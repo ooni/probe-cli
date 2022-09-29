@@ -17,11 +17,11 @@ import (
 
 func TestOONIRunV2LinkCommonCase(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		descriptor := &v2Descriptor{
+		descriptor := &V2Descriptor{
 			Name:        "",
 			Description: "",
 			Author:      "",
-			Nettests: []v2Nettest{{
+			Nettests: []V2Nettest{{
 				Inputs: []string{},
 				Options: map[string]any{
 					"SleepTime": int64(10 * time.Millisecond),
@@ -56,11 +56,11 @@ func TestOONIRunV2LinkCommonCase(t *testing.T) {
 
 func TestOONIRunV2LinkCannotUpdateCache(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		descriptor := &v2Descriptor{
+		descriptor := &V2Descriptor{
 			Name:        "",
 			Description: "",
 			Author:      "",
-			Nettests: []v2Nettest{{
+			Nettests: []V2Nettest{{
 				Inputs: []string{},
 				Options: map[string]any{
 					"SleepTime": int64(10 * time.Millisecond),
@@ -104,11 +104,11 @@ func TestOONIRunV2LinkCannotUpdateCache(t *testing.T) {
 
 func TestOONIRunV2LinkWithoutAcceptChanges(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		descriptor := &v2Descriptor{
+		descriptor := &V2Descriptor{
 			Name:        "",
 			Description: "",
 			Author:      "",
-			Nettests: []v2Nettest{{
+			Nettests: []V2Nettest{{
 				Inputs: []string{},
 				Options: map[string]any{
 					"SleepTime": int64(10 * time.Millisecond),
@@ -170,11 +170,11 @@ func TestOONIRunV2LinkNilDescriptor(t *testing.T) {
 func TestOONIRunV2LinkEmptyTestName(t *testing.T) {
 	emptyTestNamesPrev := v2CountEmptyNettestNames.Load()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		descriptor := &v2Descriptor{
+		descriptor := &V2Descriptor{
 			Name:        "",
 			Description: "",
 			Author:      "",
-			Nettests: []v2Nettest{{
+			Nettests: []V2Nettest{{
 				Inputs: []string{},
 				Options: map[string]any{
 					"SleepTime": int64(10 * time.Millisecond),
@@ -214,7 +214,7 @@ func TestV2MeasureDescriptor(t *testing.T) {
 	t.Run("with nil descriptor", func(t *testing.T) {
 		ctx := context.Background()
 		config := &LinkConfig{}
-		err := v2MeasureDescriptor(ctx, config, nil)
+		err := V2MeasureDescriptor(ctx, config, nil)
 		if !errors.Is(err, ErrNilDescriptor) {
 			t.Fatal("unexpected err", err)
 		}
@@ -269,17 +269,17 @@ func TestV2MeasureDescriptor(t *testing.T) {
 			ReportFile:    "",
 			Session:       sess,
 		}
-		descr := &v2Descriptor{
+		descr := &V2Descriptor{
 			Name:        "",
 			Description: "",
 			Author:      "",
-			Nettests: []v2Nettest{{
+			Nettests: []V2Nettest{{
 				Inputs:   []string{},
 				Options:  map[string]any{},
 				TestName: "example",
 			}},
 		}
-		err := v2MeasureDescriptor(ctx, config, descr)
+		err := V2MeasureDescriptor(ctx, config, descr)
 		if err != nil {
 			t.Fatal(err)
 		}

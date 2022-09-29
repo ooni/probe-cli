@@ -30,8 +30,8 @@ var (
 	v2CountFailedExperiments = &atomicx.Int64{}
 )
 
-// v2Descriptor describes a single nettest to run.
-type v2Descriptor struct {
+// V2Descriptor describes a list of nettests to run together.
+type V2Descriptor struct {
 	// Name is the name of this descriptor.
 	Name string `json:"name"`
 
@@ -42,11 +42,11 @@ type v2Descriptor struct {
 	Author string `json:"author"`
 
 	// Nettests contains the list of nettests to run.
-	Nettests []v2Nettest `json:"nettests"`
+	Nettests []V2Nettest `json:"nettests"`
 }
 
-// v2Nettest specifies how a nettest should run.
-type v2Nettest struct {
+// V2Nettest specifies how a nettest should run.
+type V2Nettest struct {
 	// Inputs contains inputs for the experiment.
 	Inputs []string `json:"inputs"`
 
@@ -66,7 +66,7 @@ var ErrHTTPRequestFailed = errors.New("oonirun: HTTP request failed")
 // getV2DescriptorFromHTTPSURL GETs a v2Descriptor instance from
 // a static URL (e.g., from a GitHub repo or from a Gist).
 func getV2DescriptorFromHTTPSURL(ctx context.Context, client model.HTTPClient,
-	logger model.Logger, URL string) (*v2Descriptor, error) {
+	logger model.Logger, URL string) (*V2Descriptor, error) {
 	template := httpx.APIClientTemplate{
 		Accept:        "",
 		Authorization: "",
@@ -77,7 +77,7 @@ func getV2DescriptorFromHTTPSURL(ctx context.Context, client model.HTTPClient,
 		Logger:        logger,
 		UserAgent:     model.HTTPHeaderUserAgent,
 	}
-	var desc v2Descriptor
+	var desc V2Descriptor
 	if err := template.Build().GetJSON(ctx, "", &desc); err != nil {
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func getV2DescriptorFromHTTPSURL(ctx context.Context, client model.HTTPClient,
 // v2DescriptorCache contains all the known v2Descriptor entries.
 type v2DescriptorCache struct {
 	// Entries contains all the cached descriptors.
-	Entries map[string]*v2Descriptor
+	Entries map[string]*V2Descriptor
 }
 
 // v2DescriptorCacheKey is the name of the kvstore2 entry keeping
@@ -100,7 +100,7 @@ func v2DescriptorCacheLoad(fsstore model.KeyValueStore) (*v2DescriptorCache, err
 	if err != nil {
 		if errors.Is(err, kvstore.ErrNoSuchKey) {
 			cache := &v2DescriptorCache{
-				Entries: make(map[string]*v2Descriptor),
+				Entries: make(map[string]*V2Descriptor),
 			}
 			return cache, nil
 		}
@@ -111,7 +111,7 @@ func v2DescriptorCacheLoad(fsstore model.KeyValueStore) (*v2DescriptorCache, err
 		return nil, err
 	}
 	if cache.Entries == nil {
-		cache.Entries = make(map[string]*v2Descriptor)
+		cache.Entries = make(map[string]*V2Descriptor)
 	}
 	return &cache, nil
 }
@@ -139,7 +139,7 @@ func v2DescriptorCacheLoad(fsstore model.KeyValueStore) (*v2DescriptorCache, err
 // - err is the error that occurred, or nil in case of success.
 func (cache *v2DescriptorCache) PullChangesWithoutSideEffects(
 	ctx context.Context, client model.HTTPClient, logger model.Logger,
-	URL string) (oldValue, newValue *v2Descriptor, err error) {
+	URL string) (oldValue, newValue *V2Descriptor, err error) {
 	oldValue = cache.Entries[URL]
 	newValue, err = getV2DescriptorFromHTTPSURL(ctx, client, logger, URL)
 	return
@@ -149,7 +149,7 @@ func (cache *v2DescriptorCache) PullChangesWithoutSideEffects(
 //
 // Note: this method modifies cache and is not safe for concurrent usage.
 func (cache *v2DescriptorCache) Update(
-	fsstore model.KeyValueStore, URL string, entry *v2Descriptor) error {
+	fsstore model.KeyValueStore, URL string, entry *V2Descriptor) error {
 	cache.Entries[URL] = entry
 	data, err := json.Marshal(cache)
 	runtimex.PanicOnError(err, "json.Marshal failed")
@@ -159,9 +159,9 @@ func (cache *v2DescriptorCache) Update(
 // ErrNilDescriptor indicates that we have been passed a descriptor that is nil.
 var ErrNilDescriptor = errors.New("oonirun: descriptor is nil")
 
-// v2MeasureDescriptor performs the measurement or measurements
+// V2MeasureDescriptor performs the measurement or measurements
 // described by the given list of v2Descriptor.
-func v2MeasureDescriptor(ctx context.Context, config *LinkConfig, desc *v2Descriptor) error {
+func V2MeasureDescriptor(ctx context.Context, config *LinkConfig, desc *V2Descriptor) error {
 	if desc == nil {
 		// Note: we have a test checking that we can handle a nil
 		// descriptor, yet adding also this extra safety net feels
@@ -208,7 +208,7 @@ func v2MeasureDescriptor(ctx context.Context, config *LinkConfig, desc *v2Descri
 var ErrNeedToAcceptChanges = errors.New("oonirun: need to accept changes")
 
 // v2DescriptorDiff shows what changed between the old and the new descriptors.
-func v2DescriptorDiff(oldValue, newValue *v2Descriptor, URL string) string {
+func v2DescriptorDiff(oldValue, newValue *V2Descriptor, URL string) string {
 	oldData, err := json.MarshalIndent(oldValue, "", "  ")
 	runtimex.PanicOnError(err, "json.MarshalIndent failed unexpectedly")
 	newData, err := json.MarshalIndent(newValue, "", "  ")
@@ -253,5 +253,5 @@ func v2MeasureHTTPS(ctx context.Context, config *LinkConfig, URL string) error {
 			return err
 		}
 	}
-	return v2MeasureDescriptor(ctx, config, newValue) // handles nil newValue gracefully
+	return V2MeasureDescriptor(ctx, config, newValue) // handles nil newValue gracefully
 }

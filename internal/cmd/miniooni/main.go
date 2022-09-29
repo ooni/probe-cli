@@ -196,6 +196,13 @@ func registerOONIRun(rootCmd *cobra.Command, globalOptions *Options) {
 		[]string{},
 		"URL of the OONI Run v2 descriptor to run (may be specified multiple times)",
 	)
+	flags.StringSliceVarP(
+		&globalOptions.InputFilePaths,
+		"input-file",
+		"f",
+		[]string{},
+		"Path to the OONI Run v2 descriptor to run (may be specified multiple times)",
+	)
 }
 
 // registerAllExperiments registers a subcommand for each experiment
