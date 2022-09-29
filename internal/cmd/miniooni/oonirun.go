@@ -6,25 +6,18 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"os"
 
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/oonirun"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // ooniRunMain runs the experiments described by the given OONI Run URLs. This
 // function works with both v1 and v2 OONI Run URLs.
 func ooniRunMain(ctx context.Context,
 	sess *engine.Session, currentOptions *Options, annotations map[string]string) {
-	runtimex.PanicIfTrue(
-		len(currentOptions.Inputs) <= 0,
-		"in oonirun mode you need to specify at least one URL using `-i URL`",
-	)
-	runtimex.PanicIfTrue(
-		len(currentOptions.InputFilePaths) > 0,
-		"in oonirun mode you cannot specify any `-f FILE` file",
-	)
 	logger := sess.Logger()
 	cfg := &oonirun.LinkConfig{
 		AcceptChanges: currentOptions.Yes,
@@ -45,6 +38,22 @@ func ooniRunMain(ctx context.Context,
 				logger.Warnf("oonirun: we'll show this error every time the upstream link changes")
 				panic("oonirun: need to accept changes using `-y`")
 			}
+			logger.Warnf("oonirun: running link failed: %s", err.Error())
+			continue
+		}
+	}
+	for _, filename := range currentOptions.InputFilePaths {
+		data, err := os.ReadFile(filename)
+		if err != nil {
+			logger.Warnf("oonirun: reading OONI Run v2 descriptor failed: %s", err.Error())
+			continue
+		}
+		var descr oonirun.V2Descriptor
+		if err := json.Unmarshal(data, &descr); err != nil {
+			logger.Warnf("oonirun: parsing OONI Run v2 descriptor failed: %s", err.Error())
+			continue
+		}
+		if err := oonirun.V2MeasureDescriptor(ctx, cfg, &descr); err != nil {
 			logger.Warnf("oonirun: running link failed: %s", err.Error())
 			continue
 		}
