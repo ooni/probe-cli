@@ -35,7 +35,8 @@ jobs:
 
       - run: make CLI/linux-static-386
 
-      - run: ./E2E/ooniprobe.sh ./CLI/ooniprobe-linux-386
+      - run: ./E2E/ooniprobe.bash ./CLI/ooniprobe-linux-386
+      - run: ./E2E/miniooni.bash ./CLI/miniooni-linux-386
 
       - run: ./script/ghpublish.bash ./CLI/ooniprobe-linux-386 ./CLI/miniooni-linux-386
         env:
@@ -65,7 +66,8 @@ jobs:
 
       - run: make CLI/linux-static-amd64
 
-      - run: ./E2E/ooniprobe.sh ./CLI/ooniprobe-linux-amd64
+      - run: ./E2E/ooniprobe.bash ./CLI/ooniprobe-linux-amd64
+      - run: ./E2E/miniooni.bash ./CLI/miniooni-linux-amd64
 
       - run: ./script/ghpublish.bash ./CLI/ooniprobe-linux-amd64 ./CLI/miniooni-linux-amd64
         env:
@@ -98,7 +100,8 @@ jobs:
 
       - run: make CLI/linux-static-armv6
 
-      - run: ./E2E/ooniprobe.sh ./CLI/ooniprobe-linux-armv6
+      - run: ./E2E/ooniprobe.bash ./CLI/ooniprobe-linux-armv6
+      - run: ./E2E/miniooni.bash ./CLI/miniooni-linux-armv6
 
       - run: ./script/ghpublish.bash ./CLI/ooniprobe-linux-armv6 ./CLI/miniooni-linux-armv6
         env:
@@ -131,7 +134,8 @@ jobs:
 
       - run: make CLI/linux-static-armv7
 
-      - run: ./E2E/ooniprobe.sh ./CLI/ooniprobe-linux-armv7
+      - run: ./E2E/ooniprobe.bash ./CLI/ooniprobe-linux-armv7
+      - run: ./E2E/miniooni.bash ./CLI/miniooni-linux-armv7
 
       - run: ./script/ghpublish.bash ./CLI/ooniprobe-linux-armv7 ./CLI/miniooni-linux-armv7
         env:
@@ -164,7 +168,8 @@ jobs:
 
       - run: make CLI/linux-static-arm64
 
-      - run: ./E2E/ooniprobe.sh ./CLI/ooniprobe-linux-arm64
+      - run: ./E2E/ooniprobe.bash ./CLI/ooniprobe-linux-arm64
+      - run: ./E2E/miniooni.bash ./CLI/miniooni-linux-arm64
 
       - run: ./script/ghpublish.bash ./CLI/ooniprobe-linux-arm64 ./CLI/miniooni-linux-arm64
         env:

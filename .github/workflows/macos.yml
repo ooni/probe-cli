@@ -39,7 +39,8 @@ jobs:
 
       - run: make CLI/darwin
 
-      - run: ./E2E/ooniprobe.sh ./CLI/ooniprobe-darwin-amd64
+      - run: ./E2E/ooniprobe.bash ./CLI/ooniprobe-darwin-amd64
+      - run: ./E2E/miniooni.bash ./CLI/miniooni-darwin-amd64
 
       - run: |
           ./script/ghpublish.bash ./CLI/ooniprobe-darwin-amd64 \

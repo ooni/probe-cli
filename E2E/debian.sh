@@ -1,4 +1,5 @@
 #!/bin/sh
+
 # This script checks whether we can install ooniprobe on debian
 # for a specific architecture using docker and the official
 # install instructions published at https://ooni.org/install.
