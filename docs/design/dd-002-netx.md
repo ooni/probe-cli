@@ -120,7 +120,7 @@ Where `Failure` is one of the errors we care about, i.e.:
 - `eof_error`: unexpected EOF on connection
 - `generic_timeout_error`: some timer has expired
 - `ssl_invalid_hostname`: certificate not valid for SNI
-- `ssl_unknown_autority`: cannot find CA validating certificate
+- `ssl_unknown_authority`: cannot find CA validating certificate
 - `ssl_invalid_certificate`: e.g. certificate expired
 - `unknown_failure <string>`: any other error
 
