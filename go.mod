@@ -44,6 +44,7 @@ require (
 )
 
 require (
+	github.com/cloudflare/circl v1.2.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/segmentio/fasthash v1.0.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
