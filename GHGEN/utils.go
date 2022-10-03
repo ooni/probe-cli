@@ -77,33 +77,17 @@ func newStepDownloadArtifacts(w io.Writer, artifacts []string) {
 		mustFprintf(w, "      - uses: actions/download-artifact@v2\n")
 		mustFprintf(w, "        with:\n")
 		mustFprintf(w, "          name: %s\n", filepath.Base(arti))
-		mustFprintf(w, "          path: %s\n", arti)
 		mustFprintf(w, "\n")
 	}
 }
 
 func newStepGHPublish(w io.Writer, artifacts []string) {
-	// TODO(bassosimone): this rule is more complex than it should be because
-	// we want to generate exactly the same output initially. We will then
-	// make this rule simpler after we've merged the first PR introducing this script.
 	runtimex.Assert(len(artifacts) > 0, "expected at least one artifact")
-	if len(artifacts) <= 2 {
-		mustFprintf(w, "      - run: ./script/ghpublish.bash %s\n", strings.Join(artifacts, " "))
-	} else {
-		mustFprintf(w, "      - run: |\n")
-		mustFprintf(w, "          ./script/ghpublish.bash %s", artifacts[0])
-		if len(artifacts) > 1 {
-			mustFprintf(w, " \\")
-		}
-		mustFprintf(w, "\n")
-		for idx, arti := range artifacts[1:] {
-			mustFprintf(w, "                                  %s", arti)
-			if idx < len(artifacts)-2 {
-				mustFprintf(w, " \\")
-			}
-			mustFprintf(w, "\n")
-		}
+	artifactsNames := []string{}
+	for _, arti := range artifacts {
+		artifactsNames = append(artifactsNames, filepath.Base(arti))
 	}
+	mustFprintf(w, "      - run: ./script/ghpublish.bash %s\n", strings.Join(artifactsNames, " "))
 	mustFprintf(w, "        env:\n")
 	mustFprintf(w, "          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n")
 	mustFprintf(w, "\n")
@@ -131,13 +115,13 @@ func newStepInstallTor(w io.Writer) {
 }
 
 func newStepRunOONIProbeIntegrationTests(w io.Writer, os, arch, ext string) {
-	mustFprintf(w, "      - run: ./E2E/ooniprobe.bash ./CLI/ooniprobe-%s-%s%s\n", os, arch, ext)
+	mustFprintf(w, "      - run: ./E2E/ooniprobe.bash ./ooniprobe-%s-%s%s\n", os, arch, ext)
 	mustFprintf(w, "        shell: bash\n")
 	mustFprintf(w, "\n")
 }
 
 func newStepRunMiniooniIntegrationTests(w io.Writer, arch, ext string) {
-	mustFprintf(w, "      - run: ./E2E/miniooni.bash ./CLI/miniooni-linux-%s%s\n", arch, ext)
+	mustFprintf(w, "      - run: ./E2E/miniooni.bash ./miniooni-linux-%s%s\n", arch, ext)
 	mustFprintf(w, "        shell: bash\n")
 	mustFprintf(w, "\n")
 }

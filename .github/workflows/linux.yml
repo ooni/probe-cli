@@ -50,21 +50,15 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
       - uses: actions/download-artifact@v2
         with:
           name: ooniprobe-linux-386
-          path: ./CLI/ooniprobe-linux-386
 
       - uses: actions/download-artifact@v2
         with:
           name: miniooni-linux-386
-          path: ./CLI/miniooni-linux-386
 
-      - run: ./script/ghpublish.bash ./CLI/ooniprobe-linux-386 ./CLI/miniooni-linux-386
+      - run: ./script/ghpublish.bash ooniprobe-linux-386 miniooni-linux-386
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -110,12 +104,10 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: ooniprobe-linux-amd64
-          path: ./CLI/ooniprobe-linux-amd64
 
       - uses: actions/download-artifact@v2
         with:
           name: miniooni-linux-amd64
-          path: ./CLI/miniooni-linux-amd64
 
       - name: Get GOVERSION content
         id: goversion
@@ -128,10 +120,10 @@ jobs:
       - run: sudo apt-get update -q
       - run: sudo apt-get install -y tor
 
-      - run: ./E2E/ooniprobe.bash ./CLI/ooniprobe-linux-amd64
+      - run: ./E2E/ooniprobe.bash ./ooniprobe-linux-amd64
         shell: bash
 
-      - run: ./E2E/miniooni.bash ./CLI/miniooni-linux-amd64
+      - run: ./E2E/miniooni.bash ./miniooni-linux-amd64
         shell: bash
 
   publish_linux_cli_amd64:
@@ -140,21 +132,15 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
       - uses: actions/download-artifact@v2
         with:
           name: ooniprobe-linux-amd64
-          path: ./CLI/ooniprobe-linux-amd64
 
       - uses: actions/download-artifact@v2
         with:
           name: miniooni-linux-amd64
-          path: ./CLI/miniooni-linux-amd64
 
-      - run: ./script/ghpublish.bash ./CLI/ooniprobe-linux-amd64 ./CLI/miniooni-linux-amd64
+      - run: ./script/ghpublish.bash ooniprobe-linux-amd64 miniooni-linux-amd64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -198,21 +184,15 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
       - uses: actions/download-artifact@v2
         with:
           name: ooniprobe-linux-armv6
-          path: ./CLI/ooniprobe-linux-armv6
 
       - uses: actions/download-artifact@v2
         with:
           name: miniooni-linux-armv6
-          path: ./CLI/miniooni-linux-armv6
 
-      - run: ./script/ghpublish.bash ./CLI/ooniprobe-linux-armv6 ./CLI/miniooni-linux-armv6
+      - run: ./script/ghpublish.bash ooniprobe-linux-armv6 miniooni-linux-armv6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -256,21 +236,15 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
       - uses: actions/download-artifact@v2
         with:
           name: ooniprobe-linux-armv7
-          path: ./CLI/ooniprobe-linux-armv7
 
       - uses: actions/download-artifact@v2
         with:
           name: miniooni-linux-armv7
-          path: ./CLI/miniooni-linux-armv7
 
-      - run: ./script/ghpublish.bash ./CLI/ooniprobe-linux-armv7 ./CLI/miniooni-linux-armv7
+      - run: ./script/ghpublish.bash ooniprobe-linux-armv7 miniooni-linux-armv7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -314,21 +288,15 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
       - uses: actions/download-artifact@v2
         with:
           name: ooniprobe-linux-arm64
-          path: ./CLI/ooniprobe-linux-arm64
 
       - uses: actions/download-artifact@v2
         with:
           name: miniooni-linux-arm64
-          path: ./CLI/miniooni-linux-arm64
 
-      - run: ./script/ghpublish.bash ./CLI/ooniprobe-linux-arm64 ./CLI/miniooni-linux-arm64
+      - run: ./script/ghpublish.bash ooniprobe-linux-arm64 miniooni-linux-arm64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

@@ -58,29 +58,19 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
       - uses: actions/download-artifact@v2
         with:
           name: oonimkall.aar
-          path: ./MOBILE/android/oonimkall.aar
 
       - uses: actions/download-artifact@v2
         with:
           name: oonimkall-sources.jar
-          path: ./MOBILE/android/oonimkall-sources.jar
 
       - uses: actions/download-artifact@v2
         with:
           name: oonimkall.pom
-          path: ./MOBILE/android/oonimkall.pom
 
-      - run: |
-          ./script/ghpublish.bash ./MOBILE/android/oonimkall.aar \
-                                  ./MOBILE/android/oonimkall-sources.jar \
-                                  ./MOBILE/android/oonimkall.pom
+      - run: ./script/ghpublish.bash oonimkall.aar oonimkall-sources.jar oonimkall.pom
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -124,21 +114,15 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
       - uses: actions/download-artifact@v2
         with:
           name: miniooni-android-386
-          path: ./CLI/miniooni-android-386
 
       - uses: actions/download-artifact@v2
         with:
           name: ooniprobe-android-386
-          path: ./CLI/ooniprobe-android-386
 
-      - run: ./script/ghpublish.bash ./CLI/miniooni-android-386 ./CLI/ooniprobe-android-386
+      - run: ./script/ghpublish.bash miniooni-android-386 ooniprobe-android-386
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -182,21 +166,15 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
       - uses: actions/download-artifact@v2
         with:
           name: miniooni-android-amd64
-          path: ./CLI/miniooni-android-amd64
 
       - uses: actions/download-artifact@v2
         with:
           name: ooniprobe-android-amd64
-          path: ./CLI/ooniprobe-android-amd64
 
-      - run: ./script/ghpublish.bash ./CLI/miniooni-android-amd64 ./CLI/ooniprobe-android-amd64
+      - run: ./script/ghpublish.bash miniooni-android-amd64 ooniprobe-android-amd64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -240,21 +218,15 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
       - uses: actions/download-artifact@v2
         with:
           name: miniooni-android-arm
-          path: ./CLI/miniooni-android-arm
 
       - uses: actions/download-artifact@v2
         with:
           name: ooniprobe-android-arm
-          path: ./CLI/ooniprobe-android-arm
 
-      - run: ./script/ghpublish.bash ./CLI/miniooni-android-arm ./CLI/ooniprobe-android-arm
+      - run: ./script/ghpublish.bash miniooni-android-arm ooniprobe-android-arm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -298,21 +270,15 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
       - uses: actions/download-artifact@v2
         with:
           name: miniooni-android-arm64
-          path: ./CLI/miniooni-android-arm64
 
       - uses: actions/download-artifact@v2
         with:
           name: ooniprobe-android-arm64
-          path: ./CLI/ooniprobe-android-arm64
 
-      - run: ./script/ghpublish.bash ./CLI/miniooni-android-arm64 ./CLI/ooniprobe-android-arm64
+      - run: ./script/ghpublish.bash miniooni-android-arm64 ooniprobe-android-arm64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

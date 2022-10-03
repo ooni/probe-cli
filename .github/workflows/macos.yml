@@ -61,16 +61,11 @@ jobs:
     runs-on: macos-11
     needs: build_darwin_cli
     steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
       - uses: actions/download-artifact@v2
         with:
           name: ooniprobe-darwin-amd64
-          path: ./CLI/ooniprobe-darwin-amd64
 
-      - run: ./E2E/ooniprobe.bash ./CLI/ooniprobe-darwin-amd64
+      - run: ./E2E/ooniprobe.bash ./ooniprobe-darwin-amd64
         shell: bash
 
   publish_darwin_cli:
@@ -79,35 +74,23 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
       - uses: actions/download-artifact@v2
         with:
           name: ooniprobe-darwin-amd64
-          path: ./CLI/ooniprobe-darwin-amd64
 
       - uses: actions/download-artifact@v2
         with:
           name: ooniprobe-darwin-arm64
-          path: ./CLI/ooniprobe-darwin-arm64
 
       - uses: actions/download-artifact@v2
         with:
           name: miniooni-darwin-amd64
-          path: ./CLI/miniooni-darwin-amd64
 
       - uses: actions/download-artifact@v2
         with:
           name: miniooni-darwin-arm64
-          path: ./CLI/miniooni-darwin-arm64
 
-      - run: |
-          ./script/ghpublish.bash ./CLI/ooniprobe-darwin-amd64 \
-                                  ./CLI/ooniprobe-darwin-arm64 \
-                                  ./CLI/miniooni-darwin-amd64 \
-                                  ./CLI/miniooni-darwin-arm64
+      - run: ./script/ghpublish.bash ooniprobe-darwin-amd64 ooniprobe-darwin-arm64 miniooni-darwin-amd64 miniooni-darwin-arm64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

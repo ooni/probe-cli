@@ -71,9 +71,8 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: ooniprobe-windows-amd64.exe
-          path: ./CLI/ooniprobe-windows-amd64.exe
 
-      - run: ./E2E/ooniprobe.bash ./CLI/ooniprobe-windows-amd64.exe
+      - run: ./E2E/ooniprobe.bash ./ooniprobe-windows-amd64.exe
         shell: bash
 
   publish_windows_cli:
@@ -89,28 +88,20 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: ooniprobe-windows-386.exe
-          path: ./CLI/ooniprobe-windows-386.exe
 
       - uses: actions/download-artifact@v2
         with:
           name: ooniprobe-windows-amd64.exe
-          path: ./CLI/ooniprobe-windows-amd64.exe
 
       - uses: actions/download-artifact@v2
         with:
           name: miniooni-windows-386.exe
-          path: ./CLI/miniooni-windows-386.exe
 
       - uses: actions/download-artifact@v2
         with:
           name: miniooni-windows-amd64.exe
-          path: ./CLI/miniooni-windows-amd64.exe
 
-      - run: |
-          ./script/ghpublish.bash ./CLI/ooniprobe-windows-386.exe \
-                                  ./CLI/ooniprobe-windows-amd64.exe \
-                                  ./CLI/miniooni-windows-386.exe \
-                                  ./CLI/miniooni-windows-amd64.exe
+      - run: ./script/ghpublish.bash ooniprobe-windows-386.exe ooniprobe-windows-amd64.exe miniooni-windows-386.exe miniooni-windows-amd64.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

@@ -34,7 +34,7 @@ func buildAndPublishCLIWindows(w io.Writer, job *Job) {
 
 	newJob(w, testJob, runsOnWindows, buildJob, noPermissions)
 	newStepCheckout(w)
-	newStepDownloadArtifacts(w, []string{"./CLI/ooniprobe-windows-amd64.exe"})
+	newStepDownloadArtifacts(w, []string{"ooniprobe-windows-amd64.exe"})
 	newStepRunOONIProbeIntegrationTests(w, "windows", "amd64", ".exe")
 
 	newJob(w, publishJob, runsOnUbuntu, testJob, contentsWritePermissions)

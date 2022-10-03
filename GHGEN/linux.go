@@ -51,7 +51,6 @@ func buildAndPublishCLILinux(w io.Writer, job *Job) {
 			newJob(w, publishJob, runsOnUbuntu, buildJob, contentsWritePermissions)
 		}
 
-		newStepCheckout(w)
 		newStepDownloadArtifacts(w, artifacts)
 		newStepGHPublish(w, artifacts)
 	}
