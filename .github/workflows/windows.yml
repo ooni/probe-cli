@@ -74,7 +74,6 @@ jobs:
           name: miniooni-windows-amd64.exe
 
       - run: bash.exe ./E2E/ooniprobe.bash ./ooniprobe-windows-amd64.exe
-      - run: bash.exe ./E2E/miniooni.bash ./miniooni-windows-amd64.exe
 
   publish:
     needs: test
