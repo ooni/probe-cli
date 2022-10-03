@@ -29,7 +29,7 @@ func newclient() probeservices.Client {
 	ua := fmt.Sprintf("apitool/%s ooniprobe-engine/%s", version.Version, version.Version)
 	return probeservices.Client{
 		APIClientTemplate: httpx.APIClientTemplate{
-			BaseURL:    "https://api.ooni.io/",
+			BaseURL:    *backend,
 			HTTPClient: &http.Client{Transport: txp},
 			Logger:     log.Log,
 			UserAgent:  ua,
@@ -50,6 +50,7 @@ func fatalOnError(err error, message string) {
 }
 
 var (
+	backend  = flag.String("backend", "https://ams-pg-test.ooni.org/", "Backend to use")
 	debug    = flag.Bool("v", false, "Enable verbose mode")
 	input    = flag.String("input", "", "Input of the measurement")
 	mode     = flag.String("mode", "", "One of: check, meta, raw")
