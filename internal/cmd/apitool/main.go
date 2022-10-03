@@ -50,7 +50,7 @@ func fatalOnError(err error, message string) {
 }
 
 var (
-	backend  = flag.String("backend", "https://ams-pg-test.ooni.org/", "Backend to use")
+	backend  = flag.String("backend", "https://api.ooni.io/", "Backend to use")
 	debug    = flag.Bool("v", false, "Enable verbose mode")
 	input    = flag.String("input", "", "Input of the measurement")
 	mode     = flag.String("mode", "", "One of: check, meta, raw")
