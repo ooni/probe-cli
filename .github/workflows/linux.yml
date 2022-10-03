@@ -67,6 +67,13 @@ jobs:
 
       - run: ./E2E/ooniprobe.bash ./CLI/ooniprobe-linux-amd64
 
+      - name: Get GOVERSION content
+        id: goversion
+        run: echo ::set-output name=version::$(cat GOVERSION)
+      - uses: magnetikonline/action-golang-cache@v2
+        with:
+          go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
       - run: sudo apt-get update -q
       - run: sudo apt-get install -y tor
       - run: ./E2E/miniooni.bash ./CLI/miniooni-linux-amd64
