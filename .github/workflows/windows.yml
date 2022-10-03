@@ -64,10 +64,16 @@ jobs:
       actions: read
     steps:
       - uses: actions/checkout@v2
+
       - uses: actions/download-artifact@v2
         with:
           name: ooniprobe-windows-amd64.exe
-      - run: bash.exe ./E2E/ooniprobe.sh ./ooniprobe-windows-amd64.exe
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: miniooni-windows-amd64.exe
+
+      - run: bash.exe ./E2E/ooniprobe.bash ./ooniprobe-windows-amd64.exe
 
   publish:
     needs: test
