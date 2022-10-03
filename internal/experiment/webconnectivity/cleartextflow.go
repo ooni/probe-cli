@@ -38,9 +38,8 @@ type CleartextFlow struct {
 	// Logger is the MANDATORY logger to use.
 	Logger model.Logger
 
-	// Sema is the MANDATORY semaphore to allow just a single
-	// connection to perform the HTTP transaction.
-	Sema <-chan any
+	// NumRedirects it the MANDATORY counter of the number of redirects.
+	NumRedirects *NumRedirects
 
 	// TestKeys is MANDATORY and contains the TestKeys.
 	TestKeys *TestKeys
@@ -60,6 +59,10 @@ type CleartextFlow struct {
 
 	// HostHeader is the OPTIONAL host header to use.
 	HostHeader string
+
+	// PrioSelector is the OPTIONAL priority selector to use to determine
+	// whether this flow is allowed to fetch the webpage.
+	PrioSelector *prioritySelector
 
 	// Referer contains the OPTIONAL referer, used for redirects.
 	Referer string
@@ -113,11 +116,9 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) {
 
 	alpn := "" // no ALPN because we're not using TLS
 
-	// Only allow N flows to _use_ the connection
-	select {
-	case <-t.Sema:
-	default:
-		ol.Stop(nil)
+	// Determine whether we're allowed to fetch the webpage
+	if t.PrioSelector == nil || !t.PrioSelector.permissionToFetch(t.Address) {
+		ol.Stop("stop after TCP connect")
 		return
 	}
 
@@ -224,6 +225,9 @@ func (t *CleartextFlow) httpTransaction(ctx context.Context, network, address, a
 	txp model.HTTPTransport, req *http.Request, trace *measurexlite.Trace) (*http.Response, []byte, error) {
 	const maxbody = 1 << 19
 	started := trace.TimeSince(trace.ZeroTime)
+	t.TestKeys.AppendNetworkEvents(measurexlite.NewAnnotationArchivalNetworkEvent(
+		trace.Index, started, "http_transaction_start",
+	))
 	resp, err := txp.RoundTrip(req)
 	var body []byte
 	if err == nil {
@@ -232,9 +236,12 @@ func (t *CleartextFlow) httpTransaction(ctx context.Context, network, address, a
 			t.CookieJar.SetCookies(req.URL, cookies)
 		}
 		reader := io.LimitReader(resp.Body, maxbody)
-		body, err = netxlite.ReadAllContext(ctx, reader)
+		body, err = StreamAllContext(ctx, reader)
 	}
 	finished := trace.TimeSince(trace.ZeroTime)
+	t.TestKeys.AppendNetworkEvents(measurexlite.NewAnnotationArchivalNetworkEvent(
+		trace.Index, finished, "http_transaction_done",
+	))
 	ev := measurexlite.NewArchivalHTTPRequestResult(
 		trace.Index,
 		started,
@@ -255,8 +262,8 @@ func (t *CleartextFlow) httpTransaction(ctx context.Context, network, address, a
 
 // maybeFollowRedirects follows redirects if configured and needed
 func (t *CleartextFlow) maybeFollowRedirects(ctx context.Context, resp *http.Response) {
-	if !t.FollowRedirects {
-		return // not configured
+	if !t.FollowRedirects || !t.NumRedirects.CanFollowOneMoreRedirect() {
+		return // not configured or too many redirects
 	}
 	switch resp.StatusCode {
 	case 301, 302, 307, 308:
@@ -266,19 +273,20 @@ func (t *CleartextFlow) maybeFollowRedirects(ctx context.Context, resp *http.Res
 		}
 		t.Logger.Infof("redirect to: %s", location.String())
 		resolvers := &DNSResolvers{
-			CookieJar:   t.CookieJar,
-			DNSCache:    t.DNSCache,
-			Domain:      location.Hostname(),
-			IDGenerator: t.IDGenerator,
-			Logger:      t.Logger,
-			TestKeys:    t.TestKeys,
-			URL:         location,
-			ZeroTime:    t.ZeroTime,
-			WaitGroup:   t.WaitGroup,
-			Referer:     resp.Request.URL.String(),
-			Session:     nil, // no need to issue another control request
-			THAddr:      "",  // ditto
-			UDPAddress:  t.UDPAddress,
+			CookieJar:    t.CookieJar,
+			DNSCache:     t.DNSCache,
+			Domain:       location.Hostname(),
+			IDGenerator:  t.IDGenerator,
+			Logger:       t.Logger,
+			NumRedirects: t.NumRedirects,
+			TestKeys:     t.TestKeys,
+			URL:          location,
+			ZeroTime:     t.ZeroTime,
+			WaitGroup:    t.WaitGroup,
+			Referer:      resp.Request.URL.String(),
+			Session:      nil, // no need to issue another control request
+			THAddr:       "",  // ditto
+			UDPAddress:   t.UDPAddress,
 		}
 		resolvers.Start(ctx)
 	default:

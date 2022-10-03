@@ -39,6 +39,9 @@ type DNSResolvers struct {
 	// Logger is the MANDATORY logger to use.
 	Logger model.Logger
 
+	// NumRedirects it the MANDATORY counter of the number of redirects.
+	NumRedirects *NumRedirects
+
 	// TestKeys is MANDATORY and contains the TestKeys.
 	TestKeys *TestKeys
 
@@ -82,7 +85,7 @@ func (t *DNSResolvers) Start(ctx context.Context) {
 }
 
 // run performs a DNS lookup and returns the looked up addrs
-func (t *DNSResolvers) run(parentCtx context.Context) []string {
+func (t *DNSResolvers) run(parentCtx context.Context) []DNSEntry {
 	// create output channels for the lookup
 	systemOut := make(chan []string)
 	udpOut := make(chan []string)
@@ -117,39 +120,42 @@ func (t *DNSResolvers) run(parentCtx context.Context) []string {
 	})
 
 	// merge the resolved IP addresses
-	merged := map[string]bool{}
+	merged := map[string]*DNSEntry{}
 	for _, addr := range systemAddrs {
-		merged[addr] = true
+		if _, found := merged[addr]; !found {
+			merged[addr] = &DNSEntry{}
+		}
+		merged[addr].Addr = addr
+		merged[addr].Flags |= DNSAddrFlagSystemResolver
 	}
 	for _, addr := range udpAddrs {
-		merged[addr] = true
+		if _, found := merged[addr]; !found {
+			merged[addr] = &DNSEntry{}
+		}
+		merged[addr].Addr = addr
+		merged[addr].Flags |= DNSAddrFlagUDP
 	}
 	for _, addr := range httpsAddrs {
-		merged[addr] = true
-	}
-
-	// rearrange addresses to have IPv4 first
-	sorted := []string{}
-	for addr := range merged {
-		if v6, err := netxlite.IsIPv6(addr); err == nil && !v6 {
-			sorted = append(sorted, addr)
+		if _, found := merged[addr]; !found {
+			merged[addr] = &DNSEntry{}
 		}
+		merged[addr].Addr = addr
+		merged[addr].Flags |= DNSAddrFlagHTTPS
 	}
-	for addr := range merged {
-		if v6, err := netxlite.IsIPv6(addr); err == nil && v6 {
-			sorted = append(sorted, addr)
-		}
+	// implementation note: we don't remove bogons because accessing
+	// them can lead us to discover block pages
+	var entries []DNSEntry
+	for _, entry := range merged {
+		entries = append(entries, *entry)
 	}
 
-	// TODO(bassosimone): remove bogons
-
-	return sorted
+	return entries
 }
 
 // Run runs this task in the current goroutine.
 func (t *DNSResolvers) Run(parentCtx context.Context) {
 	var (
-		addresses []string
+		addresses []DNSEntry
 		found     bool
 	)
 
@@ -162,14 +168,19 @@ func (t *DNSResolvers) Run(parentCtx context.Context) {
 
 		// insert the addresses we just looked us into the cache
 		t.DNSCache.Set(t.Domain, addresses)
+
+		log.Infof("using resolved addrs: %+v", addresses)
+	} else {
+		log.Infof("using previously-cached addrs: %+v", addresses)
 	}
 
-	log.Infof("using resolved addrs: %+v", addresses)
+	// create priority selector
+	ps := newPrioritySelector(parentCtx, t.ZeroTime, t.TestKeys, t.Logger, addresses)
 
 	// fan out a number of child async tasks to use the IP addrs
-	t.startCleartextFlows(parentCtx, addresses)
-	t.startSecureFlows(parentCtx, addresses)
-	t.maybeStartControlFlow(parentCtx, addresses)
+	t.startCleartextFlows(parentCtx, ps, addresses)
+	t.startSecureFlows(parentCtx, ps, addresses)
+	t.maybeStartControlFlow(parentCtx, ps, addresses)
 }
 
 // whoamiSystemV4 performs a DNS whoami lookup for the system resolver. This function must
@@ -260,9 +271,6 @@ func (t *DNSResolvers) waitForLateReplies(parentCtx context.Context, trace *meas
 	defer t.WaitGroup.Done()
 	const lateTimeout = 500 * time.Millisecond
 	events := trace.DelayedDNSResponseWithTimeout(parentCtx, lateTimeout)
-	if length := len(events); length > 0 {
-		t.Logger.Warnf("got %d late DNS replies", length)
-	}
 	t.TestKeys.AppendDNSLateReplies(events...)
 }
 
@@ -409,14 +417,11 @@ func (t *DNSResolvers) dohSplitQueries(
 }
 
 // startCleartextFlows starts a TCP measurement flow for each IP addr.
-func (t *DNSResolvers) startCleartextFlows(ctx context.Context, addresses []string) {
-	sema := make(chan any, 1)
-	sema <- true // allow a single flow to fetch the HTTP body
-	t.startCleartextFlowsWithSema(ctx, sema, addresses)
-}
-
-// startCleartextFlowsWithSema implements EndpointMeasurementsStarter.
-func (t *DNSResolvers) startCleartextFlowsWithSema(ctx context.Context, sema <-chan any, addresses []string) {
+func (t *DNSResolvers) startCleartextFlows(
+	ctx context.Context,
+	ps *prioritySelector,
+	addresses []DNSEntry,
+) {
 	if t.URL.Scheme != "http" {
 		// Do not bother with measuring HTTP when the user
 		// has asked us to measure an HTTPS URL.
@@ -428,17 +433,18 @@ func (t *DNSResolvers) startCleartextFlowsWithSema(ctx context.Context, sema <-c
 	}
 	for _, addr := range addresses {
 		task := &CleartextFlow{
-			Address:         net.JoinHostPort(addr, port),
+			Address:         net.JoinHostPort(addr.Addr, port),
 			DNSCache:        t.DNSCache,
 			IDGenerator:     t.IDGenerator,
 			Logger:          t.Logger,
-			Sema:            sema,
+			NumRedirects:    t.NumRedirects,
 			TestKeys:        t.TestKeys,
 			ZeroTime:        t.ZeroTime,
 			WaitGroup:       t.WaitGroup,
 			CookieJar:       t.CookieJar,
 			FollowRedirects: t.URL.Scheme == "http",
 			HostHeader:      t.URL.Host,
+			PrioSelector:    ps,
 			Referer:         t.Referer,
 			UDPAddress:      t.UDPAddress,
 			URLPath:         t.URL.Path,
@@ -449,19 +455,15 @@ func (t *DNSResolvers) startCleartextFlowsWithSema(ctx context.Context, sema <-c
 }
 
 // startSecureFlows starts a TCP+TLS measurement flow for each IP addr.
-func (t *DNSResolvers) startSecureFlows(ctx context.Context, addresses []string) {
-	sema := make(chan any, 1)
-	if t.URL.Scheme == "https" {
-		// Allows just a single worker to fetch the response body but do that
-		// only if the test-lists URL uses "https" as the scheme. Otherwise, just
-		// validate IPs by performing a TLS handshake.
-		sema <- true
+func (t *DNSResolvers) startSecureFlows(
+	ctx context.Context,
+	ps *prioritySelector,
+	addresses []DNSEntry,
+) {
+	if t.URL.Scheme != "https" {
+		// When the scheme is not HTTPS we fetch using HTTP
+		ps = nil
 	}
-	t.startSecureFlowsWithSema(ctx, sema, addresses)
-}
-
-// startSecureFlowsWithSema implements EndpointMeasurementsStarter.
-func (t *DNSResolvers) startSecureFlowsWithSema(ctx context.Context, sema <-chan any, addresses []string) {
 	port := "443"
 	if urlPort := t.URL.Port(); urlPort != "" {
 		if t.URL.Scheme != "https" {
@@ -473,11 +475,11 @@ func (t *DNSResolvers) startSecureFlowsWithSema(ctx context.Context, sema <-chan
 	}
 	for _, addr := range addresses {
 		task := &SecureFlow{
-			Address:         net.JoinHostPort(addr, port),
+			Address:         net.JoinHostPort(addr.Addr, port),
 			DNSCache:        t.DNSCache,
 			IDGenerator:     t.IDGenerator,
 			Logger:          t.Logger,
-			Sema:            sema,
+			NumRedirects:    t.NumRedirects,
 			TestKeys:        t.TestKeys,
 			ZeroTime:        t.ZeroTime,
 			WaitGroup:       t.WaitGroup,
@@ -486,6 +488,7 @@ func (t *DNSResolvers) startSecureFlowsWithSema(ctx context.Context, sema <-chan
 			FollowRedirects: t.URL.Scheme == "https",
 			SNI:             t.URL.Hostname(),
 			HostHeader:      t.URL.Host,
+			PrioSelector:    ps,
 			Referer:         t.Referer,
 			UDPAddress:      t.UDPAddress,
 			URLPath:         t.URL.Path,
@@ -496,12 +499,23 @@ func (t *DNSResolvers) startSecureFlowsWithSema(ctx context.Context, sema <-chan
 }
 
 // maybeStartControlFlow starts the control flow iff .Session and .THAddr are set.
-func (t *DNSResolvers) maybeStartControlFlow(ctx context.Context, addresses []string) {
+func (t *DNSResolvers) maybeStartControlFlow(
+	ctx context.Context,
+	ps *prioritySelector,
+	addresses []DNSEntry,
+) {
+	// note: for subsequent requests we don't set .Session and .THAddr hence
+	// we are not going to query the test helper more than once
 	if t.Session != nil && t.THAddr != "" {
+		var addrs []string
+		for _, addr := range addresses {
+			addrs = append(addrs, addr.Addr)
+		}
 		ctrl := &Control{
-			Addresses:                addresses,
+			Addresses:                addrs,
 			ExtraMeasurementsStarter: t, // allows starting follow-up measurement flows
 			Logger:                   t.Logger,
+			PrioSelector:             ps,
 			TestKeys:                 t.TestKeys,
 			Session:                  t.Session,
 			THAddr:                   t.THAddr,

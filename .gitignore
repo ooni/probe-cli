@@ -7,14 +7,17 @@
 /DEBIAN_INSTALLED_PACKAGE.txt
 /debops-ci
 .DS_Store
+/ghpublish.out.txt
 /jafar
 /*.jsonl
 /miniooni
 /miniooni.exe
 /oohelper
 /oohelperd
+/ooporthelper
 /oohelperd.exe
 /oohelper.exe
+/ooporthelper.exe
 /ooniprobe
 /ooniprobe_checksums.txt
 /ooniprobe_checksums.txt.asc

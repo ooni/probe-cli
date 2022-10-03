@@ -57,6 +57,7 @@ func TestAddAnnotations(t *testing.T) {
 }
 
 type makeMeasurementConfig struct {
+	Input               string
 	ProbeIP             string
 	ProbeASN            string
 	ProbeNetworkName    string
@@ -66,10 +67,11 @@ type makeMeasurementConfig struct {
 	ResolverASN         string
 }
 
-func makeMeasurement(config makeMeasurementConfig) Measurement {
-	return Measurement{
+func makeMeasurement(config makeMeasurementConfig) *Measurement {
+	return &Measurement{
 		DataFormatVersion:    "0.3.0",
 		ID:                   "bdd20d7a-bba5-40dd-a111-9863d7908572",
+		Input:                MeasurementTarget(config.Input),
 		MeasurementStartTime: "2018-11-01 15:33:20",
 		ProbeIP:              config.ProbeIP,
 		ProbeASN:             config.ProbeASN,
@@ -82,7 +84,7 @@ func makeMeasurement(config makeMeasurementConfig) Measurement {
 		SoftwareName:         "probe-engine",
 		SoftwareVersion:      "0.1.0",
 		TestKeys: &fakeTestKeys{
-			ClientResolver: "91.80.37.104",
+			ClientResolver: config.ResolverIP,
 			Body: fmt.Sprintf(`
 				<HTML><HEAD><TITLE>Your IP is %s</TITLE></HEAD>
 				<BODY><P>Hey you, I see your IP and it's %s!</P></BODY>
@@ -95,8 +97,9 @@ func makeMeasurement(config makeMeasurementConfig) Measurement {
 	}
 }
 
-func TestScrubWeAreScrubbing(t *testing.T) {
+func TestScrubMeasurementWeAreScrubbing(t *testing.T) {
 	config := makeMeasurementConfig{
+		Input:               "130.192.91.211",
 		ProbeIP:             "130.192.91.211",
 		ProbeASN:            "AS137",
 		ProbeCC:             "IT",
@@ -106,8 +109,11 @@ func TestScrubWeAreScrubbing(t *testing.T) {
 		ResolverASN:         "AS12345",
 	}
 	m := makeMeasurement(config)
-	if err := m.Scrub(config.ProbeIP); err != nil {
+	if err := ScrubMeasurement(m, config.ProbeIP); err != nil {
 		t.Fatal(err)
+	}
+	if m.Input != Scrubbed {
+		t.Fatal("Input HAS NOT been scrubbed")
 	}
 	if m.ProbeASN != config.ProbeASN {
 		t.Fatal("ProbeASN has been scrubbed")
@@ -115,7 +121,7 @@ func TestScrubWeAreScrubbing(t *testing.T) {
 	if m.ProbeCC != config.ProbeCC {
 		t.Fatal("ProbeCC has been scrubbed")
 	}
-	if m.ProbeIP == config.ProbeIP {
+	if m.ProbeIP != DefaultProbeIP {
 		t.Fatal("ProbeIP HAS NOT been scrubbed")
 	}
 	if m.ProbeNetworkName != config.ProbeNetworkName {
@@ -137,75 +143,56 @@ func TestScrubWeAreScrubbing(t *testing.T) {
 	if bytes.Count(data, []byte(config.ProbeIP)) != 0 {
 		t.Fatal("ProbeIP not fully redacted")
 	}
-}
-
-func TestScrubNoScrubbingRequired(t *testing.T) {
-	config := makeMeasurementConfig{
-		ProbeIP:             "130.192.91.211",
-		ProbeASN:            "AS137",
-		ProbeCC:             "IT",
-		ProbeNetworkName:    "Vodafone Italia S.p.A.",
-		ResolverIP:          "8.8.8.8",
-		ResolverNetworkName: "Google LLC",
-		ResolverASN:         "AS12345",
+	// Note: ooniprobe requires the test keys to keep their original
+	// type otherwise the summary extraction process fails
+	testkeys, good := m.TestKeys.(*fakeTestKeys)
+	if !good {
+		t.Fatal("the underlying type of the test keys changed")
 	}
-	m := makeMeasurement(config)
-	m.TestKeys.(*fakeTestKeys).Body = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-	if err := m.Scrub(config.ProbeIP); err != nil {
-		t.Fatal(err)
-	}
-	if m.ProbeASN != config.ProbeASN {
-		t.Fatal("ProbeASN has been scrubbed")
-	}
-	if m.ProbeCC != config.ProbeCC {
-		t.Fatal("ProbeCC has been scrubbed")
-	}
-	if m.ProbeIP == config.ProbeIP {
-		t.Fatal("ProbeIP HAS NOT been scrubbed")
-	}
-	if m.ProbeNetworkName != config.ProbeNetworkName {
-		t.Fatal("ProbeNetworkName has been scrubbed")
-	}
-	if m.ResolverIP != config.ResolverIP {
-		t.Fatal("ResolverIP has been scrubbed")
-	}
-	if m.ResolverNetworkName != config.ResolverNetworkName {
-		t.Fatal("ResolverNetworkName has been scrubbed")
-	}
-	if m.ResolverASN != config.ResolverASN {
-		t.Fatal("ResolverASN has been scrubbed")
-	}
-	data, err := json.Marshal(m)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if bytes.Count(data, []byte(Scrubbed)) > 0 {
-		t.Fatal("We should not see any scrubbing")
+	if testkeys.ClientResolver != config.ResolverIP {
+		t.Fatal("it seems the test keys did not round trip")
 	}
 }
 
-func TestScrubInvalidIP(t *testing.T) {
-	m := &Measurement{
-		ProbeASN: "AS1234",
-		ProbeCC:  "IT",
+func TestScrubMeasurementCannotUnmarshalTopLevelKeys(t *testing.T) {
+	saved := scrubJSONUnmarshalTopLevelKeys
+	expected := errors.New("mocked err")
+	scrubJSONUnmarshalTopLevelKeys = func(data []byte, v any) error {
+		return expected
 	}
-	err := m.Scrub("") // invalid IP
-	if !errors.Is(err, ErrInvalidProbeIP) {
-		t.Fatal("not the error we expected")
-	}
-}
-
-func TestScrubMarshalError(t *testing.T) {
-	expected := errors.New("mocked error")
-	m := &Measurement{
-		ProbeASN: "AS1234",
-		ProbeCC:  "IT",
-	}
-	err := m.MaybeRewriteTestKeys(
-		"8.8.8.8", func(v interface{}) ([]byte, error) {
-			return nil, expected
-		})
+	defer func() {
+		scrubJSONUnmarshalTopLevelKeys = saved
+	}()
+	m := &Measurement{}
+	err := ScrubMeasurement(m, "10.0.0.1")
 	if !errors.Is(err, expected) {
+		t.Fatal("unexpected error", err)
+	}
+}
+
+func TestScrubMeasurementCannotUnmarshalTestKeys(t *testing.T) {
+	saved := scrubJSONUnmarshalTestKeys
+	expected := errors.New("mocked err")
+	scrubJSONUnmarshalTestKeys = func(data []byte, v any) error {
+		return expected
+	}
+	defer func() {
+		scrubJSONUnmarshalTestKeys = saved
+	}()
+	m := &Measurement{}
+	err := ScrubMeasurement(m, "10.0.0.1")
+	if !errors.Is(err, expected) {
+		t.Fatal("unexpected error", err)
+	}
+}
+
+func TestScrubMeasurementInvalidIP(t *testing.T) {
+	m := &Measurement{
+		ProbeASN: "AS1234",
+		ProbeCC:  "IT",
+	}
+	err := ScrubMeasurement(m, "") // invalid IP
+	if !errors.Is(err, ErrInvalidProbeIP) {
 		t.Fatal("not the error we expected")
 	}
 }

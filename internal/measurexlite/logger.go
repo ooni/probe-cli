@@ -58,17 +58,22 @@ func (ol *OperationLogger) maybeEmitProgress() {
 	}
 }
 
-// Stop must be called when the operation is done. The [err] argument
+// Stop must be called when the operation is done. The [value] argument
 // is the result of the operation, which may be nil. This method ensures
 // that we log the final result of the now-completed operation.
-func (ol *OperationLogger) Stop(err error) {
+func (ol *OperationLogger) Stop(value any) {
 	ol.once.Do(func() {
 		close(ol.sighup)
 		ol.wg.Wait()
-		if err != nil {
-			ol.logger.Infof("%s... %s", ol.message, err.Error())
-			return
+		if value != nil {
+			if err, okay := value.(error); okay {
+				ol.logger.Infof("%s... %s", ol.message, err.Error())
+				return
+			}
+			// fallthrough
+		} else {
+			value = "ok"
 		}
-		ol.logger.Infof("%s... ok", ol.message)
+		ol.logger.Infof("%s... %+v", ol.message, value)
 	})
 }

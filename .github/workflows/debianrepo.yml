@@ -12,26 +12,26 @@ jobs:
     runs-on: "ubuntu-20.04"
     steps:
       - uses: actions/checkout@v2
-      - run: sudo ./E2E/debian.sh docker i386
+      - run: sudo ./E2E/debian.bash docker i386
       - run: sudo cat DEBIAN_INSTALLED_PACKAGE.txt
 
   test_amd64:
     runs-on: "ubuntu-20.04"
     steps:
       - uses: actions/checkout@v2
-      - run: sudo ./E2E/debian.sh docker amd64
+      - run: sudo ./E2E/debian.bash docker amd64
       - run: sudo cat DEBIAN_INSTALLED_PACKAGE.txt
 
   test_arm:
     runs-on: "ubuntu-20.04"
     steps:
       - uses: actions/checkout@v2
-      - run: sudo ./E2E/debian.sh docker armhf
+      - run: sudo ./E2E/debian.bash docker armhf
       - run: sudo cat DEBIAN_INSTALLED_PACKAGE.txt
 
   test_arm64:
     runs-on: "ubuntu-20.04"
     steps:
       - uses: actions/checkout@v2
-      - run: sudo ./E2E/debian.sh docker arm64
+      - run: sudo ./E2E/debian.bash docker arm64
       - run: sudo cat DEBIAN_INSTALLED_PACKAGE.txt

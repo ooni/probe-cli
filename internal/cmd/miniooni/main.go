@@ -15,6 +15,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/humanize"
 	"github.com/ooni/probe-cli/v3/internal/legacy/assetsdir"
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/registry"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -24,25 +25,25 @@ import (
 
 // Options contains the options you can set from the CLI.
 type Options struct {
-	Annotations         []string
-	ExtraOptions        []string
-	HomeDir             string
-	Inputs              []string
-	InputFilePaths      []string
-	MaxRuntime          int64
-	NoJSON              bool
-	NoCollector         bool
-	ProbeServicesURL    string
-	Proxy               string
-	Random              bool
-	RepeatEvery         int64
-	ReportFile          string
-	SnowflakeRendezvous string
-	TorArgs             []string
-	TorBinary           string
-	Tunnel              string
-	Verbose             bool
-	Yes                 bool
+	Annotations      []string
+	Emoji            bool
+	ExtraOptions     []string
+	HomeDir          string
+	Inputs           []string
+	InputFilePaths   []string
+	MaxRuntime       int64
+	NoJSON           bool
+	NoCollector      bool
+	ProbeServicesURL string
+	Proxy            string
+	Random           bool
+	RepeatEvery      int64
+	ReportFile       string
+	TorArgs          []string
+	TorBinary        string
+	Tunnel           string
+	Verbose          bool
+	Yes              bool
 }
 
 // main is the main function of miniooni.
@@ -63,6 +64,13 @@ func main() {
 		"A",
 		[]string{},
 		"add KEY=VALUE annotation to the report (can be repeated multiple times)",
+	)
+
+	flags.BoolVar(
+		&globalOptions.Emoji,
+		"emoji",
+		false,
+		"whether to use emojis when logging",
 	)
 
 	flags.StringVar(
@@ -195,6 +203,13 @@ func registerOONIRun(rootCmd *cobra.Command, globalOptions *Options) {
 		[]string{},
 		"URL of the OONI Run v2 descriptor to run (may be specified multiple times)",
 	)
+	flags.StringSliceVarP(
+		&globalOptions.InputFilePaths,
+		"input-file",
+		"f",
+		[]string{},
+		"Path to the OONI Run v2 descriptor to run (may be specified multiple times)",
+	)
 }
 
 // registerAllExperiments registers a subcommand for each experiment
@@ -274,7 +289,9 @@ func MainWithConfiguration(experimentName string, currentOptions *Options) {
 		currentOptions.Proxy = fmt.Sprintf("%s:///", currentOptions.Tunnel)
 	}
 
-	logger := &log.Logger{Level: log.InfoLevel, Handler: &logHandler{Writer: os.Stderr}}
+	logHandler := logx.NewHandlerWithDefaultSettings()
+	logHandler.Emoji = currentOptions.Emoji
+	logger := &log.Logger{Level: log.InfoLevel, Handler: logHandler}
 	if currentOptions.Verbose {
 		logger.Level = log.DebugLevel
 	}

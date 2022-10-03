@@ -49,7 +49,7 @@ func main() {
 func wcth() interface{} {
 	serverURL := *server
 	if serverURL == "" {
-		serverURL = "https://wcth.ooni.io/"
+		serverURL = "https://0.th.ooni.org/"
 	}
 	clnt := internal.OOClient{HTTPClient: httpClient, Resolver: resolver}
 	config := internal.OOConfig{TargetURL: *target, ServerURL: serverURL}

@@ -1,0 +1,18 @@
+# Verifies that `./script/ghpublish.bash` is WAI
+name: ghpublish
+on:
+  push:
+    branches:
+      - "release/**"
+      - "fullbuild"
+      - "ghpublishbuild"
+
+jobs:
+  test_ghpublish_bash:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - run: ./script/ghpublish_test.bash

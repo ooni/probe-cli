@@ -57,7 +57,7 @@ func (tx *Trace) OnTLSHandshakeDone(started time.Time, remoteAddr string, config
 	case tx.tlsHandshake <- NewArchivalTLSOrQUICHandshakeResult(
 		tx.Index,
 		started.Sub(tx.ZeroTime),
-		"tls",
+		"tcp",
 		remoteAddr,
 		config,
 		state,

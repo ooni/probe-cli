@@ -28,6 +28,11 @@ const (
 
 // analysisDNSToplevel is the toplevel analysis function for DNS results.
 //
+// Note: this function DOES NOT consider failed DNS-over-HTTPS (DoH) submeasurements
+// and ONLY considers the IP addrs they have resolved. Failing to contact a DoH service
+// provides info about such a DoH service rather than on the measured URL. See the
+// https://github.com/ooni/probe/issues/2274 issue for more info.
+//
 // The goals of this function are the following:
 //
 // 1. Set the legacy .DNSExperimentFailure field to the failure value of the
@@ -53,6 +58,7 @@ const (
 func (tk *TestKeys) analysisDNSToplevel(logger model.Logger) {
 	tk.analysisDNSExperimentFailure()
 	tk.analysisDNSBogon(logger)
+	tk.analysisDNSDuplicateResponses(logger)
 	tk.analysisDNSUnexpectedFailure(logger)
 	tk.analysisDNSUnexpectedAddrs(logger)
 	if tk.DNSFlags != 0 {
@@ -65,6 +71,15 @@ func (tk *TestKeys) analysisDNSToplevel(logger model.Logger) {
 	}
 }
 
+// analysisDNSDuplicateResponses checks whether we received duplicate
+// replies for DNS-over-UDP queries, which is very unexpected.
+func (tk *TestKeys) analysisDNSDuplicateResponses(logger model.Logger) {
+	if length := len(tk.DNSDuplicateResponses); length > 0 {
+		// TODO(bassosimone): write algorithm to analyze this
+		logger.Warnf("DNS: got %d unexpected late/duplicate DNS responses", length)
+	}
+}
+
 // analysisDNSExperimentFailure sets the legacy DNSExperimentFailure field.
 func (tk *TestKeys) analysisDNSExperimentFailure() {
 	for _, query := range tk.Queries {
@@ -72,6 +87,13 @@ func (tk *TestKeys) analysisDNSExperimentFailure() {
 			if query.QueryType == "AAAA" && *query.Failure == netxlite.FailureDNSNoAnswer {
 				// maybe this heuristic could be further improved by checking
 				// whether the TH did actually see any IPv6 address?
+				continue
+			}
+			if query.Engine == "doh" {
+				// we SHOULD NOT flag DoH failures _because_ they pertain to the
+				// DoH service rather than to the input URL
+				//
+				// See https://github.com/ooni/probe/issues/2274
 				continue
 			}
 			tk.DNSExperimentFailure = fail
@@ -84,17 +106,33 @@ func (tk *TestKeys) analysisDNSExperimentFailure() {
 // we dectect any bogon in the .Queries field of the TestKeys.
 func (tk *TestKeys) analysisDNSBogon(logger model.Logger) {
 	for _, query := range tk.Queries {
+		// Implementation note: any bogon IP address resolved by a DoH service
+		// is STILL suspicious since it should not happen. TODO(bassosimone): an
+		// even better algorithm could possibly check whether also the TH has
+		// observed bogon IP addrs and avoid flagging in such a case.
+		//
+		// See https://github.com/ooni/probe/issues/2274
 		for _, answer := range query.Answers {
 			switch answer.AnswerType {
 			case "A":
 				if net.ParseIP(answer.IPv4) != nil && netxlite.IsBogon(answer.IPv4) {
-					logger.Warnf("DNS: BOGON %s in #%d", answer.IPv4, query.TransactionID)
+					logger.Warnf(
+						"DNS: got BOGON answer %s for domain %s (see #%d)",
+						answer.IPv4,
+						query.Hostname,
+						query.TransactionID,
+					)
 					tk.DNSFlags |= AnalysisDNSBogon
 					// continue processing so we print all the bogons we have
 				}
 			case "AAAA":
 				if net.ParseIP(answer.IPv6) != nil && netxlite.IsBogon(answer.IPv6) {
-					logger.Warnf("DNS: BOGON %s in #%d", answer.IPv6, query.TransactionID)
+					logger.Warnf(
+						"DNS: got BOGON answer %s for domain %s (see #%d)",
+						answer.IPv6,
+						query.Hostname,
+						query.TransactionID,
+					)
 					tk.DNSFlags |= AnalysisDNSBogon
 					// continue processing so we print all the bogons we have
 				}
@@ -141,6 +179,13 @@ func (tk *TestKeys) analysisDNSUnexpectedFailure(logger model.Logger) {
 	for _, query := range tk.Queries {
 		if domain != query.Hostname {
 			continue // not the domain queried by the test helper
+		}
+		if query.Engine == "doh" {
+			// As mentioned above, a DoH failure is not information about
+			// the URL we're measuring but about the DoH service being blocked.
+			//
+			// See https://github.com/ooni/probe/issues/2274
+			continue
 		}
 		hasAddrs := false
 	Loop:
@@ -211,6 +256,12 @@ func (tk *TestKeys) analysisDNSUnexpectedAddrs(logger model.Logger) {
 		if domain != query.Hostname {
 			continue // not the domain the TH queried for
 		}
+		// Implementation note: in the case in which DoH returned answers, here
+		// it still feels okay to consider them. We should avoid flagging DoH
+		// failures as measurement failures but if DoH returns us some unexpected
+		// even-non-bogon addr, it seems worth flagging for now.
+		//
+		// See https://github.com/ooni/probe/issues/2274
 		for _, answer := range query.Answers {
 			switch answer.AnswerType {
 			case "A":
@@ -224,7 +275,7 @@ func (tk *TestKeys) analysisDNSUnexpectedAddrs(logger model.Logger) {
 	// if the probe has not collected any addr for the same domain, it's
 	// definitely suspicious and counts as a difference
 	if len(probeAddrs) <= 0 {
-		logger.Warnf("DNS: no IP address resolved by the probe")
+		logger.Warnf("DNS: the probe did not resolve any IP address")
 		tk.DNSFlags |= AnalysisDNSUnexpectedAddrs
 		return
 	}
@@ -235,6 +286,9 @@ func (tk *TestKeys) analysisDNSUnexpectedAddrs(logger model.Logger) {
 	if len(differentAddrs) <= 0 {
 		return
 	}
+	for _, addr := range differentAddrs {
+		logger.Infof("DNS: address %s: not resolved by TH", addr)
+	}
 
 	// now, let's exclude the differentAddrs for which we successfully
 	// completed a TLS handshake: those should be good addrs
@@ -242,19 +296,24 @@ func (tk *TestKeys) analysisDNSUnexpectedAddrs(logger model.Logger) {
 	if len(withoutHandshake) <= 0 {
 		return
 	}
+	for _, addr := range withoutHandshake {
+		logger.Infof("DNS: address %s: cannot confirm using TLS handshake", addr)
+	}
 
 	// as a last resort, accept the addresses without an handshake whose
 	// ASN overlaps with ASNs resolved by the TH
-	differentASNs := tk.analysisDNSDiffASN(withoutHandshake, thAddrs)
+	differentASNs := tk.analysisDNSDiffASN(logger, withoutHandshake, thAddrs)
 	if len(differentASNs) <= 0 {
 		return
 	}
 
 	// otherwise, conclude we have unexpected probe addrs
-	logger.Warnf(
-		"DNSDiff: differentAddrs: %+v; withoutHandshake: %+v; differentASNs: %+v",
-		differentAddrs, withoutHandshake, differentASNs,
-	)
+	for addr, asn := range differentASNs {
+		logger.Warnf(
+			"DNS: address %s has unexpected AS%d and we cannot use TLS to confirm it",
+			addr, asn,
+		)
+	}
 	tk.DNSFlags |= AnalysisDNSUnexpectedAddrs
 }
 
@@ -267,6 +326,10 @@ func (tk *TestKeys) analysisDNSDiffAddrs(probeAddrs, thAddrs []string) (diff []s
 	)
 	mapping := make(map[string]int)
 	for _, addr := range probeAddrs {
+		if net.ParseIP(addr) != nil && netxlite.IsBogon(addr) {
+			// we can exclude bogons from the analysis because we already analyzed them
+			continue
+		}
 		mapping[addr] |= inProbe
 	}
 	for _, addr := range thAddrs {
@@ -282,23 +345,44 @@ func (tk *TestKeys) analysisDNSDiffAddrs(probeAddrs, thAddrs []string) (diff []s
 
 // analysisDNSDiffASN returns whether there are IP addresses in the probe's
 // list with different ASNs from the ones in the TH's list.
-func (tk *TestKeys) analysisDNSDiffASN(probeAddrs, thAddrs []string) (asns []uint) {
+func (tk *TestKeys) analysisDNSDiffASN(
+	logger model.Logger,
+	probeAddrs,
+	thAddrs []string,
+) (result map[string]uint) {
 	const (
 		inProbe = 1 << iota
 		inTH
 	)
-	mapping := make(map[uint]int)
+	logger.Debugf("DNS: probeAddrs %+v, thAddrs %+v", probeAddrs, thAddrs)
+	uniqueAddrs := make(map[string]uint)
+	asnToFlags := make(map[uint]int)
 	for _, addr := range probeAddrs {
 		asn, _, _ := geoipx.LookupASN(addr)
-		mapping[asn] |= inProbe // including the zero ASN that means unknown
+		asnToFlags[asn] |= inProbe // including the zero ASN that means unknown
+		uniqueAddrs[addr] = asn
 	}
 	for _, addr := range thAddrs {
 		asn, _, _ := geoipx.LookupASN(addr)
-		mapping[asn] |= inTH // including the zero ASN that means unknown
+		asnToFlags[asn] |= inTH // including the zero ASN that means unknown
+		uniqueAddrs[addr] = asn
 	}
-	for asn, where := range mapping {
+	for addr, asn := range uniqueAddrs {
+		logger.Infof("DNS: addr %s has AS%d", addr, asn)
+	}
+	probeOnlyASNs := make(map[uint]bool)
+	for asn, where := range asnToFlags {
 		if (where & inTH) == 0 {
-			asns = append(asns, asn)
+			probeOnlyASNs[asn] = true
+		}
+	}
+	for asn := range probeOnlyASNs {
+		logger.Infof("DNS: AS%d: only seen by probe", asn)
+	}
+	result = make(map[string]uint)
+	for addr, asn := range uniqueAddrs {
+		if probeOnlyASNs[asn] {
+			result[addr] = asn
 		}
 	}
 	return
@@ -308,8 +392,9 @@ func (tk *TestKeys) analysisDNSDiffASN(probeAddrs, thAddrs []string) (asns []uin
 // for which we couldn't successfully perform a TLS handshake for the given [domain].
 func (tk *TestKeys) findAddrsWithoutTLSHandshake(domain string, addresses []string) (output []string) {
 	const (
-		resolved = 1 << iota
+		resolvedByProbe = 1 << iota
 		handshakeOK
+		hasObviousIPv6Issues
 	)
 	mapping := make(map[string]int)
 
@@ -333,7 +418,30 @@ func (tk *TestKeys) findAddrsWithoutTLSHandshake(domain string, addresses []stri
 			if _, found := mapping[addr]; !found {
 				continue // we're not interested into this addr
 			}
-			mapping[addr] |= resolved
+			mapping[addr] |= resolvedByProbe
+		}
+	}
+
+	// flag the subset of addrs with obvious IPv6 issues
+	//
+	// see https://github.com/ooni/probe/issues/2284 for more
+	// info on why we need to flag them
+	for _, connect := range tk.TCPConnect {
+		failure := connect.Status.Failure
+		if failure == nil {
+			continue // if we can connect, we don't have IPv6 issues
+		}
+		ipv6, err := netxlite.IsIPv6(connect.IP)
+		if err != nil {
+			continue // looks like a bug
+		}
+		if !ipv6 {
+			continue // not IPv6
+		}
+		hasIssues := (*failure == netxlite.FailureNetworkUnreachable ||
+			*failure == netxlite.FailureHostUnreachable)
+		if hasIssues {
+			mapping[connect.IP] |= hasObviousIPv6Issues
 		}
 	}
 
@@ -356,11 +464,15 @@ func (tk *TestKeys) findAddrsWithoutTLSHandshake(domain string, addresses []stri
 	}
 
 	// compute the list of addresses without the handshakeOK flag
+	// excluding though the ones with obvious IPv6 issues
 	for addr, flags := range mapping {
 		if flags == 0 {
 			continue // this looks like a bug
 		}
-		if (flags & (resolved | handshakeOK)) == resolved {
+		if (flags & hasObviousIPv6Issues) != 0 {
+			continue // see https://github.com/ooni/probe/issues/2284
+		}
+		if (flags & (resolvedByProbe | handshakeOK)) == resolvedByProbe {
 			output = append(output, addr)
 		}
 	}

@@ -8,6 +8,7 @@ package webconnectivity
 //
 
 import (
+	"sort"
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
@@ -17,6 +18,18 @@ import (
 
 // TestKeys contains the results produced by web_connectivity.
 type TestKeys struct {
+	// Agent is the HTTP agent we use.
+	Agent string `json:"agent"`
+
+	// ClientResolver is the IPv4 of the resolver used by getaddrinfo.
+	ClientResolver string `json:"client_resolver"`
+
+	// Retries is a legacy field always set to nil by web_connectivity@v0.4.x
+	Retries *int64 `json:"retries"`
+
+	// SOCKSProxy is a legacy field always set to nil by web_connectivity@v0.4.x
+	SOCKSProxy *string `json:"socksproxy"`
+
 	// NetworkEvents contains network events.
 	NetworkEvents []*model.ArchivalNetworkEvent `json:"network_events"`
 
@@ -30,9 +43,9 @@ type TestKeys struct {
 	// Do53 contains ancillary observations collected by Do53 resolvers.
 	Do53 *TestKeysDo53 `json:"x_do53"`
 
-	// DNSLateReplies contains late replies we didn't expect to receive from
+	// DNSDuplicateResponses contains late/duplicate responses we didn't expect to receive from
 	// a resolver (which may raise eyebrows if they're different).
-	DNSLateReplies []*model.ArchivalDNSLookupResult `json:"x_dns_late_replies"`
+	DNSDuplicateResponses []*model.ArchivalDNSLookupResult `json:"x_dns_duplicate_responses"`
 
 	// Queries contains DNS queries.
 	Queries []*model.ArchivalDNSLookupResult `json:"queries"`
@@ -52,10 +65,14 @@ type TestKeys struct {
 	// Control contains the TH's response.
 	Control *webconnectivity.ControlResponse `json:"control"`
 
+	// ConnPriorityLog explains why Web Connectivity chose to use a given
+	// ready-to-use HTTP(S) connection among many.
+	ConnPriorityLog []*ConnPriorityLogEntry `json:"x_conn_priority_log"`
+
 	// ControlFailure contains the failure of the control experiment.
 	ControlFailure *string `json:"control_failure"`
 
-	// DNSFlags contains DNS analysis flags.
+	// DNSFlags describes specific DNS anomalies we observed.
 	DNSFlags int64 `json:"x_dns_flags"`
 
 	// DNSExperimentFailure indicates whether there was a failure in any
@@ -66,8 +83,16 @@ type TestKeys struct {
 	// the TH's DNS results and the probe's DNS results.
 	DNSConsistency string `json:"dns_consistency"`
 
-	// BlockingFlags contains blocking flags.
+	// HTTPExperimentFailure indicates whether there was a failure in
+	// the final HTTP request that we recorded.
+	HTTPExperimentFailure *string `json:"http_experiment_failure"`
+
+	// BlockingFlags explains why we think that the website is blocked.
 	BlockingFlags int64 `json:"x_blocking_flags"`
+
+	// NullNullFlags describes what the algorithm to avoid emitting
+	// blocking = null, accessible = null measurements did
+	NullNullFlags int64 `json:"x_null_null_flags"`
 
 	// BodyLength match tells us whether the body length matches.
 	BodyLengthMatch *bool `json:"body_length_match"`
@@ -109,6 +134,15 @@ type TestKeys struct {
 
 	// mu provides mutual exclusion for accessing the test keys.
 	mu *sync.Mutex
+}
+
+// ConnPriorityLogEntry is an entry in the TestKeys.ConnPriorityLog slice.
+type ConnPriorityLogEntry struct {
+	// Msg is the specific log entry
+	Msg string `json:"msg"`
+
+	// T is when this entry was generated
+	T float64 `json:"t"`
 }
 
 // DNSWhoamiInfoEntry contains an entry for DNSWhoamiInfo.
@@ -168,7 +202,7 @@ func (tk *TestKeys) AppendNetworkEvents(v ...*model.ArchivalNetworkEvent) {
 // AppendDNSLateReplies appends to DNSLateReplies.
 func (tk *TestKeys) AppendDNSLateReplies(v ...*model.ArchivalDNSLookupResult) {
 	tk.mu.Lock()
-	tk.DNSLateReplies = append(tk.DNSLateReplies, v...)
+	tk.DNSDuplicateResponses = append(tk.DNSDuplicateResponses, v...)
 	tk.mu.Unlock()
 }
 
@@ -254,10 +288,28 @@ func (tk *TestKeys) WithDNSWhoami(fun func(*DNSWhoamiInfo)) {
 	tk.mu.Unlock()
 }
 
+// SetClientResolver sets the ClientResolver field.
+func (tk *TestKeys) SetClientResolver(value string) {
+	tk.mu.Lock()
+	tk.ClientResolver = value
+	tk.mu.Unlock()
+}
+
+// AppendConnPriorityLogEntry appends an entry to ConnPriorityLog.
+func (tk *TestKeys) AppendConnPriorityLogEntry(entry *ConnPriorityLogEntry) {
+	tk.mu.Lock()
+	tk.ConnPriorityLog = append(tk.ConnPriorityLog, entry)
+	tk.mu.Unlock()
+}
+
 // NewTestKeys creates a new instance of TestKeys.
 func NewTestKeys() *TestKeys {
 	return &TestKeys{
-		NetworkEvents: []*model.ArchivalNetworkEvent{},
+		Agent:          "redirect",
+		ClientResolver: "",
+		Retries:        nil,
+		SOCKSProxy:     nil,
+		NetworkEvents:  []*model.ArchivalNetworkEvent{},
 		DNSWoami: &DNSWhoamiInfo{
 			SystemV4: []DNSWhoamiInfoEntry{},
 			UDPv4:    map[string][]DNSWhoamiInfoEntry{},
@@ -273,25 +325,29 @@ func NewTestKeys() *TestKeys {
 			NetworkEvents: []*model.ArchivalNetworkEvent{},
 			Queries:       []*model.ArchivalDNSLookupResult{},
 		},
-		Queries:              []*model.ArchivalDNSLookupResult{},
-		Requests:             []*model.ArchivalHTTPRequestResult{},
-		TCPConnect:           []*model.ArchivalTCPConnectResult{},
-		TLSHandshakes:        []*model.ArchivalTLSOrQUICHandshakeResult{},
-		Control:              nil,
-		ControlFailure:       nil,
-		DNSFlags:             0,
-		DNSExperimentFailure: nil,
-		DNSConsistency:       "",
-		BlockingFlags:        0,
-		BodyLengthMatch:      nil,
-		HeadersMatch:         nil,
-		StatusCodeMatch:      nil,
-		TitleMatch:           nil,
-		Blocking:             nil,
-		Accessible:           nil,
-		ControlRequest:       nil,
-		fundamentalFailure:   nil,
-		mu:                   &sync.Mutex{},
+		DNSDuplicateResponses: []*model.ArchivalDNSLookupResult{},
+		Queries:               []*model.ArchivalDNSLookupResult{},
+		Requests:              []*model.ArchivalHTTPRequestResult{},
+		TCPConnect:            []*model.ArchivalTCPConnectResult{},
+		TLSHandshakes:         []*model.ArchivalTLSOrQUICHandshakeResult{},
+		Control:               nil,
+		ConnPriorityLog:       []*ConnPriorityLogEntry{},
+		ControlFailure:        nil,
+		DNSFlags:              0,
+		DNSExperimentFailure:  nil,
+		DNSConsistency:        "",
+		HTTPExperimentFailure: nil,
+		BlockingFlags:         0,
+		NullNullFlags:         0,
+		BodyLengthMatch:       nil,
+		HeadersMatch:          nil,
+		StatusCodeMatch:       nil,
+		TitleMatch:            nil,
+		Blocking:              nil,
+		Accessible:            nil,
+		ControlRequest:        nil,
+		fundamentalFailure:    nil,
+		mu:                    &sync.Mutex{},
 	}
 }
 
@@ -299,4 +355,9 @@ func NewTestKeys() *TestKeys {
 // must be called from the measurer after all the tasks have completed.
 func (tk *TestKeys) Finalize(logger model.Logger) {
 	tk.analysisToplevel(logger)
+	// Note: sort.SliceStable is WAI when the input slice is nil
+	// as demonstrated by https://go.dev/play/p/znA4MyGFVHC
+	sort.SliceStable(tk.NetworkEvents, func(i, j int) bool {
+		return tk.NetworkEvents[i].T < tk.NetworkEvents[j].T
+	})
 }

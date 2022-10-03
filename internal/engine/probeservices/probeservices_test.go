@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -399,31 +398,24 @@ func TestTryAllIntegrationWeRaceForFastestHTTPS(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	const pattern = "^https://ps[1-4].ooni.io$"
 	// put onion first so we also verify that we sort the endpoints
 	in := []model.OOAPIService{{
 		Type:    "onion",
 		Address: "httpo://jehhrikjjqrlpufu.onion",
 	}, {
 		Type:    "https",
-		Address: "https://ps1.ooni.io",
-	}, {
-		Type:    "https",
-		Address: "https://ps2.ooni.io",
+		Address: "https://api.ooni.io",
 	}, {
 		Front:   "dkyhjv0wpi2dk.cloudfront.net",
 		Type:    "cloudfront",
 		Address: "https://dkyhjv0wpi2dk.cloudfront.net",
-	}, {
-		Type:    "https",
-		Address: "https://ps3.ooni.io",
 	}}
 	sess := &mockable.Session{
 		MockableHTTPClient: http.DefaultClient,
 		MockableLogger:     log.Log,
 	}
 	out := probeservices.TryAll(context.Background(), sess, in)
-	if len(out) != 3 {
+	if len(out) != 1 {
 		t.Fatal("invalid number of entries")
 	}
 	//
@@ -436,34 +428,8 @@ func TestTryAllIntegrationWeRaceForFastestHTTPS(t *testing.T) {
 	if out[0].Endpoint.Type != "https" {
 		t.Fatal("invalid endpoint type")
 	}
-	if ok, _ := regexp.MatchString(pattern, out[0].Endpoint.Address); !ok {
-		t.Fatal("invalid endpoint type")
-	}
-	//
-	if out[1].Duration <= 0 {
-		t.Fatal("invalid duration")
-	}
-	if out[1].Err != nil {
-		t.Fatal("invalid error")
-	}
-	if out[1].Endpoint.Type != "https" {
-		t.Fatal("invalid endpoint type")
-	}
-	if ok, _ := regexp.MatchString(pattern, out[1].Endpoint.Address); !ok {
-		t.Fatal("invalid endpoint type")
-	}
-	//
-	if out[2].Duration <= 0 {
-		t.Fatal("invalid duration")
-	}
-	if out[2].Err != nil {
-		t.Fatal("invalid error")
-	}
-	if out[2].Endpoint.Type != "https" {
-		t.Fatal("invalid endpoint type")
-	}
-	if ok, _ := regexp.MatchString(pattern, out[2].Endpoint.Address); !ok {
-		t.Fatal("invalid endpoint type")
+	if out[0].Endpoint.Address != "https://api.ooni.io" {
+		t.Fatal("invalid endpoint address")
 	}
 }
 
@@ -574,32 +540,32 @@ func TestSelectBestSelectsTheFastest(t *testing.T) {
 	in := []*probeservices.Candidate{{
 		Duration: 10 * time.Millisecond,
 		Endpoint: model.OOAPIService{
-			Address: "https://ps1.ooni.io",
+			Address: "https://ps1.ooni.nonexistent",
 			Type:    "https",
 		},
 	}, {
 		Duration: 4 * time.Millisecond,
 		Endpoint: model.OOAPIService{
-			Address: "https://ps2.ooni.io",
+			Address: "https://ps2.ooni.nonexistent",
 			Type:    "https",
 		},
 	}, {
 		Duration: 7 * time.Millisecond,
 		Endpoint: model.OOAPIService{
-			Address: "https://ps3.ooni.io",
+			Address: "https://ps3.ooni.nonexistent",
 			Type:    "https",
 		},
 	}, {
 		Duration: 11 * time.Millisecond,
 		Endpoint: model.OOAPIService{
-			Address: "https://ps4.ooni.io",
+			Address: "https://ps4.ooni.nonexistent",
 			Type:    "https",
 		},
 	}}
 	expected := &probeservices.Candidate{
 		Duration: 4 * time.Millisecond,
 		Endpoint: model.OOAPIService{
-			Address: "https://ps2.ooni.io",
+			Address: "https://ps2.ooni.nonexistent",
 			Type:    "https",
 		},
 	}

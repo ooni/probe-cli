@@ -25,7 +25,7 @@ func TestBlock(t *testing.T) {
 	// Here we're filtering any domain containing ooni.io, so we
 	// expect the proxy to send 451 without actually proxing, thus
 	// there should not be any Via header in the output.
-	checkrequest(t, addr.String(), "mia-ps.ooni.io", 451, false)
+	checkrequest(t, addr.String(), "api.ooni.io", 451, false)
 	killproxy(t, server)
 }
 

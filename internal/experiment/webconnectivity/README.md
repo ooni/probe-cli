@@ -3,7 +3,7 @@
 This directory contains a new implementation of [Web Connectivity](
 https://github.com/ooni/spec/blob/master/nettests/ts-017-web-connectivity.md).
 
-As of 2022-08-26, this code is experimental and is not selected
+As of 2022-09-15, this code is experimental and is not selected
 by default when you run the `websites` group. You can select this
 implementation with `miniooni` using `miniooni web_connectivity@v0.5`
 from the command line.
@@ -13,16 +13,27 @@ behind writing this new implementation.
 
 ## Implementation overview
 
+```mermaid
+graph TD;
+    measurer.go --> dnsresolvers.go;
+	dnsresolvers.go --> control.go;
+	dnsresolvers.go --> cleartext.go;
+	dnsresolvers.go --> secure.go;
+	control.go --> cleartext.go;
+	control.go --> secure.go;
+	cleartext.go --> dnsresolvers.go;
+	secure.go --> dnsresolvers.go;
+	measurer.go --> analysiscore.go;
+```
+
+<p align="center"><b>Figure I</b>. Relationship between files in this implementation</p>
+
 The experiment measures a single URL at a time. The OONI Engine invokes the
 `Run` method inside the [measurer.go](measurer.go) file.
 
-This code starts a number of background tasks, waits for them to complete, and
-finally calls `TestKeys.finalize` to finalize the content of the JSON measurement.
-
-The first task that is started deals with DNS and lives in the
+The first task that `Run` starts deals with DNS and lives in the
 [dnsresolvers.go](dnsresolvers.go) file. This task is responsible for
 resolving the domain inside the URL into `0..N` IP addresses.
-
 The domain resolution includes the system resolver and a DNS-over-UDP
 resolver. The implementaion _may_ do more than that, but this is the
 bare minimum we're feeling like documenting right now. (We need to
@@ -39,16 +50,15 @@ course only happens when we know _at least_ one addr).
 
 Regarding starting endpoint measurements, we follow this policy:
 
-1. if the original URL is `http://...` then we start a cleartext task
-and an encrypted task for each address using ports `80` and `443`
-respectively.
+1. if the original URL is `http://...` then, for each address, we start
+an HTTP task using port `80` and an HTTPS task using `443`.
 
-2. if it's `https://...`, then we only start encrypted tasks.
+2. if it's `https://...`, then we only start HTTPS tasks.
 
-Cleartext tasks are implemented by [cleartextflow.go](cleartextflow.go) while
-the encrypted tasks live in [secureflow.go](secureflow.go).
+HTTP tasks are implemented by [cleartextflow.go](cleartextflow.go) while
+the HTTPS tasks live in [secureflow.go](secureflow.go).
 
-A cleartext task does the following:
+An HTTP task does the following:
 
 1. TCP connect;
 
@@ -56,7 +66,7 @@ A cleartext task does the following:
 a GET request to fetch a webpage (we cannot GET for all connections, because
 that would be `websteps` and would require a different data format).
 
-An encrypted task does the following:
+An HTTPS task does the following:
 
 1. TCP connect;
 
@@ -68,41 +78,27 @@ for all connections, because that would be `websteps` and would require a
 different data format).
 
 If fetching the webpage returns a redirect, we start a new DNS task passing it
-the redirect URL as the new URL to measure. We do not call the test helper again
+the redirect URL as the new URL to measure, thus transferring the control again
+to [dnsresolvers.go](dnsresolvers.go). We do not call the test helper again
 when this happens, though. The Web Connectivity test helper already follows the whole
 redirect chain, so we would need to change the test helper to get information on
-each flow. When this will happen, this experiment will probably not be Web Connectivity
-anymore, but rather some form of [websteps](https://github.com/bassosimone/websteps-illustrated/).
+each flow. If we fetched more than one webpage per redirect chain, this experiment would
+be [websteps](https://github.com/bassosimone/websteps-illustrated/).
 
-Additionally, when the test helper terminates, we run TCP connect and TLS handshake
-(when applicable) for new IP addresses discovered using the test helper that were
-previously unknown to the probe, thus collecting extra information. This logic lives
-inside the [control.go](control.go) file.
+Additionally, when the test helper terminates, [control.go](control.go) may run
+HTTP and/or HTTPS tasks (when applicable) for new IP addresses discovered using the test helper that were
+previously unknown to the probe, thus collecting extra information.
 
-As previously mentioned, when all tasks complete, we call `TestKeys.finalize`.
+When several connections are racing to fetch a webpage, we need specific logic to choose
+which of them to give the permission to actually fetch the webpage. This logic
+lives inside the [priority.go](priority.go) file.
 
-In turn, this function analyzes the collected data by calling code implemented
-inside the following files:
-
-- [analysiscore.go](analysiscore.go) contains the core analysis algorithm;
-
-- [analysisdns.go](analysisdns.go) contains DNS specific analysis;
-
-- [analysishttpcore.go](analysishttpcore.go) contains the bulk of the HTTP
-analysis, where we mainly determine TLS blocking;
-
-- [analysishttpdiff.go](analysishttpdiff.go) contains the HTTP diff algorithm;
-
-- [analysistcpip.go](analysistcpip.go) checks for TCP/IP blocking.
-
-We emit the `blocking` and `accessible` keys we emitted before as well as new
-keys, prefixed by `x_` to indicate that they're experimental.
+When all tasks complete, either because we reach a final state or because we have
+followed too many redirects, we use code inside [analysiscore.go](analysiscore.go) to compute the
+top-level test keys. We emit the `blocking` and `accessible` keys we emitted before
+as well as new keys, prefixed by `x_` to indicate that they're experimental.
 
 ## Limitations and next steps
-
-We need to extend the Web Connectivity test helper to return us information
-about TLS handshakes with IP addresses discovered by the probe. This information
-would allow us to make more precise TLS blocking statements.
 
 Further changes are probably possible. Departing too radically from the Web
 Connectivity model, though, will lead us to have a `websteps` implementation (but

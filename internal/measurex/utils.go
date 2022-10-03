@@ -16,7 +16,7 @@ import (
 // given the network. On failure, we return a nil list.
 func ALPNForHTTPEndpoint(network EndpointNetwork) []string {
 	switch network {
-	case NetworkQUIC:
+	case NetworkUDP:
 		return []string{"h3"}
 	case NetworkTCP:
 		return []string{"h2", "http/1.1"}

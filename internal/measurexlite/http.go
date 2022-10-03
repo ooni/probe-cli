@@ -27,7 +27,7 @@ import (
 //
 // - alpn is the negotiated ALPN or an empty string when not applicable;
 //
-// - transport is the HTTP transport's protocol we're using ("quic" or "tcp"): this field
+// - transport is the HTTP transport's protocol we're using ("udp" or "tcp"): this field
 // was introduced a long time ago to support QUIC measurements and we keep it for backwards
 // compatibility but network, address, and alpn are much more informative;
 //

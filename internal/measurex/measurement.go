@@ -156,7 +156,7 @@ func (m *DNSMeasurement) allQUICEndpoints(domain, port string) (out []*Endpoint)
 			continue
 		}
 		for _, addr := range entry.Addrs() {
-			out = append(out, m.newEndpoint(addr, port, NetworkQUIC))
+			out = append(out, m.newEndpoint(addr, port, NetworkUDP))
 		}
 	}
 	return
@@ -186,7 +186,7 @@ func (m *DNSMeasurement) allHTTPEndpointsForURL(
 	epnts := m.allEndpointsForDomain(domain, port)
 	var out []*HTTPEndpoint
 	for _, epnt := range epnts {
-		if URL.Scheme != "https" && epnt.Network == NetworkQUIC {
+		if URL.Scheme != "https" && epnt.Network == NetworkUDP {
 			continue // we'll only use QUIC with HTTPS
 		}
 		out = append(out, &HTTPEndpoint{

@@ -97,31 +97,59 @@ func TestNewDialerWithoutResolver(t *testing.T) {
 		if conn != nil {
 			t.Fatal("expected nil conn")
 		}
-		events := trace.TCPConnects()
-		if len(events) != 1 {
-			t.Fatal("expected to see single TCPConnect event")
-		}
+
 		expectedFailure := netxlite.FailureInterrupted
-		expect := &model.ArchivalTCPConnectResult{
-			IP:   "1.1.1.1",
-			Port: 443,
-			Status: model.ArchivalTCPConnectStatus{
-				Blocked: nil,
-				Failure: &expectedFailure,
-				Success: false,
-			},
-			T: time.Second.Seconds(),
-		}
-		got := events[0]
-		if diff := cmp.Diff(expect, got); diff != "" {
-			t.Fatal(diff)
-		}
+
+		t.Run("for TCPConnect", func(t *testing.T) {
+			events := trace.TCPConnects()
+			if len(events) != 1 {
+				t.Fatal("expected to see single TCPConnect event")
+			}
+			expect := &model.ArchivalTCPConnectResult{
+				IP:   "1.1.1.1",
+				Port: 443,
+				Status: model.ArchivalTCPConnectStatus{
+					Blocked: nil,
+					Failure: &expectedFailure,
+					Success: false,
+				},
+				T: time.Second.Seconds(),
+			}
+			got := events[0]
+			if diff := cmp.Diff(expect, got); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+
+		t.Run("for NetworkEvents", func(t *testing.T) {
+			events := trace.NetworkEvents()
+			if len(events) != 1 {
+				t.Fatal("expected to see single NetworkEvent event")
+			}
+			expectedFailure := netxlite.FailureInterrupted
+			expect := &model.ArchivalNetworkEvent{
+				Address:       "1.1.1.1:443",
+				Failure:       &expectedFailure,
+				NumBytes:      0,
+				Operation:     netxlite.ConnectOperation,
+				Proto:         "tcp",
+				T0:            0,
+				T:             time.Second.Seconds(),
+				TransactionID: 0,
+				Tags:          []string{},
+			}
+			got := events[0]
+			if diff := cmp.Diff(expect, got); diff != "" {
+				t.Fatal(diff)
+			}
+		})
 	})
 
 	t.Run("DialContext discards events when buffer is full", func(t *testing.T) {
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
 		trace.tcpConnect = make(chan *model.ArchivalTCPConnectResult) // no buffer
+		trace.networkEvent = make(chan *model.ArchivalNetworkEvent)   // ditto
 		dialer := trace.NewDialerWithoutResolver(model.DiscardLogger)
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel() // we cancel immediately so connect is ~instantaneous
@@ -132,10 +160,20 @@ func TestNewDialerWithoutResolver(t *testing.T) {
 		if conn != nil {
 			t.Fatal("expected nil conn")
 		}
-		events := trace.TCPConnects()
-		if len(events) != 0 {
-			t.Fatal("expected to see no TCPConnect events")
-		}
+
+		t.Run("for TCPConnect", func(t *testing.T) {
+			events := trace.TCPConnects()
+			if len(events) != 0 {
+				t.Fatal("expected to see no TCPConnect events")
+			}
+		})
+
+		t.Run("for NetworkEvents", func(t *testing.T) {
+			events := trace.NetworkEvents()
+			if len(events) != 0 {
+				t.Fatal("expected to see no NetworkEvent events")
+			}
+		})
 	})
 
 	t.Run("DialContext ignores UDP connect attempts", func(t *testing.T) {
@@ -151,10 +189,20 @@ func TestNewDialerWithoutResolver(t *testing.T) {
 		if conn != nil {
 			t.Fatal("expected nil conn")
 		}
-		events := trace.TCPConnects()
-		if len(events) != 0 {
-			t.Fatal("expected to see no TCPConnect events")
-		}
+
+		t.Run("for TCP connect", func(t *testing.T) {
+			events := trace.TCPConnects()
+			if len(events) != 0 {
+				t.Fatal("expected to see no TCPConnect events")
+			}
+		})
+
+		t.Run("for NetworkEvents", func(t *testing.T) {
+			events := trace.NetworkEvents()
+			if len(events) != 0 {
+				t.Fatal("expected to see no NetworkEvent events")
+			}
+		})
 	})
 
 	t.Run("DialContext uses a dialer without a resolver", func(t *testing.T) {

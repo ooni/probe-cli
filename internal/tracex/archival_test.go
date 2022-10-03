@@ -564,7 +564,7 @@ func TestNewTLSHandshakesList(t *testing.T) {
 				Address:            "131.252.210.176:443",
 				Err:                netxlite.FailureEOFError,
 				NoTLSVerify:        false,
-				Proto:              "quic",
+				Proto:              "udp",
 				TLSCipherSuite:     "SUITE",
 				TLSNegotiatedProto: "h3",
 				TLSPeerCerts: [][]byte{

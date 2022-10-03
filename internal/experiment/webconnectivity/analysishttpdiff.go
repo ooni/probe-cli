@@ -53,6 +53,7 @@ func (tk *TestKeys) analysisHTTPDiff(logger model.Logger,
 			tk.BlockingFlags |= analysisFlagSuccess
 			return
 		}
+		logger.Infof("HTTP: body length: MISMATCH (see #%d)", probe.TransactionID)
 		if tk.HeadersMatch != nil && *tk.HeadersMatch {
 			logger.Infof(
 				"HTTP: statusCodeMatch && headersMatch => #%d is successful",
@@ -61,6 +62,7 @@ func (tk *TestKeys) analysisHTTPDiff(logger model.Logger,
 			tk.BlockingFlags |= analysisFlagSuccess
 			return
 		}
+		logger.Infof("HTTP: uncommon headers: MISMATCH (see #%d)", probe.TransactionID)
 		if tk.TitleMatch != nil && *tk.TitleMatch {
 			logger.Infof(
 				"HTTP: statusCodeMatch && titleMatch => #%d is successful",
@@ -69,6 +71,9 @@ func (tk *TestKeys) analysisHTTPDiff(logger model.Logger,
 			tk.BlockingFlags |= analysisFlagSuccess
 			return
 		}
+		logger.Infof("HTTP: title: MISMATCH (see #%d)", probe.TransactionID)
+	} else {
+		logger.Infof("HTTP: status code: MISMATCH (see #%d)", probe.TransactionID)
 	}
 
 	tk.BlockingFlags |= analysisFlagHTTPDiff
@@ -112,10 +117,27 @@ func (tk *TestKeys) httpDiffStatusCodeMatch(
 	if measurement <= 0 {
 		return // no real status code
 	}
-	if control/100 != 2 {
-		return // avoid comparison if it seems the TH failed
-	}
 	good := control == measurement
+	if !good && control/100 != 2 {
+		// Avoid comparison if it seems the TH failed _and_ the two
+		// status codes are not equal. Originally, this algorithm was
+		// https://github.com/measurement-kit/measurement-kit/blob/b55fbecb205be62c736249b689df0c45ae342804/src/libmeasurement_kit/ooni/web_connectivity.cpp#L60
+		// and excluded the case where the TH failed with 5xx.
+		//
+		// Then, we discovered when implementing websteps a bunch
+		// of control failure modes that suggested to be more
+		// cautious. See https://github.com/bassosimone/websteps-illustrated/blob/632f27443ab9d94fb05efcf5e0b0c1ce190221e2/internal/engine/experiment/websteps/analysisweb.go#L137.
+		//
+		// However, it seems a bit retarded to avoid comparison
+		// when both the TH and the probe failed equallty. See
+		// https://github.com/ooni/probe/issues/2287, which refers
+		// to a measurement where both the probe and the TH fail
+		// with 404, but we fail to say "status_code_match = true".
+		//
+		// See https://explorer.ooni.org/measurement/20220911T203447Z_webconnectivity_IT_30722_n1_YDZQZOHAziEJk6o9?input=http%3A%2F%2Fwww.webbox.com%2Findex.php
+		// for a measurement where this was fixed.
+		return
+	}
 	tk.StatusCodeMatch = &good
 }
 

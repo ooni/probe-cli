@@ -49,18 +49,44 @@ func (r *resolverTrace) CloseIdleConnections() {
 	r.r.CloseIdleConnections()
 }
 
+// emits the resolve_start event
+func (r *resolverTrace) emitResolveStart() {
+	select {
+	case r.tx.networkEvent <- NewAnnotationArchivalNetworkEvent(
+		r.tx.Index, r.tx.TimeSince(r.tx.ZeroTime), "resolve_start",
+	):
+	default: // buffer is full
+	}
+}
+
+// emits the resolve_done event
+func (r *resolverTrace) emiteResolveDone() {
+	select {
+	case r.tx.networkEvent <- NewAnnotationArchivalNetworkEvent(
+		r.tx.Index, r.tx.TimeSince(r.tx.ZeroTime), "resolve_done",
+	):
+	default: // buffer is full
+	}
+}
+
 // LookupHost implements model.Resolver.LookupHost
 func (r *resolverTrace) LookupHost(ctx context.Context, hostname string) ([]string, error) {
+	defer r.emiteResolveDone()
+	r.emitResolveStart()
 	return r.r.LookupHost(netxlite.ContextWithTrace(ctx, r.tx), hostname)
 }
 
 // LookupHTTPS implements model.Resolver.LookupHTTPS
 func (r *resolverTrace) LookupHTTPS(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
+	defer r.emiteResolveDone()
+	r.emitResolveStart()
 	return r.r.LookupHTTPS(netxlite.ContextWithTrace(ctx, r.tx), domain)
 }
 
 // LookupNS implements model.Resolver.LookupNS
 func (r *resolverTrace) LookupNS(ctx context.Context, domain string) ([]*net.NS, error) {
+	defer r.emiteResolveDone()
+	r.emitResolveStart()
 	return r.r.LookupNS(netxlite.ContextWithTrace(ctx, r.tx), domain)
 }
 

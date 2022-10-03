@@ -158,7 +158,7 @@ type HTTPClient interface {
 // HTTPTransport is an http.Transport-like structure.
 type HTTPTransport interface {
 	// Network returns the network used by the transport, which
-	// should be one of "tcp" and "quic".
+	// should be one of "tcp" and "udp".
 	Network() string
 
 	// RoundTrip performs the HTTP round trip.
