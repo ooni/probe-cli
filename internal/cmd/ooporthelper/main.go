@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/portfiltering"
+	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -64,7 +64,7 @@ func main() {
 	flag.Parse()
 	log.SetLevel(logmap[*debug])
 	defer srvCancel()
-	ports := portfiltering.Ports
+	ports := engine.PortFilteringDefaultInput
 	if srvTest {
 		ports = TestPorts
 	}

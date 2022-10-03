@@ -4,17 +4,15 @@ package portfiltering
 // Config for the port-filtering experiment
 //
 
-import "time"
-
 // Config contains the experiment configuration.
 type Config struct {
-	// Delay is the delay between each repetition (in milliseconds).
-	Delay int64 `ooni:"number of milliseconds to wait before testing each port"`
+	// TestHelper is the URL to use for port-scanning
+	TestHelper string `ooni:"testhelper URL for port scanning"`
 }
 
-func (c *Config) delay() time.Duration {
-	if c.Delay > 0 {
-		return time.Duration(c.Delay) * time.Millisecond
+func (c *Config) testhelper() string {
+	if c.TestHelper != "" {
+		return c.TestHelper
 	}
-	return 100 * time.Millisecond
+	return "http://127.0.0.1"
 }
