@@ -53,6 +53,10 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
       - uses: actions/download-artifact@v2
         with:
           name: oonimkall.xcframework.zip
