@@ -16,6 +16,9 @@ import (
 // torsfStart starts the torsf (tor+snowflake) tunnel
 func torsfStart(ctx context.Context, config *Config) (Tunnel, DebugInfo, error) {
 	config.logger().Infof("tunnel: starting snowflake with %s rendezvous method", config.snowflakeRendezvousMethod())
+	if err := ctx.Err(); err != nil {
+		return nil, DebugInfo{}, err
+	}
 
 	// 1. start a listener using snowflake
 	sfdialer, err := newSnowflakeDialer(config)

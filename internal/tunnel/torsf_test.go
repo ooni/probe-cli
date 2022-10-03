@@ -96,9 +96,8 @@ func Test_torsfStart(t *testing.T) {
 
 	t.Run("torStart fails", func(t *testing.T) {
 		ctx := context.Background()
-		ctx, cancel := context.WithCancel(ctx)
-		cancel() // should fail immediately
 		stopCounter := &atomicx.Int64{}
+		expected := errors.New("expected err")
 		config := &Config{
 			Name:                "torsf",
 			Session:             &MockableSession{},
@@ -117,6 +116,9 @@ func Test_torsfStart(t *testing.T) {
 					counter:          stopCounter,
 				}
 			},
+			testSfTorStart: func(ctx context.Context, config *Config) (Tunnel, DebugInfo, error) {
+				return nil, DebugInfo{}, expected
+			},
 			testSocks5New:        nil,
 			testTorStart:         nil,
 			testTorProtocolInfo:  nil,
@@ -127,7 +129,7 @@ func Test_torsfStart(t *testing.T) {
 			Name: "torsf",
 		}
 		tun, debugInfo, err := torsfStart(ctx, config)
-		if !errors.Is(err, context.Canceled) {
+		if !errors.Is(err, expected) {
 			t.Fatal("unexpected err", err)
 		}
 		if tun != nil {
