@@ -25,25 +25,26 @@ import (
 
 // Options contains the options you can set from the CLI.
 type Options struct {
-	Annotations      []string
-	Emoji            bool
-	ExtraOptions     []string
-	HomeDir          string
-	Inputs           []string
-	InputFilePaths   []string
-	MaxRuntime       int64
-	NoJSON           bool
-	NoCollector      bool
-	ProbeServicesURL string
-	Proxy            string
-	Random           bool
-	RepeatEvery      int64
-	ReportFile       string
-	TorArgs          []string
-	TorBinary        string
-	Tunnel           string
-	Verbose          bool
-	Yes              bool
+	Annotations         []string
+	Emoji               bool
+	ExtraOptions        []string
+	HomeDir             string
+	Inputs              []string
+	InputFilePaths      []string
+	MaxRuntime          int64
+	NoJSON              bool
+	NoCollector         bool
+	ProbeServicesURL    string
+	Proxy               string
+	Random              bool
+	RepeatEvery         int64
+	ReportFile          string
+	SnowflakeRendezvous string
+	TorArgs             []string
+	TorBinary           string
+	Tunnel              string
+	Verbose             bool
+	Yes                 bool
 }
 
 // main is the main function of miniooni.
