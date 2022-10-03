@@ -31,10 +31,12 @@ func buildAndPublishCLIMacOS(w io.Writer, job *Job) {
 	newStepUploadArtifacts(w, artifacts)
 
 	newJob(w, testJob, runsOnMacOS, buildJob, noPermissions)
+	newStepCheckout(w)
 	newStepDownloadArtifacts(w, []string{"ooniprobe-darwin-amd64"})
 	newStepRunOONIProbeIntegrationTests(w, "darwin", "amd64", "")
 
 	newJob(w, publishJob, runsOnMacOS, testJob, contentsWritePermissions)
+	newStepCheckout(w)
 	newStepDownloadArtifacts(w, artifacts)
 	newStepGHPublish(w, artifacts)
 }

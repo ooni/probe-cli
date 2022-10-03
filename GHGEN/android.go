@@ -30,6 +30,7 @@ func buildAndPublishMobileAndroid(w io.Writer, job *Job) {
 	newStepUploadArtifacts(w, artifacts)
 
 	newJob(w, publishJob, runsOnUbuntu, buildJob, contentsWritePermissions)
+	newStepCheckout(w)
 	newStepDownloadArtifacts(w, artifacts)
 	newStepGHPublish(w, artifacts)
 }
@@ -53,6 +54,7 @@ func buildAndPublishCLIAndroid(w io.Writer, job *Job) {
 		newStepUploadArtifacts(w, artifacts)
 
 		newJob(w, publishJob, runsOnUbuntu, buildJob, contentsWritePermissions)
+		newStepCheckout(w)
 		newStepDownloadArtifacts(w, artifacts)
 		newStepGHPublish(w, artifacts)
 	}

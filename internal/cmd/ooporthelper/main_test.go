@@ -10,6 +10,7 @@ import (
 )
 
 func TestMainWorkingAsIntended(t *testing.T) {
+	t.Skip("// TODO(https://github.com/ooni/probe/issues/2338)")
 	srvTest = true // toggle to imply that we are running in test mode
 	go main()
 	dialer := netxlite.NewDialerWithoutResolver(model.DiscardLogger)

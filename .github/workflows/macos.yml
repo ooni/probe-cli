@@ -61,6 +61,10 @@ jobs:
     runs-on: macos-11
     needs: build_darwin_cli
     steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
       - uses: actions/download-artifact@v2
         with:
           name: ooniprobe-darwin-amd64
@@ -74,6 +78,10 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
       - uses: actions/download-artifact@v2
         with:
           name: ooniprobe-darwin-amd64
