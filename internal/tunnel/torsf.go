@@ -22,12 +22,7 @@ func torsfStart(ctx context.Context, config *Config) (Tunnel, DebugInfo, error) 
 	if err != nil {
 		return nil, DebugInfo{}, err
 	}
-	ptl := &ptx.Listener{
-		ExperimentByteCounter: nil,
-		Logger:                config.logger(),
-		PTDialer:              sfdialer,
-		SessionByteCounter:    bytecounter.ContextSessionByteCounter(ctx),
-	}
+	ptl := config.sfNewPTXListener(ctx, sfdialer)
 	if err := ptl.Start(); err != nil {
 		return nil, DebugInfo{}, err
 	}
@@ -41,18 +36,47 @@ func torsfStart(ctx context.Context, config *Config) (Tunnel, DebugInfo, error) 
 	config.TorArgs = append(config.TorArgs, extraArguments...)
 
 	// 3. start tor as we would normally do
-	torTunnel, debugInfo, err := torStart(ctx, config)
+	torTunnel, debugInfo, err := config.sfTorStart(ctx, config)
+	debugInfo.Name = "torsf"
 	if err != nil {
 		ptl.Stop()
 		return nil, debugInfo, err
 	}
 
-	// 4. wrap the result to avoid leaking resources
-	torsfTunnel := &torsfTunnel{
+	// 4. wrap the tunnel and the listener
+	tsft := &torsfTunnel{
 		torTunnel:  torTunnel,
 		sfListener: ptl,
 	}
-	return torsfTunnel, debugInfo, nil
+	return tsft, debugInfo, nil
+}
+
+func (c *Config) sfNewPTXListener(ctx context.Context, sfdialer *ptx.SnowflakeDialer) (out torsfPTXListener) {
+	out = &ptx.Listener{
+		ExperimentByteCounter: nil,
+		ListenSocks:           c.testSfListenSocks,
+		Logger:                c.logger(),
+		PTDialer:              sfdialer,
+		SessionByteCounter:    bytecounter.ContextSessionByteCounter(ctx),
+	}
+	if c.testSfWrapPTXListener != nil {
+		out = c.testSfWrapPTXListener(out)
+	}
+	return
+}
+
+// torsfPTXListener is an abstract ptx.Listener.
+type torsfPTXListener interface {
+	Start() error
+	Stop()
+	AsClientTransportPluginArgument() string
+}
+
+func (c *Config) sfTorStart(ctx context.Context, config *Config) (Tunnel, DebugInfo, error) {
+	if c.testSfTorStart != nil {
+		return c.testSfTorStart(ctx, config)
+	}
+	return torStart(ctx, config)
 }
 
 // newSnowflakeDialer returns the correct snowflake dialer.

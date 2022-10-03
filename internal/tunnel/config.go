@@ -10,6 +10,7 @@ import (
 	"github.com/cretz/bine/control"
 	"github.com/cretz/bine/tor"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/ptx"
 	"golang.org/x/sys/execabs"
 )
 
@@ -59,6 +60,18 @@ type Config struct {
 
 	// testNetListen allows us to mock net.Listen in testing code.
 	testNetListen func(network string, address string) (net.Listener, error)
+
+	// testSfListenSocks is OPTIONAL and allows to override the
+	// ListenSocks field of a ptx.Listener.
+	testSfListenSocks func(network string, laddr string) (ptx.SocksListener, error)
+
+	// testSfNewPTXListener is OPTIONAL and allows us to wrap the
+	// constructed ptx.Listener for testing purposes.
+	testSfWrapPTXListener func(torsfPTXListener) torsfPTXListener
+
+	// testSfTorStart is OPTIONAL and allows us to override the
+	// call to torStart inside the torsf tunnel.
+	testSfTorStart func(ctx context.Context, config *Config) (Tunnel, DebugInfo, error)
 
 	// testSocks5New allows us to mock socks5.New in testing code.
 	testSocks5New func(conf *socks5.Config) (*socks5.Server, error)

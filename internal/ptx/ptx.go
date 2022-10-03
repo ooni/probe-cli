@@ -74,6 +74,10 @@ type Listener struct {
 	// counts the bytes consumed by the experiment.
 	ExperimentByteCounter *bytecounter.Counter
 
+	// ListenSocks is OPTIONAL and allows you to override the
+	// function called by default to listen for SOCKS5.
+	ListenSocks func(network string, laddr string) (SocksListener, error)
+
 	// Logger is the OPTIONAL logger. When not set, this library
 	// will not emit logs. (But the underlying pluggable transport
 	// may still emit its own log messages.)
@@ -98,10 +102,7 @@ type Listener struct {
 	laddr net.Addr
 
 	// listener allows us to stop the listener.
-	listener ptxSocksListener
-
-	// overrideListenSocks allows us to override pt.ListenSocks.
-	overrideListenSocks func(network string, laddr string) (ptxSocksListener, error)
+	listener SocksListener
 }
 
 // logger returns the Logger, if set, or the defaultLogger.
@@ -148,7 +149,7 @@ func (lst *Listener) forwardWithContext(ctx context.Context, left, right net.Con
 // handleSocksConn handles a new SocksConn connection by establishing
 // the corresponding PT connection and forwarding traffic. This
 // function TAKES OWNERSHIP of the socksConn argument.
-func (lst *Listener) handleSocksConn(ctx context.Context, socksConn ptxSocksConn) error {
+func (lst *Listener) handleSocksConn(ctx context.Context, socksConn SocksConn) error {
 	err := socksConn.Grant(&net.TCPAddr{IP: net.IPv4zero, Port: 0})
 	if err != nil {
 		lst.logger().Warnf("ptx: socksConn.Grant error: %s", err)
@@ -169,10 +170,10 @@ func (lst *Listener) handleSocksConn(ctx context.Context, socksConn ptxSocksConn
 	return nil                                     // used for testing
 }
 
-// ptxSocksListener is a pt.SocksListener-like structure.
-type ptxSocksListener interface {
+// SocksListener is the listener for socks connections.
+type SocksListener interface {
 	// AcceptSocks accepts a socks conn
-	AcceptSocks() (ptxSocksConn, error)
+	AcceptSocks() (SocksConn, error)
 
 	// Addr returns the listening address.
 	Addr() net.Addr
@@ -181,8 +182,8 @@ type ptxSocksListener interface {
 	Close() error
 }
 
-// ptxSocksConn is a pt.SocksConn-like structure.
-type ptxSocksConn interface {
+// SocksConn is a SOCKS connection.
+type SocksConn interface {
 	// net.Conn is the embedded interface.
 	net.Conn
 
@@ -192,7 +193,7 @@ type ptxSocksConn interface {
 
 // acceptLoop accepts and handles local socks connection. This function
 // DOES NOT take ownership of the socks listener.
-func (lst *Listener) acceptLoop(ctx context.Context, ln ptxSocksListener) {
+func (lst *Listener) acceptLoop(ctx context.Context, ln SocksListener) {
 	for {
 		conn, err := ln.AcceptSocks()
 		if err != nil {
@@ -243,15 +244,15 @@ func (lst *Listener) Start() error {
 }
 
 // listenSocks calles either pt.ListenSocks or lst.overrideListenSocks.
-func (lst *Listener) listenSocks(network string, laddr string) (ptxSocksListener, error) {
-	if lst.overrideListenSocks != nil {
-		return lst.overrideListenSocks(network, laddr)
+func (lst *Listener) listenSocks(network string, laddr string) (SocksListener, error) {
+	if lst.ListenSocks != nil {
+		return lst.ListenSocks(network, laddr)
 	}
 	return lst.castListener(pt.ListenSocks(network, laddr))
 }
 
 // castListener casts a pt.SocksListener to ptxSocksListener.
-func (lst *Listener) castListener(in *pt.SocksListener, err error) (ptxSocksListener, error) {
+func (lst *Listener) castListener(in *pt.SocksListener, err error) (SocksListener, error) {
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +265,7 @@ type ptxSocksListenerAdapter struct {
 }
 
 // AcceptSocks adapts pt.SocksListener.AcceptSocks to ptxSockListener.AcceptSocks.
-func (la *ptxSocksListenerAdapter) AcceptSocks() (ptxSocksConn, error) {
+func (la *ptxSocksListenerAdapter) AcceptSocks() (SocksConn, error) {
 	return la.SocksListener.AcceptSocks()
 }
 
@@ -307,11 +308,11 @@ func (lst *Listener) Stop() {
 // Assuming that we are listening at 127.0.0.1:12345, then this
 // function will return the following string:
 //
-//     obfs4 socks5 127.0.0.1:12345
+//	obfs4 socks5 127.0.0.1:12345
 //
 // The correct configuration line for the `torrc` would be:
 //
-//     ClientTransportPlugin obfs4 socks5 127.0.0.1:12345
+//	ClientTransportPlugin obfs4 socks5 127.0.0.1:12345
 //
 // Since we pass configuration to tor using the command line, it
 // is more convenient to us to avoid including ClientTransportPlugin
