@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # This test for now uses --no-collector and we just ensure that the OONI
 # instance is not exploding. We are confident that, if miniooni submits

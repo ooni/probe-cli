@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 
 # This script checks whether we can install ooniprobe on debian
 # for a specific architecture using docker and the official
 # install instructions published at https://ooni.org/install.
 
-set -e
+set -euo pipefail
 
 install_flow() {
 	set -x
@@ -27,7 +27,7 @@ docker_flow() {
 	}
 	set -x
 	docker pull debian:stable
-	docker run -v "$(pwd):/ooni" -w /ooni debian:stable ./E2E/debian.sh install "$1"
+	docker run -v "$(pwd):/ooni" -w /ooni debian:stable ./E2E/debian.bash install "$1"
 }
 
 if [ "$1" = "docker" ]; then
