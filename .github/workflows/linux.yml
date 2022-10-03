@@ -124,9 +124,11 @@ jobs:
       - run: sudo apt-get update -q
       - run: sudo apt-get install -y tor
 
+      - run: chmod +x ooniprobe-linux-amd64
       - run: ./E2E/ooniprobe.bash ./ooniprobe-linux-amd64
         shell: bash
 
+      - run: chmod +x miniooni-linux-amd64
       - run: ./E2E/miniooni.bash ./miniooni-linux-amd64
         shell: bash
 

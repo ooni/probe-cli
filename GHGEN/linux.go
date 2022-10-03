@@ -45,7 +45,7 @@ func buildAndPublishCLILinux(w io.Writer, job *Job) {
 			newStepSetupGo(w, fmt.Sprintf("linux-%s", arch))
 			newStepInstallTor(w)
 			newStepRunOONIProbeIntegrationTests(w, "linux", arch, "")
-			newStepRunMiniooniIntegrationTests(w, arch, "")
+			newStepRunMiniooniIntegrationTests(w, "linux", arch, "")
 			newJob(w, publishJob, runsOnUbuntu, testJob, contentsWritePermissions)
 		default:
 			newJob(w, publishJob, runsOnUbuntu, buildJob, contentsWritePermissions)

@@ -115,13 +115,21 @@ func newStepInstallTor(w io.Writer) {
 }
 
 func newStepRunOONIProbeIntegrationTests(w io.Writer, os, arch, ext string) {
-	mustFprintf(w, "      - run: ./E2E/ooniprobe.bash ./ooniprobe-%s-%s%s\n", os, arch, ext)
+	executable := fmt.Sprintf("ooniprobe-%s-%s%s", os, arch, ext)
+	if os != "windows" {
+		mustFprintf(w, "      - run: chmod +x %s\n", executable)
+	}
+	mustFprintf(w, "      - run: ./E2E/ooniprobe.bash ./%s\n", executable)
 	mustFprintf(w, "        shell: bash\n")
 	mustFprintf(w, "\n")
 }
 
-func newStepRunMiniooniIntegrationTests(w io.Writer, arch, ext string) {
-	mustFprintf(w, "      - run: ./E2E/miniooni.bash ./miniooni-linux-%s%s\n", arch, ext)
+func newStepRunMiniooniIntegrationTests(w io.Writer, os, arch, ext string) {
+	executable := fmt.Sprintf("miniooni-%s-%s%s", os, arch, ext)
+	if os != "windows" {
+		mustFprintf(w, "      - run: chmod +x %s\n", executable)
+	}
+	mustFprintf(w, "      - run: ./E2E/miniooni.bash ./%s\n", executable)
 	mustFprintf(w, "        shell: bash\n")
 	mustFprintf(w, "\n")
 }

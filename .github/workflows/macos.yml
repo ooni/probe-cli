@@ -69,6 +69,7 @@ jobs:
         with:
           name: ooniprobe-darwin-amd64
 
+      - run: chmod +x ooniprobe-darwin-amd64
       - run: ./E2E/ooniprobe.bash ./ooniprobe-darwin-amd64
         shell: bash
 
