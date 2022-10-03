@@ -59,6 +59,22 @@ func TestStartTorWithCancelledContext(t *testing.T) {
 	}
 }
 
+func TestStartTorsfWithCancelledContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // fail immediately
+	tun, _, err := tunnel.Start(ctx, &tunnel.Config{
+		Name:      "torsf",
+		Session:   &tunnel.MockableSession{},
+		TunnelDir: "testdata",
+	})
+	if !errors.Is(err, context.Canceled) {
+		t.Fatal("not the error we expected")
+	}
+	if tun != nil {
+		t.Fatal("expected nil tunnel here")
+	}
+}
+
 func TestStartInvalidTunnel(t *testing.T) {
 	ctx := context.Background()
 	tun, _, err := tunnel.Start(ctx, &tunnel.Config{

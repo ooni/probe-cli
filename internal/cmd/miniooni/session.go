@@ -36,14 +36,15 @@ func newSessionOrPanic(ctx context.Context, currentOptions *Options,
 	runtimex.PanicOnError(err, "cannot create tunnelDir")
 
 	config := engine.SessionConfig{
-		KVStore:         kvstore,
-		Logger:          logger,
-		ProxyURL:        proxyURL,
-		SoftwareName:    softwareName,
-		SoftwareVersion: softwareVersion,
-		TorArgs:         currentOptions.TorArgs,
-		TorBinary:       currentOptions.TorBinary,
-		TunnelDir:       tunnelDir,
+		KVStore:             kvstore,
+		Logger:              logger,
+		ProxyURL:            proxyURL,
+		SnowflakeRendezvous: currentOptions.SnowflakeRendezvous,
+		SoftwareName:        softwareName,
+		SoftwareVersion:     softwareVersion,
+		TorArgs:             currentOptions.TorArgs,
+		TorBinary:           currentOptions.TorBinary,
+		TunnelDir:           tunnelDir,
 	}
 	if currentOptions.ProbeServicesURL != "" {
 		config.AvailableProbeServices = []model.OOAPIService{{

@@ -10,6 +10,7 @@ import (
 	"github.com/cretz/bine/control"
 	"github.com/cretz/bine/tor"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/ptx"
 	"golang.org/x/sys/execabs"
 )
 
@@ -27,6 +28,10 @@ type Config struct {
 	// mock of the required functionality. That is, the possibility
 	// of obtaining a valid psiphon configuration.
 	Session Session
+
+	// SnowflakeRendezvous is the OPTIONAL rendezvous
+	// method for snowflake
+	SnowflakeRendezvous string
 
 	// TunnelDir is the MANDATORY directory in which the tunnel SHOULD
 	// store its state, if any. If this field is empty, the
@@ -56,6 +61,18 @@ type Config struct {
 	// testNetListen allows us to mock net.Listen in testing code.
 	testNetListen func(network string, address string) (net.Listener, error)
 
+	// testSfListenSocks is OPTIONAL and allows to override the
+	// ListenSocks field of a ptx.Listener.
+	testSfListenSocks func(network string, laddr string) (ptx.SocksListener, error)
+
+	// testSfNewPTXListener is OPTIONAL and allows us to wrap the
+	// constructed ptx.Listener for testing purposes.
+	testSfWrapPTXListener func(torsfPTXListener) torsfPTXListener
+
+	// testSfTorStart is OPTIONAL and allows us to override the
+	// call to torStart inside the torsf tunnel.
+	testSfTorStart func(ctx context.Context, config *Config) (Tunnel, DebugInfo, error)
+
 	// testSocks5New allows us to mock socks5.New in testing code.
 	testSocks5New func(conf *socks5.Config) (*socks5.Server, error)
 
@@ -72,6 +89,14 @@ type Config struct {
 	// testTorGetInfo allows us to fake a failure when
 	// getting info from the tor control port.
 	testTorGetInfo func(ctrl *control.Conn, keys ...string) ([]*control.KeyVal, error)
+}
+
+// snowflakeRendezvousMethod returns the rendezvous method that snowflake should use
+func (c *Config) snowflakeRendezvousMethod() string {
+	if c.SnowflakeRendezvous != "" {
+		return c.SnowflakeRendezvous
+	}
+	return "domain_fronting"
 }
 
 // logger returns the logger to use.
