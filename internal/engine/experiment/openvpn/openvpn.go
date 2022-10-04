@@ -163,8 +163,8 @@ type TestKeys struct {
 	// Stages is a sequence of stages with their corresponding timestamp.
 	Stages []Stage `json:"stages"`
 
-	// Dial connect traces a TCP connection for the vpn dialer (null for UDP transport).
-	DialConnect *model.ArchivalTCPConnectResult `json:"tcp_connect"`
+	// TCPCconnect traces a TCP connection for the vpn dialer (null for UDP transport).
+	TCPConnect *model.ArchivalTCPConnectResult `json:"tcp_connect"`
 
 	// Failure contains the failure string or nil.
 	Failure *string `json:"failure"`
@@ -532,7 +532,7 @@ func (m *Measurer) traceDialTCP(ctx context.Context, sess model.ExperimentSessio
 	dialer := trace.NewDialerWithoutResolver(sess.Logger())
 	m.tunnel.Dialer = dialer
 	err := m.tunnel.Start(ctx)
-	tk.DialConnect = <-trace.TCPConnect
+	tk.TCPConnect = trace.FirstTCPConnectOrNil()
 	ol.Stop(err)
 	if err != nil {
 		tk.Failure = tracex.NewFailure(err)

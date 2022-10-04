@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	allexperiments["openvpn"] = &Factory{
+	AllExperiments["openvpn"] = &Factory{
 		build: func(config interface{}) model.ExperimentMeasurer {
 			return openvpn.NewExperimentMeasurer(
 				*config.(*openvpn.Config),
