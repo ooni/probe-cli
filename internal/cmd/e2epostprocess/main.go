@@ -27,7 +27,7 @@ type Measurement struct {
 }
 
 func main() {
-	backend := flag.String("backend", "https://ams-pg-test.ooni.org/", "Backend to use")
+	backend := flag.String("backend", "https://api.ooni.io/", "Backend to use")
 	expected := flag.Int("expected", 0, "Expected number of measurement files")
 	flag.Parse()
 	if *expected <= 0 {
