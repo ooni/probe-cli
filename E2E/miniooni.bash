@@ -18,8 +18,18 @@ $miniooni --yes -o E2E/o.jsonl \
 	--tunnel=none \
 	web_connectivity -i https://mail.google.com/robots.txt
 
+# Cloudfront note: as of 2022-10-08, dvp6h0xblpcqp.cloudfront.net
+# and dkyhjv0wpi2dk.cloudfront.net front distinct aliases of the
+# same backend host (backend-fsn.ooni.org). We can use either addr
+# and the result should be the same. So, let us test that.
+
 $miniooni --yes -o E2E/o.jsonl \
 	--probe-services=https://dvp6h0xblpcqp.cloudfront.net/ \
+	--tunnel=none \
+	web_connectivity -i https://mail.google.com/robots.txt
+
+$miniooni --yes -o E2E/o.jsonl \
+	--probe-services=https://dkyhjv0wpi2dk.cloudfront.net/ \
 	--tunnel=none \
 	web_connectivity -i https://mail.google.com/robots.txt
 
@@ -38,4 +48,4 @@ $miniooni --yes -o E2E/o.jsonl \
 	--tunnel=torsf \
 	web_connectivity -i https://mail.google.com/robots.txt
 
-go run ./internal/cmd/e2epostprocess -expected 5 -backend https://ams-pg-test.ooni.org/
+go run ./internal/cmd/e2epostprocess -expected 6 -backend https://ams-pg-test.ooni.org/
