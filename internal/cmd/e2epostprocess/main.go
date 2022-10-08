@@ -27,6 +27,7 @@ type Measurement struct {
 }
 
 func main() {
+	backend := flag.String("backend", "https://api.ooni.io/", "Backend to use")
 	expected := flag.Int("expected", 0, "Expected number of measurement files")
 	flag.Parse()
 	if *expected <= 0 {
@@ -61,6 +62,7 @@ func main() {
 			options := []string{
 				"run",
 				"./internal/cmd/apitool",
+				"-backend", *backend,
 				"-mode", "meta",
 				"-report-id", entry.ReportID,
 			}

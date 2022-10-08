@@ -193,6 +193,8 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 			config.Logger.Infof("tunnel '%s' running...", proxyURL.Scheme)
 			sess.tunnel = tunnel
 			proxyURL = tunnel.SOCKS5ProxyURL()
+		case "none":
+			proxyURL = nil // explicit way of saying we don't want to use a tunnel
 		}
 	}
 	sess.proxyURL = proxyURL
