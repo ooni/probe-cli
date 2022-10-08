@@ -31,7 +31,7 @@ func shutdown(ctx context.Context, l net.Listener) {
 }
 
 // TODO(DecFox): Add the ability of an echo service to generate some traffic
-func handleConnetion(ctx context.Context, conn net.Conn) {
+func handleConnection(ctx context.Context, conn net.Conn) {
 	defer conn.Close()
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
@@ -48,10 +48,10 @@ func listenTCP(ctx context.Context, port string) {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			log.Infof("listener unable to accept connections on port%s", port)
+			log.Infof("listener unable to accept connections on port: %s", port)
 			return
 		}
-		go handleConnetion(ctx, conn)
+		go handleConnection(ctx, conn)
 	}
 }
 
