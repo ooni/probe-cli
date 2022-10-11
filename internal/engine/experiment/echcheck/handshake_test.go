@@ -48,7 +48,7 @@ func TestHandshake(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result := handshakeWithEch(ctx, conn, time.Now(), "0.0.0.0:443", "example.org")
+	result := handshakeWithEch(ctx, conn, time.Now(), "0.0.0.0:0", "example.org")
 	if result == nil {
 		t.Fatal("expected result")
 	}
