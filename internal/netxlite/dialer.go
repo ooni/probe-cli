@@ -34,7 +34,7 @@ func NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...model.Di
 // When possible use NewDialerWithResolver or NewDialerWithoutResolver
 // instead of using this rather low-level function.
 //
-// Arguments
+// # Arguments
 //
 // 1. logger is used to emit debug messages (MUST NOT be nil);
 //
@@ -47,58 +47,57 @@ func NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...model.Di
 // modify the behavior of the returned dialer (see below). Please note
 // that this function will just ignore any nil wrapper.
 //
-// Return value
+// # Return value
 //
 // The returned dialer is an opaque type consisting of the composition of
 // several simple dialers. The following pseudo code illustrates the general
 // behavior of the returned composed dialer:
 //
-//     addrs, err := dnslookup()
-//     if err != nil {
-//       return nil, err
-//     }
-//     errors := []error{}
-//     for _, a := range addrs {
-//       conn, err := tcpconnect(a)
-//       if err != nil {
-//         errors = append(errors, err)
-//         continue
-//       }
-//       return conn, nil
-//     }
-//     return nil, errors[0]
-//
+//	addrs, err := dnslookup()
+//	if err != nil {
+//	  return nil, err
+//	}
+//	errors := []error{}
+//	for _, a := range addrs {
+//	  conn, err := tcpconnect(a)
+//	  if err != nil {
+//	    errors = append(errors, err)
+//	    continue
+//	  }
+//	  return conn, nil
+//	}
+//	return nil, errors[0]
 //
 // The following table describes the structure of the returned dialer:
 //
-//     +-------+-----------------+------------------------------------------+
-//     | Index | Name            | Description                              |
-//     +-------+-----------------+------------------------------------------+
-//     | 0     | base            | the baseDialer argument                  |
-//     +-------+-----------------+------------------------------------------+
-//     | 1     | errWrapper      | wraps Go errors to be consistent with    |
-//     |       |                 | OONI df-007-errors spec                  |
-//     +-------+-----------------+------------------------------------------+
-//     | 2     | ???             | if there are wrappers, result of calling |
-//     |       |                 | the first one on the errWrapper dialer   |
-//     +-------+-----------------+------------------------------------------+
-//     | ...   | ...             | ...                                      |
-//     +-------+-----------------+------------------------------------------+
-//     | N     | ???             | if there are wrappers, result of calling |
-//     |       |                 | the last one on the N-1 dialer           |
-//     +-------+-----------------+------------------------------------------+
-//     | N+1   | logger (inner)  | logs TCP connect operations              |
-//     +-------+-----------------+------------------------------------------+
-//     | N+2   | resolver        | DNS lookup and try connect each IP in    |
-//     |       |                 | sequence until one of them succeeds      |
-//     +-------+-----------------+------------------------------------------+
-//     | N+3   | logger (outer)  | logs the overall dial operation          |
-//     +-------+-----------------+------------------------------------------+
+//	+-------+-----------------+------------------------------------------+
+//	| Index | Name            | Description                              |
+//	+-------+-----------------+------------------------------------------+
+//	| 0     | base            | the baseDialer argument                  |
+//	+-------+-----------------+------------------------------------------+
+//	| 1     | errWrapper      | wraps Go errors to be consistent with    |
+//	|       |                 | OONI df-007-errors spec                  |
+//	+-------+-----------------+------------------------------------------+
+//	| 2     | ???             | if there are wrappers, result of calling |
+//	|       |                 | the first one on the errWrapper dialer   |
+//	+-------+-----------------+------------------------------------------+
+//	| ...   | ...             | ...                                      |
+//	+-------+-----------------+------------------------------------------+
+//	| N     | ???             | if there are wrappers, result of calling |
+//	|       |                 | the last one on the N-1 dialer           |
+//	+-------+-----------------+------------------------------------------+
+//	| N+1   | logger (inner)  | logs TCP connect operations              |
+//	+-------+-----------------+------------------------------------------+
+//	| N+2   | resolver        | DNS lookup and try connect each IP in    |
+//	|       |                 | sequence until one of them succeeds      |
+//	+-------+-----------------+------------------------------------------+
+//	| N+3   | logger (outer)  | logs the overall dial operation          |
+//	+-------+-----------------+------------------------------------------+
 //
 // The list of wrappers allows to insert modified dialers in the correct
 // place for observing and saving I/O events (connect, read, etc.).
 //
-// Remarks
+// # Remarks
 //
 // When the resolver is &NullResolver{} any attempt to perform DNS resolutions
 // in the dialer at index N+2 will fail with ErrNoResolver.
@@ -155,16 +154,16 @@ var _ model.Dialer = &DialerSystem{}
 
 const dialerDefaultTimeout = 15 * time.Second
 
-func (d *DialerSystem) newUnderlyingDialer() model.SimpleDialer {
+func (d *DialerSystem) configuredTimeout() time.Duration {
 	t := d.timeout
 	if t <= 0 {
 		t = dialerDefaultTimeout
 	}
-	return &net.Dialer{Timeout: t}
+	return t
 }
 
 func (d *DialerSystem) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
-	return d.newUnderlyingDialer().DialContext(ctx, network, address)
+	return TProxy.DialContext(ctx, d.configuredTimeout(), network, address)
 }
 
 func (d *DialerSystem) CloseIdleConnections() {
