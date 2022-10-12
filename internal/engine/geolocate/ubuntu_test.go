@@ -10,6 +10,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestUbuntuParseError(t *testing.T) {
@@ -23,6 +24,7 @@ func TestUbuntuParseError(t *testing.T) {
 		}},
 		log.Log,
 		model.HTTPHeaderUserAgent,
+		netxlite.NewStdlibResolver(model.DiscardLogger),
 	)
 	if err == nil || !strings.HasPrefix(err.Error(), "XML syntax error") {
 		t.Fatalf("not the error we expected: %+v", err)
@@ -38,6 +40,7 @@ func TestIPLookupWorksUsingUbuntu(t *testing.T) {
 		http.DefaultClient,
 		log.Log,
 		model.HTTPHeaderUserAgent,
+		netxlite.NewStdlibResolver(model.DiscardLogger),
 	)
 	if err != nil {
 		t.Fatal(err)

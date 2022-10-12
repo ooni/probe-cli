@@ -2,16 +2,13 @@ package geolocate
 
 import (
 	"context"
+	"net"
 	"net/http"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/pion/stun"
 )
-
-// TODO(bassosimone): we should modify the stun code to use
-// the session resolver rather than using its own.
-//
-// See https://github.com/ooni/probe/issues/1383.
 
 type stunClient interface {
 	Close() error
@@ -19,24 +16,35 @@ type stunClient interface {
 }
 
 type stunConfig struct {
-	Dial     func(network string, address string) (stunClient, error)
-	Endpoint string
-	Logger   model.Logger
+	Dialer    model.Dialer // optional
+	Endpoint  string
+	Logger    model.Logger
+	NewClient func(conn net.Conn) (stunClient, error) // optional
+	Resolver  model.Resolver
 }
 
-func stunDialer(network string, address string) (stunClient, error) {
-	return stun.Dial(network, address)
+func stunNewClient(conn net.Conn) (stunClient, error) {
+	return stun.NewClient(conn)
 }
 
 func stunIPLookup(ctx context.Context, config stunConfig) (string, error) {
 	config.Logger.Debugf("STUNIPLookup: start using %s", config.Endpoint)
 	ip, err := func() (string, error) {
-		dial := config.Dial
-		if dial == nil {
-			dial = stunDialer
+		dialer := config.Dialer
+		if dialer == nil {
+			dialer = netxlite.NewDialerWithResolver(config.Logger, config.Resolver)
 		}
-		clnt, err := dial("udp", config.Endpoint)
+		conn, err := dialer.DialContext(ctx, "udp", config.Endpoint)
 		if err != nil {
+			return model.DefaultProbeIP, err
+		}
+		newClient := config.NewClient
+		if newClient == nil {
+			newClient = stunNewClient
+		}
+		clnt, err := newClient(conn)
+		if err != nil {
+			conn.Close()
 			return model.DefaultProbeIP, err
 		}
 		defer clnt.Close()
@@ -78,10 +86,12 @@ func stunEkigaIPLookup(
 	httpClient *http.Client,
 	logger model.Logger,
 	userAgent string,
+	resolver model.Resolver,
 ) (string, error) {
 	return stunIPLookup(ctx, stunConfig{
 		Endpoint: "stun.ekiga.net:3478",
 		Logger:   logger,
+		Resolver: resolver,
 	})
 }
 
@@ -90,9 +100,11 @@ func stunGoogleIPLookup(
 	httpClient *http.Client,
 	logger model.Logger,
 	userAgent string,
+	resolver model.Resolver,
 ) (string, error) {
 	return stunIPLookup(ctx, stunConfig{
 		Endpoint: "stun.l.google.com:19302",
 		Logger:   logger,
+		Resolver: resolver,
 	})
 }
