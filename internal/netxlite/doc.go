@@ -8,13 +8,13 @@
 // You should consider checking the tutorial explaining how to use this package
 // for network measurements: https://github.com/ooni/probe-cli/tree/master/internal/tutorial/netxlite.
 //
-// Naming and history
+// # Naming and history
 //
 // Previous versions of this package were called netx. Compared to such
 // versions this package is lightweight because it does not contain code
 // to perform the measurements, hence its name.
 //
-// Design
+// # Design
 //
 // We want to potentially be able to observe each low-level operation
 // separately, even though this is not done by this package. This is
@@ -50,10 +50,10 @@
 //
 // 3. resolving domain names with getaddrinfo.
 //
-// By overriding the TProxyXXX variables, you can control these operations and
-// route traffic to, e.g., a wireguard peer where you implement censorship.
+// By overriding the TProxy variable, you can control these operations and route
+// traffic to, e.g., a wireguard peer where you implement censorship.
 //
-// Operations
+// # Operations
 //
 // This package implements the following operations:
 //
@@ -74,7 +74,7 @@
 // Operations 1, 2, 3, and 4 are used when we perform measurements,
 // while 5 and 6 are mostly used when speaking with our backend.
 //
-// Getaddrinfo usage
+// # Getaddrinfo usage
 //
 // When compiled with CGO_ENABLED=1, this package will link with libc
 // and call getaddrinfo directly. While this design choice means we will

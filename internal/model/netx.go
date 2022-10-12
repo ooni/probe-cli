@@ -480,3 +480,21 @@ type UDPLikeConn interface {
 	// which is also instrumental to setting the read buffer.
 	SyscallConn() (syscall.RawConn, error)
 }
+
+// UnderlyingNetwork implements the underlying network APIs on
+// top of which we implement network extensions.
+type UnderlyingNetwork interface {
+	// DialContext is equivalent to net.Dialer.DialContext except that
+	// there is also an explicit timeout for dialing.
+	DialContext(ctx context.Context, timeout time.Duration, network, address string) (net.Conn, error)
+
+	// ListenUDP is equivalent to net.ListenUDP.
+	ListenUDP(network string, addr *net.UDPAddr) (UDPLikeConn, error)
+
+	// GetaddrinfoLookupANY is like net.Resolver.LookupHost except that it
+	// also returns to the caller the CNAME when it is available.
+	GetaddrinfoLookupANY(ctx context.Context, domain string) ([]string, string, error)
+
+	// GetaddrinfoResolverNetwork returns the resolver network.
+	GetaddrinfoResolverNetwork() string
+}

@@ -15,6 +15,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/apex/log"
 	"github.com/google/shlex"
@@ -340,11 +341,11 @@ func (c *remoteClient) route() {
 	}()
 }
 
-// DialWithDialer dials a network connection using the given stdlib dialer.
-func (c *remoteClient) DialWithDialer(ctx context.Context, d *net.Dialer, network string, address string) (net.Conn, error) {
-	if d.Timeout > 0 {
+// DialContext implements UnderlyingNetwork.DialContext.
+func (c *remoteClient) DialContext(ctx context.Context, timeout time.Duration, network string, address string) (net.Conn, error) {
+	if timeout > 0 {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, d.Timeout)
+		ctx, cancel = context.WithTimeout(ctx, timeout)
 		defer cancel()
 	}
 	if remoteIsIPv6(address) {
@@ -367,7 +368,7 @@ func remoteIsIPv6(endpoint string) bool {
 	return v6
 }
 
-// ListenUDP creates a new listening UDP socket.
+// ListenUDP implements UnderlyingNetwork.
 func (c *remoteClient) ListenUDP(network string, addr *net.UDPAddr) (model.UDPLikeConn, error) {
 	pconn, err := c.net.ListenUDP(addr)
 	if err != nil {
@@ -423,8 +424,13 @@ func (*remoteClientRawConnUDP) Write(f func(fd uintptr) (done bool)) error {
 	return nil
 }
 
-// GetaddrinfoLookupANY performs a DNS lookup using getaddrinfo.
+// GetaddrinfoLookupANY implements UnderlyingNetwork.
 func (c *remoteClient) GetaddrinfoLookupANY(ctx context.Context, domain string) ([]string, string, error) {
 	addrs, err := c.net.LookupContextHost(ctx, domain)
 	return addrs, "", err
+}
+
+// GetaddrinfoResolverNetwork implements UnderlyingNetwork.
+func (c *remoteClient) GetaddrinfoResolverNetwork() string {
+	return netxlite.StdlibResolverGetaddrinfo
 }

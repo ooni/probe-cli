@@ -50,9 +50,7 @@ func remoteMaybeHijack(options *Options) error {
 	go client.route()
 
 	// hijack netxlite's fundamental network operations
-	netxlite.TProxyDialWithDialer = client.DialWithDialer
-	netxlite.TProxyGetaddrinfoLookupANY = client.GetaddrinfoLookupANY
-	netxlite.TProxyListenUDP = client.ListenUDP
+	netxlite.TProxy = client
 	log.Infof("remote: %s: hijacked netxlite network primitives", remoteName)
 
 	return nil
