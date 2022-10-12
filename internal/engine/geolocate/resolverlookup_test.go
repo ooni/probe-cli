@@ -4,10 +4,16 @@ import (
 	"context"
 	"errors"
 	"testing"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestLookupResolverIP(t *testing.T) {
-	addr, err := (resolverLookupClient{}).LookupResolverIP(context.Background())
+	rlc := resolverLookupClient{
+		Resolver: netxlite.NewStdlibResolver(model.DiscardLogger),
+	}
+	addr, err := rlc.LookupResolverIP(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -26,7 +32,9 @@ func (bhl brokenHostLookupper) LookupHost(ctx context.Context, host string) ([]s
 
 func TestLookupResolverIPFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	rlc := resolverLookupClient{}
+	rlc := resolverLookupClient{
+		Resolver: netxlite.NewStdlibResolver(model.DiscardLogger),
+	}
 	addr, err := rlc.do(context.Background(), brokenHostLookupper{
 		err: expected,
 	})
@@ -39,7 +47,9 @@ func TestLookupResolverIPFailure(t *testing.T) {
 }
 
 func TestLookupResolverIPNoAddressReturned(t *testing.T) {
-	rlc := resolverLookupClient{}
+	rlc := resolverLookupClient{
+		Resolver: netxlite.NewStdlibResolver(model.DiscardLogger),
+	}
 	addr, err := rlc.do(context.Background(), brokenHostLookupper{})
 	if !errors.Is(err, ErrNoIPAddressReturned) {
 		t.Fatalf("not the error we expected: %+v", err)

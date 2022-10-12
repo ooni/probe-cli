@@ -10,6 +10,8 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/pion/stun"
 )
 
@@ -19,6 +21,7 @@ func TestSTUNIPLookupCanceledContext(t *testing.T) {
 	ip, err := stunIPLookup(ctx, stunConfig{
 		Endpoint: "stun.ekiga.net:3478",
 		Logger:   log.Log,
+		Resolver: netxlite.NewStdlibResolver(model.DiscardLogger),
 	})
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("not the error we expected: %+v", err)
@@ -32,8 +35,10 @@ func TestSTUNIPLookupDialFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
 	ip, err := stunIPLookup(ctx, stunConfig{
-		Dial: func(network, address string) (stunClient, error) {
-			return nil, expected
+		Dialer: &mocks.Dialer{
+			MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+				return nil, expected
+			},
 		},
 		Endpoint: "stun.ekiga.net:3478",
 		Logger:   log.Log,
@@ -70,11 +75,17 @@ func TestSTUNIPLookupStartReturnsError(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
 	ip, err := stunIPLookup(ctx, stunConfig{
-		Dial: func(network, address string) (stunClient, error) {
-			return MockableSTUNClient{StartErr: expected}, nil
+		Dialer: &mocks.Dialer{
+			MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+				conn := &mocks.Conn{}
+				return conn, nil
+			},
 		},
 		Endpoint: "stun.ekiga.net:3478",
 		Logger:   log.Log,
+		NewClient: func(conn net.Conn) (stunClient, error) {
+			return MockableSTUNClient{StartErr: expected}, nil
+		},
 	})
 	if !errors.Is(err, expected) {
 		t.Fatalf("not the error we expected: %+v", err)
@@ -88,13 +99,19 @@ func TestSTUNIPLookupStunEventContainsError(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
 	ip, err := stunIPLookup(ctx, stunConfig{
-		Dial: func(network, address string) (stunClient, error) {
+		Dialer: &mocks.Dialer{
+			MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+				conn := &mocks.Conn{}
+				return conn, nil
+			},
+		},
+		Endpoint: "stun.ekiga.net:3478",
+		Logger:   log.Log,
+		NewClient: func(conn net.Conn) (stunClient, error) {
 			return MockableSTUNClient{Event: stun.Event{
 				Error: expected,
 			}}, nil
 		},
-		Endpoint: "stun.ekiga.net:3478",
-		Logger:   log.Log,
 	})
 	if !errors.Is(err, expected) {
 		t.Fatalf("not the error we expected: %+v", err)
@@ -107,13 +124,19 @@ func TestSTUNIPLookupStunEventContainsError(t *testing.T) {
 func TestSTUNIPLookupCannotDecodeMessage(t *testing.T) {
 	ctx := context.Background()
 	ip, err := stunIPLookup(ctx, stunConfig{
-		Dial: func(network, address string) (stunClient, error) {
+		Dialer: &mocks.Dialer{
+			MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+				conn := &mocks.Conn{}
+				return conn, nil
+			},
+		},
+		Endpoint: "stun.ekiga.net:3478",
+		Logger:   log.Log,
+		NewClient: func(conn net.Conn) (stunClient, error) {
 			return MockableSTUNClient{Event: stun.Event{
 				Message: &stun.Message{},
 			}}, nil
 		},
-		Endpoint: "stun.ekiga.net:3478",
-		Logger:   log.Log,
 	})
 	if !errors.Is(err, stun.ErrAttributeNotFound) {
 		t.Fatalf("not the error we expected: %+v", err)
@@ -129,6 +152,7 @@ func TestIPLookupWorksUsingSTUNEkiga(t *testing.T) {
 		http.DefaultClient,
 		log.Log,
 		model.HTTPHeaderUserAgent,
+		netxlite.NewStdlibResolver(model.DiscardLogger),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -144,6 +168,7 @@ func TestIPLookupWorksUsingSTUNGoogle(t *testing.T) {
 		http.DefaultClient,
 		log.Log,
 		model.HTTPHeaderUserAgent,
+		netxlite.NewStdlibResolver(model.DiscardLogger),
 	)
 	if err != nil {
 		t.Fatal(err)

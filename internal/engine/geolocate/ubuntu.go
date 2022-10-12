@@ -19,6 +19,7 @@ func ubuntuIPLookup(
 	httpClient *http.Client,
 	logger model.Logger,
 	userAgent string,
+	resolver model.Resolver,
 ) (string, error) {
 	data, err := (&httpx.APIClientTemplate{
 		BaseURL:    "https://geoip.ubuntu.com/",
