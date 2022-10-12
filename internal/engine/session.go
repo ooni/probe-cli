@@ -35,6 +35,10 @@ type SessionConfig struct {
 	TorArgs                []string
 	TorBinary              string
 
+	// SnowflakeRendezvous is the rendezvous method
+	// to be used by the torsf tunnel
+	SnowflakeRendezvous string
+
 	// TunnelDir is the directory where we should store
 	// the state of persistent tunnels. This field is
 	// optional _unless_ you want to use tunnels. In such
@@ -171,16 +175,17 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 	proxyURL := config.ProxyURL
 	if proxyURL != nil {
 		switch proxyURL.Scheme {
-		case "psiphon", "tor", "fake":
+		case "psiphon", "tor", "torsf", "fake":
 			config.Logger.Infof(
 				"starting '%s' tunnel; please be patient...", proxyURL.Scheme)
 			tunnel, _, err := tunnel.Start(ctx, &tunnel.Config{
-				Logger:    config.Logger,
-				Name:      proxyURL.Scheme,
-				Session:   &sessionTunnelEarlySession{},
-				TorArgs:   config.TorArgs,
-				TorBinary: config.TorBinary,
-				TunnelDir: config.TunnelDir,
+				Logger:              config.Logger,
+				Name:                proxyURL.Scheme,
+				SnowflakeRendezvous: config.SnowflakeRendezvous,
+				Session:             &sessionTunnelEarlySession{},
+				TorArgs:             config.TorArgs,
+				TorBinary:           config.TorBinary,
+				TunnelDir:           config.TunnelDir,
 			})
 			if err != nil {
 				return nil, err
@@ -188,6 +193,8 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 			config.Logger.Infof("tunnel '%s' running...", proxyURL.Scheme)
 			sess.tunnel = tunnel
 			proxyURL = tunnel.SOCKS5ProxyURL()
+		case "none":
+			proxyURL = nil // explicit way of saying we don't want to use a tunnel
 		}
 	}
 	sess.proxyURL = proxyURL

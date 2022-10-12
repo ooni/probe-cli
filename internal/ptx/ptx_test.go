@@ -73,7 +73,7 @@ func TestListenerWorksWithFakeDialer(t *testing.T) {
 func TestListenerCannotListen(t *testing.T) {
 	expected := errors.New("mocked error")
 	lst := &Listener{
-		overrideListenSocks: func(network, laddr string) (ptxSocksListener, error) {
+		ListenSocks: func(network, laddr string) (SocksListener, error) {
 			return nil, expected
 		},
 	}
@@ -193,7 +193,7 @@ func TestListenerForwardWithNaturalTermination(t *testing.T) {
 // mockableSocksListener is a mockable ptxSocksListener.
 type mockableSocksListener struct {
 	// MockAcceptSocks allows to mock AcceptSocks.
-	MockAcceptSocks func() (ptxSocksConn, error)
+	MockAcceptSocks func() (SocksConn, error)
 
 	// MockAddr allows to mock Addr.
 	MockAddr func() net.Addr
@@ -203,7 +203,7 @@ type mockableSocksListener struct {
 }
 
 // AcceptSocks implemements ptxSocksListener.AcceptSocks.
-func (m *mockableSocksListener) AcceptSocks() (ptxSocksConn, error) {
+func (m *mockableSocksListener) AcceptSocks() (SocksConn, error) {
 	return m.MockAcceptSocks()
 }
 
@@ -220,7 +220,7 @@ func (m *mockableSocksListener) Close() error {
 func TestListenerLoopWithTemporaryError(t *testing.T) {
 	isclosed := &atomicx.Int64{}
 	sl := &mockableSocksListener{
-		MockAcceptSocks: func() (ptxSocksConn, error) {
+		MockAcceptSocks: func() (SocksConn, error) {
 			if isclosed.Load() > 0 {
 				return nil, io.EOF
 			}

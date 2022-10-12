@@ -25,26 +25,27 @@ import (
 
 // Options contains the options you can set from the CLI.
 type Options struct {
-	Annotations      []string
-	Emoji            bool
-	ExtraOptions     []string
-	HomeDir          string
-	Inputs           []string
-	InputFilePaths   []string
-	MaxRuntime       int64
-	NoJSON           bool
-	NoCollector      bool
-	ProbeServicesURL string
-	Proxy            string
-	Random           bool
-	RemoteName       string
-	RepeatEvery      int64
-	ReportFile       string
-	TorArgs          []string
-	TorBinary        string
-	Tunnel           string
-	Verbose          bool
-	Yes              bool
+	Annotations         []string
+	Emoji               bool
+	ExtraOptions        []string
+	HomeDir             string
+	Inputs              []string
+	InputFilePaths      []string
+	MaxRuntime          int64
+	NoJSON              bool
+	NoCollector         bool
+	ProbeServicesURL    string
+	Proxy               string
+	Random              bool
+	RemoteName          string
+	RepeatEvery         int64
+	ReportFile          string
+	SnowflakeRendezvous string
+	TorArgs             []string
+	TorBinary           string
+	Tunnel              string
+	Verbose             bool
+	Yes                 bool
 }
 
 // main is the main function of miniooni.
@@ -133,6 +134,13 @@ func main() {
 		"set the output report file path (default: \"report.jsonl\")",
 	)
 
+	flags.StringVar(
+		&globalOptions.SnowflakeRendezvous,
+		"snowflake-rendezvous",
+		"domain_fronting",
+		"rendezvous method for --tunnel=torsf (one of: \"domain_fronting\" and \"amp\")",
+	)
+
 	flags.StringSliceVar(
 		&globalOptions.TorArgs,
 		"tor-args",
@@ -151,7 +159,7 @@ func main() {
 		&globalOptions.Tunnel,
 		"tunnel",
 		"",
-		"tunnel to use to communicate with the OONI backend (one of: tor, psiphon)",
+		"tunnel to use to communicate with the OONI backend (one of: psiphon, tor, torsf)",
 	)
 
 	flags.BoolVarP(

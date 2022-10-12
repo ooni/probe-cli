@@ -8,9 +8,11 @@ export GOCACHE=$GOCACHE
 export GOMODCACHE=$GOMODCACHE
 export GOOS=$GOOS
 export GOARCH=$GOARCH
+export OONI_PSIPHON_TAGS=${OONI_PSIPHON_TAGS:-}
 for PACKAGE in $@; do
 	PRODUCT=$(basename $PACKAGE)
 	go build -o ./CLI/$PRODUCT-$GOOS-$OONIARCH \
+		-tags=$OONI_PSIPHON_TAGS \
 		-ldflags='-s -w -extldflags "-static"' \
 		$GOLANG_EXTRA_FLAGS $PACKAGE
 done
