@@ -140,20 +140,17 @@ func (m Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	urlgetter.RegisterExtensions(measurement)
 
 	certPool := netxlite.NewDefaultCertPool()
-	signalCABytes := []byte(signalCA)
+	signalCAByteSlice := [][]byte{
+		[]byte(signalCA),
+		[]byte(signalCANew),
+	}
 	if m.Config.SignalCA != "" {
-		signalCABytes = []byte(m.Config.SignalCA)
+		signalCAByteSlice = [][]byte{[]byte(m.Config.SignalCA)}
 	}
-	if !certPool.AppendCertsFromPEM(signalCABytes) {
-		return errors.New("AppendCertsFromPEM failed for old CA")
-	}
-
-	signalCANewBytes := []byte(signalCANew)
-	if m.Config.SignalCA != "" {
-		signalCANewBytes = []byte(m.Config.SignalCA)
-	}
-	if !certPool.AppendCertsFromPEM(signalCANewBytes) {
-		return errors.New("AppendCertsFromPEM failed for new CA")
+	for _, caBytes := range signalCAByteSlice {
+		if !certPool.AppendCertsFromPEM(caBytes) {
+			return errors.New("AppendCertsFromPEM failed")
+		}
 	}
 
 	inputs := []urlgetter.MultiInput{
