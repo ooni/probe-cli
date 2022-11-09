@@ -2,7 +2,7 @@
 // measures the bootstrapping of an OpenVPN connection against a given remote,
 // a series of ICMP pings, and a series of url page fetches through the tunnel.
 //
-// See https://github.com/ooni/spec/blob/master/nettests/ts-032-openvpn.md
+// See https://github.com/ooni/spec/blob/master/nettests/ts-039-openvpn.md
 package openvpn
 
 import (
@@ -36,6 +36,9 @@ const (
 	// pingCount tells how many icmp echo requests to send.
 	pingCount = 10
 	//pingCount = 1
+
+	// sucessLossThreshold will mark icmp pings as successful if loss is below this number.
+	sucessLossThreshold = 0.5
 
 	// pingExtraWaitSeconds tells how many grace seconds to wait after
 	// last ping in train.
@@ -201,7 +204,7 @@ func (m *Measurer) Run(
 			break
 		}
 		loss := 1 - float32(p.PacketsRecv)/float32(p.PacketsSent)
-		if loss < 0.5 {
+		if loss < sucessLossThreshold {
 			goodICMP += 1
 		}
 	}
