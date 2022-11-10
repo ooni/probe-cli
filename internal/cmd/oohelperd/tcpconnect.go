@@ -7,6 +7,8 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
@@ -41,6 +43,9 @@ type tcpConfig struct {
 	// Address is the MANDATORY address to measure.
 	Address string
 
+	// Cache is the MANDATORY TCP cache to use.
+	Cache model.KeyValueStore
+
 	// EnableTLS OPTIONALLY enables TLS.
 	EnableTLS bool
 
@@ -66,21 +71,119 @@ type tcpConfig struct {
 	Wg *sync.WaitGroup
 }
 
+// tcpCacheKey is the key used by the TCP cache
+type tcpCacheKey struct {
+	// EnableTLS OPTIONALLY enables TLS.
+	EnableTLS bool
+
+	// Endpoint is the MANDATORY endpoint to connect to.
+	Endpoint string
+
+	// URLHostname is the MANDATORY URL.Hostname() to use.
+	URLHostname string
+}
+
+// newTCPCacheKey creates a new tcpCacheKey from the given [config].
+func newTCPCacheKey(config *tcpConfig) *tcpCacheKey {
+	return &tcpCacheKey{
+		EnableTLS:   config.EnableTLS,
+		Endpoint:    config.Endpoint,
+		URLHostname: config.URLHostname,
+	}
+}
+
+// asCacheKeyString returns the string used by the underlying cache as key.
+func (tck *tcpCacheKey) asCacheKeyString() string {
+	return fmt.Sprintf("%+v", tck)
+}
+
+// Equals returns whether two instances are equal
+func (tck *tcpCacheKey) Equals(other *tcpCacheKey) bool {
+	return tck.EnableTLS == other.EnableTLS && tck.Endpoint == other.Endpoint &&
+		tck.URLHostname == other.URLHostname
+}
+
+// tcpCacheEntry is an entry inside the TCP cache.
+type tcpCacheEntry struct {
+	// Created is when we created this entry.
+	Created time.Time
+
+	// Key identifies this cache entry.
+	Key tcpCacheKey
+
+	// Result is the cached result.
+	Result *tcpResultPair
+}
+
+// tcpCacheGet gets a list of results from the TCP cache key.
+func tcpCacheGet(cache model.KeyValueStore, key *tcpCacheKey) ([]*tcpCacheEntry, error) {
+	rawdata, err := cache.Get(key.asCacheKeyString())
+	if err != nil {
+		return nil, err
+	}
+	var values []*tcpCacheEntry
+	if err := json.Unmarshal(rawdata, &values); err != nil {
+		return nil, err
+	}
+	const tcpCacheExpirationTime = 15 * time.Minute
+	var out []*tcpCacheEntry
+	for _, value := range values {
+		if value == nil || value.Result == nil || time.Since(value.Created) >= tcpCacheExpirationTime {
+			continue // this entry is malformed or has expired
+		}
+		out = append(out, value)
+	}
+	return out, nil
+}
+
+// tcpCacheEntriesFind searches for a given domain inside a set of entries.
+func tcpCacheEntriesFind(epv []*tcpCacheEntry, key *tcpCacheKey) (*tcpCacheEntry, bool) {
+	for _, ep := range epv {
+		if ep != nil && key.Equals(&ep.Key) {
+			return ep, true
+		}
+	}
+	return nil, false
+}
+
+// tcpCacheWriteBack writes back into the cache.
+func tcpCacheWriteBack(cache model.KeyValueStore, key *tcpCacheKey, epv []*tcpCacheEntry) error {
+	rawdata, err := json.Marshal(epv)
+	if err != nil {
+		return err
+	}
+	return cache.Set(key.asCacheKeyString(), rawdata)
+}
+
 // tcpDo performs the TCP check.
 func tcpDo(ctx context.Context, config *tcpConfig) {
+	defer config.Wg.Done()
+	key := newTCPCacheKey(config)
+	entries, _ := tcpCacheGet(config.Cache, key) // the error is not so relevant
+	entry, _ := tcpCacheEntriesFind(entries, key)
+	if entry == nil {
+		entry = &tcpCacheEntry{
+			Created: time.Now(),
+			Key:     *key,
+			Result:  tcpDoWithoutCache(ctx, config),
+		}
+		entries = append(entries, entry)
+	}
+	config.Out <- entry.Result
+	_ = tcpCacheWriteBack(config.Cache, key, entries)
+}
+
+// tcpDoWithoutCache implements tcpDo
+func tcpDoWithoutCache(ctx context.Context, config *tcpConfig) *tcpResultPair {
 	const timeout = 15 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	defer config.Wg.Done()
 	out := &tcpResultPair{
 		Address:  config.Address,
 		Endpoint: config.Endpoint,
 		TCP:      model.THTCPConnectResult{},
 		TLS:      nil, // means: not measured
 	}
-	defer func() {
-		config.Out <- out
-	}()
 	ol := measurexlite.NewOperationLogger(
 		config.Logger,
 		"TCPConnect %s EnableTLS=%v SNI=%s",
@@ -96,7 +199,7 @@ func tcpDo(ctx context.Context, config *tcpConfig) {
 	defer measurexlite.MaybeClose(conn)
 	if err != nil || !config.EnableTLS {
 		ol.Stop(err)
-		return
+		return out
 	}
 	tlsConfig := &tls.Config{
 		NextProtos: []string{"h2", "http/1.1"},
@@ -112,6 +215,7 @@ func tcpDo(ctx context.Context, config *tcpConfig) {
 		Failure:    newfailure(err),
 	}
 	measurexlite.MaybeClose(tlsConn)
+	return out
 }
 
 // tcpMapFailure attempts to map netxlite failures to the strings

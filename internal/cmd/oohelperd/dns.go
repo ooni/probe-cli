@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"sync"
 	"time"
 
@@ -24,6 +25,9 @@ type ctrlDNSResult = model.THDNSResult
 
 // dnsConfig configures the DNS check.
 type dnsConfig struct {
+	// Cache is the MANDATORY cache to use.
+	Cache model.KeyValueStore
+
 	// Domain is the MANDATORY domain to resolve.
 	Domain string
 
@@ -40,12 +44,94 @@ type dnsConfig struct {
 	Wg *sync.WaitGroup
 }
 
+// dnsCacheKey is the key used inside the DNS cache.
+type dnsCacheKey string
+
+// newDNSCacheKey creates a new dnsCacheKey
+func newDNSCacheKey(config *dnsConfig) dnsCacheKey {
+	return dnsCacheKey(config.Domain)
+}
+
+// asCacheKeyString returns the string used by the underlying cache as key.
+func (tck dnsCacheKey) asCacheKeyString() string {
+	return string(tck)
+}
+
+// dnsCacheEntry is an entry inside the DNS cache.
+type dnsCacheEntry struct {
+	// Created is when we created this entry.
+	Created time.Time
+
+	// Key is the domain we've resolved.
+	Key dnsCacheKey
+
+	// Result is the cached result.
+	Result ctrlDNSResult
+}
+
+// dnsCacheGet gets a list of results from the DNS cache key.
+func dnsCacheGet(cache model.KeyValueStore, key dnsCacheKey) ([]*dnsCacheEntry, error) {
+	rawdata, err := cache.Get(key.asCacheKeyString())
+	if err != nil {
+		return nil, err
+	}
+	var values []*dnsCacheEntry
+	if err := json.Unmarshal(rawdata, &values); err != nil {
+		return nil, err
+	}
+	const dnsCacheExpirationTime = 15 * time.Minute
+	var out []*dnsCacheEntry
+	for _, value := range values {
+		if value == nil || time.Since(value.Created) >= dnsCacheExpirationTime {
+			continue // this entry is malformed or has expired
+		}
+		out = append(out, value)
+	}
+	return out, nil
+}
+
+// dnsCacheEntriesFind searches for a given domain inside a set of entries.
+func dnsCacheEntriesFind(epv []*dnsCacheEntry, key dnsCacheKey) (*dnsCacheEntry, bool) {
+	for _, ep := range epv {
+		if ep != nil && key == ep.Key {
+			return ep, true
+		}
+	}
+	return nil, false
+}
+
+// dnsCacheWriteBack writes back into the cache.
+func dnsCacheWriteBack(cache model.KeyValueStore, key dnsCacheKey, epv []*dnsCacheEntry) error {
+	rawdata, err := json.Marshal(epv)
+	if err != nil {
+		return err
+	}
+	return cache.Set(key.asCacheKeyString(), rawdata)
+}
+
 // dnsDo performs the DNS check.
 func dnsDo(ctx context.Context, config *dnsConfig) {
+	defer config.Wg.Done()
+	key := newDNSCacheKey(config)
+	entries, _ := dnsCacheGet(config.Cache, key) // the error is not so relevant
+	entry, _ := dnsCacheEntriesFind(entries, key)
+	if entry == nil {
+		entry = &dnsCacheEntry{
+			Created: time.Now(),
+			Key:     key,
+			Result:  dnsDoWithoutCache(ctx, config),
+		}
+		entries = append(entries, entry)
+	}
+	config.Out <- entry.Result
+	_ = dnsCacheWriteBack(config.Cache, key, entries)
+}
+
+// dnsDoWithoutCache implements dnsDo.
+func dnsDoWithoutCache(ctx context.Context, config *dnsConfig) ctrlDNSResult {
 	const timeout = 4 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	defer config.Wg.Done()
 	reso := config.NewResolver(config.Logger)
 	defer reso.CloseIdleConnections()
 	ol := measurexlite.NewOperationLogger(config.Logger, "DNSLookup %s", config.Domain)
@@ -55,7 +141,7 @@ func dnsDo(ctx context.Context, config *dnsConfig) {
 		addrs = []string{} // fix: the old test helper did that
 	}
 	failure := dnsMapFailure(newfailure(err))
-	config.Out <- ctrlDNSResult{
+	return ctrlDNSResult{
 		Failure: failure,
 		Addrs:   addrs,
 		ASNs:    []int64{}, // unused by the TH and not serialized
