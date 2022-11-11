@@ -4,9 +4,10 @@ import (
 	"context"
 
 	"github.com/ooni/probe-cli/v3/internal/geoipx"
-	"github.com/ooni/probe-cli/v3/internal/httpx"
+	"github.com/ooni/probe-cli/v3/internal/httpapi"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // Redirect to types defined inside the model package
@@ -21,22 +22,23 @@ type (
 // Control performs the control request and returns the response.
 func Control(
 	ctx context.Context, sess model.ExperimentSession,
-	thAddr string, creq ControlRequest) (out ControlResponse, err error) {
-	clnt := &httpx.APIClientTemplate{
-		BaseURL:    thAddr,
-		HTTPClient: sess.DefaultHTTPClient(),
-		Logger:     sess.Logger(),
-		UserAgent:  sess.UserAgent(),
-	}
+	testhelpers []model.OOAPIService, creq ControlRequest) (ControlResponse, *model.OOAPIService, error) {
+	seqCaller := httpapi.NewSequenceCaller(
+		httpapi.MustNewPOSTJSONWithJSONResponseDescriptor(sess.Logger(), "/", creq).WithBodyLogging(),
+		httpapi.NewEndpointList(sess.DefaultHTTPClient(), sess.UserAgent(), testhelpers...)...,
+	)
 	sess.Logger().Infof("control for %s...", creq.HTTPRequest)
-	// make sure error is wrapped
-	err = clnt.WithBodyLogging().Build().PostJSON(ctx, "/", creq, &out)
-	if err != nil {
-		err = netxlite.NewTopLevelGenericErrWrapper(err)
-	}
+	var out ControlResponse
+	idx, err := seqCaller.CallWithJSONResponse(ctx, &out)
 	sess.Logger().Infof("control for %s... %+v", creq.HTTPRequest, model.ErrorToStringOrOK(err))
+	if err != nil {
+		// make sure error is wrapped
+		err = netxlite.NewTopLevelGenericErrWrapper(err)
+		return ControlResponse{}, nil, err
+	}
 	fillASNs(&out.DNS)
-	return
+	runtimex.Assert(idx >= 0 && idx < len(testhelpers), "idx out of bounds")
+	return out, &testhelpers[idx], nil
 }
 
 // fillASNs fills the ASNs array of ControlDNSResult. For each Addr inside
