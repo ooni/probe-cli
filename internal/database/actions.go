@@ -12,8 +12,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/enginex"
-	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/utils"
+	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/pkg/errors"
 	"github.com/upper/db/v4"
 )
@@ -65,7 +64,7 @@ func GetMeasurementJSON(sess db.Session, measurementID int64) (map[string]interf
 		}
 		query := url.Values{}
 		query.Add("report_id", reportID)
-		if measurement.URL.URL.Valid == true {
+		if measurement.URL.URL.Valid {
 			query.Add("input", measurement.URL.URL.String)
 		}
 		measurementURL.RawQuery = query.Encode()
@@ -84,7 +83,7 @@ func GetMeasurementJSON(sess db.Session, measurementID int64) (map[string]interf
 	}
 	// MeasurementFilePath might be NULL because the measurement from a
 	// 3.0.0-beta install
-	if measurement.Measurement.MeasurementFilePath.Valid == false {
+	if measurement.Measurement.MeasurementFilePath.Valid {
 		log.Error("invalid measurement_file_path")
 		log.Error("backup your OONI_HOME and run `ooniprobe reset`")
 		return nil, errors.New("cannot access measurement file")
@@ -254,7 +253,7 @@ func CreateMeasurement(sess db.Session, reportID sql.NullString, testName string
 func CreateResult(sess db.Session, homePath string, testGroupName string, networkID int64) (*Result, error) {
 	startTime := time.Now().UTC()
 
-	p, err := utils.MakeResultsDir(homePath, testGroupName, startTime)
+	p, err := MakeResultsDir(homePath, testGroupName, startTime)
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +275,7 @@ func CreateResult(sess db.Session, homePath string, testGroupName string, networ
 }
 
 // CreateNetwork will create a new network in the network table
-func CreateNetwork(sess db.Session, loc enginex.LocationProvider) (*Network, error) {
+func CreateNetwork(sess db.Session, loc engine.LocationProvider) (*Network, error) {
 	network := Network{
 		ASN:         loc.ProbeASN(),
 		CountryCode: loc.ProbeCC(),
@@ -351,7 +350,7 @@ func AddTestKeys(sess db.Session, msmt *Measurement, tk interface{}) error {
 	// the IsAnomaly field of bool type.
 	// Maybe generics are not so bad after-all, heh golang?
 	isAnomalyValue := reflect.ValueOf(tk).FieldByName("IsAnomaly")
-	if isAnomalyValue.IsValid() == true && isAnomalyValue.Kind() == reflect.Bool {
+	if isAnomalyValue.IsValid() && isAnomalyValue.Kind() == reflect.Bool {
 		isAnomaly = isAnomalyValue.Bool()
 		isAnomalyValid = true
 	}

@@ -8,7 +8,7 @@ import (
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/cli/root"
-	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/database"
+	"github.com/ooni/probe-cli/v3/internal/database"
 	"github.com/upper/db/v4"
 )
 

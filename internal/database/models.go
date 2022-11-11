@@ -99,7 +99,7 @@ type PerformanceTestKeys struct {
 
 // Finished marks the result as done and sets the runtime
 func (r *Result) Finished(sess db.Session) error {
-	if r.IsDone == true || r.Runtime != 0 {
+	if r.IsDone || r.Runtime != 0 {
 		return errors.New("Result is already finished")
 	}
 	r.Runtime = time.Now().UTC().Sub(r.StartTime).Seconds()

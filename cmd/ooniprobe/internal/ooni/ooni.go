@@ -10,10 +10,10 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/config"
-	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/database"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/enginex"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/utils"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/database"
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/legacy/assetsdir"

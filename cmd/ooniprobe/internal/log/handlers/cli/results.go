@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/database"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/utils"
+	"github.com/ooni/probe-cli/v3/internal/database"
 )
 
 func formatSpeed(speed float64) string {
