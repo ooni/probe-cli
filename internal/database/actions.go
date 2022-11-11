@@ -83,7 +83,7 @@ func GetMeasurementJSON(sess db.Session, measurementID int64) (map[string]interf
 	}
 	// MeasurementFilePath might be NULL because the measurement from a
 	// 3.0.0-beta install
-	if measurement.Measurement.MeasurementFilePath.Valid {
+	if !measurement.Measurement.MeasurementFilePath.Valid {
 		log.Error("invalid measurement_file_path")
 		log.Error("backup your OONI_HOME and run `ooniprobe reset`")
 		return nil, errors.New("cannot access measurement file")
