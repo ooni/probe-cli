@@ -253,7 +253,7 @@ func CreateMeasurement(sess db.Session, reportID sql.NullString, testName string
 func CreateResult(sess db.Session, homePath string, testGroupName string, networkID int64) (*Result, error) {
 	startTime := time.Now().UTC()
 
-	p, err := MakeResultsDir(homePath, testGroupName, startTime)
+	p, err := makeResultsDir(homePath, testGroupName, startTime)
 	if err != nil {
 		return nil, err
 	}

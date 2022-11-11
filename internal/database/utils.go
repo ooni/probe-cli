@@ -13,7 +13,7 @@ import (
 const ResultTimestamp = "2006-01-02T150405.999999999Z0700"
 
 // MakeResultsDir creates and returns a directory for the result
-func MakeResultsDir(home string, name string, ts time.Time) (string, error) {
+func makeResultsDir(home string, name string, ts time.Time) (string, error) {
 	p := filepath.Join(home, "msmts",
 		fmt.Sprintf("%s-%s", name, ts.Format(ResultTimestamp)))
 
