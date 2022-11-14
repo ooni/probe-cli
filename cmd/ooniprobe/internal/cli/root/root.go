@@ -44,6 +44,9 @@ func init() {
 	softwareVersion := Cmd.Flag(
 		"software-version", "Override the application version",
 	).Default(version.Version).String()
+	proxy := Cmd.Flag(
+		"proxy", "specify a proxy address for speaking to the OONI Probe backend (use: --proxy=psiphon:/// for psiphon)",
+	).String()
 
 	Cmd.PreAction(func(ctx *kingpin.ParseContext) error {
 		// TODO(bassosimone): we need to properly deprecate --batch
@@ -78,7 +81,7 @@ func init() {
 			}
 
 			probe := ooni.NewProbe(*configPath, homePath)
-			err = probe.Init(*softwareName, *softwareVersion)
+			err = probe.Init(*softwareName, *softwareVersion, *proxy)
 			if err != nil {
 				return nil, err
 			}
