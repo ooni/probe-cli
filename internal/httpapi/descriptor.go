@@ -5,9 +5,7 @@ package httpapi
 //
 
 import (
-	"bytes"
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/url"
 	"time"
@@ -47,7 +45,7 @@ type Descriptor struct {
 	Method string
 
 	// RequestBody is the OPTIONAL request body.
-	RequestBody io.Reader
+	RequestBody []byte
 
 	// Timeout is the OPTIONAL timeout for this call. If no timeout
 	// is specified we will use the |DefaultCallTimeout| const.
@@ -62,10 +60,10 @@ type Descriptor struct {
 
 // WithBodyLogging returns a SHALLOW COPY of |Descriptor| with LogBody set to true. You SHOULD
 // only use this method when initializing the descriptor you want to use.
-func (desc *Descriptor) WithBodyLogging() *Descriptor {
+func (desc *Descriptor) WithBodyLogging(value bool) *Descriptor {
 	out := &Descriptor{}
 	*out = *desc
-	out.LogBody = true
+	out.LogBody = value
 	return out
 }
 
@@ -122,7 +120,7 @@ func NewPOSTJSONWithJSONResponseDescriptor(logger model.Logger, urlPath string, 
 		Logger:        logger,
 		MaxBodySize:   DefaultMaxBodySize,
 		Method:        http.MethodPost,
-		RequestBody:   bytes.NewReader(rawRequest),
+		RequestBody:   rawRequest,
 		Timeout:       DefaultCallTimeout,
 		URLPath:       urlPath,
 		URLQuery:      nil,

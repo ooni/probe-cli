@@ -1,8 +1,6 @@
 package httpapi
 
 import (
-	"context"
-	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -11,8 +9,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/model/mocks"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestDescriptor_WithBodyLogging(t *testing.T) {
@@ -24,7 +20,7 @@ func TestDescriptor_WithBodyLogging(t *testing.T) {
 		Logger        model.Logger
 		MaxBodySize   int64
 		Method        string
-		RequestBody   io.Reader
+		RequestBody   []byte
 		Timeout       time.Duration
 		URLPath       string
 		URLQuery      url.Values
@@ -49,7 +45,7 @@ func TestDescriptor_WithBodyLogging(t *testing.T) {
 			Logger:        model.DiscardLogger,
 			MaxBodySize:   123,
 			Method:        "POST",
-			RequestBody:   &mocks.Reader{},
+			RequestBody:   []byte("123"),
 			Timeout:       15555,
 			URLPath:       "/",
 			URLQuery: map[string][]string{
@@ -64,7 +60,7 @@ func TestDescriptor_WithBodyLogging(t *testing.T) {
 			Logger:        model.DiscardLogger,
 			MaxBodySize:   123,
 			Method:        "POST",
-			RequestBody:   &mocks.Reader{},
+			RequestBody:   []byte("123"),
 			Timeout:       15555,
 			URLPath:       "/",
 			URLQuery: map[string][]string{
@@ -87,7 +83,7 @@ func TestDescriptor_WithBodyLogging(t *testing.T) {
 				URLPath:       tt.fields.URLPath,
 				URLQuery:      tt.fields.URLQuery,
 			}
-			got := desc.WithBodyLogging()
+			got := desc.WithBodyLogging(true)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Fatal(diff)
 			}
@@ -169,7 +165,7 @@ func TestNewPOSTJSONWithJSONResponseDescriptor(t *testing.T) {
 			Logger:        model.DiscardLogger,
 			MaxBodySize:   DefaultMaxBodySize,
 			Method:        http.MethodPost,
-			RequestBody:   nil,
+			RequestBody:   []byte(`{"Name":"sbs","Age":99}`),
 			Timeout:       DefaultCallTimeout,
 			URLPath:       "/robots.txt",
 			URLQuery:      nil,
@@ -178,15 +174,6 @@ func TestNewPOSTJSONWithJSONResponseDescriptor(t *testing.T) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		data, err := netxlite.ReadAllContext(context.Background(), got.RequestBody)
-		if err != nil {
-			log.Fatal(err)
-		}
-		expectedData := []byte(`{"Name":"sbs","Age":99}`)
-		if diff := cmp.Diff(expectedData, data); diff != "" {
-			log.Fatal(diff)
-		}
-		got.RequestBody = nil // cannot be compared by default with cmp.Diff
 		if diff := cmp.Diff(expected, got); diff != "" {
 			t.Fatal(diff)
 		}
@@ -228,21 +215,12 @@ func TestMustNewPOSTJSONWithJSONResponseDescriptor(t *testing.T) {
 			Logger:        model.DiscardLogger,
 			MaxBodySize:   DefaultMaxBodySize,
 			Method:        http.MethodPost,
-			RequestBody:   nil,
+			RequestBody:   []byte(`{"Name":"sbs","Age":99}`),
 			Timeout:       DefaultCallTimeout,
 			URLPath:       "/robots.txt",
 			URLQuery:      nil,
 		}
 		got := MustNewPOSTJSONWithJSONResponseDescriptor(model.DiscardLogger, "/robots.txt", request)
-		data, err := netxlite.ReadAllContext(context.Background(), got.RequestBody)
-		if err != nil {
-			log.Fatal(err)
-		}
-		expectedData := []byte(`{"Name":"sbs","Age":99}`)
-		if diff := cmp.Diff(expectedData, data); diff != "" {
-			log.Fatal(diff)
-		}
-		got.RequestBody = nil // cannot be compared by default with cmp.Diff
 		if diff := cmp.Diff(expected, got); diff != "" {
 			t.Fatal(diff)
 		}

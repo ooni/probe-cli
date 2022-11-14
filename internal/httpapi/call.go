@@ -5,6 +5,7 @@ package httpapi
 //
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -45,7 +46,14 @@ func newRequest(ctx context.Context, endpoint *Endpoint, desc *Descriptor) (*htt
 	} else {
 		URL.RawQuery = "" // as documented we only honour desc.URLQuery
 	}
-	request, err := http.NewRequestWithContext(ctx, desc.Method, URL.String(), desc.RequestBody)
+	var reqBody io.Reader
+	if len(desc.RequestBody) > 0 {
+		reqBody = bytes.NewReader(desc.RequestBody)
+		if desc.LogBody {
+			desc.Logger.Debugf("httpapi: request body: %s", string(desc.RequestBody))
+		}
+	}
+	request, err := http.NewRequestWithContext(ctx, desc.Method, URL.String(), reqBody)
 	if err != nil {
 		return nil, err
 	}

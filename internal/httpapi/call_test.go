@@ -1,11 +1,13 @@
 package httpapi
 
 import (
-	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -13,6 +15,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func Test_joinURLPath(t *testing.T) {
@@ -165,7 +168,7 @@ func Test_newRequest(t *testing.T) {
 				t.Fatal("invalid URL")
 			}
 			if req.Body != nil {
-				t.Fatal("invalid body")
+				t.Fatal("invalid body", req.Body)
 			}
 		},
 		wantErr: nil,
@@ -187,7 +190,7 @@ func Test_newRequest(t *testing.T) {
 				Logger:        nil,
 				MaxBodySize:   0,
 				Method:        http.MethodPost,
-				RequestBody:   bytes.NewReader([]byte("deadbeef")),
+				RequestBody:   []byte("deadbeef"),
 				Timeout:       0,
 				URLPath:       "",
 				URLQuery:      map[string][]string{},
@@ -648,6 +651,32 @@ func TestCallWithJSONResponse(t *testing.T) {
 			},
 		},
 		wantErr: nil,
+	}, {
+		name: "response is not JSON",
+		args: args{
+			ctx: context.Background(),
+			desc: &Descriptor{
+				LogBody: false,
+				Logger:  model.DiscardLogger,
+				Method:  http.MethodGet,
+			},
+			endpoint: &Endpoint{
+				BaseURL: "https://www.example.com/",
+				HTTPClient: &mocks.HTTPClient{
+					MockDo: func(req *http.Request) (*http.Response, error) {
+						resp := &http.Response{
+							Header: http.Header{
+								"Content-Type": {"application/json"},
+							},
+							Body:       io.NopCloser(strings.NewReader(`{`)), // invalid JSON
+							StatusCode: 200,
+						}
+						return resp, nil
+					},
+				},
+			},
+		},
+		wantErr: errors.New("unexpected end of JSON input"),
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -669,4 +698,214 @@ func TestCallWithJSONResponse(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCallHonoursContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // should fail HTTP request immediately
+	desc := &Descriptor{
+		LogBody: false,
+		Logger:  model.DiscardLogger,
+		Method:  http.MethodGet,
+		URLPath: "/robots.txt",
+	}
+	endpoint := &Endpoint{
+		BaseURL:    "https://www.example.com/",
+		HTTPClient: http.DefaultClient,
+		UserAgent:  model.HTTPHeaderUserAgent,
+	}
+	body, err := Call(ctx, desc, endpoint)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatal("unexpected err", err)
+	}
+	if len(body) > 0 {
+		t.Fatal("expected zero-length body")
+	}
+}
+
+func TestCallWithJSONResponseHonoursContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // should fail HTTP request immediately
+	desc := &Descriptor{
+		LogBody: false,
+		Logger:  model.DiscardLogger,
+		Method:  http.MethodGet,
+		URLPath: "/robots.txt",
+	}
+	endpoint := &Endpoint{
+		BaseURL:    "https://www.example.com/",
+		HTTPClient: http.DefaultClient,
+		UserAgent:  model.HTTPHeaderUserAgent,
+	}
+	var resp url.URL
+	err := CallWithJSONResponse(ctx, desc, endpoint, &resp)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatal("unexpected err", err)
+	}
+}
+
+func TestCallAndBodyLogging(t *testing.T) {
+
+	// This test was originally written for the httpx package and we have adapted it
+	// by keeping the ~same implementation with a custom callx function that converts
+	// the previous semantics of httpx to the new semantics of httpapi.
+	callx := func(baseURL string, logBody bool, logger model.Logger, request, response any) error {
+		desc := MustNewPOSTJSONWithJSONResponseDescriptor(logger, "/", request).WithBodyLogging(logBody)
+		runtimex.Assert(desc.LogBody == logBody, "desc.LogBody should be equal to logBody here")
+		endpoint := &Endpoint{
+			BaseURL:    baseURL,
+			HTTPClient: http.DefaultClient,
+		}
+		return CallWithJSONResponse(context.Background(), desc, endpoint, response)
+	}
+
+	// we also needed to create a constructor for the logger
+	newlogger := func(logs chan string) model.Logger {
+		return &mocks.Logger{
+			MockDebugf: func(format string, v ...interface{}) {
+				logs <- fmt.Sprintf(format, v...)
+			},
+			MockWarnf: func(format string, v ...interface{}) {
+				logs <- fmt.Sprintf(format, v...)
+			},
+		}
+	}
+
+	t.Run("logging enabled and 200 Ok", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				w.Write([]byte("[]"))
+			},
+		))
+		logs := make(chan string, 1024)
+		defer server.Close()
+		var (
+			input  []string
+			output []string
+		)
+		logger := newlogger(logs)
+		err := callx(server.URL, true, logger, input, &output)
+		var found int
+		close(logs)
+		for entry := range logs {
+			if strings.HasPrefix(entry, "httpapi: request body: ") {
+				found |= 1 << 0
+				continue
+			}
+			if strings.HasPrefix(entry, "httpapi: response body: ") {
+				found |= 1 << 1
+				continue
+			}
+		}
+		if found != (1<<0 | 1<<1) {
+			t.Fatal("did not find logs")
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("logging enabled and 401 Unauthorized", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(401)
+				w.Write([]byte("[]"))
+			},
+		))
+		logs := make(chan string, 1024)
+		defer server.Close()
+		var (
+			input  []string
+			output []string
+		)
+		logger := newlogger(logs)
+		err := callx(server.URL, true, logger, input, &output)
+		var found int
+		close(logs)
+		for entry := range logs {
+			if strings.HasPrefix(entry, "httpapi: request body: ") {
+				found |= 1 << 0
+				continue
+			}
+			if strings.HasPrefix(entry, "httpapi: response body: ") {
+				found |= 1 << 1
+				continue
+			}
+		}
+		if found != (1<<0 | 1<<1) {
+			t.Fatal("did not find logs")
+		}
+		if !errors.Is(err, ErrRequestFailed) {
+			t.Fatal("unexpected err", err)
+		}
+	})
+
+	t.Run("logging NOT enabled and 200 Ok", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				w.Write([]byte("[]"))
+			},
+		))
+		logs := make(chan string, 1024)
+		defer server.Close()
+		var (
+			input  []string
+			output []string
+		)
+		logger := newlogger(logs)
+		err := callx(server.URL, false, logger, input, &output) // no logging
+		var found int
+		close(logs)
+		for entry := range logs {
+			if strings.HasPrefix(entry, "httpapi: request body: ") {
+				found |= 1 << 0
+				continue
+			}
+			if strings.HasPrefix(entry, "httpapi: response body: ") {
+				found |= 1 << 1
+				continue
+			}
+		}
+		if found != 0 {
+			t.Fatal("did find logs")
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("logging NOT enabled and 401 Unauthorized", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(401)
+				w.Write([]byte("[]"))
+			},
+		))
+		logs := make(chan string, 1024)
+		defer server.Close()
+		var (
+			input  []string
+			output []string
+		)
+		logger := newlogger(logs)
+		err := callx(server.URL, false, logger, input, &output) // no logging
+		var found int
+		close(logs)
+		for entry := range logs {
+			if strings.HasPrefix(entry, "httpapi: request body: ") {
+				found |= 1 << 0
+				continue
+			}
+			if strings.HasPrefix(entry, "httpapi: response body: ") {
+				found |= 1 << 1
+				continue
+			}
+		}
+		if found != 0 {
+			t.Fatal("did find logs")
+		}
+		if !errors.Is(err, ErrRequestFailed) {
+			t.Fatal("unexpected err", err)
+		}
+	})
 }

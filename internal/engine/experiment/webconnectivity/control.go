@@ -24,7 +24,7 @@ func Control(
 	ctx context.Context, sess model.ExperimentSession,
 	testhelpers []model.OOAPIService, creq ControlRequest) (ControlResponse, *model.OOAPIService, error) {
 	seqCaller := httpapi.NewSequenceCaller(
-		httpapi.MustNewPOSTJSONWithJSONResponseDescriptor(sess.Logger(), "/", creq).WithBodyLogging(),
+		httpapi.MustNewPOSTJSONWithJSONResponseDescriptor(sess.Logger(), "/", creq).WithBodyLogging(true),
 		httpapi.NewEndpointList(sess.DefaultHTTPClient(), sess.UserAgent(), testhelpers...)...,
 	)
 	sess.Logger().Infof("control for %s...", creq.HTTPRequest)
