@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"sort"
 	"strings"
 	"sync"
 	"text/template"
@@ -36,7 +37,7 @@ const (
 	testName = "openvpn"
 
 	// testVersion is the openvpn experiment version.
-	testVersion = "0.0.12"
+	testVersion = "0.0.13"
 
 	// pingCount tells how many icmp echo requests to send.
 	pingCount = 10
@@ -59,7 +60,6 @@ const (
 )
 
 var (
-	bootstrapError = "bootstrap-error"
 	localCredsFile = "ooni-vpn-creds"
 )
 
@@ -93,19 +93,20 @@ type PingResult struct {
 	MaxRtt      float64     `json:"max_rtt"`
 	AvgRtt      float64     `json:"avg_rtt"`
 	StdRtt      float64     `json:"std_rtt"`
-	Error       *string     `json:"error"`
+	Failure     *string     `json:"failure"`
 }
 
-// Stage captures a uint16 event measuring the progress of the VPN connection.
-type Stage struct {
-	OpID      uint16  `json:"op_id"`
-	Operation string  `json:"operation"`
-	Time      float64 `json:"t"`
+// HandshakeEvent captures a uint16 event measuring the progress of the
+// handshake for the OpenVPN connection.
+type HandshakeEvent struct {
+	TransactionID uint16  `json:"transaction_id"`
+	Operation     string  `json:"operation"`
+	Time          float64 `json:"t"`
 }
 
-func newStage(st uint16, t time.Duration) Stage {
+func newHandshakeEvent(evt uint16, t time.Duration) HandshakeEvent {
 	var s string
-	switch st {
+	switch evt {
 	case vpn.EventReady:
 		s = "ready"
 	case vpn.EventDialDone:
@@ -125,10 +126,10 @@ func newStage(st uint16, t time.Duration) Stage {
 	default:
 		s = "unknown"
 	}
-	return Stage{
-		OpID:      st,
-		Operation: s,
-		Time:      toMs(t),
+	return HandshakeEvent{
+		TransactionID: evt,
+		Operation:     s,
+		Time:          toMs(t),
 	}
 }
 
@@ -160,8 +161,11 @@ type TestKeys struct {
 	// BootstrapTime contains the bootstrap time on success.
 	BootstrapTime float64 `json:"bootstrap_time"`
 
-	// Stages is a sequence of stages with their corresponding timestamp.
-	Stages []Stage `json:"stages"`
+	// HandshakeEvents is a sequence of handshake events with their corresponding timestamp.
+	HandshakeEvents []HandshakeEvent `json:"network_events"`
+
+	// Last known received OpenVPN handshake event
+	LastHandshakeTransactionID int `json:"last_handshake_transaction_id"`
 
 	// TCPCconnect traces a TCP connection for the vpn dialer (null for UDP transport).
 	TCPConnect *model.ArchivalTCPConnectResult `json:"tcp_connect"`
@@ -169,13 +173,8 @@ type TestKeys struct {
 	// Failure contains the failure string or nil.
 	Failure *string `json:"failure"`
 
-	// Error is one of `null`, `"bootstrap-error"`, `"timeout-reached"`,
-	// and `"unknown-error"`.
-	// TODO(ainghazal): make sure all are covered.
-	Error *string `json:"error"`
-
 	// Pings holds an array for aggregated stats of each ping.
-	Pings []*PingResult `json:"pings"`
+	Pings []*PingResult `json:"icmp_pings"`
 
 	// Requests archive an arbitrary number of http requests done through the tunnel.
 	Requests []*measurex.ArchivalHTTPRoundTripEvent `json:"requests"`
@@ -186,6 +185,16 @@ type TestKeys struct {
 	// TODO(ainghazal): implement
 	// Obfs4Version contains the version of the obfs4 library used.
 	Obfs4Version string `json:"obfs4_version"`
+
+	// SuccessHandshake is true when we reach the last handshake stage.
+	SuccessHandshake bool `json:"success_handshake"`
+
+	// SuccessICMP signals an experiment in which _all_ of the first two ICMP pings
+	// have less than 50% packet loss.
+	SuccessICMP bool `json:"success_icmp"`
+
+	// SuccessURLGrab signals an experiment in which at least one of the urlgrabs through the tunnel is successful.
+	SuccessURLGrab bool `json:"success_urlgrab"`
 
 	// Success is true when we reached the end of the test without errors.
 	Success bool `json:"success"`
@@ -217,9 +226,9 @@ func (m *Measurer) ExperimentVersion() string {
 }
 
 // registerExtensions registers the extensions used by this experiment.
-func (m *Measurer) registerExtensions(measurement *model.Measurement) {
-	// currently none
-}
+//func (m *Measurer) registerExtensions(measurement *model.Measurement) {
+// currently none
+//}
 
 // pingTimeout returns the timeout set on each pinger train.
 func pingTimeout() time.Duration {
@@ -236,7 +245,7 @@ func doSinglePing(wg *sync.WaitGroup, conn net.Conn, target string, tk *TestKeys
 	pingResult := parseStats(pinger, target)
 	if err != nil {
 		e := err.Error()
-		pingResult.Error = &e
+		pingResult.Failure = &e
 	}
 	tk.Pings = append(tk.Pings, pingResult)
 }
@@ -282,7 +291,7 @@ func (m *Measurer) Run(
 		return err
 	}
 	m.tunnel = tunnel
-	m.registerExtensions(measurement)
+	//m.registerExtensions(measurement)
 
 	const maxRuntime = 600 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, maxRuntime)
@@ -340,6 +349,24 @@ func (m *Measurer) Run(
 	sendBlockingPing(wg, m.tunnel, remoteVPNGateway, tk)
 	sendBlockingPing(wg, m.tunnel, pingTargetNZ, tk)
 
+	// we now look at the first two pings to see if we can mark those as
+	// "usable" (but see note above about the wish to randomize these icmp
+	// pings)
+	wantedICMP := 2
+	goodICMP := 0
+	for _, p := range tk.Pings[:wantedICMP] {
+		if p.PacketsSent == 0 {
+			break
+		}
+		loss := 1 - float32(p.PacketsRecv)/float32(p.PacketsSent)
+		if loss < 0.5 {
+			goodICMP += 1
+		}
+	}
+	if goodICMP == wantedICMP {
+		tk.SuccessICMP = true
+	}
+
 	//
 	// 2. urlgrab
 	//
@@ -378,6 +405,16 @@ func (m *Measurer) Run(
 	}
 
 	tk.Requests = append(tk.Requests, measurex.NewArchivalHTTPRoundTripEventList(db.AsMeasurement().HTTPRoundTrip)...)
+
+	goodURLGrabs := 0
+	for _, r := range tk.Requests {
+		if r.Failure == nil {
+			goodURLGrabs += 1
+		}
+	}
+	if goodURLGrabs != 0 {
+		tk.SuccessURLGrab = true
+	}
 
 	sess.Logger().Info("openvpn: all tests ok")
 	tk.Success = true
@@ -483,17 +520,17 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 	}
 
 	tk := &TestKeys{
-		Provider:       experiment.Provider,
-		Proto:          testName,
-		Transport:      protoToString(m.vpnOptions.Proto),
-		Remote:         remote,
-		Obfuscation:    experiment.Config.Obfuscation,
-		MiniVPNVersion: getMiniVPNVersion(),
-		BootstrapTime:  0,
-		Failure:        nil,
-		Error:          nil,
-		Stages:         []Stage{},
-		Requests:       []*measurex.ArchivalHTTPRoundTripEvent{},
+		Provider:        experiment.Provider,
+		Proto:           testName,
+		Transport:       protoToString(m.vpnOptions.Proto),
+		Remote:          remote,
+		Obfuscation:     experiment.Config.Obfuscation,
+		MiniVPNVersion:  getMiniVPNVersion(),
+		Obfs4Version:    getObfs4Version(),
+		BootstrapTime:   0,
+		Failure:         nil,
+		HandshakeEvents: []HandshakeEvent{},
+		Requests:        []*measurex.ArchivalHTTPRoundTripEvent{},
 	}
 	sess.Logger().Info("openvpn: bootstrapping openvpn connection")
 	defer func() {
@@ -508,9 +545,9 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 	go func() {
 		for {
 			select {
-			case stage := <-vpnEventChan:
-				st := newStage(stage, time.Now().Sub(zeroTime))
-				tk.Stages = append(tk.Stages, st)
+			case evt := <-vpnEventChan:
+				h := newHandshakeEvent(evt, time.Now().Sub(zeroTime))
+				tk.HandshakeEvents = append(tk.HandshakeEvents, h)
 			}
 		}
 	}()
@@ -525,6 +562,23 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 	}
 
 	tk.BootstrapTime = time.Now().Sub(zeroTime).Seconds()
+
+	handshakeEvts := tk.HandshakeEvents
+	sortByTransactionID := func(i, j int) bool {
+		return handshakeEvts[i].TransactionID < handshakeEvts[j].TransactionID
+	}
+
+	if len(handshakeEvts) != 0 {
+		sort.Slice(handshakeEvts, sortByTransactionID)
+		lastEvent := handshakeEvts[len(handshakeEvts)-1]
+		tk.LastHandshakeTransactionID = int(lastEvent.TransactionID)
+		switch lastEvent.TransactionID {
+		case vpn.EventHandshakeDone:
+			tk.SuccessHandshake = true
+		default:
+			tk.SuccessHandshake = false
+		}
+	}
 }
 
 func (m *Measurer) traceDialTCP(ctx context.Context, sess model.ExperimentSession, trace *measurexlite.Trace, index int64, tk *TestKeys) {
@@ -536,7 +590,6 @@ func (m *Measurer) traceDialTCP(ctx context.Context, sess model.ExperimentSessio
 	ol.Stop(err)
 	if err != nil {
 		tk.Failure = tracex.NewFailure(err)
-		tk.Error = &bootstrapError
 		sess.Logger().Info("openvpn: bootstrapping failed")
 		return
 	}
@@ -547,7 +600,6 @@ func (m *Measurer) dialUDP(ctx context.Context, sess model.ExperimentSession, tr
 	err := m.tunnel.Start(ctx)
 	if err != nil {
 		tk.Failure = tracex.NewFailure(err)
-		tk.Error = &bootstrapError
 		sess.Logger().Info("openvpn: bootstrapping failed")
 		return
 	}
@@ -595,6 +647,20 @@ func getMiniVPNVersion() string {
 	for _, dep := range bi.Deps {
 		p := strings.Split(dep.Path, "/")
 		if p[len(p)-1] == "minivpn" {
+			return dep.Version
+		}
+	}
+	return ""
+}
+
+func getObfs4Version() string {
+	bi, ok := debug.ReadBuildInfo()
+	if !ok {
+		return "unknown"
+	}
+	for _, dep := range bi.Deps {
+		p := strings.Split(dep.Path, "/")
+		if p[len(p)-1] == "obfs4.git" {
 			return dep.Version
 		}
 	}
