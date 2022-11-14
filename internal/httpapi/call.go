@@ -40,8 +40,10 @@ func newRequest(ctx context.Context, endpoint *Endpoint, desc *Descriptor) (*htt
 	}
 	// BaseURL and resource URL are joined if they have a path
 	URL.Path = joinURLPath(URL.Path, desc.URLPath)
-	if desc.URLQuery != nil {
+	if len(desc.URLQuery) > 0 {
 		URL.RawQuery = desc.URLQuery.Encode()
+	} else {
+		URL.RawQuery = "" // as documented we only honour desc.URLQuery
 	}
 	request, err := http.NewRequestWithContext(ctx, desc.Method, URL.String(), desc.RequestBody)
 	if err != nil {
@@ -66,9 +68,9 @@ func newRequest(ctx context.Context, endpoint *Endpoint, desc *Descriptor) (*htt
 // ErrRequestFailed indicates that the server returned >= 400.
 var ErrRequestFailed = errors.New("httpapi: http request failed")
 
-// dorcall calls the API represented by the given request |req| on the given |endpoint|
+// docall calls the API represented by the given request |req| on the given |endpoint|
 // and returns the response and its body or an error.
-func dorcall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http.Response, []byte, error) {
+func docall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http.Response, []byte, error) {
 	response, err := endpoint.HTTPClient.Do(request)
 	if err != nil {
 		return nil, nil, err
@@ -86,13 +88,13 @@ func dorcall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http
 		desc.Logger.Debugf("httpapi: response body: %s", string(data))
 	}
 	if response.StatusCode >= 400 {
-		return response, nil, fmt.Errorf("%w: %s", ErrRequestFailed, response.Status)
+		return response, nil, fmt.Errorf("%w: %d", ErrRequestFailed, response.StatusCode)
 	}
 	return response, data, nil
 }
 
-// rcall is like Call but also returns the response.
-func rcall(ctx context.Context, desc *Descriptor, endpoint *Endpoint) (*http.Response, []byte, error) {
+// call is like Call but also returns the response.
+func call(ctx context.Context, desc *Descriptor, endpoint *Endpoint) (*http.Response, []byte, error) {
 	timeout := desc.Timeout
 	if timeout <= 0 {
 		timeout = DefaultCallTimeout // as documented
@@ -103,24 +105,28 @@ func rcall(ctx context.Context, desc *Descriptor, endpoint *Endpoint) (*http.Res
 	if err != nil {
 		return nil, nil, err
 	}
-	return dorcall(endpoint, desc, request)
+	return docall(endpoint, desc, request)
 }
 
 // Call invokes the API described by |desc| on the given HTTP |endpoint| and
 // returns the response body (as a slice of bytes) or an error.
 func Call(ctx context.Context, desc *Descriptor, endpoint *Endpoint) ([]byte, error) {
-	_, rawResponseBody, err := rcall(ctx, desc, endpoint)
+	_, rawResponseBody, err := call(ctx, desc, endpoint)
 	return rawResponseBody, err
+}
+
+var goodContentType = map[string]bool{
+	applicationJSON: true,
 }
 
 // CallWithJSONResponse is like Call but also assumes that the response is a
 // JSON body and attempts to parse it into the |response| field.
 func CallWithJSONResponse(ctx context.Context, desc *Descriptor, endpoint *Endpoint, response any) error {
-	httpResp, rawRespBody, err := rcall(ctx, desc, endpoint)
+	httpResp, rawRespBody, err := call(ctx, desc, endpoint)
 	if err != nil {
 		return err
 	}
-	if ctype := httpResp.Header.Get("Content-Type"); ctype != applicationJSON {
+	if ctype := httpResp.Header.Get("Content-Type"); !goodContentType[ctype] {
 		desc.Logger.Warnf("httpapi: unexpected content-type: %s", ctype)
 		// fallthrough
 	}

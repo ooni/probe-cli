@@ -14,7 +14,11 @@ import "github.com/ooni/probe-cli/v3/internal/model"
 // The zero value of this struct is invalid. Please, fill all the
 // fields marked as MANDATORY for correct initialization.
 type Endpoint struct {
-	// BaseURL is the MANDATORY endpoint base URL.
+	// BaseURL is the MANDATORY endpoint base URL. We will honour the
+	// path of this URL and prepend it to the actual path specified inside
+	// a |Descriptor.URLPath|. However, we will always discard any query
+	// that may have been set inside the BaseURL. The only query string
+	// will be composed from the |Descriptor.URLQuery| values.
 	//
 	// For example, https://api.ooni.io.
 	BaseURL string

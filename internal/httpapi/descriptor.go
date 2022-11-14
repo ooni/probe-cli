@@ -152,6 +152,6 @@ func NewGETResourceDescriptor(logger model.Logger, urlPath string) *Descriptor {
 		RequestBody:   nil,
 		Timeout:       DefaultCallTimeout,
 		URLPath:       urlPath,
-		URLQuery:      nil,
+		URLQuery:      url.Values{},
 	}
 }
