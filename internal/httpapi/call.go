@@ -124,6 +124,8 @@ func Call(ctx context.Context, desc *Descriptor, endpoint *Endpoint) ([]byte, er
 	return rawResponseBody, err
 }
 
+// goodContentType tracks known-good content-types for JSON. If the content-type
+// is not in this map, |CallWithJSONResponse| emits a warning message.
 var goodContentType = map[string]bool{
 	applicationJSON: true,
 }
