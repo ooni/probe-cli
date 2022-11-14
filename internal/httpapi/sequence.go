@@ -8,7 +8,7 @@ import (
 )
 
 // SequenceCaller calls the API specified by |Descriptor| once for each
-// available |Endpoints| until one of them succeds or all fail.
+// available |Endpoints| until one of them succeeds or all fail.
 type SequenceCaller struct {
 	// Descriptor is the API |Descriptor|.
 	Descriptor *Descriptor

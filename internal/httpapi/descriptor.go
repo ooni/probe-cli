@@ -80,7 +80,7 @@ func NewGETJSONDescriptor(logger model.Logger, urlPath string) *Descriptor {
 	return NewGETJSONWithQueryDescriptor(logger, urlPath, url.Values{})
 }
 
-// applicationJSON is the a common content-type for JSON
+// applicationJSON is the content-type for JSON
 const applicationJSON = "application/json"
 
 // NewGETJSONWithQueryDescriptor is like NewGETJSONDescriptor but it also
