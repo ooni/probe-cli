@@ -49,6 +49,7 @@ func newRequest(ctx context.Context, endpoint *Endpoint, desc *Descriptor) (*htt
 	var reqBody io.Reader
 	if len(desc.RequestBody) > 0 {
 		reqBody = bytes.NewReader(desc.RequestBody)
+		desc.Logger.Debugf("httpapi: request body length: %d", len(desc.RequestBody))
 		if desc.LogBody {
 			desc.Logger.Debugf("httpapi: request body: %s", string(desc.RequestBody))
 		}

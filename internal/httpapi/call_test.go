@@ -187,7 +187,7 @@ func Test_newRequest(t *testing.T) {
 				Authorization: "",
 				ContentType:   "",
 				LogBody:       false,
-				Logger:        nil,
+				Logger:        model.DiscardLogger,
 				MaxBodySize:   0,
 				Method:        http.MethodPost,
 				RequestBody:   []byte("deadbeef"),
