@@ -58,7 +58,7 @@ type Descriptor struct {
 	URLQuery url.Values
 }
 
-// WithBodyLogging returns a SHALLOW COPY of |Descriptor| with LogBody set to true. You SHOULD
+// WithBodyLogging returns a SHALLOW COPY of |Descriptor| with LogBody set to |value|. You SHOULD
 // only use this method when initializing the descriptor you want to use.
 func (desc *Descriptor) WithBodyLogging(value bool) *Descriptor {
 	out := &Descriptor{}
