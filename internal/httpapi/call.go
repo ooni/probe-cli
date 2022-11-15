@@ -124,9 +124,9 @@ func Call(ctx context.Context, desc *Descriptor, endpoint *Endpoint) ([]byte, er
 	return rawResponseBody, err
 }
 
-// goodContentType tracks known-good content-types for JSON. If the content-type
+// goodContentTypeForJSON tracks known-good content-types for JSON. If the content-type
 // is not in this map, |CallWithJSONResponse| emits a warning message.
-var goodContentType = map[string]bool{
+var goodContentTypeForJSON = map[string]bool{
 	applicationJSON: true,
 }
 
@@ -137,7 +137,7 @@ func CallWithJSONResponse(ctx context.Context, desc *Descriptor, endpoint *Endpo
 	if err != nil {
 		return err
 	}
-	if ctype := httpResp.Header.Get("Content-Type"); !goodContentType[ctype] {
+	if ctype := httpResp.Header.Get("Content-Type"); !goodContentTypeForJSON[ctype] {
 		desc.Logger.Warnf("httpapi: unexpected content-type: %s", ctype)
 		// fallthrough
 	}

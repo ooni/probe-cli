@@ -1,5 +1,13 @@
 package httpapi
 
+//
+// Sequentially call available API endpoints until one succeed
+// or all of them fail. A future implementation of this code may
+// (probably should?) take into account knowledge of what is
+// working and what is not working to optimize the order with
+// which to try different alternatives.
+//
+
 import (
 	"context"
 	"errors"

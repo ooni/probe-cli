@@ -102,7 +102,7 @@ func Test_newRequest(t *testing.T) {
 				RequestBody:   nil,
 				Timeout:       0,
 				URLPath:       "",
-				URLQuery:      map[string][]string{},
+				URLQuery:      nil,
 			},
 		},
 		wantFn:  nil,
@@ -128,7 +128,7 @@ func Test_newRequest(t *testing.T) {
 				RequestBody:   nil,
 				Timeout:       0,
 				URLPath:       "",
-				URLQuery:      map[string][]string{},
+				URLQuery:      nil,
 			},
 		},
 		wantFn:  nil,
@@ -154,7 +154,7 @@ func Test_newRequest(t *testing.T) {
 				RequestBody:   nil,
 				Timeout:       0,
 				URLPath:       "",
-				URLQuery:      map[string][]string{},
+				URLQuery:      nil,
 			},
 		},
 		wantFn: func(t *testing.T, req *http.Request) {
@@ -193,7 +193,7 @@ func Test_newRequest(t *testing.T) {
 				RequestBody:   []byte("deadbeef"),
 				Timeout:       0,
 				URLPath:       "",
-				URLQuery:      map[string][]string{},
+				URLQuery:      nil,
 			},
 		},
 		wantFn: func(t *testing.T, req *http.Request) {
@@ -236,7 +236,7 @@ func Test_newRequest(t *testing.T) {
 				RequestBody:   nil,
 				Timeout:       0,
 				URLPath:       "",
-				URLQuery:      map[string][]string{},
+				URLQuery:      nil,
 			},
 		},
 		wantFn: func(t *testing.T, req *http.Request) {
@@ -287,7 +287,7 @@ func Test_newRequest(t *testing.T) {
 				RequestBody:   nil,
 				Timeout:       0,
 				URLPath:       "/test-list/urls",
-				URLQuery:      map[string][]string{},
+				URLQuery:      nil,
 			},
 		},
 		wantFn: func(t *testing.T, req *http.Request) {
@@ -323,7 +323,7 @@ func Test_newRequest(t *testing.T) {
 				RequestBody:   nil,
 				Timeout:       0,
 				URLPath:       "",
-				URLQuery:      map[string][]string{},
+				URLQuery:      nil,
 			},
 		},
 		wantFn: func(t *testing.T, req *http.Request) {
@@ -377,7 +377,7 @@ func Test_newRequest(t *testing.T) {
 		},
 		wantErr: nil,
 	}, {
-		name: "with as many implicitly initialized fiels as possible",
+		name: "with as many implicitly-initialized fields as possible",
 		args: args{
 			ctx: context.Background(),
 			endpoint: &Endpoint{
