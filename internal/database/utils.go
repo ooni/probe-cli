@@ -1,12 +1,11 @@
 package database
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 // resultTimestamp is a windows friendly timestamp
