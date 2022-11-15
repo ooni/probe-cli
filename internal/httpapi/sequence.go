@@ -16,7 +16,10 @@ import (
 )
 
 // SequenceCaller calls the API specified by |Descriptor| once for each
-// available |Endpoints| until one of them succeeds or all fail.
+// available |Endpoints| until one of them succeeds.
+//
+// CAVEAT: this code will ONLY retry API calls with subsequent endpoints when
+// the error originates in the HTTP round trip or while reading the body.
 type SequenceCaller struct {
 	// Descriptor is the API |Descriptor|.
 	Descriptor *Descriptor
@@ -36,36 +39,55 @@ func NewSequenceCaller(desc *Descriptor, endpoints ...*Endpoint) *SequenceCaller
 // ErrAllEndpointsFailed indicates that all endpoints failed.
 var ErrAllEndpointsFailed = errors.New("httpapi: all endpoints failed")
 
+// shouldRetry returns true when we should try with another endpoint given the
+// value of |err| which could (obviously) be nil in case of success.
+func (sc *SequenceCaller) shouldRetry(err error) bool {
+	var kind *errMaybeCensorship
+	belongs := errors.As(err, &kind)
+	return belongs
+}
+
 // Call calls |Call| for each |Endpoint| and |Descriptor| until one endpoint succeeds. The
 // return value is the response body and the selected endpoint index or the error.
+//
+// CAVEAT: this code will ONLY retry API calls with subsequent endpoints when
+// the error originates in the HTTP round trip or while reading the body.
+// caused by collateral-damage or targeted censorship blocking our backends.
 func (sc *SequenceCaller) Call(ctx context.Context) ([]byte, int, error) {
 	var selected int
 	merr := multierror.New(ErrAllEndpointsFailed)
 	for _, epnt := range sc.Endpoints {
 		respBody, err := Call(ctx, sc.Descriptor, epnt)
-		if err != nil {
+		if sc.shouldRetry(err) {
 			merr.Add(err)
 			selected++
 			continue
 		}
-		return respBody, selected, nil
+		// Note: some errors will lead us to return
+		// early as documented for this method
+		return respBody, selected, err
 	}
 	return nil, -1, merr
 }
 
-// CallWithJSONResponse calls |CallWithJSONResponse| for each |Endpoint|
-// and |Descriptor| until one endpoint succeeds. The return value is
-// the selected endpoint index or the error that occurred.
+// CallWithJSONResponse is like |SequenceCaller.Call| except that it invokes the
+// underlying |CallWithJSONResponse| rather than invoking |Call|.
+//
+// CAVEAT: this code will ONLY retry API calls with subsequent endpoints when
+// the error originates in the HTTP round trip or while reading the body.
 func (sc *SequenceCaller) CallWithJSONResponse(ctx context.Context, response any) (int, error) {
 	var selected int
 	merr := multierror.New(ErrAllEndpointsFailed)
 	for _, epnt := range sc.Endpoints {
-		if err := CallWithJSONResponse(ctx, sc.Descriptor, epnt, response); err != nil {
+		err := CallWithJSONResponse(ctx, sc.Descriptor, epnt, response)
+		if sc.shouldRetry(err) {
 			merr.Add(err)
 			selected++
 			continue
 		}
-		return selected, nil
+		// Note: some errors will lead us to return
+		// early as documented for this method
+		return selected, err
 	}
 	return -1, merr
 }

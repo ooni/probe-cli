@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -74,15 +73,44 @@ func newRequest(ctx context.Context, endpoint *Endpoint, desc *Descriptor) (*htt
 	return request, nil
 }
 
-// ErrRequestFailed indicates that the server returned >= 400.
-var ErrRequestFailed = errors.New("httpapi: http request failed")
+// ErrHTTPRequestFailed indicates that the server returned >= 400.
+type ErrHTTPRequestFailed struct {
+	// StatusCode is the status code that failed.
+	StatusCode int
+}
+
+// Error implements error.
+func (err *ErrHTTPRequestFailed) Error() string {
+	return fmt.Sprintf("httpapi: http request failed: %d", err.StatusCode)
+}
+
+// errMaybeCensorship indicates that there was an error at the networking layer
+// including, e.g., DNS, TCP connect, TLS. When we see this kind of error, we
+// will consider retrying with another endpoint under the assumption that it
+// may be that the current endpoint is censored.
+type errMaybeCensorship struct {
+	// Err is the underlying error
+	Err error
+}
+
+// Error implements error
+func (err *errMaybeCensorship) Error() string {
+	return err.Err.Error()
+}
+
+// Unwrap allows to get the underlying error
+func (err *errMaybeCensorship) Unwrap() error {
+	return err.Err
+}
 
 // docall calls the API represented by the given request |req| on the given |endpoint|
 // and returns the response and its body or an error.
 func docall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http.Response, []byte, error) {
+	// Implementation note: remember to mark errors for which you want
+	// to retry with another endpoint using errMaybeCensorship.
 	response, err := endpoint.HTTPClient.Do(request)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, &errMaybeCensorship{err}
 	}
 	defer response.Body.Close()
 	// Implementation note: always read and log the response body since
@@ -90,14 +118,14 @@ func docall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http.
 	r := io.LimitReader(response.Body, DefaultMaxBodySize)
 	data, err := netxlite.ReadAllContext(request.Context(), r)
 	if err != nil {
-		return response, nil, err
+		return response, nil, &errMaybeCensorship{err}
 	}
 	desc.Logger.Debugf("httpapi: response body length: %d bytes", len(data))
 	if desc.LogBody {
 		desc.Logger.Debugf("httpapi: response body: %s", string(data))
 	}
 	if response.StatusCode >= 400 {
-		return response, nil, fmt.Errorf("%w: %d", ErrRequestFailed, response.StatusCode)
+		return response, nil, &ErrHTTPRequestFailed{response.StatusCode}
 	}
 	return response, data, nil
 }
@@ -119,6 +147,10 @@ func call(ctx context.Context, desc *Descriptor, endpoint *Endpoint) (*http.Resp
 
 // Call invokes the API described by |desc| on the given HTTP |endpoint| and
 // returns the response body (as a slice of bytes) or an error.
+//
+// Note: this function returns ErrHTTPRequestFailed if the HTTP status code is
+// greater or equal than 400. You could use errors.As to obtain a copy of the
+// error that was returned and see for yourself the actual status code.
 func Call(ctx context.Context, desc *Descriptor, endpoint *Endpoint) ([]byte, error) {
 	_, rawResponseBody, err := call(ctx, desc, endpoint)
 	return rawResponseBody, err
@@ -132,6 +164,13 @@ var goodContentTypeForJSON = map[string]bool{
 
 // CallWithJSONResponse is like Call but also assumes that the response is a
 // JSON body and attempts to parse it into the |response| field.
+//
+// Note: this function returns ErrHTTPRequestFailed if the HTTP status code is
+// greater or equal than 400. You could use errors.As to obtain a copy of the
+// error that was returned and see for yourself the actual status code.
+//
+// Note: this function returns ErrJSONParsingFailed if it cannot parse the
+// returned JSON. You can use errors.As to check for the error type.
 func CallWithJSONResponse(ctx context.Context, desc *Descriptor, endpoint *Endpoint, response any) error {
 	httpResp, rawRespBody, err := call(ctx, desc, endpoint)
 	if err != nil {

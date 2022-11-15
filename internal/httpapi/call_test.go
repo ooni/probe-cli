@@ -435,6 +435,7 @@ func TestCall(t *testing.T) {
 		args    args
 		want    []byte
 		wantErr error
+		errfn   func(t *testing.T, err error)
 	}{{
 		name: "newRequest fails",
 		args: args{
@@ -461,6 +462,7 @@ func TestCall(t *testing.T) {
 		},
 		want:    nil,
 		wantErr: errors.New(`parse "\t\t\t": net/url: invalid control character in URL`),
+		errfn:   nil,
 	}, {
 		name: "endpoint.HTTPClient.Do fails",
 		args: args{
@@ -480,6 +482,12 @@ func TestCall(t *testing.T) {
 		},
 		want:    nil,
 		wantErr: io.EOF,
+		errfn: func(t *testing.T, err error) {
+			var expect *errMaybeCensorship
+			if !errors.As(err, &expect) {
+				t.Fatal("unexpected error type")
+			}
+		},
 	}, {
 		name: "reading body fails",
 		args: args{
@@ -506,6 +514,12 @@ func TestCall(t *testing.T) {
 		},
 		want:    nil,
 		wantErr: errors.New(netxlite.FailureConnectionReset),
+		errfn: func(t *testing.T, err error) {
+			var expect *errMaybeCensorship
+			if !errors.As(err, &expect) {
+				t.Fatal("unexpected error type")
+			}
+		},
 	}, {
 		name: "status code indicates failure",
 		args: args{
@@ -529,6 +543,12 @@ func TestCall(t *testing.T) {
 		},
 		want:    nil,
 		wantErr: errors.New("httpapi: http request failed: 403"),
+		errfn: func(t *testing.T, err error) {
+			var expect *ErrHTTPRequestFailed
+			if !errors.As(err, &expect) {
+				t.Fatal("invalid error type")
+			}
+		},
 	}, {
 		name: "success with log body flag",
 		args: args{
@@ -553,6 +573,7 @@ func TestCall(t *testing.T) {
 		},
 		want:    []byte("deadbeef"),
 		wantErr: nil,
+		errfn:   nil,
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -594,6 +615,7 @@ func TestCallWithJSONResponse(t *testing.T) {
 		name    string
 		args    args
 		wantErr error
+		errfn   func(*testing.T, error)
 	}{{
 		name: "call fails",
 		args: args{
@@ -606,6 +628,88 @@ func TestCallWithJSONResponse(t *testing.T) {
 			},
 		},
 		wantErr: errors.New(`parse "\t\t\t\t": net/url: invalid control character in URL`),
+		errfn:   nil,
+	}, {
+		name: "with error during httpClient.Do",
+		args: args{
+			ctx: context.Background(),
+			desc: &Descriptor{
+				Logger: model.DiscardLogger,
+			},
+			endpoint: &Endpoint{
+				BaseURL: "https://www.example.com/a",
+				HTTPClient: &mocks.HTTPClient{
+					MockDo: func(req *http.Request) (*http.Response, error) {
+						return nil, io.EOF
+					},
+				},
+			},
+		},
+		wantErr: io.EOF,
+		errfn: func(t *testing.T, err error) {
+			var expect *errMaybeCensorship
+			if !errors.As(err, &expect) {
+				t.Fatal("invalid error type")
+			}
+		},
+	}, {
+		name: "with error when reading the response body",
+		args: args{
+			ctx: context.Background(),
+			desc: &Descriptor{
+				Logger: model.DiscardLogger,
+			},
+			endpoint: &Endpoint{
+				BaseURL: "https://www.example.com/a",
+				HTTPClient: &mocks.HTTPClient{
+					MockDo: func(req *http.Request) (*http.Response, error) {
+						resp := &http.Response{
+							Body: io.NopCloser(&mocks.Reader{
+								MockRead: func(b []byte) (int, error) {
+									return 0, netxlite.ECONNRESET
+								},
+							}),
+							StatusCode: 200,
+						}
+						return resp, nil
+					},
+				},
+			},
+		},
+		wantErr: errors.New(netxlite.FailureConnectionReset),
+		errfn: func(t *testing.T, err error) {
+			var expect *errMaybeCensorship
+			if !errors.As(err, &expect) {
+				t.Fatal("invalid error type")
+			}
+		},
+	}, {
+		name: "with HTTP failure",
+		args: args{
+			ctx: context.Background(),
+			desc: &Descriptor{
+				Logger: model.DiscardLogger,
+			},
+			endpoint: &Endpoint{
+				BaseURL: "https://www.example.com/a",
+				HTTPClient: &mocks.HTTPClient{
+					MockDo: func(req *http.Request) (*http.Response, error) {
+						resp := &http.Response{
+							Body:       io.NopCloser(strings.NewReader(`{"Name": "sbs", "Age": 99}`)),
+							StatusCode: 400,
+						}
+						return resp, nil
+					},
+				},
+			},
+		},
+		wantErr: errors.New("httpapi: http request failed: 400"),
+		errfn: func(t *testing.T, err error) {
+			var expect *ErrHTTPRequestFailed
+			if !errors.As(err, &expect) {
+				t.Fatal("invalid error type")
+			}
+		},
 	}, {
 		name: "with good response and missing header",
 		args: args{
@@ -627,6 +731,7 @@ func TestCallWithJSONResponse(t *testing.T) {
 			},
 		},
 		wantErr: nil,
+		errfn:   nil,
 	}, {
 		name: "with good response and good header",
 		args: args{
@@ -651,6 +756,7 @@ func TestCallWithJSONResponse(t *testing.T) {
 			},
 		},
 		wantErr: nil,
+		errfn:   nil,
 	}, {
 		name: "response is not JSON",
 		args: args{
@@ -677,6 +783,7 @@ func TestCallWithJSONResponse(t *testing.T) {
 			},
 		},
 		wantErr: errors.New("unexpected end of JSON input"),
+		errfn:   nil,
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -695,6 +802,9 @@ func TestCallWithJSONResponse(t *testing.T) {
 				// nothing
 			default:
 				t.Fatalf("expected %s but got %s", err.Error(), tt.wantErr.Error())
+			}
+			if tt.errfn != nil {
+				tt.errfn(t, err)
 			}
 		})
 	}
@@ -744,7 +854,7 @@ func TestCallWithJSONResponseHonoursContext(t *testing.T) {
 	}
 }
 
-func TestCallAndBodyLogging(t *testing.T) {
+func TestDescriptorLogging(t *testing.T) {
 
 	// This test was originally written for the httpx package and we have adapted it
 	// by keeping the ~same implementation with a custom callx function that converts
@@ -771,7 +881,7 @@ func TestCallAndBodyLogging(t *testing.T) {
 		}
 	}
 
-	t.Run("logging enabled and 200 Ok", func(t *testing.T) {
+	t.Run("body logging enabled and 200 Ok", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) {
 				w.Write([]byte("[]"))
@@ -789,23 +899,40 @@ func TestCallAndBodyLogging(t *testing.T) {
 		close(logs)
 		for entry := range logs {
 			if strings.HasPrefix(entry, "httpapi: request body: ") {
+				// we expect this because body logging is enabled
 				found |= 1 << 0
 				continue
 			}
 			if strings.HasPrefix(entry, "httpapi: response body: ") {
+				// we expect this because body logging is enabled
 				found |= 1 << 1
 				continue
 			}
+			if strings.HasPrefix(entry, "httpapi: unexpected content-type: ") {
+				// we would expect this because the server does not send us any content-type
+				found |= 1 << 2
+				continue
+			}
+			if strings.HasPrefix(entry, "httpapi: request body length: ") {
+				// we should see this because we sent a body
+				found |= 1 << 3
+				continue
+			}
+			if strings.HasPrefix(entry, "httpapi: response body length: ") {
+				// we should see this because we receive a body
+				found |= 1 << 4
+				continue
+			}
 		}
-		if found != (1<<0 | 1<<1) {
-			t.Fatal("did not find logs")
+		if found != (1<<0 | 1<<1 | 1<<2 | 1<<3 | 1<<4) {
+			t.Fatal("did not find the expected logs")
 		}
 		if err != nil {
 			t.Fatal(err)
 		}
 	})
 
-	t.Run("logging enabled and 401 Unauthorized", func(t *testing.T) {
+	t.Run("body logging enabled and 401 Unauthorized", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(401)
@@ -824,23 +951,42 @@ func TestCallAndBodyLogging(t *testing.T) {
 		close(logs)
 		for entry := range logs {
 			if strings.HasPrefix(entry, "httpapi: request body: ") {
+				// should occur because body logging is enabled
 				found |= 1 << 0
 				continue
 			}
 			if strings.HasPrefix(entry, "httpapi: response body: ") {
+				// should occur because body logging is enabled
 				found |= 1 << 1
 				continue
 			}
+			if strings.HasPrefix(entry, "httpapi: unexpected content-type: ") {
+				// note: this one should not occur because the code is 401 so we're not
+				// actually going to parse the JSON document
+				found |= 1 << 2
+				continue
+			}
+			if strings.HasPrefix(entry, "httpapi: request body length: ") {
+				// we should see this because we send a body
+				found |= 1 << 3
+				continue
+			}
+			if strings.HasPrefix(entry, "httpapi: response body length: ") {
+				// we should see this because we receive a body
+				found |= 1 << 4
+				continue
+			}
 		}
-		if found != (1<<0 | 1<<1) {
-			t.Fatal("did not find logs")
+		if found != (1<<0 | 1<<1 | 1<<3 | 1<<4) {
+			t.Fatal("did not find the expected logs")
 		}
-		if !errors.Is(err, ErrRequestFailed) {
+		var failure *ErrHTTPRequestFailed
+		if !errors.As(err, &failure) || failure.StatusCode != 401 {
 			t.Fatal("unexpected err", err)
 		}
 	})
 
-	t.Run("logging NOT enabled and 200 Ok", func(t *testing.T) {
+	t.Run("body logging NOT enabled and 200 Ok", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) {
 				w.Write([]byte("[]"))
@@ -858,23 +1004,41 @@ func TestCallAndBodyLogging(t *testing.T) {
 		close(logs)
 		for entry := range logs {
 			if strings.HasPrefix(entry, "httpapi: request body: ") {
+				// should not see it: body logging is disabled
 				found |= 1 << 0
 				continue
 			}
 			if strings.HasPrefix(entry, "httpapi: response body: ") {
+				// should not see it: body logging is disabled
 				found |= 1 << 1
 				continue
 			}
+			if strings.HasPrefix(entry, "httpapi: unexpected content-type: ") {
+				// this one should be logged ANYWAY because it's orthogonal to the
+				// body logging so we should see it also in this case.
+				found |= 1 << 2
+				continue
+			}
+			if strings.HasPrefix(entry, "httpapi: request body length: ") {
+				// should see this because we send a body
+				found |= 1 << 3
+				continue
+			}
+			if strings.HasPrefix(entry, "httpapi: response body length: ") {
+				// should see this because we're receiving a body
+				found |= 1 << 4
+				continue
+			}
 		}
-		if found != 0 {
-			t.Fatal("did find logs")
+		if found != (1<<2 | 1<<3 | 1<<4) {
+			t.Fatal("did not find the expected logs")
 		}
 		if err != nil {
 			t.Fatal(err)
 		}
 	})
 
-	t.Run("logging NOT enabled and 401 Unauthorized", func(t *testing.T) {
+	t.Run("body logging NOT enabled and 401 Unauthorized", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(401)
@@ -893,18 +1057,36 @@ func TestCallAndBodyLogging(t *testing.T) {
 		close(logs)
 		for entry := range logs {
 			if strings.HasPrefix(entry, "httpapi: request body: ") {
+				// should not see it: body logging is disabled
 				found |= 1 << 0
 				continue
 			}
 			if strings.HasPrefix(entry, "httpapi: response body: ") {
+				// should not see it: body logging is disabled
 				found |= 1 << 1
 				continue
 			}
+			if strings.HasPrefix(entry, "httpapi: unexpected content-type: ") {
+				// should not see it because we don't parse the body on 401 errors
+				found |= 1 << 2
+				continue
+			}
+			if strings.HasPrefix(entry, "httpapi: request body length: ") {
+				// we send a body so we should see it
+				found |= 1 << 3
+				continue
+			}
+			if strings.HasPrefix(entry, "httpapi: response body length: ") {
+				// we receive a body so we should see it
+				found |= 1 << 4
+				continue
+			}
 		}
-		if found != 0 {
-			t.Fatal("did find logs")
+		if found != (1<<3 | 1<<4) {
+			t.Fatal("did not find the expected logs")
 		}
-		if !errors.Is(err, ErrRequestFailed) {
+		var failure *ErrHTTPRequestFailed
+		if !errors.As(err, &failure) || failure.StatusCode != 401 {
 			t.Fatal("unexpected err", err)
 		}
 	})
