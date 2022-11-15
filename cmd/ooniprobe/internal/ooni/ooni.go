@@ -11,10 +11,9 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/config"
-	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/database"
-	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/enginex"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/utils"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/database"
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/legacy/assetsdir"
@@ -25,6 +24,11 @@ import (
 
 // DefaultSoftwareName is the default software name.
 const DefaultSoftwareName = "ooniprobe-cli"
+
+// logger is the logger used by the engine.
+var logger = log.WithFields(log.Fields{
+	"type": "engine",
+})
 
 // ProbeCLI is the OONI Probe CLI context.
 type ProbeCLI interface {
@@ -231,7 +235,7 @@ func (p *Probe) NewSession(ctx context.Context, runType model.RunType) (*engine.
 	}
 	return engine.NewSession(ctx, engine.SessionConfig{
 		KVStore:         kvstore,
-		Logger:          enginex.Logger,
+		Logger:          logger,
 		SoftwareName:    softwareName,
 		SoftwareVersion: p.softwareVersion,
 		TempDir:         p.tempDir,

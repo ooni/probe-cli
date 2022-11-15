@@ -1,14 +1,4 @@
-// Package enginex contains ooni/probe-engine extensions.
-package enginex
-
-import (
-	"github.com/apex/log"
-)
-
-// Logger is the logger used by the engine.
-var Logger = log.WithFields(log.Fields{
-	"type": "engine",
-})
+package engine
 
 // LocationProvider is an interface that returns the current location. The
 // github.com/ooni/probe-cli/v3/internal/engine/session.Session implements it.

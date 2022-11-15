@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/database"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/ooni"
+	"github.com/ooni/probe-cli/v3/internal/database"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/pkg/errors"
 )
