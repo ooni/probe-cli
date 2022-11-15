@@ -17,7 +17,7 @@ func TestInit(t *testing.T) {
 	probe := NewProbe("", ooniHome)
 	swName := "ooniprobe-cli-tests"
 	swVersion := "3.0.0-alpha"
-	if err := probe.Init(swName, swVersion); err != nil {
+	if err := probe.Init(swName, swVersion, ""); err != nil {
 		t.Error(err)
 		t.Fatal("failed to init the context")
 	}
