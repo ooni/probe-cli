@@ -33,7 +33,7 @@ func newOONIProbe(t *testing.T) *ooni.Probe {
 	probe := ooni.NewProbe(configPath, homePath)
 	swName := "ooniprobe-cli-tests"
 	swVersion := "3.0.0-alpha"
-	err = probe.Init(swName, swVersion)
+	err = probe.Init(swName, swVersion, "")
 	if err != nil {
 		t.Fatal(err)
 	}
