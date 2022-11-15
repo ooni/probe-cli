@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -881,7 +882,7 @@ func TestDescriptorLogging(t *testing.T) {
 		}
 	}
 
-	t.Run("body logging enabled and 200 Ok", func(t *testing.T) {
+	t.Run("body logging enabled, 200 Ok, and without content-type", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) {
 				w.Write([]byte("[]"))
@@ -925,6 +926,58 @@ func TestDescriptorLogging(t *testing.T) {
 			}
 		}
 		if found != (1<<0 | 1<<1 | 1<<2 | 1<<3 | 1<<4) {
+			t.Fatal("did not find the expected logs")
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("body logging enabled, 200 Ok, and with content-type", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Add("content-type", "application/json")
+				w.Write([]byte("[]"))
+			},
+		))
+		logs := make(chan string, 1024)
+		defer server.Close()
+		var (
+			input  []string
+			output []string
+		)
+		logger := newlogger(logs)
+		err := callx(server.URL, true, logger, input, &output)
+		var found int
+		close(logs)
+		for entry := range logs {
+			if strings.HasPrefix(entry, "httpapi: request body: ") {
+				// we expect this because body logging is enabled
+				found |= 1 << 0
+				continue
+			}
+			if strings.HasPrefix(entry, "httpapi: response body: ") {
+				// we expect this because body logging is enabled
+				found |= 1 << 1
+				continue
+			}
+			if strings.HasPrefix(entry, "httpapi: unexpected content-type: ") {
+				// we do not expect this because the server sends us a content-type
+				found |= 1 << 2
+				continue
+			}
+			if strings.HasPrefix(entry, "httpapi: request body length: ") {
+				// we should see this because we sent a body
+				found |= 1 << 3
+				continue
+			}
+			if strings.HasPrefix(entry, "httpapi: response body length: ") {
+				// we should see this because we receive a body
+				found |= 1 << 4
+				continue
+			}
+		}
+		if found != (1<<0 | 1<<1 | 1<<3 | 1<<4) {
 			t.Fatal("did not find the expected logs")
 		}
 		if err != nil {
@@ -1088,6 +1141,23 @@ func TestDescriptorLogging(t *testing.T) {
 		var failure *ErrHTTPRequestFailed
 		if !errors.As(err, &failure) || failure.StatusCode != 401 {
 			t.Fatal("unexpected err", err)
+		}
+	})
+}
+
+func Test_errMaybeCensorship_Unwrap(t *testing.T) {
+	t.Run("for errors.Is", func(t *testing.T) {
+		var err error = &errMaybeCensorship{io.EOF}
+		if !errors.Is(err, io.EOF) {
+			t.Fatal("cannot unwrap")
+		}
+	})
+
+	t.Run("for errors.As", func(t *testing.T) {
+		var err error = &errMaybeCensorship{netxlite.ECONNRESET}
+		var syserr syscall.Errno
+		if !errors.As(err, &syserr) || syserr != netxlite.ECONNRESET {
+			t.Fatal("cannot unwrap")
 		}
 	})
 }

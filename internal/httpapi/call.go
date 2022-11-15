@@ -168,9 +168,6 @@ var goodContentTypeForJSON = map[string]bool{
 // Note: this function returns ErrHTTPRequestFailed if the HTTP status code is
 // greater or equal than 400. You could use errors.As to obtain a copy of the
 // error that was returned and see for yourself the actual status code.
-//
-// Note: this function returns ErrJSONParsingFailed if it cannot parse the
-// returned JSON. You can use errors.As to check for the error type.
 func CallWithJSONResponse(ctx context.Context, desc *Descriptor, endpoint *Endpoint, response any) error {
 	httpResp, rawRespBody, err := call(ctx, desc, endpoint)
 	if err != nil {

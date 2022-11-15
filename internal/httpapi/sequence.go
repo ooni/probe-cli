@@ -15,8 +15,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/multierror"
 )
 
-// SequenceCaller calls the API specified by |Descriptor| once for each
-// available |Endpoints| until one of them succeeds.
+// SequenceCaller calls the API specified by |Descriptor| once for each of
+// the available |Endpoints| until one of them succeeds.
 //
 // CAVEAT: this code will ONLY retry API calls with subsequent endpoints when
 // the error originates in the HTTP round trip or while reading the body.
@@ -52,7 +52,6 @@ func (sc *SequenceCaller) shouldRetry(err error) bool {
 //
 // CAVEAT: this code will ONLY retry API calls with subsequent endpoints when
 // the error originates in the HTTP round trip or while reading the body.
-// caused by collateral-damage or targeted censorship blocking our backends.
 func (sc *SequenceCaller) Call(ctx context.Context) ([]byte, int, error) {
 	var selected int
 	merr := multierror.New(ErrAllEndpointsFailed)
