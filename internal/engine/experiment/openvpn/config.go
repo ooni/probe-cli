@@ -1,5 +1,9 @@
 package openvpn
 
+//
+// Config
+//
+
 import (
 	"encoding/base64"
 	"errors"
@@ -15,6 +19,22 @@ var (
 	ErrBadBase64Blob = errors.New("wrong base64 encoding")
 	BadOONIRunInput  = errors.New("bad oonirun input")
 )
+
+// Config contains openvpn experiment configuration.
+// TODO(ainghazal): it might be handy to be able to pass a list of urls here, to be able to test arbirtrary urls:
+// - an array of urls
+// - an optional (and reasonable) truncation threshold for each url (needs to be overriden).
+type Config struct {
+	SafeKey        string `ooni:"key to connect to the OpenVPN endpoint"`
+	SafeCert       string `ooni:"cert to connect to the OpenVPN endpoint"`
+	SafeCa         string `ooni:"ca to connect to the OpenVPN endpoint"`
+	SafeLocalCreds bool   `ooni:"whether to use local credentials for the given provider"`
+	Obfuscation    string `ooni:"obfuscation type for the tunnel"`
+	SafeProxyURI   string `ooni:"obfuscating proxy to be used"` // empty if Obfuscation is "none"
+	Cipher         string `ooni:"cipher to use"`
+	Auth           string `ooni:"auth to use"`
+	Compress       string `ooni:"compression to use"`
+}
 
 var vpnConfigTemplate = `{{ if eq .Config.Obfuscation "obfs4" }}proxy-obfs4 {{ .Config.ProxyURI }}{{ else }}remote {{ .Hostname }} {{ .Port }}{{ end }}
 proto {{ .Transport }}

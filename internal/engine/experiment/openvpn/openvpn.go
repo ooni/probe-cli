@@ -10,20 +10,16 @@ import (
 	"context"
 	"errors"
 	"io"
-	"log"
-	"math"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
-	"runtime/debug"
 	"strings"
 	"sync"
 	"text/template"
 	"time"
 
-	"github.com/ooni/minivpn/extras/ping"
 	"github.com/ooni/minivpn/vpn"
 	"github.com/ooni/probe-cli/v3/internal/measurex"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
@@ -62,81 +58,6 @@ var (
 	localCredsFile = "ooni-vpn-creds"
 )
 
-// Config contains the experiment config.
-// TODO(ainghazal): it might be handy to be able to pass a list of urls here, to be able to test arbirtrary urls:
-// - an array of urls
-// - an optional (and reasonable) truncation threshold for each url (needs to be overriden).
-type Config struct {
-	SafeKey        string `ooni:"key to connect to the OpenVPN endpoint"`
-	SafeCert       string `ooni:"cert to connect to the OpenVPN endpoint"`
-	SafeCa         string `ooni:"ca to connect to the OpenVPN endpoint"`
-	SafeLocalCreds bool   `ooni:"whether to use local credentials for the given provider"`
-	Obfuscation    string `ooni:"obfuscation type for the tunnel"`
-	SafeProxyURI   string `ooni:"obfuscating proxy to be used"` // empty if Obfuscation is "none"
-	Cipher         string `ooni:"cipher to use"`
-	Auth           string `ooni:"auth to use"`
-	Compress       string `ooni:"compression to use"`
-}
-
-// PingReply is a single response in the ping sequence.
-type PingReply struct {
-	Seq int     `json:"seq"`
-	TTL int     `json:"ttl"`
-	Rtt float64 `json:"rtt"`
-}
-
-// PingResult holds the results for a pinger run.
-type PingResult struct {
-	Target      string      `json:"target"`
-	Sequence    []PingReply `json:"sequence"`
-	PacketsRecv int         `json:"pkt_rcv"`
-	PacketsSent int         `json:"pkt_snt"`
-	MinRtt      float64     `json:"min_rtt"`
-	MaxRtt      float64     `json:"max_rtt"`
-	AvgRtt      float64     `json:"avg_rtt"`
-	StdRtt      float64     `json:"std_rtt"`
-	Failure     *string     `json:"failure"`
-}
-
-// HandshakeEvent captures a uint16 event measuring the progress of the
-// handshake for the OpenVPN connection.
-type HandshakeEvent struct {
-	TransactionID uint16  `json:"transaction_id"`
-	Operation     string  `json:"operation"`
-	Time          float64 `json:"t"`
-}
-
-func newHandshakeEvent(evt uint16, t time.Duration) HandshakeEvent {
-	var s string
-	switch evt {
-	case vpn.EventReady:
-		s = "ready"
-	case vpn.EventDialDone:
-		s = "dial_done"
-	case vpn.EventHandshake:
-		s = "vpn_handshake_start"
-	case vpn.EventReset:
-		s = "reset"
-	case vpn.EventTLSConn:
-		s = "tls_conn"
-	case vpn.EventTLSHandshake:
-		s = "tls_handshake_start"
-	case vpn.EventTLSHandshakeDone:
-		s = "tls_handshake_done"
-	case vpn.EventDataInitDone:
-		s = "data_init"
-	case vpn.EventHandshakeDone:
-		s = "vpn_handshake_done"
-	default:
-		s = "unknown"
-	}
-	return HandshakeEvent{
-		TransactionID: evt,
-		Operation:     s,
-		Time:          toMs(t),
-	}
-}
-
 // TestKeys contains the experiment's result.
 type TestKeys struct {
 	//
@@ -172,7 +93,8 @@ type TestKeys struct {
 	LastHandshakeTransactionID int `json:"last_handshake_transaction_id"`
 
 	// TCPCconnect traces a TCP connection for the vpn dialer (null for UDP transport).
-	TCPConnect *model.ArchivalTCPConnectResult `json:"tcp_connect"`
+	//TCPConnect *model.ArchivalTCPConnectResult `json:"tcp_connect"`
+	TCPConnect []tracex.TCPConnectEntry `json:"tcp_connect"`
 
 	// Failure contains the failure string or nil.
 	Failure *string `json:"failure"`
@@ -181,14 +103,18 @@ type TestKeys struct {
 	Pings []*PingResult `json:"icmp_pings"`
 
 	// Requests archive an arbitrary number of http requests done through the tunnel.
-	Requests []*measurex.ArchivalHTTPRoundTripEvent `json:"requests"`
+	//Requests []*measurex.ArchivalHTTPRoundTripEvent `json:"requests"`
+	Requests []tracex.RequestEntry `json:"requests"`
+
+	// Software identification
 
 	// MiniVPNVersion contains the version of the minivpn library used.
 	MiniVPNVersion string `json:"minivpn_version"`
 
-	// TODO(ainghazal): implement
 	// Obfs4Version contains the version of the obfs4 library used.
 	Obfs4Version string `json:"obfs4_version"`
+
+	// Summaries for partial results
 
 	// SuccessHandshake is true when we reach the last handshake stage.
 	SuccessHandshake bool `json:"success_handshake"`
@@ -219,6 +145,11 @@ type Measurer struct {
 	tmpConfigFile string
 }
 
+// NewExperimentMeasurer creates a new ExperimentMeasurer.
+func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
+	return &Measurer{config: config}
+}
+
 // ExperimentName implements model.ExperimentMeasurer.ExperimentName.
 func (m *Measurer) ExperimentName() string {
 	return testName
@@ -232,33 +163,6 @@ func (m *Measurer) ExperimentVersion() string {
 func registerExtensions(m *model.Measurement) {
 	model.ArchivalExtHTTP.AddTo(m)
 	model.ArchivalExtDNS.AddTo(m)
-}
-
-// pingTimeout returns the timeout set on each pinger train.
-func pingTimeout() time.Duration {
-	return time.Second * (pingCount + pingExtraWaitSeconds)
-}
-
-func doSinglePing(wg *sync.WaitGroup, conn net.Conn, target string, tk *TestKeys) {
-	defer wg.Done()
-	pinger := ping.NewFromSharedConnection(target, conn)
-	pinger.Count = pingCount
-	pinger.Timeout = pingTimeout()
-
-	err := pinger.Run(context.Background())
-	pingResult := parseStats(pinger, target)
-	if err != nil {
-		e := err.Error()
-		pingResult.Failure = &e
-	}
-	tk.Pings = append(tk.Pings, pingResult)
-}
-
-func sendBlockingPing(wg *sync.WaitGroup, conn net.Conn, target string, tk *TestKeys) {
-	wg.Add(1)
-	go doSinglePing(wg, conn, target, tk)
-	wg.Wait()
-	log.Printf("ping train sent to %s ----", target)
 }
 
 // Run runs the experiment with the specified context, session,
@@ -286,6 +190,9 @@ func (m *Measurer) Run(
 	if err != nil {
 		return err
 	}
+
+	registerExtensions(measurement)
+
 	tunnel, err := m.setup(experiment, sess.Logger())
 	if err != nil {
 		// we cannot setup the experiment
@@ -616,11 +523,6 @@ func (m *Measurer) dialUDP(ctx context.Context, sess model.ExperimentSession, tr
 	sess.Logger().Info("openvpn: bootstrapping done")
 }
 
-// NewExperimentMeasurer creates a new ExperimentMeasurer.
-func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
-	return &Measurer{config: config}
-}
-
 // SummaryKeys contains summary keys for this experiment.
 //
 // Note that this structure is part of the ABI contract with probe-cli
@@ -647,63 +549,4 @@ func (m *Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, 
 		return nil, errNilTestKeys
 	}
 	return SummaryKeys{IsAnomaly: testkeys.Failure != nil}, nil
-}
-
-func getMiniVPNVersion() string {
-	bi, ok := debug.ReadBuildInfo()
-	if !ok {
-		return "unknown"
-	}
-	for _, dep := range bi.Deps {
-		p := strings.Split(dep.Path, "/")
-		if p[len(p)-1] == "minivpn" {
-			return dep.Version
-		}
-	}
-	return ""
-}
-
-func getObfs4Version() string {
-	bi, ok := debug.ReadBuildInfo()
-	if !ok {
-		return "unknown"
-	}
-	for _, dep := range bi.Deps {
-		p := strings.Split(dep.Path, "/")
-		if p[len(p)-1] == "obfs4.git" {
-			return dep.Version
-		}
-	}
-	return ""
-}
-
-// parseStats accepts a pointer to a Pinger struct and a target string, and returns
-// an pointer to a PingResult with all the fields filled.
-func parseStats(pinger *ping.Pinger, target string) *PingResult {
-	st := pinger.Statistics()
-	replies := []PingReply{}
-	for _, r := range st.Replies {
-		replies = append(replies, PingReply{
-			Seq: r.Seq,
-			Rtt: toMs(r.Rtt),
-			TTL: r.TTL,
-		})
-	}
-	pingStats := &PingResult{
-		Target:      target,
-		PacketsRecv: st.PacketsRecv,
-		PacketsSent: st.PacketsSent,
-		Sequence:    replies,
-		MinRtt:      toMs(st.MinRtt),
-		MaxRtt:      toMs(st.MaxRtt),
-		AvgRtt:      toMs(st.AvgRtt),
-		StdRtt:      toMs(st.StdDevRtt),
-	}
-	return pingStats
-}
-
-// toMs converts time.Duration to a float64 number representing milliseconds
-// with fixed precision (3 decimal places).
-func toMs(t time.Duration) float64 {
-	return math.Round(t.Seconds()*1e6) / 1e3
 }
