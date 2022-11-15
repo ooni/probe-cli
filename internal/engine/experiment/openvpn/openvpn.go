@@ -229,6 +229,11 @@ func (m *Measurer) ExperimentVersion() string {
 	return testVersion
 }
 
+func registerExtensions(m *model.Measurement) {
+	model.ArchivalExtHTTP.AddTo(m)
+	model.ArchivalExtDNS.AddTo(m)
+}
+
 // pingTimeout returns the timeout set on each pinger train.
 func pingTimeout() time.Duration {
 	return time.Second * (pingCount + pingExtraWaitSeconds)
