@@ -18,7 +18,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
-	"sort"
 	"strings"
 	"sync"
 	"text/template"
@@ -37,7 +36,7 @@ const (
 	testName = "openvpn"
 
 	// testVersion is the openvpn experiment version.
-	testVersion = "0.0.13"
+	testVersion = "0.0.14"
 
 	// pingCount tells how many icmp echo requests to send.
 	pingCount = 10
@@ -64,6 +63,9 @@ var (
 )
 
 // Config contains the experiment config.
+// TODO(ainghazal): it might be handy to be able to pass a list of urls here, to be able to test arbirtrary urls:
+// - an array of urls
+// - an optional (and reasonable) truncation threshold for each url (needs to be overriden).
 type Config struct {
 	SafeKey        string `ooni:"key to connect to the OpenVPN endpoint"`
 	SafeCert       string `ooni:"cert to connect to the OpenVPN endpoint"`
@@ -111,12 +113,14 @@ func newHandshakeEvent(evt uint16, t time.Duration) HandshakeEvent {
 		s = "ready"
 	case vpn.EventDialDone:
 		s = "dial_done"
+	case vpn.EventHandshake:
+		s = "vpn_handshake_start"
 	case vpn.EventReset:
 		s = "reset"
 	case vpn.EventTLSConn:
 		s = "tls_conn"
 	case vpn.EventTLSHandshake:
-		s = "tls_handshake"
+		s = "tls_handshake_start"
 	case vpn.EventTLSHandshakeDone:
 		s = "tls_handshake_done"
 	case vpn.EventDataInitDone:
@@ -225,11 +229,6 @@ func (m *Measurer) ExperimentVersion() string {
 	return testVersion
 }
 
-// registerExtensions registers the extensions used by this experiment.
-//func (m *Measurer) registerExtensions(measurement *model.Measurement) {
-// currently none
-//}
-
 // pingTimeout returns the timeout set on each pinger train.
 func pingTimeout() time.Duration {
 	return time.Second * (pingCount + pingExtraWaitSeconds)
@@ -291,7 +290,6 @@ func (m *Measurer) Run(
 		return err
 	}
 	m.tunnel = tunnel
-	//m.registerExtensions(measurement)
 
 	const maxRuntime = 600 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, maxRuntime)
@@ -542,37 +540,42 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 
 	zeroTime := time.Now()
 
-	go func() {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	go func(wg *sync.WaitGroup) {
 		for {
 			select {
 			case evt := <-vpnEventChan:
 				h := newHandshakeEvent(evt, time.Now().Sub(zeroTime))
 				tk.HandshakeEvents = append(tk.HandshakeEvents, h)
+				if evt == vpn.EventHandshakeDone {
+					wg.Done()
+				}
 			}
 		}
-	}()
+	}(wg)
 
 	index := int64(1)
 	trace := measurexlite.NewTrace(index, zeroTime)
 
 	if tk.Transport == "tcp" {
-		m.traceDialTCP(ctx, sess, trace, index, tk)
+		m.traceDialTCP(ctx, sess, trace, index, tk, wg)
 	} else {
-		m.dialUDP(ctx, sess, trace, index, tk)
+		m.dialUDP(ctx, sess, trace, index, tk, wg)
 	}
 
+	wg.Wait()
 	tk.BootstrapTime = time.Now().Sub(zeroTime).Seconds()
-
-	handshakeEvts := tk.HandshakeEvents
-	sortByTransactionID := func(i, j int) bool {
-		return handshakeEvts[i].TransactionID < handshakeEvts[j].TransactionID
-	}
-
-	if len(handshakeEvts) != 0 {
-		sort.Slice(handshakeEvts, sortByTransactionID)
-		lastEvent := handshakeEvts[len(handshakeEvts)-1]
-		tk.LastHandshakeTransactionID = int(lastEvent.TransactionID)
-		switch lastEvent.TransactionID {
+	if len(tk.HandshakeEvents) != 0 {
+		max := uint16(0)
+		for _, e := range tk.HandshakeEvents {
+			if e.TransactionID > max {
+				max = e.TransactionID
+			}
+		}
+		tk.LastHandshakeTransactionID = int(max)
+		switch max {
 		case vpn.EventHandshakeDone:
 			tk.SuccessHandshake = true
 		default:
@@ -581,7 +584,7 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 	}
 }
 
-func (m *Measurer) traceDialTCP(ctx context.Context, sess model.ExperimentSession, trace *measurexlite.Trace, index int64, tk *TestKeys) {
+func (m *Measurer) traceDialTCP(ctx context.Context, sess model.ExperimentSession, trace *measurexlite.Trace, index int64, tk *TestKeys, wg *sync.WaitGroup) {
 	ol := measurexlite.NewOperationLogger(sess.Logger(), "OpenVPN Dial #%d %s", index, tk.Remote)
 	dialer := trace.NewDialerWithoutResolver(sess.Logger())
 	m.tunnel.Dialer = dialer
@@ -591,16 +594,18 @@ func (m *Measurer) traceDialTCP(ctx context.Context, sess model.ExperimentSessio
 	if err != nil {
 		tk.Failure = tracex.NewFailure(err)
 		sess.Logger().Info("openvpn: bootstrapping failed")
+		wg.Done() // do not wait for handshake to be completed
 		return
 	}
 	sess.Logger().Info("openvpn: bootstrapping done")
 }
 
-func (m *Measurer) dialUDP(ctx context.Context, sess model.ExperimentSession, trace *measurexlite.Trace, index int64, tk *TestKeys) {
+func (m *Measurer) dialUDP(ctx context.Context, sess model.ExperimentSession, trace *measurexlite.Trace, index int64, tk *TestKeys, wg *sync.WaitGroup) {
 	err := m.tunnel.Start(ctx)
 	if err != nil {
 		tk.Failure = tracex.NewFailure(err)
 		sess.Logger().Info("openvpn: bootstrapping failed")
+		wg.Done() // do not wait for handshake to be completed
 		return
 	}
 	sess.Logger().Info("openvpn: bootstrapping done")
