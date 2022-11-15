@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ResultTimestamp is a windows friendly timestamp
+// resultTimestamp is a windows friendly timestamp
 const resultTimestamp = "2006-01-02T150405.999999999Z0700"
 
 // MakeResultsDir creates and returns a directory for the result
