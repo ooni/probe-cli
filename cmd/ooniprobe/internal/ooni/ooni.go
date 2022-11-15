@@ -24,7 +24,7 @@ import (
 // DefaultSoftwareName is the default software name.
 const DefaultSoftwareName = "ooniprobe-cli"
 
-// Logger is the logger used by the engine.
+// logger is the logger used by the engine.
 var logger = log.WithFields(log.Fields{
 	"type": "engine",
 })
