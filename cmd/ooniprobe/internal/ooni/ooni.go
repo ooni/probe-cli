@@ -4,16 +4,16 @@ import (
 	"context"
 	_ "embed" // because we embed a file
 	"io/ioutil"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/config"
-	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/database"
-	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/enginex"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/utils"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/database"
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/legacy/assetsdir"
@@ -24,6 +24,11 @@ import (
 
 // DefaultSoftwareName is the default software name.
 const DefaultSoftwareName = "ooniprobe-cli"
+
+// logger is the logger used by the engine.
+var logger = log.WithFields(log.Fields{
+	"type": "engine",
+})
 
 // ProbeCLI is the OONI Probe CLI context.
 type ProbeCLI interface {
@@ -62,6 +67,7 @@ type Probe struct {
 
 	softwareName    string
 	softwareVersion string
+	proxyURL        *url.URL
 }
 
 // SetIsBatch sets the value of isBatch.
@@ -124,7 +130,7 @@ func (p *Probe) ListenForSignals() {
 // MaybeListenForStdinClosed will treat any error on stdin just
 // like SIGTERM if and only if
 //
-//     os.Getenv("OONI_STDIN_EOF_IMPLIES_SIGTERM") == "true"
+//	os.Getenv("OONI_STDIN_EOF_IMPLIES_SIGTERM") == "true"
 //
 // When this feature is enabled, a collateral effect is that we swallow
 // whatever is passed to us on the standard input.
@@ -151,7 +157,7 @@ func (p *Probe) MaybeListenForStdinClosed() {
 }
 
 // Init the OONI manager
-func (p *Probe) Init(softwareName, softwareVersion string) error {
+func (p *Probe) Init(softwareName, softwareVersion, proxy string) error {
 	var err error
 
 	if err = MaybeInitializeHome(p.home); err != nil {
@@ -197,6 +203,12 @@ func (p *Probe) Init(softwareName, softwareVersion string) error {
 
 	p.softwareName = softwareName
 	p.softwareVersion = softwareVersion
+	if proxy != "" {
+		p.proxyURL, err = url.Parse(proxy)
+		if err != nil {
+			return errors.Wrap(err, "invalid proxy URL")
+		}
+	}
 	return nil
 }
 
@@ -223,11 +235,12 @@ func (p *Probe) NewSession(ctx context.Context, runType model.RunType) (*engine.
 	}
 	return engine.NewSession(ctx, engine.SessionConfig{
 		KVStore:         kvstore,
-		Logger:          enginex.Logger,
+		Logger:          logger,
 		SoftwareName:    softwareName,
 		SoftwareVersion: p.softwareVersion,
 		TempDir:         p.tempDir,
 		TunnelDir:       p.tunnelDir,
+		ProxyURL:        p.proxyURL,
 	})
 }
 

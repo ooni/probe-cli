@@ -8,7 +8,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/mitchellh/go-wordwrap"
-	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/database"
+	"github.com/ooni/probe-cli/v3/internal/database"
 )
 
 // MeasurementJSON prints the JSON of a measurement
