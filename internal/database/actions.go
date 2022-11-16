@@ -17,34 +17,20 @@ import (
 	"github.com/upper/db/v4"
 )
 
-var (
-	errInvalidDatabasePath = errors.New("database: passed an empty database path")
-)
-
-// DatabaseConfig is the configuration for creating a new database instance
-type DatabaseConfig struct {
-	DatabasePath string
-}
-
-// NewDatabase returns a new database instance
-func New(dbpath string) (*Database, error) {
-	if dbpath == "" {
-		return nil, errInvalidDatabasePath
-	}
+// Open returns a new database instance
+func Open(dbpath string) (*Database, error) {
 	db, err := Connect(dbpath)
 	if err != nil {
 		return nil, err
 	}
 	return &Database{
-		sess:   db,
-		dbPath: dbpath,
+		sess: db,
 	}, nil
 }
 
 // Database is a database instance to store measurements
 type Database struct {
-	sess   db.Session
-	dbPath string
+	sess db.Session
 }
 
 // Session returns the database session
