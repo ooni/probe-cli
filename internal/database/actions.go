@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	errInvalidDatabasePath = "database: passed an empty database path"
+	errInvalidDatabasePath = errors.New("database: passed an empty database path")
 )
 
 // DatabaseConfig is the configuration for creating a new database instance
@@ -27,17 +27,21 @@ type DatabaseConfig struct {
 }
 
 // NewDatabase returns a new database instance
-func NewDatabase(config *DatabaseConfig) (*Database, error) {
-	if config.DatabasePath == "" {
-		return &Database{}, errors.New(errInvalidDatabasePath)
+func New(dbpath string) (*Database, error) {
+	if dbpath == "" {
+		return nil, errInvalidDatabasePath
 	}
-	db, err := Connect(config.DatabasePath)
+	db, err := Connect(dbpath)
+	if err != nil {
+		return nil, err
+	}
 	return &Database{
 		sess:   db,
-		dbPath: config.DatabasePath,
-	}, err
+		dbPath: dbpath,
+	}, nil
 }
 
+// Database is a database instance to store measurements
 type Database struct {
 	sess   db.Session
 	dbPath string
@@ -394,4 +398,9 @@ func (d *Database) AddTestKeys(msmt *Measurement, tk interface{}) error {
 		return errors.Wrap(err, "updating measurement")
 	}
 	return nil
+}
+
+// Close closes the database session
+func (d *Database) Close() error {
+	return d.sess.Close()
 }

@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -45,10 +46,12 @@ func (lp *locationInfo) ResolverIP() string {
 
 func TestNewDatabase(t *testing.T) {
 	t.Run("with empty path", func(t *testing.T) {
-		_, err := NewDatabase(&DatabaseConfig{
-			DatabasePath: "",
-		})
-		if err == nil || err.Error() != errInvalidDatabasePath {
+		dbpath := ""
+		db, err := New(dbpath)
+		if db != nil {
+			t.Fatal("unexpected database instance")
+		}
+		if err == nil || !errors.Is(err, errInvalidDatabasePath) {
 			t.Fatal(err)
 		}
 	})
@@ -59,9 +62,7 @@ func TestNewDatabase(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer os.Remove(tmpfile.Name())
-		_, err = NewDatabase(&DatabaseConfig{
-			DatabasePath: tmpfile.Name(),
-		})
+		_, err = New(tmpfile.Name())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -81,9 +82,7 @@ func TestMeasurementWorkflow(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpdir)
 
-	database, err := NewDatabase(&DatabaseConfig{
-		DatabasePath: tmpfile.Name(),
-	})
+	database, err := New(tmpfile.Name())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -191,9 +190,7 @@ func TestDeleteResult(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpdir)
 
-	database, err := NewDatabase(&DatabaseConfig{
-		DatabasePath: tmpfile.Name(),
-	})
+	database, err := New(tmpfile.Name())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -267,9 +264,7 @@ func TestNetworkCreate(t *testing.T) {
 	}
 	defer os.Remove(tmpfile.Name())
 
-	database, err := NewDatabase(&DatabaseConfig{
-		DatabasePath: tmpfile.Name(),
-	})
+	database, err := New(tmpfile.Name())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -305,9 +300,7 @@ func TestURLCreation(t *testing.T) {
 	}
 	defer os.Remove(tmpfile.Name())
 
-	database, err := NewDatabase(&DatabaseConfig{
-		DatabasePath: tmpfile.Name(),
-	})
+	database, err := New(tmpfile.Name())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -386,9 +379,7 @@ func TestGetMeasurementJSON(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpdir)
 
-	database, err := NewDatabase(&DatabaseConfig{
-		DatabasePath: tmpfile.Name(),
-	})
+	database, err := New(tmpfile.Name())
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -179,9 +179,7 @@ func (p *Probe) Init(softwareName, softwareVersion, proxy string) error {
 
 	p.dbPath = utils.DBDir(p.home, "main")
 	log.Debugf("Connecting to database sqlite3://%s", p.dbPath)
-	db, err := database.NewDatabase(&database.DatabaseConfig{
-		DatabasePath: p.dbPath,
-	})
+	db, err := database.New(p.dbPath)
 	if err != nil {
 		return err
 	}
