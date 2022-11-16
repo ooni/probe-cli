@@ -25,7 +25,7 @@ func (n DNSCheck) lookupURLs(ctl *Controller) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ctl.BuildAndSetInputIdxMap(ctl.Probe.DB(), testlist)
+	return ctl.BuildAndSetInputIdxMap(testlist)
 }
 
 // Run starts the nettest.

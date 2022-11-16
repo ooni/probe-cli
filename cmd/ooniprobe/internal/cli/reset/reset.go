@@ -25,7 +25,7 @@ func init() {
 			log.WithError(err).Error("failed to close the DB")
 			return err
 		}
-		if *force == true {
+		if *force {
 			os.RemoveAll(ctx.Home())
 			log.Infof("Deleted %s", ctx.Home())
 		} else {

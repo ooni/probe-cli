@@ -14,7 +14,6 @@ import (
 	engine "github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/pkg/errors"
-	"github.com/upper/db/v4"
 )
 
 // Nettest interface. Every Nettest should implement this.
@@ -90,14 +89,13 @@ type Controller struct {
 // - on success, a list of strings containing URLs to test;
 //
 // - on failure, an error.
-func (c *Controller) BuildAndSetInputIdxMap(
-	sess db.Session, testlist []model.OOAPIURLInfo) ([]string, error) {
+func (c *Controller) BuildAndSetInputIdxMap(testlist []model.OOAPIURLInfo) ([]string, error) {
 	var urls []string
 	urlIDMap := make(map[int64]int64)
 	for idx, url := range testlist {
 		log.Debugf("Going over URL %d", idx)
-		urlID, err := database.CreateOrUpdateURL(
-			sess, url.URL, url.CategoryCode, url.CountryCode,
+		urlID, err := c.Probe.DB().CreateOrUpdateURL(
+			url.URL, url.CategoryCode, url.CountryCode,
 		)
 		if err != nil {
 			log.Error("failed to add to the URL table")
@@ -124,6 +122,7 @@ func (c *Controller) SetNettestIndex(i, n int) {
 // This function will continue to run in most cases but will
 // immediately halt if something's wrong with the file system.
 func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error {
+	db := c.Probe.DB()
 	// This will configure the controller as handler for the callbacks
 	// called by ooni/probe-engine/experiment.Experiment.
 	builder.SetCallbacks(model.ExperimentCallbacks(c))
@@ -168,6 +167,7 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 		log.Debug("disabling maxRuntime with user-provided input")
 		maxRuntime = 0
 	}
+	sess := db.Session()
 	start := time.Now()
 	c.ntStartTime = start
 	for idx, input := range inputs {
@@ -187,8 +187,8 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 			urlID = sql.NullInt64{Int64: c.inputIdxMap[idx64], Valid: true}
 		}
 
-		msmt, err := database.CreateMeasurement(
-			c.Probe.DB(), reportID, exp.Name(), c.res.MeasurementDir, idx, resultID, urlID,
+		msmt, err := db.CreateMeasurement(
+			reportID, exp.Name(), c.res.MeasurementDir, idx, resultID, urlID,
 		)
 		if err != nil {
 			return errors.Wrap(err, "failed to create measurement")
@@ -201,7 +201,7 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 		measurement, err := exp.MeasureWithContext(context.Background(), input)
 		if err != nil {
 			log.WithError(err).Debug(color.RedString("failure.measurement"))
-			if err := c.msmts[idx64].Failed(c.Probe.DB(), err.Error()); err != nil {
+			if err := c.msmts[idx64].Failed(sess, err.Error()); err != nil {
 				return errors.Wrap(err, "failed to mark measurement as failed")
 			}
 			// Since https://github.com/ooni/probe-cli/pull/527, the Measure
@@ -221,10 +221,10 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 			// bit of a spew in the logs, perhaps, but stopping seems less efficient.
 			if err := exp.SubmitAndUpdateMeasurementContext(context.Background(), measurement); err != nil {
 				log.Debug(color.RedString("failure.measurement_submission"))
-				if err := c.msmts[idx64].UploadFailed(c.Probe.DB(), err.Error()); err != nil {
+				if err := c.msmts[idx64].UploadFailed(sess, err.Error()); err != nil {
 					return errors.Wrap(err, "failed to mark upload as failed")
 				}
-			} else if err := c.msmts[idx64].UploadSucceeded(c.Probe.DB()); err != nil {
+			} else if err := c.msmts[idx64].UploadSucceeded(sess); err != nil {
 				return errors.Wrap(err, "failed to mark upload as succeeded")
 			} else {
 				// Everything went OK, don't save to disk
@@ -238,7 +238,7 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 			}
 		}
 
-		if err := c.msmts[idx64].Done(c.Probe.DB()); err != nil {
+		if err := c.msmts[idx64].Done(sess); err != nil {
 			return errors.Wrap(err, "failed to mark measurement as done")
 		}
 
@@ -253,11 +253,11 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 			continue
 		}
 		log.Debugf("Fetching: %d %v", idx, c.msmts[idx64])
-		if err := database.AddTestKeys(c.Probe.DB(), c.msmts[idx64], tk); err != nil {
+		if err := db.AddTestKeys(c.msmts[idx64], tk); err != nil {
 			return errors.Wrap(err, "failed to add test keys to summary")
 		}
 	}
-	database.UpdateUploadedStatus(c.Probe.DB(), c.res)
+	db.UpdateUploadedStatus(c.res)
 	log.Debugf("status.end")
 	return nil
 }

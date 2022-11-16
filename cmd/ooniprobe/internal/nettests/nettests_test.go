@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/ooni"
-	"github.com/ooni/probe-cli/v3/internal/database"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -53,11 +52,12 @@ func TestRun(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	network, err := database.CreateNetwork(probe.DB(), sess)
+	db := probe.DB()
+	network, err := db.CreateNetwork(sess)
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := database.CreateResult(probe.DB(), probe.Home(), "middlebox", network.ID)
+	res, err := db.CreateResult(probe.Home(), "middlebox", network.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
