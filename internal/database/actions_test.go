@@ -43,6 +43,31 @@ func (lp *locationInfo) ResolverIP() string {
 	return lp.resolverIP
 }
 
+func TestNewDatabase(t *testing.T) {
+	t.Run("with empty path", func(t *testing.T) {
+		_, err := NewDatabase(&DatabaseConfig{
+			DatabasePath: "",
+		})
+		if err == nil || err.Error() != errInvalidDatabasePath {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("with valid path", func(t *testing.T) {
+		tmpfile, err := ioutil.TempFile("", "dbtest")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer os.Remove(tmpfile.Name())
+		_, err = NewDatabase(&DatabaseConfig{
+			DatabasePath: tmpfile.Name(),
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
 func TestMeasurementWorkflow(t *testing.T) {
 	tmpfile, err := ioutil.TempFile("", "dbtest")
 	if err != nil {
@@ -56,7 +81,9 @@ func TestMeasurementWorkflow(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpdir)
 
-	sess, err := Connect(tmpfile.Name())
+	database, err := NewDatabase(&DatabaseConfig{
+		DatabasePath: tmpfile.Name(),
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,12 +93,13 @@ func TestMeasurementWorkflow(t *testing.T) {
 		countryCode: "IT",
 		networkName: "Unknown",
 	}
-	network, err := CreateNetwork(sess, &location)
+	sess := database.Session()
+	network, err := database.CreateNetwork(&location)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	result, err := CreateResult(sess, tmpdir, "websites", network.ID)
+	result, err := database.CreateResult(tmpdir, "websites", network.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +110,7 @@ func TestMeasurementWorkflow(t *testing.T) {
 	msmtFilePath := tmpdir
 	urlID := sql.NullInt64{Int64: 0, Valid: false}
 
-	m1, err := CreateMeasurement(sess, reportID, testName, msmtFilePath, 0, resultID, urlID)
+	m1, err := database.CreateMeasurement(reportID, testName, msmtFilePath, 0, resultID, urlID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +121,7 @@ func TestMeasurementWorkflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	m2, err := CreateMeasurement(sess, reportID, testName, msmtFilePath, 0, resultID, urlID)
+	m2, err := database.CreateMeasurement(reportID, testName, msmtFilePath, 0, resultID, urlID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,7 +135,7 @@ func TestMeasurementWorkflow(t *testing.T) {
 	if m2.ResultID != m1.ResultID {
 		t.Error("result_id mismatch")
 	}
-	err = UpdateUploadedStatus(sess, result)
+	err = database.UpdateUploadedStatus(result)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -122,7 +150,7 @@ func TestMeasurementWorkflow(t *testing.T) {
 		t.Error("result should be marked as not uploaded")
 	}
 
-	done, incomplete, err := ListResults(sess)
+	done, incomplete, err := database.ListResults()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -141,7 +169,7 @@ func TestMeasurementWorkflow(t *testing.T) {
 		t.Error("there should be a total of 1 anomalies in the result")
 	}
 
-	msmts, err := ListMeasurements(sess, resultID)
+	msmts, err := database.ListMeasurements(resultID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,7 +191,9 @@ func TestDeleteResult(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpdir)
 
-	sess, err := Connect(tmpfile.Name())
+	database, err := NewDatabase(&DatabaseConfig{
+		DatabasePath: tmpfile.Name(),
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -173,12 +203,13 @@ func TestDeleteResult(t *testing.T) {
 		countryCode: "IT",
 		networkName: "Unknown",
 	}
-	network, err := CreateNetwork(sess, &location)
+	sess := database.Session()
+	network, err := database.CreateNetwork(&location)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	result, err := CreateResult(sess, tmpdir, "websites", network.ID)
+	result, err := database.CreateResult(tmpdir, "websites", network.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -189,7 +220,7 @@ func TestDeleteResult(t *testing.T) {
 	msmtFilePath := tmpdir
 	urlID := sql.NullInt64{Int64: 0, Valid: false}
 
-	m1, err := CreateMeasurement(sess, reportID, testName, msmtFilePath, 0, resultID, urlID)
+	m1, err := database.CreateMeasurement(reportID, testName, msmtFilePath, 0, resultID, urlID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -204,7 +235,7 @@ func TestDeleteResult(t *testing.T) {
 		t.Error("result_id mismatch")
 	}
 
-	err = DeleteResult(sess, resultID)
+	err = database.DeleteResult(resultID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -223,7 +254,7 @@ func TestDeleteResult(t *testing.T) {
 		t.Fatal("measurements should be zero")
 	}
 
-	err = DeleteResult(sess, 20)
+	err = database.DeleteResult(20)
 	if err != db.ErrNoMoreRows {
 		t.Fatal(err)
 	}
@@ -236,7 +267,9 @@ func TestNetworkCreate(t *testing.T) {
 	}
 	defer os.Remove(tmpfile.Name())
 
-	sess, err := Connect(tmpfile.Name())
+	database, err := NewDatabase(&DatabaseConfig{
+		DatabasePath: tmpfile.Name(),
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -253,12 +286,12 @@ func TestNetworkCreate(t *testing.T) {
 		networkName: "Fufnet",
 	}
 
-	_, err = CreateNetwork(sess, &l1)
+	_, err = database.CreateNetwork(&l1)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, err = CreateNetwork(sess, &l2)
+	_, err = database.CreateNetwork(&l2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -272,32 +305,34 @@ func TestURLCreation(t *testing.T) {
 	}
 	defer os.Remove(tmpfile.Name())
 
-	sess, err := Connect(tmpfile.Name())
+	database, err := NewDatabase(&DatabaseConfig{
+		DatabasePath: tmpfile.Name(),
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	newID1, err := CreateOrUpdateURL(sess, "https://google.com", "GMB", "XX")
+	newID1, err := database.CreateOrUpdateURL("https://google.com", "GMB", "XX")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	newID2, err := CreateOrUpdateURL(sess, "https://google.com", "SRCH", "XX")
+	newID2, err := database.CreateOrUpdateURL("https://google.com", "SRCH", "XX")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	newID3, err := CreateOrUpdateURL(sess, "https://facebook.com", "GRP", "XX")
+	newID3, err := database.CreateOrUpdateURL("https://facebook.com", "GRP", "XX")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	newID4, err := CreateOrUpdateURL(sess, "https://facebook.com", "GMP", "XX")
+	newID4, err := database.CreateOrUpdateURL("https://facebook.com", "GMP", "XX")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	newID5, err := CreateOrUpdateURL(sess, "https://google.com", "SRCH", "XX")
+	newID5, err := database.CreateOrUpdateURL("https://google.com", "SRCH", "XX")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -351,22 +386,24 @@ func TestGetMeasurementJSON(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpdir)
 
-	sess, err := Connect(tmpfile.Name())
+	database, err := NewDatabase(&DatabaseConfig{
+		DatabasePath: tmpfile.Name(),
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	sess := database.Session()
 	location := locationInfo{
 		asn:         0,
 		countryCode: "IT",
 		networkName: "Unknown",
 	}
-	network, err := CreateNetwork(sess, &location)
+	network, err := database.CreateNetwork(&location)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	result, err := CreateResult(sess, tmpdir, "websites", network.ID)
+	result, err := database.CreateResult(tmpdir, "websites", network.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -377,7 +414,7 @@ func TestGetMeasurementJSON(t *testing.T) {
 	msmtFilePath := tmpdir
 	urlID := sql.NullInt64{Int64: 0, Valid: false}
 
-	msmt, err := CreateMeasurement(sess, reportID, testName, msmtFilePath, 0, resultID, urlID)
+	msmt, err := database.CreateMeasurement(reportID, testName, msmtFilePath, 0, resultID, urlID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -387,7 +424,7 @@ func TestGetMeasurementJSON(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tk, err := GetMeasurementJSON(sess, msmt.ID)
+	tk, err := database.GetMeasurementJSON(msmt.ID)
 	if err != nil {
 		t.Fatal(err)
 	}

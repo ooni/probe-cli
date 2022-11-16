@@ -8,7 +8,6 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/ooni"
-	"github.com/ooni/probe-cli/v3/internal/database"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/pkg/errors"
 )
@@ -72,7 +71,8 @@ func RunGroup(config RunGroupConfig) error {
 		log.WithError(err).Error("Failed to lookup the location of the probe")
 		return err
 	}
-	network, err := database.CreateNetwork(config.Probe.DB(), sess)
+	db := config.Probe.DB()
+	network, err := db.CreateNetwork(sess)
 	if err != nil {
 		log.WithError(err).Error("Failed to create the network row")
 		return err
@@ -89,8 +89,8 @@ func RunGroup(config RunGroupConfig) error {
 	}
 	log.Debugf("Running test group %s", group.Label)
 
-	result, err := database.CreateResult(
-		config.Probe.DB(), config.Probe.Home(), config.GroupName, network.ID)
+	result, err := db.CreateResult(
+		config.Probe.Home(), config.GroupName, network.ID)
 	if err != nil {
 		log.Errorf("DB result error: %s", err)
 		return err
@@ -131,8 +131,8 @@ func RunGroup(config RunGroupConfig) error {
 	if err != nil {
 		os.Remove(result.MeasurementDir)
 	}
-
-	if err = result.Finished(config.Probe.DB()); err != nil {
+	dbSess := db.Session()
+	if err = result.Finished(dbSess); err != nil {
 		return err
 	}
 	return nil

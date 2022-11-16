@@ -12,7 +12,7 @@ import (
 	"github.com/upper/db/v4"
 )
 
-func deleteAll(sess db.Session, skipInteractive bool) error {
+func deleteAll(d *database.Database, skipInteractive bool) error {
 	if skipInteractive == false {
 		answer := ""
 		confirm := &survey.Select{
@@ -25,21 +25,21 @@ func deleteAll(sess db.Session, skipInteractive bool) error {
 			return errors.New("canceled by user")
 		}
 	}
-	doneResults, incompleteResults, err := database.ListResults(sess)
+	doneResults, incompleteResults, err := d.ListResults()
 	if err != nil {
 		log.WithError(err).Error("failed to list results")
 		return err
 	}
 	cnt := 0
 	for _, result := range incompleteResults {
-		err = database.DeleteResult(sess, result.Result.ID)
+		err = d.DeleteResult(result.Result.ID)
 		if err == db.ErrNoMoreRows {
 			log.WithError(err).Errorf("failed to delete result #%d", result.Result.ID)
 		}
 		cnt++
 	}
 	for _, result := range doneResults {
-		err = database.DeleteResult(sess, result.Result.ID)
+		err = d.DeleteResult(result.Result.ID)
 		if err == db.ErrNoMoreRows {
 			log.WithError(err).Errorf("failed to delete result #%d", result.Result.ID)
 		}
@@ -68,7 +68,7 @@ func init() {
 		}
 
 		if *yes == true {
-			err = database.DeleteResult(ctx.DB(), *resultID)
+			err = ctx.DB().DeleteResult(*resultID)
 			if err == db.ErrNoMoreRows {
 				return errors.New("result not found")
 			}
@@ -84,7 +84,7 @@ func init() {
 		if answer == "false" {
 			return errors.New("canceled by user")
 		}
-		err = database.DeleteResult(ctx.DB(), *resultID)
+		err = ctx.DB().DeleteResult(*resultID)
 		if err == db.ErrNoMoreRows {
 			return errors.New("result not found")
 		}

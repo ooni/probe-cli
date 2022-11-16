@@ -31,7 +31,7 @@ func (n WebConnectivity) lookupURLs(ctl *Controller, categories []string) ([]str
 	if err != nil {
 		return nil, err
 	}
-	return ctl.BuildAndSetInputIdxMap(ctl.Probe.DB(), testlist)
+	return ctl.BuildAndSetInputIdxMap(testlist)
 }
 
 // WebConnectivity test implementation

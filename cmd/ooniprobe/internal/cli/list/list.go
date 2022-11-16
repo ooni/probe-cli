@@ -7,7 +7,6 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/cli/root"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/output"
-	"github.com/ooni/probe-cli/v3/internal/database"
 )
 
 func init() {
@@ -20,7 +19,7 @@ func init() {
 			return err
 		}
 		if *resultID > 0 {
-			measurements, err := database.ListMeasurements(probeCLI.DB(), *resultID)
+			measurements, err := probeCLI.DB().ListMeasurements(*resultID)
 			if err != nil {
 				log.WithError(err).Error("failed to list measurements")
 				return err
@@ -63,7 +62,7 @@ func init() {
 			}
 			output.MeasurementSummary(msmtSummary)
 		} else {
-			doneResults, incompleteResults, err := database.ListResults(probeCLI.DB())
+			doneResults, incompleteResults, err := probeCLI.DB().ListResults()
 			if err != nil {
 				log.WithError(err).Error("failed to list results")
 				return err

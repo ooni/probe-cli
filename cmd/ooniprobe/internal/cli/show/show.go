@@ -5,7 +5,6 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/cli/root"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/output"
-	"github.com/ooni/probe-cli/v3/internal/database"
 )
 
 func init() {
@@ -17,7 +16,7 @@ func init() {
 			log.WithError(err).Error("failed to initialize root context")
 			return err
 		}
-		msmt, err := database.GetMeasurementJSON(ctx.DB(), *msmtID)
+		msmt, err := ctx.DB().GetMeasurementJSON(*msmtID)
 		if err != nil {
 			log.Errorf("error: %v", err)
 			return err

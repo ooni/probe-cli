@@ -19,7 +19,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/pkg/errors"
-	"github.com/upper/db/v4"
 )
 
 // DefaultSoftwareName is the default software name.
@@ -33,7 +32,7 @@ var logger = log.WithFields(log.Fields{
 // ProbeCLI is the OONI Probe CLI context.
 type ProbeCLI interface {
 	Config() *config.Config
-	DB() db.Session
+	DB() *database.Database
 	IsBatch() bool
 	Home() string
 	TempDir() string
@@ -53,7 +52,7 @@ type ProbeEngine interface {
 // Probe contains the ooniprobe CLI context.
 type Probe struct {
 	config  *config.Config
-	db      db.Session
+	db      *database.Database
 	isBatch bool
 
 	home      string
@@ -86,7 +85,7 @@ func (p *Probe) Config() *config.Config {
 }
 
 // DB returns the database we're using
-func (p *Probe) DB() db.Session {
+func (p *Probe) DB() *database.Database {
 	return p.db
 }
 
@@ -180,7 +179,9 @@ func (p *Probe) Init(softwareName, softwareVersion, proxy string) error {
 
 	p.dbPath = utils.DBDir(p.home, "main")
 	log.Debugf("Connecting to database sqlite3://%s", p.dbPath)
-	db, err := database.Connect(p.dbPath)
+	db, err := database.NewDatabase(&database.DatabaseConfig{
+		DatabasePath: p.dbPath,
+	})
 	if err != nil {
 		return err
 	}
