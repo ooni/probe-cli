@@ -28,7 +28,12 @@ func main() {
 		MockableLogger:  log.Log,
 		MockableTempDir: tempdir,
 	}
-	if err = m.Run(ctx, sess, measurement, callbacks); err != nil {
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	if err = m.Run(ctx, args); err != nil {
 		log.WithError(err).Fatal("torsf experiment failed")
 	}
 	data, err := json.Marshal(measurement)

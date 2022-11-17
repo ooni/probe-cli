@@ -112,12 +112,11 @@ var (
 )
 
 // Run implements ExperimentMeasurer.Run.
-func (m *Measurer) Run(
-	ctx context.Context,
-	sess model.ExperimentSession,
-	measurement *model.Measurement,
-	callbacks model.ExperimentCallbacks,
-) error {
+func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
+	_ = args.Callbacks
+	measurement := args.Measurement
+	sess := args.Session
+
 	if measurement.Input == "" {
 		return errNoInputProvided
 	}

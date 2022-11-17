@@ -34,7 +34,12 @@ func TestRunWithExistingTor(t *testing.T) {
 		MockableLogger:  log.Log,
 		MockableTempDir: tempdir,
 	}
-	if err = m.Run(ctx, sess, measurement, callbacks); err != nil {
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	if err = m.Run(ctx, args); err != nil {
 		t.Fatal(err)
 	}
 }

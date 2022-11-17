@@ -93,10 +93,10 @@ func (m *Measurer) ExperimentVersion() string {
 // minimal implementation of the `torsf` experiment.
 //
 // ```Go
-func (m *Measurer) Run(
-	ctx context.Context, sess model.ExperimentSession,
-	measurement *model.Measurement, callbacks model.ExperimentCallbacks,
-) error {
+func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
+	_ = args.Callbacks
+	_ = args.Measurement
+	sess := args.Session
 	// ```
 	// As you can see, this is just a stub implementation that sleeps
 	// for one second and prints a logging message.

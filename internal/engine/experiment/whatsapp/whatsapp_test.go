@@ -35,7 +35,12 @@ func TestSuccess(t *testing.T) {
 	sess := &mockable.Session{MockableLogger: log.Log}
 	measurement := new(model.Measurement)
 	callbacks := model.NewPrinterCallbacks(log.Log)
-	err := measurer.Run(ctx, sess, measurement, callbacks)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(ctx, args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +75,12 @@ func TestFailureAllEndpoints(t *testing.T) {
 	sess := &mockable.Session{MockableLogger: log.Log}
 	measurement := new(model.Measurement)
 	callbacks := model.NewPrinterCallbacks(log.Log)
-	err := measurer.Run(ctx, sess, measurement, callbacks)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(ctx, args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -598,7 +608,12 @@ func TestWeConfigureWebChecksCorrectly(t *testing.T) {
 	}
 	measurement := new(model.Measurement)
 	callbacks := model.NewPrinterCallbacks(log.Log)
-	if err := measurer.Run(ctx, sess, measurement, callbacks); err != nil {
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	if err := measurer.Run(ctx, args); err != nil {
 		t.Fatal(err)
 	}
 	if called.Load() != 263 {

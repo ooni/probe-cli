@@ -56,12 +56,12 @@ func TestExperimentNameAndVersion(t *testing.T) {
 
 func TestDNSCheckFailsWithoutInput(t *testing.T) {
 	measurer := NewExperimentMeasurer(Config{Domain: "example.com"})
-	err := measurer.Run(
-		context.Background(),
-		newsession(),
-		new(model.Measurement),
-		model.NewPrinterCallbacks(log.Log),
-	)
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: new(model.Measurement),
+		Session:     newsession(),
+	}
+	err := measurer.Run(context.Background(), args)
 	if !errors.Is(err, ErrInputRequired) {
 		t.Fatal("expected no input error")
 	}
@@ -69,12 +69,12 @@ func TestDNSCheckFailsWithoutInput(t *testing.T) {
 
 func TestDNSCheckFailsWithInvalidURL(t *testing.T) {
 	measurer := NewExperimentMeasurer(Config{})
-	err := measurer.Run(
-		context.Background(),
-		newsession(),
-		&model.Measurement{Input: "Not a valid URL \x7f"},
-		model.NewPrinterCallbacks(log.Log),
-	)
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: &model.Measurement{Input: "Not a valid URL \x7f"},
+		Session:     newsession(),
+	}
+	err := measurer.Run(context.Background(), args)
 	if !errors.Is(err, ErrInvalidURL) {
 		t.Fatal("expected invalid input error")
 	}
@@ -82,12 +82,12 @@ func TestDNSCheckFailsWithInvalidURL(t *testing.T) {
 
 func TestDNSCheckFailsWithUnsupportedProtocol(t *testing.T) {
 	measurer := NewExperimentMeasurer(Config{})
-	err := measurer.Run(
-		context.Background(),
-		newsession(),
-		&model.Measurement{Input: "file://1.1.1.1"},
-		model.NewPrinterCallbacks(log.Log),
-	)
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: &model.Measurement{Input: "file://1.1.1.1"},
+		Session:     newsession(),
+	}
+	err := measurer.Run(context.Background(), args)
 	if !errors.Is(err, ErrUnsupportedURLScheme) {
 		t.Fatal("expected unsupported scheme error")
 	}
@@ -100,12 +100,12 @@ func TestWithCancelledContext(t *testing.T) {
 		DefaultAddrs: "1.1.1.1 1.0.0.1",
 	})
 	measurement := &model.Measurement{Input: "dot://one.one.one.one"}
-	err := measurer.Run(
-		ctx,
-		newsession(),
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     newsession(),
+	}
+	err := measurer.Run(ctx, args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,12 +147,12 @@ func TestDNSCheckValid(t *testing.T) {
 		DefaultAddrs: "1.1.1.1 1.0.0.1",
 	})
 	measurement := model.Measurement{Input: "dot://one.one.one.one:853"}
-	err := measurer.Run(
-		context.Background(),
-		newsession(),
-		&measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: &measurement,
+		Session:     newsession(),
+	}
+	err := measurer.Run(context.Background(), args)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err.Error())
 	}
@@ -195,12 +195,12 @@ func TestDNSCheckWait(t *testing.T) {
 	measurer := &Measurer{Endpoints: endpoints}
 	run := func(input string) {
 		measurement := model.Measurement{Input: model.MeasurementTarget(input)}
-		err := measurer.Run(
-			context.Background(),
-			newsession(),
-			&measurement,
-			model.NewPrinterCallbacks(log.Log),
-		)
+		args := &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(log.Log),
+			Measurement: &measurement,
+			Session:     newsession(),
+		}
+		err := measurer.Run(context.Background(), args)
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err.Error())
 		}

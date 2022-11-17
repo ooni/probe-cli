@@ -59,7 +59,12 @@ func TestSuccessWithMockedTunnelStart(t *testing.T) {
 	callbacks := &model.PrinterCallbacks{
 		Logger: model.DiscardLogger,
 	}
-	if err := m.Run(ctx, sess, measurement, callbacks); err != nil {
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	if err := m.Run(ctx, args); err != nil {
 		t.Fatal(err)
 	}
 	if called.Load() != 1 {
@@ -113,7 +118,12 @@ func TestWithCancelledContext(t *testing.T) {
 	callbacks := &model.PrinterCallbacks{
 		Logger: model.DiscardLogger,
 	}
-	if err := m.Run(ctx, sess, measurement, callbacks); err != nil {
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	if err := m.Run(ctx, args); err != nil {
 		t.Fatal(err)
 	}
 	tk := measurement.TestKeys.(*TestKeys)
@@ -170,7 +180,12 @@ func TestFailureToStartTunnel(t *testing.T) {
 	callbacks := &model.PrinterCallbacks{
 		Logger: model.DiscardLogger,
 	}
-	if err := m.Run(ctx, sess, measurement, callbacks); err != nil {
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	if err := m.Run(ctx, args); err != nil {
 		t.Fatal(err)
 	}
 	tk := measurement.TestKeys.(*TestKeys)

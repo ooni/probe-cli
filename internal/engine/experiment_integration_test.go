@@ -475,10 +475,7 @@ func (am *antaniMeasurer) ExperimentVersion() string {
 	return "0.1.1"
 }
 
-func (am *antaniMeasurer) Run(
-	ctx context.Context, sess model.ExperimentSession,
-	measurement *model.Measurement, callbacks model.ExperimentCallbacks,
-) error {
+func (am *antaniMeasurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	return nil
 }
 

@@ -100,7 +100,7 @@ const (
 					"cert": "XXXXXXXXXXXXXXXXXXXXXXXXX",
 					"iatMode": "0"
 				  }
-				},              
+				},
 				{
 				  "type":"openvpn",
 				  "protocols":[
@@ -328,7 +328,12 @@ func TestInvalidCaCert(t *testing.T) {
 	sess := &mockable.Session{MockableLogger: log.Log}
 	measurement := new(model.Measurement)
 	callbacks := model.NewPrinterCallbacks(log.Log)
-	err := measurer.Run(ctx, sess, measurement, callbacks)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(ctx, args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -599,7 +604,12 @@ func TestMissingTransport(t *testing.T) {
 	sess := &mockable.Session{MockableLogger: log.Log}
 	measurement := new(model.Measurement)
 	callbacks := model.NewPrinterCallbacks(log.Log)
-	err = measurer.Run(ctx, sess, measurement, callbacks)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err = measurer.Run(ctx, args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -790,14 +800,14 @@ func runDefaultMockTest(t *testing.T, multiGetter urlgetter.MultiGetter) *model.
 	}
 
 	measurement := new(model.Measurement)
-	err := measurer.Run(
-		context.Background(),
-		&mockable.Session{
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session: &mockable.Session{
 			MockableLogger: log.Log,
 		},
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	}
+	err := measurer.Run(context.Background(), args)
 
 	if err != nil {
 		t.Fatal(err)

@@ -57,10 +57,10 @@ func (m Measurer) ExperimentVersion() string {
 var ErrFailure = errors.New("mocked error")
 
 // Run implements model.ExperimentMeasurer.Run.
-func (m Measurer) Run(
-	ctx context.Context, sess model.ExperimentSession,
-	measurement *model.Measurement, callbacks model.ExperimentCallbacks,
-) error {
+func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
+	callbacks := args.Callbacks
+	measurement := args.Measurement
+	sess := args.Session
 	var err error
 	if m.config.ReturnError {
 		err = ErrFailure

@@ -38,7 +38,12 @@ func TestMeasurer_input_failure(t *testing.T) {
 			},
 		}
 		callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
-		err := m.Run(ctx, sess, meas, callbacks)
+		args := &model.ExperimentArgs{
+			Callbacks:   callbacks,
+			Measurement: meas,
+			Session:     sess,
+		}
+		err := m.Run(ctx, args)
 		return meas, m, err
 	}
 

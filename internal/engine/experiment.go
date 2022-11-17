@@ -92,7 +92,12 @@ func (eaw *experimentAsyncWrapper) RunAsync(
 	out := make(chan *model.ExperimentAsyncTestKeys)
 	measurement := eaw.experiment.newMeasurement(input)
 	start := time.Now()
-	err := eaw.experiment.measurer.Run(ctx, eaw.session, measurement, eaw.callbacks)
+	args := &model.ExperimentArgs{
+		Callbacks:   eaw.callbacks,
+		Measurement: measurement,
+		Session:     eaw.session,
+	}
+	err := eaw.experiment.measurer.Run(ctx, args)
 	stop := time.Now()
 	if err != nil {
 		return nil, err

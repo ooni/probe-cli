@@ -120,10 +120,11 @@ var (
 )
 
 // Run implements model.ExperimentSession.Run
-func (m *Measurer) Run(
-	ctx context.Context, sess model.ExperimentSession,
-	measurement *model.Measurement, callbacks model.ExperimentCallbacks,
-) error {
+func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
+	_ = args.Callbacks
+	measurement := args.Measurement
+	sess := args.Session
+
 	// 1. fill the measurement with test keys
 	tk := new(TestKeys)
 	tk.Lookups = make(map[string]urlgetter.TestKeys)

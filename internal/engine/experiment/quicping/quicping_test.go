@@ -33,8 +33,12 @@ func TestInvalidHost(t *testing.T) {
 	measurement := new(model.Measurement)
 	measurement.Input = model.MeasurementTarget("a.a.a.a")
 	sess := &mockable.Session{MockableLogger: log.Log}
-	err := measurer.Run(context.Background(), sess, measurement,
-		model.NewPrinterCallbacks(log.Log))
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(context.Background(), args)
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
@@ -53,8 +57,12 @@ func TestURLInput(t *testing.T) {
 	measurement := new(model.Measurement)
 	measurement.Input = model.MeasurementTarget("https://google.com/")
 	sess := &mockable.Session{MockableLogger: log.Log}
-	err := measurer.Run(context.Background(), sess, measurement,
-		model.NewPrinterCallbacks(log.Log))
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(context.Background(), args)
 	if err != nil {
 		t.Fatal("unexpected error")
 	}
@@ -73,8 +81,12 @@ func TestSuccess(t *testing.T) {
 	measurement := new(model.Measurement)
 	measurement.Input = model.MeasurementTarget("google.com")
 	sess := &mockable.Session{MockableLogger: log.Log}
-	err := measurer.Run(context.Background(), sess, measurement,
-		model.NewPrinterCallbacks(log.Log))
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(context.Background(), args)
 	if err != nil {
 		t.Fatal("did not expect an error here")
 	}
@@ -117,8 +129,12 @@ func TestWithCancelledContext(t *testing.T) {
 	sess := &mockable.Session{MockableLogger: log.Log}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	err := measurer.Run(ctx, sess, measurement,
-		model.NewPrinterCallbacks(log.Log))
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(ctx, args)
 	if err != nil {
 		t.Fatal("did not expect an error here")
 	}
@@ -138,8 +154,12 @@ func TestListenFails(t *testing.T) {
 	measurement := new(model.Measurement)
 	measurement.Input = model.MeasurementTarget("google.com")
 	sess := &mockable.Session{MockableLogger: log.Log}
-	err := measurer.Run(context.Background(), sess, measurement,
-		model.NewPrinterCallbacks(log.Log))
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(context.Background(), args)
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
@@ -182,8 +202,12 @@ func TestWriteFails(t *testing.T) {
 	measurement := new(model.Measurement)
 	measurement.Input = model.MeasurementTarget("google.com")
 	sess := &mockable.Session{MockableLogger: log.Log}
-	err := measurer.Run(context.Background(), sess, measurement,
-		model.NewPrinterCallbacks(log.Log))
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(context.Background(), args)
 	if err != nil {
 		t.Fatal("unexpected error")
 	}
@@ -239,8 +263,12 @@ func TestReadFails(t *testing.T) {
 	measurement := new(model.Measurement)
 	measurement.Input = model.MeasurementTarget("google.com")
 	sess := &mockable.Session{MockableLogger: log.Log}
-	err := measurer.Run(context.Background(), sess, measurement,
-		model.NewPrinterCallbacks(log.Log))
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(context.Background(), args)
 	if err != nil {
 		t.Fatal("unexpected error")
 	}
@@ -271,8 +299,12 @@ func TestNoResponse(t *testing.T) {
 	measurement := new(model.Measurement)
 	measurement.Input = model.MeasurementTarget("ooni.org")
 	sess := &mockable.Session{MockableLogger: log.Log}
-	err := measurer.Run(context.Background(), sess, measurement,
-		model.NewPrinterCallbacks(log.Log))
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(context.Background(), args)
 	if err != nil {
 		t.Fatal("did not expect an error here")
 	}

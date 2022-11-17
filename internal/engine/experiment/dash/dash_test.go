@@ -270,15 +270,15 @@ func TestMeasureWithCancelledContext(t *testing.T) {
 	cancel() // cause failure
 	measurement := new(model.Measurement)
 	m := &Measurer{}
-	err := m.Run(
-		ctx,
-		&mockable.Session{
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session: &mockable.Session{
 			MockableHTTPClient: http.DefaultClient,
 			MockableLogger:     log.Log,
 		},
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	}
+	err := m.Run(ctx, args)
 	// See corresponding comment in Measurer.Run implementation to
 	// understand why here it's correct to return nil.
 	if !errors.Is(err, nil) {

@@ -29,7 +29,12 @@ func TestMeasurer_run(t *testing.T) {
 	}
 	callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
 	ctx := context.Background()
-	err := m.Run(ctx, sess, meas, callbacks)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: meas,
+		Session:     sess,
+	}
+	err := m.Run(ctx, args)
 	if err != nil {
 		t.Fatal(err)
 	}
