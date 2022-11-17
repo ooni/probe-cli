@@ -7,7 +7,9 @@ package portfiltering
 import (
 	"context"
 	"errors"
+	"net"
 	"net/url"
+	"strconv"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -33,6 +35,12 @@ func (m *Measurer) ExperimentVersion() string {
 }
 
 var (
+	// errInputRequired indicates that no input was provided
+	errInputRequired = errors.New("this experiment needs input")
+
+	// errInvalidInput indicates an invalid port number
+	errInvalidInput = errors.New("port number is invalid")
+
 	// errInvalidTestHelper indicates that the given test helper is not an URL
 	errInvalidTestHelper = errors.New("testhelper is not an URL")
 )
@@ -44,21 +52,26 @@ func (m *Measurer) Run(
 	measurement *model.Measurement,
 	callbacks model.ExperimentCallbacks,
 ) error {
+	input := string(measurement.Input)
+	if input == "" {
+		return errInputRequired
+	}
+	port, err := strconv.Atoi(input)
+	if err != nil || port >= 65536 || port < 0 {
+		return errInvalidInput
+	}
 	// TODO(DecFox): Replace the localhost deployment with an OONI testhelper
 	// Ensure that we only do this once we have a deployed testhelper
-	testhelper := "http://127.0.0.1"
-	parsed, err := url.Parse(testhelper)
+	th := m.config.testhelper()
+	parsed, err := url.Parse(th)
 	if err != nil {
 		return errInvalidTestHelper
 	}
 	tk := new(TestKeys)
 	measurement.TestKeys = tk
-	out := make(chan *model.ArchivalTCPConnectResult)
-	go m.tcpConnectLoop(ctx, measurement.MeasurementStartTimeSaved, sess.Logger(), parsed.Host, out)
-	for len(tk.TCPConnect) < len(Ports) {
-		tk.TCPConnect = append(tk.TCPConnect, <-out)
-	}
-	return nil // return nil so we always submit the measurement
+	addr := net.JoinHostPort(parsed.Hostname(), input)
+	m.tcpConnect(ctx, int64(0), measurement.MeasurementStartTimeSaved, sess.Logger(), tk, addr)
+	return nil
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.

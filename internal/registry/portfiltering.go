@@ -11,13 +11,12 @@ import (
 
 func init() {
 	AllExperiments["portfiltering"] = &Factory{
-		build: func(config any) model.ExperimentMeasurer {
+		build: func(config interface{}) model.ExperimentMeasurer {
 			return portfiltering.NewExperimentMeasurer(
-				config.(portfiltering.Config),
+				*config.(*portfiltering.Config),
 			)
 		},
-		config:        portfiltering.Config{},
-		interruptible: false,
-		inputPolicy:   model.InputNone,
+		config:      &portfiltering.Config{},
+		inputPolicy: model.InputOrStaticDefault,
 	}
 }
