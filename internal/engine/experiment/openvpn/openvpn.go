@@ -11,7 +11,6 @@ import (
 	"errors"
 	"io"
 	"net"
-	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -21,7 +20,7 @@ import (
 	"time"
 
 	"github.com/ooni/minivpn/vpn"
-	"github.com/ooni/probe-cli/v3/internal/measurex"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
@@ -32,7 +31,7 @@ const (
 	testName = "openvpn"
 
 	// testVersion is the openvpn experiment version.
-	testVersion = "0.0.14"
+	testVersion = "0.0.15"
 
 	// pingCount tells how many icmp echo requests to send.
 	pingCount = 10
@@ -57,78 +56,6 @@ const (
 var (
 	localCredsFile = "ooni-vpn-creds"
 )
-
-// TestKeys contains the experiment's result.
-type TestKeys struct {
-	//
-	// Keys that will serve as primary keys.
-	//
-
-	// Provider is the entity that controls the endpoints.
-	Provider string `json:"provider"`
-
-	// Proto is the protocol used in the experiment (openvpn in this case).
-	Proto string `json:"vpn_protocol"`
-
-	// Transport is the transport protocol (tcp, udp).
-	Transport string `json:"transport"`
-
-	// Remote is the remote used in the experiment (ip:addr).
-	Remote string `json:"remote"`
-
-	// Obfuscation is the kind of obfuscation used, if any.
-	Obfuscation string `json:"obfuscation"`
-
-	//
-	// Other keys
-	//
-
-	// BootstrapTime contains the bootstrap time on success.
-	BootstrapTime float64 `json:"bootstrap_time"`
-
-	// HandshakeEvents is a sequence of handshake events with their corresponding timestamp.
-	HandshakeEvents []HandshakeEvent `json:"network_events"`
-
-	// Last known received OpenVPN handshake event
-	LastHandshakeTransactionID int `json:"last_handshake_transaction_id"`
-
-	// TCPCconnect traces a TCP connection for the vpn dialer (null for UDP transport).
-	//TCPConnect *model.ArchivalTCPConnectResult `json:"tcp_connect"`
-	TCPConnect []tracex.TCPConnectEntry `json:"tcp_connect"`
-
-	// Failure contains the failure string or nil.
-	Failure *string `json:"failure"`
-
-	// Pings holds an array for aggregated stats of each ping.
-	Pings []*PingResult `json:"icmp_pings"`
-
-	// Requests archive an arbitrary number of http requests done through the tunnel.
-	//Requests []*measurex.ArchivalHTTPRoundTripEvent `json:"requests"`
-	Requests []tracex.RequestEntry `json:"requests"`
-
-	// Software identification
-
-	// MiniVPNVersion contains the version of the minivpn library used.
-	MiniVPNVersion string `json:"minivpn_version"`
-
-	// Obfs4Version contains the version of the obfs4 library used.
-	Obfs4Version string `json:"obfs4_version"`
-
-	// Summaries for partial results
-
-	// SuccessHandshake is true when we reach the last handshake stage.
-	SuccessHandshake bool `json:"success_handshake"`
-
-	// SuccessICMP signals an experiment in which _all_ of the first two ICMP pings
-	// have less than 50% packet loss.
-	SuccessICMP bool `json:"success_icmp"`
-
-	// SuccessURLGrab signals an experiment in which at least one of the urlgrabs through the tunnel is successful.
-	SuccessURLGrab bool `json:"success_urlgrab"`
-
-	// Success is true when we reached the end of the test without errors.
-	Success bool `json:"success"`
-}
 
 // Measurer performs the measurement.
 type Measurer struct {
@@ -162,7 +89,6 @@ func (m *Measurer) ExperimentVersion() string {
 
 func registerExtensions(m *model.Measurement) {
 	model.ArchivalExtHTTP.AddTo(m)
-	model.ArchivalExtDNS.AddTo(m)
 }
 
 // Run runs the experiment with the specified context, session,
@@ -283,38 +209,30 @@ func (m *Measurer) Run(
 
 	sess.Logger().Infof("openvpn: urlgrab stage")
 
-	vpnDialer := vpn.NewTunDialer(m.tunnel)
+	// TODO append any extra target URL from extra options
+	targetURLs := []string{urlGrabURI}
 
-	db := &measurex.MeasurementDB{}
-	mx := measurex.NewMeasurerWithDefaultSettings()
-	txp := measurex.WrapHTTPTransport(
-		time.Now(),
-		db,
-		&txpTCP{&http.Transport{DialContext: vpnDialer.DialContext}},
-		100) // this should be enough to get the html lang attribute
-	clnt := &http.Client{
-		Transport: txp,
-		Jar:       measurex.NewCookieJar(),
+	urlgetterConfig := urlgetter.Config{
+		Dialer: vpn.NewTunDialer(m.tunnel),
 	}
-
-	targetURLs := []string{urlGrabURI, googleURI}
 
 	for _, uri := range targetURLs {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			u, _ := url.Parse(uri)
 
 			m.tunnel.SetReadDeadline(time.Now().Add(time.Second * 60))
-			resp, _ := mx.HTTPClientGET(ctx, clnt, u)
-			if resp != nil {
-				resp.Body.Close()
+
+			g := urlgetter.Getter{
+				Config:  urlgetterConfig,
+				Session: sess,
+				Target:  uri,
 			}
+			urlgetTk, _ := g.Get(context.Background())
+			tk.Requests = append(tk.Requests, urlgetTk.Requests...)
 		}()
 		wg.Wait()
 	}
-
-	tk.Requests = append(tk.Requests, measurex.NewArchivalHTTPRoundTripEventList(db.AsMeasurement().HTTPRoundTrip)...)
 
 	goodURLGrabs := 0
 	for _, r := range tk.Requests {
@@ -329,15 +247,6 @@ func (m *Measurer) Run(
 	sess.Logger().Info("openvpn: all tests ok")
 	tk.Success = true
 	return nil
-}
-
-// txpTCP implements model.HTTPTransport
-type txpTCP struct {
-	*http.Transport
-}
-
-func (t *txpTCP) Network() string {
-	return "tcp"
 }
 
 // setup prepares for running the openvpn experiment. Returns a minivpn dialer on success.
@@ -429,19 +338,12 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 		remote = net.JoinHostPort(m.vpnOptions.Remote, m.vpnOptions.Port)
 	}
 
-	tk := &TestKeys{
-		Provider:        experiment.Provider,
-		Proto:           testName,
-		Transport:       protoToString(m.vpnOptions.Proto),
-		Remote:          remote,
-		Obfuscation:     experiment.Config.Obfuscation,
-		MiniVPNVersion:  getMiniVPNVersion(),
-		Obfs4Version:    getObfs4Version(),
-		BootstrapTime:   0,
-		Failure:         nil,
-		HandshakeEvents: []HandshakeEvent{},
-		Requests:        []*measurex.ArchivalHTTPRoundTripEvent{},
-	}
+	tk := NewTestKeys()
+	tk.Provider = experiment.Provider
+	tk.Transport = protoToString(m.vpnOptions.Proto)
+	tk.Remote = remote
+	tk.Obfuscation = experiment.Config.Obfuscation
+
 	sess.Logger().Info("openvpn: bootstrapping openvpn connection")
 	defer func() {
 		out <- tk
