@@ -27,6 +27,7 @@ type Config struct {
 	// not settable from command line
 	CertPool *x509.CertPool
 	Timeout  time.Duration
+	Dialer   model.Dialer
 
 	// settable from command line
 	DNSCache          string `ooni:"Add 'DOMAIN IP...' to cache"`
