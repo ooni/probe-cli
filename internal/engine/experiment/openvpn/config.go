@@ -21,10 +21,9 @@ var (
 )
 
 // Config contains openvpn experiment configuration.
-// TODO(ainghazal): it might be handy to be able to pass a list of urls here, to be able to test arbirtrary urls:
-// - an array of urls
-// - an optional (and reasonable) truncation threshold for each url (needs to be overriden).
+// TODO(ainghazal): add an optional (and reasonable) truncation threshold for each url (needs to be overriden).
 type Config struct {
+	URLs           string `ooni:"comma-separated list of extra URLs to fetch through the tunnel"`
 	SafeKey        string `ooni:"key to connect to the OpenVPN endpoint"`
 	SafeCert       string `ooni:"cert to connect to the OpenVPN endpoint"`
 	SafeCa         string `ooni:"ca to connect to the OpenVPN endpoint"`

@@ -31,7 +31,7 @@ const (
 	testName = "openvpn"
 
 	// testVersion is the openvpn experiment version.
-	testVersion = "0.0.15"
+	testVersion = "0.0.16"
 
 	// pingCount tells how many icmp echo requests to send.
 	pingCount = 10
@@ -209,8 +209,12 @@ func (m *Measurer) Run(
 
 	sess.Logger().Infof("openvpn: urlgrab stage")
 
-	// TODO append any extra target URL from extra options
 	targetURLs := []string{urlGrabURI}
+
+	if len(m.config.URLs) != 0 {
+		urls := strings.Split(m.config.URLs, ",")
+		targetURLs = append(targetURLs, urls...)
+	}
 
 	urlgetterConfig := urlgetter.Config{
 		Dialer: vpn.NewTunDialer(m.tunnel),
@@ -279,7 +283,13 @@ func (m *Measurer) setup(exp *model.VPNExperiment, logger model.Logger) (*vpn.Cl
 			return nil, err
 		}
 		logger.Infof("Copying credentials for %v", strings.ToLower(exp.Provider))
-		credsPth := filepath.Join(os.Getenv("HOME"), ".ooni", "vpn", exp.Provider+".txt")
+
+		// TODO retrieve OONI_HOME in a better way
+		homedir, err := os.UserHomeDir()
+		if err != nil {
+			return nil, err
+		}
+		credsPth := filepath.Join(homedir, ".miniooni", "vpn", exp.Provider+".txt")
 		creds, err := os.Open(credsPth)
 		if err != nil {
 			return nil, err
