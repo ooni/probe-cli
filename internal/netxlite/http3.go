@@ -77,3 +77,9 @@ func NewHTTP3TransportWithResolver(logger model.Logger, reso model.Resolver) mod
 	qd := NewQUICDialerWithResolver(NewQUICListener(), logger, reso)
 	return NewHTTP3Transport(logger, qd, nil)
 }
+
+// NewHTTP3ClientWithResolver creates a new HTTP3Transport using the
+// given resolver and then from that builds an HTTPClient.
+func NewHTTP3ClientWithResolver(logger model.Logger, reso model.Resolver) model.HTTPClient {
+	return NewHTTPClient(NewHTTP3TransportWithResolver(logger, reso))
+}

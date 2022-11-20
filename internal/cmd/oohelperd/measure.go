@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 type (
@@ -60,6 +61,7 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 		TCPConnect:   map[string]model.THTCPConnectResult{},
 		TLSHandshake: map[string]model.THTLSHandshakeResult{},
 		HTTPRequest:  model.THHTTPRequestResult{},
+		HTTP3Request: nil,
 		DNS:          model.THDNSResult{},
 		IPInfo:       map[string]*model.THIPInfo{},
 	}
@@ -114,6 +116,34 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 
 	// continue assembling the response
 	cresp.HTTPRequest = <-httpch
+
+	if cresp.HTTPRequest.DiscoveredH3 != "" {
+		// http3: start
+		http3ch := make(chan ctrlHTTPResponse, 1)
+		wg.Add(1)
+
+		h3Client := func(logger model.Logger) model.HTTPClient {
+			reso := netxlite.MaybeWrapWithBogonResolver(
+				true, // enabled
+				newResolver(logger),
+			)
+			return netxlite.NewHTTP3ClientWithResolver(logger, reso)
+		}
+		go httpDo(ctx, &httpConfig{
+			Headers:           creq.HTTPRequestHeaders,
+			Logger:            logger,
+			MaxAcceptableBody: config.MaxAcceptableBody,
+			NewClient:         h3Client,
+			Out:               http3ch,
+			URL:               "https://" + cresp.HTTPRequest.DiscoveredH3,
+			Wg:                wg,
+			h3:                true,
+		})
+		wg.Wait()
+
+		http3Request := <-http3ch
+		cresp.HTTP3Request = &http3Request
+	}
 Loop:
 	for {
 		select {

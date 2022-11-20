@@ -7,6 +7,7 @@ package main
 import (
 	"context"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -47,6 +48,9 @@ type httpConfig struct {
 
 	// Wg is MANDATORY and allows synchronizing with parent.
 	Wg *sync.WaitGroup
+
+	// h3 is the OPTIONAL flag to indicate that this is an HTTP/3 request
+	h3 bool
 }
 
 // httpDo performs the HTTP check.
@@ -102,13 +106,56 @@ func httpDo(ctx context.Context, config *httpConfig) {
 	reader := &io.LimitedReader{R: resp.Body, N: config.MaxAcceptableBody}
 	data, err := netxlite.ReadAllContext(ctx, reader)
 	ol.Stop(err)
-	config.Out <- ctrlHTTPResponse{
-		BodyLength: int64(len(data)),
-		Failure:    httpMapFailure(err),
-		StatusCode: int64(resp.StatusCode),
-		Headers:    headers,
-		Title:      measurexlite.WebGetTitle(string(data)),
+
+	h3Endpoint := ""
+	if !config.h3 {
+		h3Endpoint = getHTTP3Altsvc(resp)
 	}
+
+	config.Out <- ctrlHTTPResponse{
+		BodyLength:   int64(len(data)),
+		DiscoveredH3: h3Endpoint,
+		Failure:      httpMapFailure(err),
+		StatusCode:   int64(resp.StatusCode),
+		Headers:      headers,
+		Title:        measurexlite.WebGetTitle(string(data)),
+	}
+}
+
+func getHTTP3Altsvc(resp *http.Response) string {
+	var responses []*http.Response
+	var request *http.Request
+
+	// go through chain of HTTP Request - Responses to find first Response
+	// TODO (kelmenhorst): this will not work for http:// URLs
+	for i := 0; i < 10; i++ {
+		responses = append(responses, resp)
+		request = resp.Request
+		if request == nil {
+			break
+		}
+		if request.Response == nil {
+			break
+		}
+		resp = request.Response
+	}
+	alt_svc := resp.Header.Get("Alt-Svc")
+	_, after, v := strings.Cut(alt_svc, "h3=")
+	if v != true {
+		return ""
+	}
+
+	authority := strings.Split(after, ";")[0]
+	authority = strings.ReplaceAll(authority, "\"", "")
+	authority = strings.ReplaceAll(authority, "'", "")
+	host, port, err := net.SplitHostPort(authority)
+	if err != nil {
+		return ""
+	}
+	if host == "" {
+		host = request.URL.Host
+	}
+	return net.JoinHostPort(host, port)
 }
 
 // httpMapFailure attempts to map netxlite failures to the strings
