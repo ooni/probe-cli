@@ -204,12 +204,14 @@ func (m *Measurer) Run(
 
 // setup prepares for running the wireguard experiment. Returns an error on failure.
 func (m *Measurer) setup(ctx context.Context, config string, logger model.Logger) error {
-	o, err := getOptionsFromFile(config)
+	// TODO: use model.VPNConfig for common attrs
+	// ie, parse the input vpn://proto.provider/ ...
+	o, err := getOptionsFromConfig(m.config)
 	if err != nil {
 		return err
 	}
 	m.options = o
-	return err
+	return nil
 }
 
 // bootstrap runs the bootstrap.

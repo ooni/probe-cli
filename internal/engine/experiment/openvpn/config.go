@@ -23,16 +23,17 @@ var (
 // Config contains openvpn experiment configuration.
 // TODO(ainghazal): add an optional (and reasonable) truncation threshold for each url (needs to be overriden).
 type Config struct {
-	URLs           string `ooni:"comma-separated list of extra URLs to fetch through the tunnel"`
+	URLs        string `ooni:"comma-separated list of extra URLs to fetch through the tunnel"`
+	Cipher      string `ooni:"cipher to use"`
+	Auth        string `ooni:"auth to use"`
+	Obfuscation string `ooni:"obfuscation type for the tunnel"`
+	Compress    string `ooni:"compression to use"`
+	// Safe_XXX optins are not sent to the backend for archival.
 	SafeKey        string `ooni:"key to connect to the OpenVPN endpoint"`
 	SafeCert       string `ooni:"cert to connect to the OpenVPN endpoint"`
 	SafeCa         string `ooni:"ca to connect to the OpenVPN endpoint"`
 	SafeLocalCreds bool   `ooni:"whether to use local credentials for the given provider"`
-	Obfuscation    string `ooni:"obfuscation type for the tunnel"`
 	SafeProxyURI   string `ooni:"obfuscating proxy to be used"` // empty if Obfuscation is "none"
-	Cipher         string `ooni:"cipher to use"`
-	Auth           string `ooni:"auth to use"`
-	Compress       string `ooni:"compression to use"`
 }
 
 var vpnConfigTemplate = `{{ if eq .Config.Obfuscation "obfs4" }}proxy-obfs4 {{ .Config.ProxyURI }}{{ else }}remote {{ .Hostname }} {{ .Port }}{{ end }}

@@ -29,35 +29,6 @@ type TestKeys struct {
 	// Other keys
 	//
 
-	// BootstrapTime contains the bootstrap time on success.
-	BootstrapTime float64 `json:"bootstrap_time"`
-
-	// HandshakeEvents is a sequence of handshake events with their corresponding timestamp.
-	HandshakeEvents []HandshakeEvent `json:"network_events"`
-
-	// Last known received OpenVPN handshake event
-	LastHandshakeTransactionID uint8 `json:"last_handshake_transaction_id"`
-
-	// TCPCconnect traces a TCP connection for the vpn dialer (null for UDP transport).
-	TCPConnect *model.ArchivalTCPConnectResult `json:"tcp_connect"`
-
-	// Failure contains the failure string or nil.
-	Failure *string `json:"failure"`
-
-	// Pings holds an array for aggregated stats of each ping.
-	Pings []*PingResult `json:"icmp_pings"`
-
-	// Requests contain HTTP results done through the tunnel.
-	Requests []model.ArchivalHTTPRequestResult `json:"requests"`
-
-	// Software identification
-
-	// MiniVPNVersion contains the version of the minivpn library used.
-	MiniVPNVersion string `json:"minivpn_version"`
-
-	// Obfs4Version contains the version of the obfs4 library used.
-	Obfs4Version string `json:"obfs4_version"`
-
 	// Summaries for partial results
 
 	// SuccessHandshake is true when we reach the last handshake stage.
@@ -72,6 +43,35 @@ type TestKeys struct {
 
 	// Success is true when we reached the end of the test without errors.
 	Success bool `json:"success"`
+
+	// Failure contains the failure string or nil.
+	Failure *string `json:"failure"`
+
+	// Software identification
+
+	// MiniVPNVersion contains the version of the minivpn library used.
+	MiniVPNVersion string `json:"minivpn_version"`
+
+	// Obfs4Version contains the version of the obfs4 library used.
+	Obfs4Version string `json:"obfs4_version"`
+
+	// BootstrapTime contains the bootstrap time on success.
+	BootstrapTime float64 `json:"bootstrap_time"`
+
+	// Last known received OpenVPN handshake event
+	LastHandshakeTransactionID uint8 `json:"last_handshake_transaction_id"`
+
+	// HandshakeEvents is a sequence of handshake events with their corresponding timestamp.
+	HandshakeEvents []HandshakeEvent `json:"network_events"`
+
+	// TCPCconnect traces a TCP connection for the vpn dialer (null for UDP transport).
+	TCPConnect *model.ArchivalTCPConnectResult `json:"tcp_connect"`
+
+	// Pings holds an array for aggregated stats of each ping.
+	Pings []*PingResult `json:"icmp_pings"`
+
+	// Requests contain HTTP results done through the tunnel.
+	Requests []model.ArchivalHTTPRequestResult `json:"requests"`
 }
 
 // NewTestKeys creates a new instance of TestKeys.
