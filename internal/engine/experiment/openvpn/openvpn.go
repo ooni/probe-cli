@@ -177,11 +177,15 @@ func (m *Measurer) Run(
 	// TODO(ainghazal): for the sake of reducing experimental bias, we
 	// should randomize the order of the following function calls. But that
 	// is going to make parsing the data a bit harder, unless we convene on
-	// a given idx.
+	// a given idx. We could explore something like:
+	// {'label': 'google.dns', 'target': '8.8.8.8', 'order': 1}
 	// TODO(ainghazal): another option pointed out by sbasso is to use a
 	// different gvisor socket and then do n pings concurrently. this
 	// probably will help with the situation in which packets arrive too
 	// late and then they're not arriving from the expected src addr.
+	// On the other hand, we should probably compensate for the fact that
+	// the tests will take 3x less time to complete (in case the duration
+	// of our test was enough to catch delayed firewall response).
 
 	sendBlockingPing(wg, m.tunnel, pingTarget, tk)
 	sendBlockingPing(wg, m.tunnel, remoteVPNGateway, tk)
