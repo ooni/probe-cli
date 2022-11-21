@@ -134,6 +134,10 @@ type TestKeys struct {
 
 	// mu provides mutual exclusion for accessing the test keys.
 	mu *sync.Mutex
+
+	// testHelper is used to communicate the TH that worked to the main
+	// goroutine such that we can fill measurement.TestHelpers.
+	testHelper *model.OOAPIService
 }
 
 // ConnPriorityLogEntry is an entry in the TestKeys.ConnPriorityLog slice.
@@ -302,6 +306,21 @@ func (tk *TestKeys) AppendConnPriorityLogEntry(entry *ConnPriorityLogEntry) {
 	tk.mu.Unlock()
 }
 
+// setTestHelper sets .testHelper in a thread safe way
+func (tk *TestKeys) setTestHelper(th *model.OOAPIService) {
+	tk.mu.Lock()
+	tk.testHelper = th
+	tk.mu.Unlock()
+}
+
+// getTestHelper gets .testHelper in a thread safe way
+func (tk *TestKeys) getTestHelper() (th *model.OOAPIService) {
+	tk.mu.Lock()
+	th = tk.testHelper
+	tk.mu.Unlock()
+	return
+}
+
 // NewTestKeys creates a new instance of TestKeys.
 func NewTestKeys() *TestKeys {
 	return &TestKeys{
@@ -348,6 +367,7 @@ func NewTestKeys() *TestKeys {
 		ControlRequest:        nil,
 		fundamentalFailure:    nil,
 		mu:                    &sync.Mutex{},
+		testHelper:            nil,
 	}
 }
 

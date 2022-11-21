@@ -36,7 +36,7 @@ func (m *Measurer) ExperimentName() string {
 
 // ExperimentVersion implements model.ExperimentMeasurer.
 func (m *Measurer) ExperimentVersion() string {
-	return "0.5.18"
+	return "0.5.19"
 }
 
 // Run implements model.ExperimentMeasurer.
@@ -89,17 +89,7 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 
 	// obtain the test helper's address
 	testhelpers, _ := sess.GetTestHelpersByName("web-connectivity")
-	var thAddr string
-	for _, th := range testhelpers {
-		if th.Type == "https" {
-			thAddr = th.Address
-			measurement.TestHelpers = map[string]any{
-				"backend": &th,
-			}
-			break
-		}
-	}
-	if thAddr == "" {
+	if len(testhelpers) < 1 {
 		sess.Logger().Warnf("continuing without a valid TH address")
 		tk.SetControlFailure(webconnectivity.ErrNoAvailableTestHelpers)
 	}
@@ -120,7 +110,7 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 		CookieJar:    jar,
 		Referer:      "",
 		Session:      sess,
-		THAddr:       thAddr,
+		TestHelpers:  testhelpers,
 		UDPAddress:   "",
 	}
 	resos.Start(ctx)
@@ -136,6 +126,16 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 
 	// perform any deferred computation on the test keys
 	tk.Finalize(sess.Logger())
+
+	// set the test helper we used
+	// TODO(bassosimone): it may be more informative to know about all the
+	// test helpers we _tried_ to use, however the data format does not have
+	// support for that as far as I can tell...
+	if th := tk.getTestHelper(); th != nil {
+		measurement.TestHelpers = map[string]interface{}{
+			"backend": th,
+		}
+	}
 
 	// return whether there was a fundamental failure, which would prevent
 	// the measurement from being submitted to the OONI collector.

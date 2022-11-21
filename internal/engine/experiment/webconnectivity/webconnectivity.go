@@ -15,7 +15,7 @@ import (
 
 const (
 	testName    = "web_connectivity"
-	testVersion = "0.4.1"
+	testVersion = "0.4.2"
 )
 
 // Config contains the experiment config.
@@ -145,18 +145,8 @@ func (m Measurer) Run(
 	}
 	// 1. find test helper
 	testhelpers, _ := sess.GetTestHelpersByName("web-connectivity")
-	var testhelper *model.OOAPIService
-	for _, th := range testhelpers {
-		if th.Type == "https" {
-			testhelper = &th
-			break
-		}
-	}
-	if testhelper == nil {
+	if len(testhelpers) < 1 {
 		return ErrNoAvailableTestHelpers
-	}
-	measurement.TestHelpers = map[string]interface{}{
-		"backend": testhelper,
 	}
 	// 2. perform the DNS lookup step
 	dnsBegin := time.Now()
@@ -167,10 +157,11 @@ func (m Measurer) Run(
 	tk.Queries = append(tk.Queries, dnsResult.TestKeys.Queries...)
 	tk.DNSExperimentFailure = dnsResult.Failure
 	epnts := NewEndpoints(URL, dnsResult.Addresses())
-	sess.Logger().Infof("using control: %s", testhelper.Address)
+	sess.Logger().Infof("using control: %+v", testhelpers)
 	// 3. perform the control measurement
 	thBegin := time.Now()
-	tk.Control, err = Control(ctx, sess, testhelper.Address, ControlRequest{
+	var usedTH *model.OOAPIService
+	tk.Control, usedTH, err = Control(ctx, sess, testhelpers, ControlRequest{
 		HTTPRequest: URL.String(),
 		HTTPRequestHeaders: map[string][]string{
 			"Accept":          {model.HTTPHeaderAccept},
@@ -179,6 +170,11 @@ func (m Measurer) Run(
 		},
 		TCPConnect: epnts.Endpoints(),
 	})
+	if usedTH != nil {
+		measurement.TestHelpers = map[string]interface{}{
+			"backend": usedTH,
+		}
+	}
 	tk.THRuntime = time.Since(thBegin)
 	tk.ControlFailure = tracex.NewFailure(err)
 	// 4. analyze DNS results

@@ -285,7 +285,7 @@ func (t *CleartextFlow) maybeFollowRedirects(ctx context.Context, resp *http.Res
 			WaitGroup:    t.WaitGroup,
 			Referer:      resp.Request.URL.String(),
 			Session:      nil, // no need to issue another control request
-			THAddr:       "",  // ditto
+			TestHelpers:  nil, // ditto
 			UDPAddress:   t.UDPAddress,
 		}
 		resolvers.Start(ctx)

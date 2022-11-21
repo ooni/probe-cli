@@ -8,10 +8,11 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
-	"github.com/ooni/probe-cli/v3/internal/httpx"
+	"github.com/ooni/probe-cli/v3/internal/httpapi"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // EndpointMeasurementsStarter is used by Control to start extra
@@ -51,8 +52,8 @@ type Control struct {
 	// Session is the MANDATORY session to use.
 	Session model.ExperimentSession
 
-	// THAddr is the MANDATORY TH's URL.
-	THAddr string
+	// TestHelpers is the MANDATORY list of test helpers.
+	TestHelpers []model.OOAPIService
 
 	// URL is the MANDATORY URL we are measuring.
 	URL *url.URL
@@ -102,26 +103,20 @@ func (c *Control) Run(parentCtx context.Context) {
 	// create logger for this operation
 	ol := measurexlite.NewOperationLogger(
 		c.Logger,
-		"control for %s using %s",
+		"control for %s using %+v",
 		creq.HTTPRequest,
-		c.THAddr,
+		c.TestHelpers,
 	)
 
-	// create an API client
-	clnt := (&httpx.APIClientTemplate{
-		Accept:        "",
-		Authorization: "",
-		BaseURL:       c.THAddr,
-		HTTPClient:    c.Session.DefaultHTTPClient(),
-		Host:          "", // use the one inside the URL
-		LogBody:       true,
-		Logger:        c.Logger,
-		UserAgent:     c.Session.UserAgent(),
-	}).Build()
+	// create an httpapi sequence caller
+	seqCaller := httpapi.NewSequenceCaller(
+		httpapi.MustNewPOSTJSONWithJSONResponseDescriptor(c.Logger, "/", creq).WithBodyLogging(true),
+		httpapi.NewEndpointList(c.Session.DefaultHTTPClient(), c.Session.UserAgent(), c.TestHelpers...)...,
+	)
 
 	// issue the control request and wait for the response
 	var cresp webconnectivity.ControlResponse
-	err := clnt.PostJSON(opCtx, "/", creq, &cresp)
+	idx, err := seqCaller.CallWithJSONResponse(opCtx, &cresp)
 	if err != nil {
 		// make sure error is wrapped
 		err = netxlite.NewTopLevelGenericErrWrapper(err)
@@ -133,6 +128,10 @@ func (c *Control) Run(parentCtx context.Context) {
 	// on success, save the control response
 	c.TestKeys.SetControl(&cresp)
 	ol.Stop(nil)
+
+	// record the specific TH that worked
+	runtimex.Assert(idx >= 0 && idx < len(c.TestHelpers), "idx out of bounds")
+	c.TestKeys.setTestHelper(&c.TestHelpers[idx])
 
 	// if the TH returned us addresses we did not previously were
 	// aware of, make sure we also measure them
