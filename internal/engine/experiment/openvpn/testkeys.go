@@ -36,7 +36,7 @@ type TestKeys struct {
 	HandshakeEvents []HandshakeEvent `json:"network_events"`
 
 	// Last known received OpenVPN handshake event
-	LastHandshakeTransactionID int `json:"last_handshake_transaction_id"`
+	LastHandshakeTransactionID uint8 `json:"last_handshake_transaction_id"`
 
 	// TCPCconnect traces a TCP connection for the vpn dialer (null for UDP transport).
 	TCPConnect *model.ArchivalTCPConnectResult `json:"tcp_connect"`

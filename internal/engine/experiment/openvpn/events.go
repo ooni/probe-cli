@@ -9,12 +9,12 @@ import (
 // HandshakeEvent captures a uint16 event measuring the progress of the
 // handshake for the OpenVPN connection.
 type HandshakeEvent struct {
-	TransactionID uint16  `json:"transaction_id"`
+	TransactionID uint8   `json:"transaction_id"`
 	Operation     string  `json:"operation"`
 	Time          float64 `json:"t"`
 }
 
-func newHandshakeEvent(evt uint16, t time.Duration) HandshakeEvent {
+func newHandshakeEvent(evt uint8, t time.Duration) HandshakeEvent {
 	var s string
 	switch evt {
 	case vpn.EventReady:

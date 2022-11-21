@@ -35,6 +35,7 @@ const (
 
 	// pingCount tells how many icmp echo requests to send.
 	pingCount = 10
+	//pingCount = 1
 
 	// pingExtraWaitSeconds tells how many grace seconds to wait after
 	// last ping in train.
@@ -112,6 +113,7 @@ func (m *Measurer) Run(
 			sess.Logger().Infof(err.Error())
 		}
 	}()
+
 	experiment, err := vpnExperimentFromURI(string(measurement.Input))
 	if err != nil {
 		return err
@@ -359,7 +361,7 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 		out <- tk
 	}()
 
-	vpnEventChan := make(chan uint16, 100)
+	vpnEventChan := make(chan uint8, 100)
 	m.tunnel.EventListener = vpnEventChan
 
 	zeroTime := time.Now()
@@ -380,7 +382,7 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 		}
 	}(wg)
 
-	index := int64(1)
+	index := int64(0)
 	trace := measurexlite.NewTrace(index, zeroTime)
 
 	if tk.Transport == "tcp" {
@@ -392,13 +394,13 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 	wg.Wait()
 	tk.BootstrapTime = time.Now().Sub(zeroTime).Seconds()
 	if len(tk.HandshakeEvents) != 0 {
-		max := uint16(0)
+		max := uint8(0)
 		for _, e := range tk.HandshakeEvents {
 			if e.TransactionID > max {
 				max = e.TransactionID
 			}
 		}
-		tk.LastHandshakeTransactionID = int(max)
+		tk.LastHandshakeTransactionID = uint8(max)
 		switch max {
 		case vpn.EventHandshakeDone:
 			tk.SuccessHandshake = true
