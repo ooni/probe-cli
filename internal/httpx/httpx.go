@@ -1,4 +1,8 @@
 // Package httpx contains http extensions.
+//
+// Deprecated: new code should use httpapi instead. While this package and httpapi
+// are basically using the same implementation, the API exposed by httpapi allows
+// us to try the same request with multiple HTTP endpoints.
 package httpx
 
 import (

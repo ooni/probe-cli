@@ -67,8 +67,9 @@ type DNSResolvers struct {
 	// always follow the redirect chain caused by the provided URL.
 	Session model.ExperimentSession
 
-	// THAddr is the OPTIONAL test helper address.
-	THAddr string
+	// TestHelpers is the OPTIONAL list of test helpers. If the list is
+	// empty, we are not going to try to contact any test helper.
+	TestHelpers []model.OOAPIService
 
 	// UDPAddress is the OPTIONAL address of the UDP resolver to use. If this
 	// field is not set we use a default one (e.g., `8.8.8.8:53`).
@@ -498,15 +499,15 @@ func (t *DNSResolvers) startSecureFlows(
 	}
 }
 
-// maybeStartControlFlow starts the control flow iff .Session and .THAddr are set.
+// maybeStartControlFlow starts the control flow iff .Session and .TestHelpers are set.
 func (t *DNSResolvers) maybeStartControlFlow(
 	ctx context.Context,
 	ps *prioritySelector,
 	addresses []DNSEntry,
 ) {
-	// note: for subsequent requests we don't set .Session and .THAddr hence
+	// note: for subsequent requests we don't set .Session and .TestHelpers hence
 	// we are not going to query the test helper more than once
-	if t.Session != nil && t.THAddr != "" {
+	if t.Session != nil && len(t.TestHelpers) > 0 {
 		var addrs []string
 		for _, addr := range addresses {
 			addrs = append(addrs, addr.Addr)
@@ -518,7 +519,7 @@ func (t *DNSResolvers) maybeStartControlFlow(
 			PrioSelector:             ps,
 			TestKeys:                 t.TestKeys,
 			Session:                  t.Session,
-			THAddr:                   t.THAddr,
+			TestHelpers:              t.TestHelpers,
 			URL:                      t.URL,
 			WaitGroup:                t.WaitGroup,
 		}
