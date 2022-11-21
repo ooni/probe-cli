@@ -39,6 +39,8 @@ func pingTimeout() time.Duration {
 func doSinglePing(wg *sync.WaitGroup, conn net.Conn, target string, tk *TestKeys) {
 	defer wg.Done()
 	pinger := ping.NewFromSharedConnection(target, conn)
+	// this is a "raw" socket
+	pinger.Raw = true
 	pinger.Count = pingCount
 	pinger.Timeout = pingTimeout()
 
