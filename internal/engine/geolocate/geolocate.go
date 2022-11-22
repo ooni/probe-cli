@@ -91,7 +91,7 @@ func NewTask(config Config) *Task {
 		probeASNLookupper:    mmdbLookupper{},
 		resolverASNLookupper: mmdbLookupper{},
 		resolverIPLookupper: resolverLookupClient{
-			Resolver: config.Resolver,
+			Logger: config.Logger,
 		},
 	}
 }

@@ -6,12 +6,13 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestLookupResolverIP(t *testing.T) {
 	rlc := resolverLookupClient{
-		Resolver: netxlite.NewStdlibResolver(model.DiscardLogger),
+		Logger: model.DiscardLogger,
 	}
 	addr, err := rlc.LookupResolverIP(context.Background())
 	if err != nil {
@@ -22,22 +23,32 @@ func TestLookupResolverIP(t *testing.T) {
 	}
 }
 
-type brokenHostLookupper struct {
-	err error
-}
-
-func (bhl brokenHostLookupper) LookupHost(ctx context.Context, host string) ([]string, error) {
-	return nil, bhl.err
-}
-
 func TestLookupResolverIPFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	rlc := resolverLookupClient{
-		Resolver: netxlite.NewStdlibResolver(model.DiscardLogger),
+		Logger: model.DiscardLogger,
 	}
-	addr, err := rlc.do(context.Background(), brokenHostLookupper{
-		err: expected,
-	})
+
+	// Note well: because we want to really enforce the implementation of the
+	// resolverlookup to use the system resolver, here we are using TProxy for
+	// testing rather than having a mockable resolver as we normally do.
+	//
+	// We're doing this because we want to make it less likely that we will
+	// introduce bug https://github.com/ooni/probe/issues/2360 again.
+	oldTProxy := netxlite.TProxy
+	defer func() {
+		netxlite.TProxy = oldTProxy
+	}()
+	netxlite.TProxy = &mocks.UnderlyingNetwork{
+		MockGetaddrinfoLookupANY: func(ctx context.Context, domain string) ([]string, string, error) {
+			return nil, "", expected
+		},
+		MockGetaddrinfoResolverNetwork: func() string {
+			return netxlite.StdlibResolverGetaddrinfo
+		},
+	}
+
+	addr, err := rlc.LookupResolverIP(context.Background())
 	if !errors.Is(err, expected) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
@@ -48,10 +59,30 @@ func TestLookupResolverIPFailure(t *testing.T) {
 
 func TestLookupResolverIPNoAddressReturned(t *testing.T) {
 	rlc := resolverLookupClient{
-		Resolver: netxlite.NewStdlibResolver(model.DiscardLogger),
+		Logger: model.DiscardLogger,
 	}
-	addr, err := rlc.do(context.Background(), brokenHostLookupper{})
-	if !errors.Is(err, ErrNoIPAddressReturned) {
+
+	// Note well: because we want to really enforce the implementation of the
+	// resolverlookup to use the system resolver, here we are using TProxy for
+	// testing rather than having a mockable resolver as we normally do.
+	//
+	// We're doing this because we want to make it less likely that we will
+	// introduce bug https://github.com/ooni/probe/issues/2360 again.
+	oldTProxy := netxlite.TProxy
+	defer func() {
+		netxlite.TProxy = oldTProxy
+	}()
+	netxlite.TProxy = &mocks.UnderlyingNetwork{
+		MockGetaddrinfoLookupANY: func(ctx context.Context, domain string) ([]string, string, error) {
+			return nil, "", nil
+		},
+		MockGetaddrinfoResolverNetwork: func() string {
+			return netxlite.StdlibResolverGetaddrinfo
+		},
+	}
+
+	addr, err := rlc.LookupResolverIP(context.Background())
+	if err == nil || err.Error() != netxlite.FailureDNSNoAnswer {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
 	if len(addr) != 0 {

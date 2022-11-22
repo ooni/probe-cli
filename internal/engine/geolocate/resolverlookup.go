@@ -2,37 +2,24 @@ package geolocate
 
 import (
 	"context"
-	"errors"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
-
-var (
-	// ErrNoIPAddressReturned indicates that no IP address was
-	// returned by a specific DNS resolver.
-	ErrNoIPAddressReturned = errors.New("geolocate: no IP address returned")
-)
-
-type dnsResolver interface {
-	LookupHost(ctx context.Context, host string) (addrs []string, err error)
-}
 
 type resolverLookupClient struct {
-	Resolver model.Resolver
+	Logger model.Logger
 }
 
-func (rlc resolverLookupClient) do(ctx context.Context, r dnsResolver) (string, error) {
+func (rlc resolverLookupClient) LookupResolverIP(ctx context.Context) (string, error) {
+	// MUST be the system resolver! See https://github.com/ooni/probe/issues/2360
+	reso := netxlite.NewStdlibResolver(rlc.Logger)
 	var ips []string
-	ips, err := r.LookupHost(ctx, "whoami.v4.powerdns.org")
+	ips, err := reso.LookupHost(ctx, "whoami.v4.powerdns.org")
 	if err != nil {
 		return "", err
 	}
-	if len(ips) < 1 {
-		return "", ErrNoIPAddressReturned
-	}
+	runtimex.Assert(len(ips) >= 1, "reso.LookupHost returned zero IP addresses")
 	return ips[0], nil
-}
-
-func (rlc resolverLookupClient) LookupResolverIP(ctx context.Context) (ip string, err error) {
-	return rlc.do(ctx, rlc.Resolver)
 }
