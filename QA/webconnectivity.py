@@ -49,9 +49,13 @@ def assert_status_flags_are(ooni_exe, tk, desired):
 
 def webconnectivity_https_ok_with_control_failure(ooni_exe, outfile):
     """Successful HTTPS measurement but control failure."""
+    # Note: this QA check will increasingly become more difficult to implement
+    # as we continue to improve our fallback TH strategies
     args = [
         "-iptables-reset-keyword",
         "th.ooni.org",
+        "-iptables-reset-keyword",
+        "d33d1gs9kpq1c5.cloudfront.net",
     ]
     tk = execute_jafar_and_return_validated_test_keys(
         ooni_exe,
@@ -62,7 +66,7 @@ def webconnectivity_https_ok_with_control_failure(ooni_exe, outfile):
     )
     assert tk["dns_experiment_failure"] == None
     assert tk["dns_consistency"] == None
-    assert tk["control_failure"] == "connection_reset"
+    assert "connection_reset" in tk["control_failure"]
     assert tk["http_experiment_failure"] == None
     assert tk["body_length_match"] == None
     assert tk["body_proportion"] == 0
@@ -80,9 +84,13 @@ def webconnectivity_https_ok_with_control_failure(ooni_exe, outfile):
 
 def webconnectivity_http_ok_with_control_failure(ooni_exe, outfile):
     """Successful HTTP measurement but control failure."""
+    # Note: this QA check will increasingly become more difficult to implement
+    # as we continue to improve our fallback TH strategies
     args = [
         "-iptables-reset-keyword",
         "th.ooni.org",
+        "-iptables-reset-keyword",
+        "d33d1gs9kpq1c5.cloudfront.net",
     ]
     tk = execute_jafar_and_return_validated_test_keys(
         ooni_exe,
@@ -93,7 +101,7 @@ def webconnectivity_http_ok_with_control_failure(ooni_exe, outfile):
     )
     assert tk["dns_experiment_failure"] == None
     assert tk["dns_consistency"] == None
-    assert tk["control_failure"] == "connection_reset"
+    assert "connection_reset" in tk["control_failure"]
     assert tk["http_experiment_failure"] == None
     assert tk["body_length_match"] == None
     assert tk["body_proportion"] == 0
@@ -183,33 +191,6 @@ def webconnectivity_dns_hijacking(ooni_exe, outfile):
     assert tk["blocking"] == False
     assert tk["accessible"] == True
     assert_status_flags_are(ooni_exe, tk, 1)
-
-
-def webconnectivity_control_unreachable_and_using_http(ooni_exe, outfile):
-    """Test case where the control is unreachable and we're using the
-    plaintext HTTP protocol rather than HTTPS"""
-    args = []
-    args.append("-iptables-reset-keyword")
-    args.append("th.ooni.org")
-    tk = execute_jafar_and_return_validated_test_keys(
-        ooni_exe,
-        outfile,
-        "-i http://example.org web_connectivity",
-        "webconnectivity_control_unreachable_and_using_http",
-        args,
-    )
-    assert tk["dns_experiment_failure"] == None
-    assert tk["dns_consistency"] == None
-    assert tk["control_failure"] == "connection_reset"
-    assert tk["http_experiment_failure"] == None
-    assert tk["body_length_match"] == None
-    assert tk["body_proportion"] == 0
-    assert tk["status_code_match"] == None
-    assert tk["headers_match"] == None
-    assert tk["title_match"] == None
-    assert tk["blocking"] == None
-    assert tk["accessible"] == None
-    assert_status_flags_are(ooni_exe, tk, 8)
 
 
 def webconnectivity_nonexistent_domain(ooni_exe, outfile):
@@ -858,7 +839,6 @@ def main():
         webconnectivity_transparent_http_proxy,
         webconnectivity_transparent_https_proxy,
         webconnectivity_dns_hijacking,
-        webconnectivity_control_unreachable_and_using_http,
         webconnectivity_nonexistent_domain,
         webconnectivity_tcpip_blocking_with_consistent_dns,
         webconnectivity_tcpip_blocking_with_inconsistent_dns,
