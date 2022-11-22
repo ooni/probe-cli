@@ -63,6 +63,13 @@ func TestHandlerWorkingAsIntended(t *testing.T) {
 		NewDialer: func(model.Logger) model.Dialer {
 			return netxlite.NewDialerWithStdlibResolver(model.DiscardLogger)
 		},
+		NewQUICDialer: func(logger model.Logger) model.QUICDialer {
+			return netxlite.NewQUICDialerWithResolver(
+				netxlite.NewQUICListener(),
+				model.DiscardLogger,
+				newResolver(model.DiscardLogger),
+			)
+		},
 		NewResolver: func(model.Logger) model.Resolver {
 			return netxlite.NewUnwrappedStdlibResolver()
 		},
