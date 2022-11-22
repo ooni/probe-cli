@@ -35,6 +35,9 @@ type handler struct {
 	// NewDialer is the MANDATORY factory to create a new Dialer.
 	NewDialer func(model.Logger) model.Dialer
 
+	// NewQUICDialer is the MANDATORY factory to create a new QUICDialer.
+	NewQUICDialer func(model.Logger) model.QUICDialer
+
 	// NewResolver is the MANDATORY factory for creating a new resolver.
 	NewResolver func(model.Logger) model.Resolver
 

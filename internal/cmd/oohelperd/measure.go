@@ -58,12 +58,13 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 
 	// start assembling the response
 	cresp := &ctrlResponse{
-		TCPConnect:   map[string]model.THTCPConnectResult{},
-		TLSHandshake: map[string]model.THTLSHandshakeResult{},
-		HTTPRequest:  model.THHTTPRequestResult{},
-		HTTP3Request: nil,
-		DNS:          model.THDNSResult{},
-		IPInfo:       map[string]*model.THIPInfo{},
+		TCPConnect:    map[string]model.THTCPConnectResult{},
+		TLSHandshake:  map[string]model.THTLSHandshakeResult{},
+		QUICHandshake: map[string]model.THTLSHandshakeResult{},
+		HTTPRequest:   model.THHTTPRequestResult{},
+		HTTP3Request:  nil,
+		DNS:           model.THDNSResult{},
+		IPInfo:        map[string]*model.THIPInfo{},
 	}
 	select {
 	case cresp.DNS = <-dnsch:
@@ -117,7 +118,22 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 	// continue assembling the response
 	cresp.HTTPRequest = <-httpch
 
+	quicconnch := make(chan *quicResult, len(endpoints))
+
 	if cresp.HTTPRequest.DiscoveredH3 != "" {
+		// quicconnect: start over all the endpoints
+		for _, endpoint := range endpoints {
+			wg.Add(1)
+			go quicDo(ctx, &quicConfig{
+				Address:       endpoint.Addr,
+				Endpoint:      endpoint.Epnt,
+				Logger:        logger,
+				NewQUICDialer: config.NewQUICDialer,
+				URLHostname:   URL.Hostname(),
+				Out:           quicconnch,
+				Wg:            wg,
+			})
+		}
 		// http3: start
 		http3ch := make(chan ctrlHTTPResponse, 1)
 		wg.Add(1)
@@ -155,6 +171,8 @@ Loop:
 					info.Flags |= model.THIPInfoFlagValidForDomain
 				}
 			}
+		case quicconn := <-quicconnch:
+			cresp.QUICHandshake[quicconn.Endpoint] = quicconn.QUIC
 		default:
 			break Loop
 		}

@@ -84,6 +84,13 @@ func main() {
 		NewDialer: func(logger model.Logger) model.Dialer {
 			return netxlite.NewDialerWithResolver(logger, newResolver(logger))
 		},
+		NewQUICDialer: func(logger model.Logger) model.QUICDialer {
+			return netxlite.NewQUICDialerWithResolver(
+				netxlite.NewQUICListener(),
+				logger,
+				newResolver(logger),
+			)
+		},
 		NewResolver: newResolver,
 		NewTLSHandshaker: func(logger model.Logger) model.TLSHandshaker {
 			return netxlite.NewTLSHandshakerStdlib(logger)
