@@ -8,6 +8,7 @@
 /debops-ci
 .DS_Store
 /ghpublish.out.txt
+/go.work
 /jafar
 /*.jsonl
 /miniooni

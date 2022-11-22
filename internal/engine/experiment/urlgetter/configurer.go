@@ -94,6 +94,7 @@ func (c Configurer) NewConfiguration() (Configuration, error) {
 	}
 	configuration.HTTPConfig.TLSConfig.InsecureSkipVerify = c.Config.NoTLSVerify
 	configuration.HTTPConfig.TLSConfig.RootCAs = c.Config.CertPool
+	configuration.HTTPConfig.Dialer = c.Config.Dialer
 	// configure proxy
 	configuration.HTTPConfig.ProxyURL = c.ProxyURL
 	return configuration, nil
