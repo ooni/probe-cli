@@ -31,7 +31,12 @@ func TestRunDNSCheckWithCancelledContext(t *testing.T) {
 	cancel() // fail immediately
 	sess := &mockable.Session{MockableLogger: log.Log}
 	callbacks := model.NewPrinterCallbacks(log.Log)
-	err := measurer.Run(ctx, sess, measurement, callbacks)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(ctx, args)
 	// TODO(bassosimone): here we could improve the tests by checking
 	// whether the result makes sense for a cancelled context.
 	if err != nil {
@@ -62,7 +67,12 @@ func TestRunURLGetterWithCancelledContext(t *testing.T) {
 	cancel() // fail immediately
 	sess := &mockable.Session{MockableLogger: log.Log}
 	callbacks := model.NewPrinterCallbacks(log.Log)
-	err := measurer.Run(ctx, sess, measurement, callbacks)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(ctx, args)
 	if err != nil { // here we expected nil b/c we want to submit the measurement
 		t.Fatal(err)
 	}
@@ -86,7 +96,12 @@ func TestRunWithInvalidJSON(t *testing.T) {
 	ctx := context.Background()
 	sess := &mockable.Session{MockableLogger: log.Log}
 	callbacks := model.NewPrinterCallbacks(log.Log)
-	err := measurer.Run(ctx, sess, measurement, callbacks)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(ctx, args)
 	if err == nil || err.Error() != "invalid character '}' looking for beginning of value" {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
@@ -100,7 +115,12 @@ func TestRunWithUnknownExperiment(t *testing.T) {
 	ctx := context.Background()
 	sess := &mockable.Session{MockableLogger: log.Log}
 	callbacks := model.NewPrinterCallbacks(log.Log)
-	err := measurer.Run(ctx, sess, measurement, callbacks)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(ctx, args)
 	if err == nil || err.Error() != "no such experiment: antani" {
 		t.Fatalf("not the error we expected: %+v", err)
 	}

@@ -32,12 +32,12 @@ func TestMeasurerExperimentNameVersion(t *testing.T) {
 func TestRunWithoutInput(t *testing.T) {
 	measurer := NewExperimentMeasurer(Config{})
 	measurement := new(model.Measurement)
-	err := measurer.Run(
-		context.Background(),
-		&mockable.Session{},
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     &mockable.Session{},
+	}
+	err := measurer.Run(context.Background(), args)
 	if !errors.Is(err, errStunMissingInput) {
 		t.Fatal("not the error we expected", err)
 	}
@@ -47,12 +47,12 @@ func TestRunWithInvalidURL(t *testing.T) {
 	measurer := NewExperimentMeasurer(Config{})
 	measurement := new(model.Measurement)
 	measurement.Input = model.MeasurementTarget("\t") // <- invalid URL
-	err := measurer.Run(
-		context.Background(),
-		&mockable.Session{},
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     &mockable.Session{},
+	}
+	err := measurer.Run(context.Background(), args)
 	if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
 		t.Fatal("not the error we expected", err)
 	}
@@ -62,12 +62,12 @@ func TestRunWithNoPort(t *testing.T) {
 	measurer := NewExperimentMeasurer(Config{})
 	measurement := new(model.Measurement)
 	measurement.Input = model.MeasurementTarget("stun://stun.ekiga.net")
-	err := measurer.Run(
-		context.Background(),
-		&mockable.Session{},
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     &mockable.Session{},
+	}
+	err := measurer.Run(context.Background(), args)
 	if !errors.Is(err, errStunMissingPortInURL) {
 		t.Fatal("not the error we expected", err)
 	}
@@ -77,12 +77,12 @@ func TestRunWithUnsupportedURLScheme(t *testing.T) {
 	measurer := NewExperimentMeasurer(Config{})
 	measurement := new(model.Measurement)
 	measurement.Input = model.MeasurementTarget("https://stun.ekiga.net:3478")
-	err := measurer.Run(
-		context.Background(),
-		&mockable.Session{},
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     &mockable.Session{},
+	}
+	err := measurer.Run(context.Background(), args)
 	if !errors.Is(err, errUnsupportedURLScheme) {
 		t.Fatal("not the error we expected", err)
 	}
@@ -92,14 +92,14 @@ func TestRunWithInput(t *testing.T) {
 	measurer := NewExperimentMeasurer(Config{})
 	measurement := new(model.Measurement)
 	measurement.Input = model.MeasurementTarget(defaultInput)
-	err := measurer.Run(
-		context.Background(),
-		&mockable.Session{
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session: &mockable.Session{
 			MockableLogger: model.DiscardLogger,
 		},
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	}
+	err := measurer.Run(context.Background(), args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,14 +124,14 @@ func TestCancelledContext(t *testing.T) {
 	measurer := NewExperimentMeasurer(Config{})
 	measurement := new(model.Measurement)
 	measurement.Input = model.MeasurementTarget(defaultInput)
-	err := measurer.Run(
-		ctx,
-		&mockable.Session{
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session: &mockable.Session{
 			MockableLogger: model.DiscardLogger,
 		},
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	}
+	err := measurer.Run(ctx, args)
 	if !errors.Is(err, nil) { // nil because we want to submit
 		t.Fatal("not the error we expected", err)
 	}
@@ -166,14 +166,14 @@ func TestNewClientFailure(t *testing.T) {
 	measurer := NewExperimentMeasurer(*config)
 	measurement := new(model.Measurement)
 	measurement.Input = model.MeasurementTarget(defaultInput)
-	err := measurer.Run(
-		context.Background(),
-		&mockable.Session{
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session: &mockable.Session{
 			MockableLogger: model.DiscardLogger,
 		},
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	}
+	err := measurer.Run(context.Background(), args)
 	if !errors.Is(err, nil) { // nil because we want to submit
 		t.Fatal("not the error we expected")
 	}
@@ -202,14 +202,14 @@ func TestStartFailure(t *testing.T) {
 	measurer := NewExperimentMeasurer(*config)
 	measurement := new(model.Measurement)
 	measurement.Input = model.MeasurementTarget(defaultInput)
-	err := measurer.Run(
-		context.Background(),
-		&mockable.Session{
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session: &mockable.Session{
 			MockableLogger: model.DiscardLogger,
 		},
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	}
+	err := measurer.Run(context.Background(), args)
 	if !errors.Is(err, nil) { // nil because we want to submit
 		t.Fatal("not the error we expected")
 	}
@@ -242,14 +242,14 @@ func TestReadFailure(t *testing.T) {
 	measurer := NewExperimentMeasurer(*config)
 	measurement := new(model.Measurement)
 	measurement.Input = model.MeasurementTarget(defaultInput)
-	err := measurer.Run(
-		context.Background(),
-		&mockable.Session{
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session: &mockable.Session{
 			MockableLogger: model.DiscardLogger,
 		},
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	}
+	err := measurer.Run(context.Background(), args)
 	if !errors.Is(err, nil) { // nil because we want to submit
 		t.Fatal("not the error we expected")
 	}

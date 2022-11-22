@@ -42,7 +42,12 @@ func TestSuccess(t *testing.T) {
 	}
 	measurement := new(model.Measurement)
 	callbacks := model.NewPrinterCallbacks(log.Log)
-	err := measurer.Run(ctx, sess, measurement, callbacks)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(ctx, args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +96,12 @@ func TestCancelledContext(t *testing.T) {
 	}
 	measurement := new(model.Measurement)
 	callbacks := model.NewPrinterCallbacks(log.Log)
-	err := measurer.Run(ctx, sess, measurement, callbacks)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(ctx, args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -190,7 +200,12 @@ func TestWithFakeMethods(t *testing.T) {
 	}
 	measurement := new(model.Measurement)
 	callbacks := model.NewPrinterCallbacks(log.Log)
-	err := measurer.Run(ctx, sess, measurement, callbacks)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(ctx, args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -251,7 +266,12 @@ func TestWithNoMethods(t *testing.T) {
 	}
 	measurement := new(model.Measurement)
 	callbacks := model.NewPrinterCallbacks(log.Log)
-	err := measurer.Run(ctx, sess, measurement, callbacks)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(ctx, args)
 	if !errors.Is(err, hirl.ErrNoMeasurementMethod) {
 		t.Fatal("not the error we expected")
 	}
@@ -279,7 +299,12 @@ func TestNoHelpers(t *testing.T) {
 	sess := &mockable.Session{}
 	measurement := new(model.Measurement)
 	callbacks := model.NewPrinterCallbacks(log.Log)
-	err := measurer.Run(ctx, sess, measurement, callbacks)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(ctx, args)
 	if !errors.Is(err, hirl.ErrNoAvailableTestHelpers) {
 		t.Fatal("not the error we expected")
 	}
@@ -311,7 +336,12 @@ func TestNoActualHelperInList(t *testing.T) {
 	}
 	measurement := new(model.Measurement)
 	callbacks := model.NewPrinterCallbacks(log.Log)
-	err := measurer.Run(ctx, sess, measurement, callbacks)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(ctx, args)
 	if !errors.Is(err, hirl.ErrNoAvailableTestHelpers) {
 		t.Fatal("not the error we expected")
 	}
@@ -346,7 +376,12 @@ func TestWrongTestHelperType(t *testing.T) {
 	}
 	measurement := new(model.Measurement)
 	callbacks := model.NewPrinterCallbacks(log.Log)
-	err := measurer.Run(ctx, sess, measurement, callbacks)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(ctx, args)
 	if !errors.Is(err, hirl.ErrInvalidHelperType) {
 		t.Fatal("not the error we expected")
 	}

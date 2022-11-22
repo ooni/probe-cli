@@ -27,12 +27,12 @@ func TestRunWithExplicitSNI(t *testing.T) {
 	})
 	measurement := new(model.Measurement)
 	measurement.Input = "8.8.8.8:853"
-	err := measurer.Run(
-		ctx,
-		&mockable.Session{},
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     &mockable.Session{},
+	}
+	err := measurer.Run(ctx, args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,12 +43,12 @@ func TestRunWithImplicitSNI(t *testing.T) {
 	measurer := tlstool.NewExperimentMeasurer(tlstool.Config{})
 	measurement := new(model.Measurement)
 	measurement.Input = "dns.google:853"
-	err := measurer.Run(
-		ctx,
-		&mockable.Session{},
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     &mockable.Session{},
+	}
+	err := measurer.Run(ctx, args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,12 +60,12 @@ func TestRunWithCancelledContext(t *testing.T) {
 	measurer := tlstool.NewExperimentMeasurer(tlstool.Config{})
 	measurement := new(model.Measurement)
 	measurement.Input = "dns.google:853"
-	err := measurer.Run(
-		ctx,
-		&mockable.Session{},
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     &mockable.Session{},
+	}
+	err := measurer.Run(ctx, args)
 	if err != nil {
 		t.Fatal(err)
 	}

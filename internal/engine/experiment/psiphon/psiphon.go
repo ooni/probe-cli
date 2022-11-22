@@ -66,10 +66,10 @@ func (m *Measurer) printprogress(
 }
 
 // Run runs the measurement
-func (m *Measurer) Run(
-	ctx context.Context, sess model.ExperimentSession,
-	measurement *model.Measurement, callbacks model.ExperimentCallbacks,
-) error {
+func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
+	callbacks := args.Callbacks
+	measurement := args.Measurement
+	sess := args.Session
 	const maxruntime = 300
 	ctx, cancel := context.WithTimeout(ctx, maxruntime*time.Second)
 	var (

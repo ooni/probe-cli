@@ -46,10 +46,10 @@ type StructuredInput struct {
 }
 
 // Run implements ExperimentMeasurer.ExperimentVersion.
-func (Measurer) Run(
-	ctx context.Context, sess model.ExperimentSession,
-	measurement *model.Measurement, callbacks model.ExperimentCallbacks,
-) error {
+func (Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
+	callbacks := args.Callbacks
+	measurement := args.Measurement
+	sess := args.Session
 	var input StructuredInput
 	if err := json.Unmarshal([]byte(measurement.Input), &input); err != nil {
 		return err

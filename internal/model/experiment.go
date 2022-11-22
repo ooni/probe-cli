@@ -117,6 +117,19 @@ func (d PrinterCallbacks) OnProgress(percentage float64, message string) {
 	d.Logger.Infof("[%5.1f%%] %s", percentage*100, message)
 }
 
+// ExperimentArgs contains the arguments passed to an experiment.
+type ExperimentArgs struct {
+	// Callbacks contains MANDATORY experiment callbacks.
+	Callbacks ExperimentCallbacks
+
+	// Measurement is the MANDATORY measurement in which the experiment
+	// must write the results of the measurement.
+	Measurement *Measurement
+
+	// Session is the MANDATORY session the experiment can use.
+	Session ExperimentSession
+}
+
 // ExperimentMeasurer is the interface that allows to run a
 // measurement for a specific experiment.
 type ExperimentMeasurer interface {
@@ -133,10 +146,7 @@ type ExperimentMeasurer interface {
 	// set the relevant OONI error inside of the measurement and
 	// return nil. This is important because the caller WILL NOT submit
 	// the measurement if this method returns an error.
-	Run(
-		ctx context.Context, sess ExperimentSession,
-		measurement *Measurement, callbacks ExperimentCallbacks,
-	) error
+	Run(ctx context.Context, args *ExperimentArgs) error
 
 	// GetSummaryKeys returns summary keys expected by ooni/probe-cli.
 	GetSummaryKeys(*Measurement) (interface{}, error)

@@ -36,14 +36,14 @@ func TestMeasurerMeasureFetchTorTargetsError(t *testing.T) {
 	measurer.fetchTorTargets = func(ctx context.Context, sess model.ExperimentSession, cc string) (map[string]model.OOAPITorTarget, error) {
 		return nil, expected
 	}
-	err := measurer.Run(
-		context.Background(),
-		&mockable.Session{
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: &model.Measurement{},
+		Session: &mockable.Session{
 			MockableLogger: log.Log,
 		},
-		new(model.Measurement),
-		model.NewPrinterCallbacks(log.Log),
-	)
+	}
+	err := measurer.Run(context.Background(), args)
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
 	}
@@ -55,14 +55,14 @@ func TestMeasurerMeasureFetchTorTargetsEmptyList(t *testing.T) {
 		return nil, nil
 	}
 	measurement := new(model.Measurement)
-	err := measurer.Run(
-		context.Background(),
-		&mockable.Session{
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session: &mockable.Session{
 			MockableLogger: log.Log,
 		},
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	}
+	err := measurer.Run(context.Background(), args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,14 +79,14 @@ func TestMeasurerMeasureGoodWithMockedOrchestra(t *testing.T) {
 	measurer.fetchTorTargets = func(ctx context.Context, sess model.ExperimentSession, cc string) (map[string]model.OOAPITorTarget, error) {
 		return nil, nil
 	}
-	err := measurer.Run(
-		context.Background(),
-		&mockable.Session{
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: &model.Measurement{},
+		Session: &mockable.Session{
 			MockableLogger: log.Log,
 		},
-		new(model.Measurement),
-		model.NewPrinterCallbacks(log.Log),
-	)
+	}
+	err := measurer.Run(context.Background(), args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,12 +99,12 @@ func TestMeasurerMeasureGood(t *testing.T) {
 	measurer := NewMeasurer(Config{})
 	sess := newsession()
 	measurement := new(model.Measurement)
-	err := measurer.Run(
-		context.Background(),
-		sess,
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(context.Background(), args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -142,12 +142,12 @@ func TestMeasurerMeasureSanitiseOutput(t *testing.T) {
 		key: staticPrivateTestingTarget,
 	}
 	measurement := new(model.Measurement)
-	err := measurer.Run(
-		context.Background(),
-		sess,
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(context.Background(), args)
 	if err != nil {
 		t.Fatal(err)
 	}

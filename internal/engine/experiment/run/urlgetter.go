@@ -18,5 +18,10 @@ func (m *urlGetterMain) do(ctx context.Context, input StructuredInput,
 	measurement.TestName = exp.ExperimentName()
 	measurement.TestVersion = exp.ExperimentVersion()
 	measurement.Input = model.MeasurementTarget(input.Input)
-	return exp.Run(ctx, sess, measurement, callbacks)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	return exp.Run(ctx, args)
 }

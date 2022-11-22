@@ -38,12 +38,10 @@ var (
 )
 
 // Run implements ExperimentMeasurer.Run.
-func (m *Measurer) Run(
-	ctx context.Context,
-	sess model.ExperimentSession,
-	measurement *model.Measurement,
-	callbacks model.ExperimentCallbacks,
-) error {
+func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
+	_ = args.Callbacks
+	measurement := args.Measurement
+	sess := args.Session
 	// TODO(DecFox): Replace the localhost deployment with an OONI testhelper
 	// Ensure that we only do this once we have a deployed testhelper
 	testhelper := "http://127.0.0.1"

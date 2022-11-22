@@ -116,12 +116,12 @@ func TestMeasurerMeasureNoMeasurementInput(t *testing.T) {
 	measurer := NewExperimentMeasurer(Config{
 		ControlSNI: "example.com",
 	})
-	err := measurer.Run(
-		context.Background(),
-		newsession(),
-		new(model.Measurement),
-		model.NewPrinterCallbacks(log.Log),
-	)
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: &model.Measurement{},
+		Session:     newsession(),
+	}
+	err := measurer.Run(context.Background(), args)
 	if err.Error() != "Experiment requires measurement.Input" {
 		t.Fatal("not the error we expected")
 	}
@@ -136,12 +136,12 @@ func TestMeasurerMeasureWithInvalidInput(t *testing.T) {
 	measurement := &model.Measurement{
 		Input: "\t",
 	}
-	err := measurer.Run(
-		ctx,
-		newsession(),
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     newsession(),
+	}
+	err := measurer.Run(ctx, args)
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
@@ -156,12 +156,12 @@ func TestMeasurerMeasureWithCancelledContext(t *testing.T) {
 	measurement := &model.Measurement{
 		Input: "kernel.org",
 	}
-	err := measurer.Run(
-		ctx,
-		newsession(),
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     newsession(),
+	}
+	err := measurer.Run(ctx, args)
 	if err != nil {
 		t.Fatal(err)
 	}

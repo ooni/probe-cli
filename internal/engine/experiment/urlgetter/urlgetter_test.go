@@ -23,10 +23,12 @@ func TestMeasurer(t *testing.T) {
 	}
 	measurement := new(model.Measurement)
 	measurement.Input = "https://www.google.com"
-	err := m.Run(
-		ctx, &mockable.Session{},
-		measurement, model.NewPrinterCallbacks(log.Log),
-	)
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     &mockable.Session{},
+	}
+	err := m.Run(ctx, args)
 	if !errors.Is(err, nil) { // nil because we want to submit the measurement
 		t.Fatal("not the error we expected")
 	}
@@ -60,10 +62,12 @@ func TestMeasurerDNSCache(t *testing.T) {
 	}
 	measurement := new(model.Measurement)
 	measurement.Input = "https://www.google.com"
-	err := m.Run(
-		ctx, &mockable.Session{},
-		measurement, model.NewPrinterCallbacks(log.Log),
-	)
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     &mockable.Session{},
+	}
+	err := m.Run(ctx, args)
 	if !errors.Is(err, nil) { // nil because we want to submit the measurement
 		t.Fatal("not the error we expected")
 	}

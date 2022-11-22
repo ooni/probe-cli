@@ -106,10 +106,10 @@ const maxRuntime = 200 * time.Second
 // set the relevant OONI error inside of the measurement and
 // return nil. This is important because the caller may not submit
 // the measurement if this method returns an error.
-func (m *Measurer) Run(
-	ctx context.Context, sess model.ExperimentSession,
-	measurement *model.Measurement, callbacks model.ExperimentCallbacks,
-) error {
+func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
+	callbacks := args.Callbacks
+	measurement := args.Measurement
+	sess := args.Session
 	m.registerExtensions(measurement)
 	start := time.Now()
 	ctx, cancel := context.WithTimeout(ctx, maxRuntime)

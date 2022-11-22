@@ -97,10 +97,10 @@ func (m Measurer) ExperimentVersion() string {
 }
 
 // Run implements model.ExperimentSession.Run
-func (m Measurer) Run(
-	ctx context.Context, sess model.ExperimentSession,
-	measurement *model.Measurement, callbacks model.ExperimentCallbacks,
-) error {
+func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
+	_ = args.Callbacks
+	measurement := args.Measurement
+	sess := args.Session
 	// When using the urlgetter experiment directly, there is a nonconfigurable
 	// default timeout that applies. When urlgetter is used as a library, it's
 	// instead the responsibility of the user of urlgetter to set timeouts. Note

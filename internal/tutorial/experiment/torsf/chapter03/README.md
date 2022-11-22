@@ -32,10 +32,10 @@ print periodic updates via the `callbacks`. We will defer the
 real work to a private function called `run`.
 
 ```Go
-func (m *Measurer) Run(
-	ctx context.Context, sess model.ExperimentSession,
-	measurement *model.Measurement, callbacks model.ExperimentCallbacks,
-) error {
+func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
+	callbacks := args.Callbacks
+	measurement := args.Measurement
+	sess := args.Session
 ```
 
 Let's create an instance of `TestKeys` and let's modify

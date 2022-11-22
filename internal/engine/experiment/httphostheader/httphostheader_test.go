@@ -30,12 +30,12 @@ func TestMeasurerMeasureNoMeasurementInput(t *testing.T) {
 	measurer := NewExperimentMeasurer(Config{
 		TestHelperURL: "http://www.google.com",
 	})
-	err := measurer.Run(
-		context.Background(),
-		newsession(),
-		new(model.Measurement),
-		model.NewPrinterCallbacks(log.Log),
-	)
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: &model.Measurement{},
+		Session:     newsession(),
+	}
+	err := measurer.Run(context.Background(), args)
 	if err == nil || err.Error() != "experiment requires input" {
 		t.Fatal("not the error we expected")
 	}
@@ -44,12 +44,12 @@ func TestMeasurerMeasureNoMeasurementInput(t *testing.T) {
 func TestMeasurerMeasureNoTestHelper(t *testing.T) {
 	measurer := NewExperimentMeasurer(Config{})
 	measurement := &model.Measurement{Input: "x.org"}
-	err := measurer.Run(
-		context.Background(),
-		newsession(),
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     newsession(),
+	}
+	err := measurer.Run(context.Background(), args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,12 +75,12 @@ func TestRunnerHTTPSetHostHeader(t *testing.T) {
 	measurement := &model.Measurement{
 		Input: "x.org",
 	}
-	err := measurer.Run(
-		context.Background(),
-		newsession(),
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     newsession(),
+	}
+	err := measurer.Run(context.Background(), args)
 	if host != "x.org" {
 		t.Fatal("not the host we expected")
 	}

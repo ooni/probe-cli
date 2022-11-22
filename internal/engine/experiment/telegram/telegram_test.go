@@ -28,14 +28,14 @@ func TestNewExperimentMeasurer(t *testing.T) {
 func TestGood(t *testing.T) {
 	measurer := telegram.NewExperimentMeasurer(telegram.Config{})
 	measurement := new(model.Measurement)
-	err := measurer.Run(
-		context.Background(),
-		&mockable.Session{
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session: &mockable.Session{
 			MockableLogger: log.Log,
 		},
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	}
+	err := measurer.Run(context.Background(), args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -297,7 +297,12 @@ func TestWeConfigureWebChecksToFailOnHTTPError(t *testing.T) {
 	}
 	measurement := new(model.Measurement)
 	callbacks := model.NewPrinterCallbacks(log.Log)
-	if err := measurer.Run(ctx, sess, measurement, callbacks); err != nil {
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	if err := measurer.Run(ctx, args); err != nil {
 		t.Fatal(err)
 	}
 	if called.Load() < 1 {

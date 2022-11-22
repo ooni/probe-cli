@@ -37,7 +37,12 @@ func TestSuccess(t *testing.T) {
 	sess := newsession(t, true)
 	measurement := &model.Measurement{Input: "http://www.example.com"}
 	callbacks := model.NewPrinterCallbacks(log.Log)
-	err := measurer.Run(ctx, sess, measurement, callbacks)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(ctx, args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -65,7 +70,12 @@ func TestMeasureWithCancelledContext(t *testing.T) {
 	sess := newsession(t, true)
 	measurement := &model.Measurement{Input: "http://www.example.com"}
 	callbacks := model.NewPrinterCallbacks(log.Log)
-	if err := measurer.Run(ctx, sess, measurement, callbacks); err != nil {
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	if err := measurer.Run(ctx, args); err != nil {
 		t.Fatal(err)
 	}
 	tk := measurement.TestKeys.(*webconnectivity.TestKeys)
@@ -99,7 +109,12 @@ func TestMeasureWithNoInput(t *testing.T) {
 	sess := newsession(t, true)
 	measurement := &model.Measurement{Input: ""}
 	callbacks := model.NewPrinterCallbacks(log.Log)
-	err := measurer.Run(ctx, sess, measurement, callbacks)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(ctx, args)
 	if !errors.Is(err, webconnectivity.ErrNoInput) {
 		t.Fatal(err)
 	}
@@ -127,7 +142,12 @@ func TestMeasureWithInputNotBeingAnURL(t *testing.T) {
 	sess := newsession(t, true)
 	measurement := &model.Measurement{Input: "\t\t\t\t\t\t"}
 	callbacks := model.NewPrinterCallbacks(log.Log)
-	err := measurer.Run(ctx, sess, measurement, callbacks)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(ctx, args)
 	if !errors.Is(err, webconnectivity.ErrInputIsNotAnURL) {
 		t.Fatal(err)
 	}
@@ -155,7 +175,12 @@ func TestMeasureWithUnsupportedInput(t *testing.T) {
 	sess := newsession(t, true)
 	measurement := &model.Measurement{Input: "dnslookup://example.com"}
 	callbacks := model.NewPrinterCallbacks(log.Log)
-	err := measurer.Run(ctx, sess, measurement, callbacks)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(ctx, args)
 	if !errors.Is(err, webconnectivity.ErrUnsupportedInput) {
 		t.Fatal(err)
 	}
@@ -183,7 +208,12 @@ func TestMeasureWithNoAvailableTestHelpers(t *testing.T) {
 	sess := newsession(t, false)
 	measurement := &model.Measurement{Input: "https://www.example.com"}
 	callbacks := model.NewPrinterCallbacks(log.Log)
-	err := measurer.Run(ctx, sess, measurement, callbacks)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(ctx, args)
 	if !errors.Is(err, webconnectivity.ErrNoAvailableTestHelpers) {
 		t.Fatal(err)
 	}

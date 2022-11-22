@@ -84,7 +84,12 @@ func TestRunWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // immediately cancel
 	meas := &model.Measurement{}
-	err := m.Run(ctx, sess, meas, model.NewPrinterCallbacks(log.Log))
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: meas,
+		Session:     sess,
+	}
+	err := m.Run(ctx, args)
 	// Here we get nil because we still want to submit this measurement
 	if !errors.Is(err, nil) {
 		t.Fatal("not the error we expected")
@@ -104,15 +109,15 @@ func TestGood(t *testing.T) {
 	}
 	measurement := new(model.Measurement)
 	measurer := NewExperimentMeasurer(Config{})
-	err := measurer.Run(
-		context.Background(),
-		&mockable.Session{
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session: &mockable.Session{
 			MockableHTTPClient: http.DefaultClient,
 			MockableLogger:     log.Log,
 		},
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	}
+	err := measurer.Run(context.Background(), args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,15 +138,15 @@ func TestFailDownload(t *testing.T) {
 		cancel()
 	}
 	meas := &model.Measurement{}
-	err := measurer.Run(
-		ctx,
-		&mockable.Session{
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: meas,
+		Session: &mockable.Session{
 			MockableHTTPClient: http.DefaultClient,
 			MockableLogger:     log.Log,
 		},
-		meas,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	}
+	err := measurer.Run(ctx, args)
 	// We expect a nil failure here because we want to submit anyway
 	// a measurement that failed to connect to m-lab.
 	if err != nil {
@@ -164,15 +169,15 @@ func TestFailUpload(t *testing.T) {
 		cancel()
 	}
 	meas := &model.Measurement{}
-	err := measurer.Run(
-		ctx,
-		&mockable.Session{
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: meas,
+		Session: &mockable.Session{
 			MockableHTTPClient: http.DefaultClient,
 			MockableLogger:     log.Log,
 		},
-		meas,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	}
+	err := measurer.Run(ctx, args)
 	// Here we expect a nil error because we want to submit this measurement
 	if err != nil {
 		t.Fatal(err)
@@ -197,15 +202,15 @@ func TestDownloadJSONUnmarshalFail(t *testing.T) {
 		seenError = true
 		return expected
 	}
-	err := measurer.Run(
-		context.Background(),
-		&mockable.Session{
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: &model.Measurement{},
+		Session: &mockable.Session{
 			MockableHTTPClient: http.DefaultClient,
 			MockableLogger:     log.Log,
 		},
-		new(model.Measurement),
-		model.NewPrinterCallbacks(log.Log),
-	)
+	}
+	err := measurer.Run(context.Background(), args)
 	if err != nil {
 		t.Fatal(err)
 	}

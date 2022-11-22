@@ -25,14 +25,14 @@ func TestNewExperimentMeasurer(t *testing.T) {
 func TestGood(t *testing.T) {
 	measurer := signal.NewExperimentMeasurer(signal.Config{})
 	measurement := new(model.Measurement)
-	err := measurer.Run(
-		context.Background(),
-		&mockable.Session{
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session: &mockable.Session{
 			MockableLogger: log.Log,
 		},
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	}
+	err := measurer.Run(context.Background(), args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,14 +103,14 @@ func TestBadSignalCA(t *testing.T) {
 		SignalCA: "INVALIDCA",
 	})
 	measurement := new(model.Measurement)
-	err := measurer.Run(
-		context.Background(),
-		&mockable.Session{
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session: &mockable.Session{
 			MockableLogger: log.Log,
 		},
-		measurement,
-		model.NewPrinterCallbacks(log.Log),
-	)
+	}
+	err := measurer.Run(context.Background(), args)
 	if err.Error() != "AppendCertsFromPEM failed" {
 		t.Fatal("not the error we expected")
 	}

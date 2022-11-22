@@ -211,7 +211,12 @@ need any fancy context and we pass a `context.Background` to `Run`.
 
 ```Go
 	ctx := context.Background()
-	if err = m.Run(ctx, sess, measurement, callbacks); err != nil {
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	if err = m.Run(ctx, args); err != nil {
 		log.WithError(err).Fatal("torsf experiment failed")
 	}
 ```

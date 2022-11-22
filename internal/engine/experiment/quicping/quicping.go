@@ -221,12 +221,11 @@ func (m *Measurer) receiver(
 }
 
 // Run implements ExperimentMeasurer.Run.
-func (m *Measurer) Run(
-	ctx context.Context,
-	sess model.ExperimentSession,
-	measurement *model.Measurement,
-	callbacks model.ExperimentCallbacks,
-) error {
+func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
+	_ = args.Callbacks
+	measurement := args.Measurement
+	sess := args.Session
+
 	host := string(measurement.Input)
 	// allow URL input
 	if u, err := url.ParseRequestURI(host); err == nil {

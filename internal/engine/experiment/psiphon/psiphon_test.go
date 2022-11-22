@@ -33,8 +33,12 @@ func TestRunWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately
 	measurement := new(model.Measurement)
-	err := measurer.Run(ctx, newfakesession(), measurement,
-		model.NewPrinterCallbacks(log.Log))
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     newfakesession(),
+	}
+	err := measurer.Run(ctx, args)
 	if !errors.Is(err, nil) { // nil because we want to submit the measurement
 		t.Fatal("expected another error here")
 	}
@@ -64,8 +68,12 @@ func TestRunWithCustomInputAndCancelledContext(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately
-	err := measurer.Run(ctx, newfakesession(), measurement,
-		model.NewPrinterCallbacks(log.Log))
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     newfakesession(),
+	}
+	err := measurer.Run(ctx, args)
 	if !errors.Is(err, nil) { // nil because we want to submit the measurement
 		t.Fatal("expected another error here")
 	}
@@ -84,7 +92,12 @@ func TestRunWillPrintSomethingWithCancelledContext(t *testing.T) {
 		cancel() // fail after we've given the printer a chance to run
 	}
 	observer := observerCallbacks{progress: &atomicx.Int64{}}
-	err := measurer.Run(ctx, newfakesession(), measurement, observer)
+	args := &model.ExperimentArgs{
+		Callbacks:   observer,
+		Measurement: measurement,
+		Session:     newfakesession(),
+	}
+	err := measurer.Run(ctx, args)
 	if !errors.Is(err, nil) { // nil because we want to submit the measurement
 		t.Fatal("expected another error here")
 	}

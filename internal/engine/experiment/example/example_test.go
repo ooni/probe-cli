@@ -26,7 +26,12 @@ func TestSuccess(t *testing.T) {
 	sess := &mockable.Session{MockableLogger: log.Log}
 	callbacks := model.NewPrinterCallbacks(sess.Logger())
 	measurement := new(model.Measurement)
-	err := m.Run(ctx, sess, measurement, callbacks)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := m.Run(ctx, args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,7 +52,12 @@ func TestFailure(t *testing.T) {
 	ctx := context.Background()
 	sess := &mockable.Session{MockableLogger: log.Log}
 	callbacks := model.NewPrinterCallbacks(sess.Logger())
-	err := m.Run(ctx, sess, new(model.Measurement), callbacks)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: new(model.Measurement),
+		Session:     sess,
+	}
+	err := m.Run(ctx, args)
 	if !errors.Is(err, example.ErrFailure) {
 		t.Fatal("expected an error here")
 	}

@@ -78,10 +78,10 @@ var (
 )
 
 // Run implements ExperimentMeasurer.Run.
-func (m Measurer) Run(
-	ctx context.Context, sess model.ExperimentSession,
-	measurement *model.Measurement, callbacks model.ExperimentCallbacks,
-) error {
+func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
+	callbacks := args.Callbacks
+	measurement := args.Measurement
+	sess := args.Session
 	tk := new(TestKeys)
 	measurement.TestKeys = tk
 	if len(m.Methods) < 1 {
