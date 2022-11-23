@@ -4,12 +4,10 @@ import (
 	"database/sql"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/upper/db/v4"
 )
 
 // Database allows mocking a database
 type Database struct {
-	MockSession              func() db.Session
 	MockCreateNetwork        func(loc model.LocationProvider) (*model.DatabaseNetwork, error)
 	MockCreateOrUpdateURL    func(urlStr string, categoryCode string, countryCode string) (int64, error)
 	MockCreateResult         func(homePath string, testGroupName string, networkID int64) (*model.DatabaseResult, error)
@@ -26,15 +24,9 @@ type Database struct {
 	MockListResults        func() ([]model.DatabaseResultNetwork, []model.DatabaseResultNetwork, error)
 	MockListMeasurements   func(resultID int64) ([]model.DatabaseMeasurementURLNetwork, error)
 	MockGetMeasurementJSON func(msmtID int64) (map[string]interface{}, error)
-	MockClose              func() error
 }
 
 var _ model.WritableDatabase = &Database{}
-
-// Session calls MockSession
-func (d *Database) Session() db.Session {
-	return d.MockSession()
-}
 
 // CreateNetwork calls MockCreateNetwork
 func (d *Database) CreateNetwork(loc model.LocationProvider) (*model.DatabaseNetwork, error) {
@@ -112,9 +104,4 @@ func (d *Database) ListMeasurements(resultID int64) ([]model.DatabaseMeasurement
 // GetMeasurementJSON calls MockGetMeasurementJSON
 func (d *Database) GetMeasurementJSON(msmtID int64) (map[string]interface{}, error) {
 	return d.MockGetMeasurementJSON(msmtID)
-}
-
-// Close calls MockClose
-func (d *Database) Close() error {
-	return d.MockClose()
 }
