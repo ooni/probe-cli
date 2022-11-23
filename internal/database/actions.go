@@ -35,12 +35,12 @@ type database struct {
 
 var _ model.WritableDatabase = &database{}
 
-// Session returns the database session
+// Session implements Writable/ReadableDatabase.Session
 func (d *database) Session() db.Session {
 	return d.sess
 }
 
-// CreateNetwork will create a new network in the network table
+// CreateNetwork implements WritableDatabase.CreateNetwork
 func (d *database) CreateNetwork(loc model.LocationProvider) (*model.DatabaseNetwork, error) {
 	network := model.DatabaseNetwork{
 		ASN:         loc.ProbeASN(),
@@ -59,9 +59,7 @@ func (d *database) CreateNetwork(loc model.LocationProvider) (*model.DatabaseNet
 	return &network, nil
 }
 
-// CreateOrUpdateURL will create a new URL entry to the urls table if it doesn't
-// exists, otherwise it will update the category code of the one already in
-// there.
+// CreateOrUpdateURL implements WritableDatabase.CreateOrUpdateURL
 func (d *database) CreateOrUpdateURL(urlStr string, categoryCode string, countryCode string) (int64, error) {
 	var url model.DatabaseURL
 	err := d.sess.Tx(func(tx db.Session) error {
@@ -99,8 +97,7 @@ func (d *database) CreateOrUpdateURL(urlStr string, categoryCode string, country
 	return url.ID.Int64, nil
 }
 
-// CreateResult writes the Result to the database a returns a pointer
-// to the Result
+// CreateResult  implements WritableDatabase.CreateResult
 func (d *database) CreateResult(homePath string, testGroupName string, networkID int64) (*model.DatabaseResult, error) {
 	startTime := time.Now().UTC()
 
@@ -125,7 +122,7 @@ func (d *database) CreateResult(homePath string, testGroupName string, networkID
 	return &result, nil
 }
 
-// UpdateUploadedStatus will check if all the measurements inside of a given result set have been uploaded and if so will set the is_uploaded flag to true
+// UpdateUploadedStatus implements WritableDatabase.UpdateUploadedStatus
 func (d *database) UpdateUploadedStatus(result *model.DatabaseResult) error {
 	err := d.sess.Tx(func(tx db.Session) error {
 		uploadedTotal := model.UploadedTotalCount{}
@@ -160,7 +157,7 @@ func (d *database) UpdateUploadedStatus(result *model.DatabaseResult) error {
 	return nil
 }
 
-// Finished marks the result as done and sets the runtime
+// Finished implements WritableDatabase.Finished
 func (d *database) Finished(result *model.DatabaseResult) error {
 	if result.IsDone || result.Runtime != 0 {
 		return errors.New("Result is already finished")
@@ -175,8 +172,7 @@ func (d *database) Finished(result *model.DatabaseResult) error {
 	return nil
 }
 
-// DeleteResult will delete a particular result and the relative measurement on
-// disk.
+// DeleteResult implements WritableDatabase.DeleteResult
 func (d *database) DeleteResult(resultID int64) error {
 	var result model.DatabaseResult
 	res := d.sess.Collection("results").Find("result_id", resultID)
@@ -195,8 +191,7 @@ func (d *database) DeleteResult(resultID int64) error {
 	return nil
 }
 
-// CreateMeasurement writes the measurement to the database a returns a pointer
-// to the Measurement
+// CreateMeasurement implements WritableDatabase.CreateMeasurement
 func (d *database) CreateMeasurement(reportID sql.NullString, testName string, measurementDir string, idx int,
 	resultID int64, urlID sql.NullInt64) (*model.DatabaseMeasurement, error) {
 	// TODO we should look into generating this file path in a more robust way.
@@ -223,7 +218,7 @@ func (d *database) CreateMeasurement(reportID sql.NullString, testName string, m
 	return &msmt, nil
 }
 
-// AddTestKeys writes the summary to the measurement
+// AddTestKeys implements WritableDatabase.AddTestKeys
 func (d *database) AddTestKeys(msmt *model.DatabaseMeasurement, tk interface{}) error {
 	var (
 		isAnomaly      bool
@@ -251,7 +246,7 @@ func (d *database) AddTestKeys(msmt *model.DatabaseMeasurement, tk interface{}) 
 	return nil
 }
 
-// Done marks the measurement as completed
+// Done implements WritableDatabase.Done
 func (d *database) Done(msmt *model.DatabaseMeasurement) error {
 	runtime := time.Now().UTC().Sub(msmt.StartTime)
 	msmt.Runtime = runtime.Seconds()
@@ -263,7 +258,7 @@ func (d *database) Done(msmt *model.DatabaseMeasurement) error {
 	return nil
 }
 
-// UploadFailed writes the error string for the upload failure to the measurement
+// UploadFailed implements WritableDatabase.UploadFailed
 func (d *database) UploadFailed(msmt *model.DatabaseMeasurement, failure string) error {
 	msmt.UploadFailureMsg = sql.NullString{String: failure, Valid: true}
 	msmt.IsUploaded = false
@@ -274,7 +269,7 @@ func (d *database) UploadFailed(msmt *model.DatabaseMeasurement, failure string)
 	return nil
 }
 
-// UploadSucceeded writes the error string for the upload failure to the measurement
+// UploadSucceeded implements WritableDatabase.UploadSucceeded
 func (d *database) UploadSucceeded(msmt *model.DatabaseMeasurement) error {
 	msmt.IsUploaded = true
 	err := d.sess.Collection("measurements").Find("measurement_id", msmt.ID).Update(msmt)
@@ -284,7 +279,7 @@ func (d *database) UploadSucceeded(msmt *model.DatabaseMeasurement) error {
 	return nil
 }
 
-// Failed writes the error string to the measurement
+// Failed implements WritableDatabase.Failed
 func (d *database) Failed(msmt *model.DatabaseMeasurement, failure string) error {
 	msmt.FailureMsg = sql.NullString{String: failure, Valid: true}
 	msmt.IsFailed = true
@@ -297,7 +292,7 @@ func (d *database) Failed(msmt *model.DatabaseMeasurement, failure string) error
 
 var _ model.ReadableDatabase = &database{}
 
-// ListResults return the list of results
+// ListResults implements ReadableDatabase.ListResults
 func (d *database) ListResults() ([]model.DatabaseResultNetwork, []model.DatabaseResultNetwork, error) {
 	doneResults := []model.DatabaseResultNetwork{}
 	incompleteResults := []model.DatabaseResultNetwork{}
@@ -359,7 +354,7 @@ func (d *database) ListResults() ([]model.DatabaseResultNetwork, []model.Databas
 	return doneResults, incompleteResults, nil
 }
 
-// ListMeasurements given a result ID
+// ListMeasurements implements ReadableDatabase.ListMeasurements
 func (d *database) ListMeasurements(resultID int64) ([]model.DatabaseMeasurementURLNetwork, error) {
 	measurements := []model.DatabaseMeasurementURLNetwork{}
 	req := d.sess.SQL().Select(
@@ -380,7 +375,7 @@ func (d *database) ListMeasurements(resultID int64) ([]model.DatabaseMeasurement
 	return measurements, nil
 }
 
-// GetMeasurementJSON returns a map[string]interface{} given a database and a measurementID
+// GetMeasurementJSON implements ReadableDatabase.GetMeasurementJSON
 func (d *database) GetMeasurementJSON(msmtID int64) (map[string]interface{}, error) {
 	var (
 		measurement model.DatabaseMeasurementURLNetwork
@@ -443,7 +438,7 @@ func (d *database) GetMeasurementJSON(msmtID int64) (map[string]interface{}, err
 	return msmtJSON, nil
 }
 
-// Close closes the database session
+// Close implements Writable/ReadableDatabase.Close
 func (d *database) Close() error {
 	return d.sess.Close()
 }
