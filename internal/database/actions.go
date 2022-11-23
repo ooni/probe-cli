@@ -204,7 +204,7 @@ func (d *Database) CreateMeasurement(reportID sql.NullString, testName string, m
 }
 
 // AddTestKeys implements WritableDatabase.AddTestKeys
-func (d *Database) AddTestKeys(msmt *model.DatabaseMeasurement, tk interface{}) error {
+func (d *Database) AddTestKeys(msmt *model.DatabaseMeasurement, tk any) error {
 	var (
 		isAnomaly      bool
 		isAnomalyValid bool

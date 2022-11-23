@@ -106,7 +106,7 @@ type WritableDatabase interface {
 	// - tk is the testkeys
 	//
 	// Returns a non-nil error if measurement update failed
-	AddTestKeys(msmt *DatabaseMeasurement, tk interface{}) error
+	AddTestKeys(msmt *DatabaseMeasurement, tk any) error
 
 	// Done marks the measurement as completed
 	//
