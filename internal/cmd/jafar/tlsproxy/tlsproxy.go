@@ -21,8 +21,9 @@ type Dialer interface {
 
 // CensoringProxy is a censoring TLS proxy
 type CensoringProxy struct {
-	keywords []string
-	dial     func(network, address string) (net.Conn, error)
+	keywords     []string
+	dial         func(network, address string) (net.Conn, error)
+	outboundPort string
 }
 
 // NewCensoringProxy creates a new CensoringProxy instance using
@@ -31,13 +32,18 @@ type CensoringProxy struct {
 // the SNII record of a ClientHello. dnsNetwork and dnsAddress are
 // settings to configure the upstream, non censored DNS.
 func NewCensoringProxy(
-	keywords []string, uncensored Dialer,
+	keywords []string, uncensored Dialer, outboundPort *string,
 ) *CensoringProxy {
+	defaultPort := "443"
+	if outboundPort == nil {
+		outboundPort = &defaultPort
+	}
 	return &CensoringProxy{
 		keywords: keywords,
 		dial: func(network, address string) (net.Conn, error) {
 			return uncensored.DialContext(context.Background(), network, address)
 		},
+		outboundPort: *outboundPort,
 	}
 }
 
@@ -146,7 +152,7 @@ func (p *CensoringProxy) handle(clientconn net.Conn) {
 			return
 		}
 	}
-	serverconn, err := p.dial("tcp", net.JoinHostPort(sni, "443"))
+	serverconn, err := p.dial("tcp", net.JoinHostPort(sni, p.outboundPort))
 	if err != nil {
 		log.WithError(err).Warn("tlsproxy: p.dial failed")
 		alertclose(clientconn)
