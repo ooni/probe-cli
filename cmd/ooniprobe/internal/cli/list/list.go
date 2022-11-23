@@ -19,7 +19,7 @@ func init() {
 			return err
 		}
 		if *resultID > 0 {
-			measurements, err := probeCLI.DB().ListMeasurements(*resultID)
+			measurements, err := probeCLI.ReadDB().ListMeasurements(*resultID)
 			if err != nil {
 				log.WithError(err).Error("failed to list measurements")
 				return err
@@ -46,13 +46,13 @@ func init() {
 				// We assume that since these are summary level information the first
 				// item will contain the information necessary.
 				if isFirst {
-					msmtSummary.TotalRuntime = msmt.Result.Runtime
+					msmtSummary.TotalRuntime = msmt.DatabaseResult.Runtime
 					msmtSummary.DataUsageUp = msmt.DataUsageUp
 					msmtSummary.DataUsageDown = msmt.DataUsageDown
 					msmtSummary.NetworkName = msmt.NetworkName
-					msmtSummary.NetworkCountryCode = msmt.Network.CountryCode
+					msmtSummary.NetworkCountryCode = msmt.DatabaseNetwork.CountryCode
 					msmtSummary.ASN = msmt.ASN
-					msmtSummary.StartTime = msmt.Measurement.StartTime
+					msmtSummary.StartTime = msmt.DatabaseMeasurement.StartTime
 				}
 				if msmt.IsAnomaly.Bool == true {
 					msmtSummary.AnomalyCount++
@@ -62,7 +62,7 @@ func init() {
 			}
 			output.MeasurementSummary(msmtSummary)
 		} else {
-			doneResults, incompleteResults, err := probeCLI.DB().ListResults()
+			doneResults, incompleteResults, err := probeCLI.ReadDB().ListResults()
 			if err != nil {
 				log.WithError(err).Error("failed to list results")
 				return err
@@ -72,14 +72,14 @@ func init() {
 			}
 			for idx, result := range incompleteResults {
 				output.ResultItem(output.ResultItemData{
-					ID:                      result.Result.ID,
+					ID:                      result.DatabaseResult.ID,
 					Index:                   idx,
 					TotalCount:              len(incompleteResults),
 					Name:                    result.TestGroupName,
 					StartTime:               result.StartTime,
-					NetworkName:             result.Network.NetworkName,
-					Country:                 result.Network.CountryCode,
-					ASN:                     result.Network.ASN,
+					NetworkName:             result.DatabaseNetwork.NetworkName,
+					Country:                 result.DatabaseNetwork.CountryCode,
+					ASN:                     result.DatabaseNetwork.ASN,
 					MeasurementCount:        0,
 					MeasurementAnomalyCount: 0,
 					TestKeys:                "{}", // FIXME this used to be Summary we probably need to use a list now
@@ -111,14 +111,14 @@ func init() {
 				}
 
 				output.ResultItem(output.ResultItemData{
-					ID:                      result.Result.ID,
+					ID:                      result.DatabaseResult.ID,
 					Index:                   idx,
 					TotalCount:              len(doneResults),
 					Name:                    result.TestGroupName,
 					StartTime:               result.StartTime,
-					NetworkName:             result.Network.NetworkName,
-					Country:                 result.Network.CountryCode,
-					ASN:                     result.Network.ASN,
+					NetworkName:             result.DatabaseNetwork.NetworkName,
+					Country:                 result.DatabaseNetwork.CountryCode,
+					ASN:                     result.DatabaseNetwork.ASN,
 					TestKeys:                testKeys,
 					MeasurementCount:        result.TotalCount,
 					MeasurementAnomalyCount: result.AnomalyCount,
@@ -127,7 +127,7 @@ func init() {
 					DataUsageDown:           result.DataUsageDown,
 				})
 				resultSummary.TotalTests++
-				netCount[result.Network.ASN]++
+				netCount[result.DatabaseNetwork.ASN]++
 				resultSummary.TotalDataUsageUp += result.DataUsageUp
 				resultSummary.TotalDataUsageDown += result.DataUsageDown
 			}

@@ -52,7 +52,7 @@ func TestRun(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	db := probe.DB()
+	db := probe.WriteDB()
 	network, err := db.CreateNetwork(sess)
 	if err != nil {
 		t.Fatal(err)

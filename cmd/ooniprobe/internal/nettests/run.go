@@ -71,7 +71,7 @@ func RunGroup(config RunGroupConfig) error {
 		log.WithError(err).Error("Failed to lookup the location of the probe")
 		return err
 	}
-	db := config.Probe.DB()
+	db := config.Probe.WriteDB()
 	network, err := db.CreateNetwork(sess)
 	if err != nil {
 		log.WithError(err).Error("Failed to create the network row")
@@ -131,8 +131,7 @@ func RunGroup(config RunGroupConfig) error {
 	if err != nil {
 		os.Remove(result.MeasurementDir)
 	}
-	dbSess := db.Session()
-	if err = result.Finished(dbSess); err != nil {
+	if err = db.Finished(result); err != nil {
 		return err
 	}
 	return nil

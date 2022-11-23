@@ -9,7 +9,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/utils"
-	"github.com/ooni/probe-cli/v3/internal/database"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func formatSpeed(speed float64) string {
@@ -45,7 +45,7 @@ var summarizers = map[string]func(uint64, uint64, string) []string{
 		}
 	},
 	"performance": func(totalCount uint64, anomalyCount uint64, ss string) []string {
-		var tk database.PerformanceTestKeys
+		var tk model.PerformanceTestKeys
 		if err := json.Unmarshal([]byte(ss), &tk); err != nil {
 			return nil
 		}

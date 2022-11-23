@@ -8,11 +8,11 @@ import (
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/cli/root"
-	"github.com/ooni/probe-cli/v3/internal/database"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/upper/db/v4"
 )
 
-func deleteAll(d *database.Database, skipInteractive bool) error {
+func deleteAll(d model.WritableDatabase, r model.ReadableDatabase, skipInteractive bool) error {
 	if skipInteractive == false {
 		answer := ""
 		confirm := &survey.Select{
@@ -25,23 +25,23 @@ func deleteAll(d *database.Database, skipInteractive bool) error {
 			return errors.New("canceled by user")
 		}
 	}
-	doneResults, incompleteResults, err := d.ListResults()
+	doneResults, incompleteResults, err := r.ListResults()
 	if err != nil {
 		log.WithError(err).Error("failed to list results")
 		return err
 	}
 	cnt := 0
 	for _, result := range incompleteResults {
-		err = d.DeleteResult(result.Result.ID)
+		err = d.DeleteResult(result.DatabaseResult.ID)
 		if err == db.ErrNoMoreRows {
-			log.WithError(err).Errorf("failed to delete result #%d", result.Result.ID)
+			log.WithError(err).Errorf("failed to delete result #%d", result.DatabaseResult.ID)
 		}
 		cnt++
 	}
 	for _, result := range doneResults {
-		err = d.DeleteResult(result.Result.ID)
+		err = d.DeleteResult(result.DatabaseResult.ID)
 		if err == db.ErrNoMoreRows {
-			log.WithError(err).Errorf("failed to delete result #%d", result.Result.ID)
+			log.WithError(err).Errorf("failed to delete result #%d", result.DatabaseResult.ID)
 		}
 		cnt++
 	}
@@ -64,11 +64,11 @@ func init() {
 		}
 
 		if *all == true {
-			return deleteAll(ctx.DB(), *yes)
+			return deleteAll(ctx.WriteDB(), ctx.ReadDB(), *yes)
 		}
 
 		if *yes == true {
-			err = ctx.DB().DeleteResult(*resultID)
+			err = ctx.WriteDB().DeleteResult(*resultID)
 			if err == db.ErrNoMoreRows {
 				return errors.New("result not found")
 			}
@@ -84,7 +84,7 @@ func init() {
 		if answer == "false" {
 			return errors.New("canceled by user")
 		}
-		err = ctx.DB().DeleteResult(*resultID)
+		err = ctx.WriteDB().DeleteResult(*resultID)
 		if err == db.ErrNoMoreRows {
 			return errors.New("result not found")
 		}

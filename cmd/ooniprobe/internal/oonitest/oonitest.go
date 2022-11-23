@@ -8,8 +8,8 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/config"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/ooni"
-	"github.com/ooni/probe-cli/v3/internal/database"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
 // FakeOutput allows to fake the output package.
@@ -28,7 +28,7 @@ func (fo *FakeOutput) SectionTitle(s string) {
 // FakeProbeCLI fakes ooni.ProbeCLI
 type FakeProbeCLI struct {
 	FakeConfig         *config.Config
-	FakeDB             *database.Database
+	FakeDB             *mocks.Database
 	FakeIsBatch        bool
 	FakeHome           string
 	FakeTempDir        string
@@ -41,8 +41,13 @@ func (cli *FakeProbeCLI) Config() *config.Config {
 	return cli.FakeConfig
 }
 
-// DB implements ProbeCLI.DB
-func (cli *FakeProbeCLI) DB() *database.Database {
+// WriteDB implements ProbeCLI.WriteDB
+func (cli *FakeProbeCLI) WriteDB() model.WritableDatabase {
+	return cli.FakeDB
+}
+
+// ReadDB implements ProbeCLI.ReadDB
+func (cli *FakeProbeCLI) ReadDB() model.ReadableDatabase {
 	return cli.FakeDB
 }
 
