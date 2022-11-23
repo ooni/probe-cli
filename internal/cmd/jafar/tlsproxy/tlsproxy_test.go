@@ -94,7 +94,7 @@ func TestFailWriteAfterConnect(t *testing.T) {
 
 func TestListenError(t *testing.T) {
 	proxy := NewCensoringProxy(
-		[]string{""}, uncensored.NewClient("https://1.1.1.1/dns-query"), nil,
+		[]string{""}, uncensored.NewClient("https://1.1.1.1/dns-query"), "443",
 	)
 	listener, err := proxy.Start("8.8.8.8:80")
 	if err == nil {
@@ -107,7 +107,7 @@ func TestListenError(t *testing.T) {
 
 func newproxy(t *testing.T, blocked string) net.Listener {
 	proxy := NewCensoringProxy(
-		[]string{blocked}, uncensored.NewClient("https://1.1.1.1/dns-query"), nil,
+		[]string{blocked}, uncensored.NewClient("https://1.1.1.1/dns-query"), "443",
 	)
 	listener, err := proxy.Start("127.0.0.1:0")
 	if err != nil {

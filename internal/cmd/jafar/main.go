@@ -232,7 +232,7 @@ func iptablesStart() *iptables.CensoringPolicy {
 }
 
 func tlsProxyStart(uncensored *uncensored.Client) net.Listener {
-	proxy := tlsproxy.NewCensoringProxy(tlsProxyBlock, uncensored, tlsProxyOutboundPort)
+	proxy := tlsproxy.NewCensoringProxy(tlsProxyBlock, uncensored, *tlsProxyOutboundPort)
 	listener, err := proxy.Start(*tlsProxyAddress)
 	runtimex.PanicOnError(err, "proxy.Start failed")
 	return listener

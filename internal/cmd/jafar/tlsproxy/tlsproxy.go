@@ -29,21 +29,17 @@ type CensoringProxy struct {
 // NewCensoringProxy creates a new CensoringProxy instance using
 // the specified list of keywords to censor. keywords is the list
 // of keywords that trigger censorship if any of them appears in
-// the SNII record of a ClientHello. dnsNetwork and dnsAddress are
+// the SNI record of a ClientHello. dnsNetwork and dnsAddress are
 // settings to configure the upstream, non censored DNS.
 func NewCensoringProxy(
-	keywords []string, uncensored Dialer, outboundPort *string,
+	keywords []string, uncensored Dialer, outboundPort string,
 ) *CensoringProxy {
-	defaultPort := "443"
-	if outboundPort == nil {
-		outboundPort = &defaultPort
-	}
 	return &CensoringProxy{
 		keywords: keywords,
 		dial: func(network, address string) (net.Conn, error) {
 			return uncensored.DialContext(context.Background(), network, address)
 		},
-		outboundPort: *outboundPort,
+		outboundPort: outboundPort,
 	}
 }
 
