@@ -32,8 +32,7 @@ var logger = log.WithFields(log.Fields{
 // ProbeCLI is the OONI Probe CLI context.
 type ProbeCLI interface {
 	Config() *config.Config
-	WriteDB() model.WritableDatabase
-	ReadDB() model.ReadableDatabase
+	DB() *database.Database
 	IsBatch() bool
 	Home() string
 	TempDir() string
@@ -53,8 +52,7 @@ type ProbeEngine interface {
 // Probe contains the ooniprobe CLI context.
 type Probe struct {
 	config  *config.Config
-	writeDB model.WritableDatabase
-	readDB  model.ReadableDatabase
+	db      *database.Database
 	isBatch bool
 
 	home      string
@@ -86,14 +84,9 @@ func (p *Probe) Config() *config.Config {
 	return p.config
 }
 
-// WriteDB returns the writable database we're using
-func (p *Probe) WriteDB() model.WritableDatabase {
-	return p.writeDB
-}
-
-// ReadDB returns the readable database we're using
-func (p *Probe) ReadDB() model.ReadableDatabase {
-	return p.readDB
+// DB returns the database we're using
+func (p *Probe) DB() *database.Database {
+	return p.db
 }
 
 // Home returns the home directory.
@@ -190,8 +183,7 @@ func (p *Probe) Init(softwareName, softwareVersion, proxy string) error {
 	if err != nil {
 		return err
 	}
-	p.writeDB = db
-	p.readDB = db
+	p.db = db
 
 	// We cleanup the assets files used by versions of ooniprobe
 	// older than v3.9.0, where we started embedding the assets

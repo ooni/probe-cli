@@ -18,30 +18,30 @@ import (
 )
 
 // Open returns a new database instance
-func Open(dbpath string) (*database, error) {
+func Open(dbpath string) (*Database, error) {
 	db, err := Connect(dbpath)
 	if err != nil {
 		return nil, err
 	}
-	return &database{
+	return &Database{
 		sess: db,
 	}, nil
 }
 
 // Database is a database instance to store measurements
-type database struct {
+type Database struct {
 	sess db.Session
 }
 
-var _ model.WritableDatabase = &database{}
+var _ model.WritableDatabase = &Database{}
 
 // Session implements Writable/ReadableDatabase.Session
-func (d *database) Session() db.Session {
+func (d *Database) Session() db.Session {
 	return d.sess
 }
 
 // CreateNetwork implements WritableDatabase.CreateNetwork
-func (d *database) CreateNetwork(loc model.LocationProvider) (*model.DatabaseNetwork, error) {
+func (d *Database) CreateNetwork(loc model.LocationProvider) (*model.DatabaseNetwork, error) {
 	network := model.DatabaseNetwork{
 		ASN:         loc.ProbeASN(),
 		CountryCode: loc.ProbeCC(),
@@ -60,7 +60,7 @@ func (d *database) CreateNetwork(loc model.LocationProvider) (*model.DatabaseNet
 }
 
 // CreateOrUpdateURL implements WritableDatabase.CreateOrUpdateURL
-func (d *database) CreateOrUpdateURL(urlStr string, categoryCode string, countryCode string) (int64, error) {
+func (d *Database) CreateOrUpdateURL(urlStr string, categoryCode string, countryCode string) (int64, error) {
 	var url model.DatabaseURL
 	err := d.sess.Tx(func(tx db.Session) error {
 		res := tx.Collection("urls").Find(
@@ -98,7 +98,7 @@ func (d *database) CreateOrUpdateURL(urlStr string, categoryCode string, country
 }
 
 // CreateResult  implements WritableDatabase.CreateResult
-func (d *database) CreateResult(homePath string, testGroupName string, networkID int64) (*model.DatabaseResult, error) {
+func (d *Database) CreateResult(homePath string, testGroupName string, networkID int64) (*model.DatabaseResult, error) {
 	startTime := time.Now().UTC()
 
 	p, err := makeResultsDir(homePath, testGroupName, startTime)
@@ -123,7 +123,7 @@ func (d *database) CreateResult(homePath string, testGroupName string, networkID
 }
 
 // UpdateUploadedStatus implements WritableDatabase.UpdateUploadedStatus
-func (d *database) UpdateUploadedStatus(result *model.DatabaseResult) error {
+func (d *Database) UpdateUploadedStatus(result *model.DatabaseResult) error {
 	err := d.sess.Tx(func(tx db.Session) error {
 		uploadedTotal := model.UploadedTotalCount{}
 		req := tx.SQL().Select(
@@ -157,23 +157,8 @@ func (d *database) UpdateUploadedStatus(result *model.DatabaseResult) error {
 	return nil
 }
 
-// Finished implements WritableDatabase.Finished
-func (d *database) Finished(result *model.DatabaseResult) error {
-	if result.IsDone || result.Runtime != 0 {
-		return errors.New("Result is already finished")
-	}
-	result.Runtime = time.Now().UTC().Sub(result.StartTime).Seconds()
-	result.IsDone = true
-
-	err := d.sess.Collection("results").Find("result_id", result.ID).Update(result)
-	if err != nil {
-		return errors.Wrap(err, "updating finished result")
-	}
-	return nil
-}
-
 // DeleteResult implements WritableDatabase.DeleteResult
-func (d *database) DeleteResult(resultID int64) error {
+func (d *Database) DeleteResult(resultID int64) error {
 	var result model.DatabaseResult
 	res := d.sess.Collection("results").Find("result_id", resultID)
 	if err := res.One(&result); err != nil {
@@ -192,7 +177,7 @@ func (d *database) DeleteResult(resultID int64) error {
 }
 
 // CreateMeasurement implements WritableDatabase.CreateMeasurement
-func (d *database) CreateMeasurement(reportID sql.NullString, testName string, measurementDir string, idx int,
+func (d *Database) CreateMeasurement(reportID sql.NullString, testName string, measurementDir string, idx int,
 	resultID int64, urlID sql.NullInt64) (*model.DatabaseMeasurement, error) {
 	// TODO we should look into generating this file path in a more robust way.
 	// If there are two identical test_names in the same test group there is
@@ -219,7 +204,7 @@ func (d *database) CreateMeasurement(reportID sql.NullString, testName string, m
 }
 
 // AddTestKeys implements WritableDatabase.AddTestKeys
-func (d *database) AddTestKeys(msmt *model.DatabaseMeasurement, tk interface{}) error {
+func (d *Database) AddTestKeys(msmt *model.DatabaseMeasurement, tk interface{}) error {
 	var (
 		isAnomaly      bool
 		isAnomalyValid bool
@@ -246,54 +231,10 @@ func (d *database) AddTestKeys(msmt *model.DatabaseMeasurement, tk interface{}) 
 	return nil
 }
 
-// Done implements WritableDatabase.Done
-func (d *database) Done(msmt *model.DatabaseMeasurement) error {
-	runtime := time.Now().UTC().Sub(msmt.StartTime)
-	msmt.Runtime = runtime.Seconds()
-	msmt.IsDone = true
-	err := d.sess.Collection("measurements").Find("measurement_id", msmt.ID).Update(msmt)
-	if err != nil {
-		return errors.Wrap(err, "updating measurement")
-	}
-	return nil
-}
-
-// UploadFailed implements WritableDatabase.UploadFailed
-func (d *database) UploadFailed(msmt *model.DatabaseMeasurement, failure string) error {
-	msmt.UploadFailureMsg = sql.NullString{String: failure, Valid: true}
-	msmt.IsUploaded = false
-	err := d.sess.Collection("measurements").Find("measurement_id", msmt.ID).Update(msmt)
-	if err != nil {
-		return errors.Wrap(err, "updating measurement")
-	}
-	return nil
-}
-
-// UploadSucceeded implements WritableDatabase.UploadSucceeded
-func (d *database) UploadSucceeded(msmt *model.DatabaseMeasurement) error {
-	msmt.IsUploaded = true
-	err := d.sess.Collection("measurements").Find("measurement_id", msmt.ID).Update(msmt)
-	if err != nil {
-		return errors.Wrap(err, "updating measurement")
-	}
-	return nil
-}
-
-// Failed implements WritableDatabase.Failed
-func (d *database) Failed(msmt *model.DatabaseMeasurement, failure string) error {
-	msmt.FailureMsg = sql.NullString{String: failure, Valid: true}
-	msmt.IsFailed = true
-	err := d.sess.Collection("measurements").Find("measurement_id", msmt.ID).Update(msmt)
-	if err != nil {
-		return errors.Wrap(err, "updating measurement")
-	}
-	return nil
-}
-
-var _ model.ReadableDatabase = &database{}
+var _ model.ReadableDatabase = &Database{}
 
 // ListResults implements ReadableDatabase.ListResults
-func (d *database) ListResults() ([]model.DatabaseResultNetwork, []model.DatabaseResultNetwork, error) {
+func (d *Database) ListResults() ([]model.DatabaseResultNetwork, []model.DatabaseResultNetwork, error) {
 	doneResults := []model.DatabaseResultNetwork{}
 	incompleteResults := []model.DatabaseResultNetwork{}
 	req := d.sess.SQL().Select(
@@ -355,7 +296,7 @@ func (d *database) ListResults() ([]model.DatabaseResultNetwork, []model.Databas
 }
 
 // ListMeasurements implements ReadableDatabase.ListMeasurements
-func (d *database) ListMeasurements(resultID int64) ([]model.DatabaseMeasurementURLNetwork, error) {
+func (d *Database) ListMeasurements(resultID int64) ([]model.DatabaseMeasurementURLNetwork, error) {
 	measurements := []model.DatabaseMeasurementURLNetwork{}
 	req := d.sess.SQL().Select(
 		db.Raw("networks.*"),
@@ -376,7 +317,7 @@ func (d *database) ListMeasurements(resultID int64) ([]model.DatabaseMeasurement
 }
 
 // GetMeasurementJSON implements ReadableDatabase.GetMeasurementJSON
-func (d *database) GetMeasurementJSON(msmtID int64) (map[string]interface{}, error) {
+func (d *Database) GetMeasurementJSON(msmtID int64) (map[string]interface{}, error) {
 	var (
 		measurement model.DatabaseMeasurementURLNetwork
 		msmtJSON    map[string]interface{}
@@ -439,6 +380,6 @@ func (d *database) GetMeasurementJSON(msmtID int64) (map[string]interface{}, err
 }
 
 // Close implements Writable/ReadableDatabase.Close
-func (d *database) Close() error {
+func (d *Database) Close() error {
 	return d.sess.Close()
 }

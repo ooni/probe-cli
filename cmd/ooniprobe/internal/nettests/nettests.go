@@ -93,7 +93,7 @@ func (c *Controller) BuildAndSetInputIdxMap(testlist []model.OOAPIURLInfo) ([]st
 	urlIDMap := make(map[int64]int64)
 	for idx, url := range testlist {
 		log.Debugf("Going over URL %d", idx)
-		urlID, err := c.Probe.WriteDB().CreateOrUpdateURL(
+		urlID, err := c.Probe.DB().CreateOrUpdateURL(
 			url.URL, url.CategoryCode, url.CountryCode,
 		)
 		if err != nil {
@@ -121,7 +121,7 @@ func (c *Controller) SetNettestIndex(i, n int) {
 // This function will continue to run in most cases but will
 // immediately halt if something's wrong with the file system.
 func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error {
-	db := c.Probe.WriteDB()
+	db := c.Probe.DB()
 	// This will configure the controller as handler for the callbacks
 	// called by ooni/probe-engine/experiment.Experiment.
 	builder.SetCallbacks(model.ExperimentCallbacks(c))

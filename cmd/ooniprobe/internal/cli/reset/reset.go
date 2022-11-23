@@ -20,9 +20,7 @@ func init() {
 		}
 		// We need to first the DB otherwise the DB will be rewritten on close when
 		// we delete the home directory.
-		// Since the writable and readable database are same, we only close the writable
-		// database
-		err = ctx.WriteDB().Close()
+		err = ctx.DB().Close()
 		if err != nil {
 			log.WithError(err).Error("failed to close the DB")
 			return err

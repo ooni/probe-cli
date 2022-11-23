@@ -7,15 +7,10 @@ package model
 import (
 	"database/sql"
 	"time"
-
-	"github.com/upper/db/v4"
 )
 
 // WritabeDatabase supports writing and updating data.
 type WritableDatabase interface {
-	// Session returns the database session
-	Session() db.Session
-
 	// CreateNetwork will create a new network in the network table
 	//
 	// Arguments:
@@ -152,16 +147,10 @@ type WritableDatabase interface {
 	//
 	// Returns a non-nil error if the measurement update failed
 	Failed(msmt *DatabaseMeasurement, failure string) error
-
-	// Close closes the database session
-	Close() error
 }
 
 // ReadableDatabase only supports reading data.
 type ReadableDatabase interface {
-	// Session returns the database session
-	Session() db.Session
-
 	// ListResults return the list of results
 	//
 	// Arguments:
@@ -186,9 +175,6 @@ type ReadableDatabase interface {
 	//
 	// Returns the measurement JSON or an error
 	GetMeasurementJSON(msmtID int64) (map[string]interface{}, error)
-
-	// Close closes the database session
-	Close() error
 }
 
 // ResultNetwork is used to represent the structure made from the JOIN

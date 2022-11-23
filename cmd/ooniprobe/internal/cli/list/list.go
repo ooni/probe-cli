@@ -19,7 +19,7 @@ func init() {
 			return err
 		}
 		if *resultID > 0 {
-			measurements, err := probeCLI.ReadDB().ListMeasurements(*resultID)
+			measurements, err := probeCLI.DB().ListMeasurements(*resultID)
 			if err != nil {
 				log.WithError(err).Error("failed to list measurements")
 				return err
@@ -54,7 +54,7 @@ func init() {
 					msmtSummary.ASN = msmt.ASN
 					msmtSummary.StartTime = msmt.DatabaseMeasurement.StartTime
 				}
-				if msmt.IsAnomaly.Bool == true {
+				if msmt.IsAnomaly.Bool {
 					msmtSummary.AnomalyCount++
 				}
 				msmtSummary.TotalCount++
@@ -62,7 +62,7 @@ func init() {
 			}
 			output.MeasurementSummary(msmtSummary)
 		} else {
-			doneResults, incompleteResults, err := probeCLI.ReadDB().ListResults()
+			doneResults, incompleteResults, err := probeCLI.DB().ListResults()
 			if err != nil {
 				log.WithError(err).Error("failed to list results")
 				return err

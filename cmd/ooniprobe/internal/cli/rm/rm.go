@@ -8,15 +8,15 @@ import (
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/cli/root"
-	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/database"
 	"github.com/upper/db/v4"
 )
 
-func deleteAll(d model.WritableDatabase, r model.ReadableDatabase, skipInteractive bool) error {
-	if skipInteractive == false {
+func deleteAll(d *database.Database, skipInteractive bool) error {
+	if !skipInteractive {
 		answer := ""
 		confirm := &survey.Select{
-			Message: fmt.Sprintf("Are you sure you wish to delete ALL results"),
+			Message: "Are you sure you wish to delete ALL results",
 			Options: []string{"true", "false"},
 			Default: "false",
 		}
@@ -25,7 +25,7 @@ func deleteAll(d model.WritableDatabase, r model.ReadableDatabase, skipInteracti
 			return errors.New("canceled by user")
 		}
 	}
-	doneResults, incompleteResults, err := r.ListResults()
+	doneResults, incompleteResults, err := d.ListResults()
 	if err != nil {
 		log.WithError(err).Error("failed to list results")
 		return err
@@ -63,12 +63,12 @@ func init() {
 			return err
 		}
 
-		if *all == true {
-			return deleteAll(ctx.WriteDB(), ctx.ReadDB(), *yes)
+		if *all {
+			return deleteAll(ctx.DB(), *yes)
 		}
 
-		if *yes == true {
-			err = ctx.WriteDB().DeleteResult(*resultID)
+		if *yes {
+			err = ctx.DB().DeleteResult(*resultID)
 			if err == db.ErrNoMoreRows {
 				return errors.New("result not found")
 			}
@@ -84,7 +84,7 @@ func init() {
 		if answer == "false" {
 			return errors.New("canceled by user")
 		}
-		err = ctx.WriteDB().DeleteResult(*resultID)
+		err = ctx.DB().DeleteResult(*resultID)
 		if err == db.ErrNoMoreRows {
 			return errors.New("result not found")
 		}
