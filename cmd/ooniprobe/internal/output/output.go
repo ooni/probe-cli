@@ -8,7 +8,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/mitchellh/go-wordwrap"
-	"github.com/ooni/probe-cli/v3/internal/database"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // MeasurementJSON prints the JSON of a measurement
@@ -59,31 +59,31 @@ func MeasurementSummary(msmt MeasurementSummaryData) {
 }
 
 // MeasurementItem logs a progress type event
-func MeasurementItem(msmt database.MeasurementURLNetwork, isFirst bool, isLast bool) {
+func MeasurementItem(msmt model.DatabaseMeasurementURLNetwork, isFirst bool, isLast bool) {
 	log.WithFields(log.Fields{
 		"type":     "measurement_item",
 		"is_first": isFirst,
 		"is_last":  isLast,
 
-		"id":                    msmt.Measurement.ID,
+		"id":                    msmt.DatabaseMeasurement.ID,
 		"test_name":             msmt.TestName,
-		"test_group_name":       msmt.Result.TestGroupName,
-		"start_time":            msmt.Measurement.StartTime,
+		"test_group_name":       msmt.DatabaseResult.TestGroupName,
+		"start_time":            msmt.DatabaseMeasurement.StartTime,
 		"test_keys":             msmt.TestKeys,
-		"network_country_code":  msmt.Network.CountryCode,
-		"network_name":          msmt.Network.NetworkName,
-		"asn":                   msmt.Network.ASN,
-		"runtime":               msmt.Measurement.Runtime,
-		"url":                   msmt.URL.URL.String,
-		"url_category_code":     msmt.URL.CategoryCode.String,
-		"url_country_code":      msmt.URL.CountryCode.String,
+		"network_country_code":  msmt.DatabaseNetwork.CountryCode,
+		"network_name":          msmt.DatabaseNetwork.NetworkName,
+		"asn":                   msmt.DatabaseNetwork.ASN,
+		"runtime":               msmt.DatabaseMeasurement.Runtime,
+		"url":                   msmt.DatabaseURL.URL.String,
+		"url_category_code":     msmt.DatabaseURL.CategoryCode.String,
+		"url_country_code":      msmt.DatabaseURL.CountryCode.String,
 		"is_anomaly":            msmt.IsAnomaly.Bool,
-		"is_uploaded":           msmt.Measurement.IsUploaded,
+		"is_uploaded":           msmt.DatabaseMeasurement.IsUploaded,
 		"is_upload_failed":      msmt.IsUploadFailed,
 		"upload_failure_msg":    msmt.UploadFailureMsg.String,
 		"is_failed":             msmt.IsFailed,
 		"failure_msg":           msmt.FailureMsg.String,
-		"is_done":               msmt.Measurement.IsDone,
+		"is_done":               msmt.DatabaseMeasurement.IsDone,
 		"report_file_path":      msmt.ReportFilePath.String,
 		"measurement_file_path": msmt.MeasurementFilePath.String,
 	}).Info("measurement")

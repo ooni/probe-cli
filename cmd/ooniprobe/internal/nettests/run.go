@@ -131,8 +131,7 @@ func RunGroup(config RunGroupConfig) error {
 	if err != nil {
 		os.Remove(result.MeasurementDir)
 	}
-	dbSess := db.Session()
-	if err = result.Finished(dbSess); err != nil {
+	if err = db.Finished(result); err != nil {
 		return err
 	}
 	return nil

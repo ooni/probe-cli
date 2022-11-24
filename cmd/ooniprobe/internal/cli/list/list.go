@@ -46,15 +46,15 @@ func init() {
 				// We assume that since these are summary level information the first
 				// item will contain the information necessary.
 				if isFirst {
-					msmtSummary.TotalRuntime = msmt.Result.Runtime
+					msmtSummary.TotalRuntime = msmt.DatabaseResult.Runtime
 					msmtSummary.DataUsageUp = msmt.DataUsageUp
 					msmtSummary.DataUsageDown = msmt.DataUsageDown
 					msmtSummary.NetworkName = msmt.NetworkName
-					msmtSummary.NetworkCountryCode = msmt.Network.CountryCode
+					msmtSummary.NetworkCountryCode = msmt.DatabaseNetwork.CountryCode
 					msmtSummary.ASN = msmt.ASN
-					msmtSummary.StartTime = msmt.Measurement.StartTime
+					msmtSummary.StartTime = msmt.DatabaseMeasurement.StartTime
 				}
-				if msmt.IsAnomaly.Bool == true {
+				if msmt.IsAnomaly.Bool {
 					msmtSummary.AnomalyCount++
 				}
 				msmtSummary.TotalCount++
@@ -72,14 +72,14 @@ func init() {
 			}
 			for idx, result := range incompleteResults {
 				output.ResultItem(output.ResultItemData{
-					ID:                      result.Result.ID,
+					ID:                      result.DatabaseResult.ID,
 					Index:                   idx,
 					TotalCount:              len(incompleteResults),
 					Name:                    result.TestGroupName,
 					StartTime:               result.StartTime,
-					NetworkName:             result.Network.NetworkName,
-					Country:                 result.Network.CountryCode,
-					ASN:                     result.Network.ASN,
+					NetworkName:             result.DatabaseNetwork.NetworkName,
+					Country:                 result.DatabaseNetwork.CountryCode,
+					ASN:                     result.DatabaseNetwork.ASN,
 					MeasurementCount:        0,
 					MeasurementAnomalyCount: 0,
 					TestKeys:                "{}", // FIXME this used to be Summary we probably need to use a list now
@@ -111,14 +111,14 @@ func init() {
 				}
 
 				output.ResultItem(output.ResultItemData{
-					ID:                      result.Result.ID,
+					ID:                      result.DatabaseResult.ID,
 					Index:                   idx,
 					TotalCount:              len(doneResults),
 					Name:                    result.TestGroupName,
 					StartTime:               result.StartTime,
-					NetworkName:             result.Network.NetworkName,
-					Country:                 result.Network.CountryCode,
-					ASN:                     result.Network.ASN,
+					NetworkName:             result.DatabaseNetwork.NetworkName,
+					Country:                 result.DatabaseNetwork.CountryCode,
+					ASN:                     result.DatabaseNetwork.ASN,
 					TestKeys:                testKeys,
 					MeasurementCount:        result.TotalCount,
 					MeasurementAnomalyCount: result.AnomalyCount,
@@ -127,7 +127,7 @@ func init() {
 					DataUsageDown:           result.DataUsageDown,
 				})
 				resultSummary.TotalTests++
-				netCount[result.Network.ASN]++
+				netCount[result.DatabaseNetwork.ASN]++
 				resultSummary.TotalDataUsageUp += result.DataUsageUp
 				resultSummary.TotalDataUsageDown += result.DataUsageDown
 			}
