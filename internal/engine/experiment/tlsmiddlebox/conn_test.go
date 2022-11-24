@@ -4,11 +4,15 @@ import (
 	"context"
 	"errors"
 	"io"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"syscall"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func TestDialerTTLWrapperConn(t *testing.T) {
@@ -135,9 +139,15 @@ func TestSetTTL(t *testing.T) {
 
 func TestGetSoErr(t *testing.T) {
 	t.Run("success case", func(t *testing.T) {
+		srvr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(200)
+		}))
+		defer srvr.Close()
+		URL, err := url.Parse(srvr.URL)
+		runtimex.PanicOnError(err, "url.Parse failed")
 		d := NewDialerTTLWrapper()
 		ctx := context.Background()
-		conn, err := d.DialContext(ctx, "tcp", "1.1.1.1:80")
+		conn, err := d.DialContext(ctx, "tcp", URL.Host)
 		if err != nil {
 			t.Fatal(err)
 		}
