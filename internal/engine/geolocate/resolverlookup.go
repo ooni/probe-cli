@@ -20,6 +20,8 @@ func (rlc resolverLookupClient) LookupResolverIP(ctx context.Context) (string, e
 	if err != nil {
 		return "", err
 	}
+	// Note: it feels okay to panic here because a resolver is expected to never return
+	// zero valid IP addresses to the caller without emitting an error.
 	runtimex.Assert(len(ips) >= 1, "reso.LookupHost returned zero IP addresses")
 	return ips[0], nil
 }
