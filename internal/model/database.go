@@ -1,7 +1,7 @@
 package model
 
 //
-// Database
+// Results database
 //
 
 import (
