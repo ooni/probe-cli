@@ -13,10 +13,10 @@ import (
 )
 
 func deleteAll(d *database.Database, skipInteractive bool) error {
-	if skipInteractive == false {
+	if !skipInteractive {
 		answer := ""
 		confirm := &survey.Select{
-			Message: fmt.Sprintf("Are you sure you wish to delete ALL results"),
+			Message: "Are you sure you wish to delete ALL results",
 			Options: []string{"true", "false"},
 			Default: "false",
 		}
@@ -32,16 +32,16 @@ func deleteAll(d *database.Database, skipInteractive bool) error {
 	}
 	cnt := 0
 	for _, result := range incompleteResults {
-		err = d.DeleteResult(result.Result.ID)
+		err = d.DeleteResult(result.DatabaseResult.ID)
 		if err == db.ErrNoMoreRows {
-			log.WithError(err).Errorf("failed to delete result #%d", result.Result.ID)
+			log.WithError(err).Errorf("failed to delete result #%d", result.DatabaseResult.ID)
 		}
 		cnt++
 	}
 	for _, result := range doneResults {
-		err = d.DeleteResult(result.Result.ID)
+		err = d.DeleteResult(result.DatabaseResult.ID)
 		if err == db.ErrNoMoreRows {
-			log.WithError(err).Errorf("failed to delete result #%d", result.Result.ID)
+			log.WithError(err).Errorf("failed to delete result #%d", result.DatabaseResult.ID)
 		}
 		cnt++
 	}
@@ -63,11 +63,11 @@ func init() {
 			return err
 		}
 
-		if *all == true {
+		if *all {
 			return deleteAll(ctx.DB(), *yes)
 		}
 
-		if *yes == true {
+		if *yes {
 			err = ctx.DB().DeleteResult(*resultID)
 			if err == db.ErrNoMoreRows {
 				return errors.New("result not found")

@@ -1,4 +1,4 @@
-package engine
+package model
 
 // LocationProvider is an interface that returns the current location. The
 // github.com/ooni/probe-cli/v3/internal/engine/session.Session implements it.

@@ -10,7 +10,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/ooni"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/output"
-	"github.com/ooni/probe-cli/v3/internal/database"
 	engine "github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/pkg/errors"
@@ -23,7 +22,7 @@ type Nettest interface {
 
 // NewController creates a nettest controller
 func NewController(
-	nt Nettest, probe *ooni.Probe, res *database.Result, sess *engine.Session) *Controller {
+	nt Nettest, probe *ooni.Probe, res *model.DatabaseResult, sess *engine.Session) *Controller {
 	return &Controller{
 		Probe:   probe,
 		nt:      nt,
@@ -37,12 +36,12 @@ func NewController(
 type Controller struct {
 	Probe       *ooni.Probe
 	Session     *engine.Session
-	res         *database.Result
+	res         *model.DatabaseResult
 	nt          Nettest
 	ntCount     int
 	ntIndex     int
 	ntStartTime time.Time // used to calculate the eta
-	msmts       map[int64]*database.Measurement
+	msmts       map[int64]*model.DatabaseMeasurement
 	inputIdxMap map[int64]int64 // Used to map mk idx to database id
 
 	// InputFiles optionally contains the names of the input
@@ -133,7 +132,7 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 		c.res.DataUsageUp += exp.KibiBytesSent()
 	}()
 
-	c.msmts = make(map[int64]*database.Measurement)
+	c.msmts = make(map[int64]*model.DatabaseMeasurement)
 
 	// These values are shared by every measurement
 	var reportID sql.NullString
@@ -167,7 +166,6 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 		log.Debug("disabling maxRuntime with user-provided input")
 		maxRuntime = 0
 	}
-	sess := db.Session()
 	start := time.Now()
 	c.ntStartTime = start
 	for idx, input := range inputs {
@@ -201,7 +199,7 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 		measurement, err := exp.MeasureWithContext(context.Background(), input)
 		if err != nil {
 			log.WithError(err).Debug(color.RedString("failure.measurement"))
-			if err := c.msmts[idx64].Failed(sess, err.Error()); err != nil {
+			if err := db.Failed(c.msmts[idx64], err.Error()); err != nil {
 				return errors.Wrap(err, "failed to mark measurement as failed")
 			}
 			// Since https://github.com/ooni/probe-cli/pull/527, the Measure
@@ -221,10 +219,10 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 			// bit of a spew in the logs, perhaps, but stopping seems less efficient.
 			if err := exp.SubmitAndUpdateMeasurementContext(context.Background(), measurement); err != nil {
 				log.Debug(color.RedString("failure.measurement_submission"))
-				if err := c.msmts[idx64].UploadFailed(sess, err.Error()); err != nil {
+				if err := db.UploadFailed(c.msmts[idx64], err.Error()); err != nil {
 					return errors.Wrap(err, "failed to mark upload as failed")
 				}
-			} else if err := c.msmts[idx64].UploadSucceeded(sess); err != nil {
+			} else if err := db.UploadSucceeded(c.msmts[idx64]); err != nil {
 				return errors.Wrap(err, "failed to mark upload as succeeded")
 			} else {
 				// Everything went OK, don't save to disk
@@ -238,7 +236,7 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 			}
 		}
 
-		if err := c.msmts[idx64].Done(sess); err != nil {
+		if err := db.Done(c.msmts[idx64]); err != nil {
 			return errors.Wrap(err, "failed to mark measurement as done")
 		}
 
