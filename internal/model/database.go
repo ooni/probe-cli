@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// WritabeDatabase supports writing and updating data.
+// WritableDatabase supports writing and updating data.
 type WritableDatabase interface {
 	// CreateNetwork will create a new network in the network table
 	//
