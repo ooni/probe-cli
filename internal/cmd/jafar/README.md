@@ -165,7 +165,7 @@ on their SNI value. It is controlled by the following flags:
   -tls-proxy-block value
         Register SNI header keyword triggering TLS censorship
   -tls-proxy-outbound-port
-        Define the outbound port requests are proxied to (default "443 for HTTPS)
+        Define the outbound port requests are proxied to (default "443" for HTTPS)
 ```
 
 The `-tls-proxy-address` flags has the same semantics it has for the DNS
