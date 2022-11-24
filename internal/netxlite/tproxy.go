@@ -3,32 +3,14 @@ package netxlite
 import (
 	"context"
 	"net"
-	"sync"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// TProxySet sets the value of the transparent proxy in a thread safe way
-// and returns the previous value just in case you want to restore it later.
-//
-// CAVEAT: it's not recommended to modify the transparent proxy while OONI's
-// doing network I/O. Please, only use TProxySet for integration testing.
-func TProxySet(t model.UnderlyingNetwork) model.UnderlyingNetwork {
-	tproxyMu.Lock()
-	oldt := tproxy
-	tproxy = t
-	tproxyMu.Unlock()
-	return oldt
-}
-
-var (
-	// tproxy refers to the UnderlyingNetwork implementation used by netxlite.
-	tproxy model.UnderlyingNetwork = &DefaultTProxy{}
-
-	// tproxyMu protects tproxy
-	tproxyMu sync.Mutex
-)
+// TProxy refers to the UnderlyingNetwork implementation. By overriding this
+// variable you can force netxlite to use alternative network primitives.
+var TProxy model.UnderlyingNetwork = &DefaultTProxy{}
 
 // defaultTProxy is the default UnderlyingNetwork implementation.
 type DefaultTProxy struct{}

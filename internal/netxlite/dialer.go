@@ -163,7 +163,7 @@ func (d *DialerSystem) configuredTimeout() time.Duration {
 }
 
 func (d *DialerSystem) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
-	return tproxy.DialContext(ctx, d.configuredTimeout(), network, address)
+	return TProxy.DialContext(ctx, d.configuredTimeout(), network, address)
 }
 
 func (d *DialerSystem) CloseIdleConnections() {

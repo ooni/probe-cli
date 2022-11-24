@@ -35,15 +35,18 @@ func TestLookupResolverIPFailure(t *testing.T) {
 	//
 	// We're doing this because we want to make it less likely that we will
 	// introduce bug https://github.com/ooni/probe/issues/2360 again.
-	oldTProxy := netxlite.TProxySet(&mocks.UnderlyingNetwork{
+	oldTProxy := netxlite.TProxy
+	defer func() {
+		netxlite.TProxy = oldTProxy
+	}()
+	netxlite.TProxy = &mocks.UnderlyingNetwork{
 		MockGetaddrinfoLookupANY: func(ctx context.Context, domain string) ([]string, string, error) {
 			return nil, "", expected
 		},
 		MockGetaddrinfoResolverNetwork: func() string {
 			return netxlite.StdlibResolverGetaddrinfo
 		},
-	})
-	defer netxlite.TProxySet(oldTProxy)
+	}
 
 	addr, err := rlc.LookupResolverIP(context.Background())
 	if !errors.Is(err, expected) {
@@ -65,15 +68,18 @@ func TestLookupResolverIPNoAddressReturned(t *testing.T) {
 	//
 	// We're doing this because we want to make it less likely that we will
 	// introduce bug https://github.com/ooni/probe/issues/2360 again.
-	oldTProxy := netxlite.TProxySet(&mocks.UnderlyingNetwork{
+	oldTProxy := netxlite.TProxy
+	defer func() {
+		netxlite.TProxy = oldTProxy
+	}()
+	netxlite.TProxy = &mocks.UnderlyingNetwork{
 		MockGetaddrinfoLookupANY: func(ctx context.Context, domain string) ([]string, string, error) {
 			return nil, "", nil
 		},
 		MockGetaddrinfoResolverNetwork: func() string {
 			return netxlite.StdlibResolverGetaddrinfo
 		},
-	})
-	defer netxlite.TProxySet(oldTProxy)
+	}
 
 	addr, err := rlc.LookupResolverIP(context.Background())
 	if err == nil || err.Error() != netxlite.FailureDNSNoAnswer {
