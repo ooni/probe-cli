@@ -28,12 +28,12 @@ type THTLSHandshakeResult struct {
 // THHTTPRequestResult is the result of the HTTP request
 // performed by the control vantage point.
 type THHTTPRequestResult struct {
-	BodyLength   int64             `json:"body_length"`
-	DiscoveredH3 string            `json:"discovered_h3_endpoint"`
-	Failure      *string           `json:"failure"`
-	Title        string            `json:"title"`
-	Headers      map[string]string `json:"headers"`
-	StatusCode   int64             `json:"status_code"`
+	BodyLength           int64             `json:"body_length"`
+	DiscoveredH3Endpoint string            `json:"discovered_h3_endpoint"`
+	Failure              *string           `json:"failure"`
+	Title                string            `json:"title"`
+	Headers              map[string]string `json:"headers"`
+	StatusCode           int64             `json:"status_code"`
 }
 
 // TODO(bassosimone): ASNs is a private implementation detail of v0.4
@@ -82,7 +82,7 @@ type THResponse struct {
 	TLSHandshake  map[string]THTLSHandshakeResult `json:"tls_handshake,omitempty"`
 	QUICHandshake map[string]THTLSHandshakeResult `json:"quic_handshake"`
 	HTTPRequest   THHTTPRequestResult             `json:"http_request"`
-	HTTP3Request  *THHTTPRequestResult            `json:"http3_request"`
+	HTTP3Request  *THHTTPRequestResult            `json:"http3_request"` // optional!
 	DNS           THDNSResult                     `json:"dns"`
 	IPInfo        map[string]*THIPInfo            `json:"ip_info,omitempty"`
 }

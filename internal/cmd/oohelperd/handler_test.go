@@ -57,8 +57,11 @@ func TestHandlerWorkingAsIntended(t *testing.T) {
 		BaseLogger:        model.DiscardLogger,
 		Indexer:           &atomicx.Int64{},
 		MaxAcceptableBody: 1 << 24,
-		NewClient: func(model.Logger) model.HTTPClient {
+		NewHTTPClient: func(model.Logger) model.HTTPClient {
 			return http.DefaultClient
+		},
+		NewHTTP3Client: func(logger model.Logger) model.HTTPClient {
+			return netxlite.NewHTTP3ClientWithResolver(model.DiscardLogger, newResolver(model.DiscardLogger))
 		},
 		NewDialer: func(model.Logger) model.Dialer {
 			return netxlite.NewDialerWithStdlibResolver(model.DiscardLogger)

@@ -66,8 +66,8 @@ type tcpConfig struct {
 	Wg *sync.WaitGroup
 }
 
-// tcpDo performs the TCP and TLS check.
-func tcpDo(ctx context.Context, config *tcpConfig) {
+// tcpTLSDo performs the TCP and TLS check.
+func tcpTLSDo(ctx context.Context, config *tcpConfig) {
 	const timeout = 15 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()

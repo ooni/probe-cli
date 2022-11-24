@@ -49,8 +49,8 @@ type httpConfig struct {
 	// Wg is MANDATORY and allows synchronizing with parent.
 	Wg *sync.WaitGroup
 
-	// h3 is the OPTIONAL flag to indicate that this is an HTTP/3 request
-	h3 bool
+	// searchForH3 is the OPTIONAL flag to decide whether to inspect Alt-Svc for HTTP/3 discovery
+	searchForH3 bool
 }
 
 // httpDo performs the HTTP check.
@@ -108,17 +108,17 @@ func httpDo(ctx context.Context, config *httpConfig) {
 	ol.Stop(err)
 
 	h3Endpoint := ""
-	if !config.h3 {
+	if config.searchForH3 {
 		h3Endpoint = getHTTP3Altsvc(resp)
 	}
 
 	config.Out <- ctrlHTTPResponse{
-		BodyLength:   int64(len(data)),
-		DiscoveredH3: h3Endpoint,
-		Failure:      httpMapFailure(err),
-		StatusCode:   int64(resp.StatusCode),
-		Headers:      headers,
-		Title:        measurexlite.WebGetTitle(string(data)),
+		BodyLength:           int64(len(data)),
+		DiscoveredH3Endpoint: h3Endpoint,
+		Failure:              httpMapFailure(err),
+		StatusCode:           int64(resp.StatusCode),
+		Headers:              headers,
+		Title:                measurexlite.WebGetTitle(string(data)),
 	}
 }
 
@@ -131,9 +131,6 @@ func getHTTP3Altsvc(resp *http.Response) string {
 	for i := 0; i < 10; i++ {
 		responses = append(responses, resp)
 		request = resp.Request
-		if request == nil {
-			break
-		}
 		if request.Response == nil {
 			break
 		}

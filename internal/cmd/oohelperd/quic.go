@@ -1,5 +1,9 @@
 package main
 
+//
+// QUIC connect measurements
+//
+
 import (
 	"context"
 	"crypto/tls"

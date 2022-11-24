@@ -12,7 +12,6 @@ import (
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 type (
@@ -62,7 +61,7 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 		TLSHandshake:  map[string]model.THTLSHandshakeResult{},
 		QUICHandshake: map[string]model.THTLSHandshakeResult{},
 		HTTPRequest:   model.THHTTPRequestResult{},
-		HTTP3Request:  nil,
+		HTTP3Request:  nil, // optional field!
 		DNS:           model.THDNSResult{},
 		IPInfo:        map[string]*model.THIPInfo{},
 	}
@@ -86,7 +85,7 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 	tcpconnch := make(chan *tcpResultPair, len(endpoints))
 	for _, endpoint := range endpoints {
 		wg.Add(1)
-		go tcpDo(ctx, &tcpConfig{
+		go tcpTLSDo(ctx, &tcpConfig{
 			Address:          endpoint.Addr,
 			EnableTLS:        endpoint.TLS,
 			Endpoint:         endpoint.Epnt,
@@ -106,10 +105,11 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 		Headers:           creq.HTTPRequestHeaders,
 		Logger:            logger,
 		MaxAcceptableBody: config.MaxAcceptableBody,
-		NewClient:         config.NewClient,
+		NewClient:         config.NewHTTPClient,
 		Out:               httpch,
 		URL:               creq.HTTPRequest,
 		Wg:                wg,
+		searchForH3:       true,
 	})
 
 	// wait for endpoint measurements to complete
@@ -118,9 +118,10 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 	// continue assembling the response
 	cresp.HTTPRequest = <-httpch
 
+	// HTTP/3
 	quicconnch := make(chan *quicResult, len(endpoints))
 
-	if cresp.HTTPRequest.DiscoveredH3 != "" {
+	if cresp.HTTPRequest.DiscoveredH3Endpoint != "" {
 		// quicconnect: start over all the endpoints
 		for _, endpoint := range endpoints {
 			wg.Add(1)
@@ -134,26 +135,20 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 				Wg:            wg,
 			})
 		}
+
 		// http3: start
 		http3ch := make(chan ctrlHTTPResponse, 1)
 		wg.Add(1)
 
-		h3Client := func(logger model.Logger) model.HTTPClient {
-			reso := netxlite.MaybeWrapWithBogonResolver(
-				true, // enabled
-				newResolver(logger),
-			)
-			return netxlite.NewHTTP3ClientWithResolver(logger, reso)
-		}
 		go httpDo(ctx, &httpConfig{
 			Headers:           creq.HTTPRequestHeaders,
 			Logger:            logger,
 			MaxAcceptableBody: config.MaxAcceptableBody,
-			NewClient:         h3Client,
+			NewClient:         config.NewHTTP3Client,
 			Out:               http3ch,
-			URL:               "https://" + cresp.HTTPRequest.DiscoveredH3,
+			URL:               "https://" + cresp.HTTPRequest.DiscoveredH3Endpoint,
 			Wg:                wg,
-			h3:                true,
+			searchForH3:       false,
 		})
 		wg.Wait()
 
