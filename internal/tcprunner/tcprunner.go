@@ -47,13 +47,12 @@ type TCPRunner struct {
 
 // TCPSession Manages a single TCP session and TLS handshake to a given ip:port
 type TCPSession struct {
-	Itk     TCPSessionModel
-	Runner  *TCPRunner
-	Addr    string
-	Port    string
-	TLS     bool
-	RawConn *net.Conn
-	TLSConn *net.Conn
+	Itk    TCPSessionModel
+	Runner *TCPRunner
+	Addr   string
+	Port   string
+	TLS    bool
+	conn   net.Conn
 }
 
 // FailedStep saves a failure (with an associated failed step identifier) into IndividualTestKeys
@@ -68,25 +67,17 @@ func (s *TCPSession) FailedStep(failure string, step string) {
 
 // Close closes the open TCP connections
 func (s *TCPSession) Close() {
-	if s.TLS {
-		var conn = *s.TLSConn
-		conn.Close()
-	} else {
-		// TODO: should raw connection be closed anyway?
-		var conn = *s.RawConn
-		conn.Close()
-	}
+	s.conn.Close()
 }
 
 // CurrentConn returns the currently active connection (TLS or plaintext)
 func (s *TCPSession) CurrentConn() net.Conn {
 	if s.TLS {
-		// TODO: move to Debugf
 		s.Runner.Logger.Infof("Reusing TLS connection")
-		return *s.TLSConn
+	} else {
+		s.Runner.Logger.Infof("Reusing plaintext connection")
 	}
-	s.Runner.Logger.Infof("Reusing plaintext connection")
-	return *s.RawConn
+	return s.conn
 }
 
 // Conn initializes a new Run and IndividualTestKeys
@@ -117,7 +108,7 @@ func (s *TCPSession) Conn(addr string, port string) bool {
 		s.FailedStep(*tracex.NewFailure(err), "tcp_connect")
 		return false
 	}
-	s.RawConn = &conn
+	s.conn = conn
 
 	return true
 }
@@ -145,7 +136,7 @@ func (s *TCPSession) Handshake() bool {
 	}
 	s.Runner.Logger.Infof("Starting TLS handshake with %s:%s", s.Addr, s.Port)
 	thx := s.Runner.Trace.NewTLSHandshakerStdlib(s.Runner.Logger)
-	tconn, _, err := thx.Handshake(s.Runner.Ctx, *s.RawConn, s.Runner.Tlsconfig)
+	tconn, _, err := thx.Handshake(s.Runner.Ctx, s.CurrentConn(), s.Runner.Tlsconfig)
 	s.Itk.HandshakeResult(s.Runner.Trace.FirstTLSHandshakeOrNil())
 	if err != nil {
 		s.FailedStep(*tracex.NewFailure(err), "tls_handshake")
@@ -153,7 +144,7 @@ func (s *TCPSession) Handshake() bool {
 	}
 
 	s.TLS = true
-	s.TLSConn = &tconn
+	s.conn = tconn
 	s.Runner.Logger.Infof("Handshake succeeded")
 	return true
 }
