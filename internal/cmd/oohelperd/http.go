@@ -109,7 +109,7 @@ func httpDo(ctx context.Context, config *httpConfig) {
 
 	h3Endpoint := ""
 	if config.searchForH3 {
-		h3Endpoint = getHTTP3Altsvc(resp)
+		h3Endpoint = discoverH3Endpoint(resp)
 	}
 
 	config.Out <- ctrlHTTPResponse{
@@ -122,37 +122,68 @@ func httpDo(ctx context.Context, config *httpConfig) {
 	}
 }
 
-func getHTTP3Altsvc(resp *http.Response) string {
-	var responses []*http.Response
-	var request *http.Request
+func discoverH3Endpoint(resp *http.Response) string {
+	firstResp := getFirstResponseInRedirectChain(resp)
+	h3Endpoint := parseAltSvc(firstResp)
+	if h3Endpoint == "" {
+		return ""
+	}
+	host, port, err := net.SplitHostPort(h3Endpoint)
+	if err != nil {
+		return ""
+	}
+	if host == "" {
+		host = firstResp.Request.URL.Host
+	}
+	return net.JoinHostPort(host, port)
+}
 
-	// go through chain of HTTP Request - Responses to find first Response
-	// TODO (kelmenhorst): this will not work for http:// URLs
+// go through chain of HTTP Request - Response chain to find first HTTP Response
+func getFirstResponseInRedirectChain(resp *http.Response) *http.Response {
+	var responses []*http.Response
+	// TODO (kelmenhorst): this will not work for http:// URLs because http/1.1
+	// responses often do not carry Alt-Svc header with h3 advertisement
 	for i := 0; i < 10; i++ {
 		responses = append(responses, resp)
-		request = resp.Request
+		request := resp.Request
 		if request.Response == nil {
 			break
 		}
 		resp = request.Response
 	}
-	alt_svc := resp.Header.Get("Alt-Svc")
-	_, after, v := strings.Cut(alt_svc, "h3=")
-	if v != true {
-		return ""
-	}
+	return resp
 
-	authority := strings.Split(after, ";")[0]
-	authority = strings.ReplaceAll(authority, "\"", "")
-	authority = strings.ReplaceAll(authority, "'", "")
-	host, port, err := net.SplitHostPort(authority)
-	if err != nil {
+}
+
+func parseAltSvc(resp *http.Response) string {
+	altsvc := resp.Header.Get("Alt-Svc")
+	if altsvc == "" {
 		return ""
 	}
-	if host == "" {
-		host = request.URL.Host
+	// Alt-Svc syntax:
+	//
+	// Alt-Svc: clear
+	// Alt-Svc: <protocol-id>=<alt-authority>; ma=<max-age>
+	// Alt-Svc: <protocol-id>=<alt-authority>; ma=<max-age>; persist=1
+	//
+	// multiple entries may be separated by comma.
+	//
+	// See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Alt-Svc
+	entries := strings.Split(altsvc, ",")
+	if len(entries) < 1 {
+		return ""
 	}
-	return net.JoinHostPort(host, port)
+	parts := strings.Split(entries[0], ";") // we assume to find the h3 alt-svc in the first entry, if at all
+	if len(parts) < 1 {
+		return ""
+	}
+	_, alt_authority, _ := strings.Cut(parts[0], "h3=")
+	if alt_authority == "" {
+		return ""
+	}
+	alt_authority = strings.TrimPrefix(alt_authority, "\"")
+	alt_authority = strings.TrimSuffix(alt_authority, "\"")
+	return alt_authority
 }
 
 // httpMapFailure attempts to map netxlite failures to the strings

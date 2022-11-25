@@ -142,3 +142,51 @@ func Test_httpMapFailure(t *testing.T) {
 		})
 	}
 }
+
+func TestParseAltSvc(t *testing.T) {
+	resp := &http.Response{
+		Header: http.Header{"Alt-Svc": []string{"h3=\":443\"; ma=3600,h2=\":443\"; ma=3600"}}}
+	authority := parseAltSvc(resp)
+
+	if authority != ":443" {
+		t.Fatal("parsing error alt-svc")
+	}
+
+	resp.Header["Alt-Svc"] = []string{""}
+	authority = parseAltSvc(resp)
+
+	if authority != "" {
+		t.Fatal("parsing error alt-svc")
+	}
+
+	resp.Header["Alt-Svc"] = []string{"h2=\":443\"; ma=3600"}
+	authority = parseAltSvc(resp)
+
+	if authority != "" {
+		t.Fatal("parsing error alt-svc")
+	}
+}
+
+func TestGetHTTP3Altsvc(t *testing.T) {
+	req, _ := http.NewRequest("GET", "https://cloudflare.com", nil)
+	resp := &http.Response{
+		Status:     "200 OK",
+		StatusCode: 200,
+		Header:     http.Header{},
+		Request:    req,
+	}
+	if discoverH3Endpoint(resp) != "" {
+		t.Fatal("unexpected alt-svc response")
+	}
+
+	resp = &http.Response{
+		Status:     "200 OK",
+		StatusCode: 200,
+		Header: http.Header{
+			"Alt-Svc": []string{"h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\""}},
+		Request: req,
+	}
+	if discoverH3Endpoint(resp) != "" {
+		t.Fatal("unexpected alt-svc response")
+	}
+}
