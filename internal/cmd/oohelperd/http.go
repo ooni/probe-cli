@@ -138,11 +138,12 @@ func discoverH3Endpoint(resp *http.Response) string {
 	return net.JoinHostPort(host, port)
 }
 
-// go through chain of HTTP Request - Response chain to find first HTTP Response
+// search for the first HTTP response in the redirect chain
 func getFirstResponseInRedirectChain(resp *http.Response) *http.Response {
 	var responses []*http.Response
-	// TODO (kelmenhorst): this will not work for http:// URLs because http/1.1
-	// responses often do not carry Alt-Svc header with h3 advertisement
+	// TODO(kelmenhorst) This will not work for http:// URLs:
+	// I found out that many/some/? hosts do not advertise h3 via Alt-Svc on an HTTP/1.1 response.
+	// Thus, measuring http://cloudflare.com will not cause a h3 follow-up, but https://cloudflare.com will.
 	for i := 0; i < 10; i++ {
 		responses = append(responses, resp)
 		request := resp.Request
