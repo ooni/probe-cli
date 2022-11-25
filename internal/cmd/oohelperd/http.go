@@ -16,6 +16,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
@@ -122,8 +123,18 @@ func httpDo(ctx context.Context, config *httpConfig) {
 	}
 }
 
+// Discovers an H3 endpoint by inspecting the Alt-Svc header in the first request-response pair of the redirect chain.
+//
+// TODO(kelmenhorst) Known limitations:
+//   - This will not work for http:// URLs: Many/some/? hosts do not advertise h3 via Alt-Svc on an HTTP/1.1 response.
+//     Thus, measuring http://cloudflare.com will not cause a h3 follow-up, but https://cloudflare.com will.
+//   - We only consider the Alt-Svc binding of the very first request-response pair.
+//     However, by using parseAltSvc we can later change the code to consider any request-response pair without too much refactoring.
 func discoverH3Endpoint(resp *http.Response) string {
-	firstResp := getFirstResponseInRedirectChain(resp)
+	firstResp, found := getFirstResponseInRedirectChain(resp)
+	if !found {
+		return ""
+	}
 	h3Endpoint := parseAltSvc(firstResp)
 	if h3Endpoint == "" {
 		return ""
@@ -139,20 +150,18 @@ func discoverH3Endpoint(resp *http.Response) string {
 }
 
 // search for the first HTTP response in the redirect chain
-func getFirstResponseInRedirectChain(resp *http.Response) *http.Response {
+func getFirstResponseInRedirectChain(resp *http.Response) (*http.Response, bool) {
 	var responses []*http.Response
-	// TODO(kelmenhorst) This will not work for http:// URLs:
-	// I found out that many/some/? hosts do not advertise h3 via Alt-Svc on an HTTP/1.1 response.
-	// Thus, measuring http://cloudflare.com will not cause a h3 follow-up, but https://cloudflare.com will.
-	for i := 0; i < 10; i++ {
+	// The default std lib behavior is to stop redirecting after 10 consecutive requests. Defensively we stop searching after 11.
+	for i := 0; i < 11; i++ {
 		responses = append(responses, resp)
 		request := resp.Request
 		if request.Response == nil {
-			break
+			return resp, true
 		}
 		resp = request.Response
 	}
-	return resp
+	return nil, false
 
 }
 
@@ -171,20 +180,21 @@ func parseAltSvc(resp *http.Response) string {
 	//
 	// See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Alt-Svc
 	entries := strings.Split(altsvc, ",")
-	if len(entries) < 1 {
-		return ""
+	runtimex.Assert(len(entries) > 0, "expected at least one entry in strings.Split result")
+
+	for _, entry := range entries {
+		parts := strings.Split(entry, ";")
+		runtimex.Assert(len(parts) > 0, "expected at least one entry in strings.Split result")
+
+		_, alt_authority, _ := strings.Cut(parts[0], "h3=")
+		if alt_authority == "" {
+			continue
+		}
+		alt_authority = strings.TrimPrefix(alt_authority, "\"")
+		alt_authority = strings.TrimSuffix(alt_authority, "\"")
+		return alt_authority
 	}
-	parts := strings.Split(entries[0], ";") // we assume to find the h3 alt-svc in the first entry, if at all
-	if len(parts) < 1 {
-		return ""
-	}
-	_, alt_authority, _ := strings.Cut(parts[0], "h3=")
-	if alt_authority == "" {
-		return ""
-	}
-	alt_authority = strings.TrimPrefix(alt_authority, "\"")
-	alt_authority = strings.TrimSuffix(alt_authority, "\"")
-	return alt_authority
+	return ""
 }
 
 // httpMapFailure attempts to map netxlite failures to the strings

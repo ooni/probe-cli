@@ -147,21 +147,24 @@ func TestParseAltSvc(t *testing.T) {
 	resp := &http.Response{
 		Header: http.Header{"Alt-Svc": []string{"h3=\":443\"; ma=3600,h2=\":443\"; ma=3600"}}}
 	authority := parseAltSvc(resp)
+	if authority != ":443" {
+		t.Fatal("parsing error alt-svc")
+	}
 
+	resp.Header["Alt-Svc"] = []string{"h2=\":443\"; ma=3600,h3=\":443\"; ma=3600"}
+	authority = parseAltSvc(resp)
 	if authority != ":443" {
 		t.Fatal("parsing error alt-svc")
 	}
 
 	resp.Header["Alt-Svc"] = []string{""}
 	authority = parseAltSvc(resp)
-
 	if authority != "" {
 		t.Fatal("parsing error alt-svc")
 	}
 
 	resp.Header["Alt-Svc"] = []string{"h2=\":443\"; ma=3600"}
 	authority = parseAltSvc(resp)
-
 	if authority != "" {
 		t.Fatal("parsing error alt-svc")
 	}
