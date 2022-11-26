@@ -88,26 +88,189 @@ func config(input model.MeasurementTarget) (*runtimeConfig, error) {
 
 // TestKeys contains the experiment results
 type TestKeys struct {
+	// DNS queries for the requested boostrap nodes
+	// TODO: move to individual test keys? https://github.com/ooni/probe-cli/pull/986#issuecomment-1327659474
 	Queries []*model.ArchivalDNSLookupResult `json:"queries"`
 	Runs    []*IndividualTestKeys            `json:"runs"`
 	// Used for global failure (DNS resolution)
 	Failure string `json:"failure"`
 }
 
-func (tk *TestKeys) failure(err error) {
-	tk.Failure = *tracex.NewFailure(err)
+// DHTRunner takes care of sequential DHT tests
+type DHTRunner struct {
+	// Only used for building multiple runs from a global bootstrap nodes list
+	tk                *TestKeys
+	// Where to store run results
+	itk				  *IndividualTestKeys
+	ctx				  context.Context
+	trace             *measurexlite.Trace
+	logger            model.Logger
+	BootstrapNodes    []string
+	resolvedNodes     []string
 }
 
-func (tk *TestKeys) computeFailure() {
-	if tk.Failure != "" {
-		return
+func (d *DHTRunner) error(msg string) {
+	d.itk.Failure = msg
+	d.globalError(msg)
+}
+
+func (d *DHTRunner) globalError(msg string) {
+	d.tk.Failure = msg
+}
+
+// resolve takes the current list of bootstrap nodes (potentially domain names)
+// and resolves them to actual IP addresses and ports for further use in runs
+func (d *DHTRunner) resolve() bool {
+	// If no BootstrapNodes were passed, use default list
+	if len(d.BootstrapNodes) == 0 {
+		d.BootstrapNodes = defaultDHTBoostrapNodes()
 	}
-	for _, itk := range tk.Runs {
-		if itk.Failure != "" {
-			tk.Failure = itk.Failure
-			return
+
+	resolver := d.trace.NewStdlibResolver(d.logger)
+	resolveCounter := 0
+	successCounter := 0
+
+	for _, node := range(d.BootstrapNodes) {
+		resolveCounter++
+		host, port, err := net.SplitHostPort(node)
+		if err != nil {
+			// Provided bootstrap node is not valid host:port, abort
+			d.globalError(*tracex.NewFailure(err))
+			return false
+		}
+
+		d.logger.Infof("Starting DNS for %s", host)
+		addrs, err := resolver.LookupHost(d.ctx, host)
+		d.tk.Queries = append(d.tk.Queries, d.trace.DNSLookupsFromRoundTrip()...)
+		if err != nil {
+			// Failed to resolve host, don't abort
+			d.logger.Warn(*tracex.NewFailure(err))
+			continue
+		}
+		successCounter++
+		d.logger.Infof("Finished DNS for %s: %v", host, addrs)
+
+		// Append individual IP/port to resolvedNodes
+		for _, ip := range(addrs)  {
+			d.resolvedNodes = append(d.resolvedNodes, net.JoinHostPort(ip, port))
 		}
 	}
+
+	if resolveCounter != successCounter {
+		d.logger.Warn("Some DNS resolutions failed (see errors above)")
+	}
+
+	// If all resolutions failed, return error
+	if successCounter == 0 {
+		d.globalError("All provided bootstrap nodes failed to resolve")
+		return false
+	}
+
+	return true
+}
+
+// runSeparate tests all resolved IP/port combos as separate DHT runs
+// Takes a refTime to create a new trace for each run
+func (d *DHTRunner) runSeparate(refTime time.Time, infohash [20]byte) bool {
+	oneOrMoreFailed := false
+
+	if ! d.resolve() {
+		return false
+	}
+
+	for _, node := range(d.resolvedNodes) {
+		// Start a new 
+		subRunner := &DHTRunner{
+			tk:        		d.tk,
+			itk:			d.newRun(),
+			ctx:			d.ctx,
+			// TODO: populate NewTrace time
+			trace:          measurexlite.NewTrace(0, refTime),
+			logger:         d.logger,
+			BootstrapNodes: []string{},
+			resolvedNodes:  []string{node},
+		}
+
+		// Ignore individual errors. They are stored as failure but we want to keep iterating
+		if ! subRunner.bootstrap(infohash) {
+			oneOrMoreFailed = true
+		}
+	}
+
+	return oneOrMoreFailed
+}
+
+func (d *DHTRunner) newRun() *IndividualTestKeys {
+	itk := new(IndividualTestKeys)
+	d.tk.Runs = append(d.tk.Runs, itk)
+	return itk
+}
+
+func (d *DHTRunner) run(infohash [20]byte) bool {
+	if ! d.resolve() {
+		return false
+	}
+
+	d.itk = d.newRun()
+	return d.bootstrap(infohash)
+}
+
+func (d *DHTRunner) bootstrap(infohash [20]byte) bool {
+	d.itk.BootstrapNodes = d.resolvedNodes
+	d.itk.BootstrapNum = len(d.resolvedNodes)
+
+	// Starting new DHT client
+	d.logger.Infof("Starting DHT server for the following bootstrap nodes: %v", d.resolvedNodes)
+	dhtconf := dht.NewDefaultServerConfig()
+	dhtconf.QueryResendDelay = func() time.Duration {
+		return 10 * time.Second
+	}
+
+	dhtconf.StartingNodes = func() (addrs []dht.Addr, err error) {
+		for _, addrport := range d.resolvedNodes {
+			udpAddr, err := net.ResolveUDPAddr("udp", addrport)
+			if err != nil {
+				return nil, err
+			}
+			addrs = append(addrs, dht.NewAddr(udpAddr))
+		}
+		return addrs, nil
+	}
+
+	dhtsrv, err := dht.NewServer(dhtconf)
+	if err != nil {
+		d.itk.error(err)
+		return false
+	}
+	d.logger.Infof("Finished starting DHT server. Starting announce for %s", string(infohash[:]))
+
+	announce, err := dhtsrv.AnnounceTraversal(infohash)
+	if err != nil {
+		d.itk.error(err)
+		return false
+	}
+	defer announce.Close()
+
+	counter := 0
+	for entry := range announce.Peers {
+		counter++
+		d.itk.InfohashPeers = append(d.itk.InfohashPeers, entry.NodeInfo.Addr.String())
+		d.logger.Debugf("peer %d: %s", counter, entry.NodeInfo.Addr)
+	}
+
+	stats := announce.TraversalStats()
+	d.itk.PeersTriedNum = stats.NumAddrsTried
+	d.itk.PeersRespondedNum = stats.NumResponses
+	d.itk.InfohashPeersNum = counter
+
+	if d.itk.PeersRespondedNum == 0 {
+		d.error("No DHT peers were found")
+		return false
+	}
+
+	d.logger.Infof("Tried %d peers obtained from %d bootstrap nodes. Got response from %d. %d have requested infohash.", d.itk.PeersTriedNum, d.itk.BootstrapNum, d.itk.PeersRespondedNum, d.itk.InfohashPeersNum)
+
+	return true
 }
 
 // IndividualTestKeys indicate results for a single IP/port combo DHT bootstrap node
@@ -177,69 +340,6 @@ func defaultDHTBoostrapNodes() []string {
 	}
 }
 
-// Server starts a DHT server with a list of bootstrap nodes and stores
-// failure cases inside a IndividualTestKeys
-func Server(bootstrapNodes []string, itk *IndividualTestKeys) (*dht.Server, bool) {
-	itk.BootstrapNodes = bootstrapNodes
-	itk.BootstrapNum = len(bootstrapNodes)
-
-	// Starting new DHT client
-	dhtconf := dht.NewDefaultServerConfig()
-	dhtconf.QueryResendDelay = func() time.Duration {
-		return 10 * time.Second
-	}
-
-	dhtconf.StartingNodes = func() (addrs []dht.Addr, err error) {
-		for _, addrport := range bootstrapNodes {
-			udpAddr, err := net.ResolveUDPAddr("udp", addrport)
-			if err != nil {
-				return nil, err
-			}
-			addrs = append(addrs, dht.NewAddr(udpAddr))
-		}
-		return addrs, nil
-	}
-
-	dhtsrv, err := dht.NewServer(dhtconf)
-	if err != nil {
-		itk.error(err)
-		return nil, false
-	}
-	itk.logger.Infof("Finished starting DHT server with bootstrap nodes: %v", bootstrapNodes)
-	return dhtsrv, true
-}
-
-func testServer(dht *dht.Server, infohash [20]byte, itk *IndividualTestKeys) bool {
-	announce, err := dht.AnnounceTraversal(infohash)
-	if err != nil {
-		itk.error(err)
-		return false
-	}
-	defer announce.Close()
-
-	counter := 0
-	for entry := range announce.Peers {
-		counter++
-		itk.InfohashPeers = append(itk.InfohashPeers, entry.NodeInfo.Addr.String())
-		itk.logger.Debugf("peer %d: %s", counter, entry.NodeInfo.Addr)
-	}
-
-	stats := announce.TraversalStats()
-	itk.PeersTriedNum = stats.NumAddrsTried
-	itk.PeersRespondedNum = stats.NumResponses
-	itk.InfohashPeersNum = counter
-
-	if itk.PeersRespondedNum == 0 {
-		itk.error(errors.New("No DHT peers were found"))
-		return false
-	}
-
-	itk.logger.Infof("Tried %d peers obtained from %d bootstrap nodes. Got response from %d. %d have requested infohash.", itk.PeersTriedNum, itk.BootstrapNum, itk.PeersRespondedNum, itk.InfohashPeersNum)
-
-	return true
-
-}
-
 // Run implements ExperimentMeasurer.Run
 func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	//ctx context.Context, sess model.ExperimentSession,
@@ -249,8 +349,8 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	measurement := args.Measurement
 	log := sess.Logger()
 	trace := measurexlite.NewTrace(0, measurement.MeasurementStartTimeSaved)
-	resolver := trace.NewStdlibResolver(log)
 
+	//resolver := trace.NewStdlibResolver(log)
 	config, err := config(measurement.Input)
 	if err != nil {
 		// Invalid input data, we don't even generate report
@@ -267,60 +367,25 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	var infohash [20]byte
 	copy(infohash[:], config.infohash)
 
-	if config.dhtnode != "" {
-		// Specific node provided: resolve it
-		log.Infof("Resolving DNS for %s", config.dhtnode)
-		resolvedAddrs, err := resolver.LookupHost(ctx, config.dhtnode)
-		tk.Queries = append(tk.Queries, trace.DNSLookupsFromRoundTrip()...)
-		if err != nil {
-			tk.failure(err)
-			return nil
-		}
-		log.Infof("Finished DNS for %s: %v", config.dhtnode, resolvedAddrs)
-
-		for _, addr := range resolvedAddrs {
-
-			nodeAddrport := net.JoinHostPort(addr, config.port)
-			log.Infof("Trying DHT bootstrap node %s", nodeAddrport)
-			nodeAddrports := []string{nodeAddrport}
-
-			itk := newITK(tk, log)
-
-			dht, success := Server(nodeAddrports, itk)
-			if !success {
-				continue
-			}
-
-			testServer(dht, infohash, itk)
-		}
-	} else {
-		// Use default DHT bootstrap nodes because none was given by input
-		resolvedAddrports := []string{}
-		for _, bootstrapDomain := range defaultDHTBoostrapNodes() {
-			// Ignore error because we use static input so panic chance is 0
-			host, port, _ := net.SplitHostPort(bootstrapDomain)
-			log.Infof("Resolving DNS for %s", host)
-			resolvedAddrs, err := resolver.LookupHost(ctx, host)
-			tk.Queries = append(tk.Queries, trace.DNSLookupsFromRoundTrip()...)
-			if err != nil {
-				tk.failure(err)
-				return nil
-			}
-			log.Infof("Finished DNS for %s: %v", host, resolvedAddrs)
-			for _, resolvedAddr := range resolvedAddrs {
-				resolvedAddrports = append(resolvedAddrports, net.JoinHostPort(resolvedAddr, port))
-			}
-		}
-		log.Infof("Resolved the following bootstrap nodes: %v", resolvedAddrports)
-
-		itk := newITK(tk, log)
-		dht, success := Server(resolvedAddrports, itk)
-		if success {
-			testServer(dht, infohash, itk)
-		}
+	runner := &DHTRunner{
+		tk:        		tk,
+		itk:			nil,
+		ctx:			ctx,
+		trace:          trace,
+		logger:         log,
+		// TODO: default to boostrap
+		BootstrapNodes: []string{},
+		resolvedNodes:  []string{},
 	}
 
-	tk.computeFailure()
+	if config.dhtnode != "" {
+		// We only want to try the specified node, using all IPs as separate runs
+		runner.BootstrapNodes = []string{fmt.Sprintf("%s:%s", config.dhtnode, config.port)}
+		runner.runSeparate(measurement.MeasurementStartTimeSaved, infohash)
+	} else {
+		// We want to try all default nodes in a single run
+		runner.run(infohash)
+	}
 
 	return nil
 }
