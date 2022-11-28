@@ -31,7 +31,7 @@ const (
 	testName = "openvpn"
 
 	// testVersion is the openvpn experiment version.
-	testVersion = "0.0.16"
+	testVersion = "0.0.17"
 
 	// pingCount tells how many icmp echo requests to send.
 	pingCount = 10
@@ -229,6 +229,8 @@ func (m *Measurer) Run(
 		Dialer: vpn.NewTunDialer(m.tunnel),
 	}
 
+	// TODO this assumes small web pages
+	const maxURLGrabTime = 30 * time.Second
 	for _, uri := range targetURLs {
 		wg.Add(1)
 		go func() {
@@ -241,7 +243,9 @@ func (m *Measurer) Run(
 				Session: sess,
 				Target:  uri,
 			}
-			urlgetTk, _ := g.Get(context.Background())
+			ctx, cancel := context.WithTimeout(context.Background(), maxURLGrabTime)
+			defer cancel()
+			urlgetTk, _ := g.Get(ctx)
 			tk.Requests = append(tk.Requests, urlgetTk.Requests...)
 		}()
 		wg.Wait()
