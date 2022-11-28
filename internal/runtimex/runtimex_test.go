@@ -31,7 +31,7 @@ func TestPanicOnError(t *testing.T) {
 func TestAssert(t *testing.T) {
 	badfunc := func(in bool, message string) (out error) {
 		defer func() {
-			out = errors.New(recover().(string))
+			out = recover().(error)
 		}()
 		runtimex.Assert(in, message)
 		return
@@ -53,7 +53,7 @@ func TestAssert(t *testing.T) {
 func TestPanicIfTrue(t *testing.T) {
 	badfunc := func(in bool, message string) (out error) {
 		defer func() {
-			out = errors.New(recover().(string))
+			out = recover().(error)
 		}()
 		runtimex.PanicIfTrue(in, message)
 		return
@@ -75,7 +75,7 @@ func TestPanicIfTrue(t *testing.T) {
 func TestPanicIfNil(t *testing.T) {
 	badfunc := func(in interface{}, message string) (out error) {
 		defer func() {
-			out = errors.New(recover().(string))
+			out = recover().(error)
 		}()
 		runtimex.PanicIfNil(in, message)
 		return
