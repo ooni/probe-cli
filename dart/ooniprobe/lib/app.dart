@@ -85,9 +85,13 @@ class _AppState extends State<App> with TrayListener {
 
   void initTrayIcon() async {
     trayManager.addListener(this);
-    await trayManager.setIcon('assets/images/logo.png');
-    await trayManager.setToolTip('tray_manager');
-    await trayManager.setTitle('tray_manager');
+    await trayManager.setIcon(Platform.isWindows
+        ? 'assets/images/logo.ico'
+        : 'assets/images/logo.png');
+    try {
+      await trayManager.setToolTip('tray_manager');
+      await trayManager.setTitle('tray_manager');
+    } catch (_) {}
     Menu _menu = Menu(
       items: [
         MenuItem(
