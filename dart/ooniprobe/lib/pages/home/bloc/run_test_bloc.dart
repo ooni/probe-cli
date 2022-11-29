@@ -56,8 +56,10 @@ Engine newEngine() {
   final ext = libraryExtension();
   if (goos == 'darwin') {
     return Engine("${goarch}/libooniengine.${ext}");
-  } else if(goos == 'windows'){
-  return Engine("..\\..\\LIBRARY\\windows\\amd64\\libooniengine.dll");
+  } else if (goos == 'windows') {
+    return Engine("..\\..\\LIBRARY\\windows\\amd64\\libooniengine.dll");
+  } else if (goos == 'linux') {
+    return Engine("../../LIBRARY/linux/amd64/libooniengine.so");
   } else {
     return Engine("libooniengine.${ext}");
   }

@@ -358,6 +358,18 @@ OONIMKALL_R := $(shell git describe --tags || echo '0.0.0-dev')
 	GOOS=darwin GOARCH=amd64 CGO_ENABLED=1 go build -buildmode=c-shared -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
 
 #help:
+#help: * `./mk ./LIBRARY/linux/amd64/libooniengine.so`: builds the OONI engine library for linux/amd64
+.PHONY: ./LIBRARY/linux/amd64/libooniengine.so
+./LIBRARY/linux/amd64/libooniengine.so: search/for/go maybe/copypsiphon ./LIBRARY/include/ooni/engine.h
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go build -buildmode=c-shared -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
+
+#help:
+#help: * `./mk ./LIBRARY/linux/arm64/libooniengine.so`: builds the OONI engine library for linux/arm64
+.PHONY: ./LIBRARY/linux/arm64/libooniengine.so
+./LIBRARY/linux/arm64/libooniengine.so: search/for/go maybe/copypsiphon ./LIBRARY/include/ooni/engine.h
+	GOOS=linux GOARCH=arm64 CGO_ENABLED=1 go build -buildmode=c-shared -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
+
+#help:
 #help: * `./mk ./LIBRARY/windows/amd64/libooniengine.dll`: builds the OONI engine library for windows/amd64
 .PHONY: ./LIBRARY/windows/amd64/libooniengine.dll
 ./LIBRARY/windows/amd64/libooniengine.dll: search/for/go maybe/copypsiphon ./LIBRARY/include/ooni/engine.h
