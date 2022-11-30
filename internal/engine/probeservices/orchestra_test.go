@@ -1,5 +1,4 @@
-// Package testorchestra helps with testing the OONI orchestra API.
-package testorchestra
+package probeservices_test
 
 import "github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 

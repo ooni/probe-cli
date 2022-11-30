@@ -7,12 +7,11 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices/testorchestra"
 )
 
 func TestFetchPsiphonConfig(t *testing.T) {
 	clnt := newclient()
-	if err := clnt.MaybeRegister(context.Background(), testorchestra.MetadataFixture()); err != nil {
+	if err := clnt.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
 		t.Fatal(err)
 	}
 	if err := clnt.MaybeLogin(context.Background()); err != nil {

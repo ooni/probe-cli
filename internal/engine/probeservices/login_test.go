@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices/testorchestra"
 )
 
 func TestMaybeLogin(t *testing.T) {
@@ -57,7 +56,7 @@ func TestMaybeLogin(t *testing.T) {
 func TestMaybeLoginIdempotent(t *testing.T) {
 	clnt := newclient()
 	ctx := context.Background()
-	metadata := testorchestra.MetadataFixture()
+	metadata := MetadataFixture()
 	if err := clnt.MaybeRegister(ctx, metadata); err != nil {
 		t.Fatal(err)
 	}
