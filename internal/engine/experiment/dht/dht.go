@@ -78,7 +78,7 @@ func config(input model.MeasurementTarget) (*runtimeConfig, error) {
 	}
 
 	validConfig := runtimeConfig{
-		dhtnode:  parsed.Hostname(),
+		dhtnode:  fmt.Sprintf("[%s]", parsed.Hostname()),
 		port:     parsed.Port(),
 		infohash: hash,
 	}
@@ -132,6 +132,7 @@ func (d *DHTRunner) resolve() bool {
 
 	for _, node := range(d.BootstrapNodes) {
 		resolveCounter++
+
 		host, port, err := net.SplitHostPort(node)
 		if err != nil {
 			// Provided bootstrap node is not valid host:port, abort
@@ -139,7 +140,7 @@ func (d *DHTRunner) resolve() bool {
 			return false
 		}
 
-		d.logger.Infof("Starting DNS for %s", host)
+		d.logger.Infof("Starting DNS for '%s'", host)
 		addrs, err := resolver.LookupHost(d.ctx, host)
 		d.tk.Queries = append(d.tk.Queries, d.trace.DNSLookupsFromRoundTrip()...)
 		if err != nil {
@@ -148,7 +149,7 @@ func (d *DHTRunner) resolve() bool {
 			continue
 		}
 		successCounter++
-		d.logger.Infof("Finished DNS for %s: %v", host, addrs)
+		d.logger.Infof("Finished DNS for '%s' : %v", host, addrs)
 
 		// Append individual IP/port to resolvedNodes
 		for _, ip := range(addrs)  {
