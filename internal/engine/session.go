@@ -611,7 +611,7 @@ func (s *Session) initOrchestraClient(
 	// need to communicate any specific information. The code that will
 	// perform an update used to be responsible of doing that. Now, we
 	// are not using orchestra for this purpose anymore.
-	meta := probeservices.ProbeMetadata{
+	meta := model.OOAPIProbeMetadata{
 		Platform:        "miniooni",
 		ProbeASN:        "AS0",
 		ProbeCC:         "ZZ",
