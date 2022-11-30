@@ -110,7 +110,7 @@ type Session struct {
 // sessionProbeServicesClientForCheckIn returns the probe services
 // client that we should be using for performing the check-in.
 type sessionProbeServicesClientForCheckIn interface {
-	CheckIn(ctx context.Context, config model.OOAPICheckInConfig) (*model.OOAPICheckInInfo, error)
+	CheckIn(ctx context.Context, config model.OOAPICheckInConfig) (*model.OOAPICheckInNettests, error)
 }
 
 // NewSession creates a new session. This factory function will
@@ -256,7 +256,7 @@ func (s *Session) KibiBytesSent() float64 {
 //
 // The return value is either the check-in response or an error.
 func (s *Session) CheckIn(
-	ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInInfo, error) {
+	ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInNettests, error) {
 	if err := s.maybeLookupLocationContext(ctx); err != nil {
 		return nil, err
 	}
@@ -611,7 +611,7 @@ func (s *Session) initOrchestraClient(
 	// need to communicate any specific information. The code that will
 	// perform an update used to be responsible of doing that. Now, we
 	// are not using orchestra for this purpose anymore.
-	meta := probeservices.Metadata{
+	meta := probeservices.ProbeMetadata{
 		Platform:        "miniooni",
 		ProbeASN:        "AS0",
 		ProbeCC:         "ZZ",

@@ -3,48 +3,14 @@ package probeservices
 import (
 	"context"
 	"net/url"
-	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/httpx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
-
-// MeasurementMetaConfig contains configuration for GetMeasurementMeta.
-type MeasurementMetaConfig struct {
-	// ReportID is the mandatory report ID.
-	ReportID string
-
-	// Full indicates whether we also want the full measurement body.
-	Full bool
-
-	// Input is the optional input.
-	Input string
-}
-
-// MeasurementMeta contains measurement metadata.
-type MeasurementMeta struct {
-	// Fields returned by the API server whenever we are
-	// calling /api/v1/measurement_meta.
-	Anomaly              bool      `json:"anomaly"`
-	CategoryCode         string    `json:"category_code"`
-	Confirmed            bool      `json:"confirmed"`
-	Failure              bool      `json:"failure"`
-	Input                *string   `json:"input"`
-	MeasurementStartTime time.Time `json:"measurement_start_time"`
-	ProbeASN             int64     `json:"probe_asn"`
-	ProbeCC              string    `json:"probe_cc"`
-	ReportID             string    `json:"report_id"`
-	Scores               string    `json:"scores"`
-	TestName             string    `json:"test_name"`
-	TestStartTime        time.Time `json:"test_start_time"`
-
-	// This field is only included if the user has specified
-	// the config.Full option, otherwise it's empty.
-	RawMeasurement string `json:"raw_measurement"`
-}
 
 // GetMeasurementMeta returns meta information about a measurement.
 func (c Client) GetMeasurementMeta(
-	ctx context.Context, config MeasurementMetaConfig) (*MeasurementMeta, error) {
+	ctx context.Context, config model.OOAPIMeasurementMetaConfig) (*model.OOAPIMeasurementMeta, error) {
 	query := url.Values{}
 	query.Add("report_id", config.ReportID)
 	if config.Input != "" {
@@ -53,7 +19,7 @@ func (c Client) GetMeasurementMeta(
 	if config.Full {
 		query.Add("full", "true")
 	}
-	var response MeasurementMeta
+	var response model.OOAPIMeasurementMeta
 	err := (&httpx.APIClientTemplate{
 		BaseURL:    c.BaseURL,
 		HTTPClient: c.HTTPClient,

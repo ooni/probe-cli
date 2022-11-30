@@ -1,24 +1,26 @@
-package probeservices
+package model
 
 import "testing"
 
-func TestValid(t *testing.T) {
+func TestOOAPIProbeMetadataValid(t *testing.T) {
 	t.Run("fail on probe_cc", func(t *testing.T) {
-		var m Metadata
+		var m OOAPIProbeMetadata
 		if m.Valid() != false {
 			t.Fatal("expected false here")
 		}
 	})
+
 	t.Run("fail on probe_asn", func(t *testing.T) {
-		m := Metadata{
+		m := OOAPIProbeMetadata{
 			ProbeCC: "IT",
 		}
 		if m.Valid() != false {
 			t.Fatal("expected false here")
 		}
 	})
+
 	t.Run("fail on platform", func(t *testing.T) {
-		m := Metadata{
+		m := OOAPIProbeMetadata{
 			ProbeCC:  "IT",
 			ProbeASN: "AS1234",
 		}
@@ -26,8 +28,9 @@ func TestValid(t *testing.T) {
 			t.Fatal("expected false here")
 		}
 	})
+
 	t.Run("fail on software_name", func(t *testing.T) {
-		m := Metadata{
+		m := OOAPIProbeMetadata{
 			ProbeCC:  "IT",
 			ProbeASN: "AS1234",
 			Platform: "linux",
@@ -36,8 +39,9 @@ func TestValid(t *testing.T) {
 			t.Fatal("expected false here")
 		}
 	})
+
 	t.Run("fail on software_version", func(t *testing.T) {
-		m := Metadata{
+		m := OOAPIProbeMetadata{
 			ProbeCC:      "IT",
 			ProbeASN:     "AS1234",
 			Platform:     "linux",
@@ -47,8 +51,9 @@ func TestValid(t *testing.T) {
 			t.Fatal("expected false here")
 		}
 	})
+
 	t.Run("fail on supported_tests", func(t *testing.T) {
-		m := Metadata{
+		m := OOAPIProbeMetadata{
 			ProbeCC:         "IT",
 			ProbeASN:        "AS1234",
 			Platform:        "linux",
@@ -59,8 +64,9 @@ func TestValid(t *testing.T) {
 			t.Fatal("expected false here")
 		}
 	})
+
 	t.Run("fail on missing device_token", func(t *testing.T) {
-		m := Metadata{
+		m := OOAPIProbeMetadata{
 			ProbeCC:         "IT",
 			ProbeASN:        "AS1234",
 			Platform:        "ios",
@@ -72,8 +78,9 @@ func TestValid(t *testing.T) {
 			t.Fatal("expected false here")
 		}
 	})
+
 	t.Run("success for desktop", func(t *testing.T) {
-		m := Metadata{
+		m := OOAPIProbeMetadata{
 			ProbeCC:         "IT",
 			ProbeASN:        "AS1234",
 			Platform:        "linux",
@@ -85,8 +92,9 @@ func TestValid(t *testing.T) {
 			t.Fatal("expected true here")
 		}
 	})
+
 	t.Run("success for mobile", func(t *testing.T) {
-		m := Metadata{
+		m := OOAPIProbeMetadata{
 			DeviceToken:     "xx-xxx-xx-xxxx",
 			ProbeCC:         "IT",
 			ProbeASN:        "AS1234",

@@ -21,9 +21,9 @@ type fakeTestKeys struct {
 	Failure *string `json:"failure"`
 }
 
-func makeMeasurement(rt ReportTemplate, ID string) model.Measurement {
+func makeMeasurement(rt model.OOAPIReportTemplate, ID string) model.Measurement {
 	return model.Measurement{
-		DataFormatVersion:    DefaultDataFormatVersion,
+		DataFormatVersion:    model.OOAPIReportDefaultDataFormatVersion,
 		ID:                   "bdd20d7a-bba5-40dd-a111-9863d7908572",
 		MeasurementRuntime:   5.0565230846405,
 		MeasurementStartTime: "2018-11-01 15:33:20",
@@ -54,9 +54,9 @@ func TestNewReportTemplate(t *testing.T) {
 		TestVersion:     "0.1.0",
 	}
 	rt := NewReportTemplate(m)
-	expect := ReportTemplate{
-		DataFormatVersion: DefaultDataFormatVersion,
-		Format:            DefaultFormat,
+	expect := model.OOAPIReportTemplate{
+		DataFormatVersion: model.OOAPIReportDefaultDataFormatVersion,
+		Format:            model.OOAPIReportDefaultFormat,
 		ProbeASN:          "AS117",
 		ProbeCC:           "IT",
 		SoftwareName:      "ooniprobe-engine",
@@ -72,9 +72,9 @@ func TestNewReportTemplate(t *testing.T) {
 
 func TestReportLifecycle(t *testing.T) {
 	ctx := context.Background()
-	template := ReportTemplate{
-		DataFormatVersion: DefaultDataFormatVersion,
-		Format:            DefaultFormat,
+	template := model.OOAPIReportTemplate{
+		DataFormatVersion: model.OOAPIReportDefaultDataFormatVersion,
+		Format:            model.OOAPIReportDefaultFormat,
 		ProbeASN:          "AS0",
 		ProbeCC:           "ZZ",
 		SoftwareName:      "ooniprobe-engine",
@@ -102,9 +102,9 @@ func TestReportLifecycle(t *testing.T) {
 
 func TestReportLifecycleWrongExperiment(t *testing.T) {
 	ctx := context.Background()
-	template := ReportTemplate{
-		DataFormatVersion: DefaultDataFormatVersion,
-		Format:            DefaultFormat,
+	template := model.OOAPIReportTemplate{
+		DataFormatVersion: model.OOAPIReportDefaultDataFormatVersion,
+		Format:            model.OOAPIReportDefaultFormat,
 		ProbeASN:          "AS0",
 		ProbeCC:           "ZZ",
 		SoftwareName:      "ooniprobe-engine",
@@ -127,9 +127,9 @@ func TestReportLifecycleWrongExperiment(t *testing.T) {
 
 func TestOpenReportInvalidDataFormatVersion(t *testing.T) {
 	ctx := context.Background()
-	template := ReportTemplate{
+	template := model.OOAPIReportTemplate{
 		DataFormatVersion: "0.1.0",
-		Format:            DefaultFormat,
+		Format:            model.OOAPIReportDefaultFormat,
 		ProbeASN:          "AS0",
 		ProbeCC:           "ZZ",
 		SoftwareName:      "ooniprobe-engine",
@@ -150,8 +150,8 @@ func TestOpenReportInvalidDataFormatVersion(t *testing.T) {
 
 func TestOpenReportInvalidFormat(t *testing.T) {
 	ctx := context.Background()
-	template := ReportTemplate{
-		DataFormatVersion: DefaultDataFormatVersion,
+	template := model.OOAPIReportTemplate{
+		DataFormatVersion: model.OOAPIReportDefaultDataFormatVersion,
 		Format:            "yaml",
 		ProbeASN:          "AS0",
 		ProbeCC:           "ZZ",
@@ -173,9 +173,9 @@ func TestOpenReportInvalidFormat(t *testing.T) {
 
 func TestJSONAPIClientCreateFailure(t *testing.T) {
 	ctx := context.Background()
-	template := ReportTemplate{
-		DataFormatVersion: DefaultDataFormatVersion,
-		Format:            DefaultFormat,
+	template := model.OOAPIReportTemplate{
+		DataFormatVersion: model.OOAPIReportDefaultDataFormatVersion,
+		Format:            model.OOAPIReportDefaultFormat,
 		ProbeASN:          "AS0",
 		ProbeCC:           "ZZ",
 		SoftwareName:      "ooniprobe-engine",
@@ -203,9 +203,9 @@ func TestOpenResponseNoJSONSupport(t *testing.T) {
 	)
 	defer server.Close()
 	ctx := context.Background()
-	template := ReportTemplate{
-		DataFormatVersion: DefaultDataFormatVersion,
-		Format:            DefaultFormat,
+	template := model.OOAPIReportTemplate{
+		DataFormatVersion: model.OOAPIReportDefaultDataFormatVersion,
+		Format:            model.OOAPIReportDefaultFormat,
 		ProbeASN:          "AS0",
 		ProbeCC:           "ZZ",
 		SoftwareName:      "ooniprobe-engine",
@@ -256,9 +256,9 @@ func TestEndToEnd(t *testing.T) {
 	)
 	defer server.Close()
 	ctx := context.Background()
-	template := ReportTemplate{
-		DataFormatVersion: DefaultDataFormatVersion,
-		Format:            DefaultFormat,
+	template := model.OOAPIReportTemplate{
+		DataFormatVersion: model.OOAPIReportDefaultDataFormatVersion,
+		Format:            model.OOAPIReportDefaultFormat,
 		ProbeASN:          "AS0",
 		ProbeCC:           "ZZ",
 		SoftwareName:      "ooniprobe-engine",
@@ -280,7 +280,7 @@ func TestEndToEnd(t *testing.T) {
 }
 
 type RecordingReportChannel struct {
-	tmpl ReportTemplate
+	tmpl model.OOAPIReportTemplate
 	m    []*model.Measurement
 	mu   sync.Mutex
 }
@@ -318,7 +318,7 @@ type RecordingReportOpener struct {
 }
 
 func (rro *RecordingReportOpener) OpenReport(
-	ctx context.Context, rt ReportTemplate,
+	ctx context.Context, rt model.OOAPIReportTemplate,
 ) (ReportChannel, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
@@ -333,9 +333,9 @@ func (rro *RecordingReportOpener) OpenReport(
 func TestOpenReportCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // immediately abort
-	template := ReportTemplate{
-		DataFormatVersion: DefaultDataFormatVersion,
-		Format:            DefaultFormat,
+	template := model.OOAPIReportTemplate{
+		DataFormatVersion: model.OOAPIReportDefaultDataFormatVersion,
+		Format:            model.OOAPIReportDefaultFormat,
 		ProbeASN:          "AS0",
 		ProbeCC:           "ZZ",
 		SoftwareName:      "ooniprobe-engine",
@@ -357,9 +357,9 @@ func TestOpenReportCancelledContext(t *testing.T) {
 func TestSubmitMeasurementCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	template := ReportTemplate{
-		DataFormatVersion: DefaultDataFormatVersion,
-		Format:            DefaultFormat,
+	template := model.OOAPIReportTemplate{
+		DataFormatVersion: model.OOAPIReportDefaultDataFormatVersion,
+		Format:            model.OOAPIReportDefaultFormat,
 		ProbeASN:          "AS0",
 		ProbeCC:           "ZZ",
 		SoftwareName:      "ooniprobe-engine",
@@ -389,7 +389,7 @@ func TestSubmitMeasurementCancelledContext(t *testing.T) {
 
 func makeMeasurementWithoutTemplate(failure, testName string) *model.Measurement {
 	return &model.Measurement{
-		DataFormatVersion:    DefaultDataFormatVersion,
+		DataFormatVersion:    model.OOAPIReportDefaultDataFormatVersion,
 		ID:                   "bdd20d7a-bba5-40dd-a111-9863d7908572",
 		MeasurementRuntime:   5.0565230846405,
 		MeasurementStartTime: "2018-11-01 15:33:20",

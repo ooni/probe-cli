@@ -33,7 +33,7 @@ type mockableProbeServicesClientForCheckIn struct {
 
 	// Results contains the results of the call. This field MUST be
 	// non-nil if and only if Error is nil.
-	Results *model.OOAPICheckInInfo
+	Results *model.OOAPICheckInNettests
 
 	// Error indicates whether the call failed. This field MUST be
 	// non-nil if and only if Error is nil.
@@ -45,7 +45,7 @@ type mockableProbeServicesClientForCheckIn struct {
 
 // CheckIn implements sessionProbeServicesClientForCheckIn.CheckIn.
 func (c *mockableProbeServicesClientForCheckIn) CheckIn(
-	ctx context.Context, config model.OOAPICheckInConfig) (*model.OOAPICheckInInfo, error) {
+	ctx context.Context, config model.OOAPICheckInConfig) (*model.OOAPICheckInNettests, error) {
 	defer c.mu.Unlock()
 	c.mu.Lock()
 	if c.Config != nil {
@@ -59,7 +59,7 @@ func (c *mockableProbeServicesClientForCheckIn) CheckIn(
 }
 
 func TestSessionCheckInSuccessful(t *testing.T) {
-	results := &model.OOAPICheckInInfo{
+	results := &model.OOAPICheckInNettests{
 		WebConnectivity: &model.OOAPICheckInInfoWebConnectivity{
 			ReportID: "xxx-x-xx",
 			URLs: []model.OOAPIURLInfo{{
