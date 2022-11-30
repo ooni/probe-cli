@@ -22,7 +22,8 @@ func (c Client) FetchURLList(ctx context.Context, config model.OOAPIURLListConfi
 	}
 	if len(config.Categories) > 0 {
 		// Note: ooapi (the unused package in v3.14.0 that implemented automatic API
-		// generation) used `category_code` (singular) here, but that's wrong.
+		// generation) used `category_code` (singular) here, but that's wrong. The plural
+		// name is the correct name as I've just verified -- 2022-11-30.
 		query.Set("category_codes", strings.Join(config.Categories, ","))
 	}
 	var response model.OOAPIURLListResult
