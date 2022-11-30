@@ -1,6 +1,7 @@
 package bittorrent
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/pkg/errors"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/anacrolix/dht/v2"
 	"github.com/anacrolix/torrent"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
@@ -34,7 +36,9 @@ const (
 )
 
 // Config contains the experiment config.
-type Config struct{}
+type Config struct {
+	BootstrapNodes []*string
+}
 
 type runtimeConfig struct {
 	magnet string
@@ -132,7 +136,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	tk := new(TestKeys)
 	measurement.TestKeys = tk
 
-	ctx, cancel := context.WithTimeout(ctx, 120*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	tmpdir, err := os.MkdirTemp("", "ooni")
@@ -146,6 +150,23 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	conf := torrent.NewDefaultClientConfig()
 	conf.DataDir = tmpdir
 	conf.NoUpload = true
+	conf.ListenPort = 0
+	if len(m.Config.BootstrapNodes) != 0 {
+		// Explicit bootstrap nodes instead of default
+		// (used for testing via localhost peer)
+		conf.DhtStartingNodes = func(network string) dht.StartingNodesGetter {
+			return func() (addrs []dht.Addr, err error) {
+				for _, addrport := range m.Config.BootstrapNodes {
+					udpAddr, err := net.ResolveUDPAddr("udp", *addrport)
+					if err != nil {
+						return nil, err
+					}
+					addrs = append(addrs, dht.NewAddr(udpAddr))
+				}
+				return addrs, nil
+			}
+		}
+	}
 
 	// Lookup tracker IPs via ooni utils
 	conf.LookupTrackerIp = func(u *url.URL) ([]net.IP, error) {
@@ -194,6 +215,10 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	select {
 	case <-ctx.Done():
 		tk.Failure = "metainfo_timeout"
+		writer := bytes.NewBufferString("")
+		client.WriteStatus(writer)
+		log.Info(writer.String())
+
 		return nil
 	case <-torrent.GotInfo():
 	}
@@ -210,9 +235,14 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	select {
 	case <-ctx.Done():
 		timeoutStats(torrent, client, tk)
+		tk.Failure = "timeout"
 	case <-finished:
 		torrentStats(torrent, client, tk)
+		writer := bytes.NewBufferString("")
+		client.WriteStatus(writer)
+		log.Info(writer.String())
 	}
+
 	return nil
 }
 
