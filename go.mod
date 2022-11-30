@@ -8,8 +8,8 @@ require (
 	git.torproject.org/pluggable-transports/snowflake.git/v2 v2.3.0
 	github.com/AlecAivazis/survey/v2 v2.3.5
 	github.com/alecthomas/kingpin v2.2.6+incompatible
-	github.com/anacrolix/dht/v2 v2.19.1
-	github.com/anacrolix/torrent v1.47.0
+	github.com/anacrolix/dht/v2 v2.19.3-0.20221129012050-3231c919e67b
+	github.com/anacrolix/torrent v1.47.1-0.20221102120345-c63f7e1bd720
 	github.com/apex/log v1.9.0
 	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5
 	github.com/cretz/bine v0.2.0
