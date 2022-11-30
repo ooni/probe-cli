@@ -44,31 +44,31 @@ type InputLoaderLogger interface {
 // You MUST NOT change any public field of this structure when
 // in use, because that MAY lead to data races.
 //
-// InputNone
+// # InputNone
 //
 // We fail if there is any StaticInput or any SourceFiles. If
 // there's no input, we return a single, empty entry that causes
 // experiments that don't require input to run once.
 //
-// InputOptional
+// # InputOptional
 //
 // We gather input from StaticInput and SourceFiles. If there is
 // input, we return it. Otherwise we return a single, empty entry
 // that causes experiments that don't require input to run once.
 //
-// InputOrQueryBackend
+// # InputOrQueryBackend
 //
 // We gather input from StaticInput and SourceFiles. If there is
 // input, we return it. Otherwise, we use OONI's probe services
 // to gather input using the best API for the task.
 //
-// InputOrStaticDefault
+// # InputOrStaticDefault
 //
 // We gather input from StaticInput and SourceFiles. If there is
 // input, we return it. Otherwise, we return an internal static
 // list of inputs to be used with this experiment.
 //
-// InputStrictlyRequired
+// # InputStrictlyRequired
 //
 // We gather input from StaticInput and SourceFiles. If there is
 // input, we return it. Otherwise, we return an error.
