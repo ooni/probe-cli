@@ -1,35 +1,61 @@
 package model
 
 //
-// Data structures used to speak with the OONI API.
+// OONI API data model.
+//
+// See https://api.ooni.io/apidocs/.
 //
 
-// OOAPICheckInConfigWebConnectivity is the configuration for the WebConnectivity test
+// OOAPICheckInConfigWebConnectivity is the WebConnectivity
+// portion of OOAPICheckInConfig.
 type OOAPICheckInConfigWebConnectivity struct {
-	CategoryCodes []string `json:"category_codes"` // CategoryCodes is an array of category codes
+	// CategoryCodes contains an array of category codes
+	CategoryCodes []string `json:"category_codes"`
 }
 
-// OOAPICheckInConfig contains configuration for calling the checkin API.
+// OOAPICheckInConfig contains config for a checkin API call.
 type OOAPICheckInConfig struct {
-	Charging        bool                              `json:"charging"`         // Charging indicate if the phone is actually charging
-	OnWiFi          bool                              `json:"on_wifi"`          // OnWiFi indicate if the phone is actually connected to a WiFi network
-	Platform        string                            `json:"platform"`         // Platform of the probe
-	ProbeASN        string                            `json:"probe_asn"`        // ProbeASN is the probe country code
-	ProbeCC         string                            `json:"probe_cc"`         // ProbeCC is the probe country code
-	RunType         RunType                           `json:"run_type"`         // RunType
-	SoftwareName    string                            `json:"software_name"`    // SoftwareName of the probe
-	SoftwareVersion string                            `json:"software_version"` // SoftwareVersion of the probe
-	WebConnectivity OOAPICheckInConfigWebConnectivity `json:"web_connectivity"` // WebConnectivity class contain an array of categories
+	// Charging indicate whether the phone is charging.
+	Charging bool `json:"charging"`
+
+	// OnWiFi indicate if the phone is connected to a WiFi.
+	OnWiFi bool `json:"on_wifi"`
+
+	// Platform of the probe.
+	Platform string `json:"platform"`
+
+	// ProbeASN is the probe ASN.
+	ProbeASN string `json:"probe_asn"`
+
+	// ProbeCC is the probe country code.
+	ProbeCC string `json:"probe_cc"`
+
+	// RunType indicated whether the run is "timed" or "manual".
+	RunType RunType `json:"run_type"`
+
+	// SoftwareName of the probe.
+	SoftwareName string `json:"software_name"`
+
+	// SoftwareVersion of the probe.
+	SoftwareVersion string `json:"software_version"`
+
+	// WebConnectivity contains WebConnectivity information.
+	WebConnectivity OOAPICheckInConfigWebConnectivity `json:"web_connectivity"`
 }
 
-// OOAPICheckInInfoWebConnectivity contains the array of URLs returned by the checkin API
+// OOAPICheckInInfoWebConnectivity contains the WebConnectivity
+// part of OOAPICheckInInfo.
 type OOAPICheckInInfoWebConnectivity struct {
-	ReportID string         `json:"report_id"`
-	URLs     []OOAPIURLInfo `json:"urls"`
+	// ReportID is the report ID the probe should use.
+	ReportID string `json:"report_id"`
+
+	// URLs contains the URL to measure.
+	URLs []OOAPIURLInfo `json:"urls"`
 }
 
-// OOAPICheckInInfo contains the return test objects from the checkin API
+// OOAPICheckInInfo contains the information returned by the checkin API call.
 type OOAPICheckInInfo struct {
+	// WebConnectivity contains WebConnectivity related information.
 	WebConnectivity *OOAPICheckInInfoWebConnectivity `json:"web_connectivity"`
 }
 
@@ -69,16 +95,26 @@ type OOAPITorTarget struct {
 	Source string `json:"source"`
 }
 
-// OOAPIURLInfo contains info on a test lists URL
+// OOAPIURLInfo contains information on a test lists URL.
 type OOAPIURLInfo struct {
+	// CategoryCode is the URL's category (e.g., FEXP, POLT, HUMR).
 	CategoryCode string `json:"category_code"`
-	CountryCode  string `json:"country_code"`
-	URL          string `json:"url"`
+
+	// CountryCode is the URL's ISO country code or ZZ for global URLs.
+	CountryCode string `json:"country_code"`
+
+	// URL is the string-serialized URL.
+	URL string `json:"url"`
 }
 
 // OOAPIURLListConfig contains configuration for fetching the URL list.
 type OOAPIURLListConfig struct {
-	Categories  []string // Categories to query for (empty means all)
-	CountryCode string   // CountryCode is the optional country code
-	Limit       int64    // Max number of URLs (<= 0 means no limit)
+	// Categories to query for (empty means all)
+	Categories []string
+
+	// CountryCode is the optional country code
+	CountryCode string
+
+	// Max number of URLs (<= 0 means no limit)
+	Limit int64
 }
