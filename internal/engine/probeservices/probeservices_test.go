@@ -1,4 +1,4 @@
-package probeservices_test
+package probeservices
 
 import (
 	"context"
@@ -12,13 +12,12 @@ import (
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-func newclient() *probeservices.Client {
-	client, err := probeservices.NewClient(
+func newclient() *Client {
+	client, err := NewClient(
 		&mockable.Session{
 			MockableHTTPClient: http.DefaultClient,
 			MockableLogger:     log.Log,
@@ -35,7 +34,7 @@ func newclient() *probeservices.Client {
 }
 
 func TestNewClientHTTPS(t *testing.T) {
-	client, err := probeservices.NewClient(
+	client, err := NewClient(
 		&mockable.Session{}, model.OOAPIService{
 			Address: "https://x.org",
 			Type:    "https",
@@ -49,12 +48,12 @@ func TestNewClientHTTPS(t *testing.T) {
 }
 
 func TestNewClientUnsupportedEndpoint(t *testing.T) {
-	client, err := probeservices.NewClient(
+	client, err := NewClient(
 		&mockable.Session{}, model.OOAPIService{
 			Address: "https://x.org",
 			Type:    "onion",
 		})
-	if !errors.Is(err, probeservices.ErrUnsupportedEndpoint) {
+	if !errors.Is(err, ErrUnsupportedEndpoint) {
 		t.Fatal("not the error we expected")
 	}
 	if client != nil {
@@ -63,7 +62,7 @@ func TestNewClientUnsupportedEndpoint(t *testing.T) {
 }
 
 func TestNewClientCloudfrontInvalidURL(t *testing.T) {
-	client, err := probeservices.NewClient(
+	client, err := NewClient(
 		&mockable.Session{}, model.OOAPIService{
 			Address: "\t\t\t",
 			Type:    "cloudfront",
@@ -77,12 +76,12 @@ func TestNewClientCloudfrontInvalidURL(t *testing.T) {
 }
 
 func TestNewClientCloudfrontInvalidURLScheme(t *testing.T) {
-	client, err := probeservices.NewClient(
+	client, err := NewClient(
 		&mockable.Session{}, model.OOAPIService{
 			Address: "http://x.org",
 			Type:    "cloudfront",
 		})
-	if !errors.Is(err, probeservices.ErrUnsupportedCloudFrontAddress) {
+	if !errors.Is(err, ErrUnsupportedCloudFrontAddress) {
 		t.Fatal("not the error we expected")
 	}
 	if client != nil {
@@ -91,12 +90,12 @@ func TestNewClientCloudfrontInvalidURLScheme(t *testing.T) {
 }
 
 func TestNewClientCloudfrontInvalidURLWithPort(t *testing.T) {
-	client, err := probeservices.NewClient(
+	client, err := NewClient(
 		&mockable.Session{}, model.OOAPIService{
 			Address: "https://x.org:54321",
 			Type:    "cloudfront",
 		})
-	if !errors.Is(err, probeservices.ErrUnsupportedCloudFrontAddress) {
+	if !errors.Is(err, ErrUnsupportedCloudFrontAddress) {
 		t.Fatal("not the error we expected")
 	}
 	if client != nil {
@@ -105,7 +104,7 @@ func TestNewClientCloudfrontInvalidURLWithPort(t *testing.T) {
 }
 
 func TestNewClientCloudfrontInvalidFront(t *testing.T) {
-	client, err := probeservices.NewClient(
+	client, err := NewClient(
 		&mockable.Session{}, model.OOAPIService{
 			Address: "https://x.org",
 			Type:    "cloudfront",
@@ -120,7 +119,7 @@ func TestNewClientCloudfrontInvalidFront(t *testing.T) {
 }
 
 func TestNewClientCloudfrontGood(t *testing.T) {
-	client, err := probeservices.NewClient(
+	client, err := NewClient(
 		&mockable.Session{}, model.OOAPIService{
 			Address: "https://x.org",
 			Type:    "cloudfront",
@@ -141,7 +140,7 @@ func TestCloudfront(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	client, err := probeservices.NewClient(
+	client, err := NewClient(
 		&mockable.Session{}, model.OOAPIService{
 			Address: "https://meek.azureedge.net",
 			Type:    "cloudfront",
@@ -176,8 +175,8 @@ func TestDefaultProbeServicesWorkAsIntended(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	for _, e := range probeservices.Default() {
-		client, err := probeservices.NewClient(&mockable.Session{
+	for _, e := range Default() {
+		client, err := NewClient(&mockable.Session{
 			MockableHTTPClient: http.DefaultClient,
 			MockableLogger:     log.Log,
 		}, e)
@@ -217,7 +216,7 @@ func TestSortEndpoints(t *testing.T) {
 		Type:    "onion",
 		Address: "httpo://jehhrikjjqrlpufu.onion",
 	}}
-	out := probeservices.SortEndpoints(in)
+	out := SortEndpoints(in)
 	diff := cmp.Diff(out, expect)
 	if diff != "" {
 		t.Fatal(diff)
@@ -252,7 +251,7 @@ func TestOnlyHTTPS(t *testing.T) {
 		Type:    "https",
 		Address: "https://mia-ps-nonexistent.ooni.io",
 	}}
-	out := probeservices.OnlyHTTPS(in)
+	out := OnlyHTTPS(in)
 	diff := cmp.Diff(out, expect)
 	if diff != "" {
 		t.Fatal(diff)
@@ -286,7 +285,7 @@ func TestOnlyFallbacks(t *testing.T) {
 		Type:    "onion",
 		Address: "httpo://jehhrikjjqrlpufu.onion",
 	}}
-	out := probeservices.OnlyFallbacks(in)
+	out := OnlyFallbacks(in)
 	diff := cmp.Diff(out, expect)
 	if diff != "" {
 		t.Fatal(diff)
@@ -318,7 +317,7 @@ func TestTryAllCanceledContext(t *testing.T) {
 		MockableHTTPClient: http.DefaultClient,
 		MockableLogger:     log.Log,
 	}
-	out := probeservices.TryAll(ctx, sess, in)
+	out := TryAll(ctx, sess, in)
 	if len(out) != 5 {
 		t.Fatal("invalid number of entries")
 	}
@@ -382,7 +381,7 @@ func TestTryAllCanceledContext(t *testing.T) {
 	// and so we don't basically do anything. But it also may be nonzero since
 	// we also run tests in the cloud, which is slower than my desktop. So, I
 	// have not written a specific test concerning out[4].Duration.
-	if !errors.Is(out[4].Err, probeservices.ErrUnsupportedEndpoint) {
+	if !errors.Is(out[4].Err, ErrUnsupportedEndpoint) {
 		t.Fatal("invalid error")
 	}
 	if out[4].Endpoint.Type != "onion" {
@@ -413,7 +412,7 @@ func TestTryAllIntegrationWeRaceForFastestHTTPS(t *testing.T) {
 		MockableHTTPClient: http.DefaultClient,
 		MockableLogger:     log.Log,
 	}
-	out := probeservices.TryAll(context.Background(), sess, in)
+	out := TryAll(context.Background(), sess, in)
 	if len(out) != 1 {
 		t.Fatal("invalid number of entries")
 	}
@@ -458,7 +457,7 @@ func TestTryAllIntegrationWeFallback(t *testing.T) {
 		MockableHTTPClient: http.DefaultClient,
 		MockableLogger:     log.Log,
 	}
-	out := probeservices.TryAll(context.Background(), sess, in)
+	out := TryAll(context.Background(), sess, in)
 	if len(out) != 4 {
 		t.Fatal("invalid number of entries")
 	}
@@ -520,23 +519,23 @@ func TestTryAllIntegrationWeFallback(t *testing.T) {
 }
 
 func TestSelectBestEmptyInput(t *testing.T) {
-	if out := probeservices.SelectBest(nil); out != nil {
+	if out := SelectBest(nil); out != nil {
 		t.Fatal("expected nil output here")
 	}
 }
 
 func TestSelectBestOnlyFailures(t *testing.T) {
-	in := []*probeservices.Candidate{{
+	in := []*Candidate{{
 		Duration: 10 * time.Millisecond,
 		Err:      io.EOF,
 	}}
-	if out := probeservices.SelectBest(in); out != nil {
+	if out := SelectBest(in); out != nil {
 		t.Fatal("expected nil output here")
 	}
 }
 
 func TestSelectBestSelectsTheFastest(t *testing.T) {
-	in := []*probeservices.Candidate{{
+	in := []*Candidate{{
 		Duration: 10 * time.Millisecond,
 		Endpoint: model.OOAPIService{
 			Address: "https://ps1.ooni.nonexistent",
@@ -561,14 +560,14 @@ func TestSelectBestSelectsTheFastest(t *testing.T) {
 			Type:    "https",
 		},
 	}}
-	expected := &probeservices.Candidate{
+	expected := &Candidate{
 		Duration: 4 * time.Millisecond,
 		Endpoint: model.OOAPIService{
 			Address: "https://ps2.ooni.nonexistent",
 			Type:    "https",
 		},
 	}
-	out := probeservices.SelectBest(in)
+	out := SelectBest(in)
 	if diff := cmp.Diff(out, expected); diff != "" {
 		t.Fatal(diff)
 	}
@@ -580,7 +579,7 @@ func TestGetCredsAndAuthNotLoggedIn(t *testing.T) {
 		t.Fatal(err)
 	}
 	creds, auth, err := clnt.GetCredsAndAuth()
-	if !errors.Is(err, probeservices.ErrNotLoggedIn) {
+	if !errors.Is(err, ErrNotLoggedIn) {
 		t.Fatal("not the error we expected")
 	}
 	if creds != nil {

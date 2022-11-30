@@ -1,4 +1,4 @@
-package probeservices_test
+package probeservices
 
 import (
 	"encoding/json"
@@ -7,19 +7,18 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 )
 
 func TestStateAuth(t *testing.T) {
 	t.Run("with no Token", func(t *testing.T) {
-		state := probeservices.State{Expire: time.Now().Add(10 * time.Hour)}
+		state := State{Expire: time.Now().Add(10 * time.Hour)}
 		if state.Auth() != nil {
 			t.Fatal("expected nil here")
 		}
 	})
 	t.Run("with expired Token", func(t *testing.T) {
-		state := probeservices.State{
+		state := State{
 			Expire: time.Now().Add(-1 * time.Hour),
 			Token:  "xx-x-xxx-xx",
 		}
@@ -28,7 +27,7 @@ func TestStateAuth(t *testing.T) {
 		}
 	})
 	t.Run("with good Token", func(t *testing.T) {
-		state := probeservices.State{
+		state := State{
 			Expire: time.Now().Add(10 * time.Hour),
 			Token:  "xx-x-xxx-xx",
 		}
@@ -40,13 +39,13 @@ func TestStateAuth(t *testing.T) {
 
 func TestStateCredentials(t *testing.T) {
 	t.Run("with no ClientID", func(t *testing.T) {
-		state := probeservices.State{}
+		state := State{}
 		if state.Credentials() != nil {
 			t.Fatal("expected nil here")
 		}
 	})
 	t.Run("with no Password", func(t *testing.T) {
-		state := probeservices.State{
+		state := State{
 			ClientID: "xx-x-xxx-xx",
 		}
 		if state.Credentials() != nil {
@@ -54,7 +53,7 @@ func TestStateCredentials(t *testing.T) {
 		}
 	})
 	t.Run("with all good", func(t *testing.T) {
-		state := probeservices.State{
+		state := State{
 			ClientID: "xx-x-xxx-xx",
 			Password: "xx",
 		}
@@ -67,8 +66,8 @@ func TestStateCredentials(t *testing.T) {
 func TestStateFileMemoryIntegration(t *testing.T) {
 	// Does the StateFile have the property that we can write
 	// values into it and then read again the same files?
-	sf := probeservices.NewStateFile(&kvstore.Memory{})
-	s := probeservices.State{
+	sf := NewStateFile(&kvstore.Memory{})
+	s := State{
 		Expire:   time.Now(),
 		Password: "xy",
 		Token:    "abc",
@@ -85,8 +84,8 @@ func TestStateFileMemoryIntegration(t *testing.T) {
 }
 
 func TestStateFileSetMarshalError(t *testing.T) {
-	sf := probeservices.NewStateFile(&kvstore.Memory{})
-	s := probeservices.State{
+	sf := NewStateFile(&kvstore.Memory{})
+	s := State{
 		Expire:   time.Now(),
 		Password: "xy",
 		Token:    "abc",
@@ -102,7 +101,7 @@ func TestStateFileSetMarshalError(t *testing.T) {
 }
 
 func TestStateFileGetKVStoreGetError(t *testing.T) {
-	sf := probeservices.NewStateFile(&kvstore.Memory{})
+	sf := NewStateFile(&kvstore.Memory{})
 	expected := errors.New("mocked error")
 	failingfunc := func(string) ([]byte, error) {
 		return nil, expected
@@ -126,8 +125,8 @@ func TestStateFileGetKVStoreGetError(t *testing.T) {
 }
 
 func TestStateFileGetUnmarshalError(t *testing.T) {
-	sf := probeservices.NewStateFile(&kvstore.Memory{})
-	if err := sf.Set(probeservices.State{}); err != nil {
+	sf := NewStateFile(&kvstore.Memory{})
+	if err := sf.Set(State{}); err != nil {
 		t.Fatal(err)
 	}
 	expected := errors.New("mocked error")

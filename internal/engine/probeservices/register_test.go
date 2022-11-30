@@ -1,27 +1,25 @@
-package probeservices_test
+package probeservices
 
 import (
 	"context"
 	"errors"
 	"strings"
 	"testing"
-
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 )
 
 func TestMaybeRegister(t *testing.T) {
 	t.Run("when metadata is not valid", func(t *testing.T) {
 		clnt := newclient()
 		ctx := context.Background()
-		var metadata probeservices.Metadata
+		var metadata Metadata
 		err := clnt.MaybeRegister(ctx, metadata)
-		if !errors.Is(err, probeservices.ErrInvalidMetadata) {
+		if !errors.Is(err, ErrInvalidMetadata) {
 			t.Fatal("expected an error here")
 		}
 	})
 	t.Run("when we have already registered", func(t *testing.T) {
 		clnt := newclient()
-		state := probeservices.State{
+		state := State{
 			ClientID: "xx-xxx-x-xxxx",
 			Password: "xx",
 		}

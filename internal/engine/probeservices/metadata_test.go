@@ -1,20 +1,16 @@
-package probeservices_test
+package probeservices
 
-import (
-	"testing"
-
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
-)
+import "testing"
 
 func TestValid(t *testing.T) {
 	t.Run("fail on probe_cc", func(t *testing.T) {
-		var m probeservices.Metadata
+		var m Metadata
 		if m.Valid() != false {
 			t.Fatal("expected false here")
 		}
 	})
 	t.Run("fail on probe_asn", func(t *testing.T) {
-		m := probeservices.Metadata{
+		m := Metadata{
 			ProbeCC: "IT",
 		}
 		if m.Valid() != false {
@@ -22,7 +18,7 @@ func TestValid(t *testing.T) {
 		}
 	})
 	t.Run("fail on platform", func(t *testing.T) {
-		m := probeservices.Metadata{
+		m := Metadata{
 			ProbeCC:  "IT",
 			ProbeASN: "AS1234",
 		}
@@ -31,7 +27,7 @@ func TestValid(t *testing.T) {
 		}
 	})
 	t.Run("fail on software_name", func(t *testing.T) {
-		m := probeservices.Metadata{
+		m := Metadata{
 			ProbeCC:  "IT",
 			ProbeASN: "AS1234",
 			Platform: "linux",
@@ -41,7 +37,7 @@ func TestValid(t *testing.T) {
 		}
 	})
 	t.Run("fail on software_version", func(t *testing.T) {
-		m := probeservices.Metadata{
+		m := Metadata{
 			ProbeCC:      "IT",
 			ProbeASN:     "AS1234",
 			Platform:     "linux",
@@ -52,7 +48,7 @@ func TestValid(t *testing.T) {
 		}
 	})
 	t.Run("fail on supported_tests", func(t *testing.T) {
-		m := probeservices.Metadata{
+		m := Metadata{
 			ProbeCC:         "IT",
 			ProbeASN:        "AS1234",
 			Platform:        "linux",
@@ -64,7 +60,7 @@ func TestValid(t *testing.T) {
 		}
 	})
 	t.Run("fail on missing device_token", func(t *testing.T) {
-		m := probeservices.Metadata{
+		m := Metadata{
 			ProbeCC:         "IT",
 			ProbeASN:        "AS1234",
 			Platform:        "ios",
@@ -77,7 +73,7 @@ func TestValid(t *testing.T) {
 		}
 	})
 	t.Run("success for desktop", func(t *testing.T) {
-		m := probeservices.Metadata{
+		m := Metadata{
 			ProbeCC:         "IT",
 			ProbeASN:        "AS1234",
 			Platform:        "linux",
@@ -90,7 +86,7 @@ func TestValid(t *testing.T) {
 		}
 	})
 	t.Run("success for mobile", func(t *testing.T) {
-		m := probeservices.Metadata{
+		m := Metadata{
 			DeviceToken:     "xx-xxx-xx-xxxx",
 			ProbeCC:         "IT",
 			ProbeASN:        "AS1234",

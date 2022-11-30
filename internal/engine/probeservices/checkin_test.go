@@ -1,4 +1,4 @@
-package probeservices_test
+package probeservices
 
 import (
 	"context"

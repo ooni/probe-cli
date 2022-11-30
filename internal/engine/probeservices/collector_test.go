@@ -1,4 +1,4 @@
-package probeservices_test
+package probeservices
 
 import (
 	"context"
@@ -13,7 +13,6 @@ import (
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -22,9 +21,9 @@ type fakeTestKeys struct {
 	Failure *string `json:"failure"`
 }
 
-func makeMeasurement(rt probeservices.ReportTemplate, ID string) model.Measurement {
+func makeMeasurement(rt ReportTemplate, ID string) model.Measurement {
 	return model.Measurement{
-		DataFormatVersion:    probeservices.DefaultDataFormatVersion,
+		DataFormatVersion:    DefaultDataFormatVersion,
 		ID:                   "bdd20d7a-bba5-40dd-a111-9863d7908572",
 		MeasurementRuntime:   5.0565230846405,
 		MeasurementStartTime: "2018-11-01 15:33:20",
@@ -54,10 +53,10 @@ func TestNewReportTemplate(t *testing.T) {
 		TestStartTime:   "2019-10-28 12:51:06",
 		TestVersion:     "0.1.0",
 	}
-	rt := probeservices.NewReportTemplate(m)
-	expect := probeservices.ReportTemplate{
-		DataFormatVersion: probeservices.DefaultDataFormatVersion,
-		Format:            probeservices.DefaultFormat,
+	rt := NewReportTemplate(m)
+	expect := ReportTemplate{
+		DataFormatVersion: DefaultDataFormatVersion,
+		Format:            DefaultFormat,
 		ProbeASN:          "AS117",
 		ProbeCC:           "IT",
 		SoftwareName:      "ooniprobe-engine",
@@ -73,9 +72,9 @@ func TestNewReportTemplate(t *testing.T) {
 
 func TestReportLifecycle(t *testing.T) {
 	ctx := context.Background()
-	template := probeservices.ReportTemplate{
-		DataFormatVersion: probeservices.DefaultDataFormatVersion,
-		Format:            probeservices.DefaultFormat,
+	template := ReportTemplate{
+		DataFormatVersion: DefaultDataFormatVersion,
+		Format:            DefaultFormat,
 		ProbeASN:          "AS0",
 		ProbeCC:           "ZZ",
 		SoftwareName:      "ooniprobe-engine",
@@ -103,9 +102,9 @@ func TestReportLifecycle(t *testing.T) {
 
 func TestReportLifecycleWrongExperiment(t *testing.T) {
 	ctx := context.Background()
-	template := probeservices.ReportTemplate{
-		DataFormatVersion: probeservices.DefaultDataFormatVersion,
-		Format:            probeservices.DefaultFormat,
+	template := ReportTemplate{
+		DataFormatVersion: DefaultDataFormatVersion,
+		Format:            DefaultFormat,
 		ProbeASN:          "AS0",
 		ProbeCC:           "ZZ",
 		SoftwareName:      "ooniprobe-engine",
@@ -128,9 +127,9 @@ func TestReportLifecycleWrongExperiment(t *testing.T) {
 
 func TestOpenReportInvalidDataFormatVersion(t *testing.T) {
 	ctx := context.Background()
-	template := probeservices.ReportTemplate{
+	template := ReportTemplate{
 		DataFormatVersion: "0.1.0",
-		Format:            probeservices.DefaultFormat,
+		Format:            DefaultFormat,
 		ProbeASN:          "AS0",
 		ProbeCC:           "ZZ",
 		SoftwareName:      "ooniprobe-engine",
@@ -141,7 +140,7 @@ func TestOpenReportInvalidDataFormatVersion(t *testing.T) {
 	}
 	client := newclient()
 	report, err := client.OpenReport(ctx, template)
-	if !errors.Is(err, probeservices.ErrUnsupportedDataFormatVersion) {
+	if !errors.Is(err, ErrUnsupportedDataFormatVersion) {
 		t.Fatal("not the error we expected")
 	}
 	if report != nil {
@@ -151,8 +150,8 @@ func TestOpenReportInvalidDataFormatVersion(t *testing.T) {
 
 func TestOpenReportInvalidFormat(t *testing.T) {
 	ctx := context.Background()
-	template := probeservices.ReportTemplate{
-		DataFormatVersion: probeservices.DefaultDataFormatVersion,
+	template := ReportTemplate{
+		DataFormatVersion: DefaultDataFormatVersion,
 		Format:            "yaml",
 		ProbeASN:          "AS0",
 		ProbeCC:           "ZZ",
@@ -164,7 +163,7 @@ func TestOpenReportInvalidFormat(t *testing.T) {
 	}
 	client := newclient()
 	report, err := client.OpenReport(ctx, template)
-	if !errors.Is(err, probeservices.ErrUnsupportedFormat) {
+	if !errors.Is(err, ErrUnsupportedFormat) {
 		t.Fatal("not the error we expected")
 	}
 	if report != nil {
@@ -174,9 +173,9 @@ func TestOpenReportInvalidFormat(t *testing.T) {
 
 func TestJSONAPIClientCreateFailure(t *testing.T) {
 	ctx := context.Background()
-	template := probeservices.ReportTemplate{
-		DataFormatVersion: probeservices.DefaultDataFormatVersion,
-		Format:            probeservices.DefaultFormat,
+	template := ReportTemplate{
+		DataFormatVersion: DefaultDataFormatVersion,
+		Format:            DefaultFormat,
 		ProbeASN:          "AS0",
 		ProbeCC:           "ZZ",
 		SoftwareName:      "ooniprobe-engine",
@@ -204,9 +203,9 @@ func TestOpenResponseNoJSONSupport(t *testing.T) {
 	)
 	defer server.Close()
 	ctx := context.Background()
-	template := probeservices.ReportTemplate{
-		DataFormatVersion: probeservices.DefaultDataFormatVersion,
-		Format:            probeservices.DefaultFormat,
+	template := ReportTemplate{
+		DataFormatVersion: DefaultDataFormatVersion,
+		Format:            DefaultFormat,
 		ProbeASN:          "AS0",
 		ProbeCC:           "ZZ",
 		SoftwareName:      "ooniprobe-engine",
@@ -218,7 +217,7 @@ func TestOpenResponseNoJSONSupport(t *testing.T) {
 	client := newclient()
 	client.BaseURL = server.URL
 	report, err := client.OpenReport(ctx, template)
-	if !errors.Is(err, probeservices.ErrJSONFormatNotSupported) {
+	if !errors.Is(err, ErrJSONFormatNotSupported) {
 		t.Fatal("expected an error here")
 	}
 	if report != nil {
@@ -257,9 +256,9 @@ func TestEndToEnd(t *testing.T) {
 	)
 	defer server.Close()
 	ctx := context.Background()
-	template := probeservices.ReportTemplate{
-		DataFormatVersion: probeservices.DefaultDataFormatVersion,
-		Format:            probeservices.DefaultFormat,
+	template := ReportTemplate{
+		DataFormatVersion: DefaultDataFormatVersion,
+		Format:            DefaultFormat,
 		ProbeASN:          "AS0",
 		ProbeCC:           "ZZ",
 		SoftwareName:      "ooniprobe-engine",
@@ -281,13 +280,13 @@ func TestEndToEnd(t *testing.T) {
 }
 
 type RecordingReportChannel struct {
-	tmpl probeservices.ReportTemplate
+	tmpl ReportTemplate
 	m    []*model.Measurement
 	mu   sync.Mutex
 }
 
 func (rrc *RecordingReportChannel) CanSubmit(m *model.Measurement) bool {
-	return reflect.DeepEqual(probeservices.NewReportTemplate(m), rrc.tmpl)
+	return reflect.DeepEqual(NewReportTemplate(m), rrc.tmpl)
 }
 
 func (rrc *RecordingReportChannel) SubmitMeasurement(ctx context.Context, m *model.Measurement) error {
@@ -319,8 +318,8 @@ type RecordingReportOpener struct {
 }
 
 func (rro *RecordingReportOpener) OpenReport(
-	ctx context.Context, rt probeservices.ReportTemplate,
-) (probeservices.ReportChannel, error) {
+	ctx context.Context, rt ReportTemplate,
+) (ReportChannel, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
@@ -334,9 +333,9 @@ func (rro *RecordingReportOpener) OpenReport(
 func TestOpenReportCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // immediately abort
-	template := probeservices.ReportTemplate{
-		DataFormatVersion: probeservices.DefaultDataFormatVersion,
-		Format:            probeservices.DefaultFormat,
+	template := ReportTemplate{
+		DataFormatVersion: DefaultDataFormatVersion,
+		Format:            DefaultFormat,
 		ProbeASN:          "AS0",
 		ProbeCC:           "ZZ",
 		SoftwareName:      "ooniprobe-engine",
@@ -358,9 +357,9 @@ func TestOpenReportCancelledContext(t *testing.T) {
 func TestSubmitMeasurementCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	template := probeservices.ReportTemplate{
-		DataFormatVersion: probeservices.DefaultDataFormatVersion,
-		Format:            probeservices.DefaultFormat,
+	template := ReportTemplate{
+		DataFormatVersion: DefaultDataFormatVersion,
+		Format:            DefaultFormat,
 		ProbeASN:          "AS0",
 		ProbeCC:           "ZZ",
 		SoftwareName:      "ooniprobe-engine",
@@ -390,7 +389,7 @@ func TestSubmitMeasurementCancelledContext(t *testing.T) {
 
 func makeMeasurementWithoutTemplate(failure, testName string) *model.Measurement {
 	return &model.Measurement{
-		DataFormatVersion:    probeservices.DefaultDataFormatVersion,
+		DataFormatVersion:    DefaultDataFormatVersion,
 		ID:                   "bdd20d7a-bba5-40dd-a111-9863d7908572",
 		MeasurementRuntime:   5.0565230846405,
 		MeasurementStartTime: "2018-11-01 15:33:20",
@@ -412,7 +411,7 @@ func makeMeasurementWithoutTemplate(failure, testName string) *model.Measurement
 
 func TestSubmitterLifecyle(t *testing.T) {
 	rro := &RecordingReportOpener{}
-	submitter := probeservices.NewSubmitter(rro, log.Log)
+	submitter := NewSubmitter(rro, log.Log)
 	ctx := context.Background()
 	m1 := makeMeasurementWithoutTemplate("antani", "example")
 	if err := submitter.Submit(ctx, m1); err != nil {
@@ -439,7 +438,7 @@ func TestSubmitterLifecyle(t *testing.T) {
 
 func TestSubmitterCannotOpenNewChannel(t *testing.T) {
 	rro := &RecordingReportOpener{}
-	submitter := probeservices.NewSubmitter(rro, log.Log)
+	submitter := NewSubmitter(rro, log.Log)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately
 	m1 := makeMeasurementWithoutTemplate("antani", "example")
