@@ -36,7 +36,7 @@ func (s State) Credentials() *model.OOAPILoginCredentials {
 	if s.Password == "" {
 		return nil
 	}
-	return &model.OOAPILoginCredentials{ClientID: s.ClientID, Password: s.Password}
+	return &model.OOAPILoginCredentials{Username: s.ClientID, Password: s.Password}
 }
 
 // StateFile is the orchestra state file. It is backed by

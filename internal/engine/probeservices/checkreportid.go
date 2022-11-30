@@ -5,17 +5,14 @@ import (
 	"net/url"
 
 	"github.com/ooni/probe-cli/v3/internal/httpx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
-
-type checkReportIDResponse struct {
-	Found bool `json:"found"`
-}
 
 // CheckReportID checks whether the given ReportID exists.
 func (c Client) CheckReportID(ctx context.Context, reportID string) (bool, error) {
 	query := url.Values{}
 	query.Add("report_id", reportID)
-	var response checkReportIDResponse
+	var response model.OOAPICheckReportIDResponse
 	err := (&httpx.APIClientTemplate{
 		BaseURL:    c.BaseURL,
 		HTTPClient: c.HTTPClient,
