@@ -2,6 +2,7 @@ package dht
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -75,15 +76,22 @@ func TestMeasurer_run(t *testing.T) {
 		defer dht.Close()
 		_, _ = dht.Bootstrap()
 
-		println(dht.Addr().String())
 		url := fmt.Sprintf("dht://%s", dht.Addr().String())
 
+		hash := "631a31dd0a46257d5078c0dee4e66e26f73e42ac"
+		var infohash [20]byte
+		copy(infohash[:], hash)
+		_, _ = dht.AnnounceTraversal(infohash)
+
 		meas, m, err := runHelper(url)
+
+		tk := meas.TestKeys.(*TestKeys)
+		bs, _ := json.MarshalIndent(tk, "", "  ")
+		println(string(bs))
+
 		if err != nil {
 			t.Fatal(err)
 		}
-
-		tk := meas.TestKeys.(*TestKeys)
 
 		if tk.Failure != "" {
 			t.Fatal(tk.Failure)
@@ -94,6 +102,7 @@ func TestMeasurer_run(t *testing.T) {
 		}
 
 		run := tk.Runs[0]
+
 		if run.Failure != "" {
 			t.Fatal(run.Failure)
 		}
