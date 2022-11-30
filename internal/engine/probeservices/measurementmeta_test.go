@@ -1,4 +1,4 @@
-package probeservices_test
+package probeservices
 
 import (
 	"context"
@@ -9,13 +9,12 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/httpx"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 )
 
 func TestGetMeasurementMetaWorkingAsIntended(t *testing.T) {
-	client := probeservices.Client{
+	client := Client{
 		APIClientTemplate: httpx.APIClientTemplate{
 			BaseURL:    "https://api.ooni.io/",
 			HTTPClient: http.DefaultClient,
@@ -24,9 +23,9 @@ func TestGetMeasurementMetaWorkingAsIntended(t *testing.T) {
 		},
 		LoginCalls:    &atomicx.Int64{},
 		RegisterCalls: &atomicx.Int64{},
-		StateFile:     probeservices.NewStateFile(&kvstore.Memory{}),
+		StateFile:     NewStateFile(&kvstore.Memory{}),
 	}
-	config := probeservices.MeasurementMetaConfig{
+	config := MeasurementMetaConfig{
 		ReportID: `20201209T052225Z_urlgetter_IT_30722_n1_E1VUhMz08SEkgYFU`,
 		Full:     true,
 		Input:    `https://www.example.org`,
@@ -83,7 +82,7 @@ func TestGetMeasurementMetaWorkingAsIntended(t *testing.T) {
 }
 
 func TestGetMeasurementMetaWorkingWithCancelledContext(t *testing.T) {
-	client := probeservices.Client{
+	client := Client{
 		APIClientTemplate: httpx.APIClientTemplate{
 			BaseURL:    "https://api.ooni.io/",
 			HTTPClient: http.DefaultClient,
@@ -92,9 +91,9 @@ func TestGetMeasurementMetaWorkingWithCancelledContext(t *testing.T) {
 		},
 		LoginCalls:    &atomicx.Int64{},
 		RegisterCalls: &atomicx.Int64{},
-		StateFile:     probeservices.NewStateFile(&kvstore.Memory{}),
+		StateFile:     NewStateFile(&kvstore.Memory{}),
 	}
-	config := probeservices.MeasurementMetaConfig{
+	config := MeasurementMetaConfig{
 		ReportID: `20201209T052225Z_urlgetter_IT_30722_n1_E1VUhMz08SEkgYFU`,
 		Full:     true,
 		Input:    `https://www.example.org`,
