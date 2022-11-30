@@ -58,7 +58,7 @@ type Session struct {
 	MockNewSubmitter func(ctx context.Context) (model.Submitter, error)
 
 	MockCheckIn func(ctx context.Context,
-		config *model.OOAPICheckInConfig) (*model.OOAPICheckInInfo, error)
+		config *model.OOAPICheckInConfig) (*model.OOAPICheckInNettests, error)
 }
 
 func (sess *Session) GetTestHelpersByName(name string) ([]model.OOAPIService, bool) {
@@ -156,6 +156,6 @@ func (sess *Session) NewSubmitter(ctx context.Context) (model.Submitter, error) 
 }
 
 func (sess *Session) CheckIn(ctx context.Context,
-	config *model.OOAPICheckInConfig) (*model.OOAPICheckInInfo, error) {
+	config *model.OOAPICheckInConfig) (*model.OOAPICheckInNettests, error) {
 	return sess.MockCheckIn(ctx, config)
 }

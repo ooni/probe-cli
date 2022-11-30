@@ -199,7 +199,7 @@ func (e *experiment) SubmitAndUpdateMeasurementContext(
 func (e *experiment) newMeasurement(input string) *model.Measurement {
 	utctimenow := time.Now().UTC()
 	m := &model.Measurement{
-		DataFormatVersion:         probeservices.DefaultDataFormatVersion,
+		DataFormatVersion:         model.OOAPIReportDefaultDataFormatVersion,
 		Input:                     model.MeasurementTarget(input),
 		MeasurementStartTime:      utctimenow.Format(dateFormat),
 		MeasurementStartTimeSaved: utctimenow,
@@ -251,10 +251,10 @@ func (e *experiment) OpenReportContext(ctx context.Context) error {
 	return nil
 }
 
-func (e *experiment) newReportTemplate() probeservices.ReportTemplate {
-	return probeservices.ReportTemplate{
-		DataFormatVersion: probeservices.DefaultDataFormatVersion,
-		Format:            probeservices.DefaultFormat,
+func (e *experiment) newReportTemplate() model.OOAPIReportTemplate {
+	return model.OOAPIReportTemplate{
+		DataFormatVersion: model.OOAPIReportDefaultDataFormatVersion,
+		Format:            model.OOAPIReportDefaultFormat,
 		ProbeASN:          e.session.ProbeASNString(),
 		ProbeCC:           e.session.ProbeCC(),
 		SoftwareName:      e.session.SoftwareName(),

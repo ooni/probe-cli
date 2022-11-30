@@ -73,7 +73,7 @@ type Client struct {
 // GetCredsAndAuth is an utility function that returns the credentials with
 // which we are registered and the token with which we're logged in. If we're
 // not registered or not logged in, an error is returned instead.
-func (c Client) GetCredsAndAuth() (*LoginCredentials, *LoginAuth, error) {
+func (c Client) GetCredsAndAuth() (*model.OOAPILoginCredentials, *model.OOAPILoginAuth, error) {
 	state := c.StateFile.Get()
 	creds := state.Credentials()
 	if creds == nil {

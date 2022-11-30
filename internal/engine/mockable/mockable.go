@@ -28,7 +28,7 @@ type Session struct {
 	MockableFetchTorTargetsErr       error
 	MockableFetchURLListResult       []model.OOAPIURLInfo
 	MockableFetchURLListErr          error
-	MockableCheckInInfo              *model.OOAPICheckInInfo
+	MockableCheckInInfo              *model.OOAPICheckInNettests
 	MockableCheckInErr               error
 	MockableResolverIP               string
 	MockableSoftwareName             string

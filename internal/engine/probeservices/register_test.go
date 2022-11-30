@@ -5,13 +5,15 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestMaybeRegister(t *testing.T) {
 	t.Run("when metadata is not valid", func(t *testing.T) {
 		clnt := newclient()
 		ctx := context.Background()
-		var metadata Metadata
+		var metadata model.OOAPIProbeMetadata
 		err := clnt.MaybeRegister(ctx, metadata)
 		if !errors.Is(err, ErrInvalidMetadata) {
 			t.Fatal("expected an error here")

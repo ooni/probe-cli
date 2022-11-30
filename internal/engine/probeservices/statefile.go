@@ -17,26 +17,26 @@ type State struct {
 
 // Auth returns an authentication structure, if possible, otherwise
 // it returns nil, meaning that you should login again.
-func (s State) Auth() *LoginAuth {
+func (s State) Auth() *model.OOAPILoginAuth {
 	if s.Token == "" {
 		return nil
 	}
 	if time.Now().Add(30 * time.Second).After(s.Expire) {
 		return nil
 	}
-	return &LoginAuth{Expire: s.Expire, Token: s.Token}
+	return &model.OOAPILoginAuth{Expire: s.Expire, Token: s.Token}
 }
 
 // Credentials returns login credentials, if possible, otherwise it
 // returns nil, meaning that you should create an account.
-func (s State) Credentials() *LoginCredentials {
+func (s State) Credentials() *model.OOAPILoginCredentials {
 	if s.ClientID == "" {
 		return nil
 	}
 	if s.Password == "" {
 		return nil
 	}
-	return &LoginCredentials{ClientID: s.ClientID, Password: s.Password}
+	return &model.OOAPILoginCredentials{ClientID: s.ClientID, Password: s.Password}
 }
 
 // StateFile is the orchestra state file. It is backed by

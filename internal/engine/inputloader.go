@@ -28,7 +28,7 @@ var (
 // introduce this abstraction because it helps us with testing.
 type InputLoaderSession interface {
 	CheckIn(ctx context.Context,
-		config *model.OOAPICheckInConfig) (*model.OOAPICheckInInfo, error)
+		config *model.OOAPICheckInConfig) (*model.OOAPICheckInNettests, error)
 }
 
 // InputLoaderLogger is the logger according to an InputLoader.
@@ -316,7 +316,7 @@ func (il *InputLoader) loadRemote(ctx context.Context) ([]model.OOAPIURLInfo, er
 // the URLs that are not part of the requested categories. This is done for
 // robustness, just in case we or the API do something wrong.
 func (il *InputLoader) checkIn(
-	ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInInfo, error) {
+	ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInNettests, error) {
 	reply, err := il.Session.CheckIn(ctx, config)
 	if err != nil {
 		return nil, err

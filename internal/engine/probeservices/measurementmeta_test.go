@@ -11,6 +11,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/httpx"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestGetMeasurementMetaWorkingAsIntended(t *testing.T) {
@@ -25,7 +26,7 @@ func TestGetMeasurementMetaWorkingAsIntended(t *testing.T) {
 		RegisterCalls: &atomicx.Int64{},
 		StateFile:     NewStateFile(&kvstore.Memory{}),
 	}
-	config := MeasurementMetaConfig{
+	config := model.OOAPIMeasurementMetaConfig{
 		ReportID: `20201209T052225Z_urlgetter_IT_30722_n1_E1VUhMz08SEkgYFU`,
 		Full:     true,
 		Input:    `https://www.example.org`,
@@ -93,7 +94,7 @@ func TestGetMeasurementMetaWorkingWithCancelledContext(t *testing.T) {
 		RegisterCalls: &atomicx.Int64{},
 		StateFile:     NewStateFile(&kvstore.Memory{}),
 	}
-	config := MeasurementMetaConfig{
+	config := model.OOAPIMeasurementMetaConfig{
 		ReportID: `20201209T052225Z_urlgetter_IT_30722_n1_E1VUhMz08SEkgYFU`,
 		Full:     true,
 		Input:    `https://www.example.org`,
