@@ -13,7 +13,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices/testorchestra"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -577,7 +576,7 @@ func TestSelectBestSelectsTheFastest(t *testing.T) {
 
 func TestGetCredsAndAuthNotLoggedIn(t *testing.T) {
 	clnt := newclient()
-	if err := clnt.MaybeRegister(context.Background(), testorchestra.MetadataFixture()); err != nil {
+	if err := clnt.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
 		t.Fatal(err)
 	}
 	creds, auth, err := clnt.GetCredsAndAuth()

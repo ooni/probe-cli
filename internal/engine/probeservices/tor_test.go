@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices/testorchestra"
 )
 
 func TestFetchTorTargets(t *testing.T) {
@@ -14,7 +13,7 @@ func TestFetchTorTargets(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	clnt := newclient()
-	if err := clnt.MaybeRegister(context.Background(), testorchestra.MetadataFixture()); err != nil {
+	if err := clnt.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
 		t.Fatal(err)
 	}
 	if err := clnt.MaybeLogin(context.Background()); err != nil {
@@ -65,7 +64,7 @@ func TestFetchTorTargetsSetsQueryString(t *testing.T) {
 	clnt := newclient()
 	txp := new(FetchTorTargetsHTTPTransport)
 	clnt.HTTPClient = &http.Client{Transport: txp}
-	if err := clnt.MaybeRegister(context.Background(), testorchestra.MetadataFixture()); err != nil {
+	if err := clnt.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
 		t.Fatal(err)
 	}
 	if err := clnt.MaybeLogin(context.Background()); err != nil {
