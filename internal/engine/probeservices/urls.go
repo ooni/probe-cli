@@ -21,6 +21,8 @@ func (c Client) FetchURLList(ctx context.Context, config model.OOAPIURLListConfi
 		query.Set("limit", fmt.Sprintf("%d", config.Limit))
 	}
 	if len(config.Categories) > 0 {
+		// Note: ooapi (the unused package in v3.14.0 that implemented automatic API
+		// generation) used `category_code` (singular) here, but that's wrong.
 		query.Set("category_codes", strings.Join(config.Categories, ","))
 	}
 	var response model.OOAPIURLListResult

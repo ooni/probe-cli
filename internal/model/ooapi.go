@@ -63,11 +63,24 @@ type OOAPICheckInNettests struct {
 
 // OOAPICheckInResult is the result returned by the checkin API.
 type OOAPICheckInResult struct {
+	// ProbeASN contains the probe's ASN.
+	ProbeASN string `json:"probe_asn"`
+
+	// ProbeCC contains the probe's CC.
+	ProbeCC string `json:"probe_cc"`
+
 	// Tests contains information about nettests.
 	Tests OOAPICheckInNettests `json:"tests"`
 
 	// V is the version.
-	V int `json:"v"`
+	V int64 `json:"v"`
+}
+
+// OOAPICheckReportIDResponse is the check-report-id API response.
+type OOAPICheckReportIDResponse struct {
+	Error string `json:"error"`
+	Found bool   `json:"found"`
+	V     int64  `json:"v"`
 }
 
 // OOAPIService describes a backend service.
@@ -174,6 +187,9 @@ type OOAPIReportTemplate struct {
 
 // OOAPICollectorOpenResponse is the response returned by the open report API.
 type OOAPICollectorOpenResponse struct {
+	// BackendVersion is the backend version.
+	BackendVersion string `json:"backend_version"`
+
 	// ReportID is the report ID.
 	ReportID string `json:"report_id"`
 
@@ -198,7 +214,7 @@ type OOAPICollectorUpdateResponse struct {
 
 // OOAPILoginCredentials contains the login credentials
 type OOAPILoginCredentials struct {
-	ClientID string `json:"username"`
+	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
@@ -306,5 +322,12 @@ type OOAPIRegisterResponse struct {
 
 // OOAPIURLListResult is the result of the /api/v1/test-list/urls API call.
 type OOAPIURLListResult struct {
-	Results []OOAPIURLInfo `json:"results"`
+	Metadata OOAPIURLListMetadata `json:"metadata"`
+	Results  []OOAPIURLInfo       `json:"results"`
+}
+
+// OONIAPIURLListMetadata contains metadata included
+// inside the OOAPIURLListResult struct.
+type OOAPIURLListMetadata struct {
+	Count int64 `json:"count"`
 }
