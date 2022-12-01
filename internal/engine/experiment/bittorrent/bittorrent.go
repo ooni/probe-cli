@@ -38,6 +38,7 @@ const (
 // Config contains the experiment config.
 type Config struct {
 	BootstrapNodes []*string
+	DisableDHTSecurity bool
 }
 
 type runtimeConfig struct {
@@ -165,6 +166,12 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 				}
 				return addrs, nil
 			}
+		}
+	}
+	// Try disable DHT security
+	if m.Config.DisableDHTSecurity {
+		conf.ConfigureAnacrolixDhtServer = func (dht *dht.ServerConfig) {
+			dht.NoSecurity = true
 		}
 	}
 

@@ -35,6 +35,12 @@ func SeedFile(file string) (*torrent.Client, *string, []*string, error) {
 	conf.Seed = true
 	conf.DisableWebtorrent = true
 	conf.DisableWebseeds = true
+
+	// Try disable DHT security on torrent's DHT servers
+	conf.ConfigureAnacrolixDhtServer = func (dht *dht.ServerConfig) {
+		dht.NoSecurity = true
+	}
+
 	client, err := torrent.NewClient(conf)
 	if err != nil {
 		println("Failed client")
