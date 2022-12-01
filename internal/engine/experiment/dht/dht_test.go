@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"testing"
 
 	"github.com/anacrolix/dht/v2"
@@ -70,8 +71,17 @@ func TestMeasurer_run(t *testing.T) {
 		conf.StartingNodes = func() (addrs []dht.Addr, err error) {
 			return []dht.Addr{}, nil
 		}
+
+		// Let's try setting the connection manually
+		conn, err := net.ListenPacket("udp4", "127.0.0.1:0")
+		if err != nil {
+			t.Fatal(err)
+		}
+		conf.Conn = conn
+
 		// Not sure why but let's try...
 		conf.NoSecurity = true
+
 		conf.Passive = false
 		dht, err := dht.NewServer(conf)
 		if err != nil {
