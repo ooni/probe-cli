@@ -31,7 +31,7 @@ const (
 	testName = "wireguard"
 
 	// testVersion is the wireguard experiment version.
-	testVersion = "0.0.1"
+	testVersion = "0.0.2"
 
 	// pingCount tells how many icmp echo requests to send.
 	pingCount = 10
@@ -279,26 +279,26 @@ func (m *Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, 
 }
 
 func doWireguardBootstrap(o *options) (tun.Device, *netstack.Net, error) {
-	tun, tnet, err := netstack.CreateNetTUN(
+	devTun, tnet, err := netstack.CreateNetTUN(
 		[]netip.Addr{netip.MustParseAddr(o.ip)},
 		[]netip.Addr{netip.MustParseAddr(o.ns)},
 		1420)
 	if err != nil {
 		log.Panic(err)
 	}
-	dev := device.NewDevice(tun, conn.NewDefaultBind(), device.NewLogger(device.LogLevelVerbose, ""))
+	dev := device.NewDevice(devTun, conn.NewDefaultBind(), device.NewLogger(device.LogLevelVerbose, ""))
 	dev.IpcSet(`private_key=` + o.privKey + `
 public_key=` + o.pubKey + `
 preshared_key=` + o.presharedKey + `
 endpoint=` + o.endpoint + `
 allowed_ip=0.0.0.0/0
 `)
+
 	err = dev.Up()
 	if err != nil {
 		return nil, nil, err
 	}
-	return tun, tnet, nil
-
+	return devTun, tnet, nil
 }
 
 func getLinesFromFile(path string) ([]string, error) {
