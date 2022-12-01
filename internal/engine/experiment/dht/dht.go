@@ -35,7 +35,9 @@ const (
 )
 
 // Config contains the experiment config.
-type Config struct{}
+type Config struct{
+	DisableDHTSecurity bool
+}
 
 type runtimeConfig struct {
 	// nodeaddr IP or domain name
@@ -107,6 +109,7 @@ type DHTRunner struct {
 	logger            model.Logger
 	BootstrapNodes    []string
 	resolvedNodes     []string
+	disableDHTSecurity bool
 }
 
 func (d *DHTRunner) error(msg string) {
@@ -190,6 +193,7 @@ func (d *DHTRunner) runSeparate(refTime time.Time, infohash [20]byte) bool {
 			logger:         d.logger,
 			BootstrapNodes: []string{},
 			resolvedNodes:  []string{node},
+			disableDHTSecurity: d.disableDHTSecurity,
 		}
 
 		// Ignore individual errors. They are stored as failure but we want to keep iterating
@@ -236,6 +240,11 @@ func (d *DHTRunner) bootstrap(infohash [20]byte) bool {
 			addrs = append(addrs, dht.NewAddr(udpAddr))
 		}
 		return addrs, nil
+	}
+
+	// Disable DHT security for local tests
+	if d.disableDHTSecurity {
+		dhtconf.NoSecurity = true
 	}
 
 	dhtsrv, err := dht.NewServer(dhtconf)
@@ -377,6 +386,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		// TODO: default to boostrap
 		BootstrapNodes: []string{},
 		resolvedNodes:  []string{},
+		disableDHTSecurity: m.Config.DisableDHTSecurity,
 	}
 
 	if config.dhtnode != "" {

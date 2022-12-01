@@ -16,7 +16,9 @@ import (
 func TestMeasurer_run(t *testing.T) {
 	// runHelper is an helper function to run this set of tests.
 	runHelper := func(input string) (*model.Measurement, model.ExperimentMeasurer, error) {
-		measurer := NewExperimentMeasurer(Config{})
+		measurer := NewExperimentMeasurer(Config{
+			DisableDHTSecurity: true,
+		})
 		ctx := context.Background()
 		measurement := &model.Measurement{
 			Input: model.MeasurementTarget(input),
@@ -68,6 +70,8 @@ func TestMeasurer_run(t *testing.T) {
 		conf.StartingNodes = func() (addrs []dht.Addr, err error) {
 			return []dht.Addr{}, nil
 		}
+		// Not sure why but let's try...
+		conf.NoSecurity = true
 		conf.Passive = false
 		dht, err := dht.NewServer(conf)
 		if err != nil {
