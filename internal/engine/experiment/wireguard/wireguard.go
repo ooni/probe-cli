@@ -9,9 +9,11 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/netip"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -31,7 +33,7 @@ const (
 	testName = "wireguard"
 
 	// testVersion is the wireguard experiment version.
-	testVersion = "0.0.2"
+	testVersion = "0.0.3"
 
 	// pingCount tells how many icmp echo requests to send.
 	pingCount = 10
@@ -55,6 +57,11 @@ const (
 
 	// googleURI is self-explanatory.
 	googleURI = "https://www.google.com/"
+
+	// speedFiles
+	file10mb = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_10MB.pdf"
+	file20mb = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_20MB.pdf"
+	file50mb = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_50MB.pdf"
 )
 
 var (
@@ -138,10 +145,19 @@ func (m *Measurer) Run(
 	wg := new(sync.WaitGroup)
 	tk.Pings = []*PingResult{}
 
-	sendBlockingPing(wg, m.tun, m.tnet, pingTarget, tk)
+	var count int
+	countFromConfig, err := strconv.Atoi(m.config.PingCount)
+	if err == nil {
+		count = int(countFromConfig)
+	} else {
+		fmt.Println("error", err)
+		count = pingCount
+	}
+
+	sendBlockingPing(wg, m.tun, m.tnet, pingTarget, count, tk)
 	//TODO(ainghazal): get gateway ip
 	//sendBlockingPing(wg, m.tunnel, remoteVPNGateway, tk)
-	sendBlockingPing(wg, m.tun, m.tnet, pingTargetNZ, tk)
+	sendBlockingPing(wg, m.tun, m.tnet, pingTargetNZ, count, tk)
 
 	wantedICMP := 1
 	goodICMP := 0
@@ -197,8 +213,43 @@ func (m *Measurer) Run(
 		tk.SuccessURLGrab = true
 	}
 
-	sess.Logger().Info("openvpn: all tests ok")
-	tk.Success = true
+	if goodICMP == 0 && goodURLGrabs == 0 {
+		sess.Logger().Info("wireguard: all tests failed")
+		tk.Success = false
+	} else {
+		sess.Logger().Info("wireguard: all tests ok")
+		tk.Success = true
+	}
+
+	if m.config.WithSpeedTest == "yes" {
+		sess.Logger().Infof("wireguard: speed test")
+		// TODO it'd be good to give some feedback in here, we
+		// can calculate the progress % for instance.
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			g := urlgetter.Getter{
+				Config:  urlgetterConfig,
+				Session: sess,
+				Target:  file10mb,
+			}
+			speedFetch, _ := g.Get(context.Background())
+			// TODO check if failure==nil
+			if len(speedFetch.Requests) > 0 {
+				// assuming there're no redirects etc
+				req := speedFetch.Requests[0]
+				tk.SpeedTest = &SpeedTest{
+					Failure: req.Failure,
+					File:    file10mb,
+					T0:      req.T0,
+					T:       req.T,
+				}
+			}
+		}()
+		wg.Wait()
+	}
+
 	return nil
 }
 
