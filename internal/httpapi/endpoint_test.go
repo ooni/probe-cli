@@ -50,17 +50,24 @@ func TestNewEndpointList(t *testing.T) {
 			BaseURL:    "https://www.example.com/",
 			HTTPClient: defaultHTTPClient,
 			Host:       "",
+			Logger:     model.DiscardLogger,
 			UserAgent:  model.HTTPHeaderUserAgent,
 		}, {
 			BaseURL:    "https://www.example.org/",
 			HTTPClient: defaultHTTPClient,
 			Host:       "example.org.it",
+			Logger:     model.DiscardLogger,
 			UserAgent:  model.HTTPHeaderUserAgent,
 		}},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotOut := NewEndpointList(tt.args.httpClient, tt.args.userAgent, tt.args.services...)
+			gotOut := NewEndpointList(
+				tt.args.httpClient,
+				model.DiscardLogger,
+				tt.args.userAgent,
+				tt.args.services...,
+			)
 			if diff := cmp.Diff(tt.wantOut, gotOut); diff != "" {
 				t.Fatal(diff)
 			}
