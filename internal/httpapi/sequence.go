@@ -20,6 +20,8 @@ import (
 //
 // CAVEAT: this code will ONLY retry API calls with subsequent endpoints when
 // the error originates in the HTTP round trip or while reading the body.
+//
+// Deprecated: use SimpleCall and TypedCall instead.
 type SequenceCaller struct {
 	// Descriptor is the API |Descriptor|.
 	Descriptor *Descriptor

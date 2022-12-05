@@ -74,15 +74,15 @@ func NewGETJSONDescriptor(urlPath string) *Descriptor {
 	return NewGETJSONWithQueryDescriptor(urlPath, url.Values{})
 }
 
-// applicationJSON is the content-type for JSON
-const applicationJSON = "application/json"
+// ApplicationJSON is the content-type for JSON
+const ApplicationJSON = "application/json"
 
 // NewGETJSONWithQueryDescriptor is like NewGETJSONDescriptor but it also
 // allows you to provide |query| arguments. Leaving |query| nil or empty
 // is equivalent to calling NewGETJSONDescriptor directly.
 func NewGETJSONWithQueryDescriptor(urlPath string, query url.Values) *Descriptor {
 	return &Descriptor{
-		Accept:        applicationJSON,
+		Accept:        ApplicationJSON,
 		Authorization: "",
 		ContentType:   "",
 		LogBody:       false,
@@ -106,9 +106,9 @@ func NewPOSTJSONWithJSONResponseDescriptor(urlPath string, request any) (*Descri
 		return nil, err
 	}
 	desc := &Descriptor{
-		Accept:        applicationJSON,
+		Accept:        ApplicationJSON,
 		Authorization: "",
-		ContentType:   applicationJSON,
+		ContentType:   ApplicationJSON,
 		LogBody:       false,
 		MaxBodySize:   DefaultMaxBodySize,
 		Method:        http.MethodPost,
