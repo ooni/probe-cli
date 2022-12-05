@@ -9,7 +9,7 @@ package httpapi
 // The corresponding API-calling function is [SimpleCall].
 type SimpleSpec interface {
 	// Descriptor returns the descriptor to use.
-	Descriptor() *Descriptor
+	Descriptor() (*Descriptor, error)
 }
 
 // TypedSpec[T] describes an API that returns *T as the response.

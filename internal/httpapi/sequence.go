@@ -56,7 +56,7 @@ func (ssc *SimpleSequenceCaller) SimpleCall(ctx context.Context) ([]byte, int, e
 	var selected int
 	merr := multierror.New(ErrAllEndpointsFailed)
 	for _, epnt := range ssc.Endpoints {
-		respBody, err := SimpleCall(ctx, ssc.Spec, epnt)
+		respBody, err := RawCall(ctx, ssc.Spec, epnt)
 		if sequenceCallerShouldRetry(err) {
 			merr.Add(err)
 			selected++

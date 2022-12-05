@@ -145,13 +145,16 @@ func call(ctx context.Context, desc *Descriptor, endpoint *Endpoint) (*http.Resp
 	return docall(endpoint, desc, request)
 }
 
-// SimpleCall calls the API described by spec using endpoint.
+// RawCall calls the API described by spec using endpoint.
 //
 // Note: this function returns ErrHTTPRequestFailed if the HTTP status code is
 // greater or equal than 400. You could use errors.As to obtain a copy of the
 // error that was returned and see for yourself the actual status code.
-func SimpleCall(ctx context.Context, spec SimpleSpec, endpoint *Endpoint) ([]byte, error) {
-	desc := spec.Descriptor()
+func RawCall(ctx context.Context, spec SimpleSpec, endpoint *Endpoint) ([]byte, error) {
+	desc, err := spec.Descriptor()
+	if err != nil {
+		return nil, err
+	}
 	_, data, err := call(ctx, desc, endpoint)
 	return data, err
 }
