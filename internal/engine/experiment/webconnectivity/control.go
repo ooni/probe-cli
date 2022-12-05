@@ -7,6 +7,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/httpapi"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/ooapi"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -23,13 +24,12 @@ type (
 func Control(
 	ctx context.Context, sess model.ExperimentSession,
 	testhelpers []model.OOAPIService, creq ControlRequest) (ControlResponse, *model.OOAPIService, error) {
-	seqCaller := httpapi.NewSequenceCaller(
-		httpapi.MustNewPOSTJSONWithJSONResponseDescriptor("/", creq).WithBodyLogging(true),
+	seqCaller := httpapi.NewTypedSequenceCaller[model.THResponse](
+		&ooapi.THAPISpec{Request: &creq},
 		httpapi.NewEndpointList(sess.DefaultHTTPClient(), sess.Logger(), sess.UserAgent(), testhelpers...)...,
 	)
 	sess.Logger().Infof("control for %s...", creq.HTTPRequest)
-	var out ControlResponse
-	idx, err := seqCaller.CallWithJSONResponse(ctx, &out)
+	out, idx, err := seqCaller.TypedCall(ctx)
 	sess.Logger().Infof("control for %s... %+v", creq.HTTPRequest, model.ErrorToStringOrOK(err))
 	if err != nil {
 		// make sure error is wrapped
@@ -38,7 +38,8 @@ func Control(
 	}
 	fillASNs(&out.DNS)
 	runtimex.Assert(idx >= 0 && idx < len(testhelpers), "idx out of bounds")
-	return out, &testhelpers[idx], nil
+	runtimex.Assert(out != nil, "expected non-nil out pointer")
+	return *out, &testhelpers[idx], nil
 }
 
 // fillASNs fills the ASNs array of ControlDNSResult. For each Addr inside

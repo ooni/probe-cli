@@ -12,6 +12,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/ooapi"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -108,15 +109,14 @@ func (c *Control) Run(parentCtx context.Context) {
 		c.TestHelpers,
 	)
 
-	// create an httpapi sequence caller
-	seqCaller := httpapi.NewSequenceCaller(
-		httpapi.MustNewPOSTJSONWithJSONResponseDescriptor("/", creq).WithBodyLogging(true),
+	// create a sequence caller
+	seqCaller := httpapi.NewTypedSequenceCaller[model.THResponse](
+		&ooapi.THAPISpec{Request: creq},
 		httpapi.NewEndpointList(c.Session.DefaultHTTPClient(), c.Logger, c.Session.UserAgent(), c.TestHelpers...)...,
 	)
 
 	// issue the control request and wait for the response
-	var cresp webconnectivity.ControlResponse
-	idx, err := seqCaller.CallWithJSONResponse(opCtx, &cresp)
+	cresp, idx, err := seqCaller.TypedCall(opCtx)
 	if err != nil {
 		// make sure error is wrapped
 		err = netxlite.NewTopLevelGenericErrWrapper(err)
@@ -126,7 +126,7 @@ func (c *Control) Run(parentCtx context.Context) {
 	}
 
 	// on success, save the control response
-	c.TestKeys.SetControl(&cresp)
+	c.TestKeys.SetControl(cresp)
 	ol.Stop(nil)
 
 	// record the specific TH that worked
