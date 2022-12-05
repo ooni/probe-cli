@@ -14,7 +14,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/ooni/probe-cli/v3/internal/multierror"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -159,27 +158,15 @@ func Call(ctx context.Context, desc *Descriptor, endpoint *Endpoint) ([]byte, er
 	return rawResponseBody, err
 }
 
-// SimpleCall calls the API described by the given [SimpleSpec] using the
-// given list consisting of zero or more [Endpoint] instances.
+// SimpleCall calls the API described by spec using endpoint.
 //
 // Note: this function returns ErrHTTPRequestFailed if the HTTP status code is
 // greater or equal than 400. You could use errors.As to obtain a copy of the
 // error that was returned and see for yourself the actual status code.
-//
-// CAVEAT: this code will ONLY retry API calls with subsequent endpoints when
-// the error originates in the HTTP round trip or while reading the body.
-func SimpleCall(ctx context.Context, spec SimpleSpec, endpoints ...*Endpoint) ([]byte, error) {
+func SimpleCall(ctx context.Context, spec SimpleSpec, endpoint *Endpoint) ([]byte, error) {
 	desc := spec.Descriptor()
-	me := multierror.New(ErrAllEndpointsFailed)
-	for _, epnt := range endpoints {
-		_, data, err := call(ctx, desc, epnt)
-		if err != nil {
-			me.Add(err)
-			continue
-		}
-		return data, nil
-	}
-	return nil, me
+	_, data, err := call(ctx, desc, endpoint)
+	return data, err
 }
 
 // goodContentTypeForJSON tracks known-good content-types for JSON. If the content-type
@@ -208,37 +195,27 @@ func CallWithJSONResponse(ctx context.Context, desc *Descriptor, endpoint *Endpo
 	return json.Unmarshal(rawRespBody, response)
 }
 
-// TypedCall calls the API described by the given [TypedSpec] using the
-// given list consisting of zero or more [Endpoint] instances.
+// TypedCall calls the API described by spec using endpoint.
 //
 // Note: this function returns ErrHTTPRequestFailed if the HTTP status code is
 // greater or equal than 400. You could use errors.As to obtain a copy of the
 // error that was returned and see for yourself the actual status code.
-//
-// CAVEAT: this code will ONLY retry API calls with subsequent endpoints when
-// the error originates in the HTTP round trip or while reading the body.
-func TypedCall[T any](ctx context.Context, spec TypedSpec[T], endpoints ...*Endpoint) (*T, error) {
+func TypedCall[T any](ctx context.Context, spec TypedSpec[T], endpoint *Endpoint) (*T, error) {
 	desc, err := spec.Descriptor()
 	if err != nil {
 		return nil, err
 	}
-	me := multierror.New(ErrAllEndpointsFailed)
-	for _, epnt := range endpoints {
-		httpResp, rawRespBody, err := call(ctx, desc, epnt)
-		if err != nil {
-			me.Add(err)
-			continue
-		}
-		if ctype := httpResp.Header.Get("Content-Type"); !goodContentTypeForJSON[ctype] {
-			epnt.Logger.Warnf("httpapi: unexpected content-type: %s", ctype)
-			// fallthrough
-		}
-		value := spec.ZeroResponse()
-		if err := json.Unmarshal(rawRespBody, &value); err != nil {
-			me.Add(err)
-			continue
-		}
-		return &value, nil
+	httpResp, rawRespBody, err := call(ctx, desc, endpoint)
+	if err != nil {
+		return nil, err
 	}
-	return nil, me
+	if ctype := httpResp.Header.Get("Content-Type"); !goodContentTypeForJSON[ctype] {
+		endpoint.Logger.Warnf("httpapi: unexpected content-type: %s", ctype)
+		// fallthrough
+	}
+	value := spec.ZeroResponse()
+	if err := json.Unmarshal(rawRespBody, &value); err != nil {
+		return nil, err
+	}
+	return &value, nil
 }
