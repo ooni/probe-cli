@@ -19,6 +19,6 @@ type TypedSpec[T any] interface {
 	// Descriptor returns the descriptor to use.
 	Descriptor() (*Descriptor, error)
 
-	// ZeroResponse returns a zero-initialized instance of T.
+	// ZeroResponse returns T's zero value.
 	ZeroResponse() T
 }

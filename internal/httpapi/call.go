@@ -130,7 +130,7 @@ func docall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http.
 	return response, data, nil
 }
 
-// call is like Call but also returns the response.
+// call calls the given API and returns the response and the raw response body.
 func call(ctx context.Context, desc *Descriptor, endpoint *Endpoint) (*http.Response, []byte, error) {
 	timeout := desc.Timeout
 	if timeout <= 0 {
@@ -143,19 +143,6 @@ func call(ctx context.Context, desc *Descriptor, endpoint *Endpoint) (*http.Resp
 		return nil, nil, err
 	}
 	return docall(endpoint, desc, request)
-}
-
-// Call invokes the API described by |desc| on the given HTTP |endpoint| and
-// returns the response body (as a slice of bytes) or an error.
-//
-// Note: this function returns ErrHTTPRequestFailed if the HTTP status code is
-// greater or equal than 400. You could use errors.As to obtain a copy of the
-// error that was returned and see for yourself the actual status code.
-//
-// Deprecated: use SimpleCall instead.
-func Call(ctx context.Context, desc *Descriptor, endpoint *Endpoint) ([]byte, error) {
-	_, rawResponseBody, err := call(ctx, desc, endpoint)
-	return rawResponseBody, err
 }
 
 // SimpleCall calls the API described by spec using endpoint.
@@ -173,26 +160,6 @@ func SimpleCall(ctx context.Context, spec SimpleSpec, endpoint *Endpoint) ([]byt
 // is not in this map, |CallWithJSONResponse| emits a warning message.
 var goodContentTypeForJSON = map[string]bool{
 	ApplicationJSON: true,
-}
-
-// CallWithJSONResponse is like Call but also assumes that the response is a
-// JSON body and attempts to parse it into the |response| field.
-//
-// Note: this function returns ErrHTTPRequestFailed if the HTTP status code is
-// greater or equal than 400. You could use errors.As to obtain a copy of the
-// error that was returned and see for yourself the actual status code.
-//
-// Deprecated: use TypedCall instead.
-func CallWithJSONResponse(ctx context.Context, desc *Descriptor, endpoint *Endpoint, response any) error {
-	httpResp, rawRespBody, err := call(ctx, desc, endpoint)
-	if err != nil {
-		return err
-	}
-	if ctype := httpResp.Header.Get("Content-Type"); !goodContentTypeForJSON[ctype] {
-		endpoint.Logger.Warnf("httpapi: unexpected content-type: %s", ctype)
-		// fallthrough
-	}
-	return json.Unmarshal(rawRespBody, response)
 }
 
 // TypedCall calls the API described by spec using endpoint.
