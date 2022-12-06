@@ -178,7 +178,8 @@ func (m *Measurer) quicHandshake(ctx context.Context, index int64,
 		RootCAs:    netxlite.NewDefaultCertPool(),
 		ServerName: sni,
 	}
-	_, err := dialer.DialContext(ctx, address, tlsConfig, &quic.Config{})
+	quicEarlyConn, err := dialer.DialContext(ctx, address, tlsConfig, &quic.Config{})
+	defer measurexlite.MaybeCloseQuic(quicEarlyConn)
 	ol.Stop(err)
 	sp.QUICHandshake = trace.FirstQUICHandshakeOrNil() // record the first handshake from the buffer
 	sp.NetworkEvents = append(sp.NetworkEvents, trace.NetworkEvents()...)

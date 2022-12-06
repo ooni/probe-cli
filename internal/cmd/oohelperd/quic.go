@@ -83,7 +83,8 @@ func quicDo(ctx context.Context, config *quicConfig) {
 		RootCAs:    netxlite.NewDefaultCertPool(),
 		ServerName: config.URLHostname,
 	}
-	_, err := dialer.DialContext(ctx, config.Endpoint, tlsConfig, &quic.Config{})
+	quicConn, err := dialer.DialContext(ctx, config.Endpoint, tlsConfig, &quic.Config{})
+	defer measurexlite.MaybeCloseQuic(quicConn)
 	ol.Stop(err)
 
 	out.QUIC = ctrlQUICResult{
