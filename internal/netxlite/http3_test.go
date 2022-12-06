@@ -138,3 +138,32 @@ func TestNewHTTP3TransportWithResolver(t *testing.T) {
 		verifyTypeChainForHTTP3(t, txp, model.DiscardLogger, nil, nil, reso)
 	})
 }
+
+func TestNewHTTP3ClientWithResolver(t *testing.T) {
+	reso := &mocks.Resolver{}
+	clnt := NewHTTP3ClientWithResolver(model.DiscardLogger, reso)
+	ewc, ok := clnt.(*httpClientErrWrapper)
+	if !ok {
+		t.Fatal("expected *httpClientErrWrapper")
+	}
+	httpClnt, ok := ewc.HTTPClient.(*http.Client)
+	if !ok {
+		t.Fatal("expected *http.Client")
+	}
+	txp := httpClnt.Transport.(*httpTransportLogger)
+	txpEwrap := txp.HTTPTransport.(*httpTransportErrWrapper)
+	txpCc := txpEwrap.HTTPTransport.(*http3Transport)
+	dialerLogger := txpCc.dialer.(*quicDialerLogger)
+	dialerReso := dialerLogger.Dialer.(*quicDialerResolver)
+	dialerLoggerInner := dialerReso.Dialer.(*quicDialerLogger)
+	dialerWrapper := dialerLoggerInner.Dialer.(*quicDialerErrWrapper)
+	dialerCompleter := dialerWrapper.QUICDialer.(*quicDialerHandshakeCompleter)
+	dialerQUICGo := dialerCompleter.Dialer.(*quicDialerQUICGo)
+
+	if dialerReso.Resolver != reso {
+		t.Fatal("invalid resolver")
+	}
+	if dialerQUICGo.QUICListener == nil {
+		t.Fatal("QUICListener should not be nil")
+	}
+}
