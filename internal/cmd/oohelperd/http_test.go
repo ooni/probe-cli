@@ -144,29 +144,41 @@ func Test_httpMapFailure(t *testing.T) {
 }
 
 func TestParseAltSvc(t *testing.T) {
-	resp := &http.Response{
-		Header: http.Header{"Alt-Svc": []string{"h3=\":443\"; ma=3600,h2=\":443\"; ma=3600"}}}
-	authority := parseAltSvc(resp)
-	if authority != ":443" {
-		t.Fatal("parsing error alt-svc")
+	type altSvcTest struct {
+		name string 
+		input http.Header
+		want string
+	}
+	tests := [] altSvcTest {
+		{ 
+			name: "standard",
+			input: http.Header{"Alt-Svc": []string{`h3=":443"; ma=3600,h2=":443"; ma=3600`}},
+			want: ":443",
+		},
+		{
+			name: "changed order",
+			input: http.Header{"Alt-Svc": []string{`h2=":443"; ma=3600,h3=":443"; ma=3600`}},
+			want: ":443",
+		},
+		{
+			name: "empty",
+			input: http.Header{"Alt-Svc": []string{""}},
+			want: "",
+		},
+		{
+			name: "no h3",
+			input: http.Header{"Alt-Svc": []string{`h2=":443"; ma=3600`}},
+			want: "",
+		},
 	}
 
-	resp.Header["Alt-Svc"] = []string{"h2=\":443\"; ma=3600,h3=\":443\"; ma=3600"}
-	authority = parseAltSvc(resp)
-	if authority != ":443" {
-		t.Fatal("parsing error alt-svc")
-	}
-
-	resp.Header["Alt-Svc"] = []string{""}
-	authority = parseAltSvc(resp)
-	if authority != "" {
-		t.Fatal("parsing error alt-svc")
-	}
-
-	resp.Header["Alt-Svc"] = []string{"h2=\":443\"; ma=3600"}
-	authority = parseAltSvc(resp)
-	if authority != "" {
-		t.Fatal("parsing error alt-svc")
+	resp := &http.Response{}
+	for _, test := range tests {
+		resp.Header = test.input
+		authority := parseAltSvc(resp)
+		if authority != test.want {
+			t.Fatalf("Alt-Svc parsing error (%s)", test.name)
+		}
 	}
 }
 
@@ -178,7 +190,7 @@ func TestGetHTTP3Altsvc(t *testing.T) {
 		Header:     http.Header{},
 		Request:    req,
 	}
-	if discoverH3Endpoint(resp) != "" {
+	if discoverH3Endpoint(resp, req) != "" {
 		t.Fatal("unexpected alt-svc response")
 	}
 
@@ -186,10 +198,10 @@ func TestGetHTTP3Altsvc(t *testing.T) {
 		Status:     "200 OK",
 		StatusCode: 200,
 		Header: http.Header{
-			"Alt-Svc": []string{"h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\""}},
+			"Alt-Svc": []string{`h3-Q050=":443"; ma=2592000,h3-Q046=":443"; ma=2592000,h3-Q043=":443"; ma=2592000,quic=":443"; ma=2592000; v="46,43"`}},
 		Request: req,
 	}
-	if discoverH3Endpoint(resp) != "" {
+	if discoverH3Endpoint(resp, req) != "" {
 		t.Fatal("unexpected alt-svc response")
 	}
 }

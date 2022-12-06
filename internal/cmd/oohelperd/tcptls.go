@@ -36,8 +36,8 @@ type tcpResultPair struct {
 	TLS *ctrlTLSResult
 }
 
-// tcpConfig configures the TCP connect check.
-type tcpConfig struct {
+// tcpTLSConfig configures the TCP connect check.
+type tcpTLSConfig struct {
 	// Address is the MANDATORY address to measure.
 	Address string
 
@@ -66,8 +66,8 @@ type tcpConfig struct {
 	Wg *sync.WaitGroup
 }
 
-// tcpTLSDo performs the TCP and TLS check.
-func tcpTLSDo(ctx context.Context, config *tcpConfig) {
+// tcpTLSDo performs the TCP and (possibly) TLS checks.
+func tcpTLSDo(ctx context.Context, config *tcpTLSConfig) {
 	const timeout = 15 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()

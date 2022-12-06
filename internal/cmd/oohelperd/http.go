@@ -110,7 +110,7 @@ func httpDo(ctx context.Context, config *httpConfig) {
 
 	h3Endpoint := ""
 	if config.searchForH3 {
-		h3Endpoint = discoverH3Endpoint(resp)
+		h3Endpoint = discoverH3Endpoint(resp, req)
 	}
 
 	config.Out <- ctrlHTTPResponse{
@@ -123,14 +123,18 @@ func httpDo(ctx context.Context, config *httpConfig) {
 	}
 }
 
-// Discovers an H3 endpoint by inspecting the Alt-Svc header in the first request-response pair of the redirect chain.
+// Discovers an H3 endpoint by inspecting the Alt-Svc header in the first request-response pair
+// of the redirect chain.
 //
 // TODO(kelmenhorst) Known limitations:
-//   - This will not work for http:// URLs: Many/some/? hosts do not advertise h3 via Alt-Svc on an HTTP/1.1 response.
-//     Thus, measuring http://cloudflare.com will not cause a h3 follow-up, but https://cloudflare.com will.
+//   - This will not work for http:// URLs: Many/some/? hosts do not advertise h3 via Alt-Svc on a
+//     cleartext HTTP response.
+//     Thus, measuring http://cloudflare.com will not cause a h3 follow-up, but 
+//     https://cloudflare.com will.
 //   - We only consider the Alt-Svc binding of the very first request-response pair.
-//     However, by using parseAltSvc we can later change the code to consider any request-response pair without too much refactoring.
-func discoverH3Endpoint(resp *http.Response) string {
+//     However, by using parseAltSvc we can later change the code to consider any request-response
+//     pair without too much refactoring.
+func discoverH3Endpoint(resp *http.Response, initReq *http.Request) string {
 	firstResp, found := getFirstResponseInRedirectChain(resp)
 	if !found {
 		return ""
@@ -139,48 +143,49 @@ func discoverH3Endpoint(resp *http.Response) string {
 	if h3Endpoint == "" {
 		return ""
 	}
+	// Examples:
+	//
+	//     Alt-Svc: h2="alt.example.com:443", h2=":443"
+	//     Alt-Svc: h3-25=":443"; ma=3600, h2=":443"; ma=3600
+	//
+	// So here we need to handle both `alt.example.com:443` and `:443` cases.
 	host, port, err := net.SplitHostPort(h3Endpoint)
 	if err != nil {
 		return ""
 	}
 	if host == "" {
-		host = firstResp.Request.URL.Host
+		host = initReq.URL.Host
 	}
 	return net.JoinHostPort(host, port)
 }
 
 // search for the first HTTP response in the redirect chain
 func getFirstResponseInRedirectChain(resp *http.Response) (*http.Response, bool) {
-	var responses []*http.Response
-	// The default std lib behavior is to stop redirecting after 10 consecutive requests. Defensively we stop searching after 11.
+	// The default std lib behavior is to stop redirecting after 10 consecutive requests.
+	// Defensively we stop searching after 11.
 	for i := 0; i < 11; i++ {
-		responses = append(responses, resp)
 		request := resp.Request
+		runtimex.Assert(request != nil, "expected Request != nil")
 		if request.Response == nil {
 			return resp, true
 		}
 		resp = request.Response
 	}
 	return nil, false
-
 }
 
-func parseAltSvc(resp *http.Response) string {
+func parseAltSvc(resp *http.Response) string { 
 	altsvc := resp.Header.Get("Alt-Svc")
-	if altsvc == "" {
-		return ""
-	}
-	// Alt-Svc syntax:
+	// Syntax:
 	//
 	// Alt-Svc: clear
 	// Alt-Svc: <protocol-id>=<alt-authority>; ma=<max-age>
 	// Alt-Svc: <protocol-id>=<alt-authority>; ma=<max-age>; persist=1
 	//
-	// multiple entries may be separated by comma.
+	// Multiple entries may be separated by comma.
 	//
 	// See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Alt-Svc
 	entries := strings.Split(altsvc, ",")
-	runtimex.Assert(len(entries) > 0, "expected at least one entry in strings.Split result")
 
 	for _, entry := range entries {
 		parts := strings.Split(entry, ";")

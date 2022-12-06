@@ -89,13 +89,12 @@ func main() {
 			return netxlite.NewHTTP3ClientWithResolver(logger, reso)
 		},
 		NewDialer: func(logger model.Logger) model.Dialer {
-			return netxlite.NewDialerWithResolver(logger, newResolver(logger))
+			return netxlite.NewDialerWithoutResolver(logger)
 		},
 		NewQUICDialer: func(logger model.Logger) model.QUICDialer {
-			return netxlite.NewQUICDialerWithResolver(
+			return netxlite.NewQUICDialerWithoutResolver(
 				netxlite.NewQUICListener(),
 				logger,
-				newResolver(logger),
 			)
 		},
 		NewResolver: newResolver,

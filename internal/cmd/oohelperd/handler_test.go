@@ -64,7 +64,7 @@ func TestHandlerWorkingAsIntended(t *testing.T) {
 			return netxlite.NewHTTP3ClientWithResolver(model.DiscardLogger, newResolver(model.DiscardLogger))
 		},
 		NewDialer: func(model.Logger) model.Dialer {
-			return netxlite.NewDialerWithStdlibResolver(model.DiscardLogger)
+			return netxlite.NewDialerWithoutResolver(model.DiscardLogger)
 		},
 		NewQUICDialer: func(logger model.Logger) model.QUICDialer {
 			return netxlite.NewQUICDialerWithResolver(

@@ -85,7 +85,7 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 	tcpconnch := make(chan *tcpResultPair, len(endpoints))
 	for _, endpoint := range endpoints {
 		wg.Add(1)
-		go tcpTLSDo(ctx, &tcpConfig{
+		go tcpTLSDo(ctx, &tcpTLSConfig{
 			Address:          endpoint.Addr,
 			EnableTLS:        endpoint.TLS,
 			Endpoint:         endpoint.Epnt,
@@ -138,6 +138,7 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 
 		// http3: start
 		http3ch := make(chan ctrlHTTPResponse, 1)
+
 		wg.Add(1)
 
 		go httpDo(ctx, &httpConfig{
