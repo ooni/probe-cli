@@ -155,7 +155,6 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		}
 	}
 	inputs = append(inputs, urlgetter.MultiInput{
-		Config: urlgetter.Config{FailOnHTTPError: true},
 		Target: RegistrationServiceURL,
 	})
 	inputs = append(inputs, urlgetter.MultiInput{
