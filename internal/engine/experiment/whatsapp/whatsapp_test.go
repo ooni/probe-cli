@@ -20,7 +20,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	if measurer.ExperimentName() != "whatsapp" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.10.0" {
+	if measurer.ExperimentVersion() != "0.11.0" {
 		t.Fatal("unexpected version")
 	}
 }
@@ -336,7 +336,6 @@ func TestWeConfigureWebChecksCorrectly(t *testing.T) {
 	}
 	called := &atomicx.Int64{}
 	emptyConfig := urlgetter.Config{}
-	configWithFailOnHTTPError := urlgetter.Config{FailOnHTTPError: true}
 	measurer := whatsapp.Measurer{
 		Config: whatsapp.Config{},
 		Getter: func(ctx context.Context, g urlgetter.Getter) (urlgetter.TestKeys, error) {
@@ -348,7 +347,7 @@ func TestWeConfigureWebChecksCorrectly(t *testing.T) {
 				}
 			case whatsapp.RegistrationServiceURL:
 				called.Add(4)
-				if diff := cmp.Diff(g.Config, configWithFailOnHTTPError); diff != "" {
+				if diff := cmp.Diff(g.Config, emptyConfig); diff != "" {
 					panic(diff)
 				}
 			default:
