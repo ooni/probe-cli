@@ -6,8 +6,6 @@ import (
 	"io"
 	"testing"
 
-	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/telegram"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
@@ -20,7 +18,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	if measurer.ExperimentName() != "telegram" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.2.0" {
+	if measurer.ExperimentVersion() != "0.3.0" {
 		t.Fatal("unexpected version")
 	}
 }
@@ -31,10 +29,10 @@ func TestGood(t *testing.T) {
 	err := measurer.Run(
 		context.Background(),
 		&mockable.Session{
-			MockableLogger: log.Log,
+			MockableLogger: model.DiscardLogger,
 		},
 		measurement,
-		model.NewPrinterCallbacks(log.Log),
+		model.NewPrinterCallbacks(model.DiscardLogger),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -234,109 +232,24 @@ func TestUpdateWithAllConnectsFailed(t *testing.T) {
 	}
 }
 
-func TestUpdateWebWithMixedResults(t *testing.T) {
+func TestUpdateWithWebFailure(t *testing.T) {
+	failure := netxlite.FailureEOFError
+	failedOperation := netxlite.TLSHandshakeOperation
 	tk := telegram.NewTestKeys()
-	tk.Update(urlgetter.MultiOutput{
-		Input: urlgetter.MultiInput{
-			Config: urlgetter.Config{Method: "GET"},
-			Target: "http://web.telegram.org/",
-		},
-		TestKeys: urlgetter.TestKeys{
-			FailedOperation: (func() *string {
-				s := netxlite.HTTPRoundTripOperation
-				return &s
-			})(),
-			Failure: (func() *string {
-				s := netxlite.FailureEOFError
-				return &s
-			})(),
-		},
-	})
 	tk.Update(urlgetter.MultiOutput{
 		Input: urlgetter.MultiInput{
 			Config: urlgetter.Config{Method: "GET"},
 			Target: "https://web.telegram.org/",
 		},
 		TestKeys: urlgetter.TestKeys{
-			HTTPResponseBody:   `<title>Telegram Web</title>`,
-			HTTPResponseStatus: 200,
+			Failure:         &failure,
+			FailedOperation: &failedOperation,
 		},
 	})
 	if tk.TelegramWebStatus != "blocked" {
 		t.Fatal("TelegramWebStatus should be blocked")
 	}
-	if *tk.TelegramWebFailure != netxlite.FailureEOFError {
-		t.Fatal("invalid TelegramWebFailure")
-	}
-}
-
-func TestWeConfigureWebChecksToFailOnHTTPError(t *testing.T) {
-	called := &atomicx.Int64{}
-	failOnErrorHTTPS := &atomicx.Int64{}
-	failOnErrorHTTP := &atomicx.Int64{}
-	measurer := telegram.Measurer{
-		Config: telegram.Config{},
-		Getter: func(ctx context.Context, g urlgetter.Getter) (urlgetter.TestKeys, error) {
-			called.Add(1)
-			switch g.Target {
-			case "https://web.telegram.org/":
-				if g.Config.FailOnHTTPError {
-					failOnErrorHTTPS.Add(1)
-				}
-			case "http://web.telegram.org/":
-				if g.Config.FailOnHTTPError {
-					failOnErrorHTTP.Add(1)
-				}
-			}
-			return urlgetter.DefaultMultiGetter(ctx, g)
-		},
-	}
-	ctx := context.Background()
-	sess := &mockable.Session{
-		MockableLogger: log.Log,
-	}
-	measurement := new(model.Measurement)
-	callbacks := model.NewPrinterCallbacks(log.Log)
-	if err := measurer.Run(ctx, sess, measurement, callbacks); err != nil {
-		t.Fatal(err)
-	}
-	if called.Load() < 1 {
-		t.Fatal("not called")
-	}
-	if failOnErrorHTTPS.Load() != 1 {
-		t.Fatal("not configured fail on error for HTTPS")
-	}
-	if failOnErrorHTTP.Load() != 1 {
-		t.Fatal("not configured fail on error for HTTP")
-	}
-}
-
-func TestUpdateWithMissingTitle(t *testing.T) {
-	tk := telegram.NewTestKeys()
-	tk.Update(urlgetter.MultiOutput{
-		Input: urlgetter.MultiInput{
-			Config: urlgetter.Config{Method: "GET"},
-			Target: "http://web.telegram.org/",
-		},
-		TestKeys: urlgetter.TestKeys{
-			HTTPResponseStatus: 200,
-			HTTPResponseBody:   "<HTML><title>Telegram Web</title></HTML>",
-		},
-	})
-	tk.Update(urlgetter.MultiOutput{
-		Input: urlgetter.MultiInput{
-			Config: urlgetter.Config{Method: "GET"},
-			Target: "http://web.telegram.org/",
-		},
-		TestKeys: urlgetter.TestKeys{
-			HTTPResponseStatus: 200,
-			HTTPResponseBody:   "<HTML><title>Antani Web</title></HTML>",
-		},
-	})
-	if tk.TelegramWebStatus != "blocked" {
-		t.Fatal("TelegramWebStatus should be blocked")
-	}
-	if *tk.TelegramWebFailure != "telegram_missing_title_error" {
+	if *tk.TelegramWebFailure != failure {
 		t.Fatal("invalid TelegramWebFailure")
 	}
 }
@@ -346,17 +259,7 @@ func TestUpdateWithAllGood(t *testing.T) {
 	tk.Update(urlgetter.MultiOutput{
 		Input: urlgetter.MultiInput{
 			Config: urlgetter.Config{Method: "GET"},
-			Target: "http://web.telegram.org/",
-		},
-		TestKeys: urlgetter.TestKeys{
-			HTTPResponseStatus: 200,
-			HTTPResponseBody:   "<HTML><title>Telegram Web</title></HTML>",
-		},
-	})
-	tk.Update(urlgetter.MultiOutput{
-		Input: urlgetter.MultiInput{
-			Config: urlgetter.Config{Method: "GET"},
-			Target: "http://web.telegram.org/",
+			Target: "https://web.telegram.org/",
 		},
 		TestKeys: urlgetter.TestKeys{
 			HTTPResponseStatus: 200,
