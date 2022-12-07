@@ -21,14 +21,11 @@ const (
 	// RegistrationServiceURL is the URL used by WhatsApp registration service
 	RegistrationServiceURL = "https://v.whatsapp.net/v2/register"
 
-	// WebHTTPURL is WhatsApp web's HTTP URL
-	WebHTTPURL = "http://web.whatsapp.com/"
-
 	// WebHTTPSURL is WhatsApp web's HTTPS URL
 	WebHTTPSURL = "https://web.whatsapp.com/"
 
 	testName    = "whatsapp"
-	testVersion = "0.9.0"
+	testVersion = "0.10.0"
 )
 
 var endpointPattern = regexp.MustCompile(`^tcpconnect://e[0-9]{1,2}\.whatsapp\.net:[0-9]{3,5}$`)
@@ -47,7 +44,6 @@ type TestKeys struct {
 	WhatsappWebFailure               *string        `json:"whatsapp_web_failure"`
 	WhatsappWebStatus                string         `json:"whatsapp_web_status"`
 	WhatsappEndpointsCount           map[string]int `json:"-"`
-	WhatsappHTTPFailure              *string        `json:"-"`
 	WhatsappHTTPSFailure             *string        `json:"-"`
 }
 
@@ -63,7 +59,6 @@ func NewTestKeys() *TestKeys {
 		WhatsappWebFailure:               &failure,
 		WhatsappWebStatus:                "blocked",
 		WhatsappEndpointsCount:           make(map[string]int),
-		WhatsappHTTPFailure:              &failure,
 		WhatsappHTTPSFailure:             &failure,
 	}
 }
@@ -100,37 +95,18 @@ func (tk *TestKeys) Update(v urlgetter.MultiOutput) {
 		return
 	}
 	// Track result of accessing the web interface.
-	switch v.Input.Target {
-	case WebHTTPSURL:
-		tk.WhatsappHTTPSFailure = v.TestKeys.Failure
-	case WebHTTPURL:
-		failure := v.TestKeys.Failure
-		if failure != nil {
-			// nothing to do here
-		} else if v.TestKeys.HTTPResponseStatus != 302 {
-			failure = &model.HTTPUnexpectedStatusCode
-		} else if len(v.TestKeys.HTTPResponseLocations) != 1 {
-			failure = &model.HTTPUnexpectedRedirectURL
-		} else if v.TestKeys.HTTPResponseLocations[0] != WebHTTPSURL {
-			failure = &model.HTTPUnexpectedRedirectURL
-		}
-		tk.WhatsappHTTPFailure = failure
-	}
+	tk.WhatsappHTTPSFailure = v.TestKeys.Failure
 }
 
 // ComputeWebStatus sets the web status fields.
 func (tk *TestKeys) ComputeWebStatus() {
-	if tk.WhatsappHTTPFailure == nil && tk.WhatsappHTTPSFailure == nil {
+	if tk.WhatsappHTTPSFailure == nil {
 		tk.WhatsappWebFailure = nil
 		tk.WhatsappWebStatus = "ok"
 		return
 	}
 	tk.WhatsappWebStatus = "blocked" // must be here because of unit tests
-	if tk.WhatsappHTTPSFailure != nil {
-		tk.WhatsappWebFailure = tk.WhatsappHTTPSFailure
-		return
-	}
-	tk.WhatsappWebFailure = tk.WhatsappHTTPFailure
+	tk.WhatsappWebFailure = tk.WhatsappHTTPSFailure
 }
 
 // Measurer performs the measurement
@@ -179,12 +155,6 @@ func (m Measurer) Run(
 		// connection and we don't see any socket/TLS errors. Hence, we
 		// don't care about the HTTP response code.
 		Target: WebHTTPSURL,
-	})
-	inputs = append(inputs, urlgetter.MultiInput{
-		// We consider this check successful if we get a valid redirect
-		// for the HTTPS web interface. No need to follow redirects.
-		Config: urlgetter.Config{NoFollowRedirects: true},
-		Target: WebHTTPURL,
 	})
 	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	rnd.Shuffle(len(inputs), func(i, j int) {
