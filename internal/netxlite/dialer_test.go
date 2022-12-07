@@ -118,7 +118,9 @@ func TestDialerSystem(t *testing.T) {
 		})
 
 		t.Run("enforces the configured timeout", func(t *testing.T) {
-			const timeout = 1 * time.Nanosecond
+			// Raised this timer to one second on 2022-12-07 because we've seen
+			// flaky results on Windows systems otherwise.
+			const timeout = 1 * time.Second
 			d := &DialerSystem{timeout: timeout}
 			ctx := context.Background()
 			start := time.Now()
