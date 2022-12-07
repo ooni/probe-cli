@@ -6,7 +6,6 @@ package telegram
 import (
 	"context"
 	"errors"
-	"strings"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
@@ -16,7 +15,7 @@ import (
 
 const (
 	testName    = "telegram"
-	testVersion = "0.2.0"
+	testVersion = "0.3.0"
 )
 
 // Config contains the telegram experiment config.
@@ -61,23 +60,11 @@ func (tk *TestKeys) Update(v urlgetter.MultiOutput) {
 		}
 		return
 	}
-	// now take care of web
-	if tk.TelegramWebStatus != "ok" {
-		return // we already flipped the state
-	}
 	if v.TestKeys.Failure != nil {
 		tk.TelegramWebStatus = "blocked"
 		tk.TelegramWebFailure = v.TestKeys.Failure
 		return
 	}
-	title := `<title>Telegram Web</title>`
-	if strings.Contains(v.TestKeys.HTTPResponseBody, title) == false {
-		failureString := "telegram_missing_title_error"
-		tk.TelegramWebFailure = &failureString
-		tk.TelegramWebStatus = "blocked"
-		return
-	}
-	return
 }
 
 // Measurer performs the measurement
@@ -118,7 +105,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		{Target: "http://95.161.76.100/", Config: urlgetter.Config{Method: "POST"}},
 
 		// Note: the following list contains the same endpoints as above with HTTP (not a typo using
-		// https would not work here) _and_ port 443.
+		// https _would not work_ here) _and_ port 443.
 		{Target: "http://149.154.175.50:443/", Config: urlgetter.Config{Method: "POST"}},
 		{Target: "http://149.154.167.51:443/", Config: urlgetter.Config{Method: "POST"}},
 		{Target: "http://149.154.175.100:443/", Config: urlgetter.Config{Method: "POST"}},
@@ -128,13 +115,8 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 
 		// Here we need to provide the method explicitly. See
 		// https://github.com/ooni/probe-engine/issues/827.
-		{Target: "http://web.telegram.org/", Config: urlgetter.Config{
-			Method:          "GET",
-			FailOnHTTPError: true,
-		}},
 		{Target: "https://web.telegram.org/", Config: urlgetter.Config{
-			Method:          "GET",
-			FailOnHTTPError: true,
+			Method: "GET",
 		}},
 	}
 	multi := urlgetter.Multi{Begin: time.Now(), Getter: m.Getter, Session: sess}
