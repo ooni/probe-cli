@@ -25,7 +25,7 @@ const (
 	WebHTTPSURL = "https://web.whatsapp.com/"
 
 	testName    = "whatsapp"
-	testVersion = "0.10.0"
+	testVersion = "0.11.0"
 )
 
 var endpointPattern = regexp.MustCompile(`^tcpconnect://e[0-9]{1,2}\.whatsapp\.net:[0-9]{3,5}$`)
