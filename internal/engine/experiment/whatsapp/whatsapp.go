@@ -78,6 +78,13 @@ func (tk *TestKeys) Update(v urlgetter.MultiOutput) {
 			runtimex.PanicOnError(err, "url.Parse should not fail here")
 			hostname := parsed.Hostname()
 			tk.WhatsappEndpointsCount[hostname]++
+			// Implementation note: here we're counting twice because we test each
+			// IP address twice: once for 443 and once for 5222. Above we use .Hostname
+			// therefore URL parsing discards the port and we only get the addr.
+			//
+			// This line of code was confusing enough to cause me to create an issue to
+			// investigate it: https://github.com/ooni/probe/issues/2383. So, it's better
+			// to document what's going on here :grimacing:.
 			if tk.WhatsappEndpointsCount[hostname] >= 2 {
 				tk.WhatsappEndpointsBlocked = append(tk.WhatsappEndpointsBlocked, hostname)
 			}
