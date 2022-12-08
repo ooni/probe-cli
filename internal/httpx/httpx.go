@@ -25,6 +25,10 @@ type APIClientTemplate struct {
 	// Accept contains the OPTIONAL accept header.
 	Accept string
 
+	// AcceptEncodingGzip OPTIONALLY configures requesting the server
+	// to gzip the response sent to us.
+	AcceptEncodingGzip bool
+
 	// Authorization contains the OPTIONAL authorization header.
 	Authorization string
 
@@ -106,6 +110,10 @@ type apiClient struct {
 	// Accept contains the OPTIONAL accept header.
 	Accept string
 
+	// AcceptEncodingGzip OPTIONALLY configures requesting the server
+	// to gzip the response sent to us.
+	AcceptEncodingGzip bool
+
 	// Authorization contains the OPTIONAL authorization header.
 	Authorization string
 
@@ -148,6 +156,9 @@ func (c *apiClient) newRequestWithJSONBody(
 	}
 	if body != nil {
 		request.Header.Set("Content-Type", "application/json")
+	}
+	if c.AcceptEncodingGzip {
+		request.Header.Set("Accept-Encoding", "gzip")
 	}
 	return request, nil
 }

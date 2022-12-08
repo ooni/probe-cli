@@ -26,6 +26,9 @@ type Descriptor struct {
 	// Authorization is the OPTIONAL authorization.
 	Authorization string
 
+	// AcceptEncodingGzip OPTIONALLY accepts gzip-encoding bodies.
+	AcceptEncodingGzip bool
+
 	// ContentType is the OPTIONAL content-type header.
 	ContentType string
 

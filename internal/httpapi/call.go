@@ -70,6 +70,9 @@ func newRequest(ctx context.Context, endpoint *Endpoint, desc *Descriptor) (*htt
 	if endpoint.UserAgent != "" {
 		request.Header.Set("User-Agent", endpoint.UserAgent)
 	}
+	if desc.AcceptEncodingGzip {
+		request.Header.Set("Accept-Encoding", "gzip")
+	}
 	return request, nil
 }
 
