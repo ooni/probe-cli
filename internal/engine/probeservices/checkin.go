@@ -3,7 +3,6 @@ package probeservices
 import (
 	"context"
 
-	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/httpapi"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -37,7 +36,7 @@ func (c Client) CheckIn(ctx context.Context, config model.OOAPICheckInConfig) (*
 	}
 	// TODO(bassosimone): refactor this code to be able to pass c.Logger as the logger
 	// TODO(bassosimone): the logger _actually_ belongs to the endpoint!
-	desc, err := httpapi.NewPOSTJSONWithJSONResponseDescriptor(log.Log, "/api/v1/check-in", config)
+	desc, err := httpapi.NewPOSTJSONWithJSONResponseDescriptor("/api/v1/check-in", config)
 	runtimex.PanicOnError(err, "httpapi.NewPOSTJSONWithJSONResponseDescriptor failed")
 	desc.AcceptEncodingGzip = true
 	var response model.OOAPICheckInResult

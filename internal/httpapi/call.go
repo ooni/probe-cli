@@ -49,9 +49,9 @@ func newRequest(ctx context.Context, endpoint *Endpoint, desc *Descriptor) (*htt
 	var reqBody io.Reader
 	if len(desc.RequestBody) > 0 {
 		reqBody = bytes.NewReader(desc.RequestBody)
-		desc.Logger.Debugf("httpapi: request body length: %d", len(desc.RequestBody))
+		endpoint.Logger.Debugf("httpapi: request body length: %d", len(desc.RequestBody))
 		if desc.LogBody {
-			desc.Logger.Debugf("httpapi: request body: %s", string(desc.RequestBody))
+			endpoint.Logger.Debugf("httpapi: request body: %s", string(desc.RequestBody))
 		}
 	}
 	request, err := http.NewRequestWithContext(ctx, desc.Method, URL.String(), reqBody)
@@ -139,9 +139,9 @@ func docall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http.
 	if err != nil {
 		return response, nil, &errMaybeCensorship{err}
 	}
-	desc.Logger.Debugf("httpapi: response body length: %d bytes", len(data))
+	endpoint.Logger.Debugf("httpapi: response body length: %d bytes", len(data))
 	if desc.LogBody {
-		desc.Logger.Debugf("httpapi: response body: %s", string(data))
+		endpoint.Logger.Debugf("httpapi: response body: %s", string(data))
 	}
 
 	if response.StatusCode >= 400 {
@@ -194,7 +194,7 @@ func CallWithJSONResponse(ctx context.Context, desc *Descriptor, endpoint *Endpo
 		return err
 	}
 	if ctype := httpResp.Header.Get("Content-Type"); !goodContentTypeForJSON[ctype] {
-		desc.Logger.Warnf("httpapi: unexpected content-type: %s", ctype)
+		endpoint.Logger.Warnf("httpapi: unexpected content-type: %s", ctype)
 		// fallthrough
 	}
 	return json.Unmarshal(rawRespBody, response)
