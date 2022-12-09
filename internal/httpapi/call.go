@@ -9,6 +9,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -107,6 +108,9 @@ func (err *errMaybeCensorship) Unwrap() error {
 	return err.Err
 }
 
+// ErrTruncated indicates we truncated the response body.
+var ErrTruncated = errors.New("httpapi: truncated response body")
+
 // docall calls the API represented by the given request |req| on the given |endpoint|
 // and returns the response and its body or an error.
 func docall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http.Response, []byte, error) {
@@ -144,6 +148,9 @@ func docall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http.
 	data, err := netxlite.ReadAllContext(request.Context(), reader)
 	if err != nil {
 		return response, nil, &errMaybeCensorship{err}
+	}
+	if int64(len(data)) >= maxBodySize {
+		return response, nil, ErrTruncated
 	}
 	endpoint.Logger.Debugf("httpapi: response body length: %d bytes", len(data))
 	if desc.LogBody {

@@ -66,7 +66,7 @@ func (desc *Descriptor) WithBodyLogging(value bool) *Descriptor {
 
 // DefaultMaxBodySize is the default value for the maximum
 // body size you can fetch using the httpapi package.
-const DefaultMaxBodySize = 1 << 22
+const DefaultMaxBodySize = 1 << 24
 
 // DefaultCallTimeout is the default timeout for an httpapi call.
 const DefaultCallTimeout = 60 * time.Second
