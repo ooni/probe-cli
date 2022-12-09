@@ -138,7 +138,7 @@ func docall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http.
 	reader = io.LimitReader(reader, maxBodySize)
 
 	// Implementation note: always read and log the response body _before_
-	// check the status code, since it's quite useful to log the response JSON
+	// checking the status code, since it's quite useful to log the JSON
 	// returned by the OONI API in case of errors. Obviously, the flip side
 	// of this choice is that we read potentially very large error pages.
 	data, err := netxlite.ReadAllContext(request.Context(), reader)
