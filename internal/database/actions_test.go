@@ -8,6 +8,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/upper/db/v4"
 )
 
@@ -137,9 +138,9 @@ func TestMeasurementWorkflow(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	result.Finished(sess)
+	database.Finished(result)
 
-	var r Result
+	var r model.DatabaseResult
 	err = sess.Collection("measurements").Find("result_id", result.ID).One(&r)
 	if err != nil {
 		t.Fatal(err)
@@ -171,7 +172,7 @@ func TestMeasurementWorkflow(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if msmts[0].Network.NetworkType != "wifi" {
+	if msmts[0].DatabaseNetwork.NetworkType != "wifi" {
 		t.Error("network_type should be wifi")
 	}
 }
@@ -221,7 +222,7 @@ func TestDeleteResult(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var m2 Measurement
+	var m2 model.DatabaseMeasurement
 	err = sess.Collection("measurements").Find("measurement_id", m1.ID).One(&m2)
 	if err != nil {
 		t.Fatal(err)
@@ -347,7 +348,7 @@ func TestURLCreation(t *testing.T) {
 }
 
 func TestPerformanceTestKeys(t *testing.T) {
-	var tk PerformanceTestKeys
+	var tk model.PerformanceTestKeys
 
 	ndtS := "{\"download\":100.0,\"upload\":20.0,\"ping\":2.2}"
 	dashS := "{\"median_bitrate\":102.0}"

@@ -20,6 +20,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/httpx"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
@@ -103,8 +104,8 @@ func pprint(opaque interface{}) {
 	fmt.Printf("%s\n", data)
 }
 
-func mmeta(c probeservices.Client, full bool) *probeservices.MeasurementMeta {
-	config := probeservices.MeasurementMetaConfig{
+func mmeta(c probeservices.Client, full bool) *model.OOAPIMeasurementMeta {
+	config := model.OOAPIMeasurementMetaConfig{
 		ReportID: *reportid,
 		Full:     full,
 		Input:    *input,

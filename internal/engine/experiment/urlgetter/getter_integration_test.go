@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"runtime"
 	"strings"
 	"testing"
@@ -484,11 +485,18 @@ func TestGetterIntegrationHTTPS(t *testing.T) {
 }
 
 func TestGetterIntegrationRedirect(t *testing.T) {
+	// Because of https://github.com/ooni/probe/issues/2374, we're now
+	// using a local testing server (more robust anyway).
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Location", "https://web.whatsapp.com/")
+		w.WriteHeader(302)
+	}))
+	defer server.Close()
 	ctx := context.Background()
 	g := urlgetter.Getter{
 		Config:  urlgetter.Config{NoFollowRedirects: true},
 		Session: &mockable.Session{},
-		Target:  "http://web.whatsapp.com",
+		Target:  server.URL,
 	}
 	tk, err := g.Get(ctx)
 	if err != nil {

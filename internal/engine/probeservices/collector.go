@@ -10,16 +10,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-const (
-	// DefaultDataFormatVersion is the default data format version.
-	//
-	// See https://github.com/ooni/spec/tree/master/data-formats#history.
-	DefaultDataFormatVersion = "0.2.0"
-
-	// DefaultFormat is the default format
-	DefaultFormat = "json"
-)
-
 var (
 	// ErrUnsupportedDataFormatVersion indicates that the user provided
 	// in input a data format version that we do not support.
@@ -33,43 +23,11 @@ var (
 	ErrJSONFormatNotSupported = errors.New("JSON format not supported")
 )
 
-// ReportTemplate is the template for opening a report
-type ReportTemplate struct {
-	// DataFormatVersion is unconditionally set to DefaultDataFormatVersion
-	// and you don't need to be concerned about it.
-	DataFormatVersion string `json:"data_format_version"`
-
-	// Format is unconditionally set to `json` and you don't need
-	// to be concerned about it.
-	Format string `json:"format"`
-
-	// ProbeASN is the probe's autonomous system number (e.g. `AS1234`)
-	ProbeASN string `json:"probe_asn"`
-
-	// ProbeCC is the probe's country code (e.g. `IT`)
-	ProbeCC string `json:"probe_cc"`
-
-	// SoftwareName is the app name (e.g. `measurement-kit`)
-	SoftwareName string `json:"software_name"`
-
-	// SoftwareVersion is the app version (e.g. `0.9.1`)
-	SoftwareVersion string `json:"software_version"`
-
-	// TestName is the test name (e.g. `ndt`)
-	TestName string `json:"test_name"`
-
-	// TestStartTime contains the test start time
-	TestStartTime string `json:"test_start_time"`
-
-	// TestVersion is the test version (e.g. `1.0.1`)
-	TestVersion string `json:"test_version"`
-}
-
 // NewReportTemplate creates a new ReportTemplate from a Measurement.
-func NewReportTemplate(m *model.Measurement) ReportTemplate {
-	return ReportTemplate{
-		DataFormatVersion: DefaultDataFormatVersion,
-		Format:            DefaultFormat,
+func NewReportTemplate(m *model.Measurement) model.OOAPIReportTemplate {
+	return model.OOAPIReportTemplate{
+		DataFormatVersion: model.OOAPIReportDefaultDataFormatVersion,
+		Format:            model.OOAPIReportDefaultFormat,
 		ProbeASN:          m.ProbeASN,
 		ProbeCC:           m.ProbeCC,
 		SoftwareName:      m.SoftwareName,
@@ -80,11 +38,6 @@ func NewReportTemplate(m *model.Measurement) ReportTemplate {
 	}
 }
 
-type collectorOpenResponse struct {
-	ID               string   `json:"report_id"`
-	SupportedFormats []string `json:"supported_formats"`
-}
-
 type reportChan struct {
 	// ID is the report ID
 	ID string
@@ -93,40 +46,27 @@ type reportChan struct {
 	client Client
 
 	// tmpl is the template used when opening this report.
-	tmpl ReportTemplate
+	tmpl model.OOAPIReportTemplate
 }
 
 // OpenReport opens a new report.
-func (c Client) OpenReport(ctx context.Context, rt ReportTemplate) (ReportChannel, error) {
-	if rt.DataFormatVersion != DefaultDataFormatVersion {
+func (c Client) OpenReport(ctx context.Context, rt model.OOAPIReportTemplate) (ReportChannel, error) {
+	if rt.DataFormatVersion != model.OOAPIReportDefaultDataFormatVersion {
 		return nil, ErrUnsupportedDataFormatVersion
 	}
-	if rt.Format != DefaultFormat {
+	if rt.Format != model.OOAPIReportDefaultFormat {
 		return nil, ErrUnsupportedFormat
 	}
-	var cor collectorOpenResponse
+	var cor model.OOAPICollectorOpenResponse
 	if err := c.APIClientTemplate.WithBodyLogging().Build().PostJSON(ctx, "/report", rt, &cor); err != nil {
 		return nil, err
 	}
 	for _, format := range cor.SupportedFormats {
 		if format == "json" {
-			return &reportChan{ID: cor.ID, client: c, tmpl: rt}, nil
+			return &reportChan{ID: cor.ReportID, client: c, tmpl: rt}, nil
 		}
 	}
 	return nil, ErrJSONFormatNotSupported
-}
-
-type collectorUpdateRequest struct {
-	// Format is the data format
-	Format string `json:"format"`
-
-	// Content is the actual report
-	Content interface{} `json:"content"`
-}
-
-type collectorUpdateResponse struct {
-	// ID is the measurement ID
-	ID string `json:"measurement_id"`
 }
 
 // CanSubmit returns true whether the provided measurement belongs to
@@ -142,10 +82,10 @@ func (r reportChan) CanSubmit(m *model.Measurement) bool {
 // submitted. Otherwise, we'll set the report ID to the empty
 // string, so that you know which measurements weren't submitted.
 func (r reportChan) SubmitMeasurement(ctx context.Context, m *model.Measurement) error {
-	var updateResponse collectorUpdateResponse
+	var updateResponse model.OOAPICollectorUpdateResponse
 	m.ReportID = r.ID
 	err := r.client.APIClientTemplate.WithBodyLogging().Build().PostJSON(
-		ctx, fmt.Sprintf("/report/%s", r.ID), collectorUpdateRequest{
+		ctx, fmt.Sprintf("/report/%s", r.ID), model.OOAPICollectorUpdateRequest{
 			Format:  "json",
 			Content: m,
 		}, &updateResponse,
@@ -175,7 +115,7 @@ var _ ReportChannel = &reportChan{}
 // ReportOpener is any struct that is able to open a new ReportChannel. The
 // Client struct belongs to this interface.
 type ReportOpener interface {
-	OpenReport(ctx context.Context, rt ReportTemplate) (ReportChannel, error)
+	OpenReport(ctx context.Context, rt model.OOAPIReportTemplate) (ReportChannel, error)
 }
 
 var _ ReportOpener = Client{}

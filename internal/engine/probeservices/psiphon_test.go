@@ -1,18 +1,15 @@
-package probeservices_test
+package probeservices
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
 	"testing"
-
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices/testorchestra"
 )
 
 func TestFetchPsiphonConfig(t *testing.T) {
 	clnt := newclient()
-	if err := clnt.MaybeRegister(context.Background(), testorchestra.MetadataFixture()); err != nil {
+	if err := clnt.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
 		t.Fatal(err)
 	}
 	if err := clnt.MaybeLogin(context.Background()); err != nil {
@@ -30,14 +27,14 @@ func TestFetchPsiphonConfig(t *testing.T) {
 
 func TestFetchPsiphonConfigNotRegistered(t *testing.T) {
 	clnt := newclient()
-	state := probeservices.State{
+	state := State{
 		// Explicitly empty so the test is more clear
 	}
 	if err := clnt.StateFile.Set(state); err != nil {
 		t.Fatal(err)
 	}
 	data, err := clnt.FetchPsiphonConfig(context.Background())
-	if !errors.Is(err, probeservices.ErrNotRegistered) {
+	if !errors.Is(err, ErrNotRegistered) {
 		t.Fatal("expected an error here")
 	}
 	if data != nil {

@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
@@ -21,7 +20,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	if measurer.ExperimentName() != "whatsapp" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.9.0" {
+	if measurer.ExperimentVersion() != "0.11.0" {
 		t.Fatal("unexpected version")
 	}
 }
@@ -32,9 +31,9 @@ func TestSuccess(t *testing.T) {
 	}
 	measurer := whatsapp.NewExperimentMeasurer(whatsapp.Config{})
 	ctx := context.Background()
-	sess := &mockable.Session{MockableLogger: log.Log}
+	sess := &mockable.Session{MockableLogger: model.DiscardLogger}
 	measurement := new(model.Measurement)
-	callbacks := model.NewPrinterCallbacks(log.Log)
+	callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
 	args := &model.ExperimentArgs{
 		Callbacks:   callbacks,
 		Measurement: measurement,
@@ -72,9 +71,9 @@ func TestFailureAllEndpoints(t *testing.T) {
 	measurer := whatsapp.NewExperimentMeasurer(whatsapp.Config{})
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately
-	sess := &mockable.Session{MockableLogger: log.Log}
+	sess := &mockable.Session{MockableLogger: model.DiscardLogger}
 	measurement := new(model.Measurement)
-	callbacks := model.NewPrinterCallbacks(log.Log)
+	callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
 	args := &model.ExperimentArgs{
 		Callbacks:   callbacks,
 		Measurement: measurement,
@@ -123,7 +122,6 @@ func TestFailureAllEndpoints(t *testing.T) {
 
 func TestTestKeysComputeWebStatus(t *testing.T) {
 	errorString := io.EOF.Error()
-	secondErrorString := context.Canceled.Error()
 	type fields struct {
 		TestKeys                         urlgetter.TestKeys
 		RegistrationServerFailure        *string
@@ -133,7 +131,6 @@ func TestTestKeysComputeWebStatus(t *testing.T) {
 		WhatsappEndpointsStatus          string
 		WhatsappWebStatus                string
 		WhatsappWebFailure               *string
-		WhatsappHTTPFailure              *string
 		WhatsappHTTPSFailure             *string
 	}
 	tests := []struct {
@@ -146,26 +143,11 @@ func TestTestKeysComputeWebStatus(t *testing.T) {
 		failure: nil,
 		status:  "ok",
 	}, {
-		name: "with HTTP failure",
-		fields: fields{
-			WhatsappHTTPFailure: &errorString,
-		},
-		failure: &errorString,
-		status:  "blocked",
-	}, {
 		name: "with HTTPS failure",
 		fields: fields{
 			WhatsappHTTPSFailure: &errorString,
 		},
 		failure: &errorString,
-		status:  "blocked",
-	}, {
-		name: "with both HTTP and HTTPS failure",
-		fields: fields{
-			WhatsappHTTPFailure:  &errorString,
-			WhatsappHTTPSFailure: &secondErrorString,
-		},
-		failure: &secondErrorString,
 		status:  "blocked",
 	}}
 	for _, tt := range tests {
@@ -179,7 +161,6 @@ func TestTestKeysComputeWebStatus(t *testing.T) {
 				WhatsappEndpointsStatus:          tt.fields.WhatsappEndpointsStatus,
 				WhatsappWebStatus:                tt.fields.WhatsappWebStatus,
 				WhatsappWebFailure:               tt.fields.WhatsappWebFailure,
-				WhatsappHTTPFailure:              tt.fields.WhatsappHTTPFailure,
 				WhatsappHTTPSFailure:             tt.fields.WhatsappHTTPSFailure,
 			}
 			tk.ComputeWebStatus()
@@ -213,13 +194,6 @@ func TestTestKeysMixedEndpointsFailure(t *testing.T) {
 	tk.Update(urlgetter.MultiOutput{
 		Input:    urlgetter.MultiInput{Target: whatsapp.WebHTTPSURL},
 		TestKeys: urlgetter.TestKeys{},
-	})
-	tk.Update(urlgetter.MultiOutput{
-		Input: urlgetter.MultiInput{Target: whatsapp.WebHTTPURL},
-		TestKeys: urlgetter.TestKeys{
-			HTTPResponseStatus:    302,
-			HTTPResponseLocations: []string{whatsapp.WebHTTPSURL},
-		},
 	})
 	tk.ComputeWebStatus()
 	if tk.RegistrationServerFailure != nil {
@@ -264,13 +238,6 @@ func TestTestKeysOnlyEndpointsFailure(t *testing.T) {
 		Input:    urlgetter.MultiInput{Target: whatsapp.WebHTTPSURL},
 		TestKeys: urlgetter.TestKeys{},
 	})
-	tk.Update(urlgetter.MultiOutput{
-		Input: urlgetter.MultiInput{Target: whatsapp.WebHTTPURL},
-		TestKeys: urlgetter.TestKeys{
-			HTTPResponseStatus:    302,
-			HTTPResponseLocations: []string{whatsapp.WebHTTPSURL},
-		},
-	})
 	tk.ComputeWebStatus()
 	if tk.RegistrationServerFailure != nil {
 		t.Fatal("invalid RegistrationServerFailure")
@@ -309,13 +276,6 @@ func TestTestKeysOnlyRegistrationServerFailure(t *testing.T) {
 	tk.Update(urlgetter.MultiOutput{
 		Input:    urlgetter.MultiInput{Target: whatsapp.WebHTTPSURL},
 		TestKeys: urlgetter.TestKeys{},
-	})
-	tk.Update(urlgetter.MultiOutput{
-		Input: urlgetter.MultiInput{Target: whatsapp.WebHTTPURL},
-		TestKeys: urlgetter.TestKeys{
-			HTTPResponseStatus:    302,
-			HTTPResponseLocations: []string{whatsapp.WebHTTPSURL},
-		},
 	})
 	tk.ComputeWebStatus()
 	if *tk.RegistrationServerFailure != failure {
@@ -356,13 +316,6 @@ func TestTestKeysOnlyWebHTTPSFailure(t *testing.T) {
 		Input:    urlgetter.MultiInput{Target: whatsapp.WebHTTPSURL},
 		TestKeys: urlgetter.TestKeys{Failure: &failure},
 	})
-	tk.Update(urlgetter.MultiOutput{
-		Input: urlgetter.MultiInput{Target: whatsapp.WebHTTPURL},
-		TestKeys: urlgetter.TestKeys{
-			HTTPResponseStatus:    302,
-			HTTPResponseLocations: []string{whatsapp.WebHTTPSURL},
-		},
-	})
 	tk.ComputeWebStatus()
 	if tk.RegistrationServerFailure != nil {
 		t.Fatal("invalid RegistrationServerFailure")
@@ -387,193 +340,12 @@ func TestTestKeysOnlyWebHTTPSFailure(t *testing.T) {
 	}
 }
 
-func TestTestKeysOnlyWebHTTPFailureNo302(t *testing.T) {
-	tk := whatsapp.NewTestKeys()
-	tk.Update(urlgetter.MultiOutput{
-		Input:    urlgetter.MultiInput{Target: "tcpconnect://e7.whatsapp.net:443"},
-		TestKeys: urlgetter.TestKeys{},
-	})
-	tk.Update(urlgetter.MultiOutput{
-		Input:    urlgetter.MultiInput{Target: whatsapp.RegistrationServiceURL},
-		TestKeys: urlgetter.TestKeys{},
-	})
-	tk.Update(urlgetter.MultiOutput{
-		Input:    urlgetter.MultiInput{Target: whatsapp.WebHTTPSURL},
-		TestKeys: urlgetter.TestKeys{},
-	})
-	tk.Update(urlgetter.MultiOutput{
-		Input: urlgetter.MultiInput{Target: whatsapp.WebHTTPURL},
-		TestKeys: urlgetter.TestKeys{
-			HTTPResponseStatus: 400,
-		},
-	})
-	tk.ComputeWebStatus()
-	if tk.RegistrationServerFailure != nil {
-		t.Fatal("invalid RegistrationServerFailure")
-	}
-	if tk.RegistrationServerStatus != "ok" {
-		t.Fatal("invalid RegistrationServerStatus")
-	}
-	if len(tk.WhatsappEndpointsBlocked) != 0 {
-		t.Fatal("invalid WhatsappEndpointsBlocked")
-	}
-	if len(tk.WhatsappEndpointsDNSInconsistent) != 0 {
-		t.Fatal("invalid WhatsappEndpointsDNSInconsistent")
-	}
-	if tk.WhatsappEndpointsStatus != "ok" {
-		t.Fatal("invalid WhatsappEndpointsStatus")
-	}
-	if *tk.WhatsappWebFailure != model.HTTPUnexpectedStatusCode {
-		t.Fatal("invalid WhatsappWebFailure")
-	}
-	if tk.WhatsappWebStatus != "blocked" {
-		t.Fatal("invalid WhatsappWebStatus")
-	}
-}
-
-func TestTestKeysOnlyWebHTTPFailureNoLocations(t *testing.T) {
-	tk := whatsapp.NewTestKeys()
-	tk.Update(urlgetter.MultiOutput{
-		Input:    urlgetter.MultiInput{Target: "tcpconnect://e7.whatsapp.net:443"},
-		TestKeys: urlgetter.TestKeys{},
-	})
-	tk.Update(urlgetter.MultiOutput{
-		Input:    urlgetter.MultiInput{Target: whatsapp.RegistrationServiceURL},
-		TestKeys: urlgetter.TestKeys{},
-	})
-	tk.Update(urlgetter.MultiOutput{
-		Input:    urlgetter.MultiInput{Target: whatsapp.WebHTTPSURL},
-		TestKeys: urlgetter.TestKeys{},
-	})
-	tk.Update(urlgetter.MultiOutput{
-		Input: urlgetter.MultiInput{Target: whatsapp.WebHTTPURL},
-		TestKeys: urlgetter.TestKeys{
-			HTTPResponseStatus:    302,
-			HTTPResponseLocations: nil,
-		},
-	})
-	tk.ComputeWebStatus()
-	if tk.RegistrationServerFailure != nil {
-		t.Fatal("invalid RegistrationServerFailure")
-	}
-	if tk.RegistrationServerStatus != "ok" {
-		t.Fatal("invalid RegistrationServerStatus")
-	}
-	if len(tk.WhatsappEndpointsBlocked) != 0 {
-		t.Fatal("invalid WhatsappEndpointsBlocked")
-	}
-	if len(tk.WhatsappEndpointsDNSInconsistent) != 0 {
-		t.Fatal("invalid WhatsappEndpointsDNSInconsistent")
-	}
-	if tk.WhatsappEndpointsStatus != "ok" {
-		t.Fatal("invalid WhatsappEndpointsStatus")
-	}
-	if *tk.WhatsappWebFailure != model.HTTPUnexpectedRedirectURL {
-		t.Fatal("invalid WhatsappWebFailure")
-	}
-	if tk.WhatsappWebStatus != "blocked" {
-		t.Fatal("invalid WhatsappWebStatus")
-	}
-}
-
-func TestTestKeysOnlyWebHTTPFailureNotExpectedURL(t *testing.T) {
-	tk := whatsapp.NewTestKeys()
-	tk.Update(urlgetter.MultiOutput{
-		Input:    urlgetter.MultiInput{Target: "tcpconnect://e7.whatsapp.net:443"},
-		TestKeys: urlgetter.TestKeys{},
-	})
-	tk.Update(urlgetter.MultiOutput{
-		Input:    urlgetter.MultiInput{Target: whatsapp.RegistrationServiceURL},
-		TestKeys: urlgetter.TestKeys{},
-	})
-	tk.Update(urlgetter.MultiOutput{
-		Input:    urlgetter.MultiInput{Target: whatsapp.WebHTTPSURL},
-		TestKeys: urlgetter.TestKeys{},
-	})
-	tk.Update(urlgetter.MultiOutput{
-		Input: urlgetter.MultiInput{Target: whatsapp.WebHTTPURL},
-		TestKeys: urlgetter.TestKeys{
-			HTTPResponseStatus:    302,
-			HTTPResponseLocations: []string{"https://x.org/"},
-		},
-	})
-	tk.ComputeWebStatus()
-	if tk.RegistrationServerFailure != nil {
-		t.Fatal("invalid RegistrationServerFailure")
-	}
-	if tk.RegistrationServerStatus != "ok" {
-		t.Fatal("invalid RegistrationServerStatus")
-	}
-	if len(tk.WhatsappEndpointsBlocked) != 0 {
-		t.Fatal("invalid WhatsappEndpointsBlocked")
-	}
-	if len(tk.WhatsappEndpointsDNSInconsistent) != 0 {
-		t.Fatal("invalid WhatsappEndpointsDNSInconsistent")
-	}
-	if tk.WhatsappEndpointsStatus != "ok" {
-		t.Fatal("invalid WhatsappEndpointsStatus")
-	}
-	if *tk.WhatsappWebFailure != model.HTTPUnexpectedRedirectURL {
-		t.Fatal("invalid WhatsappWebFailure")
-	}
-	if tk.WhatsappWebStatus != "blocked" {
-		t.Fatal("invalid WhatsappWebStatus")
-	}
-}
-
-func TestTestKeysOnlyWebHTTPFailureTooManyURLs(t *testing.T) {
-	tk := whatsapp.NewTestKeys()
-	tk.Update(urlgetter.MultiOutput{
-		Input:    urlgetter.MultiInput{Target: "tcpconnect://e7.whatsapp.net:443"},
-		TestKeys: urlgetter.TestKeys{},
-	})
-	tk.Update(urlgetter.MultiOutput{
-		Input:    urlgetter.MultiInput{Target: whatsapp.RegistrationServiceURL},
-		TestKeys: urlgetter.TestKeys{},
-	})
-	tk.Update(urlgetter.MultiOutput{
-		Input:    urlgetter.MultiInput{Target: whatsapp.WebHTTPSURL},
-		TestKeys: urlgetter.TestKeys{},
-	})
-	tk.Update(urlgetter.MultiOutput{
-		Input: urlgetter.MultiInput{Target: whatsapp.WebHTTPURL},
-		TestKeys: urlgetter.TestKeys{
-			HTTPResponseStatus:    302,
-			HTTPResponseLocations: []string{whatsapp.WebHTTPSURL, "https://x.org/"},
-		},
-	})
-	tk.ComputeWebStatus()
-	if tk.RegistrationServerFailure != nil {
-		t.Fatal("invalid RegistrationServerFailure")
-	}
-	if tk.RegistrationServerStatus != "ok" {
-		t.Fatal("invalid RegistrationServerStatus")
-	}
-	if len(tk.WhatsappEndpointsBlocked) != 0 {
-		t.Fatal("invalid WhatsappEndpointsBlocked")
-	}
-	if len(tk.WhatsappEndpointsDNSInconsistent) != 0 {
-		t.Fatal("invalid WhatsappEndpointsDNSInconsistent")
-	}
-	if tk.WhatsappEndpointsStatus != "ok" {
-		t.Fatal("invalid WhatsappEndpointsStatus")
-	}
-	if *tk.WhatsappWebFailure != model.HTTPUnexpectedRedirectURL {
-		t.Fatal("invalid WhatsappWebFailure")
-	}
-	if tk.WhatsappWebStatus != "blocked" {
-		t.Fatal("invalid WhatsappWebStatus")
-	}
-}
-
 func TestWeConfigureWebChecksCorrectly(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
 	called := &atomicx.Int64{}
 	emptyConfig := urlgetter.Config{}
-	configWithFailOnHTTPError := urlgetter.Config{FailOnHTTPError: true}
-	configWithNoFollowRedirects := urlgetter.Config{NoFollowRedirects: true}
 	measurer := whatsapp.Measurer{
 		Config: whatsapp.Config{},
 		Getter: func(ctx context.Context, g urlgetter.Getter) (urlgetter.TestKeys, error) {
@@ -583,14 +355,9 @@ func TestWeConfigureWebChecksCorrectly(t *testing.T) {
 				if diff := cmp.Diff(g.Config, emptyConfig); diff != "" {
 					panic(diff)
 				}
-			case whatsapp.WebHTTPURL:
-				called.Add(2)
-				if diff := cmp.Diff(g.Config, configWithNoFollowRedirects); diff != "" {
-					panic(diff)
-				}
 			case whatsapp.RegistrationServiceURL:
 				called.Add(4)
-				if diff := cmp.Diff(g.Config, configWithFailOnHTTPError); diff != "" {
+				if diff := cmp.Diff(g.Config, emptyConfig); diff != "" {
 					panic(diff)
 				}
 			default:
@@ -604,10 +371,10 @@ func TestWeConfigureWebChecksCorrectly(t *testing.T) {
 	}
 	ctx := context.Background()
 	sess := &mockable.Session{
-		MockableLogger: log.Log,
+		MockableLogger: model.DiscardLogger,
 	}
 	measurement := new(model.Measurement)
-	callbacks := model.NewPrinterCallbacks(log.Log)
+	callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
 	args := &model.ExperimentArgs{
 		Callbacks:   callbacks,
 		Measurement: measurement,
@@ -616,8 +383,9 @@ func TestWeConfigureWebChecksCorrectly(t *testing.T) {
 	if err := measurer.Run(ctx, args); err != nil {
 		t.Fatal(err)
 	}
-	if called.Load() != 263 {
-		t.Fatal("not called the expected number of times")
+	const expected = 261
+	if got := called.Load(); got != expected {
+		t.Fatalf("not called the expected number of times: expected = %d, got = %d", expected, got)
 	}
 }
 

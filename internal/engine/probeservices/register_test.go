@@ -1,4 +1,4 @@
-package probeservices_test
+package probeservices
 
 import (
 	"context"
@@ -6,23 +6,22 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices/testorchestra"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestMaybeRegister(t *testing.T) {
 	t.Run("when metadata is not valid", func(t *testing.T) {
 		clnt := newclient()
 		ctx := context.Background()
-		var metadata probeservices.Metadata
+		var metadata model.OOAPIProbeMetadata
 		err := clnt.MaybeRegister(ctx, metadata)
-		if !errors.Is(err, probeservices.ErrInvalidMetadata) {
+		if !errors.Is(err, ErrInvalidMetadata) {
 			t.Fatal("expected an error here")
 		}
 	})
 	t.Run("when we have already registered", func(t *testing.T) {
 		clnt := newclient()
-		state := probeservices.State{
+		state := State{
 			ClientID: "xx-xxx-x-xxxx",
 			Password: "xx",
 		}
@@ -30,7 +29,7 @@ func TestMaybeRegister(t *testing.T) {
 			t.Fatal(err)
 		}
 		ctx := context.Background()
-		metadata := testorchestra.MetadataFixture()
+		metadata := MetadataFixture()
 		if err := clnt.MaybeRegister(ctx, metadata); err != nil {
 			t.Fatal(err)
 		}
@@ -39,7 +38,7 @@ func TestMaybeRegister(t *testing.T) {
 		clnt := newclient()
 		clnt.BaseURL = "\t\t\t" // makes it fail
 		ctx := context.Background()
-		metadata := testorchestra.MetadataFixture()
+		metadata := MetadataFixture()
 		err := clnt.MaybeRegister(ctx, metadata)
 		if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
 			t.Fatal("expected an error here")
@@ -50,7 +49,7 @@ func TestMaybeRegister(t *testing.T) {
 func TestMaybeRegisterIdempotent(t *testing.T) {
 	clnt := newclient()
 	ctx := context.Background()
-	metadata := testorchestra.MetadataFixture()
+	metadata := MetadataFixture()
 	if err := clnt.MaybeRegister(ctx, metadata); err != nil {
 		t.Fatal(err)
 	}

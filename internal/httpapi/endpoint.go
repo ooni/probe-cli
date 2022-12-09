@@ -35,6 +35,11 @@ type Endpoint struct {
 	// host header may be needed when using cloudfronting.
 	Host string
 
+	// Logger is the MANDATORY logger to use.
+	//
+	// For example, model.DiscardLogger.
+	Logger model.Logger
+
 	// User-Agent is the OPTIONAL user-agent to use. If empty,
 	// we'll use the stdlib's default user-agent string.
 	UserAgent string
@@ -47,11 +52,17 @@ type Endpoint struct {
 //
 // - httpClient is the HTTP client to use for accessing the endpoints;
 //
+// - logger is the logger to use;
+//
 // - userAgent is the user agent you would like to use;
 //
 // - service is the list of services gathered from the backend.
-func NewEndpointList(httpClient model.HTTPClient,
-	userAgent string, services ...model.OOAPIService) (out []*Endpoint) {
+func NewEndpointList(
+	httpClient model.HTTPClient,
+	logger model.Logger,
+	userAgent string,
+	services ...model.OOAPIService,
+) (out []*Endpoint) {
 	for _, svc := range services {
 		switch svc.Type {
 		case "https":
@@ -59,6 +70,7 @@ func NewEndpointList(httpClient model.HTTPClient,
 				BaseURL:    svc.Address,
 				HTTPClient: httpClient,
 				Host:       "",
+				Logger:     logger,
 				UserAgent:  userAgent,
 			})
 		case "cloudfront":
@@ -66,6 +78,7 @@ func NewEndpointList(httpClient model.HTTPClient,
 				BaseURL:    svc.Address,
 				HTTPClient: httpClient,
 				Host:       svc.Front,
+				Logger:     logger,
 				UserAgent:  userAgent,
 			})
 		default:

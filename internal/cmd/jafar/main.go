@@ -58,8 +58,9 @@ var (
 
 	tag *string
 
-	tlsProxyAddress *string
-	tlsProxyBlock   flagx.StringArray
+	tlsProxyAddress      *string
+	tlsProxyBlock        flagx.StringArray
+	tlsProxyOutboundPort *string
 
 	uncensoredResolverDoH *string
 )
@@ -159,11 +160,15 @@ func init() {
 	// tlsProxy
 	tlsProxyAddress = flag.String(
 		"tls-proxy-address", "127.0.0.1:443",
-		"Address where the HTTP proxy should listen",
+		"Address where the TCP+TLS proxy should listen",
 	)
 	flag.Var(
 		&tlsProxyBlock, "tls-proxy-block",
 		"Register keyword triggering TLS censorship",
+	)
+	tlsProxyOutboundPort = flag.String(
+		"tls-proxy-outbound-port", "443",
+		"The outbound port where requests should be proxied",
 	)
 
 	// uncensored
@@ -227,7 +232,7 @@ func iptablesStart() *iptables.CensoringPolicy {
 }
 
 func tlsProxyStart(uncensored *uncensored.Client) net.Listener {
-	proxy := tlsproxy.NewCensoringProxy(tlsProxyBlock, uncensored)
+	proxy := tlsproxy.NewCensoringProxy(tlsProxyBlock, uncensored, *tlsProxyOutboundPort)
 	listener, err := proxy.Start(*tlsProxyAddress)
 	runtimex.PanicOnError(err, "proxy.Start failed")
 	return listener

@@ -5,7 +5,6 @@ import (
 	"context"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -29,7 +28,7 @@ type Session struct {
 	MockableFetchTorTargetsErr       error
 	MockableFetchURLListResult       []model.OOAPIURLInfo
 	MockableFetchURLListErr          error
-	MockableCheckInInfo              *model.OOAPICheckInInfo
+	MockableCheckInInfo              *model.OOAPICheckInNettests
 	MockableCheckInErr               error
 	MockableResolverIP               string
 	MockableSoftwareName             string
@@ -150,4 +149,3 @@ func (sess *Session) UserAgent() string {
 }
 
 var _ model.ExperimentSession = &Session{}
-var _ probeservices.Session = &Session{}

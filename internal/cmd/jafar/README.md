@@ -156,14 +156,16 @@ response for every request whose `Host` contains the specified string.
 
 ### tls-proxy
 
-TLS proxy is a proxy that routes traffic to specific servers depending
+TLS proxy is a TCP proxy that routes traffic to specific servers depending
 on their SNI value. It is controlled by the following flags:
 
 ```bash
   -tls-proxy-address string
-        Address where the HTTP proxy should listen (default "127.0.0.1:443")
+        Address where the TCP+TLS proxy should listen (default "127.0.0.1:443")
   -tls-proxy-block value
-        Register keyword triggering TLS censorship
+        Register SNI header keyword triggering TLS censorship
+  -tls-proxy-outbound-port
+        Define the outbound port requests are proxied to (default "443" for HTTPS)
 ```
 
 The `-tls-proxy-address` flags has the same semantics it has for the DNS

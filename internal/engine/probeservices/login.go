@@ -2,20 +2,9 @@ package probeservices
 
 import (
 	"context"
-	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
-
-// LoginCredentials contains the login credentials
-type LoginCredentials struct {
-	ClientID string `json:"username"`
-	Password string `json:"password"`
-}
-
-// LoginAuth contains authentication info
-type LoginAuth struct {
-	Expire time.Time `json:"expire"`
-	Token  string    `json:"token"`
-}
 
 // MaybeLogin performs login if necessary
 func (c Client) MaybeLogin(ctx context.Context) error {
@@ -28,7 +17,7 @@ func (c Client) MaybeLogin(ctx context.Context) error {
 		return ErrNotRegistered
 	}
 	c.LoginCalls.Add(1)
-	var auth LoginAuth
+	var auth model.OOAPILoginAuth
 	if err := c.APIClientTemplate.Build().PostJSON(
 		ctx, "/api/v1/login", *creds, &auth); err != nil {
 		return err

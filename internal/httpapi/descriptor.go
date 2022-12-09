@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -31,11 +30,6 @@ type Descriptor struct {
 
 	// LogBody OPTIONALLY enables logging bodies.
 	LogBody bool
-
-	// Logger is the MANDATORY logger to use.
-	//
-	// For example, model.DiscardLogger.
-	Logger model.Logger
 
 	// MaxBodySize is the OPTIONAL maximum response body size. If
 	// not set, we use the |DefaultMaxBodySize| constant.
@@ -76,8 +70,8 @@ const DefaultCallTimeout = 60 * time.Second
 
 // NewGETJSONDescriptor is a convenience factory for creating a new descriptor
 // that uses the GET method and expects a JSON response.
-func NewGETJSONDescriptor(logger model.Logger, urlPath string) *Descriptor {
-	return NewGETJSONWithQueryDescriptor(logger, urlPath, url.Values{})
+func NewGETJSONDescriptor(urlPath string) *Descriptor {
+	return NewGETJSONWithQueryDescriptor(urlPath, url.Values{})
 }
 
 // applicationJSON is the content-type for JSON
@@ -86,13 +80,12 @@ const applicationJSON = "application/json"
 // NewGETJSONWithQueryDescriptor is like NewGETJSONDescriptor but it also
 // allows you to provide |query| arguments. Leaving |query| nil or empty
 // is equivalent to calling NewGETJSONDescriptor directly.
-func NewGETJSONWithQueryDescriptor(logger model.Logger, urlPath string, query url.Values) *Descriptor {
+func NewGETJSONWithQueryDescriptor(urlPath string, query url.Values) *Descriptor {
 	return &Descriptor{
 		Accept:        applicationJSON,
 		Authorization: "",
 		ContentType:   "",
 		LogBody:       false,
-		Logger:        logger,
 		MaxBodySize:   DefaultMaxBodySize,
 		Method:        http.MethodGet,
 		RequestBody:   nil,
@@ -107,7 +100,7 @@ func NewGETJSONWithQueryDescriptor(logger model.Logger, urlPath string, query ur
 //
 // This function ONLY fails if we cannot serialize the |request| to JSON. So, if you know
 // that |request| is JSON-serializable, you can safely call MustNewPostJSONWithJSONResponseDescriptor instead.
-func NewPOSTJSONWithJSONResponseDescriptor(logger model.Logger, urlPath string, request any) (*Descriptor, error) {
+func NewPOSTJSONWithJSONResponseDescriptor(urlPath string, request any) (*Descriptor, error) {
 	rawRequest, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
@@ -117,7 +110,6 @@ func NewPOSTJSONWithJSONResponseDescriptor(logger model.Logger, urlPath string, 
 		Authorization: "",
 		ContentType:   applicationJSON,
 		LogBody:       false,
-		Logger:        logger,
 		MaxBodySize:   DefaultMaxBodySize,
 		Method:        http.MethodPost,
 		RequestBody:   rawRequest,
@@ -130,21 +122,20 @@ func NewPOSTJSONWithJSONResponseDescriptor(logger model.Logger, urlPath string, 
 
 // MustNewPOSTJSONWithJSONResponseDescriptor is like NewPOSTJSONWithJSONResponseDescriptor except that
 // it panics in case it's not possible to JSON serialize the |request|.
-func MustNewPOSTJSONWithJSONResponseDescriptor(logger model.Logger, urlPath string, request any) *Descriptor {
-	desc, err := NewPOSTJSONWithJSONResponseDescriptor(logger, urlPath, request)
+func MustNewPOSTJSONWithJSONResponseDescriptor(urlPath string, request any) *Descriptor {
+	desc, err := NewPOSTJSONWithJSONResponseDescriptor(urlPath, request)
 	runtimex.PanicOnError(err, "NewPOSTJSONWithJSONResponseDescriptor failed")
 	return desc
 }
 
 // NewGETResourceDescriptor creates a generic descriptor for GETting a
 // resource of unspecified type using the given |urlPath|.
-func NewGETResourceDescriptor(logger model.Logger, urlPath string) *Descriptor {
+func NewGETResourceDescriptor(urlPath string) *Descriptor {
 	return &Descriptor{
 		Accept:        "",
 		Authorization: "",
 		ContentType:   "",
 		LogBody:       false,
-		Logger:        logger,
 		MaxBodySize:   DefaultMaxBodySize,
 		Method:        http.MethodGet,
 		RequestBody:   nil,
