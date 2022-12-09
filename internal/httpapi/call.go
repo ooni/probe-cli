@@ -128,7 +128,7 @@ func docall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http.
 			// This case happens when we cannot read the gzip header
 			// hence it can be "triggered" remotely and we cannot just
 			// panic on error to handle this error condition.
-			return nil, nil, err
+			return response, nil, err
 		}
 	}
 	reader = io.LimitReader(reader, DefaultMaxBodySize)
