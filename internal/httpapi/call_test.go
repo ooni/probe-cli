@@ -401,6 +401,23 @@ func Test_newRequest(t *testing.T) {
 			}
 		},
 		wantErr: nil,
+	}, {
+		name: "we honour the AcceptEncodingGzip flag",
+		args: args{
+			ctx: context.Background(),
+			endpoint: &Endpoint{
+				BaseURL: "https://example.com/",
+			},
+			desc: &Descriptor{
+				AcceptEncodingGzip: true,
+			},
+		},
+		wantFn: func(t *testing.T, req *http.Request) {
+			if req.Header.Get("Accept-Encoding") != "gzip" {
+				t.Fatal("did not set the Accept-Encoding header")
+			}
+		},
+		wantErr: nil,
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
