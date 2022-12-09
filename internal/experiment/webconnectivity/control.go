@@ -110,8 +110,8 @@ func (c *Control) Run(parentCtx context.Context) {
 
 	// create an httpapi sequence caller
 	seqCaller := httpapi.NewSequenceCaller(
-		httpapi.MustNewPOSTJSONWithJSONResponseDescriptor(c.Logger, "/", creq).WithBodyLogging(true),
-		httpapi.NewEndpointList(c.Session.DefaultHTTPClient(), c.Session.UserAgent(), c.TestHelpers...)...,
+		httpapi.MustNewPOSTJSONWithJSONResponseDescriptor("/", creq).WithBodyLogging(true),
+		httpapi.NewEndpointList(c.Session.DefaultHTTPClient(), c.Logger, c.Session.UserAgent(), c.TestHelpers...)...,
 	)
 
 	// issue the control request and wait for the response

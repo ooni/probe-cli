@@ -18,7 +18,6 @@ func TestSequenceCaller(t *testing.T) {
 		t.Run("first success", func(t *testing.T) {
 			sc := NewSequenceCaller(
 				&Descriptor{
-					Logger:  model.DiscardLogger,
 					Method:  http.MethodGet,
 					URLPath: "/",
 				},
@@ -33,6 +32,7 @@ func TestSequenceCaller(t *testing.T) {
 							return resp, nil
 						},
 					},
+					Logger: model.DiscardLogger,
 				},
 				&Endpoint{
 					BaseURL: "https://b.example.com/",
@@ -41,6 +41,7 @@ func TestSequenceCaller(t *testing.T) {
 							return nil, io.EOF
 						},
 					},
+					Logger: model.DiscardLogger,
 				},
 			)
 			data, idx, err := sc.Call(context.Background())
@@ -58,7 +59,6 @@ func TestSequenceCaller(t *testing.T) {
 		t.Run("first HTTP failure and we immediately stop", func(t *testing.T) {
 			sc := NewSequenceCaller(
 				&Descriptor{
-					Logger:  model.DiscardLogger,
 					Method:  http.MethodGet,
 					URLPath: "/",
 				},
@@ -73,6 +73,7 @@ func TestSequenceCaller(t *testing.T) {
 							return resp, nil
 						},
 					},
+					Logger: model.DiscardLogger,
 				},
 				&Endpoint{
 					BaseURL: "https://b.example.com/",
@@ -81,6 +82,7 @@ func TestSequenceCaller(t *testing.T) {
 							return nil, io.EOF
 						},
 					},
+					Logger: model.DiscardLogger,
 				},
 			)
 			data, idx, err := sc.Call(context.Background())
@@ -99,7 +101,6 @@ func TestSequenceCaller(t *testing.T) {
 		t.Run("first network failure, second success", func(t *testing.T) {
 			sc := NewSequenceCaller(
 				&Descriptor{
-					Logger:  model.DiscardLogger,
 					Method:  http.MethodGet,
 					URLPath: "/",
 				},
@@ -110,6 +111,7 @@ func TestSequenceCaller(t *testing.T) {
 							return nil, io.EOF // should cause us to cycle to the second entry
 						},
 					},
+					Logger: model.DiscardLogger,
 				},
 				&Endpoint{
 					BaseURL: "https://b.example.com/",
@@ -122,6 +124,7 @@ func TestSequenceCaller(t *testing.T) {
 							return resp, nil
 						},
 					},
+					Logger: model.DiscardLogger,
 				},
 			)
 			data, idx, err := sc.Call(context.Background())
@@ -139,7 +142,6 @@ func TestSequenceCaller(t *testing.T) {
 		t.Run("all network failure", func(t *testing.T) {
 			sc := NewSequenceCaller(
 				&Descriptor{
-					Logger:  model.DiscardLogger,
 					Method:  http.MethodGet,
 					URLPath: "/",
 				},
@@ -150,6 +152,7 @@ func TestSequenceCaller(t *testing.T) {
 							return nil, io.EOF // should cause us to cycle to the next entry
 						},
 					},
+					Logger: model.DiscardLogger,
 				},
 				&Endpoint{
 					BaseURL: "https://b.example.com/",
@@ -158,6 +161,7 @@ func TestSequenceCaller(t *testing.T) {
 							return nil, io.EOF // should cause us to cycle to the next entry
 						},
 					},
+					Logger: model.DiscardLogger,
 				},
 			)
 			data, idx, err := sc.Call(context.Background())
@@ -182,7 +186,6 @@ func TestSequenceCaller(t *testing.T) {
 		t.Run("first success", func(t *testing.T) {
 			sc := NewSequenceCaller(
 				&Descriptor{
-					Logger:  model.DiscardLogger,
 					Method:  http.MethodGet,
 					URLPath: "/",
 				},
@@ -197,6 +200,7 @@ func TestSequenceCaller(t *testing.T) {
 							return resp, nil
 						},
 					},
+					Logger: model.DiscardLogger,
 				},
 				&Endpoint{
 					BaseURL: "https://b.example.com/",
@@ -209,6 +213,7 @@ func TestSequenceCaller(t *testing.T) {
 							return resp, nil
 						},
 					},
+					Logger: model.DiscardLogger,
 				},
 			)
 			expect := response{
@@ -231,7 +236,6 @@ func TestSequenceCaller(t *testing.T) {
 		t.Run("first HTTP failure and we immediately stop", func(t *testing.T) {
 			sc := NewSequenceCaller(
 				&Descriptor{
-					Logger:  model.DiscardLogger,
 					Method:  http.MethodGet,
 					URLPath: "/",
 				},
@@ -246,6 +250,7 @@ func TestSequenceCaller(t *testing.T) {
 							return resp, nil
 						},
 					},
+					Logger: model.DiscardLogger,
 				},
 				&Endpoint{
 					BaseURL: "https://b.example.com/",
@@ -254,6 +259,7 @@ func TestSequenceCaller(t *testing.T) {
 							return nil, io.EOF
 						},
 					},
+					Logger: model.DiscardLogger,
 				},
 			)
 			// even though there is a JSON body we don't care about reading it
@@ -279,7 +285,6 @@ func TestSequenceCaller(t *testing.T) {
 		t.Run("first network failure, second success", func(t *testing.T) {
 			sc := NewSequenceCaller(
 				&Descriptor{
-					Logger:  model.DiscardLogger,
 					Method:  http.MethodGet,
 					URLPath: "/",
 				},
@@ -290,6 +295,7 @@ func TestSequenceCaller(t *testing.T) {
 							return nil, io.EOF // should cause us to try the next entry
 						},
 					},
+					Logger: model.DiscardLogger,
 				},
 				&Endpoint{
 					BaseURL: "https://b.example.com/",
@@ -302,6 +308,7 @@ func TestSequenceCaller(t *testing.T) {
 							return resp, nil
 						},
 					},
+					Logger: model.DiscardLogger,
 				},
 			)
 			expect := response{
@@ -324,7 +331,6 @@ func TestSequenceCaller(t *testing.T) {
 		t.Run("all network failure", func(t *testing.T) {
 			sc := NewSequenceCaller(
 				&Descriptor{
-					Logger:  model.DiscardLogger,
 					Method:  http.MethodGet,
 					URLPath: "/",
 				},
@@ -335,6 +341,7 @@ func TestSequenceCaller(t *testing.T) {
 							return nil, io.EOF // should cause us to try the next entry
 						},
 					},
+					Logger: model.DiscardLogger,
 				},
 				&Endpoint{
 					BaseURL: "https://b.example.com/",
@@ -343,6 +350,7 @@ func TestSequenceCaller(t *testing.T) {
 							return nil, io.EOF // should cause us to try the next entry
 						},
 					},
+					Logger: model.DiscardLogger,
 				},
 			)
 			var got response

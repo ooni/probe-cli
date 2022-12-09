@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestDescriptor_WithBodyLogging(t *testing.T) {
@@ -17,7 +16,6 @@ func TestDescriptor_WithBodyLogging(t *testing.T) {
 		Authorization string
 		ContentType   string
 		LogBody       bool
-		Logger        model.Logger
 		MaxBodySize   int64
 		Method        string
 		RequestBody   []byte
@@ -42,7 +40,6 @@ func TestDescriptor_WithBodyLogging(t *testing.T) {
 			Authorization: "y",
 			ContentType:   "zzz",
 			LogBody:       false, // obviously must be false
-			Logger:        model.DiscardLogger,
 			MaxBodySize:   123,
 			Method:        "POST",
 			RequestBody:   []byte("123"),
@@ -57,7 +54,6 @@ func TestDescriptor_WithBodyLogging(t *testing.T) {
 			Authorization: "y",
 			ContentType:   "zzz",
 			LogBody:       true,
-			Logger:        model.DiscardLogger,
 			MaxBodySize:   123,
 			Method:        "POST",
 			RequestBody:   []byte("123"),
@@ -75,7 +71,6 @@ func TestDescriptor_WithBodyLogging(t *testing.T) {
 				Authorization: tt.fields.Authorization,
 				ContentType:   tt.fields.ContentType,
 				LogBody:       tt.fields.LogBody,
-				Logger:        tt.fields.Logger,
 				MaxBodySize:   tt.fields.MaxBodySize,
 				Method:        tt.fields.Method,
 				RequestBody:   tt.fields.RequestBody,
@@ -97,7 +92,6 @@ func TestNewGetJSONDescriptor(t *testing.T) {
 		Authorization: "",
 		ContentType:   "",
 		LogBody:       false,
-		Logger:        model.DiscardLogger,
 		MaxBodySize:   DefaultMaxBodySize,
 		Method:        http.MethodGet,
 		RequestBody:   nil,
@@ -105,7 +99,7 @@ func TestNewGetJSONDescriptor(t *testing.T) {
 		URLPath:       "/robots.txt",
 		URLQuery:      url.Values{},
 	}
-	got := NewGETJSONDescriptor(model.DiscardLogger, "/robots.txt")
+	got := NewGETJSONDescriptor("/robots.txt")
 	if diff := cmp.Diff(expected, got); diff != "" {
 		t.Fatal(diff)
 	}
@@ -121,7 +115,6 @@ func TestNewGetJSONWithQueryDescriptor(t *testing.T) {
 		Authorization: "",
 		ContentType:   "",
 		LogBody:       false,
-		Logger:        model.DiscardLogger,
 		MaxBodySize:   DefaultMaxBodySize,
 		Method:        http.MethodGet,
 		RequestBody:   nil,
@@ -129,7 +122,7 @@ func TestNewGetJSONWithQueryDescriptor(t *testing.T) {
 		URLPath:       "/robots.txt",
 		URLQuery:      query,
 	}
-	got := NewGETJSONWithQueryDescriptor(model.DiscardLogger, "/robots.txt", query)
+	got := NewGETJSONWithQueryDescriptor("/robots.txt", query)
 	if diff := cmp.Diff(expected, got); diff != "" {
 		t.Fatal(diff)
 	}
@@ -143,7 +136,7 @@ func TestNewPOSTJSONWithJSONResponseDescriptor(t *testing.T) {
 
 	t.Run("with failure", func(t *testing.T) {
 		request := make(chan int64)
-		got, err := NewPOSTJSONWithJSONResponseDescriptor(model.DiscardLogger, "/robots.txt", request)
+		got, err := NewPOSTJSONWithJSONResponseDescriptor("/robots.txt", request)
 		if err == nil || err.Error() != "json: unsupported type: chan int64" {
 			log.Fatal("unexpected err", err)
 		}
@@ -162,7 +155,6 @@ func TestNewPOSTJSONWithJSONResponseDescriptor(t *testing.T) {
 			Authorization: "",
 			ContentType:   "application/json",
 			LogBody:       false,
-			Logger:        model.DiscardLogger,
 			MaxBodySize:   DefaultMaxBodySize,
 			Method:        http.MethodPost,
 			RequestBody:   []byte(`{"Name":"sbs","Age":99}`),
@@ -170,7 +162,7 @@ func TestNewPOSTJSONWithJSONResponseDescriptor(t *testing.T) {
 			URLPath:       "/robots.txt",
 			URLQuery:      nil,
 		}
-		got, err := NewPOSTJSONWithJSONResponseDescriptor(model.DiscardLogger, "/robots.txt", request)
+		got, err := NewPOSTJSONWithJSONResponseDescriptor("/robots.txt", request)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -195,7 +187,7 @@ func TestMustNewPOSTJSONWithJSONResponseDescriptor(t *testing.T) {
 				}
 			}()
 			request := make(chan int64)
-			_ = MustNewPOSTJSONWithJSONResponseDescriptor(model.DiscardLogger, "/robots.txt", request)
+			_ = MustNewPOSTJSONWithJSONResponseDescriptor("/robots.txt", request)
 		}()
 		if !panicked {
 			t.Fatal("did not panic")
@@ -212,7 +204,6 @@ func TestMustNewPOSTJSONWithJSONResponseDescriptor(t *testing.T) {
 			Authorization: "",
 			ContentType:   "application/json",
 			LogBody:       false,
-			Logger:        model.DiscardLogger,
 			MaxBodySize:   DefaultMaxBodySize,
 			Method:        http.MethodPost,
 			RequestBody:   []byte(`{"Name":"sbs","Age":99}`),
@@ -220,7 +211,7 @@ func TestMustNewPOSTJSONWithJSONResponseDescriptor(t *testing.T) {
 			URLPath:       "/robots.txt",
 			URLQuery:      nil,
 		}
-		got := MustNewPOSTJSONWithJSONResponseDescriptor(model.DiscardLogger, "/robots.txt", request)
+		got := MustNewPOSTJSONWithJSONResponseDescriptor("/robots.txt", request)
 		if diff := cmp.Diff(expected, got); diff != "" {
 			t.Fatal(diff)
 		}
@@ -233,7 +224,6 @@ func TestNewGetResourceDescriptor(t *testing.T) {
 		Authorization: "",
 		ContentType:   "",
 		LogBody:       false,
-		Logger:        model.DiscardLogger,
 		MaxBodySize:   DefaultMaxBodySize,
 		Method:        http.MethodGet,
 		RequestBody:   nil,
@@ -241,7 +231,7 @@ func TestNewGetResourceDescriptor(t *testing.T) {
 		URLPath:       "/robots.txt",
 		URLQuery:      url.Values{},
 	}
-	got := NewGETResourceDescriptor(model.DiscardLogger, "/robots.txt")
+	got := NewGETResourceDescriptor("/robots.txt")
 	if diff := cmp.Diff(expected, got); diff != "" {
 		t.Fatal(diff)
 	}

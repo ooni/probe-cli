@@ -90,6 +90,7 @@ func Test_newRequest(t *testing.T) {
 				BaseURL:    "\t\t\t", // does not parse!
 				HTTPClient: nil,
 				Host:       "",
+				Logger:     nil,
 				UserAgent:  "",
 			},
 			desc: &Descriptor{
@@ -97,7 +98,6 @@ func Test_newRequest(t *testing.T) {
 				Authorization: "",
 				ContentType:   "",
 				LogBody:       false,
-				Logger:        nil,
 				MaxBodySize:   0,
 				Method:        "",
 				RequestBody:   nil,
@@ -116,6 +116,7 @@ func Test_newRequest(t *testing.T) {
 				BaseURL:    "https://example.com/",
 				HTTPClient: nil,
 				Host:       "",
+				Logger:     nil,
 				UserAgent:  "",
 			},
 			desc: &Descriptor{
@@ -123,7 +124,6 @@ func Test_newRequest(t *testing.T) {
 				Authorization: "",
 				ContentType:   "",
 				LogBody:       false,
-				Logger:        nil,
 				MaxBodySize:   0,
 				Method:        "",
 				RequestBody:   nil,
@@ -142,6 +142,7 @@ func Test_newRequest(t *testing.T) {
 				BaseURL:    "https://example.com/",
 				HTTPClient: nil,
 				Host:       "",
+				Logger:     nil,
 				UserAgent:  "",
 			},
 			desc: &Descriptor{
@@ -149,7 +150,6 @@ func Test_newRequest(t *testing.T) {
 				Authorization: "",
 				ContentType:   "",
 				LogBody:       false,
-				Logger:        nil,
 				MaxBodySize:   0,
 				Method:        http.MethodGet,
 				RequestBody:   nil,
@@ -181,6 +181,7 @@ func Test_newRequest(t *testing.T) {
 				BaseURL:    "https://example.com/",
 				HTTPClient: nil,
 				Host:       "",
+				Logger:     model.DiscardLogger,
 				UserAgent:  "",
 			},
 			desc: &Descriptor{
@@ -188,7 +189,6 @@ func Test_newRequest(t *testing.T) {
 				Authorization: "",
 				ContentType:   "",
 				LogBody:       false,
-				Logger:        model.DiscardLogger,
 				MaxBodySize:   0,
 				Method:        http.MethodPost,
 				RequestBody:   []byte("deadbeef"),
@@ -224,6 +224,7 @@ func Test_newRequest(t *testing.T) {
 				BaseURL:    "https://example.com/",
 				HTTPClient: nil,
 				Host:       "antani.org",
+				Logger:     nil,
 				UserAgent:  "httpclient/1.0.1",
 			},
 			desc: &Descriptor{
@@ -231,7 +232,6 @@ func Test_newRequest(t *testing.T) {
 				Authorization: "deafbeef",
 				ContentType:   "text/plain",
 				LogBody:       false,
-				Logger:        nil,
 				MaxBodySize:   0,
 				Method:        http.MethodPut,
 				RequestBody:   nil,
@@ -275,6 +275,7 @@ func Test_newRequest(t *testing.T) {
 				BaseURL:    "https://www.example.com/api/v1",
 				HTTPClient: nil,
 				Host:       "",
+				Logger:     nil,
 				UserAgent:  "",
 			},
 			desc: &Descriptor{
@@ -282,7 +283,6 @@ func Test_newRequest(t *testing.T) {
 				Authorization: "",
 				ContentType:   "",
 				LogBody:       false,
-				Logger:        nil,
 				MaxBodySize:   0,
 				Method:        http.MethodGet,
 				RequestBody:   nil,
@@ -311,6 +311,7 @@ func Test_newRequest(t *testing.T) {
 				BaseURL:    "https://example.org/api/v1/?probe_cc=IT",
 				HTTPClient: nil,
 				Host:       "",
+				Logger:     nil,
 				UserAgent:  "",
 			},
 			desc: &Descriptor{
@@ -318,7 +319,6 @@ func Test_newRequest(t *testing.T) {
 				Authorization: "",
 				ContentType:   "",
 				LogBody:       false,
-				Logger:        nil,
 				MaxBodySize:   0,
 				Method:        http.MethodGet,
 				RequestBody:   nil,
@@ -347,6 +347,7 @@ func Test_newRequest(t *testing.T) {
 				BaseURL:    "https://www.example.com/api/v1/",
 				HTTPClient: nil,
 				Host:       "",
+				Logger:     nil,
 				UserAgent:  "",
 			},
 			desc: &Descriptor{
@@ -354,7 +355,6 @@ func Test_newRequest(t *testing.T) {
 				Authorization: "",
 				ContentType:   "",
 				LogBody:       false,
-				Logger:        nil,
 				MaxBodySize:   0,
 				Method:        http.MethodGet,
 				RequestBody:   nil,
@@ -446,7 +446,6 @@ func TestCall(t *testing.T) {
 				Authorization: "",
 				ContentType:   "",
 				LogBody:       false,
-				Logger:        nil,
 				MaxBodySize:   0,
 				Method:        "",
 				RequestBody:   nil,
@@ -458,6 +457,7 @@ func TestCall(t *testing.T) {
 				BaseURL:    "\t\t\t", // causes newRequest to fail
 				HTTPClient: nil,
 				Host:       "",
+				Logger:     nil,
 				UserAgent:  "",
 			},
 		},
@@ -469,7 +469,6 @@ func TestCall(t *testing.T) {
 		args: args{
 			ctx: context.Background(),
 			desc: &Descriptor{
-				Logger: model.DiscardLogger,
 				Method: http.MethodGet,
 			},
 			endpoint: &Endpoint{
@@ -479,6 +478,7 @@ func TestCall(t *testing.T) {
 						return nil, io.EOF
 					},
 				},
+				Logger: model.DiscardLogger,
 			},
 		},
 		want:    nil,
@@ -494,7 +494,6 @@ func TestCall(t *testing.T) {
 		args: args{
 			ctx: context.Background(),
 			desc: &Descriptor{
-				Logger: model.DiscardLogger,
 				Method: http.MethodGet,
 			},
 			endpoint: &Endpoint{
@@ -511,6 +510,7 @@ func TestCall(t *testing.T) {
 						return resp, nil
 					},
 				},
+				Logger: model.DiscardLogger,
 			},
 		},
 		want:    nil,
@@ -526,7 +526,6 @@ func TestCall(t *testing.T) {
 		args: args{
 			ctx: context.Background(),
 			desc: &Descriptor{
-				Logger: model.DiscardLogger,
 				Method: http.MethodGet,
 			},
 			endpoint: &Endpoint{
@@ -540,6 +539,7 @@ func TestCall(t *testing.T) {
 						return resp, nil
 					},
 				},
+				Logger: model.DiscardLogger,
 			},
 		},
 		want:    nil,
@@ -556,7 +556,6 @@ func TestCall(t *testing.T) {
 			ctx: context.Background(),
 			desc: &Descriptor{
 				LogBody: true, // as documented by this test's name
-				Logger:  model.DiscardLogger,
 				Method:  http.MethodGet,
 			},
 			endpoint: &Endpoint{
@@ -570,6 +569,7 @@ func TestCall(t *testing.T) {
 						return resp, nil
 					},
 				},
+				Logger: model.DiscardLogger,
 			},
 		},
 		want:    []byte("deadbeef"),
@@ -620,12 +620,11 @@ func TestCallWithJSONResponse(t *testing.T) {
 	}{{
 		name: "call fails",
 		args: args{
-			ctx: context.Background(),
-			desc: &Descriptor{
-				Logger: model.DiscardLogger,
-			},
+			ctx:  context.Background(),
+			desc: &Descriptor{},
 			endpoint: &Endpoint{
 				BaseURL: "\t\t\t\t", // causes failure
+				Logger:  model.DiscardLogger,
 			},
 		},
 		wantErr: errors.New(`parse "\t\t\t\t": net/url: invalid control character in URL`),
@@ -633,10 +632,8 @@ func TestCallWithJSONResponse(t *testing.T) {
 	}, {
 		name: "with error during httpClient.Do",
 		args: args{
-			ctx: context.Background(),
-			desc: &Descriptor{
-				Logger: model.DiscardLogger,
-			},
+			ctx:  context.Background(),
+			desc: &Descriptor{},
 			endpoint: &Endpoint{
 				BaseURL: "https://www.example.com/a",
 				HTTPClient: &mocks.HTTPClient{
@@ -644,6 +641,7 @@ func TestCallWithJSONResponse(t *testing.T) {
 						return nil, io.EOF
 					},
 				},
+				Logger: model.DiscardLogger,
 			},
 		},
 		wantErr: io.EOF,
@@ -656,10 +654,8 @@ func TestCallWithJSONResponse(t *testing.T) {
 	}, {
 		name: "with error when reading the response body",
 		args: args{
-			ctx: context.Background(),
-			desc: &Descriptor{
-				Logger: model.DiscardLogger,
-			},
+			ctx:  context.Background(),
+			desc: &Descriptor{},
 			endpoint: &Endpoint{
 				BaseURL: "https://www.example.com/a",
 				HTTPClient: &mocks.HTTPClient{
@@ -675,6 +671,7 @@ func TestCallWithJSONResponse(t *testing.T) {
 						return resp, nil
 					},
 				},
+				Logger: model.DiscardLogger,
 			},
 		},
 		wantErr: errors.New(netxlite.FailureConnectionReset),
@@ -687,10 +684,8 @@ func TestCallWithJSONResponse(t *testing.T) {
 	}, {
 		name: "with HTTP failure",
 		args: args{
-			ctx: context.Background(),
-			desc: &Descriptor{
-				Logger: model.DiscardLogger,
-			},
+			ctx:  context.Background(),
+			desc: &Descriptor{},
 			endpoint: &Endpoint{
 				BaseURL: "https://www.example.com/a",
 				HTTPClient: &mocks.HTTPClient{
@@ -702,6 +697,7 @@ func TestCallWithJSONResponse(t *testing.T) {
 						return resp, nil
 					},
 				},
+				Logger: model.DiscardLogger,
 			},
 		},
 		wantErr: errors.New("httpapi: http request failed: 400"),
@@ -714,10 +710,8 @@ func TestCallWithJSONResponse(t *testing.T) {
 	}, {
 		name: "with good response and missing header",
 		args: args{
-			ctx: context.Background(),
-			desc: &Descriptor{
-				Logger: model.DiscardLogger,
-			},
+			ctx:  context.Background(),
+			desc: &Descriptor{},
 			endpoint: &Endpoint{
 				BaseURL: "https://www.example.com/a",
 				HTTPClient: &mocks.HTTPClient{
@@ -729,6 +723,7 @@ func TestCallWithJSONResponse(t *testing.T) {
 						return resp, nil
 					},
 				},
+				Logger: model.DiscardLogger,
 			},
 		},
 		wantErr: nil,
@@ -736,10 +731,8 @@ func TestCallWithJSONResponse(t *testing.T) {
 	}, {
 		name: "with good response and good header",
 		args: args{
-			ctx: context.Background(),
-			desc: &Descriptor{
-				Logger: model.DiscardLogger,
-			},
+			ctx:  context.Background(),
+			desc: &Descriptor{},
 			endpoint: &Endpoint{
 				BaseURL: "https://www.example.com/a",
 				HTTPClient: &mocks.HTTPClient{
@@ -754,6 +747,7 @@ func TestCallWithJSONResponse(t *testing.T) {
 						return resp, nil
 					},
 				},
+				Logger: model.DiscardLogger,
 			},
 		},
 		wantErr: nil,
@@ -764,7 +758,6 @@ func TestCallWithJSONResponse(t *testing.T) {
 			ctx: context.Background(),
 			desc: &Descriptor{
 				LogBody: false,
-				Logger:  model.DiscardLogger,
 				Method:  http.MethodGet,
 			},
 			endpoint: &Endpoint{
@@ -781,6 +774,7 @@ func TestCallWithJSONResponse(t *testing.T) {
 						return resp, nil
 					},
 				},
+				Logger: model.DiscardLogger,
 			},
 		},
 		wantErr: errors.New("unexpected end of JSON input"),
@@ -816,13 +810,13 @@ func TestCallHonoursContext(t *testing.T) {
 	cancel() // should fail HTTP request immediately
 	desc := &Descriptor{
 		LogBody: false,
-		Logger:  model.DiscardLogger,
 		Method:  http.MethodGet,
 		URLPath: "/robots.txt",
 	}
 	endpoint := &Endpoint{
 		BaseURL:    "https://www.example.com/",
 		HTTPClient: http.DefaultClient,
+		Logger:     model.DiscardLogger,
 		UserAgent:  model.HTTPHeaderUserAgent,
 	}
 	body, err := Call(ctx, desc, endpoint)
@@ -839,13 +833,13 @@ func TestCallWithJSONResponseHonoursContext(t *testing.T) {
 	cancel() // should fail HTTP request immediately
 	desc := &Descriptor{
 		LogBody: false,
-		Logger:  model.DiscardLogger,
 		Method:  http.MethodGet,
 		URLPath: "/robots.txt",
 	}
 	endpoint := &Endpoint{
 		BaseURL:    "https://www.example.com/",
 		HTTPClient: http.DefaultClient,
+		Logger:     model.DiscardLogger,
 		UserAgent:  model.HTTPHeaderUserAgent,
 	}
 	var resp url.URL
@@ -861,11 +855,12 @@ func TestDescriptorLogging(t *testing.T) {
 	// by keeping the ~same implementation with a custom callx function that converts
 	// the previous semantics of httpx to the new semantics of httpapi.
 	callx := func(baseURL string, logBody bool, logger model.Logger, request, response any) error {
-		desc := MustNewPOSTJSONWithJSONResponseDescriptor(logger, "/", request).WithBodyLogging(logBody)
+		desc := MustNewPOSTJSONWithJSONResponseDescriptor("/", request).WithBodyLogging(logBody)
 		runtimex.Assert(desc.LogBody == logBody, "desc.LogBody should be equal to logBody here")
 		endpoint := &Endpoint{
 			BaseURL:    baseURL,
 			HTTPClient: http.DefaultClient,
+			Logger:     logger,
 		}
 		return CallWithJSONResponse(context.Background(), desc, endpoint, response)
 	}
