@@ -644,7 +644,7 @@ func Test_docall(t *testing.T) {
 				UserAgent: "",
 			},
 			desc: &Descriptor{
-				MaxBodySize: 0, // means use the default
+				MaxBodySize: 0, // we're testing that putting zero here implies default
 				Method:      http.MethodGet,
 				URLPath:     "/",
 			},
@@ -684,9 +684,8 @@ func Test_docall(t *testing.T) {
 				UserAgent: "",
 			},
 			desc: &Descriptor{
-				MaxBodySize: 0, // means use the default
-				Method:      http.MethodGet,
-				URLPath:     "/",
+				Method:  http.MethodGet,
+				URLPath: "/",
 			},
 			request: &http.Request{},
 		},
@@ -727,9 +726,8 @@ func Test_docall(t *testing.T) {
 				UserAgent: "",
 			},
 			desc: &Descriptor{
-				MaxBodySize: 0, // means use the default
-				Method:      http.MethodGet,
-				URLPath:     "/",
+				Method:  http.MethodGet,
+				URLPath: "/",
 			},
 			request: &http.Request{},
 		},
@@ -789,12 +787,15 @@ func Test_docall(t *testing.T) {
 				t.Errorf("docall() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+
+			// as documented we match ONLY status code and response headers
 			if !reflect.DeepEqual(resp.StatusCode, tt.wantResp.StatusCode) {
 				t.Errorf("docall() got = %v, want %v", resp.StatusCode, tt.wantResp.StatusCode)
 			}
 			if !reflect.DeepEqual(resp.Header, tt.wantResp.Header) {
 				t.Errorf("docall() got = %v, want %v", resp.Header, tt.wantResp.Header)
 			}
+
 			if !reflect.DeepEqual(body, tt.wantBody) {
 				t.Errorf("docall() got1 = %v, want %v", body, tt.wantBody)
 			}
