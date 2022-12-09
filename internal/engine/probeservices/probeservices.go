@@ -130,6 +130,8 @@ func NewClient(sess Session, endpoint model.OOAPIService) (*Client, error) {
 // newHTTPAPIEndpoint is a convenience function for constructing a new
 // instance of *httpapi.Endpoint based on the content of Client
 func (c Client) newHTTPAPIEndpoint() *httpapi.Endpoint {
+	// TODO(https://github.com/ooni/probe/issues/2362): we should migrate all APIs to use
+	// httpapi, which supports fallback, while httpx does not support fallback.
 	return &httpapi.Endpoint{
 		BaseURL:    c.BaseURL,
 		HTTPClient: c.HTTPClient,
