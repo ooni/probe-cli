@@ -124,7 +124,7 @@ func docall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http.
 	// returned by the OONI API in case of errors. Obviously, the flip side
 	// of this choice is that we read potentially very large error pages.
 
-	reader := io.LimitReader(response.Body, DefaultMaxBodySize)
+	var reader io.Reader = response.Body
 	if response.Header.Get("Content-Encoding") == "gzip" {
 		reader, err = gzip.NewReader(reader)
 		if err != nil {
@@ -134,6 +134,7 @@ func docall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http.
 			return nil, nil, err
 		}
 	}
+	reader = io.LimitReader(reader, DefaultMaxBodySize)
 
 	data, err := netxlite.ReadAllContext(request.Context(), reader)
 	if err != nil {
