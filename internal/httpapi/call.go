@@ -119,11 +119,8 @@ func docall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http.
 	}
 	defer response.Body.Close()
 
-	// Implementation note: always read and log the response body _before_
-	// check the status code, since it's quite useful to log the response JSON
-	// returned by the OONI API in case of errors. Obviously, the flip side
-	// of this choice is that we read potentially very large error pages.
-
+	// Implementation note: enforce the maximum body size on the
+	// decompressed body in case there's gzip compression.
 	var reader io.Reader = response.Body
 	if response.Header.Get("Content-Encoding") == "gzip" {
 		reader, err = gzip.NewReader(reader)
@@ -136,6 +133,10 @@ func docall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http.
 	}
 	reader = io.LimitReader(reader, DefaultMaxBodySize)
 
+	// Implementation note: always read and log the response body _before_
+	// check the status code, since it's quite useful to log the response JSON
+	// returned by the OONI API in case of errors. Obviously, the flip side
+	// of this choice is that we read potentially very large error pages.
 	data, err := netxlite.ReadAllContext(request.Context(), reader)
 	if err != nil {
 		return response, nil, &errMaybeCensorship{err}
