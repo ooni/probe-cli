@@ -6,6 +6,7 @@ package httpapi
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -111,15 +112,30 @@ func (err *errMaybeCensorship) Unwrap() error {
 func docall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http.Response, []byte, error) {
 	// Implementation note: remember to mark errors for which you want
 	// to retry with another endpoint using errMaybeCensorship.
+
 	response, err := endpoint.HTTPClient.Do(request)
 	if err != nil {
 		return nil, nil, &errMaybeCensorship{err}
 	}
 	defer response.Body.Close()
-	// Implementation note: always read and log the response body since
-	// it's quite useful to see the response JSON on API error.
-	r := io.LimitReader(response.Body, DefaultMaxBodySize)
-	data, err := netxlite.ReadAllContext(request.Context(), r)
+
+	// Implementation note: always read and log the response body _before_
+	// check the status code, since it's quite useful to log the response JSON
+	// returned by the OONI API in case of errors. Obviously, the flip side
+	// of this choice is that we read potentially very large error pages.
+
+	reader := io.LimitReader(response.Body, DefaultMaxBodySize)
+	if response.Header.Get("Content-Encoding") == "gzip" {
+		reader, err = gzip.NewReader(reader)
+		if err != nil {
+			// This case happens when we cannot read the gzip header
+			// hence it can be "triggered" remotely and we cannot just
+			// panic on error to handle this error condition.
+			return nil, nil, err
+		}
+	}
+
+	data, err := netxlite.ReadAllContext(request.Context(), reader)
 	if err != nil {
 		return response, nil, &errMaybeCensorship{err}
 	}
@@ -127,6 +143,7 @@ func docall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http.
 	if desc.LogBody {
 		desc.Logger.Debugf("httpapi: response body: %s", string(data))
 	}
+
 	if response.StatusCode >= 400 {
 		return response, nil, &ErrHTTPRequestFailed{response.StatusCode}
 	}
