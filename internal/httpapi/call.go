@@ -131,7 +131,11 @@ func docall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http.
 			return response, nil, err
 		}
 	}
-	reader = io.LimitReader(reader, DefaultMaxBodySize)
+	maxBodySize := desc.MaxBodySize
+	if maxBodySize <= 0 {
+		maxBodySize = DefaultMaxBodySize
+	}
+	reader = io.LimitReader(reader, maxBodySize)
 
 	// Implementation note: always read and log the response body _before_
 	// check the status code, since it's quite useful to log the response JSON
