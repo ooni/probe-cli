@@ -1,7 +1,7 @@
 package main
 
 //
-// QUIC connect measurements
+// QUIC handshake measurements
 //
 
 import (
@@ -84,7 +84,7 @@ func quicDo(ctx context.Context, config *quicConfig) {
 		ServerName: config.URLHostname,
 	}
 	quicConn, err := dialer.DialContext(ctx, config.Endpoint, tlsConfig, &quic.Config{})
-	defer measurexlite.MaybeCloseQuic(quicConn)
+	defer measurexlite.MaybeCloseQUICConn(quicConn)
 	ol.Stop(err)
 
 	out.QUIC = ctrlQUICResult{

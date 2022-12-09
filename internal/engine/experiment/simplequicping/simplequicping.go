@@ -179,7 +179,7 @@ func (m *Measurer) quicHandshake(ctx context.Context, index int64,
 		ServerName: sni,
 	}
 	quicEarlyConn, err := dialer.DialContext(ctx, address, tlsConfig, &quic.Config{})
-	defer measurexlite.MaybeCloseQuic(quicEarlyConn)
+	defer measurexlite.MaybeCloseQUICConn(quicEarlyConn)
 	ol.Stop(err)
 	sp.QUICHandshake = trace.FirstQUICHandshakeOrNil() // record the first handshake from the buffer
 	sp.NetworkEvents = append(sp.NetworkEvents, trace.NetworkEvents()...)

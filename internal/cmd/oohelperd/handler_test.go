@@ -53,6 +53,11 @@ const requestWithoutDomainName = `{
 }`
 
 func TestHandlerWorkingAsIntended(t *testing.T) {
+	// TODO(bassosimone): we should factor the function that constructs a
+	// handler inside of main.go and reuse it here. As much as this is just
+	// an integration test, it seems backwards to initialize the handler
+	// differently than we use it in production (and I don't see a reason
+	// why we should be doing that).
 	handler := &handler{
 		BaseLogger:        model.DiscardLogger,
 		Indexer:           &atomicx.Int64{},
@@ -61,16 +66,16 @@ func TestHandlerWorkingAsIntended(t *testing.T) {
 			return http.DefaultClient
 		},
 		NewHTTP3Client: func(logger model.Logger) model.HTTPClient {
-			return netxlite.NewHTTP3ClientWithResolver(model.DiscardLogger, newResolver(model.DiscardLogger))
+			return netxlite.NewHTTP3ClientWithResolver(
+				model.DiscardLogger, newResolver(model.DiscardLogger))
 		},
 		NewDialer: func(model.Logger) model.Dialer {
 			return netxlite.NewDialerWithoutResolver(model.DiscardLogger)
 		},
 		NewQUICDialer: func(logger model.Logger) model.QUICDialer {
-			return netxlite.NewQUICDialerWithResolver(
+			return netxlite.NewQUICDialerWithoutResolver(
 				netxlite.NewQUICListener(),
 				model.DiscardLogger,
-				newResolver(model.DiscardLogger),
 			)
 		},
 		NewResolver: func(model.Logger) model.Resolver {

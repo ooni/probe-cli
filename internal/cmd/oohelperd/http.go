@@ -129,7 +129,7 @@ func httpDo(ctx context.Context, config *httpConfig) {
 // TODO(kelmenhorst) Known limitations:
 //   - This will not work for http:// URLs: Many/some/? hosts do not advertise h3 via Alt-Svc on a
 //     cleartext HTTP response.
-//     Thus, measuring http://cloudflare.com will not cause a h3 follow-up, but 
+//     Thus, measuring http://cloudflare.com will not cause a h3 follow-up, but
 //     https://cloudflare.com will.
 //   - We only consider the Alt-Svc binding of the very first request-response pair.
 //     However, by using parseAltSvc we can later change the code to consider any request-response
@@ -165,7 +165,7 @@ func getFirstResponseInRedirectChain(resp *http.Response) (*http.Response, bool)
 	// Defensively we stop searching after 11.
 	for i := 0; i < 11; i++ {
 		request := resp.Request
-		runtimex.Assert(request != nil, "expected Request != nil")
+		runtimex.Assert(request != nil, "expected resp.Request != nil")
 		if request.Response == nil {
 			return resp, true
 		}
@@ -174,7 +174,7 @@ func getFirstResponseInRedirectChain(resp *http.Response) (*http.Response, bool)
 	return nil, false
 }
 
-func parseAltSvc(resp *http.Response) string { 
+func parseAltSvc(resp *http.Response) string {
 	altsvc := resp.Header.Get("Alt-Svc")
 	// Syntax:
 	//

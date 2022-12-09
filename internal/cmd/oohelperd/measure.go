@@ -140,7 +140,6 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 		http3ch := make(chan ctrlHTTPResponse, 1)
 
 		wg.Add(1)
-
 		go httpDo(ctx, &httpConfig{
 			Headers:           creq.HTTPRequestHeaders,
 			Logger:            logger,
