@@ -91,17 +91,18 @@ const applicationJSON = "application/json"
 // is equivalent to calling NewGETJSONDescriptor directly.
 func NewGETJSONWithQueryDescriptor(logger model.Logger, urlPath string, query url.Values) *Descriptor {
 	return &Descriptor{
-		Accept:        applicationJSON,
-		Authorization: "",
-		ContentType:   "",
-		LogBody:       false,
-		Logger:        logger,
-		MaxBodySize:   DefaultMaxBodySize,
-		Method:        http.MethodGet,
-		RequestBody:   nil,
-		Timeout:       DefaultCallTimeout,
-		URLPath:       urlPath,
-		URLQuery:      query,
+		Accept:             applicationJSON,
+		AcceptEncodingGzip: false,
+		Authorization:      "",
+		ContentType:        "",
+		LogBody:            false,
+		Logger:             logger,
+		MaxBodySize:        DefaultMaxBodySize,
+		Method:             http.MethodGet,
+		RequestBody:        nil,
+		Timeout:            DefaultCallTimeout,
+		URLPath:            urlPath,
+		URLQuery:           query,
 	}
 }
 
@@ -116,17 +117,18 @@ func NewPOSTJSONWithJSONResponseDescriptor(logger model.Logger, urlPath string, 
 		return nil, err
 	}
 	desc := &Descriptor{
-		Accept:        applicationJSON,
-		Authorization: "",
-		ContentType:   applicationJSON,
-		LogBody:       false,
-		Logger:        logger,
-		MaxBodySize:   DefaultMaxBodySize,
-		Method:        http.MethodPost,
-		RequestBody:   rawRequest,
-		Timeout:       DefaultCallTimeout,
-		URLPath:       urlPath,
-		URLQuery:      nil,
+		Accept:             applicationJSON,
+		AcceptEncodingGzip: false,
+		Authorization:      "",
+		ContentType:        applicationJSON,
+		LogBody:            false,
+		Logger:             logger,
+		MaxBodySize:        DefaultMaxBodySize,
+		Method:             http.MethodPost,
+		RequestBody:        rawRequest,
+		Timeout:            DefaultCallTimeout,
+		URLPath:            urlPath,
+		URLQuery:           nil,
 	}
 	return desc, nil
 }
@@ -143,16 +145,17 @@ func MustNewPOSTJSONWithJSONResponseDescriptor(logger model.Logger, urlPath stri
 // resource of unspecified type using the given |urlPath|.
 func NewGETResourceDescriptor(logger model.Logger, urlPath string) *Descriptor {
 	return &Descriptor{
-		Accept:        "",
-		Authorization: "",
-		ContentType:   "",
-		LogBody:       false,
-		Logger:        logger,
-		MaxBodySize:   DefaultMaxBodySize,
-		Method:        http.MethodGet,
-		RequestBody:   nil,
-		Timeout:       DefaultCallTimeout,
-		URLPath:       urlPath,
-		URLQuery:      url.Values{},
+		Accept:             "",
+		AcceptEncodingGzip: false,
+		Authorization:      "",
+		ContentType:        "",
+		LogBody:            false,
+		Logger:             logger,
+		MaxBodySize:        DefaultMaxBodySize,
+		Method:             http.MethodGet,
+		RequestBody:        nil,
+		Timeout:            DefaultCallTimeout,
+		URLPath:            urlPath,
+		URLQuery:           url.Values{},
 	}
 }
