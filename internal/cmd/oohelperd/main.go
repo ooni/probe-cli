@@ -60,7 +60,7 @@ func main() {
 		BaseLogger:        log.Log,
 		Indexer:           &atomicx.Int64{},
 		MaxAcceptableBody: maxAcceptableBody,
-		NewClient: func(logger model.Logger) model.HTTPClient {
+		NewHTTPClient: func(logger model.Logger) model.HTTPClient {
 			// If the DoH resolver we're using insists that a given domain maps to
 			// bogons, make sure we're going to fail the HTTP measurement.
 			//
@@ -81,8 +81,21 @@ func main() {
 			)
 			return netxlite.NewHTTPClientWithResolver(logger, reso)
 		},
+		NewHTTP3Client: func(logger model.Logger) model.HTTPClient {
+			reso := netxlite.MaybeWrapWithBogonResolver(
+				true, // enabled
+				newResolver(logger),
+			)
+			return netxlite.NewHTTP3ClientWithResolver(logger, reso)
+		},
 		NewDialer: func(logger model.Logger) model.Dialer {
-			return netxlite.NewDialerWithResolver(logger, newResolver(logger))
+			return netxlite.NewDialerWithoutResolver(logger)
+		},
+		NewQUICDialer: func(logger model.Logger) model.QUICDialer {
+			return netxlite.NewQUICDialerWithoutResolver(
+				netxlite.NewQUICListener(),
+				logger,
+			)
 		},
 		NewResolver: newResolver,
 		NewTLSHandshaker: func(logger model.Logger) model.TLSHandshaker {

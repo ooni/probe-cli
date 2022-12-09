@@ -29,11 +29,17 @@ type handler struct {
 	// MaxAcceptableBody is the MANDATORY maximum acceptable response body.
 	MaxAcceptableBody int64
 
-	// NewClient is the MANDATORY factory to create a new HTTPClient.
-	NewClient func(model.Logger) model.HTTPClient
-
 	// NewDialer is the MANDATORY factory to create a new Dialer.
 	NewDialer func(model.Logger) model.Dialer
+
+	// NewHTTPClient is the MANDATORY factory to create a new HTTPClient.
+	NewHTTPClient func(model.Logger) model.HTTPClient
+
+	// NewHTTP3Client is the MANDATORY factory to create a new HTTP3Client.
+	NewHTTP3Client func(model.Logger) model.HTTPClient
+
+	// NewQUICDialer is the MANDATORY factory to create a new QUICDialer.
+	NewQUICDialer func(model.Logger) model.QUICDialer
 
 	// NewResolver is the MANDATORY factory for creating a new resolver.
 	NewResolver func(model.Logger) model.Resolver

@@ -306,3 +306,40 @@ func TestFirstQUICHandshake(t *testing.T) {
 		}
 	})
 }
+
+func TestMaybeCloseQUICConn(t *testing.T) {
+	type closeQuicTest struct {
+		name   string
+		input  quic.EarlyConnection
+		called bool
+	}
+	var called bool
+
+	tests := []closeQuicTest{
+		{
+			name:   "with nil earlyconn",
+			input:  nil,
+			called: false,
+		},
+		{
+			name: "with nonnil conn",
+			input: &mocks.QUICEarlyConnection{
+				MockCloseWithError: func(code quic.ApplicationErrorCode, reason string) error {
+					called = true
+					return nil
+				},
+			},
+			called: true,
+		},
+	}
+	for _, test := range tests {
+		err := MaybeCloseQUICConn(test.input)
+		if err != nil {
+			t.Fatalf("MaybeCloseQUICConn: unexpected failure (%s)", test.name)
+		}
+		if called != test.called {
+			t.Fatalf("MaybeCloseQUICConn: unexpected behavior (%s)", test.name)
+		}
+		called = false
+	}
+}

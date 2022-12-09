@@ -7,6 +7,7 @@ package main
 import (
 	"context"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -15,6 +16,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
@@ -47,6 +49,9 @@ type httpConfig struct {
 
 	// Wg is MANDATORY and allows synchronizing with parent.
 	Wg *sync.WaitGroup
+
+	// searchForH3 is the OPTIONAL flag to decide whether to inspect Alt-Svc for HTTP/3 discovery
+	searchForH3 bool
 }
 
 // httpDo performs the HTTP check.
@@ -102,13 +107,99 @@ func httpDo(ctx context.Context, config *httpConfig) {
 	reader := &io.LimitedReader{R: resp.Body, N: config.MaxAcceptableBody}
 	data, err := netxlite.ReadAllContext(ctx, reader)
 	ol.Stop(err)
-	config.Out <- ctrlHTTPResponse{
-		BodyLength: int64(len(data)),
-		Failure:    httpMapFailure(err),
-		StatusCode: int64(resp.StatusCode),
-		Headers:    headers,
-		Title:      measurexlite.WebGetTitle(string(data)),
+
+	h3Endpoint := ""
+	if config.searchForH3 {
+		h3Endpoint = discoverH3Endpoint(resp, req)
 	}
+
+	config.Out <- ctrlHTTPResponse{
+		BodyLength:           int64(len(data)),
+		DiscoveredH3Endpoint: h3Endpoint,
+		Failure:              httpMapFailure(err),
+		StatusCode:           int64(resp.StatusCode),
+		Headers:              headers,
+		Title:                measurexlite.WebGetTitle(string(data)),
+	}
+}
+
+// Discovers an H3 endpoint by inspecting the Alt-Svc header in the first request-response pair
+// of the redirect chain.
+//
+// TODO(kelmenhorst) Known limitations:
+//   - This will not work for http:// URLs: Many/some/? hosts do not advertise h3 via Alt-Svc on a
+//     cleartext HTTP response.
+//     Thus, measuring http://cloudflare.com will not cause a h3 follow-up, but
+//     https://cloudflare.com will.
+//   - We only consider the Alt-Svc binding of the very first request-response pair.
+//     However, by using parseAltSvc we can later change the code to consider any request-response
+//     pair without too much refactoring.
+func discoverH3Endpoint(resp *http.Response, initReq *http.Request) string {
+	firstResp, found := getFirstResponseInRedirectChain(resp)
+	if !found {
+		return ""
+	}
+	h3Endpoint := parseAltSvc(firstResp)
+	if h3Endpoint == "" {
+		return ""
+	}
+	// Examples:
+	//
+	//     Alt-Svc: h2="alt.example.com:443", h2=":443"
+	//     Alt-Svc: h3-25=":443"; ma=3600, h2=":443"; ma=3600
+	//
+	// So here we need to handle both `alt.example.com:443` and `:443` cases.
+	host, port, err := net.SplitHostPort(h3Endpoint)
+	if err != nil {
+		return ""
+	}
+	if host == "" {
+		host = initReq.URL.Host
+	}
+	return net.JoinHostPort(host, port)
+}
+
+// search for the first HTTP response in the redirect chain
+func getFirstResponseInRedirectChain(resp *http.Response) (*http.Response, bool) {
+	// The default std lib behavior is to stop redirecting after 10 consecutive requests.
+	// Defensively we stop searching after 11.
+	for i := 0; i < 11; i++ {
+		request := resp.Request
+		runtimex.Assert(request != nil, "expected resp.Request != nil")
+		if request.Response == nil {
+			return resp, true
+		}
+		resp = request.Response
+	}
+	return nil, false
+}
+
+func parseAltSvc(resp *http.Response) string {
+	altsvc := resp.Header.Get("Alt-Svc")
+	// Syntax:
+	//
+	// Alt-Svc: clear
+	// Alt-Svc: <protocol-id>=<alt-authority>; ma=<max-age>
+	// Alt-Svc: <protocol-id>=<alt-authority>; ma=<max-age>; persist=1
+	//
+	// Multiple entries may be separated by comma.
+	//
+	// See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Alt-Svc
+	entries := strings.Split(altsvc, ",")
+
+	for _, entry := range entries {
+		parts := strings.Split(entry, ";")
+		runtimex.Assert(len(parts) > 0, "expected at least one entry in strings.Split result")
+
+		_, alt_authority, _ := strings.Cut(parts[0], "h3=")
+		if alt_authority == "" {
+			continue
+		}
+		alt_authority = strings.TrimPrefix(alt_authority, "\"")
+		alt_authority = strings.TrimSuffix(alt_authority, "\"")
+		return alt_authority
+	}
+	return ""
 }
 
 // httpMapFailure attempts to map netxlite failures to the strings
