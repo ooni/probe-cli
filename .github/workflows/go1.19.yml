@@ -18,11 +18,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - run: go install golang.org/dl/go1.19.1@latest
+      - uses: actions/setup-go@v3
+        with:
+          go-version: "1.19"
 
-      - run: $(go env GOPATH)/bin/go1.19.1 download
+      - run: go version
 
-      - run: $(go env GOPATH)/bin/go1.19.1 build -v ./...
+      - run: go build -v ./...
 
-      - run: $(go env GOPATH)/bin/go1.19.1 test -short -race -tags shaping ./...
-
+      - run: go test -short -race -tags shaping ./...
