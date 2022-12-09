@@ -123,8 +123,6 @@ func docall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http.
 	}
 	defer response.Body.Close()
 
-	// Implementation note: enforce the maximum body size on the
-	// decompressed body in case there's gzip compression.
 	var reader io.Reader = response.Body
 	if response.Header.Get("Content-Encoding") == "gzip" {
 		reader, err = gzip.NewReader(reader)
@@ -139,6 +137,8 @@ func docall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http.
 	if maxBodySize <= 0 {
 		maxBodySize = DefaultMaxBodySize
 	}
+	// Implementation note: when there's decompression we must (obviously?)
+	// enforce the maximum body size on the _decompressed_ body.
 	reader = io.LimitReader(reader, maxBodySize)
 
 	// Implementation note: always read and log the response body _before_
