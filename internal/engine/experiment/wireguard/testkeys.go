@@ -5,10 +5,12 @@ import (
 )
 
 type SpeedTest struct {
-	Failure bool    `json:"failure"`
-	File    string  `json:"file"`
-	T0      float64 `json:"t0"`
-	T       float64 `json:"t"`
+	Failed     bool    `json:"failed"`
+	Failure    *string `json:"failure"`
+	File       string  `json:"file"`
+	T0         float64 `json:"t0"`
+	T          float64 `json:"t"`
+	BodyLength int64   `json:"x_body_length"`
 }
 
 // TestKeys contains the experiment's result.

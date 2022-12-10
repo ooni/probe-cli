@@ -24,6 +24,7 @@ import (
 	"golang.zx2c4.com/wireguard/tun/netstack"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
+	"github.com/ooni/probe-cli/v3/internal/measurex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -33,7 +34,7 @@ const (
 	testName = "wireguard"
 
 	// testVersion is the wireguard experiment version.
-	testVersion = "0.0.3"
+	testVersion = "0.0.5"
 
 	// pingCount tells how many icmp echo requests to send.
 	pingCount = 10
@@ -59,6 +60,10 @@ const (
 	googleURI = "https://www.google.com/"
 
 	// speedFiles
+	file4k   = "https://raw.githubusercontent.com/ooni/probe-cli/master/Readme.md"
+	file100k = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_100k.pdf"
+	file500k = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_500k.pdf"
+	file1mb  = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_1MB.pdf"
 	file10mb = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_10MB.pdf"
 	file20mb = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_20MB.pdf"
 	file50mb = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_50MB.pdf"
@@ -155,7 +160,7 @@ func (m *Measurer) Run(
 	}
 
 	sendBlockingPing(wg, m.tun, m.tnet, pingTarget, count, tk)
-	//TODO(ainghazal): get gateway ip
+	//TODO(ainghazal): get gateway ip  (from the socket interface)
 	//sendBlockingPing(wg, m.tunnel, remoteVPNGateway, tk)
 	sendBlockingPing(wg, m.tun, m.tnet, pingTargetNZ, count, tk)
 
@@ -183,68 +188,102 @@ func (m *Measurer) Run(
 		targetURLs = append(targetURLs, urls...)
 	}
 
-	urlgetterConfig := urlgetter.Config{
-		Dialer: netstackDialer{m.tnet},
-	}
-
-	for _, uri := range targetURLs {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-
-			g := urlgetter.Getter{
-				Config:  urlgetterConfig,
-				Session: sess,
-				Target:  uri,
-			}
-			urlgetTk, _ := g.Get(context.Background())
-			tk.Requests = append(tk.Requests, urlgetTk.Requests...)
-		}()
-		wg.Wait()
-	}
-
-	goodURLGrabs := 0
-	for _, r := range tk.Requests {
-		if r.Failure == nil {
-			goodURLGrabs += 1
+	wgDialer := netstackDialer{m.tnet}
+	getURLGetterConfig := func() urlgetter.Config {
+		return urlgetter.Config{
+			Dialer: wgDialer,
+			//Dialer: netstackDialer{m.tnet},
 		}
 	}
-	if goodURLGrabs != 0 {
-		tk.SuccessURLGrab = true
+	urlgetterConfig := getURLGetterConfig()
+
+	speedTestTarget := ""
+	switch m.config.WithSpeedTest {
+	case "4k":
+		speedTestTarget = file4k
+	case "100k":
+		speedTestTarget = file100k
+	case "500k":
+		speedTestTarget = file500k
+	case "1mb":
+		speedTestTarget = file1mb
+	case "10mb":
+		speedTestTarget = file10mb
+	case "20mb":
+		speedTestTarget = file20mb
+	case "50mb":
+		speedTestTarget = file50mb
+	default:
 	}
 
-	if goodICMP == 0 && goodURLGrabs == 0 {
-		sess.Logger().Info("wireguard: all tests failed")
-		tk.Success = false
-	} else {
-		sess.Logger().Info("wireguard: all tests ok")
-		tk.Success = true
+	doSpeedTest := false
+	if speedTestTarget != "" {
+		doSpeedTest = true
 	}
 
-	if m.config.WithSpeedTest == "yes" {
+	if !doSpeedTest {
+		for _, uri := range targetURLs {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+
+				g := urlgetter.Getter{
+					Config:  urlgetterConfig,
+					Session: sess,
+					Target:  uri,
+				}
+				urlgetTk, _ := g.Get(context.Background())
+				tk.Requests = append(tk.Requests, urlgetTk.Requests...)
+			}()
+			wg.Wait()
+		}
+		goodURLGrabs := 0
+		for _, r := range tk.Requests {
+			if r.Failure == nil {
+				goodURLGrabs += 1
+			}
+		}
+		if goodURLGrabs != 0 {
+			tk.SuccessURLGrab = true
+		}
+
+		if goodICMP == 0 && goodURLGrabs == 0 {
+			sess.Logger().Info("wireguard: all tests failed")
+			tk.Success = false
+		} else {
+			sess.Logger().Info("wireguard: all tests ok")
+			tk.Success = true
+		}
+	}
+
+	if doSpeedTest {
 		sess.Logger().Infof("wireguard: speed test")
+		sess.Logger().Infof("wireguard: retrieving %s", speedTestTarget)
 		// TODO it'd be good to give some feedback in here, we
 		// can calculate the progress % for instance.
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 
-			g := urlgetter.Getter{
-				Config:  urlgetterConfig,
-				Session: sess,
-				Target:  file10mb,
+			// TODO(ainghazal): there is probably a better way to do this now,
+			// but this is the simplest way I managed to find to pass a custom
+			// snapshotSize.
+			mx := measurex.NewMeasurerWithDefaultSettings()
+			mx.Begin = time.Now()
+			const snapshotsize = 1 << 28
+			mx.HTTPMaxBodySnapshotSize = snapshotsize
+			const timeout = 120 * time.Second
+			speedTestResp, err := mx.EasyHTTPRoundTripGET(ctx, timeout, speedTestTarget)
+			tk.SpeedTest = &SpeedTest{
+				Failure: err,
+				Failed:  err != nil,
+				File:    speedTestTarget,
 			}
-			speedFetch, _ := g.Get(context.Background())
-			// TODO check if failure==nil
-			if len(speedFetch.Requests) > 0 {
-				// assuming there're no redirects etc
-				req := speedFetch.Requests[0]
-				tk.SpeedTest = &SpeedTest{
-					Failure: req.Failure,
-					File:    file10mb,
-					T0:      req.T0,
-					T:       req.T,
-				}
+			if len(speedTestResp.Requests) > 0 {
+				req := speedTestResp.Requests[0]
+				tk.SpeedTest.T0 = req.Started
+				tk.SpeedTest.T = req.Finished
+				tk.SpeedTest.BodyLength = req.Response.BodyLength
 			}
 		}()
 		wg.Wait()
@@ -291,6 +330,7 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 
 	// this bootstrap is only local interface setup, so maybe it does not make sense to
 	// include it in measurements.
+	// not very meaningful for wireguard.
 	tk.BootstrapTime = time.Now().Sub(s).Seconds()
 	m.tun = tun
 	m.tnet = tnet
