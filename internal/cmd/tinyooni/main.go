@@ -142,6 +142,7 @@ func main() {
 	rootCmd.MarkFlagsMutuallyExclusive("proxy", "tunnel")
 
 	registerWebConnectivity(rootCmd, &globalOptions)
+	registerTelegram(rootCmd, &globalOptions)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
