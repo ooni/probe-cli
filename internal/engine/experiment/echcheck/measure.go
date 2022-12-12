@@ -49,14 +49,12 @@ func (m *Measurer) ExperimentVersion() string {
 // Run implements ExperimentMeasurer.Run.
 func (m *Measurer) Run(
 	ctx context.Context,
-	sess model.ExperimentSession,
-	measurement *model.Measurement,
-	callbacks model.ExperimentCallbacks,
+	args *model.ExperimentArgs,
 ) error {
-	if measurement.Input == "" {
-		measurement.Input = defaultDomain
+	if args.Measurement.Input == "" {
+		args.Measurement.Input = defaultDomain
 	}
-	parsed, err := url.Parse(string(measurement.Input))
+	parsed, err := url.Parse(string(args.Measurement.Input))
 	if err != nil {
 		return errInputIsNotAnURL
 	}
@@ -65,8 +63,8 @@ func (m *Measurer) Run(
 	}
 
 	// 1. perform a DNSLookup
-	trace := measurexlite.NewTrace(0, measurement.MeasurementStartTimeSaved)
-	resolver := trace.NewParallelDNSOverHTTPSResolver(sess.Logger(), m.config.resolverURL())
+	trace := measurexlite.NewTrace(0, args.Measurement.MeasurementStartTimeSaved)
+	resolver := trace.NewParallelDNSOverHTTPSResolver(args.Session.Logger(), m.config.resolverURL())
 	addrs, err := resolver.LookupHost(ctx, parsed.Host)
 	if err != nil {
 		return err
@@ -90,10 +88,10 @@ func (m *Measurer) Run(
 	defer cancel()
 
 	testKeys := TestKeys{}
-	testKeys.Control = *handshake(ctx, conn, measurement.MeasurementStartTimeSaved, address, parsed.Host)
-	testKeys.Target = *handshakeWithEch(ctx, conn2, measurement.MeasurementStartTimeSaved, address, parsed.Host)
+	testKeys.Control = *handshake(ctx, conn, args.Measurement.MeasurementStartTimeSaved, address, parsed.Host)
+	testKeys.Target = *handshakeWithEch(ctx, conn2, args.Measurement.MeasurementStartTimeSaved, address, parsed.Host)
 
-	measurement.TestKeys = testKeys
+	args.Measurement.TestKeys = testKeys
 
 	return nil
 }
