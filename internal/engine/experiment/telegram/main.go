@@ -165,6 +165,11 @@ func submitOrStoreLocally(
 ) error {
 	logger := sess.Logger()
 
+	// TODO(bassosimone): this function is basically the same for each
+	// experiment so we can easily share it. The only "tricky" part
+	// here is that we should construct the explorer URL differently
+	// depending on whether there's input.
+
 	if !args.NoCollector {
 		// Submit the measurement to the OONI backend.
 		err := sess.SubmitMeasurementV2(ctx, meas)
