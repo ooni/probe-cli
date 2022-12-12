@@ -14,6 +14,11 @@ import (
 // ErrNoCheckInInfo indicates check-in returned no suitable info.
 var ErrNoCheckInInfo = errors.New("webconnectivity: returned no check-in info")
 
+// TODO(bassosimone): I am wondering whether we should have a specific
+// MainArgs struct for each experiment rather than a common struct.
+
+// TODO(bassosimone): ideally, I would like OONI Run v2 to call Main.
+
 // Main is the main function of the experiment.
 func Main(
 	ctx context.Context,
