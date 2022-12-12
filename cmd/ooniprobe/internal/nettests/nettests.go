@@ -205,23 +205,22 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 		}
 
 		c.saveToDisk = true
-		if c.Probe.Config().Sharing.UploadResults {
-			ctx := context.Background()
-			submitter, err := c.newSubmitter(ctx)
-			if err != nil {
-				return errors.Wrap(err, "failed to initialise submitter")
+
+		ctx := context.Background()
+		submitter, err := c.newSubmitter(ctx)
+		if err != nil {
+			return errors.Wrap(err, "failed to initialise submitter")
+		}
+		if err := submitter.Submit(ctx, measurement); err != nil {
+			log.Debug(color.RedString("failure.measurement_submission"))
+			if err := db.UploadFailed(c.msmts[idx64], err.Error()); err != nil {
+				return errors.Wrap(err, "failed to mark upload as failed")
 			}
-			if err := submitter.Submit(ctx, measurement); err != nil {
-				log.Debug(color.RedString("failure.measurement_submission"))
-				if err := db.UploadFailed(c.msmts[idx64], err.Error()); err != nil {
-					return errors.Wrap(err, "failed to mark upload as failed")
-				}
-			} else if err := db.UploadSucceeded(c.msmts[idx64]); err != nil {
-				return errors.Wrap(err, "failed to mark upload as succeeded")
-			} else {
-				// Everything went OK, don't save to disk
-				c.saveToDisk = false
-			}
+		} else if err := db.UploadSucceeded(c.msmts[idx64]); err != nil {
+			return errors.Wrap(err, "failed to mark upload as succeeded")
+		} else {
+			// Everything went OK, don't save to disk
+			c.saveToDisk = false
 		}
 
 		// We only save the measurement to disk if we failed to upload the measurement
