@@ -8,7 +8,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// getoonidir returns the $HOME directory.
+// getHomeDir returns the $HOME directory.
 func getHomeDir() (string, string) {
 	// See https://gist.github.com/miguelmota/f30a04a6d64bd52d7ab59ea8d95e54da
 	if runtime.GOOS == "windows" {

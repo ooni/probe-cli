@@ -1,6 +1,10 @@
 // Package experiment contains common code for implementing experiments.
 package experiment
 
+//
+// Common code for implementing experiments
+//
+
 import (
 	"context"
 	"database/sql"
