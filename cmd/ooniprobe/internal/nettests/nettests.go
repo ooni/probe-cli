@@ -62,6 +62,15 @@ type Controller struct {
 
 	// curInputIdx is the current input index
 	curInputIdx int
+
+	// saveToDisk indicates if we want to save the measurement to disk
+	saveToDisk bool
+
+	// newSaverFn is OPTIONAL and is used for testing
+	newSaverFn func(model.Experiment, model.DatabaseMeasurement) (engine.Saver, error)
+
+	// newSubmitterFn is OPTIONAL and is used for testing
+	newSubmitterFn func(ctx context.Context) (engine.Submitter, error)
 }
 
 // BuildAndSetInputIdxMap takes in input a list of URLs in the format
@@ -141,17 +150,6 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 	log.Debug(color.RedString("status.queued"))
 	log.Debug(color.RedString("status.started"))
 
-	if c.Probe.Config().Sharing.UploadResults {
-		if err := exp.OpenReportContext(context.Background()); err != nil {
-			log.Debugf(
-				"%s: %s", color.RedString("failure.report_create"), err.Error(),
-			)
-		} else {
-			log.Debugf(color.RedString("status.report_create"))
-			reportID = sql.NullString{String: exp.ReportID(), Valid: true}
-		}
-	}
-
 	maxRuntime := time.Duration(c.Probe.Config().Nettests.WebsitesMaxRuntime) * time.Second
 	if c.RunType == model.RunTypeTimed && maxRuntime > 0 {
 		log.Debug("disabling maxRuntime when running in the background")
@@ -212,12 +210,14 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 			continue
 		}
 
-		saveToDisk := true
+		c.saveToDisk = true
 		if c.Probe.Config().Sharing.UploadResults {
-			// Implementation note: SubmitMeasurement will fail here if we did fail
-			// to open the report but we still want to continue. There will be a
-			// bit of a spew in the logs, perhaps, but stopping seems less efficient.
-			if err := exp.SubmitAndUpdateMeasurementContext(context.Background(), measurement); err != nil {
+			ctx := context.Background()
+			submitter, err := c.newSubmitter(ctx)
+			if err != nil {
+				return errors.Wrap(err, "failed to initialise submitter")
+			}
+			if err := submitter.Submit(ctx, measurement); err != nil {
 				log.Debug(color.RedString("failure.measurement_submission"))
 				if err := db.UploadFailed(c.msmts[idx64], err.Error()); err != nil {
 					return errors.Wrap(err, "failed to mark upload as failed")
@@ -226,14 +226,18 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 				return errors.Wrap(err, "failed to mark upload as succeeded")
 			} else {
 				// Everything went OK, don't save to disk
-				saveToDisk = false
+				c.saveToDisk = false
 			}
 		}
+
 		// We only save the measurement to disk if we failed to upload the measurement
-		if saveToDisk {
-			if err := exp.SaveMeasurement(measurement, msmt.MeasurementFilePath.String); err != nil {
-				return errors.Wrap(err, "failed to save measurement on disk")
-			}
+		saver, err := c.newSaver(exp, *msmt)
+		if err != nil {
+			return errors.Wrap(err, "failed to initialise saver")
+		}
+		err = saver.SaveMeasurement(measurement)
+		if err != nil {
+			return errors.Wrap(err, "failed to save measurement on disk")
 		}
 
 		if err := db.Done(c.msmts[idx64]); err != nil {
@@ -294,4 +298,29 @@ func (c *Controller) OnProgress(perc float64, msg string) {
 	}
 	key := fmt.Sprintf("%T", c.nt)
 	output.Progress(key, perc, eta, msg)
+}
+
+// newSaver creates a new engine.Saver instance.
+func (c *Controller) newSaver(experiment model.Experiment, msmt model.DatabaseMeasurement) (engine.Saver, error) {
+	if c.newSaverFn != nil {
+		return c.newSaverFn(experiment, msmt)
+	}
+	return engine.NewSaver(engine.SaverConfig{
+		Enabled:    c.saveToDisk,
+		Experiment: experiment,
+		FilePath:   msmt.MeasurementFilePath.String,
+		Logger:     c.Session.Logger(),
+	})
+}
+
+// newSubmitter creates a new engine.Submitter instance.
+func (c *Controller) newSubmitter(ctx context.Context) (engine.Submitter, error) {
+	if c.newSubmitterFn != nil {
+		return c.newSubmitterFn(ctx)
+	}
+	return engine.NewSubmitter(ctx, engine.SubmitterConfig{
+		Enabled: c.Probe.Config().Sharing.UploadResults,
+		Session: c.Session,
+		Logger:  c.Session.Logger(),
+	})
 }
