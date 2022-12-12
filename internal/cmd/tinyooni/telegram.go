@@ -43,6 +43,8 @@ func registerTelegram(rootCmd *cobra.Command, globalOptions *GlobalOptions) {
 func telegramMain(globalOptions *GlobalOptions, options *telegramOptions) {
 	ctx := context.Background()
 
+	ooniHome := maybeGetOONIDir(globalOptions.HomeDir)
+
 	// create a new measurement session
 	sess, err := newSession(ctx, globalOptions)
 	runtimex.PanicOnError(err, "newSession failed")
@@ -50,13 +52,13 @@ func telegramMain(globalOptions *GlobalOptions, options *telegramOptions) {
 	err = sess.MaybeLookupLocationContext(ctx)
 	runtimex.PanicOnError(err, "sess.MaybeLookupLocation failed")
 
-	db, err := database.Open("database.sqlite3")
+	db, err := database.Open(databasePath(ooniHome))
 	runtimex.PanicOnError(err, "database.Open failed")
 
 	networkDB, err := db.CreateNetwork(sess)
 	runtimex.PanicOnError(err, "db.Create failed")
 
-	dbResult, err := db.CreateResult(".", "custom", networkDB.ID)
+	dbResult, err := db.CreateResult(ooniHome, "custom", networkDB.ID)
 	runtimex.PanicOnError(err, "db.CreateResult failed")
 
 	args := &model.ExperimentMainArgs{
@@ -67,7 +69,7 @@ func telegramMain(globalOptions *GlobalOptions, options *telegramOptions) {
 		Database:       db,
 		Inputs:         nil,
 		MaxRuntime:     0,
-		MeasurementDir: "results.d",
+		MeasurementDir: dbResult.MeasurementDir,
 		NoCollector:    false,
 		OnWiFi:         true,
 		ResultID:       dbResult.ID,

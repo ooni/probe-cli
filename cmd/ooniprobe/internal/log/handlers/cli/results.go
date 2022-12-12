@@ -86,7 +86,11 @@ var summarizers = map[string]func(uint64, uint64, string) []string{
 }
 
 func makeSummary(name string, totalCount uint64, anomalyCount uint64, ss string) []string {
-	return summarizers[name](totalCount, anomalyCount, ss)
+	summarizer, ok := summarizers[name]
+	if !ok {
+		return []string{"", "", ""}
+	}
+	return summarizer(totalCount, anomalyCount, ss)
 }
 
 func logResultItem(w io.Writer, f log.Fields) error {

@@ -28,4 +28,5 @@
 /*.tar.gz
 /testdata/gotmp
 /tmp-*
+/tinyooni
 /*.zip

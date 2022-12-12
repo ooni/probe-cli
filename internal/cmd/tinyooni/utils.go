@@ -38,3 +38,8 @@ func maybeGetOONIDir(optionsHome string) string {
 	runtimex.Assert(homeDir != "", "homeDir is empty")
 	return filepath.Join(homeDir, dirName)
 }
+
+// databasePath returns the database path given the OONI_HOME.
+func databasePath(ooniHome string) string {
+	return filepath.Join(ooniHome, "db", "main.sqlite3")
+}
