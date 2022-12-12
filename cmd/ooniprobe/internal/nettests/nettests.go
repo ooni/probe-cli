@@ -65,12 +65,6 @@ type Controller struct {
 
 	// saveToDisk indicates if we want to save the measurement to disk
 	saveToDisk bool
-
-	// newSaverFn is OPTIONAL and is used for testing
-	newSaverFn func(model.Experiment, model.DatabaseMeasurement) (engine.Saver, error)
-
-	// newSubmitterFn is OPTIONAL and is used for testing
-	newSubmitterFn func(ctx context.Context) (engine.Submitter, error)
 }
 
 // BuildAndSetInputIdxMap takes in input a list of URLs in the format
@@ -302,9 +296,6 @@ func (c *Controller) OnProgress(perc float64, msg string) {
 
 // newSaver creates a new engine.Saver instance.
 func (c *Controller) newSaver(experiment model.Experiment, msmt model.DatabaseMeasurement) (engine.Saver, error) {
-	if c.newSaverFn != nil {
-		return c.newSaverFn(experiment, msmt)
-	}
 	return engine.NewSaver(engine.SaverConfig{
 		Enabled:    c.saveToDisk,
 		Experiment: experiment,
@@ -315,9 +306,6 @@ func (c *Controller) newSaver(experiment model.Experiment, msmt model.DatabaseMe
 
 // newSubmitter creates a new engine.Submitter instance.
 func (c *Controller) newSubmitter(ctx context.Context) (engine.Submitter, error) {
-	if c.newSubmitterFn != nil {
-		return c.newSubmitterFn(ctx)
-	}
 	return engine.NewSubmitter(ctx, engine.SubmitterConfig{
 		Enabled: c.Probe.Config().Sharing.UploadResults,
 		Session: c.Session,
