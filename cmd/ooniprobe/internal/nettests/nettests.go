@@ -160,6 +160,13 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 	}
 	start := time.Now()
 	c.ntStartTime = start
+
+	ctx := context.Background()
+	submitter, err := c.newSubmitter(ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to initialise submitter")
+	}
+
 	for idx, input := range inputs {
 		if c.Probe.IsTerminated() {
 			log.Info("user requested us to terminate using Ctrl-C")
@@ -177,6 +184,10 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 			urlID = sql.NullInt64{Int64: c.inputIdxMap[idx64], Valid: true}
 		}
 
+		// TODO(DecFox): we currently pass a nil reportID which should be replaced by the reportID
+		// we get from the submitter. However, since the reportID is generated on uploading the first
+		// measurement, we do not have a valid reportID to pass here. Therefore, we want to populate the
+		// submitter without having to upload a measurement.
 		msmt, err := db.CreateMeasurement(
 			reportID, exp.Name(), c.res.MeasurementDir, idx, resultID, urlID,
 		)
@@ -206,11 +217,7 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 
 		c.saveToDisk = true
 
-		ctx := context.Background()
-		submitter, err := c.newSubmitter(ctx)
-		if err != nil {
-			return errors.Wrap(err, "failed to initialise submitter")
-		}
+		// upload measurement
 		if err := submitter.Submit(ctx, measurement); err != nil {
 			log.Debug(color.RedString("failure.measurement_submission"))
 			if err := db.UploadFailed(c.msmts[idx64], err.Error()); err != nil {
