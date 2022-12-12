@@ -97,6 +97,21 @@ func (r reportChan) SubmitMeasurement(ctx context.Context, m *model.Measurement)
 	return nil
 }
 
+var ErrMissingReportID = errors.New("probeservices: missing report ID")
+
+func (c Client) SubmitMeasurementV2(ctx context.Context, m *model.Measurement) error {
+	if m.ReportID == "" {
+		return ErrMissingReportID
+	}
+	var updateResponse model.OOAPICollectorUpdateResponse
+	return c.APIClientTemplate.WithBodyLogging().Build().PostJSON(
+		ctx, fmt.Sprintf("/report/%s", m.ReportID), model.OOAPICollectorUpdateRequest{
+			Format:  "json",
+			Content: m,
+		}, &updateResponse,
+	)
+}
+
 // ReportID returns the report ID.
 func (r reportChan) ReportID() string {
 	return r.ID

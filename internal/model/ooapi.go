@@ -45,6 +45,13 @@ type OOAPICheckInConfig struct {
 	WebConnectivity OOAPICheckInConfigWebConnectivity `json:"web_connectivity"`
 }
 
+// OOAPICheckInInfoTelegram contains the Telegram
+// part of OOAPICheckInInfo.
+type OOAPICheckInInfoTelegram struct {
+	// ReportID is the report ID the probe should use.
+	ReportID string `json:"report_id"`
+}
+
 // OOAPICheckInInfoWebConnectivity contains the WebConnectivity
 // part of OOAPICheckInInfo.
 type OOAPICheckInInfoWebConnectivity struct {
@@ -57,6 +64,9 @@ type OOAPICheckInInfoWebConnectivity struct {
 
 // OOAPICheckInNettests contains nettest information returned by the checkin API call.
 type OOAPICheckInNettests struct {
+	// Telegram contains Telegram related information.
+	Telegram *OOAPICheckInInfoTelegram `json:"telegram"`
+
 	// WebConnectivity contains WebConnectivity related information.
 	WebConnectivity *OOAPICheckInInfoWebConnectivity `json:"web_connectivity"`
 }

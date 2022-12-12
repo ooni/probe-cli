@@ -61,6 +61,26 @@ type Session struct {
 		config *model.OOAPICheckInConfig) (*model.OOAPICheckInNettests, error)
 }
 
+// Platform implements model.ExperimentSession
+func (*Session) Platform() string {
+	panic("unimplemented")
+}
+
+// ResolverASNString implements model.ExperimentSession
+func (*Session) ResolverASNString() string {
+	panic("unimplemented")
+}
+
+// ResolverNetworkName implements model.ExperimentSession
+func (*Session) ResolverNetworkName() string {
+	panic("unimplemented")
+}
+
+// SubmitMeasurementV2 implements model.ExperimentSession
+func (*Session) SubmitMeasurementV2(ctx context.Context, measurement *model.Measurement) error {
+	panic("unimplemented")
+}
+
 func (sess *Session) GetTestHelpersByName(name string) ([]model.OOAPIService, bool) {
 	return sess.MockGetTestHelpersByName(name)
 }

@@ -556,6 +556,14 @@ func (s *Session) ResolverNetworkName() string {
 	return nn
 }
 
+func (s *Session) SubmitMeasurementV2(ctx context.Context, meas *model.Measurement) error {
+	clnt, err := s.NewProbeServicesClient(ctx)
+	if err != nil {
+		return err
+	}
+	return clnt.SubmitMeasurementV2(ctx, meas)
+}
+
 // SoftwareName returns the application name.
 func (s *Session) SoftwareName() string {
 	return s.softwareName
