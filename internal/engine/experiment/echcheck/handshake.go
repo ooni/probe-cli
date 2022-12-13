@@ -37,12 +37,10 @@ func handshakeWithExtension(ctx context.Context, conn net.Conn, zeroTime time.Ti
 	tlsConfig := genTLSConfig(sni)
 
 	handshakerConstructor := newHandshakerWithExtensions(extensions)
+	tracedHandshaker := handshakerConstructor(log.Log, &utls.HelloFirefox_Auto)
 
 	start := time.Now()
-
-	tracedHandshaker := handshakerConstructor(log.Log, &utls.HelloFirefox_65)
 	_, connState, err := tracedHandshaker.Handshake(ctx, conn, tlsConfig)
-
 	finish := time.Now()
 
 	return measurexlite.NewArchivalTLSOrQUICHandshakeResult(0, start.Sub(zeroTime), "tcp", address, tlsConfig,

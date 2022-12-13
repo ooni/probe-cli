@@ -6,6 +6,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"net"
 	"net/url"
 	"sync"
@@ -70,6 +71,7 @@ func (m *Measurer) Run(
 	if err != nil {
 		return err
 	}
+	runtimex.Assert(len(addrs) > 0, "expected at least one entry in addrs")
 	address := net.JoinHostPort(addrs[0], "443")
 
 	// 2. Set up TCP connections

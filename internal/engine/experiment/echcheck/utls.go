@@ -17,7 +17,7 @@ type tlsHandshakerWithExtensions struct {
 
 var _ model.TLSHandshaker = &tlsHandshakerWithExtensions{}
 
-// newHandshakerWithExtensions returns a NewHandsharer function for creating
+// newHandshakerWithExtensions returns a NewHandshaker function for creating
 // tlsHandshakerWithExtensions instances.
 func newHandshakerWithExtensions(extensions []utls.TLSExtension) func(dl model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker {
 	return func(dl model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker {
@@ -43,6 +43,7 @@ func (t *tlsHandshakerWithExtensions) Handshake(ctx context.Context, conn net.Co
 	return t.conn.NetConn(), t.conn.ConnectionState(), err
 }
 
+// TODO remove after https://github.com/ooni/probe/issues/2378
 // utlsConn is a utls connection
 type utlsConn struct {
 	*utls.UConn

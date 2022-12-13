@@ -82,6 +82,7 @@ func generateGreaseExtension(rand io.Reader) ([]byte, error) {
 		return nil, err
 	}
 
+	// TODO: compute this correctly as per https://www.ietf.org/archive/id/draft-ietf-tls-esni-14.html#name-recommended-padding-scheme
 	randomEncodedClientHelloInnerLen := 100
 	cipherLen := int(aead.CipherLen(uint(randomEncodedClientHelloInnerLen)))
 	ech.payload = make([]byte, randomEncodedClientHelloInnerLen+cipherLen)
