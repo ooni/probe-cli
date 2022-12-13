@@ -8,6 +8,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"net"
 	"net/url"
+	"sync"
 	"time"
 )
 
@@ -83,15 +84,27 @@ func (m *Measurer) Run(
 		return netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ConnectOperation, err)
 	}
 
-	// 3. Conduct and measure TLS Handshakes
+	// 3. Conduct and measure control and target TLS handshakes in parallel
+	var wg sync.WaitGroup
+	var control, target model.ArchivalTLSOrQUICHandshakeResult
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	testKeys := TestKeys{}
-	testKeys.Control = *handshake(ctx, conn, args.Measurement.MeasurementStartTimeSaved, address, parsed.Host)
-	testKeys.Target = *handshakeWithEch(ctx, conn2, args.Measurement.MeasurementStartTimeSaved, address, parsed.Host)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		control = *handshake(ctx, conn, args.Measurement.MeasurementStartTimeSaved, address, parsed.Host)
+	}()
 
-	args.Measurement.TestKeys = testKeys
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		target = *handshakeWithEch(ctx, conn2, args.Measurement.MeasurementStartTimeSaved, address, parsed.Host)
+	}()
+
+	wg.Wait()
+
+	args.Measurement.TestKeys = TestKeys{Control: control, Target: target}
 
 	return nil
 }
