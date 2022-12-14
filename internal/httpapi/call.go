@@ -19,7 +19,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// joinURLPath appends |resourcePath| to |urlPath|.
+// joinURLPath appends resourcePath to urlPath.
 func joinURLPath(urlPath, resourcePath string) string {
 	if resourcePath == "" {
 		if urlPath == "" {
@@ -34,7 +34,7 @@ func joinURLPath(urlPath, resourcePath string) string {
 	return urlPath + resourcePath
 }
 
-// newRequest creates a new http.Request from the given |ctx|, |endpoint|, and |desc|.
+// newRequest creates a new http.Request from the given ctx, endpoint, and desc.
 func newRequest(ctx context.Context, endpoint *Endpoint, desc *Descriptor) (*http.Request, error) {
 	URL, err := url.Parse(endpoint.BaseURL)
 	if err != nil {
@@ -111,7 +111,7 @@ func (err *errMaybeCensorship) Unwrap() error {
 // ErrTruncated indicates we truncated the response body.
 var ErrTruncated = errors.New("httpapi: truncated response body")
 
-// docall calls the API represented by the given request |req| on the given |endpoint|
+// docall calls the API represented by the given request req on the given endpoint
 // and returns the response and its body or an error.
 func docall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http.Response, []byte, error) {
 	// Implementation note: remember to mark errors for which you want
@@ -178,7 +178,7 @@ func call(ctx context.Context, desc *Descriptor, endpoint *Endpoint) (*http.Resp
 	return docall(endpoint, desc, request)
 }
 
-// Call invokes the API described by |desc| on the given HTTP |endpoint| and
+// Call invokes the API described by desc on the given HTTP endpoint and
 // returns the response body (as a slice of bytes) or an error.
 //
 // Note: this function returns ErrHTTPRequestFailed if the HTTP status code is
@@ -189,26 +189,16 @@ func Call(ctx context.Context, desc *Descriptor, endpoint *Endpoint) ([]byte, er
 	return rawResponseBody, err
 }
 
-// goodContentTypeForJSON tracks known-good content-types for JSON. If the content-type
-// is not in this map, |CallWithJSONResponse| emits a warning message.
-var goodContentTypeForJSON = map[string]bool{
-	applicationJSON: true,
-}
-
 // CallWithJSONResponse is like Call but also assumes that the response is a
-// JSON body and attempts to parse it into the |response| field.
+// JSON body and attempts to parse it into the response field.
 //
 // Note: this function returns ErrHTTPRequestFailed if the HTTP status code is
 // greater or equal than 400. You could use errors.As to obtain a copy of the
 // error that was returned and see for yourself the actual status code.
 func CallWithJSONResponse(ctx context.Context, desc *Descriptor, endpoint *Endpoint, response any) error {
-	httpResp, rawRespBody, err := call(ctx, desc, endpoint)
+	_, rawRespBody, err := call(ctx, desc, endpoint)
 	if err != nil {
 		return err
-	}
-	if ctype := httpResp.Header.Get("Content-Type"); !goodContentTypeForJSON[ctype] {
-		endpoint.Logger.Warnf("httpapi: unexpected content-type: %s", ctype)
-		// fallthrough
 	}
 	return json.Unmarshal(rawRespBody, response)
 }

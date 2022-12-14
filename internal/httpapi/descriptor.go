@@ -35,7 +35,7 @@ type Descriptor struct {
 	LogBody bool
 
 	// MaxBodySize is the OPTIONAL maximum response body size. If
-	// not set, we use the |DefaultMaxBodySize| constant.
+	// not set, we use the [DefaultMaxBodySize] constant.
 	MaxBodySize int64
 
 	// Method is the MANDATORY request method.
@@ -45,7 +45,7 @@ type Descriptor struct {
 	RequestBody []byte
 
 	// Timeout is the OPTIONAL timeout for this call. If no timeout
-	// is specified we will use the |DefaultCallTimeout| const.
+	// is specified we will use the [DefaultCallTimeout] const.
 	Timeout time.Duration
 
 	// URLPath is the MANDATORY URL path.
@@ -55,7 +55,7 @@ type Descriptor struct {
 	URLQuery url.Values
 }
 
-// WithBodyLogging returns a SHALLOW COPY of |Descriptor| with LogBody set to |value|. You SHOULD
+// WithBodyLogging returns a SHALLOW COPY of [Descriptor] with LogBody set to value. You SHOULD
 // only use this method when initializing the descriptor you want to use.
 func (desc *Descriptor) WithBodyLogging(value bool) *Descriptor {
 	out := &Descriptor{}
@@ -81,7 +81,7 @@ func NewGETJSONDescriptor(urlPath string) *Descriptor {
 const applicationJSON = "application/json"
 
 // NewGETJSONWithQueryDescriptor is like NewGETJSONDescriptor but it also
-// allows you to provide |query| arguments. Leaving |query| nil or empty
+// allows you to provide query arguments. Leaving query nil or empty
 // is equivalent to calling NewGETJSONDescriptor directly.
 func NewGETJSONWithQueryDescriptor(urlPath string, query url.Values) *Descriptor {
 	return &Descriptor{
@@ -102,8 +102,8 @@ func NewGETJSONWithQueryDescriptor(urlPath string, query url.Values) *Descriptor
 // NewPOSTJSONWithJSONResponseDescriptor creates a descriptor that POSTs a JSON document
 // and expects to receive back a JSON document from the API.
 //
-// This function ONLY fails if we cannot serialize the |request| to JSON. So, if you know
-// that |request| is JSON-serializable, you can safely call MustNewPostJSONWithJSONResponseDescriptor instead.
+// This function ONLY fails if we cannot serialize the request to JSON. So, if you know
+// that request is JSON-serializable, you can safely call MustNewPostJSONWithJSONResponseDescriptor instead.
 func NewPOSTJSONWithJSONResponseDescriptor(urlPath string, request any) (*Descriptor, error) {
 	rawRequest, err := json.Marshal(request)
 	if err != nil {
@@ -126,7 +126,7 @@ func NewPOSTJSONWithJSONResponseDescriptor(urlPath string, request any) (*Descri
 }
 
 // MustNewPOSTJSONWithJSONResponseDescriptor is like NewPOSTJSONWithJSONResponseDescriptor except that
-// it panics in case it's not possible to JSON serialize the |request|.
+// it panics in case it's not possible to JSON serialize the request.
 func MustNewPOSTJSONWithJSONResponseDescriptor(urlPath string, request any) *Descriptor {
 	desc, err := NewPOSTJSONWithJSONResponseDescriptor(urlPath, request)
 	runtimex.PanicOnError(err, "NewPOSTJSONWithJSONResponseDescriptor failed")
@@ -134,7 +134,7 @@ func MustNewPOSTJSONWithJSONResponseDescriptor(urlPath string, request any) *Des
 }
 
 // NewGETResourceDescriptor creates a generic descriptor for GETting a
-// resource of unspecified type using the given |urlPath|.
+// resource of unspecified type using the given urlPath.
 func NewGETResourceDescriptor(urlPath string) *Descriptor {
 	return &Descriptor{
 		Accept:             "",

@@ -16,9 +16,9 @@ import "github.com/ooni/probe-cli/v3/internal/model"
 type Endpoint struct {
 	// BaseURL is the MANDATORY endpoint base URL. We will honour the
 	// path of this URL and prepend it to the actual path specified inside
-	// a |Descriptor.URLPath|. However, we will always discard any query
+	// a [Descriptor] URLPath. However, we will always discard any query
 	// that may have been set inside the BaseURL. The only query string
-	// will be composed from the |Descriptor.URLQuery| values.
+	// will be composed from the [Descriptor] URLQuery values.
 	//
 	// For example, https://api.ooni.io.
 	BaseURL string
@@ -45,7 +45,7 @@ type Endpoint struct {
 	UserAgent string
 }
 
-// NewEndpointList constructs a list of API endpoints from |services|
+// NewEndpointList constructs a list of API endpoints from services
 // returned by the OONI backend (or known in advance).
 //
 // Arguments:
