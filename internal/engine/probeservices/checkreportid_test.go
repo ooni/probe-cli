@@ -2,7 +2,6 @@ package probeservices
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"testing"
 
@@ -34,30 +33,6 @@ func TestCheckReportIDWorkingAsIntended(t *testing.T) {
 		t.Fatal(err)
 	}
 	if found != true {
-		t.Fatal("unexpected found value")
-	}
-}
-
-func TestCheckReportIDWorkingWithCancelledContext(t *testing.T) {
-	client := Client{
-		APIClientTemplate: httpx.APIClientTemplate{
-			BaseURL:    "https://api.ooni.io/",
-			HTTPClient: http.DefaultClient,
-			Logger:     log.Log,
-			UserAgent:  "miniooni/0.1.0-dev",
-		},
-		LoginCalls:    &atomicx.Int64{},
-		RegisterCalls: &atomicx.Int64{},
-		StateFile:     NewStateFile(&kvstore.Memory{}),
-	}
-	reportID := `20201209T052225Z_urlgetter_IT_30722_n1_E1VUhMz08SEkgYFU`
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // fail immediately
-	found, err := client.CheckReportID(ctx, reportID)
-	if !errors.Is(err, context.Canceled) {
-		t.Fatalf("not the error we expected: %+v", err)
-	}
-	if found != false {
 		t.Fatal("unexpected found value")
 	}
 }
