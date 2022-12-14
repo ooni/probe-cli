@@ -358,16 +358,6 @@ func (s *Session) FetchTorTargets(
 	return clnt.FetchTorTargets(ctx, cc)
 }
 
-// FetchURLList fetches the URL list from the API.
-func (s *Session) FetchURLList(
-	ctx context.Context, config model.OOAPIURLListConfig) ([]model.OOAPIURLInfo, error) {
-	clnt, err := s.NewOrchestraClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return clnt.FetchURLList(ctx, config)
-}
-
 // KeyValueStore returns the configured key-value store.
 func (s *Session) KeyValueStore() model.KeyValueStore {
 	return s.kvStore

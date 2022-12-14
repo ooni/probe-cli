@@ -211,19 +211,6 @@ func TestSessionMaybeLookupLocationContextLookupLocationContextFailure(t *testin
 	}
 }
 
-func TestSessionFetchURLListWithCancelledContext(t *testing.T) {
-	sess := &Session{}
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // cause failure
-	resp, err := sess.FetchURLList(ctx, model.OOAPIURLListConfig{})
-	if !errors.Is(err, context.Canceled) {
-		t.Fatal("not the error we expected", err)
-	}
-	if resp != nil {
-		t.Fatal("expected nil response here")
-	}
-}
-
 func TestSessionFetchTorTargetsWithCancelledContext(t *testing.T) {
 	sess := &Session{}
 	ctx, cancel := context.WithCancel(context.Background())
