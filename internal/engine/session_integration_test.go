@@ -501,17 +501,3 @@ func TestSessionNewSubmitterReturnsNonNilSubmitter(t *testing.T) {
 		t.Fatal("expected non nil submitter here")
 	}
 }
-
-func TestSessionFetchURLList(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	sess := newSessionForTesting(t)
-	resp, err := sess.FetchURLList(context.Background(), model.OOAPIURLListConfig{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if resp == nil {
-		t.Fatal("expected non-nil response here")
-	}
-}

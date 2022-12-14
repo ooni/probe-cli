@@ -28,6 +28,7 @@ import (
 	"net/url"
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/httpapi"
 	"github.com/ooni/probe-cli/v3/internal/httpx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -123,5 +124,19 @@ func NewClient(sess Session, endpoint model.OOAPIService) (*Client, error) {
 		return client, nil
 	default:
 		return nil, ErrUnsupportedEndpoint
+	}
+}
+
+// newHTTPAPIEndpoint is a convenience function for constructing a new
+// instance of *httpapi.Endpoint based on the content of Client
+func (c Client) newHTTPAPIEndpoint() *httpapi.Endpoint {
+	// TODO(https://github.com/ooni/probe/issues/2362): we should migrate all APIs to use
+	// httpapi, which supports fallback, while httpx does not support fallback.
+	return &httpapi.Endpoint{
+		BaseURL:    c.BaseURL,
+		HTTPClient: c.HTTPClient,
+		Logger:     c.Logger,
+		Host:       c.Host,
+		UserAgent:  c.UserAgent,
 	}
 }

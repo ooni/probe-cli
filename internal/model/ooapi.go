@@ -1,12 +1,12 @@
 package model
 
-import "time"
-
 //
 // OONI API data model.
 //
 // See https://api.ooni.io/apidocs/.
 //
+
+import "time"
 
 // OOAPICheckInConfigWebConnectivity is the WebConnectivity
 // portion of OOAPICheckInConfig.
@@ -129,18 +129,6 @@ type OOAPIURLInfo struct {
 
 	// URL is the string-serialized URL.
 	URL string `json:"url"`
-}
-
-// OOAPIURLListConfig contains configuration for fetching the URL list.
-type OOAPIURLListConfig struct {
-	// Categories to query for (empty means all)
-	Categories []string
-
-	// CountryCode is the optional country code
-	CountryCode string
-
-	// Max number of URLs (<= 0 means no limit)
-	Limit int64
 }
 
 const (
@@ -318,16 +306,4 @@ type OOAPIRegisterRequest struct {
 // OOAPIRegisterResponse is a reponse from the register API.
 type OOAPIRegisterResponse struct {
 	ClientID string `json:"client_id"`
-}
-
-// OOAPIURLListResult is the result of the /api/v1/test-list/urls API call.
-type OOAPIURLListResult struct {
-	Metadata OOAPIURLListMetadata `json:"metadata"`
-	Results  []OOAPIURLInfo       `json:"results"`
-}
-
-// OONIAPIURLListMetadata contains metadata included
-// inside the OOAPIURLListResult struct.
-type OOAPIURLListMetadata struct {
-	Count int64 `json:"count"`
 }

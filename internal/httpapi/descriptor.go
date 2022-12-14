@@ -21,6 +21,9 @@ type Descriptor struct {
 	// Authorization is the OPTIONAL authorization.
 	Authorization string
 
+	// AcceptEncodingGzip OPTIONALLY accepts gzip-encoding bodies.
+	AcceptEncodingGzip bool
+
 	// ContentType is the OPTIONAL content-type header.
 	ContentType string
 
@@ -50,7 +53,7 @@ type Descriptor struct {
 
 // DefaultMaxBodySize is the default value for the maximum
 // body size you can fetch using the httpapi package.
-const DefaultMaxBodySize = 1 << 22
+const DefaultMaxBodySize = 1 << 24
 
 // DefaultCallTimeout is the default timeout for an httpapi call.
 const DefaultCallTimeout = 60 * time.Second

@@ -6,8 +6,10 @@ package httpapi
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -70,6 +72,9 @@ func newRequest(ctx context.Context, endpoint *Endpoint, desc *Descriptor) (*htt
 	if endpoint.UserAgent != "" {
 		request.Header.Set("User-Agent", endpoint.UserAgent)
 	}
+	if desc.AcceptEncodingGzip {
+		request.Header.Set("Accept-Encoding", "gzip")
+	}
 	return request, nil
 }
 
@@ -103,27 +108,55 @@ func (err *errMaybeCensorship) Unwrap() error {
 	return err.Err
 }
 
+// ErrTruncated indicates we truncated the response body.
+var ErrTruncated = errors.New("httpapi: truncated response body")
+
 // docall calls the API represented by the given request |req| on the given |endpoint|
 // and returns the response and its body or an error.
 func docall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http.Response, []byte, error) {
 	// Implementation note: remember to mark errors for which you want
 	// to retry with another endpoint using errMaybeCensorship.
+
 	response, err := endpoint.HTTPClient.Do(request)
 	if err != nil {
 		return nil, nil, &errMaybeCensorship{err}
 	}
 	defer response.Body.Close()
-	// Implementation note: always read and log the response body since
-	// it's quite useful to see the response JSON on API error.
-	r := io.LimitReader(response.Body, DefaultMaxBodySize)
-	data, err := netxlite.ReadAllContext(request.Context(), r)
+
+	var reader io.Reader = response.Body
+	if response.Header.Get("Content-Encoding") == "gzip" {
+		reader, err = gzip.NewReader(reader)
+		if err != nil {
+			// This case happens when we cannot read the gzip header
+			// hence it can be "triggered" remotely and we cannot just
+			// panic on error to handle this error condition.
+			return response, nil, err
+		}
+	}
+	maxBodySize := desc.MaxBodySize
+	if maxBodySize <= 0 {
+		maxBodySize = DefaultMaxBodySize
+	}
+	// Implementation note: when there's decompression we must (obviously?)
+	// enforce the maximum body size on the _decompressed_ body.
+	reader = io.LimitReader(reader, maxBodySize)
+
+	// Implementation note: always read and log the response body _before_
+	// checking the status code, since it's quite useful to log the JSON
+	// returned by the OONI API in case of errors. Obviously, the flip side
+	// of this choice is that we read potentially very large error pages.
+	data, err := netxlite.ReadAllContext(request.Context(), reader)
 	if err != nil {
 		return response, nil, &errMaybeCensorship{err}
+	}
+	if int64(len(data)) >= maxBodySize {
+		return response, nil, ErrTruncated
 	}
 	endpoint.Logger.Debugf("httpapi: response body length: %d bytes", len(data))
 	if desc.LogBody {
 		endpoint.Logger.Debugf("httpapi: response body: %s", string(data))
 	}
+
 	if response.StatusCode >= 400 {
 		return response, nil, &ErrHTTPRequestFailed{response.StatusCode}
 	}
