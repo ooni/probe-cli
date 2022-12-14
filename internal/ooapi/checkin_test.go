@@ -22,18 +22,6 @@ func TestNewDescriptorCheckIn(t *testing.T) {
 		field := rdesc.Field(idx)
 		name := typ.Field(idx).Name
 
-		// check fields which should have a zero value first
-		if field.IsZero() {
-			switch name {
-			case "Authorization", "LogBody", "MaxBodySize", "Timeout", "URLQuery":
-				// this field is expected to be zero
-			default:
-				t.Fatalf("field %s should not be zero-initialized", name)
-			}
-			continue
-		}
-
-		// then focus on fields who should not have a zero value
 		switch name {
 		case "AcceptEncodingGzip":
 			if !field.Interface().(bool) {
@@ -43,8 +31,20 @@ func TestNewDescriptorCheckIn(t *testing.T) {
 			if field.Interface().(string) != httpapi.ApplicationJSON {
 				t.Fatalf("unexpected desc.%s", name)
 			}
+		case "Authorization":
+			if !field.IsZero() {
+				t.Fatalf("unexpected desc.%s", name)
+			}
 		case "ContentType":
 			if field.Interface().(string) != httpapi.ApplicationJSON {
+				t.Fatalf("unexpected desc.%s", name)
+			}
+		case "LogBody":
+			if !field.IsZero() {
+				t.Fatalf("unexpected desc.%s", name)
+			}
+		case "MaxBodySize":
+			if !field.IsZero() {
 				t.Fatalf("unexpected desc.%s", name)
 			}
 		case "Method":
@@ -55,12 +55,20 @@ func TestNewDescriptorCheckIn(t *testing.T) {
 			if len(field.Interface().([]byte)) <= 2 {
 				t.Fatalf("unexpected desc.%s length", name)
 			}
+		case "Timeout":
+			if !field.IsZero() {
+				t.Fatalf("unexpected desc.%s", name)
+			}
 		case "URLPath":
 			if field.Interface().(string) != "/api/v1/check-in" {
 				t.Fatalf("unexpected desc.%s", name)
 			}
+		case "URLQuery":
+			if !field.IsZero() {
+				t.Fatalf("unexpected desc.%s", name)
+			}
 		default:
-			t.Fatalf("unhandled non-zero field %s", name)
+			t.Fatalf("unhandled field %s", name)
 		}
 	}
 }
