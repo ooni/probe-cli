@@ -17,7 +17,7 @@ func TestSequenceCaller(t *testing.T) {
 	t.Run("Call", func(t *testing.T) {
 		t.Run("first success", func(t *testing.T) {
 			sc := NewSequenceCaller(
-				&Descriptor{
+				&Descriptor[RawRequest]{
 					Method:  http.MethodGet,
 					URLPath: "/",
 				},
@@ -58,7 +58,7 @@ func TestSequenceCaller(t *testing.T) {
 
 		t.Run("first HTTP failure and we immediately stop", func(t *testing.T) {
 			sc := NewSequenceCaller(
-				&Descriptor{
+				&Descriptor[RawRequest]{
 					Method:  http.MethodGet,
 					URLPath: "/",
 				},
@@ -100,7 +100,7 @@ func TestSequenceCaller(t *testing.T) {
 
 		t.Run("first network failure, second success", func(t *testing.T) {
 			sc := NewSequenceCaller(
-				&Descriptor{
+				&Descriptor[RawRequest]{
 					Method:  http.MethodGet,
 					URLPath: "/",
 				},
@@ -141,7 +141,7 @@ func TestSequenceCaller(t *testing.T) {
 
 		t.Run("all network failure", func(t *testing.T) {
 			sc := NewSequenceCaller(
-				&Descriptor{
+				&Descriptor[RawRequest]{
 					Method:  http.MethodGet,
 					URLPath: "/",
 				},
@@ -185,7 +185,7 @@ func TestSequenceCaller(t *testing.T) {
 
 		t.Run("first success", func(t *testing.T) {
 			sc := NewSequenceCaller(
-				&Descriptor{
+				&Descriptor[RawRequest]{
 					Method:  http.MethodGet,
 					URLPath: "/",
 				},
@@ -235,7 +235,7 @@ func TestSequenceCaller(t *testing.T) {
 
 		t.Run("first HTTP failure and we immediately stop", func(t *testing.T) {
 			sc := NewSequenceCaller(
-				&Descriptor{
+				&Descriptor[RawRequest]{
 					Method:  http.MethodGet,
 					URLPath: "/",
 				},
@@ -284,7 +284,7 @@ func TestSequenceCaller(t *testing.T) {
 
 		t.Run("first network failure, second success", func(t *testing.T) {
 			sc := NewSequenceCaller(
-				&Descriptor{
+				&Descriptor[RawRequest]{
 					Method:  http.MethodGet,
 					URLPath: "/",
 				},
@@ -330,7 +330,7 @@ func TestSequenceCaller(t *testing.T) {
 
 		t.Run("all network failure", func(t *testing.T) {
 			sc := NewSequenceCaller(
-				&Descriptor{
+				&Descriptor[RawRequest]{
 					Method:  http.MethodGet,
 					URLPath: "/",
 				},

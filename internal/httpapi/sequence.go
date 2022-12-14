@@ -20,17 +20,20 @@ import (
 //
 // CAVEAT: this code will ONLY retry API calls with subsequent endpoints when
 // the error originates in the HTTP round trip or while reading the body.
-type SequenceCaller struct {
+type SequenceCaller[RequestType any] struct {
 	// Descriptor is the API [Descriptor].
-	Descriptor *Descriptor
+	Descriptor *Descriptor[RequestType]
 
 	// Endpoints is the list of [Endpoint] to use.
 	Endpoints []*Endpoint
 }
 
 // NewSequenceCaller is a factory for creating a [SequenceCaller].
-func NewSequenceCaller(desc *Descriptor, endpoints ...*Endpoint) *SequenceCaller {
-	return &SequenceCaller{
+func NewSequenceCaller[RequestType any](
+	desc *Descriptor[RequestType],
+	endpoints ...*Endpoint,
+) *SequenceCaller[RequestType] {
+	return &SequenceCaller[RequestType]{
 		Descriptor: desc,
 		Endpoints:  endpoints,
 	}
@@ -39,9 +42,9 @@ func NewSequenceCaller(desc *Descriptor, endpoints ...*Endpoint) *SequenceCaller
 // ErrAllEndpointsFailed indicates that all endpoints failed.
 var ErrAllEndpointsFailed = errors.New("httpapi: all endpoints failed")
 
-// shouldRetry returns true when we should try with another endpoint given the
+// sequenceCallershouldRetry returns true when we should try with another endpoint given the
 // value of err which could (obviously) be nil in case of success.
-func (sc *SequenceCaller) shouldRetry(err error) bool {
+func sequenceCallerShouldRetry(err error) bool {
 	var kind *errMaybeCensorship
 	belongs := errors.As(err, &kind)
 	return belongs
@@ -52,12 +55,12 @@ func (sc *SequenceCaller) shouldRetry(err error) bool {
 //
 // CAVEAT: this code will ONLY retry API calls with subsequent endpoints when
 // the error originates in the HTTP round trip or while reading the body.
-func (sc *SequenceCaller) Call(ctx context.Context) ([]byte, int, error) {
+func (sc *SequenceCaller[RequestType]) Call(ctx context.Context) ([]byte, int, error) {
 	var selected int
 	merr := multierror.New(ErrAllEndpointsFailed)
 	for _, epnt := range sc.Endpoints {
 		respBody, err := Call(ctx, sc.Descriptor, epnt)
-		if sc.shouldRetry(err) {
+		if sequenceCallerShouldRetry(err) {
 			merr.Add(err)
 			selected++
 			continue
@@ -74,12 +77,13 @@ func (sc *SequenceCaller) Call(ctx context.Context) ([]byte, int, error) {
 //
 // CAVEAT: this code will ONLY retry API calls with subsequent endpoints when
 // the error originates in the HTTP round trip or while reading the body.
-func (sc *SequenceCaller) CallWithJSONResponse(ctx context.Context, response any) (int, error) {
+func (sc *SequenceCaller[RequestType]) CallWithJSONResponse(
+	ctx context.Context, response any) (int, error) {
 	var selected int
 	merr := multierror.New(ErrAllEndpointsFailed)
 	for _, epnt := range sc.Endpoints {
 		err := CallWithJSONResponse(ctx, sc.Descriptor, epnt, response)
-		if sc.shouldRetry(err) {
+		if sequenceCallerShouldRetry(err) {
 			merr.Add(err)
 			selected++
 			continue

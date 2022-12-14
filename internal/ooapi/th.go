@@ -15,10 +15,12 @@ import (
 
 // NewDescriptorTH creates a new [httpapi.Descriptor] describing how
 // to issue an HTTP call to the Web Connectivity Test Helper (TH).
-func NewDescriptorTH(creq *model.THRequest) *httpapi.Descriptor {
+func NewDescriptorTH(
+	creq *model.THRequest,
+) *httpapi.Descriptor[*model.THRequest] {
 	rawRequest, err := json.Marshal(creq)
 	runtimex.PanicOnError(err, "json.Marshal failed unexpectedly")
-	return &httpapi.Descriptor{
+	return &httpapi.Descriptor[*model.THRequest]{
 		Accept:             httpapi.ApplicationJSON,
 		AcceptEncodingGzip: false,
 		Authorization:      "",
@@ -26,9 +28,11 @@ func NewDescriptorTH(creq *model.THRequest) *httpapi.Descriptor {
 		LogBody:            true,
 		MaxBodySize:        0,
 		Method:             http.MethodPost,
-		RequestBody:        rawRequest,
-		Timeout:            0,
-		URLPath:            "/",
-		URLQuery:           nil,
+		Request: &httpapi.RequestDescriptor[*model.THRequest]{
+			Body: rawRequest,
+		},
+		Timeout:  0,
+		URLPath:  "/",
+		URLQuery: nil,
 	}
 }
