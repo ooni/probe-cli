@@ -5,6 +5,7 @@ import (
 )
 
 type SpeedTest struct {
+	IsVPN      bool    `json:"is_vpn"`
 	Failed     bool    `json:"failed"`
 	Failure    *string `json:"failure"`
 	File       string  `json:"file"`
@@ -57,7 +58,7 @@ type TestKeys struct {
 	// Pings is an array of ping stats.
 	Pings []*PingResult `json:"icmp_pings"`
 
-	SpeedTest *SpeedTest `json:"speed_test"`
+	SpeedTest []*SpeedTest `json:"speed_test"`
 
 	// Requests contain HTTP results done through the tunnel.
 	Requests []model.ArchivalHTTPRequestResult `json:"requests"`

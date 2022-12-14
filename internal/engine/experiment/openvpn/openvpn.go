@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -240,11 +241,11 @@ func (m *Measurer) Run(
 
 	speedTestTarget := ""
 	switch m.config.WithSpeedTest {
-	case "4k":
+	case "4kb":
 		speedTestTarget = file4kb
-	case "100k":
+	case "100kb":
 		speedTestTarget = file100kb
-	case "500k":
+	case "500kb":
 		speedTestTarget = file500kb
 	case "1mb":
 		speedTestTarget = file1mb
@@ -308,14 +309,16 @@ func (m *Measurer) Run(
 	}
 
 	if doSpeedTest {
+		tk.SpeedTest = []*SpeedTest{}
 		sess.Logger().Infof("openvpn: speed test")
 		sess.Logger().Infof("openvpn: retrieving %s", speedTestTarget)
 		// TODO it'd be good to give some feedback in here, we
 		// can calculate the progress % for instance.
+
+		// first time, via the direct connection
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-
 			// TODO(ainghazal): there is probably a better way to do this now,
 			// but this is the simplest way I managed to find to pass a custom
 			// snapshotSize.
@@ -325,17 +328,53 @@ func (m *Measurer) Run(
 			mx.HTTPMaxBodySnapshotSize = snapshotsize
 			const timeout = 120 * time.Second
 			speedTestResp, err := mx.EasyHTTPRoundTripGET(ctx, timeout, speedTestTarget)
-			tk.SpeedTest = &SpeedTest{
+			st := &SpeedTest{
+				IsVPN:   false,
 				Failure: err,
 				Failed:  err != nil,
 				File:    speedTestTarget,
 			}
 			if len(speedTestResp.Requests) > 0 {
 				req := speedTestResp.Requests[0]
-				tk.SpeedTest.T0 = req.Started
-				tk.SpeedTest.T = req.Finished
-				tk.SpeedTest.BodyLength = req.Response.BodyLength
+				st.T0 = req.Started
+				st.T = req.Finished
+				st.BodyLength = req.Response.BodyLength
 			}
+			tk.SpeedTest = append(tk.SpeedTest, st)
+		}()
+		wg.Wait()
+
+		// second time, via the tunnel
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			// TODO(ainghazal): there is probably a better way to do this now,
+			// but this is the simplest way I managed to find to pass a custom
+			// snapshotSize.
+			mx := measurex.NewMeasurerWithDefaultSettings()
+			mx.HTTPClient = &http.Client{
+				Transport: &http.Transport{
+					Dial: vpn.NewTunDialer(m.tunnel).Dial,
+				},
+			}
+			mx.Begin = time.Now()
+			const snapshotsize = 1 << 28
+			mx.HTTPMaxBodySnapshotSize = snapshotsize
+			const timeout = 120 * time.Second
+			speedTestResp, err := mx.EasyHTTPRoundTripGET(ctx, timeout, speedTestTarget)
+			st := &SpeedTest{
+				IsVPN:   true,
+				Failure: err,
+				Failed:  err != nil,
+				File:    speedTestTarget,
+			}
+			if len(speedTestResp.Requests) > 0 {
+				req := speedTestResp.Requests[0]
+				st.T0 = req.Started
+				st.T = req.Finished
+				st.BodyLength = req.Response.BodyLength
+			}
+			tk.SpeedTest = append(tk.SpeedTest, st)
 		}()
 		wg.Wait()
 	}
