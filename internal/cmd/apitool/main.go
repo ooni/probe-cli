@@ -68,8 +68,6 @@ func main() {
 	log.SetLevel(logmap[*debug])
 	client := newclient()
 	switch *mode {
-	case "check":
-		check(client)
 	case "meta":
 		meta(client)
 	case "raw":
@@ -77,12 +75,6 @@ func main() {
 	default:
 		fatalOnError(fmt.Errorf("invalid -mode flag value: %s", *mode), "usage error")
 	}
-}
-
-func check(c probeservices.Client) {
-	found, err := c.CheckReportID(context.Background(), *reportid)
-	fatalOnError(err, "c.CheckReportID failed")
-	fmt.Printf("%+v\n", found)
 }
 
 func meta(c probeservices.Client) {
