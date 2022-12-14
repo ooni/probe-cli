@@ -7,6 +7,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/httpapi"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/ooapi"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -24,7 +25,7 @@ func Control(
 	ctx context.Context, sess model.ExperimentSession,
 	testhelpers []model.OOAPIService, creq ControlRequest) (ControlResponse, *model.OOAPIService, error) {
 	seqCaller := httpapi.NewSequenceCaller(
-		httpapi.MustNewPOSTJSONWithJSONResponseDescriptor("/", creq).WithBodyLogging(true),
+		ooapi.NewDescriptorTH(&creq),
 		httpapi.NewEndpointList(sess.DefaultHTTPClient(), sess.Logger(), sess.UserAgent(), testhelpers...)...,
 	)
 	sess.Logger().Infof("control for %s...", creq.HTTPRequest)
