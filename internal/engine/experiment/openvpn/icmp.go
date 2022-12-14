@@ -32,17 +32,17 @@ type PingResult struct {
 }
 
 // pingTimeout returns the timeout set on each pinger train.
-func pingTimeout() time.Duration {
-	return time.Second * (pingCount + pingExtraWaitSeconds)
+func pingTimeout(count int) time.Duration {
+	return 2*time.Second*time.Duration(count) + pingExtraWaitSeconds
 }
 
-func doSinglePing(wg *sync.WaitGroup, conn net.Conn, target string, tk *TestKeys) {
+func doSinglePing(wg *sync.WaitGroup, conn net.Conn, target string, count int, tk *TestKeys) {
 	defer wg.Done()
 	pinger := ping.NewFromSharedConnection(target, conn)
-	// this is a "raw" socket
+	// this is a "raw" socket for openvpn experiment
 	pinger.Raw = true
-	pinger.Count = pingCount
-	pinger.Timeout = pingTimeout()
+	pinger.Count = count
+	pinger.Timeout = pingTimeout(count)
 
 	err := pinger.Run(context.Background())
 	pingResult := parseStats(pinger, target)
@@ -53,9 +53,9 @@ func doSinglePing(wg *sync.WaitGroup, conn net.Conn, target string, tk *TestKeys
 	tk.Pings = append(tk.Pings, pingResult)
 }
 
-func sendBlockingPing(wg *sync.WaitGroup, conn net.Conn, target string, tk *TestKeys) {
+func sendBlockingPing(wg *sync.WaitGroup, conn net.Conn, target string, count int, tk *TestKeys) {
 	wg.Add(1)
-	go doSinglePing(wg, conn, target, tk)
+	go doSinglePing(wg, conn, target, count, tk)
 	wg.Wait()
 	log.Printf("ping train sent to %s ----", target)
 }

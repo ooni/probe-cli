@@ -23,11 +23,13 @@ var (
 // Config contains openvpn experiment configuration.
 // TODO(ainghazal): add an optional (and reasonable) truncation threshold for each url (needs to be overriden).
 type Config struct {
-	URLs        string `ooni:"comma-separated list of extra URLs to fetch through the tunnel"`
-	Cipher      string `ooni:"cipher to use"`
-	Auth        string `ooni:"auth to use"`
-	Obfuscation string `ooni:"obfuscation type for the tunnel"`
-	Compress    string `ooni:"compression to use"`
+	URLs          string `ooni:"comma-separated list of extra URLs to fetch through the tunnel"`
+	PingCount     string `ooni:"number of icmp pings to send (default: 10)"`
+	WithSpeedTest string `ooni:"if yes, perform a speed test insteaad of fetching the given list of urls"`
+	Cipher        string `ooni:"cipher to use"`
+	Auth          string `ooni:"auth to use"`
+	Obfuscation   string `ooni:"obfuscation type for the tunnel"`
+	Compress      string `ooni:"compression to use"`
 	// Safe_XXX optins are not sent to the backend for archival.
 	SafeKey        string `ooni:"key to connect to the OpenVPN endpoint"`
 	SafeCert       string `ooni:"cert to connect to the OpenVPN endpoint"`

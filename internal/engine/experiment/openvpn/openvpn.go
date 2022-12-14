@@ -9,11 +9,13 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"text/template"
@@ -21,6 +23,7 @@ import (
 
 	"github.com/ooni/minivpn/vpn"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
+	"github.com/ooni/probe-cli/v3/internal/measurex"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
@@ -31,11 +34,10 @@ const (
 	testName = "openvpn"
 
 	// testVersion is the openvpn experiment version.
-	testVersion = "0.0.17"
+	testVersion = "0.0.18"
 
 	// pingCount tells how many icmp echo requests to send.
 	pingCount = 10
-	//pingCount = 1
 
 	// sucessLossThreshold will mark icmp pings as successful if loss is below this number.
 	sucessLossThreshold = 0.5
@@ -55,6 +57,15 @@ const (
 
 	// googleURI is self-explanatory.
 	googleURI = "https://www.google.com/"
+
+	// speedTestFiles
+	file4kb   = "https://raw.githubusercontent.com/ooni/probe-cli/master/Readme.md"
+	file100kb = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_100k.pdf"
+	file500kb = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_500k.pdf"
+	file1mb   = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_1MB.pdf"
+	file10mb  = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_10MB.pdf"
+	file20mb  = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_20MB.pdf"
+	file50mb  = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_50MB.pdf"
 )
 
 var (
@@ -177,6 +188,15 @@ func (m *Measurer) Run(
 	wg := new(sync.WaitGroup)
 	tk.Pings = []*PingResult{}
 
+	var count int
+	countFromConfig, err := strconv.Atoi(m.config.PingCount)
+	if err == nil {
+		count = int(countFromConfig)
+	} else {
+		fmt.Println("error", err)
+		count = pingCount
+	}
+
 	// TODO(ainghazal): for the sake of reducing experimental bias, we
 	// should randomize the order of the following function calls. But that
 	// is going to make parsing the data a bit harder, unless we convene on
@@ -190,9 +210,9 @@ func (m *Measurer) Run(
 	// the tests will take 3x less time to complete (in case the duration
 	// of our test was enough to catch delayed firewall response).
 
-	sendBlockingPing(wg, m.tunnel, pingTarget, tk)
-	sendBlockingPing(wg, m.tunnel, remoteVPNGateway, tk)
-	sendBlockingPing(wg, m.tunnel, pingTargetNZ, tk)
+	sendBlockingPing(wg, m.tunnel, pingTarget, count, tk)
+	sendBlockingPing(wg, m.tunnel, remoteVPNGateway, count, tk)
+	sendBlockingPing(wg, m.tunnel, pingTargetNZ, count, tk)
 
 	// we now look at the first two pings to see if we can mark those as
 	// "usable" (but see note above about the wish to randomize these icmp
@@ -218,47 +238,106 @@ func (m *Measurer) Run(
 
 	sess.Logger().Infof("openvpn: urlgrab stage")
 
+	speedTestTarget := ""
+	switch m.config.WithSpeedTest {
+	case "4k":
+		speedTestTarget = file4kb
+	case "100k":
+		speedTestTarget = file100kb
+	case "500k":
+		speedTestTarget = file500kb
+	case "1mb":
+		speedTestTarget = file1mb
+	case "10mb":
+		speedTestTarget = file10mb
+	case "20mb":
+		speedTestTarget = file20mb
+	case "50mb":
+		speedTestTarget = file50mb
+	default:
+	}
+
+	doSpeedTest := false
+	if speedTestTarget != "" {
+		doSpeedTest = true
+	}
+
 	targetURLs := []string{urlGrabURI}
+	if !doSpeedTest {
 
-	if len(m.config.URLs) != 0 {
-		urls := strings.Split(m.config.URLs, ",")
-		targetURLs = append(targetURLs, urls...)
+		if len(m.config.URLs) != 0 {
+			urls := strings.Split(m.config.URLs, ",")
+			targetURLs = append(targetURLs, urls...)
+		}
+
+		urlgetterConfig := urlgetter.Config{
+			Dialer: vpn.NewTunDialer(m.tunnel),
+		}
+
+		// TODO this assumes small web pages
+		const maxURLGrabTime = 30 * time.Second
+		for _, uri := range targetURLs {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+
+				m.tunnel.SetReadDeadline(time.Now().Add(time.Second * 60))
+
+				g := urlgetter.Getter{
+					Config:  urlgetterConfig,
+					Session: sess,
+					Target:  uri,
+				}
+				ctx, cancel := context.WithTimeout(context.Background(), maxURLGrabTime)
+				defer cancel()
+				urlgetTk, _ := g.Get(ctx)
+				tk.Requests = append(tk.Requests, urlgetTk.Requests...)
+			}()
+			wg.Wait()
+		}
+
+		goodURLGrabs := 0
+		for _, r := range tk.Requests {
+			if r.Failure == nil {
+				goodURLGrabs += 1
+			}
+		}
+		if goodURLGrabs != 0 {
+			tk.SuccessURLGrab = true
+		}
 	}
 
-	urlgetterConfig := urlgetter.Config{
-		Dialer: vpn.NewTunDialer(m.tunnel),
-	}
-
-	// TODO this assumes small web pages
-	const maxURLGrabTime = 30 * time.Second
-	for _, uri := range targetURLs {
+	if doSpeedTest {
+		sess.Logger().Infof("openvpn: speed test")
+		sess.Logger().Infof("openvpn: retrieving %s", speedTestTarget)
+		// TODO it'd be good to give some feedback in here, we
+		// can calculate the progress % for instance.
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 
-			m.tunnel.SetReadDeadline(time.Now().Add(time.Second * 60))
-
-			g := urlgetter.Getter{
-				Config:  urlgetterConfig,
-				Session: sess,
-				Target:  uri,
+			// TODO(ainghazal): there is probably a better way to do this now,
+			// but this is the simplest way I managed to find to pass a custom
+			// snapshotSize.
+			mx := measurex.NewMeasurerWithDefaultSettings()
+			mx.Begin = time.Now()
+			const snapshotsize = 1 << 28
+			mx.HTTPMaxBodySnapshotSize = snapshotsize
+			const timeout = 120 * time.Second
+			speedTestResp, err := mx.EasyHTTPRoundTripGET(ctx, timeout, speedTestTarget)
+			tk.SpeedTest = &SpeedTest{
+				Failure: err,
+				Failed:  err != nil,
+				File:    speedTestTarget,
 			}
-			ctx, cancel := context.WithTimeout(context.Background(), maxURLGrabTime)
-			defer cancel()
-			urlgetTk, _ := g.Get(ctx)
-			tk.Requests = append(tk.Requests, urlgetTk.Requests...)
+			if len(speedTestResp.Requests) > 0 {
+				req := speedTestResp.Requests[0]
+				tk.SpeedTest.T0 = req.Started
+				tk.SpeedTest.T = req.Finished
+				tk.SpeedTest.BodyLength = req.Response.BodyLength
+			}
 		}()
 		wg.Wait()
-	}
-
-	goodURLGrabs := 0
-	for _, r := range tk.Requests {
-		if r.Failure == nil {
-			goodURLGrabs += 1
-		}
-	}
-	if goodURLGrabs != 0 {
-		tk.SuccessURLGrab = true
 	}
 
 	sess.Logger().Info("openvpn: all tests ok")

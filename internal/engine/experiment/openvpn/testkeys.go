@@ -4,6 +4,15 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
+type SpeedTest struct {
+	Failed     bool    `json:"failed"`
+	Failure    *string `json:"failure"`
+	File       string  `json:"file"`
+	T0         float64 `json:"t0"`
+	T          float64 `json:"t"`
+	BodyLength int64   `json:"x_body_length"`
+}
+
 // TestKeys contains the experiment's result.
 type TestKeys struct {
 	//
@@ -69,6 +78,8 @@ type TestKeys struct {
 
 	// Pings holds an array for aggregated stats of each ping.
 	Pings []*PingResult `json:"icmp_pings"`
+
+	SpeedTest *SpeedTest `json:"speed_test"`
 
 	// Requests contain HTTP results done through the tunnel.
 	Requests []model.ArchivalHTTPRequestResult `json:"requests"`

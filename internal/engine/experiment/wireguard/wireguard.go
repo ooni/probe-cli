@@ -59,14 +59,14 @@ const (
 	// googleURI is self-explanatory.
 	googleURI = "https://www.google.com/"
 
-	// speedFiles
-	file4k   = "https://raw.githubusercontent.com/ooni/probe-cli/master/Readme.md"
-	file100k = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_100k.pdf"
-	file500k = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_500k.pdf"
-	file1mb  = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_1MB.pdf"
-	file10mb = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_10MB.pdf"
-	file20mb = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_20MB.pdf"
-	file50mb = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_50MB.pdf"
+	// speedTestFiles
+	file4kb   = "https://raw.githubusercontent.com/ooni/probe-cli/master/Readme.md"
+	file100kb = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_100k.pdf"
+	file500kb = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_500k.pdf"
+	file1mb   = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_1MB.pdf"
+	file10mb  = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_10MB.pdf"
+	file20mb  = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_20MB.pdf"
+	file50mb  = "https://raw.githubusercontent.com/ainghazal/vpn-test-lists/main/dummy/file_50MB.pdf"
 )
 
 var (
@@ -200,11 +200,11 @@ func (m *Measurer) Run(
 	speedTestTarget := ""
 	switch m.config.WithSpeedTest {
 	case "4k":
-		speedTestTarget = file4k
+		speedTestTarget = file4kb
 	case "100k":
-		speedTestTarget = file100k
+		speedTestTarget = file100kb
 	case "500k":
-		speedTestTarget = file500k
+		speedTestTarget = file500kb
 	case "1mb":
 		speedTestTarget = file1mb
 	case "10mb":

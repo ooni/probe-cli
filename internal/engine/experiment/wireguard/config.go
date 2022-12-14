@@ -10,7 +10,7 @@ type Config struct {
 	ConfigFile    string `ooni:"Configuration file for the WireGuard experiment"`
 	URLs          string `ooni:"comma-separated list of extra URLs to fetch through the tunnel"`
 	PingCount     string `ooni:"number of icmp pings to send (default: 10)"`
-	WithSpeedTest string `ooni:"if yes, perform a speed test after fetching the given list of urls"`
+	WithSpeedTest string `ooni:"if yes, perform a speed test instead of fetching the given list of urls"`
 	Remote        string
 	// Safe_XXX options are not sent to the backend for archival.
 	SafePrivateKey   string
