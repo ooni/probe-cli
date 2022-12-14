@@ -12,6 +12,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/ooapi"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -110,7 +111,7 @@ func (c *Control) Run(parentCtx context.Context) {
 
 	// create an httpapi sequence caller
 	seqCaller := httpapi.NewSequenceCaller(
-		httpapi.MustNewPOSTJSONWithJSONResponseDescriptor("/", creq).WithBodyLogging(true),
+		ooapi.NewDescriptorTH(creq),
 		httpapi.NewEndpointList(c.Session.DefaultHTTPClient(), c.Logger, c.Session.UserAgent(), c.TestHelpers...)...,
 	)
 
