@@ -42,7 +42,7 @@ type APIClientTemplate struct {
 	LogBody bool
 
 	// Logger is MANDATORY the logger to use.
-	Logger model.DebugLogger
+	Logger model.Logger
 
 	// UserAgent is the OPTIONAL user agent to use.
 	UserAgent string
@@ -123,7 +123,7 @@ type apiClient struct {
 	LogBody bool
 
 	// Logger is MANDATORY the logger to use.
-	Logger model.DebugLogger
+	Logger model.Logger
 
 	// UserAgent is the OPTIONAL user agent to use.
 	UserAgent string

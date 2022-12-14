@@ -25,6 +25,9 @@ type Descriptor struct {
 	// Authorization is the OPTIONAL authorization.
 	Authorization string
 
+	// AcceptEncodingGzip OPTIONALLY accepts gzip-encoding bodies.
+	AcceptEncodingGzip bool
+
 	// ContentType is the OPTIONAL content-type header.
 	ContentType string
 
@@ -63,7 +66,7 @@ func (desc *Descriptor) WithBodyLogging(value bool) *Descriptor {
 
 // DefaultMaxBodySize is the default value for the maximum
 // body size you can fetch using the httpapi package.
-const DefaultMaxBodySize = 1 << 22
+const DefaultMaxBodySize = 1 << 24
 
 // DefaultCallTimeout is the default timeout for an httpapi call.
 const DefaultCallTimeout = 60 * time.Second
@@ -82,16 +85,17 @@ const applicationJSON = "application/json"
 // is equivalent to calling NewGETJSONDescriptor directly.
 func NewGETJSONWithQueryDescriptor(urlPath string, query url.Values) *Descriptor {
 	return &Descriptor{
-		Accept:        applicationJSON,
-		Authorization: "",
-		ContentType:   "",
-		LogBody:       false,
-		MaxBodySize:   DefaultMaxBodySize,
-		Method:        http.MethodGet,
-		RequestBody:   nil,
-		Timeout:       DefaultCallTimeout,
-		URLPath:       urlPath,
-		URLQuery:      query,
+		Accept:             applicationJSON,
+		AcceptEncodingGzip: false,
+		Authorization:      "",
+		ContentType:        "",
+		LogBody:            false,
+		MaxBodySize:        DefaultMaxBodySize,
+		Method:             http.MethodGet,
+		RequestBody:        nil,
+		Timeout:            DefaultCallTimeout,
+		URLPath:            urlPath,
+		URLQuery:           query,
 	}
 }
 
@@ -106,16 +110,17 @@ func NewPOSTJSONWithJSONResponseDescriptor(urlPath string, request any) (*Descri
 		return nil, err
 	}
 	desc := &Descriptor{
-		Accept:        applicationJSON,
-		Authorization: "",
-		ContentType:   applicationJSON,
-		LogBody:       false,
-		MaxBodySize:   DefaultMaxBodySize,
-		Method:        http.MethodPost,
-		RequestBody:   rawRequest,
-		Timeout:       DefaultCallTimeout,
-		URLPath:       urlPath,
-		URLQuery:      nil,
+		Accept:             applicationJSON,
+		AcceptEncodingGzip: false,
+		Authorization:      "",
+		ContentType:        applicationJSON,
+		LogBody:            false,
+		MaxBodySize:        DefaultMaxBodySize,
+		Method:             http.MethodPost,
+		RequestBody:        rawRequest,
+		Timeout:            DefaultCallTimeout,
+		URLPath:            urlPath,
+		URLQuery:           nil,
 	}
 	return desc, nil
 }
@@ -132,15 +137,16 @@ func MustNewPOSTJSONWithJSONResponseDescriptor(urlPath string, request any) *Des
 // resource of unspecified type using the given |urlPath|.
 func NewGETResourceDescriptor(urlPath string) *Descriptor {
 	return &Descriptor{
-		Accept:        "",
-		Authorization: "",
-		ContentType:   "",
-		LogBody:       false,
-		MaxBodySize:   DefaultMaxBodySize,
-		Method:        http.MethodGet,
-		RequestBody:   nil,
-		Timeout:       DefaultCallTimeout,
-		URLPath:       urlPath,
-		URLQuery:      url.Values{},
+		Accept:             "",
+		AcceptEncodingGzip: false,
+		Authorization:      "",
+		ContentType:        "",
+		LogBody:            false,
+		MaxBodySize:        DefaultMaxBodySize,
+		Method:             http.MethodGet,
+		RequestBody:        nil,
+		Timeout:            DefaultCallTimeout,
+		URLPath:            urlPath,
+		URLQuery:           url.Values{},
 	}
 }
