@@ -26,8 +26,6 @@ type Session struct {
 	MockableFetchPsiphonConfigErr    error
 	MockableFetchTorTargetsResult    map[string]model.OOAPITorTarget
 	MockableFetchTorTargetsErr       error
-	MockableFetchURLListResult       []model.OOAPIURLInfo
-	MockableFetchURLListErr          error
 	MockableCheckInInfo              *model.OOAPICheckInNettests
 	MockableCheckInErr               error
 	MockableResolverIP               string
@@ -60,12 +58,6 @@ func (sess *Session) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
 func (sess *Session) FetchTorTargets(
 	ctx context.Context, cc string) (map[string]model.OOAPITorTarget, error) {
 	return sess.MockableFetchTorTargetsResult, sess.MockableFetchTorTargetsErr
-}
-
-// FetchURLList implements ExperimentSession.FetchURLList.
-func (sess *Session) FetchURLList(
-	ctx context.Context, config model.OOAPIURLListConfig) ([]model.OOAPIURLInfo, error) {
-	return sess.MockableFetchURLListResult, sess.MockableFetchURLListErr
 }
 
 // KeyValueStore returns the configured key-value store.

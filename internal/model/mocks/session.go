@@ -18,9 +18,6 @@ type Session struct {
 	MockFetchTorTargets func(
 		ctx context.Context, cc string) (map[string]model.OOAPITorTarget, error)
 
-	MockFetchURLList func(
-		ctx context.Context, config model.OOAPIURLListConfig) ([]model.OOAPIURLInfo, error)
-
 	MockKeyValueStore func() model.KeyValueStore
 
 	MockLogger func() model.Logger
@@ -76,11 +73,6 @@ func (sess *Session) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
 func (sess *Session) FetchTorTargets(
 	ctx context.Context, cc string) (map[string]model.OOAPITorTarget, error) {
 	return sess.MockFetchTorTargets(ctx, cc)
-}
-
-func (sess *Session) FetchURLList(
-	ctx context.Context, config model.OOAPIURLListConfig) ([]model.OOAPIURLInfo, error) {
-	return sess.MockFetchURLList(ctx, config)
 }
 
 func (sess *Session) KeyValueStore() model.KeyValueStore {
