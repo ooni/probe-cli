@@ -35,7 +35,11 @@ func joinURLPath(urlPath, resourcePath string) string {
 }
 
 // newRequest creates a new http.Request from the given ctx, endpoint, and desc.
-func newRequest(ctx context.Context, endpoint *Endpoint, desc *Descriptor) (*http.Request, error) {
+func newRequest[RequestType any](
+	ctx context.Context,
+	endpoint *Endpoint,
+	desc *Descriptor[RequestType],
+) (*http.Request, error) {
 	URL, err := url.Parse(endpoint.BaseURL)
 	if err != nil {
 		return nil, err
@@ -48,11 +52,11 @@ func newRequest(ctx context.Context, endpoint *Endpoint, desc *Descriptor) (*htt
 		URL.RawQuery = "" // as documented we only honour desc.URLQuery
 	}
 	var reqBody io.Reader
-	if len(desc.RequestBody) > 0 {
-		reqBody = bytes.NewReader(desc.RequestBody)
-		endpoint.Logger.Debugf("httpapi: request body length: %d", len(desc.RequestBody))
+	if desc.Request != nil && len(desc.Request.Body) > 0 {
+		reqBody = bytes.NewReader(desc.Request.Body)
+		endpoint.Logger.Debugf("httpapi: request body length: %d", len(desc.Request.Body))
 		if desc.LogBody {
-			endpoint.Logger.Debugf("httpapi: request body: %s", string(desc.RequestBody))
+			endpoint.Logger.Debugf("httpapi: request body: %s", string(desc.Request.Body))
 		}
 	}
 	request, err := http.NewRequestWithContext(ctx, desc.Method, URL.String(), reqBody)
@@ -113,7 +117,11 @@ var ErrTruncated = errors.New("httpapi: truncated response body")
 
 // docall calls the API represented by the given request req on the given endpoint
 // and returns the response and its body or an error.
-func docall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http.Response, []byte, error) {
+func docall[RequestType any](
+	endpoint *Endpoint,
+	desc *Descriptor[RequestType],
+	request *http.Request,
+) (*http.Response, []byte, error) {
 	// Implementation note: remember to mark errors for which you want
 	// to retry with another endpoint using errMaybeCensorship.
 
@@ -164,7 +172,11 @@ func docall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http.
 }
 
 // call is like Call but also returns the response.
-func call(ctx context.Context, desc *Descriptor, endpoint *Endpoint) (*http.Response, []byte, error) {
+func call[RequestType any](
+	ctx context.Context,
+	desc *Descriptor[RequestType],
+	endpoint *Endpoint,
+) (*http.Response, []byte, error) {
 	timeout := desc.Timeout
 	if timeout <= 0 {
 		timeout = DefaultCallTimeout // as documented
@@ -184,7 +196,11 @@ func call(ctx context.Context, desc *Descriptor, endpoint *Endpoint) (*http.Resp
 // Note: this function returns ErrHTTPRequestFailed if the HTTP status code is
 // greater or equal than 400. You could use errors.As to obtain a copy of the
 // error that was returned and see for yourself the actual status code.
-func Call(ctx context.Context, desc *Descriptor, endpoint *Endpoint) ([]byte, error) {
+func Call[RequestType any](
+	ctx context.Context,
+	desc *Descriptor[RequestType],
+	endpoint *Endpoint,
+) ([]byte, error) {
 	_, rawResponseBody, err := call(ctx, desc, endpoint)
 	return rawResponseBody, err
 }
@@ -195,7 +211,12 @@ func Call(ctx context.Context, desc *Descriptor, endpoint *Endpoint) ([]byte, er
 // Note: this function returns ErrHTTPRequestFailed if the HTTP status code is
 // greater or equal than 400. You could use errors.As to obtain a copy of the
 // error that was returned and see for yourself the actual status code.
-func CallWithJSONResponse(ctx context.Context, desc *Descriptor, endpoint *Endpoint, response any) error {
+func CallWithJSONResponse[RequestType any](
+	ctx context.Context,
+	desc *Descriptor[RequestType],
+	endpoint *Endpoint,
+	response any,
+) error {
 	_, rawRespBody, err := call(ctx, desc, endpoint)
 	if err != nil {
 		return err

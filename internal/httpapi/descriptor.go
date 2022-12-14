@@ -9,12 +9,22 @@ import (
 	"time"
 )
 
+// RawRequest is the type to use with [RequestDescriptor] and
+// [Descriptor] when the request is just raw bytes.
+type RawRequest struct{}
+
+// RequestDescriptor describes the request.
+type RequestDescriptor[T any] struct {
+	// Body is the raw request body.
+	Body []byte
+}
+
 // Descriptor contains the parameters for calling a given HTTP
 // API (e.g., GET /api/v1/test-list/urls).
 //
 // The zero value of this struct is invalid. Please, fill all the
 // fields marked as MANDATORY for correct initialization.
-type Descriptor struct {
+type Descriptor[RequestType any] struct {
 	// Accept contains the OPTIONAL accept header.
 	Accept string
 
@@ -37,8 +47,8 @@ type Descriptor struct {
 	// Method is the MANDATORY request method.
 	Method string
 
-	// RequestBody is the OPTIONAL request body.
-	RequestBody []byte
+	// Request is the OPTIONAL request descriptor.
+	Request *RequestDescriptor[RequestType]
 
 	// Timeout is the OPTIONAL timeout for this call. If no timeout
 	// is specified we will use the [DefaultCallTimeout] const.

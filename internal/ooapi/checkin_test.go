@@ -52,7 +52,8 @@ func TestNewDescriptorCheckIn(t *testing.T) {
 				t.Fatalf("unexpected desc.%s", name)
 			}
 		case "RequestBody":
-			if len(field.Interface().([]byte)) <= 2 {
+			reqBody := field.Interface().(*httpapi.RequestDescriptor[*model.OOAPICheckInConfig])
+			if len(reqBody.Body) <= 2 {
 				t.Fatalf("unexpected desc.%s length", name)
 			}
 		case "Timeout":
