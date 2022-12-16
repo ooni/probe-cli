@@ -8,6 +8,7 @@ import (
 	"errors"
 	"net/url"
 	"os"
+	"path"
 	"runtime"
 	"strings"
 
@@ -85,4 +86,15 @@ func gethomedir(optionsHome string) string {
 		// fallthrough
 	}
 	return os.Getenv("HOME")
+}
+
+// createAndReturnMiniooniDir creates the $HOME/.miniooni directory
+// and returns its full path to the caller.
+func createAndReturnMiniooniDir(options *Options) string {
+	homeDir := gethomedir(options.HomeDir)
+	runtimex.Assert(homeDir != "", "home directory is empty")
+	miniooniDir := path.Join(homeDir, ".miniooni")
+	err := os.MkdirAll(miniooniDir, 0700)
+	runtimex.PanicOnError(err, "cannot create $HOME/.miniooni directory")
+	return miniooniDir
 }

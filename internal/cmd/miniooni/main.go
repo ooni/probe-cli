@@ -37,6 +37,7 @@ type Options struct {
 	ProbeServicesURL    string
 	Proxy               string
 	Random              bool
+	RemoteName          string
 	RepeatEvery         int64
 	ReportFile          string
 	SnowflakeRendezvous string
@@ -111,6 +112,13 @@ func main() {
 		"set proxy URL to communicate with the OONI backend (mutually exclusive with --tunnel)",
 	)
 
+	flags.StringVar(
+		&globalOptions.RemoteName,
+		"remote",
+		"",
+		"name of the remote to use to hijack all network traffic",
+	)
+
 	flags.Int64Var(
 		&globalOptions.RepeatEvery,
 		"repeat-every",
@@ -174,6 +182,8 @@ func main() {
 
 	registerAllExperiments(rootCmd, &globalOptions)
 	registerOONIRun(rootCmd, &globalOptions)
+	registerRemoteTCP(rootCmd)
+	registerRemoteSSH(rootCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
@@ -300,6 +310,7 @@ func MainWithConfiguration(experimentName string, currentOptions *Options) {
 		currentOptions.ReportFile = "report.jsonl"
 	}
 	log.Log = logger
+	remoteMaybeHijack(currentOptions)
 	for {
 		mainSingleIteration(logger, experimentName, currentOptions)
 		if currentOptions.RepeatEvery <= 0 {
@@ -333,11 +344,7 @@ func mainSingleIteration(logger model.Logger, experimentName string, currentOpti
 	//Mon Jan 2 15:04:05 -0700 MST 2006
 	log.Infof("Current time: %s", time.Now().Format("2006-01-02 15:04:05 MST"))
 
-	homeDir := gethomedir(currentOptions.HomeDir)
-	runtimex.Assert(homeDir != "", "home directory is empty")
-	miniooniDir := path.Join(homeDir, ".miniooni")
-	err := os.MkdirAll(miniooniDir, 0700)
-	runtimex.PanicOnError(err, "cannot create $HOME/.miniooni directory")
+	miniooniDir := createAndReturnMiniooniDir(currentOptions)
 
 	// We cleanup the assets files used by versions of ooniprobe
 	// older than v3.9.0, where we started embedding the assets
