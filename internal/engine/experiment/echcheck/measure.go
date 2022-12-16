@@ -9,7 +9,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"net"
 	"net/url"
-	"sync"
 	"time"
 )
 
@@ -87,24 +86,21 @@ func (m *Measurer) Run(
 	}
 
 	// 3. Conduct and measure control and target TLS handshakes in parallel
-	var wg sync.WaitGroup
-	var control, target model.ArchivalTLSOrQUICHandshakeResult
+	controlChannel := make(chan model.ArchivalTLSOrQUICHandshakeResult)
+	targetChannel := make(chan model.ArchivalTLSOrQUICHandshakeResult)
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	wg.Add(1)
 	go func() {
-		defer wg.Done()
-		control = *handshake(ctx, conn, args.Measurement.MeasurementStartTimeSaved, address, parsed.Host)
+		controlChannel <- *handshake(ctx, conn, args.Measurement.MeasurementStartTimeSaved, address, parsed.Host)
 	}()
 
-	wg.Add(1)
 	go func() {
-		defer wg.Done()
-		target = *handshakeWithEch(ctx, conn2, args.Measurement.MeasurementStartTimeSaved, address, parsed.Host)
+		targetChannel <- *handshakeWithEch(ctx, conn2, args.Measurement.MeasurementStartTimeSaved, address, parsed.Host)
 	}()
 
-	wg.Wait()
+	control := <-controlChannel
+	target := <-targetChannel
 
 	args.Measurement.TestKeys = TestKeys{Control: control, Target: target}
 
