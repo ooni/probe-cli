@@ -116,8 +116,7 @@ func (c *Control) Run(parentCtx context.Context) {
 	)
 
 	// issue the control request and wait for the response
-	var cresp webconnectivity.ControlResponse
-	idx, err := seqCaller.CallWithJSONResponse(opCtx, &cresp)
+	cresp, idx, err := seqCaller.Call(opCtx)
 	if err != nil {
 		// make sure error is wrapped
 		err = netxlite.NewTopLevelGenericErrWrapper(err)
@@ -125,9 +124,10 @@ func (c *Control) Run(parentCtx context.Context) {
 		ol.Stop(err)
 		return
 	}
+	runtimex.Assert(cresp != nil, "cresp is nil")
 
 	// on success, save the control response
-	c.TestKeys.SetControl(&cresp)
+	c.TestKeys.SetControl(cresp)
 	ol.Stop(nil)
 
 	// record the specific TH that worked

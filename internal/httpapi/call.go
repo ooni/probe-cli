@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -17,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // joinURLPath appends resourcePath to urlPath.
@@ -35,10 +35,10 @@ func joinURLPath(urlPath, resourcePath string) string {
 }
 
 // newRequest creates a new http.Request from the given ctx, endpoint, and desc.
-func newRequest[RequestType any](
+func newRequest[RequestType, ResponseType any](
 	ctx context.Context,
 	endpoint *Endpoint,
-	desc *Descriptor[RequestType],
+	desc *Descriptor[RequestType, ResponseType],
 ) (*http.Request, error) {
 	URL, err := url.Parse(endpoint.BaseURL)
 	if err != nil {
@@ -117,9 +117,9 @@ var ErrTruncated = errors.New("httpapi: truncated response body")
 
 // docall calls the API represented by the given request req on the given endpoint
 // and returns the response and its body or an error.
-func docall[RequestType any](
+func docall[RequestType, ResponseType any](
 	endpoint *Endpoint,
-	desc *Descriptor[RequestType],
+	desc *Descriptor[RequestType, ResponseType],
 	request *http.Request,
 ) (*http.Response, []byte, error) {
 	// Implementation note: remember to mark errors for which you want
@@ -172,9 +172,9 @@ func docall[RequestType any](
 }
 
 // call is like Call but also returns the response.
-func call[RequestType any](
+func call[RequestType, ResponseType any](
 	ctx context.Context,
-	desc *Descriptor[RequestType],
+	desc *Descriptor[RequestType, ResponseType],
 	endpoint *Endpoint,
 ) (*http.Response, []byte, error) {
 	timeout := desc.Timeout
@@ -191,35 +191,20 @@ func call[RequestType any](
 }
 
 // Call invokes the API described by desc on the given HTTP endpoint and
-// returns the response body (as a slice of bytes) or an error.
+// returns the response body (as a ResponseType instance) or an error.
 //
 // Note: this function returns ErrHTTPRequestFailed if the HTTP status code is
 // greater or equal than 400. You could use errors.As to obtain a copy of the
 // error that was returned and see for yourself the actual status code.
-func Call[RequestType any](
+func Call[RequestType, ResponseType any](
 	ctx context.Context,
-	desc *Descriptor[RequestType],
+	desc *Descriptor[RequestType, ResponseType],
 	endpoint *Endpoint,
-) ([]byte, error) {
-	_, rawResponseBody, err := call(ctx, desc, endpoint)
-	return rawResponseBody, err
-}
-
-// CallWithJSONResponse is like Call but also assumes that the response is a
-// JSON body and attempts to parse it into the response field.
-//
-// Note: this function returns ErrHTTPRequestFailed if the HTTP status code is
-// greater or equal than 400. You could use errors.As to obtain a copy of the
-// error that was returned and see for yourself the actual status code.
-func CallWithJSONResponse[RequestType any](
-	ctx context.Context,
-	desc *Descriptor[RequestType],
-	endpoint *Endpoint,
-	response any,
-) error {
-	_, rawRespBody, err := call(ctx, desc, endpoint)
+) (ResponseType, error) {
+	runtimex.Assert(desc.Response != nil, "desc.Response is nil")
+	resp, rawResponseBody, err := call(ctx, desc, endpoint)
 	if err != nil {
-		return err
+		return *new(ResponseType), err
 	}
-	return json.Unmarshal(rawRespBody, response)
+	return desc.Response.Unmarshal(resp, rawResponseBody)
 }

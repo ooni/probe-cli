@@ -17,10 +17,10 @@ import (
 // to issue an HTTP call to the Web Connectivity Test Helper (TH).
 func NewDescriptorTH(
 	creq *model.THRequest,
-) *httpapi.Descriptor[*model.THRequest] {
+) *httpapi.Descriptor[*model.THRequest, *model.THResponse] {
 	rawRequest, err := json.Marshal(creq)
 	runtimex.PanicOnError(err, "json.Marshal failed unexpectedly")
-	return &httpapi.Descriptor[*model.THRequest]{
+	return &httpapi.Descriptor[*model.THRequest, *model.THResponse]{
 		Accept:             httpapi.ApplicationJSON,
 		AcceptEncodingGzip: false,
 		Authorization:      "",
@@ -31,6 +31,7 @@ func NewDescriptorTH(
 		Request: &httpapi.RequestDescriptor[*model.THRequest]{
 			Body: rawRequest,
 		},
+		Response: &httpapi.JSONResponseDescriptor[*model.THResponse]{},
 		Timeout:  0,
 		URLPath:  "/",
 		URLQuery: nil,

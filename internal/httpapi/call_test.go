@@ -7,7 +7,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"net/url"
+	"net/http/httptest"
 	"reflect"
 	"strings"
 	"syscall"
@@ -75,7 +75,7 @@ func Test_newRequest(t *testing.T) {
 	type args struct {
 		ctx      context.Context
 		endpoint *Endpoint
-		desc     *Descriptor[RawRequest]
+		desc     *Descriptor[RawRequest, []byte]
 	}
 	tests := []struct {
 		name    string
@@ -93,7 +93,7 @@ func Test_newRequest(t *testing.T) {
 				Logger:     nil,
 				UserAgent:  "",
 			},
-			desc: &Descriptor[RawRequest]{
+			desc: &Descriptor[RawRequest, []byte]{
 				Accept:        "",
 				Authorization: "",
 				ContentType:   "",
@@ -101,6 +101,7 @@ func Test_newRequest(t *testing.T) {
 				MaxBodySize:   0,
 				Method:        "",
 				Request:       nil,
+				Response:      &RawResponseDescriptor{},
 				Timeout:       0,
 				URLPath:       "",
 				URLQuery:      nil,
@@ -119,7 +120,7 @@ func Test_newRequest(t *testing.T) {
 				Logger:     nil,
 				UserAgent:  "",
 			},
-			desc: &Descriptor[RawRequest]{
+			desc: &Descriptor[RawRequest, []byte]{
 				Accept:        "",
 				Authorization: "",
 				ContentType:   "",
@@ -127,6 +128,7 @@ func Test_newRequest(t *testing.T) {
 				MaxBodySize:   0,
 				Method:        "",
 				Request:       nil,
+				Response:      &RawResponseDescriptor{},
 				Timeout:       0,
 				URLPath:       "",
 				URLQuery:      nil,
@@ -145,7 +147,7 @@ func Test_newRequest(t *testing.T) {
 				Logger:     nil,
 				UserAgent:  "",
 			},
-			desc: &Descriptor[RawRequest]{
+			desc: &Descriptor[RawRequest, []byte]{
 				Accept:        "",
 				Authorization: "",
 				ContentType:   "",
@@ -153,6 +155,7 @@ func Test_newRequest(t *testing.T) {
 				MaxBodySize:   0,
 				Method:        http.MethodGet,
 				Request:       nil,
+				Response:      &RawResponseDescriptor{},
 				Timeout:       0,
 				URLPath:       "",
 				URLQuery:      nil,
@@ -184,7 +187,7 @@ func Test_newRequest(t *testing.T) {
 				Logger:     model.DiscardLogger,
 				UserAgent:  "",
 			},
-			desc: &Descriptor[RawRequest]{
+			desc: &Descriptor[RawRequest, []byte]{
 				Accept:        "",
 				Authorization: "",
 				ContentType:   "",
@@ -192,6 +195,7 @@ func Test_newRequest(t *testing.T) {
 				MaxBodySize:   0,
 				Method:        http.MethodPost,
 				Request:       &RequestDescriptor[RawRequest]{Body: []byte("deadbeef")},
+				Response:      &RawResponseDescriptor{},
 				Timeout:       0,
 				URLPath:       "",
 				URLQuery:      nil,
@@ -227,7 +231,7 @@ func Test_newRequest(t *testing.T) {
 				Logger:     nil,
 				UserAgent:  "httpclient/1.0.1",
 			},
-			desc: &Descriptor[RawRequest]{
+			desc: &Descriptor[RawRequest, []byte]{
 				Accept:        "application/json",
 				Authorization: "deafbeef",
 				ContentType:   "text/plain",
@@ -235,6 +239,7 @@ func Test_newRequest(t *testing.T) {
 				MaxBodySize:   0,
 				Method:        http.MethodPut,
 				Request:       nil,
+				Response:      &RawResponseDescriptor{},
 				Timeout:       0,
 				URLPath:       "",
 				URLQuery:      nil,
@@ -278,7 +283,7 @@ func Test_newRequest(t *testing.T) {
 				Logger:     nil,
 				UserAgent:  "",
 			},
-			desc: &Descriptor[RawRequest]{
+			desc: &Descriptor[RawRequest, []byte]{
 				Accept:        "",
 				Authorization: "",
 				ContentType:   "",
@@ -286,6 +291,7 @@ func Test_newRequest(t *testing.T) {
 				MaxBodySize:   0,
 				Method:        http.MethodGet,
 				Request:       nil,
+				Response:      &RawResponseDescriptor{},
 				Timeout:       0,
 				URLPath:       "/test-list/urls",
 				URLQuery:      nil,
@@ -314,7 +320,7 @@ func Test_newRequest(t *testing.T) {
 				Logger:     nil,
 				UserAgent:  "",
 			},
-			desc: &Descriptor[RawRequest]{
+			desc: &Descriptor[RawRequest, []byte]{
 				Accept:        "",
 				Authorization: "",
 				ContentType:   "",
@@ -322,6 +328,7 @@ func Test_newRequest(t *testing.T) {
 				MaxBodySize:   0,
 				Method:        http.MethodGet,
 				Request:       nil,
+				Response:      &RawResponseDescriptor{},
 				Timeout:       0,
 				URLPath:       "",
 				URLQuery:      nil,
@@ -350,7 +357,7 @@ func Test_newRequest(t *testing.T) {
 				Logger:     nil,
 				UserAgent:  "",
 			},
-			desc: &Descriptor[RawRequest]{
+			desc: &Descriptor[RawRequest, []byte]{
 				Accept:        "",
 				Authorization: "",
 				ContentType:   "",
@@ -358,6 +365,7 @@ func Test_newRequest(t *testing.T) {
 				MaxBodySize:   0,
 				Method:        http.MethodGet,
 				Request:       nil,
+				Response:      &RawResponseDescriptor{},
 				Timeout:       0,
 				URLPath:       "test-list/urls",
 				URLQuery: map[string][]string{
@@ -384,7 +392,7 @@ func Test_newRequest(t *testing.T) {
 			endpoint: &Endpoint{
 				BaseURL: "https://example.com/",
 			},
-			desc: &Descriptor[RawRequest]{},
+			desc: &Descriptor[RawRequest, []byte]{},
 		},
 		wantFn: func(t *testing.T, req *http.Request) {
 			if req == nil {
@@ -405,7 +413,7 @@ func Test_newRequest(t *testing.T) {
 			endpoint: &Endpoint{
 				BaseURL: "https://example.com/",
 			},
-			desc: &Descriptor[RawRequest]{
+			desc: &Descriptor[RawRequest, []byte]{
 				AcceptEncodingGzip: true,
 			},
 		},
@@ -581,7 +589,7 @@ var gzipBombForCall = []byte{
 func Test_docall(t *testing.T) {
 	type args struct {
 		endpoint *Endpoint
-		desc     *Descriptor[RawRequest]
+		desc     *Descriptor[RawRequest, []byte]
 		request  *http.Request
 	}
 	tests := []struct {
@@ -608,9 +616,10 @@ func Test_docall(t *testing.T) {
 				Logger:    model.DiscardLogger,
 				UserAgent: "",
 			},
-			desc: &Descriptor[RawRequest]{
+			desc: &Descriptor[RawRequest, []byte]{
 				MaxBodySize: 7,
 				Method:      http.MethodGet,
+				Response:    &RawResponseDescriptor{},
 				URLPath:     "/",
 			},
 			request: &http.Request{},
@@ -640,9 +649,10 @@ func Test_docall(t *testing.T) {
 				Logger:    model.DiscardLogger,
 				UserAgent: "",
 			},
-			desc: &Descriptor[RawRequest]{
+			desc: &Descriptor[RawRequest, []byte]{
 				MaxBodySize: 0, // we're testing that putting zero here implies default
 				Method:      http.MethodGet,
+				Response:    &RawResponseDescriptor{},
 				URLPath:     "/",
 			},
 			request: &http.Request{},
@@ -680,9 +690,10 @@ func Test_docall(t *testing.T) {
 				Logger:    model.DiscardLogger,
 				UserAgent: "",
 			},
-			desc: &Descriptor[RawRequest]{
-				Method:  http.MethodGet,
-				URLPath: "/",
+			desc: &Descriptor[RawRequest, []byte]{
+				Method:   http.MethodGet,
+				Response: &RawResponseDescriptor{},
+				URLPath:  "/",
 			},
 			request: &http.Request{},
 		},
@@ -722,9 +733,10 @@ func Test_docall(t *testing.T) {
 				Logger:    model.DiscardLogger,
 				UserAgent: "",
 			},
-			desc: &Descriptor[RawRequest]{
-				Method:  http.MethodGet,
-				URLPath: "/",
+			desc: &Descriptor[RawRequest, []byte]{
+				Method:   http.MethodGet,
+				Response: &RawResponseDescriptor{},
+				URLPath:  "/",
 			},
 			request: &http.Request{},
 		},
@@ -759,9 +771,10 @@ func Test_docall(t *testing.T) {
 				Logger:    model.DiscardLogger,
 				UserAgent: "",
 			},
-			desc: &Descriptor[RawRequest]{
+			desc: &Descriptor[RawRequest, []byte]{
 				MaxBodySize: 2048, // very small value
 				Method:      http.MethodGet,
+				Response:    &RawResponseDescriptor{},
 				URLPath:     "/",
 			},
 			request: &http.Request{},
@@ -803,7 +816,7 @@ func Test_docall(t *testing.T) {
 func TestCall(t *testing.T) {
 	type args struct {
 		ctx      context.Context
-		desc     *Descriptor[RawRequest]
+		desc     *Descriptor[RawRequest, []byte]
 		endpoint *Endpoint
 	}
 	tests := []struct {
@@ -816,7 +829,7 @@ func TestCall(t *testing.T) {
 		name: "newRequest fails",
 		args: args{
 			ctx: context.Background(),
-			desc: &Descriptor[RawRequest]{
+			desc: &Descriptor[RawRequest, []byte]{
 				Accept:        "",
 				Authorization: "",
 				ContentType:   "",
@@ -824,6 +837,7 @@ func TestCall(t *testing.T) {
 				MaxBodySize:   0,
 				Method:        "",
 				Request:       nil,
+				Response:      &RawResponseDescriptor{},
 				Timeout:       0,
 				URLPath:       "",
 				URLQuery:      nil,
@@ -843,8 +857,9 @@ func TestCall(t *testing.T) {
 		name: "endpoint.HTTPClient.Do fails",
 		args: args{
 			ctx: context.Background(),
-			desc: &Descriptor[RawRequest]{
-				Method: http.MethodGet,
+			desc: &Descriptor[RawRequest, []byte]{
+				Method:   http.MethodGet,
+				Response: &RawResponseDescriptor{},
 			},
 			endpoint: &Endpoint{
 				BaseURL: "https://example.com/",
@@ -868,8 +883,9 @@ func TestCall(t *testing.T) {
 		name: "reading body fails",
 		args: args{
 			ctx: context.Background(),
-			desc: &Descriptor[RawRequest]{
-				Method: http.MethodGet,
+			desc: &Descriptor[RawRequest, []byte]{
+				Method:   http.MethodGet,
+				Response: &RawResponseDescriptor{},
 			},
 			endpoint: &Endpoint{
 				BaseURL: "https://www.example.com/",
@@ -900,8 +916,9 @@ func TestCall(t *testing.T) {
 		name: "status code indicates failure",
 		args: args{
 			ctx: context.Background(),
-			desc: &Descriptor[RawRequest]{
-				Method: http.MethodGet,
+			desc: &Descriptor[RawRequest, []byte]{
+				Method:   http.MethodGet,
+				Response: &RawResponseDescriptor{},
 			},
 			endpoint: &Endpoint{
 				BaseURL: "https://example.com/",
@@ -929,9 +946,10 @@ func TestCall(t *testing.T) {
 		name: "success with log body flag",
 		args: args{
 			ctx: context.Background(),
-			desc: &Descriptor[RawRequest]{
-				LogBody: true, // as documented by this test's name
-				Method:  http.MethodGet,
+			desc: &Descriptor[RawRequest, []byte]{
+				LogBody:  true, // as documented by this test's name
+				Method:   http.MethodGet,
+				Response: &RawResponseDescriptor{},
 			},
 			endpoint: &Endpoint{
 				BaseURL: "https://example.com/",
@@ -973,197 +991,81 @@ func TestCall(t *testing.T) {
 	}
 }
 
-func TestCallWithJSONResponse(t *testing.T) {
-	type response struct {
-		Name string
-		Age  int64
-	}
-	expectedResponse := response{
-		Name: "sbs",
-		Age:  99,
-	}
-	type args struct {
-		ctx      context.Context
-		desc     *Descriptor[RawRequest]
-		endpoint *Endpoint
-	}
+// CallStructRequest is the request used by TestCallWithJSON
+type CallStructRequest struct {
+	Name string
+	Age  int
+}
+
+// CallStructResponse is the response used by TestCallWithJSON
+type CallStructResponse struct {
+	Name       string
+	AgeSquared int
+}
+
+func TestCallWithJSON(t *testing.T) {
 	tests := []struct {
-		name    string
-		args    args
-		wantErr error
-		errfn   func(*testing.T, error)
+		name         string
+		bodyToReturn []byte
+		want         *CallStructResponse
+		wantErr      error
 	}{{
-		name: "call fails",
-		args: args{
-			ctx:  context.Background(),
-			desc: &Descriptor[RawRequest]{},
-			endpoint: &Endpoint{
-				BaseURL: "\t\t\t\t", // causes failure
-				Logger:  model.DiscardLogger,
-			},
-		},
-		wantErr: errors.New(`parse "\t\t\t\t": net/url: invalid control character in URL`),
-		errfn:   nil,
+		name:         "with JSON parser failure",
+		bodyToReturn: []byte(`{`),
+		want:         nil,
+		wantErr:      errors.New("unexpected end of JSON input"),
 	}, {
-		name: "with error during httpClient.Do",
-		args: args{
-			ctx:  context.Background(),
-			desc: &Descriptor[RawRequest]{},
-			endpoint: &Endpoint{
-				BaseURL: "https://www.example.com/a",
-				HTTPClient: &mocks.HTTPClient{
-					MockDo: func(req *http.Request) (*http.Response, error) {
-						return nil, io.EOF
-					},
-				},
-				Logger: model.DiscardLogger,
-			},
-		},
-		wantErr: io.EOF,
-		errfn: func(t *testing.T, err error) {
-			var expect *errMaybeCensorship
-			if !errors.As(err, &expect) {
-				t.Fatal("invalid error type")
-			}
-		},
-	}, {
-		name: "with error when reading the response body",
-		args: args{
-			ctx:  context.Background(),
-			desc: &Descriptor[RawRequest]{},
-			endpoint: &Endpoint{
-				BaseURL: "https://www.example.com/a",
-				HTTPClient: &mocks.HTTPClient{
-					MockDo: func(req *http.Request) (*http.Response, error) {
-						resp := &http.Response{
-							Body: io.NopCloser(&mocks.Reader{
-								MockRead: func(b []byte) (int, error) {
-									return 0, netxlite.ECONNRESET
-								},
-							}),
-							StatusCode: 200,
-						}
-						return resp, nil
-					},
-				},
-				Logger: model.DiscardLogger,
-			},
-		},
-		wantErr: errors.New(netxlite.FailureConnectionReset),
-		errfn: func(t *testing.T, err error) {
-			var expect *errMaybeCensorship
-			if !errors.As(err, &expect) {
-				t.Fatal("invalid error type")
-			}
-		},
-	}, {
-		name: "with HTTP failure",
-		args: args{
-			ctx:  context.Background(),
-			desc: &Descriptor[RawRequest]{},
-			endpoint: &Endpoint{
-				BaseURL: "https://www.example.com/a",
-				HTTPClient: &mocks.HTTPClient{
-					MockDo: func(req *http.Request) (*http.Response, error) {
-						resp := &http.Response{
-							Body:       io.NopCloser(strings.NewReader(`{"Name": "sbs", "Age": 99}`)),
-							StatusCode: 400,
-						}
-						return resp, nil
-					},
-				},
-				Logger: model.DiscardLogger,
-			},
-		},
-		wantErr: errors.New("httpapi: http request failed: 400"),
-		errfn: func(t *testing.T, err error) {
-			var expect *ErrHTTPRequestFailed
-			if !errors.As(err, &expect) {
-				t.Fatal("invalid error type")
-			}
-		},
-	}, {
-		name: "with good response and missing header",
-		args: args{
-			ctx:  context.Background(),
-			desc: &Descriptor[RawRequest]{},
-			endpoint: &Endpoint{
-				BaseURL: "https://www.example.com/a",
-				HTTPClient: &mocks.HTTPClient{
-					MockDo: func(req *http.Request) (*http.Response, error) {
-						resp := &http.Response{
-							Body:       io.NopCloser(strings.NewReader(`{"Name": "sbs", "Age": 99}`)),
-							StatusCode: 200,
-						}
-						return resp, nil
-					},
-				},
-				Logger: model.DiscardLogger,
-			},
+		name:         "with good response",
+		bodyToReturn: []byte(`{"Name": "sbs", "AgeSquared": 1156}`),
+		want: &CallStructResponse{
+			Name:       "sbs",
+			AgeSquared: 1156,
 		},
 		wantErr: nil,
-		errfn:   nil,
-	}, {
-		name: "with good response and good header",
-		args: args{
-			ctx:  context.Background(),
-			desc: &Descriptor[RawRequest]{},
-			endpoint: &Endpoint{
-				BaseURL: "https://www.example.com/a",
-				HTTPClient: &mocks.HTTPClient{
-					MockDo: func(req *http.Request) (*http.Response, error) {
-						resp := &http.Response{
-							Header: http.Header{
-								"Content-Type": {"application/json"},
-							},
-							Body:       io.NopCloser(strings.NewReader(`{"Name": "sbs", "Age": 99}`)),
-							StatusCode: 200,
-						}
-						return resp, nil
-					},
-				},
-				Logger: model.DiscardLogger,
-			},
-		},
-		wantErr: nil,
-		errfn:   nil,
-	}, {
-		name: "response is not JSON",
-		args: args{
-			ctx: context.Background(),
-			desc: &Descriptor[RawRequest]{
-				LogBody: false,
-				Method:  http.MethodGet,
-			},
-			endpoint: &Endpoint{
-				BaseURL: "https://www.example.com/",
-				HTTPClient: &mocks.HTTPClient{
-					MockDo: func(req *http.Request) (*http.Response, error) {
-						resp := &http.Response{
-							Header: http.Header{
-								"Content-Type": {"application/json"},
-							},
-							Body:       io.NopCloser(strings.NewReader(`{`)), // invalid JSON
-							StatusCode: 200,
-						}
-						return resp, nil
-					},
-				},
-				Logger: model.DiscardLogger,
-			},
-		},
-		wantErr: errors.New("unexpected end of JSON input"),
-		errfn:   nil,
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var response response
-			err := CallWithJSONResponse(tt.args.ctx, tt.args.desc, tt.args.endpoint, &response)
+
+			// start a server that will return the configured body
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Write(tt.bodyToReturn)
+			}))
+			defer server.Close()
+
+			// prepare endpoint for the call
+			epnt := &Endpoint{
+				BaseURL:    server.URL,
+				HTTPClient: http.DefaultClient,
+				Host:       "",
+				Logger:     model.DiscardLogger,
+				UserAgent:  "",
+			}
+
+			// prepare descriptor for the call
+			desc := &Descriptor[*CallStructRequest, *CallStructResponse]{
+				Accept:             ApplicationJSON,
+				Authorization:      "",
+				AcceptEncodingGzip: false,
+				ContentType:        ApplicationJSON,
+				LogBody:            true,
+				MaxBodySize:        0,
+				Method:             http.MethodPost,
+				Request: &RequestDescriptor[*CallStructRequest]{
+					Body: []byte(`{"Name": "sbs", "Age": 34}`),
+				},
+				Response: &JSONResponseDescriptor[*CallStructResponse]{},
+				Timeout:  0,
+				URLPath:  "/",
+				URLQuery: nil,
+			}
+
+			// call the API
+			resp, err := Call(context.Background(), desc, epnt)
+
+			// check the error
 			switch {
 			case err == nil && tt.wantErr == nil:
-				if diff := cmp.Diff(expectedResponse, response); err != nil {
-					t.Fatal(diff)
-				}
+				// nothing
 			case err != nil && tt.wantErr == nil:
 				t.Fatalf("expected <nil> error but got %s", err.Error())
 			case err == nil && tt.wantErr != nil:
@@ -1173,8 +1075,10 @@ func TestCallWithJSONResponse(t *testing.T) {
 			default:
 				t.Fatalf("expected %s but got %s", err.Error(), tt.wantErr.Error())
 			}
-			if tt.errfn != nil {
-				tt.errfn(t, err)
+
+			// check the response
+			if diff := cmp.Diff(tt.want, resp); diff != "" {
+				t.Fatal(diff)
 			}
 		})
 	}
@@ -1183,10 +1087,11 @@ func TestCallWithJSONResponse(t *testing.T) {
 func TestCallHonoursContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // should fail HTTP request immediately
-	desc := &Descriptor[RawRequest]{
-		LogBody: false,
-		Method:  http.MethodGet,
-		URLPath: "/robots.txt",
+	desc := &Descriptor[RawRequest, []byte]{
+		LogBody:  false,
+		Method:   http.MethodGet,
+		Response: &RawResponseDescriptor{},
+		URLPath:  "/robots.txt",
 	}
 	endpoint := &Endpoint{
 		BaseURL:    "https://www.example.com/",
@@ -1200,27 +1105,6 @@ func TestCallHonoursContext(t *testing.T) {
 	}
 	if len(body) > 0 {
 		t.Fatal("expected zero-length body")
-	}
-}
-
-func TestCallWithJSONResponseHonoursContext(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // should fail HTTP request immediately
-	desc := &Descriptor[RawRequest]{
-		LogBody: false,
-		Method:  http.MethodGet,
-		URLPath: "/robots.txt",
-	}
-	endpoint := &Endpoint{
-		BaseURL:    "https://www.example.com/",
-		HTTPClient: http.DefaultClient,
-		Logger:     model.DiscardLogger,
-		UserAgent:  model.HTTPHeaderUserAgent,
-	}
-	var resp url.URL
-	err := CallWithJSONResponse(ctx, desc, endpoint, &resp)
-	if !errors.Is(err, context.Canceled) {
-		t.Fatal("unexpected err", err)
 	}
 }
 

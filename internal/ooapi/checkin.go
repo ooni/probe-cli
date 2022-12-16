@@ -17,10 +17,10 @@ import (
 // to issue an HTTP call to the CheckIn API.
 func NewDescriptorCheckIn(
 	config *model.OOAPICheckInConfig,
-) *httpapi.Descriptor[*model.OOAPICheckInConfig] {
+) *httpapi.Descriptor[*model.OOAPICheckInConfig, *model.OOAPICheckInResult] {
 	rawRequest, err := json.Marshal(config)
 	runtimex.PanicOnError(err, "json.Marshal failed unexpectedly")
-	return &httpapi.Descriptor[*model.OOAPICheckInConfig]{
+	return &httpapi.Descriptor[*model.OOAPICheckInConfig, *model.OOAPICheckInResult]{
 		Accept:             httpapi.ApplicationJSON,
 		AcceptEncodingGzip: true, // we want a small response
 		Authorization:      "",
@@ -31,6 +31,7 @@ func NewDescriptorCheckIn(
 		Request: &httpapi.RequestDescriptor[*model.OOAPICheckInConfig]{
 			Body: rawRequest,
 		},
+		Response: &httpapi.JSONResponseDescriptor[*model.OOAPICheckInResult]{},
 		Timeout:  0,
 		URLPath:  "/api/v1/check-in",
 		URLQuery: nil,

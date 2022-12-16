@@ -29,8 +29,7 @@ func Control(
 		httpapi.NewEndpointList(sess.DefaultHTTPClient(), sess.Logger(), sess.UserAgent(), testhelpers...)...,
 	)
 	sess.Logger().Infof("control for %s...", creq.HTTPRequest)
-	var out ControlResponse
-	idx, err := seqCaller.CallWithJSONResponse(ctx, &out)
+	out, idx, err := seqCaller.Call(ctx)
 	sess.Logger().Infof("control for %s... %+v", creq.HTTPRequest, model.ErrorToStringOrOK(err))
 	if err != nil {
 		// make sure error is wrapped
@@ -39,7 +38,8 @@ func Control(
 	}
 	fillASNs(&out.DNS)
 	runtimex.Assert(idx >= 0 && idx < len(testhelpers), "idx out of bounds")
-	return out, &testhelpers[idx], nil
+	runtimex.Assert(out != nil, "out is nil")
+	return *out, &testhelpers[idx], nil
 }
 
 // fillASNs fills the ASNs array of ControlDNSResult. For each Addr inside
