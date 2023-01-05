@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -277,9 +276,6 @@ func TestGetterWithCancelledContextNoFollowRedirects(t *testing.T) {
 }
 
 func TestGetterWithCancelledContextCannotStartTunnel(t *testing.T) {
-	if strings.HasPrefix(runtime.Version(), "go1.19") {
-		t.Skip("TODO(https://github.com/ooni/probe/issues/2222)")
-	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately
 	g := urlgetter.Getter{

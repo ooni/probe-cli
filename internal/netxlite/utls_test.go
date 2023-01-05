@@ -101,12 +101,7 @@ func TestUTLSConn(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		// TODO(https://github.com/ooni/probe/issues/2222): we cannot avoid
-		// castedTconn until we use oocrypto >= v0.2 which uses go1.19. In turn,
-		// we cannot use go1.19 as our main version until we upgrade psiphon
-		// such that it builds using go1.19, which is the issue in #2222.
-		castedTconn := tconn.(*utlsConn)
-		if castedTconn.NetConn() != conn {
+		if tconn.NetConn() != conn {
 			t.Fatal("NetConn is not WAI")
 		}
 	})
