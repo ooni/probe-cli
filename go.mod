@@ -10,6 +10,7 @@ require (
 	github.com/alecthomas/kingpin v2.2.6+incompatible
 	github.com/apex/log v1.9.0
 	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5
+	github.com/cloudflare/circl v1.2.0
 	github.com/cretz/bine v0.2.0
 	github.com/fatih/color v1.13.0
 	github.com/google/go-cmp v0.5.8
@@ -25,8 +26,8 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.6.6
 	github.com/ooni/go-libtor v1.1.6
-	github.com/ooni/oocrypto v0.1.2
-	github.com/ooni/oohttp v0.2.2
+	github.com/ooni/oocrypto v0.3.0
+	github.com/ooni/oohttp v0.4.0
 	github.com/ooni/probe-assets v0.13.0
 	github.com/ooni/psiphon/tunnel-core v0.0.0-20220819091114-7dccc0b6b6cd
 	github.com/oschwald/geoip2-golang v1.8.0
@@ -38,13 +39,12 @@ require (
 	github.com/upper/db/v4 v4.6.0
 	gitlab.com/yawning/obfs4.git v0.0.0-20220904064028-336a71d6e4cf
 	gitlab.com/yawning/utls.git v0.0.12-1
-	golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90
-	golang.org/x/net v0.0.0-20220906165146-f3363e06e74c
-	golang.org/x/sys v0.0.0-20220829200755-d48e67d00261
+	golang.org/x/crypto v0.5.0
+	golang.org/x/net v0.5.0
+	golang.org/x/sys v0.4.0
 )
 
 require (
-	github.com/cloudflare/circl v1.2.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/segmentio/fasthash v1.0.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
@@ -128,8 +128,8 @@ require (
 	gitlab.com/yawning/bsaes.git v0.0.0-20190805113838-0a714cd429ec // indirect
 	gitlab.com/yawning/edwards25519-extra.git v0.0.0-20220726154925-def713fd18e4 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
-	golang.org/x/term v0.0.0-20220722155259-a9ba230a4035 // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/term v0.4.0 // indirect
+	golang.org/x/text v0.6.0 // indirect
 	golang.org/x/tools v0.1.12 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
