@@ -7,6 +7,7 @@ require (
 	git.torproject.org/pluggable-transports/goptlib.git v1.3.0
 	git.torproject.org/pluggable-transports/snowflake.git/v2 v2.4.1
 	github.com/AlecAivazis/survey/v2 v2.3.6
+	github.com/Psiphon-Labs/psiphon-tunnel-core v1.0.11-0.20221205143218-5641695f3e85
 	github.com/alecthomas/kingpin v2.2.6+incompatible
 	github.com/apex/log v1.9.0
 	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5
@@ -29,7 +30,6 @@ require (
 	github.com/ooni/oocrypto v0.3.0
 	github.com/ooni/oohttp v0.4.0
 	github.com/ooni/probe-assets v0.13.0
-	github.com/ooni/psiphon/tunnel-core v0.0.0-20220819091114-7dccc0b6b6cd
 	github.com/oschwald/geoip2-golang v1.8.0
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/pion/stun v0.3.5
@@ -45,9 +45,17 @@ require (
 )
 
 require (
+	github.com/Psiphon-Labs/bolt v0.0.0-20200624191537-23cedaef7ad7 // indirect
+	github.com/Psiphon-Labs/goptlib v0.0.0-20200406165125-c0e32a7a3464 // indirect
+	github.com/Psiphon-Labs/qtls-go1-18 v0.0.0-20221014170512-3bdc7291c091 // indirect
+	github.com/Psiphon-Labs/qtls-go1-19 v0.0.0-20221014165721-ed28749db082 // indirect
+	github.com/Psiphon-Labs/quic-go v0.0.0-20221014165902-1b7c3975fcf3 // indirect
+	github.com/Psiphon-Labs/tls-tris v0.0.0-20210713133851-676a693d51ad // indirect
+	github.com/andybalholm/brotli v1.0.5-0.20220518190645-786ec621f618 // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/google/pprof v0.0.0-20221219190121-3cb0bae90811 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/klauspost/compress v1.15.10-0.20220729101446-5a3a4a965cc6 // indirect
 	github.com/onsi/ginkgo/v2 v2.6.1 // indirect
 	github.com/segmentio/fasthash v1.0.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
@@ -109,7 +117,7 @@ require (
 	github.com/prometheus/common v0.39.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/refraction-networking/gotapdance v1.3.4 // indirect
-	github.com/refraction-networking/utls v1.0.0 // indirect
+	github.com/refraction-networking/utls v1.1.3 // indirect
 	github.com/sergeyfrolov/bsbuffer v0.0.0-20180903213811-94e85abb8507 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/spf13/cobra v1.6.1

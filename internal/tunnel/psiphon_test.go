@@ -1,10 +1,4 @@
-//go:build !go1.19
-
 package tunnel
-
-//
-// Psiphon not working with go1.19: TODO(https://github.com/ooni/probe/issues/2222)
-//
 
 import (
 	"context"
@@ -12,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ooni/psiphon/tunnel-core/ClientLibrary/clientlib"
+	"github.com/Psiphon-Labs/psiphon-tunnel-core/ClientLibrary/clientlib"
 )
 
 func TestPsiphonWithCancelledContext(t *testing.T) {
