@@ -11,14 +11,12 @@ import (
 // the list internally used by TPO's snowflake.
 var inputs = []string{
 	"stun.voip.blackberry.com:3478",
-	"stun.altar.com.pl:3478",
 	"stun.antisip.com:3478",
 	"stun.bluesip.net:3478",
 	"stun.dus.net:3478",
 	"stun.epygi.com:3478",
 	"stun.sonetel.com:3478",
 	"stun.sonetel.net:3478",
-	"stun.stunprotocol.org:3478",
 	"stun.uls.co.za:3478",
 	"stun.voipgate.com:3478",
 	"stun.voys.nl:3478",
