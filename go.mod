@@ -29,8 +29,7 @@ require (
 	github.com/ooni/go-libtor v1.1.6
 	github.com/ooni/oocrypto v0.3.0
 	github.com/ooni/oohttp v0.4.0
-	github.com/ooni/probe-assets v0.13.0
-	github.com/oschwald/geoip2-golang v1.8.0
+	github.com/ooni/probe-assets v0.14.0
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/pion/stun v0.3.5
 	github.com/pkg/errors v0.9.1
@@ -95,7 +94,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.16 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
-	github.com/oschwald/maxminddb-golang v1.10.0 // indirect
+	github.com/oschwald/maxminddb-golang v1.10.0
 	github.com/pion/datachannel v1.5.5 // indirect
 	github.com/pion/dtls/v2 v2.1.5 // indirect
 	github.com/pion/ice/v2 v2.2.13 // indirect

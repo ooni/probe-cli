@@ -7,7 +7,7 @@ import (
 	"github.com/ooni/probe-assets/assets"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
-	"github.com/oschwald/geoip2-golang"
+	"github.com/oschwald/maxminddb-golang"
 )
 
 // TODO(bassosimone): this would be more efficient if we'd open just
@@ -16,10 +16,10 @@ import (
 // LookupASN maps [ip] to an AS number and an AS organization name.
 func LookupASN(ip string) (asn uint, org string, err error) {
 	asn, org = model.DefaultProbeASN, model.DefaultProbeNetworkName
-	db, err := geoip2.FromBytes(assets.ASNDatabaseData())
-	runtimex.PanicOnError(err, "cannot load embedded geoip2 ASN database")
+	db, err := maxminddb.FromBytes(assets.OOMMDBDatabaseBytes)
+	runtimex.PanicOnError(err, "cannot load embedded geoip2 database")
 	defer db.Close()
-	record, err := db.ASN(net.ParseIP(ip))
+	record, err := assets.OOMMDBLooup(db, net.ParseIP(ip))
 	if err != nil {
 		return
 	}
@@ -33,10 +33,10 @@ func LookupASN(ip string) (asn uint, org string, err error) {
 // LookupCC maps [ip] to a country code.
 func LookupCC(ip string) (cc string, err error) {
 	cc = model.DefaultProbeCC
-	db, err := geoip2.FromBytes(assets.CountryDatabaseData())
+	db, err := maxminddb.FromBytes(assets.OOMMDBDatabaseBytes)
 	runtimex.PanicOnError(err, "cannot load embedded geoip2 country database")
 	defer db.Close()
-	record, err := db.Country(net.ParseIP(ip))
+	record, err := assets.OOMMDBLooup(db, net.ParseIP(ip))
 	if err != nil {
 		return
 	}
