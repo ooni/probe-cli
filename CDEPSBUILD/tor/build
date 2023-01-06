@@ -44,7 +44,7 @@ pkgbuild() (
 	make -j$(nproc) V=1 libtor.a
 
 	install -m644 src/feature/api/tor_api.h $DESTDIR/include
-	install libtor.a $DESTDIR/lib
+	install -m644 libtor.a $DESTDIR/lib
 )
 
 pkgbuild

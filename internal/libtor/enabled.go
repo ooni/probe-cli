@@ -12,6 +12,9 @@ package libtor
 // #cgo darwin,amd64 CFLAGS: -I${SRCDIR}/darwin/amd64/include
 // #cgo darwin,amd64 LDFLAGS: -L${SRCDIR}/darwin/amd64/lib -ltor -levent -lssl -lcrypto -lz
 //
+// #cgo linux,amd64 CFLAGS: -I${SRCDIR}/linux/amd64/include
+// #cgo linux,amd64 LDFLAGS: -L${SRCDIR}/linux/amd64/lib -ltor -levent -lssl -lcrypto -lz -lm
+//
 // #include <limits.h>
 // #include <stdbool.h>
 // #include <stdlib.h>
