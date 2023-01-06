@@ -185,6 +185,10 @@ func (p *torProcess) runtor(ctx context.Context, cc net.Conn, args ...string) {
 		<-ctx.Done()
 	}()
 
+	// TODO(bassosimone): what should we do if the user closes the
+	// control connection? What happens when tor is a subprocess and
+	// we close the control connection? We should do the same!
+
 	// Route messages from and to the control connection
 	go sendrecv(cc, filep)
 	go sendrecv(filep, cc)
