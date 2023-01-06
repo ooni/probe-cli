@@ -142,7 +142,7 @@ func (p *torProcess) runtor(ctx context.Context, cc net.Conn, args ...string) {
 	// Create argc and argv for tor
 	argv := append([]string{"tor"}, args...)
 	const toomany = 256 // arbitrary low limit to make C.int and C.size_t casts always work
-	if len(argv) > 256 {
+	if len(argv) > toomany {
 		p.startErr <- ErrTooManyArguments // nonblocking channel
 		return
 	}
