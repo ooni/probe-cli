@@ -24,17 +24,24 @@ pkgbuild() (
 
 	git apply $mydir/*.patch
 
-	./configure \
-		${TOR_CONFIGURE_FLAGS:-} \
+	if [[ "${CONFIGURE_HOST:-}" != "" ]]; then
+		extraflags="--host=${CONFIGURE_HOST}"
+	else
+		extraflags=""
+	fi
+
+	./configure $extraflags \
 		--enable-pic \
 		--enable-static-libevent --with-libevent-dir=$DESTDIR \
 		--enable-static-openssl --with-openssl-dir=$DESTDIR \
 		--enable-static-zlib --with-zlib-dir=$DESTDIR \
 		--disable-module-dirauth \
 		--disable-zstd --disable-lzma \
+		--disable-tool-name-check \
+		--disable-systemd \
 		--prefix=/
 
-	make -j$(nproc) libtor.a
+	make -j$(nproc) V=1 libtor.a
 
 	install -m644 src/feature/api/tor_api.h $DESTDIR/include
 	install libtor.a $DESTDIR/lib

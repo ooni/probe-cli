@@ -24,6 +24,8 @@ pkgbuild() (
 
 	git apply $mydir/*.patch
 
+	export CHOST=${CONFIGURE_HOST:-} # zlib's configure otherwise uses Apple's libtool
+
 	./configure --prefix=/ --static
 
 	make -j$(nproc)

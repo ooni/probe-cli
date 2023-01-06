@@ -1,0 +1,114 @@
+#!/bin/bash
+# Adapted from https://github.com/guardianproject/tor-android
+# SPDX-License-Identifier: BSD-3-Clause
+
+set -euo pipefail
+
+USAGE="usage: $0 386|amd64|arm|arm64 [package...]"
+
+if [[ $# < 1 ]]; then
+	echo $USAGE 1>&2
+	exit 1
+fi
+GOARCH=$1
+shift
+
+topdir=$(dirname $(dirname $(realpath $0)))
+
+ANDROID_HOME=$($topdir/MOBILE/android/home)
+ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/$(cat $topdir/NDKVERSION)
+
+SYSNAME="$(uname -s | tr [A-Z] [a-z])-$(uname -m)"
+if [[ "$SYSNAME" == "darwin-arm64" ]]; then
+	SYSNAME="darwin-x86_64" # the NDK is currently only available for amd64
+fi
+TOOLCHAIN="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$SYSNAME"
+
+API=21
+
+# TODO(bassosimone): we should be using -mthumb for armv7 and generally
+# we should do a better job at setting robust compiler flags
+
+# This function implements the build strategy required by
+# packages that use the autotools.
+likeautotools() (
+	local PACKAGE=$1
+	shift
+
+	# See https://developer.android.com/ndk/guides/other_build_systems
+
+	if [[ $GOARCH == "arm64" ]]; then
+		local TARGET=aarch64-linux-android
+		local CONFIGURE_HOST=$TARGET
+	elif [[ $GOARCH == "arm" ]]; then
+		local TARGET=armv7a-linux-androideabi
+		local CONFIGURE_HOST=arm-linux-androideabi
+	elif [[ $GOARCH == "386" ]]; then
+		local TARGET=i686-linux-android
+		local CONFIGURE_HOST=$TARGET
+	elif [[ $GOARCH == "amd64" ]]; then
+		local TARGET=x86_64-linux-android
+		local CONFIGURE_HOST=$TARGET
+	else
+		echo "$0: unsupported GOARCH: $GOARCH" 1>&2
+		exit 1
+	fi
+
+	export CONFIGURE_HOST=$CONFIGURE_HOST
+	export DESTDIR=$topdir/internal/libtor/android/$GOARCH
+	export AR=$TOOLCHAIN/bin/llvm-ar
+	export CC=$TOOLCHAIN/bin/$TARGET$API-clang
+	export AS=$CC
+	export CXX=$TOOLCHAIN/bin/$TARGET$API-clang++
+	export LD=$TOOLCHAIN/bin/ld
+	export RANLIB=$TOOLCHAIN/bin/llvm-ranlib
+	export STRIP=$TOOLCHAIN/bin/llvm-strip
+
+	$topdir/CDEPSBUILD/$PACKAGE/build
+)
+
+# This function implements the build strategy required by OpenSSL.
+likeopenssl() (
+	local PACKAGE=$1
+	shift
+
+	# See https://github.com/openssl/openssl/blob/master/NOTES-ANDROID.md
+
+	export PATH=$TOOLCHAIN/bin:$PATH
+
+	if [[ $GOARCH == "386" ]]; then
+		OPENSSL_COMPILER="android-x86"
+	elif [[ $GOARCH == "amd64" ]]; then
+		OPENSSL_COMPILER="android-x86_64"
+	elif [[ $GOARCH == "arm" ]]; then
+		OPENSSL_COMPILER="android-arm"
+	elif [[ $GOARCH == "arm64" ]]; then
+		OPENSSL_COMPILER="android-arm64"
+	else
+		echo "FATAL: unsupported GOARCH: $goarch" 1>&2
+		exit 1
+	fi
+
+	export ANDROID_HOME=$ANDROID_HOME
+	export ANDROID_NDK_HOME=$ANDROID_NDK_ROOT # it seems OpenSSL 1.1.1s uses this name
+	export DESTDIR=$topdir/internal/libtor/android/$GOARCH
+	export OPENSSL_COMPILER="$OPENSSL_COMPILER -D__ANDROID_API__=$API"
+
+	$topdir/CDEPSBUILD/$PACKAGE/build
+)
+
+while [[ $# > 0 ]]; do
+	case $(cat $topdir/CDEPSBUILD/$1/android) in
+	autotools)
+		likeautotools $1
+		;;
+	openssl)
+		likeopenssl $1
+		;;
+	*)
+		echo "FATAL: don't know how to build $1" 1>&2
+		exit 1
+		;;
+	esac
+	shift
+done

@@ -26,10 +26,16 @@ pkgbuild() (
 
 	./autogen.sh
 
+	if [[ "${CONFIGURE_HOST:-}" != "" ]]; then
+		extraflags="--host=${CONFIGURE_HOST}"
+	else
+		extraflags=""
+	fi
+
 	./configure \
 		LDFLAGS="${LDFLAGS:-} -L$DESTDIR/lib" \
 		CFLAGS="${CFLAGS:-} -I$DESTDIR/include" \
-		${LIBEVENT_CONFIGURE_FLAGS:-} \
+		$extraflags \
 		--disable-libevent-regress \
 		--disable-samples \
 		--disable-shared \
