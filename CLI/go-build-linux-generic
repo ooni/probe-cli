@@ -22,7 +22,7 @@ if [[ $# -ne 1 ]]; then
 	echo "" 1>&2
 	echo "Example:" 1>&2
 	echo "" 1>&2
-	echo "  ./CLI/go-build-linux-glibc ./internal/cmd/miniooni" 1>&2
+	echo "  ./CLI/go-build-linux-generic ./internal/cmd/miniooni" 1>&2
 	echo "" 1>&2
 	exit 1
 fi
