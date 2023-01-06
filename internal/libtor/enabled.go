@@ -139,6 +139,9 @@ func (p *torProcess) runtor(ctx context.Context, cc net.Conn, args ...string) {
 		return
 	}
 
+	// TODO(bassosimone): I don't understand whether I should decorate these
+	// C pointers using unsafe.Pointer or it doesn't matter
+
 	// Create argc and argv for tor
 	argv := append([]string{"tor"}, args...)
 	const toomany = 256 // arbitrary low limit to make C.int and C.size_t casts always work
