@@ -194,7 +194,7 @@ func (p *torProcess) runtor(ctx context.Context, cc net.Conn, args ...string) {
 	go sendrecv(filep, cc)
 
 	// Tell user that startup is successful.
-	p.startErr <- nil
+	p.startErr <- nil // nonblocking chan
 
 	// Run tor until completion. Note that return codes are not
 	// currently documented and they're never zero (WTF?!).
