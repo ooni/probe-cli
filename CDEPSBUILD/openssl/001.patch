@@ -1,0 +1,14 @@
+diff --git a/include/openssl/opensslv.h b/include/openssl/opensslv.h
+index fd9400a..0d2c9dc 100644
+--- a/include/openssl/opensslv.h
++++ b/include/openssl/opensslv.h
+@@ -94,6 +94,9 @@ extern "C" {
+ # define SHLIB_VERSION_HISTORY ""
+ # define SHLIB_VERSION_NUMBER "1.1"
+
++/* OPENSSL_OONI is used by dependencies to ensure they are using the
++   correct OpenSSL headers and not some other headers. */
++#define OPENSSL_OONI 1
+
+ #ifdef  __cplusplus
+ }

@@ -1,0 +1,15 @@
+diff --git a/crypto/comp/c_zlib.c b/crypto/comp/c_zlib.c
+index b819337..e479bd6 100644
+--- a/crypto/comp/c_zlib.c
++++ b/crypto/comp/c_zlib.c
+@@ -34,6 +34,10 @@ static COMP_METHOD zlib_method_nozlib = {
+
+ # include <zlib.h>
+
++#ifndef ZLIB_OONI
++# error "We're not including the correct zlib.h file"
++#endif
++
+ static int zlib_stateful_init(COMP_CTX *ctx);
+ static void zlib_stateful_finish(COMP_CTX *ctx);
+ static int zlib_stateful_compress_block(COMP_CTX *ctx, unsigned char *out,

@@ -1,0 +1,35 @@
+#!/bin/bash
+# Adapted from https://github.com/guardianproject/tor-android
+# SPDX-License-Identifier: BSD-3-Clause
+
+set -euxo pipefail
+
+mydir=$(dirname $(realpath $0))
+
+pkgbuild() (
+	local workdir=$(mktemp -d)
+
+	cd $workdir
+
+	curl -fsSLO https://zlib.net/zlib-1.2.13.tar.gz
+	local expected_sha256="b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30"
+	local real_sha256=$(sha256sum zlib-1.2.13.tar.gz | awk '{print $1}')
+	if [[ $expected_sha256 != $real_sha256 ]]; then
+		echo "FATAL: expected $expected_sha256 got $real_sha256" 1>&2
+		exit 1
+	fi
+
+	tar -xf zlib-1.2.13.tar.gz
+	cd zlib-1.2.13
+
+	git apply $mydir/*.patch
+
+	./configure --prefix=/ --static
+
+	make -j$(nproc)
+
+	make DESTDIR=$DESTDIR install
+	rm -rf $DESTDIR/{lib/pkgconfig,share}
+)
+
+pkgbuild

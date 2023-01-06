@@ -1,0 +1,43 @@
+#!/bin/bash
+# Adapted from https://github.com/guardianproject/tor-android
+# SPDX-License-Identifier: BSD-3-Clause
+
+set -euxo pipefail
+
+mydir=$(dirname $(realpath $0))
+
+pkgbuild() (
+	local workdir=$(mktemp -d)
+
+	cd $workdir
+
+	curl -fsSLO https://www.torproject.org/dist/tor-0.4.7.12.tar.gz
+	local expected_sha256="3b5d969712c467851bd028f314343ef15a97ea457191e93ffa97310b05b9e395"
+	local real_sha256=$(sha256sum tor-0.4.7.12.tar.gz | awk '{print $1}')
+	if [[ $expected_sha256 != $real_sha256 ]]; then
+		echo "FATAL: expected $expected_sha256 got $real_sha256" 1>&2
+		exit 1
+	fi
+
+	tar -xf tor-0.4.7.12.tar.gz
+	cd tor-0.4.7.12
+
+	git apply $mydir/*.patch
+
+	./configure \
+		${TOR_CONFIGURE_FLAGS:-} \
+		--enable-pic \
+		--enable-static-libevent --with-libevent-dir=$DESTDIR \
+		--enable-static-openssl --with-openssl-dir=$DESTDIR \
+		--enable-static-zlib --with-zlib-dir=$DESTDIR \
+		--disable-module-dirauth \
+		--disable-zstd --disable-lzma \
+		--prefix=/
+
+	make -j$(nproc) libtor.a
+
+	install -m644 src/feature/api/tor_api.h $DESTDIR/include
+	install libtor.a $DESTDIR/lib
+)
+
+pkgbuild
