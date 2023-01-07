@@ -1,10 +1,8 @@
-package runtimex_test
+package runtimex
 
 import (
 	"errors"
 	"testing"
-
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func TestPanicOnError(t *testing.T) {
@@ -12,12 +10,12 @@ func TestPanicOnError(t *testing.T) {
 		defer func() {
 			out = recover().(error)
 		}()
-		runtimex.PanicOnError(in, "we expect this assertion to fail")
+		PanicOnError(in, "we expect this assertion to fail")
 		return
 	}
 
 	t.Run("error is nil", func(t *testing.T) {
-		runtimex.PanicOnError(nil, "this assertion should not fail")
+		PanicOnError(nil, "this assertion should not fail")
 	})
 
 	t.Run("error is not nil", func(t *testing.T) {
@@ -33,12 +31,12 @@ func TestAssert(t *testing.T) {
 		defer func() {
 			out = recover().(error)
 		}()
-		runtimex.Assert(in, message)
+		Assert(in, message)
 		return
 	}
 
 	t.Run("assertion is true", func(t *testing.T) {
-		runtimex.Assert(true, "this assertion should not fail")
+		Assert(true, "this assertion should not fail")
 	})
 
 	t.Run("assertion is false", func(t *testing.T) {
@@ -55,12 +53,12 @@ func TestPanicIfTrue(t *testing.T) {
 		defer func() {
 			out = recover().(error)
 		}()
-		runtimex.PanicIfTrue(in, message)
+		PanicIfTrue(in, message)
 		return
 	}
 
 	t.Run("assertion is false", func(t *testing.T) {
-		runtimex.PanicIfTrue(false, "this assertion should not fail")
+		PanicIfTrue(false, "this assertion should not fail")
 	})
 
 	t.Run("assertion is true", func(t *testing.T) {
@@ -77,12 +75,12 @@ func TestPanicIfNil(t *testing.T) {
 		defer func() {
 			out = recover().(error)
 		}()
-		runtimex.PanicIfNil(in, message)
+		PanicIfNil(in, message)
 		return
 	}
 
 	t.Run("value is not nil", func(t *testing.T) {
-		runtimex.PanicIfNil(false, "this assertion should not fail")
+		PanicIfNil(false, "this assertion should not fail")
 	})
 
 	t.Run("value is nil", func(t *testing.T) {
