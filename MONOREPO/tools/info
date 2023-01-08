@@ -1,0 +1,25 @@
+#!/bin/bash
+
+#doc:
+#doc: # MONOREPO/tools/info
+#doc:
+#doc: Shows inline documentation.
+
+set -euo pipefail
+
+reporoot=$(dirname $(dirname $(dirname $(realpath $0))))
+
+source $reporoot/MONOREPO/tools/libcore.bash
+
+document() {
+	echo ""
+	cat $1 | grep '^#doc:' | sed -e 's/^#doc: //g' -e 's/^#doc://g'
+}
+
+document $reporoot/MONOREPO/tools/info
+document $reporoot/MONOREPO/tools/libcore.bash
+document $reporoot/MONOREPO/tools/libgit.bash
+document $reporoot/MONOREPO/tools/gitx
+document $reporoot/MONOREPO/tools/setupandroid
+document $reporoot/MONOREPO/tools/setupgo
+document $reporoot/MONOREPO/tools/setupshfmt
