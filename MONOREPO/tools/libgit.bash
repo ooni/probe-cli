@@ -185,6 +185,11 @@ clean_one_repo() {
 	shift
 	(
 		run cd $dirname
+		local extraflags=""
+		if [[ $1 == "." ]]; then
+			# Avoid completely removing all the cloned subrepos
+			extraflags="-e ./MONOREPO/repo"
+		fi
 		run git clean -dffx
 	)
 }

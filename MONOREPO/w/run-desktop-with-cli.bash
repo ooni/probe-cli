@@ -2,6 +2,7 @@
 set -euo pipefail
 
 reporoot=$(dirname $(dirname $(dirname $(realpath $0))))
+cd $reporoot
 
 source $reporoot/MONOREPO/tools/libcore.bash
 
