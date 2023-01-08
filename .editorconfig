@@ -13,3 +13,6 @@ indent_style = space
 [*.{yml,yaml}]
 indent_style = space
 indent_size = 2
+
+[*.java]
+indent_style = space
