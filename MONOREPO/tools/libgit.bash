@@ -262,6 +262,7 @@ subcommand_status() {
 #doc: to the main branch of the repository.
 reset_one_repo() {
 	local dirname=$(repo_to_dir $1)
+	shift
 	echo ""
 	(
 		run cd $dirname
