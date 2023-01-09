@@ -1,0 +1,15 @@
+diff --git a/src/lib/tls/tortls_openssl.c b/src/lib/tls/tortls_openssl.c
+index 77de2d6..ce46554 100644
+--- a/src/lib/tls/tortls_openssl.c
++++ b/src/lib/tls/tortls_openssl.c
+@@ -45,6 +45,10 @@ DISABLE_GCC_WARNING("-Wredundant-decls")
+ #error "We require OpenSSL with ECC support"
+ #endif
+
++#ifndef OPENSSL_OONI
++#error "We're not including the correct openssl/opensslv.h file"
++#endif
++
+ #include <openssl/ssl.h>
+ #include <openssl/ssl3.h>
+ #include <openssl/err.h>

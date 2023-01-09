@@ -1,0 +1,53 @@
+#!/bin/bash
+# Adapted from https://github.com/guardianproject/tor-android
+# SPDX-License-Identifier: BSD-3-Clause
+
+set -euxo pipefail
+
+mydir=$(dirname $(realpath $0))
+
+pkgbuild() (
+	local workdir=$(mktemp -d)
+
+	cd $workdir
+
+	curl -fsSLO https://github.com/libevent/libevent/archive/release-2.1.12-stable.tar.gz
+	local expected_sha256="7180a979aaa7000e1264da484f712d403fcf7679b1e9212c4e3d09f5c93efc24"
+	local real_sha256=$(sha256sum release-2.1.12-stable.tar.gz | awk '{print $1}')
+	if [[ $expected_sha256 != $real_sha256 ]]; then
+		echo "FATAL: expected $expected_sha256 got $real_sha256" 1>&2
+		exit 1
+	fi
+
+	tar -xf release-2.1.12-stable.tar.gz
+	cd libevent-release-2.1.12-stable
+
+	git apply $mydir/*.patch
+
+	./autogen.sh
+
+	if [[ "${CONFIGURE_HOST:-}" != "" ]]; then
+		extraflags="--host=${CONFIGURE_HOST}"
+	else
+		extraflags=""
+	fi
+
+	./configure \
+		LDFLAGS="-L$DESTDIR/lib ${LDFLAGS:-} " \
+		CFLAGS="-I$DESTDIR/include ${CFLAGS:-}" \
+		$extraflags \
+		--disable-libevent-regress \
+		--disable-samples \
+		--disable-shared \
+		--prefix=/
+
+	make -j$(nproc)
+
+	make DESTDIR=$DESTDIR install
+	rm -rf $DESTDIR/bin
+	rm -rf $DESTDIR/lib/pkgconfig
+	rm -rf $DESTDIR/lib/*.la
+	rm -rf $DESTDIR/lib/libevent_*.a # we just need libevent.a
+)
+
+pkgbuild

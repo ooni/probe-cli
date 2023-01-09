@@ -1,0 +1,1 @@
+-lssl -lcrypto -lgdi32 -lws2_32 -lcrypt32

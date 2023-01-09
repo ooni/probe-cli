@@ -1,0 +1,15 @@
+diff --git a/src/lib/compress/compress_zlib.c b/src/lib/compress/compress_zlib.c
+index 52f9509..fb7e39e 100644
+--- a/src/lib/compress/compress_zlib.c
++++ b/src/lib/compress/compress_zlib.c
+@@ -45,6 +45,10 @@
+ #error "We require zlib version 1.2 or later."
+ #endif
+
++#ifndef ZLIB_OONI
++#error "We're not including the correct zlib.h file"
++#endif
++
+ static size_t tor_zlib_state_size_precalc(int inflate,
+                                           int windowbits, int memlevel);
+
