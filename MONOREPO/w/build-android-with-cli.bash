@@ -15,6 +15,9 @@ run cp -v MOBILE/android/oonimkall.aar ./MONOREPO/repo/probe-android/engine-expe
 (
 	run export ANDROID_HOME=$(./MOBILE/android/home)
 	run cd ./MONOREPO/repo/probe-android
+	# Note: we're building the experimental full release because the dev
+	# release allows low-level code to do too many things. See
+	# https://ooni.org/post/making-ooni-probe-android-more-resilient/#changing-our-android-tls-fingerprint
 	run ./gradlew assembleExperimentalFullRelease
 	apkdir=./app/build/outputs/apk/experimentalFull/release
 	run cp -v $apkdir/app-experimental-full-release-unsigned.apk  $reporoot/MOBILE/android/app-unsigned.apk
