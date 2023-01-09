@@ -17,6 +17,7 @@ document() {
 }
 
 document $reporoot/MONOREPO/tools/info
+document $reporoot/MONOREPO/tools/gitconfig.bash
 document $reporoot/MONOREPO/tools/libcore.bash
 document $reporoot/MONOREPO/tools/libgit.bash
 document $reporoot/MONOREPO/tools/gitx
