@@ -1,0 +1,6 @@
+#!/bin/bash
+set -euxo pipefail
+reporoot=$(dirname $(dirname $(dirname $(realpath $0))))
+android_home=$(cd $reporoot && ./MOBILE/android/home)
+adb=$android_home/platform-tools/adb
+$adb install $reporoot/MOBILE/android/app.apk
