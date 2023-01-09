@@ -106,7 +106,7 @@ and prunes knowledge of remote branches that have been pruned also upstream.
 These scripts are very opinionated in terms of how one should be
 developing with git. Here is the only workflow they support:
 
-1. you start from a clean, synced tree (`gitx clean && gitx reset && gitx sync`);
+1. you start from a clean, synced tree (`gitx clean && gitx reset -f && gitx sync`);
 
 2. you checkout a feature branch (`gitx checkout issue/1234`);
 
