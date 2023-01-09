@@ -5,6 +5,7 @@
 
 reporoot=$(dirname $(dirname $(dirname $(realpath $0))))
 
+source $reporoot/MONOREPO/tools/gitconfig.bash
 source $reporoot/MONOREPO/tools/libcore.bash
 
 #doc:
@@ -70,22 +71,6 @@ fail_if_main() {
 		exit 1
 	fi
 }
-
-#doc:
-#doc: ## repositories (array)
-#doc:
-#doc: List of repositories to track
-repositories=(
-	. # the dot is git@github.com:ooni/probe-cli and MUST be first
-	git@github.com:ooni/oocrypto
-	git@github.com:ooni/oohttp
-	git@github.com:ooni/probe-android
-	git@github.com:ooni/probe-assets
-	git@github.com:ooni/probe-desktop
-	git@github.com:ooni/probe-ios
-	git@github.com:ooni/probe-releases
-	git@github.com:ooni/spec
-)
 
 #doc:
 #doc: ## for_each_repo (function)
@@ -156,7 +141,7 @@ checkout_one_repo() {
 	local branch_name=$2
 	(
 		run cd $dirname
-		run git checkout $branch_name || run git checkout -b $branch_name
+		run git checkout -b $branch_name
 	)
 }
 
@@ -287,13 +272,15 @@ reset_one_repo() {
 		else
 			fatal "default branch not named master or main"
 		fi
-		for branch in "$(git branch --list | grep -v '^*')"; do
-			# Implementation WTF note: for some reason I always get a zero
-			# length branch name when filtering with the above grep
-			if [[ -n $branch ]]; then
-				run git branch -D $branch
-			fi
-		done
+		if [[ $# > 0 && "$1" == "-f" ]]; then
+			for branch in "$(git branch --list | grep -v '^*')"; do
+				# Implementation WTF note: for some reason I always get a zero
+				# length branch name when filtering with the above grep
+				if [[ -n $branch ]]; then
+					run git branch -D $branch
+				fi
+			done
+		fi
 	)
 }
 
@@ -302,7 +289,7 @@ reset_one_repo() {
 #doc:
 #doc: Implements the reset subcommand.
 subcommand_reset() {
-	for_each_repo reset_one_repo
+	for_each_repo reset_one_repo "$@"
 }
 
 #doc:
