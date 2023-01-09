@@ -66,8 +66,15 @@ mode using the [../pkg/oonimkall](../pkg/oonimkall/) we just compiled;
 The [gitx](tools/gitx) script contains monorepo aware git extensions
 through a set of subcommands. Here's a brief overview:
 
-* `gitx checkout {branch}` runs `git checkout -b {branch}`
-in the probe-cli repository as well as in the subrepositories.
+* `gitx checkout {branch}` runs `git checkout {branch} || git checkout -b {branch}`
+in the probe-cli repository as well as in the subrepositories. Because we run
+`checkout` both without and with `-b`, the end result is that we have all
+the repositories with an equally named branch. Checking out an already
+existing branch helps with picking up unfinished work. Checking out a
+new branch is how you start doing now work. In some cases, you are going
+to have a branch already existing only for some repositories (e.g., you
+started working on a feature and then realized you wanted to use the
+monorepo). For this reason, we implement this mixed branch checkout strategy.
 
 * `gitx clean` runs `git clean -dffx` in the probe-cli repository as
 well as in the subrepositories making sure we don't wipe out the
@@ -116,3 +123,8 @@ developing with git. Here is the only workflow they support:
 8. you manually (for now) open pull requests;
 
 9. you eventually merge all the PRs.
+
+## History
+
+The [bassosimone/monorepo](https://github.com/bassosimone/monorepo) is the
+place where we've been incubating this functionality for ~one year.
