@@ -274,11 +274,10 @@ reset_one_repo() {
 		else
 			fatal "default branch not named master or main"
 		fi
+		current=$(git branch --show-current)
 		if [[ $# > 0 && "$1" == "-f" ]]; then
-			for branch in "$(git branch --list | grep -v '^*')"; do
-				# Implementation WTF note: for some reason I always get a zero
-				# length branch name when filtering with the above grep
-				if [[ -n $branch ]]; then
+			for branch in "$(git branch --list)"; do
+				if [[ $branch != $current ]]; then
 					run git branch -D $branch
 				fi
 			done
