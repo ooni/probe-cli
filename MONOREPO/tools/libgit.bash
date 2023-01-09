@@ -277,6 +277,8 @@ reset_one_repo() {
 		current=$(git branch --show-current)
 		if [[ $# > 0 && "$1" == "-f" ]]; then
 			for branch in "$(git branch --list | cut -c 3-)"; do # deal with asterisk
+				info "current: $current"
+				info "branch: $branch"
 				if [[ $branch != $current ]]; then
 					run git branch -D $branch
 				fi
