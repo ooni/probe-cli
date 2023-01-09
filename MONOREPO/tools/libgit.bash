@@ -141,7 +141,7 @@ checkout_one_repo() {
 	local branch_name=$2
 	(
 		run cd $dirname
-		run git checkout -b $branch_name
+		run git checkout $branch_name || git checkout -b $branch_name
 	)
 }
 
