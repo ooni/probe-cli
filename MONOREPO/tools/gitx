@@ -35,7 +35,7 @@ if [[ $# > 0 ]]; then
 		subcommand_push
 		;;
 	reset)
-		subcommand_reset
+		subcommand_reset "$@"
 		;;
 	status)
 		subcommand_status
