@@ -276,9 +276,7 @@ reset_one_repo() {
 		fi
 		current=$(git branch --show-current)
 		if [[ $# > 0 && "$1" == "-f" ]]; then
-			for branch in "$(git for-each-ref --format='%(refname:short)' refs/heads/)"; do
-				info "current: $current"
-				info "branch: $branch"
+			for branch in $(git for-each-ref --format='%(refname:short)' refs/heads/); do
 				if [[ $branch != $current && $branch != "" ]]; then
 					run git branch -D $branch
 				fi
