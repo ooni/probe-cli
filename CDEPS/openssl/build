@@ -11,6 +11,7 @@ pkgbuild() (
 
 	cd $workdir
 
+	# See https://github.com/Homebrew/homebrew-core/blob/master/Formula/openssl@1.1.rb
 	curl -fsSLO https://www.openssl.org/source/openssl-1.1.1s.tar.gz
 	local expected_sha256="c5ac01e760ee6ff0dab61d6b2bbd30146724d063eb322180c6f18a6f74e4b6aa"
 	local real_sha256=$(sha256sum openssl-1.1.1s.tar.gz | awk '{print $1}')

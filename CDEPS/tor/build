@@ -11,6 +11,7 @@ pkgbuild() (
 
 	cd $workdir
 
+	# See https://github.com/Homebrew/homebrew-core/blob/master/Formula/tor.rb
 	curl -fsSLO https://www.torproject.org/dist/tor-0.4.7.12.tar.gz
 	local expected_sha256="3b5d969712c467851bd028f314343ef15a97ea457191e93ffa97310b05b9e395"
 	local real_sha256=$(sha256sum tor-0.4.7.12.tar.gz | awk '{print $1}')

@@ -11,6 +11,7 @@ pkgbuild() (
 
 	cd $workdir
 
+	# See https://github.com/Homebrew/homebrew-core/blob/master/Formula/libevent.rb
 	curl -fsSLO https://github.com/libevent/libevent/archive/release-2.1.12-stable.tar.gz
 	local expected_sha256="7180a979aaa7000e1264da484f712d403fcf7679b1e9212c4e3d09f5c93efc24"
 	local real_sha256=$(sha256sum release-2.1.12-stable.tar.gz | awk '{print $1}')
