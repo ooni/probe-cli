@@ -42,7 +42,7 @@ pkgbuild() (
 		--disable-shared \
 		--prefix=/
 
-	make -j$(nproc)
+	make V=1 -j$(nproc)
 
 	make DESTDIR=$DESTDIR install
 	rm -rf $DESTDIR/bin

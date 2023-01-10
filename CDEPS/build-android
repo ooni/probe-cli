@@ -27,8 +27,29 @@ TOOLCHAIN="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$SYSNAME"
 
 API=$(cat $topdir/ANDROIDAPI)
 
-# TODO(bassosimone): we should be using -mthumb for armv7 and generally
-# we should do a better job at setting robust compiler flags
+# See https://airbus-seclab.github.io/c-compiler-security/ as well as the flags
+# produced by running ndk-build inside the android/ndk-samples repository
+# (see https://github.com/android/ndk-samples/tree/android-mk/hello-jni/jni).
+#
+# TODO(bassosimone): as of 2023-01-10, -fstack-clash-protection causes
+# a warning when compiling for either arm or arm64.
+#
+# TODO(bassosimone): as of 2023-01-10, -fsanitize=safe-stack is not
+# defined when compiling for arm and causes a linker error. (It's curious
+# that we see a linker error but this happens because zlib also builds
+# some examples as part of its default build.)
+if [[ $GOARCH == "386" ]]; then
+	export CFLAGS="-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fPIC -O2 -DANDROID -fsanitize=safe-stack -fstack-clash-protection -fsanitize=bounds -fsanitize-undefined-trap-on-error -mstackrealign"
+elif [[ $GOARCH == "amd64" ]]; then
+	export CFLAGS="-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fPIC -O2 -DANDROID -fsanitize=safe-stack -fstack-clash-protection -fsanitize=bounds -fsanitize-undefined-trap-on-error"
+elif [[ $GOARCH == "arm" ]]; then
+	export CFLAGS="-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fpic -Oz -DANDROID -fsanitize=bounds -fsanitize-undefined-trap-on-error -mthumb"
+elif [[ $GOARCH == "arm64" ]]; then
+	export CFLAGS="-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fpic -O2 -DANDROID -fsanitize=safe-stack -fsanitize=bounds -fsanitize-undefined-trap-on-error"
+else
+	echo "$0: unsupported GOARCH: $GOARCH" 1>&2
+	exit 1
+fi
 
 # This function implements the build strategy required by
 # packages that use the autotools.

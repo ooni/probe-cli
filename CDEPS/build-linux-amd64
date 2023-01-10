@@ -21,7 +21,8 @@ topdir=$(dirname $(dirname $(realpath $0)))
 
 export DESTDIR=$topdir/internal/libtor/linux/$GOARCH
 
-source $topdir/CDEPS/cflags-linux
+# See https://airbus-seclab.github.io/c-compiler-security/
+export CFLAGS="-D_FORTIFY_SOURCE=2 -fstack-protector-strong -fstack-clash-protection -fPIE -fsanitize=bounds -fsanitize-undefined-trap-on-error -O2"
 
 while [[ $# > 0 ]]; do
 	$topdir/CDEPS/$1/build
