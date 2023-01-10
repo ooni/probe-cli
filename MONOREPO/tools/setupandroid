@@ -1,0 +1,15 @@
+#!/bin/bash
+
+#doc:
+#doc: # MONOREPO/tools/setupsandroid
+#doc:
+#doc: Installs the required android tools.
+
+set -euo pipefail
+
+reporoot=$(dirname $(dirname $(dirname $(realpath $0))))
+
+source $reporoot/MONOREPO/tools/libcore.bash
+
+run ./MOBILE/android/setup
+run ./MOBILE/android/ensure

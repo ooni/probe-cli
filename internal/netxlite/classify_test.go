@@ -104,6 +104,12 @@ func TestClassifyGenericError(t *testing.T) {
 		}
 	})
 
+	t.Run("for the 'unknown_failure' string", func(t *testing.T) {
+		if ClassifyGenericError(ErrUnknown) != FailureUnknown {
+			t.Fatal("unexpected result")
+		}
+	})
+
 	t.Run("for unknown errors", func(t *testing.T) {
 		t.Run("with an IPv4 address", func(t *testing.T) {
 			input := errors.New("read tcp 10.0.2.15:56948->93.184.216.34:443: some error")

@@ -1,0 +1,37 @@
+#!/bin/bash
+
+#doc:
+#doc: # MONOREPO/tools/setupgo
+#doc:
+#doc: Installs the required golang version in $HOME.
+
+set -euo pipefail
+
+reporoot=$(dirname $(dirname $(dirname $(realpath $0))))
+
+source $reporoot/MONOREPO/tools/libcore.bash
+
+golang_version=$(cd $reporoot && cat GOVERSION)
+golang_tarball=go${golang_version}.$(goos)-$(goarch).tar.gz
+golang_tarball_url=https://dl.google.com/go/${golang_tarball}
+golang_sha256=${golang_tarball}.sha256
+golang_sha256_url=${golang_tarball_url}.sha256
+
+if [[ ! -d $HOME/sdk/go${golang_version} ]]; then
+	run curl -f#SLO $golang_tarball_url
+	run curl -f#SLO $golang_sha256_url
+	echo "$(cat $golang_sha256)  $golang_tarball" >SHA256SUMS
+	run sha256sum -c SHA256SUMS
+	run rm -f SHA256SUMS $golang_sha256
+	run mkdir -p $HOME/sdk
+	run tar -C $HOME/sdk -xf $golang_tarball
+	run mv $HOME/sdk/go $HOME/sdk/go$golang_version
+	run rm -f $golang_tarball
+fi
+
+if [[ -d $HOME/bin ]]; then
+	run rm -f $HOME/bin/go
+	run ln -s $HOME/sdk/go${golang_version}/bin/go $HOME/bin/go
+fi
+
+run $reporoot/CLI/check-go-version

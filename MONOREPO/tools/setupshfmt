@@ -1,0 +1,16 @@
+#!/bin/bash
+
+#doc:
+#doc: # MONOREPO/tools/setupshfmt
+#doc:
+#doc: Installs the shfmt shell formatter.
+
+set -euo pipefail
+
+reporoot=$(dirname $(dirname $(dirname $(realpath $0))))
+
+source $reporoot/MONOREPO/tools/libcore.bash
+
+$reporoot/MONOREPO/tools/setupgo
+
+run go install mvdan.cc/sh/v3/cmd/shfmt@latest

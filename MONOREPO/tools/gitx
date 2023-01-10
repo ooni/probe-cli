@@ -1,0 +1,65 @@
+#!/bin/bash
+
+#doc:
+#doc: # MONOREPO/tools/gitx
+#doc:
+#doc: Executes git commands on ooni/probe-cli as well as on all
+#doc: the repos inside the `repositories` array
+
+set -euo pipefail
+
+reporoot=$(dirname $(dirname $(dirname $(realpath $0))))
+
+source $reporoot/MONOREPO/tools/libgit.bash
+
+usage=1
+if [[ $# > 0 ]]; then
+	usage=0
+	subcommand=$1
+	shift
+
+	case $subcommand in
+	checkout)
+		subcommand_checkout "$@"
+		;;
+	clean)
+		subcommand_clean
+		;;
+	commit)
+		subcommand_commit "$@"
+		;;
+	diff)
+		subcommand_diff "$@"
+		;;
+	push)
+		subcommand_push
+		;;
+	reset)
+		subcommand_reset "$@"
+		;;
+	status)
+		subcommand_status
+		;;
+	sync)
+		subcommand_sync
+		;;
+	*)
+		warn "unknown subcommand: $subcommand"
+		usage=2
+		;;
+	esac
+fi
+
+if [[ $usage != 0 ]]; then
+	echo ""
+	echo "usage: gitx checkout {branch}"
+	echo "       gitx clean"
+	echo "       gitx commit {commit-message-file}"
+	echo "       gitx diff [flags]"
+	echo "       gitx push"
+	echo "       gitx reset"
+	echo "       gitx status"
+	echo "       gitx sync"
+	echo ""
+	exit $((usage - 1))
+fi
