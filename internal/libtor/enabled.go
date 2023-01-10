@@ -54,6 +54,7 @@ import "C"
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"os"
 	"sync"
@@ -77,11 +78,11 @@ var _ process.Creator = &torCreator{}
 func (c *torCreator) New(ctx context.Context, args ...string) (process.Process, error) {
 	left, right := net.Pipe()
 	proc := &torProcess{
-		awaitStart:  make(chan any, 1),
+		awaitStart:  make(chan any, 1), // buffer
 		controlConn: left,
-		startErr:    make(chan error, 1),
+		startErr:    make(chan error, 1), // buffer
 		startOnce:   sync.Once{},
-		waitErr:     make(chan error, 1),
+		waitErr:     make(chan error, 1), // buffer
 		waitOnce:    sync.Once{},
 	}
 	go proc.runtor(ctx, right, args...)
@@ -124,13 +125,14 @@ func (p *torProcess) Wait() (err error) {
 	return
 }
 
-var (
-	// ErrTooManyArguments indicates that p.args contains too many arguments
-	ErrTooManyArguments = errors.New("libtor: too many arguments")
+// ErrTooManyArguments indicates that p.args contains too many arguments
+var ErrTooManyArguments = errors.New("libtor: too many arguments")
 
-	// ErrCannotCreateControlSocket indicates that we cannot create a control socket.
-	ErrCannotCreateControlSocket = errors.New("libtor: cannot create a control socket")
-)
+// ErrCannotCreateControlSocket indicates that we cannot create a control socket.
+var ErrCannotCreateControlSocket = errors.New("libtor: cannot create a control socket")
+
+// ErrNonzeroExitCode indicates that tor returned a nonzero exit code
+var ErrNonzeroExitCode = errors.New("libtor: command completed with nonzero exit code")
 
 // runtor runs tor until completion and ensures that tor exits when
 // the given ctx is cancelled or its deadline expires.
@@ -142,8 +144,12 @@ func (p *torProcess) runtor(ctx context.Context, cc net.Conn, args ...string) {
 		return
 	}
 
-	// TODO(bassosimone): I don't understand whether I should decorate these
-	// C pointers using unsafe.Pointer or it doesn't matter
+	// Note: when writing this code I was wondering whether I needed to
+	// use unsafe.Pointer to track pointers that matter to C code. Reading
+	// this message[1] has been useful to understand that the most likely
+	// answer to this question is "obviously, no".
+	//
+	// See https://groups.google.com/g/golang-nuts/c/yNis7bQG_rY/m/yaJFoSx1hgIJ
 
 	// Create argc and argv for tor
 	argv := append([]string{"tor"}, args...)
@@ -153,8 +159,13 @@ func (p *torProcess) runtor(ctx context.Context, cc net.Conn, args ...string) {
 		return
 	}
 	argc := C.size_t(len(argv))
-	cargv := C.cstringArrayNew(argc)
-	defer C.cstringArrayFree(cargv, C.size_t(argc))
+	// Note: here we allocate argc + 1 because a "null pointer always follows
+	// the last element: argv[argc] is this null pointer."
+	//
+	// See https://www.gnu.org/software/libc/manual/html_node/Program-Arguments.html
+	allocSiz := argc + 1
+	cargv := C.cstringArrayNew(allocSiz)
+	defer C.cstringArrayFree(cargv, argc)
 	for idx, entry := range argv {
 		C.cstringArraySet(cargv, C.size_t(idx), C.CString(entry))
 	}
@@ -196,14 +207,14 @@ func (p *torProcess) runtor(ctx context.Context, cc net.Conn, args ...string) {
 	go sendrecv(cc, filep)
 	go sendrecv(filep, cc)
 
-	// Tell user that startup is successful.
-	p.startErr <- nil // nonblocking chan
+	// Let the user know that startup was successful.
+	p.startErr <- nil // nonblocking channel
 
-	// Run tor until completion. Note that return codes are not
-	// currently documented and they're never zero (WTF?!).
-	_ = C.tor_run_main(config)
-
-	// Tell user that we terminated.
+	// Run tor until completion.
+	if code := C.tor_run_main(config); code != 0 {
+		p.waitErr <- fmt.Errorf("%w: %d", ErrNonzeroExitCode, code) // nonblocking channel
+		return
+	}
 	p.waitErr <- nil // nonblocking channel
 }
 
