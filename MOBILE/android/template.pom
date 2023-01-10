@@ -4,25 +4,25 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.ooni</groupId>
-  <artifactId>oonimkall</artifactId>
+  <artifactId>@ARTIFACTID@</artifactId>
   <version>@VERSION@</version>
   <packaging>aar</packaging>
 
   <name>oonimkall</name>
-  <description>OONI Probe Library for Android</description>
+  <description>@DESCRIPTION@</description>
   <url>https://github.com/ooni/probe-cli</url>
 
   <licenses>
     <license>
-      <name>The 3-Clause BSD License</name>
-      <url>https://opensource.org/licenses/BSD-3-Clause</url>
+      <name>GPL-3.0-or-later</name>
+      <url>https://github.com/ooni/probe-cli/blob/master/LICENSE</url>
       <distribution>repo</distribution>
     </license>
   </licenses>
 
   <scm>
-    <url>https://github.com/ooni/probe-engine</url>
-    <connection>https://github.com/ooni/probe-engine.git</connection>
+    <url>https://github.com/ooni/probe-cli</url>
+    <connection>https://github.com/ooni/probe-cli.git</connection>
   </scm>
 
   <developers>
@@ -30,7 +30,7 @@
       <name>Simone Basso</name>
       <email>simone@openobservatory.org</email>
       <roles>
-        <role>Core developer</role>
+        <role>Research Engineer</role>
       </roles>
       <timezone>Europe/Rome</timezone>
     </developer>

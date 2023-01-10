@@ -1,4 +1,13 @@
 #!/bin/bash
 set -euo pipefail
 __version=$(date -u +%Y.%m.%d-%H%M%S)
-cat ./MOBILE/android/template.pom | sed -e "s/@VERSION@/$__version/g" > ./MOBILE/android/oonimkall.pom
+
+cat ./MOBILE/android/template.pom | sed -e "s/@VERSION@/$__version/g" \
+	-e "s/@ARTIFACTID@/oonimkall/g" \
+	-e "s/@DESCRIPTION@/OONI Probe Library for Android/g" \
+	>./MOBILE/android/oonimkall.pom
+
+cat ./MOBILE/android/template.pom | sed -e "s/@VERSION@/$__version/g" \
+	-e "s/@ARTIFACTID@/torbinary/g" \
+	-e "s/@DESCRIPTION@/Tor binary for OONI Probe/g" \
+	>./MOBILE/android/torbinary.pom

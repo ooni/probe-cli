@@ -1,0 +1,17 @@
+#!/bin/bash
+set -euo pipefail
+topdir=$(dirname $(dirname $(dirname $(realpath $0))))
+(
+	work=$(mktemp -d)
+	cd $work
+	mkdir -p jni/{arm64-v8a,armeabi-v7a,x86,x86_64}
+	cp -v $topdir/CDEPS/dist/android/arm/bin/tor jni/armeabi-v7a
+	cp -v $topdir/CDEPS/dist/android/386/bin/tor jni/x86
+	cp -v $topdir/CDEPS/dist/android/arm64/bin/tor jni/arm64-v8a
+	cp -v $topdir/CDEPS/dist/android/amd64/bin/tor jni/x86_64
+	API=$(cat $topdir/ANDROIDAPI)
+	cat $topdir/MOBILE/android/tormanifest-template.xml |
+		sed "s/@MINSDK@/$API/g" >AndroidManifest.xml
+	set -x
+	jar -cf $topdir/MOBILE/android/torbinary.aar .
+)
