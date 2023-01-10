@@ -2,7 +2,7 @@
 
 package tunnel
 
-// This file implements our strategy for running tor on ios.
+// This file implements our strategy for running tor on iOS.
 
 import (
 	"strings"
