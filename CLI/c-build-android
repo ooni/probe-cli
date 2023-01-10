@@ -24,7 +24,7 @@ if [[ "$SYSNAME" == "darwin-arm64" ]]; then
 fi
 TOOLCHAIN="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$SYSNAME"
 
-API=21
+API=$(cat $topdir/ANDROIDAPI)
 
 # TODO(bassosimone): we should be using -mthumb for armv7 and generally
 # we should do a better job at setting robust compiler flags
