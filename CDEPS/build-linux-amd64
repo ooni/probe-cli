@@ -21,6 +21,8 @@ topdir=$(dirname $(dirname $(realpath $0)))
 
 export DESTDIR=$topdir/internal/libtor/linux/$GOARCH
 
+source $topdir/CDEPS/cflags-linux
+
 while [[ $# > 0 ]]; do
 	$topdir/CDEPS/$1/build
 	shift
