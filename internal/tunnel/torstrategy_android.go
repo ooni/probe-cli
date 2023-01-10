@@ -5,6 +5,7 @@ package tunnel
 // This file implements our strategy for running tor on android.
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/cretz/bine/tor"
