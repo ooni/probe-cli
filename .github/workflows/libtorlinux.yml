@@ -1,5 +1,5 @@
 # Runs tests for internal/libtor with -tags=ooni_libtor
-name: coverage
+name: libtorlinux
 on:
   pull_request:
   push:
