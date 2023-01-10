@@ -60,7 +60,6 @@ import "C"
 import (
 	"context"
 	"errors"
-	"io"
 	"net"
 	"os"
 	"sync"

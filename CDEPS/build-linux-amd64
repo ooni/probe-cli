@@ -1,0 +1,27 @@
+#!/bin/bash
+set -euo pipefail
+
+if [[ $# < 0 ]]; then
+	echo "usage: $0 [package...]" 1>&2
+	exit 1
+fi
+
+case "$(uname -m)" in
+x86_64)
+	GOARCH=amd64
+	export OPENSSL_COMPILER=linux-x86_64
+	;;
+*)
+	echo "FATAL: unsupported architecture" 1>&2
+	exit 1
+	;;
+esac
+
+topdir=$(dirname $(dirname $(realpath $0)))
+
+export DESTDIR=$topdir/internal/libtor/linux/$GOARCH
+
+while [[ $# > 0 ]]; do
+	$topdir/CDEPS/$1/build
+	shift
+done
