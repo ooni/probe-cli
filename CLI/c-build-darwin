@@ -31,6 +31,6 @@ export CC="clang -arch $DARWIN_ARCH"
 export DESTDIR=$topdir/internal/libtor/darwin/$GOARCH
 
 while [[ $# > 0 ]]; do
-	$topdir/CDEPSBUILD/$1/build
+	$topdir/CDEPS/$1/build
 	shift
 done

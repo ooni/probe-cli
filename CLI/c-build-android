@@ -64,7 +64,7 @@ likeautotools() (
 	export RANLIB=$TOOLCHAIN/bin/llvm-ranlib
 	export STRIP=$TOOLCHAIN/bin/llvm-strip
 
-	$topdir/CDEPSBUILD/$PACKAGE/build
+	$topdir/CDEPS/$PACKAGE/build
 )
 
 # This function implements the build strategy required by OpenSSL.
@@ -94,11 +94,11 @@ likeopenssl() (
 	export DESTDIR=$topdir/internal/libtor/android/$GOARCH
 	export OPENSSL_COMPILER="$OPENSSL_COMPILER -D__ANDROID_API__=$API"
 
-	$topdir/CDEPSBUILD/$PACKAGE/build
+	$topdir/CDEPS/$PACKAGE/build
 )
 
 while [[ $# > 0 ]]; do
-	case $(cat $topdir/CDEPSBUILD/$1/android) in
+	case $(cat $topdir/CDEPS/$1/android) in
 	autotools)
 		likeautotools $1
 		;;
