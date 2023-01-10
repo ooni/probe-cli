@@ -84,6 +84,11 @@ func (c *torCreator) New(ctx context.Context, args ...string) (process.Process, 
 		startOnce:   sync.Once{},
 		waitErr:     make(chan error, 1), // buffer
 		waitOnce:    sync.Once{},
+
+		closedWhenNotStarted:     make(chan any, 1), // buffer
+		simulateBadControlSocket: false,
+		simulateFileConnFailure:  false,
+		simulateNonzeroExitCode:  false,
 	}
 	go proc.runtor(ctx, right, args...)
 	return proc, nil
@@ -91,12 +96,19 @@ func (c *torCreator) New(ctx context.Context, args ...string) (process.Process, 
 
 // torProcess implements [process.Process].
 type torProcess struct {
+	// ordinary state variables
 	awaitStart  chan any
 	controlConn net.Conn
 	startErr    chan error
 	startOnce   sync.Once
 	waitErr     chan error
 	waitOnce    sync.Once
+
+	// for testing
+	closedWhenNotStarted     chan any
+	simulateBadControlSocket bool
+	simulateFileConnFailure  bool
+	simulateNonzeroExitCode  bool
 }
 
 var _ process.Process = &torProcess{}
@@ -141,6 +153,8 @@ func (p *torProcess) runtor(ctx context.Context, cc net.Conn, args ...string) {
 	select {
 	case <-p.awaitStart:
 	case <-ctx.Done():
+		p.startErr <- ctx.Err() // nonblocking chan
+		close(p.closedWhenNotStarted)
 		return
 	}
 
@@ -179,46 +193,85 @@ func (p *torProcess) runtor(ctx context.Context, cc net.Conn, args ...string) {
 
 	// Create OWNING file descriptor
 	filedesc := C.tor_main_configuration_setup_control_socket(config)
+	if p.simulateBadControlSocket {
+		filedesc = C.INVALID_TOR_CONTROL_SOCKET
+	}
 	if !C.filedescIsGood(filedesc) {
 		p.startErr <- ErrCannotCreateControlSocket // nonblocking channel
 		return
 	}
 
-	// Convert the OWNING file descriptor into a proper file.
-	filep, err := net.FileConn(os.NewFile(uintptr(filedesc), ""))
+	// Convert the OWNING file descriptor into a proper file. Because
+	// filedesc is good, os.NewFile shouldn't fail.
+	filep := os.NewFile(uintptr(filedesc), "")
+	runtimex.Assert(filep != nil, "os.NewFile should not fail")
+	conn, err := net.FileConn(filep)
+	if p.simulateFileConnFailure {
+		err = ErrCannotCreateControlSocket
+	}
 	if err != nil {
 		p.startErr <- err // nonblocking channel
 		return
 	}
 
+	// In the following we're going to possibly call Close multiple
+	// times. Let's be very sure that this close is idempotent.
+	conn = withIdempotentClose(conn)
+	cc = withIdempotentClose(cc)
+
 	// Make sure we close filep when the context is done. Because the
 	// socket is OWNING, this will also cause tor to return.
 	go func() {
-		defer filep.Close()
+		defer conn.Close()
 		defer cc.Close()
 		<-ctx.Done()
 	}()
 
-	// TODO(bassosimone): what should we do if the user closes the
-	// control connection? What happens when tor is a subprocess and
-	// we close the control connection? We should do the same!
-
-	// Route messages from and to the control connection
-	go sendrecv(cc, filep)
-	go sendrecv(filep, cc)
+	// Route messages from and to the control connection.
+	go sendrecvThenClose(cc, conn)
+	go sendrecvThenClose(conn, cc)
 
 	// Let the user know that startup was successful.
 	p.startErr <- nil // nonblocking channel
 
 	// Run tor until completion.
-	if code := C.tor_run_main(config); code != 0 {
+	if !p.simulateNonzeroExitCode {
+		code = C.tor_run_main(config)
+	} else {
+		code = 1
+	}
+	if code != 0 {
 		p.waitErr <- fmt.Errorf("%w: %d", ErrNonzeroExitCode, code) // nonblocking channel
 		return
 	}
 	p.waitErr <- nil // nonblocking channel
 }
 
-// sendrecv routes traffic between two connections.
-func sendrecv(left, right net.Conn) {
+// sendrecvThenClose routes traffic between two connections and then
+// closes both of them when done with routing traffic.
+func sendrecvThenClose(left, right net.Conn) {
+	defer left.Close()
+	defer right.Close()
 	netxlite.CopyContext(context.Background(), left, right)
+}
+
+// withIdempotentClose ensures that a connection has idempotent close.
+func withIdempotentClose(c net.Conn) net.Conn {
+	return &idempotentClose{
+		Conn: c,
+		once: sync.Once{},
+	}
+}
+
+// idempotentClose ensures close is idempotent for a net.Conn
+type idempotentClose struct {
+	net.Conn
+	once sync.Once
+}
+
+func (c *idempotentClose) Close() (err error) {
+	c.once.Do(func() {
+		err = c.Conn.Close()
+	})
+	return
 }
