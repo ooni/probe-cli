@@ -1,8 +1,9 @@
-//go:build android
+//go:build android || (cgo && linux && amd64 && ooni_libtor)
 
 package tunnel
 
-// This file implements our strategy for running tor on android.
+// This file implements our strategy for running tor on android or
+// in an experimental configuration on linux/amd64.
 
 import (
 	"errors"

@@ -66,6 +66,7 @@ import (
 	"sync"
 
 	"github.com/cretz/bine/process"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -215,5 +216,5 @@ func (p *torProcess) runtor(ctx context.Context, cc net.Conn, args ...string) {
 
 // sendrecv routes traffic between two connections.
 func sendrecv(left, right net.Conn) {
-	io.Copy(left, right)
+	netxlite.CopyContext(context.Background(), left, right)
 }

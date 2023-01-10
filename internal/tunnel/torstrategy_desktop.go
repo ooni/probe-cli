@@ -1,8 +1,9 @@
-//go:build !android && !ios
+//go:build !android && !ios && !(cgo && linux && amd64 && ooni_libtor)
 
 package tunnel
 
-// This file implements our strategy for running tor on desktop.
+// This file implements our strategy for running tor on desktop in most
+// configurations except for experimental ones.
 
 import (
 	"strings"
