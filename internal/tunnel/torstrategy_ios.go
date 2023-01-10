@@ -1,8 +1,8 @@
-//go:build ios || android
+//go:build ios
 
 package tunnel
 
-// This file implements our strategy for running tor on mobile.
+// This file implements our strategy for running tor on ios.
 
 import (
 	"strings"
