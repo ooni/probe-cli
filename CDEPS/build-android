@@ -20,7 +20,8 @@ ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/$(cat $topdir/NDKVERSION)
 
 SYSNAME="$(uname -s | tr [A-Z] [a-z])-$(uname -m)"
 if [[ "$SYSNAME" == "darwin-arm64" ]]; then
-	SYSNAME="darwin-x86_64" # the NDK is currently only available for amd64
+	# QUIRK: the NDK is currently only available for amd64
+	SYSNAME="darwin-x86_64"
 fi
 TOOLCHAIN="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$SYSNAME"
 
@@ -31,7 +32,7 @@ API=$(cat $topdir/ANDROIDAPI)
 
 # This function implements the build strategy required by
 # packages that use the autotools.
-likeautotools() (
+autotools_build() (
 	local PACKAGE=$1
 	shift
 
@@ -68,7 +69,7 @@ likeautotools() (
 )
 
 # This function implements the build strategy required by OpenSSL.
-likeopenssl() (
+opensslish_build() (
 	local PACKAGE=$1
 	shift
 
@@ -90,7 +91,7 @@ likeopenssl() (
 	fi
 
 	export ANDROID_HOME=$ANDROID_HOME
-	export ANDROID_NDK_HOME=$ANDROID_NDK_ROOT # it seems OpenSSL 1.1.1s uses this name
+	export ANDROID_NDK_HOME=$ANDROID_NDK_ROOT # QUIRK: OpenSSL 1.1.1s uses this legacy name
 	export DESTDIR=$topdir/internal/libtor/android/$GOARCH
 	export OPENSSL_COMPILER="$OPENSSL_COMPILER -D__ANDROID_API__=$API"
 
@@ -100,10 +101,10 @@ likeopenssl() (
 while [[ $# > 0 ]]; do
 	case $(cat $topdir/CDEPS/$1/android) in
 	autotools)
-		likeautotools $1
+		autotools_build $1
 		;;
 	openssl)
-		likeopenssl $1
+		opensslish_build $1
 		;;
 	*)
 		echo "FATAL: don't know how to build $1" 1>&2
