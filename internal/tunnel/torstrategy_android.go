@@ -12,8 +12,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/libtor"
 )
 
-// getTorStartConf in this configuration uses torExePath to get a
-// suitable tor binary and then executes it.
+// getTorStartConf in this configuration returns a tor.StartConf
+// configured to run the version of tor we embed as a library.
 func getTorStartConf(config *Config, dataDir string, extraArgs []string) (*tor.StartConf, error) {
 	creator, good := libtor.MaybeCreator()
 	if !good {
