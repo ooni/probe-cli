@@ -27,14 +27,14 @@ fi
 
 if [[ -f ./internal/engine/psiphon-config.json.age &&
 	-f ./internal/engine/psiphon-config.key ]]; then
-	OONI_PSIPHON_TAGS="ooni_psiphon_config,ooni_libtor"
+	build_tags="ooni_psiphon_config,ooni_libtor"
 else
-	OONI_PSIPHON_TAGS="ooni_libtor"
+	build_tags="ooni_libtor"
 fi
 
 ./CDEPS/build-linux-amd64 zlib openssl libevent tor
 
 set -x
 for pkg in "$@"; do
-	go build -tags=$OONI_PSIPHON_TAGS -ldflags="-s -w" ${GOLANG_EXTRA_FLAGS:-} $pkg
+	go build -tags=$build_tags -ldflags="-s -w" ${GOLANG_EXTRA_FLAGS:-} $pkg
 done
