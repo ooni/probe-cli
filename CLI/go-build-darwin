@@ -14,9 +14,7 @@ if [[ $# -ne 2 ]]; then
 	echo "" 1>&2
 	echo "* automatically sets -tags=ooni_psiphon_config when possible;" 1>&2
 	echo "" 1>&2
-	echo "* if GOLANG_EXTRA_FLAGS is set, pass it to the Go compiler;" 1>&2
-	echo "" 1>&2
-	echo "* uses the C compiler to build and link an embedded tor library." 1>&2
+	echo "* if GOLANG_EXTRA_FLAGS is set, pass it to the Go compiler." 1>&2
 	echo "" 1>&2
 	echo "Example:" 1>&2
 	echo "" 1>&2
@@ -31,19 +29,17 @@ PACKAGE=$2
 
 if [[ -f ./internal/engine/psiphon-config.json.age &&
 	-f ./internal/engine/psiphon-config.key ]]; then
-	buildtags="ooni_psiphon_config,ooni_libtor"
+	OONI_PSIPHON_TAGS=ooni_psiphon_config
 else
-	buildtags="ooni_libtor"
+	OONI_PSIPHON_TAGS=""
 fi
 
 PRODUCT=$(basename $PACKAGE)
-
-./CLI/c-build-darwin $GOARCH zlib openssl libevent tor
 
 set -x
 export CGO_ENABLED=1
 export GOOS=$GOOS
 export GOARCH=$GOARCH
-go build -tags=$buildtags -ldflags="-s -w" \
+go build -tags=$OONI_PSIPHON_TAGS -ldflags="-s -w" \
 	-o ./CLI/$PRODUCT-$GOOS-$GOARCH ${GOLANG_EXTRA_FLAGS:-} \
 	$PACKAGE
