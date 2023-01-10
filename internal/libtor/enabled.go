@@ -6,12 +6,6 @@ package libtor
 // SPDX-License-Identifier: MIT
 
 //
-// #cgo darwin,arm64 CFLAGS: -I${SRCDIR}/darwin/arm64/include
-// #cgo darwin,arm64 LDFLAGS: -L${SRCDIR}/darwin/arm64/lib -ltor -levent -lssl -lcrypto -lz
-//
-// #cgo darwin,amd64 CFLAGS: -I${SRCDIR}/darwin/amd64/include
-// #cgo darwin,amd64 LDFLAGS: -L${SRCDIR}/darwin/amd64/lib -ltor -levent -lssl -lcrypto -lz
-//
 // #cgo linux,amd64 CFLAGS: -I${SRCDIR}/linux/amd64/include
 // #cgo linux,amd64 LDFLAGS: -L${SRCDIR}/linux/amd64/lib -ltor -levent -lssl -lcrypto -lz -lm
 //
