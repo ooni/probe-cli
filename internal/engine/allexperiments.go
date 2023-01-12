@@ -30,6 +30,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/vanillator"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/whatsapp"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/randomtraffic"
 )
 
 var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
@@ -360,6 +361,17 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 			},
 			config:      &whatsapp.Config{},
 			inputPolicy: InputNone,
+		}
+	},
+	"randomtraffic": func(session *Session) *ExperimentBuilder {
+		return &ExperimentBuilder{
+			build: func(config interface{}) *Experiment {
+				return newExperiment(session, randomtraffic.NewExperimentMeasurer(
+					*config.(*randomtraffic.Config),
+				))
+			},
+			config: &randomtraffic.Config{},
+			inputPolicy:   InputNone,
 		}
 	},
 }
