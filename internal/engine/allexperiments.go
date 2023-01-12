@@ -366,7 +366,7 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 	"randomtraffic": func(session *Session) *ExperimentBuilder {
 		return &ExperimentBuilder{
 			build: func(config interface{}) *Experiment {
-				return newExperiment(session, randomtraffic.NewExperimentMeasurer(
+				return NewExperiment(session, randomtraffic.NewExperimentMeasurer(
 					*config.(*randomtraffic.Config),
 				))
 			},
