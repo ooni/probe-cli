@@ -28,6 +28,7 @@ package webconnectivity
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"time"
@@ -35,6 +36,10 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
+
+// errNotPermittedToFetch indicates we're not permitted to fetch a webpage
+// because another goroutine have already fetched that webpage.
+var errNotPermittedToFetch = errors.New("webconnectivity: not permitted to fetch")
 
 // prioritySelector selects the connection with the highest priority.
 type prioritySelector struct {

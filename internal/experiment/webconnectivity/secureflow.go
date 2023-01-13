@@ -96,7 +96,12 @@ func (t *SecureFlow) Start(ctx context.Context) {
 }
 
 // Run runs this task in the current goroutine.
-func (t *SecureFlow) Run(parentCtx context.Context, index int64) {
+func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
+	if err := allowedToConnect(t.Address); err != nil {
+		t.Logger.Warnf("SecureFlow: %s", err.Error())
+		return err
+	}
+
 	// create trace
 	trace := measurexlite.NewTrace(index, t.ZeroTime)
 
@@ -114,7 +119,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) {
 	t.TestKeys.AppendTCPConnectResults(trace.TCPConnects()...)
 	if err != nil {
 		ol.Stop(err)
-		return
+		return err
 	}
 	defer func() {
 		t.TestKeys.AppendNetworkEvents(trace.NetworkEvents()...)
@@ -126,7 +131,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) {
 	if err != nil {
 		t.TestKeys.SetFundamentalFailure(err)
 		ol.Stop(err)
-		return
+		return err
 	}
 	tlsHandshaker := trace.NewTLSHandshakerStdlib(t.Logger)
 	tlsConfig := &tls.Config{
@@ -141,7 +146,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) {
 	t.TestKeys.AppendTLSHandshakes(trace.TLSHandshakes()...)
 	if err != nil {
 		ol.Stop(err)
-		return
+		return err
 	}
 	defer tlsConn.Close()
 
@@ -150,7 +155,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) {
 	// Determine whether we're allowed to fetch the webpage
 	if t.PrioSelector == nil || !t.PrioSelector.permissionToFetch(t.Address) {
 		ol.Stop("stop after TLS handshake")
-		return
+		return errNotPermittedToFetch
 	}
 
 	// create HTTP transport
@@ -175,7 +180,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) {
 			t.TestKeys.SetFundamentalFailure(err)
 		}
 		ol.Stop(err)
-		return
+		return err
 	}
 
 	// perform HTTP transaction
@@ -190,7 +195,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) {
 	)
 	if err != nil {
 		ol.Stop(err)
-		return
+		return err
 	}
 
 	// if enabled, follow possible redirects
@@ -201,6 +206,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) {
 
 	// completed successfully
 	ol.Stop(nil)
+	return nil
 }
 
 // alpn returns the user-configured ALPN or a reasonable default
