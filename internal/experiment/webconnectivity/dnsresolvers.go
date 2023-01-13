@@ -120,6 +120,10 @@ func (t *DNSResolvers) run(parentCtx context.Context) []DNSEntry {
 		di.UDPv4[udpAddress] = whoamiUDPv4
 	})
 
+	return dnsMergeEntries(systemAddrs, udpAddrs, httpsAddrs)
+}
+
+func dnsMergeEntries(systemAddrs, udpAddrs, httpsAddrs []string) []DNSEntry {
 	// merge the resolved IP addresses
 	merged := map[string]*DNSEntry{}
 	for _, addr := range systemAddrs {
@@ -143,13 +147,24 @@ func (t *DNSResolvers) run(parentCtx context.Context) []DNSEntry {
 		merged[addr].Addr = addr
 		merged[addr].Flags |= DNSAddrFlagHTTPS
 	}
-	// implementation note: we don't remove bogons because accessing
-	// them can lead us to discover block pages
+	// Implementation note: we don't remove bogons because accessing
+	// them can lead us to discover block pages.
+	//
+	// Though we may want to stop fetching bogons in the future as
+	// documented in https://github.com/ooni/probe/issues/2327
+	//
+	// For the time being, stop fetching from loopack IP addrs given
+	// that a website cannot have a loopback IP address and this is
+	// definitely and for sure SUPER suspicious. See also the
+	// https://github.com/ooni/probe/issues/2397 issue.
 	var entries []DNSEntry
 	for _, entry := range merged {
+		ip := net.ParseIP(entry.Addr)
+		if ip == nil || ip.IsLoopback() {
+			continue
+		}
 		entries = append(entries, *entry)
 	}
-
 	return entries
 }
 
