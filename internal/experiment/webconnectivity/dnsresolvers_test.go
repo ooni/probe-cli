@@ -29,6 +29,22 @@ func Test_dnsMergeEntries(t *testing.T) {
 			"8.8.4.4":              DNSAddrFlagUDP,
 			"2001:4860:4860::8888": DNSAddrFlagHTTPS,
 		},
+	}, {
+		name: "we skip non-ip-addr entries (should not happen but just in case...)",
+		systemAddrs: []string{
+			"dns.google", "8.8.8.8",
+		},
+		udpAddrs: []string{
+			"dns.google", "8.8.4.4", "8.8.8.8",
+		},
+		httpsAddrs: []string{
+			"8.8.8.8", "2001:4860:4860::8888",
+		},
+		want: map[string]int64{
+			"8.8.8.8":              DNSAddrFlagSystemResolver | DNSAddrFlagUDP | DNSAddrFlagHTTPS,
+			"8.8.4.4":              DNSAddrFlagUDP,
+			"2001:4860:4860::8888": DNSAddrFlagHTTPS,
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
