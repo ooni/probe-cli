@@ -1,4 +1,4 @@
-package telegram
+package tor
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 )
 
 // ErrNoCheckInInfo indicates check-in returned no suitable info.
-var ErrNoCheckInInfo = errors.New("telegram: returned no check-in info")
+var ErrNoCheckInInfo = errors.New("tor: returned no check-in info")
 
 // Main is the main function of the experiment.
 func Main(ctx context.Context, args *model.ExperimentMainArgs, config *Config) error {
@@ -37,16 +37,22 @@ func Main(ctx context.Context, args *model.ExperimentMainArgs, config *Config) e
 	if err != nil {
 		return err
 	}
-	if checkInResp.Telegram == nil {
+	if checkInResp.Tor == nil {
 		return ErrNoCheckInInfo
 	}
 
 	// Obtain and log the report ID.
-	reportID := checkInResp.Telegram.ReportID
+	reportID := checkInResp.Tor.ReportID
 	logger.Infof("ReportID: %s", reportID)
 
 	// Create an instance of the experiment's measurer.
-	measurer := &Measurer{Config: *config}
+	measurer := &Measurer{
+		config: *config,
+		fetchTorTargets: func(ctx context.Context, sess model.ExperimentSession,
+			cc string) (map[string]model.OOAPITorTarget, error) {
+			return sess.FetchTorTargets(ctx, cc)
+		},
+	}
 
 	// Record when we started running this nettest.
 	testStartTime := time.Now()

@@ -1,4 +1,4 @@
-package webconnectivity
+package hhfm
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 )
 
 // ErrNoCheckInInfo indicates check-in returned no suitable info.
-var ErrNoCheckInInfo = errors.New("webconnectivity: returned no check-in info")
+var ErrNoCheckInInfo = errors.New("http_header_field_manipulation: returned no check-in info")
 
 // Main is the main function of the experiment.
 func Main(ctx context.Context, args *model.ExperimentMainArgs, config *Config) error {
@@ -38,19 +38,19 @@ func Main(ctx context.Context, args *model.ExperimentMainArgs, config *Config) e
 	if err != nil {
 		return err
 	}
-	if checkInResp.WebConnectivity == nil {
+	if checkInResp.HHFM == nil {
 		return ErrNoCheckInInfo
 	}
 
 	// Obtain and log the report ID.
-	reportID := checkInResp.WebConnectivity.ReportID
+	reportID := checkInResp.HHFM.ReportID
 	logger.Infof("ReportID: %s", reportID)
 
 	// Obtain experiment inputs.
 	inputs := getInputs(args, checkInResp)
 
 	// Create an instance of the experiment's measurer.
-	measurer := &Measurer{Config: config}
+	measurer := &Measurer{Config: *config}
 
 	// Record when we started running this nettest.
 	testStartTime := time.Now()

@@ -45,13 +45,6 @@ type OOAPICheckInConfig struct {
 	WebConnectivity OOAPICheckInConfigWebConnectivity `json:"web_connectivity"`
 }
 
-// OOAPICheckInInfoTelegram contains the Telegram
-// part of OOAPICheckInInfo.
-type OOAPICheckInInfoTelegram struct {
-	// ReportID is the report ID the probe should use.
-	ReportID string `json:"report_id"`
-}
-
 // OOAPICheckInInfoWebConnectivity contains the WebConnectivity
 // part of OOAPICheckInInfo.
 type OOAPICheckInInfoWebConnectivity struct {
@@ -62,13 +55,161 @@ type OOAPICheckInInfoWebConnectivity struct {
 	URLs []OOAPIURLInfo `json:"urls"`
 }
 
+// OOAPICheckInInfoNDT contains the NDT
+// part of OOAPICheckInInfo.
+type OOAPICheckInInfoNDT struct {
+	// ReportID is the report ID the probe should use.
+	ReportID string `json:"report_id"`
+}
+
+// OOAPICheckInInfoDash contains the Dash
+// part of OOAPICheckInInfo.
+type OOAPICheckInInfoDash struct {
+	// ReportID is the report ID the probe should use.
+	ReportID string `json:"report_id"`
+}
+
+// OOAPICheckInInfoHHFM contains the HHFM
+// part of OOAPICheckInInfo.
+type OOAPICheckInInfoHHFM struct {
+	// Report ID is the report ID the probe should use.
+	ReportID string `json:"report_id"`
+}
+
+// OOAPICheckInInfoHIRL contains the HIRL
+// part of OOAPICheckInInfo.
+type OOAPICheckInInfoHIRL struct {
+	// Report ID is the report ID the probe should use.
+	ReportID string `json:"report_id"`
+}
+
+// OOAPICheckInInfoFacebookMessenger contains the FBMessenger
+// part of OOAPICheckInInfo.
+type OOAPICheckInInfoFacebookMessenger struct {
+	// ReportID is the report ID the probe should use.
+	ReportID string `json:"report_id"`
+}
+
+// OOAPICheckInInfoSignal contains the Signal
+// part of OOAPICheckInInfo.
+type OOAPICheckInInfoSignal struct {
+	// ReportID is the report ID the probe should use.
+	ReportID string `json:"report_id"`
+}
+
+// OOAPICheckInInfoTelegram contains the Telegram
+// part of OOAPICheckInInfo.
+type OOAPICheckInInfoTelegram struct {
+	// ReportID is the report ID the probe should use.
+	ReportID string `json:"report_id"`
+}
+
+// OOAPICheckInInfoWhatsapp contains the Whatsapp
+// part of OOAPICheckInInfo.
+type OOAPICheckInInfoWhatsapp struct {
+	// ReportID is the report ID the probe should use.
+	ReportID string `json:"report_id"`
+}
+
+// OOAPICheckInInfoPsiphon contains the Psiphon
+// part of OOAPICheckInInfo.
+type OOAPICheckInInfoPsiphon struct {
+	// ReportID is the report ID the probe should use.
+	ReportID string `json:"report_id"`
+}
+
+// OOAPICheckInInfoTor contains the Tor
+// part of OOAPICheckInInfo.
+type OOAPICheckInInfoTor struct {
+	// ReportID is the report ID the probe should use.
+	ReportID string `json:"report_id"`
+}
+
+// OOAPICheckInInfoDNSCheck contains the DNSCheck
+// part of OOAPICheckInInfo.
+type OOAPICheckInInfoDNSCheck struct {
+	// ReportID is the report ID the probe should use.
+	ReportID string `json:"report_id"`
+}
+
+// OOAPICheckInInfoStunReachability contains the StunReachability
+// part of OOAPICheckInInfo.
+type OOAPICheckInInfoStunReachability struct {
+	// ReportID is the report ID the probe should use.
+	ReportID string `json:"report_id"`
+}
+
+// OOAPICheckInInfoTorsf contains the Torsf
+// part of OOAPICheckInInfo.
+type OOAPICheckInInfoTorsf struct {
+	// ReportID is the report ID the probe should use.
+	ReportID string `json:"report_id"`
+}
+
+// OOAPICheckInInfoVanillaTor contains the VanillaTor
+// part of OOAPICheckInInfo.
+type OOAPICheckInInfoVanillaTor struct {
+	// ReportID is the report ID the probe should use.
+	ReportID string `json:"report_id"`
+}
+
+// OOAPICheckInInfoRiseupVPN contains the RiseupVPN
+// part of OOAPICheckInInfo.
+type OOAPICheckInInfoRiseupVPN struct {
+	// ReportID is the report ID the probe should use.
+	ReportID string `json:"report_id"`
+}
+
 // OOAPICheckInNettests contains nettest information returned by the checkin API call.
 type OOAPICheckInNettests struct {
+	// WebConnectivity contains WebConnectivity related information.
+	WebConnectivity *OOAPICheckInInfoWebConnectivity `json:"web_connectivity"`
+
+	// Dash contains Dash related information.
+	Dash *OOAPICheckInInfoDash `json:"dash"`
+
+	// NDT contains NDT related information.
+	NDT *OOAPICheckInInfoNDT `json:"ndt"`
+
+	// HHFM contains the HHFM related information.
+	HHFM *OOAPICheckInInfoHHFM `json:"http_header_field_manipulation"`
+
+	// HIRL contains the HIRL related information.
+	HIRL *OOAPICheckInInfoHIRL `json:"http_invalid_request_line"`
+
+	// FacebookMessenger contaings Facebook Messenger related information.
+	FacebookMessenger *OOAPICheckInInfoFacebookMessenger `json:"facebook_messenger"`
+
+	// Signal contains Signal related information.
+	// TODO: Add Signal to the check-in API response
+	Signal *OOAPICheckInInfoSignal `json:"signal"`
+
 	// Telegram contains Telegram related information.
 	Telegram *OOAPICheckInInfoTelegram `json:"telegram"`
 
-	// WebConnectivity contains WebConnectivity related information.
-	WebConnectivity *OOAPICheckInInfoWebConnectivity `json:"web_connectivity"`
+	// Whatsapp contains Whatsapp related information.
+	Whatsapp *OOAPICheckInInfoWhatsapp `json:"whatsapp"`
+
+	// Psiphon contains Psiphon related information.
+	Psiphon *OOAPICheckInInfoPsiphon `json:"psiphon"`
+
+	// Tor contains Tor related information.
+	Tor *OOAPICheckInInfoTor `json:"tor"`
+
+	// DNSCheck contains DNSCheck related information.
+	DNSChck *OOAPICheckInInfoDNSCheck `json:"dnscheck"`
+
+	// StunReachability contains StunReachability related information.
+	StunReachability *OOAPICheckInInfoStunReachability `json:"stun_reachability"`
+
+	// Torsf contains Torsf related information.
+	Torsf *OOAPICheckInInfoTorsf `json:"torsf"`
+
+	// VanillaTor contains VanillaTor related information.
+	VanillaTor *OOAPICheckInInfoVanillaTor `json:"vanilla_tor"`
+
+	// RiseupVPN contains RiseupVPN related information.
+	RiseupVPN *OOAPICheckInInfoRiseupVPN `json:"riseupvpn"`
 }
 
 // OOAPICheckInResult is the result returned by the checkin API.

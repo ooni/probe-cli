@@ -1,7 +1,8 @@
-package telegram
+package ndt7
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"time"
@@ -11,7 +12,7 @@ import (
 )
 
 // ErrNoCheckInInfo indicates check-in returned no suitable info.
-var ErrNoCheckInInfo = errors.New("telegram: returned no check-in info")
+var ErrNoCheckInInfo = errors.New("ndt7: returned no check-in info")
 
 // Main is the main function of the experiment.
 func Main(ctx context.Context, args *model.ExperimentMainArgs, config *Config) error {
@@ -37,16 +38,19 @@ func Main(ctx context.Context, args *model.ExperimentMainArgs, config *Config) e
 	if err != nil {
 		return err
 	}
-	if checkInResp.Telegram == nil {
+	if checkInResp.NDT == nil {
 		return ErrNoCheckInInfo
 	}
 
 	// Obtain and log the report ID.
-	reportID := checkInResp.Telegram.ReportID
+	reportID := checkInResp.NDT.ReportID
 	logger.Infof("ReportID: %s", reportID)
 
 	// Create an instance of the experiment's measurer.
-	measurer := &Measurer{Config: *config}
+	measurer := &Measurer{
+		config:        *config,
+		jsonUnmarshal: json.Unmarshal,
+	}
 
 	// Record when we started running this nettest.
 	testStartTime := time.Now()

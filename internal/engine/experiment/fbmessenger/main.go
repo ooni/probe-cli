@@ -1,4 +1,4 @@
-package telegram
+package fbmessenger
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 )
 
 // ErrNoCheckInInfo indicates check-in returned no suitable info.
-var ErrNoCheckInInfo = errors.New("telegram: returned no check-in info")
+var ErrNoCheckInInfo = errors.New("fbmessenger: returned no check-in info")
 
 // Main is the main function of the experiment.
 func Main(ctx context.Context, args *model.ExperimentMainArgs, config *Config) error {
@@ -37,12 +37,12 @@ func Main(ctx context.Context, args *model.ExperimentMainArgs, config *Config) e
 	if err != nil {
 		return err
 	}
-	if checkInResp.Telegram == nil {
+	if checkInResp.FacebookMessenger == nil {
 		return ErrNoCheckInInfo
 	}
 
 	// Obtain and log the report ID.
-	reportID := checkInResp.Telegram.ReportID
+	reportID := checkInResp.FacebookMessenger.ReportID
 	logger.Infof("ReportID: %s", reportID)
 
 	// Create an instance of the experiment's measurer.
