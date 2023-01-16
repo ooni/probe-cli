@@ -1,7 +1,7 @@
 package model
 
 // LocationProvider is an interface that returns the current location. The
-// github.com/ooni/probe-cli/v3/internal/engine/session.Session implements it.
+// [engine.Session] struct implements this interface.
 type LocationProvider interface {
 	ProbeASN() uint
 	ProbeASNString() string

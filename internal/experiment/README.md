@@ -1,4 +1,4 @@
-# Directory github.com/ooni/probe-cli/internal/engine/experiment
+# Directory github.com/ooni/probe-cli/v3/internal/experiment
 
 This directory contains the implementation of all the supported
 experiments, one for each directory. The [OONI spec repository
