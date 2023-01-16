@@ -53,9 +53,10 @@ func init() {
 
 func hhfmMain(ctx context.Context, sess model.ExperimentSession, options *hhfmOptions,
 	config *hhfm.Config, db *database.DatabaseProps) error {
+	annotations := mustMakeMapStringString(options.Annotations)
 	args := &model.ExperimentMainArgs{
-		Annotations:    map[string]string{}, // TODO(bassosimone): fill
-		CategoryCodes:  nil,                 // accept any category
+		Annotations:    annotations, // TODO(bassosimone): fill
+		CategoryCodes:  nil,         // accept any category
 		Charging:       true,
 		Callbacks:      model.NewPrinterCallbacks(log.Log),
 		Database:       db.Database,

@@ -28,3 +28,15 @@ func mustMakeMapStringAny(input []string) (output map[string]any) {
 	}
 	return
 }
+
+// mustMakeMapStringString makes a map from string to string using as input a list
+// of key-value pairs used to initialize the map, or panics on error
+func mustMakeMapStringString(input []string) (output map[string]string) {
+	output = make(map[string]string)
+	for _, opt := range input {
+		key, value, err := splitPair(opt)
+		runtimex.PanicOnError(err, "cannot split key-value pair")
+		output[key] = value
+	}
+	return
+}
