@@ -16,12 +16,7 @@ This repository contains core OONI tools written in Go:
 
 - the OONI Probe engine (inside [internal](internal)).
 
-Every top-level directory in this repository contains an explanatory README file. You
-may also notice that some internal packages live under [internal/engine](internal/engine)
-while most others are top-level. This is part of [a long-standing refactoring](
-https://github.com/ooni/probe/issues/2115) started when we merged
-https://github.com/ooni/probe-engine into this repository. We'll slowly
-ensure that all packages inside `engine` are moved out of it and inside `internal`.
+Every top-level directory in this repository contains an explanatory README file.
 
 ## Semantic versioning policy
 

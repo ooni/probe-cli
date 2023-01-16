@@ -13,8 +13,7 @@ explains to you how to write a simple experiment. After reading it, you
 will understand the interfaces between an experiment and the OONI
 core. What this tutorial does not teach you, though, is how
 to tell the OONI core about this experiment. To see how to do that,
-you should check how we do that in [internal/engine/allexperiments.go](
-../engine/allexperiments.go).
+you should check how we do that in [internal/registry](../registry).
 
 - [Using the measurex package to write network experiments](measurex): this
 tutorial explains to you how to use the `measurex` library to write networking

@@ -16,7 +16,7 @@ import (
 )
 
 // Implementation note: this file is written with easy diffing with respect
-// to internal/engine/experiment/vanillator/vanillator_test.go in mind.
+// to internal/experiment/vanillator/vanillator_test.go in mind.
 //
 // We may want to have a single implementation for both nettests in the future.
 

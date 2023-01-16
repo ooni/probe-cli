@@ -38,7 +38,7 @@
 // See also https://github.com/ooni/probe-engine/pull/347 for the
 // design document describing the task API.
 //
-// See also https://github.com/ooni/probe-cli/v3/internal/engine/blob/master/DESIGN.md,
+// See also https://github.com/ooni/probe-engine/blob/master/DESIGN.md,
 // which explains why we implemented the oonimkall API.
 //
 // # Session API
