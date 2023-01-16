@@ -5,7 +5,50 @@ package runtimex
 import (
 	"errors"
 	"fmt"
+	"runtime/debug"
 )
+
+// BuildInfoRecord contains build-time information.
+type BuildInfoRecord struct {
+	// GoVersion is the version of go with which this code
+	// was compiled or an empty string.
+	GoVersion string
+
+	// VcsModified indicates whether the tree was dirty.
+	VcsModified string
+
+	// VcsRevision is the VCS revision we compiled.
+	VcsRevision string
+
+	// VcsTime is the time of the revision we're building.
+	VcsTime string
+
+	// VcsTool is the VCS tool being used.
+	VcsTool string
+}
+
+// BuildInfo is the singleton containing build-time information.
+var BuildInfo BuildInfoRecord
+
+func init() {
+	info, good := debug.ReadBuildInfo()
+	if !good {
+		return
+	}
+	BuildInfo.GoVersion = info.GoVersion
+	for _, entry := range info.Settings {
+		switch entry.Key {
+		case "vcs.revision":
+			BuildInfo.VcsRevision = entry.Value
+		case "vcs.time":
+			BuildInfo.VcsTime = entry.Value
+		case "vcs.modified":
+			BuildInfo.VcsModified = entry.Value
+		case "vcs":
+			BuildInfo.VcsTool = entry.Value
+		}
+	}
+}
 
 // PanicOnError calls panic() if err is not nil. The type passed
 // to panic is an error type wrapping the original error.

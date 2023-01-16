@@ -19,6 +19,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/platform"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/tunnel"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
@@ -159,6 +160,13 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
+	config.Logger.Infof(
+		"ooniprobe-engine/v%s %s dirty=%s %s",
+		version.Version,
+		runtimex.BuildInfo.VcsRevision[:10], // short identifier
+		runtimex.BuildInfo.VcsModified,
+		runtimex.BuildInfo.GoVersion,
+	)
 	sess := &Session{
 		availableProbeServices:  config.AvailableProbeServices,
 		byteCounter:             bytecounter.New(),
