@@ -15,7 +15,7 @@ import (
 // errNotAllowedToConnect indicates we're not allowed to connect.
 var errNotAllowedToConnect = errors.New("webconnectivity: not allowed to connect")
 
-// allowedToConnect returns whether we can connect to the given endpoint.
+// allowedToConnect returns nil if we can connect to a given endpoint.
 func allowedToConnect(endpoint string) error {
 	addr, _, err := net.SplitHostPort(endpoint)
 	if err != nil {
