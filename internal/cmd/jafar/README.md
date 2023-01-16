@@ -254,4 +254,4 @@ Run `curl` in a censored environment where it cannot connect to
           -main-command 'curl -Lv http://play.google.com'
 ```
 
-For more usage examples, see `../../testjafar.bash`.
+For more usage examples, see `../../script/testjafar.bash`.
