@@ -163,7 +163,7 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 	config.Logger.Infof(
 		"ooniprobe-engine/v%s %s dirty=%s %s",
 		version.Version,
-		runtimex.BuildInfo.VcsRevision[:10], // short identifier
+		runtimex.BuildInfo.VcsRevision,
 		runtimex.BuildInfo.VcsModified,
 		runtimex.BuildInfo.GoVersion,
 	)
