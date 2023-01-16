@@ -3,10 +3,10 @@ package engine
 import (
 	"context"
 	"errors"
+	"sync/atomic"
 	"testing"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -28,7 +28,7 @@ func TestSubmitterNotEnabled(t *testing.T) {
 }
 
 type FakeSubmitter struct {
-	Calls *atomicx.Int64
+	Calls *atomic.Int64
 	Error error
 }
 
@@ -71,7 +71,7 @@ func TestNewSubmitterWithFailedSubmission(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
 	fakeSubmitter := &FakeSubmitter{
-		Calls: &atomicx.Int64{},
+		Calls: &atomic.Int64{},
 		Error: expected,
 	}
 	submitter, err := NewSubmitter(ctx, SubmitterConfig{

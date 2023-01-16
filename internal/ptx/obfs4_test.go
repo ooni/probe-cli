@@ -6,9 +6,9 @@ import (
 	"net"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
@@ -96,7 +96,7 @@ func TestOBFS4DialerFailsWithConnectionErrorAndContextExpiration(t *testing.T) {
 // obfs4connwrapper allows us to observe that Close has been called
 type obfs4connwrapper struct {
 	net.Conn
-	called *atomicx.Int64
+	called *atomic.Int64
 }
 
 // Close implements net.Conn.Close
@@ -112,7 +112,7 @@ func TestOBFS4DialerWorksWithContextExpiration(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	called := &atomicx.Int64{}
+	called := &atomic.Int64{}
 	o4d := DefaultTestingOBFS4Bridge()
 	o4d.UnderlyingDialer = &mocks.Dialer{
 		MockDialContext: func(

@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/tunnel"
@@ -31,7 +31,7 @@ func TestExperimentNameAndVersion(t *testing.T) {
 
 func TestSuccessWithMockedTunnelStart(t *testing.T) {
 	bootstrapTime := 3 * time.Second
-	called := &atomicx.Int64{}
+	called := &atomic.Int64{}
 	m := &Measurer{
 		config: Config{},
 		mockStartTunnel: func(

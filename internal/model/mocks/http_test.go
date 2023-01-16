@@ -3,9 +3,8 @@ package mocks
 import (
 	"errors"
 	"net/http"
+	"sync/atomic"
 	"testing"
-
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 )
 
 func TestHTTPTransport(t *testing.T) {
@@ -38,7 +37,7 @@ func TestHTTPTransport(t *testing.T) {
 	})
 
 	t.Run("CloseIdleConnections", func(t *testing.T) {
-		called := &atomicx.Int64{}
+		called := &atomic.Int64{}
 		txp := &HTTPTransport{
 			MockCloseIdleConnections: func() {
 				called.Add(1)
@@ -69,7 +68,7 @@ func TestHTTPClient(t *testing.T) {
 	})
 
 	t.Run("CloseIdleConnections", func(t *testing.T) {
-		called := &atomicx.Int64{}
+		called := &atomic.Int64{}
 		clnt := &HTTPClient{
 			MockCloseIdleConnections: func() {
 				called.Add(1)

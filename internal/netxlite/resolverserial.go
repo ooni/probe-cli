@@ -8,9 +8,9 @@ import (
 	"context"
 	"errors"
 	"net"
+	"sync/atomic"
 
 	"github.com/miekg/dns"
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -27,7 +27,7 @@ import (
 // each query three times for soft errors.
 type SerialResolver struct {
 	// NumTimeouts is MANDATORY and counts the number of timeouts.
-	NumTimeouts *atomicx.Int64
+	NumTimeouts *atomic.Int64
 
 	// Txp is the MANDATORY underlying DNS transport.
 	Txp model.DNSTransport
@@ -38,7 +38,7 @@ var _ model.Resolver = &SerialResolver{}
 // NewUnwrappedSerialResolver creates a new, and unwrapped, SerialResolver instance.
 func NewUnwrappedSerialResolver(t model.DNSTransport) *SerialResolver {
 	return &SerialResolver{
-		NumTimeouts: &atomicx.Int64{},
+		NumTimeouts: &atomic.Int64{},
 		Txp:         t,
 	}
 }

@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"runtime"
 	"sync"
+	"sync/atomic"
 
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
@@ -17,17 +17,17 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// AtomicInt64 allows us to export atomicx.Int64 variables to
+// AtomicInt64 allows us to export atomic.Int64 variables to
 // mobile libraries so we can use them in testing.
 type AtomicInt64 struct {
-	*atomicx.Int64
+	*atomic.Int64
 }
 
 // These two variables contain metrics pertaining to the number
 // of Sessions and Contexts that are currently being used.
 var (
-	ActiveSessions = &AtomicInt64{&atomicx.Int64{}}
-	ActiveContexts = &AtomicInt64{&atomicx.Int64{}}
+	ActiveSessions = &AtomicInt64{&atomic.Int64{}}
+	ActiveContexts = &AtomicInt64{&atomic.Int64{}}
 )
 
 // Logger is the logger used by a Session. You should implement a class

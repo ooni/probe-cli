@@ -14,9 +14,9 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sync/atomic"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/httpx"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
@@ -35,8 +35,8 @@ func newclient() probeservices.Client {
 			Logger:     log.Log,
 			UserAgent:  ua,
 		},
-		LoginCalls:    &atomicx.Int64{},
-		RegisterCalls: &atomicx.Int64{},
+		LoginCalls:    &atomic.Int64{},
+		RegisterCalls: &atomic.Int64{},
 		StateFile:     probeservices.NewStateFile(&kvstore.Memory{}),
 	}
 }

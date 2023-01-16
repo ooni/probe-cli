@@ -5,10 +5,10 @@ import (
 	"crypto/tls"
 	"errors"
 	"net"
+	"sync/atomic"
 	"testing"
 
 	"github.com/miekg/dns"
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
@@ -190,7 +190,7 @@ func TestSerialResolver(t *testing.T) {
 		t.Run("for round-trip error", func(t *testing.T) {
 			expected := errors.New("mocked error")
 			r := &SerialResolver{
-				NumTimeouts: &atomicx.Int64{},
+				NumTimeouts: &atomic.Int64{},
 				Txp: &mocks.DNSTransport{
 					MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
 						return nil, expected
@@ -213,7 +213,7 @@ func TestSerialResolver(t *testing.T) {
 		t.Run("for decode error", func(t *testing.T) {
 			expected := errors.New("mocked error")
 			r := &SerialResolver{
-				NumTimeouts: &atomicx.Int64{},
+				NumTimeouts: &atomic.Int64{},
 				Txp: &mocks.DNSTransport{
 					MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
 						response := &mocks.DNSResponse{
@@ -243,7 +243,7 @@ func TestSerialResolver(t *testing.T) {
 		t.Run("for round-trip error", func(t *testing.T) {
 			expected := errors.New("mocked error")
 			r := &SerialResolver{
-				NumTimeouts: &atomicx.Int64{},
+				NumTimeouts: &atomic.Int64{},
 				Txp: &mocks.DNSTransport{
 					MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
 						return nil, expected
@@ -266,7 +266,7 @@ func TestSerialResolver(t *testing.T) {
 		t.Run("for decode error", func(t *testing.T) {
 			expected := errors.New("mocked error")
 			r := &SerialResolver{
-				NumTimeouts: &atomicx.Int64{},
+				NumTimeouts: &atomic.Int64{},
 				Txp: &mocks.DNSTransport{
 					MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
 						response := &mocks.DNSResponse{

@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"io"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/psiphon"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
@@ -91,7 +91,7 @@ func TestRunWillPrintSomethingWithCancelledContext(t *testing.T) {
 		time.Sleep(2 * time.Second)
 		cancel() // fail after we've given the printer a chance to run
 	}
-	observer := observerCallbacks{progress: &atomicx.Int64{}}
+	observer := observerCallbacks{progress: &atomic.Int64{}}
 	args := &model.ExperimentArgs{
 		Callbacks:   observer,
 		Measurement: measurement,
@@ -111,7 +111,7 @@ func TestRunWillPrintSomethingWithCancelledContext(t *testing.T) {
 }
 
 type observerCallbacks struct {
-	progress *atomicx.Int64
+	progress *atomic.Int64
 }
 
 func (d observerCallbacks) OnProgress(percentage float64, message string) {

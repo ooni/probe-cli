@@ -7,12 +7,12 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/config"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/utils"
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/database"
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
@@ -62,7 +62,7 @@ type Probe struct {
 	dbPath     string
 	configPath string
 
-	isTerminated *atomicx.Int64
+	isTerminated *atomic.Int64
 
 	softwareName    string
 	softwareVersion string
@@ -258,7 +258,7 @@ func NewProbe(configPath string, homePath string) *Probe {
 		home:         homePath,
 		config:       &config.Config{},
 		configPath:   configPath,
-		isTerminated: &atomicx.Int64{},
+		isTerminated: &atomic.Int64{},
 	}
 }
 
