@@ -30,7 +30,7 @@ pkg_after=$pkg_prefix/$name_after
 
 for file in $(find . -type f -name \*.go); do
 	echo "editing the import path of $file"
-	cat $file | sed -e "s|\"$pkg_before\"|\"$pkg_after\"|g" > $file.tmp
+	cat $file | sed -e "s|\"$pkg_before|\"$pkg_after|g" > $file.tmp
 	cat $file.tmp > $file
 	rm $file.tmp
 done

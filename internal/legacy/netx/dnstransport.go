@@ -27,7 +27,7 @@ import (
 // - if the URL is `doh://google` or `doh://cloudflare` or the URL
 // starts with `https://`, then we create a DoH client.
 //
-// - if the URL is `` or `system:///`, then we create a system client,
+// - if the URL is `""` or `"system:///"`, then we create a system client,
 // i.e. a client using the system resolver.
 //
 // - if the URL starts with `udp://`, then we create a client using

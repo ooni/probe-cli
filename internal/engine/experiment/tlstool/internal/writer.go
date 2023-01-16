@@ -20,7 +20,7 @@ func (c SleeperWriter) Write(b []byte) (int, error) {
 // SplitterWriter is a writer that splits every outgoing buffer
 // according to the rules specified by the Splitter.
 //
-// Caveat
+// # Caveat
 //
 // The TLS ClientHello may be retransmitted if the server is
 // requesting us to restart the negotiation. Therefore, it is

@@ -10,10 +10,10 @@ import (
 	"sync/atomic"
 
 	"github.com/ooni/probe-cli/v3/internal/engine"
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 

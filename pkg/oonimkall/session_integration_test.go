@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
+	"github.com/ooni/probe-cli/v3/internal/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/pkg/oonimkall"
 )

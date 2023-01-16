@@ -45,13 +45,13 @@ const (
 // From the XDNSFlags value, we determine, in turn DNSConsistency and
 // XBlockingFlags according to the following decision table:
 //
-//     +-----------+----------------+---------------------+
-//     | XDNSFlags | DNSConsistency | XBlockingFlags      |
-//     +-----------+----------------+---------------------+
-//     | 0         | "consistent"   | no change           |
-//     +-----------+----------------+---------------------+
-//     | nonzero   | "inconsistent" | set FlagDNSBlocking |
-//     +-----------+----------------+---------------------+
+//	+-----------+----------------+---------------------+
+//	| XDNSFlags | DNSConsistency | XBlockingFlags      |
+//	+-----------+----------------+---------------------+
+//	| 0         | "consistent"   | no change           |
+//	+-----------+----------------+---------------------+
+//	| nonzero   | "inconsistent" | set FlagDNSBlocking |
+//	+-----------+----------------+---------------------+
 //
 // We explain how XDNSFlags is determined in the documentation of
 // the functions that this function calls to do its job.

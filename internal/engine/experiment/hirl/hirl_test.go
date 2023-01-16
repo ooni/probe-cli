@@ -8,8 +8,8 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/hirl"
-	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
+	"github.com/ooni/probe-cli/v3/internal/legacy/netx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/tracex"

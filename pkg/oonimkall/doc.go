@@ -9,11 +9,11 @@
 // reimplementation of the mkall API implemented by Measurement Kit
 // in, e.g., https://github.com/measurement-kit/mkall-ios.
 //
-// Design
+// # Design
 //
 // See docs/design/dd-001-oonimkall.md in the probe-cli repository.
 //
-// Semantic versioning policy
+// # Semantic versioning policy
 //
 // This package is public for technical reasons. We cannot use `go
 // mobile` on a private package. Yet, we are not going to bump this
@@ -21,7 +21,7 @@
 // consider this package our private API for interfacing with our
 // mobile applications for Android and iOS.
 //
-// Task API
+// # Task API
 //
 // The basic tenet of the task API is that you define an experiment
 // task you wanna run using a JSON, then you start a task for it, and
@@ -41,7 +41,7 @@
 // See also https://github.com/ooni/probe-cli/v3/internal/engine/blob/master/DESIGN.md,
 // which explains why we implemented the oonimkall API.
 //
-// Session API
+// # Session API
 //
 // The Session API is a Go API that can be exported to mobile apps
 // using the gomobile tool. The latest design document for this API is

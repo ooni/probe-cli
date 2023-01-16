@@ -8,7 +8,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/dnscheck"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/run"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
-	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
+	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 

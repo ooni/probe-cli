@@ -13,7 +13,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
+	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
 	"github.com/ooni/probe-cli/v3/internal/measurex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"

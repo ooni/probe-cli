@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/legacy/netx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/tracex"

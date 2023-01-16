@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
+	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/ptx"
 	"github.com/ooni/probe-cli/v3/internal/tunnel"
