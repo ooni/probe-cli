@@ -91,7 +91,7 @@ func (t *CleartextFlow) Start(ctx context.Context) {
 // Run runs this task in the current goroutine.
 func (t *CleartextFlow) Run(parentCtx context.Context, index int64) error {
 	if err := allowedToConnect(t.Address); err != nil {
-		t.Logger.Warnf("SecureFlow: %s", err.Error())
+		t.Logger.Warnf("CleartextFlow: %s", err.Error())
 		return err
 	}
 
