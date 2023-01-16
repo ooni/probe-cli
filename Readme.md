@@ -51,8 +51,7 @@ Every top-level directory in this repository contains an explanatory README file
 Follow the instructions at [ooni.org/install/cli](https://ooni.org/install/cli)
 to install `ooniprobe` precompiled binaries for Windows, macOS, and
 Debian/Ubuntu. Once `ooniprobe` is installed, refer to the
-[user guide](https://ooni.org/support/ooni-probe-cli). Run `ooniprobe --help`
-to get brief help instructions.
+[user guide](https://ooni.org/support/ooni-probe-cli).
 
 ## Build instructions
 
