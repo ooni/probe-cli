@@ -237,7 +237,7 @@ func TestEndToEnd(t *testing.T) {
 				if err != nil {
 					panic(err)
 				}
-				sdata, err := os.ReadFile("../testdata/collector-expected.jsonl")
+				sdata, err := os.ReadFile("testdata/collector-expected.jsonl")
 				if err != nil {
 					panic(err)
 				}
