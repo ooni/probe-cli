@@ -2,7 +2,7 @@
 // for running quick and dirty experiments. This tool will change
 // without notice and may be removed without notice.
 //
-// Caveats
+// # Caveats
 //
 // In particular, this experiment MAY panic when passed incorrect
 // input. This is acceptable because this is not production ready code.

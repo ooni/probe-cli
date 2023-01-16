@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/sessionresolver"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/sessionresolver"
 )
 
 func TestSessionResolverGood(t *testing.T) {

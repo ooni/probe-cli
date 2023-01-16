@@ -109,7 +109,7 @@ func (state *getaddrinfoState) toError(code int64, err error, goos string) error
 // was a bug, fixed in glibc 2.27, were EAI_NONAME was returned
 // when EAI_NODATA would actually have been more proper:
 //
-//     https://sourceware.org/bugzilla/show_bug.cgi?id=21922
+//	https://sourceware.org/bugzilla/show_bug.cgi?id=21922
 //
 // 3. Android libc: EAI_NODATA is defined in netdb.h and is not
 // protected by any feature flag. The getaddrinfo function (as
@@ -124,12 +124,12 @@ func (state *getaddrinfoState) toError(code int64, err error, goos string) error
 // So, android_getaddrinfo_proxy was introduced a long time
 // ago on October 28, 2010 by this commit:
 //
-//     https://github.com/aosp-mirror/platform_bionic/commit/a1dbf0b453801620565e5911f354f82706b0200d
+//	https://github.com/aosp-mirror/platform_bionic/commit/a1dbf0b453801620565e5911f354f82706b0200d
 //
 // Then a subsequent commit changed android_getaddrinfo_proxy
 // to basically default to EAI_NODATA on proxy errors:
 //
-//     https://github.com/aosp-mirror/platform_bionic/commit/c63e59039d28c352e3053bb81319e960c392dbd4
+//	https://github.com/aosp-mirror/platform_bionic/commit/c63e59039d28c352e3053bb81319e960c392dbd4
 //
 // As of today and 4ebdeebef74, android_getaddrinfo_proxy returns
 // one of the following possible return codes:

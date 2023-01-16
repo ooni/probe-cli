@@ -50,15 +50,15 @@ const (
 // Originally, Web Connectivity only had a blocking scalar value so
 // we could see ourselves in one of the following cases:
 //
-//     +----------+------------+--------------------------+
-//     | Blocking | Accessible | Meaning                  |
-//     +----------+------------+--------------------------+
-//     | null     | null       | Probe analysis error     |
-//     +----------+------------+--------------------------+
-//     | false    | true       | We detected no blocking  |
-//     +----------+------------+--------------------------+
-//     | "..."    | false      | We detected blocking     |
-//     +----------+------------+--------------------------+
+//	+----------+------------+--------------------------+
+//	| Blocking | Accessible | Meaning                  |
+//	+----------+------------+--------------------------+
+//	| null     | null       | Probe analysis error     |
+//	+----------+------------+--------------------------+
+//	| false    | true       | We detected no blocking  |
+//	+----------+------------+--------------------------+
+//	| "..."    | false      | We detected blocking     |
+//	+----------+------------+--------------------------+
 //
 // While it would be possible in this implementation, which has a granular
 // definition of blocking (x_blocking_flags), to set accessible to mean
@@ -73,21 +73,21 @@ const (
 // Accordingly, this is how we map the value of the .XBlockingFlags to the
 // values of .Blocking and .Accessible:
 //
-//     +--------------------------------------+----------------+-------------+
-//     | .BlockingFlags                       | .Blocking      | .Accessible |
-//     +--------------------------------------+----------------+-------------+
-//     | (& DNSBlocking) != 0                 | "dns"          | false       |
-//     +--------------------------------------+----------------+-------------+
-//     | (& TCPIPBlocking) != 0               | "tcp_ip"       | false       |
-//     +--------------------------------------+----------------+-------------+
-//     | (& (TLSBlocking|HTTPBlocking)) != 0  | "http-failure" | false       |
-//     +--------------------------------------+----------------+-------------+
-//     | (& HTTPDiff) != 0                    | "http-diff"    | false       |
-//     +--------------------------------------+----------------+-------------+
-//     | == FlagSuccess                       | false          | true        |
-//     +--------------------------------------+----------------+-------------+
-//     | otherwise                            | null           | null        |
-//     +--------------------------------------+----------------+-------------+
+//	+--------------------------------------+----------------+-------------+
+//	| .BlockingFlags                       | .Blocking      | .Accessible |
+//	+--------------------------------------+----------------+-------------+
+//	| (& DNSBlocking) != 0                 | "dns"          | false       |
+//	+--------------------------------------+----------------+-------------+
+//	| (& TCPIPBlocking) != 0               | "tcp_ip"       | false       |
+//	+--------------------------------------+----------------+-------------+
+//	| (& (TLSBlocking|HTTPBlocking)) != 0  | "http-failure" | false       |
+//	+--------------------------------------+----------------+-------------+
+//	| (& HTTPDiff) != 0                    | "http-diff"    | false       |
+//	+--------------------------------------+----------------+-------------+
+//	| == FlagSuccess                       | false          | true        |
+//	+--------------------------------------+----------------+-------------+
+//	| otherwise                            | null           | null        |
+//	+--------------------------------------+----------------+-------------+
 //
 // It's a very simple rule, that should preserve previous semantics.
 //
