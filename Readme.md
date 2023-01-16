@@ -1,3 +1,8 @@
+<!--
+Adapted from https://github.com/othneildrew/Best-README-Template, which is
+under the MIT license. So, this file is also under the MIT license.
+-->
+
 [![OONI Probe Android](docs/logo.png)](https://ooni.org)
 
 <div align="center">
