@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![GoDoc](https://godoc.org/github.com/ooni/probe-cli?status.svg)](https://godoc.org/github.com/ooni/probe-cli) [![Coverage Status](https://coveralls.io/repos/github/ooni/probe-cli/badge.svg?branch=master)](https://coveralls.io/github/ooni/probe-cli?branch=master) [![Slack](https://slack.openobservatory.org/badge.svg)](https://slack.openobservatory.org/)
+[![GoDoc](https://pkg.go.dev/badge/github.com/ooni/probe-cli/)](https://pkg.go.dev/github.com/ooni/probe-cli/v3) [![Coverage Status](https://coveralls.io/repos/github/ooni/probe-cli/badge.svg?branch=master)](https://coveralls.io/github/ooni/probe-cli?branch=master) [![Slack](https://slack.openobservatory.org/badge.svg)](https://slack.openobservatory.org/)
 
 ## OONI Probe Measurement Engine and CLI
 
