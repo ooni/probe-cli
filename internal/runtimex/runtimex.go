@@ -5,7 +5,59 @@ package runtimex
 import (
 	"errors"
 	"fmt"
+	"runtime/debug"
 )
+
+// BuildInfoRecord contains build-time information.
+type BuildInfoRecord struct {
+	// GoVersion is the version of go with which this code
+	// was compiled or an empty string.
+	GoVersion string
+
+	// VcsModified indicates whether the tree was dirty.
+	VcsModified string
+
+	// VcsRevision is the VCS revision we compiled.
+	VcsRevision string
+
+	// VcsTime is the time of the revision we're building.
+	VcsTime string
+
+	// VcsTool is the VCS tool being used.
+	VcsTool string
+}
+
+// setkv is a convenience function to set a [BuildInfoRecord] entry.
+func (bir *BuildInfoRecord) setkv(key, value string) {
+	switch key {
+	case "vcs.revision":
+		bir.VcsRevision = value
+	case "vcs.time":
+		bir.VcsTime = value
+	case "vcs.modified":
+		bir.VcsModified = value
+	case "vcs":
+		bir.VcsTool = value
+	}
+}
+
+// setall sets all the possible settings.
+func (bir *BuildInfoRecord) setall(settings []debug.BuildSetting) {
+	for _, entry := range settings {
+		bir.setkv(entry.Key, entry.Value)
+	}
+}
+
+// BuildInfo is the singleton containing build-time information.
+var BuildInfo = &BuildInfoRecord{}
+
+func init() {
+	info, good := debug.ReadBuildInfo()
+	if good {
+		BuildInfo.GoVersion = info.GoVersion
+		BuildInfo.setall(info.Settings)
+	}
+}
 
 // PanicOnError calls panic() if err is not nil. The type passed
 // to panic is an error type wrapping the original error.

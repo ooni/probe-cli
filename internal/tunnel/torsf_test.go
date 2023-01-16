@@ -6,10 +6,10 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/ptx"
@@ -17,7 +17,7 @@ import (
 
 type torsfPTXListenerWrapper struct {
 	torsfPTXListener
-	counter *atomicx.Int64
+	counter *atomic.Int64
 }
 
 func (tw *torsfPTXListenerWrapper) Stop() {
@@ -96,7 +96,7 @@ func Test_torsfStart(t *testing.T) {
 
 	t.Run("torStart fails", func(t *testing.T) {
 		ctx := context.Background()
-		stopCounter := &atomicx.Int64{}
+		stopCounter := &atomic.Int64{}
 		expected := errors.New("expected err")
 		config := &Config{
 			Name:                "torsf",

@@ -5,9 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sync/atomic"
 	"testing"
-
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 )
 
 func TestErrWrapper(t *testing.T) {
@@ -46,7 +45,7 @@ func TestErrWrapper(t *testing.T) {
 
 func TestNewErrWrapper(t *testing.T) {
 	t.Run("panics if the classifier is nil", func(t *testing.T) {
-		recovered := &atomicx.Int64{}
+		recovered := &atomic.Int64{}
 		func() {
 			defer func() {
 				if recover() != nil {
@@ -61,7 +60,7 @@ func TestNewErrWrapper(t *testing.T) {
 	})
 
 	t.Run("panics if the operation is empty", func(t *testing.T) {
-		recovered := &atomicx.Int64{}
+		recovered := &atomic.Int64{}
 		func() {
 			defer func() {
 				if recover() != nil {
@@ -76,7 +75,7 @@ func TestNewErrWrapper(t *testing.T) {
 	})
 
 	t.Run("panics if the error is nil", func(t *testing.T) {
-		recovered := &atomicx.Int64{}
+		recovered := &atomic.Int64{}
 		func() {
 			defer func() {
 				if recover() != nil {

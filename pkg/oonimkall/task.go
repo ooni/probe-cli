@@ -3,15 +3,15 @@ package oonimkall
 import (
 	"context"
 	"encoding/json"
+	"sync/atomic"
 
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // Task is an asynchronous task running an experiment. It mimics the
 // namesake concept initially implemented in Measurement Kit.
 //
-// Future directions
+// # Future directions
 //
 // Currently Task and Session are two unrelated APIs. As part of
 // evolving the APIs with which apps interact with the engine, we
@@ -21,7 +21,7 @@ import (
 // created with the OONI probe services backends.
 type Task struct {
 	cancel    context.CancelFunc
-	isdone    *atomicx.Int64
+	isdone    *atomic.Int64
 	isstarted chan interface{} // for testing
 	isstopped chan interface{} // for testing
 	out       chan *event
@@ -38,7 +38,7 @@ func StartTask(input string) (*Task, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	task := &Task{
 		cancel:    cancel,
-		isdone:    &atomicx.Int64{},
+		isdone:    &atomic.Int64{},
 		isstarted: make(chan interface{}),
 		isstopped: make(chan interface{}),
 		out:       make(chan *event, bufsiz),

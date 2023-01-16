@@ -23,4 +23,4 @@ jobs:
 
       - run: go build -v ./internal/cmd/jafar
 
-      - run: sudo ./testjafar.bash
+      - run: sudo ./script/testjafar.bash

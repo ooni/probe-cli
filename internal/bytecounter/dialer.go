@@ -14,7 +14,7 @@ import (
 // MaybeWrapWithContextAwareDialer wraps the given dialer with a ContextAwareDialer
 // if the enabled argument is true and otherwise just returns the given dialer.
 //
-// Bug
+// # Bug
 //
 // This implementation cannot properly account for the bytes that are sent by
 // persistent connections, because they stick to the counters set when the

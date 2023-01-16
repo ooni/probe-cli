@@ -1,10 +1,9 @@
 package oonimkall
 
 import (
+	"sync/atomic"
 	"testing"
 	"time"
-
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 )
 
 func TestClampTimeout(t *testing.T) {
@@ -29,7 +28,7 @@ func TestNewContextWithZeroTimeout(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	here := &atomicx.Int64{}
+	here := &atomic.Int64{}
 	ctx, cancel := newContext(0)
 	defer cancel()
 	go func() {
@@ -47,7 +46,7 @@ func TestNewContextWithNegativeTimeout(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	here := &atomicx.Int64{}
+	here := &atomic.Int64{}
 	ctx, cancel := newContext(-1)
 	defer cancel()
 	go func() {
@@ -65,7 +64,7 @@ func TestNewContextWithHugeTimeout(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	here := &atomicx.Int64{}
+	here := &atomic.Int64{}
 	ctx, cancel := newContext(maxTimeout + 1)
 	defer cancel()
 	go func() {
@@ -83,7 +82,7 @@ func TestNewContextWithReasonableTimeout(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	here := &atomicx.Int64{}
+	here := &atomic.Int64{}
 	ctx, cancel := newContext(1)
 	defer cancel()
 	go func() {
@@ -101,7 +100,7 @@ func TestNewContextWithArtificiallyLowMaxTimeout(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	here := &atomicx.Int64{}
+	here := &atomic.Int64{}
 	const maxTimeout = 2
 	ctx, cancel := newContextEx(maxTimeout+1, maxTimeout)
 	defer cancel()

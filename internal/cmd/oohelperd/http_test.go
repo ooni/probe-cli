@@ -145,30 +145,30 @@ func Test_httpMapFailure(t *testing.T) {
 
 func TestParseAltSvc(t *testing.T) {
 	type altSvcTest struct {
-		name string 
+		name  string
 		input http.Header
-		want string
+		want  string
 	}
-	tests := [] altSvcTest {
-		{ 
-			name: "standard",
+	tests := []altSvcTest{
+		{
+			name:  "standard",
 			input: http.Header{"Alt-Svc": []string{`h3=":443"; ma=3600,h2=":443"; ma=3600`}},
-			want: ":443",
+			want:  ":443",
 		},
 		{
-			name: "changed order",
+			name:  "changed order",
 			input: http.Header{"Alt-Svc": []string{`h2=":443"; ma=3600,h3=":443"; ma=3600`}},
-			want: ":443",
+			want:  ":443",
 		},
 		{
-			name: "empty",
+			name:  "empty",
 			input: http.Header{"Alt-Svc": []string{""}},
-			want: "",
+			want:  "",
 		},
 		{
-			name: "no h3",
+			name:  "no h3",
 			input: http.Header{"Alt-Svc": []string{`h2=":443"; ma=3600`}},
-			want: "",
+			want:  "",
 		},
 	}
 

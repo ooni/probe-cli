@@ -1,4 +1,4 @@
-# Directory MOBILE
+# Scripts to build the OONI Probe mobile library
 
 This directory is used for building for Android and iOS.
 

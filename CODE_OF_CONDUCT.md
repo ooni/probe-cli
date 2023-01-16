@@ -1,4 +1,3 @@
 # OONI Code of Conduct
 
-Please, refer to [ooni/ooni.org's CODE\_OF\_CONDUCT.md](
-https://github.com/ooni/ooni.org/blob/master/CODE_OF_CONDUCT.md).
+Please, refer to https://ooni.org/get-involved/code-of-conduct/.

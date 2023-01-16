@@ -5,7 +5,7 @@ package registry
 //
 
 import (
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/ndt7"
+	"github.com/ooni/probe-cli/v3/internal/experiment/ndt7"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 

@@ -9,16 +9,17 @@ import (
 	"net/url"
 	"os"
 	"sync"
+	"sync/atomic"
 
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
-	"github.com/ooni/probe-cli/v3/internal/engine/sessionresolver"
+	"github.com/ooni/probe-cli/v3/internal/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/platform"
+	"github.com/ooni/probe-cli/v3/internal/probeservices"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/sessionresolver"
 	"github.com/ooni/probe-cli/v3/internal/tunnel"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
@@ -60,7 +61,7 @@ type Session struct {
 	location                 *geolocate.Results
 	logger                   model.Logger
 	proxyURL                 *url.URL
-	queryProbeServicesCount  *atomicx.Int64
+	queryProbeServicesCount  *atomic.Int64
 	resolver                 *sessionresolver.Resolver
 	selectedProbeServiceHook func(*model.OOAPIService)
 	selectedProbeService     *model.OOAPIService
@@ -159,12 +160,19 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
+	config.Logger.Infof(
+		"ooniprobe-engine/v%s %s dirty=%s %s",
+		version.Version,
+		runtimex.BuildInfo.VcsRevision,
+		runtimex.BuildInfo.VcsModified,
+		runtimex.BuildInfo.GoVersion,
+	)
 	sess := &Session{
 		availableProbeServices:  config.AvailableProbeServices,
 		byteCounter:             bytecounter.New(),
 		kvStore:                 config.KVStore,
 		logger:                  config.Logger,
-		queryProbeServicesCount: &atomicx.Int64{},
+		queryProbeServicesCount: &atomic.Int64{},
 		softwareName:            config.SoftwareName,
 		softwareVersion:         config.SoftwareVersion,
 		tempDir:                 tempDir,
