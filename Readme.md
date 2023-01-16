@@ -16,7 +16,8 @@
   <summary>Table of Contents</summary>
   <ol>
     <li><a href="#about-this-project">About this project</a></li>
-    <li><a href="#getting-started>Getting started</a></li>
+    <li><a href="#install-instructions">Install instructions</a></li>
+    <li><a href="#build-instructions>Build instructions<a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#updating-dependencies">Updating dependencies</a></li>
@@ -45,13 +46,15 @@ This repository contains the following Go packages:
 
 Every top-level directory in this repository contains an explanatory README file.
 
-## Getting started
+## Install instructions
 
 Follow the instructions at [ooni.org/install/cli](https://ooni.org/install/cli)
 to install `ooniprobe` precompiled binaries for Windows, macOS, and
 Debian/Ubuntu. Once `ooniprobe` is installed, refer to the
 [user guide](https://ooni.org/support/ooni-probe-cli). Run `ooniprobe --help`
 to get brief help instructions.
+
+## Build instructions
 
 To build `ooniprobe` or other binaries manually, you need to
 install and use the Go version mentioned by the
