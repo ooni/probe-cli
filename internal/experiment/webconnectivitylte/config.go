@@ -1,4 +1,4 @@
-package webconnectivity
+package webconnectivitylte
 
 //
 // Config
