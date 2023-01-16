@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
+	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"golang.org/x/sys/execabs"
 )

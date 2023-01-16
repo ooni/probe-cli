@@ -9,7 +9,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
+	"github.com/ooni/probe-cli/v3/internal/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 

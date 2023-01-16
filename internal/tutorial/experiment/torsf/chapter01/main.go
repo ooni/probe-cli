@@ -63,7 +63,7 @@ import (
 	// The mockable package contains widely used mocks.
 	//
 	// ```Go
-	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
+	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
 
 	// ```
 	//

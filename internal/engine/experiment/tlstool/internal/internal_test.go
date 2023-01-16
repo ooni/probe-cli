@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tlstool/internal"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/legacy/netx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
