@@ -143,8 +143,6 @@ func (t *DNSResolvers) run(parentCtx context.Context) []DNSEntry {
 		merged[addr].Addr = addr
 		merged[addr].Flags |= DNSAddrFlagHTTPS
 	}
-	// implementation note: we don't remove bogons because accessing
-	// them can lead us to discover block pages
 	var entries []DNSEntry
 	for _, entry := range merged {
 		entries = append(entries, *entry)

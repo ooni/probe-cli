@@ -89,7 +89,12 @@ func (t *CleartextFlow) Start(ctx context.Context) {
 }
 
 // Run runs this task in the current goroutine.
-func (t *CleartextFlow) Run(parentCtx context.Context, index int64) {
+func (t *CleartextFlow) Run(parentCtx context.Context, index int64) error {
+	if err := allowedToConnect(t.Address); err != nil {
+		t.Logger.Warnf("CleartextFlow: %s", err.Error())
+		return err
+	}
+
 	// create trace
 	trace := measurexlite.NewTrace(index, t.ZeroTime)
 
@@ -107,7 +112,7 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) {
 	t.TestKeys.AppendTCPConnectResults(trace.TCPConnects()...)
 	if err != nil {
 		ol.Stop(err)
-		return
+		return err
 	}
 	defer func() {
 		t.TestKeys.AppendNetworkEvents(trace.NetworkEvents()...)
@@ -119,7 +124,7 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) {
 	// Determine whether we're allowed to fetch the webpage
 	if t.PrioSelector == nil || !t.PrioSelector.permissionToFetch(t.Address) {
 		ol.Stop("stop after TCP connect")
-		return
+		return errNotPermittedToFetch
 	}
 
 	// create HTTP transport
@@ -143,7 +148,7 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) {
 			t.TestKeys.SetFundamentalFailure(err)
 		}
 		ol.Stop(err)
-		return
+		return err
 	}
 
 	// perform HTTP transaction
@@ -158,7 +163,7 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) {
 	)
 	if err != nil {
 		ol.Stop(err)
-		return
+		return err
 	}
 
 	// if enabled, follow possible redirects
@@ -169,6 +174,7 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) {
 
 	// completed successfully
 	ol.Stop(nil)
+	return nil
 }
 
 // urlHost computes the host to include into the URL
