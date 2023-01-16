@@ -5,7 +5,7 @@ package registry
 //
 
 import (
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/hhfm"
+	"github.com/ooni/probe-cli/v3/internal/experiment/hhfm"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 

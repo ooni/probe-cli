@@ -5,7 +5,7 @@ package registry
 //
 
 import (
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/dnscheck"
+	"github.com/ooni/probe-cli/v3/internal/experiment/dnscheck"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 

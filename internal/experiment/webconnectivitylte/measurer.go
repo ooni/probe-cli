@@ -11,7 +11,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
+	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"golang.org/x/net/publicsuffix"
 )

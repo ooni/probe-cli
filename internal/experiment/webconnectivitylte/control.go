@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
+	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/httpapi"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
