@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"sync/atomic"
 	"testing"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/httpx"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -22,8 +22,8 @@ func TestGetMeasurementMetaWorkingAsIntended(t *testing.T) {
 			Logger:     log.Log,
 			UserAgent:  "miniooni/0.1.0-dev",
 		},
-		LoginCalls:    &atomicx.Int64{},
-		RegisterCalls: &atomicx.Int64{},
+		LoginCalls:    &atomic.Int64{},
+		RegisterCalls: &atomic.Int64{},
 		StateFile:     NewStateFile(&kvstore.Memory{}),
 	}
 	config := model.OOAPIMeasurementMetaConfig{
@@ -90,8 +90,8 @@ func TestGetMeasurementMetaWorkingWithCancelledContext(t *testing.T) {
 			Logger:     log.Log,
 			UserAgent:  "miniooni/0.1.0-dev",
 		},
-		LoginCalls:    &atomicx.Int64{},
-		RegisterCalls: &atomicx.Int64{},
+		LoginCalls:    &atomic.Int64{},
+		RegisterCalls: &atomic.Int64{},
 		StateFile:     NewStateFile(&kvstore.Memory{}),
 	}
 	config := model.OOAPIMeasurementMetaConfig{

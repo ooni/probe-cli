@@ -10,9 +10,9 @@ import (
 	"fmt"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/measurex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -242,7 +242,7 @@ func (m *Measurer) measureTargets(
 
 type resultsCollector struct {
 	callbacks       model.ExperimentCallbacks
-	completed       *atomicx.Int64
+	completed       *atomic.Int64
 	flexibleConnect func(context.Context, keytarget) (*measurex.ArchivalMeasurement, *string)
 	measurement     *model.Measurement
 	mu              sync.Mutex
@@ -257,7 +257,7 @@ func newResultsCollector(
 ) *resultsCollector {
 	rc := &resultsCollector{
 		callbacks:     callbacks,
-		completed:     &atomicx.Int64{},
+		completed:     &atomic.Int64{},
 		measurement:   measurement,
 		sess:          sess,
 		targetresults: make(map[string]TargetResults),

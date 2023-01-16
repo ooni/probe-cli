@@ -9,8 +9,8 @@ import (
 	"errors"
 	"net/http/cookiejar"
 	"sync"
+	"sync/atomic"
 
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"golang.org/x/net/publicsuffix"
@@ -78,7 +78,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	measurement.TestKeys = tk
 
 	// create variables required to run parallel tasks
-	idGenerator := &atomicx.Int64{}
+	idGenerator := &atomic.Int64{}
 	wg := &sync.WaitGroup{}
 
 	// create cookiejar

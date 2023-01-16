@@ -14,9 +14,9 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -34,7 +34,7 @@ type SecureFlow struct {
 	DNSCache *DNSCache
 
 	// IDGenerator is the MANDATORY atomic int64 to generate task IDs.
-	IDGenerator *atomicx.Int64
+	IDGenerator *atomic.Int64
 
 	// Logger is the MANDATORY logger to use.
 	Logger model.Logger

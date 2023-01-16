@@ -4,19 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"sync/atomic"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestWebConnectivityRunnerWithMaybeLookupBackendsFailure(t *testing.T) {
 	errMocked := errors.New("mocked error")
 	sess := &FakeExperimentSession{
-		LockCount:         &atomicx.Int64{},
+		LockCount:         &atomic.Int64{},
 		LookupBackendsErr: errMocked,
-		UnlockCount:       &atomicx.Int64{},
+		UnlockCount:       &atomic.Int64{},
 	}
 	runner := &webConnectivityRunner{sess: sess}
 	ctx := context.Background()
@@ -36,9 +36,9 @@ func TestWebConnectivityRunnerWithMaybeLookupBackendsFailure(t *testing.T) {
 func TestWebConnectivityRunnerWithMaybeLookupLocationFailure(t *testing.T) {
 	errMocked := errors.New("mocked error")
 	sess := &FakeExperimentSession{
-		LockCount:         &atomicx.Int64{},
+		LockCount:         &atomic.Int64{},
 		LookupLocationErr: errMocked,
-		UnlockCount:       &atomicx.Int64{},
+		UnlockCount:       &atomic.Int64{},
 	}
 	runner := &webConnectivityRunner{sess: sess}
 	ctx := context.Background()
@@ -58,9 +58,9 @@ func TestWebConnectivityRunnerWithMaybeLookupLocationFailure(t *testing.T) {
 func TestWebConnectivityRunnerWithNewExperimentBuilderFailure(t *testing.T) {
 	errMocked := errors.New("mocked error")
 	sess := &FakeExperimentSession{
-		LockCount:               &atomicx.Int64{},
+		LockCount:               &atomic.Int64{},
 		NewExperimentBuilderErr: errMocked,
-		UnlockCount:             &atomicx.Int64{},
+		UnlockCount:             &atomic.Int64{},
 	}
 	runner := &webConnectivityRunner{sess: sess}
 	ctx := context.Background()
@@ -83,9 +83,9 @@ func TestWebConnectivityRunnerWithMeasureFailure(t *testing.T) {
 	e := &FakeExperiment{Err: errMocked}
 	eb := &FakeExperimentBuilder{Experiment: e}
 	sess := &FakeExperimentSession{
-		LockCount:         &atomicx.Int64{},
+		LockCount:         &atomic.Int64{},
 		ExperimentBuilder: eb,
-		UnlockCount:       &atomicx.Int64{},
+		UnlockCount:       &atomic.Int64{},
 	}
 	runner := &webConnectivityRunner{sess: sess}
 	ctx := context.Background()
@@ -117,9 +117,9 @@ func TestWebConnectivityRunnerWithNoError(t *testing.T) {
 	e := &FakeExperiment{Measurement: m, Sent: 10, Received: 128}
 	eb := &FakeExperimentBuilder{Experiment: e}
 	sess := &FakeExperimentSession{
-		LockCount:         &atomicx.Int64{},
+		LockCount:         &atomic.Int64{},
 		ExperimentBuilder: eb,
-		UnlockCount:       &atomicx.Int64{},
+		UnlockCount:       &atomic.Int64{},
 	}
 	runner := &webConnectivityRunner{sess: sess}
 	ctx := context.Background()

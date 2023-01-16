@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"sync/atomic"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/whatsapp"
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
@@ -344,7 +344,7 @@ func TestWeConfigureWebChecksCorrectly(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	called := &atomicx.Int64{}
+	called := &atomic.Int64{}
 	emptyConfig := urlgetter.Config{}
 	measurer := whatsapp.Measurer{
 		Config: whatsapp.Config{},

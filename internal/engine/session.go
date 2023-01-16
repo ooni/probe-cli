@@ -9,8 +9,8 @@ import (
 	"net/url"
 	"os"
 	"sync"
+	"sync/atomic"
 
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
@@ -60,7 +60,7 @@ type Session struct {
 	location                 *geolocate.Results
 	logger                   model.Logger
 	proxyURL                 *url.URL
-	queryProbeServicesCount  *atomicx.Int64
+	queryProbeServicesCount  *atomic.Int64
 	resolver                 *sessionresolver.Resolver
 	selectedProbeServiceHook func(*model.OOAPIService)
 	selectedProbeService     *model.OOAPIService
@@ -164,7 +164,7 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 		byteCounter:             bytecounter.New(),
 		kvStore:                 config.KVStore,
 		logger:                  config.Logger,
-		queryProbeServicesCount: &atomicx.Int64{},
+		queryProbeServicesCount: &atomic.Int64{},
 		softwareName:            config.SoftwareName,
 		softwareVersion:         config.SoftwareVersion,
 		tempDir:                 tempDir,

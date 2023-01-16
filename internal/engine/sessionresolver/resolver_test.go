@@ -6,10 +6,10 @@ import (
 	"net"
 	"net/url"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
@@ -271,7 +271,7 @@ func TestMaybeConfusionManyEntries(t *testing.T) {
 
 func TestResolverWorksWithProxy(t *testing.T) {
 	var (
-		works      = &atomicx.Int64{}
+		works      = &atomic.Int64{}
 		startuperr = make(chan error)
 		listench   = make(chan net.Listener)
 		done       = make(chan interface{})

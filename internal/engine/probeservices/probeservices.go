@@ -26,8 +26,8 @@ package probeservices
 import (
 	"errors"
 	"net/url"
+	"sync/atomic"
 
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/httpapi"
 	"github.com/ooni/probe-cli/v3/internal/httpx"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -66,8 +66,8 @@ type Session interface {
 // Client is a client for the OONI probe services API.
 type Client struct {
 	httpx.APIClientTemplate
-	LoginCalls    *atomicx.Int64
-	RegisterCalls *atomicx.Int64
+	LoginCalls    *atomic.Int64
+	RegisterCalls *atomic.Int64
 	StateFile     StateFile
 }
 
@@ -97,8 +97,8 @@ func NewClient(sess Session, endpoint model.OOAPIService) (*Client, error) {
 			Logger:     sess.Logger(),
 			UserAgent:  sess.UserAgent(),
 		},
-		LoginCalls:    &atomicx.Int64{},
-		RegisterCalls: &atomicx.Int64{},
+		LoginCalls:    &atomic.Int64{},
+		RegisterCalls: &atomic.Int64{},
 		StateFile:     NewStateFile(sess.KeyValueStore()),
 	}
 	switch endpoint.Type {

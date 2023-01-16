@@ -4,10 +4,9 @@ import (
 	"errors"
 	"io/fs"
 	"os"
+	"sync/atomic"
 	"syscall"
 	"testing"
-
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 )
 
 // baseDir is the base directory we use for testing.
@@ -15,12 +14,12 @@ var baseDir = "./testdata/"
 
 // failingStatFS is a fs.FS returning a file where stat() fails.
 type failingStatFS struct {
-	CloseCount *atomicx.Int64
+	CloseCount *atomic.Int64
 }
 
 // failingStatFile is a fs.File where stat() fails.
 type failingStatFile struct {
-	CloseCount *atomicx.Int64
+	CloseCount *atomic.Int64
 }
 
 // errStatFailed is the internal error indicating that stat() failed.
@@ -50,7 +49,7 @@ func (failingStatFile) Read([]byte) (int, error) {
 }
 
 func TestOpenWithFailingStat(t *testing.T) {
-	count := &atomicx.Int64{}
+	count := &atomic.Int64{}
 	_, err := openWithFS(
 		failingStatFS{CloseCount: count}, baseDir+"testfile.txt")
 	if !errors.Is(err, errStatFailed) {

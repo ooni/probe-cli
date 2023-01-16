@@ -11,9 +11,9 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -30,7 +30,7 @@ const (
 // Endpoints keeps track of repeatedly measured endpoints.
 type Endpoints struct {
 	WaitTime  time.Duration
-	count     *atomicx.Int64
+	count     *atomic.Int64
 	nextVisit map[string]time.Time
 	mu        sync.Mutex
 }
@@ -48,7 +48,7 @@ func (e *Endpoints) maybeSleep(resolverURL string, logger model.Logger) {
 	}
 	sleepTime := nextTime.Sub(now)
 	if e.count == nil {
-		e.count = &atomicx.Int64{}
+		e.count = &atomic.Int64{}
 	}
 	e.count.Add(1)
 	logger.Infof("waiting %v before testing %s again", sleepTime, resolverURL)

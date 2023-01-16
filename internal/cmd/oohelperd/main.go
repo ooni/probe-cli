@@ -7,10 +7,10 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -58,7 +58,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/", &handler{
 		BaseLogger:        log.Log,
-		Indexer:           &atomicx.Int64{},
+		Indexer:           &atomic.Int64{},
 		MaxAcceptableBody: maxAcceptableBody,
 		NewHTTPClient: func(logger model.Logger) model.HTTPClient {
 			// If the DoH resolver we're using insists that a given domain maps to

@@ -6,25 +6,25 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"sync/atomic"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 type FakeResolver struct {
-	NumFailures *atomicx.Int64
+	NumFailures *atomic.Int64
 	Err         error
 	Result      []string
 }
 
 func NewFakeResolverThatFails() FakeResolver {
-	return FakeResolver{NumFailures: &atomicx.Int64{}, Err: ErrNotFound}
+	return FakeResolver{NumFailures: &atomic.Int64{}, Err: ErrNotFound}
 }
 
 func NewFakeResolverWithResult(r []string) FakeResolver {
-	return FakeResolver{NumFailures: &atomicx.Int64{}, Result: r}
+	return FakeResolver{NumFailures: &atomic.Int64{}, Result: r}
 }
 
 var ErrNotFound = &net.DNSError{

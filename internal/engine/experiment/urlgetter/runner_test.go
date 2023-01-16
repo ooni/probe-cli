@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -234,7 +234,7 @@ func TestRunnerHTTPWithConnectionClosedByServerAnd400(t *testing.T) {
 
 func TestRunnerWeCanForceUserAgent(t *testing.T) {
 	expected := "antani/1.23.4-dev"
-	found := &atomicx.Int64{}
+	found := &atomic.Int64{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("User-Agent") == expected {
 			found.Add(1)
@@ -261,7 +261,7 @@ func TestRunnerWeCanForceUserAgent(t *testing.T) {
 
 func TestRunnerDefaultUserAgent(t *testing.T) {
 	expected := model.HTTPHeaderUserAgent
-	found := &atomicx.Int64{}
+	found := &atomic.Int64{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("User-Agent") == expected {
 			found.Add(1)

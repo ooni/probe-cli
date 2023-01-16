@@ -68,8 +68,6 @@ run `go mod tidy` to minimize such changes.
 
 ## Implementation requirements
 
-- use `./internal/atomicx` rather than `atomic/sync`
-
 - do not use `os/exec`, use `x/sys/execabs` or `./internal/shellx`
 
 - use `./internal/fsx.OpenFile` when you need to open a file
