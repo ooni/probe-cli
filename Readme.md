@@ -17,7 +17,7 @@
   <ol>
     <li><a href="#about-this-project">About this project</a></li>
     <li><a href="#install-instructions">Install instructions</a></li>
-    <li><a href="#build-instructions>Build instructions<a></li>
+    <li><a href="#build-instructions">Build instructions<a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#updating-dependencies">Updating dependencies</a></li>
