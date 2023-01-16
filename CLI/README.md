@@ -1,3 +1,4 @@
-# Directory github.com/ooni/probe-cli/CLI
+# Building CLI tools
 
-We use this directory for building CLI binaries (e.g. ooniprobe).
+We use this directory for building CLI tools (e.g., `ooniprobe`).
+

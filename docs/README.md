@@ -1,3 +1,3 @@
-# Directory github.com/ooni/probe-cli/docs
+# Documentation
 
 This directory contains documentation.
