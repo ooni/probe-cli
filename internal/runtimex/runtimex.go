@@ -27,26 +27,35 @@ type BuildInfoRecord struct {
 	VcsTool string
 }
 
+// setkv is a convenience function to set a [BuildInfoRecord] entry.
+func (bir *BuildInfoRecord) setkv(key, value string) {
+	switch key {
+	case "vcs.revision":
+		bir.VcsRevision = value
+	case "vcs.time":
+		bir.VcsTime = value
+	case "vcs.modified":
+		bir.VcsModified = value
+	case "vcs":
+		bir.VcsTool = value
+	}
+}
+
+// setall sets all the possible settings.
+func (bir *BuildInfoRecord) setall(settings []debug.BuildSetting) {
+	for _, entry := range settings {
+		bir.setkv(entry.Key, entry.Value)
+	}
+}
+
 // BuildInfo is the singleton containing build-time information.
-var BuildInfo BuildInfoRecord
+var BuildInfo = &BuildInfoRecord{}
 
 func init() {
 	info, good := debug.ReadBuildInfo()
-	if !good {
-		return
-	}
-	BuildInfo.GoVersion = info.GoVersion
-	for _, entry := range info.Settings {
-		switch entry.Key {
-		case "vcs.revision":
-			BuildInfo.VcsRevision = entry.Value
-		case "vcs.time":
-			BuildInfo.VcsTime = entry.Value
-		case "vcs.modified":
-			BuildInfo.VcsModified = entry.Value
-		case "vcs":
-			BuildInfo.VcsTool = entry.Value
-		}
+	if good {
+		BuildInfo.GoVersion = info.GoVersion
+		BuildInfo.setall(info.Settings)
 	}
 }
 
