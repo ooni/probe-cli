@@ -1,4 +1,4 @@
-# Directory MONOREPO
+# Scripts to emulate a monorepo
 
 This directory contains scripts to emulate a
 [monorepo](https://en.wikipedia.org/wiki/Monorepo).
