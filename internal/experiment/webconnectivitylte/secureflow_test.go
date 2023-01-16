@@ -1,14 +1,14 @@
-package webconnectivity
+package webconnectivitylte
 
 import (
 	"context"
 	"errors"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -16,7 +16,7 @@ func TestSecureFlow_Run(t *testing.T) {
 	type fields struct {
 		Address         string
 		DNSCache        *DNSCache
-		IDGenerator     *atomicx.Int64
+		IDGenerator     *atomic.Int64
 		Logger          model.Logger
 		NumRedirects    *NumRedirects
 		TestKeys        *TestKeys
