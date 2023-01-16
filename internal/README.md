@@ -29,7 +29,7 @@ To run `pkgsite`, use:
 pkgsite
 ```
 
-Then visit `http://127.0.0.1:8080/github.com/ooni/probe-cli/v3` with
+Then visit http://127.0.0.1:8080/github.com/ooni/probe-cli/v3 with
 your browser to browse the documentation.
 
 ## Getting information about a package
