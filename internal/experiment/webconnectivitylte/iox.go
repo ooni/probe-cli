@@ -1,4 +1,4 @@
-package webconnectivity
+package webconnectivitylte
 
 //
 // Extensions to incrementally stream-reading a response body.

@@ -1,4 +1,4 @@
-package webconnectivity
+package webconnectivitylte
 
 //
 // Determine which connection(s) are allowed to fetch the webpage
