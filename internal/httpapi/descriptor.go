@@ -43,12 +43,22 @@ func (r *RawResponseDescriptor) Unmarshal(resp *http.Response, data []byte) ([]b
 type JSONResponseDescriptor[T any] struct{}
 
 // Unmarshal implements ResponseDescriptor
-func (r *JSONResponseDescriptor[T]) Unmarshal(resp *http.Response, data []byte) (T, error) {
-	value := *new(T)
+func (r *JSONResponseDescriptor[T]) Unmarshal(resp *http.Response, data []byte) (*T, error) {
+	// Important safety note: this implementation is tailored so that, when
+	// the raw JSON body is `null`, we DO NOT return `nil`, `nil`. Because
+	// we create a T on the stack and then let it escape, in such a case the
+	// code will instead return an empty T and nil. Returning an empty T is
+	// slightly better because the caller does not need to worry about the
+	// returned pointer also being nil, but they just need to worry about
+	// whether any field inside the returned struct is the zero value.
+	//
+	// Because this safety property is important, there is also a test that
+	// makes sure we don't return `nil`, `nil` with `null` input.
+	var value T
 	if err := json.Unmarshal(data, &value); err != nil {
-		return *new(T), err
+		return nil, err
 	}
-	return value, nil
+	return &value, nil
 }
 
 // Descriptor contains the parameters for calling a given HTTP
