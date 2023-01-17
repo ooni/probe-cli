@@ -111,7 +111,7 @@ type Session struct {
 // sessionProbeServicesClientForCheckIn returns the probe services
 // client that we should be using for performing the check-in.
 type sessionProbeServicesClientForCheckIn interface {
-	CheckIn(ctx context.Context, config model.OOAPICheckInConfig) (*model.OOAPICheckInNettests, error)
+	CheckIn(ctx context.Context, config model.OOAPICheckInConfig) (*model.OOAPICheckInResult, error)
 }
 
 // NewSession creates a new session. This factory function will
@@ -264,7 +264,9 @@ func (s *Session) KibiBytesSent() float64 {
 //
 // The return value is either the check-in response or an error.
 func (s *Session) CheckIn(
-	ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInNettests, error) {
+	ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInResultNettests, error) {
+	// TODO(bassosimone): consider refactoring this function to return
+	// the whole check-in response to the caller.
 	if err := s.maybeLookupLocationContext(ctx); err != nil {
 		return nil, err
 	}
@@ -293,7 +295,13 @@ func (s *Session) CheckIn(
 	if config.WebConnectivity.CategoryCodes == nil {
 		config.WebConnectivity.CategoryCodes = []string{}
 	}
-	return client.CheckIn(ctx, *config)
+	resp, err := client.CheckIn(ctx, *config)
+	if err != nil {
+		return nil, err
+	}
+	// TODO(bassosimone): here is where we should implement
+	// caching of the check-in response.
+	return &resp.Tests, nil
 }
 
 // maybeLookupLocationContext is a wrapper for MaybeLookupLocationContext that calls

@@ -481,6 +481,6 @@ func (sess *Session) CheckIn(ctx *Context, config *CheckInConfig) (*CheckInInfo,
 		return nil, err
 	}
 	return &CheckInInfo{
-		WebConnectivity: newCheckInInfoWebConnectivity(result.WebConnectivity),
+		WebConnectivity: newCheckInInfoWebConnectivity(result.Tests.WebConnectivity),
 	}, nil
 }

@@ -33,7 +33,7 @@ type mockableProbeServicesClientForCheckIn struct {
 
 	// Results contains the results of the call. This field MUST be
 	// non-nil if and only if Error is nil.
-	Results *model.OOAPICheckInNettests
+	Results *model.OOAPICheckInResult
 
 	// Error indicates whether the call failed. This field MUST be
 	// non-nil if and only if Error is nil.
@@ -45,7 +45,7 @@ type mockableProbeServicesClientForCheckIn struct {
 
 // CheckIn implements sessionProbeServicesClientForCheckIn.CheckIn.
 func (c *mockableProbeServicesClientForCheckIn) CheckIn(
-	ctx context.Context, config model.OOAPICheckInConfig) (*model.OOAPICheckInNettests, error) {
+	ctx context.Context, config model.OOAPICheckInConfig) (*model.OOAPICheckInResult, error) {
 	defer c.mu.Unlock()
 	c.mu.Lock()
 	if c.Config != nil {
@@ -59,7 +59,7 @@ func (c *mockableProbeServicesClientForCheckIn) CheckIn(
 }
 
 func TestSessionCheckInSuccessful(t *testing.T) {
-	results := &model.OOAPICheckInNettests{
+	results := &model.OOAPICheckInResultNettests{
 		WebConnectivity: &model.OOAPICheckInInfoWebConnectivity{
 			ReportID: "xxx-x-xx",
 			URLs: []model.OOAPIURLInfo{{
@@ -74,7 +74,9 @@ func TestSessionCheckInSuccessful(t *testing.T) {
 		},
 	}
 	mockedClnt := &mockableProbeServicesClientForCheckIn{
-		Results: results,
+		Results: &model.OOAPICheckInResult{
+			Tests: *results,
+		},
 	}
 	s := &Session{
 		location: &geolocate.Results{
@@ -118,6 +120,35 @@ func TestSessionCheckInSuccessful(t *testing.T) {
 	}
 	if mockedClnt.Config.WebConnectivity.CategoryCodes == nil {
 		t.Fatal("invalid ...CategoryCodes")
+	}
+}
+
+func TestSessionCheckInNetworkError(t *testing.T) {
+	expect := errors.New("mocked error")
+	mockedClnt := &mockableProbeServicesClientForCheckIn{
+		Error: expect,
+	}
+	s := &Session{
+		location: &geolocate.Results{
+			ASN:         137,
+			CountryCode: "IT",
+		},
+		softwareName:    "miniooni",
+		softwareVersion: "0.1.0-dev",
+		testMaybeLookupLocationContext: func(ctx context.Context) error {
+			return nil
+		},
+		testNewProbeServicesClientForCheckIn: func(
+			ctx context.Context) (sessionProbeServicesClientForCheckIn, error) {
+			return mockedClnt, nil
+		},
+	}
+	out, err := s.CheckIn(context.Background(), &model.OOAPICheckInConfig{})
+	if !errors.Is(err, expect) {
+		t.Fatal("unexpected err", err)
+	}
+	if out != nil {
+		t.Fatal("expected nil out")
 	}
 }
 

@@ -13,12 +13,12 @@ import (
 // Returns the list of tests to run and the URLs, on success,
 // or an explanatory error, in case of failure.
 func (c Client) CheckIn(
-	ctx context.Context, config model.OOAPICheckInConfig) (*model.OOAPICheckInNettests, error) {
+	ctx context.Context, config model.OOAPICheckInConfig) (*model.OOAPICheckInResult, error) {
 	epnt := c.newHTTPAPIEndpoint()
 	desc := ooapi.NewDescriptorCheckIn(&config)
 	resp, err := httpapi.Call(ctx, desc, epnt)
 	if err != nil {
 		return nil, err
 	}
-	return &resp.Tests, nil
+	return resp, nil
 }

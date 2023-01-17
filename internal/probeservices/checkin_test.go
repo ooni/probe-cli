@@ -29,16 +29,16 @@ func TestCheckInSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result == nil || result.WebConnectivity == nil {
+	if result == nil || result.Tests.WebConnectivity == nil {
 		t.Fatal("got nil result or WebConnectivity")
 	}
-	if result.WebConnectivity.ReportID == "" {
+	if result.Tests.WebConnectivity.ReportID == "" {
 		t.Fatal("ReportID is empty")
 	}
-	if len(result.WebConnectivity.URLs) < 1 {
+	if len(result.Tests.WebConnectivity.URLs) < 1 {
 		t.Fatal("unexpected number of URLs")
 	}
-	for _, entry := range result.WebConnectivity.URLs {
+	for _, entry := range result.Tests.WebConnectivity.URLs {
 		if entry.CategoryCode != "NEWS" && entry.CategoryCode != "CULTR" {
 			t.Fatalf("unexpected category code: %+v", entry)
 		}
