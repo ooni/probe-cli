@@ -18,6 +18,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/platform"
 	"github.com/ooni/probe-cli/v3/internal/probeservices"
+	"github.com/ooni/probe-cli/v3/internal/registry"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/sessionresolver"
 	"github.com/ooni/probe-cli/v3/internal/tunnel"
@@ -299,8 +300,7 @@ func (s *Session) CheckIn(
 	if err != nil {
 		return nil, err
 	}
-	// TODO(bassosimone): here is where we should implement
-	// caching of the check-in response.
+	s.updateCheckInFlagsState(resp)
 	return &resp.Tests, nil
 }
 
@@ -404,6 +404,16 @@ var ErrAlreadyUsingProxy = errors.New(
 // for the experiment with the given name, or an error if
 // there's no such experiment with the given name
 func (s *Session) NewExperimentBuilder(name string) (model.ExperimentBuilder, error) {
+	name = registry.CanonicalizeExperimentName(name)
+	switch {
+	case name == "web_connectivity" && s.getCheckInFlagValue("webconnectivity_0.5"):
+		// use LTE rather than the normal webconnectivity when the
+		// feature flag has been set through the check-in API
+		s.Logger().Infof("using webconnectivity LTE")
+		name = "web_connectivity@v0.5"
+	default:
+		// nothing
+	}
 	eb, err := newExperimentBuilder(s, name)
 	if err != nil {
 		return nil, err
