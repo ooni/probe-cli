@@ -55,7 +55,8 @@ type OOAPICheckInInfoWebConnectivity struct {
 	URLs []OOAPIURLInfo `json:"urls"`
 }
 
-// OOAPICheckInResultNettests contains nettest information returned by the checkin API call.
+// OOAPICheckInResultNettests contains nettests information
+// returned by the checkin API call.
 type OOAPICheckInResultNettests struct {
 	// WebConnectivity contains WebConnectivity related information.
 	WebConnectivity *OOAPICheckInInfoWebConnectivity `json:"web_connectivity"`
