@@ -30,7 +30,7 @@ func TestUTLSConn(t *testing.T) {
 	t.Run("Handshake", func(t *testing.T) {
 		t.Run("not interrupted with success", func(t *testing.T) {
 			ctx := context.Background()
-			conn := &utlsConn{
+			conn := &UTLSConn{
 				testableHandshake: func() error {
 					return nil
 				},
@@ -44,7 +44,7 @@ func TestUTLSConn(t *testing.T) {
 		t.Run("not interrupted with failure", func(t *testing.T) {
 			expected := errors.New("mocked error")
 			ctx := context.Background()
-			conn := &utlsConn{
+			conn := &UTLSConn{
 				testableHandshake: func() error {
 					return expected
 				},
@@ -61,7 +61,7 @@ func TestUTLSConn(t *testing.T) {
 			sigch := make(chan interface{})
 			ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
 			defer cancel()
-			conn := &utlsConn{
+			conn := &UTLSConn{
 				testableHandshake: func() error {
 					defer wg.Done()
 					<-sigch
@@ -80,7 +80,7 @@ func TestUTLSConn(t *testing.T) {
 			wg := sync.WaitGroup{}
 			wg.Add(1)
 			ctx := context.Background()
-			conn := &utlsConn{
+			conn := &UTLSConn{
 				testableHandshake: func() error {
 					defer wg.Done()
 					panic("mascetti")
@@ -95,7 +95,7 @@ func TestUTLSConn(t *testing.T) {
 	})
 
 	t.Run("NetConn", func(t *testing.T) {
-		factory := newConnUTLS(&utls.HelloChrome_70)
+		factory := newUTLSConnFactory(&utls.HelloChrome_70)
 		conn := &mocks.Conn{}
 		tconn, err := factory(conn, &tls.Config{})
 		if err != nil {
@@ -144,7 +144,7 @@ func Test_newConnUTLSWithHelloID(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer conn.Close()
-			got, err := newConnUTLSWithHelloID(conn, tt.config, tt.cid)
+			got, err := NewUTLSConn(conn, tt.config, tt.cid)
 			if !errors.Is(err, tt.wantErr) {
 				t.Fatal("unexpected err", err)
 			}
