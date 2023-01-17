@@ -52,6 +52,13 @@ func (r *JSONResponseDescriptor[T]) Unmarshal(resp *http.Response, data []byte) 
 	// returned pointer also being nil, but they just need to worry about
 	// whether any field inside the returned struct is the zero value.
 	//
+	// (Of course, the above reasoning breaks if the caller asks for a T
+	// equal to `*Foo`, which causes the return value to be `**Foo`. That
+	// said, in all cases in OONI we have T equal to `Foo` and we return
+	// a `*Foo` type. This scenario is, in fact, the only one making sense
+	// when you're reading a JSON from a server. So, while the problem is
+	// only solved for a sub-problem, this sub-problem is the one that matters.)
+	//
 	// Because this safety property is important, there is also a test that
 	// makes sure we don't return `nil`, `nil` with `null` input.
 	var value T
