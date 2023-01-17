@@ -326,7 +326,7 @@ func TestSession(t *testing.T) {
 	t.Run("CheckIn", func(t *testing.T) {
 		expected := errors.New("mocked err")
 		s := &Session{
-			MockCheckIn: func(ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInNettests, error) {
+			MockCheckIn: func(ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInResultNettests, error) {
 				return nil, expected
 			},
 		}

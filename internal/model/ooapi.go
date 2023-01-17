@@ -55,8 +55,9 @@ type OOAPICheckInInfoWebConnectivity struct {
 	URLs []OOAPIURLInfo `json:"urls"`
 }
 
-// OOAPICheckInNettests contains nettest information returned by the checkin API call.
-type OOAPICheckInNettests struct {
+// OOAPICheckInResultNettests contains nettests information
+// returned by the checkin API call.
+type OOAPICheckInResultNettests struct {
 	// WebConnectivity contains WebConnectivity related information.
 	WebConnectivity *OOAPICheckInInfoWebConnectivity `json:"web_connectivity"`
 }
@@ -70,7 +71,7 @@ type OOAPICheckInResult struct {
 	ProbeCC string `json:"probe_cc"`
 
 	// Tests contains information about nettests.
-	Tests OOAPICheckInNettests `json:"tests"`
+	Tests OOAPICheckInResultNettests `json:"tests"`
 
 	// V is the version.
 	V int64 `json:"v"`

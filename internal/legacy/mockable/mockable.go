@@ -26,7 +26,7 @@ type Session struct {
 	MockableFetchPsiphonConfigErr    error
 	MockableFetchTorTargetsResult    map[string]model.OOAPITorTarget
 	MockableFetchTorTargetsErr       error
-	MockableCheckInInfo              *model.OOAPICheckInNettests
+	MockableCheckInInfo              *model.OOAPICheckInResultNettests
 	MockableCheckInErr               error
 	MockableResolverIP               string
 	MockableSoftwareName             string
