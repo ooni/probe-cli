@@ -31,7 +31,7 @@ func NewDescriptorCheckIn(
 		Request: &httpapi.RequestDescriptor[*model.OOAPICheckInConfig]{
 			Body: rawRequest,
 		},
-		Response: &httpapi.JSONResponseDescriptor[*model.OOAPICheckInResult]{},
+		Response: &httpapi.JSONResponseDescriptor[model.OOAPICheckInResult]{},
 		Timeout:  0,
 		URLPath:  "/api/v1/check-in",
 		URLQuery: nil,

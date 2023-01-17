@@ -31,7 +31,7 @@ func NewDescriptorTH(
 		Request: &httpapi.RequestDescriptor[*model.THRequest]{
 			Body: rawRequest,
 		},
-		Response: &httpapi.JSONResponseDescriptor[*model.THResponse]{},
+		Response: &httpapi.JSONResponseDescriptor[model.THResponse]{},
 		Timeout:  0,
 		URLPath:  "/",
 		URLQuery: nil,
