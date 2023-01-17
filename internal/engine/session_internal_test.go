@@ -89,6 +89,7 @@ func TestSessionCheckInSuccessful(t *testing.T) {
 			ASN:         137,
 			CountryCode: "IT",
 		},
+		kvStore:         &kvstore.Memory{},
 		softwareName:    "miniooni",
 		softwareVersion: "0.1.0-dev",
 		testMaybeLookupLocationContext: func(ctx context.Context) error {

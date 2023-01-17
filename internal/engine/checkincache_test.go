@@ -46,7 +46,7 @@ func TestSessionUpdateCheckInFlagsState(t *testing.T) {
 		}
 	})
 
-	t.Run("when we there's a failure trying to store", func(t *testing.T) {
+	t.Run("when there's a failure trying to store", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		s := &Session{
 			kvStore: &mocks.KeyValueStore{
@@ -91,7 +91,7 @@ func TestSessionGetCheckInFlagValue(t *testing.T) {
 	})
 
 	t.Run("if the record was cached too much time ago", func(t *testing.T) {
-		response := `{}`
+		response := `{}` // zero struct means the expiry time is long ago in the past
 		s := &Session{
 			kvStore: &mocks.KeyValueStore{
 				MockGet: func(key string) (value []byte, err error) {
