@@ -1,2 +1,2 @@
-// Package dslx contains an internal DSL for writing network experiments.
+// Package dslx implements a domain specific language for writing network experiments.
 package dslx
