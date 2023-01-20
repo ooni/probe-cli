@@ -7,7 +7,7 @@ require (
 	git.torproject.org/pluggable-transports/goptlib.git v1.3.0
 	git.torproject.org/pluggable-transports/snowflake.git/v2 v2.5.1
 	github.com/AlecAivazis/survey/v2 v2.3.6
-	github.com/Psiphon-Labs/psiphon-tunnel-core v1.0.11-0.20221205143218-5641695f3e85
+	github.com/Psiphon-Labs/psiphon-tunnel-core v1.0.11-0.20230109152509-df9b786ba0f4
 	github.com/alecthomas/kingpin v2.2.6+incompatible
 	github.com/apex/log v1.9.0
 	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5

@@ -69,8 +69,8 @@ github.com/Psiphon-Labs/bolt v0.0.0-20200624191537-23cedaef7ad7 h1:Hx/NCZTnvoKZu
 github.com/Psiphon-Labs/bolt v0.0.0-20200624191537-23cedaef7ad7/go.mod h1:alTtZBo3j4AWFvUrAH6F5ZaHcTj4G5Y01nHz8dkU6vU=
 github.com/Psiphon-Labs/goptlib v0.0.0-20200406165125-c0e32a7a3464 h1:VmnMMMheFXwLV0noxYhbJbLmkV4iaVW3xNnj6xcCNHo=
 github.com/Psiphon-Labs/goptlib v0.0.0-20200406165125-c0e32a7a3464/go.mod h1:Pe5BqN2DdIdChorAXl6bDaQd/wghpCleJfid2NoSli0=
-github.com/Psiphon-Labs/psiphon-tunnel-core v1.0.11-0.20221205143218-5641695f3e85 h1:WpNIYHI2FmpJahlo87xtJNgftRMhWYxp4qirskSyVY0=
-github.com/Psiphon-Labs/psiphon-tunnel-core v1.0.11-0.20221205143218-5641695f3e85/go.mod h1:dSa3K4KRmcWV7RXUy5CeGPiNBF09Ft4NLZX63hY01ug=
+github.com/Psiphon-Labs/psiphon-tunnel-core v1.0.11-0.20230109152509-df9b786ba0f4 h1:Z+I4JTLZbvIOHQykeNmHRznPxCWY98utrQnC3TRgU+c=
+github.com/Psiphon-Labs/psiphon-tunnel-core v1.0.11-0.20230109152509-df9b786ba0f4/go.mod h1:dSa3K4KRmcWV7RXUy5CeGPiNBF09Ft4NLZX63hY01ug=
 github.com/Psiphon-Labs/qtls-go1-18 v0.0.0-20221014170512-3bdc7291c091 h1:Kv0LQQ3joUp8s2z36aigpNgNyiLiExT/OS9KOC/L/gI=
 github.com/Psiphon-Labs/qtls-go1-18 v0.0.0-20221014170512-3bdc7291c091/go.mod h1:0IvfcPDkLvBkir+WGq3E0shsx+TLasdcl8ojVWWTflE=
 github.com/Psiphon-Labs/qtls-go1-19 v0.0.0-20221014165721-ed28749db082 h1:arVlc3JYvckFXGyB8N30ul8AmA+rDuLolPRYMDHzgTU=
