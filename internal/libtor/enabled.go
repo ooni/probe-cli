@@ -27,7 +27,7 @@ package libtor
 // /* Note: we need to define inline helpers because we cannot index C arrays in Go. */
 //
 // static char **cstringArrayNew(size_t size) {
-//     char **argv = calloc(sizeof(char *), size);
+//     char **argv = calloc(size, sizeof(char *));
 //     if (argv == NULL) {
 //         abort();
 //     }
