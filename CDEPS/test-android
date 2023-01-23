@@ -1,0 +1,17 @@
+#!/bin/bash
+
+#
+# Tests that the android build is setting the
+# correct environment variables.
+#
+
+set -euo pipefail
+
+topdir=$(dirname $(dirname $(realpath $0)))
+
+$topdir/MOBILE/android/ensure
+
+for GOARCH in amd64 386 arm64 arm; do
+	$topdir/CDEPS/build-android $GOARCH autotools_test
+	$topdir/CDEPS/build-android $GOARCH openssl_test
+done

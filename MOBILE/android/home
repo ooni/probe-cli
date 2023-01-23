@@ -7,16 +7,16 @@ if [[ $# -eq 1 && $1 == "--no-check" ]]; then
 	nocheck=1
 fi
 
-GOOS=$(go env GOOS)
-case $GOOS in
-linux)
+system=$(uname -s)
+case $system in
+Linux)
 	__sdk_dir=$HOME/Android/Sdk
 	;;
-darwin)
+Darwin)
 	__sdk_dir=$HOME/Library/Android/sdk
 	;;
 *)
-	echo "FATAL: unsupported operating system" 1>&2
+	echo "FATAL: unsupported operating system: $system" 1>&2
 	exit 1
 	;;
 esac

@@ -119,6 +119,10 @@ opensslish_build() (
 	$topdir/CDEPS/$PACKAGE/build
 )
 
+# We need to know the operating system for which we're building
+# and the architecture to run unit tests for this script.
+export GOARCH GOOS=android
+
 while [[ $# > 0 ]]; do
 	case $(cat $topdir/CDEPS/$1/android) in
 	autotools)

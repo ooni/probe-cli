@@ -1,0 +1,20 @@
+name: androidbuild
+on:
+  pull_request:
+  push:
+    branches:
+      - "master"
+      - "release/**"
+      - "fullbuild"
+
+jobs:
+  test_android_build_environ:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - run: ./MOBILE/android/setup
+
+      - run: ./CDEPS/test-android
