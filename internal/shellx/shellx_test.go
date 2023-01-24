@@ -157,6 +157,94 @@ func TestEnv(t *testing.T) {
 		})
 	})
 
+	t.Run("RunQuiet", func(t *testing.T) {
+		t.Run("with a valid command", func(t *testing.T) {
+			env := &Env{}
+			err := env.RunQuiet(testGolangExe, "env")
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+
+		t.Run("with an invalid command", func(t *testing.T) {
+			env := &Env{}
+			err := env.RunQuiet("nonexistent", "env")
+			if !testErrorIsExecutableNotFound(err) {
+				t.Fatal("unexpected error", err)
+			}
+		})
+	})
+
+	t.Run("Run", func(t *testing.T) {
+		t.Run("with a valid command", func(t *testing.T) {
+			env := &Env{}
+			err := env.Run(model.DiscardLogger, testGolangExe, "env")
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+
+		t.Run("with an invalid command", func(t *testing.T) {
+			env := &Env{}
+			err := env.Run(model.DiscardLogger, "nonexistent", "env")
+			if !testErrorIsExecutableNotFound(err) {
+				t.Fatal("unexpected error", err)
+			}
+		})
+	})
+
+	t.Run("RunCommandLine", func(t *testing.T) {
+		t.Run("with a valid command", func(t *testing.T) {
+			env := &Env{}
+			err := env.RunCommandLine(model.DiscardLogger, testGolangExe+" env")
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+
+		t.Run("with an invalid command", func(t *testing.T) {
+			env := &Env{}
+			err := env.RunCommandLine(model.DiscardLogger, "nonexistent env")
+			if !testErrorIsExecutableNotFound(err) {
+				t.Fatal("unexpected error", err)
+			}
+		})
+
+		t.Run("with empty command line", func(t *testing.T) {
+			env := &Env{}
+			err := env.RunCommandLine(model.DiscardLogger, "")
+			if !errors.Is(err, ErrNoCommandToExecute) {
+				t.Fatal("unexpected error", err)
+			}
+		})
+
+		t.Run("with invalid command line", func(t *testing.T) {
+			env := &Env{}
+			err := env.RunCommandLine(model.DiscardLogger, "\"foobar")
+			if !testErrorIsCannotParseCmdLine(err) {
+				t.Fatal("unexpected error", err)
+			}
+		})
+	})
+
+	t.Run("RunCommandLineQuiet", func(t *testing.T) {
+		t.Run("with a valid command", func(t *testing.T) {
+			env := &Env{}
+			err := env.RunCommandLineQuiet(testGolangExe + " env")
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+
+		t.Run("with an invalid command", func(t *testing.T) {
+			env := &Env{}
+			err := env.RunCommandLineQuiet("nonexistent env")
+			if !testErrorIsExecutableNotFound(err) {
+				t.Fatal("unexpected error", err)
+			}
+		})
+	})
+
 	t.Run("OutputCommandLine", func(t *testing.T) {
 		t.Run("with a valid command", func(t *testing.T) {
 			env := &Env{}
