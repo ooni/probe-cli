@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/martian/v3/mitm"
 	"github.com/miekg/dns"
+	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -89,8 +90,7 @@ func (p *HTTPServer) TLSConfig() *tls.Config {
 
 // newHTTPOrHTTPSServer is an internal factory for creating a new instance.
 func newHTTPOrHTTPSServer(action HTTPAction, enableTLS bool) *HTTPServer {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	runtimex.PanicOnError(err, "net.Listen failed")
+	listener := must.Listen("tcp", "127.0.0.1:0")
 	srv := &HTTPServer{
 		action:  action,
 		cert:    nil,

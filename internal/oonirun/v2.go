@@ -17,7 +17,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/httpx"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/must"
 )
 
 var (
@@ -151,8 +151,7 @@ func (cache *v2DescriptorCache) PullChangesWithoutSideEffects(
 func (cache *v2DescriptorCache) Update(
 	fsstore model.KeyValueStore, URL string, entry *V2Descriptor) error {
 	cache.Entries[URL] = entry
-	data, err := json.Marshal(cache)
-	runtimex.PanicOnError(err, "json.Marshal failed")
+	data := must.MarshalJSON(cache)
 	return fsstore.Set(v2DescriptorCacheKey, data)
 }
 
@@ -209,10 +208,8 @@ var ErrNeedToAcceptChanges = errors.New("oonirun: need to accept changes")
 
 // v2DescriptorDiff shows what changed between the old and the new descriptors.
 func v2DescriptorDiff(oldValue, newValue *V2Descriptor, URL string) string {
-	oldData, err := json.MarshalIndent(oldValue, "", "  ")
-	runtimex.PanicOnError(err, "json.MarshalIndent failed unexpectedly")
-	newData, err := json.MarshalIndent(newValue, "", "  ")
-	runtimex.PanicOnError(err, "json.MarshalIndent failed unexpectedly")
+	oldData := must.MarshalAndIndentJSON(oldValue, "", "  ")
+	newData := must.MarshalAndIndentJSON(newValue, "", "  ")
 	oldString, newString := string(oldData)+"\n", string(newData)+"\n"
 	oldFile := "OLD " + URL
 	newFile := "NEW " + URL

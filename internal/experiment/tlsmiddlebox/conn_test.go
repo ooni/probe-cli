@@ -6,13 +6,12 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"syscall"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
+	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func TestDialerTTLWrapperConn(t *testing.T) {
@@ -143,8 +142,7 @@ func TestGetSoErr(t *testing.T) {
 			w.WriteHeader(200)
 		}))
 		defer srvr.Close()
-		URL, err := url.Parse(srvr.URL)
-		runtimex.PanicOnError(err, "url.Parse failed")
+		URL := must.ParseURL(srvr.URL)
 		d := NewDialerTTLWrapper()
 		ctx := context.Background()
 		conn, err := d.DialContext(ctx, "tcp", URL.Host)

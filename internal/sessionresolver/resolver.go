@@ -6,7 +6,6 @@ package sessionresolver
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -18,7 +17,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/multierror"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/must"
 )
 
 // Resolver is the session resolver. Resolver will try to use
@@ -84,8 +83,7 @@ func (r *Resolver) CloseIdleConnections() {
 
 // Stats returns stats about the session resolver.
 func (r *Resolver) Stats() string {
-	data, err := json.Marshal(r.readstatedefault())
-	runtimex.PanicOnError(err, "json.Marshal should not fail here")
+	data := must.MarshalJSON(r.readstatedefault())
 	return fmt.Sprintf("sessionresolver: %s", string(data))
 }
 

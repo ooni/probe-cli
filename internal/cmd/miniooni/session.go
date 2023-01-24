@@ -10,6 +10,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
@@ -24,7 +25,7 @@ func newSessionOrPanic(ctx context.Context, currentOptions *Options,
 	miniooniDir string, logger model.Logger) *engine.Session {
 	var proxyURL *url.URL
 	if currentOptions.Proxy != "" {
-		proxyURL = mustParseURL(currentOptions.Proxy)
+		proxyURL = must.ParseURL(currentOptions.Proxy)
 	}
 
 	kvstore2dir := filepath.Join(miniooniDir, "kvstore2")

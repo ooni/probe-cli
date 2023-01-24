@@ -12,7 +12,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/must"
 )
 
 const (
@@ -198,8 +198,7 @@ var scrubJSONUnmarshalTopLevelKeys = json.Unmarshal
 // scrubTopLevelKeys removes [currentIP] from the top-level keys
 // of [m] by rewriting these keys in place.
 func scrubTopLevelKeys(m *Measurement, currentIP string) error {
-	data, err := json.Marshal(m)
-	runtimex.PanicOnError(err, "json.Marshal(m) failed") // m must serialize
+	data := must.MarshalJSON(m)
 	data = bytes.ReplaceAll(data, []byte(currentIP), []byte(Scrubbed))
 	return scrubJSONUnmarshalTopLevelKeys(data, &m)
 }
@@ -210,8 +209,7 @@ var scrubJSONUnmarshalTestKeys = json.Unmarshal
 // scrubTestKeys removes [currentIP] from the TestKeys by rewriting
 // them in place while preserving their original type
 func scrubTestKeys(m *Measurement, currentIP string) error {
-	data, err := json.Marshal(m.TestKeys)
-	runtimex.PanicOnError(err, "json.Marshal(m.TestKeys) failed") // m.TestKeys must serialize
+	data := must.MarshalJSON(m.TestKeys)
 	data = bytes.ReplaceAll(data, []byte(currentIP), []byte(Scrubbed))
 	return scrubJSONUnmarshalTestKeys(data, &m.TestKeys)
 }

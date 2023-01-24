@@ -10,7 +10,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/experiment/portfiltering"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/must"
 )
 
 var (
@@ -41,8 +41,7 @@ func handleConnection(ctx context.Context, conn net.Conn) {
 func listenTCP(ctx context.Context, port string) {
 	defer srvWg.Done()
 	address := net.JoinHostPort("127.0.0.1", port)
-	listener, err := net.Listen("tcp", address)
-	runtimex.PanicOnError(err, "net.Listen failed")
+	listener := must.Listen("tcp", address)
 	go shutdown(ctx, listener)
 	srvTestChan <- port // send to channel to imply server will start listening on port
 	for {

@@ -18,7 +18,6 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"net/http"
@@ -26,13 +25,13 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/measurex"
+	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func print(v interface{}) {
-	data, err := json.Marshal(v)
-	runtimex.PanicOnError(err, "json.Marshal failed")
+	data := must.MarshalJSON(v)
 	fmt.Printf("%s\n", string(data))
 }
 

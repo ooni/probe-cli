@@ -4,13 +4,13 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/cmd/oohelper/internal"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -41,8 +41,7 @@ func main() {
 	flag.Parse()
 	log.SetLevel(logmap[*debug])
 	cresp := wcth()
-	data, err := json.MarshalIndent(cresp, "", "    ")
-	runtimex.PanicOnError(err, "json.MarshalIndent failed")
+	data := must.MarshalAndIndentJSON(cresp, "", "    ")
 	fmt.Printf("%s\n", string(data))
 }
 

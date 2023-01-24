@@ -2,7 +2,6 @@ package oonirun
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -12,7 +11,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/must"
 )
 
 func TestOONIRunV2LinkCommonCase(t *testing.T) {
@@ -29,8 +28,7 @@ func TestOONIRunV2LinkCommonCase(t *testing.T) {
 				TestName: "example",
 			}},
 		}
-		data, err := json.Marshal(descriptor)
-		runtimex.PanicOnError(err, "json.Marshal failed")
+		data := must.MarshalJSON(descriptor)
 		w.Write(data)
 	}))
 	defer server.Close()
@@ -68,8 +66,7 @@ func TestOONIRunV2LinkCannotUpdateCache(t *testing.T) {
 				TestName: "example",
 			}},
 		}
-		data, err := json.Marshal(descriptor)
-		runtimex.PanicOnError(err, "json.Marshal failed")
+		data := must.MarshalJSON(descriptor)
 		w.Write(data)
 	}))
 	defer server.Close()
@@ -116,8 +113,7 @@ func TestOONIRunV2LinkWithoutAcceptChanges(t *testing.T) {
 				TestName: "example",
 			}},
 		}
-		data, err := json.Marshal(descriptor)
-		runtimex.PanicOnError(err, "json.Marshal failed")
+		data := must.MarshalJSON(descriptor)
 		w.Write(data)
 	}))
 	defer server.Close()
@@ -182,8 +178,7 @@ func TestOONIRunV2LinkEmptyTestName(t *testing.T) {
 				TestName: "", // empty!
 			}},
 		}
-		data, err := json.Marshal(descriptor)
-		runtimex.PanicOnError(err, "json.Marshal failed")
+		data := must.MarshalJSON(descriptor)
 		w.Write(data)
 	}))
 	defer server.Close()

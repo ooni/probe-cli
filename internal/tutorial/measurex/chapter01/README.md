@@ -45,13 +45,12 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/measurex"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/must"
 )
 
 func main() {
@@ -172,8 +171,7 @@ we first convert it to the "archival" format. This is the
 data format specified at [ooni/spec](https://github.com/ooni/spec/tree/master/data-formats).
 
 ```Go
-	data, err := json.Marshal(measurex.NewArchivalDNSMeasurement(m))
-	runtimex.PanicOnError(err, "json.Marshal failed")
+	data := must.MarshalJSON(measurex.NewArchivalDNSMeasurement(m))
 	fmt.Printf("%s\n", string(data))
 ```
 

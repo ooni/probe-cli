@@ -10,8 +10,8 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func TestMainWorkingAsIntended(t *testing.T) {
@@ -34,8 +34,7 @@ func TestMainWorkingAsIntended(t *testing.T) {
 			"8.8.4.4:443",
 		},
 	}
-	data, err := json.Marshal(jsonReq)
-	runtimex.PanicOnError(err, "cannot marshal request")
+	data := must.MarshalJSON(jsonReq)
 
 	// construct the test helper's URL
 	endpoint := <-srvAddr
@@ -44,8 +43,7 @@ func TestMainWorkingAsIntended(t *testing.T) {
 		Host:   endpoint,
 		Path:   "/",
 	}
-	req, err := http.NewRequest("POST", URL.String(), bytes.NewReader(data))
-	runtimex.PanicOnError(err, "cannot create new HTTP request")
+	req := must.NewHTTPRequest("POST", URL.String(), bytes.NewReader(data))
 
 	// issue the request and get the response
 	resp, err := http.DefaultClient.Do(req)

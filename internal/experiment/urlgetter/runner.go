@@ -11,6 +11,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/legacy/netx"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -62,8 +63,7 @@ func MaybeUserAgent(ua string) string {
 
 func (r Runner) httpGet(ctx context.Context, url string) error {
 	// Implementation note: empty Method implies using the GET method
-	req, err := http.NewRequest(r.Config.Method, url, nil)
-	runtimex.PanicOnError(err, "http.NewRequest failed")
+	req := must.NewHTTPRequest(r.Config.Method, url, nil)
 	req = req.WithContext(ctx)
 	req.Header.Set("Accept", model.HTTPHeaderAccept)
 	req.Header.Set("Accept-Language", model.HTTPHeaderAcceptLanguage)

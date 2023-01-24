@@ -19,13 +19,12 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
-	"net/url"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/measurex"
+	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -46,8 +45,7 @@ type measurement struct {
 //
 // ```Go
 func print(v interface{}) {
-	data, err := json.Marshal(v)
-	runtimex.PanicOnError(err, "json.Marshal failed")
+	data := must.MarshalJSON(v)
 	fmt.Printf("%s\n", string(data))
 }
 
@@ -58,8 +56,7 @@ func main() {
 	flag.Parse()
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
-	parsed, err := url.Parse(*URL)
-	runtimex.PanicOnError(err, "url.Parse failed")
+	parsed := must.ParseURL(*URL)
 	mx := measurex.NewMeasurerWithDefaultSettings()
 	// ```
 	//

@@ -4,7 +4,7 @@ import (
 	"net"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/must"
 )
 
 // EndpointInfo describes a TCP/TLS endpoint.
@@ -69,8 +69,7 @@ func NewEndpointPort(URL *url.URL) (out EndpointPort) {
 		out.URLGetterScheme, out.Port = "tlshandshake", "443"
 	}
 	if URL.Host != URL.Hostname() {
-		_, port, err := net.SplitHostPort(URL.Host)
-		runtimex.PanicOnError(err, "SplitHostPort should not fail here")
+		_, port := must.SplitHostPort(URL.Host)
 		out.Port = port
 	}
 	return

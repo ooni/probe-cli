@@ -5,7 +5,6 @@ package tor
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/measurex"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/scrubber"
@@ -270,15 +270,13 @@ func maybeSanitize(input TargetResults, kt keytarget) TargetResults {
 	if !kt.private() {
 		return input
 	}
-	data, err := json.Marshal(input)
-	runtimex.PanicOnError(err, "json.Marshal should not fail here")
+	data := must.MarshalJSON(input)
 	// Implementation note: here we are using a strict scrubbing policy where
 	// we remove all IP _endpoints_, mainly for convenience, because we already
 	// have a well tested implementation that does that.
 	data = []byte(scrubber.Scrub(string(data)))
 	var out TargetResults
-	err = json.Unmarshal(data, &out)
-	runtimex.PanicOnError(err, "json.Unmarshal should not fail here")
+	must.UnmarshalJSON(data, &out)
 	return out
 }
 

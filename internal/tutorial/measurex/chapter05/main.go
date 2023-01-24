@@ -27,14 +27,13 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/measurex"
+	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func main() {
@@ -70,8 +69,7 @@ func main() {
 	// lines of code for printing the resulting measurement.
 	//
 	// ```
-	data, err := json.Marshal(measurex.NewArchivalEndpointMeasurement(m))
-	runtimex.PanicOnError(err, "json.Marshal failed")
+	data := must.MarshalJSON(measurex.NewArchivalEndpointMeasurement(m))
 	fmt.Printf("%s\n", string(data))
 }
 

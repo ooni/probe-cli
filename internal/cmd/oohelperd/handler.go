@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
@@ -87,8 +87,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	metricRequestsCount.WithLabelValues("200", "ok").Inc()
 	// We assume that the following call cannot fail because it's a
 	// clearly-serializable data structure.
-	data, err = json.Marshal(cresp)
-	runtimex.PanicOnError(err, "json.Marshal failed")
+	data = must.MarshalJSON(cresp)
 	w.Header().Add("Content-Type", "application/json")
 	w.Write(data)
 }

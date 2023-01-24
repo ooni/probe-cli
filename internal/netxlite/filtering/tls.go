@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/martian/v3/mitm"
+	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -79,8 +80,7 @@ func tlsConfigMITM() (*x509.Certificate, *rsa.PrivateKey, *mitm.Config) {
 func NewTLSServer(action TLSAction) *TLSServer {
 	done := make(chan bool)
 	cert, privkey, config := tlsConfigMITM()
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	runtimex.PanicOnError(err, "net.Listen failed")
+	listener := must.Listen("tcp", "127.0.0.1:0")
 	ctx, cancel := context.WithCancel(context.Background())
 	endpoint := listener.Addr().String()
 	server := &TLSServer{

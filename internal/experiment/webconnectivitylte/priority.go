@@ -30,10 +30,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -126,8 +126,7 @@ func (ps *prioritySelector) log(format string, v ...any) {
 // permissionToFetch returns whether this ready-to-use connection
 // is permitted to perform a round trip and fetch the webpage.
 func (ps *prioritySelector) permissionToFetch(address string) bool {
-	ipAddr, _, err := net.SplitHostPort(address)
-	runtimex.PanicOnError(err, "net.SplitHostPort failed")
+	ipAddr, _ := must.SplitHostPort(address)
 	r := &priorityRequest{
 		addr: ipAddr,
 		resp: make(chan bool, 1), // buffer to simplify selector() implementation
