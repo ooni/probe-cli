@@ -4,10 +4,12 @@ import (
 	"errors"
 	"runtime"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
 // testGolangExe is the golang exe to use in this test suite
@@ -34,17 +36,37 @@ func testErrorIsCannotParseCmdLine(err error) bool {
 	return err != nil && err.Error() == "EOF found when expecting closing quote"
 }
 
+// testLogger returns a test logger and a counter incremented
+// each time the logger logs at infof level.
+func testLogger() (model.Logger, *atomic.Int64) {
+	n := &atomic.Int64{}
+	log := &mocks.Logger{
+		MockInfof: func(format string, v ...interface{}) {
+			n.Add(1)
+		},
+	}
+	return log, n
+}
+
 func TestRun(t *testing.T) {
 	t.Run("with a valid command", func(t *testing.T) {
-		if err := Run(model.DiscardLogger, testGolangExe, "version"); err != nil {
+		log, count := testLogger()
+		if err := Run(log, testGolangExe, "version"); err != nil {
 			t.Fatal(err)
+		}
+		if n := count.Load(); n != 1 {
+			t.Fatal("expected one log message, got", n)
 		}
 	})
 
 	t.Run("with an invalid command", func(t *testing.T) {
-		err := Run(model.DiscardLogger, "nonexistent", "version")
+		log, count := testLogger()
+		err := Run(log, "nonexistent", "version")
 		if !testErrorIsExecutableNotFound(err) {
 			t.Fatal("unexpected error", err)
+		}
+		if n := count.Load(); n != 0 {
+			t.Fatal("expected zero log messages, got", n)
 		}
 	})
 }
@@ -66,22 +88,34 @@ func TestRunQuiet(t *testing.T) {
 
 func TestRunCommandline(t *testing.T) {
 	t.Run("when the command does not parse", func(t *testing.T) {
-		err := RunCommandLine(model.DiscardLogger, `"foobar`)
+		log, count := testLogger()
+		err := RunCommandLine(log, `"foobar`)
 		if !testErrorIsCannotParseCmdLine(err) {
 			t.Fatal("unexpected error", err)
+		}
+		if n := count.Load(); n != 0 {
+			t.Fatal("expected zero log messages, got", n)
 		}
 	})
 
 	t.Run("when we have no arguments", func(t *testing.T) {
-		err := RunCommandLine(model.DiscardLogger, "")
+		log, count := testLogger()
+		err := RunCommandLine(log, "")
 		if !errors.Is(err, ErrNoCommandToExecute) {
 			t.Fatal("unexpected error", err)
+		}
+		if n := count.Load(); n != 0 {
+			t.Fatal("expected zero log messages, got", n)
 		}
 	})
 
 	t.Run("when we have arguments", func(t *testing.T) {
-		if err := RunCommandLine(model.DiscardLogger, testGolangExe+" version"); err != nil {
+		log, count := testLogger()
+		if err := RunCommandLine(log, testGolangExe+" version"); err != nil {
 			t.Fatal(err)
+		}
+		if n := count.Load(); n != 1 {
+			t.Fatal("expected one log message, got", n)
 		}
 	})
 }
@@ -111,24 +145,32 @@ func TestRunCommandlineQuiet(t *testing.T) {
 func TestEnv(t *testing.T) {
 	t.Run("Output", func(t *testing.T) {
 		t.Run("with a valid command", func(t *testing.T) {
+			log, count := testLogger()
 			env := &Env{}
-			output, err := env.Output(model.DiscardLogger, testGolangExe, "env")
+			output, err := env.Output(log, testGolangExe, "env")
 			if err != nil {
 				t.Fatal(err)
 			}
 			if len(output) <= 0 {
 				t.Fatal("expected to see output")
 			}
+			if n := count.Load(); n != 1 {
+				t.Fatal("expected one log message, got", n)
+			}
 		})
 
 		t.Run("with an invalid command", func(t *testing.T) {
+			log, count := testLogger()
 			env := &Env{}
-			output, err := env.Output(model.DiscardLogger, "nonexistent", "env")
+			output, err := env.Output(log, "nonexistent", "env")
 			if !testErrorIsExecutableNotFound(err) {
 				t.Fatal("unexpected error", err)
 			}
 			if len(output) > 0 {
 				t.Fatal("expected to see no output")
+			}
+			if n := count.Load(); n != 0 {
+				t.Fatal("expected zero log messages, got", n)
 			}
 		})
 	})
@@ -178,17 +220,25 @@ func TestEnv(t *testing.T) {
 	t.Run("Run", func(t *testing.T) {
 		t.Run("with a valid command", func(t *testing.T) {
 			env := &Env{}
-			err := env.Run(model.DiscardLogger, testGolangExe, "env")
+			log, count := testLogger()
+			err := env.Run(log, testGolangExe, "env")
 			if err != nil {
 				t.Fatal(err)
+			}
+			if n := count.Load(); n != 1 {
+				t.Fatal("expected one log message, got", n)
 			}
 		})
 
 		t.Run("with an invalid command", func(t *testing.T) {
 			env := &Env{}
-			err := env.Run(model.DiscardLogger, "nonexistent", "env")
+			log, count := testLogger()
+			err := env.Run(log, "nonexistent", "env")
 			if !testErrorIsExecutableNotFound(err) {
 				t.Fatal("unexpected error", err)
+			}
+			if n := count.Load(); n != 0 {
+				t.Fatal("expected zero log messages, got", n)
 			}
 		})
 	})
@@ -196,33 +246,49 @@ func TestEnv(t *testing.T) {
 	t.Run("RunCommandLine", func(t *testing.T) {
 		t.Run("with a valid command", func(t *testing.T) {
 			env := &Env{}
-			err := env.RunCommandLine(model.DiscardLogger, testGolangExe+" env")
+			log, count := testLogger()
+			err := env.RunCommandLine(log, testGolangExe+" env")
 			if err != nil {
 				t.Fatal(err)
+			}
+			if n := count.Load(); n != 1 {
+				t.Fatal("expected one log message, got", n)
 			}
 		})
 
 		t.Run("with an invalid command", func(t *testing.T) {
 			env := &Env{}
-			err := env.RunCommandLine(model.DiscardLogger, "nonexistent env")
+			log, count := testLogger()
+			err := env.RunCommandLine(log, "nonexistent env")
 			if !testErrorIsExecutableNotFound(err) {
 				t.Fatal("unexpected error", err)
+			}
+			if n := count.Load(); n != 0 {
+				t.Fatal("expected zero log messages, got", n)
 			}
 		})
 
 		t.Run("with empty command line", func(t *testing.T) {
 			env := &Env{}
-			err := env.RunCommandLine(model.DiscardLogger, "")
+			log, count := testLogger()
+			err := env.RunCommandLine(log, "")
 			if !errors.Is(err, ErrNoCommandToExecute) {
 				t.Fatal("unexpected error", err)
+			}
+			if n := count.Load(); n != 0 {
+				t.Fatal("expected zero log messages, got", n)
 			}
 		})
 
 		t.Run("with invalid command line", func(t *testing.T) {
 			env := &Env{}
-			err := env.RunCommandLine(model.DiscardLogger, "\"foobar")
+			log, count := testLogger()
+			err := env.RunCommandLine(log, "\"foobar")
 			if !testErrorIsCannotParseCmdLine(err) {
 				t.Fatal("unexpected error", err)
+			}
+			if n := count.Load(); n != 0 {
+				t.Fatal("expected zero log messages, got", n)
 			}
 		})
 	})
@@ -248,58 +314,79 @@ func TestEnv(t *testing.T) {
 	t.Run("OutputCommandLine", func(t *testing.T) {
 		t.Run("with a valid command", func(t *testing.T) {
 			env := &Env{}
-			output, err := env.OutputCommandLine(model.DiscardLogger, testGolangExe+" env")
+			log, count := testLogger()
+			output, err := env.OutputCommandLine(log, testGolangExe+" env")
 			if err != nil {
 				t.Fatal(err)
 			}
 			if len(output) <= 0 {
 				t.Fatal("expected to see output")
 			}
+			if n := count.Load(); n != 1 {
+				t.Fatal("expected one log message, got", n)
+			}
 		})
 
 		t.Run("with an invalid command", func(t *testing.T) {
 			env := &Env{}
-			output, err := env.OutputCommandLine(model.DiscardLogger, "nonexistent env")
+			log, count := testLogger()
+			output, err := env.OutputCommandLine(log, "nonexistent env")
 			if !testErrorIsExecutableNotFound(err) {
 				t.Fatal("unexpected error", err)
 			}
 			if len(output) > 0 {
 				t.Fatal("expected to see no output")
 			}
+			if n := count.Load(); n != 0 {
+				t.Fatal("expected zero log messages, got", n)
+			}
 		})
 
 		t.Run("with empty command line", func(t *testing.T) {
 			env := &Env{}
-			output, err := env.OutputCommandLine(model.DiscardLogger, "")
+			log, count := testLogger()
+			output, err := env.OutputCommandLine(log, "")
 			if !errors.Is(err, ErrNoCommandToExecute) {
 				t.Fatal("unexpected error", err)
 			}
 			if len(output) > 0 {
 				t.Fatal("expected to see no output")
 			}
+			if n := count.Load(); n != 0 {
+				t.Fatal("expected zero log messages, got", n)
+			}
 		})
 
-		t.Run("with invalid command line", func(t *testing.T) {
+		t.Run("with a command line that does not parse", func(t *testing.T) {
 			env := &Env{}
-			output, err := env.OutputCommandLine(model.DiscardLogger, "\"foobar")
+			log, count := testLogger()
+			output, err := env.OutputCommandLine(log, "\"foobar")
 			if !testErrorIsCannotParseCmdLine(err) {
 				t.Fatal("unexpected error", err)
 			}
 			if len(output) > 0 {
 				t.Fatal("expected to see no output")
 			}
+			if n := count.Load(); n != 0 {
+				t.Fatal("expected zero log messages, got", n)
+			}
 		})
 
 		t.Run("with environment variables", func(t *testing.T) {
 			env := &Env{}
+			log, count := testLogger()
 			env.Append("GOCACHE", "/foobar")
-			output, err := env.OutputCommandLine(model.DiscardLogger, "go env GOCACHE")
+			env.Append("FOO", "/foobar")
+			output, err := env.OutputCommandLine(log, "go env GOCACHE")
 			if err != nil {
 				t.Fatal(err)
 			}
 			expected := []byte("/foobar\n")
 			if diff := cmp.Diff(expected, output); diff != "" {
 				t.Fatal(diff)
+			}
+			if n := count.Load(); n != 3 {
+				t.Fatal("expected three log messages, got", n)
 			}
 		})
 	})
