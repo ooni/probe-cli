@@ -3,7 +3,7 @@
 |              |                                                |
 |--------------|------------------------------------------------|
 | Author       | [@bassosimone](https://github.com/bassosimone) |
-| Last-Updated | 2023-01-23                                     |
+| Last-Updated | 2023-01-24                                    |
 | Reviewed-by  | [@kelmenhorst](https://github.com/kelmenhorst) |
 | Status       | approved                                       |
 
@@ -756,11 +756,6 @@ the `px` pipeline to an argument read from `inputs`. By convention,
 `Map` expects `input` to be closed to signal EOF. Similarly, `Map`
 will close the returned channel when done writing it.
 
-(In the current prototype, this function's name is `MapAsync`; we
-should delete the `Map` function and rename `MapAsync` to `Map`. The
-prototype also defines a type name `Streamable` that wraps the
-channel, but that seems unnecessary.)
-
 We also need a convenience function, `StreamList`, that takes
 in input a list and returns a channel:
 
@@ -770,9 +765,6 @@ func StreamList(values ...T) <-chan T
 
 This function creates a background goroutine that streams the
 content of the list onto the channel, then closes the channel.
-
-(The `StreamList` function is named `Stream` in the prototype,
-and we should rename it before merging into probe-cli.)
 
 Thanks to `StreamList`, we can write a `Map` example as follows:
 
@@ -848,9 +840,6 @@ func (c *Counter) Value() int64 {
 	/* ... */
 }
 ```
-
-(Note that this type has a different name in the prototype; we
-should change its naming in the pull request to use the name used by this document.)
 
 We have now shown how to count events. Another relatively frequent
 measurement need is running a follow-up experiment when a specific pipeline stage fails.
@@ -935,9 +924,7 @@ with parallelism three. Then we loop over the results
 and only run HTTP measurements for the first successful result (if any).
 
 Again, we could implement this functionality by adding extra
-complexity to the DSL, but there is no need. (Still, the
-prototype includes a feature allowing us to stop the pipeline
-early, which is, in fact, extra complexity, and we should remove it.)
+complexity to the DSL, but there is no need.
 
 This section completed our design space exploration. Let us
 now conclude by comparing the DSL to other APIs.

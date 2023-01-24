@@ -23,25 +23,15 @@ type Parallelism int
 //
 // - fx is the function to apply;
 //
-// - as is the list on which to apply fx.
+// - inputs receives arguments on which to apply fx.
 //
 // The return value is the list [fx(a)] for every a in as.
 func Map[A, B any](
 	ctx context.Context,
 	parallelism Parallelism,
 	fx Func[A, *Maybe[B]],
-	as ...A,
-) []*Maybe[B] {
-	return MapAsync(ctx, parallelism, fx, Stream(as...)).Collect()
-}
-
-// MapAsync is like Map but deals with streams.
-func MapAsync[A, B any](
-	ctx context.Context,
-	parallelism Parallelism,
-	fx Func[A, *Maybe[B]],
-	inputs *Streamable[A],
-) *Streamable[*Maybe[B]] {
+	inputs <-chan A,
+) <-chan *Maybe[B] {
 	// create channel for returning results
 	r := make(chan *Maybe[B])
 
@@ -54,7 +44,7 @@ func MapAsync[A, B any](
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for a := range inputs.C {
+			for a := range inputs {
 				r <- fx.Apply(ctx, a)
 			}
 		}()
@@ -66,7 +56,7 @@ func MapAsync[A, B any](
 		wg.Wait()
 	}()
 
-	return &Streamable[*Maybe[B]]{r}
+	return r
 }
 
 // Parallel executes f1...fn in parallel over the same input.
@@ -89,16 +79,17 @@ func Parallel[A, B any](
 	input A,
 	fn ...Func[A, *Maybe[B]],
 ) []*Maybe[B] {
-	return ParallelAsync(ctx, parallelism, input, Stream(fn...)).Collect()
+	c := ParallelAsync(ctx, parallelism, input, StreamList(fn...))
+	return Collect(c)
 }
 
-// ParallelAsync is like Parallel but deals with streams.
+// ParallelAsync is like Parallel but deals with channels.
 func ParallelAsync[A, B any](
 	ctx context.Context,
 	parallelism Parallelism,
 	input A,
-	funcs *Streamable[Func[A, *Maybe[B]]],
-) *Streamable[*Maybe[B]] {
+	funcs <-chan Func[A, *Maybe[B]],
+) <-chan *Maybe[B] {
 	// create channel for returning results
 	r := make(chan *Maybe[B])
 
@@ -111,7 +102,7 @@ func ParallelAsync[A, B any](
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for fx := range funcs.C {
+			for fx := range funcs {
 				r <- fx.Apply(ctx, input)
 			}
 		}()
@@ -123,14 +114,14 @@ func ParallelAsync[A, B any](
 		wg.Wait()
 	}()
 
-	return &Streamable[*Maybe[B]]{r}
+	return r
 }
 
-// ApplyAsync is equivalent to calling Apply but returns a Streamable.
+// ApplyAsync is equivalent to calling Apply but returns a channel.
 func ApplyAsync[A, B any](
 	ctx context.Context,
 	fx Func[A, *Maybe[B]],
 	input A,
-) *Streamable[*Maybe[B]] {
-	return MapAsync(ctx, Parallelism(1), fx, Stream(input))
+) <-chan *Maybe[B] {
+	return Map(ctx, Parallelism(1), fx, StreamList(input))
 }

@@ -6,23 +6,16 @@ package dslx
 
 import "sync"
 
-// Streamable wraps a channel that returns T and is closed
-// by the producer when all input has been emitted.
-type Streamable[T any] struct {
-	// C is the channel written by the producer.
-	C <-chan T
-}
-
-// Collect collects all the elements inside a stream.
-func (s *Streamable[T]) Collect() (v []T) {
-	for t := range s.C { // the producer closes C when done
+// Collect collects all the elements inside a channel.
+func Collect[T any](c <-chan T) (v []T) {
+	for t := range c { // the producer closes C when done
 		v = append(v, t)
 	}
 	return
 }
 
-// Stream creates a Streamable out of static values.
-func Stream[T any](ts ...T) *Streamable[T] {
+// StreamList creates a channel out of static values.
+func StreamList[T any](ts ...T) <-chan T {
 	c := make(chan T)
 	go func() {
 		defer close(c) // as documented
@@ -30,18 +23,18 @@ func Stream[T any](ts ...T) *Streamable[T] {
 			c <- t
 		}
 	}()
-	return &Streamable[T]{c}
+	return c
 }
 
 // Zip zips together results from many [Streabable]s.
-func Zip[T any](sources ...*Streamable[T]) *Streamable[T] {
+func Zip[T any](sources ...<-chan T) <-chan T {
 	r := make(chan T)
 	wg := &sync.WaitGroup{}
 	for _, src := range sources {
 		wg.Add(1)
-		go func(s *Streamable[T]) {
+		go func(c <-chan T) {
 			defer wg.Done()
-			for e := range s.C { // the producer closes C when done
+			for e := range c { // the producer closes C when done
 				r <- e
 			}
 		}(src)
@@ -50,10 +43,10 @@ func Zip[T any](sources ...*Streamable[T]) *Streamable[T] {
 		defer close(r) // as documented
 		wg.Wait()
 	}()
-	return &Streamable[T]{r}
+	return r
 }
 
-// ZipAndCollect is syntactic sugar for Zip(sources...).Collect().
-func ZipAndCollect[T any](sources ...*Streamable[T]) []T {
-	return Zip(sources...).Collect()
+// ZipAndCollect is syntactic sugar for Collect(Zip(sources...)).
+func ZipAndCollect[T any](sources ...<-chan T) []T {
+	return Collect(Zip(sources...))
 }

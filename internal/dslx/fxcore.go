@@ -72,30 +72,30 @@ func (h *compose2Func[A, B, C]) Apply(ctx context.Context, a A) *Maybe[C] {
 	}
 }
 
-// Counter generates an instance of *CounterState.
-func Counter[T any]() *CounterState[T] {
-	return &CounterState[T]{}
+// NewCounter generates an instance of *Counter
+func NewCounter[T any]() *Counter[T] {
+	return &Counter[T]{}
 }
 
-// CounterState allows to count how many times
+// Counter allows to count how many times
 // a Func[T, *Maybe[T]] is invoked.
-type CounterState[T any] struct {
+type Counter[T any] struct {
 	n atomic.Int64
 }
 
 // Value returns the counter's value.
-func (c *CounterState[T]) Value() int64 {
+func (c *Counter[T]) Value() int64 {
 	return c.n.Load()
 }
 
 // Func returns a Func[T, *Maybe[T]] that updates the counter.
-func (c *CounterState[T]) Func() Func[T, *Maybe[T]] {
+func (c *Counter[T]) Func() Func[T, *Maybe[T]] {
 	return &counterFunc[T]{c}
 }
 
 // counterFunc is the Func returned by CounterFunc.Func.
 type counterFunc[T any] struct {
-	c *CounterState[T]
+	c *Counter[T]
 }
 
 // Apply implements Func.
