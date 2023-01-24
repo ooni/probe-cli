@@ -4,8 +4,6 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
-
-	"github.com/apex/log"
 )
 
 func TestConnect(t *testing.T) {
@@ -26,7 +24,6 @@ func TestConnect(t *testing.T) {
 	}
 
 	if len(colls) < 1 {
-		log.Fatal("missing tables")
+		t.Fatal("missing tables")
 	}
-
 }

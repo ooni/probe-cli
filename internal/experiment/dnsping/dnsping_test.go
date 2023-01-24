@@ -3,7 +3,6 @@ package dnsping
 import (
 	"context"
 	"errors"
-	"log"
 	"net"
 	"net/url"
 	"testing"
@@ -101,7 +100,7 @@ func TestMeasurer_run(t *testing.T) {
 	t.Run("with local listener", func(t *testing.T) {
 		srvrURL, dnsListener, err := startDNSServer()
 		if err != nil {
-			log.Fatal(err)
+			t.Fatal(err)
 		}
 		defer dnsListener.Close()
 		meas, m, err := runHelper(srvrURL)

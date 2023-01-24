@@ -217,7 +217,7 @@ func TestQUICDialerQUICGo(t *testing.T) {
 				t.Fatal("not the error we expected", err)
 			}
 			if qconn != nil {
-				log.Fatal("expected nil connection here")
+				t.Fatal("expected nil connection here")
 			}
 		})
 
