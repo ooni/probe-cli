@@ -143,6 +143,60 @@ func TestRunCommandlineQuiet(t *testing.T) {
 }
 
 func TestEnv(t *testing.T) {
+
+	t.Run("we verify we can add environment variables", func(t *testing.T) {
+		env := &Env{}
+
+		// Add the expected environment variables. The command we're
+		// going to run will exit(1) if it cannot find them.
+		env.Append("ANTANI", "antani")
+		env.Append("MASCETTI", "mascetti")
+		env.Append("STUZZICA", "stuzzica")
+
+		t.Run("for OutputQuiet", func(t *testing.T) {
+			_, err := env.OutputQuiet(testGolangExe, "run", "./testdata/checkenv.go")
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+
+		t.Run("for Output", func(t *testing.T) {
+			_, err := env.Output(model.DiscardLogger, testGolangExe, "run", "./testdata/checkenv.go")
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+
+		t.Run("for RunQuiet", func(t *testing.T) {
+			t.Log(env.Vars)
+			err := env.RunQuiet(testGolangExe, "run", "./testdata/checkenv.go")
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+
+		t.Run("for Run", func(t *testing.T) {
+			err := env.Run(model.DiscardLogger, testGolangExe, "run", "./testdata/checkenv.go")
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+
+		t.Run("for RunCommandLineQuiet", func(t *testing.T) {
+			err := env.RunCommandLineQuiet(testGolangExe + " run ./testdata/checkenv.go")
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+
+		t.Run("for RunCommandLine", func(t *testing.T) {
+			err := env.RunCommandLine(model.DiscardLogger, testGolangExe+" run ./testdata/checkenv.go")
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+	})
+
 	t.Run("Output", func(t *testing.T) {
 		t.Run("with a valid command", func(t *testing.T) {
 			log, count := testLogger()
