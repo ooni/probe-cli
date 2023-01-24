@@ -11,6 +11,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -123,7 +124,9 @@ func DNSLookupGetaddrinfo() Func[*DomainToResolve, *Maybe[*ResolvedAddresses]] {
 }
 
 // dnsLookupGetaddrinfoFunc is the function returned by DNSLookupGetaddrinfo.
-type dnsLookupGetaddrinfoFunc struct{}
+type dnsLookupGetaddrinfoFunc struct {
+	resolver *mocks.Resolver // for testing
+}
 
 // Apply implements Func.
 func (f *dnsLookupGetaddrinfoFunc) Apply(
@@ -144,7 +147,11 @@ func (f *dnsLookupGetaddrinfoFunc) Apply(
 	const timeout = 4 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	resolver := trace.NewStdlibResolver(input.Logger)
+
+	var resolver model.Resolver = f.resolver
+	if resolver == nil {
+		resolver = trace.NewStdlibResolver(input.Logger)
+	}
 
 	// lookup
 	addrs, err := resolver.LookupHost(ctx, input.Domain)

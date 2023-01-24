@@ -5,21 +5,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-var wantEndpoint *Endpoint = &Endpoint{
-	Domain:      "www.google.com",
-	IDGenerator: &atomic.Int64{},
-	Logger:      log.Log,
-	ZeroTime:    time.Time{},
-}
+var wantDomain string = "www.google.com"
+var wantIDGenerator *atomic.Int64 = &atomic.Int64{}
+var wantLogger model.Logger = model.DiscardLogger
+var wantZeroTime = time.Time{}
 
 var options []EndpointOption = []EndpointOption{
-	EndpointOptionDomain(wantEndpoint.Domain),
-	EndpointOptionIDGenerator(wantEndpoint.IDGenerator),
-	EndpointOptionLogger(wantEndpoint.Logger),
-	EndpointOptionZeroTime(wantEndpoint.ZeroTime),
+	EndpointOptionDomain(wantDomain),
+	EndpointOptionIDGenerator(wantIDGenerator),
+	EndpointOptionLogger(wantLogger),
+	EndpointOptionZeroTime(wantZeroTime),
 }
 
 func TestNewEndpoint(t *testing.T) {
@@ -31,17 +29,17 @@ func TestNewEndpoint(t *testing.T) {
 	if testEndpoint.Address != "a.b.c.d" {
 		t.Fatalf("expected: %s, got: %s", "a.b.c.d", testEndpoint.Address)
 	}
-	if testEndpoint.Domain != wantEndpoint.Domain {
-		t.Fatalf("expected: %s, got: %s", wantEndpoint.Domain, testEndpoint.Domain)
+	if testEndpoint.Domain != wantDomain {
+		t.Fatalf("expected: %s, got: %s", wantDomain, testEndpoint.Domain)
 	}
-	if testEndpoint.IDGenerator != wantEndpoint.IDGenerator {
-		t.Fatalf("expected: %v, got: %v", wantEndpoint.IDGenerator, testEndpoint.IDGenerator)
+	if testEndpoint.IDGenerator != wantIDGenerator {
+		t.Fatalf("expected: %v, got: %v", wantIDGenerator, testEndpoint.IDGenerator)
 	}
-	if testEndpoint.Logger != wantEndpoint.Logger {
-		t.Fatalf("expected: %v, got: %v", wantEndpoint.Logger, testEndpoint.Logger)
+	if testEndpoint.Logger != wantLogger {
+		t.Fatalf("expected: %v, got: %v", wantLogger, testEndpoint.Logger)
 	}
-	if testEndpoint.ZeroTime != wantEndpoint.ZeroTime {
-		t.Fatalf("expected: %v, got: %v", wantEndpoint.ZeroTime, testEndpoint.ZeroTime)
+	if testEndpoint.ZeroTime != wantZeroTime {
+		t.Fatalf("expected: %v, got: %v", wantZeroTime, testEndpoint.ZeroTime)
 	}
 
 }
@@ -53,16 +51,16 @@ func TestEndpointOptions(t *testing.T) {
 		opt(testEndpoint)
 	}
 
-	if testEndpoint.Domain != wantEndpoint.Domain {
-		t.Fatalf("expected: %s, got: %s", wantEndpoint.Domain, testEndpoint.Domain)
+	if testEndpoint.Domain != wantDomain {
+		t.Fatalf("expected: %s, got: %s", wantDomain, testEndpoint.Domain)
 	}
-	if testEndpoint.IDGenerator != wantEndpoint.IDGenerator {
-		t.Fatalf("expected: %v, got: %v", wantEndpoint.IDGenerator, testEndpoint.IDGenerator)
+	if testEndpoint.IDGenerator != wantIDGenerator {
+		t.Fatalf("expected: %v, got: %v", wantIDGenerator, testEndpoint.IDGenerator)
 	}
-	if testEndpoint.Logger != wantEndpoint.Logger {
-		t.Fatalf("expected: %v, got: %v", wantEndpoint.Logger, testEndpoint.Logger)
+	if testEndpoint.Logger != wantLogger {
+		t.Fatalf("expected: %v, got: %v", wantLogger, testEndpoint.Logger)
 	}
-	if testEndpoint.ZeroTime != wantEndpoint.ZeroTime {
-		t.Fatalf("expected: %v, got: %v", wantEndpoint.ZeroTime, testEndpoint.ZeroTime)
+	if testEndpoint.ZeroTime != wantZeroTime {
+		t.Fatalf("expected: %v, got: %v", wantZeroTime, testEndpoint.ZeroTime)
 	}
 }
