@@ -4,7 +4,6 @@ package main
 import (
 	"context"
 	"flag"
-	"net"
 	"net/http"
 	"sync"
 	"sync/atomic"
@@ -12,8 +11,8 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -103,8 +102,7 @@ func main() {
 		},
 	})
 	srv := &http.Server{Addr: *endpoint, Handler: mux}
-	listener, err := net.Listen("tcp", *endpoint)
-	runtimex.PanicOnError(err, "net.Listen failed")
+	listener := must.Listen("tcp", *endpoint)
 	srvAddr <- listener.Addr().String()
 	srvWg.Add(1)
 	go srv.Serve(listener)

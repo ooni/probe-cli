@@ -4,7 +4,6 @@ package main
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
@@ -59,9 +59,8 @@ func canOpen(filepath string) bool {
 
 func readLines(path string) []string {
 	// open measurement file
-	file, err := os.Open(path)
-	runtimex.PanicOnError(err, "Open file error.")
-	defer file.Close()
+	file := must.OpenFile(path)
+	defer file.MustClose()
 
 	scanner := bufio.NewScanner(file)
 	// the maximum line length should be selected really big
@@ -103,8 +102,7 @@ func newSubmitter(sess *engine.Session, ctx context.Context) *probeservices.Subm
 // toMeasurement loads an input string as model.Measurement
 func toMeasurement(s string) *model.Measurement {
 	var mm model.Measurement
-	err := json.Unmarshal([]byte(s), &mm)
-	runtimex.PanicOnError(err, "json.Unmarshal error")
+	must.UnmarshalJSON([]byte(s), &mm)
 	return &mm
 }
 

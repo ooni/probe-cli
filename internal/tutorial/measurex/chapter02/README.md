@@ -20,13 +20,12 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/measurex"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/must"
 )
 
 func main() {
@@ -74,8 +73,7 @@ chapter. Like we did before, we convert the obtained measurement
 to the "archival" data format before printing.
 
 ```Go
-	data, err := json.Marshal(measurex.NewArchivalEndpointMeasurement(m))
-	runtimex.PanicOnError(err, "json.Marshal failed")
+	data := must.MarshalJSON(measurex.NewArchivalEndpointMeasurement(m))
 	fmt.Printf("%s\n", string(data))
 }
 

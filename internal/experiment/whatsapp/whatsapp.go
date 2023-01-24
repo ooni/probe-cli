@@ -8,13 +8,12 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"net/url"
 	"regexp"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/must"
 )
 
 const (
@@ -74,8 +73,7 @@ func (tk *TestKeys) Update(v urlgetter.MultiOutput) {
 	// Set the status of WhatsApp endpoints
 	if endpointPattern.MatchString(v.Input.Target) {
 		if v.TestKeys.Failure != nil {
-			parsed, err := url.Parse(v.Input.Target)
-			runtimex.PanicOnError(err, "url.Parse should not fail here")
+			parsed := must.ParseURL(v.Input.Target)
 			hostname := parsed.Hostname()
 			tk.WhatsappEndpointsCount[hostname]++
 			// Implementation note: here we're counting twice because we test each

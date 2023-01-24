@@ -2,14 +2,13 @@ package oonimkall
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/must"
 )
 
 // runnerForTask runs a specific task
@@ -304,8 +303,7 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 			continue
 		}
 		m.AddAnnotations(r.settings.Annotations)
-		data, err := json.Marshal(m)
-		runtimex.PanicOnError(err, "measurement.MarshalJSON failed")
+		data := must.MarshalJSON(m)
 		r.emitter.Emit(eventTypeMeasurement, eventMeasurementGeneric{
 			Idx:     int64(idx),
 			Input:   input,

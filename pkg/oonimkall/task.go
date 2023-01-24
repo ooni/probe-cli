@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"sync/atomic"
 
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/must"
 )
 
 // Task is an asynchronous task running an experiment. It mimics the
@@ -67,8 +67,7 @@ func (t *Task) WaitForNextEvent() string {
 		t.isdone.Add(1)
 		return terminated
 	}
-	data, err := json.Marshal(evp)
-	runtimex.PanicOnError(err, "json.Marshal failed")
+	data := must.MarshalJSON(evp)
 	return string(data)
 }
 

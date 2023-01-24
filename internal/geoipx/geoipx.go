@@ -34,7 +34,7 @@ func LookupASN(ip string) (asn uint, org string, err error) {
 func LookupCC(ip string) (cc string, err error) {
 	cc = model.DefaultProbeCC
 	db, err := maxminddb.FromBytes(assets.OOMMDBDatabaseBytes)
-	runtimex.PanicOnError(err, "cannot load embedded geoip2 country database")
+	runtimex.PanicOnError(err, "cannot load embedded geoip2 database")
 	defer db.Close()
 	record, err := assets.OOMMDBLooup(db, net.ParseIP(ip))
 	if err != nil {

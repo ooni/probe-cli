@@ -5,12 +5,11 @@ package ooapi
 //
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/ooni/probe-cli/v3/internal/httpapi"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/must"
 )
 
 // NewDescriptorCheckIn creates a new [httpapi.Descriptor] describing how
@@ -18,8 +17,7 @@ import (
 func NewDescriptorCheckIn(
 	config *model.OOAPICheckInConfig,
 ) *httpapi.Descriptor[*model.OOAPICheckInConfig, *model.OOAPICheckInResult] {
-	rawRequest, err := json.Marshal(config)
-	runtimex.PanicOnError(err, "json.Marshal failed unexpectedly")
+	rawRequest := must.MarshalJSON(config)
 	return &httpapi.Descriptor[*model.OOAPICheckInConfig, *model.OOAPICheckInResult]{
 		Accept:             httpapi.ApplicationJSON,
 		AcceptEncodingGzip: true, // we want a small response

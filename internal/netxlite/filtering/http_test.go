@@ -30,7 +30,7 @@ func TestHTTPServer(t *testing.T) {
 		clnt := &http.Client{Transport: txp}
 		req, err := http.NewRequestWithContext(
 			ctx, method, URL.String(), bytes.NewReader(requestBody))
-		runtimex.PanicOnError(err, "http.NewRequest failed")
+		runtimex.PanicOnError(err, "http.NewRequestWithContext failed")
 		req.Host = host
 		return clnt.Do(req)
 	}

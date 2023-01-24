@@ -2,9 +2,8 @@ package oonimkall
 
 import (
 	"context"
-	"encoding/json"
 
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/must"
 )
 
 // WebConnectivityConfig contains settings for WebConnectivity.
@@ -69,8 +68,7 @@ func (r *webConnectivityRunner) run(ctx context.Context, config *WebConnectivity
 	if err != nil {
 		return nil, err
 	}
-	data, err := json.Marshal(measurement)
-	runtimex.PanicOnError(err, "json.Marshal should not fail here")
+	data := must.MarshalJSON(measurement)
 	return &WebConnectivityResults{
 		KibiBytesReceived: exp.KibiBytesReceived(),
 		KibiBytesSent:     exp.KibiBytesSent(),

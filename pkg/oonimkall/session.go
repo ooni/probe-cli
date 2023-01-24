@@ -13,8 +13,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/probeservices"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // AtomicInt64 allows us to export atomic.Int64 variables to
@@ -326,8 +326,7 @@ func (sess *Session) Submit(ctx *Context, measurement string) (*SubmitMeasuremen
 	if err := sess.submitter.Submit(ctx.ctx, &mm); err != nil {
 		return nil, err
 	}
-	data, err := json.Marshal(mm)
-	runtimex.PanicOnError(err, "json.Marshal should not fail here")
+	data := must.MarshalJSON(mm)
 	return &SubmitMeasurementResults{
 		UpdatedMeasurement: string(data),
 		UpdatedReportID:    mm.ReportID,

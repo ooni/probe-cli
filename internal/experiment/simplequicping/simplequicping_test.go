@@ -8,7 +8,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
-	"log"
 	"math/big"
 	"net/url"
 	"testing"
@@ -105,7 +104,7 @@ func TestMeasurer_run(t *testing.T) {
 	t.Run("with local listener", func(t *testing.T) {
 		srvrURL, listener, err := startEchoServer()
 		if err != nil {
-			log.Fatal(err)
+			t.Fatal(err)
 		}
 		defer listener.Close()
 		meas, m, err := runHelper(srvrURL)

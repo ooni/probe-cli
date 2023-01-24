@@ -6,7 +6,6 @@ package main
 
 import (
 	"errors"
-	"net/url"
 	"os"
 	"runtime"
 	"strings"
@@ -52,13 +51,6 @@ func mustMakeMapStringAny(input []string) (output map[string]any) {
 		output[key] = value
 	}
 	return
-}
-
-// mustParseURL parses the given URL or panics
-func mustParseURL(URL string) *url.URL {
-	rv, err := url.Parse(URL)
-	runtimex.PanicOnError(err, "cannot parse URL")
-	return rv
 }
 
 // gethomedir returns the home directory. If optionsHome is set, then we

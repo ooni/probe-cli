@@ -12,8 +12,8 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
@@ -110,8 +110,7 @@ func (oo OOClient) Do(ctx context.Context, config OOConfig) (*CtrlResponse, erro
 		},
 		TCPConnect: endpoints,
 	}
-	data, err := json.Marshal(creq)
-	runtimex.PanicOnError(err, "oohelper: cannot marshal control request")
+	data := must.MarshalJSON(creq)
 	log.Debugf("out: %s", string(data))
 	req, err := http.NewRequestWithContext(ctx, "POST", config.ServerURL, bytes.NewReader(data))
 	if err != nil {

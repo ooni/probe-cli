@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/must"
 )
 
 // checkInFlagsState is the state created by check-in flags.
@@ -33,8 +33,7 @@ func (s *Session) updateCheckInFlagsState(resp *model.OOAPICheckInResult) error 
 		Expire: time.Now().Add(24 * time.Hour),
 		Flags:  resp.Conf.Features,
 	}
-	data, err := json.Marshal(wrapper)
-	runtimex.PanicOnError(err, "json.Marshal unexpectedly failed")
+	data := must.MarshalJSON(wrapper)
 	return s.kvStore.Set(checkInFlagsState, data)
 }
 

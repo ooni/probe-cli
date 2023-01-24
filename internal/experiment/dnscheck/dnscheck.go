@@ -17,7 +17,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/legacy/netx"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
@@ -291,10 +291,9 @@ func makeResolverURL(URL *url.URL, addr string) string {
 	}
 	// 2. adjust hostname if we also have a port
 	if hasPort := URL.Port() != ""; hasPort {
-		_, port, err := net.SplitHostPort(URL.Host)
 		// We say this cannot fail because we already parsed the URL to validate
 		// its scheme and hence the URL hostname should be well formed.
-		runtimex.PanicOnError(err, "net.SplitHostPort should not fail here")
+		_, port := must.SplitHostPort(URL.Host)
 		hostname = net.JoinHostPort(hostname, port)
 	} else if idx := strings.Index(addr, ":"); idx >= 0 {
 		// Make sure an IPv6 address hostname without a port is properly
