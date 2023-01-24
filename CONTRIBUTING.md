@@ -68,14 +68,15 @@ run `go mod tidy` to minimize such changes.
 
 ## Implementation requirements
 
-- do not use `os/exec`, use `x/sys/execabs` or `./internal/shellx`
+- consider using `./internal/shellx` instead of `os/exec` if `shellx`
+implements the functionality you need
 
 - use `./internal/fsx.OpenFile` when you need to open a file
 
 - use `./internal/netxlite.ReadAllContext` instead of `io.ReadAll`
 and `./internal/netxlite.CopyContext` instead of `io.Copy`
 
-- use `./internal/model.ErrorToStringOrOK` when 
+- use `./internal/model.ErrorToStringOrOK` when
 an experiment logs intermediate results
 
 ## Code testing requirements
@@ -143,4 +144,4 @@ tools for publishing binaries to our Debian repository, Maven Central, etc.
 
 ## Community Channels
 
-Stuck somewhere or Have any questions? please join our [Slack Channels](https://slack.ooni.org/) or [IRC](ircs://irc.oftc.net:6697/#ooni). We're here to help and always available to discuss. 
+Stuck somewhere or Have any questions? please join our [Slack Channels](https://slack.ooni.org/) or [IRC](ircs://irc.oftc.net:6697/#ooni). We're here to help and always available to discuss.
