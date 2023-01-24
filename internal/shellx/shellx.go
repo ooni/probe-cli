@@ -79,7 +79,7 @@ func (e *Env) Output(logger model.Logger, command string, args ...string) ([]byt
 }
 
 // RunQuiet runs the given command without emitting any output and
-// using the environment variables in the current [Environ].
+// using the environment variables in the current [Env].
 func (e *Env) RunQuiet(command string, args ...string) error {
 	return Run(nil, command, args...)
 }
