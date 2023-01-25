@@ -86,7 +86,7 @@ func TestWithCustomLibrary(t *testing.T) {
 	}
 }
 
-func TestRemoveCommonEnvironmentVariables(t *testing.T) {
+func TestCmdEnvironMinusOsEnviron(t *testing.T) {
 	cmd := &execabs.Cmd{
 		Env: os.Environ(),
 	}
@@ -100,7 +100,7 @@ func TestRemoveCommonEnvironmentVariables(t *testing.T) {
 	for key := range expected {
 		cmd.Env = append(cmd.Env, key)
 	}
-	got := RemoveCommonEnvironmentVariables(cmd)
+	got := CmdEnvironMinusOsEnviron(cmd)
 	m := map[string]bool{}
 	for _, entry := range got {
 		m[entry] = true

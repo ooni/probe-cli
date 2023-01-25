@@ -1,4 +1,4 @@
-// Package shellxtesting contains mocks for shellx.
+// Package shellxtesting supports shellx testing.
 package shellxtesting
 
 import (
@@ -43,23 +43,26 @@ func MustArgv(c *execabs.Cmd) []string {
 	return out
 }
 
-// RemoveCommonEnvironmentVariables returns the given [execabs.Cmd]
-// environment variables minus the ones of the current process.
-func RemoveCommonEnvironmentVariables(c *execabs.Cmd) []string {
+// CmdEnvironMinusOsEnviron removes the environment variables in
+// [os.Environ] from the ones inside the given command. Note that
+// the variables in os.Environ and in the command are like name=value,
+// therefore, if you have HOME=/home/sbs in os.Environ and have
+// HOME=/tmp in the command, you'll get HOME=/tmp in output.
+func CmdEnvironMinusOsEnviron(c *execabs.Cmd) []string {
 	const (
-		us = 1 << iota
-		them
+		inCmd = 1 << iota
+		inEnviron
 	)
 	m := make(map[string]int)
 	for _, env := range os.Environ() {
-		m[env] |= us
+		m[env] |= inEnviron
 	}
 	for _, env := range c.Env {
-		m[env] |= them
+		m[env] |= inCmd
 	}
 	out := []string{}
 	for key, value := range m {
-		if (value & us) == 0 {
+		if value == inCmd {
 			out = append(out, key)
 		}
 	}
