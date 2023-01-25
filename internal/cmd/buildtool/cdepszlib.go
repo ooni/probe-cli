@@ -1,5 +1,8 @@
 package main
 
+// Adapted from https://github.com/guardianproject/tor-android
+// SPDX-License-Identifier: BSD-3-Clause
+
 import (
 	"path/filepath"
 	"runtime"
@@ -37,11 +40,7 @@ func cdepsZlibBuildMain(depsEnv *cdepsEnv) {
 	cdepsMustRunWithDefaultConfig(envp, "./configure", "--prefix=/", "--static")
 
 	must.Run(log.Log, "make", "-j", strconv.Itoa(runtime.NumCPU()))
-
-	envp = &shellx.Envp{}
-	envp.Append("DESTDIR", depsEnv.destdir)
-	cdepsMustRunWithDefaultConfig(envp, "make", "install")
-
+	must.Run(log.Log, "make", "DESTDIR="+depsEnv.destdir, "install")
 	must.Run(log.Log, "rm", "-rf", filepath.Join(depsEnv.destdir, "lib", "pkgconfig"))
 	must.Run(log.Log, "rm", "-rf", filepath.Join(depsEnv.destdir, "share"))
 }

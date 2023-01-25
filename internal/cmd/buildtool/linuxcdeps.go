@@ -12,12 +12,14 @@ import (
 // linuxCdepsSubcommand returns the linuxCdeps sucommand.
 func linuxCdepsSubcommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "cdeps {zlib|openssl|libevent|tor}",
+		Use:   "cdeps {zlib|openssl|libevent|tor} [zlib|openssl|libevent|tor...]",
 		Short: "Builds C dependencies on Linux systems (experimental)",
 		Run: func(cmd *cobra.Command, args []string) {
-			linuxCdepsBuildMain(args[0])
+			for _, arg := range args {
+				linuxCdepsBuildMain(arg)
+			}
 		},
-		Args: cobra.ExactArgs(1),
+		Args: cobra.MinimumNArgs(1),
 	}
 }
 
@@ -46,6 +48,8 @@ func linuxCdepsBuildMain(depName string) {
 	switch depName {
 	case "zlib":
 		cdepsZlibBuildMain(depsEnv)
+	case "openssl":
+		cdepsOpenSSLBuildMain(depsEnv)
 	default:
 		panic(fmt.Errorf("unknown dependency: %s", depName))
 	}

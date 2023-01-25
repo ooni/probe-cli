@@ -23,13 +23,19 @@ type cdepsEnv struct {
 	// destdir is the directory where to install.
 	destdir string
 
+	// openSSLAPIDefine is an extra define we need to add on Android.
+	openSSLAPIDefine string
+
 	// openSSLCompiler is the compiler name for OpenSSL.
 	openSSLCompiler string
 }
 
-// fillEnv fills an environment using the cdepsEnv settings.
-func (c *cdepsEnv) fillEnv(envp *shellx.Envp) {
-	envp.Append("CFLAGS", strings.Join(c.cflags, " "))
+// fillEnv fills an environment using the cdepsEnv settings. The extraCflags
+// arguments allow to modify the cflags without mutating this struct.
+func (c *cdepsEnv) fillEnv(envp *shellx.Envp, extraCflags ...string) {
+	mergedCflags := append([]string{}, c.cflags...)
+	mergedCflags = append(mergedCflags, extraCflags...)
+	envp.Append("CFLAGS", strings.Join(mergedCflags, " "))
 }
 
 // cdepsMustMkdirTemp creates a temporary directory.
@@ -85,13 +91,17 @@ func cdepsMustListPatches(dir string) (out []string) {
 	return
 }
 
+// cdepsDefaultShellxConfig returns the default config used when calling shellx.RunEx.
+func cdepsDefaultShellxConfig() *shellx.Config {
+	return &shellx.Config{
+		Logger: log.Log,
+		Flags:  shellx.FlagShowStdoutStderr,
+	}
+}
+
 // cdepsMustRunWithDefaultConfig is a convenience wrapper
 // around calling [shellx.RunEx] and checking the return value.
 func cdepsMustRunWithDefaultConfig(envp *shellx.Envp, command string, args ...string) {
 	argv := runtimex.Try1(shellx.NewArgv(command, args...))
-	config := &shellx.Config{
-		Logger: log.Log,
-		Flags:  shellx.FlagShowStdoutStderr,
-	}
-	runtimex.Try0(shellx.RunEx(config, argv, envp))
+	runtimex.Try0(shellx.RunEx(cdepsDefaultShellxConfig(), argv, envp))
 }
