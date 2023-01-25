@@ -88,11 +88,8 @@ CLI/android-arm64: search/for/go search/for/android/sdk maybe/copypsiphon
 #help: The `make CLI/darwin` command builds the ooniprobe and miniooni
 #help: command line clients for darwin/amd64 and darwin/arm64.
 .PHONY: CLI/darwin
-CLI/darwin: search/for/go maybe/copypsiphon
-	./CLI/go-build-darwin amd64 ./internal/cmd/miniooni
-	./CLI/go-build-darwin amd64 ./cmd/ooniprobe
-	./CLI/go-build-darwin arm64 ./internal/cmd/miniooni
-	./CLI/go-build-darwin arm64 ./cmd/ooniprobe
+CLI/darwin:
+	go run ./internal/cmd/buildtool darwin
 
 #help:
 #help: The `make CLI/linux-static-386` command builds and statically links the
