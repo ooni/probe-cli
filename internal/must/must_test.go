@@ -138,3 +138,32 @@ func TestRunCommandLine(t *testing.T) {
 func TestRunCommandLineQuiet(t *testing.T) {
 	RunCommandLineQuiet(testGolangExe + " version")
 }
+
+func TestWriteFile(t *testing.T) {
+	filename := filepath.Join("testdata", "test.txt")
+	content := []byte("antani")
+	WriteFile(filename, content, 0600)
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != string(content) {
+		t.Fatal("did not write the expected content")
+	}
+}
+
+func TestReadFile(t *testing.T) {
+	filename := filepath.Join("testdata", ".gitignore")
+	data := ReadFile(filename)
+	if string(data) != "*\n" && string(data) != "*\r\n" {
+		t.Fatal("unexpected content")
+	}
+}
+
+func TestFirstLineBytes(t *testing.T) {
+	data := []byte("antani\nmascetti\nmelandri\n")
+	firstline := FirstLineBytes(data)
+	if string(firstline) != "antani" {
+		t.Fatal("unexpected result")
+	}
+}

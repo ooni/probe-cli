@@ -2,9 +2,11 @@
 package must
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"net"
 	"net/http"
 	"net/url"
@@ -129,4 +131,28 @@ func RunCommandLine(logger model.Logger, cmdline string) {
 func RunCommandLineQuiet(cmdline string) {
 	err := shellx.RunCommandLineQuiet(cmdline)
 	runtimex.PanicOnError(err, "shellx.RunCommandLineQuiet failed")
+}
+
+// WriteFile is like [os.WriteFile] but calls
+// [runtimex.PanicOnError] on failure.
+func WriteFile(filename string, content []byte, mode fs.FileMode) {
+	err := os.WriteFile(filename, content, mode)
+	runtimex.PanicOnError(err, "os.WriteFile failed")
+}
+
+// ReadFile is like [os.ReadFile] but calls
+// [runtimex.PanicOnError] on failure.
+func ReadFile(filename string) []byte {
+	data, err := os.ReadFile(filename)
+	runtimex.PanicOnError(err, "os.ReadFile failed")
+	return data
+}
+
+// FirstLineBytes takes in input a sequence of bytes and
+// returns in output the first line. This function will
+// call [runtimex.PanicOnError] on failure.
+func FirstLineBytes(data []byte) []byte {
+	first, _, good := bytes.Cut(data, []byte("\n"))
+	runtimex.Assert(good, "could not find the first line")
+	return first
 }
