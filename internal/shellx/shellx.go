@@ -117,8 +117,9 @@ type Config struct {
 
 // cmd creates a new [execabs.Cmd] instance.
 func cmd(config *Config, argv *Argv, envp *Envp) *execabs.Cmd {
-	// Implementation note: since Go 1.19 we don't need to use the execabs
-	// package anymore. See <https://tip.golang.org/doc/go1.19>.
+	// Implementation note: in go1.19, os/exec does not use "." for searching
+	// the path except for Windows (IIUC). Because of that, let's keep using
+	// x/sys/execabs everywhere. See <https://tip.golang.org/doc/go1.19>.
 	cmd := execabs.Command(argv.P, argv.V...)
 	cmd.Env = os.Environ()
 	for _, entry := range envp.V {
