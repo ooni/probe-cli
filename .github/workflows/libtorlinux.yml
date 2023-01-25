@@ -24,6 +24,6 @@ jobs:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-libtorlinux-${{ steps.goversion.outputs.version }}"
 
-      - run: ./CDEPS/build-linux-amd64 zlib openssl libevent tor
+      - run: go run ./internal/cmd/buildtool linux cdeps zlib openssl libevent tor
 
       - run: go test -count 1 -v -cover -tags ooni_libtor -race ./internal/libtor/...
