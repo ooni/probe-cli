@@ -2,6 +2,7 @@ package dslx
 
 import (
 	"context"
+	"errors"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -41,6 +42,7 @@ type Test struct {
 }
 
 func TestGetaddrinfo(t *testing.T) {
+	nxDomainErr := errors.New(netxlite.FailureDNSNXDOMAINError)
 	tests := []Test{
 		{
 			name: "GetAddrInfo w/ Invalid Domain",
@@ -51,9 +53,9 @@ func TestGetaddrinfo(t *testing.T) {
 				ZeroTime:    time.Time{},
 			},
 			resolver: &mocks.Resolver{MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-				return nil, netxlite.ErrOODNSNoSuchHost
+				return nil, nxDomainErr
 			}},
-			expectedErr: netxlite.ErrOODNSNoSuchHost,
+			expectedErr: nxDomainErr,
 		},
 		{
 			name: "GetAddrInfo w/ Invalid Domain",

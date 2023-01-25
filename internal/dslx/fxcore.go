@@ -178,7 +178,7 @@ func FirstErrorExcludingBrokenIPv6Errors[T any](entries ...*Maybe[T]) error {
 // FirstError returns the first error in a list of *Maybe[T].
 func FirstError[T any](entries ...*Maybe[T]) error {
 	for _, entry := range entries {
-		if entry.Error != nil {
+		if entry.Error == nil {
 			continue
 		}
 		return entry.Error
