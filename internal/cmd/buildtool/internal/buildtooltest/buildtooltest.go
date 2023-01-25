@@ -1,3 +1,4 @@
+// Package buildtooltest contains code for testing buildtool.
 package buildtooltest
 
 import (
@@ -13,7 +14,8 @@ import (
 	"golang.org/x/sys/execabs"
 )
 
-// ExecExpectations describes what we would expect to .
+// ExecExpectations describes what we would expect to see
+// when building in terms of executed subcommands.
 type ExecExpectations struct {
 	// Env contains the environment variables we would expect to see.
 	Env []string
@@ -87,7 +89,7 @@ func CheckSingleCommand(cmd *execabs.Cmd, tee ExecExpectations) error {
 	return nil
 }
 
-// CheckManyCommands applies testCheckSingleCommand for each command
+// CheckManyCommands applies CheckSingleCommand for each command
 // by comparing it with the matching expectation.
 func CheckManyCommands(cmd []*execabs.Cmd, tee []ExecExpectations) error {
 	if len(cmd) != len(tee) {
@@ -130,7 +132,7 @@ func (cc *SimpleCommandCollector) LookPath(file string) (string, error) {
 // CanonicalGolangVersion is the canonical version used in tests.
 const CanonicalGolangVersion = "1.14.17"
 
-// constants describing the several functions we can call
+// Constants describing the dependent functions we can call when building.
 const (
 	TagGolangCheck                 = "golangCheck"
 	TagLinuxReadGOVERSION          = "linuxReadGOVERSION"
@@ -157,8 +159,7 @@ func (cc *DependenciesCallCounter) GolangCheck() {
 // linuxReadGOVERSION implements buildDeps
 func (cc *DependenciesCallCounter) LinuxReadGOVERSION(filename string) []byte {
 	cc.increment(TagLinuxReadGOVERSION)
-	v := []byte(CanonicalGolangVersion)
-	v = append(v, '\n')
+	v := append([]byte(CanonicalGolangVersion), '\n')
 	return v
 }
 

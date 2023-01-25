@@ -89,7 +89,7 @@ CLI/android-arm64: search/for/go search/for/android/sdk maybe/copypsiphon
 #help: command line clients for darwin/amd64 and darwin/arm64.
 .PHONY: CLI/darwin
 CLI/darwin:
-	go run ./internal/cmd/buildtool build darwin
+	go run ./internal/cmd/buildtool darwin
 
 #help:
 #help: The `make CLI/linux-static-386` command builds and statically links the

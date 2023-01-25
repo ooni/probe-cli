@@ -5,31 +5,27 @@ package main
 //
 
 import (
-	"fmt"
-	"os"
-
+	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/spf13/cobra"
 )
 
 func main() {
-	go func() {
-		if r := recover(); r != nil {
-			fmt.Fprintf(os.Stderr, "FATAL: %+v\n", r)
-			os.Exit(1)
-		}
-	}()
 	root := &cobra.Command{
 		Use:   "buildtool",
-		Short: "Tool for building ooniprobe",
+		Short: "Tool for building ooniprobe, miniooni, etc.",
 	}
 	root.AddCommand(darwinSubcommand())
-	root.AddCommand(genericSubcommand(productMiniooni))
-	root.AddCommand(genericSubcommand(productOohelperd))
-	root.AddCommand(genericSubcommand(productOoniprobe))
-	root.AddCommand(linuxDockerSubcommand())
-	root.AddCommand(linuxStaticSubcommand())
-	root.AddCommand(windowsSubcommand())
+	logHandler := logx.NewHandlerWithDefaultSettings()
+	logHandler.Emoji = true
+	log.Log = &log.Logger{Level: log.InfoLevel, Handler: logHandler}
+
+	go func() {
+		if r := recover(); r != nil {
+			log.Fatalf("%+v", r)
+		}
+	}()
 	err := root.Execute()
 	runtimex.PanicOnError(err, "root.Execute")
 }

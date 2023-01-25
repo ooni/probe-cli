@@ -7,37 +7,37 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/must"
 )
 
-// buildDependencies is the default buildDeps implementation
-type buildDependencies struct{}
+// buildDeps is the default buildDeps implementation
+type buildDeps struct{}
 
-var _ buildtoolmodel.Dependencies = &buildDependencies{}
+var _ buildtoolmodel.Dependencies = &buildDeps{}
 
 // GolangCheck implements buildtoolmodel.Dependencies
-func (*buildDependencies) GolangCheck() {
-	golangCheck()
+func (*buildDeps) GolangCheck() {
+	golangCheck("GOVERSION")
 }
 
 // LinuxReadGOVERSION implements buildtoolmodel.Dependencies
-func (*buildDependencies) LinuxReadGOVERSION(filename string) []byte {
+func (*buildDeps) LinuxReadGOVERSION(filename string) []byte {
 	return must.ReadFile(filename)
 }
 
 // LinuxWriteDockerfile implements buildtoolmodel.Dependencies
-func (*buildDependencies) LinuxWriteDockerfile(filename string, content []byte, mode fs.FileMode) {
+func (*buildDeps) LinuxWriteDockerfile(filename string, content []byte, mode fs.FileMode) {
 	must.WriteFile(filename, content, mode)
 }
 
 // PsiphonFilesExist implements buildtoolmodel.Dependencies
-func (*buildDependencies) PsiphonFilesExist() bool {
+func (*buildDeps) PsiphonFilesExist() bool {
 	return psiphonFilesExist()
 }
 
 // PsiphonMaybeCopyConfigFiles implements buildtoolmodel.Dependencies
-func (*buildDependencies) PsiphonMaybeCopyConfigFiles() {
+func (*buildDeps) PsiphonMaybeCopyConfigFiles() {
 	psiphonMaybeCopyConfigFiles()
 }
 
 // WindowsMingwCheck implements buildtoolmodel.Dependencies
-func (*buildDependencies) WindowsMingwCheck() {
-	windowsMingwCheck()
+func (*buildDeps) WindowsMingwCheck() {
+	//windowsMingwCheck() /* TODO(bassosimone) */
 }
