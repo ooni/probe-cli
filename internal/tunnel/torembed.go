@@ -2,8 +2,7 @@
 
 package tunnel
 
-// This file implements our strategy for running tor on android or
-// in an experimental configuration with `-tags=ooni_libtor`.
+// This file implements an experimental strategy for running tor.
 
 import (
 	"errors"
