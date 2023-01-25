@@ -50,6 +50,8 @@ func linuxCdepsBuildMain(depName string) {
 		cdepsLibeventBuildMain(depsEnv)
 	case "openssl":
 		cdepsOpenSSLBuildMain(depsEnv)
+	case "tor":
+		cdepsTorBuildMain(depsEnv)
 	case "zlib":
 		cdepsZlibBuildMain(depsEnv)
 	default:
