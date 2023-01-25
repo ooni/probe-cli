@@ -18,12 +18,13 @@ func main() {
 	}
 	root.AddCommand(darwinSubcommand())
 	root.AddCommand(genericSubcommand())
+	root.AddCommand(linuxSubcommand())
 	root.AddCommand(windowsSubcommand())
 	logHandler := logx.NewHandlerWithDefaultSettings()
 	logHandler.Emoji = true
 	log.Log = &log.Logger{Level: log.InfoLevel, Handler: logHandler}
 
-	go func() {
+	defer func() {
 		if r := recover(); r != nil {
 			log.Fatalf("%+v", r)
 		}
