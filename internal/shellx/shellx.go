@@ -117,9 +117,18 @@ type Config struct {
 
 // cmd creates a new [execabs.Cmd] instance.
 func cmd(config *Config, argv *Argv, envp *Envp) *execabs.Cmd {
-	// Implementation note: in go1.19, os/exec does not use "." for searching
-	// the path except for Windows (IIUC). Because of that, let's keep using
-	// x/sys/execabs everywhere. See <https://tip.golang.org/doc/go1.19>.
+	// Implementation note: go1.19 release notes says about os/exec:
+	//
+	//	[...]
+	//
+	//	On Windows, Command and LookPath now respect the NoDefaultCurrentDirectoryInExePath
+	//	environment variable, making it possible to disable the default implicit search
+	//	of “.” in PATH lookups on Windows systems.
+	//
+	// I would rather not use "." for search paths on Windows as well,
+	// hence the choice to keep using x/sys/execabs everywhere.
+	//
+	// See <https://tip.golang.org/doc/go1.19> for more information.
 	cmd := execabs.Command(argv.P, argv.V...)
 	cmd.Env = os.Environ()
 	for _, entry := range envp.V {
