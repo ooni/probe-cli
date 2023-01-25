@@ -14,20 +14,20 @@ import (
 )
 
 // cdepsZlibBuildMain is the script that builds zlib.
-func cdepsZlibBuildMain(depsEnv *cdepsEnv) {
-	topdir := cdepsMustAbsoluteCurdir()
+func cdepsZlibBuildMain(cdenv *cdepsEnv, deps cdepsDependencies) {
+	topdir := deps.absoluteCurDir()
 	work := cdepsMustMkdirTemp()
 	restore := cdepsMustChdir(work)
 	defer restore()
 
 	// See https://github.com/Homebrew/homebrew-core/blob/master/Formula/zlib.rb
 	cdepsMustFetch("https://zlib.net/zlib-1.2.13.tar.gz")
-	cdepsMustVerifySHA256(
+	deps.verifySHA256(
 		"b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30",
 		"zlib-1.2.13.tar.gz",
 	)
 	must.Run(log.Log, "tar", "-xf", "zlib-1.2.13.tar.gz")
-	_ = cdepsMustChdir("zlib-1.2.13")
+	_ = deps.mustChdir("zlib-1.2.13")
 
 	mydir := filepath.Join(topdir, "CDEPS", "zlib")
 	for _, patch := range cdepsMustListPatches(mydir) {
@@ -35,12 +35,14 @@ func cdepsZlibBuildMain(depsEnv *cdepsEnv) {
 	}
 
 	envp := &shellx.Envp{}
-	envp.Append("CHOST", depsEnv.configureHost) // zlib's configure otherwise uses Apple's libtool
-	depsEnv.addCflags(envp)
+	if cdenv.configureHost != "" {
+		envp.Append("CHOST", cdenv.configureHost) // zlib's configure otherwise uses Apple's libtool
+	}
+	cdenv.addCflags(envp)
 	cdepsMustRunWithDefaultConfig(envp, "./configure", "--prefix=/", "--static")
 
 	must.Run(log.Log, "make", "-j", strconv.Itoa(runtime.NumCPU()))
-	must.Run(log.Log, "make", "DESTDIR="+depsEnv.destdir, "install")
-	must.Run(log.Log, "rm", "-rf", filepath.Join(depsEnv.destdir, "lib", "pkgconfig"))
-	must.Run(log.Log, "rm", "-rf", filepath.Join(depsEnv.destdir, "share"))
+	must.Run(log.Log, "make", "DESTDIR="+cdenv.destdir, "install")
+	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "lib", "pkgconfig"))
+	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "share"))
 }
