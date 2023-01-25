@@ -7,24 +7,24 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"os/exec"
 	"strings"
 
 	"github.com/google/shlex"
 	"github.com/ooni/probe-cli/v3/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"golang.org/x/sys/execabs"
 )
 
 // Dependencies is the library on which this package depends.
 type Dependencies interface {
 	// CmdOutput is equivalent to calling c.Output.
-	CmdOutput(c *exec.Cmd) ([]byte, error)
+	CmdOutput(c *execabs.Cmd) ([]byte, error)
 
 	// CmdRun is equivalent to calling c.Run.
-	CmdRun(c *exec.Cmd) error
+	CmdRun(c *execabs.Cmd) error
 
-	// LookPath is equivalent to calling exec.LookPath.
+	// LookPath is equivalent to calling execabs.LookPath.
 	LookPath(file string) (string, error)
 }
 
@@ -35,18 +35,18 @@ var Library Dependencies = &StdlibDependencies{}
 type StdlibDependencies struct{}
 
 // CmdOutput implements [Dependencies].
-func (*StdlibDependencies) CmdOutput(c *exec.Cmd) ([]byte, error) {
+func (*StdlibDependencies) CmdOutput(c *execabs.Cmd) ([]byte, error) {
 	return c.Output()
 }
 
 // CmdRun implements [Dependencies].
-func (*StdlibDependencies) CmdRun(c *exec.Cmd) error {
+func (*StdlibDependencies) CmdRun(c *execabs.Cmd) error {
 	return c.Run()
 }
 
 // LookPath implements [Dependencies].
 func (*StdlibDependencies) LookPath(file string) (string, error) {
-	return exec.LookPath(file)
+	return execabs.LookPath(file)
 }
 
 // Envp is the environment in which we execute commands.
@@ -115,11 +115,11 @@ type Config struct {
 	Flags int64
 }
 
-// cmd creates a new [exec.Cmd] instance.
-func cmd(config *Config, argv *Argv, envp *Envp) *exec.Cmd {
+// cmd creates a new [execabs.Cmd] instance.
+func cmd(config *Config, argv *Argv, envp *Envp) *execabs.Cmd {
 	// Implementation note: since Go 1.19 we don't need to use the execabs
 	// package anymore. See <https://tip.golang.org/doc/go1.19>.
-	cmd := exec.Command(argv.P, argv.V...)
+	cmd := execabs.Command(argv.P, argv.V...)
 	cmd.Env = os.Environ()
 	for _, entry := range envp.V {
 		if config.Logger != nil {

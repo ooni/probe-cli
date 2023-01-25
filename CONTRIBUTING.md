@@ -68,8 +68,8 @@ run `go mod tidy` to minimize such changes.
 
 ## Implementation requirements
 
-- consider using `./internal/shellx` instead of `os/exec` if `shellx`
-implements the functionality you need
+- always use `x/sys/execabs` or `./internal/shellx` instead of
+using the `os/exec` package directly
 
 - use `./internal/fsx.OpenFile` when you need to open a file
 

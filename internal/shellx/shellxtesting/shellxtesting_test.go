@@ -3,21 +3,21 @@ package shellxtesting
 import (
 	"errors"
 	"os"
-	"os/exec"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/shellx"
+	"golang.org/x/sys/execabs"
 )
 
 func TestCmdOutput(t *testing.T) {
 	expected := errors.New("mocked error")
 	lib := &Library{
-		MockCmdOutput: func(c *exec.Cmd) ([]byte, error) {
+		MockCmdOutput: func(c *execabs.Cmd) ([]byte, error) {
 			return nil, expected
 		},
 	}
-	data, err := lib.CmdOutput(&exec.Cmd{})
+	data, err := lib.CmdOutput(&execabs.Cmd{})
 	if !errors.Is(err, expected) {
 		t.Fatal("unexpected error", err)
 	}
@@ -29,11 +29,11 @@ func TestCmdOutput(t *testing.T) {
 func TestCmdRun(t *testing.T) {
 	expected := errors.New("mocked error")
 	lib := &Library{
-		MockCmdRun: func(c *exec.Cmd) error {
+		MockCmdRun: func(c *execabs.Cmd) error {
 			return expected
 		},
 	}
-	err := lib.CmdRun(&exec.Cmd{})
+	err := lib.CmdRun(&execabs.Cmd{})
 	if !errors.Is(err, expected) {
 		t.Fatal("unexpected error", err)
 	}
@@ -56,7 +56,7 @@ func TestLookPath(t *testing.T) {
 }
 
 func TestMustArgv(t *testing.T) {
-	cmd := &exec.Cmd{
+	cmd := &execabs.Cmd{
 		Path: "/usr/bin/go",
 		Args: []string{"go", "env", "GOPATH"},
 	}
@@ -70,7 +70,7 @@ func TestMustArgv(t *testing.T) {
 func TestWithCustomLibrary(t *testing.T) {
 	expected := errors.New("mocked error")
 	library := &Library{
-		MockCmdRun: func(c *exec.Cmd) error {
+		MockCmdRun: func(c *execabs.Cmd) error {
 			return expected
 		},
 		MockLookPath: func(file string) (string, error) {
@@ -87,7 +87,7 @@ func TestWithCustomLibrary(t *testing.T) {
 }
 
 func TestRemoveCommonEnvironmentVariables(t *testing.T) {
-	cmd := &exec.Cmd{
+	cmd := &execabs.Cmd{
 		Env: os.Environ(),
 	}
 	expected := map[string]bool{
