@@ -13,8 +13,8 @@ import (
 )
 
 // golangCheck checks whether the "go" binary is the correct version
-func golangCheck() {
-	expected := string(must.FirstLineBytes(must.ReadFile("GOVERSION")))
+func golangCheck(filename string) {
+	expected := string(must.FirstLineBytes(must.ReadFile(filename)))
 	firstline := string(must.FirstLineBytes(must.RunOutput(log.Log, "go", "version")))
 	vec := strings.Split(firstline, " ")
 	runtimex.Assert(len(vec) == 4, "expected four tokens")

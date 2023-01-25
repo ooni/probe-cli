@@ -14,7 +14,7 @@ var _ buildtoolmodel.Dependencies = &buildDeps{}
 
 // GolangCheck implements buildtoolmodel.Dependencies
 func (*buildDeps) GolangCheck() {
-	golangCheck()
+	golangCheck("GOVERSION")
 }
 
 // LinuxReadGOVERSION implements buildtoolmodel.Dependencies
