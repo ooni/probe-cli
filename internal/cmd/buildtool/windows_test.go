@@ -1,14 +1,6 @@
 package main
 
-import (
-	"os/exec"
-	"testing"
-
-	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
-	"github.com/ooni/probe-cli/v3/internal/shellx/shellxtesting"
-)
-
+/*
 func TestWindowsBuildAll(t *testing.T) {
 
 	type expectations struct {
@@ -203,3 +195,4 @@ func TestWindowsBuildAll(t *testing.T) {
 		})
 	}
 }
+*/

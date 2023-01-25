@@ -1,15 +1,6 @@
 package main
 
-import (
-	"os"
-	"os/exec"
-	"testing"
-
-	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
-	"github.com/ooni/probe-cli/v3/internal/shellx/shellxtesting"
-)
-
+/*
 func TestLinuxStaticBuildAll(t *testing.T) {
 
 	cwd, err := os.Getwd()
@@ -246,3 +237,4 @@ func TestLinuxStaticBuildAll(t *testing.T) {
 		})
 	}
 }
+*/

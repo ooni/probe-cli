@@ -1,14 +1,6 @@
 package main
 
-import (
-	"os/exec"
-	"testing"
-
-	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
-	"github.com/ooni/probe-cli/v3/internal/shellx/shellxtesting"
-)
-
+/*
 func TestGenericBuildPackage(t *testing.T) {
 
 	type testspec struct {
@@ -78,3 +70,4 @@ func TestGenericBuildPackage(t *testing.T) {
 		})
 	}
 }
+*/

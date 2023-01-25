@@ -8,17 +8,18 @@ import (
 	"os"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/cmd/buildtool/internal/buildtoolmodel"
 	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/shellx"
 	"github.com/spf13/cobra"
 )
 
-// darwinSubcommand returns the darwin sucommand.
+// darwinSubcommand returns the darwin [cobra.Command].
 func darwinSubcommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "darwin",
-		Short: "Builds ooniprobe for darwin",
+		Short: "Builds ooniprobe and miniooni for darwin",
 		Run: func(cmd *cobra.Command, args []string) {
 			darwinBuildAll(&buildDependencies{})
 		},
@@ -26,10 +27,10 @@ func darwinSubcommand() *cobra.Command {
 	}
 }
 
-// darwinBuildAll builds all the possible packages for darwin.
-func darwinBuildAll(deps buildDeps) {
-	deps.psiphonMaybeCopyConfigFiles()
-	deps.golangCheck()
+// darwinBuildAll builds all the packages for darwin.
+func darwinBuildAll(deps buildtoolmodel.Dependencies) {
+	deps.PsiphonMaybeCopyConfigFiles()
+	deps.GolangCheck()
 	archs := []string{"amd64", "arm64"}
 	products := []*product{productMiniooni, productOoniprobe}
 	for _, arch := range archs {
@@ -39,13 +40,12 @@ func darwinBuildAll(deps buildDeps) {
 	}
 }
 
-// darwinBuildPackagebuild builds the given package for darwin
-// compiling for the specified architecture.
-func darwinBuildPackage(deps buildDeps, goarch string, product *product) {
+// darwinBuildPackagebuild builds a package for an architecture.
+func darwinBuildPackage(deps buildtoolmodel.Dependencies, goarch string, product *product) {
 	must.Fprintf(os.Stderr, "# building %s for darwin/%s\n", product.Pkg, goarch)
 
 	argv := runtimex.Try1(shellx.NewArgv("go", "build"))
-	if deps.psiphonFilesExist() {
+	if deps.PsiphonFilesExist() {
 		argv.Append("-tags", "ooni_psiphon_config")
 	}
 	argv.Append("-ldflags", "-s -w")
@@ -61,7 +61,6 @@ func darwinBuildPackage(deps buildDeps, goarch string, product *product) {
 		Logger: log.Log,
 		Flags:  shellx.FlagShowStdoutStderr,
 	}
-
 	runtimex.Try0(shellx.RunEx(config, argv, envp))
 
 	must.Fprintf(os.Stderr, "\n")

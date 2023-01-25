@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/cmd/buildtool/internal/buildtoolmodel"
 	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/shellx"
@@ -29,10 +30,10 @@ func windowsSubcommand() *cobra.Command {
 }
 
 // windowsBuildAll is the main function of the windows subcommand.
-func windowsBuildAll(deps buildDeps) {
-	deps.psiphonMaybeCopyConfigFiles()
-	deps.golangCheck()
-	deps.windowsMingwCheck()
+func windowsBuildAll(deps buildtoolmodel.Dependencies) {
+	deps.PsiphonMaybeCopyConfigFiles()
+	deps.GolangCheck()
+	deps.WindowsMingwCheck()
 	archs := []string{"386", "amd64"}
 	products := []*product{productMiniooni, productOoniprobe}
 	for _, arch := range archs {
@@ -44,11 +45,11 @@ func windowsBuildAll(deps buildDeps) {
 
 // windowsBuildPackage builds the given package for windows
 // compiling for the specified architecture.
-func windowsBuildPackage(deps buildDeps, goarch string, product *product) {
+func windowsBuildPackage(deps buildtoolmodel.Dependencies, goarch string, product *product) {
 	must.Fprintf(os.Stderr, "# building %s for windows/%s\n", product.Pkg, goarch)
 
 	argv := runtimex.Try1(shellx.NewArgv("go", "build"))
-	if deps.psiphonFilesExist() {
+	if deps.PsiphonFilesExist() {
 		argv.Append("-tags", "ooni_psiphon_config")
 	}
 

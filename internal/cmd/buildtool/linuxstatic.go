@@ -12,6 +12,7 @@ import (
 	"strconv"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/cmd/buildtool/internal/buildtoolmodel"
 	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/shellx"
@@ -44,9 +45,9 @@ func (b *linuxStaticBuilder) main(*cobra.Command, []string) {
 }
 
 // linuxStaticBuildAll builds all the packages on a linux-static environment.
-func linuxStaticBuilAll(deps buildDeps, goarch string, goarm int64) {
-	deps.psiphonMaybeCopyConfigFiles()
-	deps.golangCheck()
+func linuxStaticBuilAll(deps buildtoolmodel.Dependencies, goarch string, goarm int64) {
+	deps.PsiphonMaybeCopyConfigFiles()
+	deps.GolangCheck()
 
 	// TODO(bassosimone): I am running the container with the right userID but
 	// apparently this is not enough to make git happy--why?
@@ -63,7 +64,7 @@ func linuxStaticBuilAll(deps buildDeps, goarch string, goarm int64) {
 
 // linuxStaticBuildPackage builds a package in a linux static environment.
 func linuxStaticBuildPackage(
-	deps buildDeps,
+	deps buildtoolmodel.Dependencies,
 	product *product,
 	goarch string,
 	goarm int64,
@@ -79,7 +80,7 @@ func linuxStaticBuildPackage(
 	ooniArch := linuxStaticBuildOONIArch(goarch, goarm)
 
 	argv := runtimex.Try1(shellx.NewArgv("go", "build"))
-	if deps.psiphonFilesExist() {
+	if deps.PsiphonFilesExist() {
 		argv.Append("-tags", "ooni_psiphon_config")
 	}
 	argv.Append("-ldflags", "-s -w -extldflags -static")

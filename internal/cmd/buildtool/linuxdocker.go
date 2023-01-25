@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/cmd/buildtool/internal/buildtoolmodel"
 	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/spf13/cobra"
@@ -26,10 +27,10 @@ func linuxDockerSubcommand() *cobra.Command {
 }
 
 // main is the main function of the linuxDocker subcommand.
-func linuxDockerBuildAll(deps buildDeps, ooniArch string) {
-	deps.psiphonMaybeCopyConfigFiles()
+func linuxDockerBuildAll(deps buildtoolmodel.Dependencies, ooniArch string) {
+	deps.PsiphonMaybeCopyConfigFiles()
 
-	golangVersion := string(must.FirstLineBytes(deps.linuxReadGOVERSION("GOVERSION")))
+	golangVersion := string(must.FirstLineBytes(deps.LinuxReadGOVERSION("GOVERSION")))
 	golangDockerImage := "golang:" + golangVersion + "-alpine"
 
 	var (
@@ -77,7 +78,7 @@ func linuxDockerBuildAll(deps buildDeps, ooniArch string) {
 }
 
 // linuxDockerWwriteDockerfile writes the CLI/Dockerfile file.
-func linuxDockerWriteDockerfile(deps buildDeps, dockerArch, golangDockerImage, uid string) {
+func linuxDockerWriteDockerfile(deps buildtoolmodel.Dependencies, dockerArch, golangDockerImage, uid string) {
 	content := []byte(fmt.Sprintf(`
 		FROM --platform=linux/%s %s
 		RUN apk update
@@ -86,5 +87,5 @@ func linuxDockerWriteDockerfile(deps buildDeps, dockerArch, golangDockerImage, u
 		RUN adduser -D -h /home/oobuild -G nobody -u %s oobuild
 		ENV HOME=/home/oobuild`, dockerArch, golangDockerImage, uid,
 	))
-	deps.linuxWriteDockerfile(filepath.Join("CLI", "Dockerfile"), content, 0600)
+	deps.LinuxWriteDockerfile(filepath.Join("CLI", "Dockerfile"), content, 0600)
 }

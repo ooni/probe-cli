@@ -1,128 +1,116 @@
 package main
 
 import (
-	"os/exec"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/cmd/buildtool/internal/buildtooltest"
 	"github.com/ooni/probe-cli/v3/internal/shellx/shellxtesting"
 )
 
 func TestDarwinBuildAll(t *testing.T) {
 
-	type expectations struct {
-		env  map[string]int
-		argv []string
-	}
-
+	// testspec specifies a test case for this test
 	type testspec struct {
-		name       string
+		// name is the name of the test case
+		name string
+
+		// hasPsiphon indicates whether we should build with psiphon config
 		hasPsiphon bool
-		expect     []expectations
+
+		// expectations contains the commands we expect to see
+		expect []buildtooltest.ExecExpectations
 	}
 
 	var testcases = []testspec{{
-		name:       "build where we have the psiphon config",
+		name:       "with psiphon config",
 		hasPsiphon: true,
-		expect: []expectations{{
-			env: map[string]int{
-				"CGO_ENABLED=1": 1,
-				"GOARCH=amd64":  1,
-				"GOOS=darwin":   1,
+		expect: []buildtooltest.ExecExpectations{{
+			Env: []string{
+				"CGO_ENABLED=1",
+				"GOARCH=amd64",
+				"GOOS=darwin",
 			},
-			argv: []string{
-				runtimex.Try1(exec.LookPath("go")),
-				"build", "-tags", "ooni_psiphon_config",
+			Argv: []string{
+				"go", "build", "-tags", "ooni_psiphon_config",
 				"-ldflags", "-s -w", "-o", "CLI/miniooni-darwin-amd64",
 				"./internal/cmd/miniooni",
 			},
 		}, {
-			env: map[string]int{
-				"CGO_ENABLED=1": 1,
-				"GOARCH=amd64":  1,
-				"GOOS=darwin":   1,
+			Env: []string{
+				"CGO_ENABLED=1",
+				"GOARCH=amd64",
+				"GOOS=darwin",
 			},
-			argv: []string{
-				runtimex.Try1(exec.LookPath("go")),
-				"build", "-tags", "ooni_psiphon_config",
+			Argv: []string{
+				"go", "build", "-tags", "ooni_psiphon_config",
 				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-darwin-amd64",
 				"./cmd/ooniprobe",
 			},
 		}, {
-			env: map[string]int{
-				"CGO_ENABLED=1": 1,
-				"GOARCH=arm64":  1,
-				"GOOS=darwin":   1,
+			Env: []string{
+				"CGO_ENABLED=1",
+				"GOARCH=arm64",
+				"GOOS=darwin",
 			},
-			argv: []string{
-				runtimex.Try1(exec.LookPath("go")),
-				"build", "-tags", "ooni_psiphon_config",
+			Argv: []string{
+				"go", "build", "-tags", "ooni_psiphon_config",
 				"-ldflags", "-s -w", "-o", "CLI/miniooni-darwin-arm64",
 				"./internal/cmd/miniooni",
 			},
 		}, {
-			env: map[string]int{
-				"CGO_ENABLED=1": 1,
-				"GOARCH=arm64":  1,
-				"GOOS=darwin":   1,
+			Env: []string{
+				"CGO_ENABLED=1",
+				"GOARCH=arm64",
+				"GOOS=darwin",
 			},
-			argv: []string{
-				runtimex.Try1(exec.LookPath("go")),
-				"build", "-tags", "ooni_psiphon_config",
+			Argv: []string{
+				"go", "build", "-tags", "ooni_psiphon_config",
 				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-darwin-arm64",
 				"./cmd/ooniprobe",
 			},
 		}},
 	}, {
-		name:       "build where we don't have the psiphon config",
+		name:       "without psiphon config",
 		hasPsiphon: false,
-		expect: []expectations{{
-			env: map[string]int{
-				"CGO_ENABLED=1": 1,
-				"GOARCH=amd64":  1,
-				"GOOS=darwin":   1,
+		expect: []buildtooltest.ExecExpectations{{
+			Env: []string{
+				"CGO_ENABLED=1",
+				"GOARCH=amd64",
+				"GOOS=darwin",
 			},
-			argv: []string{
-				runtimex.Try1(exec.LookPath("go")),
-				"build",
-				"-ldflags", "-s -w", "-o", "CLI/miniooni-darwin-amd64",
+			Argv: []string{
+				"go", "build", "-ldflags", "-s -w", "-o", "CLI/miniooni-darwin-amd64",
 				"./internal/cmd/miniooni",
 			},
 		}, {
-			env: map[string]int{
-				"CGO_ENABLED=1": 1,
-				"GOARCH=amd64":  1,
-				"GOOS=darwin":   1,
+			Env: []string{
+				"CGO_ENABLED=1",
+				"GOARCH=amd64",
+				"GOOS=darwin",
 			},
-			argv: []string{
-				runtimex.Try1(exec.LookPath("go")),
-				"build",
-				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-darwin-amd64",
+			Argv: []string{
+				"go", "build", "-ldflags", "-s -w", "-o", "CLI/ooniprobe-darwin-amd64",
 				"./cmd/ooniprobe",
 			},
 		}, {
-			env: map[string]int{
-				"CGO_ENABLED=1": 1,
-				"GOARCH=arm64":  1,
-				"GOOS=darwin":   1,
+			Env: []string{
+				"CGO_ENABLED=1",
+				"GOARCH=arm64",
+				"GOOS=darwin",
 			},
-			argv: []string{
-				runtimex.Try1(exec.LookPath("go")),
-				"build",
-				"-ldflags", "-s -w", "-o", "CLI/miniooni-darwin-arm64",
+			Argv: []string{
+				"go", "build", "-ldflags", "-s -w", "-o", "CLI/miniooni-darwin-arm64",
 				"./internal/cmd/miniooni",
 			},
 		}, {
-			env: map[string]int{
-				"CGO_ENABLED=1": 1,
-				"GOARCH=arm64":  1,
-				"GOOS=darwin":   1,
+			Env: []string{
+				"CGO_ENABLED=1",
+				"GOARCH=arm64",
+				"GOOS=darwin",
 			},
-			argv: []string{
-				runtimex.Try1(exec.LookPath("go")),
-				"build",
-				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-darwin-arm64",
+			Argv: []string{
+				"go", "build", "-ldflags", "-s -w", "-o", "CLI/ooniprobe-darwin-arm64",
 				"./cmd/ooniprobe",
 			},
 		}},
@@ -131,59 +119,28 @@ func TestDarwinBuildAll(t *testing.T) {
 	for _, testcase := range testcases {
 		t.Run(testcase.name, func(t *testing.T) {
 
-			commands := []*exec.Cmd{}
-			library := &shellxtesting.Library{
-				MockCmdRun: func(c *exec.Cmd) error {
-					commands = append(commands, c)
-					return nil
-				},
-				MockLookPath: func(file string) (string, error) {
-					return file, nil
-				},
+			cc := &buildtooltest.SimpleCommandCollector{}
+
+			deps := &buildtooltest.DependenciesCallCounter{
+				HasPsiphon: testcase.hasPsiphon,
 			}
 
-			var calledPsiphonMaybeCopyConfigFiles int64
-			var calledGolangCheck int64
-			deps := &testBuildDeps{
-				MockGolangCheck: func() {
-					calledGolangCheck++
-				},
-				MockPsiphonMaybeCopyConfigFiles: func() {
-					calledPsiphonMaybeCopyConfigFiles++
-				},
-				MockPsiphonFilesExist: func() bool {
-					return testcase.hasPsiphon
-				},
-			}
-
-			shellxtesting.WithCustomLibrary(library, func() {
+			shellxtesting.WithCustomLibrary(cc, func() {
 				darwinBuildAll(deps)
 			})
 
-			if calledGolangCheck <= 0 {
-				t.Fatal("did not call golangCheck")
-			}
-			if calledPsiphonMaybeCopyConfigFiles <= 0 {
-				t.Fatal("did not call psiphonMaybeConfigFiles")
+			expectCalls := map[string]int{
+				buildtooltest.TagGolangCheck:           1,
+				buildtooltest.TagMaybeCopyPsiphonFiles: 1,
+				buildtooltest.TagPsiphonFilesExist:     4,
 			}
 
-			if len(commands) != len(testcase.expect) {
-				t.Fatal("unexpected number of commands", len(commands))
+			if diff := cmp.Diff(expectCalls, deps.Counter); diff != "" {
+				t.Fatal(diff)
 			}
-			for idx := 0; idx < len(testcase.expect); idx++ {
-				command := commands[idx]
-				envs := shellxtesting.RemoveCommonEnvironmentVariables(command)
-				gotEnv := map[string]int{}
-				for _, env := range envs {
-					gotEnv[env]++
-				}
-				if diff := cmp.Diff(testcase.expect[idx].env, gotEnv); diff != "" {
-					t.Fatal(diff)
-				}
-				gotArgv := shellxtesting.MustArgv(command)
-				if diff := cmp.Diff(testcase.expect[idx].argv, gotArgv); diff != "" {
-					t.Fatal(diff)
-				}
+
+			if err := buildtooltest.CheckManyCommands(cc.Commands, testcase.expect); err != nil {
+				t.Fatal(err)
 			}
 		})
 	}

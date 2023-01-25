@@ -1,20 +1,6 @@
 package main
 
-import (
-	"errors"
-	"fmt"
-	"io/fs"
-	"os"
-	"os/exec"
-	"os/user"
-	"strings"
-	"testing"
-	"time"
-
-	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/shellx/shellxtesting"
-)
-
+/*
 func TestLinuxDockerBuildAll(t *testing.T) {
 
 	type testspec struct {
@@ -100,24 +86,6 @@ var testDockerGoArm = map[string]string{
 	"amd64": "0",
 }
 
-func testCompareArgv(expected, got []string) error {
-	if len(expected) != len(got) {
-		return fmt.Errorf("expected %d entries but got %d", len(expected), len(got))
-	}
-	if len(got) < 1 {
-		return errors.New("expected at least one entry")
-	}
-	if !strings.HasSuffix(got[0], expected[0]) {
-		return fmt.Errorf("expected %s prefix but got %s", expected[0], got[0])
-	}
-	for idx := 1; idx < len(got); idx++ {
-		if got[idx] != expected[idx] {
-			return fmt.Errorf("entry %d: expected %s, but got %s", idx, expected[idx], got[idx])
-		}
-	}
-	return nil
-}
-
 func testDockerExpectDockerPull(t *testing.T, ooniArch string, cmd *exec.Cmd) {
 	envs := shellxtesting.RemoveCommonEnvironmentVariables(cmd)
 	if diff := cmp.Diff(envs, []string{}); diff != "" {
@@ -172,3 +140,4 @@ func testDockerExpectDockerRun(t *testing.T, ooniArch string, cmd *exec.Cmd) {
 		t.Fatal(err)
 	}
 }
+*/

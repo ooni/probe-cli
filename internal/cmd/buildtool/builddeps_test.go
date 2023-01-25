@@ -1,6 +1,6 @@
 package main
 
-import "io/fs"
+/*
 
 // testBuildDeps contains the test buildDeps.
 type testBuildDeps struct {
@@ -48,3 +48,5 @@ func (d *testBuildDeps) psiphonMaybeCopyConfigFiles() {
 func (d *testBuildDeps) windowsMingwCheck() {
 	d.MockWindowsMingwCheck()
 }
+
+*/
