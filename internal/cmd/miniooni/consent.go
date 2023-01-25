@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/ooni/probe-cli/v3/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -18,7 +19,7 @@ func acquireUserConsent(miniooniDir string, currentOptions *Options) {
 	err := maybeWriteConsentFile(currentOptions.Yes, consentFile)
 	runtimex.PanicOnError(err, "cannot write informed consent file")
 	runtimex.Assert(
-		regularFileExists(consentFile),
+		fsx.RegularFileExists(consentFile),
 		riskOfRunningOONI,
 	)
 }
