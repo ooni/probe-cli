@@ -5,13 +5,6 @@ import (
 	"testing"
 )
 
-func TestCanOpen(t *testing.T) {
-	ok := canOpen("testdata/testmeasurement.json")
-	if !ok {
-		t.Fatal("unexpected error")
-	}
-}
-
 func TestReadLines(t *testing.T) {
 	lines := readLines("testdata/testmeasurement.json")
 	if lines == nil {
