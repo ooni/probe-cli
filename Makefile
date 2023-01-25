@@ -162,11 +162,6 @@ MOBILE/ios: search/for/go search/for/zip search/for/xcode maybe/copypsiphon
 	./MOBILE/ios/zipframework
 	./MOBILE/ios/createpodspec
 
-.PHONY: search/for/docker
-search/for/docker:
-	@printf "checking for docker... "
-	@command -v docker || { echo "not found"; exit 1; }
-
 .PHONY: search/for/git
 search/for/git:
 	@printf "checking for git... "
