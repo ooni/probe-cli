@@ -198,9 +198,6 @@ func TestLinuxStaticBuildAll(t *testing.T) {
 				MockPsiphonFilesExist: func() bool {
 					return testcase.hasPsiphon
 				},
-				MockWindowsMingwCheck: func() {
-					panic("should not be called")
-				},
 			}
 
 			shellxtesting.WithCustomLibrary(library, func() {
