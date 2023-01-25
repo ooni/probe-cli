@@ -21,7 +21,7 @@ import (
 func windowsSubcommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "windows",
-		Short: "Builds ooniprobe for windows",
+		Short: "Builds ooniprobe and miniooni for windows",
 		Run: func(cmd *cobra.Command, args []string) {
 			windowsBuildAll(&buildDeps{})
 		},
