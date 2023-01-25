@@ -1,15 +1,19 @@
-// Package shellx runs external commands.
+// Package shellx helps to write shell-like Go code.
 package shellx
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"strings"
 
 	"github.com/google/shlex"
+	"github.com/ooni/probe-cli/v3/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // Dependencies is the library on which this package depends.
@@ -277,4 +281,31 @@ func maybeQuoteArg(a string) string {
 		a = "\"" + a + "\""
 	}
 	return a
+}
+
+// fsxOpenFile is the function to open a file for reading.
+var fsxOpenFile = fsx.OpenFile
+
+// osOpenFile is the generic function to open a file.
+var osOpenFile = os.OpenFile
+
+// netxliteCopyContext is the generic function to copy content.
+var netxliteCopyContext = netxlite.CopyContext
+
+// CopyFile copies [source] to [dest].
+func CopyFile(source, dest string, perms fs.FileMode) error {
+	sourcefp, err := fsxOpenFile(source)
+	if err != nil {
+		return err
+	}
+	defer sourcefp.Close()
+	destfp, err := osOpenFile(dest, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, perms)
+	if err != nil {
+		return err
+	}
+	if _, err := netxliteCopyContext(context.Background(), destfp, sourcefp); err != nil {
+		destfp.Close()
+		return err
+	}
+	return destfp.Close()
 }

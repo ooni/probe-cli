@@ -141,6 +141,7 @@ func TestRunCommandLineQuiet(t *testing.T) {
 
 func TestWriteFile(t *testing.T) {
 	filename := filepath.Join("testdata", "test.txt")
+	defer os.Remove(filename)
 	content := []byte("antani")
 	WriteFile(filename, content, 0600)
 	data, err := os.ReadFile(filename)
@@ -179,5 +180,16 @@ func TestRunOutputQuiet(t *testing.T) {
 	out := RunOutputQuiet(testGolangExe, "version")
 	if len(out) <= 0 {
 		t.Fatal("expected to see output")
+	}
+}
+
+func TestCopyFile(t *testing.T) {
+	sourcefile := filepath.Join("testdata", ".gitignore")
+	expect := ReadFile(sourcefile)
+	destfile := filepath.Join("testdata", "copy.txt")
+	CopyFile(sourcefile, destfile, 0600)
+	got := ReadFile(destfile)
+	if diff := cmp.Diff(expect, got); diff != "" {
+		t.Fatal(diff)
 	}
 }

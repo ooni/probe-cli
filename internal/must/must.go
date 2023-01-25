@@ -172,3 +172,10 @@ func RunOutputQuiet(command string, args ...string) []byte {
 	runtimex.PanicOnError(err, "shellx.Output failed")
 	return out
 }
+
+// CopyFile is like [shellx.CopyFile] but calls
+// [runtimex.PanicOnError] on failure.
+func CopyFile(source, dest string, perms fs.FileMode) {
+	err := shellx.CopyFile(source, dest, perms)
+	runtimex.PanicOnError(err, "shellx.CopyFile failed")
+}

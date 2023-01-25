@@ -1,15 +1,22 @@
 package shellx
 
 import (
+	"context"
 	"errors"
+	"io"
+	"io/fs"
+	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync/atomic"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // testGolangExe is the golang exe to use in this test suite
@@ -378,4 +385,74 @@ func Test_maybeQuoteArg(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCopyFile(t *testing.T) {
+	t.Run("in case of success", func(t *testing.T) {
+		source := filepath.Join("testdata", "checkenv.go")
+		expected, err := os.ReadFile(source)
+		if err != nil {
+			t.Fatal(err)
+		}
+		dest := filepath.Join("testdata", "copy.txt")
+		defer os.Remove(dest)
+		if err := CopyFile(source, dest, 0600); err != nil {
+			t.Fatal(err)
+		}
+		got, err := os.ReadFile(dest)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if diff := cmp.Diff(expected, got); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
+	t.Run("if we cannot open the source file", func(t *testing.T) {
+		source := filepath.Join("testdata", "checkenv.go")
+		dest := filepath.Join("testdata", "copy.txt")
+		defer os.Remove(dest)
+		expected := errors.New("mocked error")
+		fsxOpenFile = func(pathname string) (fs.File, error) {
+			return nil, expected
+		}
+		defer func() {
+			fsxOpenFile = fsx.OpenFile
+		}()
+		if err := CopyFile(source, dest, 0600); !errors.Is(err, expected) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+
+	t.Run("if we cannot open the dest file", func(t *testing.T) {
+		source := filepath.Join("testdata", "checkenv.go")
+		dest := filepath.Join("testdata", "copy.txt")
+		defer os.Remove(dest)
+		expected := errors.New("mocked error")
+		osOpenFile = func(name string, flag int, perm os.FileMode) (*os.File, error) {
+			return nil, expected
+		}
+		defer func() {
+			osOpenFile = os.OpenFile
+		}()
+		if err := CopyFile(source, dest, 0600); !errors.Is(err, expected) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+
+	t.Run("if we cannot copy", func(t *testing.T) {
+		source := filepath.Join("testdata", "checkenv.go")
+		dest := filepath.Join("testdata", "copy.txt")
+		defer os.Remove(dest)
+		expected := errors.New("mocked error")
+		netxliteCopyContext = func(ctx context.Context, dst io.Writer, src io.Reader) (int64, error) {
+			return 0, expected
+		}
+		defer func() {
+			netxliteCopyContext = netxlite.CopyContext
+		}()
+		if err := CopyFile(source, dest, 0600); !errors.Is(err, expected) {
+			t.Fatal("unexpected error", err)
+		}
+	})
 }
