@@ -14,12 +14,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// regularFileExists returns true if the given filepath exists and is a regular file
-func regularFileExists(filepath string) bool {
-	stat, err := os.Stat(filepath)
-	return err == nil && stat.Mode().IsRegular()
-}
-
 // splitPair takes in input a string in the form KEY=VALUE and splits it. This
 // function returns an error if it cannot find the = character to split the string.
 func splitPair(s string) (string, string, error) {

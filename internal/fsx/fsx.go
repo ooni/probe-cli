@@ -29,7 +29,7 @@ func openWithFS(fs fs.FS, pathname string) (fs.File, error) {
 		file.Close()
 		return nil, err
 	}
-	if info.IsDir() {
+	if !isRegular(info) {
 		file.Close()
 		return nil, &os.PathError{
 			Op:   "openFile",
@@ -46,4 +46,18 @@ type filesystem struct{}
 // Open implements fs.FS.Open.
 func (filesystem) Open(pathname string) (fs.File, error) {
 	return os.Open(pathname)
+}
+
+func isRegular(info fs.FileInfo) bool {
+	return info.Mode().IsRegular()
+}
+
+// RegularFileExists returns whether the given [filename]
+// exists and is a regular file.
+func RegularFileExists(filename string) bool {
+	finfo, err := os.Stat(filename)
+	if err != nil {
+		return false
+	}
+	return isRegular(finfo)
 }

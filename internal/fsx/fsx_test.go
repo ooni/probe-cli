@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"sync/atomic"
 	"syscall"
 	"testing"
@@ -80,4 +81,29 @@ func TestOpeningExistingFileShouldWork(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer file.Close()
+}
+
+func TestRegularFileExists(t *testing.T) {
+	t.Run("for existing file", func(t *testing.T) {
+		path := filepath.Join("testdata", "testfile.txt")
+		exists := RegularFileExists(path)
+		if !exists {
+			t.Fatal("should exist")
+		}
+	})
+
+	t.Run("for existing directory", func(t *testing.T) {
+		exists := RegularFileExists("testdata")
+		if exists {
+			t.Fatal("should not exist")
+		}
+	})
+
+	t.Run("for nonexisting file", func(t *testing.T) {
+		path := filepath.Join("testdata", "nonexistent")
+		exists := RegularFileExists(path)
+		if exists {
+			t.Fatal("should not exist")
+		}
+	})
 }
