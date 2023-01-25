@@ -33,12 +33,14 @@ func linuxCdepsBuildMain(depName string) {
 			"-D_FORTIFY_SOURCE=2",
 			"-fstack-protector-strong",
 			"-fstack-clash-protection",
-			"-fPIE",
+			"-fPIC", // makes more sense than -fPIE given that we're building a library
 			"-fsanitize=bounds",
 			"-fsanitize-undefined-trap-on-error",
 			"-O2",
 		},
-		destdir:         filepath.Join("internal", "libtor", "linux", runtime.GOARCH),
+		destdir: runtimex.Try1(filepath.Abs(filepath.Join( // must be absolute
+			"internal", "libtor", "linux", runtime.GOARCH,
+		))),
 		openSSLCompiler: "linux-x86_64",
 	}
 	switch depName {
