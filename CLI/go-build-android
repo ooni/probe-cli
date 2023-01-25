@@ -39,28 +39,27 @@ PRODUCT=$(basename $PACKAGE)
 ANDROID_HOME=$(./MOBILE/android/home)
 NDK_VERSION=$(cat NDKVERSION)
 ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$NDK_VERSION
-API=$(cat ANDROIDAPI)
 
 if [[ $ANDROIDARCH == arm ]]; then
 	GOARCH=arm
 	GOARM=7
-	CC=$(find $ANDROID_NDK_HOME -type f -name armv7a-linux-androideabi${API}-clang)
-	CXX=$(find $ANDROID_NDK_HOME -type f -name armv7a-linux-androideabi${API}-clang++)
+	CC=$(find $ANDROID_NDK_HOME -type f -name armv7a-linux-androideabi21-clang)
+	CXX=$(find $ANDROID_NDK_HOME -type f -name armv7a-linux-androideabi21-clang++)
 elif [[ $ANDROIDARCH == arm64 ]]; then
 	GOARCH=$ANDROIDARCH
 	GOARM=
-	CC=$(find $ANDROID_NDK_HOME -type f -name aarch64-linux-android${API}-clang)
-	CXX=$(find $ANDROID_NDK_HOME -type f -name aarch64-linux-android${API}-clang++)
+	CC=$(find $ANDROID_NDK_HOME -type f -name aarch64-linux-android21-clang)
+	CXX=$(find $ANDROID_NDK_HOME -type f -name aarch64-linux-android21-clang++)
 elif [[ $ANDROIDARCH == 386 ]]; then
 	GOARCH=$ANDROIDARCH
 	GOARM=
-	CC=$(find $ANDROID_NDK_HOME -type f -name i686-linux-android${API}-clang)
-	CXX=$(find $ANDROID_NDK_HOME -type f -name i686-linux-android${API}-clang++)
+	CC=$(find $ANDROID_NDK_HOME -type f -name i686-linux-android21-clang)
+	CXX=$(find $ANDROID_NDK_HOME -type f -name i686-linux-android21-clang++)
 elif [[ $ANDROIDARCH == amd64 ]]; then
 	GOARCH=$ANDROIDARCH
 	GOARM=
-	CC=$(find $ANDROID_NDK_HOME -type f -name x86_64-linux-android${API}-clang)
-	CXX=$(find $ANDROID_NDK_HOME -type f -name x86_64-linux-android${API}-clang++)
+	CC=$(find $ANDROID_NDK_HOME -type f -name x86_64-linux-android21-clang)
+	CXX=$(find $ANDROID_NDK_HOME -type f -name x86_64-linux-android21-clang++)
 else
 	echo "FATAL: invalid ANDROIDARCH: $ANDROIDARCH" 1>&2
 	exit 1
