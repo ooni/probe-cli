@@ -5,57 +5,49 @@ package main
 //
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
 	"runtime"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/must"
+	"github.com/ooni/probe-cli/v3/internal/cmd/buildtool/internal/buildtoolmodel"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/shellx"
 	"github.com/spf13/cobra"
 )
 
 // genericSubcommand returns the generic sucommand.
-func genericSubcommand(p *product) *cobra.Command {
-	name := filepath.Base(p.Pkg)
-	cfg := &genericBuilder{
-		p: p,
+func genericSubcommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "generic",
+		Short: "Generic Go builder for the current GOOS and GOARCH",
 	}
-	return &cobra.Command{
-		Use:   name,
-		Short: fmt.Sprintf("Builds %s for %s/%s", name, runtime.GOOS, runtime.GOARCH),
-		Run:   cfg.main,
+	cmd.AddCommand(&cobra.Command{
+		Use:   "miniooni",
+		Short: "Builds miniooni for the current GOOS and GOARCH",
 		Args:  cobra.NoArgs,
-	}
-}
-
-// genericBuilder is the configuration for a generic build
-type genericBuilder struct {
-	p *product
-}
-
-// main is the main function of the generic subcommand.
-func (b *genericBuilder) main(*cobra.Command, []string) {
-	psiphonMaybeCopyConfigFiles()
-	golangCheck()
-	hasPsiphon := psiphonFilesExist()
-	genericBuildPackage(b.p, hasPsiphon)
+		Run: func(cmd *cobra.Command, args []string) {
+			genericBuildPackage(&buildDeps{}, productMiniooni)
+		},
+	})
+	cmd.AddCommand(&cobra.Command{
+		Use:   "ooniprobe",
+		Short: "Builds ooniprobe for the current GOOS and GOARCH",
+		Args:  cobra.NoArgs,
+		Run: func(cmd *cobra.Command, args []string) {
+			genericBuildPackage(&buildDeps{}, productOoniprobe)
+		},
+	})
+	return cmd
 }
 
 // genericBuildPackage is the generic function for building a package.
-func genericBuildPackage(product *product, hasPsiphon bool) {
-	must.Fprintf(
-		os.Stderr,
-		"# building %s for %s/%s\n",
-		product.Pkg,
-		runtime.GOOS,
-		runtime.GOARCH,
-	)
+func genericBuildPackage(deps buildtoolmodel.Dependencies, product *product) {
+	deps.PsiphonMaybeCopyConfigFiles()
+	deps.GolangCheck()
+
+	log.Infof("building %s for %s/%s", product.Pkg, runtime.GOOS, runtime.GOARCH)
 
 	argv := runtimex.Try1(shellx.NewArgv("go", "build"))
-	if hasPsiphon {
+	if deps.PsiphonFilesExist() {
 		argv.Append("-tags", "ooni_psiphon_config")
 	}
 	argv.Append("-ldflags", "-s -w")
@@ -67,6 +59,4 @@ func genericBuildPackage(product *product, hasPsiphon bool) {
 	}
 
 	runtimex.Try0(shellx.RunEx(config, argv, &shellx.Envp{}))
-
-	must.Fprintf(os.Stderr, "\n")
 }

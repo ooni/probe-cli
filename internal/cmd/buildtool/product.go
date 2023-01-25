@@ -39,12 +39,6 @@ var productMiniooni = &product{
 	Kind: "CLI",
 }
 
-// productOohelperd is the oohelperd product.
-var productOohelperd = &product{
-	Pkg:  "./internal/cmd/oohelperd",
-	Kind: "CLI",
-}
-
 // productOoniprobe is the ooniprobe product.
 var productOoniprobe = &product{
 	Pkg:  "./cmd/ooniprobe",

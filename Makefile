@@ -131,14 +131,14 @@ CLI/linux-static-arm64:
 #help: system, putting the binary in the top-level directory.
 .PHONY: CLI/miniooni
 CLI/miniooni:
-	go run ./internal/cmd/buildtool build miniooni
+	go run ./internal/cmd/buildtool generic miniooni
 
 #help:
 #help: The `make CLI/ooniprobe` command creates a build of ooniprobe, for the current
 #help: system, putting the binary in the top-level directory.
 .PHONY: CLI/ooniprobe
 CLI/ooniprobe:
-	go run ./internal/cmd/buildtool build ooniprobe
+	go run ./internal/cmd/buildtool generic ooniprobe
 
 #help:
 #help: The `make CLI/windows` command builds the ooniprobe and miniooni
