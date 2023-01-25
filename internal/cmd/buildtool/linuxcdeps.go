@@ -1,5 +1,9 @@
 package main
 
+//
+// Allows building C dependencies using Linux
+//
+
 import (
 	"fmt"
 	"path/filepath"
@@ -16,7 +20,7 @@ func linuxCdepsSubcommand() *cobra.Command {
 		Short: "Builds C dependencies on Linux systems (experimental)",
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, arg := range args {
-				linuxCdepsBuildMain(arg)
+				linuxCdepsBuildMain(arg, &cdepsDependenciesStdlib{})
 			}
 		},
 		Args: cobra.MinimumNArgs(1),
@@ -24,12 +28,12 @@ func linuxCdepsSubcommand() *cobra.Command {
 }
 
 // linuxCdepsBuildMain is the main of the linuxCdeps build.
-func linuxCdepsBuildMain(depName string) {
+func linuxCdepsBuildMain(name string, deps cdepsDependencies) {
 	runtimex.Assert(
 		runtime.GOOS == "linux" && runtime.GOARCH == "amd64",
 		"this command requires linux/amd64",
 	)
-	depsEnv := &cdepsEnv{
+	cdenv := &cdepsEnv{
 		cflags: []string{
 			// See https://airbus-seclab.github.io/c-compiler-security/
 			"-D_FORTIFY_SOURCE=2",
@@ -45,16 +49,16 @@ func linuxCdepsBuildMain(depName string) {
 		))),
 		openSSLCompiler: "linux-x86_64",
 	}
-	switch depName {
+	switch name {
 	case "libevent":
-		cdepsLibeventBuildMain(depsEnv)
+		cdepsLibeventBuildMain(cdenv, deps)
 	case "openssl":
-		cdepsOpenSSLBuildMain(depsEnv)
+		cdepsOpenSSLBuildMain(cdenv, deps)
 	case "tor":
-		cdepsTorBuildMain(depsEnv)
+		cdepsTorBuildMain(cdenv, deps)
 	case "zlib":
-		cdepsZlibBuildMain(depsEnv)
+		cdepsZlibBuildMain(cdenv, deps)
 	default:
-		panic(fmt.Errorf("unknown dependency: %s", depName))
+		panic(fmt.Errorf("unknown dependency: %s", name))
 	}
 }

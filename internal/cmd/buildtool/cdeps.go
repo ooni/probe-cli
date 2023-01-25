@@ -1,5 +1,9 @@
 package main
 
+//
+// Building C dependencies: common code
+//
+
 import (
 	"os"
 	"path/filepath"
@@ -33,17 +37,50 @@ type cdepsEnv struct {
 	openSSLCompiler string
 }
 
-// addCflags merges this struct's cflags with the extra cflags and
+// cdepsDependencies groups dependencies used when building cdeps.
+type cdepsDependencies interface {
+	// mustChdir changes the current working directory and returns the
+	// function to return to the original working directory.
+	mustChdir(dirname string) func()
+
+	// absoluteCurDir returns the absolute current directory.
+	absoluteCurDir() string
+
+	// verifySHA256 verifies that the tarball has the given checksum.
+	verifySHA256(expectedSHA256, tarball string)
+}
+
+// cdepsDependenciesStdlib are the [cdepsDependencies] used by default.
+type cdepsDependenciesStdlib struct{}
+
+var _ cdepsDependencies = &cdepsDependenciesStdlib{}
+
+// absoluteCurDir implements cdepsDependencies
+func (c *cdepsDependenciesStdlib) absoluteCurDir() string {
+	return cdepsMustAbsoluteCurdir()
+}
+
+// verifySHA256 implements cdepsDependencies
+func (c *cdepsDependenciesStdlib) verifySHA256(expectedSHA256, tarball string) {
+	cdepsMustVerifySHA256(expectedSHA256, tarball)
+}
+
+// mustChdir implements cdepsDependencies
+func (c *cdepsDependenciesStdlib) mustChdir(dirname string) func() {
+	return cdepsMustChdir(dirname)
+}
+
+// cdepsAddCflags merges this struct's cflags with the extra cflags and
 // then stores the merged cflags into the given envp.
-func (c *cdepsEnv) addCflags(envp *shellx.Envp, extraCflags ...string) {
+func cdepsAddCflags(envp *shellx.Envp, c *cdepsEnv, extraCflags ...string) {
 	mergedCflags := append([]string{}, c.cflags...)
 	mergedCflags = append(mergedCflags, extraCflags...)
 	envp.Append("CFLAGS", strings.Join(mergedCflags, " "))
 }
 
-// addLdflags merges this struct's ldflags with the extra ldflags and
+// cdepsAddLdflags merges this struct's ldflags with the extra ldflags and
 // then stores the merged ldflags into the given envp.
-func (c *cdepsEnv) addLdflags(envp *shellx.Envp, extraLdflags ...string) {
+func cdepsAddLdflags(envp *shellx.Envp, c *cdepsEnv, extraLdflags ...string) {
 	mergedLdflags := append([]string{}, c.ldflags...)
 	mergedLdflags = append(mergedLdflags, extraLdflags...)
 	envp.Append("LDFLAGS", strings.Join(mergedLdflags, " "))

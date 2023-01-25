@@ -66,7 +66,7 @@ func CompareEnv(expected, got []string) error {
 		case weExpected | weGot:
 			// nothing
 		case weGot:
-			issues = append(issues, fmt.Sprintf("* we got %s, which we don't expected", value))
+			issues = append(issues, fmt.Sprintf("* we got %s, which we didn't expect", value))
 		case weExpected:
 			issues = append(issues, fmt.Sprintf("* we expected but did not see %s", value))
 		}

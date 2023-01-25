@@ -1,5 +1,8 @@
 package main
 
+//
+// Building C dependencies: libevent
+//
 // Adapted from https://github.com/guardianproject/tor-android
 // SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,20 +18,20 @@ import (
 )
 
 // cdepsLibeventBuildMain is the script that builds libevent.
-func cdepsLibeventBuildMain(depsEnv *cdepsEnv) {
-	topdir := cdepsMustAbsoluteCurdir()
+func cdepsLibeventBuildMain(cdenv *cdepsEnv, deps cdepsDependencies) {
+	topdir := deps.absoluteCurDir() // must be mockable
 	work := cdepsMustMkdirTemp()
 	restore := cdepsMustChdir(work)
 	defer restore()
 
 	// See https://github.com/Homebrew/homebrew-core/blob/master/Formula/libevent.rb
 	cdepsMustFetch("https://github.com/libevent/libevent/archive/release-2.1.12-stable.tar.gz")
-	cdepsMustVerifySHA256(
+	deps.verifySHA256( // must be mockable
 		"7180a979aaa7000e1264da484f712d403fcf7679b1e9212c4e3d09f5c93efc24",
 		"release-2.1.12-stable.tar.gz",
 	)
 	must.Run(log.Log, "tar", "-xf", "release-2.1.12-stable.tar.gz")
-	_ = cdepsMustChdir("libevent-release-2.1.12-stable")
+	_ = deps.mustChdir("libevent-release-2.1.12-stable") // must be mockable
 
 	mydir := filepath.Join(topdir, "CDEPS", "libevent")
 	for _, patch := range cdepsMustListPatches(mydir) {
@@ -38,29 +41,29 @@ func cdepsLibeventBuildMain(depsEnv *cdepsEnv) {
 	must.Run(log.Log, "./autogen.sh")
 
 	envp := &shellx.Envp{}
-	depsEnv.addCflags(envp, "-I"+depsEnv.destdir+"/include")
-	depsEnv.addLdflags(envp, "-L"+depsEnv.destdir+"/lib")
+	cdepsAddCflags(envp, cdenv, "-I"+cdenv.destdir+"/include")
+	cdepsAddLdflags(envp, cdenv, "-L"+cdenv.destdir+"/lib")
 
 	argv := runtimex.Try1(shellx.NewArgv("./configure"))
-	if depsEnv.configureHost != "" {
-		argv.Append("--host=" + depsEnv.configureHost)
+	if cdenv.configureHost != "" {
+		argv.Append("--host=" + cdenv.configureHost)
 	}
 	argv.Append("--disable-libevent-regress", "--disable-samples", "--disable-shared", "--prefix=/")
 	runtimex.Try0(shellx.RunEx(cdepsDefaultShellxConfig(), argv, envp))
 
 	must.Run(log.Log, "make", "V=1", "-j", strconv.Itoa(runtime.NumCPU()))
-	must.Run(log.Log, "make", "DESTDIR="+depsEnv.destdir, "install")
-	must.Run(log.Log, "rm", "-rf", filepath.Join(depsEnv.destdir, "bin"))
+	must.Run(log.Log, "make", "DESTDIR="+cdenv.destdir, "install")
+	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "bin"))
+	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "lib", "pkgconfig"))
 
 	// we just need libevent.a
-	must.Run(log.Log, "rm", "-rf", filepath.Join(depsEnv.destdir, "lib", "pkgconfig"))
-	must.Run(log.Log, "rm", "-rf", filepath.Join(depsEnv.destdir, "lib", "libevent.la"))
-	must.Run(log.Log, "rm", "-rf", filepath.Join(depsEnv.destdir, "lib", "libevent_core.a"))
-	must.Run(log.Log, "rm", "-rf", filepath.Join(depsEnv.destdir, "lib", "libevent_core.la"))
-	must.Run(log.Log, "rm", "-rf", filepath.Join(depsEnv.destdir, "lib", "libevent_extra.a"))
-	must.Run(log.Log, "rm", "-rf", filepath.Join(depsEnv.destdir, "lib", "libevent_extra.la"))
-	must.Run(log.Log, "rm", "-rf", filepath.Join(depsEnv.destdir, "lib", "libevent_openssl.a"))
-	must.Run(log.Log, "rm", "-rf", filepath.Join(depsEnv.destdir, "lib", "libevent_openssl.la"))
-	must.Run(log.Log, "rm", "-rf", filepath.Join(depsEnv.destdir, "lib", "libevent_pthreads.a"))
-	must.Run(log.Log, "rm", "-rf", filepath.Join(depsEnv.destdir, "lib", "libevent_pthreads.la"))
+	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "lib", "libevent.la"))
+	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "lib", "libevent_core.a"))
+	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "lib", "libevent_core.la"))
+	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "lib", "libevent_extra.a"))
+	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "lib", "libevent_extra.la"))
+	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "lib", "libevent_openssl.a"))
+	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "lib", "libevent_openssl.la"))
+	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "lib", "libevent_pthreads.a"))
+	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "lib", "libevent_pthreads.la"))
 }

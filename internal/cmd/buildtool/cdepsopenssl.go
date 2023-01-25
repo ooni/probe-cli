@@ -1,5 +1,8 @@
 package main
 
+//
+// Building C dependencies: OpenSSL
+//
 // Adapted from https://github.com/guardianproject/tor-android
 // SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,20 +18,20 @@ import (
 )
 
 // cdepsOpenSSLBuildMain is the script that builds OpenSSL.
-func cdepsOpenSSLBuildMain(depsEnv *cdepsEnv) {
-	topdir := cdepsMustAbsoluteCurdir()
+func cdepsOpenSSLBuildMain(cdenv *cdepsEnv, deps cdepsDependencies) {
+	topdir := deps.absoluteCurDir() // must be mockable
 	work := cdepsMustMkdirTemp()
 	restore := cdepsMustChdir(work)
 	defer restore()
 
 	// See https://github.com/Homebrew/homebrew-core/blob/master/Formula/openssl@1.1.rb
 	cdepsMustFetch("https://www.openssl.org/source/openssl-1.1.1s.tar.gz")
-	cdepsMustVerifySHA256(
+	deps.verifySHA256( // must be mockable
 		"c5ac01e760ee6ff0dab61d6b2bbd30146724d063eb322180c6f18a6f74e4b6aa",
 		"openssl-1.1.1s.tar.gz",
 	)
 	must.Run(log.Log, "tar", "-xf", "openssl-1.1.1s.tar.gz")
-	_ = cdepsMustChdir("openssl-1.1.1s")
+	_ = deps.mustChdir("openssl-1.1.1s") // must be mockable
 
 	mydir := filepath.Join(topdir, "CDEPS", "openssl")
 	for _, patch := range cdepsMustListPatches(mydir) {
@@ -36,21 +39,21 @@ func cdepsOpenSSLBuildMain(depsEnv *cdepsEnv) {
 	}
 
 	envp := &shellx.Envp{}
-	depsEnv.addCflags(envp, "-Wno-macro-redefined")
+	cdepsAddCflags(envp, cdenv, "-Wno-macro-redefined")
 	argv := runtimex.Try1(shellx.NewArgv(
 		"./Configure", "no-comp", "no-dtls", "no-ec2m", "no-psk", "no-srp",
 		"no-ssl2", "no-ssl3", "no-camellia", "no-idea", "no-md2", "no-md4",
 		"no-mdc2", "no-rc2", "no-rc4", "no-rc5", "no-rmd160", "no-whirlpool",
 		"no-dso", "no-hw", "no-ui-console", "no-shared", "no-unit-test",
-		depsEnv.openSSLCompiler,
+		cdenv.openSSLCompiler,
 	))
-	if depsEnv.openSSLAPIDefine != "" {
-		argv.Append(depsEnv.openSSLAPIDefine)
+	if cdenv.openSSLAPIDefine != "" {
+		argv.Append(cdenv.openSSLAPIDefine)
 	}
 	argv.Append("--libdir=lib", "--prefix=/", "--openssldir=/")
 	runtimex.Try0(shellx.RunEx(cdepsDefaultShellxConfig(), argv, envp))
 
 	must.Run(log.Log, "make", "-j", strconv.Itoa(runtime.NumCPU()))
-	must.Run(log.Log, "make", "DESTDIR="+depsEnv.destdir, "install_dev")
-	must.Run(log.Log, "rm", "-rf", filepath.Join(depsEnv.destdir, "lib", "pkgconfig"))
+	must.Run(log.Log, "make", "DESTDIR="+cdenv.destdir, "install_dev")
+	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "lib", "pkgconfig"))
 }
