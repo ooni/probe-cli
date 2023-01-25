@@ -18,38 +18,37 @@ import (
 
 // windowsSubcommand returns the windows sucommand.
 func windowsSubcommand() *cobra.Command {
-	builder := &windowsBuilder{}
 	return &cobra.Command{
 		Use:   "windows",
 		Short: "Builds ooniprobe for windows",
-		Run:   builder.main,
-		Args:  cobra.NoArgs,
+		Run: func(cmd *cobra.Command, args []string) {
+			windowsBuildAll(&buildDependencies{})
+		},
+		Args: cobra.NoArgs,
 	}
 }
 
-// windowsBuilder builds for windows.
-type windowsBuilder struct{}
-
-// main is the main function of the windows subcommand.
-func (b *windowsBuilder) main(cmd *cobra.Command, args []string) {
-	psiphonMaybeCopyConfigFiles()
-	golangCheck()
-	b.mingwCheck()
+// windowsBuildAll is the main function of the windows subcommand.
+func windowsBuildAll(deps buildDeps) {
+	deps.psiphonMaybeCopyConfigFiles()
+	deps.golangCheck()
+	deps.windowsMingwCheck()
 	archs := []string{"386", "amd64"}
 	products := []*product{productMiniooni, productOoniprobe}
 	for _, arch := range archs {
 		for _, product := range products {
-			b.build(arch, product)
+			windowsBuildPackage(deps, arch, product)
 		}
 	}
 }
 
-// build builds the given package for windows compiling for the specified architecture.
-func (b *windowsBuilder) build(goarch string, product *product) {
+// windowsBuildPackage builds the given package for windows
+// compiling for the specified architecture.
+func windowsBuildPackage(deps buildDeps, goarch string, product *product) {
 	must.Fprintf(os.Stderr, "# building %s for windows/%s\n", product.Pkg, goarch)
 
 	argv := runtimex.Try1(shellx.NewArgv("go", "build"))
-	if psiphonFilesExist() {
+	if deps.psiphonFilesExist() {
 		argv.Append("-tags", "ooni_psiphon_config")
 	}
 
@@ -96,16 +95,16 @@ const windowsMingwAmd64Compiler = "x86_64-w64-mingw32-gcc"
 // windowsMingw386Compiler is the 386 compiler.
 const windowsMingw386Compiler = "i686-w64-mingw32-gcc"
 
-// mingwCheck checks we're using the correct mingw version.
-func (b *windowsBuilder) mingwCheck() {
-	b.mingwCheckFor(windowsMingwAmd64Compiler)
-	b.mingwCheckFor(windowsMingw386Compiler)
+// windowsMingwCheck checks we're using the correct mingw version.
+func windowsMingwCheck() {
+	windowsMingwCheckFor(windowsMingwAmd64Compiler)
+	windowsMingwCheckFor(windowsMingw386Compiler)
 	must.Fprintf(os.Stderr, "\n")
 }
 
-// mingwCheckFor implements mingwCheck for the given compiler.
-func (b *windowsBuilder) mingwCheckFor(compiler string) {
-	expected := b.expectedVersion()
+// windowsMingwCheckFor implements mingwCheck for the given compiler.
+func windowsMingwCheckFor(compiler string) {
+	expected := windowsMingwExpectedVersionGetter()
 	firstLine := string(must.FirstLineBytes(must.RunOutputQuiet(compiler, "--version")))
 	v := strings.Split(firstLine, " ")
 	runtimex.Assert(len(v) == 3, "expected to see exactly three tokens")
@@ -116,8 +115,8 @@ func (b *windowsBuilder) mingwCheckFor(compiler string) {
 	must.Fprintf(os.Stderr, "# using %s %s\n", compiler, expected)
 }
 
-// expectedVersion returns the correct expected mingw version.
-func (b *windowsBuilder) expectedVersion() string {
+// windowsMingwEexpectedVersionGetter returns the correct expected mingw version.
+func windowsMingwExpectedVersionGetter() string {
 	value := os.Getenv(windowsMingwEnvironmentVariable)
 	if value == "" {
 		return windowsMingwExpectedVersion

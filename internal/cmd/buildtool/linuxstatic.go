@@ -40,8 +40,13 @@ type linuxStaticBuilder struct {
 
 // main is the main function of the linuxStatic subcommand.
 func (b *linuxStaticBuilder) main(*cobra.Command, []string) {
-	psiphonMaybeCopyConfigFiles()
-	golangCheck()
+	linuxStaticBuilAll(&buildDependencies{}, runtime.GOARCH, b.goarm)
+}
+
+// linuxStaticBuildAll builds all the packages on a linux-static environment.
+func linuxStaticBuilAll(deps buildDeps, goarch string, goarm int64) {
+	deps.psiphonMaybeCopyConfigFiles()
+	deps.golangCheck()
 
 	// TODO(bassosimone): I am running the container with the right userID but
 	// apparently this is not enough to make git happy--why?
@@ -50,39 +55,52 @@ func (b *linuxStaticBuilder) main(*cobra.Command, []string) {
 	must.Fprintf(os.Stderr, "\n")
 
 	products := []*product{productMiniooni, productOoniprobe}
+	cacheprefix := runtimex.Try1(filepath.Abs("GOCACHE"))
 	for _, product := range products {
-		b.build(product)
+		linuxStaticBuildPackage(deps, product, goarch, goarm, cacheprefix)
 	}
 }
 
-// build runs the build.
-func (b *linuxStaticBuilder) build(product *product) {
-	cacheprefix := runtimex.Try1(filepath.Abs(filepath.Join("GOCACHE", "oonibuild", "v1", b.fullarch())))
-
+// linuxStaticBuildPackage builds a package in a linux static environment.
+func linuxStaticBuildPackage(
+	deps buildDeps,
+	product *product,
+	goarch string,
+	goarm int64,
+	cacheprefix string,
+) {
 	must.Fprintf(
 		os.Stderr,
 		"# building %s for linux/%s with static linking\n",
 		product.Pkg,
-		runtime.GOARCH,
+		goarch,
 	)
 
+	ooniArch := linuxStaticBuildOONIArch(goarch, goarm)
+
 	argv := runtimex.Try1(shellx.NewArgv("go", "build"))
-	if psiphonFilesExist() {
+	if deps.psiphonFilesExist() {
 		argv.Append("-tags", "ooni_psiphon_config")
 	}
 	argv.Append("-ldflags", "-s -w -extldflags -static")
-	argv.Append("-o", product.DestinationPath("linux", runtime.GOARCH))
+	argv.Append("-o", product.DestinationPath("linux", ooniArch))
 	argv.Append(product.Pkg)
 
 	envp := &shellx.Envp{}
 	envp.Append("CGO_ENABLED", "1")
 	envp.Append("GOOS", "linux")
-	envp.Append("GOARCH", runtime.GOARCH)
-	if b.goarm > 0 {
-		envp.Append("GOARM", strconv.FormatInt(b.goarm, 10))
+	envp.Append("GOARCH", goarch)
+	if goarm > 0 {
+		envp.Append("GOARM", strconv.FormatInt(goarm, 10))
 	}
-	envp.Append("GOCACHE", filepath.Join(cacheprefix, "buildcache"))
-	envp.Append("GOMODCACHE", filepath.Join(cacheprefix, "modcache"))
+	cachedirbase := filepath.Join(
+		cacheprefix,
+		"oonibuild",
+		"v1",
+		ooniArch,
+	)
+	envp.Append("GOCACHE", filepath.Join(cachedirbase, "buildcache"))
+	envp.Append("GOMODCACHE", filepath.Join(cachedirbase, "modcache"))
 
 	config := &shellx.Config{
 		Logger: log.Log,
@@ -94,13 +112,14 @@ func (b *linuxStaticBuilder) build(product *product) {
 	must.Fprintf(os.Stderr, "\n")
 }
 
-// fullarch returns the full arch name
-func (cfg *linuxStaticBuilder) fullarch() string {
-	switch runtime.GOARCH {
+// linuxStaticBuildOONIArch returns the OONI arch name. This is equal
+// to the GOARCH but for arm where we use armv6 and armv7.
+func linuxStaticBuildOONIArch(goarch string, goarm int64) string {
+	switch goarch {
 	case "arm":
-		runtimex.Assert(cfg.goarm > 0, "expected a > 0 goarm value")
-		return fmt.Sprintf("armv%d", cfg.goarm)
+		runtimex.Assert(goarm > 0, "expected a > 0 goarm value")
+		return fmt.Sprintf("armv%d", goarm)
 	default:
-		return runtime.GOARCH
+		return goarch
 	}
 }

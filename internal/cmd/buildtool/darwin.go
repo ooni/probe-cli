@@ -16,37 +16,36 @@ import (
 
 // darwinSubcommand returns the darwin sucommand.
 func darwinSubcommand() *cobra.Command {
-	builder := &darwinBuilder{}
 	return &cobra.Command{
 		Use:   "darwin",
 		Short: "Builds ooniprobe for darwin",
-		Run:   builder.main,
-		Args:  cobra.NoArgs,
+		Run: func(cmd *cobra.Command, args []string) {
+			darwinBuildAll(&buildDependencies{})
+		},
+		Args: cobra.NoArgs,
 	}
 }
 
-// darwinBuilder builds for darwin.
-type darwinBuilder struct{}
-
-// main is the main function of the darwin subcommand.
-func (b *darwinBuilder) main(cmd *cobra.Command, args []string) {
-	psiphonMaybeCopyConfigFiles()
-	golangCheck()
+// darwinBuildAll builds all the possible packages for darwin.
+func darwinBuildAll(deps buildDeps) {
+	deps.psiphonMaybeCopyConfigFiles()
+	deps.golangCheck()
 	archs := []string{"amd64", "arm64"}
 	products := []*product{productMiniooni, productOoniprobe}
 	for _, arch := range archs {
 		for _, product := range products {
-			b.build(arch, product)
+			darwinBuildPackage(deps, arch, product)
 		}
 	}
 }
 
-// build builds the given package for darwin compiling for the specified architecture.
-func (b *darwinBuilder) build(goarch string, product *product) {
+// darwinBuildPackagebuild builds the given package for darwin
+// compiling for the specified architecture.
+func darwinBuildPackage(deps buildDeps, goarch string, product *product) {
 	must.Fprintf(os.Stderr, "# building %s for darwin/%s\n", product.Pkg, goarch)
 
 	argv := runtimex.Try1(shellx.NewArgv("go", "build"))
-	if psiphonFilesExist() {
+	if deps.psiphonFilesExist() {
 		argv.Append("-tags", "ooni_psiphon_config")
 	}
 	argv.Append("-ldflags", "-s -w")

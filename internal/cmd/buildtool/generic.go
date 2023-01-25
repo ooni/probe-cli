@@ -39,23 +39,27 @@ type genericBuilder struct {
 // main is the main function of the generic subcommand.
 func (b *genericBuilder) main(*cobra.Command, []string) {
 	psiphonMaybeCopyConfigFiles()
-
 	golangCheck()
+	hasPsiphon := psiphonFilesExist()
+	genericBuildPackage(b.p, hasPsiphon)
+}
 
+// genericBuildPackage is the generic function for building a package.
+func genericBuildPackage(product *product, hasPsiphon bool) {
 	must.Fprintf(
 		os.Stderr,
 		"# building %s for %s/%s\n",
-		b.p.Pkg,
+		product.Pkg,
 		runtime.GOOS,
 		runtime.GOARCH,
 	)
 
 	argv := runtimex.Try1(shellx.NewArgv("go", "build"))
-	if psiphonFilesExist() {
+	if hasPsiphon {
 		argv.Append("-tags", "ooni_psiphon_config")
 	}
 	argv.Append("-ldflags", "-s -w")
-	argv.Append(b.p.Pkg)
+	argv.Append(product.Pkg)
 
 	config := &shellx.Config{
 		Logger: log.Log,

@@ -12,7 +12,6 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/must"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/shellx"
 )
 
@@ -38,8 +37,15 @@ func psiphonMaybeCopyConfigFiles() {
 	err := psiphonAttemptToCopyConfig(privateRepoDir)
 	if err != nil {
 		must.Fprintf(os.Stderr, "# trying to clone github.com/ooni/probe-private\n")
-		must.Run(log.Log, "git", "clone", "git@github.com:ooni/probe-private", privateRepoDir)
-		runtimex.Try0(psiphonAttemptToCopyConfig(privateRepoDir))
+		err := shellx.Run(log.Log, "git", "clone", "git@github.com:ooni/probe-private", privateRepoDir)
+		if err != nil {
+			must.Fprintf(os.Stderr, "# it seems we cannot clone ooni/probe-private")
+			return
+		}
+		if err := psiphonAttemptToCopyConfig(privateRepoDir); err != nil {
+			must.Fprintf(os.Stderr, "# it seems we cannot copy psiphon config")
+			return
+		}
 	}
 	must.Fprintf(os.Stderr, "# psiphon config files copied successfully\n")
 	must.Fprintf(os.Stderr, "\n")
