@@ -7,24 +7,24 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"os/exec"
 	"strings"
 
 	"github.com/google/shlex"
 	"github.com/ooni/probe-cli/v3/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"golang.org/x/sys/execabs"
 )
 
 // Dependencies is the library on which this package depends.
 type Dependencies interface {
 	// CmdOutput is equivalent to calling c.Output.
-	CmdOutput(c *exec.Cmd) ([]byte, error)
+	CmdOutput(c *execabs.Cmd) ([]byte, error)
 
 	// CmdRun is equivalent to calling c.Run.
-	CmdRun(c *exec.Cmd) error
+	CmdRun(c *execabs.Cmd) error
 
-	// LookPath is equivalent to calling exec.LookPath.
+	// LookPath is equivalent to calling execabs.LookPath.
 	LookPath(file string) (string, error)
 }
 
@@ -35,18 +35,18 @@ var Library Dependencies = &StdlibDependencies{}
 type StdlibDependencies struct{}
 
 // CmdOutput implements [Dependencies].
-func (*StdlibDependencies) CmdOutput(c *exec.Cmd) ([]byte, error) {
+func (*StdlibDependencies) CmdOutput(c *execabs.Cmd) ([]byte, error) {
 	return c.Output()
 }
 
 // CmdRun implements [Dependencies].
-func (*StdlibDependencies) CmdRun(c *exec.Cmd) error {
+func (*StdlibDependencies) CmdRun(c *execabs.Cmd) error {
 	return c.Run()
 }
 
 // LookPath implements [Dependencies].
 func (*StdlibDependencies) LookPath(file string) (string, error) {
-	return exec.LookPath(file)
+	return execabs.LookPath(file)
 }
 
 // Envp is the environment in which we execute commands.
@@ -115,11 +115,21 @@ type Config struct {
 	Flags int64
 }
 
-// cmd creates a new [exec.Cmd] instance.
-func cmd(config *Config, argv *Argv, envp *Envp) *exec.Cmd {
-	// Implementation note: since Go 1.19 we don't need to use the execabs
-	// package anymore. See <https://tip.golang.org/doc/go1.19>.
-	cmd := exec.Command(argv.P, argv.V...)
+// cmd creates a new [execabs.Cmd] instance.
+func cmd(config *Config, argv *Argv, envp *Envp) *execabs.Cmd {
+	// Implementation note: go1.19 release notes says about os/exec:
+	//
+	//	[...]
+	//
+	//	On Windows, Command and LookPath now respect the NoDefaultCurrentDirectoryInExePath
+	//	environment variable, making it possible to disable the default implicit search
+	//	of “.” in PATH lookups on Windows systems.
+	//
+	// I would rather not use "." for search paths on Windows as well,
+	// hence the choice to keep using x/sys/execabs everywhere.
+	//
+	// See <https://tip.golang.org/doc/go1.19> for more information.
+	cmd := execabs.Command(argv.P, argv.V...)
 	cmd.Env = os.Environ()
 	for _, entry := range envp.V {
 		if config.Logger != nil {
@@ -128,7 +138,7 @@ func cmd(config *Config, argv *Argv, envp *Envp) *exec.Cmd {
 		cmd.Env = append(cmd.Env, entry)
 	}
 	if config.Logger != nil {
-		cmdline := quotedCommandLine(argv.P, argv.V...)
+		cmdline := quotedCommandLineUnsafe(argv.P, argv.V...)
 		config.Logger.Infof("+ %s", cmdline)
 	}
 	return cmd
@@ -194,8 +204,7 @@ func run(logger model.Logger, flags int64, command string, args ...string) error
 	return RunEx(config, argv, envp)
 }
 
-// RunQuiet runs the given command without emitting any output and
-// using the environment variables in the current [Envp].
+// RunQuiet runs the given command without emitting any output.
 func RunQuiet(command string, args ...string) error {
 	return run(nil, 0, command, args...)
 }
@@ -262,18 +271,20 @@ func OutputCommandLine(logger model.Logger, cmdline string) ([]byte, error) {
 // ErrNoCommandToExecute means that the command line is empty.
 var ErrNoCommandToExecute = errors.New("shellx: no command to execute")
 
-// quotedCommandLine returns a quoted command line.
-func quotedCommandLine(command string, args ...string) string {
+// quotedCommandLineUnsafe returns a quoted command line. This function is unsafe
+// and SHOULD only be used to produce a nice output.
+func quotedCommandLineUnsafe(command string, args ...string) string {
 	v := []string{}
-	v = append(v, maybeQuoteArg(command))
+	v = append(v, maybeQuoteArgUnsafe(command))
 	for _, a := range args {
-		v = append(v, maybeQuoteArg(a))
+		v = append(v, maybeQuoteArgUnsafe(a))
 	}
 	return strings.Join(v, " ")
 }
 
-// maybeQuoteArg quotes a command line argument if needed.
-func maybeQuoteArg(a string) string {
+// maybeQuoteArgUnsafe quotes a command line argument if needed. This function is unsafe
+// and SHOULD only be used to produce a nice output.
+func maybeQuoteArgUnsafe(a string) string {
 	if strings.Contains(a, "\"") {
 		a = strings.ReplaceAll(a, "\"", "\\\"")
 	}

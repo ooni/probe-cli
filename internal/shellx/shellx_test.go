@@ -75,7 +75,7 @@ func TestVerifyWeAddEnvironmentVariables(t *testing.T) {
 	env := &Envp{}
 
 	// Add the expected environment variables. The command we're
-	// going to run will exit(1) if it cannot find them.
+	// going to run will exit with nonzero exit code if it cannot find them.
 	env.Append("ANTANI", "antani")
 	env.Append("MASCETTI", "mascetti")
 	env.Append("STUZZICA", "stuzzica")
@@ -200,7 +200,7 @@ func TestRun(t *testing.T) {
 }
 
 func TestRunCommandLine(t *testing.T) {
-	t.Run("with a valid command", func(t *testing.T) {
+	t.Run("with a valid command line", func(t *testing.T) {
 		log, count := testLogger()
 		err := RunCommandLine(log, testGolangExe+" env")
 		if err != nil {
@@ -211,7 +211,7 @@ func TestRunCommandLine(t *testing.T) {
 		}
 	})
 
-	t.Run("with an invalid command", func(t *testing.T) {
+	t.Run("with an invalid command line", func(t *testing.T) {
 		log, count := testLogger()
 		err := RunCommandLine(log, "nonexistent env")
 		if !testErrorIsExecutableNotFound(err) {
@@ -233,7 +233,7 @@ func TestRunCommandLine(t *testing.T) {
 		}
 	})
 
-	t.Run("with invalid command line", func(t *testing.T) {
+	t.Run("with a command line that does not parse", func(t *testing.T) {
 		log, count := testLogger()
 		err := RunCommandLine(log, "\"foobar")
 		if !testErrorIsCannotParseCmdLine(err) {
@@ -243,26 +243,51 @@ func TestRunCommandLine(t *testing.T) {
 			t.Fatal("expected zero log messages, got", n)
 		}
 	})
-}
 
 func TestRunCommandLineQuiet(t *testing.T) {
-	t.Run("with a valid command", func(t *testing.T) {
+	t.Run("with a valid command line", func(t *testing.T) {
 		err := RunCommandLineQuiet(testGolangExe + " env")
 		if err != nil {
 			t.Fatal(err)
 		}
 	})
 
-	t.Run("with an invalid command", func(t *testing.T) {
+	t.Run("with an invalid command line", func(t *testing.T) {
 		err := RunCommandLineQuiet("nonexistent env")
 		if !testErrorIsExecutableNotFound(err) {
+			t.Fatal("unexpected error", err)
+		}
+		if len(output) > 0 {
+			t.Fatal("expected to see no output")
+		}
+		if n := count.Load(); n != 0 {
+			t.Fatal("expected zero log messages, got", n)
+		}
+	})
+
+	t.Run("with empty command line", func(t *testing.T) {
+		err := RunCommandLineQuiet("")
+		if !errors.Is(err, ErrNoCommandToExecute) {
+			t.Fatal("unexpected error", err)
+		}
+		if len(output) > 0 {
+			t.Fatal("expected to see no output")
+		}
+		if n := count.Load(); n != 0 {
+			t.Fatal("expected zero log messages, got", n)
+		}
+	})
+
+	t.Run("with a command line that does not parse", func(t *testing.T) {
+		err := RunCommandLineQuiet("\"foobar")
+		if !testErrorIsCannotParseCmdLine(err) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 }
 
 func TestOutputCommandLine(t *testing.T) {
-	t.Run("with a valid command", func(t *testing.T) {
+	t.Run("with a valid command line", func(t *testing.T) {
 		log, count := testLogger()
 		output, err := OutputCommandLine(log, testGolangExe+" env")
 		if err != nil {
@@ -276,7 +301,7 @@ func TestOutputCommandLine(t *testing.T) {
 		}
 	})
 
-	t.Run("with an invalid command", func(t *testing.T) {
+	t.Run("with an invalid command line", func(t *testing.T) {
 		log, count := testLogger()
 		output, err := OutputCommandLine(log, "nonexistent env")
 		if !testErrorIsExecutableNotFound(err) {
@@ -339,9 +364,29 @@ func TestOutputCommandLineQuiet(t *testing.T) {
 			t.Fatal("expected to see no output")
 		}
 	})
+
+	t.Run("with empty command line", func(t *testing.T) {
+		output, err := OutputCommandLineQuiet("")
+		if !errors.Is(err, ErrNoCommandToExecute) {
+			t.Fatal("unexpected error", err)
+		}
+		if len(output) > 0 {
+			t.Fatal("expected to see no output")
+		}
+	})
+
+	t.Run("with a command line that does not parse", func(t *testing.T) {
+		output, err := OutputCommandLineQuiet("\"foobar")
+		if !testErrorIsCannotParseCmdLine(err) {
+			t.Fatal("unexpected error", err)
+		}
+		if len(output) > 0 {
+			t.Fatal("expected to see no output")
+		}
+	})
 }
 
-func Test_maybeQuoteArg(t *testing.T) {
+func Test_maybeQuoteArgUnsafe(t *testing.T) {
 	type args struct {
 		a string
 	}
@@ -380,7 +425,7 @@ func Test_maybeQuoteArg(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := maybeQuoteArg(tt.args.a); got != tt.want {
+			if got := maybeQuoteArgUnsafe(tt.args.a); got != tt.want {
 				t.Errorf("maybeQuoteArg() = %v, want %v", got, tt.want)
 			}
 		})
