@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/ooni/probe-cli/v3/internal/cmd/buildtool/internal/buildtoolmodel"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/shellx"
 	"github.com/ooni/probe-cli/v3/internal/shellx/shellxtesting"
 	"golang.org/x/sys/execabs"
@@ -30,9 +31,7 @@ func CompareArgv(expected, got []string) error {
 	if len(expected) != len(got) {
 		return fmt.Errorf("expected %d entries but got %d", len(expected), len(got))
 	}
-	if len(got) < 1 {
-		return errors.New("expected at least one entry")
-	}
+	runtimex.Assert(len(got) >= 1, "too few entries")
 	if !strings.HasSuffix(got[0], expected[0]) {
 		return fmt.Errorf("expected %s prefix but got %s", expected[0], got[0])
 	}
@@ -60,6 +59,7 @@ func CompareEnv(expected, got []string) error {
 	}
 	var issues []string
 	for value, flags := range uniq {
+		runtimex.Assert(flags&(^(weExpected|weGot)) == 0, "extra flags")
 		switch flags {
 		case weExpected | weGot:
 			// nothing
@@ -67,8 +67,6 @@ func CompareEnv(expected, got []string) error {
 			issues = append(issues, fmt.Sprintf("* we got %s, which we don't expected", value))
 		case weExpected:
 			issues = append(issues, fmt.Sprintf("* we expected but did not see %s", value))
-		default:
-			panic("not possible")
 		}
 	}
 	if len(issues) > 0 {
@@ -95,9 +93,7 @@ func CheckManyCommands(cmd []*execabs.Cmd, tee []ExecExpectations) error {
 	if len(cmd) != len(tee) {
 		return fmt.Errorf("expected to see %d commands, got %d", len(tee), len(cmd))
 	}
-	if len(cmd) <= 0 {
-		return fmt.Errorf("expected to see at least one command")
-	}
+	runtimex.Assert(len(cmd) > 0, "expected to see at least one command")
 	for idx := 0; idx < len(cmd); idx++ {
 		if err := CheckSingleCommand(cmd[idx], tee[idx]); err != nil {
 			return err
@@ -136,12 +132,12 @@ const CanonicalGolangVersion = "1.14.17"
 
 // constants describing the several functions we can call
 const (
-	TagGolangCheck           = "golangCheck"
-	TagLinuxReadGOVERSION    = "linuxReadGOVERSION"
-	TagLinuxWriteDockerfile  = "linuxWriteDockerfile"
-	TagPsiphonFilesExist     = "psiphonFilesExist"
-	TagMaybeCopyPsiphonFiles = "maybeCopyPsiphonFiles"
-	TagWindowsMingwCheck     = "windowsMingwCheck"
+	TagGolangCheck                 = "golangCheck"
+	TagLinuxReadGOVERSION          = "linuxReadGOVERSION"
+	TagLinuxWriteDockerfile        = "linuxWriteDockerfile"
+	TagPsiphonFilesExist           = "psiphonFilesExist"
+	TagPsiphonMaybeCopyConfigFiles = "maybeCopyPsiphonFiles"
+	TagWindowsMingwCheck           = "windowsMingwCheck"
 )
 
 // DependenciesCallCounter allows to counter how many times the
@@ -180,7 +176,7 @@ func (cc *DependenciesCallCounter) PsiphonFilesExist() bool {
 
 // psiphonMaybeCopyConfigFiles implements buildDeps
 func (cc *DependenciesCallCounter) PsiphonMaybeCopyConfigFiles() {
-	cc.increment(TagMaybeCopyPsiphonFiles)
+	cc.increment(TagPsiphonMaybeCopyConfigFiles)
 }
 
 // windowsMingwCheck implements buildDeps

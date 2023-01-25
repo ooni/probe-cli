@@ -6,7 +6,7 @@ import (
 	"golang.org/x/sys/execabs"
 )
 
-func TestTestCheckManyCommands(t *testing.T) {
+func TestCheckManyCommands(t *testing.T) {
 
 	type testcase struct {
 		name      string
@@ -36,7 +36,7 @@ func TestTestCheckManyCommands(t *testing.T) {
 		}},
 		expectErr: false,
 	}, {
-		name: "where the issue is with the environment",
+		name: "where we didn't find the environment we expected",
 		cmd: []*execabs.Cmd{{
 			Path: "/usr/local/bin/go",
 			Args: []string{"go", "version"},
@@ -47,13 +47,51 @@ func TestTestCheckManyCommands(t *testing.T) {
 		}},
 		expectErr: true,
 	}, {
-		name: "where the issue is with the argv",
+		name: "where a specific command line argument differs",
 		cmd: []*execabs.Cmd{{
 			Path: "/usr/local/bin/go",
 			Args: []string{"go", "version"},
 		}},
 		tee: []ExecExpectations{{
 			Argv: []string{"go", "env"},
+		}},
+		expectErr: true,
+	}, {
+		name: "where the argvs have different length",
+		cmd: []*execabs.Cmd{{
+			Path: "/usr/local/bin/go",
+			Args: []string{"go", "version"},
+		}},
+		tee: []ExecExpectations{{
+			Argv: []string{"go", "env", "GOPATH"},
+		}},
+		expectErr: true,
+	}, {
+		name: "where the argv[0] suffix does not match",
+		cmd: []*execabs.Cmd{{
+			Path: "/usr/local/bin/go1.17.9",
+			Args: []string{"go1.17.9", "version"},
+		}},
+		tee: []ExecExpectations{{
+			Argv: []string{"go", "version"},
+		}},
+		expectErr: true,
+	}, {
+		name: "where we got more environment than expected",
+		cmd: []*execabs.Cmd{{
+			Path: "/usr/local/bin/go",
+			Args: []string{"go", "version"},
+			Env:  []string{"GOPATH=/tmp"},
+		}},
+		tee: []ExecExpectations{{
+			Argv: []string{"go", "version"},
+		}},
+		expectErr: true,
+	}, {
+		name: "with mismatch between number of commands and expectations",
+		cmd:  []*execabs.Cmd{},
+		tee: []ExecExpectations{{
+			Argv: []string{"go", "version"},
 		}},
 		expectErr: true,
 	}}
@@ -71,7 +109,7 @@ func TestTestCheckManyCommands(t *testing.T) {
 	}
 }
 
-func TestTestSimpleCommandCollector(t *testing.T) {
+func TestSimpleCommandCollector(t *testing.T) {
 	t.Run("LookPath", func(t *testing.T) {
 		cc := &SimpleCommandCollector{}
 		path, err := cc.LookPath("go")
@@ -110,16 +148,70 @@ func TestTestSimpleCommandCollector(t *testing.T) {
 	})
 }
 
-func TestTestDependenciesCallCounter(t *testing.T) {
-	t.Run("golangCheck", func(t *testing.T) {})
+func TestDependenciesCallCounter(t *testing.T) {
+	t.Run("golangCheck", func(t *testing.T) {
+		cc := &DependenciesCallCounter{}
+		cc.GolangCheck()
+		if cc.Counter[TagGolangCheck] != 1 {
+			t.Fatal("did not increment")
+		}
+	})
 
-	t.Run("linuxReadGOVERSION", func(t *testing.T) {})
+	t.Run("linuxReadGOVERSION", func(t *testing.T) {
+		cc := &DependenciesCallCounter{}
+		cc.LinuxReadGOVERSION("xo")
+		if cc.Counter[TagLinuxReadGOVERSION] != 1 {
+			t.Fatal("did not increment")
+		}
+	})
 
-	t.Run("linuxWriteDOCKEFILE", func(t *testing.T) {})
+	t.Run("linuxWriteDOCKEFILE", func(t *testing.T) {
+		cc := &DependenciesCallCounter{}
+		cc.LinuxWriteDockerfile("xo", nil, 0600)
+		if cc.Counter[TagLinuxWriteDockerfile] != 1 {
+			t.Fatal("did not increment")
+		}
+	})
 
-	t.Run("psiphonFileExists", func(t *testing.T) {})
+	t.Run("psiphonFileExists", func(t *testing.T) {
+		t.Run("if false", func(t *testing.T) {
+			cc := &DependenciesCallCounter{}
+			got := cc.PsiphonFilesExist()
+			if got {
+				t.Fatal("expected false here")
+			}
+			if cc.Counter[TagPsiphonFilesExist] != 1 {
+				t.Fatal("did not increment")
+			}
+		})
 
-	t.Run("psiphonMaybeCopyConfigFiles", func(t *testing.T) {})
+		t.Run("if false", func(t *testing.T) {
+			cc := &DependenciesCallCounter{
+				HasPsiphon: true,
+			}
+			got := cc.PsiphonFilesExist()
+			if !got {
+				t.Fatal("expected true here")
+			}
+			if cc.Counter[TagPsiphonFilesExist] != 1 {
+				t.Fatal("did not increment")
+			}
+		})
+	})
 
-	t.Run("windowsMingwCheck", func(t *testing.T) {})
+	t.Run("psiphonMaybeCopyConfigFiles", func(t *testing.T) {
+		cc := &DependenciesCallCounter{}
+		cc.PsiphonMaybeCopyConfigFiles()
+		if cc.Counter[TagPsiphonMaybeCopyConfigFiles] != 1 {
+			t.Fatal("did not increment")
+		}
+	})
+
+	t.Run("windowsMingwCheck", func(t *testing.T) {
+		cc := &DependenciesCallCounter{}
+		cc.WindowsMingwCheck()
+		if cc.Counter[TagWindowsMingwCheck] != 1 {
+			t.Fatal("did not increment")
+		}
+	})
 }

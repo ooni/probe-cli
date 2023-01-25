@@ -130,9 +130,9 @@ func TestDarwinBuildAll(t *testing.T) {
 			})
 
 			expectCalls := map[string]int{
-				buildtooltest.TagGolangCheck:           1,
-				buildtooltest.TagMaybeCopyPsiphonFiles: 1,
-				buildtooltest.TagPsiphonFilesExist:     4,
+				buildtooltest.TagGolangCheck:                 1,
+				buildtooltest.TagPsiphonMaybeCopyConfigFiles: 1,
+				buildtooltest.TagPsiphonFilesExist:           4,
 			}
 
 			if diff := cmp.Diff(expectCalls, deps.Counter); diff != "" {
