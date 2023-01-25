@@ -1,4 +1,4 @@
-//go:build android || ooni_libtor
+//go:build ooni_libtor
 
 package tunnel
 

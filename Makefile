@@ -151,10 +151,6 @@ CLI/windows:
 #help: The `make MOBILE/android` command builds the oonimkall library for Android.
 .PHONY: MOBILE/android
 MOBILE/android: search/for/go search/for/android/sdk maybe/copypsiphon
-	./CDEPS/build-android 386 zlib openssl libevent tor
-	./CDEPS/build-android amd64 zlib openssl libevent tor
-	./CDEPS/build-android arm zlib openssl libevent tor
-	./CDEPS/build-android arm64 zlib openssl libevent tor
 	./MOBILE/gomobile android ./pkg/oonimkall
 	./MOBILE/android/createpom
 
