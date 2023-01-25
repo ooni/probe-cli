@@ -138,7 +138,7 @@ func cmd(config *Config, argv *Argv, envp *Envp) *execabs.Cmd {
 		cmd.Env = append(cmd.Env, entry)
 	}
 	if config.Logger != nil {
-		cmdline := quotedCommandLine(argv.P, argv.V...)
+		cmdline := quotedCommandLineUnsafe(argv.P, argv.V...)
 		config.Logger.Infof("+ %s", cmdline)
 	}
 	return cmd
@@ -204,8 +204,7 @@ func run(logger model.Logger, flags int64, command string, args ...string) error
 	return RunEx(config, argv, envp)
 }
 
-// RunQuiet runs the given command without emitting any output and
-// using the environment variables in the current [Envp].
+// RunQuiet runs the given command without emitting any output.
 func RunQuiet(command string, args ...string) error {
 	return run(nil, 0, command, args...)
 }
@@ -272,18 +271,20 @@ func OutputCommandLine(logger model.Logger, cmdline string) ([]byte, error) {
 // ErrNoCommandToExecute means that the command line is empty.
 var ErrNoCommandToExecute = errors.New("shellx: no command to execute")
 
-// quotedCommandLine returns a quoted command line.
-func quotedCommandLine(command string, args ...string) string {
+// quotedCommandLineUnsafe returns a quoted command line. This function is unsafe
+// and SHOULD only be used to produce a nice output.
+func quotedCommandLineUnsafe(command string, args ...string) string {
 	v := []string{}
-	v = append(v, maybeQuoteArg(command))
+	v = append(v, maybeQuoteArgUnsafe(command))
 	for _, a := range args {
-		v = append(v, maybeQuoteArg(a))
+		v = append(v, maybeQuoteArgUnsafe(a))
 	}
 	return strings.Join(v, " ")
 }
 
-// maybeQuoteArg quotes a command line argument if needed.
-func maybeQuoteArg(a string) string {
+// maybeQuoteArgUnsafe quotes a command line argument if needed. This function is unsafe
+// and SHOULD only be used to produce a nice output.
+func maybeQuoteArgUnsafe(a string) string {
 	if strings.Contains(a, "\"") {
 		a = strings.ReplaceAll(a, "\"", "\\\"")
 	}
