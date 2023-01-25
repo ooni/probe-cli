@@ -24,10 +24,11 @@ func main() {
 	logHandler.Emoji = true
 	log.Log = &log.Logger{Level: log.InfoLevel, Handler: logHandler}
 
-	go func() {
+	defer func() {
 		if r := recover(); r != nil {
 			log.Fatalf("%+v", r)
 		}
+		log.Infof("done")
 	}()
 	err := root.Execute()
 	runtimex.PanicOnError(err, "root.Execute")
