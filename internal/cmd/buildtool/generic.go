@@ -5,7 +5,6 @@ package main
 //
 
 import (
-	"fmt"
 	"runtime"
 
 	"github.com/apex/log"
@@ -19,7 +18,7 @@ import (
 func genericSubcommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "generic",
-		Short: fmt.Sprintf("Generic Go builder for %s/%s", runtime.GOOS, runtime.GOARCH),
+		Short: "Generic Go builder for the current GOOS and GOARCH",
 	}
 	cmd.AddCommand(&cobra.Command{
 		Use:   "miniooni",
