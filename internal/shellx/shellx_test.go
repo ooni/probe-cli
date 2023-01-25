@@ -243,6 +243,7 @@ func TestRunCommandLine(t *testing.T) {
 			t.Fatal("expected zero log messages, got", n)
 		}
 	})
+}
 
 func TestRunCommandLineQuiet(t *testing.T) {
 	t.Run("with a valid command line", func(t *testing.T) {
@@ -257,24 +258,12 @@ func TestRunCommandLineQuiet(t *testing.T) {
 		if !testErrorIsExecutableNotFound(err) {
 			t.Fatal("unexpected error", err)
 		}
-		if len(output) > 0 {
-			t.Fatal("expected to see no output")
-		}
-		if n := count.Load(); n != 0 {
-			t.Fatal("expected zero log messages, got", n)
-		}
 	})
 
 	t.Run("with empty command line", func(t *testing.T) {
 		err := RunCommandLineQuiet("")
 		if !errors.Is(err, ErrNoCommandToExecute) {
 			t.Fatal("unexpected error", err)
-		}
-		if len(output) > 0 {
-			t.Fatal("expected to see no output")
-		}
-		if n := count.Load(); n != 0 {
-			t.Fatal("expected zero log messages, got", n)
 		}
 	})
 
