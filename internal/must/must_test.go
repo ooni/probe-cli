@@ -3,6 +3,7 @@ package must
 import (
 	"bytes"
 	"io"
+	"net"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -88,9 +89,24 @@ func TestUnmarshalJSON(t *testing.T) {
 }
 
 func TestListen(t *testing.T) {
-	conn := Listen("tcp", "127.0.0.1:0")
-	// TODO(bassosimone): unclear to me what to test here?
+	listener := Listen("tcp", "127.0.0.1:0")
+	defer listener.Close()
+	errch := make(chan error, 1)
+	go func() {
+		conn, err := listener.Accept()
+		errch <- err
+		if err == nil {
+			conn.Close()
+		}
+	}()
+	conn, err := net.Dial("tcp", listener.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
 	conn.Close()
+	if err := <-errch; err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestNewHTTPRequest(t *testing.T) {
@@ -187,6 +203,7 @@ func TestCopyFile(t *testing.T) {
 	sourcefile := filepath.Join("testdata", ".gitignore")
 	expect := ReadFile(sourcefile)
 	destfile := filepath.Join("testdata", "copy.txt")
+	defer os.Remove(destfile)
 	CopyFile(sourcefile, destfile, 0600)
 	got := ReadFile(destfile)
 	if diff := cmp.Diff(expect, got); diff != "" {
