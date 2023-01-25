@@ -1,15 +1,19 @@
-// Package shellx runs external commands.
+// Package shellx helps to write shell-like Go code.
 package shellx
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"strings"
 
 	"github.com/google/shlex"
+	"github.com/ooni/probe-cli/v3/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // Dependencies is the library on which this package depends.
@@ -24,107 +28,63 @@ type Dependencies interface {
 	LookPath(file string) (string, error)
 }
 
-// Library contains the default dependencies. You will want to change
-// this variable when writing tests.
+// Library contains the default dependencies.
 var Library Dependencies = &StdlibDependencies{}
 
 // StdlibDependencies contains the stdlib implementation of the [Dependencies].
 type StdlibDependencies struct{}
 
-// CmdOutput implements Dependencies
+// CmdOutput implements [Dependencies].
 func (*StdlibDependencies) CmdOutput(c *exec.Cmd) ([]byte, error) {
 	return c.Output()
 }
 
-// CmdRun implements Dependencies
+// CmdRun implements [Dependencies].
 func (*StdlibDependencies) CmdRun(c *exec.Cmd) error {
 	return c.Run()
 }
 
-// LookPath implements Dependencies
+// LookPath implements [Dependencies].
 func (*StdlibDependencies) LookPath(file string) (string, error) {
 	return exec.LookPath(file)
 }
 
-// Env is the environment in which we execute commands.
-type Env struct {
-	// Vars contains the environment variables to add to the current
+// Envp is the environment in which we execute commands.
+type Envp struct {
+	// V contains the OPTIONAL environment variables to add to the current
 	// environment when we're executing commands.
-	Vars []string
+	V []string
 }
 
 // Append appends an environment variable to the environment.
-func (e *Env) Append(key, value string) {
-	e.Vars = append(e.Vars, fmt.Sprintf("%s=%s", key, value))
+func (e *Envp) Append(key, value string) {
+	e.V = append(e.V, fmt.Sprintf("%s=%s", key, value))
 }
 
-// OutputQuiet is like RunQuiet except that, in case of success, it captures
-// the standard output and returns it to the caller.
-func (e *Env) OutputQuiet(command string, args ...string) ([]byte, error) {
-	return e.Output(nil, command, args...)
+// Argv contains the complete argv.
+type Argv struct {
+	// P is the MANDATORY program to execute.
+	P string
+
+	// V contains the OPTIONAL arguments.
+	V []string
 }
 
-// Output is like OutputQuiet except that it logs the command to be executed
-// and the environment variables specific to this command.
-func (e *Env) Output(logger model.Logger, command string, args ...string) ([]byte, error) {
-	cmd, err := e.cmd(logger, command, args...)
+// NewArgv creates a new [Argv] from the given command and arguments.
+func NewArgv(command string, args ...string) (*Argv, error) {
+	fullpath, err := Library.LookPath(command) // allows mocking
 	if err != nil {
 		return nil, err
 	}
-	if logger != nil {
-		// note: cmd.Output wants the stdout to be nil
-		cmd.Stderr = os.Stderr
+	argv := &Argv{
+		P: fullpath,
+		V: args,
 	}
-	return Library.CmdOutput(cmd) // allows mocking
+	return argv, nil
 }
 
-// RunQuiet runs the given command without emitting any output and
-// using the environment variables in the current [Env].
-func (e *Env) RunQuiet(command string, args ...string) error {
-	return e.Run(nil, command, args...)
-}
-
-// Run is like RunQuiet except that it also logs the command to be
-// executed, the environment variables specific to this command, the
-// text logged to stdout and stderr.
-func (e *Env) Run(logger model.Logger, command string, args ...string) error {
-	cmd, err := e.cmd(logger, command, args...)
-	if err != nil {
-		return err
-	}
-	if logger != nil {
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-	}
-	return Library.CmdRun(cmd) // allows mocking
-}
-
-// RunCommandLineQuiet is like RunQuiet but takes a command line as argument.
-func (e *Env) RunCommandLineQuiet(cmdline string) error {
-	return e.RunCommandLine(nil, cmdline)
-}
-
-// RunCommandLine is like RunCommandLineQuiet but logs the command to
-// execute as well as the command-specific environment variables.
-func (e *Env) RunCommandLine(logger model.Logger, cmdline string) error {
-	args, err := shlex.Split(cmdline)
-	if err != nil {
-		return err
-	}
-	if len(args) < 1 {
-		return ErrNoCommandToExecute
-	}
-	return e.Run(logger, args[0], args[1:]...)
-}
-
-// OutputCommandLineQuiet is like OutputQuiet but takes a command line as argument.
-func (e *Env) OutputCommandLineQuiet(cmdline string) ([]byte, error) {
-	return e.OutputCommandLine(nil, cmdline)
-}
-
-// OutputCommandLine is like OutputCommandLineQuiet but logs the command to
-// execute as well as the command-specific environment variables.
-func (e *Env) OutputCommandLine(logger model.Logger, cmdline string) ([]byte, error) {
+// ParseCommandLine creates an instance of [Argv] from the given command line.
+func ParseCommandLine(cmdline string) (*Argv, error) {
 	args, err := shlex.Split(cmdline)
 	if err != nil {
 		return nil, err
@@ -132,54 +92,175 @@ func (e *Env) OutputCommandLine(logger model.Logger, cmdline string) ([]byte, er
 	if len(args) < 1 {
 		return nil, ErrNoCommandToExecute
 	}
-	return e.Output(logger, args[0], args[1:]...)
+	return NewArgv(args[0], args[1:]...)
 }
 
-// cmd is an internal factory for creating a new command.
-func (e *Env) cmd(logger model.Logger, command string, args ...string) (*exec.Cmd, error) {
-	fullpath, err := Library.LookPath(command) // allows mocking
-	if err != nil {
-		return nil, err
-	}
+// Append appends arguments to the command line.
+func (a *Argv) Append(args ...string) {
+	a.V = append(a.V, args...)
+}
+
+const (
+	// FlagShowStdoutStderr enables connecting the child's stdout and stderr
+	// to the current program's stdout and stderr.
+	FlagShowStdoutStderr = 1 << iota
+)
+
+// Config contains config for executing programs.
+type Config struct {
+	// Logger is the OPTIONAL logger to use.
+	Logger model.Logger
+
+	// Flags contains OPTIONAL binary flags to configure the program.
+	Flags int64
+}
+
+// cmd creates a new [exec.Cmd] instance.
+func cmd(config *Config, argv *Argv, envp *Envp) *exec.Cmd {
 	// Implementation note: since Go 1.19 we don't need to use the execabs
 	// package anymore. See <https://tip.golang.org/doc/go1.19>.
-	cmd := exec.Command(fullpath, args...)
+	cmd := exec.Command(argv.P, argv.V...)
 	cmd.Env = os.Environ()
-	for _, entry := range e.Vars {
-		if logger != nil {
-			logger.Infof("+ export %s", entry)
+	for _, entry := range envp.V {
+		if config.Logger != nil {
+			config.Logger.Infof("+ export %s", entry)
 		}
 		cmd.Env = append(cmd.Env, entry)
 	}
-	if logger != nil {
-		cmdline := quotedCommandLine(fullpath, args...)
-		logger.Infof("+ %s", cmdline)
+	if config.Logger != nil {
+		cmdline := quotedCommandLine(argv.P, argv.V...)
+		config.Logger.Infof("+ %s", cmdline)
 	}
-	return cmd, nil
+	return cmd
 }
 
-// Run calls [Env.Run] using an empty [Env].
-func Run(logger model.Logger, program string, args ...string) error {
-	return (&Env{}).Run(logger, program, args...)
+// OutputEx implements [Output] and [OutputQuiet].
+func OutputEx(config *Config, argv *Argv, envp *Envp) ([]byte, error) {
+	cmd := cmd(config, argv, envp)
+	if (config.Flags & FlagShowStdoutStderr) != 0 {
+		// note: cmd.Output wants the stdout to be nil
+		cmd.Stderr = os.Stderr
+	}
+	return Library.CmdOutput(cmd) // allows mocking
 }
 
-// RunQuiet calls [Env.RunQuiet] using an empty [Env].
-func RunQuiet(program string, args ...string) error {
-	return (&Env{}).RunQuiet(program, args...)
+// output is the common implementation of [Output] and [OutputQuiet].
+func output(logger model.Logger, flags int64, command string, args ...string) ([]byte, error) {
+	argv, err := NewArgv(command, args...)
+	if err != nil {
+		return nil, err
+	}
+	envp := &Envp{}
+	config := &Config{
+		Logger: logger,
+		Flags:  flags,
+	}
+	return OutputEx(config, argv, envp)
+}
+
+// OutputQuiet is like [RunQuiet] except that, in case of success, it captures
+// the standard output and returns it to the caller.
+func OutputQuiet(command string, args ...string) ([]byte, error) {
+	return output(nil, 0, command, args...)
+}
+
+// Output is like [OutputQuiet] except that it logs the command to be executed
+// and the environment variables specific to this command.
+func Output(logger model.Logger, command string, args ...string) ([]byte, error) {
+	return output(logger, FlagShowStdoutStderr, command, args...)
+}
+
+// RunEx implements [Run] and [RunQuiet].
+func RunEx(config *Config, argv *Argv, envp *Envp) error {
+	cmd := cmd(config, argv, envp)
+	if config.Flags&FlagShowStdoutStderr != 0 {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
+	return Library.CmdRun(cmd) // allows mocking
+}
+
+// run is the common implementation of [Run] and [RunQuiet].
+func run(logger model.Logger, flags int64, command string, args ...string) error {
+	argv, err := NewArgv(command, args...)
+	if err != nil {
+		return err
+	}
+	envp := &Envp{}
+	config := &Config{
+		Logger: logger,
+		Flags:  flags,
+	}
+	return RunEx(config, argv, envp)
+}
+
+// RunQuiet runs the given command without emitting any output and
+// using the environment variables in the current [Envp].
+func RunQuiet(command string, args ...string) error {
+	return run(nil, 0, command, args...)
+}
+
+// Run is like [RunQuiet] except that it also logs the command to
+// exec, the environment variables specific to this command, the text
+// logged to stdout and stderr.
+func Run(logger model.Logger, command string, args ...string) error {
+	return run(logger, FlagShowStdoutStderr, command, args...)
+}
+
+// runCommandLine is the common implementation of
+// [RunCommandLineQuiet] and [RunCommandLine].
+func runCommandLine(logger model.Logger, flags int64, cmdline string) error {
+	argv, err := ParseCommandLine(cmdline)
+	if err != nil {
+		return err
+	}
+	envp := &Envp{}
+	config := &Config{
+		Logger: logger,
+		Flags:  flags,
+	}
+	return RunEx(config, argv, envp)
+}
+
+// RunCommandLineQuiet is like [RunQuiet] but takes a command line as argument.
+func RunCommandLineQuiet(cmdline string) error {
+	return runCommandLine(nil, 0, cmdline)
+}
+
+// RunCommandLine is like [RunCommandLineQuiet] but logs the command to
+// execute as well as the command-specific environment variables.
+func RunCommandLine(logger model.Logger, cmdline string) error {
+	return runCommandLine(logger, FlagShowStdoutStderr, cmdline)
+}
+
+// outputCommandLine is the common implementation
+// of [OutputCommandLineQuiet] and [OutputCommandLine].
+func outputCommandLine(logger model.Logger, flags int64, cmdline string) ([]byte, error) {
+	argv, err := ParseCommandLine(cmdline)
+	if err != nil {
+		return nil, err
+	}
+	envp := &Envp{}
+	config := &Config{
+		Logger: logger,
+		Flags:  flags,
+	}
+	return OutputEx(config, argv, envp)
+}
+
+// OutputCommandLineQuiet is like [OutputQuiet] but takes a command line as argument.
+func OutputCommandLineQuiet(cmdline string) ([]byte, error) {
+	return outputCommandLine(nil, 0, cmdline)
+}
+
+// OutputCommandLine is like OutputCommandLineQuiet but logs the command to
+// execute as well as the command-specific environment variables.
+func OutputCommandLine(logger model.Logger, cmdline string) ([]byte, error) {
+	return outputCommandLine(logger, FlagShowStdoutStderr, cmdline)
 }
 
 // ErrNoCommandToExecute means that the command line is empty.
 var ErrNoCommandToExecute = errors.New("shellx: no command to execute")
-
-// RunCommandLine calls [Env.RunCommandLine] using an empty [Env].
-func RunCommandLine(logger model.Logger, cmdline string) error {
-	return (&Env{}).RunCommandLine(logger, cmdline)
-}
-
-// RunCommandLineQuiet calls [Env.RunCommandLineQuiet] using an empty [Env].
-func RunCommandLineQuiet(cmdline string) error {
-	return (&Env{}).RunCommandLineQuiet(cmdline)
-}
 
 // quotedCommandLine returns a quoted command line.
 func quotedCommandLine(command string, args ...string) string {
@@ -200,4 +281,31 @@ func maybeQuoteArg(a string) string {
 		a = "\"" + a + "\""
 	}
 	return a
+}
+
+// fsxOpenFile is the function to open a file for reading.
+var fsxOpenFile = fsx.OpenFile
+
+// osOpenFile is the generic function to open a file.
+var osOpenFile = os.OpenFile
+
+// netxliteCopyContext is the generic function to copy content.
+var netxliteCopyContext = netxlite.CopyContext
+
+// CopyFile copies [source] to [dest].
+func CopyFile(source, dest string, perms fs.FileMode) error {
+	sourcefp, err := fsxOpenFile(source)
+	if err != nil {
+		return err
+	}
+	defer sourcefp.Close()
+	destfp, err := osOpenFile(dest, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, perms)
+	if err != nil {
+		return err
+	}
+	if _, err := netxliteCopyContext(context.Background(), destfp, sourcefp); err != nil {
+		destfp.Close()
+		return err
+	}
+	return destfp.Close()
 }
