@@ -1,5 +1,8 @@
 package main
 
+//
+// Building C dependencies: tor
+//
 // Adapted from https://github.com/guardianproject/tor-android
 // SPDX-License-Identifier: BSD-3-Clause
 
@@ -16,19 +19,19 @@ import (
 
 // cdepsTorBuildMain is the script that builds tor.
 func cdepsTorBuildMain(cdenv *cdepsEnv, deps cdepsDependencies) {
-	topdir := deps.absoluteCurDir()
+	topdir := deps.absoluteCurDir() // must be mockable
 	work := cdepsMustMkdirTemp()
 	restore := cdepsMustChdir(work)
 	defer restore()
 
 	// See https://github.com/Homebrew/homebrew-core/blob/master/Formula/tor.rb
 	cdepsMustFetch("https://www.torproject.org/dist/tor-0.4.7.12.tar.gz")
-	deps.verifySHA256(
+	deps.verifySHA256( // must be mockable
 		"3b5d969712c467851bd028f314343ef15a97ea457191e93ffa97310b05b9e395",
 		"tor-0.4.7.12.tar.gz",
 	)
 	must.Run(log.Log, "tar", "-xf", "tor-0.4.7.12.tar.gz")
-	_ = deps.mustChdir("tor-0.4.7.12")
+	_ = deps.mustChdir("tor-0.4.7.12") // must be mockable
 
 	mydir := filepath.Join(topdir, "CDEPS", "tor")
 	for _, patch := range cdepsMustListPatches(mydir) {
@@ -36,8 +39,8 @@ func cdepsTorBuildMain(cdenv *cdepsEnv, deps cdepsDependencies) {
 	}
 
 	envp := &shellx.Envp{}
-	cdenv.addCflags(envp)
-	cdenv.addLdflags(envp)
+	cdepsAddCflags(envp, cdenv)
+	cdepsAddLdflags(envp, cdenv)
 
 	argv := runtimex.Try1(shellx.NewArgv("./configure"))
 	if cdenv.configureHost != "" {

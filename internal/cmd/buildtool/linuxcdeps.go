@@ -1,5 +1,9 @@
 package main
 
+//
+// Allows building C dependencies using Linux
+//
+
 import (
 	"fmt"
 	"path/filepath"
