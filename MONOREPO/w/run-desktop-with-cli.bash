@@ -30,7 +30,7 @@ arm64)
 	;;
 esac
 
-run make CLI/ooniprobe
+run ./CLI/go-build-generic ./cmd/ooniprobe
 run mkdir -p ./MONOREPO/repo/probe-desktop/build/probe-cli/${GOOS}_${GOARCH}
 run mv -v ooniprobe ./MONOREPO/repo/probe-desktop/build/probe-cli/${GOOS}_${GOARCH}
 (

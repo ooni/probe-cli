@@ -89,63 +89,66 @@ CLI/android-arm64: search/for/go search/for/android/sdk maybe/copypsiphon
 #help: command line clients for darwin/amd64 and darwin/arm64.
 .PHONY: CLI/darwin
 CLI/darwin:
-	go run ./internal/cmd/buildtool build darwin
+	go run ./internal/cmd/buildtool darwin
 
 #help:
 #help: The `make CLI/linux-static-386` command builds and statically links the
 #help: ooniprobe and miniooni binaries for linux/386.
 .PHONY: CLI/linux-static-386
-CLI/linux-static-386:
-	go run ./internal/cmd/buildtool build linux-docker 386
+CLI/linux-static-386: search/for/docker maybe/copypsiphon
+	./CLI/go-build-linux-static $(OONI_GO_DOCKER_GOCACHE) 386 ./cmd/ooniprobe ./internal/cmd/miniooni
 
 #help:
 #help: The `make CLI/linux-static-amd64` command builds and statically links the
 #help: ooniprobe and miniooni binaries for linux/amd64.
 .PHONY: CLI/linux-static-amd64
-CLI/linux-static-amd64:
-	go run ./internal/cmd/buildtool build linux-docker amd64
+CLI/linux-static-amd64: search/for/docker maybe/copypsiphon
+	./CLI/go-build-linux-static $(OONI_GO_DOCKER_GOCACHE) amd64 ./cmd/ooniprobe ./internal/cmd/miniooni
 
 #help:
 #help: The `make CLI/linux-static-armv6` command builds and statically links the
 #help: ooniprobe and miniooni binaries for linux/arm/v6.
 .PHONY: CLI/linux-static-armv6
-CLI/linux-static-armv6:
-	go run ./internal/cmd/buildtool build linux-docker armv6
+CLI/linux-static-armv6: search/for/docker maybe/copypsiphon
+	./CLI/go-build-linux-static $(OONI_GO_DOCKER_GOCACHE) armv6 ./cmd/ooniprobe ./internal/cmd/miniooni
 
 #help:
 #help: The `make CLI/linux-static-armv7` command builds and statically links the
 #help: ooniprobe and miniooni binaries for linux/arm/v7.
 .PHONY: CLI/linux-static-armv7
-CLI/linux-static-armv7:
-	go run ./internal/cmd/buildtool build linux-docker armv7
+CLI/linux-static-armv7: search/for/docker maybe/copypsiphon
+	./CLI/go-build-linux-static $(OONI_GO_DOCKER_GOCACHE) armv7 ./cmd/ooniprobe ./internal/cmd/miniooni
 
 #help:
 #help: The `make CLI/linux-static-arm64` command builds and statically links the
 #help: ooniprobe and miniooni binaries for linux/arm64.
 .PHONY: CLI/linux-static-arm64
-CLI/linux-static-arm64:
-	go run ./internal/cmd/buildtool build linux-docker arm64
+CLI/linux-static-arm64: search/for/docker maybe/copypsiphon
+	./CLI/go-build-linux-static $(OONI_GO_DOCKER_GOCACHE) arm64 ./cmd/ooniprobe ./internal/cmd/miniooni
 
 #help:
 #help: The `make CLI/miniooni` command creates a build of miniooni, for the current
 #help: system, putting the binary in the top-level directory.
 .PHONY: CLI/miniooni
-CLI/miniooni:
-	go run ./internal/cmd/buildtool build miniooni
+CLI/miniooni: maybe/copypsiphon search/for/go
+	./CLI/go-build-generic ./internal/cmd/miniooni
 
 #help:
 #help: The `make CLI/ooniprobe` command creates a build of ooniprobe, for the current
 #help: system, putting the binary in the top-level directory.
 .PHONY: CLI/ooniprobe
-CLI/ooniprobe:
-	go run ./internal/cmd/buildtool build ooniprobe
+CLI/ooniprobe: maybe/copypsiphon search/for/go
+	./CLI/go-build-generic ./cmd/ooniprobe
 
 #help:
 #help: The `make CLI/windows` command builds the ooniprobe and miniooni
 #help: command line clients for windows/386 and windows/amd64.
 .PHONY: CLI/windows
-CLI/windows:
-	go run ./internal/cmd/buildtool build windows
+CLI/windows: search/for/go search/for/mingw-w64 maybe/copypsiphon
+	./CLI/go-build-windows 386 ./internal/cmd/miniooni
+	./CLI/go-build-windows 386 ./cmd/ooniprobe
+	./CLI/go-build-windows amd64 ./internal/cmd/miniooni
+	./CLI/go-build-windows amd64 ./cmd/ooniprobe
 
 #help:
 #help: The `make MOBILE/android` command builds the oonimkall library for Android.
@@ -180,6 +183,10 @@ search/for/go:
 search/for/java:
 	@printf "checking for java... "
 	@command -v java || { echo "not found"; exit 1; }
+
+.PHONY: search/for/mingw-w64
+search/for/mingw-w64:
+	./CLI/check-mingw-w64-version
 
 .PHONY: search/for/xcode
 search/for/xcode:
