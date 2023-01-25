@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync/atomic"
 	"syscall"
 	"testing"
@@ -102,6 +103,16 @@ func TestRegularFileExists(t *testing.T) {
 	t.Run("for nonexisting file", func(t *testing.T) {
 		path := filepath.Join("testdata", "nonexistent")
 		exists := RegularFileExists(path)
+		if exists {
+			t.Fatal("should not exist")
+		}
+	})
+
+	t.Run("for a special file", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("skip test under windows")
+		}
+		exists := RegularFileExists("/dev/null")
 		if exists {
 			t.Fatal("should not exist")
 		}
