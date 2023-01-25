@@ -5,9 +5,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestCreateFile(t *testing.T) {
@@ -107,4 +109,32 @@ func TestSplitHostPort(t *testing.T) {
 	if addr != "127.0.0.1" || port != "8080" {
 		t.Fatal("unexpected result")
 	}
+}
+
+// testGolangExe is the golang exe to use in this test suite
+var testGolangExe string
+
+func init() {
+	switch runtime.GOOS {
+	case "windows":
+		testGolangExe = "go.exe"
+	default:
+		testGolangExe = "go"
+	}
+}
+
+func TestRun(t *testing.T) {
+	Run(model.DiscardLogger, testGolangExe, "version")
+}
+
+func TestRunQuiet(t *testing.T) {
+	RunQuiet(testGolangExe, "version")
+}
+
+func TestRunCommandLine(t *testing.T) {
+	RunCommandLine(model.DiscardLogger, testGolangExe+" version")
+}
+
+func TestRunCommandLineQuiet(t *testing.T) {
+	RunCommandLineQuiet(testGolangExe + " version")
 }

@@ -10,7 +10,9 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/shellx"
 )
 
 // CreateFile is like [os.Create] but calls
@@ -101,4 +103,30 @@ func SplitHostPort(hostport string) (host string, port string) {
 	host, port, err := net.SplitHostPort(hostport)
 	runtimex.PanicOnError(err, "net.SplitHostPort failed")
 	return host, port
+}
+
+// Run is like [shellx.Run] but calls [runtimex.PanicOnError] on failure.
+func Run(logger model.Logger, command string, args ...string) {
+	err := shellx.Run(logger, command, args...)
+	runtimex.PanicOnError(err, "shellx.Run failed")
+}
+
+// RunQuiet is like [shellx.RunQuiet] but calls [runtimex.PanicOnError] on failure.
+func RunQuiet(command string, args ...string) {
+	err := shellx.RunQuiet(command, args...)
+	runtimex.PanicOnError(err, "shellx.RunQuiet failed")
+}
+
+// RunCommandLine is like [shellx.RunCommandLine] but calls
+// [runtimex.PanicOnError] on failure.
+func RunCommandLine(logger model.Logger, cmdline string) {
+	err := shellx.RunCommandLine(logger, cmdline)
+	runtimex.PanicOnError(err, "shellx.RunCommandLine failed")
+}
+
+// RunCommandLineQuiet is like [shellx.RunCommandLineQuiet] but calls
+// [runtimex.PanicOnError] on failure.
+func RunCommandLineQuiet(cmdline string) {
+	err := shellx.RunCommandLineQuiet(cmdline)
+	runtimex.PanicOnError(err, "shellx.RunCommandLineQuiet failed")
 }
