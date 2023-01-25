@@ -70,7 +70,7 @@ func linuxDockerBuildAll(deps buildtoolmodel.Dependencies, ooniArch string) {
 		"-v", curdir+":/ooni",
 		"-w", "/ooni",
 		image,
-		"go", "run", "./internal/cmd/buildtool", "linux-static", "--goarm", goarm,
+		"go", "run", "./internal/cmd/buildtool", "linux", "static", "--goarm", goarm,
 	)
 }
 
