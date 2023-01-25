@@ -144,11 +144,8 @@ CLI/ooniprobe: maybe/copypsiphon search/for/go
 #help: The `make CLI/windows` command builds the ooniprobe and miniooni
 #help: command line clients for windows/386 and windows/amd64.
 .PHONY: CLI/windows
-CLI/windows: search/for/go search/for/mingw-w64 maybe/copypsiphon
-	./CLI/go-build-windows 386 ./internal/cmd/miniooni
-	./CLI/go-build-windows 386 ./cmd/ooniprobe
-	./CLI/go-build-windows amd64 ./internal/cmd/miniooni
-	./CLI/go-build-windows amd64 ./cmd/ooniprobe
+CLI/windows:
+	go run ./internal/cmd/buildtool windows
 
 #help:
 #help: The `make MOBILE/android` command builds the oonimkall library for Android.
@@ -183,10 +180,6 @@ search/for/go:
 search/for/java:
 	@printf "checking for java... "
 	@command -v java || { echo "not found"; exit 1; }
-
-.PHONY: search/for/mingw-w64
-search/for/mingw-w64:
-	./CLI/check-mingw-w64-version
 
 .PHONY: search/for/xcode
 search/for/xcode:
