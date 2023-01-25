@@ -160,7 +160,7 @@ func (elw *recordErrorsFunc[A, B]) Apply(ctx context.Context, a A) *Maybe[B] {
 // *Maybe[T] excluding errors known to be linked with IPv6 issues.
 func FirstErrorExcludingBrokenIPv6Errors[T any](entries ...*Maybe[T]) error {
 	for _, entry := range entries {
-		if entry.Error != nil {
+		if entry.Error == nil {
 			continue
 		}
 		err := entry.Error
