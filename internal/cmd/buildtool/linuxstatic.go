@@ -25,7 +25,7 @@ func linuxStaticSubcommand() *cobra.Command {
 	}
 	cmd := &cobra.Command{
 		Use:   "static",
-		Short: "Builds ooniprobe for linux assuming static linking is possible",
+		Short: "Builds ooniprobe and miniooni for linux with static linking assuming alpine",
 		Run:   config.main,
 		Args:  cobra.NoArgs,
 	}

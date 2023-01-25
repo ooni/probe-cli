@@ -18,7 +18,7 @@ import (
 func linuxDockerSubcommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "docker {386|amd64|armv6|armv7|arm64}",
-		Short: "Builds ooniprobe for linux-static using docker and golang:alpine",
+		Short: "Builds ooniprobe and miniooni with static linking using docker",
 		Run: func(cmd *cobra.Command, args []string) {
 			linuxDockerBuildAll(&buildDeps{}, args[0])
 		},
@@ -28,6 +28,7 @@ func linuxDockerSubcommand() *cobra.Command {
 
 // main is the main function of the linuxDocker subcommand.
 func linuxDockerBuildAll(deps buildtoolmodel.Dependencies, ooniArch string) {
+	defer log.Infof("done")
 	deps.PsiphonMaybeCopyConfigFiles()
 
 	golangVersion := string(must.FirstLineBytes(deps.LinuxReadGOVERSION("GOVERSION")))
@@ -51,12 +52,16 @@ func linuxDockerBuildAll(deps buildtoolmodel.Dependencies, ooniArch string) {
 
 	user := runtimex.Try1(user.Current())
 
+	// Implementation note: we must run docker as the user that invokes
+	// it for actions/cache@v3 to be able to cache OOGOCACHEDIR. This
+	// constraint forces us to run all privileged operations early
+	// using a Dockerfile, so the build proper runs as $(id -u):$(id -g).
 	log.Infof("writing CLI/Dockerfile")
 	linuxDockerWriteDockerfile(deps, dockerArch, golangDockerImage, user.Uid)
 
 	image := fmt.Sprintf("oobuild-%s-%s", ooniArch, time.Now().Format("20060102"))
 
-	log.Infof("pull the correct docker image")
+	log.Infof("pull and build the correct docker image")
 	must.Run(log.Log, "docker", "pull", "--platform", "linux/"+dockerArch, golangDockerImage)
 	must.Run(log.Log, "docker", "build", "--platform", "linux/"+dockerArch, "-t", image, "CLI")
 

@@ -28,7 +28,6 @@ func main() {
 		if r := recover(); r != nil {
 			log.Fatalf("%+v", r)
 		}
-		log.Infof("done")
 	}()
 	err := root.Execute()
 	runtimex.PanicOnError(err, "root.Execute")
