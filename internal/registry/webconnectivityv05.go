@@ -7,18 +7,18 @@ package registry
 //
 
 import (
-	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivity"
+	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivitylte"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func init() {
 	AllExperiments["web_connectivity@v0.5"] = &Factory{
 		build: func(config any) model.ExperimentMeasurer {
-			return webconnectivity.NewExperimentMeasurer(
-				config.(*webconnectivity.Config),
+			return webconnectivitylte.NewExperimentMeasurer(
+				config.(*webconnectivitylte.Config),
 			)
 		},
-		config:        &webconnectivity.Config{},
+		config:        &webconnectivitylte.Config{},
 		interruptible: false,
 		inputPolicy:   model.InputOrQueryBackend,
 	}

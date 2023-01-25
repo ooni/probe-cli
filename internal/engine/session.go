@@ -9,16 +9,18 @@ import (
 	"net/url"
 	"os"
 	"sync"
+	"sync/atomic"
 
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
-	"github.com/ooni/probe-cli/v3/internal/engine/sessionresolver"
+	"github.com/ooni/probe-cli/v3/internal/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/platform"
+	"github.com/ooni/probe-cli/v3/internal/probeservices"
+	"github.com/ooni/probe-cli/v3/internal/registry"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/sessionresolver"
 	"github.com/ooni/probe-cli/v3/internal/tunnel"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
@@ -60,7 +62,7 @@ type Session struct {
 	location                 *geolocate.Results
 	logger                   model.Logger
 	proxyURL                 *url.URL
-	queryProbeServicesCount  *atomicx.Int64
+	queryProbeServicesCount  *atomic.Int64
 	resolver                 *sessionresolver.Resolver
 	selectedProbeServiceHook func(*model.OOAPIService)
 	selectedProbeService     *model.OOAPIService
@@ -110,7 +112,7 @@ type Session struct {
 // sessionProbeServicesClientForCheckIn returns the probe services
 // client that we should be using for performing the check-in.
 type sessionProbeServicesClientForCheckIn interface {
-	CheckIn(ctx context.Context, config model.OOAPICheckInConfig) (*model.OOAPICheckInNettests, error)
+	CheckIn(ctx context.Context, config model.OOAPICheckInConfig) (*model.OOAPICheckInResult, error)
 }
 
 // NewSession creates a new session. This factory function will
@@ -159,12 +161,19 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
+	config.Logger.Infof(
+		"ooniprobe-engine/v%s %s dirty=%s %s",
+		version.Version,
+		runtimex.BuildInfo.VcsRevision,
+		runtimex.BuildInfo.VcsModified,
+		runtimex.BuildInfo.GoVersion,
+	)
 	sess := &Session{
 		availableProbeServices:  config.AvailableProbeServices,
 		byteCounter:             bytecounter.New(),
 		kvStore:                 config.KVStore,
 		logger:                  config.Logger,
-		queryProbeServicesCount: &atomicx.Int64{},
+		queryProbeServicesCount: &atomic.Int64{},
 		softwareName:            config.SoftwareName,
 		softwareVersion:         config.SoftwareVersion,
 		tempDir:                 tempDir,
@@ -256,7 +265,9 @@ func (s *Session) KibiBytesSent() float64 {
 //
 // The return value is either the check-in response or an error.
 func (s *Session) CheckIn(
-	ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInNettests, error) {
+	ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInResultNettests, error) {
+	// TODO(bassosimone): consider refactoring this function to return
+	// the whole check-in response to the caller.
 	if err := s.maybeLookupLocationContext(ctx); err != nil {
 		return nil, err
 	}
@@ -285,7 +296,12 @@ func (s *Session) CheckIn(
 	if config.WebConnectivity.CategoryCodes == nil {
 		config.WebConnectivity.CategoryCodes = []string{}
 	}
-	return client.CheckIn(ctx, *config)
+	resp, err := client.CheckIn(ctx, *config)
+	if err != nil {
+		return nil, err
+	}
+	s.updateCheckInFlagsState(resp)
+	return &resp.Tests, nil
 }
 
 // maybeLookupLocationContext is a wrapper for MaybeLookupLocationContext that calls
@@ -388,6 +404,16 @@ var ErrAlreadyUsingProxy = errors.New(
 // for the experiment with the given name, or an error if
 // there's no such experiment with the given name
 func (s *Session) NewExperimentBuilder(name string) (model.ExperimentBuilder, error) {
+	name = registry.CanonicalizeExperimentName(name)
+	switch {
+	case name == "web_connectivity" && s.getCheckInFlagValue("webconnectivity_0.5"):
+		// use LTE rather than the normal webconnectivity when the
+		// feature flag has been set through the check-in API
+		s.Logger().Infof("using webconnectivity LTE")
+		name = "web_connectivity@v0.5"
+	default:
+		// nothing
+	}
 	eb, err := newExperimentBuilder(s, name)
 	if err != nil {
 		return nil, err

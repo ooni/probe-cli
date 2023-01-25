@@ -1,3 +1,3 @@
-# Directory github.com/ooni/probe-cli/pkg
+# Public Go packages
 
 This directory contains public Go packages.

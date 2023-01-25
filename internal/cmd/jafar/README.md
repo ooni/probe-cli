@@ -8,7 +8,7 @@ any system but it really only works on Linux.
 
 ## Building
 
-We use Go >= 1.18. Jafar also needs the C library headers,
+We use Go >= 1.19. Jafar also needs the C library headers,
 iptables installed, and root permissions.
 
 With Linux Alpine edge, you can compile Jafar with:
@@ -254,4 +254,4 @@ Run `curl` in a censored environment where it cannot connect to
           -main-command 'curl -Lv http://play.google.com'
 ```
 
-For more usage examples, see `../../testjafar.bash`.
+For more usage examples, see `../../script/testjafar.bash`.

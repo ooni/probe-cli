@@ -14,8 +14,9 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/probeservices"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
@@ -217,10 +218,15 @@ func (e *experiment) newMeasurement(input string) *model.Measurement {
 		TestStartTime:             e.testStartTime,
 		TestVersion:               e.testVersion,
 	}
+	m.AddAnnotation("architecture", runtime.GOARCH)
 	m.AddAnnotation("engine_name", "ooniprobe-engine")
 	m.AddAnnotation("engine_version", version.Version)
+	m.AddAnnotation("go_version", runtimex.BuildInfo.GoVersion)
 	m.AddAnnotation("platform", e.session.Platform())
-	m.AddAnnotation("architecture", runtime.GOARCH)
+	m.AddAnnotation("vcs_modified", runtimex.BuildInfo.VcsModified)
+	m.AddAnnotation("vcs_revision", runtimex.BuildInfo.VcsRevision)
+	m.AddAnnotation("vcs_time", runtimex.BuildInfo.VcsTime)
+	m.AddAnnotation("vcs_tool", runtimex.BuildInfo.VcsTool)
 	return m
 }
 

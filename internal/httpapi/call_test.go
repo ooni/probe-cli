@@ -1015,6 +1015,11 @@ func TestCallWithJSON(t *testing.T) {
 		want:         nil,
 		wantErr:      errors.New("unexpected end of JSON input"),
 	}, {
+		name:         "with literal null response",
+		bodyToReturn: []byte(`null`),
+		want:         &CallStructResponse{},
+		wantErr:      nil,
+	}, {
 		name:         "with good response",
 		bodyToReturn: []byte(`{"Name": "sbs", "AgeSquared": 1156}`),
 		want: &CallStructResponse{
@@ -1053,7 +1058,7 @@ func TestCallWithJSON(t *testing.T) {
 				Request: &RequestDescriptor[*CallStructRequest]{
 					Body: []byte(`{"Name": "sbs", "Age": 34}`),
 				},
-				Response: &JSONResponseDescriptor[*CallStructResponse]{},
+				Response: &JSONResponseDescriptor[CallStructResponse]{},
 				Timeout:  0,
 				URLPath:  "/",
 				URLQuery: nil,

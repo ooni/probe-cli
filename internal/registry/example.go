@@ -7,7 +7,7 @@ package registry
 import (
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/example"
+	"github.com/ooni/probe-cli/v3/internal/experiment/example"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 

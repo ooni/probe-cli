@@ -1,6 +1,6 @@
 // Package model contains the shared interfaces and data structures.
 //
-// Criteria for adding a type to this package
+// # Criteria for adding a type to this package
 //
 // This package should contain two types:
 //
@@ -15,7 +15,7 @@
 // this logic is strictly related to data structures and we
 // cannot implement this logic elsewhere.
 //
-// Content of this package
+// # Content of this package
 //
 // The following list (which may not always be up-to-date)
 // summarizes the categories of types that currently belong here

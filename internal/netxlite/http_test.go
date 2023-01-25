@@ -8,11 +8,11 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
@@ -199,7 +199,7 @@ func TestHTTPTransportLogger(t *testing.T) {
 	})
 
 	t.Run("CloseIdleConnections", func(t *testing.T) {
-		calls := &atomicx.Int64{}
+		calls := &atomic.Int64{}
 		txp := &httpTransportLogger{
 			HTTPTransport: &mocks.HTTPTransport{
 				MockCloseIdleConnections: func() {
@@ -267,7 +267,7 @@ func TestHTTPTransportConnectionsCloser(t *testing.T) {
 
 func TestNewHTTPTransport(t *testing.T) {
 	t.Run("works as intended with failing dialer", func(t *testing.T) {
-		called := &atomicx.Int64{}
+		called := &atomic.Int64{}
 		expected := errors.New("mocked error")
 		d := &dialerResolverWithTracing{
 			Dialer: &mocks.Dialer{

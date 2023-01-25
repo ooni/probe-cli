@@ -1,4 +1,4 @@
-# Directory GOCACHE
+# GOCACHE for Docker based builds
 
 This directory contains the GOCACHE and GOMODCACHE we use when
 statically compiling Linux binaries using Docker.
