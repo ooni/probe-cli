@@ -156,3 +156,19 @@ func FirstLineBytes(data []byte) []byte {
 	runtimex.Assert(good, "could not find the first line")
 	return first
 }
+
+// RunOutput is like [shellx.Output] but calls
+// [runtimex.PanicOnError] on failure.
+func RunOutput(logger model.Logger, command string, args ...string) []byte {
+	out, err := shellx.Output(logger, command, args...)
+	runtimex.PanicOnError(err, "shellx.Output failed")
+	return out
+}
+
+// RunOutputQuiet is like [shellx.OutputQuiet] but calls
+// [runtimex.PanicOnError] on failure.
+func RunOutputQuiet(command string, args ...string) []byte {
+	out, err := shellx.OutputQuiet(command, args...)
+	runtimex.PanicOnError(err, "shellx.Output failed")
+	return out
+}

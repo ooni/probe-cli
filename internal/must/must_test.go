@@ -167,3 +167,17 @@ func TestFirstLineBytes(t *testing.T) {
 		t.Fatal("unexpected result")
 	}
 }
+
+func TestRunOutput(t *testing.T) {
+	out := RunOutput(model.DiscardLogger, testGolangExe, "version")
+	if len(out) <= 0 {
+		t.Fatal("expected to see output")
+	}
+}
+
+func TestRunOutputQuiet(t *testing.T) {
+	out := RunOutputQuiet(testGolangExe, "version")
+	if len(out) <= 0 {
+		t.Fatal("expected to see output")
+	}
+}
