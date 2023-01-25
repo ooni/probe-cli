@@ -21,7 +21,7 @@ func darwinSubcommand() *cobra.Command {
 		Use:   "darwin",
 		Short: "Builds ooniprobe and miniooni for darwin",
 		Run: func(cmd *cobra.Command, args []string) {
-			darwinBuildAll(&buildDependencies{})
+			darwinBuildAll(&buildDeps{})
 		},
 		Args: cobra.NoArgs,
 	}

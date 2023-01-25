@@ -24,12 +24,6 @@ func main() {
 		Short: "Tool for building ooniprobe",
 	}
 	root.AddCommand(darwinSubcommand())
-	root.AddCommand(genericSubcommand(productMiniooni))
-	root.AddCommand(genericSubcommand(productOohelperd))
-	root.AddCommand(genericSubcommand(productOoniprobe))
-	root.AddCommand(linuxDockerSubcommand())
-	root.AddCommand(linuxStaticSubcommand())
-	root.AddCommand(windowsSubcommand())
 	err := root.Execute()
 	runtimex.PanicOnError(err, "root.Execute")
 }
