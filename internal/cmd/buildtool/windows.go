@@ -21,9 +21,9 @@ import (
 func windowsSubcommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "windows",
-		Short: "Builds ooniprobe for windows",
+		Short: "Builds ooniprobe and miniooni for windows",
 		Run: func(cmd *cobra.Command, args []string) {
-			windowsBuildAll(&buildDependencies{})
+			windowsBuildAll(&buildDeps{})
 		},
 		Args: cobra.NoArgs,
 	}
@@ -46,7 +46,7 @@ func windowsBuildAll(deps buildtoolmodel.Dependencies) {
 // windowsBuildPackage builds the given package for windows
 // compiling for the specified architecture.
 func windowsBuildPackage(deps buildtoolmodel.Dependencies, goarch string, product *product) {
-	must.Fprintf(os.Stderr, "# building %s for windows/%s\n", product.Pkg, goarch)
+	log.Infof("building %s for windows/%s", product.Pkg, goarch)
 
 	argv := runtimex.Try1(shellx.NewArgv("go", "build"))
 	if deps.PsiphonFilesExist() {
@@ -77,8 +77,6 @@ func windowsBuildPackage(deps buildtoolmodel.Dependencies, goarch string, produc
 	}
 
 	runtimex.Try0(shellx.RunEx(config, argv, envp))
-
-	must.Fprintf(os.Stderr, "\n")
 }
 
 // windowsMingwExpectedVersion is the expected version of mingw-w64,
@@ -100,7 +98,6 @@ const windowsMingw386Compiler = "i686-w64-mingw32-gcc"
 func windowsMingwCheck() {
 	windowsMingwCheckFor(windowsMingwAmd64Compiler)
 	windowsMingwCheckFor(windowsMingw386Compiler)
-	must.Fprintf(os.Stderr, "\n")
 }
 
 // windowsMingwCheckFor implements mingwCheck for the given compiler.
@@ -110,10 +107,9 @@ func windowsMingwCheckFor(compiler string) {
 	v := strings.Split(firstLine, " ")
 	runtimex.Assert(len(v) == 3, "expected to see exactly three tokens")
 	if got := v[2]; got != expected {
-		must.Fprintf(os.Stderr, "# FATAL: expected mingw %s but got %s", expected, got)
-		os.Exit(1)
+		log.Fatalf("expected mingw %s but got %s", expected, got)
 	}
-	must.Fprintf(os.Stderr, "# using %s %s\n", compiler, expected)
+	log.Infof("using %s %s", compiler, expected)
 }
 
 // windowsMingwEexpectedVersionGetter returns the correct expected mingw version.
@@ -122,6 +118,6 @@ func windowsMingwExpectedVersionGetter() string {
 	if value == "" {
 		return windowsMingwExpectedVersion
 	}
-	must.Fprintf(os.Stderr, "# mingw version overriden using %s", windowsMingwEnvironmentVariable)
+	log.Infof("mingw version overriden using %s", windowsMingwEnvironmentVariable)
 	return value
 }

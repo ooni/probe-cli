@@ -17,6 +17,7 @@ func main() {
 		Short: "Tool for building ooniprobe, miniooni, etc.",
 	}
 	root.AddCommand(darwinSubcommand())
+	root.AddCommand(windowsSubcommand())
 	logHandler := logx.NewHandlerWithDefaultSettings()
 	logHandler.Emoji = true
 	log.Log = &log.Logger{Level: log.InfoLevel, Handler: logHandler}

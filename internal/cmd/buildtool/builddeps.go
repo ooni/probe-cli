@@ -39,5 +39,5 @@ func (*buildDeps) PsiphonMaybeCopyConfigFiles() {
 
 // WindowsMingwCheck implements buildtoolmodel.Dependencies
 func (*buildDeps) WindowsMingwCheck() {
-	//windowsMingwCheck() /* TODO(bassosimone) */
+	windowsMingwCheck()
 }

@@ -145,7 +145,7 @@ CLI/ooniprobe:
 #help: command line clients for windows/386 and windows/amd64.
 .PHONY: CLI/windows
 CLI/windows:
-	go run ./internal/cmd/buildtool build windows
+	go run ./internal/cmd/buildtool windows
 
 #help:
 #help: The `make MOBILE/android` command builds the oonimkall library for Android.

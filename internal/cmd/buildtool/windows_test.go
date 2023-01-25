@@ -1,71 +1,75 @@
 package main
 
-/*
+import (
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/cmd/buildtool/internal/buildtooltest"
+	"github.com/ooni/probe-cli/v3/internal/shellx/shellxtesting"
+)
+
 func TestWindowsBuildAll(t *testing.T) {
 
-	type expectations struct {
-		env  map[string]int
-		argv []string
-	}
-
+	// testspec specifies a test case for this test
 	type testspec struct {
-		name       string
+		// name is the name of the test case
+		name string
+
+		// hasPsiphon indicates whether we should build with psiphon config
 		hasPsiphon bool
-		expect     []expectations
+
+		// expectations contains the commands we expect to see
+		expect []buildtooltest.ExecExpectations
 	}
 
 	var testcases = []testspec{{
 		name:       "build where we have the psiphon config",
 		hasPsiphon: true,
-		expect: []expectations{{
-			env: map[string]int{
-				"CC=i686-w64-mingw32-gcc": 1,
-				"CGO_ENABLED=1":           1,
-				"GOARCH=386":              1,
-				"GOOS=windows":            1,
+		expect: []buildtooltest.ExecExpectations{{
+			Env: []string{
+				"CC=i686-w64-mingw32-gcc",
+				"CGO_ENABLED=1",
+				"GOARCH=386",
+				"GOOS=windows",
 			},
-			argv: []string{
-				runtimex.Try1(exec.LookPath("go")),
-				"build", "-tags", "ooni_psiphon_config",
+			Argv: []string{
+				"go", "build", "-tags", "ooni_psiphon_config",
 				"-ldflags", "-s -w", "-o", "CLI/miniooni-windows-386.exe",
 				"./internal/cmd/miniooni",
 			},
 		}, {
-			env: map[string]int{
-				"CC=i686-w64-mingw32-gcc": 1,
-				"CGO_ENABLED=1":           1,
-				"GOARCH=386":              1,
-				"GOOS=windows":            1,
+			Env: []string{
+				"CC=i686-w64-mingw32-gcc",
+				"CGO_ENABLED=1",
+				"GOARCH=386",
+				"GOOS=windows",
 			},
-			argv: []string{
-				runtimex.Try1(exec.LookPath("go")),
-				"build", "-tags", "ooni_psiphon_config",
+			Argv: []string{
+				"go", "build", "-tags", "ooni_psiphon_config",
 				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-windows-386.exe",
 				"./cmd/ooniprobe",
 			},
 		}, {
-			env: map[string]int{
-				"CC=x86_64-w64-mingw32-gcc": 1,
-				"CGO_ENABLED=1":             1,
-				"GOARCH=amd64":              1,
-				"GOOS=windows":              1,
+			Env: []string{
+				"CC=x86_64-w64-mingw32-gcc",
+				"CGO_ENABLED=1",
+				"GOARCH=amd64",
+				"GOOS=windows",
 			},
-			argv: []string{
-				runtimex.Try1(exec.LookPath("go")),
-				"build", "-tags", "ooni_psiphon_config",
+			Argv: []string{
+				"go", "build", "-tags", "ooni_psiphon_config",
 				"-ldflags", "-s -w", "-o", "CLI/miniooni-windows-amd64.exe",
 				"./internal/cmd/miniooni",
 			},
 		}, {
-			env: map[string]int{
-				"CC=x86_64-w64-mingw32-gcc": 1,
-				"CGO_ENABLED=1":             1,
-				"GOARCH=amd64":              1,
-				"GOOS=windows":              1,
+			Env: []string{
+				"CC=x86_64-w64-mingw32-gcc",
+				"CGO_ENABLED=1",
+				"GOARCH=amd64",
+				"GOOS=windows",
 			},
-			argv: []string{
-				runtimex.Try1(exec.LookPath("go")),
-				"build", "-tags", "ooni_psiphon_config",
+			Argv: []string{
+				"go", "build", "-tags", "ooni_psiphon_config",
 				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-windows-amd64.exe",
 				"./cmd/ooniprobe",
 			},
@@ -73,56 +77,48 @@ func TestWindowsBuildAll(t *testing.T) {
 	}, {
 		name:       "build where we don't have the psiphon config",
 		hasPsiphon: false,
-		expect: []expectations{{
-			env: map[string]int{
-				"CC=i686-w64-mingw32-gcc": 1,
-				"CGO_ENABLED=1":           1,
-				"GOARCH=386":              1,
-				"GOOS=windows":            1,
+		expect: []buildtooltest.ExecExpectations{{
+			Env: []string{
+				"CC=i686-w64-mingw32-gcc",
+				"CGO_ENABLED=1",
+				"GOARCH=386",
+				"GOOS=windows",
 			},
-			argv: []string{
-				runtimex.Try1(exec.LookPath("go")),
-				"build",
-				"-ldflags", "-s -w", "-o", "CLI/miniooni-windows-386.exe",
+			Argv: []string{
+				"go", "build", "-ldflags", "-s -w", "-o", "CLI/miniooni-windows-386.exe",
 				"./internal/cmd/miniooni",
 			},
 		}, {
-			env: map[string]int{
-				"CC=i686-w64-mingw32-gcc": 1,
-				"CGO_ENABLED=1":           1,
-				"GOARCH=386":              1,
-				"GOOS=windows":            1,
+			Env: []string{
+				"CC=i686-w64-mingw32-gcc",
+				"CGO_ENABLED=1",
+				"GOARCH=386",
+				"GOOS=windows",
 			},
-			argv: []string{
-				runtimex.Try1(exec.LookPath("go")),
-				"build",
-				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-windows-386.exe",
+			Argv: []string{
+				"go", "build", "-ldflags", "-s -w", "-o", "CLI/ooniprobe-windows-386.exe",
 				"./cmd/ooniprobe",
 			},
 		}, {
-			env: map[string]int{
-				"CC=x86_64-w64-mingw32-gcc": 1,
-				"CGO_ENABLED=1":             1,
-				"GOARCH=amd64":              1,
-				"GOOS=windows":              1,
+			Env: []string{
+				"CC=x86_64-w64-mingw32-gcc",
+				"CGO_ENABLED=1",
+				"GOARCH=amd64",
+				"GOOS=windows",
 			},
-			argv: []string{
-				runtimex.Try1(exec.LookPath("go")),
-				"build",
-				"-ldflags", "-s -w", "-o", "CLI/miniooni-windows-amd64.exe",
+			Argv: []string{
+				"go", "build", "-ldflags", "-s -w", "-o", "CLI/miniooni-windows-amd64.exe",
 				"./internal/cmd/miniooni",
 			},
 		}, {
-			env: map[string]int{
-				"CC=x86_64-w64-mingw32-gcc": 1,
-				"CGO_ENABLED=1":             1,
-				"GOARCH=amd64":              1,
-				"GOOS=windows":              1,
+			Env: []string{
+				"CC=x86_64-w64-mingw32-gcc",
+				"CGO_ENABLED=1",
+				"GOARCH=amd64",
+				"GOOS=windows",
 			},
-			argv: []string{
-				runtimex.Try1(exec.LookPath("go")),
-				"build",
-				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-windows-amd64.exe",
+			Argv: []string{
+				"go", "build", "-ldflags", "-s -w", "-o", "CLI/ooniprobe-windows-amd64.exe",
 				"./cmd/ooniprobe",
 			},
 		}},
@@ -131,68 +127,30 @@ func TestWindowsBuildAll(t *testing.T) {
 	for _, testcase := range testcases {
 		t.Run(testcase.name, func(t *testing.T) {
 
-			commands := []*exec.Cmd{}
-			library := &shellxtesting.Library{
-				MockCmdRun: func(c *exec.Cmd) error {
-					commands = append(commands, c)
-					return nil
-				},
-				MockLookPath: func(file string) (string, error) {
-					return file, nil
-				},
+			cc := &buildtooltest.SimpleCommandCollector{}
+
+			deps := &buildtooltest.DependenciesCallCounter{
+				HasPsiphon: testcase.hasPsiphon,
 			}
 
-			var calledPsiphonMaybeCopyConfigFiles int64
-			var calledGolangCheck int64
-			var calledWindowsMingwCheck int64
-			deps := &testBuildDeps{
-				MockGolangCheck: func() {
-					calledGolangCheck++
-				},
-				MockPsiphonMaybeCopyConfigFiles: func() {
-					calledPsiphonMaybeCopyConfigFiles++
-				},
-				MockPsiphonFilesExist: func() bool {
-					return testcase.hasPsiphon
-				},
-				MockWindowsMingwCheck: func() {
-					calledWindowsMingwCheck++
-				},
-			}
-
-			shellxtesting.WithCustomLibrary(library, func() {
+			shellxtesting.WithCustomLibrary(cc, func() {
 				windowsBuildAll(deps)
 			})
 
-			if calledGolangCheck <= 0 {
-				t.Fatal("did not call golangCheck")
-			}
-			if calledPsiphonMaybeCopyConfigFiles <= 0 {
-				t.Fatal("did not call psiphonMaybeConfigFiles")
-			}
-			if calledWindowsMingwCheck <= 0 {
-				t.Fatal("did not call windowsMingwCheck")
+			expectCalls := map[string]int{
+				buildtooltest.TagGolangCheck:                 1,
+				buildtooltest.TagPsiphonMaybeCopyConfigFiles: 1,
+				buildtooltest.TagPsiphonFilesExist:           4,
+				buildtooltest.TagWindowsMingwCheck:           1,
 			}
 
-			if len(commands) != len(testcase.expect) {
-				t.Fatal("unexpected number of commands", len(commands))
+			if diff := cmp.Diff(expectCalls, deps.Counter); diff != "" {
+				t.Fatal(diff)
 			}
-			for idx := 0; idx < len(testcase.expect); idx++ {
-				command := commands[idx]
-				envs := shellxtesting.RemoveCommonEnvironmentVariables(command)
-				gotEnv := map[string]int{}
-				for _, env := range envs {
-					gotEnv[env]++
-				}
-				if diff := cmp.Diff(testcase.expect[idx].env, gotEnv); diff != "" {
-					t.Fatal(diff)
-				}
-				gotArgv := shellxtesting.MustArgv(command)
-				if diff := cmp.Diff(testcase.expect[idx].argv, gotArgv); diff != "" {
-					t.Fatal(diff)
-				}
+
+			if err := buildtooltest.CheckManyCommands(cc.Commands, testcase.expect); err != nil {
+				t.Fatal(err)
 			}
 		})
 	}
 }
-*/
