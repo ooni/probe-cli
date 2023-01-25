@@ -8,8 +8,7 @@ source $reporoot/MONOREPO/tools/libcore.bash
 
 ./MOBILE/android/newkeystore
 
-./MOBILE/gomobile android ./pkg/oonimkall
-
+make ./MOBILE/android
 run cp -v MOBILE/android/oonimkall.aar ./MONOREPO/repo/probe-android/engine-experimental/
 
 (

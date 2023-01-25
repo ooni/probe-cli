@@ -1,0 +1,29 @@
+# Runs tests for internal/libtor with -tags=ooni_libtor
+name: libtorlinux
+on:
+  pull_request:
+  push:
+    branches:
+      - "master"
+      - "release/**"
+      - "fullbuild"
+
+jobs:
+  test_ooni_libtor:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get GOVERSION content
+        id: goversion
+        run: echo ::set-output name=version::$(cat GOVERSION)
+
+      - uses: magnetikonline/action-golang-cache@v2
+        with:
+          go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-libtorlinux-${{ steps.goversion.outputs.version }}"
+
+      - run: go run ./internal/cmd/buildtool linux cdeps zlib openssl libevent tor
+
+      - run: go test -count 1 -v -cover -tags ooni_libtor -race ./internal/libtor/...

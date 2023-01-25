@@ -1,0 +1,15 @@
+diff --git a/src/lib/evloop/compat_libevent.c b/src/lib/evloop/compat_libevent.c
+index fd840f8..2ec37e7 100644
+--- a/src/lib/evloop/compat_libevent.c
++++ b/src/lib/evloop/compat_libevent.c
+@@ -19,6 +19,10 @@
+ #include <event2/thread.h>
+ #include <string.h>
+
++#ifndef EVENT_OONI
++#error "We're not including the correct event2/event.h file"
++#endif
++
+ /** A string which, if it appears in a libevent log, should be ignored. */
+ static const char *suppress_msg = NULL;
+ /** Callback function passed to event_set_log() so we can intercept
