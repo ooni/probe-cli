@@ -23,6 +23,9 @@ type cdepsEnv struct {
 	// destdir is the directory where to install.
 	destdir string
 
+	// lfdlags contains the LDFLAGS to use when compiling.
+	ldflags []string
+
 	// openSSLAPIDefine is an extra define we need to add on Android.
 	openSSLAPIDefine string
 
@@ -30,12 +33,20 @@ type cdepsEnv struct {
 	openSSLCompiler string
 }
 
-// fillEnv fills an environment using the cdepsEnv settings. The extraCflags
-// arguments allow to modify the cflags without mutating this struct.
-func (c *cdepsEnv) fillEnv(envp *shellx.Envp, extraCflags ...string) {
+// addCflags merges this struct's cflags with the extra cflags and
+// then stores the merged cflags into the given envp.
+func (c *cdepsEnv) addCflags(envp *shellx.Envp, extraCflags ...string) {
 	mergedCflags := append([]string{}, c.cflags...)
 	mergedCflags = append(mergedCflags, extraCflags...)
 	envp.Append("CFLAGS", strings.Join(mergedCflags, " "))
+}
+
+// addLdflags merges this struct's ldflags with the extra ldflags and
+// then stores the merged ldflags into the given envp.
+func (c *cdepsEnv) addLdflags(envp *shellx.Envp, extraLdflags ...string) {
+	mergedLdflags := append([]string{}, c.ldflags...)
+	mergedLdflags = append(mergedLdflags, extraLdflags...)
+	envp.Append("LDFLAGS", strings.Join(mergedLdflags, " "))
 }
 
 // cdepsMustMkdirTemp creates a temporary directory.

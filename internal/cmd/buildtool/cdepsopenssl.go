@@ -36,7 +36,7 @@ func cdepsOpenSSLBuildMain(depsEnv *cdepsEnv) {
 	}
 
 	envp := &shellx.Envp{}
-	depsEnv.fillEnv(envp, "-Wno-macro-redefined")
+	depsEnv.addCflags(envp, "-Wno-macro-redefined")
 	argv := runtimex.Try1(shellx.NewArgv(
 		"./Configure", "no-comp", "no-dtls", "no-ec2m", "no-psk", "no-srp",
 		"no-ssl2", "no-ssl3", "no-camellia", "no-idea", "no-md2", "no-md4",

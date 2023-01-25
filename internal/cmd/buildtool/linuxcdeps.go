@@ -46,10 +46,12 @@ func linuxCdepsBuildMain(depName string) {
 		openSSLCompiler: "linux-x86_64",
 	}
 	switch depName {
-	case "zlib":
-		cdepsZlibBuildMain(depsEnv)
+	case "libevent":
+		cdepsLibeventBuildMain(depsEnv)
 	case "openssl":
 		cdepsOpenSSLBuildMain(depsEnv)
+	case "zlib":
+		cdepsZlibBuildMain(depsEnv)
 	default:
 		panic(fmt.Errorf("unknown dependency: %s", depName))
 	}

@@ -36,7 +36,7 @@ func cdepsZlibBuildMain(depsEnv *cdepsEnv) {
 
 	envp := &shellx.Envp{}
 	envp.Append("CHOST", depsEnv.configureHost) // zlib's configure otherwise uses Apple's libtool
-	depsEnv.fillEnv(envp)
+	depsEnv.addCflags(envp)
 	cdepsMustRunWithDefaultConfig(envp, "./configure", "--prefix=/", "--static")
 
 	must.Run(log.Log, "make", "-j", strconv.Itoa(runtime.NumCPU()))
