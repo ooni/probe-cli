@@ -130,15 +130,15 @@ CLI/linux-static-arm64: search/for/docker maybe/copypsiphon
 #help: The `make CLI/miniooni` command creates a build of miniooni, for the current
 #help: system, putting the binary in the top-level directory.
 .PHONY: CLI/miniooni
-CLI/miniooni: maybe/copypsiphon search/for/go
-	./CLI/go-build-generic ./internal/cmd/miniooni
+CLI/miniooni:
+	go run ./internal/cmd/buildtool generic miniooni
 
 #help:
 #help: The `make CLI/ooniprobe` command creates a build of ooniprobe, for the current
 #help: system, putting the binary in the top-level directory.
 .PHONY: CLI/ooniprobe
-CLI/ooniprobe: maybe/copypsiphon search/for/go
-	./CLI/go-build-generic ./cmd/ooniprobe
+CLI/ooniprobe:
+	go run ./internal/cmd/buildtool generic ooniprobe
 
 #help:
 #help: The `make CLI/windows` command builds the ooniprobe and miniooni
