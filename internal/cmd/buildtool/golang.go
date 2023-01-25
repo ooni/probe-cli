@@ -5,7 +5,6 @@ package main
 //
 
 import (
-	"os"
 	"strings"
 
 	"github.com/apex/log"
@@ -20,9 +19,7 @@ func golangCheck() {
 	vec := strings.Split(firstline, " ")
 	runtimex.Assert(len(vec) == 4, "expected four tokens")
 	if got := vec[2]; got != "go"+expected {
-		must.Fprintf(os.Stderr, "# FATAL: expected go%s but got %s", expected, got)
-		os.Exit(1)
+		log.Fatalf("expected go%s but got %s", expected, got)
 	}
-	must.Fprintf(os.Stderr, "# using go%s\n", expected)
-	must.Fprintf(os.Stderr, "\n")
+	log.Infof("using go%s", expected)
 }

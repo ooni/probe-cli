@@ -5,13 +5,11 @@ package main
 //
 
 import (
-	"os"
 	"path"
 	"path/filepath"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/fsx"
-	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/shellx"
 )
 
@@ -29,26 +27,25 @@ func psiphonFilesExist() bool {
 // psiphonMaybeCopyConfigFiles copies the psiphon config if possible.
 func psiphonMaybeCopyConfigFiles() {
 	if psiphonFilesExist() {
-		must.Fprintf(os.Stderr, "# psiphon files already present on the filesystem\n")
+		log.Infof("psiphon files already present on the filesystem")
 		return
 	}
-	must.Fprintf(os.Stderr, "# trying to copy psiphon config files\n")
+	log.Infof("trying to copy psiphon config files")
 	privateRepoDir := filepath.Join("MONOREPO", "repo", "probe-private")
 	err := psiphonAttemptToCopyConfig(privateRepoDir)
 	if err != nil {
-		must.Fprintf(os.Stderr, "# trying to clone github.com/ooni/probe-private\n")
+		log.Infof("trying to clone github.com/ooni/probe-private")
 		err := shellx.Run(log.Log, "git", "clone", "git@github.com:ooni/probe-private", privateRepoDir)
 		if err != nil {
-			must.Fprintf(os.Stderr, "# it seems we cannot clone ooni/probe-private")
+			log.Warnf("it seems we cannot clone ooni/probe-private")
 			return
 		}
 		if err := psiphonAttemptToCopyConfig(privateRepoDir); err != nil {
-			must.Fprintf(os.Stderr, "# it seems we cannot copy psiphon config")
+			log.Warnf("it seems we cannot copy psiphon config")
 			return
 		}
 	}
-	must.Fprintf(os.Stderr, "# psiphon config files copied successfully\n")
-	must.Fprintf(os.Stderr, "\n")
+	log.Infof("psiphon config files copied successfully")
 }
 
 // psiphonAttemptToCopyConfig attempts to copy the config from the monorepo.
