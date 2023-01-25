@@ -1,0 +1,50 @@
+package main
+
+import (
+	"fmt"
+	"path/filepath"
+	"runtime"
+
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/spf13/cobra"
+)
+
+// linuxCdepsSubcommand returns the linuxCdeps sucommand.
+func linuxCdepsSubcommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "cdeps {zlib|openssl|libevent|tor}",
+		Short: "Builds C dependencies on Linux systems (experimental)",
+		Run: func(cmd *cobra.Command, args []string) {
+			linuxCdepsBuildMain(args[0])
+		},
+		Args: cobra.ExactArgs(1),
+	}
+}
+
+// linuxCdepsBuildMain is the main of the linuxCdeps build.
+func linuxCdepsBuildMain(depName string) {
+	runtimex.Assert(
+		runtime.GOOS == "linux" && runtime.GOARCH == "amd64",
+		"this command requires linux/amd64",
+	)
+	depsEnv := &cdepsEnv{
+		cflags: []string{
+			// See https://airbus-seclab.github.io/c-compiler-security/
+			"-D_FORTIFY_SOURCE=2",
+			"-fstack-protector-strong",
+			"-fstack-clash-protection",
+			"-fPIE",
+			"-fsanitize=bounds",
+			"-fsanitize-undefined-trap-on-error",
+			"-O2",
+		},
+		destdir:         filepath.Join("internal", "libtor", "linux", runtime.GOARCH),
+		openSSLCompiler: "linux-x86_64",
+	}
+	switch depName {
+	case "zlib":
+		cdepsZlibBuildMain(depsEnv)
+	default:
+		panic(fmt.Errorf("unknown dependency: %s", depName))
+	}
+}
