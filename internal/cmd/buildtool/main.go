@@ -18,6 +18,7 @@ func main() {
 	}
 	root.AddCommand(darwinSubcommand())
 	root.AddCommand(genericSubcommand())
+	root.AddCommand(linuxSubcommand())
 	root.AddCommand(windowsSubcommand())
 	logHandler := logx.NewHandlerWithDefaultSettings()
 	logHandler.Emoji = true

@@ -1,6 +1,14 @@
 package main
 
-/*
+import (
+	"os"
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/cmd/buildtool/internal/buildtooltest"
+	"github.com/ooni/probe-cli/v3/internal/shellx/shellxtesting"
+)
+
 func TestLinuxStaticBuildAll(t *testing.T) {
 
 	cwd, err := os.Getwd()
@@ -8,17 +16,22 @@ func TestLinuxStaticBuildAll(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	type expectations struct {
-		env  map[string]int
-		argv []string
-	}
-
+	// testspec specifies a test case for this test
 	type testspec struct {
-		name       string
-		goarch     string
-		goarm      int64
+		// name is the name of the test case
+		name string
+
+		// goarch is the GOARCH value
+		goarch string
+
+		// goarm is the GOARM value
+		goarm int64
+
+		// hasPsiphon indicates whether we should build with psiphon config
 		hasPsiphon bool
-		expect     []expectations
+
+		// expectations contains the commands we expect to see
+		expect []buildtooltest.ExecExpectations
 	}
 
 	var testcases = []testspec{{
@@ -26,31 +39,32 @@ func TestLinuxStaticBuildAll(t *testing.T) {
 		goarch:     "arm64",
 		goarm:      0,
 		hasPsiphon: true,
-		expect: []expectations{{
-			env: map[string]int{
-				"GOCACHE=" + cwd + "/GOCACHE/oonibuild/v1/arm64/buildcache":  1,
-				"GOMODCACHE=" + cwd + "/GOCACHE/oonibuild/v1/arm64/modcache": 1,
-				"CGO_ENABLED=1": 1,
-				"GOARCH=arm64":  1,
-				"GOOS=linux":    1,
+		expect: []buildtooltest.ExecExpectations{{
+			Env:  []string{},
+			Argv: []string{"git", "config", "--global", "--add", "safe.directory", "/ooni"},
+		}, {
+			Env: []string{
+				"GOCACHE=" + cwd + "/GOCACHE/oonibuild/v1/arm64/buildcache",
+				"GOMODCACHE=" + cwd + "/GOCACHE/oonibuild/v1/arm64/modcache",
+				"CGO_ENABLED=1",
+				"GOARCH=arm64",
+				"GOOS=linux",
 			},
-			argv: []string{
-				runtimex.Try1(exec.LookPath("go")),
-				"build", "-tags", "ooni_psiphon_config",
+			Argv: []string{
+				"go", "build", "-tags", "ooni_psiphon_config",
 				"-ldflags", "-s -w -extldflags -static", "-o", "CLI/miniooni-linux-arm64",
 				"./internal/cmd/miniooni",
 			},
 		}, {
-			env: map[string]int{
-				"GOCACHE=" + cwd + "/GOCACHE/oonibuild/v1/arm64/buildcache":  1,
-				"GOMODCACHE=" + cwd + "/GOCACHE/oonibuild/v1/arm64/modcache": 1,
-				"CGO_ENABLED=1": 1,
-				"GOARCH=arm64":  1,
-				"GOOS=linux":    1,
+			Env: []string{
+				"GOCACHE=" + cwd + "/GOCACHE/oonibuild/v1/arm64/buildcache",
+				"GOMODCACHE=" + cwd + "/GOCACHE/oonibuild/v1/arm64/modcache",
+				"CGO_ENABLED=1",
+				"GOARCH=arm64",
+				"GOOS=linux",
 			},
-			argv: []string{
-				runtimex.Try1(exec.LookPath("go")),
-				"build", "-tags", "ooni_psiphon_config",
+			Argv: []string{
+				"go", "build", "-tags", "ooni_psiphon_config",
 				"-ldflags", "-s -w -extldflags -static", "-o", "CLI/ooniprobe-linux-arm64",
 				"./cmd/ooniprobe",
 			},
@@ -60,33 +74,32 @@ func TestLinuxStaticBuildAll(t *testing.T) {
 		goarch:     "amd64",
 		goarm:      0,
 		hasPsiphon: false,
-		expect: []expectations{{
-			env: map[string]int{
-				"GOCACHE=" + cwd + "/GOCACHE/oonibuild/v1/amd64/buildcache":  1,
-				"GOMODCACHE=" + cwd + "/GOCACHE/oonibuild/v1/amd64/modcache": 1,
-				"CGO_ENABLED=1": 1,
-				"GOARCH=amd64":  1,
-				"GOOS=linux":    1,
+		expect: []buildtooltest.ExecExpectations{{
+			Env:  []string{},
+			Argv: []string{"git", "config", "--global", "--add", "safe.directory", "/ooni"},
+		}, {
+			Env: []string{
+				"GOCACHE=" + cwd + "/GOCACHE/oonibuild/v1/amd64/buildcache",
+				"GOMODCACHE=" + cwd + "/GOCACHE/oonibuild/v1/amd64/modcache",
+				"CGO_ENABLED=1",
+				"GOARCH=amd64",
+				"GOOS=linux",
 			},
-			argv: []string{
-				runtimex.Try1(exec.LookPath("go")),
-				"build",
-				"-ldflags", "-s -w -extldflags -static", "-o", "CLI/miniooni-linux-amd64",
-				"./internal/cmd/miniooni",
+			Argv: []string{
+				"go", "build", "-ldflags", "-s -w -extldflags -static",
+				"-o", "CLI/miniooni-linux-amd64", "./internal/cmd/miniooni",
 			},
 		}, {
-			env: map[string]int{
-				"GOCACHE=" + cwd + "/GOCACHE/oonibuild/v1/amd64/buildcache":  1,
-				"GOMODCACHE=" + cwd + "/GOCACHE/oonibuild/v1/amd64/modcache": 1,
-				"CGO_ENABLED=1": 1,
-				"GOARCH=amd64":  1,
-				"GOOS=linux":    1,
+			Env: []string{
+				"GOCACHE=" + cwd + "/GOCACHE/oonibuild/v1/amd64/buildcache",
+				"GOMODCACHE=" + cwd + "/GOCACHE/oonibuild/v1/amd64/modcache",
+				"CGO_ENABLED=1",
+				"GOARCH=amd64",
+				"GOOS=linux",
 			},
-			argv: []string{
-				runtimex.Try1(exec.LookPath("go")),
-				"build",
-				"-ldflags", "-s -w -extldflags -static", "-o", "CLI/ooniprobe-linux-amd64",
-				"./cmd/ooniprobe",
+			Argv: []string{
+				"go", "build", "-ldflags", "-s -w -extldflags -static",
+				"-o", "CLI/ooniprobe-linux-amd64", "./cmd/ooniprobe",
 			},
 		}},
 	}, {
@@ -94,33 +107,34 @@ func TestLinuxStaticBuildAll(t *testing.T) {
 		goarch:     "arm",
 		goarm:      7,
 		hasPsiphon: true,
-		expect: []expectations{{
-			env: map[string]int{
-				"GOCACHE=" + cwd + "/GOCACHE/oonibuild/v1/armv7/buildcache":  1,
-				"GOMODCACHE=" + cwd + "/GOCACHE/oonibuild/v1/armv7/modcache": 1,
-				"CGO_ENABLED=1": 1,
-				"GOARCH=arm":    1,
-				"GOARM=7":       1,
-				"GOOS=linux":    1,
+		expect: []buildtooltest.ExecExpectations{{
+			Env:  []string{},
+			Argv: []string{"git", "config", "--global", "--add", "safe.directory", "/ooni"},
+		}, {
+			Env: []string{
+				"GOCACHE=" + cwd + "/GOCACHE/oonibuild/v1/armv7/buildcache",
+				"GOMODCACHE=" + cwd + "/GOCACHE/oonibuild/v1/armv7/modcache",
+				"CGO_ENABLED=1",
+				"GOARCH=arm",
+				"GOARM=7",
+				"GOOS=linux",
 			},
-			argv: []string{
-				runtimex.Try1(exec.LookPath("go")),
-				"build", "-tags", "ooni_psiphon_config",
+			Argv: []string{
+				"go", "build", "-tags", "ooni_psiphon_config",
 				"-ldflags", "-s -w -extldflags -static", "-o", "CLI/miniooni-linux-armv7",
 				"./internal/cmd/miniooni",
 			},
 		}, {
-			env: map[string]int{
-				"GOCACHE=" + cwd + "/GOCACHE/oonibuild/v1/armv7/buildcache":  1,
-				"GOMODCACHE=" + cwd + "/GOCACHE/oonibuild/v1/armv7/modcache": 1,
-				"CGO_ENABLED=1": 1,
-				"GOARCH=arm":    1,
-				"GOARM=7":       1,
-				"GOOS=linux":    1,
+			Env: []string{
+				"GOCACHE=" + cwd + "/GOCACHE/oonibuild/v1/armv7/buildcache",
+				"GOMODCACHE=" + cwd + "/GOCACHE/oonibuild/v1/armv7/modcache",
+				"CGO_ENABLED=1",
+				"GOARCH=arm",
+				"GOARM=7",
+				"GOOS=linux",
 			},
-			argv: []string{
-				runtimex.Try1(exec.LookPath("go")),
-				"build", "-tags", "ooni_psiphon_config",
+			Argv: []string{
+				"go", "build", "-tags", "ooni_psiphon_config",
 				"-ldflags", "-s -w -extldflags -static", "-o", "CLI/ooniprobe-linux-armv7",
 				"./cmd/ooniprobe",
 			},
@@ -130,35 +144,34 @@ func TestLinuxStaticBuildAll(t *testing.T) {
 		goarch:     "arm",
 		goarm:      6,
 		hasPsiphon: false,
-		expect: []expectations{{
-			env: map[string]int{
-				"GOCACHE=" + cwd + "/GOCACHE/oonibuild/v1/armv6/buildcache":  1,
-				"GOMODCACHE=" + cwd + "/GOCACHE/oonibuild/v1/armv6/modcache": 1,
-				"CGO_ENABLED=1": 1,
-				"GOARCH=arm":    1,
-				"GOARM=6":       1,
-				"GOOS=linux":    1,
+		expect: []buildtooltest.ExecExpectations{{
+			Env:  []string{},
+			Argv: []string{"git", "config", "--global", "--add", "safe.directory", "/ooni"},
+		}, {
+			Env: []string{
+				"GOCACHE=" + cwd + "/GOCACHE/oonibuild/v1/armv6/buildcache",
+				"GOMODCACHE=" + cwd + "/GOCACHE/oonibuild/v1/armv6/modcache",
+				"CGO_ENABLED=1",
+				"GOARCH=arm",
+				"GOARM=6",
+				"GOOS=linux",
 			},
-			argv: []string{
-				runtimex.Try1(exec.LookPath("go")),
-				"build",
-				"-ldflags", "-s -w -extldflags -static", "-o", "CLI/miniooni-linux-armv6",
-				"./internal/cmd/miniooni",
+			Argv: []string{
+				"go", "build", "-ldflags", "-s -w -extldflags -static",
+				"-o", "CLI/miniooni-linux-armv6", "./internal/cmd/miniooni",
 			},
 		}, {
-			env: map[string]int{
-				"GOCACHE=" + cwd + "/GOCACHE/oonibuild/v1/armv6/buildcache":  1,
-				"GOMODCACHE=" + cwd + "/GOCACHE/oonibuild/v1/armv6/modcache": 1,
-				"CGO_ENABLED=1": 1,
-				"GOARCH=arm":    1,
-				"GOARM=6":       1,
-				"GOOS=linux":    1,
+			Env: []string{
+				"GOCACHE=" + cwd + "/GOCACHE/oonibuild/v1/armv6/buildcache",
+				"GOMODCACHE=" + cwd + "/GOCACHE/oonibuild/v1/armv6/modcache",
+				"CGO_ENABLED=1",
+				"GOARCH=arm",
+				"GOARM=6",
+				"GOOS=linux",
 			},
-			argv: []string{
-				runtimex.Try1(exec.LookPath("go")),
-				"build",
-				"-ldflags", "-s -w -extldflags -static", "-o", "CLI/ooniprobe-linux-armv6",
-				"./cmd/ooniprobe",
+			Argv: []string{
+				"go", "build", "-ldflags", "-s -w -extldflags -static",
+				"-o", "CLI/ooniprobe-linux-armv6", "./cmd/ooniprobe",
 			},
 		}},
 	}}
@@ -166,75 +179,29 @@ func TestLinuxStaticBuildAll(t *testing.T) {
 	for _, testcase := range testcases {
 		t.Run(testcase.name, func(t *testing.T) {
 
-			commands := []*exec.Cmd{}
-			library := &shellxtesting.Library{
-				MockCmdRun: func(c *exec.Cmd) error {
-					commands = append(commands, c)
-					return nil
-				},
-				MockLookPath: func(file string) (string, error) {
-					return file, nil
-				},
+			cc := &buildtooltest.SimpleCommandCollector{}
+
+			deps := &buildtooltest.DependenciesCallCounter{
+				HasPsiphon: testcase.hasPsiphon,
 			}
 
-			var calledPsiphonMaybeCopyConfigFiles int64
-			var calledGolangCheck int64
-			deps := &testBuildDeps{
-				MockGolangCheck: func() {
-					calledGolangCheck++
-				},
-				MockPsiphonMaybeCopyConfigFiles: func() {
-					calledPsiphonMaybeCopyConfigFiles++
-				},
-				MockPsiphonFilesExist: func() bool {
-					return testcase.hasPsiphon
-				},
-			}
-
-			shellxtesting.WithCustomLibrary(library, func() {
+			shellxtesting.WithCustomLibrary(cc, func() {
 				linuxStaticBuilAll(deps, testcase.goarch, testcase.goarm)
 			})
 
-			if calledGolangCheck <= 0 {
-				t.Fatal("did not call golangCheck")
-			}
-			if calledPsiphonMaybeCopyConfigFiles <= 0 {
-				t.Fatal("did not call psiphonMaybeConfigFiles")
-			}
-
-			if len(commands) != len(testcase.expect)+1 {
-				t.Fatal("unexpected number of commands", len(commands))
+			expectCalls := map[string]int{
+				buildtooltest.TagGolangCheck:                 1,
+				buildtooltest.TagPsiphonMaybeCopyConfigFiles: 1,
+				buildtooltest.TagPsiphonFilesExist:           2,
 			}
 
-			command0 := commands[0]
-			command0Envs := shellxtesting.RemoveCommonEnvironmentVariables(command0)
-			if diff := cmp.Diff(command0Envs, []string{}); diff != "" {
-				t.Fatal(diff)
-			}
-			expectedCommand0Args := []string{
-				"git", "config", "--global",
-				"--add", "safe.directory", "/ooni",
-			}
-			if diff := cmp.Diff(command0.Args, expectedCommand0Args); diff != "" {
+			if diff := cmp.Diff(expectCalls, deps.Counter); diff != "" {
 				t.Fatal(diff)
 			}
 
-			for idx := 0; idx < len(testcase.expect); idx++ {
-				command := commands[idx+1]
-				envs := shellxtesting.RemoveCommonEnvironmentVariables(command)
-				gotEnv := map[string]int{}
-				for _, env := range envs {
-					gotEnv[env]++
-				}
-				if diff := cmp.Diff(testcase.expect[idx].env, gotEnv); diff != "" {
-					t.Fatal(diff)
-				}
-				gotArgv := shellxtesting.MustArgv(command)
-				if diff := cmp.Diff(testcase.expect[idx].argv, gotArgv); diff != "" {
-					t.Fatal(diff)
-				}
+			if err := buildtooltest.CheckManyCommands(cc.Commands, testcase.expect); err != nil {
+				t.Fatal(err)
 			}
 		})
 	}
 }
-*/

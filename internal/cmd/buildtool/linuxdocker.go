@@ -17,10 +17,10 @@ import (
 // linuxDockerSubcommand returns the linuxDocker sucommand.
 func linuxDockerSubcommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "linux-docker {386|amd64|armv6|armv7|arm64}",
+		Use:   "docker {386|amd64|armv6|armv7|arm64}",
 		Short: "Builds ooniprobe for linux-static using docker and golang:alpine",
 		Run: func(cmd *cobra.Command, args []string) {
-			linuxDockerBuildAll(&buildDependencies{}, args[0])
+			linuxDockerBuildAll(&buildDeps{}, args[0])
 		},
 		Args: cobra.ExactArgs(1),
 	}
@@ -51,19 +51,16 @@ func linuxDockerBuildAll(deps buildtoolmodel.Dependencies, ooniArch string) {
 
 	user := runtimex.Try1(user.Current())
 
-	must.Fprintf(os.Stderr, "# writing CLI/Dockerfile\n")
+	log.Infof("writing CLI/Dockerfile")
 	linuxDockerWriteDockerfile(deps, dockerArch, golangDockerImage, user.Uid)
-	must.Fprintf(os.Stderr, "\n")
 
 	image := fmt.Sprintf("oobuild-%s-%s", ooniArch, time.Now().Format("20060102"))
 
-	must.Fprintf(os.Stderr, "# pull the correct docker image\n")
+	log.Infof("pull the correct docker image")
 	must.Run(log.Log, "docker", "pull", "--platform", "linux/"+dockerArch, golangDockerImage)
-	must.Fprintf(os.Stderr, "\n")
-
 	must.Run(log.Log, "docker", "build", "--platform", "linux/"+dockerArch, "-t", image, "CLI")
 
-	must.Fprintf(os.Stderr, "# run the build inside docker\n")
+	log.Infof("run the build inside docker")
 	curdir := runtimex.Try1(os.Getwd())
 
 	must.Run(
