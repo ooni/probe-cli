@@ -70,7 +70,7 @@ func TestOpenNonexistentFile(t *testing.T) {
 
 func TestOpenDirectoryShouldFail(t *testing.T) {
 	_, err := OpenFile(baseDir)
-	if !errors.Is(err, syscall.EISDIR) {
+	if !errors.Is(err, ErrNotRegularFile) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
 }

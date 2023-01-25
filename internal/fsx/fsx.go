@@ -2,21 +2,24 @@
 package fsx
 
 import (
+	"errors"
+	"fmt"
 	"io/fs"
 	"os"
-	"syscall"
 )
 
 // OpenFile is a wrapper for os.OpenFile that ensures that
 // we're opening a file rather than a directory. If you are
-// opening a directory, this func returns an *os.PathError
-// error with Err set to syscall.EISDIR.
+// not opening a regular file, this func returns an error.
 //
 // As mentioned in CONTRIBUTING.md, this is the function
 // you SHOULD be using when opening files.
 func OpenFile(pathname string) (fs.File, error) {
 	return openWithFS(filesystem{}, pathname)
 }
+
+// ErrNotRegularFile indicates you're not opening a regular file.
+var ErrNotRegularFile = errors.New("not a regular file")
 
 // openWithFS is like Open but with explicit file system argument.
 func openWithFS(fs fs.FS, pathname string) (fs.File, error) {
@@ -31,11 +34,7 @@ func openWithFS(fs fs.FS, pathname string) (fs.File, error) {
 	}
 	if !isRegular(info) {
 		file.Close()
-		return nil, &os.PathError{
-			Op:   "openFile",
-			Path: pathname,
-			Err:  syscall.EISDIR,
-		}
+		return nil, fmt.Errorf("%w: %s", ErrNotRegularFile, pathname)
 	}
 	return file, nil
 }
