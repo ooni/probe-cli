@@ -151,8 +151,8 @@ func androidBuildCLIProductArch(
 	argv.Append(product.Pkg)
 
 	// For more complex use cases such as building cdeps we have dedicated
-	// extracting functions, but this code is simple enough that it's OK to
-	// keep here without refactoring it into a function.
+	// extracting functions (e.g., cBuildExportAutotools), but this code is
+	// simple enough that it's OK to keep here without refactoring.
 	envp := &shellx.Envp{}
 	envp.Append("CGO_ENABLED", "1")
 	envp.Append("CC", cgo.CC)
