@@ -46,7 +46,7 @@ func cdepsLibeventBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependenci
 		CXXFLAGS: []string{"-I" + globalEnv.DESTDIR + "/include"},
 		LDFLAGS:  []string{"-L" + globalEnv.DESTDIR + "/lib"},
 	}
-	envp := cBuildExportEnviron(globalEnv, localEnv)
+	envp := cBuildExportAutotools(cBuildMerge(globalEnv, localEnv))
 
 	argv := runtimex.Try1(shellx.NewArgv("./configure"))
 	if globalEnv.CONFIGURE_HOST != "" {

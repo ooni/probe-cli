@@ -123,6 +123,7 @@ func androidBuildCLIAll(deps buildtoolmodel.Dependencies) {
 				deps,
 				product,
 				arch,
+				androidHome,
 				ndkDir,
 			)
 		}
@@ -134,9 +135,10 @@ func androidBuildCLIProductArch(
 	deps buildtoolmodel.Dependencies,
 	product *product,
 	ooniArch string,
+	androidHome string,
 	ndkDir string,
 ) {
-	cgo := newAndroidCBuildEnv(ndkDir, ooniArch)
+	cgo := newAndroidCBuildEnv(androidHome, ndkDir, ooniArch)
 
 	log.Infof("building %s for android/%s", product.Pkg, ooniArch)
 
@@ -148,6 +150,9 @@ func androidBuildCLIProductArch(
 	argv.Append("-o", product.DestinationPath("android", ooniArch))
 	argv.Append(product.Pkg)
 
+	// For more complex use cases such as building cdeps we have dedicated
+	// extracting functions (e.g., cBuildExportAutotools), but this code is
+	// simple enough that it's OK to keep here without refactoring.
 	envp := &shellx.Envp{}
 	envp.Append("CGO_ENABLED", "1")
 	envp.Append("CC", cgo.CC)
@@ -175,40 +180,58 @@ func androidBuildCLIProductArch(
 
 // newAndroidCBuildEnv creates a new [cBuildEnv] for the
 // given ooniArch ("arm", "arm64", "386", "amd64").
-func newAndroidCBuildEnv(ndkDir string, ooniArch string) *cBuildEnv {
+func newAndroidCBuildEnv(androidHome, ndkDir, ooniArch string) *cBuildEnv {
+	binpath := androidNDKBinPath(ndkDir)
+	destdir := runtimex.Try1(filepath.Abs(filepath.Join( // must be absolute
+		"internal", "libtor", "android", ooniArch,
+	)))
 	out := &cBuildEnv{
-		BINPATH:  androidNDKBinPath(ndkDir),
-		CC:       "",
-		CFLAGS:   androidCflags(ooniArch),
-		CXX:      "",
-		CXXFLAGS: androidCflags(ooniArch),
-		GOARCH:   "",
-		GOARM:    "",
+		ANDROID_HOME:       androidHome,
+		ANDROID_NDK_HOME:   ndkDir,
+		AS:                 "", // later
+		AR:                 filepath.Join(binpath, "llvm-ar"),
+		BINPATH:            binpath,
+		CC:                 "", // later
+		CFLAGS:             androidCflags(ooniArch),
+		CONFIGURE_HOST:     "", // later
+		DESTDIR:            destdir,
+		CXX:                "", // later
+		CXXFLAGS:           androidCflags(ooniArch),
+		GOARCH:             ooniArch,
+		GOARM:              "", // maybe later
+		LD:                 filepath.Join(binpath, "ld"),
+		LDFLAGS:            []string{}, // empty
+		OPENSSL_API_DEFINE: "-D__ANDROID_API__=21",
+		OPENSSL_COMPILER:   "", // later
+		RANLIB:             filepath.Join(binpath, "llvm-ranlib"),
+		STRIP:              filepath.Join(binpath, "llvm-strip"),
 	}
 	switch ooniArch {
 	case "arm":
 		out.CC = filepath.Join(out.BINPATH, "armv7a-linux-androideabi21-clang")
 		out.CXX = filepath.Join(out.BINPATH, "armv7a-linux-androideabi21-clang++")
-		out.GOARCH = ooniArch
 		out.GOARM = "7"
+		out.CONFIGURE_HOST = "arm-linux-androideabi"
+		out.OPENSSL_COMPILER = "android-arm"
 	case "arm64":
 		out.CC = filepath.Join(out.BINPATH, "aarch64-linux-android21-clang")
 		out.CXX = filepath.Join(out.BINPATH, "aarch64-linux-android21-clang++")
-		out.GOARCH = ooniArch
-		out.GOARM = ""
+		out.CONFIGURE_HOST = "aarch64-linux-android"
+		out.OPENSSL_COMPILER = "android-arm64"
 	case "386":
 		out.CC = filepath.Join(out.BINPATH, "i686-linux-android21-clang")
 		out.CXX = filepath.Join(out.BINPATH, "i686-linux-android21-clang++")
-		out.GOARCH = ooniArch
-		out.GOARM = ""
+		out.CONFIGURE_HOST = "i686-linux-android"
+		out.OPENSSL_COMPILER = "android-x86"
 	case "amd64":
 		out.CC = filepath.Join(out.BINPATH, "x86_64-linux-android21-clang")
 		out.CXX = filepath.Join(out.BINPATH, "x86_64-linux-android21-clang++")
-		out.GOARCH = ooniArch
-		out.GOARM = ""
+		out.CONFIGURE_HOST = "x86_64-linux-android"
+		out.OPENSSL_COMPILER = "android-x86_64"
 	default:
 		panic(errors.New("unsupported ooniArch"))
 	}
+	out.AS = out.CC
 	return out
 }
 

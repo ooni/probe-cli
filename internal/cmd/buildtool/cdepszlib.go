@@ -37,7 +37,7 @@ func cdepsZlibBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencies) 
 		must.Run(log.Log, "git", "apply", patch)
 	}
 
-	envp := cBuildExportEnviron(globalEnv, &cBuildEnv{})
+	envp := cBuildExportAutotools(globalEnv)
 	if globalEnv.CONFIGURE_HOST != "" {
 		envp.Append("CHOST", globalEnv.CONFIGURE_HOST) // zlib's configure otherwise uses Apple's libtool
 	}
