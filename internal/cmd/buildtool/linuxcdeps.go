@@ -47,12 +47,12 @@ func linuxCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
 		"-O2",
 	}
 	globalEnv := &cBuildEnv{
-		cflags:   cflags,
-		cxxflags: cflags,
-		destdir: runtimex.Try1(filepath.Abs(filepath.Join( // must be absolute
+		CFLAGS:   cflags,
+		CXXFLAGS: cflags,
+		DESTDIR: runtimex.Try1(filepath.Abs(filepath.Join( // must be absolute
 			"internal", "libtor", "linux", runtime.GOARCH,
 		))),
-		openSSLCompiler: "linux-x86_64",
+		OPENSSL_COMPILER: "linux-x86_64",
 	}
 	switch name {
 	case "libevent":

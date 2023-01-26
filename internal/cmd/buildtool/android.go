@@ -150,12 +150,12 @@ func androidBuildCLIProductArch(
 
 	envp := &shellx.Envp{}
 	envp.Append("CGO_ENABLED", "1")
-	envp.Append("CC", cgo.cc)
-	envp.Append("CXX", cgo.cxx)
+	envp.Append("CC", cgo.CC)
+	envp.Append("CXX", cgo.CXX)
 	envp.Append("GOOS", "android")
-	envp.Append("GOARCH", cgo.goarch)
-	if cgo.goarm != "" {
-		envp.Append("GOARM", cgo.goarm)
+	envp.Append("GOARCH", cgo.GOARCH)
+	if cgo.GOARM != "" {
+		envp.Append("GOARM", cgo.GOARM)
 	}
 
 	// [2023-01-26] Adding the following flags produces these warnings for android/arm
@@ -177,35 +177,35 @@ func androidBuildCLIProductArch(
 // given ooniArch ("arm", "arm64", "386", "amd64").
 func newAndroidCBuildEnv(ndkDir string, ooniArch string) *cBuildEnv {
 	out := &cBuildEnv{
-		binpath:  androidNDKBinPath(ndkDir),
-		cc:       "",
-		cflags:   androidCflags(ooniArch),
-		cxx:      "",
-		cxxflags: androidCflags(ooniArch),
-		goarch:   "",
-		goarm:    "",
+		BINPATH:  androidNDKBinPath(ndkDir),
+		CC:       "",
+		CFLAGS:   androidCflags(ooniArch),
+		CXX:      "",
+		CXXFLAGS: androidCflags(ooniArch),
+		GOARCH:   "",
+		GOARM:    "",
 	}
 	switch ooniArch {
 	case "arm":
-		out.cc = filepath.Join(out.binpath, "armv7a-linux-androideabi21-clang")
-		out.cxx = filepath.Join(out.binpath, "armv7a-linux-androideabi21-clang++")
-		out.goarch = ooniArch
-		out.goarm = "7"
+		out.CC = filepath.Join(out.BINPATH, "armv7a-linux-androideabi21-clang")
+		out.CXX = filepath.Join(out.BINPATH, "armv7a-linux-androideabi21-clang++")
+		out.GOARCH = ooniArch
+		out.GOARM = "7"
 	case "arm64":
-		out.cc = filepath.Join(out.binpath, "aarch64-linux-android21-clang")
-		out.cxx = filepath.Join(out.binpath, "aarch64-linux-android21-clang++")
-		out.goarch = ooniArch
-		out.goarm = ""
+		out.CC = filepath.Join(out.BINPATH, "aarch64-linux-android21-clang")
+		out.CXX = filepath.Join(out.BINPATH, "aarch64-linux-android21-clang++")
+		out.GOARCH = ooniArch
+		out.GOARM = ""
 	case "386":
-		out.cc = filepath.Join(out.binpath, "i686-linux-android21-clang")
-		out.cxx = filepath.Join(out.binpath, "i686-linux-android21-clang++")
-		out.goarch = ooniArch
-		out.goarm = ""
+		out.CC = filepath.Join(out.BINPATH, "i686-linux-android21-clang")
+		out.CXX = filepath.Join(out.BINPATH, "i686-linux-android21-clang++")
+		out.GOARCH = ooniArch
+		out.GOARM = ""
 	case "amd64":
-		out.cc = filepath.Join(out.binpath, "x86_64-linux-android21-clang")
-		out.cxx = filepath.Join(out.binpath, "x86_64-linux-android21-clang++")
-		out.goarch = ooniArch
-		out.goarm = ""
+		out.CC = filepath.Join(out.BINPATH, "x86_64-linux-android21-clang")
+		out.CXX = filepath.Join(out.BINPATH, "x86_64-linux-android21-clang++")
+		out.GOARCH = ooniArch
+		out.GOARM = ""
 	default:
 		panic(errors.New("unsupported ooniArch"))
 	}

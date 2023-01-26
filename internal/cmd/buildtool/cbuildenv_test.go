@@ -9,14 +9,14 @@ import (
 func TestCBuildEnv(t *testing.T) {
 	t.Run("we can correctly merge build flags", func(t *testing.T) {
 		global := &cBuildEnv{
-			cflags:   []string{"a", "b", "c"},
-			cxxflags: []string{"A", "B", "C"},
-			ldflags:  []string{"1", "2", "3"},
+			CFLAGS:   []string{"a", "b", "c"},
+			CXXFLAGS: []string{"A", "B", "C"},
+			LDFLAGS:  []string{"1", "2", "3"},
 		}
 		local := &cBuildEnv{
-			cflags:   []string{"d", "e"},
-			cxxflags: []string{"D", "E"},
-			ldflags:  []string{"4", "5"},
+			CFLAGS:   []string{"d", "e"},
+			CXXFLAGS: []string{"D", "E"},
+			LDFLAGS:  []string{"4", "5"},
 		}
 		envp := cBuildExportEnviron(global, local)
 		expected := []string{
@@ -31,14 +31,14 @@ func TestCBuildEnv(t *testing.T) {
 
 	t.Run("we do nothing with empty variables", func(t *testing.T) {
 		global := &cBuildEnv{
-			cflags:   []string{},
-			cxxflags: []string{},
-			ldflags:  []string{},
+			CFLAGS:   []string{},
+			CXXFLAGS: []string{},
+			LDFLAGS:  []string{},
 		}
 		local := &cBuildEnv{
-			cflags:   []string{},
-			cxxflags: []string{},
-			ldflags:  []string{},
+			CFLAGS:   []string{},
+			CXXFLAGS: []string{},
+			LDFLAGS:  []string{},
 		}
 		envp := cBuildExportEnviron(global, local)
 		var expected []string

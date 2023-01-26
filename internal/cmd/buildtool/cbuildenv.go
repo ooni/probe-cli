@@ -11,44 +11,46 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/shellx"
 )
 
-// cBuildEnv describes the C build environment. We use
-// this structure for more complex C and CGO builds.
+// cBuildEnv describes the C build environment. We use this structure
+// for more complex C and CGO builds. You should think at fields inside
+// this structure as the enviroment variables you would use and export
+// in a bash script (hence the all uppercase naming).
 type cBuildEnv struct {
-	// binpath is the path containing the C and C++ compilers.
-	binpath string
+	// BINPATH is the path containing the C and C++ compilers.
+	BINPATH string
 
-	// cc is the full path to the C compiler.
-	cc string
+	// CC is the full path to the C compiler.
+	CC string
 
-	// cflags contains the extra CFLAGS to set.
-	cflags []string
+	// CFLAGS contains the extra CFLAGS to set.
+	CFLAGS []string
 
-	// configureHost is the value to pass to ./configure's --host option.
-	configureHost string
+	// CONFIGURE_HOST is the value to pass to ./configure's --host option.
+	CONFIGURE_HOST string
 
-	// destdir is the directory where to install.
-	destdir string
+	// DESTDIR is the directory where to install.
+	DESTDIR string
 
-	// cxx is the full path to the CXX compiler.
-	cxx string
+	// CXX is the full path to the CXX compiler.
+	CXX string
 
-	// cxxflags contains the extra CXXFLAGS to set.
-	cxxflags []string
+	// CXXFLAGS contains the extra CXXFLAGS to set.
+	CXXFLAGS []string
 
-	// goarch is the GOARCH we're building for.
-	goarch string
+	// GOARCH is the GOARCH we're building for.
+	GOARCH string
 
-	// goarm is the GOARM subarchitecture.
-	goarm string
+	// GOARM is the GOARM subarchitecture.
+	GOARM string
 
 	// lfdlags contains the LDFLAGS to use when compiling.
-	ldflags []string
+	LDFLAGS []string
 
-	// openSSLAPIDefine is an extra define we need to add on Android.
-	openSSLAPIDefine string
+	// OPENSSL_API_DEFINE is an extra define we need to add on Android.
+	OPENSSL_API_DEFINE string
 
-	// openSSLCompiler is the compiler name for OpenSSL.
-	openSSLCompiler string
+	// OPENSSL_COMPILER is the compiler name for OpenSSL.
+	OPENSSL_COMPILER string
 }
 
 // cBuildExportEnviron merges the gloval and the local c build environment
@@ -58,20 +60,20 @@ type cBuildEnv struct {
 func cBuildExportEnviron(global, local *cBuildEnv) *shellx.Envp {
 	envp := &shellx.Envp{}
 
-	cflags := append([]string{}, global.cflags...)
-	cflags = append(cflags, local.cflags...)
+	cflags := append([]string{}, global.CFLAGS...)
+	cflags = append(cflags, local.CFLAGS...)
 	if len(cflags) > 0 {
 		envp.Append("CFLAGS", strings.Join(cflags, " "))
 	}
 
-	cxxflags := append([]string{}, global.cxxflags...)
-	cxxflags = append(cxxflags, local.cxxflags...)
+	cxxflags := append([]string{}, global.CXXFLAGS...)
+	cxxflags = append(cxxflags, local.CXXFLAGS...)
 	if len(cxxflags) > 0 {
 		envp.Append("CXXFLAGS", strings.Join(cxxflags, " "))
 	}
 
-	ldflags := append([]string{}, global.ldflags...)
-	ldflags = append(ldflags, local.ldflags...)
+	ldflags := append([]string{}, global.LDFLAGS...)
+	ldflags = append(ldflags, local.LDFLAGS...)
 	if len(ldflags) > 0 {
 		envp.Append("LDFLAGS", strings.Join(ldflags, " "))
 	}
