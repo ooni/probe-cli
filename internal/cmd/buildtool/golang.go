@@ -23,3 +23,8 @@ func golangCheck(filename string) {
 	}
 	log.Infof("using go%s", expected)
 }
+
+// golangGOPATH returns the GOPATH value.
+func golangGOPATH() string {
+	return string(must.FirstLineBytes(must.RunOutput(log.Log, "go", "env", "GOPATH")))
+}

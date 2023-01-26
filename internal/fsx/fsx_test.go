@@ -118,3 +118,28 @@ func TestRegularFileExists(t *testing.T) {
 		}
 	})
 }
+
+func TestDirectoryExists(t *testing.T) {
+	t.Run("for existing directory", func(t *testing.T) {
+		exists := DirectoryExists("testdata")
+		if !exists {
+			t.Fatal("should exist")
+		}
+	})
+
+	t.Run("for existing file", func(t *testing.T) {
+		path := filepath.Join("testdata", "testfile.txt")
+		exists := DirectoryExists(path)
+		if exists {
+			t.Fatal("should not exist")
+		}
+	})
+
+	t.Run("for nonexisting directory", func(t *testing.T) {
+		path := filepath.Join("testdata", "nonexistent")
+		exists := DirectoryExists(path)
+		if exists {
+			t.Fatal("should not exist")
+		}
+	})
+}

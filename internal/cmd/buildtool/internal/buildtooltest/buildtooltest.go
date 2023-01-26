@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"path/filepath"
 	"strings"
 
 	"github.com/ooni/probe-cli/v3/internal/cmd/buildtool/internal/buildtoolmodel"
@@ -129,11 +130,14 @@ func (cc *SimpleCommandCollector) LookPath(file string) (string, error) {
 	return file, nil
 }
 
-// CanonicalGolangVersion is the canonical version used in tests.
+// CanonicalGolangVersion is the canonical Go version used in tests.
 const CanonicalGolangVersion = "1.14.17"
 
 // Constants describing the dependent functions we can call when building.
 const (
+	TagAndroidNDKCheck             = "androidNDK"
+	TagAndroidSDKCheck             = "androidSDK"
+	TagGOPATH                      = "GOPATH"
 	TagGolangCheck                 = "golangCheck"
 	TagLinuxReadGOVERSION          = "linuxReadGOVERSION"
 	TagLinuxWriteDockerfile        = "linuxWriteDockerfile"
@@ -151,36 +155,57 @@ type DependenciesCallCounter struct {
 
 var _ buildtoolmodel.Dependencies = &DependenciesCallCounter{}
 
-// golangCheck implements buildDeps
+// CanonicalNDKVersion is the canonical NDK version used in tests.
+const CanonicalNDKVersion = "25.1.7654321"
+
+// AndroidNDKCheck implements buildtoolmodel.Dependencies
+func (cc *DependenciesCallCounter) AndroidNDKCheck(androidHome string) string {
+	cc.increment(TagAndroidNDKCheck)
+	return filepath.Join(androidHome, "ndk", CanonicalNDKVersion)
+}
+
+// AndroidSDKCheck implements buildtoolmodel.Dependencies
+func (cc *DependenciesCallCounter) AndroidSDKCheck() string {
+	cc.increment(TagAndroidSDKCheck)
+	return filepath.Join("", "Android", "sdk") // fake location
+}
+
+// GOPATH implements buildtoolmodel.Dependencies
+func (cc *DependenciesCallCounter) GOPATH() string {
+	cc.increment(TagGOPATH)
+	return "/go/gopath" // fake location
+}
+
+// golangCheck implements buildtoolmodel.Dependencies
 func (cc *DependenciesCallCounter) GolangCheck() {
 	cc.increment(TagGolangCheck)
 }
 
-// linuxReadGOVERSION implements buildDeps
+// linuxReadGOVERSION implements buildtoolmodel.Dependencies
 func (cc *DependenciesCallCounter) LinuxReadGOVERSION(filename string) []byte {
 	cc.increment(TagLinuxReadGOVERSION)
 	v := append([]byte(CanonicalGolangVersion), '\n')
 	return v
 }
 
-// linuxWriteDockerfile implements buildDeps
+// linuxWriteDockerfile implements buildtoolmodel.Dependencies
 func (cc *DependenciesCallCounter) LinuxWriteDockerfile(
 	filename string, content []byte, mode fs.FileMode) {
 	cc.increment(TagLinuxWriteDockerfile)
 }
 
-// psiphonFilesExist implements buildDeps
+// psiphonFilesExist implements buildtoolmodel.Dependencies
 func (cc *DependenciesCallCounter) PsiphonFilesExist() bool {
 	cc.increment(TagPsiphonFilesExist)
 	return cc.HasPsiphon
 }
 
-// psiphonMaybeCopyConfigFiles implements buildDeps
+// psiphonMaybeCopyConfigFiles implements buildtoolmodel.Dependencies
 func (cc *DependenciesCallCounter) PsiphonMaybeCopyConfigFiles() {
 	cc.increment(TagPsiphonMaybeCopyConfigFiles)
 }
 
-// windowsMingwCheck implements buildDeps
+// windowsMingwCheck implements buildtoolmodel.Dependencies
 func (cc *DependenciesCallCounter) WindowsMingwCheck() {
 	cc.increment(TagWindowsMingwCheck)
 }
