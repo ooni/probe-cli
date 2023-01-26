@@ -34,17 +34,19 @@ func linuxCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
 		runtime.GOOS == "linux" && runtime.GOARCH == "amd64",
 		"this command requires linux/amd64",
 	)
+	cflags := []string{
+		// See https://airbus-seclab.github.io/c-compiler-security/
+		"-D_FORTIFY_SOURCE=2",
+		"-fstack-protector-strong",
+		"-fstack-clash-protection",
+		"-fPIC", // makes more sense than -fPIE given that we're building a library
+		"-fsanitize=bounds",
+		"-fsanitize-undefined-trap-on-error",
+		"-O2",
+	}
 	globalEnv := &cBuildEnv{
-		cflags: []string{
-			// See https://airbus-seclab.github.io/c-compiler-security/
-			"-D_FORTIFY_SOURCE=2",
-			"-fstack-protector-strong",
-			"-fstack-clash-protection",
-			"-fPIC", // makes more sense than -fPIE given that we're building a library
-			"-fsanitize=bounds",
-			"-fsanitize-undefined-trap-on-error",
-			"-O2",
-		},
+		cflags:   cflags,
+		cxxflags: cflags,
 		destdir: runtimex.Try1(filepath.Abs(filepath.Join( // must be absolute
 			"internal", "libtor", "linux", runtime.GOARCH,
 		))),

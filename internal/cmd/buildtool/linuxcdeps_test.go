@@ -11,10 +11,6 @@ import (
 )
 
 func TestLinuxCdepsBuildMain(t *testing.T) {
-	if runtime.GOOS != "linux" && runtime.GOARCH != "amd64" {
-		t.Skip("skip test for GOOS != linux and GOARCH != amd64")
-	}
-
 	faketopdir := (&buildtooltest.DependenciesCallCounter{}).AbsoluteCurDir()
 
 	// testspec specifies a test case for this test
@@ -50,6 +46,7 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 		}, {
 			Env: []string{
 				"CFLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong -fstack-clash-protection -fPIC -fsanitize=bounds -fsanitize-undefined-trap-on-error -O2",
+				"CXXFLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong -fstack-clash-protection -fPIC -fsanitize=bounds -fsanitize-undefined-trap-on-error -O2",
 			},
 			Argv: []string{
 				"./configure", "--prefix=/", "--static",
@@ -106,6 +103,7 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 		}, {
 			Env: []string{
 				"CFLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong -fstack-clash-protection -fPIC -fsanitize=bounds -fsanitize-undefined-trap-on-error -O2 -Wno-macro-redefined",
+				"CXXFLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong -fstack-clash-protection -fPIC -fsanitize=bounds -fsanitize-undefined-trap-on-error -O2 -Wno-macro-redefined",
 			},
 			Argv: []string{
 				"./Configure", "no-comp", "no-dtls", "no-ec2m", "no-psk", "no-srp",
@@ -172,6 +170,10 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 			Env: []string{
 				fmt.Sprintf(
 					"CFLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong -fstack-clash-protection -fPIC -fsanitize=bounds -fsanitize-undefined-trap-on-error -O2 -I%s/internal/cmd/buildtool/internal/libtor/linux/amd64/include",
+					faketopdir,
+				),
+				fmt.Sprintf(
+					"CXXFLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong -fstack-clash-protection -fPIC -fsanitize=bounds -fsanitize-undefined-trap-on-error -O2 -I%s/internal/cmd/buildtool/internal/libtor/linux/amd64/include",
 					faketopdir,
 				),
 				fmt.Sprintf(
@@ -307,7 +309,7 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 		}, {
 			Env: []string{
 				"CFLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong -fstack-clash-protection -fPIC -fsanitize=bounds -fsanitize-undefined-trap-on-error -O2",
-				"LDFLAGS=",
+				"CXXFLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong -fstack-clash-protection -fPIC -fsanitize=bounds -fsanitize-undefined-trap-on-error -O2",
 			},
 			Argv: []string{
 				"./configure",
