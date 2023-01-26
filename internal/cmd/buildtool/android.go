@@ -348,12 +348,10 @@ func androidCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
 		runtime.GOOS == "darwin" || runtime.GOOS == "linux",
 		"this command requires darwin or linux",
 	)
-	deps.PsiphonMaybeCopyConfigFiles()
-	deps.GolangCheck()
 
 	androidHome := deps.AndroidSDKCheck()
 	ndkDir := deps.AndroidNDKCheck(androidHome)
-	archs := []string{"amd64", "386", "arm64", "arm"}
+	archs := []string{"arm", "arm64", "386", "amd64"}
 	for _, arch := range archs {
 		androidCdepsBuildArch(deps, arch, androidHome, ndkDir, name)
 	}
