@@ -150,6 +150,9 @@ func androidBuildCLIProductArch(
 	argv.Append("-o", product.DestinationPath("android", ooniArch))
 	argv.Append(product.Pkg)
 
+	// For more complex use cases such as building cdeps we have dedicated
+	// extracting functions, but this code is simple enough that it's OK to
+	// keep here without refactoring it into a function.
 	envp := &shellx.Envp{}
 	envp.Append("CGO_ENABLED", "1")
 	envp.Append("CC", cgo.CC)
@@ -192,12 +195,12 @@ func newAndroidCBuildEnv(androidHome, ndkDir, ooniArch string) *cBuildEnv {
 		CFLAGS:             androidCflags(ooniArch),
 		CONFIGURE_HOST:     "", // later
 		DESTDIR:            destdir,
-		CXX:                "",
+		CXX:                "", // later
 		CXXFLAGS:           androidCflags(ooniArch),
 		GOARCH:             ooniArch,
 		GOARM:              "", // maybe later
-		LD:                 "",
-		LDFLAGS:            []string{}, // empty for now
+		LD:                 filepath.Join(binpath, "ld"),
+		LDFLAGS:            []string{}, // empty
 		OPENSSL_API_DEFINE: "-D__ANDROID_API__=21",
 		OPENSSL_COMPILER:   "", // later
 		RANLIB:             filepath.Join(binpath, "llvm-ranlib"),
