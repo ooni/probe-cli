@@ -1,4 +1,4 @@
-// Command GHGEN regenerates selected GitHub actions.
+// Command ghgen regenerates selected GitHub actions.
 package main
 
 import (
