@@ -1,5 +1,9 @@
 package main
 
+//
+// Common code for gomobile based builds.
+//
+
 import (
 	"path/filepath"
 
@@ -24,7 +28,7 @@ type gomobileConfig struct {
 	// output is the name of the output file.
 	output string
 
-	// target is the build target (e.g. "android")
+	// target is the build target (e.g. "android").
 	target string
 }
 

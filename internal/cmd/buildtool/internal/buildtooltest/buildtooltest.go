@@ -176,36 +176,36 @@ func (cc *DependenciesCallCounter) GOPATH() string {
 	return "/go/gopath" // fake location
 }
 
-// golangCheck implements buildDeps
+// golangCheck implements buildtoolmodel.Dependencies
 func (cc *DependenciesCallCounter) GolangCheck() {
 	cc.increment(TagGolangCheck)
 }
 
-// linuxReadGOVERSION implements buildDeps
+// linuxReadGOVERSION implements buildtoolmodel.Dependencies
 func (cc *DependenciesCallCounter) LinuxReadGOVERSION(filename string) []byte {
 	cc.increment(TagLinuxReadGOVERSION)
 	v := append([]byte(CanonicalGolangVersion), '\n')
 	return v
 }
 
-// linuxWriteDockerfile implements buildDeps
+// linuxWriteDockerfile implements buildtoolmodel.Dependencies
 func (cc *DependenciesCallCounter) LinuxWriteDockerfile(
 	filename string, content []byte, mode fs.FileMode) {
 	cc.increment(TagLinuxWriteDockerfile)
 }
 
-// psiphonFilesExist implements buildDeps
+// psiphonFilesExist implements buildtoolmodel.Dependencies
 func (cc *DependenciesCallCounter) PsiphonFilesExist() bool {
 	cc.increment(TagPsiphonFilesExist)
 	return cc.HasPsiphon
 }
 
-// psiphonMaybeCopyConfigFiles implements buildDeps
+// psiphonMaybeCopyConfigFiles implements buildtoolmodel.Dependencies
 func (cc *DependenciesCallCounter) PsiphonMaybeCopyConfigFiles() {
 	cc.increment(TagPsiphonMaybeCopyConfigFiles)
 }
 
-// windowsMingwCheck implements buildDeps
+// windowsMingwCheck implements buildtoolmodel.Dependencies
 func (cc *DependenciesCallCounter) WindowsMingwCheck() {
 	cc.increment(TagWindowsMingwCheck)
 }

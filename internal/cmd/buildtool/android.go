@@ -40,7 +40,6 @@ func androidBuildAll(deps buildtoolmodel.Dependencies) {
 
 	deps.PsiphonMaybeCopyConfigFiles()
 	deps.GolangCheck()
-	deps.AndroidSDKCheck()
 
 	androidHome := deps.AndroidSDKCheck()
 	ndkDir := deps.AndroidNDKCheck(androidHome)
@@ -67,7 +66,6 @@ func androidBuildGomobile(deps buildtoolmodel.Dependencies, envp *shellx.Envp) {
 
 // androidSDKCheck checks we have the right SDK installed.
 func androidSDKCheck() string {
-	// Make sure we have a working ANDROID_HOME
 	androidHome := os.Getenv("ANDROID_HOME")
 	if androidHome == "" {
 		switch runtime.GOOS {
