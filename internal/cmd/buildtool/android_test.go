@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"runtime"
 	"strconv"
@@ -936,6 +937,656 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 
 			shellxtesting.WithCustomLibrary(cc, func() {
 				androidCdepsBuildMain("openssl", deps)
+			})
+
+			expectCalls := map[string]int{
+				buildtooltest.TagAbsoluteCurDir:  4,
+				buildtooltest.TagAndroidNDKCheck: 1,
+				buildtooltest.TagAndroidSDKCheck: 1,
+				buildtooltest.TagMustChdir:       4,
+				buildtooltest.TagVerifySHA256:    4,
+			}
+
+			if diff := cmp.Diff(expectCalls, deps.Counter); diff != "" {
+				t.Fatal(diff)
+			}
+
+			if err := buildtooltest.CheckManyCommands(cc.Commands, testcase.expect); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestAndroidBuildCdepsLibevent(t *testing.T) {
+	faketopdir := (&buildtooltest.DependenciesCallCounter{}).AbsoluteCurDir()
+	fakeBinPath := testAndroidGetFakeBinpath()
+
+	// testspec specifies a test case for this test
+	type testspec struct {
+		// name is the name of the test case
+		name string
+
+		// expectations contains the commands we expect to see
+		expect []buildtooltest.ExecExpectations
+	}
+
+	var testcases = []testspec{{
+		name: "libevent",
+		expect: []buildtooltest.ExecExpectations{{
+			Env: []string{},
+			Argv: []string{
+				"curl",
+				"-fsSLO",
+				"https://github.com/libevent/libevent/archive/release-2.1.12-stable.tar.gz",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"tar", "-xf", "release-2.1.12-stable.tar.gz",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/libevent/000.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/libevent/001.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/libevent/002.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"./autogen.sh",
+			},
+		}, {
+			Env: []string{
+				"AS=" + fakeBinPath + "/armv7a-linux-androideabi21-clang",
+				"LD=" + fakeBinPath + "/ld",
+				"CXX=" + fakeBinPath + "/armv7a-linux-androideabi21-clang++",
+				"CC=" + fakeBinPath + "/armv7a-linux-androideabi21-clang",
+				"AR=" + fakeBinPath + "/llvm-ar",
+				"RANLIB=" + fakeBinPath + "/llvm-ranlib",
+				"STRIP=" + fakeBinPath + "/llvm-strip",
+				"LDFLAGS=-L" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm/lib",
+				fmt.Sprintf(
+					"%s %s",
+					"CFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fpic -Oz -DANDROID -fsanitize=bounds -fsanitize-undefined-trap-on-error -mthumb",
+					"-I"+faketopdir+"/internal/cmd/buildtool/internal/libtor/android/arm/include",
+				),
+				fmt.Sprintf(
+					"%s %s",
+					"CXXFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fpic -Oz -DANDROID -fsanitize=bounds -fsanitize-undefined-trap-on-error -mthumb",
+					"-I"+faketopdir+"/internal/cmd/buildtool/internal/libtor/android/arm/include",
+				),
+			},
+			Argv: []string{
+				"./configure",
+				"--host=arm-linux-androideabi",
+				"--disable-libevent-regress",
+				"--disable-samples",
+				"--disable-shared",
+				"--prefix=/",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"make", "V=1", "-j", strconv.Itoa(runtime.NumCPU()),
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"make",
+				"DESTDIR=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm",
+				"install",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm/bin",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm/lib/pkgconfig",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm/lib/libevent.la",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm/lib/libevent_core.a",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm/lib/libevent_core.la",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm/lib/libevent_extra.a",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm/lib/libevent_extra.la",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm/lib/libevent_openssl.a",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm/lib/libevent_openssl.la",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm/lib/libevent_pthreads.a",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm/lib/libevent_pthreads.la",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"curl",
+				"-fsSLO",
+				"https://github.com/libevent/libevent/archive/release-2.1.12-stable.tar.gz",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"tar", "-xf", "release-2.1.12-stable.tar.gz",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/libevent/000.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/libevent/001.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/libevent/002.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"./autogen.sh",
+			},
+		}, {
+			Env: []string{
+				"AS=" + fakeBinPath + "/aarch64-linux-android21-clang",
+				"LD=" + fakeBinPath + "/ld",
+				"CXX=" + fakeBinPath + "/aarch64-linux-android21-clang++",
+				"CC=" + fakeBinPath + "/aarch64-linux-android21-clang",
+				"AR=" + fakeBinPath + "/llvm-ar",
+				"RANLIB=" + fakeBinPath + "/llvm-ranlib",
+				"STRIP=" + fakeBinPath + "/llvm-strip",
+				"LDFLAGS=-L" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64/lib",
+				fmt.Sprintf(
+					"%s %s",
+					"CFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fpic -O2 -DANDROID -fsanitize=safe-stack -fsanitize=bounds -fsanitize-undefined-trap-on-error",
+					"-I"+faketopdir+"/internal/cmd/buildtool/internal/libtor/android/arm64/include",
+				),
+				fmt.Sprintf(
+					"%s %s",
+					"CXXFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fpic -O2 -DANDROID -fsanitize=safe-stack -fsanitize=bounds -fsanitize-undefined-trap-on-error",
+					"-I"+faketopdir+"/internal/cmd/buildtool/internal/libtor/android/arm64/include",
+				),
+			},
+			Argv: []string{
+				"./configure",
+				"--host=aarch64-linux-android",
+				"--disable-libevent-regress",
+				"--disable-samples",
+				"--disable-shared",
+				"--prefix=/",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"make", "V=1", "-j", strconv.Itoa(runtime.NumCPU()),
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"make",
+				"DESTDIR=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64",
+				"install",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64/bin",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64/lib/pkgconfig",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64/lib/libevent.la",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64/lib/libevent_core.a",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64/lib/libevent_core.la",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64/lib/libevent_extra.a",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64/lib/libevent_extra.la",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64/lib/libevent_openssl.a",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64/lib/libevent_openssl.la",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64/lib/libevent_pthreads.a",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64/lib/libevent_pthreads.la",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"curl",
+				"-fsSLO",
+				"https://github.com/libevent/libevent/archive/release-2.1.12-stable.tar.gz",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"tar", "-xf", "release-2.1.12-stable.tar.gz",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/libevent/000.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/libevent/001.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/libevent/002.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"./autogen.sh",
+			},
+		}, {
+			Env: []string{
+				"AS=" + fakeBinPath + "/i686-linux-android21-clang",
+				"LD=" + fakeBinPath + "/ld",
+				"CXX=" + fakeBinPath + "/i686-linux-android21-clang++",
+				"CC=" + fakeBinPath + "/i686-linux-android21-clang",
+				"AR=" + fakeBinPath + "/llvm-ar",
+				"RANLIB=" + fakeBinPath + "/llvm-ranlib",
+				"STRIP=" + fakeBinPath + "/llvm-strip",
+				"LDFLAGS=-L" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386/lib",
+				fmt.Sprintf(
+					"%s %s",
+					"CFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fPIC -O2 -DANDROID -fsanitize=safe-stack -fstack-clash-protection -fsanitize=bounds -fsanitize-undefined-trap-on-error -mstackrealign",
+					"-I"+faketopdir+"/internal/cmd/buildtool/internal/libtor/android/386/include",
+				),
+				fmt.Sprintf(
+					"%s %s",
+					"CXXFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fPIC -O2 -DANDROID -fsanitize=safe-stack -fstack-clash-protection -fsanitize=bounds -fsanitize-undefined-trap-on-error -mstackrealign",
+					"-I"+faketopdir+"/internal/cmd/buildtool/internal/libtor/android/386/include",
+				),
+			},
+			Argv: []string{
+				"./configure",
+				"--host=i686-linux-android",
+				"--disable-libevent-regress",
+				"--disable-samples",
+				"--disable-shared",
+				"--prefix=/",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"make", "V=1", "-j", strconv.Itoa(runtime.NumCPU()),
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"make",
+				"DESTDIR=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386",
+				"install",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386/bin",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386/lib/pkgconfig",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386/lib/libevent.la",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386/lib/libevent_core.a",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386/lib/libevent_core.la",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386/lib/libevent_extra.a",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386/lib/libevent_extra.la",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386/lib/libevent_openssl.a",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386/lib/libevent_openssl.la",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386/lib/libevent_pthreads.a",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386/lib/libevent_pthreads.la",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"curl",
+				"-fsSLO",
+				"https://github.com/libevent/libevent/archive/release-2.1.12-stable.tar.gz",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"tar", "-xf", "release-2.1.12-stable.tar.gz",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/libevent/000.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/libevent/001.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/libevent/002.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"./autogen.sh",
+			},
+		}, {
+			Env: []string{
+				"AS=" + fakeBinPath + "/x86_64-linux-android21-clang",
+				"LD=" + fakeBinPath + "/ld",
+				"CXX=" + fakeBinPath + "/x86_64-linux-android21-clang++",
+				"CC=" + fakeBinPath + "/x86_64-linux-android21-clang",
+				"AR=" + fakeBinPath + "/llvm-ar",
+				"RANLIB=" + fakeBinPath + "/llvm-ranlib",
+				"STRIP=" + fakeBinPath + "/llvm-strip",
+				"LDFLAGS=-L" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64/lib",
+				fmt.Sprintf(
+					"%s %s",
+					"CFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fPIC -O2 -DANDROID -fsanitize=safe-stack -fstack-clash-protection -fsanitize=bounds -fsanitize-undefined-trap-on-error",
+					"-I"+faketopdir+"/internal/cmd/buildtool/internal/libtor/android/amd64/include",
+				),
+				fmt.Sprintf(
+					"%s %s",
+					"CXXFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fPIC -O2 -DANDROID -fsanitize=safe-stack -fstack-clash-protection -fsanitize=bounds -fsanitize-undefined-trap-on-error",
+					"-I"+faketopdir+"/internal/cmd/buildtool/internal/libtor/android/amd64/include",
+				),
+			},
+			Argv: []string{
+				"./configure",
+				"--host=x86_64-linux-android",
+				"--disable-libevent-regress",
+				"--disable-samples",
+				"--disable-shared",
+				"--prefix=/",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"make", "V=1", "-j", strconv.Itoa(runtime.NumCPU()),
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"make",
+				"DESTDIR=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64",
+				"install",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64/bin",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64/lib/pkgconfig",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64/lib/libevent.la",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64/lib/libevent_core.a",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64/lib/libevent_core.la",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64/lib/libevent_extra.a",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64/lib/libevent_extra.la",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64/lib/libevent_openssl.a",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64/lib/libevent_openssl.la",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64/lib/libevent_pthreads.a",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-rf",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64/lib/libevent_pthreads.la",
+			},
+		}},
+	}}
+
+	for _, testcase := range testcases {
+		t.Run(testcase.name, func(t *testing.T) {
+
+			cc := &buildtooltest.SimpleCommandCollector{}
+
+			deps := &buildtooltest.DependenciesCallCounter{
+				HasPsiphon: false,
+			}
+
+			shellxtesting.WithCustomLibrary(cc, func() {
+				androidCdepsBuildMain("libevent", deps)
 			})
 
 			expectCalls := map[string]int{

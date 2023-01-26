@@ -32,7 +32,7 @@ type ExecExpectations struct {
 // and returns an explanatory error if they do not match.
 func CompareArgv(expected, got []string) error {
 	if len(expected) != len(got) {
-		return fmt.Errorf("expected %d entries but got %d", len(expected), len(got))
+		return fmt.Errorf("expected %d entries but got %d (%+v)", len(expected), len(got), got)
 	}
 	runtimex.Assert(len(got) >= 1, "too few entries")
 	if !strings.HasSuffix(got[0], expected[0]) {
@@ -67,9 +67,9 @@ func CompareEnv(expected, got []string) error {
 		case weExpected | weGot:
 			// nothing
 		case weGot:
-			issues = append(issues, fmt.Sprintf("* we got %s, which we didn't expect", value))
+			issues = append(issues, fmt.Sprintf("\n* we got %s, which we didn't expect\n", value))
 		case weExpected:
-			issues = append(issues, fmt.Sprintf("* we expected but did not see %s", value))
+			issues = append(issues, fmt.Sprintf("\n* we expected but did not see %s\n", value))
 		}
 	}
 	if len(issues) > 0 {
