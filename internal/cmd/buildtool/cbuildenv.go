@@ -1,15 +1,15 @@
 package main
 
+//
+// Common build environment for builds using C (which applies
+// to both CGO builds and to pure C builds).
+//
+
 import (
 	"strings"
 
 	"github.com/ooni/probe-cli/v3/internal/shellx"
 )
-
-//
-// Common build environment for builds using C (which applies
-// to both CGO builds and to pure C builds).
-//
 
 // cBuildEnv describes the C build environment. We use this structure
 // for more complex C and CGO builds. You should think at fields inside

@@ -46,17 +46,18 @@ func linuxCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
 		"-fsanitize-undefined-trap-on-error",
 		"-O2",
 	}
+	destdir := runtimex.Try1(filepath.Abs(filepath.Join( // must be absolute
+		"internal", "libtor", "linux", runtime.GOARCH,
+	)))
 	globalEnv := &cBuildEnv{
-		ANDROID_HOME:     "",
-		ANDROID_NDK_HOME: "",
-		AR:               "",
-		BINPATH:          "",
-		CC:               "",
-		CFLAGS:           cflags,
-		CONFIGURE_HOST:   "",
-		DESTDIR: runtimex.Try1(filepath.Abs(filepath.Join( // must be absolute
-			"internal", "libtor", "linux", runtime.GOARCH,
-		))),
+		ANDROID_HOME:       "",
+		ANDROID_NDK_HOME:   "",
+		AR:                 "",
+		BINPATH:            "",
+		CC:                 "",
+		CFLAGS:             cflags,
+		CONFIGURE_HOST:     "",
+		DESTDIR:            destdir,
 		CXX:                "",
 		CXXFLAGS:           cflags,
 		GOARCH:             "",
