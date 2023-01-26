@@ -19,7 +19,7 @@ import (
 )
 
 // cdepsOpenSSLBuildMain is the script that builds OpenSSL.
-func cdepsOpenSSLBuildMain(cdenv *cdepsEnv, deps buildtoolmodel.Dependencies) {
+func cdepsOpenSSLBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencies) {
 	topdir := deps.AbsoluteCurDir() // must be mockable
 	work := cdepsMustMkdirTemp()
 	restore := cdepsMustChdir(work)
@@ -39,22 +39,26 @@ func cdepsOpenSSLBuildMain(cdenv *cdepsEnv, deps buildtoolmodel.Dependencies) {
 		must.Run(log.Log, "git", "apply", patch)
 	}
 
-	envp := &shellx.Envp{}
-	cdepsAddCflags(envp, cdenv, "-Wno-macro-redefined")
+	localEnv := &cBuildEnv{
+		cflags:   []string{"-Wno-macro-redefined"},
+		cxxflags: []string{"-Wno-macro-redefined"},
+	}
+	envp := cBuildExportEnviron(globalEnv, localEnv)
+
 	argv := runtimex.Try1(shellx.NewArgv(
 		"./Configure", "no-comp", "no-dtls", "no-ec2m", "no-psk", "no-srp",
 		"no-ssl2", "no-ssl3", "no-camellia", "no-idea", "no-md2", "no-md4",
 		"no-mdc2", "no-rc2", "no-rc4", "no-rc5", "no-rmd160", "no-whirlpool",
 		"no-dso", "no-hw", "no-ui-console", "no-shared", "no-unit-test",
-		cdenv.openSSLCompiler,
+		globalEnv.openSSLCompiler,
 	))
-	if cdenv.openSSLAPIDefine != "" {
-		argv.Append(cdenv.openSSLAPIDefine)
+	if globalEnv.openSSLAPIDefine != "" {
+		argv.Append(globalEnv.openSSLAPIDefine)
 	}
 	argv.Append("--libdir=lib", "--prefix=/", "--openssldir=/")
 	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, envp))
 
 	must.Run(log.Log, "make", "-j", strconv.Itoa(runtime.NumCPU()))
-	must.Run(log.Log, "make", "DESTDIR="+cdenv.destdir, "install_dev")
-	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "lib", "pkgconfig"))
+	must.Run(log.Log, "make", "DESTDIR="+globalEnv.destdir, "install_dev")
+	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.destdir, "lib", "pkgconfig"))
 }

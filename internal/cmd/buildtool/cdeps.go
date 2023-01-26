@@ -16,43 +16,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/shellx"
 )
 
-// cdepsEnv contains the environment for compiling a C dependency.
-type cdepsEnv struct {
-	// cflags contains the CFLAGS to use when compiling.
-	cflags []string
-
-	// configureHost is the value to pass to ./configure's --host option.
-	configureHost string
-
-	// destdir is the directory where to install.
-	destdir string
-
-	// lfdlags contains the LDFLAGS to use when compiling.
-	ldflags []string
-
-	// openSSLAPIDefine is an extra define we need to add on Android.
-	openSSLAPIDefine string
-
-	// openSSLCompiler is the compiler name for OpenSSL.
-	openSSLCompiler string
-}
-
-// cdepsAddCflags merges this struct's cflags with the extra cflags and
-// then stores the merged cflags into the given envp.
-func cdepsAddCflags(envp *shellx.Envp, c *cdepsEnv, extraCflags ...string) {
-	mergedCflags := append([]string{}, c.cflags...)
-	mergedCflags = append(mergedCflags, extraCflags...)
-	envp.Append("CFLAGS", strings.Join(mergedCflags, " "))
-}
-
-// cdepsAddLdflags merges this struct's ldflags with the extra ldflags and
-// then stores the merged ldflags into the given envp.
-func cdepsAddLdflags(envp *shellx.Envp, c *cdepsEnv, extraLdflags ...string) {
-	mergedLdflags := append([]string{}, c.ldflags...)
-	mergedLdflags = append(mergedLdflags, extraLdflags...)
-	envp.Append("LDFLAGS", strings.Join(mergedLdflags, " "))
-}
-
 // cdepsMustMkdirTemp creates a temporary directory.
 func cdepsMustMkdirTemp() string {
 	return runtimex.Try1(os.MkdirTemp("", ""))

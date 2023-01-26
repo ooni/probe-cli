@@ -19,7 +19,7 @@ import (
 )
 
 // cdepsTorBuildMain is the script that builds tor.
-func cdepsTorBuildMain(cdenv *cdepsEnv, deps buildtoolmodel.Dependencies) {
+func cdepsTorBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencies) {
 	topdir := deps.AbsoluteCurDir() // must be mockable
 	work := cdepsMustMkdirTemp()
 	restore := cdepsMustChdir(work)
@@ -39,19 +39,18 @@ func cdepsTorBuildMain(cdenv *cdepsEnv, deps buildtoolmodel.Dependencies) {
 		must.Run(log.Log, "git", "apply", patch)
 	}
 
-	envp := &shellx.Envp{}
-	cdepsAddCflags(envp, cdenv)
-	cdepsAddLdflags(envp, cdenv)
+	localEnv := &cBuildEnv{}
+	envp := cBuildExportEnviron(globalEnv, localEnv)
 
 	argv := runtimex.Try1(shellx.NewArgv("./configure"))
-	if cdenv.configureHost != "" {
-		argv.Append("--host=" + cdenv.configureHost)
+	if globalEnv.configureHost != "" {
+		argv.Append("--host=" + globalEnv.configureHost)
 	}
 	argv.Append(
 		"--enable-pic",
-		"--enable-static-libevent", "--with-libevent-dir="+cdenv.destdir,
-		"--enable-static-openssl", "--with-openssl-dir="+cdenv.destdir,
-		"--enable-static-zlib", "--with-zlib-dir="+cdenv.destdir,
+		"--enable-static-libevent", "--with-libevent-dir="+globalEnv.destdir,
+		"--enable-static-openssl", "--with-openssl-dir="+globalEnv.destdir,
+		"--enable-static-zlib", "--with-zlib-dir="+globalEnv.destdir,
 		"--disable-module-dirauth",
 		"--disable-zstd", "--disable-lzma",
 		"--disable-tool-name-check",
@@ -62,6 +61,6 @@ func cdepsTorBuildMain(cdenv *cdepsEnv, deps buildtoolmodel.Dependencies) {
 
 	must.Run(log.Log, "make", "V=1", "-j", strconv.Itoa(runtime.NumCPU()))
 
-	must.Run(log.Log, "install", "-m644", "src/feature/api/tor_api.h", cdenv.destdir+"/include")
-	must.Run(log.Log, "install", "-m644", "libtor.a", cdenv.destdir+"/lib")
+	must.Run(log.Log, "install", "-m644", "src/feature/api/tor_api.h", globalEnv.destdir+"/include")
+	must.Run(log.Log, "install", "-m644", "libtor.a", globalEnv.destdir+"/lib")
 }

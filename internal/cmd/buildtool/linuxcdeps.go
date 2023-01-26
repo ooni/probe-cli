@@ -34,7 +34,7 @@ func linuxCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
 		runtime.GOOS == "linux" && runtime.GOARCH == "amd64",
 		"this command requires linux/amd64",
 	)
-	cdenv := &cdepsEnv{
+	globalEnv := &cBuildEnv{
 		cflags: []string{
 			// See https://airbus-seclab.github.io/c-compiler-security/
 			"-D_FORTIFY_SOURCE=2",
@@ -52,13 +52,13 @@ func linuxCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
 	}
 	switch name {
 	case "libevent":
-		cdepsLibeventBuildMain(cdenv, deps)
+		cdepsLibeventBuildMain(globalEnv, deps)
 	case "openssl":
-		cdepsOpenSSLBuildMain(cdenv, deps)
+		cdepsOpenSSLBuildMain(globalEnv, deps)
 	case "tor":
-		cdepsTorBuildMain(cdenv, deps)
+		cdepsTorBuildMain(globalEnv, deps)
 	case "zlib":
-		cdepsZlibBuildMain(cdenv, deps)
+		cdepsZlibBuildMain(globalEnv, deps)
 	default:
 		panic(fmt.Errorf("unknown dependency: %s", name))
 	}
