@@ -12,6 +12,11 @@ type buildDeps struct{}
 
 var _ buildtoolmodel.Dependencies = &buildDeps{}
 
+// AbsoluteCurDir implements buildtoolmodel.Dependencies
+func (*buildDeps) AbsoluteCurDir() string {
+	return cdepsMustAbsoluteCurdir()
+}
+
 // AndroidNDKCheck implements buildtoolmodel.Dependencies
 func (*buildDeps) AndroidNDKCheck(androidHome string) string {
 	return androidNDKCheck(androidHome)
@@ -42,6 +47,11 @@ func (*buildDeps) LinuxWriteDockerfile(filename string, content []byte, mode fs.
 	must.WriteFile(filename, content, mode)
 }
 
+// MustChdir implements buildtoolmodel.Dependencies
+func (*buildDeps) MustChdir(dirname string) func() {
+	return cdepsMustChdir(dirname)
+}
+
 // PsiphonFilesExist implements buildtoolmodel.Dependencies
 func (*buildDeps) PsiphonFilesExist() bool {
 	return psiphonFilesExist()
@@ -55,4 +65,9 @@ func (*buildDeps) PsiphonMaybeCopyConfigFiles() {
 // WindowsMingwCheck implements buildtoolmodel.Dependencies
 func (*buildDeps) WindowsMingwCheck() {
 	windowsMingwCheck()
+}
+
+// VerifySHA256 implements buildtoolmodel.Dependencies
+func (*buildDeps) VerifySHA256(expectedSHA256 string, tarball string) {
+	cdepsMustVerifySHA256(expectedSHA256, tarball)
 }

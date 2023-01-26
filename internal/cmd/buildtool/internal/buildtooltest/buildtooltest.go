@@ -40,7 +40,7 @@ func CompareArgv(expected, got []string) error {
 	}
 	for idx := 1; idx < len(got); idx++ {
 		if got[idx] != expected[idx] {
-			return fmt.Errorf("entry %d: expected %s, but got %s", idx, expected[idx], got[idx])
+			return fmt.Errorf("entry %d of %+v: expected %s, but got %s", idx, expected, expected[idx], got[idx])
 		}
 	}
 	return nil
@@ -135,14 +135,17 @@ const CanonicalGolangVersion = "1.14.17"
 
 // Constants describing the dependent functions we can call when building.
 const (
+	TagAbsoluteCurDir              = "absoluteCurDir"
 	TagAndroidNDKCheck             = "androidNDK"
 	TagAndroidSDKCheck             = "androidSDK"
 	TagGOPATH                      = "GOPATH"
 	TagGolangCheck                 = "golangCheck"
 	TagLinuxReadGOVERSION          = "linuxReadGOVERSION"
 	TagLinuxWriteDockerfile        = "linuxWriteDockerfile"
+	TagMustChdir                   = "mustChdir"
 	TagPsiphonFilesExist           = "psiphonFilesExist"
 	TagPsiphonMaybeCopyConfigFiles = "maybeCopyPsiphonFiles"
+	TagVerifySHA256                = "verifySHA256"
 	TagWindowsMingwCheck           = "windowsMingwCheck"
 )
 
@@ -157,6 +160,12 @@ var _ buildtoolmodel.Dependencies = &DependenciesCallCounter{}
 
 // CanonicalNDKVersion is the canonical NDK version used in tests.
 const CanonicalNDKVersion = "25.1.7654321"
+
+// AbsoluteCurDir implements buildtoolmodel.Dependencies
+func (cc *DependenciesCallCounter) AbsoluteCurDir() string {
+	cc.increment(TagAbsoluteCurDir)
+	return runtimex.Try1(filepath.Abs("../../../")) // pretend we're in the real topdir
+}
 
 // AndroidNDKCheck implements buildtoolmodel.Dependencies
 func (cc *DependenciesCallCounter) AndroidNDKCheck(androidHome string) string {
@@ -194,6 +203,12 @@ func (cc *DependenciesCallCounter) LinuxWriteDockerfile(
 	cc.increment(TagLinuxWriteDockerfile)
 }
 
+// MustChdir implements buildtoolmodel.Dependencies
+func (cc *DependenciesCallCounter) MustChdir(dirname string) func() {
+	cc.increment(TagMustChdir)
+	return func() {} // nothing
+}
+
 // psiphonFilesExist implements buildtoolmodel.Dependencies
 func (cc *DependenciesCallCounter) PsiphonFilesExist() bool {
 	cc.increment(TagPsiphonFilesExist)
@@ -203,6 +218,11 @@ func (cc *DependenciesCallCounter) PsiphonFilesExist() bool {
 // psiphonMaybeCopyConfigFiles implements buildtoolmodel.Dependencies
 func (cc *DependenciesCallCounter) PsiphonMaybeCopyConfigFiles() {
 	cc.increment(TagPsiphonMaybeCopyConfigFiles)
+}
+
+// VerifySHA256 implements buildtoolmodel.Dependencies
+func (cc *DependenciesCallCounter) VerifySHA256(expectedSHA256 string, tarball string) {
+	cc.increment(TagVerifySHA256)
 }
 
 // windowsMingwCheck implements buildtoolmodel.Dependencies

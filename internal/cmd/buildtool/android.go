@@ -147,7 +147,7 @@ func androidBuildCLIProductArch(
 	ooniArch string,
 	ndkDir string,
 ) {
-	cdeps := androidNewCdepsEnv(ndkDir, ooniArch)
+	cgo := newAndroidCBuildEnv(ndkDir, ooniArch)
 
 	log.Infof("building %s for android/%s", product.Pkg, ooniArch)
 
@@ -184,24 +184,17 @@ func androidBuildCLIProductArch(
 	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, envp))
 }
 
-// androidNewCdepsEnv creates a new cdepsEnv for the given
-// ooniArch ("arm", "arm64", "386", "amd64").
-func androidNewCdepsEnv(ndkDir string, ooniArch string) *cdepsEnv {
-	out := &cdepsEnv{
-		binpath:       androidNDKBinPath(ndkDir),
-		cc:            "",
-		cflags:        androidCflags(ooniArch),
-		cxx:           "",
-		cxxflags:      androidCflags(ooniArch),
-		configureHost: "",
-		destdir: runtimex.Try1(filepath.Abs(filepath.Join( // must be absolute
-			"internal", "libtor", "android", ooniArch,
-		))),
-		goarch:           "",
-		goarm:            "",
-		ldflags:          []string{},
-		openSSLAPIDefine: "-D__ANDROID_API__=21",
-		openSSLCompiler:  "",
+// newAndroidCBuildEnv creates a new [cBuildEnv] for the
+// given ooniArch ("arm", "arm64", "386", "amd64").
+func newAndroidCBuildEnv(ndkDir string, ooniArch string) *cBuildEnv {
+	out := &cBuildEnv{
+		binpath:  androidNDKBinPath(ndkDir),
+		cc:       "",
+		cflags:   androidCflags(ooniArch),
+		cxx:      "",
+		cxxflags: androidCflags(ooniArch),
+		goarch:   "",
+		goarm:    "",
 	}
 	switch ooniArch {
 	case "arm":

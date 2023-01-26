@@ -12,40 +12,39 @@ import (
 	"strconv"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/cmd/buildtool/internal/buildtoolmodel"
 	"github.com/ooni/probe-cli/v3/internal/must"
-	"github.com/ooni/probe-cli/v3/internal/shellx"
 )
 
 // cdepsZlibBuildMain is the script that builds zlib.
-func cdepsZlibBuildMain(cdenv *cdepsEnv, deps cdepsDependencies) {
-	topdir := deps.absoluteCurDir() // must be mockable
+func cdepsZlibBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencies) {
+	topdir := deps.AbsoluteCurDir() // must be mockable
 	work := cdepsMustMkdirTemp()
 	restore := cdepsMustChdir(work)
 	defer restore()
 
 	// See https://github.com/Homebrew/homebrew-core/blob/master/Formula/zlib.rb
 	cdepsMustFetch("https://zlib.net/zlib-1.2.13.tar.gz")
-	deps.verifySHA256( // must be mockable
+	deps.VerifySHA256( // must be mockable
 		"b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30",
 		"zlib-1.2.13.tar.gz",
 	)
 	must.Run(log.Log, "tar", "-xf", "zlib-1.2.13.tar.gz")
-	_ = deps.mustChdir("zlib-1.2.13") // must be mockable
+	_ = deps.MustChdir("zlib-1.2.13") // must be mockable
 
 	mydir := filepath.Join(topdir, "CDEPS", "zlib")
 	for _, patch := range cdepsMustListPatches(mydir) {
 		must.Run(log.Log, "git", "apply", patch)
 	}
 
-	envp := &shellx.Envp{}
-	if cdenv.configureHost != "" {
-		envp.Append("CHOST", cdenv.configureHost) // zlib's configure otherwise uses Apple's libtool
+	envp := cBuildExportEnviron(globalEnv, &cBuildEnv{})
+	if globalEnv.configureHost != "" {
+		envp.Append("CHOST", globalEnv.configureHost) // zlib's configure otherwise uses Apple's libtool
 	}
-	cdepsAddCflags(envp, cdenv)
 	cdepsMustRunWithDefaultConfig(envp, "./configure", "--prefix=/", "--static")
 
 	must.Run(log.Log, "make", "-j", strconv.Itoa(runtime.NumCPU()))
-	must.Run(log.Log, "make", "DESTDIR="+cdenv.destdir, "install")
-	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "lib", "pkgconfig"))
-	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "share"))
+	must.Run(log.Log, "make", "DESTDIR="+globalEnv.destdir, "install")
+	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.destdir, "lib", "pkgconfig"))
+	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.destdir, "share"))
 }
