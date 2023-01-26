@@ -22,12 +22,6 @@ help:
 	@cat Makefile | grep -E '^#(quick)?help:' | sed -E -e 's/^#(quick)?help://' -e s'/^\ //'
 
 #help:
-#help: The `make CLI/android` command builds miniooni and ooniprobe for android.
-.PHONY: CLI/android
-CLI/android:
-	go run ./internal/cmd/buildtool android cli
-
-#help:
 #help: The `make CLI/darwin` command builds the ooniprobe and miniooni
 #help: command line clients for darwin/amd64 and darwin/arm64.
 .PHONY: CLI/darwin
@@ -91,9 +85,12 @@ CLI/windows:
 	go run ./internal/cmd/buildtool windows
 
 #help:
-#help: The `make MOBILE/android` command builds the oonimkall library for Android.
-.PHONY: MOBILE/android
-MOBILE/android: search/for/java
+#help: The `make android` command builds the oonimkall library for Android
+#help: and compiles miniooni and ooniprobe for android CLI usage.
+.PHONY: android
+android: search/for/java
+	go run ./internal/cmd/buildtool android cdeps zlib openssl libevent tor
+	go run ./internal/cmd/buildtool android cli
 	go run ./internal/cmd/buildtool android gomobile
 	./MOBILE/android/createpom
 

@@ -35,9 +35,7 @@ jobs:
           PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
 
-      - run: make MOBILE/cli
-
-      - run: make MOBILE/android
+      - run: make android
 
       - uses: actions/upload-artifact@v2
         with:

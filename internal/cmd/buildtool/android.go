@@ -155,7 +155,9 @@ func androidBuildCLIProductArch(
 
 	argv := runtimex.Try1(shellx.NewArgv("go", "build"))
 	if deps.PsiphonFilesExist() {
-		argv.Append("-tags", "ooni_psiphon_config")
+		argv.Append("-tags", "ooni_psiphon_config,ooni_libtor")
+	} else {
+		argv.Append("-tags", "ooni_libtor")
 	}
 	argv.Append("-ldflags", "-s -w")
 	argv.Append("-o", product.DestinationPath("android", ooniArch))

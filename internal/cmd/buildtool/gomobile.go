@@ -53,7 +53,9 @@ func gomobileBuild(config *gomobileConfig) {
 		argv.Append(entry)
 	}
 	if config.deps.PsiphonFilesExist() {
-		argv.Append("-tags", "ooni_psiphon_config")
+		argv.Append("-tags", "ooni_psiphon_config,ooni_libtor")
+	} else {
+		argv.Append("-tags", "ooni_libtor")
 	}
 	argv.Append("-ldflags", "-s -w")
 	argv.Append("./pkg/oonimkall")
