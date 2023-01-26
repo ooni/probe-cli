@@ -33,21 +33,31 @@ func linuxCdepsBuildMain(name string, deps cdepsDependencies) {
 		runtime.GOOS == "linux" && runtime.GOARCH == "amd64",
 		"this command requires linux/amd64",
 	)
+	cflags := []string{
+		// See https://airbus-seclab.github.io/c-compiler-security/
+		"-D_FORTIFY_SOURCE=2",
+		"-fstack-protector-strong",
+		"-fstack-clash-protection",
+		"-fPIC", // makes more sense than -fPIE given that we're building a library
+		"-fsanitize=bounds",
+		"-fsanitize-undefined-trap-on-error",
+		"-O2",
+	}
 	cdenv := &cdepsEnv{
-		cflags: []string{
-			// See https://airbus-seclab.github.io/c-compiler-security/
-			"-D_FORTIFY_SOURCE=2",
-			"-fstack-protector-strong",
-			"-fstack-clash-protection",
-			"-fPIC", // makes more sense than -fPIE given that we're building a library
-			"-fsanitize=bounds",
-			"-fsanitize-undefined-trap-on-error",
-			"-O2",
-		},
-		destdir: runtimex.Try1(filepath.Abs(filepath.Join( // must be absolute
+		binpath:       "",
+		cc:            "",
+		cflags:        cflags,
+		cxx:           "",
+		cxxflags:      cflags,
+		configureHost: "",
+		destdir: runtimex.Try1(filepath.Abs(filepath.Join(
 			"internal", "libtor", "linux", runtime.GOARCH,
 		))),
-		openSSLCompiler: "linux-x86_64",
+		goarch:           "",
+		goarm:            "",
+		ldflags:          []string{},
+		openSSLAPIDefine: "",
+		openSSLCompiler:  "linux-x86_64",
 	}
 	switch name {
 	case "libevent":

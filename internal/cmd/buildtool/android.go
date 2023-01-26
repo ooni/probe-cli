@@ -6,6 +6,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -38,6 +39,16 @@ func androidSubcommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			androidBuildCLIAll(&buildDeps{})
 		},
+	})
+	cmd.AddCommand(&cobra.Command{
+		Use:   "cdeps {zlib|openssl|libevent|tor} [zlib|openssl|libevent|tor...]",
+		Short: "Builds C dependencies on Linux systems (experimental)",
+		Run: func(cmd *cobra.Command, args []string) {
+			for _, arg := range args {
+				androidCdepsBuildMain(arg, &buildDeps{}, &cdepsDependenciesStdlib{})
+			}
+		},
+		Args: cobra.MinimumNArgs(1),
 	})
 	return cmd
 }
@@ -136,7 +147,7 @@ func androidBuildCLIProductArch(
 	ooniArch string,
 	ndkDir string,
 ) {
-	cgo := newAndroidConfigCGO(ndkDir, ooniArch)
+	cdeps := androidNewCdepsEnv(ndkDir, ooniArch)
 
 	log.Infof("building %s for android/%s", product.Pkg, ooniArch)
 
@@ -150,12 +161,12 @@ func androidBuildCLIProductArch(
 
 	envp := &shellx.Envp{}
 	envp.Append("CGO_ENABLED", "1")
-	envp.Append("CC", cgo.cc)
-	envp.Append("CXX", cgo.cxx)
+	envp.Append("CC", cdeps.cc)
+	envp.Append("CXX", cdeps.cxx)
 	envp.Append("GOOS", "android")
-	envp.Append("GOARCH", cgo.goarch)
-	if cgo.goarm != "" {
-		envp.Append("GOARM", cgo.goarm)
+	envp.Append("GOARCH", cdeps.goarch)
+	if cdeps.goarm != "" {
+		envp.Append("GOARM", cdeps.goarm)
 	}
 
 	// [2023-01-26] Adding the following flags produces these warnings for android/arm
@@ -173,42 +184,24 @@ func androidBuildCLIProductArch(
 	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, envp))
 }
 
-// androidConfigCGO contains the settings required
-// to compile for Android using a C compiler.
-type androidConfigCGO struct {
-	// binpath is the path containing the C and C++ compilers.
-	binpath string
-
-	// cc is the full path to the C compiler.
-	cc string
-
-	// cflags contains the extra CFLAGS to set.
-	cflags []string
-
-	// cxx is the full path to the CXX compiler.
-	cxx string
-
-	// cxxflags contains the extra CXXFLAGS to set.
-	cxxflags []string
-
-	// goarch is the GOARCH we're building for.
-	goarch string
-
-	// goarm is the GOARM subarchitecture.
-	goarm string
-}
-
-// newAndroidConfigCGO creates a new androidConfigCGO for the
-// given ooniArch ("arm", "arm64", "386", "amd64").
-func newAndroidConfigCGO(ndkDir string, ooniArch string) *androidConfigCGO {
-	out := &androidConfigCGO{
-		binpath:  androidNDKBinPath(ndkDir),
-		cc:       "",
-		cflags:   androidCflags(ooniArch),
-		cxx:      "",
-		cxxflags: androidCflags(ooniArch),
-		goarch:   "",
-		goarm:    "",
+// androidNewCdepsEnv creates a new cdepsEnv for the given
+// ooniArch ("arm", "arm64", "386", "amd64").
+func androidNewCdepsEnv(ndkDir string, ooniArch string) *cdepsEnv {
+	out := &cdepsEnv{
+		binpath:       androidNDKBinPath(ndkDir),
+		cc:            "",
+		cflags:        androidCflags(ooniArch),
+		cxx:           "",
+		cxxflags:      androidCflags(ooniArch),
+		configureHost: "",
+		destdir: runtimex.Try1(filepath.Abs(filepath.Join( // must be absolute
+			"internal", "libtor", "android", ooniArch,
+		))),
+		goarch:           "",
+		goarm:            "",
+		ldflags:          []string{},
+		openSSLAPIDefine: "-D__ANDROID_API__=21",
+		openSSLCompiler:  "",
 	}
 	switch ooniArch {
 	case "arm":
@@ -216,21 +209,25 @@ func newAndroidConfigCGO(ndkDir string, ooniArch string) *androidConfigCGO {
 		out.cxx = filepath.Join(out.binpath, "armv7a-linux-androideabi21-clang++")
 		out.goarch = ooniArch
 		out.goarm = "7"
+		out.openSSLCompiler = "android-arm"
 	case "arm64":
 		out.cc = filepath.Join(out.binpath, "aarch64-linux-android21-clang")
 		out.cxx = filepath.Join(out.binpath, "aarch64-linux-android21-clang++")
 		out.goarch = ooniArch
 		out.goarm = ""
+		out.openSSLCompiler = "android-arm64"
 	case "386":
 		out.cc = filepath.Join(out.binpath, "i686-linux-android21-clang")
 		out.cxx = filepath.Join(out.binpath, "i686-linux-android21-clang++")
 		out.goarch = ooniArch
 		out.goarm = ""
+		out.openSSLCompiler = "android-x86"
 	case "amd64":
 		out.cc = filepath.Join(out.binpath, "x86_64-linux-android21-clang")
 		out.cxx = filepath.Join(out.binpath, "x86_64-linux-android21-clang++")
 		out.goarch = ooniArch
 		out.goarm = ""
+		out.openSSLCompiler = "android-x86_64"
 	default:
 		panic(errors.New("unsupported ooniArch"))
 	}
@@ -330,5 +327,40 @@ func androidNDKBinPath(ndkDir string) string {
 		return filepath.Join(ndkDir, "toolchains", "llvm", "prebuilt", "darwin-x86_64", "bin")
 	default:
 		panic(errors.New("unsupported runtime.GOOS"))
+	}
+}
+
+// androidCdepsBuildMain builds C dependencies for android.
+func androidCdepsBuildMain(name string, deps buildtoolmodel.Dependencies, cdeps cdepsDependencies) {
+	runtimex.Assert(
+		runtime.GOOS == "darwin" || runtime.GOOS == "linux",
+		"this command requires darwin or linux",
+	)
+	deps.PsiphonMaybeCopyConfigFiles()
+	deps.GolangCheck()
+
+	androidHome := deps.AndroidSDKCheck()
+	ndkDir := deps.AndroidNDKCheck(androidHome)
+	//archs := []string{"amd64", "386", "arm64", "arm"}
+	archs := []string{"arm64"} //XXX
+	for _, arch := range archs {
+		androidCdepsBuildArch(cdeps, arch, ndkDir, name)
+	}
+}
+
+// androidCdepsBuildArch builds the given dependency for the given arch
+func androidCdepsBuildArch(deps cdepsDependencies, arch, ndkDir, name string) {
+	cdenv := androidNewCdepsEnv(ndkDir, arch)
+	switch name {
+	case "libevent":
+		cdepsLibeventBuildMain(cdenv, deps)
+	case "openssl":
+		cdepsOpenSSLBuildMain(cdenv, deps)
+	case "tor":
+		cdepsTorBuildMain(cdenv, deps)
+	case "zlib":
+		cdepsZlibBuildMain(cdenv, deps)
+	default:
+		panic(fmt.Errorf("unknown dependency: %s", name))
 	}
 }

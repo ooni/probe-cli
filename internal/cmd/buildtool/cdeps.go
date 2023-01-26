@@ -16,16 +16,35 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/shellx"
 )
 
-// cdepsEnv contains the environment for compiling a C dependency.
+// cdepsEnv contains the environment for compiling a C dependency
+// either directly or through the CGO compiler.
 type cdepsEnv struct {
+	// binpath is the path containing the C and C++ compilers.
+	binpath string
+
+	// cc is the full path to the C compiler.
+	cc string
+
 	// cflags contains the CFLAGS to use when compiling.
 	cflags []string
+
+	// cxx is the full path to the CXX compiler.
+	cxx string
+
+	// cxxflags contains the extra CXXFLAGS to set.
+	cxxflags []string
 
 	// configureHost is the value to pass to ./configure's --host option.
 	configureHost string
 
 	// destdir is the directory where to install.
 	destdir string
+
+	// goarch is the GOARCH we're building for.
+	goarch string
+
+	// goarm is the GOARM subarchitecture.
+	goarm string
 
 	// lfdlags contains the LDFLAGS to use when compiling.
 	ldflags []string
