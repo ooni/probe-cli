@@ -28,4 +28,22 @@ func TestCBuildEnv(t *testing.T) {
 			t.Fatal(diff)
 		}
 	})
+
+	t.Run("we do nothing with empty variables", func(t *testing.T) {
+		global := &cBuildEnv{
+			cflags:   []string{},
+			cxxflags: []string{},
+			ldflags:  []string{},
+		}
+		local := &cBuildEnv{
+			cflags:   []string{},
+			cxxflags: []string{},
+			ldflags:  []string{},
+		}
+		envp := cBuildExportEnviron(global, local)
+		var expected []string
+		if diff := cmp.Diff(expected, envp.V); diff != "" {
+			t.Fatal(diff)
+		}
+	})
 }

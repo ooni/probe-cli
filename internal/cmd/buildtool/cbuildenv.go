@@ -1,5 +1,10 @@
 package main
 
+//
+// Common build environment for builds using C (which applies
+// to both CGO builds and to pure C builds).
+//
+
 import (
 	"strings"
 
@@ -55,15 +60,21 @@ func cBuildExportEnviron(global, local *cBuildEnv) *shellx.Envp {
 
 	cflags := append([]string{}, global.cflags...)
 	cflags = append(cflags, local.cflags...)
-	envp.Append("CFLAGS", strings.Join(cflags, " "))
+	if len(cflags) > 0 {
+		envp.Append("CFLAGS", strings.Join(cflags, " "))
+	}
 
 	cxxflags := append([]string{}, global.cxxflags...)
 	cxxflags = append(cxxflags, local.cxxflags...)
-	envp.Append("CXXFLAGS", strings.Join(cxxflags, " "))
+	if len(cxxflags) > 0 {
+		envp.Append("CXXFLAGS", strings.Join(cxxflags, " "))
+	}
 
 	ldflags := append([]string{}, global.ldflags...)
 	ldflags = append(ldflags, local.ldflags...)
-	envp.Append("LDFLAGS", strings.Join(ldflags, " "))
+	if len(ldflags) > 0 {
+		envp.Append("LDFLAGS", strings.Join(ldflags, " "))
+	}
 
 	return envp
 }
