@@ -198,7 +198,7 @@ func newAndroidCBuildEnv(androidHome, ndkDir, ooniArch string) *cBuildEnv {
 	)))
 	out := &cBuildEnv{
 		ANDROID_HOME:       androidHome,
-		ANDROID_NDK_HOME:   ndkDir,
+		ANDROID_NDK_ROOT:   ndkDir,
 		AS:                 "", // later
 		AR:                 filepath.Join(binpath, "llvm-ar"),
 		BINPATH:            binpath,
@@ -353,16 +353,21 @@ func androidCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
 
 	androidHome := deps.AndroidSDKCheck()
 	ndkDir := deps.AndroidNDKCheck(androidHome)
-	//archs := []string{"amd64", "386", "arm64", "arm"}
-	archs := []string{"arm64"} //XXX
+	archs := []string{"amd64", "386", "arm64", "arm"}
 	for _, arch := range archs {
-		androidCdepsBuildArch(deps, arch, ndkDir, name)
+		androidCdepsBuildArch(deps, arch, androidHome, ndkDir, name)
 	}
 }
 
 // androidCdepsBuildArch builds the given dependency for the given arch
-func androidCdepsBuildArch(deps buildtoolmodel.Dependencies, arch, ndkDir, name string) {
-	cdenv := newAndroidCBuildEnv(ndkDir, arch)
+func androidCdepsBuildArch(
+	deps buildtoolmodel.Dependencies,
+	arch string,
+	androidHome string,
+	ndkDir string,
+	name string,
+) {
+	cdenv := newAndroidCBuildEnv(androidHome, ndkDir, arch)
 	switch name {
 	case "libevent":
 		cdepsLibeventBuildMain(cdenv, deps)

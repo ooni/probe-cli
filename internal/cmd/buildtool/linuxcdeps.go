@@ -51,7 +51,7 @@ func linuxCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
 	)))
 	globalEnv := &cBuildEnv{
 		ANDROID_HOME:       "",
-		ANDROID_NDK_HOME:   "",
+		ANDROID_NDK_ROOT:   "",
 		AR:                 "",
 		BINPATH:            "",
 		CC:                 "",

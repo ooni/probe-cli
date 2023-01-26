@@ -100,7 +100,7 @@ func TestCBuildExportAutotools(t *testing.T) {
 func TestCBuildExportOpenSSL(t *testing.T) {
 	global := &cBuildEnv{
 		ANDROID_HOME:     "/android",
-		ANDROID_NDK_HOME: "/android/sdk/ndk",
+		ANDROID_NDK_ROOT: "/android/sdk/ndk",
 		CFLAGS:           []string{"-Wall", "-Wextra"},
 		CXXFLAGS:         []string{"-Wall", "-Wextra", "-std=c++11"},
 		LDFLAGS:          []string{"-L/usr/local/lib"},
