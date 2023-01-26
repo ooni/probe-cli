@@ -158,7 +158,7 @@ func androidBuildCLIProductArch(
 		envp.Append("GOARM", cgo.goarm)
 	}
 
-	// Adding the following flags produces these warnings:
+	// [2023-01-26] Adding the following flags produces these warnings for android/arm
 	//
 	//	ld: warning: /tmp/go-link-2920159630/000016.o:(function threadentry: .text.threadentry+0x16):
 	//	branch and link relocation: R_ARM_THM_CALL to non STT_FUNC symbol: crosscall_arm1 interworking
