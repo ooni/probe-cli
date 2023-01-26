@@ -39,8 +39,7 @@ func cdepsTorBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencies) {
 		must.Run(log.Log, "git", "apply", patch)
 	}
 
-	localEnv := &cBuildEnv{}
-	envp := cBuildExportEnviron(globalEnv, localEnv)
+	envp := cBuildExportAutotools(globalEnv)
 
 	argv := runtimex.Try1(shellx.NewArgv("./configure"))
 	if globalEnv.CONFIGURE_HOST != "" {

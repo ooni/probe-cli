@@ -177,13 +177,25 @@ func androidBuildCLIProductArch(
 // given ooniArch ("arm", "arm64", "386", "amd64").
 func newAndroidCBuildEnv(ndkDir string, ooniArch string) *cBuildEnv {
 	out := &cBuildEnv{
-		BINPATH:  androidNDKBinPath(ndkDir),
-		CC:       "",
-		CFLAGS:   androidCflags(ooniArch),
-		CXX:      "",
-		CXXFLAGS: androidCflags(ooniArch),
-		GOARCH:   "",
-		GOARM:    "",
+		ANDROID_HOME:       "",
+		ANDROID_NDK_HOME:   "",
+		AS:                 "",
+		AR:                 ooniArch,
+		BINPATH:            androidNDKBinPath(ndkDir),
+		CC:                 "",
+		CFLAGS:             androidCflags(ooniArch),
+		CONFIGURE_HOST:     "",
+		DESTDIR:            "",
+		CXX:                "",
+		CXXFLAGS:           androidCflags(ooniArch),
+		GOARCH:             "",
+		GOARM:              "",
+		LD:                 "",
+		LDFLAGS:            []string{},
+		OPENSSL_API_DEFINE: "",
+		OPENSSL_COMPILER:   "",
+		RANLIB:             "",
+		STRIP:              "",
 	}
 	switch ooniArch {
 	case "arm":
@@ -209,6 +221,7 @@ func newAndroidCBuildEnv(ndkDir string, ooniArch string) *cBuildEnv {
 	default:
 		panic(errors.New("unsupported ooniArch"))
 	}
+	out.AS = out.CC
 	return out
 }
 

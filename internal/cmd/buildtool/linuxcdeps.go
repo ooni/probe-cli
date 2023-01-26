@@ -47,12 +47,26 @@ func linuxCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
 		"-O2",
 	}
 	globalEnv := &cBuildEnv{
-		CFLAGS:   cflags,
-		CXXFLAGS: cflags,
+		ANDROID_HOME:     "",
+		ANDROID_NDK_HOME: "",
+		AR:               "",
+		BINPATH:          "",
+		CC:               "",
+		CFLAGS:           cflags,
+		CONFIGURE_HOST:   "",
 		DESTDIR: runtimex.Try1(filepath.Abs(filepath.Join( // must be absolute
 			"internal", "libtor", "linux", runtime.GOARCH,
 		))),
-		OPENSSL_COMPILER: "linux-x86_64",
+		CXX:                "",
+		CXXFLAGS:           cflags,
+		GOARCH:             "",
+		GOARM:              "",
+		LD:                 "",
+		LDFLAGS:            []string{},
+		OPENSSL_API_DEFINE: "",
+		OPENSSL_COMPILER:   "linux-x86_64",
+		RANLIB:             "",
+		STRIP:              "",
 	}
 	switch name {
 	case "libevent":

@@ -43,7 +43,7 @@ func cdepsOpenSSLBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencie
 		CFLAGS:   []string{"-Wno-macro-redefined"},
 		CXXFLAGS: []string{"-Wno-macro-redefined"},
 	}
-	envp := cBuildExportEnviron(globalEnv, localEnv)
+	envp := cBuildExportOpenSSL(cBuildMerge(globalEnv, localEnv))
 
 	argv := runtimex.Try1(shellx.NewArgv(
 		"./Configure", "no-comp", "no-dtls", "no-ec2m", "no-psk", "no-srp",
