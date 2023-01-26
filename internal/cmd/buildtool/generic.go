@@ -53,10 +53,5 @@ func genericBuildPackage(deps buildtoolmodel.Dependencies, product *product) {
 	argv.Append("-ldflags", "-s -w")
 	argv.Append(product.Pkg)
 
-	config := &shellx.Config{
-		Logger: log.Log,
-		Flags:  shellx.FlagShowStdoutStderr,
-	}
-
-	runtimex.Try0(shellx.RunEx(config, argv, &shellx.Envp{}))
+	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, &shellx.Envp{}))
 }
