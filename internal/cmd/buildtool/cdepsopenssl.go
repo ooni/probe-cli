@@ -48,11 +48,15 @@ func cdepsOpenSSLBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencie
 	envp := cBuildExportOpenSSL(mergedEnv)
 
 	// QUIRK: OpenSSL-1.1.1s wants ANDROID_NDK_HOME
-	envp.Append("ANDROID_NDK_HOME", mergedEnv.ANDROID_NDK_ROOT)
+	if mergedEnv.ANDROID_NDK_ROOT != "" {
+		envp.Append("ANDROID_NDK_HOME", mergedEnv.ANDROID_NDK_ROOT)
+	}
 
 	// QUIRK: OpenSSL-1.1.1s wants the PATH to contain the
 	// directory where the Android compiler lives.
-	envp.Append("PATH", cdepsOpenSSLPrependToPath(mergedEnv.BINPATH))
+	if mergedEnv.BINPATH != "" {
+		envp.Append("PATH", cdepsOpenSSLPrependToPath(mergedEnv.BINPATH))
+	}
 
 	argv := runtimex.Try1(shellx.NewArgv(
 		"./Configure", "no-comp", "no-dtls", "no-ec2m", "no-psk", "no-srp",

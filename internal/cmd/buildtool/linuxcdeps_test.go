@@ -122,7 +122,10 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 				"linux-x86_64", "--libdir=lib", "--prefix=/", "--openssldir=/",
 			},
 		}, {
-			Env: []string{},
+			Env: []string{
+				"CFLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong -fstack-clash-protection -fPIC -fsanitize=bounds -fsanitize-undefined-trap-on-error -O2 -Wno-macro-redefined",
+				"CXXFLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong -fstack-clash-protection -fPIC -fsanitize=bounds -fsanitize-undefined-trap-on-error -O2 -Wno-macro-redefined",
+			},
 			Argv: []string{
 				"make", "-j", strconv.Itoa(runtime.NumCPU()),
 			},
