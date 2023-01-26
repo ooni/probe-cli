@@ -451,7 +451,7 @@ func TestAndroidBuildCdepsZlib(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"make", "-j", "8",
+				"make", "-j", strconv.Itoa(runtime.NumCPU()),
 			},
 		}, {
 			Env: []string{},
@@ -504,7 +504,7 @@ func TestAndroidBuildCdepsZlib(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"make", "-j", "8",
+				"make", "-j", strconv.Itoa(runtime.NumCPU()),
 			},
 		}, {
 			Env: []string{},
@@ -557,7 +557,7 @@ func TestAndroidBuildCdepsZlib(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"make", "-j", "8",
+				"make", "-j", strconv.Itoa(runtime.NumCPU()),
 			},
 		}, {
 			Env: []string{},
@@ -610,7 +610,7 @@ func TestAndroidBuildCdepsZlib(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"make", "-j", "8",
+				"make", "-j", strconv.Itoa(runtime.NumCPU()),
 			},
 		}, {
 			Env: []string{},
