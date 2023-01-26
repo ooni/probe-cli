@@ -23,16 +23,20 @@ import (
 func androidSubcommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "android",
-		Short: "Builds ooniprobe and miniooni for android",
-		Run: func(cmd *cobra.Command, args []string) {
-			androidBuildAll(&buildDeps{})
-		},
+		Short: "Builds ooniprobe, miniooni, and oonimkall for android",
 	}
+	cmd.AddCommand(&cobra.Command{
+		Use:   "gomobile",
+		Short: "Builds oonimkall for android using gomobile",
+		Run: func(cmd *cobra.Command, args []string) {
+			androidBuildGomobile(&buildDeps{})
+		},
+	})
 	return cmd
 }
 
-// androidBuildAll is the main function of the android subcommand.
-func androidBuildAll(deps buildtoolmodel.Dependencies) {
+// androidBuildGomobile invokes the gomobile build.
+func androidBuildGomobile(deps buildtoolmodel.Dependencies) {
 	runtimex.Assert(
 		runtime.GOOS == "linux" || runtime.GOOS == "android",
 		"this command requires darwin or linux",
@@ -48,11 +52,6 @@ func androidBuildAll(deps buildtoolmodel.Dependencies) {
 	envp.Append("ANDROID_HOME", androidHome)
 	envp.Append("ANDROID_NDK_HOME", ndkDir)
 
-	androidBuildGomobile(deps, envp)
-}
-
-// androidBuildGomobile invokes the gomobile build.
-func androidBuildGomobile(deps buildtoolmodel.Dependencies, envp *shellx.Envp) {
 	config := &gomobileConfig{
 		deps:       deps,
 		envp:       envp,

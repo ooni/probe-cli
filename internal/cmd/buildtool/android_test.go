@@ -8,7 +8,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/shellx/shellxtesting"
 )
 
-func TestAndroidBuildAll(t *testing.T) {
+func TestAndroidBuildGomobile(t *testing.T) {
 
 	// testspec specifies a test case for this test
 	type testspec struct {
@@ -106,7 +106,7 @@ func TestAndroidBuildAll(t *testing.T) {
 			}
 
 			shellxtesting.WithCustomLibrary(cc, func() {
-				androidBuildAll(deps)
+				androidBuildGomobile(deps)
 			})
 
 			expectCalls := map[string]int{
