@@ -31,8 +31,7 @@ func buildAndPublishAndroid(w io.Writer, job *Job) {
 	newStepCheckout(w)
 	newStepSetupGo(w, "android")
 	newStepSetupPsiphon(w)
-	newStepMake(w, "MOBILE/cli")
-	newStepMake(w, "MOBILE/android")
+	newStepMake(w, "android")
 	newStepUploadArtifacts(w, artifacts)
 
 	newJob(w, publishJob, runsOnUbuntu, buildJob, contentsWritePermissions)
