@@ -17,7 +17,7 @@ import (
 func iosSubcommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ios",
-		Short: "Builds oonimkall for iOS",
+		Short: "Builds oonimkall and its dependencies for iOS",
 	}
 	cmd.AddCommand(&cobra.Command{
 		Use:   "gomobile",
