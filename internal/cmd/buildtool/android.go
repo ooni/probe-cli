@@ -6,6 +6,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -38,6 +39,16 @@ func androidSubcommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			androidBuildCLIAll(&buildDeps{})
 		},
+	})
+	cmd.AddCommand(&cobra.Command{
+		Use:   "cdeps {zlib|openssl|libevent|tor} [zlib|openssl|libevent|tor...]",
+		Short: "Builds C dependencies on Linux systems (experimental)",
+		Run: func(cmd *cobra.Command, args []string) {
+			for _, arg := range args {
+				androidCdepsBuildMain(arg, &buildDeps{})
+			}
+		},
+		Args: cobra.MinimumNArgs(1),
 	})
 	return cmd
 }
@@ -187,7 +198,7 @@ func newAndroidCBuildEnv(androidHome, ndkDir, ooniArch string) *cBuildEnv {
 	)))
 	out := &cBuildEnv{
 		ANDROID_HOME:       androidHome,
-		ANDROID_NDK_HOME:   ndkDir,
+		ANDROID_NDK_ROOT:   ndkDir,
 		AS:                 "", // later
 		AR:                 filepath.Join(binpath, "llvm-ar"),
 		BINPATH:            binpath,
@@ -328,5 +339,45 @@ func androidNDKBinPath(ndkDir string) string {
 		return filepath.Join(ndkDir, "toolchains", "llvm", "prebuilt", "darwin-x86_64", "bin")
 	default:
 		panic(errors.New("unsupported runtime.GOOS"))
+	}
+}
+
+// androidCdepsBuildMain builds C dependencies for android.
+func androidCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
+	runtimex.Assert(
+		runtime.GOOS == "darwin" || runtime.GOOS == "linux",
+		"this command requires darwin or linux",
+	)
+	deps.PsiphonMaybeCopyConfigFiles()
+	deps.GolangCheck()
+
+	androidHome := deps.AndroidSDKCheck()
+	ndkDir := deps.AndroidNDKCheck(androidHome)
+	archs := []string{"amd64", "386", "arm64", "arm"}
+	for _, arch := range archs {
+		androidCdepsBuildArch(deps, arch, androidHome, ndkDir, name)
+	}
+}
+
+// androidCdepsBuildArch builds the given dependency for the given arch
+func androidCdepsBuildArch(
+	deps buildtoolmodel.Dependencies,
+	arch string,
+	androidHome string,
+	ndkDir string,
+	name string,
+) {
+	cdenv := newAndroidCBuildEnv(androidHome, ndkDir, arch)
+	switch name {
+	case "libevent":
+		cdepsLibeventBuildMain(cdenv, deps)
+	case "openssl":
+		cdepsOpenSSLBuildMain(cdenv, deps)
+	case "tor":
+		cdepsTorBuildMain(cdenv, deps)
+	case "zlib":
+		cdepsZlibBuildMain(cdenv, deps)
+	default:
+		panic(fmt.Errorf("unknown dependency: %s", name))
 	}
 }

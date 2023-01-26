@@ -7,6 +7,7 @@ package main
 // SPDX-License-Identifier: BSD-3-Clause
 
 import (
+	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -43,7 +44,19 @@ func cdepsOpenSSLBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencie
 		CFLAGS:   []string{"-Wno-macro-redefined"},
 		CXXFLAGS: []string{"-Wno-macro-redefined"},
 	}
-	envp := cBuildExportOpenSSL(cBuildMerge(globalEnv, localEnv))
+	mergedEnv := cBuildMerge(globalEnv, localEnv)
+	envp := cBuildExportOpenSSL(mergedEnv)
+
+	// QUIRK: OpenSSL-1.1.1s wants ANDROID_NDK_HOME
+	if mergedEnv.ANDROID_NDK_ROOT != "" {
+		envp.Append("ANDROID_NDK_HOME", mergedEnv.ANDROID_NDK_ROOT)
+	}
+
+	// QUIRK: OpenSSL-1.1.1s wants the PATH to contain the
+	// directory where the Android compiler lives.
+	if mergedEnv.BINPATH != "" {
+		envp.Append("PATH", cdepsOpenSSLPrependToPath(mergedEnv.BINPATH))
+	}
 
 	argv := runtimex.Try1(shellx.NewArgv(
 		"./Configure", "no-comp", "no-dtls", "no-ec2m", "no-psk", "no-srp",
@@ -58,7 +71,28 @@ func cdepsOpenSSLBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencie
 	argv.Append("--libdir=lib", "--prefix=/", "--openssldir=/")
 	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, envp))
 
-	must.Run(log.Log, "make", "-j", strconv.Itoa(runtime.NumCPU()))
+	// QUIRK: we need to supply the PATH because OpenSSL's configure
+	// isn't as cool as the usual GNU configure unfortunately.
+	runtimex.Try0(shellx.RunEx(
+		defaultShellxConfig(),
+		runtimex.Try1(shellx.NewArgv(
+			"make", "-j", strconv.Itoa(runtime.NumCPU()),
+		)),
+		envp,
+	))
+
 	must.Run(log.Log, "make", "DESTDIR="+globalEnv.DESTDIR, "install_dev")
 	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.DESTDIR, "lib", "pkgconfig"))
+}
+
+func cdepsOpenSSLPrependToPath(value string) string {
+	current := os.Getenv("PATH")
+	switch runtime.GOOS {
+	case "windows":
+		// Untested right now. If you dare running the build on pure Windows
+		// and discover this code doesn't work, I owe you a beer.
+		return value + ";" + current
+	default:
+		return value + ":" + current
+	}
 }

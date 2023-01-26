@@ -19,8 +19,8 @@ type cBuildEnv struct {
 	// ANDROID_HOME is the android home variable.
 	ANDROID_HOME string
 
-	// ANDROID_NDK_HOME is the android NDK home variable.
-	ANDROID_NDK_HOME string
+	// ANDROID_NDK_ROOT is the android NDK root variable.
+	ANDROID_NDK_ROOT string
 
 	// AS is the full path to the assembler.
 	AS string
@@ -87,7 +87,7 @@ type cBuildEnv struct {
 func cBuildMerge(global, local *cBuildEnv) *cBuildEnv {
 	out := &cBuildEnv{
 		ANDROID_HOME:       global.ANDROID_HOME,
-		ANDROID_NDK_HOME:   global.ANDROID_NDK_HOME,
+		ANDROID_NDK_ROOT:   global.ANDROID_NDK_ROOT,
 		AR:                 global.AR,
 		AS:                 global.AS,
 		BINPATH:            global.BINPATH,
@@ -142,7 +142,7 @@ func cBuildExportAutotools(env *cBuildEnv) *shellx.Envp {
 func cBuildExportOpenSSL(env *cBuildEnv) *shellx.Envp {
 	out := &shellx.Envp{}
 	cBuildMaybeAppend(out, "ANDROID_HOME", env.ANDROID_HOME)
-	cBuildMaybeAppend(out, "ANDROID_NDK_HOME", env.ANDROID_NDK_HOME)
+	cBuildMaybeAppend(out, "ANDROID_NDK_ROOT", env.ANDROID_NDK_ROOT)
 	cBuildMaybeAppend(out, "CFLAGS", strings.Join(env.CFLAGS, " "))
 	cBuildMaybeAppend(out, "CXXFLAGS", strings.Join(env.CXXFLAGS, " "))
 	cBuildMaybeAppend(out, "LDFLAGS", strings.Join(env.LDFLAGS, " "))
