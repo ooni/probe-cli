@@ -1607,3 +1607,337 @@ func TestAndroidBuildCdepsLibevent(t *testing.T) {
 		})
 	}
 }
+
+func TestAndroidBuildCdepsTor(t *testing.T) {
+	faketopdir := (&buildtooltest.DependenciesCallCounter{}).AbsoluteCurDir()
+	fakeBinPath := testAndroidGetFakeBinpath()
+
+	// testspec specifies a test case for this test
+	type testspec struct {
+		// name is the name of the test case
+		name string
+
+		// expectations contains the commands we expect to see
+		expect []buildtooltest.ExecExpectations
+	}
+
+	var testcases = []testspec{{
+		name: "tor",
+		expect: []buildtooltest.ExecExpectations{{
+			Env: []string{},
+			Argv: []string{
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.7.12.tar.gz",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"tar", "-xf", "tor-0.4.7.12.tar.gz",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/tor/000.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/tor/001.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/tor/002.patch",
+			},
+		}, {
+			Env: []string{
+				"AS=" + fakeBinPath + "/armv7a-linux-androideabi21-clang",
+				"CC=" + fakeBinPath + "/armv7a-linux-androideabi21-clang",
+				"RANLIB=" + fakeBinPath + "/llvm-ranlib",
+				"STRIP=" + fakeBinPath + "/llvm-strip",
+				"CXXFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fpic -Oz -DANDROID -fsanitize=bounds -fsanitize-undefined-trap-on-error -mthumb",
+				"CFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fpic -Oz -DANDROID -fsanitize=bounds -fsanitize-undefined-trap-on-error -mthumb",
+				"CXX=" + fakeBinPath + "/armv7a-linux-androideabi21-clang++",
+				"LD=" + fakeBinPath + "/ld",
+				"AR=" + fakeBinPath + "/llvm-ar",
+			},
+			Argv: []string{
+				"./configure",
+				"--host=arm-linux-androideabi",
+				"--enable-pic",
+				"--enable-static-libevent",
+				"--with-libevent-dir=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm",
+				"--enable-static-openssl",
+				"--with-openssl-dir=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm",
+				"--enable-static-zlib",
+				"--with-zlib-dir=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm",
+				"--disable-module-dirauth",
+				"--disable-zstd",
+				"--disable-lzma",
+				"--disable-tool-name-check",
+				"--disable-systemd",
+				"--prefix=/",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"make", "V=1", "-j", strconv.Itoa(runtime.NumCPU()),
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"install", "-m644", "src/feature/api/tor_api.h",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm/include",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"install", "-m644", "libtor.a",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm/lib",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.7.12.tar.gz",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"tar", "-xf", "tor-0.4.7.12.tar.gz",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/tor/000.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/tor/001.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/tor/002.patch",
+			},
+		}, {
+			Env: []string{
+				"AS=" + fakeBinPath + "/aarch64-linux-android21-clang",
+				"CC=" + fakeBinPath + "/aarch64-linux-android21-clang",
+				"RANLIB=" + fakeBinPath + "/llvm-ranlib",
+				"STRIP=" + fakeBinPath + "/llvm-strip",
+				"CXXFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fpic -O2 -DANDROID -fsanitize=safe-stack -fsanitize=bounds -fsanitize-undefined-trap-on-error",
+				"CFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fpic -O2 -DANDROID -fsanitize=safe-stack -fsanitize=bounds -fsanitize-undefined-trap-on-error",
+				"CXX=" + fakeBinPath + "/aarch64-linux-android21-clang++",
+				"LD=" + fakeBinPath + "/ld",
+				"AR=" + fakeBinPath + "/llvm-ar",
+			},
+			Argv: []string{
+				"./configure",
+				"--host=aarch64-linux-android",
+				"--enable-pic",
+				"--enable-static-libevent",
+				"--with-libevent-dir=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64",
+				"--enable-static-openssl",
+				"--with-openssl-dir=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64",
+				"--enable-static-zlib",
+				"--with-zlib-dir=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64",
+				"--disable-module-dirauth",
+				"--disable-zstd",
+				"--disable-lzma",
+				"--disable-tool-name-check",
+				"--disable-systemd",
+				"--prefix=/",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"make", "V=1", "-j", strconv.Itoa(runtime.NumCPU()),
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"install", "-m644", "src/feature/api/tor_api.h",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64/include",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"install", "-m644", "libtor.a",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64/lib",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.7.12.tar.gz",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"tar", "-xf", "tor-0.4.7.12.tar.gz",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/tor/000.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/tor/001.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/tor/002.patch",
+			},
+		}, {
+			Env: []string{
+				"AS=" + fakeBinPath + "/i686-linux-android21-clang",
+				"CC=" + fakeBinPath + "/i686-linux-android21-clang",
+				"RANLIB=" + fakeBinPath + "/llvm-ranlib",
+				"STRIP=" + fakeBinPath + "/llvm-strip",
+				"CXXFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fPIC -O2 -DANDROID -fsanitize=safe-stack -fstack-clash-protection -fsanitize=bounds -fsanitize-undefined-trap-on-error -mstackrealign",
+				"CFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fPIC -O2 -DANDROID -fsanitize=safe-stack -fstack-clash-protection -fsanitize=bounds -fsanitize-undefined-trap-on-error -mstackrealign",
+				"CXX=" + fakeBinPath + "/i686-linux-android21-clang++",
+				"LD=" + fakeBinPath + "/ld",
+				"AR=" + fakeBinPath + "/llvm-ar",
+			},
+			Argv: []string{
+				"./configure",
+				"--host=i686-linux-android",
+				"--enable-pic",
+				"--enable-static-libevent",
+				"--with-libevent-dir=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386",
+				"--enable-static-openssl",
+				"--with-openssl-dir=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386",
+				"--enable-static-zlib",
+				"--with-zlib-dir=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386",
+				"--disable-module-dirauth",
+				"--disable-zstd",
+				"--disable-lzma",
+				"--disable-tool-name-check",
+				"--disable-systemd",
+				"--prefix=/",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"make", "V=1", "-j", strconv.Itoa(runtime.NumCPU()),
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"install", "-m644", "src/feature/api/tor_api.h",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386/include",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"install", "-m644", "libtor.a",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386/lib",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.7.12.tar.gz",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"tar", "-xf", "tor-0.4.7.12.tar.gz",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/tor/000.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/tor/001.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/tor/002.patch",
+			},
+		}, {
+			Env: []string{
+				"AS=" + fakeBinPath + "/x86_64-linux-android21-clang",
+				"CC=" + fakeBinPath + "/x86_64-linux-android21-clang",
+				"RANLIB=" + fakeBinPath + "/llvm-ranlib",
+				"STRIP=" + fakeBinPath + "/llvm-strip",
+				"CXXFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fPIC -O2 -DANDROID -fsanitize=safe-stack -fstack-clash-protection -fsanitize=bounds -fsanitize-undefined-trap-on-error",
+				"CFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fPIC -O2 -DANDROID -fsanitize=safe-stack -fstack-clash-protection -fsanitize=bounds -fsanitize-undefined-trap-on-error",
+				"CXX=" + fakeBinPath + "/x86_64-linux-android21-clang++",
+				"LD=" + fakeBinPath + "/ld",
+				"AR=" + fakeBinPath + "/llvm-ar",
+			},
+			Argv: []string{
+				"./configure",
+				"--host=x86_64-linux-android",
+				"--enable-pic",
+				"--enable-static-libevent",
+				"--with-libevent-dir=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64",
+				"--enable-static-openssl",
+				"--with-openssl-dir=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64",
+				"--enable-static-zlib",
+				"--with-zlib-dir=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64",
+				"--disable-module-dirauth",
+				"--disable-zstd",
+				"--disable-lzma",
+				"--disable-tool-name-check",
+				"--disable-systemd",
+				"--prefix=/",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"make", "V=1", "-j", strconv.Itoa(runtime.NumCPU()),
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"install", "-m644", "src/feature/api/tor_api.h",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64/include",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"install", "-m644", "libtor.a",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64/lib",
+			},
+		}},
+	}}
+
+	for _, testcase := range testcases {
+		t.Run(testcase.name, func(t *testing.T) {
+
+			cc := &buildtooltest.SimpleCommandCollector{}
+
+			deps := &buildtooltest.DependenciesCallCounter{
+				HasPsiphon: false,
+			}
+
+			shellxtesting.WithCustomLibrary(cc, func() {
+				androidCdepsBuildMain("tor", deps)
+			})
+
+			expectCalls := map[string]int{
+				buildtooltest.TagAbsoluteCurDir:  4,
+				buildtooltest.TagAndroidNDKCheck: 1,
+				buildtooltest.TagAndroidSDKCheck: 1,
+				buildtooltest.TagMustChdir:       4,
+				buildtooltest.TagVerifySHA256:    4,
+			}
+
+			if diff := cmp.Diff(expectCalls, deps.Counter); diff != "" {
+				t.Fatal(diff)
+			}
+
+			if err := buildtooltest.CheckManyCommands(cc.Commands, testcase.expect); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
