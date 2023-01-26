@@ -22,67 +22,10 @@ help:
 	@cat Makefile | grep -E '^#(quick)?help:' | sed -E -e 's/^#(quick)?help://' -e s'/^\ //'
 
 #help:
-#help: The following variables control the build. You can specify them
-#help: on the command line as a key-value pairs (see usage above).
-
-#help:
-#help: * GIT_CLONE_DIR           : directory where to clone repositories, by default
-#help:                             set to `$HOME/.ooniprobe-build/src`.
-GIT_CLONE_DIR = $(HOME)/.ooniprobe-build/src
-
-#help:
-#help: * OONI_GO_DOCKER_GOCACHE  : base directory to put GOMODCACHE and GOCACHE
-#help:                             when building using Docker. By default this
-#help:                             is set to `$HOME/.ooniprobe-build/cache`
-#help:
-OONI_GO_DOCKER_GOCACHE = $$(pwd)/GOCACHE
-
-#help:
-#help: * OONI_PSIPHON_TAGS       : build tags for `go build -tags ...` that cause
-#help:                             the build to embed a psiphon configuration file
-#help:                             into the generated binaries. This build tag
-#help:                             implies cloning the git@github.com:ooni/probe-private
-#help:                             repository. If you do not have the permission to
-#help:                             clone it, just clear this variable, e.g.:
-#help:
-#help:                                 make OONI_PSIPHON_TAGS="" CLI/miniooni
-OONI_PSIPHON_TAGS = ooni_psiphon_config
-
-#quickhelp:
-#quickhelp: The `make show-config` command shows the current value of the
-#quickhelp: variables controlling the build.
-.PHONY: show-config
-show-config:
-	@echo "GIT_CLONE_DIR=$(GIT_CLONE_DIR)"
-	@echo "OONI_PSIPHON_TAGS=$(OONI_PSIPHON_TAGS)"
-
-#help:
-#help: The `make CLI/android-386` command builds miniooni and ooniprobe for android/386.
-.PHONY: CLI/android-386
-CLI/android-386: search/for/go search/for/android/sdk maybe/copypsiphon
-	./CLI/go-build-android 386 ./internal/cmd/miniooni
-	./CLI/go-build-android 386 ./cmd/ooniprobe
-
-#help:
-#help: The `make CLI/android-amd64` command builds miniooni and ooniprobe for android/amd64.
-.PHONY: CLI/android-amd64
-CLI/android-amd64: search/for/go search/for/android/sdk maybe/copypsiphon
-	./CLI/go-build-android amd64 ./internal/cmd/miniooni
-	./CLI/go-build-android amd64 ./cmd/ooniprobe
-
-#help:
-#help: The `make CLI/android-arm` command builds miniooni and ooniprobe for android/arm.
-.PHONY: CLI/android-arm
-CLI/android-arm: search/for/go search/for/android/sdk maybe/copypsiphon
-	./CLI/go-build-android arm ./internal/cmd/miniooni
-	./CLI/go-build-android arm ./cmd/ooniprobe
-
-#help:
-#help: The `make CLI/android-arm64` command builds miniooni and ooniprobe for android/arm64.
-.PHONY: CLI/android-arm64
-CLI/android-arm64: search/for/go search/for/android/sdk maybe/copypsiphon
-	./CLI/go-build-android arm64 ./internal/cmd/miniooni
-	./CLI/go-build-android arm64 ./cmd/ooniprobe
+#help: The `make CLI/android` command builds miniooni and ooniprobe for android.
+.PHONY: CLI/android
+CLI/android:
+	go run ./internal/cmd/buildtool android cli
 
 #help:
 #help: The `make CLI/darwin` command builds the ooniprobe and miniooni
@@ -150,7 +93,7 @@ CLI/windows:
 #help:
 #help: The `make MOBILE/android` command builds the oonimkall library for Android.
 .PHONY: MOBILE/android
-MOBILE/android:
+MOBILE/android: search/for/java
 	go run ./internal/cmd/buildtool android gomobile
 	./MOBILE/android/createpom
 
@@ -161,15 +104,6 @@ MOBILE/ios: search/for/zip search/for/xcode
 	go run ./internal/cmd/buildtool ios gomobile
 	./MOBILE/ios/zipframework
 	./MOBILE/ios/createpodspec
-
-.PHONY: search/for/git
-search/for/git:
-	@printf "checking for git... "
-	@command -v git || { echo "not found"; exit 1; }
-
-.PHONY: search/for/go
-search/for/go:
-	./CLI/check-go-version
 
 .PHONY: search/for/java
 search/for/java:
@@ -184,25 +118,3 @@ search/for/xcode:
 search/for/zip:
 	@printf "checking for zip... "
 	@command -v zip || { echo "not found"; exit 1; }
-
-#
-# Note: we check for files being already there before attempting
-# to clone _because_ we put files in there using secrets when
-# running cloud builds. This saves us from including a token with
-# `repo` scope as a build secret, which is a very broad scope.
-#
-# Cloning the private repository, instead, is the way in which
-# local builds get access to the psiphon config files.
-#
-.PHONY: maybe/copypsiphon
-maybe/copypsiphon: search/for/git
-	@if test "$(OONI_PSIPHON_TAGS)" = "ooni_psiphon_config"; then \
-		if test ! -f ./internal/engine/psiphon-config.json.age -a \
-		        ! -f ./internal/engine/psiphon-config.key; then \
-			./script/copy-psiphon-files.bash $(GIT_CLONE_DIR) || exit 1; \
-		fi; \
-	fi
-
-.PHONY: search/for/android/sdk
-search/for/android/sdk: search/for/java
-	./MOBILE/android/ensure

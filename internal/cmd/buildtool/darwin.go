@@ -54,9 +54,5 @@ func darwinBuildPackage(deps buildtoolmodel.Dependencies, goarch string, product
 	envp.Append("GOARCH", goarch)
 	envp.Append("GOOS", "darwin")
 
-	config := &shellx.Config{
-		Logger: log.Log,
-		Flags:  shellx.FlagShowStdoutStderr,
-	}
-	runtimex.Try0(shellx.RunEx(config, argv, envp))
+	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, envp))
 }

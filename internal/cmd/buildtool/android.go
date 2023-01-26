@@ -32,6 +32,13 @@ func androidSubcommand() *cobra.Command {
 			androidBuildGomobile(&buildDeps{})
 		},
 	})
+	cmd.AddCommand(&cobra.Command{
+		Use:   "cli",
+		Short: "Builds ooniprobe and miniooni for usage within termux",
+		Run: func(cmd *cobra.Command, args []string) {
+			androidBuildCLIAll(&buildDeps{})
+		},
+	})
 	return cmd
 }
 
@@ -94,4 +101,234 @@ func androidNDKCheck(androidHome string) string {
 		log.Fatalf("cannot continue without a valid Android NDK installation")
 	}
 	return ndkDir
+}
+
+// androidBuildCLIAll builds all products in CLI mode for Android
+func androidBuildCLIAll(deps buildtoolmodel.Dependencies) {
+	runtimex.Assert(
+		runtime.GOOS == "darwin" || runtime.GOOS == "linux",
+		"this command requires darwin or linux",
+	)
+
+	deps.PsiphonMaybeCopyConfigFiles()
+	deps.GolangCheck()
+
+	androidHome := deps.AndroidSDKCheck()
+	ndkDir := deps.AndroidNDKCheck(androidHome)
+	archs := []string{"amd64", "386", "arm64", "arm"}
+	products := []*product{productMiniooni, productOoniprobe}
+	for _, arch := range archs {
+		for _, product := range products {
+			androidBuildCLIProductArch(
+				deps,
+				product,
+				arch,
+				ndkDir,
+			)
+		}
+	}
+}
+
+// androidBuildCLIProductArch builds a product for the given arch.
+func androidBuildCLIProductArch(
+	deps buildtoolmodel.Dependencies,
+	product *product,
+	ooniArch string,
+	ndkDir string,
+) {
+	cgo := newAndroidConfigCGO(ndkDir, ooniArch)
+
+	log.Infof("building %s for android/%s", product.Pkg, ooniArch)
+
+	argv := runtimex.Try1(shellx.NewArgv("go", "build"))
+	if deps.PsiphonFilesExist() {
+		argv.Append("-tags", "ooni_psiphon_config")
+	}
+	argv.Append("-ldflags", "-s -w")
+	argv.Append("-o", product.DestinationPath("android", ooniArch))
+	argv.Append(product.Pkg)
+
+	envp := &shellx.Envp{}
+	envp.Append("CGO_ENABLED", "1")
+	envp.Append("CC", cgo.cc)
+	envp.Append("CXX", cgo.cxx)
+	envp.Append("GOOS", "android")
+	envp.Append("GOARCH", cgo.goarch)
+	if cgo.goarm != "" {
+		envp.Append("GOARM", cgo.goarm)
+	}
+
+	// [2023-01-26] Adding the following flags produces these warnings for android/arm
+	//
+	//	ld: warning: /tmp/go-link-2920159630/000016.o:(function threadentry: .text.threadentry+0x16):
+	//	branch and link relocation: R_ARM_THM_CALL to non STT_FUNC symbol: crosscall_arm1 interworking
+	//	not performed; consider using directive '.type crosscall_arm1, %function' to give symbol
+	//	type STT_FUNC if interworking between ARM and Thumb is required; gcc_linux_arm.c
+	//
+	// So, for now, I have disabled adding the flags.
+	//
+	//envp.Append("CGO_CFLAGS", strings.Join(cgo.cflags, " "))
+	//envp.Append("CGO_CXXFLAGS", strings.Join(cgo.cxxflags, " "))
+
+	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, envp))
+}
+
+// androidConfigCGO contains the settings required
+// to compile for Android using a C compiler.
+type androidConfigCGO struct {
+	// binpath is the path containing the C and C++ compilers.
+	binpath string
+
+	// cc is the full path to the C compiler.
+	cc string
+
+	// cflags contains the extra CFLAGS to set.
+	cflags []string
+
+	// cxx is the full path to the CXX compiler.
+	cxx string
+
+	// cxxflags contains the extra CXXFLAGS to set.
+	cxxflags []string
+
+	// goarch is the GOARCH we're building for.
+	goarch string
+
+	// goarm is the GOARM subarchitecture.
+	goarm string
+}
+
+// newAndroidConfigCGO creates a new androidConfigCGO for the
+// given ooniArch ("arm", "arm64", "386", "amd64").
+func newAndroidConfigCGO(ndkDir string, ooniArch string) *androidConfigCGO {
+	out := &androidConfigCGO{
+		binpath:  androidNDKBinPath(ndkDir),
+		cc:       "",
+		cflags:   androidCflags(ooniArch),
+		cxx:      "",
+		cxxflags: androidCflags(ooniArch),
+		goarch:   "",
+		goarm:    "",
+	}
+	switch ooniArch {
+	case "arm":
+		out.cc = filepath.Join(out.binpath, "armv7a-linux-androideabi21-clang")
+		out.cxx = filepath.Join(out.binpath, "armv7a-linux-androideabi21-clang++")
+		out.goarch = ooniArch
+		out.goarm = "7"
+	case "arm64":
+		out.cc = filepath.Join(out.binpath, "aarch64-linux-android21-clang")
+		out.cxx = filepath.Join(out.binpath, "aarch64-linux-android21-clang++")
+		out.goarch = ooniArch
+		out.goarm = ""
+	case "386":
+		out.cc = filepath.Join(out.binpath, "i686-linux-android21-clang")
+		out.cxx = filepath.Join(out.binpath, "i686-linux-android21-clang++")
+		out.goarch = ooniArch
+		out.goarm = ""
+	case "amd64":
+		out.cc = filepath.Join(out.binpath, "x86_64-linux-android21-clang")
+		out.cxx = filepath.Join(out.binpath, "x86_64-linux-android21-clang++")
+		out.goarch = ooniArch
+		out.goarm = ""
+	default:
+		panic(errors.New("unsupported ooniArch"))
+	}
+	return out
+}
+
+// androidCflags returns the CFLAGS to use on Android.
+func androidCflags(arch string) []string {
+	// See https://airbus-seclab.github.io/c-compiler-security/ as well as the flags
+	// produced by running ndk-build inside the android/ndk-samples repository
+	// (see https://github.com/android/ndk-samples/tree/android-mk/hello-jni/jni).
+	//
+	// TODO(bassosimone): as of 2023-01-10, -fstack-clash-protection causes
+	// a warning when compiling for either arm or arm64.
+	//
+	// TODO(bassosimone): as of 2023-01-10, -fsanitize=safe-stack is not
+	// defined when compiling for arm and causes a linker error. (It's curious
+	// that we see a linker error but this happens because zlib also builds
+	// some examples as part of its default build.)
+	switch arch {
+	case "386":
+		return []string{
+			"-fdata-sections",
+			"-ffunction-sections",
+			"-fstack-protector-strong",
+			"-funwind-tables",
+			"-no-canonical-prefixes",
+			"-D_FORTIFY_SOURCE=2",
+			"-fPIC",
+			"-O2",
+			"-DANDROID",
+			"-fsanitize=safe-stack",
+			"-fstack-clash-protection",
+			"-fsanitize=bounds",
+			"-fsanitize-undefined-trap-on-error",
+			"-mstackrealign",
+		}
+	case "amd64":
+		return []string{
+			"-fdata-sections",
+			"-ffunction-sections",
+			"-fstack-protector-strong",
+			"-funwind-tables",
+			"-no-canonical-prefixes",
+			"-D_FORTIFY_SOURCE=2",
+			"-fPIC",
+			"-O2",
+			"-DANDROID",
+			"-fsanitize=safe-stack",
+			"-fstack-clash-protection",
+			"-fsanitize=bounds",
+			"-fsanitize-undefined-trap-on-error",
+		}
+	case "arm":
+		return []string{
+			"-fdata-sections",
+			"-ffunction-sections",
+			"-fstack-protector-strong",
+			"-funwind-tables",
+			"-no-canonical-prefixes",
+			"-D_FORTIFY_SOURCE=2",
+			"-fpic",
+			"-Oz",
+			"-DANDROID",
+			"-fsanitize=bounds",
+			"-fsanitize-undefined-trap-on-error",
+			"-mthumb",
+		}
+	case "arm64":
+		return []string{
+			"-fdata-sections",
+			"-ffunction-sections",
+			"-fstack-protector-strong",
+			"-funwind-tables",
+			"-no-canonical-prefixes",
+			"-D_FORTIFY_SOURCE=2",
+			"-fpic",
+			"-O2",
+			"-DANDROID",
+			"-fsanitize=safe-stack",
+			"-fsanitize=bounds",
+			"-fsanitize-undefined-trap-on-error",
+		}
+	default:
+		panic(errors.New("unsupported arch"))
+	}
+}
+
+// androidNDKBinPath returns the binary path given the android
+// NDK home and the runtime.GOOS variable value.
+func androidNDKBinPath(ndkDir string) string {
+	// TODO(bassosimone): do android toolchains exists for other runtime.GOARCH?
+	switch runtime.GOOS {
+	case "linux":
+		return filepath.Join(ndkDir, "toolchains", "llvm", "prebuilt", "linux-x86_64", "bin")
+	case "darwin":
+		return filepath.Join(ndkDir, "toolchains", "llvm", "prebuilt", "darwin-x86_64", "bin")
+	default:
+		panic(errors.New("unsupported runtime.GOOS"))
+	}
 }

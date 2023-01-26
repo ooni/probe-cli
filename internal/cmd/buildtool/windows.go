@@ -71,12 +71,7 @@ func windowsBuildPackage(deps buildtoolmodel.Dependencies, goarch string, produc
 	envp.Append("GOARCH", goarch)
 	envp.Append("GOOS", "windows")
 
-	config := &shellx.Config{
-		Logger: log.Log,
-		Flags:  shellx.FlagShowStdoutStderr,
-	}
-
-	runtimex.Try0(shellx.RunEx(config, argv, envp))
+	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, envp))
 }
 
 // windowsMingwExpectedVersion is the expected version of mingw-w64,

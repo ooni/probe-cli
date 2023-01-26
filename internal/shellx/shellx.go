@@ -133,7 +133,7 @@ func cmd(config *Config, argv *Argv, envp *Envp) *execabs.Cmd {
 	cmd.Env = os.Environ()
 	for _, entry := range envp.V {
 		if config.Logger != nil {
-			config.Logger.Infof("+ export %s", entry)
+			config.Logger.Infof("+ export %s", maybeQuoteArgUnsafe(entry))
 		}
 		cmd.Env = append(cmd.Env, entry)
 	}

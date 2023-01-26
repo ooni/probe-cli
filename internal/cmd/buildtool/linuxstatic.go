@@ -91,12 +91,7 @@ func linuxStaticBuildPackage(
 	envp.Append("GOCACHE", filepath.Join(cachedirbase, "buildcache"))
 	envp.Append("GOMODCACHE", filepath.Join(cachedirbase, "modcache"))
 
-	config := &shellx.Config{
-		Logger: log.Log,
-		Flags:  shellx.FlagShowStdoutStderr,
-	}
-
-	runtimex.Try0(shellx.RunEx(config, argv, envp))
+	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, envp))
 }
 
 // linuxStaticBuildOONIArch returns the OONI arch name. This is equal

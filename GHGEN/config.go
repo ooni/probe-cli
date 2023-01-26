@@ -18,10 +18,7 @@ type Job struct {
 // Config contains the configuration.
 var Config = map[string][]Job{
 	"android": {{
-		Action:      buildAndPublishMobileAndroid,
-		ArchsMatrix: []string{},
-	}, {
-		Action: buildAndPublishCLIAndroid,
+		Action: buildAndPublishAndroid,
 		ArchsMatrix: []string{
 			"386",
 			"amd64",
