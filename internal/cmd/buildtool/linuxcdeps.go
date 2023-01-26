@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/ooni/probe-cli/v3/internal/cmd/buildtool/internal/buildtoolmodel"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/spf13/cobra"
 )
@@ -20,7 +21,7 @@ func linuxCdepsSubcommand() *cobra.Command {
 		Short: "Builds C dependencies on Linux systems (experimental)",
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, arg := range args {
-				linuxCdepsBuildMain(arg, &cdepsDependenciesStdlib{})
+				linuxCdepsBuildMain(arg, &buildDeps{})
 			}
 		},
 		Args: cobra.MinimumNArgs(1),
@@ -28,7 +29,7 @@ func linuxCdepsSubcommand() *cobra.Command {
 }
 
 // linuxCdepsBuildMain is the main of the linuxCdeps build.
-func linuxCdepsBuildMain(name string, deps cdepsDependencies) {
+func linuxCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
 	runtimex.Assert(
 		runtime.GOOS == "linux" && runtime.GOARCH == "amd64",
 		"this command requires linux/amd64",

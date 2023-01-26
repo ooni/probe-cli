@@ -2,42 +2,20 @@ package main
 
 import (
 	"fmt"
-	"path/filepath"
 	"runtime"
 	"strconv"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/cmd/buildtool/internal/buildtooltest"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/shellx/shellxtesting"
 )
-
-// cdepsFakeDependencies implements fake [cdepsDependencies] for unit testing.
-type cdepsFakeDependencies struct{}
-
-var _ cdepsDependencies = &cdepsFakeDependencies{}
-
-// absoluteCurDir implements cdepsDependencies
-func (*cdepsFakeDependencies) absoluteCurDir() string {
-	return runtimex.Try1(filepath.Abs("../../../")) // pretend we're in the real topdir
-}
-
-// check implements cdepsVerifier
-func (*cdepsFakeDependencies) verifySHA256(expectedSHA256 string, tarball string) {
-	// nothing
-}
-
-// mustChdir implements cdepsDependencies
-func (*cdepsFakeDependencies) mustChdir(dirname string) func() {
-	return func() {} // nothing
-}
 
 func TestLinuxCdepsBuildMain(t *testing.T) {
 	if runtime.GOOS != "linux" && runtime.GOARCH != "amd64" {
 		t.Skip("skip test for GOOS != linux and GOARCH != amd64")
 	}
 
-	faketopdir := (&cdepsFakeDependencies{}).absoluteCurDir()
+	faketopdir := (&buildtooltest.DependenciesCallCounter{}).AbsoluteCurDir()
 
 	// testspec specifies a test case for this test
 	type testspec struct {
@@ -372,7 +350,7 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 			cc := &buildtooltest.SimpleCommandCollector{}
 
 			shellxtesting.WithCustomLibrary(cc, func() {
-				linuxCdepsBuildMain(testcase.target, &cdepsFakeDependencies{})
+				linuxCdepsBuildMain(testcase.target, &buildtooltest.DependenciesCallCounter{})
 			})
 
 			if err := buildtooltest.CheckManyCommands(cc.Commands, testcase.expect); err != nil {

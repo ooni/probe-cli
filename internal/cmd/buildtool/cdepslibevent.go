@@ -12,26 +12,27 @@ import (
 	"strconv"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/cmd/buildtool/internal/buildtoolmodel"
 	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/shellx"
 )
 
 // cdepsLibeventBuildMain is the script that builds libevent.
-func cdepsLibeventBuildMain(cdenv *cdepsEnv, deps cdepsDependencies) {
-	topdir := deps.absoluteCurDir() // must be mockable
+func cdepsLibeventBuildMain(cdenv *cdepsEnv, deps buildtoolmodel.Dependencies) {
+	topdir := deps.AbsoluteCurDir() // must be mockable
 	work := cdepsMustMkdirTemp()
 	restore := cdepsMustChdir(work)
 	defer restore()
 
 	// See https://github.com/Homebrew/homebrew-core/blob/master/Formula/libevent.rb
 	cdepsMustFetch("https://github.com/libevent/libevent/archive/release-2.1.12-stable.tar.gz")
-	deps.verifySHA256( // must be mockable
+	deps.VerifySHA256( // must be mockable
 		"7180a979aaa7000e1264da484f712d403fcf7679b1e9212c4e3d09f5c93efc24",
 		"release-2.1.12-stable.tar.gz",
 	)
 	must.Run(log.Log, "tar", "-xf", "release-2.1.12-stable.tar.gz")
-	_ = deps.mustChdir("libevent-release-2.1.12-stable") // must be mockable
+	_ = deps.MustChdir("libevent-release-2.1.12-stable") // must be mockable
 
 	mydir := filepath.Join(topdir, "CDEPS", "libevent")
 	for _, patch := range cdepsMustListPatches(mydir) {

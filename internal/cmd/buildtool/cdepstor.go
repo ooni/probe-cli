@@ -12,26 +12,27 @@ import (
 	"strconv"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/cmd/buildtool/internal/buildtoolmodel"
 	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/shellx"
 )
 
 // cdepsTorBuildMain is the script that builds tor.
-func cdepsTorBuildMain(cdenv *cdepsEnv, deps cdepsDependencies) {
-	topdir := deps.absoluteCurDir() // must be mockable
+func cdepsTorBuildMain(cdenv *cdepsEnv, deps buildtoolmodel.Dependencies) {
+	topdir := deps.AbsoluteCurDir() // must be mockable
 	work := cdepsMustMkdirTemp()
 	restore := cdepsMustChdir(work)
 	defer restore()
 
 	// See https://github.com/Homebrew/homebrew-core/blob/master/Formula/tor.rb
 	cdepsMustFetch("https://www.torproject.org/dist/tor-0.4.7.12.tar.gz")
-	deps.verifySHA256( // must be mockable
+	deps.VerifySHA256( // must be mockable
 		"3b5d969712c467851bd028f314343ef15a97ea457191e93ffa97310b05b9e395",
 		"tor-0.4.7.12.tar.gz",
 	)
 	must.Run(log.Log, "tar", "-xf", "tor-0.4.7.12.tar.gz")
-	_ = deps.mustChdir("tor-0.4.7.12") // must be mockable
+	_ = deps.MustChdir("tor-0.4.7.12") // must be mockable
 
 	mydir := filepath.Join(topdir, "CDEPS", "tor")
 	for _, patch := range cdepsMustListPatches(mydir) {
