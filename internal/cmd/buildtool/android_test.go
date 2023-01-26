@@ -397,3 +397,265 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 		})
 	}
 }
+
+func TestAndroidBuildCdepsZlib(t *testing.T) {
+	faketopdir := (&buildtooltest.DependenciesCallCounter{}).AbsoluteCurDir()
+	fakeBinPath := testAndroidGetFakeBinpath()
+
+	// testspec specifies a test case for this test
+	type testspec struct {
+		// name is the name of the test case
+		name string
+
+		// expectations contains the commands we expect to see
+		expect []buildtooltest.ExecExpectations
+	}
+
+	var testcases = []testspec{{
+		name: "zlib",
+		expect: []buildtooltest.ExecExpectations{{
+			Env: []string{},
+			Argv: []string{
+				"curl", "-fsSLO", "https://zlib.net/zlib-1.2.13.tar.gz",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"tar", "-xf", "zlib-1.2.13.tar.gz",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/zlib/000.patch",
+			},
+		}, {
+			Env: []string{
+				"AR=" + fakeBinPath + "/llvm-ar",
+				"AS=" + fakeBinPath + "/armv7a-linux-androideabi21-clang",
+				"CC=" + fakeBinPath + "/armv7a-linux-androideabi21-clang",
+				"CFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fpic -Oz -DANDROID -fsanitize=bounds -fsanitize-undefined-trap-on-error -mthumb",
+				"CXX=" + fakeBinPath + "/armv7a-linux-androideabi21-clang++",
+				"CXXFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fpic -Oz -DANDROID -fsanitize=bounds -fsanitize-undefined-trap-on-error -mthumb",
+				"LD=" + fakeBinPath + "/ld",
+				"RANLIB=" + fakeBinPath + "/llvm-ranlib",
+				"STRIP=" + fakeBinPath + "/llvm-strip",
+				"CHOST=arm-linux-androideabi",
+			},
+			Argv: []string{
+				"./configure", "--prefix=/", "--static",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"make", "-j", "8",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"make",
+				"DESTDIR=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm",
+				"install",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm", "-rf", faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm/lib/pkgconfig",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm", "-rf", faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm/share",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"curl", "-fsSLO", "https://zlib.net/zlib-1.2.13.tar.gz",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"tar", "-xf", "zlib-1.2.13.tar.gz",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/zlib/000.patch",
+			},
+		}, {
+			Env: []string{
+				"AR=" + fakeBinPath + "/llvm-ar",
+				"AS=" + fakeBinPath + "/aarch64-linux-android21-clang",
+				"CC=" + fakeBinPath + "/aarch64-linux-android21-clang",
+				"CFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fpic -O2 -DANDROID -fsanitize=safe-stack -fsanitize=bounds -fsanitize-undefined-trap-on-error",
+				"CXX=" + fakeBinPath + "/aarch64-linux-android21-clang++",
+				"CXXFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fpic -O2 -DANDROID -fsanitize=safe-stack -fsanitize=bounds -fsanitize-undefined-trap-on-error",
+				"LD=" + fakeBinPath + "/ld",
+				"RANLIB=" + fakeBinPath + "/llvm-ranlib",
+				"STRIP=" + fakeBinPath + "/llvm-strip",
+				"CHOST=aarch64-linux-android",
+			},
+			Argv: []string{
+				"./configure", "--prefix=/", "--static",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"make", "-j", "8",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"make",
+				"DESTDIR=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64",
+				"install",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm", "-rf", faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64/lib/pkgconfig",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm", "-rf", faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64/share",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"curl", "-fsSLO", "https://zlib.net/zlib-1.2.13.tar.gz",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"tar", "-xf", "zlib-1.2.13.tar.gz",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/zlib/000.patch",
+			},
+		}, {
+			Env: []string{
+				"AR=" + fakeBinPath + "/llvm-ar",
+				"AS=" + fakeBinPath + "/i686-linux-android21-clang",
+				"CC=" + fakeBinPath + "/i686-linux-android21-clang",
+				"CFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fPIC -O2 -DANDROID -fsanitize=safe-stack -fstack-clash-protection -fsanitize=bounds -fsanitize-undefined-trap-on-error -mstackrealign",
+				"CXX=" + fakeBinPath + "/i686-linux-android21-clang++",
+				"CXXFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fPIC -O2 -DANDROID -fsanitize=safe-stack -fstack-clash-protection -fsanitize=bounds -fsanitize-undefined-trap-on-error -mstackrealign",
+				"LD=" + fakeBinPath + "/ld",
+				"RANLIB=" + fakeBinPath + "/llvm-ranlib",
+				"STRIP=" + fakeBinPath + "/llvm-strip",
+				"CHOST=i686-linux-android",
+			},
+			Argv: []string{
+				"./configure", "--prefix=/", "--static",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"make", "-j", "8",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"make",
+				"DESTDIR=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386",
+				"install",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm", "-rf", faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386/lib/pkgconfig",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm", "-rf", faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386/share",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"curl", "-fsSLO", "https://zlib.net/zlib-1.2.13.tar.gz",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"tar", "-xf", "zlib-1.2.13.tar.gz",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/zlib/000.patch",
+			},
+		}, {
+			Env: []string{
+				"AR=" + fakeBinPath + "/llvm-ar",
+				"AS=" + fakeBinPath + "/x86_64-linux-android21-clang",
+				"CC=" + fakeBinPath + "/x86_64-linux-android21-clang",
+				"CFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fPIC -O2 -DANDROID -fsanitize=safe-stack -fstack-clash-protection -fsanitize=bounds -fsanitize-undefined-trap-on-error",
+				"CXX=" + fakeBinPath + "/x86_64-linux-android21-clang++",
+				"CXXFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fPIC -O2 -DANDROID -fsanitize=safe-stack -fstack-clash-protection -fsanitize=bounds -fsanitize-undefined-trap-on-error",
+				"LD=" + fakeBinPath + "/ld",
+				"RANLIB=" + fakeBinPath + "/llvm-ranlib",
+				"STRIP=" + fakeBinPath + "/llvm-strip",
+				"CHOST=x86_64-linux-android",
+			},
+			Argv: []string{
+				"./configure", "--prefix=/", "--static",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"make", "-j", "8",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"make",
+				"DESTDIR=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64",
+				"install",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm", "-rf", faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64/lib/pkgconfig",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm", "-rf", faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64/share",
+			},
+		}},
+	}}
+
+	for _, testcase := range testcases {
+		t.Run(testcase.name, func(t *testing.T) {
+
+			cc := &buildtooltest.SimpleCommandCollector{}
+
+			deps := &buildtooltest.DependenciesCallCounter{
+				HasPsiphon: false,
+			}
+
+			shellxtesting.WithCustomLibrary(cc, func() {
+				androidCdepsBuildMain("zlib", deps)
+			})
+
+			expectCalls := map[string]int{
+				buildtooltest.TagAbsoluteCurDir:  4,
+				buildtooltest.TagAndroidNDKCheck: 1,
+				buildtooltest.TagAndroidSDKCheck: 1,
+				buildtooltest.TagMustChdir:       4,
+				buildtooltest.TagVerifySHA256:    4,
+			}
+
+			if diff := cmp.Diff(expectCalls, deps.Counter); diff != "" {
+				t.Fatal(diff)
+			}
+
+			if err := buildtooltest.CheckManyCommands(cc.Commands, testcase.expect); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
