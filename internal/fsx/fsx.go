@@ -60,3 +60,13 @@ func RegularFileExists(filename string) bool {
 	}
 	return isRegular(finfo)
 }
+
+// DirectoryExists returns whether the given filename
+// exists and is a directory.
+func DirectoryExists(filename string) bool {
+	finfo, err := os.Stat(filename)
+	if err != nil {
+		return false
+	}
+	return finfo.IsDir()
+}

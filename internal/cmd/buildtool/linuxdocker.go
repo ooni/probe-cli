@@ -26,7 +26,7 @@ func linuxDockerSubcommand() *cobra.Command {
 	}
 }
 
-// main is the main function of the linuxDocker subcommand.
+// linuxDockerBuildAll is the main function of the linuxDocker subcommand.
 func linuxDockerBuildAll(deps buildtoolmodel.Dependencies, ooniArch string) {
 	defer log.Infof("done")
 	deps.PsiphonMaybeCopyConfigFiles()

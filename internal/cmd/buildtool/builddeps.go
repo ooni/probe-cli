@@ -12,6 +12,21 @@ type buildDeps struct{}
 
 var _ buildtoolmodel.Dependencies = &buildDeps{}
 
+// AndroidNDKCheck implements buildtoolmodel.Dependencies
+func (*buildDeps) AndroidNDKCheck(androidHome string) string {
+	return androidNDKCheck(androidHome)
+}
+
+// AndroidSDKCheck implements buildtoolmodel.Dependencies
+func (*buildDeps) AndroidSDKCheck() string {
+	return androidSDKCheck()
+}
+
+// GOPATH implements buildtoolmodel.Dependencies
+func (*buildDeps) GOPATH() string {
+	return golangGOPATH()
+}
+
 // GolangCheck implements buildtoolmodel.Dependencies
 func (*buildDeps) GolangCheck() {
 	golangCheck("GOVERSION")

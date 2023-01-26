@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"path/filepath"
 	"strings"
 
 	"github.com/ooni/probe-cli/v3/internal/cmd/buildtool/internal/buildtoolmodel"
@@ -129,11 +130,14 @@ func (cc *SimpleCommandCollector) LookPath(file string) (string, error) {
 	return file, nil
 }
 
-// CanonicalGolangVersion is the canonical version used in tests.
+// CanonicalGolangVersion is the canonical Go version used in tests.
 const CanonicalGolangVersion = "1.14.17"
 
 // Constants describing the dependent functions we can call when building.
 const (
+	TagAndroidNDKCheck             = "androidNDK"
+	TagAndroidSDKCheck             = "androidSDK"
+	TagGOPATH                      = "GOPATH"
 	TagGolangCheck                 = "golangCheck"
 	TagLinuxReadGOVERSION          = "linuxReadGOVERSION"
 	TagLinuxWriteDockerfile        = "linuxWriteDockerfile"
@@ -150,6 +154,27 @@ type DependenciesCallCounter struct {
 }
 
 var _ buildtoolmodel.Dependencies = &DependenciesCallCounter{}
+
+// CanonicalNDKVersion is the canonical NDK version used in tests.
+const CanonicalNDKVersion = "25.1.7654321"
+
+// AndroidNDKCheck implements buildtoolmodel.Dependencies
+func (cc *DependenciesCallCounter) AndroidNDKCheck(androidHome string) string {
+	cc.increment(TagAndroidNDKCheck)
+	return filepath.Join(androidHome, "ndk", CanonicalNDKVersion)
+}
+
+// AndroidSDKCheck implements buildtoolmodel.Dependencies
+func (cc *DependenciesCallCounter) AndroidSDKCheck() string {
+	cc.increment(TagAndroidSDKCheck)
+	return filepath.Join("", "Android", "sdk") // fake location
+}
+
+// GOPATH implements buildtoolmodel.Dependencies
+func (cc *DependenciesCallCounter) GOPATH() string {
+	cc.increment(TagGOPATH)
+	return "/go/gopath" // fake location
+}
 
 // golangCheck implements buildDeps
 func (cc *DependenciesCallCounter) GolangCheck() {

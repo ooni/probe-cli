@@ -51,7 +51,7 @@ func cdepsOpenSSLBuildMain(cdenv *cdepsEnv, deps cdepsDependencies) {
 		argv.Append(cdenv.openSSLAPIDefine)
 	}
 	argv.Append("--libdir=lib", "--prefix=/", "--openssldir=/")
-	runtimex.Try0(shellx.RunEx(cdepsDefaultShellxConfig(), argv, envp))
+	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, envp))
 
 	must.Run(log.Log, "make", "-j", strconv.Itoa(runtime.NumCPU()))
 	must.Run(log.Log, "make", "DESTDIR="+cdenv.destdir, "install_dev")

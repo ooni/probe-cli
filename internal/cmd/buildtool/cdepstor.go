@@ -57,7 +57,7 @@ func cdepsTorBuildMain(cdenv *cdepsEnv, deps cdepsDependencies) {
 		"--disable-systemd",
 		"--prefix=/",
 	)
-	runtimex.Try0(shellx.RunEx(cdepsDefaultShellxConfig(), argv, envp))
+	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, envp))
 
 	must.Run(log.Log, "make", "V=1", "-j", strconv.Itoa(runtime.NumCPU()))
 

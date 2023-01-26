@@ -16,6 +16,7 @@ func main() {
 		Use:   "buildtool",
 		Short: "Tool for building ooniprobe, miniooni, etc.",
 	}
+	root.AddCommand(androidSubcommand())
 	root.AddCommand(darwinSubcommand())
 	root.AddCommand(genericSubcommand())
 	root.AddCommand(linuxSubcommand())

@@ -139,8 +139,8 @@ func cdepsMustListPatches(dir string) (out []string) {
 	return
 }
 
-// cdepsDefaultShellxConfig returns the default config used when calling shellx.RunEx.
-func cdepsDefaultShellxConfig() *shellx.Config {
+// defaultShellxConfig returns the default config used when calling shellx.RunEx.
+func defaultShellxConfig() *shellx.Config {
 	return &shellx.Config{
 		Logger: log.Log,
 		Flags:  shellx.FlagShowStdoutStderr,
@@ -151,5 +151,5 @@ func cdepsDefaultShellxConfig() *shellx.Config {
 // around calling [shellx.RunEx] and checking the return value.
 func cdepsMustRunWithDefaultConfig(envp *shellx.Envp, command string, args ...string) {
 	argv := runtimex.Try1(shellx.NewArgv(command, args...))
-	runtimex.Try0(shellx.RunEx(cdepsDefaultShellxConfig(), argv, envp))
+	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, envp))
 }

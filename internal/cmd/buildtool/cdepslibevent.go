@@ -49,7 +49,7 @@ func cdepsLibeventBuildMain(cdenv *cdepsEnv, deps cdepsDependencies) {
 		argv.Append("--host=" + cdenv.configureHost)
 	}
 	argv.Append("--disable-libevent-regress", "--disable-samples", "--disable-shared", "--prefix=/")
-	runtimex.Try0(shellx.RunEx(cdepsDefaultShellxConfig(), argv, envp))
+	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, envp))
 
 	must.Run(log.Log, "make", "V=1", "-j", strconv.Itoa(runtime.NumCPU()))
 	must.Run(log.Log, "make", "DESTDIR="+cdenv.destdir, "install")
