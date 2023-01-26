@@ -45,7 +45,7 @@ func androidSubcommand() *cobra.Command {
 		Short: "Builds C dependencies on Linux systems (experimental)",
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, arg := range args {
-				androidCdepsBuildMain(arg, &buildDeps{}, &cdepsDependenciesStdlib{})
+				androidCdepsBuildMain(arg, &buildDeps{})
 			}
 		},
 		Args: cobra.MinimumNArgs(1),
@@ -147,7 +147,7 @@ func androidBuildCLIProductArch(
 	ooniArch string,
 	ndkDir string,
 ) {
-	cgo := newAndroidCBuildEnv(ndkDir, ooniArch)
+	cdeps := newAndroidCBuildEnv(ndkDir, ooniArch)
 
 	log.Infof("building %s for android/%s", product.Pkg, ooniArch)
 
@@ -188,13 +188,18 @@ func androidBuildCLIProductArch(
 // given ooniArch ("arm", "arm64", "386", "amd64").
 func newAndroidCBuildEnv(ndkDir string, ooniArch string) *cBuildEnv {
 	out := &cBuildEnv{
-		binpath:  androidNDKBinPath(ndkDir),
-		cc:       "",
-		cflags:   androidCflags(ooniArch),
-		cxx:      "",
-		cxxflags: androidCflags(ooniArch),
-		goarch:   "",
-		goarm:    "",
+		binpath:          androidNDKBinPath(ndkDir),
+		cc:               "",
+		cflags:           androidCflags(ooniArch),
+		configureHost:    "",
+		destdir:          "",
+		cxx:              "",
+		cxxflags:         androidCflags(ooniArch),
+		goarch:           "",
+		goarm:            "",
+		ldflags:          []string{},
+		openSSLAPIDefine: "",
+		openSSLCompiler:  "",
 	}
 	switch ooniArch {
 	case "arm":
@@ -324,7 +329,7 @@ func androidNDKBinPath(ndkDir string) string {
 }
 
 // androidCdepsBuildMain builds C dependencies for android.
-func androidCdepsBuildMain(name string, deps buildtoolmodel.Dependencies, cdeps cdepsDependencies) {
+func androidCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
 	runtimex.Assert(
 		runtime.GOOS == "darwin" || runtime.GOOS == "linux",
 		"this command requires darwin or linux",
@@ -337,13 +342,13 @@ func androidCdepsBuildMain(name string, deps buildtoolmodel.Dependencies, cdeps 
 	//archs := []string{"amd64", "386", "arm64", "arm"}
 	archs := []string{"arm64"} //XXX
 	for _, arch := range archs {
-		androidCdepsBuildArch(cdeps, arch, ndkDir, name)
+		androidCdepsBuildArch(deps, arch, ndkDir, name)
 	}
 }
 
 // androidCdepsBuildArch builds the given dependency for the given arch
-func androidCdepsBuildArch(deps cdepsDependencies, arch, ndkDir, name string) {
-	cdenv := androidNewCdepsEnv(ndkDir, arch)
+func androidCdepsBuildArch(deps buildtoolmodel.Dependencies, arch, ndkDir, name string) {
+	cdenv := newAndroidCBuildEnv(ndkDir, arch)
 	switch name {
 	case "libevent":
 		cdepsLibeventBuildMain(cdenv, deps)

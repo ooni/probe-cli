@@ -47,11 +47,15 @@ func linuxCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
 		"-O2",
 	}
 	globalEnv := &cBuildEnv{
-		cflags:   cflags,
-		cxxflags: cflags,
+		binpath:       "",
+		cc:            "",
+		cflags:        cflags,
+		configureHost: "",
 		destdir: runtimex.Try1(filepath.Abs(filepath.Join( // must be absolute
 			"internal", "libtor", "linux", runtime.GOARCH,
 		))),
+		cxx:              "",
+		cxxflags:         cflags,
 		goarch:           "",
 		goarm:            "",
 		ldflags:          []string{},

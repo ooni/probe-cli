@@ -51,12 +51,25 @@ type cBuildEnv struct {
 	openSSLCompiler string
 }
 
-// cBuildExportEnviron merges the gloval and the local c build environment
-// to produce the environment variables to export for the build. More specifically,
-// this appends the local variables to the remote variables for any string slice
-// type inside [cBuildEnv]. We ignore all the other variables.
+// cBuildExportEnviron merges the global and the local [cBuildEnv] to produce
+// environment variables suitable for cross compiling. More specifically:
+//
+// 1. we use the CC, CXX, LD, etc. scalars from the global environment.
+//
+// 2. we append all the vector variables defined in the local environment
+// to the ones inside the global environment.
+//
+// In other words, the local environment is only suitable for appending
+// new values to CFLAGS, CXXFLAGS, LDFLAGS, etc.
 func cBuildExportEnviron(global, local *cBuildEnv) *shellx.Envp {
 	envp := &shellx.Envp{}
+
+	if global.cc != "" {
+		envp.Append("CC", global.cc)
+	}
+	if global.cxx != "" {
+		envp.Append("CXX", global.cxx)
+	}
 
 	cflags := append([]string{}, global.cflags...)
 	cflags = append(cflags, local.cflags...)
