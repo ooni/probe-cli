@@ -38,7 +38,7 @@ func androidSubcommand() *cobra.Command {
 // androidBuildGomobile invokes the gomobile build.
 func androidBuildGomobile(deps buildtoolmodel.Dependencies) {
 	runtimex.Assert(
-		runtime.GOOS == "linux" || runtime.GOOS == "android",
+		runtime.GOOS == "darwin" || runtime.GOOS == "linux",
 		"this command requires darwin or linux",
 	)
 

@@ -19,6 +19,7 @@ func main() {
 	root.AddCommand(androidSubcommand())
 	root.AddCommand(darwinSubcommand())
 	root.AddCommand(genericSubcommand())
+	root.AddCommand(iosSubcommand())
 	root.AddCommand(linuxSubcommand())
 	root.AddCommand(windowsSubcommand())
 	logHandler := logx.NewHandlerWithDefaultSettings()
