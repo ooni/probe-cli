@@ -19,7 +19,7 @@ import (
 )
 
 // cdepsLibeventBuildMain is the script that builds libevent.
-func cdepsLibeventBuildMain(cdenv *cdepsEnv, deps buildtoolmodel.Dependencies) {
+func cdepsLibeventBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencies) {
 	topdir := deps.AbsoluteCurDir() // must be mockable
 	work := cdepsMustMkdirTemp()
 	restore := cdepsMustChdir(work)
@@ -41,30 +41,33 @@ func cdepsLibeventBuildMain(cdenv *cdepsEnv, deps buildtoolmodel.Dependencies) {
 
 	must.Run(log.Log, "./autogen.sh")
 
-	envp := &shellx.Envp{}
-	cdepsAddCflags(envp, cdenv, "-I"+cdenv.destdir+"/include")
-	cdepsAddLdflags(envp, cdenv, "-L"+cdenv.destdir+"/lib")
+	localEnv := &cBuildEnv{
+		cflags:   []string{"-I" + globalEnv.destdir + "/include"},
+		cxxflags: []string{"-I" + globalEnv.destdir + "/include"},
+		ldflags:  []string{"-L" + globalEnv.destdir + "/lib"},
+	}
+	envp := cBuildExportEnviron(globalEnv, localEnv)
 
 	argv := runtimex.Try1(shellx.NewArgv("./configure"))
-	if cdenv.configureHost != "" {
-		argv.Append("--host=" + cdenv.configureHost)
+	if globalEnv.configureHost != "" {
+		argv.Append("--host=" + globalEnv.configureHost)
 	}
 	argv.Append("--disable-libevent-regress", "--disable-samples", "--disable-shared", "--prefix=/")
 	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, envp))
 
 	must.Run(log.Log, "make", "V=1", "-j", strconv.Itoa(runtime.NumCPU()))
-	must.Run(log.Log, "make", "DESTDIR="+cdenv.destdir, "install")
-	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "bin"))
-	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "lib", "pkgconfig"))
+	must.Run(log.Log, "make", "DESTDIR="+globalEnv.destdir, "install")
+	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.destdir, "bin"))
+	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.destdir, "lib", "pkgconfig"))
 
 	// we just need libevent.a
-	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "lib", "libevent.la"))
-	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "lib", "libevent_core.a"))
-	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "lib", "libevent_core.la"))
-	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "lib", "libevent_extra.a"))
-	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "lib", "libevent_extra.la"))
-	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "lib", "libevent_openssl.a"))
-	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "lib", "libevent_openssl.la"))
-	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "lib", "libevent_pthreads.a"))
-	must.Run(log.Log, "rm", "-rf", filepath.Join(cdenv.destdir, "lib", "libevent_pthreads.la"))
+	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.destdir, "lib", "libevent.la"))
+	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.destdir, "lib", "libevent_core.a"))
+	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.destdir, "lib", "libevent_core.la"))
+	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.destdir, "lib", "libevent_extra.a"))
+	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.destdir, "lib", "libevent_extra.la"))
+	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.destdir, "lib", "libevent_openssl.a"))
+	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.destdir, "lib", "libevent_openssl.la"))
+	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.destdir, "lib", "libevent_pthreads.a"))
+	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.destdir, "lib", "libevent_pthreads.la"))
 }

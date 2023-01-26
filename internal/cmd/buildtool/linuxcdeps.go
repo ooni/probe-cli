@@ -20,6 +20,12 @@ func linuxCdepsSubcommand() *cobra.Command {
 		Use:   "cdeps {zlib|openssl|libevent|tor} [zlib|openssl|libevent|tor...]",
 		Short: "Builds C dependencies on Linux systems (experimental)",
 		Run: func(cmd *cobra.Command, args []string) {
+			// Implementation note: perform the check here such that we can
+			// run unit test for the building code from any system
+			runtimex.Assert(
+				runtime.GOOS == "linux" && runtime.GOARCH == "amd64",
+				"this command requires linux/amd64",
+			)
 			for _, arg := range args {
 				linuxCdepsBuildMain(arg, &buildDeps{})
 			}
@@ -30,21 +36,19 @@ func linuxCdepsSubcommand() *cobra.Command {
 
 // linuxCdepsBuildMain is the main of the linuxCdeps build.
 func linuxCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
-	runtimex.Assert(
-		runtime.GOOS == "linux" && runtime.GOARCH == "amd64",
-		"this command requires linux/amd64",
-	)
-	cdenv := &cdepsEnv{
-		cflags: []string{
-			// See https://airbus-seclab.github.io/c-compiler-security/
-			"-D_FORTIFY_SOURCE=2",
-			"-fstack-protector-strong",
-			"-fstack-clash-protection",
-			"-fPIC", // makes more sense than -fPIE given that we're building a library
-			"-fsanitize=bounds",
-			"-fsanitize-undefined-trap-on-error",
-			"-O2",
-		},
+	cflags := []string{
+		// See https://airbus-seclab.github.io/c-compiler-security/
+		"-D_FORTIFY_SOURCE=2",
+		"-fstack-protector-strong",
+		"-fstack-clash-protection",
+		"-fPIC", // makes more sense than -fPIE given that we're building a library
+		"-fsanitize=bounds",
+		"-fsanitize-undefined-trap-on-error",
+		"-O2",
+	}
+	globalEnv := &cBuildEnv{
+		cflags:   cflags,
+		cxxflags: cflags,
 		destdir: runtimex.Try1(filepath.Abs(filepath.Join( // must be absolute
 			"internal", "libtor", "linux", runtime.GOARCH,
 		))),
@@ -52,13 +56,13 @@ func linuxCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
 	}
 	switch name {
 	case "libevent":
-		cdepsLibeventBuildMain(cdenv, deps)
+		cdepsLibeventBuildMain(globalEnv, deps)
 	case "openssl":
-		cdepsOpenSSLBuildMain(cdenv, deps)
+		cdepsOpenSSLBuildMain(globalEnv, deps)
 	case "tor":
-		cdepsTorBuildMain(cdenv, deps)
+		cdepsTorBuildMain(globalEnv, deps)
 	case "zlib":
-		cdepsZlibBuildMain(cdenv, deps)
+		cdepsZlibBuildMain(globalEnv, deps)
 	default:
 		panic(fmt.Errorf("unknown dependency: %s", name))
 	}

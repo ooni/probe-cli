@@ -40,7 +40,7 @@ func CompareArgv(expected, got []string) error {
 	}
 	for idx := 1; idx < len(got); idx++ {
 		if got[idx] != expected[idx] {
-			return fmt.Errorf("entry %d: expected %s, but got %s", idx, expected[idx], got[idx])
+			return fmt.Errorf("entry %d of %+v: expected %s, but got %s", idx, expected, expected[idx], got[idx])
 		}
 	}
 	return nil

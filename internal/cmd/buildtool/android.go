@@ -136,7 +136,7 @@ func androidBuildCLIProductArch(
 	ooniArch string,
 	ndkDir string,
 ) {
-	cgo := newAndroidConfigCGO(ndkDir, ooniArch)
+	cgo := newAndroidCBuildEnv(ndkDir, ooniArch)
 
 	log.Infof("building %s for android/%s", product.Pkg, ooniArch)
 
@@ -173,35 +173,10 @@ func androidBuildCLIProductArch(
 	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, envp))
 }
 
-// androidConfigCGO contains the settings required
-// to compile for Android using a C compiler.
-type androidConfigCGO struct {
-	// binpath is the path containing the C and C++ compilers.
-	binpath string
-
-	// cc is the full path to the C compiler.
-	cc string
-
-	// cflags contains the extra CFLAGS to set.
-	cflags []string
-
-	// cxx is the full path to the CXX compiler.
-	cxx string
-
-	// cxxflags contains the extra CXXFLAGS to set.
-	cxxflags []string
-
-	// goarch is the GOARCH we're building for.
-	goarch string
-
-	// goarm is the GOARM subarchitecture.
-	goarm string
-}
-
-// newAndroidConfigCGO creates a new androidConfigCGO for the
+// newAndroidCBuildEnv creates a new [cBuildEnv] for the
 // given ooniArch ("arm", "arm64", "386", "amd64").
-func newAndroidConfigCGO(ndkDir string, ooniArch string) *androidConfigCGO {
-	out := &androidConfigCGO{
+func newAndroidCBuildEnv(ndkDir string, ooniArch string) *cBuildEnv {
+	out := &cBuildEnv{
 		binpath:  androidNDKBinPath(ndkDir),
 		cc:       "",
 		cflags:   androidCflags(ooniArch),
