@@ -12,26 +12,27 @@ import (
 	"strconv"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/cmd/buildtool/internal/buildtoolmodel"
 	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/shellx"
 )
 
 // cdepsOpenSSLBuildMain is the script that builds OpenSSL.
-func cdepsOpenSSLBuildMain(cdenv *cdepsEnv, deps cdepsDependencies) {
-	topdir := deps.absoluteCurDir() // must be mockable
+func cdepsOpenSSLBuildMain(cdenv *cdepsEnv, deps buildtoolmodel.Dependencies) {
+	topdir := deps.AbsoluteCurDir() // must be mockable
 	work := cdepsMustMkdirTemp()
 	restore := cdepsMustChdir(work)
 	defer restore()
 
 	// See https://github.com/Homebrew/homebrew-core/blob/master/Formula/openssl@1.1.rb
 	cdepsMustFetch("https://www.openssl.org/source/openssl-1.1.1s.tar.gz")
-	deps.verifySHA256( // must be mockable
+	deps.VerifySHA256( // must be mockable
 		"c5ac01e760ee6ff0dab61d6b2bbd30146724d063eb322180c6f18a6f74e4b6aa",
 		"openssl-1.1.1s.tar.gz",
 	)
 	must.Run(log.Log, "tar", "-xf", "openssl-1.1.1s.tar.gz")
-	_ = deps.mustChdir("openssl-1.1.1s") // must be mockable
+	_ = deps.MustChdir("openssl-1.1.1s") // must be mockable
 
 	mydir := filepath.Join(topdir, "CDEPS", "openssl")
 	for _, patch := range cdepsMustListPatches(mydir) {

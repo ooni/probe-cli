@@ -37,39 +37,6 @@ type cdepsEnv struct {
 	openSSLCompiler string
 }
 
-// cdepsDependencies groups dependencies used when building cdeps.
-type cdepsDependencies interface {
-	// mustChdir changes the current working directory and returns the
-	// function to return to the original working directory.
-	mustChdir(dirname string) func()
-
-	// absoluteCurDir returns the absolute current directory.
-	absoluteCurDir() string
-
-	// verifySHA256 verifies that the tarball has the given checksum.
-	verifySHA256(expectedSHA256, tarball string)
-}
-
-// cdepsDependenciesStdlib are the [cdepsDependencies] used by default.
-type cdepsDependenciesStdlib struct{}
-
-var _ cdepsDependencies = &cdepsDependenciesStdlib{}
-
-// absoluteCurDir implements cdepsDependencies
-func (c *cdepsDependenciesStdlib) absoluteCurDir() string {
-	return cdepsMustAbsoluteCurdir()
-}
-
-// verifySHA256 implements cdepsDependencies
-func (c *cdepsDependenciesStdlib) verifySHA256(expectedSHA256, tarball string) {
-	cdepsMustVerifySHA256(expectedSHA256, tarball)
-}
-
-// mustChdir implements cdepsDependencies
-func (c *cdepsDependenciesStdlib) mustChdir(dirname string) func() {
-	return cdepsMustChdir(dirname)
-}
-
 // cdepsAddCflags merges this struct's cflags with the extra cflags and
 // then stores the merged cflags into the given envp.
 func cdepsAddCflags(envp *shellx.Envp, c *cdepsEnv, extraCflags ...string) {

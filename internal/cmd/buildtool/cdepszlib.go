@@ -12,25 +12,26 @@ import (
 	"strconv"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/cmd/buildtool/internal/buildtoolmodel"
 	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/shellx"
 )
 
 // cdepsZlibBuildMain is the script that builds zlib.
-func cdepsZlibBuildMain(cdenv *cdepsEnv, deps cdepsDependencies) {
-	topdir := deps.absoluteCurDir() // must be mockable
+func cdepsZlibBuildMain(cdenv *cdepsEnv, deps buildtoolmodel.Dependencies) {
+	topdir := deps.AbsoluteCurDir() // must be mockable
 	work := cdepsMustMkdirTemp()
 	restore := cdepsMustChdir(work)
 	defer restore()
 
 	// See https://github.com/Homebrew/homebrew-core/blob/master/Formula/zlib.rb
 	cdepsMustFetch("https://zlib.net/zlib-1.2.13.tar.gz")
-	deps.verifySHA256( // must be mockable
+	deps.VerifySHA256( // must be mockable
 		"b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30",
 		"zlib-1.2.13.tar.gz",
 	)
 	must.Run(log.Log, "tar", "-xf", "zlib-1.2.13.tar.gz")
-	_ = deps.mustChdir("zlib-1.2.13") // must be mockable
+	_ = deps.MustChdir("zlib-1.2.13") // must be mockable
 
 	mydir := filepath.Join(topdir, "CDEPS", "zlib")
 	for _, patch := range cdepsMustListPatches(mydir) {

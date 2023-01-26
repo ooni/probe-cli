@@ -1,8 +1,10 @@
 package buildtooltest
 
 import (
+	"path/filepath"
 	"testing"
 
+	"github.com/ooni/probe-cli/v3/internal/fsx"
 	"golang.org/x/sys/execabs"
 )
 
@@ -149,7 +151,57 @@ func TestSimpleCommandCollector(t *testing.T) {
 }
 
 func TestDependenciesCallCounter(t *testing.T) {
-	t.Run("golangCheck", func(t *testing.T) {
+	t.Run("AbsoluteCurDir", func(t *testing.T) {
+		cc := &DependenciesCallCounter{}
+		dir := cc.AbsoluteCurDir()
+		if cc.Counter[TagAbsoluteCurDir] != 1 {
+			t.Fatal("did not increment")
+		}
+		// Note: adding two ".." to offset for the fact that we're two
+		// more directories deep with respect to when we run tests
+		cdepsDir := filepath.Join(dir, "..", "..", "CDEPS")
+		if !fsx.DirectoryExists(cdepsDir) {
+			t.Fatal("directory does not exist", cdepsDir)
+		}
+	})
+
+	t.Run("AndroidNDKCheck", func(t *testing.T) {
+		cc := &DependenciesCallCounter{}
+		dir := cc.AndroidNDKCheck("xo")
+		if cc.Counter[TagAndroidNDKCheck] != 1 {
+			t.Fatal("did not increment")
+		}
+		expect := filepath.Join("xo", "ndk", CanonicalNDKVersion)
+		if dir != expect {
+			t.Fatal("expected", expect, "but got", dir)
+		}
+	})
+
+	t.Run("AndroidSDKCheck", func(t *testing.T) {
+		cc := &DependenciesCallCounter{}
+		dir := cc.AndroidSDKCheck()
+		if cc.Counter[TagAndroidSDKCheck] != 1 {
+			t.Fatal("did not increment")
+		}
+		expect := filepath.Join("Android", "sdk")
+		if dir != expect {
+			t.Fatal("expected", expect, "but got", dir)
+		}
+	})
+
+	t.Run("GOPATH", func(t *testing.T) {
+		cc := &DependenciesCallCounter{}
+		dir := cc.GOPATH()
+		if cc.Counter[TagGOPATH] != 1 {
+			t.Fatal("did not increment")
+		}
+		expect := "/go/gopath"
+		if dir != expect {
+			t.Fatal("expected", expect, "but got", dir)
+		}
+	})
+
+	t.Run("GolangCheck", func(t *testing.T) {
 		cc := &DependenciesCallCounter{}
 		cc.GolangCheck()
 		if cc.Counter[TagGolangCheck] != 1 {
@@ -157,7 +209,7 @@ func TestDependenciesCallCounter(t *testing.T) {
 		}
 	})
 
-	t.Run("linuxReadGOVERSION", func(t *testing.T) {
+	t.Run("LinuxReadGOVERSION", func(t *testing.T) {
 		cc := &DependenciesCallCounter{}
 		cc.LinuxReadGOVERSION("xo")
 		if cc.Counter[TagLinuxReadGOVERSION] != 1 {
@@ -165,7 +217,7 @@ func TestDependenciesCallCounter(t *testing.T) {
 		}
 	})
 
-	t.Run("linuxWriteDOCKEFILE", func(t *testing.T) {
+	t.Run("LinuxWriteDOCKEFILE", func(t *testing.T) {
 		cc := &DependenciesCallCounter{}
 		cc.LinuxWriteDockerfile("xo", nil, 0600)
 		if cc.Counter[TagLinuxWriteDockerfile] != 1 {
@@ -173,7 +225,15 @@ func TestDependenciesCallCounter(t *testing.T) {
 		}
 	})
 
-	t.Run("psiphonFileExists", func(t *testing.T) {
+	t.Run("MustChdir", func(t *testing.T) {
+		cc := &DependenciesCallCounter{}
+		cc.MustChdir("xo")
+		if cc.Counter[TagMustChdir] != 1 {
+			t.Fatal("did not increment")
+		}
+	})
+
+	t.Run("PsiphonFileExists", func(t *testing.T) {
 		t.Run("if false", func(t *testing.T) {
 			cc := &DependenciesCallCounter{}
 			got := cc.PsiphonFilesExist()
@@ -199,7 +259,7 @@ func TestDependenciesCallCounter(t *testing.T) {
 		})
 	})
 
-	t.Run("psiphonMaybeCopyConfigFiles", func(t *testing.T) {
+	t.Run("PsiphonMaybeCopyConfigFiles", func(t *testing.T) {
 		cc := &DependenciesCallCounter{}
 		cc.PsiphonMaybeCopyConfigFiles()
 		if cc.Counter[TagPsiphonMaybeCopyConfigFiles] != 1 {
@@ -207,7 +267,15 @@ func TestDependenciesCallCounter(t *testing.T) {
 		}
 	})
 
-	t.Run("windowsMingwCheck", func(t *testing.T) {
+	t.Run("VerifySHA256", func(t *testing.T) {
+		cc := &DependenciesCallCounter{}
+		cc.VerifySHA256("xo", "xo")
+		if cc.Counter[TagVerifySHA256] != 1 {
+			t.Fatal("did not increment")
+		}
+	})
+
+	t.Run("WindowsMingwCheck", func(t *testing.T) {
 		cc := &DependenciesCallCounter{}
 		cc.WindowsMingwCheck()
 		if cc.Counter[TagWindowsMingwCheck] != 1 {
