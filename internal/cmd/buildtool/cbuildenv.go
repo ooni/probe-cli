@@ -11,83 +11,140 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/shellx"
 )
 
-// cBuildEnv describes the C build environment. We use
-// this structure for more complex C and CGO builds.
+// cBuildEnv describes the C build environment. We use this structure
+// for more complex C and CGO builds. You should think at fields inside
+// this structure as the enviroment variables you would use and export
+// in a bash script (hence the all uppercase naming).
 type cBuildEnv struct {
-	// binpath is the path containing the C and C++ compilers.
-	binpath string
+	// ANDROID_HOME is the android home variable.
+	ANDROID_HOME string
 
-	// cc is the full path to the C compiler.
-	cc string
+	// ANDROID_NDK_HOME is the android NDK home variable.
+	ANDROID_NDK_HOME string
 
-	// cflags contains the extra CFLAGS to set.
-	cflags []string
+	// AS is the full path to the assembler.
+	AS string
 
-	// configureHost is the value to pass to ./configure's --host option.
-	configureHost string
+	// AR is the full path to the ar tool.
+	AR string
 
-	// destdir is the directory where to install.
-	destdir string
+	// BINPATH is the path containing the C and C++ compilers.
+	BINPATH string
 
-	// cxx is the full path to the CXX compiler.
-	cxx string
+	// CC is the full path to the C compiler.
+	CC string
 
-	// cxxflags contains the extra CXXFLAGS to set.
-	cxxflags []string
+	// CFLAGS contains the extra CFLAGS to set.
+	CFLAGS []string
 
-	// goarch is the GOARCH we're building for.
-	goarch string
+	// CONFIGURE_HOST is the value to pass to ./configure's --host option.
+	CONFIGURE_HOST string
 
-	// goarm is the GOARM subarchitecture.
-	goarm string
+	// DESTDIR is the directory where to install.
+	DESTDIR string
 
-	// lfdlags contains the LDFLAGS to use when compiling.
-	ldflags []string
+	// CXX is the full path to the CXX compiler.
+	CXX string
 
-	// openSSLAPIDefine is an extra define we need to add on Android.
-	openSSLAPIDefine string
+	// CXXFLAGS contains the extra CXXFLAGS to set.
+	CXXFLAGS []string
 
-	// openSSLCompiler is the compiler name for OpenSSL.
-	openSSLCompiler string
+	// GOARCH is the GOARCH we're building for.
+	GOARCH string
+
+	// GOARM is the GOARM subarchitecture.
+	GOARM string
+
+	// LD is the full path to the linker.
+	LD string
+
+	// LDFLAGS contains the LDFLAGS to use when compiling.
+	LDFLAGS []string
+
+	// OPENSSL_API_DEFINE is an extra define we need to add on Android.
+	OPENSSL_API_DEFINE string
+
+	// OPENSSL_COMPILER is the compiler name for OpenSSL.
+	OPENSSL_COMPILER string
+
+	// RANLIB is the path to the ranlib tool.
+	RANLIB string
+
+	// STRIP is the path to the strip tool.
+	STRIP string
 }
 
-// cBuildExportEnviron merges the global and the local [cBuildEnv] to produce
-// environment variables suitable for cross compiling. More specifically:
+// cBuildMerge merges the global and the local [cBuildEnv] to produce a
+// new [cBuildEnv] where the following holds:
 //
-// 1. we use the CC, CXX, LD, etc. scalars from the global environment.
+// 1. all the scalar variables come from the global one;
 //
-// 2. we append all the vector variables defined in the local environment
-// to the ones inside the global environment.
+// 2. all the slice variables are the ones in the global one with
+// appended the ones in the local one.
 //
-// In other words, the local environment is only suitable for appending
-// new values to CFLAGS, CXXFLAGS, LDFLAGS, etc.
-func cBuildExportEnviron(global, local *cBuildEnv) *shellx.Envp {
-	envp := &shellx.Envp{}
-
-	if global.cc != "" {
-		envp.Append("CC", global.cc)
+// This kind of merging allows a build rule to include more
+// environment variables to CFLAGS, CXXFLAGS, etc.
+func cBuildMerge(global, local *cBuildEnv) *cBuildEnv {
+	out := &cBuildEnv{
+		ANDROID_HOME:       global.ANDROID_HOME,
+		ANDROID_NDK_HOME:   global.ANDROID_NDK_HOME,
+		AR:                 global.AR,
+		AS:                 global.AS,
+		BINPATH:            global.BINPATH,
+		CC:                 global.CC,
+		CFLAGS:             append([]string{}, global.CFLAGS...),
+		CONFIGURE_HOST:     global.CONFIGURE_HOST,
+		DESTDIR:            global.DESTDIR,
+		CXX:                global.CXX,
+		CXXFLAGS:           append([]string{}, global.CXXFLAGS...),
+		GOARCH:             global.GOARCH,
+		GOARM:              global.GOARM,
+		LD:                 global.LD,
+		LDFLAGS:            append([]string{}, global.LDFLAGS...),
+		OPENSSL_API_DEFINE: global.OPENSSL_API_DEFINE,
+		OPENSSL_COMPILER:   global.OPENSSL_COMPILER,
+		RANLIB:             global.RANLIB,
+		STRIP:              global.STRIP,
 	}
-	if global.cxx != "" {
-		envp.Append("CXX", global.cxx)
-	}
+	out.CFLAGS = append(out.CFLAGS, local.CFLAGS...)
+	out.CXXFLAGS = append(out.CXXFLAGS, local.CXXFLAGS...)
+	out.LDFLAGS = append(out.LDFLAGS, local.LDFLAGS...)
+	return out
+}
 
-	cflags := append([]string{}, global.cflags...)
-	cflags = append(cflags, local.cflags...)
-	if len(cflags) > 0 {
-		envp.Append("CFLAGS", strings.Join(cflags, " "))
+// cBuildMaybeAppendScalar is a convenience function for appending a
+// scalar environment variable to out.
+func cBuildMaybeAppend(out *shellx.Envp, name, value string) {
+	if value != "" {
+		out.Append(name, value)
 	}
+}
 
-	cxxflags := append([]string{}, global.cxxflags...)
-	cxxflags = append(cxxflags, local.cxxflags...)
-	if len(cxxflags) > 0 {
-		envp.Append("CXXFLAGS", strings.Join(cxxflags, " "))
-	}
+// cBuildExportAutotools exports all the environment variables
+// inside the given [cBuildEnv] required by autotools builds.
+func cBuildExportAutotools(env *cBuildEnv) *shellx.Envp {
+	out := &shellx.Envp{}
+	cBuildMaybeAppend(out, "AR", env.AR)
+	cBuildMaybeAppend(out, "AS", env.AS)
+	cBuildMaybeAppend(out, "CC", env.CC)
+	cBuildMaybeAppend(out, "CFLAGS", strings.Join(env.CFLAGS, " "))
+	cBuildMaybeAppend(out, "CXX", env.CXX)
+	cBuildMaybeAppend(out, "CXXFLAGS", strings.Join(env.CXXFLAGS, " "))
+	cBuildMaybeAppend(out, "LD", env.LD)
+	cBuildMaybeAppend(out, "LDFLAGS", strings.Join(env.LDFLAGS, " "))
+	cBuildMaybeAppend(out, "RANLIB", env.RANLIB)
+	cBuildMaybeAppend(out, "STRIP", env.STRIP)
+	return out
+}
 
-	ldflags := append([]string{}, global.ldflags...)
-	ldflags = append(ldflags, local.ldflags...)
-	if len(ldflags) > 0 {
-		envp.Append("LDFLAGS", strings.Join(ldflags, " "))
-	}
-
-	return envp
+// cBuildExportOpenSSL exports all the environment variables
+// inside the given [cBuildEnv] required by OpenSSL builds.
+func cBuildExportOpenSSL(env *cBuildEnv) *shellx.Envp {
+	out := &shellx.Envp{}
+	cBuildMaybeAppend(out, "ANDROID_HOME", env.ANDROID_HOME)
+	cBuildMaybeAppend(out, "ANDROID_NDK_HOME", env.ANDROID_NDK_HOME)
+	cBuildMaybeAppend(out, "CFLAGS", strings.Join(env.CFLAGS, " "))
+	cBuildMaybeAppend(out, "CXXFLAGS", strings.Join(env.CXXFLAGS, " "))
+	cBuildMaybeAppend(out, "LDFLAGS", strings.Join(env.LDFLAGS, " "))
+	return out
 }

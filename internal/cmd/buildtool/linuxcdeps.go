@@ -46,21 +46,28 @@ func linuxCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
 		"-fsanitize-undefined-trap-on-error",
 		"-O2",
 	}
+	destdir := runtimex.Try1(filepath.Abs(filepath.Join( // must be absolute
+		"internal", "libtor", "linux", runtime.GOARCH,
+	)))
 	globalEnv := &cBuildEnv{
-		binpath:       "",
-		cc:            "",
-		cflags:        cflags,
-		configureHost: "",
-		destdir: runtimex.Try1(filepath.Abs(filepath.Join( // must be absolute
-			"internal", "libtor", "linux", runtime.GOARCH,
-		))),
-		cxx:              "",
-		cxxflags:         cflags,
-		goarch:           "",
-		goarm:            "",
-		ldflags:          []string{},
-		openSSLAPIDefine: "",
-		openSSLCompiler:  "linux-x86_64",
+		ANDROID_HOME:       "",
+		ANDROID_NDK_HOME:   "",
+		AR:                 "",
+		BINPATH:            "",
+		CC:                 "",
+		CFLAGS:             cflags,
+		CONFIGURE_HOST:     "",
+		DESTDIR:            destdir,
+		CXX:                "",
+		CXXFLAGS:           cflags,
+		GOARCH:             "",
+		GOARM:              "",
+		LD:                 "",
+		LDFLAGS:            []string{},
+		OPENSSL_API_DEFINE: "",
+		OPENSSL_COMPILER:   "linux-x86_64",
+		RANLIB:             "",
+		STRIP:              "",
 	}
 	switch name {
 	case "libevent":
