@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"testing"
@@ -24,6 +25,14 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 		// expectations contains the commands we expect to see
 		expect []buildtooltest.ExecExpectations
 	}
+
+	// Note: even if the build only runs on Linux, we want to run unit tests
+	// from everywhere otherwise we cannot catch errors. This means we need
+	// to do some gymnastics here to fake out the correct GOARCH.
+	sysDepDestDir := filepath.Join(
+		"internal", "cmd", "buildtool", "internal", "libtor",
+		"linux", runtime.GOARCH,
+	)
 
 	var testcases = []testspec{{
 		name:   "we can build zlib",
@@ -60,21 +69,21 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 			Env: []string{},
 			Argv: []string{
 				"make",
-				"DESTDIR=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/linux/amd64",
+				"DESTDIR=" + faketopdir + "/" + sysDepDestDir,
 				"install",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
 				"rm", "-rf",
-				faketopdir + "/internal/cmd/buildtool/internal/libtor/linux/amd64/lib/pkgconfig",
+				faketopdir + "/" + sysDepDestDir + "/lib/pkgconfig",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
 				"rm",
 				"-rf",
-				faketopdir + "/internal/cmd/buildtool/internal/libtor/linux/amd64/share",
+				faketopdir + "/" + sysDepDestDir + "/share",
 			},
 		}},
 	}, {
@@ -121,14 +130,14 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 			Env: []string{},
 			Argv: []string{
 				"make",
-				"DESTDIR=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/linux/amd64",
+				"DESTDIR=" + faketopdir + "/" + sysDepDestDir,
 				"install_dev",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
 				"rm", "-rf",
-				faketopdir + "/internal/cmd/buildtool/internal/libtor/linux/amd64/lib/pkgconfig",
+				faketopdir + "/" + sysDepDestDir + "/lib/pkgconfig",
 			},
 		}},
 	}, {
@@ -169,16 +178,19 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 		}, {
 			Env: []string{
 				fmt.Sprintf(
-					"CFLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong -fstack-clash-protection -fPIC -fsanitize=bounds -fsanitize-undefined-trap-on-error -O2 -I%s/internal/cmd/buildtool/internal/libtor/linux/amd64/include",
+					"CFLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong -fstack-clash-protection -fPIC -fsanitize=bounds -fsanitize-undefined-trap-on-error -O2 -I%s/%s/include",
 					faketopdir,
+					sysDepDestDir,
 				),
 				fmt.Sprintf(
-					"CXXFLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong -fstack-clash-protection -fPIC -fsanitize=bounds -fsanitize-undefined-trap-on-error -O2 -I%s/internal/cmd/buildtool/internal/libtor/linux/amd64/include",
+					"CXXFLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong -fstack-clash-protection -fPIC -fsanitize=bounds -fsanitize-undefined-trap-on-error -O2 -I%s/%s/include",
 					faketopdir,
+					sysDepDestDir,
 				),
 				fmt.Sprintf(
-					"LDFLAGS=-L%s/internal/cmd/buildtool/internal/libtor/linux/amd64/lib",
+					"LDFLAGS=-L%s/%s/lib",
 					faketopdir,
+					sysDepDestDir,
 				),
 			},
 			Argv: []string{
@@ -197,7 +209,7 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 			Env: []string{},
 			Argv: []string{
 				"make",
-				"DESTDIR=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/linux/amd64",
+				"DESTDIR=" + faketopdir + "/" + sysDepDestDir,
 				"install",
 			},
 		}, {
@@ -205,77 +217,77 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 			Argv: []string{
 				"rm",
 				"-rf",
-				faketopdir + "/internal/cmd/buildtool/internal/libtor/linux/amd64/bin",
+				faketopdir + "/" + sysDepDestDir + "/bin",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
 				"rm",
 				"-rf",
-				faketopdir + "/internal/cmd/buildtool/internal/libtor/linux/amd64/lib/pkgconfig",
+				faketopdir + "/" + sysDepDestDir + "/lib/pkgconfig",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
 				"rm",
 				"-rf",
-				faketopdir + "/internal/cmd/buildtool/internal/libtor/linux/amd64/lib/libevent.la",
+				faketopdir + "/" + sysDepDestDir + "/lib/libevent.la",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
 				"rm",
 				"-rf",
-				faketopdir + "/internal/cmd/buildtool/internal/libtor/linux/amd64/lib/libevent_core.a",
+				faketopdir + "/" + sysDepDestDir + "/lib/libevent_core.a",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
 				"rm",
 				"-rf",
-				faketopdir + "/internal/cmd/buildtool/internal/libtor/linux/amd64/lib/libevent_core.la",
+				faketopdir + "/" + sysDepDestDir + "/lib/libevent_core.la",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
 				"rm",
 				"-rf",
-				faketopdir + "/internal/cmd/buildtool/internal/libtor/linux/amd64/lib/libevent_extra.a",
+				faketopdir + "/" + sysDepDestDir + "/lib/libevent_extra.a",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
 				"rm",
 				"-rf",
-				faketopdir + "/internal/cmd/buildtool/internal/libtor/linux/amd64/lib/libevent_extra.la",
+				faketopdir + "/" + sysDepDestDir + "/lib/libevent_extra.la",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
 				"rm",
 				"-rf",
-				faketopdir + "/internal/cmd/buildtool/internal/libtor/linux/amd64/lib/libevent_openssl.a",
+				faketopdir + "/" + sysDepDestDir + "/lib/libevent_openssl.a",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
 				"rm",
 				"-rf",
-				faketopdir + "/internal/cmd/buildtool/internal/libtor/linux/amd64/lib/libevent_openssl.la",
+				faketopdir + "/" + sysDepDestDir + "/lib/libevent_openssl.la",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
 				"rm",
 				"-rf",
-				faketopdir + "/internal/cmd/buildtool/internal/libtor/linux/amd64/lib/libevent_pthreads.a",
+				faketopdir + "/" + sysDepDestDir + "/lib/libevent_pthreads.a",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
 				"rm",
 				"-rf",
-				faketopdir + "/internal/cmd/buildtool/internal/libtor/linux/amd64/lib/libevent_pthreads.la",
+				faketopdir + "/" + sysDepDestDir + "/lib/libevent_pthreads.la",
 			},
 		}},
 	}, {
@@ -315,11 +327,11 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 				"./configure",
 				"--enable-pic",
 				"--enable-static-libevent",
-				"--with-libevent-dir=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/linux/amd64",
+				"--with-libevent-dir=" + faketopdir + "/" + sysDepDestDir,
 				"--enable-static-openssl",
-				"--with-openssl-dir=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/linux/amd64",
+				"--with-openssl-dir=" + faketopdir + "/" + sysDepDestDir,
 				"--enable-static-zlib",
-				"--with-zlib-dir=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/linux/amd64",
+				"--with-zlib-dir=" + faketopdir + "/" + sysDepDestDir,
 				"--disable-module-dirauth",
 				"--disable-zstd",
 				"--disable-lzma",
@@ -336,13 +348,13 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 			Env: []string{},
 			Argv: []string{
 				"install", "-m644", "src/feature/api/tor_api.h",
-				faketopdir + "/internal/cmd/buildtool/internal/libtor/linux/amd64/include",
+				faketopdir + "/" + sysDepDestDir + "/include",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
 				"install", "-m644", "libtor.a",
-				faketopdir + "/internal/cmd/buildtool/internal/libtor/linux/amd64/lib",
+				faketopdir + "/" + sysDepDestDir + "/lib",
 			},
 		}},
 	}}

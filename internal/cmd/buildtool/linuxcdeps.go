@@ -20,6 +20,12 @@ func linuxCdepsSubcommand() *cobra.Command {
 		Use:   "cdeps {zlib|openssl|libevent|tor} [zlib|openssl|libevent|tor...]",
 		Short: "Builds C dependencies on Linux systems (experimental)",
 		Run: func(cmd *cobra.Command, args []string) {
+			// Implementation note: perform the check here such that we can
+			// run unit test for the building code from any system
+			runtimex.Assert(
+				runtime.GOOS == "linux" && runtime.GOARCH == "amd64",
+				"this command requires linux/amd64",
+			)
 			for _, arg := range args {
 				linuxCdepsBuildMain(arg, &buildDeps{})
 			}
@@ -30,10 +36,6 @@ func linuxCdepsSubcommand() *cobra.Command {
 
 // linuxCdepsBuildMain is the main of the linuxCdeps build.
 func linuxCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
-	runtimex.Assert(
-		runtime.GOOS == "linux" && runtime.GOARCH == "amd64",
-		"this command requires linux/amd64",
-	)
 	cflags := []string{
 		// See https://airbus-seclab.github.io/c-compiler-security/
 		"-D_FORTIFY_SOURCE=2",
