@@ -38,13 +38,13 @@ func cdepsZlibBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencies) 
 	}
 
 	envp := cBuildExportEnviron(globalEnv, &cBuildEnv{})
-	if globalEnv.configureHost != "" {
-		envp.Append("CHOST", globalEnv.configureHost) // zlib's configure otherwise uses Apple's libtool
+	if globalEnv.CONFIGURE_HOST != "" {
+		envp.Append("CHOST", globalEnv.CONFIGURE_HOST) // zlib's configure otherwise uses Apple's libtool
 	}
 	cdepsMustRunWithDefaultConfig(envp, "./configure", "--prefix=/", "--static")
 
 	must.Run(log.Log, "make", "-j", strconv.Itoa(runtime.NumCPU()))
-	must.Run(log.Log, "make", "DESTDIR="+globalEnv.destdir, "install")
-	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.destdir, "lib", "pkgconfig"))
-	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.destdir, "share"))
+	must.Run(log.Log, "make", "DESTDIR="+globalEnv.DESTDIR, "install")
+	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.DESTDIR, "lib", "pkgconfig"))
+	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.DESTDIR, "share"))
 }

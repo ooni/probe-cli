@@ -40,8 +40,8 @@ func cdepsOpenSSLBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencie
 	}
 
 	localEnv := &cBuildEnv{
-		cflags:   []string{"-Wno-macro-redefined"},
-		cxxflags: []string{"-Wno-macro-redefined"},
+		CFLAGS:   []string{"-Wno-macro-redefined"},
+		CXXFLAGS: []string{"-Wno-macro-redefined"},
 	}
 	envp := cBuildExportEnviron(globalEnv, localEnv)
 
@@ -50,15 +50,15 @@ func cdepsOpenSSLBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencie
 		"no-ssl2", "no-ssl3", "no-camellia", "no-idea", "no-md2", "no-md4",
 		"no-mdc2", "no-rc2", "no-rc4", "no-rc5", "no-rmd160", "no-whirlpool",
 		"no-dso", "no-hw", "no-ui-console", "no-shared", "no-unit-test",
-		globalEnv.openSSLCompiler,
+		globalEnv.OPENSSL_COMPILER,
 	))
-	if globalEnv.openSSLAPIDefine != "" {
-		argv.Append(globalEnv.openSSLAPIDefine)
+	if globalEnv.OPENSSL_API_DEFINE != "" {
+		argv.Append(globalEnv.OPENSSL_API_DEFINE)
 	}
 	argv.Append("--libdir=lib", "--prefix=/", "--openssldir=/")
 	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, envp))
 
 	must.Run(log.Log, "make", "-j", strconv.Itoa(runtime.NumCPU()))
-	must.Run(log.Log, "make", "DESTDIR="+globalEnv.destdir, "install_dev")
-	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.destdir, "lib", "pkgconfig"))
+	must.Run(log.Log, "make", "DESTDIR="+globalEnv.DESTDIR, "install_dev")
+	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.DESTDIR, "lib", "pkgconfig"))
 }
