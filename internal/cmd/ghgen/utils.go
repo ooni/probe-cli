@@ -30,7 +30,7 @@ func newJob(w io.Writer, name, runsOn, needs string, permissions map[string]stri
 }
 
 func newStepCheckout(w io.Writer) {
-	mustFprintf(w, "      - uses: actions/checkout@v2\n")
+	mustFprintf(w, "      - uses: actions/checkout@v3\n")
 	mustFprintf(w, "        with:\n")
 	mustFprintf(w, "          fetch-depth: 0\n")
 	mustFprintf(w, "\n")

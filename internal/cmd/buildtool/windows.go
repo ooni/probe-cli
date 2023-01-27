@@ -100,7 +100,7 @@ func windowsMingwCheckFor(compiler string) {
 	expected := windowsMingwExpectedVersionGetter()
 	firstLine := string(must.FirstLineBytes(must.RunOutputQuiet(compiler, "--version")))
 	v := strings.Split(firstLine, " ")
-	runtimex.Assert(len(v) == 3, "expected to see exactly three tokens")
+	runtimex.Assert(len(v) >= 3, "expected to see three tokens or more")
 	if got := v[2]; got != expected {
 		log.Fatalf("expected mingw %s but got %s", expected, got)
 	}

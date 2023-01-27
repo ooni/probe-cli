@@ -16,7 +16,7 @@ jobs:
     permissions: # See https://github.com/ooni/probe/issues/2154
       contents: write
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Get GOVERSION content
         id: goversion
