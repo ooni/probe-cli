@@ -42,7 +42,7 @@ func androidSubcommand() *cobra.Command {
 	})
 	cmd.AddCommand(&cobra.Command{
 		Use:   "cdeps {zlib|openssl|libevent|tor} [zlib|openssl|libevent|tor...]",
-		Short: "Builds C dependencies on Linux systems (experimental)",
+		Short: "Cross compiles C dependencies for Android",
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, arg := range args {
 				androidCdepsBuildMain(arg, &buildDeps{})
@@ -350,7 +350,6 @@ func androidCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
 		runtime.GOOS == "darwin" || runtime.GOOS == "linux",
 		"this command requires darwin or linux",
 	)
-
 	androidHome := deps.AndroidSDKCheck()
 	ndkDir := deps.AndroidNDKCheck(androidHome)
 	archs := []string{"arm", "arm64", "386", "amd64"}

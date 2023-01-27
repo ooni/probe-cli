@@ -2,8 +2,12 @@
 
 package tunnel
 
+//
 // This file implements our strategy for running tor on desktop in most
-// configurations except for experimental ones.
+// configurations except for the ooni_libtor case, where we build tor and
+// its dependencies for Linux. The purpuse of this special case it that
+// of testing the otherwise untested code that would run on Android.
+//
 
 import (
 	"strings"
