@@ -2,7 +2,14 @@
 
 package tunnel
 
-// This file implements an experimental strategy for running tor.
+//
+// This file implements the ooni_libtor strategy of embedding tor. We manually
+// compile tor and its dependencies and link against it. We currently only adopt
+// this technique for Android. We may possibly migrate also iOS in the future,
+// provided that this functionality proves to be stable in the 3.17 cycle.
+//
+// See https://github.com/ooni/probe/issues/2365.
+//
 
 import (
 	"errors"
