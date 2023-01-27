@@ -1,5 +1,10 @@
 package main
 
+//
+// Allows unit testing build rules by abstracting
+// specific activities through an interface.
+//
+
 import (
 	"io/fs"
 

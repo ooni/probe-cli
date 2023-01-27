@@ -1,5 +1,9 @@
 package main
 
+//
+// Building for linux-static using docker and alpine.
+//
+
 import (
 	"fmt"
 	"os"

@@ -16,12 +16,14 @@ func main() {
 		Use:   "buildtool",
 		Short: "Tool for building ooniprobe, miniooni, etc.",
 	}
+
 	root.AddCommand(androidSubcommand())
 	root.AddCommand(darwinSubcommand())
 	root.AddCommand(genericSubcommand())
 	root.AddCommand(iosSubcommand())
 	root.AddCommand(linuxSubcommand())
 	root.AddCommand(windowsSubcommand())
+
 	logHandler := logx.NewHandlerWithDefaultSettings()
 	logHandler.Emoji = true
 	log.Log = &log.Logger{Level: log.InfoLevel, Handler: logHandler}
