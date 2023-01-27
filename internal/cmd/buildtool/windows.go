@@ -1,7 +1,7 @@
 package main
 
 //
-// Windows build
+// Windows cross build using mingw-w64
 //
 
 import (

@@ -1,7 +1,8 @@
 package main
 
 //
-// Builds for Linux assuming static linking makes sense.
+// Builds for Linux assuming static linking makes sense and
+// also assuming we're in a docker container.
 //
 
 import (

@@ -1,7 +1,7 @@
 package main
 
 //
-// Defines the products we can build
+// Defines the CLI products we can build
 //
 
 import (

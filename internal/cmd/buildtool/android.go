@@ -68,6 +68,13 @@ func androidBuildGomobile(deps buildtoolmodel.Dependencies) {
 
 	envp := &shellx.Envp{}
 	envp.Append("ANDROID_HOME", androidHome)
+
+	// From the gomobile repository:
+	//
+	//	Try the ANDROID_NDK_HOME variable.  This approach is deprecated, but it has
+	//	the highest priority because it represents an explicit user choice.
+	//
+	// See https://github.com/golang/mobile/blob/8578da983/cmd/gomobile/env.go#L394
 	envp.Append("ANDROID_NDK_HOME", ndkDir)
 
 	config := &gomobileConfig{
