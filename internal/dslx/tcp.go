@@ -12,17 +12,19 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
 // TCPConnect returns a function that establishes TCP connections.
 func TCPConnect(pool *ConnPool) Func[*Endpoint, *Maybe[*TCPConnection]] {
-	f := &tcpConnectFunc{pool}
+	f := &tcpConnectFunc{pool, nil}
 	return f
 }
 
 // tcpConnectFunc is a function that establishes TCP connections.
 type tcpConnectFunc struct {
-	p *ConnPool
+	p      *ConnPool
+	dialer *mocks.Dialer // for testing
 }
 
 // Apply applies the function to its arguments.
@@ -44,7 +46,11 @@ func (f *tcpConnectFunc) Apply(
 	const timeout = 15 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	dialer := trace.NewDialerWithoutResolver(input.Logger)
+
+	var dialer model.Dialer = f.dialer
+	if dialer == nil {
+		dialer = trace.NewDialerWithoutResolver(input.Logger)
+	}
 
 	// connect
 	conn, err := dialer.DialContext(ctx, "tcp", input.Address)

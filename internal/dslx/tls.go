@@ -14,6 +14,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -80,6 +81,9 @@ type tlsHandshakeFunc struct {
 
 	// ServerName is the ServerName to handshake for.
 	ServerName string
+
+	// for testing
+	handshaker *mocks.TLSHandshaker
 }
 
 // Apply implements Func.
@@ -103,7 +107,10 @@ func (f *tlsHandshakeFunc) Apply(
 	)
 
 	// setup
-	handshaker := trace.NewTLSHandshakerStdlib(input.Logger)
+	var handshaker model.TLSHandshaker = f.handshaker
+	if handshaker == nil {
+		handshaker = trace.NewTLSHandshakerStdlib(input.Logger)
+	}
 	config := &tls.Config{
 		NextProtos:         nextProto,
 		InsecureSkipVerify: f.InsecureSkipVerify,
