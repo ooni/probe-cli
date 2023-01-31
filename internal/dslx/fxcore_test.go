@@ -69,7 +69,6 @@ func TestCompose2(t *testing.T) {
 			t.Fatalf("%s: expected result state %v, got %v", test.name, test.expectedRes, r.State)
 		}
 	}
-
 }
 
 func TestCounter(t *testing.T) {
@@ -150,6 +149,7 @@ func TestFirstError(t *testing.T) {
 	}
 	networkUnreachable := errors.New(netxlite.FailureNetworkUnreachable)
 	mockErr := errors.New("mocked")
+	// permutations: we want to test different orderings
 	perm := [][]int{
 		{0, 1, 2},
 		{0, 2, 1},
@@ -190,5 +190,30 @@ func TestFirstError(t *testing.T) {
 	if firstErr != nil {
 		t.Fatalf("FirstError: unexpected error %s", firstErr)
 	}
+	firstErr = FirstErrorExcludingBrokenIPv6Errors(noErrRes...)
+	if firstErr != nil {
+		t.Fatalf("FirstErrorExcludingBrokenIPv6Errors: unexpected error %s", firstErr)
+	}
+}
 
+func inc() Func[int, *Maybe[int]] {
+	return &incFunc{}
+}
+
+type incFunc struct{}
+
+func (f *incFunc) Apply(ctx context.Context, i int) *Maybe[int] {
+	return &Maybe[int]{State: i + 1}
+}
+
+func TestGen(t *testing.T) {
+	incFunc := inc()
+	composit := Compose14(incFunc, incFunc, incFunc, incFunc, incFunc, incFunc, incFunc, incFunc, incFunc, incFunc, incFunc, incFunc, incFunc, incFunc)
+	r := composit.Apply(context.Background(), 0)
+	if r.Error != nil {
+		t.Fatalf("TestGen: unexpected error %s", r.Error)
+	}
+	if r.State != 14 {
+		t.Fatalf("TestGen: expected result state %v, got %v", 14, r.State)
+	}
 }
