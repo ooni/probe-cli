@@ -142,7 +142,7 @@ func Test_newChildResolver(t *testing.T) {
 			}
 		})
 
-		t.Run("what we get is an action DNS-over-HTTPS resolver", func(t *testing.T) {
+		t.Run("what we get is a DNS-over-HTTPS resolver", func(t *testing.T) {
 			handler := &testDNSOverHTTPSHandler{
 				A: []net.IP{net.IPv4(8, 8, 8, 8)},
 			}
