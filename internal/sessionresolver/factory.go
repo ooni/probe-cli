@@ -54,7 +54,7 @@ func newChildResolver(
 	}
 	var reso model.Resolver
 	switch parsed.Scheme {
-	case "http", "https":
+	case "http", "https": // http is here for testing
 		reso = newChildResolverHTTPS(logger, URL, http3Enabled, counter, proxyURL)
 	case "system":
 		reso = bytecounter.MaybeWrapSystemResolver(
