@@ -166,7 +166,7 @@ func (d *quicDialerQUICGo) dialEarlyContext(ctx context.Context,
 func (d *quicDialerQUICGo) maybeApplyTLSDefaults(config *tls.Config, port int) *tls.Config {
 	config = config.Clone()
 	if config.RootCAs == nil {
-		config.RootCAs = defaultCertPool
+		config.RootCAs = NewDefaultCertPool()
 	}
 	if len(config.NextProtos) <= 0 {
 		switch port {

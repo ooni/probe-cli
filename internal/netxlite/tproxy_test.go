@@ -3,13 +3,16 @@ package netxlite
 import (
 	"context"
 	"crypto/x509"
+	"net"
+	"net/http"
+	"net/http/httptest"
 	"runtime"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func TestDefaultTProxy(t *testing.T) {
@@ -36,16 +39,48 @@ func TestDefaultTProxy(t *testing.T) {
 }
 
 func TestWithCustomTProxy(t *testing.T) {
-	expected := x509.NewCertPool()
-	tproxy := &mocks.UnderlyingNetwork{
-		MockMaybeModifyPool: func(pool *x509.CertPool) *x509.CertPool {
-			runtimex.Assert(expected != pool, "got unexpected pool")
-			return expected
-		},
-	}
-	WithCustomTProxy(tproxy, func() {
-		if NewDefaultCertPool() != expected {
-			t.Fatal("unexpected pool")
+
+	t.Run("we can override the default cert pool", func(t *testing.T) {
+		srvr := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(444)
+		}))
+		defer srvr.Close()
+
+		// TODO(bassosimone): we need a more compact and ergonomic
+		// way of overriding the underlying network
+		tproxy := &mocks.UnderlyingNetwork{
+			MockDialContext: func(ctx context.Context, timeout time.Duration, network string, address string) (net.Conn, error) {
+				return (&DefaultTProxy{}).DialContext(ctx, timeout, network, address)
+			},
+			MockListenUDP: func(network string, addr *net.UDPAddr) (model.UDPLikeConn, error) {
+				return (&DefaultTProxy{}).ListenUDP(network, addr)
+			},
+			MockGetaddrinfoLookupANY: func(ctx context.Context, domain string) ([]string, string, error) {
+				return (&DefaultTProxy{}).GetaddrinfoLookupANY(ctx, domain)
+			},
+			MockGetaddrinfoResolverNetwork: func() string {
+				return (&DefaultTProxy{}).GetaddrinfoResolverNetwork()
+			},
+			MockMaybeModifyPool: func(*x509.CertPool) *x509.CertPool {
+				pool := x509.NewCertPool()
+				pool.AddCert(srvr.Certificate())
+				return pool
+			},
 		}
+
+		WithCustomTProxy(tproxy, func() {
+			clnt := NewHTTPClientStdlib(model.DiscardLogger)
+			req, err := http.NewRequestWithContext(context.Background(), "GET", srvr.URL, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			resp, err := clnt.Do(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if resp.StatusCode != 444 {
+				t.Fatal("unexpected status code")
+			}
+		})
 	})
 }
