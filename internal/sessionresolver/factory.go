@@ -24,7 +24,7 @@ var errUnsupportedResolverScheme = errors.New("unsupported resolver scheme")
 //
 // - logger is the MANDATORY logger;
 //
-// - URL is the MANDATORY HTTP/3 URL to use;
+// - URL is the MANDATORY URL to use (a DoH URL or system:///);
 //
 // - http3Enabled indicates whether to use HTTP/3;
 //
