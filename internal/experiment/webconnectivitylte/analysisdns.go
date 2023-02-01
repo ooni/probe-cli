@@ -214,6 +214,9 @@ func (tk *TestKeys) analysisDNSUnexpectedFailure(logger model.Logger) {
 		logger.Warnf("DNS: unexpected failure %s in #%d", *query.Failure, query.TransactionID)
 		tk.DNSFlags |= AnalysisDNSUnexpectedFailure
 		// continue processing so we print all the unexpected failures
+
+		// TODO(https://github.com/ooni/probe/issues/2029#issuecomment-1411716295): we need
+		// to ensure we correctly handle the android_dns_cache_no_data case.
 	}
 }
 
