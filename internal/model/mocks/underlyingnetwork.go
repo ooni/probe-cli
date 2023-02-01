@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"context"
+	"crypto/x509"
 	"net"
 	"time"
 
@@ -17,6 +18,8 @@ type UnderlyingNetwork struct {
 	MockGetaddrinfoLookupANY func(ctx context.Context, domain string) ([]string, string, error)
 
 	MockGetaddrinfoResolverNetwork func() string
+
+	MockMaybeModifyPool func(pool *x509.CertPool) *x509.CertPool
 }
 
 var _ model.UnderlyingNetwork = &UnderlyingNetwork{}
@@ -35,4 +38,9 @@ func (un *UnderlyingNetwork) GetaddrinfoLookupANY(ctx context.Context, domain st
 
 func (un *UnderlyingNetwork) GetaddrinfoResolverNetwork() string {
 	return un.MockGetaddrinfoResolverNetwork()
+}
+
+// MaybeModifyPool implements model.UnderlyingNetwork
+func (un *UnderlyingNetwork) MaybeModifyPool(pool *x509.CertPool) *x509.CertPool {
+	return un.MockMaybeModifyPool(pool)
 }

@@ -7,6 +7,7 @@ package model
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"net"
 	"net/http"
 	"syscall"
@@ -488,13 +489,17 @@ type UnderlyingNetwork interface {
 	// there is also an explicit timeout for dialing.
 	DialContext(ctx context.Context, timeout time.Duration, network, address string) (net.Conn, error)
 
-	// ListenUDP is equivalent to net.ListenUDP.
-	ListenUDP(network string, addr *net.UDPAddr) (UDPLikeConn, error)
-
 	// GetaddrinfoLookupANY is like net.Resolver.LookupHost except that it
 	// also returns to the caller the CNAME when it is available.
 	GetaddrinfoLookupANY(ctx context.Context, domain string) ([]string, string, error)
 
 	// GetaddrinfoResolverNetwork returns the resolver network.
 	GetaddrinfoResolverNetwork() string
+
+	// ListenUDP is equivalent to net.ListenUDP.
+	ListenUDP(network string, addr *net.UDPAddr) (UDPLikeConn, error)
+
+	// MaybeModifyPool typically returns the same pool it is passed
+	// as an argument, but sometimes could modify it for testing.
+	MaybeModifyPool(pool *x509.CertPool) *x509.CertPool
 }
