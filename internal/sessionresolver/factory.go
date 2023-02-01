@@ -88,8 +88,6 @@ func newChildResolverHTTPS(
 		tlsDialer := netxlite.NewTLSDialer(dialer, thx)
 		txp = netxlite.NewHTTPTransport(logger, dialer, tlsDialer)
 	case true:
-		// TODO(bassosimone): to test this arm we need to further extend
-		// netxlite to override the default list of certificates
 		txp = netxlite.NewHTTP3TransportStdlib(logger)
 	}
 	txp = bytecounter.MaybeWrapHTTPTransport(txp, counter)
