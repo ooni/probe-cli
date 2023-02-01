@@ -98,7 +98,7 @@ func (r *resolver) updateCounterBytesRecv(err error) {
 			netxlite.FailureDNSNonRecoverableFailure,
 			netxlite.FailureDNSServfailError:
 			// In case it seems we received a message, let us
-			// pretent overall it was 128 bytes
+			// pretend overall it was 128 bytes
 			r.Counter.Received.Add(128)
 		default:
 			// In this case we assume we did not receive any byte
