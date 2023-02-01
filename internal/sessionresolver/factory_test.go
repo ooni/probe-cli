@@ -16,7 +16,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -121,11 +120,18 @@ func Test_newChildResolver(t *testing.T) {
 	t.Run("for HTTPS resolvers", func(t *testing.T) {
 
 		t.Run("the returned resolver wraps errors", func(t *testing.T) {
-			srvr := filtering.NewHTTPServerCleartext(filtering.HTTPActionReset)
+			handler := &testDNSOverHTTPSHandler{
+				A: []net.IP{net.IPv4(8, 8, 8, 8)},
+			}
+			// Because we're using a testing server w/o installing its
+			// certificate, we expect to see a TLS failure here
+			srvr := httptest.NewTLSServer(handler)
+			defer srvr.Close()
+
 			defer srvr.Close()
 			reso, err := newChildResolver(
 				model.DiscardLogger,
-				srvr.URL().String(),
+				srvr.URL,
 				false,
 				bytecounter.New(),
 				nil,
@@ -134,7 +140,7 @@ func Test_newChildResolver(t *testing.T) {
 				t.Fatal(err)
 			}
 			addrs, err := reso.LookupHost(context.Background(), "dns.google")
-			if err == nil || err.Error() != netxlite.FailureConnectionReset {
+			if err == nil || err.Error() != netxlite.FailureSSLUnknownAuthority {
 				t.Fatal("unexpected error", err)
 			}
 			if len(addrs) != 0 {
