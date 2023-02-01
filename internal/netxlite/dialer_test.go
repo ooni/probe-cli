@@ -130,7 +130,7 @@ func TestDialerSystem(t *testing.T) {
 			if conn != nil {
 				t.Fatal("unexpected conn")
 			}
-			if stop.Sub(start) > 500*time.Millisecond {
+			if stop.Sub(start) > 100*time.Millisecond {
 				t.Fatal("unable to enforce timeout")
 			}
 		})
