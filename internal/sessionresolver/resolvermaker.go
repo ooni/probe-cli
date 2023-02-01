@@ -1,7 +1,7 @@
 package sessionresolver
 
 //
-// High-level for creating a new child resolver
+// High-level code for creating a new child resolver
 //
 
 import (
