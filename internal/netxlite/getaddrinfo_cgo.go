@@ -22,6 +22,8 @@ import (
 	"runtime"
 	"syscall"
 	"unsafe"
+
+	"github.com/miekg/dns"
 )
 
 // getaddrinfoResolverNetwork returns the "network" that is actually
@@ -167,7 +169,8 @@ func (state *getaddrinfoState) toAddressList(res *C.struct_addrinfo) ([]string, 
 	)
 	for r := res; r != nil; r = r.ai_next {
 		if r.ai_canonname != nil {
-			canonname = C.GoString(r.ai_canonname)
+			// See https://github.com/ooni/probe/issues/2293
+			canonname = dns.CanonicalName(C.GoString(r.ai_canonname))
 		}
 		// We only asked for SOCK_STREAM, but check anyhow.
 		if r.ai_socktype != C.SOCK_STREAM {
