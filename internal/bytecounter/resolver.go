@@ -8,9 +8,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// MaybeWrapSystemResolver takes in input an Resolver and either wraps it
+// MaybeWrapSystemResolver takes in input a Resolver and either wraps it
 // to perform byte counting, if this counter is not nil, or just returns to the
-// caller the original transport, when the counter is nil.
+// caller the original resolver, when the counter is nil.
 //
 // # Bug
 //
