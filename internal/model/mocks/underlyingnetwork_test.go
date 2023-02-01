@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"context"
+	"crypto/x509"
 	"errors"
 	"net"
 	"testing"
@@ -74,6 +75,19 @@ func TestUnderlyingNetwork(t *testing.T) {
 		got := un.GetaddrinfoResolverNetwork()
 		if got != expect {
 			t.Fatal("unexpected resolver network")
+		}
+	})
+
+	t.Run("MaybeModifyPool", func(t *testing.T) {
+		expect := x509.NewCertPool()
+		un := &UnderlyingNetwork{
+			MockMaybeModifyPool: func(pool *x509.CertPool) *x509.CertPool {
+				return expect
+			},
+		}
+		got := un.MaybeModifyPool(nil)
+		if got != expect {
+			t.Fatal("unexpected result")
 		}
 	})
 }

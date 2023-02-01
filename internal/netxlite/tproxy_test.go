@@ -2,10 +2,14 @@ package netxlite
 
 import (
 	"context"
+	"crypto/x509"
 	"runtime"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func TestDefaultTProxy(t *testing.T) {
@@ -27,6 +31,21 @@ func TestDefaultTProxy(t *testing.T) {
 		}
 		if conn != nil {
 			t.Fatal("expected nil conn")
+		}
+	})
+}
+
+func TestWithCustomTProxy(t *testing.T) {
+	expected := x509.NewCertPool()
+	tproxy := &mocks.UnderlyingNetwork{
+		MockMaybeModifyPool: func(pool *x509.CertPool) *x509.CertPool {
+			runtimex.Assert(expected != pool, "got unexpected pool")
+			return expected
+		},
+	}
+	WithCustomTProxy(tproxy, func() {
+		if NewDefaultCertPool() != expected {
+			t.Fatal("unexpected pool")
 		}
 	})
 }

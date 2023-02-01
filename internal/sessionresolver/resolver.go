@@ -1,14 +1,12 @@
 package sessionresolver
 
 //
-// Implementation of Resolver
+// Implementation of model.Resolver
 //
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"math/rand"
 	"net"
 	"net/url"
@@ -16,9 +14,9 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
+	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/multierror"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // Resolver is the session resolver. Resolver will try to use
@@ -82,13 +80,6 @@ func (r *Resolver) CloseIdleConnections() {
 	r.once.Do(r.closeall)
 }
 
-// Stats returns stats about the session resolver.
-func (r *Resolver) Stats() string {
-	data, err := json.Marshal(r.readstatedefault())
-	runtimex.PanicOnError(err, "json.Marshal should not fail here")
-	return fmt.Sprintf("sessionresolver: %s", string(data))
-}
-
 // errLookupNotImplemented indicates a given lookup type is not implemented.
 var errLookupNotImplemented = errors.New("sessionresolver: lookup not implemented")
 
@@ -148,13 +139,14 @@ func (r *Resolver) lookupHost(ctx context.Context, ri *resolverinfo, hostname st
 		ri.Score = 0 // this is a hard error
 		return nil, err
 	}
+	op := measurexlite.NewOperationLogger(
+		r.logger(), "sessionresolver: lookup %s using %s", hostname, ri.URL)
 	addrs, err := timeLimitedLookup(ctx, re, hostname)
+	op.Stop(err)
 	if err == nil {
-		r.logger().Infof("sessionresolver: %s... %v", ri.URL, model.ErrorToStringOrOK(nil))
 		ri.Score = ewma*1.0 + (1-ewma)*ri.Score // increase score
 		return addrs, nil
 	}
-	r.logger().Warnf("sessionresolver: %s... %s", ri.URL, err.Error())
 	ri.Score = ewma*0.0 + (1-ewma)*ri.Score // decrease score
 	return nil, err
 }

@@ -16,7 +16,7 @@ func TestMaybeWrapHTTPTransport(t *testing.T) {
 	t.Run("when counter is not nil", func(t *testing.T) {
 		underlying := &mocks.HTTPTransport{}
 		counter := &Counter{}
-		txp := counter.MaybeWrapHTTPTransport(underlying)
+		txp := MaybeWrapHTTPTransport(underlying, counter)
 		realTxp := txp.(*httpTransport)
 		if realTxp.HTTPTransport != underlying {
 			t.Fatal("did not wrap correctly")
@@ -26,7 +26,7 @@ func TestMaybeWrapHTTPTransport(t *testing.T) {
 	t.Run("when counter is nil", func(t *testing.T) {
 		underlying := &mocks.HTTPTransport{}
 		var counter *Counter
-		txp := counter.MaybeWrapHTTPTransport(underlying)
+		txp := MaybeWrapHTTPTransport(underlying, counter)
 		if txp != underlying {
 			t.Fatal("unexpected result")
 		}

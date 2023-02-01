@@ -104,7 +104,7 @@ func (txp *dnsOverGetaddrinfoTransport) lookupfn() func(ctx context.Context, dom
 	if txp.testableLookupANY != nil {
 		return txp.testableLookupANY
 	}
-	return TProxy.GetaddrinfoLookupANY
+	return tproxySingleton().GetaddrinfoLookupANY
 }
 
 func (txp *dnsOverGetaddrinfoTransport) RequiresPadding() bool {
@@ -112,7 +112,7 @@ func (txp *dnsOverGetaddrinfoTransport) RequiresPadding() bool {
 }
 
 func (txp *dnsOverGetaddrinfoTransport) Network() string {
-	return TProxy.GetaddrinfoResolverNetwork()
+	return tproxySingleton().GetaddrinfoResolverNetwork()
 }
 
 func (txp *dnsOverGetaddrinfoTransport) Address() string {

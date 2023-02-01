@@ -2,18 +2,23 @@ package sessionresolver
 
 import (
 	"context"
+	"crypto/x509"
 	"errors"
 	"net"
 	"net/url"
 	"strings"
 	"sync/atomic"
+	"syscall"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/multierror"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestNetworkWorks(t *testing.T) {
@@ -71,9 +76,6 @@ func TestTypicalUsageWithFailure(t *testing.T) {
 	}
 	if len(reso.res) < 1 {
 		t.Fatal("expected to see some resolvers here")
-	}
-	if reso.Stats() == "" {
-		t.Fatal("expected to see some string returned by stats")
 	}
 	reso.CloseIdleConnections()
 	if len(reso.res) != 0 {
@@ -383,4 +385,142 @@ func TestUnimplementedFunctions(t *testing.T) {
 			t.Fatal("expected empty result")
 		}
 	})
+}
+
+func TestResolverWorkingAsIntendedWithMocks(t *testing.T) {
+
+	// fields contains the public fields to set.
+	type fields struct {
+		// byteCounter is the byte counter we'll use.
+		byteCounter *bytecounter.Counter
+
+		// kvstore is the kvstore we'll use.
+		kvstore *kvstore.Memory
+
+		// logger is the logger we'll use.
+		logger model.Logger
+
+		// proxyURL is the proxy URL we'll use.
+		proxyURL *url.URL
+	}
+
+	// testCase is an individual test case.
+	type testCase struct {
+		// name is the test case name.
+		name string
+
+		// fields contains the fields to set.
+		fields *fields
+
+		// domainToResolve is the domain to resolve.
+		domainToResolve string
+
+		// tproxy contains the netxlite underlying network
+		// configuration to use for testing.
+		tproxy model.UnderlyingNetwork
+
+		// expectErr indicates whether we expected an error.
+		expectErr bool
+
+		// expectAddrs contains the expected addresses.
+		expectAddrs []string
+	}
+
+	// TODO(bassosimone): as painful as it may be, we need to write more
+	// tests like this that capture the whole behavior of the package. They
+	// give us higher confidence that _everything_ is still WAI regardless
+	// of any intermediate refactoring we may be implement here.
+	//
+	// For now, I have just written tests for extreme use cases such as
+	// nothing is working and just the system resolver is working. We need
+	// to figure out a way of writing more alike tests.
+	//
+	// I am not going to do that now, because that would be out of the
+	// scope of the current pull request on which I am working.
+
+	var testCases = []testCase{{
+		name: "every system-resolver lookup returns NXDOMAIN",
+		fields: &fields{
+			byteCounter: bytecounter.New(),
+			kvstore:     &kvstore.Memory{},
+			logger:      model.DiscardLogger,
+			proxyURL:    nil,
+		},
+		domainToResolve: "example.com",
+		tproxy: &mocks.UnderlyingNetwork{
+			MockDialContext: func(ctx context.Context, timeout time.Duration, network string, address string) (net.Conn, error) {
+				dialer := &net.Dialer{Timeout: timeout}
+				return dialer.DialContext(ctx, network, address)
+			},
+			MockListenUDP: func(network string, addr *net.UDPAddr) (model.UDPLikeConn, error) {
+				return net.ListenUDP(network, addr)
+			},
+			MockGetaddrinfoLookupANY: func(ctx context.Context, domain string) ([]string, string, error) {
+				return nil, "", errors.New(netxlite.DNSNoSuchHostSuffix)
+			},
+			MockGetaddrinfoResolverNetwork: func() string {
+				return netxlite.StdlibResolverGetaddrinfo
+			},
+			MockMaybeModifyPool: func(pool *x509.CertPool) *x509.CertPool {
+				return pool
+			},
+		},
+		expectErr:   true,
+		expectAddrs: nil,
+	}, {
+		name: "only the system resolver works",
+		fields: &fields{
+			byteCounter: bytecounter.New(),
+			kvstore:     &kvstore.Memory{},
+			logger:      model.DiscardLogger,
+			proxyURL:    nil,
+		},
+		domainToResolve: "example.com",
+		tproxy: &mocks.UnderlyingNetwork{
+			MockDialContext: func(ctx context.Context, timeout time.Duration, network string, address string) (net.Conn, error) {
+				return nil, syscall.ECONNREFUSED
+			},
+			MockListenUDP: func(network string, addr *net.UDPAddr) (model.UDPLikeConn, error) {
+				return nil, syscall.ENETDOWN
+			},
+			MockGetaddrinfoLookupANY: func(ctx context.Context, domain string) ([]string, string, error) {
+				switch domain {
+				case "example.com":
+					return []string{"1.2.3.4", "1.2.3.5"}, "", nil
+				default:
+					return nil, "", errors.New(netxlite.DNSNoSuchHostSuffix)
+				}
+			},
+			MockGetaddrinfoResolverNetwork: func() string {
+				return netxlite.StdlibResolverGetaddrinfo
+			},
+			MockMaybeModifyPool: func(pool *x509.CertPool) *x509.CertPool {
+				return pool
+			},
+		},
+		expectErr:   false,
+		expectAddrs: []string{"1.2.3.4", "1.2.3.5"},
+	}}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			netxlite.WithCustomTProxy(tt.tproxy, func() {
+				reso := &Resolver{
+					ByteCounter: tt.fields.byteCounter,
+					KVStore:     tt.fields.kvstore,
+					Logger:      tt.fields.logger,
+					ProxyURL:    tt.fields.proxyURL,
+				}
+
+				addrs, err := reso.LookupHost(context.Background(), tt.domainToResolve)
+				if (err != nil) != tt.expectErr {
+					t.Fatal("tt.expectErr", tt.expectErr, "got", err)
+				}
+
+				if diff := cmp.Diff(tt.expectAddrs, addrs); diff != "" {
+					t.Fatal(diff)
+				}
+			})
+		})
+	}
 }

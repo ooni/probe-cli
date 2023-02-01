@@ -105,7 +105,7 @@ func NewDefaultCertPool() *x509.CertPool {
 	// have a test in certify_test.go that guarantees that
 	ok := pool.AppendCertsFromPEM([]byte(pemcerts))
 	runtimex.Assert(ok, "pool.AppendCertsFromPEM failed")
-	return pool
+	return tproxySingleton().MaybeModifyPool(pool)
 }
 
 // ErrInvalidTLSVersion indicates that you passed us a string
