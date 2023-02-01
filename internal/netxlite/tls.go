@@ -184,10 +184,6 @@ type tlsHandshakerConfigurable struct {
 
 var _ model.TLSHandshaker = &tlsHandshakerConfigurable{}
 
-// defaultCertPool is the cert pool we use by default. We store this
-// value into a private variable to enable for unit testing.
-var defaultCertPool = NewDefaultCertPool()
-
 // tlsMaybeConnectionState returns the connection state if error is nil
 // and otherwise just returns an empty state to the caller.
 func tlsMaybeConnectionState(conn TLSConn, err error) tls.ConnectionState {
@@ -213,7 +209,7 @@ func (h *tlsHandshakerConfigurable) Handshake(
 	conn.SetDeadline(time.Now().Add(timeout))
 	if config.RootCAs == nil {
 		config = config.Clone()
-		config.RootCAs = defaultCertPool
+		config.RootCAs = NewDefaultCertPool()
 	}
 	tlsconn, err := h.newConn(conn, config)
 	if err != nil {
