@@ -9,21 +9,79 @@ import (
 	"net/http"
 	"net/url"
 	"time"
-
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
+
+// RawRequest is the type to use with [RequestDescriptor] and
+// [Descriptor] when the request body is just raw bytes.
+type RawRequest struct{}
+
+// RequestDescriptor describes the request.
+type RequestDescriptor[T any] struct {
+	// Body is the raw request body.
+	Body []byte
+}
+
+// ResponseDescriptor describes the response.
+type ResponseDescriptor[T any] interface {
+	// Unmarshal unmarshals the raw response into a T.
+	Unmarshal(resp *http.Response, data []byte) (T, error)
+}
+
+// RawResponseDescriptor is the type to use with [Descriptor]
+// when the response's body is just raw bytes.
+type RawResponseDescriptor struct{}
+
+var _ ResponseDescriptor[[]byte] = &RawResponseDescriptor{}
+
+// Unmarshal implements ResponseDescriptor
+func (r *RawResponseDescriptor) Unmarshal(resp *http.Response, data []byte) ([]byte, error) {
+	return data, nil
+}
+
+// JSONResponseDescriptor is the type to use with [Descriptor]
+// when the response's body is encoded using JSON.
+type JSONResponseDescriptor[T any] struct{}
+
+// Unmarshal implements ResponseDescriptor
+func (r *JSONResponseDescriptor[T]) Unmarshal(resp *http.Response, data []byte) (*T, error) {
+	// Important safety note: this implementation is tailored so that, when
+	// the raw JSON body is `null`, we DO NOT return `nil`, `nil`. Because
+	// we create a T on the stack and then let it escape, in such a case the
+	// code will instead return an empty T and nil. Returning an empty T is
+	// slightly better because the caller does not need to worry about the
+	// returned pointer also being nil, but they just need to worry about
+	// whether any field inside the returned struct is the zero value.
+	//
+	// (Of course, the above reasoning breaks if the caller asks for a T
+	// equal to `*Foo`, which causes the return value to be `**Foo`. That
+	// said, in all cases in OONI we have T equal to `Foo` and we return
+	// a `*Foo` type. This scenario is, in fact, the only one making sense
+	// when you're reading a JSON from a server. So, while the problem is
+	// only solved for a sub-problem, this sub-problem is the one that matters.)
+	//
+	// Because this safety property is important, there is also a test that
+	// makes sure we don't return `nil`, `nil` with `null` input.
+	var value T
+	if err := json.Unmarshal(data, &value); err != nil {
+		return nil, err
+	}
+	return &value, nil
+}
 
 // Descriptor contains the parameters for calling a given HTTP
 // API (e.g., GET /api/v1/test-list/urls).
 //
 // The zero value of this struct is invalid. Please, fill all the
 // fields marked as MANDATORY for correct initialization.
-type Descriptor struct {
+type Descriptor[RequestType, ResponseType any] struct {
 	// Accept contains the OPTIONAL accept header.
 	Accept string
 
 	// Authorization is the OPTIONAL authorization.
 	Authorization string
+
+	// AcceptEncodingGzip OPTIONALLY accepts gzip-encoding bodies.
+	AcceptEncodingGzip bool
 
 	// ContentType is the OPTIONAL content-type header.
 	ContentType string
@@ -32,17 +90,20 @@ type Descriptor struct {
 	LogBody bool
 
 	// MaxBodySize is the OPTIONAL maximum response body size. If
-	// not set, we use the |DefaultMaxBodySize| constant.
+	// not set, we use the [DefaultMaxBodySize] constant.
 	MaxBodySize int64
 
 	// Method is the MANDATORY request method.
 	Method string
 
-	// RequestBody is the OPTIONAL request body.
-	RequestBody []byte
+	// Request is the OPTIONAL request descriptor.
+	Request *RequestDescriptor[RequestType]
+
+	// Response is the MANDATORY response descriptor.
+	Response ResponseDescriptor[ResponseType]
 
 	// Timeout is the OPTIONAL timeout for this call. If no timeout
-	// is specified we will use the |DefaultCallTimeout| const.
+	// is specified we will use the [DefaultCallTimeout] const.
 	Timeout time.Duration
 
 	// URLPath is the MANDATORY URL path.
@@ -52,95 +113,12 @@ type Descriptor struct {
 	URLQuery url.Values
 }
 
-// WithBodyLogging returns a SHALLOW COPY of |Descriptor| with LogBody set to |value|. You SHOULD
-// only use this method when initializing the descriptor you want to use.
-func (desc *Descriptor) WithBodyLogging(value bool) *Descriptor {
-	out := &Descriptor{}
-	*out = *desc
-	out.LogBody = value
-	return out
-}
-
 // DefaultMaxBodySize is the default value for the maximum
 // body size you can fetch using the httpapi package.
-const DefaultMaxBodySize = 1 << 22
+const DefaultMaxBodySize = 1 << 24
 
 // DefaultCallTimeout is the default timeout for an httpapi call.
 const DefaultCallTimeout = 60 * time.Second
 
-// NewGETJSONDescriptor is a convenience factory for creating a new descriptor
-// that uses the GET method and expects a JSON response.
-func NewGETJSONDescriptor(urlPath string) *Descriptor {
-	return NewGETJSONWithQueryDescriptor(urlPath, url.Values{})
-}
-
-// applicationJSON is the content-type for JSON
-const applicationJSON = "application/json"
-
-// NewGETJSONWithQueryDescriptor is like NewGETJSONDescriptor but it also
-// allows you to provide |query| arguments. Leaving |query| nil or empty
-// is equivalent to calling NewGETJSONDescriptor directly.
-func NewGETJSONWithQueryDescriptor(urlPath string, query url.Values) *Descriptor {
-	return &Descriptor{
-		Accept:        applicationJSON,
-		Authorization: "",
-		ContentType:   "",
-		LogBody:       false,
-		MaxBodySize:   DefaultMaxBodySize,
-		Method:        http.MethodGet,
-		RequestBody:   nil,
-		Timeout:       DefaultCallTimeout,
-		URLPath:       urlPath,
-		URLQuery:      query,
-	}
-}
-
-// NewPOSTJSONWithJSONResponseDescriptor creates a descriptor that POSTs a JSON document
-// and expects to receive back a JSON document from the API.
-//
-// This function ONLY fails if we cannot serialize the |request| to JSON. So, if you know
-// that |request| is JSON-serializable, you can safely call MustNewPostJSONWithJSONResponseDescriptor instead.
-func NewPOSTJSONWithJSONResponseDescriptor(urlPath string, request any) (*Descriptor, error) {
-	rawRequest, err := json.Marshal(request)
-	if err != nil {
-		return nil, err
-	}
-	desc := &Descriptor{
-		Accept:        applicationJSON,
-		Authorization: "",
-		ContentType:   applicationJSON,
-		LogBody:       false,
-		MaxBodySize:   DefaultMaxBodySize,
-		Method:        http.MethodPost,
-		RequestBody:   rawRequest,
-		Timeout:       DefaultCallTimeout,
-		URLPath:       urlPath,
-		URLQuery:      nil,
-	}
-	return desc, nil
-}
-
-// MustNewPOSTJSONWithJSONResponseDescriptor is like NewPOSTJSONWithJSONResponseDescriptor except that
-// it panics in case it's not possible to JSON serialize the |request|.
-func MustNewPOSTJSONWithJSONResponseDescriptor(urlPath string, request any) *Descriptor {
-	desc, err := NewPOSTJSONWithJSONResponseDescriptor(urlPath, request)
-	runtimex.PanicOnError(err, "NewPOSTJSONWithJSONResponseDescriptor failed")
-	return desc
-}
-
-// NewGETResourceDescriptor creates a generic descriptor for GETting a
-// resource of unspecified type using the given |urlPath|.
-func NewGETResourceDescriptor(urlPath string) *Descriptor {
-	return &Descriptor{
-		Accept:        "",
-		Authorization: "",
-		ContentType:   "",
-		LogBody:       false,
-		MaxBodySize:   DefaultMaxBodySize,
-		Method:        http.MethodGet,
-		RequestBody:   nil,
-		Timeout:       DefaultCallTimeout,
-		URLPath:       urlPath,
-		URLQuery:      url.Values{},
-	}
-}
+// ApplicationJSON is the content-type for JSON
+const ApplicationJSON = "application/json"

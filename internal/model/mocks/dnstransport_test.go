@@ -3,9 +3,9 @@ package mocks
 import (
 	"context"
 	"errors"
+	"sync/atomic"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -60,7 +60,7 @@ func TestDNSTransport(t *testing.T) {
 	})
 
 	t.Run("CloseIdleConnections", func(t *testing.T) {
-		called := &atomicx.Int64{}
+		called := &atomic.Int64{}
 		txp := &DNSTransport{
 			MockCloseIdleConnections: func() {
 				called.Add(1)

@@ -1,0 +1,14 @@
+#!/bin/bash
+set -euxo pipefail
+reporoot=$(dirname $(dirname $(dirname $(realpath $0))))
+android_home=$(cd $reporoot && ./MOBILE/android/home)
+apksigner=$(find $android_home/build-tools -type f -name apksigner | head -n1)
+zipalign=$(find $android_home/build-tools -type f -name zipalign | head -n1)
+(
+	cd $reporoot/MOBILE/android
+	rm -f app-unsigned-aligned.apk
+	$zipalign -p 4 app-unsigned.apk app-unsigned-aligned.apk
+	rm -f app.apk
+	$apksigner sign --ks keystore.jks --out app.apk \
+		--ks-pass pass:ooniprobe app-unsigned-aligned.apk
+)

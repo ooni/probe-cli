@@ -13,8 +13,9 @@ import (
 	"github.com/apex/log"
 
 	"github.com/ooni/probe-cli/v3/internal/engine"
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
+	"github.com/ooni/probe-cli/v3/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
 	"github.com/pborman/getopt/v2"
@@ -50,11 +51,6 @@ func fatalIfFalse(cond bool, msg string) {
 	if !cond {
 		panic(msg)
 	}
-}
-
-func canOpen(filepath string) bool {
-	stat, err := os.Stat(filepath)
-	return err == nil && stat.Mode().IsRegular()
 }
 
 func readLines(path string) []string {
@@ -127,7 +123,7 @@ func submitAll(ctx context.Context, lines []string, subm *probeservices.Submitte
 func mainWithArgs(args []string) {
 	fatalIfFalse(len(args) == 2, "Usage: ./oonireport upload <file>")
 	fatalIfFalse(args[0] == "upload", "Unsupported operation")
-	fatalIfFalse(canOpen(args[1]), "Cannot open measurement file")
+	fatalIfFalse(fsx.RegularFileExists(args[1]), "Cannot open measurement file")
 
 	path = args[1]
 	lines := readLines(path)

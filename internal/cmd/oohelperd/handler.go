@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync/atomic"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -24,7 +24,7 @@ type handler struct {
 	BaseLogger model.Logger
 
 	// Indexer is the MANDATORY atomic integer used to assign an index to requests.
-	Indexer *atomicx.Int64
+	Indexer *atomic.Int64
 
 	// MaxAcceptableBody is the MANDATORY maximum acceptable response body.
 	MaxAcceptableBody int64

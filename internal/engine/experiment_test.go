@@ -3,7 +3,7 @@ package engine
 import (
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
+	"github.com/ooni/probe-cli/v3/internal/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 

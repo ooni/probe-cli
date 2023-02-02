@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"net"
+	"sync/atomic"
 	"testing"
 
 	sflib "git.torproject.org/pluggable-transports/snowflake.git/v2/client/lib"
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
@@ -236,7 +236,7 @@ func TestSnowflakeDialerCannotCreateConnWithContextExpiration(t *testing.T) {
 }
 
 func TestSnowflakeDialerWorksWithWithCancelledContext(t *testing.T) {
-	called := &atomicx.Int64{}
+	called := &atomic.Int64{}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	sfd := &SnowflakeDialer{

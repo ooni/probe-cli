@@ -1,7 +1,5 @@
-// Package version contains version information
+// Package version contains version information.
 package version
 
-const (
-	// Version is the software version
-	Version = "3.17.0-alpha"
-)
+// Version is the ooniprobe version.
+const Version = "3.18.0-alpha"

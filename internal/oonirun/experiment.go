@@ -9,16 +9,16 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
+	"sync/atomic"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/humanize"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // experimentShuffledInputs counts how many times we shuffled inputs
-var experimentShuffledInputs = &atomicx.Int64{}
+var experimentShuffledInputs = &atomic.Int64{}
 
 // Experiment describes an experiment to run. You MUST fill all the fields that
 // are marked as MANDATORY, otherwise Experiment.Run will cause panics.

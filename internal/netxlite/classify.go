@@ -15,6 +15,14 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/scrubber"
 )
 
+// FailureUnknown is the prefix used for unknown failures
+const FailureUnknown = "unknown_failure"
+
+// ErrUnknown is an error you may want to return when you don't
+// known what exactly happened. This error is automatically mapped
+// to FailureUnknown by ClassifyGenericError.
+var ErrUnknown = errors.New(FailureUnknown)
+
 // ClassifyGenericError maps an error occurred during an operation to
 // an OONI failure string. This specific classifier is the most
 // generic one. You usually use it when mapping I/O errors. You should
@@ -63,7 +71,11 @@ func ClassifyGenericError(err error) string {
 		return failure
 	}
 
-	formatted := fmt.Sprintf("unknown_failure: %s", err.Error())
+	if err.Error() == FailureUnknown {
+		return FailureUnknown
+	}
+
+	formatted := fmt.Sprintf("%s: %s", FailureUnknown, err.Error())
 	return scrubber.Scrub(formatted) // scrub IP addresses in the error
 }
 

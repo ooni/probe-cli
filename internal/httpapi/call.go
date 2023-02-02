@@ -6,8 +6,9 @@ package httpapi
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,9 +16,10 @@ import (
 	"strings"
 
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// joinURLPath appends |resourcePath| to |urlPath|.
+// joinURLPath appends resourcePath to urlPath.
 func joinURLPath(urlPath, resourcePath string) string {
 	if resourcePath == "" {
 		if urlPath == "" {
@@ -32,8 +34,12 @@ func joinURLPath(urlPath, resourcePath string) string {
 	return urlPath + resourcePath
 }
 
-// newRequest creates a new http.Request from the given |ctx|, |endpoint|, and |desc|.
-func newRequest(ctx context.Context, endpoint *Endpoint, desc *Descriptor) (*http.Request, error) {
+// newRequest creates a new http.Request from the given ctx, endpoint, and desc.
+func newRequest[RequestType, ResponseType any](
+	ctx context.Context,
+	endpoint *Endpoint,
+	desc *Descriptor[RequestType, ResponseType],
+) (*http.Request, error) {
 	URL, err := url.Parse(endpoint.BaseURL)
 	if err != nil {
 		return nil, err
@@ -46,11 +52,11 @@ func newRequest(ctx context.Context, endpoint *Endpoint, desc *Descriptor) (*htt
 		URL.RawQuery = "" // as documented we only honour desc.URLQuery
 	}
 	var reqBody io.Reader
-	if len(desc.RequestBody) > 0 {
-		reqBody = bytes.NewReader(desc.RequestBody)
-		endpoint.Logger.Debugf("httpapi: request body length: %d", len(desc.RequestBody))
+	if desc.Request != nil && len(desc.Request.Body) > 0 {
+		reqBody = bytes.NewReader(desc.Request.Body)
+		endpoint.Logger.Debugf("httpapi: request body length: %d", len(desc.Request.Body))
 		if desc.LogBody {
-			endpoint.Logger.Debugf("httpapi: request body: %s", string(desc.RequestBody))
+			endpoint.Logger.Debugf("httpapi: request body: %s", string(desc.Request.Body))
 		}
 	}
 	request, err := http.NewRequestWithContext(ctx, desc.Method, URL.String(), reqBody)
@@ -69,6 +75,9 @@ func newRequest(ctx context.Context, endpoint *Endpoint, desc *Descriptor) (*htt
 	}
 	if endpoint.UserAgent != "" {
 		request.Header.Set("User-Agent", endpoint.UserAgent)
+	}
+	if desc.AcceptEncodingGzip {
+		request.Header.Set("Accept-Encoding", "gzip")
 	}
 	return request, nil
 }
@@ -103,27 +112,59 @@ func (err *errMaybeCensorship) Unwrap() error {
 	return err.Err
 }
 
-// docall calls the API represented by the given request |req| on the given |endpoint|
+// ErrTruncated indicates we truncated the response body.
+var ErrTruncated = errors.New("httpapi: truncated response body")
+
+// docall calls the API represented by the given request req on the given endpoint
 // and returns the response and its body or an error.
-func docall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http.Response, []byte, error) {
+func docall[RequestType, ResponseType any](
+	endpoint *Endpoint,
+	desc *Descriptor[RequestType, ResponseType],
+	request *http.Request,
+) (*http.Response, []byte, error) {
 	// Implementation note: remember to mark errors for which you want
 	// to retry with another endpoint using errMaybeCensorship.
+
 	response, err := endpoint.HTTPClient.Do(request)
 	if err != nil {
 		return nil, nil, &errMaybeCensorship{err}
 	}
 	defer response.Body.Close()
-	// Implementation note: always read and log the response body since
-	// it's quite useful to see the response JSON on API error.
-	r := io.LimitReader(response.Body, DefaultMaxBodySize)
-	data, err := netxlite.ReadAllContext(request.Context(), r)
+
+	var reader io.Reader = response.Body
+	if response.Header.Get("Content-Encoding") == "gzip" {
+		reader, err = gzip.NewReader(reader)
+		if err != nil {
+			// This case happens when we cannot read the gzip header
+			// hence it can be "triggered" remotely and we cannot just
+			// panic on error to handle this error condition.
+			return response, nil, err
+		}
+	}
+	maxBodySize := desc.MaxBodySize
+	if maxBodySize <= 0 {
+		maxBodySize = DefaultMaxBodySize
+	}
+	// Implementation note: when there's decompression we must (obviously?)
+	// enforce the maximum body size on the _decompressed_ body.
+	reader = io.LimitReader(reader, maxBodySize)
+
+	// Implementation note: always read and log the response body _before_
+	// checking the status code, since it's quite useful to log the JSON
+	// returned by the OONI API in case of errors. Obviously, the flip side
+	// of this choice is that we read potentially very large error pages.
+	data, err := netxlite.ReadAllContext(request.Context(), reader)
 	if err != nil {
 		return response, nil, &errMaybeCensorship{err}
+	}
+	if int64(len(data)) >= maxBodySize {
+		return response, nil, ErrTruncated
 	}
 	endpoint.Logger.Debugf("httpapi: response body length: %d bytes", len(data))
 	if desc.LogBody {
 		endpoint.Logger.Debugf("httpapi: response body: %s", string(data))
 	}
+
 	if response.StatusCode >= 400 {
 		return response, nil, &ErrHTTPRequestFailed{response.StatusCode}
 	}
@@ -131,7 +172,11 @@ func docall(endpoint *Endpoint, desc *Descriptor, request *http.Request) (*http.
 }
 
 // call is like Call but also returns the response.
-func call(ctx context.Context, desc *Descriptor, endpoint *Endpoint) (*http.Response, []byte, error) {
+func call[RequestType, ResponseType any](
+	ctx context.Context,
+	desc *Descriptor[RequestType, ResponseType],
+	endpoint *Endpoint,
+) (*http.Response, []byte, error) {
 	timeout := desc.Timeout
 	if timeout <= 0 {
 		timeout = DefaultCallTimeout // as documented
@@ -145,37 +190,21 @@ func call(ctx context.Context, desc *Descriptor, endpoint *Endpoint) (*http.Resp
 	return docall(endpoint, desc, request)
 }
 
-// Call invokes the API described by |desc| on the given HTTP |endpoint| and
-// returns the response body (as a slice of bytes) or an error.
+// Call invokes the API described by desc on the given HTTP endpoint and
+// returns the response body (as a ResponseType instance) or an error.
 //
 // Note: this function returns ErrHTTPRequestFailed if the HTTP status code is
 // greater or equal than 400. You could use errors.As to obtain a copy of the
 // error that was returned and see for yourself the actual status code.
-func Call(ctx context.Context, desc *Descriptor, endpoint *Endpoint) ([]byte, error) {
-	_, rawResponseBody, err := call(ctx, desc, endpoint)
-	return rawResponseBody, err
-}
-
-// goodContentTypeForJSON tracks known-good content-types for JSON. If the content-type
-// is not in this map, |CallWithJSONResponse| emits a warning message.
-var goodContentTypeForJSON = map[string]bool{
-	applicationJSON: true,
-}
-
-// CallWithJSONResponse is like Call but also assumes that the response is a
-// JSON body and attempts to parse it into the |response| field.
-//
-// Note: this function returns ErrHTTPRequestFailed if the HTTP status code is
-// greater or equal than 400. You could use errors.As to obtain a copy of the
-// error that was returned and see for yourself the actual status code.
-func CallWithJSONResponse(ctx context.Context, desc *Descriptor, endpoint *Endpoint, response any) error {
-	httpResp, rawRespBody, err := call(ctx, desc, endpoint)
+func Call[RequestType, ResponseType any](
+	ctx context.Context,
+	desc *Descriptor[RequestType, ResponseType],
+	endpoint *Endpoint,
+) (ResponseType, error) {
+	runtimex.Assert(desc.Response != nil, "desc.Response is nil")
+	resp, rawResponseBody, err := call(ctx, desc, endpoint)
 	if err != nil {
-		return err
+		return *new(ResponseType), err
 	}
-	if ctype := httpResp.Header.Get("Content-Type"); !goodContentTypeForJSON[ctype] {
-		endpoint.Logger.Warnf("httpapi: unexpected content-type: %s", ctype)
-		// fallthrough
-	}
-	return json.Unmarshal(rawRespBody, response)
+	return desc.Response.Unmarshal(resp, rawResponseBody)
 }

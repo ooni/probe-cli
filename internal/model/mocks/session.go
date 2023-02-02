@@ -18,9 +18,6 @@ type Session struct {
 	MockFetchTorTargets func(
 		ctx context.Context, cc string) (map[string]model.OOAPITorTarget, error)
 
-	MockFetchURLList func(
-		ctx context.Context, config model.OOAPIURLListConfig) ([]model.OOAPIURLInfo, error)
-
 	MockKeyValueStore func() model.KeyValueStore
 
 	MockLogger func() model.Logger
@@ -58,7 +55,7 @@ type Session struct {
 	MockNewSubmitter func(ctx context.Context) (model.Submitter, error)
 
 	MockCheckIn func(ctx context.Context,
-		config *model.OOAPICheckInConfig) (*model.OOAPICheckInNettests, error)
+		config *model.OOAPICheckInConfig) (*model.OOAPICheckInResultNettests, error)
 }
 
 // Platform implements model.ExperimentSession
@@ -96,11 +93,6 @@ func (sess *Session) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
 func (sess *Session) FetchTorTargets(
 	ctx context.Context, cc string) (map[string]model.OOAPITorTarget, error) {
 	return sess.MockFetchTorTargets(ctx, cc)
-}
-
-func (sess *Session) FetchURLList(
-	ctx context.Context, config model.OOAPIURLListConfig) ([]model.OOAPIURLInfo, error) {
-	return sess.MockFetchURLList(ctx, config)
 }
 
 func (sess *Session) KeyValueStore() model.KeyValueStore {
@@ -176,6 +168,6 @@ func (sess *Session) NewSubmitter(ctx context.Context) (model.Submitter, error) 
 }
 
 func (sess *Session) CheckIn(ctx context.Context,
-	config *model.OOAPICheckInConfig) (*model.OOAPICheckInNettests, error) {
+	config *model.OOAPICheckInConfig) (*model.OOAPICheckInResultNettests, error) {
 	return sess.MockCheckIn(ctx, config)
 }

@@ -14,14 +14,14 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sync/atomic"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/httpx"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
@@ -35,8 +35,8 @@ func newclient() probeservices.Client {
 			Logger:     log.Log,
 			UserAgent:  ua,
 		},
-		LoginCalls:    &atomicx.Int64{},
-		RegisterCalls: &atomicx.Int64{},
+		LoginCalls:    &atomic.Int64{},
+		RegisterCalls: &atomic.Int64{},
 		StateFile:     probeservices.NewStateFile(&kvstore.Memory{}),
 	}
 }
@@ -68,8 +68,6 @@ func main() {
 	log.SetLevel(logmap[*debug])
 	client := newclient()
 	switch *mode {
-	case "check":
-		check(client)
 	case "meta":
 		meta(client)
 	case "raw":
@@ -77,12 +75,6 @@ func main() {
 	default:
 		fatalOnError(fmt.Errorf("invalid -mode flag value: %s", *mode), "usage error")
 	}
-}
-
-func check(c probeservices.Client) {
-	found, err := c.CheckReportID(context.Background(), *reportid)
-	fatalOnError(err, "c.CheckReportID failed")
-	fmt.Printf("%+v\n", found)
 }
 
 func meta(c probeservices.Client) {

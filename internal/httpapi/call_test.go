@@ -1,13 +1,14 @@
 package httpapi
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
+	"reflect"
 	"strings"
 	"syscall"
 	"testing"
@@ -16,7 +17,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func Test_joinURLPath(t *testing.T) {
@@ -75,7 +75,7 @@ func Test_newRequest(t *testing.T) {
 	type args struct {
 		ctx      context.Context
 		endpoint *Endpoint
-		desc     *Descriptor
+		desc     *Descriptor[RawRequest, []byte]
 	}
 	tests := []struct {
 		name    string
@@ -93,14 +93,15 @@ func Test_newRequest(t *testing.T) {
 				Logger:     nil,
 				UserAgent:  "",
 			},
-			desc: &Descriptor{
+			desc: &Descriptor[RawRequest, []byte]{
 				Accept:        "",
 				Authorization: "",
 				ContentType:   "",
 				LogBody:       false,
 				MaxBodySize:   0,
 				Method:        "",
-				RequestBody:   nil,
+				Request:       nil,
+				Response:      &RawResponseDescriptor{},
 				Timeout:       0,
 				URLPath:       "",
 				URLQuery:      nil,
@@ -119,14 +120,15 @@ func Test_newRequest(t *testing.T) {
 				Logger:     nil,
 				UserAgent:  "",
 			},
-			desc: &Descriptor{
+			desc: &Descriptor[RawRequest, []byte]{
 				Accept:        "",
 				Authorization: "",
 				ContentType:   "",
 				LogBody:       false,
 				MaxBodySize:   0,
 				Method:        "",
-				RequestBody:   nil,
+				Request:       nil,
+				Response:      &RawResponseDescriptor{},
 				Timeout:       0,
 				URLPath:       "",
 				URLQuery:      nil,
@@ -145,14 +147,15 @@ func Test_newRequest(t *testing.T) {
 				Logger:     nil,
 				UserAgent:  "",
 			},
-			desc: &Descriptor{
+			desc: &Descriptor[RawRequest, []byte]{
 				Accept:        "",
 				Authorization: "",
 				ContentType:   "",
 				LogBody:       false,
 				MaxBodySize:   0,
 				Method:        http.MethodGet,
-				RequestBody:   nil,
+				Request:       nil,
+				Response:      &RawResponseDescriptor{},
 				Timeout:       0,
 				URLPath:       "",
 				URLQuery:      nil,
@@ -184,14 +187,15 @@ func Test_newRequest(t *testing.T) {
 				Logger:     model.DiscardLogger,
 				UserAgent:  "",
 			},
-			desc: &Descriptor{
+			desc: &Descriptor[RawRequest, []byte]{
 				Accept:        "",
 				Authorization: "",
 				ContentType:   "",
-				LogBody:       false,
+				LogBody:       true, // just to exercise the code path
 				MaxBodySize:   0,
 				Method:        http.MethodPost,
-				RequestBody:   []byte("deadbeef"),
+				Request:       &RequestDescriptor[RawRequest]{Body: []byte("deadbeef")},
+				Response:      &RawResponseDescriptor{},
 				Timeout:       0,
 				URLPath:       "",
 				URLQuery:      nil,
@@ -227,14 +231,15 @@ func Test_newRequest(t *testing.T) {
 				Logger:     nil,
 				UserAgent:  "httpclient/1.0.1",
 			},
-			desc: &Descriptor{
+			desc: &Descriptor[RawRequest, []byte]{
 				Accept:        "application/json",
 				Authorization: "deafbeef",
 				ContentType:   "text/plain",
 				LogBody:       false,
 				MaxBodySize:   0,
 				Method:        http.MethodPut,
-				RequestBody:   nil,
+				Request:       nil,
+				Response:      &RawResponseDescriptor{},
 				Timeout:       0,
 				URLPath:       "",
 				URLQuery:      nil,
@@ -278,14 +283,15 @@ func Test_newRequest(t *testing.T) {
 				Logger:     nil,
 				UserAgent:  "",
 			},
-			desc: &Descriptor{
+			desc: &Descriptor[RawRequest, []byte]{
 				Accept:        "",
 				Authorization: "",
 				ContentType:   "",
 				LogBody:       false,
 				MaxBodySize:   0,
 				Method:        http.MethodGet,
-				RequestBody:   nil,
+				Request:       nil,
+				Response:      &RawResponseDescriptor{},
 				Timeout:       0,
 				URLPath:       "/test-list/urls",
 				URLQuery:      nil,
@@ -314,14 +320,15 @@ func Test_newRequest(t *testing.T) {
 				Logger:     nil,
 				UserAgent:  "",
 			},
-			desc: &Descriptor{
+			desc: &Descriptor[RawRequest, []byte]{
 				Accept:        "",
 				Authorization: "",
 				ContentType:   "",
 				LogBody:       false,
 				MaxBodySize:   0,
 				Method:        http.MethodGet,
-				RequestBody:   nil,
+				Request:       nil,
+				Response:      &RawResponseDescriptor{},
 				Timeout:       0,
 				URLPath:       "",
 				URLQuery:      nil,
@@ -350,14 +357,15 @@ func Test_newRequest(t *testing.T) {
 				Logger:     nil,
 				UserAgent:  "",
 			},
-			desc: &Descriptor{
+			desc: &Descriptor[RawRequest, []byte]{
 				Accept:        "",
 				Authorization: "",
 				ContentType:   "",
 				LogBody:       false,
 				MaxBodySize:   0,
 				Method:        http.MethodGet,
-				RequestBody:   nil,
+				Request:       nil,
+				Response:      &RawResponseDescriptor{},
 				Timeout:       0,
 				URLPath:       "test-list/urls",
 				URLQuery: map[string][]string{
@@ -384,7 +392,7 @@ func Test_newRequest(t *testing.T) {
 			endpoint: &Endpoint{
 				BaseURL: "https://example.com/",
 			},
-			desc: &Descriptor{},
+			desc: &Descriptor[RawRequest, []byte]{},
 		},
 		wantFn: func(t *testing.T, req *http.Request) {
 			if req == nil {
@@ -395,6 +403,23 @@ func Test_newRequest(t *testing.T) {
 			}
 			if req.URL.String() != "https://example.com/" {
 				t.Fatal("invalid URL")
+			}
+		},
+		wantErr: nil,
+	}, {
+		name: "we honour the AcceptEncodingGzip flag",
+		args: args{
+			ctx: context.Background(),
+			endpoint: &Endpoint{
+				BaseURL: "https://example.com/",
+			},
+			desc: &Descriptor[RawRequest, []byte]{
+				AcceptEncodingGzip: true,
+			},
+		},
+		wantFn: func(t *testing.T, req *http.Request) {
+			if req.Header.Get("Accept-Encoding") != "gzip" {
+				t.Fatal("did not set the Accept-Encoding header")
 			}
 		},
 		wantErr: nil,
@@ -425,10 +450,373 @@ func Test_newRequest(t *testing.T) {
 	}
 }
 
+// gzipBombForCall contains one megabyte of zeroes compressed using gzip
+var gzipBombForCall = []byte{
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0xff, 0xec, 0xc0, 0x31, 0x01, 0x00, 0x00,
+	0x00, 0xc2, 0x20, 0xfb, 0xa7, 0x36, 0xc4, 0x5e,
+	0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x40, 0xf4, 0x00, 0x00, 0x00, 0xff, 0xff, 0x1c,
+	0xea, 0x38, 0xa7, 0x00, 0x00, 0x10, 0x00,
+}
+
+func Test_docall(t *testing.T) {
+	type args struct {
+		endpoint *Endpoint
+		desc     *Descriptor[RawRequest, []byte]
+		request  *http.Request
+	}
+	tests := []struct {
+		name     string
+		args     args
+		wantResp *http.Response
+		wantBody []byte
+		wantErr  error
+	}{{
+		name: "we honour the configured max body size",
+		args: args{
+			endpoint: &Endpoint{
+				BaseURL: "http://127.0.0.2/", // actually unused
+				HTTPClient: &mocks.HTTPClient{
+					MockDo: func(req *http.Request) (*http.Response, error) {
+						resp := &http.Response{
+							StatusCode: 200,
+							Body:       io.NopCloser(strings.NewReader("AAAAAAAAAAAAAAAAA")),
+						}
+						return resp, nil
+					},
+				},
+				Host:      "",
+				Logger:    model.DiscardLogger,
+				UserAgent: "",
+			},
+			desc: &Descriptor[RawRequest, []byte]{
+				MaxBodySize: 7,
+				Method:      http.MethodGet,
+				Response:    &RawResponseDescriptor{},
+				URLPath:     "/",
+			},
+			request: &http.Request{},
+		},
+		wantResp: &http.Response{
+			// Implementation note: the test will ONLY match
+			// the status code and the response headers.
+			StatusCode: 200,
+		},
+		wantBody: nil,
+		wantErr:  ErrTruncated,
+	}, {
+		name: "we have a default max body size",
+		args: args{
+			endpoint: &Endpoint{
+				BaseURL: "http://127.0.0.2/", // actually unused
+				HTTPClient: &mocks.HTTPClient{
+					MockDo: func(req *http.Request) (*http.Response, error) {
+						resp := &http.Response{
+							StatusCode: 200,
+							Body:       io.NopCloser(strings.NewReader("AAAAAAAAAAAAAAAAA")),
+						}
+						return resp, nil
+					},
+				},
+				Host:      "",
+				Logger:    model.DiscardLogger,
+				UserAgent: "",
+			},
+			desc: &Descriptor[RawRequest, []byte]{
+				MaxBodySize: 0, // we're testing that putting zero here implies default
+				Method:      http.MethodGet,
+				Response:    &RawResponseDescriptor{},
+				URLPath:     "/",
+			},
+			request: &http.Request{},
+		},
+		wantResp: &http.Response{
+			// Implementation note: the test will ONLY match
+			// the status code and the response headers.
+			StatusCode: 200,
+		},
+		wantBody: []byte("AAAAAAAAAAAAAAAAA"),
+		wantErr:  nil,
+	}, {
+		name: "we decompress gzip encoded bodies",
+		args: args{
+			endpoint: &Endpoint{
+				BaseURL: "http://127.0.0.2/", // actually unused
+				HTTPClient: &mocks.HTTPClient{
+					MockDo: func(req *http.Request) (*http.Response, error) {
+						resp := &http.Response{
+							StatusCode: 200,
+							Body: io.NopCloser(bytes.NewReader([]byte{
+								0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00,
+								0x00, 0xff, 0x72, 0x74, 0x74, 0x74, 0xd4, 0x45,
+								0x25, 0x00, 0x01, 0x00, 0x00, 0xff, 0xff, 0xc2,
+								0x43, 0xb0, 0x08, 0x13, 0x00, 0x00, 0x00,
+							})),
+							Header: http.Header{
+								"Content-Encoding": {"gzip"},
+							},
+						}
+						return resp, nil
+					},
+				},
+				Host:      "",
+				Logger:    model.DiscardLogger,
+				UserAgent: "",
+			},
+			desc: &Descriptor[RawRequest, []byte]{
+				Method:   http.MethodGet,
+				Response: &RawResponseDescriptor{},
+				URLPath:  "/",
+			},
+			request: &http.Request{},
+		},
+		wantResp: &http.Response{
+			// Implementation note: the test will ONLY match
+			// the status code and the response headers.
+			StatusCode: 200,
+			Header: http.Header{
+				"Content-Encoding": {"gzip"},
+			},
+		},
+		wantBody: []byte("AAAA-AAAA-AAAA-AAAA"),
+		wantErr:  nil,
+	}, {
+		name: "we handle issues with the gzip header",
+		args: args{
+			endpoint: &Endpoint{
+				BaseURL: "http://127.0.0.2/", // actually unused
+				HTTPClient: &mocks.HTTPClient{
+					MockDo: func(req *http.Request) (*http.Response, error) {
+						resp := &http.Response{
+							StatusCode: 200,
+							Body: io.NopCloser(bytes.NewReader([]byte{
+								0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, // <- changed this line
+								0x00, 0xff, 0x72, 0x74, 0x74, 0x74, 0xd4, 0x45,
+								0x25, 0x00, 0x01, 0x00, 0x00, 0xff, 0xff, 0xc2,
+								0x43, 0xb0, 0x08, 0x13, 0x00, 0x00, 0x00,
+							})),
+							Header: http.Header{
+								"Content-Encoding": {"gzip"},
+							},
+						}
+						return resp, nil
+					},
+				},
+				Host:      "",
+				Logger:    model.DiscardLogger,
+				UserAgent: "",
+			},
+			desc: &Descriptor[RawRequest, []byte]{
+				Method:   http.MethodGet,
+				Response: &RawResponseDescriptor{},
+				URLPath:  "/",
+			},
+			request: &http.Request{},
+		},
+		wantResp: &http.Response{
+			// Implementation note: the test will ONLY match
+			// the status code and the response headers.
+			StatusCode: 200,
+			Header: http.Header{
+				"Content-Encoding": {"gzip"},
+			},
+		},
+		wantBody: nil,
+		wantErr:  gzip.ErrHeader,
+	}, {
+		name: "we protect against a gzip bomb",
+		args: args{
+			endpoint: &Endpoint{
+				BaseURL: "http://127.0.0.2/", // actually unused
+				HTTPClient: &mocks.HTTPClient{
+					MockDo: func(req *http.Request) (*http.Response, error) {
+						resp := &http.Response{
+							StatusCode: 200,
+							Body:       io.NopCloser(bytes.NewReader(gzipBombForCall)),
+							Header: http.Header{
+								"Content-Encoding": {"gzip"},
+							},
+						}
+						return resp, nil
+					},
+				},
+				Host:      "",
+				Logger:    model.DiscardLogger,
+				UserAgent: "",
+			},
+			desc: &Descriptor[RawRequest, []byte]{
+				MaxBodySize: 2048, // very small value
+				Method:      http.MethodGet,
+				Response:    &RawResponseDescriptor{},
+				URLPath:     "/",
+			},
+			request: &http.Request{},
+		},
+		wantResp: &http.Response{
+			// Implementation note: the test will ONLY match
+			// the status code and the response headers.
+			StatusCode: 200,
+			Header: http.Header{
+				"Content-Encoding": {"gzip"},
+			},
+		},
+		wantBody: nil,
+		wantErr:  ErrTruncated,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, body, err := docall(tt.args.endpoint, tt.args.desc, tt.args.request)
+			if err != tt.wantErr {
+				t.Errorf("docall() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			// as documented we match ONLY status code and response headers
+			if !reflect.DeepEqual(resp.StatusCode, tt.wantResp.StatusCode) {
+				t.Errorf("docall() got = %v, want %v", resp.StatusCode, tt.wantResp.StatusCode)
+			}
+			if !reflect.DeepEqual(resp.Header, tt.wantResp.Header) {
+				t.Errorf("docall() got = %v, want %v", resp.Header, tt.wantResp.Header)
+			}
+
+			if !reflect.DeepEqual(body, tt.wantBody) {
+				t.Errorf("docall() got1 = %v, want %v", body, tt.wantBody)
+			}
+		})
+	}
+}
+
 func TestCall(t *testing.T) {
 	type args struct {
 		ctx      context.Context
-		desc     *Descriptor
+		desc     *Descriptor[RawRequest, []byte]
 		endpoint *Endpoint
 	}
 	tests := []struct {
@@ -441,14 +829,15 @@ func TestCall(t *testing.T) {
 		name: "newRequest fails",
 		args: args{
 			ctx: context.Background(),
-			desc: &Descriptor{
+			desc: &Descriptor[RawRequest, []byte]{
 				Accept:        "",
 				Authorization: "",
 				ContentType:   "",
 				LogBody:       false,
 				MaxBodySize:   0,
 				Method:        "",
-				RequestBody:   nil,
+				Request:       nil,
+				Response:      &RawResponseDescriptor{},
 				Timeout:       0,
 				URLPath:       "",
 				URLQuery:      nil,
@@ -468,8 +857,9 @@ func TestCall(t *testing.T) {
 		name: "endpoint.HTTPClient.Do fails",
 		args: args{
 			ctx: context.Background(),
-			desc: &Descriptor{
-				Method: http.MethodGet,
+			desc: &Descriptor[RawRequest, []byte]{
+				Method:   http.MethodGet,
+				Response: &RawResponseDescriptor{},
 			},
 			endpoint: &Endpoint{
 				BaseURL: "https://example.com/",
@@ -493,8 +883,9 @@ func TestCall(t *testing.T) {
 		name: "reading body fails",
 		args: args{
 			ctx: context.Background(),
-			desc: &Descriptor{
-				Method: http.MethodGet,
+			desc: &Descriptor[RawRequest, []byte]{
+				Method:   http.MethodGet,
+				Response: &RawResponseDescriptor{},
 			},
 			endpoint: &Endpoint{
 				BaseURL: "https://www.example.com/",
@@ -525,8 +916,9 @@ func TestCall(t *testing.T) {
 		name: "status code indicates failure",
 		args: args{
 			ctx: context.Background(),
-			desc: &Descriptor{
-				Method: http.MethodGet,
+			desc: &Descriptor[RawRequest, []byte]{
+				Method:   http.MethodGet,
+				Response: &RawResponseDescriptor{},
 			},
 			endpoint: &Endpoint{
 				BaseURL: "https://example.com/",
@@ -554,9 +946,10 @@ func TestCall(t *testing.T) {
 		name: "success with log body flag",
 		args: args{
 			ctx: context.Background(),
-			desc: &Descriptor{
-				LogBody: true, // as documented by this test's name
-				Method:  http.MethodGet,
+			desc: &Descriptor[RawRequest, []byte]{
+				LogBody:  true, // as documented by this test's name
+				Method:   http.MethodGet,
+				Response: &RawResponseDescriptor{},
 			},
 			endpoint: &Endpoint{
 				BaseURL: "https://example.com/",
@@ -598,197 +991,86 @@ func TestCall(t *testing.T) {
 	}
 }
 
-func TestCallWithJSONResponse(t *testing.T) {
-	type response struct {
-		Name string
-		Age  int64
-	}
-	expectedResponse := response{
-		Name: "sbs",
-		Age:  99,
-	}
-	type args struct {
-		ctx      context.Context
-		desc     *Descriptor
-		endpoint *Endpoint
-	}
+// CallStructRequest is the request used by TestCallWithJSON
+type CallStructRequest struct {
+	Name string
+	Age  int
+}
+
+// CallStructResponse is the response used by TestCallWithJSON
+type CallStructResponse struct {
+	Name       string
+	AgeSquared int
+}
+
+func TestCallWithJSON(t *testing.T) {
 	tests := []struct {
-		name    string
-		args    args
-		wantErr error
-		errfn   func(*testing.T, error)
+		name         string
+		bodyToReturn []byte
+		want         *CallStructResponse
+		wantErr      error
 	}{{
-		name: "call fails",
-		args: args{
-			ctx:  context.Background(),
-			desc: &Descriptor{},
-			endpoint: &Endpoint{
-				BaseURL: "\t\t\t\t", // causes failure
-				Logger:  model.DiscardLogger,
-			},
-		},
-		wantErr: errors.New(`parse "\t\t\t\t": net/url: invalid control character in URL`),
-		errfn:   nil,
+		name:         "with JSON parser failure",
+		bodyToReturn: []byte(`{`),
+		want:         nil,
+		wantErr:      errors.New("unexpected end of JSON input"),
 	}, {
-		name: "with error during httpClient.Do",
-		args: args{
-			ctx:  context.Background(),
-			desc: &Descriptor{},
-			endpoint: &Endpoint{
-				BaseURL: "https://www.example.com/a",
-				HTTPClient: &mocks.HTTPClient{
-					MockDo: func(req *http.Request) (*http.Response, error) {
-						return nil, io.EOF
-					},
-				},
-				Logger: model.DiscardLogger,
-			},
-		},
-		wantErr: io.EOF,
-		errfn: func(t *testing.T, err error) {
-			var expect *errMaybeCensorship
-			if !errors.As(err, &expect) {
-				t.Fatal("invalid error type")
-			}
-		},
+		name:         "with literal null response",
+		bodyToReturn: []byte(`null`),
+		want:         &CallStructResponse{},
+		wantErr:      nil,
 	}, {
-		name: "with error when reading the response body",
-		args: args{
-			ctx:  context.Background(),
-			desc: &Descriptor{},
-			endpoint: &Endpoint{
-				BaseURL: "https://www.example.com/a",
-				HTTPClient: &mocks.HTTPClient{
-					MockDo: func(req *http.Request) (*http.Response, error) {
-						resp := &http.Response{
-							Body: io.NopCloser(&mocks.Reader{
-								MockRead: func(b []byte) (int, error) {
-									return 0, netxlite.ECONNRESET
-								},
-							}),
-							StatusCode: 200,
-						}
-						return resp, nil
-					},
-				},
-				Logger: model.DiscardLogger,
-			},
-		},
-		wantErr: errors.New(netxlite.FailureConnectionReset),
-		errfn: func(t *testing.T, err error) {
-			var expect *errMaybeCensorship
-			if !errors.As(err, &expect) {
-				t.Fatal("invalid error type")
-			}
-		},
-	}, {
-		name: "with HTTP failure",
-		args: args{
-			ctx:  context.Background(),
-			desc: &Descriptor{},
-			endpoint: &Endpoint{
-				BaseURL: "https://www.example.com/a",
-				HTTPClient: &mocks.HTTPClient{
-					MockDo: func(req *http.Request) (*http.Response, error) {
-						resp := &http.Response{
-							Body:       io.NopCloser(strings.NewReader(`{"Name": "sbs", "Age": 99}`)),
-							StatusCode: 400,
-						}
-						return resp, nil
-					},
-				},
-				Logger: model.DiscardLogger,
-			},
-		},
-		wantErr: errors.New("httpapi: http request failed: 400"),
-		errfn: func(t *testing.T, err error) {
-			var expect *ErrHTTPRequestFailed
-			if !errors.As(err, &expect) {
-				t.Fatal("invalid error type")
-			}
-		},
-	}, {
-		name: "with good response and missing header",
-		args: args{
-			ctx:  context.Background(),
-			desc: &Descriptor{},
-			endpoint: &Endpoint{
-				BaseURL: "https://www.example.com/a",
-				HTTPClient: &mocks.HTTPClient{
-					MockDo: func(req *http.Request) (*http.Response, error) {
-						resp := &http.Response{
-							Body:       io.NopCloser(strings.NewReader(`{"Name": "sbs", "Age": 99}`)),
-							StatusCode: 200,
-						}
-						return resp, nil
-					},
-				},
-				Logger: model.DiscardLogger,
-			},
+		name:         "with good response",
+		bodyToReturn: []byte(`{"Name": "sbs", "AgeSquared": 1156}`),
+		want: &CallStructResponse{
+			Name:       "sbs",
+			AgeSquared: 1156,
 		},
 		wantErr: nil,
-		errfn:   nil,
-	}, {
-		name: "with good response and good header",
-		args: args{
-			ctx:  context.Background(),
-			desc: &Descriptor{},
-			endpoint: &Endpoint{
-				BaseURL: "https://www.example.com/a",
-				HTTPClient: &mocks.HTTPClient{
-					MockDo: func(req *http.Request) (*http.Response, error) {
-						resp := &http.Response{
-							Header: http.Header{
-								"Content-Type": {"application/json"},
-							},
-							Body:       io.NopCloser(strings.NewReader(`{"Name": "sbs", "Age": 99}`)),
-							StatusCode: 200,
-						}
-						return resp, nil
-					},
-				},
-				Logger: model.DiscardLogger,
-			},
-		},
-		wantErr: nil,
-		errfn:   nil,
-	}, {
-		name: "response is not JSON",
-		args: args{
-			ctx: context.Background(),
-			desc: &Descriptor{
-				LogBody: false,
-				Method:  http.MethodGet,
-			},
-			endpoint: &Endpoint{
-				BaseURL: "https://www.example.com/",
-				HTTPClient: &mocks.HTTPClient{
-					MockDo: func(req *http.Request) (*http.Response, error) {
-						resp := &http.Response{
-							Header: http.Header{
-								"Content-Type": {"application/json"},
-							},
-							Body:       io.NopCloser(strings.NewReader(`{`)), // invalid JSON
-							StatusCode: 200,
-						}
-						return resp, nil
-					},
-				},
-				Logger: model.DiscardLogger,
-			},
-		},
-		wantErr: errors.New("unexpected end of JSON input"),
-		errfn:   nil,
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var response response
-			err := CallWithJSONResponse(tt.args.ctx, tt.args.desc, tt.args.endpoint, &response)
+
+			// start a server that will return the configured body
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Write(tt.bodyToReturn)
+			}))
+			defer server.Close()
+
+			// prepare endpoint for the call
+			epnt := &Endpoint{
+				BaseURL:    server.URL,
+				HTTPClient: http.DefaultClient,
+				Host:       "",
+				Logger:     model.DiscardLogger,
+				UserAgent:  "",
+			}
+
+			// prepare descriptor for the call
+			desc := &Descriptor[*CallStructRequest, *CallStructResponse]{
+				Accept:             ApplicationJSON,
+				Authorization:      "",
+				AcceptEncodingGzip: false,
+				ContentType:        ApplicationJSON,
+				LogBody:            true,
+				MaxBodySize:        0,
+				Method:             http.MethodPost,
+				Request: &RequestDescriptor[*CallStructRequest]{
+					Body: []byte(`{"Name": "sbs", "Age": 34}`),
+				},
+				Response: &JSONResponseDescriptor[CallStructResponse]{},
+				Timeout:  0,
+				URLPath:  "/",
+				URLQuery: nil,
+			}
+
+			// call the API
+			resp, err := Call(context.Background(), desc, epnt)
+
+			// check the error
 			switch {
 			case err == nil && tt.wantErr == nil:
-				if diff := cmp.Diff(expectedResponse, response); err != nil {
-					t.Fatal(diff)
-				}
+				// nothing
 			case err != nil && tt.wantErr == nil:
 				t.Fatalf("expected <nil> error but got %s", err.Error())
 			case err == nil && tt.wantErr != nil:
@@ -798,8 +1080,10 @@ func TestCallWithJSONResponse(t *testing.T) {
 			default:
 				t.Fatalf("expected %s but got %s", err.Error(), tt.wantErr.Error())
 			}
-			if tt.errfn != nil {
-				tt.errfn(t, err)
+
+			// check the response
+			if diff := cmp.Diff(tt.want, resp); diff != "" {
+				t.Fatal(diff)
 			}
 		})
 	}
@@ -808,10 +1092,11 @@ func TestCallWithJSONResponse(t *testing.T) {
 func TestCallHonoursContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // should fail HTTP request immediately
-	desc := &Descriptor{
-		LogBody: false,
-		Method:  http.MethodGet,
-		URLPath: "/robots.txt",
+	desc := &Descriptor[RawRequest, []byte]{
+		LogBody:  false,
+		Method:   http.MethodGet,
+		Response: &RawResponseDescriptor{},
+		URLPath:  "/robots.txt",
 	}
 	endpoint := &Endpoint{
 		BaseURL:    "https://www.example.com/",
@@ -826,318 +1111,6 @@ func TestCallHonoursContext(t *testing.T) {
 	if len(body) > 0 {
 		t.Fatal("expected zero-length body")
 	}
-}
-
-func TestCallWithJSONResponseHonoursContext(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // should fail HTTP request immediately
-	desc := &Descriptor{
-		LogBody: false,
-		Method:  http.MethodGet,
-		URLPath: "/robots.txt",
-	}
-	endpoint := &Endpoint{
-		BaseURL:    "https://www.example.com/",
-		HTTPClient: http.DefaultClient,
-		Logger:     model.DiscardLogger,
-		UserAgent:  model.HTTPHeaderUserAgent,
-	}
-	var resp url.URL
-	err := CallWithJSONResponse(ctx, desc, endpoint, &resp)
-	if !errors.Is(err, context.Canceled) {
-		t.Fatal("unexpected err", err)
-	}
-}
-
-func TestDescriptorLogging(t *testing.T) {
-
-	// This test was originally written for the httpx package and we have adapted it
-	// by keeping the ~same implementation with a custom callx function that converts
-	// the previous semantics of httpx to the new semantics of httpapi.
-	callx := func(baseURL string, logBody bool, logger model.Logger, request, response any) error {
-		desc := MustNewPOSTJSONWithJSONResponseDescriptor("/", request).WithBodyLogging(logBody)
-		runtimex.Assert(desc.LogBody == logBody, "desc.LogBody should be equal to logBody here")
-		endpoint := &Endpoint{
-			BaseURL:    baseURL,
-			HTTPClient: http.DefaultClient,
-			Logger:     logger,
-		}
-		return CallWithJSONResponse(context.Background(), desc, endpoint, response)
-	}
-
-	// we also needed to create a constructor for the logger
-	newlogger := func(logs chan string) model.Logger {
-		return &mocks.Logger{
-			MockDebugf: func(format string, v ...interface{}) {
-				logs <- fmt.Sprintf(format, v...)
-			},
-			MockWarnf: func(format string, v ...interface{}) {
-				logs <- fmt.Sprintf(format, v...)
-			},
-		}
-	}
-
-	t.Run("body logging enabled, 200 Ok, and without content-type", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(
-			func(w http.ResponseWriter, r *http.Request) {
-				w.Write([]byte("[]"))
-			},
-		))
-		logs := make(chan string, 1024)
-		defer server.Close()
-		var (
-			input  []string
-			output []string
-		)
-		logger := newlogger(logs)
-		err := callx(server.URL, true, logger, input, &output)
-		var found int
-		close(logs)
-		for entry := range logs {
-			if strings.HasPrefix(entry, "httpapi: request body: ") {
-				// we expect this because body logging is enabled
-				found |= 1 << 0
-				continue
-			}
-			if strings.HasPrefix(entry, "httpapi: response body: ") {
-				// we expect this because body logging is enabled
-				found |= 1 << 1
-				continue
-			}
-			if strings.HasPrefix(entry, "httpapi: unexpected content-type: ") {
-				// we would expect this because the server does not send us any content-type
-				found |= 1 << 2
-				continue
-			}
-			if strings.HasPrefix(entry, "httpapi: request body length: ") {
-				// we should see this because we sent a body
-				found |= 1 << 3
-				continue
-			}
-			if strings.HasPrefix(entry, "httpapi: response body length: ") {
-				// we should see this because we receive a body
-				found |= 1 << 4
-				continue
-			}
-		}
-		if found != (1<<0 | 1<<1 | 1<<2 | 1<<3 | 1<<4) {
-			t.Fatal("did not find the expected logs")
-		}
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("body logging enabled, 200 Ok, and with content-type", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(
-			func(w http.ResponseWriter, r *http.Request) {
-				w.Header().Add("content-type", "application/json")
-				w.Write([]byte("[]"))
-			},
-		))
-		logs := make(chan string, 1024)
-		defer server.Close()
-		var (
-			input  []string
-			output []string
-		)
-		logger := newlogger(logs)
-		err := callx(server.URL, true, logger, input, &output)
-		var found int
-		close(logs)
-		for entry := range logs {
-			if strings.HasPrefix(entry, "httpapi: request body: ") {
-				// we expect this because body logging is enabled
-				found |= 1 << 0
-				continue
-			}
-			if strings.HasPrefix(entry, "httpapi: response body: ") {
-				// we expect this because body logging is enabled
-				found |= 1 << 1
-				continue
-			}
-			if strings.HasPrefix(entry, "httpapi: unexpected content-type: ") {
-				// we do not expect this because the server sends us a content-type
-				found |= 1 << 2
-				continue
-			}
-			if strings.HasPrefix(entry, "httpapi: request body length: ") {
-				// we should see this because we sent a body
-				found |= 1 << 3
-				continue
-			}
-			if strings.HasPrefix(entry, "httpapi: response body length: ") {
-				// we should see this because we receive a body
-				found |= 1 << 4
-				continue
-			}
-		}
-		if found != (1<<0 | 1<<1 | 1<<3 | 1<<4) {
-			t.Fatal("did not find the expected logs")
-		}
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("body logging enabled and 401 Unauthorized", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(
-			func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(401)
-				w.Write([]byte("[]"))
-			},
-		))
-		logs := make(chan string, 1024)
-		defer server.Close()
-		var (
-			input  []string
-			output []string
-		)
-		logger := newlogger(logs)
-		err := callx(server.URL, true, logger, input, &output)
-		var found int
-		close(logs)
-		for entry := range logs {
-			if strings.HasPrefix(entry, "httpapi: request body: ") {
-				// should occur because body logging is enabled
-				found |= 1 << 0
-				continue
-			}
-			if strings.HasPrefix(entry, "httpapi: response body: ") {
-				// should occur because body logging is enabled
-				found |= 1 << 1
-				continue
-			}
-			if strings.HasPrefix(entry, "httpapi: unexpected content-type: ") {
-				// note: this one should not occur because the code is 401 so we're not
-				// actually going to parse the JSON document
-				found |= 1 << 2
-				continue
-			}
-			if strings.HasPrefix(entry, "httpapi: request body length: ") {
-				// we should see this because we send a body
-				found |= 1 << 3
-				continue
-			}
-			if strings.HasPrefix(entry, "httpapi: response body length: ") {
-				// we should see this because we receive a body
-				found |= 1 << 4
-				continue
-			}
-		}
-		if found != (1<<0 | 1<<1 | 1<<3 | 1<<4) {
-			t.Fatal("did not find the expected logs")
-		}
-		var failure *ErrHTTPRequestFailed
-		if !errors.As(err, &failure) || failure.StatusCode != 401 {
-			t.Fatal("unexpected err", err)
-		}
-	})
-
-	t.Run("body logging NOT enabled and 200 Ok", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(
-			func(w http.ResponseWriter, r *http.Request) {
-				w.Write([]byte("[]"))
-			},
-		))
-		logs := make(chan string, 1024)
-		defer server.Close()
-		var (
-			input  []string
-			output []string
-		)
-		logger := newlogger(logs)
-		err := callx(server.URL, false, logger, input, &output) // no logging
-		var found int
-		close(logs)
-		for entry := range logs {
-			if strings.HasPrefix(entry, "httpapi: request body: ") {
-				// should not see it: body logging is disabled
-				found |= 1 << 0
-				continue
-			}
-			if strings.HasPrefix(entry, "httpapi: response body: ") {
-				// should not see it: body logging is disabled
-				found |= 1 << 1
-				continue
-			}
-			if strings.HasPrefix(entry, "httpapi: unexpected content-type: ") {
-				// this one should be logged ANYWAY because it's orthogonal to the
-				// body logging so we should see it also in this case.
-				found |= 1 << 2
-				continue
-			}
-			if strings.HasPrefix(entry, "httpapi: request body length: ") {
-				// should see this because we send a body
-				found |= 1 << 3
-				continue
-			}
-			if strings.HasPrefix(entry, "httpapi: response body length: ") {
-				// should see this because we're receiving a body
-				found |= 1 << 4
-				continue
-			}
-		}
-		if found != (1<<2 | 1<<3 | 1<<4) {
-			t.Fatal("did not find the expected logs")
-		}
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("body logging NOT enabled and 401 Unauthorized", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(
-			func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(401)
-				w.Write([]byte("[]"))
-			},
-		))
-		logs := make(chan string, 1024)
-		defer server.Close()
-		var (
-			input  []string
-			output []string
-		)
-		logger := newlogger(logs)
-		err := callx(server.URL, false, logger, input, &output) // no logging
-		var found int
-		close(logs)
-		for entry := range logs {
-			if strings.HasPrefix(entry, "httpapi: request body: ") {
-				// should not see it: body logging is disabled
-				found |= 1 << 0
-				continue
-			}
-			if strings.HasPrefix(entry, "httpapi: response body: ") {
-				// should not see it: body logging is disabled
-				found |= 1 << 1
-				continue
-			}
-			if strings.HasPrefix(entry, "httpapi: unexpected content-type: ") {
-				// should not see it because we don't parse the body on 401 errors
-				found |= 1 << 2
-				continue
-			}
-			if strings.HasPrefix(entry, "httpapi: request body length: ") {
-				// we send a body so we should see it
-				found |= 1 << 3
-				continue
-			}
-			if strings.HasPrefix(entry, "httpapi: response body length: ") {
-				// we receive a body so we should see it
-				found |= 1 << 4
-				continue
-			}
-		}
-		if found != (1<<3 | 1<<4) {
-			t.Fatal("did not find the expected logs")
-		}
-		var failure *ErrHTTPRequestFailed
-		if !errors.As(err, &failure) || failure.StatusCode != 401 {
-			t.Fatal("unexpected err", err)
-		}
-	})
 }
 
 func Test_errMaybeCensorship_Unwrap(t *testing.T) {

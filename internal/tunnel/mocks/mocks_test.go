@@ -2,11 +2,11 @@ package mocks
 
 import (
 	"net/url"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 )
 
 func TestTunnel(t *testing.T) {
@@ -46,7 +46,7 @@ func TestTunnel(t *testing.T) {
 	})
 
 	t.Run("Stop", func(t *testing.T) {
-		called := &atomicx.Int64{}
+		called := &atomic.Int64{}
 		tun := &Tunnel{
 			MockStop: func() {
 				called.Add(1)

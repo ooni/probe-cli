@@ -10,14 +10,6 @@ func init() {
 	*input = `https://www.example.org`
 }
 
-func TestCheck(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	*mode = "check"
-	main()
-}
-
 func TestRaw(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")

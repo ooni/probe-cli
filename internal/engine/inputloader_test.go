@@ -446,7 +446,7 @@ func TestInputLoaderReadfileScannerFailure(t *testing.T) {
 type InputLoaderMockableSession struct {
 	// Output contains the output of CheckIn. It should
 	// be nil when Error is not-nil.
-	Output *model.OOAPICheckInNettests
+	Output *model.OOAPICheckInResultNettests
 
 	// Error is the error to be returned by CheckIn. It
 	// should be nil when Output is not-nil.
@@ -455,7 +455,7 @@ type InputLoaderMockableSession struct {
 
 // CheckIn implements InputLoaderSession.CheckIn.
 func (sess *InputLoaderMockableSession) CheckIn(
-	ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInNettests, error) {
+	ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInResultNettests, error) {
 	if sess.Output == nil && sess.Error == nil {
 		return nil, errors.New("both Output and Error are nil")
 	}
@@ -480,7 +480,7 @@ func TestInputLoaderCheckInFailure(t *testing.T) {
 func TestInputLoaderCheckInSuccessWithNilWebConnectivity(t *testing.T) {
 	il := &InputLoader{
 		Session: &InputLoaderMockableSession{
-			Output: &model.OOAPICheckInNettests{},
+			Output: &model.OOAPICheckInResultNettests{},
 		},
 	}
 	out, err := il.loadRemote(context.Background())
@@ -495,7 +495,7 @@ func TestInputLoaderCheckInSuccessWithNilWebConnectivity(t *testing.T) {
 func TestInputLoaderCheckInSuccessWithNoURLs(t *testing.T) {
 	il := &InputLoader{
 		Session: &InputLoaderMockableSession{
-			Output: &model.OOAPICheckInNettests{
+			Output: &model.OOAPICheckInResultNettests{
 				WebConnectivity: &model.OOAPICheckInInfoWebConnectivity{},
 			},
 		},
@@ -521,7 +521,7 @@ func TestInputLoaderCheckInSuccessWithSomeURLs(t *testing.T) {
 	}}
 	il := &InputLoader{
 		Session: &InputLoaderMockableSession{
-			Output: &model.OOAPICheckInNettests{
+			Output: &model.OOAPICheckInResultNettests{
 				WebConnectivity: &model.OOAPICheckInInfoWebConnectivity{
 					URLs: expect,
 				},

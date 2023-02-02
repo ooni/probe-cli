@@ -6,9 +6,9 @@ package netxlite
 
 import (
 	"sync"
+	"sync/atomic"
 
 	"github.com/miekg/dns"
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -29,7 +29,7 @@ const (
 // Encoder implements model.DNSEncoder.Encode.
 func (e *DNSEncoderMiekg) Encode(domain string, qtype uint16, padding bool) model.DNSQuery {
 	return &dnsQuery{
-		bytesCalls:    &atomicx.Int64{},
+		bytesCalls:    &atomic.Int64{},
 		domain:        domain,
 		kind:          qtype,
 		id:            dns.Id(),
@@ -42,7 +42,7 @@ func (e *DNSEncoderMiekg) Encode(domain string, qtype uint16, padding bool) mode
 // dnsQuery implements model.DNSQuery.
 type dnsQuery struct {
 	// bytesCalls counts the calls to the bytes() method
-	bytesCalls *atomicx.Int64
+	bytesCalls *atomic.Int64
 
 	// domain is the domain.
 	domain string

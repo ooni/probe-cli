@@ -4,10 +4,11 @@ import (
 	"errors"
 	"io/fs"
 	"os"
+	"path/filepath"
+	"runtime"
+	"sync/atomic"
 	"syscall"
 	"testing"
-
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 )
 
 // baseDir is the base directory we use for testing.
@@ -15,12 +16,12 @@ var baseDir = "./testdata/"
 
 // failingStatFS is a fs.FS returning a file where stat() fails.
 type failingStatFS struct {
-	CloseCount *atomicx.Int64
+	CloseCount *atomic.Int64
 }
 
 // failingStatFile is a fs.File where stat() fails.
 type failingStatFile struct {
-	CloseCount *atomicx.Int64
+	CloseCount *atomic.Int64
 }
 
 // errStatFailed is the internal error indicating that stat() failed.
@@ -50,7 +51,7 @@ func (failingStatFile) Read([]byte) (int, error) {
 }
 
 func TestOpenWithFailingStat(t *testing.T) {
-	count := &atomicx.Int64{}
+	count := &atomic.Int64{}
 	_, err := openWithFS(
 		failingStatFS{CloseCount: count}, baseDir+"testfile.txt")
 	if !errors.Is(err, errStatFailed) {
@@ -70,7 +71,7 @@ func TestOpenNonexistentFile(t *testing.T) {
 
 func TestOpenDirectoryShouldFail(t *testing.T) {
 	_, err := OpenFile(baseDir)
-	if !errors.Is(err, syscall.EISDIR) {
+	if !errors.Is(err, ErrNotRegularFile) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
 }
@@ -81,4 +82,64 @@ func TestOpeningExistingFileShouldWork(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer file.Close()
+}
+
+func TestRegularFileExists(t *testing.T) {
+	t.Run("for existing file", func(t *testing.T) {
+		path := filepath.Join("testdata", "testfile.txt")
+		exists := RegularFileExists(path)
+		if !exists {
+			t.Fatal("should exist")
+		}
+	})
+
+	t.Run("for existing directory", func(t *testing.T) {
+		exists := RegularFileExists("testdata")
+		if exists {
+			t.Fatal("should not exist")
+		}
+	})
+
+	t.Run("for nonexisting file", func(t *testing.T) {
+		path := filepath.Join("testdata", "nonexistent")
+		exists := RegularFileExists(path)
+		if exists {
+			t.Fatal("should not exist")
+		}
+	})
+
+	t.Run("for a special file", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("skip test under windows")
+		}
+		exists := RegularFileExists("/dev/null")
+		if exists {
+			t.Fatal("should not exist")
+		}
+	})
+}
+
+func TestDirectoryExists(t *testing.T) {
+	t.Run("for existing directory", func(t *testing.T) {
+		exists := DirectoryExists("testdata")
+		if !exists {
+			t.Fatal("should exist")
+		}
+	})
+
+	t.Run("for existing file", func(t *testing.T) {
+		path := filepath.Join("testdata", "testfile.txt")
+		exists := DirectoryExists(path)
+		if exists {
+			t.Fatal("should not exist")
+		}
+	})
+
+	t.Run("for nonexisting directory", func(t *testing.T) {
+		path := filepath.Join("testdata", "nonexistent")
+		exists := DirectoryExists(path)
+		if exists {
+			t.Fatal("should not exist")
+		}
+	})
 }

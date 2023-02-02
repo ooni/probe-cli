@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
+	"github.com/ooni/probe-cli/v3/internal/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/pkg/oonimkall"
 )
@@ -240,8 +240,8 @@ func TestCheckInSuccess(t *testing.T) {
 		SoftwareVersion: "2.7.1",
 		WebConnectivity: &oonimkall.CheckInConfigWebConnectivity{},
 	}
-	config.WebConnectivity.Add("NEWS")
-	config.WebConnectivity.Add("CULTR")
+	config.WebConnectivity.AddCategory("NEWS")
+	config.WebConnectivity.AddCategory("CULTR")
 	result, err := sess.CheckIn(ctx, &config)
 	if err != nil {
 		t.Fatalf("unexpected error: %+v", err)
@@ -291,8 +291,8 @@ func TestCheckInLookupLocationFailure(t *testing.T) {
 		SoftwareVersion: "2.7.1",
 		WebConnectivity: &oonimkall.CheckInConfigWebConnectivity{},
 	}
-	config.WebConnectivity.Add("NEWS")
-	config.WebConnectivity.Add("CULTR")
+	config.WebConnectivity.AddCategory("NEWS")
+	config.WebConnectivity.AddCategory("CULTR")
 	ctx.Cancel() // immediate failure
 	result, err := sess.CheckIn(ctx, &config)
 	if !errors.Is(err, geolocate.ErrAllIPLookuppersFailed) {
@@ -324,8 +324,8 @@ func TestCheckInNewProbeServicesFailure(t *testing.T) {
 		SoftwareVersion: "2.7.1",
 		WebConnectivity: &oonimkall.CheckInConfigWebConnectivity{},
 	}
-	config.WebConnectivity.Add("NEWS")
-	config.WebConnectivity.Add("CULTR")
+	config.WebConnectivity.AddCategory("NEWS")
+	config.WebConnectivity.AddCategory("CULTR")
 	result, err := sess.CheckIn(ctx, &config)
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("not the error we expected: %+v", err)
@@ -356,8 +356,8 @@ func TestCheckInCheckInFailure(t *testing.T) {
 		SoftwareVersion: "2.7.1",
 		WebConnectivity: &oonimkall.CheckInConfigWebConnectivity{},
 	}
-	config.WebConnectivity.Add("NEWS")
-	config.WebConnectivity.Add("CULTR")
+	config.WebConnectivity.AddCategory("NEWS")
+	config.WebConnectivity.AddCategory("CULTR")
 	result, err := sess.CheckIn(ctx, &config)
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("not the error we expected: %+v", err)
@@ -390,73 +390,6 @@ func TestCheckInNoParams(t *testing.T) {
 	}
 	if result != nil {
 		t.Fatal("unexpected not nil result here")
-	}
-}
-
-func TestFetchURLListSuccess(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	sess, err := NewSessionForTesting()
-	if err != nil {
-		t.Fatal(err)
-	}
-	ctx := sess.NewContext()
-	config := oonimkall.URLListConfig{
-		Limit: 10,
-	}
-	config.AddCategory("NEWS")
-	config.AddCategory("CULTR")
-	result, err := sess.FetchURLList(ctx, &config)
-	if err != nil {
-		t.Fatalf("unexpected error: %+v", err)
-	}
-	if result == nil || result.Results == nil {
-		t.Fatal("got nil result")
-	}
-	for idx := int64(0); idx < result.Size(); idx++ {
-		entry := result.At(idx)
-		if entry.CategoryCode != "NEWS" && entry.CategoryCode != "CULTR" {
-			t.Fatalf("unexpected category code: %+v", entry)
-		}
-	}
-	if result.At(-1) != nil {
-		t.Fatal("expected nil here")
-	}
-	if result.At(result.Size()) != nil {
-		t.Fatal("expected nil here")
-	}
-}
-
-func TestFetchURLListWithCC(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	sess, err := NewSessionForTesting()
-	if err != nil {
-		t.Fatal(err)
-	}
-	ctx := sess.NewContext()
-	config := oonimkall.URLListConfig{
-		CountryCode: "IT",
-	}
-	config.AddCategory("NEWS")
-	config.AddCategory("CULTR")
-	result, err := sess.FetchURLList(ctx, &config)
-	if err != nil {
-		t.Fatalf("unexpected error: %+v", err)
-	}
-	if result == nil || result.Results == nil {
-		t.Fatal("got nil result")
-	}
-	found := false
-	for _, entry := range result.Results {
-		if entry.CountryCode == "IT" {
-			found = true
-		}
-	}
-	if !found {
-		t.Fatalf("not found url for country code: IT")
 	}
 }
 

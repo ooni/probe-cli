@@ -1,0 +1,45 @@
+#!/bin/bash
+
+#doc:
+#doc: # MONOREPO/tools/vscode
+#doc:
+#doc: Opens vscode for a given repository.
+
+set -euo pipefail
+
+reporoot=$(dirname $(dirname $(dirname $(realpath $0))))
+
+source $reporoot/MONOREPO/tools/libgit.bash
+
+do_print_name() {
+	local dirname=$(basename $(repo_to_dir $1))
+	if [[ $dirname != "probe-cli" ]]; then
+		printf "%s\n" "- ./MONOREPO/repo/$(basename $(repo_to_dir $1))"
+	else
+		printf "%s\n" "- ."
+	fi
+}
+
+if [[ $# -ne 1 ]]; then
+	printf "This command opens the given repository inside vscode.\n"
+	printf "\n"
+	printf "Usage:\n"
+	printf "  ./tools/vscode {repository}\n"
+	printf "\n"
+	printf "Available repositories:\n"
+	for_each_repo do_print_name
+	printf "\n"
+	exit 0
+fi
+
+case "$(goos)" in
+"linux")
+	code --new-window "$(realpath $1)"
+	;;
+"darwin")
+	open "/Applications/Visual Studio Code.app" --args --new-window "$(realpath $1)"
+	;;
+*)
+	fatal "This command only works on Linux and Darwin"
+	;;
+esac

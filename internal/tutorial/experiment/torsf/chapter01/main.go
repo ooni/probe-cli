@@ -56,14 +56,14 @@ import (
 	// The torsf package contains the implementation of the torsf experiment.
 	//
 	// ```Go
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/torsf"
+	"github.com/ooni/probe-cli/v3/internal/experiment/torsf"
 
 	// ```
 	//
 	// The mockable package contains widely used mocks.
 	//
 	// ```Go
-	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
+	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
 
 	// ```
 	//

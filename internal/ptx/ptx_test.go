@@ -7,12 +7,12 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"sync/atomic"
 	"syscall"
 	"testing"
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -218,7 +218,7 @@ func (m *mockableSocksListener) Close() error {
 }
 
 func TestListenerLoopWithTemporaryError(t *testing.T) {
-	isclosed := &atomicx.Int64{}
+	isclosed := &atomic.Int64{}
 	sl := &mockableSocksListener{
 		MockAcceptSocks: func() (SocksConn, error) {
 			if isclosed.Load() > 0 {

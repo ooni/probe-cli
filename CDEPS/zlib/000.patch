@@ -1,0 +1,15 @@
+diff --git a/zlib.h b/zlib.h
+index 953cb50..ec2e2f8 100644
+--- a/zlib.h
++++ b/zlib.h
+@@ -1928,6 +1928,10 @@ ZEXTERN int            ZEXPORTVA gzvprintf Z_ARG((gzFile file,
+ #  endif
+ #endif
+
++/* ZLIB_OONI is used by dependencies to ensure they are using the
++   correct zlib.h header and not some other header. */
++#define ZLIB_OONI 1
++
+ #ifdef __cplusplus
+ }
+ #endif

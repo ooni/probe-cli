@@ -13,9 +13,9 @@ import (
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
@@ -499,19 +499,5 @@ func TestSessionNewSubmitterReturnsNonNilSubmitter(t *testing.T) {
 	}
 	if subm == nil {
 		t.Fatal("expected non nil submitter here")
-	}
-}
-
-func TestSessionFetchURLList(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	sess := newSessionForTesting(t)
-	resp, err := sess.FetchURLList(context.Background(), model.OOAPIURLListConfig{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if resp == nil {
-		t.Fatal("expected non-nil response here")
 	}
 }

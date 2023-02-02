@@ -7,27 +7,27 @@ import (
 	"net/url"
 	"runtime"
 	"sync"
+	"sync/atomic"
 
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine"
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// AtomicInt64 allows us to export atomicx.Int64 variables to
+// AtomicInt64 allows us to export atomic.Int64 variables to
 // mobile libraries so we can use them in testing.
 type AtomicInt64 struct {
-	*atomicx.Int64
+	*atomic.Int64
 }
 
 // These two variables contain metrics pertaining to the number
 // of Sessions and Contexts that are currently being used.
 var (
-	ActiveSessions = &AtomicInt64{&atomicx.Int64{}}
-	ActiveContexts = &AtomicInt64{&atomicx.Int64{}}
+	ActiveSessions = &AtomicInt64{&atomic.Int64{}}
+	ActiveContexts = &AtomicInt64{&atomic.Int64{}}
 )
 
 // Logger is the logger used by a Session. You should implement a class
@@ -341,9 +341,9 @@ type CheckInConfigWebConnectivity struct {
 	CategoryCodes []string
 }
 
-// Add adds a category code to ckw.CategoryCode. This method allows you to
+// AddCategory adds a category code to ckw.CategoryCode. This method allows you to
 // edit ckw.CategoryCodes, which is inaccessible from Java/ObjC.
-func (ckw *CheckInConfigWebConnectivity) Add(cat string) {
+func (ckw *CheckInConfigWebConnectivity) AddCategory(cat string) {
 	ckw.CategoryCodes = append(ckw.CategoryCodes, cat)
 }
 
@@ -481,73 +481,6 @@ func (sess *Session) CheckIn(ctx *Context, config *CheckInConfig) (*CheckInInfo,
 		return nil, err
 	}
 	return &CheckInInfo{
-		WebConnectivity: newCheckInInfoWebConnectivity(result.WebConnectivity),
-	}, nil
-}
-
-// URLListConfig contains configuration for fetching the URL list.
-type URLListConfig struct {
-	Categories  []string // Categories to query for (empty means all)
-	CountryCode string   // CountryCode is the optional country code
-	Limit       int64    // Max number of URLs (<= 0 means no limit)
-}
-
-// URLListResult contains the URLs returned from the FetchURL API
-type URLListResult struct {
-	Results []model.OOAPIURLInfo
-}
-
-// AddCategory adds category code to the array in URLListConfig
-func (ckw *URLListConfig) AddCategory(cat string) {
-	ckw.Categories = append(ckw.Categories, cat)
-}
-
-// At gets the URLInfo at position idx from CheckInInfoWebConnectivity.URLs. It returns
-// nil if you are using an outs of bound index.
-func (ckw *URLListResult) At(idx int64) *URLInfo {
-	if idx < 0 || int(idx) >= len(ckw.Results) {
-		return nil
-	}
-	w := ckw.Results[idx]
-	return &URLInfo{
-		CategoryCode: w.CategoryCode,
-		CountryCode:  w.CountryCode,
-		URL:          w.URL,
-	}
-}
-
-// Size returns the number of URLs.
-func (ckw *URLListResult) Size() int64 {
-	return int64(len(ckw.Results))
-}
-
-// FetchURLList fetches the list of URLs to test
-func (sess *Session) FetchURLList(ctx *Context, config *URLListConfig) (*URLListResult, error) {
-	sess.mtx.Lock()
-	defer sess.mtx.Unlock()
-	psc, err := sess.sessp.NewProbeServicesClient(ctx.ctx)
-	if err != nil {
-		return nil, err
-	}
-	if config.CountryCode == "" {
-		config.CountryCode = "XX"
-		info, err := sess.sessp.LookupLocationContext(ctx.ctx)
-		// TODO(bassosimone): this piece of code feels wrong to me. We don't
-		// want to continue if we cannot discover the country.
-		if err == nil && info != nil {
-			config.CountryCode = info.CountryCode
-		}
-	}
-	cfg := model.OOAPIURLListConfig{
-		Categories:  config.Categories,
-		CountryCode: config.CountryCode,
-		Limit:       config.Limit,
-	}
-	result, err := psc.FetchURLList(ctx.ctx, cfg)
-	if err != nil {
-		return nil, err
-	}
-	return &URLListResult{
-		Results: result,
+		WebConnectivity: newCheckInInfoWebConnectivity(result.Tests.WebConnectivity),
 	}, nil
 }

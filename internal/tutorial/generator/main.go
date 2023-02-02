@@ -64,7 +64,7 @@ func gen1(destfile io.Writer, filepath string) {
 // files using the specified order. Note that files names are not
 // paths, just file names, e.g.,
 //
-//     gen("./experiment/torsf/chapter01", "main.go")
+//	gen("./experiment/torsf/chapter01", "main.go")
 func gen(dirpath string, files ...string) {
 	readme := path.Join(dirpath, "README.md")
 	destfile, err := os.Create(path.Join(readme))

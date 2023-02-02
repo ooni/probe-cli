@@ -80,22 +80,6 @@ func TestSession(t *testing.T) {
 		}
 	})
 
-	t.Run("FetchURLList", func(t *testing.T) {
-		expected := errors.New("mocked err")
-		s := &Session{
-			MockFetchURLList: func(ctx context.Context, config model.OOAPIURLListConfig) ([]model.OOAPIURLInfo, error) {
-				return nil, expected
-			},
-		}
-		out, err := s.FetchURLList(context.Background(), model.OOAPIURLListConfig{})
-		if !errors.Is(err, expected) {
-			t.Fatal("unexpected err", err)
-		}
-		if len(out) > 0 {
-			t.Fatal("expected empty out")
-		}
-	})
-
 	t.Run("KeyValueStore", func(t *testing.T) {
 		expect := &KeyValueStore{}
 		s := &Session{
@@ -342,7 +326,7 @@ func TestSession(t *testing.T) {
 	t.Run("CheckIn", func(t *testing.T) {
 		expected := errors.New("mocked err")
 		s := &Session{
-			MockCheckIn: func(ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInNettests, error) {
+			MockCheckIn: func(ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInResultNettests, error) {
 				return nil, expected
 			},
 		}

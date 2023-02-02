@@ -1,4 +1,4 @@
-# Quality Assurance scripts
+# Quality assurance scripts
 
 This directory contains quality assurance scripts that use Jafar to
 ensure that OONI implementations behave. These scripts work with miniooni.

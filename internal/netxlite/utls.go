@@ -30,12 +30,12 @@ import (
 // Passing a nil `id` will make this function panic.
 func NewTLSHandshakerUTLS(logger model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker {
 	return newTLSHandshaker(&tlsHandshakerConfigurable{
-		NewConn: newConnUTLS(id),
+		NewConn: newUTLSConnFactory(id),
 	}, logger)
 }
 
-// utlsConn implements TLSConn and uses a utls UConn as its underlying connection
-type utlsConn struct {
+// UTLSConn implements TLSConn and uses a utls UConn as its underlying connection
+type UTLSConn struct {
 	// We include the real UConn
 	*utls.UConn
 
@@ -46,22 +46,22 @@ type utlsConn struct {
 	nc net.Conn
 }
 
-// Ensures that a utlsConn implements the TLSConn interface.
-var _ TLSConn = &utlsConn{}
+// Ensures that a UTLSConn implements the TLSConn interface.
+var _ TLSConn = &UTLSConn{}
 
-// newConnUTLS returns a NewConn function for creating utlsConn instances.
-func newConnUTLS(clientHello *utls.ClientHelloID) func(conn net.Conn, config *tls.Config) (TLSConn, error) {
+// newUTLSConnFactory returns a NewConn function for creating UTLSConn instances.
+func newUTLSConnFactory(clientHello *utls.ClientHelloID) func(conn net.Conn, config *tls.Config) (TLSConn, error) {
 	return func(conn net.Conn, config *tls.Config) (TLSConn, error) {
-		return newConnUTLSWithHelloID(conn, config, clientHello)
+		return NewUTLSConn(conn, config, clientHello)
 	}
 }
 
 // errUTLSIncompatibleStdlibConfig indicates that the stdlib config you passed to
-// newConnUTLSWithHelloID contains some fields we don't support.
+// NewUTLSConn contains some fields we don't support.
 var errUTLSIncompatibleStdlibConfig = errors.New("utls: incompatible stdlib config")
 
-// newConnUTLSWithHelloID creates a new connection with the given client hello ID.
-func newConnUTLSWithHelloID(conn net.Conn, config *tls.Config, cid *utls.ClientHelloID) (TLSConn, error) {
+// NewUTLSConn creates a new connection with the given client hello ID.
+func NewUTLSConn(conn net.Conn, config *tls.Config, cid *utls.ClientHelloID) (*UTLSConn, error) {
 	supportedFields := map[string]bool{
 		"DynamicRecordSizingDisabled": true,
 		"InsecureSkipVerify":          true,
@@ -91,7 +91,7 @@ func newConnUTLSWithHelloID(conn net.Conn, config *tls.Config, cid *utls.ClientH
 		ServerName:                  config.ServerName,
 	}
 	tlsConn := utls.UClient(conn, uConfig, *cid)
-	oconn := &utlsConn{
+	oconn := &UTLSConn{
 		UConn:             tlsConn,
 		testableHandshake: nil,
 		nc:                conn,
@@ -104,7 +104,7 @@ func newConnUTLSWithHelloID(conn net.Conn, config *tls.Config, cid *utls.ClientH
 // See https://github.com/ooni/probe/issues/1770 for more information.
 var ErrUTLSHandshakePanic = errors.New("utls: handshake panic")
 
-func (c *utlsConn) HandshakeContext(ctx context.Context) (err error) {
+func (c *UTLSConn) HandshakeContext(ctx context.Context) (err error) {
 	errch := make(chan error, 1)
 	go func() {
 		defer func() {
@@ -123,14 +123,14 @@ func (c *utlsConn) HandshakeContext(ctx context.Context) (err error) {
 	return
 }
 
-func (c *utlsConn) handshakefn() func() error {
+func (c *UTLSConn) handshakefn() func() error {
 	if c.testableHandshake != nil {
 		return c.testableHandshake
 	}
 	return c.UConn.Handshake
 }
 
-func (c *utlsConn) ConnectionState() tls.ConnectionState {
+func (c *UTLSConn) ConnectionState() tls.ConnectionState {
 	uState := c.Conn.ConnectionState()
 	return tls.ConnectionState{
 		Version:                     uState.Version,
@@ -148,6 +148,6 @@ func (c *utlsConn) ConnectionState() tls.ConnectionState {
 	}
 }
 
-func (c *utlsConn) NetConn() net.Conn {
+func (c *UTLSConn) NetConn() net.Conn {
 	return c.nc
 }

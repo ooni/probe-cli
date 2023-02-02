@@ -1,8 +1,12 @@
-//go:build ios || android
+//go:build ios || (android && !ooni_libtor)
 
 package tunnel
 
-// This file implements our strategy for running tor on mobile.
+//
+// This file implements our old strategy for running tor on mobile, which
+// is based on integrating github.com/ooni/go-libtor. We currently only use
+// this stategy on iOS. See https://github.com/ooni/probe/issues/2365.
+//
 
 import (
 	"strings"

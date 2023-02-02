@@ -17,7 +17,7 @@ import (
 // The zero-value of this struct is invalid. To construct you should either
 // fill all the fields marked as MANDATORY or use NewTrace.
 //
-// Buffered channels
+// # Buffered channels
 //
 // NewTrace uses reasonable buffer sizes for the channels used for collecting
 // events. You should drain the channels used by this implementation after

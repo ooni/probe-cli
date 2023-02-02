@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -60,7 +60,7 @@ func TestHandlerWorkingAsIntended(t *testing.T) {
 	// why we should be doing that).
 	handler := &handler{
 		BaseLogger:        model.DiscardLogger,
-		Indexer:           &atomicx.Int64{},
+		Indexer:           &atomic.Int64{},
 		MaxAcceptableBody: 1 << 24,
 		NewHTTPClient: func(model.Logger) model.HTTPClient {
 			return http.DefaultClient
