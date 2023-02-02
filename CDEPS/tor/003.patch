@@ -1,0 +1,18 @@
+diff --git a/src/feature/api/tor_api.c b/src/feature/api/tor_api.c
+index 88e91ebfd5..2773949264 100644
+--- a/src/feature/api/tor_api.c
++++ b/src/feature/api/tor_api.c
+@@ -131,9 +131,13 @@ tor_main_configuration_free(tor_main_configuration_t *cfg)
+     }
+     raw_free(cfg->argv_owned);
+   }
++  /* See https://github.com/ooni/probe/issues/2405 to understand
++     why we're not closing the controller socker here. */
++  /*
+   if (SOCKET_OK(cfg->owning_controller_socket)) {
+     raw_closesocket(cfg->owning_controller_socket);
+   }
++  */
+   raw_free(cfg);
+ }
+ 
