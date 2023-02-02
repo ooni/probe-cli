@@ -12,7 +12,7 @@ import (
 // ExperimentSession is the experiment's view of a session.
 type ExperimentSession interface {
 	// CheckIn invokes the check-in API.
-	CheckIn(ctx context.Context, config *OOAPICheckInConfig) (*OOAPICheckInNettests, error)
+	CheckIn(ctx context.Context, config *OOAPICheckInConfig) (*OOAPICheckInResultNettests, error)
 
 	// DefaultHTTPClient returns the default HTTPClient used by the session.
 	DefaultHTTPClient() HTTPClient

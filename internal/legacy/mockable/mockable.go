@@ -145,7 +145,7 @@ func (sess *Session) UserAgent() string {
 	return sess.MockableUserAgent
 }
 
-func (sess *Session) CheckIn(ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInNettests, error) {
+func (sess *Session) CheckIn(ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInResultNettests, error) {
 	panic("not implemented")
 }
 

@@ -9,11 +9,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync/atomic"
 
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
 	"github.com/hexops/gotextdiff/span"
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/httpx"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -24,11 +24,11 @@ import (
 var (
 	// v2CountEmptyNettestNames counts the number of cases in which we have been
 	// given an empty nettest name, which is useful for testing.
-	v2CountEmptyNettestNames = &atomicx.Int64{}
+	v2CountEmptyNettestNames = &atomic.Int64{}
 
 	// v2CountFailedExperiments countes the number of failed experiments
 	// and is useful when testing this package
-	v2CountFailedExperiments = &atomicx.Int64{}
+	v2CountFailedExperiments = &atomic.Int64{}
 )
 
 // V2Descriptor describes a list of nettests to run together.

@@ -50,7 +50,7 @@ func Main(ctx context.Context, args *model.ExperimentMainArgs, config *Config) e
 	inputs := getInputs(args, checkInResp)
 
 	// Create an instance of the experiment's measurer.
-	measurer := &Measurer{Config: config}
+	measurer := &Measurer{Config: *config}
 
 	// Record when we started running this nettest.
 	testStartTime := time.Now()
@@ -94,7 +94,7 @@ func Main(ctx context.Context, args *model.ExperimentMainArgs, config *Config) e
 
 // getInputs obtains inputs from either args or checkInResp giving
 // priority to user supplied arguments inside args.
-func getInputs(args *model.ExperimentMainArgs, checkInResp *model.OOAPICheckInNettests) []model.OOAPIURLInfo {
+func getInputs(args *model.ExperimentMainArgs, checkInResp *model.OOAPICheckInResultNettests) []model.OOAPIURLInfo {
 	runtimex.Assert(checkInResp.WebConnectivity != nil, "getInputs passed invalid checkInResp")
 	inputs := args.Inputs
 	if len(inputs) < 1 {

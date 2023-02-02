@@ -24,7 +24,7 @@ func CallCheckIn(
 	ctx context.Context,
 	args *model.ExperimentMainArgs,
 	sess model.ExperimentSession,
-) (*model.OOAPICheckInNettests, error) {
+) (*model.OOAPICheckInResultNettests, error) {
 	return sess.CheckIn(ctx, &model.OOAPICheckInConfig{
 		Charging:        args.Charging,
 		OnWiFi:          args.OnWiFi,
