@@ -205,14 +205,27 @@ func (p *torProcess) runtor(ctx context.Context, cc net.Conn, args ...string) {
 	// filedesc is good, os.NewFile shouldn't fail.
 	filep := os.NewFile(uintptr(filedesc), "")
 	runtimex.Assert(filep != nil, "os.NewFile should not fail")
+
+	// Create a new net.Conn using a copy of the underlying
+	// file descriptor as documented above.
 	conn, err := net.FileConn(filep)
 	if p.simulateFileConnFailure {
 		err = ErrCannotCreateControlSocket
 	}
 	if err != nil {
+		filep.Close()
 		p.startErr <- err // nonblocking channel
 		return
 	}
+
+	// From the documentation of [net.FileConn]:
+	//
+	//	It is the caller's responsibility to close f when
+	//	finished. Closing c does not affect f, and closing
+	//	f does not affect c.
+	//
+	// So, it's safe to close the filep now.
+	filep.Close()
 
 	// In the following we're going to possibly call Close multiple
 	// times. Let's be very sure that this close is idempotent.
@@ -227,7 +240,7 @@ func (p *torProcess) runtor(ctx context.Context, cc net.Conn, args ...string) {
 		<-ctx.Done()
 	}()
 
-	// Route messages from and to the control connection.
+	// Route messages to and from the control connection.
 	go sendrecvThenClose(cc, conn)
 	go sendrecvThenClose(conn, cc)
 
