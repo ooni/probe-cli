@@ -29,9 +29,10 @@ func getTorStartConf(config *Config, dataDir string, extraArgs []string) (*tor.S
 	config.logger().Infof("tunnel: tor: exec: <internal/libtor> %s %s",
 		dataDir, strings.Join(extraArgs, " "))
 	return &tor.StartConf{
-		ProcessCreator: creator,
-		DataDir:        dataDir,
-		ExtraArgs:      extraArgs,
-		NoHush:         true,
+		ProcessCreator:         creator,
+		UseEmbeddedControlConn: true,
+		DataDir:                dataDir,
+		ExtraArgs:              extraArgs,
+		NoHush:                 true,
 	}, nil
 }
