@@ -207,7 +207,7 @@ func (p *torProcess) runtor(ctx context.Context, cc net.Conn, args ...string) {
 	runtimex.Assert(filep != nil, "os.NewFile should not fail")
 
 	// Create a new net.Conn using a copy of the underlying
-	// file descriptor as documented above.
+	// file descriptor using net.FileConn (see below).
 	conn, err := net.FileConn(filep)
 	if p.simulateFileConnFailure {
 		err = ErrCannotCreateControlSocket
