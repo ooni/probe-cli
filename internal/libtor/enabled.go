@@ -138,5 +138,6 @@ func (e *embeddedProcess) EmbeddedControlConn() (net.Conn, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to create control socket: %v", err)
 	}
+	file.Close() // net.FileConn duplicates the fd
 	return conn, nil
 }
