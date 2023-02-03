@@ -20,6 +20,13 @@ func getTorStartConf(config *Config, dataDir string, extraArgs []string) (*tor.S
 	config.logger().Infof("tunnel: tor: exec: <ooni/go-libtor> %s %s",
 		dataDir, strings.Join(extraArgs, " "))
 	return &tor.StartConf{
+		// Implementation note: go-libtor leaks a file descriptor when you set
+		// UseEmbeddedControlConn, as documented by
+		//
+		//	https://github.com/ooni/probe/issues/2405
+		//
+		// This is why we're not using this field for now. The above mentioned
+		// issue also refers to what a possible fix would look like.
 		ProcessCreator: libtor.Creator,
 		DataDir:        dataDir,
 		ExtraArgs:      extraArgs,
