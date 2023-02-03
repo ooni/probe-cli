@@ -1,18 +1,48 @@
+diff --git a/src/core/mainloop/connection.c b/src/core/mainloop/connection.c
+index cf25213cb1..d690de3892 100644
+--- a/src/core/mainloop/connection.c
++++ b/src/core/mainloop/connection.c
+@@ -149,6 +149,8 @@
+
+ #include "core/or/congestion_control_flow.h"
+
++#include <stdio.h>
++
+ /**
+  * On Windows and Linux we cannot reliably bind() a socket to an
+  * address and port if: 1) There's already a socket bound to wildcard
+@@ -949,6 +951,7 @@ connection_free_minimal(connection_t *conn)
+
+   if (SOCKET_OK(conn->s)) {
+     log_debug(LD_NET,"closing fd %d.",(int)conn->s);
++    fprintf(stderr, "SBSDEBUG: connection_free_minimal %lld\n", (long long)conn->s);
+     tor_close_socket(conn->s);
+     conn->s = TOR_INVALID_SOCKET;
+   }
 diff --git a/src/feature/api/tor_api.c b/src/feature/api/tor_api.c
-index 88e91ebfd5..2773949264 100644
+index 88e91ebfd5..fb49d92ad7 100644
 --- a/src/feature/api/tor_api.c
 +++ b/src/feature/api/tor_api.c
-@@ -131,9 +131,13 @@ tor_main_configuration_free(tor_main_configuration_t *cfg)
-     }
+@@ -116,6 +116,11 @@ tor_main_configuration_setup_control_socket(tor_main_configuration_t *cfg)
+   cfg_add_owned_arg(cfg, "__OwningControllerFD");
+   cfg_add_owned_arg(cfg, buf);
+
++  fprintf(
++    stderr, "SBSDEBUG: tor_main_configuration_setup_control_socket %lld %lld\n",
++    (long long)fds[0], (long long)fds[1]
++  );
++
+   cfg->owning_controller_socket = fds[1];
+   return fds[0];
+ }
+@@ -132,6 +137,10 @@ tor_main_configuration_free(tor_main_configuration_t *cfg)
      raw_free(cfg->argv_owned);
    }
-+  /* See https://gitlab.torproject.org/tpo/core/tor/-/issues/40747 to
-+     understand why we're not closing the socket here. */
-+  /*
    if (SOCKET_OK(cfg->owning_controller_socket)) {
++    fprintf(
++      stderr, "SBSDEBUG: tor_main_configuration_free %lld\n",
++      (long long)cfg->owning_controller_socket
++    );
      raw_closesocket(cfg->owning_controller_socket);
    }
-+  */
    raw_free(cfg);
- }
-
