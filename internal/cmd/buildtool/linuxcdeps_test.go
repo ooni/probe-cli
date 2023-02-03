@@ -322,6 +322,11 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 				"git", "apply", faketopdir + "/CDEPS/tor/002.patch",
 			},
 		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/tor/003.patch",
+			},
+		}, {
 			Env: []string{
 				"CFLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong -fstack-clash-protection -fPIC -fsanitize=bounds -fsanitize-undefined-trap-on-error -O2",
 				"CXXFLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong -fstack-clash-protection -fPIC -fsanitize=bounds -fsanitize-undefined-trap-on-error -O2",

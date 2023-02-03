@@ -1667,6 +1667,11 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 				"git", "apply", faketopdir + "/CDEPS/tor/002.patch",
 			},
 		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/tor/003.patch",
+			},
+		}, {
 			Env: []string{
 				"AS=" + fakeBinPath + "/armv7a-linux-androideabi21-clang",
 				"CC=" + fakeBinPath + "/armv7a-linux-androideabi21-clang",
@@ -1736,6 +1741,11 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 			Env: []string{},
 			Argv: []string{
 				"git", "apply", faketopdir + "/CDEPS/tor/002.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/tor/003.patch",
 			},
 		}, {
 			Env: []string{
@@ -1809,6 +1819,11 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 				"git", "apply", faketopdir + "/CDEPS/tor/002.patch",
 			},
 		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/tor/003.patch",
+			},
+		}, {
 			Env: []string{
 				"AS=" + fakeBinPath + "/i686-linux-android21-clang",
 				"CC=" + fakeBinPath + "/i686-linux-android21-clang",
@@ -1878,6 +1893,11 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 			Env: []string{},
 			Argv: []string{
 				"git", "apply", faketopdir + "/CDEPS/tor/002.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/tor/003.patch",
 			},
 		}, {
 			Env: []string{
