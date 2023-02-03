@@ -257,17 +257,47 @@ func newAndroidCBuildEnv(androidHome, ndkDir, ooniArch string) *cBuildEnv {
 
 // androidCflags returns the CFLAGS to use on Android.
 func androidCflags(arch string) []string {
-	// See https://airbus-seclab.github.io/c-compiler-security/ as well as the flags
-	// produced by running ndk-build inside the android/ndk-samples repository
-	// (see https://github.com/android/ndk-samples/tree/android-mk/hello-jni/jni).
+	// As of 2023-02-02, these are the compiler flags that ndk-build
+	// would use to produce a static library. To get the flags you
+	// need the following filesystem structure:
 	//
-	// TODO(bassosimone): as of 2023-01-10, -fstack-clash-protection causes
-	// a warning when compiling for either arm or arm64.
+	//	foobar/
+	//		jni/
+	//			Android.mk
+	//			Application.mk
+	//			hello.c
 	//
-	// TODO(bassosimone): as of 2023-01-10, -fsanitize=safe-stack is not
-	// defined when compiling for arm and causes a linker error. (It's curious
-	// that we see a linker error but this happens because zlib also builds
-	// some examples as part of its default build.)
+	// where the content of Android.mk is the following:
+	//
+	//	LOCAL_PATH := $(call my-dir)
+	//	include $(CLEAR_VARS)
+	//	LOCAL_SRC_FILES := hello.c
+	//	LOCAL_MODULE    := hello
+	//	include $(BUILD_STATIC_LIBRARY)
+	//
+	// the content of Application.mk is the following:
+	//
+	//	APP_ABI := all
+	//
+	// the content of hello.c is the following:
+	//
+	//	int hello(int x) { return x; }
+	//
+	// To see the command line flags you need to run this command:
+	//
+	//	$ANDROID_NDK_ROOT/ndk-build V=1
+	//
+	// We discarded flags that set the target and the sysroot
+	// because we use the cross compiler rather than calling
+	// the clang binary directly. We also discarded all warnings
+	// because we don't own the code we're compiling.
+	//
+	// What changed compared to previous compiler flags that
+	// caused segfaults is basically that now we don't try to
+	// use any sanitizer, where previously we tried some.
+	//
+	// We also removed -DNDEBUG because tor fails to build if
+	// the -DNDEBUG compiler flag is set. (Nice!)
 	switch arch {
 	case "386":
 		return []string{
@@ -280,10 +310,6 @@ func androidCflags(arch string) []string {
 			"-fPIC",
 			"-O2",
 			"-DANDROID",
-			"-fsanitize=safe-stack",
-			"-fstack-clash-protection",
-			"-fsanitize=bounds",
-			"-fsanitize-undefined-trap-on-error",
 			"-mstackrealign",
 		}
 	case "amd64":
@@ -297,10 +323,6 @@ func androidCflags(arch string) []string {
 			"-fPIC",
 			"-O2",
 			"-DANDROID",
-			"-fsanitize=safe-stack",
-			"-fstack-clash-protection",
-			"-fsanitize=bounds",
-			"-fsanitize-undefined-trap-on-error",
 		}
 	case "arm":
 		return []string{
@@ -311,11 +333,9 @@ func androidCflags(arch string) []string {
 			"-no-canonical-prefixes",
 			"-D_FORTIFY_SOURCE=2",
 			"-fpic",
+			"-mthumb",
 			"-Oz",
 			"-DANDROID",
-			"-fsanitize=bounds",
-			"-fsanitize-undefined-trap-on-error",
-			"-mthumb",
 		}
 	case "arm64":
 		return []string{
@@ -328,9 +348,6 @@ func androidCflags(arch string) []string {
 			"-fpic",
 			"-O2",
 			"-DANDROID",
-			"-fsanitize=safe-stack",
-			"-fsanitize=bounds",
-			"-fsanitize-undefined-trap-on-error",
 		}
 	default:
 		panic(errors.New("unsupported arch"))
