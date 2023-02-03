@@ -6,8 +6,8 @@ index 88e91ebfd5..2773949264 100644
      }
      raw_free(cfg->argv_owned);
    }
-+  /* See https://github.com/ooni/probe/issues/2405 to understand
-+     why we're not closing the controller socker here. */
++  /* See https://gitlab.torproject.org/tpo/core/tor/-/issues/40747 to
++     understand why we're not closing the socket here. */
 +  /*
    if (SOCKET_OK(cfg->owning_controller_socket)) {
      raw_closesocket(cfg->owning_controller_socket);
@@ -15,4 +15,4 @@ index 88e91ebfd5..2773949264 100644
 +  */
    raw_free(cfg);
  }
- 
+
