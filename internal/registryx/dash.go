@@ -1,13 +1,10 @@
 package registryx
 
 import (
-	"context"
-
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/database"
-	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/experiment/dash"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/setter"
 	"github.com/spf13/cobra"
 )
 
@@ -16,39 +13,19 @@ type dashOptions struct {
 	ConfigOptions []string
 }
 
+var _ model.ExperimentOptions = &dashOptions{}
+
 func init() {
 	options := &dashOptions{}
-	AllExperiments["dash"] = &Factory{
-		Main: func(ctx context.Context, sess *engine.Session, db *database.DatabaseProps) error {
-			config := &dash.Config{}
-			configMap := mustMakeMapStringAny(options.ConfigOptions)
-			if err := setOptionsAny(config, configMap); err != nil {
-				return err
-			}
-			return dashMain(ctx, sess, options, config, db)
-		},
-		Oonirun: func(ctx context.Context, sess *engine.Session, inputs []string,
-			args map[string]any, extraOptions map[string]any, db *database.DatabaseProps) error {
-			options := &dashOptions{}
-			if err := setOptionsAny(options, args); err != nil {
-				return err
-			}
-			config := &dash.Config{}
-			if err := setOptionsAny(config, extraOptions); err != nil {
-				return err
-			}
-			return dashMain(ctx, sess, options, config, db)
-		},
-		BuildFlags: func(experimentName string, rootCmd *cobra.Command) {
-			dashBuildFlags(experimentName, rootCmd, options, &dash.Config{})
-		},
-	}
+	AllExperimentOptions["dash"] = options
+	AllExperiments["dash"] = &dash.ExperimentMain{}
 }
 
-func dashMain(ctx context.Context, sess model.ExperimentSession, options *dashOptions,
-	config *dash.Config, db *database.DatabaseProps) error {
-	annotations := mustMakeMapStringString(options.Annotations)
-	args := &model.ExperimentMainArgs{
+// SetArguments
+func (do *dashOptions) SetArguments(sess model.ExperimentSession,
+	db *model.DatabaseProps) *model.ExperimentMainArgs {
+	annotations := mustMakeMapStringString(do.Annotations)
+	return &model.ExperimentMainArgs{
 		Annotations:    annotations, // TODO(bassosimone): fill
 		CategoryCodes:  nil,         // accept any category
 		Charging:       true,
@@ -63,24 +40,37 @@ func dashMain(ctx context.Context, sess model.ExperimentSession, options *dashOp
 		RunType:        model.RunTypeManual,
 		Session:        sess,
 	}
-	return dash.Main(ctx, args, config)
 }
 
-func dashBuildFlags(experimentName string, rootCmd *cobra.Command,
-	options *dashOptions, config any) {
+// ExtraOptions
+func (do *dashOptions) ExtraOptions() map[string]any {
+	return mustMakeMapStringAny(do.ConfigOptions)
+}
+
+// BuildWithOONIRun
+func (do *dashOptions) BuildWithOONIRun(inputs []string, args map[string]any) error {
+	if err := setter.SetOptionsAny(do, args); err != nil {
+		return err
+	}
+	return nil
+}
+
+// BuildFlags
+func (do *dashOptions) BuildFlags(experimentName string, rootCmd *cobra.Command) {
 	flags := rootCmd.Flags()
+	config := dash.Config{}
 
 	flags.StringSliceVarP(
-		&options.Annotations,
+		&do.Annotations,
 		"annotation",
 		"A",
 		[]string{},
 		"add KEY=VALUE annotation to the report (can be repeated multiple times)",
 	)
 
-	if doc := documentationForOptions(experimentName, config); doc != "" {
+	if doc := setter.DocumentationForOptions(experimentName, config); doc != "" {
 		flags.StringSliceVarP(
-			&options.ConfigOptions,
+			&do.ConfigOptions,
 			"options",
 			"O",
 			[]string{},

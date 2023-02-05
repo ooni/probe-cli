@@ -179,8 +179,13 @@ func V2MeasureDescriptor(ctx context.Context, config *LinkConfig, desc *V2Descri
 			v2CountEmptyNettestNames.Add(1)
 			continue
 		}
+		// populate options using the V2Nettest struct
+		options := registryx.AllExperimentOptions[nettest.TestName]
+		options.BuildWithOONIRun(nettest.Inputs, nettest.Args)
+		// pass the set options to the experiment factory
 		factory := registryx.AllExperiments[nettest.TestName]
-		err := factory.Oonirun(ctx, config.Session, nettest.Inputs, nettest.Args, nettest.Options, config.DatabaseProps)
+		factory.SetArguments(config.Session, config.DatabaseProps, nettest.Options)
+		err := factory.Main(ctx)
 		if err != nil {
 			logger.Warnf("cannot run experiment: %s", err.Error())
 			v2CountFailedExperiments.Add(1)

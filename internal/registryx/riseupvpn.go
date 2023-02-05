@@ -1,13 +1,10 @@
 package registryx
 
 import (
-	"context"
-
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/database"
-	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/experiment/riseupvpn"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/setter"
 	"github.com/spf13/cobra"
 )
 
@@ -16,39 +13,19 @@ type riseupvpnOptions struct {
 	ConfigOptions []string
 }
 
+var _ model.ExperimentOptions = &riseupvpnOptions{}
+
 func init() {
 	options := &riseupvpnOptions{}
-	AllExperiments["riseupvpn"] = &Factory{
-		Main: func(ctx context.Context, sess *engine.Session, db *database.DatabaseProps) error {
-			config := &riseupvpn.Config{}
-			configMap := mustMakeMapStringAny(options.ConfigOptions)
-			if err := setOptionsAny(config, configMap); err != nil {
-				return err
-			}
-			return riseupvpnMain(ctx, sess, options, config, db)
-		},
-		Oonirun: func(ctx context.Context, sess *engine.Session, inputs []string,
-			args map[string]any, extraOptions map[string]any, db *database.DatabaseProps) error {
-			options := &riseupvpnOptions{}
-			if err := setOptionsAny(options, args); err != nil {
-				return err
-			}
-			config := &riseupvpn.Config{}
-			if err := setOptionsAny(config, extraOptions); err != nil {
-				return err
-			}
-			return riseupvpnMain(ctx, sess, options, config, db)
-		},
-		BuildFlags: func(experimentName string, rootCmd *cobra.Command) {
-			riseupvpnBuildFlags(experimentName, rootCmd, options, &riseupvpn.Config{})
-		},
-	}
+	AllExperimentOptions["riseupvpn"] = options
+	AllExperiments["riseupvpn"] = &riseupvpn.ExperimentMain{}
 }
 
-func riseupvpnMain(ctx context.Context, sess model.ExperimentSession, options *riseupvpnOptions,
-	config *riseupvpn.Config, db *database.DatabaseProps) error {
-	annotations := mustMakeMapStringString(options.Annotations)
-	args := &model.ExperimentMainArgs{
+// SetArguments
+func (ro *riseupvpnOptions) SetArguments(sess model.ExperimentSession,
+	db *model.DatabaseProps) *model.ExperimentMainArgs {
+	annotations := mustMakeMapStringString(ro.Annotations)
+	return &model.ExperimentMainArgs{
 		Annotations:    annotations, // TODO(bassosimone): fill
 		CategoryCodes:  nil,         // accept any category
 		Charging:       true,
@@ -63,24 +40,37 @@ func riseupvpnMain(ctx context.Context, sess model.ExperimentSession, options *r
 		RunType:        model.RunTypeManual,
 		Session:        sess,
 	}
-	return riseupvpn.Main(ctx, args, config)
 }
 
-func riseupvpnBuildFlags(experimentName string, rootCmd *cobra.Command,
-	options *riseupvpnOptions, config any) {
+// ExtraOptions
+func (ro *riseupvpnOptions) ExtraOptions() map[string]any {
+	return mustMakeMapStringAny(ro.ConfigOptions)
+}
+
+// BuildWithOONIRun
+func (ro *riseupvpnOptions) BuildWithOONIRun(inputs []string, args map[string]any) error {
+	if err := setter.SetOptionsAny(ro, args); err != nil {
+		return err
+	}
+	return nil
+}
+
+// BuildFlags
+func (ro *riseupvpnOptions) BuildFlags(experimentName string, rootCmd *cobra.Command) {
 	flags := rootCmd.Flags()
+	config := &riseupvpn.Config{}
 
 	flags.StringSliceVarP(
-		&options.Annotations,
+		&ro.Annotations,
 		"annotation",
 		"A",
 		[]string{},
 		"add KEY=VALUE annotation to the report (can be repeated multiple times)",
 	)
 
-	if doc := documentationForOptions(experimentName, config); doc != "" {
+	if doc := setter.DocumentationForOptions(experimentName, config); doc != "" {
 		flags.StringSliceVarP(
-			&options.ConfigOptions,
+			&ro.ConfigOptions,
 			"options",
 			"O",
 			[]string{},

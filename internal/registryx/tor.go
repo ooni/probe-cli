@@ -1,13 +1,10 @@
 package registryx
 
 import (
-	"context"
-
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/database"
-	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/experiment/tor"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/setter"
 	"github.com/spf13/cobra"
 )
 
@@ -16,39 +13,18 @@ type torOptions struct {
 	ConfigOptions []string
 }
 
+var _ model.ExperimentOptions = &torOptions{}
+
 func init() {
-	options := &torOptions{}
-	AllExperiments["tor"] = &Factory{
-		Main: func(ctx context.Context, sess *engine.Session, db *database.DatabaseProps) error {
-			config := &tor.Config{}
-			configMap := mustMakeMapStringAny(options.ConfigOptions)
-			if err := setOptionsAny(config, configMap); err != nil {
-				return err
-			}
-			return torMain(ctx, sess, options, config, db)
-		},
-		Oonirun: func(ctx context.Context, sess *engine.Session, inputs []string,
-			args map[string]any, extraOptions map[string]any, db *database.DatabaseProps) error {
-			options := &torOptions{}
-			if err := setOptionsAny(options, args); err != nil {
-				return err
-			}
-			config := &tor.Config{}
-			if err := setOptionsAny(config, extraOptions); err != nil {
-				return err
-			}
-			return torMain(ctx, sess, options, config, db)
-		},
-		BuildFlags: func(experimentName string, rootCmd *cobra.Command) {
-			torBuildFlags(experimentName, rootCmd, options, &tor.Config{})
-		},
-	}
+	options := &webConnectivityOptions{}
+	AllExperimentOptions["tor"] = options
+	AllExperiments["tor"] = &tor.ExperimentMain{}
 }
 
-func torMain(ctx context.Context, sess model.ExperimentSession, options *torOptions,
-	config *tor.Config, db *database.DatabaseProps) error {
-	annotations := mustMakeMapStringString(options.Annotations)
-	args := &model.ExperimentMainArgs{
+func (toro *torOptions) SetArguments(sess model.ExperimentSession,
+	db *model.DatabaseProps) *model.ExperimentMainArgs {
+	annotations := mustMakeMapStringString(toro.Annotations)
+	return &model.ExperimentMainArgs{
 		Annotations:    annotations, // TODO(bassosimone): fill
 		CategoryCodes:  nil,         // accept any category
 		Charging:       true,
@@ -63,24 +39,34 @@ func torMain(ctx context.Context, sess model.ExperimentSession, options *torOpti
 		RunType:        model.RunTypeManual,
 		Session:        sess,
 	}
-	return tor.Main(ctx, args, config)
 }
 
-func torBuildFlags(experimentName string, rootCmd *cobra.Command,
-	options *torOptions, config any) {
+func (toro *torOptions) ExtraOptions() map[string]any {
+	return mustMakeMapStringAny(toro.ConfigOptions)
+}
+
+func (toro *torOptions) BuildWithOONIRun(inputs []string, args map[string]any) error {
+	if err := setter.SetOptionsAny(toro, args); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (toro *torOptions) BuildFlags(experimentName string, rootCmd *cobra.Command) {
 	flags := rootCmd.Flags()
+	config := &tor.Config{}
 
 	flags.StringSliceVarP(
-		&options.Annotations,
+		&toro.Annotations,
 		"annotation",
 		"A",
 		[]string{},
 		"add KEY=VALUE annotation to the report (can be repeated multiple times)",
 	)
 
-	if doc := documentationForOptions(experimentName, config); doc != "" {
+	if doc := setter.DocumentationForOptions(experimentName, config); doc != "" {
 		flags.StringSliceVarP(
-			&options.ConfigOptions,
+			&toro.ConfigOptions,
 			"options",
 			"O",
 			[]string{},

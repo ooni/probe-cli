@@ -1,13 +1,10 @@
 package registryx
 
 import (
-	"context"
-
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/database"
-	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/experiment/signal"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/setter"
 	"github.com/spf13/cobra"
 )
 
@@ -16,41 +13,21 @@ type signalOptions struct {
 	ConfigOptions []string
 }
 
+var _ model.ExperimentOptions = &signalOptions{}
+
 func init() {
 	options := &signalOptions{}
-	AllExperiments["signal"] = &Factory{
-		Main: func(ctx context.Context, sess *engine.Session, db *database.DatabaseProps) error {
-			config := &signal.Config{}
-			configMap := mustMakeMapStringAny(options.ConfigOptions)
-			if err := setOptionsAny(config, configMap); err != nil {
-				return err
-			}
-			return signalMain(ctx, sess, options, config, db)
-		},
-		Oonirun: func(ctx context.Context, sess *engine.Session, inputs []string,
-			args map[string]any, extraOptions map[string]any, db *database.DatabaseProps) error {
-			options := &signalOptions{}
-			if err := setOptionsAny(options, args); err != nil {
-				return err
-			}
-			config := &signal.Config{}
-			if err := setOptionsAny(config, extraOptions); err != nil {
-				return err
-			}
-			return signalMain(ctx, sess, options, config, db)
-		},
-		BuildFlags: func(experimentName string, rootCmd *cobra.Command) {
-			signalBuildFlags(experimentName, rootCmd, options, &signal.Config{})
-		},
-	}
+	AllExperimentOptions["signal"] = options
+	AllExperiments["signal"] = &signal.ExperimentMain{}
 }
 
-func signalMain(ctx context.Context, sess model.ExperimentSession, options *signalOptions,
-	config *signal.Config, db *database.DatabaseProps) error {
-	annotations := mustMakeMapStringString(options.Annotations)
-	args := &model.ExperimentMainArgs{
-		Annotations:    annotations, // TODO(bassosimone): fill
-		CategoryCodes:  nil,         // accept any category
+// SetArguments
+func (so *signalOptions) SetArguments(sess model.ExperimentSession,
+	db *model.DatabaseProps) *model.ExperimentMainArgs {
+	annotations := mustMakeMapStringString(so.Annotations)
+	return &model.ExperimentMainArgs{
+		Annotations:    annotations,
+		CategoryCodes:  nil, // accept any category
 		Charging:       true,
 		Callbacks:      model.NewPrinterCallbacks(log.Log),
 		Database:       db.Database,
@@ -63,24 +40,37 @@ func signalMain(ctx context.Context, sess model.ExperimentSession, options *sign
 		RunType:        model.RunTypeManual,
 		Session:        sess,
 	}
-	return signal.Main(ctx, args, config)
 }
 
-func signalBuildFlags(experimentName string, rootCmd *cobra.Command,
-	options *signalOptions, config any) {
+// ExtraOptions
+func (so *signalOptions) ExtraOptions() map[string]any {
+	return mustMakeMapStringAny(so.ConfigOptions)
+}
+
+// BuildWithOONIRun
+func (so *signalOptions) BuildWithOONIRun(inputs []string, args map[string]any) error {
+	if err := setter.SetOptionsAny(so, args); err != nil {
+		return err
+	}
+	return nil
+}
+
+// BuildFlags
+func (so *signalOptions) BuildFlags(experimentName string, rootCmd *cobra.Command) {
 	flags := rootCmd.Flags()
+	config := &signal.Config{}
 
 	flags.StringSliceVarP(
-		&options.Annotations,
+		&so.Annotations,
 		"annotation",
 		"A",
 		[]string{},
 		"add KEY=VALUE annotation to the report (can be repeated multiple times)",
 	)
 
-	if doc := documentationForOptions(experimentName, config); doc != "" {
+	if doc := setter.DocumentationForOptions(experimentName, config); doc != "" {
 		flags.StringSliceVarP(
-			&options.ConfigOptions,
+			&so.ConfigOptions,
 			"options",
 			"O",
 			[]string{},

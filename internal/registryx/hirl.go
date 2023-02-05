@@ -1,13 +1,10 @@
 package registryx
 
 import (
-	"context"
-
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/database"
-	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/experiment/hirl"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/setter"
 	"github.com/spf13/cobra"
 )
 
@@ -16,39 +13,19 @@ type hirlOptions struct {
 	ConfigOptions []string
 }
 
+var _ model.ExperimentOptions = &hirlOptions{}
+
 func init() {
 	options := &hirlOptions{}
-	AllExperiments["hirl"] = &Factory{
-		Main: func(ctx context.Context, sess *engine.Session, db *database.DatabaseProps) error {
-			config := &hirl.Config{}
-			configMap := mustMakeMapStringAny(options.ConfigOptions)
-			if err := setOptionsAny(config, configMap); err != nil {
-				return err
-			}
-			return hirlMain(ctx, sess, options, config, db)
-		},
-		Oonirun: func(ctx context.Context, sess *engine.Session, inputs []string,
-			args map[string]any, extraOptions map[string]any, db *database.DatabaseProps) error {
-			options := &hirlOptions{}
-			if err := setOptionsAny(options, args); err != nil {
-				return err
-			}
-			config := &hirl.Config{}
-			if err := setOptionsAny(config, extraOptions); err != nil {
-				return err
-			}
-			return hirlMain(ctx, sess, options, config, db)
-		},
-		BuildFlags: func(experimentName string, rootCmd *cobra.Command) {
-			hirlBuildFlags(experimentName, rootCmd, options, &hirl.Config{})
-		},
-	}
+	AllExperimentOptions["hirl"] = options
+	AllExperiments["hirl"] = &hirl.ExperimentMain{}
 }
 
-func hirlMain(ctx context.Context, sess model.ExperimentSession, options *hirlOptions,
-	config *hirl.Config, db *database.DatabaseProps) error {
-	annotations := mustMakeMapStringString(options.Annotations)
-	args := &model.ExperimentMainArgs{
+// SetArguments
+func (hirlo *hirlOptions) SetArguments(sess model.ExperimentSession,
+	db *model.DatabaseProps) *model.ExperimentMainArgs {
+	annotations := mustMakeMapStringString(hirlo.Annotations)
+	return &model.ExperimentMainArgs{
 		Annotations:    annotations, // TODO(bassosimone): fill
 		CategoryCodes:  nil,         // accept any category
 		Charging:       true,
@@ -63,24 +40,37 @@ func hirlMain(ctx context.Context, sess model.ExperimentSession, options *hirlOp
 		RunType:        model.RunTypeManual,
 		Session:        sess,
 	}
-	return hirl.Main(ctx, args, config)
 }
 
-func hirlBuildFlags(experimentName string, rootCmd *cobra.Command,
-	options *hirlOptions, config any) {
+// ExtraOptions
+func (hirlo *hirlOptions) ExtraOptions() map[string]any {
+	return mustMakeMapStringAny(hirlo.ConfigOptions)
+}
+
+// BuildWithOONIRun
+func (hirlo *hirlOptions) BuildWithOONIRun(inputs []string, args map[string]any) error {
+	if err := setter.SetOptionsAny(hirlo, args); err != nil {
+		return err
+	}
+	return nil
+}
+
+// BuildFlags
+func (hirlo *hirlOptions) BuildFlags(experimentName string, rootCmd *cobra.Command) {
 	flags := rootCmd.Flags()
+	config := hirl.Config{}
 
 	flags.StringSliceVarP(
-		&options.Annotations,
+		&hirlo.Annotations,
 		"annotation",
 		"A",
 		[]string{},
 		"add KEY=VALUE annotation to the report (can be repeated multiple times)",
 	)
 
-	if doc := documentationForOptions(experimentName, config); doc != "" {
+	if doc := setter.DocumentationForOptions(experimentName, config); doc != "" {
 		flags.StringSliceVarP(
-			&options.ConfigOptions,
+			&hirlo.ConfigOptions,
 			"options",
 			"O",
 			[]string{},

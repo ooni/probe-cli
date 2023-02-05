@@ -1,17 +1,14 @@
 package registryx
 
 import (
-	"context"
-
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/database"
-	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/experiment/hhfm"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/setter"
 	"github.com/spf13/cobra"
 )
 
-// hhfmOptions contains options for web connectivity.
+// hhfmOptions contains options for hhfm.
 type hhfmOptions struct {
 	Annotations    []string
 	InputFilePaths []string
@@ -21,47 +18,25 @@ type hhfmOptions struct {
 	ConfigOptions  []string
 }
 
+var _ model.ExperimentOptions = &hhfmOptions{}
+
 func init() {
 	options := &hhfmOptions{}
-	AllExperiments["hhfm"] = &Factory{
-		Main: func(ctx context.Context, sess *engine.Session, db *database.DatabaseProps) error {
-			config := &hhfm.Config{}
-			configMap := mustMakeMapStringAny(options.ConfigOptions)
-			if err := setOptionsAny(config, configMap); err != nil {
-				return err
-			}
-			return hhfmMain(ctx, sess, options, config, db)
-		},
-		Oonirun: func(ctx context.Context, sess *engine.Session, inputs []string,
-			args map[string]any, extraOptions map[string]any, db *database.DatabaseProps) error {
-			options := &hhfmOptions{}
-			options.Inputs = inputs
-			if err := setOptionsAny(options, args); err != nil {
-				return err
-			}
-			config := &hhfm.Config{}
-			if err := setOptionsAny(config, extraOptions); err != nil {
-				return err
-			}
-			return hhfmMain(ctx, sess, options, config, db)
-		},
-		BuildFlags: func(experimentName string, rootCmd *cobra.Command) {
-			hhfmBuildFlags(experimentName, rootCmd, options, &hhfm.Config{})
-		},
-	}
+	AllExperimentOptions["hhfm"] = options
+	AllExperiments["hhfm"] = &hhfm.ExperimentMain{}
 }
 
-func hhfmMain(ctx context.Context, sess model.ExperimentSession, options *hhfmOptions,
-	config *hhfm.Config, db *database.DatabaseProps) error {
-	annotations := mustMakeMapStringString(options.Annotations)
-	args := &model.ExperimentMainArgs{
+func (hhfmo *hhfmOptions) SetArguments(sess model.ExperimentSession,
+	db *model.DatabaseProps) *model.ExperimentMainArgs {
+	annotations := mustMakeMapStringString(hhfmo.Annotations)
+	return &model.ExperimentMainArgs{
 		Annotations:    annotations, // TODO(bassosimone): fill
 		CategoryCodes:  nil,         // accept any category
 		Charging:       true,
 		Callbacks:      model.NewPrinterCallbacks(log.Log),
 		Database:       db.Database,
-		Inputs:         options.Inputs,
-		MaxRuntime:     options.MaxRuntime,
+		Inputs:         hhfmo.Inputs,
+		MaxRuntime:     hhfmo.MaxRuntime,
 		MeasurementDir: db.DatabaseResult.MeasurementDir,
 		NoCollector:    false,
 		OnWiFi:         true,
@@ -69,16 +44,27 @@ func hhfmMain(ctx context.Context, sess model.ExperimentSession, options *hhfmOp
 		RunType:        model.RunTypeManual,
 		Session:        sess,
 	}
-
-	return hhfm.Main(ctx, args, config)
 }
 
-func hhfmBuildFlags(experimentName string, rootCmd *cobra.Command,
-	options *hhfmOptions, config any) {
+// ExtraOptions
+func (hhfmo *hhfmOptions) ExtraOptions() map[string]any {
+	return mustMakeMapStringAny(hhfmo.ConfigOptions)
+}
+
+// BuildWithOONIRun
+func (hhfmo *hhfmOptions) BuildWithOONIRun(inputs []string, args map[string]any) error {
+	if err := setter.SetOptionsAny(hhfmo, args); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (hhfmo *hhfmOptions) BuildFlags(experimentName string, rootCmd *cobra.Command) {
 	flags := rootCmd.Flags()
+	config := hhfm.Config{}
 
 	flags.StringSliceVarP(
-		&options.Annotations,
+		&hhfmo.Annotations,
 		"annotation",
 		"A",
 		[]string{},
@@ -86,7 +72,7 @@ func hhfmBuildFlags(experimentName string, rootCmd *cobra.Command,
 	)
 
 	flags.StringSliceVarP(
-		&options.InputFilePaths,
+		&hhfmo.InputFilePaths,
 		"input-file",
 		"f",
 		[]string{},
@@ -94,7 +80,7 @@ func hhfmBuildFlags(experimentName string, rootCmd *cobra.Command,
 	)
 
 	flags.StringSliceVarP(
-		&options.Inputs,
+		&hhfmo.Inputs,
 		"input",
 		"i",
 		[]string{},
@@ -102,22 +88,22 @@ func hhfmBuildFlags(experimentName string, rootCmd *cobra.Command,
 	)
 
 	flags.Int64Var(
-		&options.MaxRuntime,
+		&hhfmo.MaxRuntime,
 		"max-runtime",
 		0,
 		"maximum runtime in seconds for the experiment (zero means infinite)",
 	)
 
 	flags.BoolVar(
-		&options.Random,
+		&hhfmo.Random,
 		"random",
 		false,
 		"randomize the inputs list",
 	)
 
-	if doc := documentationForOptions(experimentName, config); doc != "" {
+	if doc := setter.DocumentationForOptions(experimentName, config); doc != "" {
 		flags.StringSliceVarP(
-			&options.ConfigOptions,
+			&hhfmo.ConfigOptions,
 			"options",
 			"O",
 			[]string{},

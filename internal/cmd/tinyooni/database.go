@@ -8,11 +8,12 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/database"
 	"github.com/ooni/probe-cli/v3/internal/engine"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // initDatabase initializes a database and returns the corresponding database properties.
-func initDatabase(ctx context.Context, sess *engine.Session, globalOptions *GlobalOptions) *database.DatabaseProps {
+func initDatabase(ctx context.Context, sess *engine.Session, globalOptions *GlobalOptions) *model.DatabaseProps {
 	ooniHome := maybeGetOONIDir(globalOptions.HomeDir)
 
 	db, err := database.Open(databasePath(ooniHome))
@@ -24,7 +25,7 @@ func initDatabase(ctx context.Context, sess *engine.Session, globalOptions *Glob
 	dbResult, err := db.CreateResult(ooniHome, "custom", networkDB.ID)
 	runtimex.PanicOnError(err, "db.CreateResult failed")
 
-	return &database.DatabaseProps{
+	return &model.DatabaseProps{
 		Database:        db,
 		DatabaseNetwork: networkDB,
 		DatabaseResult:  dbResult,

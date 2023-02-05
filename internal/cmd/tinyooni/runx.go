@@ -31,7 +31,10 @@ func registerAllExperiments(rootCmd *cobra.Command, globalOptions *GlobalOptions
 		}
 		rootCmd.AddCommand(subCmd)
 
-		factory.BuildFlags(subCmd.Use, subCmd)
+		// build experiment specific flags here
+		options := registryx.AllExperimentOptions[subCmd.Use]
+		options.BuildFlags(subCmd.Use, subCmd)
+		factory.SetOptions(options)
 	}
 }
 
@@ -49,6 +52,7 @@ func runExperimentsMain(experimentName string, currentOptions *GlobalOptions) {
 	dbProps := initDatabase(ctx, sess, currentOptions)
 
 	factory := registryx.AllExperiments[experimentName]
-	err = factory.Main(ctx, sess, dbProps)
+	factory.SetArguments(sess, dbProps, nil)
+	err = factory.Main(ctx)
 	runtimex.PanicOnError(err, fmt.Sprintf("%s.Main failed", experimentName))
 }

@@ -1,13 +1,10 @@
 package registryx
 
 import (
-	"context"
-
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/database"
-	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/experiment/whatsapp"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/setter"
 	"github.com/spf13/cobra"
 )
 
@@ -16,40 +13,21 @@ type whatsappOptions struct {
 	ConfigOptions []string
 }
 
+var _ model.ExperimentOptions = &whatsappOptions{}
+
 func init() {
 	options := &whatsappOptions{}
-	AllExperiments["whatsapp"] = &Factory{
-		Main: func(ctx context.Context, sess *engine.Session, db *database.DatabaseProps) error {
-			config := &whatsapp.Config{}
-			configMap := mustMakeMapStringAny(options.ConfigOptions)
-			if err := setOptionsAny(config, configMap); err != nil {
-				return err
-			}
-			return whatsappMain(ctx, sess, options, config, db)
-		},
-		Oonirun: func(ctx context.Context, sess *engine.Session, inputs []string,
-			args map[string]any, extraOptions map[string]any, db *database.DatabaseProps) error {
-			options := &whatsappOptions{}
-			if err := setOptionsAny(options, args); err != nil {
-				return err
-			}
-			config := &whatsapp.Config{}
-			if err := setOptionsAny(config, extraOptions); err != nil {
-				return err
-			}
-			return whatsappMain(ctx, sess, options, config, db)
-		},
-		BuildFlags: func(experimentName string, rootCmd *cobra.Command) {
-			whatsappBuildFlags(experimentName, rootCmd, options, &whatsapp.Config{})
-		},
-	}
+	AllExperimentOptions["whatsapp"] = options
+	AllExperiments["whatsapp"] = &whatsapp.ExperimentMain{}
 }
 
-func whatsappMain(ctx context.Context, sess model.ExperimentSession, options *whatsappOptions,
-	config *whatsapp.Config, db *database.DatabaseProps) error {
-	args := &model.ExperimentMainArgs{
-		Annotations:    map[string]string{}, // TODO(bassosimone): fill
-		CategoryCodes:  nil,                 // accept any category
+// SetArguments
+func (wo *whatsappOptions) SetArguments(sess model.ExperimentSession,
+	db *model.DatabaseProps) *model.ExperimentMainArgs {
+	annotations := mustMakeMapStringString(wo.Annotations)
+	return &model.ExperimentMainArgs{
+		Annotations:    annotations,
+		CategoryCodes:  nil, // accept any category
 		Charging:       true,
 		Callbacks:      model.NewPrinterCallbacks(log.Log),
 		Database:       db.Database,
@@ -62,24 +40,37 @@ func whatsappMain(ctx context.Context, sess model.ExperimentSession, options *wh
 		RunType:        model.RunTypeManual,
 		Session:        sess,
 	}
-	return whatsapp.Main(ctx, args, config)
 }
 
-func whatsappBuildFlags(experimentName string, rootCmd *cobra.Command,
-	options *whatsappOptions, config any) {
+// ExtraOptions
+func (wo *whatsappOptions) ExtraOptions() map[string]any {
+	return mustMakeMapStringAny(wo.ConfigOptions)
+}
+
+// BuildWithOONIRun
+func (wo *whatsappOptions) BuildWithOONIRun(inputs []string, args map[string]any) error {
+	if err := setter.SetOptionsAny(wo, args); err != nil {
+		return err
+	}
+	return nil
+}
+
+// BuildFlags
+func (wo *whatsappOptions) BuildFlags(experimentName string, rootCmd *cobra.Command) {
 	flags := rootCmd.Flags()
+	config := &whatsapp.Config{}
 
 	flags.StringSliceVarP(
-		&options.Annotations,
+		&wo.Annotations,
 		"annotation",
 		"A",
 		[]string{},
 		"add KEY=VALUE annotation to the report (can be repeated multiple times)",
 	)
 
-	if doc := documentationForOptions(experimentName, config); doc != "" {
+	if doc := setter.DocumentationForOptions(experimentName, config); doc != "" {
 		flags.StringSliceVarP(
-			&options.ConfigOptions,
+			&wo.ConfigOptions,
 			"options",
 			"O",
 			[]string{},

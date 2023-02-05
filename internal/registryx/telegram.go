@@ -1,13 +1,10 @@
 package registryx
 
 import (
-	"context"
-
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/database"
-	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/experiment/telegram"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/setter"
 	"github.com/spf13/cobra"
 )
 
@@ -16,39 +13,19 @@ type telegramOptions struct {
 	ConfigOptions []string
 }
 
+var _ model.ExperimentOptions = &telegramOptions{}
+
 func init() {
 	options := &telegramOptions{}
-	AllExperiments["telegram"] = &Factory{
-		Main: func(ctx context.Context, sess *engine.Session, db *database.DatabaseProps) error {
-			config := &telegram.Config{}
-			configMap := mustMakeMapStringAny(options.ConfigOptions)
-			if err := setOptionsAny(config, configMap); err != nil {
-				return err
-			}
-			return telegramMain(ctx, sess, options, config, db)
-		},
-		Oonirun: func(ctx context.Context, sess *engine.Session, inputs []string,
-			args map[string]any, extraOptions map[string]any, db *database.DatabaseProps) error {
-			options := &telegramOptions{}
-			if err := setOptionsAny(options, args); err != nil {
-				return err
-			}
-			config := &telegram.Config{}
-			if err := setOptionsAny(config, extraOptions); err != nil {
-				return err
-			}
-			return telegramMain(ctx, sess, options, config, db)
-		},
-		BuildFlags: func(experimentName string, rootCmd *cobra.Command) {
-			telegramBuildFlags(experimentName, rootCmd, options, &telegram.Config{})
-		},
-	}
+	AllExperimentOptions["telegram"] = options
+	AllExperiments["telegram"] = &telegram.ExperimentMain{}
 }
 
-func telegramMain(ctx context.Context, sess model.ExperimentSession, options *telegramOptions,
-	config *telegram.Config, db *database.DatabaseProps) error {
-	annotations := mustMakeMapStringString(options.Annotations)
-	args := &model.ExperimentMainArgs{
+// SetArguments
+func (to *telegramOptions) SetArguments(sess model.ExperimentSession,
+	db *model.DatabaseProps) *model.ExperimentMainArgs {
+	annotations := mustMakeMapStringString(to.Annotations)
+	return &model.ExperimentMainArgs{
 		Annotations:    annotations, // TODO(bassosimone): fill
 		CategoryCodes:  nil,         // accept any category
 		Charging:       true,
@@ -63,24 +40,37 @@ func telegramMain(ctx context.Context, sess model.ExperimentSession, options *te
 		RunType:        model.RunTypeManual,
 		Session:        sess,
 	}
-	return telegram.Main(ctx, args, config)
 }
 
-func telegramBuildFlags(experimentName string, rootCmd *cobra.Command,
-	options *telegramOptions, config any) {
+// ExtraOptions
+func (to *telegramOptions) ExtraOptions() map[string]any {
+	return mustMakeMapStringAny(to.ConfigOptions)
+}
+
+// BuildWithOONIRun
+func (to *telegramOptions) BuildWithOONIRun(inputs []string, args map[string]any) error {
+	if err := setter.SetOptionsAny(to, args); err != nil {
+		return err
+	}
+	return nil
+}
+
+// BuildFlags
+func (to *telegramOptions) BuildFlags(experimentName string, rootCmd *cobra.Command) {
 	flags := rootCmd.Flags()
+	config := &telegram.Config{}
 
 	flags.StringSliceVarP(
-		&options.Annotations,
+		&to.Annotations,
 		"annotation",
 		"A",
 		[]string{},
 		"add KEY=VALUE annotation to the report (can be repeated multiple times)",
 	)
 
-	if doc := documentationForOptions(experimentName, config); doc != "" {
+	if doc := setter.DocumentationForOptions(experimentName, config); doc != "" {
 		flags.StringSliceVarP(
-			&options.ConfigOptions,
+			&to.ConfigOptions,
 			"options",
 			"O",
 			[]string{},

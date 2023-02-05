@@ -73,10 +73,13 @@ func v1Measure(ctx context.Context, config *LinkConfig, URL string) error {
 	if mv := pu.Query().Get("mv"); mv != "1.2.0" {
 		return fmt.Errorf("%w: unknown minimum version", ErrInvalidV1URLQueryArgument)
 	}
-	factory := registryx.AllExperiments[name]
 	args := make(map[string]any)
+	options := registryx.AllExperimentOptions[name]
+	options.BuildWithOONIRun(inputs, args)
 	extraOptions := make(map[string]any) // the v1 spec does not allow users to pass experiment options
-	return factory.Oonirun(ctx, config.Session, inputs, args, extraOptions, config.DatabaseProps)
+	factory := registryx.AllExperiments[name]
+	factory.SetArguments(config.Session, config.DatabaseProps, extraOptions)
+	return factory.Main(ctx)
 }
 
 // v1ParseArguments parses the `ta` field of the query string.

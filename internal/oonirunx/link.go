@@ -8,7 +8,6 @@ import (
 	"context"
 	"strings"
 
-	"github.com/ooni/probe-cli/v3/internal/database"
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -39,7 +38,7 @@ type LinkConfig struct {
 	Session *engine.Session
 
 	// DatabaseProps is the MANDATORY database properties to use
-	DatabaseProps *database.DatabaseProps
+	DatabaseProps *model.DatabaseProps
 }
 
 // LinkRunner knows how to run an OONI Run v1 or v2 link.

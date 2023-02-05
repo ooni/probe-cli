@@ -1,7 +1,9 @@
 package registryx
 
+import "github.com/ooni/probe-cli/v3/internal/model"
+
 // Where we register all the available experiments.
-var AllExperiments = map[string]*Factory{}
+var AllExperiments = map[string]Experiment{}
 
 // ExperimentNames returns the name of all experiments
 func ExperimentNames() (names []string) {
@@ -10,3 +12,5 @@ func ExperimentNames() (names []string) {
 	}
 	return
 }
+
+var AllExperimentOptions = map[string]model.ExperimentOptions{}

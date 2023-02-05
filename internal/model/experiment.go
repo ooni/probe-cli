@@ -7,6 +7,8 @@ package model
 
 import (
 	"context"
+
+	"github.com/spf13/cobra"
 )
 
 // ExperimentSession is the experiment's view of a session.
@@ -381,4 +383,19 @@ type Saver interface {
 // ExperimentInputProcessor processes inputs for an experiment.
 type ExperimentInputProcessor interface {
 	Run(ctx context.Context) error
+}
+
+// ExperimentOptions
+type ExperimentOptions interface {
+	// SetArguments
+	SetArguments(sess ExperimentSession, db *DatabaseProps) *ExperimentMainArgs
+
+	// ExtraOptions
+	ExtraOptions() map[string]any
+
+	// BuildWithOONIRun
+	BuildWithOONIRun(inputs []string, args map[string]any) error
+
+	// BuildFlags
+	BuildFlags(experimentName string, rootCmd *cobra.Command)
 }

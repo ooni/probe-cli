@@ -1,13 +1,10 @@
 package registryx
 
 import (
-	"context"
-
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/database"
-	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/experiment/psiphon"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/setter"
 	"github.com/spf13/cobra"
 )
 
@@ -16,39 +13,19 @@ type psiphonOptions struct {
 	ConfigOptions []string
 }
 
+var _ model.ExperimentOptions = &psiphonOptions{}
+
 func init() {
 	options := &psiphonOptions{}
-	AllExperiments["psiphon"] = &Factory{
-		Main: func(ctx context.Context, sess *engine.Session, db *database.DatabaseProps) error {
-			config := &psiphon.Config{}
-			configMap := mustMakeMapStringAny(options.ConfigOptions)
-			if err := setOptionsAny(config, configMap); err != nil {
-				return err
-			}
-			return psiphonMain(ctx, sess, options, config, db)
-		},
-		Oonirun: func(ctx context.Context, sess *engine.Session, inputs []string,
-			args map[string]any, extraOptions map[string]any, db *database.DatabaseProps) error {
-			options := &psiphonOptions{}
-			if err := setOptionsAny(options, args); err != nil {
-				return err
-			}
-			config := &psiphon.Config{}
-			if err := setOptionsAny(config, extraOptions); err != nil {
-				return err
-			}
-			return psiphonMain(ctx, sess, options, config, db)
-		},
-		BuildFlags: func(experimentName string, rootCmd *cobra.Command) {
-			psiphonBuildFlags(experimentName, rootCmd, options, &psiphon.Config{})
-		},
-	}
+	AllExperimentOptions["psiphon"] = options
+	AllExperiments["psiphon"] = &psiphon.ExperimentMain{}
 }
 
-func psiphonMain(ctx context.Context, sess model.ExperimentSession, options *psiphonOptions,
-	config *psiphon.Config, db *database.DatabaseProps) error {
-	annotations := mustMakeMapStringString(options.Annotations)
-	args := &model.ExperimentMainArgs{
+// SetArguments
+func (po *psiphonOptions) SetArguments(sess model.ExperimentSession,
+	db *model.DatabaseProps) *model.ExperimentMainArgs {
+	annotations := mustMakeMapStringString(po.Annotations)
+	return &model.ExperimentMainArgs{
 		Annotations:    annotations, // TODO(bassosimone): fill
 		CategoryCodes:  nil,         // accept any category
 		Charging:       true,
@@ -63,24 +40,37 @@ func psiphonMain(ctx context.Context, sess model.ExperimentSession, options *psi
 		RunType:        model.RunTypeManual,
 		Session:        sess,
 	}
-	return psiphon.Main(ctx, args, config)
 }
 
-func psiphonBuildFlags(experimentName string, rootCmd *cobra.Command,
-	options *psiphonOptions, config any) {
+// ExtraOptions
+func (po *psiphonOptions) ExtraOptions() map[string]any {
+	return mustMakeMapStringAny(po.ConfigOptions)
+}
+
+// BuildWithOONIRun
+func (po *psiphonOptions) BuildWithOONIRun(inputs []string, args map[string]any) error {
+	if err := setter.SetOptionsAny(po, args); err != nil {
+		return err
+	}
+	return nil
+}
+
+// BuildFlags
+func (po *psiphonOptions) BuildFlags(experimentName string, rootCmd *cobra.Command) {
 	flags := rootCmd.Flags()
+	config := psiphon.Config{}
 
 	flags.StringSliceVarP(
-		&options.Annotations,
+		&po.Annotations,
 		"annotation",
 		"A",
 		[]string{},
 		"add KEY=VALUE annotation to the report (can be repeated multiple times)",
 	)
 
-	if doc := documentationForOptions(experimentName, config); doc != "" {
+	if doc := setter.DocumentationForOptions(experimentName, config); doc != "" {
 		flags.StringSliceVarP(
-			&options.ConfigOptions,
+			&po.ConfigOptions,
 			"options",
 			"O",
 			[]string{},
