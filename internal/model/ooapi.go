@@ -87,6 +87,9 @@ type OOAPICheckInResult struct {
 type OOAPICheckInResultConfig struct {
 	// Features contains feature flags.
 	Features map[string]bool `json:"features"`
+
+	// TestHelpers contains test-helpers information.
+	TestHelpers map[string][]OOAPIService `json:"test_helpers"`
 }
 
 // OOAPICheckReportIDResponse is the check-report-id API response.
