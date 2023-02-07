@@ -222,12 +222,16 @@ func (f *httpRequestFunc) newHTTPRequest(
 		return nil, err
 	}
 
-	if v := f.Host; v != "" { // note: if req.Host is empty, Go uses URL.Hostname
-		req.Header.Set("Host", v) // ignored by Go but we want it into the measurement
+	if v := f.Host; v != "" {
 		req.Host = v
 	} else {
-		req.Host = URL.Host // above we log the content of req.Host
+		// Go would use URL.Host as "Host" header anyways in case we leave req.Host empty.
+		// We already set it here so that we can use req.Host for logging.
+		req.Host = URL.Host
 	}
+	// req.Header["Host"] is ignored by Go but we want to have it in the measurement
+	// to reflect what we think has been sent as HTTP headers.
+	req.Header.Set("Host", req.Host)
 
 	if v := f.Accept; v != "" {
 		req.Header.Set("Accept", v)
