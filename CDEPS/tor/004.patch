@@ -1,0 +1,30 @@
+diff --git a/src/app/main/main.c b/src/app/main/main.c
+index 838e129d04..3aa1b334fa 100644
+--- a/src/app/main/main.c
++++ b/src/app/main/main.c
+@@ -92,6 +92,8 @@
+ #include <unistd.h>
+ #endif
+ 
++#include <stdio.h>
++
+ #ifdef HAVE_SYSTEMD
+ #   if defined(__COVERITY__) && !defined(__INCLUDE_LEVEL__)
+ /* Systemd's use of gcc's __INCLUDE_LEVEL__ extension macro appears to confuse
+@@ -1284,8 +1286,16 @@ pubsub_install(void)
+ {
+     pubsub_builder_t *builder = pubsub_builder_new();
+     int r = subsystems_add_pubsub(builder);
++    if (r != 0) {
++        fprintf(stderr, "SBSDEBUG: subsystems_add_pubsub failed: %d\n", r);
++        /* FALLTHROUGH */
++    }
+     tor_assert(r == 0);
+     r = tor_mainloop_connect_pubsub(builder); // consumes builder
++    if (r != 0) {
++        fprintf(stderr, "SBSDEBUG: tor_mainloop_connect_pubsub failed: %d\n", r);
++        /* FALLTHROUGH */
++    }
+     tor_assert(r == 0);
+ }
+ 
