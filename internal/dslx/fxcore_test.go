@@ -164,7 +164,6 @@ func TestFirstError(t *testing.T) {
 		{Error: mockErr},
 	}
 	for _, p := range perm {
-		fmt.Println(p)
 		var mockResults []*Maybe[string]
 		for _, i := range p {
 			mockResults = append(mockResults, res[i])

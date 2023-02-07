@@ -3,6 +3,7 @@ package dslx
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"io"
 	"net"
 	"sync/atomic"
@@ -14,29 +15,54 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
-type tlsTest struct {
-	expectedConn net.Conn
-	expectedErr  error
-	wasClosed    bool
-	name         string
-	handshaker   *mocks.TLSHandshaker
-	tcpConn      mocks.Conn
-	sni          string
-	address      string
-	domain       string
-}
-
 func TestTLSHandshake(t *testing.T) {
-	// TODO(kelmenhorst): this should be more elaborate
-	_ = TLSHandshake(
+	certpool := x509.NewCertPool()
+	certpool.AddCert(&x509.Certificate{})
+
+	f := TLSHandshake(
 		&ConnPool{},
 		TLSHandshakeOptionInsecureSkipVerify(true),
 		TLSHandshakeOptionNextProto([]string{"h3"}),
 		TLSHandshakeOptionServerName("sni"),
+		TLSHandshakeOptionRootCAs(certpool),
 	)
+	var handshakeFunc *tlsHandshakeFunc
+	var ok bool
+	if handshakeFunc, ok = f.(*tlsHandshakeFunc); !ok {
+		t.Fatal("TLSHandshake: unexpected type. Expected: tlsHandshakeFunc")
+	}
+	if !handshakeFunc.InsecureSkipVerify {
+		t.Fatalf("TLSHandshake: %s, expected %v, got %v", "InsecureSkipVerify", true, false)
+	}
+	if len(handshakeFunc.NextProto) != 1 || handshakeFunc.NextProto[0] != "h3" {
+		t.Fatalf("TLSHandshake: %s, expected %v, got %v", "NextProto", []string{"h3"}, handshakeFunc.NextProto)
+	}
+	if handshakeFunc.ServerName != "sni" {
+		t.Fatalf("TLSHandshake: %s, expected %s, got %s", "ServerName", "sni", handshakeFunc.ServerName)
+	}
+	if !handshakeFunc.RootCAs.Equal(certpool) {
+		t.Fatalf("TLSHandshake: %s, expected %v, got %v", "RootCAs", certpool, handshakeFunc.RootCAs)
+	}
 }
 
 func TestApplyTLS(t *testing.T) {
+	type configOptions struct {
+		sni        string
+		address    string
+		domain     string
+		nextProtos []string
+	}
+
+	type tlsTest struct {
+		expectedConn net.Conn
+		expectedErr  error
+		wasClosed    bool
+		name         string
+		handshaker   *mocks.TLSHandshaker
+		tcpConn      mocks.Conn
+		config       configOptions
+	}
+
 	tcpConn := mocks.Conn{
 		MockClose: func() error {
 			wasClosed = true
@@ -57,63 +83,72 @@ func TestApplyTLS(t *testing.T) {
 	tests := []tlsTest{
 		{
 			name:         "with EOF",
+			tcpConn:      tcpConn,
+			handshaker:   eofHandshaker,
 			expectedConn: nil,
 			expectedErr:  io.EOF,
-			handshaker:   eofHandshaker,
-			tcpConn:      tcpConn,
-			domain:       "domain.com",
 		},
 		{
 			name:         "success",
+			tcpConn:      tcpConn,
+			handshaker:   goodHandshaker,
 			expectedConn: tlsConn,
 			expectedErr:  nil,
 			wasClosed:    true,
-			handshaker:   goodHandshaker,
-			tcpConn:      tcpConn,
 		},
 		{
 			name:         "with sni",
+			config:       configOptions{sni: "sni.com"},
+			tcpConn:      tcpConn,
+			handshaker:   goodHandshaker,
 			expectedConn: tlsConn,
 			expectedErr:  nil,
 			wasClosed:    true,
-			handshaker:   goodHandshaker,
-			tcpConn:      tcpConn,
-			sni:          "sni.com",
 		},
 		{
 			name:         "with invalid address",
-			address:      "#",
+			config:       configOptions{address: "#"},
+			tcpConn:      tcpConn,
+			handshaker:   goodHandshaker,
 			expectedConn: tlsConn,
 			expectedErr:  nil,
 			wasClosed:    true,
-			handshaker:   goodHandshaker,
+		},
+		{
+			name:         "with options",
+			config:       configOptions{domain: "domain.com", nextProtos: []string{"h3"}},
 			tcpConn:      tcpConn,
+			handshaker:   goodHandshaker,
+			expectedConn: tlsConn,
+			expectedErr:  nil,
+			wasClosed:    true,
 		},
 	}
 
 	for _, test := range tests {
 		pool := &ConnPool{}
 		tlsHandshake := &tlsHandshakeFunc{
+			NextProto:  test.config.nextProtos,
 			Pool:       pool,
-			ServerName: test.sni,
+			ServerName: test.config.sni,
 			handshaker: test.handshaker,
 		}
 		idGen := &atomic.Int64{}
 		zeroTime := time.Time{}
 		trace := measurexlite.NewTrace(idGen.Add(1), zeroTime)
-		address := test.address
+		address := test.config.address
 		if address == "" {
 			address = "1.2.3.4:567"
 		}
 		tcpConn := TCPConnection{
 			Address:     address,
 			Conn:        &test.tcpConn,
-			Domain:      test.domain,
-			Network:     "tcp",
+			Domain:      test.config.domain,
 			IDGenerator: idGen,
 			Logger:      model.DiscardLogger,
-			ZeroTime:    zeroTime,
+			Network:     "tcp",
 			Trace:       trace,
+			ZeroTime:    zeroTime,
 		}
 		res := tlsHandshake.Apply(context.Background(), &tcpConn)
 		if res.Error != test.expectedErr {

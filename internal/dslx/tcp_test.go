@@ -22,6 +22,15 @@ type tcpTest struct {
 
 var wasClosed bool = false
 
+func TestTCPConnect(t *testing.T) {
+	f := TCPConnect(
+		&ConnPool{},
+	)
+	if _, ok := f.(*tcpConnectFunc); !ok {
+		t.Fatal("TCPConnect: unexpected type. Expected: tcpConnectFunc")
+	}
+}
+
 func TestApplyTCP(t *testing.T) {
 	plainConn := &mocks.Conn{
 		MockClose: func() error {
