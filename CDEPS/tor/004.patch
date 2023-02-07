@@ -94,3 +94,71 @@ index 30b9194062..6a554c06bd 100644
  
    pubsub_items_install_bindings(builder->items, dispatcher);
    if (items_out) {
+diff --git a/src/lib/pubsub/pubsub_check.c b/src/lib/pubsub/pubsub_check.c
+index 99e604d715..a9ae957551 100644
+--- a/src/lib/pubsub/pubsub_check.c
++++ b/src/lib/pubsub/pubsub_check.c
+@@ -25,6 +25,7 @@
+ #include "lib/malloc/malloc.h"
+ #include "lib/string/compat_string.h"
+ 
++#include <stdio.h>
+ #include <string.h>
+ 
+ static void pubsub_adjmap_add(pubsub_adjmap_t *map,
+@@ -343,21 +344,27 @@ lint_message(const pubsub_adjmap_t *map, message_id_t msg)
+     log_warn(LD_MESG|LD_BUG,
+              "Message \"%s\" has subscribers, but no publishers.",
+              get_message_id_name(msg));
++    fprintf(stderr, "SBSDEBUG: n_pub == 0\n");
+     ok = false;
+   } else if (n_sub == 0) {
+     log_warn(LD_MESG|LD_BUG,
+              "Message \"%s\" has publishers, but no subscribers.",
+              get_message_id_name(msg));
++    fprintf(stderr, "SBSDEBUG: n_sub == 0\n");
+     ok = false;
+   }
+ 
+   /* Check the message graph topology. */
+-  if (lint_message_graph(map, msg, pub, sub) < 0)
++  if (lint_message_graph(map, msg, pub, sub) < 0) {
++    fprintf(stderr, "SBSDEBUG: lint_message_graph failed\n");
+     ok = false;
++  }
+ 
+   /* Check whether the messages have the same fields set on them. */
+-  if (lint_message_consistency(msg, pub, sub) < 0)
++  if (lint_message_consistency(msg, pub, sub) < 0) {
++    fprintf(stderr, "SBSDEBUG: lint_message_consistency failed\n");
+     ok = false;
++  }
+ 
+   if (!ok) {
+     /* There was a problem -- let's log all the publishers and subscribers on
+@@ -385,6 +392,7 @@ pubsub_adjmap_check(const pubsub_adjmap_t *map)
+   bool all_ok = true;
+   for (unsigned i = 0; i < map->n_msgs; ++i) {
+     if (lint_message(map, i) < 0) {
++      fprintf(stderr, "lint_message failed for %u\n", i);
+       all_ok = false;
+     }
+   }
+@@ -401,11 +409,15 @@ pubsub_builder_check(pubsub_builder_t *builder)
+   pubsub_adjmap_t *map = pubsub_build_adjacency_map(builder->items);
+   int rv = -1;
+ 
+-  if (!map)
++  if (!map) {
++    fprintf(stderr, "SBSDEBUG: pubsub_build_adjacency_map failed\n");
+     goto err; // should be impossible
++  }
+ 
+-  if (pubsub_adjmap_check(map) < 0)
++  if (pubsub_adjmap_check(map) < 0) {
++    fprintf(stderr, "SBSDEBUG: pubsub_adjmap_check failed\n");
+     goto err;
++  }
+ 
+   rv = 0;
+  err:
