@@ -221,3 +221,99 @@ func TestApplyHTTP(t *testing.T) {
 		}
 	})
 }
+
+func TestHTTPTCP(t *testing.T) {
+	t.Run("get httpTransportTCPFunc", func(t *testing.T) {
+		f := HTTPTransportTCP()
+		if _, ok := f.(*httpTransportTCPFunc); !ok {
+			t.Fatal("unexpected type")
+		}
+	})
+	t.Run("get composed function: TCP with HTTP", func(t *testing.T) {
+		f := HTTPRequestOverTCP()
+		if _, ok := f.(*compose2Func[*TCPConnection, *HTTPTransport, *HTTPResponse]); !ok {
+			t.Fatal("unexpected type")
+		}
+	})
+	t.Run("apply httpTransportTCPFunc", func(t *testing.T) {
+		conn := &mocks.Conn{}
+		idGen := &atomic.Int64{}
+		zeroTime := time.Time{}
+		trace := measurexlite.NewTrace(idGen.Add(1), zeroTime)
+		address := ""
+		if address == "" {
+			address = "1.2.3.4:567"
+		}
+		tcpConn := &TCPConnection{
+			Address:     address,
+			Conn:        conn,
+			IDGenerator: idGen,
+			Logger:      model.DiscardLogger,
+			Network:     "tcp",
+			Trace:       trace,
+			ZeroTime:    zeroTime,
+		}
+		f := httpTransportTCPFunc{}
+		res := f.Apply(context.Background(), tcpConn)
+		if res.Error != nil {
+			t.Fatalf("unexpected error: %s", res.Error)
+		}
+		if res.State == nil {
+			t.Fatal("unexpected nil transport")
+		}
+		if res.State.Scheme != "http" {
+			t.Fatalf("unexpected scheme, want %s, got %s", "http", res.State.Scheme)
+		}
+		if res.State.Address != address {
+			t.Fatalf("unexpected address, want %s, got %s", address, res.State.Address)
+		}
+	})
+}
+
+func TestHTTPTLS(t *testing.T) {
+	t.Run("get httpTransportTLSFunc", func(t *testing.T) {
+		f := HTTPTransportTLS()
+		if _, ok := f.(*httpTransportTLSFunc); !ok {
+			t.Fatal("unexpected type")
+		}
+	})
+	t.Run("get composed function: TLS with HTTP", func(t *testing.T) {
+		f := HTTPRequestOverTLS()
+		if _, ok := f.(*compose2Func[*TLSConnection, *HTTPTransport, *HTTPResponse]); !ok {
+			t.Fatal("unexpected type")
+		}
+	})
+	t.Run("apply httpTransportTLSFunc", func(t *testing.T) {
+		conn := &mocks.TLSConn{}
+		idGen := &atomic.Int64{}
+		zeroTime := time.Time{}
+		trace := measurexlite.NewTrace(idGen.Add(1), zeroTime)
+		address := ""
+		if address == "" {
+			address = "1.2.3.4:567"
+		}
+		tlsConn := &TLSConnection{
+			Address:     address,
+			Conn:        conn,
+			IDGenerator: idGen,
+			Logger:      model.DiscardLogger,
+			Network:     "tcp",
+			Trace:       trace,
+			ZeroTime:    zeroTime,
+		}
+		f := httpTransportTLSFunc{}
+		res := f.Apply(context.Background(), tlsConn)
+		if res.Error != nil {
+			t.Fatalf("unexpected error: %s", res.Error)
+		}
+		if res.State == nil {
+			t.Fatal("unexpected nil transport")
+		}
+		if res.State.Scheme != "https" {
+			t.Fatalf("unexpected scheme, want %s, got %s", "https", res.State.Scheme)
+		}
+		if res.State.Address != address {
+			t.Fatalf("unexpected address, want %s, got %s", address, res.State.Address)
+		}
+	})
+}
