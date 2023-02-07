@@ -28,3 +28,69 @@ index 838e129d04..3aa1b334fa 100644
      tor_assert(r == 0);
  }
  
+diff --git a/src/core/mainloop/mainloop_pubsub.c b/src/core/mainloop/mainloop_pubsub.c
+index 1e72ada5f0..72dd348a2e 100644
+--- a/src/core/mainloop/mainloop_pubsub.c
++++ b/src/core/mainloop/mainloop_pubsub.c
+@@ -26,6 +26,8 @@
+ #include "lib/pubsub/pubsub.h"
+ #include "lib/pubsub/pubsub_build.h"
+ 
++#include <stdio.h>
++
+ /**
+  * Dispatcher to use for delivering messages.
+  **/
+@@ -63,8 +65,10 @@ tor_mainloop_connect_pubsub(struct pubsub_builder_t *builder)
+   tor_mainloop_disconnect_pubsub();
+ 
+   the_dispatcher = pubsub_builder_finalize(builder, &the_pubsub_items);
+-  if (! the_dispatcher)
++  if (! the_dispatcher) {
++    fprintf(stderr, "SBSDEBUG: the_distpatcher is NULL\n");
+     goto err;
++  }
+ 
+   rv = 0;
+   goto done;
+diff --git a/src/lib/pubsub/pubsub_build.c b/src/lib/pubsub/pubsub_build.c
+index 30b9194062..6a554c06bd 100644
+--- a/src/lib/pubsub/pubsub_build.c
++++ b/src/lib/pubsub/pubsub_build.c
+@@ -25,7 +25,8 @@
+ #include "lib/log/util_bug.h"
+ #include "lib/malloc/malloc.h"
+ 
+- #include <string.h>
++#include <string.h>
++#include <stdio.h>
+ 
+ /** Construct and return a new empty pubsub_items_t. */
+ static pubsub_items_t *
+@@ -281,19 +282,24 @@ pubsub_builder_finalize(pubsub_builder_t *builder,
+   dispatch_t *dispatcher = NULL;
+   tor_assert_nonfatal(builder->n_connectors == 0);
+ 
+-  if (pubsub_builder_check(builder) < 0)
++  if (pubsub_builder_check(builder) < 0) {
++    fprintf(stderr, "SBSDEBUG: pubsub_builder_check failed\n");
+     goto err;
++  }
+ 
+   if (builder->n_errors) {
+     log_warn(LD_GENERAL, "At least one error occurred previously when "
+              "configuring the dispatcher.");
++    fprintf(stderr, "SBSDEBUG: builder->n_errors is not zero\n");
+     goto err;
+   }
+ 
+   dispatcher = dispatch_new(builder->cfg);
+ 
+-  if (!dispatcher)
++  if (!dispatcher) {
++    fprintf(stderr, "SBSDEBUG: dispatcher_new failed\n");
+     goto err;
++  }
+ 
+   pubsub_items_install_bindings(builder->items, dispatcher);
+   if (items_out) {
