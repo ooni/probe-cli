@@ -9,7 +9,6 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestNewDomainToResolve(t *testing.T) {
@@ -20,71 +19,182 @@ func TestNewDomainToResolve(t *testing.T) {
 		DNSLookupOptionZeroTime(wantZeroTime),
 	)
 	if domainToResolve.Domain != wantDomain {
-		t.Fatalf("expected: %s, got: %s", wantDomain, domainToResolve.Domain)
+		t.Fatalf("unexpected domain, want: %s, got: %s", wantDomain, domainToResolve.Domain)
 	}
 	if domainToResolve.IDGenerator != wantIDGenerator {
-		t.Fatalf("expected: %v, got: %v", wantIDGenerator, domainToResolve.IDGenerator)
+		t.Fatalf("unexpected id generator, want: %v, got: %v", wantIDGenerator, domainToResolve.IDGenerator)
 	}
 	if domainToResolve.Logger != wantLogger {
-		t.Fatalf("expected: %v, got: %v", wantLogger, domainToResolve.Logger)
+		t.Fatalf("unexpected logger, want: %v, got: %v", wantLogger, domainToResolve.Logger)
 	}
 	if domainToResolve.ZeroTime != wantZeroTime {
-		t.Fatalf("expected: %v, got: %v", wantZeroTime, domainToResolve.ZeroTime)
+		t.Fatalf("unexpected zerotime, want: %v, got: %v", wantZeroTime, domainToResolve.ZeroTime)
 	}
-}
-
-type Test struct {
-	name          string
-	domain        DomainToResolve
-	resolver      *mocks.Resolver
-	expectedErr   error
-	expectedState *ResolvedAddresses
 }
 
 func TestGetaddrinfo(t *testing.T) {
-	nxDomainErr := errors.New(netxlite.FailureDNSNXDOMAINError)
-	tests := []Test{
-		{
-			name: "GetAddrInfo w/ Invalid Domain",
-			domain: DomainToResolve{
+	t.Run("get dnsLookupGetaddrinfoFunc", func(t *testing.T) {
+		f := DNSLookupGetaddrinfo()
+		if _, ok := f.(*dnsLookupGetaddrinfoFunc); !ok {
+			t.Fatal("unexpected type, want dnsLookupGetaddrinfoFunc")
+		}
+	})
+	t.Run("apply dnsLookupGetaddrinfoFunc", func(t *testing.T) {
+		t.Run("with lookup error", func(t *testing.T) {
+			mockedErr := errors.New("mocked")
+			domain := &DomainToResolve{
 				Domain:      "example.com",
 				Logger:      model.DiscardLogger,
 				IDGenerator: &atomic.Int64{},
 				ZeroTime:    time.Time{},
-			},
-			resolver: &mocks.Resolver{MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-				return nil, nxDomainErr
-			}},
-			expectedErr: nxDomainErr,
-		},
-		{
-			name: "GetAddrInfo w/ Invalid Domain",
-			domain: DomainToResolve{
+			}
+			f := dnsLookupGetaddrinfoFunc{
+				resolver: &mocks.Resolver{MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+					return nil, mockedErr
+				}},
+			}
+			res := f.Apply(context.Background(), domain)
+			if res.Observations == nil || len(res.Observations) <= 0 {
+				t.Fatal("unexpected empty observations")
+			}
+			if res.Error != mockedErr {
+				t.Fatalf("unexpected error type: %s", res.Error)
+			}
+			if res.State == nil {
+				t.Fatal("unexpected nil state")
+			}
+			if res.State.Addresses != nil {
+				t.Fatal("expected empty addresses here")
+			}
+		})
+		t.Run("with nil resolver", func(t *testing.T) {
+			domain := &DomainToResolve{
 				Domain:      "example.com",
 				Logger:      model.DiscardLogger,
 				IDGenerator: &atomic.Int64{},
 				ZeroTime:    time.Time{},
-			},
-			resolver: &mocks.Resolver{MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-				return []string{"93.184.216.34"}, nil
-			}},
-			expectedErr: nil,
-		},
-	}
-	getaddrinfo := DNSLookupGetaddrinfo().(*dnsLookupGetaddrinfoFunc)
+			}
+			f := dnsLookupGetaddrinfoFunc{}
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+			res := f.Apply(ctx, domain)
+			if res.Observations == nil || len(res.Observations) <= 0 {
+				t.Fatal("unexpected empty observations")
+			}
+			if res.Error == nil || res.Error.Error() != "interrupted" {
+				t.Fatalf("expected context canceled error, got: %s", res.Error)
+			}
+		})
+		t.Run("with success", func(t *testing.T) {
+			domain := &DomainToResolve{
+				Domain:      "example.com",
+				Logger:      model.DiscardLogger,
+				IDGenerator: &atomic.Int64{},
+				ZeroTime:    time.Time{},
+			}
+			f := dnsLookupGetaddrinfoFunc{
+				resolver: &mocks.Resolver{MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+					return []string{"93.184.216.34"}, nil
+				}},
+			}
+			res := f.Apply(context.Background(), domain)
+			if res.Observations == nil || len(res.Observations) <= 0 {
+				t.Fatal("unexpected empty observations")
+			}
+			if res.Error != nil {
+				t.Fatalf("unexpected error: %s", res.Error)
+			}
+			if res.State == nil {
+				t.Fatal("unexpected nil state")
+			}
+			if len(res.State.Addresses) != 1 || res.State.Addresses[0] != "93.184.216.34" {
+				t.Fatal("unexpected addresses")
+			}
+		})
+	})
+}
 
-	for _, test := range tests {
-		getaddrinfo.resolver = test.resolver
-		r := getaddrinfo.Apply(context.Background(), &test.domain)
-		if r.Observations == nil || len(r.Observations) <= 0 {
-			t.Fatalf("%s: expected observations, got none", test.name)
+func TestLookupUDP(t *testing.T) {
+	t.Run("get dnsLookupUDPFunc", func(t *testing.T) {
+		f := DNSLookupUDP("1.1.1.1:53")
+		if _, ok := f.(*dnsLookupUDPFunc); !ok {
+			t.Fatal("unexpected type, want dnsLookupUDPFunc")
 		}
-		if r.Error != test.expectedErr {
-			t.Fatalf("%s: expected: %s, got: %s", test.name, test.expectedErr, r.Error)
-		}
-		if r.Error != nil && r.State == nil {
-			t.Fatalf("%s: unexpected nil-state", test.name)
-		}
-	}
+	})
+	t.Run("apply dnsLookupGetaddrinfoFunc", func(t *testing.T) {
+		t.Run("with lookup error", func(t *testing.T) {
+			mockedErr := errors.New("mocked")
+			domain := &DomainToResolve{
+				Domain:      "example.com",
+				Logger:      model.DiscardLogger,
+				IDGenerator: &atomic.Int64{},
+				ZeroTime:    time.Time{},
+			}
+			f := dnsLookupUDPFunc{
+				Resolver: "1.1.1.1:53",
+				mockResolver: &mocks.Resolver{MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+					return nil, mockedErr
+				}},
+			}
+			res := f.Apply(context.Background(), domain)
+			if res.Observations == nil || len(res.Observations) <= 0 {
+				t.Fatal("unexpected empty observations")
+			}
+			if res.Error != mockedErr {
+				t.Fatalf("unexpected error type: %s", res.Error)
+			}
+			if res.State == nil {
+				t.Fatal("unexpected nil state")
+			}
+			if res.State.Addresses != nil {
+				t.Fatal("expected empty addresses here")
+			}
+		})
+		t.Run("with nil mock resolver", func(t *testing.T) {
+			domain := &DomainToResolve{
+				Domain:      "example.com",
+				Logger:      model.DiscardLogger,
+				IDGenerator: &atomic.Int64{},
+				ZeroTime:    time.Time{},
+			}
+			f := dnsLookupUDPFunc{Resolver: "1.1.1.1:53"}
 
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+			res := f.Apply(ctx, domain)
+			if res.Observations == nil || len(res.Observations) <= 0 {
+				t.Fatal("unexpected empty observations")
+			}
+			if res.Error == nil || res.Error.Error() != "interrupted" {
+				t.Fatalf("expected context canceled error, got: %s", res.Error)
+			}
+		})
+		t.Run("with success", func(t *testing.T) {
+			domain := &DomainToResolve{
+				Domain:      "example.com",
+				Logger:      model.DiscardLogger,
+				IDGenerator: &atomic.Int64{},
+				ZeroTime:    time.Time{},
+			}
+			f := dnsLookupUDPFunc{
+				Resolver: "1.1.1.1:53",
+				mockResolver: &mocks.Resolver{MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+					return []string{"93.184.216.34"}, nil
+				}},
+			}
+			res := f.Apply(context.Background(), domain)
+			if res.Observations == nil || len(res.Observations) <= 0 {
+				t.Fatal("unexpected empty observations")
+			}
+			if res.Error != nil {
+				t.Fatalf("unexpected error: %s", res.Error)
+			}
+			if res.State == nil {
+				t.Fatal("unexpected nil state")
+			}
+			if len(res.State.Addresses) != 1 || res.State.Addresses[0] != "93.184.216.34" {
+				t.Fatal("unexpected addresses")
+			}
+		})
+	})
 }

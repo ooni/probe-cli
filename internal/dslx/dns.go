@@ -11,7 +11,6 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -125,7 +124,7 @@ func DNSLookupGetaddrinfo() Func[*DomainToResolve, *Maybe[*ResolvedAddresses]] {
 
 // dnsLookupGetaddrinfoFunc is the function returned by DNSLookupGetaddrinfo.
 type dnsLookupGetaddrinfoFunc struct {
-	resolver *mocks.Resolver // for testing
+	resolver model.Resolver // for testing
 }
 
 // Apply implements Func.
@@ -148,7 +147,7 @@ func (f *dnsLookupGetaddrinfoFunc) Apply(
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	var resolver model.Resolver = f.resolver
+	resolver := f.resolver
 	if resolver == nil {
 		resolver = trace.NewStdlibResolver(input.Logger)
 	}
@@ -187,7 +186,8 @@ func DNSLookupUDP(resolver string) Func[*DomainToResolve, *Maybe[*ResolvedAddres
 // dnsLookupUDPFunc is the function returned by DNSLookupUDP.
 type dnsLookupUDPFunc struct {
 	// Resolver is the MANDATORY resolver to use.
-	Resolver string
+	Resolver     string
+	mockResolver model.Resolver // for testing
 }
 
 // Apply implements Func.
@@ -210,11 +210,15 @@ func (f *dnsLookupUDPFunc) Apply(
 	const timeout = 4 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	resolver := trace.NewParallelUDPResolver(
-		input.Logger,
-		netxlite.NewDialerWithoutResolver(input.Logger),
-		f.Resolver,
-	)
+
+	resolver := f.mockResolver
+	if resolver == nil {
+		resolver = trace.NewParallelUDPResolver(
+			input.Logger,
+			netxlite.NewDialerWithoutResolver(input.Logger),
+			f.Resolver,
+		)
+	}
 
 	// lookup
 	addrs, err := resolver.LookupHost(ctx, input.Domain)
