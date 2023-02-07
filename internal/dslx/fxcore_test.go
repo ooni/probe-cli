@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -21,6 +22,11 @@ func (f *roundFunc) Apply(ctx context.Context, i float32) *Maybe[int] {
 	return &Maybe[int]{
 		Error: f.err,
 		State: int(i),
+		Observations: []*Observations{
+			{
+				NetworkEvents: []*model.ArchivalNetworkEvent{{Tags: []string{"round"}}},
+			},
+		},
 	}
 }
 
@@ -34,26 +40,34 @@ func (f *toStringFunc) Apply(ctx context.Context, i int) *Maybe[string] {
 	return &Maybe[string]{
 		Error: nil,
 		State: fmt.Sprint(i),
+		Observations: []*Observations{
+			{
+				NetworkEvents: []*model.ArchivalNetworkEvent{{Tags: []string{"toString"}}},
+			},
+		},
 	}
 }
 
 func TestCompose2(t *testing.T) {
 	type testCompose struct {
-		name        string
-		mockError   error
-		expectedRes string
+		name         string
+		mockError    error
+		expectedRes  string
+		expectedObsN int
 	}
 
 	tests := []testCompose{
 		{
-			name:        "Compose2: pipeline succeeds, odd",
-			mockError:   nil,
-			expectedRes: "27",
+			name:         "Compose2: pipeline succeeds",
+			mockError:    nil,
+			expectedRes:  "27",
+			expectedObsN: 2,
 		},
 		{
-			name:        "Compose2: pipeline fails",
-			mockError:   errors.New("mocked"),
-			expectedRes: "",
+			name:         "Compose2: pipeline fails",
+			mockError:    errors.New("mocked"),
+			expectedRes:  "",
+			expectedObsN: 1,
 		},
 	}
 	var v float32 = 27.4
@@ -68,6 +82,24 @@ func TestCompose2(t *testing.T) {
 		if r.State != test.expectedRes {
 			t.Fatalf("%s: expected result state %v, got %v", test.name, test.expectedRes, r.State)
 		}
+		if len(r.Observations) != test.expectedObsN {
+			t.Fatalf("%s: expected number of (merged) observations %d, got %d", test.name, test.expectedObsN, len(r.Observations))
+		}
+	}
+}
+
+func TestObservations(t *testing.T) {
+	funcRound := round(nil)
+	fungToString := toString()
+	composit := Compose2(funcRound, fungToString)
+	r1 := composit.Apply(context.Background(), 27.4)
+	r2 := composit.Apply(context.Background(), 8.2)
+	if len(r1.Observations) != 2 || len(r2.Observations) != 2 {
+		t.Fatalf("Observations: unexpected number of observations")
+	}
+	mergedObservations := ExtractObservations(r1, r2)
+	if len(mergedObservations) != 4 {
+		t.Fatalf("Observations: expected number of merged observations %d, got %d", 4, len(mergedObservations))
 	}
 }
 
