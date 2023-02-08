@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/backendclient"
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/cmd/dismantle/backendclient"
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivitylte"
 	"github.com/ooni/probe-cli/v3/internal/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
