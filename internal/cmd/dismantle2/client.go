@@ -1,4 +1,4 @@
-package session
+package main
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/session"
 )
 
 // Client is a client for a [Session]. You should use a [Client]
@@ -13,7 +14,7 @@ import (
 type Client struct {
 	logger  model.Logger
 	once    sync.Once
-	session *Session
+	session *session.Session
 }
 
 // NewClient creates a [Client] instance.
@@ -21,13 +22,13 @@ func NewClient(logger model.Logger) *Client {
 	return &Client{
 		logger:  logger,
 		once:    sync.Once{},
-		session: New(),
+		session: session.New(),
 	}
 }
 
 // Bootstrap bootstraps a session.
-func (c *Client) Bootstrap(ctx context.Context, req *BootstrapRequest) error {
-	if err := c.session.Send(ctx, &Request{Bootstrap: req}); err != nil {
+func (c *Client) Bootstrap(ctx context.Context, req *session.BootstrapRequest) error {
+	if err := c.session.Send(ctx, &session.Request{Bootstrap: req}); err != nil {
 		return err
 	}
 	for {
@@ -51,8 +52,8 @@ func (c *Client) Bootstrap(ctx context.Context, req *BootstrapRequest) error {
 }
 
 // Geolocate performs geolocation. You must run bootstrap first.
-func (c *Client) Geolocate(ctx context.Context, req *GeolocateRequest) (*geolocate.Results, error) {
-	if err := c.session.Send(ctx, &Request{Geolocate: req}); err != nil {
+func (c *Client) Geolocate(ctx context.Context, req *session.GeolocateRequest) (*geolocate.Results, error) {
+	if err := c.session.Send(ctx, &session.Request{Geolocate: req}); err != nil {
 		return nil, err
 	}
 	for {
@@ -76,8 +77,8 @@ func (c *Client) Geolocate(ctx context.Context, req *GeolocateRequest) (*geoloca
 }
 
 // CheckIn calls the check-in API. You must run bootstrap first.
-func (c *Client) CheckIn(ctx context.Context, req *CheckInRequest) (*model.OOAPICheckInResult, error) {
-	if err := c.session.Send(ctx, &Request{CheckIn: req}); err != nil {
+func (c *Client) CheckIn(ctx context.Context, req *session.CheckInRequest) (*model.OOAPICheckInResult, error) {
+	if err := c.session.Send(ctx, &session.Request{CheckIn: req}); err != nil {
 		return nil, err
 	}
 	for {
@@ -102,8 +103,8 @@ func (c *Client) CheckIn(ctx context.Context, req *CheckInRequest) (*model.OOAPI
 
 // WebConnectivity runs a single-URL Web Connectivity measurement.
 func (c *Client) WebConnectivity(
-	ctx context.Context, req *WebConnectivityRequest) (*model.Measurement, error) {
-	if err := c.session.Send(ctx, &Request{WebConnectivity: req}); err != nil {
+	ctx context.Context, req *session.WebConnectivityRequest) (*model.Measurement, error) {
+	if err := c.session.Send(ctx, &session.Request{WebConnectivity: req}); err != nil {
 		return nil, err
 	}
 	for {
@@ -128,7 +129,7 @@ func (c *Client) WebConnectivity(
 
 // Submit submits a measurement.
 func (c *Client) Submit(ctx context.Context, measurement *model.Measurement) error {
-	if err := c.session.Send(ctx, &Request{Submit: measurement}); err != nil {
+	if err := c.session.Send(ctx, &session.Request{Submit: measurement}); err != nil {
 		return err
 	}
 	for {
@@ -160,7 +161,7 @@ func (c *Client) Close() (err error) {
 }
 
 // emitLog emits a log event.
-func (c *Client) emitLog(ev *LogEvent) {
+func (c *Client) emitLog(ev *session.LogEvent) {
 	switch ev.Level {
 	case "DEBUG":
 		c.logger.Debug(ev.Message)

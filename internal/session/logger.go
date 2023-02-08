@@ -1,5 +1,9 @@
 package session
 
+//
+// A model.Logger emitting events on a Session output channel
+//
+
 import (
 	"fmt"
 	"time"
@@ -7,7 +11,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// LogEvent is an event emitted by a logger.
+// LogEvent is a log event.
 type LogEvent struct {
 	// Timestamp is the log timestamp.
 	Timestamp time.Time
@@ -37,7 +41,7 @@ type sessionLogger struct {
 // Debug implements model.Logger
 func (sl *sessionLogger) Debug(msg string) {
 	if sl.verbose {
-		sl.emit("DEBUG", msg)
+		sl.maybeEmit("DEBUG", msg)
 	}
 }
 
@@ -50,7 +54,7 @@ func (sl *sessionLogger) Debugf(format string, v ...interface{}) {
 
 // Info implements model.Logger
 func (sl *sessionLogger) Info(msg string) {
-	sl.emit("INFO", msg)
+	sl.maybeEmit("INFO", msg)
 }
 
 // Infof implements model.Logger
@@ -60,7 +64,7 @@ func (sl *sessionLogger) Infof(format string, v ...interface{}) {
 
 // Warn implements model.Logger
 func (sl *sessionLogger) Warn(msg string) {
-	sl.emit("WARNING", msg)
+	sl.maybeEmit("WARNING", msg)
 }
 
 // Warnf implements model.Logger
@@ -68,8 +72,8 @@ func (sl *sessionLogger) Warnf(format string, v ...interface{}) {
 	sl.Warn(fmt.Sprintf(format, v...))
 }
 
-// emit emits a log message.
-func (sl *sessionLogger) emit(level, message string) {
+// maybeEmit emits a log message if the output channel buffer is not full.
+func (sl *sessionLogger) maybeEmit(level, message string) {
 	ev := &Event{
 		Log: &LogEvent{
 			Timestamp: time.Now(),
@@ -77,5 +81,5 @@ func (sl *sessionLogger) emit(level, message string) {
 			Message:   message,
 		},
 	}
-	sl.session.emit(ev)
+	sl.session.maybeEmit(ev)
 }

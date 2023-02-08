@@ -1,5 +1,9 @@
 package session
 
+//
+// State of a bootstrapped session.
+//
+
 import (
 	"context"
 	"errors"
@@ -18,14 +22,14 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
-// state is the session's state. Only the background
-// goroutine is allowed to manipulate it.
+// state is the boostrapped [Session] state. Only the background
+// goroutine is allowed to manipulate the [state].
 type state struct {
 	// backendClient is the backend client we're using.
 	backendClient *backendclient.Client
 
-	// checkIn is the most recently fetched check-in result or nil.
-	checkIn *model.OOAPICheckInResult
+	// checkIn is the most recently fetched check-in result.
+	checkIn model.OptionalPtr[model.OOAPICheckInResult]
 
 	// counter is the bytecounter we're using.
 	counter *bytecounter.Counter
@@ -36,8 +40,8 @@ type state struct {
 	// kvstore is the session's key-value store.
 	kvstore model.KeyValueStore
 
-	// location is the most recently resolved location or nil.
-	location *geolocate.Results
+	// location is the most recently resolved location.
+	location model.OptionalPtr[geolocate.Results]
 
 	// logger is the model.Logger we're using.
 	logger model.Logger
@@ -72,6 +76,14 @@ type state struct {
 	userAgent string
 }
 
+// cleanup cleans the resources used by [state].
+func (s *state) cleanup() {
+	s.resolver.CloseIdleConnections()
+	s.httpClient.CloseIdleConnections()
+	s.tunnel.Stop()
+	os.RemoveAll(s.tempDir)
+}
+
 // ErrEmptySoftwareName indicates the software name is empty.
 var ErrEmptySoftwareName = errors.New("session: passed empty software name")
 
@@ -79,18 +91,15 @@ var ErrEmptySoftwareName = errors.New("session: passed empty software name")
 var ErrEmptySoftwareVersion = errors.New("session: passed empty software version")
 
 // newState creates a new [state] instance.
-func (s *Session) newState(ctx context.Context, req *Request) (*state, error) {
-	runtimex.Assert(req.Bootstrap != nil, "passed nil Bootstrap")
-
-	if req.Bootstrap.SoftwareName == "" {
+func (s *Session) newState(ctx context.Context, req *BootstrapRequest) (*state, error) {
+	if req.SoftwareName == "" {
 		return nil, ErrEmptySoftwareName
 	}
-
-	if req.Bootstrap.SoftwareVersion == "" {
+	if req.SoftwareVersion == "" {
 		return nil, ErrEmptySoftwareVersion
 	}
 
-	logger := s.newLogger(req.Bootstrap.VerboseLogging)
+	logger := s.newLogger(req.VerboseLogging)
 
 	// Implementation note: the context we receive from the caller limits the
 	// whole lifetime of the tunnel we're going to create below. Because of
@@ -99,30 +108,50 @@ func (s *Session) newState(ctx context.Context, req *Request) (*state, error) {
 	ts := newTickerService(ctx, s)
 	defer ts.stop()
 
-	logger.Infof("creating key-value store at %s", req.Bootstrap.StateDir)
-	kvstore, err := kvstore.NewFS(req.Bootstrap.StateDir)
+	logger.Infof("creating key-value store at %s", req.StateDir)
+	kvstore, err := kvstore.NewFS(req.StateDir)
 	if err != nil {
 		logger.Warnf("cannot create key-value store: %s", err.Error())
 		return nil, err
 	}
 
-	logger.Infof("creating temporary directory inside %s", req.Bootstrap.TempDir)
-	if err := os.MkdirAll(req.Bootstrap.TempDir, 0700); err != nil {
-		logger.Warnf("cannot create temporary directory root: %s", err.Error())
-		return nil, err
-	}
-	tempDir, err := os.MkdirTemp(req.Bootstrap.TempDir, "")
+	tempDir, err := stateNewTempDir(logger, req)
 	if err != nil {
-		logger.Warnf("cannot create session temporary directory: %s", err.Error())
+		// warning message already printed
 		return nil, err
 	}
 
 	logger.Infof("checking whether we need to create a circumvention tunnel")
-	tunnel, err := newTunnel(ctx, logger, req.Bootstrap)
+	tunnel, err := newTunnel(ctx, logger, req)
 	if err != nil {
 		logger.Warnf("cannot create tunnel: %s", err.Error())
 		return nil, err
 	}
+
+	state := newStateCannotFail(
+		logger,
+		kvstore,
+		tunnel,
+		tempDir,
+		req,
+	)
+	return state, nil
+}
+
+// newStateCannotFail constructs a [state] once we have
+// performed all operations that may fail.
+func newStateCannotFail(
+	logger model.Logger,
+	kvstore model.KeyValueStore,
+	tunnel tunnel.Tunnel,
+	tempDir string,
+	req *BootstrapRequest,
+) *state {
+	runtimex.Assert(logger != nil, "passed a nil logger")
+	runtimex.Assert(kvstore != nil, "passed a nil kvstore")
+	runtimex.Assert(tunnel != nil, "passed a nil tunnel")
+	runtimex.Assert(tempDir != "", "passed an empty tempDir")
+	runtimex.Assert(req != nil, "passed a nil req")
 
 	logger.Infof("creating a session byte counter")
 	counter := bytecounter.New()
@@ -146,8 +175,8 @@ func (s *Session) newState(ctx context.Context, req *Request) (*state, error) {
 	logger.Infof("creating the default user-agent string")
 	userAgent := fmt.Sprintf(
 		"%s/%s ooniprobe-engine/%s",
-		req.Bootstrap.SoftwareName,
-		req.Bootstrap.SoftwareVersion,
+		req.SoftwareName,
+		req.SoftwareVersion,
 		version.Version,
 	)
 
@@ -163,28 +192,35 @@ func (s *Session) newState(ctx context.Context, req *Request) (*state, error) {
 	logger.Infof("session bootstrap complete")
 	state := &state{
 		backendClient:   backendClient,
-		checkIn:         nil,
+		checkIn:         model.OptionalPtr[model.OOAPICheckInResult]{},
 		counter:         counter,
 		httpClient:      httpClient,
 		kvstore:         kvstore,
-		location:        nil,
+		location:        model.OptionalPtr[geolocate.Results]{},
 		logger:          logger,
 		resolver:        resolver,
-		softwareName:    req.Bootstrap.SoftwareName,
-		softwareVersion: req.Bootstrap.SoftwareVersion,
+		softwareName:    req.SoftwareName,
+		softwareVersion: req.SoftwareVersion,
 		tempDir:         tempDir,
-		torBinary:       req.Bootstrap.TorBinary,
-		tunnelDir:       req.Bootstrap.TunnelDir,
+		torBinary:       req.TorBinary,
+		tunnelDir:       req.TunnelDir,
 		tunnel:          tunnel,
 		userAgent:       userAgent,
 	}
-	return state, nil
+	return state
 }
 
-// cleanup cleans the resources used by [state].
-func (s *state) cleanup() {
-	s.resolver.CloseIdleConnections()
-	s.httpClient.CloseIdleConnections()
-	s.tunnel.Stop()
-	os.RemoveAll(s.tempDir)
+// stateNewTempDir creates a new temporary directory for [state].
+func stateNewTempDir(logger model.Logger, req *BootstrapRequest) (string, error) {
+	logger.Infof("creating temporary directory inside %s", req.TempDir)
+	if err := os.MkdirAll(req.TempDir, 0700); err != nil {
+		logger.Warnf("cannot create temporary directory root: %s", err.Error())
+		return "", err
+	}
+	tempDir, err := os.MkdirTemp(req.TempDir, "")
+	if err != nil {
+		logger.Warnf("cannot create session temporary directory: %s", err.Error())
+		return "", err
+	}
+	return tempDir, nil
 }

@@ -42,7 +42,7 @@ func (ts *tickerService) mainloop(ctx context.Context) {
 	for {
 		select {
 		case t := <-ticker.C:
-			ts.sess.emit(&Event{
+			ts.sess.maybeEmit(&Event{
 				Ticker: &TickerEvent{
 					ElapsedTime: t.Sub(t0),
 				},

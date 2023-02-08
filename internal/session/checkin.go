@@ -1,5 +1,9 @@
 package session
 
+//
+// Code to call the check-in API.
+//
+
 import (
 	"context"
 
@@ -20,32 +24,30 @@ type CheckInEvent struct {
 }
 
 // checkin calls the check-in API.
-func (s *Session) checkin(ctx context.Context, req *Request) {
+func (s *Session) checkin(ctx context.Context, req *CheckInRequest) {
+	runtimex.Assert(req != nil, "passed a nil req")
 	result, err := s.docheckin(ctx, req)
-	event := &Event{
+	s.maybeEmit(&Event{
 		CheckIn: &CheckInEvent{
 			Error:  err,
 			Result: result,
 		},
-	}
-	s.emit(event)
+	})
 }
 
 // docheckin implements checkin.
-func (s *Session) docheckin(ctx context.Context, req *Request) (*model.OOAPICheckInResult, error) {
-	runtimex.Assert(req.CheckIn != nil, "passed a nil CheckIn")
-
-	if s.state == nil {
+func (s *Session) docheckin(ctx context.Context, req *CheckInRequest) (*model.OOAPICheckInResult, error) {
+	if s.state.IsNone() {
 		return nil, ErrNotBootstrapped
 	}
 
 	ts := newTickerService(ctx, s)
 	defer ts.stop()
 
-	result, err := s.state.backendClient.CheckIn(ctx, req.CheckIn)
+	result, err := s.state.Unwrap().backendClient.CheckIn(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	s.state.checkIn = result
+	s.state.Unwrap().checkIn = model.NewOptionalPtr(result)
 	return result, nil
 }

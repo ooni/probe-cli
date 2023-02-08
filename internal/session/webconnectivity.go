@@ -1,5 +1,9 @@
 package session
 
+//
+// Running the Web Connectivity experiment
+//
+
 import (
 	"context"
 	"time"
@@ -33,29 +37,29 @@ type WebConnectivityEvent struct {
 }
 
 // webconnectivity performs a measurement using Web Connectivity.
-func (s *Session) webconnectivity(ctx context.Context, req *Request) {
+func (s *Session) webconnectivity(ctx context.Context, req *WebConnectivityRequest) {
+	runtimex.Assert(req != nil, "passed a nil req")
 	measurement, err := s.dowebconnectivity(ctx, req)
-	event := &Event{
+	s.maybeEmit(&Event{
 		WebConnectivity: &WebConnectivityEvent{
 			Error:       err,
 			Measurement: measurement,
 		},
-	}
-	s.emit(event)
+	})
 }
 
 // dowebconnectivity implements webconnectivity.
-func (s *Session) dowebconnectivity(ctx context.Context, req *Request) (*model.Measurement, error) {
-	runtimex.Assert(req.WebConnectivity != nil, "passed a nil WebConnectivity")
+func (s *Session) dowebconnectivity(
+	ctx context.Context, req *WebConnectivityRequest) (*model.Measurement, error) {
 
-	if s.state == nil {
+	if s.state.IsNone() {
 		return nil, ErrNotBootstrapped
 	}
 
 	ts := newTickerService(ctx, s)
 	defer ts.stop()
 
-	adapter, err := newSessionAdapter(s.state)
+	adapter, err := newSessionAdapter(s.state.Unwrap())
 	if err != nil {
 		return nil, err
 	}
@@ -66,11 +70,11 @@ func (s *Session) dowebconnectivity(ctx context.Context, req *Request) (*model.M
 		adapter.location,
 		runner.ExperimentName(),
 		runner.ExperimentVersion(),
-		req.WebConnectivity.TestStartTime,
-		req.WebConnectivity.ReportID,
-		s.state.softwareName,
-		s.state.softwareVersion,
-		req.WebConnectivity.Input,
+		req.TestStartTime,
+		req.ReportID,
+		s.state.Unwrap().softwareName,
+		s.state.Unwrap().softwareVersion,
+		req.Input,
 	)
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),

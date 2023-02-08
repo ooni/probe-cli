@@ -1,5 +1,9 @@
 package session
 
+//
+// Adapter to pass model.ExperimentSession to experiments
+//
+
 import (
 	"context"
 	"errors"
@@ -28,18 +32,18 @@ var ErrNoCheckIn = errors.New("session: no check-in information")
 
 // newSessionAdapter creates a new [sessionAdapter] instance.
 func newSessionAdapter(state *state) (*sessionAdapter, error) {
-	if state.location == nil {
+	if state.location.IsNone() {
 		return nil, ErrNoLocation
 	}
-	if state.checkIn == nil {
+	if state.checkIn.IsNone() {
 		return nil, ErrNoCheckIn
 	}
 	sa := &sessionAdapter{
 		httpClient:  state.httpClient,
-		location:    state.location,
+		location:    state.location.Unwrap(),
 		logger:      state.logger,
 		tempDir:     state.tempDir,
-		testHelpers: state.checkIn.Conf.TestHelpers,
+		testHelpers: state.checkIn.Unwrap().Conf.TestHelpers,
 		torBinary:   state.torBinary,
 		tunnelDir:   state.tunnelDir,
 		userAgent:   state.userAgent,
@@ -92,7 +96,9 @@ func (es *sessionAdapter) TempDir() string {
 
 // TorArgs implements model.ExperimentSession
 func (es *sessionAdapter) TorArgs() []string {
-	return []string{} // TODO(bassosimone): this field is only meaningful for bootstrap
+	// TODO(bassosimone): this field is only meaningful for bootstrap. So, it is
+	// wrong that we include it into the ExperimentSession.
+	return []string{}
 }
 
 // TorBinary implements model.ExperimentSession

@@ -1,5 +1,9 @@
 package session
 
+//
+// Geolocating a probe.
+//
+
 import (
 	"context"
 	"errors"
@@ -17,30 +21,28 @@ type GeolocateEvent struct {
 	// Error is the geolocate result.
 	Error error
 
-	// Location is the probe location.
+	// Location is the geolocated location.
 	Location *geolocate.Results
 }
 
 // geolocate performs a geolocation.
-func (s *Session) geolocate(ctx context.Context, req *Request) {
+func (s *Session) geolocate(ctx context.Context, req *GeolocateRequest) {
+	runtimex.Assert(req != nil, "passed a nil req")
 	location, err := s.dogeolocate(ctx, req)
-	event := &Event{
+	s.maybeEmit(&Event{
 		Geolocate: &GeolocateEvent{
 			Error:    err,
 			Location: location,
 		},
-	}
-	s.emit(event)
+	})
 }
 
-// ErrNotBootstrapped indicates we didn't bootstrap a session.
+// ErrNotBootstrapped indicates we have not bootstrapped the session yet.
 var ErrNotBootstrapped = errors.New("session: not bootstrapped")
 
 // dogeolocate implements geolocate.
-func (s *Session) dogeolocate(ctx context.Context, req *Request) (*geolocate.Results, error) {
-	runtimex.Assert(req.Geolocate != nil, "passed a nil Geolocate")
-
-	if s.state == nil {
+func (s *Session) dogeolocate(ctx context.Context, req *GeolocateRequest) (*geolocate.Results, error) {
+	if s.state.IsNone() {
 		return nil, ErrNotBootstrapped
 	}
 
@@ -48,11 +50,11 @@ func (s *Session) dogeolocate(ctx context.Context, req *Request) (*geolocate.Res
 	defer ts.stop()
 
 	geolocateConfig := geolocate.Config{
-		Resolver:  s.state.resolver,
-		Logger:    s.state.logger,
-		UserAgent: model.HTTPHeaderUserAgent,
+		Resolver:  s.state.Unwrap().resolver,
+		Logger:    s.state.Unwrap().logger,
+		UserAgent: model.HTTPHeaderUserAgent, // do not disclose we are OONI
 	}
-	task := geolocate.NewTask(geolocateConfig) // XXX
+	task := geolocate.NewTask(geolocateConfig) // TODO(bassosimone): make this a pointer.
 
 	// TODO(bassosimone): we should make geolocate.Results a type
 	// in the internal/model package and use the ~typical naming for
@@ -62,6 +64,6 @@ func (s *Session) dogeolocate(ctx context.Context, req *Request) (*geolocate.Res
 		return nil, err
 	}
 
-	s.state.location = location
+	s.state.Unwrap().location = model.NewOptionalPtr(location)
 	return location, nil
 }

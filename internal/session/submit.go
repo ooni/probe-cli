@@ -1,5 +1,9 @@
 package session
 
+//
+// Submitting measurements
+//
+
 import (
 	"context"
 
@@ -17,8 +21,8 @@ type SubmitEvent struct {
 }
 
 // submit submits a measurement.
-func (s *Session) submit(ctx context.Context, req *Request) {
-	s.emit(&Event{
+func (s *Session) submit(ctx context.Context, req *SubmitRequest) {
+	s.maybeEmit(&Event{
 		Submit: &SubmitEvent{
 			Error: s.dosubmit(ctx, req),
 		},
@@ -26,15 +30,15 @@ func (s *Session) submit(ctx context.Context, req *Request) {
 }
 
 // dosubmit implements submit.
-func (s *Session) dosubmit(ctx context.Context, req *Request) error {
-	runtimex.Assert(req.Submit != nil, "passed a nil Submit")
+func (s *Session) dosubmit(ctx context.Context, req *SubmitRequest) error {
+	runtimex.Assert(req != nil, "passed a nil req")
 
-	if s.state == nil {
+	if s.state.IsNone() {
 		return ErrNotBootstrapped
 	}
 
 	ts := newTickerService(ctx, s)
 	defer ts.stop()
 
-	return s.state.backendClient.Submit(ctx, req.Submit)
+	return s.state.Unwrap().backendClient.Submit(ctx, req)
 }

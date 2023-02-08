@@ -1,12 +1,19 @@
 package session
 
+//
+// Bootstrapping a measurement session.
+//
+
 import (
 	"context"
 	"errors"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // BootstrapRequest is a request to bootstrap the [Session] and
-// contains the arguments requested by the bootstrap. You can
+// contains the arguments required by the bootstrap. You can
 // boostrap a [Session] just once. All operations you would like
 // to perform with a [Session] require a boostrap first.
 type BootstrapRequest struct {
@@ -40,11 +47,14 @@ type BootstrapRequest struct {
 	SoftwareVersion string
 
 	// TorArgs OPTIONALLY passes command line arguments to tor
-	// when the ProxyURL scheme is "tor" or "torsf".
+	// when the ProxyURL scheme is "tor" or "torsf". We will only
+	// use these arguments for bootstrapping, not for measuring.
 	TorArgs []string
 
 	// TorBinary OPTIONALLY tells the engine to use a specific
-	// binary for starting the "tor" and "torsf" tunnels.
+	// binary for starting the "tor" and "torsf" tunnels. If this
+	// argument is set, we will also use it for measuring for
+	// each experiment that requires tor.
 	TorBinary string
 
 	// TempDir is the MANDATORY base directory in which
@@ -66,8 +76,9 @@ type BootstrapEvent struct {
 }
 
 // boostrap bootstraps a session.
-func (s *Session) bootstrap(ctx context.Context, req *Request) {
-	s.emit(&Event{
+func (s *Session) bootstrap(ctx context.Context, req *BootstrapRequest) {
+	runtimex.Assert(req != nil, "passed nil req")
+	s.maybeEmit(&Event{
 		Bootstrap: &BootstrapEvent{
 			Error: s.dobootstrap(ctx, req),
 		},
@@ -78,14 +89,14 @@ func (s *Session) bootstrap(ctx context.Context, req *Request) {
 var ErrAlreadyBootstrapped = errors.New("session: already bootstrapped")
 
 // dobootstrap implements bootstrap.
-func (s *Session) dobootstrap(ctx context.Context, req *Request) error {
-	if s.state != nil {
+func (s *Session) dobootstrap(ctx context.Context, req *BootstrapRequest) error {
+	if s.state.IsSome() {
 		return ErrAlreadyBootstrapped
 	}
 	state, err := s.newState(ctx, req)
 	if err != nil {
 		return err
 	}
-	s.state = state
+	s.state = model.NewOptionalPtr(state)
 	return nil
 }

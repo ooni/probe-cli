@@ -19,7 +19,7 @@ const softwareVersion = "0.1.0-dev"
 func main() {
 	log.SetLevel(log.DebugLevel)
 
-	client := session.NewClient(log.Log)
+	client := NewClient(log.Log)
 	ctx := context.Background()
 
 	bootstrapRequest := &session.BootstrapRequest{

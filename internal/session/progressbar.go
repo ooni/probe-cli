@@ -1,17 +1,24 @@
 package session
 
+//
+// Progress bar for experiments that manage their own progress
+// bar such as DASH, NDT, HIRL, HHFM.
+//
+
 import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// ProgressEvent indicates the progress in a task completion.
+// ProgressEvent indicates the progress in a task completion
+// for tasks that manage their own progress bar.
 type ProgressEvent struct {
 	// Timestamp is the timestamp.
 	Timestamp time.Time
 
-	// Completion is a number between 0 and 1.
+	// Completion is a number between 0 and 1 indicating
+	// how close we are to completion.
 	Completion float64
 
 	// Message is the message.
@@ -27,11 +34,11 @@ var _ model.ExperimentCallbacks = &progressBar{}
 
 // OnProgress implements model.ExperimentCallbacks
 func (pb *progressBar) OnProgress(completion float64, message string) {
-	pb.emit(completion, message)
+	pb.maybeEmit(completion, message)
 }
 
-// emit emits a progress event.
-func (pb *progressBar) emit(completion float64, message string) {
+// emit emits a progress event unless the output channel is full.
+func (pb *progressBar) maybeEmit(completion float64, message string) {
 	ev := &Event{
 		Progress: &ProgressEvent{
 			Timestamp:  time.Now(),
@@ -39,5 +46,5 @@ func (pb *progressBar) emit(completion float64, message string) {
 			Message:    message,
 		},
 	}
-	pb.session.emit(ev)
+	pb.session.maybeEmit(ev)
 }
