@@ -1,7 +1,10 @@
+// Package backendclient implements a client to communicate
+// with the OONI backend infrastructure.
 package backendclient
 
 import (
 	"context"
+	"errors"
 	"net/url"
 
 	"github.com/ooni/probe-cli/v3/internal/httpapi"
@@ -9,21 +12,31 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/ooapi"
 )
 
+// Config contains configuration for [New].
 type Config struct {
-	KVStore    model.KeyValueStore
-	HTTPClient model.HTTPClient
-	Logger     model.Logger
-	UserAgent  string
+	// BaseURL is the OPTIONAL OONI backend URL.
+	BaseURL *url.URL
 
-	// optional fields
-	BaseURL  *url.URL
-	ProxyURL *url.URL
+	// KVStore is the MANDATORY key-value store to use.
+	KVStore model.KeyValueStore
+
+	// HTTPClient is the MANDATORY underlying HTTPClient to use.
+	HTTPClient model.HTTPClient
+
+	// Logger is the MANDATORY logger to use.
+	Logger model.Logger
+
+	// UserAgent is the MANDATORY user agent to use.
+	UserAgent string
 }
 
+// Client is a client to communicate with the OONI backend.
 type Client struct {
+	// endpoint is the HTTP API endpoint.
 	endpoint *httpapi.Endpoint
 }
 
+// New constructs a new instance of [Client].
 func New(config *Config) *Client {
 	baseURL := "https://api.ooni.io/"
 	if config.BaseURL != nil {
@@ -32,7 +45,7 @@ func New(config *Config) *Client {
 	endpoint := &httpapi.Endpoint{
 		BaseURL:    baseURL,
 		HTTPClient: config.HTTPClient,
-		Host:       "",
+		Host:       "", // no need to configure
 		Logger:     config.Logger,
 		UserAgent:  config.UserAgent,
 	}
@@ -42,20 +55,24 @@ func New(config *Config) *Client {
 	return backendClient
 }
 
+// CheckIn invokes the check-in API.
 func (c *Client) CheckIn(
 	ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInResult, error) {
 	return httpapi.Call(ctx, ooapi.NewDescriptorCheckIn(config), c.endpoint)
 }
 
+// FetchPsiphonConfig retrieves Psiphon configuration.
 func (c *Client) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
-	panic("not implemented")
+	return nil, errors.New("not implemented")
 }
 
+// FetchTorTargets fetches measurement targets for the tor experiment.
 func (c *Client) FetchTorTargets(
 	ctx context.Context, cc string) (result map[string]model.OOAPITorTarget, err error) {
-	panic("not implemented")
+	return nil, errors.New("not implemented")
 }
 
+// Submit submits the given measurement.
 func (c *Client) Submit(ctx context.Context, m *model.Measurement) error {
 	req := &model.OOAPICollectorUpdateRequest{
 		Format:  "json",

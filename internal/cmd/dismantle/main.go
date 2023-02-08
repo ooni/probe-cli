@@ -87,7 +87,6 @@ func main() {
 		Logger:     logger,
 		UserAgent:  userAgent,
 		BaseURL:    nil,
-		ProxyURL:   proxyURL,
 	}
 	backendClient := backendclient.New(backendClientConfig)
 
