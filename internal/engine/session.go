@@ -191,7 +191,7 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 				Logger:              config.Logger,
 				Name:                proxyURL.Scheme,
 				SnowflakeRendezvous: config.SnowflakeRendezvous,
-				Session:             &sessionTunnelEarlySession{},
+				Session:             &SessionTunnelEarlySession{},
 				TorArgs:             config.TorArgs,
 				TorBinary:           config.TorBinary,
 				TunnelDir:           config.TunnelDir,

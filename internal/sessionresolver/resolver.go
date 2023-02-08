@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -100,6 +101,7 @@ var ErrLookupHost = errors.New("sessionresolver: LookupHost failed")
 // multierror.Union error on failure, so you can see individual errors
 // and get a better picture of what's been going wrong.
 func (r *Resolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
+	log.Warnf("PROXY URL: %+v", r.ProxyURL)
 	state := r.readstatedefault()
 	r.maybeConfusion(state, time.Now().UnixNano())
 	defer r.writestate(state)

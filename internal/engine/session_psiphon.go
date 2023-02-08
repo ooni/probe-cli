@@ -17,13 +17,13 @@ var psiphonConfigJSONAge []byte
 //go:embed psiphon-config.key
 var psiphonConfigSecretKey string
 
-// sessionTunnelEarlySession is the early session that we pass
+// SessionTunnelEarlySession is the early session that we pass
 // to tunnel.Start to fetch the Psiphon configuration.
-type sessionTunnelEarlySession struct{}
+type SessionTunnelEarlySession struct{}
 
 // FetchPsiphonConfig decrypts psiphonConfigJSONAge using
 // filippo.io/age _and_ psiphonConfigSecretKey.
-func (s *sessionTunnelEarlySession) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
+func (s *SessionTunnelEarlySession) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
 	key := "AGE-SECRET-KEY-1" + psiphonConfigSecretKey
 	identity, err := age.ParseX25519Identity(key)
 	if err != nil {
@@ -40,13 +40,13 @@ func (s *sessionTunnelEarlySession) FetchPsiphonConfig(ctx context.Context) ([]b
 // FetchPsiphonConfig decrypts psiphonConfigJSONAge using
 // filippo.io/age _and_ psiphonConfigSecretKey.
 func (s *Session) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
-	child := &sessionTunnelEarlySession{}
+	child := &SessionTunnelEarlySession{}
 	return child.FetchPsiphonConfig(ctx)
 }
 
 // CheckEmbeddedPsiphonConfig checks whether we can load psiphon's config
 func CheckEmbeddedPsiphonConfig() error {
-	child := &sessionTunnelEarlySession{}
+	child := &SessionTunnelEarlySession{}
 	_, err := child.FetchPsiphonConfig(context.Background())
 	return err
 }
