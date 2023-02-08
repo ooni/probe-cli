@@ -63,12 +63,12 @@ func main() {
 	}
 	defer sessionResolver.CloseIdleConnections()
 
-	geolocateConfig := &geolocate.Config{
+	geolocateConfig := geolocate.Config{
 		Resolver:  sessionResolver,
 		Logger:    logger,
 		UserAgent: model.HTTPHeaderUserAgent,
 	}
-	geolocateTask := geolocate.NewTask(*geolocateConfig) // XXX
+	geolocateTask := geolocate.NewTask(geolocateConfig) // XXX
 	location := runtimex.Try1(geolocateTask.Run(ctx))
 	logger.Infof("%+v", location)
 
