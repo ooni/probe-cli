@@ -24,21 +24,21 @@ type Results struct {
 	// NetworkName is the network name.
 	NetworkName string
 
-	// IP is the probe IP.
-	ProbeIP string
+	// IPAddr is the probe IPAddr.
+	IPAddr string
 
-	// ResolverASN is the resolver ASN.
-	ResolverASN uint
+	// ResolverASNumber is the resolver ASN.
+	ResolverASNumber uint
 
-	// ResolverIP is the resolver IP.
-	ResolverIP string
+	// ResolverIPAddr is the resolver IP.
+	ResolverIPAddr string
 
-	// ResolverNetworkName is the resolver network name.
-	ResolverNetworkName string
+	// ResolverASNetworkName is the resolver network name.
+	ResolverASNetworkName string
 }
 
-// ASNString returns the ASN as a string.
-func (r *Results) ASNString() string {
+// ProbeASNString returns the ASN as a string.
+func (r *Results) ProbeASNString() string {
 	return fmt.Sprintf("AS%d", r.ASN)
 }
 
@@ -110,26 +110,26 @@ type Task struct {
 func (op Task) Run(ctx context.Context) (*Results, error) {
 	var err error
 	out := &Results{
-		ASN:                 model.DefaultProbeASN,
-		CountryCode:         model.DefaultProbeCC,
-		NetworkName:         model.DefaultProbeNetworkName,
-		ProbeIP:             model.DefaultProbeIP,
-		ResolverASN:         model.DefaultResolverASN,
-		ResolverIP:          model.DefaultResolverIP,
-		ResolverNetworkName: model.DefaultResolverNetworkName,
+		ASN:                   model.DefaultProbeASN,
+		CountryCode:           model.DefaultProbeCC,
+		NetworkName:           model.DefaultProbeNetworkName,
+		IPAddr:                model.DefaultProbeIP,
+		ResolverASNumber:      model.DefaultResolverASN,
+		ResolverIPAddr:        model.DefaultResolverIP,
+		ResolverASNetworkName: model.DefaultResolverNetworkName,
 	}
 	ip, err := op.probeIPLookupper.LookupProbeIP(ctx)
 	if err != nil {
 		return out, fmt.Errorf("lookupProbeIP failed: %w", err)
 	}
-	out.ProbeIP = ip
-	asn, networkName, err := op.probeASNLookupper.LookupASN(out.ProbeIP)
+	out.IPAddr = ip
+	asn, networkName, err := op.probeASNLookupper.LookupASN(out.IPAddr)
 	if err != nil {
 		return out, fmt.Errorf("lookupASN failed: %w", err)
 	}
 	out.ASN = asn
 	out.NetworkName = networkName
-	cc, err := op.countryLookupper.LookupCC(out.ProbeIP)
+	cc, err := op.countryLookupper.LookupCC(out.IPAddr)
 	if err != nil {
 		return out, fmt.Errorf("lookupProbeCC failed: %w", err)
 	}
@@ -143,14 +143,14 @@ func (op Task) Run(ctx context.Context) (*Results, error) {
 	if err != nil {
 		return out, nil // intentional
 	}
-	out.ResolverIP = resolverIP
+	out.ResolverIPAddr = resolverIP
 	resolverASN, resolverNetworkName, err := op.resolverASNLookupper.LookupASN(
-		out.ResolverIP,
+		out.ResolverIPAddr,
 	)
 	if err != nil {
 		return out, nil // intentional
 	}
-	out.ResolverASN = resolverASN
-	out.ResolverNetworkName = resolverNetworkName
+	out.ResolverASNumber = resolverASN
+	out.ResolverASNetworkName = resolverNetworkName
 	return out, nil
 }

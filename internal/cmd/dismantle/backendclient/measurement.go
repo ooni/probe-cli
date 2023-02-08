@@ -33,13 +33,13 @@ func NewMeasurement(
 		MeasurementStartTime:      utctimenow.Format(dateFormat),
 		MeasurementStartTimeSaved: utctimenow,
 		ProbeIP:                   model.DefaultProbeIP,
-		ProbeASN:                  location.ASNString(),
+		ProbeASN:                  location.ProbeASNString(),
 		ProbeCC:                   location.CountryCode,
 		ProbeNetworkName:          location.NetworkName,
 		ReportID:                  reportID,
-		ResolverASN:               fmt.Sprintf("AS%d", location.ResolverASN), // XXX
-		ResolverIP:                location.ResolverIP,
-		ResolverNetworkName:       location.ResolverNetworkName,
+		ResolverASN:               fmt.Sprintf("AS%d", location.ResolverASNumber), // XXX
+		ResolverIP:                location.ResolverIPAddr,
+		ResolverNetworkName:       location.ResolverASNetworkName,
 		SoftwareName:              softwareName,
 		SoftwareVersion:           softwareVersion,
 		TestName:                  testName,

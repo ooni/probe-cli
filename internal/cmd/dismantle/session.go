@@ -52,7 +52,7 @@ func (es *experimentSession) ProbeCC() string {
 
 // ResolverIP implements model.ExperimentSession
 func (es *experimentSession) ResolverIP() string {
-	return es.location.ResolverIP
+	return es.location.ResolverIPAddr
 }
 
 // TempDir implements model.ExperimentSession

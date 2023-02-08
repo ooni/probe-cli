@@ -95,7 +95,7 @@ func main() {
 		Charging:        false,
 		OnWiFi:          false,
 		Platform:        platform.Name(),
-		ProbeASN:        location.ASNString(),
+		ProbeASN:        location.ProbeASNString(),
 		ProbeCC:         location.CountryCode,
 		RunType:         "manual",
 		SoftwareName:    softwareName,
