@@ -61,7 +61,7 @@ func (c *Client) Submit(ctx context.Context, m *model.Measurement) error {
 		Format:  "json",
 		Content: m,
 	}
-	descriptor := newSubmitDescriptor(req, m.ReportID)
+	descriptor := ooapi.NewSubmitMeasurementDescriptor(req, m.ReportID)
 	_, err := httpapi.Call(ctx, descriptor, c.endpoint)
 	return err
 }

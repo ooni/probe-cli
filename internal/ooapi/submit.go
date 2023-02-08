@@ -1,4 +1,4 @@
-package backendclient
+package ooapi
 
 import (
 	"encoding/json"
@@ -10,7 +10,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-func newSubmitDescriptor(
+// NewSubmitMeasurementDescriptor creates a new [httpapi.Descriptor] describing how
+// to submit a measurement to the OONI backend.
+func NewSubmitMeasurementDescriptor(
 	req *model.OOAPICollectorUpdateRequest, reportID string) *httpapi.Descriptor[
 	*model.OOAPICollectorUpdateRequest, *model.OOAPICollectorUpdateResponse] {
 	rawBody, err := json.Marshal(req)
