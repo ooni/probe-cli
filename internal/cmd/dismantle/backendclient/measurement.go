@@ -12,8 +12,10 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
+// dateFormat is the data format used to fill a measurement.
 const dateFormat = "2006-01-02 15:04:05"
 
+// NewMeasurement constructs a new measurement.
 func NewMeasurement(
 	location *geolocate.Results,
 	testName string,

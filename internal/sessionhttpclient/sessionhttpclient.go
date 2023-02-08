@@ -13,15 +13,21 @@ import (
 
 // Config contains config for creating a new session HTTP client.
 type Config struct {
+	// ByteCounter is the MANDATORY byte counter to use.
 	ByteCounter *bytecounter.Counter
-	Logger      model.Logger
-	Resolver    model.Resolver
 
-	// optional fields
+	// Logger is the MANDATORY logger to use.
+	Logger model.Logger
+
+	// ProxyURL is the OPTIONAL proxy URL that the HTTPClient
+	// returned by New should be using.
 	ProxyURL *url.URL
+
+	// Resolver is the MANDATORY resolver to use.
+	Resolver model.Resolver
 }
 
-// New creates a new HTTP client to be used during a measurement
+// New creates a new HTTPClient to be used during a measurement
 // session to communicate with the OONI backend.
 func New(config *Config) model.HTTPClient {
 	dialer := netxlite.NewDialerWithResolver(config.Logger, config.Resolver)
