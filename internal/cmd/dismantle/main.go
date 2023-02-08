@@ -122,7 +122,7 @@ func main() {
 	for _, input := range checkInResult.Tests.WebConnectivity.URLs {
 		cfg := &webconnectivitylte.Config{}
 		runner := webconnectivitylte.NewExperimentMeasurer(cfg)
-		measurement := backendclient.NewMeasurement(
+		measurement := model.NewMeasurement(
 			location, runner.ExperimentName(), runner.ExperimentVersion(),
 			testStartTime, reportID, softwareName, softwareVersion, input.URL,
 		)
