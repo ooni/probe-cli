@@ -40,11 +40,17 @@ func (s *Session) docheckin(ctx context.Context, req *CheckInRequest) (*model.OO
 	if s.state.IsNone() {
 		return nil, ErrNotBootstrapped
 	}
+	if s.state.Unwrap().checkIn.IsSome() {
+		// TODO(bassosimone): in the future we should define caching
+		// policies for the check-in response, but for now this is fine.
+		return s.state.Unwrap().checkIn.Unwrap(), nil
+	}
 
 	ts := newTickerService(ctx, s)
 	defer ts.stop()
 
-	result, err := s.state.Unwrap().backendClient.CheckIn(ctx, req)
+	backendClient := s.state.Unwrap().backendClient
+	result, err := backendClient.CheckIn(ctx, req)
 	if err != nil {
 		return nil, err
 	}

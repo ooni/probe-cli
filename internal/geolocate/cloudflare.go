@@ -28,6 +28,5 @@ func cloudflareIPLookup(
 	}
 	r := regexp.MustCompile("(?:ip)=(.*)")
 	ip := strings.Trim(string(r.Find(data)), "ip=")
-	logger.Debugf("cloudflare: body: %s", ip)
 	return ip, nil
 }

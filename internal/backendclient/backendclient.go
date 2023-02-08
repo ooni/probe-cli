@@ -8,6 +8,7 @@ import (
 	"net/url"
 
 	"github.com/ooni/probe-cli/v3/internal/httpapi"
+	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/ooapi"
 )
@@ -58,7 +59,14 @@ func New(config *Config) *Client {
 // CheckIn invokes the check-in API.
 func (c *Client) CheckIn(
 	ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInResult, error) {
-	return httpapi.Call(ctx, ooapi.NewDescriptorCheckIn(config), c.endpoint)
+	op := measurexlite.NewOperationLogger(
+		c.endpoint.Logger,
+		"backendclient: check-in using %s",
+		c.endpoint.BaseURL,
+	)
+	r, err := httpapi.Call(ctx, ooapi.NewDescriptorCheckIn(config), c.endpoint)
+	op.Stop(err)
+	return r, err
 }
 
 // FetchPsiphonConfig retrieves Psiphon configuration.

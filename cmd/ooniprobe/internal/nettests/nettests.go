@@ -10,7 +10,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/ooni"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/output"
-	engine "github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/pkg/errors"
 )
@@ -22,7 +21,7 @@ type Nettest interface {
 
 // NewController creates a nettest controller
 func NewController(
-	nt Nettest, probe *ooni.Probe, res *model.DatabaseResult, sess *engine.Session) *Controller {
+	nt Nettest, probe *ooni.Probe, res *model.DatabaseResult, sess ooni.ProbeEngine) *Controller {
 	return &Controller{
 		Probe:   probe,
 		nt:      nt,
@@ -35,7 +34,7 @@ func NewController(
 // each nettest instance has one controller
 type Controller struct {
 	Probe       *ooni.Probe
-	Session     *engine.Session
+	Session     ooni.ProbeEngine
 	res         *model.DatabaseResult
 	nt          Nettest
 	ntCount     int

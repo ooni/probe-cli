@@ -48,7 +48,7 @@ func TestRun(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	probe := newOONIProbe(t)
-	sess, err := probe.NewSession(context.Background(), model.RunTypeManual)
+	sess, err := probe.NewProbeEngine(context.Background(), model.RunTypeManual)
 	if err != nil {
 		t.Fatal(err)
 	}

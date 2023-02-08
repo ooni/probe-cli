@@ -129,6 +129,7 @@ func NewTask(config Config) *Task {
 	}
 	return &Task{
 		countryLookupper:     mmdbLookupper{},
+		logger:               config.Logger,
 		probeIPLookupper:     ipLookupClient(config),
 		probeASNLookupper:    mmdbLookupper{},
 		resolverASNLookupper: mmdbLookupper{},
@@ -142,6 +143,7 @@ func NewTask(config Config) *Task {
 // instance of Task using the NewTask factory.
 type Task struct {
 	countryLookupper     countryLookupper
+	logger               model.Logger
 	probeIPLookupper     probeIPLookupper
 	probeASNLookupper    asnLookupper
 	resolverASNLookupper asnLookupper
@@ -169,12 +171,15 @@ func (op Task) Run(ctx context.Context) (*Results, error) {
 	if err != nil {
 		return out, fmt.Errorf("lookupASN failed: %w", err)
 	}
+	op.logger.Infof("geolocate: probe ASN: %d", asn)
+	op.logger.Infof("geolocate: probe network name: %s", networkName)
 	out.ASN = asn
 	out.NetworkName = networkName
 	cc, err := op.countryLookupper.LookupCC(out.IPAddr)
 	if err != nil {
 		return out, fmt.Errorf("lookupProbeCC failed: %w", err)
 	}
+	op.logger.Infof("geolocate: country code: %s", cc)
 	out.CountryCode = cc
 	out.didResolverLookup = true
 	// Note: ignoring the result of lookupResolverIP and lookupASN
@@ -192,6 +197,8 @@ func (op Task) Run(ctx context.Context) (*Results, error) {
 	if err != nil {
 		return out, nil // intentional
 	}
+	op.logger.Infof("geolocate: resolver ASN: %d", resolverASN)
+	op.logger.Infof("geolocate: resolver network name: %s", resolverNetworkName)
 	out.ResolverASNumber = resolverASN
 	out.ResolverASNetworkName = resolverNetworkName
 	return out, nil

@@ -6,7 +6,6 @@ package session
 
 import (
 	"context"
-	"errors"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -85,13 +84,10 @@ func (s *Session) bootstrap(ctx context.Context, req *BootstrapRequest) {
 	})
 }
 
-// ErrAlreadyBootstrapped indicates that we already bootstrapped a [Session].
-var ErrAlreadyBootstrapped = errors.New("session: already bootstrapped")
-
 // dobootstrap implements bootstrap.
 func (s *Session) dobootstrap(ctx context.Context, req *BootstrapRequest) error {
 	if s.state.IsSome() {
-		return ErrAlreadyBootstrapped
+		return nil // idempotent
 	}
 	state, err := s.newState(ctx, req)
 	if err != nil {

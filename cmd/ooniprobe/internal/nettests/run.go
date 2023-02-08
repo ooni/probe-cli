@@ -9,6 +9,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/ooni"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/platform"
 	"github.com/pkg/errors"
 )
 
@@ -59,7 +60,7 @@ func RunGroup(config RunGroupConfig) error {
 		return nil
 	}
 
-	sess, err := config.Probe.NewSession(context.Background(), config.RunType)
+	sess, err := config.Probe.NewProbeEngine(context.Background(), config.RunType)
 	if err != nil {
 		log.WithError(err).Error("Failed to create a measurement session")
 		return err
@@ -77,7 +78,23 @@ func RunGroup(config RunGroupConfig) error {
 		log.WithError(err).Error("Failed to create the network row")
 		return err
 	}
-	if err := sess.MaybeLookupBackends(); err != nil {
+	checkInConfig := &model.OOAPICheckInConfig{
+		Charging:        true,
+		OnWiFi:          true,
+		Platform:        platform.Name(),
+		ProbeASN:        sess.ProbeASNString(),
+		ProbeCC:         sess.ProbeCC(),
+		RunType:         config.RunType,
+		SoftwareName:    sess.SoftwareName(),
+		SoftwareVersion: sess.SoftwareVersion(),
+		WebConnectivity: model.OOAPICheckInConfigWebConnectivity{
+			CategoryCodes: config.Probe.Config().Nettests.WebsitesEnabledCategoryCodes,
+		},
+	}
+	if checkInConfig.WebConnectivity.CategoryCodes == nil {
+		checkInConfig.WebConnectivity.CategoryCodes = []string{}
+	}
+	if err := sess.MaybeLookupBackends(checkInConfig); err != nil {
 		log.WithError(err).Warn("Failed to discover OONI backends")
 		return err
 	}

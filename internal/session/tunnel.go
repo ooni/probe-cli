@@ -22,7 +22,7 @@ var ErrUnsupportedTunnelScheme = errors.New("session: unsupported tunnel scheme"
 // newTunnel creates a new [tunnel.Tunnel] given a ProxyURL.
 func newTunnel(ctx context.Context, logger model.Logger, req *BootstrapRequest) (tunnel.Tunnel, error) {
 	if req.ProxyURL == "" {
-		logger.Info("no need to create any tunnel")
+		logger.Info("bootstrap: no need to create any tunnel")
 		return &nullTunnel{}, nil
 	}
 	URL, err := url.Parse(req.ProxyURL)
@@ -31,13 +31,13 @@ func newTunnel(ctx context.Context, logger model.Logger, req *BootstrapRequest) 
 	}
 	switch scheme := URL.Scheme; scheme {
 	case "socks5":
-		logger.Infof("creating fake tunnel for %s", req.ProxyURL)
+		logger.Infof("bootstrap: creating fake tunnel for %s", req.ProxyURL)
 		return &socks5Tunnel{URL}, nil
 	case "tor", "torsf":
-		logger.Infof("creating %s tunnel; please, be patient...", scheme)
+		logger.Infof("bootstrap: creating %s tunnel; please, be patient...", scheme)
 		return newTorOrTorsfTunnel(ctx, logger, req, scheme)
 	case "psiphon":
-		logger.Info("creating psiphon tunnel; please, be patient...")
+		logger.Info("bootstrap: creating psiphon tunnel; please, be patient...")
 		return newPsiphonTunnel(ctx, logger, req)
 	default:
 		return nil, fmt.Errorf("%w: %s", ErrUnsupportedTunnelScheme, scheme)

@@ -22,7 +22,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
-// state is the boostrapped [Session] state. Only the background
+// state is the bootstrapped [Session] state. Only the background
 // goroutine is allowed to manipulate the [state].
 type state struct {
 	// backendClient is the backend client we're using.
@@ -108,10 +108,16 @@ func (s *Session) newState(ctx context.Context, req *BootstrapRequest) (*state, 
 	ts := newTickerService(ctx, s)
 	defer ts.stop()
 
-	logger.Infof("creating key-value store at %s", req.StateDir)
+	logger.Infof("bootstrap: creating key-value store at %s", req.StateDir)
 	kvstore, err := kvstore.NewFS(req.StateDir)
 	if err != nil {
-		logger.Warnf("cannot create key-value store: %s", err.Error())
+		logger.Warnf("bootstrap: cannot create key-value store: %s", err.Error())
+		return nil, err
+	}
+
+	logger.Infof("bootstrap: creating tunnels dir at %s", req.TunnelDir)
+	if err := os.MkdirAll(req.TunnelDir, 0700); err != nil {
+		logger.Warnf("bootstrap: cannot create tunnels dir: %s", err.Error())
 		return nil, err
 	}
 
@@ -121,10 +127,9 @@ func (s *Session) newState(ctx context.Context, req *BootstrapRequest) (*state, 
 		return nil, err
 	}
 
-	logger.Infof("checking whether we need to create a circumvention tunnel")
 	tunnel, err := newTunnel(ctx, logger, req)
 	if err != nil {
-		logger.Warnf("cannot create tunnel: %s", err.Error())
+		logger.Warnf("bootstrap: cannot create tunnel: %s", err.Error())
 		return nil, err
 	}
 
@@ -153,10 +158,10 @@ func newStateCannotFail(
 	runtimex.Assert(tempDir != "", "passed an empty tempDir")
 	runtimex.Assert(req != nil, "passed a nil req")
 
-	logger.Infof("creating a session byte counter")
+	logger.Infof("bootstrap: creating a session byte counter")
 	counter := bytecounter.New()
 
-	logger.Infof("creating a resolver for the session")
+	logger.Infof("bootstrap: creating a resolver for the session")
 	resolver := &sessionresolver.Resolver{
 		ByteCounter: counter,
 		KVStore:     kvstore,
@@ -164,7 +169,7 @@ func newStateCannotFail(
 		ProxyURL:    tunnel.SOCKS5ProxyURL(), // possibly nil, which is OK
 	}
 
-	logger.Infof("creating an HTTP client for the session")
+	logger.Infof("bootstrap: creating an HTTP client for the session")
 	httpClient := sessionhttpclient.New(&sessionhttpclient.Config{
 		ByteCounter: counter,
 		Logger:      logger,
@@ -172,7 +177,7 @@ func newStateCannotFail(
 		Resolver:    resolver,
 	})
 
-	logger.Infof("creating the default user-agent string")
+	logger.Infof("bootstrap: creating the default user-agent string")
 	userAgent := fmt.Sprintf(
 		"%s/%s ooniprobe-engine/%s",
 		req.SoftwareName,
@@ -180,7 +185,7 @@ func newStateCannotFail(
 		version.Version,
 	)
 
-	logger.Infof("creating a client to communicate with the OONI backend")
+	logger.Infof("bootstrap: creating an OONI backend client")
 	backendClient := backendclient.New(&backendclient.Config{
 		BaseURL:    nil, // use the default
 		KVStore:    kvstore,
@@ -189,7 +194,7 @@ func newStateCannotFail(
 		UserAgent:  userAgent,
 	})
 
-	logger.Infof("session bootstrap complete")
+	logger.Infof("bootstrap: complete")
 	state := &state{
 		backendClient:   backendClient,
 		checkIn:         model.OptionalPtr[model.OOAPICheckInResult]{},
@@ -212,14 +217,14 @@ func newStateCannotFail(
 
 // stateNewTempDir creates a new temporary directory for [state].
 func stateNewTempDir(logger model.Logger, req *BootstrapRequest) (string, error) {
-	logger.Infof("creating temporary directory inside %s", req.TempDir)
+	logger.Infof("bootstrap: creating temporary directory inside %s", req.TempDir)
 	if err := os.MkdirAll(req.TempDir, 0700); err != nil {
-		logger.Warnf("cannot create temporary directory root: %s", err.Error())
+		logger.Warnf("bootstrap: cannot create temporary directory root: %s", err.Error())
 		return "", err
 	}
 	tempDir, err := os.MkdirTemp(req.TempDir, "")
 	if err != nil {
-		logger.Warnf("cannot create session temporary directory: %s", err.Error())
+		logger.Warnf("bootstrap: cannot create session temporary directory: %s", err.Error())
 		return "", err
 	}
 	return tempDir, nil

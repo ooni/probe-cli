@@ -45,6 +45,11 @@ func (s *Session) dogeolocate(ctx context.Context, req *GeolocateRequest) (*geol
 	if s.state.IsNone() {
 		return nil, ErrNotBootstrapped
 	}
+	if s.state.Unwrap().location.IsSome() {
+		// TODO(bassosimone): in the future we should define caching
+		// policies for the location, but for now this is fine.
+		return s.state.Unwrap().location.Unwrap(), nil
+	}
 
 	ts := newTickerService(ctx, s)
 	defer ts.stop()

@@ -8,7 +8,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivitylte"
+	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -64,8 +64,8 @@ func (s *Session) dowebconnectivity(
 		return nil, err
 	}
 
-	cfg := &webconnectivitylte.Config{}
-	runner := webconnectivitylte.NewExperimentMeasurer(cfg)
+	cfg := webconnectivity.Config{}
+	runner := webconnectivity.NewExperimentMeasurer(cfg)
 	measurement := model.NewMeasurement(
 		adapter.location,
 		runner.ExperimentName(),
