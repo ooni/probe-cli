@@ -14,8 +14,11 @@ import (
 )
 
 const (
-	testName    = "web_connectivity"
-	testVersion = "0.4.2"
+	// ExperimentName is the experiment name
+	ExperimentName = "web_connectivity"
+
+	// ExperimentVersion is the experiment version
+	ExperimentVersion = "0.4.2"
 )
 
 // Config contains the experiment config.
@@ -85,12 +88,12 @@ func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
 
 // ExperimentName implements ExperimentMeasurer.ExperExperimentName.
 func (m Measurer) ExperimentName() string {
-	return testName
+	return ExperimentName
 }
 
 // ExperimentVersion implements ExperimentMeasurer.ExperExperimentVersion.
 func (m Measurer) ExperimentVersion() string {
-	return testVersion
+	return ExperimentVersion
 }
 
 var (
@@ -261,6 +264,11 @@ type SummaryKeys struct {
 
 // GetSummaryKeys implements model.ExperimentMeasurer.GetSummaryKeys.
 func (m Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, error) {
+	return GetSummaryKeys(measurement)
+}
+
+// GetSummaryKeys returns the Web Connectivity summary keys
+func GetSummaryKeys(measurement *model.Measurement) (interface{}, error) {
 	sk := SummaryKeys{IsAnomaly: false}
 	tk, ok := measurement.TestKeys.(*TestKeys)
 	if !ok {
