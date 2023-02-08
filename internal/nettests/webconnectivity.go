@@ -139,8 +139,3 @@ func (e *WebConnectivity) Name() string {
 func (e *WebConnectivity) ReportID() string {
 	return e.config.CheckIn.Tests.WebConnectivity.ReportID
 }
-
-// Session implements Experiment
-func (e *WebConnectivity) Session() *Session {
-	return e.config.Session
-}

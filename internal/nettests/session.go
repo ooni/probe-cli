@@ -42,6 +42,11 @@ func (s *Session) Close() error {
 	return nil
 }
 
+// BootstrapRequest returns the configured bootstrap request.
+func (s *Session) BootstrapRequest() *session.BootstrapRequest {
+	return s.bootstrapRequest
+}
+
 // Bootstrap performs the session bootstrap.
 func (s *Session) Bootstrap(ctx context.Context) error {
 	if err := s.session.Send(ctx, &session.Request{Bootstrap: s.bootstrapRequest}); err != nil {
@@ -64,9 +69,6 @@ func (s *Session) Bootstrap(ctx context.Context) error {
 
 // Geolocate runs the geolocate task.
 func (s *Session) Geolocate(ctx context.Context) (*geolocate.Results, error) {
-	if err := s.Bootstrap(ctx); err != nil {
-		return nil, err
-	}
 	req := &session.GeolocateRequest{}
 	if err := s.session.Send(ctx, &session.Request{Geolocate: req}); err != nil {
 		return nil, err
@@ -89,9 +91,6 @@ func (s *Session) Geolocate(ctx context.Context) (*geolocate.Results, error) {
 // CheckIn runs the checkIn task.
 func (s *Session) CheckIn(
 	ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInResult, error) {
-	if err := s.Bootstrap(ctx); err != nil {
-		return nil, err
-	}
 	if err := s.session.Send(ctx, &session.Request{CheckIn: config}); err != nil {
 		return nil, err
 	}

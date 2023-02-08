@@ -17,6 +17,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/nettests"
 	"github.com/ooni/probe-cli/v3/internal/session"
 	"github.com/pkg/errors"
 )
@@ -36,7 +37,7 @@ type ProbeCLI interface {
 	IsBatch() bool
 	Home() string
 	TempDir() string
-	NewProbeEngine(ctx context.Context, runType model.RunType) (ProbeEngine, error)
+	NewSession(ctx context.Context, runType model.RunType) *nettests.Session
 }
 
 // ProbeEngine is an instance of the OONI Probe engine.
@@ -213,10 +214,8 @@ func (p *Probe) Init(softwareName, softwareVersion, proxy string) error {
 	return nil
 }
 
-// newSession creates a new ooni/probe-engine session using the
-// current configuration inside the context. The caller must close
-// the session when done using it, by calling sess.Close().
-func (p *Probe) newSession(ctx context.Context, runType model.RunType) (*engineSession, error) {
+// NewSession creates a new measurement session.
+func (p *Probe) NewSession(ctx context.Context, runType model.RunType) *nettests.Session {
 
 	// When the software name is the default software name and we're running
 	// in unattended mode, adjust the software name accordingly.
@@ -252,16 +251,7 @@ func (p *Probe) newSession(ctx context.Context, runType model.RunType) (*engineS
 		VerboseLogging:            false,
 	}
 
-	return newSession(config, logger), nil
-}
-
-// NewProbeEngine creates a new ProbeEngine instance.
-func (p *Probe) NewProbeEngine(ctx context.Context, runType model.RunType) (ProbeEngine, error) {
-	sess, err := p.newSession(ctx, runType)
-	if err != nil {
-		return nil, err
-	}
-	return sess, nil
+	return nettests.NewSession(config, logger)
 }
 
 // NewProbe creates a new probe instance.

@@ -11,6 +11,7 @@ import (
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/ooni"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/output"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/nettests"
 	"github.com/pkg/errors"
 )
 
@@ -21,7 +22,8 @@ type Nettest interface {
 
 // NewController creates a nettest controller
 func NewController(
-	nt Nettest, probe *ooni.Probe, res *model.DatabaseResult, sess ooni.ProbeEngine) *Controller {
+	nt Nettest, probe *ooni.Probe, res *model.DatabaseResult,
+	sess *nettests.Session) *Controller {
 	return &Controller{
 		Probe:   probe,
 		nt:      nt,
@@ -33,15 +35,16 @@ func NewController(
 // Controller is passed to the run method of every Nettest
 // each nettest instance has one controller
 type Controller struct {
-	Probe       *ooni.Probe
-	Session     ooni.ProbeEngine
-	res         *model.DatabaseResult
-	nt          Nettest
-	ntCount     int
-	ntIndex     int
-	ntStartTime time.Time // used to calculate the eta
-	msmts       map[int64]*model.DatabaseMeasurement
-	inputIdxMap map[int64]int64 // Used to map mk idx to database id
+	CheckInResult *model.OOAPICheckInResult
+	Probe         *ooni.Probe
+	Session       *nettests.Session
+	res           *model.DatabaseResult
+	nt            Nettest
+	ntCount       int
+	ntIndex       int
+	ntStartTime   time.Time // used to calculate the eta
+	msmts         map[int64]*model.DatabaseMeasurement
+	inputIdxMap   map[int64]int64 // Used to map mk idx to database id
 
 	// InputFiles optionally contains the names of the input
 	// files to read inputs from (only for nettests that take
@@ -119,13 +122,12 @@ func (c *Controller) SetNettestIndex(i, n int) {
 //
 // This function will continue to run in most cases but will
 // immediately halt if something's wrong with the file system.
-func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error {
+func (c *Controller) Run(factory nettests.ExperimentFactory, inputs []string) error {
 	db := c.Probe.DB()
+	c.numInputs = len(inputs)
 	// This will configure the controller as handler for the callbacks
 	// called by ooni/probe-engine/experiment.Experiment.
-	builder.SetCallbacks(model.ExperimentCallbacks(c))
-	c.numInputs = len(inputs)
-	exp := builder.NewExperiment()
+	exp := factory.NewExperiment(c)
 	defer func() {
 		c.res.DataUsageDown += exp.KibiBytesReceived()
 		c.res.DataUsageUp += exp.KibiBytesSent()
@@ -141,14 +143,7 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 	log.Debug(color.RedString("status.started"))
 
 	if c.Probe.Config().Sharing.UploadResults {
-		if err := exp.OpenReportContext(context.Background()); err != nil {
-			log.Debugf(
-				"%s: %s", color.RedString("failure.report_create"), err.Error(),
-			)
-		} else {
-			log.Debugf(color.RedString("status.report_create"))
-			reportID = sql.NullString{String: exp.ReportID(), Valid: true}
-		}
+		reportID = sql.NullString{String: exp.ReportID(), Valid: true}
 	}
 
 	maxRuntime := time.Duration(c.Probe.Config().Nettests.WebsitesMaxRuntime) * time.Second
@@ -195,7 +190,7 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 		if input != "" {
 			c.OnProgress(0, fmt.Sprintf("processing input: %s", input))
 		}
-		measurement, err := exp.MeasureWithContext(context.Background(), input)
+		measurement, err := exp.Measure(context.Background(), input)
 		if err != nil {
 			log.WithError(err).Debug(color.RedString("failure.measurement"))
 			if err := db.Failed(c.msmts[idx64], err.Error()); err != nil {
@@ -216,7 +211,7 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 			// Implementation note: SubmitMeasurement will fail here if we did fail
 			// to open the report but we still want to continue. There will be a
 			// bit of a spew in the logs, perhaps, but stopping seems less efficient.
-			if err := exp.SubmitAndUpdateMeasurementContext(context.Background(), measurement); err != nil {
+			if err := c.Session.Submit(context.Background(), measurement); err != nil {
 				log.Debug(color.RedString("failure.measurement_submission"))
 				if err := db.UploadFailed(c.msmts[idx64], err.Error()); err != nil {
 					return errors.Wrap(err, "failed to mark upload as failed")
@@ -230,7 +225,7 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 		}
 		// We only save the measurement to disk if we failed to upload the measurement
 		if saveToDisk {
-			if err := exp.SaveMeasurement(measurement, msmt.MeasurementFilePath.String); err != nil {
+			if err := nettests.SaveMeasurement(measurement, msmt.MeasurementFilePath.String); err != nil {
 				return errors.Wrap(err, "failed to save measurement on disk")
 			}
 		}

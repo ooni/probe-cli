@@ -60,33 +60,42 @@ func RunGroup(config RunGroupConfig) error {
 		return nil
 	}
 
-	sess, err := config.Probe.NewProbeEngine(context.Background(), config.RunType)
-	if err != nil {
-		log.WithError(err).Error("Failed to create a measurement session")
-		return err
-	}
+	sess := config.Probe.NewSession(context.Background(), config.RunType)
 	defer sess.Close()
 
-	err = sess.MaybeLookupLocation()
+	if err := sess.Bootstrap(context.Background()); err != nil {
+		log.WithError(err).Error("Failed to bootstrap the measurement session")
+		return err
+	}
+
+	location, err := sess.Geolocate(context.Background())
 	if err != nil {
 		log.WithError(err).Error("Failed to lookup the location of the probe")
 		return err
 	}
 	db := config.Probe.DB()
-	network, err := db.CreateNetwork(sess)
+	network, err := db.CreateNetwork(location)
 	if err != nil {
 		log.WithError(err).Error("Failed to create the network row")
 		return err
 	}
+
+	log.Debugf(
+		"Enabled category codes are the following %v",
+		config.Probe.Config().Nettests.WebsitesEnabledCategoryCodes,
+	)
 	checkInConfig := &model.OOAPICheckInConfig{
+		// Setting Charging and OnWiFi to true causes the CheckIn
+		// API to return to us as much URL as possible with the
+		// given RunType hint.
 		Charging:        true,
 		OnWiFi:          true,
 		Platform:        platform.Name(),
-		ProbeASN:        sess.ProbeASNString(),
-		ProbeCC:         sess.ProbeCC(),
+		ProbeASN:        location.ProbeASNString(),
+		ProbeCC:         location.ProbeCC(),
 		RunType:         config.RunType,
-		SoftwareName:    sess.SoftwareName(),
-		SoftwareVersion: sess.SoftwareVersion(),
+		SoftwareName:    sess.BootstrapRequest().SoftwareName,
+		SoftwareVersion: sess.BootstrapRequest().SoftwareVersion,
 		WebConnectivity: model.OOAPICheckInConfigWebConnectivity{
 			CategoryCodes: config.Probe.Config().Nettests.WebsitesEnabledCategoryCodes,
 		},
@@ -94,8 +103,9 @@ func RunGroup(config RunGroupConfig) error {
 	if checkInConfig.WebConnectivity.CategoryCodes == nil {
 		checkInConfig.WebConnectivity.CategoryCodes = []string{}
 	}
-	if err := sess.MaybeLookupBackends(checkInConfig); err != nil {
-		log.WithError(err).Warn("Failed to discover OONI backends")
+	checkInResult, err := sess.CheckIn(context.Background(), checkInConfig)
+	if err != nil {
+		log.WithError(err).Warn("Failed to query the check-in API")
 		return err
 	}
 
@@ -128,6 +138,7 @@ func RunGroup(config RunGroupConfig) error {
 		}
 		log.Debugf("Running test %T", nt)
 		ctl := NewController(nt, config.Probe, result, sess)
+		ctl.CheckInResult = checkInResult
 		ctl.InputFiles = config.InputFiles
 		ctl.Inputs = config.Inputs
 		ctl.RunType = config.RunType

@@ -34,9 +34,6 @@ type Experiment interface {
 
 	// ReportID returns the reportID used by this experiment.
 	ReportID() string
-
-	// Session returns the session owning this experiment.
-	Session() *Session
 }
 
 // ErrMissingCheckInConfig is the error returned when we do not have
