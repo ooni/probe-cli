@@ -37,9 +37,51 @@ type Results struct {
 	ResolverASNetworkName string
 }
 
+var _ model.LocationProvider = &Results{}
+
+// ProbeASN implements model.LocationProvider
+func (r *Results) ProbeASN() uint {
+	return r.ASN
+}
+
 // ProbeASNString returns the ASN as a string.
 func (r *Results) ProbeASNString() string {
 	return fmt.Sprintf("AS%d", r.ASN)
+}
+
+// ProbeCC implements model.LocationProvider
+func (r *Results) ProbeCC() string {
+	return r.CountryCode
+}
+
+// ProbeIP implements model.LocationProvider
+func (r *Results) ProbeIP() string {
+	return r.IPAddr
+}
+
+// ProbeNetworkName implements model.LocationProvider
+func (r *Results) ProbeNetworkName() string {
+	return r.NetworkName
+}
+
+// ResolverASN implements model.LocationProvider
+func (r *Results) ResolverASN() uint {
+	return r.ResolverASNumber
+}
+
+// ResolverASNString implements model.LocationProvider
+func (r *Results) ResolverASNString() string {
+	return fmt.Sprintf("AS%d", r.ResolverASNumber)
+}
+
+// ResolverIP implements model.LocationProvider
+func (r *Results) ResolverIP() string {
+	return r.ResolverIPAddr
+}
+
+// ResolverNetworkName implements model.LocationProvider
+func (r *Results) ResolverNetworkName() string {
+	return r.ResolverASNetworkName
 }
 
 type probeIPLookupper interface {

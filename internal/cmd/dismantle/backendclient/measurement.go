@@ -1,11 +1,9 @@
 package backendclient
 
 import (
-	"fmt"
 	"runtime"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/platform"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -17,7 +15,7 @@ const dateFormat = "2006-01-02 15:04:05"
 
 // NewMeasurement constructs a new measurement.
 func NewMeasurement(
-	location *geolocate.Results,
+	location model.LocationProvider,
 	testName string,
 	testVersion string,
 	testStartTime time.Time,
@@ -34,12 +32,12 @@ func NewMeasurement(
 		MeasurementStartTimeSaved: utctimenow,
 		ProbeIP:                   model.DefaultProbeIP,
 		ProbeASN:                  location.ProbeASNString(),
-		ProbeCC:                   location.CountryCode,
-		ProbeNetworkName:          location.NetworkName,
+		ProbeCC:                   location.ProbeCC(),
+		ProbeNetworkName:          location.ProbeNetworkName(),
 		ReportID:                  reportID,
-		ResolverASN:               fmt.Sprintf("AS%d", location.ResolverASNumber), // XXX
-		ResolverIP:                location.ResolverIPAddr,
-		ResolverNetworkName:       location.ResolverASNetworkName,
+		ResolverASN:               location.ResolverASNString(),
+		ResolverIP:                location.ResolverIP(),
+		ResolverNetworkName:       location.ResolverNetworkName(),
 		SoftwareName:              softwareName,
 		SoftwareVersion:           softwareVersion,
 		TestName:                  testName,
