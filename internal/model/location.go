@@ -19,4 +19,13 @@ type LocationProvider interface {
 
 	// ResolverIP is the IP of the resolver.
 	ResolverIP() string
+
+	// ResolverASN is the resolver ASN.
+	ResolverASN() uint
+
+	// ResolverASNString is the resolver ASN as the AS%d string.
+	ResolverASNString() string
+
+	// ResolverNetworkName is the name of the ResolverASN.
+	ResolverNetworkName() string
 }

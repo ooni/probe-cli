@@ -3,12 +3,15 @@ package mocks
 import "github.com/ooni/probe-cli/v3/internal/model"
 
 type LocationProvider struct {
-	MockProbeASN         func() uint
-	MockProbeASNString   func() string
-	MockProbeCC          func() string
-	MockProbeIP          func() string
-	MockProbeNetworkName func() string
-	MockResolverIP       func() string
+	MockProbeASN            func() uint
+	MockProbeASNString      func() string
+	MockProbeCC             func() string
+	MockProbeIP             func() string
+	MockProbeNetworkName    func() string
+	MockResolverIP          func() string
+	MockResolverASN         func() uint
+	MockResolverASNString   func() string
+	MockResolverNetworkName func() string
 }
 
 var _ model.LocationProvider = &LocationProvider{}
@@ -41,4 +44,19 @@ func (loc *LocationProvider) ProbeNetworkName() string {
 // ResolverIP calls MockResolverIP
 func (loc *LocationProvider) ResolverIP() string {
 	return loc.MockResolverIP()
+}
+
+// ResolverASN implements model.LocationProvider
+func (loc *LocationProvider) ResolverASN() uint {
+	return loc.MockResolverASN()
+}
+
+// ResolverASNString implements model.LocationProvider
+func (loc *LocationProvider) ResolverASNString() string {
+	return loc.MockResolverASNString()
+}
+
+// ResolverNetworkName implements model.LocationProvider
+func (loc *LocationProvider) ResolverNetworkName() string {
+	return loc.MockResolverNetworkName()
 }
