@@ -25,7 +25,7 @@ import (
 // We may want to have a single implementation for both nettests in the future.
 
 // testVersion is the experiment version.
-const testVersion = "0.3.0"
+const testVersion = "0.4.0"
 
 // Config contains the experiment config.
 type Config struct {
@@ -82,6 +82,9 @@ type TestKeys struct {
 
 	// TransportName is always set to "snowflake" for this experiment.
 	TransportName string `json:"transport_name"`
+
+	// cannotFindTorBinary indicates that we could not find the tor binary.
+	cannotFindTorBinary bool
 }
 
 // Measurer performs the measurement.
@@ -147,6 +150,9 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		case tk := <-tkch:
 			measurement.TestKeys = tk
 			callbacks.OnProgress(1.0, "torsf experiment is finished")
+			if tk.cannotFindTorBinary {
+				return tunnel.ErrCannotFindTorBinary
+			}
 			return nil
 		case <-ticker.C:
 			if !m.config.DisableProgress {
@@ -228,7 +234,9 @@ func (m *Measurer) bootstrap(ctx context.Context, timeout time.Duration, sess mo
 			"ClientTransportPlugin", ptl.AsClientTransportPluginArgument(),
 			"Bridge", sfdialer.AsBridgeArgument(),
 		},
+		TorBinary: sess.TorBinary(),
 	})
+	tk.cannotFindTorBinary = errors.Is(err, tunnel.ErrCannotFindTorBinary)
 	tk.TorVersion = debugInfo.Version
 	m.readTorLogs(sess.Logger(), tk, debugInfo.LogFilePath)
 	if err != nil {

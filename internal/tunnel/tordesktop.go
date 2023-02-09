@@ -10,6 +10,7 @@ package tunnel
 //
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/cretz/bine/tor"
@@ -21,7 +22,7 @@ func getTorStartConf(config *Config, dataDir string, extraArgs []string) (*tor.S
 	exePath, err := config.torBinary()
 	if err != nil {
 		config.logger().Warnf("cannot find tor binary: %s", err.Error())
-		return nil, err
+		return nil, fmt.Errorf("%w: %s", ErrCannotFindTorBinary, err.Error())
 	}
 	config.logger().Infof("tunnel: tor: exec: %s %s %s", exePath,
 		dataDir, strings.Join(extraArgs, " "))

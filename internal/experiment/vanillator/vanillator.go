@@ -23,7 +23,7 @@ import (
 // We may want to have a single implementation for both nettests in the future.
 
 // testVersion is the experiment version.
-const testVersion = "0.2.0"
+const testVersion = "0.3.0"
 
 // Config contains the experiment config.
 type Config struct {
@@ -68,6 +68,9 @@ type TestKeys struct {
 
 	// TransportName is always set to "vanilla" for this experiment.
 	TransportName string `json:"transport_name"`
+
+	// cannotFindTorBinary indicates that we could not find the tor binary.
+	cannotFindTorBinary bool
 }
 
 // Measurer performs the measurement.
@@ -123,6 +126,9 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		case tk := <-tkch:
 			measurement.TestKeys = tk
 			callbacks.OnProgress(1.0, "vanilla_tor experiment is finished")
+			if tk.cannotFindTorBinary {
+				return tunnel.ErrCannotFindTorBinary
+			}
 			return nil
 		case <-ticker.C:
 			if !m.config.DisableProgress {
@@ -168,7 +174,9 @@ func (m *Measurer) bootstrap(ctx context.Context, timeout time.Duration,
 		Session:   sess,
 		TunnelDir: path.Join(m.baseTunnelDir(sess), "vanillator"),
 		Logger:    sess.Logger(),
+		TorBinary: sess.TorBinary(),
 	})
+	tk.cannotFindTorBinary = errors.Is(err, tunnel.ErrCannotFindTorBinary)
 	tk.TorVersion = debugInfo.Version
 	m.readTorLogs(sess.Logger(), tk, debugInfo.LogFilePath)
 	if err != nil {
