@@ -20,7 +20,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	if measurer.ExperimentName() != "http_invalid_request_line" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.2.0" {
+	if measurer.ExperimentVersion() != "0.2.1" {
 		t.Fatal("unexpected version")
 	}
 }
