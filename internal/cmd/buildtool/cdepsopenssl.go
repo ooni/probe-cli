@@ -8,7 +8,6 @@ package main
 //
 
 import (
-	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -28,13 +27,13 @@ func cdepsOpenSSLBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencie
 	defer restore()
 
 	// See https://github.com/Homebrew/homebrew-core/blob/master/Formula/openssl@1.1.rb
-	cdepsMustFetch("https://www.openssl.org/source/openssl-1.1.1s.tar.gz")
+	cdepsMustFetch("https://www.openssl.org/source/openssl-1.1.1t.tar.gz")
 	deps.VerifySHA256( // must be mockable
-		"c5ac01e760ee6ff0dab61d6b2bbd30146724d063eb322180c6f18a6f74e4b6aa",
-		"openssl-1.1.1s.tar.gz",
+		"8dee9b24bdb1dcbf0c3d1e9b02fb8f6bf22165e807f45adeb7c9677536859d3b",
+		"openssl-1.1.1t.tar.gz",
 	)
-	must.Run(log.Log, "tar", "-xf", "openssl-1.1.1s.tar.gz")
-	_ = deps.MustChdir("openssl-1.1.1s") // must be mockable
+	must.Run(log.Log, "tar", "-xf", "openssl-1.1.1t.tar.gz")
+	_ = deps.MustChdir("openssl-1.1.1t") // must be mockable
 
 	mydir := filepath.Join(topdir, "CDEPS", "openssl")
 	for _, patch := range cdepsMustListPatches(mydir) {
@@ -48,15 +47,15 @@ func cdepsOpenSSLBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencie
 	mergedEnv := cBuildMerge(globalEnv, localEnv)
 	envp := cBuildExportOpenSSL(mergedEnv)
 
-	// QUIRK: OpenSSL-1.1.1s wants ANDROID_NDK_HOME
+	// QUIRK: OpenSSL-1.1.1t wants ANDROID_NDK_HOME
 	if mergedEnv.ANDROID_NDK_ROOT != "" {
 		envp.Append("ANDROID_NDK_HOME", mergedEnv.ANDROID_NDK_ROOT)
 	}
 
-	// QUIRK: OpenSSL-1.1.1s wants the PATH to contain the
+	// QUIRK: OpenSSL-1.1.1t wants the PATH to contain the
 	// directory where the Android compiler lives.
 	if mergedEnv.BINPATH != "" {
-		envp.Append("PATH", cdepsOpenSSLPrependToPath(mergedEnv.BINPATH))
+		envp.Append("PATH", cdepsPrependToPath(mergedEnv.BINPATH))
 	}
 
 	argv := runtimex.Try1(shellx.NewArgv(
@@ -84,16 +83,4 @@ func cdepsOpenSSLBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencie
 
 	must.Run(log.Log, "make", "DESTDIR="+globalEnv.DESTDIR, "install_dev")
 	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.DESTDIR, "lib", "pkgconfig"))
-}
-
-func cdepsOpenSSLPrependToPath(value string) string {
-	current := os.Getenv("PATH")
-	switch runtime.GOOS {
-	case "windows":
-		// Untested right now. If you dare running the build on pure Windows
-		// and discover this code doesn't work, I owe you a beer.
-		return value + ";" + current
-	default:
-		return value + ":" + current
-	}
 }
