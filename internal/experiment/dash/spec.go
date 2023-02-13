@@ -1,9 +1,6 @@
 package dash
 
 const (
-	// negotiatePath is the URL path used to negotiate
-	negotiatePath = "/negotiate/dash"
-
 	// downloadPath is the URL path used to request DASH segments. You can
 	// append to this path an integer indicating how many bytes you would like
 	// the server to send you as part of the next chunk.

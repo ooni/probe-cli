@@ -260,7 +260,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	if measurer.ExperimentName() != "dash" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.13.0" {
+	if measurer.ExperimentVersion() != "0.14.0" {
 		t.Fatal("unexpected version")
 	}
 }

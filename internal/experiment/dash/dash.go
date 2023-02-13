@@ -25,7 +25,7 @@ const (
 	defaultTimeout = 120 * time.Second
 	magicVersion   = "0.008000000"
 	testName       = "dash"
-	testVersion    = "0.13.0"
+	testVersion    = "0.14.0"
 	totalStep      = 15
 )
 
@@ -89,10 +89,6 @@ func (r runner) ReadAllContext(ctx context.Context, reader io.Reader) ([]byte, e
 	return netxlite.ReadAllContext(ctx, reader)
 }
 
-func (r runner) Scheme() string {
-	return "https"
-}
-
 func (r runner) UserAgent() string {
 	return r.sess.UserAgent()
 }
@@ -103,20 +99,19 @@ func (r runner) loop(ctx context.Context, numIterations int64) error {
 		return err
 	}
 	r.tk.Server = ServerInfo{
-		Hostname: locateResult.FQDN,
+		Hostname: locateResult.Hostname,
 		Site:     locateResult.Site,
 	}
-	fqdn := locateResult.FQDN
-	r.callbacks.OnProgress(0.0, fmt.Sprintf("streaming: server: %s", fqdn))
-	negotiateResp, err := negotiate(ctx, fqdn, r)
+	r.callbacks.OnProgress(0.0, fmt.Sprintf("streaming: server: %s", locateResult.Hostname))
+	negotiateResp, err := negotiate(ctx, locateResult.NegotiateURL, r)
 	if err != nil {
 		return err
 	}
-	if err := r.measure(ctx, fqdn, negotiateResp, numIterations); err != nil {
+	if err := r.measure(ctx, locateResult.BaseURL, negotiateResp, numIterations); err != nil {
 		return err
 	}
 	// TODO(bassosimone): it seems we're not saving the server data?
-	err = collect(ctx, fqdn, negotiateResp.Authorization, r.tk.ReceiverData, r)
+	err = collect(ctx, locateResult.BaseURL, negotiateResp.Authorization, r.tk.ReceiverData, r)
 	if err != nil {
 		return err
 	}
@@ -124,7 +119,7 @@ func (r runner) loop(ctx context.Context, numIterations int64) error {
 }
 
 func (r runner) measure(
-	ctx context.Context, fqdn string, negotiateResp negotiateResponse,
+	ctx context.Context, baseURL string, negotiateResp negotiateResponse,
 	numIterations int64) error {
 	// Note: according to a comment in MK sources 3000 kbit/s was the
 	// minimum speed recommended by Netflix for SD quality in 2017.
@@ -146,11 +141,11 @@ func (r runner) measure(
 	for current.Iteration < numIterations {
 		result, err := download(ctx, downloadConfig{
 			authorization: negotiateResp.Authorization,
+			baseURL:       baseURL,
 			begin:         begin,
 			currentRate:   current.Rate,
 			deps:          r,
 			elapsedTarget: current.ElapsedTarget,
-			fqdn:          fqdn,
 		})
 		if err != nil {
 			// Implementation note: ndt7 controls the connection much

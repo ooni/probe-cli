@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"net/url"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -17,23 +16,18 @@ type negotiateDeps interface {
 	Logger() model.Logger
 	NewHTTPRequest(method string, url string, body io.Reader) (*http.Request, error)
 	ReadAllContext(ctx context.Context, r io.Reader) ([]byte, error)
-	Scheme() string
 	UserAgent() string
 }
 
 func negotiate(
-	ctx context.Context, fqdn string, deps negotiateDeps) (negotiateResponse, error) {
+	ctx context.Context, negotiateURL string, deps negotiateDeps) (negotiateResponse, error) {
 	var negotiateResp negotiateResponse
 	data, err := deps.JSONMarshal(negotiateRequest{DASHRates: defaultRates})
 	if err != nil {
 		return negotiateResp, err
 	}
 	deps.Logger().Debugf("dash: body: %s", string(data))
-	var URL url.URL
-	URL.Scheme = deps.Scheme()
-	URL.Host = fqdn
-	URL.Path = negotiatePath
-	req, err := deps.NewHTTPRequest("POST", URL.String(), bytes.NewReader(data))
+	req, err := deps.NewHTTPRequest("POST", negotiateURL, bytes.NewReader(data))
 	if err != nil {
 		return negotiateResp, err
 	}

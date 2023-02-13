@@ -178,3 +178,71 @@ func (c *Client) QueryNDT7(ctx context.Context) ([]*NDT7Result, error) {
 	}
 	return result, nil
 }
+
+// DashResult is the result of a v2 locate services query for dash.
+type DashResult struct {
+	// Hostname is an informative field containing the hostname
+	// to which you're connected. Because there are access tokens,
+	// you CANNOT use this field directly.
+	Hostname string
+
+	// Site is an informative field containing the site
+	// to which the server belongs to.
+	Site string
+
+	// NegotiateURL is the HTTPS URL to be used for
+	// performing the DASH negotiate operation. Note that the
+	// URL typically includes the required access token.
+	NegotiateURL string
+
+	// BaseURL is the base URL used for the download and the
+	// collect phases of dash. The token is only required during
+	// the negotiate phase and we can otherwise use a base URL.
+	BaseURL string
+}
+
+// dashURLPath is the URL path to be used for dash
+const dashURLPath = "v2/nearest/neubot/dash"
+
+// QueryDash performs a v2 locate services query for dash.
+func (c *Client) QueryDash(ctx context.Context) ([]*DashResult, error) {
+	out, err := c.query(ctx, dashURLPath)
+	if err != nil {
+		return nil, err
+	}
+	runtimex.Assert(out != nil, "expected non-nil out")
+	var result []*DashResult
+	for _, entry := range out.Results {
+		r := DashResult{
+			NegotiateURL: entry.URLs["https:///negotiate/dash"],
+		}
+		if r.NegotiateURL == "" {
+			continue
+		}
+		// Implementation note: we extract the hostname from the
+		// download URL, under the assumption that the download and
+		// the upload URLs have the same hostname.
+		url, err := url.Parse(r.NegotiateURL)
+		if err != nil {
+			continue
+		}
+		r.Hostname = url.Hostname()
+		r.BaseURL = dashBaseURL(url)
+		r.Site = entry.Site()
+		result = append(result, &r)
+	}
+	if len(result) <= 0 {
+		return nil, ErrEmptyResponse
+	}
+	return result, nil
+}
+
+// dashBaseURL obtains the dash base URL from the negotiate URL.
+func dashBaseURL(URL *url.URL) string {
+	out := &url.URL{
+		Scheme: URL.Scheme,
+		Host:   URL.Host,
+		Path:   "/",
+	}
+	return out.String()
+}

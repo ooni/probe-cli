@@ -13,17 +13,16 @@ type downloadDeps interface {
 	HTTPClient() *http.Client
 	NewHTTPRequest(method string, url string, body io.Reader) (*http.Request, error)
 	ReadAllContext(ctx context.Context, r io.Reader) ([]byte, error)
-	Scheme() string
 	UserAgent() string
 }
 
 type downloadConfig struct {
 	authorization string
+	baseURL       string
 	begin         time.Time
 	currentRate   int64
 	deps          downloadDeps
 	elapsedTarget int64
-	fqdn          string
 }
 
 type downloadResult struct {
@@ -35,13 +34,14 @@ type downloadResult struct {
 }
 
 func download(ctx context.Context, config downloadConfig) (downloadResult, error) {
+	var result downloadResult
 	nbytes := (config.currentRate * 1000 * config.elapsedTarget) >> 3
-	var URL url.URL
-	URL.Scheme = config.deps.Scheme()
-	URL.Host = config.fqdn
+	URL, err := url.Parse(config.baseURL)
+	if err != nil {
+		return result, err
+	}
 	URL.Path = fmt.Sprintf("%s%d", downloadPath, nbytes)
 	req, err := config.deps.NewHTTPRequest("GET", URL.String(), nil)
-	var result downloadResult
 	if err != nil {
 		return result, err
 	}

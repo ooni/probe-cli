@@ -17,20 +17,20 @@ type collectDeps interface {
 	Logger() model.Logger
 	NewHTTPRequest(method string, url string, body io.Reader) (*http.Request, error)
 	ReadAllContext(ctx context.Context, r io.Reader) ([]byte, error)
-	Scheme() string
 	UserAgent() string
 }
 
-func collect(ctx context.Context, fqdn, authorization string,
+func collect(ctx context.Context, baseURL, authorization string,
 	results []clientResults, deps collectDeps) error {
 	data, err := deps.JSONMarshal(results)
 	if err != nil {
 		return err
 	}
 	deps.Logger().Debugf("dash: body: %s", string(data))
-	var URL url.URL
-	URL.Scheme = deps.Scheme()
-	URL.Host = fqdn
+	URL, err := url.Parse(baseURL)
+	if err != nil {
+		return err
+	}
 	URL.Path = collectPath
 	req, err := deps.NewHTTPRequest("POST", URL.String(), bytes.NewReader(data))
 	if err != nil {
