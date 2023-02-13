@@ -36,7 +36,7 @@ func CompareArgv(expected, got []string) error {
 	}
 	runtimex.Assert(len(got) >= 1, "too few entries")
 	if !strings.HasSuffix(got[0], expected[0]) {
-		return fmt.Errorf("expected %s prefix but got %s", expected[0], got[0])
+		return fmt.Errorf("expected %s suffix but got %s", expected[0], got[0])
 	}
 	for idx := 1; idx < len(got); idx++ {
 		if got[idx] != expected[idx] {
