@@ -1,6 +1,4 @@
-// Package mlablocatev2 implements m-lab locate services API v2. This
-// API currently only allows you to get servers for ndt7. Use the
-// mlablocate package for all other m-lab tools.
+// Package mlablocatev2 implements m-lab locate services API v2.
 package mlablocatev2
 
 import (
@@ -8,26 +6,24 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"regexp"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-const (
-	// ndt7URLPath is the URL path to be used for ndt
-	ndt7URLPath = "v2/nearest/ndt/ndt7"
-)
+// ndt7URLPath is the URL path to be used for ndt
+const ndt7URLPath = "v2/nearest/ndt/ndt7"
 
-var (
-	// ErrRequestFailed indicates that the response is not "200 Ok"
-	ErrRequestFailed = errors.New("mlablocatev2: request failed")
+// ErrRequestFailed indicates that the response is not "200 Ok"
+var ErrRequestFailed = errors.New("mlablocatev2: request failed")
 
-	// ErrEmptyResponse indicates that no hosts were returned
-	ErrEmptyResponse = errors.New("mlablocatev2: empty response")
-)
+// ErrEmptyResponse indicates that no hosts were returned
+var ErrEmptyResponse = errors.New("mlablocatev2: empty response")
 
 // Client is a client for v2 of the locate services. Please use the
 // NewClient factory to construct a new instance of client, otherwise
@@ -50,8 +46,8 @@ type Client struct {
 }
 
 // NewClient creates a client for v2 of the locate services.
-func NewClient(httpClient model.HTTPClient, logger model.DebugLogger, userAgent string) Client {
-	return Client{
+func NewClient(httpClient model.HTTPClient, logger model.DebugLogger, userAgent string) *Client {
+	return &Client{
 		HTTPClient: httpClient,
 		Hostname:   "locate.measurementlab.net",
 		Logger:     logger,
@@ -60,22 +56,24 @@ func NewClient(httpClient model.HTTPClient, logger model.DebugLogger, userAgent 
 	}
 }
 
-// entryRecord describes one of the boxes returned by v2 of
+// entryRecord describes one of the machines returned by v2 of
 // the locate service. It gives you the FQDN of the specific
-// box along with URLs for each experiment phase. You MUST
+// machine along with URLs for each experiment phase. You SHOULD
 // use the URLs directly because they contain access tokens.
 type entryRecord struct {
-	Machine string            `json:"machine"`
-	URLs    map[string]string `json:"urls"`
+	// Machine is the FQDN of the machine
+	Machine string `json:"machine"`
+
+	// URLs contains the URLs to use
+	URLs map[string]string `json:"urls"`
 }
 
-var (
-	// siteRegexp is the regexp to extract the site from the
-	// machine name when the domain is a v2 domain.
-	//
-	// Example: mlab3-mil04.mlab-oti.measurement-lab.org.
-	siteRegexp = regexp.MustCompile(
-		`^(mlab[1-4]d?)-([a-z]{3}[0-9tc]{2})\.([a-z0-9-]{1,16})\.(measurement-lab\.org)$`)
+// siteRegexp is the regexp to extract the site from the
+// machine name when the domain is a v2 domain.
+//
+// Example: mlab3-mil04.mlab-oti.measurement-lab.org.
+var siteRegexp = regexp.MustCompile(
+	`^(mlab[1-4]d?)-([a-z]{3}[0-9tc]{2})\.([a-z0-9-]{1,16})\.(measurement-lab\.org)$`,
 )
 
 // Site returns the site name. If it is not possible to determine
@@ -90,14 +88,12 @@ func (er entryRecord) Site() string {
 
 // resultRecord is a result of a query to locate.measurementlab.net.
 type resultRecord struct {
+	// Results contains the results.
 	Results []entryRecord `json:"results"`
 }
 
-// query performs a locate.measurementlab.net query
-// using v2 of the locate protocol.
-func (c Client) query(ctx context.Context, path string) (resultRecord, error) {
-	// TODO(bassosimone): this code should probably be
-	// refactored to use the httpx package.
+// query queries the locate service.
+func (c *Client) query(ctx context.Context, path string) (*resultRecord, error) {
 	URL := &url.URL{
 		Scheme: c.Scheme,
 		Host:   c.Hostname,
@@ -105,35 +101,36 @@ func (c Client) query(ctx context.Context, path string) (resultRecord, error) {
 	}
 	req, err := http.NewRequestWithContext(ctx, "GET", URL.String(), nil)
 	if err != nil {
-		return resultRecord{}, err
+		return nil, err
 	}
 	req.Header.Add("User-Agent", c.UserAgent)
 	c.Logger.Debugf("mlablocatev2: GET %s", URL.String())
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
-		return resultRecord{}, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return resultRecord{}, fmt.Errorf("%w: %d", ErrRequestFailed, resp.StatusCode)
+		return nil, fmt.Errorf("%w: %d", ErrRequestFailed, resp.StatusCode)
 	}
-	data, err := netxlite.ReadAllContext(ctx, resp.Body)
+	reader := io.LimitReader(resp.Body, 1<<20)
+	data, err := netxlite.ReadAllContext(ctx, reader)
 	if err != nil {
-		return resultRecord{}, err
+		return nil, err
 	}
 	c.Logger.Debugf("mlablocatev2: %s", string(data))
 	var result resultRecord
 	if err := json.Unmarshal(data, &result); err != nil {
-		return resultRecord{}, err
+		return nil, err
 	}
-	return result, nil
+	return &result, nil
 }
 
 // NDT7Result is the result of a v2 locate services query for ndt7.
 type NDT7Result struct {
 	// Hostname is an informative field containing the hostname
 	// to which you're connected. Because there are access tokens,
-	// you cannot use this field directly.
+	// you CANNOT use this field directly.
 	Hostname string
 
 	// Site is an informative field containing the site
@@ -150,12 +147,13 @@ type NDT7Result struct {
 }
 
 // QueryNDT7 performs a v2 locate services query for ndt7.
-func (c Client) QueryNDT7(ctx context.Context) ([]NDT7Result, error) {
+func (c *Client) QueryNDT7(ctx context.Context) ([]*NDT7Result, error) {
 	out, err := c.query(ctx, ndt7URLPath)
 	if err != nil {
 		return nil, err
 	}
-	var result []NDT7Result
+	runtimex.Assert(out != nil, "expected non-nil out")
+	var result []*NDT7Result
 	for _, entry := range out.Results {
 		r := NDT7Result{
 			WSSDownloadURL: entry.URLs["wss:///ndt/v7/download"],
@@ -171,9 +169,9 @@ func (c Client) QueryNDT7(ctx context.Context) ([]NDT7Result, error) {
 		if err != nil {
 			continue
 		}
-		r.Site = entry.Site()
 		r.Hostname = url.Hostname()
-		result = append(result, r)
+		r.Site = entry.Site()
+		result = append(result, &r)
 	}
 	if len(result) <= 0 {
 		return nil, ErrEmptyResponse
