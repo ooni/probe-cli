@@ -191,7 +191,7 @@ type DashResult struct {
 	Site string
 
 	// NegotiateURL is the HTTPS URL to be used for
-	// performing the DASH negotiate operation. Note that the
+	// performing the DASH negotiate operation. Note that this
 	// URL typically includes the required access token.
 	NegotiateURL string
 
@@ -219,9 +219,6 @@ func (c *Client) QueryDash(ctx context.Context) ([]*DashResult, error) {
 		if r.NegotiateURL == "" {
 			continue
 		}
-		// Implementation note: we extract the hostname from the
-		// download URL, under the assumption that the download and
-		// the upload URLs have the same hostname.
 		url, err := url.Parse(r.NegotiateURL)
 		if err != nil {
 			continue
