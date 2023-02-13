@@ -165,7 +165,7 @@ func TestNDT7QueryFails(t *testing.T) {
 		Transport: &mocks.HTTPTransport{
 			MockRoundTrip: func(req *http.Request) (*http.Response, error) {
 				resp := &http.Response{
-					StatusCode: 400,
+					StatusCode: 404,
 					Body: io.NopCloser(&mocks.Reader{
 						MockRead: func(b []byte) (int, error) {
 							return 0, io.EOF
