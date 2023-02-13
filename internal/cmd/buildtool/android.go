@@ -71,11 +71,16 @@ func androidBuildGomobile(deps buildtoolmodel.Dependencies) {
 
 	// From the gomobile repository:
 	//
-	//	Try the ANDROID_NDK_HOME variable.  This approach is deprecated, but it has
+	//	Try the ANDROID_NDK_HOME variable. This approach is deprecated, but it has
 	//	the highest priority because it represents an explicit user choice.
 	//
 	// See https://github.com/golang/mobile/blob/8578da983/cmd/gomobile/env.go#L394
 	envp.Append("ANDROID_NDK_HOME", ndkDir)
+
+	// We need to include the GOPATH into the PATH because the
+	// gomobile tool needs to call $GOPATH/bin/gobind.
+	goPath := filepath.Join(deps.GOPATH(), "bin")
+	envp.Append("PATH", cdepsPrependToPath(goPath))
 
 	config := &gomobileConfig{
 		deps:       deps,
@@ -103,7 +108,7 @@ func androidSDKCheck() string {
 	}
 	if !fsx.DirectoryExists(androidHome) {
 		log.Warnf("expected to find Android SDK at %s, but found nothing", androidHome)
-		log.Infof("HINT: run ./MOBILE/android/setup to (re)install the SDK")
+		log.Infof("HINT: run ./MOBILE/android/setup && ./MOBILE/android/ensure to (re)install the SDK")
 		log.Fatalf("cannot continue without a valid Android SDK installation")
 	}
 	return androidHome
@@ -115,7 +120,7 @@ func androidNDKCheck(androidHome string) string {
 	ndkDir := filepath.Join(androidHome, "ndk", ndkVersion)
 	if !fsx.DirectoryExists(ndkDir) {
 		log.Warnf("expected to find Android NDK at %s, but found nothing", ndkDir)
-		log.Infof("HINT: run ./MOBILE/android/setup to (re)install the SDK")
+		log.Infof("HINT: run ./MOBILE/android/setup && ./MOBILE/android/ensure to (re)install the SDK")
 		log.Fatalf("cannot continue without a valid Android NDK installation")
 	}
 	return ndkDir

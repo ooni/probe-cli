@@ -7,6 +7,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -82,4 +83,18 @@ func defaultShellxConfig() *shellx.Config {
 func cdepsMustRunWithDefaultConfig(envp *shellx.Envp, command string, args ...string) {
 	argv := runtimex.Try1(shellx.NewArgv(command, args...))
 	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, envp))
+}
+
+// cdepsPrependToPath returns the original PATH environment
+// variable with the given value prepended to it.
+func cdepsPrependToPath(value string) string {
+	current := os.Getenv("PATH")
+	switch runtime.GOOS {
+	case "windows":
+		// Untested right now. If you dare running the build on pure Windows
+		// and discover this code doesn't work, I owe you a beer.
+		return value + ";" + current
+	default:
+		return value + ":" + current
+	}
 }
