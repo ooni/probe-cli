@@ -9,12 +9,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
 func TestSuccess(t *testing.T) {
 	// this test is ~0.5 s, so we can always run it
-	client := NewClient(http.DefaultClient, log.Log, "miniooni/0.1.0-dev")
+	client := NewClient(http.DefaultClient, model.DiscardLogger, "miniooni/0.1.0-dev")
 	result, err := client.QueryNDT7(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -27,7 +28,7 @@ func TestSuccess(t *testing.T) {
 			t.Fatal("expected non empty Hostname here")
 		}
 		if entry.Site == "" {
-			t.Fatal("expected non=-empty Site here")
+			t.Fatal("expected non-empty Site here")
 		}
 		if entry.WSSDownloadURL == "" {
 			t.Fatal("expected non-empty WSSDownloadURL here")
@@ -46,53 +47,35 @@ func TestSuccess(t *testing.T) {
 
 func Test404Response(t *testing.T) {
 	// this test is ~0.5 s, so we can always run it
-	client := NewClient(http.DefaultClient, log.Log, "miniooni/0.1.0-dev")
+	client := NewClient(http.DefaultClient, model.DiscardLogger, "miniooni/0.1.0-dev")
 	result, err := client.query(context.Background(), "nonexistent")
 	if !errors.Is(err, ErrRequestFailed) {
 		t.Fatal("not the error we expected")
 	}
-	if result.Results != nil {
+	if result != nil {
 		t.Fatal("expected empty results")
 	}
 }
 
 func TestNewRequestFailure(t *testing.T) {
-	client := NewClient(http.DefaultClient, log.Log, "miniooni/0.1.0-dev")
+	client := NewClient(http.DefaultClient, model.DiscardLogger, "miniooni/0.1.0-dev")
 	client.Hostname = "\t"
 	result, err := client.query(context.Background(), "nonexistent")
 	if err == nil || !strings.Contains(err.Error(), "invalid URL escape") {
 		t.Fatal("not the error we expected")
 	}
-	if result.Results != nil {
+	if result != nil {
 		t.Fatal("expected nil results")
 	}
 }
 
 func TestHTTPClientDoFailure(t *testing.T) {
-	client := NewClient(http.DefaultClient, log.Log, "miniooni/0.1.0-dev")
+	client := NewClient(http.DefaultClient, model.DiscardLogger, "miniooni/0.1.0-dev")
 	expected := errors.New("mocked error")
 	client.HTTPClient = &http.Client{
-		Transport: FakeTransport{Err: expected},
-	}
-	result, err := client.query(context.Background(), "nonexistent")
-	if !errors.Is(err, expected) {
-		t.Fatal("not the error we expected")
-	}
-	if result.Results != nil {
-		t.Fatal("expected nil results")
-	}
-}
-
-func TestCannotReadBody(t *testing.T) {
-	client := NewClient(http.DefaultClient, log.Log, "miniooni/0.1.0-dev")
-	expected := errors.New("mocked error")
-	client.HTTPClient = &http.Client{
-		Transport: FakeTransport{
-			Resp: &http.Response{
-				StatusCode: 200,
-				Body: FakeBody{
-					Err: expected,
-				},
+		Transport: &mocks.HTTPTransport{
+			MockRoundTrip: func(req *http.Request) (*http.Response, error) {
+				return nil, expected
 			},
 		},
 	}
@@ -100,21 +83,48 @@ func TestCannotReadBody(t *testing.T) {
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
 	}
-	if result.Results != nil {
+	if result != nil {
+		t.Fatal("expected nil results")
+	}
+}
+
+func TestCannotReadBody(t *testing.T) {
+	client := NewClient(http.DefaultClient, model.DiscardLogger, "miniooni/0.1.0-dev")
+	expected := errors.New("mocked error")
+	client.HTTPClient = &http.Client{
+		Transport: &mocks.HTTPTransport{
+			MockRoundTrip: func(req *http.Request) (*http.Response, error) {
+				resp := &http.Response{
+					StatusCode: 200,
+					Body: io.NopCloser(&mocks.Reader{
+						MockRead: func(b []byte) (int, error) {
+							return 0, expected
+						},
+					}),
+				}
+				return resp, nil
+			},
+		},
+	}
+	result, err := client.query(context.Background(), "nonexistent")
+	if !errors.Is(err, expected) {
+		t.Fatal("not the error we expected")
+	}
+	if result != nil {
 		t.Fatal("expected nil results")
 	}
 }
 
 func TestInvalidJSON(t *testing.T) {
-	client := NewClient(http.DefaultClient, log.Log, "miniooni/0.1.0-dev")
+	client := NewClient(http.DefaultClient, model.DiscardLogger, "miniooni/0.1.0-dev")
 	client.HTTPClient = &http.Client{
-		Transport: FakeTransport{
-			Resp: &http.Response{
-				StatusCode: 200,
-				Body: FakeBody{
-					Err:  io.EOF,
-					Data: []byte(`{`),
-				},
+		Transport: &mocks.HTTPTransport{
+			MockRoundTrip: func(req *http.Request) (*http.Response, error) {
+				resp := &http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(strings.NewReader("{")),
+				}
+				return resp, nil
 			},
 		},
 	}
@@ -122,21 +132,21 @@ func TestInvalidJSON(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "unexpected end of JSON input") {
 		t.Fatal("not the error we expected")
 	}
-	if result.Results != nil {
+	if result != nil {
 		t.Fatal("expected nil results")
 	}
 }
 
 func TestEmptyResponse(t *testing.T) {
-	client := NewClient(http.DefaultClient, log.Log, "miniooni/0.1.0-dev")
+	client := NewClient(http.DefaultClient, model.DiscardLogger, "miniooni/0.1.0-dev")
 	client.HTTPClient = &http.Client{
-		Transport: FakeTransport{
-			Resp: &http.Response{
-				StatusCode: 200,
-				Body: FakeBody{
-					Err:  io.EOF,
-					Data: []byte(`{}`),
-				},
+		Transport: &mocks.HTTPTransport{
+			MockRoundTrip: func(req *http.Request) (*http.Response, error) {
+				resp := &http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(strings.NewReader("{}")),
+				}
+				return resp, nil
 			},
 		},
 	}
@@ -150,18 +160,25 @@ func TestEmptyResponse(t *testing.T) {
 }
 
 func TestNDT7QueryFails(t *testing.T) {
-	client := NewClient(http.DefaultClient, log.Log, "miniooni/0.1.0-dev")
+	client := NewClient(http.DefaultClient, model.DiscardLogger, "miniooni/0.1.0-dev")
 	client.HTTPClient = &http.Client{
-		Transport: FakeTransport{
-			Resp: &http.Response{
-				StatusCode: 404,
-				Body:       FakeBody{Err: io.EOF},
+		Transport: &mocks.HTTPTransport{
+			MockRoundTrip: func(req *http.Request) (*http.Response, error) {
+				resp := &http.Response{
+					StatusCode: 400,
+					Body: io.NopCloser(&mocks.Reader{
+						MockRead: func(b []byte) (int, error) {
+							return 0, io.EOF
+						},
+					}),
+				}
+				return resp, nil
 			},
 		},
 	}
 	result, err := client.QueryNDT7(context.Background())
 	if !errors.Is(err, ErrRequestFailed) {
-		t.Fatal("not the error we expected")
+		t.Fatal("not the error we expected", err)
 	}
 	if result != nil {
 		t.Fatal("expected nil results")
@@ -169,16 +186,17 @@ func TestNDT7QueryFails(t *testing.T) {
 }
 
 func TestNDT7InvalidURLs(t *testing.T) {
-	client := NewClient(http.DefaultClient, log.Log, "miniooni/0.1.0-dev")
+	client := NewClient(http.DefaultClient, model.DiscardLogger, "miniooni/0.1.0-dev")
 	client.HTTPClient = &http.Client{
-		Transport: FakeTransport{
-			Resp: &http.Response{
-				StatusCode: 200,
-				Body: FakeBody{
-					Data: []byte(
+		Transport: &mocks.HTTPTransport{
+			MockRoundTrip: func(req *http.Request) (*http.Response, error) {
+				resp := &http.Response{
+					StatusCode: 200,
+					Body: io.NopCloser(strings.NewReader(
 						`{"results":[{"machine":"mlab3-mil04.mlab-oti.measurement-lab.org","urls":{"wss:///ndt/v7/download":":","wss:///ndt/v7/upload":":"}}]}`),
-					Err: io.EOF,
-				},
+					),
+				}
+				return resp, nil
 			},
 		},
 	}
@@ -192,16 +210,17 @@ func TestNDT7InvalidURLs(t *testing.T) {
 }
 
 func TestNDT7EmptyURLs(t *testing.T) {
-	client := NewClient(http.DefaultClient, log.Log, "miniooni/0.1.0-dev")
+	client := NewClient(http.DefaultClient, model.DiscardLogger, "miniooni/0.1.0-dev")
 	client.HTTPClient = &http.Client{
-		Transport: FakeTransport{
-			Resp: &http.Response{
-				StatusCode: 200,
-				Body: FakeBody{
-					Data: []byte(
+		Transport: &mocks.HTTPTransport{
+			MockRoundTrip: func(req *http.Request) (*http.Response, error) {
+				resp := &http.Response{
+					StatusCode: 200,
+					Body: io.NopCloser(strings.NewReader(
 						`{"results":[{"machine":"mlab3-mil04.mlab-oti.measurement-lab.org","urls":{"wss:///ndt/v7/download":"","wss:///ndt/v7/upload":""}}]}`),
-					Err: io.EOF,
-				},
+					),
+				}
+				return resp, nil
 			},
 		},
 	}

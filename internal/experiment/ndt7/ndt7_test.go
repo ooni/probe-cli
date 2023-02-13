@@ -35,7 +35,7 @@ func TestDiscoverCancelledContext(t *testing.T) {
 	if !errors.Is(err, context.Canceled) {
 		t.Fatal("not the error we expected")
 	}
-	if locateResult.Hostname != "" {
+	if locateResult != nil {
 		t.Fatal("not the Hostname we expected")
 	}
 }

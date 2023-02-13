@@ -11,6 +11,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/mlablocatev2"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 const (
@@ -75,14 +76,15 @@ type Measurer struct {
 }
 
 func (m *Measurer) discover(
-	ctx context.Context, sess model.ExperimentSession) (mlablocatev2.NDT7Result, error) {
+	ctx context.Context, sess model.ExperimentSession) (*mlablocatev2.NDT7Result, error) {
 	httpClient := netxlite.NewHTTPClientStdlib(sess.Logger())
 	defer httpClient.CloseIdleConnections()
 	client := mlablocatev2.NewClient(httpClient, sess.Logger(), sess.UserAgent())
 	out, err := client.QueryNDT7(ctx)
 	if err != nil {
-		return mlablocatev2.NDT7Result{}, err
+		return nil, err
 	}
+	runtimex.Assert(len(out) >= 1, "too few entries")
 	return out[0], nil // same as with locate services v1
 }
 
