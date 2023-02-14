@@ -15,10 +15,10 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
-func TestRunnerLoopLocateFailure(t *testing.T) {
+func TestRunnerRunAllPhasesLocateFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 
-	r := runner{
+	r := &runner{
 		callbacks: model.NewPrinterCallbacks(log.Log),
 		httpClient: &mocks.HTTPClient{
 			MockDo: func(req *http.Request) (*http.Response, error) {
@@ -42,16 +42,16 @@ func TestRunnerLoopLocateFailure(t *testing.T) {
 		tk: &TestKeys{},
 	}
 
-	err := r.loop(context.Background(), 1)
+	err := runnerRunAllPhases(context.Background(), r, 1)
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
 	}
 }
 
-func TestRunnerLoopNegotiateFailure(t *testing.T) {
+func TestRunnerRunAllPhasesNegotiateFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 
-	r := runner{
+	r := &runner{
 		callbacks: model.NewPrinterCallbacks(log.Log),
 
 		httpClient: &mocks.HTTPClient{
@@ -85,15 +85,15 @@ func TestRunnerLoopNegotiateFailure(t *testing.T) {
 		tk: &TestKeys{},
 	}
 
-	err := r.loop(context.Background(), 1)
+	err := runnerRunAllPhases(context.Background(), r, 1)
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
 	}
 }
 
-func TestRunnerLoopMeasureFailure(t *testing.T) {
+func TestRunnerRunAllPhasesMeasureFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	r := runner{
+	r := &runner{
 		callbacks: model.NewPrinterCallbacks(log.Log),
 
 		httpClient: &mocks.HTTPClient{
@@ -134,17 +134,17 @@ func TestRunnerLoopMeasureFailure(t *testing.T) {
 		},
 		tk: &TestKeys{},
 	}
-	err := r.loop(context.Background(), 1)
+	err := runnerRunAllPhases(context.Background(), r, 1)
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
 	}
 }
 
-func TestRunnerLoopCollectFailure(t *testing.T) {
+func TestRunnerRunAllPhasesCollectFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	saver := new(tracex.Saver)
 	saver.Write(&tracex.EventConnectOperation{V: &tracex.EventValue{Duration: 150 * time.Millisecond}})
-	r := runner{
+	r := &runner{
 		callbacks: model.NewPrinterCallbacks(log.Log),
 
 		httpClient: &mocks.HTTPClient{
@@ -193,17 +193,17 @@ func TestRunnerLoopCollectFailure(t *testing.T) {
 		},
 		tk: &TestKeys{},
 	}
-	err := r.loop(context.Background(), 1)
+	err := runnerRunAllPhases(context.Background(), r, 1)
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
 	}
 }
 
-func TestRunnerLoopSuccess(t *testing.T) {
+func TestRunnerRunAllPhasesSuccess(t *testing.T) {
 	saver := &tracex.Saver{}
 	saver.Write(&tracex.EventConnectOperation{V: &tracex.EventValue{Duration: 150 * time.Millisecond}})
 
-	r := runner{
+	r := &runner{
 		callbacks: model.NewPrinterCallbacks(log.Log),
 
 		httpClient: &mocks.HTTPClient{
@@ -258,7 +258,7 @@ func TestRunnerLoopSuccess(t *testing.T) {
 		},
 		tk: &TestKeys{},
 	}
-	err := r.loop(context.Background(), 1)
+	err := runnerRunAllPhases(context.Background(), r, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
