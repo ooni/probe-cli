@@ -13,17 +13,12 @@ import (
 )
 
 func TestNegotiateNewHTTPRequestWithContextFailure(t *testing.T) {
-	expected := errors.New("mocked error")
-
 	deps := &mockableDependencies{
-		MockNewHTTPRequestWithContext: func(
-			ctx context.Context, method, url string, body io.Reader) (*http.Request, error) {
-			return nil, expected
-		},
+		MockNewHTTPRequestWithContext: http.NewRequestWithContext,
 	}
 
-	result, err := negotiate(context.Background(), "", deps)
-	if !errors.Is(err, expected) {
+	result, err := negotiate(context.Background(), "\t", deps)
+	if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
 		t.Fatal("not the error we expected")
 	}
 	if result.Authorization != "" || result.Unchoked != 0 {
