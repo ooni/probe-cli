@@ -20,8 +20,9 @@ type downloadDeps interface {
 	// HTTPClient returns the HTTP client to use.
 	HTTPClient() model.HTTPClient
 
-	// NewHTTPRequest allows mocking [http.NewRequest].
-	NewHTTPRequest(method string, url string, body io.Reader) (*http.Request, error)
+	// NewHTTPRequestWithContext allows mocking [http.NewRequestWithContext].
+	NewHTTPRequestWithContext(
+		ctx context.Context, method string, url string, body io.Reader) (*http.Request, error)
 
 	// ReadAllContext allows mocking [netxlite.ReadAllContext].
 	ReadAllContext(ctx context.Context, r io.Reader) ([]byte, error)
@@ -85,7 +86,7 @@ func download(ctx context.Context, config downloadConfig) (downloadResult, error
 	URL.Scheme = config.deps.Scheme()
 	URL.Host = config.fqdn
 	URL.Path = fmt.Sprintf("%s%d", downloadPath, nbytes)
-	req, err := config.deps.NewHTTPRequest("GET", URL.String(), nil)
+	req, err := config.deps.NewHTTPRequestWithContext(ctx, "GET", URL.String(), nil)
 	var result downloadResult
 	if err != nil {
 		return result, err
@@ -96,7 +97,7 @@ func download(ctx context.Context, config downloadConfig) (downloadResult, error
 
 	// issue the request and get the response
 	savedTicks := time.Now()
-	resp, err := config.deps.HTTPClient().Do(req.WithContext(ctx))
+	resp, err := config.deps.HTTPClient().Do(req)
 	if err != nil {
 		return result, err
 	}

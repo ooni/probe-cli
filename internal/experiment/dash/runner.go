@@ -54,9 +54,10 @@ func (r runner) Logger() model.Logger {
 	return r.sess.Logger()
 }
 
-// NewHTTPRequest allows mocking the [http.NewRequest] function.
-func (r runner) NewHTTPRequest(meth, url string, body io.Reader) (*http.Request, error) {
-	return http.NewRequest(meth, url, body)
+// NewHTTPRequestWithContext allows mocking the [http.NewRequestWithContext] function.
+func (r runner) NewHTTPRequestWithContext(
+	ctx context.Context, method, url string, body io.Reader) (*http.Request, error) {
+	return http.NewRequestWithContext(ctx, method, url, body)
 }
 
 // RealAllContext allows mocking the [netxlite.ReadAllContext] function.
