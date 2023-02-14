@@ -19,8 +19,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
-// runner contains settings for running the dash experiment.
-type runner struct {
+// runnerConfig contains settings for running the dash experiment. This struct
+// also implements [dependencies] thus allowing for unit testing of dash.
+type runnerConfig struct {
 	// callbacks contains the callbacks for emitting progress.
 	callbacks model.ExperimentCallbacks
 
@@ -38,31 +39,31 @@ type runner struct {
 	tk *TestKeys
 }
 
-var _ dependencies = &runner{}
+var _ dependencies = &runnerConfig{}
 
 // HTTPClient returns the configured HTTP client.
-func (r *runner) HTTPClient() model.HTTPClient {
+func (r *runnerConfig) HTTPClient() model.HTTPClient {
 	return r.httpClient
 }
 
 // Logger returns the logger to use.
-func (r *runner) Logger() model.Logger {
+func (r *runnerConfig) Logger() model.Logger {
 	return r.sess.Logger()
 }
 
 // NewHTTPRequestWithContext allows mocking the [http.NewRequestWithContext] function.
-func (r *runner) NewHTTPRequestWithContext(
+func (r *runnerConfig) NewHTTPRequestWithContext(
 	ctx context.Context, method, url string, body io.Reader) (*http.Request, error) {
 	return http.NewRequestWithContext(ctx, method, url, body)
 }
 
 // UserAgent returns the user-agent to use.
-func (r *runner) UserAgent() string {
+func (r *runnerConfig) UserAgent() string {
 	return r.sess.UserAgent()
 }
 
 // runnerRunAllPhases runs all the experiment phases.
-func runnerRunAllPhases(ctx context.Context, r *runner, numIterations int64) error {
+func runnerRunAllPhases(ctx context.Context, r *runnerConfig, numIterations int64) error {
 	// 1. locate the server with which to perform the measurement
 	locateResult, err := locate(ctx, r)
 	if err != nil {
@@ -115,7 +116,7 @@ func runnerRunAllPhases(ctx context.Context, r *runner, numIterations int64) err
 // parameter controls the total number of iterations we'll make.
 func runnerMeasure(
 	ctx context.Context,
-	r *runner,
+	r *runnerConfig,
 	baseURL string,
 	negotiateResp negotiateResponse,
 	numIterations int64,
@@ -245,7 +246,7 @@ func (tk *TestKeys) analyze() error {
 }
 
 // runnerMain is the main function that runs the experiment.
-func runnerMain(ctx context.Context, r *runner) error {
+func runnerMain(ctx context.Context, r *runnerConfig) error {
 	defer r.callbacks.OnProgress(1, "streaming: done")
 	err := runnerRunAllPhases(ctx, r, totalStep)
 	if err != nil {
