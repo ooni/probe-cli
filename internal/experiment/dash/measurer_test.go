@@ -8,8 +8,8 @@ import (
 
 	"github.com/apex/log"
 	"github.com/montanaflynn/stats"
-	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
 func TestTestKeysAnalyzeWithNoData(t *testing.T) {
@@ -87,9 +87,16 @@ func TestMeasureWithCancelledContext(t *testing.T) {
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
-		Session: &mockable.Session{
-			MockableHTTPClient: http.DefaultClient,
-			MockableLogger:     log.Log,
+		Session: &mocks.Session{
+			MockDefaultHTTPClient: func() model.HTTPClient {
+				return http.DefaultClient
+			},
+			MockLogger: func() model.Logger {
+				return model.DiscardLogger
+			},
+			MockUserAgent: func() string {
+				return "miniooni/0.1.0-dev"
+			},
 		},
 	}
 	err := m.Run(ctx, args)
