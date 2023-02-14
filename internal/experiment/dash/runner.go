@@ -166,7 +166,7 @@ func runnerMeasure(
 		// copying to produce distinct structures. The current code is a
 		// small refactoring away to produce all equal structures! We
 		// added a WARNING in the TestKeys doc to defend against such a
-		// dangerous refactoring, while waiting to make core more robust.
+		// dangerous refactoring, while waiting to make code more robust.
 		current.Elapsed = result.elapsed
 		current.Received = result.received
 		current.RequestTicks = result.requestTicks
