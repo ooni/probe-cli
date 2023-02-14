@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
@@ -32,8 +31,13 @@ func TestRunnerLoopLocateFailure(t *testing.T) {
 			},
 		},
 		saver: &tracex.Saver{},
-		sess: &mockable.Session{
-			MockableLogger: log.Log,
+		sess: &mocks.Session{
+			MockLogger: func() model.Logger {
+				return model.DiscardLogger
+			},
+			MockUserAgent: func() string {
+				return "miniooni/0.1.0-dev"
+			},
 		},
 		tk: &TestKeys{},
 	}
@@ -70,8 +74,13 @@ func TestRunnerLoopNegotiateFailure(t *testing.T) {
 		},
 
 		saver: &tracex.Saver{},
-		sess: &mockable.Session{
-			MockableLogger: log.Log,
+		sess: &mocks.Session{
+			MockLogger: func() model.Logger {
+				return model.DiscardLogger
+			},
+			MockUserAgent: func() string {
+				return "miniooni/0.1.0-dev"
+			},
 		},
 		tk: &TestKeys{},
 	}
@@ -115,8 +124,13 @@ func TestRunnerLoopMeasureFailure(t *testing.T) {
 		},
 
 		saver: &tracex.Saver{},
-		sess: &mockable.Session{
-			MockableLogger: log.Log,
+		sess: &mocks.Session{
+			MockLogger: func() model.Logger {
+				return model.DiscardLogger
+			},
+			MockUserAgent: func() string {
+				return "miniooni/0.1.0-dev"
+			},
 		},
 		tk: &TestKeys{},
 	}
@@ -169,8 +183,13 @@ func TestRunnerLoopCollectFailure(t *testing.T) {
 		},
 
 		saver: saver,
-		sess: &mockable.Session{
-			MockableLogger: log.Log,
+		sess: &mocks.Session{
+			MockLogger: func() model.Logger {
+				return model.DiscardLogger
+			},
+			MockUserAgent: func() string {
+				return "miniooni/0.1.0-dev"
+			},
 		},
 		tk: &TestKeys{},
 	}
@@ -229,8 +248,13 @@ func TestRunnerLoopSuccess(t *testing.T) {
 		},
 
 		saver: saver,
-		sess: &mockable.Session{
-			MockableLogger: log.Log,
+		sess: &mocks.Session{
+			MockLogger: func() model.Logger {
+				return model.DiscardLogger
+			},
+			MockUserAgent: func() string {
+				return "miniooni/0.1.0-dev"
+			},
 		},
 		tk: &TestKeys{},
 	}
