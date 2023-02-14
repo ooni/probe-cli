@@ -26,8 +26,9 @@ type negotiateDeps interface {
 	// Logger returns the logger to use.
 	Logger() model.Logger
 
-	// NewHTTPRequest allows mocking the [http.NewRequest] function.
-	NewHTTPRequest(method string, url string, body io.Reader) (*http.Request, error)
+	// NewHTTPRequestWithContext allows mocking the [http.NewRequestWithContext] function.
+	NewHTTPRequestWithContext(
+		ctx context.Context, method string, url string, body io.Reader) (*http.Request, error)
 
 	// ReadAllContext allows mocking the [netxlite.ReadAllContext] function.
 	ReadAllContext(ctx context.Context, r io.Reader) ([]byte, error)
@@ -60,7 +61,7 @@ func negotiate(
 	URL.Scheme = deps.Scheme()
 	URL.Host = fqdn
 	URL.Path = negotiatePath
-	req, err := deps.NewHTTPRequest("POST", URL.String(), bytes.NewReader(data))
+	req, err := deps.NewHTTPRequestWithContext(ctx, "POST", URL.String(), bytes.NewReader(data))
 	if err != nil {
 		return negotiateResp, err
 	}
@@ -69,7 +70,7 @@ func negotiate(
 	req.Header.Set("Authorization", "")
 
 	// issue the request and read the response
-	resp, err := deps.HTTPClient().Do(req.WithContext(ctx))
+	resp, err := deps.HTTPClient().Do(req)
 	if err != nil {
 		return negotiateResp, err
 	}

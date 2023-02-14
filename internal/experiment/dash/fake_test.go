@@ -32,8 +32,8 @@ func (d FakeDeps) Logger() model.Logger {
 	return log.Log
 }
 
-func (d FakeDeps) NewHTTPRequest(
-	method string, url string, body io.Reader) (*http.Request, error) {
+func (d FakeDeps) NewHTTPRequestWithContext(
+	ctx context.Context, method string, url string, body io.Reader) (*http.Request, error) {
 	return d.newHTTPRequestResult, d.newHTTPRequestErr
 }
 
