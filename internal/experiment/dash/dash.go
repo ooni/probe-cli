@@ -1,7 +1,8 @@
-// Package dash implements the DASH network experiment.
-//
-// Spec: https://github.com/ooni/spec/blob/master/nettests/ts-021-dash.md
 package dash
+
+//
+// Top-level experiment implementation
+//
 
 import (
 	"context"
@@ -25,7 +26,7 @@ const (
 	defaultTimeout = 120 * time.Second
 	magicVersion   = "0.008000000"
 	testName       = "dash"
-	testVersion    = "0.13.0"
+	testVersion    = "0.14.0"
 	totalStep      = 15
 )
 
@@ -37,7 +38,7 @@ var (
 // Config contains the experiment config.
 type Config struct{}
 
-// Simple contains the experiment total summary
+// Simple contains the experiment total summary.
 type Simple struct {
 	ConnectLatency  float64 `json:"connect_latency"`
 	MedianBitrate   int64   `json:"median_bitrate"`
@@ -47,13 +48,13 @@ type Simple struct {
 // ServerInfo contains information on the selected server
 //
 // This is currently an extension to the DASH specification
-// until the data format of the new mlab locate is clear.
+// until the data format of mlab locate v2 is fixed.
 type ServerInfo struct {
 	Hostname string `json:"hostname"`
 	Site     string `json:"site,omitempty"`
 }
 
-// TestKeys contains the test keys
+// TestKeys contains the test keys.
 type TestKeys struct {
 	Server       ServerInfo      `json:"server"`
 	Simple       Simple          `json:"simple"`
@@ -69,11 +70,11 @@ type runner struct {
 	tk         *TestKeys
 }
 
-func (r runner) HTTPClient() *http.Client {
+func (r runner) HTTPClient() model.HTTPClient {
 	return r.httpClient
 }
 
-func (r runner) JSONMarshal(v interface{}) ([]byte, error) {
+func (r runner) JSONMarshal(v any) ([]byte, error) {
 	return json.Marshal(v)
 }
 
@@ -305,7 +306,7 @@ type SummaryKeys struct {
 }
 
 // GetSummaryKeys implements model.ExperimentMeasurer.GetSummaryKeys.
-func (m Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, error) {
+func (m Measurer) GetSummaryKeys(measurement *model.Measurement) (any, error) {
 	sk := SummaryKeys{IsAnomaly: false}
 	tk, ok := measurement.TestKeys.(*TestKeys)
 	if !ok {
