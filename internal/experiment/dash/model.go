@@ -1,5 +1,11 @@
 package dash
 
+//
+// Definition of requests and responses.
+//
+// See the spec: https://github.com/ooni/spec/blob/master/nettests/ts-021-dash.md.
+//
+
 // clientResults contains the results measured by the client. This data
 // structure is sent to the server in the collection phase.
 //
