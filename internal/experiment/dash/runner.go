@@ -18,7 +18,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
-// runner runs the experiment.
+// runner contains settings for running the dash experiment.
 type runner struct {
 	// callbacks contains the callbacks for emitting progress.
 	callbacks model.ExperimentCallbacks
@@ -37,32 +37,31 @@ type runner struct {
 	tk *TestKeys
 }
 
-var _ dependencies = runner{}
+var _ dependencies = &runner{}
 
 // HTTPClient returns the configured HTTP client.
-func (r runner) HTTPClient() model.HTTPClient {
+func (r *runner) HTTPClient() model.HTTPClient {
 	return r.httpClient
 }
 
 // Logger returns the logger to use.
-func (r runner) Logger() model.Logger {
+func (r *runner) Logger() model.Logger {
 	return r.sess.Logger()
 }
 
 // NewHTTPRequestWithContext allows mocking the [http.NewRequestWithContext] function.
-func (r runner) NewHTTPRequestWithContext(
+func (r *runner) NewHTTPRequestWithContext(
 	ctx context.Context, method, url string, body io.Reader) (*http.Request, error) {
 	return http.NewRequestWithContext(ctx, method, url, body)
 }
 
 // UserAgent returns the user-agent to use.
-func (r runner) UserAgent() string {
+func (r *runner) UserAgent() string {
 	return r.sess.UserAgent()
 }
 
-// loop (probably a misnomer) is the main function of the experiment, where
-// we perform in sequence all the dash experiment's phases.
-func (r runner) loop(ctx context.Context, numIterations int64) error {
+// runnerRunAllPhases runs all the experiment phases.
+func runnerRunAllPhases(ctx context.Context, r *runner, numIterations int64) error {
 	// 1. locate the server with which to perform the measurement
 	locateResult, err := locate(ctx, r)
 	if err != nil {
@@ -87,7 +86,7 @@ func (r runner) loop(ctx context.Context, numIterations int64) error {
 	}
 
 	// 3. perform the measurement loop running for numIterations iterations.
-	if err := r.measure(ctx, fqdn, negotiateResp, numIterations); err != nil {
+	if err := runnerMeasure(ctx, r, fqdn, negotiateResp, numIterations); err != nil {
 		return err
 	}
 
@@ -106,11 +105,15 @@ func (r runner) loop(ctx context.Context, numIterations int64) error {
 	return r.tk.analyze()
 }
 
-// measure performs DASH measurements with the server. The numIterations
+// runnerMeasure performs DASH measurements with the server. The numIterations
 // parameter controls the total number of iterations we'll make.
-func (r runner) measure(
-	ctx context.Context, fqdn string, negotiateResp negotiateResponse,
-	numIterations int64) error {
+func runnerMeasure(
+	ctx context.Context,
+	r *runner,
+	fqdn string,
+	negotiateResp negotiateResponse,
+	numIterations int64,
+) error {
 
 	// 1. fill the initial client results.
 	//
@@ -161,7 +164,9 @@ func (r runner) measure(
 		// TODO(bassosimone): we should create a new structure in each
 		// loop rather than overwriting the same structure and relying on
 		// copying to produce distinct structures. The current code is a
-		// small refactoring away to produce all equal structures!
+		// small refactoring away to produce all equal structures! We
+		// added a WARNING in the TestKeys doc to defend against such a
+		// dangerous refactoring, while waiting to make code more robust.
 		current.Elapsed = result.elapsed
 		current.Received = result.received
 		current.RequestTicks = result.requestTicks
@@ -233,11 +238,10 @@ func (tk *TestKeys) analyze() error {
 	return err
 }
 
-// do runs the experiment.
-func (r runner) do(ctx context.Context) error {
+// runnerMain is the main function that runs the experiment.
+func runnerMain(ctx context.Context, r *runner) error {
 	defer r.callbacks.OnProgress(1, "streaming: done")
-	const numIterations = totalStep
-	err := r.loop(ctx, numIterations)
+	err := runnerRunAllPhases(ctx, r, totalStep)
 	if err != nil {
 		s := err.Error()
 		r.tk.Failure = &s

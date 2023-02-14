@@ -59,17 +59,17 @@ type Measurer struct {
 }
 
 // ExperimentName implements model.ExperimentMeasurer.ExperimentName.
-func (m Measurer) ExperimentName() string {
+func (m *Measurer) ExperimentName() string {
 	return testName
 }
 
 // ExperimentVersion implements model.ExperimentMeasurer.ExperimentVersion.
-func (m Measurer) ExperimentVersion() string {
+func (m *Measurer) ExperimentVersion() string {
 	return testVersion
 }
 
 // Run implements model.ExperimentMeasurer.Run.
-func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
+func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	// unwrap arguments
 	callbacks := args.Callbacks
 	measurement := args.Measurement
@@ -101,7 +101,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	defer cancel()
 
 	// create an instance of runner.
-	r := runner{
+	r := &runner{
 		callbacks:  callbacks,
 		httpClient: httpClient,
 		saver:      saver,
@@ -116,13 +116,13 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	// the measurement failed for some fundamental reason (e.g., the input
 	// is an URL that you cannot parse). For DASH, this case will never happen
 	// because there is no input, so always returning nil is fine here.
-	_ = r.do(ctx)
+	_ = runnerMain(ctx, r)
 	return nil
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
 func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
-	return Measurer{config: config}
+	return &Measurer{config: config}
 }
 
 // SummaryKeys contains summary keys for this experiment.
