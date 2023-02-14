@@ -41,8 +41,9 @@ type negotiateDeps interface {
 
 // negotiate implements one step of the negotiate phase of dash. The original server
 // had a queue to avoid allowing too many clients to run in parallel. During the negotiate
-// loop, clients wait for servers to give them permission to start an experiment. Since
-// ~2023-02-14, we will use negotiate to authenticate using m-lab locate v2 tokens.
+// loop, clients wait for servers to give them permission to start an experiment. Modern
+// servers always authorize clients to run. Since ~2023-02-14, we will use negotiate to
+// authenticate using m-lab locate v2 tokens.
 func negotiate(
 	ctx context.Context, fqdn string, deps negotiateDeps) (negotiateResponse, error) {
 	var negotiateResp negotiateResponse
