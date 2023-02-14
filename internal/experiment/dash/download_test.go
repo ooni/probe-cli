@@ -1,20 +1,31 @@
 package dash
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"io"
 	"net/http"
-	"net/url"
+	"strings"
 	"testing"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
-func TestDownloadNewHTTPRequestFailure(t *testing.T) {
+func TestDownloadNewHTTPRequestWithContextFailure(t *testing.T) {
 	expected := errors.New("mocked error")
+
+	deps := &mockableDependencies{
+		MockNewHTTPRequestWithContext: func(
+			ctx context.Context, method, url string, body io.Reader) (*http.Request, error) {
+			return nil, expected
+		},
+	}
+
 	_, err := download(context.Background(), downloadConfig{
-		deps: FakeDeps{newHTTPRequestErr: expected},
+		deps: deps,
 	})
+
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
 	}
@@ -22,26 +33,48 @@ func TestDownloadNewHTTPRequestFailure(t *testing.T) {
 
 func TestDownloadHTTPClientDoFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	txp := FakeHTTPTransport{err: expected}
+
+	deps := &mockableDependencies{
+		MockNewHTTPRequestWithContext: http.NewRequestWithContext,
+		MockHTTPClient: func() model.HTTPClient {
+			return &mocks.HTTPClient{
+				MockDo: func(req *http.Request) (*http.Response, error) {
+					return nil, expected
+				},
+			}
+		},
+	}
+
 	_, err := download(context.Background(), downloadConfig{
-		deps: FakeDeps{httpTransport: txp, newHTTPRequestResult: &http.Request{
-			Header: http.Header{},
-			URL:    &url.URL{},
-		}},
+		deps: deps,
 	})
+
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
 	}
 }
 
 func TestDownloadInternalError(t *testing.T) {
-	txp := FakeHTTPTransport{resp: &http.Response{StatusCode: 500}}
+
+	deps := &mockableDependencies{
+		MockNewHTTPRequestWithContext: http.NewRequestWithContext,
+		MockHTTPClient: func() model.HTTPClient {
+			return &mocks.HTTPClient{
+				MockDo: func(req *http.Request) (*http.Response, error) {
+					resp := &http.Response{
+						StatusCode: 500,
+						Body:       io.NopCloser(strings.NewReader("")),
+					}
+					return resp, nil
+				},
+			}
+		},
+	}
+
 	_, err := download(context.Background(), downloadConfig{
-		deps: FakeDeps{httpTransport: txp, newHTTPRequestResult: &http.Request{
-			Header: http.Header{},
-			URL:    &url.URL{},
-		}},
+		deps: deps,
 	})
+
 	if !errors.Is(err, errHTTPRequestFailed) {
 		t.Fatal("not the error we expected")
 	}
@@ -49,40 +82,57 @@ func TestDownloadInternalError(t *testing.T) {
 
 func TestDownloadReadAllFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	txp := FakeHTTPTransport{resp: &http.Response{
-		Body:       io.NopCloser(bytes.NewReader(nil)),
-		StatusCode: 200,
-	}}
-	_, err := download(context.Background(), downloadConfig{
-		deps: FakeDeps{
-			httpTransport: txp,
-			newHTTPRequestResult: &http.Request{
-				Header: http.Header{},
-				URL:    &url.URL{},
-			},
-			readAllErr: expected,
+
+	deps := &mockableDependencies{
+		MockNewHTTPRequestWithContext: http.NewRequestWithContext,
+		MockHTTPClient: func() model.HTTPClient {
+			return &mocks.HTTPClient{
+				MockDo: func(req *http.Request) (*http.Response, error) {
+					reader := &mocks.Reader{
+						MockRead: func(b []byte) (int, error) {
+							return 0, expected
+						},
+					}
+					resp := &http.Response{
+						StatusCode: 200,
+						Body:       io.NopCloser(reader),
+					}
+					return resp, nil
+				},
+			}
 		},
+	}
+
+	_, err := download(context.Background(), downloadConfig{
+		deps: deps,
 	})
+
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
 	}
 }
 
 func TestDownloadSuccess(t *testing.T) {
-	txp := FakeHTTPTransport{resp: &http.Response{
-		Body:       io.NopCloser(bytes.NewReader(nil)),
-		StatusCode: 200,
-	}}
-	result, err := download(context.Background(), downloadConfig{
-		deps: FakeDeps{
-			httpTransport: txp,
-			newHTTPRequestResult: &http.Request{
-				Header: http.Header{},
-				URL:    &url.URL{},
-			},
-			readAllResult: []byte("[]"),
+
+	deps := &mockableDependencies{
+		MockNewHTTPRequestWithContext: http.NewRequestWithContext,
+		MockHTTPClient: func() model.HTTPClient {
+			return &mocks.HTTPClient{
+				MockDo: func(req *http.Request) (*http.Response, error) {
+					resp := &http.Response{
+						StatusCode: 200,
+						Body:       io.NopCloser(strings.NewReader("[]")),
+					}
+					return resp, nil
+				},
+			}
 		},
+	}
+
+	result, err := download(context.Background(), downloadConfig{
+		deps: deps,
 	})
+
 	if err != nil {
 		t.Fatal(err)
 	}

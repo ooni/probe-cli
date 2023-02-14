@@ -6,7 +6,6 @@ package dash
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,7 +15,6 @@ import (
 	"github.com/montanaflynn/stats"
 	"github.com/ooni/probe-cli/v3/internal/humanize"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
@@ -39,14 +37,11 @@ type runner struct {
 	tk *TestKeys
 }
 
+var _ dependencies = runner{}
+
 // HTTPClient returns the configured HTTP client.
 func (r runner) HTTPClient() model.HTTPClient {
 	return r.httpClient
-}
-
-// JSONMarshal allows mocking the [json.Marshal] function.
-func (r runner) JSONMarshal(v any) ([]byte, error) {
-	return json.Marshal(v)
 }
 
 // Logger returns the logger to use.
@@ -58,16 +53,6 @@ func (r runner) Logger() model.Logger {
 func (r runner) NewHTTPRequestWithContext(
 	ctx context.Context, method, url string, body io.Reader) (*http.Request, error) {
 	return http.NewRequestWithContext(ctx, method, url, body)
-}
-
-// RealAllContext allows mocking the [netxlite.ReadAllContext] function.
-func (r runner) ReadAllContext(ctx context.Context, reader io.Reader) ([]byte, error) {
-	return netxlite.ReadAllContext(ctx, reader)
-}
-
-// Scheme returns the URL scheme to use.
-func (r runner) Scheme() string {
-	return "https"
 }
 
 // UserAgent returns the user-agent to use.
