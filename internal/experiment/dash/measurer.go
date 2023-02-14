@@ -101,7 +101,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	defer cancel()
 
 	// create an instance of runner.
-	r := &runner{
+	r := &runnerConfig{
 		callbacks:  callbacks,
 		httpClient: httpClient,
 		saver:      saver,

@@ -18,7 +18,7 @@ import (
 func TestRunnerRunAllPhasesLocateFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 
-	r := &runner{
+	r := &runnerConfig{
 		callbacks: model.NewPrinterCallbacks(log.Log),
 		httpClient: &mocks.HTTPClient{
 			MockDo: func(req *http.Request) (*http.Response, error) {
@@ -51,7 +51,7 @@ func TestRunnerRunAllPhasesLocateFailure(t *testing.T) {
 func TestRunnerRunAllPhasesNegotiateFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 
-	r := &runner{
+	r := &runnerConfig{
 		callbacks: model.NewPrinterCallbacks(log.Log),
 
 		httpClient: &mocks.HTTPClient{
@@ -93,7 +93,7 @@ func TestRunnerRunAllPhasesNegotiateFailure(t *testing.T) {
 
 func TestRunnerRunAllPhasesMeasureFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	r := &runner{
+	r := &runnerConfig{
 		callbacks: model.NewPrinterCallbacks(log.Log),
 
 		httpClient: &mocks.HTTPClient{
@@ -144,7 +144,7 @@ func TestRunnerRunAllPhasesCollectFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	saver := new(tracex.Saver)
 	saver.Write(&tracex.EventConnectOperation{V: &tracex.EventValue{Duration: 150 * time.Millisecond}})
-	r := &runner{
+	r := &runnerConfig{
 		callbacks: model.NewPrinterCallbacks(log.Log),
 
 		httpClient: &mocks.HTTPClient{
@@ -203,7 +203,7 @@ func TestRunnerRunAllPhasesSuccess(t *testing.T) {
 	saver := &tracex.Saver{}
 	saver.Write(&tracex.EventConnectOperation{V: &tracex.EventValue{Duration: 150 * time.Millisecond}})
 
-	r := &runner{
+	r := &runnerConfig{
 		callbacks: model.NewPrinterCallbacks(log.Log),
 
 		httpClient: &mocks.HTTPClient{
