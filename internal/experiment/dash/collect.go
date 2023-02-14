@@ -17,7 +17,7 @@ import (
 // collect implements the collect phase of the dash experiment. We send to
 // the neubot/dash server the results we collected and we get back a response
 // from the server.
-func collect(ctx context.Context, fqdn, authorization string,
+func collect(ctx context.Context, baseURL, authorization string,
 	results []clientResults, deps dependencies) error {
 	// marshal our results
 	data, err := json.Marshal(results)
@@ -25,9 +25,10 @@ func collect(ctx context.Context, fqdn, authorization string,
 	deps.Logger().Debugf("dash: body: %s", string(data))
 
 	// prepare the HTTP request
-	var URL url.URL
-	URL.Scheme = "https"
-	URL.Host = fqdn
+	URL, err := url.Parse(baseURL)
+	if err != nil {
+		return err
+	}
 	URL.Path = collectPath
 	req, err := deps.NewHTTPRequestWithContext(ctx, "POST", URL.String(), bytes.NewReader(data))
 	if err != nil {
