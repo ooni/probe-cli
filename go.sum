@@ -661,8 +661,9 @@ github.com/pion/datachannel v1.5.2/go.mod h1:FTGQWaHrdCwIJ1rw6xBIfZVkslikjShim5y
 github.com/pion/datachannel v1.5.5 h1:10ef4kwdjije+M9d7Xm9im2Y3O6A6ccQb0zcqZcJew8=
 github.com/pion/datachannel v1.5.5/go.mod h1:iMz+lECmfdCMqFRhXhcA/219B0SQlbpoR2V118yimL0=
 github.com/pion/dtls/v2 v2.1.3/go.mod h1:o6+WvyLDAlXF7YiPB/RlskRoeK+/JtuaZa5emwQcWus=
-github.com/pion/dtls/v2 v2.1.5 h1:jlh2vtIyUBShchoTDqpCCqiYCyRFJ/lvf/gQ8TALs+c=
 github.com/pion/dtls/v2 v2.1.5/go.mod h1:BqCE7xPZbPSubGasRoDFJeTsyJtdD1FanJYL0JGheqY=
+github.com/pion/dtls/v2 v2.2.4 h1:YSfYwDQgrxMYXLBc/m7PFY5BVtWlNm/DN4qoU2CbcWg=
+github.com/pion/dtls/v2 v2.2.4/go.mod h1:WGKfxqhrddne4Kg3p11FUMJrynkOY4lb25zHNO49wuw=
 github.com/pion/ice/v2 v2.2.6/go.mod h1:SWuHiOGP17lGromHTFadUe1EuPgFh/oCU6FCMZHooVE=
 github.com/pion/ice/v2 v2.2.12/go.mod h1:z2KXVFyRkmjetRlaVRgjO9U3ShKwzhlUylvxKfHfd5A=
 github.com/pion/ice/v2 v2.2.13 h1:NvLtzwcyob6wXgFqLmVQbGB3s9zzWmOegNMKYig5l9M=
@@ -701,12 +702,14 @@ github.com/pion/transport v0.13.0/go.mod h1:yxm9uXpK9bpBBWkITk13cLo1y5/ur5VQpG22
 github.com/pion/transport v0.13.1/go.mod h1:EBxbqzyv+ZrmDb82XswEE0BjfQFtuw1Nu6sjnjWCsGg=
 github.com/pion/transport v0.14.1 h1:XSM6olwW+o8J4SCmOBb/BpwZypkHeyM0PGFCxNQBr40=
 github.com/pion/transport v0.14.1/go.mod h1:4tGmbk00NeYA3rUa9+n+dzCCoKkcy3YlYb99Jn2fNnI=
+github.com/pion/transport/v2 v2.0.0 h1:bsMYyqHCbkvHwj+eNCFBuxtlKndKfyGI2vaQmM3fIE4=
+github.com/pion/transport/v2 v2.0.0/go.mod h1:HS2MEBJTwD+1ZI2eSXSvHJx/HnzQqRy2/LXxt6eVMHc=
 github.com/pion/turn/v2 v2.0.8/go.mod h1:+y7xl719J8bAEVpSXBXvTxStjJv3hbz9YFflvkpcGPw=
 github.com/pion/turn/v2 v2.0.9 h1:jcDPw0Vfd5I4iTc7s0Upfc2aMnyu2lgJ9vV0SUrNC1o=
 github.com/pion/turn/v2 v2.0.9/go.mod h1:DQlwUwx7hL8Xya6TTAabbd9DdKXTNR96Xf5g5Qqso/M=
 github.com/pion/udp v0.1.1/go.mod h1:6AFo+CMdKQm7UiA0eUPA8/eVCTx8jBIITLZHc9DWX5M=
-github.com/pion/udp v0.1.2 h1:Bl1ifOcoVYg9gnk1+9yyTX8XgAUORiDvM7UqBb3skhg=
-github.com/pion/udp v0.1.2/go.mod h1:CuqU2J4MmF3sjqKfk1SaIhuNXdum5PJRqd2LHuLMQSk=
+github.com/pion/udp v0.1.4 h1:OowsTmu1Od3sD6i3fQUJxJn2fEvJO6L1TidgadtbTI8=
+github.com/pion/udp v0.1.4/go.mod h1:G8LDo56HsFwC24LIcnT4YIDU5qcB6NepqqjP0keL2us=
 github.com/pion/webrtc/v3 v3.1.41/go.mod h1:sUcW9SFPEWerDqGOBmdYEMfRvbdd7rgwo4bNzfsXww4=
 github.com/pion/webrtc/v3 v3.1.50 h1:wLMo1+re4WMZ9Kun9qcGcY+XoHkE3i0CXrrc0sjhVCk=
 github.com/pion/webrtc/v3 v3.1.50/go.mod h1:y9n09weIXB+sjb9mi0GBBewNxo4TKUQm5qdtT5v3/X4=
