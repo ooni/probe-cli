@@ -36,7 +36,7 @@ type Client struct {
 	Hostname string
 
 	// Logger is the MANDATORY logger to use.
-	Logger model.DebugLogger
+	Logger model.Logger
 
 	// Scheme is the MANDATORY scheme to use (http or https).
 	Scheme string
@@ -46,7 +46,7 @@ type Client struct {
 }
 
 // NewClient creates a client for v2 of the locate services.
-func NewClient(httpClient model.HTTPClient, logger model.DebugLogger, userAgent string) *Client {
+func NewClient(httpClient model.HTTPClient, logger model.Logger, userAgent string) *Client {
 	return &Client{
 		HTTPClient: httpClient,
 		Hostname:   "locate.measurementlab.net",
@@ -94,6 +94,7 @@ type resultRecord struct {
 
 // query queries the locate service.
 func (c *Client) query(ctx context.Context, path string) (*resultRecord, error) {
+	// prepare the HTTP request
 	URL := &url.URL{
 		Scheme: c.Scheme,
 		Host:   c.Hostname,
@@ -105,11 +106,15 @@ func (c *Client) query(ctx context.Context, path string) (*resultRecord, error) 
 	}
 	req.Header.Add("User-Agent", c.UserAgent)
 	c.Logger.Debugf("mlablocatev2: GET %s", URL.String())
+
+	// send the HTTP request
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	// process the HTTP response
 	if resp.StatusCode != 200 {
 		return nil, fmt.Errorf("%w: %d", ErrRequestFailed, resp.StatusCode)
 	}
@@ -119,6 +124,8 @@ func (c *Client) query(ctx context.Context, path string) (*resultRecord, error) 
 		return nil, err
 	}
 	c.Logger.Debugf("mlablocatev2: %s", string(data))
+
+	// parse the JSON response body
 	var result resultRecord
 	if err := json.Unmarshal(data, &result); err != nil {
 		return nil, err
@@ -148,11 +155,14 @@ type NDT7Result struct {
 
 // QueryNDT7 performs a v2 locate services query for ndt7.
 func (c *Client) QueryNDT7(ctx context.Context) ([]*NDT7Result, error) {
+	// get the generic response from locate
 	out, err := c.query(ctx, ndt7URLPath)
 	if err != nil {
 		return nil, err
 	}
 	runtimex.Assert(out != nil, "expected non-nil out")
+
+	// process the results and assemble output used by NDT
 	var result []*NDT7Result
 	for _, entry := range out.Results {
 		r := NDT7Result{
@@ -160,19 +170,26 @@ func (c *Client) QueryNDT7(ctx context.Context) ([]*NDT7Result, error) {
 			WSSUploadURL:   entry.URLs["wss:///ndt/v7/upload"],
 		}
 		if r.WSSDownloadURL == "" || r.WSSUploadURL == "" {
+			c.Logger.Warn("empty WSSDownloadURL or WSSUploadURL")
 			continue
 		}
+
 		// Implementation note: we extract the hostname from the
 		// download URL, under the assumption that the download and
 		// the upload URLs have the same hostname.
 		url, err := url.Parse(r.WSSDownloadURL)
 		if err != nil {
+			c.Logger.Warnf("cannot parse WSSDownloadURL: %s", err.Error())
 			continue
 		}
+
+		// assemble the full response
 		r.Hostname = url.Hostname()
 		r.Site = entry.Site()
 		result = append(result, &r)
 	}
+
+	// make sure we have at least one entry
 	if len(result) <= 0 {
 		return nil, ErrEmptyResponse
 	}
@@ -206,28 +223,38 @@ const dashURLPath = "v2/nearest/neubot/dash"
 
 // QueryDash performs a v2 locate services query for dash.
 func (c *Client) QueryDash(ctx context.Context) ([]*DashResult, error) {
+	// get the generic response from locate
 	out, err := c.query(ctx, dashURLPath)
 	if err != nil {
 		return nil, err
 	}
 	runtimex.Assert(out != nil, "expected non-nil out")
+
+	// process the results and assemble output used by DASH
 	var result []*DashResult
 	for _, entry := range out.Results {
 		r := DashResult{
 			NegotiateURL: entry.URLs["https:///negotiate/dash"],
 		}
 		if r.NegotiateURL == "" {
+			c.Logger.Warn("empty NegotiateURL")
 			continue
 		}
+
 		url, err := url.Parse(r.NegotiateURL)
 		if err != nil {
+			c.Logger.Warnf("cannot parse NegotiateURL: %s", err.Error())
 			continue
 		}
+
+		// assemble the full response
 		r.Hostname = url.Hostname()
 		r.BaseURL = dashBaseURL(url)
 		r.Site = entry.Site()
 		result = append(result, &r)
 	}
+
+	// make sure we have at least one entry
 	if len(result) <= 0 {
 		return nil, ErrEmptyResponse
 	}
