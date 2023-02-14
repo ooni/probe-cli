@@ -7,32 +7,11 @@ package dash
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
-
-// downloadDeps contains dependencies for [download].
-type downloadDeps interface {
-	// HTTPClient returns the HTTP client to use.
-	HTTPClient() model.HTTPClient
-
-	// NewHTTPRequestWithContext allows mocking [http.NewRequestWithContext].
-	NewHTTPRequestWithContext(
-		ctx context.Context, method string, url string, body io.Reader) (*http.Request, error)
-
-	// ReadAllContext allows mocking [netxlite.ReadAllContext].
-	ReadAllContext(ctx context.Context, r io.Reader) ([]byte, error)
-
-	// Scheme is the scheme we should use.
-	Scheme() string
-
-	// UserAgent is the user-agent we should use.
-	UserAgent() string
-}
 
 // downloadConfig contains configuration for [download].
 type downloadConfig struct {
@@ -46,7 +25,7 @@ type downloadConfig struct {
 	currentRate int64
 
 	// deps contains the mockable dependencies.
-	deps downloadDeps
+	deps dependencies
 
 	// elapsedTarget is the desired amount of time that the download
 	// of the next chunk should take.
@@ -83,7 +62,7 @@ func download(ctx context.Context, config downloadConfig) (downloadResult, error
 
 	// prepare the HTTP request
 	var URL url.URL
-	URL.Scheme = config.deps.Scheme()
+	URL.Scheme = "https"
 	URL.Host = config.fqdn
 	URL.Path = fmt.Sprintf("%s%d", downloadPath, nbytes)
 	req, err := config.deps.NewHTTPRequestWithContext(ctx, "GET", URL.String(), nil)
@@ -109,7 +88,7 @@ func download(ctx context.Context, config downloadConfig) (downloadResult, error
 	}
 
 	// read the response body
-	data, err := config.deps.ReadAllContext(ctx, resp.Body)
+	data, err := netxlite.ReadAllContext(ctx, resp.Body)
 	if err != nil {
 		return result, err
 	}

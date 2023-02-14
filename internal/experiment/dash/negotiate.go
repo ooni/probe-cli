@@ -8,37 +8,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io"
-	"net/http"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
-
-// negotiateDeps contains dependencies for [negotiate].
-type negotiateDeps interface {
-	// HTTPClient returns the HTTP client to use.
-	HTTPClient() model.HTTPClient
-
-	// JSONMarshal allows mocking the [json.Marshal] function.
-	JSONMarshal(v any) ([]byte, error)
-
-	// Logger returns the logger to use.
-	Logger() model.Logger
-
-	// NewHTTPRequestWithContext allows mocking the [http.NewRequestWithContext] function.
-	NewHTTPRequestWithContext(
-		ctx context.Context, method string, url string, body io.Reader) (*http.Request, error)
-
-	// ReadAllContext allows mocking the [netxlite.ReadAllContext] function.
-	ReadAllContext(ctx context.Context, r io.Reader) ([]byte, error)
-
-	// Scheme returns the URL scheme to use.
-	Scheme() string
-
-	// UserAgent returns the user-agent to use.
-	UserAgent() string
-}
 
 // negotiate implements one step of the negotiate phase of dash. The original server
 // had a queue to avoid allowing too many clients to run in parallel. During the negotiate
@@ -46,19 +20,17 @@ type negotiateDeps interface {
 // servers always authorize clients to run. Since ~2023-02-14, we will use negotiate to
 // authenticate using m-lab locate v2 tokens.
 func negotiate(
-	ctx context.Context, fqdn string, deps negotiateDeps) (negotiateResponse, error) {
+	ctx context.Context, fqdn string, deps dependencies) (negotiateResponse, error) {
 	var negotiateResp negotiateResponse
 
 	// marshal the request body
-	data, err := deps.JSONMarshal(negotiateRequest{DASHRates: defaultRates})
-	if err != nil {
-		return negotiateResp, err
-	}
+	data, err := json.Marshal(negotiateRequest{DASHRates: defaultRates})
+	runtimex.PanicOnError(err, "json.Marshal failed")
 	deps.Logger().Debugf("dash: body: %s", string(data))
 
 	// prepare the HTTP request
 	var URL url.URL
-	URL.Scheme = deps.Scheme()
+	URL.Scheme = "https"
 	URL.Host = fqdn
 	URL.Path = negotiatePath
 	req, err := deps.NewHTTPRequestWithContext(ctx, "POST", URL.String(), bytes.NewReader(data))
@@ -82,7 +54,7 @@ func negotiate(
 	}
 
 	// read the response body
-	data, err = deps.ReadAllContext(ctx, resp.Body)
+	data, err = netxlite.ReadAllContext(ctx, resp.Body)
 	if err != nil {
 		return negotiateResp, err
 	}
