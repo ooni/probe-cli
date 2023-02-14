@@ -26,8 +26,9 @@ type collectDeps interface {
 	// Logger returns the logger we should use.
 	Logger() model.Logger
 
-	// NewHTTPRequest allows to mock the [http.NewRequest] function.
-	NewHTTPRequest(method string, url string, body io.Reader) (*http.Request, error)
+	// NewHTTPRequestWithContext allows to mock the [http.NewRequestWithContext] function.
+	NewHTTPRequestWithContext(
+		context context.Context, method string, url string, body io.Reader) (*http.Request, error)
 
 	// RealAllContext allows to mock the [netxlite.ReadAllContext] function.
 	ReadAllContext(ctx context.Context, r io.Reader) ([]byte, error)
@@ -56,7 +57,7 @@ func collect(ctx context.Context, fqdn, authorization string,
 	URL.Scheme = deps.Scheme()
 	URL.Host = fqdn
 	URL.Path = collectPath
-	req, err := deps.NewHTTPRequest("POST", URL.String(), bytes.NewReader(data))
+	req, err := deps.NewHTTPRequestWithContext(ctx, "POST", URL.String(), bytes.NewReader(data))
 	if err != nil {
 		return err
 	}
@@ -65,7 +66,7 @@ func collect(ctx context.Context, fqdn, authorization string,
 	req.Header.Set("Authorization", authorization)
 
 	// send the request and get a response.
-	resp, err := deps.HTTPClient().Do(req.WithContext(ctx))
+	resp, err := deps.HTTPClient().Do(req)
 	if err != nil {
 		return err
 	}
