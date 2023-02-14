@@ -15,6 +15,7 @@ import (
 	"github.com/montanaflynn/stats"
 	"github.com/ooni/probe-cli/v3/internal/humanize"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
@@ -67,12 +68,13 @@ func runnerRunAllPhases(ctx context.Context, r *runner, numIterations int64) err
 	if err != nil {
 		return err
 	}
+	runtimex.Assert(locateResult != nil, "nil locateResult")
 	r.tk.Server = ServerInfo{
-		Hostname: locateResult.FQDN,
+		Hostname: locateResult.Hostname,
 		Site:     locateResult.Site,
 	}
-	fqdn := locateResult.FQDN
-	r.callbacks.OnProgress(0.0, fmt.Sprintf("streaming: server: %s", fqdn))
+	hostname := locateResult.Hostname
+	r.callbacks.OnProgress(0.0, fmt.Sprintf("streaming: server: %s", hostname))
 
 	// 2. negotiate with the server and immediately bail in case
 	// there is an error. Historically, the server could choose not
@@ -80,13 +82,17 @@ func runnerRunAllPhases(ctx context.Context, r *runner, numIterations int64) err
 	// would loop until given the authorization. Nowadays, the server
 	// always admits us and the queuing is handled centrally by the
 	// m-lab locate API.
-	negotiateResp, err := negotiate(ctx, fqdn, r)
+	negotiateResp, err := negotiate(ctx, locateResult.NegotiateURL, r)
 	if err != nil {
 		return err
 	}
 
 	// 3. perform the measurement loop running for numIterations iterations.
-	if err := runnerMeasure(ctx, r, fqdn, negotiateResp, numIterations); err != nil {
+	//
+	// Implementation note: while we MUST use the NegotiateURL for negotiating such
+	// that we consume m-lab's access token, we are free to use the BaseURL for
+	// subsequent operations, since just negotiate is token aware.
+	if err := runnerMeasure(ctx, r, locateResult.BaseURL, negotiateResp, numIterations); err != nil {
 		return err
 	}
 
@@ -96,7 +102,7 @@ func runnerRunAllPhases(ctx context.Context, r *runner, numIterations int64) err
 	// Implementation note: we are not saving server-side measurements
 	// because historically the interesting DASH measurement is the one
 	// performed on the client side.
-	err = collect(ctx, fqdn, negotiateResp.Authorization, r.tk.ReceiverData, r)
+	err = collect(ctx, locateResult.BaseURL, negotiateResp.Authorization, r.tk.ReceiverData, r)
 	if err != nil {
 		return err
 	}
@@ -110,7 +116,7 @@ func runnerRunAllPhases(ctx context.Context, r *runner, numIterations int64) err
 func runnerMeasure(
 	ctx context.Context,
 	r *runner,
-	fqdn string,
+	baseURL string,
 	negotiateResp negotiateResponse,
 	numIterations int64,
 ) error {
@@ -142,11 +148,11 @@ func runnerMeasure(
 		// 2.1. attempt do download a chunk from the server.
 		result, err := download(ctx, downloadConfig{
 			authorization: negotiateResp.Authorization,
+			baseURL:       baseURL,
 			begin:         begin,
 			currentRate:   current.Rate,
 			deps:          r,
 			elapsedTarget: current.ElapsedTarget,
-			fqdn:          fqdn,
 		})
 		if err != nil {
 			// Implementation note: ndt7 controls the connection much

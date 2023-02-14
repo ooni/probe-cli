@@ -18,6 +18,9 @@ type downloadConfig struct {
 	// authorization contains the authorization token to perform the download.
 	authorization string
 
+	// baseURL is the base URL to use.
+	baseURL string
+
 	// begin is the time when we started.
 	begin time.Time
 
@@ -30,9 +33,6 @@ type downloadConfig struct {
 	// elapsedTarget is the desired amount of time that the download
 	// of the next chunk should take.
 	elapsedTarget int64
-
-	// fqdn is the domain for the URL.Host
-	fqdn string
 }
 
 // downloadResult is the result returned by [download].
@@ -61,12 +61,13 @@ func download(ctx context.Context, config downloadConfig) (downloadResult, error
 	nbytes := (config.currentRate * 1000 * config.elapsedTarget) >> 3
 
 	// prepare the HTTP request
-	var URL url.URL
-	URL.Scheme = "https"
-	URL.Host = config.fqdn
+	var result downloadResult
+	URL, err := url.Parse(config.baseURL)
+	if err != nil {
+		return result, err
+	}
 	URL.Path = fmt.Sprintf("%s%d", downloadPath, nbytes)
 	req, err := config.deps.NewHTTPRequestWithContext(ctx, "GET", URL.String(), nil)
-	var result downloadResult
 	if err != nil {
 		return result, err
 	}

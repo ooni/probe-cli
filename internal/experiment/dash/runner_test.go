@@ -61,7 +61,7 @@ func TestRunnerRunAllPhasesNegotiateFailure(t *testing.T) {
 					resp := &http.Response{
 						StatusCode: 200,
 						Body: io.NopCloser(strings.NewReader(
-							`{"fqdn": "ams01.measurementlab.net"}`,
+							`{"results": [{"urls": {"https:///negotiate/dash": "https://neubot-mlab1-mil06.mlab-oti.measurement-lab.org/negotiate/dash"}}]}`,
 						)),
 					}
 					return resp, nil
@@ -87,7 +87,7 @@ func TestRunnerRunAllPhasesNegotiateFailure(t *testing.T) {
 
 	err := runnerRunAllPhases(context.Background(), r, 1)
 	if !errors.Is(err, expected) {
-		t.Fatal("not the error we expected")
+		t.Fatal("not the error we expected", err)
 	}
 }
 
@@ -103,7 +103,7 @@ func TestRunnerRunAllPhasesMeasureFailure(t *testing.T) {
 					resp := &http.Response{
 						StatusCode: 200,
 						Body: io.NopCloser(strings.NewReader(
-							`{"fqdn": "ams01.measurementlab.net"}`,
+							`{"results": [{"urls": {"https:///negotiate/dash": "https://neubot-mlab1-mil06.mlab-oti.measurement-lab.org/negotiate/dash"}}]}`,
 						)),
 					}
 					return resp, nil
@@ -136,7 +136,7 @@ func TestRunnerRunAllPhasesMeasureFailure(t *testing.T) {
 	}
 	err := runnerRunAllPhases(context.Background(), r, 1)
 	if !errors.Is(err, expected) {
-		t.Fatal("not the error we expected")
+		t.Fatal("not the error we expected", err)
 	}
 }
 
@@ -154,7 +154,7 @@ func TestRunnerRunAllPhasesCollectFailure(t *testing.T) {
 					resp := &http.Response{
 						StatusCode: 200,
 						Body: io.NopCloser(strings.NewReader(
-							`{"fqdn": "ams01.measurementlab.net"}`,
+							`{"results": [{"urls": {"https:///negotiate/dash": "https://neubot-mlab1-mil06.mlab-oti.measurement-lab.org/negotiate/dash"}}]}`,
 						)),
 					}
 					return resp, nil
@@ -195,7 +195,7 @@ func TestRunnerRunAllPhasesCollectFailure(t *testing.T) {
 	}
 	err := runnerRunAllPhases(context.Background(), r, 1)
 	if !errors.Is(err, expected) {
-		t.Fatal("not the error we expected")
+		t.Fatal("not the error we expected", err)
 	}
 }
 
@@ -213,7 +213,7 @@ func TestRunnerRunAllPhasesSuccess(t *testing.T) {
 					resp := &http.Response{
 						StatusCode: 200,
 						Body: io.NopCloser(strings.NewReader(
-							`{"fqdn": "ams01.measurementlab.net"}`,
+							`{"results": [{"urls": {"https:///negotiate/dash": "https://neubot-mlab1-mil06.mlab-oti.measurement-lab.org/negotiate/dash"}}]}`,
 						)),
 					}
 					return resp, nil

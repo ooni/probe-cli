@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"net/url"
 
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -20,7 +19,7 @@ import (
 // servers always authorize clients to run. Since ~2023-02-14, we will use negotiate to
 // authenticate using m-lab locate v2 tokens.
 func negotiate(
-	ctx context.Context, fqdn string, deps dependencies) (negotiateResponse, error) {
+	ctx context.Context, negotiateURL string, deps dependencies) (negotiateResponse, error) {
 	var negotiateResp negotiateResponse
 
 	// marshal the request body
@@ -29,11 +28,7 @@ func negotiate(
 	deps.Logger().Debugf("dash: body: %s", string(data))
 
 	// prepare the HTTP request
-	var URL url.URL
-	URL.Scheme = "https"
-	URL.Host = fqdn
-	URL.Path = negotiatePath
-	req, err := deps.NewHTTPRequestWithContext(ctx, "POST", URL.String(), bytes.NewReader(data))
+	req, err := deps.NewHTTPRequestWithContext(ctx, "POST", negotiateURL, bytes.NewReader(data))
 	if err != nil {
 		return negotiateResp, err
 	}

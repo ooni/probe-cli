@@ -12,6 +12,22 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
+func TestCollectParseURLFailure(t *testing.T) {
+	expected := errors.New("mocked error")
+
+	deps := &mockableDependencies{
+		MockNewHTTPRequestWithContext: func(
+			ctx context.Context, method, url string, body io.Reader) (*http.Request, error) {
+			return nil, expected
+		},
+	}
+
+	err := collect(context.Background(), "\t", "", nil, deps)
+	if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
+		t.Fatal("not the error we expected", err)
+	}
+}
+
 func TestCollectNewHTTPRequestWithContextFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 
