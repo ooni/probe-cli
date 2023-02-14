@@ -20,11 +20,11 @@ type FakeDeps struct {
 	readAllResult        []byte
 }
 
-func (d FakeDeps) HTTPClient() *http.Client {
+func (d FakeDeps) HTTPClient() model.HTTPClient {
 	return &http.Client{Transport: d.httpTransport}
 }
 
-func (d FakeDeps) JSONMarshal(v interface{}) ([]byte, error) {
+func (d FakeDeps) JSONMarshal(v any) ([]byte, error) {
 	return d.jsonMarshalResult, d.jsonMarshalErr
 }
 
