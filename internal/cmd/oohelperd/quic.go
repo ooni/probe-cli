@@ -13,7 +13,6 @@ import (
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // ctrlQUICResult is the result of the QUIC check performed by the test helper.
@@ -78,9 +77,11 @@ func quicDo(ctx context.Context, config *quicConfig) {
 	dialer := config.NewQUICDialer(config.Logger)
 	defer dialer.CloseIdleConnections()
 
+	// See https://github.com/ooni/probe/issues/2413 to understand
+	// why we're using a cached cert pool.
 	tlsConfig := &tls.Config{
 		NextProtos: []string{"h3"},
-		RootCAs:    netxlite.NewDefaultCertPool(),
+		RootCAs:    certpool,
 		ServerName: config.URLHostname,
 	}
 	quicConn, err := dialer.DialContext(ctx, config.Endpoint, tlsConfig, &quic.Config{})
