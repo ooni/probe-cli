@@ -3,6 +3,7 @@
 /*.deb
 /*.exe
 /*.jsonl
+/*.pprof
 /*.tar.gz
 /*.zip
 /DEBIAN_INSTALLED_PACKAGE.txt

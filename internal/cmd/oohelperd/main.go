@@ -6,8 +6,12 @@ import (
 	"flag"
 	"net"
 	"net/http"
+	"os"
+	"os/signal"
+	"runtime/pprof"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/apex/log"
@@ -46,16 +50,38 @@ func shutdown(srv *http.Server) {
 }
 
 func main() {
+	// initialize variables for command line options
+	prometheus := flag.String("prometheus", "127.0.0.1:9091", "Prometheus endpoint")
+	debug := flag.Bool("debug", false, "Toggle debug mode")
+	cpuprofile := flag.String("cpuprofile", "", "write cpu profile to file")
+
+	// parse command line options
+	flag.Parse()
+
+	// optionally collect a CPU profile
+	if *cpuprofile != "" {
+		fp, err := os.Create(*cpuprofile)
+		runtimex.PanicOnError(err, "os.Create failed")
+		pprof.StartCPUProfile(fp)
+		defer func() {
+			pprof.StopCPUProfile()
+			log.Infof("written cpuprofile at: %s", *cpuprofile)
+			log.Infof("to analyze the profile run: go tool pprof oohelperd %s", *cpuprofile)
+			log.Infof("use the web command to get an interactive web profile")
+		}()
+	}
+
+	// set log level
 	logmap := map[bool]log.Level{
 		true:  log.DebugLevel,
 		false: log.InfoLevel,
 	}
-	prometheus := flag.String("prometheus", "127.0.0.1:9091", "Prometheus endpoint")
-	debug := flag.Bool("debug", false, "Toggle debug mode")
-	flag.Parse()
 	log.SetLevel(logmap[*debug])
-	defer srvCancel()
+
+	// create the HTTP server mux
 	mux := http.NewServeMux()
+
+	// add the main oohelperd handler to the mux
 	mux.Handle("/", &handler{
 		BaseLogger:        log.Log,
 		Indexer:           &atomic.Int64{},
@@ -102,19 +128,42 @@ func main() {
 			return netxlite.NewTLSHandshakerStdlib(logger)
 		},
 	})
+
+	// create a listening server for oohelperd
 	srv := &http.Server{Addr: *endpoint, Handler: mux}
 	listener, err := net.Listen("tcp", *endpoint)
 	runtimex.PanicOnError(err, "net.Listen failed")
+
+	// await for the server's address to become available
 	srvAddr <- listener.Addr().String()
 	srvWg.Add(1)
+
+	// start listening in the background
+	defer srvCancel()
 	go srv.Serve(listener)
+
+	// create another server for serving prometheus metrics
 	promMux := http.NewServeMux()
 	promMux.Handle("/metrics", promhttp.Handler())
 	promSrv := &http.Server{Addr: *prometheus, Handler: promMux}
 	go promSrv.ListenAndServe()
-	<-srvCtx.Done()
+
+	// await for the main context to be canceled or for a signal
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	select {
+	case <-srvCtx.Done():
+	case sig := <-sigs:
+		log.Infof("interrupted by signal: %v", sig)
+	}
+
+	// shutdown the servers
 	shutdown(srv)
 	shutdown(promSrv)
+
+	// close the listener
 	listener.Close()
+
+	// notify tests that we are now done
 	srvWg.Done()
 }
