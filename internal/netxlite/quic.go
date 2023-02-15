@@ -166,7 +166,8 @@ func (d *quicDialerQUICGo) dialEarlyContext(ctx context.Context,
 func (d *quicDialerQUICGo) maybeApplyTLSDefaults(config *tls.Config, port int) *tls.Config {
 	config = config.Clone()
 	if config.RootCAs == nil {
-		config.RootCAs = NewDefaultCertPool()
+		// See https://github.com/ooni/probe/issues/2413 for context
+		config.RootCAs = tproxySingleton().DefaultCertPool()
 	}
 	if len(config.NextProtos) <= 0 {
 		switch port {
