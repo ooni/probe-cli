@@ -105,7 +105,7 @@ func NewDefaultCertPool() *x509.CertPool {
 	// have a test in certify_test.go that guarantees that
 	ok := pool.AppendCertsFromPEM([]byte(pemcerts))
 	runtimex.Assert(ok, "pool.AppendCertsFromPEM failed")
-	return tproxySingleton().MaybeModifyPool(pool)
+	return pool
 }
 
 // ErrInvalidTLSVersion indicates that you passed us a string
@@ -209,7 +209,8 @@ func (h *tlsHandshakerConfigurable) Handshake(
 	conn.SetDeadline(time.Now().Add(timeout))
 	if config.RootCAs == nil {
 		config = config.Clone()
-		config.RootCAs = NewDefaultCertPool()
+		// See https://github.com/ooni/probe/issues/2413 for context
+		config.RootCAs = tproxySingleton().DefaultCertPool()
 	}
 	tlsconn, err := h.newConn(conn, config)
 	if err != nil {
