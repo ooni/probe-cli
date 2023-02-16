@@ -56,43 +56,13 @@ func shutdown(srv *http.Server) {
 	srv.Shutdown(ctx)
 }
 
-func main() {
-	// initialize variables for command line options
-	prometheus := flag.String("prometheus", "127.0.0.1:9091", "Prometheus endpoint")
-	debug := flag.Bool("debug", false, "Toggle debug mode")
-	cpuprofile := flag.String("cpuprofile", "", "write cpu profile to file")
-
-	// parse command line options
-	flag.Parse()
-
-	// optionally collect a CPU profile
-	if *cpuprofile != "" {
-		fp, err := os.Create(*cpuprofile)
-		runtimex.PanicOnError(err, "os.Create failed")
-		pprof.StartCPUProfile(fp)
-		defer func() {
-			pprof.StopCPUProfile()
-			log.Infof("written cpuprofile at: %s", *cpuprofile)
-			log.Infof("to analyze the profile run: go tool pprof oohelperd %s", *cpuprofile)
-			log.Infof("use the web command to get an interactive web profile")
-		}()
-	}
-
-	// set log level
-	logmap := map[bool]log.Level{
-		true:  log.DebugLevel,
-		false: log.InfoLevel,
-	}
-	log.SetLevel(logmap[*debug])
-
-	// create the HTTP server mux
-	mux := http.NewServeMux()
-
-	// add the main oohelperd handler to the mux
-	mux.Handle("/", &handler{
+// newHandler constructs the [handler] used by [main].
+func newHandler() *handler {
+	return &handler{
 		BaseLogger:        log.Log,
 		Indexer:           &atomic.Int64{},
 		MaxAcceptableBody: maxAcceptableBody,
+		Measure:           measure,
 		NewHTTPClient: func(logger model.Logger) model.HTTPClient {
 			// If the DoH resolver we're using insists that a given domain maps to
 			// bogons, make sure we're going to fail the HTTP measurement.
@@ -134,7 +104,43 @@ func main() {
 		NewTLSHandshaker: func(logger model.Logger) model.TLSHandshaker {
 			return netxlite.NewTLSHandshakerStdlib(logger)
 		},
-	})
+	}
+}
+
+func main() {
+	// initialize variables for command line options
+	prometheus := flag.String("prometheus", "127.0.0.1:9091", "Prometheus endpoint")
+	debug := flag.Bool("debug", false, "Toggle debug mode")
+	cpuprofile := flag.String("cpuprofile", "", "write cpu profile to file")
+
+	// parse command line options
+	flag.Parse()
+
+	// optionally collect a CPU profile
+	if *cpuprofile != "" {
+		fp, err := os.Create(*cpuprofile)
+		runtimex.PanicOnError(err, "os.Create failed")
+		pprof.StartCPUProfile(fp)
+		defer func() {
+			pprof.StopCPUProfile()
+			log.Infof("written cpuprofile at: %s", *cpuprofile)
+			log.Infof("to analyze the profile run: go tool pprof oohelperd %s", *cpuprofile)
+			log.Infof("use the web command to get an interactive web profile")
+		}()
+	}
+
+	// set log level
+	logmap := map[bool]log.Level{
+		true:  log.DebugLevel,
+		false: log.InfoLevel,
+	}
+	log.SetLevel(logmap[*debug])
+
+	// create the HTTP server mux
+	mux := http.NewServeMux()
+
+	// add the main oohelperd handler to the mux
+	mux.Handle("/", newHandler())
 
 	// create a listening server for oohelperd
 	srv := &http.Server{Addr: *endpoint, Handler: mux}

@@ -6,17 +6,15 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"net/http/httptest"
 	"strings"
-	"sync/atomic"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-const simplerequest = `{
+// simpleRequestForHandler is a simple request for the [handler].
+const simpleRequestForHandler = `{
 	"http_request": "https://dns.google",
 	"http_request_headers": {
 	  "Accept": [
@@ -34,81 +32,76 @@ const simplerequest = `{
 	]
 }`
 
+// requestWithDomainName is input for testing the [handler].
 const requestWithoutDomainName = `{
 	"http_request": "https://8.8.8.8",
 	"http_request_headers": {
-	  "Accept": [
-		"*/*"
-	  ],
-	  "Accept-Language": [
-		"en-US;q=0.8,en;q=0.5"
-	  ],
-	  "User-Agent": [
-		"Mozilla/5.0"
-	  ]
+		"Accept": [
+			"*/*"
+		],
+		"Accept-Language": [
+			"en-US;q=0.8,en;q=0.5"
+		],
+		"User-Agent": [
+			"Mozilla/5.0"
+		]
 	},
 	"tcp_connect": [
-	  "8.8.8.8:443"
+		"8.8.8.8:443"
 	]
 }`
 
+// TestHandlerWorkingAsIntended is an unit test exercising
+// several code paths inside the [handler].
 func TestHandlerWorkingAsIntended(t *testing.T) {
-	// TODO(bassosimone): we should factor the function that constructs a
-	// handler inside of main.go and reuse it here. As much as this is just
-	// an integration test, it seems backwards to initialize the handler
-	// differently than we use it in production (and I don't see a reason
-	// why we should be doing that).
-	handler := &handler{
-		BaseLogger:        model.DiscardLogger,
-		Indexer:           &atomic.Int64{},
-		MaxAcceptableBody: 1 << 24,
-		NewHTTPClient: func(model.Logger) model.HTTPClient {
-			return http.DefaultClient
-		},
-		NewHTTP3Client: func(logger model.Logger) model.HTTPClient {
-			return netxlite.NewHTTP3ClientWithResolver(
-				model.DiscardLogger, newResolver(model.DiscardLogger))
-		},
-		NewDialer: func(model.Logger) model.Dialer {
-			return netxlite.NewDialerWithoutResolver(model.DiscardLogger)
-		},
-		NewQUICDialer: func(logger model.Logger) model.QUICDialer {
-			return netxlite.NewQUICDialerWithoutResolver(
-				netxlite.NewQUICListener(),
-				model.DiscardLogger,
-			)
-		},
-		NewResolver: func(model.Logger) model.Resolver {
-			return netxlite.NewUnwrappedStdlibResolver()
-		},
-		NewTLSHandshaker: func(model.Logger) model.TLSHandshaker {
-			return netxlite.NewTLSHandshakerStdlib(model.DiscardLogger)
-		},
-	}
-	srv := httptest.NewServer(handler)
-	defer srv.Close()
+
+	// expectationSpec describes our expectations
 	type expectationSpec struct {
-		name            string
-		reqMethod       string
-		reqContentType  string
-		reqBody         string
-		respStatusCode  int
+		// name is the name of the subtest
+		name string
+
+		// reqMethod is the method for the HTTP request
+		reqMethod string
+
+		// reqContentType is the content-type for the HTTP request
+		reqContentType string
+
+		// measureFn optionally allows overriding the default
+		// value of the handler.Measure function
+		measureFn func(
+			ctx context.Context, config *handler, creq *model.THRequest) (*model.THResponse, error)
+
+		// reqBody is the request body to use
+		reqBody io.Reader
+
+		// respStatusCode is the expected response status code
+		respStatusCode int
+
+		// respContentType is the expected content-type
 		respContentType string
-		parseBody       bool
+
+		// parseBody indicates whether this test should attempt
+		// to parse the response body
+		parseBody bool
 	}
+
 	expectations := []expectationSpec{{
 		name:            "check for invalid method",
 		reqMethod:       "GET",
 		reqContentType:  "",
-		reqBody:         "",
+		reqBody:         strings.NewReader(""),
 		respStatusCode:  400,
 		respContentType: "",
 		parseBody:       false,
 	}, {
-		name:            "check for invalid content-type",
-		reqMethod:       "POST",
-		reqContentType:  "",
-		reqBody:         "",
+		name:           "check for error reading request body",
+		reqMethod:      "POST",
+		reqContentType: "application/json",
+		reqBody: &mocks.Reader{
+			MockRead: func(b []byte) (int, error) {
+				return 0, errors.New("connection reset by peer")
+			},
+		},
 		respStatusCode:  400,
 		respContentType: "",
 		parseBody:       false,
@@ -116,7 +109,7 @@ func TestHandlerWorkingAsIntended(t *testing.T) {
 		name:            "check for invalid request body",
 		reqMethod:       "POST",
 		reqContentType:  "application/json",
-		reqBody:         "{",
+		reqBody:         strings.NewReader("{"),
 		respStatusCode:  400,
 		respContentType: "",
 		parseBody:       false,
@@ -124,90 +117,94 @@ func TestHandlerWorkingAsIntended(t *testing.T) {
 		name:            "with measurement failure",
 		reqMethod:       "POST",
 		reqContentType:  "application/json",
-		reqBody:         `{"http_request": "http://[::1]aaaa"}`,
+		reqBody:         strings.NewReader(`{"http_request": "http://[::1]aaaa"}`),
 		respStatusCode:  400,
 		respContentType: "",
 		parseBody:       false,
 	}, {
-		name:            "with reasonably good request",
+		name: "with reasonably good request",
+		measureFn: func(ctx context.Context, config *handler, creq *model.THRequest) (*model.THResponse, error) {
+			cresp := &model.THResponse{}
+			return cresp, nil
+		},
 		reqMethod:       "POST",
 		reqContentType:  "application/json",
-		reqBody:         simplerequest,
+		reqBody:         strings.NewReader(simpleRequestForHandler),
 		respStatusCode:  200,
 		respContentType: "application/json",
 		parseBody:       true,
 	}, {
-		name:            "when there's no domain name in the request",
+		name: "with request that does not contain a domain name",
+		// TODO(bassosimone): this subtest is still an integration test because
+		// it tests part of measure.go. We should create unit tests for measure.go
+		// and remove this test from this file.
+		measureFn:       measure,
 		reqMethod:       "POST",
 		reqContentType:  "application/json",
-		reqBody:         requestWithoutDomainName,
+		reqBody:         strings.NewReader(requestWithoutDomainName),
 		respStatusCode:  200,
 		respContentType: "application/json",
 		parseBody:       true,
 	}}
+
 	for _, expect := range expectations {
 		t.Run(expect.name, func(t *testing.T) {
-			body := strings.NewReader(expect.reqBody)
-			req, err := http.NewRequest(expect.reqMethod, srv.URL, body)
+			// create handler and possibly override .Measure
+			handler := newHandler()
+			if expect.measureFn != nil {
+				handler.Measure = expect.measureFn
+			}
+
+			// create request
+			req, err := http.NewRequestWithContext(
+				context.Background(),
+				expect.reqMethod,
+				"http://127.0.0.1:8080/",
+				expect.reqBody,
+			)
 			if err != nil {
 				t.Fatalf("%s: %+v", expect.name, err)
 			}
 			if expect.reqContentType != "" {
 				req.Header.Add("content-type", expect.reqContentType)
 			}
-			resp, err := http.DefaultClient.Do(req)
-			if err != nil {
-				t.Fatalf("%s: %+v", expect.name, err)
+
+			// create response writer
+			var (
+				respBody       = []byte{}
+				header         = http.Header{}
+				statusCode int = 200
+			)
+			rw := &mocks.HTTPResponseWriter{
+				MockHeader: func() http.Header {
+					return header
+				},
+				MockWrite: func(b []byte) (int, error) {
+					respBody = append(respBody, b...)
+					return len(b), nil
+				},
+				MockWriteHeader: func(code int) {
+					statusCode = code
+				},
 			}
-			defer resp.Body.Close()
-			if resp.StatusCode != expect.respStatusCode {
-				t.Fatalf("unexpected status code: %+v", resp.StatusCode)
+
+			// perform round trip
+			handler.ServeHTTP(rw, req)
+
+			// process response
+			if statusCode != expect.respStatusCode {
+				t.Fatalf("unexpected status code: %+v", statusCode)
 			}
-			if v := resp.Header.Get("content-type"); v != expect.respContentType {
+			if v := header.Get("content-type"); v != expect.respContentType {
 				t.Fatalf("unexpected content-type: %s", v)
-			}
-			data, err := netxlite.ReadAllContext(context.Background(), resp.Body)
-			if err != nil {
-				t.Fatal(err)
 			}
 			if !expect.parseBody {
 				return
 			}
 			var v interface{}
-			if err := json.Unmarshal(data, &v); err != nil {
+			if err := json.Unmarshal(respBody, &v); err != nil {
 				t.Fatal(err)
 			}
 		})
-	}
-}
-
-func TestHandlerWithRequestBodyReadingError(t *testing.T) {
-	expected := errors.New("mocked error")
-	handler := handler{MaxAcceptableBody: 1 << 24}
-	var statusCode int
-	headers := http.Header{}
-	rw := &mocks.HTTPResponseWriter{
-		MockWriteHeader: func(code int) {
-			statusCode = code
-		},
-		MockHeader: func() http.Header {
-			return headers
-		},
-	}
-	req := &http.Request{
-		Method: "POST",
-		Header: map[string][]string{
-			"Content-Type":   {"application/json"},
-			"Content-Length": {"2048"},
-		},
-		Body: io.NopCloser(&mocks.Reader{
-			MockRead: func(b []byte) (int, error) {
-				return 0, expected
-			},
-		}),
-	}
-	handler.ServeHTTP(rw, req)
-	if statusCode != 400 {
-		t.Fatal("unexpected status code")
 	}
 }
