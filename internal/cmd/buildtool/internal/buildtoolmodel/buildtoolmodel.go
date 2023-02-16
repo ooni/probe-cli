@@ -49,4 +49,7 @@ type Dependencies interface {
 	// WindowsMingwCheck makes sure we're using the
 	// expected version of mingw-w64.
 	WindowsMingwCheck()
+
+	// GOOS returns the current GOOS.
+	GOOS() string
 }

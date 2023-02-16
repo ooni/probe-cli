@@ -44,3 +44,9 @@ var productOoniprobe = &product{
 	Pkg:  "./cmd/ooniprobe",
 	Kind: "CLI",
 }
+
+// productLibooniengine is the ooni engine shared library
+var productLibooniengine = &product{
+	Pkg:  "./internal/libooniengine",
+	Kind: "lib",
+}

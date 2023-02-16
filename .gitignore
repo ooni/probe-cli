@@ -17,5 +17,6 @@
 /oohelperd
 /ooniprobe
 /ooporthelper
+/libooniengine.*
 /probe-cli.cov
 /tmp-*

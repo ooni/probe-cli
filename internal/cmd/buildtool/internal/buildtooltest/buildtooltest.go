@@ -147,6 +147,7 @@ const (
 	TagPsiphonMaybeCopyConfigFiles = "maybeCopyPsiphonFiles"
 	TagVerifySHA256                = "verifySHA256"
 	TagWindowsMingwCheck           = "windowsMingwCheck"
+	TagGOOS                        = "GOOS"
 )
 
 // DependenciesCallCounter allows to counter how many times the
@@ -154,6 +155,7 @@ const (
 type DependenciesCallCounter struct {
 	Counter    map[string]int
 	HasPsiphon bool
+	OS         string
 }
 
 var _ buildtoolmodel.Dependencies = &DependenciesCallCounter{}
@@ -228,6 +230,12 @@ func (cc *DependenciesCallCounter) VerifySHA256(expectedSHA256 string, tarball s
 // windowsMingwCheck implements buildtoolmodel.Dependencies
 func (cc *DependenciesCallCounter) WindowsMingwCheck() {
 	cc.increment(TagWindowsMingwCheck)
+}
+
+// GOOS implements buildtool.Dependencies
+func (cc *DependenciesCallCounter) GOOS() string {
+	cc.increment(TagGOOS)
+	return cc.OS
 }
 
 // increment increments the given counter
