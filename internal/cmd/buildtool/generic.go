@@ -74,7 +74,7 @@ func genericBuildLibrary(deps buildtoolmodel.Dependencies, product *product) {
 	log.Infof("building %s for %s/%s", product.Pkg, os, runtime.GOARCH)
 
 	lib := path.Base(product.Pkg)
-	library, err := generateLibrary(lib, os)
+	library := runtimex.Try1(generateLibrary(lib, os))
 	runtimex.PanicOnError(err, fmt.Sprintf("failed to build for %s", os))
 
 	argv := runtimex.Try1(shellx.NewArgv("go", "build"))

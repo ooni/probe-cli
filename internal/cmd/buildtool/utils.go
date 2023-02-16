@@ -7,7 +7,7 @@ import (
 
 var errInvalidGOOSValue = errors.New("cannot build for runtime.GOOS value")
 
-// generateExtension generates the suitable library extension for the given GOOS.
+// generateLibrary generates the suitable library extension for the given GOOS.
 func generateLibrary(prefix string, os string) (string, error) {
 	switch os {
 	case "windows":
