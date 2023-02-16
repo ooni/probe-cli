@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/pprof"
@@ -18,6 +19,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/version"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -38,6 +40,9 @@ var (
 	// prometheusEndpoint is the endpoint where we serve prometheus metrics
 	prometheusEndpoint = flag.String("prometheus-endpoint", "127.0.0.1:9091", "Prometheus endpoint")
 
+	// replace runs the commands to replace a running oohelperd.
+	replace = flag.Bool("replace", false, "Replaces a running oohelperd instance")
+
 	// sigs is the channel where we collect signals
 	sigs = make(chan os.Signal, 1)
 
@@ -46,6 +51,9 @@ var (
 
 	// srvWg is used by tests to know when the server has shut down
 	srvWg = new(sync.WaitGroup)
+
+	// versionFlag indicates we must print the version on stdout
+	versionFlag = flag.Bool("version", false, "Prints version information on the stdout")
 )
 
 // newResolver creates a new [model.Resolver] suitable for serving
@@ -132,6 +140,20 @@ func main() {
 		false: log.InfoLevel,
 	}
 	log.SetLevel(logmap[*debug])
+
+	if *replace {
+		replaceRunningInstance(newReplaceDeps())
+		return
+	}
+	if *versionFlag {
+		fmt.Printf("oohelperd/%s %s dirty=%v commit=%s\n",
+			version.Version,
+			runtimex.BuildInfo.GoVersion,
+			runtimex.BuildInfo.VcsModified,
+			runtimex.BuildInfo.VcsRevision,
+		)
+		return
+	}
 
 	// create the HTTP server mux
 	mux := http.NewServeMux()
