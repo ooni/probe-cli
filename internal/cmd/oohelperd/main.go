@@ -24,17 +24,30 @@ import (
 const maxAcceptableBody = 1 << 24
 
 var (
-	endpoint  = flag.String("endpoint", "127.0.0.1:8080", "API endpoint")
-	srvAddr   = make(chan string, 1) // with buffer
-	srvCancel context.CancelFunc
-	srvCtx    context.Context
-	srvWg     = new(sync.WaitGroup)
+	// apiEndpoint is the endpoint where we serve ooniprobe requests
+	apiEndpoint = flag.String("endpoint", "127.0.0.1:8080", "API endpoint")
+
+	// cpuprofile controls whether to write a cpuprofile on a file
+	cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+
+	// debug controls whether to enable verbose logging
+	debug = flag.Bool("debug", false, "Toggle debug mode")
+
+	// prometheusEpnt is the endpoint where we serve prometheus metrics
+	prometheusEpnt = flag.String("prometheus", "127.0.0.1:9091", "Prometheus endpoint")
+
+	// sigs is the channel where we collect signals
+	sigs = make(chan os.Signal, 1)
+
+	// srvAdd is used to pass the server address to tests
+	srvAddr = make(chan string, 1)
+
+	// srvWg is used by tests to know when the server has shut down
+	srvWg = new(sync.WaitGroup)
 )
 
-func init() {
-	srvCtx, srvCancel = context.WithCancel(context.Background())
-}
-
+// newResolver creates a new [model.Resolver] suitable for serving
+// requests coming from ooniprobe clients.
 func newResolver(logger model.Logger) model.Resolver {
 	// Implementation note: pin to a specific resolver so we don't depend upon the
 	// default resolver configured by the box. Also, use an encrypted transport thus
@@ -43,8 +56,15 @@ func newResolver(logger model.Logger) model.Resolver {
 	return resolver
 }
 
-func shutdown(srv *http.Server) {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+// shutdown calls srv.Shutdown with a reasonably long timeout. The srv.Shutdown
+// function will immediately close any open listener and then will wait until
+// all pending connections are closed or the context has expired. By giving pending
+// connections a long timeout to complete, we make sure we can serve many of them
+// while still eventually shutting down the server. This function will decrement
+// the given wait group counter when it is done running.
+func shutdown(srv *http.Server, wg *sync.WaitGroup) {
+	defer wg.Done()
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
 	srv.Shutdown(ctx)
 }
@@ -101,11 +121,6 @@ func newHandler() *handler {
 }
 
 func main() {
-	// initialize variables for command line options
-	prometheus := flag.String("prometheus", "127.0.0.1:9091", "Prometheus endpoint")
-	debug := flag.Bool("debug", false, "Toggle debug mode")
-	cpuprofile := flag.String("cpuprofile", "", "write cpu profile to file")
-
 	// parse command line options
 	flag.Parse()
 
@@ -135,40 +150,42 @@ func main() {
 	// add the main oohelperd handler to the mux
 	mux.Handle("/", newHandler())
 
-	// create a listening server for oohelperd
-	srv := &http.Server{Addr: *endpoint, Handler: mux}
-	listener, err := net.Listen("tcp", *endpoint)
+	// create a listening server for serving ooniprobe requests
+	srv := &http.Server{Addr: *apiEndpoint, Handler: mux}
+	listener, err := net.Listen("tcp", *apiEndpoint)
 	runtimex.PanicOnError(err, "net.Listen failed")
 
 	// await for the server's address to become available
 	srvAddr <- listener.Addr().String()
 	srvWg.Add(1)
 
+	log.Infof("serving ooniprobe requests at http://%s/", listener.Addr().String())
+
 	// start listening in the background
-	defer srvCancel()
 	go srv.Serve(listener)
 
 	// create another server for serving prometheus metrics
 	promMux := http.NewServeMux()
 	promMux.Handle("/metrics", promhttp.Handler())
-	promSrv := &http.Server{Addr: *prometheus, Handler: promMux}
+	promSrv := &http.Server{Addr: *prometheusEpnt, Handler: promMux}
 	go promSrv.ListenAndServe()
 
+	log.Infof("serving prometheus metrics at http://%s/", *prometheusEpnt)
+
 	// await for the main context to be canceled or for a signal
-	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	select {
-	case <-srvCtx.Done():
-	case sig := <-sigs:
-		log.Infof("interrupted by signal: %v", sig)
-	}
+	sig := <-sigs
+	log.Infof("interrupted by signal: %v", sig)
 
-	// shutdown the servers
-	shutdown(srv)
-	shutdown(promSrv)
-
-	// close the listener
-	listener.Close()
+	// shutdown the servers awaiting for connections being
+	// served to terminate before exiting gracefully.
+	log.Infof("waiting for pending requests to complete")
+	shutdownWg := &sync.WaitGroup{}
+	shutdownWg.Add(1)
+	go shutdown(srv, shutdownWg)
+	shutdownWg.Add(1)
+	go shutdown(promSrv, shutdownWg)
+	shutdownWg.Wait()
 
 	// notify tests that we are now done
 	srvWg.Done()
