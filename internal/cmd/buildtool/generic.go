@@ -5,7 +5,6 @@ package main
 //
 
 import (
-	"fmt"
 	"path"
 	"runtime"
 
@@ -73,9 +72,9 @@ func genericBuildLibrary(deps buildtoolmodel.Dependencies, product *product) {
 
 	log.Infof("building %s for %s/%s", product.Pkg, os, runtime.GOARCH)
 
-	lib := path.Base(product.Pkg)
-	library := runtimex.Try1(generateLibrary(lib, os))
-	runtimex.PanicOnError(err, fmt.Sprintf("failed to build for %s", os))
+	// Note: here we're using path.Base because we know in advance that the
+	// packages paths are separated by forward slashes!
+	library := runtimex.Try1(generateLibrary(path.Base(product.Pkg), os))
 
 	argv := runtimex.Try1(shellx.NewArgv("go", "build"))
 	argv.Append("-buildmode", "c-shared")
