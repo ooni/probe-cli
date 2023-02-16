@@ -628,10 +628,10 @@ github.com/onsi/gomega v1.17.0/go.mod h1:HnhC7FXeEQY45zxNK3PPoIUhzk/80Xly9PcubAl
 github.com/onsi/gomega v1.24.1 h1:KORJXNNTzJXzu4ScJWssJfJMnJ+2QJqhoQSRwNlze9E=
 github.com/ooni/go-libtor v1.1.7 h1:ooVcdEPBqDox5OfeXAfXIeQFCbqMLJVfIpO+Irr7N9A=
 github.com/ooni/go-libtor v1.1.7/go.mod h1:q1YyLwRD9GeMyeerVvwc0vJ2YgwDLTp2bdVcrh/JXyI=
-github.com/ooni/oocrypto v0.4.1 h1:R30TIYJ1Wct9Js6uv1/icVIZJWS+/TqEgRj7kG+WVKo=
-github.com/ooni/oocrypto v0.4.1/go.mod h1:D/yqWldJfw/4LKFJ0+2t0gDQ0cXVsHx2v45ODmna5SY=
-github.com/ooni/oohttp v0.5.1 h1:C2VaxI+NQRLCqPHKu6ihAHU1Cn+Q73snIjHrU8oVRbI=
-github.com/ooni/oohttp v0.5.1/go.mod h1:XRJVx6aCswQrE7Fp3j4d8SjHNh1rPEdhpTyPu3zkyBw=
+github.com/ooni/oocrypto v0.4.2 h1:D7PB97EBfCgS/GlXoiWlS523oniqYn7sPVWSRk6kfW0=
+github.com/ooni/oocrypto v0.4.2/go.mod h1:D/yqWldJfw/4LKFJ0+2t0gDQ0cXVsHx2v45ODmna5SY=
+github.com/ooni/oohttp v0.5.2 h1:2U5OKi2tQTs9okdEV9FYZTzegI6OIJ86i9WsMDCfTq4=
+github.com/ooni/oohttp v0.5.2/go.mod h1:XRJVx6aCswQrE7Fp3j4d8SjHNh1rPEdhpTyPu3zkyBw=
 github.com/ooni/probe-assets v0.15.0 h1:VFOnVO4rypeI6Qfn25Uck1YhAlu3BJQqC9Vrp8nL8C0=
 github.com/ooni/probe-assets v0.15.0/go.mod h1:+otUATjJ8T7NsTKhmkXAKLW9oy0NhbcggXhlKzZHqVI=
 github.com/op/go-logging v0.0.0-20160315200505-970db520ece7/go.mod h1:HzydrMdWErDVzsI23lYNej1Htcns9BCg93Dk0bBINWk=

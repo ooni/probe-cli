@@ -27,8 +27,8 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.7.0
 	github.com/ooni/go-libtor v1.1.7
-	github.com/ooni/oocrypto v0.4.1
-	github.com/ooni/oohttp v0.5.1
+	github.com/ooni/oocrypto v0.4.2
+	github.com/ooni/oohttp v0.5.2
 	github.com/ooni/probe-assets v0.15.0
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/pion/stun v0.3.5
