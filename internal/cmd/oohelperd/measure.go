@@ -121,7 +121,10 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 	// HTTP/3
 	quicconnch := make(chan *quicResult, len(endpoints))
 
-	if cresp.HTTPRequest.DiscoveredH3Endpoint != "" {
+	// In the v3.17.x and possibly v3.18.x release cycles, QUIC is disabled by
+	// default but clients that know QUIC can enable it. We will eventually remove
+	// this flag and enable QUIC measurements for all clients.
+	if creq.XQUICEnabled && cresp.HTTPRequest.DiscoveredH3Endpoint != "" {
 		// quicconnect: start over all the endpoints
 		for _, endpoint := range endpoints {
 			wg.Add(1)
@@ -155,6 +158,7 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 		http3Request := <-http3ch
 		cresp.HTTP3Request = &http3Request
 	}
+
 Loop:
 	for {
 		select {
