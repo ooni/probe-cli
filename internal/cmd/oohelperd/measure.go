@@ -26,7 +26,7 @@ type (
 // returns the corresponding response or an error.
 func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResponse, error) {
 	// create indexed logger
-	logger := &indexLogger{
+	logger := &prefixLogger{
 		indexstr: fmt.Sprintf("<#%d> ", config.Indexer.Add(1)),
 		logger:   config.BaseLogger,
 	}
