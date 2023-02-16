@@ -3,11 +3,20 @@ package model
 // THDNSNameError is the error returned by the control on NXDOMAIN
 const THDNSNameError = "dns_name_error"
 
-// THRequest is the request that we send to the control
+// THRequest is the request that we send to the control.
+//
+// See https://github.com/ooni/spec/blob/master/nettests/ts-017-web-connectivity.md
 type THRequest struct {
 	HTTPRequest        string              `json:"http_request"`
 	HTTPRequestHeaders map[string][]string `json:"http_request_headers"`
 	TCPConnect         []string            `json:"tcp_connect"`
+
+	// XQUICEnabled is a feature flag that tells the oohelperd to
+	// conditionally enable QUIC measurements, which are otherwise
+	// disabled by default. We will honour this flag during the
+	// v3.17.x release cycle and possibly also for v3.18.x but we
+	// will eventually enable QUIC for all clients.
+	XQUICEnabled bool `json:"x_quic_enabled"`
 }
 
 // THTCPConnectResult is the result of the TCP connect
