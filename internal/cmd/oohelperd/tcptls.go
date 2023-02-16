@@ -99,10 +99,11 @@ func tcpTLSDo(ctx context.Context, config *tcpTLSConfig) {
 		return
 	}
 	// See https://github.com/ooni/probe/issues/2413 to understand
-	// why we're using a cached cert pool.
+	// why we're using nil to force netxlite to use the cached
+	// default Mozilla cert pool.
 	tlsConfig := &tls.Config{
 		NextProtos: []string{"h2", "http/1.1"},
-		RootCAs:    certpool,
+		RootCAs:    nil,
 		ServerName: config.URLHostname,
 	}
 	thx := config.NewTSLHandshaker(config.Logger)

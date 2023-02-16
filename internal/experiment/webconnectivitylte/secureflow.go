@@ -134,9 +134,12 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 		return err
 	}
 	tlsHandshaker := trace.NewTLSHandshakerStdlib(t.Logger)
+	// See https://github.com/ooni/probe/issues/2413 to understand
+	// why we're using nil to force netxlite to use the cached
+	// default Mozilla cert pool.
 	tlsConfig := &tls.Config{
 		NextProtos: t.alpn(),
-		RootCAs:    netxlite.NewDefaultCertPool(),
+		RootCAs:    nil,
 		ServerName: tlsSNI,
 	}
 	const tlsTimeout = 10 * time.Second

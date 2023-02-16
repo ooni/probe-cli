@@ -23,13 +23,6 @@ import (
 
 const maxAcceptableBody = 1 << 24
 
-// certpool caches the default X509 certificate pool used by this program. Profiling
-// shows that, without caching, this program spends a significant amount of time
-// building and garbage collecting the certificate pool.
-//
-// See https://github.com/ooni/probe/issues/2413 for context.
-var certpool = netxlite.NewDefaultCertPool()
-
 var (
 	endpoint  = flag.String("endpoint", "127.0.0.1:8080", "API endpoint")
 	srvAddr   = make(chan string, 1) // with buffer

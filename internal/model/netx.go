@@ -203,7 +203,7 @@ type QUICDialer interface {
 	//
 	// - set ServerName to be the SNI;
 	//
-	// - set RootCAs to NewDefaultCertPool();
+	// - set RootCAs to nil (which causes us to use the default cert pool);
 	//
 	// - set NextProtos to []string{"h3"}.
 	//
@@ -277,7 +277,7 @@ type TLSHandshaker interface {
 	//
 	// - set ServerName to be the SNI;
 	//
-	// - set RootCAs to NewDefaultCertPool();
+	// - set RootCAs to nil (which causes us to use the default cert pool);
 	//
 	// - set NextProtos to []string{"h2", "http/1.1"} for HTTPS
 	// and []string{"dot"} for DNS-over-TLS.
