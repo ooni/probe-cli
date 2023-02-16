@@ -5,6 +5,7 @@ package main
 //
 
 import (
+	"fmt"
 	"runtime"
 
 	"github.com/apex/log"
@@ -36,6 +37,14 @@ func genericSubcommand() *cobra.Command {
 			genericBuildPackage(&buildDeps{}, productOoniprobe)
 		},
 	})
+	cmd.AddCommand(&cobra.Command{
+		Use:   "libooniengine",
+		Short: "Builds libooniengine for the current GOOS and GOARCH",
+		Args:  cobra.NoArgs,
+		Run: func(cmd *cobra.Command, args []string) {
+			genericBuildLibrary(&buildDeps{}, productLibooniengine)
+		},
+	})
 	return cmd
 }
 
@@ -51,6 +60,20 @@ func genericBuildPackage(deps buildtoolmodel.Dependencies, product *product) {
 		argv.Append("-tags", "ooni_psiphon_config")
 	}
 	argv.Append("-ldflags", "-s -w")
+	argv.Append(product.Pkg)
+
+	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, &shellx.Envp{}))
+}
+
+// genericBuildLibrary is the generic function for building a library.
+func genericBuildLibrary(deps buildtoolmodel.Dependencies, product *product) {
+	// deps.GolangCheck()
+
+	log.Infof("building %s for %s/%s", product.Pkg, runtime.GOOS, runtime.GOARCH)
+
+	argv := runtimex.Try1(shellx.NewArgv("go", "build"))
+	argv.Append("-buildmode", "c-shared")
+	argv.Append("-o", fmt.Sprintf("%s.so", product.Pkg)) // Note: we are only building for linux for now
 	argv.Append(product.Pkg)
 
 	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, &shellx.Envp{}))
