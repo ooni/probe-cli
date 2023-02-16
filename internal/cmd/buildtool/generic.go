@@ -67,7 +67,7 @@ func genericBuildPackage(deps buildtoolmodel.Dependencies, product *product) {
 
 // genericBuildLibrary is the generic function for building a library.
 func genericBuildLibrary(deps buildtoolmodel.Dependencies, product *product) {
-	// deps.GolangCheck()
+	deps.GolangCheck()
 
 	log.Infof("building %s for %s/%s", product.Pkg, runtime.GOOS, runtime.GOARCH)
 
