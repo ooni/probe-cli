@@ -6,9 +6,9 @@ import (
 	"flag"
 	"net"
 	"net/http"
+	"net/http/pprof"
 	"os"
 	"os/signal"
-	"runtime/pprof"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -21,20 +21,22 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-const maxAcceptableBody = 1 << 24
+// maxAcceptableBodySize is the maximum acceptable body size for incoming
+// API requests as well as when we're measuring webpages.
+const maxAcceptableBodySize = 1 << 24
 
 var (
 	// apiEndpoint is the endpoint where we serve ooniprobe requests
-	apiEndpoint = flag.String("endpoint", "127.0.0.1:8080", "API endpoint")
-
-	// cpuprofile controls whether to write a cpuprofile on a file
-	cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+	apiEndpoint = flag.String("api-endpoint", "127.0.0.1:8080", "API endpoint")
 
 	// debug controls whether to enable verbose logging
 	debug = flag.Bool("debug", false, "Toggle debug mode")
 
-	// prometheusEpnt is the endpoint where we serve prometheus metrics
-	prometheusEpnt = flag.String("prometheus", "127.0.0.1:9091", "Prometheus endpoint")
+	// pprofEndpoint is the endpoint where we serve pprof info.
+	pprofEndpoint = flag.String("pprof-endpoint", "127.0.0.1:6061", "Pprof endpoint")
+
+	// prometheusEndpoint is the endpoint where we serve prometheus metrics
+	prometheusEndpoint = flag.String("prometheus-endpoint", "127.0.0.1:9091", "Prometheus endpoint")
 
 	// sigs is the channel where we collect signals
 	sigs = make(chan os.Signal, 1)
@@ -74,7 +76,7 @@ func newHandler() *handler {
 	return &handler{
 		BaseLogger:        log.Log,
 		Indexer:           &atomic.Int64{},
-		MaxAcceptableBody: maxAcceptableBody,
+		MaxAcceptableBody: maxAcceptableBodySize,
 		Measure:           measure,
 		NewHTTPClient: func(logger model.Logger) model.HTTPClient {
 			// If the DoH resolver we're using insists that a given domain maps to
@@ -124,19 +126,6 @@ func main() {
 	// parse command line options
 	flag.Parse()
 
-	// optionally collect a CPU profile
-	if *cpuprofile != "" {
-		fp, err := os.Create(*cpuprofile)
-		runtimex.PanicOnError(err, "os.Create failed")
-		pprof.StartCPUProfile(fp)
-		defer func() {
-			pprof.StopCPUProfile()
-			log.Infof("written cpuprofile at: %s", *cpuprofile)
-			log.Infof("to analyze the profile run: go tool pprof oohelperd %s", *cpuprofile)
-			log.Infof("use the web command to get an interactive web profile")
-		}()
-	}
-
 	// set log level
 	logmap := map[bool]log.Level{
 		true:  log.DebugLevel,
@@ -159,18 +148,25 @@ func main() {
 	srvAddr <- listener.Addr().String()
 	srvWg.Add(1)
 
-	log.Infof("serving ooniprobe requests at http://%s/", listener.Addr().String())
-
 	// start listening in the background
 	go srv.Serve(listener)
+	log.Infof("serving ooniprobe requests at http://%s/", listener.Addr().String())
 
 	// create another server for serving prometheus metrics
 	promMux := http.NewServeMux()
 	promMux.Handle("/metrics", promhttp.Handler())
-	promSrv := &http.Server{Addr: *prometheusEpnt, Handler: promMux}
+	promSrv := &http.Server{Addr: *prometheusEndpoint, Handler: promMux}
 	go promSrv.ListenAndServe()
+	log.Infof("serving prometheus metrics at http://%s/", *prometheusEndpoint)
 
-	log.Infof("serving prometheus metrics at http://%s/", *prometheusEpnt)
+	// create another server for serving pprof metrics
+	pprofMux := http.NewServeMux()
+	pprofMux.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+	pprofMux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+	pprofSrv := &http.Server{Addr: *pprofEndpoint, Handler: pprofMux}
+	go pprofSrv.ListenAndServe()
+	log.Infof("serving CPU profile at http://%s/debug/pprof/profile", *pprofEndpoint)
+	log.Infof("serving execution traces at http://%s/debug/pprof/trace", *pprofEndpoint)
 
 	// await for the main context to be canceled or for a signal
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
@@ -185,6 +181,8 @@ func main() {
 	go shutdown(srv, shutdownWg)
 	shutdownWg.Add(1)
 	go shutdown(promSrv, shutdownWg)
+	shutdownWg.Add(1)
+	go shutdown(pprofSrv, shutdownWg)
 	shutdownWg.Wait()
 
 	// notify tests that we are now done
