@@ -71,9 +71,12 @@ func genericBuildLibrary(deps buildtoolmodel.Dependencies, product *product) {
 
 	log.Infof("building %s for %s/%s", product.Pkg, runtime.GOOS, runtime.GOARCH)
 
+	library, err := generateLibrary(product.Pkg)
+	runtimex.PanicOnError(err, fmt.Sprintf("failed to build for %s", runtime.GOOS))
+
 	argv := runtimex.Try1(shellx.NewArgv("go", "build"))
 	argv.Append("-buildmode", "c-shared")
-	argv.Append("-o", fmt.Sprintf("%s.so", product.Pkg)) // Note: we are only building for linux for now
+	argv.Append("-o", library)
 	argv.Append(product.Pkg)
 
 	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, &shellx.Envp{}))
