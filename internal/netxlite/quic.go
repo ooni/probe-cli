@@ -35,6 +35,15 @@ func (qls *quicListenerStdlib) Listen(addr *net.UDPAddr) (model.UDPLikeConn, err
 // NewQUICDialerWithResolver is the WrapDialer equivalent for QUIC where
 // we return a composed QUICDialer modified by optional wrappers.
 //
+// The returned dialer guarantees:
+//
+// 1. logging;
+//
+// 2. error wrapping;
+//
+// 3. that we are going to use Mozilla CA if the [tls.Config]
+// RootCAs field is zero initialized.
+//
 // Please, note that this fuunction will just ignore any nil wrapper.
 //
 // Unlike the dialer returned by WrapDialer, this dialer MAY attempt

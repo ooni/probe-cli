@@ -116,11 +116,14 @@ func Test_newConnUTLSWithHelloID(t *testing.T) {
 		wantErr     error
 	}{{
 		name: "with only supported fields",
+		// See https://github.com/ooni/probe/issues/2413 to understand
+		// why we're using nil to force netxlite to use the cached
+		// default Mozilla cert pool.
 		config: &tls.Config{
 			DynamicRecordSizingDisabled: true,
 			InsecureSkipVerify:          true,
 			NextProtos:                  []string{"h3"},
-			RootCAs:                     NewDefaultCertPool(),
+			RootCAs:                     nil,
 			ServerName:                  "ooni.org",
 		},
 		cid:         &utls.HelloFirefox_55,

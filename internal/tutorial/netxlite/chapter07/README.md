@@ -48,7 +48,7 @@ func main() {
 	config := &tls.Config{
 		ServerName: *sni,
 		NextProtos: []string{"h2", "http/1.1"},
-		RootCAs:    netxlite.NewDefaultCertPool(),
+		RootCAs:    nil,
 	}
 	conn, _, err := dialTLS(ctx, *address, config)
 	if err != nil {

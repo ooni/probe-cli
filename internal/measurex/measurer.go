@@ -299,7 +299,8 @@ func (mx *Measurer) TCPConnectWithDB(ctx context.Context, db WritableDB, address
 // - ServerName to the desired SNI or InsecureSkipVerify to
 // skip the certificate name verification;
 //
-// - RootCAs to nextlite.NewDefaultCertPool() output;
+// - RootCAs to nil to force netxlite to use its cached
+// copy of Mozilla's CA bundle;
 //
 // - NextProtos to the desired ALPN ([]string{"h2", "http/1.1"} for
 // HTTPS and []string{"dot"} for DNS-over-TLS).
@@ -378,7 +379,8 @@ func (mx *Measurer) TLSConnectAndHandshakeWithDB(ctx context.Context,
 // - ServerName to the desired SNI or InsecureSkipVerify to
 // skip the certificate name verification;
 //
-// - RootCAs to nextlite.NewDefaultCertPool() output;
+// - RootCAs to nil to force netxlite to use its cached
+// copy of Mozilla's CA bundle;
 //
 // - NextProtos to the desired ALPN ([]string{"h2", "http/1.1"} for
 // HTTPS and []string{"dot"} for DNS-over-TLS).
@@ -557,10 +559,12 @@ func (mx *Measurer) httpEndpointGetHTTP(ctx context.Context,
 // httpEndpointGetHTTPS specializes httpEndpointGetTCP for HTTPS.
 func (mx *Measurer) httpEndpointGetHTTPS(ctx context.Context,
 	db WritableDB, epnt *HTTPEndpoint, jar http.CookieJar) (*http.Response, error) {
+	// Using a nil cert pool here forces netxlite to use a cached copy of Mozilla's
+	// CA bundle. See https://github.com/ooni/probe/issues/2413 for context.
 	conn, err := mx.TLSConnectAndHandshakeWithDB(ctx, db, epnt.Address, &tls.Config{
 		ServerName: epnt.SNI,
 		NextProtos: epnt.ALPN,
-		RootCAs:    netxlite.NewDefaultCertPool(),
+		RootCAs:    nil,
 	})
 	if err != nil {
 		return nil, err
@@ -575,10 +579,12 @@ func (mx *Measurer) httpEndpointGetHTTPS(ctx context.Context,
 // httpEndpointGetQUIC specializes httpEndpointGetTCP for QUIC.
 func (mx *Measurer) httpEndpointGetQUIC(ctx context.Context,
 	db WritableDB, epnt *HTTPEndpoint, jar http.CookieJar) (*http.Response, error) {
+	// Using a nil cert pool here forces netxlite to use a cached copy of Mozilla's
+	// CA bundle. See https://github.com/ooni/probe/issues/2413 for context.
 	qconn, err := mx.QUICHandshakeWithDB(ctx, db, epnt.Address, &tls.Config{
 		ServerName: epnt.SNI,
 		NextProtos: epnt.ALPN,
-		RootCAs:    netxlite.NewDefaultCertPool(),
+		RootCAs:    nil,
 	})
 	if err != nil {
 		return nil, err
