@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"path"
 	"runtime"
 
 	"github.com/apex/log"
@@ -68,11 +69,13 @@ func genericBuildPackage(deps buildtoolmodel.Dependencies, product *product) {
 // genericBuildLibrary is the generic function for building a library.
 func genericBuildLibrary(deps buildtoolmodel.Dependencies, product *product) {
 	deps.GolangCheck()
+	os := deps.GOOS()
 
-	log.Infof("building %s for %s/%s", product.Pkg, runtime.GOOS, runtime.GOARCH)
+	log.Infof("building %s for %s/%s", product.Pkg, os, runtime.GOARCH)
 
-	library, err := generateLibrary(product.Pkg)
-	runtimex.PanicOnError(err, fmt.Sprintf("failed to build for %s", runtime.GOOS))
+	lib := path.Base(product.Pkg)
+	library, err := generateLibrary(lib, os)
+	runtimex.PanicOnError(err, fmt.Sprintf("failed to build for %s", os))
 
 	argv := runtimex.Try1(shellx.NewArgv("go", "build"))
 	argv.Append("-buildmode", "c-shared")

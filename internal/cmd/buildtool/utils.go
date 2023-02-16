@@ -3,14 +3,13 @@ package main
 import (
 	"errors"
 	"fmt"
-	"runtime"
 )
 
 var errInvalidGOOSValue = errors.New("cannot build for runtime.GOOS value")
 
 // generateExtension generates the suitable library extension for the given GOOS.
-func generateLibrary(prefix string) (string, error) {
-	switch runtime.GOOS {
+func generateLibrary(prefix string, os string) (string, error) {
+	switch os {
 	case "windows":
 		return fmt.Sprintf("%s.dll", prefix), nil
 	case "linux":
