@@ -48,7 +48,8 @@ const requestWithoutDomainName = `{
 	},
 	"tcp_connect": [
 		"8.8.8.8:443"
-	]
+	],
+	"x_quic_enabled": true
 }`
 
 // TestHandlerWorkingAsIntended is an unit test exercising
