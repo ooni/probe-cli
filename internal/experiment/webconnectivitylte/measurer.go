@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivity"
+	"github.com/ooni/probe-cli/v3/internal/inputparser"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"golang.org/x/net/publicsuffix"
 )
@@ -36,7 +37,7 @@ func (m *Measurer) ExperimentName() string {
 
 // ExperimentVersion implements model.ExperimentMeasurer.
 func (m *Measurer) ExperimentVersion() string {
-	return "0.5.21"
+	return "0.5.22"
 }
 
 // Run implements model.ExperimentMeasurer.
@@ -60,7 +61,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	}
 
 	// convert the input string to a URL
-	inputParser := &InputParser{
+	inputParserConfig := &inputparser.Config{
 		AcceptedSchemes: []string{
 			"http",
 			"https",
@@ -68,7 +69,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		AllowEndpoints: false,
 		DefaultScheme:  "",
 	}
-	URL, err := inputParser.Parse(string(measurement.Input))
+	URL, err := inputparser.Parse(inputParserConfig, measurement.Input)
 	if err != nil {
 		return err
 	}
