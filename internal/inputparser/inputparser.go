@@ -72,6 +72,7 @@ func Parse(config *Config, input model.MeasurementTarget) (*url.URL, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		// Fallthrough on success.
 	}
 
