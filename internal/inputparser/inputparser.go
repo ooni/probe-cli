@@ -62,6 +62,11 @@ func Parse(config *Config, input model.MeasurementTarget) (*url.URL, error) {
 
 	// Reject empty URL.Hostname().
 	if URL.Hostname() == "" {
+		// If we are not allowed to parse endpoints, just emit an error.
+		if !config.AllowEndpoints {
+			return nil, ErrEmptyHostname
+		}
+
 		// Check whether we could interpret the URL as an endpoint.
 		URL, err = maybeEndpointToURL(config, URL)
 		if err != nil {
@@ -92,11 +97,6 @@ func Parse(config *Config, input model.MeasurementTarget) (*url.URL, error) {
 // See https://go.dev/play/p/Rk5pS_zGY5U for additional information on how
 // URL.Parse will parse "example.com:80" and other endpoints.
 func maybeEndpointToURL(config *Config, URL *url.URL) (*url.URL, error) {
-	// If we are not allowed to parse endpoints, just emit an error.
-	if !config.AllowEndpoints {
-		return nil, ErrEmptyHostname
-	}
-
 	// Make sure the parsing result is exactly what we expected.
 	expect := &url.URL{
 		Scheme: URL.Scheme,
