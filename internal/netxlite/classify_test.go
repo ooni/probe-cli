@@ -332,6 +332,20 @@ func TestClassifyTLSHandshakeError(t *testing.T) {
 		}
 	})
 
+	t.Run("for 'tls: unrecognized name' error", func(t *testing.T) {
+		err := errors.New("tls: handshake failed: tls: unrecognized name")
+		if ClassifyTLSHandshakeError(err) != FailureSSLInvalidHostname {
+			t.Fatal("unexpected result")
+		}
+	})
+
+	t.Run("for 'tls: alert(112)' error", func(t *testing.T) { // yawning utls
+		err := errors.New("tls: handshake failed: tls: alert(112)")
+		if ClassifyTLSHandshakeError(err) != FailureSSLInvalidHostname {
+			t.Fatal("unexpected result")
+		}
+	})
+
 	t.Run("for another kind of error", func(t *testing.T) {
 		if ClassifyTLSHandshakeError(io.EOF) != FailureEOFError {
 			t.Fatal("unexpected result")
