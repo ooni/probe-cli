@@ -221,6 +221,63 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 	return sess, nil
 }
 
+func NewSessionWithoutTunnel(ctx context.Context, config *SessionConfig) (*Session, error) {
+	if config.Logger == nil {
+		return nil, errors.New("Logger is empty")
+	}
+	if config.SoftwareName == "" {
+		return nil, errors.New("SoftwareName is empty")
+	}
+	if config.SoftwareVersion == "" {
+		return nil, errors.New("SoftwareVersion is empty")
+	}
+	if config.KVStore == nil {
+		config.KVStore = &kvstore.Memory{}
+	}
+	// Implementation note: if config.TempDir is empty, then Go will
+	// use the temporary directory on the current system. This should
+	// work on Desktop. We tested that it did also work on iOS, but
+	// we have also seen on 2020-06-10 that it does not work on Android.
+	tempDir, err := ioutil.TempDir(config.TempDir, "ooniengine")
+	if err != nil {
+		return nil, err
+	}
+	config.Logger.Infof(
+		"ooniprobe-engine/v%s %s dirty=%s %s",
+		version.Version,
+		runtimex.BuildInfo.VcsRevision,
+		runtimex.BuildInfo.VcsModified,
+		runtimex.BuildInfo.GoVersion,
+	)
+	sess := &Session{
+		availableProbeServices:  config.AvailableProbeServices,
+		byteCounter:             bytecounter.New(),
+		kvStore:                 config.KVStore,
+		logger:                  config.Logger,
+		queryProbeServicesCount: &atomic.Int64{},
+		softwareName:            config.SoftwareName,
+		softwareVersion:         config.SoftwareVersion,
+		tempDir:                 tempDir,
+		torArgs:                 config.TorArgs,
+		torBinary:               config.TorBinary,
+		tunnelDir:               config.TunnelDir,
+	}
+	var proxyURL *url.URL = nil
+	sess.proxyURL = proxyURL
+	sess.resolver = &sessionresolver.Resolver{
+		ByteCounter: sess.byteCounter,
+		KVStore:     config.KVStore,
+		Logger:      sess.logger,
+		ProxyURL:    proxyURL,
+	}
+	txp := netxlite.NewHTTPTransportWithLoggerResolverAndOptionalProxyURL(
+		sess.logger, sess.resolver, sess.proxyURL,
+	)
+	txp = bytecounter.WrapHTTPTransport(txp, sess.byteCounter)
+	sess.httpDefaultTransport = txp
+	return sess, nil
+}
+
 // TunnelDir returns the persistent directory used by tunnels.
 func (s *Session) TunnelDir() string {
 	return s.tunnelDir
