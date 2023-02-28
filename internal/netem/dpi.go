@@ -30,6 +30,12 @@ func (*DPINone) Divert(
 // the traffic towards a given server endpoint. The zero value is invalid;
 // please fill all the fields marked as MANDATORY.
 type DPIDropTrafficForServerEndpoint struct {
+	// Direction is the MANDATORY packets flow direction. Use
+	// [LinkDirectionLeftToRight] when you are installing this
+	// DPI rule on the client side; use [LinkDirectionRightToLeft]
+	// when you are installing it on the server side.
+	Direction LinkDirection
+
 	// ServerIPAddress is the MANDATORY server endpoint IP address.
 	ServerIPAddress string
 
@@ -50,9 +56,8 @@ func (e *DPIDropTrafficForServerEndpoint) Divert(
 	dest *NIC,
 	rawPacket []byte,
 ) bool {
-	// Check whether packet is flowing in the left->right direction. See [Backbone]
-	// documentation to understand why this is correct.
-	if direction != LinkDirectionRightToLeft {
+	// Check whether packet is flowing in the expected direction.
+	if direction != e.Direction {
 		return false // wrong direction, let it flow
 	}
 

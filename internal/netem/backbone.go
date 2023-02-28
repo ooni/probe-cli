@@ -31,14 +31,14 @@ import (
 //	| server | --------------------'
 //	'--------'         L2..LN
 //
-// So going from client to backbone is going in the left->right direction of
-// the L1 link. On the contrary, going from the server to the backbone is
-// going in the right->left direction of the server-specific Li link in L2..LN.
+// Where, L1, L2, ..., LN are [Link]s.
 //
-// While in the real world the DPI is implemented near the client, we implement
-// it on the specific Li link between the backbone and a server because this
-// significantly simplifies the filtering algorithm. We immediately know that
-// the traffic we're filtering is specific of a given server.
+// Hence, going from client to backbone is going in the left->right direction of
+// the L1 link. On the contrary, going from the server to the backbone is
+// going in the right->left direction of the server-specific Lx for x in 2..N.
+//
+// The [Backbone] will remember the IP address of each configured client and
+// server and will route traffic accordingly.
 type Backbone struct {
 	// mu provides mutual exclusion.
 	mu sync.Mutex
@@ -58,25 +58,33 @@ func NewBackbone() *Backbone {
 // AddClient adds a client stub network to the backbone. This function starts
 // background goroutines that implement routing such that packets destined
 // to the client IP address will reach the client. Those goroutines will run
-// as long as the given context has not been canceled.
-func (b *Backbone) AddClient(ctx context.Context, stack *GvisorStack, factory LinkFactory) {
+// as long as the given context has not been canceled. This function will
+// panic if the stack has an IP address belonging to a client or server that
+// has previously been registered. The [Link] created for the client will
+// use the configured [LinkDPIEngine] (use [DPINone] to disable DPI).
+func (b *Backbone) AddClient(
+	ctx context.Context,
+	stack *GvisorStack,
+	factory LinkFactory,
+	dpi LinkDPIEngine,
+) {
 	defer b.mu.Unlock()
 	b.mu.Lock()
 
 	// make sure we don't have duplicate IP addresses
 	_, found := b.table[stack.IPAddress()]
-	runtimex.Assert(!found, "netem: AddClient: duplicate IP address")
+	runtimex.Assert(!found, "netem: Router: detected duplicate IP address")
 
 	// create the client and the internet NIC
-	clientNIC := NewNIC()
+	localNIC := NewNIC()
 	internetNIC := NewNIC()
 
 	// connect the NICs using a link and install the DPI engine
-	link := factory(clientNIC, internetNIC)
-	link.Up(ctx, false)
+	link := factory(localNIC, internetNIC, dpi)
+	link.Up(ctx)
 
 	// attach the stack to its NIC
-	stack.Attach(ctx, clientNIC)
+	stack.Attach(ctx, localNIC)
 
 	// route traffic exiting on the internetNIC
 	go b.routeLoop(ctx, internetNIC)
@@ -86,43 +94,12 @@ func (b *Backbone) AddClient(ctx context.Context, stack *GvisorStack, factory Li
 	log.Infof("route add %s %s", stack.IPAddress(), internetNIC.name)
 }
 
-// AddServer is like [AddClient] but adds a server to the backbone. Even though it
-// would not make sense in the real world, we attach the DPI engine to the server
-// to implicitly make the DPI rules only apply to such a server.
-func (b *Backbone) AddServer(
-	ctx context.Context,
-	stack *GvisorStack,
-	factory LinkFactory,
-	dpi LinkDPIEngine,
-) {
-	defer b.mu.Unlock()
-	b.mu.Lock()
-
-	// make sure we don't have duplicate addresses
-	_, found := b.table[stack.IPAddress()]
-	runtimex.Assert(!found, "netem: AddClient: duplicate IP address")
-
-	// create the stub-side and the internet-side NICs
-	stubNIC := NewNIC()
-	internetNIC := NewNIC()
-
-	// connect the NICs using a link
-	link := factory(stubNIC, internetNIC)
-	link.DPI = dpi
-	link.Up(ctx, false)
-
-	// attach the stack to its NIC
-	stack.Attach(ctx, stubNIC)
-
-	// route traffic exiting on the internetNIC.
-	go b.routeLoop(ctx, internetNIC)
-
-	// register the internet-side NIC with the backbone
-	b.table[stack.IPAddress()] = internetNIC
-	log.Infof("route add %s %s", stack.IPAddress(), internetNIC.name)
+// AddServer is like [AddClient] but adds a server to the backbone.
+func (b *Backbone) AddServer(ctx context.Context, stack *GvisorStack, factory LinkFactory) {
+	b.AddClient(ctx, stack, factory, &DPINone{})
 }
 
-// route routes traffic emitted by a given NIC.
+// route routes traffic emitted by a given NIC to the correct destination NIC.
 func (b *Backbone) routeLoop(ctx context.Context, nic *NIC) {
 	for {
 		rawPacket, err := nic.ReadIncoming(ctx)
@@ -134,8 +111,7 @@ func (b *Backbone) routeLoop(ctx context.Context, nic *NIC) {
 	}
 }
 
-// maybeRoutePacket attempts to route a packet provided that
-// a route for it actually exists.
+// maybeRoutePacket attempts to route a raw packet.
 func (b *Backbone) maybeRoutePacket(ctx context.Context, rawInput []byte) {
 	// parse the packet
 	packet, err := dissect(rawInput)
@@ -151,8 +127,7 @@ func (b *Backbone) maybeRoutePacket(ctx context.Context, rawInput []byte) {
 	}
 	packet.decrementTimeToLive()
 
-	// figure out interface where to emit the packet and the
-	// currently configured backend hijacker (if any).
+	// figure out the interface where to emit the packet.
 	destAddr := packet.destinationIPAddress()
 	b.mu.Lock()
 	destNIC := b.table[destAddr]

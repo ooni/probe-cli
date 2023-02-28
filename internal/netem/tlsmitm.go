@@ -14,7 +14,9 @@ import (
 )
 
 // TLSMITMConfig contains configuration for TLS MITM operations. You MUST use the
-// [NewMITMConfig] factory to create a new instance.
+// [NewMITMConfig] factory to create a new instance. You will need to pass this
+// instance to [NewGVisorStack] so that all the [GvisorStack] can communicate with
+// each other using the same underlying (fake) root CA pool.
 type TLSMITMConfig struct {
 	// cert is the fake CA certificate for MITM.
 	cert *x509.Certificate

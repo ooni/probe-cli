@@ -49,12 +49,12 @@ func (sg *StaticGetaddrinfo) AddStaticEntry(domain string, entry *StaticGetaddri
 
 var _ GvisorGetaddrinfo = &StaticGetaddrinfo{}
 
-// errDNSNoSuchHost is returned when a DNS lookup fails.
-var errDNSNoSuchHost = errors.New("netem: dns: no such host")
+// ErrDNSNoSuchHost is returned when a DNS lookup fails.
+var ErrDNSNoSuchHost = errors.New("netem: dns: no such host")
 
-// errDNSServerMisbehaving is the error we return when we don't
+// ErrDNSServerMisbehaving is the error we return when we don't
 // know otherwise how to characterize the DNS failure.
-var errDNSServerMisbehaving = errors.New("netem: dns: server misbehaving")
+var ErrDNSServerMisbehaving = errors.New("netem: dns: server misbehaving")
 
 // Lookup implements GetaddrinfoBackend
 func (sg *StaticGetaddrinfo) Lookup(ctx context.Context, domain string) ([]string, string, error) {
@@ -62,10 +62,10 @@ func (sg *StaticGetaddrinfo) Lookup(ctx context.Context, domain string) ([]strin
 	sg.mu.Lock()
 	entry := sg.m[dns.CanonicalName(domain)]
 	if entry == nil {
-		return nil, "", errDNSNoSuchHost
+		return nil, "", ErrDNSNoSuchHost
 	}
 	if len(entry.Addresses) <= 0 {
-		return nil, "", errDNSServerMisbehaving
+		return nil, "", ErrDNSServerMisbehaving
 	}
 	return entry.Addresses, entry.CNAME, nil
 }

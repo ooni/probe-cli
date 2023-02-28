@@ -12,14 +12,16 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-// maybeDumpPacket dumps a packet if the enabled flag is true.
+// maybeDumpPacket dumps a packet if the enabled flag is true. We will dump
+// packets using the github.com/apex/log default logger.
 func maybeDumpPacket(enabled bool, nicName string, rawPacket []byte) {
 	if enabled {
 		dumpPacket(nicName, rawPacket)
 	}
 }
 
-// dumpPacket dumps a packet if dumping is configured.
+// dumpPacket dumps a packet. We will dump
+// packets using the github.com/apex/log default logger.
 func dumpPacket(nicName string, rawPacket []byte) {
 	// decode the packet as IPv4
 	packet, err := dissect(rawPacket)

@@ -12,15 +12,32 @@ import (
 )
 
 // NIC is a network interface controller. The zero value is
-// invalid; you MUST initialize all MANDATORY fields.
+// invalid; you MUST use [NewNIC] to create a [NIC].
+//
+// Once you have a [NIC] instance you can:
+//
+//   - attach the [NIC] to a [GvisorStack] such that the
+//     stack ends up using the [NIC];
+//
+//   - use a [Link] to collect two [NIC]s.
+//
+// Internally a [NIC] uses channels to represent incoming and
+// outgoing IPv4 or IPv6 packets. We deal with raw IPv4 and IPv6
+// packets because [GvisorStack] reads and writes this kind of
+// data through its internal, userspace TUN interface.
+//
+// Reading either queue blocks until either a new packet arrives
+// or the controlling context has been canceled. Writing a new
+// packet does not block. We create channels with queues and when
+// the queue is fully, we discaring extra packets.
 type NIC struct {
-	// incoming is the queue of incoming packets.
+	// incoming queues incoming packets.
 	incoming chan []byte
 
 	// name is the NIC name.
 	name string
 
-	// outgoing is the queue of outgoing packets.
+	// outgoing queue outgoing packets.
 	outgoing chan []byte
 }
 
@@ -30,9 +47,12 @@ type NICOption func(nic *NIC)
 // nicIndex is the index used to name NICs.
 var nicIndex = &atomic.Int64{}
 
+// DefaultNICBufferSize is the default channel buffer size used by [NewNIC].
+const DefaultNICBufferSize = 1024
+
 // NICOptionIncomingBufferSize selects the number of full-size packets
 // that the NICs incoming buffer should hold before dropping packets. The
-// default is to use a 1024-entries buffer.
+// default is to use a [DefaultNICBuffersize]-entries buffer.
 func NICOptionIncomingBufferSize(value int) NICOption {
 	return func(nic *NIC) {
 		nic.incoming = make(chan []byte, value)
@@ -41,15 +61,15 @@ func NICOptionIncomingBufferSize(value int) NICOption {
 
 // NICOptionOutgoingBufferSize selects the number of full-size packets
 // that the NICs outgoing buffer should hold before dropping packets. The
-// default is to use a 1024-entries buffer.
+// default is to use a [DefaultNICBuffersize]-entries buffer.
 func NICOptionOutgoingBufferSize(value int) NICOption {
 	return func(nic *NIC) {
 		nic.outgoing = make(chan []byte, value)
 	}
 }
 
-// NICOptionName selects the name of the NIC. The default is to use
-// ethX where X is an incremental absolute number.
+// NICOptionName selects the name of the NIC. The default is to use "ethX"
+// where X is a global, atomic integer we increment for each new NIC.
 func NICOptionName(value string) NICOption {
 	return func(nic *NIC) {
 		nic.name = value
@@ -58,11 +78,10 @@ func NICOptionName(value string) NICOption {
 
 // NewNIC creates a new NIC instance using the given options.
 func NewNIC(options ...NICOption) *NIC {
-	const defaultBuffer = 1024
 	nic := &NIC{
-		incoming: make(chan []byte, defaultBuffer),
+		incoming: make(chan []byte, DefaultNICBufferSize),
 		name:     fmt.Sprintf("eth%d", nicIndex.Add(1)),
-		outgoing: make(chan []byte, defaultBuffer),
+		outgoing: make(chan []byte, DefaultNICBufferSize),
 	}
 	for _, opt := range options {
 		opt(nic)

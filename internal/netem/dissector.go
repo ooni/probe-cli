@@ -11,12 +11,13 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-// dissectedPacket is a dissected packet.
+// dissectedPacket is a dissected packet. The zero-value is invalid; you
+// MUST use the [dissect] factory to create a new instance.
 type dissectedPacket struct {
 	// pkt is the underlying packet.
 	pkt gopacket.Packet
 
-	// ip is the network layer.
+	// ip is the network layer (either IPv4 or IPv6).
 	ip gopacket.NetworkLayer
 
 	// tcp is the POSSIBLY NIL tcp layer.
@@ -39,7 +40,8 @@ var errDissectTransport = errors.New("dissect: unsupported transport protocol")
 func dissect(rawPacket []byte) (*dissectedPacket, error) {
 	dp := &dissectedPacket{}
 
-	// we need to sniff the protocol version
+	// [GvisorStack] emits raw IPv4 or IPv6 packets and we need to
+	// sniff the actual version from the first octet
 	if len(rawPacket) < 1 {
 		return nil, errDissectShortPacket
 	}
@@ -86,9 +88,13 @@ func dissect(rawPacket []byte) (*dissectedPacket, error) {
 func (dp *dissectedPacket) decrementTimeToLive() {
 	switch v := dp.ip.(type) {
 	case *layers.IPv4:
-		v.TTL--
+		if v.TTL > 0 {
+			v.TTL--
+		}
 	case *layers.IPv6:
-		v.HopLimit--
+		if v.HopLimit > 0 {
+			v.HopLimit--
+		}
 	default:
 		panic(errDissectNetwork)
 	}
