@@ -195,7 +195,7 @@ func runTheDashExperiment(ctx context.Context, client *netem.GvisorStack) {
 
 func withDash() {
 	// TODO(bassosimone): creating servers manually like this is obviously
-	// difficult and error prone; we need some higher-level abstraction?
+	// difficult and error prone; we need some higher-level abstraction
 
 	// create overarching context
 	ctx, cancel := context.WithCancel(context.Background())
