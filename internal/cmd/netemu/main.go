@@ -13,6 +13,7 @@ import (
 	"time"
 
 	apexlog "github.com/apex/log"
+	"github.com/google/gopacket/layers"
 	"github.com/ooni/probe-cli/v3/internal/experiment/dash"
 	"github.com/ooni/probe-cli/v3/internal/humanize"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -199,18 +200,41 @@ func withBetterDash() {
 	defer env.Stop()
 	gginfo := env.NonCensoredStaticGetaddrinfo()
 
-	{
+	if false {
 		linkFactory := netem.NewLinkMedium
 		dpi := &netem.DPINone{}
 		env.RunExperiment(gginfo, linkFactory, dpi)
 	}
 
-	{
+	if false {
 		linkFactory := netem.NewLinkSlowest
 		dpi := &netem.DPINone{}
 		env.RunExperiment(gginfo, linkFactory, dpi)
 	}
 
+	if true {
+		linkFactory := netem.NewLinkFastest
+		dpi := &netem.DPIDropTrafficForServerEndpoint{
+			Direction:       netem.LinkDirectionLeftToRight,
+			ServerIPAddress: env.DASHServerIPAddress(),
+			ServerPort:      443,
+			ServerProtocol:  layers.IPProtocolTCP,
+		}
+		_, err := env.RunExperiment(gginfo, linkFactory, dpi)
+		log.Printf("ERROR: %+v", err)
+	}
+
+	if false {
+		linkFactory := netem.NewLinkFastest
+		dpi := &netem.DPIDropTrafficForServerEndpoint{
+			Direction:       netem.LinkDirectionLeftToRight,
+			ServerIPAddress: env.MLabLocateServerIPAddress(),
+			ServerPort:      443,
+			ServerProtocol:  layers.IPProtocolTCP,
+		}
+		_, err := env.RunExperiment(gginfo, linkFactory, dpi)
+		log.Printf("ERROR: %+v", err)
+	}
 }
 
 func main() {

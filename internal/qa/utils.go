@@ -1,5 +1,9 @@
 package qa
 
+//
+// Utility functions
+//
+
 import (
 	"errors"
 	"math"

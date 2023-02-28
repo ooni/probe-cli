@@ -1,8 +1,10 @@
 package qa
 
 //
+// Code to perform DASH QA.
+//
 // DASH minimal server implementation using netem.GvisorStack
-// and adapted from github.com/neubot/dash
+// and adapted from github.com/neubot/dash.
 //
 
 import (
@@ -109,6 +111,16 @@ func (env *DASHEnvironment) NonCensoredStaticGetaddrinfo() *netem.StaticGetaddri
 		CNAME: "",
 	})
 	return gginfo
+}
+
+// MLabLocateServerIPAddress returns the m-lab locate server IP address.
+func (env *DASHEnvironment) MLabLocateServerIPAddress() string {
+	return mlabLocateIPAddress
+}
+
+// DASHServerIPAddress returns the DASH server IP address.
+func (env *DASHEnvironment) DASHServerIPAddress() string {
+	return dashServerIPAddress
 }
 
 // RunExperiment runs the DASH experiment and returns the resulting
