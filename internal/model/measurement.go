@@ -15,6 +15,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
+// MeasurementDateFormat is the data format used by [Measurement].
+const MeasurementDateFormat = "2006-01-02 15:04:05"
+
 const (
 	// DefaultProbeASN is the default probe ASN as a number.
 	DefaultProbeASN uint = 0

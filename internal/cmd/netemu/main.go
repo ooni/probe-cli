@@ -19,6 +19,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netem"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/qa"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
@@ -245,6 +246,25 @@ func withDash() {
 	defer dashServer.Stop()
 
 	runTheDashExperiment(ctx, client)
+}
+
+func withBetterDash() {
+	env := qa.NewDASHEnvironment()
+	defer env.Stop()
+	gginfo := env.NonCensoredStaticGetaddrinfo()
+
+	{
+		linkFactory := netem.NewLinkMedium
+		dpi := &netem.DPINone{}
+		env.RunExperiment(gginfo, linkFactory, dpi)
+	}
+
+	{
+		linkFactory := netem.NewLinkSlowest
+		dpi := &netem.DPINone{}
+		env.RunExperiment(gginfo, linkFactory, dpi)
+	}
+
 }
 
 func main() {

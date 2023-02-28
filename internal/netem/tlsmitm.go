@@ -6,6 +6,7 @@ package netem
 
 import (
 	"crypto/rsa"
+	"crypto/tls"
 	"crypto/x509"
 	"time"
 
@@ -45,4 +46,10 @@ func (c *TLSMITMConfig) CertPool() *x509.CertPool {
 	pool := x509.NewCertPool()
 	pool.AddCert(c.cert)
 	return pool
+}
+
+// TLSConfig returns a *tls.Config that will generate certificates on-the-fly using
+// the SNI extension in the TLS ClientHello.
+func (c *TLSMITMConfig) TLSConfig() *tls.Config {
+	return c.config.TLS()
 }

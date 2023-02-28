@@ -3,8 +3,6 @@
 // This package exists to facilitate running integration tests where
 // we run OONI Probe code with a completely emulated Internet.
 //
-// # Implementation overview
-//
 // A [GvisorStack] is a TCP/IP stack in userspace. This type implements
 // [model.UnderlyingNetwork], which means that we can use it with [netxlite]
 // by calling [netxlite.WithCustomTProxy].
@@ -25,4 +23,9 @@
 // censorship using DPI. However, by passing a [DPIDropTrafficForServerEndpoint]
 // instance you can, e.g., drop traffic directed towards an endpoint. Other
 // DPI-based censorship policies are also available.
+//
+// For more complex scenarios, you create a [Backbone] and use its
+// [Backbone.AddClient] and [Backbone.AddServer] methods to add more
+// clients and servers. We will automatically route the traffic to
+// the right client or server for you.
 package netem
