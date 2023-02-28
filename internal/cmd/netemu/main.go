@@ -194,60 +194,6 @@ func runTheDashExperiment(ctx context.Context, client *netem.GvisorStack) {
 	})
 }
 
-func withDash() {
-	// TODO(bassosimone): creating servers manually like this is obviously
-	// difficult and error prone; we need some higher-level abstraction
-
-	// create overarching context
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// fill DNS information
-	const dashServerAddr = "130.192.182.100"
-	const locateServerAddr = "130.192.182.101"
-	gginfo := netem.NewStaticGetaddrinfo()
-	gginfo.AddStaticEntry(netem.DefaultMLabLocateDASHDomain, &netem.StaticGetaddrinfoEntry{
-		Addresses: []string{
-			dashServerAddr,
-		},
-		CNAME: "",
-	})
-	gginfo.AddStaticEntry(netem.DefaultMLabLocateDomain, &netem.StaticGetaddrinfoEntry{
-		Addresses: []string{
-			locateServerAddr,
-		},
-		CNAME: "",
-	})
-
-	// create configuration for performing TLS MITM
-	mitmCfg := netem.NewTLSMITMConfig()
-
-	// create a network backbone
-	backbone := netem.NewBackbone()
-
-	// create a client stack
-	client := netem.NewGvisorStack("130.192.91.211", mitmCfg, gginfo)
-	backbone.AddClient(ctx, client, netem.NewLinkMedium, &netem.DPINone{}) // change link here to change perf
-
-	// create a server stack
-	server := netem.NewGvisorStack(dashServerAddr, mitmCfg, gginfo)
-	backbone.AddServer(ctx, server, netem.NewLinkFastest)
-
-	// run the locatev2 server using the server stack
-	server2 := netem.NewGvisorStack(locateServerAddr, mitmCfg, gginfo)
-	backbone.AddServer(ctx, server2, netem.NewLinkFastest)
-	locateServer := netem.NewMLabLocateServer(server2, mitmCfg, locateServerAddr, &netem.MLabLocateConfig{
-		DASH: netem.NewMLabLocateConfigDASH(),
-	})
-	defer locateServer.Stop()
-
-	// run the DASH server using the server stack
-	dashServer := netem.NewDASHServer(server, mitmCfg, dashServerAddr)
-	defer dashServer.Stop()
-
-	runTheDashExperiment(ctx, client)
-}
-
 func withBetterDash() {
 	env := qa.NewDASHEnvironment()
 	defer env.Stop()
@@ -268,5 +214,5 @@ func withBetterDash() {
 }
 
 func main() {
-	withDash()
+	withBetterDash()
 }

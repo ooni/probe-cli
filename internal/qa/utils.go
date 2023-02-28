@@ -33,7 +33,7 @@ func (p *probeIP) Next() string {
 	} else {
 		panic(errors.New("qa: out of all available IP addresses"))
 	}
-	return string(net.IPv4(130, 192, third, fourth))
+	return net.IPv4(130, 192, third, fourth).String()
 }
 
 // newMeasurement creates a new fake [model.Measurement].
