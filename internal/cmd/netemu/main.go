@@ -226,15 +226,15 @@ func withDash() {
 
 	// create a client stack
 	client := netem.NewGvisorStack("130.192.91.211", mitmCfg, gginfo)
-	backbone.AddClient(ctx, client, netem.NewLinkMedium) // change link here to change perf
+	backbone.AddClient(ctx, client, netem.NewLinkMedium, &netem.DPINone{}) // change link here to change perf
 
 	// create a server stack
 	server := netem.NewGvisorStack(dashServerAddr, mitmCfg, gginfo)
-	backbone.AddServer(ctx, server, netem.NewLinkFastest, &netem.DPINone{})
+	backbone.AddServer(ctx, server, netem.NewLinkFastest)
 
 	// run the locatev2 server using the server stack
 	server2 := netem.NewGvisorStack(locateServerAddr, mitmCfg, gginfo)
-	backbone.AddServer(ctx, server2, netem.NewLinkFastest, &netem.DPINone{})
+	backbone.AddServer(ctx, server2, netem.NewLinkFastest)
 	locateServer := netem.NewMLabLocateServer(server2, mitmCfg, locateServerAddr, &netem.MLabLocateConfig{
 		DASH: netem.NewMLabLocateConfigDASH(),
 	})
