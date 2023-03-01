@@ -168,7 +168,7 @@ func NewLinkFastest(left, right *NIC, dpi LinkDPIEngine) *Link {
 }
 
 // NewLinkMedium returns a slower [Link] than [NewLinkFastest]. We calibrated
-// the settings to obtain around 10 Mbit/s when using DASH.
+// the settings to obtain around 8 Mbit/s when using DASH.
 func NewLinkMedium(left, right *NIC, dpi LinkDPIEngine) *Link {
 	return &Link{
 		DPI:                  dpi,
