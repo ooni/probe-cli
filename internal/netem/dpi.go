@@ -7,6 +7,7 @@ package netem
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/google/gopacket/layers"
 )
@@ -25,6 +26,11 @@ func (*DPINone) Divert(
 	rawPacket []byte,
 ) bool {
 	return false
+}
+
+// Delay implements LinkDPIEngine
+func (*DPINone) Delay(ctx context.Context, direction LinkDirection, rawPacket []byte) {
+	// nothing
 }
 
 // DPIDropTrafficForServerEndpoint is a [LinkDPIEngine] that drops all
@@ -70,6 +76,15 @@ func (e *DPIDropTrafficForServerEndpoint) Divert(
 
 	// it's our packet if it maches the expected destination
 	return packet.matchDestination(e.ServerProtocol, e.ServerIPAddress, e.ServerPort)
+}
+
+// Delay implements LinkDPIEngine
+func (e *DPIDropTrafficForServerEndpoint) Delay(
+	ctx context.Context,
+	direction LinkDirection,
+	rawPacket []byte,
+) {
+	// nothing
 }
 
 // dpiFlow describes a specific flow. The zero value is invalid; please,
@@ -265,59 +280,13 @@ func (e *DPIDropTrafficForTLSSNI) Divert(
 	return true
 }
 
-// dpiThrottledFlow is a flow that is being throttled. The zero
-// value is invalid; use [newDPIThrottledFlow] to construct.
-type dpiThrottledFlow struct {
-	// circuit is the slow circuit to use.
-	circuit *slowCircuit
-
-	// flow is the underlying flow
-	flow *dpiFlow
-}
-
-// newDPIThrottledFlow constructs a [dpiThrottledFlow]. This function will start
-// goroutines taking care of throttling. They will run as long as ctx is not canceled.
-func newDPIThrottledFlow(ctx context.Context, packet *dissectedPacket) *dpiThrottledFlow {
-	return &dpiThrottledFlow{
-		circuit: newSlowCircuit(ctx, true),
-		flow:    newDPIFlow(packet),
-	}
-}
-
-// dpiThrottledFlowList is a list of throttled flows. The zero
-// value of this structure is ready to use.
-type dpiThrottledFlowList struct {
-	// list is the list of flows being throttled.
-	list []*dpiThrottledFlow
-
-	// mu provides mutual exclusion
-	mu sync.Mutex
-}
-
-// addFromPacket creates a new throttling flow and adds it to the
-// list. This function creates I/O goroutines to throttle this flow,
-// which will run until the given context is canceled.
-func (l *dpiThrottledFlowList) addFromPacket(ctx context.Context, packet *dissectedPacket) {
-	tf := newDPIThrottledFlow(ctx, packet)
-	defer l.mu.Unlock()
-	l.mu.Lock()
-	l.list = append(l.list, tf)
-}
-
-// lookup returns the slow circuit throttling the flow to which this
-// packet belongs, or false in case there is none.
-func (bh *dpiThrottledFlowList) lookup(
+// Delay implements LinkDPIEngine
+func (e *DPIDropTrafficForTLSSNI) Delay(
+	ctx context.Context,
 	direction LinkDirection,
-	packet *dissectedPacket,
-) (*slowCircuit, bool) {
-	defer bh.mu.Unlock()
-	bh.mu.Lock()
-	for _, f := range bh.list {
-		if f.flow.containsPacket(direction, packet) {
-			return f.circuit, true
-		}
-	}
-	return nil, false
+	rawPacket []byte,
+) {
+	// nothing
 }
 
 // DPIThrottleTrafficForTLSSNI is a [LinkDPIEngine] that throttles
@@ -328,7 +297,7 @@ func (bh *dpiThrottledFlowList) lookup(
 // what this library encourages doing anyway).
 type DPIThrottleTrafficForTLSSNI struct {
 	// slowed contains information about slowed-down flows.
-	slowed *dpiThrottledFlowList
+	slowed *dpiFlowList
 
 	// sni is the offending SNI.
 	sni string
@@ -339,7 +308,7 @@ var _ LinkDPIEngine = &DPIThrottleTrafficForTLSSNI{}
 // NewDPIThrottleTrafficForTLSSNI constructs a [DPIThrottleTrafficForTLSSNI].
 func NewDPIThrottleTrafficForTLSSNI(sni string) *DPIThrottleTrafficForTLSSNI {
 	return &DPIThrottleTrafficForTLSSNI{
-		slowed: &dpiThrottledFlowList{},
+		slowed: &dpiFlowList{},
 		sni:    sni,
 	}
 }
@@ -368,11 +337,6 @@ func (e *DPIThrottleTrafficForTLSSNI) Divert(
 	// while packets in the other directions could be throttled if
 	// they happen to belong to a slowed-down flow.
 	if direction != LinkDirectionLeftToRight {
-		circuit, good := e.slowed.lookup(direction, packet)
-		if good {
-			circuit.submitOrDrop(ctx, dest, rawPacket)
-			return true // packet routed over a slow circuit or dropped
-		}
 		return false
 	}
 
@@ -385,7 +349,37 @@ func (e *DPIThrottleTrafficForTLSSNI) Divert(
 		return false
 	}
 
-	// create the slow circuit but otherwise don't disturb this packet
-	e.slowed.addFromPacket(ctx, packet)
+	// register this packet flow as offending
+	e.slowed.addFromPacket(packet)
 	return false
+}
+
+// Delay implements LinkDPIEngine
+func (e *DPIThrottleTrafficForTLSSNI) Delay(
+	ctx context.Context,
+	direction LinkDirection,
+	rawPacket []byte,
+) {
+	// we only care about throttling packets from the server to
+	// the client and the client is always on the left
+	if direction != LinkDirectionRightToLeft {
+		return
+	}
+
+	// parse the packet
+	packet, err := dissect(rawPacket)
+	if err != nil {
+		return
+	}
+
+	// check whether this packet belongs to the slowed-down set
+	if !e.slowed.belongsTo(direction, packet) {
+		return
+	}
+
+	// send the packet over a slow link with queueing
+	const bw = 128 * KilobitsPerSecond
+	const avgDelay = 100 * time.Millisecond
+	delay := linkComputeTXRXDelay(bw, int64(len(rawPacket))) + avgDelay
+	linkMaybeEmulateDelay(ctx, delay)
 }

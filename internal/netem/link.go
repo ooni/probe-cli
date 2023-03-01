@@ -25,6 +25,16 @@ type LinkDPIEngine interface {
 		dest *NIC,
 		rawPacket []byte,
 	) bool
+
+	// Delay allows a [LinkDPIEngine] to delay a packet. You can use this
+	// hook to implement throttling. Remember to use monotonically increasing
+	// delays over time, unless it's fine to reorder packets. See the
+	// documentation of [Link] for more information.
+	Delay(
+		ctx context.Context,
+		direction LinkDirection,
+		rawPacket []byte,
+	)
 }
 
 // LinkDirection is the direction of a link.
@@ -62,15 +72,19 @@ const LinkDirectionRightToLeft = LinkDirection(1)
 //	                                    |
 //	                                    | false
 //	                                    |
-//	              .-------.             V
-//	              | Right | <---- WriteIncoming
-//	              '-------'
+//	.-------.                           V
+//	| Right | <--- WriteIncoming <--- dpi.Delay
+//	'-------'
 //
 // That is, we call the dpi.Divert hook after emulating the delay of the
 // link. When the hook returns true, we stop caring about the packet. When
-// it retuns false, we pass the packet to the right NIC.
+// it retuns false, we call the dpi.Delay hook, which does not divert the
+// packet but allows to implement throttling. Finally, we deliver the packet
+// to the right NIC by calling its WriteIncoming method.
 //
-// The right-to-left direction works similarly.
+// The right-to-left direction works similarly, except that we emulate the
+// right-to-left delay after dpi.Divert. We do this to model the DPI device
+// as generally close the the user, which lives on the left.
 //
 // Typically, one uses [Backbone] to manage several [Link]s and implement
 // routing. In such a case it is worth remembering the following:
@@ -85,7 +99,7 @@ const LinkDirectionRightToLeft = LinkDirection(1)
 // both client and server stub networks. This fact is also documented
 // by the documentation of [Backbone].
 type Link struct {
-	// DPI is the MANDATORY DPI engine to use.
+	// DPI is the OPTIONAL DPI engine to use.
 	DPI LinkDPIEngine
 
 	// Dump controls whether you want to Dump packets. Should you want
@@ -243,6 +257,13 @@ func (l *Link) deliverPacket(
 		}
 	}
 
+	// Possibly throttle the packet using the DPI engine. Because each
+	// packet travels independently, by deferring certain packets and
+	// not deferring others, we're subverting the original network order.
+	if l.DPI != nil {
+		l.DPI.Delay(ctx, direction, rawPacket)
+	}
+
 	// only dump the packet entering the interface after we know
 	// it has not been diverted by the DPI
 	maybeDumpPacket(l.Dump, writer.Name+"<-", rawPacket)
@@ -258,11 +279,16 @@ func (l *Link) deliverPacket(
 
 // linkMaybeEmulateTXRXDelay possibly adds delay to the transmission.
 func linkMaybeEmulateTXRXDelay(ctx context.Context, speed Bandwidth, count int64) error {
-	if speed <= 0 || count <= 0 {
-		return nil
+	return linkMaybeEmulateDelay(ctx, linkComputeTXRXDelay(speed, count))
+}
+
+// linkComputeTXRXDelay computes the TX or RX delay for a given packet. This
+// function returns zero in case we don't need to set a delay.
+func linkComputeTXRXDelay(speed Bandwidth, count int64) (out time.Duration) {
+	if speed > 0 && count > 0 {
+		out = (time.Duration(count*8) * time.Second) / time.Duration(speed)
 	}
-	delay := (time.Duration(count*8) * time.Second) / time.Duration(speed)
-	return linkMaybeEmulateDelay(ctx, delay)
+	return
 }
 
 // linkMaybeEmulateDelay possibly adds delay to the transmission.
