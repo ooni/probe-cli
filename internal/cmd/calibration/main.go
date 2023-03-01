@@ -14,6 +14,7 @@ import (
 func runServer(ctx context.Context, server *netem.GvisorStack, done chan any) {
 	buffer := make([]byte, 65535)
 	_ = runtimex.Try1(rand.Read(buffer))
+
 	addr := &net.TCPAddr{
 		IP:   net.IPv4(10, 0, 0, 1),
 		Port: 443,
@@ -21,13 +22,42 @@ func runServer(ctx context.Context, server *netem.GvisorStack, done chan any) {
 	}
 	listener := runtimex.Try1(server.ListenTCP("tcp", addr))
 	defer listener.Close()
-	close(done)
+
+	close(done) // tell the client we're not listening
+
 	for {
 		conn := runtimex.Try1(listener.Accept())
 		for {
 			if _, err := conn.Write(buffer); err != nil {
 				break
 			}
+		}
+	}
+}
+
+func runClient(ctx context.Context, client *netem.GvisorStack) {
+	ticker := time.NewTicker(250 * time.Millisecond)
+	defer ticker.Stop()
+
+	conn := runtimex.Try1(client.DialContext(ctx, 0, "tcp", "10.0.0.1:443"))
+
+	buffer := make([]byte, 65535)
+
+	var total int64
+	t0 := time.Now()
+
+	fmt.Printf("elapsed (s),total (byte),speed (Mbit/s)\n")
+	for {
+		count := runtimex.Try1(conn.Read(buffer))
+		total += int64(count)
+
+		select {
+		case <-ticker.C:
+			elapsed := time.Since(t0).Seconds()
+			speed := (float64(total*8) / elapsed) / (1000 * 1000)
+			fmt.Printf("%f,%d,%f\n", elapsed, total, speed)
+		default:
+			// nothing
 		}
 	}
 }
@@ -70,23 +100,5 @@ func main() {
 	go runServer(ctx, server, done)
 	<-done
 
-	ticker := time.NewTicker(250 * time.Millisecond)
-	defer ticker.Stop()
-	conn := runtimex.Try1(client.DialContext(ctx, 0, "tcp", "10.0.0.1:443"))
-	buffer := make([]byte, 65535)
-	var total int64
-	t0 := time.Now()
-	fmt.Printf("elapsed (s),total (byte),speed (Mbit/s)\n")
-	for {
-		count := runtimex.Try1(conn.Read(buffer))
-		total += int64(count)
-		select {
-		case <-ticker.C:
-			elapsed := time.Since(t0).Seconds()
-			speed := (float64(total*8) / elapsed) / (1000 * 1000)
-			fmt.Printf("%f,%d,%f\n", elapsed, total, speed)
-		default:
-			// nothing
-		}
-	}
+	runClient(ctx, client)
 }
