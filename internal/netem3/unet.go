@@ -79,19 +79,19 @@ var (
 )
 
 // UNetMTU is the MTU used by [NewUNetStack].
-const UNetMTU = 1300
+const UNetMTU = 65000
 
 // NewUNetStack constructs a new [UNetStack] instance. This function calls
 // [runtimex.PanicOnError] in case of failure.
 //
 // Arguments:
 //
-// - A is the IPv4  address to assign to the [UNetStack];
+// - A is the IPv4 address to assign to the [UNetStack];
 //
 // - cfg contains TLS MITM configuration;
 //
-// - ggi provides the getaddrinfo functionality to the [UNetStack].
-func NewUNetStack(A string, cfg *TLSMITMConfig, ggi UNetGetaddrinfo) *UNetStack {
+// - gginfo provides the getaddrinfo functionality to the [UNetStack].
+func NewUNetStack(A string, cfg *TLSMITMConfig, gginfo UNetGetaddrinfo) *UNetStack {
 	runtimex.Assert(UNetMTU >= 1300, "MTU too small for using lucas-clemente/quic-go")
 
 	// parse the local address
@@ -107,7 +107,7 @@ func NewUNetStack(A string, cfg *TLSMITMConfig, ggi UNetGetaddrinfo) *UNetStack 
 	// fill and return the network
 	return &UNetStack{
 		closeOnce:      sync.Once{},
-		gginfo:         ggi,
+		gginfo:         gginfo,
 		ipAddress:      addr,
 		name:           name,
 		ns:             ns,
@@ -134,8 +134,8 @@ func (gs *UNetStack) IPAddress() string {
 	return gs.ipAddress.String()
 }
 
-// ReadFrame implements LinkNIC
-func (gs *UNetStack) ReadFrame() (*LinkFrame, error) {
+// ReadPacket implements LinkNIC
+func (gs *UNetStack) ReadPacket() ([]byte, error) {
 	// create buffer for incoming packet
 	const packetbuffer = 1 << 17
 	runtimex.Assert(packetbuffer > UNetMTU, "packetbuffer smaller than the MTU")
@@ -149,16 +149,12 @@ func (gs *UNetStack) ReadFrame() (*LinkFrame, error) {
 
 	// prepare the outgoing frame
 	payload := buffer[:count]
-	frame := &LinkFrame{
-		CreationTime: time.Now(),
-		Payload:      payload,
-	}
-	return frame, nil
+	return payload, nil
 }
 
-// WriteFrame implements LinkNIC
-func (gs *UNetStack) WriteFrame(frame *LinkFrame) error {
-	return gs.ns.WritePacket(frame.Payload)
+// WritePacket implements LinkNIC
+func (gs *UNetStack) WritePacket(packet []byte) error {
+	return gs.ns.WritePacket(packet)
 }
 
 // DefaultCertPool implements model.UnderlyingNetwork.

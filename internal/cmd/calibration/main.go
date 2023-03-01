@@ -81,7 +81,7 @@ func runCalibrationClient(ctx context.Context, client model.UnderlyingNetwork) {
 
 func main() {
 	delay := flag.Duration("delay", 0, "LTR and RTL delay in millisecond")
-	bw := flag.Int64("bw", 0, "RTL bandwidth constraint")
+	plr := flag.Float64("plr", 0, "right-to-left packet loss rate")
 	timeout := flag.Duration("timeout", 10*time.Second, "duration of the test")
 	flag.Parse()
 
@@ -103,13 +103,13 @@ func main() {
 
 	// connect the two stacks using a link
 	linkConfig := &netem3.LinkConfig{
-		Dump:                 false,
-		Left:                 client,
-		LeftToRightDelay:     *delay,
-		LeftToRightBandwidth: 0,
-		Right:                server,
-		RightToLeftDelay:     *delay,
-		RightToLeftBandwidth: netem3.Bandwidth(*bw) * netem3.KilobitsPerSecond,
+		Dump:             false,
+		Left:             client,
+		LeftToRightDelay: *delay,
+		LeftToRightPLR:   0,
+		Right:            server,
+		RightToLeftDelay: *delay,
+		RightToLeftPLR:   *plr,
 	}
 	link := netem3.NewLink(linkConfig)
 

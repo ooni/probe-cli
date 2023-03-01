@@ -21,7 +21,7 @@ type StaticGetaddrinfoEntry struct {
 	CNAME string
 }
 
-// StaticGetaddrinfo implements [GetaddrinfoBackend]
+// StaticGetaddrinfo implements [UNetGetaddrinfo]
 // using a static map to lookup addresses. The zero value
 // is invalid; instantiate using [NewStaticGetaddrinfo].
 type StaticGetaddrinfo struct {

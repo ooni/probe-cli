@@ -7,21 +7,11 @@ package netem3
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/apex/log"
 )
-
-// LinkFrame is a frame encapsulating an IPv4 or IPv6 packet.
-type LinkFrame struct {
-	// CreationTime is when the frame was created.
-	CreationTime time.Time
-
-	// Payload is the IPv4 or IPv6 packet.
-	Payload []byte
-}
 
 // linkInterfaceID is the unique ID of each link NIC.
 var linkInterfaceID = &atomic.Int64{}
@@ -36,11 +26,11 @@ type LinkNIC interface {
 	// InterfaceName returns the name of the NIC.
 	InterfaceName() string
 
-	// ReadFrame reads a frame from the NIC.
-	ReadFrame() (*LinkFrame, error)
+	// ReadPacket reads a packet from the NIC.
+	ReadPacket() ([]byte, error)
 
-	// WriteFrame writes a frame to the NIC.
-	WriteFrame(frame *LinkFrame) error
+	// WritePacket writes a packet to the NIC.
+	WritePacket(packet []byte) error
 }
 
 // LinkDirection is the direction of a link.
@@ -61,8 +51,8 @@ type LinkConfig struct {
 	// Left is the MANDATORY left NIC device.
 	Left LinkNIC
 
-	// LeftToRightBandwidth is the bandwidth in the left->right direction.
-	LeftToRightBandwidth Bandwidth
+	// LeftToRightPLR is the packet-loss rate in the left->right direction.
+	LeftToRightPLR float64
 
 	// LeftToRightDelay is the delay in the left->rigth direction.
 	LeftToRightDelay time.Duration
@@ -73,8 +63,8 @@ type LinkConfig struct {
 	// RightToLeftDelay is the delay in the right->left direction.
 	RightToLeftDelay time.Duration
 
-	// RightToLeftBandwidth is the bandwidth in the right->left direction.
-	RightToLeftBandwidth Bandwidth
+	// RightToLeftPLR is the packet-loss rate in the right->left direction.
+	RightToLeftPLR float64
 }
 
 // Link models a link between a "left" and a "right" NIC. The zero value
@@ -83,54 +73,35 @@ type LinkConfig struct {
 //
 // A link is characterized by left-to-right and right-to-left delays, which
 // are configured by the [Link] constructors. A link is also characterized
-// by a left-to-right and right-to-left bandwidths. In principle, the performance
-// could be a property of the NIC or of the link. But it seems more accurate to
-// attach it to the link, because of 10/100/1000 Ethernet cards. At the end
-// of the day, it is the link that determines the bandwidth.
+// by a left-to-right and right-to-left packet loss rate (PLR).
 //
-// Do not assume that setting a specific bandwidth and delay is going to yield
+// Do not assume that setting a specific PLR and delay is going to yield
 // very accurate results like this was a good simulator you could use for writing
 // papers about TCP performance. We did not write this code with that use case
 // in mind. Rather, here the objective is to be able to detect dramatic throttling
 // cases where the speed drops of a ~10x factor across test cases.
 //
-// Once you created a link, it will not forward traffic between its left
-// and right NICs until you call the [Link.Up] method.
+// Once you created a link, it will immediately start to forward traffic
+// until you call [Link.Close] to shut it down.
 //
-// After you have called [Link.Up], the left-to-right fowarding works
-// as depicted by the following diagram:
+// We create a goroutine for each possible packet in flight in each of
+// the two directions. The following diagram illustrates what happens
+// when a goroutine moves a packet from left to right:
 //
 //	.------.
-//	| Left | ---> ReadOutgoing ---> EmulateTXRXDelay ---> <<new goroutine>>
-//	'------'                                                     |
-//	                                                             V
-//	                                    .-------------- EmulateLeftToRightDelay
-//	                                    |
-//	                                    |
-//	                                    V         true
-//	                                dpi.Divert ----------> Packet handled by dpi
-//	                                    |                     (maybe dropped)
-//	                                    | false
-//	                                    |
-//	.-------.                           V
-//	| Right | <--- WriteIncoming <--- dpi.Delay
-//	'-------'                           (maybe throttling)
+//	| Left | ---> ReadPacket ---> Apply PLR policy ---> <<drop>>
+//	'------'                             |
+//	                                     V
+//	                                  <<keep>>
+//	                                     |
+//	                                     V
+//	                             Apply delay policy
+//	                                     |
+//	.-------.                            V
+//	| Right | <-------------------- WritePacket
+//	'-------'
 //
-// We emulate the TXRX delay of the link in the same goroutine in which we
-// read the packet, because that is how sending and transmitting over a channel
-// looks like. After that, we fork off a packet-specific goroutine, which is
-// responsible of emulating the propagation delay. We must do this because
-// otherwise we could not have multiple packets in flight.
-//
-// Note that we call the dpi.Divert hook after emulating the delay of the
-// link. When the hook returns true, we stop caring about the packet. When
-// it retuns false, we call the dpi.Delay hook, which does not divert the
-// packet but allows to implement throttling. Finally, we deliver the packet
-// to the right NIC by calling its WriteIncoming method.
-//
-// The right-to-left direction works similarly, except that we emulate the
-// right-to-left delay after dpi.Divert. We do this to model the DPI device
-// as generally close the the user, which lives on the left.
+// The right-to-left direction works similarly.
 //
 // Typically, one uses [Backbone] to manage several [Link]s and implement
 // routing. In such a case it is worth remembering the following:
@@ -145,8 +116,11 @@ type LinkConfig struct {
 // both client and server stub networks. This fact is also documented
 // by the documentation of [Backbone].
 type Link struct {
+	// shutdown allows us to shutdown a link
 	shutdown context.CancelFunc
-	wg       *sync.WaitGroup
+
+	// wg allows us to wait for the background goroutines
+	wg *sync.WaitGroup
 }
 
 // NewLink creates a new [Link] instance and spawns goroutines for forwarding
@@ -159,31 +133,43 @@ func NewLink(config *LinkConfig) *Link {
 	// create wait group to synchronize with [Link.Close]
 	wg := &sync.WaitGroup{}
 
+	// create link losses managers
+	leftLLM := newLinkLossesManager(config.LeftToRightPLR)
+	rightLLM := newLinkLossesManager(config.RightToLeftPLR)
+
+	// this is the maximum number of packets in flight per direction,
+	// which limits the maximum congestion window
+	const maxInFlight = 1000
+
 	// forward in the left->right direction.
-	wg.Add(1)
-	go linkForward(
-		ctx,
-		config.Dump,
-		LinkDirectionLeftToRight,
-		config.Left,
-		config.Right,
-		config.LeftToRightBandwidth,
-		config.LeftToRightDelay,
-		wg,
-	)
+	for i := 0; i < maxInFlight; i++ {
+		wg.Add(1)
+		go linkForward(
+			ctx,
+			leftLLM,
+			LinkDirectionLeftToRight,
+			config.Left,
+			config.Right,
+			config.LeftToRightDelay,
+			wg,
+			config.Dump,
+		)
+	}
 
 	// forward in the right->left direction.
-	wg.Add(1)
-	go linkForward(
-		ctx,
-		config.Dump,
-		LinkDirectionRightToLeft,
-		config.Right,
-		config.Left,
-		config.RightToLeftBandwidth,
-		config.RightToLeftDelay,
-		wg,
-	)
+	for i := 0; i < maxInFlight; i++ {
+		wg.Add(1)
+		go linkForward(
+			ctx,
+			rightLLM,
+			LinkDirectionRightToLeft,
+			config.Right,
+			config.Left,
+			config.RightToLeftDelay,
+			wg,
+			config.Dump,
+		)
+	}
 
 	link := &Link{
 		shutdown: cancel,
@@ -202,85 +188,86 @@ func (lnk *Link) Close() error {
 // readableLinkNIC is a read-only [LinkNIC]
 type readableLinkNIC interface {
 	InterfaceName() string
-	ReadFrame() (*LinkFrame, error)
+	ReadPacket() ([]byte, error)
 }
 
 // writeableLinkNIC is a write-only [LinkNIC]
 type writeableLinkNIC interface {
 	InterfaceName() string
-	WriteFrame(frame *LinkFrame) error
+	WritePacket(packet []byte) error
 }
 
-// linkForward forwards traffic between reader and writer
+// linkForward models the life of a packet in flight
 func linkForward(
 	ctx context.Context,
-	dump bool,
+	llm *linkLossesManager,
 	direction LinkDirection,
 	reader readableLinkNIC,
 	writer writeableLinkNIC,
-	bw Bandwidth,
-	delay time.Duration,
+	oneWayDelay time.Duration,
 	wg *sync.WaitGroup,
+	dump bool,
 ) {
 	defer wg.Done()
 
 	for {
 		// read a frame from the source NIC
-		frame, err := reader.ReadFrame()
+		rawPacket, err := reader.ReadPacket()
 		if err != nil {
-			log.Warnf("netem: linkForward: WriteFrame: %s", err.Error())
 			return
 		}
 
 		// dump the frame
-		maybeDumpPacket(dump, reader.InterfaceName()+"->", frame.Payload)
+		maybeDumpPacket(dump, reader.InterfaceName()+"->", rawPacket)
 
-		// compute the transmission delay
-		d := linkComputeTXDelay(bw, len(frame.Payload))
+		// drop the packet according to the PLR policy
+		if llm.shouldDrop() {
+			continue
+		}
 
-		// add the propagation delay
-		d += delay
-
-		// compute the frame arrival deadline
-		arrival := frame.CreationTime.Add(d)
-
-		// if needed sleep to deliver the packet at the right time
-		if err := linkMaybeEmulateDelay(ctx, -time.Since(arrival)); err != nil {
-			log.Warnf("netem: linkForward: linkMaybeEmulateDelay: %s", err.Error())
+		// honour the one-way propagation delay
+		select {
+		case <-ctx.Done():
 			return
+		case <-time.After(oneWayDelay):
 		}
 
 		// dump the frame
-		maybeDumpPacket(dump, writer.InterfaceName()+"<-", frame.Payload)
+		maybeDumpPacket(dump, writer.InterfaceName()+"<-", rawPacket)
 
 		// write the frame to the destination NIC
-		if err := writer.WriteFrame(frame); err != nil {
-			log.Warnf("netem: linkForward: ReadFrame: %s", err.Error())
+		if err := writer.WritePacket(rawPacket); err != nil {
 			return
 		}
 	}
 }
 
-// linkComputeTXDelay computes the TX delay for a given packet. This
-// function returns zero in case we don't need to set a delay.
-func linkComputeTXDelay(speed Bandwidth, count int) (out time.Duration) {
-	if speed > 0 && count > 0 {
-		out = (time.Duration(count) * 8 * time.Second) / time.Duration(speed)
-	}
-	return
+// linkLossesManager manages losses on the link. The zero value
+// is invalid, use [newLinkLossesManager] to construct.
+type linkLossesManager struct {
+	// mu provides mutual exclusion
+	mu sync.Mutex
+
+	// rng is the random number generator.
+	rng *rand.Rand
+
+	// targetPLR is the target PLR.
+	targetPLR float64
 }
 
-// linkMaybeEmulateDelay possibly adds delay to the transmission.
-func linkMaybeEmulateDelay(ctx context.Context, delay time.Duration) error {
-	if delay <= 0 {
-		return nil
+// newLinkLossesManager creates a new [linkLossesManager].
+func newLinkLossesManager(targetPLR float64) *linkLossesManager {
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return &linkLossesManager{
+		mu:        sync.Mutex{},
+		rng:       rng,
+		targetPLR: targetPLR,
 	}
-	timer := time.NewTimer(delay)
-	defer timer.Stop()
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-timer.C:
-		return nil
-	}
+}
+
+// shouldDrop returns true if this packet should be dropped.
+func (llm *linkLossesManager) shouldDrop() bool {
+	defer llm.mu.Unlock()
+	llm.mu.Lock()
+	return llm.rng.Float64() < llm.targetPLR
 }
