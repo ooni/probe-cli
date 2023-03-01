@@ -102,7 +102,7 @@ func main() {
 
 	if *index == 0 || *index == 7 {
 		fmt.Fprintf(os.Stderr, "\n\n\n")
-		log.Infof("WITH DPI THROTTLING TRAFFIC FOR MLAB-NS SNI")
+		log.Infof("WITH DPI THROTTLING TRAFFIC FOR DASH SNI")
 		linkFactory := netem.NewLinkFastest
 		dpi := netem.NewDPIThrottleTrafficForTLSSNI(env.DASHServerDomainName())
 		_, err := env.RunExperiment(gginfo, linkFactory, dpi)
