@@ -236,9 +236,16 @@ func withBetterDash() {
 		log.Printf("ERROR: %+v", err)
 	}
 
-	if true {
+	if false {
 		linkFactory := netem.NewLinkFastest
 		dpi := netem.NewDPIDropTrafficForTLSSNI(env.DASHServerDomainName())
+		_, err := env.RunExperiment(gginfo, linkFactory, dpi)
+		log.Printf("ERROR: %+v", err)
+	}
+
+	if true {
+		linkFactory := netem.NewLinkFastest
+		dpi := netem.NewDPIThrottleTrafficForTLSSNI(env.DASHServerDomainName())
 		_, err := env.RunExperiment(gginfo, linkFactory, dpi)
 		log.Printf("ERROR: %+v", err)
 	}

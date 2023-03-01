@@ -186,22 +186,6 @@ func (dp *dissectedPacket) matchDestination(proto layers.IPProtocol, address str
 	}
 }
 
-// matchSource returns true when the given IPv4 packet has the
-// expected protocol, source address, and port.
-func (dp *dissectedPacket) matchSource(proto layers.IPProtocol, address string, port uint16) bool {
-	if dp.transportProtocol() != proto {
-		return false
-	}
-	switch {
-	case dp.tcp != nil:
-		return dp.sourceIPAddress() == address && dp.tcp.SrcPort == layers.TCPPort(port)
-	case dp.udp != nil:
-		return dp.sourceIPAddress() == address && dp.udp.SrcPort == layers.UDPPort(port)
-	default:
-		return false
-	}
-}
-
 // parseTLSServerName attempts to parse this packet as
 // a TLS client hello and to return the SNI.
 func (dp *dissectedPacket) parseTLSServerName() (string, error) {
