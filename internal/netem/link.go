@@ -51,10 +51,17 @@ const LinkDirectionRightToLeft = LinkDirection(1)
 // fill all the fields marked as MANDATORY below.
 //
 // A link is characterized by left-to-right and right-to-left delays, which
-// are configured by the [Link] constructors. Those delays do not allow
-// for accurate modeling of network performance. However, we have calibrated
-// specific delays such that we can construct links with rougly one order
-// of magnitude performance difference between each other.
+// are configured by the [Link] constructors. A link is also characterized
+// by a left-to-right and right-to-left bandwidths. In principle, the performance
+// could be a property of the NIC or of the link. But it seems more accurate to
+// attach it to the link, because of 10/100/1000 Ethernet cards. At the end
+// of the day, it is the link that determines the bandwidth.
+//
+// Do not assume that setting a specific bandwidth and delay is going to yield
+// very accurate results like this was a good simulator you could use for writing
+// papers about TCP performance. We did not write this code with that use case
+// in mind. Rather, here the objective is to be able to detect dramatic throttling
+// cases where the speed drops of a ~10x factor across test cases.
 //
 // Once you created a link, it will not forward traffic between its left
 // and right NICs until you call the [Link.Up] method.
@@ -63,20 +70,28 @@ const LinkDirectionRightToLeft = LinkDirection(1)
 // as depicted by the following diagram:
 //
 //	.------.
-//	| Left | ---> ReadOutgoing ---> EmulateLeftToRightDelay
-//	'------'                            |
+//	| Left | ---> ReadOutgoing ---> EmulateTXRXDelay ---> <<new goroutine>>
+//	'------'                                                     |
+//	                                                             V
+//	                                    .-------------- EmulateLeftToRightDelay
 //	                                    |
 //	                                    |
 //	                                    V         true
 //	                                dpi.Divert ----------> Packet handled by dpi
-//	                                    |
+//	                                    |                     (maybe dropped)
 //	                                    | false
 //	                                    |
 //	.-------.                           V
 //	| Right | <--- WriteIncoming <--- dpi.Delay
-//	'-------'
+//	'-------'                           (maybe throttling)
 //
-// That is, we call the dpi.Divert hook after emulating the delay of the
+// We emulate the TXRX delay of the link in the same goroutine in which we
+// read the packet, because that is how sending and transmitting over a channel
+// looks like. After that, we fork off a packet-specific goroutine, which is
+// responsible of emulating the propagation delay. We must do this because
+// otherwise we could not have multiple packets in flight.
+//
+// Note that we call the dpi.Divert hook after emulating the delay of the
 // link. When the hook returns true, we stop caring about the packet. When
 // it retuns false, we call the dpi.Delay hook, which does not divert the
 // packet but allows to implement throttling. Finally, we deliver the packet
@@ -109,6 +124,9 @@ type Link struct {
 	// Left is the MANDATORY left NIC device.
 	Left *NIC
 
+	// LeftToRightBandwidth is the bandwidth in the left->right direction.
+	LeftToRightBandwidth Bandwidth
+
 	// LeftToRightDelay is the delay in the left->rigth direction.
 	LeftToRightDelay time.Duration
 
@@ -117,6 +135,9 @@ type Link struct {
 
 	// RightToLeftDelay is the delay in the right->left direction.
 	RightToLeftDelay time.Duration
+
+	// RightToLeftBandwidth is the bandwidth in the right->left direction.
+	RightToLeftBandwidth Bandwidth
 }
 
 // LinkFactory the signature of the function that creates a [Link].
@@ -135,35 +156,44 @@ func NewLinkVerbose(factory LinkFactory) LinkFactory {
 // NewLinkFastest returns the fastest possible [Link] without any delay.
 func NewLinkFastest(left, right *NIC, dpi LinkDPIEngine) *Link {
 	return &Link{
-		DPI:              dpi,
-		Left:             left,
-		LeftToRightDelay: 0,
-		Right:            right,
-		RightToLeftDelay: 0,
+		DPI:                  dpi,
+		Dump:                 false,
+		Left:                 left,
+		LeftToRightBandwidth: 0,
+		LeftToRightDelay:     0,
+		Right:                right,
+		RightToLeftDelay:     0,
+		RightToLeftBandwidth: 0,
 	}
 }
 
 // NewLinkMedium returns a slower [Link] than [NewLinkFastest]. We calibrated
-// the settings to obtain around 8 Mbit/s when using DASH.
+// the settings to obtain around 10 Mbit/s when using DASH.
 func NewLinkMedium(left, right *NIC, dpi LinkDPIEngine) *Link {
 	return &Link{
-		DPI:              dpi,
-		Left:             left,
-		LeftToRightDelay: time.Millisecond,
-		Right:            right,
-		RightToLeftDelay: time.Millisecond,
+		DPI:                  dpi,
+		Dump:                 false,
+		Left:                 left,
+		LeftToRightBandwidth: 10 * MegabitsPerSecond,
+		LeftToRightDelay:     5 * time.Millisecond,
+		Right:                right,
+		RightToLeftDelay:     5 * time.Millisecond,
+		RightToLeftBandwidth: 10 * MegabitsPerSecond,
 	}
 }
 
 // NewLinkSlowest returns a slower [Link] than [NewLinkMedium]. We calibrated
-// the settings to ontain around 400 kbit/s when using DASH.
+// the settings to ontain around 500 kbit/s when using DASH.
 func NewLinkSlowest(left, right *NIC, dpi LinkDPIEngine) *Link {
 	return &Link{
-		DPI:              dpi,
-		Left:             left,
-		LeftToRightDelay: 20 * time.Millisecond,
-		Right:            right,
-		RightToLeftDelay: 20 * time.Millisecond,
+		DPI:                  dpi,
+		Dump:                 false,
+		Left:                 left,
+		LeftToRightBandwidth: 500 * KilobitsPerSecond,
+		LeftToRightDelay:     25 * time.Millisecond,
+		Right:                right,
+		RightToLeftDelay:     25 * time.Millisecond,
+		RightToLeftBandwidth: 500 * KilobitsPerSecond,
 	}
 }
 
@@ -215,8 +245,7 @@ func (l *Link) forward(
 		// we don't need to care about this detail later when we divert it
 		// through DPI. Note that we must do this in the same goroutine since
 		// TX and RX are NIC-blocking operations.
-		linkMaybeEmulateTXRXDelay(ctx, reader.SendBandwidth, int64(len(rawPacket)))
-		linkMaybeEmulateTXRXDelay(ctx, writer.RecvBandwidth, int64(len(rawPacket)))
+		l.maybeEmulateTXRXDelay(ctx, direction, int64(len(rawPacket)))
 
 		// Implementation note: modeling the packet's propagation delay
 		// must happen in a background goroutine because indeed here the
@@ -277,8 +306,17 @@ func (l *Link) deliverPacket(
 	}
 }
 
-// linkMaybeEmulateTXRXDelay possibly adds delay to the transmission.
-func linkMaybeEmulateTXRXDelay(ctx context.Context, speed Bandwidth, count int64) error {
+// maybeEmulateTXRXDelay possibly adds delay to the transmission.
+func (l *Link) maybeEmulateTXRXDelay(ctx context.Context, direction LinkDirection, count int64) error {
+	var speed Bandwidth
+	switch direction {
+	case LinkDirectionLeftToRight:
+		speed = l.LeftToRightBandwidth
+	case LinkDirectionRightToLeft:
+		speed = l.RightToLeftBandwidth
+	default:
+		speed = 0 // shouldn't happen
+	}
 	return linkMaybeEmulateDelay(ctx, linkComputeTXRXDelay(speed, count))
 }
 

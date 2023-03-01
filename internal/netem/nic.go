@@ -40,78 +40,21 @@ type NIC struct {
 
 	// Outgoing is MANDATORY and queues outgoing packets.
 	Outgoing chan []byte
-
-	// RecvBandwidth is the OPTIONAL receive bandwidth.
-	RecvBandwidth Bandwidth
-
-	// SendBandwidth is the OPTIONAL send bandwidth.
-	SendBandwidth Bandwidth
 }
-
-// NICOption is an option for [NewNic].
-type NICOption func(nic *NIC)
 
 // nicIndex is the index used to name NICs.
 var nicIndex = &atomic.Int64{}
 
 // DefaultNICBufferSize is the default channel buffer size used by [NewNIC].
-const DefaultNICBufferSize = 1024
-
-// NICOptionIncomingBufferSize selects the number of full-size packets
-// that the NICs incoming buffer should hold before dropping packets. The
-// default is to use a [DefaultNICBuffersize]-entries buffer.
-func NICOptionIncomingBufferSize(value int) NICOption {
-	return func(nic *NIC) {
-		nic.Incoming = make(chan []byte, value)
-	}
-}
-
-// NICOptionOutgoingBufferSize selects the number of full-size packets
-// that the NICs outgoing buffer should hold before dropping packets. The
-// default is to use a [DefaultNICBuffersize]-entries buffer.
-func NICOptionOutgoingBufferSize(value int) NICOption {
-	return func(nic *NIC) {
-		nic.Outgoing = make(chan []byte, value)
-	}
-}
-
-// NICOptionName selects the name of the NIC. The default is to use "ethX"
-// where X is a global, atomic integer we increment for each new NIC.
-func NICOptionName(value string) NICOption {
-	return func(nic *NIC) {
-		nic.Name = value
-	}
-}
-
-// NICOptionRecvBandwidth configures the physical recv bandwidth. The default
-// is to use an infinitely fast NIC that recvs any packet in 0 seconds.
-func NICOptionRecvBandwidth(value Bandwidth) NICOption {
-	return func(nic *NIC) {
-		nic.RecvBandwidth = value
-	}
-}
-
-// NICOptionSendBandwidth configures the physical send bandwidth. The default
-// is to use an infinitely fast NIC that sends any packet in 0 seconds.
-func NICOptionSendBandwidth(value Bandwidth) NICOption {
-	return func(nic *NIC) {
-		nic.SendBandwidth = value
-	}
-}
+const DefaultNICBufferSize = 4096
 
 // NewNIC creates a new NIC instance using the given options.
-func NewNIC(options ...NICOption) *NIC {
-	nic := &NIC{
-		Incoming:      make(chan []byte, DefaultNICBufferSize),
-		Name:          fmt.Sprintf("eth%d", nicIndex.Add(1)),
-		Outgoing:      make(chan []byte, DefaultNICBufferSize),
-		RecvBandwidth: 0,
-		SendBandwidth: 0,
+func NewNIC() *NIC {
+	return &NIC{
+		Incoming: make(chan []byte, DefaultNICBufferSize),
+		Name:     fmt.Sprintf("eth%d", nicIndex.Add(1)),
+		Outgoing: make(chan []byte, DefaultNICBufferSize),
 	}
-	for _, opt := range options {
-		opt(nic)
-	}
-	return nic
 }
 
 // ReadIncoming reads a raw packet from the incoming channel or

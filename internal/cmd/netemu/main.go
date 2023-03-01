@@ -200,7 +200,7 @@ func withBetterDash() {
 	defer env.Stop()
 	gginfo := env.NonCensoredStaticGetaddrinfo()
 
-	if false {
+	if true {
 		linkFactory := netem.NewLinkMedium
 		dpi := &netem.DPINone{}
 		env.RunExperiment(gginfo, linkFactory, dpi)
@@ -243,7 +243,7 @@ func withBetterDash() {
 		log.Printf("ERROR: %+v", err)
 	}
 
-	if true {
+	if false {
 		linkFactory := netem.NewLinkFastest
 		dpi := netem.NewDPIThrottleTrafficForTLSSNI(env.DASHServerDomainName())
 		_, err := env.RunExperiment(gginfo, linkFactory, dpi)

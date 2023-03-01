@@ -40,31 +40,29 @@ func main() {
 
 	client := netem.NewGvisorStack("10.0.0.2", cfg, gginfo)
 	left := &netem.NIC{
-		Incoming:      make(chan []byte, 4096),
-		Name:          "client0",
-		Outgoing:      make(chan []byte, 4096),
-		RecvBandwidth: 2000 * netem.KilobitsPerSecond,
-		SendBandwidth: 2000 * netem.KilobitsPerSecond,
+		Incoming: make(chan []byte, 4096),
+		Name:     "client0",
+		Outgoing: make(chan []byte, 4096),
 	}
 	client.Attach(ctx, left)
 
 	server := netem.NewGvisorStack("10.0.0.1", cfg, gginfo)
 	right := &netem.NIC{
-		Incoming:      make(chan []byte, 4096),
-		Name:          "server0",
-		Outgoing:      make(chan []byte, 4096),
-		RecvBandwidth: 0,
-		SendBandwidth: 0,
+		Incoming: make(chan []byte, 4096),
+		Name:     "server0",
+		Outgoing: make(chan []byte, 4096),
 	}
 	server.Attach(ctx, right)
 
 	link := &netem.Link{
-		DPI:              &netem.DPINone{},
-		Dump:             false,
-		Left:             left,
-		LeftToRightDelay: 0 * time.Millisecond,
-		Right:            right,
-		RightToLeftDelay: 0 * time.Millisecond,
+		DPI:                  &netem.DPINone{},
+		Dump:                 false,
+		Left:                 left,
+		LeftToRightDelay:     0 * time.Millisecond,
+		LeftToRightBandwidth: 0,
+		Right:                right,
+		RightToLeftDelay:     0 * time.Millisecond,
+		RightToLeftBandwidth: 700 * netem.KilobitsPerSecond,
 	}
 	link.Up(ctx)
 
