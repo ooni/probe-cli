@@ -12,15 +12,14 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
-var wasClosed bool = false
-
 func TestTCPConnect(t *testing.T) {
+	wasClosed := false
 	t.Run("Get tcpConnectFunc", func(t *testing.T) {
 		f := TCPConnect(
 			&ConnPool{},
 		)
 		if _, ok := f.(*tcpConnectFunc); !ok {
-			t.Fatal("TCPConnect: unexpected type. Expected: tcpConnectFunc")
+			t.Fatal("unexpected type. Expected: tcpConnectFunc")
 		}
 	})
 	t.Run("Apply tcpConnectFunc", func(t *testing.T) {
@@ -41,7 +40,7 @@ func TestTCPConnect(t *testing.T) {
 			},
 		}
 		tests := map[string]struct {
-			dialer     *mocks.Dialer
+			dialer     model.Dialer
 			expectConn net.Conn
 			expectErr  error
 			closed     bool

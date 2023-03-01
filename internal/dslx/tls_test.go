@@ -26,6 +26,7 @@ Test cases:
   - with options
 */
 func TestTLSHandshake(t *testing.T) {
+	wasClosed := false
 	t.Run("Get tlsHandshakeFunc with options", func(t *testing.T) {
 		certpool := x509.NewCertPool()
 		certpool.AddCert(&x509.Certificate{})
@@ -33,7 +34,7 @@ func TestTLSHandshake(t *testing.T) {
 		f := TLSHandshake(
 			&ConnPool{},
 			TLSHandshakeOptionInsecureSkipVerify(true),
-			TLSHandshakeOptionNextProto([]string{"h3"}),
+			TLSHandshakeOptionNextProto([]string{"h2"}),
 			TLSHandshakeOptionServerName("sni"),
 			TLSHandshakeOptionRootCAs(certpool),
 		)
@@ -45,8 +46,8 @@ func TestTLSHandshake(t *testing.T) {
 		if !handshakeFunc.InsecureSkipVerify {
 			t.Fatalf("unexpected %s, expected %v, got %v", "InsecureSkipVerify", true, false)
 		}
-		if len(handshakeFunc.NextProto) != 1 || handshakeFunc.NextProto[0] != "h3" {
-			t.Fatalf("unexpected %s, expected %v, got %v", "NextProto", []string{"h3"}, handshakeFunc.NextProto)
+		if len(handshakeFunc.NextProto) != 1 || handshakeFunc.NextProto[0] != "h2" {
+			t.Fatalf("unexpected %s, expected %v, got %v", "NextProto", []string{"h2"}, handshakeFunc.NextProto)
 		}
 		if handshakeFunc.ServerName != "sni" {
 			t.Fatalf("unexpected %s, expected %s, got %s", "ServerName", "sni", handshakeFunc.ServerName)

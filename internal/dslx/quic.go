@@ -70,6 +70,8 @@ type quicHandshakeFunc struct {
 
 	// ServerName is the ServerName to handshake for.
 	ServerName string
+
+	dialer model.QUICDialer // for testing
 }
 
 // Apply implements Func.
@@ -92,7 +94,10 @@ func (f *quicHandshakeFunc) Apply(
 
 	// setup
 	quicListener := netxlite.NewQUICListener()
-	quicDialer := trace.NewQUICDialerWithoutResolver(quicListener, input.Logger)
+	quicDialer := f.dialer
+	if quicDialer == nil {
+		quicDialer = trace.NewQUICDialerWithoutResolver(quicListener, input.Logger)
+	}
 	config := &tls.Config{
 		NextProtos:         []string{"h3"},
 		InsecureSkipVerify: f.InsecureSkipVerify,

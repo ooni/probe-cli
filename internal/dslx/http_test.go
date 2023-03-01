@@ -259,10 +259,7 @@ func TestHTTPTCP(t *testing.T) {
 		idGen := &atomic.Int64{}
 		zeroTime := time.Time{}
 		trace := measurexlite.NewTrace(idGen.Add(1), zeroTime)
-		address := ""
-		if address == "" {
-			address = "1.2.3.4:567"
-		}
+		address := "1.2.3.4:567"
 		tcpConn := &TCPConnection{
 			Address:     address,
 			Conn:        conn,
@@ -282,6 +279,50 @@ func TestHTTPTCP(t *testing.T) {
 		}
 		if res.State.Scheme != "http" {
 			t.Fatalf("unexpected scheme, want %s, got %s", "http", res.State.Scheme)
+		}
+		if res.State.Address != address {
+			t.Fatalf("unexpected address, want %s, got %s", address, res.State.Address)
+		}
+	})
+}
+
+/*
+Test cases:
+- Get httpTransportQUICFunc
+- Apply httpTransportQUICFunc
+*/
+func TestHTTPQUIC(t *testing.T) {
+	t.Run("Get httpTransportQUICFunc", func(t *testing.T) {
+		f := HTTPTransportQUIC()
+		if _, ok := f.(*httpTransportQUICFunc); !ok {
+			t.Fatal("unexpected type")
+		}
+	})
+	t.Run("Apply httpTransportQUICFunc", func(t *testing.T) {
+		conn := &mocks.QUICEarlyConnection{}
+		idGen := &atomic.Int64{}
+		zeroTime := time.Time{}
+		trace := measurexlite.NewTrace(idGen.Add(1), zeroTime)
+		address := "1.2.3.4:567"
+		quicConn := &QUICConnection{
+			Address:     address,
+			QUICConn:    conn,
+			IDGenerator: idGen,
+			Logger:      model.DiscardLogger,
+			Network:     "udp",
+			Trace:       trace,
+			ZeroTime:    zeroTime,
+		}
+		f := httpTransportQUICFunc{}
+		res := f.Apply(context.Background(), quicConn)
+		if res.Error != nil {
+			t.Fatalf("unexpected error: %s", res.Error)
+		}
+		if res.State == nil {
+			t.Fatal("unexpected nil transport")
+		}
+		if res.State.Scheme != "https" {
+			t.Fatalf("unexpected scheme, want %s, got %s", "https", res.State.Scheme)
 		}
 		if res.State.Address != address {
 			t.Fatalf("unexpected address, want %s, got %s", address, res.State.Address)
@@ -313,10 +354,7 @@ func TestHTTPTLS(t *testing.T) {
 		idGen := &atomic.Int64{}
 		zeroTime := time.Time{}
 		trace := measurexlite.NewTrace(idGen.Add(1), zeroTime)
-		address := ""
-		if address == "" {
-			address = "1.2.3.4:567"
-		}
+		address := "1.2.3.4:567"
 		tlsConn := &TLSConnection{
 			Address:     address,
 			Conn:        conn,
