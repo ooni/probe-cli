@@ -12,6 +12,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/apex/log"
 	"github.com/montanaflynn/stats"
 	"github.com/ooni/probe-cli/v3/internal/humanize"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -67,6 +68,7 @@ func runnerRunAllPhases(ctx context.Context, r *runnerConfig, numIterations int6
 	// 1. locate the server with which to perform the measurement
 	locateResult, err := locate(ctx, r)
 	if err != nil {
+		log.Warnf("dash: error calling locate: %s", err.Error())
 		return err
 	}
 	runtimex.Assert(locateResult != nil, "nil locateResult")
@@ -85,6 +87,7 @@ func runnerRunAllPhases(ctx context.Context, r *runnerConfig, numIterations int6
 	// m-lab locate API.
 	negotiateResp, err := negotiate(ctx, locateResult.NegotiateURL, r)
 	if err != nil {
+		log.Warnf("dash: error negotiating: %s", err.Error())
 		return err
 	}
 
@@ -94,6 +97,7 @@ func runnerRunAllPhases(ctx context.Context, r *runnerConfig, numIterations int6
 	// that we consume m-lab's access token, we are free to use the BaseURL for
 	// subsequent operations, since just negotiate is token aware.
 	if err := runnerMeasure(ctx, r, locateResult.BaseURL, negotiateResp, numIterations); err != nil {
+		log.Warnf("dash: error measuring: %s", err.Error())
 		return err
 	}
 
@@ -105,6 +109,7 @@ func runnerRunAllPhases(ctx context.Context, r *runnerConfig, numIterations int6
 	// performed on the client side.
 	err = collect(ctx, locateResult.BaseURL, negotiateResp.Authorization, r.tk.ReceiverData, r)
 	if err != nil {
+		log.Warnf("dash: error collecting: %s", err.Error())
 		return err
 	}
 

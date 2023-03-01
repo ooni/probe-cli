@@ -272,9 +272,9 @@ func (s *dashServer) negotiate(w http.ResponseWriter, r *http.Request) {
 
 // collect handles the collect request
 func (s *dashServer) collect(w http.ResponseWriter, r *http.Request) {
-	// Unlike the official DASH server, here we just return an empty object to
-	// the client (which ignores this response message anyway).
-	w.Write([]byte(`{}`))
+	// Unlike the official DASH server, here we just return an empty list
+	// to the client (which ignores this response message anyway).
+	w.Write([]byte(`[]`))
 }
 
 // download handles the download request
