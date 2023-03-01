@@ -6,99 +6,95 @@ import (
 	"testing"
 )
 
-func increaseByOne(wg *sync.WaitGroup) Func[int, *Maybe[int]] {
-	return &increase{wg}
+func getFnWait(wg *sync.WaitGroup) Func[int, *Maybe[int]] {
+	return &fnWait{wg}
 }
 
-type increase struct {
+type fnWait struct {
 	wg *sync.WaitGroup // set to n corresponding to the number of used goroutines
 }
 
-func (f *increase) Apply(ctx context.Context, i int) *Maybe[int] {
+func (f *fnWait) Apply(ctx context.Context, i int) *Maybe[int] {
 	f.wg.Done()
-	f.wg.Wait() // we want to make sure that this function has been reached n times before we continue
+	f.wg.Wait() // continue when n goroutines have reached this point
 	return &Maybe[int]{State: i + 1}
 }
 
+/*
+Test cases:
+- Map multiple inputs to multiple goroutines
+  - with 4 goroutines
+  - expect parallelism set to 1 if < 0
+*/
 func TestMap(t *testing.T) {
-	inputs := []int{0, 10, 20, 30}
-	wg := sync.WaitGroup{}
-	wg.Add(len(inputs))
-	inputStream := StreamList(inputs...)
+	t.Run("Map multiple inputs to multiple goroutines", func(t *testing.T) {
+		tests := map[string]struct {
+			input       []int
+			parallelism int
+		}{
+			"with 4 goroutines":                  {input: []int{0, 10, 20, 30}, parallelism: 4},
+			"expect parallelism set to 1 if < 0": {input: []int{0}, parallelism: -1},
+		}
+		for name, tt := range tests {
+			t.Run(name, func(t *testing.T) {
+				wg := sync.WaitGroup{}
+				wg.Add(len(tt.input))
+				inputStream := StreamList(tt.input...)
 
-	res := make(map[int]bool)
-	// we need 4 goroutines to decrease the waitgroup counter in Apply to 0
-	for out := range Map(context.Background(), 4, increaseByOne(&wg), inputStream) {
-		res[out.State] = true
-	}
-	if !(res[1] && res[11] && res[21] && res[31]) {
-		t.Fatalf("TestMap: expected results 1,11,21,31, got %v", res)
-	}
-}
-
-func TestMapNegativeParallelism(t *testing.T) {
-	inputs := []int{0}
-	wg := sync.WaitGroup{}
-	wg.Add(len(inputs))
-	inputStream := StreamList(inputs...)
-
-	res := make(map[int]bool)
-	// we expect parallelism to be set to 1 if it is < 0
-	for out := range Map(context.Background(), -1, increaseByOne(&wg), inputStream) {
-		res[out.State] = true
-	}
-	if !res[1] {
-		t.Fatalf("TestMapNegativeParallelism: expected results 1, got %v", res)
-	}
+				res := make(map[int]bool)
+				// we need 4 goroutines to decrease the waitgroup counter to 0
+				for out := range Map(context.Background(), Parallelism(tt.parallelism), getFnWait(&wg), inputStream) {
+					res[out.State] = true
+				}
+				for _, i := range tt.input {
+					if !res[i+1] {
+						t.Fatalf("unexpected result")
+					}
+				}
+			})
+		}
+	})
 }
 
 func TestApplyAsync(t *testing.T) {
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	res := make(map[int]bool)
-	for out := range ApplyAsync(context.Background(), increaseByOne(&wg), 0) {
-		res[out.State] = true
-	}
-	if !res[1] {
-		t.Fatalf("TestApplyAsync: expected results 1, got %v", res)
-	}
+	t.Run("ApplyAsync: Apply async returns a channel", func(t *testing.T) {
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+		out := <-ApplyAsync(context.Background(), getFnWait(&wg), 0)
+		if out.State != 1 {
+			t.Fatalf("unexpected result")
+		}
+	})
 }
 
+/*
+Test cases:
+- Parallel: Map multiple funcs working on the same input to multiple goroutines
+  - with 2 goroutines and 2 processing funcs
+  - expect parallelism set to 1 if < 0
+*/
 func TestParallel(t *testing.T) {
-	input := 2
-	wg := sync.WaitGroup{}
-	wg.Add(input)
-
-	funcs := []Func[int, *Maybe[int]]{
-		increaseByOne(&wg),
-		increaseByOne(&wg),
-	}
-	res := []int{}
-	for _, out := range Parallel(context.Background(), Parallelism(input), 0, funcs...) {
-		res = append(res, out.State)
-		if out.State != 1 {
-			t.Fatalf("TestParallel: unexpected result, want 1, got %d", out.State)
+	t.Run("Parallel: Map multiple funcs working on the same input to multiple goroutines", func(t *testing.T) {
+		tests := map[string]struct {
+			funcs       int
+			parallelism int
+		}{
+			"with 2 goroutines and 2 funcs":      {funcs: 2, parallelism: 2},
+			"expect parallelism set to 1 if < 0": {funcs: 1, parallelism: -1},
 		}
-	}
-	if len(res) != 2 {
-		t.Fatalf("TestParallel: expected 3 results, got %d", len(res))
-	}
-}
-
-func TestParallelNegativeParallelism(t *testing.T) {
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	funcs := []Func[int, *Maybe[int]]{
-		increaseByOne(&wg),
-	}
-	res := []int{}
-	for _, out := range Parallel(context.Background(), -1, 0, funcs...) {
-		res = append(res, out.State)
-		if out.State != 1 {
-			t.Fatalf("TestParallelNegativeParallelism: unexpected result, want 1, got %d", out.State)
+		for name, tt := range tests {
+			t.Run(name, func(t *testing.T) {
+				wg := sync.WaitGroup{}
+				wg.Add(tt.funcs)
+				funcs := []Func[int, *Maybe[int]]{}
+				for i := 0; i < tt.funcs; i++ {
+					funcs = append(funcs, getFnWait(&wg))
+				}
+				out := Parallel(context.Background(), Parallelism(tt.parallelism), 0, funcs...)
+				if len(out) != tt.funcs {
+					t.Fatalf("unexpected number of results")
+				}
+			})
 		}
-	}
-	if len(res) != 1 {
-		t.Fatalf("TestParallelNegativeParallelism: expected 3 results, got %d", len(res))
-	}
+	})
 }

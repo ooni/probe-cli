@@ -9,14 +9,25 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
-func mockConnWithErr(err error) io.Closer {
+/*
+Test cases:
+- Maybe track connections
+	- with nil
+	- with connection
+	- with quic connection
+- Close ConnPool
+	- all Close() calls succeed
+	- one Close() call fails
+*/
+
+func closeConnWithErr(err error) io.Closer {
 	return &mocks.Conn{
 		MockClose: func() error {
 			return err
 		},
 	}
 }
-func mockQUICConnWithErr(err error) io.Closer {
+func closeQUICConnWithErr(err error) io.Closer {
 	return &quicCloserConn{
 		&mocks.QUICEarlyConnection{
 			MockCloseWithError: func(code quic.ApplicationErrorCode, reason string) error {
@@ -26,72 +37,59 @@ func mockQUICConnWithErr(err error) io.Closer {
 	}
 }
 
-func TestMaybeTrack(t *testing.T) {
-	type ConnPoolTest struct {
-		name        string
-		mockConn    io.Closer
-		expectedLen int
+func TestConnPool(t *testing.T) {
+	type connpoolTest struct {
+		mockConn io.Closer
+		want     int // len of connpool.v
 	}
-	tests := []ConnPoolTest{
-		{
-			name:        "MaybeTrack: nil",
-			mockConn:    nil,
-			expectedLen: 0,
-		},
-		{
-			name:        "MaybeTrack: good conn",
-			mockConn:    mockConnWithErr(nil),
-			expectedLen: 1,
-		},
-		{
-			name:        "MaybeTrack: good quic conn",
-			mockConn:    mockQUICConnWithErr(nil),
-			expectedLen: 1,
-		},
-	}
-	for _, test := range tests {
-		connpool := &ConnPool{}
-		connpool.MaybeTrack(test.mockConn)
-		if len(connpool.v) != test.expectedLen {
-			t.Fatalf("%s: expected # of conns: %d, got: %d", test.name, test.expectedLen, len(connpool.v))
+	t.Run("Maybe track connections", func(t *testing.T) {
+		tests := map[string]connpoolTest{
+			"with nil":             {mockConn: nil, want: 0},
+			"with connection":      {mockConn: closeConnWithErr(nil), want: 1},
+			"with quic connection": {mockConn: closeQUICConnWithErr(nil), want: 1},
 		}
-	}
-}
-
-func TestClose(t *testing.T) {
-	type testConnPool struct {
-		name string
-		p    ConnPool
-	}
-	mockErr := errors.New("mocked")
-
-	tests := []*testConnPool{
-		{
-			name: "Close: all Close() succeed",
-			p: ConnPool{
-				v: []io.Closer{
-					mockConnWithErr(nil),
-					mockQUICConnWithErr(nil),
+		for name, tt := range tests {
+			t.Run(name, func(t *testing.T) {
+				connpool := &ConnPool{}
+				connpool.MaybeTrack(tt.mockConn)
+				if len(connpool.v) != tt.want {
+					t.Fatalf("expected %d tracked connections, got: %d", tt.want, len(connpool.v))
+				}
+			})
+		}
+	})
+	t.Run("Close ConnPool", func(t *testing.T) {
+		mockErr := errors.New("mocked")
+		tests := map[string]struct {
+			pool *ConnPool
+		}{
+			"all Close() calls succeed": {
+				pool: &ConnPool{
+					v: []io.Closer{
+						closeConnWithErr(nil),
+						closeQUICConnWithErr(nil),
+					},
 				},
 			},
-		},
-		{
-			name: "Close: 1 Close() call fails",
-			p: ConnPool{
-				v: []io.Closer{
-					mockConnWithErr(nil),
-					mockConnWithErr(mockErr),
+			"one Close() call fails": {
+				pool: &ConnPool{
+					v: []io.Closer{
+						closeConnWithErr(nil),
+						closeConnWithErr(mockErr),
+					},
 				},
 			},
-		},
-	}
-	for _, test := range tests {
-		err := test.p.Close()
-		if err != nil { // Close() always returns a nil error
-			t.Fatalf("%s: unexpected error %s", test.name, err)
 		}
-		if test.p.v != nil {
-			t.Fatalf("%s: v should be reset but is not", test.name)
+		for name, tt := range tests {
+			t.Run(name, func(t *testing.T) {
+				err := tt.pool.Close()
+				if err != nil { // Close() should always return nil
+					t.Fatalf("unexpected error %s", err)
+				}
+				if tt.pool.v != nil {
+					t.Fatalf("v should be reset but is not")
+				}
+			})
 		}
-	}
+	})
 }

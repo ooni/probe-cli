@@ -15,152 +15,150 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
+/*
+Test cases:
+- Get tlsHandshakeFunc with options
+- Apply tlsHandshakeFunc
+  - with EOF
+  - with invalid address
+  - with success
+  - with sni
+  - with options
+*/
 func TestTLSHandshake(t *testing.T) {
-	certpool := x509.NewCertPool()
-	certpool.AddCert(&x509.Certificate{})
+	t.Run("Get tlsHandshakeFunc with options", func(t *testing.T) {
+		certpool := x509.NewCertPool()
+		certpool.AddCert(&x509.Certificate{})
 
-	f := TLSHandshake(
-		&ConnPool{},
-		TLSHandshakeOptionInsecureSkipVerify(true),
-		TLSHandshakeOptionNextProto([]string{"h3"}),
-		TLSHandshakeOptionServerName("sni"),
-		TLSHandshakeOptionRootCAs(certpool),
-	)
-	var handshakeFunc *tlsHandshakeFunc
-	var ok bool
-	if handshakeFunc, ok = f.(*tlsHandshakeFunc); !ok {
-		t.Fatal("TLSHandshake: unexpected type. Expected: tlsHandshakeFunc")
-	}
-	if !handshakeFunc.InsecureSkipVerify {
-		t.Fatalf("TLSHandshake: %s, expected %v, got %v", "InsecureSkipVerify", true, false)
-	}
-	if len(handshakeFunc.NextProto) != 1 || handshakeFunc.NextProto[0] != "h3" {
-		t.Fatalf("TLSHandshake: %s, expected %v, got %v", "NextProto", []string{"h3"}, handshakeFunc.NextProto)
-	}
-	if handshakeFunc.ServerName != "sni" {
-		t.Fatalf("TLSHandshake: %s, expected %s, got %s", "ServerName", "sni", handshakeFunc.ServerName)
-	}
-	if !handshakeFunc.RootCAs.Equal(certpool) {
-		t.Fatalf("TLSHandshake: %s, expected %v, got %v", "RootCAs", certpool, handshakeFunc.RootCAs)
-	}
-}
-
-func TestApplyTLS(t *testing.T) {
-	type configOptions struct {
-		sni        string
-		address    string
-		domain     string
-		nextProtos []string
-	}
-
-	type tlsTest struct {
-		expectedConn net.Conn
-		expectedErr  error
-		wasClosed    bool
-		name         string
-		handshaker   *mocks.TLSHandshaker
-		tcpConn      mocks.Conn
-		config       configOptions
-	}
-
-	tcpConn := mocks.Conn{
-		MockClose: func() error {
-			wasClosed = true
-			return nil
-		},
-	}
-	tlsConn := &mocks.TLSConn{Conn: tcpConn}
-	eofHandshaker := &mocks.TLSHandshaker{
-		MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
-			return nil, tls.ConnectionState{}, io.EOF
-		},
-	}
-	goodHandshaker := &mocks.TLSHandshaker{
-		MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
-			return tlsConn, tls.ConnectionState{}, nil
-		},
-	}
-	tests := []tlsTest{
-		{
-			name:         "with EOF",
-			tcpConn:      tcpConn,
-			handshaker:   eofHandshaker,
-			expectedConn: nil,
-			expectedErr:  io.EOF,
-		},
-		{
-			name:         "success",
-			tcpConn:      tcpConn,
-			handshaker:   goodHandshaker,
-			expectedConn: tlsConn,
-			expectedErr:  nil,
-			wasClosed:    true,
-		},
-		{
-			name:         "with sni",
-			config:       configOptions{sni: "sni.com"},
-			tcpConn:      tcpConn,
-			handshaker:   goodHandshaker,
-			expectedConn: tlsConn,
-			expectedErr:  nil,
-			wasClosed:    true,
-		},
-		{
-			name:         "with invalid address",
-			config:       configOptions{address: "#"},
-			tcpConn:      tcpConn,
-			handshaker:   goodHandshaker,
-			expectedConn: tlsConn,
-			expectedErr:  nil,
-			wasClosed:    true,
-		},
-		{
-			name:         "with options",
-			config:       configOptions{domain: "domain.com", nextProtos: []string{"h3"}},
-			tcpConn:      tcpConn,
-			handshaker:   goodHandshaker,
-			expectedConn: tlsConn,
-			expectedErr:  nil,
-			wasClosed:    true,
-		},
-	}
-
-	for _, test := range tests {
-		pool := &ConnPool{}
-		tlsHandshake := &tlsHandshakeFunc{
-			NextProto:  test.config.nextProtos,
-			Pool:       pool,
-			ServerName: test.config.sni,
-			handshaker: test.handshaker,
+		f := TLSHandshake(
+			&ConnPool{},
+			TLSHandshakeOptionInsecureSkipVerify(true),
+			TLSHandshakeOptionNextProto([]string{"h3"}),
+			TLSHandshakeOptionServerName("sni"),
+			TLSHandshakeOptionRootCAs(certpool),
+		)
+		var handshakeFunc *tlsHandshakeFunc
+		var ok bool
+		if handshakeFunc, ok = f.(*tlsHandshakeFunc); !ok {
+			t.Fatal("unexpected type. Expected: tlsHandshakeFunc")
 		}
-		idGen := &atomic.Int64{}
-		zeroTime := time.Time{}
-		trace := measurexlite.NewTrace(idGen.Add(1), zeroTime)
-		address := test.config.address
-		if address == "" {
-			address = "1.2.3.4:567"
+		if !handshakeFunc.InsecureSkipVerify {
+			t.Fatalf("unexpected %s, expected %v, got %v", "InsecureSkipVerify", true, false)
 		}
-		tcpConn := TCPConnection{
-			Address:     address,
-			Conn:        &test.tcpConn,
-			Domain:      test.config.domain,
-			IDGenerator: idGen,
-			Logger:      model.DiscardLogger,
-			Network:     "tcp",
-			Trace:       trace,
-			ZeroTime:    zeroTime,
+		if len(handshakeFunc.NextProto) != 1 || handshakeFunc.NextProto[0] != "h3" {
+			t.Fatalf("unexpected %s, expected %v, got %v", "NextProto", []string{"h3"}, handshakeFunc.NextProto)
 		}
-		res := tlsHandshake.Apply(context.Background(), &tcpConn)
-		if res.Error != test.expectedErr {
-			t.Fatalf("%s: expected error %s, got %s", test.name, test.expectedErr, res.Error)
+		if handshakeFunc.ServerName != "sni" {
+			t.Fatalf("unexpected %s, expected %s, got %s", "ServerName", "sni", handshakeFunc.ServerName)
 		}
-		if res.State.Conn != test.expectedConn {
-			t.Fatalf("%s: expected conn %v, got %v", test.name, test.expectedConn, res.State.Conn)
+		if !handshakeFunc.RootCAs.Equal(certpool) {
+			t.Fatalf("unexpected %s, expected %v, got %v", "RootCAs", certpool, handshakeFunc.RootCAs)
 		}
-		pool.Close()
-		if wasClosed != test.wasClosed {
-			t.Fatalf("%s: expected closeErr %v, got %v", test.name, test.wasClosed, wasClosed)
+	})
+	t.Run("Apply tlsHandshakeFunc", func(t *testing.T) {
+		type configOptions struct {
+			sni        string
+			address    string
+			domain     string
+			nextProtos []string
 		}
-		wasClosed = false
-	}
+		tcpConn := mocks.Conn{
+			MockClose: func() error {
+				wasClosed = true
+				return nil
+			},
+		}
+		tlsConn := &mocks.TLSConn{Conn: tcpConn}
+		eofHandshaker := &mocks.TLSHandshaker{
+			MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
+				return nil, tls.ConnectionState{}, io.EOF
+			},
+		}
+		goodHandshaker := &mocks.TLSHandshaker{
+			MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
+				return tlsConn, tls.ConnectionState{}, nil
+			},
+		}
+		tests := map[string]struct {
+			config     configOptions
+			handshaker *mocks.TLSHandshaker
+			expectConn net.Conn
+			expectErr  error
+			closed     bool
+		}{
+			"with EOF": {
+				handshaker: eofHandshaker,
+				expectConn: nil,
+				expectErr:  io.EOF,
+				closed:     false,
+			},
+			"with invalid address": {
+				config:     configOptions{address: "#"},
+				handshaker: goodHandshaker,
+				expectConn: tlsConn,
+				expectErr:  nil,
+				closed:     true,
+			},
+			"with success": {
+				handshaker: goodHandshaker,
+				expectConn: tlsConn,
+				expectErr:  nil,
+				closed:     true,
+			},
+			"with sni": {
+				config:     configOptions{sni: "sni.com"},
+				handshaker: goodHandshaker,
+				expectConn: tlsConn,
+				expectErr:  nil,
+				closed:     true,
+			},
+			"with options": {
+				config:     configOptions{domain: "domain.com", nextProtos: []string{"h3"}},
+				handshaker: goodHandshaker,
+				expectConn: tlsConn,
+				expectErr:  nil,
+				closed:     true,
+			},
+		}
+		for name, tt := range tests {
+			t.Run(name, func(t *testing.T) {
+				pool := &ConnPool{}
+				tlsHandshake := &tlsHandshakeFunc{
+					NextProto:  tt.config.nextProtos,
+					Pool:       pool,
+					ServerName: tt.config.sni,
+					handshaker: tt.handshaker,
+				}
+				idGen := &atomic.Int64{}
+				zeroTime := time.Time{}
+				trace := measurexlite.NewTrace(idGen.Add(1), zeroTime)
+				address := tt.config.address
+				if address == "" {
+					address = "1.2.3.4:567"
+				}
+				tcpConn := TCPConnection{
+					Address:     address,
+					Conn:        &tcpConn,
+					Domain:      tt.config.domain,
+					IDGenerator: idGen,
+					Logger:      model.DiscardLogger,
+					Network:     "tcp",
+					Trace:       trace,
+					ZeroTime:    zeroTime,
+				}
+				res := tlsHandshake.Apply(context.Background(), &tcpConn)
+				if res.Error != tt.expectErr {
+					t.Fatalf("unexpected error: %s", res.Error)
+				}
+				if res.State.Conn != tt.expectConn {
+					t.Fatalf("unexpected conn %v", res.State.Conn)
+				}
+				pool.Close()
+				if wasClosed != tt.closed {
+					t.Fatalf("unexpected connection closed state %v", wasClosed)
+				}
+			})
+			wasClosed = false
+		}
+	})
 }

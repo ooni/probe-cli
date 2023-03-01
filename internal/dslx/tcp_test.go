@@ -12,77 +12,68 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
-type tcpTest struct {
-	expectedConn net.Conn
-	expectedErr  error
-	wasClosed    bool
-	name         string
-	dialer       *mocks.Dialer
-}
-
 var wasClosed bool = false
 
 func TestTCPConnect(t *testing.T) {
-	f := TCPConnect(
-		&ConnPool{},
-	)
-	if _, ok := f.(*tcpConnectFunc); !ok {
-		t.Fatal("TCPConnect: unexpected type. Expected: tcpConnectFunc")
-	}
-}
-
-func TestApplyTCP(t *testing.T) {
-	plainConn := &mocks.Conn{
-		MockClose: func() error {
-			wasClosed = true
-			return nil
-		},
-	}
-	tests := []tcpTest{
-		{
-			name:         "with EOF",
-			expectedConn: nil,
-			expectedErr:  io.EOF,
-			dialer: &mocks.Dialer{
-				MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
-					return nil, io.EOF
-				},
+	t.Run("Get tcpConnectFunc", func(t *testing.T) {
+		f := TCPConnect(
+			&ConnPool{},
+		)
+		if _, ok := f.(*tcpConnectFunc); !ok {
+			t.Fatal("TCPConnect: unexpected type. Expected: tcpConnectFunc")
+		}
+	})
+	t.Run("Apply tcpConnectFunc", func(t *testing.T) {
+		plainConn := &mocks.Conn{
+			MockClose: func() error {
+				wasClosed = true
+				return nil
 			},
-		},
-		{
-			name:         "success",
-			expectedConn: plainConn,
-			expectedErr:  nil,
-			wasClosed:    true,
-			dialer: &mocks.Dialer{
-				MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
-					return plainConn, nil
-				},
+		}
+		eofDialer := &mocks.Dialer{
+			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+				return nil, io.EOF
 			},
-		},
-	}
+		}
+		goodDialer := &mocks.Dialer{
+			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+				return plainConn, nil
+			},
+		}
+		tests := map[string]struct {
+			dialer     *mocks.Dialer
+			expectConn net.Conn
+			expectErr  error
+			closed     bool
+		}{
+			"with EOF": {expectConn: nil, expectErr: io.EOF, closed: false, dialer: eofDialer},
+			"success":  {expectConn: plainConn, expectErr: nil, closed: true, dialer: goodDialer},
+		}
 
-	for _, test := range tests {
-		pool := &ConnPool{}
-		tcpConnect := &tcpConnectFunc{pool, test.dialer}
-		endpoint := &Endpoint{
-			Address:     "1.2.3.4:567",
-			Network:     "tcp",
-			IDGenerator: &atomic.Int64{},
-			Logger:      model.DiscardLogger,
-			ZeroTime:    time.Time{},
+		for name, tt := range tests {
+			t.Run(name, func(t *testing.T) {
+				pool := &ConnPool{}
+				tcpConnect := &tcpConnectFunc{pool, tt.dialer}
+				endpoint := &Endpoint{
+					Address:     "1.2.3.4:567",
+					Network:     "tcp",
+					IDGenerator: &atomic.Int64{},
+					Logger:      model.DiscardLogger,
+					ZeroTime:    time.Time{},
+				}
+				res := tcpConnect.Apply(context.Background(), endpoint)
+				if res.Error != tt.expectErr {
+					t.Fatalf("unexpected error: %s", res.Error)
+				}
+				if res.State.Conn != tt.expectConn {
+					t.Fatalf("unexpected conn: %s", res.State.Conn)
+				}
+				pool.Close()
+				if wasClosed != tt.closed {
+					t.Fatalf("unexpected connection closed state: %v", wasClosed)
+				}
+			})
+			wasClosed = false
 		}
-		res := tcpConnect.Apply(context.Background(), endpoint)
-		if res.Error != test.expectedErr {
-			t.Fatalf("%s: expected error %s, got %s", test.name, test.expectedErr, res.Error)
-		}
-		if res.State.Conn != test.expectedConn {
-			t.Fatalf("%s: expected conn %s, got %s", test.name, test.expectedConn, res.State.Conn)
-		}
-		pool.Close()
-		if wasClosed != test.wasClosed {
-			t.Fatalf("%s: expected closeErr %v, got %v", test.name, test.wasClosed, wasClosed)
-		}
-		wasClosed = false
-	}
+	})
 }
