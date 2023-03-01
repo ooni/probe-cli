@@ -11,13 +11,11 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netem"
+	"github.com/ooni/probe-cli/v3/internal/netem3"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-func runCalibrationServer(ctx context.Context, server *netem.GvisorStack, ready, done chan any) {
-	defer close(done)
-
+func runCalibrationServer(ctx context.Context, server *netem3.UNetStack, ready chan any) {
 	buffer := make([]byte, 65535)
 	_ = runtimex.Try1(rand.Read(buffer))
 
@@ -43,9 +41,7 @@ func runCalibrationServer(ctx context.Context, server *netem.GvisorStack, ready,
 	}
 }
 
-func runCalibrationClient(ctx context.Context, client model.UnderlyingNetwork, done chan any) {
-	defer close(done)
-
+func runCalibrationClient(ctx context.Context, client model.UnderlyingNetwork) {
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 
@@ -93,59 +89,40 @@ func main() {
 	logHandler.Emoji = true
 	log.Log = &log.Logger{Level: log.InfoLevel, Handler: logHandler}
 
-	gvisorCtx, gvisorCancel := context.WithCancel(context.Background())
-	scCtx, scCancel := context.WithCancel(gvisorCtx)
-	if *timeout > 0 {
-		scCtx, scCancel = context.WithTimeout(gvisorCtx, *timeout)
-	}
-	defer scCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
+	defer cancel()
 
-	gginfo := netem.NewStaticGetaddrinfo()
-	cfg := netem.NewTLSMITMConfig()
+	gginfo := netem3.NewStaticGetaddrinfo()
+	cfg := netem3.NewTLSMITMConfig()
 
 	// create the client TCP/IP userspace stack
-	client := netem.NewGvisorStack("10.0.0.2", cfg, gginfo)
-	left := &netem.NIC{
-		Incoming: make(chan []byte, 4096),
-		Name:     "client0",
-		Outgoing: make(chan []byte, 4096),
-	}
-	client.Attach(gvisorCtx, left)
+	client := netem3.NewUNetStack("10.0.0.2", cfg, gginfo)
 
 	// create the server TCP/IP userspace stack
-	server := netem.NewGvisorStack("10.0.0.1", cfg, gginfo)
-	right := &netem.NIC{
-		Incoming: make(chan []byte, 4096),
-		Name:     "server0",
-		Outgoing: make(chan []byte, 4096),
-	}
-	server.Attach(gvisorCtx, right)
+	server := netem3.NewUNetStack("10.0.0.1", cfg, gginfo)
 
 	// connect the two stacks using a link
-	link := &netem.Link{
-		DPI:                  &netem.DPINone{},
+	linkConfig := &netem3.LinkConfig{
 		Dump:                 false,
-		Left:                 left,
+		Left:                 client,
 		LeftToRightDelay:     *delay,
 		LeftToRightBandwidth: 0,
-		Right:                right,
+		Right:                server,
 		RightToLeftDelay:     *delay,
-		RightToLeftBandwidth: netem.Bandwidth(*bw) * netem.KilobitsPerSecond,
+		RightToLeftBandwidth: netem3.Bandwidth(*bw) * netem3.KilobitsPerSecond,
 	}
-	link.Up(gvisorCtx)
+	link := netem3.NewLink(linkConfig)
 
 	// start server in background and wait until it's listening
 	serverReady := make(chan any)
-	serverDone := make(chan any)
-	go runCalibrationServer(scCtx, server, serverReady, serverDone)
+	go runCalibrationServer(ctx, server, serverReady)
 	<-serverReady
 
 	// run client in foreground and measure speed
-	clientDone := make(chan any)
-	runCalibrationClient(scCtx, client, clientDone)
+	go runCalibrationClient(ctx, client)
 
-	// wait for client and server to be done before shutting routing down
-	<-serverDone
-	<-clientDone
-	gvisorCancel()
+	<-ctx.Done()
+	client.Close()
+	server.Close()
+	link.Close()
 }
