@@ -71,6 +71,9 @@ func (sc *slowCircuit) loop(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case pkt := <-sc.ch:
+			// Implementation note: modeling the packet's propagation delay
+			// must happen in a background goroutine because indeed here the
+			// general idea is to ~fill the channel (see Jacobson '88).
 			go sc.delayAndWriteIncoming(ctx, pkt.nic, pkt.rawPacket)
 		}
 	}

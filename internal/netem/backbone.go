@@ -91,7 +91,7 @@ func (b *Backbone) AddClient(
 
 	// register the internetNIC with network with the backbone
 	b.table[stack.IPAddress()] = internetNIC
-	log.Infof("netem: route add %s %s", stack.IPAddress(), internetNIC.name)
+	log.Infof("netem: route add %s %s", stack.IPAddress(), internetNIC.Name)
 }
 
 // AddServer is like [AddClient] but adds a server to the backbone.

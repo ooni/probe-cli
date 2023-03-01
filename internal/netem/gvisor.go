@@ -118,7 +118,7 @@ func (gs *GvisorStack) IPAddress() string {
 // network stack. The second goroutine will read packets generated
 // by the network stack and write packets to the NIC.
 func (gs *GvisorStack) Attach(ctx context.Context, nic *NIC) {
-	log.Infof("netem: ifconfig %s %s", nic.name, gs.ipAddress)
+	log.Infof("netem: ifconfig %s %s", nic.Name, gs.ipAddress)
 
 	wg := &sync.WaitGroup{}
 
@@ -130,7 +130,7 @@ func (gs *GvisorStack) Attach(ctx context.Context, nic *NIC) {
 
 	go func() {
 		wg.Wait()
-		log.Infof("netem: ifconfig %s down", nic.name)
+		log.Infof("netem: ifconfig %s down", nic.Name)
 	}()
 }
 

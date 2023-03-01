@@ -12,7 +12,8 @@ import (
 )
 
 // NIC is a network interface controller. The zero value is
-// invalid; you MUST use [NewNIC] to create a [NIC].
+// invalid; either create a [NIC] using [NewNIC] or make sure
+// you manually fill all the fields marked as MANDATORY.
 //
 // Once you have a [NIC] instance you can:
 //
@@ -31,14 +32,20 @@ import (
 // packet does not block. We create channels with queues and when
 // the queue is fully, we discaring extra packets.
 type NIC struct {
-	// incoming queues incoming packets.
-	incoming chan []byte
+	// Incoming is MANDATORY and queues incoming packets.
+	Incoming chan []byte
 
-	// name is the NIC name.
-	name string
+	// Name is the MANDATORY Name of the NIC.
+	Name string
 
-	// outgoing queue outgoing packets.
-	outgoing chan []byte
+	// Outgoing is MANDATORY and queues outgoing packets.
+	Outgoing chan []byte
+
+	// RecvBandwidth is the OPTIONAL receive bandwidth.
+	RecvBandwidth Bandwidth
+
+	// SendBandwidth is the OPTIONAL send bandwidth.
+	SendBandwidth Bandwidth
 }
 
 // NICOption is an option for [NewNic].
@@ -55,7 +62,7 @@ const DefaultNICBufferSize = 1024
 // default is to use a [DefaultNICBuffersize]-entries buffer.
 func NICOptionIncomingBufferSize(value int) NICOption {
 	return func(nic *NIC) {
-		nic.incoming = make(chan []byte, value)
+		nic.Incoming = make(chan []byte, value)
 	}
 }
 
@@ -64,7 +71,7 @@ func NICOptionIncomingBufferSize(value int) NICOption {
 // default is to use a [DefaultNICBuffersize]-entries buffer.
 func NICOptionOutgoingBufferSize(value int) NICOption {
 	return func(nic *NIC) {
-		nic.outgoing = make(chan []byte, value)
+		nic.Outgoing = make(chan []byte, value)
 	}
 }
 
@@ -72,16 +79,34 @@ func NICOptionOutgoingBufferSize(value int) NICOption {
 // where X is a global, atomic integer we increment for each new NIC.
 func NICOptionName(value string) NICOption {
 	return func(nic *NIC) {
-		nic.name = value
+		nic.Name = value
+	}
+}
+
+// NICOptionRecvBandwidth configures the physical recv bandwidth. The default
+// is to use an infinitely fast NIC that recvs any packet in 0 seconds.
+func NICOptionRecvBandwidth(value Bandwidth) NICOption {
+	return func(nic *NIC) {
+		nic.RecvBandwidth = value
+	}
+}
+
+// NICOptionSendBandwidth configures the physical send bandwidth. The default
+// is to use an infinitely fast NIC that sends any packet in 0 seconds.
+func NICOptionSendBandwidth(value Bandwidth) NICOption {
+	return func(nic *NIC) {
+		nic.SendBandwidth = value
 	}
 }
 
 // NewNIC creates a new NIC instance using the given options.
 func NewNIC(options ...NICOption) *NIC {
 	nic := &NIC{
-		incoming: make(chan []byte, DefaultNICBufferSize),
-		name:     fmt.Sprintf("eth%d", nicIndex.Add(1)),
-		outgoing: make(chan []byte, DefaultNICBufferSize),
+		Incoming:      make(chan []byte, DefaultNICBufferSize),
+		Name:          fmt.Sprintf("eth%d", nicIndex.Add(1)),
+		Outgoing:      make(chan []byte, DefaultNICBufferSize),
+		RecvBandwidth: 0,
+		SendBandwidth: 0,
 	}
 	for _, opt := range options {
 		opt(nic)
@@ -93,7 +118,7 @@ func NewNIC(options ...NICOption) *NIC {
 // returns an error if the given context is done.
 func (n *NIC) ReadIncoming(ctx context.Context) ([]byte, error) {
 	select {
-	case rawPacket := <-n.incoming:
+	case rawPacket := <-n.Incoming:
 		return rawPacket, nil
 	case <-ctx.Done():
 		return nil, ctx.Err()
@@ -104,7 +129,7 @@ func (n *NIC) ReadIncoming(ctx context.Context) ([]byte, error) {
 // returns an error if the given context is done.
 func (n *NIC) ReadOutgoing(ctx context.Context) ([]byte, error) {
 	select {
-	case rawPacket := <-n.outgoing:
+	case rawPacket := <-n.Outgoing:
 		return rawPacket, nil
 	case <-ctx.Done():
 		return nil, ctx.Err()
@@ -118,7 +143,7 @@ var ErrNICBufferFull = errors.New("nic: buffer is full: dropping packet")
 // returns an error if the context is done or the buffer full.
 func (n *NIC) WriteIncoming(ctx context.Context, rawPacket []byte) error {
 	select {
-	case n.incoming <- rawPacket:
+	case n.Incoming <- rawPacket:
 		return nil
 	case <-ctx.Done():
 		return ctx.Err()
@@ -131,7 +156,7 @@ func (n *NIC) WriteIncoming(ctx context.Context, rawPacket []byte) error {
 // returns an error if the context is done or the buffer full.
 func (n *NIC) WriteOutgoing(ctx context.Context, rawPacket []byte) error {
 	select {
-	case n.outgoing <- rawPacket:
+	case n.Outgoing <- rawPacket:
 		return nil
 	case <-ctx.Done():
 		return ctx.Err()

@@ -183,8 +183,8 @@ func (l *Link) forward(
 	writer *NIC,
 	delay time.Duration,
 ) {
-	log.Infof("netem: link %s -> %s up", reader.name, writer.name)
-	defer log.Infof("netem: link %s -> %s down", reader.name, writer.name)
+	log.Infof("netem: link %s -> %s up", reader.Name, writer.Name)
+	defer log.Infof("netem: link %s -> %s down", reader.Name, writer.Name)
 
 	for {
 		// read from the reader NIC
@@ -195,9 +195,18 @@ func (l *Link) forward(
 		}
 
 		// dump before emulating delay for pretty obvious reasons
-		maybeDumpPacket(l.Dump, reader.name+"->", rawPacket)
+		maybeDumpPacket(l.Dump, reader.Name+"->", rawPacket)
 
-		// deliver this packet in the background
+		// Immediately defer the packet of the proper TX/RX delay such that
+		// we don't need to care about this detail later when we divert it
+		// through DPI. Note that we must do this in the same goroutine since
+		// TX and RX are NIC-blocking operations.
+		linkMaybeEmulateTXRXDelay(ctx, reader.SendBandwidth, int64(len(rawPacket)))
+		linkMaybeEmulateTXRXDelay(ctx, writer.RecvBandwidth, int64(len(rawPacket)))
+
+		// Implementation note: modeling the packet's propagation delay
+		// must happen in a background goroutine because indeed here the
+		// general idea is to ~fill the channel (see Jacobson '88).
 		go l.deliverPacket(ctx, direction, reader, writer, delay, rawPacket)
 	}
 }
@@ -211,20 +220,32 @@ func (l *Link) deliverPacket(
 	delay time.Duration,
 	rawPacket []byte,
 ) {
-	// emulate the delay
-	if err := linkMaybeEmulateDelay(ctx, delay); err != nil {
-		log.Warnf("netem: link.deliverPacket: %s", err.Error())
-		return
+	// We model the DPI engine as being close to the "left" NIC. This is why
+	// here we model the delay only for right->left.
+	if direction == LinkDirectionRightToLeft {
+		if err := linkMaybeEmulateDelay(ctx, delay); err != nil {
+			log.Warnf("netem: link.deliverPacket: %s", err.Error())
+			return
+		}
 	}
 
-	// possibly divert the packet through the dpi engine
+	// possibly divert the packet through the DPI engine
 	if l.DPI != nil && l.DPI.Divert(ctx, direction, reader, writer, rawPacket) {
 		return
 	}
 
+	// We model the DPI engine as being close to the "left" NIC. This is why
+	// here we model the delay only for left->right.
+	if direction == LinkDirectionLeftToRight {
+		if err := linkMaybeEmulateDelay(ctx, delay); err != nil {
+			log.Warnf("netem: link.deliverPacket: %s", err.Error())
+			return
+		}
+	}
+
 	// only dump the packet entering the interface after we know
 	// it has not been diverted by the DPI
-	maybeDumpPacket(l.Dump, writer.name+"<-", rawPacket)
+	maybeDumpPacket(l.Dump, writer.Name+"<-", rawPacket)
 
 	// write to the writer NIC
 	if err := writer.WriteIncoming(ctx, rawPacket); err != nil {
@@ -235,7 +256,16 @@ func (l *Link) deliverPacket(
 	}
 }
 
-// linkMaybeEmulateDelay adds delay to the transmission.
+// linkMaybeEmulateTXRXDelay possibly adds delay to the transmission.
+func linkMaybeEmulateTXRXDelay(ctx context.Context, speed Bandwidth, count int64) error {
+	if speed <= 0 || count <= 0 {
+		return nil
+	}
+	delay := (time.Duration(count*8) * time.Second) / time.Duration(speed)
+	return linkMaybeEmulateDelay(ctx, delay)
+}
+
+// linkMaybeEmulateDelay possibly adds delay to the transmission.
 func linkMaybeEmulateDelay(ctx context.Context, delay time.Duration) error {
 	if delay <= 0 {
 		return nil
