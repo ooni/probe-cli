@@ -10,6 +10,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/logx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netem"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -42,7 +43,7 @@ func runCalibrationServer(ctx context.Context, server *netem.GvisorStack, ready,
 	}
 }
 
-func runCalibrationClient(ctx context.Context, client *netem.GvisorStack, done chan any) {
+func runCalibrationClient(ctx context.Context, client model.UnderlyingNetwork, done chan any) {
 	defer close(done)
 
 	ticker := time.NewTicker(500 * time.Millisecond)

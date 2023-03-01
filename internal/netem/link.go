@@ -250,6 +250,9 @@ func (l *Link) forward(
 		// Implementation note: modeling the packet's propagation delay
 		// must happen in a background goroutine because indeed here the
 		// general idea is to ~fill the channel (see Jacobson '88).
+		//
+		// TODO(bassosimone): get rid of the goroutine since we have
+		// ample buffering and it seems it does not matter!
 		go l.deliverPacket(ctx, direction, reader, writer, delay, rawPacket)
 	}
 }
