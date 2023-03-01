@@ -37,7 +37,8 @@ const LinkDirectionLeftToRight = LinkDirection(0)
 const LinkDirectionRightToLeft = LinkDirection(1)
 
 // Link models a link between a "left" and a "right" NIC. The zero value
-// is invalid; please, use a constructor to create a new instance.
+// is invalid; please, use a constructor to create a new instance or manually
+// fill all the fields marked as MANDATORY below.
 //
 // A link is characterized by left-to-right and right-to-left delays, which
 // are configured by the [Link] constructors. Those delays do not allow
@@ -84,24 +85,24 @@ const LinkDirectionRightToLeft = LinkDirection(1)
 // both client and server stub networks. This fact is also documented
 // by the documentation of [Backbone].
 type Link struct {
-	// dpi is the dpi engine.
-	dpi LinkDPIEngine
+	// DPI is the MANDATORY DPI engine to use.
+	DPI LinkDPIEngine
 
-	// dump controls whether you want to dump packets. Should you want
+	// Dump controls whether you want to Dump packets. Should you want
 	// to set this flag, you MUST do that before calling Up.
-	dump bool
+	Dump bool
 
-	// left is the left NIC device.
-	left *NIC
+	// Left is the MANDATORY left NIC device.
+	Left *NIC
 
-	// leftToRightDelay is the delay in the left->rigth direction.
-	leftToRightDelay time.Duration
+	// LeftToRightDelay is the delay in the left->rigth direction.
+	LeftToRightDelay time.Duration
 
-	// right is the right NIC device.
-	right *NIC
+	// Right is the MANDATORY right NIC device.
+	Right *NIC
 
-	// rightToLeftDelay is the delay in the right->left direction.
-	rightToLeftDelay time.Duration
+	// RightToLeftDelay is the delay in the right->left direction.
+	RightToLeftDelay time.Duration
 }
 
 // LinkFactory the signature of the function that creates a [Link].
@@ -112,7 +113,7 @@ type LinkFactory func(left, right *NIC, dpi LinkDPIEngine) *Link
 func NewLinkVerbose(factory LinkFactory) LinkFactory {
 	return func(left, right *NIC, dpi LinkDPIEngine) *Link {
 		link := factory(left, right, dpi)
-		link.dump = true
+		link.Dump = true
 		return link
 	}
 }
@@ -120,11 +121,11 @@ func NewLinkVerbose(factory LinkFactory) LinkFactory {
 // NewLinkFastest returns the fastest possible [Link] without any delay.
 func NewLinkFastest(left, right *NIC, dpi LinkDPIEngine) *Link {
 	return &Link{
-		dpi:              dpi,
-		left:             left,
-		leftToRightDelay: 0,
-		right:            right,
-		rightToLeftDelay: 0,
+		DPI:              dpi,
+		Left:             left,
+		LeftToRightDelay: 0,
+		Right:            right,
+		RightToLeftDelay: 0,
 	}
 }
 
@@ -132,11 +133,11 @@ func NewLinkFastest(left, right *NIC, dpi LinkDPIEngine) *Link {
 // the settings to obtain around 8 Mbit/s when using DASH.
 func NewLinkMedium(left, right *NIC, dpi LinkDPIEngine) *Link {
 	return &Link{
-		dpi:              dpi,
-		left:             left,
-		leftToRightDelay: time.Millisecond,
-		right:            right,
-		rightToLeftDelay: time.Millisecond,
+		DPI:              dpi,
+		Left:             left,
+		LeftToRightDelay: time.Millisecond,
+		Right:            right,
+		RightToLeftDelay: time.Millisecond,
 	}
 }
 
@@ -144,11 +145,11 @@ func NewLinkMedium(left, right *NIC, dpi LinkDPIEngine) *Link {
 // the settings to ontain around 400 kbit/s when using DASH.
 func NewLinkSlowest(left, right *NIC, dpi LinkDPIEngine) *Link {
 	return &Link{
-		dpi:              dpi,
-		left:             left,
-		leftToRightDelay: 20 * time.Millisecond,
-		right:            right,
-		rightToLeftDelay: 20 * time.Millisecond,
+		DPI:              dpi,
+		Left:             left,
+		LeftToRightDelay: 20 * time.Millisecond,
+		Right:            right,
+		RightToLeftDelay: 20 * time.Millisecond,
 	}
 }
 
@@ -156,26 +157,26 @@ func NewLinkSlowest(left, right *NIC, dpi LinkDPIEngine) *Link {
 // expires or is cancelled. You MUST NOT call this function more than once.
 func (l *Link) Up(ctx context.Context) {
 	// left->right
-	go l.linkForward(
+	go l.forward(
 		ctx,
 		LinkDirectionLeftToRight,
-		l.left,
-		l.right,
-		l.leftToRightDelay,
+		l.Left,
+		l.Right,
+		l.LeftToRightDelay,
 	)
 
 	// right->left
-	go l.linkForward(
+	go l.forward(
 		ctx,
 		LinkDirectionRightToLeft,
-		l.right,
-		l.left,
-		l.rightToLeftDelay,
+		l.Right,
+		l.Left,
+		l.RightToLeftDelay,
 	)
 }
 
-// linkForward forwards traffic between two TUNs.
-func (l *Link) linkForward(
+// forward forwards traffic between two TUNs.
+func (l *Link) forward(
 	ctx context.Context,
 	direction LinkDirection,
 	reader *NIC,
@@ -189,35 +190,48 @@ func (l *Link) linkForward(
 		// read from the reader NIC
 		rawPacket, err := reader.ReadOutgoing(ctx)
 		if err != nil {
-			log.Warnf("netem: linkForward: %s", ctx.Err().Error())
+			log.Warnf("netem: link.forward: %s", ctx.Err().Error())
 			return
 		}
 
 		// dump before emulating delay for pretty obvious reasons
-		maybeDumpPacket(l.dump, reader.name+"->", rawPacket)
+		maybeDumpPacket(l.Dump, reader.name+"->", rawPacket)
 
-		// emulate the delay
-		if err := linkMaybeEmulateDelay(ctx, delay); err != nil {
-			log.Warnf("netem: linkForward: %s", err.Error())
-			return
+		// deliver this packet in the background
+		go l.deliverPacket(ctx, direction, reader, writer, delay, rawPacket)
+	}
+}
+
+// deliverPacket delivers a single packet.
+func (l *Link) deliverPacket(
+	ctx context.Context,
+	direction LinkDirection,
+	reader *NIC,
+	writer *NIC,
+	delay time.Duration,
+	rawPacket []byte,
+) {
+	// emulate the delay
+	if err := linkMaybeEmulateDelay(ctx, delay); err != nil {
+		log.Warnf("netem: link.deliverPacket: %s", err.Error())
+		return
+	}
+
+	// possibly divert the packet through the dpi engine
+	if l.DPI != nil && l.DPI.Divert(ctx, direction, reader, writer, rawPacket) {
+		return
+	}
+
+	// only dump the packet entering the interface after we know
+	// it has not been diverted by the DPI
+	maybeDumpPacket(l.Dump, writer.name+"<-", rawPacket)
+
+	// write to the writer NIC
+	if err := writer.WriteIncoming(ctx, rawPacket); err != nil {
+		if !errors.Is(err, ErrNICBufferFull) {
+			log.Warnf("netem: link.deliverPacket: %s", err.Error())
 		}
-
-		// possibly divert the packet through the dpi engine
-		if l.dpi != nil && l.dpi.Divert(ctx, direction, reader, writer, rawPacket) {
-			continue
-		}
-
-		// only dump the packet entering the interface after we know
-		// it has not been diverted by the DPI
-		maybeDumpPacket(l.dump, writer.name+"<-", rawPacket)
-
-		// write to the writer NIC
-		if err := writer.WriteIncoming(ctx, rawPacket); err != nil {
-			log.Warnf("netem: linkForward: %s", ctx.Err().Error())
-			if !errors.Is(err, ErrNICBufferFull) {
-				return
-			}
-		}
+		return
 	}
 }
 

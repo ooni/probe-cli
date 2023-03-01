@@ -154,8 +154,8 @@ func gvisorReadFromTUN(ctx context.Context, wg *sync.WaitGroup, tun tun.Device, 
 
 		// write incoming packet to the NIC
 		if err := nic.WriteOutgoing(ctx, rawPacket); err != nil {
-			log.Warnf("netem: gvisorReadFromTUN: %s", ctx.Err().Error())
 			if !errors.Is(err, ErrNICBufferFull) {
+				log.Warnf("netem: gvisorReadFromTUN: %s", err.Error())
 				return
 			}
 		}
