@@ -71,7 +71,7 @@ func (sc *slowCircuit) loop(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case pkt := <-sc.ch:
-			sc.delayAndWriteIncoming(ctx, pkt.nic, pkt.rawPacket)
+			go sc.delayAndWriteIncoming(ctx, pkt.nic, pkt.rawPacket)
 		}
 	}
 }
