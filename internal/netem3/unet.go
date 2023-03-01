@@ -102,7 +102,7 @@ func NewUNetStack(A string, cfg *TLSMITMConfig, gginfo UNetGetaddrinfo) *UNetSta
 
 	// log that we are bringing up a new virtual interface
 	name := nextLinkInterfaceID()
-	log.Infof("ifconfig %s %s up", name, A)
+	log.Infof("netem: ifconfig %s %s up", name, A)
 
 	// fill and return the network
 	return &UNetStack{
@@ -118,7 +118,7 @@ func NewUNetStack(A string, cfg *TLSMITMConfig, gginfo UNetGetaddrinfo) *UNetSta
 // Close shutds down the virtual network stack.
 func (gs *UNetStack) Close() error {
 	gs.closeOnce.Do(func() {
-		log.Infof("ifconfig %s down", gs.name)
+		log.Infof("netem: ifconfig %s down", gs.name)
 		gs.ns.Close()
 	})
 	return nil

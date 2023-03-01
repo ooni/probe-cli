@@ -95,21 +95,35 @@ func main() {
 	gginfo := netem3.NewStaticGetaddrinfo()
 	cfg := netem3.NewTLSMITMConfig()
 
+	// create a backbone
+	backbone := netem3.NewBackbone()
+	defer backbone.Close()
+
 	// create the client TCP/IP userspace stack
 	client := netem3.NewUNetStack("10.0.0.2", cfg, gginfo)
 
-	// create the server TCP/IP userspace stack
-	server := netem3.NewUNetStack("10.0.0.1", cfg, gginfo)
-
-	// connect the two stacks using a link
-	linkConfig := &netem3.LinkConfig{
+	// attach the client to the backbone
+	clientLinkConfig := &netem3.LinkConfig{
 		Dump:             false,
 		LeftToRightDelay: *delay,
 		LeftToRightPLR:   0,
 		RightToLeftDelay: *delay,
 		RightToLeftPLR:   *plr,
 	}
-	link := netem3.NewLink(client, server, linkConfig)
+	backbone.AddStack(client, clientLinkConfig)
+
+	// create the server TCP/IP userspace stack
+	server := netem3.NewUNetStack("10.0.0.1", cfg, gginfo)
+
+	// attach the server to the backbone.
+	serverLinkConfig := &netem3.LinkConfig{
+		Dump:             false,
+		LeftToRightPLR:   0,
+		LeftToRightDelay: 0,
+		RightToLeftDelay: 0,
+		RightToLeftPLR:   0,
+	}
+	backbone.AddStack(server, serverLinkConfig)
 
 	// start server in background and wait until it's listening
 	serverReady := make(chan any)
@@ -120,7 +134,4 @@ func main() {
 	go runCalibrationClient(ctx, client)
 
 	<-ctx.Done()
-	client.Close()
-	server.Close()
-	link.Close()
 }

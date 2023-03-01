@@ -48,17 +48,11 @@ type LinkConfig struct {
 	// to set this flag, you MUST do that before calling Up.
 	Dump bool
 
-	// Left is the MANDATORY left NIC device.
-	Left LinkNIC
-
 	// LeftToRightPLR is the packet-loss rate in the left->right direction.
 	LeftToRightPLR float64
 
 	// LeftToRightDelay is the delay in the left->rigth direction.
 	LeftToRightDelay time.Duration
-
-	// Right is the MANDATORY right NIC device.
-	Right LinkNIC
 
 	// RightToLeftDelay is the delay in the right->left direction.
 	RightToLeftDelay time.Duration
@@ -126,7 +120,7 @@ type Link struct {
 // NewLink creates a new [Link] instance and spawns goroutines for forwarding
 // traffic between the left and the right [LinkNIC]. You MUST call [Link.Close] to
 // stop these goroutines when you are done with the [Link].
-func NewLink(config *LinkConfig) *Link {
+func NewLink(left, right LinkNIC, config *LinkConfig) *Link {
 	// create context for interrupting the [Link].
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -148,8 +142,8 @@ func NewLink(config *LinkConfig) *Link {
 			ctx,
 			leftLLM,
 			LinkDirectionLeftToRight,
-			config.Left,
-			config.Right,
+			left,
+			right,
 			config.LeftToRightDelay,
 			wg,
 			config.Dump,
@@ -163,8 +157,8 @@ func NewLink(config *LinkConfig) *Link {
 			ctx,
 			rightLLM,
 			LinkDirectionRightToLeft,
-			config.Right,
-			config.Left,
+			right,
+			left,
 			config.RightToLeftDelay,
 			wg,
 			config.Dump,
