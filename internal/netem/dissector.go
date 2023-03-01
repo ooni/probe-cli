@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
+	"github.com/ooni/probe-cli/v3/internal/tlsparse"
 )
 
 // dissectedPacket is a dissected packet. The zero-value is invalid; you
@@ -198,5 +199,18 @@ func (dp *dissectedPacket) matchSource(proto layers.IPProtocol, address string, 
 		return dp.sourceIPAddress() == address && dp.udp.SrcPort == layers.UDPPort(port)
 	default:
 		return false
+	}
+}
+
+// parseTLSServerName attempts to parse this packet as
+// a TLS client hello and to return the SNI.
+func (dp *dissectedPacket) parseTLSServerName() (string, error) {
+	switch {
+	case dp.tcp != nil:
+		return tlsparse.JustUnmarshalServerName(dp.tcp.Payload)
+	case dp.udp != nil:
+		return tlsparse.JustUnmarshalServerName(dp.udp.Payload)
+	default:
+		return "", errDissectTransport
 	}
 }

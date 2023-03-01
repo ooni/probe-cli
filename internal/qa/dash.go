@@ -118,9 +118,19 @@ func (env *DASHEnvironment) MLabLocateServerIPAddress() string {
 	return mlabLocateIPAddress
 }
 
+// MLabLocateDomainName returns the domain name used by m-lab locate.
+func (env *DASHEnvironment) MLabLocateDomainName() string {
+	return mlabLocateDomain
+}
+
 // DASHServerIPAddress returns the DASH server IP address.
 func (env *DASHEnvironment) DASHServerIPAddress() string {
 	return dashServerIPAddress
+}
+
+// DASHServerDomainName returns the domain name used by the DASH server.
+func (env *DASHEnvironment) DASHServerDomainName() string {
+	return dashServerDomain
 }
 
 // RunExperiment runs the DASH experiment and returns the resulting

@@ -212,7 +212,7 @@ func withBetterDash() {
 		env.RunExperiment(gginfo, linkFactory, dpi)
 	}
 
-	if true {
+	if false {
 		linkFactory := netem.NewLinkFastest
 		dpi := &netem.DPIDropTrafficForServerEndpoint{
 			Direction:       netem.LinkDirectionLeftToRight,
@@ -232,6 +232,13 @@ func withBetterDash() {
 			ServerPort:      443,
 			ServerProtocol:  layers.IPProtocolTCP,
 		}
+		_, err := env.RunExperiment(gginfo, linkFactory, dpi)
+		log.Printf("ERROR: %+v", err)
+	}
+
+	if true {
+		linkFactory := netem.NewLinkFastest
+		dpi := netem.NewDPIDropTrafficForTLSSNI(env.DASHServerDomainName())
 		_, err := env.RunExperiment(gginfo, linkFactory, dpi)
 		log.Printf("ERROR: %+v", err)
 	}
