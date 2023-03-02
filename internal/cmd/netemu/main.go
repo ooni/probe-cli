@@ -63,7 +63,7 @@ func main() {
 			LeftToRightPLR:   0,
 			LeftToRightDelay: 30 * time.Millisecond,
 			RightToLeftDelay: 30 * time.Millisecond,
-			RightToLeftPLR:   0.195,
+			RightToLeftPLR:   0.07,
 		}
 		stack := env.NewUNetStack(gginfo)
 		dumper := netem.NewPCAPDumper("dashTestCase3.pcap", stack)
