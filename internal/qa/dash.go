@@ -31,12 +31,9 @@ import (
 // DASHEnvironment is the environment in which we run DASH QA tests. The zero value
 // is invalid; please, use [NewDASHEnvironment] to instantiate.
 type DASHEnvironment struct {
-	// backbone is the [netem.backbone] to which all the servers relevant
+	// backbone is the [netem.Backbone] to which all the servers relevant
 	// to perform DASH QA checks have been attached.
 	backbone *netem.Backbone
-
-	// cancel stops all the goroutines running in the background.
-	cancel context.CancelFunc
 
 	// dashServer is the dash server.
 	dashServer *dashServer
@@ -55,14 +52,14 @@ type DASHEnvironment struct {
 	tlsMITMConfig *netem.TLSMITMConfig
 }
 
+// dashMTU is an MTU suitable for DASH measurements.
+const dashMTU = 8000
+
 // NewDASHEnvironment creates a new [DASHEnvironment]. This function will start
 // goroutines to handle emulated network I/O. To stop all the emulated network
 // activity you MUST call the [DASHEnvironment.Stop] method when done. This function
 // will call [runtimex.PanicOnError] in case of failure.
 func NewDASHEnvironment() *DASHEnvironment {
-	// create context for cancelling background operations.
-	ctx, cancel := context.WithCancel(context.Background())
-
 	// create configuration for performing TLS MITM
 	mitmConfig := netem.NewTLSMITMConfig()
 
@@ -73,18 +70,17 @@ func NewDASHEnvironment() *DASHEnvironment {
 	backbone := netem.NewBackbone()
 
 	// create the locate v2 server
-	locateStack := netem.NewGvisorStack(mlabLocateIPAddress, mitmConfig, gginfo)
-	backbone.AddServer(ctx, locateStack, netem.NewLinkFastest)
+	locateStack := netem.NewUNetStack(dashMTU, mlabLocateIPAddress, mitmConfig, gginfo)
+	backbone.AddStack(locateStack, &netem.LinkConfig{})
 	locateServer := newMLabLocateServer(locateStack, mitmConfig, mlabLocateIPAddress)
 
 	// create the dash server
-	dashStack := netem.NewGvisorStack(dashServerIPAddress, mitmConfig, gginfo)
-	backbone.AddServer(ctx, dashStack, netem.NewLinkFastest)
+	dashStack := netem.NewUNetStack(dashMTU, dashServerIPAddress, mitmConfig, gginfo)
+	backbone.AddStack(dashStack, &netem.LinkConfig{})
 	dashServer := newDASHServer(dashStack, mitmConfig, dashServerIPAddress)
 
 	return &DASHEnvironment{
 		backbone:      backbone,
-		cancel:        cancel,
 		dashServer:    dashServer,
 		locateServer:  locateServer,
 		probeIP:       &probeIP{},
@@ -133,20 +129,20 @@ func (env *DASHEnvironment) DASHServerDomainName() string {
 	return dashServerDomain
 }
 
+// NewUNetStack creates a new [netem.UNetStack] instance.
+func (env *DASHEnvironment) NewUNetStack(gginfo netem.UNetGetaddrinfo) *netem.UNetStack {
+	return netem.NewUNetStack(dashMTU, env.probeIP.Next(), env.tlsMITMConfig, gginfo)
+}
+
 // RunExperiment runs the DASH experiment and returns the resulting
 // [model.Measurement] (on success) or an error (on failure).
 func (env *DASHEnvironment) RunExperiment(
-	gginfo netem.GvisorGetaddrinfo,
-	linkFactory netem.LinkFactory,
-	dpi netem.LinkDPIEngine,
+	ctx context.Context,
+	stack netem.DPIStack,
+	linkConfig *netem.LinkConfig,
 ) (*model.Measurement, error) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// create and attach client stack
-	addr := env.probeIP.Next()
-	stack := netem.NewGvisorStack(addr, env.tlsMITMConfig, gginfo)
-	env.backbone.AddClient(ctx, stack, linkFactory, dpi)
+	// attach client stack
+	env.backbone.AddStack(stack, linkConfig)
 
 	// create measurer for the dash experiment
 	measurer := dash.NewExperimentMeasurer(dash.Config{})
@@ -181,13 +177,12 @@ func (env *DASHEnvironment) RunExperiment(
 	return measurement, nil
 }
 
-// Stop stops all the goroutines running in the background.
-func (env *DASHEnvironment) Stop() {
+// Close stops all the goroutines running in the background.
+func (env *DASHEnvironment) Close() error {
 	env.stopOnce.Do(func() {
-		env.dashServer.Stop()
-		env.locateServer.Stop()
-		env.cancel()
+		env.backbone.Close()
 	})
+	return nil
 }
 
 // dashServerDomain is the domain used for neubot/dash.
@@ -209,7 +204,7 @@ type dashServer struct {
 // newDASHServer creates a new [dashServer] instance. This function
 // calls [runtimex.PanicOnError] on failure.
 func newDASHServer(
-	stack *netem.GvisorStack,
+	stack *netem.UNetStack,
 	mitmConfig *netem.TLSMITMConfig,
 	ipAddress string,
 ) *dashServer {

@@ -21,21 +21,16 @@ type DPIDropTrafficForServerEndpoint struct {
 	// ServerProtocol is the MANDATORY server endpoint protocol.
 	ServerProtocol layers.IPProtocol
 
-	// Stack is the MANDATORY stack to wrap.
-	Stack BackboneStack
+	// DPIStack is the MANDATORY stack to wrap.
+	DPIStack
 }
 
-var _ BackboneStack = &DPIDropTrafficForServerEndpoint{}
+var _ DPIStack = &DPIDropTrafficForServerEndpoint{}
 
-// InterfaceName implements BackboneStack
-func (bs *DPIDropTrafficForServerEndpoint) InterfaceName() string {
-	return bs.Stack.InterfaceName()
-}
-
-// ReadPacket implements BackboneStack
+// ReadPacket implements DPIStack
 func (bs *DPIDropTrafficForServerEndpoint) ReadPacket() ([]byte, error) {
 	for {
-		rawPacket, err := bs.Stack.ReadPacket()
+		rawPacket, err := bs.DPIStack.ReadPacket()
 		if err != nil {
 			return nil, err
 		}
@@ -61,7 +56,7 @@ func (bs *DPIDropTrafficForServerEndpoint) WritePacket(rawPacket []byte) error {
 	// parse the packet
 	packet, err := dissectPacket(rawPacket)
 	if err != nil {
-		return bs.Stack.WritePacket(rawPacket)
+		return bs.DPIStack.WritePacket(rawPacket)
 	}
 
 	// if the packet matches the offending source, drop it
@@ -69,17 +64,7 @@ func (bs *DPIDropTrafficForServerEndpoint) WritePacket(rawPacket []byte) error {
 		return nil
 	}
 
-	return bs.Stack.WritePacket(rawPacket)
-}
-
-// Close implements BackboneStack
-func (bs *DPIDropTrafficForServerEndpoint) Close() error {
-	return bs.Stack.Close()
-}
-
-// IPAddress implements BackboneStack
-func (bs *DPIDropTrafficForServerEndpoint) IPAddress() string {
-	return bs.Stack.IPAddress()
+	return bs.DPIStack.WritePacket(rawPacket)
 }
 
 // DPIDropTrafficForTLSSNI is a [LinkDPIEngine] that drops all
@@ -95,30 +80,25 @@ type DPIDropTrafficForTLSSNI struct {
 	// sni is the offending SNI.
 	sni string
 
-	// stack is the [BackboneStack] we wrap.
-	stack BackboneStack
+	// DPIStack is the stack we wrap.
+	DPIStack
 }
 
 var _ BackboneStack = &DPIDropTrafficForTLSSNI{}
 
 // NewDPIDropTrafficForTLSSNI constructs a [DPIDropTrafficForTLSSNI].
-func NewDPIDropTrafficForTLSSNI(stack BackboneStack, sni string) *DPIDropTrafficForTLSSNI {
+func NewDPIDropTrafficForTLSSNI(stack DPIStack, sni string) *DPIDropTrafficForTLSSNI {
 	return &DPIDropTrafficForTLSSNI{
 		blackHole: &dpiFlowList{},
 		sni:       sni,
-		stack:     stack,
+		DPIStack:  stack,
 	}
-}
-
-// InterfaceName implements BackboneStack
-func (bs *DPIDropTrafficForTLSSNI) InterfaceName() string {
-	return bs.stack.InterfaceName()
 }
 
 // ReadPacket implements BackboneStack
 func (bs *DPIDropTrafficForTLSSNI) ReadPacket() ([]byte, error) {
 	for {
-		rawPacket, err := bs.stack.ReadPacket()
+		rawPacket, err := bs.DPIStack.ReadPacket()
 		if err != nil {
 			return nil, err
 		}
@@ -162,12 +142,12 @@ func (bs *DPIDropTrafficForTLSSNI) WritePacket(rawPacket []byte) error {
 	// parse the packet
 	packet, err := dissectPacket(rawPacket)
 	if err != nil {
-		return bs.stack.WritePacket(rawPacket)
+		return bs.DPIStack.WritePacket(rawPacket)
 	}
 
 	// short circuit for UDP packets
 	if packet.transportProtocol() != layers.IPProtocolTCP {
-		return bs.stack.WritePacket(rawPacket)
+		return bs.DPIStack.WritePacket(rawPacket)
 	}
 
 	// silently drop the packet if it belongs to a backholed flow
@@ -176,15 +156,5 @@ func (bs *DPIDropTrafficForTLSSNI) WritePacket(rawPacket []byte) error {
 	}
 
 	// otherwise deliver the packet
-	return bs.stack.WritePacket(rawPacket)
-}
-
-// Close implements BackboneStack
-func (bs *DPIDropTrafficForTLSSNI) Close() error {
-	return bs.stack.Close()
-}
-
-// IPAddress implements BackboneStack
-func (bs *DPIDropTrafficForTLSSNI) IPAddress() string {
-	return bs.stack.IPAddress()
+	return bs.DPIStack.WritePacket(rawPacket)
 }

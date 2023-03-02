@@ -63,6 +63,9 @@ type UNetStack struct {
 	// ipAddress is the IP address we're using.
 	ipAddress netip.Addr
 
+	// mtu is the configured MTU.
+	mtu uint32
+
 	// name is the name of the NIC.
 	name string
 
@@ -78,9 +81,6 @@ var (
 	_ LinkNIC                 = &UNetStack{}
 )
 
-// UNetMTU is the MTU used by [NewUNetStack].
-const UNetMTU = 65000
-
 // NewUNetStack constructs a new [UNetStack] instance. This function calls
 // [runtimex.PanicOnError] in case of failure.
 //
@@ -91,14 +91,14 @@ const UNetMTU = 65000
 // - cfg contains TLS MITM configuration;
 //
 // - gginfo provides the getaddrinfo functionality to the [UNetStack].
-func NewUNetStack(A string, cfg *TLSMITMConfig, gginfo UNetGetaddrinfo) *UNetStack {
-	runtimex.Assert(UNetMTU >= 1300, "MTU too small for using lucas-clemente/quic-go")
+func NewUNetStack(MTU uint32, A string, cfg *TLSMITMConfig, gginfo UNetGetaddrinfo) *UNetStack {
+	runtimex.Assert(MTU >= 1300, "MTU too small for using lucas-clemente/quic-go")
 
 	// parse the local address
 	addr := runtimex.Try1(netip.ParseAddr(A))
 
 	// create userspace TUN and network stack
-	ns := newGVisorStack(addr, UNetMTU)
+	ns := newGVisorStack(addr, MTU)
 
 	// log that we are bringing up a new virtual interface
 	name := nextLinkInterfaceID()
@@ -138,7 +138,7 @@ func (gs *UNetStack) IPAddress() string {
 func (gs *UNetStack) ReadPacket() ([]byte, error) {
 	// create buffer for incoming packet
 	const packetbuffer = 1 << 17
-	runtimex.Assert(packetbuffer > UNetMTU, "packetbuffer smaller than the MTU")
+	runtimex.Assert(packetbuffer > gs.mtu, "packetbuffer smaller than the MTU")
 	buffer := make([]byte, packetbuffer)
 
 	// read incoming packet

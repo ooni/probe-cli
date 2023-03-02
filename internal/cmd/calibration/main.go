@@ -11,11 +11,11 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netem3"
+	"github.com/ooni/probe-cli/v3/internal/netem"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-func runCalibrationServer(ctx context.Context, server *netem3.UNetStack, ready chan any) {
+func runCalibrationServer(ctx context.Context, server *netem.UNetStack, ready chan any) {
 	buffer := make([]byte, 65535)
 	_ = runtimex.Try1(rand.Read(buffer))
 
@@ -92,24 +92,26 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
 
-	gginfo := netem3.NewStaticGetaddrinfo()
-	cfg := netem3.NewTLSMITMConfig()
+	gginfo := netem.NewStaticGetaddrinfo()
+	cfg := netem.NewTLSMITMConfig()
+
+	const MTU = 64000
 
 	// create the client TCP/IP userspace stack
-	client := netem3.NewUNetStack("10.0.0.2", cfg, gginfo)
+	client := netem.NewUNetStack(MTU, "10.0.0.2", cfg, gginfo)
 
 	// create the server TCP/IP userspace stack
-	server := netem3.NewUNetStack("10.0.0.1", cfg, gginfo)
+	server := netem.NewUNetStack(MTU, "10.0.0.1", cfg, gginfo)
 
 	// connect the two stacks using a link
-	linkConfig := &netem3.LinkConfig{
+	linkConfig := &netem.LinkConfig{
 		Dump:             false,
 		LeftToRightDelay: *delay,
 		LeftToRightPLR:   0,
 		RightToLeftDelay: *delay,
 		RightToLeftPLR:   *plr,
 	}
-	link := netem3.NewLink(client, server, linkConfig)
+	link := netem.NewLink(client, server, linkConfig)
 
 	// start server in background and wait until it's listening
 	serverReady := make(chan any)

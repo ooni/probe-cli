@@ -7,9 +7,11 @@ package main
 //
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/apex/log"
 	"github.com/google/gopacket/layers"
@@ -27,15 +29,15 @@ func main() {
 	log.Log = &log.Logger{Level: log.InfoLevel, Handler: logHandler}
 
 	env := qa.NewDASHEnvironment()
-	defer env.Stop()
+	defer env.Close()
 	gginfo := env.NonCensoredStaticGetaddrinfo()
+
+	ctx := context.Background()
 
 	if *index == 0 || *index == 1 {
 		fmt.Fprintf(os.Stderr, "\n\n\n")
 		log.Infof("WITH THE FASTEST LINK")
-		linkFactory := netem.NewLinkFastest
-		dpi := &netem.DPINone{}
-		_, err := env.RunExperiment(gginfo, linkFactory, dpi)
+		_, err := env.RunExperiment(ctx, env.NewUNetStack(gginfo), &netem.LinkConfig{})
 		log.Infof("ERROR: %+v", err)
 		fmt.Fprintf(os.Stderr, "\n\n\n")
 	}
@@ -43,9 +45,14 @@ func main() {
 	if *index == 0 || *index == 2 {
 		fmt.Fprintf(os.Stderr, "\n\n\n")
 		log.Infof("WITH THE MEDIUM LINK")
-		linkFactory := netem.NewLinkMedium
-		dpi := &netem.DPINone{}
-		_, err := env.RunExperiment(gginfo, linkFactory, dpi)
+		linkConfig := &netem.LinkConfig{
+			Dump:             false,
+			LeftToRightPLR:   0.00001,
+			LeftToRightDelay: 5 * time.Millisecond,
+			RightToLeftDelay: 5 * time.Millisecond,
+			RightToLeftPLR:   0.00001,
+		}
+		_, err := env.RunExperiment(ctx, env.NewUNetStack(gginfo), linkConfig)
 		log.Infof("ERROR: %+v", err)
 		fmt.Fprintf(os.Stderr, "\n\n\n")
 	}
@@ -53,9 +60,14 @@ func main() {
 	if *index == 0 || *index == 3 {
 		fmt.Fprintf(os.Stderr, "\n\n\n")
 		log.Infof("WITH THE SLOWEST LINK")
-		linkFactory := netem.NewLinkSlowest
-		dpi := &netem.DPINone{}
-		_, err := env.RunExperiment(gginfo, linkFactory, dpi)
+		linkConfig := &netem.LinkConfig{
+			Dump:             false,
+			LeftToRightPLR:   0,
+			LeftToRightDelay: 100 * time.Millisecond,
+			RightToLeftDelay: 100 * time.Millisecond,
+			RightToLeftPLR:   0.1,
+		}
+		_, err := env.RunExperiment(ctx, env.NewUNetStack(gginfo), linkConfig)
 		log.Infof("ERROR: %+v", err)
 		fmt.Fprintf(os.Stderr, "\n\n\n")
 	}
@@ -63,14 +75,13 @@ func main() {
 	if *index == 0 || *index == 4 {
 		fmt.Fprintf(os.Stderr, "\n\n\n")
 		log.Infof("WITH DPI DROPPING TRAFFIC TO DASH SERVER")
-		linkFactory := netem.NewLinkFastest
 		dpi := &netem.DPIDropTrafficForServerEndpoint{
-			Direction:       netem.LinkDirectionLeftToRight,
 			ServerIPAddress: env.DASHServerIPAddress(),
 			ServerPort:      443,
 			ServerProtocol:  layers.IPProtocolTCP,
+			DPIStack:        env.NewUNetStack(gginfo),
 		}
-		_, err := env.RunExperiment(gginfo, linkFactory, dpi)
+		_, err := env.RunExperiment(ctx, dpi, &netem.LinkConfig{})
 		log.Infof("ERROR: %+v", err)
 		fmt.Fprintf(os.Stderr, "\n\n\n")
 	}
@@ -78,14 +89,13 @@ func main() {
 	if *index == 0 || *index == 5 {
 		fmt.Fprintf(os.Stderr, "\n\n\n")
 		log.Infof("WITH DPI DROPPING TRAFFIC FOR MLAB-NS")
-		linkFactory := netem.NewLinkFastest
 		dpi := &netem.DPIDropTrafficForServerEndpoint{
-			Direction:       netem.LinkDirectionLeftToRight,
 			ServerIPAddress: env.MLabLocateServerIPAddress(),
 			ServerPort:      443,
 			ServerProtocol:  layers.IPProtocolTCP,
+			DPIStack:        env.NewUNetStack(gginfo),
 		}
-		_, err := env.RunExperiment(gginfo, linkFactory, dpi)
+		_, err := env.RunExperiment(ctx, dpi, &netem.LinkConfig{})
 		log.Infof("ERROR: %+v", err)
 		fmt.Fprintf(os.Stderr, "\n\n\n")
 	}
@@ -93,9 +103,11 @@ func main() {
 	if *index == 0 || *index == 6 {
 		fmt.Fprintf(os.Stderr, "\n\n\n")
 		log.Infof("WITH DPI DROPPING TRAFFIC FOR DASH SNI")
-		linkFactory := netem.NewLinkFastest
-		dpi := netem.NewDPIDropTrafficForTLSSNI(env.DASHServerDomainName())
-		_, err := env.RunExperiment(gginfo, linkFactory, dpi)
+		dpi := netem.NewDPIDropTrafficForTLSSNI(
+			env.NewUNetStack(gginfo),
+			env.DASHServerDomainName(),
+		)
+		_, err := env.RunExperiment(ctx, dpi, &netem.LinkConfig{})
 		log.Infof("ERROR: %+v", err)
 		fmt.Fprintf(os.Stderr, "\n\n\n")
 	}
@@ -103,9 +115,19 @@ func main() {
 	if *index == 0 || *index == 7 {
 		fmt.Fprintf(os.Stderr, "\n\n\n")
 		log.Infof("WITH DPI THROTTLING TRAFFIC FOR DASH SNI")
-		linkFactory := netem.NewLinkFastest
-		dpi := netem.NewDPIThrottleTrafficForTLSSNI(env.DASHServerDomainName())
-		_, err := env.RunExperiment(gginfo, linkFactory, dpi)
+		dpi := netem.NewDPIThrottleTrafficForTLSSNI(
+			env.NewUNetStack(gginfo),
+			env.DASHServerDomainName(),
+			0.19,
+		)
+		linkConfig := &netem.LinkConfig{
+			Dump:             false,
+			LeftToRightPLR:   0,
+			LeftToRightDelay: 30 * time.Millisecond,
+			RightToLeftDelay: 30 * time.Millisecond,
+			RightToLeftPLR:   0,
+		}
+		_, err := env.RunExperiment(ctx, dpi, linkConfig)
 		log.Infof("ERROR: %+v", err)
 		fmt.Fprintf(os.Stderr, "\n\n\n")
 	}

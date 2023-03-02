@@ -55,7 +55,7 @@ type mlabLocateServer struct {
 // newMLabLocateServer creates a new [mlabLocateServer] instance. This
 // function calls [runtimex.PanicOnError] on failure.
 func newMLabLocateServer(
-	stack *netem.GvisorStack,
+	stack *netem.UNetStack,
 	mitmConfig *netem.TLSMITMConfig,
 	ipAddress string,
 ) *mlabLocateServer {

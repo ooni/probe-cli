@@ -8,7 +8,14 @@ import (
 	"sync"
 
 	"github.com/google/gopacket/layers"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
+
+// DPIStack is the [UNetStack]-like model implemented by DPI code.
+type DPIStack interface {
+	BackboneStack
+	model.UnderlyingNetwork
+}
 
 // dpiFlow describes a specific flow. The zero value is invalid; please,
 // construct using the [newDPIFlow] constructor.

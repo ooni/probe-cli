@@ -11,11 +11,11 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netem3"
+	"github.com/ooni/probe-cli/v3/internal/netem"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-func runCalibrationServer(ctx context.Context, server *netem3.UNetStack, ready chan any) {
+func runCalibrationServer(ctx context.Context, server *netem.UNetStack, ready chan any) {
 	buffer := make([]byte, 65535)
 	_ = runtimex.Try1(rand.Read(buffer))
 
@@ -92,18 +92,20 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
 
-	gginfo := netem3.NewStaticGetaddrinfo()
-	cfg := netem3.NewTLSMITMConfig()
+	gginfo := netem.NewStaticGetaddrinfo()
+	cfg := netem.NewTLSMITMConfig()
 
 	// create a backbone
-	backbone := netem3.NewBackbone()
+	backbone := netem.NewBackbone()
 	defer backbone.Close()
 
+	const MTU = 64000
+
 	// create the client TCP/IP userspace stack
-	client := netem3.NewUNetStack("10.0.0.2", cfg, gginfo)
+	client := netem.NewUNetStack(MTU, "10.0.0.2", cfg, gginfo)
 
 	// attach the client to the backbone
-	clientLinkConfig := &netem3.LinkConfig{
+	clientLinkConfig := &netem.LinkConfig{
 		Dump:             false,
 		LeftToRightDelay: *delay,
 		LeftToRightPLR:   0,
@@ -113,10 +115,10 @@ func main() {
 	backbone.AddStack(client, clientLinkConfig)
 
 	// create the server TCP/IP userspace stack
-	server := netem3.NewUNetStack("10.0.0.1", cfg, gginfo)
+	server := netem.NewUNetStack(MTU, "10.0.0.1", cfg, gginfo)
 
 	// attach the server to the backbone.
-	serverLinkConfig := &netem3.LinkConfig{
+	serverLinkConfig := &netem.LinkConfig{
 		Dump:             false,
 		LeftToRightPLR:   0,
 		LeftToRightDelay: 0,
