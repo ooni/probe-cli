@@ -148,7 +148,7 @@ func (env *DASHEnvironment) RunExperiment(
 	measurer := dash.NewExperimentMeasurer(dash.Config{})
 
 	// create measurement to fill
-	measurement := newMeasurement(measurer.ExperimentName(), measurer.ExperimentVersion())
+	measurement := NewMeasurement(measurer.ExperimentName(), measurer.ExperimentVersion())
 
 	// create args for Run
 	args := &model.ExperimentArgs{

@@ -28,6 +28,7 @@ func newOperationLogger(maxwait time.Duration, logger model.Logger, format strin
 		message: fmt.Sprintf(format, v...),
 		once:    &sync.Once{},
 		sighup:  make(chan any),
+		start:   time.Now(),
 		wg:      &sync.WaitGroup{},
 	}
 	ol.wg.Add(1)
@@ -43,6 +44,7 @@ type OperationLogger struct {
 	message string
 	once    *sync.Once
 	sighup  chan any
+	start   time.Time
 	wg      *sync.WaitGroup
 }
 
@@ -63,17 +65,18 @@ func (ol *OperationLogger) maybeEmitProgress() {
 // that we log the final result of the now-completed operation.
 func (ol *OperationLogger) Stop(value any) {
 	ol.once.Do(func() {
+		elapsed := time.Since(ol.start)
 		close(ol.sighup)
 		ol.wg.Wait()
 		if value != nil {
 			if err, okay := value.(error); okay {
-				ol.logger.Infof("%s... %s", ol.message, err.Error())
+				ol.logger.Infof("%s... %s [%s]", ol.message, err.Error(), elapsed)
 				return
 			}
 			// fallthrough
 		} else {
 			value = "ok"
 		}
-		ol.logger.Infof("%s... %+v", ol.message, value)
+		ol.logger.Infof("%s... %+v [%s]", ol.message, value, elapsed)
 	})
 }

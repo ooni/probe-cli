@@ -40,8 +40,8 @@ func (p *probeIP) Next() string {
 	return net.IPv4(130, 192, third, fourth).String()
 }
 
-// newMeasurement creates a new fake [model.Measurement].
-func newMeasurement(testName, testVersion string) *model.Measurement {
+// NewMeasurement creates a new fake [model.Measurement].
+func NewMeasurement(testName, testVersion string) *model.Measurement {
 	utctimenow := time.Now().UTC()
 	return &model.Measurement{
 		Annotations:               map[string]string{},
