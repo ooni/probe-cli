@@ -127,6 +127,31 @@ func NewLink(left, right LinkNIC, config *LinkConfig) *Link {
 	leftLLM := newLinkLossesManager(config.LeftToRightPLR)
 	rightLLM := newLinkLossesManager(config.RightToLeftPLR)
 
+	// TODO(bassosimone): this design where a single goroutine models
+	// a packet works but is also suboptimal. A better design is
+	// the following:
+	//
+	// - the NIC asks the link for the propagation delay;
+	//
+	// - the NIC embeds the packet into a structure that contains
+	// (a) the expected packet deadline (now + delay) and (b)\
+	// the actual packer payload (which is gonna be useful);
+	//
+	// - the NIC pushes into the queue;
+	//
+	// - a single goroutine (or a small pool) drains the queue
+	// and emulates the delivery of the packet where:
+	//
+	// - if deadline - now >= 0, sleep for that amount of time
+	// to ensure the packet is delivered in time;
+	//
+	// - otherwise, warn the user that the simulation is
+	// degrading because we're keeping packets into the
+	// queue between the NIC and the think for too much time.
+	//
+	// Thanks to @robertodauria for helping me in figuring
+	// out a way to avoid spawning 1k goroutines!
+	//
 	// this is the maximum number of packets in flight per direction,
 	// which limits the maximum congestion window
 	const maxInFlight = 1000
