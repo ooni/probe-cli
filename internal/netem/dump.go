@@ -5,6 +5,7 @@ package netem
 //
 
 import (
+	"context"
 	"os"
 	"sync"
 	"time"
@@ -13,43 +14,48 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// PCAPDumper is a [DPIStack] but also an open PCAP file. Remember
-// to call Close when done to flush the PCAP file. The zero
+// PCAPDumper is a [DPIStack] but also an open PCAP file. The zero
 // value is invalid; use [NewPCAPDumper] to instantiate.
 type PCAPDumper struct {
+	// cancel stops the background goroutines.
+	cancel context.CancelFunc
+
 	// closeOnce provides "once" semantics for close.
 	closeOnce sync.Once
 
-	// filep is the file where we're writing.
-	filep *os.File
+	// joined is closed when the background goroutine has terminated
+	joined chan any
 
-	// mu provides mutual exclusion
-	mu sync.Mutex
-
-	// w is the PCAP writer
-	w *pcapgo.Writer
+	// pic is the channel where we post packets to capture
+	pic chan *pcapDumperPacketInfo
 
 	// DPIStack is the wrapped stack
 	DPIStack
 }
 
+// pcapDumperPacketInfo contains info about a packet.
+type pcapDumperPacketInfo struct {
+	originalLength int
+	snapshot       []byte
+}
+
 // NewPCAPDumper wraps an existing [DPIStack], intercepts the packets read
 // and written, and stores them into the given PCAP file. This function
-// calls [runtimex.PanicOnError] in case of failure.
+// creates a background goroutine for writing into the PCAP file. To join
+// the goroutine, call [PCAPDumper.Close].
 func NewPCAPDumper(filename string, stack DPIStack) *PCAPDumper {
-	filep := runtimex.Try1(os.Create(filename))
-	w := pcapgo.NewWriter(filep)
-	const largeSnapLen = 262144
-	runtimex.Try0(w.WriteFileHeader(largeSnapLen, layers.LinkTypeIPv4))
+	const manyPackets = 4096
+	ctx, cancel := context.WithCancel(context.Background())
 	pd := &PCAPDumper{
+		cancel:    cancel,
 		closeOnce: sync.Once{},
-		filep:     filep,
-		w:         w,
+		joined:    make(chan any),
+		pic:       make(chan *pcapDumperPacketInfo, manyPackets),
 		DPIStack:  stack,
 	}
+	go pd.loop(ctx, filename)
 	return pd
 }
 
@@ -61,45 +67,90 @@ func (pd *PCAPDumper) ReadPacket() ([]byte, error) {
 		return nil, err
 	}
 
-	// write into the PCAP
-	pd.writePCAP(packet)
+	// send packet information to the background writer
+	pd.deliverPacketInfo(packet)
 
 	// provide it to the caller
 	return packet, nil
 }
 
-// writePCAP writes the given packet into the PCAP file.
-func (pd *PCAPDumper) writePCAP(packet []byte) {
-	// because we have two competing writer goroutines, we need to
-	// synchronize access to the file to avoid messing it up
-	defer pd.mu.Unlock()
-	pd.mu.Lock()
-
+// deliverPacketInfo delivers packet info to the background writer.
+func (pd *PCAPDumper) deliverPacketInfo(packet []byte) {
 	// make sure the capture length makes sense
 	packetLength := len(packet)
 	captureLength := 256
 	if packetLength < captureLength {
 		captureLength = packetLength
 	}
-	packet = packet[:captureLength]
 
-	// write the packet into the PCAP
+	// actually deliver the packet info
+	pinfo := &pcapDumperPacketInfo{
+		originalLength: len(packet),
+		snapshot:       append([]byte{}, packet[:captureLength]...), // duplicate
+	}
+	select {
+	case pd.pic <- pinfo:
+	default:
+		// just drop from the capture
+	}
+}
+
+// loop is the loop that writes pcaps
+func (pd *PCAPDumper) loop(ctx context.Context, filename string) {
+	// synchronize with parent
+	defer close(pd.joined)
+
+	// open the file where to create the pcap
+	filep, err := os.Create(filename)
+	if err != nil {
+		log.Warnf("netem: PCAPDumper: os.Create: %s", err.Error())
+		return
+	}
+	defer func() {
+		if err := filep.Close(); err != nil {
+			log.Warnf("netem: PCAPDumper: filep.Close: %s", err.Error())
+			// fallthrough
+		}
+	}()
+
+	// write the PCAP header
+	w := pcapgo.NewWriter(filep)
+	const largeSnapLen = 262144
+	if err := w.WriteFileHeader(largeSnapLen, layers.LinkTypeIPv4); err != nil {
+		log.Warnf("netem: PCAPDumper: os.Create: %s", err.Error())
+		return
+	}
+
+	// loop until we're done and write each entry
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case pinfo := <-pd.pic:
+			pd.doWritePCAPEntry(pinfo, w)
+		}
+	}
+}
+
+// doWritePCAPEntry writes the given packet entry into the PCAP file.
+func (pd *PCAPDumper) doWritePCAPEntry(pinfo *pcapDumperPacketInfo, w *pcapgo.Writer) {
 	ci := gopacket.CaptureInfo{
 		Timestamp:      time.Now(),
-		CaptureLength:  captureLength,
-		Length:         packetLength,
+		CaptureLength:  len(pinfo.snapshot),
+		Length:         pinfo.originalLength,
 		InterfaceIndex: 0,
 		AncillaryData:  []interface{}{},
 	}
-	if err := pd.w.WritePacket(ci, packet); err != nil {
-		log.Warnf("netem: PCAPDumper.WritePacket: %s", err.Error())
+	if err := w.WritePacket(ci, pinfo.snapshot); err != nil {
+		log.Warnf("netem: w.WritePacket: %s", err.Error())
+		// fallthrough
 	}
 }
 
 // WritePacket implements DPIStack
 func (pd *PCAPDumper) WritePacket(packet []byte) error {
-	// write into the PCAP
-	pd.writePCAP(packet)
+	// send packet information to the background writer
+	pd.deliverPacketInfo(packet)
 
 	// provide packet to the stack
 	return pd.DPIStack.WritePacket(packet)
@@ -108,8 +159,15 @@ func (pd *PCAPDumper) WritePacket(packet []byte) error {
 // Close implements DPIStack
 func (pd *PCAPDumper) Close() error {
 	pd.closeOnce.Do(func() {
+		// notify the underlying stack to stop
 		pd.DPIStack.Close()
-		runtimex.Try0(pd.filep.Close())
+
+		// notify the background goroutine to terminate
+		pd.cancel()
+
+		// wait until the channel is drained
+		log.Infof("netem: PCAPDumper: awaiting for background writer to finish writing")
+		<-pd.joined
 	})
 	return nil
 }
