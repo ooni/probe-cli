@@ -188,6 +188,7 @@ func (gs *UNetStack) DialContext(
 	switch network {
 	case "tcp":
 		conn, err = gs.ns.DialContextTCPAddrPort(ctx, addrport)
+
 	case "udp":
 		conn, err = gs.ns.DialUDPAddrPort(netip.AddrPort{}, addrport)
 

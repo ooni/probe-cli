@@ -224,7 +224,7 @@ func newBackboneNIC(remoteIf, ipAddress string) *backboneNIC {
 	log.Infof("netem: route add %s/32 %s", ipAddress, remoteIf)
 	log.Infof("netem: route add default %s", name)
 
-	// Implementation note: having a buffer for the backboneNIC fixed
+	// TODO(bassosimone): having a buffer for the backboneNIC fixed
 	// a hang while running DASH QA tests. Why did this happen?
 	const bufsiz = 1024
 	return &backboneNIC{
