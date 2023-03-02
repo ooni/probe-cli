@@ -227,9 +227,9 @@ func newBackboneNIC(remoteIf, ipAddress string) *backboneNIC {
 		closeOnce: sync.Once{},
 		closed:    make(chan any),
 		ipAddress: ipAddress,
-		incoming:  make(chan []byte, 1024),
+		incoming:  make(chan []byte),
 		name:      name,
-		outgoing:  make(chan []byte, 1024),
+		outgoing:  make(chan []byte),
 		remoteIf:  remoteIf,
 	}
 }
