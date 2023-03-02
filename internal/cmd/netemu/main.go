@@ -46,7 +46,6 @@ func main() {
 		fmt.Fprintf(os.Stderr, "\n\n\n")
 		log.Infof("WITH THE MEDIUM LINK")
 		linkConfig := &netem.LinkConfig{
-			Dump:             false,
 			LeftToRightPLR:   0.00001,
 			LeftToRightDelay: 5 * time.Millisecond,
 			RightToLeftDelay: 5 * time.Millisecond,
@@ -61,13 +60,14 @@ func main() {
 		fmt.Fprintf(os.Stderr, "\n\n\n")
 		log.Infof("WITH THE SLOWEST LINK")
 		linkConfig := &netem.LinkConfig{
-			Dump:             false,
 			LeftToRightPLR:   0,
-			LeftToRightDelay: 100 * time.Millisecond,
-			RightToLeftDelay: 100 * time.Millisecond,
-			RightToLeftPLR:   0.1,
+			LeftToRightDelay: 30 * time.Millisecond,
+			RightToLeftDelay: 30 * time.Millisecond,
+			RightToLeftPLR:   0.195,
 		}
-		_, err := env.RunExperiment(ctx, env.NewUNetStack(gginfo), linkConfig)
+		stack := env.NewUNetStack(gginfo)
+		dumper := netem.NewPCAPDumper("dashTestCase3.pcap", 262144, stack)
+		_, err := env.RunExperiment(ctx, dumper, linkConfig)
 		log.Infof("ERROR: %+v", err)
 		fmt.Fprintf(os.Stderr, "\n\n\n")
 	}
@@ -103,10 +103,9 @@ func main() {
 	if *index == 0 || *index == 6 {
 		fmt.Fprintf(os.Stderr, "\n\n\n")
 		log.Infof("WITH DPI DROPPING TRAFFIC FOR DASH SNI")
-		dpi := netem.NewDPIDropTrafficForTLSSNI(
-			env.NewUNetStack(gginfo),
-			env.DASHServerDomainName(),
-		)
+		stack := env.NewUNetStack(gginfo)
+		dumper := netem.NewPCAPDumper("dashTestCase6.pcap", 256, stack)
+		dpi := netem.NewDPIDropTrafficForTLSSNI(dumper, env.DASHServerDomainName())
 		_, err := env.RunExperiment(ctx, dpi, &netem.LinkConfig{})
 		log.Infof("ERROR: %+v", err)
 		fmt.Fprintf(os.Stderr, "\n\n\n")
@@ -121,7 +120,6 @@ func main() {
 			0.19,
 		)
 		linkConfig := &netem.LinkConfig{
-			Dump:             false,
 			LeftToRightPLR:   0,
 			LeftToRightDelay: 30 * time.Millisecond,
 			RightToLeftDelay: 30 * time.Millisecond,

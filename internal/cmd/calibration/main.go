@@ -105,7 +105,6 @@ func main() {
 
 	// connect the two stacks using a link
 	linkConfig := &netem.LinkConfig{
-		Dump:             false,
 		LeftToRightDelay: *delay,
 		LeftToRightPLR:   0,
 		RightToLeftDelay: *delay,

@@ -44,10 +44,6 @@ const LinkDirectionRightToLeft = LinkDirection(1)
 
 // LinkConfig contains config for creating a [Link].
 type LinkConfig struct {
-	// Dump controls whether you want to Dump packets. Should you want
-	// to set this flag, you MUST do that before calling Up.
-	Dump bool
-
 	// LeftToRightPLR is the packet-loss rate in the left->right direction.
 	LeftToRightPLR float64
 
@@ -146,7 +142,6 @@ func NewLink(left, right LinkNIC, config *LinkConfig) *Link {
 			right,
 			config.LeftToRightDelay,
 			wg,
-			config.Dump,
 		)
 	}
 
@@ -161,7 +156,6 @@ func NewLink(left, right LinkNIC, config *LinkConfig) *Link {
 			left,
 			config.RightToLeftDelay,
 			wg,
-			config.Dump,
 		)
 	}
 
@@ -200,7 +194,6 @@ func linkForward(
 	writer writeableLinkNIC,
 	oneWayDelay time.Duration,
 	wg *sync.WaitGroup,
-	dump bool,
 ) {
 	defer wg.Done()
 
@@ -210,9 +203,6 @@ func linkForward(
 		if err != nil {
 			return
 		}
-
-		// dump the frame
-		maybeDumpPacket(dump, reader.InterfaceName()+"->", rawPacket)
 
 		// drop the packet according to the PLR policy
 		if llm.shouldDrop() {
@@ -225,9 +215,6 @@ func linkForward(
 			return
 		case <-time.After(oneWayDelay):
 		}
-
-		// dump the frame
-		maybeDumpPacket(dump, writer.InterfaceName()+"<-", rawPacket)
 
 		// write the frame to the destination NIC
 		if err := writer.WritePacket(rawPacket); err != nil {

@@ -106,7 +106,6 @@ func main() {
 
 	// attach the client to the backbone
 	clientLinkConfig := &netem.LinkConfig{
-		Dump:             false,
 		LeftToRightDelay: *delay,
 		LeftToRightPLR:   0,
 		RightToLeftDelay: *delay,
@@ -119,7 +118,6 @@ func main() {
 
 	// attach the server to the backbone.
 	serverLinkConfig := &netem.LinkConfig{
-		Dump:             false,
 		LeftToRightPLR:   0,
 		LeftToRightDelay: 0,
 		RightToLeftDelay: 0,

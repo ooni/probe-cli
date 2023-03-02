@@ -3,6 +3,7 @@
 /*.deb
 /*.exe
 /*.jsonl
+/*.pcap
 /*.pprof
 /*.tar.gz
 /*.zip
