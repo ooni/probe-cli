@@ -37,8 +37,8 @@ var errDissectNetwork = errors.New("dissect: unsupported network protocol")
 // errDissectTransport indicates that we don't support the packet's transport protocol.
 var errDissectTransport = errors.New("dissect: unsupported transport protocol")
 
-// dissect parses a packet TCP/IP layers.
-func dissect(rawPacket []byte) (*dissectedPacket, error) {
+// dissectPacket parses a packet TCP/IP layers.
+func dissectPacket(rawPacket []byte) (*dissectedPacket, error) {
 	dp := &dissectedPacket{}
 
 	// [GvisorStack] emits raw IPv4 or IPv6 packets and we need to
@@ -181,6 +181,22 @@ func (dp *dissectedPacket) matchDestination(proto layers.IPProtocol, address str
 		return dp.destinationIPAddress() == address && dp.tcp.DstPort == layers.TCPPort(port)
 	case dp.udp != nil:
 		return dp.destinationIPAddress() == address && dp.udp.DstPort == layers.UDPPort(port)
+	default:
+		return false
+	}
+}
+
+// matchSource returns true when the given IPv4 packet has the
+// expected protocol, source address, and port.
+func (dp *dissectedPacket) matchSource(proto layers.IPProtocol, address string, port uint16) bool {
+	if dp.transportProtocol() != proto {
+		return false
+	}
+	switch {
+	case dp.tcp != nil:
+		return dp.sourceIPAddress() == address && dp.tcp.SrcPort == layers.TCPPort(port)
+	case dp.udp != nil:
+		return dp.sourceIPAddress() == address && dp.udp.SrcPort == layers.UDPPort(port)
 	default:
 		return false
 	}

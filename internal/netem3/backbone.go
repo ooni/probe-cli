@@ -143,7 +143,7 @@ func (b *Backbone) routeLoop(nic readableBackboneNIC) {
 // maybeRoutePacket attempts to route a raw packet.
 func (b *Backbone) maybeRoutePacket(rawInput []byte) {
 	// parse the packet
-	packet, err := dissect(rawInput)
+	packet, err := dissectPacket(rawInput)
 	if err != nil {
 		log.Warnf("netem: maybeRoutePacket: %s", err.Error())
 		return

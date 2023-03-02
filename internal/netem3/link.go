@@ -26,10 +26,10 @@ type LinkNIC interface {
 	// InterfaceName returns the name of the NIC.
 	InterfaceName() string
 
-	// ReadPacket reads a packet from the NIC.
+	// ReadPacket should return the next packet to send over the [Link].
 	ReadPacket() ([]byte, error)
 
-	// WritePacket writes a packet to the NIC.
+	// WritePacket is called by a [Link] to deliver a packet.
 	WritePacket(packet []byte) error
 }
 

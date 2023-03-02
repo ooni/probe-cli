@@ -24,7 +24,7 @@ func maybeDumpPacket(enabled bool, nicName string, rawPacket []byte) {
 // packets using the github.com/apex/log default logger.
 func dumpPacket(nicName string, rawPacket []byte) {
 	// decode the packet as IPv4
-	packet, err := dissect(rawPacket)
+	packet, err := dissectPacket(rawPacket)
 	if err != nil {
 		log.Warnf("netem: dumpPacket: %s", err.Error())
 		return
