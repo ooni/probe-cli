@@ -52,9 +52,6 @@ type DASHEnvironment struct {
 	tlsMITMConfig *netem.TLSMITMConfig
 }
 
-// dashMTU is an MTU suitable for DASH measurements.
-const dashMTU = 8000
-
 // NewDASHEnvironment creates a new [DASHEnvironment]. This function will start
 // goroutines to handle emulated network I/O. To stop all the emulated network
 // activity you MUST call the [DASHEnvironment.Stop] method when done. This function
@@ -70,12 +67,12 @@ func NewDASHEnvironment() *DASHEnvironment {
 	backbone := netem.NewBackbone()
 
 	// create the locate v2 server
-	locateStack := netem.NewUNetStack(dashMTU, mlabLocateIPAddress, mitmConfig, gginfo)
+	locateStack := netem.NewUNetStack(mlabLocateIPAddress, mitmConfig, gginfo)
 	backbone.AddStack(locateStack, &netem.LinkConfig{})
 	locateServer := newMLabLocateServer(locateStack, mitmConfig, mlabLocateIPAddress)
 
 	// create the dash server
-	dashStack := netem.NewUNetStack(dashMTU, dashServerIPAddress, mitmConfig, gginfo)
+	dashStack := netem.NewUNetStack(dashServerIPAddress, mitmConfig, gginfo)
 	backbone.AddStack(dashStack, &netem.LinkConfig{})
 	dashServer := newDASHServer(dashStack, mitmConfig, dashServerIPAddress)
 
@@ -131,7 +128,7 @@ func (env *DASHEnvironment) DASHServerDomainName() string {
 
 // NewUNetStack creates a new [netem.UNetStack] instance.
 func (env *DASHEnvironment) NewUNetStack(gginfo netem.UNetGetaddrinfo) *netem.UNetStack {
-	return netem.NewUNetStack(dashMTU, env.probeIP.Next(), env.tlsMITMConfig, gginfo)
+	return netem.NewUNetStack(env.probeIP.Next(), env.tlsMITMConfig, gginfo)
 }
 
 // RunExperiment runs the DASH experiment and returns the resulting

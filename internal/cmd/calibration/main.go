@@ -80,7 +80,7 @@ func runCalibrationClient(ctx context.Context, client model.UnderlyingNetwork) {
 }
 
 func main() {
-	delay := flag.Duration("delay", 0, "LTR and RTL delay in millisecond")
+	rtt := flag.Duration("rtt", 0, "RTT delay")
 	plr := flag.Float64("plr", 0, "right-to-left packet loss rate")
 	timeout := flag.Duration("timeout", 10*time.Second, "duration of the test")
 	flag.Parse()
@@ -95,22 +95,23 @@ func main() {
 	gginfo := netem.NewStaticGetaddrinfo()
 	cfg := netem.NewTLSMITMConfig()
 
-	const MTU = 64000
-
 	// create the client TCP/IP userspace stack
-	client := netem.NewUNetStack(MTU, "10.0.0.2", cfg, gginfo)
+	client := netem.NewUNetStack("10.0.0.2", cfg, gginfo)
 
 	// create the server TCP/IP userspace stack
-	server := netem.NewUNetStack(MTU, "10.0.0.1", cfg, gginfo)
+	server := netem.NewUNetStack("10.0.0.1", cfg, gginfo)
+
+	// capture packets on the server side
+	serverPCAPWriter := netem.NewPCAPDumper("calibration.pcap", server)
 
 	// connect the two stacks using a link
 	linkConfig := &netem.LinkConfig{
-		LeftToRightDelay: *delay,
+		LeftToRightDelay: *rtt / 2,
 		LeftToRightPLR:   0,
-		RightToLeftDelay: *delay,
+		RightToLeftDelay: *rtt / 2,
 		RightToLeftPLR:   *plr,
 	}
-	link := netem.NewLink(client, server, linkConfig)
+	link := netem.NewLink(client, serverPCAPWriter, linkConfig)
 
 	// start server in background and wait until it's listening
 	serverReady := make(chan any)
@@ -122,6 +123,6 @@ func main() {
 
 	<-ctx.Done()
 	client.Close()
-	server.Close()
+	serverPCAPWriter.Close()
 	link.Close()
 }

@@ -99,10 +99,8 @@ func main() {
 	backbone := netem.NewBackbone()
 	defer backbone.Close()
 
-	const MTU = 64000
-
 	// create the client TCP/IP userspace stack
-	client := netem.NewUNetStack(MTU, "10.0.0.2", cfg, gginfo)
+	client := netem.NewUNetStack("10.0.0.2", cfg, gginfo)
 
 	// attach the client to the backbone
 	clientLinkConfig := &netem.LinkConfig{
@@ -114,7 +112,7 @@ func main() {
 	backbone.AddStack(client, clientLinkConfig)
 
 	// create the server TCP/IP userspace stack
-	server := netem.NewUNetStack(MTU, "10.0.0.1", cfg, gginfo)
+	server := netem.NewUNetStack("10.0.0.1", cfg, gginfo)
 
 	// attach the server to the backbone.
 	serverLinkConfig := &netem.LinkConfig{

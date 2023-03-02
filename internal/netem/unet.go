@@ -91,7 +91,8 @@ var (
 // - cfg contains TLS MITM configuration;
 //
 // - gginfo provides the getaddrinfo functionality to the [UNetStack].
-func NewUNetStack(MTU uint32, A string, cfg *TLSMITMConfig, gginfo UNetGetaddrinfo) *UNetStack {
+func NewUNetStack(A string, cfg *TLSMITMConfig, gginfo UNetGetaddrinfo) *UNetStack {
+	const MTU = 1460
 	runtimex.Assert(MTU >= 1300, "MTU too small for using lucas-clemente/quic-go")
 
 	// parse the local address

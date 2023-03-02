@@ -81,16 +81,14 @@ func main() {
 	gginfo := netem.NewStaticGetaddrinfo()
 	cfg := netem.NewTLSMITMConfig()
 
-	const MTU = 64000
-
 	// create the client TCP/IP userspace stack
-	client := netem.NewUNetStack(MTU, "10.0.0.2", cfg, gginfo)
+	client := netem.NewUNetStack("10.0.0.2", cfg, gginfo)
 
 	// start capturing packets on the client side
 	pcapClient := netem.NewPCAPDumper("tcpping.pcap", client)
 
 	// create the server TCP/IP userspace stack
-	server := netem.NewUNetStack(MTU, "10.0.0.1", cfg, gginfo)
+	server := netem.NewUNetStack("10.0.0.1", cfg, gginfo)
 
 	// connect the two stacks using a link
 	linkConfig := &netem.LinkConfig{
