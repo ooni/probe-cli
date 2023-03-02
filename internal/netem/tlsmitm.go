@@ -1,4 +1,4 @@
-package netem3
+package netem
 
 //
 // TLS: MITM configuration

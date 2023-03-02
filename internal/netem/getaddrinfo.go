@@ -1,4 +1,4 @@
-package netem3
+package netem
 
 //
 // Getaddrinfo implementation(s)

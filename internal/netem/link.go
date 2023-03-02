@@ -1,4 +1,4 @@
-package netem3
+package netem
 
 //
 // Network link modeling
