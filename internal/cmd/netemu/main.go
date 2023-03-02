@@ -66,7 +66,7 @@ func main() {
 			RightToLeftPLR:   0.195,
 		}
 		stack := env.NewUNetStack(gginfo)
-		dumper := netem.NewPCAPDumper("dashTestCase3.pcap", 262144, stack)
+		dumper := netem.NewPCAPDumper("dashTestCase3.pcap", stack)
 		_, err := env.RunExperiment(ctx, dumper, linkConfig)
 		log.Infof("ERROR: %+v", err)
 		fmt.Fprintf(os.Stderr, "\n\n\n")
@@ -104,7 +104,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "\n\n\n")
 		log.Infof("WITH DPI DROPPING TRAFFIC FOR DASH SNI")
 		stack := env.NewUNetStack(gginfo)
-		dumper := netem.NewPCAPDumper("dashTestCase6.pcap", 256, stack)
+		dumper := netem.NewPCAPDumper("dashTestCase6.pcap", stack)
 		dpi := netem.NewDPIDropTrafficForTLSSNI(dumper, env.DASHServerDomainName())
 		_, err := env.RunExperiment(ctx, dpi, &netem.LinkConfig{})
 		log.Infof("ERROR: %+v", err)
@@ -119,6 +119,22 @@ func main() {
 			env.DASHServerDomainName(),
 			0.19,
 		)
+		linkConfig := &netem.LinkConfig{
+			LeftToRightPLR:   0,
+			LeftToRightDelay: 30 * time.Millisecond,
+			RightToLeftDelay: 30 * time.Millisecond,
+			RightToLeftPLR:   0,
+		}
+		_, err := env.RunExperiment(ctx, dpi, linkConfig)
+		log.Infof("ERROR: %+v", err)
+		fmt.Fprintf(os.Stderr, "\n\n\n")
+	}
+
+	if *index == 0 || *index == 8 {
+		fmt.Fprintf(os.Stderr, "\n\n\n")
+		log.Infof("RESETTING TCP TRAFFIC AFTER WE SEE DASH SNI")
+		dumper := netem.NewPCAPDumper("dashTestCase8.pcap", env.NewUNetStack(gginfo))
+		dpi := netem.NewDPIResetTrafficForTLSSNI(dumper, env.DASHServerDomainName())
 		linkConfig := &netem.LinkConfig{
 			LeftToRightPLR:   0,
 			LeftToRightDelay: 30 * time.Millisecond,

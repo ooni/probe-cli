@@ -70,7 +70,7 @@ func (bs *DPIThrottleTrafficForTLSSNI) ReadPacket() ([]byte, error) {
 		bs.slowed.addFromPacket(packet)
 	}
 
-	// deliver packer ANYWAY
+	// deliver packet ANYWAY
 	return rawPacket, nil
 }
 

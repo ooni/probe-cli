@@ -214,3 +214,80 @@ func (dp *dissectedPacket) parseTLSServerName() (string, error) {
 		return "", errDissectTransport
 	}
 }
+
+// reflectDissectedTCPSegmentWithRSTFlag assumes that packet is an IPv4 packet
+// containing a TCP segment, and constructs a new serialized packet where
+// we reflect incoming fields and set the RST flag.
+func reflectDissectedTCPSegmentWithRSTFlag(packet *dissectedPacket) ([]byte, error) {
+	var (
+		ipv4 *layers.IPv4
+		tcp  *layers.TCP
+	)
+
+	// reflect the network layer first
+	switch v := packet.ip.(type) {
+	case *layers.IPv4:
+		ipv4 = &layers.IPv4{
+			BaseLayer:  layers.BaseLayer{},
+			Version:    4,
+			IHL:        0,
+			TOS:        0,
+			Length:     0,
+			Id:         v.Id,
+			Flags:      0,
+			FragOffset: 0,
+			TTL:        60,
+			Protocol:   v.Protocol,
+			Checksum:   0,
+			SrcIP:      v.DstIP,
+			DstIP:      v.SrcIP,
+			Options:    []layers.IPv4Option{},
+			Padding:    []byte{},
+		}
+
+	default:
+		return nil, errDissectNetwork
+	}
+
+	// additionally reflect the transport layer
+	switch {
+	case packet.tcp != nil:
+		tcp = &layers.TCP{
+			BaseLayer:  layers.BaseLayer{},
+			SrcPort:    packet.tcp.DstPort,
+			DstPort:    packet.tcp.SrcPort,
+			Seq:        packet.tcp.Ack,
+			Ack:        packet.tcp.Seq,
+			DataOffset: 0,
+			FIN:        false,
+			SYN:        false,
+			RST:        true,
+			PSH:        false,
+			ACK:        false,
+			URG:        false,
+			ECE:        false,
+			CWR:        false,
+			NS:         false,
+			Window:     packet.tcp.Window,
+			Checksum:   0,
+			Urgent:     0,
+			Options:    []layers.TCPOption{},
+			Padding:    []byte{},
+		}
+
+	default:
+		return nil, errDissectTransport
+	}
+
+	// serialize the layers
+	tcp.SetNetworkLayerForChecksum(ipv4)
+	buf := gopacket.NewSerializeBuffer()
+	opts := gopacket.SerializeOptions{
+		FixLengths:       true,
+		ComputeChecksums: true,
+	}
+	if err := gopacket.SerializeLayers(buf, opts, ipv4, tcp); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
