@@ -107,11 +107,13 @@ type Config struct {
 type TestKeys struct {
 	mu sync.Mutex
 
-	NetworkEvents        []tracex.NetworkEvent    `json:"network_events"`
-	Queries              []tracex.DNSQueryEntry   `json:"queries"`
+	Agent                string                   `json:"agent"`
+	SOCKSProxy           string                   `json:"socksproxy,omitempty"`
 	Requests             []tracex.RequestEntry    `json:"requests"`
+	Queries              []tracex.DNSQueryEntry   `json:"queries"`
 	TCPConnect           []tracex.TCPConnectEntry `json:"tcp_connect"`
 	TLSHandshakes        []tracex.TLSHandshake    `json:"tls_handshakes"`
+	NetworkEvents        []tracex.NetworkEvent    `json:"network_events"`
 	SignalBackendStatus  string                   `json:"signal_backend_status"`
 	SignalBackendFailure *string                  `json:"signal_backend_failure"`
 }
