@@ -189,39 +189,51 @@ func TestFirstError(t *testing.T) {
 	networkUnreachable := errors.New(netxlite.FailureNetworkUnreachable)
 	mockErr := errors.New("mocked")
 	errRes := []*Maybe[string]{
-		{Error: nil},
-		{Error: networkUnreachable},
-		{Error: mockErr},
+		{Error: nil, Operation: "succeeds"},
+		{Error: networkUnreachable, Operation: "broken IPv6"},
+		{Error: mockErr, Operation: "mock error"},
 	}
 	noErrRes := []*Maybe[HTTPResponse]{
-		{Error: nil},
-		{Error: nil},
+		{Error: nil, Operation: "succeeds"},
+		{Error: nil, Operation: "succeeds"},
 	}
 	t.Run("Extract first error from list of *Maybe", func(t *testing.T) {
 		t.Run("without errors", func(t *testing.T) {
-			firstErr := FirstError(noErrRes...)
+			firstErr, failedOp := FirstError(noErrRes...)
 			if firstErr != nil {
 				t.Fatalf("unexpected error: %s", firstErr)
 			}
+			if failedOp != "" {
+				t.Fatalf("unexpected failed operation")
+			}
 		})
 		t.Run("with errors", func(t *testing.T) {
-			firstErr := FirstError(errRes...)
+			firstErr, failedOp := FirstError(errRes...)
 			if firstErr != networkUnreachable {
 				t.Fatalf("unexpected error: %s", firstErr)
+			}
+			if failedOp != "broken IPv6" {
+				t.Fatalf("unexpected failed operation")
 			}
 		})
 	})
 	t.Run("Extract first error excluding broken IPv6 errors", func(t *testing.T) {
 		t.Run("without errors", func(t *testing.T) {
-			firstErrExclIPv6 := FirstErrorExcludingBrokenIPv6Errors(noErrRes...)
+			firstErrExclIPv6, failedOp := FirstErrorExcludingBrokenIPv6Errors(noErrRes...)
 			if firstErrExclIPv6 != nil {
 				t.Fatalf("unexpected error: %s", firstErrExclIPv6)
 			}
+			if failedOp != "" {
+				t.Fatalf("unexpected failed operation")
+			}
 		})
 		t.Run("with errors", func(t *testing.T) {
-			firstErrExclIPv6 := FirstErrorExcludingBrokenIPv6Errors(errRes...)
+			firstErrExclIPv6, failedOp := FirstErrorExcludingBrokenIPv6Errors(errRes...)
 			if firstErrExclIPv6 != mockErr {
 				t.Fatalf("unexpected error: %s", firstErrExclIPv6)
+			}
+			if failedOp != "mock error" {
+				t.Fatalf("unexpected failed operation")
 			}
 		})
 	})
