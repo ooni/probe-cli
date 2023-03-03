@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/dslx"
-	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
@@ -106,9 +105,15 @@ type Config struct {
 
 // TestKeys contains signal test keys.
 type TestKeys struct {
-	urlgetter.TestKeys
-	SignalBackendStatus  string  `json:"signal_backend_status"`
-	SignalBackendFailure *string `json:"signal_backend_failure"`
+	mu sync.Mutex
+
+	NetworkEvents        []tracex.NetworkEvent    `json:"network_events"`
+	Queries              []tracex.DNSQueryEntry   `json:"queries"`
+	Requests             []tracex.RequestEntry    `json:"requests"`
+	TCPConnect           []tracex.TCPConnectEntry `json:"tcp_connect"`
+	TLSHandshakes        []tracex.TLSHandshake    `json:"tls_handshakes"`
+	SignalBackendStatus  string                   `json:"signal_backend_status"`
+	SignalBackendFailure *string                  `json:"signal_backend_failure"`
 }
 
 // NewTestKeys creates new signal TestKeys.
@@ -119,8 +124,10 @@ func NewTestKeys() *TestKeys {
 	}
 }
 
-// MergeObservations updates the TestKeys using the given [Observations].
+// MergeObservations updates the TestKeys using the given [Observations] (goroutine safe).
 func (tk *TestKeys) MergeObservations(obs []*dslx.Observations) {
+	defer tk.mu.Unlock()
+	tk.mu.Lock()
 	for _, o := range obs {
 		// update the easy to update entries first
 		for _, e := range o.NetworkEvents {
@@ -141,14 +148,19 @@ func (tk *TestKeys) MergeObservations(obs []*dslx.Observations) {
 	}
 }
 
+// SetFailure updates the TestKeys using the given error (goroutine safe).
+func (tk *TestKeys) SetFailure(err error) {
+	defer tk.mu.Unlock()
+	tk.mu.Lock()
+	tk.SignalBackendStatus = "blocked"
+	tk.SignalBackendFailure = tracex.NewFailure(err)
+}
+
 // Measurer performs the measurement
 type Measurer struct {
 	// Config contains the experiment settings. If empty we
 	// will be using default settings.
 	Config Config
-
-	// Getter is an optional getter to be used for testing.
-	Getter urlgetter.MultiGetter
 }
 
 // ExperimentName implements ExperimentMeasurer.ExperimentName
@@ -205,19 +217,8 @@ func measureTarget(
 	certPool *x509.CertPool,
 	wg *sync.WaitGroup,
 ) {
-	doMeasureTarget(ctx, logger, idGen, zeroTime, tk, domain, certPool)
-	wg.Done()
-}
+	defer wg.Done()
 
-func doMeasureTarget(
-	ctx context.Context,
-	logger model.Logger,
-	idGen *atomic.Int64,
-	zeroTime time.Time,
-	tk *TestKeys,
-	domain string,
-	certPool *x509.CertPool,
-) {
 	// describe the DNS measurement input
 	dnsInput := dslx.NewDomainToResolve(
 		dslx.DomainName(domain),
@@ -234,13 +235,12 @@ func doMeasureTarget(
 	// extract and merge observations with the test keys
 	tk.MergeObservations(dslx.ExtractObservations(dnsResult))
 
-	// if the lookup has failed we return
+	// if the lookup has failed we set the error and return
 	if dnsResult.Error != nil {
-		tk.Failure = tracex.NewFailure(dnsResult.Error)
-		tk.FailedOperation = &dnsResult.Operation
+		tk.SetFailure(dnsResult.Error)
 		return
 	}
-
+	// for this domain, we are only interested in the lookup, so we return here
 	if domain == "uptime.signal.org" {
 		return
 	}
@@ -284,30 +284,21 @@ func doMeasureTarget(
 		httpsFunction,
 		dslx.StreamList(endpoints...),
 	)
-
-	collectedResults := dslx.Collect(httpsResults)
+	coll := dslx.Collect(httpsResults)
 
 	// extract and merge observations with the test keys
-	tk.MergeObservations(dslx.ExtractObservations(collectedResults...))
+	tk.MergeObservations(dslx.ExtractObservations(coll...))
 
 	// if we saw successes, then this domain is not blocked
-	// TODO: is that reasonable?
+	// TODO: Success = at least one endpoint succeeds?
 	if successes.Value() > 0 {
 		return
 	}
 
-	firstError, failedOp := dslx.FirstErrorExcludingBrokenIPv6Errors(collectedResults...)
-	if firstError == nil {
-		firstError, failedOp = dslx.FirstError(collectedResults...)
-	}
-
+	firstError, _ := dslx.FirstError(coll...)
 	if firstError != nil {
-		tk.Failure = tracex.NewFailure(firstError)
-		tk.FailedOperation = &failedOp
-		tk.SignalBackendStatus = "blocked"
-		sError := firstError.Error()
-		// TODO: is this reasonable? Only the error of the last target will be stored.
-		tk.SignalBackendFailure = &sError
+		tk.SetFailure(firstError)
+		return
 	}
 }
 
