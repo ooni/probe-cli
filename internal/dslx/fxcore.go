@@ -27,6 +27,9 @@ type Maybe[State any] struct {
 	// Observations contains the collected observations.
 	Observations []*Observations
 
+	// Operation contains the name of this operation.
+	Operation string
+
 	// Skipped indicates whether an operation decided
 	// that subsequent steps should be skipped.
 	Skipped bool
@@ -58,15 +61,21 @@ func (h *compose2Func[A, B, C]) Apply(ctx context.Context, a A) *Maybe[C] {
 		return &Maybe[C]{
 			Error:        mb.Error,
 			Observations: mb.Observations,
+			Operation:    mb.Operation,
 			Skipped:      mb.Skipped,
 			State:        *new(C), // zero value
 		}
 	}
 	mc := h.g.Apply(ctx, mb.State)
 	runtimex.Assert(mc != nil, "h.g.Apply returned a nil pointer")
+	op := mc.Operation
+	if op == "" { // propagate the previous operation name, if this operation has none
+		op = mb.Operation
+	}
 	return &Maybe[C]{
 		Error:        mc.Error,
 		Observations: append(mb.Observations, mc.Observations...), // merge observations
+		Operation:    op,
 		Skipped:      mc.Skipped,
 		State:        mc.State,
 	}
@@ -104,6 +113,7 @@ func (c *counterFunc[T]) Apply(ctx context.Context, value T) *Maybe[T] {
 	return &Maybe[T]{
 		Error:        nil,
 		Observations: nil,
+		Operation:    "", // we cannot fail, so no need to store operation name
 		Skipped:      false,
 		State:        value,
 	}

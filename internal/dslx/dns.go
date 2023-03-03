@@ -170,6 +170,7 @@ func (f *dnsLookupGetaddrinfoFunc) Apply(
 	return &Maybe[*ResolvedAddresses]{
 		Error:        err,
 		Observations: maybeTraceToObservations(trace),
+		Operation:    netxlite.ResolveOperation,
 		Skipped:      false,
 		State:        state,
 	}
@@ -238,6 +239,7 @@ func (f *dnsLookupUDPFunc) Apply(
 	return &Maybe[*ResolvedAddresses]{
 		Error:        err,
 		Observations: maybeTraceToObservations(trace),
+		Operation:    netxlite.ResolveOperation,
 		Skipped:      false,
 		State:        state,
 	}

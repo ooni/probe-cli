@@ -192,6 +192,7 @@ func (f *httpRequestFunc) Apply(
 	return &Maybe[*HTTPResponse]{
 		Error:        err,
 		Observations: observations,
+		Operation:    netxlite.HTTPRoundTripOperation,
 		Skipped:      false,
 		State:        state,
 	}

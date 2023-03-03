@@ -149,6 +149,7 @@ func (f *tlsHandshakeFunc) Apply(
 	return &Maybe[*TLSConnection]{
 		Error:        err,
 		Observations: maybeTraceToObservations(trace),
+		Operation:    netxlite.TLSHandshakeOperation,
 		Skipped:      false,
 		State:        state,
 	}

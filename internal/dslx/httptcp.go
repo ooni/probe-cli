@@ -46,6 +46,7 @@ func (f *httpTransportTCPFunc) Apply(
 	return &Maybe[*HTTPTransport]{
 		Error:        nil,
 		Observations: nil,
+		Operation:    "", // we cannot fail, so no need to store operation name
 		Skipped:      false,
 		State:        state,
 	}

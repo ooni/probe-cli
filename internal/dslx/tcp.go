@@ -12,6 +12,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // TCPConnect returns a function that establishes TCP connections.
@@ -74,6 +75,7 @@ func (f *tcpConnectFunc) Apply(
 	return &Maybe[*TCPConnection]{
 		Error:        err,
 		Observations: maybeTraceToObservations(trace),
+		Operation:    netxlite.ConnectOperation,
 		Skipped:      false,
 		State:        state,
 	}

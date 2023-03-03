@@ -141,6 +141,7 @@ func (f *quicHandshakeFunc) Apply(
 	return &Maybe[*QUICConnection]{
 		Error:        err,
 		Observations: maybeTraceToObservations(trace),
+		Operation:    netxlite.QUICHandshakeOperation,
 		Skipped:      false,
 		State:        state,
 	}

@@ -9,12 +9,13 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-func getFn(err error) Func[int, *Maybe[int]] {
-	return &fn{err: err}
+func getFn(err error, name string) Func[int, *Maybe[int]] {
+	return &fn{err: err, name: name}
 }
 
 type fn struct {
-	err error
+	err  error
+	name string
 }
 
 func (f *fn) Apply(ctx context.Context, i int) *Maybe[int] {
@@ -26,6 +27,7 @@ func (f *fn) Apply(ctx context.Context, i int) *Maybe[int] {
 				NetworkEvents: []*model.ArchivalNetworkEvent{{Tags: []string{"apply"}}},
 			},
 		},
+		Operation: f.name,
 	}
 }
 
@@ -48,12 +50,15 @@ func TestCompose2(t *testing.T) {
 		}
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {
-				f1 := getFn(tt.err)
-				f2 := getFn(nil)
+				f1 := getFn(tt.err, "maybe fail")
+				f2 := getFn(nil, "succeed")
 				composit := Compose2(f1, f2)
 				r := composit.Apply(context.Background(), tt.input)
 				if r.Error != tt.err {
 					t.Fatalf("unexpected error")
+				}
+				if tt.err != nil && r.Operation != "maybe fail" {
+					t.Fatalf("unexpected operation string")
 				}
 				if len(r.Observations) != tt.numObs {
 					t.Fatalf("unexpected number of (merged) observations")
@@ -65,7 +70,7 @@ func TestCompose2(t *testing.T) {
 
 func TestGen(t *testing.T) {
 	t.Run("Create composit of 14 functions", func(t *testing.T) {
-		incFunc := getFn(nil)
+		incFunc := getFn(nil, "succeed")
 		composit := Compose14(incFunc, incFunc, incFunc, incFunc, incFunc, incFunc, incFunc, incFunc,
 			incFunc, incFunc, incFunc, incFunc, incFunc, incFunc)
 		r := composit.Apply(context.Background(), 0)
@@ -75,13 +80,16 @@ func TestGen(t *testing.T) {
 		if r.State != 14 {
 			t.Fatalf("unexpected result state")
 		}
+		if r.Operation != "succeed" {
+			t.Fatal("unexpected operation string")
+		}
 	})
 }
 
 func TestObservations(t *testing.T) {
 	t.Run("Extract observations", func(t *testing.T) {
-		fn1 := getFn(nil)
-		fn2 := getFn(nil)
+		fn1 := getFn(nil, "succeed")
+		fn2 := getFn(nil, "succeed")
 		composit := Compose2(fn1, fn2)
 		r1 := composit.Apply(context.Background(), 3)
 		r2 := composit.Apply(context.Background(), 42)
@@ -112,13 +120,16 @@ func TestCounter(t *testing.T) {
 		}
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {
-				fn := getFn(tt.err)
+				fn := getFn(tt.err, "maybe fail")
 				cnt := NewCounter[int]()
 				composit := Compose2(fn, cnt.Func())
-				_ = composit.Apply(context.Background(), 42)
+				r := composit.Apply(context.Background(), 42)
 				cntVal := cnt.Value()
 				if cntVal != tt.expect {
 					t.Fatalf("unexpected counter value")
+				}
+				if r.Operation != "maybe fail" {
+					t.Fatal("unexpected operation string")
 				}
 			})
 		}
@@ -142,10 +153,10 @@ func TestErrorLogger(t *testing.T) {
 		}
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {
-				fn := getFn(tt.err)
+				fn := getFn(tt.err, "maybe fail")
 				errLog := &ErrorLogger{}
 				fnWithErrors := RecordErrors(errLog, fn)
-				fnWithErrors.Apply(context.Background(), 42)
+				r := fnWithErrors.Apply(context.Background(), 42)
 				errs := errLog.Errors()
 				if len(errs) != tt.expect {
 					t.Fatalf("unexpected number of logged errors")
@@ -155,6 +166,9 @@ func TestErrorLogger(t *testing.T) {
 				}
 				if errLog.errors != nil {
 					t.Fatalf("errors should be cleared after call to Errors")
+				}
+				if r.Operation != "maybe fail" {
+					t.Fatal("unexpected operation string")
 				}
 			})
 		}
@@ -179,7 +193,7 @@ func TestFirstError(t *testing.T) {
 		{Error: networkUnreachable},
 		{Error: mockErr},
 	}
-	noErrRes := []*Maybe[string]{
+	noErrRes := []*Maybe[HTTPResponse]{
 		{Error: nil},
 		{Error: nil},
 	}
