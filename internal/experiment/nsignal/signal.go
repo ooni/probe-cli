@@ -127,7 +127,7 @@ func NewTestKeys() *TestKeys {
 }
 
 // MergeObservations updates the TestKeys using the given [Observations] (goroutine safe).
-func (tk *TestKeys) MergeObservations(obs []*dslx.Observations) {
+func (tk *TestKeys) mergeObservations(obs []*dslx.Observations) {
 	defer tk.mu.Unlock()
 	tk.mu.Lock()
 	for _, o := range obs {
@@ -235,7 +235,7 @@ func measureTarget(
 	dnsResult := lookup.Apply(ctx, dnsInput)
 
 	// extract and merge observations with the test keys
-	tk.MergeObservations(dslx.ExtractObservations(dnsResult))
+	tk.mergeObservations(dslx.ExtractObservations(dnsResult))
 
 	// if the lookup has failed we set the error and return
 	if dnsResult.Error != nil {
@@ -289,7 +289,7 @@ func measureTarget(
 	coll := dslx.Collect(httpsResults)
 
 	// extract and merge observations with the test keys
-	tk.MergeObservations(dslx.ExtractObservations(coll...))
+	tk.mergeObservations(dslx.ExtractObservations(coll...))
 
 	// if we saw successes, then this domain is not blocked
 	// TODO: Success = at least one endpoint succeeds?

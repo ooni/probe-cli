@@ -50,7 +50,7 @@ type Subresult struct {
 	THAddress     string                   `json:"th_address"`
 }
 
-func (tk *Subresult) MergeObservations(obs []*dslx.Observations) {
+func (tk *Subresult) mergeObservations(obs []*dslx.Observations) {
 	for _, o := range obs {
 		// update the easy to update entries first
 		for _, e := range o.NetworkEvents {
@@ -181,7 +181,7 @@ func (m *Measurer) measureone(
 		SNI:       sni,
 		THAddress: thaddr,
 	}
-	subresult.MergeObservations(dslx.ExtractObservations(dnsResult))
+	subresult.mergeObservations(dslx.ExtractObservations(dnsResult))
 
 	// if the lookup has failed we return
 	if dnsResult.Error != nil {
@@ -226,7 +226,7 @@ func (m *Measurer) measureone(
 	coll := dslx.Collect(httpsResults)
 
 	// extract and merge observations
-	subresult.MergeObservations(dslx.ExtractObservations(coll...))
+	subresult.mergeObservations(dslx.ExtractObservations(coll...))
 
 	// extract first error
 	firstError, _ := dslx.FirstError(coll...)
