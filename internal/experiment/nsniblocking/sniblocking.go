@@ -39,16 +39,15 @@ type Config struct {
 // Subresult contains the keys of a single measurement
 // that targets either the target or the control.
 type Subresult struct {
-	FailedOperation *string                  `json:"failed_operation"`
-	Failure         *string                  `json:"failure"`
-	NetworkEvents   []tracex.NetworkEvent    `json:"network_events"`
-	Queries         []tracex.DNSQueryEntry   `json:"queries"`
-	Requests        []tracex.RequestEntry    `json:"requests"`
-	TCPConnect      []tracex.TCPConnectEntry `json:"tcp_connect"`
-	TLSHandshakes   []tracex.TLSHandshake    `json:"tls_handshakes"`
-	Cached          bool                     `json:"-"`
-	SNI             string                   `json:"sni"`
-	THAddress       string                   `json:"th_address"`
+	Failure       *string                  `json:"failure"`
+	NetworkEvents []tracex.NetworkEvent    `json:"network_events"`
+	Queries       []tracex.DNSQueryEntry   `json:"queries"`
+	Requests      []tracex.RequestEntry    `json:"requests"`
+	TCPConnect    []tracex.TCPConnectEntry `json:"tcp_connect"`
+	TLSHandshakes []tracex.TLSHandshake    `json:"tls_handshakes"`
+	Cached        bool                     `json:"-"`
+	SNI           string                   `json:"sni"`
+	THAddress     string                   `json:"th_address"`
 }
 
 func (tk *Subresult) MergeObservations(obs []*dslx.Observations) {
@@ -149,16 +148,13 @@ func (m *Measurer) measureone(
 	case <-time.After(sleeptime):
 	case <-ctx.Done():
 		s := netxlite.FailureInterrupted
-		failedop := netxlite.TopLevelOperation
 		return Subresult{
-			FailedOperation: &failedop,
-			Failure:         &s,
-			THAddress:       thaddr,
-			SNI:             sni,
+			Failure:   &s,
+			THAddress: thaddr,
+			SNI:       sni,
 		}
 	}
 
-	// perform the measurement
 	idGen := &atomic.Int64{}
 	zeroTime := time.Now()
 
@@ -227,19 +223,15 @@ func (m *Measurer) measureone(
 		dslx.StreamList(endpoints...),
 	)
 
-	collectedResults := dslx.Collect(httpsResults)
+	coll := dslx.Collect(httpsResults)
 
 	// extract and merge observations
-	subresult.MergeObservations(dslx.ExtractObservations(collectedResults...))
+	subresult.MergeObservations(dslx.ExtractObservations(coll...))
 
-	// extract first error with failed operation
-	firstError, failedOp := dslx.FirstErrorExcludingBrokenIPv6Errors(collectedResults...)
-	if firstError == nil {
-		firstError, failedOp = dslx.FirstError(collectedResults...)
-	}
+	// extract first error
+	firstError, _ := dslx.FirstError(coll...)
 	if firstError != nil {
 		subresult.Failure = tracex.NewFailure(firstError)
-		subresult.FailedOperation = &failedOp
 	}
 
 	return subresult
@@ -287,7 +279,6 @@ func (m *Measurer) startall(
 func processall(
 	outputs <-chan Subresult,
 	measurement *model.Measurement,
-	callbacks model.ExperimentCallbacks,
 	inputs []string,
 	sess model.ExperimentSession,
 	controlSNI string,
@@ -332,7 +323,6 @@ func maybeURLToSNI(input model.MeasurementTarget) (model.MeasurementTarget, erro
 
 // Run implements ExperimentMeasurer.Run.
 func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
-	callbacks := args.Callbacks
 	measurement := args.Measurement
 	sess := args.Session
 	m.mu.Lock()
@@ -371,7 +361,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	defer cancel()
 	outputs := m.startall(ctx, sess, measurement, inputs)
 	measurement.TestKeys = processall(
-		outputs, measurement, callbacks, inputs, sess, m.config.ControlSNI,
+		outputs, measurement, inputs, sess, m.config.ControlSNI,
 	)
 	return nil
 }
