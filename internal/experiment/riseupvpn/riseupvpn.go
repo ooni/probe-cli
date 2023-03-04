@@ -61,7 +61,7 @@ type Config struct {
 // TestKeys contains riseupvpn test keys.
 type TestKeys struct {
 	urlgetter.TestKeys
-	APIFailure      *string             `json:"api_failure"`
+	APIFailure      []string            `json:"api_failure"`
 	APIStatus       string              `json:"api_status"`
 	CACertStatus    bool                `json:"ca_cert_status"`
 	FailingGateways []GatewayConnection `json:"failing_gateways"`
@@ -86,12 +86,9 @@ func (tk *TestKeys) UpdateProviderAPITestKeys(v urlgetter.MultiOutput) {
 	tk.Requests = append(tk.Requests, v.TestKeys.Requests...)
 	tk.TCPConnect = append(tk.TCPConnect, v.TestKeys.TCPConnect...)
 	tk.TLSHandshakes = append(tk.TLSHandshakes, v.TestKeys.TLSHandshakes...)
-	if tk.APIStatus != "ok" {
-		return // we already flipped the state
-	}
 	if v.TestKeys.Failure != nil {
 		tk.APIStatus = "blocked"
-		tk.APIFailure = v.TestKeys.Failure
+		tk.APIFailure = append(tk.APIFailure, *v.TestKeys.Failure)
 		return
 	}
 }
@@ -147,11 +144,6 @@ func (tk *TestKeys) AddCACertFetchTestKeys(testKeys urlgetter.TestKeys) {
 	tk.Requests = append(tk.Requests, testKeys.Requests...)
 	tk.TCPConnect = append(tk.TCPConnect, testKeys.TCPConnect...)
 	tk.TLSHandshakes = append(tk.TLSHandshakes, testKeys.TLSHandshakes...)
-	if testKeys.Failure != nil {
-		tk.APIStatus = "blocked"
-		tk.APIFailure = tk.Failure
-		tk.CACertStatus = false
-	}
 }
 
 // Measurer performs the measurement.
@@ -208,17 +200,15 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		tk := entry.TestKeys
 		testkeys.AddCACertFetchTestKeys(tk)
 		if tk.Failure != nil {
-			// TODO(bassosimone,cyberta): should we update the testkeys
-			// in this case (e.g., APIFailure?)
-			// See https://github.com/ooni/probe/issues/1432.
-			return nil
-		}
-		if ok := certPool.AppendCertsFromPEM([]byte(tk.HTTPResponseBody)); !ok {
 			testkeys.CACertStatus = false
 			testkeys.APIStatus = "blocked"
-			errorValue := "invalid_ca"
-			testkeys.APIFailure = &errorValue
-			return nil
+			testkeys.APIFailure = append(testkeys.APIFailure, *tk.Failure)
+			certPool = nil
+		} else if ok := certPool.AppendCertsFromPEM([]byte(tk.HTTPResponseBody)); !ok {
+			testkeys.CACertStatus = false
+			testkeys.APIStatus = "blocked"
+			testkeys.APIFailure = append(testkeys.APIFailure, "invalid_ca")
+			certPool = nil
 		}
 	}
 
@@ -230,16 +220,19 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 			CertPool:        certPool,
 			Method:          "GET",
 			FailOnHTTPError: true,
+			NoTLSVerify:     !testkeys.CACertStatus,
 		}},
 		{Target: eipServiceURL, Config: urlgetter.Config{
 			CertPool:        certPool,
 			Method:          "GET",
 			FailOnHTTPError: true,
+			NoTLSVerify:     !testkeys.CACertStatus,
 		}},
 		{Target: geoServiceURL, Config: urlgetter.Config{
 			CertPool:        certPool,
 			Method:          "GET",
 			FailOnHTTPError: true,
+			NoTLSVerify:     !testkeys.CACertStatus,
 		}},
 	}
 	for entry := range multi.CollectOverall(ctx, inputs, 1, 50, "riseupvpn", callbacks) {
