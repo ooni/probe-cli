@@ -235,8 +235,18 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 			NoTLSVerify:     !testkeys.CACertStatus,
 		}},
 	}
+
 	for entry := range multi.CollectOverall(ctx, inputs, 1, 50, "riseupvpn", callbacks) {
 		testkeys.UpdateProviderAPITestKeys(entry)
+	}
+
+	if testkeys.APIStatus == "blocked" {
+		for _, input := range inputs {
+			input.Config.Tunnel = "torsf"
+		}
+		for entry := range multi.CollectOverall(ctx, inputs, 1, 50, "riseupvpn", callbacks) {
+			testkeys.UpdateProviderAPITestKeys(entry)
+		}
 	}
 
 	// test gateways now
