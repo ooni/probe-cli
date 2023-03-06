@@ -24,6 +24,8 @@ const (
 	tcpConnect    = "tcpconnect://"
 )
 
+var locations = []string{"Seattle", "Amsterdam"}
+
 // EipService is the main JSON object of eip-service.json.
 type EipService struct {
 	Gateways []GatewayV3
@@ -36,6 +38,7 @@ type GatewayV3 struct {
 	}
 	Host      string
 	IPAddress string `json:"ip_address"`
+	Location  string `json:"location"`
 }
 
 // TransportV3 describes a transport.
@@ -51,6 +54,24 @@ type GatewayConnection struct {
 	IP            string `json:"ip"`
 	Port          int    `json:"port"`
 	TransportType string `json:"transport_type"`
+}
+
+// GatewayLoad describes the load of a single Gateway.
+type GatewayLoad struct {
+	Host     string  `json:"host"`
+	Fullness float64 `json:"fullness"`
+	Overload bool    `json:"overload"`
+}
+
+// GeoService represents the geoService API (also known as menshen) json response
+type GeoService struct {
+	IPAddress      string        `json:"ip"`
+	Country        string        `json:"cc"`
+	City           string        `json:"city"`
+	Latitude       float64       `json:"lat"`
+	Longitude      float64       `json:"lon"`
+	Gateways       []string      `json:"gateways"`
+	SortedGateways []GatewayLoad `json:"sortedGateways"`
 }
 
 // Config contains the riseupvpn experiment config.
@@ -302,18 +323,76 @@ func generateMultiInputs(gateways []GatewayV3, transportType string) []urlgetter
 }
 
 func parseGateways(testKeys *TestKeys) []GatewayV3 {
+	var eipService *EipService = nil
+	var geoService *GeoService = nil
 	for _, requestEntry := range testKeys.Requests {
 		if requestEntry.Request.URL == eipServiceURL && requestEntry.Failure == nil {
-			// TODO(bassosimone,cyberta): is it reasonable that we discard
-			// the error when the JSON we fetched cannot be parsed?
-			// See https://github.com/ooni/probe/issues/1432
-			eipService, err := DecodeEIP3(requestEntry.Response.Body.Value)
-			if err == nil {
-				return eipService.Gateways
+			var err error = nil
+			eipService, err = DecodeEIP3(requestEntry.Response.Body.Value)
+			if err != nil {
+				testKeys.APIFailure = append(testKeys.APIFailure, "invalid_eipservice_response")
+				return nil
+			}
+		} else if requestEntry.Request.URL == geoServiceURL && requestEntry.Failure == nil {
+			var err error = nil
+			geoService, err = DecodeGeoService(requestEntry.Response.Body.Value)
+			if err != nil {
+				testKeys.APIFailure = append(testKeys.APIFailure, "invalid_geoservice_response")
 			}
 		}
 	}
-	return nil
+	return filterGateways(eipService, geoService)
+}
+
+func filterGateways(eipService *EipService, geoService *GeoService) []GatewayV3 {
+	var result []GatewayV3 = nil
+	for _, gateway := range eipService.Gateways {
+		if !gateway.hasTransport("obfs4") ||
+			!gateway.isLocationUnderTest() ||
+			geoService != nil && !geoService.isHealthyGateway(gateway) {
+			continue
+		}
+		result = append(result, gateway)
+		if len(result) == 3 {
+			return result
+		}
+	}
+
+	return result
+}
+
+func (gateway *GatewayV3) hasTransport(s string) bool {
+	for _, transport := range gateway.Capabilities.Transport {
+		if s == transport.Type {
+			return true
+		}
+	}
+	return false
+}
+
+func (gateway *GatewayV3) isLocationUnderTest() bool {
+	for _, location := range locations {
+		if location == gateway.Location {
+			return true
+		}
+	}
+	return false
+}
+
+func (geoService *GeoService) isHealthyGateway(gateway GatewayV3) bool {
+	if geoService.SortedGateways == nil {
+		// Earlier versions of the geoservice don't include the sorted gateway list containing the load info,
+		// so we can't say anything about the load of a gateway in that case.
+		// We assume it's an healthy location. Riseup will switch to the updated API soon *fingers crossed*
+		return true
+	}
+	for _, gatewayLoad := range geoService.SortedGateways {
+		if gatewayLoad.Host == gateway.Host {
+			return !gatewayLoad.Overload
+		}
+	}
+
+	return false
 }
 
 // DecodeEIP3 decodes eip-service.json version 3
@@ -324,6 +403,16 @@ func DecodeEIP3(body string) (*EipService, error) {
 		return nil, err
 	}
 	return &eip, nil
+}
+
+// DecodeGeoService decodes geoService  json
+func DecodeGeoService(body string) (*GeoService, error) {
+	var gs GeoService
+	err := json.Unmarshal([]byte(body), &gs)
+	if err != nil {
+		return nil, err
+	}
+	return &gs, nil
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
