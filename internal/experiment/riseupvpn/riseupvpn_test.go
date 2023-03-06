@@ -291,7 +291,7 @@ func TestUpdateWithMixedResults(t *testing.T) {
 	if tk.APIStatus != "blocked" {
 		t.Fatal("ApiStatus should be blocked")
 	}
-	if *tk.APIFailure != netxlite.FailureEOFError {
+	if len(tk.APIFailure) > 0 && tk.APIFailure[0] != netxlite.FailureEOFError {
 		t.Fatal("invalid ApiFailure")
 	}
 	if tk.FailingGateways != nil {
@@ -344,11 +344,24 @@ func TestInvalidCaCert(t *testing.T) {
 	if tk.APIStatus != "blocked" {
 		t.Fatal("ApiStatus should be blocked")
 	}
-	if tk.FailingGateways != nil {
-		t.Fatal("invalid FailingGateways")
+
+	if tk.FailingGateways == nil || len(tk.FailingGateways) != 1 {
+		t.Fatal("invalid length of FailingGateways")
 	}
-	if tk.TransportStatus != nil {
-		t.Fatal("invalid TransportStatus")
+
+	gw := tk.FailingGateways[0]
+	if gw.IP != "234.345.234.345" {
+		t.Fatal("invalid failed gateway ip: " + fmt.Sprint(gw.IP))
+	}
+	if gw.Port != 443 {
+		t.Fatal("invalid failed gateway port: " + fmt.Sprint(gw.Port))
+	}
+	if gw.TransportType != "openvpn" {
+		t.Fatal("invalid failed transport type: " + fmt.Sprint(gw.TransportType))
+	}
+
+	if tk.TransportStatus == nil || tk.TransportStatus["openvpn"] != "ok" {
+		t.Fatal("invalid TransportStatus: " + fmt.Sprint(tk.TransportStatus))
 	}
 }
 
@@ -371,17 +384,17 @@ func TestFailureCaCertFetch(t *testing.T) {
 		t.Fatal("invalid ApiStatus")
 	}
 
-	if tk.APIFailure != nil {
-		t.Fatal("ApiFailure should be null")
+	if tk.APIFailure == nil || len(tk.APIFailure) != 1 || tk.APIFailure[0] != io.EOF.Error() {
+		t.Fatal("ApiFailure should not be null" + fmt.Sprint(tk.APIFailure))
 	}
-	if len(tk.Requests) > 1 {
-		t.Fatal("Unexpected requests")
+	if len(tk.Requests) == 1 {
+		t.Fatal("Too less requests, expected to run all API requests")
 	}
 	if tk.FailingGateways != nil {
 		t.Fatal("invalid FailingGateways")
 	}
-	if tk.TransportStatus != nil {
-		t.Fatal("invalid TransportStatus")
+	if tk.TransportStatus == nil || tk.TransportStatus["openvpn"] != "ok" || tk.TransportStatus["obfs4"] != "ok" {
+		t.Fatal("invalid TransportStatus: " + fmt.Sprint(tk.TransportStatus))
 	}
 }
 
