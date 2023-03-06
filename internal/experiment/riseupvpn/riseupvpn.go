@@ -217,7 +217,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 			FailOnHTTPError: true,
 		}},
 	}
-	for entry := range multi.CollectOverall(ctx, inputs, 0, 50, "riseupvpn", callbacks) {
+	for entry := range multi.CollectOverall(ctx, inputs, 0, 20, "riseupvpn", callbacks) {
 		tk := entry.TestKeys
 		testkeys.AddCACertFetchTestKeys(tk)
 		if tk.Failure != nil {
@@ -257,7 +257,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		}},
 	}
 
-	for entry := range multi.CollectOverall(ctx, inputs, 1, 50, "riseupvpn", callbacks) {
+	for entry := range multi.CollectOverall(ctx, inputs, 1, 20, "riseupvpn", callbacks) {
 		testkeys.UpdateProviderAPITestKeys(entry)
 	}
 
@@ -265,7 +265,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		for _, input := range inputs {
 			input.Config.Tunnel = "torsf"
 		}
-		for entry := range multi.CollectOverall(ctx, inputs, 1, 50, "riseupvpn", callbacks) {
+		for entry := range multi.CollectOverall(ctx, inputs, 1, 20, "riseupvpn", callbacks) {
 			testkeys.UpdateProviderAPITestKeys(entry)
 		}
 	}
