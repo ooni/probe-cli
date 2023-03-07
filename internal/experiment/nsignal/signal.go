@@ -83,6 +83,7 @@ Lrsybb0z5gg8w7ZblEuB9zOW9M3l60DXuJO6l7g+deV6P96rv2unHS8UlvWiVWDy
 -----END CERTIFICATE-----`
 )
 
+// newCertPool returns a [x509.CertPool], containing the custom Signal CA root certificates
 func newCertPool() (*x509.CertPool, error) {
 	certPool := netxlite.NewDefaultCertPool()
 	signalCAByteSlice := [][]byte{
@@ -107,15 +108,16 @@ type Config struct {
 type TestKeys struct {
 	mu sync.Mutex
 
-	Agent                string                   `json:"agent"`
-	SOCKSProxy           string                   `json:"socksproxy,omitempty"`
-	Requests             []tracex.RequestEntry    `json:"requests"`
-	Queries              []tracex.DNSQueryEntry   `json:"queries"`
-	TCPConnect           []tracex.TCPConnectEntry `json:"tcp_connect"`
-	TLSHandshakes        []tracex.TLSHandshake    `json:"tls_handshakes"`
-	NetworkEvents        []tracex.NetworkEvent    `json:"network_events"`
-	SignalBackendStatus  string                   `json:"signal_backend_status"`
-	SignalBackendFailure *string                  `json:"signal_backend_failure"`
+	Agent         string                   `json:"agent"`                // df-001-httpt
+	SOCKSProxy    string                   `json:"socksproxy,omitempty"` // df-001-httpt
+	Requests      []tracex.RequestEntry    `json:"requests"`             // df-001-httpt
+	Queries       []tracex.DNSQueryEntry   `json:"queries"`              // df-002-dnst
+	TCPConnect    []tracex.TCPConnectEntry `json:"tcp_connect"`          // df-005-tcpconnect
+	TLSHandshakes []tracex.TLSHandshake    `json:"tls_handshakes"`       // df-006-tlshandshake
+	NetworkEvents []tracex.NetworkEvent    `json:"network_events"`       // df-008-netevents
+
+	SignalBackendStatus  string  `json:"signal_backend_status"`
+	SignalBackendFailure *string `json:"signal_backend_failure"`
 }
 
 // NewTestKeys creates new signal TestKeys.
@@ -126,12 +128,11 @@ func NewTestKeys() *TestKeys {
 	}
 }
 
-// MergeObservations updates the TestKeys using the given [Observations] (goroutine safe).
+// mergeObservations updates the TestKeys using the given [Observations] (goroutine safe).
 func (tk *TestKeys) mergeObservations(obs []*dslx.Observations) {
 	defer tk.mu.Unlock()
 	tk.mu.Lock()
 	for _, o := range obs {
-		// update the easy to update entries first
 		for _, e := range o.NetworkEvents {
 			tk.NetworkEvents = append(tk.NetworkEvents, *e)
 		}
@@ -150,8 +151,8 @@ func (tk *TestKeys) mergeObservations(obs []*dslx.Observations) {
 	}
 }
 
-// SetFailure updates the TestKeys using the given error (goroutine safe).
-func (tk *TestKeys) SetFailure(err error) {
+// setFailure updates the TestKeys using the given error (goroutine safe).
+func (tk *TestKeys) setFailure(err error) {
 	defer tk.mu.Unlock()
 	tk.mu.Lock()
 	tk.SignalBackendStatus = "blocked"
@@ -181,7 +182,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	measurement := args.Measurement
 	tk := new(TestKeys)
 	measurement.TestKeys = tk
-	idGen := &atomic.Int64{}
+
 	zeroTime := time.Now()
 	certPool, err := newCertPool()
 	if err != nil {
@@ -202,13 +203,14 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	wg := &sync.WaitGroup{}
 	for _, domain := range domains {
 		wg.Add(1)
-		go measureTarget(ctx, sess.Logger(), idGen, zeroTime, tk, domain, certPool, wg)
+		go measureTarget(ctx, sess.Logger(), &atomic.Int64{}, zeroTime, tk, domain, certPool, wg)
 	}
 	wg.Wait()
 
 	return nil
 }
 
+// measureTarget measures a signal backend domain
 func measureTarget(
 	ctx context.Context,
 	logger model.Logger,
@@ -239,10 +241,10 @@ func measureTarget(
 
 	// if the lookup has failed we set the error and return
 	if dnsResult.Error != nil {
-		tk.SetFailure(dnsResult.Error)
+		tk.setFailure(dnsResult.Error)
 		return
 	}
-	// for this domain, we are only interested in the lookup, so we return here
+	// for uptime.signal.org, we are only interested in the lookup, so we return here
 	if domain == "uptime.signal.org" {
 		return
 	}
@@ -260,7 +262,7 @@ func measureTarget(
 		dslx.EndpointOptionZeroTime(zeroTime),
 	)
 
-	// count the number of successes
+	// count the number of successful GET requests
 	successes := dslx.Counter[*dslx.HTTPResponse]{}
 
 	// create the established connections pool
@@ -276,7 +278,7 @@ func measureTarget(
 		),
 		dslx.HTTPTransportTLS(),
 		dslx.HTTPRequest(),
-		successes.Func(), // number of times we arrive here
+		successes.Func(), // count number of times we arrive here
 	)
 
 	// run 443/tcp/tls/https measurement
@@ -297,9 +299,10 @@ func measureTarget(
 		return
 	}
 
+	// else we find the first error and store it in the test keys
 	firstError, _ := dslx.FirstError(coll...)
 	if firstError != nil {
-		tk.SetFailure(firstError)
+		tk.setFailure(firstError)
 		return
 	}
 }
