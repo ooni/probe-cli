@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	testName    = "telegram"
-	testVersion = "0.3.0"
+	testName    = "ntelegram"
+	testVersion = "0.1.0"
 )
 
 // Config contains the telegram experiment config.
@@ -27,18 +27,20 @@ type Config struct{}
 
 // TestKeys contains telegram test keys.
 type TestKeys struct {
-	mu                   sync.Mutex
-	Agent                string                   `json:"agent"`
-	SOCKSProxy           string                   `json:"socksproxy,omitempty"`
-	Requests             []tracex.RequestEntry    `json:"requests"`
-	Queries              []tracex.DNSQueryEntry   `json:"queries"`
-	TCPConnect           []tracex.TCPConnectEntry `json:"tcp_connect"`
-	TLSHandshakes        []tracex.TLSHandshake    `json:"tls_handshakes"`
-	NetworkEvents        []tracex.NetworkEvent    `json:"network_events"`
-	TelegramHTTPBlocking bool                     `json:"telegram_http_blocking"`
-	TelegramTCPBlocking  bool                     `json:"telegram_tcp_blocking"`
-	TelegramWebFailure   *string                  `json:"telegram_web_failure"`
-	TelegramWebStatus    string                   `json:"telegram_web_status"`
+	mu sync.Mutex
+
+	Agent         string                   `json:"agent"`                // df-001-httpt
+	SOCKSProxy    string                   `json:"socksproxy,omitempty"` // df-001-httpt
+	Requests      []tracex.RequestEntry    `json:"requests"`             // df-001-httpt
+	Queries       []tracex.DNSQueryEntry   `json:"queries"`              // df-002-dnst
+	TCPConnect    []tracex.TCPConnectEntry `json:"tcp_connect"`          // df-005-tcpconnect
+	TLSHandshakes []tracex.TLSHandshake    `json:"tls_handshakes"`       // df-006-tlshandshake
+	NetworkEvents []tracex.NetworkEvent    `json:"network_events"`       // df-008-netevents
+
+	TelegramHTTPBlocking bool    `json:"telegram_http_blocking"`
+	TelegramTCPBlocking  bool    `json:"telegram_tcp_blocking"`
+	TelegramWebFailure   *string `json:"telegram_web_failure"`
+	TelegramWebStatus    string  `json:"telegram_web_status"`
 }
 
 // NewTestKeys creates new telegram TestKeys.
@@ -56,7 +58,6 @@ func (tk *TestKeys) mergeObservations(obs []*dslx.Observations) {
 	defer tk.mu.Unlock()
 	tk.mu.Lock()
 	for _, o := range obs {
-		// update the easy to update entries first
 		for _, e := range o.NetworkEvents {
 			tk.NetworkEvents = append(tk.NetworkEvents, *e)
 		}
@@ -75,6 +76,7 @@ func (tk *TestKeys) mergeObservations(obs []*dslx.Observations) {
 	}
 }
 
+// maybeSetDCFailure updates the TestKeys using the tcp and http success counters (goroutine safe).
 func (tk *TestKeys) maybeSetDCFailure(
 	tcpSuccessCounter *dslx.Counter[*dslx.TCPConnection],
 	httpSuccessCounter *dslx.Counter[*dslx.HTTPResponse],
@@ -85,6 +87,7 @@ func (tk *TestKeys) maybeSetDCFailure(
 	tk.TelegramHTTPBlocking = httpSuccessCounter.Value() <= 0
 }
 
+// setWebFailure updates the TestKeys using the given error (goroutine safe).
 func (tk *TestKeys) setWebFailure(err error) {
 	defer tk.mu.Unlock()
 	tk.mu.Lock()
@@ -109,6 +112,8 @@ func (m Measurer) ExperimentVersion() string {
 	return testVersion
 }
 
+// measureDC measures telegram datacenter endpoints by issuing HTTP POST requests
+// and calls wg.Done() upon return.
 func measureDC(
 	ctx context.Context,
 	sess model.ExperimentSession,
@@ -118,6 +123,7 @@ func measureDC(
 	wg *sync.WaitGroup,
 ) {
 	defer wg.Done()
+
 	// ipAddrs contains the DCs IP addresses
 	var ipAddrs = dslx.NewAddressSet().Add(
 		"149.154.175.50",
@@ -144,17 +150,13 @@ func measureDC(
 			))
 		}
 	}
-	var (
-		// tcpConnectSuccessCounter counts the number of TCP successes
-		tcpSuccessCounter = dslx.Counter[*dslx.TCPConnection]{}
 
-		// httpRoundTripSuccessCounter counts the number of HTTP successes
-		httpSuccessCounter = dslx.Counter[*dslx.HTTPResponse]{}
-	)
-
-	// create the established connections pool
 	connpool := &dslx.ConnPool{}
 	defer connpool.Close()
+	var (
+		tcpSuccessCounter  = dslx.Counter[*dslx.TCPConnection]{}
+		httpSuccessCounter = dslx.Counter[*dslx.HTTPResponse]{}
+	)
 
 	// construct the http/POST function to measure the endpoints
 	httpFunc := dslx.Compose5(
@@ -178,6 +180,7 @@ func measureDC(
 	tk.maybeSetDCFailure(&tcpSuccessCounter, &httpSuccessCounter)
 }
 
+// measureWeb measures Telegram Web and calls wg.Done() upon return.
 func measureWeb(
 	ctx context.Context,
 	sess model.ExperimentSession,
@@ -237,7 +240,7 @@ func measureWeb(
 		successes.Func(), // count the number of successes
 	)
 
-	// run https measurement
+	// run https measurement and collect the results
 	httpsResults := dslx.Map(
 		ctx,
 		dslx.Parallelism(2),
