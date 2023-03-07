@@ -2,15 +2,29 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"net/url"
+	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-type sessConfig struct {
+var (
+	errInvalidSessionId = errors.New("passed Session ID does not exist")
+	mapSession          map[int64]*engine.Session
+	idx                 int64 = 1
+	mu                  sync.Mutex
+)
+
+func init() {
+	taskRegistry["NewSession"] = &newSessionTaskRunner{}
+	taskRegistry["DeleteSession"] = &deleteSessionTask{}
+}
+
+// newSessionOptions contains the request arguments for the NewSession task.
+type newSessionOptions struct {
 	ProxyUrl        string   `json:"ProxyUrl,omitempty"`
 	StateDir        string   `json:"StateDir,omitempty"`
 	SoftwareName    string   `json:"SoftwareName,omitempty"`
@@ -21,32 +35,36 @@ type sessConfig struct {
 	TunnelDir       string   `json:"TunnelDir,omitempty"`
 }
 
-func init() {
-	taskRegistry["NewSession"] = &newSessionTaskRunner{}
+// newSessionResponse is the response for the NewSession task.
+type newSessionResponse struct {
+	SessionId int64  `json:",omitempty"`
+	Error     string `json:",omitempty"`
 }
 
 type newSessionTaskRunner struct{}
 
 var _ taskRunner = &newSessionTaskRunner{}
 
+// main implements taskRunner.main
 func (tr *newSessionTaskRunner) main(ctx context.Context,
-	emitter taskMaybeEmitter, args []byte) {
+	emitter taskMaybeEmitter, req *request, resp *response) {
 	logger := newTaskLogger(emitter)
-	var config *sessConfig
-	if err := json.Unmarshal(args, config); err != nil {
-		logger.Warnf("engine: cannot deserialize arguments: %s", err.Error())
-		return
-	}
-	// TODO(DecFox): we are ignoring the session here but we want to use this for further tasks.
-	_, err := newSession(ctx, config, logger)
+	config := req.NewSession
+	sess, err := newSession(ctx, &config, logger)
 	if err != nil {
+		resp.NewSession.Error = err.Error()
 		logger.Warnf("engine: cannot create session: %s", err.Error())
 		return
 	}
+	mu.Lock()
+	defer mu.Unlock()
+	resp.NewSession.SessionId = idx
+	mapSession[idx] = sess
+	idx++
 }
 
 // newSession creates a new *engine.Sessioncfg from the given config.
-func newSession(ctx context.Context, config *sessConfig,
+func newSession(ctx context.Context, config *newSessionOptions,
 	logger model.Logger) (*engine.Session, error) {
 	kvs, err := kvstore.NewFS(config.StateDir)
 	if err != nil {
@@ -73,10 +91,39 @@ func newSession(ctx context.Context, config *sessConfig,
 	return engine.NewSessionWithoutTunnel(ctx, cfg)
 }
 
-// parseProxyURL returns the proper proxy URL or nil if it's not cfgured.
+// parseProxyURL returns the proper proxy URL or nil if it's not configured.
 func parseProxyURL(proxyURL string) (*url.URL, error) {
 	if proxyURL == "" {
 		return nil, nil
 	}
 	return url.Parse(proxyURL)
+}
+
+// deleteSessionOptions contains the request arguments for the DeleteSession task.
+type deleteSessionOptions struct {
+	SessionId int64 `json:",omitempty"`
+}
+
+// deleteSessionResponse is the response for the DeleteSession task.
+type deleteSessionResponse struct {
+	Error string `json:",omitempty"`
+}
+
+type deleteSessionTask struct{}
+
+var _ taskRunner = &deleteSessionTask{}
+
+// main implements taskRunner.main
+func (tr *deleteSessionTask) main(ctx context.Context,
+	emitter taskMaybeEmitter, req *request, resp *response) {
+	sessionId := req.DeleteSession.SessionId
+	// TODO(DecFox): add check to ensure we have a valid sessionId
+	sess := mapSession[sessionId]
+	if sess == nil {
+		resp.DeleteSession.Error = errInvalidSessionId.Error()
+		return
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	mapSession[sessionId] = nil
 }

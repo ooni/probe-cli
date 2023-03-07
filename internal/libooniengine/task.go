@@ -2,21 +2,39 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
+	"reflect"
 	"sync/atomic"
 	"time"
 )
 
+var (
+	errInvalidRequest = errors.New("input request has no valid task name")
+)
+
+// resolveTask resolves the task name to perform from the parsed request.
+func resolveTask(req *request) (string, error) {
+	r := reflect.ValueOf(req)
+	t := r.Type()
+	for i := 0; i < r.NumField(); i++ {
+		if !r.Field(i).IsNil() {
+			return t.Field(i).Name, nil
+		}
+	}
+	return "", errInvalidRequest
+}
+
 // startTask starts a given task.
-func startTask(name string, args []byte) taskAPI {
+func startTask(name string, req *request) taskAPI {
 	ctx, cancel := context.WithCancel(context.Background())
 	tp := &taskState{
 		cancel:  cancel,
 		done:    &atomic.Int64{},
-		events:  make(chan *goMessage, taskEventsBuffer),
+		events:  make(chan *response, taskEventsBuffer),
 		stopped: make(chan any),
 	}
-	go tp.main(ctx, name, args)
+	go tp.main(ctx, name, req)
 	return tp
 }
 
@@ -29,7 +47,7 @@ type taskState struct {
 	done *atomic.Int64
 
 	// events is the channel where we emit task events.
-	events chan *goMessage
+	events chan *response
 
 	// stopped indicates that the task is done.
 	stopped chan any
@@ -38,7 +56,7 @@ type taskState struct {
 var _ taskAPI = &taskState{}
 
 // waitForNextEvent implements taskAPI.waitForNextEvent.
-func (tp *taskState) waitForNextEvent(timeout time.Duration) *goMessage {
+func (tp *taskState) waitForNextEvent(timeout time.Duration) *response {
 	// Implementation note: we don't need to log any of these nil-returning conditions
 	// as they are not exceptional, rather they're part of normal usage.
 	ctx, cancel := contextForWaitForNextEvent(timeout)
@@ -80,8 +98,9 @@ func (tp *taskState) interrupt() {
 }
 
 // main is the main function of the task.
-func (tp *taskState) main(ctx context.Context, name string, args []byte) {
+func (tp *taskState) main(ctx context.Context, name string, req *request) {
 	defer close(tp.stopped) // synchronize with caller
+	var resp *response
 	runner := taskRegistry[name]
 	if runner == nil {
 		log.Printf("OONITaskStart: unknown task name: %s", name)
@@ -90,5 +109,7 @@ func (tp *taskState) main(ctx context.Context, name string, args []byte) {
 	emitter := &taskChanEmitter{
 		out: tp.events,
 	}
-	runner.main(ctx, emitter, args)
+	defer emitter.maybeEmitEvent(resp)
+	go runTicker(ctx, tp.stopped, emitter, req, time.Now())
+	runner.main(ctx, emitter, req, resp)
 }

@@ -5,16 +5,21 @@ import (
 	"time"
 )
 
-// event is any event that occurs.
-type event interface{}
+// request is the OONI request containing task-specific arguments.
+type request struct {
+	NewSession    newSessionOptions    `json:",omitempty"`
+	Geolocate     geolocateOptions     `json:",omitempty"`
+	DeleteSession deleteSessionOptions `json:",omitempty"`
+}
 
-// goMessage is the internal representation of OONIMessage
-type goMessage struct {
-	// key is the event key.
-	key string
-
-	// value is the value of the event.
-	value event
+// response is the OONI response to serialize before sending.
+type response struct {
+	NewSession    newSessionResponse    `json:",omitempty"`
+	Geolocate     geolocateResponse     `json:",omitempty"`
+	Logger        logResponse           `json:",omitempty"`
+	Ticker        tickerResponse        `json:",omitempty"`
+	DeleteSession deleteSessionResponse `json:",omitempty"`
+	Error         string                `json:",omitempty"`
 }
 
 // taskEventsBuffer is the buffer used for the task's event chan, which
@@ -29,7 +34,7 @@ const taskEventsBuffer = 1024
 type taskMaybeEmitter interface {
 	// maybeEmitEvent emits an event if there's available buffer in the
 	// output channel and otherwise discards the event.
-	maybeEmitEvent(name string, value event)
+	maybeEmitEvent(resp *response)
 }
 
 // taskRunner runs a given task. Any task that you can run from
@@ -43,15 +48,18 @@ type taskRunner interface {
 	//
 	// - emitter is the emitter to emit events;
 	//
-	// - args contains unparsed, task-specific arguments.
-	main(ctx context.Context, emitter taskMaybeEmitter, args []byte)
+	// - req is the parsed request containing task specific arguments.
+	//
+	// - resp is the response to emit after the task is complete. Note that
+	//   this an implicit response and only indicates the final response of the task.
+	main(ctx context.Context, emitter taskMaybeEmitter, req *request, resp *response)
 }
 
 // taskAPI implements the OONI engine C API functions. We use this interface
 // to enable easier testing of the code that manages the tasks lifecycle.
 type taskAPI interface {
 	// waitForNextEvent implements OONITaskWaitForNextEvent.
-	waitForNextEvent(timeout time.Duration) *goMessage
+	waitForNextEvent(timeout time.Duration) *response
 
 	// isDone implements OONITaskIsDone.
 	isDone() bool

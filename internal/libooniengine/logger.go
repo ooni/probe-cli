@@ -17,9 +17,9 @@ const (
 	logLevel_WARNING LogLevel = 2
 )
 
-type LogEvent struct {
-	Level   LogLevel `json:"Level,omitempty"`
-	Message string   `json:"Message,omitempty"`
+type logResponse struct {
+	Level   LogLevel `json:",omitempty"`
+	Message string   `json:",omitempty"`
 }
 
 // taskLogger implements model.Logger for tasks.
@@ -78,9 +78,11 @@ func (tl *taskLogger) Warn(message string) {
 
 // emit emits a log message.
 func (tl *taskLogger) emit(level LogLevel, message string) {
-	value := &LogEvent{
-		Level:   level,
-		Message: message,
+	logResp := &response{
+		Logger: logResponse{
+			Level:   level,
+			Message: message,
+		},
 	}
-	tl.emitter.maybeEmitEvent("Log", value)
+	tl.emitter.maybeEmitEvent(logResp)
 }

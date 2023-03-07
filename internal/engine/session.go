@@ -450,6 +450,10 @@ func (s *Session) MaybeLookupBackends() error {
 	return s.MaybeLookupBackendsContext(context.Background())
 }
 
+func (s *Session) Resolver() *sessionresolver.Resolver {
+	return s.resolver
+}
+
 // ErrAlreadyUsingProxy indicates that we cannot create a tunnel with
 // a specific name because we already configured a proxy.
 var ErrAlreadyUsingProxy = errors.New(
