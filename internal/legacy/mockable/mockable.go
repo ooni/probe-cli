@@ -38,6 +38,11 @@ type Session struct {
 	MockableUserAgent                string
 }
 
+// SubmitMeasurementV2 implements model.ExperimentSession
+func (*Session) SubmitMeasurementV2(ctx context.Context, measurement *model.Measurement) error {
+	panic("unimplemented")
+}
+
 // GetTestHelpersByName implements ExperimentSession.GetTestHelpersByName
 func (sess *Session) GetTestHelpersByName(name string) ([]model.OOAPIService, bool) {
 	services, okay := sess.MockableTestHelpers[name]
@@ -138,6 +143,22 @@ func (sess *Session) TunnelDir() string {
 // UserAgent implements ExperimentSession.UserAgent
 func (sess *Session) UserAgent() string {
 	return sess.MockableUserAgent
+}
+
+func (sess *Session) CheckIn(ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInResultNettests, error) {
+	panic("not implemented")
+}
+
+func (sess *Session) Platform() string {
+	panic("not implemented")
+}
+
+func (sess *Session) ResolverASNString() string {
+	panic("not implemented")
+}
+
+func (sess *Session) ResolverNetworkName() string {
+	panic("not implemented")
 }
 
 var _ model.ExperimentSession = &Session{}

@@ -1,0 +1,68 @@
+{
+	"websites": {
+		"name":        "Websites",
+		"description": "",
+		"author":      "OONI",
+		"nettests": [{
+			"test_name": "web_connectivity"
+		}]
+	},
+	"performance": {
+		"name":        "Performance",
+		"description": "",
+		"author":      "OONI",
+		"nettests": [{
+			"test_name": "dash"
+		}, {
+			"test_name": "ndt"
+		}]
+	},
+	"middlebox": {
+		"name":        "Middlebox",
+		"description": "",
+		"author":      "OONI",
+		"nettests": [{
+			"test_name": "hirl"
+		}, {
+			"test_name": "hhfm"
+		}]
+	},
+	"im": {
+		"name":        "Instant Messaging",
+		"description": "Runs the instant messaging experiments",
+		"author":      "OONI",
+		"nettests": [{
+			"test_name": "facebook_messenger"
+		}, {
+			"test_name": "signal"
+		}, {
+			"test_name": "telegram"
+		}, {
+			"test_name": "whatsapp"
+		}]
+	},
+	"circumvention": {
+		"name":        "Circumvention",
+		"description": "",
+		"author":      "OONI",
+		"nettests": [{
+			"test_name": "psiphon"
+		}, {
+			"test_name": "tor"
+		}]
+	},
+	"experimental": {
+		"name":        "Experimental",
+		"description": "Experimental nettests",
+		"author":      "OONI",
+		"nettests": [{
+			"test_name": "dnscheck"
+		}, {
+			"test_name": "stun_reachability"
+		}, {
+			"test_name": "torsf"
+		}, {
+			"test_name": "vanilla_tor"
+		}]
+	}
+}

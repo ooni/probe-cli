@@ -10,9 +10,12 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"runtime"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/platform"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
 const (
@@ -214,4 +217,56 @@ func scrubTestKeys(m *Measurement, currentIP string) error {
 	runtimex.PanicOnError(err, "json.Marshal(m.TestKeys) failed") // m.TestKeys must serialize
 	data = bytes.ReplaceAll(data, []byte(currentIP), []byte(Scrubbed))
 	return scrubJSONUnmarshalTestKeys(data, &m.TestKeys)
+}
+
+// NewMeasurement creates a new measurement instance.
+//
+// Arguments:
+//
+// - sess is the measurement session;
+//
+// - measurer is the experiment's measurer;
+//
+// - reportID is the report ID;
+//
+// - input is the OPTIONAL measurement's input;
+//
+// - testStartTime is when this nettest started executing;
+//
+// - annotations contains the annotations.
+func NewMeasurement(
+	sess ExperimentSession,
+	measurer ExperimentMeasurer,
+	reportID string,
+	input string,
+	testStartTime time.Time,
+	annotations map[string]string,
+) *Measurement {
+	const dateFormat = "2006-01-02 15:04:05"
+	utctimenow := time.Now().UTC()
+	m := &Measurement{
+		DataFormatVersion:         OOAPIReportDefaultDataFormatVersion,
+		Input:                     MeasurementTarget(input),
+		MeasurementStartTime:      utctimenow.Format(dateFormat),
+		MeasurementStartTimeSaved: utctimenow,
+		ProbeIP:                   DefaultProbeIP,
+		ProbeASN:                  sess.ProbeASNString(),
+		ProbeCC:                   sess.ProbeCC(),
+		ProbeNetworkName:          sess.ProbeNetworkName(),
+		ReportID:                  reportID,
+		ResolverASN:               sess.ResolverASNString(),
+		ResolverIP:                sess.ResolverIP(),
+		ResolverNetworkName:       sess.ResolverNetworkName(),
+		SoftwareName:              sess.SoftwareName(),
+		SoftwareVersion:           sess.SoftwareVersion(),
+		TestName:                  measurer.ExperimentName(),
+		TestStartTime:             testStartTime.Format(dateFormat),
+		TestVersion:               measurer.ExperimentVersion(),
+	}
+	m.AddAnnotations(annotations) // must be before MANDATORY engine annotations
+	m.AddAnnotation("engine_name", "ooniprobe-engine")
+	m.AddAnnotation("engine_version", version.Version)
+	m.AddAnnotation("platform", platform.Name())
+	m.AddAnnotation("architecture", runtime.GOARCH)
+	return m
 }

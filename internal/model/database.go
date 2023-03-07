@@ -265,3 +265,15 @@ type PerformanceTestKeys struct {
 	Ping     float64 `json:"ping"`
 	Bitrate  float64 `json:"median_bitrate"`
 }
+
+// DatabaseProps contains the database properties for a database instance
+type DatabaseProps struct {
+	//
+	Database WritableDatabase
+
+	//
+	DatabaseNetwork *DatabaseNetwork
+
+	//
+	DatabaseResult *DatabaseResult
+}

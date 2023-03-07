@@ -20,3 +20,5 @@
 /libooniengine.*
 /probe-cli.cov
 /tmp-*
+/tinyooni
+/*.zip

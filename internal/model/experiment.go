@@ -7,12 +7,14 @@ package model
 
 import (
 	"context"
+
+	"github.com/spf13/cobra"
 )
 
 // ExperimentSession is the experiment's view of a session.
 type ExperimentSession interface {
-	// GetTestHelpersByName returns a list of test helpers with the given name.
-	GetTestHelpersByName(name string) ([]OOAPIService, bool)
+	// CheckIn invokes the check-in API.
+	CheckIn(ctx context.Context, config *OOAPICheckInConfig) (*OOAPICheckInResultNettests, error)
 
 	// DefaultHTTPClient returns the default HTTPClient used by the session.
 	DefaultHTTPClient() HTTPClient
@@ -23,14 +25,41 @@ type ExperimentSession interface {
 	// FetchTorTargets returns the targets for the Tor experiment or an error.
 	FetchTorTargets(ctx context.Context, cc string) (map[string]OOAPITorTarget, error)
 
+	// GetTestHelpersByName returns a list of test helpers with the given name.
+	GetTestHelpersByName(name string) ([]OOAPIService, bool)
+
 	// Logger returns the logger used by the session.
 	Logger() Logger
+
+	// Platform returns the operating system's platform name.
+	Platform() string
+
+	// ProbeASNString returns the probe's ASN as a string.
+	ProbeASNString() string
 
 	// ProbeCC returns the country code.
 	ProbeCC() string
 
+	// ProbeNetworkName is the name of the probes' ASN.
+	ProbeNetworkName() string
+
+	// ResolverASNString is the resolver ASN as a string.
+	ResolverASNString() string
+
 	// ResolverIP returns the resolver's IP.
 	ResolverIP() string
+
+	// ResolverNetworkName is the name of the resolver's ASN.
+	ResolverNetworkName() string
+
+	// SoftwareName returns the name of the client software.
+	SoftwareName() string
+
+	// SoftwareVersion returns the version of the client software.
+	SoftwareVersion() string
+
+	// SubmitMeasurementV2 submits the given measurement.
+	SubmitMeasurementV2(ctx context.Context, measurement *Measurement) error
 
 	// TempDir returns the session's temporary directory.
 	TempDir() string
@@ -125,6 +154,48 @@ type ExperimentArgs struct {
 	// Measurement is the MANDATORY measurement in which the experiment
 	// must write the results of the measurement.
 	Measurement *Measurement
+
+	// Session is the MANDATORY session the experiment can use.
+	Session ExperimentSession
+}
+
+// ExperimentMainArgs contains the args passed to the experiment's main.
+type ExperimentMainArgs struct {
+	// Annotations contains OPTIONAL annotations.
+	Annotations map[string]string
+
+	// CategoryCodes OPTIONALLY contains the enabled category codes.
+	CategoryCodes []string
+
+	// Charging OPTIONALLY indicates whether the phone is charging.
+	Charging bool
+
+	// Callbacks contains MANDATORY experiment callbacks.
+	Callbacks ExperimentCallbacks
+
+	// Database is the MANDATORY database to use.
+	Database WritableDatabase
+
+	// Inputs contains OPTIONAL experiment inputs.
+	Inputs []string
+
+	// MaxRuntime is the OPTIONAL maximum runtime in seconds.
+	MaxRuntime int64
+
+	// MeasurementDir is the MANDATORY directory where to save measurements.
+	MeasurementDir string
+
+	// NoCollector OPTIONALLY disables submitting the measurements.
+	NoCollector bool
+
+	// OnWiFi OPTIONALLY indicates whether the phone is using Wi-Fi.
+	OnWiFi bool
+
+	// ResultID contains the MANDATORY result ID.
+	ResultID int64
+
+	// RunType OPTIONALLY indicates in which mode we are running.
+	RunType RunType
 
 	// Session is the MANDATORY session the experiment can use.
 	Session ExperimentSession
@@ -312,4 +383,19 @@ type Saver interface {
 // ExperimentInputProcessor processes inputs for an experiment.
 type ExperimentInputProcessor interface {
 	Run(ctx context.Context) error
+}
+
+// ExperimentOptions
+type ExperimentOptions interface {
+	// SetArguments
+	SetArguments(sess ExperimentSession, db *DatabaseProps) *ExperimentMainArgs
+
+	// ExtraOptions
+	ExtraOptions() map[string]any
+
+	// BuildWithOONIRun
+	BuildWithOONIRun(inputs []string, args map[string]any) error
+
+	// BuildFlags
+	BuildFlags(experimentName string, rootCmd *cobra.Command)
 }
