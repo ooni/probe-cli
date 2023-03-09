@@ -250,7 +250,7 @@ func measureWeb(
 	coll := dslx.Collect(httpsResults)
 	tk.mergeObservations(dslx.ExtractObservations(coll...))
 
-	firstError, _ := dslx.FirstError(coll...)
+	firstError, _ := dslx.FirstErrorExcludingBrokenIPv6Errors(coll...)
 	if firstError != nil {
 		tk.setWebFailure(firstError)
 	}
