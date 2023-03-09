@@ -20,8 +20,8 @@ import (
 )
 
 const (
-	testName    = "sni_blocking"
-	testVersion = "0.3.0"
+	testName    = "nsni_blocking"
+	testVersion = "0.1.0"
 )
 
 // Config contains the experiment config.
@@ -39,20 +39,21 @@ type Config struct {
 // Subresult contains the keys of a single measurement
 // that targets either the target or the control.
 type Subresult struct {
-	Failure       *string                  `json:"failure"`
-	NetworkEvents []tracex.NetworkEvent    `json:"network_events"`
+	Failure       *string               `json:"failure"`
+	NetworkEvents []tracex.NetworkEvent `json:"network_events"`
+	// TODO: consider moving queries into TestKeys, as this is redundant
 	Queries       []tracex.DNSQueryEntry   `json:"queries"`
 	Requests      []tracex.RequestEntry    `json:"requests"`
+	SNI           string                   `json:"sni"`
 	TCPConnect    []tracex.TCPConnectEntry `json:"tcp_connect"`
+	THAddress     string                   `json:"th_address"`
 	TLSHandshakes []tracex.TLSHandshake    `json:"tls_handshakes"`
 	Cached        bool                     `json:"-"`
-	SNI           string                   `json:"sni"`
-	THAddress     string                   `json:"th_address"`
 }
 
+// mergeObservations updates the TestKeys using the given [Observations] (goroutine safe).
 func (tk *Subresult) mergeObservations(obs []*dslx.Observations) {
 	for _, o := range obs {
-		// update the easy to update entries first
 		for _, e := range o.NetworkEvents {
 			tk.NetworkEvents = append(tk.NetworkEvents, *e)
 		}
@@ -89,6 +90,7 @@ const (
 	classSuccessGotServerHello          = "success.got_server_hello"
 )
 
+// classify handles the classification of the result failure
 func (tk *TestKeys) classify() string {
 	if tk.Target.Failure == nil {
 		return classSuccessGotServerHello
@@ -134,6 +136,32 @@ func (m *Measurer) ExperimentVersion() string {
 	return testVersion
 }
 
+func lookupTH(
+	thaddr string,
+	idGen *atomic.Int64,
+	logger model.Logger,
+	zeroTime time.Time,
+	resolverURL string,
+	ctx context.Context,
+) *dslx.Maybe[*dslx.ResolvedAddresses] {
+	thaddrHost, _, _ := net.SplitHostPort(thaddr) // TODO: handle error?
+	// describe the DNS measurement input
+	dnsInput := dslx.NewDomainToResolve(
+		dslx.DomainName(thaddrHost),
+		dslx.DNSLookupOptionIDGenerator(idGen),
+		dslx.DNSLookupOptionLogger(logger),
+		dslx.DNSLookupOptionZeroTime(zeroTime),
+	)
+	// construct resolver
+	lookup := dslx.DNSLookupGetaddrinfo()
+	if resolverURL != "" {
+		lookup = dslx.DNSLookupUDP(resolverURL)
+	}
+	// run the DNS Lookup
+	return lookup.Apply(ctx, dnsInput)
+}
+
+// measureone measures a single test SNI with the given thaddr.
 func (m *Measurer) measureone(
 	ctx context.Context,
 	sess model.ExperimentSession,
@@ -158,25 +186,11 @@ func (m *Measurer) measureone(
 	idGen := &atomic.Int64{}
 	zeroTime := time.Now()
 
-	// describe the DNS measurement input
-	thaddrHost, _, _ := net.SplitHostPort(thaddr) // TODO: handle error?
-	dnsInput := dslx.NewDomainToResolve(
-		dslx.DomainName(thaddrHost),
-		dslx.DNSLookupOptionIDGenerator(idGen),
-		dslx.DNSLookupOptionLogger(sess.Logger()),
-		dslx.DNSLookupOptionZeroTime(zeroTime),
-	)
-	// construct resolver
-	lookup := dslx.DNSLookupGetaddrinfo()
-	if m.config.ResolverURL != "" {
-		lookup = dslx.DNSLookupUDP(m.config.ResolverURL)
-	}
-
-	// run the DNS Lookup
-	dnsResult := lookup.Apply(ctx, dnsInput)
+	// TODO: This DNS lookup is redundant, as it is done for both control and target SNI.
+	//		 However, the data format requires queries separately for each subresult.
+	dnsResult := lookupTH(thaddr, idGen, sess.Logger(), zeroTime, m.config.ResolverURL, ctx)
 
 	// create a subresult, extract and merge observations
-	// Create the subresult
 	subresult := Subresult{
 		SNI:       sni,
 		THAddress: thaddr,
@@ -237,6 +251,8 @@ func (m *Measurer) measureone(
 	return subresult
 }
 
+// measureonewithcache measures thaddr with the given sni.
+// If thaddr has been measured with the same sni before, the cached subresult is returned.
 func (m *Measurer) measureonewithcache(
 	ctx context.Context,
 	output chan<- Subresult,
@@ -341,13 +357,13 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 			m.config.ControlSNI, "443",
 		)
 	}
-	// TODO: urlgetter.RegisterExtensions. Do we need to replace that?
 
 	// TODO(bassosimone): if the user has configured DoT or DoH, here we
 	// probably want to perform the name resolution before the measurements
 	// or to make sure that the classify logic is robust to that.
 	//
 	// See https://github.com/ooni/probe-engine/issues/392.
+
 	maybeParsed, err := maybeURLToSNI(measurement.Input)
 	if err != nil {
 		return err
