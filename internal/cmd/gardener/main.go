@@ -58,6 +58,7 @@ func main() {
 	)
 	dnsReportCmd.Run = func(cmd *cobra.Command, args []string) {
 		sc := &dnsreport.Subcommand{
+			APIURL:                "https://api.ooni.io",
 			CSVSummaryFile:        "dnsreport.csv",
 			DNSOverHTTPSServerURL: "https://dns.google/dns-query",
 			Force:                 *dnsReportCmdForce,

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/cmd/gardener/internal/aggregationapi"
 	"github.com/ooni/probe-cli/v3/internal/cmd/gardener/internal/testlists"
 	"github.com/ooni/probe-cli/v3/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -22,8 +23,11 @@ import (
 // Subcommand is the dnsreport subcommand. The zero value is invalid; please, make
 // sure you initialize all the fields marked as MANDATORY.
 type Subcommand struct {
+	// APIURL is the MANDATORY OONI API URL to use.
+	APIURL string
+
 	// CSVSummaryFile is the MANDATORY file where to write the CSV
-	// summary containing information on each failing URL.
+	// summary file containing information on each failing URL.
 	CSVSummaryFile string
 
 	// DNSOverHTTPSServerURL is the MANDATORY DoH server URL.
@@ -49,7 +53,7 @@ func (sc *Subcommand) Main(ctx context.Context) {
 	}
 
 	// now analyze the current cache file
-	sc.analyzeCache()
+	sc.analyzeCache(ctx)
 }
 
 // generateCache generates the JSONLCacheFile file by attempting to measure
@@ -96,7 +100,7 @@ func (sc *Subcommand) generateCache(ctx context.Context) {
 }
 
 // analyzeCache analyzes the content of the cache file.
-func (sc *Subcommand) analyzeCache() {
+func (sc *Subcommand) analyzeCache(ctx context.Context) {
 	log.Infof("writing analysis results to %s", sc.CSVSummaryFile)
 
 	// collect all cache entries
@@ -109,8 +113,19 @@ func (sc *Subcommand) analyzeCache() {
 	writer := csv.NewWriter(filep)
 
 	// write the first entry containing headers
-	runtimex.Try0(writer.Write([]string{"file", "line", "url", "failure"}))
+	runtimex.Try0(writer.Write([]string{
+		"file",
+		"line",
+		"url",
+		"failure",
+		"measurement_count",
+		"anomaly_count",
+		"confirmed_count",
+		"ok_count",
+		"failure_count",
+	}))
 
+	// create the progress bar to show the user progress
 	bar := progressbar.NewOptions64(
 		int64(len(all)),
 		progressbar.OptionShowDescriptionAtLineEnd(),
@@ -129,11 +144,17 @@ func (sc *Subcommand) analyzeCache() {
 	for _, measurement := range all {
 		bar.Add(1)
 		if measurement.Failure != nil {
+			apiResp := aggregationapi.Query(ctx, sc.APIURL, measurement.Entry.URL)
 			runtimex.Try0(writer.Write([]string{
 				measurement.Entry.File,
 				strconv.Itoa(measurement.Entry.Line),
 				measurement.Entry.URL,
 				*measurement.Failure,
+				strconv.FormatInt(apiResp.Result.MeasurementCount, 10),
+				strconv.FormatInt(apiResp.Result.AnomalyCount, 10),
+				strconv.FormatInt(apiResp.Result.ConfirmedCount, 10),
+				strconv.FormatInt(apiResp.Result.OKCount, 10),
+				strconv.FormatInt(apiResp.Result.FailureCount, 10),
 			}))
 		}
 	}
