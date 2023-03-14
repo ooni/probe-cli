@@ -27,6 +27,9 @@ type ResponseResult struct {
 	OKCount          int64 `json:"ok_count"`
 }
 
+// timeFormat is the time format we are using
+const timeFormat = "2006-01-02T15:04:05"
+
 // Query invokes the aggregation API for the given input URL and
 // returns as the result the API response. This function calls
 // [runtimex.PanicOnError] in case of failure.
@@ -38,7 +41,7 @@ func Query(
 	// create the query string
 	oneMonthAgo := time.Now().Add(-30 * 24 * time.Hour)
 	query := url.Values{}
-	query.Add("since", oneMonthAgo.Format("2006-01-02T15:04:05"))
+	query.Add("since", oneMonthAgo.Format(timeFormat))
 	query.Add("input", inputURL)
 	query.Add("test_name", "web_connectivity")
 
