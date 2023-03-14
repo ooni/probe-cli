@@ -4,6 +4,7 @@ package dnsreport
 import (
 	"context"
 	"database/sql"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -11,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"time"
 
@@ -37,6 +39,9 @@ type Subcommand struct {
 	// Database is the MANDATORY path of the database where to
 	// store interim state while processing URLs.
 	Database string
+
+	// ReportFile is the MANDATORY file where to write the final report.
+	ReportFile string
 
 	// RepositoryDir is the MANDATORY directory where we previously
 	// cloned the citizenlab/test-lists repository.
@@ -68,6 +73,9 @@ func (s *Subcommand) Main(ctx context.Context) {
 
 	// measure each entry and update the database
 	s.measureEntries(ctx, db, entries)
+
+	// generate CSV report
+	s.writeReport(db)
 }
 
 // createTableQuery is the query to create the dnsreport table.
@@ -142,8 +150,8 @@ func (s *Subcommand) loadFromRepository(db *sql.DB) {
 	}
 }
 
-// selectQuery selects the entries to measure by checking the status
-const selectQuery = `
+// selectInsertedQuery selects the entries to measure by checking the status
+const selectInsertedQuery = `
 SELECT rowid, file, line, url
 FROM dnsreport
 WHERE status = 'inserted';
@@ -160,7 +168,7 @@ type entryToMeasure struct {
 // getEntriesToMeasure gets the entries to measure from the database.
 func (s *Subcommand) getEntriesToMeasure(db *sql.DB) (out []*entryToMeasure) {
 	// execute the query and get the matching rows
-	rows := runtimex.Try1(db.Query(selectQuery))
+	rows := runtimex.Try1(db.Query(selectInsertedQuery))
 	defer rows.Close()
 
 	// convert the rows to a list of [entryToMeasure]
@@ -327,4 +335,80 @@ func (s *Subcommand) updateEntry(
 		failureCount,
 		rowid,
 	))
+}
+
+// selectFailedQuery selects the entries that have failed
+const selectFailedQuery = `
+SELECT file, line, url, failure, measurement_count,
+	anomaly_count, confirmed_count, ok_count, failure_count
+FROM dnsreport
+WHERE status = 'failed';
+`
+
+// writeReport writes a CSV report containing the results inside the
+// database that should be examined by researchers.
+func (s *Subcommand) writeReport(db *sql.DB) {
+	// logging
+	log.Infof("writing researchers' report file: %s", s.ReportFile)
+
+	// create the output file
+	filep := runtimex.Try1(os.Create(s.ReportFile))
+
+	// create the CSV writer wrapper
+	writer := csv.NewWriter(filep)
+
+	// write the first CSV row with headers
+	runtimex.Try0(writer.Write([]string{
+		"file", "line", "url", "failure", "measurement_count",
+		"anomaly_count", "confirmed_count", "ok_count", "failure_count",
+	}))
+	writer.Flush()
+
+	// query all the entries that have been measured
+	rows := runtimex.Try1(db.Query(selectFailedQuery))
+	defer rows.Close()
+
+	// write each row into the CSV file
+	for rows.Next() {
+		// read from query
+		var (
+			file             string
+			line             int64
+			url              string
+			failure          *string
+			measurementCount int64
+			anomalyCount     int64
+			confirmedCount   int64
+			okCount          int64
+			failureCount     int64
+		)
+		runtimex.Try0(rows.Scan(
+			&file, &line, &url, &failure, &measurementCount, &anomalyCount,
+			&confirmedCount, &okCount, &failureCount,
+		))
+
+		// sanity check with respect to the failed state
+		runtimex.Assert(failure != nil, "expected non-nil failure")
+
+		// write to CSV
+		runtimex.Try0(writer.Write([]string{
+			file,
+			strconv.FormatInt(line, 10),
+			url,
+			*failure,
+			strconv.FormatInt(measurementCount, 10),
+			strconv.FormatInt(anomalyCount, 10),
+			strconv.FormatInt(confirmedCount, 10),
+			strconv.FormatInt(okCount, 10),
+			strconv.FormatInt(failureCount, 10),
+		}))
+		writer.Flush()
+	}
+
+	// make sure there was no error while reading
+	runtimex.Try0(rows.Err())
+
+	// make sure there was no error while writing
+	runtimex.Try0(writer.Error())
+	runtimex.Try0(filep.Close())
 }

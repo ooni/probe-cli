@@ -54,6 +54,7 @@ func main() {
 				APIURL:                "https://api.ooni.io",
 				DNSOverHTTPSServerURL: "https://dns.google/dns-query",
 				Database:              "dnsreport.sqlite3",
+				ReportFile:            "dnsreport.csv",
 				RepositoryDir:         repositoryDir,
 			}
 			runInterruptible(sc.Main)
