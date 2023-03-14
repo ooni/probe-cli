@@ -66,6 +66,7 @@ func newServerDNSOverHTTPS() *httptest.Server {
 			w.WriteHeader(500)
 			return
 		}
+		w.Header().Add("content-type", "application/dns-message")
 		w.Write(data)
 	}))
 }
@@ -89,7 +90,7 @@ func newServerOONIAPI() *httptest.Server {
 }
 
 const selectQueryForTesting = `
-SELECT file, line, url, status, rawResponse, failure,
+SELECT file, line, url, status, addresses, failure,
 	measurement_count, anomaly_count, confirmed_count,
 	ok_count, failure_count
 FROM dnsreport;
@@ -120,7 +121,7 @@ func validateResults(dbPath string) error {
 			line             int64
 			url              string
 			status           string
-			rawResponse      string
+			addresses        string
 			failure          *string
 			measurementCount int64
 			anomalyCount     int64
@@ -133,7 +134,7 @@ func validateResults(dbPath string) error {
 			&line,
 			&url,
 			&status,
-			&rawResponse,
+			&addresses,
 			&failure,
 			&measurementCount,
 			&anomalyCount,
@@ -170,8 +171,8 @@ func validateResults(dbPath string) error {
 			if status != "failed" {
 				return fmt.Errorf("expected status to be failed, got %s", status)
 			}
-			if len(rawResponse) <= 0 {
-				return errors.New("expected to have a raw response")
+			if addresses != "[]" {
+				return fmt.Errorf("expected addresses to be [], got %s", addresses)
 			}
 			if failure == nil {
 				return errors.New("expected non-nil failure")
@@ -191,8 +192,8 @@ func validateResults(dbPath string) error {
 			if status != "skipped" {
 				return fmt.Errorf("expected status to be skipped, got %s", status)
 			}
-			if len(rawResponse) > 0 {
-				return errors.New("expected no raw response")
+			if addresses != "[]" {
+				return fmt.Errorf("expected addresses to be [], got %s", addresses)
 			}
 			if failure != nil {
 				return errors.New("expected nil failure")
@@ -209,8 +210,8 @@ func validateResults(dbPath string) error {
 			if status != "ok" {
 				return fmt.Errorf("expected status to be ok, got %s", status)
 			}
-			if len(rawResponse) <= 0 {
-				return errors.New("expected to have a raw response")
+			if addresses != `["8.9.10.11"]` {
+				return fmt.Errorf("expected addresses to be [\"8.9.10.11\"], got %s", addresses)
 			}
 			if failure != nil {
 				return errors.New("expected nil failure")

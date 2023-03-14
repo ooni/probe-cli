@@ -2,10 +2,9 @@
 package dnsreport
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
-	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -17,7 +16,6 @@ import (
 
 	"github.com/apex/log"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/cmd/gardener/internal/aggregationapi"
 	"github.com/ooni/probe-cli/v3/internal/cmd/gardener/internal/testlists"
 	"github.com/ooni/probe-cli/v3/internal/fsx"
@@ -59,7 +57,6 @@ func (s *Subcommand) Main(ctx context.Context) {
 	// keep using the existing database file
 	if !dbExists {
 		log.Infof("creating new %s database", s.Database)
-		log.Infof("creating new %s database", s.Database) //ELLIOT
 		s.loadFromRepository(db)
 	} else {
 		log.Infof("using existing %s database", s.Database)
@@ -80,7 +77,7 @@ CREATE TABLE IF NOT EXISTS dnsreport(
 	line INTEGER NOT NULL,
 	url TEXT NOT NULL,
 	status TEXT NOT NULL,
-	rawResponse TEXT,
+	addresses TEXT NOT NULL,
 	failure TEXT,
 	measurement_count INTEGER NOT NULL,
 	anomaly_count INTEGER NOT NULL,
@@ -105,7 +102,7 @@ INSERT INTO dnsreport VALUES(
 	?,
 	?,
 	?,
-	NULL,
+	'[]',
 	NULL,
 	0,
 	0,
@@ -209,18 +206,18 @@ func (s *Subcommand) measureSingleEntry(db *sql.DB, entry *entryToMeasure) {
 
 	// handle the input URLs where the domain is an IP address.
 	if net.ParseIP(hostname) != nil {
-		s.updateEntry(db, "skipped", nil, nil, nil, entry.rowid)
+		s.updateEntry(db, "skipped", []string{}, nil, nil, entry.rowid)
 		return
 	}
 
 	// obtain the raw response and the error that occurs when trying
 	// to obtain the result of LookupHost from the raw response
-	rawResp, err := s.dnsLookupANY(hostname)
+	addrs, err := s.dnsLookupANY(hostname)
 
 	// if there is no error, stop processing right now and record
 	// that we have measured the URL into the database.
 	if err == nil {
-		s.updateEntry(db, "ok", rawResp, nil, nil, entry.rowid)
+		s.updateEntry(db, "ok", addrs, nil, nil, entry.rowid)
 		return
 	}
 
@@ -229,7 +226,7 @@ func (s *Subcommand) measureSingleEntry(db *sql.DB, entry *entryToMeasure) {
 	apiResp := s.queryAggregationAPI(entry.url)
 
 	// update the database
-	s.updateEntry(db, "failed", rawResp, err, apiResp, entry.rowid)
+	s.updateEntry(db, "failed", []string{}, err, apiResp, entry.rowid)
 }
 
 // dnsLookupANY performs an ANY DNS lookup for the given domain. This function calls
@@ -237,40 +234,27 @@ func (s *Subcommand) measureSingleEntry(db *sql.DB, entry *entryToMeasure) {
 // arises from parsing the returned DNS response as a LookupHost response. The return
 // value consists of (1) the raw response and (2) the error occurred when parsing
 // the raw response as the result of a LookupHost query.
-func (s *Subcommand) dnsLookupANY(domain string) ([]byte, error) {
+func (s *Subcommand) dnsLookupANY(domain string) ([]string, error) {
 	// create countext bound to timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// encode the query
-	encoder := &netxlite.DNSEncoderMiekg{}
-	query := encoder.Encode(domain, dns.TypeANY, true)
-	rawQuery := runtimex.Try1(query.Bytes())
+	// create DNS transport using HTTP default client
+	dnsTransport := netxlite.WrapDNSTransport(&netxlite.DNSOverHTTPSTransport{
+		Client:       http.DefaultClient,
+		Decoder:      &netxlite.DNSDecoderMiekg{},
+		URL:          s.DNSOverHTTPSServerURL,
+		HostOverride: "",
+	})
 
-	// prepare the HTTP request
-	httpReq := runtimex.Try1(http.NewRequestWithContext(
-		ctx,
-		"POST",
-		s.DNSOverHTTPSServerURL,
-		bytes.NewReader(rawQuery)),
+	// create DNS resolver
+	dnsResolver := netxlite.WrapResolver(
+		log.Log,
+		netxlite.NewUnwrappedParallelResolver(dnsTransport),
 	)
-	httpReq.Header.Add("content-type", "application/dns-message")
 
-	// obtain the corresponding HTTP response
-	httpResp := runtimex.Try1(http.DefaultClient.Do(httpReq))
-	defer httpResp.Body.Close()
-	runtimex.Assert(httpResp.StatusCode == 200, "dnsreport: http request failed")
-
-	// obtain the raw response body
-	rawResp := runtimex.Try1(netxlite.ReadAllContext(ctx, httpResp.Body))
-
-	// decode the response
-	decoder := &netxlite.DNSDecoderMiekg{}
-	resp := runtimex.Try1(decoder.DecodeResponse(rawResp, query))
-
-	// obtain the result for LookupHost
-	_, err := resp.DecodeLookupHost()
-	return rawResp, err
+	// lookup for both A and AAAA entries
+	return dnsResolver.LookupHost(ctx, domain)
 }
 
 // queryAggregationAPI queries the aggregation API for the given URL.
@@ -287,7 +271,7 @@ func (s *Subcommand) queryAggregationAPI(inputURL string) *aggregationapi.Respon
 const updateQuery = `
 UPDATE dnsreport
 SET status = ?,
-    rawResponse = ?,
+    addresses = ?,
 	failure = ?,
 	measurement_count = ?,
 	anomaly_count = ?,
@@ -303,7 +287,7 @@ WHERE
 func (s *Subcommand) updateEntry(
 	db *sql.DB,
 	status string,
-	rawResp []byte, // possibly nil
+	addresses []string, // possibly nil
 	err error, // possibly nil
 	apiResp *aggregationapi.Response, // possibly nil
 	rowid int64,
@@ -328,18 +312,12 @@ func (s *Subcommand) updateEntry(
 		failureCount = apiResp.Result.FailureCount
 	}
 
-	// deal with rawResp possibly being nil
-	var base64Resp string
-	if rawResp != nil {
-		base64Resp = base64.StdEncoding.EncodeToString(rawResp)
-	}
-
 	// update the existing row with new information
 	_ = runtimex.Try1(tx.Exec(
 		updateQuery,
 		status,
-		base64Resp,
-		measurexlite.NewFailure(err), //ELLIOT
+		string(runtimex.Try1(json.Marshal(addresses))),
+		measurexlite.NewFailure(err), // deals with nil gracefully
 		measurementCount,
 		anomalyCount,
 		confirmedCount,
