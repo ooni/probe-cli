@@ -114,6 +114,8 @@ INSERT INTO dnsreport VALUES(
 
 // loadFromRepository loads URLs from the local repository clone
 func (s *Subcommand) loadFromRepository(db *sql.DB) {
+	log.Info("loading information from the github.com/citizenlab/test-lists repository")
+
 	// create channel where to read the test list URLs
 	och := make(chan *testlists.Entry)
 
