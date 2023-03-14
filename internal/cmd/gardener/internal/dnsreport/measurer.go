@@ -55,9 +55,7 @@ func measurerWorker(
 
 	// walk through the incoming entries
 	for entry := range inputs {
-		if !entryMeasurer(ctx, entry, reso, outputs) {
-			return
-		}
+		entryMeasurer(ctx, entry, reso, outputs)
 	}
 }
 
@@ -67,11 +65,11 @@ func entryMeasurer(
 	entry *testlists.Entry,
 	reso model.Resolver,
 	outputs chan<- *Measurement,
-) bool {
+) {
 	// parse the URL and skip entries containing IP addresses
 	URL := runtimex.Try1(url.Parse(entry.URL))
 	if net.ParseIP(URL.Hostname()) != nil {
-		return true
+		return
 	}
 
 	// perform the DNS lookup
@@ -87,8 +85,6 @@ func entryMeasurer(
 	// emit the measurement, if possible
 	select {
 	case <-ctx.Done():
-		return false
 	case outputs <- measurement:
-		return true
 	}
 }

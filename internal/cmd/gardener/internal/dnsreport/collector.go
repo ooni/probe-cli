@@ -14,18 +14,18 @@ import (
 func collectorWorker(
 	ctx context.Context,
 	wg *sync.WaitGroup,
-	jsonlOutputFile string,
+	jsonlCacheFile string,
 	outputs <-chan *Measurement,
 ) {
 	// logging
-	log.Debugf("writer for %s... started", jsonlOutputFile)
-	defer log.Debugf("writer for %s... done", jsonlOutputFile)
+	log.Debugf("writer for %s... started", jsonlCacheFile)
+	defer log.Debugf("writer for %s... done", jsonlCacheFile)
 
 	// synchronize with the parent
 	defer wg.Done()
 
 	// create output file
-	filep := runtimex.Try1(os.Create(jsonlOutputFile))
+	filep := runtimex.Try1(os.Create(jsonlCacheFile))
 
 	// write each entry
 	for measurement := range outputs {

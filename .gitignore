@@ -1,5 +1,6 @@
 .DS_Store
 /*.asc
+/*.csv
 /*.deb
 /*.exe
 /*.jsonl

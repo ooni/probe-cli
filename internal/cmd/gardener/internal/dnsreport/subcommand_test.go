@@ -47,10 +47,13 @@ func TestWorkingAsIntended(t *testing.T) {
 	defer srvr.Close()
 
 	// initialize and run the dnsreport subcommand
+	summaryFile := filepath.Join("testdata", "dnsreport.csv")
 	outputFile := filepath.Join("testdata", "dnsreport.jsonl")
 	sc := &dnsreport.Subcommand{
+		CSVSummaryFile:        summaryFile,
 		DNSOverHTTPSServerURL: srvr.URL,
-		JSONLOutputFile:       outputFile,
+		Force:                 true,
+		JSONLCacheFile:        outputFile,
 		RepositoryDir:         filepath.Join("testdata", "repo"),
 	}
 	sc.Main(context.Background())
@@ -120,10 +123,13 @@ func TestRunWithCancelledContext(t *testing.T) {
 	cancel() // immediately to test what happens when we cancel the context
 
 	// initialize and run the dnsreport subcommand
+	summaryFile := filepath.Join("testdata", "dnsreport-cancelled.csv")
 	outputFile := filepath.Join("testdata", "dnsreport-cancelled.jsonl")
 	sc := &dnsreport.Subcommand{
+		CSVSummaryFile:        summaryFile,
 		DNSOverHTTPSServerURL: srvr.URL,
-		JSONLOutputFile:       outputFile,
+		Force:                 true,
+		JSONLCacheFile:        outputFile,
 		RepositoryDir:         filepath.Join("testdata", "repo"),
 	}
 	sc.Main(ctx)
