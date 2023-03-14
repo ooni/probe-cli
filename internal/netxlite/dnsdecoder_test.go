@@ -406,7 +406,7 @@ func TestDNSDecoderMiekg(t *testing.T) {
 				}
 			})
 
-			t.Run("decode A", func(t *testing.T) {
+			t.Run("decode A with A query", func(t *testing.T) {
 				d := &DNSDecoderMiekg{}
 				queryID := dns.Id()
 				rawQuery := dnsGenQuery(dns.TypeA, queryID)
@@ -438,10 +438,74 @@ func TestDNSDecoderMiekg(t *testing.T) {
 				}
 			})
 
-			t.Run("decode AAAA", func(t *testing.T) {
+			t.Run("decode A with ANY query", func(t *testing.T) {
+				d := &DNSDecoderMiekg{}
+				queryID := dns.Id()
+				rawQuery := dnsGenQuery(dns.TypeANY, queryID)
+				rawResponse := dnsGenLookupHostReplySuccess(rawQuery, nil, "1.1.1.1", "8.8.8.8")
+				query := &mocks.DNSQuery{
+					MockID: func() uint16 {
+						return queryID
+					},
+					MockType: func() uint16 {
+						return dns.TypeA
+					},
+				}
+				resp, err := d.DecodeResponse(rawResponse, query)
+				if err != nil {
+					t.Fatal(err)
+				}
+				addrs, err := resp.DecodeLookupHost()
+				if err != nil {
+					t.Fatal(err)
+				}
+				if len(addrs) != 2 {
+					t.Fatal("expected two entries here")
+				}
+				if addrs[0] != "1.1.1.1" {
+					t.Fatal("invalid first IPv4 entry")
+				}
+				if addrs[1] != "8.8.8.8" {
+					t.Fatal("invalid second IPv4 entry")
+				}
+			})
+
+			t.Run("decode AAAA with AAAA query", func(t *testing.T) {
 				d := &DNSDecoderMiekg{}
 				queryID := dns.Id()
 				rawQuery := dnsGenQuery(dns.TypeAAAA, queryID)
+				rawResponse := dnsGenLookupHostReplySuccess(rawQuery, nil, "::1", "fe80::1")
+				query := &mocks.DNSQuery{
+					MockID: func() uint16 {
+						return queryID
+					},
+					MockType: func() uint16 {
+						return dns.TypeAAAA
+					},
+				}
+				resp, err := d.DecodeResponse(rawResponse, query)
+				if err != nil {
+					t.Fatal(err)
+				}
+				addrs, err := resp.DecodeLookupHost()
+				if err != nil {
+					t.Fatal(err)
+				}
+				if len(addrs) != 2 {
+					t.Fatal("expected two entries here")
+				}
+				if addrs[0] != "::1" {
+					t.Fatal("invalid first IPv6 entry")
+				}
+				if addrs[1] != "fe80::1" {
+					t.Fatal("invalid second IPv6 entry")
+				}
+			})
+
+			t.Run("decode AAAA with ANY query", func(t *testing.T) {
+				d := &DNSDecoderMiekg{}
+				queryID := dns.Id()
+				rawQuery := dnsGenQuery(dns.TypeANY, queryID)
 				rawResponse := dnsGenLookupHostReplySuccess(rawQuery, nil, "::1", "fe80::1")
 				query := &mocks.DNSQuery{
 					MockID: func() uint16 {
@@ -660,8 +724,8 @@ func dnsGenLookupHostReplySuccess(rawQuery []byte, cname *dnsCNAMEAnswer, ips ..
 	runtimex.Assert(len(query.Question) == 1, "more than one question")
 	question := query.Question[0]
 	runtimex.Assert(
-		question.Qtype == dns.TypeA || question.Qtype == dns.TypeAAAA,
-		"invalid query type (expected A or AAAA)",
+		question.Qtype == dns.TypeA || question.Qtype == dns.TypeAAAA || question.Qtype == dns.TypeANY,
+		"invalid query type (expected A, AAAA, or ANY)",
 	)
 	reply := new(dns.Msg)
 	reply.Compress = true

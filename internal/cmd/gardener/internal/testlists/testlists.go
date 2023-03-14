@@ -2,7 +2,6 @@
 package testlists
 
 import (
-	"context"
 	"encoding/csv"
 	"errors"
 	"fmt"
@@ -24,7 +23,7 @@ type Entry struct {
 	File string
 
 	// Line is the line within the input file.
-	Line int
+	Line int64
 
 	// URL is the URL.
 	URL string
@@ -49,7 +48,7 @@ type Entry struct {
 // citizenlab/test-lists on the given channel. This function will close the
 // och channel when it has finished reading all the test-lists. This
 // function calls [runtimex.PanicOnError] in case an error occurs.
-func Generator(ctx context.Context, wg *sync.WaitGroup, testListsDir string, och chan<- *Entry) {
+func Generator(wg *sync.WaitGroup, testListsDir string, och chan<- *Entry) {
 	// logging
 	log.Debugf("generator for %s... running", testListsDir)
 	defer log.Debugf("generator for %s... done", testListsDir)
@@ -66,11 +65,6 @@ func Generator(ctx context.Context, wg *sync.WaitGroup, testListsDir string, och
 	// read the directory containing the lists
 	entries := runtimex.Try1(os.ReadDir(testListsDir))
 	for _, entry := range entries {
-		// immediately exit if the context has been canceled
-		if err := ctx.Err(); err != nil {
-			return
-		}
-
 		// make sure we skip everything that isn't a regular file
 		if !entry.Type().IsRegular() {
 			continue
@@ -82,22 +76,22 @@ func Generator(ctx context.Context, wg *sync.WaitGroup, testListsDir string, och
 		}
 
 		// collect all the entries
-		all := collect(ctx, filepath.Join(testListsDir, entry.Name()))
+		all := collect(filepath.Join(testListsDir, entry.Name()))
 
 		// emit all the entries
-		emit(ctx, entry.Name(), all, och)
+		emit(entry.Name(), all, och)
 	}
 }
 
 // collect collects all the test list entries.
-func collect(ctx context.Context, filepath string) (all []*Entry) {
+func collect(filepath string) (all []*Entry) {
 	// open file and create CSV reader
 	filep := runtimex.Try1(os.Open(filepath))
 	reader := csv.NewReader(filep)
 
 	// loop through all entries
-	var lineno int
-	for ctx.Err() == nil {
+	var lineno int64
+	for {
 		// read the current entry
 		record, err := reader.Read()
 		if errors.Is(err, io.EOF) {
@@ -134,7 +128,7 @@ func collect(ctx context.Context, filepath string) (all []*Entry) {
 }
 
 // emit emits all the entries while incrementing a progessbar
-func emit(ctx context.Context, filepath string, all []*Entry, och chan<- *Entry) {
+func emit(filepath string, all []*Entry, och chan<- *Entry) {
 	bar := progressbar.NewOptions64(
 		int64(len(all)),
 		progressbar.OptionShowDescriptionAtLineEnd(),
@@ -150,11 +144,6 @@ func emit(ctx context.Context, filepath string, all []*Entry, och chan<- *Entry)
 	)
 	for _, entry := range all {
 		bar.Add(1)
-		select {
-		case och <- entry:
-			// nothing
-		case <-ctx.Done():
-			return
-		}
+		och <- entry
 	}
 }

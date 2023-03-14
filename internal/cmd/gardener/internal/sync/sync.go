@@ -1,4 +1,4 @@
-// Package sync contains the subcommand to synchronize the test lists.
+// Package sync implements the sync subcommand.
 package sync
 
 import (
@@ -18,10 +18,10 @@ type Subcommand struct {
 }
 
 // Main is the main function run by the sync subcommand.
-func (sc *Subcommand) Main() {
+func (s *Subcommand) Main() {
 	// possibly remove a previous working copy
-	runtimex.Try0(shellx.Run(log.Log, "rm", "-rf", sc.RepositoryDir))
+	runtimex.Try0(shellx.Run(log.Log, "rm", "-rf", s.RepositoryDir))
 
 	// clone a new working copy
-	runtimex.Try0(shellx.Run(log.Log, "git", "clone", testListsRepo, sc.RepositoryDir))
+	runtimex.Try0(shellx.Run(log.Log, "git", "clone", testListsRepo, s.RepositoryDir))
 }

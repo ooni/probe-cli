@@ -72,7 +72,7 @@ func (sc *Subcommand) generateCache(ctx context.Context) {
 	// read all the test lists entries in the background
 	listsDir := filepath.Join(sc.RepositoryDir, "lists")
 	readers.Add(1)
-	go testlists.Generator(ctx, readers, listsDir, inputs)
+	go testlists.Generator(readers, listsDir, inputs)
 
 	// create channel for reading the results
 	outputs := make(chan *Measurement)

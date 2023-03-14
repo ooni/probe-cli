@@ -5,6 +5,7 @@
 /*.exe
 /*.jsonl
 /*.pprof
+/*.sqlite3
 /*.tar.gz
 /*.zip
 /DEBIAN_INSTALLED_PACKAGE.txt

@@ -49,23 +49,15 @@ func main() {
 		Use:   "dnsreport",
 		Short: "Generates a DNS report from the citizenlab/test-lists working copy",
 		Args:  cobra.NoArgs,
-	}
-	dnsReportCmdForce := dnsReportCmd.Flags().BoolP(
-		"force",
-		"f",
-		false,
-		"Force measuring again the test lists to regenerate the local cache",
-	)
-	dnsReportCmd.Run = func(cmd *cobra.Command, args []string) {
-		sc := &dnsreport.Subcommand{
-			APIURL:                "https://api.ooni.io",
-			CSVSummaryFile:        "dnsreport.csv",
-			DNSOverHTTPSServerURL: "https://dns.google/dns-query",
-			Force:                 *dnsReportCmdForce,
-			JSONLCacheFile:        "dnsreport.jsonl",
-			RepositoryDir:         repositoryDir,
-		}
-		runInterruptible(sc.Main)
+		Run: func(cmd *cobra.Command, args []string) {
+			sc := &dnsreport.Subcommand{
+				APIURL:                "https://api.ooni.io",
+				DNSOverHTTPSServerURL: "https://dns.google/dns-query",
+				Database:              "dnsreport.sqlite3",
+				RepositoryDir:         repositoryDir,
+			}
+			runInterruptible(sc.Main)
+		},
 	}
 	rootCmd.AddCommand(dnsReportCmd)
 
