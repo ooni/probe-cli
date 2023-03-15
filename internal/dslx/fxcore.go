@@ -6,7 +6,6 @@ package dslx
 
 import (
 	"context"
-	"sync"
 	"sync/atomic"
 
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -29,10 +28,6 @@ type Maybe[State any] struct {
 
 	// Operation contains the name of this operation.
 	Operation string
-
-	// Skipped indicates whether an operation decided
-	// that subsequent steps should be skipped.
-	Skipped bool
 
 	// State contains state passed between function calls. You should
 	// only access State when Error is nil and Skipped is false.
@@ -57,12 +52,11 @@ type compose2Func[A, B, C any] struct {
 func (h *compose2Func[A, B, C]) Apply(ctx context.Context, a A) *Maybe[C] {
 	mb := h.f.Apply(ctx, a)
 	runtimex.Assert(mb != nil, "h.f.Apply returned a nil pointer")
-	if mb.Skipped || mb.Error != nil {
+	if mb.Error != nil {
 		return &Maybe[C]{
 			Error:        mb.Error,
 			Observations: mb.Observations,
 			Operation:    mb.Operation,
-			Skipped:      mb.Skipped,
 			State:        *new(C), // zero value
 		}
 	}
@@ -76,7 +70,6 @@ func (h *compose2Func[A, B, C]) Apply(ctx context.Context, a A) *Maybe[C] {
 		Error:        mc.Error,
 		Observations: append(mb.Observations, mc.Observations...), // merge observations
 		Operation:    op,
-		Skipped:      mc.Skipped,
 		State:        mc.State,
 	}
 }
@@ -114,61 +107,13 @@ func (c *counterFunc[T]) Apply(ctx context.Context, value T) *Maybe[T] {
 		Error:        nil,
 		Observations: nil,
 		Operation:    "", // we cannot fail, so no need to store operation name
-		Skipped:      false,
 		State:        value,
 	}
 }
 
-// ErrorLogger logs errors emitted by Func[A, B].
-type ErrorLogger struct {
-	errors []error
-	mu     sync.Mutex
-}
-
-// Errors returns the a copy of the internal array of errors and clears
-// the internal array of errors as a side effect.
-func (e *ErrorLogger) Errors() []error {
-	defer e.mu.Unlock()
-	e.mu.Lock()
-	v := []error{}
-	v = append(v, e.errors...)
-	e.errors = nil // as documented
-	return v
-}
-
-// Record records that an error occurred.
-func (e *ErrorLogger) Record(err error) {
-	defer e.mu.Unlock()
-	e.mu.Lock()
-	e.errors = append(e.errors, err)
-}
-
-// RecordErrors records errors returned by fx.
-func RecordErrors[A, B any](logger *ErrorLogger, fx Func[A, *Maybe[B]]) Func[A, *Maybe[B]] {
-	return &recordErrorsFunc[A, B]{
-		fx: fx,
-		p:  logger,
-	}
-}
-
-// recordErrorsFunc is the type returned by ErrorLogger.Wrap.
-type recordErrorsFunc[A, B any] struct {
-	fx Func[A, *Maybe[B]]
-	p  *ErrorLogger
-}
-
-// Apply implements Func.
-func (elw *recordErrorsFunc[A, B]) Apply(ctx context.Context, a A) *Maybe[B] {
-	r := elw.fx.Apply(ctx, a)
-	if r.Error != nil {
-		elw.p.Record(r.Error)
-	}
-	return r
-}
-
 // FirstErrorExcludingBrokenIPv6Errors returns the first error and failed operation in a list of
 // *Maybe[T] excluding errors known to be linked with IPv6 issues.
-func FirstErrorExcludingBrokenIPv6Errors[T any](entries ...*Maybe[T]) (error, string) {
+func FirstErrorExcludingBrokenIPv6Errors[T any](entries ...*Maybe[T]) (string, error) {
 	for _, entry := range entries {
 		if entry.Error == nil {
 			continue
@@ -179,19 +124,19 @@ func FirstErrorExcludingBrokenIPv6Errors[T any](entries ...*Maybe[T]) (error, st
 			// This class of errors is often times linked with wrongly
 			// configured IPv6, therefore we skip them.
 		default:
-			return err, entry.Operation
+			return entry.Operation, err
 		}
 	}
-	return nil, ""
+	return "", nil
 }
 
 // FirstError returns the first error and failed operation in a list of *Maybe[T].
-func FirstError[T any](entries ...*Maybe[T]) (error, string) {
+func FirstError[T any](entries ...*Maybe[T]) (string, error) {
 	for _, entry := range entries {
 		if entry.Error == nil {
 			continue
 		}
-		return entry.Error, entry.Operation
+		return entry.Operation, entry.Error
 	}
-	return nil, ""
+	return "", nil
 }

@@ -33,7 +33,7 @@ func (f *fn) Apply(ctx context.Context, i int) *Maybe[int] {
 
 /*
 Test cases:
-- Compose 2 functions
+- Compose 2 functions:
   - pipeline succeeds
   - pipeline fails
 */
@@ -105,7 +105,7 @@ func TestObservations(t *testing.T) {
 
 /*
 Test cases:
-- Success counter
+- Success counter:
   - pipeline succeeds
   - pipeline fails
 */
@@ -138,50 +138,11 @@ func TestCounter(t *testing.T) {
 
 /*
 Test cases:
-- Log errors
-  - pipeline succeeds
-  - pipeline fails
-*/
-func TestErrorLogger(t *testing.T) {
-	t.Run("Log errors", func(t *testing.T) {
-		tests := map[string]struct {
-			err    error
-			expect int
-		}{
-			"pipeline succeeds": {err: nil, expect: 0},
-			"pipeline fails":    {err: errors.New("mocked"), expect: 1},
-		}
-		for name, tt := range tests {
-			t.Run(name, func(t *testing.T) {
-				fn := getFn(tt.err, "maybe fail")
-				errLog := &ErrorLogger{}
-				fnWithErrors := RecordErrors(errLog, fn)
-				r := fnWithErrors.Apply(context.Background(), 42)
-				errs := errLog.Errors()
-				if len(errs) != tt.expect {
-					t.Fatalf("unexpected number of logged errors")
-				}
-				if len(errs) > 0 && errs[0] != tt.err {
-					t.Fatalf("unexpected type of logged error")
-				}
-				if errLog.errors != nil {
-					t.Fatalf("errors should be cleared after call to Errors")
-				}
-				if r.Operation != "maybe fail" {
-					t.Fatal("unexpected operation string")
-				}
-			})
-		}
-	})
-}
-
-/*
-Test cases:
-- Extract first error from list of *Maybe
+- Extract first error from list of *Maybe:
   - without errors
   - with errors
 
-- Extract first error excluding broken IPv6 errors
+- Extract first error excluding broken IPv6 errors:
   - without errors
   - with errors
 */
@@ -193,13 +154,14 @@ func TestFirstError(t *testing.T) {
 		{Error: networkUnreachable, Operation: "broken IPv6"},
 		{Error: mockErr, Operation: "mock error"},
 	}
-	noErrRes := []*Maybe[HTTPResponse]{
+	noErrRes := []*Maybe[int64]{
 		{Error: nil, Operation: "succeeds"},
 		{Error: nil, Operation: "succeeds"},
 	}
+
 	t.Run("Extract first error from list of *Maybe", func(t *testing.T) {
 		t.Run("without errors", func(t *testing.T) {
-			firstErr, failedOp := FirstError(noErrRes...)
+			failedOp, firstErr := FirstError(noErrRes...)
 			if firstErr != nil {
 				t.Fatalf("unexpected error: %s", firstErr)
 			}
@@ -207,8 +169,9 @@ func TestFirstError(t *testing.T) {
 				t.Fatalf("unexpected failed operation")
 			}
 		})
+
 		t.Run("with errors", func(t *testing.T) {
-			firstErr, failedOp := FirstError(errRes...)
+			failedOp, firstErr := FirstError(errRes...)
 			if firstErr != networkUnreachable {
 				t.Fatalf("unexpected error: %s", firstErr)
 			}
@@ -217,9 +180,10 @@ func TestFirstError(t *testing.T) {
 			}
 		})
 	})
+
 	t.Run("Extract first error excluding broken IPv6 errors", func(t *testing.T) {
 		t.Run("without errors", func(t *testing.T) {
-			firstErrExclIPv6, failedOp := FirstErrorExcludingBrokenIPv6Errors(noErrRes...)
+			failedOp, firstErrExclIPv6 := FirstErrorExcludingBrokenIPv6Errors(noErrRes...)
 			if firstErrExclIPv6 != nil {
 				t.Fatalf("unexpected error: %s", firstErrExclIPv6)
 			}
@@ -227,8 +191,9 @@ func TestFirstError(t *testing.T) {
 				t.Fatalf("unexpected failed operation")
 			}
 		})
+
 		t.Run("with errors", func(t *testing.T) {
-			firstErrExclIPv6, failedOp := FirstErrorExcludingBrokenIPv6Errors(errRes...)
+			failedOp, firstErrExclIPv6 := FirstErrorExcludingBrokenIPv6Errors(errRes...)
 			if firstErrExclIPv6 != mockErr {
 				t.Fatalf("unexpected error: %s", firstErrExclIPv6)
 			}

@@ -12,7 +12,8 @@ import (
 // Parallelism is the type used to specify parallelism.
 type Parallelism int
 
-// Map applies fx to a list of elements.
+// Map applies fx to the list of elements produced
+// by a generator channel.
 //
 // Arguments:
 //
@@ -23,9 +24,12 @@ type Parallelism int
 //
 // - fx is the function to apply;
 //
-// - inputs receives arguments on which to apply fx.
+// - inputs receives arguments on which to apply fx. We expect this
+// channel to be closed to signal EOF to the background workers.
 //
-// The return value is the list [fx(a)] for every a in as.
+// The return value is the channel generating fx(a)
+// for every a in inputs. This channel will also be closed
+// to signal EOF to the consumer.
 func Map[A, B any](
 	ctx context.Context,
 	parallelism Parallelism,
@@ -50,7 +54,7 @@ func Map[A, B any](
 		}()
 	}
 
-	// close channel when done
+	// close result channel when done
 	go func() {
 		defer close(r)
 		wg.Wait()
@@ -83,7 +87,9 @@ func Parallel[A, B any](
 	return Collect(c)
 }
 
-// ParallelAsync is like Parallel but deals with channels.
+// ParallelAsync is like Parallel but deals with channels. We assume the
+// input channel will be closed to signal EOF. We will close the output
+// channel to signal EOF to the consumer.
 func ParallelAsync[A, B any](
 	ctx context.Context,
 	parallelism Parallelism,
@@ -108,7 +114,7 @@ func ParallelAsync[A, B any](
 		}()
 	}
 
-	// close channel when done
+	// close result channel when done
 	go func() {
 		defer close(r)
 		wg.Wait()
