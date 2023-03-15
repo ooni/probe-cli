@@ -243,7 +243,7 @@ func (m *Measurer) measureone(
 	subresult.mergeObservations(dslx.ExtractObservations(coll...))
 
 	// extract first error
-	firstError, _ := dslx.FirstErrorExcludingBrokenIPv6Errors(coll...)
+	_, firstError := dslx.FirstErrorExcludingBrokenIPv6Errors(coll...)
 	if firstError != nil {
 		subresult.Failure = tracex.NewFailure(firstError)
 	}

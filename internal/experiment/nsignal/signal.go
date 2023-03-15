@@ -300,7 +300,7 @@ func measureTarget(
 	}
 
 	// else we find the first error and store it in the test keys
-	firstError, _ := dslx.FirstErrorExcludingBrokenIPv6Errors(coll...)
+	_, firstError := dslx.FirstErrorExcludingBrokenIPv6Errors(coll...)
 	if firstError != nil {
 		tk.setFailure(firstError)
 		return
