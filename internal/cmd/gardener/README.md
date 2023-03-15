@@ -43,3 +43,15 @@ with the ones observed by the test helper itself.
 You can interrupt this command at any time. Re-running it will
 only measure the unmeasured URLs as long as you keep the
 `dnsreport.sqlite3` file around.
+
+When done, this command produces a `dnsreport.csv` file containing
+summary information about the expired domains.
+
+### Remove the most obvious expired domains
+
+```bash
+./gardener dnsfix
+```
+
+This command uses the `dnsreport.csv` file and applies _simple_ rules
+to only remove the most-safe-to-remove URLs from the test lists.

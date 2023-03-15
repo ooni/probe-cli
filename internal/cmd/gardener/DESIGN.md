@@ -38,3 +38,8 @@ of the researcher updating the test lists. Because of the rationale set
 forth in the general principles, the gardner provides information collected
 using the [aggregation API](https://api.ooni.io/apidocs/#/default/get_api_v1_aggregation)
 side by side with DNS results, to help making informed decisions.
+
+The `gardener dnsfix` command helps the researcher in case there are many
+URLs with expired domains by applying simple rules to remove URLs in the
+most _obvious_ cases (i.e., no anomaly or confirmed for such a URL in the
+last month).

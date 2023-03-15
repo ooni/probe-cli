@@ -19,4 +19,11 @@ gardener SHOULD NOT run measurements in parallel.
 
 When a command has finished running, it produces a summary CSV file
 containing data useful to help test lists curator to take further
-decisions regarding the changes to apply to the test lists.
+decisions regarding the changes to apply to the test lists. A command
+that generates a report is usually named `<FOO>report`.
+
+We also include commands that act upon generated reports by automatically
+removing URL by applying _obvious_ rules. A researcher may still want
+to remove additional URLs after that. A command that applies such rules
+is usually named `<FOO>fix`.
+
