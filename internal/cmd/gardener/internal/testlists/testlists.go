@@ -1,4 +1,4 @@
-// Package testlists contains code to walk through the test lists.
+// Package testlists contains code to read/rewrite the test lists.
 package testlists
 
 import (
@@ -50,7 +50,6 @@ type Entry struct {
 // och channel when it has finished reading all the test-lists. This
 // function calls [runtimex.PanicOnError] in case an error occurs.
 func Generator(wg *sync.WaitGroup, testListsDir string, och chan<- *Entry) {
-	// logging
 	log.Debugf("generator for %s... running", testListsDir)
 	defer log.Debugf("generator for %s... done", testListsDir)
 

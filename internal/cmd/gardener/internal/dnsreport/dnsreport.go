@@ -221,9 +221,8 @@ func (s *Subcommand) measureSingleEntry(db *sql.DB, entry *entryToMeasure) {
 		return
 	}
 
-	// obtain the raw response and the error that occurs when trying
-	// to obtain the result of LookupHost from the raw response
-	addrs, err := s.dnsLookupANY(hostname)
+	// lookup the host using the DoH resolver
+	addrs, err := s.dnsLookupHost(hostname)
 
 	// if there is no error, stop processing right now and record
 	// that we have measured the URL into the database.
@@ -240,12 +239,12 @@ func (s *Subcommand) measureSingleEntry(db *sql.DB, entry *entryToMeasure) {
 	s.updateEntry(db, "failed", []string{}, err, apiResp, entry.rowid)
 }
 
-// dnsLookupANY performs an ANY DNS lookup for the given domain. This function calls
+// dnsLookupHost performs an A/AAAA DNS lookup for the given domain. This function calls
 // [runtimex.PanicOnError] for any network error and _only_ returns the error that
 // arises from parsing the returned DNS response as a LookupHost response. The return
-// value consists of (1) the raw response and (2) the error occurred when parsing
+// value consists of (1) the resolved addresses and (2) the error occurred when parsing
 // the raw response as the result of a LookupHost query.
-func (s *Subcommand) dnsLookupANY(domain string) ([]string, error) {
+func (s *Subcommand) dnsLookupHost(domain string) ([]string, error) {
 	// create countext bound to timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -283,14 +282,14 @@ const updateQuery = `
 UPDATE dnsreport
 SET status = ?,
     addresses = ?,
-	failure = ?,
-	measurement_count = ?,
-	anomaly_count = ?,
-	confirmed_count = ?,
-	ok_count = ?,
-	failure_count = ?
+    failure = ?,
+    measurement_count = ?,
+    anomaly_count = ?,
+    confirmed_count = ?,
+    ok_count = ?,
+    failure_count = ?
 WHERE
-	rowid = ?;
+    rowid = ?;
 `
 
 // updateEntry updates an entry into the database using
@@ -349,7 +348,6 @@ WHERE status = 'failed';
 // writeReport writes a CSV report containing the results inside the
 // database that should be examined by researchers.
 func (s *Subcommand) writeReport(db *sql.DB) {
-	// logging
 	log.Infof("writing researchers' report file: %s", s.ReportFile)
 
 	// create the output file

@@ -44,9 +44,10 @@ func TestRewrite(t *testing.T) {
 	}
 
 	// rewrite the test list keeping only the entries containing "torrent" in their name
-	testlists.Rewrite(copied, func(URL string) bool {
+	shouldKeep := func(URL string) bool {
 		return strings.Contains(URL, "torrent")
-	})
+	}
+	testlists.Rewrite(copied, shouldKeep)
 
 	// make sure the resulting file is what we expected
 	expectedFile := filepath.Join("testdata", "it-expected.csv")
