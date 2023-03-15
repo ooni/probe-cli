@@ -48,7 +48,8 @@ type Subcommand struct {
 	RepositoryDir string
 }
 
-// Main is the main function of the dnsreport subcommand.
+// Main is the main function of the dnsreport subcommand. This function calls
+// [runtimex.PanicOnError] in case of failure.
 func (s *Subcommand) Main(ctx context.Context) {
 	// check whether the database exists
 	dbExists := fsx.RegularFileExists(s.Database)

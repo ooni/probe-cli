@@ -17,7 +17,8 @@ type Subcommand struct {
 	RepositoryDir string
 }
 
-// Main is the main function run by the sync subcommand.
+// Main is the main function run by the sync subcommand. This function calls
+// [runtimex.PanicOnError] in case of failure.
 func (s *Subcommand) Main() {
 	// possibly remove a previous working copy
 	runtimex.Try0(shellx.Run(log.Log, "rm", "-rf", s.RepositoryDir))

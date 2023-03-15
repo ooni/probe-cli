@@ -1,0 +1,6 @@
+file,line,url,failure,measurement_count,anomaly_count,confirmed_count,ok_count,failure_count
+testdata/lists/it-copy.csv,2,http://www.torrentdownload.ws/,dns_nxdomain_error,30,10,4,9,7
+testdata/lists/it-copy.csv,3,http://www.torrentroom.com/,dns_nxdomain_error,0,0,0,0,0
+testdata/lists/it-copy.csv,6,http://www.torrentvia.com/,dns_nxdomain_error,10,0,0,0,10
+testdata/lists/it-copy.csv,10,http://btdigg.org/,dns_nxdomain_error,10,0,0,10,0
+testdata/lists/it-copy.csv,12,http://demonoid.ph/,dns_servfail_error,10,0,0,10,0

@@ -1,13 +1,18 @@
 package testlists_test
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/cmd/gardener/internal/testlists"
+	"github.com/ooni/probe-cli/v3/internal/shellx"
 )
 
-func TestWorkingAsIntended(t *testing.T) {
+func TestGenerator(t *testing.T) {
 	// create controlling variables for the testlists.Generator
 	wg := &sync.WaitGroup{}
 	och := make(chan *testlists.Entry)
@@ -25,7 +30,35 @@ func TestWorkingAsIntended(t *testing.T) {
 	// wait for the generator to terminate
 	wg.Wait()
 
-	if len(all) != 1860 {
-		t.Fatal("expected 1860, got", len(all))
+	if len(all) != 28 {
+		t.Fatal("expected 28, got", len(all))
+	}
+}
+
+func TestRewrite(t *testing.T) {
+	// create a copy of the test list we want to rewrite
+	orig := filepath.Join("testdata", "it.csv")
+	copied := filepath.Join("testdata", "it-copy.csv")
+	if err := shellx.CopyFile(orig, copied, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// rewrite the test list keeping only the entries containing "torrent" in their name
+	testlists.Rewrite(copied, func(URL string) bool {
+		return strings.Contains(URL, "torrent")
+	})
+
+	// make sure the resulting file is what we expected
+	expectedFile := filepath.Join("testdata", "it-expected.csv")
+	expect, err := os.ReadFile(expectedFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(copied)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(expect, got); diff != "" {
+		t.Fatal(diff)
 	}
 }

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/schollz/progressbar/v3"
 )
@@ -86,8 +87,11 @@ func Generator(wg *sync.WaitGroup, testListsDir string, och chan<- *Entry) {
 // collect collects all the test list entries.
 func collect(filepath string) (all []*Entry) {
 	// open file and create CSV reader
-	filep := runtimex.Try1(os.Open(filepath))
+	filep := runtimex.Try1(fsx.OpenFile(filepath))
 	reader := csv.NewReader(filep)
+
+	// remember to close the open file
+	defer filep.Close()
 
 	// loop through all entries
 	var lineno int64
@@ -146,4 +150,58 @@ func emit(filepath string, all []*Entry, och chan<- *Entry) {
 		bar.Add(1)
 		och <- entry
 	}
+}
+
+// Rewrite rewrites a file in the test lists skipping all
+// the records for which shouldKeep returns false.
+func Rewrite(filename string, shouldKeep func(URL string) bool) {
+	records := csvReadAndFilter(filename, shouldKeep)
+	csvWriteBack(filename, records)
+}
+
+// csvReadAndFilter returns all the records that we shouldKeep.
+func csvReadAndFilter(filepath string, shouldKeep func(URL string) bool) [][]string {
+	// open file and create CSV reader
+	filep := runtimex.Try1(fsx.OpenFile(filepath))
+	reader := csv.NewReader(filep)
+
+	// remember to close the open file
+	defer filep.Close()
+
+	// loop through all entries
+	var (
+		lineno  int64
+		records [][]string
+	)
+	for {
+		// read the current entry
+		record, err := reader.Read()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		runtimex.PanicOnError(err, "reader.Read")
+		// this record seems malformed but in theory this
+		// cannot happen because the csv library should return
+		// an error in case we see a short record.
+		runtimex.Assert(len(record) == 6, "unexpected record length")
+
+		// keep the first line, which contains the headers as
+		// well as any other line we should keep
+		lineno++
+		if lineno == 1 || shouldKeep(record[0]) {
+			records = append(records, record)
+			continue
+		}
+	}
+
+	return records
+}
+
+// csvWriteBack writes records back to a given file.
+func csvWriteBack(filename string, records [][]string) {
+	filep := runtimex.Try1(os.Create(filename))
+	writer := csv.NewWriter(filep)
+	runtimex.Try0(writer.WriteAll(records))
+	runtimex.Try0(writer.Error())
+	runtimex.Try0(filep.Close())
 }
