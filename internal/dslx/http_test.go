@@ -17,7 +17,7 @@ import (
 /*
 Test cases:
 - Get httpRequestFunc with options
-- Apply httpRequestFunc
+- Apply httpRequestFunc:
   - with EOF
   - with invalid method
   - with port-less address
@@ -63,11 +63,13 @@ func TestHTTPRequest(t *testing.T) {
 			t.Fatalf("unexpected %s, expected %s, got %s", "UserAgent", "Mozilla/5.0 Gecko/geckotrail Firefox/firefoxversion", requestFunc.UserAgent)
 		}
 	})
+
 	t.Run("Apply httpRequestFunc", func(t *testing.T) {
 		mockResponse := &http.Response{
 			Status: "expected",
 			Body:   io.NopCloser(strings.NewReader("")),
 		}
+
 		eofTransport := &mocks.HTTPTransport{
 			MockRoundTrip: func(req *http.Request) (*http.Response, error) {
 				return nil, io.EOF
@@ -76,6 +78,7 @@ func TestHTTPRequest(t *testing.T) {
 				return "tcp"
 			},
 		}
+
 		goodTransport := &mocks.HTTPTransport{
 			MockRoundTrip: func(req *http.Request) (*http.Response, error) {
 				return mockResponse, nil
@@ -108,6 +111,7 @@ func TestHTTPRequest(t *testing.T) {
 				t.Fatal("expected nil request here")
 			}
 		})
+
 		t.Run("with invalid method", func(t *testing.T) {
 			httpTransport := HTTPTransport{
 				Address:     "1.2.3.4:567",
@@ -130,6 +134,7 @@ func TestHTTPRequest(t *testing.T) {
 				t.Fatal("expected nil request here")
 			}
 		})
+
 		t.Run("with port-less address", func(t *testing.T) {
 			httpTransport := HTTPTransport{
 				Address:     "1.2.3.4",
@@ -153,6 +158,7 @@ func TestHTTPRequest(t *testing.T) {
 				t.Fatal("unexpected host")
 			}
 		})
+
 		t.Run("with success (https)", func(t *testing.T) {
 			httpTransport := HTTPTransport{
 				Address:     "1.2.3.4:443",
@@ -173,6 +179,7 @@ func TestHTTPRequest(t *testing.T) {
 				t.Fatal("unexpected request")
 			}
 		})
+
 		t.Run("with success (http)", func(t *testing.T) {
 			httpTransport := HTTPTransport{
 				Address:     "1.2.3.4:80",
@@ -193,6 +200,7 @@ func TestHTTPRequest(t *testing.T) {
 				t.Fatal("unexpected request")
 			}
 		})
+
 		t.Run("with header options", func(t *testing.T) {
 			httpTransport := HTTPTransport{
 				Address:     "1.2.3.4:567",
@@ -248,12 +256,14 @@ func TestHTTPTCP(t *testing.T) {
 			t.Fatal("unexpected type")
 		}
 	})
+
 	t.Run("Get composed function: TCP with HTTP", func(t *testing.T) {
 		f := HTTPRequestOverTCP()
 		if _, ok := f.(*compose2Func[*TCPConnection, *HTTPTransport, *HTTPResponse]); !ok {
 			t.Fatal("unexpected type")
 		}
 	})
+
 	t.Run("Apply httpTransportTCPFunc", func(t *testing.T) {
 		conn := &mocks.Conn{}
 		idGen := &atomic.Int64{}
@@ -298,6 +308,7 @@ func TestHTTPQUIC(t *testing.T) {
 			t.Fatal("unexpected type")
 		}
 	})
+
 	t.Run("Apply httpTransportQUICFunc", func(t *testing.T) {
 		conn := &mocks.QUICEarlyConnection{}
 		idGen := &atomic.Int64{}
@@ -343,12 +354,14 @@ func TestHTTPTLS(t *testing.T) {
 			t.Fatal("unexpected type")
 		}
 	})
+
 	t.Run("Get composed function: TLS with HTTP", func(t *testing.T) {
 		f := HTTPRequestOverTLS()
 		if _, ok := f.(*compose2Func[*TLSConnection, *HTTPTransport, *HTTPResponse]); !ok {
 			t.Fatal("unexpected type")
 		}
 	})
+
 	t.Run("Apply httpTransportTLSFunc", func(t *testing.T) {
 		conn := &mocks.TLSConn{}
 		idGen := &atomic.Int64{}

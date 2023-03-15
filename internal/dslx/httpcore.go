@@ -18,10 +18,11 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// HTTPTransport is an HTTP transport bound to a TCP or TLS connection
+// HTTPTransport is an HTTP transport bound to a TCP, TLS or QUIC connection
 // that would use such a connection only and for any input URL. You generally
-// use HTTPTransportTCP or HTTPTransportTLS to create a new instance; if you
-// want to initialize manually, make sure you init the MANDATORY fields.
+// use [HTTPTransportTCP], [HTTPTransportTLS] or [HTTPTransportQUIC] to
+// create a new instance; if you want to initialize manually, make sure you
+// init the fields marked as MANDATORY.
 type HTTPTransport struct {
 	// Address is the MANDATORY address we're connected to.
 	Address string
@@ -142,7 +143,7 @@ type httpRequestFunc struct {
 // Apply implements Func.
 func (f *httpRequestFunc) Apply(
 	ctx context.Context, input *HTTPTransport) *Maybe[*HTTPResponse] {
-	// create HTTP request
+	// setup
 	const timeout = 10 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -153,6 +154,7 @@ func (f *httpRequestFunc) Apply(
 		resp         *http.Response
 	)
 
+	// create HTTP request
 	req, err := f.newHTTPRequest(ctx, input)
 	if err == nil {
 
@@ -193,7 +195,6 @@ func (f *httpRequestFunc) Apply(
 		Error:        err,
 		Observations: observations,
 		Operation:    netxlite.HTTPRoundTripOperation,
-		Skipped:      false,
 		State:        state,
 	}
 }

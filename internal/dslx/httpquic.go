@@ -44,7 +44,6 @@ func (f *httpTransportQUICFunc) Apply(
 		Error:        nil,
 		Observations: nil,
 		Operation:    "", // we cannot fail, so no need to store operation name
-		Skipped:      false,
 		State:        state,
 	}
 }
