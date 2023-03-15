@@ -15,7 +15,7 @@ import (
 func NewAddressSet(dns ...*Maybe[*ResolvedAddresses]) *AddressSet {
 	uniq := make(map[string]bool)
 	for _, e := range dns {
-		if e.Skipped || e.Error != nil {
+		if e.Error != nil {
 			continue
 		}
 		v := e.State

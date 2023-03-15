@@ -171,7 +171,6 @@ func (f *dnsLookupGetaddrinfoFunc) Apply(
 		Error:        err,
 		Observations: maybeTraceToObservations(trace),
 		Operation:    netxlite.ResolveOperation,
-		Skipped:      false,
 		State:        state,
 	}
 }
@@ -240,7 +239,6 @@ func (f *dnsLookupUDPFunc) Apply(
 		Error:        err,
 		Observations: maybeTraceToObservations(trace),
 		Operation:    netxlite.ResolveOperation,
-		Skipped:      false,
 		State:        state,
 	}
 }
