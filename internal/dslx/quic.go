@@ -142,7 +142,6 @@ func (f *quicHandshakeFunc) Apply(
 		Error:        err,
 		Observations: maybeTraceToObservations(trace),
 		Operation:    netxlite.QUICHandshakeOperation,
-		Skipped:      false,
 		State:        state,
 	}
 }

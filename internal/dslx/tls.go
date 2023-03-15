@@ -150,7 +150,6 @@ func (f *tlsHandshakeFunc) Apply(
 		Error:        err,
 		Observations: maybeTraceToObservations(trace),
 		Operation:    netxlite.TLSHandshakeOperation,
-		Skipped:      false,
 		State:        state,
 	}
 }

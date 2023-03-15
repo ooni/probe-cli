@@ -27,6 +27,7 @@ func closeConnWithErr(err error) io.Closer {
 		},
 	}
 }
+
 func closeQUICConnWithErr(err error) io.Closer {
 	return &quicCloserConn{
 		&mocks.QUICEarlyConnection{
