@@ -134,14 +134,13 @@ func (r *dnsResponse) DecodeLookupHost() ([]string, error) {
 	}
 	var addrs []string
 	for _, answer := range r.msg.Answer {
-		qtype := r.Query().Type()
-		if qtype == dns.TypeA || qtype == dns.TypeANY {
+		switch r.Query().Type() {
+		case dns.TypeA:
 			if rra, ok := answer.(*dns.A); ok {
 				ip := rra.A
 				addrs = append(addrs, ip.String())
 			}
-		}
-		if qtype == dns.TypeAAAA || qtype == dns.TypeANY {
+		case dns.TypeAAAA:
 			if rra, ok := answer.(*dns.AAAA); ok {
 				ip := rra.AAAA
 				addrs = append(addrs, ip.String())
