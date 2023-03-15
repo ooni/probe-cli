@@ -6,7 +6,6 @@ package dslx
 
 import (
 	"context"
-	"sync"
 	"sync/atomic"
 
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -110,53 +109,6 @@ func (c *counterFunc[T]) Apply(ctx context.Context, value T) *Maybe[T] {
 		Operation:    "", // we cannot fail, so no need to store operation name
 		State:        value,
 	}
-}
-
-// ErrorLogger logs errors emitted by Func[A, B].
-type ErrorLogger struct {
-	errors []error
-	mu     sync.Mutex
-}
-
-// Errors returns the a copy of the internal array of errors and clears
-// the internal array of errors as a side effect.
-func (e *ErrorLogger) Errors() []error {
-	defer e.mu.Unlock()
-	e.mu.Lock()
-	v := []error{}
-	v = append(v, e.errors...)
-	e.errors = nil // as documented
-	return v
-}
-
-// Record records that an error occurred.
-func (e *ErrorLogger) Record(err error) {
-	defer e.mu.Unlock()
-	e.mu.Lock()
-	e.errors = append(e.errors, err)
-}
-
-// RecordErrors records errors returned by fx.
-func RecordErrors[A, B any](logger *ErrorLogger, fx Func[A, *Maybe[B]]) Func[A, *Maybe[B]] {
-	return &recordErrorsFunc[A, B]{
-		fx: fx,
-		p:  logger,
-	}
-}
-
-// recordErrorsFunc is the type returned by ErrorLogger.Wrap.
-type recordErrorsFunc[A, B any] struct {
-	fx Func[A, *Maybe[B]]
-	p  *ErrorLogger
-}
-
-// Apply implements Func.
-func (elw *recordErrorsFunc[A, B]) Apply(ctx context.Context, a A) *Maybe[B] {
-	r := elw.fx.Apply(ctx, a)
-	if r.Error != nil {
-		elw.p.Record(r.Error)
-	}
-	return r
 }
 
 // FirstErrorExcludingBrokenIPv6Errors returns the first error and failed operation in a list of
