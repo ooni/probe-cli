@@ -168,7 +168,7 @@ func (elw *recordErrorsFunc[A, B]) Apply(ctx context.Context, a A) *Maybe[B] {
 
 // FirstErrorExcludingBrokenIPv6Errors returns the first error and failed operation in a list of
 // *Maybe[T] excluding errors known to be linked with IPv6 issues.
-func FirstErrorExcludingBrokenIPv6Errors[T any](entries ...*Maybe[T]) (error, string) {
+func FirstErrorExcludingBrokenIPv6Errors[T any](entries ...*Maybe[T]) (string, error) {
 	for _, entry := range entries {
 		if entry.Error == nil {
 			continue
@@ -179,19 +179,19 @@ func FirstErrorExcludingBrokenIPv6Errors[T any](entries ...*Maybe[T]) (error, st
 			// This class of errors is often times linked with wrongly
 			// configured IPv6, therefore we skip them.
 		default:
-			return err, entry.Operation
+			return entry.Operation, err
 		}
 	}
-	return nil, ""
+	return "", nil
 }
 
 // FirstError returns the first error and failed operation in a list of *Maybe[T].
-func FirstError[T any](entries ...*Maybe[T]) (error, string) {
+func FirstError[T any](entries ...*Maybe[T]) (string, error) {
 	for _, entry := range entries {
 		if entry.Error == nil {
 			continue
 		}
-		return entry.Error, entry.Operation
+		return entry.Operation, entry.Error
 	}
-	return nil, ""
+	return "", nil
 }
