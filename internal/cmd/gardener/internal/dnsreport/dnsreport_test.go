@@ -283,8 +283,16 @@ func TestWorkingAsIntended(t *testing.T) {
 		// make sure there is no databaseFile when testing
 		runtimex.Try0(os.RemoveAll(databaseFile))
 
+		// obtain previous value of loadFromRepository counter
+		prev := loadedFromRepository.Load()
+
 		// run the main function of the subcommand
 		sc.Main(context.Background())
+
+		// make sure we loaded once from the repository
+		if value := loadedFromRepository.Load(); prev+1 != value {
+			t.Fatal("expected", prev+1, "got", value)
+		}
 
 		// validate the results
 		if err := validateDatabaseResults(databaseFile); err != nil {
@@ -299,15 +307,28 @@ func TestWorkingAsIntended(t *testing.T) {
 		// make sure there is no databaseFile when testing
 		runtimex.Try0(os.RemoveAll(databaseFile))
 
+		// obtain previous value of loadFromRepository counter
+		prev := loadedFromRepository.Load()
+
 		// run the main function of the subcommand with a cancelled context, which
 		// should prevent us from processing the URLs
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel() // immediately
 		sc.Main(ctx)
 
+		// make sure we loaded once from the repository
+		if value := loadedFromRepository.Load(); prev+1 != value {
+			t.Fatal("expected", prev+1, "got", value)
+		}
+
 		// run again with background context, which should cause us to
 		// start processing from a pre-existing database.
 		sc.Main(context.Background())
+
+		// make sure the counter remained the same after the second attempt
+		if value := loadedFromRepository.Load(); prev+1 != value {
+			t.Fatal("expected", prev+1, "got", value)
+		}
 
 		// validate the results
 		if err := validateDatabaseResults(databaseFile); err != nil {

@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/apex/log"
@@ -48,6 +49,9 @@ type Subcommand struct {
 	RepositoryDir string
 }
 
+// loadedFromRepository counts the number of times we loaded from the repository
+var loadedFromRepository = &atomic.Int64{}
+
 // Main is the main function of the dnsreport subcommand. This function calls
 // [runtimex.PanicOnError] in case of failure.
 func (s *Subcommand) Main(ctx context.Context) {
@@ -64,6 +68,7 @@ func (s *Subcommand) Main(ctx context.Context) {
 	if !dbExists {
 		log.Infof("creating new %s database", s.Database)
 		s.loadFromRepository(db)
+		loadedFromRepository.Add(1)
 	} else {
 		log.Infof("using existing %s database", s.Database)
 	}
