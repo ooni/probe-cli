@@ -15,7 +15,6 @@ import (
 )
 
 func TestQUICHandshake(t *testing.T) {
-	wasClosed := false
 	t.Run("Get quicHandshakeFunc with options", func(t *testing.T) {
 		certpool := x509.NewCertPool()
 		certpool.AddCert(&x509.Certificate{})
@@ -30,7 +29,9 @@ func TestQUICHandshake(t *testing.T) {
 			t.Fatal("unexpected type. Expected: quicHandshakeFunc")
 		}
 	})
+
 	t.Run("Apply quicHandshakeFunc", func(t *testing.T) {
+		wasClosed := false
 		plainConn := &mocks.QUICEarlyConnection{
 			MockCloseWithError: func(code quic.ApplicationErrorCode, reason string) error {
 				wasClosed = true
@@ -40,18 +41,21 @@ func TestQUICHandshake(t *testing.T) {
 				return quic.ConnectionState{}
 			},
 		}
+
 		eofDialer := &mocks.QUICDialer{
 			MockDialContext: func(ctx context.Context, address string, tlsConfig *tls.Config,
 				quicConfig *quic.Config) (quic.EarlyConnection, error) {
 				return nil, io.EOF
 			},
 		}
+
 		goodDialer := &mocks.QUICDialer{
 			MockDialContext: func(ctx context.Context, address string, tlsConfig *tls.Config,
 				quicConfig *quic.Config) (quic.EarlyConnection, error) {
 				return plainConn, nil
 			},
 		}
+
 		tests := map[string]struct {
 			dialer     model.QUICDialer
 			sni        string
@@ -89,6 +93,7 @@ func TestQUICHandshake(t *testing.T) {
 			})
 			wasClosed = false
 		}
+
 		t.Run("with nil dialer", func(t *testing.T) {
 			quicHandshake := &quicHandshakeFunc{Pool: &ConnPool{}, dialer: nil}
 			endpoint := &Endpoint{

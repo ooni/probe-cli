@@ -13,7 +13,6 @@ import (
 )
 
 func TestTCPConnect(t *testing.T) {
-	wasClosed := false
 	t.Run("Get tcpConnectFunc", func(t *testing.T) {
 		f := TCPConnect(
 			&ConnPool{},
@@ -22,7 +21,9 @@ func TestTCPConnect(t *testing.T) {
 			t.Fatal("unexpected type. Expected: tcpConnectFunc")
 		}
 	})
+
 	t.Run("Apply tcpConnectFunc", func(t *testing.T) {
+		wasClosed := false
 		plainConn := &mocks.Conn{
 			MockClose: func() error {
 				wasClosed = true
@@ -34,11 +35,13 @@ func TestTCPConnect(t *testing.T) {
 				return nil, io.EOF
 			},
 		}
+
 		goodDialer := &mocks.Dialer{
 			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 				return plainConn, nil
 			},
 		}
+
 		tests := map[string]struct {
 			dialer     model.Dialer
 			expectConn net.Conn
