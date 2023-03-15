@@ -16,7 +16,7 @@ func TestEndpoint(t *testing.T) {
 	t.Run("Create new endpoint", func(t *testing.T) {
 		testEndpoint := NewEndpoint(
 			"network",
-			"a.b.c.d",
+			"10.9.8.76",
 			EndpointOptionDomain("www.example.com"),
 			EndpointOptionIDGenerator(idGen),
 			EndpointOptionLogger(model.DiscardLogger),
@@ -25,7 +25,7 @@ func TestEndpoint(t *testing.T) {
 		if testEndpoint.Network != "network" {
 			t.Fatalf("unexpected network")
 		}
-		if testEndpoint.Address != "a.b.c.d" {
+		if testEndpoint.Address != "10.9.8.76" {
 			t.Fatalf("unexpected address")
 		}
 		if testEndpoint.Domain != "www.example.com" {
