@@ -9,6 +9,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"io"
+	"net"
 	"sync/atomic"
 	"time"
 
@@ -146,12 +147,21 @@ func (f *quicHandshakeFunc) Apply(
 }
 
 func (f *quicHandshakeFunc) serverName(input *Endpoint) string {
-	// TODO(bassosimone,kelmenhorst): here we should probably use the same
-	// logic used by the TLS handshaker code, which is more robust.
 	if f.ServerName != "" {
 		return f.ServerName
 	}
-	return input.Domain
+	if input.Domain != "" {
+		return input.Domain
+	}
+	addr, _, err := net.SplitHostPort(input.Address)
+	if err == nil {
+		return addr
+	}
+	// Note: golang requires a ServerName and fails if it's empty. If the provided
+	// ServerName is an IP address, however, golang WILL NOT emit any SNI extension
+	// in the ClientHello, consistently with RFC 6066 Section 3 requirements.
+	input.Logger.Warn("TLSHandshake: cannot determine which SNI to use")
+	return ""
 }
 
 // QUICConnection is an established QUIC connection. If you initialize
