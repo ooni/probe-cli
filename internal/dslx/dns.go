@@ -88,7 +88,7 @@ type DomainToResolve struct {
 	ZeroTime time.Time
 }
 
-// ResolvedAddresses is the contains the results of DNS lookups. To initialize
+// ResolvedAddresses contains the results of DNS lookups. To initialize
 // this struct manually, follow specific instructions for each field.
 type ResolvedAddresses struct {
 	// Addresses contains the nonempty resolved addresses.
@@ -185,7 +185,7 @@ func DNSLookupUDP(resolver string) Func[*DomainToResolve, *Maybe[*ResolvedAddres
 
 // dnsLookupUDPFunc is the function returned by DNSLookupUDP.
 type dnsLookupUDPFunc struct {
-	// Resolver is the MANDATORY resolver to use.
+	// Resolver is the MANDATORY endpointed of the resolver to use.
 	Resolver     string
 	mockResolver model.Resolver // for testing
 }

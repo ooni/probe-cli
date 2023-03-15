@@ -33,7 +33,8 @@ type AddressSet struct {
 	M map[string]bool
 }
 
-// Add MUTATES the set to add a (possibly-new) address to the set.
+// Add MUTATES the set to add a (possibly-new) address to the set and
+// returns the same set to the caller allowing for chaining calls.
 func (as *AddressSet) Add(addrs ...string) *AddressSet {
 	for _, addr := range addrs {
 		as.M[addr] = true
@@ -41,7 +42,8 @@ func (as *AddressSet) Add(addrs ...string) *AddressSet {
 	return as
 }
 
-// RemoveBogons MUTATES the set to remove bogons from the set.
+// RemoveBogons MUTATES the set to remove bogons from the set and returns
+// the same set to the caller allowing for chaining calls.
 func (as *AddressSet) RemoveBogons() *AddressSet {
 	zap := []string{}
 	for addr := range as.M {

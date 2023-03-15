@@ -8,19 +8,21 @@ import (
 
 /*
 Test cases:
-- Create new address set
-	- with valid input
-	- with invalid input
-- Add address
-	- on empty set
-	- on non-empty set
-- Remove bogons
-	- on empty set
-	- on bogon set
-	- on valid set
+- Create new address set:
+  - with valid input
+  - with invalid input
+
+- Add address:
+  - on empty set
+  - on non-empty set
+
+- Remove bogons:
+  - on empty set
+  - on bogon set
+  - on valid set
+
 - Convert address set to endpoints list
 */
-
 func TestAddressSet(t *testing.T) {
 	t.Run("Create new address set", func(t *testing.T) {
 		t.Run("with valid input", func(t *testing.T) {
@@ -42,6 +44,7 @@ func TestAddressSet(t *testing.T) {
 				t.Fatalf("invalid entry")
 			}
 		})
+
 		t.Run("with invalid input", func(t *testing.T) {
 			dns := []*Maybe[*ResolvedAddresses]{
 				{
@@ -55,10 +58,12 @@ func TestAddressSet(t *testing.T) {
 			}
 		})
 	})
+
 	type addressTest struct {
 		as   *AddressSet
 		want int
 	}
+
 	t.Run("Add address", func(t *testing.T) {
 		var tests = map[string]addressTest{
 			"on empty set":     {as: &AddressSet{map[string]bool{}}, want: 1},
@@ -66,7 +71,7 @@ func TestAddressSet(t *testing.T) {
 		}
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {
-				ip := "a.b.c.d"
+				ip := "5.4.3.2"
 				tt.as.Add(ip)
 				if len(tt.as.M) != tt.want {
 					t.Fatalf("invalid number of entries")
@@ -77,8 +82,9 @@ func TestAddressSet(t *testing.T) {
 			})
 		}
 	})
+
 	t.Run("Remove bogons", func(t *testing.T) {
-		bogonIP := "a.b.c.d"
+		bogonIP := "10.0.0.1"
 		var tests = map[string]addressTest{
 			"on empty set": {as: &AddressSet{map[string]bool{}}, want: 0},
 			"on bogon set": {as: &AddressSet{map[string]bool{bogonIP: true}}, want: 0},
@@ -96,6 +102,7 @@ func TestAddressSet(t *testing.T) {
 			})
 		}
 	})
+
 	t.Run("Convert address set to endpoints list", func(t *testing.T) {
 		as := &AddressSet{map[string]bool{"1.1.1.1": true}}
 		endpoints := as.ToEndpoints("tcp", 443)
