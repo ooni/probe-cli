@@ -42,7 +42,7 @@ func (s *Subcommand) Main() {
 	cwd := runtimex.Try1(s.OsGetwd())
 
 	// enter into the git repository directory
-	log.Infof("+ chdir %s", s.RepositoryDir)
+	log.Infof("+ cd %s", s.RepositoryDir)
 	runtimex.Try0(s.OsChdir(s.RepositoryDir))
 
 	// create a unique branch name for this session
@@ -53,6 +53,6 @@ func (s *Subcommand) Main() {
 	runtimex.Try0(shellx.Run(log.Log, "git", "checkout", "-b", branchName))
 
 	// return to the previous working directory
-	log.Infof("+ chdir %s", cwd)
+	log.Infof("+ cd %s", cwd)
 	runtimex.Try0(s.OsChdir(cwd))
 }
