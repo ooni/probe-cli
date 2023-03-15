@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/apex/log"
 	"github.com/apex/log/handlers/cli"
@@ -39,6 +40,9 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			sc := &sync.Subcommand{
 				RepositoryDir: repositoryDir,
+				OsChdir:       os.Chdir,
+				OsGetwd:       os.Getwd,
+				TimeNow:       time.Now,
 			}
 			sc.Main()
 		},
