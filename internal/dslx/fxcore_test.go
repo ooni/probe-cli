@@ -33,7 +33,7 @@ func (f *fn) Apply(ctx context.Context, i int) *Maybe[int] {
 
 /*
 Test cases:
-- Compose 2 functions
+- Compose 2 functions:
   - pipeline succeeds
   - pipeline fails
 */
@@ -105,7 +105,7 @@ func TestObservations(t *testing.T) {
 
 /*
 Test cases:
-- Success counter
+- Success counter:
   - pipeline succeeds
   - pipeline fails
 */
@@ -138,7 +138,7 @@ func TestCounter(t *testing.T) {
 
 /*
 Test cases:
-- Log errors
+- Log errors:
   - pipeline succeeds
   - pipeline fails
 */
@@ -177,11 +177,11 @@ func TestErrorLogger(t *testing.T) {
 
 /*
 Test cases:
-- Extract first error from list of *Maybe
+- Extract first error from list of *Maybe:
   - without errors
   - with errors
 
-- Extract first error excluding broken IPv6 errors
+- Extract first error excluding broken IPv6 errors:
   - without errors
   - with errors
 */

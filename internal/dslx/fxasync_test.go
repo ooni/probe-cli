@@ -22,7 +22,7 @@ func (f *fnWait) Apply(ctx context.Context, i int) *Maybe[int] {
 
 /*
 Test cases:
-- Map multiple inputs to multiple goroutines
+- Map multiple inputs to multiple goroutines:
   - with 4 goroutines
   - expect parallelism set to 1 if < 0
 */
@@ -32,8 +32,8 @@ func TestMap(t *testing.T) {
 			input       []int
 			parallelism int
 		}{
-			"with 4 goroutines":                  {input: []int{0, 10, 20, 30}, parallelism: 4},
-			"expect parallelism set to 1 if < 0": {input: []int{0}, parallelism: -1},
+			"with 4 goroutines":                   {input: []int{0, 10, 20, 30}, parallelism: 4},
+			"expect parallelism set to 1 if <= 0": {input: []int{0}, parallelism: 0},
 		}
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {
@@ -42,7 +42,7 @@ func TestMap(t *testing.T) {
 				inputStream := StreamList(tt.input...)
 
 				res := make(map[int]bool)
-				// we need 4 goroutines to decrease the waitgroup counter to 0
+				// we need tt.parallelism goroutines to decrease the waitgroup counter to 0
 				for out := range Map(context.Background(), Parallelism(tt.parallelism), getFnWait(&wg), inputStream) {
 					res[out.State] = true
 				}
@@ -69,7 +69,7 @@ func TestApplyAsync(t *testing.T) {
 
 /*
 Test cases:
-- Parallel: Map multiple funcs working on the same input to multiple goroutines
+- Parallel: Map multiple funcs working on the same input to multiple goroutines:
   - with 2 goroutines and 2 processing funcs
   - expect parallelism set to 1 if < 0
 */
@@ -79,8 +79,8 @@ func TestParallel(t *testing.T) {
 			funcs       int
 			parallelism int
 		}{
-			"with 2 goroutines and 2 funcs":      {funcs: 2, parallelism: 2},
-			"expect parallelism set to 1 if < 0": {funcs: 1, parallelism: -1},
+			"with 2 goroutines and 2 funcs":       {funcs: 2, parallelism: 2},
+			"expect parallelism set to 1 if <= 0": {funcs: 1, parallelism: 0},
 		}
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {

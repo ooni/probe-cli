@@ -30,10 +30,6 @@ type Maybe[State any] struct {
 	// Operation contains the name of this operation.
 	Operation string
 
-	// Skipped indicates whether an operation decided
-	// that subsequent steps should be skipped.
-	Skipped bool
-
 	// State contains state passed between function calls. You should
 	// only access State when Error is nil and Skipped is false.
 	State State
@@ -57,12 +53,11 @@ type compose2Func[A, B, C any] struct {
 func (h *compose2Func[A, B, C]) Apply(ctx context.Context, a A) *Maybe[C] {
 	mb := h.f.Apply(ctx, a)
 	runtimex.Assert(mb != nil, "h.f.Apply returned a nil pointer")
-	if mb.Skipped || mb.Error != nil {
+	if mb.Error != nil {
 		return &Maybe[C]{
 			Error:        mb.Error,
 			Observations: mb.Observations,
 			Operation:    mb.Operation,
-			Skipped:      mb.Skipped,
 			State:        *new(C), // zero value
 		}
 	}
@@ -76,7 +71,6 @@ func (h *compose2Func[A, B, C]) Apply(ctx context.Context, a A) *Maybe[C] {
 		Error:        mc.Error,
 		Observations: append(mb.Observations, mc.Observations...), // merge observations
 		Operation:    op,
-		Skipped:      mc.Skipped,
 		State:        mc.State,
 	}
 }
@@ -114,7 +108,6 @@ func (c *counterFunc[T]) Apply(ctx context.Context, value T) *Maybe[T] {
 		Error:        nil,
 		Observations: nil,
 		Operation:    "", // we cannot fail, so no need to store operation name
-		Skipped:      false,
 		State:        value,
 	}
 }

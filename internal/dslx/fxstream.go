@@ -6,7 +6,8 @@ package dslx
 
 import "sync"
 
-// Collect collects all the elements inside a channel.
+// Collect collects all the elements inside a channel under the assumption
+// that the channel will be closed to signal EOF.
 func Collect[T any](c <-chan T) (v []T) {
 	for t := range c { // the producer closes C when done
 		v = append(v, t)
@@ -14,7 +15,8 @@ func Collect[T any](c <-chan T) (v []T) {
 	return
 }
 
-// StreamList creates a channel out of static values.
+// StreamList creates a channel out of static values. This function will
+// close the channel when it has streamed all the available elements.
 func StreamList[T any](ts ...T) <-chan T {
 	c := make(chan T)
 	go func() {
@@ -26,7 +28,8 @@ func StreamList[T any](ts ...T) <-chan T {
 	return c
 }
 
-// Zip zips together results from many [Streabable]s.
+// Zip zips together results from many channels under the assumption that
+// each channel will be closed when it has streamed all elements.
 func Zip[T any](sources ...<-chan T) <-chan T {
 	r := make(chan T)
 	wg := &sync.WaitGroup{}
