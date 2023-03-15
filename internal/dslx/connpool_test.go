@@ -11,27 +11,29 @@ import (
 
 /*
 Test cases:
-- Maybe track connections
+- Maybe track connections:
 	- with nil
 	- with connection
 	- with quic connection
-- Close ConnPool
+
+- Close ConnPool:
 	- all Close() calls succeed
 	- one Close() call fails
 */
 
-func closeConnWithErr(err error) io.Closer {
+func closeableConnWithErr(err error) io.Closer {
 	return &mocks.Conn{
 		MockClose: func() error {
 			return err
 		},
 	}
 }
-func closeQUICConnWithErr(err error) io.Closer {
+
+func closeableQUICConnWithErr(err error) io.Closer {
 	return &quicCloserConn{
 		&mocks.QUICEarlyConnection{
 			MockCloseWithError: func(code quic.ApplicationErrorCode, reason string) error {
-				return nil
+				return err
 			},
 		},
 	}
@@ -42,11 +44,12 @@ func TestConnPool(t *testing.T) {
 		mockConn io.Closer
 		want     int // len of connpool.v
 	}
+
 	t.Run("Maybe track connections", func(t *testing.T) {
 		tests := map[string]connpoolTest{
 			"with nil":             {mockConn: nil, want: 0},
-			"with connection":      {mockConn: closeConnWithErr(nil), want: 1},
-			"with quic connection": {mockConn: closeQUICConnWithErr(nil), want: 1},
+			"with connection":      {mockConn: closeableConnWithErr(nil), want: 1},
+			"with quic connection": {mockConn: closeableQUICConnWithErr(nil), want: 1},
 		}
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {
@@ -58,6 +61,7 @@ func TestConnPool(t *testing.T) {
 			})
 		}
 	})
+
 	t.Run("Close ConnPool", func(t *testing.T) {
 		mockErr := errors.New("mocked")
 		tests := map[string]struct {
@@ -66,20 +70,21 @@ func TestConnPool(t *testing.T) {
 			"all Close() calls succeed": {
 				pool: &ConnPool{
 					v: []io.Closer{
-						closeConnWithErr(nil),
-						closeQUICConnWithErr(nil),
+						closeableConnWithErr(nil),
+						closeableQUICConnWithErr(nil),
 					},
 				},
 			},
 			"one Close() call fails": {
 				pool: &ConnPool{
 					v: []io.Closer{
-						closeConnWithErr(nil),
-						closeConnWithErr(mockErr),
+						closeableConnWithErr(nil),
+						closeableConnWithErr(mockErr),
 					},
 				},
 			},
 		}
+
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {
 				err := tt.pool.Close()

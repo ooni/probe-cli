@@ -124,10 +124,9 @@ func (f *quicHandshakeFunc) Apply(
 	// stop the operation logger
 	ol.Stop(err)
 
-	// start preparing the message to emit on the stdout
 	state := &QUICConnection{
 		Address:     input.Address,
-		QUICConn:    quicConn,
+		QUICConn:    quicConn, // possibly nil
 		Domain:      input.Domain,
 		IDGenerator: input.IDGenerator,
 		Logger:      input.Logger,
@@ -142,12 +141,13 @@ func (f *quicHandshakeFunc) Apply(
 		Error:        err,
 		Observations: maybeTraceToObservations(trace),
 		Operation:    netxlite.QUICHandshakeOperation,
-		Skipped:      false,
 		State:        state,
 	}
 }
 
 func (f *quicHandshakeFunc) serverName(input *Endpoint) string {
+	// TODO(bassosimone,kelmenhorst): here we should probably use the same
+	// logic used by the TLS handshaker code, which is more robust.
 	if f.ServerName != "" {
 		return f.ServerName
 	}
@@ -175,7 +175,8 @@ type QUICConnection struct {
 	// Network is the MANDATORY network we tried to use when connecting.
 	Network string
 
-	// TLSConfig is the config we need to establ. a QUIC conn. and construct an HTTP/3 transport.
+	// TLSConfig is the config we used to establish a QUIC connection and will
+	// be needed when constructing an HTTP/3 transport.
 	TLSConfig *tls.Config
 
 	// TLSState is the possibly-empty TLS connection state.

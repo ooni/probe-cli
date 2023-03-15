@@ -18,7 +18,7 @@ import (
 /*
 Test cases:
 - Get tlsHandshakeFunc with options
-- Apply tlsHandshakeFunc
+- Apply tlsHandshakeFunc:
   - with EOF
   - with invalid address
   - with success
@@ -26,7 +26,6 @@ Test cases:
   - with options
 */
 func TestTLSHandshake(t *testing.T) {
-	wasClosed := false
 	t.Run("Get tlsHandshakeFunc with options", func(t *testing.T) {
 		certpool := x509.NewCertPool()
 		certpool.AddCert(&x509.Certificate{})
@@ -56,7 +55,10 @@ func TestTLSHandshake(t *testing.T) {
 			t.Fatalf("unexpected %s, expected %v, got %v", "RootCAs", certpool, handshakeFunc.RootCAs)
 		}
 	})
+
 	t.Run("Apply tlsHandshakeFunc", func(t *testing.T) {
+		wasClosed := false
+
 		type configOptions struct {
 			sni        string
 			address    string
@@ -70,16 +72,19 @@ func TestTLSHandshake(t *testing.T) {
 			},
 		}
 		tlsConn := &mocks.TLSConn{Conn: tcpConn}
+
 		eofHandshaker := &mocks.TLSHandshaker{
 			MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
 				return nil, tls.ConnectionState{}, io.EOF
 			},
 		}
+
 		goodHandshaker := &mocks.TLSHandshaker{
 			MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
 				return tlsConn, tls.ConnectionState{}, nil
 			},
 		}
+
 		tests := map[string]struct {
 			config     configOptions
 			handshaker *mocks.TLSHandshaker
@@ -114,13 +119,14 @@ func TestTLSHandshake(t *testing.T) {
 				closed:     true,
 			},
 			"with options": {
-				config:     configOptions{domain: "domain.com", nextProtos: []string{"h3"}},
+				config:     configOptions{domain: "domain.com", nextProtos: []string{"h2", "http/1.1"}},
 				handshaker: goodHandshaker,
 				expectConn: tlsConn,
 				expectErr:  nil,
 				closed:     true,
 			},
 		}
+
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {
 				pool := &ConnPool{}

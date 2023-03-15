@@ -76,7 +76,6 @@ func (f *tcpConnectFunc) Apply(
 		Error:        err,
 		Observations: maybeTraceToObservations(trace),
 		Operation:    netxlite.ConnectOperation,
-		Skipped:      false,
 		State:        state,
 	}
 }

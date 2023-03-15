@@ -1,11 +1,16 @@
 package dslx
 
+//
+// Connection pooling to streamline closing connections.
+//
+
 import (
 	"io"
 	"sync"
 )
 
-// ConnPool tracks established connections.
+// ConnPool tracks established connections. The zero value
+// of this struct is ready to use.
 type ConnPool struct {
 	mu sync.Mutex
 	v  []io.Closer
