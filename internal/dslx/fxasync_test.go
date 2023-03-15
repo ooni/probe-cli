@@ -57,7 +57,7 @@ func TestMap(t *testing.T) {
 }
 
 func TestApplyAsync(t *testing.T) {
-	t.Run("ApplyAsync: Apply async returns a channel", func(t *testing.T) {
+	t.Run("ApplyAsync: ApplyAsync returns a channel", func(t *testing.T) {
 		wg := sync.WaitGroup{}
 		wg.Add(1)
 		out := <-ApplyAsync(context.Background(), getFnWait(&wg), 0)
