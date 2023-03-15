@@ -270,12 +270,6 @@ type GeolocateResults struct {
 	Org string
 }
 
-// MaybeUpdateResources is a legacy stub. It does nothing. We will
-// remove it when we're ready to bump the major number.
-func (sess *Session) MaybeUpdateResources(ctx *Context) error {
-	return nil
-}
-
 // Geolocate performs a geolocate operation and returns the results.
 //
 // This function locks the session until it's done. That is, no other operation

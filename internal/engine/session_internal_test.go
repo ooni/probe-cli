@@ -2,15 +2,21 @@ package engine
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/url"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivity"
+	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivitylte"
 	"github.com/ooni/probe-cli/v3/internal/geolocate"
+	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/registry"
 )
 
 func (s *Session) GetAvailableProbeServices() []model.OOAPIService {
@@ -83,6 +89,7 @@ func TestSessionCheckInSuccessful(t *testing.T) {
 			ASN:         137,
 			CountryCode: "IT",
 		},
+		kvStore:         &kvstore.Memory{},
 		softwareName:    "miniooni",
 		softwareVersion: "0.1.0-dev",
 		testMaybeLookupLocationContext: func(ctx context.Context) error {
@@ -308,4 +315,87 @@ func TestNewSessionWithFakeTunnelAndCancelledContext(t *testing.T) {
 	if sess != nil {
 		t.Fatal("expected nil session here")
 	}
+}
+
+func TestSessionNewExperimentBuilder(t *testing.T) {
+	t.Run("for a normal experiment", func(t *testing.T) {
+		sess := &Session{
+			logger: model.DiscardLogger,
+		}
+		builder, err := sess.NewExperimentBuilder("ndt7")
+		if err != nil {
+			t.Fatal(err)
+		}
+		exp := builder.NewExperiment()
+		if exp.Name() != "ndt" {
+			t.Fatal("unexpected experiment")
+		}
+	})
+
+	t.Run("for webconnectivity without feature flags", func(t *testing.T) {
+		sess := &Session{
+			kvStore: &kvstore.Memory{},
+			logger:  model.DiscardLogger,
+		}
+		builder, err := sess.NewExperimentBuilder("web_connectivity")
+		if err != nil {
+			t.Fatal(err)
+		}
+		exp := builder.NewExperiment()
+		if exp.Name() != "web_connectivity" {
+			t.Fatal("unexpected experiment")
+		}
+		switch m := exp.(*experiment).measurer; m.(type) {
+		case webconnectivity.Measurer:
+		default:
+			t.Fatalf("unexpected measurer type: %T", m)
+		}
+	})
+
+	t.Run("for webconnectivity with feature flags", func(t *testing.T) {
+		fakeflags := &checkInFlagsWrapper{
+			Expire: time.Now().Add(24 * time.Hour),
+			Flags: map[string]bool{
+				"webconnectivity_0.5": true,
+			},
+		}
+		data, err := json.Marshal(fakeflags)
+		if err != nil {
+			t.Fatal(err)
+		}
+		memstore := &kvstore.Memory{}
+		if err := memstore.Set(checkInFlagsState, data); err != nil {
+			t.Fatal(err)
+		}
+		sess := &Session{
+			kvStore: memstore,
+			logger:  model.DiscardLogger,
+		}
+		builder, err := sess.NewExperimentBuilder("web_connectivity")
+		if err != nil {
+			t.Fatal(err)
+		}
+		exp := builder.NewExperiment()
+		if exp.Name() != "web_connectivity" {
+			t.Fatal("unexpected experiment")
+		}
+		switch m := exp.(*experiment).measurer; m.(type) {
+		case *webconnectivitylte.Measurer:
+		default:
+			t.Fatalf("unexpected measurer type %T", m)
+		}
+	})
+
+	t.Run("for a nonexisting experiment", func(t *testing.T) {
+		sess := &Session{
+			logger: model.DiscardLogger,
+		}
+		builder, err := sess.NewExperimentBuilder("nonexistent")
+		if !errors.Is(err, registry.ErrNoSuchExperiment) {
+			t.Fatal("unexpected err", err)
+		}
+		if builder != nil {
+			t.Fatal("expected nil builder here")
+		}
+	})
 }

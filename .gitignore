@@ -3,11 +3,13 @@
 /*.deb
 /*.exe
 /*.jsonl
+/*.pprof
 /*.tar.gz
 /*.zip
 /DEBIAN_INSTALLED_PACKAGE.txt
 /apitool
 /badproxy.pem
+/buildtool
 /ghpublish.out.txt
 /jafar
 /miniooni
@@ -15,5 +17,6 @@
 /oohelperd
 /ooniprobe
 /ooporthelper
+/libooniengine.*
 /probe-cli.cov
 /tmp-*

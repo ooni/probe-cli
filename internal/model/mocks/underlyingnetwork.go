@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"context"
+	"crypto/x509"
 	"net"
 	"time"
 
@@ -10,6 +11,8 @@ import (
 
 // UnderlyingNetwork allows mocking model.UnderlyingNetwork.
 type UnderlyingNetwork struct {
+	MockDefaultCertPool func() *x509.CertPool
+
 	MockDialContext func(ctx context.Context, timeout time.Duration, network, address string) (net.Conn, error)
 
 	MockListenUDP func(network string, addr *net.UDPAddr) (model.UDPLikeConn, error)
@@ -20,6 +23,10 @@ type UnderlyingNetwork struct {
 }
 
 var _ model.UnderlyingNetwork = &UnderlyingNetwork{}
+
+func (un *UnderlyingNetwork) DefaultCertPool() *x509.CertPool {
+	return un.MockDefaultCertPool()
+}
 
 func (un *UnderlyingNetwork) DialContext(ctx context.Context, timeout time.Duration, network, address string) (net.Conn, error) {
 	return un.MockDialContext(ctx, timeout, network, address)

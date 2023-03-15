@@ -357,5 +357,13 @@ func ClassifyTLSHandshakeError(err error) string {
 		// Test case: https://expired.badssl.com/
 		return FailureSSLInvalidCertificate
 	}
+
+	if strings.HasSuffix(err.Error(), "tls: unrecognized name") {
+		return FailureSSLInvalidHostname
+	}
+	if strings.HasSuffix(err.Error(), "tls: alert(112)") { // yawning/utls
+		return FailureSSLInvalidHostname
+	}
+
 	return ClassifyGenericError(err)
 }

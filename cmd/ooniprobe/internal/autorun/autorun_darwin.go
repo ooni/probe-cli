@@ -11,7 +11,7 @@ import (
 	"text/template"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/utils"
+	"github.com/ooni/probe-cli/v3/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/shellx"
 	"golang.org/x/sys/execabs"
 	"golang.org/x/sys/unix"
@@ -90,7 +90,7 @@ func (managerDarwin) LogStream() error {
 
 func (managerDarwin) mustNotHavePlist() error {
 	log.Infof("exec: test -f %s && already_registered()", plistPath)
-	if utils.FileExists(plistPath) {
+	if fsx.RegularFileExists(plistPath) {
 		// This is not atomic. Do we need atomicity here?
 		return errors.New("autorun: service already registered")
 	}

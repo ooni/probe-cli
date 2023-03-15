@@ -17,7 +17,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	if measurer.ExperimentName() != "ndt" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.10.0" {
+	if measurer.ExperimentVersion() != "0.10.1" {
 		t.Fatal("unexpected version")
 	}
 }
@@ -35,7 +35,7 @@ func TestDiscoverCancelledContext(t *testing.T) {
 	if !errors.Is(err, context.Canceled) {
 		t.Fatal("not the error we expected")
 	}
-	if locateResult.Hostname != "" {
+	if locateResult != nil {
 		t.Fatal("not the Hostname we expected")
 	}
 }

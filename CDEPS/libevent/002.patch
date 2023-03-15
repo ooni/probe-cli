@@ -1,0 +1,15 @@
+diff --git a/include/event2/event.h b/include/event2/event.h
+index a6b6144..6abb474 100644
+--- a/include/event2/event.h
++++ b/include/event2/event.h
+@@ -1665,6 +1665,10 @@ int event_base_update_cache_time(struct event_base *base);
+ EVENT2_EXPORT_SYMBOL
+ void libevent_global_shutdown(void);
+
++/* EVENT_OONI is used by dependencies to ensure they are using the
++   correct event.h header and not some other header. */
++#define EVENT_OONI 1
++
+ #ifdef __cplusplus
+ }
+ #endif

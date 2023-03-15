@@ -68,15 +68,22 @@ run `go mod tidy` to minimize such changes.
 
 ## Implementation requirements
 
-- do not use `os/exec`, use `x/sys/execabs` or `./internal/shellx`
+- always use `x/sys/execabs` or `./internal/shellx` instead of
+using the `os/exec` package directly
 
 - use `./internal/fsx.OpenFile` when you need to open a file
 
 - use `./internal/netxlite.ReadAllContext` instead of `io.ReadAll`
 and `./internal/netxlite.CopyContext` instead of `io.Copy`
 
-- use `./internal/model.ErrorToStringOrOK` when 
+- use `./internal/model.ErrorToStringOrOK` when
 an experiment logs intermediate results
+
+- do not call `netxlite.NewDefaultCertPool` unless you need to
+modify a copy of the default Mozilla CA pool (when using `netxlite`
+as the underlying library--which is the common case--you can just
+leave the `RootCAs` to `nil` in a `tls.Config` and `netxlite`
+will understand you want to use the default pool)
 
 ## Code testing requirements
 
@@ -143,4 +150,4 @@ tools for publishing binaries to our Debian repository, Maven Central, etc.
 
 ## Community Channels
 
-Stuck somewhere or Have any questions? please join our [Slack Channels](https://slack.ooni.org/) or [IRC](ircs://irc.oftc.net:6697/#ooni). We're here to help and always available to discuss. 
+Stuck somewhere or Have any questions? please join our [Slack Channels](https://slack.ooni.org/) or [IRC](ircs://irc.oftc.net:6697/#ooni). We're here to help and always available to discuss.

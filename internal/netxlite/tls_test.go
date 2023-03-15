@@ -269,7 +269,7 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 			if config.RootCAs != nil {
 				t.Fatal("config.RootCAs should still be nil")
 			}
-			if gotTLSConfig.RootCAs != defaultCertPool {
+			if gotTLSConfig.RootCAs != tproxyDefaultCertPool {
 				t.Fatal("gotTLSConfig.RootCAs has not been correctly set")
 			}
 		})

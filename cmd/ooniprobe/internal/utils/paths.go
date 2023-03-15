@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/utils/homedir"
+	"github.com/ooni/probe-cli/v3/internal/fsx"
 )
 
 // RequiredDirs returns the required ooni home directories
@@ -44,13 +45,6 @@ func DBDir(home string, name string) string {
 	return filepath.Join(home, "db", fmt.Sprintf("%s.sqlite3", name))
 }
 
-// FileExists returns true if the specified path exists and is a
-// regular file.
-func FileExists(path string) bool {
-	stat, err := os.Stat(path)
-	return err == nil && stat.Mode().IsRegular()
-}
-
 // GetOONIHome returns the path to the OONI Home
 func GetOONIHome() (string, error) {
 	if ooniHome := os.Getenv("OONI_HOME"); ooniHome != "" {
@@ -74,5 +68,5 @@ func DidLegacyInformedConsent() bool {
 	}
 
 	path := filepath.Join(filepath.Join(home, ".ooni"), "initialized")
-	return FileExists(path)
+	return fsx.RegularFileExists(path)
 }

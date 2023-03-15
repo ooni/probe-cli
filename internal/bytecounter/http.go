@@ -10,9 +10,9 @@ import (
 // MaybeWrapHTTPTransport takes in input an HTTPTransport and either wraps it
 // to perform byte counting, if this counter is not nil, or just returns to the
 // caller the original transport, when the counter is nil.
-func (c *Counter) MaybeWrapHTTPTransport(txp model.HTTPTransport) model.HTTPTransport {
-	if c != nil {
-		txp = WrapHTTPTransport(txp, c)
+func MaybeWrapHTTPTransport(txp model.HTTPTransport, counter *Counter) model.HTTPTransport {
+	if counter != nil {
+		txp = WrapHTTPTransport(txp, counter)
 	}
 	return txp
 }

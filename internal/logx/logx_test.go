@@ -80,6 +80,11 @@ func TestLogHandlerHandleLog(t *testing.T) {
 		Emoji:          true,
 		Level:          log.WarnLevel,
 		ExpectSeverity: "🔥",
+	}, {
+		Name:           "fatal level with emoji",
+		Emoji:          true,
+		Level:          log.FatalLevel,
+		ExpectSeverity: "🚨",
 	}}
 
 	for _, cnf := range configs {

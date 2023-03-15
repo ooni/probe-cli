@@ -20,7 +20,7 @@ import (
 
 const (
 	testName    = "http_invalid_request_line"
-	testVersion = "0.2.0"
+	testVersion = "0.2.1"
 	timeout     = 5 * time.Second
 )
 
@@ -96,6 +96,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	if helper.Type != "legacy" {
 		return ErrInvalidHelperType
 	}
+	sess.Logger().Infof("using test helper: %+v", helper)
 	measurement.TestHelpers = map[string]interface{}{
 		"backend": helper.Address,
 	}

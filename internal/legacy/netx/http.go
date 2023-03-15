@@ -7,6 +7,7 @@ package netx
 import (
 	"crypto/tls"
 
+	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -37,7 +38,7 @@ func NewHTTPTransport(config Config) model.HTTPTransport {
 	// not super convinced by this code because it
 	// seems we're currently counting bytes twice in some cases. I think we
 	// should review how we're counting bytes and using netx currently.
-	txp = config.ByteCounter.MaybeWrapHTTPTransport(txp)                 // WAI with ByteCounter == nil
+	txp = bytecounter.MaybeWrapHTTPTransport(txp, config.ByteCounter)    // WAI with ByteCounter == nil
 	const defaultSnapshotSize = 0                                        // means: use the default snapsize
 	return config.Saver.MaybeWrapHTTPTransport(txp, defaultSnapshotSize) // WAI with Saver == nil
 }

@@ -120,8 +120,11 @@ func extractSoError(conn net.Conn) error {
 
 // genTLSConfig generates tls.Config from a given SNI
 func genTLSConfig(sni string) *tls.Config {
+	// See https://github.com/ooni/probe/issues/2413 to understand
+	// why we're using nil to force netxlite to use the cached
+	// default Mozilla cert pool.
 	return &tls.Config{
-		RootCAs:            netxlite.NewDefaultCertPool(),
+		RootCAs:            nil,
 		ServerName:         sni,
 		NextProtos:         []string{"h2", "http/1.1"},
 		InsecureSkipVerify: true,

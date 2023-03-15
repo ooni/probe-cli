@@ -7,6 +7,7 @@ package model
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"net"
 	"net/http"
 	"syscall"
@@ -202,7 +203,7 @@ type QUICDialer interface {
 	//
 	// - set ServerName to be the SNI;
 	//
-	// - set RootCAs to NewDefaultCertPool();
+	// - set RootCAs to nil (which causes us to use the default cert pool);
 	//
 	// - set NextProtos to []string{"h3"}.
 	//
@@ -276,7 +277,7 @@ type TLSHandshaker interface {
 	//
 	// - set ServerName to be the SNI;
 	//
-	// - set RootCAs to NewDefaultCertPool();
+	// - set RootCAs to nil (which causes us to use the default cert pool);
 	//
 	// - set NextProtos to []string{"h2", "http/1.1"} for HTTPS
 	// and []string{"dot"} for DNS-over-TLS.
@@ -484,12 +485,16 @@ type UDPLikeConn interface {
 // UnderlyingNetwork implements the underlying network APIs on
 // top of which we implement network extensions.
 type UnderlyingNetwork interface {
+	// DefaultCertPool returns the underlying cert pool used by the
+	// network extensions library. You MUST NOT use this function to
+	// modify the default cert pool since this would lead to a data
+	// race. Use [netxlite.NewDefaultCertPool] if you wish to get
+	// a copy of the default cert pool that you can modify.
+	DefaultCertPool() *x509.CertPool
+
 	// DialContext is equivalent to net.Dialer.DialContext except that
 	// there is also an explicit timeout for dialing.
 	DialContext(ctx context.Context, timeout time.Duration, network, address string) (net.Conn, error)
-
-	// ListenUDP is equivalent to net.ListenUDP.
-	ListenUDP(network string, addr *net.UDPAddr) (UDPLikeConn, error)
 
 	// GetaddrinfoLookupANY is like net.Resolver.LookupHost except that it
 	// also returns to the caller the CNAME when it is available.
@@ -497,4 +502,7 @@ type UnderlyingNetwork interface {
 
 	// GetaddrinfoResolverNetwork returns the resolver network.
 	GetaddrinfoResolverNetwork() string
+
+	// ListenUDP is equivalent to net.ListenUDP.
+	ListenUDP(network string, addr *net.UDPAddr) (UDPLikeConn, error)
 }

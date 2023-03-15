@@ -248,8 +248,8 @@ func TestQUICDialerQUICGo(t *testing.T) {
 			if tlsConfig.RootCAs != nil {
 				t.Fatal("tlsConfig.RootCAs should not have been changed")
 			}
-			if gotTLSConfig.RootCAs != defaultCertPool {
-				t.Fatal("invalid gotTLSConfig.RootCAs")
+			if gotTLSConfig.RootCAs != tproxyDefaultCertPool {
+				t.Fatal("gotTLSConfig.RootCAs should have been set")
 			}
 			if tlsConfig.NextProtos != nil {
 				t.Fatal("tlsConfig.NextProtos should not have been changed")
@@ -289,8 +289,8 @@ func TestQUICDialerQUICGo(t *testing.T) {
 			if tlsConfig.RootCAs != nil {
 				t.Fatal("tlsConfig.RootCAs should not have been changed")
 			}
-			if gotTLSConfig.RootCAs != defaultCertPool {
-				t.Fatal("invalid gotTLSConfig.RootCAs")
+			if gotTLSConfig.RootCAs != tproxyDefaultCertPool {
+				t.Fatal("gotTLSConfig.RootCAs should have been set")
 			}
 			if tlsConfig.NextProtos != nil {
 				t.Fatal("tlsConfig.NextProtos should not have been changed")

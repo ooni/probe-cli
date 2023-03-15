@@ -174,7 +174,7 @@ clean_one_repo() {
 		if [[ $(basename $dirname) == "probe-cli" ]]; then
 			# Avoid completely removing all the cloned subrepos
 			# as well as the important local.bash config file
-			extraflags="-e MONOREPO/repo/ -e MONOREPO/tools/local.bash"
+			extraflags="-e MONOREPO/repo/ -e MONOREPO/tools/local.bash -e GOCACHE"
 		fi
 		run git clean -dffx $extraflags
 	)

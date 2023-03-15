@@ -215,12 +215,15 @@ func CanonicalizeExperimentName(name string) string {
 	return name
 }
 
+// ErrNoSuchExperiment indicates a given experiment does not exist.
+var ErrNoSuchExperiment = errors.New("no such experiment")
+
 // NewFactory creates a new Factory instance.
 func NewFactory(name string) (*Factory, error) {
 	name = CanonicalizeExperimentName(name)
 	factory := AllExperiments[name]
 	if factory == nil {
-		return nil, fmt.Errorf("no such experiment: %s", name)
+		return nil, fmt.Errorf("%w: %s", ErrNoSuchExperiment, name)
 	}
 	return factory, nil
 }

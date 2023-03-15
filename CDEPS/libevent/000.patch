@@ -1,0 +1,16 @@
+diff --git a/bufferevent_openssl.c b/bufferevent_openssl.c
+index b51b834..06b219e 100644
+--- a/bufferevent_openssl.c
++++ b/bufferevent_openssl.c
+@@ -67,6 +67,11 @@
+ #include <openssl/err.h>
+ #include "openssl-compat.h"
+
++#include <openssl/opensslv.h>
++#ifndef OPENSSL_OONI
++#error "We're not including the correct openssl/opensslv.h file"
++#endif
++
+ /*
+  * Define an OpenSSL bio that targets a bufferevent.
+  */

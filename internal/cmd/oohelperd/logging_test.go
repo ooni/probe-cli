@@ -6,7 +6,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
-func TestIndexLogger(t *testing.T) {
+func TestPrefixLogger(t *testing.T) {
 	t.Run("Debug", func(t *testing.T) {
 		expected := "<0>antani"
 		base := &mocks.Logger{
@@ -16,7 +16,7 @@ func TestIndexLogger(t *testing.T) {
 				}
 			},
 		}
-		logger := &indexLogger{
+		logger := &prefixLogger{
 			indexstr: "<0>",
 			logger:   base,
 		}
@@ -32,7 +32,7 @@ func TestIndexLogger(t *testing.T) {
 				}
 			},
 		}
-		logger := &indexLogger{
+		logger := &prefixLogger{
 			indexstr: "<0>",
 			logger:   base,
 		}
@@ -48,7 +48,7 @@ func TestIndexLogger(t *testing.T) {
 				}
 			},
 		}
-		logger := &indexLogger{
+		logger := &prefixLogger{
 			indexstr: "<0>",
 			logger:   base,
 		}
@@ -64,7 +64,7 @@ func TestIndexLogger(t *testing.T) {
 				}
 			},
 		}
-		logger := &indexLogger{
+		logger := &prefixLogger{
 			indexstr: "<0>",
 			logger:   base,
 		}
@@ -80,7 +80,7 @@ func TestIndexLogger(t *testing.T) {
 				}
 			},
 		}
-		logger := &indexLogger{
+		logger := &prefixLogger{
 			indexstr: "<0>",
 			logger:   base,
 		}
@@ -96,7 +96,7 @@ func TestIndexLogger(t *testing.T) {
 				}
 			},
 		}
-		logger := &indexLogger{
+		logger := &prefixLogger{
 			indexstr: "<0>",
 			logger:   base,
 		}

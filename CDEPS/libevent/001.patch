@@ -1,0 +1,15 @@
+diff --git a/test/regress_zlib.c b/test/regress_zlib.c
+index 5fe7749..558155c 100644
+--- a/test/regress_zlib.c
++++ b/test/regress_zlib.c
+@@ -80,6 +80,10 @@
+
+ #include <zlib.h>
+
++#ifndef ZLIB_OONI
++#error "We're not including the correct zlib.h file"
++#endif
++
+ static int infilter_calls;
+ static int outfilter_calls;
+ static int readcb_finished;

@@ -1,7 +1,7 @@
 package sessionresolver
 
 //
-// Code for creating a new child resolver
+// High-level code for creating a new child resolver
 //
 
 import (
@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/legacy/netx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -71,13 +70,13 @@ func (r *Resolver) newChildResolver(h3 bool, URL string) (model.Resolver, error)
 	if r.newChildResolverFn != nil {
 		return r.newChildResolverFn(h3, URL)
 	}
-	return netx.NewDNSClient(netx.Config{
-		BogonIsError: true,
-		ByteCounter:  r.ByteCounter, // nil is handled by netx
-		HTTP3Enabled: h3,
-		Logger:       r.logger(),
-		ProxyURL:     r.ProxyURL,
-	}, URL)
+	return newChildResolver(
+		r.logger(),
+		URL,
+		h3,
+		r.ByteCounter, // newChildResolver handles the nil case
+		r.ProxyURL,    // ditto
+	)
 }
 
 // newresolver creates a new resolver with the given config and URL. This is

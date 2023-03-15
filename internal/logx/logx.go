@@ -48,6 +48,8 @@ func (h *Handler) HandleLog(e *log.Entry) (err error) {
 			level = "  "
 		case log.WarnLevel:
 			level = "🔥"
+		case log.FatalLevel:
+			level = "🚨"
 		default:
 			// keep the original string
 		}

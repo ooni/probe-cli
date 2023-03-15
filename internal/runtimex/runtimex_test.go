@@ -146,3 +146,102 @@ func TestBuildInfoRecord_setall(t *testing.T) {
 		})
 	}
 }
+
+func TestTry(t *testing.T) {
+	t.Run("Try0", func(t *testing.T) {
+		t.Run("on success", func(t *testing.T) {
+			Try0(nil)
+		})
+
+		t.Run("on failure", func(t *testing.T) {
+			expected := errors.New("mocked error")
+			var got error
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						got = r.(error)
+					}
+				}()
+				Try0(expected)
+			}()
+			if !errors.Is(got, expected) {
+				t.Fatal("unexpected error")
+			}
+		})
+	})
+
+	t.Run("Try1", func(t *testing.T) {
+		t.Run("on success", func(t *testing.T) {
+			v1 := Try1(17, nil)
+			if v1 != 17 {
+				t.Fatal("unexpected value")
+			}
+		})
+
+		t.Run("on failure", func(t *testing.T) {
+			expected := errors.New("mocked error")
+			var got error
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						got = r.(error)
+					}
+				}()
+				Try1(17, expected)
+			}()
+			if !errors.Is(got, expected) {
+				t.Fatal("unexpected error")
+			}
+		})
+	})
+
+	t.Run("Try2", func(t *testing.T) {
+		t.Run("on success", func(t *testing.T) {
+			v1, v2 := Try2(17, true, nil)
+			if v1 != 17 || !v2 {
+				t.Fatal("unexpected value")
+			}
+		})
+
+		t.Run("on failure", func(t *testing.T) {
+			expected := errors.New("mocked error")
+			var got error
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						got = r.(error)
+					}
+				}()
+				Try2(17, true, expected)
+			}()
+			if !errors.Is(got, expected) {
+				t.Fatal("unexpected error")
+			}
+		})
+	})
+
+	t.Run("Try3", func(t *testing.T) {
+		t.Run("on success", func(t *testing.T) {
+			v1, v2, v3 := Try3(17, true, 44.0, nil)
+			if v1 != 17 || !v2 || v3 != 44.0 {
+				t.Fatal("unexpected value")
+			}
+		})
+
+		t.Run("on failure", func(t *testing.T) {
+			expected := errors.New("mocked error")
+			var got error
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						got = r.(error)
+					}
+				}()
+				Try3(17, true, 44.0, expected)
+			}()
+			if !errors.Is(got, expected) {
+				t.Fatal("unexpected error")
+			}
+		})
+	})
+}

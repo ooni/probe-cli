@@ -13,6 +13,12 @@ for file in $(find . -type f -name \*.go); do
 		# inside of netxlite's own test suite.
 		continue
 	fi
+	if [ "$file" = "./internal/must/must_test.go" ]; then
+		# We're allowed to use ReadAll and Copy in this file to
+		# avoid depending on netxlite, given that netxlite's test
+		# suite already depends on must.
+		continue
+	fi
 	if grep -q 'io\.ReadAll' $file; then
 		echo "in $file: do not use io.ReadAll, use netxlite.ReadAllContext" 1>&2
 		exitcode=1
