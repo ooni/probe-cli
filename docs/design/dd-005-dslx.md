@@ -132,7 +132,8 @@ m := mx.TLSConnectAndHandshake(ctx, "8.8.8.8:443", &tls.Config{
 Checking whether `m` contained a failure is, unfortunately,
 not practical. Neither `Measurement` nor `EndpointMeasurement`
 expose any method to assist with that. While this was not
-an issue when working with the websteps-illustrated prototype,
+an issue when working with the [websteps-illustrated](
+https://github.com/bassosimone/websteps-illustrated) prototype,
 we soon discovered other issues that required us to refactor
 and improve `measurex`. To this end, we introduced new methods
 for structs and moved state between structs until the exposed
@@ -146,7 +147,7 @@ would have led us to want to refactor this library again.
 
 Because exposing sequences of operations was not fundamental
 enough, we exposed operations directly, introducing
-the step-by-step design and the
+the [step-by-step design](https://github.com/ooni/probe-cli/blob/master/docs/design/dd-003-step-by-step.md) and the
 `measurexlite` library. Where `measurex` provides a list of
 eight sequences of operations, `measurexlite` provides the
 building blocks to implement such sequences (e.g., DNS
@@ -190,8 +191,8 @@ to the programmer. Given an existing codebase written
 using `measurexlite`, adding follow-up experiments boils
 down to finding the right `if` block where to add code. At
 the same time, code using `measurexlite` is significantly
-more verbose and repetitive than `urlgetter` or `measurex`:
-comparatively, `measurexlite` code feels like assembly.
+more verbose and repetitive than `urlgetter` or
+`measurex`. Comparatively, `measurexlite` code feels like assembly.
 
 When we introduced `measurexlite`, we were aware of these
 shortcomings. We initially proposed solving them by
@@ -234,7 +235,8 @@ function composition. These are our building blocks:
 
 Let us forget for a second that
 we are using Go and imagine a language where the pipe operator `|`
-means point-free function composition. Equipped with this
+means [point-free function composition](
+https://wiki.haskell.org/Pointfree). Equipped with this
 abstraction, we could rewrite the TCP connect plus TLS
 handshake example we have been using so far as follows:
 
@@ -706,7 +708,8 @@ for out := range multi.Run(ctx, input) {
 }
 ```
 
-With the websteps-illustrated `measurex` implementation, the
+With the [websteps-illustrated](https://github.com/bassosimone/websteps-illustrated)
+`measurex` implementation, the
 `MeasureEndpoints` function is intrinsically parallel:
 
 ```Go
@@ -875,8 +878,10 @@ TLS handshake failure, we can rewrite the code as follows:
 px := Compose(TCPConnect(), TLSHandshake())
 res := px.Apply(ctx, endpoint)
 saveObservations(tk, res.Observations)
-if res.Error != nil && res.Error.Error() == "connection_reset" {
-	sniBlockingMeasurement(/* ..., */ res)
+if res.Error != nil {
+	if res.Error.Error() == "connection_reset" {
+		sniBlockingMeasurement(/* ..., */ res)
+	}
 	return
 }
 httpPx := HTTPRequestOverTLS()
@@ -906,13 +911,13 @@ func measure(ctx context.Context, epnts ...*Endpoint) {
 	)
 	const parallelism = 3
 	ch := Map(ctx, parallelism, px, StreamList(epnts))
-	found := false
+	already := false
 	for  res := range ch {
 		saveObservations(tk, res.Observations)
-		if res.Error != nil || found {
+		if res.Error != nil || already {
 			continue
 		}
-		found = true
+		already = true
 		obs := runHTTPMeasurement(res)
 		saveObservations(tk, obs)
 	}
