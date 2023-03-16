@@ -1,0 +1,2 @@
+file,line,url,failure,measurement_count,anomaly_count,confirmed_count,ok_count,failure_count
+testdata/repo/lists/it.csv,2,http://www.torrentdownload.ws/,dns_nxdomain_error,30,10,4,9,7
