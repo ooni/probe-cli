@@ -1,8 +1,5 @@
-package engine
-
-//
-// Implements caching values passed by the check-in API.
-//
+// Package checkincache contains an on-disk cache for check-in responses.
+package checkincache
 
 import (
 	"encoding/json"
@@ -27,21 +24,23 @@ type checkInFlagsWrapper struct {
 	Flags map[string]bool
 }
 
+// Store stores the result of the latest check-in in the given key-value store.
 // updateCheckInFlagsState updates the state created by check-in flags.
-func (s *Session) updateCheckInFlagsState(resp *model.OOAPICheckInResult) error {
+func Store(kvStore model.KeyValueStore, resp *model.OOAPICheckInResult) error {
+	// store the check-in flags in the key-value store
 	wrapper := &checkInFlagsWrapper{
 		Expire: time.Now().Add(24 * time.Hour),
 		Flags:  resp.Conf.Features,
 	}
 	data, err := json.Marshal(wrapper)
 	runtimex.PanicOnError(err, "json.Marshal unexpectedly failed")
-	return s.kvStore.Set(checkInFlagsState, data)
+	return kvStore.Set(checkInFlagsState, data)
 }
 
-// getCheckInFlagValue returns the value of a check-in feature flag. In
-// case of any error this function will return a false value.
-func (s *Session) getCheckInFlagValue(name string) bool {
-	data, err := s.kvStore.Get(checkInFlagsState)
+// GetFeatureFlag returns the value of a check-in feature flag. In case of any
+// error this function will always return a false value.
+func GetFeatureFlag(kvStore model.KeyValueStore, name string) bool {
+	data, err := kvStore.Get(checkInFlagsState)
 	if err != nil {
 		return false // as documented
 	}

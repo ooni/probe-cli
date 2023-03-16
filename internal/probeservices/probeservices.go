@@ -66,6 +66,7 @@ type Session interface {
 // Client is a client for the OONI probe services API.
 type Client struct {
 	httpx.APIClientTemplate
+	KVStore       model.KeyValueStore
 	LoginCalls    *atomic.Int64
 	RegisterCalls *atomic.Int64
 	StateFile     StateFile
@@ -97,6 +98,7 @@ func NewClient(sess Session, endpoint model.OOAPIService) (*Client, error) {
 			Logger:     sess.Logger(),
 			UserAgent:  sess.UserAgent(),
 		},
+		KVStore:       sess.KeyValueStore(),
 		LoginCalls:    &atomic.Int64{},
 		RegisterCalls: &atomic.Int64{},
 		StateFile:     NewStateFile(sess.KeyValueStore()),

@@ -1,4 +1,4 @@
-package engine
+package checkincache
 
 import (
 	"encoding/json"
@@ -12,12 +12,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
-func TestSessionUpdateCheckInFlagsState(t *testing.T) {
+func TestStore(t *testing.T) {
 	t.Run("when we can successfully store", func(t *testing.T) {
 		memstore := &kvstore.Memory{}
-		s := &Session{
-			kvStore: memstore,
-		}
 		expectmap := map[string]bool{
 			"foobar": true,
 		}
@@ -26,7 +23,7 @@ func TestSessionUpdateCheckInFlagsState(t *testing.T) {
 				Features: expectmap,
 			},
 		}
-		err := s.updateCheckInFlagsState(result)
+		err := Store(memstore, result)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -48,58 +45,50 @@ func TestSessionUpdateCheckInFlagsState(t *testing.T) {
 
 	t.Run("when there's a failure trying to store", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		s := &Session{
-			kvStore: &mocks.KeyValueStore{
-				MockSet: func(key string, value []byte) (err error) {
-					return expected
-				},
+		memstore := &mocks.KeyValueStore{
+			MockSet: func(key string, value []byte) (err error) {
+				return expected
 			},
 		}
-		err := s.updateCheckInFlagsState(&model.OOAPICheckInResult{})
+		err := Store(memstore, &model.OOAPICheckInResult{})
 		if !errors.Is(err, expected) {
 			t.Fatal(err)
 		}
 	})
 }
 
-func TestSessionGetCheckInFlagValue(t *testing.T) {
+func TestGetFeatureFlag(t *testing.T) {
 	t.Run("when we cannot get from the store", func(t *testing.T) {
-		expected := errors.New("mocked error")
-		s := &Session{
-			kvStore: &mocks.KeyValueStore{
-				MockGet: func(key string) (value []byte, err error) {
-					return nil, expected
-				},
+		expectedErr := errors.New("mocked error")
+		memstore := &mocks.KeyValueStore{
+			MockGet: func(key string) (value []byte, err error) {
+				return nil, expectedErr
 			},
 		}
-		if s.getCheckInFlagValue("antani") {
+		if GetFeatureFlag(memstore, "antani") {
 			t.Fatal("expected to see false here")
 		}
 	})
 
 	t.Run("when we cannot unmarshal", func(t *testing.T) {
-		s := &Session{
-			kvStore: &mocks.KeyValueStore{
-				MockGet: func(key string) (value []byte, err error) {
-					return []byte(`{`), nil
-				},
+		memstore := &mocks.KeyValueStore{
+			MockGet: func(key string) (value []byte, err error) {
+				return []byte(`{`), nil
 			},
 		}
-		if s.getCheckInFlagValue("antani") {
+		if GetFeatureFlag(memstore, "antani") {
 			t.Fatal("expected to see false here")
 		}
 	})
 
 	t.Run("if the record was cached too much time ago", func(t *testing.T) {
 		response := `{}` // zero struct means the expiry time is long ago in the past
-		s := &Session{
-			kvStore: &mocks.KeyValueStore{
-				MockGet: func(key string) (value []byte, err error) {
-					return []byte(response), nil
-				},
+		memstore := &mocks.KeyValueStore{
+			MockGet: func(key string) (value []byte, err error) {
+				return []byte(response), nil
 			},
 		}
-		if s.getCheckInFlagValue("antani") {
+		if GetFeatureFlag(memstore, "antani") {
 			t.Fatal("expected to see false here")
 		}
 	})
@@ -115,14 +104,12 @@ func TestSessionGetCheckInFlagValue(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		s := &Session{
-			kvStore: &mocks.KeyValueStore{
-				MockGet: func(key string) (value []byte, err error) {
-					return data, nil
-				},
+		memstore := &mocks.KeyValueStore{
+			MockGet: func(key string) (value []byte, err error) {
+				return data, nil
 			},
 		}
-		if !s.getCheckInFlagValue("antani") {
+		if !GetFeatureFlag(memstore, "antani") {
 			t.Fatal("expected to see true here")
 		}
 	})
@@ -130,20 +117,18 @@ func TestSessionGetCheckInFlagValue(t *testing.T) {
 	t.Run("in case of success with a nil map", func(t *testing.T) {
 		response := &checkInFlagsWrapper{
 			Expire: time.Now().Add(time.Hour),
-			Flags:  nil,
+			Flags:  nil, // here the map is actually nil
 		}
 		data, err := json.Marshal(response)
 		if err != nil {
 			t.Fatal(err)
 		}
-		s := &Session{
-			kvStore: &mocks.KeyValueStore{
-				MockGet: func(key string) (value []byte, err error) {
-					return data, nil
-				},
+		memstore := &mocks.KeyValueStore{
+			MockGet: func(key string) (value []byte, err error) {
+				return data, nil
 			},
 		}
-		if s.getCheckInFlagValue("antani") {
+		if GetFeatureFlag(memstore, "antani") {
 			t.Fatal("expected to see false here")
 		}
 	})
