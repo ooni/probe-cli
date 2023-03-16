@@ -9,6 +9,4 @@ repositories=(
 	. # the dot is git@github.com:ooni/probe-cli and MUST be first
 	git@github.com:ooni/probe-android
 	git@github.com:ooni/probe-desktop
-	git@github.com:ooni/probe-ios
-	git@github.com:ooni/spec
 )
