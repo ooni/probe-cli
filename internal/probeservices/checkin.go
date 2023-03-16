@@ -28,6 +28,6 @@ func (c Client) CheckIn(
 	}
 
 	// make sure we track selected parts of the response
-	checkincache.Store(c.KVStore, resp)
+	_ = checkincache.Store(c.KVStore, resp)
 	return resp, nil
 }

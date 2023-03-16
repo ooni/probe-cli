@@ -25,7 +25,6 @@ type checkInFlagsWrapper struct {
 }
 
 // Store stores the result of the latest check-in in the given key-value store.
-// updateCheckInFlagsState updates the state created by check-in flags.
 func Store(kvStore model.KeyValueStore, resp *model.OOAPICheckInResult) error {
 	// store the check-in flags in the key-value store
 	wrapper := &checkInFlagsWrapper{

@@ -117,7 +117,7 @@ func TestGetFeatureFlag(t *testing.T) {
 	t.Run("in case of success with a nil map", func(t *testing.T) {
 		response := &checkInFlagsWrapper{
 			Expire: time.Now().Add(time.Hour),
-			Flags:  nil, // here the map is actually nil
+			Flags:  nil, // here the map is explicitly nil
 		}
 		data, err := json.Marshal(response)
 		if err != nil {
