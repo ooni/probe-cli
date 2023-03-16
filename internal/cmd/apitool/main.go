@@ -35,6 +35,7 @@ func newclient() probeservices.Client {
 			Logger:     log.Log,
 			UserAgent:  ua,
 		},
+		KVStore:       &kvstore.Memory{},
 		LoginCalls:    &atomic.Int64{},
 		RegisterCalls: &atomic.Int64{},
 		StateFile:     probeservices.NewStateFile(&kvstore.Memory{}),
