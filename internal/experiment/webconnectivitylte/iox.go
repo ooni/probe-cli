@@ -33,8 +33,10 @@ func StreamAllContext(ctx context.Context, reader io.Reader) ([]byte, error) {
 	defer cancel()
 
 	go func() {
-		buffer := make([]byte, 1<<13)
 		for {
+			// Implementation note: the buffer MUST be created at each
+			// loop, otherwise we're data-racing with the reader.
+			buffer := make([]byte, 1<<13)
 			count, err := reader.Read(buffer)
 			if count > 0 {
 				data := buffer[:count]
