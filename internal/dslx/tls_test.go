@@ -62,7 +62,6 @@ func TestTLSHandshake(t *testing.T) {
 		type configOptions struct {
 			sni        string
 			address    string
-			domain     string
 			nextProtos []string
 		}
 		tcpConn := mocks.Conn{
@@ -119,7 +118,7 @@ func TestTLSHandshake(t *testing.T) {
 				closed:     true,
 			},
 			"with options": {
-				config:     configOptions{domain: "domain.com", nextProtos: []string{"h2", "http/1.1"}},
+				config:     configOptions{nextProtos: []string{"h2", "http/1.1"}},
 				handshaker: goodHandshaker,
 				expectConn: tlsConn,
 				expectErr:  nil,
@@ -146,7 +145,6 @@ func TestTLSHandshake(t *testing.T) {
 				tcpConn := TCPConnection{
 					Address:     address,
 					Conn:        &tcpConn,
-					Domain:      tt.config.domain,
 					IDGenerator: idGen,
 					Logger:      model.DiscardLogger,
 					Network:     "tcp",
@@ -166,6 +164,74 @@ func TestTLSHandshake(t *testing.T) {
 				}
 			})
 			wasClosed = false
+		}
+	})
+}
+
+/*
+Test cases:
+- With input SNI
+- With input domain
+- With input host address
+- With input IP address
+*/
+func TestServerNameTLS(t *testing.T) {
+	t.Run("With input SNI", func(t *testing.T) {
+		sni := "sni"
+		tcpConn := TCPConnection{
+			Address: "example.com:123",
+			Logger:  model.DiscardLogger,
+		}
+		f := &tlsHandshakeFunc{
+			Pool:       &ConnPool{},
+			ServerName: sni,
+		}
+		serverName := f.serverName(&tcpConn)
+		if serverName != sni {
+			t.Fatalf("unexpected server name: %s", serverName)
+		}
+	})
+	t.Run("With input domain", func(t *testing.T) {
+		domain := "domain"
+		tcpConn := TCPConnection{
+			Address: "example.com:123",
+			Domain:  domain,
+			Logger:  model.DiscardLogger,
+		}
+		f := &tlsHandshakeFunc{
+			Pool: &ConnPool{},
+		}
+		serverName := f.serverName(&tcpConn)
+		if serverName != domain {
+			t.Fatalf("unexpected server name: %s", serverName)
+		}
+	})
+	t.Run("With input host address", func(t *testing.T) {
+		hostaddr := "example.com"
+		tcpConn := TCPConnection{
+			Address: hostaddr + ":123",
+			Logger:  model.DiscardLogger,
+		}
+		f := &tlsHandshakeFunc{
+			Pool: &ConnPool{},
+		}
+		serverName := f.serverName(&tcpConn)
+		if serverName != hostaddr {
+			t.Fatalf("unexpected server name: %s", serverName)
+		}
+	})
+	t.Run("With input IP address", func(t *testing.T) {
+		ip := "1.1.1.1"
+		tcpConn := TCPConnection{
+			Address: ip,
+			Logger:  model.DiscardLogger,
+		}
+		f := &tlsHandshakeFunc{
+			Pool: &ConnPool{},
+		}
+		serverName := f.serverName(&tcpConn)
+		if serverName != "" {
+			t.Fatalf("unexpected server name: %s", serverName)
 		}
 	})
 }

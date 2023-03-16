@@ -14,6 +14,14 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
+/*
+Test cases:
+- Get quicHandshakeFunc with options
+- Apply quicHandshakeFunc:
+  - with EOF
+  - success
+  - with sni
+*/
 func TestQUICHandshake(t *testing.T) {
 	t.Run("Get quicHandshakeFunc with options", func(t *testing.T) {
 		certpool := x509.NewCertPool()
@@ -114,5 +122,64 @@ func TestQUICHandshake(t *testing.T) {
 				t.Fatalf("unexpected conn: %s", res.State.QUICConn)
 			}
 		})
+	})
+}
+
+/*
+Test cases:
+- With input SNI
+- With input domain
+- With input host address
+- With input IP address
+*/
+func TestServerNameQUIC(t *testing.T) {
+	t.Run("With input SNI", func(t *testing.T) {
+		sni := "sni"
+		endpoint := &Endpoint{
+			Address: "example.com:123",
+			Logger:  model.DiscardLogger,
+		}
+		f := &quicHandshakeFunc{Pool: &ConnPool{}, ServerName: sni}
+		serverName := f.serverName(endpoint)
+		if serverName != sni {
+			t.Fatalf("unexpected server name: %s", serverName)
+		}
+	})
+	t.Run("With input domain", func(t *testing.T) {
+		domain := "domain"
+		endpoint := &Endpoint{
+			Address: "example.com:123",
+			Domain:  domain,
+			Logger:  model.DiscardLogger,
+		}
+		f := &quicHandshakeFunc{Pool: &ConnPool{}}
+		serverName := f.serverName(endpoint)
+		if serverName != domain {
+			t.Fatalf("unexpected server name: %s", serverName)
+		}
+	})
+	t.Run("With input host address", func(t *testing.T) {
+		hostaddr := "example.com"
+		endpoint := &Endpoint{
+			Address: hostaddr + ":123",
+			Logger:  model.DiscardLogger,
+		}
+		f := &quicHandshakeFunc{Pool: &ConnPool{}}
+		serverName := f.serverName(endpoint)
+		if serverName != hostaddr {
+			t.Fatalf("unexpected server name: %s", serverName)
+		}
+	})
+	t.Run("With input IP address", func(t *testing.T) {
+		ip := "1.1.1.1"
+		endpoint := &Endpoint{
+			Address: ip,
+			Logger:  model.DiscardLogger,
+		}
+		f := &quicHandshakeFunc{Pool: &ConnPool{}}
+		serverName := f.serverName(endpoint)
+		if serverName != "" {
+			t.Fatalf("unexpected server name: %s", serverName)
+		}
 	})
 }
