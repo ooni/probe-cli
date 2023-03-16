@@ -23,10 +23,11 @@ require (
 	github.com/iancoleman/strcase v0.2.0
 	github.com/lucas-clemente/quic-go v0.31.1
 	github.com/mattn/go-colorable v0.1.13
-	github.com/miekg/dns v1.1.50
+	github.com/miekg/dns v1.1.52
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.7.0
 	github.com/ooni/go-libtor v1.1.7
+	github.com/ooni/netem v0.0.0-20230316075930-83d9720a67f9
 	github.com/ooni/oocrypto v0.4.2
 	github.com/ooni/oohttp v0.5.2
 	github.com/ooni/probe-assets v0.15.0
@@ -39,8 +40,8 @@ require (
 	github.com/upper/db/v4 v4.6.0
 	gitlab.com/yawning/obfs4.git v0.0.0-20220904064028-336a71d6e4cf
 	gitlab.com/yawning/utls.git v0.0.12-1
-	golang.org/x/crypto v0.5.0
-	golang.org/x/net v0.7.0
+	golang.org/x/crypto v0.7.0
+	golang.org/x/net v0.8.0
 	golang.org/x/sys v0.6.0
 )
 
@@ -53,6 +54,8 @@ require (
 	github.com/Psiphon-Labs/tls-tris v0.0.0-20210713133851-676a693d51ad // indirect
 	github.com/andybalholm/brotli v1.0.5-0.20220518190645-786ec621f618 // indirect
 	github.com/golang/mock v1.6.0 // indirect
+	github.com/google/btree v1.1.2 // indirect
+	github.com/google/gopacket v1.1.19 // indirect
 	github.com/google/pprof v0.0.0-20230111200839-76d1ae5aea2b // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/klauspost/compress v1.15.14 // indirect
@@ -64,6 +67,8 @@ require (
 	github.com/segmentio/fasthash v1.0.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/exp v0.0.0-20230118134722-a68e582fa157 // indirect
+	golang.org/x/time v0.3.0 // indirect
+	gvisor.dev/gvisor v0.0.0-20221203005347-703fd9b7fbc0 // indirect
 )
 
 require (
@@ -135,9 +140,9 @@ require (
 	github.com/zach-klippenstein/goregen v0.0.0-20160303162051-795b5e3961ea // indirect
 	gitlab.com/yawning/bsaes.git v0.0.0-20190805113838-0a714cd429ec // indirect
 	gitlab.com/yawning/edwards25519-extra.git v0.0.0-20220726154925-def713fd18e4 // indirect
-	golang.org/x/mod v0.7.0 // indirect
+	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/term v0.6.0 // indirect
-	golang.org/x/text v0.7.0 // indirect
-	golang.org/x/tools v0.5.0 // indirect
-	google.golang.org/protobuf v1.28.1 // indirect
+	golang.org/x/text v0.8.0 // indirect
+	golang.org/x/tools v0.7.0 // indirect
+	google.golang.org/protobuf v1.28.2-0.20230118093459-a9481185b34d // indirect
 )
