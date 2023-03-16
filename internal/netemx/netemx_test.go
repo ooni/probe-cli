@@ -53,7 +53,7 @@ func NewEnvironment() *Environment {
 	//
 	// note: because the stack is created using topology.AddHost, we don't
 	// need to call Close when done using it, since the topology will do that
-	// for us when we call the topology's Close method
+	// for us when we call the topology's Close method.
 	serverStack := runtimex.Try1(topology.AddHost(
 		"8.8.8.8", // server IP address
 		"8.8.8.8", // default resolver address
@@ -118,6 +118,7 @@ func NewEnvironment() *Environment {
 	//
 	// note: because the stack is created using topology.AddHost, we don't
 	// need to call Close when done using it, since the topology will do that
+	// for us when we call the topology's Close method.
 	clientStack := runtimex.Try1(topology.AddHost(
 		"10.0.0.14", // client IP address
 		"8.8.8.8",   // default resolver address
@@ -310,10 +311,7 @@ func TestWithCustomTProxy(t *testing.T) {
 			// DialContext method to dial connections
 			client := netxlite.NewHTTPClientStdlib(model.DiscardLogger)
 
-			// create request using a domain that has been configured in the
-			// [Environment] we're using as valid. Note that we're using https
-			// and this will work because the client stack also controls the
-			// default CA pool through the DefaultCertPool method.
+			// create the request
 			req, err := http.NewRequest("GET", "https://quad8.com/", nil)
 			if err != nil {
 				t.Fatal(err)
@@ -321,6 +319,8 @@ func TestWithCustomTProxy(t *testing.T) {
 
 			// issue the request
 			resp, err := client.Do(req)
+
+			// make sure we got a connection RST by peer error
 			if err == nil || err.Error() != netxlite.FailureConnectionReset {
 				t.Fatal("unexpected error", err)
 			}
