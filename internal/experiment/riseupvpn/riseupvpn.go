@@ -346,15 +346,17 @@ func parseGateways(testKeys *TestKeys) []GatewayV3 {
 
 func filterGateways(eipService *EipService, geoService *GeoService) []GatewayV3 {
 	var result []GatewayV3 = nil
-	for _, gateway := range eipService.Gateways {
-		if !gateway.hasTransport("obfs4") ||
-			!gateway.isLocationUnderTest() ||
-			geoService != nil && !geoService.isHealthyGateway(gateway) {
-			continue
-		}
-		result = append(result, gateway)
-		if len(result) == 3 {
-			return result
+	if eipService != nil {
+		for _, gateway := range eipService.Gateways {
+			if !gateway.hasTransport("obfs4") ||
+				!gateway.isLocationUnderTest() ||
+				geoService != nil && !geoService.isHealthyGateway(gateway) {
+				continue
+			}
+			result = append(result, gateway)
+			if len(result) == 3 {
+				return result
+			}
 		}
 	}
 
