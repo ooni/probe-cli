@@ -24,8 +24,6 @@ const (
 	tcpConnect    = "tcpconnect://"
 )
 
-var locations = []string{"Seattle", "Amsterdam"}
-
 // EipService is the main JSON object of eip-service.json.
 type EipService struct {
 	Gateways []GatewayV3
@@ -344,12 +342,14 @@ func parseGateways(testKeys *TestKeys) []GatewayV3 {
 	return filterGateways(eipService, geoService)
 }
 
+// filterGateways selects a subset of available gateways supporting obfs4
 func filterGateways(eipService *EipService, geoService *GeoService) []GatewayV3 {
 	var result []GatewayV3 = nil
 	if eipService != nil {
+		locations := getLocationsUnderTest(eipService, geoService)
 		for _, gateway := range eipService.Gateways {
 			if !gateway.hasTransport("obfs4") ||
-				!gateway.isLocationUnderTest() ||
+				!gateway.isLocationUnderTest(locations) ||
 				geoService != nil && !geoService.isHealthyGateway(gateway) {
 				continue
 			}
@@ -357,6 +357,42 @@ func filterGateways(eipService *EipService, geoService *GeoService) []GatewayV3 
 			if len(result) == 3 {
 				return result
 			}
+		}
+	}
+	return result
+}
+
+// getLocationsUnderTest parses all gateways supporting obfs4 and returns the two locations having most obfs4 bridges
+func getLocationsUnderTest(eipService *EipService, geoService *GeoService) []string {
+	var result []string = nil
+	if eipService != nil {
+		locationMap := map[string]int{}
+		locations := []string{}
+		for _, gateway := range eipService.Gateways {
+			if !gateway.hasTransport("obfs4") {
+				continue
+			}
+			if _, ok := locationMap[gateway.Location]; !ok {
+				locations = append(locations, gateway.Location)
+			}
+			locationMap[gateway.Location] += 1
+		}
+
+		location1 := ""
+		location2 := ""
+		for _, location := range locations {
+			if locationMap[location] > locationMap[location1] {
+				location2 = location1
+				location1 = location
+			} else if locationMap[location] > locationMap[location2] {
+				location2 = location
+			}
+		}
+		if location1 != "" {
+			result = append(result, location1)
+		}
+		if location2 != "" {
+			result = append(result, location2)
 		}
 	}
 
@@ -372,7 +408,7 @@ func (gateway *GatewayV3) hasTransport(s string) bool {
 	return false
 }
 
-func (gateway *GatewayV3) isLocationUnderTest() bool {
+func (gateway *GatewayV3) isLocationUnderTest(locations []string) bool {
 	for _, location := range locations {
 		if location == gateway.Location {
 			return true
