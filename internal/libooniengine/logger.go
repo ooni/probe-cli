@@ -11,8 +11,10 @@ type LogLevel string
 const (
 	// The DEBUG log level.
 	logLevel_DEBUG LogLevel = "DEBUG"
+
 	// The INFO log level.
 	logLevel_INFO LogLevel = "INFO"
+
 	// The WARNING log level.
 	logLevel_WARNING LogLevel = "WARNING"
 )
