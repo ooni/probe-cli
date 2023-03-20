@@ -109,7 +109,11 @@ func (tk *TestKeys) UpdateProviderAPITestKeys(v urlgetter.MultiOutput) {
 	tk.TCPConnect = append(tk.TCPConnect, v.TestKeys.TCPConnect...)
 	tk.TLSHandshakes = append(tk.TLSHandshakes, v.TestKeys.TLSHandshakes...)
 	if v.TestKeys.Failure != nil {
-		tk.APIStatus = "blocked"
+		for _, request := range v.TestKeys.Requests {
+			if request.Request.URL == eipServiceURL && request.Failure != nil {
+				tk.APIStatus = "blocked"
+			}
+		}
 		tk.APIFailure = append(tk.APIFailure, *v.TestKeys.Failure)
 		return
 	}
@@ -223,12 +227,10 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		testkeys.AddCACertFetchTestKeys(tk)
 		if tk.Failure != nil {
 			testkeys.CACertStatus = false
-			testkeys.APIStatus = "blocked"
 			testkeys.APIFailure = append(testkeys.APIFailure, *tk.Failure)
 			certPool = nil
 		} else if ok := certPool.AppendCertsFromPEM([]byte(tk.HTTPResponseBody)); !ok {
 			testkeys.CACertStatus = false
-			testkeys.APIStatus = "blocked"
 			testkeys.APIFailure = append(testkeys.APIFailure, "invalid_ca")
 			certPool = nil
 		}

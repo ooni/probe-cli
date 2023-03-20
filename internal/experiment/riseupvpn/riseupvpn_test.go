@@ -263,7 +263,7 @@ func TestUpdateWithMixedResults(t *testing.T) {
 	tk.UpdateProviderAPITestKeys(urlgetter.MultiOutput{
 		Input: urlgetter.MultiInput{
 			Config: urlgetter.Config{Method: "GET"},
-			Target: "https://api.black.riseup.net:443/3/config/eip-service.json",
+			Target: "https://riseup.net/provider.json",
 		},
 		TestKeys: urlgetter.TestKeys{
 			HTTPResponseStatus: 200,
@@ -272,9 +272,17 @@ func TestUpdateWithMixedResults(t *testing.T) {
 	tk.UpdateProviderAPITestKeys(urlgetter.MultiOutput{
 		Input: urlgetter.MultiInput{
 			Config: urlgetter.Config{Method: "GET"},
-			Target: "https://riseup.net/provider.json",
+			Target: "https://api.black.riseup.net:443/3/config/eip-service.json",
 		},
 		TestKeys: urlgetter.TestKeys{
+			Requests: []model.ArchivalHTTPRequestResult{
+				{
+					Request: model.ArchivalHTTPRequest{URL: "https://api.black.riseup.net:443/3/config/eip-service.json"},
+					Failure: (func() *string {
+						s := "eof"
+						return &s
+					})(),
+				}},
 			FailedOperation: (func() *string {
 				s := netxlite.HTTPRoundTripOperation
 				return &s
@@ -352,8 +360,8 @@ func TestInvalidCaCert(t *testing.T) {
 	if tk.CACertStatus == true {
 		t.Fatal("unexpected CaCertStatus")
 	}
-	if tk.APIStatus != "blocked" {
-		t.Fatal("ApiStatus should be blocked")
+	if tk.APIStatus != "ok" {
+		t.Fatal("ApiStatus should be ok")
 	}
 
 	if tk.FailingGateways != nil {
@@ -380,7 +388,7 @@ func TestFailureCaCertFetch(t *testing.T) {
 	if tk.CACertStatus != false {
 		t.Fatal("invalid CACertStatus ")
 	}
-	if tk.APIStatus != "blocked" {
+	if tk.APIStatus != "ok" {
 		t.Fatal("invalid ApiStatus")
 	}
 
@@ -453,7 +461,7 @@ func TestFailureProviderUrlBlocked(t *testing.T) {
 	if tk.CACertStatus != true {
 		t.Fatal("invalid CACertStatus ")
 	}
-	if tk.APIStatus != "blocked" {
+	if tk.APIStatus != "ok" {
 		t.Fatal("invalid ApiStatus")
 	}
 
@@ -485,7 +493,7 @@ func TestFailureGeoIpServiceBlocked(t *testing.T) {
 		}
 	}
 
-	if tk.APIStatus != "blocked" {
+	if tk.APIStatus != "ok" {
 		t.Fatal("invalid ApiStatus")
 	}
 
