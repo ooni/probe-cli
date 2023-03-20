@@ -29,14 +29,17 @@ type EipService struct {
 	Gateways []GatewayV3
 }
 
+// Capabilities is a list of transports a gateway supports
+type Capabilities struct {
+	Transport []TransportV3
+}
+
 // GatewayV3 describes a gateway.
 type GatewayV3 struct {
-	Capabilities struct {
-		Transport []TransportV3
-	}
-	Host      string
-	IPAddress string `json:"ip_address"`
-	Location  string `json:"location"`
+	Capabilities Capabilities
+	Host         string
+	IPAddress    string `json:"ip_address"`
+	Location     string `json:"location"`
 }
 
 // TransportV3 describes a transport.
@@ -430,6 +433,7 @@ func (geoService *GeoService) isHealthyGateway(gateway GatewayV3) bool {
 		}
 	}
 
+	// gateways that are not included in the geoservice should be considered unusable
 	return false
 }
 
