@@ -17,7 +17,7 @@ import (
 
 const (
 	testName      = "riseupvpn"
-	testVersion   = "0.2.0"
+	testVersion   = "0.3.0"
 	eipServiceURL = "https://api.black.riseup.net:443/3/config/eip-service.json"
 	providerURL   = "https://riseup.net/provider.json"
 	geoServiceURL = "https://api.black.riseup.net:9001/json"
