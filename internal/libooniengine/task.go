@@ -97,6 +97,15 @@ func (tp *taskState) interrupt() {
 	tp.cancel()
 }
 
+// free implements taskAPI.free
+func (tp *taskState) free() {
+	tp.interrupt()
+	for !tp.isDone() {
+		const blockForever = -1
+		_ = tp.waitForNextEvent(blockForever)
+	}
+}
+
 // main is the main function of the task.
 func (tp *taskState) main(ctx context.Context, name string, req *request) {
 	defer close(tp.stopped) // synchronize with caller
@@ -110,6 +119,5 @@ func (tp *taskState) main(ctx context.Context, name string, req *request) {
 		out: tp.events,
 	}
 	defer emitter.maybeEmitEvent(resp)
-	go runTicker(ctx, tp.stopped, emitter, req, time.Now())
 	runner.main(ctx, emitter, req, resp)
 }

@@ -27,8 +27,7 @@ const (
 // parse converts a JSON request string to the concrete Go type.
 func parse(req *C.char) (*request, error) {
 	var out *request
-	err := json.Unmarshal([]byte(C.GoString(req)), out)
-	if err != nil {
+	if err := json.Unmarshal([]byte(C.GoString(req)), out); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -41,7 +40,6 @@ func serialize(resp *response) *C.char {
 		log.Printf("serializeMessage: cannot serialize message: %s", err.Error())
 		return C.CString("")
 	}
-
 	return C.CString(string(out))
 }
 
@@ -82,10 +80,27 @@ func OONIEngineWaitForNextEvent(task C.OONITask, timeout C.int32_t) *C.char {
 	return serialize(ev)
 }
 
+//export OONIEngineTaskIsDone
+func OONIEngineTaskIsDone(task C.OONITask) (out C.uint8_t) {
+	tp := cgo.Handle(task).Value().(taskAPI)
+	if !tp.isDone() {
+		out++
+	}
+	return
+}
+
 //export OONIEngineInterrupt
 func OONIEngineInterrupt(task C.OONITask) {
 	tp := cgo.Handle(task).Value().(taskAPI)
 	tp.interrupt()
+}
+
+//export OONIEngineFreeTask
+func OONIEngineFreeTask(task C.OONITask) {
+	handle := cgo.Handle(task)
+	tp := handle.Value().(taskAPI)
+	handle.Delete()
+	tp.free()
 }
 
 func main() {

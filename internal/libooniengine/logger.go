@@ -6,15 +6,15 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-type LogLevel int32
+type LogLevel string
 
 const (
 	// The DEBUG log level.
-	logLevel_DEBUG LogLevel = 0
+	logLevel_DEBUG LogLevel = "DEBUG"
 	// The INFO log level.
-	logLevel_INFO LogLevel = 1
+	logLevel_INFO LogLevel = "INFO"
 	// The WARNING log level.
-	logLevel_WARNING LogLevel = 2
+	logLevel_WARNING LogLevel = "WARNING"
 )
 
 type logResponse struct {
@@ -33,10 +33,10 @@ type taskLogger struct {
 
 // newLogger creates a new taskLogger instance using
 // the [emitter] to emit log events.
-func newTaskLogger(emitter taskMaybeEmitter) *taskLogger {
+func newTaskLogger(emitter taskMaybeEmitter, verbose bool) *taskLogger {
 	return &taskLogger{
 		emitter: emitter,
-		verbose: false,
+		verbose: verbose,
 	}
 }
 

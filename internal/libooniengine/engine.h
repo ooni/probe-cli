@@ -30,12 +30,12 @@ void OONIEngineFreeMemory(void *ptr);
 
 /// OONIEngineCall starts a new OONITask using the given [req].
 ///
-/// @param req A JSON string, owned by the caller, that
-/// contains the configuration for the task to start.  
+/// @param req A JSON string, owned by the caller, that contains 
+/// the configuration for the task to start.  
 ///
 /// @return Zero on failure, nonzero on success. If the return value
 /// is nonzero, a task is running. In such a case, the caller is
-/// responsible to eventually dispose of the task using OONIEngineFreeMemory.
+/// responsible to eventually dispose of the task using OONIEngineFreeTask.
 OONITask OONIEngineCall(char *req);
 
 /// OONIEngineWaitForNextEvent awaits on the [task] event queue until
@@ -47,10 +47,10 @@ OONITask OONIEngineCall(char *req);
 /// or negative, this function would potentially block forever.
 ///
 /// @return A NULL pointer on failure, non-NULL otherwise. If the return
-/// value is non-NULL, the caller takes ownership of the OONIMessage
-/// pointer and MUST free it using OONIMessageFree when done using it.
+/// value is non-NULL, the caller takes ownership of the char pointer
+/// and MUST free it using OONIEngineFreeMemory when done using it.
 ///
-/// This function will return NULL:
+/// This function will return an empty string:
 ///
 /// 1. when the timeout expires;
 ///
@@ -58,21 +58,35 @@ OONITask OONIEngineCall(char *req);
 ///
 /// 3. if [task] is zero or does not refer to a valid task;
 ///
-/// 4. if we cannot protobuf serialize the message;
+/// 4. if we cannot JSON serialize the message;
 ///
 /// 5. possibly because of other unknown internal errors.
 ///
 /// In short, you cannot reliably determine whether a task is done by
-/// checking whether this function has returned NULL.
+/// checking whether this function has returned an empty string.
 char *OONIEngineWaitForNextEvent(OONITask task, int32_t timeout);
+
+/// OONIEngineTaskIsDone returns whether the task identified by [taskID] is done. A taks is
+/// done when it has finished running _and_ its events queue has been drained.
+///
+/// @param task Task handle returned by OONIEngineCall.
+///
+/// @return Nonzero if the task exists and either is still running or has some
+/// unread events inside its events queue, zero otherwise.
+uint8_t OONIEngineTaskIsDone(OONITask task);
 
 /// OONIEngineInterrupt tells [task] to stop ASAP.
 ///
 /// @param task Task handle returned by OONIEngineCall. If task is zero
 /// or does not refer to a valid task, this function will just do nothing.
-void OONIEngineInterrupt(OONITask task);
+void OONIEngineInterruptTask(OONITask task);
 
-// OONITask
+/// OONIEngineFreeTask free the memory associated with [task]. If the task is still running, this
+/// function will also interrupt it and drain its events queue.
+///
+/// @param task Task handle returned by OONIEngineCall. If task is zero
+/// or does not refer to a valid task, this function will just do nothing.
+void OONIEngineFreeTask(OONITask task);
 
 #ifdef __cplusplus
 }

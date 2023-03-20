@@ -17,7 +17,6 @@ type response struct {
 	NewSession    newSessionResponse    `json:",omitempty"`
 	Geolocate     geolocateResponse     `json:",omitempty"`
 	Logger        logResponse           `json:",omitempty"`
-	Ticker        tickerResponse        `json:",omitempty"`
 	DeleteSession deleteSessionResponse `json:",omitempty"`
 	Error         string                `json:",omitempty"`
 }
@@ -66,6 +65,9 @@ type taskAPI interface {
 
 	// interrupt implements OONITaskInterrupt.
 	interrupt()
+
+	// free implements OONITaskFree
+	free()
 }
 
 // taskRegistry maps each task name to its implementation.
