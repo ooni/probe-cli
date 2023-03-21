@@ -88,6 +88,9 @@ func MaybeWarnAboutProbeClockBeingOff(logger model.Logger) {
 }
 
 func (s *state) maybeWarnAboutProbeClockBeingOff(logger model.Logger) {
+	if !s.good {
+		return
+	}
 	const smallOffset = 5 * time.Minute
 	shouldWarn := s.offset < -smallOffset || s.offset > smallOffset
 	if shouldWarn {
