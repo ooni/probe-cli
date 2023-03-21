@@ -22,12 +22,21 @@ import (
 
 	We cannot store on disk the monotonic clock readings because we are
 	only allowed to serialize time.Time as a string representing a "wall
-	clock" time and we cannot serialize the proper monotonic reading.
+	clock" time and we cannot serialize the underlying, and system
+	dependent, monotonic clock reading. Additionally, on Windows, the
+	monotonic clock uses the interrupt time, which countes the time since
+	boot in 100ns intervals, so serializing it is dangerous.
+
+	See https://cs.opensource.google/go/go/+/refs/tags/go1.20.2:src/runtime/time_windows_amd64.s
+	See https://learn.microsoft.com/en-us/windows/win32/sysinfo/interrupt-time
+	See https://learn.microsoft.com/en-us/windows/win32/sysinfo/system-time
 
 	Storing wall clocks on disk could be done in UTC to account for the
 	user jumping across timezones. Still, even if we did that, the stored
-	reading would still be wrong when there are wall clock jumps, which
-	includes adjusting the system clock using NTP et al.
+	reading would still be wrong when there are wall clock adjusments, which
+	includes adjusting the system clock using NTP et al. (There are cases
+	in which the clock adjustment is a jump and cases in which it is relatively
+	monotonic; see https://man.openbsd.org/settimeofday#CAVEATS.)
 
 	Therefore, the implementation of this package works entirely on memory
 	and requires calling the check-in API before performing any other
