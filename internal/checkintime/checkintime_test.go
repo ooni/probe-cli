@@ -54,8 +54,9 @@ func TestWorkingAsIntended(t *testing.T) {
 		})
 	})
 
-	// This test covers the case where the check-in API specific time
-	// field has not been initialized, so we get a zero value
+	// This test covers the case where the input time is zero. It should not
+	// happen in practice, because the parsing of the check-in API response
+	// fails if the response does not contain a correctly formatted time string.
 	t.Run("when the apiTime is zero", func(t *testing.T) {
 		s := &state{}
 		s.save(time.Time{}) // zero
