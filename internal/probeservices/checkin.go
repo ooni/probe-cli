@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/ooni/probe-cli/v3/internal/checkincache"
+	"github.com/ooni/probe-cli/v3/internal/checkintime"
 	"github.com/ooni/probe-cli/v3/internal/httpapi"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/ooapi"
@@ -29,5 +30,12 @@ func (c Client) CheckIn(
 
 	// make sure we track selected parts of the response
 	_ = checkincache.Store(c.KVStore, resp)
+
+	// make sure we save the current time according to the check-in API
+	checkintime.Save(resp.UTCTime)
+
+	// emit warning if the probe clock is off
+	checkintime.MaybeWarnAboutProbeClockBeingOff(c.Logger)
+
 	return resp, nil
 }

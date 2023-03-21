@@ -84,6 +84,14 @@ type Measurement struct {
 	// MeasurementStartTime is the time when the measurement started
 	MeasurementStartTime string `json:"measurement_start_time"`
 
+	// MeasurementStartTimeAdjusted is the OPTIONAL time when the measurement
+	// started using as time reference the check-in API time.
+	MeasurementStartTimeAdjusted time.Time `json:"measurement_start_time_adjusted,omitempty"`
+
+	// MeasurementProbeClockOffset is the OPTIONAL offset between the probe
+	// clock and the check-in API clock.
+	MeasurementProbeClockOffset time.Duration `json:"measurement_probe_clock_offset,omitempty"`
+
 	// MeasurementStartTimeSaved is the moment in time when we
 	// started the measurement. This is not included into the JSON
 	// and is only used within the ./internal pkg as a "zero" time.
