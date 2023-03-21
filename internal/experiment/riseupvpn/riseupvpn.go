@@ -329,14 +329,14 @@ func parseGateways(testKeys *TestKeys) []GatewayV3 {
 	var eipService *EipService = nil
 	var geoService *GeoService = nil
 	for _, requestEntry := range testKeys.Requests {
-		if requestEntry.Request.URL == eipServiceURL && requestEntry.Failure == nil {
+		if requestEntry.Request.URL == eipServiceURL && requestEntry.Response.Code == 200 {
 			var err error = nil
 			eipService, err = DecodeEIP3(requestEntry.Response.Body.Value)
 			if err != nil {
 				testKeys.APIFailure = append(testKeys.APIFailure, "invalid_eipservice_response")
 				return nil
 			}
-		} else if requestEntry.Request.URL == geoServiceURL && requestEntry.Failure == nil {
+		} else if requestEntry.Request.URL == geoServiceURL && requestEntry.Response.Code == 200 {
 			var err error = nil
 			geoService, err = DecodeGeoService(requestEntry.Response.Body.Value)
 			if err != nil {
