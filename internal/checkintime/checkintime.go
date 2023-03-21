@@ -16,6 +16,39 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
+/*
+	Design note
+	-----------
+
+	We cannot store on disk the monotonic clock readings because we are
+	only allowed to serialize time.Time as a string representing a "wall
+	clock" time and we cannot serialize the proper monotonic reading.
+
+	Storing wall clocks on disk could be done in UTC to account for the
+	user jumping across timezones. Still, even if we did that, the stored
+	reading would still be wrong when there are wall clock jumps, which
+	includes adjusting the system clock using NTP et al.
+
+	Therefore, the implementation of this package works entirely on memory
+	and requires calling the check-in API before performing any other
+	operation that requires timing.
+
+	This design choice is ~fine since we're moving towards a direction
+	where the check-in API will be called before running tests. Yet,
+	it also means that we wouldn't be able to verify the probe clock when
+	using a cached check-in response in the future.
+
+	A possible future improvement would be for this package to export a
+	"best effort" clock using either the system clock or the API clock
+	to provide time.Time values to TLS and QUIC. The choice on which
+	clock to use would depend on the measured clocks offset. This would
+	theoretically allow us to make TLS handshakes work even when the
+	probe clock is singificantly off. However, it's also true that we
+	would like to make TLS handshake verification non-fatal, because it
+	helps us to collect more data. Because of this reason, I have not
+	implemented subverting the TLS verification reference clock.
+*/
+
 // state contains the [checkintime] state. The zero value
 // of this structure is ready to use.
 type state struct {
