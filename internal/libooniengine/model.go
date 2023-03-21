@@ -10,6 +10,7 @@ type request struct {
 	NewSession    newSessionOptions    `json:",omitempty"`
 	Geolocate     geolocateOptions     `json:",omitempty"`
 	DeleteSession deleteSessionOptions `json:",omitempty"`
+	Test          testOptions          `json:",omitempty"`
 }
 
 // response is the OONI response to serialize before sending.
@@ -18,6 +19,7 @@ type response struct {
 	Geolocate     geolocateResponse     `json:",omitempty"`
 	Logger        logResponse           `json:",omitempty"`
 	DeleteSession deleteSessionResponse `json:",omitempty"`
+	Test          testResponse          `json:",omitempty"`
 	Error         string                `json:",omitempty"`
 }
 
