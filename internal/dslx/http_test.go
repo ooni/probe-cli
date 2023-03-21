@@ -299,12 +299,20 @@ func TestHTTPTCP(t *testing.T) {
 /*
 Test cases:
 - Get httpTransportQUICFunc
+- Get composed function: QUIC with HTTP
 - Apply httpTransportQUICFunc
 */
 func TestHTTPQUIC(t *testing.T) {
 	t.Run("Get httpTransportQUICFunc", func(t *testing.T) {
 		f := HTTPTransportQUIC()
 		if _, ok := f.(*httpTransportQUICFunc); !ok {
+			t.Fatal("unexpected type")
+		}
+	})
+
+	t.Run("Get composed function: QUIC with HTTP", func(t *testing.T) {
+		f := HTTPRequestOverQUIC()
+		if _, ok := f.(*compose2Func[*QUICConnection, *HTTPTransport, *HTTPResponse]); !ok {
 			t.Fatal("unexpected type")
 		}
 	})

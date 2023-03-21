@@ -10,6 +10,11 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
+// HTTPRequestOverQUIC returns a Func that issues HTTP requests over QUIC.
+func HTTPRequestOverQUIC(options ...HTTPRequestOption) Func[*QUICConnection, *Maybe[*HTTPResponse]] {
+	return Compose2(HTTPTransportQUIC(), HTTPRequest(options...))
+}
+
 // HTTPTransportQUIC converts a QUIC connection into an HTTP transport.
 func HTTPTransportQUIC() Func[*QUICConnection, *Maybe[*HTTPTransport]] {
 	return &httpTransportQUICFunc{}
