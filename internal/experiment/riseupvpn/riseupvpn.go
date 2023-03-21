@@ -268,7 +268,8 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		for i := range inputs {
 			inputs[i].Config.Tunnel = "torsf"
 		}
-		for entry := range multi.CollectOverall(ctx, inputs, 1, 20, "riseupvpn", callbacks) {
+
+		for entry := range multi.CollectOverall(ctx, inputs, 5, 20, "riseupvpn", callbacks) {
 			testkeys.UpdateProviderAPITestKeys(entry)
 		}
 	}
@@ -279,19 +280,25 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	openvpnEndpoints := generateMultiInputs(gateways, "openvpn")
 	obfs4Endpoints := generateMultiInputs(gateways, "obfs4")
 	overallCount := 1 + len(inputs) + len(openvpnEndpoints) + len(obfs4Endpoints)
+	startCount := 1 + len(inputs)
+	if testkeys.APIStatus == "blocked" {
+		startCount += len(inputs)
+		overallCount += len(inputs)
+	}
 
 	// measure openvpn in parallel
 	for entry := range multi.CollectOverall(
-		ctx, openvpnEndpoints, 1+len(inputs), overallCount, "riseupvpn", callbacks) {
+		ctx, openvpnEndpoints, startCount, overallCount, "riseupvpn", callbacks) {
 		testkeys.AddGatewayConnectTestKeys(entry, "openvpn")
 	}
 
+	startCount += len(openvpnEndpoints)
 	// measure obfs4 in parallel
 	// TODO(bassosimone): when urlgetter is able to do obfs4 handshakes, here
 	// can possibly also test for the obfs4 handshake.
 	// See https://github.com/ooni/probe/issues/1463.
 	for entry := range multi.CollectOverall(
-		ctx, obfs4Endpoints, 1+len(inputs)+len(openvpnEndpoints), overallCount, "riseupvpn", callbacks) {
+		ctx, obfs4Endpoints, startCount, overallCount, "riseupvpn", callbacks) {
 		testkeys.AddGatewayConnectTestKeys(entry, "obfs4")
 	}
 
