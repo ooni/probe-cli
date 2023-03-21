@@ -265,8 +265,8 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	}
 
 	if testkeys.APIStatus == "blocked" {
-		for _, input := range inputs {
-			input.Config.Tunnel = "torsf"
+		for i := range inputs {
+			inputs[i].Config.Tunnel = "torsf"
 		}
 		for entry := range multi.CollectOverall(ctx, inputs, 1, 20, "riseupvpn", callbacks) {
 			testkeys.UpdateProviderAPITestKeys(entry)
