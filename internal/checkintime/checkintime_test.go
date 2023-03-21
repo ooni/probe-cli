@@ -175,17 +175,6 @@ func TestWorkingAsIntended(t *testing.T) {
 			}
 		})
 
-		// we expect the offset to be small
-		t.Run("Offset", func(t *testing.T) {
-			delta, good := Offset()
-			if !good {
-				t.Fatal("expected to see true here")
-			}
-			if delta < -70*time.Millisecond || delta > 70*time.Millisecond {
-				t.Fatal("expected around +-70µs, got", delta.Seconds(), "seconds")
-			}
-		})
-
 		// we should not warn
 		t.Run("MaybeWarnAboutProbeClockBeingOff", func(t *testing.T) {
 			var called bool

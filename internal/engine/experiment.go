@@ -201,13 +201,11 @@ func (e *experiment) SubmitAndUpdateMeasurementContext(
 func (e *experiment) newMeasurement(input string) *model.Measurement {
 	utctimenow := time.Now().UTC()
 	apiadjustedtimenow, _ := checkintime.Now()
-	clockoffset, _ := checkintime.Offset()
 	m := &model.Measurement{
 		DataFormatVersion:            model.OOAPIReportDefaultDataFormatVersion,
 		Input:                        model.MeasurementTarget(input),
 		MeasurementStartTime:         utctimenow.Format(dateFormat),
 		MeasurementStartTimeAdjusted: apiadjustedtimenow, // not serialized if zero
-		MeasurementProbeClockOffset:  clockoffset,        // not serialized if zero
 		MeasurementStartTimeSaved:    utctimenow,
 		ProbeIP:                      model.DefaultProbeIP,
 		ProbeASN:                     e.session.ProbeASNString(),

@@ -56,7 +56,12 @@ func (s *state) save(cur time.Time) {
 }
 
 // Now returns the current time using as zero time the time saved by
-// [Save] rather than the system clock.
+// [Save] rather than the system clock. The time returned by this call
+// is reliable because it consists of the diff between two monotonic
+// clock readings of the system's monotonic clock added to the zero time
+// reference provided by the check-in API. When the probe clock is OK,
+// this value will always be slightly in the past, because we cannot
+// account for the time elapsed transferring the check-in response.
 func Now() (time.Time, bool) {
 	return singleton.now()
 }
@@ -67,27 +72,22 @@ func (s *state) now() (time.Time, bool) {
 	if !s.good {
 		return time.Time{}, false
 	}
-	delta := time.Since(s.monotonicTimeUTC)
+	delta := time.Since(s.monotonicTimeUTC) // RELIABLE diff of monotonic readings
 	out := s.apiTime.Add(delta)
 	return out, true
 }
 
-// Offset returns the offset between the probe clock and the check-in API clock
-// provided that [Save] has been called. If [Save] has not been called, this
-// function returns a zero offset and a false value.  When the probe clock works
-// as intended, there will always be a small positive offset between the probe and
-// the API clocks. It's also acceptable to have a small negative offset.
-func Offset() (time.Duration, bool) {
-	return singleton.offset()
-}
-
+// offset returns the offset between the probe clock and the check-in API clock. We do
+// not export this method because the return value is only meaningful at the time in which
+// we stored the last reading of the API clock. The true offset value would change in
+// time if the probe clock jumps forward or backward.
 func (s *state) offset() (time.Duration, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if !s.good {
 		return 0, false
 	}
-	delta := s.monotonicTimeUTC.Sub(s.apiTime)
+	delta := s.monotonicTimeUTC.Sub(s.apiTime) // UNRELIABLE non-monotonic diff
 	return delta, true
 }
 
