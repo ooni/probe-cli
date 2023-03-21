@@ -28,17 +28,6 @@ func TestWorkingAsIntended(t *testing.T) {
 			}
 		})
 
-		// we expect that the offset is also unavailable
-		t.Run("state.offset", func(t *testing.T) {
-			delta, good := s.offset()
-			if good {
-				t.Fatal("expected false here")
-			}
-			if delta != 0 {
-				t.Fatal("expected zero here")
-			}
-		})
-
 		// we expect no warning here
 		t.Run("state.maybeWarnAboutTheProbeClockBeingOff", func(t *testing.T) {
 			var called bool
@@ -69,17 +58,6 @@ func TestWorkingAsIntended(t *testing.T) {
 			}
 			if !out.IsZero() {
 				t.Fatal("expected zero value here")
-			}
-		})
-
-		// we expect that the offset is also unavailable
-		t.Run("state.offset", func(t *testing.T) {
-			delta, good := s.offset()
-			if good {
-				t.Fatal("expected false here")
-			}
-			if delta != 0 {
-				t.Fatal("expected zero here")
 			}
 		})
 
@@ -126,18 +104,6 @@ func TestWorkingAsIntended(t *testing.T) {
 			// make sure the elapsed time is around one second
 			if delta < 700*time.Millisecond || delta > 1300*time.Millisecond {
 				t.Fatal("expected around one second, got", delta.Seconds(), "seconds")
-			}
-		})
-
-		// we expect that the offset is available
-		t.Run("state.offset", func(t *testing.T) {
-			delta, good := s.offset()
-			if !good {
-				t.Fatal("expected true here")
-			}
-			const oneMonth = 30 * 24 * 60 * time.Minute
-			if delta < oneMonth {
-				t.Fatal("expected more than", oneMonth, "got", delta)
 			}
 		})
 

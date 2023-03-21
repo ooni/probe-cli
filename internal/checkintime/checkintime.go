@@ -32,6 +32,9 @@ type state struct {
 	// See https://github.com/golang/go/blob/72c58fb/src/time/time.go#L58.
 	monotonicTimeUTC time.Time
 
+	// offset is the offset between monotonicTimeUTC and apiTime.
+	offset time.Duration
+
 	// mu provides mutual exclusion.
 	mu sync.Mutex
 }
@@ -53,6 +56,7 @@ func (s *state) save(cur time.Time) {
 	s.apiTime = cur
 	s.good = true
 	s.monotonicTimeUTC = time.Now().UTC()
+	s.offset = s.monotonicTimeUTC.Sub(s.apiTime) // UNRELIABLE non-monotonic diff
 }
 
 // Now returns the current time using as zero time the time saved by
@@ -77,20 +81,6 @@ func (s *state) now() (time.Time, bool) {
 	return out, true
 }
 
-// offset returns the offset between the probe clock and the check-in API clock. We do
-// not export this method because the return value is only meaningful at the time in which
-// we stored the last reading of the API clock. The true offset value would change in
-// time if the probe clock jumps forward or backward.
-func (s *state) offset() (time.Duration, bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if !s.good {
-		return 0, false
-	}
-	delta := s.monotonicTimeUTC.Sub(s.apiTime) // UNRELIABLE non-monotonic diff
-	return delta, true
-}
-
 // MaybeWarnAboutProbeClockBeingOff emits a warning if the probe clock is off
 // compared to the clock used by the check-in API.
 func MaybeWarnAboutProbeClockBeingOff(logger model.Logger) {
@@ -98,13 +88,9 @@ func MaybeWarnAboutProbeClockBeingOff(logger model.Logger) {
 }
 
 func (s *state) maybeWarnAboutProbeClockBeingOff(logger model.Logger) {
-	delta, good := s.offset()
-	if !good {
-		return
-	}
 	const smallOffset = 5 * time.Minute
-	shouldWarn := delta < -smallOffset || delta > smallOffset
+	shouldWarn := s.offset < -smallOffset || s.offset > smallOffset
 	if shouldWarn {
-		logger.Warnf("checkintime: the probe clock is off by %s", delta)
+		logger.Warnf("checkintime: the probe clock is off by %s", s.offset)
 	}
 }
