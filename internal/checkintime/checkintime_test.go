@@ -83,7 +83,7 @@ func TestWorkingAsIntended(t *testing.T) {
 		s := &state{}
 
 		// pretend the API time is my birthday
-		apiTime := time.Date(2022, 12, 23, 6, 36, 0, 0, time.UTC)
+		apiTime := time.Date(2022, 12, 23, 7, 36, 0, 0, time.UTC)
 		s.save(apiTime)
 
 		// await a little bit
