@@ -62,7 +62,11 @@ type EasyTLSConfig struct {
 func NewEasyTLSConfig() *EasyTLSConfig {
 	return &EasyTLSConfig{
 		config: &tls.Config{
-			RootCAs: netxlite.NewDefaultCertPool(),
+			// Because here we use nil, this causes netxlite to use
+			// a cached copy of Mozilla's CA pool. We don't create a
+			// new pool every time for performance reasons. See
+			// https://github.com/ooni/probe/issues/2413 for context.
+			RootCAs: nil,
 		},
 	}
 }

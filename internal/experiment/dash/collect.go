@@ -1,53 +1,59 @@
 package dash
 
+//
+// The collect phase of the dash experiment.
+//
+
 import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io"
-	"net/http"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-type collectDeps interface {
-	HTTPClient() *http.Client
-	JSONMarshal(v interface{}) ([]byte, error)
-	Logger() model.Logger
-	NewHTTPRequest(method string, url string, body io.Reader) (*http.Request, error)
-	ReadAllContext(ctx context.Context, r io.Reader) ([]byte, error)
-	Scheme() string
-	UserAgent() string
-}
+// collect implements the collect phase of the dash experiment. We send to
+// the neubot/dash server the results we collected and we get back a response
+// from the server.
+func collect(ctx context.Context, baseURL, authorization string,
+	results []clientResults, deps dependencies) error {
+	// marshal our results
+	data, err := json.Marshal(results)
+	runtimex.PanicOnError(err, "json.Marshal failed")
+	deps.Logger().Debugf("dash: body: %s", string(data))
 
-func collect(ctx context.Context, fqdn, authorization string,
-	results []clientResults, deps collectDeps) error {
-	data, err := deps.JSONMarshal(results)
+	// prepare the HTTP request
+	URL, err := url.Parse(baseURL)
 	if err != nil {
 		return err
 	}
-	deps.Logger().Debugf("dash: body: %s", string(data))
-	var URL url.URL
-	URL.Scheme = deps.Scheme()
-	URL.Host = fqdn
 	URL.Path = collectPath
-	req, err := deps.NewHTTPRequest("POST", URL.String(), bytes.NewReader(data))
+	req, err := deps.NewHTTPRequestWithContext(ctx, "POST", URL.String(), bytes.NewReader(data))
 	if err != nil {
 		return err
 	}
 	req.Header.Set("User-Agent", deps.UserAgent())
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", authorization)
-	resp, err := deps.HTTPClient().Do(req.WithContext(ctx))
+
+	// send the request and get a response.
+	resp, err := deps.HTTPClient().Do(req)
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
+
+	// make sure the response is successful.
 	if resp.StatusCode != 200 {
 		return errHTTPRequestFailed
 	}
-	defer resp.Body.Close()
-	data, err = deps.ReadAllContext(ctx, resp.Body)
+
+	// read, parse, and ignore the response body. Historically the
+	// most userful data has always been on the server side, therefore,
+	// it doesn't matter much that we're discarding server results.
+	data, err = netxlite.ReadAllContext(ctx, resp.Body)
 	if err != nil {
 		return err
 	}

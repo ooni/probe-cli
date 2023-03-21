@@ -276,6 +276,8 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 	//
 	// - timeout
 	//
+	// - tls unrecognized name alert
+	//
 
 	dial := func(ctx context.Context, address string) (net.Conn, error) {
 		d := netxlite.NewDialerWithoutResolver(log.Log)
@@ -289,10 +291,13 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 			return fmt.Errorf("dial failed: %w", err)
 		}
 		defer conn.Close()
+		// See https://github.com/ooni/probe/issues/2413 to understand
+		// why we're using nil to force netxlite to use the cached
+		// default Mozilla cert pool.
 		config := &tls.Config{
 			ServerName: "dns.google",
 			NextProtos: []string{"h2", "http/1.1"},
-			RootCAs:    netxlite.NewDefaultCertPool(),
+			RootCAs:    nil,
 		}
 		tconn, _, err := th.Handshake(ctx, conn, config)
 		if err != nil {
@@ -311,10 +316,13 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 			return fmt.Errorf("dial failed: %w", err)
 		}
 		defer conn.Close()
+		// See https://github.com/ooni/probe/issues/2413 to understand
+		// why we're using nil to force netxlite to use the cached
+		// default Mozilla cert pool.
 		config := &tls.Config{
 			ServerName: "dns.google",
 			NextProtos: []string{"h2", "http/1.1"},
-			RootCAs:    netxlite.NewDefaultCertPool(),
+			RootCAs:    nil,
 		}
 		tconn, _, err := th.Handshake(ctx, conn, config)
 		if err == nil {
@@ -338,16 +346,49 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 			return fmt.Errorf("dial failed: %w", err)
 		}
 		defer conn.Close()
+		// See https://github.com/ooni/probe/issues/2413 to understand
+		// why we're using nil to force netxlite to use the cached
+		// default Mozilla cert pool.
 		config := &tls.Config{
 			ServerName: "dns.google",
 			NextProtos: []string{"h2", "http/1.1"},
-			RootCAs:    netxlite.NewDefaultCertPool(),
+			RootCAs:    nil,
 		}
 		tconn, _, err := th.Handshake(ctx, conn, config)
 		if err == nil {
 			return fmt.Errorf("tls handshake succeded unexpectedly")
 		}
 		if err.Error() != netxlite.FailureGenericTimeoutError {
+			return fmt.Errorf("not the error we expected: %w", err)
+		}
+		if tconn != nil {
+			return fmt.Errorf("expected nil tconn here")
+		}
+		return nil
+	}
+
+	tlsUnrecognizedNameFlow := func(th model.TLSHandshaker) error {
+		server := filtering.NewTLSServer(filtering.TLSActionAlertUnrecognizedName)
+		defer server.Close()
+		ctx := context.Background()
+		conn, err := dial(ctx, server.Endpoint())
+		if err != nil {
+			return fmt.Errorf("dial failed: %w", err)
+		}
+		defer conn.Close()
+		// See https://github.com/ooni/probe/issues/2413 to understand
+		// why we're using nil to force netxlite to use the cached
+		// default Mozilla cert pool.
+		config := &tls.Config{
+			ServerName: "dns.google",
+			NextProtos: []string{"h2", "http/1.1"},
+			RootCAs:    nil,
+		}
+		tconn, _, err := th.Handshake(ctx, conn, config)
+		if err == nil {
+			return fmt.Errorf("tls handshake succeded unexpectedly")
+		}
+		if err.Error() != netxlite.FailureSSLInvalidHostname {
 			return fmt.Errorf("not the error we expected: %w", err)
 		}
 		if tconn != nil {
@@ -380,6 +421,14 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 				t.Fatal(err)
 			}
 		})
+
+		t.Run("on TLS unrecognized name alert", func(t *testing.T) {
+			th := netxlite.NewTLSHandshakerStdlib(log.Log)
+			err := tlsUnrecognizedNameFlow(th)
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
 	})
 
 	t.Run("for utls handshaker", func(t *testing.T) {
@@ -402,6 +451,14 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 		t.Run("on timeout", func(t *testing.T) {
 			th := netxlite.NewTLSHandshakerUTLS(log.Log, &utls.HelloFirefox_55)
 			err := timeoutFlow(th)
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+
+		t.Run("on TLS unrecognized name alert", func(t *testing.T) {
+			th := netxlite.NewTLSHandshakerUTLS(log.Log, &utls.HelloFirefox_55)
+			err := tlsUnrecognizedNameFlow(th)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -430,10 +487,13 @@ func TestMeasureWithQUICDialer(t *testing.T) {
 		d := netxlite.NewQUICDialerWithoutResolver(ql, log.Log)
 		defer d.CloseIdleConnections()
 		ctx := context.Background()
+		// See https://github.com/ooni/probe/issues/2413 to understand
+		// why we're using nil to force netxlite to use the cached
+		// default Mozilla cert pool.
 		config := &tls.Config{
 			ServerName: quictesting.Domain,
 			NextProtos: []string{"h3"},
-			RootCAs:    netxlite.NewDefaultCertPool(),
+			RootCAs:    nil,
 		}
 		sess, err := d.DialContext(ctx, quictesting.Endpoint("443"), config, &quic.Config{})
 		if err != nil {
@@ -450,10 +510,13 @@ func TestMeasureWithQUICDialer(t *testing.T) {
 		d := netxlite.NewQUICDialerWithoutResolver(ql, log.Log)
 		defer d.CloseIdleConnections()
 		ctx := context.Background()
+		// See https://github.com/ooni/probe/issues/2413 to understand
+		// why we're using nil to force netxlite to use the cached
+		// default Mozilla cert pool.
 		config := &tls.Config{
 			ServerName: quictesting.Domain,
 			NextProtos: []string{"h3"},
-			RootCAs:    netxlite.NewDefaultCertPool(),
+			RootCAs:    nil,
 		}
 		// Here we assume <target-address>:1 is filtered
 		sess, err := d.DialContext(ctx, quictesting.Endpoint("1"), config, &quic.Config{})

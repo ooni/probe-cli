@@ -42,9 +42,19 @@ func tproxySingleton() model.UnderlyingNetwork {
 // DefaultTProxy is the default UnderlyingNetwork implementation.
 type DefaultTProxy struct{}
 
-// MaybeModifyPool implements model.UnderlyingNetwork
-func (tp *DefaultTProxy) MaybeModifyPool(pool *x509.CertPool) *x509.CertPool {
-	return pool
+// tproxyDefaultCertPool is a static copy of the default cert pool. You
+// MUST NOT access this variable directly. You SHOULD use the
+// tproxySingleton().DefaultCertPool() factory instead. By doing
+// that, you would allow integration tests to override the pool
+// we're using. Hence, we can run tests with fake servers.
+//
+// See https://github.com/ooni/probe/issues/2413 to understand why we
+// need a private static default pool.
+var tproxyDefaultCertPool = NewDefaultCertPool()
+
+// DefaultCertPool implements model.UnderlyingNetwork
+func (tp *DefaultTProxy) DefaultCertPool() *x509.CertPool {
+	return tproxyDefaultCertPool
 }
 
 // DialContext implements UnderlyingNetwork.

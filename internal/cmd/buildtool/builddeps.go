@@ -7,6 +7,7 @@ package main
 
 import (
 	"io/fs"
+	"runtime"
 
 	"github.com/ooni/probe-cli/v3/internal/cmd/buildtool/internal/buildtoolmodel"
 	"github.com/ooni/probe-cli/v3/internal/must"
@@ -70,6 +71,11 @@ func (*buildDeps) PsiphonMaybeCopyConfigFiles() {
 // WindowsMingwCheck implements buildtoolmodel.Dependencies
 func (*buildDeps) WindowsMingwCheck() {
 	windowsMingwCheck()
+}
+
+// GOOS implements buildtoolmodel.Dependencies
+func (*buildDeps) GOOS() string {
+	return runtime.GOOS
 }
 
 // VerifySHA256 implements buildtoolmodel.Dependencies

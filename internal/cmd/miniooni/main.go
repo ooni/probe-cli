@@ -331,7 +331,7 @@ func mainSingleIteration(logger model.Logger, experimentName string, currentOpti
 	ctx := context.Background()
 
 	//Mon Jan 2 15:04:05 -0700 MST 2006
-	log.Infof("Current time: %s", time.Now().Format("2006-01-02 15:04:05 MST"))
+	log.Infof("Current time: %s", time.Now().UTC().Format("2006-01-02 15:04:05 MST"))
 
 	homeDir := gethomedir(currentOptions.HomeDir)
 	runtimex.Assert(homeDir != "", "home directory is empty")

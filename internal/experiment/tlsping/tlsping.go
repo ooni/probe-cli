@@ -15,12 +15,11 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 const (
 	testName    = "tlsping"
-	testVersion = "0.2.0"
+	testVersion = "0.2.1"
 )
 
 // Config contains the experiment configuration.
@@ -181,9 +180,12 @@ func (m *Measurer) tlsConnectAndHandshake(ctx context.Context, index int64,
 	}
 	defer conn.Close()
 	thx := trace.NewTLSHandshakerStdlib(logger)
+	// See https://github.com/ooni/probe/issues/2413 to understand
+	// why we're using nil to force netxlite to use the cached
+	// default Mozilla cert pool.
 	config := &tls.Config{
 		NextProtos: alpn,
-		RootCAs:    netxlite.NewDefaultCertPool(),
+		RootCAs:    nil,
 		ServerName: sni,
 	}
 	_, _, err = thx.Handshake(ctx, conn, config)

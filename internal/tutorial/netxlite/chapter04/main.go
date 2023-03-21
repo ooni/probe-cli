@@ -51,7 +51,7 @@ func main() {
 	config := &tls.Config{
 		ServerName: *sni,
 		NextProtos: []string{"h3"},
-		RootCAs:    netxlite.NewDefaultCertPool(),
+		RootCAs:    nil,
 	}
 	// ```
 	//

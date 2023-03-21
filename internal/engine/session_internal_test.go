@@ -2,7 +2,6 @@ package engine
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/url"
 	"sync"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/checkincache"
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivitylte"
 	"github.com/ooni/probe-cli/v3/internal/geolocate"
@@ -353,18 +353,20 @@ func TestSessionNewExperimentBuilder(t *testing.T) {
 	})
 
 	t.Run("for webconnectivity with feature flags", func(t *testing.T) {
-		fakeflags := &checkInFlagsWrapper{
-			Expire: time.Now().Add(24 * time.Hour),
-			Flags: map[string]bool{
-				"webconnectivity_0.5": true,
-			},
-		}
-		data, err := json.Marshal(fakeflags)
-		if err != nil {
-			t.Fatal(err)
-		}
 		memstore := &kvstore.Memory{}
-		if err := memstore.Set(checkInFlagsState, data); err != nil {
+		resp := &model.OOAPICheckInResult{
+			Conf: model.OOAPICheckInResultConfig{
+				Features: map[string]bool{
+					"webconnectivity_0.5": true,
+				},
+			},
+			ProbeASN: "",
+			ProbeCC:  "",
+			Tests:    model.OOAPICheckInResultNettests{},
+			UTCTime:  time.Time{},
+			V:        0,
+		}
+		if err := checkincache.Store(memstore, resp); err != nil {
 			t.Fatal(err)
 		}
 		sess := &Session{

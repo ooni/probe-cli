@@ -48,6 +48,7 @@ func TestAndroidBuildGomobile(t *testing.T) {
 			Env: []string{
 				"ANDROID_HOME=Android/sdk",
 				"ANDROID_NDK_HOME=Android/sdk/ndk/25.1.7654321",
+				"PATH=/go/gopath/bin:" + os.Getenv("PATH"),
 			},
 			Argv: []string{
 				"gomobile", "bind", "-target", "android",
@@ -85,6 +86,7 @@ func TestAndroidBuildGomobile(t *testing.T) {
 			Env: []string{
 				"ANDROID_HOME=Android/sdk",
 				"ANDROID_NDK_HOME=Android/sdk/ndk/25.1.7654321",
+				"PATH=/go/gopath/bin:" + os.Getenv("PATH"),
 			},
 			Argv: []string{
 				"gomobile", "bind", "-target", "android",
@@ -116,7 +118,7 @@ func TestAndroidBuildGomobile(t *testing.T) {
 			})
 
 			expectCalls := map[string]int{
-				buildtooltest.TagGOPATH:                      1,
+				buildtooltest.TagGOPATH:                      2,
 				buildtooltest.TagAndroidNDKCheck:             1,
 				buildtooltest.TagAndroidSDKCheck:             1,
 				buildtooltest.TagGolangCheck:                 1,
@@ -700,12 +702,12 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-1.1.1s.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-1.1.1t.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-1.1.1s.tar.gz",
+				"tar", "-xf", "openssl-1.1.1t.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -761,12 +763,12 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-1.1.1s.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-1.1.1t.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-1.1.1s.tar.gz",
+				"tar", "-xf", "openssl-1.1.1t.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -822,12 +824,12 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-1.1.1s.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-1.1.1t.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-1.1.1s.tar.gz",
+				"tar", "-xf", "openssl-1.1.1t.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -883,12 +885,12 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-1.1.1s.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-1.1.1t.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-1.1.1s.tar.gz",
+				"tar", "-xf", "openssl-1.1.1t.tar.gz",
 			},
 		}, {
 			Env: []string{},

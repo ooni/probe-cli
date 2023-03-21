@@ -28,7 +28,7 @@ jobs:
           cache-key-suffix: "-oohelperd-${{ steps.goversion.outputs.version }}"
 
       - name: build oohelperd binary
-        run: GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./CLI/oohelperd-linux-amd64 -v -tags netgo -ldflags="-s -w -extldflags -static" ./internal/cmd/oohelperd
+        run: go run ./internal/cmd/buildtool oohelperd build
 
       - run: ./script/ghpublish.bash ./CLI/oohelperd-linux-amd64
         env:

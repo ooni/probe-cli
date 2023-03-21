@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -14,9 +15,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-func TestMainWorkingAsIntended(t *testing.T) {
+func TestMainRunServerWorkingAsIntended(t *testing.T) {
 	// let the kernel pick a random free port
-	*endpoint = "127.0.0.1:0"
+	*apiEndpoint = "127.0.0.1:0"
 
 	// run the main function in a background goroutine
 	go main()
@@ -75,8 +76,22 @@ func TestMainWorkingAsIntended(t *testing.T) {
 	}
 
 	// tear down the TH
-	srvCancel()
+	sigs <- syscall.SIGINT
 
 	// wait for the background goroutine to join
 	srvWg.Wait()
+}
+
+func TestMainReplaceWorkingAsIntended(t *testing.T) {
+	replaceDryRun = true
+	*replace = true
+	main()
+	*replace = false
+	replaceDryRun = false
+}
+
+func TestMainVersionWorkingAsIntended(t *testing.T) {
+	*versionFlag = true
+	main()
+	*versionFlag = false
 }

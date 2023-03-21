@@ -35,6 +35,15 @@ func (qls *quicListenerStdlib) Listen(addr *net.UDPAddr) (model.UDPLikeConn, err
 // NewQUICDialerWithResolver is the WrapDialer equivalent for QUIC where
 // we return a composed QUICDialer modified by optional wrappers.
 //
+// The returned dialer guarantees:
+//
+// 1. logging;
+//
+// 2. error wrapping;
+//
+// 3. that we are going to use Mozilla CA if the [tls.Config]
+// RootCAs field is zero initialized.
+//
 // Please, note that this fuunction will just ignore any nil wrapper.
 //
 // Unlike the dialer returned by WrapDialer, this dialer MAY attempt
@@ -166,7 +175,8 @@ func (d *quicDialerQUICGo) dialEarlyContext(ctx context.Context,
 func (d *quicDialerQUICGo) maybeApplyTLSDefaults(config *tls.Config, port int) *tls.Config {
 	config = config.Clone()
 	if config.RootCAs == nil {
-		config.RootCAs = NewDefaultCertPool()
+		// See https://github.com/ooni/probe/issues/2413 for context
+		config.RootCAs = tproxySingleton().DefaultCertPool()
 	}
 	if len(config.NextProtos) <= 0 {
 		switch port {

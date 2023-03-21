@@ -295,7 +295,7 @@ observations, while reflecting on their pros and cons.
 
 We revisit four distinct tactics:
 
-* [(1) Context-based tracing](#21-context-based-tracing), 
+* [(1) Context-based tracing](#21-context-based-tracing),
 * [(2) Decorator-based tracing](#22-decorator-based-tracing),
 * [(3) Step-by-step measurements](#23-step-by-step-measurements), and
 * [(4) Measurex: splitting DNSLookup and Endpoint Measurements](#24-measurex-splitting-dnslookup-and-endpoint-measurements).
@@ -950,7 +950,7 @@ care about more precisely and with less effort.
 ### 2.3. Step-by-step measurements
 
 We've had many conversations about how to simplify the way we do measurements.
-For instance, [Vinicius](https://github.com/fortuna) at some point advocated 
+For instance, [Vinicius](https://github.com/fortuna) at some point advocated
 for decomposing measurements in simple operations. He rightfully pointed out
 that tracing is excellent for debugging, but it complicates to assign
 meaning to each measurement.
@@ -1050,7 +1050,7 @@ similar to the above code.
 
 #### Issue #1 with step-by-step approach: no persistent connections
 
-Without adding extra complexity, we lose the possibility to use 
+Without adding extra complexity, we lose the possibility to use
 persistent connections. This may not be a huge problem, except for
 redirects. Each redirect will require us to set up a new connection,
 even though an ordinary `http.Transport` would probably have reused an
@@ -1392,7 +1392,7 @@ logger model.Logger, zeroTime time.Time, tk *TestKeys, address string) {
 
 	config := &tls.Config{
 		NextProtos: []string{"h2", "http/1.1"},
-		RootCAs: netxlite.NewDefaultCertPool(),
+		RootCAs: nil, // use the default Mozilla cert pool
 		ServerName: webDomain,
 	}
 	tlsConn, _, err := thx.Handshake(ctx, cw, config)

@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/measurex"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -53,7 +52,7 @@ successful, it will TLS handshake using the given TLS config.
 	m := mx.TLSConnectAndHandshake(ctx, *address, &tls.Config{
 		ServerName: *sni,
 		NextProtos: []string{"h2", "http/1.1"},
-		RootCAs:    netxlite.NewDefaultCertPool(),
+		RootCAs:    nil, // use netxlite's default
 	})
 ```
 

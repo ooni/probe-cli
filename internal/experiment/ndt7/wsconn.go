@@ -7,7 +7,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// weConn is the interface of gorilla/websocket.Conn
+// wsConn is the interface of gorilla/websocket.Conn
 type wsConn interface {
 	NextReader() (int, io.Reader, error)
 	SetReadDeadline(time.Time) error

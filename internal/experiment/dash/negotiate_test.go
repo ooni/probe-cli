@@ -1,33 +1,24 @@
 package dash
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"io"
 	"net/http"
-	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
-func TestNegotiateJSONMarshalError(t *testing.T) {
-	expected := errors.New("mocked error")
-	deps := FakeDeps{jsonMarshalErr: expected}
-	result, err := negotiate(context.Background(), "", deps)
-	if !errors.Is(err, expected) {
-		t.Fatal("not the error we expected")
+func TestNegotiateNewHTTPRequestWithContextFailure(t *testing.T) {
+	deps := &mockableDependencies{
+		MockNewHTTPRequestWithContext: http.NewRequestWithContext,
 	}
-	if result.Authorization != "" || result.Unchoked != 0 {
-		t.Fatal("unexpected result")
-	}
-}
 
-func TestNegotiateNewHTTPRequestFailure(t *testing.T) {
-	expected := errors.New("mocked error")
-	deps := FakeDeps{newHTTPRequestErr: expected}
-	result, err := negotiate(context.Background(), "", deps)
-	if !errors.Is(err, expected) {
+	result, err := negotiate(context.Background(), "\t", deps)
+	if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
 		t.Fatal("not the error we expected")
 	}
 	if result.Authorization != "" || result.Unchoked != 0 {
@@ -37,11 +28,18 @@ func TestNegotiateNewHTTPRequestFailure(t *testing.T) {
 
 func TestNegotiateHTTPClientDoFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	txp := FakeHTTPTransport{err: expected}
-	deps := FakeDeps{httpTransport: txp, newHTTPRequestResult: &http.Request{
-		Header: http.Header{},
-		URL:    &url.URL{},
-	}}
+
+	deps := &mockableDependencies{
+		MockNewHTTPRequestWithContext: http.NewRequestWithContext,
+		MockHTTPClient: func() model.HTTPClient {
+			return &mocks.HTTPClient{
+				MockDo: func(req *http.Request) (*http.Response, error) {
+					return nil, expected
+				},
+			}
+		},
+	}
+
 	result, err := negotiate(context.Background(), "", deps)
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
@@ -52,11 +50,22 @@ func TestNegotiateHTTPClientDoFailure(t *testing.T) {
 }
 
 func TestNegotiateInternalError(t *testing.T) {
-	txp := FakeHTTPTransport{resp: &http.Response{StatusCode: 500}}
-	deps := FakeDeps{httpTransport: txp, newHTTPRequestResult: &http.Request{
-		Header: http.Header{},
-		URL:    &url.URL{},
-	}}
+
+	deps := &mockableDependencies{
+		MockNewHTTPRequestWithContext: http.NewRequestWithContext,
+		MockHTTPClient: func() model.HTTPClient {
+			return &mocks.HTTPClient{
+				MockDo: func(req *http.Request) (*http.Response, error) {
+					resp := &http.Response{
+						StatusCode: 500,
+						Body:       io.NopCloser(strings.NewReader("")),
+					}
+					return resp, nil
+				},
+			}
+		},
+	}
+
 	result, err := negotiate(context.Background(), "", deps)
 	if !errors.Is(err, errHTTPRequestFailed) {
 		t.Fatal("not the error we expected")
@@ -68,18 +77,27 @@ func TestNegotiateInternalError(t *testing.T) {
 
 func TestNegotiateReadAllFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	txp := FakeHTTPTransport{resp: &http.Response{
-		Body:       io.NopCloser(bytes.NewReader(nil)),
-		StatusCode: 200,
-	}}
-	deps := FakeDeps{
-		httpTransport: txp,
-		newHTTPRequestResult: &http.Request{
-			Header: http.Header{},
-			URL:    &url.URL{},
+
+	deps := &mockableDependencies{
+		MockNewHTTPRequestWithContext: http.NewRequestWithContext,
+		MockHTTPClient: func() model.HTTPClient {
+			return &mocks.HTTPClient{
+				MockDo: func(req *http.Request) (*http.Response, error) {
+					reader := &mocks.Reader{
+						MockRead: func(b []byte) (int, error) {
+							return 0, expected
+						},
+					}
+					resp := &http.Response{
+						StatusCode: 200,
+						Body:       io.NopCloser(reader),
+					}
+					return resp, nil
+				},
+			}
 		},
-		readAllErr: expected,
 	}
+
 	result, err := negotiate(context.Background(), "", deps)
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
@@ -90,18 +108,22 @@ func TestNegotiateReadAllFailure(t *testing.T) {
 }
 
 func TestNegotiateInvalidJSON(t *testing.T) {
-	txp := FakeHTTPTransport{resp: &http.Response{
-		Body:       io.NopCloser(bytes.NewReader(nil)),
-		StatusCode: 200,
-	}}
-	deps := FakeDeps{
-		httpTransport: txp,
-		newHTTPRequestResult: &http.Request{
-			Header: http.Header{},
-			URL:    &url.URL{},
+
+	deps := &mockableDependencies{
+		MockNewHTTPRequestWithContext: http.NewRequestWithContext,
+		MockHTTPClient: func() model.HTTPClient {
+			return &mocks.HTTPClient{
+				MockDo: func(req *http.Request) (*http.Response, error) {
+					resp := &http.Response{
+						StatusCode: 200,
+						Body:       io.NopCloser(strings.NewReader("[")),
+					}
+					return resp, nil
+				},
+			}
 		},
-		readAllResult: []byte("["),
 	}
+
 	result, err := negotiate(context.Background(), "", deps)
 	if err == nil || !strings.HasSuffix(err.Error(), "unexpected end of JSON input") {
 		t.Fatal("not the error we expected")
@@ -112,18 +134,22 @@ func TestNegotiateInvalidJSON(t *testing.T) {
 }
 
 func TestNegotiateServerBusyFirstCase(t *testing.T) {
-	txp := FakeHTTPTransport{resp: &http.Response{
-		Body:       io.NopCloser(bytes.NewReader(nil)),
-		StatusCode: 200,
-	}}
-	deps := FakeDeps{
-		httpTransport: txp,
-		newHTTPRequestResult: &http.Request{
-			Header: http.Header{},
-			URL:    &url.URL{},
+
+	deps := &mockableDependencies{
+		MockNewHTTPRequestWithContext: http.NewRequestWithContext,
+		MockHTTPClient: func() model.HTTPClient {
+			return &mocks.HTTPClient{
+				MockDo: func(req *http.Request) (*http.Response, error) {
+					resp := &http.Response{
+						StatusCode: 200,
+						Body:       io.NopCloser(strings.NewReader(`{"authorization": ""}`)),
+					}
+					return resp, nil
+				},
+			}
 		},
-		readAllResult: []byte(`{"authorization": ""}`),
 	}
+
 	result, err := negotiate(context.Background(), "", deps)
 	if !errors.Is(err, errServerBusy) {
 		t.Fatal("not the error we expected")
@@ -134,18 +160,22 @@ func TestNegotiateServerBusyFirstCase(t *testing.T) {
 }
 
 func TestNegotiateServerBusyThirdCase(t *testing.T) {
-	txp := FakeHTTPTransport{resp: &http.Response{
-		Body:       io.NopCloser(bytes.NewReader(nil)),
-		StatusCode: 200,
-	}}
-	deps := FakeDeps{
-		httpTransport: txp,
-		newHTTPRequestResult: &http.Request{
-			Header: http.Header{},
-			URL:    &url.URL{},
+
+	deps := &mockableDependencies{
+		MockNewHTTPRequestWithContext: http.NewRequestWithContext,
+		MockHTTPClient: func() model.HTTPClient {
+			return &mocks.HTTPClient{
+				MockDo: func(req *http.Request) (*http.Response, error) {
+					resp := &http.Response{
+						StatusCode: 200,
+						Body:       io.NopCloser(strings.NewReader(`{}`)),
+					}
+					return resp, nil
+				},
+			}
 		},
-		readAllResult: []byte(`{}`),
 	}
+
 	result, err := negotiate(context.Background(), "", deps)
 	if !errors.Is(err, errServerBusy) {
 		t.Fatal("not the error we expected")
@@ -156,18 +186,22 @@ func TestNegotiateServerBusyThirdCase(t *testing.T) {
 }
 
 func TestNegotiateSuccess(t *testing.T) {
-	txp := FakeHTTPTransport{resp: &http.Response{
-		Body:       io.NopCloser(bytes.NewReader(nil)),
-		StatusCode: 200,
-	}}
-	deps := FakeDeps{
-		httpTransport: txp,
-		newHTTPRequestResult: &http.Request{
-			Header: http.Header{},
-			URL:    &url.URL{},
+
+	deps := &mockableDependencies{
+		MockNewHTTPRequestWithContext: http.NewRequestWithContext,
+		MockHTTPClient: func() model.HTTPClient {
+			return &mocks.HTTPClient{
+				MockDo: func(req *http.Request) (*http.Response, error) {
+					resp := &http.Response{
+						StatusCode: 200,
+						Body:       io.NopCloser(strings.NewReader(`{"authorization": "xx", "unchoked": 1}`)),
+					}
+					return resp, nil
+				},
+			}
 		},
-		readAllResult: []byte(`{"authorization": "xx", "unchoked": 1}`),
 	}
+
 	result, err := negotiate(context.Background(), "", deps)
 	if err != nil {
 		t.Fatal(err)
