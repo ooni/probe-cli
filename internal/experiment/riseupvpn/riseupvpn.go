@@ -488,8 +488,8 @@ func (m Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, e
 	sk.FailingGateways = len(tk.FailingGateways)
 	sk.TransportStatus = tk.TransportStatus
 	// Note: the order in the following OR chains matter: TransportStatus
-	// is nil if APIBlocked or !CACertStatus
-	sk.IsAnomaly = (sk.APIBlocked || !tk.CACertStatus ||
+	// is nil if APIBlocked
+	sk.IsAnomaly = (sk.APIBlocked ||
 		tk.TransportStatus["openvpn"] == "blocked" ||
 		tk.TransportStatus["obfs4"] == "blocked")
 	return sk, nil
