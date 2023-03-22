@@ -667,9 +667,7 @@ Moreover, we extend the constructor to support options:
 
 ```Go
 func TLSHandshake(opts ...TLSHandshakeOption) Func[*TCPConnection, *Maybe[*TLSHandshake]] {
-	fx := &tlsHandshakeFunc{
-		pool: netxlite.NewDefaultCertPool(),
-	}
+	fx := &tlsHandshakeFunc{}
 	for _, opt := range opts {
 		opt(fx)
 	}
