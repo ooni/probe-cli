@@ -151,7 +151,7 @@ var ErrNonzeroExitCode = errors.New("libtor: command completed with nonzero exit
 // the given ctx is cancelled or its deadline expires.
 func (p *torProcess) runtor(ctx context.Context, cc net.Conn, args ...string) {
 	// make sure we lock to an OS thread otherwise the goroutine can get
-	// preempted midway and cause data races
+	// preempted midway and causes data races
 	//
 	// See https://github.com/ooni/probe/issues/2406#issuecomment-1479138677
 	runtime.LockOSThread()
