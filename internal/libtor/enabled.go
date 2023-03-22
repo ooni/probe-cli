@@ -57,6 +57,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"runtime"
 	"sync"
 
 	"github.com/cretz/bine/process"
