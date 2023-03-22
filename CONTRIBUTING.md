@@ -79,11 +79,11 @@ and `./internal/netxlite.CopyContext` instead of `io.Copy`
 - use `./internal/model.ErrorToStringOrOK` when
 an experiment logs intermediate results
 
-- do not call `netxlite.NewDefaultCertPool` unless you need to
-modify a copy of the default Mozilla CA pool (when using `netxlite`
+- if you need a modified default Mozilla CA pool, call `netxlite.NewDefaultCertPoolWithExtraCerts`.
+If you do not need to modify the default pool and when using `netxlite`
 as the underlying library--which is the common case--you can just
 leave the `RootCAs` to `nil` in a `tls.Config` and `netxlite`
-will understand you want to use the default pool)
+will understand you want to use the default pool.
 
 ## Code testing requirements
 

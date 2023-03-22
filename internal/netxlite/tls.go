@@ -96,20 +96,30 @@ func TLSCipherSuiteString(value uint16) string {
 	return fmt.Sprintf("TLS_CIPHER_SUITE_UNKNOWN_%d", value)
 }
 
-// NewDefaultCertPool returns the default x509 certificate pool
+// NewMozillaCertPool returns the default x509 certificate pool
 // that we bundle from Mozilla. It's safe to modify the returned
 // value: every invocation returns a distinct *x509.CertPool
 // instance. You SHOULD NOT call this function every time your
 // experiment is processing input. If you are happy with the
 // default cert pool, just leave the RootCAs field nil. Otherwise,
 // you should cache the cert pool you use.
-func NewDefaultCertPool() *x509.CertPool {
+func NewMozillaCertPool() *x509.CertPool {
 	pool := x509.NewCertPool()
 	// Assumption: AppendCertsFromPEM cannot fail because we
 	// have a test in certify_test.go that guarantees that
 	ok := pool.AppendCertsFromPEM([]byte(pemcerts))
 	runtimex.Assert(ok, "pool.AppendCertsFromPEM failed")
 	return pool
+}
+
+// NewDefaultCertPoolWithExtraCerts returns the default x509 certificate pool
+// that we bundle from Mozilla with extra certificates appended to it.
+func NewDefaultCertPoolWithExtraCerts(pem []byte) (*x509.CertPool, error) {
+	pool := NewMozillaCertPool()
+	if !pool.AppendCertsFromPEM(pem) {
+		return nil, errors.New("AppendCertsFromPEM failed")
+	}
+	return pool, nil
 }
 
 // ErrInvalidTLSVersion indicates that you passed us a string

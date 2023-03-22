@@ -46,8 +46,8 @@ func TestCipherSuite(t *testing.T) {
 	}
 }
 
-func TestNewDefaultCertPoolWorks(t *testing.T) {
-	pool := NewDefaultCertPool()
+func TestNewMozillaCertPoolWorks(t *testing.T) {
+	pool := NewMozillaCertPool()
 	if pool == nil {
 		t.Fatal("expected non-nil value here")
 	}

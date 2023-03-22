@@ -488,8 +488,8 @@ type UnderlyingNetwork interface {
 	// DefaultCertPool returns the underlying cert pool used by the
 	// network extensions library. You MUST NOT use this function to
 	// modify the default cert pool since this would lead to a data
-	// race. Use [netxlite.NewDefaultCertPool] if you wish to get
-	// a copy of the default cert pool that you can modify.
+	// race. Use [netxlite.NewDefaultCertPoolWithExtraCerts] if you wish
+	// to get a default cert pool with additional CA certificates.
 	DefaultCertPool() *x509.CertPool
 
 	// DialContext is equivalent to net.Dialer.DialContext except that

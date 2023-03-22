@@ -29,12 +29,6 @@ func newDialManager(ndt7URL string, logger model.Logger, userAgent string) dialM
 	}
 }
 
-// We force using our bundled CA pool, which should fix
-// https://github.com/ooni/probe/issues/2031. We are creating
-// the pool just once because there is a performance penalty
-// when creating it every time. See https://github.com/ooni/probe/issues/2413.
-var certpool = netxlite.NewDefaultCertPool()
-
 func (mgr dialManager) dialWithTestName(ctx context.Context, testName string) (*websocket.Conn, error) {
 	reso := netxlite.NewStdlibResolver(mgr.logger)
 	dlr := netxlite.NewDialerWithResolver(mgr.logger, reso)
@@ -42,9 +36,7 @@ func (mgr dialManager) dialWithTestName(ctx context.Context, testName string) (*
 	// Implements shaping if the user builds using `-tags shaping`
 	// See https://github.com/ooni/probe/issues/2112
 	dlr = netxlite.NewMaybeShapingDialer(dlr)
-	tlsConfig := &tls.Config{
-		RootCAs: certpool,
-	}
+	tlsConfig := &tls.Config{}
 	dialer := websocket.Dialer{
 		NetDialContext:  dlr.DialContext,
 		ReadBufferSize:  mgr.readBufferSize,
