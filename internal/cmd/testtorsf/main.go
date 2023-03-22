@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/experiment/torsf"
+	"github.com/ooni/probe-cli/v3/internal/experiment/vanillator"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
@@ -16,10 +16,10 @@ import (
 )
 
 func runit() {
-	measurer := torsf.NewExperimentMeasurer(torsf.Config{
-		DisablePersistentDatadir: false,
-		DisableProgress:          false,
-		RendezvousMethod:         "",
+	measurer := vanillator.NewExperimentMeasurer(vanillator.Config{
+		//DisablePersistentDatadir: false,
+		DisableProgress: false,
+		//RendezvousMethod:         "",
 	})
 	meas := &model.Measurement{}
 	err := measurer.Run(
@@ -56,7 +56,7 @@ func runit() {
 		},
 	)
 	runtimex.PanicOnError(err, "measurer.Run failed")
-	tk := meas.TestKeys.(*torsf.TestKeys)
+	tk := meas.TestKeys.(*vanillator.TestKeys)
 	runtimex.Assert(tk.Success, "did not succeed")
 }
 
