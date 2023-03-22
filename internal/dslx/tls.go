@@ -55,7 +55,6 @@ func TLSHandshake(pool *ConnPool, options ...TLSHandshakeOption) Func[
 		InsecureSkipVerify: false,
 		NextProto:          []string{},
 		Pool:               pool,
-		RootCAs:            netxlite.NewDefaultCertPool(),
 		ServerName:         "",
 	}
 	for _, option := range options {

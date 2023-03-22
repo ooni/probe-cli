@@ -49,7 +49,6 @@ func QUICHandshake(pool *ConnPool, options ...QUICHandshakeOption) Func[
 	f := &quicHandshakeFunc{
 		InsecureSkipVerify: false,
 		Pool:               pool,
-		RootCAs:            netxlite.NewDefaultCertPool(),
 		ServerName:         "",
 	}
 	for _, option := range options {
