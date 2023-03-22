@@ -44,7 +44,9 @@ func linuxCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
 		"-fPIC", // makes more sense than -fPIE given that we're building a library
 		"-fsanitize=bounds",
 		"-fsanitize-undefined-trap-on-error",
+		"-fsanitize=thread",
 		"-O2",
+		"-g",
 	}
 	destdir := runtimex.Try1(filepath.Abs(filepath.Join( // must be absolute
 		"internal", "libtor", "linux", runtime.GOARCH,
