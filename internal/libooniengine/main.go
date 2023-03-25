@@ -81,6 +81,13 @@ func OONIEngineWaitForNextEvent(task C.OONITask, timeout C.int32_t) *C.char {
 	return serialize(ev)
 }
 
+//export OONIEngineTaskGetResult
+func OONIEngineTaskGetResult(task C.OONITask, timeout C.int32_t) *C.char {
+	tp := cgo.Handle(task).Value().(motor.TaskAPI)
+	result := tp.GetResult(time.Duration(timeout) * time.Millisecond)
+	return serialize(result)
+}
+
 //export OONIEngineTaskIsDone
 func OONIEngineTaskIsDone(task C.OONITask) (out C.uint8_t) {
 	tp := cgo.Handle(task).Value().(motor.TaskAPI)
@@ -90,8 +97,8 @@ func OONIEngineTaskIsDone(task C.OONITask) (out C.uint8_t) {
 	return
 }
 
-//export OONIEngineInterrupt
-func OONIEngineInterrupt(task C.OONITask) {
+//export OONIEngineInterruptTask
+func OONIEngineInterruptTask(task C.OONITask) {
 	tp := cgo.Handle(task).Value().(motor.TaskAPI)
 	tp.Interrupt()
 }

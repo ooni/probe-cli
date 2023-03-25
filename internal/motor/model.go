@@ -53,7 +53,7 @@ type taskRunner interface {
 	//
 	// - resp is the response to emit after the task is complete. Note that
 	//   this an implicit response and only indicates the final response of the task.
-	main(ctx context.Context, emitter taskMaybeEmitter, req *Request, resp *Response)
+	main(ctx context.Context, emitter taskMaybeEmitter, req *Request) *Response
 }
 
 // taskAPI implements the OONI engine C API functions. We use this interface
@@ -61,6 +61,9 @@ type taskRunner interface {
 type TaskAPI interface {
 	// waitForNextEvent implements OONITaskWaitForNextEvent.
 	WaitForNextEvent(timeout time.Duration) *Response
+
+	// GetResult implements OONITaskGetResult
+	GetResult(timeout time.Duration) *Response
 
 	// isDone implements OONITaskIsDone.
 	IsDone() bool

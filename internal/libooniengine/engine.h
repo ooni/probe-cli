@@ -66,6 +66,32 @@ OONITask OONIEngineCall(char *req);
 /// checking whether this function has returned an empty string.
 char *OONIEngineWaitForNextEvent(OONITask task, int32_t timeout);
 
+/// OONIEngineTaskGetResult awaits on the result queue until the final 
+/// result is available or the given [timeout] expires.
+///
+/// @param task Task handle returned by OONIEngineCall.
+///
+/// @param timeout Timeout in milliseconds. If the timeout is zero
+/// or negative, this function would potentially block forever.
+///
+/// @return A NULL pointer on failure, non-NULL otherwise. If the return
+/// value is non-NULL, the caller takes ownership of the char pointer
+/// and MUST free it using OONIEngineFreeMemory when done using it.
+///
+/// This function will return an empty string:
+///
+/// 1. when the timeout expires;
+///
+/// 2. if [task] is zero or does not refer to a valid task;
+///
+/// 3. if we cannot JSON serialize the message;
+///
+/// 4. possibly because of other unknown internal errors.
+///
+/// In short, you cannot reliably determine whether a task is done by
+/// checking whether this function has returned an empty string.
+char *OONIEngineTaskGetResult(OONITask task, int32_t timeout);
+
 /// OONIEngineTaskIsDone returns whether the task identified by [taskID] is done. A taks is
 /// done when it has finished running _and_ its events queue has been drained.
 ///
@@ -75,7 +101,7 @@ char *OONIEngineWaitForNextEvent(OONITask task, int32_t timeout);
 /// unread events inside its events queue, zero otherwise.
 uint8_t OONIEngineTaskIsDone(OONITask task);
 
-/// OONIEngineInterrupt tells [task] to stop ASAP.
+/// OONIEngineInterruptTask tells [task] to stop ASAP.
 ///
 /// @param task Task handle returned by OONIEngineCall. If task is zero
 /// or does not refer to a valid task, this function will just do nothing.

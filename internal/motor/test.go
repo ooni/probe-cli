@@ -34,7 +34,7 @@ var _ taskRunner = &testTaskRunner{}
 
 // main implements taskRunner.main
 func (tr *testTaskRunner) main(ctx context.Context, emitter taskMaybeEmitter,
-	req *Request, res *Response) {
+	req *Request) (res *Response) {
 	logger := newTaskLogger(emitter, false)
 	if !req.Test.Test {
 		logger.Warnf("task_runner: %s", errTestDisabled.Error())
@@ -43,4 +43,5 @@ func (tr *testTaskRunner) main(ctx context.Context, emitter taskMaybeEmitter,
 	}
 	logger.Info("task_runner: a log event for the Test task")
 	res.Test.Response = "test success"
+	return
 }
