@@ -50,9 +50,6 @@ type taskRunner interface {
 	// - emitter is the emitter to emit events;
 	//
 	// - req is the parsed request containing task specific arguments.
-	//
-	// - resp is the response to emit after the task is complete. Note that
-	//   this an implicit response and only indicates the final response of the task.
 	main(ctx context.Context, emitter taskMaybeEmitter, req *Request) *Response
 }
 
