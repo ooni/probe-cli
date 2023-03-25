@@ -1,4 +1,8 @@
-package main
+package motor
+
+//
+// session handles the bootstrap and delete tasks for OONI session.
+//
 
 // newSessionOptions contains the request arguments for the NewSession task.
 type newSessionOptions struct{}

@@ -1,4 +1,4 @@
-package main
+package motor
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 )
 
 // request is the OONI request containing task-specific arguments.
-type request struct {
+type Request struct {
 	NewSession    newSessionOptions    `json:",omitempty"`
 	Geolocate     geolocateOptions     `json:",omitempty"`
 	DeleteSession deleteSessionOptions `json:",omitempty"`
@@ -14,7 +14,7 @@ type request struct {
 }
 
 // response is the OONI response to serialize before sending.
-type response struct {
+type Response struct {
 	NewSession    newSessionResponse    `json:",omitempty"`
 	Geolocate     geolocateResponse     `json:",omitempty"`
 	Logger        logResponse           `json:",omitempty"`
@@ -35,7 +35,7 @@ const taskEventsBuffer = 1024
 type taskMaybeEmitter interface {
 	// maybeEmitEvent emits an event if there's available buffer in the
 	// output channel and otherwise discards the event.
-	maybeEmitEvent(resp *response)
+	maybeEmitEvent(resp *Response)
 }
 
 // taskRunner runs a given task. Any task that you can run from
@@ -53,23 +53,23 @@ type taskRunner interface {
 	//
 	// - resp is the response to emit after the task is complete. Note that
 	//   this an implicit response and only indicates the final response of the task.
-	main(ctx context.Context, emitter taskMaybeEmitter, req *request, resp *response)
+	main(ctx context.Context, emitter taskMaybeEmitter, req *Request, resp *Response)
 }
 
 // taskAPI implements the OONI engine C API functions. We use this interface
 // to enable easier testing of the code that manages the tasks lifecycle.
-type taskAPI interface {
+type TaskAPI interface {
 	// waitForNextEvent implements OONITaskWaitForNextEvent.
-	waitForNextEvent(timeout time.Duration) *response
+	WaitForNextEvent(timeout time.Duration) *Response
 
 	// isDone implements OONITaskIsDone.
-	isDone() bool
+	IsDone() bool
 
 	// interrupt implements OONITaskInterrupt.
-	interrupt()
+	Interrupt()
 
 	// free implements OONITaskFree
-	free()
+	Free()
 }
 
 // taskRegistry maps each task name to its implementation.

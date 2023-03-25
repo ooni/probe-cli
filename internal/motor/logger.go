@@ -1,4 +1,4 @@
-package main
+package motor
 
 import (
 	"fmt"
@@ -80,7 +80,7 @@ func (tl *taskLogger) Warn(message string) {
 
 // emit emits a log message.
 func (tl *taskLogger) emit(level LogLevel, message string) {
-	logResp := &response{
+	logResp := &Response{
 		Logger: logResponse{
 			Level:   level,
 			Message: message,

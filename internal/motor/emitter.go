@@ -1,4 +1,4 @@
-package main
+package motor
 
 //
 // Emitter
@@ -7,13 +7,13 @@ package main
 // taskEmitter implements taskMaybeEmitter.
 type taskChanEmitter struct {
 	// out is the channel where we emit events.
-	out chan *response
+	out chan *Response
 }
 
 var _ taskMaybeEmitter = &taskChanEmitter{}
 
 // maybeEmitEvent implements taskMaybeEmitter.maybeEmitEvent.
-func (e *taskChanEmitter) maybeEmitEvent(resp *response) {
+func (e *taskChanEmitter) maybeEmitEvent(resp *Response) {
 	select {
 	case e.out <- resp:
 	default: // buffer full, discard this event

@@ -1,4 +1,4 @@
-package main
+package motor
 
 import (
 	"context"
@@ -13,8 +13,8 @@ var (
 	errInvalidRequest = errors.New("input request has no valid task name")
 )
 
-// resolveTask resolves the task name to perform from the parsed request.
-func resolveTask(req *request) (string, error) {
+// ResolveTask resolves the task name to perform from the parsed request.
+func ResolveTask(req *Request) (string, error) {
 	r := reflect.ValueOf(req)
 	t := r.Type()
 	for i := 0; i < r.NumField(); i++ {
@@ -26,15 +26,15 @@ func resolveTask(req *request) (string, error) {
 }
 
 // startTask starts a given task.
-func startTask(name string, req *request) taskAPI {
+func StartTask(name string, req *Request) TaskAPI {
 	ctx, cancel := context.WithCancel(context.Background())
 	tp := &taskState{
 		cancel:  cancel,
 		done:    &atomic.Int64{},
-		events:  make(chan *response, taskEventsBuffer),
+		events:  make(chan *Response, taskEventsBuffer),
 		stopped: make(chan any),
 	}
-	go tp.main(ctx, name, req)
+	go tp.Main(ctx, name, req)
 	return tp
 }
 
@@ -47,16 +47,16 @@ type taskState struct {
 	done *atomic.Int64
 
 	// events is the channel where we emit task events.
-	events chan *response
+	events chan *Response
 
 	// stopped indicates that the task is done.
 	stopped chan any
 }
 
-var _ taskAPI = &taskState{}
+var _ TaskAPI = &taskState{}
 
 // waitForNextEvent implements taskAPI.waitForNextEvent.
-func (tp *taskState) waitForNextEvent(timeout time.Duration) *response {
+func (tp *taskState) WaitForNextEvent(timeout time.Duration) *Response {
 	// Implementation note: we don't need to log any of these nil-returning conditions
 	// as they are not exceptional, rather they're part of normal usage.
 	ctx, cancel := contextForWaitForNextEvent(timeout)
@@ -88,28 +88,28 @@ func contextForWaitForNextEvent(timeo time.Duration) (context.Context, context.C
 }
 
 // isDone implements taskAPI.isDone.
-func (tp *taskState) isDone() bool {
+func (tp *taskState) IsDone() bool {
 	return tp.done.Load() > 0
 }
 
 // interrupt implements taskAPI.interrupt.
-func (tp *taskState) interrupt() {
+func (tp *taskState) Interrupt() {
 	tp.cancel()
 }
 
 // free implements taskAPI.free
-func (tp *taskState) free() {
-	tp.interrupt()
-	for !tp.isDone() {
+func (tp *taskState) Free() {
+	tp.Interrupt()
+	for !tp.IsDone() {
 		const blockForever = -1
-		_ = tp.waitForNextEvent(blockForever)
+		_ = tp.WaitForNextEvent(blockForever)
 	}
 }
 
 // main is the main function of the task.
-func (tp *taskState) main(ctx context.Context, name string, req *request) {
+func (tp *taskState) Main(ctx context.Context, name string, req *Request) {
 	defer close(tp.stopped) // synchronize with caller
-	var resp *response
+	var resp *Response
 	runner := taskRegistry[name]
 	if runner == nil {
 		log.Printf("OONITaskStart: unknown task name: %s", name)

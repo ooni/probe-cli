@@ -1,4 +1,4 @@
-package main
+package motor
 
 //
 // test is a mock task to mimic the request-response API for the FFI consumer.
@@ -34,7 +34,7 @@ var _ taskRunner = &testTaskRunner{}
 
 // main implements taskRunner.main
 func (tr *testTaskRunner) main(ctx context.Context, emitter taskMaybeEmitter,
-	req *request, res *response) {
+	req *Request, res *Response) {
 	logger := newTaskLogger(emitter, false)
 	if !req.Test.Test {
 		logger.Warnf("task_runner: %s", errTestDisabled.Error())
