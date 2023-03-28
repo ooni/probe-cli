@@ -17,7 +17,7 @@ const (
 	testName    = "signal"
 	testVersion = "0.2.2"
 
-	signalCAs = `-----BEGIN CERTIFICATE-----
+	signalCA = `-----BEGIN CERTIFICATE-----
 MIID7zCCAtegAwIBAgIJAIm6LatK5PNiMA0GCSqGSIb3DQEBBQUAMIGNMQswCQYD
 VQQGEwJVUzETMBEGA1UECAwKQ2FsaWZvcm5pYTEWMBQGA1UEBwwNU2FuIEZyYW5j
 aXNjbzEdMBsGA1UECgwUT3BlbiBXaGlzcGVyIFN5c3RlbXMxHTAbBgNVBAsMFE9w
@@ -40,8 +40,9 @@ iOheyv7UzJOefb2pLOc9qsuvI4fnaESh9bhzln+LXxtCrRPGhkxA1IMIo3J/s2WF
 /oF4usY5J7LPkxK3LWzMJnb5EIJDmRvyH8pyRwWg6Qm6qiGFaI4nL8QU4La1x2en
 4DGXRaLMPRwjELNgQPodR38zoCMuA8gHZfZYYoZ7D7Q1wNUiVHcxuFrEeBaYJbLE
 rwLV
------END CERTIFICATE-----
+-----END CERTIFICATE-----`
 
+	signalCANew = `
 -----BEGIN CERTIFICATE-----
 MIIF2zCCA8OgAwIBAgIUAMHz4g60cIDBpPr1gyZ/JDaaPpcwDQYJKoZIhvcNAQEL
 BQAwdTELMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcT
@@ -148,13 +149,18 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	defer cancel()
 	urlgetter.RegisterExtensions(measurement)
 
-	signalCAByteSlice := []byte(signalCAs)
-	if m.Config.SignalCA != "" {
-		signalCAByteSlice = []byte(m.Config.SignalCA)
+	certPool := netxlite.NewMozillaCertPool()
+	signalCAByteSlice := [][]byte{
+		[]byte(signalCA),
+		[]byte(signalCANew),
 	}
-	certPool, err := netxlite.NewDefaultCertPoolWithExtraCerts(signalCAByteSlice)
-	for err != nil {
-		return err
+	if m.Config.SignalCA != "" {
+		signalCAByteSlice = [][]byte{[]byte(m.Config.SignalCA)}
+	}
+	for _, caBytes := range signalCAByteSlice {
+		if !certPool.AppendCertsFromPEM(caBytes) {
+			return errors.New("AppendCertsFromPEM failed")
+		}
 	}
 
 	inputs := []urlgetter.MultiInput{

@@ -112,16 +112,6 @@ func NewMozillaCertPool() *x509.CertPool {
 	return pool
 }
 
-// NewDefaultCertPoolWithExtraCerts returns the default x509 certificate pool
-// that we bundle from Mozilla with extra certificates appended to it.
-func NewDefaultCertPoolWithExtraCerts(pem []byte) (*x509.CertPool, error) {
-	pool := NewMozillaCertPool()
-	if !pool.AppendCertsFromPEM(pem) {
-		return nil, errors.New("AppendCertsFromPEM failed")
-	}
-	return pool, nil
-}
-
 // ErrInvalidTLSVersion indicates that you passed us a string
 // that does not represent a valid TLS version.
 var ErrInvalidTLSVersion = errors.New("invalid TLS version")
