@@ -51,11 +51,14 @@ func TLSHandshakeOptionServerName(value string) TLSHandshakeOption {
 // TLSHandshake returns a function performing TSL handshakes.
 func TLSHandshake(pool *ConnPool, options ...TLSHandshakeOption) Func[
 	*TCPConnection, *Maybe[*TLSConnection]] {
+	// See https://github.com/ooni/probe/issues/2413 to understand
+	// why we're using nil to force netxlite to use the cached
+	// default Mozilla cert pool.
 	f := &tlsHandshakeFunc{
 		InsecureSkipVerify: false,
 		NextProto:          []string{},
 		Pool:               pool,
-		RootCAs:            netxlite.NewDefaultCertPool(),
+		RootCAs:            nil,
 		ServerName:         "",
 	}
 	for _, option := range options {

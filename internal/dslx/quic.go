@@ -46,10 +46,13 @@ func QUICHandshakeOptionServerName(value string) QUICHandshakeOption {
 // QUICHandshake returns a function performing QUIC handshakes.
 func QUICHandshake(pool *ConnPool, options ...QUICHandshakeOption) Func[
 	*Endpoint, *Maybe[*QUICConnection]] {
+	// See https://github.com/ooni/probe/issues/2413 to understand
+	// why we're using nil to force netxlite to use the cached
+	// default Mozilla cert pool.
 	f := &quicHandshakeFunc{
 		InsecureSkipVerify: false,
 		Pool:               pool,
-		RootCAs:            netxlite.NewDefaultCertPool(),
+		RootCAs:            nil,
 		ServerName:         "",
 	}
 	for _, option := range options {
