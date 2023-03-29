@@ -81,9 +81,15 @@ func (r reportChan) CanSubmit(m *model.Measurement) bool {
 // such that it contains the report ID for which it has been
 // submitted. Otherwise, we'll set the report ID to the empty
 // string, so that you know which measurements weren't submitted.
-func (r reportChan) SubmitMeasurement(ctx context.Context, m *model.Measurement) error {
+func (r reportChan) SubmitMeasurement(
+	ctx context.Context,
+	m *model.Measurement,
+	edit bool,
+) error {
 	var updateResponse model.OOAPICollectorUpdateResponse
-	m.ReportID = r.ID
+	if edit {
+		m.ReportID = r.ID
+	}
 	err := r.client.APIClientTemplate.WithBodyLogging().Build().PostJSON(
 		ctx, fmt.Sprintf("/report/%s", r.ID), model.OOAPICollectorUpdateRequest{
 			Format:  "json",
@@ -91,7 +97,9 @@ func (r reportChan) SubmitMeasurement(ctx context.Context, m *model.Measurement)
 		}, &updateResponse,
 	)
 	if err != nil {
-		m.ReportID = ""
+		if edit {
+			m.ReportID = ""
+		}
 		return err
 	}
 	return nil
@@ -107,7 +115,7 @@ func (r reportChan) ReportID() string {
 type ReportChannel interface {
 	CanSubmit(m *model.Measurement) bool
 	ReportID() string
-	SubmitMeasurement(ctx context.Context, m *model.Measurement) error
+	SubmitMeasurement(ctx context.Context, m *model.Measurement, edit bool) error
 }
 
 var _ ReportChannel = &reportChan{}
@@ -140,15 +148,32 @@ func NewSubmitter(opener ReportOpener, logger model.Logger) *Submitter {
 // Submit submits the current measurement to the OONI backend created using
 // the ReportOpener passed to the constructor.
 func (sub *Submitter) Submit(ctx context.Context, m *model.Measurement) error {
+	_, err := sub.submit(ctx, m, true)
+	return err
+}
+
+// SubmitWithoutModifyingMeasurement is like Submit but does not modify
+// the measurement in place (which may cause a data race).
+func (sub *Submitter) SubmitWithoutModifyingMeasurement(
+	ctx context.Context,
+	m *model.Measurement,
+) (string, error) {
+	return sub.submit(ctx, m, false)
+}
+
+func (sub *Submitter) submit(ctx context.Context, m *model.Measurement, edit bool) (string, error) {
 	var err error
 	sub.mu.Lock()
 	defer sub.mu.Unlock()
 	if sub.channel == nil || !sub.channel.CanSubmit(m) {
 		sub.channel, err = sub.opener.OpenReport(ctx, NewReportTemplate(m))
 		if err != nil {
-			return err
+			return "", err
 		}
 		sub.logger.Infof("New reportID: %s", sub.channel.ReportID())
 	}
-	return sub.channel.SubmitMeasurement(ctx, m)
+	if err := sub.channel.SubmitMeasurement(ctx, m, edit); err != nil {
+		return "", err
+	}
+	return sub.channel.ReportID(), nil
 }
