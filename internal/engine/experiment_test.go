@@ -24,7 +24,7 @@ func TestExperimentHonoursSharingDefaults(t *testing.T) {
 	}
 	allspecs := []spec{{
 		name:         "probeIP",
-		locationInfo: &geolocate.Results{ProbeIP: "8.8.8.8"},
+		locationInfo: &geolocate.Results{IPAddr: "8.8.8.8"},
 		expect: func(m *model.Measurement) bool {
 			return m.ProbeIP == model.DefaultProbeIP
 		},
@@ -48,19 +48,19 @@ func TestExperimentHonoursSharingDefaults(t *testing.T) {
 		},
 	}, {
 		name:         "resolverIP",
-		locationInfo: &geolocate.Results{ResolverIP: "9.9.9.9"},
+		locationInfo: &geolocate.Results{ResolverIPAddr: "9.9.9.9"},
 		expect: func(m *model.Measurement) bool {
 			return m.ResolverIP == "9.9.9.9"
 		},
 	}, {
 		name:         "resolverASN",
-		locationInfo: &geolocate.Results{ResolverASN: 44},
+		locationInfo: &geolocate.Results{ResolverASNumber: 44},
 		expect: func(m *model.Measurement) bool {
 			return m.ResolverASN == "AS44"
 		},
 	}, {
 		name:         "resolverNetworkName",
-		locationInfo: &geolocate.Results{ResolverNetworkName: "Google LLC"},
+		locationInfo: &geolocate.Results{ResolverASNetworkName: "Google LLC"},
 		expect: func(m *model.Measurement) bool {
 			return m.ResolverNetworkName == "Google LLC"
 		},

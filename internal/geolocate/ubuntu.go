@@ -30,7 +30,6 @@ func ubuntuIPLookup(
 	if err != nil {
 		return model.DefaultProbeIP, err
 	}
-	logger.Debugf("ubuntu: body: %s", string(data))
 	var v ubuntuResponse
 	err = xml.Unmarshal(data, &v)
 	if err != nil {

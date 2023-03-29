@@ -20,6 +20,8 @@ type locationInfo struct {
 	resolverIP  string
 }
 
+var _ model.LocationProvider = &locationInfo{}
+
 func (lp *locationInfo) ProbeASN() uint {
 	return lp.asn
 }
@@ -42,6 +44,21 @@ func (lp *locationInfo) ProbeNetworkName() string {
 
 func (lp *locationInfo) ResolverIP() string {
 	return lp.resolverIP
+}
+
+// ResolverASN implements model.LocationProvider
+func (*locationInfo) ResolverASN() uint {
+	panic("unimplemented")
+}
+
+// ResolverASNString implements model.LocationProvider
+func (*locationInfo) ResolverASNString() string {
+	panic("unimplemented")
+}
+
+// ResolverNetworkName implements model.LocationProvider
+func (*locationInfo) ResolverNetworkName() string {
+	panic("unimplemented")
 }
 
 func TestNewDatabase(t *testing.T) {

@@ -97,14 +97,14 @@ func (c ipLookupClient) doWithCustomFunc(
 	if net.ParseIP(ip) == nil {
 		return model.DefaultProbeIP, fmt.Errorf("%w: %s", ErrInvalidIPAddress, ip)
 	}
-	c.Logger.Debugf("iplookup: IP: %s", ip)
+	c.Logger.Debugf("geolocate: IP: %s", ip)
 	return ip, nil
 }
 
 func (c ipLookupClient) LookupProbeIP(ctx context.Context) (string, error) {
 	union := multierror.New(ErrAllIPLookuppersFailed)
 	for _, method := range makeSlice() {
-		c.Logger.Infof("iplookup: using %s", method.name)
+		c.Logger.Infof("geolocate: using %s", method.name)
 		ip, err := c.doWithCustomFunc(ctx, method.fn)
 		if err == nil {
 			return ip, nil

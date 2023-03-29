@@ -16,16 +16,16 @@ func (s *Session) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
 	return clnt.FetchPsiphonConfig(ctx)
 }
 
-// sessionTunnelEarlySession is the early session that we pass
+// SessionTunnelEarlySession is the early session that we pass
 // to tunnel.Start to fetch the Psiphon configuration.
-type sessionTunnelEarlySession struct{}
+type SessionTunnelEarlySession struct{}
 
 // errPsiphonNoEmbeddedConfig indicates that there is no
 // embedded psiphong config file in this binary.
 var errPsiphonNoEmbeddedConfig = errors.New("no embedded configuration file")
 
 // FetchPsiphonConfig implements tunnel.Session.FetchPsiphonConfig.
-func (s *sessionTunnelEarlySession) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
+func (s *SessionTunnelEarlySession) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
 	return nil, errPsiphonNoEmbeddedConfig
 }
 

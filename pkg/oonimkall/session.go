@@ -282,9 +282,9 @@ func (sess *Session) Geolocate(ctx *Context) (*GeolocateResults, error) {
 		return nil, err
 	}
 	return &GeolocateResults{
-		ASN:     info.ASNString(),
+		ASN:     info.ProbeASNString(),
 		Country: info.CountryCode,
-		IP:      info.ProbeIP,
+		IP:      info.IPAddr,
 		Org:     info.NetworkName,
 	}, nil
 }
@@ -464,7 +464,7 @@ func (sess *Session) CheckIn(ctx *Context, config *CheckInConfig) (*CheckInInfo,
 		Charging:        config.Charging,
 		OnWiFi:          config.OnWiFi,
 		Platform:        config.Platform,
-		ProbeASN:        info.ASNString(),
+		ProbeASN:        info.ProbeASNString(),
 		ProbeCC:         info.CountryCode,
 		RunType:         model.RunType(config.RunType),
 		SoftwareVersion: config.SoftwareVersion,

@@ -15,9 +15,10 @@ import (
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/utils"
 	"github.com/ooni/probe-cli/v3/internal/database"
 	"github.com/ooni/probe-cli/v3/internal/engine"
-	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/nettests"
+	"github.com/ooni/probe-cli/v3/internal/session"
 	"github.com/pkg/errors"
 )
 
@@ -36,17 +37,19 @@ type ProbeCLI interface {
 	IsBatch() bool
 	Home() string
 	TempDir() string
-	NewProbeEngine(ctx context.Context, runType model.RunType) (ProbeEngine, error)
+	NewSession(ctx context.Context, runType model.RunType) *nettests.Session
 }
 
 // ProbeEngine is an instance of the OONI Probe engine.
 type ProbeEngine interface {
+	model.LocationProvider
+	engine.InputLoaderSession
 	Close() error
+	MaybeLookupBackends(config *model.OOAPICheckInConfig) error
 	MaybeLookupLocation() error
-	ProbeASNString() string
-	ProbeCC() string
-	ProbeIP() string
-	ProbeNetworkName() string
+	NewExperimentBuilder(name string) (model.ExperimentBuilder, error)
+	SoftwareName() string
+	SoftwareVersion() string
 }
 
 // Probe contains the ooniprobe CLI context.
@@ -211,19 +214,9 @@ func (p *Probe) Init(softwareName, softwareVersion, proxy string) error {
 	return nil
 }
 
-// NewSession creates a new ooni/probe-engine session using the
-// current configuration inside the context. The caller must close
-// the session when done using it, by calling sess.Close().
-func (p *Probe) NewSession(ctx context.Context, runType model.RunType) (*engine.Session, error) {
-	kvstore, err := kvstore.NewFS(
-		utils.EngineDir(p.home),
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "creating engine's kvstore")
-	}
-	if err := os.MkdirAll(p.tunnelDir, 0700); err != nil {
-		return nil, errors.Wrap(err, "creating tunnel dir")
-	}
+// NewSession creates a new measurement session.
+func (p *Probe) NewSession(ctx context.Context, runType model.RunType) *nettests.Session {
+
 	// When the software name is the default software name and we're running
 	// in unattended mode, adjust the software name accordingly.
 	//
@@ -232,24 +225,33 @@ func (p *Probe) NewSession(ctx context.Context, runType model.RunType) (*engine.
 	if runType == model.RunTypeTimed && softwareName == DefaultSoftwareName {
 		softwareName = DefaultSoftwareName + "-unattended"
 	}
-	return engine.NewSession(ctx, engine.SessionConfig{
-		KVStore:         kvstore,
-		Logger:          logger,
-		SoftwareName:    softwareName,
-		SoftwareVersion: p.softwareVersion,
-		TempDir:         p.tempDir,
-		TunnelDir:       p.tunnelDir,
-		ProxyURL:        p.proxyURL,
-	})
-}
 
-// NewProbeEngine creates a new ProbeEngine instance.
-func (p *Probe) NewProbeEngine(ctx context.Context, runType model.RunType) (ProbeEngine, error) {
-	sess, err := p.NewSession(ctx, runType)
-	if err != nil {
-		return nil, err
+	// TODO(bassosimone): unclear to me how to set these fields
+	//
+	// - SnowflakeRendezvousMethod
+	// - TorArgs
+	// - TorBinary
+	// - VerboseLogging
+
+	var proxyURL string
+	if p.proxyURL != nil {
+		proxyURL = p.proxyURL.String()
 	}
-	return sess, nil
+
+	config := &session.BootstrapRequest{
+		SnowflakeRendezvousMethod: "",
+		StateDir:                  utils.EngineDir(p.home),
+		ProxyURL:                  proxyURL,
+		SoftwareName:              softwareName,
+		SoftwareVersion:           p.softwareVersion,
+		TorArgs:                   nil,
+		TorBinary:                 "",
+		TempDir:                   p.tempDir,
+		TunnelDir:                 p.tunnelDir,
+		VerboseLogging:            false,
+	}
+
+	return nettests.NewSession(config, logger)
 }
 
 // NewProbe creates a new probe instance.

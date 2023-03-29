@@ -24,22 +24,64 @@ type Results struct {
 	// NetworkName is the network name.
 	NetworkName string
 
-	// IP is the probe IP.
-	ProbeIP string
+	// IPAddr is the probe IPAddr.
+	IPAddr string
 
-	// ResolverASN is the resolver ASN.
-	ResolverASN uint
+	// ResolverASNumber is the resolver ASN.
+	ResolverASNumber uint
 
-	// ResolverIP is the resolver IP.
-	ResolverIP string
+	// ResolverIPAddr is the resolver IP.
+	ResolverIPAddr string
 
-	// ResolverNetworkName is the resolver network name.
-	ResolverNetworkName string
+	// ResolverASNetworkName is the resolver network name.
+	ResolverASNetworkName string
 }
 
-// ASNString returns the ASN as a string.
-func (r *Results) ASNString() string {
+var _ model.LocationProvider = &Results{}
+
+// ProbeASN implements model.LocationProvider
+func (r *Results) ProbeASN() uint {
+	return r.ASN
+}
+
+// ProbeASNString returns the ASN as a string.
+func (r *Results) ProbeASNString() string {
 	return fmt.Sprintf("AS%d", r.ASN)
+}
+
+// ProbeCC implements model.LocationProvider
+func (r *Results) ProbeCC() string {
+	return r.CountryCode
+}
+
+// ProbeIP implements model.LocationProvider
+func (r *Results) ProbeIP() string {
+	return r.IPAddr
+}
+
+// ProbeNetworkName implements model.LocationProvider
+func (r *Results) ProbeNetworkName() string {
+	return r.NetworkName
+}
+
+// ResolverASN implements model.LocationProvider
+func (r *Results) ResolverASN() uint {
+	return r.ResolverASNumber
+}
+
+// ResolverASNString implements model.LocationProvider
+func (r *Results) ResolverASNString() string {
+	return fmt.Sprintf("AS%d", r.ResolverASNumber)
+}
+
+// ResolverIP implements model.LocationProvider
+func (r *Results) ResolverIP() string {
+	return r.ResolverIPAddr
+}
+
+// ResolverNetworkName implements model.LocationProvider
+func (r *Results) ResolverNetworkName() string {
+	return r.ResolverASNetworkName
 }
 
 type probeIPLookupper interface {
@@ -87,6 +129,7 @@ func NewTask(config Config) *Task {
 	}
 	return &Task{
 		countryLookupper:     mmdbLookupper{},
+		logger:               config.Logger,
 		probeIPLookupper:     ipLookupClient(config),
 		probeASNLookupper:    mmdbLookupper{},
 		resolverASNLookupper: mmdbLookupper{},
@@ -100,6 +143,7 @@ func NewTask(config Config) *Task {
 // instance of Task using the NewTask factory.
 type Task struct {
 	countryLookupper     countryLookupper
+	logger               model.Logger
 	probeIPLookupper     probeIPLookupper
 	probeASNLookupper    asnLookupper
 	resolverASNLookupper asnLookupper
@@ -110,29 +154,32 @@ type Task struct {
 func (op Task) Run(ctx context.Context) (*Results, error) {
 	var err error
 	out := &Results{
-		ASN:                 model.DefaultProbeASN,
-		CountryCode:         model.DefaultProbeCC,
-		NetworkName:         model.DefaultProbeNetworkName,
-		ProbeIP:             model.DefaultProbeIP,
-		ResolverASN:         model.DefaultResolverASN,
-		ResolverIP:          model.DefaultResolverIP,
-		ResolverNetworkName: model.DefaultResolverNetworkName,
+		ASN:                   model.DefaultProbeASN,
+		CountryCode:           model.DefaultProbeCC,
+		NetworkName:           model.DefaultProbeNetworkName,
+		IPAddr:                model.DefaultProbeIP,
+		ResolverASNumber:      model.DefaultResolverASN,
+		ResolverIPAddr:        model.DefaultResolverIP,
+		ResolverASNetworkName: model.DefaultResolverNetworkName,
 	}
 	ip, err := op.probeIPLookupper.LookupProbeIP(ctx)
 	if err != nil {
 		return out, fmt.Errorf("lookupProbeIP failed: %w", err)
 	}
-	out.ProbeIP = ip
-	asn, networkName, err := op.probeASNLookupper.LookupASN(out.ProbeIP)
+	out.IPAddr = ip
+	asn, networkName, err := op.probeASNLookupper.LookupASN(out.IPAddr)
 	if err != nil {
 		return out, fmt.Errorf("lookupASN failed: %w", err)
 	}
+	op.logger.Infof("geolocate: probe ASN: %d", asn)
+	op.logger.Infof("geolocate: probe network name: %s", networkName)
 	out.ASN = asn
 	out.NetworkName = networkName
-	cc, err := op.countryLookupper.LookupCC(out.ProbeIP)
+	cc, err := op.countryLookupper.LookupCC(out.IPAddr)
 	if err != nil {
 		return out, fmt.Errorf("lookupProbeCC failed: %w", err)
 	}
+	op.logger.Infof("geolocate: country code: %s", cc)
 	out.CountryCode = cc
 	out.didResolverLookup = true
 	// Note: ignoring the result of lookupResolverIP and lookupASN
@@ -143,14 +190,16 @@ func (op Task) Run(ctx context.Context) (*Results, error) {
 	if err != nil {
 		return out, nil // intentional
 	}
-	out.ResolverIP = resolverIP
+	out.ResolverIPAddr = resolverIP
 	resolverASN, resolverNetworkName, err := op.resolverASNLookupper.LookupASN(
-		out.ResolverIP,
+		out.ResolverIPAddr,
 	)
 	if err != nil {
 		return out, nil // intentional
 	}
-	out.ResolverASN = resolverASN
-	out.ResolverNetworkName = resolverNetworkName
+	op.logger.Infof("geolocate: resolver ASN: %d", resolverASN)
+	op.logger.Infof("geolocate: resolver network name: %s", resolverNetworkName)
+	out.ResolverASNumber = resolverASN
+	out.ResolverASNetworkName = resolverNetworkName
 	return out, nil
 }

@@ -7,6 +7,7 @@ package netxlite
 import (
 	"context"
 	"errors"
+	"log"
 	"net"
 	"net/url"
 
@@ -44,6 +45,7 @@ var ErrProxyUnsupportedScheme = errors.New("proxy: unsupported scheme")
 
 // DialContext implements Dialer.DialContext.
 func (d *proxyDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+	log.Printf("HEY dialing with %s", d.ProxyURL)
 	url := d.ProxyURL
 	if url.Scheme != "socks5" {
 		return nil, ErrProxyUnsupportedScheme

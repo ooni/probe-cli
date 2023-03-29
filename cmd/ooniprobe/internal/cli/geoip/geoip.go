@@ -8,7 +8,6 @@ import (
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/cli/root"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/ooni"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/output"
-	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func init() {
@@ -37,23 +36,26 @@ func dogeoip(config dogeoipconfig) error {
 		return err
 	}
 
-	engine, err := probeCLI.NewProbeEngine(context.Background(), model.RunTypeManual)
-	if err != nil {
+	sess := probeCLI.NewSession(context.Background(), "manual")
+	defer sess.Close()
+
+	if err := sess.Bootstrap(context.Background()); err != nil {
+		log.WithError(err).Error("Failed to bootstrap the measurement session")
 		return err
 	}
-	defer engine.Close()
 
-	err = engine.MaybeLookupLocation()
+	location, err := sess.Geolocate(context.Background())
 	if err != nil {
+		log.WithError(err).Error("Failed to lookup the location of the probe")
 		return err
 	}
 
 	config.Logger.WithFields(log.Fields{
 		"type":         "table",
-		"asn":          engine.ProbeASNString(),
-		"network_name": engine.ProbeNetworkName(),
-		"country_code": engine.ProbeCC(),
-		"ip":           engine.ProbeIP(),
+		"asn":          location.ProbeASNString(),
+		"network_name": location.ProbeNetworkName(),
+		"country_code": location.ProbeCC(),
+		"ip":           location.ProbeIP(),
 	}).Info("Looked up your location")
 
 	return nil

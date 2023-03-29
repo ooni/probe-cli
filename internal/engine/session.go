@@ -192,7 +192,7 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 				Logger:              config.Logger,
 				Name:                proxyURL.Scheme,
 				SnowflakeRendezvous: config.SnowflakeRendezvous,
-				Session:             &sessionTunnelEarlySession{},
+				Session:             &SessionTunnelEarlySession{},
 				TorArgs:             config.TorArgs,
 				TorBinary:           config.TorBinary,
 				TunnelDir:           config.TunnelDir,
@@ -523,7 +523,7 @@ func (s *Session) ProbeIP() string {
 	s.mu.Lock()
 	ip := model.DefaultProbeIP
 	if s.location != nil {
-		ip = s.location.ProbeIP
+		ip = s.location.IPAddr
 	}
 	return ip
 }
@@ -544,7 +544,7 @@ func (s *Session) ResolverASN() uint {
 	s.mu.Lock()
 	asn := model.DefaultResolverASN
 	if s.location != nil {
-		asn = s.location.ResolverASN
+		asn = s.location.ResolverASNumber
 	}
 	return asn
 }
@@ -555,7 +555,7 @@ func (s *Session) ResolverIP() string {
 	s.mu.Lock()
 	ip := model.DefaultResolverIP
 	if s.location != nil {
-		ip = s.location.ResolverIP
+		ip = s.location.ResolverIPAddr
 	}
 	return ip
 }
@@ -566,7 +566,7 @@ func (s *Session) ResolverNetworkName() string {
 	s.mu.Lock()
 	nn := model.DefaultResolverNetworkName
 	if s.location != nil {
-		nn = s.location.ResolverNetworkName
+		nn = s.location.ResolverASNetworkName
 	}
 	return nn
 }
