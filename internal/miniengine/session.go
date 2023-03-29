@@ -14,6 +14,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/platform"
 	"github.com/ooni/probe-cli/v3/internal/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"golang.org/x/net/context"
@@ -214,6 +215,21 @@ func NewSession(config *SessionConfig) (*Session, error) {
 		mu:            sync.Mutex{},
 	}
 	return sess, nil
+}
+
+// Platform returns the operating system platform name.
+func (sess *Session) Platform() string {
+	return platform.Name()
+}
+
+// SoftwareName returns the configured software name.
+func (sess *Session) SoftwareName() string {
+	return sess.config.SoftwareName
+}
+
+// SoftwareVersion returns the configured software version.
+func (sess *Session) SoftwareVersion() string {
+	return sess.config.SoftwareVersion
 }
 
 // Bootstrap ensures that we bootstrap the [Session].

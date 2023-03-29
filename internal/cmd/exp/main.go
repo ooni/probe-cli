@@ -7,7 +7,6 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/miniengine"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/platform"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -70,19 +69,16 @@ func main() {
 	location := runtimex.Try1(locationTask.Result())
 	log.Infof("%+v", location)
 
-	// TODO(bassosimone): we want a factory to construct a new OOAPICheckInConfig
-	// using the information available to the session.
-
 	// call the check-in API
 	checkInConfig := &model.OOAPICheckInConfig{
 		Charging:        false,
 		OnWiFi:          false,
-		Platform:        platform.Name(),
+		Platform:        sess.Platform(),
 		ProbeASN:        location.ProbeASNString,
 		ProbeCC:         location.ProbeCC,
 		RunType:         model.RunTypeTimed,
-		SoftwareName:    "miniooni",
-		SoftwareVersion: "0.1.0-dev",
+		SoftwareName:    sess.SoftwareName(),
+		SoftwareVersion: sess.SoftwareVersion(),
 		WebConnectivity: model.OOAPICheckInConfigWebConnectivity{
 			CategoryCodes: []string{},
 		},
