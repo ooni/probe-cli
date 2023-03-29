@@ -382,14 +382,58 @@ type MeasurementResult struct {
 	Summary any `json:"summary"`
 }
 
-// Measure performs a measurement using the given experiment name, the
-// given input, and the given opaque experiment options.
+// Experiment is this package's view of a [model.Experiment]
+type Experiment interface {
+	// GetSummaryKeys returns a data structure containing a
+	// summary of the test keys for ooniprobe.
+	GetSummaryKeys(m *model.Measurement) (any, error)
+
+	// KibiBytesReceived accounts for the KibiBytes received by the experiment.
+	KibiBytesReceived() float64
+
+	// KibiBytesSent is like KibiBytesReceived but for the bytes sent.
+	KibiBytesSent() float64
+
+	// MeasureWithContext performs a synchronous measurement.
+	//
+	// Return value: strictly either a non-nil measurement and
+	// a nil error or a nil measurement and a non-nil error.
+	MeasureWithContext(ctx context.Context, input string) (*model.Measurement, error)
+}
+
+// NewExperiment creates a new [Experiment] instance,
+func (sess *Session) NewExperiment(name string, options map[string]any) (Experiment, error) {
+	// lock and access the underlying session
+	sess.mu.Lock()
+	defer sess.mu.Unlock()
+
+	// handle the case where we did not bootstrap
+	if sess.child == nil {
+		return nil, ErrNoBootstrap
+	}
+
+	// create a [model.ExperimentBuilder]
+	builder, err := sess.child.NewExperimentBuilder(name)
+	if err != nil {
+		return nil, err
+	}
+
+	// set the proper callbacks for the experiment
+	callbacks := &callbacks{sess.emitter}
+	builder.SetCallbacks(callbacks)
+
+	// set the proper options for the experiment
+	if err := builder.SetOptionsAny(options); err != nil {
+		return nil, err
+	}
+
+	// create an experiment instance
+	return builder.NewExperiment(), nil
+}
+
+// Measure performs a measurement using the given experiment and input.
 func (sess *Session) Measure(
-	ctx context.Context,
-	name string,
-	input string,
-	options map[string]any,
-) *Task[*MeasurementResult] {
+	ctx context.Context, exp Experiment, input string) *Task[*MeasurementResult] {
 	task := &Task[*MeasurementResult]{
 		done:    make(chan any),
 		events:  sess.emitter,
@@ -410,26 +454,6 @@ func (sess *Session) Measure(
 			task.failure = ErrNoBootstrap
 			return
 		}
-
-		// TODO(bassosimone): there is a bug where we create a new report ID for
-		// each measurement because there's a different TestStartTime
-
-		// create a [model.ExperimentBuilder]
-		builder, err := sess.child.NewExperimentBuilder(name)
-		if err != nil {
-			task.failure = err
-			return
-		}
-
-		// set the proper callbacks for the experiment
-		callbacks := &callbacks{sess.emitter}
-		builder.SetCallbacks(callbacks)
-
-		// set the proper options for the experiment
-		builder.SetOptionsAny(options)
-
-		// create an experiment instance
-		exp := builder.NewExperiment()
 
 		// perform the measurement
 		meas, err := exp.MeasureWithContext(ctx, input)
@@ -452,7 +476,6 @@ func (sess *Session) Measure(
 			Measurement:       meas,
 			Summary:           summary,
 		}
-
 	}()
 
 	return task

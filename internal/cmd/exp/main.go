@@ -1,5 +1,9 @@
 package main
 
+//
+// Demonstrates using the fundamental OONI Engine API
+//
+
 import (
 	"context"
 	"path/filepath"
@@ -10,11 +14,14 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
+// awaitableTask is a [miniengine.Task] that we can await and for which
+// we can obtain the interim events while it's running.
 type awaitableTask interface {
 	Done() <-chan any
 	Events() <-chan *miniengine.Event
 }
 
+// awaitTask awaits for the task to be done and emits interim events
 func awaitTask(task awaitableTask) {
 	for {
 		select {
@@ -88,27 +95,14 @@ func main() {
 	checkInResult := runtimex.Try1(checkInTask.Result())
 	log.Infof("%+v", checkInResult)
 
+	// create an instance of the Web Connectivity experiment
+	exp := runtimex.Try1(sess.NewExperiment("web_connectivity", make(map[string]any)))
+
 	// measure and submit all the URLs
 	runtimex.Assert(checkInResult.Tests.WebConnectivity != nil, "nil WebConnectivity")
 	for _, entry := range checkInResult.Tests.WebConnectivity.URLs {
-		// TODO(bassosimone): the only problem with this style of measurement
-		// is that we create a new report ID for each measurement
-		//
-		// There are two options here:
-		//
-		// 1. we create a new Experiment explicitly
-		//
-		// 2. we change the way in which we determine whether to open a new report
-		//
-		// I think the first option is way better than the second.
-
 		// perform the measurement
-		measurementTask := sess.Measure(
-			ctx,
-			"web_connectivity@v0.5",
-			entry.URL,
-			make(map[string]any),
-		)
+		measurementTask := sess.Measure(ctx, exp, entry.URL)
 		awaitTask(measurementTask)
 		measurementResult := runtimex.Try1(measurementTask.Result())
 		log.Infof("%+v", measurementResult)
