@@ -6,11 +6,9 @@ type Psiphon struct {
 
 // Run starts the test
 func (h Psiphon) Run(ctl *Controller) error {
-	builder, err := ctl.Session.NewExperimentBuilder(
+	return ctl.Run(
 		"psiphon",
+		"", // TODO(bassosimone)
+		[]string{""},
 	)
-	if err != nil {
-		return err
-	}
-	return ctl.Run(builder, []string{""})
 }

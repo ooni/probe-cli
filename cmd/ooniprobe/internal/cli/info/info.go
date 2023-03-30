@@ -16,12 +16,12 @@ func init() {
 
 type doinfoconfig struct {
 	Logger      log.Interface
-	NewProbeCLI func() (ooni.ProbeCLI, error)
+	NewProbeCLI func() (*ooni.Probe, error)
 }
 
 var defaultconfig = doinfoconfig{
 	Logger:      log.Log,
-	NewProbeCLI: root.NewProbeCLI,
+	NewProbeCLI: root.Init,
 }
 
 func doinfo(config doinfoconfig) error {

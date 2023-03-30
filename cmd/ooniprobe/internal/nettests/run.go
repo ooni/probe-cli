@@ -8,7 +8,9 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/ooni"
+	"github.com/ooni/probe-cli/v3/internal/miniengine"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/pkg/errors"
 )
 
@@ -59,26 +61,43 @@ func RunGroup(config RunGroupConfig) error {
 		return nil
 	}
 
-	sess, err := config.Probe.NewSession(context.Background(), config.RunType)
+	// create a measurement session
+	sessConfig := config.Probe.NewSessionConfig(config.RunType)
+	sess, err := miniengine.NewSession(sessConfig)
 	if err != nil {
 		log.WithError(err).Error("Failed to create a measurement session")
 		return err
 	}
 	defer sess.Close()
 
-	err = sess.MaybeLookupLocation()
-	if err != nil {
-		log.WithError(err).Error("Failed to lookup the location of the probe")
+	// bootstrap the measurement session
+	log.Debugf("Enabled category codes are the following %v", config.Probe.Config().Nettests.WebsitesEnabledCategoryCodes)
+	bootstrapConfig := &miniengine.BootstrapConfig{
+		BackendURL:                "",
+		CategoryCodes:             config.Probe.Config().Nettests.WebsitesEnabledCategoryCodes,
+		Charging:                  true,
+		OnWiFi:                    true,
+		ProxyURL:                  config.Probe.ProxyURL(),
+		RunType:                   config.RunType,
+		SnowflakeRendezvousMethod: "",
+		TorArgs:                   []string{},
+		TorBinary:                 "",
+	}
+	bootstrapTask := sess.Bootstrap(context.Background(), bootstrapConfig)
+	awaitTask(bootstrapTask, model.NewPrinterCallbacks(taskLogger))
+	if _, err := bootstrapTask.Result(); err != nil {
+		log.WithError(err).Error("Failed to bootstrap a measurement session")
 		return err
 	}
+
+	// obtain the probe location
+	location := runtimex.Try1(sess.GeolocateResult())
+
+	// create the corresponding network inside the database
 	db := config.Probe.DB()
-	network, err := db.CreateNetwork(sess)
+	network, err := db.CreateNetwork(location)
 	if err != nil {
 		log.WithError(err).Error("Failed to create the network row")
-		return err
-	}
-	if err := sess.MaybeLookupBackends(); err != nil {
-		log.WithError(err).Warn("Failed to discover OONI backends")
 		return err
 	}
 

@@ -143,6 +143,12 @@ func (s *Session) newEngineSessionState(
 		return nil, err
 	}
 
+	// lookup the available backends.
+	if err := child.MaybeLookupBackendsContext(ctx); err != nil {
+		child.Close()
+		return nil, err
+	}
+
 	// call the check-in API.
 	resp, err := s.checkIn(ctx, location, child, psc, config)
 	if err != nil {

@@ -1,14 +1,13 @@
 package ooni
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
 )
 
 func TestInit(t *testing.T) {
-	ooniHome, err := ioutil.TempDir("", "oonihome")
+	ooniHome, err := os.MkdirTemp("", "oonihome")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -6,12 +6,9 @@ type RiseupVPN struct {
 
 // Run starts the test
 func (h RiseupVPN) Run(ctl *Controller) error {
-	builder, err := ctl.Session.NewExperimentBuilder(
+	return ctl.Run(
 		"riseupvpn",
+		"", // TODO(bassosimone)
+		[]string{""},
 	)
-	if err != nil {
-		return err
-	}
-
-	return ctl.Run(builder, []string{""})
 }

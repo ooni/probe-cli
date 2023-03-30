@@ -6,11 +6,9 @@ type Telegram struct {
 
 // Run starts the test
 func (h Telegram) Run(ctl *Controller) error {
-	builder, err := ctl.Session.NewExperimentBuilder(
+	return ctl.Run(
 		"telegram",
+		"", // TODO(bassosimone)
+		[]string{""},
 	)
-	if err != nil {
-		return err
-	}
-	return ctl.Run(builder, []string{""})
 }

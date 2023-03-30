@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/miniengine"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/pkg/errors"
 	"github.com/upper/db/v4"
@@ -32,8 +33,6 @@ func Open(dbpath string) (*Database, error) {
 type Database struct {
 	sess db.Session
 }
-
-var _ model.WritableDatabase = &Database{}
 
 // Session implements Writable/ReadableDatabase.Session
 func (d *Database) Session() db.Session {
@@ -293,14 +292,14 @@ func (d *Database) CreateResult(homePath string, testGroupName string, networkID
 }
 
 // CreateNetwork implements WritableDatabase.CreateNetwork
-func (d *Database) CreateNetwork(loc model.LocationProvider) (*model.DatabaseNetwork, error) {
+func (d *Database) CreateNetwork(loc *miniengine.Location) (*model.DatabaseNetwork, error) {
 	network := model.DatabaseNetwork{
-		ASN:         loc.ProbeASN(),
-		CountryCode: loc.ProbeCC(),
-		NetworkName: loc.ProbeNetworkName(),
+		ASN:         uint(loc.ProbeASN),
+		CountryCode: loc.ProbeCC,
+		NetworkName: loc.ProbeNetworkName,
 		// On desktop we consider it to always be wifi
 		NetworkType: "wifi",
-		IP:          loc.ProbeIP(),
+		IP:          loc.ProbeIP,
 	}
 	newID, err := d.sess.Collection("networks").Insert(network)
 	if err != nil {

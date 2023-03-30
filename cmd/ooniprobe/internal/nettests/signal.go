@@ -5,11 +5,9 @@ type Signal struct{}
 
 // Run starts the nettest.
 func (h Signal) Run(ctl *Controller) error {
-	builder, err := ctl.Session.NewExperimentBuilder(
+	return ctl.Run(
 		"signal",
+		"", // TODO(bassosimone)
+		[]string{""},
 	)
-	if err != nil {
-		return err
-	}
-	return ctl.Run(builder, []string{""})
 }
