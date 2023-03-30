@@ -193,7 +193,7 @@ func (e *experiment) SubmitAndUpdateMeasurementContext(
 	if e.report == nil {
 		return errors.New("report is not open")
 	}
-	return e.report.SubmitMeasurement(ctx, measurement, true)
+	return e.report.SubmitMeasurement(ctx, measurement)
 }
 
 // newMeasurement creates a new measurement for this experiment with the given input.
