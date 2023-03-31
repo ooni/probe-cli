@@ -52,7 +52,7 @@ OONITask OONIEngineCall(char *req);
 /// char pointer and MUST free it using OONIEngineFreeMemory when done 
 /// using it.
 ///
-/// This function will return an empty string:
+/// This function will return a NULL pointer:
 ///
 /// 1. when the timeout expires;
 ///
