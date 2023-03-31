@@ -27,8 +27,8 @@ const (
 
 // parse converts a JSON request string to the concrete Go type.
 func parse(req *C.char) (*motor.Request, error) {
-	var out *motor.Request
-	if err := json.Unmarshal([]byte(C.GoString(req)), out); err != nil {
+	out := &motor.Request{}
+	if err := json.Unmarshal([]byte(C.GoString(req)), &out); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -36,12 +36,32 @@ func parse(req *C.char) (*motor.Request, error) {
 
 // serialize serializes a OONI response to a JSON string accessible to C code.
 func serialize(resp *motor.Response) *C.char {
+	if resp == nil {
+		return nil
+	}
 	out, err := json.Marshal(resp)
 	if err != nil {
 		log.Printf("serializeMessage: cannot serialize message: %s", err.Error())
-		return C.CString("")
+		return nil
 	}
 	return C.CString(string(out))
+}
+
+// getTaskHandle checks if the task handle is valid and returns the corresponding TaskAPI.
+func getTaskHandle(task C.OONITask) (tp motor.TaskAPI) {
+	handle := cgo.Handle(task)
+	defer func() {
+		if r := recover(); r != nil {
+			handle.Delete()
+			tp = nil // return a nil TaskAPI when handle.Value() panics
+		}
+	}()
+	val := handle.Value() // this can panic if handle is invalid
+	tp, ok := val.(motor.TaskAPI)
+	if !ok {
+		handle.Delete()
+	}
+	return
 }
 
 //export OONIEngineVersion
@@ -61,14 +81,9 @@ func OONIEngineCall(req *C.char) C.OONITask {
 		log.Printf("OONIEngineCall: %s", err.Error())
 		return invalidTaskHandle
 	}
-	taskName, err := motor.ResolveTask(r)
-	if err != nil {
-		log.Printf("OONIEngineCall: %s", err.Error())
-		return invalidTaskHandle
-	}
-	tp := motor.StartTask(taskName, r)
+	tp := motor.StartTask(r)
 	if tp == nil {
-		log.Printf("OONITaskStart: startTask return NULL")
+		log.Printf("OONITaskStart: startTask returned NULL")
 		return invalidTaskHandle
 	}
 	return C.OONITask(cgo.NewHandle(tp))
@@ -76,21 +91,30 @@ func OONIEngineCall(req *C.char) C.OONITask {
 
 //export OONIEngineWaitForNextEvent
 func OONIEngineWaitForNextEvent(task C.OONITask, timeout C.int32_t) *C.char {
-	tp := cgo.Handle(task).Value().(motor.TaskAPI)
+	tp := getTaskHandle(task)
+	if tp == nil {
+		return nil
+	}
 	ev := tp.WaitForNextEvent(time.Duration(timeout) * time.Millisecond)
 	return serialize(ev)
 }
 
 //export OONIEngineTaskGetResult
 func OONIEngineTaskGetResult(task C.OONITask, timeout C.int32_t) *C.char {
-	tp := cgo.Handle(task).Value().(motor.TaskAPI)
-	result := tp.GetResult(time.Duration(timeout) * time.Millisecond)
+	tp := getTaskHandle(task)
+	if tp == nil {
+		return nil
+	}
+	result := tp.Result()
 	return serialize(result)
 }
 
 //export OONIEngineTaskIsDone
 func OONIEngineTaskIsDone(task C.OONITask) (out C.uint8_t) {
-	tp := cgo.Handle(task).Value().(motor.TaskAPI)
+	tp := getTaskHandle(task)
+	if tp == nil {
+		return
+	}
 	if !tp.IsDone() {
 		out++
 	}
@@ -99,16 +123,27 @@ func OONIEngineTaskIsDone(task C.OONITask) (out C.uint8_t) {
 
 //export OONIEngineInterruptTask
 func OONIEngineInterruptTask(task C.OONITask) {
-	tp := cgo.Handle(task).Value().(motor.TaskAPI)
+	tp := getTaskHandle(task)
+	if tp == nil {
+		return
+	}
 	tp.Interrupt()
 }
 
 //export OONIEngineFreeTask
 func OONIEngineFreeTask(task C.OONITask) {
 	handle := cgo.Handle(task)
-	tp := handle.Value().(motor.TaskAPI)
+	defer func() {
+		if r := recover(); r != nil {
+			handle.Delete()
+		}
+	}()
+	val := handle.Value() // this can panic if handle is invalid
+	tp, ok := val.(motor.TaskAPI)
+	if ok {
+		tp.Interrupt()
+	}
 	handle.Delete()
-	tp.Free()
 }
 
 func main() {

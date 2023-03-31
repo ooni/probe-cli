@@ -6,6 +6,7 @@ package motor
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 )
 
@@ -15,6 +16,8 @@ func init() {
 
 var (
 	errTestDisabled = errors.New("request argument for test disabled")
+
+	errParseFailed = errors.New("unable to parse task arguments")
 )
 
 // testOptions contains the request options for the Test task.
@@ -34,14 +37,19 @@ var _ taskRunner = &testTaskRunner{}
 
 // main implements taskRunner.main
 func (tr *testTaskRunner) main(ctx context.Context, emitter taskMaybeEmitter,
-	req *Request) (res *Response) {
+	req *Request, resp *Response) {
 	logger := newTaskLogger(emitter, false)
-	if !req.Test.Test {
+	args := &testOptions{}
+	if err := json.Unmarshal(req.Arguments, args); err != nil {
+		logger.Warn("task_runner: %s")
+		resp.Test.Error = errParseFailed.Error()
+		return
+	}
+	if !args.Test {
 		logger.Warnf("task_runner: %s", errTestDisabled.Error())
-		res.Test.Error = errTestDisabled.Error()
+		resp.Test.Error = errTestDisabled.Error()
 		return
 	}
 	logger.Info("task_runner: a log event for the Test task")
-	res.Test.Response = "test success"
-	return
+	resp.Test.Response = "test success"
 }

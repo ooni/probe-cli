@@ -4,7 +4,7 @@ package motor
 // Emitter
 //
 
-// taskEmitter implements taskMaybeEmitter.
+// taskChanEmitter implements taskMaybeEmitter.
 type taskChanEmitter struct {
 	// out is the channel where we emit events.
 	out chan *Response

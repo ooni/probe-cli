@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log"
-	"reflect"
 	"sync/atomic"
 	"time"
 )
@@ -13,20 +12,8 @@ var (
 	errInvalidRequest = errors.New("input request has no valid task name")
 )
 
-// ResolveTask resolves the task name to perform from the parsed request.
-func ResolveTask(req *Request) (string, error) {
-	r := reflect.ValueOf(req)
-	t := r.Type()
-	for i := 0; i < r.NumField(); i++ {
-		if !r.Field(i).IsNil() {
-			return t.Field(i).Name, nil
-		}
-	}
-	return "", errInvalidRequest
-}
-
 // startTask starts a given task.
-func StartTask(name string, req *Request) TaskAPI {
+func StartTask(req *Request) TaskAPI {
 	ctx, cancel := context.WithCancel(context.Background())
 	tp := &taskState{
 		cancel:  cancel,
@@ -35,7 +22,7 @@ func StartTask(name string, req *Request) TaskAPI {
 		result:  make(chan *Response, 1),
 		stopped: make(chan any),
 	}
-	go tp.main(ctx, name, req)
+	go tp.main(ctx, req)
 	return tp
 }
 
@@ -82,15 +69,8 @@ func (tp *taskState) WaitForNextEvent(timeout time.Duration) *Response {
 }
 
 // Result implements TaskAPI.Result
-func (tp *taskState) GetResult(timeout time.Duration) *Response {
-	ctx, cancel := contextForWaitForNextEvent(timeout)
-	defer cancel()
-	select {
-	case <-ctx.Done():
-		return nil // timeout while blocking for read
-	case ev := <-tp.result:
-		return ev // block for read till we receive a result
-	}
+func (tp *taskState) Result() *Response {
+	return <-tp.result
 }
 
 // contextForWaitForNextEvent returns the suitable context
@@ -113,26 +93,21 @@ func (tp *taskState) Interrupt() {
 	tp.cancel()
 }
 
-// Free implements TaskAPI.Free
-func (tp *taskState) Free() {
-	tp.Interrupt()
-	for !tp.IsDone() {
-		const blockForever = -1
-		_ = tp.WaitForNextEvent(blockForever)
-	}
-}
-
 // main is the main function of the task.
-func (tp *taskState) main(ctx context.Context, name string, req *Request) {
+func (tp *taskState) main(ctx context.Context, req *Request) {
 	defer close(tp.stopped) // synchronize with caller
-	runner := taskRegistry[name]
+	taskName := req.Name
+	resp := &Response{}
+	runner := taskRegistry[taskName]
 	if runner == nil {
-		log.Printf("OONITaskStart: unknown task name: %s", name)
+		log.Printf("OONITaskStart: unknown task name: %s", taskName)
+		resp.Error = errInvalidRequest.Error()
+		tp.result <- resp
 		return
 	}
 	emitter := &taskChanEmitter{
 		out: tp.events,
 	}
-	resp := runner.main(ctx, emitter, req)
+	runner.main(ctx, emitter, req, resp)
 	tp.result <- resp // emit response to result channel
 }

@@ -2,25 +2,21 @@ package motor
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 )
 
-// request is the OONI request containing task-specific arguments.
+// request is the OONI request containing task name and arguments.
 type Request struct {
-	NewSession    newSessionOptions    `json:",omitempty"`
-	Geolocate     geolocateOptions     `json:",omitempty"`
-	DeleteSession deleteSessionOptions `json:",omitempty"`
-	Test          testOptions          `json:",omitempty"`
+	Name      string          `json:",omitempty"`
+	Arguments json.RawMessage `json:",omitempty"`
 }
 
 // response is the OONI response to serialize before sending.
 type Response struct {
-	NewSession    newSessionResponse    `json:",omitempty"`
-	Geolocate     geolocateResponse     `json:",omitempty"`
-	Logger        logResponse           `json:",omitempty"`
-	DeleteSession deleteSessionResponse `json:",omitempty"`
-	Test          testResponse          `json:",omitempty"`
-	Error         string                `json:",omitempty"`
+	Logger LogResponse  `json:",omitempty"`
+	Test   testResponse `json:",omitempty"`
+	Error  string       `json:",omitempty"`
 }
 
 // taskEventsBuffer is the buffer used for the task's event chan, which
@@ -50,7 +46,7 @@ type taskRunner interface {
 	// - emitter is the emitter to emit events;
 	//
 	// - req is the parsed request containing task specific arguments.
-	main(ctx context.Context, emitter taskMaybeEmitter, req *Request) *Response
+	main(ctx context.Context, emitter taskMaybeEmitter, req *Request, resp *Response)
 }
 
 // taskAPI implements the OONI engine C API functions. We use this interface
@@ -60,16 +56,13 @@ type TaskAPI interface {
 	WaitForNextEvent(timeout time.Duration) *Response
 
 	// GetResult implements OONITaskGetResult
-	GetResult(timeout time.Duration) *Response
+	Result() *Response
 
 	// isDone implements OONITaskIsDone.
 	IsDone() bool
 
 	// interrupt implements OONITaskInterrupt.
 	Interrupt()
-
-	// free implements OONITaskFree
-	Free()
 }
 
 // taskRegistry maps each task name to its implementation.
