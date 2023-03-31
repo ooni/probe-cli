@@ -95,12 +95,17 @@ func OONIEngineWaitForNextEvent(task C.OONITask, timeout C.int32_t) *C.char {
 	if tp == nil {
 		return nil
 	}
-	ev := tp.WaitForNextEvent(time.Duration(timeout) * time.Millisecond)
+	var ev *motor.Response
+	if timeout <= 0 {
+		ev = tp.WaitForNextEvent(time.Duration(timeout))
+	} else {
+		ev = tp.WaitForNextEvent(time.Duration(timeout) * time.Millisecond)
+	}
 	return serialize(ev)
 }
 
 //export OONIEngineTaskGetResult
-func OONIEngineTaskGetResult(task C.OONITask, timeout C.int32_t) *C.char {
+func OONIEngineTaskGetResult(task C.OONITask) *C.char {
 	tp := getTaskHandle(task)
 	if tp == nil {
 		return nil

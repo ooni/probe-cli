@@ -88,7 +88,7 @@ char *OONIEngineWaitForNextEvent(OONITask task, int32_t timeout);
 ///
 /// In short, you cannot reliably determine whether a task is done by
 /// checking whether this function has returned an empty string.
-char *OONIEngineTaskGetResult(OONITask task, int32_t timeout);
+char *OONIEngineTaskGetResult(OONITask task);
 
 /// OONIEngineTaskIsDone returns whether @p task is done. A task is
 /// done when it has finished running _and_ its events queue has been drained.
