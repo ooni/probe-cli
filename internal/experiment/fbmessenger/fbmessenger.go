@@ -43,6 +43,11 @@ const (
 	testVersion = "0.2.0"
 )
 
+var Services = []string{
+	ServiceSTUN, ServiceBAPI, ServiceBGraph, ServiceEdge, ServiceExternalCDN,
+	ServiceScontentCDN, ServiceStar,
+}
+
 // Config contains the experiment config.
 type Config struct{}
 
@@ -165,12 +170,8 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	defer cancel()
 	urlgetter.RegisterExtensions(measurement)
 	// generate targets
-	services := []string{
-		ServiceSTUN, ServiceBAPI, ServiceBGraph, ServiceEdge, ServiceExternalCDN,
-		ServiceScontentCDN, ServiceStar,
-	}
 	var inputs []urlgetter.MultiInput
-	for _, service := range services {
+	for _, service := range Services {
 		inputs = append(inputs, urlgetter.MultiInput{Target: service})
 	}
 	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))

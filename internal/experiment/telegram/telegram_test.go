@@ -278,8 +278,8 @@ type Environment struct {
 	// dpi refers to the [netem.DPIEngine] we're using
 	dpi *netem.DPIEngine
 
-	// httpsServer is the HTTPS server.
-	httpsServers []*http.Server
+	// httpsServers are the HTTP servers.
+	httpServers []*http.Server
 
 	// topology is the topology we're using
 	topology *netem.StarTopology
@@ -341,7 +341,7 @@ func NewEnvironment(dnsConfig *netem.DNSConfig) *Environment {
 			w.Write([]byte(`hello, world`))
 		}),
 	}
-	e.httpsServers = append(e.httpsServers, webServer)
+	e.httpServers = append(e.httpServers, webServer)
 	// run Telegram Web server
 	go webServer.ServeTLS(webListener, "", "")
 
@@ -364,7 +364,7 @@ func NewEnvironment(dnsConfig *netem.DNSConfig) *Environment {
 					w.Write([]byte(`hello, world`))
 				}),
 			}
-			e.httpsServers = append(e.httpsServers, httpServer)
+			e.httpServers = append(e.httpServers, httpServer)
 			// run TCP server
 			go httpServer.Serve(tcpListener)
 		}
@@ -405,7 +405,7 @@ func (e *Environment) Do(function func()) {
 // Close closes all the resources used by [Environment].
 func (e *Environment) Close() error {
 	e.dnsServer.Close()
-	for _, s := range e.httpsServers {
+	for _, s := range e.httpServers {
 		s.Close()
 	}
 	e.topology.Close()
@@ -526,6 +526,9 @@ func TestMeasurerRun(t *testing.T) {
 	})
 
 	t.Run("Test Measurer with DPI that drops TCP traffic towards telegram endpoint: expect Telegram(HTTP|TCP)Blocking", func(t *testing.T) {
+		if testing.Short() {
+			t.Skip("skip test in short mode")
+		}
 		// overwrite global Datacenters, otherwise the test times out because there are too many endpoints
 		orig := telegram.Datacenters
 		telegram.Datacenters = []string{
