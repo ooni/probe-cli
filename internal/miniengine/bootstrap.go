@@ -10,6 +10,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/optional"
 	"github.com/ooni/probe-cli/v3/internal/platform"
 	"github.com/ooni/probe-cli/v3/internal/probeservices"
 	"golang.org/x/net/context"
@@ -110,7 +111,7 @@ func (s *Session) bootstrapSyncLocked(ctx context.Context, config *BootstrapConf
 	}
 
 	// MUTATE s to store the state
-	s.state = some(ess)
+	s.state = optional.Some(ess)
 	return nil
 }
 

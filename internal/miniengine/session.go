@@ -12,6 +12,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/optional"
 	"github.com/ooni/probe-cli/v3/internal/probeservices"
 )
 
@@ -104,7 +105,7 @@ type Session struct {
 	stateDir string
 
 	// state contains the optional state.
-	state optional[*engineSessionState]
+	state optional.Value[*engineSessionState]
 
 	// tempDir is the temporary directory root.
 	tempDir string
@@ -156,7 +157,7 @@ func NewSession(config *SessionConfig) (*Session, error) {
 		softwareName:    config.SoftwareName,
 		softwareVersion: config.SoftwareVersion,
 		stateDir:        config.StateDir,
-		state:           none[*engineSessionState](),
+		state:           optional.None[*engineSessionState](),
 		tempDir:         config.TempDir,
 		tunnelDir:       config.TunnelDir,
 	}
@@ -214,7 +215,7 @@ func (s *Session) Close() (err error) {
 		state := s.state.Unwrap()
 
 		// replace with empty state
-		s.state = none[*engineSessionState]()
+		s.state = optional.None[*engineSessionState]()
 
 		// close the underlying session
 		err = state.sess.Close()
