@@ -12,7 +12,6 @@ import "C"
 import (
 	"encoding/json"
 	"log"
-	"runtime/cgo"
 	"time"
 	"unsafe"
 
@@ -47,23 +46,6 @@ func serialize(resp *motor.Response) *C.char {
 	return C.CString(string(out))
 }
 
-// getTaskHandle checks if the task handle is valid and returns the corresponding TaskAPI.
-func getTaskHandle(task C.OONITask) (tp motor.TaskAPI) {
-	handle := cgo.Handle(task)
-	defer func() {
-		if r := recover(); r != nil {
-			handle.Delete()
-			tp = nil // return a nil TaskAPI when handle.Value() panics
-		}
-	}()
-	val := handle.Value() // this can panic if handle is invalid
-	tp, ok := val.(motor.TaskAPI)
-	if !ok {
-		handle.Delete()
-	}
-	return
-}
-
 //export OONIEngineVersion
 func OONIEngineVersion() *C.char {
 	return C.CString(version.Version)
@@ -86,12 +68,17 @@ func OONIEngineCall(req *C.char) C.OONITask {
 		log.Printf("OONITaskStart: startTask returned NULL")
 		return invalidTaskHandle
 	}
-	return C.OONITask(cgo.NewHandle(tp))
+	handle, err := handler.newHandle(tp)
+	if err != nil {
+		log.Printf("OONITaskStart: %s", err.Error())
+		return invalidTaskHandle
+	}
+	return C.OONITask(handle)
 }
 
 //export OONIEngineWaitForNextEvent
 func OONIEngineWaitForNextEvent(task C.OONITask, timeout C.int32_t) *C.char {
-	tp := getTaskHandle(task)
+	tp := handler.getTaskHandle(task)
 	if tp == nil {
 		return nil
 	}
@@ -106,7 +93,7 @@ func OONIEngineWaitForNextEvent(task C.OONITask, timeout C.int32_t) *C.char {
 
 //export OONIEngineTaskGetResult
 func OONIEngineTaskGetResult(task C.OONITask) *C.char {
-	tp := getTaskHandle(task)
+	tp := handler.getTaskHandle(task)
 	if tp == nil {
 		return nil
 	}
@@ -116,7 +103,7 @@ func OONIEngineTaskGetResult(task C.OONITask) *C.char {
 
 //export OONIEngineTaskIsDone
 func OONIEngineTaskIsDone(task C.OONITask) (out C.uint8_t) {
-	tp := getTaskHandle(task)
+	tp := handler.getTaskHandle(task)
 	if tp == nil {
 		return
 	}
@@ -128,7 +115,7 @@ func OONIEngineTaskIsDone(task C.OONITask) (out C.uint8_t) {
 
 //export OONIEngineInterruptTask
 func OONIEngineInterruptTask(task C.OONITask) {
-	tp := getTaskHandle(task)
+	tp := handler.getTaskHandle(task)
 	if tp == nil {
 		return
 	}
@@ -137,18 +124,11 @@ func OONIEngineInterruptTask(task C.OONITask) {
 
 //export OONIEngineFreeTask
 func OONIEngineFreeTask(task C.OONITask) {
-	handle := cgo.Handle(task)
-	defer func() {
-		if r := recover(); r != nil {
-			handle.Delete()
-		}
-	}()
-	val := handle.Value() // this can panic if handle is invalid
-	tp, ok := val.(motor.TaskAPI)
-	if ok {
+	tp := handler.getTaskHandle(task)
+	if tp != nil {
 		tp.Interrupt()
 	}
-	handle.Delete()
+	handler.delete(Handle(task))
 }
 
 func main() {

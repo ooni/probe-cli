@@ -13,7 +13,7 @@
 /// engine that performs a background operation and emits interim outpus 
 /// like logs and progress and results of the operation with meaningful
 /// events such as, for example, the results of measurements.
-typedef uintptr_t OONITask;
+typedef intptr_t OONITask;
 
 #ifdef __cplusplus
 extern "C" {
