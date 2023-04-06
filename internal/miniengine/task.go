@@ -26,6 +26,11 @@ type Task[Result any] struct {
 	result Result
 }
 
+// TODO(bassosimone):
+//
+// 1. we need a way to cancel/interrupt a running Task, which would
+// simplify the C API implementation a bit.
+
 // TaskRunner runs the main function that produces a [Task] result.
 type TaskRunner[Result any] interface {
 	// Main is the [Task] main function.
