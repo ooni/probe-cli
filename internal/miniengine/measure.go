@@ -1,7 +1,7 @@
 package miniengine
 
 //
-// Code to run measurements
+// The "measure" task
 //
 
 import (

@@ -1,7 +1,7 @@
 package miniengine
 
 //
-// Code to bootstrap a measurement session
+// The "bootstrap" task
 //
 
 import (
@@ -65,6 +65,13 @@ type BootstrapConfig struct {
 	// specify this argument when running on a mobile device.
 	TorBinary string `json:"tor_binary"`
 }
+
+// TODO(bassosimone): rather than having calls that return the geolocation and
+// the result of the check-in, we should modify Bootstrap to return something
+// like a Task[BootstrapResult] that contains both. The Bootstrap will still be
+// idempotent and short circuit already existing results if they are available.
+//
+// By doing that, we would simplify the corresponding C API.
 
 // Bootstrap ensures that we bootstrap the [Session]. This function
 // is safe to call multiple times. We'll only bootstrap on the first

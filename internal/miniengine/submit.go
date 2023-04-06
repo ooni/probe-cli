@@ -1,7 +1,7 @@
 package miniengine
 
 //
-// Code to submit a measurement to the OONI backend
+// The "submit" task
 //
 
 import (

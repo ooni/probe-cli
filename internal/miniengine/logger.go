@@ -10,7 +10,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// loggerEmitter is a [model.Logger] using an [eventEmitter].
+// loggerEmitter is a [model.Logger] and emits events using the given channel.
 type loggerEmitter struct {
 	// emitter is the channel where to emit events.
 	emitter chan<- *Event
@@ -71,6 +71,7 @@ func (cl *loggerEmitter) emit(level string, message string) {
 		Message:   message,
 		Progress:  0,
 	}
+	// Implementation note: it's fine to lose interim events
 	select {
 	case cl.emitter <- event:
 	default:
