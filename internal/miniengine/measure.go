@@ -12,10 +12,10 @@ import (
 // MeasurementResult contains the results of [Session.Measure]
 type MeasurementResult struct {
 	// KibiBytesReceived contains the KiB we received
-	KibiBytesReceived float64
+	KibiBytesReceived float64 `json:"kibi_bytes_received"`
 
 	// KibiBytesSent contains the KiB we sent
-	KibiBytesSent float64
+	KibiBytesSent float64 `json:"kibi_bytes_sent"`
 
 	// Measurement is the generated [model.Measurement]
 	Measurement *model.Measurement `json:"measurement"`

@@ -4,7 +4,10 @@ package miniengine
 // Task
 //
 
-import "golang.org/x/net/context"
+import (
+	"github.com/ooni/probe-cli/v3/internal/model"
+	"golang.org/x/net/context"
+)
 
 // Task is a long running operation that emits [Event] while it is running and
 // produces a given Result. The zero value of this struct is invalid; you cannot
@@ -45,4 +48,44 @@ func (t *Task[Result]) Events() <-chan *Event {
 func (t *Task[Result]) Result() (Result, error) {
 	<-t.done // synchronize with TaskRunner.Main
 	return t.result, t.failure
+}
+
+// Await waits for the task to complete and properly emits log messages
+// using the given logger and the given callbacks for progress.
+func (t *Task[Result]) Await(
+	ctx context.Context,
+	logger model.Logger,
+	callbacks model.ExperimentCallbacks,
+) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.Done():
+			for {
+				select {
+				case ev := <-t.Events():
+					t.emit(logger, callbacks, ev)
+				default:
+					return
+				}
+			}
+		case ev := <-t.Events():
+			t.emit(logger, callbacks, ev)
+		}
+	}
+}
+
+// emit is the helper function for emitting events called by Await.
+func (t *Task[Result]) emit(logger model.Logger, callbacks model.ExperimentCallbacks, ev *Event) {
+	switch ev.EventType {
+	case EventTypeProgress:
+		callbacks.OnProgress(ev.Progress, ev.Message)
+	case EventTypeDebug:
+		logger.Debug(ev.Message)
+	case EventTypeWarning:
+		logger.Warn(ev.Message)
+	default:
+		logger.Info(ev.Message)
+	}
 }
