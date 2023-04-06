@@ -31,12 +31,6 @@ type Task[Result any] struct {
 // 1. we need a way to cancel/interrupt a running Task, which would
 // simplify the C API implementation a bit.
 
-// TaskRunner runs the main function that produces a [Task] result.
-type TaskRunner[Result any] interface {
-	// Main is the [Task] main function.
-	Main(ctx context.Context) (Result, error)
-}
-
 // Done returns a channel closed when the [Task] is done.
 func (t *Task[Result]) Done() <-chan any {
 	return t.done
