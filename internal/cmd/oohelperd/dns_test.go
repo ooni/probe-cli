@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"errors"
+	"io"
 	"sync"
 	"testing"
 
@@ -11,10 +13,14 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
+// stringPointerForString is an helper function to map a string
+// to a pointer to the same string.
 func stringPointerForString(s string) *string {
 	return &s
 }
 
+// Test_dnsMapFailure ensures that we are mapping OONI failure
+// strings to the strings the legacy TH would have returned.
 func Test_dnsMapFailure(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -63,31 +69,134 @@ func Test_dnsMapFailure(t *testing.T) {
 	}
 }
 
+// TestDNSDo contains unit tests for [dnsDo].
 func TestDNSDo(t *testing.T) {
-	t.Run("returns non-nil addresses list on nxdomin", func(t *testing.T) {
-		ctx := context.Background()
-		config := &dnsConfig{
-			Domain: "www.ooni.nonexistent",
-			Logger: model.DiscardLogger,
-			NewResolver: func(model.Logger) model.Resolver {
-				return &mocks.Resolver{
-					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-						return nil, netxlite.ErrOODNSNoSuchHost
-					},
-					MockCloseIdleConnections: func() {
-						// nothing
-					},
-				}
-			},
-			Out: make(chan model.THDNSResult, 1),
-			Wg:  &sync.WaitGroup{},
-		}
-		config.Wg.Add(1)
-		dnsDo(ctx, config)
-		config.Wg.Wait()
-		resp := <-config.Out
-		if resp.Addrs == nil || len(resp.Addrs) != 0 {
-			t.Fatal("returned nil Addrs or Addrs containing replies")
-		}
-	})
+
+	type testcase struct {
+		// name is the name of the test case
+		name string
+
+		// inputDomain is the domain to resolve
+		inputDomain string
+
+		// inputNewResolver is the factory to create a new resolver.
+		inputNewResolver func(model.Logger) model.Resolver
+
+		// expectFailure is the expected failure
+		expectFailure *string
+
+		// expectAddrs contains the addrs we expecy to see
+		expectAddrs []string
+	}
+
+	var testcases = []testcase{{
+		name:        "returns non-nil, empty addresses list on NXDOMAIN",
+		inputDomain: "www.ooni.nonexistent",
+		inputNewResolver: func(model.Logger) model.Resolver {
+			return &mocks.Resolver{
+				MockLookupHost: func(ctx context.Context, hostname string) ([]string, error) {
+					return nil, errors.New(netxlite.DNSNoSuchHostSuffix)
+				},
+				MockCloseIdleConnections: func() {
+					// nothing
+				},
+			}
+		},
+		expectFailure: stringPointerForString(model.THDNSNameError),
+		expectAddrs:   []string{},
+	}, {
+		name:        "returns the expected result in case of successful lookup",
+		inputDomain: "www.ooni.org",
+		inputNewResolver: func(model.Logger) model.Resolver {
+			return &mocks.Resolver{
+				MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+					return []string{"8.8.8.8", "8.8.4.4"}, nil
+				},
+				MockCloseIdleConnections: func() {
+					// nothing
+				},
+			}
+		},
+		expectFailure: nil,
+		expectAddrs:   []string{"8.8.8.8", "8.8.4.4"},
+	}, {
+		name:        "when there is no answer",
+		inputDomain: "www.ooni.org",
+		inputNewResolver: func(model.Logger) model.Resolver {
+			return &mocks.Resolver{
+				MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+					return nil, errors.New(netxlite.DNSNoAnswerSuffix)
+				},
+				MockCloseIdleConnections: func() {
+					// nothing
+				},
+			}
+		},
+		expectFailure: nil,
+		expectAddrs:   []string{},
+	}, {
+		name:        "when the server is misbehaving",
+		inputDomain: "www.ooni.org",
+		inputNewResolver: func(model.Logger) model.Resolver {
+			return &mocks.Resolver{
+				MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+					return nil, errors.New(netxlite.DNSServerMisbehavingSuffix)
+				},
+				MockCloseIdleConnections: func() {
+					// nothing
+				},
+			}
+		},
+		expectFailure: stringPointerForString("dns_server_failure"),
+		expectAddrs:   []string{},
+	}, {
+		name:        "for any other error",
+		inputDomain: "www.ooni.org",
+		inputNewResolver: func(model.Logger) model.Resolver {
+			return &mocks.Resolver{
+				MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+					return nil, io.EOF
+				},
+				MockCloseIdleConnections: func() {
+					// nothing
+				},
+			}
+		},
+		expectFailure: stringPointerForString("unknown_error"),
+		expectAddrs:   []string{},
+	}}
+
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+
+			// prepare configuration for testing
+			config := &dnsConfig{
+				Domain:      tt.inputDomain,
+				Logger:      model.DiscardLogger,
+				NewResolver: tt.inputNewResolver,
+				Out:         make(chan model.THDNSResult, 1),
+				Wg:          &sync.WaitGroup{},
+			}
+
+			// run the micro-measurement in the background, wait for it
+			// to complete, and obtain the results.
+			config.Wg.Add(1)
+			dnsDo(ctx, config)
+			config.Wg.Wait()
+			resp := <-config.Out
+
+			// compare the results with the expectations.
+			if diff := cmp.Diff(tt.expectFailure, resp.Failure); diff != "" {
+				t.Fatal(diff)
+			}
+			if diff := cmp.Diff(tt.expectAddrs, resp.Addrs); diff != "" {
+				t.Fatal(diff)
+			}
+			expectASNs := []int64{} // should be unused!
+			if diff := cmp.Diff(expectASNs, resp.ASNs); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+	}
 }

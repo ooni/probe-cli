@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/measurex"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -136,7 +135,7 @@ func webConnectivity(ctx context.Context, URL string) (*measurement, error) {
 			config := &tls.Config{
 				ServerName: parsedURL.Hostname(),
 				NextProtos: []string{"h2", "http/1.1"},
-				RootCAs:    netxlite.NewDefaultCertPool(),
+				RootCAs:    nil, // use netxlite's default
 			}
 			tls := mx.TLSConnectAndHandshake(ctx, epnt.Address, config)
 			m.TCPConnect = append(

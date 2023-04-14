@@ -98,14 +98,18 @@ func TLSCipherSuiteString(value uint16) string {
 
 // NewDefaultCertPool returns the default x509 certificate pool
 // that we bundle from Mozilla. It's safe to modify the returned
-// value: every invocation returns a distinct *x509.CertPool instance.
+// value: every invocation returns a distinct *x509.CertPool
+// instance. You SHOULD NOT call this function every time your
+// experiment is processing input. If you are happy with the
+// default cert pool, just leave the RootCAs field nil. Otherwise,
+// you should cache the cert pool you use.
 func NewDefaultCertPool() *x509.CertPool {
 	pool := x509.NewCertPool()
 	// Assumption: AppendCertsFromPEM cannot fail because we
 	// have a test in certify_test.go that guarantees that
 	ok := pool.AppendCertsFromPEM([]byte(pemcerts))
 	runtimex.Assert(ok, "pool.AppendCertsFromPEM failed")
-	return tproxySingleton().MaybeModifyPool(pool)
+	return pool
 }
 
 // ErrInvalidTLSVersion indicates that you passed us a string
@@ -153,15 +157,18 @@ var _ TLSConn = &tls.Conn{}
 //
 // The handshaker guarantees:
 //
-// 1. logging
+// 1. logging;
 //
-// 2. error wrapping
+// 2. error wrapping;
+//
+// 3. that we are going to use Mozilla CA if the [tls.Config]
+// RootCAs field is zero initialized.
 func NewTLSHandshakerStdlib(logger model.DebugLogger) model.TLSHandshaker {
-	return newTLSHandshaker(&tlsHandshakerConfigurable{}, logger)
+	return newTLSHandshakerLogger(&tlsHandshakerConfigurable{}, logger)
 }
 
-// newTLSHandshaker is the common factory for creating a new TLSHandshaker
-func newTLSHandshaker(th model.TLSHandshaker, logger model.DebugLogger) model.TLSHandshaker {
+// newTLSHandshakerLogger creates a new tlsHandshakerLogger instance.
+func newTLSHandshakerLogger(th model.TLSHandshaker, logger model.DebugLogger) model.TLSHandshaker {
 	return &tlsHandshakerLogger{
 		TLSHandshaker: th,
 		DebugLogger:   logger,
@@ -209,7 +216,8 @@ func (h *tlsHandshakerConfigurable) Handshake(
 	conn.SetDeadline(time.Now().Add(timeout))
 	if config.RootCAs == nil {
 		config = config.Clone()
-		config.RootCAs = NewDefaultCertPool()
+		// See https://github.com/ooni/probe/issues/2413 for context
+		config.RootCAs = tproxySingleton().DefaultCertPool()
 	}
 	tlsconn, err := h.newConn(conn, config)
 	if err != nil {

@@ -49,6 +49,11 @@ func TestWithCustomTProxy(t *testing.T) {
 		// TODO(bassosimone): we need a more compact and ergonomic
 		// way of overriding the underlying network
 		tproxy := &mocks.UnderlyingNetwork{
+			MockDefaultCertPool: func() *x509.CertPool {
+				pool := x509.NewCertPool()
+				pool.AddCert(srvr.Certificate())
+				return pool
+			},
 			MockDialContext: func(ctx context.Context, timeout time.Duration, network string, address string) (net.Conn, error) {
 				return (&DefaultTProxy{}).DialContext(ctx, timeout, network, address)
 			},
@@ -60,11 +65,6 @@ func TestWithCustomTProxy(t *testing.T) {
 			},
 			MockGetaddrinfoResolverNetwork: func() string {
 				return (&DefaultTProxy{}).GetaddrinfoResolverNetwork()
-			},
-			MockMaybeModifyPool: func(*x509.CertPool) *x509.CertPool {
-				pool := x509.NewCertPool()
-				pool.AddCert(srvr.Certificate())
-				return pool
 			},
 		}
 

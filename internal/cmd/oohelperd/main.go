@@ -4,33 +4,60 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"net"
 	"net/http"
+	"net/http/pprof"
+	"os"
+	"os/signal"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/version"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-const maxAcceptableBody = 1 << 24
+// maxAcceptableBodySize is the maximum acceptable body size for incoming
+// API requests as well as when we're measuring webpages.
+const maxAcceptableBodySize = 1 << 24
 
 var (
-	endpoint  = flag.String("endpoint", "127.0.0.1:8080", "API endpoint")
-	srvAddr   = make(chan string, 1) // with buffer
-	srvCancel context.CancelFunc
-	srvCtx    context.Context
-	srvWg     = new(sync.WaitGroup)
+	// apiEndpoint is the endpoint where we serve ooniprobe requests
+	apiEndpoint = flag.String("api-endpoint", "127.0.0.1:8080", "API endpoint")
+
+	// debug controls whether to enable verbose logging
+	debug = flag.Bool("debug", false, "Toggle debug mode")
+
+	// pprofEndpoint is the endpoint where we serve pprof info.
+	pprofEndpoint = flag.String("pprof-endpoint", "127.0.0.1:6061", "Pprof endpoint")
+
+	// prometheusEndpoint is the endpoint where we serve prometheus metrics
+	prometheusEndpoint = flag.String("prometheus-endpoint", "127.0.0.1:9091", "Prometheus endpoint")
+
+	// replace runs the commands to replace a running oohelperd.
+	replace = flag.Bool("replace", false, "Replaces a running oohelperd instance")
+
+	// sigs is the channel where we collect signals
+	sigs = make(chan os.Signal, 1)
+
+	// srvAdd is used to pass the server address to tests
+	srvAddr = make(chan string, 1)
+
+	// srvWg is used by tests to know when the server has shut down
+	srvWg = new(sync.WaitGroup)
+
+	// versionFlag indicates we must print the version on stdout
+	versionFlag = flag.Bool("version", false, "Prints version information on the stdout")
 )
 
-func init() {
-	srvCtx, srvCancel = context.WithCancel(context.Background())
-}
-
+// newResolver creates a new [model.Resolver] suitable for serving
+// requests coming from ooniprobe clients.
 func newResolver(logger model.Logger) model.Resolver {
 	// Implementation note: pin to a specific resolver so we don't depend upon the
 	// default resolver configured by the box. Also, use an encrypted transport thus
@@ -39,27 +66,26 @@ func newResolver(logger model.Logger) model.Resolver {
 	return resolver
 }
 
-func shutdown(srv *http.Server) {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+// shutdown calls srv.Shutdown with a reasonably long timeout. The srv.Shutdown
+// function will immediately close any open listener and then will wait until
+// all pending connections are closed or the context has expired. By giving pending
+// connections a long timeout to complete, we make sure we can serve many of them
+// while still eventually shutting down the server. This function will decrement
+// the given wait group counter when it is done running.
+func shutdown(srv *http.Server, wg *sync.WaitGroup) {
+	defer wg.Done()
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
 	srv.Shutdown(ctx)
 }
 
-func main() {
-	logmap := map[bool]log.Level{
-		true:  log.DebugLevel,
-		false: log.InfoLevel,
-	}
-	prometheus := flag.String("prometheus", "127.0.0.1:9091", "Prometheus endpoint")
-	debug := flag.Bool("debug", false, "Toggle debug mode")
-	flag.Parse()
-	log.SetLevel(logmap[*debug])
-	defer srvCancel()
-	mux := http.NewServeMux()
-	mux.Handle("/", &handler{
+// newHandler constructs the [handler] used by [main].
+func newHandler() *handler {
+	return &handler{
 		BaseLogger:        log.Log,
 		Indexer:           &atomic.Int64{},
-		MaxAcceptableBody: maxAcceptableBody,
+		MaxAcceptableBody: maxAcceptableBodySize,
+		Measure:           measure,
 		NewHTTPClient: func(logger model.Logger) model.HTTPClient {
 			// If the DoH resolver we're using insists that a given domain maps to
 			// bogons, make sure we're going to fail the HTTP measurement.
@@ -101,20 +127,86 @@ func main() {
 		NewTLSHandshaker: func(logger model.Logger) model.TLSHandshaker {
 			return netxlite.NewTLSHandshakerStdlib(logger)
 		},
-	})
-	srv := &http.Server{Addr: *endpoint, Handler: mux}
-	listener, err := net.Listen("tcp", *endpoint)
+	}
+}
+
+func main() {
+	// parse command line options
+	flag.Parse()
+
+	// set log level
+	logmap := map[bool]log.Level{
+		true:  log.DebugLevel,
+		false: log.InfoLevel,
+	}
+	log.SetLevel(logmap[*debug])
+
+	if *replace {
+		replaceRunningInstance(newReplaceDeps())
+		return
+	}
+	if *versionFlag {
+		fmt.Printf("oohelperd/%s %s dirty=%v commit=%s\n",
+			version.Version,
+			runtimex.BuildInfo.GoVersion,
+			runtimex.BuildInfo.VcsModified,
+			runtimex.BuildInfo.VcsRevision,
+		)
+		return
+	}
+
+	// create the HTTP server mux
+	mux := http.NewServeMux()
+
+	// add the main oohelperd handler to the mux
+	mux.Handle("/", newHandler())
+
+	// create a listening server for serving ooniprobe requests
+	srv := &http.Server{Addr: *apiEndpoint, Handler: mux}
+	listener, err := net.Listen("tcp", *apiEndpoint)
 	runtimex.PanicOnError(err, "net.Listen failed")
+
+	// await for the server's address to become available
 	srvAddr <- listener.Addr().String()
 	srvWg.Add(1)
+
+	// start listening in the background
 	go srv.Serve(listener)
+	log.Infof("serving ooniprobe requests at http://%s/", listener.Addr().String())
+
+	// create another server for serving prometheus metrics
 	promMux := http.NewServeMux()
 	promMux.Handle("/metrics", promhttp.Handler())
-	promSrv := &http.Server{Addr: *prometheus, Handler: promMux}
+	promSrv := &http.Server{Addr: *prometheusEndpoint, Handler: promMux}
 	go promSrv.ListenAndServe()
-	<-srvCtx.Done()
-	shutdown(srv)
-	shutdown(promSrv)
-	listener.Close()
+	log.Infof("serving prometheus metrics at http://%s/", *prometheusEndpoint)
+
+	// create another server for serving pprof metrics
+	pprofMux := http.NewServeMux()
+	pprofMux.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+	pprofMux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+	pprofSrv := &http.Server{Addr: *pprofEndpoint, Handler: pprofMux}
+	go pprofSrv.ListenAndServe()
+	log.Infof("serving CPU profile at http://%s/debug/pprof/profile", *pprofEndpoint)
+	log.Infof("serving execution traces at http://%s/debug/pprof/trace", *pprofEndpoint)
+
+	// await for the main context to be canceled or for a signal
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	sig := <-sigs
+	log.Infof("interrupted by signal: %v", sig)
+
+	// shutdown the servers awaiting for connections being
+	// served to terminate before exiting gracefully.
+	log.Infof("waiting for pending requests to complete")
+	shutdownWg := &sync.WaitGroup{}
+	shutdownWg.Add(1)
+	go shutdown(srv, shutdownWg)
+	shutdownWg.Add(1)
+	go shutdown(promSrv, shutdownWg)
+	shutdownWg.Add(1)
+	go shutdown(pprofSrv, shutdownWg)
+	shutdownWg.Wait()
+
+	// notify tests that we are now done
 	srvWg.Done()
 }

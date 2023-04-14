@@ -20,7 +20,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	if measurer.ExperimentName() != "http_invalid_request_line" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.2.0" {
+	if measurer.ExperimentVersion() != "0.2.1" {
 		t.Fatal("unexpected version")
 	}
 }
@@ -32,7 +32,7 @@ func TestSuccess(t *testing.T) {
 	measurer := hirl.NewExperimentMeasurer(hirl.Config{})
 	ctx := context.Background()
 	sess := &mockable.Session{
-		MockableLogger: log.Log,
+		MockableLogger: model.DiscardLogger,
 		MockableTestHelpers: map[string][]model.OOAPIService{
 			"tcp-echo": {{
 				Address: "37.218.241.93",
@@ -86,7 +86,7 @@ func TestCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	sess := &mockable.Session{
-		MockableLogger: log.Log,
+		MockableLogger: model.DiscardLogger,
 		MockableTestHelpers: map[string][]model.OOAPIService{
 			"tcp-echo": {{
 				Address: "37.218.241.93",
@@ -197,6 +197,7 @@ func TestWithFakeMethods(t *testing.T) {
 				Type:    "legacy",
 			}},
 		},
+		MockableLogger: model.DiscardLogger,
 	}
 	measurement := new(model.Measurement)
 	callbacks := model.NewPrinterCallbacks(log.Log)
@@ -263,6 +264,7 @@ func TestWithNoMethods(t *testing.T) {
 				Type:    "legacy",
 			}},
 		},
+		MockableLogger: model.DiscardLogger,
 	}
 	measurement := new(model.Measurement)
 	callbacks := model.NewPrinterCallbacks(log.Log)
@@ -296,7 +298,9 @@ func TestWithNoMethods(t *testing.T) {
 func TestNoHelpers(t *testing.T) {
 	measurer := hirl.NewExperimentMeasurer(hirl.Config{})
 	ctx := context.Background()
-	sess := &mockable.Session{}
+	sess := &mockable.Session{
+		MockableLogger: model.DiscardLogger,
+	}
 	measurement := new(model.Measurement)
 	callbacks := model.NewPrinterCallbacks(log.Log)
 	args := &model.ExperimentArgs{
@@ -333,6 +337,7 @@ func TestNoActualHelperInList(t *testing.T) {
 		MockableTestHelpers: map[string][]model.OOAPIService{
 			"tcp-echo": nil,
 		},
+		MockableLogger: model.DiscardLogger,
 	}
 	measurement := new(model.Measurement)
 	callbacks := model.NewPrinterCallbacks(log.Log)
@@ -373,6 +378,7 @@ func TestWrongTestHelperType(t *testing.T) {
 				Type:    "antani",
 			}},
 		},
+		MockableLogger: model.DiscardLogger,
 	}
 	measurement := new(model.Measurement)
 	callbacks := model.NewPrinterCallbacks(log.Log)
@@ -405,13 +411,13 @@ func TestWrongTestHelperType(t *testing.T) {
 
 func TestRunMethodDialFailure(t *testing.T) {
 	sess := &mockable.Session{
-		MockableLogger: log.Log,
 		MockableTestHelpers: map[string][]model.OOAPIService{
 			"tcp-echo": {{
 				Address: "37.218.241.93",
 				Type:    "legacy",
 			}},
 		},
+		MockableLogger: model.DiscardLogger,
 	}
 	helpers, ok := sess.GetTestHelpersByName("tcp-echo")
 	if len(helpers) < 1 || !ok {
@@ -452,7 +458,7 @@ func TestRunMethodDialFailure(t *testing.T) {
 
 func TestRunMethodSetDeadlineFailure(t *testing.T) {
 	sess := &mockable.Session{
-		MockableLogger: log.Log,
+		MockableLogger: model.DiscardLogger,
 		MockableTestHelpers: map[string][]model.OOAPIService{
 			"tcp-echo": {{
 				Address: "37.218.241.93",
@@ -501,7 +507,7 @@ func TestRunMethodSetDeadlineFailure(t *testing.T) {
 
 func TestRunMethodWriteFailure(t *testing.T) {
 	sess := &mockable.Session{
-		MockableLogger: log.Log,
+		MockableLogger: model.DiscardLogger,
 		MockableTestHelpers: map[string][]model.OOAPIService{
 			"tcp-echo": {{
 				Address: "37.218.241.93",
@@ -550,7 +556,7 @@ func TestRunMethodWriteFailure(t *testing.T) {
 
 func TestRunMethodReadEOFWithWrongData(t *testing.T) {
 	sess := &mockable.Session{
-		MockableLogger: log.Log,
+		MockableLogger: model.DiscardLogger,
 		MockableTestHelpers: map[string][]model.OOAPIService{
 			"tcp-echo": {{
 				Address: "37.218.241.93",

@@ -448,6 +448,12 @@ func TestResolverWorkingAsIntendedWithMocks(t *testing.T) {
 		},
 		domainToResolve: "example.com",
 		tproxy: &mocks.UnderlyingNetwork{
+			MockDefaultCertPool: func() *x509.CertPool {
+				// See https://github.com/ooni/probe/issues/2413 to understand
+				// why we're using the default cert pool used by netxlite
+				// without creating a new one from scratch.
+				return (&netxlite.DefaultTProxy{}).DefaultCertPool()
+			},
 			MockDialContext: func(ctx context.Context, timeout time.Duration, network string, address string) (net.Conn, error) {
 				dialer := &net.Dialer{Timeout: timeout}
 				return dialer.DialContext(ctx, network, address)
@@ -460,9 +466,6 @@ func TestResolverWorkingAsIntendedWithMocks(t *testing.T) {
 			},
 			MockGetaddrinfoResolverNetwork: func() string {
 				return netxlite.StdlibResolverGetaddrinfo
-			},
-			MockMaybeModifyPool: func(pool *x509.CertPool) *x509.CertPool {
-				return pool
 			},
 		},
 		expectErr:   true,
@@ -477,6 +480,12 @@ func TestResolverWorkingAsIntendedWithMocks(t *testing.T) {
 		},
 		domainToResolve: "example.com",
 		tproxy: &mocks.UnderlyingNetwork{
+			MockDefaultCertPool: func() *x509.CertPool {
+				// See https://github.com/ooni/probe/issues/2413 to understand
+				// why we're using the default cert pool used by netxlite
+				// without creating a new one from scratch.
+				return (&netxlite.DefaultTProxy{}).DefaultCertPool()
+			},
 			MockDialContext: func(ctx context.Context, timeout time.Duration, network string, address string) (net.Conn, error) {
 				return nil, syscall.ECONNREFUSED
 			},
@@ -493,9 +502,6 @@ func TestResolverWorkingAsIntendedWithMocks(t *testing.T) {
 			},
 			MockGetaddrinfoResolverNetwork: func() string {
 				return netxlite.StdlibResolverGetaddrinfo
-			},
-			MockMaybeModifyPool: func(pool *x509.CertPool) *x509.CertPool {
-				return pool
 			},
 		},
 		expectErr:   false,

@@ -11,14 +11,8 @@ reporoot=$(dirname $(dirname $(dirname $(realpath $0))))
 #doc: List of repositories to track
 repositories=(
 	. # the dot is git@github.com:ooni/probe-cli and MUST be first
-	git@github.com:ooni/oocrypto
-	git@github.com:ooni/oohttp
 	git@github.com:ooni/probe-android
-	git@github.com:ooni/probe-assets
 	git@github.com:ooni/probe-desktop
-	git@github.com:ooni/probe-ios
-	git@github.com:ooni/probe-releases
-	git@github.com:ooni/spec
 )
 
 #doc:

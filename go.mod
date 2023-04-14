@@ -23,24 +23,26 @@ require (
 	github.com/iancoleman/strcase v0.2.0
 	github.com/lucas-clemente/quic-go v0.31.1
 	github.com/mattn/go-colorable v0.1.13
-	github.com/miekg/dns v1.1.50
+	github.com/miekg/dns v1.1.52
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.7.0
 	github.com/ooni/go-libtor v1.1.7
-	github.com/ooni/oocrypto v0.4.1
-	github.com/ooni/oohttp v0.5.1
-	github.com/ooni/probe-assets v0.14.0
+	github.com/ooni/netem v0.0.0-20230316075930-83d9720a67f9
+	github.com/ooni/oocrypto v0.4.2
+	github.com/ooni/oohttp v0.5.2
+	github.com/ooni/probe-assets v0.15.0
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/pion/stun v0.3.5
 	github.com/pkg/errors v0.9.1
 	github.com/rogpeppe/go-internal v1.9.0
 	github.com/rubenv/sql-migrate v1.3.0
+	github.com/schollz/progressbar/v3 v3.13.0
 	github.com/upper/db/v4 v4.6.0
 	gitlab.com/yawning/obfs4.git v0.0.0-20220904064028-336a71d6e4cf
 	gitlab.com/yawning/utls.git v0.0.12-1
-	golang.org/x/crypto v0.5.0
-	golang.org/x/net v0.5.0
-	golang.org/x/sys v0.4.0
+	golang.org/x/crypto v0.7.0
+	golang.org/x/net v0.8.0
+	golang.org/x/sys v0.6.0
 )
 
 require (
@@ -52,13 +54,21 @@ require (
 	github.com/Psiphon-Labs/tls-tris v0.0.0-20210713133851-676a693d51ad // indirect
 	github.com/andybalholm/brotli v1.0.5-0.20220518190645-786ec621f618 // indirect
 	github.com/golang/mock v1.6.0 // indirect
+	github.com/google/btree v1.1.2 // indirect
+	github.com/google/gopacket v1.1.19 // indirect
 	github.com/google/pprof v0.0.0-20230111200839-76d1ae5aea2b // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/klauspost/compress v1.15.14 // indirect
+	github.com/mattn/go-runewidth v0.0.14 // indirect
+	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/onsi/ginkgo/v2 v2.7.0 // indirect
+	github.com/pion/transport/v2 v2.0.0 // indirect
+	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/segmentio/fasthash v1.0.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/exp v0.0.0-20230118134722-a68e582fa157 // indirect
+	golang.org/x/time v0.3.0 // indirect
+	gvisor.dev/gvisor v0.0.0-20221203005347-703fd9b7fbc0 // indirect
 )
 
 require (
@@ -91,12 +101,12 @@ require (
 	github.com/marten-seemann/qtls-go1-18 v0.1.4 // indirect
 	github.com/marten-seemann/qtls-go1-19 v0.1.2 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
-	github.com/mattn/go-sqlite3 v1.14.16 // indirect
+	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/oschwald/maxminddb-golang v1.10.0
 	github.com/pion/datachannel v1.5.5 // indirect
-	github.com/pion/dtls/v2 v2.1.5 // indirect
+	github.com/pion/dtls/v2 v2.2.4 // indirect
 	github.com/pion/ice/v2 v2.2.13 // indirect
 	github.com/pion/interceptor v0.1.12 // indirect
 	github.com/pion/logging v0.2.2 // indirect
@@ -109,7 +119,7 @@ require (
 	github.com/pion/srtp/v2 v2.0.11 // indirect
 	github.com/pion/transport v0.14.1 // indirect
 	github.com/pion/turn/v2 v2.0.9 // indirect
-	github.com/pion/udp v0.1.2 // indirect
+	github.com/pion/udp v0.1.4 // indirect
 	github.com/pion/webrtc/v3 v3.1.50 // indirect
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/client_model v0.3.0 // indirect
@@ -130,9 +140,9 @@ require (
 	github.com/zach-klippenstein/goregen v0.0.0-20160303162051-795b5e3961ea // indirect
 	gitlab.com/yawning/bsaes.git v0.0.0-20190805113838-0a714cd429ec // indirect
 	gitlab.com/yawning/edwards25519-extra.git v0.0.0-20220726154925-def713fd18e4 // indirect
-	golang.org/x/mod v0.7.0 // indirect
-	golang.org/x/term v0.4.0 // indirect
-	golang.org/x/text v0.6.0 // indirect
-	golang.org/x/tools v0.5.0 // indirect
-	google.golang.org/protobuf v1.28.1 // indirect
+	golang.org/x/mod v0.9.0 // indirect
+	golang.org/x/term v0.6.0 // indirect
+	golang.org/x/text v0.8.0 // indirect
+	golang.org/x/tools v0.7.0 // indirect
+	google.golang.org/protobuf v1.28.2-0.20230118093459-a9481185b34d // indirect
 )

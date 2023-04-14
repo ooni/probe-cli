@@ -19,6 +19,7 @@ import (
 // by the probe (inside [creq]) or the TH (inside [addrs]).
 func newIPInfo(creq *ctrlRequest, addrs []string) map[string]*model.THIPInfo {
 	discoveredby := make(map[string]int64)
+
 	for _, epnt := range creq.TCPConnect {
 		addr, _, err := net.SplitHostPort(epnt)
 		if err != nil || net.ParseIP(addr) == nil {
@@ -26,11 +27,13 @@ func newIPInfo(creq *ctrlRequest, addrs []string) map[string]*model.THIPInfo {
 		}
 		discoveredby[addr] |= model.THIPInfoFlagResolvedByProbe
 	}
+
 	for _, addr := range addrs {
 		if net.ParseIP(addr) != nil {
 			discoveredby[addr] |= model.THIPInfoFlagResolvedByTH
 		}
 	}
+
 	ipinfo := make(map[string]*model.THIPInfo)
 	for addr, flags := range discoveredby {
 		if netxlite.IsBogon(addr) { // note: we already excluded non-IP addrs above
@@ -42,6 +45,7 @@ func newIPInfo(creq *ctrlRequest, addrs []string) map[string]*model.THIPInfo {
 			Flags: flags,
 		}
 	}
+
 	return ipinfo
 }
 
@@ -72,6 +76,7 @@ type endpointInfo struct {
 // 4. otherwise, we don't generate any endpoint to measure.
 func ipInfoToEndpoints(URL *url.URL, ipinfo map[string]*model.THIPInfo) []endpointInfo {
 	var ports []string
+
 	if port := URL.Port(); port != "" {
 		ports = []string{port} // as documented
 	} else if URL.Scheme == "https" {
@@ -79,6 +84,7 @@ func ipInfoToEndpoints(URL *url.URL, ipinfo map[string]*model.THIPInfo) []endpoi
 	} else if URL.Scheme == "http" {
 		ports = []string{"80", "443"} // as documented
 	}
+
 	out := []endpointInfo{}
 	for addr, info := range ipinfo {
 		if (info.Flags & model.THIPInfoFlagIsBogon) != 0 {
@@ -93,10 +99,12 @@ func ipInfoToEndpoints(URL *url.URL, ipinfo map[string]*model.THIPInfo) []endpoi
 			})
 		}
 	}
+
 	// sort the output to make testing work deterministically since iterating
 	// a map in golang isn't guaranteed to return ordered keys
 	sort.SliceStable(out, func(i, j int) bool {
 		return strings.Compare(out[i].Epnt, out[j].Epnt) < 0
 	})
+
 	return out
 }

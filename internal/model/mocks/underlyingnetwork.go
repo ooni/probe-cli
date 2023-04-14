@@ -11,6 +11,8 @@ import (
 
 // UnderlyingNetwork allows mocking model.UnderlyingNetwork.
 type UnderlyingNetwork struct {
+	MockDefaultCertPool func() *x509.CertPool
+
 	MockDialContext func(ctx context.Context, timeout time.Duration, network, address string) (net.Conn, error)
 
 	MockListenUDP func(network string, addr *net.UDPAddr) (model.UDPLikeConn, error)
@@ -18,11 +20,13 @@ type UnderlyingNetwork struct {
 	MockGetaddrinfoLookupANY func(ctx context.Context, domain string) ([]string, string, error)
 
 	MockGetaddrinfoResolverNetwork func() string
-
-	MockMaybeModifyPool func(pool *x509.CertPool) *x509.CertPool
 }
 
 var _ model.UnderlyingNetwork = &UnderlyingNetwork{}
+
+func (un *UnderlyingNetwork) DefaultCertPool() *x509.CertPool {
+	return un.MockDefaultCertPool()
+}
 
 func (un *UnderlyingNetwork) DialContext(ctx context.Context, timeout time.Duration, network, address string) (net.Conn, error) {
 	return un.MockDialContext(ctx, timeout, network, address)
@@ -38,9 +42,4 @@ func (un *UnderlyingNetwork) GetaddrinfoLookupANY(ctx context.Context, domain st
 
 func (un *UnderlyingNetwork) GetaddrinfoResolverNetwork() string {
 	return un.MockGetaddrinfoResolverNetwork()
-}
-
-// MaybeModifyPool implements model.UnderlyingNetwork
-func (un *UnderlyingNetwork) MaybeModifyPool(pool *x509.CertPool) *x509.CertPool {
-	return un.MockMaybeModifyPool(pool)
 }

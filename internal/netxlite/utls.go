@@ -23,13 +23,16 @@ import (
 //
 // The handshaker guarantees:
 //
-// 1. logging
+// 1. logging;
 //
-// 2. error wrapping
+// 2. error wrapping;
+//
+// 3. that we are going to use Mozilla CA if the [tls.Config]
+// RootCAs field is zero initialized.
 //
 // Passing a nil `id` will make this function panic.
 func NewTLSHandshakerUTLS(logger model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker {
-	return newTLSHandshaker(&tlsHandshakerConfigurable{
+	return newTLSHandshakerLogger(&tlsHandshakerConfigurable{
 		NewConn: newUTLSConnFactory(id),
 	}, logger)
 }

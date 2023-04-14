@@ -57,14 +57,14 @@ these three fields when you're performing handshakes:
 - `NextProtos`, which controls the ALPN
 
 - `RootCAs`, which we are forcing here to be the
-CA pool bundled with OONI (so we don't have to trust
-the system-wide certificate store)
+CA pool bundled with OONI by passing nil (so we don't
+have to trust the system-wide certificate store)
 
 ```Go
 	tlsConfig := &tls.Config{
 		ServerName: *sni,
 		NextProtos: []string{"h2", "http/1.1"},
-		RootCAs:    netxlite.NewDefaultCertPool(),
+		RootCAs:    nil,
 	}
 ```
 

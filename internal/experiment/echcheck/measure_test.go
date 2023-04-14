@@ -2,10 +2,11 @@ package echcheck
 
 import (
 	"context"
+	"testing"
+
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"testing"
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
@@ -13,7 +14,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	if measurer.ExperimentName() != "echcheck" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.1.0" {
+	if measurer.ExperimentVersion() != "0.1.1" {
 		t.Fatal("unexpected version")
 	}
 }

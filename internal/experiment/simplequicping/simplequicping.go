@@ -21,7 +21,7 @@ import (
 
 const (
 	testName    = "simplequicping"
-	testVersion = "0.2.0"
+	testVersion = "0.2.1"
 )
 
 // Config contains the experiment configuration.
@@ -173,9 +173,12 @@ func (m *Measurer) quicHandshake(ctx context.Context, index int64,
 	ol := measurexlite.NewOperationLogger(logger, "SimpleQUICPing #%d %s %s %v", index, address, sni, alpn)
 	listener := netxlite.NewQUICListener()
 	dialer := trace.NewQUICDialerWithoutResolver(listener, logger)
+	// See https://github.com/ooni/probe/issues/2413 to understand
+	// why we're using nil to force netxlite to use the cached
+	// default Mozilla cert pool.
 	tlsConfig := &tls.Config{
 		NextProtos: alpn,
-		RootCAs:    netxlite.NewDefaultCertPool(),
+		RootCAs:    nil,
 		ServerName: sni,
 	}
 	quicEarlyConn, err := dialer.DialContext(ctx, address, tlsConfig, &quic.Config{})

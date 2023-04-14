@@ -203,7 +203,7 @@ type QUICDialer interface {
 	//
 	// - set ServerName to be the SNI;
 	//
-	// - set RootCAs to NewDefaultCertPool();
+	// - set RootCAs to nil (which causes us to use the default cert pool);
 	//
 	// - set NextProtos to []string{"h3"}.
 	//
@@ -277,7 +277,7 @@ type TLSHandshaker interface {
 	//
 	// - set ServerName to be the SNI;
 	//
-	// - set RootCAs to NewDefaultCertPool();
+	// - set RootCAs to nil (which causes us to use the default cert pool);
 	//
 	// - set NextProtos to []string{"h2", "http/1.1"} for HTTPS
 	// and []string{"dot"} for DNS-over-TLS.
@@ -485,6 +485,13 @@ type UDPLikeConn interface {
 // UnderlyingNetwork implements the underlying network APIs on
 // top of which we implement network extensions.
 type UnderlyingNetwork interface {
+	// DefaultCertPool returns the underlying cert pool used by the
+	// network extensions library. You MUST NOT use this function to
+	// modify the default cert pool since this would lead to a data
+	// race. Use [netxlite.NewDefaultCertPool] if you wish to get
+	// a copy of the default cert pool that you can modify.
+	DefaultCertPool() *x509.CertPool
+
 	// DialContext is equivalent to net.Dialer.DialContext except that
 	// there is also an explicit timeout for dialing.
 	DialContext(ctx context.Context, timeout time.Duration, network, address string) (net.Conn, error)
@@ -498,8 +505,4 @@ type UnderlyingNetwork interface {
 
 	// ListenUDP is equivalent to net.ListenUDP.
 	ListenUDP(network string, addr *net.UDPAddr) (UDPLikeConn, error)
-
-	// MaybeModifyPool typically returns the same pool it is passed
-	// as an argument, but sometimes could modify it for testing.
-	MaybeModifyPool(pool *x509.CertPool) *x509.CertPool
 }

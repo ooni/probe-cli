@@ -22,6 +22,7 @@ func main() {
 	root.AddCommand(genericSubcommand())
 	root.AddCommand(iosSubcommand())
 	root.AddCommand(linuxSubcommand())
+	root.AddCommand(oohelperdSubcommand())
 	root.AddCommand(windowsSubcommand())
 
 	logHandler := logx.NewHandlerWithDefaultSettings()

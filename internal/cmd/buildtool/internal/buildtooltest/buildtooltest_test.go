@@ -282,4 +282,17 @@ func TestDependenciesCallCounter(t *testing.T) {
 			t.Fatal("did not increment")
 		}
 	})
+
+	t.Run("GOOS", func(t *testing.T) {
+		cc := &DependenciesCallCounter{
+			OS: "linux",
+		}
+		got := cc.GOOS()
+		if got != "linux" {
+			t.Fatal("unexpected GOOS value")
+		}
+		if cc.Counter[TagGOOS] != 1 {
+			t.Fatal("did not increment")
+		}
+	})
 }

@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
+	"github.com/ooni/probe-cli/v3/internal/checkincache"
 	"github.com/ooni/probe-cli/v3/internal/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -300,7 +301,6 @@ func (s *Session) CheckIn(
 	if err != nil {
 		return nil, err
 	}
-	s.updateCheckInFlagsState(resp)
 	return &resp.Tests, nil
 }
 
@@ -405,7 +405,7 @@ var ErrAlreadyUsingProxy = errors.New(
 func (s *Session) NewExperimentBuilder(name string) (model.ExperimentBuilder, error) {
 	name = registry.CanonicalizeExperimentName(name)
 	switch {
-	case name == "web_connectivity" && s.getCheckInFlagValue("webconnectivity_0.5"):
+	case name == "web_connectivity" && checkincache.GetFeatureFlag(s.kvStore, "webconnectivity_0.5"):
 		// use LTE rather than the normal webconnectivity when the
 		// feature flag has been set through the check-in API
 		s.Logger().Infof("using webconnectivity LTE")
