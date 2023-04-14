@@ -224,6 +224,137 @@ func TestFailureToStartTunnel(t *testing.T) {
 	}
 }
 
+func TestFailureNoTorBinary(t *testing.T) {
+	t.Run("with mocked startTunnel", func(t *testing.T) {
+		expected := tunnel.ErrCannotFindTorBinary
+		m := &Measurer{
+			config: Config{},
+			mockStartTunnel: func(ctx context.Context, config *tunnel.Config) (tunnel.Tunnel, tunnel.DebugInfo, error) {
+				return nil,
+					tunnel.DebugInfo{
+						Name:        "tor",
+						LogFilePath: filepath.Join("testdata", "partial.log"),
+					}, expected
+			},
+		}
+		ctx := context.Background()
+		measurement := &model.Measurement{}
+		sess := &mockable.Session{
+			MockableLogger: model.DiscardLogger,
+		}
+		callbacks := &model.PrinterCallbacks{
+			Logger: model.DiscardLogger,
+		}
+		args := &model.ExperimentArgs{
+			Callbacks:   callbacks,
+			Measurement: measurement,
+			Session:     sess,
+		}
+		if err := m.Run(ctx, args); !errors.Is(err, expected) {
+			t.Fatal("unexpected error")
+		}
+		tk := measurement.TestKeys.(*TestKeys)
+		if tk.BootstrapTime != 0 {
+			t.Fatal("unexpected bootstrap time")
+		}
+		if tk.Error == nil || *tk.Error != "unknown-error" {
+			t.Fatal("unexpected error")
+		}
+		if tk.Failure == nil {
+			t.Fatal("unexpectedly nil failure string")
+		}
+		if *tk.Failure != "unknown_failure: tunnel: cannot find tor binary" {
+			t.Fatal("unexpected failure string", *tk.Failure)
+		}
+		if tk.Success {
+			t.Fatal("unexpected success value")
+		}
+		if !tk.cannotFindTorBinary {
+			t.Fatal("unexpected cannotFindTorBinary values")
+		}
+		if tk.Timeout != maxRuntime.Seconds() {
+			t.Fatal("unexpected timeout")
+		}
+		if count := len(tk.TorLogs); count != 6 {
+			t.Fatal("unexpected length of tor logs", count)
+		}
+		if tk.TorProgress != 15 {
+			t.Fatal("unexpected tor progress")
+		}
+		if tk.TorProgressTag != "handshake_done" {
+			t.Fatal("unexpected tor progress tag")
+		}
+		if tk.TorProgressSummary != "Handshake with a relay done" {
+			t.Fatal("unexpected tor progress tag")
+		}
+		if tk.TransportName != "vanilla" {
+			t.Fatal("invalid transport name")
+		}
+
+	})
+
+	t.Run("with mocked TorBinary", func(t *testing.T) {
+		expected := tunnel.ErrCannotFindTorBinary
+		m := &Measurer{
+			config: Config{},
+		}
+		ctx := context.Background()
+		measurement := &model.Measurement{}
+		sess := &mockable.Session{
+			MockableLogger:    model.DiscardLogger,
+			MockableTorBinary: "",
+		}
+		callbacks := &model.PrinterCallbacks{
+			Logger: model.DiscardLogger,
+		}
+		args := &model.ExperimentArgs{
+			Callbacks:   callbacks,
+			Measurement: measurement,
+			Session:     sess,
+		}
+		if err := m.Run(ctx, args); !errors.Is(err, expected) {
+			t.Fatal("unexpected error")
+		}
+		tk := measurement.TestKeys.(*TestKeys)
+		if tk.BootstrapTime != 0 {
+			t.Fatal("unexpected bootstrap time")
+		}
+		if tk.Error == nil || *tk.Error != "unknown-error" {
+			t.Fatal("unexpected error")
+		}
+		if tk.Failure == nil {
+			t.Fatal("unexpectedly nil failure string")
+		}
+		if *tk.Failure != `unknown_failure: tunnel: cannot find tor binary: exec: "tor": executable file not found in $PATH` {
+			t.Fatal("unexpected failure string", *tk.Failure)
+		}
+		if tk.Success {
+			t.Fatal("unexpected success value")
+		}
+		if !tk.cannotFindTorBinary {
+			t.Fatal("unexpected cannotFindTorBinary values")
+		}
+		if tk.Timeout != maxRuntime.Seconds() {
+			t.Fatal("unexpected timeout")
+		}
+		if count := len(tk.TorLogs); count != 0 {
+			t.Fatal("unexpected length of tor logs", count)
+		}
+		if tk.TorProgress != 0 {
+			t.Fatal("unexpected tor progress")
+		}
+		if tk.TorProgressTag != "" {
+			t.Fatal("unexpected tor progress tag")
+		}
+		if tk.TorProgressSummary != "" {
+			t.Fatal("unexpected tor progress tag")
+		}
+		if tk.TransportName != "vanilla" {
+			t.Fatal("invalid transport name")
+		}
+	})
+}
+
 func TestGetSummaryKeys(t *testing.T) {
 	t.Run("in case of untyped nil TestKeys", func(t *testing.T) {
 		measurement := &model.Measurement{
