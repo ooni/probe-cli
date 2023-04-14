@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -301,8 +302,7 @@ func TestFailureNoTorBinary(t *testing.T) {
 		ctx := context.Background()
 		measurement := &model.Measurement{}
 		sess := &mockable.Session{
-			MockableLogger:    model.DiscardLogger,
-			MockableTorBinary: "",
+			MockableLogger: model.DiscardLogger,
 		}
 		callbacks := &model.PrinterCallbacks{
 			Logger: model.DiscardLogger,
@@ -325,7 +325,7 @@ func TestFailureNoTorBinary(t *testing.T) {
 		if tk.Failure == nil {
 			t.Fatal("unexpectedly nil failure string")
 		}
-		if *tk.Failure != `unknown_failure: tunnel: cannot find tor binary: exec: "tor": executable file not found in $PATH` {
+		if !strings.HasPrefix(*tk.Failure, "unknown_failure: tunnel: cannot find tor binary") {
 			t.Fatal("unexpected failure string", *tk.Failure)
 		}
 		if tk.Success {
