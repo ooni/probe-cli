@@ -13,15 +13,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// AddressFamily is a protocol address family.
-type AddressFamily string
-
-// AddressFamilyINET is the IPv4 protocol.
-const AddressFamilyINET = AddressFamily("INET")
-
-// AddressFamilyINET6 is the IPv6 protocol.
-const AddressFamilyINET6 = AddressFamily("INET6")
-
 // NewAddressFamilyResolver creates a new [model.Resolver] using the given
 // [AddressFamily] and the underlying [model.Resolver].
 //
@@ -37,9 +28,9 @@ const AddressFamilyINET6 = AddressFamily("INET6")
 //
 // The returned resolver will only filter the results of LookupHost since the
 // result of other lookup functions is never ambiguous.
-func NewAddressFamilyResolver(reso model.Resolver, family AddressFamily) model.Resolver {
+func NewAddressFamilyResolver(reso model.Resolver, family model.AddressFamily) model.Resolver {
 	runtimex.Assert(
-		family == AddressFamilyINET || family == AddressFamilyINET6,
+		family == model.AddressFamilyINET || family == model.AddressFamilyINET6,
 		"NewAddressFamilyResolver: invalid family argument",
 	)
 	return &addressFamilyResolver{
@@ -52,7 +43,7 @@ func NewAddressFamilyResolver(reso model.Resolver, family AddressFamily) model.R
 // the [NewAddressFamilyResolver] constructor.
 type addressFamilyResolver struct {
 	// family is the family to which we're exclusively interested.
-	family AddressFamily
+	family model.AddressFamily
 
 	// reso is the underlying resolver.
 	reso model.Resolver
@@ -94,9 +85,9 @@ func (afr *addressFamilyResolver) LookupHost(ctx context.Context, domain string)
 			continue
 		}
 		switch {
-		case afr.family == AddressFamilyINET && !ipv6:
+		case afr.family == model.AddressFamilyINET && !ipv6:
 			filtered = append(filtered, addr)
-		case afr.family == AddressFamilyINET6 && ipv6:
+		case afr.family == model.AddressFamilyINET6 && ipv6:
 			filtered = append(filtered, addr)
 		}
 	}

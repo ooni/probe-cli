@@ -20,7 +20,7 @@ func TestAddressFamilyResolver(t *testing.T) {
 				return expected
 			},
 		}
-		reso := NewAddressFamilyResolver(child, AddressFamilyINET)
+		reso := NewAddressFamilyResolver(child, model.AddressFamilyINET)
 		if got := reso.Address(); got != expected {
 			t.Fatal("unexpected address", got)
 		}
@@ -33,7 +33,7 @@ func TestAddressFamilyResolver(t *testing.T) {
 				called = true
 			},
 		}
-		reso := NewAddressFamilyResolver(child, AddressFamilyINET)
+		reso := NewAddressFamilyResolver(child, model.AddressFamilyINET)
 		reso.CloseIdleConnections()
 		if !called {
 			t.Fatal("not called")
@@ -47,7 +47,7 @@ func TestAddressFamilyResolver(t *testing.T) {
 				return nil, expected
 			},
 		}
-		reso := NewAddressFamilyResolver(child, AddressFamilyINET)
+		reso := NewAddressFamilyResolver(child, model.AddressFamilyINET)
 		svc, err := reso.LookupHTTPS(context.Background(), "ooni.torproject.org")
 		if !errors.Is(err, expected) {
 			t.Fatal("unexpected error", err)
@@ -67,7 +67,7 @@ func TestAddressFamilyResolver(t *testing.T) {
 			child model.Resolver
 
 			// family is the family to filter for
-			family AddressFamily
+			family model.AddressFamily
 
 			// expectedErr is the expected error
 			expectedErr error
@@ -88,7 +88,7 @@ func TestAddressFamilyResolver(t *testing.T) {
 					return nil, io.EOF
 				},
 			},
-			family:                   AddressFamilyINET,
+			family:                   model.AddressFamilyINET,
 			expectedErr:              io.EOF,
 			expectedAddrs:            nil,
 			disableWrappedErrorCheck: true,
@@ -102,7 +102,7 @@ func TestAddressFamilyResolver(t *testing.T) {
 					return addrs, nil
 				},
 			},
-			family:                   AddressFamilyINET,
+			family:                   model.AddressFamilyINET,
 			expectedErr:              ErrOODNSNoAnswer,
 			expectedAddrs:            nil,
 			disableWrappedErrorCheck: false,
@@ -116,7 +116,7 @@ func TestAddressFamilyResolver(t *testing.T) {
 					return addrs, nil
 				},
 			},
-			family:                   AddressFamilyINET6,
+			family:                   model.AddressFamilyINET6,
 			expectedErr:              ErrOODNSNoAnswer,
 			expectedAddrs:            nil,
 			disableWrappedErrorCheck: false,
@@ -131,7 +131,7 @@ func TestAddressFamilyResolver(t *testing.T) {
 					return addrs, nil
 				},
 			},
-			family:      AddressFamilyINET,
+			family:      model.AddressFamilyINET,
 			expectedErr: nil,
 			expectedAddrs: []string{
 				"142.251.209.4",
@@ -148,7 +148,7 @@ func TestAddressFamilyResolver(t *testing.T) {
 					return addrs, nil
 				},
 			},
-			family:      AddressFamilyINET6,
+			family:      model.AddressFamilyINET6,
 			expectedErr: nil,
 			expectedAddrs: []string{
 				"2a00:1450:4002:410::2004",
@@ -161,7 +161,7 @@ func TestAddressFamilyResolver(t *testing.T) {
 					return []string{"antani"}, nil
 				},
 			},
-			family:                   AddressFamilyINET,
+			family:                   model.AddressFamilyINET,
 			expectedErr:              ErrOODNSNoAnswer,
 			expectedAddrs:            nil,
 			disableWrappedErrorCheck: false,
@@ -205,7 +205,7 @@ func TestAddressFamilyResolver(t *testing.T) {
 				return nil, expected
 			},
 		}
-		reso := NewAddressFamilyResolver(child, AddressFamilyINET)
+		reso := NewAddressFamilyResolver(child, model.AddressFamilyINET)
 		nss, err := reso.LookupNS(context.Background(), "ooni.torproject.org")
 		if !errors.Is(err, expected) {
 			t.Fatal("unexpected error", err)
@@ -222,7 +222,7 @@ func TestAddressFamilyResolver(t *testing.T) {
 				return expected
 			},
 		}
-		reso := NewAddressFamilyResolver(child, AddressFamilyINET)
+		reso := NewAddressFamilyResolver(child, model.AddressFamilyINET)
 		if got := reso.Network(); got != expected {
 			t.Fatal("unexpected network", got)
 		}
