@@ -21,40 +21,45 @@ import (
 var ErrAllEndpointsFailed = errors.New("iplookup: all endpoints failed")
 
 // ErrAllMethodsFailed indicates that we failed to lookup
-// with all the methods we tried.
+// with all the [Method] we tried.
 var ErrAllMethodsFailed = errors.New("iplookup: all methods failed")
 
 // ErrHTTPRequestFailed indicates that an HTTP request failed.
 var ErrHTTPRequestFailed = errors.New("iplookup: http request failed")
 
-// ErrInvalidIPAddress means that a string is not a valid IP address.
+// ErrInvalidIPAddress indicates that a string expected to be a valid IP
+// address was not a valid IP address.
 var ErrInvalidIPAddress = errors.New("iplookup: invalid IP address")
 
 // ErrNoSuchMethod indicates that you asked for a nonexisting [Method].
 var ErrNoSuchMethod = errors.New("iplookup: no such method")
 
-// defaultTimeout is the default timeout we use when performing an IP lookup.
+// defaultTimeout is the default timeout we use when
+// performing the IP lookup.
 const defaultTimeout = 7 * time.Second
 
-// Client is an IP lookup client. The zero value of this struct
-// is invalid; please, fill all the MANDATORY fields.
+// Client is an IP lookup client. The zero value of this struct is
+// invalid; please, fill all the fields marked as MANDATORY.
 type Client struct {
 	// Logger is the MANDATORY [model.Logger] to use.
 	Logger model.Logger
 
-	// Resolver is the MANDATORY [model.Resolver] to use. You SHOULD use the
-	// [sessionresolver] resolver here for increased robustness.
+	// Resolver is the MANDATORY [model.Resolver] to use. We recommend
+	// using a DNS-over-HTTPS resolver here, with fallback to the system
+	// resolver, to reduce the chances that DNS censorship could cause
+	// the IP lookup procedure to fail.
 	Resolver model.Resolver
 
-	// TestingHTTPDo is the OPTIONAL hook to override issuing an HTTP request
-	// and reading the response body when testing.
+	// TestingHTTPDo is an OPTIONAL hook to override the default function
+	// called to issue an HTTP request and read the response body.
 	TestingHTTPDo func(req *http.Request) ([]byte, error)
 }
 
 // Method is an IP lookup method.
 type Method string
 
-// MethodAllRandom tries all the available methods in random order until one succeeds.
+// MethodAllRandom tries all the available methods in
+// random order until one succeeds.
 const MethodAllRandom = Method("all_random")
 
 // MethodSTUNEkiga uses a STUN endpoint exposed by Ekiga.
@@ -69,17 +74,23 @@ const MethodWebClouflare = Method("web_cloudflare")
 // MethodWebUbuntu uses a Web API exposed by Ubuntu.
 const MethodWebUbuntu = Method("web_ubuntu")
 
-// Family is the address family.
-type Family string
-
-// FamilyINET is the IPv4 address family.
-const FamilyINET = Family("INET")
-
-// FamilyINET6 is the IPv6 address family.
-const FamilyINET6 = Family("INET6")
-
 // LookupIPAddr resolves the probe IP address.
-func (c *Client) LookupIPAddr(ctx context.Context, method Method, family Family) (string, error) {
+//
+// Arguments:
+//
+// - ctx is the context allowing to interrupt this function earlier;
+//
+// - method is the IP lookup method you would like us to use;
+//
+// - family is the address family you want us to use.
+//
+// The return value is either the discovered IPv4-or-IPv6 probe IP
+// address or the error that occurred when trying to discover it.
+func (c *Client) LookupIPAddr(
+	ctx context.Context,
+	method Method,
+	family model.AddressFamily,
+) (string, error) {
 	var methods []Method
 
 	// fill the methods list depending on the user preference
@@ -94,23 +105,14 @@ func (c *Client) LookupIPAddr(ctx context.Context, method Method, family Family)
 			methods[i], methods[j] = methods[j], methods[i]
 		})
 
-	case MethodSTUNEkiga:
-		methods = append(methods, MethodSTUNEkiga)
-
-	case MethodSTUNGoogle:
-		methods = append(methods, MethodSTUNGoogle)
-
-	case MethodWebClouflare:
-		methods = append(methods, MethodWebClouflare)
-
-	case MethodWebUbuntu:
-		methods = append(methods, MethodWebUbuntu)
+	case MethodSTUNEkiga, MethodSTUNGoogle, MethodWebClouflare, MethodWebUbuntu:
+		methods = append(methods, method)
 
 	default:
 		return "", ErrNoSuchMethod
 	}
 
-	// try each method in (random) sequence
+	// try each method in sequence
 	me := multierror.New(ErrAllMethodsFailed)
 	for _, method := range methods {
 		addr, err := c.lookupMethod(ctx, method, family)
@@ -124,9 +126,12 @@ func (c *Client) LookupIPAddr(ctx context.Context, method Method, family Family)
 	return "", me
 }
 
-// lookupMethod performs the lookup using the given method.
-func (c *Client) lookupMethod(ctx context.Context, method Method, family Family) (string, error) {
-	// select the proper method
+// lookupMethod performs the IP lookup using the given method and the given family.
+func (c *Client) lookupMethod(
+	ctx context.Context,
+	method Method,
+	family model.AddressFamily,
+) (string, error) {
 	switch method {
 	case MethodSTUNEkiga:
 		return c.lookupSTUN(ctx, family, "stun.ekiga.net", "3478")
@@ -145,9 +150,9 @@ func (c *Client) lookupMethod(ctx context.Context, method Method, family Family)
 	}
 }
 
-// httpDo is the common function to issue a request and get a response.
-func (c *Client) httpDo(req *http.Request, family Family) ([]byte, error) {
-	// honour the TestingHTTPDo hook if needed.
+// httpDo is the common function to issue an HTTP request and get the response body.
+func (c *Client) httpDo(req *http.Request, family model.AddressFamily) ([]byte, error) {
+	// honour the TestingHTTPDo hook, if needed.
 	if c.TestingHTTPDo != nil {
 		return c.TestingHTTPDo(req)
 	}
@@ -155,7 +160,7 @@ func (c *Client) httpDo(req *http.Request, family Family) ([]byte, error) {
 	// create HTTP client
 	//
 	// Note: we're using the family-specific resolver which ensures that we're not
-	// even going to use IP addresses for the wrong address family
+	// going to use IP addresses for the wrong address family.
 	httpClient := netxlite.NewHTTPClientWithResolver(c.Logger, c.newFamilyResolver(family))
 	defer httpClient.CloseIdleConnections()
 
@@ -164,11 +169,19 @@ func (c *Client) httpDo(req *http.Request, family Family) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	defer resp.Body.Close()
+
+	// make sure the request succeded
 	if resp.StatusCode != 200 {
 		return nil, ErrHTTPRequestFailed
 	}
+
 	// read response body
 	return netxlite.ReadAllContext(req.Context(), resp.Body)
+}
+
+// newFamilyResolver creates a new [model.Resolver] using the given family
+// and the underlying [model.Resolver] used by the [Client].
+func (c *Client) newFamilyResolver(family model.AddressFamily) model.Resolver {
+	return netxlite.NewAddressFamilyResolver(c.Resolver, family)
 }

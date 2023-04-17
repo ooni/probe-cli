@@ -115,7 +115,11 @@ func TestClientLookupWithCloudflare(t *testing.T) {
 			}
 
 			// attempt to lookup
-			addr, err := c.LookupIPAddr(context.Background(), MethodWebClouflare, FamilyINET)
+			addr, err := c.LookupIPAddr(
+				context.Background(),
+				MethodWebClouflare,
+				model.AddressFamilyINET,
+			)
 
 			// make sure the error is the expected one
 			if !errors.Is(err, tc.expectErr) {

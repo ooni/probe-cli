@@ -1,2 +1,2 @@
-// Package iplookup discovers the probe IP address.
+// Package iplookup discovers the probe IP addresses.
 package iplookup

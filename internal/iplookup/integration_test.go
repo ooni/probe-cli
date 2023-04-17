@@ -28,7 +28,7 @@ func TestEachLookupperWorksAsIntended(t *testing.T) {
 		method iplookup.Method
 
 		// family is the family to use
-		family iplookup.Family
+		family model.AddressFamily
 
 		// expectErr is the error we expect
 		expectErr error
@@ -38,52 +38,52 @@ func TestEachLookupperWorksAsIntended(t *testing.T) {
 	testcases := []testcase{{
 		name:      "cloudflare v4",
 		method:    iplookup.MethodWebClouflare,
-		family:    iplookup.FamilyINET,
+		family:    model.AddressFamilyINET,
 		expectErr: nil,
 	}, {
 		name:      "cloudflare v6",
 		method:    iplookup.MethodWebClouflare,
-		family:    iplookup.FamilyINET6,
+		family:    model.AddressFamilyINET6,
 		expectErr: nil,
 	}, {
 		name:      "ekiga v4",
 		method:    iplookup.MethodSTUNEkiga,
-		family:    iplookup.FamilyINET,
+		family:    model.AddressFamilyINET,
 		expectErr: nil,
 	}, {
 		name:      "ekiga v6",
 		method:    iplookup.MethodSTUNEkiga,
-		family:    iplookup.FamilyINET6,
+		family:    model.AddressFamilyINET6,
 		expectErr: netxlite.ErrOODNSNoAnswer,
 	}, {
 		name:      "google v4",
 		method:    iplookup.MethodSTUNGoogle,
-		family:    iplookup.FamilyINET,
+		family:    model.AddressFamilyINET,
 		expectErr: nil,
 	}, {
 		name:      "google v6",
 		method:    iplookup.MethodSTUNGoogle,
-		family:    iplookup.FamilyINET6,
+		family:    model.AddressFamilyINET6,
 		expectErr: nil,
 	}, {
 		name:      "ubuntu v4",
 		method:    iplookup.MethodWebUbuntu,
-		family:    iplookup.FamilyINET,
+		family:    model.AddressFamilyINET,
 		expectErr: nil,
 	}, {
 		name:      "ubuntu v6",
 		method:    iplookup.MethodWebUbuntu,
-		family:    iplookup.FamilyINET6,
+		family:    model.AddressFamilyINET6,
 		expectErr: netxlite.ErrOODNSNoAnswer,
 	}, {
 		name:      "random v4",
 		method:    iplookup.MethodAllRandom,
-		family:    iplookup.FamilyINET,
+		family:    model.AddressFamilyINET,
 		expectErr: nil,
 	}, {
 		name:      "random v6",
 		method:    iplookup.MethodAllRandom,
-		family:    iplookup.FamilyINET6,
+		family:    model.AddressFamilyINET6,
 		expectErr: nil,
 	}}
 

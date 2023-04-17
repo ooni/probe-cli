@@ -75,7 +75,7 @@ func TestClient_httpDo(t *testing.T) {
 			}
 
 			// issue the request and get the response body
-			data, err := c.httpDo(req, FamilyINET)
+			data, err := c.httpDo(req, model.AddressFamilyINET)
 
 			// make sure the error is the expected one
 			if !errors.Is(err, tc.expectErr) {

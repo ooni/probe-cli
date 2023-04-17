@@ -21,7 +21,7 @@ type ubuntuResponse struct {
 }
 
 // lookupUbuntu performs the lookup using ubuntu.
-func (c *Client) lookupUbuntu(ctx context.Context, family Family) (string, error) {
+func (c *Client) lookupUbuntu(ctx context.Context, family model.AddressFamily) (string, error) {
 	// make sure we eventually time out
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()

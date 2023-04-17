@@ -16,7 +16,10 @@ import (
 )
 
 // lookupCloudflare performs the lookup using cloudflare.
-func (c *Client) lookupCloudflare(ctx context.Context, family Family) (string, error) {
+func (c *Client) lookupCloudflare(
+	ctx context.Context,
+	family model.AddressFamily,
+) (string, error) {
 	// make sure we eventually time out
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()

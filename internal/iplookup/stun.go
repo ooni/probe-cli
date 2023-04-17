@@ -8,11 +8,15 @@ import (
 	"context"
 	"net"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/stunx"
 )
 
 // lookupSTUN performs the lookup using STUN
-func (c *Client) lookupSTUN(ctx context.Context, family Family, domain, port string) (string, error) {
+func (c *Client) lookupSTUN(
+	ctx context.Context,
+	family model.AddressFamily,
+	domain, port string) (string, error) {
 	// make sure we eventually time out
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()

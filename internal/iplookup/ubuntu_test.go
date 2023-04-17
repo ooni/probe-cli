@@ -90,7 +90,11 @@ func TestClientLookupWithUbuntu(t *testing.T) {
 			}
 
 			// attempt to lookup
-			addr, err := c.LookupIPAddr(context.Background(), MethodWebUbuntu, FamilyINET)
+			addr, err := c.LookupIPAddr(
+				context.Background(),
+				MethodWebUbuntu,
+				model.AddressFamilyINET,
+			)
 
 			// make sure the error is the expected one
 			if !errors.Is(err, tc.expectErr) {
