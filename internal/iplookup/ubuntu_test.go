@@ -54,7 +54,7 @@ func TestClientLookupWithUbuntu(t *testing.T) {
 			</Response>`)
 			return response, nil
 		},
-		expectErr:    ErrInvalidIPAddress,
+		expectErr:    ErrInvalidIPAddressForFamily,
 		expectedAddr: "",
 	}, {
 		name: "the response contains a valid IP address",

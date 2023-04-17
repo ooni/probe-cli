@@ -79,17 +79,10 @@ func (afr *addressFamilyResolver) LookupHost(ctx context.Context, domain string)
 	// filter the addresses we want
 	var filtered []string
 	for _, addr := range all {
-		ipv6, err := IsIPv6(addr)
-		if err != nil {
-			// should not happen
+		if !AddressBelongsToAddressFamily(addr, afr.family) {
 			continue
 		}
-		switch {
-		case afr.family == model.AddressFamilyINET && !ipv6:
-			filtered = append(filtered, addr)
-		case afr.family == model.AddressFamilyINET6 && ipv6:
-			filtered = append(filtered, addr)
-		}
+		filtered = append(filtered, addr)
 	}
 
 	// handle the case where there's no available address
@@ -98,7 +91,23 @@ func (afr *addressFamilyResolver) LookupHost(ctx context.Context, domain string)
 	}
 
 	return filtered, nil
+}
 
+// AddressBelongsToAddressFamily returns whether an address belongs to an address family. When
+// the address string is not a valid address, this function always returns false.
+func AddressBelongsToAddressFamily(address string, family model.AddressFamily) bool {
+	ipv6, err := IsIPv6(address)
+	if err != nil {
+		return false
+	}
+	switch {
+	case family == model.AddressFamilyINET && !ipv6:
+		return true
+	case family == model.AddressFamilyINET6 && ipv6:
+		return true
+	default:
+		return false
+	}
 }
 
 // LookupNS implements model.Resolver

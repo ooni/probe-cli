@@ -6,7 +6,6 @@ package iplookup
 
 import (
 	"context"
-	"net"
 	"net/http"
 	"regexp"
 	"strings"
@@ -15,15 +14,11 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// lookupCloudflare performs the lookup using cloudflare.
-func (c *Client) lookupCloudflare(
-	ctx context.Context,
-	family model.AddressFamily,
-) (string, error) {
-	// make sure we eventually time out
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
-	defer cancel()
+// cloudflareRegex is the regex used by [lookupCloudflare].
+var cloudflareRegex = regexp.MustCompile("(?:ip)=(.*)")
 
+// lookupCloudflare performs the lookup using cloudflare.
+func (c *Client) lookupCloudflare(ctx context.Context, family model.AddressFamily) (string, error) {
 	// create HTTP request
 	const URL = "https://www.cloudflare.com/cdn-cgi/trace"
 	req := runtimex.Try1(http.NewRequestWithContext(ctx, http.MethodGet, URL, nil))
@@ -36,13 +31,6 @@ func (c *Client) lookupCloudflare(
 	}
 
 	// parse the response body to obtain the IP address
-	r := regexp.MustCompile("(?:ip)=(.*)")
-	ip := strings.Trim(string(r.Find(data)), "ip=")
-
-	// make sure the IP address is valid
-	if net.ParseIP(ip) == nil {
-		return "", ErrInvalidIPAddress
-	}
-
+	ip := strings.Trim(string(cloudflareRegex.Find(data)), "ip=")
 	return ip, nil
 }

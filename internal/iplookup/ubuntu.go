@@ -7,7 +7,6 @@ package iplookup
 import (
 	"context"
 	"encoding/xml"
-	"net"
 	"net/http"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -22,10 +21,6 @@ type ubuntuResponse struct {
 
 // lookupUbuntu performs the lookup using ubuntu.
 func (c *Client) lookupUbuntu(ctx context.Context, family model.AddressFamily) (string, error) {
-	// make sure we eventually time out
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
-	defer cancel()
-
 	// create HTTP request
 	const URL = "https://geoip.ubuntu.com/lookup"
 	req := runtimex.Try1(http.NewRequestWithContext(ctx, http.MethodGet, URL, nil))
@@ -43,11 +38,5 @@ func (c *Client) lookupUbuntu(ctx context.Context, family model.AddressFamily) (
 	if err != nil {
 		return "", err
 	}
-
-	// make sure the IP address is valid
-	if net.ParseIP(v.IP) == nil {
-		return "", ErrInvalidIPAddress
-	}
-
 	return v.IP, nil
 }

@@ -43,7 +43,7 @@ func TestClientLookupWithCloudflare(t *testing.T) {
 		fx: func(req *http.Request) ([]byte, error) {
 			return nil, nil
 		},
-		expectErr:    ErrInvalidIPAddress,
+		expectErr:    ErrInvalidIPAddressForFamily,
 		expectedAddr: "",
 	}, {
 		name: "the response contains an invalid IP address",
@@ -66,7 +66,7 @@ func TestClientLookupWithCloudflare(t *testing.T) {
 			kex=X25519`)
 			return response, nil
 		},
-		expectErr:    ErrInvalidIPAddress,
+		expectErr:    ErrInvalidIPAddressForFamily,
 		expectedAddr: "",
 	}, {
 		name: "the response contains a valid IP address",

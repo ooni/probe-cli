@@ -228,3 +228,63 @@ func TestAddressFamilyResolver(t *testing.T) {
 		}
 	})
 }
+
+func TestAddressBelongsToAddressFamily(t *testing.T) {
+	// testcase is a test case for this function
+	type testcase struct {
+		// name is the test case name
+		name string
+
+		// address is the input IP address
+		address string
+
+		// family is the input address family
+		family model.AddressFamily
+
+		// expectedResult is the expected function result
+		expectedResult bool
+	}
+
+	// testcases contains all the test cases
+	testcases := []testcase{{
+		name:           "when the input is not a valid IP address and we expect IPv6",
+		address:        "antani",
+		family:         model.AddressFamilyINET6,
+		expectedResult: false,
+	}, {
+		name:           "when the input is not a valid IP address and we expect IPv4",
+		address:        "antani",
+		family:         model.AddressFamilyINET,
+		expectedResult: false,
+	}, {
+		name:           "when the input is IPv6 and we expect IPv6",
+		address:        "::1",
+		family:         model.AddressFamilyINET6,
+		expectedResult: true,
+	}, {
+		name:           "when the input is IPv4 and we expect IPv6",
+		address:        "127.0.0.1",
+		family:         model.AddressFamilyINET6,
+		expectedResult: false,
+	}, {
+		name:           "when the input is IPv4 and we expect IPv4",
+		address:        "127.0.0.1",
+		family:         model.AddressFamilyINET,
+		expectedResult: true,
+	}, {
+		name:           "when the input is IPv6 and we expect IPv4",
+		address:        "::1",
+		family:         model.AddressFamilyINET,
+		expectedResult: false,
+	}}
+
+	// run all the test cases
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := AddressBelongsToAddressFamily(tc.address, tc.family)
+			if tc.expectedResult != got {
+				t.Fatal("expected", tc.expectedResult, "got", got)
+			}
+		})
+	}
+}

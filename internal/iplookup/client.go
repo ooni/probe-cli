@@ -8,12 +8,14 @@ import (
 	"context"
 	"errors"
 	"math/rand"
+	"net"
 	"net/http"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/multierror"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/stunx"
 )
 
 // ErrAllEndpointsFailed indicates that we failed to lookup
@@ -27,9 +29,9 @@ var ErrAllMethodsFailed = errors.New("iplookup: all methods failed")
 // ErrHTTPRequestFailed indicates that an HTTP request failed.
 var ErrHTTPRequestFailed = errors.New("iplookup: http request failed")
 
-// ErrInvalidIPAddress indicates that a string expected to be a valid IP
-// address was not a valid IP address.
-var ErrInvalidIPAddress = errors.New("iplookup: invalid IP address")
+// ErrInvalidIPAddressForFamily indicates that a string expected to be a valid IP
+// address was not a valid IP address for the family we're resolving for.
+var ErrInvalidIPAddressForFamily = errors.New("iplookup: invalid IP address for family")
 
 // ErrNoSuchMethod indicates that you asked for a nonexisting [Method].
 var ErrNoSuchMethod = errors.New("iplookup: no such method")
@@ -82,10 +84,11 @@ const MethodWebUbuntu = Method("web_ubuntu")
 //
 // - method is the IP lookup method you would like us to use;
 //
-// - family is the address family you want us to use.
+// - family is the [model.AddressFamily] you want us to exclusively use.
 //
-// The return value is either the discovered IPv4-or-IPv6 probe IP
-// address or the error that occurred when trying to discover it.
+// When the family is [model.AddressFamilyINET], this function tries
+// to find out the probe's IPv4 address; when it is [model.AddressFamilyINET6],
+// this function tries to find out the probe's IPv6 address.
 func (c *Client) LookupIPAddr(
 	ctx context.Context,
 	method Method,
@@ -131,23 +134,77 @@ func (c *Client) lookupMethod(
 	ctx context.Context,
 	method Method,
 	family model.AddressFamily,
-) (string, error) {
+) (addr string, err error) {
+	// issue the lookup using the proper method
 	switch method {
 	case MethodSTUNEkiga:
-		return c.lookupSTUN(ctx, family, "stun.ekiga.net", "3478")
+		addr, err = c.lookupSTUNDomainPort(ctx, family, "stun.ekiga.net", "3478")
 
 	case MethodSTUNGoogle:
-		return c.lookupSTUN(ctx, family, "stun.l.google.com", "19302")
+		addr, err = c.lookupSTUNDomainPort(ctx, family, "stun.l.google.com", "19302")
 
 	case MethodWebClouflare:
-		return c.lookupCloudflare(ctx, family)
+		addr, err = c.lookupCloudflare(ctx, family)
 
 	case MethodWebUbuntu:
-		return c.lookupUbuntu(ctx, family)
+		addr, err = c.lookupUbuntu(ctx, family)
 
 	default:
-		return "", ErrNoSuchMethod
+		addr, err = "", ErrNoSuchMethod
 	}
+
+	// immediately handle errors
+	if err != nil {
+		return "", err
+	}
+
+	// make sure the IP address is valid for the expected family
+	if !netxlite.AddressBelongsToAddressFamily(addr, family) {
+		return "", ErrInvalidIPAddressForFamily
+	}
+
+	// finally, return the result
+	return addr, nil
+}
+
+// lookupSTUNDomainPort performs the lookup using the STUN server at the given domain and port.
+func (c *Client) lookupSTUNDomainPort(
+	ctx context.Context, family model.AddressFamily, domain, port string) (string, error) {
+	// Note: create an address-family aware resolver to make sure we're not
+	// going to use an IP addresses belongong to the wrong family.
+	reso := c.newAddressFamilyResolver(family)
+
+	// resolve the given domain name to IP addresses
+	addrs, err := reso.LookupHost(ctx, domain)
+	if err != nil {
+		return "", err
+	}
+
+	// try each available address in sequence until one of them works
+	for _, addr := range addrs {
+		// create the destination endpoint
+		endpoint := net.JoinHostPort(addr, port)
+
+		// resolve the external address
+		publicAddr, err := c.lookupSTUNEndpoint(ctx, endpoint)
+		if err != nil {
+			continue
+		}
+		return publicAddr, nil
+	}
+
+	return "", ErrAllEndpointsFailed
+}
+
+// lookupSTUNEndpoint uses the given STUN endpoint to lookup the IP address.
+func (c *Client) lookupSTUNEndpoint(ctx context.Context, endpoint string) (string, error) {
+	// make sure we eventually time out
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	// create client and lookup the IP address
+	client := stunx.NewClient(endpoint, c.Logger)
+	return client.LookupIPAddr(ctx)
 }
 
 // httpDo is the common function to issue an HTTP request and get the response body.
@@ -157,11 +214,17 @@ func (c *Client) httpDo(req *http.Request, family model.AddressFamily) ([]byte, 
 		return c.TestingHTTPDo(req)
 	}
 
+	// make sure we eventually time out
+	ctx := req.Context()
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+	req = req.WithContext(ctx)
+
 	// create HTTP client
 	//
-	// Note: we're using the family-specific resolver which ensures that we're not
-	// going to use IP addresses for the wrong address family.
-	httpClient := netxlite.NewHTTPClientWithResolver(c.Logger, c.newFamilyResolver(family))
+	// Note: create an address-family aware resolver to make sure we're not
+	// going to use an IP addresses belongong to the wrong family.
+	httpClient := netxlite.NewHTTPClientWithResolver(c.Logger, c.newAddressFamilyResolver(family))
 	defer httpClient.CloseIdleConnections()
 
 	// issue HTTP request and get response
@@ -180,8 +243,8 @@ func (c *Client) httpDo(req *http.Request, family model.AddressFamily) ([]byte, 
 	return netxlite.ReadAllContext(req.Context(), resp.Body)
 }
 
-// newFamilyResolver creates a new [model.Resolver] using the given family
-// and the underlying [model.Resolver] used by the [Client].
-func (c *Client) newFamilyResolver(family model.AddressFamily) model.Resolver {
+// newAddressFamilyResolver creates a new [model.Resolver] using the given address
+// family and the underlying [model.Resolver] used by the [Client].
+func (c *Client) newAddressFamilyResolver(family model.AddressFamily) model.Resolver {
 	return netxlite.NewAddressFamilyResolver(c.Resolver, family)
 }
