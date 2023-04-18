@@ -69,9 +69,9 @@ func TestClient_httpDo(t *testing.T) {
 
 			// create the Client instance
 			c := &Client{
-				Logger:        model.DiscardLogger,
-				Resolver:      netxlite.NewStdlibResolver(model.DiscardLogger),
-				TestingHTTPDo: nil,
+				logger:        model.DiscardLogger,
+				resolver:      netxlite.NewStdlibResolver(model.DiscardLogger),
+				testingHTTPDo: nil,
 			}
 
 			// issue the request and get the response body

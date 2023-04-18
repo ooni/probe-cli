@@ -1,7 +1,7 @@
 package iplookup
 
 //
-// Code to resolve the IP address using Ubuntu
+// IP lookup using Ubuntu
 //
 
 import (
@@ -9,6 +9,7 @@ import (
 	"encoding/xml"
 	"net/http"
 
+	"github.com/ooni/probe-cli/v3/internal/fallback"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -19,15 +20,27 @@ type ubuntuResponse struct {
 	IP      string   `xml:"Ip"`
 }
 
+// ubuntuWebLookup implements fallback.Service
+type ubuntuWebLookup struct {
+	client *Client
+}
+
+// newUbuntuWebLookup creates a new [ubuntuWebLookup] instance.
+func newUbuntuWebLookup(client *Client) *ubuntuWebLookup {
+	return &ubuntuWebLookup{client}
+}
+
+var _ fallback.Service[model.AddressFamily, string] = &ubuntuWebLookup{}
+
 // lookupUbuntu performs the lookup using ubuntu.
-func (c *Client) lookupUbuntu(ctx context.Context, family model.AddressFamily) (string, error) {
+func (svc *ubuntuWebLookup) Run(ctx context.Context, family model.AddressFamily) (string, error) {
 	// create HTTP request
 	const URL = "https://geoip.ubuntu.com/lookup"
 	req := runtimex.Try1(http.NewRequestWithContext(ctx, http.MethodGet, URL, nil))
 	req.Header.Set("User-Agent", model.HTTPHeaderUserAgent)
 
 	// send request and get response body
-	data, err := c.httpDo(req, family)
+	data, err := svc.client.httpDo(req, family)
 	if err != nil {
 		return "", err
 	}
@@ -39,4 +52,9 @@ func (c *Client) lookupUbuntu(ctx context.Context, family model.AddressFamily) (
 		return "", err
 	}
 	return v.IP, nil
+}
+
+// URL implements fallback.Service
+func (cl *ubuntuWebLookup) URL() string {
+	return "iplookup+web://ubuntu/"
 }
