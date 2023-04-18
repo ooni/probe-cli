@@ -6,6 +6,7 @@ package fallback
 
 import (
 	"context"
+	"errors"
 	"math/rand"
 	"sort"
 	"time"
@@ -99,34 +100,91 @@ func (ms *memoryState[Config, Result]) maybeShuffle(director Director) {
 	}
 }
 
+// resultOrError contains a result or an error
+type resultOrError[Result any] struct {
+	Error  error
+	Result Result
+}
+
 // run runs each service in sequence until one that works is found or all fail
 func (ms *memoryState[Config, Result]) run(
-	ctx context.Context, config Config) (Result, error) {
-	merr := multierror.New(ErrAllFailed)
+	ctx context.Context,
+	director Director,
+	config Config,
+) (Result, error) {
+	// create a cancellable context to interrupt running goroutines
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// create channel for receiving the goroutines results
+	outch := make(chan *resultOrError[Result], len(ms.Services))
+
+	// spawn all the services to run in the background
 	for _, svc := range ms.Services {
-		res, err := svc.run(ctx, config)
-		if err != nil {
-			merr.Add(err)
+		go svc.runAsync(ctx, director, config, outch)
+	}
+
+	// create vector for receiving the results
+	outv := []*resultOrError[Result]{}
+
+	// loop receiving results from goroutines
+	for len(outv) < len(ms.Services) {
+		out := <-outch
+		outv = append(outv, out)
+
+		// as soon as we see the first success, interrupt everyone else
+		if out.Error == nil {
+			cancel()
+		}
+	}
+
+	// final loop for deciding whether to return result or error
+	merr := multierror.New(ErrAllFailed)
+	for _, out := range outv {
+		if out.Error != nil {
+			merr.Add(out.Error)
 			continue
 		}
-		return res, nil
+		return out.Result, nil
 	}
-	zero := *new(Result)
-	return zero, merr
+	zeroResult := *new(Result)
+	return zeroResult, merr
 }
 
 // ewma is the EWMA parameter used to decay the service score.
 const ewma = 0.9
 
-// run runs the given service and MUTATES it to update the score.
-func (ms *memoryServiceState[Config, Result]) run(
-	ctx context.Context, config Config) (Result, error) {
-	res, err := ms.Run(ctx, config)
-	if err != nil {
-		ms.Score *= (1 - ewma) // decay
-		zero := *new(Result)
-		return zero, err
+// runAsync runs the given service and MUTATES it to update the score.
+func (ms *memoryServiceState[Config, Result]) runAsync(
+	ctx context.Context,
+	director Director,
+	config Config,
+	outch chan *resultOrError[Result],
+) {
+	// block until authorized to run or interrupted by context
+	select {
+	case <-director.Semaphore():
+	case <-ctx.Done():
+		return
 	}
+
+	// XXX: need to tell the parent we're done
+
+	// perform the actual service operation and obtain its results
+	result, err := ms.Run(ctx, config)
+
+	// handle errors treating interrupted by context specially
+	// because that is not a real error that occurred but rather
+	// the parent goroutine that has interrupted us
+	if err != nil {
+		if !errors.Is(err, context.Canceled) { // XXX
+			ms.Score *= (1 - ewma) // decay
+		}
+		outch <- &resultOrError[Result]{Error: err}
+		return
+	}
+
+	// handle the successful case
 	ms.Score = 1.0*ewma + (1-ewma)*ms.Score // update
-	return res, nil
+	outch <- &resultOrError[Result]{Result: result}
 }

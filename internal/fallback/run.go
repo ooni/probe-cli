@@ -12,13 +12,20 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// Director directs the execution of multiple services.
+// Director directs the execution of multiple ...
 type Director interface {
+	// Acquire returns a channel that is posted each time a goroutine
+	// is allowed to start ...
+	Acquire() <-chan any
+
 	// KVStore returns the key-value store to use.
 	KVStore() model.KeyValueStore
 
 	// Key returns the key within the key-value store.
 	Key() string
+
+	// Release indicates that a new service terminated running
+	Release()
 
 	// ShuffleEvery returns the amount of time after which we should shuffle
 	// the services to discover more working services. Returning zero will
@@ -63,7 +70,7 @@ func Run[Config, Result any](
 	memo.maybeShuffle(director)
 
 	// run all services until one works or all fail - MUTATES
-	res, err := memo.run(ctx, config)
+	res, err := memo.run(ctx, director, config)
 
 	// attempt to write the state back to disk
 	_ = memo.toSerializedState().store(director)
