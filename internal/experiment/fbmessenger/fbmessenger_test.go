@@ -35,7 +35,7 @@ func TestMeasurerRun(t *testing.T) {
 		if testing.Short() {
 			t.Skip("skip test in short mode")
 		}
-		env := NewEnvironment(nil)
+		env := NewEnvironment()
 		defer env.Close()
 		env.Do(func() {
 			measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
@@ -105,7 +105,7 @@ func TestMeasurerRun(t *testing.T) {
 		})
 	})
 	t.Run("Test Measurer without DPI, cancelled context: expect interrupted failure", func(t *testing.T) {
-		env := NewEnvironment(nil)
+		env := NewEnvironment()
 		defer env.Close()
 		env.Do(func() {
 			measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
@@ -191,7 +191,7 @@ func TestMeasurerRun(t *testing.T) {
 		fbmessenger.Services = []string{
 			fbmessenger.ServiceBAPI,
 		}
-		env := NewEnvironment(nil)
+		env := NewEnvironment()
 		defer env.Close()
 		dpi := env.DPIEngine()
 		dpi.AddRule(&netem.DPIDropTrafficForServerEndpoint{
@@ -289,7 +289,7 @@ func TestMeasurerRun(t *testing.T) {
 				"a.b.c.d", //bogon
 			)
 		}
-		env := NewEnvironment(dnsConfig)
+		env := NewEnvironmentWithDNSConfig(dnsConfig)
 		defer env.Close()
 		env.Do(func() {
 			measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
@@ -567,9 +567,31 @@ type Environment struct {
 	topology *netem.StarTopology
 }
 
+func NewEnvironment() *Environment {
+	dnsConfig := netem.NewDNSConfig()
+	services := []string{
+		"stun.fbsbx.com",
+		"b-api.facebook.com",
+		"b-graph.facebook.com",
+		"edge-mqtt.facebook.com",
+		"external.xx.fbcdn.net",
+		"scontent.xx.fbcdn.net",
+		"star.c10r.facebook.com",
+	}
+	for _, s := range services {
+		// create configuration for DNS server
+		dnsConfig.AddRecord(
+			s,
+			s, // CNAME
+			"157.240.20.35",
+		)
+	}
+	return NewEnvironmentWithDNSConfig(dnsConfig)
+}
+
 // NewEnvironment creates a new QA environment. This function
 // calls [runtimex.PanicOnError] in case of failure.
-func NewEnvironment(dnsConfig *netem.DNSConfig) *Environment {
+func NewEnvironmentWithDNSConfig(dnsConfig *netem.DNSConfig) *Environment {
 	e := &Environment{}
 
 	// create a new star topology
@@ -585,27 +607,6 @@ func NewEnvironment(dnsConfig *netem.DNSConfig) *Environment {
 		"0.0.0.0", // default resolver address
 		&netem.LinkConfig{},
 	))
-
-	if dnsConfig == nil {
-		dnsConfig = netem.NewDNSConfig()
-		services := []string{
-			"stun.fbsbx.com",
-			"b-api.facebook.com",
-			"b-graph.facebook.com",
-			"edge-mqtt.facebook.com",
-			"external.xx.fbcdn.net",
-			"scontent.xx.fbcdn.net",
-			"star.c10r.facebook.com",
-		}
-		for _, s := range services {
-			// create configuration for DNS server
-			dnsConfig.AddRecord(
-				s,
-				s, // CNAME
-				"157.240.20.35",
-			)
-		}
-	}
 
 	// create DNS server using the dnsServerStack
 	e.dnsServer = runtimex.Try1(netem.NewDNSServer(

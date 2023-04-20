@@ -285,9 +285,20 @@ type Environment struct {
 	topology *netem.StarTopology
 }
 
+func NewEnvironment() *Environment {
+	// create configuration for DNS server
+	dnsConfig := netem.NewDNSConfig()
+	dnsConfig.AddRecord(
+		"web.telegram.org",
+		"web.telegram.org", // CNAME
+		"149.154.167.99",
+	)
+	return NewEnvironmentWithDNSConfig(dnsConfig)
+}
+
 // NewEnvironment creates a new QA environment. This function
 // calls [runtimex.PanicOnError] in case of failure.
-func NewEnvironment(dnsConfig *netem.DNSConfig) *Environment {
+func NewEnvironmentWithDNSConfig(dnsConfig *netem.DNSConfig) *Environment {
 	e := &Environment{}
 
 	// create a new star topology
@@ -303,16 +314,6 @@ func NewEnvironment(dnsConfig *netem.DNSConfig) *Environment {
 		"0.0.0.0", // default resolver address
 		&netem.LinkConfig{},
 	))
-
-	if dnsConfig == nil {
-		// create configuration for DNS server
-		dnsConfig = netem.NewDNSConfig()
-		dnsConfig.AddRecord(
-			"web.telegram.org",
-			"web.telegram.org", // CNAME
-			"149.154.167.99",
-		)
-	}
 
 	// create DNS server using the dnsServerStack
 	e.dnsServer = runtimex.Try1(netem.NewDNSServer(
@@ -420,7 +421,7 @@ func TestMeasurerRun(t *testing.T) {
 
 	t.Run("Test Measurer without DPI: expect success", func(t *testing.T) {
 		// create a new test environment
-		env := NewEnvironment(nil)
+		env := NewEnvironment()
 		defer env.Close()
 		env.Do(func() {
 			measurer := telegram.NewExperimentMeasurer(telegram.Config{})
@@ -498,7 +499,7 @@ func TestMeasurerRun(t *testing.T) {
 			"web.telegram.org", // CNAME
 			"a.b.c.d",          // bogon
 		)
-		env := NewEnvironment(dnsConfig)
+		env := NewEnvironmentWithDNSConfig(dnsConfig)
 		defer env.Close()
 		env.Do(func() {
 			measurer := telegram.NewExperimentMeasurer(telegram.Config{})
@@ -535,7 +536,7 @@ func TestMeasurerRun(t *testing.T) {
 			"149.154.175.50",
 		}
 		// create a new test environment
-		env := NewEnvironment(nil)
+		env := NewEnvironment()
 		defer env.Close()
 		// create DPI that drops traffic for datacenter endpoints on ports 443 and 80
 		dpi := env.DPIEngine()
@@ -581,7 +582,7 @@ func TestMeasurerRun(t *testing.T) {
 
 	t.Run("Test Measurer with DPI that drops TLS traffic with SNI = web.telegram.org: expect TelegramWebFailure", func(t *testing.T) {
 		// create a new test environment
-		env := NewEnvironment(nil)
+		env := NewEnvironment()
 		defer env.Close()
 		// create DPI that drops TLS packets with SNI = web.telegram.org
 		dpi := env.DPIEngine()
