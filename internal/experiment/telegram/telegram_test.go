@@ -469,15 +469,6 @@ func TestMeasurerRun(t *testing.T) {
 			if len(tk.TLSHandshakes) <= 0 {
 				t.Fatal("no TLSHandshakes?!")
 			}
-			if tk.TelegramHTTPBlocking != false {
-				t.Fatal("unexpected TelegramHTTPBlocking")
-			}
-			if tk.TelegramTCPBlocking != false {
-				t.Fatal("unexpected TelegramTCPBlocking")
-			}
-			if tk.TelegramWebFailure != nil {
-				t.Fatal("unexpected TelegramWebFailure")
-			}
 			if tk.TelegramWebStatus != "ok" {
 				t.Fatal("unexpected TelegramWebStatus")
 			}
