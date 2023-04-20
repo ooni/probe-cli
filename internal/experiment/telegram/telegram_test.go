@@ -299,7 +299,7 @@ func NewEnvironment(dnsConfig *netem.DNSConfig) *Environment {
 	// need to call Close when done using it, since the topology will do that
 	// for us when we call the topology's Close method.
 	dnsServerStack := runtimex.Try1(e.topology.AddHost(
-		"1.2.3.4", // server IP address
+		"1.1.1.1", // server IP address
 		"0.0.0.0", // default resolver address
 		&netem.LinkConfig{},
 	))
@@ -318,7 +318,7 @@ func NewEnvironment(dnsConfig *netem.DNSConfig) *Environment {
 	e.dnsServer = runtimex.Try1(netem.NewDNSServer(
 		model.DiscardLogger,
 		dnsServerStack,
-		"1.2.3.4",
+		"1.1.1.1",
 		dnsConfig,
 	))
 
@@ -380,7 +380,7 @@ func NewEnvironment(dnsConfig *netem.DNSConfig) *Environment {
 	// for us when we call the topology's Close method.
 	e.clientStack = runtimex.Try1(e.topology.AddHost(
 		"10.0.0.14", // client IP address
-		"1.2.3.4",   // default resolver address
+		"1.1.1.1",   // default resolver address
 		&netem.LinkConfig{
 			DPIEngine: e.dpi,
 		},

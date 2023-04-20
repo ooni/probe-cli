@@ -217,7 +217,7 @@ type Environment struct {
 func NewEnvironment(altResolver string) *Environment {
 	// create a new star topology
 	topology := runtimex.Try1(netem.NewStarTopology(model.DiscardLogger))
-	defaultResolver := "1.2.3.4"
+	defaultResolver := "1.1.1.1"
 	resolverAddr := defaultResolver
 	if altResolver != "" {
 		resolverAddr = altResolver
