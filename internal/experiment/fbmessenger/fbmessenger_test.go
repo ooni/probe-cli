@@ -20,6 +20,11 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
+var (
+	trueValue  = true
+	falseValue = false
+)
+
 func TestNewExperimentMeasurer(t *testing.T) {
 	measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
 	if measurer.ExperimentName() != "facebook_messenger" {
@@ -34,6 +39,25 @@ func TestMeasurerRun(t *testing.T) {
 	t.Run("Test Measurer without DPI: expect success", func(t *testing.T) {
 		if testing.Short() {
 			t.Skip("skip test in short mode")
+		}
+		// we expect the following TestKeys values
+		expectTestKeys := &fbmessenger.TestKeys{
+			FacebookBAPIDNSConsistent:        &trueValue,
+			FacebookBAPIReachable:            &trueValue,
+			FacebookBGraphDNSConsistent:      &trueValue,
+			FacebookBGraphReachable:          &trueValue,
+			FacebookEdgeDNSConsistent:        &trueValue,
+			FacebookEdgeReachable:            &trueValue,
+			FacebookExternalCDNDNSConsistent: &trueValue,
+			FacebookExternalCDNReachable:     &trueValue,
+			FacebookScontentCDNDNSConsistent: &trueValue,
+			FacebookScontentCDNReachable:     &trueValue,
+			FacebookStarDNSConsistent:        &trueValue,
+			FacebookStarReachable:            &trueValue,
+			FacebookSTUNDNSConsistent:        &trueValue,
+			FacebookSTUNReachable:            nil,
+			FacebookDNSBlocking:              &falseValue,
+			FacebookTCPBlocking:              &falseValue,
 		}
 		env := NewEnvironment()
 		defer env.Close()
@@ -54,57 +78,31 @@ func TestMeasurerRun(t *testing.T) {
 				t.Fatal(err)
 			}
 			tk := measurement.TestKeys.(*fbmessenger.TestKeys)
-			if *tk.FacebookBAPIDNSConsistent != true {
-				t.Fatal("invalid FacebookBAPIDNSConsistent")
-			}
-			if *tk.FacebookBAPIReachable != true {
-				t.Fatal("invalid FacebookBAPIReachable")
-			}
-			if *tk.FacebookBGraphDNSConsistent != true {
-				t.Fatal("invalid FacebookBGraphDNSConsistent")
-			}
-			if *tk.FacebookBGraphReachable != true {
-				t.Fatal("invalid FacebookBGraphReachable")
-			}
-			if *tk.FacebookEdgeDNSConsistent != true {
-				t.Fatal("invalid FacebookEdgeDNSConsistent")
-			}
-			if *tk.FacebookEdgeReachable != true {
-				t.Fatal("invalid FacebookEdgeReachable")
-			}
-			if *tk.FacebookExternalCDNDNSConsistent != true {
-				t.Fatal("invalid FacebookExternalCDNDNSConsistent")
-			}
-			if *tk.FacebookExternalCDNReachable != true {
-				t.Fatal("invalid FacebookExternalCDNReachable")
-			}
-			if *tk.FacebookScontentCDNDNSConsistent != true {
-				t.Fatal("invalid FacebookScontentCDNDNSConsistent")
-			}
-			if *tk.FacebookScontentCDNReachable != true {
-				t.Fatal("invalid FacebookScontentCDNReachable")
-			}
-			if *tk.FacebookStarDNSConsistent != true {
-				t.Fatal("invalid FacebookStarDNSConsistent")
-			}
-			if *tk.FacebookStarReachable != true {
-				t.Fatal("invalid FacebookStarReachable")
-			}
-			if *tk.FacebookSTUNDNSConsistent != true {
-				t.Fatal("invalid FacebookSTUNDNSConsistent")
-			}
-			if tk.FacebookSTUNReachable != nil {
-				t.Fatal("invalid FacebookSTUNReachable")
-			}
-			if *tk.FacebookDNSBlocking != false {
-				t.Fatal("invalid FacebookDNSBlocking")
-			}
-			if *tk.FacebookTCPBlocking != false {
-				t.Fatal("invalid FacebookTCPBlocking")
+			if !tk.EqualResults(expectTestKeys) {
+				t.Fatal("invalid TestKeys")
 			}
 		})
 	})
 	t.Run("Test Measurer without DPI, cancelled context: expect interrupted failure", func(t *testing.T) {
+		// we expect the following TestKeys values
+		expectTestKeys := &fbmessenger.TestKeys{
+			FacebookBAPIDNSConsistent:        &falseValue,
+			FacebookBAPIReachable:            nil,
+			FacebookBGraphDNSConsistent:      &falseValue,
+			FacebookBGraphReachable:          nil,
+			FacebookEdgeDNSConsistent:        &falseValue,
+			FacebookEdgeReachable:            nil,
+			FacebookExternalCDNDNSConsistent: &falseValue,
+			FacebookExternalCDNReachable:     nil,
+			FacebookScontentCDNDNSConsistent: &falseValue,
+			FacebookScontentCDNReachable:     nil,
+			FacebookStarDNSConsistent:        &falseValue,
+			FacebookStarReachable:            nil,
+			FacebookSTUNDNSConsistent:        &falseValue,
+			FacebookSTUNReachable:            nil,
+			FacebookDNSBlocking:              &trueValue,
+			FacebookTCPBlocking:              &falseValue, // no TCP blocking because we didn't ever reach TCP connect
+		}
 		env := NewEnvironment()
 		defer env.Close()
 		env.Do(func() {
@@ -124,54 +122,8 @@ func TestMeasurerRun(t *testing.T) {
 				t.Fatal(err)
 			}
 			tk := measurement.TestKeys.(*fbmessenger.TestKeys)
-			if *tk.FacebookBAPIDNSConsistent != false {
-				t.Fatal("invalid FacebookBAPIDNSConsistent")
-			}
-			if tk.FacebookBAPIReachable != nil {
-				t.Fatal("invalid FacebookBAPIReachable")
-			}
-			if *tk.FacebookBGraphDNSConsistent != false {
-				t.Fatal("invalid FacebookBGraphDNSConsistent")
-			}
-			if tk.FacebookBGraphReachable != nil {
-				t.Fatal("invalid FacebookBGraphReachable")
-			}
-			if *tk.FacebookEdgeDNSConsistent != false {
-				t.Fatal("invalid FacebookEdgeDNSConsistent")
-			}
-			if tk.FacebookEdgeReachable != nil {
-				t.Fatal("invalid FacebookEdgeReachable")
-			}
-			if *tk.FacebookExternalCDNDNSConsistent != false {
-				t.Fatal("invalid FacebookExternalCDNDNSConsistent")
-			}
-			if tk.FacebookExternalCDNReachable != nil {
-				t.Fatal("invalid FacebookExternalCDNReachable")
-			}
-			if *tk.FacebookScontentCDNDNSConsistent != false {
-				t.Fatal("invalid FacebookScontentCDNDNSConsistent")
-			}
-			if tk.FacebookScontentCDNReachable != nil {
-				t.Fatal("invalid FacebookScontentCDNReachable")
-			}
-			if *tk.FacebookStarDNSConsistent != false {
-				t.Fatal("invalid FacebookStarDNSConsistent")
-			}
-			if tk.FacebookStarReachable != nil {
-				t.Fatal("invalid FacebookStarReachable")
-			}
-			if *tk.FacebookSTUNDNSConsistent != false {
-				t.Fatal("invalid FacebookSTUNDNSConsistent")
-			}
-			if tk.FacebookSTUNReachable != nil {
-				t.Fatal("invalid FacebookSTUNReachable")
-			}
-			if *tk.FacebookDNSBlocking != true {
-				t.Fatal("invalid FacebookDNSBlocking")
-			}
-			// no TCP blocking because we didn't ever reach TCP connect
-			if *tk.FacebookTCPBlocking != false {
-				t.Fatal("invalid FacebookTCPBlocking")
+			if !tk.EqualResults(expectTestKeys) {
+				t.Fatal("invalid TestKeys")
 			}
 			sk, err := measurer.GetSummaryKeys(measurement)
 			if err != nil {
@@ -185,6 +137,13 @@ func TestMeasurerRun(t *testing.T) {
 	t.Run("Test Measurer with DPI that drops traffic to fbmessenger endpoint: expect FacebookTCPBlocking", func(t *testing.T) {
 		if testing.Short() {
 			t.Skip("skip test in short mode")
+		}
+		// we expect the following TestKeys
+		expectTestKeys := &fbmessenger.TestKeys{
+			FacebookBAPIDNSConsistent: &trueValue,
+			FacebookBAPIReachable:     &falseValue,
+			FacebookDNSBlocking:       &falseValue,
+			FacebookTCPBlocking:       &trueValue,
 		}
 		// overwrite global Services, otherwise the test times out because there are too many endpoints
 		orig := fbmessenger.Services
@@ -218,58 +177,33 @@ func TestMeasurerRun(t *testing.T) {
 				t.Fatal(err)
 			}
 			tk := measurement.TestKeys.(*fbmessenger.TestKeys)
-			if *tk.FacebookBAPIDNSConsistent != true {
-				t.Fatal("invalid FacebookBAPIDNSConsistent")
-			}
-			if *tk.FacebookBAPIReachable != false {
-				t.Fatal("invalid FacebookBAPIReachable")
-			}
-			if tk.FacebookBGraphDNSConsistent != nil {
-				t.Fatal("invalid FacebookBGraphDNSConsistent")
-			}
-			if tk.FacebookBGraphReachable != nil {
-				t.Fatal("invalid FacebookBGraphReachable")
-			}
-			if tk.FacebookEdgeDNSConsistent != nil {
-				t.Fatal("invalid FacebookEdgeDNSConsistent")
-			}
-			if tk.FacebookEdgeReachable != nil {
-				t.Fatal("invalid FacebookEdgeReachable")
-			}
-			if tk.FacebookExternalCDNDNSConsistent != nil {
-				t.Fatal("invalid FacebookExternalCDNDNSConsistent")
-			}
-			if tk.FacebookExternalCDNReachable != nil {
-				t.Fatal("invalid FacebookExternalCDNReachable")
-			}
-			if tk.FacebookScontentCDNDNSConsistent != nil {
-				t.Fatal("invalid FacebookScontentCDNDNSConsistent")
-			}
-			if tk.FacebookScontentCDNReachable != nil {
-				t.Fatal("invalid FacebookScontentCDNReachable")
-			}
-			if tk.FacebookStarDNSConsistent != nil {
-				t.Fatal("invalid FacebookStarDNSConsistent")
-			}
-			if tk.FacebookStarReachable != nil {
-				t.Fatal("invalid FacebookStarReachable")
-			}
-			if tk.FacebookSTUNDNSConsistent != nil {
-				t.Fatal("invalid FacebookSTUNDNSConsistent")
-			}
-			if tk.FacebookSTUNReachable != nil {
-				t.Fatal("invalid FacebookSTUNReachable")
-			}
-			if *tk.FacebookDNSBlocking != false {
-				t.Fatal("invalid FacebookDNSBlocking")
-			}
-			if *tk.FacebookTCPBlocking != true {
-				t.Fatal("invalid FacebookTCPBlocking")
+			if !tk.EqualResults(expectTestKeys) {
+				t.Fatal("invalid TestKeys")
 			}
 		})
 		fbmessenger.Services = orig
 	})
 	t.Run("Test Measurer with poisoned DNS: expect FacebookDNSBlocking", func(t *testing.T) {
+		// we expect the following TestKeys values
+		expectTestKeys := &fbmessenger.TestKeys{
+			FacebookBAPIDNSConsistent:        &falseValue,
+			FacebookBAPIReachable:            nil,
+			FacebookBGraphDNSConsistent:      &falseValue,
+			FacebookBGraphReachable:          nil,
+			FacebookEdgeDNSConsistent:        &falseValue,
+			FacebookEdgeReachable:            nil,
+			FacebookExternalCDNDNSConsistent: &falseValue,
+			FacebookExternalCDNReachable:     nil,
+			FacebookScontentCDNDNSConsistent: &falseValue,
+			FacebookScontentCDNReachable:     nil,
+			FacebookStarDNSConsistent:        &falseValue,
+			FacebookStarReachable:            nil,
+			FacebookSTUNDNSConsistent:        &falseValue,
+			FacebookSTUNReachable:            nil,
+			FacebookDNSBlocking:              &trueValue,
+			FacebookTCPBlocking:              &falseValue, // no TCP blocking because we didn't ever reach TCP connect
+		}
+
 		// create a new test environment with bogon DNS
 		dnsConfig := netem.NewDNSConfig()
 		services := []string{
@@ -308,54 +242,8 @@ func TestMeasurerRun(t *testing.T) {
 				t.Fatal(err)
 			}
 			tk := measurement.TestKeys.(*fbmessenger.TestKeys)
-			if *tk.FacebookBAPIDNSConsistent != false {
-				t.Fatal("invalid FacebookBAPIDNSConsistent")
-			}
-			if tk.FacebookBAPIReachable != nil {
-				t.Fatal("invalid FacebookBAPIReachable")
-			}
-			if *tk.FacebookBGraphDNSConsistent != false {
-				t.Fatal("invalid FacebookBGraphDNSConsistent")
-			}
-			if tk.FacebookBGraphReachable != nil {
-				t.Fatal("invalid FacebookBGraphReachable")
-			}
-			if *tk.FacebookEdgeDNSConsistent != false {
-				t.Fatal("invalid FacebookEdgeDNSConsistent")
-			}
-			if tk.FacebookEdgeReachable != nil {
-				t.Fatal("invalid FacebookEdgeReachable")
-			}
-			if *tk.FacebookExternalCDNDNSConsistent != false {
-				t.Fatal("invalid FacebookExternalCDNDNSConsistent")
-			}
-			if tk.FacebookExternalCDNReachable != nil {
-				t.Fatal("invalid FacebookExternalCDNReachable")
-			}
-			if *tk.FacebookScontentCDNDNSConsistent != false {
-				t.Fatal("invalid FacebookScontentCDNDNSConsistent")
-			}
-			if tk.FacebookScontentCDNReachable != nil {
-				t.Fatal("invalid FacebookScontentCDNReachable")
-			}
-			if *tk.FacebookStarDNSConsistent != false {
-				t.Fatal("invalid FacebookStarDNSConsistent")
-			}
-			if tk.FacebookStarReachable != nil {
-				t.Fatal("invalid FacebookStarReachable")
-			}
-			if *tk.FacebookSTUNDNSConsistent != false {
-				t.Fatal("invalid FacebookSTUNDNSConsistent")
-			}
-			if tk.FacebookSTUNReachable != nil {
-				t.Fatal("invalid FacebookSTUNReachable")
-			}
-			if *tk.FacebookDNSBlocking != true {
-				t.Fatal("invalid FacebookDNSBlocking")
-			}
-			// no TCP blocking because we didn't ever reach TCP connect
-			if *tk.FacebookTCPBlocking != false {
-				t.Fatal("invalid FacebookTCPBlocking")
+			if !tk.EqualResults(expectTestKeys) {
+				t.Fatal("invalid TestKeys")
 			}
 		})
 	})
