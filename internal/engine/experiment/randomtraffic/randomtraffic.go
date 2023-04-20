@@ -59,7 +59,7 @@ type TestKeys struct {
 	Censorship bool `json:"censorship"`
 
 	// String of error
-	Error *string `json:"error"`
+	Failure *string `json:"failure"`
 }
 
 // Measurer performs the measurement.
@@ -422,21 +422,21 @@ func testIP(
 	}
 	defer conn.Close()
 
-	// The average payload length is between 500 and 1000. This creates
-	// an array of bytes in that range, all of which are zero
-	bytes := make([]byte, rand.Intn(500)+500)
-
 	// If this is not the control test then make the payload random
 	if !control {
+		// The average payload length is between 500 and 1000. This creates
+		// an array of bytes in that range, all of which are zero
+		bytes := make([]byte, rand.Intn(500)+500)
+
 		// Filling byte array with random bytes
 		rand.Read(bytes)
+	
+		// Record payload
+		*payload = bytes
+
+		// Bytes are sent through the connection
+		conn.Write(bytes)
 	}
-
-	// Record payload
-	*payload = bytes
-
-	// Bytes are sent through the connection
-	conn.Write(bytes)
 
 	// No timeout and no experiment error
 	return false, nil
@@ -458,9 +458,9 @@ func configureTestKeys(
 	// If there is an error, save its string in the test keys
 	if err != nil {
 		errString := err.Error()
-		testkeys.Error = &errString
+		testkeys.Failure = &errString
 	} else {
-		testkeys.Error = nil
+		testkeys.Failure = nil
 	}
 
 	// Amount of successful connections is the test count
