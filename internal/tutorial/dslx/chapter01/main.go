@@ -1,22 +1,27 @@
 // -=-=- StartHere -=-=-
-//
+
 // # Chapter 1: Introduction and General Principle
-//
+
+// Before implementing a complete OONI Probe experiment using `dslx` in the next chapter, we will first learn about the basic principles behind the `dslx` API.
+
+// ## Background: Step-by-step network operations
 // Connections and requests using common Internet protocols are made up by a set of subsequent operations (steps).
 // Here are some examples:
-//
-// a) To connect to a QUIC endpoint, we do 2 subsequent steps:
+
+// *Example A* To connect to a QUIC endpoint, we do 2 subsequent steps:
 // * DNS lookup, and
 // * QUIC handshake.
-//
-// b) In order to do an HTTPS transaction we do 4 subsequent steps:
+
+// *Example B* In order to do an HTTPS transaction we do 4 subsequent steps:
 // * DNS lookup,
 // * TCP three-way-handshake,
 // * TLS handshake, and
 // * HTTP transaction containing HTTP requests and responses.
-//
+
 // Most OONI experiments observe and interpret the events during these operations. Thus, it makes sense to write experiments in a step-by-step manner as well, by building network functions from a toolbox of smaller building blocks.
-//
+
+// ## `dslx` building blocks
+
 // dslx provides such a toolbox of building blocks, in particular:
 // * DNSLookupGetaddrinfo
 // * DNSLookupUDP
@@ -26,32 +31,30 @@
 // * HTTPRequestOverTCP (HTTP)
 // * HTTPRequestOverTLS (HTTPS)
 // * HTTPRequestOverQUIC (HTTP/3)
-//
+
 // We can run a building block individually, e.g. the DNS Resolve operation:
-//
+
 // ```golang
 // // pseudo code
 // fn := dslx.DNSLookupGetaddrinfo()
 // dnsResult := fn.Apply()
 // ```
-//
-// We can put building blocks together, by using function composition:
-//
-// a)
-// ```golang
+
+// ## `dslx` function composition
+// By using `dslx` function composition, we can put building blocks together to create measurement pipelines. When calling `Apply` on such a pipeline, `dslx` tries to execute all steps inside the pipeline. If one step fails, the subsequent steps are skipped.
+
+// *Example A*
+// ```Go
 // // pseudo code
 // pipeline := dslx.Compose2(
 //    DNSLookupGetaddrinfo(),
 //    QUICHandshake(),
 // )
-// // Apply tries to execute both steps,
-// // the DNS Lookup and the QUIC handshake.
-// // If the DNS Lookup fails, the QUIC handshake is skipped.
 // totalResult := pipeline.Apply()
 // ```
-//
-// b)
-// ```golang
+
+// *Example B*
+// ```Go
 // // pseudo code
 // pipeline := dslx.Compose4(
 //    DNSLookupGetaddrinfo(),
@@ -59,13 +62,8 @@
 //    TLSHandshake(),
 //    HTTPRequestOverTLS(),
 // )
-// // Apply tries to execute all 4 steps: the DNS Lookup, TCP Connect,
-// // TLS handshake and HTTP transaction.
-// // If one step fails, the subsequent steps are skipped.
 // totalResult := pipeline.Apply()
 // ```
 
-// ```Go
-package main
+// Now that we have learned about this central and basic working principle of `dslx`, let's start writing some actual experiment code! [Goto chapter02](../chapter02/README.md).
 
-// ```

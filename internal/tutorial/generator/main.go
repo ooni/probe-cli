@@ -127,6 +127,7 @@ func gendslx() {
 	prefix := path.Join(".", "dslx")
 	gen(path.Join(prefix, "chapter01"), "main.go")
 	gen(path.Join(prefix, "chapter02"), "main.go")
+	gen(path.Join(prefix, "chapter03"), "main.go")
 }
 
 func main() {
