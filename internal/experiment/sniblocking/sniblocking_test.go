@@ -214,14 +214,10 @@ type Environment struct {
 
 // NewEnvironment creates a new QA environment. This function
 // calls [runtimex.PanicOnError] in case of failure.
-func NewEnvironment(altResolver string) *Environment {
+func NewEnvironment() *Environment {
 	// create a new star topology
 	topology := runtimex.Try1(netem.NewStarTopology(model.DiscardLogger))
-	defaultResolver := "1.1.1.1"
-	resolverAddr := defaultResolver
-	if altResolver != "" {
-		resolverAddr = altResolver
-	}
+	resolverAddr := "1.1.1.1"
 
 	// create server stack
 	//
@@ -229,8 +225,8 @@ func NewEnvironment(altResolver string) *Environment {
 	// need to call Close when done using it, since the topology will do that
 	// for us when we call the topology's Close method.
 	dnsServerStack := runtimex.Try1(topology.AddHost(
-		resolverAddr,    // server IP address
-		defaultResolver, // default resolver address
+		resolverAddr, // server IP address
+		resolverAddr, // default resolver address
 		&netem.LinkConfig{},
 	))
 
@@ -251,8 +247,8 @@ func NewEnvironment(altResolver string) *Environment {
 	))
 
 	serverStack := runtimex.Try1(topology.AddHost(
-		"9.9.9.9",       // server IP address
-		defaultResolver, // default resolver address
+		"9.9.9.9",    // server IP address
+		resolverAddr, // default resolver address
 		&netem.LinkConfig{},
 	))
 
@@ -279,8 +275,8 @@ func NewEnvironment(altResolver string) *Environment {
 	// need to call Close when done using it, since the topology will do that
 	// for us when we call the topology's Close method.
 	clientStack := runtimex.Try1(topology.AddHost(
-		"10.0.0.14",     // client IP address
-		defaultResolver, // default resolver address
+		"10.0.0.14",  // client IP address
+		resolverAddr, // default resolver address
 		&netem.LinkConfig{
 			DPIEngine: dpi,
 		},
@@ -318,7 +314,7 @@ func (e *Environment) Close() error {
 
 func TestMeasurerWithInvalidInput(t *testing.T) {
 	t.Run("Test Measurer with no measurement input: expect input error", func(t *testing.T) {
-		env := NewEnvironment("")
+		env := NewEnvironment()
 		defer env.Close()
 		env.Do(func() {
 			measurer := NewExperimentMeasurer(Config{})
@@ -334,7 +330,7 @@ func TestMeasurerWithInvalidInput(t *testing.T) {
 		})
 	})
 	t.Run("Test Measurer with invalid MeasurementInput: expect parsing error", func(t *testing.T) {
-		env := NewEnvironment("")
+		env := NewEnvironment()
 		defer env.Close()
 		env.Do(func() {
 			ctx, cancel := context.WithCancel(context.Background())
@@ -361,7 +357,7 @@ func TestMeasurerWithInvalidInput(t *testing.T) {
 func TestMeasurerRun(t *testing.T) {
 
 	t.Run("Test Measurer without DPI: expect success", func(t *testing.T) {
-		env := NewEnvironment("")
+		env := NewEnvironment()
 		defer env.Close()
 		env.Do(func() {
 			measurer := NewExperimentMeasurer(Config{
@@ -510,7 +506,7 @@ func TestMeasurerRun(t *testing.T) {
 	})
 
 	t.Run("Test Measurer with cache: expect to see cached entry", func(t *testing.T) {
-		env := NewEnvironment("")
+		env := NewEnvironment()
 		defer env.Close()
 		env.Do(func() {
 			cache := make(map[string]Subresult)
@@ -560,7 +556,7 @@ func TestMeasurerRun(t *testing.T) {
 	})
 
 	t.Run("Test Measurer with DPI that blocks target SNI", func(t *testing.T) {
-		env := NewEnvironment("")
+		env := NewEnvironment()
 		defer env.Close()
 		dpi := env.DPIEngine()
 		dpi.AddRule(&netem.DPIResetTrafficForTLSSNI{
@@ -601,7 +597,7 @@ func TestMeasurerRun(t *testing.T) {
 }
 
 func TestMeasureonewithcacheWorks(t *testing.T) {
-	env := NewEnvironment("")
+	env := NewEnvironment()
 	defer env.Close()
 	env.Do(func() {
 		measurer := &Measurer{cache: make(map[string]Subresult)}
