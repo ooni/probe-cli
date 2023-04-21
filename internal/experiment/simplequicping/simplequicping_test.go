@@ -15,8 +15,10 @@ import (
 	"time"
 
 	"github.com/lucas-clemente/quic-go"
+	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netemx"
 )
 
 func TestConfig_alpn(t *testing.T) {
@@ -38,6 +40,54 @@ func TestConfig_delay(t *testing.T) {
 	if c.delay() != time.Second {
 		t.Fatal("invalid default delay")
 	}
+}
+
+func TestMeasurerRun(t *testing.T) {
+	t.Run("Test Measurer without DPI: expect success", func(t *testing.T) {
+		dnsConfig := netem.NewDNSConfig()
+		conf := netemx.Config{
+			DNSConfig: dnsConfig,
+			Servers: []netemx.ServerStack{
+				{
+					ServerAddr: "8.8.8.8",
+					Listeners: []netemx.Listener{
+						{
+							Port: 443,
+							QUIC: true,
+						},
+					},
+				},
+			},
+		}
+		env := netemx.NewEnvironment(conf)
+		defer env.Close()
+		env.Do(func() {
+			measurer := NewExperimentMeasurer(Config{
+				SNI: "dns.google.com",
+			})
+			measurement := &model.Measurement{
+				Input: "quichandshake://8.8.8.8:443",
+			}
+			sess := &mockable.Session{
+				MockableLogger: model.DiscardLogger,
+			}
+			args := &model.ExperimentArgs{
+				Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+				Measurement: measurement,
+				Session:     sess,
+			}
+			err := measurer.Run(context.Background(), args)
+			if err != nil {
+				t.Fatalf("Unexpected error: %s", err)
+			}
+			tk, _ := (measurement.TestKeys).(*TestKeys)
+			for _, p := range tk.Pings {
+				if p.QUICHandshake.Failure != nil {
+					t.Fatal("unexpected error")
+				}
+			}
+		})
+	})
 }
 
 func TestMeasurer_run(t *testing.T) {
