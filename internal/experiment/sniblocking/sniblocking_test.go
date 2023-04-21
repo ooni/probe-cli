@@ -2,8 +2,6 @@ package sniblocking
 
 import (
 	"context"
-	"net"
-	"net/http"
 	"testing"
 	"time"
 
@@ -13,7 +11,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func TestTestKeysClassify(t *testing.T) {
@@ -192,129 +189,32 @@ func TestSummaryKeysGeneric(t *testing.T) {
 	}
 }
 
-// The netemx environment design is based on netemx_test.
-
-// Environment is the [netem] QA environment we use in this package.
-type Environment struct {
-	// clientStack is the client stack to use.
-	clientStack *netem.UNetStack
-
-	// dnsServer is the DNS server.
-	dnsServer *netem.DNSServer
-
-	// dpi refers to the [netem.DPIEngine] we're using
-	dpi *netem.DPIEngine
-
-	// httpsServer is the HTTPS server.
-	httpsServer *http.Server
-
-	// topology is the topology we're using
-	topology *netem.StarTopology
-}
-
-// NewEnvironment creates a new QA environment. This function
-// calls [runtimex.PanicOnError] in case of failure.
-func NewEnvironment() *Environment {
-	// create a new star topology
-	topology := runtimex.Try1(netem.NewStarTopology(model.DiscardLogger))
-	resolverAddr := "1.1.1.1"
-
-	// create server stack
-	//
-	// note: because the stack is created using topology.AddHost, we don't
-	// need to call Close when done using it, since the topology will do that
-	// for us when we call the topology's Close method.
-	dnsServerStack := runtimex.Try1(topology.AddHost(
-		resolverAddr, // server IP address
-		resolverAddr, // default resolver address
-		&netem.LinkConfig{},
-	))
-
-	// create configuration for DNS server
+// Creates an experiment-specific configuration for the [netemx.Environment].
+func envConfig() netemx.Config {
 	dnsConfig := netem.NewDNSConfig()
 	dnsConfig.AddRecord(
 		"example.org",
-		"example.org", // CNAME
+		"example.org",
 		"9.9.9.9",
 	)
-
-	// create DNS server using the dnsServerStack
-	dnsServer := runtimex.Try1(netem.NewDNSServer(
-		model.DiscardLogger,
-		dnsServerStack,
-		resolverAddr,
-		dnsConfig,
-	))
-
-	serverStack := runtimex.Try1(topology.AddHost(
-		"9.9.9.9",    // server IP address
-		resolverAddr, // default resolver address
-		&netem.LinkConfig{},
-	))
-
-	// create HTTPS server using the server stack
-	tlsListener := runtimex.Try1(serverStack.ListenTCP("tcp", &net.TCPAddr{
-		IP:   net.IPv4(9, 9, 9, 9),
-		Port: 443,
-		Zone: "",
-	}))
-	httpsServer := &http.Server{
-		TLSConfig: serverStack.ServerTLSConfig(),
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(`hello, world`))
-		}),
-	}
-	go httpsServer.ServeTLS(tlsListener, "", "")
-
-	// create a DPIEngine for implementing censorship
-	dpi := netem.NewDPIEngine(model.DiscardLogger)
-
-	// create client stack
-	//
-	// note: because the stack is created using topology.AddHost, we don't
-	// need to call Close when done using it, since the topology will do that
-	// for us when we call the topology's Close method.
-	clientStack := runtimex.Try1(topology.AddHost(
-		"10.0.0.14",  // client IP address
-		resolverAddr, // default resolver address
-		&netem.LinkConfig{
-			DPIEngine: dpi,
+	return netemx.Config{
+		DNSConfig: dnsConfig,
+		Servers: []netemx.ServerStack{
+			{
+				ServerAddr: "9.9.9.9",
+				Listeners: []netemx.Listener{
+					{
+						Port: 443,
+					},
+				},
+			},
 		},
-	))
-
-	return &Environment{
-		clientStack: clientStack,
-		dnsServer:   dnsServer,
-		dpi:         dpi,
-		httpsServer: httpsServer,
-		topology:    topology,
 	}
-}
-
-// DPIEngine returns the [netem.DPIEngine] we're using on the
-// link between the client stack and the router. You can safely
-// add new DPI rules from concurrent goroutines at any time.
-func (e *Environment) DPIEngine() *netem.DPIEngine {
-	return e.dpi
-}
-
-// Do executes the given function such that [netxlite] code uses the
-// underlying clientStack rather than ordinary networking code.
-func (e *Environment) Do(function func()) {
-	netemx.WithCustomTProxy(e.clientStack, function)
-}
-
-// Close closes all the resources used by [Environment].
-func (e *Environment) Close() error {
-	e.dnsServer.Close()
-	e.httpsServer.Close()
-	e.topology.Close()
-	return nil
 }
 
 func TestMeasurerWithInvalidInput(t *testing.T) {
 	t.Run("Test Measurer with no measurement input: expect input error", func(t *testing.T) {
-		env := NewEnvironment()
+		env := netemx.NewEnvironment(envConfig())
 		defer env.Close()
 		env.Do(func() {
 			measurer := NewExperimentMeasurer(Config{})
@@ -330,7 +230,7 @@ func TestMeasurerWithInvalidInput(t *testing.T) {
 		})
 	})
 	t.Run("Test Measurer with invalid MeasurementInput: expect parsing error", func(t *testing.T) {
-		env := NewEnvironment()
+		env := netemx.NewEnvironment(envConfig())
 		defer env.Close()
 		env.Do(func() {
 			ctx, cancel := context.WithCancel(context.Background())
@@ -357,7 +257,7 @@ func TestMeasurerWithInvalidInput(t *testing.T) {
 func TestMeasurerRun(t *testing.T) {
 
 	t.Run("Test Measurer without DPI: expect success", func(t *testing.T) {
-		env := NewEnvironment()
+		env := netemx.NewEnvironment(envConfig())
 		defer env.Close()
 		env.Do(func() {
 			measurer := NewExperimentMeasurer(Config{
@@ -506,7 +406,7 @@ func TestMeasurerRun(t *testing.T) {
 	})
 
 	t.Run("Test Measurer with cache: expect to see cached entry", func(t *testing.T) {
-		env := NewEnvironment()
+		env := netemx.NewEnvironment(envConfig())
 		defer env.Close()
 		env.Do(func() {
 			cache := make(map[string]Subresult)
@@ -556,7 +456,7 @@ func TestMeasurerRun(t *testing.T) {
 	})
 
 	t.Run("Test Measurer with DPI that blocks target SNI", func(t *testing.T) {
-		env := NewEnvironment()
+		env := netemx.NewEnvironment(envConfig())
 		defer env.Close()
 		dpi := env.DPIEngine()
 		dpi.AddRule(&netem.DPIResetTrafficForTLSSNI{
@@ -597,7 +497,7 @@ func TestMeasurerRun(t *testing.T) {
 }
 
 func TestMeasureonewithcacheWorks(t *testing.T) {
-	env := NewEnvironment()
+	env := netemx.NewEnvironment(envConfig())
 	defer env.Close()
 	env.Do(func() {
 		measurer := &Measurer{cache: make(map[string]Subresult)}

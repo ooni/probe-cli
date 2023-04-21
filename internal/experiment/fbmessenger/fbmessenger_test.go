@@ -3,8 +3,6 @@ package fbmessenger_test
 import (
 	"context"
 	"io"
-	"net"
-	"net/http"
 	"testing"
 
 	"github.com/apex/log"
@@ -16,7 +14,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
@@ -59,7 +56,7 @@ func TestMeasurerRun(t *testing.T) {
 			FacebookDNSBlocking:              &falseValue,
 			FacebookTCPBlocking:              &falseValue,
 		}
-		env := NewEnvironment()
+		env := netemx.NewEnvironment(envConfig())
 		defer env.Close()
 		env.Do(func() {
 			measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
@@ -103,7 +100,7 @@ func TestMeasurerRun(t *testing.T) {
 			FacebookDNSBlocking:              &trueValue,
 			FacebookTCPBlocking:              &falseValue, // no TCP blocking because we didn't ever reach TCP connect
 		}
-		env := NewEnvironment()
+		env := netemx.NewEnvironment(envConfig())
 		defer env.Close()
 		env.Do(func() {
 			measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
@@ -150,7 +147,7 @@ func TestMeasurerRun(t *testing.T) {
 		fbmessenger.Services = []string{
 			fbmessenger.ServiceBAPI,
 		}
-		env := NewEnvironment()
+		env := netemx.NewEnvironment(envConfig())
 		defer env.Close()
 		dpi := env.DPIEngine()
 		dpi.AddRule(&netem.DPIDropTrafficForServerEndpoint{
@@ -223,7 +220,7 @@ func TestMeasurerRun(t *testing.T) {
 				"a.b.c.d", //bogon
 			)
 		}
-		env := NewEnvironmentWithDNSConfig(dnsConfig)
+		env := netemx.NewEnvironment(envConfigWithDNS(dnsConfig))
 		defer env.Close()
 		env.Do(func() {
 			measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
@@ -435,27 +432,8 @@ func TestSummaryKeysWithTrueTrue(t *testing.T) {
 	}
 }
 
-// The netemx environment design is based on netemx_test.
-
-// Environment is the [netem] QA environment we use in this package.
-type Environment struct {
-	// clientStack is the client stack to use.
-	clientStack *netem.UNetStack
-
-	// dnsServer is the DNS server.
-	dnsServer *netem.DNSServer
-
-	// dpi refers to the [netem.DPIEngine] we're using
-	dpi *netem.DPIEngine
-
-	// httpServer is the HTTP server.
-	httpServer *http.Server
-
-	// topology is the topology we're using
-	topology *netem.StarTopology
-}
-
-func NewEnvironment() *Environment {
+// Creates an experiment-specific configuration for the [netemx.Environment].
+func envConfig() netemx.Config {
 	dnsConfig := netem.NewDNSConfig()
 	services := []string{
 		"stun.fbsbx.com",
@@ -474,93 +452,23 @@ func NewEnvironment() *Environment {
 			"157.240.20.35",
 		)
 	}
-	return NewEnvironmentWithDNSConfig(dnsConfig)
+	return envConfigWithDNS(dnsConfig)
 }
 
-// NewEnvironment creates a new QA environment. This function
-// calls [runtimex.PanicOnError] in case of failure.
-func NewEnvironmentWithDNSConfig(dnsConfig *netem.DNSConfig) *Environment {
-	e := &Environment{}
-
-	// create a new star topology
-	e.topology = runtimex.Try1(netem.NewStarTopology(model.DiscardLogger))
-
-	// create server stack
-	//
-	// note: because the stack is created using topology.AddHost, we don't
-	// need to call Close when done using it, since the topology will do that
-	// for us when we call the topology's Close method.
-	dnsServerStack := runtimex.Try1(e.topology.AddHost(
-		"1.1.1.1", // server IP address
-		"0.0.0.0", // default resolver address
-		&netem.LinkConfig{},
-	))
-
-	// create DNS server using the dnsServerStack
-	e.dnsServer = runtimex.Try1(netem.NewDNSServer(
-		model.DiscardLogger,
-		dnsServerStack,
-		"1.1.1.1",
-		dnsConfig,
-	))
-
-	// create a server stack
-	httpServerStack := runtimex.Try1(e.topology.AddHost(
-		"157.240.20.35", // server IP address
-		"0.0.0.0",       // default resolver address
-		&netem.LinkConfig{},
-	))
-
-	// create a TCP server on port 443
-	tcpListener := runtimex.Try1(httpServerStack.ListenTCP("tcp", &net.TCPAddr{
-		IP:   net.IPv4(157, 240, 20, 35),
-		Port: 443,
-		Zone: "",
-	}))
-	e.httpServer = &http.Server{
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(`hello, world`))
-		}),
-	}
-	// run TCP server
-	go e.httpServer.Serve(tcpListener)
-
-	// create a DPIEngine for implementing censorship
-	e.dpi = netem.NewDPIEngine(model.DiscardLogger)
-
-	// create client stack
-	//
-	// note: because the stack is created using topology.AddHost, we don't
-	// need to call Close when done using it, since the topology will do that
-	// for us when we call the topology's Close method.
-	e.clientStack = runtimex.Try1(e.topology.AddHost(
-		"10.0.0.14", // client IP address
-		"1.1.1.1",   // default resolver address
-		&netem.LinkConfig{
-			DPIEngine: e.dpi,
+// Creates an experiment-specific configuration for the [netemx.Environment]
+// with custom DNS.
+func envConfigWithDNS(dnsConfig *netem.DNSConfig) netemx.Config {
+	return netemx.Config{
+		DNSConfig: dnsConfig,
+		Servers: []netemx.ServerStack{
+			{
+				ServerAddr: "157.240.20.35",
+				Listeners: []netemx.Listener{
+					{
+						Port: 443,
+					},
+				},
+			},
 		},
-	))
-
-	return e
-}
-
-// DPIEngine returns the [netem.DPIEngine] we're using on the
-// link between the client stack and the router. You can safely
-// add new DPI rules from concurrent goroutines at any time.
-func (e *Environment) DPIEngine() *netem.DPIEngine {
-	return e.dpi
-}
-
-// Do executes the given function such that [netxlite] code uses the
-// underlying clientStack rather than ordinary networking code.
-func (e *Environment) Do(function func()) {
-	netemx.WithCustomTProxy(e.clientStack, function)
-}
-
-// Close closes all the resources used by [Environment].
-func (e *Environment) Close() error {
-	e.dnsServer.Close()
-	e.httpServer.Close()
-	e.topology.Close()
-	return nil
+	}
 }

@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net"
-	"net/http"
 	"testing"
 
 	"github.com/apex/log"
@@ -17,7 +15,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
@@ -265,152 +262,38 @@ func TestSummaryKeysWorksAsIntended(t *testing.T) {
 	}
 }
 
-// The netemx environment design is based on netemx_test.
-
-// Environment is the [netem] QA environment we use in this package.
-type Environment struct {
-	// clientStack is the client stack to use.
-	clientStack *netem.UNetStack
-
-	// dnsServer is the DNS server.
-	dnsServer *netem.DNSServer
-
-	// dpi refers to the [netem.DPIEngine] we're using
-	dpi *netem.DPIEngine
-
-	// httpsServers are the HTTP servers.
-	httpServers []*http.Server
-
-	// topology is the topology we're using
-	topology *netem.StarTopology
-}
-
-func NewEnvironment() *Environment {
-	// create configuration for DNS server
+// Creates an experiment-specific configuration for the [netemx.Environment].
+func envConfig() netemx.Config {
+	// create the default configuration for DNS server
 	dnsConfig := netem.NewDNSConfig()
 	dnsConfig.AddRecord(
 		"web.telegram.org",
 		"web.telegram.org", // CNAME
 		"149.154.167.99",
 	)
-	return NewEnvironmentWithDNSConfig(dnsConfig)
+	return envConfigWithDNS(dnsConfig)
 }
 
-// NewEnvironment creates a new QA environment. This function
-// calls [runtimex.PanicOnError] in case of failure.
-func NewEnvironmentWithDNSConfig(dnsConfig *netem.DNSConfig) *Environment {
-	e := &Environment{}
-
-	// create a new star topology
-	e.topology = runtimex.Try1(netem.NewStarTopology(model.DiscardLogger))
-
-	// create server stack
-	//
-	// note: because the stack is created using topology.AddHost, we don't
-	// need to call Close when done using it, since the topology will do that
-	// for us when we call the topology's Close method.
-	dnsServerStack := runtimex.Try1(e.topology.AddHost(
-		"1.1.1.1", // server IP address
-		"0.0.0.0", // default resolver address
-		&netem.LinkConfig{},
-	))
-
-	// create DNS server using the dnsServerStack
-	e.dnsServer = runtimex.Try1(netem.NewDNSServer(
-		model.DiscardLogger,
-		dnsServerStack,
-		"1.1.1.1",
-		dnsConfig,
-	))
-
-	// create the Telegram Web server stack
-	webServerStack := runtimex.Try1(e.topology.AddHost(
-		"149.154.167.99", // server IP address
-		"0.0.0.0",        // default resolver address
-		&netem.LinkConfig{},
-	))
-
-	// create HTTPS server instance on port 443 at the webServerStack
-	webListener := runtimex.Try1(webServerStack.ListenTCP("tcp", &net.TCPAddr{
-		IP:   net.IPv4(149, 154, 167, 99),
-		Port: 443,
-		Zone: "",
-	}))
-	webServer := &http.Server{
-		TLSConfig: webServerStack.ServerTLSConfig(),
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(`hello, world`))
-		}),
+// Creates an experiment-specific configuration for the [netemx.Environment]
+// with custom DNS.
+func envConfigWithDNS(dnsConfig *netem.DNSConfig) netemx.Config {
+	// config for the telegram Web server stack
+	telegramWeb := netemx.ServerStack{
+		ServerAddr: "149.154.167.99",
+		Listeners:  []netemx.Listener{{Port: 443}},
 	}
-	e.httpServers = append(e.httpServers, webServer)
-	// run Telegram Web server
-	go webServer.ServeTLS(webListener, "", "")
-
+	servers := []netemx.ServerStack{telegramWeb}
+	// for each datacenter we configure a server stack, running a port 443 and 80 instance each
 	for _, dc := range telegram.Datacenters {
-		// for each telegram endpoint, we create a server stack
-		httpServerStack := runtimex.Try1(e.topology.AddHost(
-			dc,        // server IP address
-			"0.0.0.0", // default resolver address
-			&netem.LinkConfig{},
-		))
-		// on each server stack we create two TCP servers -- on port 443 and 80
-		for _, port := range []int{443, 80} {
-			tcpListener := runtimex.Try1(httpServerStack.ListenTCP("tcp", &net.TCPAddr{
-				IP:   net.ParseIP(dc),
-				Port: port,
-				Zone: "",
-			}))
-			httpServer := &http.Server{
-				Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.Write([]byte(`hello, world`))
-				}),
-			}
-			e.httpServers = append(e.httpServers, httpServer)
-			// run TCP server
-			go httpServer.Serve(tcpListener)
-		}
+		servers = append(servers, netemx.ServerStack{
+			ServerAddr: dc,
+			Listeners:  []netemx.Listener{{Port: 443}, {Port: 80}},
+		})
 	}
-
-	// create a DPIEngine for implementing censorship
-	e.dpi = netem.NewDPIEngine(model.DiscardLogger)
-
-	// create client stack
-	//
-	// note: because the stack is created using topology.AddHost, we don't
-	// need to call Close when done using it, since the topology will do that
-	// for us when we call the topology's Close method.
-	e.clientStack = runtimex.Try1(e.topology.AddHost(
-		"10.0.0.14", // client IP address
-		"1.1.1.1",   // default resolver address
-		&netem.LinkConfig{
-			DPIEngine: e.dpi,
-		},
-	))
-
-	return e
-}
-
-// DPIEngine returns the [netem.DPIEngine] we're using on the
-// link between the client stack and the router. You can safely
-// add new DPI rules from concurrent goroutines at any time.
-func (e *Environment) DPIEngine() *netem.DPIEngine {
-	return e.dpi
-}
-
-// Do executes the given function such that [netxlite] code uses the
-// underlying clientStack rather than ordinary networking code.
-func (e *Environment) Do(function func()) {
-	netemx.WithCustomTProxy(e.clientStack, function)
-}
-
-// Close closes all the resources used by [Environment].
-func (e *Environment) Close() error {
-	e.dnsServer.Close()
-	for _, s := range e.httpServers {
-		s.Close()
+	return netemx.Config{
+		DNSConfig: dnsConfig,
+		Servers:   servers,
 	}
-	e.topology.Close()
-	return nil
 }
 
 func newsession() model.ExperimentSession {
@@ -421,7 +304,7 @@ func TestMeasurerRun(t *testing.T) {
 
 	t.Run("Test Measurer without DPI: expect success", func(t *testing.T) {
 		// create a new test environment
-		env := NewEnvironment()
+		env := netemx.NewEnvironment(envConfig())
 		defer env.Close()
 		env.Do(func() {
 			measurer := telegram.NewExperimentMeasurer(telegram.Config{})
@@ -490,7 +373,7 @@ func TestMeasurerRun(t *testing.T) {
 			"web.telegram.org", // CNAME
 			"a.b.c.d",          // bogon
 		)
-		env := NewEnvironmentWithDNSConfig(dnsConfig)
+		env := netemx.NewEnvironment(envConfigWithDNS(dnsConfig))
 		defer env.Close()
 		env.Do(func() {
 			measurer := telegram.NewExperimentMeasurer(telegram.Config{})
@@ -527,7 +410,7 @@ func TestMeasurerRun(t *testing.T) {
 			"149.154.175.50",
 		}
 		// create a new test environment
-		env := NewEnvironment()
+		env := netemx.NewEnvironment(envConfig())
 		defer env.Close()
 		// create DPI that drops traffic for datacenter endpoints on ports 443 and 80
 		dpi := env.DPIEngine()
@@ -573,7 +456,7 @@ func TestMeasurerRun(t *testing.T) {
 
 	t.Run("Test Measurer with DPI that drops TLS traffic with SNI = web.telegram.org: expect TelegramWebFailure", func(t *testing.T) {
 		// create a new test environment
-		env := NewEnvironment()
+		env := netemx.NewEnvironment(envConfig())
 		defer env.Close()
 		// create DPI that drops TLS packets with SNI = web.telegram.org
 		dpi := env.DPIEngine()
