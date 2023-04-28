@@ -2,23 +2,16 @@ package simplequicping
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/tls"
-	"crypto/x509"
-	"encoding/pem"
 	"errors"
-	"log"
-	"math/big"
-	"net/url"
 	"testing"
 	"time"
 
-	"github.com/lucas-clemente/quic-go"
+	"github.com/google/gopacket/layers"
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestConfig_alpn(t *testing.T) {
@@ -43,7 +36,63 @@ func TestConfig_delay(t *testing.T) {
 }
 
 func TestMeasurerRun(t *testing.T) {
-	t.Run("Test Measurer without DPI: expect success", func(t *testing.T) {
+	// runHelper is an helper function to run this set of tests.
+	run := func(input string) (*model.Measurement, model.ExperimentMeasurer, error) {
+		m := NewExperimentMeasurer(Config{
+			ALPN:        "h3",
+			Delay:       1, // millisecond
+			Repetitions: 4,
+		})
+		if m.ExperimentName() != "simplequicping" {
+			t.Fatal("invalid experiment name")
+		}
+		if m.ExperimentVersion() != "0.2.1" {
+			t.Fatal("invalid experiment version")
+		}
+		meas := &model.Measurement{
+			Input: model.MeasurementTarget(input),
+		}
+		sess := &mockable.Session{
+			MockableLogger: model.DiscardLogger,
+		}
+		args := &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: meas,
+			Session:     sess,
+		}
+		err := m.Run(context.Background(), args)
+		return meas, m, err
+	}
+
+	t.Run("with empty input", func(t *testing.T) {
+		_, _, err := run("")
+		if !errors.Is(err, errNoInputProvided) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+
+	t.Run("with invalid URL", func(t *testing.T) {
+		_, _, err := run("\t")
+		if !errors.Is(err, errInputIsNotAnURL) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+
+	t.Run("with invalid scheme", func(t *testing.T) {
+		_, _, err := run("https://8.8.8.8:443/")
+		if !errors.Is(err, errInvalidScheme) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+
+	t.Run("with missing port", func(t *testing.T) {
+		_, _, err := run("quichandshake://8.8.8.8")
+		if !errors.Is(err, errMissingPort) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+
+	t.Run("with netem: without DPI: expect success", func(t *testing.T) {
 		dnsConfig := netem.NewDNSConfig()
 		conf := netemx.Config{
 			DNSConfig: dnsConfig,
@@ -62,184 +111,63 @@ func TestMeasurerRun(t *testing.T) {
 		env := netemx.NewEnvironment(conf)
 		defer env.Close()
 		env.Do(func() {
-			measurer := NewExperimentMeasurer(Config{
-				SNI: "dns.google.com",
-			})
-			measurement := &model.Measurement{
-				Input: "quichandshake://8.8.8.8:443",
-			}
-			sess := &mockable.Session{
-				MockableLogger: model.DiscardLogger,
-			}
-			args := &model.ExperimentArgs{
-				Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
-				Measurement: measurement,
-				Session:     sess,
-			}
-			err := measurer.Run(context.Background(), args)
+			meas, _, err := run("quichandshake://8.8.8.8:443")
 			if err != nil {
 				t.Fatalf("Unexpected error: %s", err)
 			}
-			tk, _ := (measurement.TestKeys).(*TestKeys)
+			tk, _ := (meas.TestKeys).(*TestKeys)
 			for _, p := range tk.Pings {
 				if p.QUICHandshake.Failure != nil {
 					t.Fatal("unexpected error")
 				}
+				if len(p.NetworkEvents) < 1 {
+					t.Fatal("unexpected number of network events")
+				}
 			}
 		})
 	})
-}
 
-func TestMeasurer_run(t *testing.T) {
-	// expectedPings is the expected number of pings
-	const expectedPings = 4
-
-	// runHelper is an helper function to run this set of tests.
-	runHelper := func(input string) (*model.Measurement, model.ExperimentMeasurer, error) {
-		m := NewExperimentMeasurer(Config{
-			ALPN:        "h3",
-			Delay:       1, // millisecond
-			Repetitions: expectedPings,
+	t.Run("with netem: with DPI that drops UDP to 8.8.8.8:443: expect failure", func(t *testing.T) {
+		dnsConfig := netem.NewDNSConfig()
+		conf := netemx.Config{
+			DNSConfig: dnsConfig,
+			Servers: []netemx.ServerStack{
+				{
+					ServerAddr: "8.8.8.8",
+					Listeners: []netemx.Listener{
+						{
+							Port: 443,
+							QUIC: true,
+						},
+					},
+				},
+			},
+		}
+		env := netemx.NewEnvironment(conf)
+		defer env.Close()
+		dpi := env.DPIEngine()
+		dpi.AddRule(&netem.DPIDropTrafficForServerEndpoint{
+			Logger:          model.DiscardLogger,
+			ServerIPAddress: "8.8.8.8",
+			ServerPort:      443,
+			ServerProtocol:  layers.IPProtocolUDP,
 		})
-		if m.ExperimentName() != "simplequicping" {
-			t.Fatal("invalid experiment name")
-		}
-		if m.ExperimentVersion() != "0.2.1" {
-			t.Fatal("invalid experiment version")
-		}
-		ctx := context.Background()
-		meas := &model.Measurement{
-			Input: model.MeasurementTarget(input),
-		}
-		sess := &mockable.Session{
-			MockableLogger: model.DiscardLogger,
-		}
-		callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
-		args := &model.ExperimentArgs{
-			Callbacks:   callbacks,
-			Measurement: meas,
-			Session:     sess,
-		}
-		err := m.Run(ctx, args)
-		return meas, m, err
-	}
-
-	t.Run("with empty input", func(t *testing.T) {
-		_, _, err := runHelper("")
-		if !errors.Is(err, errNoInputProvided) {
-			t.Fatal("unexpected error", err)
-		}
+		env.Do(func() {
+			meas, _, err := run("quichandshake://8.8.8.8:443")
+			if err != nil {
+				t.Fatalf("Unexpected error: %s", err)
+			}
+			tk, _ := (meas.TestKeys).(*TestKeys)
+			for _, p := range tk.Pings {
+				if p.QUICHandshake.Failure == nil {
+					t.Fatal("expected an error here")
+				}
+				if *p.QUICHandshake.Failure != netxlite.FailureGenericTimeoutError {
+					t.Fatal("unexpected error type")
+				}
+			}
+		})
 	})
-
-	t.Run("with invalid URL", func(t *testing.T) {
-		_, _, err := runHelper("\t")
-		if !errors.Is(err, errInputIsNotAnURL) {
-			t.Fatal("unexpected error", err)
-		}
-	})
-
-	t.Run("with invalid scheme", func(t *testing.T) {
-		_, _, err := runHelper("https://8.8.8.8:443/")
-		if !errors.Is(err, errInvalidScheme) {
-			t.Fatal("unexpected error", err)
-		}
-	})
-
-	t.Run("with missing port", func(t *testing.T) {
-		_, _, err := runHelper("quichandshake://8.8.8.8")
-		if !errors.Is(err, errMissingPort) {
-			t.Fatal("unexpected error", err)
-		}
-	})
-
-	t.Run("with local listener", func(t *testing.T) {
-		srvrURL, listener, err := startEchoServer()
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer listener.Close()
-		meas, m, err := runHelper(srvrURL)
-		if err != nil {
-			t.Fatal(err)
-		}
-		tk := meas.TestKeys.(*TestKeys)
-		if len(tk.Pings) != expectedPings {
-			t.Fatal("unexpected number of pings")
-		}
-		ask, err := m.GetSummaryKeys(meas)
-		if err != nil {
-			t.Fatal("cannot obtain summary")
-		}
-		summary := ask.(SummaryKeys)
-		if summary.IsAnomaly {
-			t.Fatal("expected no anomaly")
-		}
-	})
-}
-
-// Start a server that echos all data on the first stream opened by the client.
-//
-// SPDX-License-Identifier: MIT
-//
-// See https://github.com/lucas-clemente/quic-go/blob/v0.27.0/example/echo/echo.go#L34
-func startEchoServer() (string, quic.Listener, error) {
-	listener, err := quic.ListenAddr("127.0.0.1:0", generateTLSConfig(), nil)
-	if err != nil {
-		return "", nil, err
-	}
-	go echoWorkerMain(listener)
-	URL := &url.URL{
-		Scheme: "quichandshake",
-		Host:   listener.Addr().String(),
-		Path:   "/",
-	}
-	return URL.String(), listener, nil
-}
-
-// Worker used by startEchoServer to accept a quic connection.
-//
-// SPDX-License-Identifier: MIT
-//
-// See https://github.com/lucas-clemente/quic-go/blob/v0.27.0/example/echo/echo.go#L34
-func echoWorkerMain(listener quic.Listener) {
-	for {
-		conn, err := listener.Accept(context.Background())
-		if err != nil {
-			return
-		}
-		stream, err := conn.AcceptStream(context.Background())
-		if err != nil {
-			continue
-		}
-		stream.Close()
-	}
-}
-
-// Setup a bare-bones TLS config for the server.
-//
-// SPDX-License-Identifier: MIT
-//
-// See https://github.com/lucas-clemente/quic-go/blob/v0.27.0/example/echo/echo.go#L91
-func generateTLSConfig() *tls.Config {
-	key, err := rsa.GenerateKey(rand.Reader, 1024)
-	if err != nil {
-		panic(err)
-	}
-	template := x509.Certificate{SerialNumber: big.NewInt(1)}
-	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
-	if err != nil {
-		panic(err)
-	}
-	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)})
-	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
-	tlsCert, err := tls.X509KeyPair(certPEM, keyPEM)
-	if err != nil {
-		panic(err)
-	}
-	return &tls.Config{
-		Certificates: []tls.Certificate{tlsCert},
-		NextProtos:   []string{"quic-echo-example"},
-	}
 }
 
 func TestConfig_sni(t *testing.T) {
