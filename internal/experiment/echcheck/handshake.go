@@ -10,6 +10,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	utls "gitlab.com/yawning/utls.git"
 )
 
@@ -47,9 +48,14 @@ func handshakeWithExtension(ctx context.Context, conn net.Conn, zeroTime time.Ti
 		connState, err, finish.Sub(zeroTime))
 }
 
+// We are creating the pool just once because there is a performance penalty
+// when creating it every time. See https://github.com/ooni/probe/issues/2413.
+var certpool = netxlite.NewMozillaCertPool()
+
 // genTLSConfig generates tls.Config from a given SNI
 func genTLSConfig(sni string) *tls.Config {
 	return &tls.Config{
+		RootCAs:            certpool,
 		ServerName:         sni,
 		NextProtos:         []string{"h2", "http/1.1"},
 		InsecureSkipVerify: true,
