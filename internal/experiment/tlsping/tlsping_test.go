@@ -42,6 +42,7 @@ func TestMeasurerRun(t *testing.T) {
 			ALPN:        "http/1.1",
 			Delay:       1, // millisecond
 			Repetitions: 4,
+			SNI:         "blocked.com",
 		})
 		if m.ExperimentName() != "tlsping" {
 			t.Fatal("invalid experiment name")
@@ -180,6 +181,52 @@ func TestMeasurerRun(t *testing.T) {
 					t.Fatal("expected TLSHandshake to be nil")
 				}
 				if len(p.NetworkEvents) != 0 {
+					t.Fatal("unexpected number of network events")
+				}
+			}
+		})
+	})
+	t.Run("with netem: with DPI that resets TLS to SNI 8.8.8.8: expect failure", func(t *testing.T) {
+		dnsConfig := netem.NewDNSConfig()
+		conf := netemx.Config{
+			DNSConfig: dnsConfig,
+			Servers: []netemx.ServerStack{
+				{
+					ServerAddr: "8.8.8.8",
+					Listeners:  []netemx.Listener{{Port: 443}},
+				},
+			},
+		}
+		env := netemx.NewEnvironment(conf)
+		defer env.Close()
+		dpi := env.DPIEngine()
+		dpi.AddRule(&netem.DPIResetTrafficForTLSSNI{
+			Logger: model.DiscardLogger,
+			SNI:    "blocked.com",
+		})
+		env.Do(func() {
+			meas, _, err := run(context.Background(), "tlshandshake://8.8.8.8:443")
+			if err != nil {
+				t.Fatalf("Unexpected error: %s", err)
+			}
+			tk, _ := (meas.TestKeys).(*TestKeys)
+			for _, p := range tk.Pings {
+				if p.TCPConnect == nil {
+					t.Fatal("TCPConnect should not be nil")
+				}
+				if p.TCPConnect.Status.Failure != nil {
+					t.Fatal("did not expect an error here")
+				}
+				if p.TLSHandshake == nil {
+					t.Fatal("unexpected nil TLSHandshake")
+				}
+				if p.TLSHandshake.Failure == nil {
+					t.Fatal("expected an TLS Handshake failure here")
+				}
+				if *p.TLSHandshake.Failure != netxlite.FailureConnectionReset {
+					t.Fatal("unexpected TLS failure type")
+				}
+				if len(p.NetworkEvents) <= 0 {
 					t.Fatal("unexpected number of network events")
 				}
 			}
