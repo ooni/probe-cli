@@ -176,11 +176,6 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 			FailOnHTTPError: false,
 			CertPool:        certPool,
 		}},
-		{Target: "https://api.directory.signal.org/", Config: urlgetter.Config{
-			Method:          "GET",
-			FailOnHTTPError: false,
-			CertPool:        certPool,
-		}},
 		{Target: "https://cdn.signal.org/", Config: urlgetter.Config{
 			Method:          "GET",
 			FailOnHTTPError: false,
