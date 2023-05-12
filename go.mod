@@ -11,7 +11,7 @@ require (
 	github.com/alecthomas/kingpin v2.2.6+incompatible
 	github.com/apex/log v1.9.0
 	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5
-	github.com/cloudflare/circl v1.3.1
+	github.com/cloudflare/circl v1.3.3
 	github.com/cretz/bine v0.2.0
 	github.com/fatih/color v1.13.0
 	github.com/google/go-cmp v0.5.9
