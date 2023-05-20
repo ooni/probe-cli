@@ -20,8 +20,17 @@ def execute_jafar_and_miniooni(ooni_exe, outfile, experiment, tag, args):
         os.remove(tmpoutfile)  # just in case
     execute(
         [
+            # Disable ASLR
             "setarch",
             "--addr-no-randomize",
+            # Run cachegrind
+            "valgrind",
+            "--tool=cachegrind",
+            "--I1=32768,8,64",
+            "--D1=32768,8,64",
+            "--LL=8388608,16,64",
+            "--cachegrind-out-file=cachegrind.out",
+            # Run jafar
             "./jafar",
             "-main-command",
             "./QA/minioonilike.py {} -n -o '{}' --home /tmp {}".format(
