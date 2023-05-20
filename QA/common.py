@@ -20,6 +20,8 @@ def execute_jafar_and_miniooni(ooni_exe, outfile, experiment, tag, args):
         os.remove(tmpoutfile)  # just in case
     execute(
         [
+            "setarch",
+            "--addr-no-randomize",
             "./jafar",
             "-main-command",
             "./QA/minioonilike.py {} -n -o '{}' --home /tmp {}".format(

@@ -8,7 +8,7 @@ GOVERSION=$(cat GOVERSION)
 
 cat > QA/Dockerfile << EOF
 FROM golang:$GOVERSION-alpine
-RUN apk add gcc go git musl-dev iptables tmux bind-tools curl sudo python3
+RUN apk add gcc go git musl-dev iptables tmux bind-tools curl sudo python3 setarch
 EOF
 
 $DOCKER build -t jafar-qa ./QA/
