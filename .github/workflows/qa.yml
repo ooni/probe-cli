@@ -1,6 +1,7 @@
 # Runs quality assurance checks
 name: "qa"
 on:
+  pull_request:
   push:
     branches:
       - "release/**"
