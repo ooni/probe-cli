@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/lucas-clemente/quic-go/http3"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	nlmocks "github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
