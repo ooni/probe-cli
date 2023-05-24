@@ -7,9 +7,8 @@ import (
 	"testing"
 
 	"github.com/lucas-clemente/quic-go/http3"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/model/mocks"
-	nlmocks "github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func TestHTTP3Transport(t *testing.T) {
@@ -19,7 +18,7 @@ func TestHTTP3Transport(t *testing.T) {
 			calledDialer bool
 		)
 		txp := &http3Transport{
-			child: &nlmocks.HTTP3RoundTripper{
+			child: &mocks.HTTP3RoundTripper{
 				MockClose: func() error {
 					calledHTTP3 = true
 					return nil
@@ -47,7 +46,7 @@ func TestHTTP3Transport(t *testing.T) {
 	t.Run("RoundTrip", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		txp := &http3Transport{
-			child: &nlmocks.HTTP3RoundTripper{
+			child: &mocks.HTTP3RoundTripper{
 				MockRoundTrip: func(req *http.Request) (*http.Response, error) {
 					return nil, expected
 				},

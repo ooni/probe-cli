@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	sflib "git.torproject.org/pluggable-transports/snowflake.git/v2/client/lib"
-	"github.com/ooni/probe-cli/v3/internal/model/mocks"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 )
 
 func TestSnowflakeMethodDomainFronting(t *testing.T) {
