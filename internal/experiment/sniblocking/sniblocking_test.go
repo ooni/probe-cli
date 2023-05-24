@@ -195,13 +195,13 @@ func envConfig() netemx.Config {
 	dnsConfig.AddRecord(
 		"example.org",
 		"example.org",
-		"9.9.9.9",
+		"93.184.216.34",
 	)
 	return netemx.Config{
 		DNSConfig: dnsConfig,
 		Servers: []netemx.ServerStack{
 			{
-				ServerAddr: "9.9.9.9",
+				ServerAddr: "93.184.216.34",
 				Listeners: []netemx.Listener{
 					{
 						Port: 443,
@@ -255,7 +255,6 @@ func TestMeasurerWithInvalidInput(t *testing.T) {
 
 }
 func TestMeasurerRun(t *testing.T) {
-
 	t.Run("Test Measurer without DPI: expect success", func(t *testing.T) {
 		env := netemx.NewEnvironment(envConfig())
 		defer env.Close()

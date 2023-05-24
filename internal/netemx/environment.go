@@ -34,6 +34,7 @@ type Environment struct {
 	topology *netem.StarTopology
 }
 
+// Config configures the Environment.
 type Config struct {
 	// ClientAddr is the OPTIONAL address of the client stack.
 	// If empty, we use 10.0.0.14
@@ -47,6 +48,8 @@ type Config struct {
 	Servers []ServerStack
 }
 
+// ServerStack represents a server instance.
+// Multiple listeners can run on the same server, on different ports.
 type ServerStack struct {
 	// ServerAddr is the MANDATORY address of the web server stack.
 	ServerAddr string
@@ -54,11 +57,15 @@ type ServerStack struct {
 	Listeners []Listener
 }
 
+// Listener is a handler running on a server port.
+// A Listener might use QUIC instead of TCP as transport.
 type Listener struct {
 	// Port is the port that this listener is running on.
 	Port int
-	// QUIC indicates whether this listener uses QUIC instead of TCP as transport
+	// QUIC indicates whether this listener uses QUIC instead of TCP as transport.
 	QUIC bool
+	// HandlerFunc specifies the handler to use for this listener.
+	HanderFunc http.Handler
 }
 
 // NewEnvironment creates a new QA environment. This function
@@ -73,7 +80,7 @@ func NewEnvironment(config Config) *Environment {
 		resolverAddr = "1.1.1.1"
 	}
 
-	// create server stacks
+	// create dns server stack
 	//
 	// note: because the stack is created using topology.AddHost, we don't
 	// need to call Close when done using it, since the topology will do that
@@ -96,15 +103,29 @@ func NewEnvironment(config Config) *Environment {
 	var servers []*http.Server
 	var servers3 []*http3.Server
 	for _, s := range config.Servers {
+		// create server stack
+		//
+		// note: because the stack is created using topology.AddHost, we don't
+		// need to call Close when done using it, since the topology will do that
+		// for us when we call the topology's Close method.
 		serverStack := runtimex.Try1(topology.AddHost(
 			s.ServerAddr, // server IP address
 			resolverAddr, // default resolver address
 			&netem.LinkConfig{},
 		))
 
+		// configure and start HTTP server instances running on the server stack
 		for _, l := range s.Listeners {
-			// create HTTP server using the server stack
+			handler := l.HanderFunc
+			if handler == nil {
+				// the default handler just responds "hello, world"
+				handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.Write([]byte(`hello, world`))
+				})
+			}
+			// HTTP/3
 			if l.QUIC {
+				// create a udp listener on the specified port
 				udpListener := runtimex.Try1(serverStack.ListenUDP("udp", &net.UDPAddr{
 					IP:   net.ParseIP(s.ServerAddr),
 					Port: l.Port,
@@ -112,31 +133,32 @@ func NewEnvironment(config Config) *Environment {
 				}))
 				http3Server := &http3.Server{
 					TLSConfig: serverStack.ServerTLSConfig(),
-					Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-						w.Write([]byte(`hello, world`))
-					}),
+					Handler:   handler,
 				}
 				servers3 = append(servers3, http3Server)
+				// start serving
 				go http3Server.Serve(udpListener)
 				continue
 			}
-			tlsListener := runtimex.Try1(serverStack.ListenTCP("tcp", &net.TCPAddr{
+			// HTTPS
+			// create a tcp listener on the specified port
+			tcpListener := runtimex.Try1(serverStack.ListenTCP("tcp", &net.TCPAddr{
 				IP:   net.ParseIP(s.ServerAddr),
 				Port: l.Port,
 				Zone: "",
 			}))
 			httpServer := &http.Server{
 				TLSConfig: serverStack.ServerTLSConfig(),
-				Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.Write([]byte(`hello, world`))
-				}),
+				Handler:   handler,
 			}
 			servers = append(servers, httpServer)
-			go httpServer.ServeTLS(tlsListener, "", "")
+			// start serving
+			go httpServer.ServeTLS(tcpListener, "", "")
 		}
 	}
 
 	// create a DPIEngine for implementing censorship
+	// experiments can plug in different types of DPIs, e.g. to drop all packets using a certain SNI
 	dpi := netem.NewDPIEngine(model.DiscardLogger)
 
 	// create client stack
