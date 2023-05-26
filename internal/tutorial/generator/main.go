@@ -122,8 +122,15 @@ func gennetxlite() {
 	gen(path.Join(prefix, "chapter08"), "main.go")
 }
 
+// gendslx generates the dslx chapters.
+func gendslx() {
+	prefix := path.Join(".", "dslx")
+	gen(path.Join(prefix, "chapter02"), "main.go")
+}
+
 func main() {
 	gentorsf()
 	genmeasurex()
 	gennetxlite()
+	gendslx()
 }
