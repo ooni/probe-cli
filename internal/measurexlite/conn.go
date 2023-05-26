@@ -44,13 +44,17 @@ func (c *connTrace) Read(b []byte) (int, error) {
 	network := c.RemoteAddr().Network()
 	addr := c.RemoteAddr().String()
 	started := c.tx.TimeSince(c.tx.ZeroTime)
+
 	count, err := c.Conn.Read(b)
+
 	finished := c.tx.TimeSince(c.tx.ZeroTime)
 	select {
 	case c.tx.networkEvent <- NewArchivalNetworkEvent(
-		c.tx.Index, started, netxlite.ReadOperation, network, addr, count, err, finished):
+		c.tx.Index, started, netxlite.ReadOperation, network, addr, count,
+		err, finished, c.tx.tags...):
 	default: // buffer is full
 	}
+
 	return count, err
 }
 
@@ -59,13 +63,17 @@ func (c *connTrace) Write(b []byte) (int, error) {
 	network := c.RemoteAddr().Network()
 	addr := c.RemoteAddr().String()
 	started := c.tx.TimeSince(c.tx.ZeroTime)
+
 	count, err := c.Conn.Write(b)
+
 	finished := c.tx.TimeSince(c.tx.ZeroTime)
 	select {
 	case c.tx.networkEvent <- NewArchivalNetworkEvent(
-		c.tx.Index, started, netxlite.WriteOperation, network, addr, count, err, finished):
+		c.tx.Index, started, netxlite.WriteOperation, network, addr, count,
+		err, finished, c.tx.tags...):
 	default: // buffer is full
 	}
+
 	return count, err
 }
 
@@ -96,14 +104,18 @@ type udpLikeConnTrace struct {
 // Read implements model.UDPLikeConn.ReadFrom and saves network events.
 func (c *udpLikeConnTrace) ReadFrom(b []byte) (int, net.Addr, error) {
 	started := c.tx.TimeSince(c.tx.ZeroTime)
+
 	count, addr, err := c.UDPLikeConn.ReadFrom(b)
+
 	finished := c.tx.TimeSince(c.tx.ZeroTime)
 	address := addrStringIfNotNil(addr)
 	select {
 	case c.tx.networkEvent <- NewArchivalNetworkEvent(
-		c.tx.Index, started, netxlite.ReadFromOperation, "udp", address, count, err, finished):
+		c.tx.Index, started, netxlite.ReadFromOperation, "udp", address, count,
+		err, finished, c.tx.tags...):
 	default: // buffer is full
 	}
+
 	return count, addr, err
 }
 
@@ -111,13 +123,17 @@ func (c *udpLikeConnTrace) ReadFrom(b []byte) (int, net.Addr, error) {
 func (c *udpLikeConnTrace) WriteTo(b []byte, addr net.Addr) (int, error) {
 	started := c.tx.TimeSince(c.tx.ZeroTime)
 	address := addr.String()
+
 	count, err := c.UDPLikeConn.WriteTo(b, addr)
+
 	finished := c.tx.TimeSince(c.tx.ZeroTime)
 	select {
 	case c.tx.networkEvent <- NewArchivalNetworkEvent(
-		c.tx.Index, started, netxlite.WriteToOperation, "udp", address, count, err, finished):
+		c.tx.Index, started, netxlite.WriteToOperation, "udp", address, count,
+		err, finished, c.tx.tags...):
 	default: // buffer is full
 	}
+
 	return count, err
 }
 
@@ -131,8 +147,9 @@ func addrStringIfNotNil(addr net.Addr) (out string) {
 }
 
 // NewArchivalNetworkEvent creates a new model.ArchivalNetworkEvent.
-func NewArchivalNetworkEvent(index int64, started time.Duration, operation string, network string,
-	address string, count int, err error, finished time.Duration) *model.ArchivalNetworkEvent {
+func NewArchivalNetworkEvent(index int64, started time.Duration, operation string,
+	network string, address string, count int, err error, finished time.Duration,
+	tags ...string) *model.ArchivalNetworkEvent {
 	return &model.ArchivalNetworkEvent{
 		Address:       address,
 		Failure:       tracex.NewFailure(err),
@@ -142,15 +159,15 @@ func NewArchivalNetworkEvent(index int64, started time.Duration, operation strin
 		T0:            started.Seconds(),
 		T:             finished.Seconds(),
 		TransactionID: index,
-		Tags:          []string{},
+		Tags:          copyAndNormalizeTags(tags),
 	}
 }
 
 // NewAnnotationArchivalNetworkEvent is a simplified NewArchivalNetworkEvent
 // where we create a simple annotation without attached I/O info.
 func NewAnnotationArchivalNetworkEvent(
-	index int64, time time.Duration, operation string) *model.ArchivalNetworkEvent {
-	return NewArchivalNetworkEvent(index, time, operation, "", "", 0, nil, time)
+	index int64, time time.Duration, operation string, tags ...string) *model.ArchivalNetworkEvent {
+	return NewArchivalNetworkEvent(index, time, operation, "", "", 0, nil, time, tags...)
 }
 
 // NetworkEvents drains the network events buffered inside the NetworkEvent channel.
@@ -173,4 +190,13 @@ func (tx *Trace) FirstNetworkEventOrNil() *model.ArchivalNetworkEvent {
 		return nil
 	}
 	return ev[0]
+}
+
+// copyAndNormalizeTags ensures that we map nil tags to []string
+// and that we return a copy of the tags.
+func copyAndNormalizeTags(tags []string) []string {
+	if len(tags) <= 0 {
+		tags = []string{}
+	}
+	return append([]string{}, tags...)
 }

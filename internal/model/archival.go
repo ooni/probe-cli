@@ -125,6 +125,7 @@ type ArchivalDNSLookupResult struct {
 	ResolverAddress  string              `json:"resolver_address"`
 	T0               float64             `json:"t0,omitempty"`
 	T                float64             `json:"t"`
+	Tags             []string            `json:"tags"`
 	TransactionID    int64               `json:"transaction_id,omitempty"`
 }
 
@@ -152,6 +153,7 @@ type ArchivalTCPConnectResult struct {
 	Status        ArchivalTCPConnectStatus `json:"status"`
 	T0            float64                  `json:"t0,omitempty"`
 	T             float64                  `json:"t"`
+	Tags          []string                 `json:"tags"`
 	TransactionID int64                    `json:"transaction_id,omitempty"`
 }
 
@@ -202,6 +204,7 @@ type ArchivalHTTPRequestResult struct {
 	Response      ArchivalHTTPResponse `json:"response"`
 	T0            float64              `json:"t0,omitempty"`
 	T             float64              `json:"t"`
+	Tags          []string             `json:"tags"`
 	TransactionID int64                `json:"transaction_id,omitempty"`
 }
 

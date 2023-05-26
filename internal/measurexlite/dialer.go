@@ -22,7 +22,7 @@ import (
 //
 // Note: unlike code in netx or measurex, this factory DOES NOT return you a
 // dialer that also performs wrapping of a net.Conn in case of success. If you
-// want to wrap the conn, you need to wrap it explicitly using WrapNetConn.
+// want to wrap the conn, you need to wrap it explicitly using model.Trace.WrapNetConn.
 func (tx *Trace) NewDialerWithoutResolver(dl model.DebugLogger) model.Dialer {
 	return &dialerTrace{
 		d:  tx.newDialerWithoutResolver(dl),
@@ -62,6 +62,7 @@ func (tx *Trace) OnConnectDone(
 			remoteAddr,
 			err,
 			finished.Sub(tx.ZeroTime),
+			tx.tags...,
 		):
 		default: // buffer is full
 		}
@@ -78,6 +79,7 @@ func (tx *Trace) OnConnectDone(
 			0,
 			err,
 			finished.Sub(tx.ZeroTime),
+			tx.tags...,
 		):
 		default: // buffer is full
 		}
@@ -91,7 +93,7 @@ func (tx *Trace) OnConnectDone(
 // NewArchivalTCPConnectResult generates a model.ArchivalTCPConnectResult
 // from the available information right after connect returns.
 func NewArchivalTCPConnectResult(index int64, started time.Duration, address string,
-	err error, finished time.Duration) *model.ArchivalTCPConnectResult {
+	err error, finished time.Duration, tags ...string) *model.ArchivalTCPConnectResult {
 	ip, port := archivalSplitHostPort(address)
 	return &model.ArchivalTCPConnectResult{
 		IP:   ip,
@@ -103,6 +105,7 @@ func NewArchivalTCPConnectResult(index int64, started time.Duration, address str
 		},
 		T0:            started.Seconds(),
 		T:             finished.Seconds(),
+		Tags:          copyAndNormalizeTags(tags),
 		TransactionID: index,
 	}
 }

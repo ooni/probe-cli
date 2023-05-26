@@ -35,6 +35,29 @@ func TestMaybeClose(t *testing.T) {
 	})
 }
 
+func TestMaybeCloseUDPLikeConn(t *testing.T) {
+	t.Run("with nil conn", func(t *testing.T) {
+		var conn model.UDPLikeConn = nil
+		MaybeCloseUDPLikeConn(conn)
+	})
+
+	t.Run("with nonnil conn", func(t *testing.T) {
+		var called bool
+		conn := &mocks.UDPLikeConn{
+			MockClose: func() error {
+				called = true
+				return nil
+			},
+		}
+		if err := MaybeCloseUDPLikeConn(conn); err != nil {
+			t.Fatal(err)
+		}
+		if !called {
+			t.Fatal("not called")
+		}
+	})
+}
+
 func TestWrapNetConn(t *testing.T) {
 	t.Run("WrapNetConn wraps the conn", func(t *testing.T) {
 		underlying := &mocks.Conn{}
@@ -68,8 +91,8 @@ func TestWrapNetConn(t *testing.T) {
 		}
 		zeroTime := time.Now()
 		td := testingx.NewTimeDeterministic(zeroTime)
-		trace := NewTrace(0, zeroTime)
-		trace.TimeNowFn = td.Now // deterministic time counting
+		trace := NewTrace(0, zeroTime, "antani")
+		trace.timeNowFn = td.Now // deterministic time counting
 		conn := trace.MaybeWrapNetConn(underlying)
 		const bufsiz = 128
 		buffer := make([]byte, bufsiz)
@@ -91,7 +114,7 @@ func TestWrapNetConn(t *testing.T) {
 			Operation: netxlite.ReadOperation,
 			Proto:     "tcp",
 			T:         1.0,
-			Tags:      []string{},
+			Tags:      []string{"antani"},
 		}
 		got := events[0]
 		if diff := cmp.Diff(expect, got); diff != "" {
@@ -152,8 +175,8 @@ func TestWrapNetConn(t *testing.T) {
 		}
 		zeroTime := time.Now()
 		td := testingx.NewTimeDeterministic(zeroTime)
-		trace := NewTrace(0, zeroTime)
-		trace.TimeNowFn = td.Now // deterministic time tracking
+		trace := NewTrace(0, zeroTime, "antani")
+		trace.timeNowFn = td.Now // deterministic time tracking
 		conn := trace.MaybeWrapNetConn(underlying)
 		const bufsiz = 128
 		buffer := make([]byte, bufsiz)
@@ -175,7 +198,7 @@ func TestWrapNetConn(t *testing.T) {
 			Operation: netxlite.WriteOperation,
 			Proto:     "tcp",
 			T:         1.0,
-			Tags:      []string{},
+			Tags:      []string{"antani"},
 		}
 		got := events[0]
 		if diff := cmp.Diff(expect, got); diff != "" {
@@ -246,8 +269,8 @@ func TestWrapUDPLikeConn(t *testing.T) {
 		}
 		zeroTime := time.Now()
 		td := testingx.NewTimeDeterministic(zeroTime)
-		trace := NewTrace(0, zeroTime)
-		trace.TimeNowFn = td.Now // deterministic time counting
+		trace := NewTrace(0, zeroTime, "antani")
+		trace.timeNowFn = td.Now // deterministic time counting
 		conn := trace.MaybeWrapUDPLikeConn(underlying)
 		const bufsiz = 128
 		buffer := make([]byte, bufsiz)
@@ -272,7 +295,7 @@ func TestWrapUDPLikeConn(t *testing.T) {
 			Operation: "read_from",
 			Proto:     "udp",
 			T:         1.0,
-			Tags:      []string{},
+			Tags:      []string{"antani"},
 		}
 		got := events[0]
 		if diff := cmp.Diff(expect, got); diff != "" {
@@ -320,8 +343,8 @@ func TestWrapUDPLikeConn(t *testing.T) {
 		}
 		zeroTime := time.Now()
 		td := testingx.NewTimeDeterministic(zeroTime)
-		trace := NewTrace(0, zeroTime)
-		trace.TimeNowFn = td.Now // deterministic time tracking
+		trace := NewTrace(0, zeroTime, "antani")
+		trace.timeNowFn = td.Now // deterministic time tracking
 		conn := trace.MaybeWrapUDPLikeConn(underlying)
 		const bufsiz = 128
 		buffer := make([]byte, bufsiz)
@@ -348,7 +371,7 @@ func TestWrapUDPLikeConn(t *testing.T) {
 			Operation: "write_to",
 			Proto:     "udp",
 			T:         1.0,
-			Tags:      []string{},
+			Tags:      []string{"antani"},
 		}
 		got := events[0]
 		if diff := cmp.Diff(expect, got); diff != "" {
@@ -445,10 +468,10 @@ func TestNewAnnotationArchivalNetworkEvent(t *testing.T) {
 		T0:            duration.Seconds(),
 		T:             duration.Seconds(),
 		TransactionID: index,
-		Tags:          []string{},
+		Tags:          []string{"antani"},
 	}
 	got := NewAnnotationArchivalNetworkEvent(
-		index, duration, operation,
+		index, duration, operation, "antani",
 	)
 	if diff := cmp.Diff(expect, got); diff != "" {
 		t.Fatal(diff)

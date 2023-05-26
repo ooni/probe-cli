@@ -54,6 +54,7 @@ func (r *resolverTrace) emitResolveStart() {
 	select {
 	case r.tx.networkEvent <- NewAnnotationArchivalNetworkEvent(
 		r.tx.Index, r.tx.TimeSince(r.tx.ZeroTime), "resolve_start",
+		r.tx.tags...,
 	):
 	default: // buffer is full
 	}
@@ -64,6 +65,7 @@ func (r *resolverTrace) emiteResolveDone() {
 	select {
 	case r.tx.networkEvent <- NewAnnotationArchivalNetworkEvent(
 		r.tx.Index, r.tx.TimeSince(r.tx.ZeroTime), "resolve_done",
+		r.tx.tags...,
 	):
 	default: // buffer is full
 	}
@@ -109,6 +111,7 @@ func (tx *Trace) NewParallelDNSOverHTTPSResolver(logger model.Logger, URL string
 func (tx *Trace) OnDNSRoundTripForLookupHost(started time.Time, reso model.Resolver, query model.DNSQuery,
 	response model.DNSResponse, addrs []string, err error, finished time.Time) {
 	t := finished.Sub(tx.ZeroTime)
+
 	select {
 	case tx.dnsLookup <- NewArchivalDNSLookupResultFromRoundTrip(
 		tx.Index,
@@ -119,8 +122,11 @@ func (tx *Trace) OnDNSRoundTripForLookupHost(started time.Time, reso model.Resol
 		addrs,
 		err,
 		t,
+		tx.tags...,
 	):
+
 	default:
+		// buffer is full
 	}
 }
 
@@ -137,8 +143,9 @@ type DNSNetworkAddresser interface {
 
 // NewArchivalDNSLookupResultFromRoundTrip generates a model.ArchivalDNSLookupResultFromRoundTrip
 // from the available information right after the DNS RoundTrip
-func NewArchivalDNSLookupResultFromRoundTrip(index int64, started time.Duration, reso DNSNetworkAddresser, query model.DNSQuery,
-	response model.DNSResponse, addrs []string, err error, finished time.Duration) *model.ArchivalDNSLookupResult {
+func NewArchivalDNSLookupResultFromRoundTrip(index int64, started time.Duration,
+	reso DNSNetworkAddresser, query model.DNSQuery, response model.DNSResponse,
+	addrs []string, err error, finished time.Duration, tags ...string) *model.ArchivalDNSLookupResult {
 	return &model.ArchivalDNSLookupResult{
 		Answers:          newArchivalDNSAnswers(addrs, response),
 		Engine:           reso.Network(),
@@ -153,6 +160,7 @@ func NewArchivalDNSLookupResultFromRoundTrip(index int64, started time.Duration,
 		ResolverAddress:  reso.Address(),
 		T0:               started.Seconds(),
 		T:                finished.Seconds(),
+		Tags:             copyAndNormalizeTags(tags),
 		TransactionID:    index,
 	}
 }
@@ -189,8 +197,9 @@ func newArchivalDNSAnswers(addrs []string, resp model.DNSResponse) (out []model.
 			log.Printf("BUG: NewArchivalDNSLookupResult: invalid IP address: %s", addr)
 			continue
 		}
-		asn, org, _ := geoipx.LookupASN(addr)
+		asn, org, _ := geoipx.LookupASN(addr) // error if not in the DB; returns sensible values on error
 		switch ipv6 {
+
 		case false:
 			out = append(out, model.ArchivalDNSAnswer{
 				ASN:        int64(asn),
@@ -201,6 +210,7 @@ func newArchivalDNSAnswers(addrs []string, resp model.DNSResponse) (out []model.
 				IPv6:       "",
 				TTL:        nil,
 			})
+
 		case true:
 			out = append(out, model.ArchivalDNSAnswer{
 				ASN:        int64(asn),
@@ -265,6 +275,7 @@ var ErrDelayedDNSResponseBufferFull = errors.New("buffer full")
 func (tx *Trace) OnDelayedDNSResponse(started time.Time, txp model.DNSTransport, query model.DNSQuery,
 	response model.DNSResponse, addrs []string, err error, finished time.Time) error {
 	t := finished.Sub(tx.ZeroTime)
+
 	select {
 	case tx.delayedDNSResponse <- NewArchivalDNSLookupResultFromRoundTrip(
 		tx.Index,
@@ -275,8 +286,10 @@ func (tx *Trace) OnDelayedDNSResponse(started time.Time, txp model.DNSTransport,
 		addrs,
 		err,
 		t,
+		tx.tags...,
 	):
 		return nil
+
 	default:
 		return ErrDelayedDNSResponseBufferFull
 	}
@@ -291,8 +304,10 @@ func (tx *Trace) DelayedDNSResponseWithTimeout(ctx context.Context,
 	timeout time.Duration) (out []*model.ArchivalDNSLookupResult) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
+
 	for {
 		select {
+
 		case <-ctx.Done():
 			for { // once the context is done enter in channel draining mode
 				select {
@@ -302,6 +317,7 @@ func (tx *Trace) DelayedDNSResponseWithTimeout(ctx context.Context,
 					return
 				}
 			}
+
 		case ev := <-tx.delayedDNSResponse:
 			out = append(out, ev)
 		}

@@ -21,7 +21,7 @@ func TestNewDialerWithoutResolver(t *testing.T) {
 		underlying := &mocks.Dialer{}
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		trace.NewDialerWithoutResolverFn = func(dl model.DebugLogger) model.Dialer {
+		trace.newDialerWithoutResolverFn = func(dl model.DebugLogger) model.Dialer {
 			return underlying
 		}
 		dialer := trace.NewDialerWithoutResolver(model.DiscardLogger)
@@ -46,7 +46,7 @@ func TestNewDialerWithoutResolver(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
-		trace.NewDialerWithoutResolverFn = func(dl model.DebugLogger) model.Dialer {
+		trace.newDialerWithoutResolverFn = func(dl model.DebugLogger) model.Dialer {
 			return underlying
 		}
 		dialer := trace.NewDialerWithoutResolver(model.DiscardLogger)
@@ -72,7 +72,7 @@ func TestNewDialerWithoutResolver(t *testing.T) {
 				called = true
 			},
 		}
-		trace.NewDialerWithoutResolverFn = func(dl model.DebugLogger) model.Dialer {
+		trace.newDialerWithoutResolverFn = func(dl model.DebugLogger) model.Dialer {
 			return underlying
 		}
 		dialer := trace.NewDialerWithoutResolver(model.DiscardLogger)
@@ -85,8 +85,8 @@ func TestNewDialerWithoutResolver(t *testing.T) {
 	t.Run("DialContext saves into the trace", func(t *testing.T) {
 		zeroTime := time.Now()
 		td := testingx.NewTimeDeterministic(zeroTime)
-		trace := NewTrace(0, zeroTime)
-		trace.TimeNowFn = td.Now // deterministic time tracking
+		trace := NewTrace(0, zeroTime, "antani")
+		trace.timeNowFn = td.Now // deterministic time tracking
 		dialer := trace.NewDialerWithoutResolver(model.DiscardLogger)
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel() // we cancel immediately so connect is ~instantaneous
@@ -113,7 +113,8 @@ func TestNewDialerWithoutResolver(t *testing.T) {
 					Failure: &expectedFailure,
 					Success: false,
 				},
-				T: time.Second.Seconds(),
+				T:    time.Second.Seconds(),
+				Tags: []string{"antani"},
 			}
 			got := events[0]
 			if diff := cmp.Diff(expect, got); diff != "" {
@@ -136,7 +137,7 @@ func TestNewDialerWithoutResolver(t *testing.T) {
 				T0:            0,
 				T:             time.Second.Seconds(),
 				TransactionID: 0,
-				Tags:          []string{},
+				Tags:          []string{"antani"},
 			}
 			got := events[0]
 			if diff := cmp.Diff(expect, got); diff != "" {
@@ -209,8 +210,10 @@ func TestNewDialerWithoutResolver(t *testing.T) {
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
 		dialer := trace.NewDialerWithoutResolver(model.DiscardLogger)
+
 		ctx, cancel := context.WithCancel(context.Background())
-		cancel()                                                      // we cancel immediately so connect is ~instantaneous
+		cancel() // we cancel immediately so connect is ~instantaneous
+
 		conn, err := dialer.DialContext(ctx, "udp", "dns.google:443") // domain
 		if !errors.Is(err, netxlite.ErrNoResolver) {
 			t.Fatal("unexpected err", err)

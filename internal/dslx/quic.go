@@ -82,7 +82,7 @@ type quicHandshakeFunc struct {
 func (f *quicHandshakeFunc) Apply(
 	ctx context.Context, input *Endpoint) *Maybe[*QUICConnection] {
 	// create trace
-	trace := measurexlite.NewTrace(input.IDGenerator.Add(1), input.ZeroTime)
+	trace := measurexlite.NewTrace(input.IDGenerator.Add(1), input.ZeroTime, input.Tags...)
 
 	// use defaults or user-configured overrides
 	serverName := f.serverName(input)

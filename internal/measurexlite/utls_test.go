@@ -14,7 +14,7 @@ func TestNewTLSHandshakerUTLS(t *testing.T) {
 		underlying := &mocks.TLSHandshaker{}
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		trace.NewTLSHandshakerUTLSFn = func(dl model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker {
+		trace.newTLSHandshakerUTLSFn = func(dl model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker {
 			return underlying
 		}
 		thx := trace.NewTLSHandshakerUTLS(model.DiscardLogger, &utls.HelloGolang)

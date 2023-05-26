@@ -24,7 +24,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 		underlying := &mocks.TLSHandshaker{}
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		trace.NewTLSHandshakerStdlibFn = func(dl model.DebugLogger) model.TLSHandshaker {
+		trace.newTLSHandshakerStdlibFn = func(dl model.DebugLogger) model.TLSHandshaker {
 			return underlying
 		}
 		thx := trace.NewTLSHandshakerStdlib(model.DiscardLogger)
@@ -49,7 +49,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 				return nil, tls.ConnectionState{}, expectedErr
 			},
 		}
-		trace.NewTLSHandshakerStdlibFn = func(dl model.DebugLogger) model.TLSHandshaker {
+		trace.newTLSHandshakerStdlibFn = func(dl model.DebugLogger) model.TLSHandshaker {
 			return underlying
 		}
 		thx := trace.NewTLSHandshakerStdlib(model.DiscardLogger)
@@ -73,8 +73,8 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 		mockedErr := errors.New("mocked")
 		zeroTime := time.Now()
 		td := testingx.NewTimeDeterministic(zeroTime)
-		trace := NewTrace(0, zeroTime)
-		trace.TimeNowFn = td.Now // deterministic timing
+		trace := NewTrace(0, zeroTime, "antani")
+		trace.timeNowFn = td.Now // deterministic timing
 		thx := trace.NewTLSHandshakerStdlib(model.DiscardLogger)
 		ctx := context.Background()
 		tcpConn := &mocks.Conn{
@@ -129,7 +129,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 				PeerCertificates:   []model.ArchivalMaybeBinaryData{},
 				ServerName:         "dns.cloudflare.com",
 				T:                  time.Second.Seconds(),
-				Tags:               []string{},
+				Tags:               []string{"antani"},
 				TLSVersion:         "",
 			}
 			got := events[0]
@@ -152,7 +152,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 					Operation: "tls_handshake_start",
 					Proto:     "",
 					T:         0,
-					Tags:      []string{},
+					Tags:      []string{"antani"},
 				}
 				got := events[0]
 				if diff := cmp.Diff(expect, got); diff != "" {
@@ -169,7 +169,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 					Proto:     "",
 					T0:        time.Second.Seconds(),
 					T:         time.Second.Seconds(),
-					Tags:      []string{},
+					Tags:      []string{"antani"},
 				}
 				got := events[1]
 				if diff := cmp.Diff(expect, got); diff != "" {
@@ -250,7 +250,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 		zeroTime := time.Now()
 		dt := testingx.NewTimeDeterministic(zeroTime)
 		trace := NewTrace(0, zeroTime)
-		trace.TimeNowFn = dt.Now // deterministic timing
+		trace.timeNowFn = dt.Now // deterministic timing
 		thx := trace.NewTLSHandshakerStdlib(model.DiscardLogger)
 		tlsConfig := &tls.Config{
 			RootCAs:    server.CertPool(),
