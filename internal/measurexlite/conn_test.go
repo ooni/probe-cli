@@ -57,6 +57,7 @@ func TestMaybeCloseUDPLikeConn(t *testing.T) {
 		}
 	})
 }
+
 func TestWrapNetConn(t *testing.T) {
 	t.Run("WrapNetConn wraps the conn", func(t *testing.T) {
 		underlying := &mocks.Conn{}

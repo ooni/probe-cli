@@ -276,7 +276,7 @@ func TestOnQUICHandshakeDoneExtractsTheConnectionState(t *testing.T) {
 	)
 	defer MaybeCloseQUICConn(quicConn)
 
-	// we do not expect to see an error generally here
+	// we do not expect to see an error here
 	if err != nil {
 		t.Fatal(err)
 	}
