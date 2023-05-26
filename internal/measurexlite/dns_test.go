@@ -124,8 +124,8 @@ func TestNewResolver(t *testing.T) {
 	t.Run("LookupHost saves into trace", func(t *testing.T) {
 		zeroTime := time.Now()
 		td := testingx.NewTimeDeterministic(zeroTime)
-		trace := NewTrace(0, zeroTime)
-		trace.TimeNowFn = td.Now
+		trace := NewTrace(0, zeroTime, "antani")
+		trace.timeNowFn = td.Now
 		txp := &mocks.DNSTransport{
 			MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
 				response := &mocks.DNSResponse{
@@ -198,6 +198,9 @@ func TestNewResolver(t *testing.T) {
 				if ev.Answers[1].AnswerType != "CNAME " && ev.Answers[1].Hostname != "dns.google." {
 					t.Fatal("unexpected second answer (expected CNAME)", ev.Answers[1])
 				}
+				if diff := cmp.Diff([]string{"antani"}, ev.Tags); diff != "" {
+					t.Fatal(diff)
+				}
 			}
 		})
 
@@ -209,6 +212,9 @@ func TestNewResolver(t *testing.T) {
 			foundNames := map[string]int{}
 			for _, ev := range events {
 				foundNames[ev.Operation]++
+				if diff := cmp.Diff([]string{"antani"}, ev.Tags); diff != "" {
+					t.Fatal(diff)
+				}
 			}
 			if foundNames["resolve_start"] != 1 {
 				t.Fatal("missing resolve_start")
@@ -225,7 +231,7 @@ func TestNewResolver(t *testing.T) {
 		trace := NewTrace(0, zeroTime)
 		trace.dnsLookup = make(chan *model.ArchivalDNSLookupResult) // no buffer
 		trace.networkEvent = make(chan *model.ArchivalNetworkEvent) // ditto
-		trace.TimeNowFn = td.Now
+		trace.timeNowFn = td.Now
 		txp := &mocks.DNSTransport{
 			MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
 				response := &mocks.DNSResponse{
@@ -378,8 +384,8 @@ func TestDelayedDNSResponseWithTimeout(t *testing.T) {
 		t.Run("when buffer is not full", func(t *testing.T) {
 			zeroTime := time.Now()
 			td := testingx.NewTimeDeterministic(zeroTime)
-			trace := NewTrace(0, zeroTime)
-			trace.TimeNowFn = td.Now
+			trace := NewTrace(0, zeroTime, "antani")
+			trace.timeNowFn = td.Now
 			txp := &mocks.DNSTransport{
 				MockNetwork: func() string {
 					return "udp"
@@ -420,13 +426,16 @@ func TestDelayedDNSResponseWithTimeout(t *testing.T) {
 			if len(got) != 1 {
 				t.Fatal("unexpected output from trace")
 			}
+			if diff := cmp.Diff([]string{"antani"}, got[0].Tags); diff != "" {
+				t.Fatal(diff)
+			}
 		})
 
 		t.Run("when buffer is full", func(t *testing.T) {
 			zeroTime := time.Now()
 			td := testingx.NewTimeDeterministic(zeroTime)
 			trace := NewTrace(0, zeroTime)
-			trace.TimeNowFn = td.Now
+			trace.timeNowFn = td.Now
 			trace.delayedDNSResponse = make(chan *model.ArchivalDNSLookupResult) // no buffer
 			txp := &mocks.DNSTransport{
 				MockNetwork: func() string {
@@ -475,8 +484,8 @@ func TestDelayedDNSResponseWithTimeout(t *testing.T) {
 		t.Run("context is already cancelled and we still drain the trace", func(t *testing.T) {
 			zeroTime := time.Now()
 			td := testingx.NewTimeDeterministic(zeroTime)
-			trace := NewTrace(0, zeroTime)
-			trace.TimeNowFn = td.Now
+			trace := NewTrace(0, zeroTime, "antani")
+			trace.timeNowFn = td.Now
 			txp := &mocks.DNSTransport{
 				MockNetwork: func() string {
 					return "udp"
@@ -525,8 +534,8 @@ func TestDelayedDNSResponseWithTimeout(t *testing.T) {
 		t.Run("normal case where the context times out after we start draining", func(t *testing.T) {
 			zeroTime := time.Now()
 			td := testingx.NewTimeDeterministic(zeroTime)
-			trace := NewTrace(0, zeroTime)
-			trace.TimeNowFn = td.Now
+			trace := NewTrace(0, zeroTime, "antani")
+			trace.timeNowFn = td.Now
 			txp := &mocks.DNSTransport{
 				MockNetwork: func() string {
 					return "udp"

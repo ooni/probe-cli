@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -50,43 +51,43 @@ func TestNewTrace(t *testing.T) {
 		})
 
 		t.Run("NewStdlibResolverFn is nil", func(t *testing.T) {
-			if trace.NewStdlibResolverFn != nil {
+			if trace.newStdlibResolverFn != nil {
 				t.Fatal("expected nil NewStdlibResolverFn")
 			}
 		})
 
 		t.Run("NewParallelUDPResolverFn is nil", func(t *testing.T) {
-			if trace.NewParallelUDPResolverFn != nil {
+			if trace.newParallelUDPResolverFn != nil {
 				t.Fatal("expected nil NewParallelUDPResolverFn")
 			}
 		})
 
 		t.Run("NewParallelDNSOverHTTPSResolverFn is nil", func(t *testing.T) {
-			if trace.NewParallelDNSOverHTTPSResolverFn != nil {
+			if trace.newParallelDNSOverHTTPSResolverFn != nil {
 				t.Fatal("expected nil NewParallelDNSOverHTTPSResolverFn")
 			}
 		})
 
 		t.Run("NewDialerWithoutResolverFn is nil", func(t *testing.T) {
-			if trace.NewDialerWithoutResolverFn != nil {
+			if trace.newDialerWithoutResolverFn != nil {
 				t.Fatal("expected nil NewDialerWithoutResolverFn")
 			}
 		})
 
 		t.Run("NewTLSHandshakerStdlibFn is nil", func(t *testing.T) {
-			if trace.NewTLSHandshakerStdlibFn != nil {
+			if trace.newTLSHandshakerStdlibFn != nil {
 				t.Fatal("expected nil NewTLSHandshakerStdlibFn")
 			}
 		})
 
 		t.Run("newTLShandshakerUTLSFn is nil", func(t *testing.T) {
-			if trace.NewTLSHandshakerUTLSFn != nil {
+			if trace.newTLSHandshakerUTLSFn != nil {
 				t.Fatal("expected nil NewTLSHandshakerUTLSfn")
 			}
 		})
 
 		t.Run("NewQUICDialerWithoutResolverFn is nil", func(t *testing.T) {
-			if trace.NewQUICDialerWithoutResolverFn != nil {
+			if trace.newQUICDialerWithoutResolverFn != nil {
 				t.Fatal("expected nil NewQUICDialerQithoutResolverFn")
 			}
 		})
@@ -187,7 +188,7 @@ func TestNewTrace(t *testing.T) {
 		})
 
 		t.Run("TimeNowFn is nil", func(t *testing.T) {
-			if trace.TimeNowFn != nil {
+			if trace.timeNowFn != nil {
 				t.Fatal("expected nil TimeNowFn")
 			}
 		})
@@ -205,7 +206,7 @@ func TestTrace(t *testing.T) {
 		t.Run("when not nil", func(t *testing.T) {
 			mockedErr := errors.New("mocked")
 			tx := &Trace{
-				NewStdlibResolverFn: func(logger model.Logger) model.Resolver {
+				newStdlibResolverFn: func(logger model.Logger) model.Resolver {
 					return &mocks.Resolver{
 						MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 							return []string{}, mockedErr
@@ -226,7 +227,7 @@ func TestTrace(t *testing.T) {
 
 		t.Run("when nil", func(t *testing.T) {
 			tx := &Trace{
-				NewParallelUDPResolverFn: nil,
+				newParallelUDPResolverFn: nil,
 			}
 			resolver := tx.newStdlibResolver(model.DiscardLogger)
 			ctx, cancel := context.WithCancel(context.Background())
@@ -245,7 +246,7 @@ func TestTrace(t *testing.T) {
 		t.Run("when not nil", func(t *testing.T) {
 			mockedErr := errors.New("mocked")
 			tx := &Trace{
-				NewParallelUDPResolverFn: func(logger model.Logger, dialer model.Dialer, address string) model.Resolver {
+				newParallelUDPResolverFn: func(logger model.Logger, dialer model.Dialer, address string) model.Resolver {
 					return &mocks.Resolver{
 						MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 							return []string{}, mockedErr
@@ -267,7 +268,7 @@ func TestTrace(t *testing.T) {
 
 		t.Run("when nil", func(t *testing.T) {
 			tx := &Trace{
-				NewParallelUDPResolverFn: nil,
+				newParallelUDPResolverFn: nil,
 			}
 			dialer := netxlite.NewDialerWithoutResolver(model.DiscardLogger)
 			resolver := tx.newParallelUDPResolver(model.DiscardLogger, dialer, "1.1.1.1:53")
@@ -287,7 +288,7 @@ func TestTrace(t *testing.T) {
 		t.Run("when not nil", func(t *testing.T) {
 			mockedErr := errors.New("mocked")
 			tx := &Trace{
-				NewParallelDNSOverHTTPSResolverFn: func(logger model.Logger, URL string) model.Resolver {
+				newParallelDNSOverHTTPSResolverFn: func(logger model.Logger, URL string) model.Resolver {
 					return &mocks.Resolver{
 						MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 							return []string{}, mockedErr
@@ -308,7 +309,7 @@ func TestTrace(t *testing.T) {
 
 		t.Run("when nil", func(t *testing.T) {
 			tx := &Trace{
-				NewParallelDNSOverHTTPSResolverFn: nil,
+				newParallelDNSOverHTTPSResolverFn: nil,
 			}
 			resolver := tx.newParallelDNSOverHTTPSResolver(model.DiscardLogger, "https://dns.google.com")
 			ctx, cancel := context.WithCancel(context.Background())
@@ -327,7 +328,7 @@ func TestTrace(t *testing.T) {
 		t.Run("when not nil", func(t *testing.T) {
 			mockedErr := errors.New("mocked")
 			tx := &Trace{
-				NewDialerWithoutResolverFn: func(dl model.DebugLogger) model.Dialer {
+				newDialerWithoutResolverFn: func(dl model.DebugLogger) model.Dialer {
 					return &mocks.Dialer{
 						MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
 							return nil, mockedErr
@@ -348,7 +349,7 @@ func TestTrace(t *testing.T) {
 
 		t.Run("when nil", func(t *testing.T) {
 			tx := &Trace{
-				NewDialerWithoutResolverFn: nil,
+				newDialerWithoutResolverFn: nil,
 			}
 			dialer := tx.NewDialerWithoutResolver(model.DiscardLogger)
 			ctx, cancel := context.WithCancel(context.Background())
@@ -367,7 +368,7 @@ func TestTrace(t *testing.T) {
 		t.Run("when not nil", func(t *testing.T) {
 			mockedErr := errors.New("mocked")
 			tx := &Trace{
-				NewTLSHandshakerStdlibFn: func(dl model.DebugLogger) model.TLSHandshaker {
+				newTLSHandshakerStdlibFn: func(dl model.DebugLogger) model.TLSHandshaker {
 					return &mocks.TLSHandshaker{
 						MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
 							return nil, tls.ConnectionState{}, mockedErr
@@ -392,7 +393,7 @@ func TestTrace(t *testing.T) {
 		t.Run("when nil", func(t *testing.T) {
 			mockedErr := errors.New("mocked")
 			tx := &Trace{
-				NewTLSHandshakerStdlibFn: nil,
+				newTLSHandshakerStdlibFn: nil,
 			}
 			thx := tx.NewTLSHandshakerStdlib(model.DiscardLogger)
 			tcpConn := &mocks.Conn{
@@ -437,7 +438,7 @@ func TestTrace(t *testing.T) {
 		t.Run("when not nil", func(t *testing.T) {
 			mockedErr := errors.New("mocked")
 			tx := &Trace{
-				NewTLSHandshakerUTLSFn: func(dl model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker {
+				newTLSHandshakerUTLSFn: func(dl model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker {
 					return &mocks.TLSHandshaker{
 						MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
 							return nil, tls.ConnectionState{}, mockedErr
@@ -462,7 +463,7 @@ func TestTrace(t *testing.T) {
 		t.Run("when nil", func(t *testing.T) {
 			mockedErr := errors.New("mocked")
 			tx := &Trace{
-				NewTLSHandshakerStdlibFn: nil,
+				newTLSHandshakerStdlibFn: nil,
 			}
 			thx := tx.newTLSHandshakerUTLS(model.DiscardLogger, &utls.HelloGolang)
 			tcpConn := &mocks.Conn{
@@ -507,7 +508,7 @@ func TestTrace(t *testing.T) {
 		t.Run("when not nil", func(t *testing.T) {
 			mockedErr := errors.New("mocked")
 			tx := &Trace{
-				NewQUICDialerWithoutResolverFn: func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer {
+				newQUICDialerWithoutResolverFn: func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer {
 					return &mocks.QUICDialer{
 						MockDialContext: func(ctx context.Context, address string,
 							tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
@@ -530,7 +531,7 @@ func TestTrace(t *testing.T) {
 		t.Run("when nil", func(t *testing.T) {
 			mockedErr := errors.New("mocked")
 			tx := &Trace{
-				NewQUICDialerWithoutResolverFn: nil, // explicit
+				newQUICDialerWithoutResolverFn: nil, // explicit
 			}
 			pconn := &mocks.UDPLikeConn{
 				MockLocalAddr: func() net.Addr {
@@ -573,7 +574,7 @@ func TestTrace(t *testing.T) {
 	t.Run("TimeNowFn works as intended", func(t *testing.T) {
 		fixedTime := time.Date(2022, 01, 01, 00, 00, 00, 00, time.UTC)
 		tx := &Trace{
-			TimeNowFn: func() time.Time {
+			timeNowFn: func() time.Time {
 				return fixedTime
 			},
 		}
@@ -586,7 +587,7 @@ func TestTrace(t *testing.T) {
 		t0 := time.Date(2022, 01, 01, 00, 00, 00, 00, time.UTC)
 		t1 := t0.Add(10 * time.Second)
 		tx := &Trace{
-			TimeNowFn: func() time.Time {
+			timeNowFn: func() time.Time {
 				return t1
 			},
 		}
@@ -594,4 +595,12 @@ func TestTrace(t *testing.T) {
 			t.Fatal("apparently Trace.Since is broken")
 		}
 	})
+}
+
+func TestTags(t *testing.T) {
+	trace := NewTrace(0, time.Now(), "antani")
+	got := trace.Tags()
+	if diff := cmp.Diff([]string{"antani"}, got); diff != "" {
+		t.Fatal(diff)
+	}
 }

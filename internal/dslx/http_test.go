@@ -2,6 +2,8 @@ package dslx
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -9,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -89,7 +92,7 @@ func TestHTTPRequest(t *testing.T) {
 		}
 		idGen := &atomic.Int64{}
 		zeroTime := time.Time{}
-		trace := measurexlite.NewTrace(idGen.Add(1), zeroTime)
+		trace := measurexlite.NewTrace(idGen.Add(1), zeroTime, "antani")
 
 		t.Run("with EOF", func(t *testing.T) {
 			httpTransport := HTTPTransport{
@@ -159,6 +162,35 @@ func TestHTTPRequest(t *testing.T) {
 			}
 		})
 
+		// makeSureObservationsContainTags ensures the observations you can extract from
+		// the given HTTPResponse contain the tags we configured when testing
+		makeSureObservationsContainTags := func(res *Maybe[*HTTPResponse]) error {
+			// exclude the case where there was an error
+			if res.Error != nil {
+				return fmt.Errorf("unexpected error: %w", res.Error)
+			}
+
+			// obtain the observations
+			for _, obs := range ExtractObservations(res) {
+
+				// check the network events
+				for _, ev := range obs.NetworkEvents {
+					if diff := cmp.Diff([]string{"antani"}, ev.Tags); diff != "" {
+						return errors.New(diff)
+					}
+				}
+
+				// check the HTTP events
+				for _, ev := range obs.Requests {
+					if diff := cmp.Diff([]string{"antani"}, ev.Tags); diff != "" {
+						return errors.New(diff)
+					}
+				}
+			}
+
+			return nil
+		}
+
 		t.Run("with success (https)", func(t *testing.T) {
 			httpTransport := HTTPTransport{
 				Address:     "1.2.3.4:443",
@@ -178,6 +210,7 @@ func TestHTTPRequest(t *testing.T) {
 			if res.State.HTTPResponse == nil || res.State.HTTPResponse.Status != "expected" {
 				t.Fatal("unexpected request")
 			}
+			makeSureObservationsContainTags(res)
 		})
 
 		t.Run("with success (http)", func(t *testing.T) {
@@ -199,6 +232,7 @@ func TestHTTPRequest(t *testing.T) {
 			if res.State.HTTPResponse == nil || res.State.HTTPResponse.Status != "expected" {
 				t.Fatal("unexpected request")
 			}
+			makeSureObservationsContainTags(res)
 		})
 
 		t.Run("with header options", func(t *testing.T) {
@@ -239,7 +273,6 @@ func TestHTTPRequest(t *testing.T) {
 				t.Fatal("unexpected URL path", res.State.HTTPRequest.URL.Path)
 			}
 		})
-
 	})
 }
 

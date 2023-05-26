@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -43,13 +45,26 @@ func TestTCPConnect(t *testing.T) {
 		}
 
 		tests := map[string]struct {
+			tags       []string
 			dialer     model.Dialer
 			expectConn net.Conn
 			expectErr  error
 			closed     bool
 		}{
-			"with EOF": {expectConn: nil, expectErr: io.EOF, closed: false, dialer: eofDialer},
-			"success":  {expectConn: plainConn, expectErr: nil, closed: true, dialer: goodDialer},
+			"with EOF": {
+				tags:       []string{},
+				expectConn: nil,
+				expectErr:  io.EOF,
+				closed:     false,
+				dialer:     eofDialer,
+			},
+			"success": {
+				tags:       []string{"antani"},
+				expectConn: plainConn,
+				expectErr:  nil,
+				closed:     true,
+				dialer:     goodDialer,
+			},
 		}
 
 		for name, tt := range tests {
@@ -61,21 +76,42 @@ func TestTCPConnect(t *testing.T) {
 					Network:     "tcp",
 					IDGenerator: &atomic.Int64{},
 					Logger:      model.DiscardLogger,
+					Tags:        tt.tags,
 					ZeroTime:    time.Time{},
 				}
 				res := tcpConnect.Apply(context.Background(), endpoint)
 				if res.Error != tt.expectErr {
 					t.Fatalf("unexpected error: %s", res.Error)
 				}
-				if res.State.Conn != tt.expectConn {
-					t.Fatalf("unexpected conn: %s", res.State.Conn)
+				if res.State == nil || res.State.Conn != tt.expectConn {
+					t.Fatal("unexpected conn")
 				}
 				pool.Close()
 				if wasClosed != tt.closed {
 					t.Fatalf("unexpected connection closed state: %v", wasClosed)
 				}
+				if len(tt.tags) > 0 {
+					if res.State == nil {
+						t.Fatal("expected non-nil res.State")
+					}
+					if diff := cmp.Diff([]string{"antani"}, res.State.Trace.Tags()); diff != "" {
+						t.Fatal(diff)
+					}
+				}
 			})
 			wasClosed = false
 		}
 	})
+}
+
+// Make sure we get a valid dialer if no mocked dialer is configured
+func TestDialerOrDefault(t *testing.T) {
+	f := &tcpConnectFunc{
+		p:      &ConnPool{},
+		dialer: nil,
+	}
+	dialer := f.dialerOrDefault(measurexlite.NewTrace(0, time.Now()), model.DiscardLogger)
+	if dialer == nil {
+		t.Fatal("expected non-nil dialer here")
+	}
 }

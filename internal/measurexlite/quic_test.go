@@ -14,6 +14,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/quictesting"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
@@ -22,7 +23,7 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 		underlying := &mocks.QUICDialer{}
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		trace.NewQUICDialerWithoutResolverFn = func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer {
+		trace.newQUICDialerWithoutResolverFn = func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer {
 			return underlying
 		}
 		listener := &mocks.QUICListener{}
@@ -49,7 +50,7 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
-		trace.NewQUICDialerWithoutResolverFn = func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer {
+		trace.newQUICDialerWithoutResolverFn = func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer {
 			return underlying
 		}
 		listener := &mocks.QUICListener{}
@@ -76,7 +77,7 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 				called = true
 			},
 		}
-		trace.NewQUICDialerWithoutResolverFn = func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer {
+		trace.newQUICDialerWithoutResolverFn = func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer {
 			return underlying
 		}
 		listener := &mocks.QUICListener{}
@@ -91,8 +92,8 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 		mockedErr := errors.New("mocked")
 		zeroTime := time.Now()
 		td := testingx.NewTimeDeterministic(zeroTime)
-		trace := NewTrace(0, zeroTime)
-		trace.TimeNowFn = td.Now // deterministic time tracking
+		trace := NewTrace(0, zeroTime, "antani")
+		trace.timeNowFn = td.Now // deterministic time tracking
 		pconn := &mocks.UDPLikeConn{
 			MockLocalAddr: func() net.Addr {
 				return &net.UDPAddr{
@@ -146,7 +147,7 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 				PeerCertificates:   []model.ArchivalMaybeBinaryData{},
 				ServerName:         "dns.cloudflare.com",
 				T:                  time.Second.Seconds(),
-				Tags:               []string{},
+				Tags:               []string{"antani"},
 				TLSVersion:         "",
 			}
 			got := events[0]
@@ -169,7 +170,7 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 					Operation: "quic_handshake_start",
 					Proto:     "",
 					T:         0,
-					Tags:      []string{},
+					Tags:      []string{"antani"},
 				}
 				got := events[0]
 				if diff := cmp.Diff(expect, got); diff != "" {
@@ -186,7 +187,7 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 					Proto:     "",
 					T0:        time.Second.Seconds(),
 					T:         time.Second.Seconds(),
-					Tags:      []string{},
+					Tags:      []string{"antani"},
 				}
 				got := events[1]
 				if diff := cmp.Diff(expect, got); diff != "" {
@@ -254,6 +255,42 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 			}
 		})
 	})
+}
+
+func TestOnQUICHandshakeDoneExtractsTheConnectionState(t *testing.T) {
+	// create a trace
+	trace := NewTrace(0, time.Now())
+
+	// create a QUIC dialer
+	quicListener := netxlite.NewQUICListener()
+	quicDialer := trace.NewQUICDialerWithoutResolver(quicListener, model.DiscardLogger)
+
+	// dial with the endpoint we use for testing
+	quicConn, err := quicDialer.DialContext(
+		context.Background(),
+		quictesting.Endpoint("443"),
+		&tls.Config{
+			InsecureSkipVerify: true,
+		},
+		&quic.Config{},
+	)
+	defer MaybeCloseQUICConn(quicConn)
+
+	// we do not expect to see an error generally here
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// extract the QUIC handshake event
+	event := trace.FirstQUICHandshakeOrNil()
+	if event == nil {
+		t.Fatal("expected non-nil event")
+	}
+
+	// make sure we have parsed the QUIC connection state
+	if event.NegotiatedProtocol != "h3" {
+		t.Fatal("it seems we did not parse the QUIC connection state")
+	}
 }
 
 func TestFirstQUICHandshake(t *testing.T) {
