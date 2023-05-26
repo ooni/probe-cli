@@ -287,7 +287,9 @@ func (f *httpRequestFunc) do(
 ) (*http.Response, []byte, []*Observations, error) {
 	const maxbody = 1 << 19 // TODO(bassosimone): allow to configure this value?
 	started := input.Trace.TimeSince(input.Trace.ZeroTime)
-	observations := []*Observations{{}} // one entry!
+	observations := []*Observations{
+		NewObservations(),
+	} // one entry
 
 	observations[0].NetworkEvents = append(observations[0].NetworkEvents,
 		measurexlite.NewAnnotationArchivalNetworkEvent(
