@@ -14,7 +14,7 @@ on:
 
 jobs:
   build_windows_cli:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
         with:
@@ -23,7 +23,7 @@ jobs:
       - name: Get GOVERSION content
         id: goversion
         run: echo ::set-output name=version::$(cat GOVERSION)
-      - uses: magnetikonline/action-golang-cache@v2
+      - uses: magnetikonline/action-golang-cache@v4
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
@@ -40,35 +40,35 @@ jobs:
 
       - run: make EXPECTED_MINGW_W64_VERSION="9.3-win32" CLI/windows
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: ooniprobe-windows-386.exe
           path: ./CLI/ooniprobe-windows-386.exe
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: ooniprobe-windows-amd64.exe
           path: ./CLI/ooniprobe-windows-amd64.exe
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: miniooni-windows-386.exe
           path: ./CLI/miniooni-windows-386.exe
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: miniooni-windows-amd64.exe
           path: ./CLI/miniooni-windows-amd64.exe
 
   test_windows_cli:
-    runs-on: windows-2019
+    runs-on: windows-2022
     needs: build_windows_cli
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: ooniprobe-windows-amd64.exe
 
@@ -76,7 +76,7 @@ jobs:
         shell: bash
 
   publish_windows_cli:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: test_windows_cli
     permissions:
       contents: write
@@ -85,19 +85,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: ooniprobe-windows-386.exe
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: ooniprobe-windows-amd64.exe
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: miniooni-windows-386.exe
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: miniooni-windows-amd64.exe
 

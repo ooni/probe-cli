@@ -14,7 +14,7 @@ on:
 
 jobs:
   build_linux_cli_386:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
         with:
@@ -30,7 +30,7 @@ jobs:
       - name: Get GOVERSION content
         id: goversion
         run: echo ::set-output name=version::$(cat GOVERSION)
-      - uses: magnetikonline/action-golang-cache@v2
+      - uses: magnetikonline/action-golang-cache@v4
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-linux-386-${{ steps.goversion.outputs.version }}"
@@ -42,18 +42,18 @@ jobs:
 
       - run: make CLI/linux-static-386
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: ooniprobe-linux-386
           path: ./CLI/ooniprobe-linux-386
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: miniooni-linux-386
           path: ./CLI/miniooni-linux-386
 
   publish_linux_cli_386:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: build_linux_cli_386
     permissions:
       contents: write
@@ -62,11 +62,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: ooniprobe-linux-386
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: miniooni-linux-386
 
@@ -75,7 +75,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build_linux_cli_amd64:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
         with:
@@ -91,7 +91,7 @@ jobs:
       - name: Get GOVERSION content
         id: goversion
         run: echo ::set-output name=version::$(cat GOVERSION)
-      - uses: magnetikonline/action-golang-cache@v2
+      - uses: magnetikonline/action-golang-cache@v4
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-linux-amd64-${{ steps.goversion.outputs.version }}"
@@ -103,36 +103,36 @@ jobs:
 
       - run: make CLI/linux-static-amd64
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: ooniprobe-linux-amd64
           path: ./CLI/ooniprobe-linux-amd64
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: miniooni-linux-amd64
           path: ./CLI/miniooni-linux-amd64
 
   test_linux_cli_amd64:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: build_linux_cli_amd64
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: ooniprobe-linux-amd64
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: miniooni-linux-amd64
 
       - name: Get GOVERSION content
         id: goversion
         run: echo ::set-output name=version::$(cat GOVERSION)
-      - uses: magnetikonline/action-golang-cache@v2
+      - uses: magnetikonline/action-golang-cache@v4
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-linux-amd64-${{ steps.goversion.outputs.version }}"
@@ -149,7 +149,7 @@ jobs:
         shell: bash
 
   publish_linux_cli_amd64:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: test_linux_cli_amd64
     permissions:
       contents: write
@@ -158,11 +158,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: ooniprobe-linux-amd64
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: miniooni-linux-amd64
 
@@ -171,7 +171,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build_linux_cli_armv6:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
         with:
@@ -190,7 +190,7 @@ jobs:
       - name: Get GOVERSION content
         id: goversion
         run: echo ::set-output name=version::$(cat GOVERSION)
-      - uses: magnetikonline/action-golang-cache@v2
+      - uses: magnetikonline/action-golang-cache@v4
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-linux-armv6-${{ steps.goversion.outputs.version }}"
@@ -202,18 +202,18 @@ jobs:
 
       - run: make CLI/linux-static-armv6
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: ooniprobe-linux-armv6
           path: ./CLI/ooniprobe-linux-armv6
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: miniooni-linux-armv6
           path: ./CLI/miniooni-linux-armv6
 
   publish_linux_cli_armv6:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: build_linux_cli_armv6
     permissions:
       contents: write
@@ -222,11 +222,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: ooniprobe-linux-armv6
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: miniooni-linux-armv6
 
@@ -235,7 +235,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build_linux_cli_armv7:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
         with:
@@ -254,7 +254,7 @@ jobs:
       - name: Get GOVERSION content
         id: goversion
         run: echo ::set-output name=version::$(cat GOVERSION)
-      - uses: magnetikonline/action-golang-cache@v2
+      - uses: magnetikonline/action-golang-cache@v4
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-linux-armv7-${{ steps.goversion.outputs.version }}"
@@ -266,18 +266,18 @@ jobs:
 
       - run: make CLI/linux-static-armv7
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: ooniprobe-linux-armv7
           path: ./CLI/ooniprobe-linux-armv7
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: miniooni-linux-armv7
           path: ./CLI/miniooni-linux-armv7
 
   publish_linux_cli_armv7:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: build_linux_cli_armv7
     permissions:
       contents: write
@@ -286,11 +286,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: ooniprobe-linux-armv7
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: miniooni-linux-armv7
 
@@ -299,7 +299,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build_linux_cli_arm64:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
         with:
@@ -318,7 +318,7 @@ jobs:
       - name: Get GOVERSION content
         id: goversion
         run: echo ::set-output name=version::$(cat GOVERSION)
-      - uses: magnetikonline/action-golang-cache@v2
+      - uses: magnetikonline/action-golang-cache@v4
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-linux-arm64-${{ steps.goversion.outputs.version }}"
@@ -330,18 +330,18 @@ jobs:
 
       - run: make CLI/linux-static-arm64
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: ooniprobe-linux-arm64
           path: ./CLI/ooniprobe-linux-arm64
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: miniooni-linux-arm64
           path: ./CLI/miniooni-linux-arm64
 
   publish_linux_cli_arm64:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: build_linux_cli_arm64
     permissions:
       contents: write
@@ -350,11 +350,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: ooniprobe-linux-arm64
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: miniooni-linux-arm64
 
