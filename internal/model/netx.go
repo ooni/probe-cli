@@ -13,7 +13,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/lucas-clemente/quic-go"
+	"github.com/quic-go/quic-go"
 )
 
 // DNSResponse is a parsed DNS response ready for further processing.
@@ -455,7 +455,7 @@ type Trace interface {
 }
 
 // UDPLikeConn is a net.PacketConn with some extra functions
-// required to convince the QUIC library (lucas-clemente/quic-go)
+// required to convince the QUIC library (quic-go/quic-go)
 // to inflate the receive buffer of the connection.
 //
 // The QUIC library will treat this connection as a "dumb"

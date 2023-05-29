@@ -45,8 +45,8 @@ func aeadAESGCMTLS13(key, nonceMask []byte) aead {
 }
 
 // SPDX-License-Identifier: MIT
-// This code is borrowed from https://github.com/lucas-clemente/quic-go/
-// https://github.com/lucas-clemente/quic-go/blob/f3b098775e40f96486c0065204145ddc8675eb7c/internal/handshake/initial_aead.go#L60
+// This code is borrowed from https://github.com/quic-go/quic-go/
+// https://github.com/quic-go/quic-go/blob/f3b098775e40f96486c0065204145ddc8675eb7c/internal/handshake/initial_aead.go#L60
 // https://www.rfc-editor.org/rfc/rfc9001.html#protection-keys
 //
 // computeInitialKeyAndIV derives the packet protection key and Initialization Vector (IV) from the initial secret.
@@ -65,8 +65,8 @@ func computeHP(secret []byte) (hp []byte) {
 }
 
 // SPDX-License-Identifier: MIT
-// This code is borrowed from https://github.com/lucas-clemente/quic-go/
-// https://github.com/lucas-clemente/quic-go/blob/f3b098775e40f96486c0065204145ddc8675eb7c/internal/handshake/initial_aead.go#L53
+// This code is borrowed from https://github.com/quic-go/quic-go/
+// https://github.com/quic-go/quic-go/blob/f3b098775e40f96486c0065204145ddc8675eb7c/internal/handshake/initial_aead.go#L53
 // https://www.rfc-editor.org/rfc/rfc9001.html#name-initial-secrets
 //
 // computeSecrets computes the initial secrets based on the destination connection ID.
@@ -121,8 +121,8 @@ func encryptPayload(payload, destConnID connectionID, clientSecret []byte) []byt
 }
 
 // SPDX-License-Identifier: MIT
-// This code is borrowed from https://github.com/lucas-clemente/quic-go/
-// https://github.com/lucas-clemente/quic-go/blob/master/internal/handshake/hkdf.go
+// This code is borrowed from https://github.com/quic-go/quic-go/
+// https://github.com/quic-go/quic-go/blob/master/internal/handshake/hkdf.go
 //
 // hkdfExpandLabel HKDF expands a label.
 func hkdfExpandLabel(hash crypto.Hash, secret, context []byte, label string, length int) []byte {
