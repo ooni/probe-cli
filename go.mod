@@ -21,7 +21,6 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/hexops/gotextdiff v1.0.3
 	github.com/iancoleman/strcase v0.2.0
-	github.com/lucas-clemente/quic-go v0.31.1
 	github.com/mattn/go-colorable v0.1.13
 	github.com/miekg/dns v1.1.52
 	github.com/mitchellh/go-wordwrap v1.0.1
@@ -34,6 +33,7 @@ require (
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/pion/stun v0.3.5
 	github.com/pkg/errors v0.9.1
+	github.com/quic-go/quic-go v0.32.0
 	github.com/rogpeppe/go-internal v1.9.0
 	github.com/rubenv/sql-migrate v1.3.0
 	github.com/schollz/progressbar/v3 v3.13.0
@@ -64,6 +64,9 @@ require (
 	github.com/onsi/ginkgo/v2 v2.7.0 // indirect
 	github.com/pion/transport/v2 v2.0.0 // indirect
 	github.com/quic-go/qpack v0.4.0 // indirect
+	github.com/quic-go/qtls-go1-18 v0.2.0 // indirect
+	github.com/quic-go/qtls-go1-19 v0.2.0 // indirect
+	github.com/quic-go/qtls-go1-20 v0.1.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/segmentio/fasthash v1.0.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
@@ -98,9 +101,6 @@ require (
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.3 // indirect
 	github.com/klauspost/reedsolomon v1.11.5 // indirect
-	github.com/marten-seemann/qpack v0.3.0 // indirect
-	github.com/marten-seemann/qtls-go1-18 v0.1.4 // indirect
-	github.com/marten-seemann/qtls-go1-19 v0.1.2 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect

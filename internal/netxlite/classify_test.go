@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/lucas-clemente/quic-go"
 	"github.com/pion/stun"
+	"github.com/quic-go/quic-go"
 )
 
 func TestClassifyGenericError(t *testing.T) {

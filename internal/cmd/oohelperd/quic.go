@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/quic-go/quic-go"
 )
 
 // ctrlQUICResult is the result of the QUIC check performed by the test helper.

@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/quic-go/quic-go"
 )
 
 // NewQUICListener creates a new QUICListener using the standard

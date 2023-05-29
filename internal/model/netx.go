@@ -13,7 +13,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/lucas-clemente/quic-go"
+	"github.com/quic-go/quic-go"
 )
 
 // DNSResponse is a parsed DNS response ready for further processing.

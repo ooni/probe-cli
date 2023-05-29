@@ -11,8 +11,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/scrubber"
+	"github.com/quic-go/quic-go"
 )
 
 // FailureUnknown is the prefix used for unknown failures
