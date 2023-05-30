@@ -149,7 +149,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	defer cancel()
 	urlgetter.RegisterExtensions(measurement)
 
-	certPool := netxlite.NewDefaultCertPool()
+	certPool := netxlite.NewMozillaCertPool()
 	signalCAByteSlice := [][]byte{
 		[]byte(signalCA),
 		[]byte(signalCANew),
