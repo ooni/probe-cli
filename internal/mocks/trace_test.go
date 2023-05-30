@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/quic-go/quic-go"
 )
 
 func TestTrace(t *testing.T) {

@@ -287,13 +287,19 @@ func (f *httpRequestFunc) do(
 ) (*http.Response, []byte, []*Observations, error) {
 	const maxbody = 1 << 19 // TODO(bassosimone): allow to configure this value?
 	started := input.Trace.TimeSince(input.Trace.ZeroTime)
-	observations := []*Observations{{}} // one entry!
+
+	// manually create a single 1-length observations structure because
+	// the trace cannot automatically capture HTTP events
+	observations := []*Observations{
+		NewObservations(),
+	}
 
 	observations[0].NetworkEvents = append(observations[0].NetworkEvents,
 		measurexlite.NewAnnotationArchivalNetworkEvent(
 			input.Trace.Index,
 			started,
 			"http_transaction_start",
+			input.Trace.Tags()...,
 		))
 
 	resp, err := input.Transport.RoundTrip(req)
@@ -310,6 +316,7 @@ func (f *httpRequestFunc) do(
 			input.Trace.Index,
 			finished,
 			"http_transaction_done",
+			input.Trace.Tags()...,
 		))
 
 	observations[0].Requests = append(observations[0].Requests,
@@ -326,6 +333,7 @@ func (f *httpRequestFunc) do(
 			body,
 			err,
 			finished,
+			input.Trace.Tags()...,
 		))
 
 	return resp, body, observations, err

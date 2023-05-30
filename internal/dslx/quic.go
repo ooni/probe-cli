@@ -13,10 +13,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/quic-go/quic-go"
 )
 
 // QUICHandshakeOption is an option you can pass to QUICHandshake.
@@ -46,10 +46,13 @@ func QUICHandshakeOptionServerName(value string) QUICHandshakeOption {
 // QUICHandshake returns a function performing QUIC handshakes.
 func QUICHandshake(pool *ConnPool, options ...QUICHandshakeOption) Func[
 	*Endpoint, *Maybe[*QUICConnection]] {
+	// See https://github.com/ooni/probe/issues/2413 to understand
+	// why we're using nil to force netxlite to use the cached
+	// default Mozilla cert pool.
 	f := &quicHandshakeFunc{
 		InsecureSkipVerify: false,
 		Pool:               pool,
-		RootCAs:            netxlite.NewDefaultCertPool(),
+		RootCAs:            nil,
 		ServerName:         "",
 	}
 	for _, option := range options {
@@ -79,7 +82,7 @@ type quicHandshakeFunc struct {
 func (f *quicHandshakeFunc) Apply(
 	ctx context.Context, input *Endpoint) *Maybe[*QUICConnection] {
 	// create trace
-	trace := measurexlite.NewTrace(input.IDGenerator.Add(1), input.ZeroTime)
+	trace := measurexlite.NewTrace(input.IDGenerator.Add(1), input.ZeroTime, input.Tags...)
 
 	// use defaults or user-configured overrides
 	serverName := f.serverName(input)

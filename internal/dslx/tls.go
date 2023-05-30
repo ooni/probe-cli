@@ -51,11 +51,14 @@ func TLSHandshakeOptionServerName(value string) TLSHandshakeOption {
 // TLSHandshake returns a function performing TSL handshakes.
 func TLSHandshake(pool *ConnPool, options ...TLSHandshakeOption) Func[
 	*TCPConnection, *Maybe[*TLSConnection]] {
+	// See https://github.com/ooni/probe/issues/2413 to understand
+	// why we're using nil to force netxlite to use the cached
+	// default Mozilla cert pool.
 	f := &tlsHandshakeFunc{
 		InsecureSkipVerify: false,
 		NextProto:          []string{},
 		Pool:               pool,
-		RootCAs:            netxlite.NewDefaultCertPool(),
+		RootCAs:            nil,
 		ServerName:         "",
 	}
 	for _, option := range options {
@@ -105,11 +108,10 @@ func (f *tlsHandshakeFunc) Apply(
 		nextProto,
 	)
 
+	// obtain the handshaker for use
+	handshaker := f.handshakerOrDefault(trace, input.Logger)
+
 	// setup
-	handshaker := f.handshaker
-	if handshaker == nil {
-		handshaker = trace.NewTLSHandshakerStdlib(input.Logger)
-	}
 	config := &tls.Config{
 		NextProtos:         nextProto,
 		InsecureSkipVerify: f.InsecureSkipVerify,
@@ -152,6 +154,15 @@ func (f *tlsHandshakeFunc) Apply(
 		Operation:    netxlite.TLSHandshakeOperation,
 		State:        state,
 	}
+}
+
+// handshakerOrDefault is the function used to obtain an handshaker
+func (f *tlsHandshakeFunc) handshakerOrDefault(trace *measurexlite.Trace, logger model.Logger) model.TLSHandshaker {
+	handshaker := f.handshaker
+	if handshaker == nil {
+		handshaker = trace.NewTLSHandshakerStdlib(logger)
+	}
+	return handshaker
 }
 
 func (f *tlsHandshakeFunc) serverName(input *TCPConnection) string {

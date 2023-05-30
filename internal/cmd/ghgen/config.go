@@ -52,13 +52,13 @@ var Config = map[string][]Job{
 
 const (
 	// runOnUbuntu is the Ubuntu system where to run.
-	runsOnUbuntu = "ubuntu-20.04"
+	runsOnUbuntu = "ubuntu-22.04"
 
 	// runsOnMacOS is the macOS system where to run.
-	runsOnMacOS = "macos-11"
+	runsOnMacOS = "macos-12"
 
 	// runsOnWindows is the windows system where to run.
-	runsOnWindows = "windows-2019"
+	runsOnWindows = "windows-2022"
 )
 
 // noPermission indicates a job does not require permissions.

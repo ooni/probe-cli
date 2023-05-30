@@ -40,7 +40,7 @@ func newStepSetupGo(w io.Writer, cacheName string) {
 	mustFprintf(w, "      - name: Get GOVERSION content\n")
 	mustFprintf(w, "        id: goversion\n")
 	mustFprintf(w, "        run: echo ::set-output name=version::$(cat GOVERSION)\n")
-	mustFprintf(w, "      - uses: magnetikonline/action-golang-cache@v2\n")
+	mustFprintf(w, "      - uses: magnetikonline/action-golang-cache@v4\n")
 	mustFprintf(w, "        with:\n")
 	mustFprintf(w, "          go-version: \"${{ steps.goversion.outputs.version }}\"\n")
 	mustFprintf(w, "          cache-key-suffix: \"-%s-${{ steps.goversion.outputs.version }}\"\n", cacheName)
@@ -64,7 +64,7 @@ func newStepMake(w io.Writer, target string) {
 
 func newStepUploadArtifacts(w io.Writer, artifacts []string) {
 	for _, arti := range artifacts {
-		mustFprintf(w, "      - uses: actions/upload-artifact@v2\n")
+		mustFprintf(w, "      - uses: actions/upload-artifact@v3\n")
 		mustFprintf(w, "        with:\n")
 		mustFprintf(w, "          name: %s\n", filepath.Base(arti))
 		mustFprintf(w, "          path: %s\n", arti)
@@ -74,7 +74,7 @@ func newStepUploadArtifacts(w io.Writer, artifacts []string) {
 
 func newStepDownloadArtifacts(w io.Writer, artifacts []string) {
 	for _, arti := range artifacts {
-		mustFprintf(w, "      - uses: actions/download-artifact@v2\n")
+		mustFprintf(w, "      - uses: actions/download-artifact@v3\n")
 		mustFprintf(w, "        with:\n")
 		mustFprintf(w, "          name: %s\n", filepath.Base(arti))
 		mustFprintf(w, "\n")

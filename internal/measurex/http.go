@@ -25,10 +25,10 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/quic-go/quic-go"
 	"golang.org/x/net/publicsuffix"
 )
 
