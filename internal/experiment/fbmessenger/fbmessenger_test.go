@@ -473,7 +473,7 @@ func envConfigWithDNS(dnsConfig *netem.DNSConfig) netemx.Config {
 		Servers: []netemx.ServerStack{
 			{
 				ServerAddr: "157.240.20.35",
-				Listeners: []netemx.Listener{
+				HTTPServers: []netemx.HTTPServer{
 					{
 						Port: 443,
 					},

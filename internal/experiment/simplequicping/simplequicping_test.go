@@ -109,7 +109,7 @@ func TestMeasurerRun(t *testing.T) {
 			Servers: []netemx.ServerStack{
 				{
 					ServerAddr: "8.8.8.8",
-					Listeners: []netemx.Listener{
+					HTTPServers: []netemx.HTTPServer{
 						{
 							Port: 443,
 							QUIC: true,
@@ -151,7 +151,7 @@ func TestMeasurerRun(t *testing.T) {
 			Servers: []netemx.ServerStack{
 				{
 					ServerAddr: "8.8.8.8",
-					Listeners: []netemx.Listener{
+					HTTPServers: []netemx.HTTPServer{
 						{
 							Port: 443,
 							QUIC: true,

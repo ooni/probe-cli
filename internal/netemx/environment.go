@@ -49,25 +49,25 @@ type Config struct {
 }
 
 // ServerStack represents a server instance.
-// Multiple listeners can run on the same server, on different ports.
+// Multiple HTTP servers can run on the same server, on different ports.
 type ServerStack struct {
 	// ServerAddr is the MANDATORY address of the web server stack.
 	ServerAddr string
-	// Listeners is the MANDATORY list of [Listener], i.e. server instances on this stack.
-	Listeners []Listener
+	// HTTPServers is the MANDATORY list of [HTTPServer], i.e. server instances on this stack.
+	HTTPServers []HTTPServer
 }
 
-// TODO(bassosimone): consider renaming Listener to clarify that it is
+// TODO(bassosimone): consider renaming HTTPServer to clarify that it is
 // currently just using HTTP because there's an HTTP handler.
 
-// Listener is a handler running on a server port.
-// A Listener might use QUIC instead of TCP as transport.
-type Listener struct {
-	// Port is the port that this listener is running on.
+// HTTPServer is a handler running on a server port.
+// A HTTPServer might use QUIC instead of TCP as transport.
+type HTTPServer struct {
+	// Port is the port that this HTTP server is running on.
 	Port int
-	// QUIC indicates whether this listener uses QUIC instead of TCP as transport.
+	// QUIC indicates whether this HTTP server uses QUIC instead of TCP as transport.
 	QUIC bool
-	// HandlerFunc specifies the handler to use for this listener.
+	// HandlerFunc specifies the handler to use for this HTTP server.
 	HanderFunc http.Handler
 }
 
@@ -118,7 +118,7 @@ func NewEnvironment(config Config) *Environment {
 		))
 
 		// configure and start HTTP server instances running on the server stack
-		for _, l := range s.Listeners {
+		for _, l := range s.HTTPServers {
 			handler := l.HanderFunc
 			if handler == nil {
 				// the default handler just responds "hello, world"

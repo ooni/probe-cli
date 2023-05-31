@@ -202,7 +202,7 @@ func envConfig() netemx.Config {
 		Servers: []netemx.ServerStack{
 			{
 				ServerAddr: "93.184.216.34",
-				Listeners: []netemx.Listener{
+				HTTPServers: []netemx.HTTPServer{
 					{
 						Port: 443,
 					},
