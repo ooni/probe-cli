@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"math/rand"
-	"reflect"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
@@ -55,6 +54,11 @@ type Config struct{}
 // TestKeys contains the experiment results
 type TestKeys struct {
 	urlgetter.TestKeys
+	Analysis
+}
+
+// Analysis contains the measurement analysis performed by the probe.
+type Analysis struct {
 	FacebookBAPIDNSConsistent        *bool `json:"facebook_b_api_dns_consistent"`
 	FacebookBAPIReachable            *bool `json:"facebook_b_api_reachable"`
 	FacebookBGraphDNSConsistent      *bool `json:"facebook_b_graph_dns_consistent"`
@@ -71,26 +75,6 @@ type TestKeys struct {
 	FacebookSTUNReachable            *bool `json:"facebook_stun_reachable"`
 	FacebookDNSBlocking              *bool `json:"facebook_dns_blocking"`
 	FacebookTCPBlocking              *bool `json:"facebook_tcp_blocking"`
-}
-
-// EqualResults checks whether all fbmessenger-specific TestKeys have the same result (useful for testing)
-func (tk *TestKeys) EqualResults(other *TestKeys) bool {
-	return (reflect.DeepEqual(tk.FacebookBAPIDNSConsistent, other.FacebookBAPIDNSConsistent) &&
-		reflect.DeepEqual(tk.FacebookBAPIReachable, other.FacebookBAPIReachable) &&
-		reflect.DeepEqual(tk.FacebookBGraphDNSConsistent, other.FacebookBGraphDNSConsistent) &&
-		reflect.DeepEqual(tk.FacebookBGraphReachable, other.FacebookBGraphReachable) &&
-		reflect.DeepEqual(tk.FacebookEdgeDNSConsistent, other.FacebookEdgeDNSConsistent) &&
-		reflect.DeepEqual(tk.FacebookEdgeReachable, other.FacebookEdgeReachable) &&
-		reflect.DeepEqual(tk.FacebookExternalCDNDNSConsistent, other.FacebookExternalCDNDNSConsistent) &&
-		reflect.DeepEqual(tk.FacebookExternalCDNReachable, other.FacebookExternalCDNReachable) &&
-		reflect.DeepEqual(tk.FacebookScontentCDNDNSConsistent, other.FacebookScontentCDNDNSConsistent) &&
-		reflect.DeepEqual(tk.FacebookScontentCDNReachable, other.FacebookScontentCDNReachable) &&
-		reflect.DeepEqual(tk.FacebookStarDNSConsistent, other.FacebookStarDNSConsistent) &&
-		reflect.DeepEqual(tk.FacebookStarReachable, other.FacebookStarReachable) &&
-		reflect.DeepEqual(tk.FacebookSTUNDNSConsistent, other.FacebookSTUNDNSConsistent) &&
-		reflect.DeepEqual(tk.FacebookSTUNReachable, other.FacebookSTUNReachable) &&
-		reflect.DeepEqual(tk.FacebookDNSBlocking, other.FacebookDNSBlocking) &&
-		reflect.DeepEqual(tk.FacebookTCPBlocking, other.FacebookTCPBlocking))
 }
 
 // Update updates the TestKeys using the given MultiOutput result.

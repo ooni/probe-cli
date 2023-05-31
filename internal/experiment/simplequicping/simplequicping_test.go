@@ -36,19 +36,21 @@ func TestConfig_delay(t *testing.T) {
 }
 
 func TestMeasurerRun(t *testing.T) {
-	// runHelper is an helper function to run this set of tests.
+	// run is an helper function to run this set of tests.
 	run := func(input string) (*model.Measurement, model.ExperimentMeasurer, error) {
 		m := NewExperimentMeasurer(Config{
 			ALPN:        "h3",
 			Delay:       1, // millisecond
 			Repetitions: 4,
 		})
+
 		if m.ExperimentName() != "simplequicping" {
 			t.Fatal("invalid experiment name")
 		}
 		if m.ExperimentVersion() != "0.2.1" {
 			t.Fatal("invalid experiment version")
 		}
+
 		meas := &model.Measurement{
 			Input: model.MeasurementTarget(input),
 		}
@@ -60,7 +62,9 @@ func TestMeasurerRun(t *testing.T) {
 			Measurement: meas,
 			Session:     sess,
 		}
+
 		err := m.Run(context.Background(), args)
+
 		return meas, m, err
 	}
 
@@ -108,14 +112,18 @@ func TestMeasurerRun(t *testing.T) {
 				},
 			},
 		}
+
 		env := netemx.NewEnvironment(conf)
 		defer env.Close()
+
 		env.Do(func() {
 			meas, _, err := run("quichandshake://8.8.8.8:443")
 			if err != nil {
 				t.Fatalf("Unexpected error: %s", err)
 			}
+
 			tk, _ := (meas.TestKeys).(*TestKeys)
+
 			for _, p := range tk.Pings {
 				if p.QUICHandshake.Failure != nil {
 					t.Fatal("unexpected error")
@@ -127,7 +135,7 @@ func TestMeasurerRun(t *testing.T) {
 		})
 	})
 
-	t.Run("with netem: with DPI that drops UDP to 8.8.8.8:443: expect failure", func(t *testing.T) {
+	t.Run("with netem: with DPI that drops UDP datagrams to 8.8.8.8:443: expect failure", func(t *testing.T) {
 		dnsConfig := netem.NewDNSConfig()
 		conf := netemx.Config{
 			DNSConfig: dnsConfig,
@@ -143,8 +151,10 @@ func TestMeasurerRun(t *testing.T) {
 				},
 			},
 		}
+
 		env := netemx.NewEnvironment(conf)
 		defer env.Close()
+
 		dpi := env.DPIEngine()
 		dpi.AddRule(&netem.DPIDropTrafficForServerEndpoint{
 			Logger:          model.DiscardLogger,
@@ -152,12 +162,15 @@ func TestMeasurerRun(t *testing.T) {
 			ServerPort:      443,
 			ServerProtocol:  layers.IPProtocolUDP,
 		})
+
 		env.Do(func() {
 			meas, _, err := run("quichandshake://8.8.8.8:443")
 			if err != nil {
 				t.Fatalf("Unexpected error: %s", err)
 			}
+
 			tk, _ := (meas.TestKeys).(*TestKeys)
+
 			for _, p := range tk.Pings {
 				if p.QUICHandshake.Failure == nil {
 					t.Fatal("expected an error here")

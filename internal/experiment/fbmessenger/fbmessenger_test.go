@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/apex/log"
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/gopacket/layers"
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/experiment/fbmessenger"
@@ -37,8 +38,8 @@ func TestMeasurerRun(t *testing.T) {
 		if testing.Short() {
 			t.Skip("skip test in short mode")
 		}
-		// we expect the following TestKeys values
-		expectTestKeys := &fbmessenger.TestKeys{
+		// we expect the following analysis values
+		expectAnalysis := &fbmessenger.Analysis{
 			FacebookBAPIDNSConsistent:        &trueValue,
 			FacebookBAPIReachable:            &trueValue,
 			FacebookBGraphDNSConsistent:      &trueValue,
@@ -75,11 +76,12 @@ func TestMeasurerRun(t *testing.T) {
 				t.Fatal(err)
 			}
 			tk := measurement.TestKeys.(*fbmessenger.TestKeys)
-			if !tk.EqualResults(expectTestKeys) {
-				t.Fatal("invalid TestKeys")
+			if diff := cmp.Diff(expectAnalysis, tk.Analysis); diff != "" {
+				t.Fatal(diff)
 			}
 		})
 	})
+
 	t.Run("Test Measurer without DPI, cancelled context: expect interrupted failure", func(t *testing.T) {
 		// we expect the following TestKeys values
 		expectTestKeys := &fbmessenger.TestKeys{
@@ -216,8 +218,8 @@ func TestMeasurerRun(t *testing.T) {
 			// create configuration for DNS server
 			dnsConfig.AddRecord(
 				s,
-				s,         // CNAME
-				"a.b.c.d", //bogon
+				s,             // CNAME
+				"10.10.34.35", //bogon
 			)
 		}
 		env := netemx.NewEnvironment(envConfigWithDNS(dnsConfig))

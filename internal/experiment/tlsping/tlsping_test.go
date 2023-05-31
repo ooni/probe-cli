@@ -36,7 +36,8 @@ func TestConfig_delay(t *testing.T) {
 }
 
 func TestMeasurerRun(t *testing.T) {
-	// runHelper is an helper function to run this set of tests.
+
+	// run is an helper function to run this set of tests.
 	run := func(ctx context.Context, input string) (*model.Measurement, model.ExperimentMeasurer, error) {
 		m := NewExperimentMeasurer(Config{
 			ALPN:        "http/1.1",
@@ -44,12 +45,14 @@ func TestMeasurerRun(t *testing.T) {
 			Repetitions: 4,
 			SNI:         "blocked.com",
 		})
+
 		if m.ExperimentName() != "tlsping" {
 			t.Fatal("invalid experiment name")
 		}
 		if m.ExperimentVersion() != "0.2.1" {
 			t.Fatal("invalid experiment version")
 		}
+
 		meas := &model.Measurement{
 			Input: model.MeasurementTarget(input),
 		}
@@ -62,7 +65,9 @@ func TestMeasurerRun(t *testing.T) {
 			Measurement: meas,
 			Session:     sess,
 		}
+
 		err := m.Run(ctx, args)
+
 		return meas, m, err
 	}
 
@@ -74,21 +79,21 @@ func TestMeasurerRun(t *testing.T) {
 	})
 
 	t.Run("with invalid URL", func(t *testing.T) {
-		_, _, err := run(context.Background(), "\t")
+		_, _, err := run(context.Background(), "\t") // \t causes the URL to be invalid
 		if !errors.Is(err, errInputIsNotAnURL) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with invalid scheme", func(t *testing.T) {
-		_, _, err := run(context.Background(), "https://8.8.8.8:443/")
+		_, _, err := run(context.Background(), "https://8.8.8.8:443/") // we expect tlshandshake://
 		if !errors.Is(err, errInvalidScheme) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with missing port", func(t *testing.T) {
-		_, _, err := run(context.Background(), "tlshandshake://8.8.8.8")
+		_, _, err := run(context.Background(), "tlshandshake://8.8.8.8") // missing port
 		if !errors.Is(err, errMissingPort) {
 			t.Fatal("unexpected error", err)
 		}
@@ -105,17 +110,21 @@ func TestMeasurerRun(t *testing.T) {
 				},
 			},
 		}
+
 		env := netemx.NewEnvironment(conf)
 		defer env.Close()
+
 		env.Do(func() {
 			meas, m, err := run(context.Background(), "tlshandshake://8.8.8.8:443")
 			if err != nil {
 				t.Fatalf("Unexpected error: %s", err)
 			}
+
 			tk, _ := (meas.TestKeys).(*TestKeys)
 			if len(tk.Pings) != 4 {
 				t.Fatal("unexpected number of pings")
 			}
+
 			ask, err := m.GetSummaryKeys(meas)
 			if err != nil {
 				t.Fatal("cannot obtain summary")
@@ -124,6 +133,7 @@ func TestMeasurerRun(t *testing.T) {
 			if summary.IsAnomaly {
 				t.Fatal("expected no anomaly")
 			}
+
 			for _, p := range tk.Pings {
 				if p.TCPConnect == nil {
 					t.Fatal("TCPConnect should not be nil")
@@ -141,7 +151,7 @@ func TestMeasurerRun(t *testing.T) {
 		})
 	})
 
-	t.Run("with netem: with DPI that drops TCP to 8.8.8.8:443: expect failure", func(t *testing.T) {
+	t.Run("with netem: with DPI that drops TCP segments to 8.8.8.8:443: expect failure", func(t *testing.T) {
 		dnsConfig := netem.NewDNSConfig()
 		conf := netemx.Config{
 			DNSConfig: dnsConfig,
@@ -152,8 +162,10 @@ func TestMeasurerRun(t *testing.T) {
 				},
 			},
 		}
+
 		env := netemx.NewEnvironment(conf)
 		defer env.Close()
+
 		dpi := env.DPIEngine()
 		dpi.AddRule(&netem.DPIDropTrafficForServerEndpoint{
 			Logger:          model.DiscardLogger,
@@ -161,12 +173,26 @@ func TestMeasurerRun(t *testing.T) {
 			ServerPort:      443,
 			ServerProtocol:  layers.IPProtocolTCP,
 		})
+
 		env.Do(func() {
-			meas, _, err := run(context.Background(), "tlshandshake://8.8.8.8:443")
+			meas, m, err := run(context.Background(), "tlshandshake://8.8.8.8:443")
 			if err != nil {
 				t.Fatalf("Unexpected error: %s", err)
 			}
+
 			tk, _ := (meas.TestKeys).(*TestKeys)
+
+			// note: this experiment does not set anomaly but we still want
+			// to have a test here for when we possibly will
+			ask, err := m.GetSummaryKeys(meas)
+			if err != nil {
+				t.Fatal("cannot obtain summary")
+			}
+			summary := ask.(SummaryKeys)
+			if summary.IsAnomaly {
+				t.Fatal("expected no anomaly")
+			}
+
 			for _, p := range tk.Pings {
 				if p.TCPConnect == nil {
 					t.Fatal("TCPConnect should not be nil")
@@ -177,16 +203,22 @@ func TestMeasurerRun(t *testing.T) {
 				if *p.TCPConnect.Status.Failure != netxlite.FailureGenericTimeoutError {
 					t.Fatal("expected an error here")
 				}
+
 				if p.TLSHandshake != nil {
 					t.Fatal("expected TLSHandshake to be nil")
 				}
-				if len(p.NetworkEvents) != 0 {
+
+				// TODO(bassosimone): if we were using dslx here we would have an
+				// event about connect, so we should eventually address this issue
+				// and have one.
+				if len(p.NetworkEvents) > 0 {
 					t.Fatal("unexpected number of network events")
 				}
 			}
 		})
 	})
-	t.Run("with netem: with DPI that resets TLS to SNI 8.8.8.8: expect failure", func(t *testing.T) {
+
+	t.Run("with netem: with DPI that resets TLS to SNI blocked.com: expect failure", func(t *testing.T) {
 		dnsConfig := netem.NewDNSConfig()
 		conf := netemx.Config{
 			DNSConfig: dnsConfig,
@@ -197,19 +229,34 @@ func TestMeasurerRun(t *testing.T) {
 				},
 			},
 		}
+
 		env := netemx.NewEnvironment(conf)
 		defer env.Close()
+
 		dpi := env.DPIEngine()
 		dpi.AddRule(&netem.DPIResetTrafficForTLSSNI{
 			Logger: model.DiscardLogger,
-			SNI:    "blocked.com",
+			SNI:    "blocked.com", // this is the SNI we set inside run()
 		})
+
 		env.Do(func() {
-			meas, _, err := run(context.Background(), "tlshandshake://8.8.8.8:443")
+			meas, m, err := run(context.Background(), "tlshandshake://8.8.8.8:443")
 			if err != nil {
 				t.Fatalf("Unexpected error: %s", err)
 			}
 			tk, _ := (meas.TestKeys).(*TestKeys)
+
+			// note: this experiment does not set anomaly but we still want
+			// to have a test here for when we possibly will
+			ask, err := m.GetSummaryKeys(meas)
+			if err != nil {
+				t.Fatal("cannot obtain summary")
+			}
+			summary := ask.(SummaryKeys)
+			if summary.IsAnomaly {
+				t.Fatal("expected no anomaly")
+			}
+
 			for _, p := range tk.Pings {
 				if p.TCPConnect == nil {
 					t.Fatal("TCPConnect should not be nil")
@@ -217,6 +264,7 @@ func TestMeasurerRun(t *testing.T) {
 				if p.TCPConnect.Status.Failure != nil {
 					t.Fatal("did not expect an error here")
 				}
+
 				if p.TLSHandshake == nil {
 					t.Fatal("unexpected nil TLSHandshake")
 				}
@@ -226,6 +274,7 @@ func TestMeasurerRun(t *testing.T) {
 				if *p.TLSHandshake.Failure != netxlite.FailureConnectionReset {
 					t.Fatal("unexpected TLS failure type")
 				}
+
 				if len(p.NetworkEvents) <= 0 {
 					t.Fatal("unexpected number of network events")
 				}

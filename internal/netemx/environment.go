@@ -57,6 +57,9 @@ type ServerStack struct {
 	Listeners []Listener
 }
 
+// TODO(bassosimone): consider renaming Listener to clarify that it is
+// currently just using HTTP because there's an HTTP handler.
+
 // Listener is a handler running on a server port.
 // A Listener might use QUIC instead of TCP as transport.
 type Listener struct {
