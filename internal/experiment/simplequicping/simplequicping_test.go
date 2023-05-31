@@ -35,13 +35,19 @@ func TestConfig_delay(t *testing.T) {
 	}
 }
 
+const (
+	NPINGS = 4
+	SNI    = "blocked.com"
+)
+
 func TestMeasurerRun(t *testing.T) {
 	// run is an helper function to run this set of tests.
 	run := func(input string) (*model.Measurement, model.ExperimentMeasurer, error) {
 		m := NewExperimentMeasurer(Config{
 			ALPN:        "h3",
 			Delay:       1, // millisecond
-			Repetitions: 4,
+			Repetitions: NPINGS,
+			SNI:         SNI,
 		})
 
 		if m.ExperimentName() != "simplequicping" {
@@ -123,10 +129,13 @@ func TestMeasurerRun(t *testing.T) {
 			}
 
 			tk, _ := (meas.TestKeys).(*TestKeys)
+			if len(tk.Pings) != NPINGS {
+				t.Fatal("unexpected number of pings")
+			}
 
 			for _, p := range tk.Pings {
 				if p.QUICHandshake.Failure != nil {
-					t.Fatal("unexpected error")
+					t.Fatal("unexpected error", *p.QUICHandshake.Failure)
 				}
 				if len(p.NetworkEvents) < 1 {
 					t.Fatal("unexpected number of network events")

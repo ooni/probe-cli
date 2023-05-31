@@ -35,6 +35,11 @@ func TestConfig_delay(t *testing.T) {
 	}
 }
 
+const (
+	NPINGS = 4
+	SNI    = "blocked.com"
+)
+
 func TestMeasurerRun(t *testing.T) {
 
 	// run is an helper function to run this set of tests.
@@ -42,8 +47,8 @@ func TestMeasurerRun(t *testing.T) {
 		m := NewExperimentMeasurer(Config{
 			ALPN:        "http/1.1",
 			Delay:       1, // millisecond
-			Repetitions: 4,
-			SNI:         "blocked.com",
+			Repetitions: NPINGS,
+			SNI:         SNI,
 		})
 
 		if m.ExperimentName() != "tlsping" {
@@ -121,7 +126,7 @@ func TestMeasurerRun(t *testing.T) {
 			}
 
 			tk, _ := (meas.TestKeys).(*TestKeys)
-			if len(tk.Pings) != 4 {
+			if len(tk.Pings) != NPINGS {
 				t.Fatal("unexpected number of pings")
 			}
 
@@ -236,7 +241,7 @@ func TestMeasurerRun(t *testing.T) {
 		dpi := env.DPIEngine()
 		dpi.AddRule(&netem.DPIResetTrafficForTLSSNI{
 			Logger: model.DiscardLogger,
-			SNI:    "blocked.com", // this is the SNI we set inside run()
+			SNI:    SNI, // this is the SNI we set inside run()
 		})
 
 		env.Do(func() {
