@@ -38,8 +38,8 @@ func TestMeasurerRun(t *testing.T) {
 		if testing.Short() {
 			t.Skip("skip test in short mode")
 		}
-		// we expect the following analysis values
-		expectAnalysis := &fbmessenger.Analysis{
+		// we expect the following Analysis values
+		expectAnalysis := fbmessenger.Analysis{
 			FacebookBAPIDNSConsistent:        &trueValue,
 			FacebookBAPIReachable:            &trueValue,
 			FacebookBGraphDNSConsistent:      &trueValue,
@@ -83,8 +83,8 @@ func TestMeasurerRun(t *testing.T) {
 	})
 
 	t.Run("Test Measurer without DPI, cancelled context: expect interrupted failure", func(t *testing.T) {
-		// we expect the following TestKeys values
-		expectTestKeys := &fbmessenger.TestKeys{
+		// we expect the following Analysis values
+		expectAnalysis := fbmessenger.Analysis{
 			FacebookBAPIDNSConsistent:        &falseValue,
 			FacebookBAPIReachable:            nil,
 			FacebookBGraphDNSConsistent:      &falseValue,
@@ -121,8 +121,8 @@ func TestMeasurerRun(t *testing.T) {
 				t.Fatal(err)
 			}
 			tk := measurement.TestKeys.(*fbmessenger.TestKeys)
-			if !tk.EqualResults(expectTestKeys) {
-				t.Fatal("invalid TestKeys")
+			if diff := cmp.Diff(expectAnalysis, tk.Analysis); diff != "" {
+				t.Fatal(diff)
 			}
 			sk, err := measurer.GetSummaryKeys(measurement)
 			if err != nil {
@@ -137,8 +137,8 @@ func TestMeasurerRun(t *testing.T) {
 		if testing.Short() {
 			t.Skip("skip test in short mode")
 		}
-		// we expect the following TestKeys
-		expectTestKeys := &fbmessenger.TestKeys{
+		// we expect the following Analysis values
+		expectAnalysis := fbmessenger.Analysis{
 			FacebookBAPIDNSConsistent: &trueValue,
 			FacebookBAPIReachable:     &falseValue,
 			FacebookDNSBlocking:       &falseValue,
@@ -176,15 +176,15 @@ func TestMeasurerRun(t *testing.T) {
 				t.Fatal(err)
 			}
 			tk := measurement.TestKeys.(*fbmessenger.TestKeys)
-			if !tk.EqualResults(expectTestKeys) {
-				t.Fatal("invalid TestKeys")
+			if diff := cmp.Diff(expectAnalysis, tk.Analysis); diff != "" {
+				t.Fatal(diff)
 			}
 		})
 		fbmessenger.Services = orig
 	})
 	t.Run("Test Measurer with poisoned DNS: expect FacebookDNSBlocking", func(t *testing.T) {
-		// we expect the following TestKeys values
-		expectTestKeys := &fbmessenger.TestKeys{
+		// we expect the following Analysis values
+		expectAnalysis := fbmessenger.Analysis{
 			FacebookBAPIDNSConsistent:        &falseValue,
 			FacebookBAPIReachable:            nil,
 			FacebookBGraphDNSConsistent:      &falseValue,
@@ -241,8 +241,8 @@ func TestMeasurerRun(t *testing.T) {
 				t.Fatal(err)
 			}
 			tk := measurement.TestKeys.(*fbmessenger.TestKeys)
-			if !tk.EqualResults(expectTestKeys) {
-				t.Fatal("invalid TestKeys")
+			if diff := cmp.Diff(expectAnalysis, tk.Analysis); diff != "" {
+				t.Fatal(diff)
 			}
 		})
 	})
@@ -343,8 +343,10 @@ func TestSummaryKeysWithNils(t *testing.T) {
 func TestSummaryKeysWithFalseFalse(t *testing.T) {
 	falsy := false
 	measurement := &model.Measurement{TestKeys: &fbmessenger.TestKeys{
-		FacebookTCPBlocking: &falsy,
-		FacebookDNSBlocking: &falsy,
+		Analysis: fbmessenger.Analysis{
+			FacebookTCPBlocking: &falsy,
+			FacebookDNSBlocking: &falsy,
+		},
 	}}
 	m := &fbmessenger.Measurer{}
 	osk, err := m.GetSummaryKeys(measurement)
@@ -367,8 +369,10 @@ func TestSummaryKeysWithFalseTrue(t *testing.T) {
 	falsy := false
 	truy := true
 	measurement := &model.Measurement{TestKeys: &fbmessenger.TestKeys{
-		FacebookTCPBlocking: &falsy,
-		FacebookDNSBlocking: &truy,
+		Analysis: fbmessenger.Analysis{
+			FacebookTCPBlocking: &falsy,
+			FacebookDNSBlocking: &truy,
+		},
 	}}
 	m := &fbmessenger.Measurer{}
 	osk, err := m.GetSummaryKeys(measurement)
@@ -391,8 +395,10 @@ func TestSummaryKeysWithTrueFalse(t *testing.T) {
 	falsy := false
 	truy := true
 	measurement := &model.Measurement{TestKeys: &fbmessenger.TestKeys{
-		FacebookTCPBlocking: &truy,
-		FacebookDNSBlocking: &falsy,
+		Analysis: fbmessenger.Analysis{
+			FacebookTCPBlocking: &truy,
+			FacebookDNSBlocking: &falsy,
+		},
 	}}
 	m := &fbmessenger.Measurer{}
 	osk, err := m.GetSummaryKeys(measurement)
@@ -414,8 +420,10 @@ func TestSummaryKeysWithTrueFalse(t *testing.T) {
 func TestSummaryKeysWithTrueTrue(t *testing.T) {
 	truy := true
 	measurement := &model.Measurement{TestKeys: &fbmessenger.TestKeys{
-		FacebookTCPBlocking: &truy,
-		FacebookDNSBlocking: &truy,
+		Analysis: fbmessenger.Analysis{
+			FacebookTCPBlocking: &truy,
+			FacebookDNSBlocking: &truy,
+		},
 	}}
 	m := &fbmessenger.Measurer{}
 	osk, err := m.GetSummaryKeys(measurement)
