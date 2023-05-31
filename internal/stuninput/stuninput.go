@@ -9,6 +9,8 @@ import (
 
 // TODO(bassosimone): we need to keep this list in sync with
 // the list internally used by TPO's snowflake.
+//
+// We should sync with https://gitlab.torproject.org/tpo/applications/tor-browser-build/-/blob/main/projects/common/bridges_list.snowflake.txt
 var inputs = []string{
 	"stun.voip.blackberry.com:3478",
 	"stun.antisip.com:3478",
