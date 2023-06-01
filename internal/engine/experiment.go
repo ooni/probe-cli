@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
+	"github.com/ooni/probe-cli/v3/internal/checkintime"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -199,24 +200,26 @@ func (e *experiment) SubmitAndUpdateMeasurementContext(
 // newMeasurement creates a new measurement for this experiment with the given input.
 func (e *experiment) newMeasurement(input string) *model.Measurement {
 	utctimenow := time.Now().UTC()
+	apiadjustedtimenow, _ := checkintime.Now()
 	m := &model.Measurement{
-		DataFormatVersion:         model.OOAPIReportDefaultDataFormatVersion,
-		Input:                     model.MeasurementTarget(input),
-		MeasurementStartTime:      utctimenow.Format(dateFormat),
-		MeasurementStartTimeSaved: utctimenow,
-		ProbeIP:                   model.DefaultProbeIP,
-		ProbeASN:                  e.session.ProbeASNString(),
-		ProbeCC:                   e.session.ProbeCC(),
-		ProbeNetworkName:          e.session.ProbeNetworkName(),
-		ReportID:                  e.ReportID(),
-		ResolverASN:               e.session.ResolverASNString(),
-		ResolverIP:                e.session.ResolverIP(),
-		ResolverNetworkName:       e.session.ResolverNetworkName(),
-		SoftwareName:              e.session.SoftwareName(),
-		SoftwareVersion:           e.session.SoftwareVersion(),
-		TestName:                  e.testName,
-		TestStartTime:             e.testStartTime,
-		TestVersion:               e.testVersion,
+		DataFormatVersion:            model.OOAPIReportDefaultDataFormatVersion,
+		Input:                        model.MeasurementTarget(input),
+		MeasurementStartTime:         utctimenow.Format(dateFormat),
+		MeasurementStartTimeAdjusted: apiadjustedtimenow, // not serialized if zero
+		MeasurementStartTimeSaved:    utctimenow,
+		ProbeIP:                      model.DefaultProbeIP,
+		ProbeASN:                     e.session.ProbeASNString(),
+		ProbeCC:                      e.session.ProbeCC(),
+		ProbeNetworkName:             e.session.ProbeNetworkName(),
+		ReportID:                     e.ReportID(),
+		ResolverASN:                  e.session.ResolverASNString(),
+		ResolverIP:                   e.session.ResolverIP(),
+		ResolverNetworkName:          e.session.ResolverNetworkName(),
+		SoftwareName:                 e.session.SoftwareName(),
+		SoftwareVersion:              e.session.SoftwareVersion(),
+		TestName:                     e.testName,
+		TestStartTime:                e.testStartTime,
+		TestVersion:                  e.testVersion,
 	}
 	m.AddAnnotation("architecture", runtime.GOARCH)
 	m.AddAnnotation("engine_name", "ooniprobe-engine")
