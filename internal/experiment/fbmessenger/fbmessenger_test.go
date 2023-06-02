@@ -18,6 +18,55 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
+const ServicesAddr = "157.240.20.35"
+
+// makeDNSConfig creates the default valid DNS config for this experiment
+func makeDNSConfig() *netem.DNSConfig {
+	dnsConfig := netem.NewDNSConfig()
+	services := []string{
+		"stun.fbsbx.com",
+		"b-api.facebook.com",
+		"b-graph.facebook.com",
+		"edge-mqtt.facebook.com",
+		"external.xx.fbcdn.net",
+		"scontent.xx.fbcdn.net",
+		"star.c10r.facebook.com",
+	}
+	for _, s := range services {
+		// create configuration for DNS server
+		dnsConfig.AddRecord(
+			s,
+			s, // CNAME
+			ServicesAddr,
+		)
+	}
+	return dnsConfig
+}
+
+// makeClientConf creates an experiment-specific client configuration for the [netemx.Environment].
+func makeClientConf(dnsConfig *netem.DNSConfig) *netemx.ClientConfig {
+	return &netemx.ClientConfig{
+		DNSConfig: dnsConfig,
+	}
+}
+
+// makeServersConf creates an experiment-specific servers configuration for the [netemx.Environment].
+func makeServersConf(dnsConfig *netem.DNSConfig) *netemx.ServersConfig {
+	return &netemx.ServersConfig{
+		DNSConfig: dnsConfig,
+		Servers: []netemx.ConfigServerStack{
+			{
+				ServerAddr: ServicesAddr,
+				HTTPServers: []netemx.ConfigHTTPServer{
+					{
+						Port: 443,
+					},
+				},
+			},
+		},
+	}
+}
+
 var (
 	trueValue  = true
 	falseValue = false
@@ -57,7 +106,12 @@ func TestMeasurerRun(t *testing.T) {
 			FacebookDNSBlocking:              &falseValue,
 			FacebookTCPBlocking:              &falseValue,
 		}
-		env := netemx.NewEnvironment(envConfig())
+
+		// we use the same valid DNS config for client and servers here
+		dnsConf := makeDNSConfig()
+
+		// create a new test environment
+		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
 		defer env.Close()
 		env.Do(func() {
 			measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
@@ -102,7 +156,12 @@ func TestMeasurerRun(t *testing.T) {
 			FacebookDNSBlocking:              &trueValue,
 			FacebookTCPBlocking:              &falseValue, // no TCP blocking because we didn't ever reach TCP connect
 		}
-		env := netemx.NewEnvironment(envConfig())
+
+		// we use the same valid DNS config for client and servers here
+		dnsConf := makeDNSConfig()
+
+		// create a new test environment
+		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
 		defer env.Close()
 		env.Do(func() {
 			measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
@@ -149,8 +208,15 @@ func TestMeasurerRun(t *testing.T) {
 		fbmessenger.Services = []string{
 			fbmessenger.ServiceBAPI,
 		}
-		env := netemx.NewEnvironment(envConfig())
+
+		// we use the same valid DNS config for client and servers here
+		dnsConf := makeDNSConfig()
+
+		// create a new test environment
+		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
 		defer env.Close()
+
+		// add DPI engine to emulate the censorship condition
 		dpi := env.DPIEngine()
 		dpi.AddRule(&netem.DPIDropTrafficForServerEndpoint{
 			Logger:          model.DiscardLogger,
@@ -203,8 +269,8 @@ func TestMeasurerRun(t *testing.T) {
 			FacebookTCPBlocking:              &falseValue, // no TCP blocking because we didn't ever reach TCP connect
 		}
 
-		// create a new test environment with bogon DNS
-		dnsConfig := netem.NewDNSConfig()
+		// create DNS config with bogon entries for fb services
+		bogonDNSConf := netem.NewDNSConfig()
 		services := []string{
 			"stun.fbsbx.com",
 			"b-api.facebook.com",
@@ -216,13 +282,17 @@ func TestMeasurerRun(t *testing.T) {
 		}
 		for _, s := range services {
 			// create configuration for DNS server
-			dnsConfig.AddRecord(
+			bogonDNSConf.AddRecord(
 				s,
 				s,             // CNAME
 				"10.10.34.35", //bogon
 			)
 		}
-		env := netemx.NewEnvironment(envConfigWithDNS(dnsConfig))
+		// create default DNS config for servers (no bogons)
+		dnsConf := makeDNSConfig()
+
+		// create a new test environment
+		env := netemx.NewEnvironment(makeClientConf(bogonDNSConf), makeServersConf(dnsConf))
 		defer env.Close()
 		env.Do(func() {
 			measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
@@ -439,46 +509,5 @@ func TestSummaryKeysWithTrueTrue(t *testing.T) {
 	}
 	if sk.IsAnomaly == false {
 		t.Fatal("invalid isAnomaly")
-	}
-}
-
-// Creates an experiment-specific configuration for the [netemx.Environment].
-func envConfig() netemx.Config {
-	dnsConfig := netem.NewDNSConfig()
-	services := []string{
-		"stun.fbsbx.com",
-		"b-api.facebook.com",
-		"b-graph.facebook.com",
-		"edge-mqtt.facebook.com",
-		"external.xx.fbcdn.net",
-		"scontent.xx.fbcdn.net",
-		"star.c10r.facebook.com",
-	}
-	for _, s := range services {
-		// create configuration for DNS server
-		dnsConfig.AddRecord(
-			s,
-			s, // CNAME
-			"157.240.20.35",
-		)
-	}
-	return envConfigWithDNS(dnsConfig)
-}
-
-// Creates an experiment-specific configuration for the [netemx.Environment]
-// with custom DNS.
-func envConfigWithDNS(dnsConfig *netem.DNSConfig) netemx.Config {
-	return netemx.Config{
-		DNSConfig: dnsConfig,
-		Servers: []netemx.ConfigServerStack{
-			{
-				ServerAddr: "157.240.20.35",
-				HTTPServers: []netemx.ConfigHTTPServer{
-					{
-						Port: 443,
-					},
-				},
-			},
-		},
 	}
 }

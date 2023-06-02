@@ -189,19 +189,26 @@ func TestSummaryKeysGeneric(t *testing.T) {
 	}
 }
 
-// Creates an experiment-specific configuration for the [netemx.Environment].
-func envConfig() netemx.Config {
+const ExampleAddr = "93.184.216.34"
+
+// makeDNSConfig creates the default valid DNS config for this experiment
+func makeDNSConfig() *netem.DNSConfig {
 	dnsConfig := netem.NewDNSConfig()
 	dnsConfig.AddRecord(
 		"example.org",
 		"example.org",
-		"93.184.216.34",
+		ExampleAddr,
 	)
-	return netemx.Config{
+	return dnsConfig
+}
+
+// makeClientConf creates an experiment-specific servers configuration for the [netemx.Environment].
+func makeServersConf(dnsConfig *netem.DNSConfig) *netemx.ServersConfig {
+	return &netemx.ServersConfig{
 		DNSConfig: dnsConfig,
 		Servers: []netemx.ConfigServerStack{
 			{
-				ServerAddr: "93.184.216.34",
+				ServerAddr: ExampleAddr,
 				HTTPServers: []netemx.ConfigHTTPServer{
 					{
 						Port: 443,
@@ -212,9 +219,18 @@ func envConfig() netemx.Config {
 	}
 }
 
+// makeClientConf creates an experiment-specific client configuration for the [netemx.Environment].
+func makeClientConf(dnsConfig *netem.DNSConfig) *netemx.ClientConfig {
+	return &netemx.ClientConfig{DNSConfig: dnsConfig}
+}
+
 func TestMeasurerWithInvalidInput(t *testing.T) {
 	t.Run("Test Measurer with no measurement input: expect input error", func(t *testing.T) {
-		env := netemx.NewEnvironment(envConfig())
+		// we use the same valid DNS config for client and servers here
+		dnsConf := makeDNSConfig()
+
+		// create a new test environment
+		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
 		defer env.Close()
 		env.Do(func() {
 			measurer := NewExperimentMeasurer(Config{})
@@ -230,7 +246,11 @@ func TestMeasurerWithInvalidInput(t *testing.T) {
 		})
 	})
 	t.Run("Test Measurer with invalid MeasurementInput: expect parsing error", func(t *testing.T) {
-		env := netemx.NewEnvironment(envConfig())
+		// we use the same valid DNS config for client and servers here
+		dnsConf := makeDNSConfig()
+
+		// create a new test environment
+		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
 		defer env.Close()
 		env.Do(func() {
 			ctx, cancel := context.WithCancel(context.Background())
@@ -256,7 +276,11 @@ func TestMeasurerWithInvalidInput(t *testing.T) {
 }
 func TestMeasurerRun(t *testing.T) {
 	t.Run("Test Measurer without DPI: expect success", func(t *testing.T) {
-		env := netemx.NewEnvironment(envConfig())
+		// we use the same valid DNS config for client and servers here
+		dnsConf := makeDNSConfig()
+
+		// create a new test environment
+		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
 		defer env.Close()
 		env.Do(func() {
 			measurer := NewExperimentMeasurer(Config{
@@ -405,7 +429,11 @@ func TestMeasurerRun(t *testing.T) {
 	})
 
 	t.Run("Test Measurer with cache: expect to see cached entry", func(t *testing.T) {
-		env := netemx.NewEnvironment(envConfig())
+		// we use the same valid DNS config for client and servers here
+		dnsConf := makeDNSConfig()
+
+		// create a new test environment
+		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
 		defer env.Close()
 		env.Do(func() {
 			cache := make(map[string]Subresult)
@@ -455,13 +483,20 @@ func TestMeasurerRun(t *testing.T) {
 	})
 
 	t.Run("Test Measurer with DPI that blocks target SNI", func(t *testing.T) {
-		env := netemx.NewEnvironment(envConfig())
+		// we use the same valid DNS config for client and servers here
+		dnsConf := makeDNSConfig()
+
+		// create a new test environment
+		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
 		defer env.Close()
+
+		// add DPI engine to emulate the censorship condition
 		dpi := env.DPIEngine()
 		dpi.AddRule(&netem.DPIResetTrafficForTLSSNI{
 			Logger: model.DiscardLogger,
 			SNI:    "kernel.org",
 		})
+
 		env.Do(func() {
 			measurer := NewExperimentMeasurer(Config{
 				ControlSNI: "example.org",
@@ -496,7 +531,11 @@ func TestMeasurerRun(t *testing.T) {
 }
 
 func TestMeasureonewithcacheWorks(t *testing.T) {
-	env := netemx.NewEnvironment(envConfig())
+	// we use the same valid DNS config for client and servers here
+	dnsConf := makeDNSConfig()
+
+	// create a new test environment
+	env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
 	defer env.Close()
 	env.Do(func() {
 		measurer := &Measurer{cache: make(map[string]Subresult)}

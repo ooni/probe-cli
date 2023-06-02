@@ -103,8 +103,12 @@ func TestMeasurerRun(t *testing.T) {
 	})
 
 	t.Run("with netem: without DPI: expect success", func(t *testing.T) {
+		// we use the same empty DNS config for both client and servers
 		dnsConfig := netem.NewDNSConfig()
-		conf := netemx.Config{
+
+		// configure [netemx.Environment]
+		clientConf := &netemx.ClientConfig{DNSConfig: dnsConfig}
+		serversConf := &netemx.ServersConfig{
 			DNSConfig: dnsConfig,
 			Servers: []netemx.ConfigServerStack{
 				{
@@ -118,10 +122,9 @@ func TestMeasurerRun(t *testing.T) {
 				},
 			},
 		}
-
-		env := netemx.NewEnvironment(conf)
+		// create a new test environment
+		env := netemx.NewEnvironment(clientConf, serversConf)
 		defer env.Close()
-
 		env.Do(func() {
 			meas, _, err := run("quichandshake://8.8.8.8:443")
 			if err != nil {
@@ -145,8 +148,12 @@ func TestMeasurerRun(t *testing.T) {
 	})
 
 	t.Run("with netem: with DPI that drops UDP datagrams to 8.8.8.8:443: expect failure", func(t *testing.T) {
+		// we use the same empty DNS config for both client and servers
 		dnsConfig := netem.NewDNSConfig()
-		conf := netemx.Config{
+
+		// configure [netemx.Environment]
+		clientConf := &netemx.ClientConfig{DNSConfig: dnsConfig}
+		serversConf := &netemx.ServersConfig{
 			DNSConfig: dnsConfig,
 			Servers: []netemx.ConfigServerStack{
 				{
@@ -161,9 +168,11 @@ func TestMeasurerRun(t *testing.T) {
 			},
 		}
 
-		env := netemx.NewEnvironment(conf)
+		// create a new test environment
+		env := netemx.NewEnvironment(clientConf, serversConf)
 		defer env.Close()
 
+		// add DPI engine to emulate the censorship condition
 		dpi := env.DPIEngine()
 		dpi.AddRule(&netem.DPIDropTrafficForServerEndpoint{
 			Logger:          model.DiscardLogger,
