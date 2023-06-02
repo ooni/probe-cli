@@ -10,6 +10,11 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
+const (
+	DefaultClientResolver  = "10.0.0.1"
+	DefaultServersResolver = "1.1.1.1"
+)
+
 // The netemx environment design is based on netemx_test.
 // TODO(kelmenhorst): consider writing netemx_test.go using this Environment.
 
@@ -20,8 +25,11 @@ type Environment struct {
 	// clientStack is the client stack to use.
 	clientStack *netem.UNetStack
 
-	// dnsServer is the DNS server.
-	dnsServer *netem.DNSServer
+	// clientDNS is the client's DNS server.
+	clientDNS *netem.DNSServer
+
+	// serversDNS is the servers' DNS server.
+	serversDNS *netem.DNSServer
 
 	// dpi refers to the [netem.DPIEngine] we're using.
 	dpi *netem.DPIEngine
@@ -42,8 +50,8 @@ type Environment struct {
 // TODO(kelmenhorst): use something like 10.0.0.1 as the DNS address
 // so we don't have collisions with 1.1.1.1, which we'll use in LTE
 
-// Config configures the Environment.
-type Config struct {
+// ClientConfig configures the client in the Environment.
+type ClientConfig struct {
 	// ClientAddr is the OPTIONAL address of the client stack.
 	// If empty, we use 10.0.0.14
 	ClientAddr string
@@ -51,9 +59,19 @@ type Config struct {
 	// DNSConfig is the MANDATORY [*netem.DNSConfig] to be used for the DNS in this environment.
 	DNSConfig *netem.DNSConfig
 
-	// Resolver is the OPTIONAL address of the default resolver to be used in the environment.
+	// ResolverAddr is the OPTIONAL address of the default resolver of the client to be used in the environment.
+	// If empty, we use 10.0.0.1
+	ResolverAddr string
+}
+
+// ServersConfig configures the servers in the Environment.
+type ServersConfig struct {
+	// DNSConfig is the MANDATORY [*netem.DNSConfig] to be used for the DNS in this environment.
+	DNSConfig *netem.DNSConfig
+
+	// ResolverAddr is the OPTIONAL address of the default resolver to be used in the environment.
 	// If empty, we use 1.1.1.1
-	Resolver string
+	ResolverAddr string
 
 	// Servers is the MANDATORY list of [ServerStack]s to be used in this environment.
 	Servers []ConfigServerStack
@@ -64,8 +82,6 @@ type Config struct {
 type ConfigServerStack struct {
 	// ServerAddr is the MANDATORY address of the web server stack.
 	ServerAddr string
-
-	// TODO: add here a resolver for each server.
 
 	// HTTPServers is the MANDATORY list of [HTTPServer], i.e. server instances on this stack.
 	HTTPServers []ConfigHTTPServer
@@ -95,16 +111,15 @@ type ConfigHTTPServer struct {
 // }
 //
 
-// NewEnvironment creates a new QA environment. This function
-// calls [runtimex.PanicOnError] in case of failure.
-func NewEnvironment(config Config) *Environment {
-	// create a new star topology
-	topology := runtimex.Try1(netem.NewStarTopology(model.DiscardLogger))
-
+func configureClient(
+	clientConfig *ClientConfig,
+	topology *netem.StarTopology,
+	dpi *netem.DPIEngine,
+) (*netem.UNetStack, *netem.DNSServer) {
 	// set the default resolver address
-	resolverAddr := config.Resolver
+	resolverAddr := clientConfig.ResolverAddr
 	if resolverAddr == "" {
-		resolverAddr = "1.1.1.1" // TOOD: use constant
+		resolverAddr = DefaultClientResolver
 	}
 
 	// create dns server stack
@@ -123,72 +138,8 @@ func NewEnvironment(config Config) *Environment {
 		model.DiscardLogger,
 		dnsServerStack,
 		resolverAddr,
-		config.DNSConfig,
+		clientConfig.DNSConfig,
 	))
-
-	// create HTTP servers
-	var servers []*http.Server
-	var servers3 []*http3.Server
-	for _, s := range config.Servers {
-		// TODO: can this be an independent function
-
-		// create server stack
-		//
-		// note: because the stack is created using topology.AddHost, we don't
-		// need to call Close when done using it, since the topology will do that
-		// for us when we call the topology's Close method.
-		serverStack := runtimex.Try1(topology.AddHost(
-			s.ServerAddr, // server IP address
-			resolverAddr, // default resolver address
-			&netem.LinkConfig{},
-		))
-
-		// configure and start HTTP server instances running on the server stack
-		for _, l := range s.HTTPServers {
-			handler := l.Handler
-			if handler == nil {
-				// the default handler just responds "hello, world"
-				handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.Write([]byte(`hello, world`))
-				})
-			}
-			// HTTP/3
-			if l.QUIC {
-				// create a udp listener on the specified port
-				udpListener := runtimex.Try1(serverStack.ListenUDP("udp", &net.UDPAddr{
-					IP:   net.ParseIP(s.ServerAddr),
-					Port: l.Port,
-					Zone: "",
-				}))
-				http3Server := &http3.Server{
-					TLSConfig: serverStack.ServerTLSConfig(),
-					Handler:   handler,
-				}
-				servers3 = append(servers3, http3Server)
-				// start serving
-				go http3Server.Serve(udpListener)
-				continue
-			}
-			// HTTPS
-			// create a tcp listener on the specified port
-			tcpListener := runtimex.Try1(serverStack.ListenTCP("tcp", &net.TCPAddr{
-				IP:   net.ParseIP(s.ServerAddr),
-				Port: l.Port,
-				Zone: "",
-			}))
-			httpServer := &http.Server{
-				TLSConfig: serverStack.ServerTLSConfig(),
-				Handler:   handler,
-			}
-			servers = append(servers, httpServer)
-			// start serving
-			go httpServer.ServeTLS(tcpListener, "", "")
-		}
-	}
-
-	// create a DPIEngine for implementing censorship
-	// experiments can plug in different types of DPIs, e.g. to drop all packets using a certain SNI
-	dpi := netem.NewDPIEngine(model.DiscardLogger)
 
 	// create client stack
 	//
@@ -203,9 +154,120 @@ func NewEnvironment(config Config) *Environment {
 		},
 	))
 
+	return clientStack, dnsServer
+}
+
+func configureServer(
+	s *ConfigServerStack,
+	topology *netem.StarTopology,
+	resolverAddr string,
+	servers []*http.Server,
+	servers3 []*http3.Server,
+) {
+	// create server stack
+	//
+	// note: because the stack is created using topology.AddHost, we don't
+	// need to call Close when done using it, since the topology will do that
+	// for us when we call the topology's Close method.
+	serverStack := runtimex.Try1(topology.AddHost(
+		s.ServerAddr, // server IP address
+		resolverAddr, // default resolver address
+		&netem.LinkConfig{},
+	))
+
+	// configure and start HTTP server instances running on the server stack
+	for _, l := range s.HTTPServers {
+		handler := l.Handler
+		if handler == nil {
+			// the default handler just responds "hello, world"
+			handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Write([]byte(`hello, world`))
+			})
+		}
+		// HTTP/3
+		if l.QUIC {
+			// create a udp listener on the specified port
+			udpListener := runtimex.Try1(serverStack.ListenUDP("udp", &net.UDPAddr{
+				IP:   net.ParseIP(s.ServerAddr),
+				Port: l.Port,
+				Zone: "",
+			}))
+			http3Server := &http3.Server{
+				TLSConfig: serverStack.ServerTLSConfig(),
+				Handler:   handler,
+			}
+			servers3 = append(servers3, http3Server)
+			// start serving
+			go http3Server.Serve(udpListener)
+			continue
+		}
+		// HTTPS
+		// create a tcp listener on the specified port
+		tcpListener := runtimex.Try1(serverStack.ListenTCP("tcp", &net.TCPAddr{
+			IP:   net.ParseIP(s.ServerAddr),
+			Port: l.Port,
+			Zone: "",
+		}))
+		httpServer := &http.Server{
+			TLSConfig: serverStack.ServerTLSConfig(),
+			Handler:   handler,
+		}
+		servers = append(servers, httpServer)
+		// start serving
+		go httpServer.ServeTLS(tcpListener, "", "")
+	}
+}
+
+// NewEnvironment creates a new QA environment. This function
+// calls [runtimex.PanicOnError] in case of failure.
+func NewEnvironment(clientConfig *ClientConfig, serversConfig *ServersConfig) *Environment {
+	// create a new star topology
+	topology := runtimex.Try1(netem.NewStarTopology(model.DiscardLogger))
+
+	// create a DPIEngine for implementing censorship
+	// experiments can plug in different types of DPIs, e.g. to drop all packets using a certain SNI
+	dpi := netem.NewDPIEngine(model.DiscardLogger)
+
+	// client
+	clientStack, clientDNS := configureClient(clientConfig, topology, dpi)
+
+	// create HTTP servers
+	var servers []*http.Server
+	var servers3 []*http3.Server
+
+	// set the default resolver address for the servers's DNS
+	resolverAddr := serversConfig.ResolverAddr
+	if resolverAddr == "" {
+		resolverAddr = DefaultServersResolver
+	}
+
+	// create dns server stack for the servers
+	//
+	// note: because the stack is created using topology.AddHost, we don't
+	// need to call Close when done using it, since the topology will do that
+	// for us when we call the topology's Close method.
+	dnsServerStack := runtimex.Try1(topology.AddHost(
+		resolverAddr, // server IP address
+		resolverAddr, // default resolver address
+		&netem.LinkConfig{},
+	))
+
+	// create DNS server using the dnsServerStack
+	serversDNS := runtimex.Try1(netem.NewDNSServer(
+		model.DiscardLogger,
+		dnsServerStack,
+		resolverAddr,
+		serversConfig.DNSConfig,
+	))
+
+	for _, s := range serversConfig.Servers {
+		configureServer(&s, topology, resolverAddr, servers, servers3)
+	}
+
 	return &Environment{
 		clientStack:  clientStack,
-		dnsServer:    dnsServer,
+		clientDNS:    clientDNS,
+		serversDNS:   serversDNS,
 		dpi:          dpi,
 		httpServers:  servers,
 		http3Servers: servers3,
@@ -228,7 +290,8 @@ func (e *Environment) Do(function func()) {
 
 // Close closes all the resources used by [Environment].
 func (e *Environment) Close() error {
-	e.dnsServer.Close()
+	e.clientDNS.Close()
+	e.serversDNS.Close()
 	for _, s := range e.httpServers {
 		s.Close()
 	}
