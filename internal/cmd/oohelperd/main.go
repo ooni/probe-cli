@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/http/cookiejar"
 	"net/http/pprof"
 	"os"
 	"os/signal"
@@ -21,6 +22,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"golang.org/x/net/publicsuffix"
 )
 
 // maxAcceptableBodySize is the maximum acceptable body size for incoming
@@ -79,6 +81,15 @@ func shutdown(srv *http.Server, wg *sync.WaitGroup) {
 	srv.Shutdown(ctx)
 }
 
+// newCookieJar is the factory for constructing a new cookier jar.
+func newCookieJar() *cookiejar.Jar {
+	// Implementation note: the [cookiejar.New] function always returns a
+	// nil error; hence, it's safe here to use [runtimex.Try1].
+	return runtimex.Try1(cookiejar.New(&cookiejar.Options{
+		PublicSuffixList: publicsuffix.List,
+	}))
+}
+
 // newHandler constructs the [handler] used by [main].
 func newHandler() *handler {
 	return &handler{
@@ -86,6 +97,7 @@ func newHandler() *handler {
 		Indexer:           &atomic.Int64{},
 		MaxAcceptableBody: maxAcceptableBodySize,
 		Measure:           measure,
+
 		NewHTTPClient: func(logger model.Logger) model.HTTPClient {
 			// If the DoH resolver we're using insists that a given domain maps to
 			// bogons, make sure we're going to fail the HTTP measurement.
@@ -105,15 +117,39 @@ func newHandler() *handler {
 				true, // enabled
 				newResolver(logger),
 			)
-			return netxlite.NewHTTPClientWithResolver(logger, reso)
+
+			// fix: We MUST set a cookie jar for measuring HTTP. See
+			// https://github.com/ooni/probe/issues/2488 for additional
+			// context and pointers to the relevant measurements.
+			client := &http.Client{
+				Transport:     netxlite.NewHTTPTransportWithResolver(logger, reso),
+				CheckRedirect: nil,
+				Jar:           newCookieJar(),
+				Timeout:       0,
+			}
+
+			return netxlite.WrapHTTPClient(client)
 		},
+
 		NewHTTP3Client: func(logger model.Logger) model.HTTPClient {
 			reso := netxlite.MaybeWrapWithBogonResolver(
 				true, // enabled
 				newResolver(logger),
 			)
-			return netxlite.NewHTTP3ClientWithResolver(logger, reso)
+
+			// fix: We MUST set a cookie jar for measuring HTTP. See
+			// https://github.com/ooni/probe/issues/2488 for additional
+			// context and pointers to the relevant measurements.
+			client := &http.Client{
+				Transport:     netxlite.NewHTTP3TransportWithResolver(logger, reso),
+				CheckRedirect: nil,
+				Jar:           newCookieJar(),
+				Timeout:       0,
+			}
+
+			return netxlite.WrapHTTPClient(client)
 		},
+
 		NewDialer: func(logger model.Logger) model.Dialer {
 			return netxlite.NewDialerWithoutResolver(logger)
 		},
