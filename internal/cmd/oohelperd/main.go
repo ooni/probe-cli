@@ -90,6 +90,43 @@ func newCookieJar() *cookiejar.Jar {
 	}))
 }
 
+// newHTTPClientWithTransportFactory creates a new HTTP client.
+func newHTTPClientWithTransportFactory(
+	logger model.Logger,
+	txpFactory func(model.DebugLogger, model.Resolver) model.HTTPTransport,
+) model.HTTPClient {
+	// If the DoH resolver we're using insists that a given domain maps to
+	// bogons, make sure we're going to fail the HTTP measurement.
+	//
+	// The TCP measurements scheduler in ipinfo.go will also refuse to
+	// schedule TCP measurements for bogons.
+	//
+	// While this seems theoretical, as of 2022-08-28, I see:
+	//
+	//     % host polito.it
+	//     polito.it has address 192.168.59.6
+	//     polito.it has address 192.168.40.1
+	//     polito.it mail is handled by 10 mx.polito.it.
+	//
+	// So, it's better to consider this as a possible corner case.
+	reso := netxlite.MaybeWrapWithBogonResolver(
+		true, // enabled
+		newResolver(logger),
+	)
+
+	// fix: We MUST set a cookie jar for measuring HTTP. See
+	// https://github.com/ooni/probe/issues/2488 for additional
+	// context and pointers to the relevant measurements.
+	client := &http.Client{
+		Transport:     txpFactory(logger, reso),
+		CheckRedirect: nil,
+		Jar:           newCookieJar(),
+		Timeout:       0,
+	}
+
+	return netxlite.WrapHTTPClient(client)
+}
+
 // newHandler constructs the [handler] used by [main].
 func newHandler() *handler {
 	return &handler{
@@ -99,55 +136,17 @@ func newHandler() *handler {
 		Measure:           measure,
 
 		NewHTTPClient: func(logger model.Logger) model.HTTPClient {
-			// If the DoH resolver we're using insists that a given domain maps to
-			// bogons, make sure we're going to fail the HTTP measurement.
-			//
-			// The TCP measurements scheduler in ipinfo.go will also refuse to
-			// schedule TCP measurements for bogons.
-			//
-			// While this seems theoretical, as of 2022-08-28, I see:
-			//
-			//     % host polito.it
-			//     polito.it has address 192.168.59.6
-			//     polito.it has address 192.168.40.1
-			//     polito.it mail is handled by 10 mx.polito.it.
-			//
-			// So, it's better to consider this as a possible corner case.
-			reso := netxlite.MaybeWrapWithBogonResolver(
-				true, // enabled
-				newResolver(logger),
+			return newHTTPClientWithTransportFactory(
+				logger,
+				netxlite.NewHTTPTransportWithResolver,
 			)
-
-			// fix: We MUST set a cookie jar for measuring HTTP. See
-			// https://github.com/ooni/probe/issues/2488 for additional
-			// context and pointers to the relevant measurements.
-			client := &http.Client{
-				Transport:     netxlite.NewHTTPTransportWithResolver(logger, reso),
-				CheckRedirect: nil,
-				Jar:           newCookieJar(),
-				Timeout:       0,
-			}
-
-			return netxlite.WrapHTTPClient(client)
 		},
 
 		NewHTTP3Client: func(logger model.Logger) model.HTTPClient {
-			reso := netxlite.MaybeWrapWithBogonResolver(
-				true, // enabled
-				newResolver(logger),
+			return newHTTPClientWithTransportFactory(
+				logger,
+				netxlite.NewHTTP3TransportWithResolver,
 			)
-
-			// fix: We MUST set a cookie jar for measuring HTTP. See
-			// https://github.com/ooni/probe/issues/2488 for additional
-			// context and pointers to the relevant measurements.
-			client := &http.Client{
-				Transport:     netxlite.NewHTTP3TransportWithResolver(logger, reso),
-				CheckRedirect: nil,
-				Jar:           newCookieJar(),
-				Timeout:       0,
-			}
-
-			return netxlite.WrapHTTPClient(client)
 		},
 
 		NewDialer: func(logger model.Logger) model.Dialer {
