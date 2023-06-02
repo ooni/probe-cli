@@ -199,10 +199,10 @@ func envConfig() netemx.Config {
 	)
 	return netemx.Config{
 		DNSConfig: dnsConfig,
-		Servers: []netemx.ServerStack{
+		Servers: []netemx.ConfigServerStack{
 			{
 				ServerAddr: "93.184.216.34",
-				HTTPServers: []netemx.HTTPServer{
+				HTTPServers: []netemx.ConfigHTTPServer{
 					{
 						Port: 443,
 					},

@@ -108,10 +108,10 @@ func TestMeasurerRun(t *testing.T) {
 		dnsConfig := netem.NewDNSConfig()
 		conf := netemx.Config{
 			DNSConfig: dnsConfig,
-			Servers: []netemx.ServerStack{
+			Servers: []netemx.ConfigServerStack{
 				{
 					ServerAddr:  "8.8.8.8",
-					HTTPServers: []netemx.HTTPServer{{Port: 443}},
+					HTTPServers: []netemx.ConfigHTTPServer{{Port: 443}},
 				},
 			},
 		}
@@ -160,10 +160,10 @@ func TestMeasurerRun(t *testing.T) {
 		dnsConfig := netem.NewDNSConfig()
 		conf := netemx.Config{
 			DNSConfig: dnsConfig,
-			Servers: []netemx.ServerStack{
+			Servers: []netemx.ConfigServerStack{
 				{
 					ServerAddr:  "8.8.8.8",
-					HTTPServers: []netemx.HTTPServer{{Port: 443}},
+					HTTPServers: []netemx.ConfigHTTPServer{{Port: 443}},
 				},
 			},
 		}
@@ -227,10 +227,10 @@ func TestMeasurerRun(t *testing.T) {
 		dnsConfig := netem.NewDNSConfig()
 		conf := netemx.Config{
 			DNSConfig: dnsConfig,
-			Servers: []netemx.ServerStack{
+			Servers: []netemx.ConfigServerStack{
 				{
 					ServerAddr:  "8.8.8.8",
-					HTTPServers: []netemx.HTTPServer{{Port: 443}},
+					HTTPServers: []netemx.ConfigHTTPServer{{Port: 443}},
 				},
 			},
 		}

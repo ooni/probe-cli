@@ -106,10 +106,10 @@ func TestMeasurerRun(t *testing.T) {
 		dnsConfig := netem.NewDNSConfig()
 		conf := netemx.Config{
 			DNSConfig: dnsConfig,
-			Servers: []netemx.ServerStack{
+			Servers: []netemx.ConfigServerStack{
 				{
 					ServerAddr: "8.8.8.8",
-					HTTPServers: []netemx.HTTPServer{
+					HTTPServers: []netemx.ConfigHTTPServer{
 						{
 							Port: 443,
 							QUIC: true,
@@ -148,10 +148,10 @@ func TestMeasurerRun(t *testing.T) {
 		dnsConfig := netem.NewDNSConfig()
 		conf := netemx.Config{
 			DNSConfig: dnsConfig,
-			Servers: []netemx.ServerStack{
+			Servers: []netemx.ConfigServerStack{
 				{
 					ServerAddr: "8.8.8.8",
-					HTTPServers: []netemx.HTTPServer{
+					HTTPServers: []netemx.ConfigHTTPServer{
 						{
 							Port: 443,
 							QUIC: true,

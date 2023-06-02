@@ -11,9 +11,11 @@ import (
 )
 
 // The netemx environment design is based on netemx_test.
+// TODO(kelmenhorst): consider writing netemx_test.go using this Environment.
 
-// Environment is a configurable [netem] QA environment
-// with a DNS server stack, multiple server stacks, and a client stack.
+// Environment is a configurable [netem] QA environment with a DNS server
+// stack, multiple server stacks, and a client stack. The zero value is not
+// ready to use. You should use [NewEnvironment] to construct.
 type Environment struct {
 	// clientStack is the client stack to use.
 	clientStack *netem.UNetStack
@@ -34,42 +36,64 @@ type Environment struct {
 	topology *netem.StarTopology
 }
 
+// TODO(kelmenhorst): we should check whether we need to explicitly
+// close the QUIC connection or it suffices to close the server.
+
+// TODO(kelmenhorst): use something like 10.0.0.1 as the DNS address
+// so we don't have collisions with 1.1.1.1, which we'll use in LTE
+
 // Config configures the Environment.
 type Config struct {
 	// ClientAddr is the OPTIONAL address of the client stack.
 	// If empty, we use 10.0.0.14
 	ClientAddr string
+
 	// DNSConfig is the MANDATORY [*netem.DNSConfig] to be used for the DNS in this environment.
 	DNSConfig *netem.DNSConfig
+
 	// Resolver is the OPTIONAL address of the default resolver to be used in the environment.
 	// If empty, we use 1.1.1.1
 	Resolver string
+
 	// Servers is the MANDATORY list of [ServerStack]s to be used in this environment.
-	Servers []ServerStack
+	Servers []ConfigServerStack
 }
 
-// ServerStack represents a server instance.
+// ConfigServerStack represents a server instance.
 // Multiple HTTP servers can run on the same server, on different ports.
-type ServerStack struct {
+type ConfigServerStack struct {
 	// ServerAddr is the MANDATORY address of the web server stack.
 	ServerAddr string
+
+	// TODO: add here a resolver for each server.
+
 	// HTTPServers is the MANDATORY list of [HTTPServer], i.e. server instances on this stack.
-	HTTPServers []HTTPServer
+	HTTPServers []ConfigHTTPServer
 }
 
-// TODO(bassosimone): consider renaming HTTPServer to clarify that it is
-// currently just using HTTP because there's an HTTP handler.
-
-// HTTPServer is a handler running on a server port.
-// A HTTPServer might use QUIC instead of TCP as transport.
-type HTTPServer struct {
+// ConfigHTTPServer is a handler running on a server port.
+// A ConfigHTTPServer might use QUIC instead of TCP as transport.
+type ConfigHTTPServer struct {
 	// Port is the port that this HTTP server is running on.
 	Port int
+
 	// QUIC indicates whether this HTTP server uses QUIC instead of TCP as transport.
 	QUIC bool
-	// HandlerFunc specifies the handler to use for this HTTP server.
-	HanderFunc http.Handler
+
+	// Handler OPTIONALLY specifies the handler to use for this HTTP server.
+	Handler http.Handler
 }
+
+//
+// # Proposal for more ergonomic API:
+//
+// NewEnvironment(clientConfig *ClientConfig, serverConfigs *ServersConfig) *Environment
+//
+// type ServerConfig struct {
+//   DNSConfig optional.Value[*netem.DNSConfig] // <- what the server use for resolving stuff
+//   Servers   []ConfigServerStack
+// }
+//
 
 // NewEnvironment creates a new QA environment. This function
 // calls [runtimex.PanicOnError] in case of failure.
@@ -80,7 +104,7 @@ func NewEnvironment(config Config) *Environment {
 	// set the default resolver address
 	resolverAddr := config.Resolver
 	if resolverAddr == "" {
-		resolverAddr = "1.1.1.1"
+		resolverAddr = "1.1.1.1" // TOOD: use constant
 	}
 
 	// create dns server stack
@@ -106,6 +130,8 @@ func NewEnvironment(config Config) *Environment {
 	var servers []*http.Server
 	var servers3 []*http3.Server
 	for _, s := range config.Servers {
+		// TODO: can this be an independent function
+
 		// create server stack
 		//
 		// note: because the stack is created using topology.AddHost, we don't
@@ -119,7 +145,7 @@ func NewEnvironment(config Config) *Environment {
 
 		// configure and start HTTP server instances running on the server stack
 		for _, l := range s.HTTPServers {
-			handler := l.HanderFunc
+			handler := l.Handler
 			if handler == nil {
 				// the default handler just responds "hello, world"
 				handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -170,7 +196,7 @@ func NewEnvironment(config Config) *Environment {
 	// need to call Close when done using it, since the topology will do that
 	// for us when we call the topology's Close method.
 	clientStack := runtimex.Try1(topology.AddHost(
-		"10.0.0.14",  // client IP address
+		"10.0.0.14",  // client IP address // <------ XXX
 		resolverAddr, // default resolver address
 		&netem.LinkConfig{
 			DPIEngine: dpi,

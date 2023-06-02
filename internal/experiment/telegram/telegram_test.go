@@ -278,16 +278,16 @@ func envConfig() netemx.Config {
 // with custom DNS.
 func envConfigWithDNS(dnsConfig *netem.DNSConfig) netemx.Config {
 	// config for the telegram Web server stack
-	telegramWeb := netemx.ServerStack{
+	telegramWeb := netemx.ConfigServerStack{
 		ServerAddr:  "149.154.167.99",
-		HTTPServers: []netemx.HTTPServer{{Port: 443}},
+		HTTPServers: []netemx.ConfigHTTPServer{{Port: 443}},
 	}
-	servers := []netemx.ServerStack{telegramWeb}
+	servers := []netemx.ConfigServerStack{telegramWeb}
 	// for each datacenter we configure a server stack, running a port 443 and 80 instance each
 	for _, dc := range telegram.Datacenters {
-		servers = append(servers, netemx.ServerStack{
+		servers = append(servers, netemx.ConfigServerStack{
 			ServerAddr:  dc,
-			HTTPServers: []netemx.HTTPServer{{Port: 443}, {Port: 80}},
+			HTTPServers: []netemx.ConfigHTTPServer{{Port: 443}, {Port: 80}},
 		})
 	}
 	return netemx.Config{
