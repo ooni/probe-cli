@@ -1,17 +1,18 @@
-// Package geolocate implements IP lookup, resolver lookup, and geolocation.
-package geolocate
+package engine
 
 import (
 	"context"
 	"fmt"
 
+	"github.com/ooni/probe-cli/v3/internal/iplookup"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/resolverlookup"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
 // Results contains geolocate results.
-type Results struct {
+type GeolocateResults struct {
 	// ASN is the autonomous system number.
 	ASN uint
 
@@ -38,7 +39,7 @@ type Results struct {
 }
 
 // ASNString returns the ASN as a string.
-func (r *Results) ASNString() string {
+func (r *GeolocateResults) ASNString() string {
 	return fmt.Sprintf("AS%d", r.ASN)
 }
 
@@ -59,7 +60,7 @@ type resolverIPLookupper interface {
 }
 
 // Config contains configuration for a geolocate Task.
-type Config struct {
+type GeolocateConfig struct {
 	// Resolver is the resolver we should use when
 	// making requests for discovering the IP. When
 	// this field is not set, we use the stdlib.
@@ -74,8 +75,8 @@ type Config struct {
 	UserAgent string
 }
 
-// NewTask creates a new instance of Task from config.
-func NewTask(config Config) *Task {
+// NewIplookupTask creates a new instance of IpLookupTask from config.
+func NewGeolocateTask(config GeolocateConfig) *GeolocateTask {
 	if config.Logger == nil {
 		config.Logger = model.DiscardLogger
 	}
@@ -85,20 +86,18 @@ func NewTask(config Config) *Task {
 	if config.Resolver == nil {
 		config.Resolver = netxlite.NewStdlibResolver(config.Logger)
 	}
-	return &Task{
-		countryLookupper:     mmdbLookupper{},
-		probeIPLookupper:     ipLookupClient(config),
-		probeASNLookupper:    mmdbLookupper{},
-		resolverASNLookupper: mmdbLookupper{},
-		resolverIPLookupper: resolverLookupClient{
-			Logger: config.Logger,
-		},
+	return &GeolocateTask{
+		countryLookupper:     iplookup.MMDBLookupper{},
+		probeIPLookupper:     iplookup.IpLookupClient(config),
+		probeASNLookupper:    iplookup.MMDBLookupper{},
+		resolverASNLookupper: iplookup.MMDBLookupper{},
+		resolverIPLookupper:  resolverlookup.NewResolverLookupClient(config.Logger),
 	}
 }
 
 // Task performs a geolocation. You must create a new
 // instance of Task using the NewTask factory.
-type Task struct {
+type GeolocateTask struct {
 	countryLookupper     countryLookupper
 	probeIPLookupper     probeIPLookupper
 	probeASNLookupper    asnLookupper
@@ -107,9 +106,9 @@ type Task struct {
 }
 
 // Run runs the task.
-func (op Task) Run(ctx context.Context) (*Results, error) {
+func (op *GeolocateTask) Run(ctx context.Context) (*GeolocateResults, error) {
 	var err error
-	out := &Results{
+	out := &GeolocateResults{
 		ASN:                 model.DefaultProbeASN,
 		CountryCode:         model.DefaultProbeCC,
 		NetworkName:         model.DefaultProbeNetworkName,

@@ -13,7 +13,6 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/checkincache"
-	"github.com/ooni/probe-cli/v3/internal/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -60,7 +59,7 @@ type Session struct {
 	byteCounter              *bytecounter.Counter
 	httpDefaultTransport     model.HTTPTransport
 	kvStore                  model.KeyValueStore
-	location                 *geolocate.Results
+	location                 *GeolocateResults
 	logger                   model.Logger
 	proxyURL                 *url.URL
 	queryProbeServicesCount  *atomic.Int64
@@ -79,7 +78,7 @@ type Session struct {
 
 	// testLookupLocationContext is a an optional hook for testing
 	// allowing us to mock LookupLocationContext.
-	testLookupLocationContext func(ctx context.Context) (*geolocate.Results, error)
+	testLookupLocationContext func(ctx context.Context) (*GeolocateResults, error)
 
 	// testMaybeLookupBackendsContext is an optional hook for testing
 	// allowing us to mock MaybeLookupBackendsContext.
@@ -676,8 +675,8 @@ func (s *Session) MaybeLookupBackendsContext(ctx context.Context) error {
 
 // LookupLocationContext performs a location lookup. If you want memoisation
 // of the results, you should use MaybeLookupLocationContext.
-func (s *Session) LookupLocationContext(ctx context.Context) (*geolocate.Results, error) {
-	task := geolocate.NewTask(geolocate.Config{
+func (s *Session) LookupLocationContext(ctx context.Context) (*GeolocateResults, error) {
+	task := NewGeolocateTask(GeolocateConfig{
 		Logger:    s.Logger(),
 		Resolver:  s.resolver,
 		UserAgent: s.UserAgent(),
@@ -687,7 +686,7 @@ func (s *Session) LookupLocationContext(ctx context.Context) (*geolocate.Results
 
 // lookupLocationContext calls testLookupLocationContext if set and
 // otherwise calls LookupLocationContext.
-func (s *Session) lookupLocationContext(ctx context.Context) (*geolocate.Results, error) {
+func (s *Session) lookupLocationContext(ctx context.Context) (*GeolocateResults, error) {
 	if s.testLookupLocationContext != nil {
 		return s.testLookupLocationContext(ctx)
 	}
