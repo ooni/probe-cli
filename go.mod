@@ -29,7 +29,7 @@ require (
 	github.com/ooni/go-libtor v1.1.7
 	github.com/ooni/oocrypto v0.4.3
 	github.com/ooni/oohttp v0.5.3
-	github.com/ooni/probe-assets v0.16.0
+	github.com/ooni/probe-assets v0.17.0
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/pion/stun v0.3.5
 	github.com/pkg/errors v0.9.1
@@ -40,7 +40,7 @@ require (
 	gitlab.com/yawning/utls.git v0.0.12-1
 	golang.org/x/crypto v0.5.0
 	golang.org/x/net v0.7.0
-	golang.org/x/sys v0.5.0
+	golang.org/x/sys v0.8.0
 )
 
 require (
