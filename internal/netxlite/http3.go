@@ -73,7 +73,7 @@ func NewHTTP3TransportStdlib(logger model.DebugLogger) model.HTTPTransport {
 
 // NewHTTPTransportWithResolver creates a new HTTPTransport using http3
 // that uses the given logger and the given resolver.
-func NewHTTP3TransportWithResolver(logger model.Logger, reso model.Resolver) model.HTTPTransport {
+func NewHTTP3TransportWithResolver(logger model.DebugLogger, reso model.Resolver) model.HTTPTransport {
 	qd := NewQUICDialerWithResolver(NewQUICListener(), logger, reso)
 	return NewHTTP3Transport(logger, qd, nil)
 }
