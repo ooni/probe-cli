@@ -25,7 +25,7 @@ require (
 	github.com/miekg/dns v1.1.54
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.7.1
-	github.com/ooni/go-libtor v1.1.7
+	github.com/ooni/go-libtor v1.1.8
 	github.com/ooni/netem v0.0.0-20230606061801-6bfb478aadf7
 	github.com/ooni/oocrypto v0.5.1
 	github.com/ooni/oohttp v0.6.1
