@@ -488,7 +488,7 @@ type UnderlyingNetwork interface {
 	// DefaultCertPool returns the underlying cert pool used by the
 	// network extensions library. You MUST NOT use this function to
 	// modify the default cert pool since this would lead to a data
-	// race. Use [netxlite.NewDefaultCertPool] if you wish to get
+	// race. Use [netxlite.netxlite.NewMozillaCertPool] if you wish to get
 	// a copy of the default cert pool that you can modify.
 	DefaultCertPool() *x509.CertPool
 
