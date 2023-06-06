@@ -15,6 +15,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
+// TODO: consider replacing with the generalized environment.
+
 // Environment is the [netem] QA environment we use in this package.
 //
 // This struct provides a blueprint of how to write integration tests for

@@ -3,6 +3,7 @@ package netemx
 import (
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/lucas-clemente/quic-go/http3"
 	"github.com/ooni/netem"
@@ -11,7 +12,13 @@ import (
 )
 
 const (
-	DefaultClientResolver  = "10.0.0.1"
+	// DefaultClientAddress is the address used by default for a client.
+	DefaultClientAddress = "10.0.0.14"
+
+	// DefaultClientResolver is the resolver used by default by client.
+	DefaultClientResolver = "10.0.0.1"
+
+	// DefaultServersResolver is the the resolver used by default by server.
 	DefaultServersResolver = "1.1.1.1"
 )
 
@@ -42,6 +49,10 @@ type Environment struct {
 
 	// topology is the topology we're using.
 	topology *netem.StarTopology
+
+	// TODO: consider replacing with
+	//
+	// closables []io.Closer
 }
 
 // TODO(kelmenhorst): we should check whether we need to explicitly
@@ -53,14 +64,14 @@ type Environment struct {
 // ClientConfig configures the client in the Environment.
 type ClientConfig struct {
 	// ClientAddr is the OPTIONAL address of the client stack.
-	// If empty, we use 10.0.0.14
+	// If empty, we use DefaultClientAddress.
 	ClientAddr string
 
 	// DNSConfig is the MANDATORY [*netem.DNSConfig] to be used for the DNS in this environment.
 	DNSConfig *netem.DNSConfig
 
-	// ResolverAddr is the OPTIONAL address of the default resolver of the client to be used in the environment.
-	// If empty, we use 10.0.0.1
+	// ResolverAddr is the OPTIONAL address of the default resolver of the client to
+	// be used in the environment. If empty, we use DefaultClientResolver.
 	ResolverAddr string
 }
 
@@ -70,7 +81,7 @@ type ServersConfig struct {
 	DNSConfig *netem.DNSConfig
 
 	// ResolverAddr is the OPTIONAL address of the default resolver to be used in the environment.
-	// If empty, we use 1.1.1.1
+	// If empty, we use DefaultServerResolver.
 	ResolverAddr string
 
 	// Servers is the MANDATORY list of [ServerStack]s to be used in this environment.
@@ -87,10 +98,10 @@ type ConfigServerStack struct {
 	HTTPServers []ConfigHTTPServer
 }
 
-// ConfigHTTPServer is a handler running on a server port.
-// A ConfigHTTPServer might use QUIC instead of TCP as transport.
+// ConfigHTTPServer is a handler running on a server port. A ConfigHTTPServer
+// might use QUIC instead of TCP as transport.
 type ConfigHTTPServer struct {
-	// Port is the port that this HTTP server is running on.
+	// Port is the MANDATORY port that this HTTP server is running on.
 	Port int
 
 	// QUIC indicates whether this HTTP server uses QUIC instead of TCP as transport.
@@ -100,17 +111,7 @@ type ConfigHTTPServer struct {
 	Handler http.Handler
 }
 
-//
-// # Proposal for more ergonomic API:
-//
-// NewEnvironment(clientConfig *ClientConfig, serverConfigs *ServersConfig) *Environment
-//
-// type ServerConfig struct {
-//   DNSConfig optional.Value[*netem.DNSConfig] // <- what the server use for resolving stuff
-//   Servers   []ConfigServerStack
-// }
-//
-
+// configureClient creates the client network stack
 func configureClient(
 	clientConfig *ClientConfig,
 	topology *netem.StarTopology,
@@ -130,7 +131,10 @@ func configureClient(
 	dnsServerStack := runtimex.Try1(topology.AddHost(
 		resolverAddr, // server IP address
 		resolverAddr, // default resolver address
-		&netem.LinkConfig{},
+		&netem.LinkConfig{
+			LeftToRightDelay: time.Millisecond,
+			RightToLeftDelay: time.Millisecond,
+		},
 	))
 
 	// create DNS server using the dnsServerStack
@@ -146,17 +150,23 @@ func configureClient(
 	// note: because the stack is created using topology.AddHost, we don't
 	// need to call Close when done using it, since the topology will do that
 	// for us when we call the topology's Close method.
+	//
+	// TODO(bassosimone,kelmenhorst): consider allowing to configure the
+	// delays and losses should the need for this arise in the future.
 	clientStack := runtimex.Try1(topology.AddHost(
-		"10.0.0.14",  // client IP address // <------ XXX
-		resolverAddr, // default resolver address
+		DefaultClientAddress,
+		resolverAddr,
 		&netem.LinkConfig{
-			DPIEngine: dpi,
+			DPIEngine:        dpi,
+			LeftToRightDelay: time.Millisecond,
+			RightToLeftDelay: time.Millisecond,
 		},
 	))
 
 	return clientStack, dnsServer
 }
 
+// configureServer creates a single server network stack
 func configureServer(
 	s *ConfigServerStack,
 	topology *netem.StarTopology,
@@ -170,13 +180,17 @@ func configureServer(
 	// need to call Close when done using it, since the topology will do that
 	// for us when we call the topology's Close method.
 	serverStack := runtimex.Try1(topology.AddHost(
-		s.ServerAddr, // server IP address
-		resolverAddr, // default resolver address
-		&netem.LinkConfig{},
+		s.ServerAddr,
+		resolverAddr,
+		&netem.LinkConfig{
+			LeftToRightDelay: time.Millisecond,
+			RightToLeftDelay: time.Millisecond,
+		},
 	))
 
 	// configure and start HTTP server instances running on the server stack
 	for _, l := range s.HTTPServers {
+		// make sure there is a handler
 		handler := l.Handler
 		if handler == nil {
 			// the default handler just responds "hello, world"
@@ -184,6 +198,7 @@ func configureServer(
 				w.Write([]byte(`hello, world`))
 			})
 		}
+
 		// HTTP/3
 		if l.QUIC {
 			// create a udp listener on the specified port
@@ -201,6 +216,7 @@ func configureServer(
 			go http3Server.Serve(udpListener)
 			continue
 		}
+
 		// HTTPS
 		// create a tcp listener on the specified port
 		tcpListener := runtimex.Try1(serverStack.ListenTCP("tcp", &net.TCPAddr{
@@ -224,16 +240,12 @@ func NewEnvironment(clientConfig *ClientConfig, serversConfig *ServersConfig) *E
 	// create a new star topology
 	topology := runtimex.Try1(netem.NewStarTopology(model.DiscardLogger))
 
-	// create a DPIEngine for implementing censorship
-	// experiments can plug in different types of DPIs, e.g. to drop all packets using a certain SNI
+	// create a DPIEngine for implementing censorship experiments can
+	// plug in different types of DPIs, e.g. to drop all packets using a certain SNI
 	dpi := netem.NewDPIEngine(model.DiscardLogger)
 
-	// client
+	// create a client and its DNS server (which we need to close later)
 	clientStack, clientDNS := configureClient(clientConfig, topology, dpi)
-
-	// create HTTP servers
-	var servers []*http.Server
-	var servers3 []*http3.Server
 
 	// set the default resolver address for the servers's DNS
 	resolverAddr := serversConfig.ResolverAddr
@@ -241,18 +253,25 @@ func NewEnvironment(clientConfig *ClientConfig, serversConfig *ServersConfig) *E
 		resolverAddr = DefaultServersResolver
 	}
 
-	// create dns server stack for the servers
+	// create DNS server stack for the servers
 	//
 	// note: because the stack is created using topology.AddHost, we don't
 	// need to call Close when done using it, since the topology will do that
 	// for us when we call the topology's Close method.
+	//
+	// note: we need to add a little bit of delay to the router<->servers
+	// path such that rules that use spoofing always determinstically
+	// succeed in spoofing the packets (w/o delays it's flaky).
 	dnsServerStack := runtimex.Try1(topology.AddHost(
 		resolverAddr, // server IP address
 		resolverAddr, // default resolver address
-		&netem.LinkConfig{},
+		&netem.LinkConfig{
+			LeftToRightDelay: time.Millisecond,
+			RightToLeftDelay: time.Millisecond,
+		},
 	))
 
-	// create DNS server using the dnsServerStack
+	// create DNS server
 	serversDNS := runtimex.Try1(netem.NewDNSServer(
 		model.DiscardLogger,
 		dnsServerStack,
@@ -260,7 +279,15 @@ func NewEnvironment(clientConfig *ClientConfig, serversConfig *ServersConfig) *E
 		serversConfig.DNSConfig,
 	))
 
+	// create HTTP servers (and track them so we can close tham at a later time)
+	var (
+		servers  []*http.Server
+		servers3 []*http3.Server
+	)
 	for _, s := range serversConfig.Servers {
+		// TODO(bassosimone,kelmenhorst): consider refactoring to return the
+		// new servers that we should append to the lists rather than passing
+		// an argument and fill it, which looks like C++ a bit too much.
 		configureServer(&s, topology, resolverAddr, servers, servers3)
 	}
 

@@ -15,6 +15,7 @@ require (
 	github.com/cretz/bine v0.2.0
 	github.com/fatih/color v1.13.0
 	github.com/google/go-cmp v0.5.9
+	github.com/google/gopacket v1.1.19
 	github.com/google/martian/v3 v3.3.2
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.3.0
@@ -55,7 +56,6 @@ require (
 	github.com/andybalholm/brotli v1.0.5-0.20220518190645-786ec621f618 // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/google/btree v1.1.2 // indirect
-	github.com/google/gopacket v1.1.19 // indirect
 	github.com/google/pprof v0.0.0-20230111200839-76d1ae5aea2b // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/klauspost/compress v1.15.14 // indirect
