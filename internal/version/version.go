@@ -2,4 +2,4 @@
 package version
 
 // Version is the ooniprobe version.
-const Version = "3.18.0-alpha"
+const Version = "3.19.0-alpha"
