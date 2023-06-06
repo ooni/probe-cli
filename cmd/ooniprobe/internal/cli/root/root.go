@@ -1,7 +1,7 @@
 package root
 
 import (
-	"github.com/alecthomas/kingpin"
+	"github.com/alecthomas/kingpin/v2"
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/log/handlers/batch"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/log/handlers/cli"
