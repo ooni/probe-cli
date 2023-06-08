@@ -76,7 +76,7 @@ mingw-w64 cross-compiler.
 
 ### Debian developer setup
 
-The following instructions show how to setup a development
+The followingcommands show how to setup a development
 environment using Debian 12 ("bookworm"). The same instructions
 should also work for Debian-based distribution (e.g., Ubuntu).
 
@@ -96,7 +96,7 @@ $HOME/go/bin/go1.20.5 download
 
 ### Fedora developer setup
 
-The following instructions show how to setup a development
+The following commands show how to setup a development
 environment using Fedora.
 
 ```bash
@@ -115,7 +115,7 @@ $HOME/go/bin/go1.20.5 download
 
 ### macOS developer setup
 
-The following instructions show how to setup a development
+The following commands show how to setup a development
 environment using macOS. We assume you have already installed
 [Homebrew](https://brew.sh), which should also install the
 Xcode command line tools.
