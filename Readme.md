@@ -76,7 +76,7 @@ mingw-w64 cross-compiler.
 
 ### Debian developer setup
 
-The followingcommands show how to setup a development
+The following commands show how to setup a development
 environment using Debian 12 ("bookworm"). The same instructions
 should also work for Debian-based distribution (e.g., Ubuntu).
 
