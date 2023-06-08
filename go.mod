@@ -27,8 +27,8 @@ require (
 	github.com/montanaflynn/stats v0.7.1
 	github.com/ooni/go-libtor v1.1.8
 	github.com/ooni/netem v0.0.0-20230606061801-6bfb478aadf7
-	github.com/ooni/oocrypto v0.5.1
-	github.com/ooni/oohttp v0.6.1
+	github.com/ooni/oocrypto v0.5.2
+	github.com/ooni/oohttp v0.6.2
 	github.com/ooni/probe-assets v0.17.0
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/pion/stun v0.6.0
