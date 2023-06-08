@@ -100,7 +100,7 @@ The following commands show how to setup a development
 environment using Fedora.
 
 ```bash
-# install the compilers, git, and the root CA
+# install the compilers and git
 sudo dnf install golang make gcc gcc-c++ git
 
 # [optional] install mingw-w64 if you're targeting windows
