@@ -118,7 +118,7 @@ $HOME/go/bin/go1.20.5 download
 The following instructions show how to setup a development
 environment using macOS. We assume you have already installed
 [Homebrew](https://brew.sh), which should also install the
-Xcode command line tools as part of its setup script.
+Xcode command line tools.
 
 Then, you need to follow these instructions:
 
