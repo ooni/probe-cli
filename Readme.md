@@ -58,10 +58,9 @@ to install `ooniprobe` precompiled binaries for Windows, macOS, and
 Debian/Ubuntu. Once `ooniprobe` is installed, refer to the
 [user guide](https://ooni.org/support/ooni-probe-cli).
 
-## Build instructions
+## Developer instructions
 
-To build `ooniprobe` or other binaries manually, you need to
-install and use the Go version mentioned by the
+This repository requires _exactly_ the Go version mentioned by the
 [GOVERSION](GOVERSION) file. Using a different version of
 Go _may_ work as intended but is not recommended: we depend
 on packages forked from the standard library; so, it is
@@ -72,14 +71,75 @@ You will also need a C compiler. On Linux and other Unix systems
 both GCC and Clang will work. If you're using Windows, we
 recommend installing Ubuntu or Debian on [the Windows Subsystem
 for Linux](https://learn.microsoft.com/en-us/windows/wsl/install).
-If you're targeting Windows, you should install the
+If you're targeting Windows, you should also install the
 mingw-w64 cross-compiler.
+
+### Debian developer setup
+
+The following instructions show how to setup a development
+environment using Debian 12 ("bookworm"). The same instructions
+should also work for Debian-based distribution (e.g., Ubuntu).
+
+```bash
+# install the compilers, git, and the root CA
+sudo apt install golang build-essential ca-certificates git
+
+# [optional] install mingw-w64 if you're targeting windows
+sudo apt install mingw-w64
+
+# install the required go version binary
+go install -v golang.org/dl/go1.20.5@latest
+
+# fetch the whole go distribution
+$HOME/go/bin/go1.20.5 download
+```
+
+### Fedora developer setup
+
+The following instructions show how to setup a development
+environment using Fedora.
+
+```bash
+# install the compilers, git, and the root CA
+sudo dnf install golang make gcc gcc-c++ git
+
+# [optional] install mingw-w64 if you're targeting windows
+sudo dnf install mingw64-gcc mingw64-gcc-c++
+
+# install the required go version binary
+go install -v golang.org/dl/go1.20.5@latest
+
+# fetch the whole go distribution
+$HOME/go/bin/go1.20.5 download
+```
+
+### macOS developer setup
+
+The following instructions show how to setup a development
+environment using macOS. We assume you have already installed
+[Homebrew](https://brew.sh), which should also install the
+Xcode command line tools as part of its setup script.
+
+Then, you need to follow these instructions:
+
+```bash
+# install the compiler
+brew install go
+
+# install the required go version binary
+go install -v golang.org/dl/go1.20.5@latest
+
+# fetch the whole go distribution
+$HOME/go/bin/go1.20.5 download
+```
+
+### Build instructions
 
 Once you have installed the correct Go version and a C compiler,
 you can compile `ooniprobe` using:
 
 ```bash
-go build -v -ldflags '-s -w' ./cmd/ooniprobe
+$HOME/go/bin/go1.20.5 build -v -ldflags '-s -w' ./cmd/ooniprobe
 ```
 
 This command will generate a stripped binary called `ooniprobe`
@@ -88,7 +148,7 @@ in the toplevel directory.
 Likewise, you can compile `miniooni` using:
 
 ```bash
-go build -v -ldflags '-s -w' ./internal/cmd/miniooni
+$HOME/go/bin/go1.20.5 build -v -ldflags '-s -w' ./internal/cmd/miniooni
 ```
 
 This command will generate a stripped binary called `miniooni`
@@ -97,7 +157,7 @@ in the toplevel directory.
 And `oohelperd` using:
 
 ```bash
-go build -v -ldflags '-s -w' ./internal/cmd/oohelperd
+$HOME/go/bin/go1.20.5 build -v -ldflags '-s -w' ./internal/cmd/oohelperd
 ```
 
 This command will generate a stripped binary called `oohelperd`
