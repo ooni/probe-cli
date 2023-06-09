@@ -1,6 +1,7 @@
 package netemx
 
 import (
+	"io"
 	"net"
 	"net/http"
 	"time"
@@ -32,34 +33,18 @@ type Environment struct {
 	// clientStack is the client stack to use.
 	clientStack *netem.UNetStack
 
-	// clientDNS is the client's DNS server.
-	clientDNS *netem.DNSServer
-
-	// serversDNS is the servers' DNS server.
-	serversDNS *netem.DNSServer
-
 	// dpi refers to the [netem.DPIEngine] we're using.
 	dpi *netem.DPIEngine
-
-	// httpServers are the HTTP servers.
-	httpServers []*http.Server
-
-	// http3Servers are the HTTP/3 servers.
-	http3Servers []*http3.Server
 
 	// topology is the topology we're using.
 	topology *netem.StarTopology
 
-	// TODO: consider replacing with
-	//
-	// closables []io.Closer
+	// closables contains all entities where we have to take care of closing
+	closables []io.Closer
 }
 
 // TODO(kelmenhorst): we should check whether we need to explicitly
 // close the QUIC connection or it suffices to close the server.
-
-// TODO(kelmenhorst): use something like 10.0.0.1 as the DNS address
-// so we don't have collisions with 1.1.1.1, which we'll use in LTE
 
 // ClientConfig configures the client in the Environment.
 type ClientConfig struct {
@@ -166,14 +151,13 @@ func configureClient(
 	return clientStack, dnsServer
 }
 
-// configureServer creates a single server network stack
+// configureServer creates a single server network stack by creating and launching HTTP(3) servers
 func configureServer(
 	s *ConfigServerStack,
 	topology *netem.StarTopology,
 	resolverAddr string,
-	servers []*http.Server,
-	servers3 []*http3.Server,
-) {
+) []io.Closer {
+
 	// create server stack
 	//
 	// note: because the stack is created using topology.AddHost, we don't
@@ -187,6 +171,9 @@ func configureServer(
 			RightToLeftDelay: time.Millisecond,
 		},
 	))
+
+	// create the array of closables, i.e. HTTP(3) servers, to return
+	var closables []io.Closer
 
 	// configure and start HTTP server instances running on the server stack
 	for _, l := range s.HTTPServers {
@@ -207,11 +194,15 @@ func configureServer(
 				Port: l.Port,
 				Zone: "",
 			}))
+
+			// create HTTP3 server using udpListener as underlying [net.PacketConn]
 			http3Server := &http3.Server{
 				TLSConfig: serverStack.ServerTLSConfig(),
 				Handler:   handler,
 			}
-			servers3 = append(servers3, http3Server)
+
+			closables = append(closables, http3Server)
+
 			// start serving
 			go http3Server.Serve(udpListener)
 			continue
@@ -228,10 +219,12 @@ func configureServer(
 			TLSConfig: serverStack.ServerTLSConfig(),
 			Handler:   handler,
 		}
-		servers = append(servers, httpServer)
+		closables = append(closables, httpServer)
 		// start serving
 		go httpServer.ServeTLS(tcpListener, "", "")
 	}
+
+	return closables
 }
 
 // NewEnvironment creates a new QA environment. This function
@@ -244,8 +237,12 @@ func NewEnvironment(clientConfig *ClientConfig, serversConfig *ServersConfig) *E
 	// plug in different types of DPIs, e.g. to drop all packets using a certain SNI
 	dpi := netem.NewDPIEngine(model.DiscardLogger)
 
+	// create array of closables that we track to close them later
+	var closables []io.Closer
+
 	// create a client and its DNS server (which we need to close later)
 	clientStack, clientDNS := configureClient(clientConfig, topology, dpi)
+	closables = append(closables, clientDNS)
 
 	// set the default resolver address for the servers's DNS
 	resolverAddr := serversConfig.ResolverAddr
@@ -278,27 +275,19 @@ func NewEnvironment(clientConfig *ClientConfig, serversConfig *ServersConfig) *E
 		resolverAddr,
 		serversConfig.DNSConfig,
 	))
+	closables = append(closables, serversDNS)
 
-	// create HTTP servers (and track them so we can close tham at a later time)
-	var (
-		servers  []*http.Server
-		servers3 []*http3.Server
-	)
+	// create and launch HTTP servers on the server stack
+	// (and track them so we can close them at a later time)
 	for _, s := range serversConfig.Servers {
-		// TODO(bassosimone,kelmenhorst): consider refactoring to return the
-		// new servers that we should append to the lists rather than passing
-		// an argument and fill it, which looks like C++ a bit too much.
-		configureServer(&s, topology, resolverAddr, servers, servers3)
+		closables = append(closables, configureServer(&s, topology, resolverAddr)...)
 	}
 
 	return &Environment{
-		clientStack:  clientStack,
-		clientDNS:    clientDNS,
-		serversDNS:   serversDNS,
-		dpi:          dpi,
-		httpServers:  servers,
-		http3Servers: servers3,
-		topology:     topology,
+		clientStack: clientStack,
+		dpi:         dpi,
+		closables:   closables,
+		topology:    topology,
 	}
 }
 
@@ -317,13 +306,8 @@ func (e *Environment) Do(function func()) {
 
 // Close closes all the resources used by [Environment].
 func (e *Environment) Close() error {
-	e.clientDNS.Close()
-	e.serversDNS.Close()
-	for _, s := range e.httpServers {
-		s.Close()
-	}
-	for _, s := range e.http3Servers {
-		s.Close()
+	for _, c := range e.closables {
+		c.Close()
 	}
 	e.topology.Close()
 	return nil
