@@ -43,9 +43,6 @@ type Environment struct {
 	closables []io.Closer
 }
 
-// TODO(kelmenhorst): we should check whether we need to explicitly
-// close the QUIC connection or it suffices to close the server.
-
 // ClientConfig configures the client in the Environment.
 type ClientConfig struct {
 	// ClientAddr is the OPTIONAL address of the client stack.
@@ -172,7 +169,7 @@ func configureServer(
 		},
 	))
 
-	// create the array of closables, i.e. HTTP(3) servers, to return
+	// create the array of closables, i.e. HTTP(3) servers and UDP sockets, to return
 	var closables []io.Closer
 
 	// configure and start HTTP server instances running on the server stack
@@ -201,7 +198,9 @@ func configureServer(
 				Handler:   handler,
 			}
 
-			closables = append(closables, http3Server)
+			// we need to track the UDP socket [net.PacketConn] and HTTP3 server to close them later
+			// (closing the server does not close the connection)
+			closables = append(closables, udpListener, http3Server)
 
 			// start serving
 			go http3Server.Serve(udpListener)
