@@ -2,67 +2,24 @@ package netemx_test
 
 import (
 	"context"
-	"net"
 	"net/http"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/lucas-clemente/quic-go/http3"
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
-
-// TODO: consider replacing with the generalized environment.
-
-// Environment is the [netem] QA environment we use in this package.
-//
-// This struct provides a blueprint of how to write integration tests for
-// other packages. For this reason, this code also includes support for DPI,
-// even though this isn't strictly necessary for testing [netemx].
-type Environment struct {
-	// clientStack is the client stack to use.
-	clientStack *netem.UNetStack
-
-	// dnsServer is the DNS server.
-	dnsServer *netem.DNSServer
-
-	// dpi refers to the [netem.DPIEngine] we're using
-	dpi *netem.DPIEngine
-
-	// http3Server is the HTTP3 server.
-	http3Server *http3.Server
-
-	// httpsServer is the HTTPS server.
-	httpsServer *http.Server
-
-	// quicConn is the UDPLikeConn used by the HTTP/3 server.
-	quicConn model.UDPLikeConn
-
-	// topology is the topology we're using
-	topology *netem.StarTopology
-}
 
 // NewEnvironment creates a new QA environment. This function
 // calls [runtimex.PanicOnError] in case of failure.
-func NewEnvironment() *Environment {
-	// create a new star topology
-	topology := runtimex.Try1(netem.NewStarTopology(model.DiscardLogger))
+func NewEnvironment() *netemx.Environment {
+	return netemx.NewEnvironment(clientConf(), serverConf())
+}
 
-	// create server stack
-	//
-	// note: because the stack is created using topology.AddHost, we don't
-	// need to call Close when done using it, since the topology will do that
-	// for us when we call the topology's Close method.
-	serverStack := runtimex.Try1(topology.AddHost(
-		"8.8.8.8", // server IP address
-		"8.8.8.8", // default resolver address
-		&netem.LinkConfig{},
-	))
-
-	// create configuration for DNS server
+// dnsConf creates the configuration for the DNS server
+func dnsConf() *netem.DNSConfig {
 	dnsConfig := netem.NewDNSConfig()
 	dnsConfig.AddRecord(
 		"www.example.com",
@@ -76,91 +33,26 @@ func NewEnvironment() *Environment {
 		"", // CNAME
 		"8.8.8.8",
 	)
+	return dnsConfig
+}
 
-	// create DNS server using the serverStack
-	dnsServer := runtimex.Try1(netem.NewDNSServer(
-		model.DiscardLogger,
-		serverStack,
-		"8.8.8.8",
-		dnsConfig,
-	))
-
-	// create HTTPS server using the serverStack
-	tlsListener := runtimex.Try1(serverStack.ListenTCP("tcp", &net.TCPAddr{
-		IP:   net.IPv4(8, 8, 8, 8),
-		Port: 443,
-		Zone: "",
-	}))
-	httpsServer := &http.Server{
-		TLSConfig: serverStack.ServerTLSConfig(),
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(`hello, world`))
-		}),
-	}
-	go httpsServer.ServeTLS(tlsListener, "", "")
-
-	// create HTTP3 server using the serverStack
-	quicConn := runtimex.Try1(serverStack.ListenUDP("udp", &net.UDPAddr{
-		IP:   net.IPv4(8, 8, 8, 8),
-		Port: 443,
-		Zone: "",
-	}))
-	http3Server := &http3.Server{
-		TLSConfig: serverStack.ServerTLSConfig(),
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(`hello, world`))
-		}),
-	}
-	go http3Server.Serve(quicConn)
-
-	// create a DPIEngine for implementing censorship
-	dpi := netem.NewDPIEngine(model.DiscardLogger)
-
-	// create client stack
-	//
-	// note: because the stack is created using topology.AddHost, we don't
-	// need to call Close when done using it, since the topology will do that
-	// for us when we call the topology's Close method.
-	clientStack := runtimex.Try1(topology.AddHost(
-		"10.0.0.14", // client IP address
-		"8.8.8.8",   // default resolver address
-		&netem.LinkConfig{
-			DPIEngine: dpi,
-		},
-	))
-
-	return &Environment{
-		clientStack: clientStack,
-		dnsServer:   dnsServer,
-		dpi:         dpi,
-		http3Server: http3Server,
-		httpsServer: httpsServer,
-		quicConn:    quicConn,
-		topology:    topology,
+// clientConf creates the configuration for the client in the topology
+func clientConf() *netemx.ClientConfig {
+	return &netemx.ClientConfig{
+		DNSConfig: dnsConf(),
 	}
 }
 
-// DPIEngine returns the [netem.DPIEngine] we're using on the
-// link between the client stack and the router. You can safely
-// add new DPI rules from concurrent goroutines at any time.
-func (e *Environment) DPIEngine() *netem.DPIEngine {
-	return e.dpi
-}
-
-// Do executes the given function such that [netxlite] code uses the
-// underlying clientStack rather than ordinary networking code.
-func (e *Environment) Do(function func()) {
-	netemx.WithCustomTProxy(e.clientStack, function)
-}
-
-// Close closes all the resources used by [Environment].
-func (e *Environment) Close() error {
-	e.dnsServer.Close()
-	e.quicConn.Close()
-	e.httpsServer.Close()
-	e.http3Server.Close()
-	e.topology.Close()
-	return nil
+// serverConf creates the configuration for the server in the topology
+func serverConf() *netemx.ServersConfig {
+	s := netemx.ConfigServerStack{
+		ServerAddr:  "8.8.8.8",
+		HTTPServers: []netemx.ConfigHTTPServer{{Port: 443}, {Port: 443, QUIC: true}},
+	}
+	return &netemx.ServersConfig{
+		DNSConfig: dnsConf(),
+		Servers:   []netemx.ConfigServerStack{s},
+	}
 }
 
 // TestWithCustomTProxy ensures that we can use a [netem.UnderlyingNetwork] to
