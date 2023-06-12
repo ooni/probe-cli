@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"testing"
 
 	"github.com/cretz/bine/control"
@@ -83,7 +82,7 @@ func TestTorBinaryNotFoundFailure(t *testing.T) {
 		TorBinary: "/nonexistent/directory/tor",
 		TunnelDir: "testdata",
 	})
-	if !errors.Is(err, syscall.ENOENT) {
+	if !errors.Is(err, ErrCannotFindTorBinary) {
 		t.Fatal("not the error we expected", err)
 	}
 	if tun != nil {
