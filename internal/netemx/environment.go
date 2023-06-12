@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/lucas-clemente/quic-go/http3"
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/quic-go/quic-go/http3"
 )
 
 const (
