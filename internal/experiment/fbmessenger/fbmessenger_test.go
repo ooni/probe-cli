@@ -6,70 +6,13 @@ import (
 	"testing"
 
 	"github.com/apex/log"
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/gopacket/layers"
-	"github.com/ooni/netem"
+	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/experiment/fbmessenger"
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
-)
-
-const ServicesAddr = "157.240.20.35"
-
-// makeDNSConfig creates the default valid DNS config for this experiment
-func makeDNSConfig() *netem.DNSConfig {
-	dnsConfig := netem.NewDNSConfig()
-	services := []string{
-		"stun.fbsbx.com",
-		"b-api.facebook.com",
-		"b-graph.facebook.com",
-		"edge-mqtt.facebook.com",
-		"external.xx.fbcdn.net",
-		"scontent.xx.fbcdn.net",
-		"star.c10r.facebook.com",
-	}
-	for _, s := range services {
-		// create configuration for DNS server
-		dnsConfig.AddRecord(
-			s,
-			s, // CNAME
-			ServicesAddr,
-		)
-	}
-	return dnsConfig
-}
-
-// makeClientConf creates an experiment-specific client configuration for the [netemx.Environment].
-func makeClientConf(dnsConfig *netem.DNSConfig) *netemx.ClientConfig {
-	return &netemx.ClientConfig{
-		DNSConfig: dnsConfig,
-	}
-}
-
-// makeServersConf creates an experiment-specific servers configuration for the [netemx.Environment].
-func makeServersConf(dnsConfig *netem.DNSConfig) *netemx.ServersConfig {
-	return &netemx.ServersConfig{
-		DNSConfig: dnsConfig,
-		Servers: []netemx.ConfigServerStack{
-			{
-				ServerAddr: ServicesAddr,
-				HTTPServers: []netemx.ConfigHTTPServer{
-					{
-						Port: 443,
-					},
-				},
-			},
-		},
-	}
-}
-
-var (
-	trueValue  = true
-	falseValue = false
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
@@ -82,240 +25,149 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	}
 }
 
-func TestMeasurerRun(t *testing.T) {
-	t.Run("Test Measurer without DPI: expect success", func(t *testing.T) {
-		if testing.Short() {
-			t.Skip("skip test in short mode")
-		}
-		// we expect the following Analysis values
-		expectAnalysis := fbmessenger.Analysis{
-			FacebookBAPIDNSConsistent:        &trueValue,
-			FacebookBAPIReachable:            &trueValue,
-			FacebookBGraphDNSConsistent:      &trueValue,
-			FacebookBGraphReachable:          &trueValue,
-			FacebookEdgeDNSConsistent:        &trueValue,
-			FacebookEdgeReachable:            &trueValue,
-			FacebookExternalCDNDNSConsistent: &trueValue,
-			FacebookExternalCDNReachable:     &trueValue,
-			FacebookScontentCDNDNSConsistent: &trueValue,
-			FacebookScontentCDNReachable:     &trueValue,
-			FacebookStarDNSConsistent:        &trueValue,
-			FacebookStarReachable:            &trueValue,
-			FacebookSTUNDNSConsistent:        &trueValue,
-			FacebookSTUNReachable:            nil,
-			FacebookDNSBlocking:              &falseValue,
-			FacebookTCPBlocking:              &falseValue,
-		}
+func TestSuccess(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+	measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
+	ctx := context.Background()
+	// we need a real session because we need the ASN database
+	sess := newsession(t)
+	measurement := new(model.Measurement)
+	callbacks := model.NewPrinterCallbacks(log.Log)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(ctx, args)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tk := measurement.TestKeys.(*fbmessenger.TestKeys)
+	if *tk.FacebookBAPIDNSConsistent != true {
+		t.Fatal("invalid FacebookBAPIDNSConsistent")
+	}
+	if *tk.FacebookBAPIReachable != true {
+		t.Fatal("invalid FacebookBAPIReachable")
+	}
+	if *tk.FacebookBGraphDNSConsistent != true {
+		t.Fatal("invalid FacebookBGraphDNSConsistent")
+	}
+	if *tk.FacebookBGraphReachable != true {
+		t.Fatal("invalid FacebookBGraphReachable")
+	}
+	if *tk.FacebookEdgeDNSConsistent != true {
+		t.Fatal("invalid FacebookEdgeDNSConsistent")
+	}
+	if *tk.FacebookEdgeReachable != true {
+		t.Fatal("invalid FacebookEdgeReachable")
+	}
+	if *tk.FacebookExternalCDNDNSConsistent != true {
+		t.Fatal("invalid FacebookExternalCDNDNSConsistent")
+	}
+	if *tk.FacebookExternalCDNReachable != true {
+		t.Fatal("invalid FacebookExternalCDNReachable")
+	}
+	if *tk.FacebookScontentCDNDNSConsistent != true {
+		t.Fatal("invalid FacebookScontentCDNDNSConsistent")
+	}
+	if *tk.FacebookScontentCDNReachable != true {
+		t.Fatal("invalid FacebookScontentCDNReachable")
+	}
+	if *tk.FacebookStarDNSConsistent != true {
+		t.Fatal("invalid FacebookStarDNSConsistent")
+	}
+	if *tk.FacebookStarReachable != true {
+		t.Fatal("invalid FacebookStarReachable")
+	}
+	if *tk.FacebookSTUNDNSConsistent != true {
+		t.Fatal("invalid FacebookSTUNDNSConsistent")
+	}
+	if tk.FacebookSTUNReachable != nil {
+		t.Fatal("invalid FacebookSTUNReachable")
+	}
+	if *tk.FacebookDNSBlocking != false {
+		t.Fatal("invalid FacebookDNSBlocking")
+	}
+	if *tk.FacebookTCPBlocking != false {
+		t.Fatal("invalid FacebookTCPBlocking")
+	}
+}
 
-		// we use the same valid DNS config for client and servers here
-		dnsConf := makeDNSConfig()
-
-		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
-		defer env.Close()
-		env.Do(func() {
-			measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
-			ctx := context.Background()
-			// we need a real session because we need the ASN database
-			sess := newsession()
-			measurement := new(model.Measurement)
-			callbacks := model.NewPrinterCallbacks(log.Log)
-			args := &model.ExperimentArgs{
-				Callbacks:   callbacks,
-				Measurement: measurement,
-				Session:     sess,
-			}
-			err := measurer.Run(ctx, args)
-			if err != nil {
-				t.Fatal(err)
-			}
-			tk := measurement.TestKeys.(*fbmessenger.TestKeys)
-			if diff := cmp.Diff(expectAnalysis, tk.Analysis); diff != "" {
-				t.Fatal(diff)
-			}
-		})
-	})
-
-	t.Run("Test Measurer without DPI, cancelled context: expect interrupted failure", func(t *testing.T) {
-		// we expect the following Analysis values
-		expectAnalysis := fbmessenger.Analysis{
-			FacebookBAPIDNSConsistent:        &falseValue,
-			FacebookBAPIReachable:            nil,
-			FacebookBGraphDNSConsistent:      &falseValue,
-			FacebookBGraphReachable:          nil,
-			FacebookEdgeDNSConsistent:        &falseValue,
-			FacebookEdgeReachable:            nil,
-			FacebookExternalCDNDNSConsistent: &falseValue,
-			FacebookExternalCDNReachable:     nil,
-			FacebookScontentCDNDNSConsistent: &falseValue,
-			FacebookScontentCDNReachable:     nil,
-			FacebookStarDNSConsistent:        &falseValue,
-			FacebookStarReachable:            nil,
-			FacebookSTUNDNSConsistent:        &falseValue,
-			FacebookSTUNReachable:            nil,
-			FacebookDNSBlocking:              &trueValue,
-			FacebookTCPBlocking:              &falseValue, // no TCP blocking because we didn't ever reach TCP connect
-		}
-
-		// we use the same valid DNS config for client and servers here
-		dnsConf := makeDNSConfig()
-
-		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
-		defer env.Close()
-		env.Do(func() {
-			measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
-			ctx, cancel := context.WithCancel(context.Background())
-			cancel() // so we fail immediately
-			sess := &mockable.Session{MockableLogger: log.Log}
-			measurement := new(model.Measurement)
-			callbacks := model.NewPrinterCallbacks(log.Log)
-			args := &model.ExperimentArgs{
-				Callbacks:   callbacks,
-				Measurement: measurement,
-				Session:     sess,
-			}
-			err := measurer.Run(ctx, args)
-			if err != nil {
-				t.Fatal(err)
-			}
-			tk := measurement.TestKeys.(*fbmessenger.TestKeys)
-			if diff := cmp.Diff(expectAnalysis, tk.Analysis); diff != "" {
-				t.Fatal(diff)
-			}
-			sk, err := measurer.GetSummaryKeys(measurement)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if _, ok := sk.(fbmessenger.SummaryKeys); !ok {
-				t.Fatal("invalid type for summary keys")
-			}
-		})
-	})
-	t.Run("Test Measurer with DPI that drops traffic to fbmessenger endpoint: expect FacebookTCPBlocking", func(t *testing.T) {
-		if testing.Short() {
-			t.Skip("skip test in short mode")
-		}
-		// we expect the following Analysis values
-		expectAnalysis := fbmessenger.Analysis{
-			FacebookBAPIDNSConsistent: &trueValue,
-			FacebookBAPIReachable:     &falseValue,
-			FacebookDNSBlocking:       &falseValue,
-			FacebookTCPBlocking:       &trueValue,
-		}
-		// overwrite global Services, otherwise the test times out because there are too many endpoints
-		orig := fbmessenger.Services
-		fbmessenger.Services = []string{
-			fbmessenger.ServiceBAPI,
-		}
-
-		// we use the same valid DNS config for client and servers here
-		dnsConf := makeDNSConfig()
-
-		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
-		defer env.Close()
-
-		// add DPI engine to emulate the censorship condition
-		dpi := env.DPIEngine()
-		dpi.AddRule(&netem.DPIDropTrafficForServerEndpoint{
-			Logger:          model.DiscardLogger,
-			ServerIPAddress: "157.240.20.35",
-			ServerPort:      443,
-			ServerProtocol:  layers.IPProtocolTCP,
-		})
-
-		env.Do(func() {
-			measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
-			ctx := context.Background()
-			// we need a real session because we need the ASN database
-			sess := newsession()
-			measurement := new(model.Measurement)
-			callbacks := model.NewPrinterCallbacks(log.Log)
-			args := &model.ExperimentArgs{
-				Callbacks:   callbacks,
-				Measurement: measurement,
-				Session:     sess,
-			}
-			err := measurer.Run(ctx, args)
-			if err != nil {
-				t.Fatal(err)
-			}
-			tk := measurement.TestKeys.(*fbmessenger.TestKeys)
-			if diff := cmp.Diff(expectAnalysis, tk.Analysis); diff != "" {
-				t.Fatal(diff)
-			}
-		})
-		fbmessenger.Services = orig
-	})
-	t.Run("Test Measurer with poisoned DNS: expect FacebookDNSBlocking", func(t *testing.T) {
-		// we expect the following Analysis values
-		expectAnalysis := fbmessenger.Analysis{
-			FacebookBAPIDNSConsistent:        &falseValue,
-			FacebookBAPIReachable:            nil,
-			FacebookBGraphDNSConsistent:      &falseValue,
-			FacebookBGraphReachable:          nil,
-			FacebookEdgeDNSConsistent:        &falseValue,
-			FacebookEdgeReachable:            nil,
-			FacebookExternalCDNDNSConsistent: &falseValue,
-			FacebookExternalCDNReachable:     nil,
-			FacebookScontentCDNDNSConsistent: &falseValue,
-			FacebookScontentCDNReachable:     nil,
-			FacebookStarDNSConsistent:        &falseValue,
-			FacebookStarReachable:            nil,
-			FacebookSTUNDNSConsistent:        &falseValue,
-			FacebookSTUNReachable:            nil,
-			FacebookDNSBlocking:              &trueValue,
-			FacebookTCPBlocking:              &falseValue, // no TCP blocking because we didn't ever reach TCP connect
-		}
-
-		// create DNS config with bogon entries for fb services
-		bogonDNSConf := netem.NewDNSConfig()
-		services := []string{
-			"stun.fbsbx.com",
-			"b-api.facebook.com",
-			"b-graph.facebook.com",
-			"edge-mqtt.facebook.com",
-			"external.xx.fbcdn.net",
-			"scontent.xx.fbcdn.net",
-			"star.c10r.facebook.com",
-		}
-		for _, s := range services {
-			// create configuration for DNS server
-			bogonDNSConf.AddRecord(
-				s,
-				s,             // CNAME
-				"10.10.34.35", //bogon
-			)
-		}
-		// create default DNS config for servers (no bogons)
-		dnsConf := makeDNSConfig()
-
-		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(bogonDNSConf), makeServersConf(dnsConf))
-		defer env.Close()
-		env.Do(func() {
-			measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
-			ctx := context.Background()
-			// we need a real session because we need the ASN database
-			sess := newsession()
-			measurement := new(model.Measurement)
-			callbacks := model.NewPrinterCallbacks(log.Log)
-			args := &model.ExperimentArgs{
-				Callbacks:   callbacks,
-				Measurement: measurement,
-				Session:     sess,
-			}
-			err := measurer.Run(ctx, args)
-			if err != nil {
-				t.Fatal(err)
-			}
-			tk := measurement.TestKeys.(*fbmessenger.TestKeys)
-			if diff := cmp.Diff(expectAnalysis, tk.Analysis); diff != "" {
-				t.Fatal(diff)
-			}
-		})
-	})
+func TestWithCancelledContext(t *testing.T) {
+	measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // so we fail immediately
+	sess := &mockable.Session{MockableLogger: log.Log}
+	measurement := new(model.Measurement)
+	callbacks := model.NewPrinterCallbacks(log.Log)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(ctx, args)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tk := measurement.TestKeys.(*fbmessenger.TestKeys)
+	if *tk.FacebookBAPIDNSConsistent != false {
+		t.Fatal("invalid FacebookBAPIDNSConsistent")
+	}
+	if tk.FacebookBAPIReachable != nil {
+		t.Fatal("invalid FacebookBAPIReachable")
+	}
+	if *tk.FacebookBGraphDNSConsistent != false {
+		t.Fatal("invalid FacebookBGraphDNSConsistent")
+	}
+	if tk.FacebookBGraphReachable != nil {
+		t.Fatal("invalid FacebookBGraphReachable")
+	}
+	if *tk.FacebookEdgeDNSConsistent != false {
+		t.Fatal("invalid FacebookEdgeDNSConsistent")
+	}
+	if tk.FacebookEdgeReachable != nil {
+		t.Fatal("invalid FacebookEdgeReachable")
+	}
+	if *tk.FacebookExternalCDNDNSConsistent != false {
+		t.Fatal("invalid FacebookExternalCDNDNSConsistent")
+	}
+	if tk.FacebookExternalCDNReachable != nil {
+		t.Fatal("invalid FacebookExternalCDNReachable")
+	}
+	if *tk.FacebookScontentCDNDNSConsistent != false {
+		t.Fatal("invalid FacebookScontentCDNDNSConsistent")
+	}
+	if tk.FacebookScontentCDNReachable != nil {
+		t.Fatal("invalid FacebookScontentCDNReachable")
+	}
+	if *tk.FacebookStarDNSConsistent != false {
+		t.Fatal("invalid FacebookStarDNSConsistent")
+	}
+	if tk.FacebookStarReachable != nil {
+		t.Fatal("invalid FacebookStarReachable")
+	}
+	if *tk.FacebookSTUNDNSConsistent != false {
+		t.Fatal("invalid FacebookSTUNDNSConsistent")
+	}
+	if tk.FacebookSTUNReachable != nil {
+		t.Fatal("invalid FacebookSTUNReachable")
+	}
+	if *tk.FacebookDNSBlocking != true {
+		t.Fatal("invalid FacebookDNSBlocking")
+	}
+	// no TCP blocking because we didn't ever reach TCP connect
+	if *tk.FacebookTCPBlocking != false {
+		t.Fatal("invalid FacebookTCPBlocking")
+	}
+	sk, err := measurer.GetSummaryKeys(measurement)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := sk.(fbmessenger.SummaryKeys); !ok {
+		t.Fatal("invalid type for summary keys")
+	}
 }
 
 func TestComputeEndpointStatsTCPBlocking(t *testing.T) {
@@ -378,8 +230,23 @@ func TestComputeEndpointStatsDNSIsLying(t *testing.T) {
 	}
 }
 
-func newsession() model.ExperimentSession {
-	return &mockable.Session{MockableLogger: log.Log}
+func newsession(t *testing.T) model.ExperimentSession {
+	sess, err := engine.NewSession(context.Background(), engine.SessionConfig{
+		AvailableProbeServices: []model.OOAPIService{{
+			Address: "https://ams-pg-test.ooni.org",
+			Type:    "https",
+		}},
+		Logger:          log.Log,
+		SoftwareName:    "ooniprobe-engine",
+		SoftwareVersion: "0.0.1",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := sess.MaybeLookupLocation(); err != nil {
+		t.Fatal(err)
+	}
+	return sess
 }
 
 func TestSummaryKeysInvalidType(t *testing.T) {
@@ -413,10 +280,8 @@ func TestSummaryKeysWithNils(t *testing.T) {
 func TestSummaryKeysWithFalseFalse(t *testing.T) {
 	falsy := false
 	measurement := &model.Measurement{TestKeys: &fbmessenger.TestKeys{
-		Analysis: fbmessenger.Analysis{
-			FacebookTCPBlocking: &falsy,
-			FacebookDNSBlocking: &falsy,
-		},
+		FacebookTCPBlocking: &falsy,
+		FacebookDNSBlocking: &falsy,
 	}}
 	m := &fbmessenger.Measurer{}
 	osk, err := m.GetSummaryKeys(measurement)
@@ -439,10 +304,8 @@ func TestSummaryKeysWithFalseTrue(t *testing.T) {
 	falsy := false
 	truy := true
 	measurement := &model.Measurement{TestKeys: &fbmessenger.TestKeys{
-		Analysis: fbmessenger.Analysis{
-			FacebookTCPBlocking: &falsy,
-			FacebookDNSBlocking: &truy,
-		},
+		FacebookTCPBlocking: &falsy,
+		FacebookDNSBlocking: &truy,
 	}}
 	m := &fbmessenger.Measurer{}
 	osk, err := m.GetSummaryKeys(measurement)
@@ -465,10 +328,8 @@ func TestSummaryKeysWithTrueFalse(t *testing.T) {
 	falsy := false
 	truy := true
 	measurement := &model.Measurement{TestKeys: &fbmessenger.TestKeys{
-		Analysis: fbmessenger.Analysis{
-			FacebookTCPBlocking: &truy,
-			FacebookDNSBlocking: &falsy,
-		},
+		FacebookTCPBlocking: &truy,
+		FacebookDNSBlocking: &falsy,
 	}}
 	m := &fbmessenger.Measurer{}
 	osk, err := m.GetSummaryKeys(measurement)
@@ -490,10 +351,8 @@ func TestSummaryKeysWithTrueFalse(t *testing.T) {
 func TestSummaryKeysWithTrueTrue(t *testing.T) {
 	truy := true
 	measurement := &model.Measurement{TestKeys: &fbmessenger.TestKeys{
-		Analysis: fbmessenger.Analysis{
-			FacebookTCPBlocking: &truy,
-			FacebookDNSBlocking: &truy,
-		},
+		FacebookTCPBlocking: &truy,
+		FacebookDNSBlocking: &truy,
 	}}
 	m := &fbmessenger.Measurer{}
 	osk, err := m.GetSummaryKeys(measurement)

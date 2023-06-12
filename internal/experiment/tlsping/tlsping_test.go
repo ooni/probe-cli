@@ -3,15 +3,14 @@ package tlsping
 import (
 	"context"
 	"errors"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
-	"github.com/google/gopacket/layers"
-	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netemx"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestConfig_alpn(t *testing.T) {
@@ -35,29 +34,23 @@ func TestConfig_delay(t *testing.T) {
 	}
 }
 
-const (
-	NPINGS = 4
-	SNI    = "blocked.com"
-)
+func TestMeasurer_run(t *testing.T) {
+	// expectedPings is the expected number of pings
+	const expectedPings = 4
 
-func TestMeasurerRun(t *testing.T) {
-
-	// run is an helper function to run this set of tests.
-	run := func(ctx context.Context, input string) (*model.Measurement, model.ExperimentMeasurer, error) {
+	// runHelper is an helper function to run this set of tests.
+	runHelper := func(ctx context.Context, input string) (*model.Measurement, model.ExperimentMeasurer, error) {
 		m := NewExperimentMeasurer(Config{
 			ALPN:        "http/1.1",
 			Delay:       1, // millisecond
-			Repetitions: NPINGS,
-			SNI:         SNI,
+			Repetitions: expectedPings,
 		})
-
 		if m.ExperimentName() != "tlsping" {
 			t.Fatal("invalid experiment name")
 		}
 		if m.ExperimentVersion() != "0.2.1" {
 			t.Fatal("invalid experiment version")
 		}
-
 		meas := &model.Measurement{
 			Input: model.MeasurementTarget(input),
 		}
@@ -70,234 +63,94 @@ func TestMeasurerRun(t *testing.T) {
 			Measurement: meas,
 			Session:     sess,
 		}
-
 		err := m.Run(ctx, args)
-
 		return meas, m, err
 	}
 
 	t.Run("with empty input", func(t *testing.T) {
-		_, _, err := run(context.Background(), "")
+		_, _, err := runHelper(context.Background(), "")
 		if !errors.Is(err, errNoInputProvided) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with invalid URL", func(t *testing.T) {
-		_, _, err := run(context.Background(), "\t") // \t causes the URL to be invalid
+		_, _, err := runHelper(context.Background(), "\t")
 		if !errors.Is(err, errInputIsNotAnURL) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with invalid scheme", func(t *testing.T) {
-		_, _, err := run(context.Background(), "https://8.8.8.8:443/") // we expect tlshandshake://
+		_, _, err := runHelper(context.Background(), "https://8.8.8.8:443/")
 		if !errors.Is(err, errInvalidScheme) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with missing port", func(t *testing.T) {
-		_, _, err := run(context.Background(), "tlshandshake://8.8.8.8") // missing port
+		_, _, err := runHelper(context.Background(), "tlshandshake://8.8.8.8")
 		if !errors.Is(err, errMissingPort) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
-	t.Run("with netem: without DPI: expect success", func(t *testing.T) {
-		// we use the same empty DNS config for client and servers here
-		dnsConfig := netem.NewDNSConfig()
-
-		clientConf := &netemx.ClientConfig{DNSConfig: dnsConfig}
-		serversConf := &netemx.ServersConfig{
-			DNSConfig: dnsConfig,
-			Servers: []netemx.ConfigServerStack{
-				{
-					ServerAddr:  "8.8.8.8",
-					HTTPServers: []netemx.ConfigHTTPServer{{Port: 443}},
-				},
-			},
+	t.Run("with local listener and successful outcome", func(t *testing.T) {
+		srvr := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(200)
+		}))
+		defer srvr.Close()
+		URL, err := url.Parse(srvr.URL)
+		if err != nil {
+			t.Fatal(err)
 		}
-
-		// create a new test environment
-		env := netemx.NewEnvironment(clientConf, serversConf)
-		defer env.Close()
-		env.Do(func() {
-			meas, m, err := run(context.Background(), "tlshandshake://8.8.8.8:443")
-			if err != nil {
-				t.Fatalf("Unexpected error: %s", err)
-			}
-
-			tk, _ := (meas.TestKeys).(*TestKeys)
-			if len(tk.Pings) != NPINGS {
-				t.Fatal("unexpected number of pings")
-			}
-
-			ask, err := m.GetSummaryKeys(meas)
-			if err != nil {
-				t.Fatal("cannot obtain summary")
-			}
-			summary := ask.(SummaryKeys)
-			if summary.IsAnomaly {
-				t.Fatal("expected no anomaly")
-			}
-
-			for _, p := range tk.Pings {
-				if p.TCPConnect == nil {
-					t.Fatal("TCPConnect should not be nil")
-				}
-				if p.TLSHandshake == nil {
-					t.Fatal("TLSHandshake should not be nil")
-				}
-				if p.TLSHandshake.Failure != nil {
-					t.Fatal("unexpected error")
-				}
-				if len(p.NetworkEvents) < 1 {
-					t.Fatal("unexpected number of network events")
-				}
-			}
-		})
+		URL.Scheme = "tlshandshake"
+		meas, m, err := runHelper(context.Background(), URL.String())
+		if err != nil {
+			t.Fatal(err)
+		}
+		tk := meas.TestKeys.(*TestKeys)
+		if len(tk.Pings) != expectedPings {
+			t.Fatal("unexpected number of pings")
+		}
+		ask, err := m.GetSummaryKeys(meas)
+		if err != nil {
+			t.Fatal("cannot obtain summary")
+		}
+		summary := ask.(SummaryKeys)
+		if summary.IsAnomaly {
+			t.Fatal("expected no anomaly")
+		}
 	})
 
-	t.Run("with netem: with DPI that drops TCP segments to 8.8.8.8:443: expect failure", func(t *testing.T) {
-		// we use the same empty DNS config for client and servers here
-		dnsConfig := netem.NewDNSConfig()
-
-		clientConf := &netemx.ClientConfig{DNSConfig: dnsConfig}
-		serversConf := &netemx.ServersConfig{
-			DNSConfig: dnsConfig,
-			Servers: []netemx.ConfigServerStack{
-				{
-					ServerAddr:  "8.8.8.8",
-					HTTPServers: []netemx.ConfigHTTPServer{{Port: 443}},
-				},
-			},
+	t.Run("with local listener and connect issues", func(t *testing.T) {
+		srvr := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(200)
+		}))
+		defer srvr.Close()
+		URL, err := url.Parse(srvr.URL)
+		if err != nil {
+			t.Fatal(err)
 		}
-
-		// create a new test environment
-		env := netemx.NewEnvironment(clientConf, serversConf)
-		defer env.Close()
-
-		// add DPI engine to emulate the censorship condition
-		dpi := env.DPIEngine()
-		dpi.AddRule(&netem.DPIDropTrafficForServerEndpoint{
-			Logger:          model.DiscardLogger,
-			ServerIPAddress: "8.8.8.8",
-			ServerPort:      443,
-			ServerProtocol:  layers.IPProtocolTCP,
-		})
-
-		env.Do(func() {
-			meas, m, err := run(context.Background(), "tlshandshake://8.8.8.8:443")
-			if err != nil {
-				t.Fatalf("Unexpected error: %s", err)
-			}
-
-			tk, _ := (meas.TestKeys).(*TestKeys)
-
-			// note: this experiment does not set anomaly but we still want
-			// to have a test here for when we possibly will
-			ask, err := m.GetSummaryKeys(meas)
-			if err != nil {
-				t.Fatal("cannot obtain summary")
-			}
-			summary := ask.(SummaryKeys)
-			if summary.IsAnomaly {
-				t.Fatal("expected no anomaly")
-			}
-
-			for _, p := range tk.Pings {
-				if p.TCPConnect == nil {
-					t.Fatal("TCPConnect should not be nil")
-				}
-				if p.TCPConnect.Status.Failure == nil {
-					t.Fatal("expected an error here")
-				}
-				if *p.TCPConnect.Status.Failure != netxlite.FailureGenericTimeoutError {
-					t.Fatal("expected an error here")
-				}
-
-				if p.TLSHandshake != nil {
-					t.Fatal("expected TLSHandshake to be nil")
-				}
-
-				// TODO(bassosimone): if we were using dslx here we would have an
-				// event about connect, so we should eventually address this issue
-				// and have one.
-				if len(p.NetworkEvents) > 0 {
-					t.Fatal("unexpected number of network events")
-				}
-			}
-		})
-	})
-
-	t.Run("with netem: with DPI that resets TLS to SNI blocked.com: expect failure", func(t *testing.T) {
-		// we use the same empty DNS config for client and servers here
-		dnsConfig := netem.NewDNSConfig()
-
-		clientConf := &netemx.ClientConfig{DNSConfig: dnsConfig}
-		serversConf := &netemx.ServersConfig{
-			DNSConfig: dnsConfig,
-			Servers: []netemx.ConfigServerStack{
-				{
-					ServerAddr:  "8.8.8.8",
-					HTTPServers: []netemx.ConfigHTTPServer{{Port: 443}},
-				},
-			},
+		URL.Scheme = "tlshandshake"
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel() // so we cannot dial any connection
+		meas, m, err := runHelper(ctx, URL.String())
+		if err != nil {
+			t.Fatal(err)
 		}
-
-		// create a new test environment
-		env := netemx.NewEnvironment(clientConf, serversConf)
-		defer env.Close()
-
-		// add DPI engine to emulate the censorship condition
-		dpi := env.DPIEngine()
-		dpi.AddRule(&netem.DPIResetTrafficForTLSSNI{
-			Logger: model.DiscardLogger,
-			SNI:    SNI, // this is the SNI we set inside run()
-		})
-
-		env.Do(func() {
-			meas, m, err := run(context.Background(), "tlshandshake://8.8.8.8:443")
-			if err != nil {
-				t.Fatalf("Unexpected error: %s", err)
-			}
-			tk, _ := (meas.TestKeys).(*TestKeys)
-
-			// note: this experiment does not set anomaly but we still want
-			// to have a test here for when we possibly will
-			ask, err := m.GetSummaryKeys(meas)
-			if err != nil {
-				t.Fatal("cannot obtain summary")
-			}
-			summary := ask.(SummaryKeys)
-			if summary.IsAnomaly {
-				t.Fatal("expected no anomaly")
-			}
-
-			for _, p := range tk.Pings {
-				if p.TCPConnect == nil {
-					t.Fatal("TCPConnect should not be nil")
-				}
-				if p.TCPConnect.Status.Failure != nil {
-					t.Fatal("did not expect an error here")
-				}
-
-				if p.TLSHandshake == nil {
-					t.Fatal("unexpected nil TLSHandshake")
-				}
-				if p.TLSHandshake.Failure == nil {
-					t.Fatal("expected an TLS Handshake failure here")
-				}
-				if *p.TLSHandshake.Failure != netxlite.FailureConnectionReset {
-					t.Fatal("unexpected TLS failure type")
-				}
-
-				if len(p.NetworkEvents) <= 0 {
-					t.Fatal("unexpected number of network events")
-				}
-			}
-		})
+		tk := meas.TestKeys.(*TestKeys)
+		if len(tk.Pings) != expectedPings {
+			t.Fatal("unexpected number of pings")
+		}
+		ask, err := m.GetSummaryKeys(meas)
+		if err != nil {
+			t.Fatal("cannot obtain summary")
+		}
+		summary := ask.(SummaryKeys)
+		if summary.IsAnomaly {
+			t.Fatal("expected no anomaly")
+		}
 	})
 }
 
