@@ -15,7 +15,6 @@ require (
 	github.com/cretz/bine v0.2.0
 	github.com/fatih/color v1.15.0
 	github.com/google/go-cmp v0.5.9
-	github.com/google/gopacket v1.1.19
 	github.com/google/martian/v3 v3.3.2
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.3.0
