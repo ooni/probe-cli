@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/model/mocks"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 )
 
 func TestTimeLimitedLookupSuccess(t *testing.T) {

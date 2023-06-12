@@ -6,7 +6,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/model/mocks"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 

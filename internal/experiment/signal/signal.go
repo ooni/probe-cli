@@ -15,7 +15,7 @@ import (
 
 const (
 	testName    = "signal"
-	testVersion = "0.2.2"
+	testVersion = "0.2.3"
 
 	signalCA = `-----BEGIN CERTIFICATE-----
 MIID7zCCAtegAwIBAgIJAIm6LatK5PNiMA0GCSqGSIb3DQEBBQUAMIGNMQswCQYD
@@ -149,7 +149,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	defer cancel()
 	urlgetter.RegisterExtensions(measurement)
 
-	certPool := netxlite.NewDefaultCertPool()
+	certPool := netxlite.NewMozillaCertPool()
 	signalCAByteSlice := [][]byte{
 		[]byte(signalCA),
 		[]byte(signalCANew),
@@ -172,11 +172,6 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 			CertPool:        certPool,
 		}},
 		{Target: "https://storage.signal.org/", Config: urlgetter.Config{
-			Method:          "GET",
-			FailOnHTTPError: false,
-			CertPool:        certPool,
-		}},
-		{Target: "https://api.directory.signal.org/", Config: urlgetter.Config{
 			Method:          "GET",
 			FailOnHTTPError: false,
 			CertPool:        certPool,

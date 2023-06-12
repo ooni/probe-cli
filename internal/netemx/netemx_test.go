@@ -10,6 +10,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/quic-go/quic-go/http3"
 )
 
 // NewEnvironment creates a new QA environment. This function

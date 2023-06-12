@@ -7,8 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
 /*
@@ -35,6 +36,7 @@ func TestNewDomainToResolve(t *testing.T) {
 				DNSLookupOptionIDGenerator(idGen),
 				DNSLookupOptionLogger(model.DiscardLogger),
 				DNSLookupOptionZeroTime(zt),
+				DNSLookupOptionTags("antani"),
 			)
 			if domainToResolve.Domain != "www.example.com" {
 				t.Fatalf("unexpected domain")
@@ -47,6 +49,9 @@ func TestNewDomainToResolve(t *testing.T) {
 			}
 			if domainToResolve.ZeroTime != zt {
 				t.Fatalf("unexpected zerotime")
+			}
+			if diff := cmp.Diff([]string{"antani"}, domainToResolve.Tags); diff != "" {
+				t.Fatal(diff)
 			}
 		})
 	})
@@ -73,13 +78,14 @@ func TestGetaddrinfo(t *testing.T) {
 			Domain:      "example.com",
 			Logger:      model.DiscardLogger,
 			IDGenerator: &atomic.Int64{},
+			Tags:        []string{"antani"},
 			ZeroTime:    time.Time{},
 		}
 
 		t.Run("with nil resolver", func(t *testing.T) {
 			f := dnsLookupGetaddrinfoFunc{}
 			ctx, cancel := context.WithCancel(context.Background())
-			cancel()
+			cancel() // immediately cancel the lookup
 			res := f.Apply(ctx, domain)
 			if res.Observations == nil || len(res.Observations) <= 0 {
 				t.Fatal("unexpected empty observations")
@@ -130,6 +136,9 @@ func TestGetaddrinfo(t *testing.T) {
 			if len(res.State.Addresses) != 1 || res.State.Addresses[0] != "93.184.216.34" {
 				t.Fatal("unexpected addresses")
 			}
+			if diff := cmp.Diff([]string{"antani"}, res.State.Trace.Tags()); diff != "" {
+				t.Fatal(diff)
+			}
 		})
 	})
 }
@@ -155,6 +164,7 @@ func TestLookupUDP(t *testing.T) {
 			Domain:      "example.com",
 			Logger:      model.DiscardLogger,
 			IDGenerator: &atomic.Int64{},
+			Tags:        []string{"antani"},
 			ZeroTime:    time.Time{},
 		}
 
@@ -213,6 +223,9 @@ func TestLookupUDP(t *testing.T) {
 			}
 			if len(res.State.Addresses) != 1 || res.State.Addresses[0] != "93.184.216.34" {
 				t.Fatal("unexpected addresses")
+			}
+			if diff := cmp.Diff([]string{"antani"}, res.State.Trace.Tags()); diff != "" {
+				t.Fatal(diff)
 			}
 		})
 	})

@@ -44,7 +44,8 @@ func (thx *tlsHandshakerTrace) Handshake(
 func (tx *Trace) OnTLSHandshakeStart(now time.Time, remoteAddr string, config *tls.Config) {
 	t := now.Sub(tx.ZeroTime)
 	select {
-	case tx.networkEvent <- NewAnnotationArchivalNetworkEvent(tx.Index, t, "tls_handshake_start"):
+	case tx.networkEvent <- NewAnnotationArchivalNetworkEvent(
+		tx.Index, t, "tls_handshake_start", tx.tags...):
 	default: // buffer is full
 	}
 }
@@ -53,6 +54,7 @@ func (tx *Trace) OnTLSHandshakeStart(now time.Time, remoteAddr string, config *t
 func (tx *Trace) OnTLSHandshakeDone(started time.Time, remoteAddr string, config *tls.Config,
 	state tls.ConnectionState, err error, finished time.Time) {
 	t := finished.Sub(tx.ZeroTime)
+
 	select {
 	case tx.tlsHandshake <- NewArchivalTLSOrQUICHandshakeResult(
 		tx.Index,
@@ -63,11 +65,14 @@ func (tx *Trace) OnTLSHandshakeDone(started time.Time, remoteAddr string, config
 		state,
 		err,
 		t,
+		tx.tags...,
 	):
 	default: // buffer is full
 	}
+
 	select {
-	case tx.networkEvent <- NewAnnotationArchivalNetworkEvent(tx.Index, t, "tls_handshake_done"):
+	case tx.networkEvent <- NewAnnotationArchivalNetworkEvent(
+		tx.Index, t, "tls_handshake_done", tx.tags...):
 	default: // buffer is full
 	}
 }
@@ -76,7 +81,8 @@ func (tx *Trace) OnTLSHandshakeDone(started time.Time, remoteAddr string, config
 // from the available information right after the TLS handshake returns.
 func NewArchivalTLSOrQUICHandshakeResult(
 	index int64, started time.Duration, network string, address string, config *tls.Config,
-	state tls.ConnectionState, err error, finished time.Duration) *model.ArchivalTLSOrQUICHandshakeResult {
+	state tls.ConnectionState, err error, finished time.Duration,
+	tags ...string) *model.ArchivalTLSOrQUICHandshakeResult {
 	return &model.ArchivalTLSOrQUICHandshakeResult{
 		Network:            network,
 		Address:            address,
@@ -88,7 +94,7 @@ func NewArchivalTLSOrQUICHandshakeResult(
 		ServerName:         config.ServerName,
 		T0:                 started.Seconds(),
 		T:                  finished.Seconds(),
-		Tags:               []string{},
+		Tags:               copyAndNormalizeTags(tags),
 		TLSVersion:         netxlite.TLSVersionString(state.Version),
 		TransactionID:      index,
 	}
@@ -110,12 +116,14 @@ func newArchivalBinaryData(data []byte) model.ArchivalMaybeBinaryData {
 func TLSPeerCerts(
 	state tls.ConnectionState, err error) (out []model.ArchivalMaybeBinaryData) {
 	out = []model.ArchivalMaybeBinaryData{}
+
 	var x509HostnameError x509.HostnameError
 	if errors.As(err, &x509HostnameError) {
 		// Test case: https://wrong.host.badssl.com/
 		out = append(out, newArchivalBinaryData(x509HostnameError.Certificate.Raw))
 		return
 	}
+
 	var x509UnknownAuthorityError x509.UnknownAuthorityError
 	if errors.As(err, &x509UnknownAuthorityError) {
 		// Test case: https://self-signed.badssl.com/. This error has
@@ -123,12 +131,14 @@ func TLSPeerCerts(
 		out = append(out, newArchivalBinaryData(x509UnknownAuthorityError.Cert.Raw))
 		return
 	}
+
 	var x509CertificateInvalidError x509.CertificateInvalidError
 	if errors.As(err, &x509CertificateInvalidError) {
 		// Test case: https://expired.badssl.com/
 		out = append(out, newArchivalBinaryData(x509CertificateInvalidError.Cert.Raw))
 		return
 	}
+
 	for _, cert := range state.PeerCertificates {
 		out = append(out, newArchivalBinaryData(cert.Raw))
 	}

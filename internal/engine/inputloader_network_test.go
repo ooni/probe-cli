@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/apex/log"
-	engine "github.com/ooni/probe-cli/v3/internal/engine"
+	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )

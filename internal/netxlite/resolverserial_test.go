@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/miekg/dns"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
 // errorWithTimeout is an error that golang will always consider

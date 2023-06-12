@@ -9,9 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lucas-clemente/quic-go"
+	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/model/mocks"
+	"github.com/quic-go/quic-go"
 )
 
 /*
@@ -67,36 +68,69 @@ func TestQUICHandshake(t *testing.T) {
 		tests := map[string]struct {
 			dialer     model.QUICDialer
 			sni        string
+			tags       []string
 			expectConn quic.EarlyConnection
 			expectErr  error
 			closed     bool
 		}{
-			"with EOF": {expectConn: nil, expectErr: io.EOF, closed: false, dialer: eofDialer},
-			"success":  {expectConn: plainConn, expectErr: nil, closed: true, dialer: goodDialer},
-			"with sni": {expectConn: plainConn, expectErr: nil, closed: true, dialer: goodDialer, sni: "sni.com"},
+			"with EOF": {
+				tags:       []string{},
+				expectConn: nil,
+				expectErr:  io.EOF,
+				closed:     false,
+				dialer:     eofDialer,
+			},
+			"success": {
+				tags:       []string{"antani"},
+				expectConn: plainConn,
+				expectErr:  nil,
+				closed:     true,
+				dialer:     goodDialer,
+			},
+			"with sni": {
+				tags:       []string{},
+				expectConn: plainConn,
+				expectErr:  nil,
+				closed:     true,
+				dialer:     goodDialer,
+				sni:        "sni.com",
+			},
 		}
 
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {
 				pool := &ConnPool{}
-				quicHandshake := &quicHandshakeFunc{Pool: pool, dialer: tt.dialer, ServerName: tt.sni}
+				quicHandshake := &quicHandshakeFunc{
+					Pool:       pool,
+					dialer:     tt.dialer,
+					ServerName: tt.sni,
+				}
 				endpoint := &Endpoint{
 					Address:     "1.2.3.4:567",
 					Network:     "udp",
 					IDGenerator: &atomic.Int64{},
 					Logger:      model.DiscardLogger,
+					Tags:        tt.tags,
 					ZeroTime:    time.Time{},
 				}
 				res := quicHandshake.Apply(context.Background(), endpoint)
 				if res.Error != tt.expectErr {
 					t.Fatalf("unexpected error: %s", res.Error)
 				}
-				if res.State.QUICConn != tt.expectConn {
-					t.Fatalf("unexpected conn: %s", res.State.QUICConn)
+				if res.State == nil || res.State.QUICConn != tt.expectConn {
+					t.Fatal("unexpected conn")
 				}
 				pool.Close()
 				if wasClosed != tt.closed {
 					t.Fatalf("unexpected connection closed state: %v", wasClosed)
+				}
+				if len(tt.tags) > 0 {
+					if res.State == nil {
+						t.Fatal("expected non-nil res.State")
+					}
+					if diff := cmp.Diff([]string{"antani"}, res.State.Trace.Tags()); diff != "" {
+						t.Fatal(diff)
+					}
 				}
 			})
 			wasClosed = false
@@ -145,6 +179,7 @@ func TestServerNameQUIC(t *testing.T) {
 			t.Fatalf("unexpected server name: %s", serverName)
 		}
 	})
+
 	t.Run("With input domain", func(t *testing.T) {
 		domain := "domain"
 		endpoint := &Endpoint{
@@ -158,6 +193,7 @@ func TestServerNameQUIC(t *testing.T) {
 			t.Fatalf("unexpected server name: %s", serverName)
 		}
 	})
+
 	t.Run("With input host address", func(t *testing.T) {
 		hostaddr := "example.com"
 		endpoint := &Endpoint{
@@ -170,6 +206,7 @@ func TestServerNameQUIC(t *testing.T) {
 			t.Fatalf("unexpected server name: %s", serverName)
 		}
 	})
+
 	t.Run("With input IP address", func(t *testing.T) {
 		ip := "1.1.1.1"
 		endpoint := &Endpoint{

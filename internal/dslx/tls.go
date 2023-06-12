@@ -108,11 +108,10 @@ func (f *tlsHandshakeFunc) Apply(
 		nextProto,
 	)
 
+	// obtain the handshaker for use
+	handshaker := f.handshakerOrDefault(trace, input.Logger)
+
 	// setup
-	handshaker := f.handshaker
-	if handshaker == nil {
-		handshaker = trace.NewTLSHandshakerStdlib(input.Logger)
-	}
 	config := &tls.Config{
 		NextProtos:         nextProto,
 		InsecureSkipVerify: f.InsecureSkipVerify,
@@ -155,6 +154,15 @@ func (f *tlsHandshakeFunc) Apply(
 		Operation:    netxlite.TLSHandshakeOperation,
 		State:        state,
 	}
+}
+
+// handshakerOrDefault is the function used to obtain an handshaker
+func (f *tlsHandshakeFunc) handshakerOrDefault(trace *measurexlite.Trace, logger model.Logger) model.TLSHandshaker {
+	handshaker := f.handshaker
+	if handshaker == nil {
+		handshaker = trace.NewTLSHandshakerStdlib(logger)
+	}
+	return handshaker
 }
 
 func (f *tlsHandshakeFunc) serverName(input *TCPConnection) string {

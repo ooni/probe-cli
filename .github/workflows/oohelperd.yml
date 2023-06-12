@@ -12,7 +12,7 @@ on:
 
 jobs:
   build_and_publish:
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-22.04"
     permissions: # See https://github.com/ooni/probe/issues/2154
       contents: write
     steps:
@@ -20,9 +20,9 @@ jobs:
 
       - name: Get GOVERSION content
         id: goversion
-        run: echo ::set-output name=version::$(cat GOVERSION)
+        run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
 
-      - uses: magnetikonline/action-golang-cache@v2
+      - uses: magnetikonline/action-golang-cache@v4
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-oohelperd-${{ steps.goversion.outputs.version }}"

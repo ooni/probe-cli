@@ -9,9 +9,9 @@ import (
 	"crypto/tls"
 	"time"
 
-	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/quic-go/quic-go"
 )
 
 // NewQUICDialerWithoutResolver is equivalent to netxlite.NewQUICDialerWithoutResolver
@@ -47,7 +47,8 @@ func (qdx *quicDialerTrace) CloseIdleConnections() {
 func (tx *Trace) OnQUICHandshakeStart(now time.Time, remoteAddr string, config *quic.Config) {
 	t := now.Sub(tx.ZeroTime)
 	select {
-	case tx.networkEvent <- NewAnnotationArchivalNetworkEvent(tx.Index, t, "quic_handshake_start"):
+	case tx.networkEvent <- NewAnnotationArchivalNetworkEvent(
+		tx.Index, t, "quic_handshake_start", tx.tags...):
 	default:
 	}
 }
@@ -56,10 +57,12 @@ func (tx *Trace) OnQUICHandshakeStart(now time.Time, remoteAddr string, config *
 func (tx *Trace) OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn quic.EarlyConnection,
 	config *tls.Config, err error, finished time.Time) {
 	t := finished.Sub(tx.ZeroTime)
+
 	state := tls.ConnectionState{}
 	if qconn != nil {
 		state = qconn.ConnectionState().TLS.ConnectionState
 	}
+
 	select {
 	case tx.quicHandshake <- NewArchivalTLSOrQUICHandshakeResult(
 		tx.Index,
@@ -70,11 +73,14 @@ func (tx *Trace) OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn
 		state,
 		err,
 		t,
+		tx.tags...,
 	):
 	default: // buffer is full
 	}
+
 	select {
-	case tx.networkEvent <- NewAnnotationArchivalNetworkEvent(tx.Index, t, "quic_handshake_done"):
+	case tx.networkEvent <- NewAnnotationArchivalNetworkEvent(
+		tx.Index, t, "quic_handshake_done", tx.tags...):
 	default: // buffer is full
 	}
 }

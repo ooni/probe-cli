@@ -26,6 +26,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 		body            []byte
 		err             error
 		finished        time.Duration
+		tags            []string
 	}
 
 	type config struct {
@@ -49,6 +50,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 			body:            nil,
 			err:             nil,
 			finished:        0,
+			tags:            nil,
 		},
 		expect: &model.ArchivalHTTPRequestResult{
 			Network: "",
@@ -75,6 +77,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 			},
 			T0:            0,
 			T:             0,
+			Tags:          []string{},
 			TransactionID: 0,
 		},
 	}, {
@@ -103,6 +106,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 			body:            nil,
 			err:             netxlite.NewTopLevelGenericErrWrapper(netxlite.ECONNRESET),
 			finished:        750 * time.Millisecond,
+			tags:            []string{"antani"},
 		},
 		expect: &model.ArchivalHTTPRequestResult{
 			Network: "tcp",
@@ -145,6 +149,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 			},
 			T0:            0.25,
 			T:             0.75,
+			Tags:          []string{"antani"},
 			TransactionID: 1,
 		},
 	}, {
@@ -179,6 +184,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 			body:            filtering.HTTPBlockpage451,
 			err:             nil,
 			finished:        1500 * time.Millisecond,
+			tags:            []string{"antani"},
 		},
 		expect: &model.ArchivalHTTPRequestResult{
 			Network: "udp",
@@ -233,6 +239,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 			},
 			T0:            1.4,
 			T:             1.5,
+			Tags:          []string{"antani"},
 			TransactionID: 44,
 		},
 	}, {
@@ -275,6 +282,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 			body:            nil,
 			err:             nil,
 			finished:        1500 * time.Millisecond,
+			tags:            []string{"antani"},
 		},
 		expect: &model.ArchivalHTTPRequestResult{
 			Network: "udp",
@@ -337,6 +345,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 			},
 			T0:            1.4,
 			T:             1.5,
+			Tags:          []string{"antani"},
 			TransactionID: 47,
 		},
 	}}
@@ -356,6 +365,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 				cnf.args.body,
 				cnf.args.err,
 				cnf.args.finished,
+				cnf.args.tags...,
 			)
 			if diff := cmp.Diff(cnf.expect, out); diff != "" {
 				t.Fatal(diff)

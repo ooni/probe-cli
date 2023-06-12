@@ -112,7 +112,7 @@ func (h *Handler) TypedLog(t string, e *log.Entry) error {
 		eta := e.Fields.Get("eta").(float64)
 		var etaMessage string
 		if eta >= 0 {
-			etaMessage = fmt.Sprintf("(%ss left)", bold.Sprintf("%.2f", eta))
+			etaMessage = fmt.Sprintf("(%s left)", bold.Sprintf("%s", time.Duration(eta*float64(time.Second)).Round(time.Millisecond)))
 		}
 		s := fmt.Sprintf("   %s %-25s %s",
 			bold.Sprintf("%.2f%%", perc),

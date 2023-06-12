@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
 func TestNewHTTPTransportWithLoggerResolverAndOptionalProxyURL(t *testing.T) {
