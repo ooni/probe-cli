@@ -18,7 +18,7 @@ jobs:
 
     - name: Get GOVERSION content
       id: goversion
-      run: echo ::set-output name=version::$(cat GOVERSION)
+      run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUTS"
 
     - uses: magnetikonline/action-golang-cache@v4
       with:
