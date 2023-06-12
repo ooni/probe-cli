@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
-	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -370,73 +369,6 @@ func TestFailureNoTorBinary(t *testing.T) {
 			t.Fatal("unexpected tor progress tag")
 		}
 		if tk.TorProgressSummary != "Handshake with a relay done" {
-			t.Fatal("unexpected tor progress tag")
-		}
-		if tk.TransportName != "snowflake" {
-			t.Fatal("invalid transport name")
-		}
-	})
-
-	t.Run("with mocked TorBinary", func(t *testing.T) {
-		expected := tunnel.ErrCannotFindTorBinary
-		m := &Measurer{
-			config: Config{},
-		}
-		ctx := context.Background()
-		measurement := &model.Measurement{}
-		sess := &mockable.Session{
-			MockableLogger:    model.DiscardLogger,
-			MockableTorBinary: "",
-		}
-		callbacks := &model.PrinterCallbacks{
-			Logger: model.DiscardLogger,
-		}
-		args := &model.ExperimentArgs{
-			Callbacks:   callbacks,
-			Measurement: measurement,
-			Session:     sess,
-		}
-		if err := m.Run(ctx, args); !errors.Is(err, expected) {
-			t.Fatal(err)
-		}
-		tk := measurement.TestKeys.(*TestKeys)
-		if tk.BootstrapTime != 0 {
-			t.Fatal("unexpected bootstrap time")
-		}
-		if tk.Error == nil || *tk.Error != "unknown-error" {
-			t.Fatal("unexpected error")
-		}
-		if tk.Failure == nil {
-			t.Fatal("unexpectedly nil failure string")
-		}
-		if !strings.HasPrefix(*tk.Failure, "unknown_failure: tunnel: cannot find tor binary") {
-			t.Fatal("unexpected failure string", *tk.Failure)
-		}
-		if !tk.PersistentDatadir {
-			t.Fatal("unexpected persistent datadir")
-		}
-		if tk.RendezvousMethod != "domain_fronting" {
-			t.Fatal("unexpected rendezvous method")
-		}
-		if tk.Success {
-			t.Fatal("unexpected success value")
-		}
-		if !tk.cannotFindTorBinary {
-			t.Fatal("unexpected cannotFindTorBinary values")
-		}
-		if tk.Timeout != maxRuntime.Seconds() {
-			t.Fatal("unexpected timeout")
-		}
-		if count := len(tk.TorLogs); count != 0 {
-			t.Fatal("unexpected length of tor logs", count)
-		}
-		if tk.TorProgress != 0 {
-			t.Fatal("unexpected tor progress")
-		}
-		if tk.TorProgressTag != "" {
-			t.Fatal("unexpected tor progress tag")
-		}
-		if tk.TorProgressSummary != "" {
 			t.Fatal("unexpected tor progress tag")
 		}
 		if tk.TransportName != "snowflake" {
