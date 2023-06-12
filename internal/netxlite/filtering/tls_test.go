@@ -96,7 +96,7 @@ func TestTLSServer(t *testing.T) {
 			// see this test failing with a different error string here.
 			config := &tls.Config{
 				ServerName: "dns.google",
-				RootCAs:    netxlite.NewDefaultCertPool(),
+				RootCAs:    netxlite.NewMozillaCertPool(),
 			}
 			conn, err := tls.Dial("tcp", srv.Endpoint(), config)
 			if err == nil || !strings.HasSuffix(err.Error(), "certificate signed by unknown authority") {

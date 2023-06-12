@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/alecthomas/kingpin"
+	"github.com/alecthomas/kingpin/v2"
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/cli/root"
 	"github.com/ooni/probe-cli/v3/internal/database"

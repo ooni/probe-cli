@@ -12,6 +12,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
+// TODO(bassosimone): consider moving inside the logx package?
+
 // NewOperationLogger creates a new logger that logs
 // about an in-progress operation. If it takes too much
 // time to emit the result of the operation, the code

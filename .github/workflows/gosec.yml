@@ -9,7 +9,7 @@ on:
 
 jobs:
   gosec:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
         GO111MODULE: on
     steps:
@@ -18,9 +18,9 @@ jobs:
 
     - name: Get GOVERSION content
       id: goversion
-      run: echo ::set-output name=version::$(cat GOVERSION)
+      run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
 
-    - uses: magnetikonline/action-golang-cache@v2
+    - uses: magnetikonline/action-golang-cache@v4
       with:
         go-version: "${{ steps.goversion.outputs.version }}"
         cache-key-suffix: "-gosec-${{ steps.goversion.outputs.version }}"

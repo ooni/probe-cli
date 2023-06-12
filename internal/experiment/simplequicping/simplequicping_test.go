@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/quic-go/quic-go"
 )
 
 func TestConfig_alpn(t *testing.T) {
@@ -131,7 +131,7 @@ func TestMeasurer_run(t *testing.T) {
 //
 // SPDX-License-Identifier: MIT
 //
-// See https://github.com/lucas-clemente/quic-go/blob/v0.27.0/example/echo/echo.go#L34
+// See https://github.com/quic-go/quic-go/blob/v0.27.0/example/echo/echo.go#L34
 func startEchoServer() (string, quic.Listener, error) {
 	listener, err := quic.ListenAddr("127.0.0.1:0", generateTLSConfig(), nil)
 	if err != nil {
@@ -150,7 +150,7 @@ func startEchoServer() (string, quic.Listener, error) {
 //
 // SPDX-License-Identifier: MIT
 //
-// See https://github.com/lucas-clemente/quic-go/blob/v0.27.0/example/echo/echo.go#L34
+// See https://github.com/quic-go/quic-go/blob/v0.27.0/example/echo/echo.go#L34
 func echoWorkerMain(listener quic.Listener) {
 	for {
 		conn, err := listener.Accept(context.Background())
@@ -169,7 +169,7 @@ func echoWorkerMain(listener quic.Listener) {
 //
 // SPDX-License-Identifier: MIT
 //
-// See https://github.com/lucas-clemente/quic-go/blob/v0.27.0/example/echo/echo.go#L91
+// See https://github.com/quic-go/quic-go/blob/v0.27.0/example/echo/echo.go#L91
 func generateTLSConfig() *tls.Config {
 	key, err := rsa.GenerateKey(rand.Reader, 1024)
 	if err != nil {

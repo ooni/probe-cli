@@ -36,6 +36,13 @@ func DNSLookupOptionLogger(value model.Logger) DNSLookupOption {
 	}
 }
 
+// DNSLookupOptionTags allows to set tags to tag observations.
+func DNSLookupOptionTags(value ...string) DNSLookupOption {
+	return func(dis *DomainToResolve) {
+		dis.Tags = append(dis.Tags, value...)
+	}
+}
+
 // DNSLookupOptionZeroTime configures the measurement's zero time.
 // See DomainToResolve docs for more information.
 func DNSLookupOptionZeroTime(value time.Time) DNSLookupOption {
@@ -52,6 +59,7 @@ func NewDomainToResolve(domain DomainName, options ...DNSLookupOption) *DomainTo
 		Domain:      string(domain),
 		IDGenerator: &atomic.Int64{},
 		Logger:      model.DiscardLogger,
+		Tags:        []string{},
 		ZeroTime:    time.Now(),
 	}
 	for _, option := range options {
@@ -80,6 +88,9 @@ type DomainToResolve struct {
 	// Logger is the MANDATORY logger to use. The default construction
 	// implemented by NewDomainToResolve uses model.DiscardLogger.
 	Logger model.Logger
+
+	// Tags contains OPTIONAL tags to tag observations.
+	Tags []string
 
 	// ZeroTime is the MANDATORY zero time of the measurement. We will
 	// use this field as the zero value to compute relative elapsed times
@@ -132,7 +143,7 @@ func (f *dnsLookupGetaddrinfoFunc) Apply(
 	ctx context.Context, input *DomainToResolve) *Maybe[*ResolvedAddresses] {
 
 	// create trace
-	trace := measurexlite.NewTrace(input.IDGenerator.Add(1), input.ZeroTime)
+	trace := measurexlite.NewTrace(input.IDGenerator.Add(1), input.ZeroTime, input.Tags...)
 
 	// start the operation logger
 	ol := measurexlite.NewOperationLogger(
@@ -195,7 +206,7 @@ func (f *dnsLookupUDPFunc) Apply(
 	ctx context.Context, input *DomainToResolve) *Maybe[*ResolvedAddresses] {
 
 	// create trace
-	trace := measurexlite.NewTrace(input.IDGenerator.Add(1), input.ZeroTime)
+	trace := measurexlite.NewTrace(input.IDGenerator.Add(1), input.ZeroTime, input.Tags...)
 
 	// start the operation logger
 	ol := measurexlite.NewOperationLogger(

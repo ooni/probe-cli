@@ -15,17 +15,17 @@ jobs:
     runs-on: "${{ matrix.os }}"
     strategy:
       matrix:
-        os: [ "ubuntu-20.04", "windows-2019", "macos-10.15" ]
+        os: [ "ubuntu-22.04", "windows-2022", "macos-12" ]
     steps:
 
       - uses: actions/checkout@v3
 
       - name: Get GOVERSION content
         id: goversion
-        run: echo ::set-output name=version::$(cat GOVERSION)
+        run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
         shell: bash
 
-      - uses: magnetikonline/action-golang-cache@v2
+      - uses: magnetikonline/action-golang-cache@v4
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-coverage-${{ steps.goversion.outputs.version }}"

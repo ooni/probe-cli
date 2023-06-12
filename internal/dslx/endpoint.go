@@ -38,6 +38,9 @@ type Endpoint struct {
 	// Network is the MANDATORY endpoint network.
 	Network string
 
+	// Tags contains OPTIONAL tags for tagging observations.
+	Tags []string
+
 	// ZeroTime is the MANDATORY zero time of the measurement.
 	ZeroTime time.Time
 }
@@ -63,6 +66,13 @@ func EndpointOptionIDGenerator(value *atomic.Int64) EndpointOption {
 func EndpointOptionLogger(value model.Logger) EndpointOption {
 	return func(es *Endpoint) {
 		es.Logger = value
+	}
+}
+
+// EndpointOptionTags allows to set tags to tag observations.
+func EndpointOptionTags(value ...string) EndpointOption {
+	return func(es *Endpoint) {
+		es.Tags = append(es.Tags, value...)
 	}
 }
 
@@ -92,6 +102,7 @@ func NewEndpoint(
 		IDGenerator: &atomic.Int64{},
 		Logger:      model.DiscardLogger,
 		Network:     string(network),
+		Tags:        []string{},
 		ZeroTime:    time.Now(),
 	}
 	for _, option := range options {

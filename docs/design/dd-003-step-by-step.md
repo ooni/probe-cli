@@ -239,7 +239,7 @@ alternative TLS libs (e.g., refraction-networking/utls).
 We could say more here. But I am trying to be brief. Because of that, I
 am glossing over HTTP3, which is not part of the standard library but is
 implemented by
-[lucas-clemente/quic-go](https://github.com/lucas-clemente/quic-go).
+[quic-go/quic-go](https://github.com/quic-go/quic-go).
 Apart from the stdlib and quic-go, the only other significant network code
 dependency is [miekg/dns](https://github.com/miekg/dns)
 for custom DNS resolvers (e.g., DNS-over-HTTPS).

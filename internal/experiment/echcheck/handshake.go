@@ -50,7 +50,7 @@ func handshakeWithExtension(ctx context.Context, conn net.Conn, zeroTime time.Ti
 
 // We are creating the pool just once because there is a performance penalty
 // when creating it every time. See https://github.com/ooni/probe/issues/2413.
-var certpool = netxlite.NewDefaultCertPool()
+var certpool = netxlite.NewMozillaCertPool()
 
 // genTLSConfig generates tls.Config from a given SNI
 func genTLSConfig(sni string) *tls.Config {

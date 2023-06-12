@@ -41,10 +41,12 @@ import (
 //
 // - err is the possibly-nil error that occurred during the transaction;
 //
-// - finished is when we finished reading the response's body.
+// - finished is when we finished reading the response's body;
+//
+// - tags contains optional tags to fill the .Tags field in the archival format.
 func NewArchivalHTTPRequestResult(index int64, started time.Duration, network, address, alpn string,
-	transport string, req *http.Request, resp *http.Response, maxRespBodySize int64, body []byte, err error,
-	finished time.Duration) *model.ArchivalHTTPRequestResult {
+	transport string, req *http.Request, resp *http.Response, maxRespBodySize int64, body []byte,
+	err error, finished time.Duration, tags ...string) *model.ArchivalHTTPRequestResult {
 	return &model.ArchivalHTTPRequestResult{
 		Network: network,
 		Address: address,
@@ -70,6 +72,7 @@ func NewArchivalHTTPRequestResult(index int64, started time.Duration, network, a
 		},
 		T0:            started.Seconds(),
 		T:             finished.Seconds(),
+		Tags:          copyAndNormalizeTags(tags),
 		TransactionID: index,
 	}
 }
@@ -173,10 +176,12 @@ func newHTTPHeaderList(header http.Header) (out []model.ArchivalHTTPHeader) {
 	for key := range header {
 		keys = append(keys, key)
 	}
-	// ensure the output is consistent, which helps with testing
+
+	// ensure the output is consistent, which helps with testing;
 	// for an example of why we need to sort headers, see
 	// https://github.com/ooni/probe-engine/pull/751/checks?check_run_id=853562310
 	sort.Strings(keys)
+
 	for _, key := range keys {
 		for _, value := range header[key] {
 			out = append(out, model.ArchivalHTTPHeader{

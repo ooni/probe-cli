@@ -14,7 +14,7 @@ on:
 
 jobs:
   build_ios_mobile:
-    runs-on: macos-11
+    runs-on: macos-12
     steps:
       - uses: actions/checkout@v3
         with:
@@ -22,8 +22,8 @@ jobs:
 
       - name: Get GOVERSION content
         id: goversion
-        run: echo ::set-output name=version::$(cat GOVERSION)
-      - uses: magnetikonline/action-golang-cache@v2
+        run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
+      - uses: magnetikonline/action-golang-cache@v4
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-ios-${{ steps.goversion.outputs.version }}"
@@ -35,20 +35,20 @@ jobs:
           PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
 
-      - run: make EXPECTED_XCODE_VERSION=13.2.1 MOBILE/ios
+      - run: make EXPECTED_XCODE_VERSION=14.2 MOBILE/ios
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: oonimkall.xcframework.zip
           path: ./MOBILE/ios/oonimkall.xcframework.zip
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: oonimkall.podspec
           path: ./MOBILE/ios/oonimkall.podspec
 
   publish_ios_mobile:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: build_ios_mobile
     permissions:
       contents: write
@@ -57,11 +57,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: oonimkall.xcframework.zip
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: oonimkall.podspec
 
