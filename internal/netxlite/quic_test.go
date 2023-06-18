@@ -358,9 +358,9 @@ func TestQUICDialerHandshakeCompleter(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			var called bool
 			expected := &mocks.QUICEarlyConnection{
-				MockHandshakeComplete: func() context.Context {
+				MockHandshakeComplete: func() <-chan struct{} {
 					cancel()
-					return handshakeCtx
+					return handshakeCtx.Done()
 				},
 				MockCloseWithError: func(code quic.ApplicationErrorCode, reason string) error {
 					called = true
@@ -391,9 +391,9 @@ func TestQUICDialerHandshakeCompleter(t *testing.T) {
 			handshakeCtx, handshakeCancel := context.WithCancel(context.Background())
 			defer handshakeCancel()
 			expected := &mocks.QUICEarlyConnection{
-				MockHandshakeComplete: func() context.Context {
+				MockHandshakeComplete: func() <-chan struct{} {
 					handshakeCancel()
-					return handshakeCtx
+					return handshakeCtx.Done()
 				},
 			}
 			d := &quicDialerHandshakeCompleter{
