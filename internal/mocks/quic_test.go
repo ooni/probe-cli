@@ -233,15 +233,17 @@ func TestQUICEarlyConnection(t *testing.T) {
 	})
 
 	t.Run("HandshakeComplete", func(t *testing.T) {
-		ctx := context.Background()
+		closedChan := make(chan struct{})
+		close(closedChan)
+		var closedChanUni <-chan struct{} = closedChan // cast channel to unicast
 		qconn := &QUICEarlyConnection{
-			MockHandshakeComplete: func() context.Context {
-				return ctx
+			MockHandshakeComplete: func() <-chan struct{} {
+				return closedChanUni
 			},
 		}
 		out := qconn.HandshakeComplete()
-		if !reflect.DeepEqual(ctx, out) {
-			t.Fatal("not the context we expected")
+		if !reflect.DeepEqual(closedChanUni, out) {
+			t.Fatal("not the channel we expected")
 		}
 	})
 

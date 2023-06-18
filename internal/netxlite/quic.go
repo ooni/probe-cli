@@ -211,7 +211,7 @@ func (d *quicDialerHandshakeCompleter) DialContext(
 		return nil, err
 	}
 	select {
-	case <-conn.HandshakeComplete().Done():
+	case <-conn.HandshakeComplete():
 		return conn, nil
 	case <-ctx.Done():
 		conn.CloseWithError(0, "") // we own the conn

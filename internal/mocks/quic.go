@@ -57,7 +57,7 @@ type QUICEarlyConnection struct {
 	MockCloseWithError    func(code quic.ApplicationErrorCode, reason string) error
 	MockContext           func() context.Context
 	MockConnectionState   func() quic.ConnectionState
-	MockHandshakeComplete func() context.Context
+	MockHandshakeComplete func() <-chan struct{}
 	MockNextConnection    func() quic.Connection
 	MockSendMessage       func(b []byte) error
 	MockReceiveMessage    func() ([]byte, error)
@@ -122,7 +122,7 @@ func (s *QUICEarlyConnection) ConnectionState() quic.ConnectionState {
 }
 
 // HandshakeComplete calls MockHandshakeComplete.
-func (s *QUICEarlyConnection) HandshakeComplete() context.Context {
+func (s *QUICEarlyConnection) HandshakeComplete() <-chan struct{} {
 	return s.MockHandshakeComplete()
 }
 
