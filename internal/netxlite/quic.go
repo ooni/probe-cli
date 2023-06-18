@@ -147,8 +147,7 @@ func (d *quicDialerQUICGo) DialContext(ctx context.Context,
 	pconn = trace.MaybeWrapUDPLikeConn(pconn)
 	started := trace.TimeNow()
 	trace.OnQUICHandshakeStart(started, address, quicConfig)
-	qconn, err := d.dialEarly(
-		ctx, pconn, udpAddr, address, tlsConfig, quicConfig)
+	qconn, err := d.dialEarly(ctx, pconn, udpAddr, tlsConfig, quicConfig)
 	finished := trace.TimeNow()
 	err = MaybeNewErrWrapper(ClassifyQUICHandshakeError, QUICHandshakeOperation, err)
 	trace.OnQUICHandshakeDone(started, address, qconn, tlsConfig, err, finished)
@@ -160,7 +159,7 @@ func (d *quicDialerQUICGo) DialContext(ctx context.Context,
 }
 
 func (d *quicDialerQUICGo) dialEarly(ctx context.Context,
-	pconn net.PacketConn, remoteAddr net.Addr, address string,
+	pconn net.PacketConn, remoteAddr net.Addr,
 	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
 	if d.mockDialEarly != nil {
 		return d.mockDialEarly(
