@@ -229,7 +229,7 @@ func TestQUICDialerQUICGo(t *testing.T) {
 			}
 			systemdialer := quicDialerQUICGo{
 				QUICListener: &quicListenerStdlib{},
-				mockDialEarlyContext: func(ctx context.Context, pconn net.PacketConn,
+				mockDialEarly: func(ctx context.Context, pconn net.PacketConn,
 					remoteAddr net.Addr, host string, tlsConfig *tls.Config,
 					quicConfig *quic.Config) (quic.EarlyConnection, error) {
 					gotTLSConfig = tlsConfig
@@ -270,7 +270,7 @@ func TestQUICDialerQUICGo(t *testing.T) {
 			}
 			systemdialer := quicDialerQUICGo{
 				QUICListener: &quicListenerStdlib{},
-				mockDialEarlyContext: func(ctx context.Context, pconn net.PacketConn,
+				mockDialEarly: func(ctx context.Context, pconn net.PacketConn,
 					remoteAddr net.Addr, host string, tlsConfig *tls.Config,
 					quicConfig *quic.Config) (quic.EarlyConnection, error) {
 					gotTLSConfig = tlsConfig
@@ -310,7 +310,7 @@ func TestQUICDialerQUICGo(t *testing.T) {
 			fakeconn := &mocks.QUICEarlyConnection{}
 			systemdialer := quicDialerQUICGo{
 				QUICListener: &quicListenerStdlib{},
-				mockDialEarlyContext: func(ctx context.Context, pconn net.PacketConn,
+				mockDialEarly: func(ctx context.Context, pconn net.PacketConn,
 					remoteAddr net.Addr, host string, tlsConfig *tls.Config,
 					quicConfig *quic.Config) (quic.EarlyConnection, error) {
 					return fakeconn, nil

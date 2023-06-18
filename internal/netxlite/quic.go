@@ -89,8 +89,8 @@ type quicDialerQUICGo struct {
 	// QUICListener is the underlying QUICListener to use.
 	QUICListener model.QUICListener
 
-	// mockDialEarlyContext allows to mock quic.DialEarlyContext.
-	mockDialEarlyContext func(ctx context.Context, pconn net.PacketConn,
+	// mockDialEarly allows to mock quic.DialEarly.
+	mockDialEarly func(ctx context.Context, pconn net.PacketConn,
 		remoteAddr net.Addr, host string, tlsConfig *tls.Config,
 		quicConfig *quic.Config) (quic.EarlyConnection, error)
 }
@@ -147,7 +147,7 @@ func (d *quicDialerQUICGo) DialContext(ctx context.Context,
 	pconn = trace.MaybeWrapUDPLikeConn(pconn)
 	started := trace.TimeNow()
 	trace.OnQUICHandshakeStart(started, address, quicConfig)
-	qconn, err := d.dialEarlyContext(
+	qconn, err := d.dialEarly(
 		ctx, pconn, udpAddr, address, tlsConfig, quicConfig)
 	finished := trace.TimeNow()
 	err = MaybeNewErrWrapper(ClassifyQUICHandshakeError, QUICHandshakeOperation, err)
@@ -159,11 +159,11 @@ func (d *quicDialerQUICGo) DialContext(ctx context.Context,
 	return newQUICConnectionOwnsConn(qconn, pconn), nil
 }
 
-func (d *quicDialerQUICGo) dialEarlyContext(ctx context.Context,
+func (d *quicDialerQUICGo) dialEarly(ctx context.Context,
 	pconn net.PacketConn, remoteAddr net.Addr, address string,
 	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
-	if d.mockDialEarlyContext != nil {
-		return d.mockDialEarlyContext(
+	if d.mockDialEarly != nil {
+		return d.mockDialEarly(
 			ctx, pconn, remoteAddr, address, tlsConfig, quicConfig)
 	}
 	return quic.DialEarly(
