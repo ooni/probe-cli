@@ -166,8 +166,8 @@ func (d *quicDialerQUICGo) dialEarlyContext(ctx context.Context,
 		return d.mockDialEarlyContext(
 			ctx, pconn, remoteAddr, address, tlsConfig, quicConfig)
 	}
-	return quic.DialEarlyContext(
-		ctx, pconn, remoteAddr, address, tlsConfig, quicConfig)
+	return quic.DialEarly(
+		ctx, pconn, remoteAddr, tlsConfig, quicConfig)
 }
 
 // maybeApplyTLSDefaults ensures that we're using our certificate pool, if
