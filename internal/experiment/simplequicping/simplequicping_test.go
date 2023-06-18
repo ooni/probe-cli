@@ -132,7 +132,7 @@ func TestMeasurer_run(t *testing.T) {
 // SPDX-License-Identifier: MIT
 //
 // See https://github.com/quic-go/quic-go/blob/v0.27.0/example/echo/echo.go#L34
-func startEchoServer() (string, quic.Listener, error) {
+func startEchoServer() (string, *quic.Listener, error) {
 	listener, err := quic.ListenAddr("127.0.0.1:0", generateTLSConfig(), nil)
 	if err != nil {
 		return "", nil, err
@@ -151,7 +151,7 @@ func startEchoServer() (string, quic.Listener, error) {
 // SPDX-License-Identifier: MIT
 //
 // See https://github.com/quic-go/quic-go/blob/v0.27.0/example/echo/echo.go#L34
-func echoWorkerMain(listener quic.Listener) {
+func echoWorkerMain(listener *quic.Listener) {
 	for {
 		conn, err := listener.Accept(context.Background())
 		if err != nil {
