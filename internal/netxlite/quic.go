@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/quic-go/quic-go"
 )
 
 // NewQUICListener creates a new QUICListener using the standard
@@ -84,7 +84,7 @@ func NewQUICDialerWithoutResolver(listener model.QUICListener,
 	return NewQUICDialerWithResolver(listener, logger, &NullResolver{}, wrappers...)
 }
 
-// quicDialerQUICGo dials using the lucas-clemente/quic-go library.
+// quicDialerQUICGo dials using the quic-go/quic-go library.
 type quicDialerQUICGo struct {
 	// QUICListener is the underlying QUICListener to use.
 	QUICListener model.QUICListener

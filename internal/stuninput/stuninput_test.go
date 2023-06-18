@@ -1,17 +1,19 @@
 package stuninput
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestAsSnowflakeInput(t *testing.T) {
 	outputs := AsSnowflakeInput()
 	if len(outputs) != len(inputs) {
 		t.Fatal("unexpected number of entries")
 	}
-	for idx := 0; idx < len(inputs); idx++ {
-		output := outputs[idx]
-		input := "stun:" + inputs[idx]
-		if input != output {
-			t.Fatal("mismatch")
+	for _, output := range outputs {
+		output = strings.TrimPrefix(output, "stun:")
+		if !inputs[output] {
+			t.Fatal("not found in inputs", output)
 		}
 	}
 }
@@ -21,11 +23,10 @@ func TestAsStunReachabilityInput(t *testing.T) {
 	if len(outputs) != len(inputs) {
 		t.Fatal("unexpected number of entries")
 	}
-	for idx := 0; idx < len(inputs); idx++ {
-		output := outputs[idx]
-		input := "stun://" + inputs[idx]
-		if input != output {
-			t.Fatal("mismatch")
+	for _, output := range outputs {
+		output = strings.TrimPrefix(output, "stun://")
+		if !inputs[output] {
+			t.Fatal("not found in inputs", output)
 		}
 	}
 }

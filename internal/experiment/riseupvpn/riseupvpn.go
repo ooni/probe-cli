@@ -186,7 +186,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	measurement.TestKeys = testkeys
 	urlgetter.RegisterExtensions(measurement)
 
-	certPool := netxlite.NewDefaultCertPool()
+	certPool := netxlite.NewMozillaCertPool()
 
 	// used multiple times below
 	multi := urlgetter.Multi{

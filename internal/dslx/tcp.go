@@ -32,7 +32,7 @@ func (f *tcpConnectFunc) Apply(
 	ctx context.Context, input *Endpoint) *Maybe[*TCPConnection] {
 
 	// create trace
-	trace := measurexlite.NewTrace(input.IDGenerator.Add(1), input.ZeroTime)
+	trace := measurexlite.NewTrace(input.IDGenerator.Add(1), input.ZeroTime, input.Tags...)
 
 	// start the operation logger
 	ol := measurexlite.NewOperationLogger(
@@ -47,10 +47,8 @@ func (f *tcpConnectFunc) Apply(
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	dialer := f.dialer
-	if dialer == nil {
-		dialer = trace.NewDialerWithoutResolver(input.Logger)
-	}
+	// obtain the dialer to use
+	dialer := f.dialerOrDefault(trace, input.Logger)
 
 	// connect
 	conn, err := dialer.DialContext(ctx, "tcp", input.Address)
@@ -78,6 +76,15 @@ func (f *tcpConnectFunc) Apply(
 		Operation:    netxlite.ConnectOperation,
 		State:        state,
 	}
+}
+
+// dialerOrDefault is the function used to obtain a dialer
+func (f *tcpConnectFunc) dialerOrDefault(trace *measurexlite.Trace, logger model.Logger) model.Dialer {
+	dialer := f.dialer
+	if dialer == nil {
+		dialer = trace.NewDialerWithoutResolver(logger)
+	}
+	return dialer
 }
 
 // TCPConnection is an established TCP connection. If you initialize

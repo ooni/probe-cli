@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
 /*
@@ -234,4 +234,20 @@ func TestServerNameTLS(t *testing.T) {
 			t.Fatalf("unexpected server name: %s", serverName)
 		}
 	})
+}
+
+// Make sure we get a valid handshaker if no mocked handshaker is configured
+func TestHandshakerOrDefault(t *testing.T) {
+	f := &tlsHandshakeFunc{
+		InsecureSkipVerify: false,
+		NextProto:          []string{},
+		Pool:               &ConnPool{},
+		RootCAs:            &x509.CertPool{},
+		ServerName:         "",
+		handshaker:         nil,
+	}
+	handshaker := f.handshakerOrDefault(measurexlite.NewTrace(0, time.Now()), model.DiscardLogger)
+	if handshaker == nil {
+		t.Fatal("expected non-nil handshaker here")
+	}
 }

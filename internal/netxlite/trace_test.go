@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/model/mocks"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 )
 
 func TestContextTraceOrDefault(t *testing.T) {

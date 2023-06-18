@@ -16,8 +16,8 @@ import (
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
@@ -46,8 +46,8 @@ func TestCipherSuite(t *testing.T) {
 	}
 }
 
-func TestNewDefaultCertPoolWorks(t *testing.T) {
-	pool := NewDefaultCertPool()
+func TestNewMozillaCertPoolWorks(t *testing.T) {
+	pool := NewMozillaCertPool()
 	if pool == nil {
 		t.Fatal("expected non-nil value here")
 	}

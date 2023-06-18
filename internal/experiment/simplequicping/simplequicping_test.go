@@ -6,12 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/gopacket/layers"
-	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netemx"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/quic-go/quic-go"
 )
 
 func TestConfig_alpn(t *testing.T) {
@@ -147,58 +144,62 @@ func TestMeasurerRun(t *testing.T) {
 		})
 	})
 
-	t.Run("with netem: with DPI that drops UDP datagrams to 8.8.8.8:443: expect failure", func(t *testing.T) {
-		// we use the same empty DNS config for both client and servers
-		dnsConfig := netem.NewDNSConfig()
+// Start a server that echos all data on the first stream opened by the client.
+//
+// SPDX-License-Identifier: MIT
+//
+// See https://github.com/quic-go/quic-go/blob/v0.27.0/example/echo/echo.go#L34
+func startEchoServer() (string, quic.Listener, error) {
+	listener, err := quic.ListenAddr("127.0.0.1:0", generateTLSConfig(), nil)
+	if err != nil {
+		return "", nil, err
+	}
+	go echoWorkerMain(listener)
+	URL := &url.URL{
+		Scheme: "quichandshake",
+		Host:   listener.Addr().String(),
+		Path:   "/",
+	}
+	return URL.String(), listener, nil
+}
 
-		// configure [netemx.Environment]
-		clientConf := &netemx.ClientConfig{DNSConfig: dnsConfig}
-		serversConf := &netemx.ServersConfig{
-			DNSConfig: dnsConfig,
-			Servers: []netemx.ConfigServerStack{
-				{
-					ServerAddr: "8.8.8.8",
-					HTTPServers: []netemx.ConfigHTTPServer{
-						{
-							Port: 443,
-							QUIC: true,
-						},
-					},
-				},
-			},
+// Worker used by startEchoServer to accept a quic connection.
+//
+// SPDX-License-Identifier: MIT
+//
+// See https://github.com/quic-go/quic-go/blob/v0.27.0/example/echo/echo.go#L34
+func echoWorkerMain(listener quic.Listener) {
+	for {
+		conn, err := listener.Accept(context.Background())
+		if err != nil {
+			return
 		}
 
-		// create a new test environment
-		env := netemx.NewEnvironment(clientConf, serversConf)
-		defer env.Close()
-
-		// add DPI engine to emulate the censorship condition
-		dpi := env.DPIEngine()
-		dpi.AddRule(&netem.DPIDropTrafficForServerEndpoint{
-			Logger:          model.DiscardLogger,
-			ServerIPAddress: "8.8.8.8",
-			ServerPort:      443,
-			ServerProtocol:  layers.IPProtocolUDP,
-		})
-
-		env.Do(func() {
-			meas, _, err := run("quichandshake://8.8.8.8:443")
-			if err != nil {
-				t.Fatalf("Unexpected error: %s", err)
-			}
-
-			tk, _ := (meas.TestKeys).(*TestKeys)
-
-			for _, p := range tk.Pings {
-				if p.QUICHandshake.Failure == nil {
-					t.Fatal("expected an error here")
-				}
-				if *p.QUICHandshake.Failure != netxlite.FailureGenericTimeoutError {
-					t.Fatal("unexpected error type")
-				}
-			}
-		})
-	})
+// Setup a bare-bones TLS config for the server.
+//
+// SPDX-License-Identifier: MIT
+//
+// See https://github.com/quic-go/quic-go/blob/v0.27.0/example/echo/echo.go#L91
+func generateTLSConfig() *tls.Config {
+	key, err := rsa.GenerateKey(rand.Reader, 1024)
+	if err != nil {
+		panic(err)
+	}
+	template := x509.Certificate{SerialNumber: big.NewInt(1)}
+	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
+	if err != nil {
+		panic(err)
+	}
+	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)})
+	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
+	tlsCert, err := tls.X509KeyPair(certPEM, keyPEM)
+	if err != nil {
+		panic(err)
+	}
+	return &tls.Config{
+		Certificates: []tls.Certificate{tlsCert},
+		NextProtos:   []string{"quic-echo-example"},
+	}
 }
 
 func TestConfig_sni(t *testing.T) {

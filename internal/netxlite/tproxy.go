@@ -50,7 +50,7 @@ type DefaultTProxy struct{}
 //
 // See https://github.com/ooni/probe/issues/2413 to understand why we
 // need a private static default pool.
-var tproxyDefaultCertPool = NewDefaultCertPool()
+var tproxyDefaultCertPool = NewMozillaCertPool()
 
 // DefaultCertPool implements model.UnderlyingNetwork
 func (tp *DefaultTProxy) DefaultCertPool() *x509.CertPool {

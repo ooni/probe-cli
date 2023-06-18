@@ -6,9 +6,7 @@ import (
 	"testing"
 
 	"github.com/apex/log"
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/gopacket/layers"
-	"github.com/ooni/netem"
+	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/experiment/fbmessenger"
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"

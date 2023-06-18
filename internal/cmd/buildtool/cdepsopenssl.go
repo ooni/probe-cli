@@ -27,13 +27,13 @@ func cdepsOpenSSLBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencie
 	defer restore()
 
 	// See https://github.com/Homebrew/homebrew-core/blob/master/Formula/openssl@1.1.rb
-	cdepsMustFetch("https://www.openssl.org/source/openssl-1.1.1t.tar.gz")
+	cdepsMustFetch("https://www.openssl.org/source/openssl-1.1.1u.tar.gz")
 	deps.VerifySHA256( // must be mockable
-		"8dee9b24bdb1dcbf0c3d1e9b02fb8f6bf22165e807f45adeb7c9677536859d3b",
-		"openssl-1.1.1t.tar.gz",
+		"e2f8d84b523eecd06c7be7626830370300fbcc15386bf5142d72758f6963ebc6",
+		"openssl-1.1.1u.tar.gz",
 	)
-	must.Run(log.Log, "tar", "-xf", "openssl-1.1.1t.tar.gz")
-	_ = deps.MustChdir("openssl-1.1.1t") // must be mockable
+	must.Run(log.Log, "tar", "-xf", "openssl-1.1.1u.tar.gz")
+	_ = deps.MustChdir("openssl-1.1.1u") // must be mockable
 
 	mydir := filepath.Join(topdir, "CDEPS", "openssl")
 	for _, patch := range cdepsMustListPatches(mydir) {
@@ -47,12 +47,12 @@ func cdepsOpenSSLBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencie
 	mergedEnv := cBuildMerge(globalEnv, localEnv)
 	envp := cBuildExportOpenSSL(mergedEnv)
 
-	// QUIRK: OpenSSL-1.1.1t wants ANDROID_NDK_HOME
+	// QUIRK: OpenSSL-1.1.1u wants ANDROID_NDK_HOME
 	if mergedEnv.ANDROID_NDK_ROOT != "" {
 		envp.Append("ANDROID_NDK_HOME", mergedEnv.ANDROID_NDK_ROOT)
 	}
 
-	// QUIRK: OpenSSL-1.1.1t wants the PATH to contain the
+	// QUIRK: OpenSSL-1.1.1u wants the PATH to contain the
 	// directory where the Android compiler lives.
 	if mergedEnv.BINPATH != "" {
 		envp.Append("PATH", cdepsPrependToPath(mergedEnv.BINPATH))

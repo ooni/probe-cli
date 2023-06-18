@@ -10,16 +10,16 @@ on:
 
 jobs:
   measure_coverage:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v3
 
       - name: Get GOVERSION content
         id: goversion
-        run: echo ::set-output name=version::$(cat GOVERSION)
+        run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
 
-      - uses: magnetikonline/action-golang-cache@v2
+      - uses: magnetikonline/action-golang-cache@v4
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-coverage-${{ steps.goversion.outputs.version }}"

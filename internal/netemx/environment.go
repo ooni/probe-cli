@@ -1,30 +1,31 @@
 package netemx
 
+//
+// Configurable environment for writing tests.
+//
+
 import (
 	"io"
 	"net"
 	"net/http"
 	"time"
 
-	"github.com/lucas-clemente/quic-go/http3"
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/quic-go/quic-go/http3"
 )
 
 const (
 	// DefaultClientAddress is the address used by default for a client.
 	DefaultClientAddress = "10.0.0.14"
 
-	// DefaultClientResolver is the resolver used by default by client.
+	// DefaultClientResolver is the resolver used by default by a client.
 	DefaultClientResolver = "10.0.0.1"
 
-	// DefaultServersResolver is the the resolver used by default by server.
+	// DefaultServersResolver is the the resolver used by default by a server.
 	DefaultServersResolver = "1.1.1.1"
 )
-
-// The netemx environment design is based on netemx_test.
-// TODO(kelmenhorst): consider writing netemx_test.go using this Environment.
 
 // Environment is a configurable [netem] QA environment with a DNS server
 // stack, multiple server stacks, and a client stack. The zero value is not
@@ -39,14 +40,14 @@ type Environment struct {
 	// topology is the topology we're using.
 	topology *netem.StarTopology
 
-	// closables contains all entities where we have to take care of closing
+	// closables contains all entities where we have to take care of closing.
 	closables []io.Closer
 }
 
 // ClientConfig configures the client in the Environment.
 type ClientConfig struct {
-	// ClientAddr is the OPTIONAL address of the client stack.
-	// If empty, we use DefaultClientAddress.
+	// ClientAddr is the OPTIONAL address of the client stack. If this
+	// field is empty, we use [DefaultClientAddress].
 	ClientAddr string
 
 	// DNSConfig is the MANDATORY [*netem.DNSConfig] to be used for the DNS in this environment.
@@ -62,25 +63,25 @@ type ServersConfig struct {
 	// DNSConfig is the MANDATORY [*netem.DNSConfig] to be used for the DNS in this environment.
 	DNSConfig *netem.DNSConfig
 
-	// ResolverAddr is the OPTIONAL address of the default resolver to be used in the environment.
-	// If empty, we use DefaultServerResolver.
+	// ResolverAddr is the OPTIONAL address of the default resolver to be used in the
+	// environment. If empty, we use DefaultServerResolver.
 	ResolverAddr string
 
-	// Servers is the MANDATORY list of [ServerStack]s to be used in this environment.
+	// Servers is the MANDATORY list of [ConfigServerStack] to be used in this environment.
 	Servers []ConfigServerStack
 }
 
-// ConfigServerStack represents a server instance.
-// Multiple HTTP servers can run on the same server, on different ports.
+// ConfigServerStack represents a server instance. Multiple HTTP servers can run on
+// the same server, on different ports.
 type ConfigServerStack struct {
 	// ServerAddr is the MANDATORY address of the web server stack.
 	ServerAddr string
 
-	// HTTPServers is the MANDATORY list of [HTTPServer], i.e. server instances on this stack.
+	// HTTPServers is the MANDATORY list of [ConfigHTTPServer].
 	HTTPServers []ConfigHTTPServer
 }
 
-// ConfigHTTPServer is a handler running on a server port. A ConfigHTTPServer
+// ConfigHTTPServer is an HTTP handler running on a server port. A ConfigHTTPServer
 // might use QUIC instead of TCP as transport.
 type ConfigHTTPServer struct {
 	// Port is the MANDATORY port that this HTTP server is running on.
@@ -89,25 +90,33 @@ type ConfigHTTPServer struct {
 	// QUIC indicates whether this HTTP server uses QUIC instead of TCP as transport.
 	QUIC bool
 
-	// Handler OPTIONALLY specifies the handler to use for this HTTP server.
+	// Handler OPTIONALLY specifies the handler to use for this HTTP server. If
+	// not set, we use a default handler that returns [DefaultWebPage].
 	Handler http.Handler
 }
 
-// configureClient creates the client network stack
-func configureClient(
+// createClientStackAndDNSServer creates (1) the client's TCP/IP network stack and
+// (2) a DNS server running on its own TCP/IP stack for serving client requests.
+//
+// Return values:
+//
+// - the client's userspace TCP/IP network stack;
+//
+// - the client's DNS server, which we need to close when done.
+func createClientStackAndDNSServer(
 	clientConfig *ClientConfig,
 	topology *netem.StarTopology,
 	dpi *netem.DPIEngine,
 ) (*netem.UNetStack, *netem.DNSServer) {
-	// set the default resolver address
+	// Set the DNS resolver address.
 	resolverAddr := clientConfig.ResolverAddr
 	if resolverAddr == "" {
 		resolverAddr = DefaultClientResolver
 	}
 
-	// create dns server stack
+	// Create the client's DNS server TCP/IP stack.
 	//
-	// note: because the stack is created using topology.AddHost, we don't
+	// Note: because the stack is created using topology.AddHost, we don't
 	// need to call Close when done using it, since the topology will do that
 	// for us when we call the topology's Close method.
 	dnsServerStack := runtimex.Try1(topology.AddHost(
@@ -119,7 +128,7 @@ func configureClient(
 		},
 	))
 
-	// create DNS server using the dnsServerStack
+	// Create the client's DNS server using the dnsServerStack.
 	dnsServer := runtimex.Try1(netem.NewDNSServer(
 		model.DiscardLogger,
 		dnsServerStack,
@@ -127,9 +136,9 @@ func configureClient(
 		clientConfig.DNSConfig,
 	))
 
-	// create client stack
+	// Create the client TCP/IP stack.
 	//
-	// note: because the stack is created using topology.AddHost, we don't
+	// Note: because the stack is created using topology.AddHost, we don't
 	// need to call Close when done using it, since the topology will do that
 	// for us when we call the topology's Close method.
 	//
@@ -148,16 +157,23 @@ func configureClient(
 	return clientStack, dnsServer
 }
 
-// configureServer creates a single server network stack by creating and launching HTTP(3) servers
-func configureServer(
+// DefaultWebPage is the webpage returned by the default HTTP stack
+// created for [ConfigHTTPServer].
+const DefaultWebPage = `hello, world`
+
+// createServerStack creates the TCP/IP stack required by the server as well
+// as all the servers that should run on this specific stack.
+//
+// The return value is the list of closers (representing servers) that we
+// should close when we're done running this test case.
+func createServerStack(
 	s *ConfigServerStack,
 	topology *netem.StarTopology,
 	resolverAddr string,
 ) []io.Closer {
-
-	// create server stack
+	// Create the server's TCP/IP stack
 	//
-	// note: because the stack is created using topology.AddHost, we don't
+	// Note: because the stack is created using topology.AddHost, we don't
 	// need to call Close when done using it, since the topology will do that
 	// for us when we call the topology's Close method.
 	serverStack := runtimex.Try1(topology.AddHost(
@@ -174,12 +190,12 @@ func configureServer(
 
 	// configure and start HTTP server instances running on the server stack
 	for _, l := range s.HTTPServers {
-		// make sure there is a handler
+		// Make sure there is an HTTP handler
 		handler := l.Handler
 		if handler == nil {
 			// the default handler just responds "hello, world"
 			handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.Write([]byte(`hello, world`))
+				w.Write([]byte(DefaultWebPage))
 			})
 		}
 
@@ -192,7 +208,7 @@ func configureServer(
 				Zone: "",
 			}))
 
-			// create HTTP3 server using udpListener as underlying [net.PacketConn]
+			// create HTTP3 server
 			http3Server := &http3.Server{
 				TLSConfig: serverStack.ServerTLSConfig(),
 				Handler:   handler,
@@ -214,11 +230,16 @@ func configureServer(
 			Port: l.Port,
 			Zone: "",
 		}))
+
+		// create HTTP server
 		httpServer := &http.Server{
 			TLSConfig: serverStack.ServerTLSConfig(),
 			Handler:   handler,
 		}
+
+		// make sure we need to track everything we need to close
 		closables = append(closables, httpServer)
+
 		// start serving
 		go httpServer.ServeTLS(tcpListener, "", "")
 	}
@@ -232,15 +253,14 @@ func NewEnvironment(clientConfig *ClientConfig, serversConfig *ServersConfig) *E
 	// create a new star topology
 	topology := runtimex.Try1(netem.NewStarTopology(model.DiscardLogger))
 
-	// create a DPIEngine for implementing censorship experiments can
-	// plug in different types of DPIs, e.g. to drop all packets using a certain SNI
+	// create a DPIEngine for simulating censorship conditions
 	dpi := netem.NewDPIEngine(model.DiscardLogger)
 
 	// create array of closables that we track to close them later
 	var closables []io.Closer
 
 	// create a client and its DNS server (which we need to close later)
-	clientStack, clientDNS := configureClient(clientConfig, topology, dpi)
+	clientStack, clientDNS := createClientStackAndDNSServer(clientConfig, topology, dpi)
 	closables = append(closables, clientDNS)
 
 	// set the default resolver address for the servers's DNS
@@ -249,13 +269,13 @@ func NewEnvironment(clientConfig *ClientConfig, serversConfig *ServersConfig) *E
 		resolverAddr = DefaultServersResolver
 	}
 
-	// create DNS server stack for the servers
+	// create DNS server TCP/IP stack for the servers
 	//
-	// note: because the stack is created using topology.AddHost, we don't
+	// Note: because the stack is created using topology.AddHost, we don't
 	// need to call Close when done using it, since the topology will do that
 	// for us when we call the topology's Close method.
 	//
-	// note: we need to add a little bit of delay to the router<->servers
+	// Note: we need to add a little bit of delay to the router<->servers
 	// path such that rules that use spoofing always determinstically
 	// succeed in spoofing the packets (w/o delays it's flaky).
 	dnsServerStack := runtimex.Try1(topology.AddHost(
@@ -279,7 +299,7 @@ func NewEnvironment(clientConfig *ClientConfig, serversConfig *ServersConfig) *E
 	// create and launch HTTP servers on the server stack
 	// (and track them so we can close them at a later time)
 	for _, s := range serversConfig.Servers {
-		closables = append(closables, configureServer(&s, topology, resolverAddr)...)
+		closables = append(closables, createServerStack(&s, topology, resolverAddr)...)
 	}
 
 	return &Environment{

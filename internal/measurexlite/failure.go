@@ -16,9 +16,11 @@ import (
 // See https://github.com/ooni/spec/blob/master/data-formats/df-007-errors.md
 // for more information about OONI failures.
 func NewFailure(err error) *string {
+	// make sure we behave when passed a nil input (as documented)
 	if err == nil {
 		return nil
 	}
+
 	// The following code guarantees that the error is always wrapped even
 	// when we could not actually hit our code that does the wrapping. A case
 	// in which this could happen is with context deadline for HTTP when you
@@ -29,6 +31,8 @@ func NewFailure(err error) *string {
 		couldConvert := errors.As(err, &errWrapper)
 		runtimex.Assert(couldConvert, "we should have an ErrWrapper here")
 	}
+
+	// handle the case where there's no actual failure (this would be a BUG)
 	s := errWrapper.Failure
 	if s == "" {
 		s = "unknown_failure: errWrapper.Failure is empty"

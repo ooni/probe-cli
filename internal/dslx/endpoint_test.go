@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -21,6 +22,7 @@ func TestEndpoint(t *testing.T) {
 			EndpointOptionIDGenerator(idGen),
 			EndpointOptionLogger(model.DiscardLogger),
 			EndpointOptionZeroTime(zt),
+			EndpointOptionTags("antani"),
 		)
 		if testEndpoint.Network != "network" {
 			t.Fatalf("unexpected network")
@@ -39,6 +41,9 @@ func TestEndpoint(t *testing.T) {
 		}
 		if testEndpoint.ZeroTime != zt {
 			t.Fatalf("unexpected zero time")
+		}
+		if diff := cmp.Diff([]string{"antani"}, testEndpoint.Tags); diff != "" {
+			t.Fatal(diff)
 		}
 	})
 }

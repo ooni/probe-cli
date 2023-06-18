@@ -6,8 +6,8 @@ import (
 	"io"
 	"testing"
 
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
 type dnsTransportExtensionFirst struct {
