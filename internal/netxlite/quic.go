@@ -18,14 +18,14 @@ import (
 
 // NewQUICListener creates a new QUICListener using the standard
 // library to create listening UDP sockets.
-func NewQUICListener() model.QUICListener {
+func NewQUICListener() model.UDPListener {
 	return &quicListenerErrWrapper{&quicListenerStdlib{}}
 }
 
 // quicListenerStdlib is a QUICListener using the standard library.
 type quicListenerStdlib struct{}
 
-var _ model.QUICListener = &quicListenerStdlib{}
+var _ model.UDPListener = &quicListenerStdlib{}
 
 // Listen implements QUICListener.Listen.
 func (qls *quicListenerStdlib) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
@@ -49,7 +49,7 @@ func (qls *quicListenerStdlib) Listen(addr *net.UDPAddr) (model.UDPLikeConn, err
 // Unlike the dialer returned by WrapDialer, this dialer MAY attempt
 // happy eyeballs, perform parallel dial attempts, and return an error
 // that aggregates all the errors that occurred.
-func NewQUICDialerWithResolver(listener model.QUICListener, logger model.DebugLogger,
+func NewQUICDialerWithResolver(listener model.UDPListener, logger model.DebugLogger,
 	resolver model.Resolver, wrappers ...model.QUICDialerWrapper) (outDialer model.QUICDialer) {
 	outDialer = &quicDialerErrWrapper{
 		QUICDialer: &quicDialerHandshakeCompleter{
@@ -79,7 +79,7 @@ func NewQUICDialerWithResolver(listener model.QUICListener, logger model.DebugLo
 
 // NewQUICDialerWithoutResolver is equivalent to calling NewQUICDialerWithResolver
 // with the resolver argument set to &NullResolver{}.
-func NewQUICDialerWithoutResolver(listener model.QUICListener,
+func NewQUICDialerWithoutResolver(listener model.UDPListener,
 	logger model.DebugLogger, wrappers ...model.QUICDialerWrapper) model.QUICDialer {
 	return NewQUICDialerWithResolver(listener, logger, &NullResolver{}, wrappers...)
 }
@@ -87,7 +87,7 @@ func NewQUICDialerWithoutResolver(listener model.QUICListener,
 // quicDialerQUICGo dials using the quic-go/quic-go library.
 type quicDialerQUICGo struct {
 	// QUICListener is the underlying QUICListener to use.
-	QUICListener model.QUICListener
+	QUICListener model.UDPListener
 
 	// mockDialEarly allows to mock quic.DialEarly.
 	mockDialEarly func(ctx context.Context, pconn net.PacketConn,
@@ -387,10 +387,10 @@ func (s *quicDialerSingleUse) CloseIdleConnections() {
 // quicListenerErrWrapper is a QUICListener that wraps errors.
 type quicListenerErrWrapper struct {
 	// QUICListener is the underlying listener.
-	QUICListener model.QUICListener
+	QUICListener model.UDPListener
 }
 
-var _ model.QUICListener = &quicListenerErrWrapper{}
+var _ model.UDPListener = &quicListenerErrWrapper{}
 
 // Listen implements QUICListener.Listen.
 func (qls *quicListenerErrWrapper) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {

@@ -99,7 +99,7 @@ func quicConnectionState(sess quic.EarlyConnection) tls.ConnectionState {
 // QUICListenerSaver is a QUICListener that also implements saving events.
 type QUICListenerSaver struct {
 	// QUICListener is the underlying QUICListener.
-	QUICListener model.QUICListener
+	QUICListener model.UDPListener
 
 	// Saver is the underlying Saver.
 	Saver *Saver
@@ -110,7 +110,7 @@ type QUICListenerSaver struct {
 //
 // When this function is invoked on a nil Saver, it will directly return
 // the original QUICListener without any wrapping.
-func (s *Saver) WrapQUICListener(ql model.QUICListener) model.QUICListener {
+func (s *Saver) WrapQUICListener(ql model.UDPListener) model.UDPListener {
 	if s == nil {
 		return ql
 	}
@@ -184,5 +184,5 @@ func (c *quicPacketConnWrapper) safeAddrString(addr net.Addr) (out string) {
 }
 
 var _ model.QUICDialer = &QUICDialerSaver{}
-var _ model.QUICListener = &QUICListenerSaver{}
+var _ model.UDPListener = &QUICListenerSaver{}
 var _ model.UDPLikeConn = &quicPacketConnWrapper{}

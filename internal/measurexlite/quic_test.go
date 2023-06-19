@@ -23,7 +23,7 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 		underlying := &mocks.QUICDialer{}
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		trace.newQUICDialerWithoutResolverFn = func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer {
+		trace.newQUICDialerWithoutResolverFn = func(listener model.UDPListener, dl model.DebugLogger) model.QUICDialer {
 			return underlying
 		}
 		listener := &mocks.QUICListener{}
@@ -50,7 +50,7 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
-		trace.newQUICDialerWithoutResolverFn = func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer {
+		trace.newQUICDialerWithoutResolverFn = func(listener model.UDPListener, dl model.DebugLogger) model.QUICDialer {
 			return underlying
 		}
 		listener := &mocks.QUICListener{}
@@ -77,7 +77,7 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 				called = true
 			},
 		}
-		trace.newQUICDialerWithoutResolverFn = func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer {
+		trace.newQUICDialerWithoutResolverFn = func(listener model.UDPListener, dl model.DebugLogger) model.QUICDialer {
 			return underlying
 		}
 		listener := &mocks.QUICListener{}

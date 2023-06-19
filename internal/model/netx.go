@@ -181,8 +181,8 @@ type HTTPSSvc struct {
 	IPv6 []string
 }
 
-// QUICListener listens for QUIC connections.
-type QUICListener interface {
+// UDPListener listens for connections over UDP, e.g. QUIC.
+type UDPListener interface {
 	// Listen creates a new listening UDPLikeConn.
 	Listen(addr *net.UDPAddr) (UDPLikeConn, error)
 }

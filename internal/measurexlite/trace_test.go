@@ -508,7 +508,7 @@ func TestTrace(t *testing.T) {
 		t.Run("when not nil", func(t *testing.T) {
 			mockedErr := errors.New("mocked")
 			tx := &Trace{
-				newQUICDialerWithoutResolverFn: func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer {
+				newQUICDialerWithoutResolverFn: func(listener model.UDPListener, dl model.DebugLogger) model.QUICDialer {
 					return &mocks.QUICDialer{
 						MockDialContext: func(ctx context.Context, address string,
 							tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {

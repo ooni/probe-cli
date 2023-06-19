@@ -18,13 +18,13 @@ import (
 )
 
 type quicListenerDB struct {
-	model.QUICListener
+	model.UDPListener
 	begin time.Time
 	db    WritableDB
 }
 
 func (ql *quicListenerDB) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
-	pconn, err := ql.QUICListener.Listen(addr)
+	pconn, err := ql.UDPListener.Listen(addr)
 	if err != nil {
 		return nil, err
 	}
@@ -110,9 +110,9 @@ func (qh *quicDialerDB) DialContext(ctx context.Context, address string,
 	started := time.Since(qh.begin).Seconds()
 	var state tls.ConnectionState
 	listener := &quicListenerDB{
-		QUICListener: netxlite.NewQUICListener(),
-		begin:        qh.begin,
-		db:           qh.db,
+		UDPListener: netxlite.NewQUICListener(),
+		begin:       qh.begin,
+		db:          qh.db,
 	}
 	dialer := netxlite.NewQUICDialerWithoutResolver(listener, qh.logger)
 	defer dialer.CloseIdleConnections()
