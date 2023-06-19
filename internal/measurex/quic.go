@@ -110,7 +110,7 @@ func (qh *quicDialerDB) DialContext(ctx context.Context, address string,
 	started := time.Since(qh.begin).Seconds()
 	var state tls.ConnectionState
 	listener := &quicListenerDB{
-		UDPListener: netxlite.NewQUICListener(),
+		UDPListener: netxlite.NewUDPListener(),
 		begin:       qh.begin,
 		db:          qh.db,
 	}

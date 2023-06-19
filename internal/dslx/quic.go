@@ -97,7 +97,7 @@ func (f *quicHandshakeFunc) Apply(
 	)
 
 	// setup
-	quicListener := netxlite.NewQUICListener()
+	quicListener := netxlite.NewUDPListener()
 	quicDialer := f.dialer
 	if quicDialer == nil {
 		quicDialer = trace.NewQUICDialerWithoutResolver(quicListener, input.Logger)

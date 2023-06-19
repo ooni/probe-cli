@@ -16,19 +16,19 @@ import (
 	"github.com/quic-go/quic-go"
 )
 
-// NewQUICListener creates a new QUICListener using the standard
+// NewUDPListener creates a new UDPListener using the standard
 // library to create listening UDP sockets.
-func NewQUICListener() model.UDPListener {
-	return &quicListenerErrWrapper{&quicListenerStdlib{}}
+func NewUDPListener() model.UDPListener {
+	return &quicListenerErrWrapper{&udpListenerStdlib{}}
 }
 
-// quicListenerStdlib is a QUICListener using the standard library.
-type quicListenerStdlib struct{}
+// udpListenerStdlib is a UDPListener using the standard library.
+type udpListenerStdlib struct{}
 
-var _ model.UDPListener = &quicListenerStdlib{}
+var _ model.UDPListener = &udpListenerStdlib{}
 
-// Listen implements QUICListener.Listen.
-func (qls *quicListenerStdlib) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
+// Listen implements UDPListener.Listen.
+func (qls *udpListenerStdlib) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 	return tproxySingleton().ListenUDP("udp", addr)
 }
 
