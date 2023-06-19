@@ -97,6 +97,9 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 		pconn := &mocks.UDPLikeConn{
 			MockLocalAddr: func() net.Addr {
 				return &net.UDPAddr{
+					// quic-go does not allow the use of the same net.PacketConn for multiple "Dial"
+					// calls (unless a quic.Transport is used), so we have to make sure to mock local
+					// addresses with different ports, as tests run in parallel.
 					Port: 0,
 				}
 			},
@@ -207,7 +210,10 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 		pconn := &mocks.UDPLikeConn{
 			MockLocalAddr: func() net.Addr {
 				return &net.UDPAddr{
-					Port: 0,
+					// quic-go does not allow the use of the same net.PacketConn for multiple "Dial"
+					// calls (unless a quic.Transport is used), so we have to make sure to mock local
+					// addresses with different ports, as tests run in parallel.
+					Port: 1,
 				}
 			},
 			MockRemoteAddr: func() net.Addr {
