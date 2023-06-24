@@ -217,8 +217,6 @@ github.com/fatih/color v1.9.0/go.mod h1:eQcE1qtQxscV5RaZvpXrrb8Drkc3/DdQ+uUYCNjL
 github.com/fatih/color v1.13.0/go.mod h1:kLAiJbzzSOZDVNGyDpeOxJ47H46qBXwg5ILebYFFOfk=
 github.com/fatih/color v1.15.0 h1:kOqh6YHBtK8aywxGerMG2Eq3H6Qgoqeo13Bk2Mv/nBs=
 github.com/fatih/color v1.15.0/go.mod h1:0h5ZqXfHYED7Bhv2ZJamyIOUej9KtShiJESRwBDUSsw=
-github.com/felixge/tcpkeepalive v0.0.0-20220224101934-f56176a53a1b h1:h2X1tswmsRG8D1eeDgkf18NYsQkmxK1G6P4uL3QZGIc=
-github.com/felixge/tcpkeepalive v0.0.0-20220224101934-f56176a53a1b/go.mod h1:z0yk3Pix6k848RFizhkU4uY36ts5pB1t3toBwudGbBo=
 github.com/florianl/go-nfqueue v1.1.1-0.20200829120558-a2f196e98ab0 h1:7ZJyJV4KiWBijCCzUPvVaqxsDxO36+KD0XKBdEN3I+8=
 github.com/franela/goblin v0.0.0-20200105215937-c9ffbefa60db/go.mod h1:7dvUGVsVBjqR7JHJk0brhHOZYGmfBYOrK0ZhYMEtBr4=
 github.com/franela/goreq v0.0.0-20171204163338-bcd34c9993f8/go.mod h1:ZhphrRTfi2rbfLwlschooIH4+wKKDR4Pdxhh+TRoA20=
