@@ -130,6 +130,8 @@ github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
 github.com/fatih/color v1.16.0 h1:zmkK9Ngbjj+K0yRhTVONQh1p/HknKYSlNT+vZCzyokM=
 github.com/fatih/color v1.16.0/go.mod h1:fL2Sau1YI5c0pdGEVCbKQbLXB6edEj1ZgiY4NijnWvE=
+github.com/felixge/tcpkeepalive v0.0.0-20220224101934-f56176a53a1b h1:h2X1tswmsRG8D1eeDgkf18NYsQkmxK1G6P4uL3QZGIc=
+github.com/felixge/tcpkeepalive v0.0.0-20220224101934-f56176a53a1b/go.mod h1:z0yk3Pix6k848RFizhkU4uY36ts5pB1t3toBwudGbBo=
 github.com/florianl/go-nfqueue v1.1.1-0.20200829120558-a2f196e98ab0 h1:7ZJyJV4KiWBijCCzUPvVaqxsDxO36+KD0XKBdEN3I+8=
 github.com/flynn/noise v1.0.1 h1:vPp/jdQLXC6ppsXSj/pM3W1BIJ5FEHE2TulSJBpb43Y=
 github.com/flynn/noise v1.0.1/go.mod h1:xbMo+0i6+IGbYdJhF31t2eR1BIU0CYc12+BNAKwUTag=
