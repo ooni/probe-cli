@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"net"
+	"reflect"
 	"sync"
 	"time"
 
@@ -222,7 +223,10 @@ func (d *dialerResolverWithTracing) DialContext(ctx context.Context, network, ad
 		err = MaybeNewErrWrapper(ClassifyGenericError, ConnectOperation, err)
 		trace.OnConnectDone(started, network, onlyhost, target, err, finished)
 		if err == nil {
-			conn = &dialerErrWrapperConn{conn}
+			for reflect.TypeOf(conn).ConvertibleTo(reflect.TypeOf(&dialerErrWrapperConn{})) {
+				conn = conn.(*dialerErrWrapperConn).Conn
+			}
+			conn = &dialerErrWrapperConn{Conn: conn}
 			return trace.MaybeWrapNetConn(conn), nil
 		}
 		errorslist = append(errorslist, err)

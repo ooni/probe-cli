@@ -45,12 +45,19 @@ var ErrProxyUnsupportedScheme = errors.New("proxy: unsupported scheme")
 // DialContext implements Dialer.DialContext.
 func (d *proxyDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	url := d.ProxyURL
-	if url.Scheme != "socks5" {
+	if url.Scheme == "socks5" {
+		// the code at proxy/socks5.go never fails; see https://git.io/JfJ4g
+		child, _ := proxy.SOCKS5(network, url.Host, nil, &proxyDialerWrapper{d.Dialer})
+		return d.dial(ctx, child, network, address)
+	} else if url.Scheme == "http" {
+		child := NewHTTPDialer(network, url.Host)
+		child.ProxyDial = func(ctx context.Context, network string, address string) (net.Conn, error) {
+			return d.Dialer.(proxy.ContextDialer).DialContext(ctx, network, address)
+		}
+		return d.dial(ctx, child, network, address)
+	} else {
 		return nil, ErrProxyUnsupportedScheme
 	}
-	// the code at proxy/socks5.go never fails; see https://git.io/JfJ4g
-	child, _ := proxy.SOCKS5(network, url.Host, nil, &proxyDialerWrapper{d.Dialer})
-	return d.dial(ctx, child, network, address)
 }
 
 func (d *proxyDialer) dial(
