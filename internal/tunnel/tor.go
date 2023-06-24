@@ -12,6 +12,11 @@ import (
 	"time"
 )
 
+// ErrCannotFindTorBinary is an error emitted when we cannot find the
+// tor binary. We use this error in vanillator and torsf to detect
+// cases where this happens and avoid submitting measurements.
+var ErrCannotFindTorBinary = errors.New("tunnel: cannot find tor binary")
+
 // torProcess is a running tor process.
 type torProcess interface {
 	io.Closer

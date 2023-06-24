@@ -39,7 +39,7 @@ func newStepCheckout(w io.Writer) {
 func newStepSetupGo(w io.Writer, cacheName string) {
 	mustFprintf(w, "      - name: Get GOVERSION content\n")
 	mustFprintf(w, "        id: goversion\n")
-	mustFprintf(w, "        run: echo ::set-output name=version::$(cat GOVERSION)\n")
+	mustFprintf(w, "        run: echo \"version=$(cat GOVERSION)\" >> \"$GITHUB_OUTPUT\"\n")
 	mustFprintf(w, "      - uses: magnetikonline/action-golang-cache@v4\n")
 	mustFprintf(w, "        with:\n")
 	mustFprintf(w, "          go-version: \"${{ steps.goversion.outputs.version }}\"\n")
