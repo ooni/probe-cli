@@ -297,10 +297,7 @@ func (t *SecureFlow) httpTransaction(ctx context.Context, network, address, alpn
 			t.CookieJar.SetCookies(req.URL, cookies)
 		}
 		reader := io.LimitReader(resp.Body, maxbody)
-		speedCollector := measurexlite.NewSpeedCollector(trace)
 		body, err = StreamAllContext(ctx, reader)
-		speedCollector.Close()
-		t.TestKeys.AppendNetworkEvents(speedCollector.ExtractSamples()...)
 	}
 	finished := trace.TimeSince(trace.ZeroTime)
 	t.TestKeys.AppendNetworkEvents(measurexlite.NewAnnotationArchivalNetworkEvent(
