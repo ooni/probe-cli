@@ -15,7 +15,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/geoipx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
 // wrapResolver resolver wraps the passed resolver to save data into the trace
@@ -149,7 +148,7 @@ func NewArchivalDNSLookupResultFromRoundTrip(index int64, started time.Duration,
 	return &model.ArchivalDNSLookupResult{
 		Answers:          newArchivalDNSAnswers(addrs, response),
 		Engine:           reso.Network(),
-		Failure:          tracex.NewFailure(err),
+		Failure:          NewFailure(err),
 		GetaddrinfoError: netxlite.ErrorToGetaddrinfoRetvalOrZero(err),
 		Hostname:         query.Domain(),
 		QueryType:        dns.TypeToString[query.Type()],

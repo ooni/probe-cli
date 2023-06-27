@@ -14,7 +14,6 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
 // NewDialerWithoutResolver is equivalent to netxlite.NewDialerWithoutResolver
@@ -100,7 +99,7 @@ func NewArchivalTCPConnectResult(index int64, started time.Duration, address str
 		Port: archivalPortToString(port),
 		Status: model.ArchivalTCPConnectStatus{
 			Blocked: nil,
-			Failure: tracex.NewFailure(err),
+			Failure: NewFailure(err),
 			Success: err == nil,
 		},
 		T0:            started.Seconds(),
