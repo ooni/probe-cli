@@ -10,7 +10,6 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
 // MaybeClose is a convenience function for closing a conn only when such a conn isn't nil.
@@ -152,7 +151,7 @@ func NewArchivalNetworkEvent(index int64, started time.Duration, operation strin
 	tags ...string) *model.ArchivalNetworkEvent {
 	return &model.ArchivalNetworkEvent{
 		Address:       address,
-		Failure:       tracex.NewFailure(err),
+		Failure:       NewFailure(err),
 		NumBytes:      int64(count),
 		Operation:     operation,
 		Proto:         network,
