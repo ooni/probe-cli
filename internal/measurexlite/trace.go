@@ -101,7 +101,7 @@ type Trace struct {
 const (
 	// NetworkEventBufferSize is the buffer size for constructing
 	// the internal Trace's networkEvent buffered channel.
-	NetworkEventBufferSize = 64
+	NetworkEventBufferSize = 16
 
 	// DNSLookupBufferSize is the buffer size for constructing
 	// the internal Trace's dnsLookup buffered channel.
