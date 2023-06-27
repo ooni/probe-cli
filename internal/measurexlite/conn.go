@@ -54,6 +54,8 @@ func (c *connTrace) Read(b []byte) (int, error) {
 	default: // buffer is full
 	}
 
+	c.tx.updateReadSummaryNetworkAddress(network, addr, count)
+
 	return count, err
 }
 
@@ -114,6 +116,8 @@ func (c *udpLikeConnTrace) ReadFrom(b []byte) (int, net.Addr, error) {
 		err, finished, c.tx.tags...):
 	default: // buffer is full
 	}
+
+	c.tx.updateReadSummaryPacketConn("udp", addr, count)
 
 	return count, addr, err
 }

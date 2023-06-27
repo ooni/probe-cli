@@ -5,6 +5,7 @@ package measurexlite
 //
 
 import (
+	"sync"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -65,6 +66,15 @@ type Trace struct {
 
 	// delayedDNSResponse is MANDATORY and buffers delayed DNS responses.
 	delayedDNSResponse chan *model.ArchivalDNSLookupResult
+
+	// readSummaryMu protects the readSummaryTCP and readySummaryUDP summary maps.
+	readSummaryMu sync.Mutex
+
+	// readSummaryTCP contains a MANDATORY read summary for TCP connections we're tracking.
+	readSummaryTCP map[string]int64
+
+	// readSummaryUDP contains a MANDATORY read summary for UDP connections we're tracking.
+	readSummaryUDP map[string]int64
 
 	// tcpConnect is MANDATORY and buffers TCP connect observations.
 	tcpConnect chan *model.ArchivalTCPConnectResult
@@ -150,6 +160,9 @@ func NewTrace(index int64, zeroTime time.Time, tags ...string) *Trace {
 			chan *model.ArchivalDNSLookupResult,
 			DelayedDNSResponseBufferSize,
 		),
+		readSummaryMu:  sync.Mutex{},
+		readSummaryTCP: make(map[string]int64),
+		readSummaryUDP: make(map[string]int64),
 		tcpConnect: make(
 			chan *model.ArchivalTCPConnectResult,
 			TCPConnectBufferSize,
