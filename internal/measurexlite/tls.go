@@ -14,7 +14,6 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
 // NewTLSHandshakerStdlib is equivalent to netxlite.NewTLSHandshakerStdlib
@@ -87,7 +86,7 @@ func NewArchivalTLSOrQUICHandshakeResult(
 		Network:            network,
 		Address:            address,
 		CipherSuite:        netxlite.TLSCipherSuiteString(state.CipherSuite),
-		Failure:            tracex.NewFailure(err),
+		Failure:            NewFailure(err),
 		NegotiatedProtocol: state.NegotiatedProtocol,
 		NoTLSVerify:        config.InsecureSkipVerify,
 		PeerCertificates:   TLSPeerCerts(state, err),

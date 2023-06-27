@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
 // NewArchivalHTTPRequestResult creates a new model.ArchivalHTTPRequestResult.
@@ -51,7 +50,7 @@ func NewArchivalHTTPRequestResult(index int64, started time.Duration, network, a
 		Network: network,
 		Address: address,
 		ALPN:    alpn,
-		Failure: tracex.NewFailure(err),
+		Failure: NewFailure(err),
 		Request: model.ArchivalHTTPRequest{
 			Body:            model.ArchivalMaybeBinaryData{},
 			BodyIsTruncated: false,
