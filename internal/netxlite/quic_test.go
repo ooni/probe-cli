@@ -16,10 +16,10 @@ import (
 	"github.com/quic-go/quic-go"
 )
 
-func TestNewQUICListener(t *testing.T) {
+func TestNewUDPListener(t *testing.T) {
 	ql := NewUDPListener()
-	qew := ql.(*quicListenerErrWrapper)
-	_ = qew.QUICListener.(*udpListenerStdlib)
+	qew := ql.(*udpListenerErrWrapper)
+	_ = qew.UDPListener.(*udpListenerStdlib)
 }
 
 type extensionQUICDialerFirst struct {
@@ -69,7 +69,7 @@ func TestNewQUICDialer(t *testing.T) {
 	errWrapper := ext1.QUICDialer.(*quicDialerErrWrapper)
 	handshakeCompleter := errWrapper.QUICDialer.(*quicDialerHandshakeCompleter)
 	base := handshakeCompleter.Dialer.(*quicDialerQUICGo)
-	if base.QUICListener != ql {
+	if base.UDPListener != ql {
 		t.Fatal("invalid quic listener")
 	}
 }
@@ -129,7 +129,7 @@ func TestQUICDialerQUICGo(t *testing.T) {
 				ServerName: "www.google.com",
 			}
 			systemdialer := quicDialerQUICGo{
-				QUICListener: &udpListenerStdlib{},
+				UDPListener: &udpListenerStdlib{},
 			}
 			defer systemdialer.CloseIdleConnections() // just to see it running
 			ctx := context.Background()
@@ -148,7 +148,7 @@ func TestQUICDialerQUICGo(t *testing.T) {
 				ServerName: "www.google.com",
 			}
 			systemdialer := quicDialerQUICGo{
-				QUICListener: &udpListenerStdlib{},
+				UDPListener: &udpListenerStdlib{},
 			}
 			ctx := context.Background()
 			qconn, err := systemdialer.DialContext(
@@ -166,7 +166,7 @@ func TestQUICDialerQUICGo(t *testing.T) {
 				ServerName: "www.google.com",
 			}
 			systemdialer := quicDialerQUICGo{
-				QUICListener: &udpListenerStdlib{},
+				UDPListener: &udpListenerStdlib{},
 			}
 			ctx := context.Background()
 			qconn, err := systemdialer.DialContext(
@@ -185,7 +185,7 @@ func TestQUICDialerQUICGo(t *testing.T) {
 				ServerName: "www.google.com",
 			}
 			systemdialer := quicDialerQUICGo{
-				QUICListener: &mocks.QUICListener{
+				UDPListener: &mocks.UDPListener{
 					MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 						return nil, expected
 					},
@@ -207,7 +207,7 @@ func TestQUICDialerQUICGo(t *testing.T) {
 				ServerName: "dns.google",
 			}
 			systemdialer := quicDialerQUICGo{
-				QUICListener: &udpListenerStdlib{},
+				UDPListener: &udpListenerStdlib{},
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel() // fail immediately
@@ -228,7 +228,7 @@ func TestQUICDialerQUICGo(t *testing.T) {
 				ServerName: "dns.google",
 			}
 			systemdialer := quicDialerQUICGo{
-				QUICListener: &udpListenerStdlib{},
+				UDPListener: &udpListenerStdlib{},
 				mockDialEarly: func(ctx context.Context, pconn net.PacketConn,
 					remoteAddr net.Addr, tlsConfig *tls.Config,
 					quicConfig *quic.Config) (quic.EarlyConnection, error) {
@@ -269,7 +269,7 @@ func TestQUICDialerQUICGo(t *testing.T) {
 				ServerName: "dns.google",
 			}
 			systemdialer := quicDialerQUICGo{
-				QUICListener: &udpListenerStdlib{},
+				UDPListener: &udpListenerStdlib{},
 				mockDialEarly: func(ctx context.Context, pconn net.PacketConn,
 					remoteAddr net.Addr, tlsConfig *tls.Config,
 					quicConfig *quic.Config) (quic.EarlyConnection, error) {
@@ -309,7 +309,7 @@ func TestQUICDialerQUICGo(t *testing.T) {
 			}
 			fakeconn := &mocks.QUICEarlyConnection{}
 			systemdialer := quicDialerQUICGo{
-				QUICListener: &udpListenerStdlib{},
+				UDPListener: &udpListenerStdlib{},
 				mockDialEarly: func(ctx context.Context, pconn net.PacketConn,
 					remoteAddr net.Addr, tlsConfig *tls.Config,
 					quicConfig *quic.Config) (quic.EarlyConnection, error) {
@@ -525,7 +525,7 @@ func TestQUICDialerResolver(t *testing.T) {
 			dialer := &quicDialerResolver{
 				Resolver: NewStdlibResolver(log.Log),
 				Dialer: &quicDialerQUICGo{
-					QUICListener: &udpListenerStdlib{},
+					UDPListener: &udpListenerStdlib{},
 				}}
 			qconn, err := dialer.DialContext(
 				context.Background(), "8.8.4.4:x",
@@ -724,12 +724,12 @@ func TestNewSingleUseQUICDialer(t *testing.T) {
 	}
 }
 
-func TestQUICListenerErrWrapper(t *testing.T) {
+func TestUDPListenerErrWrapper(t *testing.T) {
 	t.Run("Listen", func(t *testing.T) {
 		t.Run("on success", func(t *testing.T) {
 			expectedConn := &mocks.UDPLikeConn{}
-			ql := &quicListenerErrWrapper{
-				QUICListener: &mocks.QUICListener{
+			ql := &udpListenerErrWrapper{
+				UDPListener: &mocks.UDPListener{
 					MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 						return expectedConn, nil
 					},
@@ -747,8 +747,8 @@ func TestQUICListenerErrWrapper(t *testing.T) {
 
 		t.Run("on failure", func(t *testing.T) {
 			expectedErr := io.EOF
-			ql := &quicListenerErrWrapper{
-				QUICListener: &mocks.QUICListener{
+			ql := &udpListenerErrWrapper{
+				UDPListener: &mocks.UDPListener{
 					MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 						return nil, expectedErr
 					},

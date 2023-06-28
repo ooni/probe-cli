@@ -517,7 +517,7 @@ func TestTrace(t *testing.T) {
 					}
 				},
 			}
-			qdx := tx.newQUICDialerWithoutResolver(&mocks.QUICListener{}, model.DiscardLogger)
+			qdx := tx.newQUICDialerWithoutResolver(&mocks.UDPListener{}, model.DiscardLogger)
 			ctx := context.Background()
 			qconn, err := qdx.DialContext(ctx, "1.1.1.1:443", &tls.Config{}, &quic.Config{})
 			if !errors.Is(err, mockedErr) {
@@ -554,7 +554,7 @@ func TestTrace(t *testing.T) {
 					return nil
 				},
 			}
-			listener := &mocks.QUICListener{
+			listener := &mocks.UDPListener{
 				MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 					return pconn, nil
 				},

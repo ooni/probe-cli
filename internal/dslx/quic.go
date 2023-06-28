@@ -97,10 +97,10 @@ func (f *quicHandshakeFunc) Apply(
 	)
 
 	// setup
-	quicListener := netxlite.NewUDPListener()
+	udpListener := netxlite.NewUDPListener()
 	quicDialer := f.dialer
 	if quicDialer == nil {
-		quicDialer = trace.NewQUICDialerWithoutResolver(quicListener, input.Logger)
+		quicDialer = trace.NewQUICDialerWithoutResolver(udpListener, input.Logger)
 	}
 	config := &tls.Config{
 		NextProtos:         []string{"h3"},

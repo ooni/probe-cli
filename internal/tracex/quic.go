@@ -96,33 +96,33 @@ func quicConnectionState(sess quic.EarlyConnection) tls.ConnectionState {
 	return sess.ConnectionState().TLS.ConnectionState
 }
 
-// QUICListenerSaver is a QUICListener that also implements saving events.
-type QUICListenerSaver struct {
-	// QUICListener is the underlying QUICListener.
-	QUICListener model.UDPListener
+// UDPListenerSaver is a UDPListener that also implements saving events.
+type UDPListenerSaver struct {
+	// UDPListener is the underlying UDPListener.
+	UDPListener model.UDPListener
 
 	// Saver is the underlying Saver.
 	Saver *Saver
 }
 
-// WrapQUICListener wraps a model.QUICDialer with a QUICListenerSaver that will
+// WrapUDPListener wraps a model.UDPDialer with a UDPListenerSaver that will
 // save the QUIC I/O packet conn events into this Saver.
 //
 // When this function is invoked on a nil Saver, it will directly return
-// the original QUICListener without any wrapping.
-func (s *Saver) WrapQUICListener(ql model.UDPListener) model.UDPListener {
+// the original UDPListener without any wrapping.
+func (s *Saver) WrapUDPListener(ql model.UDPListener) model.UDPListener {
 	if s == nil {
 		return ql
 	}
-	return &QUICListenerSaver{
-		QUICListener: ql,
-		Saver:        s,
+	return &UDPListenerSaver{
+		UDPListener: ql,
+		Saver:       s,
 	}
 }
 
-// Listen implements QUICListener.Listen.
-func (qls *QUICListenerSaver) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
-	pconn, err := qls.QUICListener.Listen(addr)
+// Listen implements UDPListener.Listen.
+func (qls *UDPListenerSaver) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
+	pconn, err := qls.UDPListener.Listen(addr)
 	if err != nil {
 		return nil, err
 	}
@@ -184,5 +184,5 @@ func (c *quicPacketConnWrapper) safeAddrString(addr net.Addr) (out string) {
 }
 
 var _ model.QUICDialer = &QUICDialerSaver{}
-var _ model.UDPListener = &QUICListenerSaver{}
+var _ model.UDPListener = &UDPListenerSaver{}
 var _ model.UDPLikeConn = &quicPacketConnWrapper{}

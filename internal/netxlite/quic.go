@@ -19,7 +19,7 @@ import (
 // NewUDPListener creates a new UDPListener using the standard
 // library to create listening UDP sockets.
 func NewUDPListener() model.UDPListener {
-	return &quicListenerErrWrapper{&udpListenerStdlib{}}
+	return &udpListenerErrWrapper{&udpListenerStdlib{}}
 }
 
 // udpListenerStdlib is a UDPListener using the standard library.
@@ -54,7 +54,7 @@ func NewQUICDialerWithResolver(listener model.UDPListener, logger model.DebugLog
 	outDialer = &quicDialerErrWrapper{
 		QUICDialer: &quicDialerHandshakeCompleter{
 			Dialer: &quicDialerQUICGo{
-				QUICListener: listener,
+				UDPListener: listener,
 			},
 		},
 	}
@@ -86,8 +86,8 @@ func NewQUICDialerWithoutResolver(listener model.UDPListener,
 
 // quicDialerQUICGo dials using the quic-go/quic-go library.
 type quicDialerQUICGo struct {
-	// QUICListener is the underlying QUICListener to use.
-	QUICListener model.UDPListener
+	// UDPListener is the underlying UDPListener to use.
+	UDPListener model.UDPListener
 
 	// mockDialEarly allows to mock quic.DialEarly.
 	mockDialEarly func(ctx context.Context, pconn net.PacketConn,
@@ -138,7 +138,7 @@ func (d *quicDialerQUICGo) DialContext(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	pconn, err := d.QUICListener.Listen(&net.UDPAddr{IP: net.IPv4zero, Port: 0, Zone: ""})
+	pconn, err := d.UDPListener.Listen(&net.UDPAddr{IP: net.IPv4zero, Port: 0, Zone: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -384,17 +384,17 @@ func (s *quicDialerSingleUse) CloseIdleConnections() {
 	// nothing to do
 }
 
-// quicListenerErrWrapper is a QUICListener that wraps errors.
-type quicListenerErrWrapper struct {
-	// QUICListener is the underlying listener.
-	QUICListener model.UDPListener
+// udpListenerErrWrapper is a UDPListener that wraps errors.
+type udpListenerErrWrapper struct {
+	// UDPListener is the underlying listener.
+	UDPListener model.UDPListener
 }
 
-var _ model.UDPListener = &quicListenerErrWrapper{}
+var _ model.UDPListener = &udpListenerErrWrapper{}
 
-// Listen implements QUICListener.Listen.
-func (qls *quicListenerErrWrapper) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
-	pconn, err := qls.QUICListener.Listen(addr)
+// Listen implements UDPListener.Listen.
+func (qls *udpListenerErrWrapper) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
+	pconn, err := qls.UDPListener.Listen(addr)
 	if err != nil {
 		return nil, NewErrWrapper(ClassifyGenericError, QUICListenOperation, err)
 	}

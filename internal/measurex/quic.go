@@ -17,13 +17,13 @@ import (
 	"github.com/quic-go/quic-go"
 )
 
-type quicListenerDB struct {
+type udpListenerDB struct {
 	model.UDPListener
 	begin time.Time
 	db    WritableDB
 }
 
-func (ql *quicListenerDB) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
+func (ql *udpListenerDB) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 	pconn, err := ql.UDPListener.Listen(addr)
 	if err != nil {
 		return nil, err
@@ -109,7 +109,7 @@ func (qh *quicDialerDB) DialContext(ctx context.Context, address string,
 	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
 	started := time.Since(qh.begin).Seconds()
 	var state tls.ConnectionState
-	listener := &quicListenerDB{
+	listener := &udpListenerDB{
 		UDPListener: netxlite.NewUDPListener(),
 		begin:       qh.begin,
 		db:          qh.db,

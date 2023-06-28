@@ -26,7 +26,7 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 		trace.newQUICDialerWithoutResolverFn = func(listener model.UDPListener, dl model.DebugLogger) model.QUICDialer {
 			return underlying
 		}
-		listener := &mocks.QUICListener{}
+		listener := &mocks.UDPListener{}
 		dialer := trace.NewQUICDialerWithoutResolver(listener, model.DiscardLogger)
 		dt := dialer.(*quicDialerTrace)
 		if dt.qd != underlying {
@@ -53,7 +53,7 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 		trace.newQUICDialerWithoutResolverFn = func(listener model.UDPListener, dl model.DebugLogger) model.QUICDialer {
 			return underlying
 		}
-		listener := &mocks.QUICListener{}
+		listener := &mocks.UDPListener{}
 		dialer := trace.NewQUICDialerWithoutResolver(listener, model.DiscardLogger)
 		ctx := context.Background()
 		conn, err := dialer.DialContext(ctx, "1.1.1.1:443", &tls.Config{}, &quic.Config{})
@@ -80,7 +80,7 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 		trace.newQUICDialerWithoutResolverFn = func(listener model.UDPListener, dl model.DebugLogger) model.QUICDialer {
 			return underlying
 		}
-		listener := &mocks.QUICListener{}
+		listener := &mocks.UDPListener{}
 		dialer := trace.NewQUICDialerWithoutResolver(listener, model.DiscardLogger)
 		dialer.CloseIdleConnections()
 		if !called {
@@ -115,7 +115,7 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 				return nil
 			},
 		}
-		listener := &mocks.QUICListener{
+		listener := &mocks.UDPListener{
 			MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 				return pconn, nil
 			},
@@ -228,7 +228,7 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 				return nil
 			},
 		}
-		listener := &mocks.QUICListener{
+		listener := &mocks.UDPListener{
 			MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 				return pconn, nil
 			},
@@ -268,8 +268,8 @@ func TestOnQUICHandshakeDoneExtractsTheConnectionState(t *testing.T) {
 	trace := NewTrace(0, time.Now())
 
 	// create a QUIC dialer
-	quicListener := netxlite.NewUDPListener()
-	quicDialer := trace.NewQUICDialerWithoutResolver(quicListener, model.DiscardLogger)
+	udpListener := netxlite.NewUDPListener()
+	quicDialer := trace.NewQUICDialerWithoutResolver(udpListener, model.DiscardLogger)
 
 	// dial with the endpoint we use for testing
 	quicConn, err := quicDialer.DialContext(

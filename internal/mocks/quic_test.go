@@ -15,10 +15,10 @@ import (
 	"github.com/quic-go/quic-go"
 )
 
-func TestQUICListenerListen(t *testing.T) {
+func TestUDPListenerListen(t *testing.T) {
 	t.Run("Listen", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		ql := &QUICListener{
+		ql := &UDPListener{
 			MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 				return nil, expected
 			},
