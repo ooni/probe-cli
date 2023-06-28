@@ -796,6 +796,8 @@ github.com/quic-go/quic-go v0.33.0 h1:ItNoTDN/Fm/zBlq769lLJc8ECe9gYaW40veHCCco7y
 github.com/quic-go/quic-go v0.33.0/go.mod h1:YMuhaAV9/jIu0XclDXwZPAsP/2Kgr5yMYhe9oxhhOFA=
 github.com/quic-go/quic-go v0.35.1 h1:b0kzj6b/cQAf05cT0CkQubHM31wiA+xH3IBkxP62poo=
 github.com/quic-go/quic-go v0.35.1/go.mod h1:+4CVgVppm0FNjpG3UcX8Joi/frKOH7/ciD5yGcwOO1g=
+github.com/quic-go/quic-go v0.36.0 h1:JIrO7p7Ug6hssFcARjWDiqS2RAKJHCiwPxBAA989rbI=
+github.com/quic-go/quic-go v0.36.0/go.mod h1:zPetvwDlILVxt15n3hr3Gf/I3mDf7LpLKPhR4Ez0AZQ=
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/refraction-networking/conjure v0.4.0 h1:YObJ+6L/MnupE82N2+3m93GMzlHjHSHe1ysIYDOpqug=
 github.com/refraction-networking/conjure v0.4.0/go.mod h1:7na+SFWdaTOToNoNrsJRIj4CIMwdGFZ4kwb/CO5Z0rQ=
