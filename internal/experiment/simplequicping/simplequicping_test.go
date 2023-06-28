@@ -6,9 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/quic-go/quic-go"
+	"github.com/ooni/probe-cli/v3/internal/netemx"
 )
 
 func TestConfig_alpn(t *testing.T) {
@@ -143,63 +144,6 @@ func TestMeasurerRun(t *testing.T) {
 			}
 		})
 	})
-
-// Start a server that echos all data on the first stream opened by the client.
-//
-// SPDX-License-Identifier: MIT
-//
-// See https://github.com/quic-go/quic-go/blob/v0.27.0/example/echo/echo.go#L34
-func startEchoServer() (string, quic.Listener, error) {
-	listener, err := quic.ListenAddr("127.0.0.1:0", generateTLSConfig(), nil)
-	if err != nil {
-		return "", nil, err
-	}
-	go echoWorkerMain(listener)
-	URL := &url.URL{
-		Scheme: "quichandshake",
-		Host:   listener.Addr().String(),
-		Path:   "/",
-	}
-	return URL.String(), listener, nil
-}
-
-// Worker used by startEchoServer to accept a quic connection.
-//
-// SPDX-License-Identifier: MIT
-//
-// See https://github.com/quic-go/quic-go/blob/v0.27.0/example/echo/echo.go#L34
-func echoWorkerMain(listener quic.Listener) {
-	for {
-		conn, err := listener.Accept(context.Background())
-		if err != nil {
-			return
-		}
-
-// Setup a bare-bones TLS config for the server.
-//
-// SPDX-License-Identifier: MIT
-//
-// See https://github.com/quic-go/quic-go/blob/v0.27.0/example/echo/echo.go#L91
-func generateTLSConfig() *tls.Config {
-	key, err := rsa.GenerateKey(rand.Reader, 1024)
-	if err != nil {
-		panic(err)
-	}
-	template := x509.Certificate{SerialNumber: big.NewInt(1)}
-	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
-	if err != nil {
-		panic(err)
-	}
-	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)})
-	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
-	tlsCert, err := tls.X509KeyPair(certPEM, keyPEM)
-	if err != nil {
-		panic(err)
-	}
-	return &tls.Config{
-		Certificates: []tls.Certificate{tlsCert},
-		NextProtos:   []string{"quic-echo-example"},
-	}
 }
 
 func TestConfig_sni(t *testing.T) {
