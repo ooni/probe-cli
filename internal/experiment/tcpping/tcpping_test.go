@@ -3,14 +3,15 @@ package tcpping
 import (
 	"context"
 	"errors"
-	"net/http"
-	"net/http/httptest"
-	"net/url"
 	"testing"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
+	"github.com/google/gopacket/layers"
+	"github.com/ooni/netem"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netemx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestConfig_repetitions(t *testing.T) {
@@ -26,6 +27,8 @@ func TestConfig_delay(t *testing.T) {
 		t.Fatal("invalid default delay")
 	}
 }
+
+const NPINGS = 4
 
 func TestMeasurer_run(t *testing.T) {
 	// expectedPings is the expected number of pings
@@ -47,8 +50,8 @@ func TestMeasurer_run(t *testing.T) {
 		meas := &model.Measurement{
 			Input: model.MeasurementTarget(input),
 		}
-		sess := &mockable.Session{
-			MockableLogger: model.DiscardLogger,
+		sess := &mocks.Session{
+			MockLogger: func() model.Logger { return model.DiscardLogger },
 		}
 		callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
 		args := &model.ExperimentArgs{
@@ -88,31 +91,119 @@ func TestMeasurer_run(t *testing.T) {
 		}
 	})
 
-	t.Run("with local listener", func(t *testing.T) {
-		srvr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(200)
-		}))
-		defer srvr.Close()
-		URL, err := url.Parse(srvr.URL)
-		if err != nil {
-			t.Fatal(err)
+	t.Run("with netem: without DPI: expect success", func(t *testing.T) {
+		// we use the same empty DNS config for client and servers here
+		dnsConfig := netem.NewDNSConfig()
+
+		clientConf := &netemx.ClientConfig{DNSConfig: dnsConfig}
+		serversConf := &netemx.ServersConfig{
+			DNSConfig: dnsConfig,
+			Servers: []netemx.ConfigServerStack{
+				{
+					ServerAddr:  "8.8.8.8",
+					HTTPServers: []netemx.ConfigHTTPServer{{Port: 443}},
+				},
+			},
 		}
-		URL.Scheme = "tcpconnect"
-		meas, m, err := runHelper(URL.String())
-		if err != nil {
-			t.Fatal(err)
+
+		// create a new test environment
+		env := netemx.NewEnvironment(clientConf, serversConf)
+		defer env.Close()
+		env.Do(func() {
+			meas, m, err := runHelper("tcpconnect://8.8.8.8:443")
+			if err != nil {
+				t.Fatalf("Unexpected error: %s", err)
+			}
+
+			tk, _ := (meas.TestKeys).(*TestKeys)
+			if len(tk.Pings) != NPINGS {
+				t.Fatal("unexpected number of pings")
+			}
+
+			ask, err := m.GetSummaryKeys(meas)
+			if err != nil {
+				t.Fatal("cannot obtain summary")
+			}
+			summary := ask.(SummaryKeys)
+			if summary.IsAnomaly {
+				t.Fatal("expected no anomaly")
+			}
+
+			for _, p := range tk.Pings {
+				if p.TCPConnect == nil {
+					t.Fatal("TCPConnect should not be nil")
+				}
+				if p.TCPConnect == nil {
+					t.Fatal("TCPConnect should not be nil")
+				}
+				if !p.TCPConnect.Status.Success {
+					t.Fatal("expected success here")
+				}
+				if p.TCPConnect.Status.Failure != nil {
+					t.Fatal("unexpected TCPConnect status failure")
+				}
+			}
+		})
+	})
+
+	t.Run("with netem: with DPI that drops TCP segments to 8.8.8.8:443: expect failure", func(t *testing.T) {
+		// we use the same empty DNS config for client and servers here
+		dnsConfig := netem.NewDNSConfig()
+
+		clientConf := &netemx.ClientConfig{DNSConfig: dnsConfig}
+		serversConf := &netemx.ServersConfig{
+			DNSConfig: dnsConfig,
+			Servers: []netemx.ConfigServerStack{
+				{
+					ServerAddr:  "8.8.8.8",
+					HTTPServers: []netemx.ConfigHTTPServer{{Port: 443}},
+				},
+			},
 		}
-		tk := meas.TestKeys.(*TestKeys)
-		if len(tk.Pings) != expectedPings {
-			t.Fatal("unexpected number of pings")
-		}
-		ask, err := m.GetSummaryKeys(meas)
-		if err != nil {
-			t.Fatal("cannot obtain summary")
-		}
-		summary := ask.(SummaryKeys)
-		if summary.IsAnomaly {
-			t.Fatal("expected no anomaly")
-		}
+
+		// create a new test environment
+		env := netemx.NewEnvironment(clientConf, serversConf)
+		defer env.Close()
+
+		// add DPI engine to emulate the censorship condition
+		dpi := env.DPIEngine()
+		dpi.AddRule(&netem.DPIDropTrafficForServerEndpoint{
+			Logger:          model.DiscardLogger,
+			ServerIPAddress: "8.8.8.8",
+			ServerPort:      443,
+			ServerProtocol:  layers.IPProtocolTCP,
+		})
+
+		env.Do(func() {
+			meas, m, err := runHelper("tcpconnect://8.8.8.8:443")
+			if err != nil {
+				t.Fatalf("Unexpected error: %s", err)
+			}
+
+			tk, _ := (meas.TestKeys).(*TestKeys)
+
+			// note: this experiment does not set anomaly but we still want
+			// to have a test here for when we possibly will
+			ask, err := m.GetSummaryKeys(meas)
+			if err != nil {
+				t.Fatal("cannot obtain summary")
+			}
+			summary := ask.(SummaryKeys)
+			if summary.IsAnomaly {
+				t.Fatal("expected no anomaly")
+			}
+
+			for _, p := range tk.Pings {
+				if p.TCPConnect == nil {
+					t.Fatal("TCPConnect should not be nil")
+				}
+				if p.TCPConnect.Status.Failure == nil {
+					t.Fatal("expected an error here")
+				}
+				if *p.TCPConnect.Status.Failure != netxlite.FailureGenericTimeoutError {
+					t.Fatal("expected an error here")
+				}
+			}
+		})
 	})
 }
