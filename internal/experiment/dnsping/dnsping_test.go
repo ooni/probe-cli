@@ -3,16 +3,14 @@ package dnsping
 import (
 	"context"
 	"errors"
-	"log"
-	"net"
-	"net/url"
 	"testing"
 	"time"
 
-	"github.com/miekg/dns"
-	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
+	"github.com/google/gopacket/layers"
+	"github.com/ooni/netem"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/netemx"
 )
 
 func TestConfig_domains(t *testing.T) {
@@ -57,8 +55,8 @@ func TestMeasurer_run(t *testing.T) {
 		meas := &model.Measurement{
 			Input: model.MeasurementTarget(input),
 		}
-		sess := &mockable.Session{
-			MockableLogger: model.DiscardLogger,
+		sess := &mocks.Session{
+			MockLogger: func() model.Logger { return model.DiscardLogger },
 		}
 		callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
 		args := &model.ExperimentArgs{
@@ -98,67 +96,116 @@ func TestMeasurer_run(t *testing.T) {
 		}
 	})
 
-	t.Run("with local listener", func(t *testing.T) {
-		srvrURL, dnsListener, err := startDNSServer()
-		if err != nil {
-			log.Fatal(err)
+	t.Run("with netem: without DPI: expect success", func(t *testing.T) {
+		// we use the same empty DNS config for client and servers here
+		dnsConfig := netem.NewDNSConfig()
+		// create configuration for DNS server
+		dnsConfig.AddRecord(
+			"example.com",
+			"example.com", // CNAME
+			"93.184.216.34",
+		)
+
+		clientConf := &netemx.ClientConfig{
+			DNSConfig:    dnsConfig,
+			ResolverAddr: "8.8.8.8",
 		}
-		defer dnsListener.Close()
-		meas, m, err := runHelper(srvrURL)
-		if err != nil {
-			t.Fatal(err)
-		}
-		tk := meas.TestKeys.(*TestKeys)
-		if len(tk.Pings) != expectedPings*2 { // account for A & AAAA pings
-			t.Fatal("unexpected number of pings")
-		}
-		ask, err := m.GetSummaryKeys(meas)
-		if err != nil {
-			t.Fatal("cannot obtain summary")
-		}
-		summary := ask.(SummaryKeys)
-		if summary.IsAnomaly {
-			t.Fatal("expected no anomaly")
-		}
+
+		// create a new test environment
+		env := netemx.NewEnvironment(clientConf, &netemx.ServersConfig{})
+		defer env.Close()
+		env.Do(func() {
+			meas, m, err := runHelper("udp://8.8.8.8:53")
+			if err != nil {
+				t.Fatalf("Unexpected error: %s", err)
+			}
+
+			tk, _ := (meas.TestKeys).(*TestKeys)
+			if len(tk.Pings) != expectedPings*2 { // account for A & AAAA pings
+				t.Fatal("unexpected number of pings", len(tk.Pings))
+			}
+
+			ask, err := m.GetSummaryKeys(meas)
+			if err != nil {
+				t.Fatal("cannot obtain summary")
+			}
+			summary := ask.(SummaryKeys)
+			if summary.IsAnomaly {
+				t.Fatal("expected no anomaly")
+			}
+
+			for _, p := range tk.Pings {
+				if p.Query == nil {
+					t.Fatal("QUery should not be nil")
+				}
+				if p.Query.Answers == nil {
+					t.Fatal("p.Query.Answers should not be nil")
+				}
+				if p.Query.QueryType == "A" && p.Query.Failure != nil {
+					t.Fatal("unexpected error", *p.Query.Failure)
+				}
+			}
+		})
 	})
-}
 
-// startDNSServer starts a local DNS server.
-func startDNSServer() (string, net.PacketConn, error) {
-	dnsListener, err := net.ListenPacket("udp", "127.0.0.1:0")
-	if err != nil {
-		return "", nil, err
-	}
-	go runDNSServer(dnsListener)
-	URL := &url.URL{
-		Scheme: "udp",
-		Host:   dnsListener.LocalAddr().String(),
-		Path:   "/",
-	}
-	return URL.String(), dnsListener, nil
-}
+	t.Run("with netem: with DPI that drops TCP segments to 8.8.8.8:443: expect failure", func(t *testing.T) {
+		// we use the same empty DNS config for client and servers here
+		dnsConfig := netem.NewDNSConfig()
+		// create configuration for DNS server
+		dnsConfig.AddRecord(
+			"example.com",
+			"example.com", // CNAME
+			"93.184.216.34",
+		)
 
-// runDNSServer runs the DNS server.
-func runDNSServer(dnsListener net.PacketConn) {
-	ds := &dns.Server{
-		Handler:    &dnsHandler{},
-		Net:        "udp",
-		PacketConn: dnsListener,
-	}
-	err := ds.ActivateAndServe()
-	if !errors.Is(err, net.ErrClosed) {
-		runtimex.PanicOnError(err, "ActivateAndServe failed")
-	}
-}
+		clientConf := &netemx.ClientConfig{
+			DNSConfig:    dnsConfig,
+			ResolverAddr: "8.8.8.8",
+		}
 
-// dnsHandler handles DNS requests.
-type dnsHandler struct{}
+		// create a new test environment
+		env := netemx.NewEnvironment(clientConf, &netemx.ServersConfig{})
+		defer env.Close()
 
-// ServeDNS serves a DNS request
-func (h *dnsHandler) ServeDNS(rw dns.ResponseWriter, req *dns.Msg) {
-	m := new(dns.Msg)
-	m.Compress = true
-	m.MsgHdr.RecursionAvailable = true
-	m.SetRcode(req, dns.RcodeServerFailure)
-	rw.WriteMsg(m)
+		// add DPI engine to emulate the censorship condition
+		dpi := env.DPIEngine()
+		dpi.AddRule(&netem.DPIDropTrafficForServerEndpoint{
+			Logger:          model.DiscardLogger,
+			ServerIPAddress: "8.8.8.8",
+			ServerPort:      53,
+			ServerProtocol:  layers.IPProtocolUDP,
+		})
+
+		env.Do(func() {
+			meas, m, err := runHelper("udp://8.8.8.8:53")
+			if err != nil {
+				t.Fatalf("Unexpected error: %s", err)
+			}
+
+			tk, _ := (meas.TestKeys).(*TestKeys)
+
+			// note: this experiment does not set anomaly but we still want
+			// to have a test here for when we possibly will
+			ask, err := m.GetSummaryKeys(meas)
+			if err != nil {
+				t.Fatal("cannot obtain summary")
+			}
+			summary := ask.(SummaryKeys)
+			if summary.IsAnomaly {
+				t.Fatal("expected no anomaly")
+			}
+
+			for _, p := range tk.Pings {
+				if p.Query == nil {
+					t.Fatal("Query should not be nil")
+				}
+				if p.Query.Answers != nil {
+					t.Fatal("unexpected answers")
+				}
+				if p.Query.Failure == nil {
+					t.Fatal("expected a failure here")
+				}
+			}
+		})
+	})
 }

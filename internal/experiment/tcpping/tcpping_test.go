@@ -28,8 +28,6 @@ func TestConfig_delay(t *testing.T) {
 	}
 }
 
-const NPINGS = 4
-
 func TestMeasurer_run(t *testing.T) {
 	// expectedPings is the expected number of pings
 	const expectedPings = 4
@@ -116,7 +114,7 @@ func TestMeasurer_run(t *testing.T) {
 			}
 
 			tk, _ := (meas.TestKeys).(*TestKeys)
-			if len(tk.Pings) != NPINGS {
+			if len(tk.Pings) != expectedPings {
 				t.Fatal("unexpected number of pings")
 			}
 
