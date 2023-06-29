@@ -103,6 +103,17 @@ func TestWrapNetConn(t *testing.T) {
 		if err != nil {
 			t.Fatal("invalid err")
 		}
+
+		t.Run("we update the trace's byte received map", func(t *testing.T) {
+			stats := trace.CloneBytesReceivedMap()
+			if len(stats) != 1 {
+				t.Fatal("expected to see just one entry")
+			}
+			if stats["1.1.1.1:443 tcp"] != 128 {
+				t.Fatal("expected to know we received 128 bytes")
+			}
+		})
+
 		events := trace.NetworkEvents()
 		if len(events) != 1 {
 			t.Fatal("did not save network events")
@@ -264,6 +275,9 @@ func TestWrapUDPLikeConn(t *testing.T) {
 					MockString: func() string {
 						return "1.1.1.1:443"
 					},
+					MockNetwork: func() string {
+						return "udp"
+					},
 				}, nil
 			},
 		}
@@ -284,6 +298,17 @@ func TestWrapUDPLikeConn(t *testing.T) {
 		if err != nil {
 			t.Fatal("invalid err")
 		}
+
+		t.Run("we update the trace's byte received map", func(t *testing.T) {
+			stats := trace.CloneBytesReceivedMap()
+			if len(stats) != 1 {
+				t.Fatal("expected to see just one entry")
+			}
+			if stats["1.1.1.1:443 udp"] != 128 {
+				t.Fatal("expected to know we received 128 bytes")
+			}
+		})
+
 		events := trace.NetworkEvents()
 		if len(events) != 1 {
 			t.Fatal("did not save network events")
@@ -309,6 +334,9 @@ func TestWrapUDPLikeConn(t *testing.T) {
 				return len(b), &mocks.Addr{
 					MockString: func() string {
 						return "1.1.1.1:443"
+					},
+					MockNetwork: func() string {
+						return "udp"
 					},
 				}, nil
 			},
@@ -379,7 +407,7 @@ func TestWrapUDPLikeConn(t *testing.T) {
 		}
 	})
 
-	t.Run("Write discards the event when the buffer is full", func(t *testing.T) {
+	t.Run("WriteTo discards the event when the buffer is full", func(t *testing.T) {
 		underlying := &mocks.UDPLikeConn{
 			MockWriteTo: func(b []byte, addr net.Addr) (int, error) {
 				return len(b), nil
@@ -476,4 +504,65 @@ func TestNewAnnotationArchivalNetworkEvent(t *testing.T) {
 	if diff := cmp.Diff(expect, got); diff != "" {
 		t.Fatal(diff)
 	}
+}
+
+func TestTrace_updateBytesReceivedMapNetConn(t *testing.T) {
+	t.Run("we handle tcp4, tcp6, udp4 and udp6 like they were tcp and udp", func(t *testing.T) {
+		// create a new trace
+		tx := NewTrace(0, time.Now())
+
+		// insert stats for tcp, tcp4 and tcp6
+		tx.updateBytesReceivedMapNetConn("tcp", "1.2.3.4:5678", 10)
+		tx.updateBytesReceivedMapNetConn("tcp4", "1.2.3.4:5678", 100)
+		tx.updateBytesReceivedMapNetConn("tcp", "[::1]:5678", 10)
+		tx.updateBytesReceivedMapNetConn("tcp6", "[::1]:5678", 100)
+
+		// insert stats for udp, udp4 and udp6
+		tx.updateBytesReceivedMapNetConn("udp", "1.2.3.4:5678", 10)
+		tx.updateBytesReceivedMapNetConn("udp4", "1.2.3.4:5678", 100)
+		tx.updateBytesReceivedMapNetConn("udp", "[::1]:5678", 10)
+		tx.updateBytesReceivedMapNetConn("udp6", "[::1]:5678", 100)
+
+		// make sure the result is the expected one
+		expected := map[string]int64{
+			"1.2.3.4:5678 tcp": 110,
+			"[::1]:5678 tcp":   110,
+			"1.2.3.4:5678 udp": 110,
+			"[::1]:5678 udp":   110,
+		}
+		got := tx.CloneBytesReceivedMap()
+		if diff := cmp.Diff(expected, got); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+}
+
+func TestTrace_maybeUpdateBytesReceivedMapUDPLikeConn(t *testing.T) {
+	t.Run("we ignore cases where the address is nil", func(t *testing.T) {
+		// create a new trace
+		tx := NewTrace(0, time.Now())
+
+		// insert stats with a nil address
+		tx.maybeUpdateBytesReceivedMapUDPLikeConn(nil, 128)
+
+		// inserts stats with a good address
+		goodAddr := &mocks.Addr{
+			MockString: func() string {
+				return "1.2.3.4:5678"
+			},
+			MockNetwork: func() string {
+				return "udp"
+			},
+		}
+		tx.maybeUpdateBytesReceivedMapUDPLikeConn(goodAddr, 128)
+
+		// make sure the result is the expected one
+		expected := map[string]int64{
+			"1.2.3.4:5678 udp": 128,
+		}
+		got := tx.CloneBytesReceivedMap()
+		if diff := cmp.Diff(expected, got); diff != "" {
+			t.Fatal(diff)
+		}
+	})
 }
