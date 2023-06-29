@@ -13,18 +13,6 @@ import (
 	"time"
 )
 
-var (
-	// DefaultKeepAliveIdleTime specifies how long connection can be idle
-	// before sending keepalive message.
-	DefaultKeepAliveIdleTime = 15 * time.Minute
-	// DefaultKeepAliveCount specifies maximal number of keepalive messages
-	// sent before marking connection as dead.
-	DefaultKeepAliveCount = 8
-	// DefaultKeepAliveInterval specifies how often retry sending keepalive
-	// messages when no response is received.
-	DefaultKeepAliveInterval = 5 * time.Second
-)
-
 // A HttpDialer holds HTTP-specific options
 // Specifically for HTTP proxy, we build an HTTP tunnel
 type HttpDialer struct {
@@ -128,11 +116,11 @@ func (d *HttpDialer) pathAddrs(address string) (proxy, dst net.Addr, err error) 
 func (d *HttpDialer) DialWithConn(ctx context.Context, c net.Conn, network, address string) error {
 	if err := d.validateTarget(network, address); err != nil {
 		proxy, dst, _ := d.pathAddrs(address)
-		return &net.OpError{Op: "CONNECT", Net: network, Source: proxy, Addr: dst, Err: err}
+		return &net.OpError{Op: http.MethodConnect, Net: network, Source: proxy, Addr: dst, Err: err}
 	}
 	if ctx == nil {
 		proxy, dst, _ := d.pathAddrs(address)
-		return &net.OpError{Op: "CONNECT", Net: network, Source: proxy, Addr: dst, Err: errors.New("nil context")}
+		return &net.OpError{Op: http.MethodConnect, Net: network, Source: proxy, Addr: dst, Err: errors.New("nil context")}
 	}
 
 	connectReq := fmt.Sprintf("%v %v HTTP/1.1\r\n"+
