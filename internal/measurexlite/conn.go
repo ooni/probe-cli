@@ -54,6 +54,8 @@ func (c *connTrace) Read(b []byte) (int, error) {
 	default: // buffer is full
 	}
 
+	c.tx.BytesReceived.Add(int64(count))
+
 	return count, err
 }
 
@@ -72,6 +74,8 @@ func (c *connTrace) Write(b []byte) (int, error) {
 		err, finished, c.tx.tags...):
 	default: // buffer is full
 	}
+
+	c.tx.BytesSent.Add(int64(count))
 
 	return count, err
 }
@@ -115,6 +119,8 @@ func (c *udpLikeConnTrace) ReadFrom(b []byte) (int, net.Addr, error) {
 	default: // buffer is full
 	}
 
+	c.tx.BytesReceived.Add(int64(count))
+
 	return count, addr, err
 }
 
@@ -132,6 +138,8 @@ func (c *udpLikeConnTrace) WriteTo(b []byte, addr net.Addr) (int, error) {
 		err, finished, c.tx.tags...):
 	default: // buffer is full
 	}
+
+	c.tx.BytesSent.Add(int64(count))
 
 	return count, err
 }

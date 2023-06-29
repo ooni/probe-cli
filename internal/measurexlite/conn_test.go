@@ -103,6 +103,16 @@ func TestWrapNetConn(t *testing.T) {
 		if err != nil {
 			t.Fatal("invalid err")
 		}
+
+		t.Run("we update the per-trace I/O counters", func(t *testing.T) {
+			if trace.BytesSent.Load() != 0 {
+				t.Fatal("expected to see some no bytes sent")
+			}
+			if trace.BytesReceived.Load() <= 0 {
+				t.Fatal("expected to see some bytes received")
+			}
+		})
+
 		events := trace.NetworkEvents()
 		if len(events) != 1 {
 			t.Fatal("did not save network events")
@@ -187,6 +197,16 @@ func TestWrapNetConn(t *testing.T) {
 		if err != nil {
 			t.Fatal("invalid err")
 		}
+
+		t.Run("we update the per-trace I/O counters", func(t *testing.T) {
+			if trace.BytesReceived.Load() != 0 {
+				t.Fatal("expected to see no bytes received")
+			}
+			if trace.BytesSent.Load() <= 0 {
+				t.Fatal("expected to see some bytes sent")
+			}
+		})
+
 		events := trace.NetworkEvents()
 		if len(events) != 1 {
 			t.Fatal("did not save network events")
@@ -284,6 +304,16 @@ func TestWrapUDPLikeConn(t *testing.T) {
 		if err != nil {
 			t.Fatal("invalid err")
 		}
+
+		t.Run("we update the per-trace I/O counters", func(t *testing.T) {
+			if trace.BytesReceived.Load() <= 0 {
+				t.Fatal("expected to see some bytes received")
+			}
+			if trace.BytesSent.Load() != 0 {
+				t.Fatal("expected to see no bytes sent")
+			}
+		})
+
 		events := trace.NetworkEvents()
 		if len(events) != 1 {
 			t.Fatal("did not save network events")
@@ -360,6 +390,16 @@ func TestWrapUDPLikeConn(t *testing.T) {
 		if err != nil {
 			t.Fatal("invalid err")
 		}
+
+		t.Run("we update the per-trace I/O counters", func(t *testing.T) {
+			if trace.BytesReceived.Load() != 0 {
+				t.Fatal("expected to see no bytes received")
+			}
+			if trace.BytesSent.Load() <= 0 {
+				t.Fatal("expected to see some bytes sent")
+			}
+		})
+
 		events := trace.NetworkEvents()
 		if len(events) != 1 {
 			t.Fatal("did not save network events")
@@ -379,7 +419,7 @@ func TestWrapUDPLikeConn(t *testing.T) {
 		}
 	})
 
-	t.Run("Write discards the event when the buffer is full", func(t *testing.T) {
+	t.Run("WriteTo discards the event when the buffer is full", func(t *testing.T) {
 		underlying := &mocks.UDPLikeConn{
 			MockWriteTo: func(b []byte, addr net.Addr) (int, error) {
 				return len(b), nil

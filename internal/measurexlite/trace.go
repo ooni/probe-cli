@@ -5,6 +5,7 @@ package measurexlite
 //
 
 import (
+	"sync/atomic"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -24,6 +25,12 @@ import (
 // measurements). We have convenience methods for extracting events from the
 // buffered channels.
 type Trace struct {
+	// BytesSent is the atomic counter of bytes sent so far for this trace.
+	BytesSent atomic.Int64
+
+	// BytesReceived is like BytesSent but for the bytes received.
+	BytesReceived atomic.Int64
+
 	// Index is the unique index of this trace within the
 	// current measurement. Note that this field MUST be read-only. Writing it
 	// once you have constructed a trace MAY lead to data races.
@@ -130,7 +137,9 @@ const (
 // to identify that some traces belong to some submeasurements).
 func NewTrace(index int64, zeroTime time.Time, tags ...string) *Trace {
 	return &Trace{
-		Index: index,
+		BytesSent:     atomic.Int64{},
+		BytesReceived: atomic.Int64{},
+		Index:         index,
 		networkEvent: make(
 			chan *model.ArchivalNetworkEvent,
 			NetworkEventBufferSize,
