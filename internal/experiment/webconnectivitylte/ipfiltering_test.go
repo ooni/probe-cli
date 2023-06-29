@@ -13,19 +13,19 @@ func Test_allowedToConnect(t *testing.T) {
 	}{{
 		name:     "we cannot connect when there's no port",
 		endpoint: "8.8.4.4",
-		want:     errNotAllowedToConnect,
+		want:     ErrNotAllowedToConnect,
 	}, {
 		name:     "we cannot connect when address is a domain (should not happen)",
 		endpoint: "dns.google:443",
-		want:     errNotAllowedToConnect,
+		want:     ErrNotAllowedToConnect,
 	}, {
 		name:     "we cannot connect for IPv4 loopback 127.0.0.1",
 		endpoint: "127.0.0.1:443",
-		want:     errNotAllowedToConnect,
+		want:     ErrNotAllowedToConnect,
 	}, {
 		name:     "we cannot connect for IPv4 loopback 127.0.0.2",
 		endpoint: "127.0.0.2:443",
-		want:     errNotAllowedToConnect,
+		want:     ErrNotAllowedToConnect,
 	}, {
 		name:     "we can connect to 10.0.0.1 (may change in the future)",
 		endpoint: "10.0.0.1:443",
@@ -33,7 +33,7 @@ func Test_allowedToConnect(t *testing.T) {
 	}, {
 		name:     "we cannot connect for IPv6 loopback",
 		endpoint: "::1",
-		want:     errNotAllowedToConnect,
+		want:     ErrNotAllowedToConnect,
 	}, {
 		name:     "we can connect for public IPv4 address",
 		endpoint: "8.8.8.8:443",

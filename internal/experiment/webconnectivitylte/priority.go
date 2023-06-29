@@ -41,8 +41,8 @@ import (
 // because another goroutine have already fetched that webpage.
 var errNotPermittedToFetch = errors.New("webconnectivity: not permitted to fetch")
 
-// prioritySelector selects the connection with the highest priority.
-type prioritySelector struct {
+// PrioritySelector selects the connection with the highest priority.
+type PrioritySelector struct {
 	// ch is the channel used to ask for priority
 	ch chan *priorityRequest
 
@@ -78,15 +78,15 @@ type priorityRequest struct {
 	resp chan bool
 }
 
-// newPrioritySelector creates a new prioritySelector instance.
+// newPrioritySelector creates a new PrioritySelector instance.
 func newPrioritySelector(
 	ctx context.Context,
 	zeroTime time.Time,
 	tk *TestKeys,
 	logger model.Logger,
 	addrs []DNSEntry,
-) *prioritySelector {
-	ps := &prioritySelector{
+) *PrioritySelector {
+	ps := &PrioritySelector{
 		ch:       make(chan *priorityRequest),
 		logger:   logger,
 		m:        map[string]int64{},
@@ -115,17 +115,17 @@ func newPrioritySelector(
 }
 
 // log formats and emits a ConnPriorityLogEntry
-func (ps *prioritySelector) log(format string, v ...any) {
+func (ps *PrioritySelector) log(format string, v ...any) {
 	ps.tk.AppendConnPriorityLogEntry(&ConnPriorityLogEntry{
 		Msg: fmt.Sprintf(format, v...),
 		T:   time.Since(ps.zeroTime).Seconds(),
 	})
-	ps.logger.Infof("prioritySelector: "+format, v...)
+	ps.logger.Infof("PrioritySelector: "+format, v...)
 }
 
 // permissionToFetch returns whether this ready-to-use connection
 // is permitted to perform a round trip and fetch the webpage.
-func (ps *prioritySelector) permissionToFetch(address string) bool {
+func (ps *PrioritySelector) permissionToFetch(address string) bool {
 	ipAddr, _, err := net.SplitHostPort(address)
 	runtimex.PanicOnError(err, "net.SplitHostPort failed")
 	r := &priorityRequest{
@@ -153,7 +153,7 @@ func (ps *prioritySelector) permissionToFetch(address string) bool {
 // background goroutine and terminates when [ctx] is done.
 //
 // This function implements https://github.com/ooni/probe/issues/2276.
-func (ps *prioritySelector) selector(ctx context.Context) {
+func (ps *PrioritySelector) selector(ctx context.Context) {
 	// Implementation note: setting an arbitrary timeout here would
 	// be ~an issue because we want this goroutine to be available in
 	// case the only connections from which we could fetch a webpage
@@ -213,7 +213,7 @@ Loop:
 }
 
 // findHighestPriority returns the highest priority request
-func (ps *prioritySelector) findHighestPriority(reqs []*priorityRequest) *priorityRequest {
+func (ps *PrioritySelector) findHighestPriority(reqs []*priorityRequest) *priorityRequest {
 	runtimex.Assert(len(reqs) > 0, "findHighestPriority wants a non-empty reqs slice")
 	for _, r := range reqs {
 		if ps.isHighestPriority(r) {
@@ -224,7 +224,7 @@ func (ps *prioritySelector) findHighestPriority(reqs []*priorityRequest) *priori
 }
 
 // isHighestPriority returns whether this request is highest priority
-func (ps *prioritySelector) isHighestPriority(r *priorityRequest) bool {
+func (ps *PrioritySelector) isHighestPriority(r *priorityRequest) bool {
 	// See https://github.com/ooni/probe/issues/2276
 	flags := ps.m[r.addr]
 	if ps.nsystem > 0 {
