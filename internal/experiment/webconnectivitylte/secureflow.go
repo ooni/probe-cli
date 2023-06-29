@@ -20,6 +20,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/throttling"
 )
 
 // Measures HTTPS endpoints.
@@ -104,6 +105,13 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 
 	// create trace
 	trace := measurexlite.NewTrace(index, t.ZeroTime)
+
+	// start measuring throttling
+	sampler := throttling.NewSampler(trace)
+	defer func() {
+		t.TestKeys.AppendNetworkEvents(sampler.ExtractSamples()...)
+		sampler.Close()
+	}()
 
 	// start the operation logger
 	ol := measurexlite.NewOperationLogger(

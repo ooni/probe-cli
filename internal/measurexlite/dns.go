@@ -267,8 +267,9 @@ func (tx *Trace) FirstDNSLookup() *model.ArchivalDNSLookupResult {
 	return ev[0]
 }
 
-// ErrDelayedDNSResponseBufferFull indicates that the delayedDNSResponse buffer is full.
-var ErrDelayedDNSResponseBufferFull = errors.New("buffer full")
+// ErrDelayedDNSResponseBufferFull indicates that the delayed-DNS-response channel buffer is full.
+var ErrDelayedDNSResponseBufferFull = errors.New(
+	"measurexlite: the delayed-DNS-response channel buffer is full")
 
 // OnDelayedDNSResponse implements model.Trace.OnDelayedDNSResponse
 func (tx *Trace) OnDelayedDNSResponse(started time.Time, txp model.DNSTransport, query model.DNSQuery,

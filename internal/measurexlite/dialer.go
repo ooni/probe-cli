@@ -18,10 +18,6 @@ import (
 
 // NewDialerWithoutResolver is equivalent to netxlite.NewDialerWithoutResolver
 // except that it returns a model.Dialer that uses this trace.
-//
-// Note: unlike code in netx or measurex, this factory DOES NOT return you a
-// dialer that also performs wrapping of a net.Conn in case of success. If you
-// want to wrap the conn, you need to wrap it explicitly using model.Trace.WrapNetConn.
 func (tx *Trace) NewDialerWithoutResolver(dl model.DebugLogger) model.Dialer {
 	return &dialerTrace{
 		d:  tx.newDialerWithoutResolver(dl),
