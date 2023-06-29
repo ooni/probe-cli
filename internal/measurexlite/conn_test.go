@@ -106,7 +106,7 @@ func TestWrapNetConn(t *testing.T) {
 
 		t.Run("we update the per-trace I/O counters", func(t *testing.T) {
 			if trace.BytesSent.Load() != 0 {
-				t.Fatal("expected to see some no bytes sent")
+				t.Fatal("expected to see no bytes sent")
 			}
 			if trace.BytesReceived.Load() <= 0 {
 				t.Fatal("expected to see some bytes received")

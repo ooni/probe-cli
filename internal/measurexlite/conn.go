@@ -12,7 +12,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// MaybeClose is a convenience function for closing a conn only when such a conn isn't nil.
+// MaybeClose is a convenience function for closing a [net.Conn] when it is not nil.
 func MaybeClose(conn net.Conn) (err error) {
 	if conn != nil {
 		err = conn.Close()
@@ -80,7 +80,7 @@ func (c *connTrace) Write(b []byte) (int, error) {
 	return count, err
 }
 
-// MaybeUDPLikeClose is a convenience function for closing a conn only when such a conn isn't nil.
+// MaybeCloseUDPLikeConn is a convenience function for closing a [model.UDPLikeConn] when it is not nil.
 func MaybeCloseUDPLikeConn(conn model.UDPLikeConn) (err error) {
 	if conn != nil {
 		err = conn.Close()

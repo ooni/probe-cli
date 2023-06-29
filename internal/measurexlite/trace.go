@@ -13,19 +13,23 @@ import (
 	utls "gitlab.com/yawning/utls.git"
 )
 
-// Trace implements model.Trace.
+// Trace implements [model.Trace]. We use a [context.Context] to register ourselves
+// as the [model.Trace] and we implement the [model.Trace] callbacks to route events
+// into internal buffered channels as explained in by the [measurexlite] package
+// documentation. The zero-value of this struct is invalid. To construct use [NewTrace].
 //
-// The zero-value of this struct is invalid. To construct use NewTrace.
-//
-// # Buffered channels
-//
-// NewTrace uses reasonable buffer sizes for the channels used for collecting
+// [NewTrace] uses reasonable buffer sizes for the channels used for collecting
 // events. You should drain the channels used by this implementation after
-// each operation you perform (i.e., we expect you to peform step-by-step
-// measurements). We have convenience methods for extracting events from the
-// buffered channels.
+// each operation you perform (that is, we expect you to peform [step-by-step
+// measurements]). As mentioned in the [measurexlite] package documentation,
+// there are several methods for extracting events from the [*Trace].
+//
+// [step-by-step measurements]: https://github.com/ooni/probe-cli/blob/master/docs/design/dd-003-step-by-step.md
 type Trace struct {
-	// BytesSent is the atomic counter of bytes sent so far for this trace.
+	// BytesSent is the atomic counter of bytes sent so far for this trace. While it would
+	// be safe to write this field, given that it is atomic, doing that would be very
+	// unexpected. In fact, we exported this field to allow the user to atomically read
+	// the amount of bytes sent so far by this trace and keep statistics.
 	BytesSent *atomic.Int64
 
 	// BytesReceived is like BytesSent but for the bytes received.
@@ -95,31 +99,23 @@ type Trace struct {
 	ZeroTime time.Time
 }
 
-const (
-	// NetworkEventBufferSize is the buffer size for constructing
-	// the internal Trace's networkEvent buffered channel.
-	NetworkEventBufferSize = 64
+// NetworkEventBufferSize is the [*Trace] buffer size for network I/O events.
+const NetworkEventBufferSize = 64
 
-	// DNSLookupBufferSize is the buffer size for constructing
-	// the internal Trace's dnsLookup buffered channel.
-	DNSLookupBufferSize = 8
+// DNSLookupBufferSize is the [*Trace] buffer size for DNS lookup events.
+const DNSLookupBufferSize = 8
 
-	// DNSResponseBufferSize is the buffer size for constructing
-	// the internal Trace's dnsDelayedResponse buffered channel.
-	DelayedDNSResponseBufferSize = 8
+// DNSResponseBufferSize is the [*Trace] buffer size for delayed DNS responses events.
+const DelayedDNSResponseBufferSize = 8
 
-	// TCPConnectBufferSize is the buffer size for constructing
-	// the internal Trace's tcpConnect buffered channel.
-	TCPConnectBufferSize = 8
+// TCPConnectBufferSize is the [*Trace] buffer size for TCP connect events.
+const TCPConnectBufferSize = 8
 
-	// TLSHandshakeBufferSize is the buffer for construcing
-	// the internal Trace's tlsHandshake buffered channel.
-	TLSHandshakeBufferSize = 8
+// TLSHandshakeBufferSize is the [*Trace] buffer size for TLS handshake events.
+const TLSHandshakeBufferSize = 8
 
-	// QUICHandshakeBufferSize is the buffer for constructing
-	// the internal Trace's quicHandshake buffered channel.
-	QUICHandshakeBufferSize = 8
-)
+// QUICHandshakeBufferSize is the [*Trace] buffer size for QUIC handshake events.
+const QUICHandshakeBufferSize = 8
 
 // NewTrace creates a new instance of Trace using default settings.
 //

@@ -18,7 +18,7 @@ type Sampler struct {
 	// cancel tells the background goroutine to stop
 	cancel context.CancelFunc
 
-	// mu provides mutal exclusion
+	// mu provides mutual exclusion
 	mu *sync.Mutex
 
 	// once ensures that close has "once" semantics
