@@ -537,13 +537,13 @@ func TestTrace_updateBytesReceivedMapNetConn(t *testing.T) {
 	})
 }
 
-func TestTrace_updateBytesReceivedMapUDPLikeConn(t *testing.T) {
+func TestTrace_maybeUpdateBytesReceivedMapUDPLikeConn(t *testing.T) {
 	t.Run("we ignore cases where the address is nil", func(t *testing.T) {
 		// create a new trace
 		tx := NewTrace(0, time.Now())
 
 		// insert stats with a nil address
-		tx.updateBytesReceivedMapUDPLikeConn(nil, 128)
+		tx.maybeUpdateBytesReceivedMapUDPLikeConn(nil, 128)
 
 		// inserts stats with a good address
 		goodAddr := &mocks.Addr{
@@ -554,7 +554,7 @@ func TestTrace_updateBytesReceivedMapUDPLikeConn(t *testing.T) {
 				return "udp"
 			},
 		}
-		tx.updateBytesReceivedMapUDPLikeConn(goodAddr, 128)
+		tx.maybeUpdateBytesReceivedMapUDPLikeConn(goodAddr, 128)
 
 		// make sure the result is the expected one
 		expected := map[string]int64{

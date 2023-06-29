@@ -142,10 +142,13 @@ type udpLikeConnTrace struct {
 
 // Read implements model.UDPLikeConn.ReadFrom and saves network events.
 func (c *udpLikeConnTrace) ReadFrom(b []byte) (int, net.Addr, error) {
+	// record when we started measuring
 	started := c.tx.TimeSince(c.tx.ZeroTime)
 
+	// perform the network operation
 	count, addr, err := c.UDPLikeConn.ReadFrom(b)
 
+	// emit the network event
 	finished := c.tx.TimeSince(c.tx.ZeroTime)
 	address := addrStringIfNotNil(addr)
 	select {
@@ -155,13 +158,15 @@ func (c *udpLikeConnTrace) ReadFrom(b []byte) (int, net.Addr, error) {
 	default: // buffer is full
 	}
 
-	c.tx.updateBytesReceivedMapUDPLikeConn(addr, count)
+	// possibly collect a download speed sample
+	c.tx.maybeUpdateBytesReceivedMapUDPLikeConn(addr, count)
 
+	// return results to the caller
 	return count, addr, err
 }
 
-// updateBytesReceivedMapUDPLikeConn updates the [*Trace] bytes received map for a [model.UDPLikeConn].
-func (tx *Trace) updateBytesReceivedMapUDPLikeConn(addr net.Addr, count int) {
+// maybeUpdateBytesReceivedMapUDPLikeConn updates the [*Trace] bytes received map for a [model.UDPLikeConn].
+func (tx *Trace) maybeUpdateBytesReceivedMapUDPLikeConn(addr net.Addr, count int) {
 	// Implementation note: the address may be nil if the operation failed given that we don't
 	// have a fixed peer address for UDP connections
 	if addr != nil {
