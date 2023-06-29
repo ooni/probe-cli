@@ -16,6 +16,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/throttling"
 )
 
 // HTTPTransport is an HTTP transport bound to a TCP, TLS or QUIC connection
@@ -306,8 +307,18 @@ func (f *httpRequestFunc) do(
 	var body []byte
 	if err == nil {
 		defer resp.Body.Close()
+
+		// create sampler for measuring throttling
+		sampler := throttling.NewSampler(input.Trace)
+		defer sampler.Close()
+
+		// read a snapshot of the response body
 		reader := io.LimitReader(resp.Body, maxbody)
 		body, err = netxlite.ReadAllContext(ctx, reader) // TODO: enable streaming and measure speed
+
+		// collect and save download speed samples
+		samples := sampler.ExtractSamples()
+		observations[0].NetworkEvents = append(observations[0].NetworkEvents, samples...)
 	}
 	finished := input.Trace.TimeSince(input.Trace.ZeroTime)
 

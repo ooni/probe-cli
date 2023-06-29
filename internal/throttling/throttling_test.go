@@ -22,7 +22,7 @@ func TestSamplerWorkingAsIntended(t *testing.T) {
 		traceID     = 14
 	)
 
-	// create a testing server that sleeps after each sender for a given number of sends
+	// create a testing server that sleeps after each send for a given number of sends
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		chunk := []byte(randx.Letters(chunkSize))
 		for idx := 0; idx < repetitions; idx++ {
