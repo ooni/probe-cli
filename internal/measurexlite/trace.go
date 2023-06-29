@@ -26,10 +26,10 @@ import (
 // buffered channels.
 type Trace struct {
 	// BytesSent is the atomic counter of bytes sent so far for this trace.
-	BytesSent atomic.Int64
+	BytesSent *atomic.Int64
 
 	// BytesReceived is like BytesSent but for the bytes received.
-	BytesReceived atomic.Int64
+	BytesReceived *atomic.Int64
 
 	// Index is the unique index of this trace within the
 	// current measurement. Note that this field MUST be read-only. Writing it
@@ -137,8 +137,8 @@ const (
 // to identify that some traces belong to some submeasurements).
 func NewTrace(index int64, zeroTime time.Time, tags ...string) *Trace {
 	return &Trace{
-		BytesSent:     atomic.Int64{},
-		BytesReceived: atomic.Int64{},
+		BytesSent:     &atomic.Int64{},
+		BytesReceived: &atomic.Int64{},
 		Index:         index,
 		networkEvent: make(
 			chan *model.ArchivalNetworkEvent,
