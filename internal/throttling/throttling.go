@@ -3,6 +3,7 @@ package throttling
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
@@ -84,7 +85,7 @@ func (smpl *Sampler) mainLoop(ctx context.Context) {
 			return
 
 		case <-ticker.C:
-			smpl.collectSnapshot()
+			smpl.collectSnapshot(smpl.tx.CloneBytesReceivedMap())
 		}
 	}
 }
@@ -92,25 +93,38 @@ func (smpl *Sampler) mainLoop(ctx context.Context) {
 // BytesReceivedCumulativeOperation is the operation we set for network events.
 const BytesReceivedCumulativeOperation = "bytes_received_cumulative"
 
-func (smpl *Sampler) collectSnapshot() {
-	// fill the event
+func (smpl *Sampler) collectSnapshot(stats map[string]int64) {
+	// compute just once the events sampling time
 	now := smpl.tx.TimeSince(smpl.tx.ZeroTime).Seconds()
-	ev := &model.ArchivalNetworkEvent{
-		Address:       "",
-		Failure:       nil,
-		NumBytes:      smpl.tx.BytesReceived.Load(),
-		Operation:     BytesReceivedCumulativeOperation,
-		Proto:         "",
-		T0:            now,
-		T:             now,
-		TransactionID: smpl.tx.Index,
-		Tags:          smpl.tx.Tags(),
-	}
 
-	// lock and insert
-	smpl.mu.Lock()
-	smpl.q = append(smpl.q, ev)
-	smpl.mu.Unlock()
+	// process each entry
+	for key, count := range stats {
+		// extract the network and the address from the map key
+		// note: the format is "EPNT_ADDRESS NETWORK"
+		vector := strings.Split(key, " ")
+		if len(vector) != 2 {
+			continue
+		}
+		address, network := vector[0], vector[1]
+
+		// fill the event
+		ev := &model.ArchivalNetworkEvent{
+			Address:       address,
+			Failure:       nil,
+			NumBytes:      count,
+			Operation:     BytesReceivedCumulativeOperation,
+			Proto:         network,
+			T0:            now,
+			T:             now,
+			TransactionID: smpl.tx.Index,
+			Tags:          smpl.tx.Tags(),
+		}
+
+		// lock and insert
+		smpl.mu.Lock()
+		smpl.q = append(smpl.q, ev)
+		smpl.mu.Unlock()
+	}
 }
 
 // Close closes the [*Sampler]. This method is goroutine safe and idempotent.
@@ -125,7 +139,7 @@ func (smpl *Sampler) Close() error {
 // ExtractSamples extracts the samples from the [*Sampler]
 func (smpl *Sampler) ExtractSamples() []*model.ArchivalNetworkEvent {
 	// collect one last sample -- no need to lock since collectSnapshot locks the mutex
-	smpl.collectSnapshot()
+	smpl.collectSnapshot(smpl.tx.CloneBytesReceivedMap())
 
 	// lock and extract all samples
 	smpl.mu.Lock()

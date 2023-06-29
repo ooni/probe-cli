@@ -5,7 +5,7 @@ package measurexlite
 //
 
 import (
-	"sync/atomic"
+	"sync"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -26,19 +26,19 @@ import (
 //
 // [step-by-step measurements]: https://github.com/ooni/probe-cli/blob/master/docs/design/dd-003-step-by-step.md
 type Trace struct {
-	// BytesSent is the atomic counter of bytes sent so far for this trace. While it would
-	// be safe to write this field, given that it is atomic, doing that would be very
-	// unexpected. In fact, we exported this field to allow the user to atomically read
-	// the amount of bytes sent so far by this trace and keep statistics.
-	BytesSent *atomic.Int64
-
-	// BytesReceived is like BytesSent but for the bytes received.
-	BytesReceived *atomic.Int64
-
 	// Index is the unique index of this trace within the
 	// current measurement. Note that this field MUST be read-only. Writing it
 	// once you have constructed a trace MAY lead to data races.
 	Index int64
+
+	// bytesReceivedMap maps a remote host with the bytes we received
+	// from such a remote host. Accessing this map requires one to
+	// additionally hold the bytesReceivedMu mutex.
+	bytesReceivedMap map[string]int64
+
+	// bytesReceivedMu protects the bytesReceivedMap from concurrent
+	// access from multiple goroutines.
+	bytesReceivedMu *sync.Mutex
 
 	// networkEvent is MANDATORY and buffers network events.
 	networkEvent chan *model.ArchivalNetworkEvent
@@ -133,9 +133,9 @@ const QUICHandshakeBufferSize = 8
 // to identify that some traces belong to some submeasurements).
 func NewTrace(index int64, zeroTime time.Time, tags ...string) *Trace {
 	return &Trace{
-		BytesSent:     &atomic.Int64{},
-		BytesReceived: &atomic.Int64{},
-		Index:         index,
+		Index:            index,
+		bytesReceivedMap: make(map[string]int64),
+		bytesReceivedMu:  &sync.Mutex{},
 		networkEvent: make(
 			chan *model.ArchivalNetworkEvent,
 			NetworkEventBufferSize,

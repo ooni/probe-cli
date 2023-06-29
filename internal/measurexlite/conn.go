@@ -5,6 +5,7 @@ package measurexlite
 //
 
 import (
+	"fmt"
 	"net"
 	"time"
 
@@ -40,12 +41,15 @@ var _ net.Conn = &connTrace{}
 
 // Read implements net.Conn.Read and saves network events.
 func (c *connTrace) Read(b []byte) (int, error) {
+	// collect preliminary stats when the connection is surely active
 	network := c.RemoteAddr().Network()
 	addr := c.RemoteAddr().String()
 	started := c.tx.TimeSince(c.tx.ZeroTime)
 
+	// perform the underlying network operation
 	count, err := c.Conn.Read(b)
 
+	// emit the network event
 	finished := c.tx.TimeSince(c.tx.ZeroTime)
 	select {
 	case c.tx.networkEvent <- NewArchivalNetworkEvent(
@@ -54,9 +58,43 @@ func (c *connTrace) Read(b []byte) (int, error) {
 	default: // buffer is full
 	}
 
-	c.tx.BytesReceived.Add(int64(count))
+	// update per receiver statistics
+	c.tx.updateBytesReceivedMapNetConn(network, addr, count)
 
+	// return to the caller
 	return count, err
+}
+
+// updateBytesReceivedMapNetConn updates the [*Trace] bytes received map for a [net.Conn].
+func (tx *Trace) updateBytesReceivedMapNetConn(network, address string, count int) {
+	// normalize the network name
+	switch network {
+	case "udp", "udp4", "udp6":
+		network = "udp"
+	case "tcp", "tcp4", "tcp6":
+		network = "tcp"
+	}
+
+	// create the key for inserting inside the map
+	key := fmt.Sprintf("%s %s", address, network)
+
+	// lock and insert into the map
+	tx.bytesReceivedMu.Lock()
+	tx.bytesReceivedMap[key] += int64(count)
+	tx.bytesReceivedMu.Unlock()
+}
+
+// CloneBytesReceivedMap returns a clone of the internal bytes received map. The key
+// of the map is a string following the "EPNT_ADDRESS PROTO" pattern where the "EPNT_ADDRESS"
+// contains the endpoint address and "PROTO" is "tcp" or "udp".
+func (tx *Trace) CloneBytesReceivedMap() (out map[string]int64) {
+	out = make(map[string]int64)
+	tx.bytesReceivedMu.Lock()
+	for key, value := range tx.bytesReceivedMap {
+		out[key] = value
+	}
+	tx.bytesReceivedMu.Unlock()
+	return
 }
 
 // Write implements net.Conn.Write and saves network events.
@@ -74,8 +112,6 @@ func (c *connTrace) Write(b []byte) (int, error) {
 		err, finished, c.tx.tags...):
 	default: // buffer is full
 	}
-
-	c.tx.BytesSent.Add(int64(count))
 
 	return count, err
 }
@@ -119,9 +155,18 @@ func (c *udpLikeConnTrace) ReadFrom(b []byte) (int, net.Addr, error) {
 	default: // buffer is full
 	}
 
-	c.tx.BytesReceived.Add(int64(count))
+	c.tx.updateBytesReceivedMapUDPLikeConn(addr, count)
 
 	return count, addr, err
+}
+
+// updateBytesReceivedMapUDPLikeConn updates the [*Trace] bytes received map for a [model.UDPLikeConn].
+func (tx *Trace) updateBytesReceivedMapUDPLikeConn(addr net.Addr, count int) {
+	// Implementation note: the address may be nil if the operation failed given that we don't
+	// have a fixed peer address for UDP connections
+	if addr != nil {
+		tx.updateBytesReceivedMapNetConn(addr.Network(), addr.String(), count)
+	}
 }
 
 // Write implements model.UDPLikeConn.WriteTo and saves network events.
@@ -138,8 +183,6 @@ func (c *udpLikeConnTrace) WriteTo(b []byte, addr net.Addr) (int, error) {
 		err, finished, c.tx.tags...):
 	default: // buffer is full
 	}
-
-	c.tx.BytesSent.Add(int64(count))
 
 	return count, err
 }

@@ -1,4 +1,4 @@
-package throttling_test
+package throttling
 
 import (
 	"net/http"
@@ -12,10 +12,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/randx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
-	"github.com/ooni/probe-cli/v3/internal/throttling"
 )
 
-func TestSampler(t *testing.T) {
+func TestSamplerWorkingAsIntended(t *testing.T) {
 	const (
 		chunkSize   = 1 << 14
 		repetitions = 10
@@ -38,7 +37,7 @@ func TestSampler(t *testing.T) {
 	tx := measurexlite.NewTrace(traceID, time.Now(), expectedTags...)
 
 	// create a sampler for the trace
-	sampler := throttling.NewSampler(tx)
+	sampler := NewSampler(tx)
 	defer sampler.Close()
 
 	// create a dialer
@@ -84,15 +83,8 @@ func TestSampler(t *testing.T) {
 	for _, ev := range events {
 		t.Log(ev)
 
-		// We do not set any address because we cannot be sure about the address, but the
-		// trace is designed to operate on a single network connection, hence we do not need
-		// to worry about multiple connections being involved. We COULD potentially have
-		// more than a single destination with the [net.PacketConn] we're using for HTTP/3,
-		// because in principle someone could send us lots of spurious packets that are
-		// not meant for the QUIC connection while we're downloading, however this attack
-		// seems quite unlikely in practice, so I think it's reasonable to conclude that
-		// what the trace has seen is what the only conn in the trace has seen.
-		if ev.Address != "" {
+		// Make sure the address is the remote server address.
+		if ev.Address != server.Listener.Addr().String() {
 			t.Fatal("invalid address", ev.Address)
 		}
 
@@ -108,14 +100,12 @@ func TestSampler(t *testing.T) {
 		previousCounter = ev.NumBytes
 
 		// The operation should always be the expected one
-		if ev.Operation != throttling.BytesReceivedCumulativeOperation {
+		if ev.Operation != BytesReceivedCumulativeOperation {
 			t.Fatal("invalid operation", ev.Operation)
 		}
 
-		// We don't know the protocol. Again, this is not a problem because the trace is
-		// designed to host a single connection and we have the transaction ID, which
-		// mirrors the trace ID and tells us this information.
-		if ev.Proto != "" {
+		// Make sure the protocol is the expected one
+		if ev.Proto != "tcp" {
 			t.Fatal("invalid proto", ev.Proto)
 		}
 
@@ -129,9 +119,7 @@ func TestSampler(t *testing.T) {
 		}
 		previousT = ev.T
 
-		// This is important: we need to make sure the event's transaction ID mirrors the
-		// trace ID, which is what allows us to attribte the performance events to the
-		// specific connection we have created within the same trace ID.
+		// Make sure the trace ID is the expected one
 		if ev.TransactionID != traceID {
 			t.Fatal("unexpected transaction ID", ev.TransactionID, traceID)
 		}
@@ -140,5 +128,26 @@ func TestSampler(t *testing.T) {
 		if diff := cmp.Diff(expectedTags, ev.Tags); diff != "" {
 			t.Fatal(diff)
 		}
+	}
+}
+
+func TestSampleSkipsInvalidMapEntries(t *testing.T) {
+	// create a trace and a sampler
+	tx := measurexlite.NewTrace(0, time.Now())
+	sampler := NewSampler(tx)
+
+	// create a fake map with an invalid entry and submit it
+	stats := map[string]int64{
+		"1.1.1.1:443":     128, // this entry is INVALID because it's missing the protocol
+		"1.1.1.1:443/tcp": 44,  // INVALID because there's no space separator
+	}
+
+	// update the stats
+	sampler.collectSnapshot(stats)
+
+	// obtain the network events
+	ev := sampler.ExtractSamples()
+	if len(ev) != 0 {
+		t.Fatal("expected to see no events here")
 	}
 }
