@@ -1,5 +1,9 @@
 package netemx
 
+//
+// QA environment
+//
+
 import (
 	"io"
 	"net"
@@ -45,6 +49,7 @@ type QAEnvOption func(config *qaEnvConfig)
 // QAEnvOptionClientAddress sets the client IP address. If you do not set this option
 // we will use [QAEnvDefaultClientAddress].
 func QAEnvOptionClientAddress(ipAddr string) QAEnvOption {
+	runtimex.Assert(net.ParseIP(ipAddr) != nil, "not an IP addr")
 	return func(config *qaEnvConfig) {
 		config.clientAddress = ipAddr
 	}
@@ -53,6 +58,9 @@ func QAEnvOptionClientAddress(ipAddr string) QAEnvOption {
 // QAEnvOptionDNSOverUDPResolvers adds the given DNS-over-UDP resolvers. If you do not set this option
 // we will create a single resolver using [QAEnvDefaultUncensoredResolverAddress].
 func QAEnvOptionDNSOverUDPResolvers(ipAddrs ...string) QAEnvOption {
+	for _, a := range ipAddrs {
+		runtimex.Assert(net.ParseIP(a) != nil, "not an IP addr")
+	}
 	return func(config *qaEnvConfig) {
 		config.dnsOverUDPResolvers = append(config.dnsOverUDPResolvers, ipAddrs...)
 	}
@@ -61,6 +69,8 @@ func QAEnvOptionDNSOverUDPResolvers(ipAddrs ...string) QAEnvOption {
 // QAEnvOptionHTTPServer adds the given HTTP server. If you do not set this option
 // we will not create any HTTP server.
 func QAEnvOptionHTTPServer(ipAddr string, handler http.Handler) QAEnvOption {
+	runtimex.Assert(net.ParseIP(ipAddr) != nil, "not an IP addr")
+	runtimex.Assert(handler != nil, "passed a nil handler")
 	return func(config *qaEnvConfig) {
 		config.httpServers[ipAddr] = handler
 	}
@@ -69,6 +79,7 @@ func QAEnvOptionHTTPServer(ipAddr string, handler http.Handler) QAEnvOption {
 // QAEnvOptionISPResolverAddress sets the ISP's resolver IP address. If you do not set this option
 // we will use [QAEnvDefaultISPResolverAddress] as the address.
 func QAEnvOptionISPResolverAddress(ipAddr string) QAEnvOption {
+	runtimex.Assert(net.ParseIP(ipAddr) != nil, "not an IP addr")
 	return func(config *qaEnvConfig) {
 		config.ispResolver = ipAddr
 	}
@@ -178,7 +189,7 @@ func (env *QAEnv) mustNewClientStack(config *qaEnvConfig) *netem.UNetStack {
 	// TODO(bassosimone,kelmenhorst): consider allowing to configure the
 	// delays and losses should the need for this arise in the future.
 	return runtimex.Try1(env.topology.AddHost(
-		DefaultClientAddress,
+		QAEnvDefaultClientAddress,
 		config.ispResolver,
 		&netem.LinkConfig{
 			DPIEngine:        env.dpi,
@@ -268,18 +279,21 @@ func (env *QAEnv) mustNewHTTPServers(config *qaEnvConfig) (closables []io.Closer
 	return
 }
 
-// AddRecordToAllResolvers adds the given DNS record to all DNS resolvers.
+// AddRecordToAllResolvers adds the given DNS record to all DNS resolvers. You can safely
+// add new DNS records from concurrent goroutines at any time.
 func (env *QAEnv) AddRecordToAllResolvers(domain string, cname string, addrs ...string) {
-	env.ispResolverConfig.AddRecord(domain, cname, addrs...)
-	env.otherResolversConfig.AddRecord(domain, cname, addrs...)
+	env.ISPResolverConfig().AddRecord(domain, cname, addrs...)
+	env.OtherResolversConfig().AddRecord(domain, cname, addrs...)
 }
 
-// ISPResolverConfig returns the [*netem.DNSConfig] of the ISP resolver.
+// ISPResolverConfig returns the [*netem.DNSConfig] of the ISP resolver. Note that can safely
+// add new DNS records from concurrent goroutines at any time.
 func (env *QAEnv) ISPResolverConfig() *netem.DNSConfig {
 	return env.ispResolverConfig
 }
 
-// OtherResolversConfig returns the [*netem.DNSConfig] of the non-ISP resolvers.
+// OtherResolversConfig returns the [*netem.DNSConfig] of the non-ISP resolvers. Note that can safely
+// add new DNS records from concurrent goroutines at any time.
 func (env *QAEnv) OtherResolversConfig() *netem.DNSConfig {
 	return env.otherResolversConfig
 }
@@ -308,9 +322,25 @@ func (env *QAEnv) Close() error {
 	return nil
 }
 
+// QAEnvDefaultWebPage is the webpage returned by [QAEnvDefaultHTTPHandler].
+// created for [ConfigHTTPServer].
+const QAEnvDefaultWebPage = `<!doctype html>
+<html>
+<head>
+    <title>Default Web Page</title>
+</head>
+<body>
+<div>
+    <h1>Default Web Page</h1>
+    <p>This is the default web page of the default domain.</p>
+</div>
+</body>
+</html>
+`
+
 // QAEnvDefaultHTTPHandler returns the default HTTP handler.
 func QAEnvDefaultHTTPHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(DefaultWebPage))
+		w.Write([]byte(QAEnvDefaultWebPage))
 	})
 }
