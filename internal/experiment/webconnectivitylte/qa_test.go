@@ -53,30 +53,16 @@ func qaNewMockedTestHelper() http.Handler {
 			return
 		}
 
-		// create the endpoint
-		var endpoint string
-		switch URL.Scheme {
-		case "http":
-			endpoint = net.JoinHostPort(URL.Hostname(), "80")
-
-		case "https":
-			endpoint = net.JoinHostPort(URL.Hostname(), "443")
-
-		default:
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
 		// create a fake response
 		response := &model.THResponse{
 			TCPConnect: map[string]model.THTCPConnectResult{
-				endpoint: {
+				net.JoinHostPort(qaWebServerAddress, "80"): {
 					Status:  true,
 					Failure: nil,
 				},
 			},
 			TLSHandshake: map[string]model.THTLSHandshakeResult{
-				endpoint: {
+				net.JoinHostPort(qaWebServerAddress, "443"): {
 					ServerName: URL.Hostname(),
 					Status:     true,
 					Failure:    nil,
@@ -84,7 +70,7 @@ func qaNewMockedTestHelper() http.Handler {
 			},
 			QUICHandshake: map[string]model.THTLSHandshakeResult{},
 			HTTPRequest: model.THHTTPRequestResult{
-				BodyLength:           0,
+				BodyLength:           int64(len(netemx.DefaultWebPage)),
 				DiscoveredH3Endpoint: "",
 				Failure:              nil,
 				Title:                "Default Web Page",
@@ -128,50 +114,13 @@ func qaAddTHDomains(config *netem.DNSConfig) {
 	config.AddRecord("0.th.ooni.org", "0.th.ooni.org", qaZeroTHOoniOrg)
 }
 
-func qaNewEnvironment(clientDNSConfig *netem.DNSConfig) *netemx.Environment {
-	// clientConfig configures the client topology
-	clientConfig := &netemx.ClientConfig{
-		ClientAddr:   "", // use the default
-		DNSConfig:    clientDNSConfig,
-		ResolverAddr: "", // use the default
-	}
-
-	// create the configuration of the uncensored DNS server.
-	serversDNSConfig := netem.NewDNSConfig()
-	serversDNSConfig.AddRecord("www.example.com", "www.example.com", qaWebServerAddress)
-	serversDNSConfig.AddRecord("www.example.org", "www.example.org", qaWebServerAddress)
-
-	// create the overall configuration for the servers.
-	serversConfig := &netemx.ServersConfig{
-		DNSConfig:    serversDNSConfig,
-		ResolverAddr: "8.8.4.4", // this is what LTE uses by default
-		Servers: []netemx.ConfigServerStack{{
-			ServerAddr: qaWebServerAddress,
-			HTTPServers: []netemx.ConfigHTTPServer{{
-				Port:    80,
-				QUIC:    false,
-				Handler: nil, // use the default
-			}, {
-				Port:    443,
-				QUIC:    false,
-				Handler: nil, // use the default
-			}, {
-				Port:    443,
-				QUIC:    true,
-				Handler: nil, // use the default
-			}},
-		}, {
-			ServerAddr: qaZeroTHOoniOrg,
-			HTTPServers: []netemx.ConfigHTTPServer{{
-				Port:    443,
-				QUIC:    false,
-				Handler: qaNewMockedTestHelper(),
-			}},
-		}},
-	}
-
-	// return the environment
-	return netemx.NewEnvironment(clientConfig, serversConfig)
+// qaNewEnvironment creates a new environment for running QA.
+func qaNewEnvironment() *netemx.QAEnv {
+	return netemx.NewQAEnv(
+		netemx.QAEnvOptionDNSOverUDPResolvers("8.8.4.4"),
+		netemx.QAEnvOptionHTTPServer(qaWebServerAddress, netemx.QAEnvDefaultHTTPHandler()),
+		netemx.QAEnvOptionHTTPServer(qaZeroTHOoniOrg, qaNewMockedTestHelper()),
+	)
 }
 
 // qaNewSession creates a new mocked session.
@@ -179,7 +128,7 @@ func qaNewSession(client model.HTTPClient) model.ExperimentSession {
 	return &mocks.Session{
 		MockGetTestHelpersByName: func(name string) ([]model.OOAPIService, bool) {
 			output := []model.OOAPIService{{
-				Address: (&url.URL{Host: qaZeroTHOoniOrg, Scheme: "https", Path: "/"}).String(),
+				Address: (&url.URL{Host: "0.th.ooni.org", Scheme: "https", Path: "/"}).String(),
 				Type:    "https",
 				Front:   "",
 			}}
@@ -222,20 +171,23 @@ func qaNewSession(client model.HTTPClient) model.ExperimentSession {
 //
 // - input is the URL to measure;
 //
-// - setDNSClientConfig is called to set the DNS client config;
+// - setISPResolverConfig is called to set the ISP resolver config;
 //
 // - setDPI is called to configure the DPI engine.
 //
 // This function returns either a measurement or an error.
-func qaRunWithURL(input string, setDNSClientConfig func(*netem.DNSConfig),
+func qaRunWithURL(input string, setISPResolverConfig func(*netem.DNSConfig),
 	setDPI func(*netem.DPIEngine)) (*model.Measurement, error) {
-	// create and initialize the DNS client config.
-	dnsconfig := netem.NewDNSConfig()
-	setDNSClientConfig(dnsconfig)
-
 	// create netem environment
-	env := qaNewEnvironment(dnsconfig)
+	env := qaNewEnvironment()
 	defer env.Close()
+
+	// configure the ISP resolver
+	setISPResolverConfig(env.ISPResolverConfig())
+
+	// configure the other resolvers
+	qaAddExampleDomains(env.OtherResolversConfig())
+	qaAddTHDomains(env.OtherResolversConfig())
 
 	// possibly configure DPI rules
 	setDPI(env.DPIEngine())
@@ -309,7 +261,6 @@ func qaRunWithURL(input string, setDNSClientConfig func(*netem.DNSConfig),
 
 // TestQACleartextWAI is a test where we fetch from a cleartext page.
 func TestQACleartextWAI(t *testing.T) {
-	log.SetLevel(log.DebugLevel)
 	measurement, err := qaRunWithURL(
 		"http://www.example.com",
 		func(d *netem.DNSConfig) {

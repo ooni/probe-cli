@@ -20,11 +20,11 @@ const (
 	// DefaultClientAddress is the address used by default for a client.
 	DefaultClientAddress = "10.0.0.14"
 
-	// DefaultClientResolver is the resolver used by default by a client.
-	DefaultClientResolver = "10.0.0.1"
+	// DefaultClientResolverAddress is the resolver used by default by a client.
+	DefaultClientResolverAddress = "10.0.0.1"
 
-	// DefaultServersResolver is the the resolver used by default by a server.
-	DefaultServersResolver = "1.1.1.1"
+	// DefaultUncensoredResolverAddress is the the resolver used by default by a server.
+	DefaultUncensoredResolverAddress = "1.1.1.1"
 )
 
 // Environment is a configurable [netem] QA environment with a DNS server
@@ -111,7 +111,7 @@ func createClientStackAndDNSServer(
 	// Set the DNS resolver address.
 	resolverAddr := clientConfig.ResolverAddr
 	if resolverAddr == "" {
-		resolverAddr = DefaultClientResolver
+		resolverAddr = DefaultClientResolverAddress
 	}
 
 	// Create the client's DNS server TCP/IP stack.
@@ -277,7 +277,7 @@ func NewEnvironment(clientConfig *ClientConfig, serversConfig *ServersConfig) *E
 	// set the default resolver address for the servers's DNS
 	resolverAddr := serversConfig.ResolverAddr
 	if resolverAddr == "" {
-		resolverAddr = DefaultServersResolver
+		resolverAddr = DefaultUncensoredResolverAddress
 	}
 
 	// create DNS server TCP/IP stack for the servers
