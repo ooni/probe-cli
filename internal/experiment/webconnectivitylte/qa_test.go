@@ -70,7 +70,7 @@ func qaNewMockedTestHelper() http.Handler {
 			},
 			QUICHandshake: map[string]model.THTLSHandshakeResult{},
 			HTTPRequest: model.THHTTPRequestResult{
-				BodyLength:           int64(len(netemx.DefaultWebPage)),
+				BodyLength:           int64(len(netemx.QAEnvDefaultWebPage)),
 				DiscoveredH3Endpoint: "",
 				Failure:              nil,
 				Title:                "Default Web Page",
