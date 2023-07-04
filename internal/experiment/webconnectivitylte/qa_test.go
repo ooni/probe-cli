@@ -109,7 +109,7 @@ func qaAddExampleDomains(config *netem.DNSConfig) {
 	config.AddRecord("www.example.org", "www.example.org", qaWebServerAddress)
 }
 
-// qaAddTHDomains adds the {0,1,2,3}.th.ooni.org domains to the config.
+// qaAddTHDomains adds the 0.th.ooni.org domain to the config.
 func qaAddTHDomains(config *netem.DNSConfig) {
 	config.AddRecord("0.th.ooni.org", "0.th.ooni.org", qaZeroTHOoniOrg)
 }
