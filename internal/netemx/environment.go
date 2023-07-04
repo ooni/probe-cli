@@ -159,7 +159,19 @@ func createClientStackAndDNSServer(
 
 // DefaultWebPage is the webpage returned by the default HTTP stack
 // created for [ConfigHTTPServer].
-const DefaultWebPage = `hello, world`
+const DefaultWebPage = `<!doctype html>
+<html>
+<head>
+    <title>Default Web Page</title>
+</head>
+<body>
+<div>
+    <h1>Default Web Page</h1>
+    <p>This is the default web page of the default domain.</p>
+</div>
+</body>
+</html>
+`
 
 // createServerStack creates the TCP/IP stack required by the server as well
 // as all the servers that should run on this specific stack.
@@ -193,7 +205,6 @@ func createServerStack(
 		// Make sure there is an HTTP handler
 		handler := l.Handler
 		if handler == nil {
-			// the default handler just responds "hello, world"
 			handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.Write([]byte(DefaultWebPage))
 			})

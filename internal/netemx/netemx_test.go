@@ -130,7 +130,7 @@ func TestWithCustomTProxy(t *testing.T) {
 			if resp.StatusCode != 200 {
 				t.Fatal("expected to see 200, got", resp.StatusCode)
 			}
-			expectBody := []byte(`hello, world`)
+			expectBody := []byte(netemx.DefaultWebPage)
 			gotBody, err := netxlite.ReadAllContext(context.Background(), resp.Body)
 			if err != nil {
 				t.Fatal(err)
@@ -176,7 +176,7 @@ func TestWithCustomTProxy(t *testing.T) {
 			if resp.StatusCode != 200 {
 				t.Fatal("expected to see 200, got", resp.StatusCode)
 			}
-			expectBody := []byte(`hello, world`)
+			expectBody := []byte(netemx.DefaultWebPage)
 			gotBody, err := netxlite.ReadAllContext(context.Background(), resp.Body)
 			if err != nil {
 				t.Fatal(err)
