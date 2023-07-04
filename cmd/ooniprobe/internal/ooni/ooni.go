@@ -3,7 +3,6 @@ package ooni
 import (
 	"context"
 	_ "embed" // because we embed a file
-	"io/ioutil"
 	"net/url"
 	"os"
 	"os/signal"
@@ -14,20 +13,14 @@ import (
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/config"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/utils"
 	"github.com/ooni/probe-cli/v3/internal/database"
-	"github.com/ooni/probe-cli/v3/internal/engine"
-	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/legacy/assetsdir"
+	"github.com/ooni/probe-cli/v3/internal/miniengine"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/pkg/errors"
 )
 
 // DefaultSoftwareName is the default software name.
 const DefaultSoftwareName = "ooniprobe-cli"
-
-// logger is the logger used by the engine.
-var logger = log.WithFields(log.Fields{
-	"type": "engine",
-})
 
 // ProbeCLI is the OONI Probe CLI context.
 type ProbeCLI interface {
@@ -108,6 +101,14 @@ func (p *Probe) IsTerminated() bool {
 // Terminate interrupts the running context
 func (p *Probe) Terminate() {
 	p.isTerminated.Add(1)
+}
+
+// ProxyURL returns the configured proxy URL
+func (p *Probe) ProxyURL() string {
+	if p.proxyURL != nil {
+		return p.proxyURL.String()
+	}
+	return ""
 }
 
 // ListenForSignals will listen for SIGINT and SIGTERM. When it receives those
@@ -193,7 +194,7 @@ func (p *Probe) Init(softwareName, softwareVersion, proxy string) error {
 	// the return value as it does not matter to us here.
 	_, _ = assetsdir.Cleanup(utils.AssetsDir(p.home))
 
-	tempDir, err := ioutil.TempDir("", "ooni")
+	tempDir, err := os.MkdirTemp("", "ooni")
 	if err != nil {
 		return errors.Wrap(err, "creating TempDir")
 	}
@@ -211,19 +212,8 @@ func (p *Probe) Init(softwareName, softwareVersion, proxy string) error {
 	return nil
 }
 
-// NewSession creates a new ooni/probe-engine session using the
-// current configuration inside the context. The caller must close
-// the session when done using it, by calling sess.Close().
-func (p *Probe) NewSession(ctx context.Context, runType model.RunType) (*engine.Session, error) {
-	kvstore, err := kvstore.NewFS(
-		utils.EngineDir(p.home),
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "creating engine's kvstore")
-	}
-	if err := os.MkdirAll(p.tunnelDir, 0700); err != nil {
-		return nil, errors.Wrap(err, "creating tunnel dir")
-	}
+// NewSessionConfig creates a new [miniengine.SessionConfig].
+func (p *Probe) NewSessionConfig(runType model.RunType) *miniengine.SessionConfig {
 	// When the software name is the default software name and we're running
 	// in unattended mode, adjust the software name accordingly.
 	//
@@ -232,24 +222,14 @@ func (p *Probe) NewSession(ctx context.Context, runType model.RunType) (*engine.
 	if runType == model.RunTypeTimed && softwareName == DefaultSoftwareName {
 		softwareName = DefaultSoftwareName + "-unattended"
 	}
-	return engine.NewSession(ctx, engine.SessionConfig{
-		KVStore:         kvstore,
-		Logger:          logger,
+	return &miniengine.SessionConfig{
 		SoftwareName:    softwareName,
 		SoftwareVersion: p.softwareVersion,
+		StateDir:        utils.EngineDir(p.home),
 		TempDir:         p.tempDir,
 		TunnelDir:       p.tunnelDir,
-		ProxyURL:        p.proxyURL,
-	})
-}
-
-// NewProbeEngine creates a new ProbeEngine instance.
-func (p *Probe) NewProbeEngine(ctx context.Context, runType model.RunType) (ProbeEngine, error) {
-	sess, err := p.NewSession(ctx, runType)
-	if err != nil {
-		return nil, err
+		Verbose:         false,
 	}
-	return sess, nil
 }
 
 // NewProbe creates a new probe instance.

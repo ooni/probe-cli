@@ -23,6 +23,25 @@ var (
 	ErrJSONFormatNotSupported = errors.New("JSON format not supported")
 )
 
+// ErrEmptyReportID indicates you passed a measurement with an empty ReportID
+// to a function that submits measurements directly.
+var ErrEmptyReportID = errors.New("probeservices: empty report ID")
+
+// SubmitMeasurement submits the given measurement to the OONI collector. You MUST initialize
+// the report ID of the measurement, otherwise the submission will fail immediately.
+func (c Client) SubmitMeasurement(ctx context.Context, m *model.Measurement) error {
+	if m.ReportID == "" {
+		return ErrEmptyReportID
+	}
+	var updateResponse model.OOAPICollectorUpdateResponse
+	return c.APIClientTemplate.WithBodyLogging().Build().PostJSON(
+		ctx, fmt.Sprintf("/report/%s", m.ReportID), model.OOAPICollectorUpdateRequest{
+			Format:  "json",
+			Content: m,
+		}, &updateResponse,
+	)
+}
+
 // NewReportTemplate creates a new ReportTemplate from a Measurement.
 func NewReportTemplate(m *model.Measurement) model.OOAPIReportTemplate {
 	return model.OOAPIReportTemplate{

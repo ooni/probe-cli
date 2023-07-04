@@ -3,14 +3,16 @@ package nettests
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/apex/log"
 	"github.com/fatih/color"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/ooni"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/output"
-	engine "github.com/ooni/probe-cli/v3/internal/engine"
+	"github.com/ooni/probe-cli/v3/internal/miniengine"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/pkg/errors"
 )
@@ -22,7 +24,7 @@ type Nettest interface {
 
 // NewController creates a nettest controller
 func NewController(
-	nt Nettest, probe *ooni.Probe, res *model.DatabaseResult, sess *engine.Session) *Controller {
+	nt Nettest, probe *ooni.Probe, res *model.DatabaseResult, sess *miniengine.Session) *Controller {
 	return &Controller{
 		Probe:   probe,
 		nt:      nt,
@@ -35,7 +37,7 @@ func NewController(
 // each nettest instance has one controller
 type Controller struct {
 	Probe       *ooni.Probe
-	Session     *engine.Session
+	Session     *miniengine.Session
 	res         *model.DatabaseResult
 	nt          Nettest
 	ntCount     int
@@ -115,22 +117,19 @@ func (c *Controller) SetNettestIndex(i, n int) {
 	c.ntIndex = i
 }
 
+var _ model.ExperimentCallbacks = &Controller{}
+
 // Run runs the selected nettest using the related experiment
 // with the specified inputs.
 //
 // This function will continue to run in most cases but will
 // immediately halt if something's wrong with the file system.
-func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error {
+func (c *Controller) Run(
+	experimentName string,
+	checkInReportID string,
+	inputs []string,
+) error {
 	db := c.Probe.DB()
-	// This will configure the controller as handler for the callbacks
-	// called by ooni/probe-engine/experiment.Experiment.
-	builder.SetCallbacks(model.ExperimentCallbacks(c))
-	c.numInputs = len(inputs)
-	exp := builder.NewExperiment()
-	defer func() {
-		c.res.DataUsageDown += exp.KibiBytesReceived()
-		c.res.DataUsageUp += exp.KibiBytesSent()
-	}()
 
 	c.msmts = make(map[int64]*model.DatabaseMeasurement)
 
@@ -141,15 +140,9 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 	log.Debug(color.RedString("status.queued"))
 	log.Debug(color.RedString("status.started"))
 
-	if c.Probe.Config().Sharing.UploadResults {
-		if err := exp.OpenReportContext(context.Background()); err != nil {
-			log.Debugf(
-				"%s: %s", color.RedString("failure.report_create"), err.Error(),
-			)
-		} else {
-			log.Debugf(color.RedString("status.report_create"))
-			reportID = sql.NullString{String: exp.ReportID(), Valid: true}
-		}
+	canSubmit := c.Probe.Config().Sharing.UploadResults && checkInReportID != ""
+	if canSubmit {
+		reportID = sql.NullString{String: checkInReportID, Valid: true}
 	}
 
 	maxRuntime := time.Duration(c.Probe.Config().Nettests.WebsitesMaxRuntime) * time.Second
@@ -186,7 +179,7 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 		}
 
 		msmt, err := db.CreateMeasurement(
-			reportID, exp.Name(), c.res.MeasurementDir, idx, resultID, urlID,
+			reportID, experimentName, c.res.MeasurementDir, idx, resultID, urlID,
 		)
 		if err != nil {
 			return errors.Wrap(err, "failed to create measurement")
@@ -196,7 +189,10 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 		if input != "" {
 			c.OnProgress(0, fmt.Sprintf("processing input: %s", input))
 		}
-		measurement, err := exp.MeasureWithContext(context.Background(), input)
+		options := make(map[string]any)
+		measurementTask := c.Session.Measure(context.Background(), experimentName, options, input)
+		awaitTask(measurementTask, c)
+		measurementResult, err := measurementTask.Result()
 		if err != nil {
 			log.WithError(err).Debug(color.RedString("failure.measurement"))
 			if err := db.Failed(c.msmts[idx64], err.Error()); err != nil {
@@ -212,12 +208,21 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 			continue
 		}
 
+		// update the data usage counters
+		c.res.DataUsageDown += measurementResult.KibiBytesReceived
+		c.res.DataUsageUp += measurementResult.KibiBytesSent
+
+		// set the measurement's reportID
+		measurementResult.Measurement.ReportID = checkInReportID
+
 		saveToDisk := true
-		if c.Probe.Config().Sharing.UploadResults {
+		if canSubmit {
 			// Implementation note: SubmitMeasurement will fail here if we did fail
 			// to open the report but we still want to continue. There will be a
 			// bit of a spew in the logs, perhaps, but stopping seems less efficient.
-			if err := exp.SubmitAndUpdateMeasurementContext(context.Background(), measurement); err != nil {
+			submitTask := c.Session.Submit(context.Background(), measurementResult.Measurement)
+			awaitTask(submitTask, model.NewPrinterCallbacks(taskLogger))
+			if _, err := submitTask.Result(); err != nil {
 				log.Debug(color.RedString("failure.measurement_submission"))
 				if err := db.UploadFailed(c.msmts[idx64], err.Error()); err != nil {
 					return errors.Wrap(err, "failed to mark upload as failed")
@@ -231,33 +236,34 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 		}
 		// We only save the measurement to disk if we failed to upload the measurement
 		if saveToDisk {
-			if err := exp.SaveMeasurement(measurement, msmt.MeasurementFilePath.String); err != nil {
+			if err := c.saveMeasurement(measurementResult.Measurement, msmt.MeasurementFilePath.String); err != nil {
 				return errors.Wrap(err, "failed to save measurement on disk")
 			}
 		}
 
+		// make the measurement as done
 		if err := db.Done(c.msmts[idx64]); err != nil {
 			return errors.Wrap(err, "failed to mark measurement as done")
 		}
 
-		// We're not sure whether it's enough to log the error or we should
-		// instead also mark the measurement as failed. Strictly speaking this
-		// is an inconsistency between the code that generate the measurement
-		// and the code that process the measurement. We do have some data
-		// but we're not gonna have a summary. To be reconsidered.
-		tk, err := exp.GetSummaryKeys(measurement)
-		if err != nil {
-			log.WithError(err).Error("failed to obtain testKeys")
-			continue
-		}
-		log.Debugf("Fetching: %d %v", idx, c.msmts[idx64])
-		if err := db.AddTestKeys(c.msmts[idx64], tk); err != nil {
+		// write the measurement summary into the database
+		if err := db.AddTestKeys(c.msmts[idx64], measurementResult.Summary); err != nil {
 			return errors.Wrap(err, "failed to add test keys to summary")
 		}
 	}
+
 	db.UpdateUploadedStatus(c.res)
 	log.Debugf("status.end")
 	return nil
+}
+
+// saveMeasurement saves a measurement to disk
+func (c *Controller) saveMeasurement(meas *model.Measurement, filepath string) error {
+	data, err := json.Marshal(meas)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath, data, 0600)
 }
 
 // OnProgress should be called when a new progress event is available.
