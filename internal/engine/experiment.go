@@ -20,6 +20,12 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
+const dateFormat = "2006-01-02 15:04:05"
+
+func formatTimeNowUTC() string {
+	return time.Now().UTC().Format(dateFormat)
+}
+
 // experiment implements Experiment.
 type experiment struct {
 	byteCounter   *bytecounter.Counter
@@ -40,7 +46,7 @@ func newExperiment(sess *Session, measurer model.ExperimentMeasurer) *experiment
 		measurer:      measurer,
 		session:       sess,
 		testName:      measurer.ExperimentName(),
-		testStartTime: model.MeasurementFormatTimeNowUTC(),
+		testStartTime: formatTimeNowUTC(),
 		testVersion:   measurer.ExperimentVersion(),
 	}
 }
@@ -196,7 +202,7 @@ func (e *experiment) newMeasurement(input string) *model.Measurement {
 	m := &model.Measurement{
 		DataFormatVersion:         model.OOAPIReportDefaultDataFormatVersion,
 		Input:                     model.MeasurementTarget(input),
-		MeasurementStartTime:      utctimenow.Format(model.MeasurementDateFormat),
+		MeasurementStartTime:      utctimenow.Format(dateFormat),
 		MeasurementStartTimeSaved: utctimenow,
 		ProbeIP:                   model.DefaultProbeIP,
 		ProbeASN:                  e.session.ProbeASNString(),
