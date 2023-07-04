@@ -46,6 +46,14 @@ var (
 	DefaultResolverASNString = fmt.Sprintf("AS%d", DefaultResolverASN)
 )
 
+// MeasurementDateFormat is the data format used by a measurement.
+const MeasurementDateFormat = "2006-01-02 15:04:05"
+
+// MeasurementFormatTimeNowUTC formats the current time as UTC using the [MeasurementDateFormat].
+func MeasurementFormatTimeNowUTC() string {
+	return time.Now().UTC().Format(MeasurementDateFormat)
+}
+
 // MeasurementTarget is the target of a OONI measurement.
 type MeasurementTarget string
 
