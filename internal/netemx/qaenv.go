@@ -1,5 +1,9 @@
 package netemx
 
+//
+// QA environment
+//
+
 import (
 	"io"
 	"net"
@@ -178,7 +182,7 @@ func (env *QAEnv) mustNewClientStack(config *qaEnvConfig) *netem.UNetStack {
 	// TODO(bassosimone,kelmenhorst): consider allowing to configure the
 	// delays and losses should the need for this arise in the future.
 	return runtimex.Try1(env.topology.AddHost(
-		DefaultClientAddress,
+		QAEnvDefaultClientAddress,
 		config.ispResolver,
 		&netem.LinkConfig{
 			DPIEngine:        env.dpi,
@@ -270,8 +274,8 @@ func (env *QAEnv) mustNewHTTPServers(config *qaEnvConfig) (closables []io.Closer
 
 // AddRecordToAllResolvers adds the given DNS record to all DNS resolvers.
 func (env *QAEnv) AddRecordToAllResolvers(domain string, cname string, addrs ...string) {
-	env.ispResolverConfig.AddRecord(domain, cname, addrs...)
-	env.otherResolversConfig.AddRecord(domain, cname, addrs...)
+	env.ISPResolverConfig().AddRecord(domain, cname, addrs...)
+	env.OtherResolversConfig().AddRecord(domain, cname, addrs...)
 }
 
 // ISPResolverConfig returns the [*netem.DNSConfig] of the ISP resolver.
@@ -308,9 +312,25 @@ func (env *QAEnv) Close() error {
 	return nil
 }
 
+// QAEnvDefaultWebPage is the webpage returned by [QAEnvDefaultHTTPHandler].
+// created for [ConfigHTTPServer].
+const QAEnvDefaultWebPage = `<!doctype html>
+<html>
+<head>
+    <title>Default Web Page</title>
+</head>
+<body>
+<div>
+    <h1>Default Web Page</h1>
+    <p>This is the default web page of the default domain.</p>
+</div>
+</body>
+</html>
+`
+
 // QAEnvDefaultHTTPHandler returns the default HTTP handler.
 func QAEnvDefaultHTTPHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(DefaultWebPage))
+		w.Write([]byte(QAEnvDefaultWebPage))
 	})
 }
