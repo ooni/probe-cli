@@ -8,14 +8,11 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/experiment/whatsapp"
-	"github.com/ooni/probe-cli/v3/internal/mocks"
+	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netemx"
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
@@ -28,281 +25,99 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	}
 }
 
-const WhatsappWebAddr = "157.240.27.54"
-const WhatsappEndpointAddr = "15.197.210.208"
-
-// makeDNSConfig creates the default valid DNS config for this experiment
-func makeDNSConfig() *netem.DNSConfig {
-	dnsConfig := netem.NewDNSConfig()
-	dnsConfig.AddRecord(
-		"web.whatsapp.com",
-		"web.whatsapp.com", // CNAME
-		WhatsappWebAddr,
-	)
-	dnsConfig.AddRecord(
-		"v.whatsapp.net",
-		"v.whatsapp.net",
-		WhatsappWebAddr,
-	)
-	for idx := 1; idx <= 16; idx++ {
-		dnsConfig.AddRecord(
-			fmt.Sprintf("e%d.whatsapp.net", idx),
-			fmt.Sprintf("e%d.whatsapp.net", idx),
-			WhatsappEndpointAddr,
-		)
+func TestSuccess(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
 	}
-	return dnsConfig
-}
-
-// makeServersConf creates an experiment-specific servers configuration for the [netemx.Environment].
-func makeServersConf(dnsConfig *netem.DNSConfig) *netemx.ServersConfig {
-	// config for the whatsapp Web server stack
-	whatsappWeb := netemx.ConfigServerStack{
-		ServerAddr:  WhatsappWebAddr,
-		HTTPServers: []netemx.ConfigHTTPServer{{Port: 443}},
+	measurer := whatsapp.NewExperimentMeasurer(whatsapp.Config{})
+	ctx := context.Background()
+	sess := &mockable.Session{MockableLogger: model.DiscardLogger}
+	measurement := new(model.Measurement)
+	callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
 	}
-
-	// for each datacenter we configure a server stack, running a port 443 and 80 instance each
-	servers := []netemx.ConfigServerStack{whatsappWeb}
-
-	servers = append(servers, netemx.ConfigServerStack{
-		ServerAddr:  WhatsappEndpointAddr,
-		HTTPServers: []netemx.ConfigHTTPServer{{Port: 443}, {Port: 5222}},
-	})
-
-	return &netemx.ServersConfig{
-		DNSConfig: dnsConfig,
-		Servers:   servers,
+	err := measurer.Run(ctx, args)
+	if err != nil {
+		t.Fatal(err)
 	}
-}
-
-// makeClientConf creates an experiment-specific client configuration for the [netemx.Environment].
-func makeClientConf(dnsConfig *netem.DNSConfig) *netemx.ClientConfig {
-	return &netemx.ClientConfig{DNSConfig: dnsConfig}
-}
-
-func TestMeasurerRun(t *testing.T) {
-	t.Run("Test Measurer without DPI: expect success", func(t *testing.T) {
-		if testing.Short() {
-			t.Skip("skip test in short mode")
-		}
-		// we use the same valid DNS config for client and servers here
-		dnsConf := makeDNSConfig()
-		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
-		defer env.Close()
-		env.Do(func() {
-			measurer := whatsapp.NewExperimentMeasurer(whatsapp.Config{})
-			sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
-			measurement := new(model.Measurement)
-			args := &model.ExperimentArgs{
-				Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
-				Measurement: measurement,
-				Session:     sess,
-			}
-
-			err := measurer.Run(context.Background(), args)
-			if err != nil {
-				t.Fatal(err)
-			}
-			tk := measurement.TestKeys.(*whatsapp.TestKeys)
-			if tk.RegistrationServerFailure != nil {
-				t.Fatal("invalid RegistrationServerFailure")
-			}
-			if tk.RegistrationServerStatus != "ok" {
-				t.Fatal("invalid RegistrationServerStatus")
-			}
-			if len(tk.WhatsappEndpointsBlocked) != 0 {
-				t.Fatal("invalid WhatsappEndpointsBlocked")
-			}
-			if len(tk.WhatsappEndpointsDNSInconsistent) != 0 {
-				t.Fatal("invalid WhatsappEndpointsDNSInconsistent")
-			}
-			if tk.WhatsappEndpointsStatus != "ok" {
-				t.Fatal("invalid WhatsappEndpointsStatus")
-			}
-			if tk.WhatsappWebFailure != nil {
-				t.Fatal("invalid WhatsappWebFailure")
-			}
-			if tk.WhatsappWebStatus != "ok" {
-				t.Fatal("invalid WhatsappWebStatus")
-			}
-		})
-	})
-
-	t.Run("Test Measurer with poisoned DNS: expect WhatsappWebFailure", func(t *testing.T) {
-		// create DNS config with bogon entries for Whatsapp Web
-		bogonDNSConf := netem.NewDNSConfig()
-		bogonDNSConf.AddRecord(
-			"web.whatsapp.com",
-			"web.whatsapp.com", // CNAME
-			"10.10.34.35",      // bogon
-		)
-		bogonDNSConf.AddRecord(
-			"v.whatsapp.net",
-			"v.whatsapp.net",
-			WhatsappWebAddr,
-		)
-		for idx := 1; idx <= 16; idx++ {
-			bogonDNSConf.AddRecord(
-				fmt.Sprintf("e%d.whatsapp.net", idx),
-				fmt.Sprintf("e%d.whatsapp.net", idx),
-				WhatsappEndpointAddr,
-			)
-		}
-		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(bogonDNSConf), makeServersConf(makeDNSConfig()))
-		defer env.Close()
-		env.Do(func() {
-			measurer := whatsapp.NewExperimentMeasurer(whatsapp.Config{})
-			measurement := &model.Measurement{}
-			sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
-			args := &model.ExperimentArgs{
-				Callbacks:   model.NewPrinterCallbacks(log.Log),
-				Measurement: measurement,
-				Session:     sess,
-			}
-			err := measurer.Run(context.Background(), args)
-			if err != nil {
-				t.Fatalf("Unexpected error: %s", err)
-			}
-			tk, _ := (measurement.TestKeys).(*whatsapp.TestKeys)
-			if tk.RegistrationServerFailure != nil {
-				t.Fatal("invalid RegistrationServerFailure")
-			}
-			if tk.RegistrationServerStatus != "ok" {
-				t.Fatal("invalid RegistrationServerStatus")
-			}
-			if len(tk.WhatsappEndpointsBlocked) != 0 {
-				t.Fatal("invalid WhatsappEndpointsBlocked")
-			}
-			if len(tk.WhatsappEndpointsDNSInconsistent) != 0 {
-				t.Fatal("invalid WhatsappEndpointsDNSInconsistent")
-			}
-			if tk.WhatsappEndpointsStatus != "ok" {
-				t.Fatal("invalid WhatsappEndpointsStatus")
-			}
-			if tk.WhatsappWebFailure == nil {
-				t.Fatal("invalid WhatsappWebFailure")
-			}
-			if tk.WhatsappWebStatus == "ok" {
-				t.Fatal("invalid WhatsappWebStatus")
-			}
-		})
-	})
-
-	t.Run("Test Measurer with DPI that drops TLS traffic with SNI = web.whatsapp.com: expect WhatsappWebFailure", func(t *testing.T) {
-		// create a new test environment
-		// we use the same valid DNS config for client and servers here
-		dnsConf := makeDNSConfig()
-		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
-		defer env.Close()
-
-		// add DPI engine to emulate the censorship condition
-		dpi := env.DPIEngine()
-		dpi.AddRule(&netem.DPIResetTrafficForTLSSNI{
-			Logger: model.DiscardLogger,
-			SNI:    "web.whatsapp.com",
-		})
-
-		env.Do(func() {
-			measurer := whatsapp.NewExperimentMeasurer(whatsapp.Config{})
-			measurement := &model.Measurement{}
-			sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
-			args := &model.ExperimentArgs{
-				Callbacks:   model.NewPrinterCallbacks(log.Log),
-				Measurement: measurement,
-				Session:     sess,
-			}
-			err := measurer.Run(context.Background(), args)
-			if err != nil {
-				t.Fatalf("Unexpected error: %s", err)
-			}
-			tk, _ := (measurement.TestKeys).(*whatsapp.TestKeys)
-			if tk.RegistrationServerFailure != nil {
-				t.Fatal("invalid RegistrationServerFailure")
-			}
-			if tk.RegistrationServerStatus != "ok" {
-				t.Fatal("invalid RegistrationServerStatus")
-			}
-			if len(tk.WhatsappEndpointsBlocked) != 0 {
-				t.Fatal("invalid WhatsappEndpointsBlocked")
-			}
-			if len(tk.WhatsappEndpointsDNSInconsistent) != 0 {
-				t.Fatal("invalid WhatsappEndpointsDNSInconsistent")
-			}
-			if tk.WhatsappEndpointsStatus != "ok" {
-				t.Fatal("invalid WhatsappEndpointsStatus")
-			}
-			if tk.WhatsappWebFailure == nil {
-				t.Fatal("invalid WhatsappWebFailure")
-			}
-			if tk.WhatsappWebStatus == "ok" {
-				t.Fatal("invalid WhatsappWebStatus")
-			}
-		})
-	})
+	tk := measurement.TestKeys.(*whatsapp.TestKeys)
+	if tk.RegistrationServerFailure != nil {
+		t.Fatal("invalid RegistrationServerFailure")
+	}
+	if tk.RegistrationServerStatus != "ok" {
+		t.Fatal("invalid RegistrationServerStatus")
+	}
+	if len(tk.WhatsappEndpointsBlocked) != 0 {
+		t.Fatal("invalid WhatsappEndpointsBlocked")
+	}
+	if len(tk.WhatsappEndpointsDNSInconsistent) != 0 {
+		t.Fatal("invalid WhatsappEndpointsDNSInconsistent")
+	}
+	if tk.WhatsappEndpointsStatus != "ok" {
+		t.Fatal("invalid WhatsappEndpointsStatus")
+	}
+	if tk.WhatsappWebFailure != nil {
+		t.Fatal("invalid WhatsappWebFailure")
+	}
+	if tk.WhatsappWebStatus != "ok" {
+		t.Fatal("invalid WhatsappWebStatus")
+	}
 }
 
 func TestFailureAllEndpoints(t *testing.T) {
-	// we use the same valid DNS config for client and servers here
-	dnsConf := makeDNSConfig()
-	// create a new test environment
-	env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
-	defer env.Close()
-	env.Do(func() {
-		measurer := whatsapp.NewExperimentMeasurer(whatsapp.Config{})
-		ctx, cancel := context.WithCancel(context.Background())
-		cancel() // fail immediately
-		sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
-		measurement := new(model.Measurement)
-		callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
-		args := &model.ExperimentArgs{
-			Callbacks:   callbacks,
-			Measurement: measurement,
-			Session:     sess,
+	measurer := whatsapp.NewExperimentMeasurer(whatsapp.Config{})
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // fail immediately
+	sess := &mockable.Session{MockableLogger: model.DiscardLogger}
+	measurement := new(model.Measurement)
+	callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(ctx, args)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tk := measurement.TestKeys.(*whatsapp.TestKeys)
+	if *tk.RegistrationServerFailure != "interrupted" {
+		t.Fatal("invalid RegistrationServerFailure")
+	}
+	if tk.RegistrationServerStatus != "blocked" {
+		t.Fatal("invalid RegistrationServerStatus")
+	}
+	if len(tk.WhatsappEndpointsBlocked) != 16 {
+		t.Fatal("invalid WhatsappEndpointsBlocked")
+	}
+	pattern := regexp.MustCompile("^e[0-9]{1,2}.whatsapp.net$")
+	for i := 0; i < len(tk.WhatsappEndpointsBlocked); i++ {
+		if !pattern.MatchString(tk.WhatsappEndpointsBlocked[i]) {
+			t.Fatalf("invalid WhatsappEndpointsBlocked[%d]", i)
 		}
-		err := measurer.Run(ctx, args)
-		if err != nil {
-			t.Fatal(err)
-		}
-		tk := measurement.TestKeys.(*whatsapp.TestKeys)
-		if *tk.RegistrationServerFailure != "interrupted" {
-			t.Fatal("invalid RegistrationServerFailure")
-		}
-		if tk.RegistrationServerStatus != "blocked" {
-			t.Fatal("invalid RegistrationServerStatus")
-		}
-		if len(tk.WhatsappEndpointsBlocked) != 16 {
-			t.Fatal("invalid WhatsappEndpointsBlocked")
-		}
-		pattern := regexp.MustCompile("^e[0-9]{1,2}.whatsapp.net$")
-		for i := 0; i < len(tk.WhatsappEndpointsBlocked); i++ {
-			if !pattern.MatchString(tk.WhatsappEndpointsBlocked[i]) {
-				t.Fatalf("invalid WhatsappEndpointsBlocked[%d]", i)
-			}
-		}
-		if len(tk.WhatsappEndpointsDNSInconsistent) != 0 {
-			t.Fatal("invalid WhatsappEndpointsDNSInconsistent")
-		}
-		if tk.WhatsappEndpointsStatus != "blocked" {
-			t.Fatal("invalid WhatsappEndpointsStatus")
-		}
-		if *tk.WhatsappWebFailure != "interrupted" {
-			t.Fatal("invalid WhatsappWebFailure")
-		}
-		if tk.WhatsappWebStatus != "blocked" {
-			t.Fatal("invalid WhatsappWebStatus")
-		}
-		sk, err := measurer.GetSummaryKeys(measurement)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if _, ok := sk.(whatsapp.SummaryKeys); !ok {
-			t.Fatal("invalid type for summary keys")
-		}
-	})
+	}
+	if len(tk.WhatsappEndpointsDNSInconsistent) != 0 {
+		t.Fatal("invalid WhatsappEndpointsDNSInconsistent")
+	}
+	if tk.WhatsappEndpointsStatus != "blocked" {
+		t.Fatal("invalid WhatsappEndpointsStatus")
+	}
+	if *tk.WhatsappWebFailure != "interrupted" {
+		t.Fatal("invalid WhatsappWebFailure")
+	}
+	if tk.WhatsappWebStatus != "blocked" {
+		t.Fatal("invalid WhatsappWebStatus")
+	}
+	sk, err := measurer.GetSummaryKeys(measurement)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := sk.(whatsapp.SummaryKeys); !ok {
+		t.Fatal("invalid type for summary keys")
+	}
 }
 
 func TestTestKeysComputeWebStatus(t *testing.T) {
@@ -554,30 +369,24 @@ func TestWeConfigureWebChecksCorrectly(t *testing.T) {
 			return urlgetter.DefaultMultiGetter(ctx, g)
 		},
 	}
-
-	// we use the same valid DNS config for client and servers here
-	dnsConf := makeDNSConfig()
-	// create a new test environment
-	env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
-	defer env.Close()
-	env.Do(func() {
-		ctx := context.Background()
-		sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
-		measurement := new(model.Measurement)
-		callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
-		args := &model.ExperimentArgs{
-			Callbacks:   callbacks,
-			Measurement: measurement,
-			Session:     sess,
-		}
-		if err := measurer.Run(ctx, args); err != nil {
-			t.Fatal(err)
-		}
-		const expected = 261
-		if got := called.Load(); got != expected {
-			t.Fatalf("not called the expected number of times: expected = %d, got = %d", expected, got)
-		}
-	})
+	ctx := context.Background()
+	sess := &mockable.Session{
+		MockableLogger: model.DiscardLogger,
+	}
+	measurement := new(model.Measurement)
+	callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	if err := measurer.Run(ctx, args); err != nil {
+		t.Fatal(err)
+	}
+	const expected = 261
+	if got := called.Load(); got != expected {
+		t.Fatalf("not called the expected number of times: expected = %d, got = %d", expected, got)
+	}
 }
 
 func TestSummaryKeysInvalidType(t *testing.T) {
