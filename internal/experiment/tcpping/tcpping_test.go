@@ -90,23 +90,9 @@ func TestMeasurer_run(t *testing.T) {
 	})
 
 	t.Run("with netem: without DPI: expect success", func(t *testing.T) {
-		// we use the same empty DNS config for client and servers here
-		dnsConfig := netem.NewDNSConfig()
-
-		clientConf := &netemx.ClientConfig{DNSConfig: dnsConfig}
-		serversConf := &netemx.ServersConfig{
-			DNSConfig: dnsConfig,
-			Servers: []netemx.ConfigServerStack{
-				{
-					ServerAddr:  "8.8.8.8",
-					HTTPServers: []netemx.ConfigHTTPServer{{Port: 443}},
-				},
-			},
-		}
-
-		// create a new test environment
-		env := netemx.NewEnvironment(clientConf, serversConf)
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandler()))
 		defer env.Close()
+
 		env.Do(func() {
 			meas, m, err := runHelper("tcpconnect://8.8.8.8:443")
 			if err != nil {
@@ -145,22 +131,8 @@ func TestMeasurer_run(t *testing.T) {
 	})
 
 	t.Run("with netem: with DPI that drops TCP segments to 8.8.8.8:443: expect failure", func(t *testing.T) {
-		// we use the same empty DNS config for client and servers here
-		dnsConfig := netem.NewDNSConfig()
-
-		clientConf := &netemx.ClientConfig{DNSConfig: dnsConfig}
-		serversConf := &netemx.ServersConfig{
-			DNSConfig: dnsConfig,
-			Servers: []netemx.ConfigServerStack{
-				{
-					ServerAddr:  "8.8.8.8",
-					HTTPServers: []netemx.ConfigHTTPServer{{Port: 443}},
-				},
-			},
-		}
-
 		// create a new test environment
-		env := netemx.NewEnvironment(clientConf, serversConf)
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandler()))
 		defer env.Close()
 
 		// add DPI engine to emulate the censorship condition
