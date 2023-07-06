@@ -76,7 +76,7 @@ func TestMeasurerRun(t *testing.T) {
 	}
 
 	t.Run("with empty input", func(t *testing.T) {
-		_, _, err := run(context.Background(), "")
+		_, _, err := runHelper(context.Background(), "")
 		if !errors.Is(err, errNoInputProvided) {
 			t.Fatal("unexpected error", err)
 		}
