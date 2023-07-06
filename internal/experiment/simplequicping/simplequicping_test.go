@@ -6,10 +6,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/gopacket/layers"
 	"github.com/ooni/netem"
-	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestConfig_alpn(t *testing.T) {
@@ -39,8 +41,8 @@ const (
 )
 
 func TestMeasurerRun(t *testing.T) {
-	// run is an helper function to run this set of tests.
-	run := func(input string) (*model.Measurement, model.ExperimentMeasurer, error) {
+	// runHelper is an helper function to run this set of tests.
+	runHelper := func(input string) (*model.Measurement, model.ExperimentMeasurer, error) {
 		m := NewExperimentMeasurer(Config{
 			ALPN:        "h3",
 			Delay:       1, // millisecond
@@ -58,8 +60,8 @@ func TestMeasurerRun(t *testing.T) {
 		meas := &model.Measurement{
 			Input: model.MeasurementTarget(input),
 		}
-		sess := &mockable.Session{
-			MockableLogger: model.DiscardLogger,
+		sess := &mocks.Session{
+			MockLogger: func() model.Logger { return model.DiscardLogger },
 		}
 		args := &model.ExperimentArgs{
 			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
@@ -73,60 +75,51 @@ func TestMeasurerRun(t *testing.T) {
 	}
 
 	t.Run("with empty input", func(t *testing.T) {
-		_, _, err := run("")
+		_, _, err := runHelper("")
 		if !errors.Is(err, errNoInputProvided) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with invalid URL", func(t *testing.T) {
-		_, _, err := run("\t")
+		_, _, err := runHelper("\t")
 		if !errors.Is(err, errInputIsNotAnURL) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with invalid scheme", func(t *testing.T) {
-		_, _, err := run("https://8.8.8.8:443/")
+		_, _, err := runHelper("https://8.8.8.8:443/")
 		if !errors.Is(err, errInvalidScheme) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with missing port", func(t *testing.T) {
-		_, _, err := run("quichandshake://8.8.8.8")
+		_, _, err := runHelper("quichandshake://8.8.8.8")
 		if !errors.Is(err, errMissingPort) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with netem: without DPI: expect success", func(t *testing.T) {
-		// we use the same empty DNS config for both client and servers
-		dnsConfig := netem.NewDNSConfig()
-
-		// configure [netemx.Environment]
-		clientConf := &netemx.ClientConfig{DNSConfig: dnsConfig}
-		serversConf := &netemx.ServersConfig{
-			DNSConfig: dnsConfig,
-			Servers: []netemx.ConfigServerStack{
-				{
-					ServerAddr: "8.8.8.8",
-					HTTPServers: []netemx.ConfigHTTPServer{
-						{
-							Port: 443,
-							QUIC: true,
-						},
-					},
-				},
-			},
-		}
 		// create a new test environment
-		env := netemx.NewEnvironment(clientConf, serversConf)
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandler()))
 		defer env.Close()
+
 		env.Do(func() {
-			meas, _, err := run("quichandshake://8.8.8.8:443")
+			meas, m, err := runHelper("quichandshake://8.8.8.8:443")
 			if err != nil {
 				t.Fatalf("Unexpected error: %s", err)
+			}
+
+			ask, err := m.GetSummaryKeys(meas)
+			if err != nil {
+				t.Fatal("cannot obtain summary")
+			}
+			summary := ask.(SummaryKeys)
+			if summary.IsAnomaly {
+				t.Fatal("expected no anomaly")
 			}
 
 			tk, _ := (meas.TestKeys).(*TestKeys)
@@ -137,6 +130,53 @@ func TestMeasurerRun(t *testing.T) {
 			for _, p := range tk.Pings {
 				if p.QUICHandshake.Failure != nil {
 					t.Fatal("unexpected error", *p.QUICHandshake.Failure)
+				}
+				if len(p.NetworkEvents) < 1 {
+					t.Fatal("unexpected number of network events")
+				}
+			}
+		})
+	})
+
+	t.Run("with netem: with DPI that drops UDP datagrams to 8.8.8.8:443: expect failure", func(t *testing.T) {
+		// create a new test environment
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandler()))
+		defer env.Close()
+
+		// add DPI engine to emulate the censorship condition
+		dpi := env.DPIEngine()
+		dpi.AddRule(&netem.DPIDropTrafficForServerEndpoint{
+			Logger:          model.DiscardLogger,
+			ServerIPAddress: "8.8.8.8",
+			ServerPort:      443,
+			ServerProtocol:  layers.IPProtocolUDP,
+		})
+
+		env.Do(func() {
+			meas, m, err := runHelper("quichandshake://8.8.8.8:443")
+			if err != nil {
+				t.Fatalf("Unexpected error: %s", err)
+			}
+
+			tk, _ := (meas.TestKeys).(*TestKeys)
+
+			// note: this experiment does not set anomaly but we still want
+			// to have a test here for when we possibly will
+			ask, err := m.GetSummaryKeys(meas)
+			if err != nil {
+				t.Fatal("cannot obtain summary")
+			}
+			summary := ask.(SummaryKeys)
+			if summary.IsAnomaly {
+				t.Fatal("expected no anomaly")
+			}
+
+			for _, p := range tk.Pings {
+				if p.QUICHandshake.Failure == nil {
+					t.Fatal("expected failure here but found nil")
+				}
+				if *p.QUICHandshake.Failure != netxlite.FailureGenericTimeoutError {
+					t.Fatal("unexpected failure", *p.QUICHandshake.Failure)
 				}
 				if len(p.NetworkEvents) < 1 {
 					t.Fatal("unexpected number of network events")
