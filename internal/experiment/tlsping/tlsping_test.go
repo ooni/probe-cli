@@ -41,7 +41,7 @@ const (
 )
 
 func TestMeasurerRun(t *testing.T) {
-	// runHelper is an helper function to runHelper this set of tests.
+	// runHelper is an helper function to run this set of tests.
 	runHelper := func(ctx context.Context, input string) (*model.Measurement, model.ExperimentMeasurer, error) {
 		m := NewExperimentMeasurer(Config{
 			ALPN:        "http/1.1",
