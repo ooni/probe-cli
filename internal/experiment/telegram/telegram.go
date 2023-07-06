@@ -87,15 +87,6 @@ func (m Measurer) ExperimentVersion() string {
 	return testVersion
 }
 
-var Datacenters = []string{
-	"149.154.175.50",
-	"149.154.167.51",
-	"149.154.175.100",
-	"149.154.167.91",
-	"149.154.171.5",
-	"95.161.76.100",
-}
-
 // Run implements ExperimentMeasurer.Run
 func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	callbacks := args.Callbacks
@@ -106,17 +97,27 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	defer cancel()
 	urlgetter.RegisterExtensions(measurement)
 	inputs := []urlgetter.MultiInput{
+		{Target: "http://149.154.175.50/", Config: urlgetter.Config{Method: "POST"}},
+		{Target: "http://149.154.167.51/", Config: urlgetter.Config{Method: "POST"}},
+		{Target: "http://149.154.175.100/", Config: urlgetter.Config{Method: "POST"}},
+		{Target: "http://149.154.167.91/", Config: urlgetter.Config{Method: "POST"}},
+		{Target: "http://149.154.171.5/", Config: urlgetter.Config{Method: "POST"}},
+		{Target: "http://95.161.76.100/", Config: urlgetter.Config{Method: "POST"}},
+
+		// Note: the following list contains the same endpoints as above with HTTP (not a typo using
+		// https _would not work_ here) _and_ port 443.
+		{Target: "http://149.154.175.50:443/", Config: urlgetter.Config{Method: "POST"}},
+		{Target: "http://149.154.167.51:443/", Config: urlgetter.Config{Method: "POST"}},
+		{Target: "http://149.154.175.100:443/", Config: urlgetter.Config{Method: "POST"}},
+		{Target: "http://149.154.167.91:443/", Config: urlgetter.Config{Method: "POST"}},
+		{Target: "http://149.154.171.5:443/", Config: urlgetter.Config{Method: "POST"}},
+		{Target: "http://95.161.76.100:443/", Config: urlgetter.Config{Method: "POST"}},
+
 		// Here we need to provide the method explicitly. See
 		// https://github.com/ooni/probe-engine/issues/827.
 		{Target: "https://web.telegram.org/", Config: urlgetter.Config{
 			Method: "GET",
 		}},
-	}
-	for _, d := range Datacenters {
-		inputs = append(inputs, urlgetter.MultiInput{Target: "http://" + d, Config: urlgetter.Config{Method: "POST"}})
-		// Note: the same endpoint as above with HTTP (not a typo using
-		// https _would not work_ here) _and_ port 443.
-		inputs = append(inputs, urlgetter.MultiInput{Target: "http://" + d + ":443", Config: urlgetter.Config{Method: "POST"}})
 	}
 	multi := urlgetter.Multi{Begin: time.Now(), Getter: m.Getter, Session: sess}
 	testkeys := NewTestKeys()
