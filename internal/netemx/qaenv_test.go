@@ -237,7 +237,7 @@ func TestQAEnv(t *testing.T) {
 		// create QA env
 		env := netemx.NewQAEnv(
 			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandler()),
-			netemx.QAEnvOptionClientPCAPDumper(dumper),
+			netemx.QAEnvOptionClientNICWrapper(dumper),
 		)
 		defer env.Close()
 
@@ -262,7 +262,7 @@ func TestQAEnv(t *testing.T) {
 			// issue the request
 			resp, err := client.Do(req)
 
-			// make sure we got a connection RST by peer error
+			// make sure everything is working as intended
 			if err != nil {
 				t.Fatal("unexpected failed", err)
 			}
@@ -271,7 +271,9 @@ func TestQAEnv(t *testing.T) {
 			}
 		})
 
-		// explicit close to write the PCAP
+		// explicit close to make sure the PCAP is fully flushed and written
+		// given that we will access the file as part of the same test, so we
+		// cannot rely on the file being written by `defer env.Close()`
 		env.Close()
 
 		// make sure that the PCAP file exists

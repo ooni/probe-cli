@@ -30,7 +30,7 @@ type qaEnvConfig struct {
 	// clientAddress is the client IP address to use.
 	clientAddress string
 
-	// clientNICWrapper dumps client packets.
+	// clientNICWrapper is the OPTIONAL wrapper for the client NIC.
 	clientNICWrapper netem.LinkNICWrapper
 
 	// dnsOverUDPResolvers contains the DNS-over-UDP resolvers to create.
@@ -60,7 +60,7 @@ func QAEnvOptionClientAddress(ipAddr string) QAEnvOption {
 
 // QAEnvOptionClientNICWrapper sets the NIC wrapper for the client. The most common use case
 // for this functionality is capturing packets using [netem.NewPCAPDumper].
-func QAEnvOptionClientPCAPDumper(wrapper netem.LinkNICWrapper) QAEnvOption {
+func QAEnvOptionClientNICWrapper(wrapper netem.LinkNICWrapper) QAEnvOption {
 	return func(config *qaEnvConfig) {
 		config.clientNICWrapper = wrapper
 	}
