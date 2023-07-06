@@ -814,8 +814,8 @@ func TestClonedTLSConfigOrNewEmptyConfig(t *testing.T) {
 		if output == nil {
 			t.Fatal("expected non-nil result")
 		}
-		v := reflect.ValueOf(*output)
-		if !v.IsZero() {
+		v := reflect.ValueOf(output)
+		if !v.Elem().IsZero() {
 			t.Fatal("expected zero config")
 		}
 	})
