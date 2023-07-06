@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/gopacket/layers"
 	"github.com/ooni/netem"
-	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -41,9 +41,8 @@ const (
 )
 
 func TestMeasurerRun(t *testing.T) {
-
-	// run is an helper function to run this set of tests.
-	run := func(ctx context.Context, input string) (*model.Measurement, model.ExperimentMeasurer, error) {
+	// runHelper is an helper function to run this set of tests.
+	runHelper := func(ctx context.Context, input string) (*model.Measurement, model.ExperimentMeasurer, error) {
 		m := NewExperimentMeasurer(Config{
 			ALPN:        "http/1.1",
 			Delay:       1, // millisecond
@@ -61,8 +60,8 @@ func TestMeasurerRun(t *testing.T) {
 		meas := &model.Measurement{
 			Input: model.MeasurementTarget(input),
 		}
-		sess := &mockable.Session{
-			MockableLogger: model.DiscardLogger,
+		sess := &mocks.Session{
+			MockLogger: func() model.Logger { return model.DiscardLogger },
 		}
 		callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
 		args := &model.ExperimentArgs{
@@ -84,46 +83,33 @@ func TestMeasurerRun(t *testing.T) {
 	})
 
 	t.Run("with invalid URL", func(t *testing.T) {
-		_, _, err := run(context.Background(), "\t") // \t causes the URL to be invalid
+		_, _, err := runHelper(context.Background(), "\t") // \t causes the URL to be invalid
 		if !errors.Is(err, errInputIsNotAnURL) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with invalid scheme", func(t *testing.T) {
-		_, _, err := run(context.Background(), "https://8.8.8.8:443/") // we expect tlshandshake://
+		_, _, err := runHelper(context.Background(), "https://8.8.8.8:443/") // we expect tlshandshake://
 		if !errors.Is(err, errInvalidScheme) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with missing port", func(t *testing.T) {
-		_, _, err := run(context.Background(), "tlshandshake://8.8.8.8") // missing port
+		_, _, err := runHelper(context.Background(), "tlshandshake://8.8.8.8") // missing port
 		if !errors.Is(err, errMissingPort) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with netem: without DPI: expect success", func(t *testing.T) {
-		// we use the same empty DNS config for client and servers here
-		dnsConfig := netem.NewDNSConfig()
-
-		clientConf := &netemx.ClientConfig{DNSConfig: dnsConfig}
-		serversConf := &netemx.ServersConfig{
-			DNSConfig: dnsConfig,
-			Servers: []netemx.ConfigServerStack{
-				{
-					ServerAddr:  "8.8.8.8",
-					HTTPServers: []netemx.ConfigHTTPServer{{Port: 443}},
-				},
-			},
-		}
-
 		// create a new test environment
-		env := netemx.NewEnvironment(clientConf, serversConf)
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandler()))
 		defer env.Close()
+
 		env.Do(func() {
-			meas, m, err := run(context.Background(), "tlshandshake://8.8.8.8:443")
+			meas, m, err := runHelper(context.Background(), "tlshandshake://8.8.8.8:443")
 			if err != nil {
 				t.Fatalf("Unexpected error: %s", err)
 			}
@@ -160,22 +146,8 @@ func TestMeasurerRun(t *testing.T) {
 	})
 
 	t.Run("with netem: with DPI that drops TCP segments to 8.8.8.8:443: expect failure", func(t *testing.T) {
-		// we use the same empty DNS config for client and servers here
-		dnsConfig := netem.NewDNSConfig()
-
-		clientConf := &netemx.ClientConfig{DNSConfig: dnsConfig}
-		serversConf := &netemx.ServersConfig{
-			DNSConfig: dnsConfig,
-			Servers: []netemx.ConfigServerStack{
-				{
-					ServerAddr:  "8.8.8.8",
-					HTTPServers: []netemx.ConfigHTTPServer{{Port: 443}},
-				},
-			},
-		}
-
 		// create a new test environment
-		env := netemx.NewEnvironment(clientConf, serversConf)
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandler()))
 		defer env.Close()
 
 		// add DPI engine to emulate the censorship condition
@@ -188,7 +160,7 @@ func TestMeasurerRun(t *testing.T) {
 		})
 
 		env.Do(func() {
-			meas, m, err := run(context.Background(), "tlshandshake://8.8.8.8:443")
+			meas, m, err := runHelper(context.Background(), "tlshandshake://8.8.8.8:443")
 			if err != nil {
 				t.Fatalf("Unexpected error: %s", err)
 			}
@@ -232,33 +204,19 @@ func TestMeasurerRun(t *testing.T) {
 	})
 
 	t.Run("with netem: with DPI that resets TLS to SNI blocked.com: expect failure", func(t *testing.T) {
-		// we use the same empty DNS config for client and servers here
-		dnsConfig := netem.NewDNSConfig()
-
-		clientConf := &netemx.ClientConfig{DNSConfig: dnsConfig}
-		serversConf := &netemx.ServersConfig{
-			DNSConfig: dnsConfig,
-			Servers: []netemx.ConfigServerStack{
-				{
-					ServerAddr:  "8.8.8.8",
-					HTTPServers: []netemx.ConfigHTTPServer{{Port: 443}},
-				},
-			},
-		}
-
 		// create a new test environment
-		env := netemx.NewEnvironment(clientConf, serversConf)
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandler()))
 		defer env.Close()
 
 		// add DPI engine to emulate the censorship condition
 		dpi := env.DPIEngine()
 		dpi.AddRule(&netem.DPIResetTrafficForTLSSNI{
 			Logger: model.DiscardLogger,
-			SNI:    SNI, // this is the SNI we set inside run()
+			SNI:    SNI, // this is the SNI we set inside runHelper()
 		})
 
 		env.Do(func() {
-			meas, m, err := run(context.Background(), "tlshandshake://8.8.8.8:443")
+			meas, m, err := runHelper(context.Background(), "tlshandshake://8.8.8.8:443")
 			if err != nil {
 				t.Fatalf("Unexpected error: %s", err)
 			}
@@ -287,12 +245,15 @@ func TestMeasurerRun(t *testing.T) {
 					t.Fatal("unexpected nil TLSHandshake")
 				}
 				if p.TLSHandshake.Failure == nil {
-					t.Fatal("expected an TLS Handshake failure here")
+					t.Fatal("expected a TLS Handshake failure here")
 				}
 				if *p.TLSHandshake.Failure != netxlite.FailureConnectionReset {
 					t.Fatal("unexpected TLS failure type")
 				}
 
+				// TODO(bassosimone): if we were using dslx here we would have an
+				// event about connect, so we should eventually address this issue
+				// and have one.
 				if len(p.NetworkEvents) <= 0 {
 					t.Fatal("unexpected number of network events")
 				}
