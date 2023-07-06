@@ -1,3 +1,4 @@
+*.pcap
 .DS_Store
 /*.asc
 /*.csv
@@ -16,12 +17,12 @@
 /gardener
 /ghpublish.out.txt
 /jafar
+/libooniengine.*
 /measurement.json
 /miniooni
 /oohelper
 /oohelperd
 /ooniprobe
 /ooporthelper
-/libooniengine.*
 /probe-cli.cov
 /tmp-*
