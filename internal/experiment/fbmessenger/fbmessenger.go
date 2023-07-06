@@ -43,22 +43,12 @@ const (
 	testVersion = "0.2.0"
 )
 
-var Services = []string{
-	ServiceSTUN, ServiceBAPI, ServiceBGraph, ServiceEdge, ServiceExternalCDN,
-	ServiceScontentCDN, ServiceStar,
-}
-
 // Config contains the experiment config.
 type Config struct{}
 
 // TestKeys contains the experiment results
 type TestKeys struct {
 	urlgetter.TestKeys
-	Analysis
-}
-
-// Analysis contains the measurement analysis performed by the probe.
-type Analysis struct {
 	FacebookBAPIDNSConsistent        *bool `json:"facebook_b_api_dns_consistent"`
 	FacebookBAPIReachable            *bool `json:"facebook_b_api_reachable"`
 	FacebookBGraphDNSConsistent      *bool `json:"facebook_b_graph_dns_consistent"`
@@ -175,8 +165,12 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	defer cancel()
 	urlgetter.RegisterExtensions(measurement)
 	// generate targets
+	services := []string{
+		ServiceSTUN, ServiceBAPI, ServiceBGraph, ServiceEdge, ServiceExternalCDN,
+		ServiceScontentCDN, ServiceStar,
+	}
 	var inputs []urlgetter.MultiInput
-	for _, service := range Services {
+	for _, service := range services {
 		inputs = append(inputs, urlgetter.MultiInput{Target: service})
 	}
 	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
