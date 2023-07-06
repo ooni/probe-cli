@@ -75,28 +75,28 @@ func TestMeasurerRun(t *testing.T) {
 	}
 
 	t.Run("with empty input", func(t *testing.T) {
-		_, _, err := run("")
+		_, _, err := runHelper("")
 		if !errors.Is(err, errNoInputProvided) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with invalid URL", func(t *testing.T) {
-		_, _, err := run("\t")
+		_, _, err := runHelper("\t")
 		if !errors.Is(err, errInputIsNotAnURL) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with invalid scheme", func(t *testing.T) {
-		_, _, err := run("https://8.8.8.8:443/")
+		_, _, err := runHelper("https://8.8.8.8:443/")
 		if !errors.Is(err, errInvalidScheme) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with missing port", func(t *testing.T) {
-		_, _, err := run("quichandshake://8.8.8.8")
+		_, _, err := runHelper("quichandshake://8.8.8.8")
 		if !errors.Is(err, errMissingPort) {
 			t.Fatal("unexpected error", err)
 		}
