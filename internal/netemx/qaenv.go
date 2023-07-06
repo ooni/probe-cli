@@ -30,6 +30,9 @@ type qaEnvConfig struct {
 	// clientAddress is the client IP address to use.
 	clientAddress string
 
+	// clientNICWrapper dumps client packets.
+	clientNICWrapper netem.LinkNICWrapper
+
 	// dnsOverUDPResolvers contains the DNS-over-UDP resolvers to create.
 	dnsOverUDPResolvers []string
 
@@ -52,6 +55,14 @@ func QAEnvOptionClientAddress(ipAddr string) QAEnvOption {
 	runtimex.Assert(net.ParseIP(ipAddr) != nil, "not an IP addr")
 	return func(config *qaEnvConfig) {
 		config.clientAddress = ipAddr
+	}
+}
+
+// QAEnvOptionClientNICWrapper sets the NIC wrapper for the client. The most common use case
+// for this functionality is capturing packets using [netem.NewPCAPDumper].
+func QAEnvOptionClientPCAPDumper(wrapper netem.LinkNICWrapper) QAEnvOption {
+	return func(config *qaEnvConfig) {
+		config.clientNICWrapper = wrapper
 	}
 }
 
@@ -96,6 +107,9 @@ func QAEnvOptionLogger(logger model.Logger) QAEnvOption {
 // QAEnv is the environment for running QA tests using [github.com/ooni/netem]. The zero
 // value of this struct is invalid; please, use [NewQAEnv].
 type QAEnv struct {
+	// clientNICWrapper is the OPTIONAL wrapper for the client NIC.
+	clientNICWrapper netem.LinkNICWrapper
+
 	// clientStack is the client stack to use.
 	clientStack *netem.UNetStack
 
@@ -123,6 +137,7 @@ func NewQAEnv(options ...QAEnvOption) *QAEnv {
 	// initialize the configuration
 	config := &qaEnvConfig{
 		clientAddress:       QAEnvDefaultClientAddress,
+		clientNICWrapper:    nil,
 		dnsOverUDPResolvers: []string{},
 		httpServers:         map[string]http.Handler{},
 		ispResolver:         QAEnvDefaultISPResolverAddress,
@@ -137,6 +152,7 @@ func NewQAEnv(options ...QAEnvOption) *QAEnv {
 
 	// create an empty QAEnv
 	env := &QAEnv{
+		clientNICWrapper:     config.clientNICWrapper,
 		clientStack:          nil,
 		ispResolverConfig:    netem.NewDNSConfig(),
 		dpi:                  netem.NewDPIEngine(config.logger),
@@ -193,6 +209,7 @@ func (env *QAEnv) mustNewClientStack(config *qaEnvConfig) *netem.UNetStack {
 		config.ispResolver,
 		&netem.LinkConfig{
 			DPIEngine:        env.dpi,
+			LeftNICWrapper:   env.clientNICWrapper,
 			LeftToRightDelay: time.Millisecond,
 			RightToLeftDelay: time.Millisecond,
 		},

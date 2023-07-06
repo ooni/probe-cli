@@ -3,13 +3,16 @@ package netemx_test
 import (
 	"context"
 	"net/http"
+	"os"
 	"testing"
 
+	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/randx"
 )
 
 // TestQAEnv ensures that we can use a [netemx.QAEnv] to hijack [netxlite] function calls.
@@ -221,5 +224,66 @@ func TestQAEnv(t *testing.T) {
 				t.Fatal("expected nil response")
 			}
 		})
+	})
+
+	t.Run("we can collect PCAPs", func(t *testing.T) {
+		// create random PCAP file name
+		pcapFilename := randx.Letters(10) + ".pcap"
+		t.Log(pcapFilename)
+
+		// create PCAP dumper
+		dumper := netem.NewPCAPDumper(pcapFilename, log.Log)
+
+		// create QA env
+		env := netemx.NewQAEnv(
+			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandler()),
+			netemx.QAEnvOptionClientPCAPDumper(dumper),
+		)
+		defer env.Close()
+
+		// configure DNS
+		env.AddRecordToAllResolvers(
+			"quad8.com",
+			"", // CNAME
+			"8.8.8.8",
+		)
+
+		env.Do(func() {
+			// create client, which will use the underlying client stack's
+			// DialContext method to dial connections
+			client := netxlite.NewHTTPClientStdlib(model.DiscardLogger)
+
+			// create the request
+			req, err := http.NewRequest("GET", "https://quad8.com/", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// issue the request
+			resp, err := client.Do(req)
+
+			// make sure we got a connection RST by peer error
+			if err != nil {
+				t.Fatal("unexpected failed", err)
+			}
+			if resp == nil {
+				t.Fatal("expected non-nil response")
+			}
+		})
+
+		// explicit close to write the PCAP
+		env.Close()
+
+		// make sure that the PCAP file exists
+		stat, err := os.Stat(pcapFilename)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !stat.Mode().IsRegular() {
+			t.Fatal("expected a regular file")
+		}
+		if stat.Size() < 1 {
+			t.Fatal("expected non-empty file")
+		}
 	})
 }

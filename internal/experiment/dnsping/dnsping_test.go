@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/gopacket/layers"
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -97,23 +96,17 @@ func TestMeasurer_run(t *testing.T) {
 	})
 
 	t.Run("with netem: without DPI: expect success", func(t *testing.T) {
-		// we use the same empty DNS config for client and servers here
-		dnsConfig := netem.NewDNSConfig()
-		// create configuration for DNS server
-		dnsConfig.AddRecord(
+		// create a new test environment
+		env := netemx.NewQAEnv(netemx.QAEnvOptionDNSOverUDPResolvers("8.8.8.8"))
+		defer env.Close()
+
+		// we use the same configuration for all resolvers
+		env.AddRecordToAllResolvers(
 			"example.com",
 			"example.com", // CNAME
 			"93.184.216.34",
 		)
 
-		clientConf := &netemx.ClientConfig{
-			DNSConfig:    dnsConfig,
-			ResolverAddr: "8.8.8.8",
-		}
-
-		// create a new test environment
-		env := netemx.NewEnvironment(clientConf, &netemx.ServersConfig{})
-		defer env.Close()
 		env.Do(func() {
 			meas, m, err := runHelper("udp://8.8.8.8:53")
 			if err != nil {
@@ -138,6 +131,7 @@ func TestMeasurer_run(t *testing.T) {
 				if p.Query == nil {
 					t.Fatal("QUery should not be nil")
 				}
+				t.Logf("%+v", p.Query)
 				if p.Query.Answers == nil {
 					t.Fatal("p.Query.Answers should not be nil")
 				}
@@ -148,32 +142,32 @@ func TestMeasurer_run(t *testing.T) {
 		})
 	})
 
-	t.Run("with netem: with DPI that drops TCP segments to 8.8.8.8:443: expect failure", func(t *testing.T) {
-		// we use the same empty DNS config for client and servers here
-		dnsConfig := netem.NewDNSConfig()
-		// create configuration for DNS server
-		dnsConfig.AddRecord(
+	t.Run("with netem: with DNS spoofing: expect to see delayed responses", func(t *testing.T) {
+		dumper := netem.NewPCAPDumper("dnsping_delayed.pcap", model.DiscardLogger)
+
+		// create a new test environment
+		env := netemx.NewQAEnv(
+			netemx.QAEnvOptionDNSOverUDPResolvers("8.8.8.8"),
+			netemx.QAEnvOptionClientPCAPDumper(dumper),
+		)
+		defer env.Close()
+
+		// we use the same configuration for all resolvers
+		env.AddRecordToAllResolvers(
 			"example.com",
 			"example.com", // CNAME
 			"93.184.216.34",
 		)
 
-		clientConf := &netemx.ClientConfig{
-			DNSConfig:    dnsConfig,
-			ResolverAddr: "8.8.8.8",
-		}
-
-		// create a new test environment
-		env := netemx.NewEnvironment(clientConf, &netemx.ServersConfig{})
-		defer env.Close()
-
-		// add DPI engine to emulate the censorship condition
+		// use DPI to create DNS spoofing
 		dpi := env.DPIEngine()
-		dpi.AddRule(&netem.DPIDropTrafficForServerEndpoint{
-			Logger:          model.DiscardLogger,
-			ServerIPAddress: "8.8.8.8",
-			ServerPort:      53,
-			ServerProtocol:  layers.IPProtocolUDP,
+		dpi.AddRule(&netem.DPISpoofDNSResponse{
+			Addresses: []string{
+				"10.10.34.35",
+				"10.10.34.36",
+			},
+			Logger: model.DiscardLogger,
+			Domain: "example.com",
 		})
 
 		env.Do(func() {
@@ -183,6 +177,9 @@ func TestMeasurer_run(t *testing.T) {
 			}
 
 			tk, _ := (meas.TestKeys).(*TestKeys)
+			if len(tk.Pings) != expectedPings*2 { // account for A & AAAA pings
+				t.Fatal("unexpected number of pings", len(tk.Pings))
+			}
 
 			// note: this experiment does not set anomaly but we still want
 			// to have a test here for when we possibly will
@@ -197,13 +194,19 @@ func TestMeasurer_run(t *testing.T) {
 
 			for _, p := range tk.Pings {
 				if p.Query == nil {
-					t.Fatal("Query should not be nil")
+					t.Fatal("QUery should not be nil")
 				}
-				if p.Query.Answers != nil {
-					t.Fatal("unexpected answers")
+				//t.Logf("%+v", *p.Query.Failure)
+				t.Logf("%+v", p.Query)
+				if p.Query.Answers == nil {
+					t.Fatal("p.Query.Answers should not be nil")
 				}
-				if p.Query.Failure == nil {
-					t.Fatal("expected a failure here")
+				if p.Query.QueryType == "A" && p.Query.Failure != nil {
+					t.Fatal("unexpected error", *p.Query.Failure)
+				}
+
+				if len(p.DelayedResponses) < 1 {
+					t.Fatal("expected to see delayed responses, found nothing")
 				}
 			}
 		})
