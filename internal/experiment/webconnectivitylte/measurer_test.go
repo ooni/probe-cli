@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/apex/log"
-	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivitylte"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -16,35 +15,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-func newEnvironment() *netemx.Environment {
-	// configure default UDP DNS server
-	dnsConfig := netem.NewDNSConfig()
-	dnsConfig.AddRecord(
-		"dns.quad9.net",
-		"dns.quad9.net",
-		"104.16.248.249",
-	)
-	dnsConfig.AddRecord(
-		"mozilla.cloudflare-dns.com",
-		"mozilla.cloudflare-dns.com",
-		"104.16.248.249",
-	)
-	dnsConfig.AddRecord(
-		"dns.nextdns.io",
-		"dns.nextdns.io",
-		"104.16.248.249",
-	)
-	dnsConfig.AddRecord(
-		"dns.google",
-		"dns.google",
-		"104.16.248.249",
-	)
-	dnsConfig.AddRecord(
-		"www.example.com",
-		"www.example.com",
-		"93.184.216.34",
-	)
-
+func newEnvironment() *netemx.QAEnv {
 	// configure DoH server
 	dohServer := &netemx.DoHServer{}
 	dohServer.AddRecord("ams-pg-test.ooni.org", "188.166.93.143")
@@ -55,61 +26,41 @@ func newEnvironment() *netemx.Environment {
 	dohServer.AddRecord("2.th.ooni.org", "104.248.30.161")
 	dohServer.AddRecord("3.th.ooni.org", "104.248.30.161")
 
-	// client config with DNS server at 8.8.4.4
-	clientConf := &netemx.ClientConfig{
-		DNSConfig:    dnsConfig,
-		ResolverAddr: "8.8.4.4",
-	}
+	env := netemx.NewQAEnv(
+		netemx.QAEnvOptionDNSOverUDPResolvers("8.8.4.4"),
+		netemx.QAEnvOptionHTTPServer("93.184.216.34", netemx.QAEnvDefaultHTTPHandler()),
+		netemx.QAEnvOptionHTTPServer("104.248.30.161", oohelperd.NewHandler()),
+		netemx.QAEnvOptionHTTPServer("104.16.248.249", dohServer),
+		netemx.QAEnvOptionHTTPServer("188.166.93.143", &probeService{}),
+		netemx.QAEnvOptionHTTPServer("185.125.188.132", &netemx.GeoIPLookup{}),
+	)
 
-	// servers config contains
-	serversConf := &netemx.ServersConfig{
-		DNSConfig: dnsConfig,
-		Servers: []netemx.ConfigServerStack{
-			{
-				ServerAddr:  "93.184.216.34",
-				HTTPServers: []netemx.ConfigHTTPServer{{Port: 443}, {Port: 80}},
-			},
-			{
-				ServerAddr: "104.248.30.161",
-				HTTPServers: []netemx.ConfigHTTPServer{
-					{
-						Port:    443,
-						Handler: oohelperd.NewHandler(),
-					},
-				},
-			},
-			{
-				ServerAddr: "104.16.248.249",
-				HTTPServers: []netemx.ConfigHTTPServer{
-					{
-						Port:    443,
-						Handler: dohServer,
-					},
-				},
-			},
-			{
-				ServerAddr: "188.166.93.143",
-				HTTPServers: []netemx.ConfigHTTPServer{
-					{
-						Port:    443,
-						Handler: &probeService{},
-					},
-				},
-			},
-			{
-				ServerAddr: "185.125.188.132",
-				HTTPServers: []netemx.ConfigHTTPServer{
-					{
-						Port:    443,
-						Handler: &netemx.GeoIPLookup{},
-					},
-				},
-			},
-		},
-	}
-	// create a new test environment
-	env := netemx.NewEnvironment(clientConf, serversConf)
-
+	// configure default UDP DNS server
+	env.AddRecordToAllResolvers(
+		"dns.quad9.net",
+		"dns.quad9.net",
+		"104.16.248.249",
+	)
+	env.AddRecordToAllResolvers(
+		"mozilla.cloudflare-dns.com",
+		"mozilla.cloudflare-dns.com",
+		"104.16.248.249",
+	)
+	env.AddRecordToAllResolvers(
+		"dns.nextdns.io",
+		"dns.nextdns.io",
+		"104.16.248.249",
+	)
+	env.AddRecordToAllResolvers(
+		"dns.google",
+		"dns.google",
+		"104.16.248.249",
+	)
+	env.AddRecordToAllResolvers(
+		"www.example.com",
+		"www.example.com",
+		"93.184.216.34",
+	)
 	return env
 }
 
