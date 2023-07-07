@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/apex/log"
+	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivitylte"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -93,6 +94,44 @@ func TestSuccess(t *testing.T) {
 		}
 		if tk.HTTPExperimentFailure != nil {
 			t.Fatal("unexpected http_experiment_failure", *tk.HTTPExperimentFailure)
+		}
+	})
+}
+
+func TestDPITarget(t *testing.T) {
+	env := newEnvironment()
+	dpi := env.DPIEngine()
+	dpi.AddRule(&netem.DPIResetTrafficForTLSSNI{
+		Logger: model.DiscardLogger,
+		SNI:    "www.example.com",
+	})
+	defer env.Close()
+	env.Do(func() {
+		measurer := webconnectivitylte.NewExperimentMeasurer(&webconnectivitylte.Config{})
+		ctx := context.Background()
+		// we need a real session because we need the web-connectivity helper
+		// as well as the ASN database
+		sess := newsession(t, true)
+		measurement := &model.Measurement{Input: "https://www.example.com"}
+		callbacks := model.NewPrinterCallbacks(log.Log)
+		args := &model.ExperimentArgs{
+			Callbacks:   callbacks,
+			Measurement: measurement,
+			Session:     sess,
+		}
+		err := measurer.Run(ctx, args)
+		if err != nil {
+			t.Fatal(err)
+		}
+		tk := measurement.TestKeys.(*webconnectivitylte.TestKeys)
+		if tk.ControlFailure != nil {
+			t.Fatal("unexpected control_failure", *tk.ControlFailure)
+		}
+		if tk.DNSExperimentFailure != nil {
+			t.Fatal("unexpected dns_experiment_failure")
+		}
+		if tk.HTTPExperimentFailure == nil {
+			t.Fatal("expected an http_experiment_failure")
 		}
 	})
 }
