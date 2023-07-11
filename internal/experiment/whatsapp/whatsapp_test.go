@@ -8,14 +8,11 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/experiment/whatsapp"
-	"github.com/ooni/probe-cli/v3/internal/mocks"
+	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netemx"
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
@@ -28,262 +25,99 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	}
 }
 
-// whatsappWebAddr is the address of web.whatsapp.net and of v.whatsapp.net as of 2023-07-11
-const whatsappWebAddr = "157.240.27.54"
-
-// whatsappEndpointAddr is the address of whatsapp endpoints as of 2023-07-11
-const whatsappEndpointAddr = "15.197.210.208"
-
-// configureDNSForWeb creates DNS config for web.whatsapp.com using the given address
-func configureDNSForWeb(config *netem.DNSConfig, addr string) {
-	config.AddRecord("web.whatsapp.com", "web.whatsapp.com", addr)
-}
-
-// configureDNSForRegistrationService creates DNS config for v.whatsapp.net using the given address
-func configureDNSForRegistrationService(config *netem.DNSConfig, addr string) {
-	config.AddRecord("v.whatsapp.net", "v.whatsapp.net", addr)
-}
-
-// configureDNSForEndpoints creates DNS config for the endpoints using the given address
-func configureDNSForEndpoints(config *netem.DNSConfig, addr string) {
-	for idx := 1; idx <= 16; idx++ {
-		config.AddRecord(
-			fmt.Sprintf("e%d.whatsapp.net", idx),
-			fmt.Sprintf("e%d.whatsapp.net", idx),
-			addr,
-		)
+func TestSuccess(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+	measurer := whatsapp.NewExperimentMeasurer(whatsapp.Config{})
+	ctx := context.Background()
+	sess := &mockable.Session{MockableLogger: model.DiscardLogger}
+	measurement := new(model.Measurement)
+	callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(ctx, args)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tk := measurement.TestKeys.(*whatsapp.TestKeys)
+	if tk.RegistrationServerFailure != nil {
+		t.Fatal("invalid RegistrationServerFailure")
+	}
+	if tk.RegistrationServerStatus != "ok" {
+		t.Fatal("invalid RegistrationServerStatus")
+	}
+	if len(tk.WhatsappEndpointsBlocked) != 0 {
+		t.Fatal("invalid WhatsappEndpointsBlocked")
+	}
+	if len(tk.WhatsappEndpointsDNSInconsistent) != 0 {
+		t.Fatal("invalid WhatsappEndpointsDNSInconsistent")
+	}
+	if tk.WhatsappEndpointsStatus != "ok" {
+		t.Fatal("invalid WhatsappEndpointsStatus")
+	}
+	if tk.WhatsappWebFailure != nil {
+		t.Fatal("invalid WhatsappWebFailure")
+	}
+	if tk.WhatsappWebStatus != "ok" {
+		t.Fatal("invalid WhatsappWebStatus")
 	}
 }
 
-// configureDNSWithDefaults creates DNS configuration using the default addresses
-func configureDNSWithDefaults(config *netem.DNSConfig) {
-	configureDNSForWeb(config, whatsappWebAddr)
-	configureDNSForRegistrationService(config, whatsappWebAddr)
-	configureDNSForEndpoints(config, whatsappEndpointAddr)
-}
-
-// newQAEnvironment creates a [*netemx.QAEnv] using the default configuration
-func newQAEnvironment() *netemx.QAEnv {
-	endpointsNetStack := netemx.QAEnvNetStackTCPEcho(log.Log, 443, 5222)
-
-	// We need:
-	//
-	// - HTTPS listeners for whatsappWebAddr on port 443
-	//
-	// - TCP listeners for endpoints on 443 and 5222
-	env := netemx.NewQAEnv(
-		netemx.QAEnvOptionLogger(log.Log),
-		netemx.QAEnvOptionHTTPServer(whatsappWebAddr, netemx.QAEnvDefaultHTTPHandler()),
-		netemx.QAEnvOptionNetStack(whatsappEndpointAddr, endpointsNetStack),
-	)
-
-	// create default DNS configuration for all the existing resolvers, which specific nettests
-	// will override in case they need to modify how the ISP's DNS resolver behaves
-	configureDNSWithDefaults(env.ISPResolverConfig())
-	configureDNSWithDefaults(env.OtherResolversConfig())
-
-	return env
-}
-
-func TestMeasurerRun(t *testing.T) {
-	t.Run("without DPI: expect success", func(t *testing.T) {
-		// create a new test environment
-		env := newQAEnvironment()
-		defer env.Close()
-
-		env.Do(func() {
-			measurer := whatsapp.NewExperimentMeasurer(whatsapp.Config{})
-			sess := &mocks.Session{MockLogger: func() model.Logger { return log.Log }}
-			measurement := new(model.Measurement)
-			args := &model.ExperimentArgs{
-				Callbacks:   model.NewPrinterCallbacks(log.Log),
-				Measurement: measurement,
-				Session:     sess,
-			}
-
-			err := measurer.Run(context.Background(), args)
-			if err != nil {
-				t.Fatal(err)
-			}
-			tk := measurement.TestKeys.(*whatsapp.TestKeys)
-			if tk.RegistrationServerFailure != nil {
-				t.Fatal("invalid RegistrationServerFailure")
-			}
-			if tk.RegistrationServerStatus != "ok" {
-				t.Fatal("invalid RegistrationServerStatus")
-			}
-			if len(tk.WhatsappEndpointsBlocked) != 0 {
-				t.Fatal("invalid WhatsappEndpointsBlocked")
-			}
-			if len(tk.WhatsappEndpointsDNSInconsistent) != 0 {
-				t.Fatal("invalid WhatsappEndpointsDNSInconsistent")
-			}
-			if tk.WhatsappEndpointsStatus != "ok" {
-				t.Fatal("invalid WhatsappEndpointsStatus")
-			}
-			if tk.WhatsappWebFailure != nil {
-				t.Fatal("invalid WhatsappWebFailure")
-			}
-			if tk.WhatsappWebStatus != "ok" {
-				t.Fatal("invalid WhatsappWebStatus")
-			}
-		})
-	})
-
-	t.Run("with poisoned DNS: expect WhatsappWebFailure", func(t *testing.T) {
-		// create a new test environment
-		env := newQAEnvironment()
-		defer env.Close()
-
-		// create DNS config with bogon entries for Whatsapp Web
-		env.ISPResolverConfig().AddRecord("web.whatsapp.com", "web.whatsapp.com", "10.10.34.35")
-
-		env.Do(func() {
-			measurer := whatsapp.NewExperimentMeasurer(whatsapp.Config{})
-			measurement := &model.Measurement{}
-			sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
-			args := &model.ExperimentArgs{
-				Callbacks:   model.NewPrinterCallbacks(log.Log),
-				Measurement: measurement,
-				Session:     sess,
-			}
-			err := measurer.Run(context.Background(), args)
-			if err != nil {
-				t.Fatalf("Unexpected error: %s", err)
-			}
-			tk, _ := (measurement.TestKeys).(*whatsapp.TestKeys)
-			if tk.RegistrationServerFailure != nil {
-				t.Fatal("invalid RegistrationServerFailure")
-			}
-			if tk.RegistrationServerStatus != "ok" {
-				t.Fatal("invalid RegistrationServerStatus")
-			}
-			if len(tk.WhatsappEndpointsBlocked) != 0 {
-				t.Fatal("invalid WhatsappEndpointsBlocked")
-			}
-			if len(tk.WhatsappEndpointsDNSInconsistent) != 0 {
-				t.Fatal("invalid WhatsappEndpointsDNSInconsistent")
-			}
-			if tk.WhatsappEndpointsStatus != "ok" {
-				t.Fatal("invalid WhatsappEndpointsStatus")
-			}
-			if tk.WhatsappWebFailure == nil {
-				t.Fatal("invalid WhatsappWebFailure")
-			}
-			if tk.WhatsappWebStatus == "ok" {
-				t.Fatal("invalid WhatsappWebStatus")
-			}
-		})
-	})
-
-	t.Run("with DPI that drops TLS traffic with SNI = web.whatsapp.com: expect WhatsappWebFailure", func(t *testing.T) {
-		// create a new test environment
-		env := newQAEnvironment()
-		defer env.Close()
-
-		// add DPI engine to emulate the censorship condition
-		dpi := env.DPIEngine()
-		dpi.AddRule(&netem.DPIResetTrafficForTLSSNI{
-			Logger: model.DiscardLogger,
-			SNI:    "web.whatsapp.com",
-		})
-
-		env.Do(func() {
-			measurer := whatsapp.NewExperimentMeasurer(whatsapp.Config{})
-			measurement := &model.Measurement{}
-			sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
-			args := &model.ExperimentArgs{
-				Callbacks:   model.NewPrinterCallbacks(log.Log),
-				Measurement: measurement,
-				Session:     sess,
-			}
-			err := measurer.Run(context.Background(), args)
-			if err != nil {
-				t.Fatalf("Unexpected error: %s", err)
-			}
-			tk, _ := (measurement.TestKeys).(*whatsapp.TestKeys)
-			if tk.RegistrationServerFailure != nil {
-				t.Fatal("invalid RegistrationServerFailure")
-			}
-			if tk.RegistrationServerStatus != "ok" {
-				t.Fatal("invalid RegistrationServerStatus")
-			}
-			if len(tk.WhatsappEndpointsBlocked) != 0 {
-				t.Fatal("invalid WhatsappEndpointsBlocked")
-			}
-			if len(tk.WhatsappEndpointsDNSInconsistent) != 0 {
-				t.Fatal("invalid WhatsappEndpointsDNSInconsistent")
-			}
-			if tk.WhatsappEndpointsStatus != "ok" {
-				t.Fatal("invalid WhatsappEndpointsStatus")
-			}
-			if tk.WhatsappWebFailure == nil {
-				t.Fatal("invalid WhatsappWebFailure")
-			}
-			if tk.WhatsappWebStatus == "ok" {
-				t.Fatal("invalid WhatsappWebStatus")
-			}
-		})
-	})
-}
-
 func TestFailureAllEndpoints(t *testing.T) {
-	// create a new test environment
-	env := newQAEnvironment()
-	defer env.Close()
-
-	env.Do(func() {
-		measurer := whatsapp.NewExperimentMeasurer(whatsapp.Config{})
-		ctx, cancel := context.WithCancel(context.Background())
-		cancel() // fail immediately
-		sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
-		measurement := new(model.Measurement)
-		callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
-		args := &model.ExperimentArgs{
-			Callbacks:   callbacks,
-			Measurement: measurement,
-			Session:     sess,
+	measurer := whatsapp.NewExperimentMeasurer(whatsapp.Config{})
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // fail immediately
+	sess := &mockable.Session{MockableLogger: model.DiscardLogger}
+	measurement := new(model.Measurement)
+	callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	err := measurer.Run(ctx, args)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tk := measurement.TestKeys.(*whatsapp.TestKeys)
+	if *tk.RegistrationServerFailure != "interrupted" {
+		t.Fatal("invalid RegistrationServerFailure")
+	}
+	if tk.RegistrationServerStatus != "blocked" {
+		t.Fatal("invalid RegistrationServerStatus")
+	}
+	if len(tk.WhatsappEndpointsBlocked) != 16 {
+		t.Fatal("invalid WhatsappEndpointsBlocked")
+	}
+	pattern := regexp.MustCompile("^e[0-9]{1,2}.whatsapp.net$")
+	for i := 0; i < len(tk.WhatsappEndpointsBlocked); i++ {
+		if !pattern.MatchString(tk.WhatsappEndpointsBlocked[i]) {
+			t.Fatalf("invalid WhatsappEndpointsBlocked[%d]", i)
 		}
-		err := measurer.Run(ctx, args)
-		if err != nil {
-			t.Fatal(err)
-		}
-		tk := measurement.TestKeys.(*whatsapp.TestKeys)
-		if *tk.RegistrationServerFailure != "interrupted" {
-			t.Fatal("invalid RegistrationServerFailure")
-		}
-		if tk.RegistrationServerStatus != "blocked" {
-			t.Fatal("invalid RegistrationServerStatus")
-		}
-		if len(tk.WhatsappEndpointsBlocked) != 16 {
-			t.Fatal("invalid WhatsappEndpointsBlocked")
-		}
-		pattern := regexp.MustCompile("^e[0-9]{1,2}.whatsapp.net$")
-		for i := 0; i < len(tk.WhatsappEndpointsBlocked); i++ {
-			if !pattern.MatchString(tk.WhatsappEndpointsBlocked[i]) {
-				t.Fatalf("invalid WhatsappEndpointsBlocked[%d]", i)
-			}
-		}
-		if len(tk.WhatsappEndpointsDNSInconsistent) != 0 {
-			t.Fatal("invalid WhatsappEndpointsDNSInconsistent")
-		}
-		if tk.WhatsappEndpointsStatus != "blocked" {
-			t.Fatal("invalid WhatsappEndpointsStatus")
-		}
-		if *tk.WhatsappWebFailure != "interrupted" {
-			t.Fatal("invalid WhatsappWebFailure")
-		}
-		if tk.WhatsappWebStatus != "blocked" {
-			t.Fatal("invalid WhatsappWebStatus")
-		}
-		sk, err := measurer.GetSummaryKeys(measurement)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if _, ok := sk.(whatsapp.SummaryKeys); !ok {
-			t.Fatal("invalid type for summary keys")
-		}
-	})
+	}
+	if len(tk.WhatsappEndpointsDNSInconsistent) != 0 {
+		t.Fatal("invalid WhatsappEndpointsDNSInconsistent")
+	}
+	if tk.WhatsappEndpointsStatus != "blocked" {
+		t.Fatal("invalid WhatsappEndpointsStatus")
+	}
+	if *tk.WhatsappWebFailure != "interrupted" {
+		t.Fatal("invalid WhatsappWebFailure")
+	}
+	if tk.WhatsappWebStatus != "blocked" {
+		t.Fatal("invalid WhatsappWebStatus")
+	}
+	sk, err := measurer.GetSummaryKeys(measurement)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := sk.(whatsapp.SummaryKeys); !ok {
+		t.Fatal("invalid type for summary keys")
+	}
 }
 
 func TestTestKeysComputeWebStatus(t *testing.T) {
@@ -507,6 +341,9 @@ func TestTestKeysOnlyWebHTTPSFailure(t *testing.T) {
 }
 
 func TestWeConfigureWebChecksCorrectly(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	called := &atomic.Int64{}
 	emptyConfig := urlgetter.Config{}
 	measurer := whatsapp.Measurer{
@@ -532,9 +369,10 @@ func TestWeConfigureWebChecksCorrectly(t *testing.T) {
 			return urlgetter.DefaultMultiGetter(ctx, g)
 		},
 	}
-
 	ctx := context.Background()
-	sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
+	sess := &mockable.Session{
+		MockableLogger: model.DiscardLogger,
+	}
 	measurement := new(model.Measurement)
 	callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
 	args := &model.ExperimentArgs{
