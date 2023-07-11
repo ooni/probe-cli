@@ -28,75 +28,75 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	}
 }
 
-const WhatsappWebAddr = "157.240.27.54"
-const WhatsappEndpointAddr = "15.197.210.208"
+// whatsappWebAddr is the address of web.whatsapp.net and of v.whatsapp.net as of 2023-07-11
+const whatsappWebAddr = "157.240.27.54"
 
-// makeDNSConfig creates the default valid DNS config for this experiment
-func makeDNSConfig() *netem.DNSConfig {
-	dnsConfig := netem.NewDNSConfig()
-	dnsConfig.AddRecord(
-		"web.whatsapp.com",
-		"web.whatsapp.com", // CNAME
-		WhatsappWebAddr,
-	)
-	dnsConfig.AddRecord(
-		"v.whatsapp.net",
-		"v.whatsapp.net",
-		WhatsappWebAddr,
-	)
+// whatsappEndpointAddr is the address of whatsapp endpoints as of 2023-07-11
+const whatsappEndpointAddr = "15.197.210.208"
+
+// configureDNSForWeb creates DNS config for web.whatsapp.com using the given address
+func configureDNSForWeb(config *netem.DNSConfig, addr string) {
+	config.AddRecord("web.whatsapp.com", "web.whatsapp.com", addr)
+}
+
+// configureDNSForRegistrationService creates DNS config for v.whatsapp.net using the given address
+func configureDNSForRegistrationService(config *netem.DNSConfig, addr string) {
+	config.AddRecord("v.whatsapp.net", "v.whatsapp.net", addr)
+}
+
+// configureDNSForEndpoints creates DNS config for the endpoints using the given address
+func configureDNSForEndpoints(config *netem.DNSConfig, addr string) {
 	for idx := 1; idx <= 16; idx++ {
-		dnsConfig.AddRecord(
+		config.AddRecord(
 			fmt.Sprintf("e%d.whatsapp.net", idx),
 			fmt.Sprintf("e%d.whatsapp.net", idx),
-			WhatsappEndpointAddr,
+			addr,
 		)
 	}
-	return dnsConfig
 }
 
-// makeServersConf creates an experiment-specific servers configuration for the [netemx.Environment].
-func makeServersConf(dnsConfig *netem.DNSConfig) *netemx.ServersConfig {
-	// config for the whatsapp Web server stack
-	whatsappWeb := netemx.ConfigServerStack{
-		ServerAddr:  WhatsappWebAddr,
-		HTTPServers: []netemx.ConfigHTTPServer{{Port: 443}},
-	}
-
-	// for each datacenter we configure a server stack, running a port 443 and 80 instance each
-	servers := []netemx.ConfigServerStack{whatsappWeb}
-
-	servers = append(servers, netemx.ConfigServerStack{
-		ServerAddr:  WhatsappEndpointAddr,
-		HTTPServers: []netemx.ConfigHTTPServer{{Port: 443}, {Port: 5222}},
-	})
-
-	return &netemx.ServersConfig{
-		DNSConfig: dnsConfig,
-		Servers:   servers,
-	}
+// configureDNSWithDefaults creates DNS configuration using the default addresses
+func configureDNSWithDefaults(config *netem.DNSConfig) {
+	configureDNSForWeb(config, whatsappWebAddr)
+	configureDNSForRegistrationService(config, whatsappWebAddr)
+	configureDNSForEndpoints(config, whatsappEndpointAddr)
 }
 
-// makeClientConf creates an experiment-specific client configuration for the [netemx.Environment].
-func makeClientConf(dnsConfig *netem.DNSConfig) *netemx.ClientConfig {
-	return &netemx.ClientConfig{DNSConfig: dnsConfig}
+// newQAEnvironment creates a [*netemx.QAEnv] using the default configuration
+func newQAEnvironment() *netemx.QAEnv {
+	endpointsNetStack := netemx.QAEnvNetStackTCPEcho(log.Log, 443, 5222)
+
+	// We need:
+	//
+	// - HTTPS listeners for whatsappWebAddr on port 443
+	//
+	// - TCP listeners for endpoints on 443 and 5222
+	env := netemx.NewQAEnv(
+		netemx.QAEnvOptionLogger(log.Log),
+		netemx.QAEnvOptionHTTPServer(whatsappWebAddr, netemx.QAEnvDefaultHTTPHandler()),
+		netemx.QAEnvOptionNetStack(whatsappEndpointAddr, endpointsNetStack),
+	)
+
+	// create default DNS configuration for all the existing resolvers, which specific nettests
+	// will override in case they need to modify how the ISP's DNS resolver behaves
+	configureDNSWithDefaults(env.ISPResolverConfig())
+	configureDNSWithDefaults(env.OtherResolversConfig())
+
+	return env
 }
 
 func TestMeasurerRun(t *testing.T) {
-	t.Run("Test Measurer without DPI: expect success", func(t *testing.T) {
-		if testing.Short() {
-			t.Skip("skip test in short mode")
-		}
-		// we use the same valid DNS config for client and servers here
-		dnsConf := makeDNSConfig()
+	t.Run("without DPI: expect success", func(t *testing.T) {
 		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
+		env := newQAEnvironment()
 		defer env.Close()
+
 		env.Do(func() {
 			measurer := whatsapp.NewExperimentMeasurer(whatsapp.Config{})
-			sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
+			sess := &mocks.Session{MockLogger: func() model.Logger { return log.Log }}
 			measurement := new(model.Measurement)
 			args := &model.ExperimentArgs{
-				Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+				Callbacks:   model.NewPrinterCallbacks(log.Log),
 				Measurement: measurement,
 				Session:     sess,
 			}
@@ -130,29 +130,14 @@ func TestMeasurerRun(t *testing.T) {
 		})
 	})
 
-	t.Run("Test Measurer with poisoned DNS: expect WhatsappWebFailure", func(t *testing.T) {
-		// create DNS config with bogon entries for Whatsapp Web
-		bogonDNSConf := netem.NewDNSConfig()
-		bogonDNSConf.AddRecord(
-			"web.whatsapp.com",
-			"web.whatsapp.com", // CNAME
-			"10.10.34.35",      // bogon
-		)
-		bogonDNSConf.AddRecord(
-			"v.whatsapp.net",
-			"v.whatsapp.net",
-			WhatsappWebAddr,
-		)
-		for idx := 1; idx <= 16; idx++ {
-			bogonDNSConf.AddRecord(
-				fmt.Sprintf("e%d.whatsapp.net", idx),
-				fmt.Sprintf("e%d.whatsapp.net", idx),
-				WhatsappEndpointAddr,
-			)
-		}
+	t.Run("with poisoned DNS: expect WhatsappWebFailure", func(t *testing.T) {
 		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(bogonDNSConf), makeServersConf(makeDNSConfig()))
+		env := newQAEnvironment()
 		defer env.Close()
+
+		// create DNS config with bogon entries for Whatsapp Web
+		env.ISPResolverConfig().AddRecord("web.whatsapp.com", "web.whatsapp.com", "10.10.34.35")
+
 		env.Do(func() {
 			measurer := whatsapp.NewExperimentMeasurer(whatsapp.Config{})
 			measurement := &model.Measurement{}
@@ -191,12 +176,9 @@ func TestMeasurerRun(t *testing.T) {
 		})
 	})
 
-	t.Run("Test Measurer with DPI that drops TLS traffic with SNI = web.whatsapp.com: expect WhatsappWebFailure", func(t *testing.T) {
+	t.Run("with DPI that drops TLS traffic with SNI = web.whatsapp.com: expect WhatsappWebFailure", func(t *testing.T) {
 		// create a new test environment
-		// we use the same valid DNS config for client and servers here
-		dnsConf := makeDNSConfig()
-		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
+		env := newQAEnvironment()
 		defer env.Close()
 
 		// add DPI engine to emulate the censorship condition
@@ -246,11 +228,10 @@ func TestMeasurerRun(t *testing.T) {
 }
 
 func TestFailureAllEndpoints(t *testing.T) {
-	// we use the same valid DNS config for client and servers here
-	dnsConf := makeDNSConfig()
 	// create a new test environment
-	env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
+	env := newQAEnvironment()
 	defer env.Close()
+
 	env.Do(func() {
 		measurer := whatsapp.NewExperimentMeasurer(whatsapp.Config{})
 		ctx, cancel := context.WithCancel(context.Background())
@@ -526,9 +507,6 @@ func TestTestKeysOnlyWebHTTPSFailure(t *testing.T) {
 }
 
 func TestWeConfigureWebChecksCorrectly(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
 	called := &atomic.Int64{}
 	emptyConfig := urlgetter.Config{}
 	measurer := whatsapp.Measurer{
@@ -555,29 +533,22 @@ func TestWeConfigureWebChecksCorrectly(t *testing.T) {
 		},
 	}
 
-	// we use the same valid DNS config for client and servers here
-	dnsConf := makeDNSConfig()
-	// create a new test environment
-	env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
-	defer env.Close()
-	env.Do(func() {
-		ctx := context.Background()
-		sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
-		measurement := new(model.Measurement)
-		callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
-		args := &model.ExperimentArgs{
-			Callbacks:   callbacks,
-			Measurement: measurement,
-			Session:     sess,
-		}
-		if err := measurer.Run(ctx, args); err != nil {
-			t.Fatal(err)
-		}
-		const expected = 261
-		if got := called.Load(); got != expected {
-			t.Fatalf("not called the expected number of times: expected = %d, got = %d", expected, got)
-		}
-	})
+	ctx := context.Background()
+	sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
+	measurement := new(model.Measurement)
+	callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	if err := measurer.Run(ctx, args); err != nil {
+		t.Fatal(err)
+	}
+	const expected = 261
+	if got := called.Load(); got != expected {
+		t.Fatalf("not called the expected number of times: expected = %d, got = %d", expected, got)
+	}
 }
 
 func TestSummaryKeysInvalidType(t *testing.T) {
