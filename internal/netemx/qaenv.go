@@ -6,8 +6,10 @@ package netemx
 
 import (
 	"io"
+	"math"
 	"net"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -44,6 +46,9 @@ type qaEnvConfig struct {
 
 	// logger is the logger to use.
 	logger model.Logger
+
+	// tcpListeners contains the TCP listeners to create.
+	tcpListeners map[string]QAEnvConnHandler
 }
 
 // QAEnvOption is an option to modify [NewQAEnv] default behavior.
@@ -104,6 +109,19 @@ func QAEnvOptionLogger(logger model.Logger) QAEnvOption {
 	}
 }
 
+// QAEnvConnHandler TAKES OWNERSHIP of and handles the given net.Conn.
+type QAEnvConnHandler interface {
+	OnAccept(logger model.Logger, conn net.Conn)
+}
+
+// QAEnvOptionTCPListener adds a TCP listener to the list of TCP listeners to create. The endpoint
+// argument follows the "ADDR:PORT" pattern for IPv4 and the "[ADDR]:PORT" pattern for IPv6.
+func QAEnvOptionTCPListener(endpoint string, handler QAEnvConnHandler) QAEnvOption {
+	return func(config *qaEnvConfig) {
+		config.tcpListeners[endpoint] = handler
+	}
+}
+
 // QAEnv is the environment for running QA tests using [github.com/ooni/netem]. The zero
 // value of this struct is invalid; please, use [NewQAEnv].
 type QAEnv struct {
@@ -112,6 +130,9 @@ type QAEnv struct {
 
 	// clientStack is the client stack to use.
 	clientStack *netem.UNetStack
+
+	// closables contains all entities where we have to take care of closing.
+	closables []io.Closer
 
 	// ispResolverConfig is the DNS config used by the ISP resolver.
 	ispResolverConfig *netem.DNSConfig
@@ -127,9 +148,6 @@ type QAEnv struct {
 
 	// topology is the topology we're using.
 	topology *netem.StarTopology
-
-	// closables contains all entities where we have to take care of closing.
-	closables []io.Closer
 }
 
 // NewQAEnv creates a new [QAEnv].
@@ -142,6 +160,7 @@ func NewQAEnv(options ...QAEnvOption) *QAEnv {
 		httpServers:         map[string]http.Handler{},
 		ispResolver:         QAEnvDefaultISPResolverAddress,
 		logger:              model.DiscardLogger,
+		tcpListeners:        map[string]QAEnvConnHandler{},
 	}
 	for _, option := range options {
 		option(config)
@@ -154,12 +173,12 @@ func NewQAEnv(options ...QAEnvOption) *QAEnv {
 	env := &QAEnv{
 		clientNICWrapper:     config.clientNICWrapper,
 		clientStack:          nil,
+		closables:            []io.Closer{},
 		ispResolverConfig:    netem.NewDNSConfig(),
 		dpi:                  netem.NewDPIEngine(config.logger),
 		once:                 sync.Once{},
 		otherResolversConfig: netem.NewDNSConfig(),
 		topology:             runtimex.Try1(netem.NewStarTopology(config.logger)),
-		closables:            []io.Closer{},
 	}
 
 	// create all the required internals
@@ -167,6 +186,7 @@ func NewQAEnv(options ...QAEnvOption) *QAEnv {
 	env.clientStack = env.mustNewClientStack(config)
 	env.closables = append(env.closables, env.mustNewResolvers(config)...)
 	env.closables = append(env.closables, env.mustNewHTTPServers(config)...)
+	env.closables = append(env.closables, env.mustNewTCPListeners(config)...)
 
 	return env
 }
@@ -296,6 +316,65 @@ func (env *QAEnv) mustNewHTTPServers(config *qaEnvConfig) (closables []io.Closer
 	return
 }
 
+func (env *QAEnv) mustNewTCPListeners(config *qaEnvConfig) (closables []io.Closer) {
+	runtimex.Assert(len(config.dnsOverUDPResolvers) >= 1, "expected at least one DNS resolver")
+	resolver := config.dnsOverUDPResolvers[0]
+
+	for endpoint, handler := range config.tcpListeners {
+		// convert the endpoint to a TCP address
+		addr, sport := runtimex.Try2(net.SplitHostPort(endpoint))
+		port := runtimex.Try1(strconv.Atoi(sport))
+		runtimex.Assert(port >= 0 && port <= math.MaxUint16, "invalid port number")
+		parsedIP := net.ParseIP(addr)
+		runtimex.Assert(parsedIP != nil, "expected valid IP address")
+		tcpAddr := &net.TCPAddr{
+			IP:   parsedIP,
+			Port: port,
+			Zone: "",
+		}
+
+		// Create the server's TCP/IP stack
+		//
+		// Note: because the stack is created using topology.AddHost, we don't
+		// need to call Close when done using it, since the topology will do that
+		// for us when we call the topology's Close method.
+		stack := runtimex.Try1(env.topology.AddHost(
+			addr,     // IP address
+			resolver, // default resolver address
+			&netem.LinkConfig{
+				LeftToRightDelay: time.Millisecond,
+				RightToLeftDelay: time.Millisecond,
+			},
+		))
+
+		// create the TCP listener
+		listener := runtimex.Try1(stack.ListenTCP("tcp", tcpAddr))
+
+		// start background goroutine handling connections
+		go qaEnvTCPListenerLoop(config.logger, listener, handler)
+	}
+	return
+}
+
+func qaEnvTCPListenerLoop(logger model.Logger, listener net.Listener, handler QAEnvConnHandler) {
+	// Implementation note: because this function is only used for writing QA tests, it is
+	// fine that we are using runtimex.Try1 and ignoring any resulting panic.
+	defer runtimex.CatchLogAndIgnorePanic(logger, "qaEnvTCPListenerLoop")
+	for {
+		conn := runtimex.Try1(listener.Accept())
+		go qaEnvTCPListenerHandleConn(logger, handler, conn)
+	}
+}
+
+func qaEnvTCPListenerHandleConn(logger model.Logger, handler QAEnvConnHandler, conn net.Conn) {
+	// just in case the handler didn't do it, close the connection (because close SHOULD be
+	// idempotent when closing connections, the possible double close is fine here)
+	defer conn.Close()
+
+	// pass the control to the specific handler
+	handler.OnAccept(logger, conn)
+}
+
 // AddRecordToAllResolvers adds the given DNS record to all DNS resolvers. You can safely
 // add new DNS records from concurrent goroutines at any time.
 func (env *QAEnv) AddRecordToAllResolvers(domain string, cname string, addrs ...string) {
@@ -331,9 +410,12 @@ func (env *QAEnv) Do(function func()) {
 // Close closes all the resources used by [QAEnv].
 func (env *QAEnv) Close() error {
 	env.once.Do(func() {
+		// first close all the possible closables we track
 		for _, c := range env.closables {
 			c.Close()
 		}
+
+		// finally close the whole network topology
 		env.topology.Close()
 	})
 	return nil
@@ -360,4 +442,28 @@ func QAEnvDefaultHTTPHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(QAEnvDefaultWebPage))
 	})
+}
+
+// QAEnvTCPListenerEcho TAKES OWNERSHIP of a net.Conn and echoes traffic.
+func QAEnvTCPListenerEcho() QAEnvConnHandler {
+	return &qaEnvTCPListenerEcho{}
+}
+
+type qaEnvTCPListenerEcho struct{}
+
+// OnAccept implements QAEnvConnHandler.
+func (*qaEnvTCPListenerEcho) OnAccept(logger model.Logger, conn net.Conn) {
+	// Implementation note: because this function is only used for writing QA tests, it is
+	// fine that we are using runtimex.Try1 and ignoring any resulting panic.
+	defer runtimex.CatchLogAndIgnorePanic(logger, "qaEnvTCPListenerEcho.OnAccept")
+
+	// make sure we close the conn
+	defer conn.Close()
+
+	// loop until there is an I/O error
+	for {
+		buffer := make([]byte, 4096)
+		count := runtimex.Try1(conn.Read(buffer))
+		_, _ = conn.Write(buffer[:count])
+	}
 }

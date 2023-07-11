@@ -1,8 +1,10 @@
 package netemx_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 
 	"github.com/apex/log"
@@ -147,4 +149,65 @@ func Example_resolverConfig() {
 
 	// Output:
 	// [93.184.216.34] [93.184.216.34] [10.10.34.35]
+}
+
+// This example shows how to create a TCP listener attached to an arbitrary conn handler.
+func Example_tcpListener() {
+	// e1WhatsappNet is e1.whatsapp.net IP address as of 2023-07-11
+	const e1WhatsappNet = "3.33.252.61"
+
+	// endpoint is the Jabber endpoint we want to connect to
+	endpoint := net.JoinHostPort(e1WhatsappNet, "5222")
+
+	// create the QA environment
+	env := netemx.NewQAEnv(
+		netemx.QAEnvOptionTCPListener(endpoint, netemx.QAEnvTCPListenerEcho()),
+		netemx.QAEnvOptionLogger(log.Log),
+	)
+
+	// make sure we close all the resources when we're done
+	defer env.Close()
+
+	// create common DNS configuration for clients and servers
+	env.AddRecordToAllResolvers("e1.whatsapp.net", "", e1WhatsappNet)
+
+	// run netxlite code inside the netemx environment
+	env.Do(func() {
+		// create a system resolver instance
+		reso := netxlite.NewStdlibResolver(log.Log)
+
+		// create a dialer
+		dialer := netxlite.NewDialerWithResolver(log.Log, reso)
+
+		// attempt to establish a TCP connection
+		conn, err := dialer.DialContext(context.Background(), "tcp", "3.33.252.61:5222")
+
+		// make sure no error occurred
+		if err != nil {
+			log.Fatalf("dialer.DialContext failed: %s", err.Error())
+		}
+
+		// send data to the echo server
+		input := []byte("0xdeadbeef")
+		if _, err := conn.Write(input); err != nil {
+			log.Fatalf("conn.Write failed: %s", err.Error())
+		}
+
+		// receive data from the echo server
+		buffer := make([]byte, 1<<17)
+		count, err := conn.Read(buffer)
+		if err != nil {
+			log.Fatalf("conn.Read failed: %s", err.Error())
+		}
+		output := buffer[:count]
+
+		// print whether input and output are equal
+		fmt.Println(bytes.Equal(input, output))
+
+		// close the connection
+		conn.Close()
+	})
+
+	// Output:
+	// true
 }

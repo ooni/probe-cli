@@ -109,3 +109,22 @@ func Try3[T1, T2, T3 any](v1 T1, v2 T2, v3 T3, err error) (T1, T2, T3) {
 	PanicOnError(err, "Try3")
 	return v1, v2, v3
 }
+
+// WarningLogger is the interface a logger that emits warnings. We cannot directly use
+// the definition inside the [model] package because [model] depends on [runtimex].
+type WarningLogger interface {
+	Warnf(format string, v ...any)
+}
+
+// CatchLogAndIgnorePanic is a function that catches and ignores panics. You
+// can invoke this function as follows:
+//
+//	defer runtimex.CatchLogAndIgnorePanic()
+//
+// and rest assured that any panic will not propagate further. You should typically
+// only use this function when writing testing code.
+func CatchLogAndIgnorePanic(logger WarningLogger, prefix string) {
+	if rec := recover(); rec != nil {
+		logger.Warnf("%s: %+v", prefix, rec)
+	}
+}
