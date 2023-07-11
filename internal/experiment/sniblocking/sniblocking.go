@@ -246,7 +246,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		m.config.ControlSNI = "example.org"
 	}
 	if measurement.Input == "" {
-		return errors.New("Experiment requires measurement.Input")
+		return errors.New("experiment requires measurement.Input")
 	}
 	if m.config.TestHelperAddress == "" {
 		m.config.TestHelperAddress = net.JoinHostPort(
