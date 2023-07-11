@@ -16,12 +16,14 @@ func TestTestKeysClassify(t *testing.T) {
 	asStringPtr := func(s string) *string {
 		return &s
 	}
+
 	t.Run("with tk.Target.Failure == nil", func(t *testing.T) {
 		tk := new(TestKeys)
 		if tk.classify() != classSuccessGotServerHello {
 			t.Fatal("unexpected result")
 		}
 	})
+
 	t.Run("with tk.Target.Failure == connection_refused", func(t *testing.T) {
 		tk := new(TestKeys)
 		tk.Target.Failure = asStringPtr(netxlite.FailureConnectionRefused)
@@ -29,6 +31,7 @@ func TestTestKeysClassify(t *testing.T) {
 			t.Fatal("unexpected result")
 		}
 	})
+
 	t.Run("with tk.Target.Failure == dns_nxdomain_error", func(t *testing.T) {
 		tk := new(TestKeys)
 		tk.Target.Failure = asStringPtr(netxlite.FailureDNSNXDOMAINError)
@@ -36,6 +39,7 @@ func TestTestKeysClassify(t *testing.T) {
 			t.Fatal("unexpected result")
 		}
 	})
+
 	t.Run("with tk.Target.Failure == android_dns_cache_no_data", func(t *testing.T) {
 		tk := new(TestKeys)
 		tk.Target.Failure = asStringPtr(netxlite.FailureAndroidDNSCacheNoData)
@@ -43,6 +47,7 @@ func TestTestKeysClassify(t *testing.T) {
 			t.Fatal("unexpected result")
 		}
 	})
+
 	t.Run("with tk.Target.Failure == connection_reset", func(t *testing.T) {
 		tk := new(TestKeys)
 		tk.Target.Failure = asStringPtr(netxlite.FailureConnectionReset)
@@ -50,6 +55,7 @@ func TestTestKeysClassify(t *testing.T) {
 			t.Fatal("unexpected result")
 		}
 	})
+
 	t.Run("with tk.Target.Failure == eof_error", func(t *testing.T) {
 		tk := new(TestKeys)
 		tk.Target.Failure = asStringPtr(netxlite.FailureEOFError)
@@ -57,6 +63,7 @@ func TestTestKeysClassify(t *testing.T) {
 			t.Fatal("unexpected result")
 		}
 	})
+
 	t.Run("with tk.Target.Failure == ssl_invalid_hostname", func(t *testing.T) {
 		tk := new(TestKeys)
 		tk.Target.Failure = asStringPtr(netxlite.FailureSSLInvalidHostname)
@@ -64,6 +71,7 @@ func TestTestKeysClassify(t *testing.T) {
 			t.Fatal("unexpected result")
 		}
 	})
+
 	t.Run("with tk.Target.Failure == ssl_unknown_authority", func(t *testing.T) {
 		tk := new(TestKeys)
 		tk.Target.Failure = asStringPtr(netxlite.FailureSSLUnknownAuthority)
@@ -71,6 +79,7 @@ func TestTestKeysClassify(t *testing.T) {
 			t.Fatal("unexpected result")
 		}
 	})
+
 	t.Run("with tk.Target.Failure == ssl_invalid_certificate", func(t *testing.T) {
 		tk := new(TestKeys)
 		tk.Target.Failure = asStringPtr(netxlite.FailureSSLInvalidCertificate)
@@ -78,6 +87,7 @@ func TestTestKeysClassify(t *testing.T) {
 			t.Fatal("unexpected result")
 		}
 	})
+
 	t.Run("with tk.Target.Failure == generic_timeout_error #1", func(t *testing.T) {
 		tk := new(TestKeys)
 		tk.Target.Failure = asStringPtr(netxlite.FailureGenericTimeoutError)
@@ -85,6 +95,7 @@ func TestTestKeysClassify(t *testing.T) {
 			t.Fatal("unexpected result")
 		}
 	})
+
 	t.Run("with tk.Target.Failure == generic_timeout_error #2", func(t *testing.T) {
 		tk := new(TestKeys)
 		tk.Target.Failure = asStringPtr(netxlite.FailureGenericTimeoutError)
@@ -93,6 +104,7 @@ func TestTestKeysClassify(t *testing.T) {
 			t.Fatal("unexpected result")
 		}
 	})
+
 	t.Run("with tk.Target.Failure == unknown_failure", func(t *testing.T) {
 		tk := new(TestKeys)
 		tk.Target.Failure = asStringPtr("unknown_failure")
@@ -151,6 +163,7 @@ func TestMaybeURLToSNI(t *testing.T) {
 			t.Fatal("expected empty parsed here")
 		}
 	})
+
 	t.Run("for domain name", func(t *testing.T) {
 		parsed, err := maybeURLToSNI("kernel.org")
 		if err != nil {
@@ -160,6 +173,7 @@ func TestMaybeURLToSNI(t *testing.T) {
 			t.Fatal("expected different domain here")
 		}
 	})
+
 	t.Run("for valid URL", func(t *testing.T) {
 		parsed, err := maybeURLToSNI("https://kernel.org/robots.txt")
 		if err != nil {
@@ -220,6 +234,7 @@ func TestMeasurerWithInvalidInput(t *testing.T) {
 			}
 		})
 	})
+
 	t.Run("with invalid MeasurementInput: expect parsing error", func(t *testing.T) {
 		// create a new test environment
 		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(exampleOrgAddr, netemx.QAEnvDefaultHTTPHandler()))
@@ -249,8 +264,8 @@ func TestMeasurerWithInvalidInput(t *testing.T) {
 			}
 		})
 	})
-
 }
+
 func TestMeasurerRun(t *testing.T) {
 	t.Run("without DPI: expect success", func(t *testing.T) {
 		// create a new test environment
