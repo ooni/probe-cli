@@ -40,7 +40,7 @@ const (
 	ServiceStar = "tcpconnect://star.c10r.facebook.com:443"
 
 	testName    = "facebook_messenger"
-	testVersion = "0.2.0"
+	testVersion = "0.2.1"
 )
 
 // Services is the list of services we're testing.
