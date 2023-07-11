@@ -6,10 +6,8 @@ package netemx
 
 import (
 	"io"
-	"math"
 	"net"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 
@@ -47,8 +45,8 @@ type qaEnvConfig struct {
 	// logger is the logger to use.
 	logger model.Logger
 
-	// tcpListeners contains the TCP listeners to create.
-	tcpListeners map[string]QAEnvConnHandler
+	// netStacks contains information about the net stacks to create.
+	netStacks map[string]QAEnvNetStackHandler
 }
 
 // QAEnvOption is an option to modify [NewQAEnv] default behavior.
@@ -109,16 +107,29 @@ func QAEnvOptionLogger(logger model.Logger) QAEnvOption {
 	}
 }
 
-// QAEnvConnHandler TAKES OWNERSHIP of and handles the given net.Conn.
-type QAEnvConnHandler interface {
-	OnAccept(logger model.Logger, conn net.Conn)
+// QAEnvNetStackHandler handles a [*netem.UNetStack] created using [QAEnvOptionNetStack].
+type QAEnvNetStackHandler interface {
+	// Listen should use the stack to create all the listening TCP and UDP sockets
+	// required by the specific test case, as well as to start the required background
+	// goroutines servicing incoming requests for the created listeners. This method
+	// MUST BE CONCURRENCY SAFE and it MUST NOT arrange for the Close method to close
+	// the stack because it is managed by the [QAEnv]. This method MAY call PANIC
+	// in case of listening failure: the caller calls PANIC on error anyway.
+	Listen(stack *netem.UNetStack) error
+
+	// Close should close the listening TCP and UDP sockets and the background
+	// goroutines created by Listen. This method MUST BE CONCURRENCY SAFE and IDEMPOTENT and
+	// it MUST NOT close the stack passed to Listen because it is managed by [QAEnv].
+	Close() error
 }
 
-// QAEnvOptionTCPListener adds a TCP listener to the list of TCP listeners to create. The endpoint
-// argument follows the "ADDR:PORT" pattern for IPv4 and the "[ADDR]:PORT" pattern for IPv6.
-func QAEnvOptionTCPListener(endpoint string, handler QAEnvConnHandler) QAEnvOption {
+// QAEnvOptionNetStack creates an userspace network stack with the given IP address and binds it
+// to the given handler, which will be responsible to create listening sockets and closing them
+// when we're done running. This option is lower-level than [QAEnvOptionHTTPServer], so you should
+// probably use [QAEnvOptionHTTPServer] unless you need to do something custom.
+func QAEnvOptionNetStack(ipAddr string, handler QAEnvNetStackHandler) QAEnvOption {
 	return func(config *qaEnvConfig) {
-		config.tcpListeners[endpoint] = handler
+		config.netStacks[ipAddr] = handler
 	}
 }
 
@@ -160,7 +171,7 @@ func NewQAEnv(options ...QAEnvOption) *QAEnv {
 		httpServers:         map[string]http.Handler{},
 		ispResolver:         QAEnvDefaultISPResolverAddress,
 		logger:              model.DiscardLogger,
-		tcpListeners:        map[string]QAEnvConnHandler{},
+		netStacks:           map[string]QAEnvNetStackHandler{},
 	}
 	for _, option := range options {
 		option(config)
@@ -186,7 +197,7 @@ func NewQAEnv(options ...QAEnvOption) *QAEnv {
 	env.clientStack = env.mustNewClientStack(config)
 	env.closables = append(env.closables, env.mustNewResolvers(config)...)
 	env.closables = append(env.closables, env.mustNewHTTPServers(config)...)
-	env.closables = append(env.closables, env.mustNewTCPListeners(config)...)
+	env.closables = append(env.closables, env.mustNewNetStacks(config)...)
 
 	return env
 }
@@ -316,30 +327,18 @@ func (env *QAEnv) mustNewHTTPServers(config *qaEnvConfig) (closables []io.Closer
 	return
 }
 
-func (env *QAEnv) mustNewTCPListeners(config *qaEnvConfig) (closables []io.Closer) {
+func (env *QAEnv) mustNewNetStacks(config *qaEnvConfig) (closables []io.Closer) {
 	runtimex.Assert(len(config.dnsOverUDPResolvers) >= 1, "expected at least one DNS resolver")
 	resolver := config.dnsOverUDPResolvers[0]
 
-	for endpoint, handler := range config.tcpListeners {
-		// convert the endpoint to a TCP address
-		addr, sport := runtimex.Try2(net.SplitHostPort(endpoint))
-		port := runtimex.Try1(strconv.Atoi(sport))
-		runtimex.Assert(port >= 0 && port <= math.MaxUint16, "invalid port number")
-		parsedIP := net.ParseIP(addr)
-		runtimex.Assert(parsedIP != nil, "expected valid IP address")
-		tcpAddr := &net.TCPAddr{
-			IP:   parsedIP,
-			Port: port,
-			Zone: "",
-		}
-
+	for ipAddr, handler := range config.netStacks {
 		// Create the server's TCP/IP stack
 		//
 		// Note: because the stack is created using topology.AddHost, we don't
 		// need to call Close when done using it, since the topology will do that
 		// for us when we call the topology's Close method.
 		stack := runtimex.Try1(env.topology.AddHost(
-			addr,     // IP address
+			ipAddr,   // IP address
 			resolver, // default resolver address
 			&netem.LinkConfig{
 				LeftToRightDelay: time.Millisecond,
@@ -347,32 +346,13 @@ func (env *QAEnv) mustNewTCPListeners(config *qaEnvConfig) (closables []io.Close
 			},
 		))
 
-		// create the TCP listener
-		listener := runtimex.Try1(stack.ListenTCP("tcp", tcpAddr))
+		// create the required listeners
+		runtimex.Try0(handler.Listen(stack))
 
-		// start background goroutine handling connections
-		go qaEnvTCPListenerLoop(config.logger, listener, handler)
+		// track the handler as the something that needs to be closed
+		closables = append(closables, handler)
 	}
 	return
-}
-
-func qaEnvTCPListenerLoop(logger model.Logger, listener net.Listener, handler QAEnvConnHandler) {
-	// Implementation note: because this function is only used for writing QA tests, it is
-	// fine that we are using runtimex.Try1 and ignoring any resulting panic.
-	defer runtimex.CatchLogAndIgnorePanic(logger, "qaEnvTCPListenerLoop")
-	for {
-		conn := runtimex.Try1(listener.Accept())
-		go qaEnvTCPListenerHandleConn(logger, handler, conn)
-	}
-}
-
-func qaEnvTCPListenerHandleConn(logger model.Logger, handler QAEnvConnHandler, conn net.Conn) {
-	// just in case the handler didn't do it, close the connection (because close SHOULD be
-	// idempotent when closing connections, the possible double close is fine here)
-	defer conn.Close()
-
-	// pass the control to the specific handler
-	handler.OnAccept(logger, conn)
 }
 
 // AddRecordToAllResolvers adds the given DNS record to all DNS resolvers. You can safely
@@ -444,18 +424,80 @@ func QAEnvDefaultHTTPHandler() http.Handler {
 	})
 }
 
-// QAEnvTCPListenerEcho TAKES OWNERSHIP of a net.Conn and echoes traffic.
-func QAEnvTCPListenerEcho() QAEnvConnHandler {
-	return &qaEnvTCPListenerEcho{}
+// QAEnvNetStackTCPEcho is a [QAEnvNetStackHandler] implementing a TCP echo service.
+func QAEnvNetStackTCPEcho(logger model.Logger, ports ...uint16) QAEnvNetStackHandler {
+	return &qaEnvNetStackTCPEcho{
+		closers: []io.Closer{},
+		logger:  logger,
+		mu:      sync.Mutex{},
+		ports:   ports,
+	}
 }
 
-type qaEnvTCPListenerEcho struct{}
+type qaEnvNetStackTCPEcho struct {
+	closers []io.Closer
+	logger  model.Logger
+	mu      sync.Mutex
+	ports   []uint16
+}
 
-// OnAccept implements QAEnvConnHandler.
-func (*qaEnvTCPListenerEcho) OnAccept(logger model.Logger, conn net.Conn) {
+// Close implements QAEnvNetStackHandler.
+func (echo *qaEnvNetStackTCPEcho) Close() error {
+	// "this method MUST be CONCURRENCY SAFE"
+	defer echo.mu.Unlock()
+	echo.mu.Lock()
+
+	// make sure we close all the child listeners
+	for _, closer := range echo.closers {
+		_ = closer.Close()
+	}
+
+	// "this method MUST be IDEMPOTENT"
+	echo.closers = []io.Closer{}
+
+	return nil
+}
+
+// Listen implements QAEnvNetStackHandler.
+func (echo *qaEnvNetStackTCPEcho) Listen(stack *netem.UNetStack) error {
+	// "this method MUST be CONCURRENCY SAFE"
+	defer echo.mu.Unlock()
+	echo.mu.Lock()
+
+	// for each port of interest - note that here we panic liberally because we are
+	// allowed to do so by the [QAEnvNetStackHandler] documentation.
+	for _, port := range echo.ports {
+		// create the endpoint address
+		ipAddr := net.ParseIP(stack.IPAddress())
+		runtimex.Assert(ipAddr != nil, "invalid IP address")
+		epnt := &net.TCPAddr{IP: ipAddr, Port: int(port)}
+
+		// attempt to listen
+		listener := runtimex.Try1(stack.ListenTCP("tcp", epnt))
+
+		// spawn goroutine for accepting
+		go echo.acceptLoop(listener)
+
+		// track this listener as something to close later
+		echo.closers = append(echo.closers, listener)
+	}
+	return nil
+}
+
+func (echo *qaEnvNetStackTCPEcho) acceptLoop(listener net.Listener) {
 	// Implementation note: because this function is only used for writing QA tests, it is
 	// fine that we are using runtimex.Try1 and ignoring any resulting panic.
-	defer runtimex.CatchLogAndIgnorePanic(logger, "qaEnvTCPListenerEcho.OnAccept")
+	defer runtimex.CatchLogAndIgnorePanic(echo.logger, "qaEnvNetStackTCPEcho.acceptLoop")
+	for {
+		conn := runtimex.Try1(listener.Accept())
+		go echo.serve(conn)
+	}
+}
+
+func (echo *qaEnvNetStackTCPEcho) serve(conn net.Conn) {
+	// Implementation note: because this function is only used for writing QA tests, it is
+	// fine that we are using runtimex.Try1 and ignoring any resulting panic.
+	defer runtimex.CatchLogAndIgnorePanic(echo.logger, "qaEnvTCPListenerEcho.OnAccept")
 
 	// make sure we close the conn
 	defer conn.Close()

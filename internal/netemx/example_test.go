@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"net"
 	"net/http"
 
 	"github.com/apex/log"
@@ -156,12 +155,9 @@ func Example_tcpListener() {
 	// e1WhatsappNet is e1.whatsapp.net IP address as of 2023-07-11
 	const e1WhatsappNet = "3.33.252.61"
 
-	// endpoint is the Jabber endpoint we want to connect to
-	endpoint := net.JoinHostPort(e1WhatsappNet, "5222")
-
 	// create the QA environment
 	env := netemx.NewQAEnv(
-		netemx.QAEnvOptionTCPListener(endpoint, netemx.QAEnvTCPListenerEcho()),
+		netemx.QAEnvOptionNetStack(e1WhatsappNet, netemx.QAEnvNetStackTCPEcho(log.Log, 5222)),
 		netemx.QAEnvOptionLogger(log.Log),
 	)
 
@@ -180,7 +176,7 @@ func Example_tcpListener() {
 		dialer := netxlite.NewDialerWithResolver(log.Log, reso)
 
 		// attempt to establish a TCP connection
-		conn, err := dialer.DialContext(context.Background(), "tcp", "3.33.252.61:5222")
+		conn, err := dialer.DialContext(context.Background(), "tcp", "e1.whatsapp.net:5222")
 
 		// make sure no error occurred
 		if err != nil {
