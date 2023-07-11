@@ -15,7 +15,7 @@ import (
 
 const (
 	testName    = "telegram"
-	testVersion = "0.3.0"
+	testVersion = "0.3.1"
 )
 
 // Config contains the telegram experiment config.
@@ -87,7 +87,8 @@ func (m Measurer) ExperimentVersion() string {
 	return testVersion
 }
 
-var Datacenters = []string{
+// DatacenterIPAddrs contains the list of Telegram data centers IP addresses to measure.
+var DatacenterIPAddrs = []string{
 	"149.154.175.50",
 	"149.154.167.51",
 	"149.154.175.100",
@@ -112,11 +113,10 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 			Method: "GET",
 		}},
 	}
-	for _, d := range Datacenters {
-		inputs = append(inputs, urlgetter.MultiInput{Target: "http://" + d, Config: urlgetter.Config{Method: "POST"}})
-		// Note: the same endpoint as above with HTTP (not a typo using
-		// https _would not work_ here) _and_ port 443.
-		inputs = append(inputs, urlgetter.MultiInput{Target: "http://" + d + ":443", Config: urlgetter.Config{Method: "POST"}})
+	for _, dc := range DatacenterIPAddrs {
+		inputs = append(inputs, urlgetter.MultiInput{Target: "http://" + dc, Config: urlgetter.Config{Method: "POST"}})
+		// Note: the same endpoint as above with HTTP (not a typo using https _would not work_ here) _and_ port 443.
+		inputs = append(inputs, urlgetter.MultiInput{Target: "http://" + dc + ":443", Config: urlgetter.Config{Method: "POST"}})
 	}
 	multi := urlgetter.Multi{Begin: time.Now(), Getter: m.Getter, Session: sess}
 	testkeys := NewTestKeys()
