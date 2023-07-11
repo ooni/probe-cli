@@ -486,7 +486,7 @@ func (echo *qaEnvNetStackTCPEcho) Listen(stack *netem.UNetStack) error {
 
 func (echo *qaEnvNetStackTCPEcho) acceptLoop(listener net.Listener) {
 	// Implementation note: because this function is only used for writing QA tests, it is
-	// fine that we are using runtimex.Try1 and ignoring any resulting panic.
+	// fine that we are using runtimex.Try1 and ignoring any panic.
 	defer runtimex.CatchLogAndIgnorePanic(echo.logger, "qaEnvNetStackTCPEcho.acceptLoop")
 	for {
 		conn := runtimex.Try1(listener.Accept())
@@ -496,8 +496,8 @@ func (echo *qaEnvNetStackTCPEcho) acceptLoop(listener net.Listener) {
 
 func (echo *qaEnvNetStackTCPEcho) serve(conn net.Conn) {
 	// Implementation note: because this function is only used for writing QA tests, it is
-	// fine that we are using runtimex.Try1 and ignoring any resulting panic.
-	defer runtimex.CatchLogAndIgnorePanic(echo.logger, "qaEnvTCPListenerEcho.OnAccept")
+	// fine that we are using runtimex.Try1 and ignoring any panic.
+	defer runtimex.CatchLogAndIgnorePanic(echo.logger, "qaEnvTCPListenerEcho.serve")
 
 	// make sure we close the conn
 	defer conn.Close()

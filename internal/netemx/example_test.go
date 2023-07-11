@@ -150,8 +150,8 @@ func Example_resolverConfig() {
 	// [93.184.216.34] [93.184.216.34] [10.10.34.35]
 }
 
-// This example shows how to create a TCP listener attached to an arbitrary conn handler.
-func Example_tcpListener() {
+// This example shows how to create a TCP listener attached to an arbitrary netstack handler.
+func Example_customNetStackHandler() {
 	// e1WhatsappNet is e1.whatsapp.net IP address as of 2023-07-11
 	const e1WhatsappNet = "3.33.252.61"
 
