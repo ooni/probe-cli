@@ -7,7 +7,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/netem"
-	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -137,7 +137,7 @@ func TestProcessallPanicsIfInvalidSNI(t *testing.T) {
 		measurement,
 		model.NewPrinterCallbacks(log.Log),
 		[]string{"kernel.org", "example.com"},
-		newsession(),
+		&mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
 		"example.com",
 	)
 }
@@ -172,10 +172,6 @@ func TestMaybeURLToSNI(t *testing.T) {
 	})
 }
 
-func newsession() model.ExperimentSession {
-	return &mockable.Session{MockableLogger: log.Log}
-}
-
 func TestSummaryKeysGeneric(t *testing.T) {
 	measurement := &model.Measurement{TestKeys: &TestKeys{}}
 	m := &Measurer{}
@@ -189,69 +185,51 @@ func TestSummaryKeysGeneric(t *testing.T) {
 	}
 }
 
-const ExampleAddr = "93.184.216.34"
+// exampleOrgAddr is the IP address used for example.org in netem-based nettests.
+const exampleOrgAddr = "93.184.216.34"
 
-// makeDNSConfig creates the default valid DNS config for this experiment
-func makeDNSConfig() *netem.DNSConfig {
-	dnsConfig := netem.NewDNSConfig()
-	dnsConfig.AddRecord(
-		"example.org",
-		"example.org",
-		ExampleAddr,
-	)
-	return dnsConfig
+// configureDNSWithAddr is like [configureDNSWithDefaults] but uses the given IP addr.
+func configureDNSWithAddr(config *netem.DNSConfig, addr string) {
+	config.AddRecord("example.org", "example.org", addr)
 }
 
-// makeClientConf creates an experiment-specific servers configuration for the [netemx.Environment].
-func makeServersConf(dnsConfig *netem.DNSConfig) *netemx.ServersConfig {
-	return &netemx.ServersConfig{
-		DNSConfig: dnsConfig,
-		Servers: []netemx.ConfigServerStack{
-			{
-				ServerAddr: ExampleAddr,
-				HTTPServers: []netemx.ConfigHTTPServer{
-					{
-						Port: 443,
-					},
-				},
-			},
-		},
-	}
-}
-
-// makeClientConf creates an experiment-specific client configuration for the [netemx.Environment].
-func makeClientConf(dnsConfig *netem.DNSConfig) *netemx.ClientConfig {
-	return &netemx.ClientConfig{DNSConfig: dnsConfig}
+// configureDNSWithDefaults populates the given config using [exampleOrgAddr] as the address.
+func configureDNSWithDefaults(config *netem.DNSConfig) {
+	configureDNSWithAddr(config, exampleOrgAddr)
 }
 
 func TestMeasurerWithInvalidInput(t *testing.T) {
-	t.Run("Test Measurer with no measurement input: expect input error", func(t *testing.T) {
-		// we use the same valid DNS config for client and servers here
-		dnsConf := makeDNSConfig()
-
+	t.Run("with no measurement input: expect input error", func(t *testing.T) {
 		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(exampleOrgAddr, netemx.QAEnvDefaultHTTPHandler()))
 		defer env.Close()
+
+		// we use the same valid DNS config for client and servers here
+		configureDNSWithDefaults(env.ISPResolverConfig())
+		configureDNSWithDefaults(env.OtherResolversConfig())
+
 		env.Do(func() {
 			measurer := NewExperimentMeasurer(Config{})
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(log.Log),
 				Measurement: &model.Measurement{},
-				Session:     newsession(),
+				Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
 			}
 			err := measurer.Run(context.Background(), args)
-			if err.Error() != "Experiment requires measurement.Input" {
+			if err.Error() != "experiment requires measurement.Input" {
 				t.Fatal("not the error we expected")
 			}
 		})
 	})
-	t.Run("Test Measurer with invalid MeasurementInput: expect parsing error", func(t *testing.T) {
-		// we use the same valid DNS config for client and servers here
-		dnsConf := makeDNSConfig()
-
+	t.Run("with invalid MeasurementInput: expect parsing error", func(t *testing.T) {
 		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(exampleOrgAddr, netemx.QAEnvDefaultHTTPHandler()))
 		defer env.Close()
+
+		// we use the same valid DNS config for client and servers here
+		configureDNSWithDefaults(env.ISPResolverConfig())
+		configureDNSWithDefaults(env.OtherResolversConfig())
+
 		env.Do(func() {
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel() // immediately cancel the context
@@ -264,7 +242,7 @@ func TestMeasurerWithInvalidInput(t *testing.T) {
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(log.Log),
 				Measurement: measurement,
-				Session:     newsession(),
+				Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
 			}
 			err := measurer.Run(ctx, args)
 			if err == nil {
@@ -275,13 +253,15 @@ func TestMeasurerWithInvalidInput(t *testing.T) {
 
 }
 func TestMeasurerRun(t *testing.T) {
-	t.Run("Test Measurer without DPI: expect success", func(t *testing.T) {
-		// we use the same valid DNS config for client and servers here
-		dnsConf := makeDNSConfig()
-
+	t.Run("without DPI: expect success", func(t *testing.T) {
 		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(exampleOrgAddr, netemx.QAEnvDefaultHTTPHandler()))
 		defer env.Close()
+
+		// we use the same valid DNS config for client and servers here
+		configureDNSWithDefaults(env.ISPResolverConfig())
+		configureDNSWithDefaults(env.OtherResolversConfig())
+
 		env.Do(func() {
 			measurer := NewExperimentMeasurer(Config{
 				ControlSNI: "example.org",
@@ -292,7 +272,7 @@ func TestMeasurerRun(t *testing.T) {
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(log.Log),
 				Measurement: measurement,
-				Session:     newsession(),
+				Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
 			}
 			err := measurer.Run(context.Background(), args)
 			if err != nil {
@@ -354,7 +334,7 @@ func TestMeasurerRun(t *testing.T) {
 		})
 	})
 
-	t.Run("Test Measurer with cancelled context: expect interrupted failure and nil keys", func(t *testing.T) {
+	t.Run("with cancelled context: expect interrupted failure and nil keys", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel() // immediately cancel the context
 		measurer := NewExperimentMeasurer(Config{
@@ -366,7 +346,7 @@ func TestMeasurerRun(t *testing.T) {
 		args := &model.ExperimentArgs{
 			Callbacks:   model.NewPrinterCallbacks(log.Log),
 			Measurement: measurement,
-			Session:     newsession(),
+			Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
 		}
 		err := measurer.Run(ctx, args)
 		if err != nil {
@@ -428,13 +408,15 @@ func TestMeasurerRun(t *testing.T) {
 		}
 	})
 
-	t.Run("Test Measurer with cache: expect to see cached entry", func(t *testing.T) {
-		// we use the same valid DNS config for client and servers here
-		dnsConf := makeDNSConfig()
-
+	t.Run("with cache: expect to see cached entry", func(t *testing.T) {
 		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(exampleOrgAddr, netemx.QAEnvDefaultHTTPHandler()))
 		defer env.Close()
+
+		// we use the same valid DNS config for client and servers here
+		configureDNSWithDefaults(env.ISPResolverConfig())
+		configureDNSWithDefaults(env.OtherResolversConfig())
+
 		env.Do(func() {
 			cache := make(map[string]Subresult)
 			s := "mock error"
@@ -457,7 +439,7 @@ func TestMeasurerRun(t *testing.T) {
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(log.Log),
 				Measurement: measurement,
-				Session:     newsession(),
+				Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
 			}
 			err := measurer.Run(context.Background(), args)
 			if err != nil {
@@ -482,13 +464,14 @@ func TestMeasurerRun(t *testing.T) {
 		})
 	})
 
-	t.Run("Test Measurer with DPI that blocks target SNI", func(t *testing.T) {
-		// we use the same valid DNS config for client and servers here
-		dnsConf := makeDNSConfig()
-
+	t.Run("with DPI that blocks target SNI", func(t *testing.T) {
 		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(exampleOrgAddr, netemx.QAEnvDefaultHTTPHandler()))
 		defer env.Close()
+
+		// we use the same valid DNS config for client and servers here
+		configureDNSWithDefaults(env.ISPResolverConfig())
+		configureDNSWithDefaults(env.OtherResolversConfig())
 
 		// add DPI engine to emulate the censorship condition
 		dpi := env.DPIEngine()
@@ -507,7 +490,7 @@ func TestMeasurerRun(t *testing.T) {
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(log.Log),
 				Measurement: measurement,
-				Session:     newsession(),
+				Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
 			}
 			err := measurer.Run(context.Background(), args)
 			if err != nil {
@@ -531,12 +514,14 @@ func TestMeasurerRun(t *testing.T) {
 }
 
 func TestMeasureonewithcacheWorks(t *testing.T) {
-	// we use the same valid DNS config for client and servers here
-	dnsConf := makeDNSConfig()
-
 	// create a new test environment
-	env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
+	env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(exampleOrgAddr, netemx.QAEnvDefaultHTTPHandler()))
 	defer env.Close()
+
+	// we use the same valid DNS config for client and servers here
+	configureDNSWithDefaults(env.ISPResolverConfig())
+	configureDNSWithDefaults(env.OtherResolversConfig())
+
 	env.Do(func() {
 		measurer := &Measurer{cache: make(map[string]Subresult)}
 		output := make(chan Subresult, 2)
@@ -544,7 +529,7 @@ func TestMeasureonewithcacheWorks(t *testing.T) {
 			measurer.measureonewithcache(
 				context.Background(),
 				output,
-				&mockable.Session{MockableLogger: log.Log},
+				&mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
 				time.Now(),
 				"kernel.org",
 				"example.org:443",
