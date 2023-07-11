@@ -123,6 +123,9 @@ type WarningLogger interface {
 //
 // and rest assured that any panic will not propagate further. You should typically
 // only use this function when writing testing code.
+//
+// This function will emit a warning message prefixed using the given prefix and emitted
+// using the given logger in case it intercepts and suppresses a panic.
 func CatchLogAndIgnorePanic(logger WarningLogger, prefix string) {
 	if rec := recover(); rec != nil {
 		logger.Warnf("%s: %+v", prefix, rec)

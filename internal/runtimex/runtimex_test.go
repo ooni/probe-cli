@@ -256,7 +256,7 @@ func (cwl *countingWarningLogger) Warnf(format string, v ...any) {
 	cwl.num.Add(1)
 }
 
-func TestCatchAndIgnorePanic(t *testing.T) {
+func TestCatchLogAndIgnorePanic(t *testing.T) {
 	logger := &countingWarningLogger{}
 	func() {
 		defer CatchLogAndIgnorePanic(logger, "panic")
