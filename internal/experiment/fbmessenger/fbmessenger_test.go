@@ -3,6 +3,7 @@ package fbmessenger_test
 import (
 	"context"
 	"io"
+	"net/url"
 	"testing"
 
 	"github.com/apex/log"
@@ -11,60 +12,28 @@ import (
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/experiment/fbmessenger"
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
-	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
-const ServicesAddr = "157.240.20.35"
+// servicesAddr is the IP address implementing al fbmessenger services in netem-based tests
+const servicesAddr = "157.240.20.35"
 
-// makeDNSConfig creates the default valid DNS config for this experiment
-func makeDNSConfig() *netem.DNSConfig {
-	dnsConfig := netem.NewDNSConfig()
-	services := []string{
-		"stun.fbsbx.com",
-		"b-api.facebook.com",
-		"b-graph.facebook.com",
-		"edge-mqtt.facebook.com",
-		"external.xx.fbcdn.net",
-		"scontent.xx.fbcdn.net",
-		"star.c10r.facebook.com",
-	}
-	for _, s := range services {
-		// create configuration for DNS server
-		dnsConfig.AddRecord(
-			s,
-			s, // CNAME
-			ServicesAddr,
-		)
-	}
-	return dnsConfig
-}
-
-// makeClientConf creates an experiment-specific client configuration for the [netemx.Environment].
-func makeClientConf(dnsConfig *netem.DNSConfig) *netemx.ClientConfig {
-	return &netemx.ClientConfig{
-		DNSConfig: dnsConfig,
+// configureDNSWithAddr is like [configureDNS] but uses a specific addr.
+func configureDNSWithAddr(config *netem.DNSConfig, addr string) {
+	for _, svc := range fbmessenger.Services {
+		hostname := runtimex.Try1(url.Parse(svc)).Hostname()
+		config.AddRecord(hostname, hostname, addr)
 	}
 }
 
-// makeServersConf creates an experiment-specific servers configuration for the [netemx.Environment].
-func makeServersConf(dnsConfig *netem.DNSConfig) *netemx.ServersConfig {
-	return &netemx.ServersConfig{
-		DNSConfig: dnsConfig,
-		Servers: []netemx.ConfigServerStack{
-			{
-				ServerAddr: ServicesAddr,
-				HTTPServers: []netemx.ConfigHTTPServer{
-					{
-						Port: 443,
-					},
-				},
-			},
-		},
-	}
+// configureDNSWithDefaults configures the given [*netem.DNSConfig] with all the required domains
+func configureDNSWithDefaults(config *netem.DNSConfig) {
+	configureDNSWithAddr(config, servicesAddr)
 }
 
 var (
@@ -83,10 +52,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 }
 
 func TestMeasurerRun(t *testing.T) {
-	t.Run("Test Measurer without DPI: expect success", func(t *testing.T) {
-		if testing.Short() {
-			t.Skip("skip test in short mode")
-		}
+	t.Run("without DPI: expect success", func(t *testing.T) {
 		// we expect the following Analysis values
 		expectAnalysis := fbmessenger.Analysis{
 			FacebookBAPIDNSConsistent:        &trueValue,
@@ -107,17 +73,18 @@ func TestMeasurerRun(t *testing.T) {
 			FacebookTCPBlocking:              &falseValue,
 		}
 
-		// we use the same valid DNS config for client and servers here
-		dnsConf := makeDNSConfig()
-
 		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(servicesAddr, netemx.QAEnvDefaultHTTPHandler()))
 		defer env.Close()
+
+		// configure the DNS for all resolvers
+		configureDNSWithDefaults(env.ISPResolverConfig())
+		configureDNSWithDefaults(env.OtherResolversConfig())
+
 		env.Do(func() {
 			measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
 			ctx := context.Background()
-			// we need a real session because we need the ASN database
-			sess := newsession()
+			sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
 			measurement := new(model.Measurement)
 			callbacks := model.NewPrinterCallbacks(log.Log)
 			args := &model.ExperimentArgs{
@@ -136,7 +103,7 @@ func TestMeasurerRun(t *testing.T) {
 		})
 	})
 
-	t.Run("Test Measurer without DPI, cancelled context: expect interrupted failure", func(t *testing.T) {
+	t.Run("without DPI, cancelled context: expect interrupted failure", func(t *testing.T) {
 		// we expect the following Analysis values
 		expectAnalysis := fbmessenger.Analysis{
 			FacebookBAPIDNSConsistent:        &falseValue,
@@ -157,17 +124,19 @@ func TestMeasurerRun(t *testing.T) {
 			FacebookTCPBlocking:              &falseValue, // no TCP blocking because we didn't ever reach TCP connect
 		}
 
-		// we use the same valid DNS config for client and servers here
-		dnsConf := makeDNSConfig()
-
 		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(servicesAddr, netemx.QAEnvDefaultHTTPHandler()))
 		defer env.Close()
+
+		// configure the DNS for all resolvers
+		configureDNSWithDefaults(env.ISPResolverConfig())
+		configureDNSWithDefaults(env.OtherResolversConfig())
+
 		env.Do(func() {
 			measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel() // so we fail immediately
-			sess := &mockable.Session{MockableLogger: log.Log}
+			sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
 			measurement := new(model.Measurement)
 			callbacks := model.NewPrinterCallbacks(log.Log)
 			args := &model.ExperimentArgs{
@@ -192,10 +161,12 @@ func TestMeasurerRun(t *testing.T) {
 			}
 		})
 	})
+
 	t.Run("Test Measurer with DPI that drops traffic to fbmessenger endpoint: expect FacebookTCPBlocking", func(t *testing.T) {
 		if testing.Short() {
 			t.Skip("skip test in short mode")
 		}
+
 		// we expect the following Analysis values
 		expectAnalysis := fbmessenger.Analysis{
 			FacebookBAPIDNSConsistent: &trueValue,
@@ -203,24 +174,29 @@ func TestMeasurerRun(t *testing.T) {
 			FacebookDNSBlocking:       &falseValue,
 			FacebookTCPBlocking:       &trueValue,
 		}
+
 		// overwrite global Services, otherwise the test times out because there are too many endpoints
 		orig := fbmessenger.Services
 		fbmessenger.Services = []string{
 			fbmessenger.ServiceBAPI,
 		}
-
-		// we use the same valid DNS config for client and servers here
-		dnsConf := makeDNSConfig()
+		defer func() {
+			fbmessenger.Services = orig
+		}()
 
 		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(servicesAddr, netemx.QAEnvDefaultHTTPHandler()))
 		defer env.Close()
+
+		// configure the DNS for all resolvers
+		configureDNSWithDefaults(env.ISPResolverConfig())
+		configureDNSWithDefaults(env.OtherResolversConfig())
 
 		// add DPI engine to emulate the censorship condition
 		dpi := env.DPIEngine()
 		dpi.AddRule(&netem.DPIDropTrafficForServerEndpoint{
 			Logger:          model.DiscardLogger,
-			ServerIPAddress: "157.240.20.35",
+			ServerIPAddress: servicesAddr,
 			ServerPort:      443,
 			ServerProtocol:  layers.IPProtocolTCP,
 		})
@@ -228,8 +204,7 @@ func TestMeasurerRun(t *testing.T) {
 		env.Do(func() {
 			measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
 			ctx := context.Background()
-			// we need a real session because we need the ASN database
-			sess := newsession()
+			sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
 			measurement := new(model.Measurement)
 			callbacks := model.NewPrinterCallbacks(log.Log)
 			args := &model.ExperimentArgs{
@@ -246,9 +221,9 @@ func TestMeasurerRun(t *testing.T) {
 				t.Fatal(diff)
 			}
 		})
-		fbmessenger.Services = orig
 	})
-	t.Run("Test Measurer with poisoned DNS: expect FacebookDNSBlocking", func(t *testing.T) {
+
+	t.Run("with poisoned DNS: expect FacebookDNSBlocking", func(t *testing.T) {
 		// we expect the following Analysis values
 		expectAnalysis := fbmessenger.Analysis{
 			FacebookBAPIDNSConsistent:        &falseValue,
@@ -269,36 +244,20 @@ func TestMeasurerRun(t *testing.T) {
 			FacebookTCPBlocking:              &falseValue, // no TCP blocking because we didn't ever reach TCP connect
 		}
 
-		// create DNS config with bogon entries for fb services
-		bogonDNSConf := netem.NewDNSConfig()
-		services := []string{
-			"stun.fbsbx.com",
-			"b-api.facebook.com",
-			"b-graph.facebook.com",
-			"edge-mqtt.facebook.com",
-			"external.xx.fbcdn.net",
-			"scontent.xx.fbcdn.net",
-			"star.c10r.facebook.com",
-		}
-		for _, s := range services {
-			// create configuration for DNS server
-			bogonDNSConf.AddRecord(
-				s,
-				s,             // CNAME
-				"10.10.34.35", //bogon
-			)
-		}
-		// create default DNS config for servers (no bogons)
-		dnsConf := makeDNSConfig()
-
 		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(bogonDNSConf), makeServersConf(dnsConf))
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(servicesAddr, netemx.QAEnvDefaultHTTPHandler()))
 		defer env.Close()
+
+		// configure all DNS servers but the ISP's one
+		configureDNSWithDefaults(env.OtherResolversConfig())
+
+		// configure the ISP resolver to use bogons
+		configureDNSWithAddr(env.ISPResolverConfig(), "10.10.34.35")
+
 		env.Do(func() {
 			measurer := fbmessenger.NewExperimentMeasurer(fbmessenger.Config{})
 			ctx := context.Background()
-			// we need a real session because we need the ASN database
-			sess := newsession()
+			sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
 			measurement := new(model.Measurement)
 			callbacks := model.NewPrinterCallbacks(log.Log)
 			args := &model.ExperimentArgs{
@@ -376,10 +335,6 @@ func TestComputeEndpointStatsDNSIsLying(t *testing.T) {
 	if tk.FacebookTCPBlocking != nil { // meaning: not determined yet
 		t.Fatal("invalid FacebookTCPBlocking")
 	}
-}
-
-func newsession() model.ExperimentSession {
-	return &mockable.Session{MockableLogger: log.Log}
 }
 
 func TestSummaryKeysInvalidType(t *testing.T) {

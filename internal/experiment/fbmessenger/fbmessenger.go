@@ -43,6 +43,7 @@ const (
 	testVersion = "0.2.0"
 )
 
+// Services is the list of services we're testing.
 var Services = []string{
 	ServiceSTUN, ServiceBAPI, ServiceBGraph, ServiceEdge, ServiceExternalCDN,
 	ServiceScontentCDN, ServiceStar,
