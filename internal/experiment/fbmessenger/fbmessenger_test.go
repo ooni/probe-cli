@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/gopacket/layers"
 	"github.com/ooni/netem"
@@ -32,6 +31,7 @@ func configureDNSWithAddr(config *netem.DNSConfig, addr string) {
 }
 
 // configureDNSWithDefaults configures the given [*netem.DNSConfig] with all the required domains
+// listed in [fbmessenger.Services] using [servicesAddr] as the IP address.
 func configureDNSWithDefaults(config *netem.DNSConfig) {
 	configureDNSWithAddr(config, servicesAddr)
 }
@@ -86,7 +86,7 @@ func TestMeasurerRun(t *testing.T) {
 			ctx := context.Background()
 			sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
 			measurement := new(model.Measurement)
-			callbacks := model.NewPrinterCallbacks(log.Log)
+			callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
 			args := &model.ExperimentArgs{
 				Callbacks:   callbacks,
 				Measurement: measurement,
@@ -138,7 +138,7 @@ func TestMeasurerRun(t *testing.T) {
 			cancel() // so we fail immediately
 			sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
 			measurement := new(model.Measurement)
-			callbacks := model.NewPrinterCallbacks(log.Log)
+			callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
 			args := &model.ExperimentArgs{
 				Callbacks:   callbacks,
 				Measurement: measurement,
@@ -162,7 +162,7 @@ func TestMeasurerRun(t *testing.T) {
 		})
 	})
 
-	t.Run("Test Measurer with DPI that drops traffic to fbmessenger endpoint: expect FacebookTCPBlocking", func(t *testing.T) {
+	t.Run("with DPI that drops traffic to fbmessenger endpoint: expect FacebookTCPBlocking", func(t *testing.T) {
 		if testing.Short() {
 			t.Skip("skip test in short mode")
 		}
@@ -206,7 +206,7 @@ func TestMeasurerRun(t *testing.T) {
 			ctx := context.Background()
 			sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
 			measurement := new(model.Measurement)
-			callbacks := model.NewPrinterCallbacks(log.Log)
+			callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
 			args := &model.ExperimentArgs{
 				Callbacks:   callbacks,
 				Measurement: measurement,
@@ -259,7 +259,7 @@ func TestMeasurerRun(t *testing.T) {
 			ctx := context.Background()
 			sess := &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }}
 			measurement := new(model.Measurement)
-			callbacks := model.NewPrinterCallbacks(log.Log)
+			callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
 			args := &model.ExperimentArgs{
 				Callbacks:   callbacks,
 				Measurement: measurement,
@@ -366,11 +366,10 @@ func TestSummaryKeysWithNils(t *testing.T) {
 }
 
 func TestSummaryKeysWithFalseFalse(t *testing.T) {
-	falsy := false
 	measurement := &model.Measurement{TestKeys: &fbmessenger.TestKeys{
 		Analysis: fbmessenger.Analysis{
-			FacebookTCPBlocking: &falsy,
-			FacebookDNSBlocking: &falsy,
+			FacebookTCPBlocking: &falseValue,
+			FacebookDNSBlocking: &falseValue,
 		},
 	}}
 	m := &fbmessenger.Measurer{}
@@ -391,12 +390,10 @@ func TestSummaryKeysWithFalseFalse(t *testing.T) {
 }
 
 func TestSummaryKeysWithFalseTrue(t *testing.T) {
-	falsy := false
-	truy := true
 	measurement := &model.Measurement{TestKeys: &fbmessenger.TestKeys{
 		Analysis: fbmessenger.Analysis{
-			FacebookTCPBlocking: &falsy,
-			FacebookDNSBlocking: &truy,
+			FacebookTCPBlocking: &falseValue,
+			FacebookDNSBlocking: &trueValue,
 		},
 	}}
 	m := &fbmessenger.Measurer{}
@@ -417,12 +414,10 @@ func TestSummaryKeysWithFalseTrue(t *testing.T) {
 }
 
 func TestSummaryKeysWithTrueFalse(t *testing.T) {
-	falsy := false
-	truy := true
 	measurement := &model.Measurement{TestKeys: &fbmessenger.TestKeys{
 		Analysis: fbmessenger.Analysis{
-			FacebookTCPBlocking: &truy,
-			FacebookDNSBlocking: &falsy,
+			FacebookTCPBlocking: &trueValue,
+			FacebookDNSBlocking: &falseValue,
 		},
 	}}
 	m := &fbmessenger.Measurer{}
@@ -443,11 +438,10 @@ func TestSummaryKeysWithTrueFalse(t *testing.T) {
 }
 
 func TestSummaryKeysWithTrueTrue(t *testing.T) {
-	truy := true
 	measurement := &model.Measurement{TestKeys: &fbmessenger.TestKeys{
 		Analysis: fbmessenger.Analysis{
-			FacebookTCPBlocking: &truy,
-			FacebookDNSBlocking: &truy,
+			FacebookTCPBlocking: &trueValue,
+			FacebookDNSBlocking: &trueValue,
 		},
 	}}
 	m := &fbmessenger.Measurer{}
