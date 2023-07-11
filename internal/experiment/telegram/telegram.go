@@ -117,8 +117,8 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	// We need to measure each address twice. Once using port 80 and once using port 443. In both
 	// cases, the protocol MUST be HTTP. The DCs do not support access on port 443 using TLS.
 	for _, dc := range DatacenterIPAddrs {
-		inputs = append(inputs, urlgetter.MultiInput{Target: "http://" + dc, Config: urlgetter.Config{Method: "POST"}})
-		inputs = append(inputs, urlgetter.MultiInput{Target: "http://" + dc + ":443", Config: urlgetter.Config{Method: "POST"}})
+		inputs = append(inputs, urlgetter.MultiInput{Target: "http://" + dc + "/", Config: urlgetter.Config{Method: "POST"}})
+		inputs = append(inputs, urlgetter.MultiInput{Target: "http://" + dc + ":443/", Config: urlgetter.Config{Method: "POST"}})
 	}
 
 	multi := urlgetter.Multi{Begin: time.Now(), Getter: m.Getter, Session: sess}
