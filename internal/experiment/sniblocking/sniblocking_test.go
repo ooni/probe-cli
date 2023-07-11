@@ -2,14 +2,13 @@ package sniblocking
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -113,6 +112,253 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	}
 }
 
+func TestMeasurerMeasureNoMeasurementInput(t *testing.T) {
+	measurer := NewExperimentMeasurer(Config{
+		ControlSNI: "example.com",
+	})
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: &model.Measurement{},
+		Session:     newsession(),
+	}
+	err := measurer.Run(context.Background(), args)
+	if err.Error() != "Experiment requires measurement.Input" {
+		t.Fatal("not the error we expected")
+	}
+}
+
+func TestMeasurerMeasureWithInvalidInput(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // immediately cancel the context
+	measurer := NewExperimentMeasurer(Config{
+		ControlSNI: "example.com",
+	})
+	measurement := &model.Measurement{
+		Input: "\t",
+	}
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     newsession(),
+	}
+	err := measurer.Run(ctx, args)
+	if err == nil {
+		t.Fatal("expected an error here")
+	}
+}
+
+func TestMeasurerMeasureWithCancelledContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // immediately cancel the context
+	measurer := NewExperimentMeasurer(Config{
+		ControlSNI: "example.com",
+	})
+	measurement := &model.Measurement{
+		Input: "kernel.org",
+	}
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     newsession(),
+	}
+	err := measurer.Run(ctx, args)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sk, err := measurer.GetSummaryKeys(measurement)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := sk.(SummaryKeys); !ok {
+		t.Fatal("invalid type for summary keys")
+	}
+}
+
+func TestMeasureoneCancelledContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // immediately cancel the context
+	result := new(Measurer).measureone(
+		ctx,
+		&mockable.Session{MockableLogger: log.Log},
+		time.Now(),
+		"kernel.org",
+		"example.com:443",
+	)
+	if result.Agent != "" {
+		t.Fatal("not the expected Agent")
+	}
+	if result.BootstrapTime != 0.0 {
+		t.Fatal("not the expected BootstrapTime")
+	}
+	if result.DNSCache != nil {
+		t.Fatal("not the expected DNSCache")
+	}
+	if result.FailedOperation == nil || *result.FailedOperation != netxlite.TopLevelOperation {
+		t.Fatal("not the expected FailedOperation")
+	}
+	if result.Failure == nil || *result.Failure != netxlite.FailureInterrupted {
+		t.Fatal("not the expected failure")
+	}
+	if result.NetworkEvents != nil {
+		t.Fatal("not the expected NetworkEvents")
+	}
+	if result.Queries != nil {
+		t.Fatal("not the expected Queries")
+	}
+	if result.Requests != nil {
+		t.Fatal("not the expected Requests")
+	}
+	if result.SOCKSProxy != "" {
+		t.Fatal("not the expected SOCKSProxy")
+	}
+	if result.TCPConnect != nil {
+		t.Fatal("not the expected TCPConnect")
+	}
+	if result.TLSHandshakes != nil {
+		t.Fatal("not the expected TLSHandshakes")
+	}
+	if result.Tunnel != "" {
+		t.Fatal("not the expected Tunnel")
+	}
+	if result.SNI != "kernel.org" {
+		t.Fatal("unexpected SNI")
+	}
+	if result.THAddress != "example.com:443" {
+		t.Fatal("unexpected THAddress")
+	}
+}
+
+func TestMeasureoneWithPreMeasurementFailure(t *testing.T) {
+	result := new(Measurer).measureone(
+		context.Background(),
+		&mockable.Session{MockableLogger: log.Log},
+		time.Now(),
+		"kernel.org",
+		"example.com:443\t\t\t", // cause URL parse error
+	)
+	if result.Agent != "redirect" {
+		t.Fatal("not the expected Agent")
+	}
+	if result.BootstrapTime != 0.0 {
+		t.Fatal("not the expected BootstrapTime")
+	}
+	if result.DNSCache != nil {
+		t.Fatal("not the expected DNSCache")
+	}
+	if result.FailedOperation == nil || *result.FailedOperation != "top_level" {
+		t.Fatal("not the expected FailedOperation")
+	}
+	if result.Failure == nil || !strings.Contains(*result.Failure, "invalid target URL") {
+		t.Fatal("not the expected failure")
+	}
+	if result.NetworkEvents != nil {
+		t.Fatal("not the expected NetworkEvents")
+	}
+	if result.Queries != nil {
+		t.Fatal("not the expected Queries")
+	}
+	if result.Requests != nil {
+		t.Fatal("not the expected Requests")
+	}
+	if result.SOCKSProxy != "" {
+		t.Fatal("not the expected SOCKSProxy")
+	}
+	if result.TCPConnect != nil {
+		t.Fatal("not the expected TCPConnect")
+	}
+	if result.TLSHandshakes != nil {
+		t.Fatal("not the expected TLSHandshakes")
+	}
+	if result.Tunnel != "" {
+		t.Fatal("not the expected Tunnel")
+	}
+	if result.SNI != "kernel.org" {
+		t.Fatal("unexpected SNI")
+	}
+	if result.THAddress != "example.com:443\t\t\t" {
+		t.Fatal("unexpected THAddress")
+	}
+}
+
+func TestMeasureoneSuccess(t *testing.T) {
+	result := new(Measurer).measureone(
+		context.Background(),
+		&mockable.Session{MockableLogger: log.Log},
+		time.Now(),
+		"kernel.org",
+		"example.com:443",
+	)
+	if result.Agent != "redirect" {
+		t.Fatal("not the expected Agent")
+	}
+	if result.BootstrapTime != 0.0 {
+		t.Fatal("not the expected BootstrapTime")
+	}
+	if result.DNSCache != nil {
+		t.Fatal("not the expected DNSCache")
+	}
+	if result.FailedOperation == nil || *result.FailedOperation != netxlite.TLSHandshakeOperation {
+		t.Fatal("not the expected FailedOperation")
+	}
+	if result.Failure == nil || *result.Failure != netxlite.FailureSSLInvalidHostname {
+		t.Fatal("unexpected failure")
+	}
+	if len(result.NetworkEvents) < 1 {
+		t.Fatal("not the expected NetworkEvents")
+	}
+	if len(result.Queries) < 1 {
+		t.Fatal("not the expected Queries")
+	}
+	if result.Requests != nil {
+		t.Fatal("not the expected Requests")
+	}
+	if result.SOCKSProxy != "" {
+		t.Fatal("not the expected SOCKSProxy")
+	}
+	if len(result.TCPConnect) < 1 {
+		t.Fatal("not the expected TCPConnect")
+	}
+	if len(result.TLSHandshakes) < 1 {
+		t.Fatal("not the expected TLSHandshakes")
+	}
+	if result.Tunnel != "" {
+		t.Fatal("not the expected Tunnel")
+	}
+	if result.SNI != "kernel.org" {
+		t.Fatal("unexpected SNI")
+	}
+	if result.THAddress != "example.com:443" {
+		t.Fatal("unexpected THAddress")
+	}
+}
+
+func TestMeasureonewithcacheWorks(t *testing.T) {
+	measurer := &Measurer{cache: make(map[string]Subresult)}
+	output := make(chan Subresult, 2)
+	for i := 0; i < 2; i++ {
+		measurer.measureonewithcache(
+			context.Background(),
+			output,
+			&mockable.Session{MockableLogger: log.Log},
+			time.Now(),
+			"kernel.org",
+			"example.com:443",
+		)
+	}
+	for _, expected := range []bool{false, true} {
+		result := <-output
+		if result.Cached != expected {
+			t.Fatal("unexpected cached")
+		}
+		if *result.Failure != netxlite.FailureSSLInvalidHostname {
+			t.Fatal("unexpected failure")
+		}
+		if result.SNI != "kernel.org" {
+			t.Fatal("unexpected SNI")
+		}
+	}
+}
+
 func TestProcessallPanicsIfInvalidSNI(t *testing.T) {
 	defer func() {
 		panicdata := recover()
@@ -187,380 +433,4 @@ func TestSummaryKeysGeneric(t *testing.T) {
 	if sk.IsAnomaly {
 		t.Fatal("invalid isAnomaly")
 	}
-}
-
-const ExampleAddr = "93.184.216.34"
-
-// makeDNSConfig creates the default valid DNS config for this experiment
-func makeDNSConfig() *netem.DNSConfig {
-	dnsConfig := netem.NewDNSConfig()
-	dnsConfig.AddRecord(
-		"example.org",
-		"example.org",
-		ExampleAddr,
-	)
-	return dnsConfig
-}
-
-// makeClientConf creates an experiment-specific servers configuration for the [netemx.Environment].
-func makeServersConf(dnsConfig *netem.DNSConfig) *netemx.ServersConfig {
-	return &netemx.ServersConfig{
-		DNSConfig: dnsConfig,
-		Servers: []netemx.ConfigServerStack{
-			{
-				ServerAddr: ExampleAddr,
-				HTTPServers: []netemx.ConfigHTTPServer{
-					{
-						Port: 443,
-					},
-				},
-			},
-		},
-	}
-}
-
-// makeClientConf creates an experiment-specific client configuration for the [netemx.Environment].
-func makeClientConf(dnsConfig *netem.DNSConfig) *netemx.ClientConfig {
-	return &netemx.ClientConfig{DNSConfig: dnsConfig}
-}
-
-func TestMeasurerWithInvalidInput(t *testing.T) {
-	t.Run("Test Measurer with no measurement input: expect input error", func(t *testing.T) {
-		// we use the same valid DNS config for client and servers here
-		dnsConf := makeDNSConfig()
-
-		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
-		defer env.Close()
-		env.Do(func() {
-			measurer := NewExperimentMeasurer(Config{})
-			args := &model.ExperimentArgs{
-				Callbacks:   model.NewPrinterCallbacks(log.Log),
-				Measurement: &model.Measurement{},
-				Session:     newsession(),
-			}
-			err := measurer.Run(context.Background(), args)
-			if err.Error() != "Experiment requires measurement.Input" {
-				t.Fatal("not the error we expected")
-			}
-		})
-	})
-	t.Run("Test Measurer with invalid MeasurementInput: expect parsing error", func(t *testing.T) {
-		// we use the same valid DNS config for client and servers here
-		dnsConf := makeDNSConfig()
-
-		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
-		defer env.Close()
-		env.Do(func() {
-			ctx, cancel := context.WithCancel(context.Background())
-			cancel() // immediately cancel the context
-			measurer := NewExperimentMeasurer(Config{
-				ControlSNI: "example.org",
-			})
-			measurement := &model.Measurement{
-				Input: "\t",
-			}
-			args := &model.ExperimentArgs{
-				Callbacks:   model.NewPrinterCallbacks(log.Log),
-				Measurement: measurement,
-				Session:     newsession(),
-			}
-			err := measurer.Run(ctx, args)
-			if err == nil {
-				t.Fatal("expected an error here")
-			}
-		})
-	})
-
-}
-func TestMeasurerRun(t *testing.T) {
-	t.Run("Test Measurer without DPI: expect success", func(t *testing.T) {
-		// we use the same valid DNS config for client and servers here
-		dnsConf := makeDNSConfig()
-
-		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
-		defer env.Close()
-		env.Do(func() {
-			measurer := NewExperimentMeasurer(Config{
-				ControlSNI: "example.org",
-			})
-			measurement := &model.Measurement{
-				Input: "kernel.org",
-			}
-			args := &model.ExperimentArgs{
-				Callbacks:   model.NewPrinterCallbacks(log.Log),
-				Measurement: measurement,
-				Session:     newsession(),
-			}
-			err := measurer.Run(context.Background(), args)
-			if err != nil {
-				t.Fatalf("Unexpected error: %s", err)
-			}
-			tk, _ := (measurement.TestKeys).(*TestKeys)
-			if tk.Result != classSuccessGotServerHello {
-				t.Fatalf("Unexpected result, expected: %s, got: %s", classSuccessGotServerHello, tk.Result)
-			}
-			if tk.Control.Failure != nil {
-				t.Fatalf("Unexpected Control Failure %s", *tk.Control.Failure)
-			}
-			target := tk.Target
-			if target.Failure != nil {
-				t.Fatalf("Unexpected Target Failure %s", *tk.Target.Failure)
-			}
-			if target.Agent != "redirect" {
-				t.Fatal("not the expected Agent")
-			}
-			if target.BootstrapTime != 0.0 {
-				t.Fatal("not the expected BootstrapTime")
-			}
-			if target.DNSCache != nil {
-				t.Fatal("not the expected DNSCache")
-			}
-			if target.FailedOperation != nil {
-				t.Fatal("unexpected FailedOperation")
-			}
-			if target.Failure != nil {
-				t.Fatal("unexpected failure")
-			}
-			if len(target.NetworkEvents) < 1 {
-				t.Fatal("not the expected NetworkEvents")
-			}
-			if len(target.Queries) < 1 {
-				t.Fatal("not the expected Queries")
-			}
-			if target.Requests != nil {
-				t.Fatal("not the expected Requests")
-			}
-			if target.SOCKSProxy != "" {
-				t.Fatal("not the expected SOCKSProxy")
-			}
-			if len(target.TCPConnect) < 1 {
-				t.Fatal("not the expected TCPConnect")
-			}
-			if len(target.TLSHandshakes) < 1 {
-				t.Fatal("not the expected TLSHandshakes")
-			}
-			if target.Tunnel != "" {
-				t.Fatal("not the expected Tunnel")
-			}
-			if target.SNI != "kernel.org" {
-				t.Fatal("unexpected SNI")
-			}
-			if target.THAddress != "example.org:443" {
-				t.Fatal("unexpected THAddress")
-			}
-		})
-	})
-
-	t.Run("Test Measurer with cancelled context: expect interrupted failure and nil keys", func(t *testing.T) {
-		ctx, cancel := context.WithCancel(context.Background())
-		cancel() // immediately cancel the context
-		measurer := NewExperimentMeasurer(Config{
-			ControlSNI: "example.com",
-		})
-		measurement := &model.Measurement{
-			Input: "kernel.org",
-		}
-		args := &model.ExperimentArgs{
-			Callbacks:   model.NewPrinterCallbacks(log.Log),
-			Measurement: measurement,
-			Session:     newsession(),
-		}
-		err := measurer.Run(ctx, args)
-		if err != nil {
-			t.Fatal(err)
-		}
-		tk := measurement.TestKeys.(*TestKeys)
-		if tk.Result != classAnomalyUnexpectedFailure {
-			t.Fatalf("Unexpected result, expected: %s, got: %s", classAnomalyUnexpectedFailure, tk.Result)
-		}
-		sk, err := measurer.GetSummaryKeys(measurement)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if _, ok := sk.(SummaryKeys); !ok {
-			t.Fatal("invalid type for summary keys")
-		}
-		target := tk.Target
-		if target.Agent != "" {
-			t.Fatal("not the expected Agent")
-		}
-		if target.BootstrapTime != 0.0 {
-			t.Fatal("not the expected BootstrapTime")
-		}
-		if target.DNSCache != nil {
-			t.Fatal("not the expected DNSCache")
-		}
-		if target.FailedOperation == nil || *target.FailedOperation != netxlite.TopLevelOperation {
-			t.Fatal("not the expected FailedOperation")
-		}
-		if target.Failure == nil || *target.Failure != netxlite.FailureInterrupted {
-			t.Fatal("not the expected failure")
-		}
-		if target.NetworkEvents != nil {
-			t.Fatal("not the expected NetworkEvents")
-		}
-		if target.Queries != nil {
-			t.Fatal("not the expected Queries")
-		}
-		if target.Requests != nil {
-			t.Fatal("not the expected Requests")
-		}
-		if target.SOCKSProxy != "" {
-			t.Fatal("not the expected SOCKSProxy")
-		}
-		if target.TCPConnect != nil {
-			t.Fatal("not the expected TCPConnect")
-		}
-		if target.TLSHandshakes != nil {
-			t.Fatal("not the expected TLSHandshakes")
-		}
-		if target.Tunnel != "" {
-			t.Fatal("not the expected Tunnel")
-		}
-		if target.SNI != "kernel.org" {
-			t.Fatal("unexpected SNI")
-		}
-		if target.THAddress != "example.com:443" {
-			t.Fatal("unexpected THAddress")
-		}
-	})
-
-	t.Run("Test Measurer with cache: expect to see cached entry", func(t *testing.T) {
-		// we use the same valid DNS config for client and servers here
-		dnsConf := makeDNSConfig()
-
-		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
-		defer env.Close()
-		env.Do(func() {
-			cache := make(map[string]Subresult)
-			s := "mock error"
-			testsni := "kernel.org"
-			thaddr := "example.org:443"
-			subresult := Subresult{
-				Cached:    true,
-				THAddress: thaddr,
-				SNI:       testsni,
-			}
-			subresult.Failure = &s
-			cache[testsni+thaddr] = subresult
-			measurer := NewExperimentMeasurer(Config{
-				ControlSNI: "example.org",
-			})
-			measurer.(*Measurer).cache = cache
-			measurement := &model.Measurement{
-				Input: model.MeasurementTarget(testsni),
-			}
-			args := &model.ExperimentArgs{
-				Callbacks:   model.NewPrinterCallbacks(log.Log),
-				Measurement: measurement,
-				Session:     newsession(),
-			}
-			err := measurer.Run(context.Background(), args)
-			if err != nil {
-				t.Fatalf("Unexpected error: %s", err)
-			}
-			tk, _ := (measurement.TestKeys).(*TestKeys)
-			if tk.Result != classAnomalyUnexpectedFailure {
-				t.Fatalf("Unexpected result, expected: %s, got: %s", classAnomalyUnexpectedFailure, tk.Result)
-			}
-			if tk.Control.Failure != nil {
-				t.Fatalf("Unexpected Control Failure %s", *tk.Control.Failure)
-			}
-			if tk.Target.Failure == nil {
-				t.Fatalf("Expected Target Failure but got none")
-			}
-			if *tk.Target.Failure != "mock error" {
-				t.Fatalf("Unexpected Target Failure, expected: %s, got: %s", "mock error", *tk.Target.Failure)
-			}
-			if !tk.Target.Cached {
-				t.Fatalf("Expected Cached = true")
-			}
-		})
-	})
-
-	t.Run("Test Measurer with DPI that blocks target SNI", func(t *testing.T) {
-		// we use the same valid DNS config for client and servers here
-		dnsConf := makeDNSConfig()
-
-		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
-		defer env.Close()
-
-		// add DPI engine to emulate the censorship condition
-		dpi := env.DPIEngine()
-		dpi.AddRule(&netem.DPIResetTrafficForTLSSNI{
-			Logger: model.DiscardLogger,
-			SNI:    "kernel.org",
-		})
-
-		env.Do(func() {
-			measurer := NewExperimentMeasurer(Config{
-				ControlSNI: "example.org",
-			})
-			measurement := &model.Measurement{
-				Input: "kernel.org",
-			}
-			args := &model.ExperimentArgs{
-				Callbacks:   model.NewPrinterCallbacks(log.Log),
-				Measurement: measurement,
-				Session:     newsession(),
-			}
-			err := measurer.Run(context.Background(), args)
-			if err != nil {
-				t.Fatalf("Unexpected error: %s", err)
-			}
-			tk, _ := (measurement.TestKeys).(*TestKeys)
-			if tk.Result != classInterferenceReset {
-				t.Fatalf("Unexpected result, expected: %s, got: %s", classInterferenceReset, tk.Result)
-			}
-			if tk.Control.Failure != nil {
-				t.Fatalf("Unexpected Control Failure %s", *tk.Control.Failure)
-			}
-			if tk.Target.Failure == nil {
-				t.Fatalf("Expected a Target Failure, but got none")
-			}
-			if *tk.Target.Failure != netxlite.FailureConnectionReset {
-				t.Fatalf("Unexpected Target Failure, got: %s, expected: %s", *tk.Target.Failure, netxlite.FailureConnectionReset)
-			}
-		})
-	})
-}
-
-func TestMeasureonewithcacheWorks(t *testing.T) {
-	// we use the same valid DNS config for client and servers here
-	dnsConf := makeDNSConfig()
-
-	// create a new test environment
-	env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
-	defer env.Close()
-	env.Do(func() {
-		measurer := &Measurer{cache: make(map[string]Subresult)}
-		output := make(chan Subresult, 2)
-		for i := 0; i < 2; i++ {
-			measurer.measureonewithcache(
-				context.Background(),
-				output,
-				&mockable.Session{MockableLogger: log.Log},
-				time.Now(),
-				"kernel.org",
-				"example.org:443",
-			)
-		}
-		for _, expected := range []bool{false, true} {
-			result := <-output
-			if result.Cached != expected {
-				t.Fatal("unexpected cached")
-			}
-			if result.Failure != nil {
-				t.Fatal("unexpected failure")
-			}
-			if result.SNI != "kernel.org" {
-				t.Fatal("unexpected SNI")
-			}
-		}
-	})
 }
