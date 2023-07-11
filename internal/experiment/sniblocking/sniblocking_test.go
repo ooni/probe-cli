@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/apex/log"
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -135,7 +134,7 @@ func TestProcessallPanicsIfInvalidSNI(t *testing.T) {
 	processall(
 		outputs,
 		measurement,
-		model.NewPrinterCallbacks(log.Log),
+		model.NewPrinterCallbacks(model.DiscardLogger),
 		[]string{"kernel.org", "example.com"},
 		&mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
 		"example.com",
@@ -211,7 +210,7 @@ func TestMeasurerWithInvalidInput(t *testing.T) {
 		env.Do(func() {
 			measurer := NewExperimentMeasurer(Config{})
 			args := &model.ExperimentArgs{
-				Callbacks:   model.NewPrinterCallbacks(log.Log),
+				Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
 				Measurement: &model.Measurement{},
 				Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
 			}
@@ -240,7 +239,7 @@ func TestMeasurerWithInvalidInput(t *testing.T) {
 				Input: "\t",
 			}
 			args := &model.ExperimentArgs{
-				Callbacks:   model.NewPrinterCallbacks(log.Log),
+				Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
 				Measurement: measurement,
 				Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
 			}
@@ -270,7 +269,7 @@ func TestMeasurerRun(t *testing.T) {
 				Input: "kernel.org",
 			}
 			args := &model.ExperimentArgs{
-				Callbacks:   model.NewPrinterCallbacks(log.Log),
+				Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
 				Measurement: measurement,
 				Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
 			}
@@ -344,7 +343,7 @@ func TestMeasurerRun(t *testing.T) {
 			Input: "kernel.org",
 		}
 		args := &model.ExperimentArgs{
-			Callbacks:   model.NewPrinterCallbacks(log.Log),
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
 			Measurement: measurement,
 			Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
 		}
@@ -437,7 +436,7 @@ func TestMeasurerRun(t *testing.T) {
 				Input: model.MeasurementTarget(testsni),
 			}
 			args := &model.ExperimentArgs{
-				Callbacks:   model.NewPrinterCallbacks(log.Log),
+				Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
 				Measurement: measurement,
 				Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
 			}
@@ -488,7 +487,7 @@ func TestMeasurerRun(t *testing.T) {
 				Input: "kernel.org",
 			}
 			args := &model.ExperimentArgs{
-				Callbacks:   model.NewPrinterCallbacks(log.Log),
+				Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
 				Measurement: measurement,
 				Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
 			}
