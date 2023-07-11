@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
+	"net/http"
+	"sync"
 	"testing"
 
 	"github.com/apex/log"
@@ -11,10 +14,11 @@ import (
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/experiment/telegram"
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
-	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
@@ -262,64 +266,122 @@ func TestSummaryKeysWorksAsIntended(t *testing.T) {
 	}
 }
 
-const TelegramWebAddr = "149.154.167.99"
+// telegramWebAddr is the web.telegram.org IP address as of 2023-07-11
+const telegramWebAddr = "149.154.167.99"
 
-// makeDNSConfig creates the default valid DNS config for this experiment
-func makeDNSConfig() *netem.DNSConfig {
-	dnsConfig := netem.NewDNSConfig()
-	dnsConfig.AddRecord(
-		"web.telegram.org",
-		"web.telegram.org", // CNAME
-		TelegramWebAddr,
-	)
-	return dnsConfig
+// configureDNSWithAddr configures the given DNS config for web.telegram.org using the given addr.
+func configureDNSWithAddr(config *netem.DNSConfig, addr string) {
+	config.AddRecord("web.telegram.org", "web.telegram.org", addr)
 }
 
-// makeServersConf creates an experiment-specific servers configuration for the [netemx.Environment].
-func makeServersConf(dnsConfig *netem.DNSConfig) *netemx.ServersConfig {
-	// config for the telegram Web server stack
-	telegramWeb := netemx.ConfigServerStack{
-		ServerAddr:  TelegramWebAddr,
-		HTTPServers: []netemx.ConfigHTTPServer{{Port: 443}},
-	}
-	// for each datacenter we configure a server stack, running a port 443 and 80 instance each
-	servers := []netemx.ConfigServerStack{telegramWeb}
-	for _, dc := range telegram.Datacenters {
-		servers = append(servers, netemx.ConfigServerStack{
-			ServerAddr:  dc,
-			HTTPServers: []netemx.ConfigHTTPServer{{Port: 443}, {Port: 80}},
-		})
-	}
-	return &netemx.ServersConfig{
-		DNSConfig: dnsConfig,
-		Servers:   servers,
-	}
+// configureDNSWithDefaults configures the given DNS config for web.telegram.org using the default addr.
+func configureDNSWithDefaults(config *netem.DNSConfig) {
+	configureDNSWithAddr(config, telegramWebAddr)
 }
 
-// makeClientConf creates an experiment-specific client configuration for the [netemx.Environment].
-func makeClientConf(dnsConfig *netem.DNSConfig) *netemx.ClientConfig {
-	return &netemx.ClientConfig{DNSConfig: dnsConfig}
+// telegramHTTPServerNetStackHandler is a [netemx.QAEnvNetStackHandler] that serves HTTP requests
+// on the given addr and ports 443 and 80 as required by the telegram nettest
+type telegramHTTPServerNetStackHandler struct {
+	closers []io.Closer
+	mu      sync.Mutex
 }
 
-func newsession() model.ExperimentSession {
-	return &mockable.Session{MockableLogger: log.Log}
+var _ netemx.QAEnvNetStackHandler = &telegramHTTPServerNetStackHandler{}
+
+// Close implements netemx.QAEnvNetStackHandler.
+func (nsh *telegramHTTPServerNetStackHandler) Close() error {
+	// make the method locked as requested by the documentation
+	defer nsh.mu.Unlock()
+	nsh.mu.Lock()
+
+	// close each of the closers
+	for _, closer := range nsh.closers {
+		_ = closer.Close()
+	}
+
+	// be idempotent
+	nsh.closers = []io.Closer{}
+	return nil
+}
+
+// Listen implements netemx.QAEnvNetStackHandler.
+func (nsh *telegramHTTPServerNetStackHandler) Listen(stack *netem.UNetStack) error {
+	// make the method locked as requested by the documentation
+	defer nsh.mu.Unlock()
+	nsh.mu.Lock()
+
+	// we create an empty mux, which should cause a 404 for each webpage, which seems what
+	// the servers used by telegram DC do as of 2023-07-11
+	mux := http.NewServeMux()
+
+	// listen on port 80
+	nsh.listenPort(stack, mux, 80)
+
+	// listen on port 443
+	nsh.listenPort(stack, mux, 443)
+	return nil
+}
+
+func (nsh *telegramHTTPServerNetStackHandler) listenPort(stack *netem.UNetStack, mux *http.ServeMux, port uint16) {
+	// create the listening address
+	ipAddr := net.ParseIP(stack.IPAddress())
+	runtimex.Assert(ipAddr != nil, "expected valid IP address")
+	addr := &net.TCPAddr{IP: ipAddr, Port: int(port)}
+	listener := runtimex.Try1(stack.ListenTCP("tcp", addr))
+	srvr := &http.Server{Handler: mux}
+
+	// serve requests in a background goroutine
+	go srvr.Serve(listener)
+
+	// make sure we track the server (the .Serve method will close the
+	// listener once we close the server itself)
+	nsh.closers = append(nsh.closers, srvr)
+}
+
+// newQAEnvironment creates a QA environment for testing using the given addresses.
+func newQAEnvironment(ipaddrs ...string) *netemx.QAEnv {
+	// create a single handler for handling all the requests
+	handler := &telegramHTTPServerNetStackHandler{
+		closers: []io.Closer{},
+		mu:      sync.Mutex{},
+	}
+
+	// create the options for constructing the env
+	var options []netemx.QAEnvOption
+	for _, ipaddr := range ipaddrs {
+		options = append(options, netemx.QAEnvOptionNetStack(ipaddr, handler))
+	}
+
+	// add explicit logging which helps to inspect the tests results
+	options = append(options, netemx.QAEnvOptionLogger(log.Log))
+
+	// add handler for telegram web (we're using a different-from-reality HTTP handler
+	// but we're not testing for the returned webpage, so we should be fine)
+	options = append(options, netemx.QAEnvOptionHTTPServer(telegramWebAddr, netemx.QAEnvDefaultHTTPHandler()))
+
+	// create the environment proper with all the options
+	env := netemx.NewQAEnv(options...)
+
+	// register with all the possible resolvers the correct DNS records - registering again
+	// inside individual tests will override the values we're setting here
+	configureDNSWithDefaults(env.ISPResolverConfig())
+	configureDNSWithDefaults(env.OtherResolversConfig())
+	return env
 }
 
 func TestMeasurerRun(t *testing.T) {
-	t.Run("Test Measurer without DPI: expect success", func(t *testing.T) {
-		// we use the same valid DNS config for client and servers here
-		dnsConf := makeDNSConfig()
-
+	t.Run("without DPI: expect success", func(t *testing.T) {
 		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
+		env := newQAEnvironment(telegram.DatacenterIPAddrs...)
 		defer env.Close()
+
 		env.Do(func() {
 			measurer := telegram.NewExperimentMeasurer(telegram.Config{})
 			measurement := &model.Measurement{}
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(log.Log),
 				Measurement: measurement,
-				Session:     newsession(),
+				Session:     &mocks.Session{MockLogger: func() model.Logger { return log.Log }},
 			}
 			err := measurer.Run(context.Background(), args)
 			if err != nil {
@@ -372,28 +434,21 @@ func TestMeasurerRun(t *testing.T) {
 		})
 	})
 
-	t.Run("Test Measurer with poisoned DNS: expect TelegramWebFailure", func(t *testing.T) {
-		// create DNS config with bogon entries for Telegram Web
-		bogonDNSConf := netem.NewDNSConfig()
-		bogonDNSConf.AddRecord(
-			"web.telegram.org",
-			"web.telegram.org", // CNAME
-			"10.10.34.35",      // bogon
-		)
-
-		// create default DNS config for servers (no bogons)
-		dnsConf := makeDNSConfig()
-
+	t.Run("with poisoned DNS: expect TelegramWebFailure", func(t *testing.T) {
 		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(bogonDNSConf), makeServersConf(dnsConf))
+		env := newQAEnvironment(telegram.DatacenterIPAddrs...)
 		defer env.Close()
+
+		// register bogon entries for web.telegram.org in the resolver's ISP
+		env.ISPResolverConfig().AddRecord("web.telegram.org", "web.telegram.org", "10.10.34.35")
+
 		env.Do(func() {
 			measurer := telegram.NewExperimentMeasurer(telegram.Config{})
 			measurement := &model.Measurement{}
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(log.Log),
 				Measurement: measurement,
-				Session:     newsession(),
+				Session:     &mocks.Session{MockLogger: func() model.Logger { return log.Log }},
 			}
 			err := measurer.Run(context.Background(), args)
 			if err != nil {
@@ -412,34 +467,35 @@ func TestMeasurerRun(t *testing.T) {
 		})
 	})
 
-	t.Run("Test Measurer with DPI that drops TCP traffic towards telegram endpoint: expect Telegram(HTTP|TCP)Blocking", func(t *testing.T) {
+	t.Run("with DPI that drops TCP traffic towards telegram endpoint: expect Telegram(HTTP|TCP)Blocking", func(t *testing.T) {
 		if testing.Short() {
 			t.Skip("skip test in short mode")
 		}
+
 		// overwrite global Datacenters, otherwise the test times out because there are too many endpoints
-		orig := telegram.Datacenters
-		telegram.Datacenters = []string{
+		orig := telegram.DatacenterIPAddrs
+		telegram.DatacenterIPAddrs = []string{
 			"149.154.175.50",
 		}
-
-		// we use the same valid DNS config for client and servers here
-		dnsConf := makeDNSConfig()
+		defer func() {
+			telegram.DatacenterIPAddrs = orig
+		}()
 
 		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
+		env := newQAEnvironment(telegram.DatacenterIPAddrs...)
 		defer env.Close()
 
 		// add DPI engine to emulate the censorship condition
 		dpi := env.DPIEngine()
-		for _, dc := range telegram.Datacenters {
+		for _, dc := range telegram.DatacenterIPAddrs {
 			dpi.AddRule(&netem.DPIDropTrafficForServerEndpoint{
-				Logger:          model.DiscardLogger,
+				Logger:          log.Log,
 				ServerIPAddress: dc,
 				ServerPort:      80,
 				ServerProtocol:  layers.IPProtocolTCP,
 			})
 			dpi.AddRule(&netem.DPIDropTrafficForServerEndpoint{
-				Logger:          model.DiscardLogger,
+				Logger:          log.Log,
 				ServerIPAddress: dc,
 				ServerPort:      443,
 				ServerProtocol:  layers.IPProtocolTCP,
@@ -452,7 +508,7 @@ func TestMeasurerRun(t *testing.T) {
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(log.Log),
 				Measurement: measurement,
-				Session:     newsession(),
+				Session:     &mocks.Session{MockLogger: func() model.Logger { return log.Log }},
 			}
 			err := measurer.Run(context.Background(), args)
 			if err != nil {
@@ -469,21 +525,17 @@ func TestMeasurerRun(t *testing.T) {
 				t.Fatal("Expected TCP blocking but got none")
 			}
 		})
-		telegram.Datacenters = orig
 	})
 
-	t.Run("Test Measurer with DPI that drops TLS traffic with SNI = web.telegram.org: expect TelegramWebFailure", func(t *testing.T) {
-		// we use the same valid DNS config for client and servers here
-		dnsConf := makeDNSConfig()
-
+	t.Run("with DPI that drops TLS traffic with SNI = web.telegram.org: expect TelegramWebFailure", func(t *testing.T) {
 		// create a new test environment
-		env := netemx.NewEnvironment(makeClientConf(dnsConf), makeServersConf(dnsConf))
+		env := newQAEnvironment(telegram.DatacenterIPAddrs...)
 		defer env.Close()
 
 		// add DPI engine to emulate the censorship condition
 		dpi := env.DPIEngine()
 		dpi.AddRule(&netem.DPIResetTrafficForTLSSNI{
-			Logger: model.DiscardLogger,
+			Logger: log.Log,
 			SNI:    "web.telegram.org",
 		})
 
@@ -493,7 +545,7 @@ func TestMeasurerRun(t *testing.T) {
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(log.Log),
 				Measurement: measurement,
-				Session:     newsession(),
+				Session:     &mocks.Session{MockLogger: func() model.Logger { return log.Log }},
 			}
 			err := measurer.Run(context.Background(), args)
 			if err != nil {
