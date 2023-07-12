@@ -14,9 +14,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/experiment/riseupvpn"
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
-	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
@@ -696,7 +695,7 @@ func TestMissingTransport(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	sess := &mockable.Session{MockableLogger: log.Log}
+	sess := &mocks.Session{MockLogger: func() model.Logger { return log.Log }}
 	measurement := new(model.Measurement)
 	callbacks := model.NewPrinterCallbacks(log.Log)
 	args := &model.ExperimentArgs{
@@ -1100,9 +1099,7 @@ func runDefaultMockTest(t *testing.T, multiGetter urlgetter.MultiGetter) *model.
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
-		Session: &mockable.Session{
-			MockableLogger: log.Log,
-		},
+		Session:     &mocks.Session{MockLogger: func() model.Logger { return log.Log }},
 	}
 	err := measurer.Run(context.Background(), args)
 
