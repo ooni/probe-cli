@@ -3,16 +3,15 @@ package dnsping
 import (
 	"context"
 	"errors"
-	"log"
-	"net"
-	"net/url"
 	"testing"
 	"time"
 
-	"github.com/miekg/dns"
-	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
+	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/netem"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/netemx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestConfig_domains(t *testing.T) {
@@ -57,8 +56,8 @@ func TestMeasurer_run(t *testing.T) {
 		meas := &model.Measurement{
 			Input: model.MeasurementTarget(input),
 		}
-		sess := &mockable.Session{
-			MockableLogger: model.DiscardLogger,
+		sess := &mocks.Session{
+			MockLogger: func() model.Logger { return model.DiscardLogger },
 		}
 		callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
 		args := &model.ExperimentArgs{
@@ -98,67 +97,139 @@ func TestMeasurer_run(t *testing.T) {
 		}
 	})
 
-	t.Run("with local listener", func(t *testing.T) {
-		srvrURL, dnsListener, err := startDNSServer()
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer dnsListener.Close()
-		meas, m, err := runHelper(srvrURL)
-		if err != nil {
-			t.Fatal(err)
-		}
-		tk := meas.TestKeys.(*TestKeys)
-		if len(tk.Pings) != expectedPings*2 { // account for A & AAAA pings
-			t.Fatal("unexpected number of pings")
-		}
-		ask, err := m.GetSummaryKeys(meas)
-		if err != nil {
-			t.Fatal("cannot obtain summary")
-		}
-		summary := ask.(SummaryKeys)
-		if summary.IsAnomaly {
-			t.Fatal("expected no anomaly")
-		}
+	t.Run("with netem: without DPI: expect success", func(t *testing.T) {
+		// create a new test environment
+		env := netemx.NewQAEnv(netemx.QAEnvOptionDNSOverUDPResolvers("8.8.8.8"))
+		defer env.Close()
+
+		// we use the same configuration for all resolvers
+		env.AddRecordToAllResolvers(
+			"example.com",
+			"example.com", // CNAME
+			"93.184.216.34",
+		)
+
+		env.Do(func() {
+			meas, m, err := runHelper("udp://8.8.8.8:53")
+			if err != nil {
+				t.Fatalf("Unexpected error: %s", err)
+			}
+
+			tk, _ := (meas.TestKeys).(*TestKeys)
+			if len(tk.Pings) != expectedPings*2 { // account for A & AAAA pings
+				t.Fatal("unexpected number of pings", len(tk.Pings))
+			}
+
+			ask, err := m.GetSummaryKeys(meas)
+			if err != nil {
+				t.Fatal("cannot obtain summary")
+			}
+			summary := ask.(SummaryKeys)
+			if summary.IsAnomaly {
+				t.Fatal("expected no anomaly")
+			}
+
+			for _, p := range tk.Pings {
+				if p.Query == nil {
+					t.Fatal("QUery should not be nil")
+				}
+				t.Logf("%+v", p.Query)
+				if p.Query.Answers == nil {
+					t.Fatal("p.Query.Answers should not be nil")
+				}
+				if p.Query.QueryType == "A" && p.Query.Failure != nil {
+					t.Fatal("unexpected error", *p.Query.Failure)
+				}
+			}
+		})
 	})
-}
 
-// startDNSServer starts a local DNS server.
-func startDNSServer() (string, net.PacketConn, error) {
-	dnsListener, err := net.ListenPacket("udp", "127.0.0.1:0")
-	if err != nil {
-		return "", nil, err
-	}
-	go runDNSServer(dnsListener)
-	URL := &url.URL{
-		Scheme: "udp",
-		Host:   dnsListener.LocalAddr().String(),
-		Path:   "/",
-	}
-	return URL.String(), dnsListener, nil
-}
+	t.Run("with netem: with DNS spoofing: expect to see delayed responses", func(t *testing.T) {
+		// create a new test environment
+		env := netemx.NewQAEnv(netemx.QAEnvOptionDNSOverUDPResolvers("8.8.8.8"))
+		defer env.Close()
 
-// runDNSServer runs the DNS server.
-func runDNSServer(dnsListener net.PacketConn) {
-	ds := &dns.Server{
-		Handler:    &dnsHandler{},
-		Net:        "udp",
-		PacketConn: dnsListener,
-	}
-	err := ds.ActivateAndServe()
-	if !errors.Is(err, net.ErrClosed) {
-		runtimex.PanicOnError(err, "ActivateAndServe failed")
-	}
-}
+		// we use the same configuration for all resolvers
+		env.AddRecordToAllResolvers(
+			"example.com",
+			"example.com", // CNAME
+			"93.184.216.34",
+		)
 
-// dnsHandler handles DNS requests.
-type dnsHandler struct{}
+		// use DPI to create DNS spoofing
+		dpi := env.DPIEngine()
+		dpi.AddRule(&netem.DPISpoofDNSResponse{
+			Addresses: []string{
+				"10.10.34.35",
+				"10.10.34.36",
+			},
+			Logger: model.DiscardLogger,
+			Domain: "example.com",
+		})
 
-// ServeDNS serves a DNS request
-func (h *dnsHandler) ServeDNS(rw dns.ResponseWriter, req *dns.Msg) {
-	m := new(dns.Msg)
-	m.Compress = true
-	m.MsgHdr.RecursionAvailable = true
-	m.SetRcode(req, dns.RcodeServerFailure)
-	rw.WriteMsg(m)
+		env.Do(func() {
+			meas, m, err := runHelper("udp://8.8.8.8:53")
+			if err != nil {
+				t.Fatalf("Unexpected error: %s", err)
+			}
+
+			tk, _ := (meas.TestKeys).(*TestKeys)
+			if len(tk.Pings) != expectedPings*2 { // account for A & AAAA pings
+				t.Fatal("unexpected number of pings", len(tk.Pings))
+			}
+
+			// note: this experiment does not set anomaly but we still want
+			// to have a test here for when we possibly will
+			ask, err := m.GetSummaryKeys(meas)
+			if err != nil {
+				t.Fatal("cannot obtain summary")
+			}
+			summary := ask.(SummaryKeys)
+			if summary.IsAnomaly {
+				t.Fatal("expected no anomaly")
+			}
+
+			for _, p := range tk.Pings {
+				if p.Query == nil {
+					t.Fatal("QUery should not be nil")
+				}
+
+				switch p.Query.QueryType {
+				case "A":
+					if p.Query.Answers == nil {
+						t.Fatal("[A] p.Query.Answers should not be nil")
+					}
+					if p.Query.Failure != nil {
+						t.Fatal("[A] unexpected error", *p.Query.Failure)
+					}
+					expected := map[string]bool{
+						"10.10.34.35": true,
+						"10.10.34.36": true,
+					}
+					got := make(map[string]bool)
+					for _, entry := range p.Query.Answers {
+						got[entry.IPv4] = true
+					}
+					if diff := cmp.Diff(expected, got); diff != "" {
+						t.Fatal(diff)
+					}
+
+				case "AAAA":
+					if p.Query.Answers != nil {
+						t.Fatal("[AAAA] p.Query.Answers should be nil")
+					}
+					if p.Query.Failure == nil {
+						t.Fatal("[AAAA] expected error but found nil")
+					}
+					if *p.Query.Failure != netxlite.FailureDNSNoAnswer {
+						t.Fatal("[A] unexpected error", *p.Query.Failure)
+					}
+				}
+
+				if len(p.DelayedResponses) < 1 {
+					t.Fatal("expected to see delayed responses, found nothing")
+				}
+			}
+		})
+	})
 }
