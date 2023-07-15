@@ -22,6 +22,11 @@ func WithCustomTProxy(tproxy netem.UnderlyingNetwork, function func()) {
 	netxlite.WithCustomTProxy(&adapter{tproxy}, function)
 }
 
+// GetCustomTProxy returns the tproxy wrapped by the adapter.
+func GetCustomTProxy(tproxy netem.UnderlyingNetwork) model.UnderlyingNetwork {
+	return &adapter{tproxy}
+}
+
 // adapter adapts [netem.UnderlyingNetwork] to [model.UnderlyingNetwork].
 type adapter struct {
 	tp netem.UnderlyingNetwork
