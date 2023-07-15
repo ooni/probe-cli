@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/http/cookiejar"
 	"testing"
 
 	"github.com/apex/log"
@@ -12,8 +13,10 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivitylte"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/oohelperd"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"golang.org/x/net/publicsuffix"
 )
 
 func newEnvironment() *netemx.QAEnv {
@@ -30,11 +33,16 @@ func newEnvironment() *netemx.QAEnv {
 	env := netemx.NewQAEnv(
 		netemx.QAEnvOptionDNSOverUDPResolvers("8.8.4.4"),
 		netemx.QAEnvOptionHTTPServer("93.184.216.34", netemx.QAEnvDefaultHTTPHandler()),
-		netemx.QAEnvOptionHTTPServer("104.248.30.161", oohelperd.NewHandler()),
+		netemx.QAEnvOptionHTTPServer("104.248.30.161", nil),
 		netemx.QAEnvOptionHTTPServer("104.16.248.249", dohServer),
 		netemx.QAEnvOptionHTTPServer("188.166.93.143", &probeService{}),
 		netemx.QAEnvOptionHTTPServer("185.125.188.132", &netemx.GeoIPLookup{}),
 	)
+
+	// create new testhelper handler using the newly created server stack
+	underlyingStack := env.GetServerStack("104.248.30.161")
+	helperHandler := newTestHelper(underlyingStack)
+	env.AddHandler("104.248.30.161", helperHandler)
 
 	// configure default UDP DNS server
 	env.AddRecordToAllResolvers(
@@ -65,6 +73,48 @@ func newEnvironment() *netemx.QAEnv {
 	return env
 }
 
+func newTestHelper(underlying netem.UnderlyingNetwork) *oohelperd.Handler {
+	n := netxlite.Net{Underlying: netemx.GetCustomTProxy(underlying)}
+	helperHandler := oohelperd.NewHandler()
+	helperHandler.NewDialer = func(logger model.Logger) model.Dialer {
+		return n.NewDialerWithResolver(logger, n.NewStdlibResolver(logger))
+	}
+	helperHandler.NewQUICDialer = func(logger model.Logger) model.QUICDialer {
+		return n.NewQUICDialerWithResolver(
+			n.NewQUICListener(),
+			logger,
+			n.NewStdlibResolver(logger),
+		)
+	}
+	helperHandler.NewResolver = func(logger model.Logger) model.Resolver {
+		return n.NewStdlibResolver(logger)
+	}
+
+	helperHandler.NewHTTPClient = func(logger model.Logger) model.HTTPClient {
+		cookieJar, _ := cookiejar.New(&cookiejar.Options{
+			PublicSuffixList: publicsuffix.List,
+		})
+		return &http.Client{
+			Transport:     n.NewHTTPTransportStdlib(logger),
+			CheckRedirect: nil,
+			Jar:           cookieJar,
+			Timeout:       0,
+		}
+	}
+	helperHandler.NewHTTP3Client = func(logger model.Logger) model.HTTPClient {
+		cookieJar, _ := cookiejar.New(&cookiejar.Options{
+			PublicSuffixList: publicsuffix.List,
+		})
+		return &http.Client{
+			Transport:     n.NewHTTP3TransportStdlib(logger),
+			CheckRedirect: nil,
+			Jar:           cookieJar,
+			Timeout:       0,
+		}
+	}
+	return helperHandler
+}
+
 func TestSuccess(t *testing.T) {
 	env := newEnvironment()
 	defer env.Close()
@@ -89,11 +139,11 @@ func TestSuccess(t *testing.T) {
 		if tk.ControlFailure != nil {
 			t.Fatal("unexpected control_failure", *tk.ControlFailure)
 		}
-		if tk.DNSExperimentFailure != nil {
-			t.Fatal("unexpected dns_experiment_failure", *tk.DNSExperimentFailure)
+		if tk.Blocking != false {
+			t.Fatal("unexpected blocking detected")
 		}
-		if tk.HTTPExperimentFailure != nil {
-			t.Fatal("unexpected http_experiment_failure", *tk.HTTPExperimentFailure)
+		if tk.Accessible != true {
+			t.Fatal("unexpected accessible flag: should be accessible")
 		}
 	})
 }
@@ -127,11 +177,11 @@ func TestDPITarget(t *testing.T) {
 		if tk.ControlFailure != nil {
 			t.Fatal("unexpected control_failure", *tk.ControlFailure)
 		}
-		if tk.DNSExperimentFailure != nil {
-			t.Fatal("unexpected dns_experiment_failure")
+		if tk.Blocking != "http-failure" {
+			t.Fatal("unexpected blocking type")
 		}
-		if tk.HTTPExperimentFailure == nil {
-			t.Fatal("expected an http_experiment_failure")
+		if tk.Accessible == true {
+			t.Fatal("unexpected accessible flag: should be false")
 		}
 	})
 }
