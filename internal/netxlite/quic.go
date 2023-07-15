@@ -23,12 +23,19 @@ func NewQUICListener() model.QUICListener {
 }
 
 // quicListenerStdlib is a QUICListener using the standard library.
-type quicListenerStdlib struct{}
+type quicListenerStdlib struct {
+	// underlying is the OPTIONAL custom [UnderlyingNetwork].
+	// If nil, we will use tproxySingleton() as underlying network.
+	underlying model.UnderlyingNetwork
+}
 
 var _ model.QUICListener = &quicListenerStdlib{}
 
 // Listen implements QUICListener.Listen.
 func (qls *quicListenerStdlib) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
+	if qls.underlying != nil {
+		return qls.underlying.ListenUDP("udp", addr)
+	}
 	return tproxySingleton().ListenUDP("udp", addr)
 }
 
@@ -51,11 +58,17 @@ func (qls *quicListenerStdlib) Listen(addr *net.UDPAddr) (model.UDPLikeConn, err
 // that aggregates all the errors that occurred.
 func NewQUICDialerWithResolver(listener model.QUICListener, logger model.DebugLogger,
 	resolver model.Resolver, wrappers ...model.QUICDialerWrapper) (outDialer model.QUICDialer) {
+	baseDialer := &quicDialerQUICGo{
+		QUICListener: listener,
+	}
+	return WrapQUICDialer(logger, resolver, baseDialer, wrappers...)
+}
+
+func WrapQUICDialer(logger model.DebugLogger, resolver model.Resolver,
+	baseDialer model.QUICDialer, wrappers ...model.QUICDialerWrapper) (outDialer model.QUICDialer) {
 	outDialer = &quicDialerErrWrapper{
 		QUICDialer: &quicDialerHandshakeCompleter{
-			Dialer: &quicDialerQUICGo{
-				QUICListener: listener,
-			},
+			Dialer: baseDialer,
 		},
 	}
 	for _, wrapper := range wrappers {
@@ -88,6 +101,10 @@ func NewQUICDialerWithoutResolver(listener model.QUICListener,
 type quicDialerQUICGo struct {
 	// QUICListener is the underlying QUICListener to use.
 	QUICListener model.QUICListener
+
+	// underlying is the OPTIONAL custom [UnderlyingNetwork].
+	// If nil, we will use tproxySingleton() as underlying network.
+	underlying model.UnderlyingNetwork
 
 	// mockDialEarlyContext allows to mock quic.DialEarlyContext.
 	mockDialEarlyContext func(ctx context.Context, pconn net.PacketConn,
@@ -177,6 +194,9 @@ func (d *quicDialerQUICGo) maybeApplyTLSDefaults(config *tls.Config, port int) *
 	if config.RootCAs == nil {
 		// See https://github.com/ooni/probe/issues/2413 for context
 		config.RootCAs = tproxySingleton().DefaultCertPool()
+		if d.underlying != nil {
+			config.RootCAs = d.underlying.DefaultCertPool()
+		}
 	}
 	if len(config.NextProtos) <= 0 {
 		switch port {

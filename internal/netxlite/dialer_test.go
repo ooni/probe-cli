@@ -134,6 +134,23 @@ func TestDialerSystem(t *testing.T) {
 				t.Fatal("unable to enforce timeout")
 			}
 		})
+
+		t.Run("with custom underlying network", func(t *testing.T) {
+			expected := errors.New("mocked underlying network")
+			proxy := &mocks.UnderlyingNetwork{
+				MockDialContext: func(ctx context.Context, timeout time.Duration, network string, address string) (net.Conn, error) {
+					return nil, expected
+				},
+			}
+			d := &DialerSystem{underlying: proxy}
+			conn, err := d.DialContext(context.Background(), "tcp", "dns.google:443")
+			if conn != nil {
+				t.Fatal("unexpected conn")
+			}
+			if err != expected {
+				t.Fatal("unexpected err")
+			}
+		})
 	})
 }
 

@@ -187,6 +187,10 @@ type tlsHandshakerConfigurable struct {
 	// Timeout is the OPTIONAL timeout imposed on the TLS handshake. If zero
 	// or negative, we will use default timeout of 10 seconds.
 	Timeout time.Duration
+
+	// underlying is the OPTIONAL custom [UnderlyingNetwork].
+	// If nil, we will use tproxySingleton() as underlying network.
+	underlying model.UnderlyingNetwork
 }
 
 var _ model.TLSHandshaker = &tlsHandshakerConfigurable{}
@@ -218,6 +222,9 @@ func (h *tlsHandshakerConfigurable) Handshake(
 		config = config.Clone()
 		// See https://github.com/ooni/probe/issues/2413 for context
 		config.RootCAs = tproxySingleton().DefaultCertPool()
+		if h.underlying != nil {
+			config.RootCAs = h.underlying.DefaultCertPool()
+		}
 	}
 	tlsconn, err := h.newConn(conn, config)
 	if err != nil {
