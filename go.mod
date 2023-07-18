@@ -6,7 +6,7 @@ require (
 	filippo.io/age v1.1.1
 	git.torproject.org/pluggable-transports/goptlib.git v1.3.0
 	git.torproject.org/pluggable-transports/snowflake.git/v2 v2.5.1
-	github.com/AlecAivazis/survey/v2 v2.3.6
+	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/Psiphon-Labs/psiphon-tunnel-core v1.0.11-0.20230418182520-830177ebde85
 	github.com/alecthomas/kingpin/v2 v2.3.2
 	github.com/apex/log v1.9.0
@@ -20,9 +20,9 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/hexops/gotextdiff v1.0.3
-	github.com/iancoleman/strcase v0.2.0
+	github.com/iancoleman/strcase v0.3.0
 	github.com/mattn/go-colorable v0.1.13
-	github.com/miekg/dns v1.1.54
+	github.com/miekg/dns v1.1.55
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.7.1
 	github.com/ooni/go-libtor v1.1.8
@@ -31,11 +31,11 @@ require (
 	github.com/ooni/oohttp v0.6.3
 	github.com/ooni/probe-assets v0.18.0
 	github.com/pborman/getopt/v2 v2.1.0
-	github.com/pion/stun v0.6.0
+	github.com/pion/stun v0.6.1
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.33.0
-	github.com/rogpeppe/go-internal v1.10.0
-	github.com/rubenv/sql-migrate v1.4.0
+	github.com/rogpeppe/go-internal v1.11.0
+	github.com/rubenv/sql-migrate v1.5.1
 	github.com/schollz/progressbar/v3 v3.13.1
 	github.com/upper/db/v4 v4.6.0
 	gitlab.com/yawning/obfs4.git v0.0.0-20230519154740-645026c2ada4
@@ -132,7 +132,7 @@ require (
 	github.com/pion/srtp/v2 v2.0.15 // indirect
 	github.com/pion/turn/v2 v2.1.0 // indirect
 	github.com/pion/webrtc/v3 v3.2.9 // indirect
-	github.com/prometheus/client_golang v1.15.1
+	github.com/prometheus/client_golang v1.16.0
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.10.1 // indirect
