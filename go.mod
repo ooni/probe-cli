@@ -29,7 +29,7 @@ require (
 	github.com/ooni/netem v0.0.0-20230606061801-6bfb478aadf7
 	github.com/ooni/oocrypto v0.5.3
 	github.com/ooni/oohttp v0.6.3
-	github.com/ooni/probe-assets v0.17.0
+	github.com/ooni/probe-assets v0.18.0
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/pion/stun v0.6.0
 	github.com/pkg/errors v0.9.1
@@ -117,7 +117,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.17
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
-	github.com/oschwald/maxminddb-golang v1.10.0
+	github.com/oschwald/maxminddb-golang v1.11.0
 	github.com/pion/datachannel v1.5.5 // indirect
 	github.com/pion/dtls/v2 v2.2.7 // indirect
 	github.com/pion/ice/v2 v2.3.6 // indirect
