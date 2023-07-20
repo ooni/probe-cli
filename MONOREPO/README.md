@@ -51,6 +51,10 @@ purpuse of making the two use cases above possible.
 The [w](w) directory contains workflows implementing use cases. These
 are the most important workflows:
 
+* [build-android-stable.bash](w/build-android-stable.bash): builds
+[repo/probe-android](repo/probe-android/) in stable release using
+a temporary key store rather than the official one;
+
 * [build-android-with-cli.bash](w/build-android-with-cli.bash): builds
 [../pkg/oonimkall](../pkg/oonimkall/) for Android and builds
 [repo/probe-android](repo/probe-android/) in experimental release
