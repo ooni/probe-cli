@@ -4,7 +4,9 @@ set -euo pipefail
 reporoot=$(dirname $(dirname $(dirname $(realpath $0))))
 cd $reporoot
 
-source $reporoot/MONOREPO/tools/libcore.bash
+source $reporoot/MONOREPO/tools/libgit.bash
+for_each_repo fail_if_dirty
+for_each_repo fail_if_not_main
 
 ./MOBILE/android/newkeystore
 
