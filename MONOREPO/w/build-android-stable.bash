@@ -8,7 +8,7 @@ source $reporoot/MONOREPO/tools/libgit.bash
 for_each_repo fail_if_dirty
 for_each_repo fail_if_not_main
 
-./MOBILE/android/newkeystore
+run ./MOBILE/android/newkeystore
 
 (
 	run export ANDROID_HOME=$(./MOBILE/android/home)
@@ -20,4 +20,4 @@ for_each_repo fail_if_not_main
 	run cp -v $apkdir/app-stable-full-release-unsigned.apk  $reporoot/MOBILE/android/app-unsigned.apk
 )
 
-./MOBILE/android/sign
+run ./MOBILE/android/sign
