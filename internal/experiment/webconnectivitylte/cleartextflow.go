@@ -63,7 +63,7 @@ type CleartextFlow struct {
 
 	// PrioSelector is the OPTIONAL priority selector to use to determine
 	// whether this flow is allowed to fetch the webpage.
-	PrioSelector *PrioritySelector
+	PrioSelector *prioritySelector
 
 	// Referer contains the OPTIONAL referer, used for redirects.
 	Referer string

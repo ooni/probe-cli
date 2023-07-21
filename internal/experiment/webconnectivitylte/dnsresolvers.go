@@ -418,7 +418,7 @@ func (t *DNSResolvers) dohSplitQueries(
 // startCleartextFlows starts a TCP measurement flow for each IP addr.
 func (t *DNSResolvers) startCleartextFlows(
 	ctx context.Context,
-	ps *PrioritySelector,
+	ps *prioritySelector,
 	addresses []DNSEntry,
 ) {
 	if t.URL.Scheme != "http" {
@@ -456,7 +456,7 @@ func (t *DNSResolvers) startCleartextFlows(
 // startSecureFlows starts a TCP+TLS measurement flow for each IP addr.
 func (t *DNSResolvers) startSecureFlows(
 	ctx context.Context,
-	ps *PrioritySelector,
+	ps *prioritySelector,
 	addresses []DNSEntry,
 ) {
 	if t.URL.Scheme != "https" {
@@ -500,7 +500,7 @@ func (t *DNSResolvers) startSecureFlows(
 // maybeStartControlFlow starts the control flow iff .Session and .TestHelpers are set.
 func (t *DNSResolvers) maybeStartControlFlow(
 	ctx context.Context,
-	ps *PrioritySelector,
+	ps *prioritySelector,
 	addresses []DNSEntry,
 ) {
 	// note: for subsequent requests we don't set .Session and .TestHelpers hence

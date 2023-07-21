@@ -12,15 +12,15 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// ErrNotAllowedToConnect indicates we're not allowed to connect.
-var ErrNotAllowedToConnect = errors.New("webconnectivity: not allowed to connect")
+// errNotAllowedToConnect indicates we're not allowed to connect.
+var errNotAllowedToConnect = errors.New("webconnectivity: not allowed to connect")
 
 // allowedToConnect returns nil if we can connect to a given endpoint. Otherwise
 // it returns an error explaining why we cannot connect.
 func allowedToConnect(endpoint string) error {
 	addr, _, err := net.SplitHostPort(endpoint)
 	if err != nil {
-		return fmt.Errorf("%w: %s", ErrNotAllowedToConnect, err.Error())
+		return fmt.Errorf("%w: %s", errNotAllowedToConnect, err.Error())
 	}
 	// Implementation note: we don't remove bogons because accessing
 	// them can lead us to discover block pages. This may change in
@@ -29,7 +29,7 @@ func allowedToConnect(endpoint string) error {
 	// We prevent connecting to localhost, however, as documented
 	// inside https://github.com/ooni/probe/issues/2397.
 	if netxlite.IsLoopback(addr) {
-		return fmt.Errorf("%w: is loopback", ErrNotAllowedToConnect)
+		return fmt.Errorf("%w: is loopback", errNotAllowedToConnect)
 	}
 	return nil
 }
