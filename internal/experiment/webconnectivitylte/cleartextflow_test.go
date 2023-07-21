@@ -25,7 +25,7 @@ func TestCleartextFlow_Run(t *testing.T) {
 		CookieJar       http.CookieJar
 		FollowRedirects bool
 		HostHeader      string
-		PrioSelector    *PrioritySelector
+		PrioSelector    *prioritySelector
 		Referer         string
 		UDPAddress      string
 		URLPath         string
@@ -50,7 +50,7 @@ func TestCleartextFlow_Run(t *testing.T) {
 			parentCtx: context.Background(),
 			index:     0,
 		},
-		want: ErrNotAllowedToConnect,
+		want: errNotAllowedToConnect,
 	}, {
 		name: "with loopback IPv6 endpoint",
 		fields: fields{
@@ -61,7 +61,7 @@ func TestCleartextFlow_Run(t *testing.T) {
 			parentCtx: context.Background(),
 			index:     0,
 		},
-		want: ErrNotAllowedToConnect,
+		want: errNotAllowedToConnect,
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -21,10 +21,10 @@ import (
 type EndpointMeasurementsStarter interface {
 	// startCleartextFlows starts a TCP measurement flow for each IP addr. The [ps]
 	// argument determines whether this flow will be allowed to fetch the webpage.
-	startCleartextFlows(ctx context.Context, ps *PrioritySelector, addresses []DNSEntry)
+	startCleartextFlows(ctx context.Context, ps *prioritySelector, addresses []DNSEntry)
 
 	// startSecureFlows is like startCleartextFlows but for HTTPS.
-	startSecureFlows(ctx context.Context, ps *PrioritySelector, addresses []DNSEntry)
+	startSecureFlows(ctx context.Context, ps *prioritySelector, addresses []DNSEntry)
 }
 
 // Control issues a Control request and saves the results
@@ -45,7 +45,7 @@ type Control struct {
 
 	// PrioSelector is the OPTIONAL priority selector to use to determine
 	// whether we will be allowed to fetch the webpage.
-	PrioSelector *PrioritySelector
+	PrioSelector *prioritySelector
 
 	// TestKeys is MANDATORY and contains the TestKeys.
 	TestKeys *TestKeys

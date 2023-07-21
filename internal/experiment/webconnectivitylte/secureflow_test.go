@@ -1,4 +1,4 @@
-package webconnectivitylte_test
+package webconnectivitylte
 
 import (
 	"context"
@@ -9,25 +9,24 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivitylte"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestSecureFlow_Run(t *testing.T) {
 	type fields struct {
 		Address         string
-		DNSCache        *webconnectivitylte.DNSCache
+		DNSCache        *DNSCache
 		IDGenerator     *atomic.Int64
 		Logger          model.Logger
-		NumRedirects    *webconnectivitylte.NumRedirects
-		TestKeys        *webconnectivitylte.TestKeys
+		NumRedirects    *NumRedirects
+		TestKeys        *TestKeys
 		ZeroTime        time.Time
 		WaitGroup       *sync.WaitGroup
 		ALPN            []string
 		CookieJar       http.CookieJar
 		FollowRedirects bool
 		HostHeader      string
-		PrioSelector    *webconnectivitylte.PrioritySelector
+		PrioSelector    *prioritySelector
 		Referer         string
 		SNI             string
 		UDPAddress      string
@@ -53,7 +52,7 @@ func TestSecureFlow_Run(t *testing.T) {
 			parentCtx: context.Background(),
 			index:     0,
 		},
-		want: webconnectivitylte.ErrNotAllowedToConnect,
+		want: errNotAllowedToConnect,
 	}, {
 		name: "with loopback IPv6 endpoint",
 		fields: fields{
@@ -64,11 +63,11 @@ func TestSecureFlow_Run(t *testing.T) {
 			parentCtx: context.Background(),
 			index:     0,
 		},
-		want: webconnectivitylte.ErrNotAllowedToConnect,
+		want: errNotAllowedToConnect,
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tr := &webconnectivitylte.SecureFlow{
+			tr := &SecureFlow{
 				Address:         tt.fields.Address,
 				DNSCache:        tt.fields.DNSCache,
 				IDGenerator:     tt.fields.IDGenerator,

@@ -1,4 +1,4 @@
-package webconnectivitylte_test
+package webconnectivitylte
 
 import (
 	"context"
@@ -9,13 +9,15 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/netem"
-	"github.com/ooni/probe-cli/v3/internal/engine"
-	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivitylte"
+	"github.com/ooni/probe-cli/v3/internal/bytecounter"
+	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/oohelperd"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/sessionresolver"
 	"golang.org/x/net/publicsuffix"
 )
 
@@ -119,11 +121,9 @@ func TestSuccess(t *testing.T) {
 	env := newEnvironment()
 	defer env.Close()
 	env.Do(func() {
-		measurer := webconnectivitylte.NewExperimentMeasurer(&webconnectivitylte.Config{})
+		measurer := NewExperimentMeasurer(&Config{})
 		ctx := context.Background()
-		// we need a real session because we need the web-connectivity helper
-		// as well as the ASN database
-		sess := newsession(t, true)
+		sess := newSession()
 		measurement := &model.Measurement{Input: "https://www.example.com"}
 		callbacks := model.NewPrinterCallbacks(log.Log)
 		args := &model.ExperimentArgs{
@@ -135,7 +135,7 @@ func TestSuccess(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		tk := measurement.TestKeys.(*webconnectivitylte.TestKeys)
+		tk := measurement.TestKeys.(*TestKeys)
 		if tk.ControlFailure != nil {
 			t.Fatal("unexpected control_failure", *tk.ControlFailure)
 		}
@@ -157,11 +157,9 @@ func TestDPITarget(t *testing.T) {
 	})
 	defer env.Close()
 	env.Do(func() {
-		measurer := webconnectivitylte.NewExperimentMeasurer(&webconnectivitylte.Config{})
+		measurer := NewExperimentMeasurer(&Config{})
 		ctx := context.Background()
-		// we need a real session because we need the web-connectivity helper
-		// as well as the ASN database
-		sess := newsession(t, true)
+		sess := newSession()
 		measurement := &model.Measurement{Input: "https://www.example.com"}
 		callbacks := model.NewPrinterCallbacks(log.Log)
 		args := &model.ExperimentArgs{
@@ -173,7 +171,7 @@ func TestDPITarget(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		tk := measurement.TestKeys.(*webconnectivitylte.TestKeys)
+		tk := measurement.TestKeys.(*TestKeys)
 		if tk.ControlFailure != nil {
 			t.Fatal("unexpected control_failure", *tk.ControlFailure)
 		}
@@ -220,26 +218,68 @@ func (p *probeService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-func newsession(t *testing.T, lookupBackends bool) model.ExperimentSession {
-	sess, err := engine.NewSession(context.Background(), engine.SessionConfig{
-		AvailableProbeServices: []model.OOAPIService{{
-			Address: "https://ams-pg-test.ooni.org",
-			Type:    "https",
-		}},
-		Logger:          log.Log,
-		SoftwareName:    "ooniprobe-engine",
-		SoftwareVersion: "0.0.1",
-	})
-	if err != nil {
-		t.Fatal(err)
+// newSession creates a new [mocks.Session].
+func newSession() model.ExperimentSession {
+	byteCounter := bytecounter.New()
+	resolver := &sessionresolver.Resolver{
+		ByteCounter: byteCounter,
+		KVStore:     &kvstore.Memory{},
+		Logger:      log.Log,
+		ProxyURL:    nil,
 	}
-	if lookupBackends {
-		if err := sess.MaybeLookupBackends(); err != nil {
-			t.Fatal(err)
-		}
+	txp := netxlite.NewHTTPTransportWithLoggerResolverAndOptionalProxyURL(
+		log.Log, resolver, nil,
+	)
+	txp = bytecounter.WrapHTTPTransport(txp, byteCounter)
+	return &mocks.Session{
+		MockGetTestHelpersByName: func(name string) ([]model.OOAPIService, bool) {
+			output := []model.OOAPIService{
+				{
+					Address: "https://3.th.ooni.org",
+					Type:    "https",
+				},
+				{
+					Address: "https://2.th.ooni.org",
+					Type:    "https",
+				},
+				{
+					Address: "https://1.th.ooni.org",
+					Type:    "https",
+				},
+				{
+					Address: "https://0.th.ooni.org",
+					Type:    "https",
+				},
+			}
+			return output, true
+		},
+		MockDefaultHTTPClient: func() model.HTTPClient {
+			return &http.Client{Transport: txp}
+		},
+		MockFetchPsiphonConfig: nil,
+		MockFetchTorTargets:    nil,
+		MockKeyValueStore:      nil,
+		MockLogger: func() model.Logger {
+			return log.Log
+		},
+		MockMaybeResolverIP:  nil,
+		MockProbeASNString:   nil,
+		MockProbeCC:          nil,
+		MockProbeIP:          nil,
+		MockProbeNetworkName: nil,
+		MockProxyURL:         nil,
+		MockResolverIP:       nil,
+		MockSoftwareName:     nil,
+		MockSoftwareVersion:  nil,
+		MockTempDir:          nil,
+		MockTorArgs:          nil,
+		MockTorBinary:        nil,
+		MockTunnelDir:        nil,
+		MockUserAgent: func() string {
+			return model.HTTPHeaderUserAgent
+		},
+		MockNewExperimentBuilder: nil,
+		MockNewSubmitter:         nil,
+		MockCheckIn:              nil,
 	}
-	if err := sess.MaybeLookupLocation(); err != nil {
-		t.Fatal(err)
-	}
-	return sess
 }
