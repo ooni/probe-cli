@@ -15,6 +15,11 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
+type (
+	ctrlRequest  = model.THRequest
+	ctrlResponse = model.THResponse
+)
+
 func TestMainRunServerWorkingAsIntended(t *testing.T) {
 	// let the kernel pick a random free port
 	*apiEndpoint = "127.0.0.1:0"

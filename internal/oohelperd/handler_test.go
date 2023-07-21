@@ -1,4 +1,4 @@
-package main
+package oohelperd
 
 import (
 	"context"
@@ -70,7 +70,7 @@ func TestHandlerWorkingAsIntended(t *testing.T) {
 		// measureFn optionally allows overriding the default
 		// value of the handler.Measure function
 		measureFn func(
-			ctx context.Context, config *handler, creq *model.THRequest) (*model.THResponse, error)
+			ctx context.Context, config *Handler, creq *model.THRequest) (*model.THResponse, error)
 
 		// reqBody is the request body to use
 		reqBody io.Reader
@@ -124,7 +124,7 @@ func TestHandlerWorkingAsIntended(t *testing.T) {
 		parseBody:       false,
 	}, {
 		name: "with reasonably good request",
-		measureFn: func(ctx context.Context, config *handler, creq *model.THRequest) (*model.THResponse, error) {
+		measureFn: func(ctx context.Context, config *Handler, creq *model.THRequest) (*model.THResponse, error) {
 			cresp := &model.THResponse{}
 			return cresp, nil
 		},
@@ -151,7 +151,7 @@ func TestHandlerWorkingAsIntended(t *testing.T) {
 	for _, expect := range expectations {
 		t.Run(expect.name, func(t *testing.T) {
 			// create handler and possibly override .Measure
-			handler := newHandler()
+			handler := NewHandler()
 			if expect.measureFn != nil {
 				handler.Measure = expect.measureFn
 			}
