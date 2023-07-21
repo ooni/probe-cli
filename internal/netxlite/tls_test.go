@@ -137,7 +137,7 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 	t.Run("Handshake", func(t *testing.T) {
 		t.Run("with handshake I/O error", func(t *testing.T) {
 			var times []time.Time
-			h := &tlsHandshakerConfigurable{}
+			h := &tlsHandshakerConfigurable{underlying: tproxySingleton()}
 			tcpConn := &mocks.Conn{
 				MockWrite: func(b []byte) (int, error) {
 					return 0, io.EOF
@@ -209,7 +209,7 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer conn.Close()
-			handshaker := &tlsHandshakerConfigurable{}
+			handshaker := &tlsHandshakerConfigurable{underlying: tproxySingleton()}
 			ctx := context.Background()
 			config := &tls.Config{
 				InsecureSkipVerify: true,
@@ -239,6 +239,7 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 						},
 					}, nil
 				},
+				underlying: tproxySingleton(),
 			}
 			ctx := context.Background()
 			config := &tls.Config{}
@@ -345,6 +346,7 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 				NewConn: func(conn net.Conn, config *tls.Config) (TLSConn, error) {
 					return nil, expected
 				},
+				underlying: tproxySingleton(),
 			}
 			ctx := context.Background()
 			config := &tls.Config{}
@@ -711,7 +713,7 @@ func TestTLSDialer(t *testing.T) {
 		t.Run("failure dialing", func(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel() // immediately fail
-			dialer := tlsDialer{Dialer: &DialerSystem{}}
+			dialer := tlsDialer{Dialer: &DialerSystem{underlying: tproxySingleton()}}
 			conn, err := dialer.DialTLSContext(ctx, "tcp", "www.google.com:443")
 			if err == nil || !strings.HasSuffix(err.Error(), "operation was canceled") {
 				t.Fatal("not the error we expected", err)
@@ -743,7 +745,9 @@ func TestTLSDialer(t *testing.T) {
 						}
 					}}, nil
 				}},
-				TLSHandshaker: &tlsHandshakerConfigurable{},
+				TLSHandshaker: &tlsHandshakerConfigurable{
+					underlying: tproxySingleton(),
+				},
 			}
 			conn, err := dialer.DialTLSContext(ctx, "tcp", "www.google.com:443")
 			if !errors.Is(err, io.EOF) {

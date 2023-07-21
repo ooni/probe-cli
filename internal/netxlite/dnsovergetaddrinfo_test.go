@@ -15,40 +15,40 @@ import (
 
 func TestDNSOverGetaddrinfo(t *testing.T) {
 	t.Run("RequiresPadding", func(t *testing.T) {
-		txp := &dnsOverGetaddrinfoTransport{}
+		txp := &dnsOverGetaddrinfoTransport{underlying: tproxySingleton()}
 		if txp.RequiresPadding() {
 			t.Fatal("expected false")
 		}
 	})
 
 	t.Run("Network", func(t *testing.T) {
-		txp := &dnsOverGetaddrinfoTransport{}
+		txp := &dnsOverGetaddrinfoTransport{underlying: tproxySingleton()}
 		if txp.Network() != getaddrinfoResolverNetwork() {
 			t.Fatal("unexpected Network")
 		}
 	})
 
 	t.Run("Address", func(t *testing.T) {
-		txp := &dnsOverGetaddrinfoTransport{}
+		txp := &dnsOverGetaddrinfoTransport{underlying: tproxySingleton()}
 		if txp.Address() != "" {
 			t.Fatal("unexpected Address")
 		}
 	})
 
 	t.Run("CloseIdleConnections", func(t *testing.T) {
-		txp := &dnsOverGetaddrinfoTransport{}
+		txp := &dnsOverGetaddrinfoTransport{underlying: tproxySingleton()}
 		txp.CloseIdleConnections() // does not crash
 	})
 
 	t.Run("check default timeout", func(t *testing.T) {
-		txp := &dnsOverGetaddrinfoTransport{}
+		txp := &dnsOverGetaddrinfoTransport{underlying: tproxySingleton()}
 		if txp.timeout() != 15*time.Second {
 			t.Fatal("unexpected default timeout")
 		}
 	})
 
 	t.Run("check default lookup host func not nil", func(t *testing.T) {
-		txp := &dnsOverGetaddrinfoTransport{}
+		txp := &dnsOverGetaddrinfoTransport{underlying: tproxySingleton()}
 		if txp.lookupfn() == nil {
 			t.Fatal("expected non-nil func here")
 		}
@@ -57,6 +57,7 @@ func TestDNSOverGetaddrinfo(t *testing.T) {
 	t.Run("RoundTrip", func(t *testing.T) {
 		t.Run("with invalid query type", func(t *testing.T) {
 			txp := &dnsOverGetaddrinfoTransport{
+				underlying: tproxySingleton(),
 				testableLookupANY: func(ctx context.Context, domain string) ([]string, string, error) {
 					return []string{"8.8.8.8"}, "dns.google", nil
 				},
@@ -75,6 +76,7 @@ func TestDNSOverGetaddrinfo(t *testing.T) {
 
 		t.Run("with success", func(t *testing.T) {
 			txp := &dnsOverGetaddrinfoTransport{
+				underlying: tproxySingleton(),
 				testableLookupANY: func(ctx context.Context, domain string) ([]string, string, error) {
 					return []string{"8.8.8.8"}, "dns.google", nil
 				},
@@ -123,6 +125,7 @@ func TestDNSOverGetaddrinfo(t *testing.T) {
 			wg.Add(1)
 			done := make(chan interface{})
 			txp := &dnsOverGetaddrinfoTransport{
+				underlying:      tproxySingleton(),
 				testableTimeout: 1 * time.Microsecond,
 				testableLookupANY: func(ctx context.Context, domain string) ([]string, string, error) {
 					defer wg.Done()
@@ -149,6 +152,7 @@ func TestDNSOverGetaddrinfo(t *testing.T) {
 			wg.Add(1)
 			done := make(chan interface{})
 			txp := &dnsOverGetaddrinfoTransport{
+				underlying:      tproxySingleton(),
 				testableTimeout: 1 * time.Microsecond,
 				testableLookupANY: func(ctx context.Context, domain string) ([]string, string, error) {
 					defer wg.Done()
@@ -172,6 +176,7 @@ func TestDNSOverGetaddrinfo(t *testing.T) {
 
 		t.Run("with NXDOMAIN", func(t *testing.T) {
 			txp := &dnsOverGetaddrinfoTransport{
+				underlying: tproxySingleton(),
 				testableLookupANY: func(ctx context.Context, domain string) ([]string, string, error) {
 					return nil, "", ErrOODNSNoSuchHost
 				},

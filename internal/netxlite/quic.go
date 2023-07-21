@@ -19,12 +19,12 @@ import (
 // NewQUICListener creates a new QUICListener using the standard
 // library to create listening UDP sockets.
 func NewQUICListener() model.QUICListener {
-	return &quicListenerErrWrapper{&quicListenerStdlib{}}
+	return &quicListenerErrWrapper{&quicListenerStdlib{underlying: tproxySingleton()}}
 }
 
 // quicListenerStdlib is a QUICListener using the standard library.
 type quicListenerStdlib struct {
-	// underlying is the OPTIONAL custom [UnderlyingNetwork].
+	// underlying is the MANDATORY custom [UnderlyingNetwork].
 	// If nil, we will use tproxySingleton() as underlying network.
 	underlying model.UnderlyingNetwork
 }
@@ -33,10 +33,7 @@ var _ model.QUICListener = &quicListenerStdlib{}
 
 // Listen implements QUICListener.Listen.
 func (qls *quicListenerStdlib) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
-	if qls.underlying != nil {
-		return qls.underlying.ListenUDP("udp", addr)
-	}
-	return tproxySingleton().ListenUDP("udp", addr)
+	return qls.underlying.ListenUDP("udp", addr)
 }
 
 // NewQUICDialerWithResolver is the WrapDialer equivalent for QUIC where
@@ -60,6 +57,7 @@ func NewQUICDialerWithResolver(listener model.QUICListener, logger model.DebugLo
 	resolver model.Resolver, wrappers ...model.QUICDialerWrapper) (outDialer model.QUICDialer) {
 	baseDialer := &quicDialerQUICGo{
 		QUICListener: listener,
+		underlying:   tproxySingleton(),
 	}
 	return WrapQUICDialer(logger, resolver, baseDialer, wrappers...)
 }
@@ -102,7 +100,7 @@ type quicDialerQUICGo struct {
 	// QUICListener is the underlying QUICListener to use.
 	QUICListener model.QUICListener
 
-	// underlying is the OPTIONAL custom [UnderlyingNetwork].
+	// underlying is the MANDATORY custom [UnderlyingNetwork].
 	// If nil, we will use tproxySingleton() as underlying network.
 	underlying model.UnderlyingNetwork
 
@@ -193,10 +191,7 @@ func (d *quicDialerQUICGo) maybeApplyTLSDefaults(config *tls.Config, port int) *
 	config = config.Clone()
 	if config.RootCAs == nil {
 		// See https://github.com/ooni/probe/issues/2413 for context
-		config.RootCAs = tproxySingleton().DefaultCertPool()
-		if d.underlying != nil {
-			config.RootCAs = d.underlying.DefaultCertPool()
-		}
+		config.RootCAs = d.underlying.DefaultCertPool()
 	}
 	if len(config.NextProtos) <= 0 {
 		switch port {
