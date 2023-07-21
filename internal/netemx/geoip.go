@@ -5,7 +5,7 @@ import "net/http"
 type GeoIPLookup struct{}
 
 func (p *GeoIPLookup) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	resp := `<?xml version="1.0" encoding="UTF-8"?><Response><Ip>89.0.2.153</Ip><Status>OK</Status><CountryCode>DE</CountryCode><CountryCode3>DEU</CountryCode3><CountryName>Germany</CountryName><RegionCode>07</RegionCode><RegionName>Nordrhein-Westfalen</RegionName><City>Aachen</City><ZipPostalCode>52074</ZipPostalCode><Latitude>50.7479</Latitude><Longitude>6.0485</Longitude><AreaCode>0</AreaCode><TimeZone>Europe/Berlin</TimeZone></Response>`
+	resp := `<?xml version="1.0" encoding="UTF-8"?><Response><Ip>99.83.231.61</Ip><Status>OK</Status><CountryCode>US</CountryCode><CountryCode3>USA</CountryCode3><CountryName>United States of America</CountryName><RegionName>Washington</RegionName><City>Seattle</City><ZipPostalCode>98108</ZipPostalCode><Latitude>47.5413</Latitude><Longitude>-122.3129</Longitude><TimeZone>America/Los_Angeles</TimeZone></Response>`
 
 	w.Header().Add("Content-Type", "text/xml")
 	w.Write([]byte(resp))
