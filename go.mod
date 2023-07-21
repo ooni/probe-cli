@@ -6,7 +6,7 @@ require (
 	filippo.io/age v1.1.1
 	git.torproject.org/pluggable-transports/goptlib.git v1.3.0
 	git.torproject.org/pluggable-transports/snowflake.git/v2 v2.5.1
-	github.com/AlecAivazis/survey/v2 v2.3.6
+	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/Psiphon-Labs/psiphon-tunnel-core v1.0.11-0.20230418182520-830177ebde85
 	github.com/alecthomas/kingpin/v2 v2.3.2
 	github.com/apex/log v1.9.0
@@ -21,29 +21,29 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/hexops/gotextdiff v1.0.3
-	github.com/iancoleman/strcase v0.2.0
+	github.com/iancoleman/strcase v0.3.0
 	github.com/mattn/go-colorable v0.1.13
-	github.com/miekg/dns v1.1.54
+	github.com/miekg/dns v1.1.55
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.7.1
 	github.com/ooni/go-libtor v1.1.8
 	github.com/ooni/netem v0.0.0-20230606061801-6bfb478aadf7
-	github.com/ooni/oocrypto v0.5.2
-	github.com/ooni/oohttp v0.6.2
-	github.com/ooni/probe-assets v0.17.0
+	github.com/ooni/oocrypto v0.5.3
+	github.com/ooni/oohttp v0.6.3
+	github.com/ooni/probe-assets v0.18.0
 	github.com/pborman/getopt/v2 v2.1.0
-	github.com/pion/stun v0.6.0
+	github.com/pion/stun v0.6.1
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.33.0
-	github.com/rogpeppe/go-internal v1.10.0
-	github.com/rubenv/sql-migrate v1.4.0
+	github.com/rogpeppe/go-internal v1.11.0
+	github.com/rubenv/sql-migrate v1.5.1
 	github.com/schollz/progressbar/v3 v3.13.1
 	github.com/upper/db/v4 v4.6.0
 	gitlab.com/yawning/obfs4.git v0.0.0-20230519154740-645026c2ada4
 	gitlab.com/yawning/utls.git v0.0.12-1
-	golang.org/x/crypto v0.9.0
-	golang.org/x/net v0.10.0
-	golang.org/x/sys v0.8.0
+	golang.org/x/crypto v0.11.0
+	golang.org/x/net v0.12.0
+	golang.org/x/sys v0.10.0
 )
 
 require (
@@ -117,7 +117,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.17
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
-	github.com/oschwald/maxminddb-golang v1.10.0
+	github.com/oschwald/maxminddb-golang v1.11.0
 	github.com/pion/datachannel v1.5.5 // indirect
 	github.com/pion/dtls/v2 v2.2.7 // indirect
 	github.com/pion/ice/v2 v2.3.6 // indirect
@@ -132,7 +132,7 @@ require (
 	github.com/pion/srtp/v2 v2.0.15 // indirect
 	github.com/pion/turn/v2 v2.1.0 // indirect
 	github.com/pion/webrtc/v3 v3.2.9 // indirect
-	github.com/prometheus/client_golang v1.15.1
+	github.com/prometheus/client_golang v1.16.0
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.10.1 // indirect
@@ -152,8 +152,8 @@ require (
 	gitlab.com/yawning/bsaes.git v0.0.0-20190805113838-0a714cd429ec // indirect
 	gitlab.com/yawning/edwards25519-extra.git v0.0.0-20220726154925-def713fd18e4 // indirect
 	golang.org/x/mod v0.10.0 // indirect
-	golang.org/x/term v0.8.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
+	golang.org/x/term v0.10.0 // indirect
+	golang.org/x/text v0.11.0 // indirect
 	golang.org/x/tools v0.9.3 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 )

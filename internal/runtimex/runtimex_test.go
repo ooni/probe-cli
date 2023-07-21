@@ -3,6 +3,7 @@ package runtimex
 import (
 	"errors"
 	"runtime/debug"
+	"sync/atomic"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -244,4 +245,24 @@ func TestTry(t *testing.T) {
 			}
 		})
 	})
+}
+
+type countingWarningLogger struct {
+	num atomic.Int64
+}
+
+// Warnf implements WarningLogger.
+func (cwl *countingWarningLogger) Warnf(format string, v ...any) {
+	cwl.num.Add(1)
+}
+
+func TestCatchLogAndIgnorePanic(t *testing.T) {
+	logger := &countingWarningLogger{}
+	func() {
+		defer CatchLogAndIgnorePanic(logger, "panic")
+		panic("Bonsoir, Elliot!")
+	}()
+	if logger.num.Load() != 1 {
+		t.Fatal("Warnf not called")
+	}
 }

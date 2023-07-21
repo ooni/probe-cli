@@ -4,13 +4,21 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
+	"net/http"
+	"sync"
 	"testing"
 
+	"github.com/apex/log"
+	"github.com/google/gopacket/layers"
+	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/experiment/telegram"
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
-	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
@@ -18,68 +26,8 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	if measurer.ExperimentName() != "telegram" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.3.0" {
+	if measurer.ExperimentVersion() != "0.3.1" {
 		t.Fatal("unexpected version")
-	}
-}
-
-func TestGood(t *testing.T) {
-	measurer := telegram.NewExperimentMeasurer(telegram.Config{})
-	measurement := new(model.Measurement)
-	args := &model.ExperimentArgs{
-		Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
-		Measurement: measurement,
-		Session: &mockable.Session{
-			MockableLogger: model.DiscardLogger,
-		},
-	}
-	err := measurer.Run(context.Background(), args)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tk := measurement.TestKeys.(*telegram.TestKeys)
-	if tk.Agent != "redirect" {
-		t.Fatal("unexpected Agent")
-	}
-	if tk.FailedOperation != nil {
-		t.Fatal("unexpected FailedOperation")
-	}
-	if tk.Failure != nil {
-		t.Fatal("unexpected Failure")
-	}
-	if len(tk.NetworkEvents) <= 0 {
-		t.Fatal("no NetworkEvents?!")
-	}
-	if len(tk.Queries) <= 0 {
-		t.Fatal("no Queries?!")
-	}
-	if len(tk.Requests) <= 0 {
-		t.Fatal("no Requests?!")
-	}
-	if len(tk.TCPConnect) <= 0 {
-		t.Fatal("no TCPConnect?!")
-	}
-	if len(tk.TLSHandshakes) <= 0 {
-		t.Fatal("no TLSHandshakes?!")
-	}
-	if tk.TelegramHTTPBlocking != false {
-		t.Fatal("unexpected TelegramHTTPBlocking")
-	}
-	if tk.TelegramTCPBlocking != false {
-		t.Fatal("unexpected TelegramTCPBlocking")
-	}
-	if tk.TelegramWebFailure != nil {
-		t.Fatal("unexpected TelegramWebFailure")
-	}
-	if tk.TelegramWebStatus != "ok" {
-		t.Fatal("unexpected TelegramWebStatus")
-	}
-	sk, err := measurer.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, ok := sk.(telegram.SummaryKeys); !ok {
-		t.Fatal("invalid type for summary keys")
 	}
 }
 
@@ -316,4 +264,303 @@ func TestSummaryKeysWorksAsIntended(t *testing.T) {
 			}
 		})
 	}
+}
+
+// telegramWebAddr is the web.telegram.org IP address as of 2023-07-11
+const telegramWebAddr = "149.154.167.99"
+
+// configureDNSWithAddr configures the given DNS config for web.telegram.org using the given addr.
+func configureDNSWithAddr(config *netem.DNSConfig, addr string) {
+	config.AddRecord("web.telegram.org", "web.telegram.org", addr)
+}
+
+// configureDNSWithDefaults configures the given DNS config for web.telegram.org using the default addr.
+func configureDNSWithDefaults(config *netem.DNSConfig) {
+	configureDNSWithAddr(config, telegramWebAddr)
+}
+
+// telegramHTTPServerNetStackHandler is a [netemx.QAEnvNetStackHandler] that serves HTTP requests
+// on the given addr and ports 443 and 80 as required by the telegram nettest
+type telegramHTTPServerNetStackHandler struct {
+	closers []io.Closer
+	mu      sync.Mutex
+}
+
+var _ netemx.QAEnvNetStackHandler = &telegramHTTPServerNetStackHandler{}
+
+// Close implements netemx.QAEnvNetStackHandler.
+func (nsh *telegramHTTPServerNetStackHandler) Close() error {
+	// make the method locked as requested by the documentation
+	defer nsh.mu.Unlock()
+	nsh.mu.Lock()
+
+	// close each of the closers
+	for _, closer := range nsh.closers {
+		_ = closer.Close()
+	}
+
+	// be idempotent
+	nsh.closers = []io.Closer{}
+	return nil
+}
+
+// Listen implements netemx.QAEnvNetStackHandler.
+func (nsh *telegramHTTPServerNetStackHandler) Listen(stack *netem.UNetStack) error {
+	// make the method locked as requested by the documentation
+	defer nsh.mu.Unlock()
+	nsh.mu.Lock()
+
+	// we create an empty mux, which should cause a 404 for each webpage, which seems what
+	// the servers used by telegram DC do as of 2023-07-11
+	mux := http.NewServeMux()
+
+	// listen on port 80
+	nsh.listenPort(stack, mux, 80)
+
+	// listen on port 443
+	nsh.listenPort(stack, mux, 443)
+	return nil
+}
+
+func (nsh *telegramHTTPServerNetStackHandler) listenPort(stack *netem.UNetStack, mux *http.ServeMux, port uint16) {
+	// create the listening address
+	ipAddr := net.ParseIP(stack.IPAddress())
+	runtimex.Assert(ipAddr != nil, "expected valid IP address")
+	addr := &net.TCPAddr{IP: ipAddr, Port: int(port)}
+	listener := runtimex.Try1(stack.ListenTCP("tcp", addr))
+	srvr := &http.Server{Handler: mux}
+
+	// serve requests in a background goroutine
+	go srvr.Serve(listener)
+
+	// make sure we track the server (the .Serve method will close the
+	// listener once we close the server itself)
+	nsh.closers = append(nsh.closers, srvr)
+}
+
+// newQAEnvironment creates a QA environment for testing using the given addresses.
+func newQAEnvironment(ipaddrs ...string) *netemx.QAEnv {
+	// create a single handler for handling all the requests
+	handler := &telegramHTTPServerNetStackHandler{
+		closers: []io.Closer{},
+		mu:      sync.Mutex{},
+	}
+
+	// create the options for constructing the env
+	var options []netemx.QAEnvOption
+	for _, ipaddr := range ipaddrs {
+		options = append(options, netemx.QAEnvOptionNetStack(ipaddr, handler))
+	}
+
+	// add explicit logging which helps to inspect the tests results
+	options = append(options, netemx.QAEnvOptionLogger(log.Log))
+
+	// add handler for telegram web (we're using a different-from-reality HTTP handler
+	// but we're not testing for the returned webpage, so we should be fine)
+	options = append(options, netemx.QAEnvOptionHTTPServer(telegramWebAddr, netemx.QAEnvDefaultHTTPHandler()))
+
+	// create the environment proper with all the options
+	env := netemx.NewQAEnv(options...)
+
+	// register with all the possible resolvers the correct DNS records - registering again
+	// inside individual tests will override the values we're setting here
+	configureDNSWithDefaults(env.ISPResolverConfig())
+	configureDNSWithDefaults(env.OtherResolversConfig())
+	return env
+}
+
+func TestMeasurerRun(t *testing.T) {
+	t.Run("without DPI: expect success", func(t *testing.T) {
+		// create a new test environment
+		env := newQAEnvironment(telegram.DatacenterIPAddrs...)
+		defer env.Close()
+
+		env.Do(func() {
+			measurer := telegram.NewExperimentMeasurer(telegram.Config{})
+			measurement := &model.Measurement{}
+			args := &model.ExperimentArgs{
+				Callbacks:   model.NewPrinterCallbacks(log.Log),
+				Measurement: measurement,
+				Session:     &mocks.Session{MockLogger: func() model.Logger { return log.Log }},
+			}
+			err := measurer.Run(context.Background(), args)
+			if err != nil {
+				t.Fatalf("Unexpected error: %s", err)
+			}
+			tk, _ := (measurement.TestKeys).(*telegram.TestKeys)
+			if tk.TelegramWebFailure != nil {
+				t.Fatalf("Unexpected Telegram Web failure %s", *tk.TelegramWebFailure)
+			}
+			if tk.TelegramHTTPBlocking {
+				t.Fatalf("Unexpected HTTP blocking")
+			}
+			if tk.TelegramTCPBlocking {
+				t.Fatal("Unexpected TCP blocking")
+			}
+			if tk.Agent != "redirect" {
+				t.Fatal("unexpected Agent")
+			}
+			if tk.FailedOperation != nil {
+				t.Fatal("unexpected FailedOperation")
+			}
+			if tk.Failure != nil {
+				t.Fatal("unexpected Failure")
+			}
+			if len(tk.NetworkEvents) <= 0 {
+				t.Fatal("no NetworkEvents?!")
+			}
+			if len(tk.Queries) <= 0 {
+				t.Fatal("no Queries?!")
+			}
+			if len(tk.Requests) <= 0 {
+				t.Fatal("no Requests?!")
+			}
+			if len(tk.TCPConnect) <= 0 {
+				t.Fatal("no TCPConnect?!")
+			}
+			if len(tk.TLSHandshakes) <= 0 {
+				t.Fatal("no TLSHandshakes?!")
+			}
+			if tk.TelegramWebStatus != "ok" {
+				t.Fatal("unexpected TelegramWebStatus")
+			}
+			sk, err := measurer.GetSummaryKeys(measurement)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, ok := sk.(telegram.SummaryKeys); !ok {
+				t.Fatal("invalid type for summary keys")
+			}
+		})
+	})
+
+	t.Run("with poisoned DNS: expect TelegramWebFailure", func(t *testing.T) {
+		// create a new test environment
+		env := newQAEnvironment(telegram.DatacenterIPAddrs...)
+		defer env.Close()
+
+		// register bogon entries for web.telegram.org in the resolver's ISP
+		env.ISPResolverConfig().AddRecord("web.telegram.org", "web.telegram.org", "10.10.34.35")
+
+		env.Do(func() {
+			measurer := telegram.NewExperimentMeasurer(telegram.Config{})
+			measurement := &model.Measurement{}
+			args := &model.ExperimentArgs{
+				Callbacks:   model.NewPrinterCallbacks(log.Log),
+				Measurement: measurement,
+				Session:     &mocks.Session{MockLogger: func() model.Logger { return log.Log }},
+			}
+			err := measurer.Run(context.Background(), args)
+			if err != nil {
+				t.Fatalf("Unexpected error: %s", err)
+			}
+			tk, _ := (measurement.TestKeys).(*telegram.TestKeys)
+			if tk.TelegramWebFailure == nil {
+				t.Fatalf("Expected Web Failure but got none")
+			}
+			if tk.TelegramHTTPBlocking {
+				t.Fatal("Unexpected HTTP blocking")
+			}
+			if tk.TelegramTCPBlocking {
+				t.Fatal("Unexpected TCP blocking")
+			}
+		})
+	})
+
+	t.Run("with DPI that drops TCP traffic towards telegram endpoint: expect Telegram(HTTP|TCP)Blocking", func(t *testing.T) {
+		if testing.Short() {
+			t.Skip("skip test in short mode")
+		}
+
+		// overwrite global Datacenters, otherwise the test times out because there are too many endpoints
+		orig := telegram.DatacenterIPAddrs
+		telegram.DatacenterIPAddrs = []string{
+			"149.154.175.50",
+		}
+		defer func() {
+			telegram.DatacenterIPAddrs = orig
+		}()
+
+		// create a new test environment
+		env := newQAEnvironment(telegram.DatacenterIPAddrs...)
+		defer env.Close()
+
+		// add DPI engine to emulate the censorship condition
+		dpi := env.DPIEngine()
+		for _, dc := range telegram.DatacenterIPAddrs {
+			dpi.AddRule(&netem.DPIDropTrafficForServerEndpoint{
+				Logger:          log.Log,
+				ServerIPAddress: dc,
+				ServerPort:      80,
+				ServerProtocol:  layers.IPProtocolTCP,
+			})
+			dpi.AddRule(&netem.DPIDropTrafficForServerEndpoint{
+				Logger:          log.Log,
+				ServerIPAddress: dc,
+				ServerPort:      443,
+				ServerProtocol:  layers.IPProtocolTCP,
+			})
+		}
+
+		env.Do(func() {
+			measurer := telegram.NewExperimentMeasurer(telegram.Config{})
+			measurement := &model.Measurement{}
+			args := &model.ExperimentArgs{
+				Callbacks:   model.NewPrinterCallbacks(log.Log),
+				Measurement: measurement,
+				Session:     &mocks.Session{MockLogger: func() model.Logger { return log.Log }},
+			}
+			err := measurer.Run(context.Background(), args)
+			if err != nil {
+				t.Fatalf("Unexpected error: %s", err)
+			}
+			tk, _ := (measurement.TestKeys).(*telegram.TestKeys)
+			if tk.TelegramWebFailure != nil {
+				t.Fatalf("Unexpected Telegram Web failure %s", *tk.TelegramWebFailure)
+			}
+			if !tk.TelegramHTTPBlocking {
+				t.Fatal("Expected HTTP blocking but got none")
+			}
+			if !tk.TelegramTCPBlocking {
+				t.Fatal("Expected TCP blocking but got none")
+			}
+		})
+	})
+
+	t.Run("with DPI that drops TLS traffic with SNI = web.telegram.org: expect TelegramWebFailure", func(t *testing.T) {
+		// create a new test environment
+		env := newQAEnvironment(telegram.DatacenterIPAddrs...)
+		defer env.Close()
+
+		// add DPI engine to emulate the censorship condition
+		dpi := env.DPIEngine()
+		dpi.AddRule(&netem.DPIResetTrafficForTLSSNI{
+			Logger: log.Log,
+			SNI:    "web.telegram.org",
+		})
+
+		env.Do(func() {
+			measurer := telegram.NewExperimentMeasurer(telegram.Config{})
+			measurement := &model.Measurement{}
+			args := &model.ExperimentArgs{
+				Callbacks:   model.NewPrinterCallbacks(log.Log),
+				Measurement: measurement,
+				Session:     &mocks.Session{MockLogger: func() model.Logger { return log.Log }},
+			}
+			err := measurer.Run(context.Background(), args)
+			if err != nil {
+				t.Fatalf("Unexpected error: %s", err)
+			}
+			tk, _ := (measurement.TestKeys).(*telegram.TestKeys)
+			if tk.TelegramWebFailure == nil {
+				t.Fatalf("Expected Web Failure but got none")
+			}
+			if tk.TelegramHTTPBlocking {
+				t.Fatal("Unexpected HTTP blocking")
+			}
+			if tk.TelegramTCPBlocking {
+				t.Fatal("Unexpected TCP blocking")
+			}
+		})
+	})
 }
