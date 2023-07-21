@@ -1,4 +1,4 @@
-package main
+package oohelperd
 
 //
 // TCP connect (and optionally TLS handshake) measurements
