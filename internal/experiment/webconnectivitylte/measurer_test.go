@@ -34,17 +34,27 @@ func newEnvironment() *netemx.QAEnv {
 
 	env := netemx.NewQAEnv(
 		netemx.QAEnvOptionDNSOverUDPResolvers("8.8.4.4"),
-		netemx.QAEnvOptionHTTPServer("93.184.216.34", netemx.QAEnvDefaultHTTPHandler()),
-		netemx.QAEnvOptionHTTPServer("104.248.30.161", nil),
-		netemx.QAEnvOptionHTTPServer("104.16.248.249", dohServer),
-		netemx.QAEnvOptionHTTPServer("188.166.93.143", &probeService{}),
-		netemx.QAEnvOptionHTTPServer("185.125.188.132", &netemx.GeoIPLookup{}),
+		netemx.QAEnvOptionHTTPServerWithFactory(
+			"93.184.216.34",
+			netemx.QAEnvAlwaysReturnThisHandler(netemx.QAEnvDefaultHTTPHandler()),
+		),
+		netemx.QAEnvOptionHTTPServerWithFactory(
+			"104.248.30.161",
+			testHelperFactory{},
+		),
+		netemx.QAEnvOptionHTTPServerWithFactory(
+			"104.16.248.249",
+			netemx.QAEnvAlwaysReturnThisHandler(dohServer),
+		),
+		netemx.QAEnvOptionHTTPServerWithFactory(
+			"188.166.93.143",
+			netemx.QAEnvAlwaysReturnThisHandler(&probeService{}),
+		),
+		netemx.QAEnvOptionHTTPServerWithFactory(
+			"185.125.188.132",
+			netemx.QAEnvAlwaysReturnThisHandler(&netemx.GeoIPLookup{}),
+		),
 	)
-
-	// create new testhelper handler using the newly created server stack
-	underlyingStack := env.GetServerStack("104.248.30.161")
-	helperHandler := newTestHelper(underlyingStack)
-	env.AddHandler("104.248.30.161", helperHandler)
 
 	// configure default UDP DNS server
 	env.AddRecordToAllResolvers(
@@ -75,8 +85,12 @@ func newEnvironment() *netemx.QAEnv {
 	return env
 }
 
-func newTestHelper(underlying netem.UnderlyingNetwork) *oohelperd.Handler {
-	n := netxlite.Net{Underlying: netemx.GetCustomTProxy(underlying)}
+// testHelperFactory is the factory to create a oohelperd testhelper using the given underlying network.
+type testHelperFactory struct{}
+
+// NewHandler implements QAEnvHTTPHandlerFactory.NewHandler.
+func (f testHelperFactory) NewHandler(net netem.UnderlyingNetwork) http.Handler {
+	n := netxlite.Net{Underlying: netemx.GetCustomTProxy(net)}
 	helperHandler := oohelperd.NewHandler()
 	helperHandler.NewDialer = func(logger model.Logger) model.Dialer {
 		return n.NewDialerWithResolver(logger, n.NewStdlibResolver(logger))

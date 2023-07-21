@@ -36,8 +36,8 @@ type qaEnvConfig struct {
 	// dnsOverUDPResolvers contains the DNS-over-UDP resolvers to create.
 	dnsOverUDPResolvers []string
 
-	// httpServers contains the HTTP servers to create.
-	httpServers map[string]http.Handler
+	// httpServers contains factory functions for the HTTP servers to create.
+	httpServers map[string]QAEnvHTTPHandlerFactory
 
 	// ispResolver is the ISP resolver to use.
 	ispResolver string
@@ -80,16 +80,36 @@ func QAEnvOptionDNSOverUDPResolvers(ipAddrs ...string) QAEnvOption {
 	}
 }
 
-// QAEnvOptionHTTPServer adds the given HTTP server. If you do not set this option
-// we will not create any HTTP server.
-func QAEnvOptionHTTPServer(ipAddr string, handler http.Handler) QAEnvOption {
+// QAEnvHTTPHandlerFactory constructs an [http.Handler] using the given underlying network.
+type QAEnvHTTPHandlerFactory interface {
+	NewHandler(net netem.UnderlyingNetwork) http.Handler
+}
+
+// QAEnvOptionHTTPServerWithFactory adds the given HTTP server as a factory function.
+// If you do not set this option we will not create any HTTP server.
+func QAEnvOptionHTTPServerWithFactory(ipAddr string, factory QAEnvHTTPHandlerFactory) QAEnvOption {
 	runtimex.Assert(net.ParseIP(ipAddr) != nil, "not an IP addr")
-	// TODO: we might want to pass a nil handler first and add another one later
-	// (see: experiment/webconnectivitylte/measurer_test.go)
-	// runtimex.Assert(handler != nil, "passed a nil handler")
+	runtimex.Assert(factory != nil, "passed a nil handler factory")
+
 	return func(config *qaEnvConfig) {
-		config.httpServers[ipAddr] = handler
+		config.httpServers[ipAddr] = factory
 	}
+}
+
+// defaultHTTPHandlerFactory is the default handler factory that just returns a given [http.Handler].
+type defaultHTTPHandlerFactory struct {
+	handler http.Handler
+}
+
+// NewHandler implements QAEnvHTTPHandlerFactory.NewHandler.
+func (f defaultHTTPHandlerFactory) NewHandler(net netem.UnderlyingNetwork) http.Handler {
+	return f.handler
+}
+
+// QAEnvAlwaysReturnThisHandler returns a QAEnvHTTPHandlerFactory such that we can always use the
+// new API that requires a httpHandlerFactory.
+func QAEnvAlwaysReturnThisHandler(handler http.Handler) QAEnvHTTPHandlerFactory {
+	return &defaultHTTPHandlerFactory{handler}
 }
 
 // QAEnvOptionISPResolverAddress sets the ISP's resolver IP address. If you do not set this option
@@ -178,7 +198,7 @@ func NewQAEnv(options ...QAEnvOption) *QAEnv {
 		clientAddress:       QAEnvDefaultClientAddress,
 		clientNICWrapper:    nil,
 		dnsOverUDPResolvers: []string{},
-		httpServers:         map[string]http.Handler{},
+		httpServers:         map[string]QAEnvHTTPHandlerFactory{},
 		ispResolver:         QAEnvDefaultISPResolverAddress,
 		logger:              model.DiscardLogger,
 		netStacks:           map[string]QAEnvNetStackHandler{},
@@ -211,15 +231,6 @@ func NewQAEnv(options ...QAEnvOption) *QAEnv {
 	env.closables = append(env.closables, env.mustNewNetStacks(config)...)
 
 	return env
-}
-
-// AddHandler is used to add another handler at a given server stack after creating the environment.
-// We need this option to use a server stack that has been created during NewQAEnv as an underlying
-// network of a HTTP handler.
-// (see: experiment/webconnectivitylte/measurer_test.go)
-func (env *QAEnv) AddHandler(serverAddr string, handler http.Handler) {
-	serverStack := env.serverStacks[serverAddr]
-	env.closables = append(env.closables, env.serverListen(serverStack, handler, serverAddr)...)
 }
 
 func (env *QAEnv) mustNewISPResolverStack(config *qaEnvConfig) io.Closer {
@@ -301,7 +312,7 @@ func (env *QAEnv) mustNewHTTPServers(config *qaEnvConfig) (closables []io.Closer
 	runtimex.Assert(len(config.dnsOverUDPResolvers) >= 1, "expected at least one DNS resolver")
 	resolver := config.dnsOverUDPResolvers[0]
 
-	for addr, handler := range config.httpServers {
+	for addr, factory := range config.httpServers {
 		// Create the server's TCP/IP stack
 		//
 		// Note: because the stack is created using topology.AddHost, we don't
@@ -317,9 +328,7 @@ func (env *QAEnv) mustNewHTTPServers(config *qaEnvConfig) (closables []io.Closer
 		))
 		env.serverStacks[addr] = stack
 
-		if handler == nil {
-			continue
-		}
+		handler := factory.NewHandler(stack)
 		closables = env.serverListen(stack, handler, addr)
 	}
 	return

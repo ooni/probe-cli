@@ -117,8 +117,14 @@ func qaAddTHDomains(config *netem.DNSConfig) {
 func qaNewEnvironment() *netemx.QAEnv {
 	return netemx.NewQAEnv(
 		netemx.QAEnvOptionDNSOverUDPResolvers("8.8.4.4"),
-		netemx.QAEnvOptionHTTPServer(qaWebServerAddress, netemx.QAEnvDefaultHTTPHandler()),
-		netemx.QAEnvOptionHTTPServer(qaZeroTHOoniOrg, qaNewMockedTestHelper()),
+		netemx.QAEnvOptionHTTPServerWithFactory(
+			qaWebServerAddress,
+			netemx.QAEnvAlwaysReturnThisHandler(netemx.QAEnvDefaultHTTPHandler()),
+		),
+		netemx.QAEnvOptionHTTPServerWithFactory(
+			qaZeroTHOoniOrg,
+			netemx.QAEnvAlwaysReturnThisHandler(qaNewMockedTestHelper()),
+		),
 	)
 }
 
