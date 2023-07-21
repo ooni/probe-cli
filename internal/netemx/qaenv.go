@@ -144,6 +144,9 @@ type QAEnv struct {
 	// clientStack is the client stack to use.
 	clientStack *netem.UNetStack
 
+	// serverStacks are the server stacks to use.
+	serverStacks map[string]*netem.UNetStack
+
 	// closables contains all entities where we have to take care of closing.
 	closables []io.Closer
 
@@ -191,6 +194,7 @@ func NewQAEnv(options ...QAEnvOption) *QAEnv {
 	env := &QAEnv{
 		clientNICWrapper:     config.clientNICWrapper,
 		clientStack:          nil,
+		serverStacks:         make(map[string]*netem.UNetStack),
 		closables:            []io.Closer{},
 		ispResolverConfig:    netem.NewDNSConfig(),
 		dpi:                  netem.NewDPIEngine(config.logger),
