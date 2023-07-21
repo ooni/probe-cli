@@ -22,10 +22,6 @@ type dnsOverGetaddrinfoTransport struct {
 
 	// (OPTIONAL) allows to mock the underlying getaddrinfo call
 	testableLookupANY func(ctx context.Context, domain string) ([]string, string, error)
-
-	// underlying is the OPTIONAL custom [UnderlyingNetwork].
-	// If nil, we will use tproxySingleton() as underlying network.
-	underlying model.UnderlyingNetwork
 }
 
 // NewDNSOverGetaddrinfoTransport creates a new dns-over-getaddrinfo transport.
@@ -108,9 +104,6 @@ func (txp *dnsOverGetaddrinfoTransport) lookupfn() func(ctx context.Context, dom
 	if txp.testableLookupANY != nil {
 		return txp.testableLookupANY
 	}
-	if txp.underlying != nil {
-		return txp.underlying.GetaddrinfoLookupANY
-	}
 	return tproxySingleton().GetaddrinfoLookupANY
 }
 
@@ -119,9 +112,6 @@ func (txp *dnsOverGetaddrinfoTransport) RequiresPadding() bool {
 }
 
 func (txp *dnsOverGetaddrinfoTransport) Network() string {
-	if txp.underlying != nil {
-		return txp.underlying.GetaddrinfoResolverNetwork()
-	}
 	return tproxySingleton().GetaddrinfoResolverNetwork()
 }
 

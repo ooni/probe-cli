@@ -148,10 +148,6 @@ func NewDialerWithoutResolver(dl model.DebugLogger, w ...model.DialerWrapper) mo
 type DialerSystem struct {
 	// timeout is the OPTIONAL timeout (for testing).
 	timeout time.Duration
-
-	// underlying is the OPTIONAL custom [UnderlyingNetwork].
-	// If nil, we will use tproxySingleton() as underlying network.
-	underlying model.UnderlyingNetwork
 }
 
 var _ model.Dialer = &DialerSystem{}
@@ -167,9 +163,6 @@ func (d *DialerSystem) configuredTimeout() time.Duration {
 }
 
 func (d *DialerSystem) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
-	if d.underlying != nil {
-		return d.underlying.DialContext(ctx, d.configuredTimeout(), network, address)
-	}
 	return tproxySingleton().DialContext(ctx, d.configuredTimeout(), network, address)
 }
 

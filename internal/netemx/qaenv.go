@@ -84,9 +84,7 @@ func QAEnvOptionDNSOverUDPResolvers(ipAddrs ...string) QAEnvOption {
 // we will not create any HTTP server.
 func QAEnvOptionHTTPServer(ipAddr string, handler http.Handler) QAEnvOption {
 	runtimex.Assert(net.ParseIP(ipAddr) != nil, "not an IP addr")
-	// TODO: we might want to pass a nil handler first and add another one later
-	// (see: experiment/webconnectivitylte/measurer_test.go)
-	// runtimex.Assert(handler != nil, "passed a nil handler")
+	runtimex.Assert(handler != nil, "passed a nil handler")
 	return func(config *qaEnvConfig) {
 		config.httpServers[ipAddr] = handler
 	}
@@ -163,11 +161,6 @@ type QAEnv struct {
 	topology *netem.StarTopology
 }
 
-// GetServerStack returns the server stack at the given address.
-func (env *QAEnv) GetServerStack(addr string) *netem.UNetStack {
-	return env.serverStacks[addr]
-}
-
 // NewQAEnv creates a new [QAEnv].
 func NewQAEnv(options ...QAEnvOption) *QAEnv {
 	// initialize the configuration
@@ -207,15 +200,6 @@ func NewQAEnv(options ...QAEnvOption) *QAEnv {
 	env.closables = append(env.closables, env.mustNewNetStacks(config)...)
 
 	return env
-}
-
-// AddHandler is used to add another handler at a given server stack after creating the environment.
-// We need this option to use a server stack that has been created during NewQAEnv as an underlying
-// network of a HTTP handler.
-// (see: experiment/webconnectivitylte/measurer_test.go)
-func (env *QAEnv) AddHandler(serverAddr string, handler http.Handler) {
-	serverStack := env.serverStacks[serverAddr]
-	env.closables = append(env.closables, env.serverListen(serverStack, handler, serverAddr)...)
 }
 
 func (env *QAEnv) mustNewISPResolverStack(config *qaEnvConfig) io.Closer {
@@ -311,42 +295,34 @@ func (env *QAEnv) mustNewHTTPServers(config *qaEnvConfig) (closables []io.Closer
 				RightToLeftDelay: time.Millisecond,
 			},
 		))
-		env.serverStacks[addr] = stack
 
-		if handler == nil {
-			continue
+		ipAddr := net.ParseIP(addr)
+		runtimex.Assert(ipAddr != nil, "invalid IP addr")
+
+		// listen for HTTP
+		{
+			listener := runtimex.Try1(stack.ListenTCP("tcp", &net.TCPAddr{IP: ipAddr, Port: 80}))
+			srv := &http.Server{Handler: handler}
+			closables = append(closables, srv)
+			go srv.Serve(listener)
 		}
-		closables = env.serverListen(stack, handler, addr)
-	}
-	return
-}
 
-func (env *QAEnv) serverListen(stack *netem.UNetStack, handler http.Handler, addr string) (closables []io.Closer) {
-	ipAddr := net.ParseIP(addr)
-	runtimex.Assert(ipAddr != nil, "invalid IP addr")
+		// listen for HTTPS
+		{
+			listener := runtimex.Try1(stack.ListenTCP("tcp", &net.TCPAddr{IP: ipAddr, Port: 443}))
+			srv := &http.Server{TLSConfig: stack.ServerTLSConfig(), Handler: handler}
+			closables = append(closables, srv)
+			go srv.ServeTLS(listener, "", "")
+		}
 
-	// listen for HTTP
-	{
-		listener := runtimex.Try1(stack.ListenTCP("tcp", &net.TCPAddr{IP: ipAddr, Port: 80}))
-		srv := &http.Server{Handler: handler}
-		closables = append(closables, srv)
-		go srv.Serve(listener)
-	}
+		// listen for HTTP3
+		{
+			listener := runtimex.Try1(stack.ListenUDP("udp", &net.UDPAddr{IP: ipAddr, Port: 443}))
+			srv := &http3.Server{TLSConfig: stack.ServerTLSConfig(), Handler: handler}
+			closables = append(closables, listener, srv)
+			go srv.Serve(listener)
 
-	// listen for HTTPS
-	{
-		listener := runtimex.Try1(stack.ListenTCP("tcp", &net.TCPAddr{IP: ipAddr, Port: 443}))
-		srv := &http.Server{TLSConfig: stack.ServerTLSConfig(), Handler: handler}
-		closables = append(closables, srv)
-		go srv.ServeTLS(listener, "", "")
-	}
-
-	// listen for HTTP3
-	{
-		listener := runtimex.Try1(stack.ListenUDP("udp", &net.UDPAddr{IP: ipAddr, Port: 443}))
-		srv := &http3.Server{TLSConfig: stack.ServerTLSConfig(), Handler: handler}
-		closables = append(closables, listener, srv)
-		go srv.Serve(listener)
+		}
 	}
 	return
 }
