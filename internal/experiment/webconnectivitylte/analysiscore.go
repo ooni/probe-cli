@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/url"
 
+	"github.com/ooni/probe-cli/v3/internal/geoipx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -98,7 +99,7 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 	// not going to use any form of locking here.
 
 	// these functions compute the value of XBlockingFlags
-	tk.analysisDNSToplevel(logger)
+	tk.analysisDNSToplevel(logger, model.GeoIPASNLookupperFunc(geoipx.LookupASN))
 	tk.analysisTCPIPToplevel(logger)
 	tk.analysisTLSToplevel(logger)
 	tk.analysisHTTPToplevel(logger)
