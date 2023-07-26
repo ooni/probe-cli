@@ -8,7 +8,6 @@ import (
 	"net"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/geoipx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -55,12 +54,12 @@ const (
 //
 // We explain how XDNSFlags is determined in the documentation of
 // the functions that this function calls to do its job.
-func (tk *TestKeys) analysisDNSToplevel(logger model.Logger) {
+func (tk *TestKeys) analysisDNSToplevel(logger model.Logger, lookupper model.GeoIPASNLookupper) {
 	tk.analysisDNSExperimentFailure()
 	tk.analysisDNSBogon(logger)
 	tk.analysisDNSDuplicateResponses(logger)
 	tk.analysisDNSUnexpectedFailure(logger)
-	tk.analysisDNSUnexpectedAddrs(logger)
+	tk.analysisDNSUnexpectedAddrs(logger, lookupper)
 	if tk.DNSFlags != 0 {
 		logger.Warn("DNSConsistency: inconsistent")
 		tk.DNSConsistency = "inconsistent"
@@ -223,7 +222,10 @@ func (tk *TestKeys) analysisDNSUnexpectedFailure(logger model.Logger) {
 // analysisDNSUnexpectedAddrs computes the AnalysisDNSUnexpectedAddrs flags. This
 // algorithm builds upon the original DNSDiff algorithm by introducing an additional
 // TLS based heuristic for determining whether an IP address was legit.
-func (tk *TestKeys) analysisDNSUnexpectedAddrs(logger model.Logger) {
+func (tk *TestKeys) analysisDNSUnexpectedAddrs(
+	logger model.Logger,
+	lookupper model.GeoIPASNLookupper,
+) {
 	// make sure we have control before proceeding futher
 	if tk.Control == nil || tk.ControlRequest == nil {
 		return
@@ -305,7 +307,7 @@ func (tk *TestKeys) analysisDNSUnexpectedAddrs(logger model.Logger) {
 
 	// as a last resort, accept the addresses without an handshake whose
 	// ASN overlaps with ASNs resolved by the TH
-	differentASNs := tk.analysisDNSDiffASN(logger, withoutHandshake, thAddrs)
+	differentASNs := tk.analysisDNSDiffASN(logger, withoutHandshake, thAddrs, lookupper)
 	if len(differentASNs) <= 0 {
 		return
 	}
@@ -352,6 +354,7 @@ func (tk *TestKeys) analysisDNSDiffASN(
 	logger model.Logger,
 	probeAddrs,
 	thAddrs []string,
+	lookupper model.GeoIPASNLookupper,
 ) (result map[string]uint) {
 	const (
 		inProbe = 1 << iota
@@ -361,12 +364,12 @@ func (tk *TestKeys) analysisDNSDiffASN(
 	uniqueAddrs := make(map[string]uint)
 	asnToFlags := make(map[uint]int)
 	for _, addr := range probeAddrs {
-		asn, _, _ := geoipx.LookupASN(addr)
+		asn, _, _ := lookupper.LookupASN(addr)
 		asnToFlags[asn] |= inProbe // including the zero ASN that means unknown
 		uniqueAddrs[addr] = asn
 	}
 	for _, addr := range thAddrs {
-		asn, _, _ := geoipx.LookupASN(addr)
+		asn, _, _ := lookupper.LookupASN(addr)
 		asnToFlags[asn] |= inTH // including the zero ASN that means unknown
 		uniqueAddrs[addr] = asn
 	}

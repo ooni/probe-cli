@@ -10,3 +10,9 @@ type LocationProvider interface {
 	ProbeNetworkName() string
 	ResolverIP() string
 }
+
+// LocationASN contains ASN information related to a location.
+type LocationASN struct {
+	ASNumber     uint
+	Organization string
+}
