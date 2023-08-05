@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/apex/log"
-	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/experiment/riseupvpn"
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
@@ -238,20 +237,18 @@ func TestGood(t *testing.T) {
 	if tk.APIFailure != nil {
 		t.Fatal("unexpected ApiFailure")
 	}
-	if tk.APIStatus != "ok" {
-		t.Fatal("unexpected ApiStatus")
-	}
 	if tk.CACertStatus != true {
 		t.Fatal("unexpected CaCertStatus")
 	}
-	if tk.FailingGateways != nil {
-		t.Fatal("unexpected FailingGateways value")
+
+	hasOpenvpn1 := false
+	for _, tcpConnect := range tk.TCPConnect {
+		if tcpConnect.IP == "234.345.234.345" {
+			hasOpenvpn1 = true
+		}
 	}
-	if tk.TransportStatus == nil {
-		t.Fatal("unexpected nil TransportStatus struct ")
-	}
-	if tk.TransportStatus["openvpn"] != "ok" {
-		t.Fatal("unexpected openvpn transport status")
+	if !hasOpenvpn1 {
+		t.Fatalf("Gateway tests should run %t", hasOpenvpn1)
 	}
 }
 
@@ -301,18 +298,11 @@ func TestUpdateWithMixedResults(t *testing.T) {
 			HTTPResponseStatus: 200,
 		},
 	})
-	if tk.APIStatus != "blocked" {
-		t.Fatal("ApiStatus should be blocked")
-	}
+
 	if len(tk.APIFailure) > 0 && tk.APIFailure[0] != netxlite.FailureEOFError {
 		t.Fatal("invalid ApiFailure")
 	}
-	if tk.FailingGateways != nil {
-		t.Fatal("invalid FailingGateways")
-	}
-	if tk.TransportStatus != nil {
-		t.Fatal("invalid TransportStatus")
-	}
+
 }
 
 func TestInvalidCaCert(t *testing.T) {
@@ -359,17 +349,6 @@ func TestInvalidCaCert(t *testing.T) {
 	if tk.CACertStatus == true {
 		t.Fatal("unexpected CaCertStatus")
 	}
-	if tk.APIStatus != "ok" {
-		t.Fatal("ApiStatus should be ok")
-	}
-
-	if tk.FailingGateways != nil {
-		t.Fatal("invalid FailingGateways")
-	}
-
-	if tk.TransportStatus == nil || tk.TransportStatus["openvpn"] != "ok" || tk.TransportStatus["obfs4"] != "ok" {
-		t.Fatal("invalid TransportStatus: " + fmt.Sprint(tk.TransportStatus))
-	}
 }
 
 func TestFailureCaCertFetch(t *testing.T) {
@@ -387,9 +366,6 @@ func TestFailureCaCertFetch(t *testing.T) {
 	if tk.CACertStatus != false {
 		t.Fatal("invalid CACertStatus ")
 	}
-	if tk.APIStatus != "ok" {
-		t.Fatal("invalid ApiStatus")
-	}
 
 	if tk.APIFailure == nil || len(tk.APIFailure) != 1 || tk.APIFailure[0] != io.EOF.Error() {
 		t.Fatal("ApiFailure should not be null" + fmt.Sprint(tk.APIFailure))
@@ -397,11 +373,10 @@ func TestFailureCaCertFetch(t *testing.T) {
 	if len(tk.Requests) == 1 {
 		t.Fatal("Too less requests, expected to run all API requests")
 	}
-	if tk.FailingGateways != nil {
-		t.Fatal("invalid FailingGateways")
-	}
-	if tk.TransportStatus == nil || tk.TransportStatus["openvpn"] != "ok" || tk.TransportStatus["obfs4"] != "ok" {
-		t.Fatal("invalid TransportStatus: " + fmt.Sprint(tk.TransportStatus))
+	for _, tcpConnect := range tk.TCPConnect {
+		if tcpConnect.IP == openvpnurl1 || tcpConnect.IP == openvpnurl2 || tcpConnect.IP == obfs4url1 || tcpConnect.IP == obfs4url2 {
+			t.Fatal("No gateaway tests should be run if API fails")
+		}
 	}
 }
 
@@ -426,10 +401,6 @@ func TestFailureEipServiceBlocked(t *testing.T) {
 				t.Fatal("Failure for " + entry.Request.URL + " should not be null")
 			}
 		}
-	}
-
-	if tk.APIStatus != "blocked" {
-		t.Fatal("invalid ApiStatus")
 	}
 
 	if tk.APIFailure == nil {
@@ -460,9 +431,6 @@ func TestFailureProviderUrlBlocked(t *testing.T) {
 	if tk.CACertStatus != true {
 		t.Fatal("invalid CACertStatus ")
 	}
-	if tk.APIStatus != "ok" {
-		t.Fatal("invalid ApiStatus")
-	}
 
 	if tk.APIFailure == nil {
 		t.Fatal("ApiFailure should not be null")
@@ -492,10 +460,6 @@ func TestFailureGeoIpServiceBlocked(t *testing.T) {
 		}
 	}
 
-	if tk.APIStatus != "ok" {
-		t.Fatal("invalid ApiStatus")
-	}
-
 	if tk.APIFailure == nil {
 		t.Fatal("ApiFailure should not be null")
 	}
@@ -517,203 +481,19 @@ func TestFailureGateway1TransportNOK(t *testing.T) {
 		t.Fatal("invalid CACertStatus ")
 	}
 
-	if tk.FailingGateways == nil || len(tk.FailingGateways) != 1 {
-		t.Fatal("unexpected amount of failing gateways")
-	}
-
-	gw := tk.FailingGateways[0]
-	if gw.IP != "234.345.234.345" {
-		t.Fatal("invalid failed gateway ip: " + fmt.Sprint(gw.IP))
-	}
-	if gw.Port != 443 {
-		t.Fatal("invalid failed gateway port: " + fmt.Sprint(gw.Port))
-	}
-	if gw.TransportType != "openvpn" {
-		t.Fatal("invalid failed transport type: " + fmt.Sprint(gw.TransportType))
-	}
-
-	if tk.APIStatus == "blocked" {
-		t.Fatal("invalid ApiStatus")
-	}
-
-	if tk.APIFailure != nil {
-		t.Fatal("ApiFailure should be null")
-	}
-
-	if tk.TransportStatus == nil || tk.TransportStatus["openvpn"] != "blocked" {
-		t.Fatal("invalid TransportStatus: " + fmt.Sprint(tk.TransportStatus))
-	}
-
-	if tk.TransportStatus == nil || tk.TransportStatus["obfs4"] == "blocked" {
-		t.Fatal("invalid TransportStatus: " + fmt.Sprint(tk.TransportStatus))
-	}
-}
-
-func TestFailureGateway1TransportOK(t *testing.T) {
-	eipService, err := riseupvpn.DecodeEIP3(eipservice)
-	if err != nil {
-		t.Fatal("Preconditions for the test are not met.")
-	}
-
-	//add obfs4 capability to 1. gateway
-	addObfs4Capability(&eipService.Gateways[0])
-
-	eipservicejson, err := json.Marshal(eipService)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(string(eipservicejson))
-
-	requestResponseMap := map[string]string{
-		eipserviceurl: string(eipservicejson),
-		providerurl:   provider,
-		geoserviceurl: geoservice,
-		cacerturl:     cacert,
-		openvpnurl1:   "",
-		openvpnurl2:   "",
-		obfs4url1:     "",
-		obfs4url2:     "",
-	}
-
-	measurement := runDefaultMockTest(t, generateMockGetter(requestResponseMap, map[string]bool{
-		cacerturl:     true,
-		eipserviceurl: true,
-		providerurl:   true,
-		geoserviceurl: true,
-		openvpnurl1:   false, // failed gateway
-		openvpnurl2:   true,
-		obfs4url1:     true,
-		obfs4url2:     true,
-	}))
-	tk := measurement.TestKeys.(*riseupvpn.TestKeys)
-	if tk.CACertStatus != true {
-		t.Fatal("invalid CACertStatus ")
-	}
-
-	if tk.FailingGateways == nil || len(tk.FailingGateways) != 1 {
-		t.Fatal("unexpected amount of failing gateways")
-	}
-
-	gw := tk.FailingGateways[0]
-	if gw.IP != "234.345.234.345" {
-		t.Fatal("invalid failed gateway ip: " + fmt.Sprint(gw.IP))
-	}
-	if gw.Port != 443 {
-		t.Fatal("invalid failed gateway port: " + fmt.Sprint(gw.Port))
-	}
-	if gw.TransportType != "openvpn" {
-		t.Fatal("invalid failed transport type: " + fmt.Sprint(gw.TransportType))
-	}
-
-	if tk.APIStatus == "blocked" {
-		t.Fatal("invalid ApiStatus")
-	}
-
-	if tk.APIFailure != nil {
-		t.Fatal("ApiFailure should be null")
-	}
-
-	if tk.TransportStatus == nil || tk.TransportStatus["openvpn"] == "blocked" {
-		t.Fatal("invalid TransportStatus: " + fmt.Sprint(tk.TransportStatus))
-	}
-
-	if tk.TransportStatus == nil || tk.TransportStatus["obfs4"] == "blocked" {
-		t.Fatal("invalid TransportStatus: " + fmt.Sprint(tk.TransportStatus))
-	}
-}
-
-func TestFailureTransport(t *testing.T) {
-	measurement := runDefaultMockTest(t, generateDefaultMockGetter(map[string]bool{
-		cacerturl:     true,
-		eipserviceurl: true,
-		providerurl:   true,
-		geoserviceurl: true,
-		openvpnurl1:   false,
-		openvpnurl2:   false,
-		obfs4url1:     false,
-	}))
-	tk := measurement.TestKeys.(*riseupvpn.TestKeys)
-
-	if tk.TransportStatus == nil || tk.TransportStatus["openvpn"] != "blocked" {
-		t.Fatal("invalid TransportStatus: " + fmt.Sprint(tk.TransportStatus))
-	}
-
-	if tk.TransportStatus == nil || tk.TransportStatus["obfs4"] != "blocked" {
-		t.Fatal("invalid TransportStatus: " + fmt.Sprint(tk.TransportStatus))
-	}
-}
-
-func TestMissingTransport(t *testing.T) {
-	eipService, err := riseupvpn.DecodeEIP3(eipservice)
-	if err != nil {
-		t.Fatal("Preconditions for the test are not met.")
-	}
-
-	//remove obfs4 capability from 2. gateway so that our
-	//mock provider supports only openvpn
-	index := -1
-	transports := eipService.Gateways[1].Capabilities.Transport
-	for i, transport := range transports {
-		if transport.Type == "obfs4" {
-			index = i
-			break
+	for _, tcpConnect := range tk.TCPConnect {
+		if !tcpConnect.Status.Success {
+			if tcpConnect.IP != "234.345.234.345" {
+				t.Fatal("invalid failed gateway ip: " + fmt.Sprint(tcpConnect.IP))
+			}
+			if tcpConnect.Port != 443 {
+				t.Fatal("invalid failed gateway port: " + fmt.Sprint(tcpConnect.Port))
+			}
 		}
 	}
-	if index == -1 {
-		t.Fatal("Preconditions for the test are not met. Default eipservice string should contain obfs4 transport.")
-	}
 
-	transports[index] = transports[len(transports)-1]
-	transports = transports[:len(transports)-1]
-	eipService.Gateways[1].Capabilities.Transport = transports
-	eipservicejson, err := json.Marshal(eipservice)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	requestResponseMap := map[string]string{
-		eipserviceurl: string(eipservicejson),
-		providerurl:   provider,
-		geoserviceurl: geoservice,
-		cacerturl:     cacert,
-		openvpnurl1:   "",
-		openvpnurl2:   "",
-		obfs4url1:     "",
-	}
-
-	measurer := riseupvpn.Measurer{
-		Config: riseupvpn.Config{},
-		Getter: generateMockGetter(requestResponseMap, map[string]bool{
-			cacerturl:     true,
-			eipserviceurl: true,
-			providerurl:   true,
-			geoserviceurl: true,
-			openvpnurl1:   true,
-			openvpnurl2:   true,
-			obfs4url1:     false,
-		}),
-	}
-
-	ctx := context.Background()
-	sess := &mocks.Session{MockLogger: func() model.Logger { return log.Log }}
-	measurement := new(model.Measurement)
-	callbacks := model.NewPrinterCallbacks(log.Log)
-	args := &model.ExperimentArgs{
-		Callbacks:   callbacks,
-		Measurement: measurement,
-		Session:     sess,
-	}
-	err = measurer.Run(ctx, args)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tk := measurement.TestKeys.(*riseupvpn.TestKeys)
-	if tk.TransportStatus == nil || tk.TransportStatus["openvpn"] != "blocked" {
-		t.Fatal("invalid TransportStatus: " + fmt.Sprint(tk.TransportStatus))
-	}
-
-	if _, found := tk.TransportStatus["obfs"]; found {
-		t.Fatal("invalid TransportStatus: " + fmt.Sprint(tk.TransportStatus))
+	if tk.APIFailure != nil {
+		t.Fatal("ApiFailure should be null")
 	}
 }
 
@@ -754,12 +534,10 @@ func TestIgnoreOverloadedGateways(t *testing.T) {
 
 	tk := measurement.TestKeys.(*riseupvpn.TestKeys)
 
-	if tk.TransportStatus == nil || tk.TransportStatus["openvpn"] == "blocked" || tk.TransportStatus["obfs"] == "blocked" {
-		t.Fatal("invalid TransportStatus: " + fmt.Sprint(tk.TransportStatus))
-	}
-
-	if tk.FailingGateways != nil {
-		t.Fatal("unexpected amount of failing gateways. Overloaded gateways shouldn't be tested. " + fmt.Sprint(tk.FailingGateways))
+	for _, tcpConnect := range tk.TCPConnect {
+		if !tcpConnect.Status.Success {
+			t.Fatal("unexpected failing tcpconnect. Overloaded gateways shouldn't be tested. " + fmt.Sprint(tcpConnect))
+		}
 	}
 }
 
@@ -809,13 +587,20 @@ func TestIgnoreLocationsWithFewObfs4Bridges(t *testing.T) {
 
 	tk := measurement.TestKeys.(*riseupvpn.TestKeys)
 
-	if tk.TransportStatus == nil || tk.TransportStatus["openvpn"] == "blocked" || tk.TransportStatus["obfs"] == "blocked" {
-		t.Fatal("invalid TransportStatus: " + fmt.Sprint(tk.TransportStatus))
+	for _, tcpConnect := range tk.TCPConnect {
+		if tcpConnect.IP == "234.345.234.345" { // Seattle
+			t.Fatal("Locations with few gateways should be ignored")
+		}
 	}
+	/*
+		if tk.TransportStatus == nil || tk.TransportStatus["openvpn"] == "blocked" || tk.TransportStatus["obfs"] == "blocked" {
+			t.Fatal("invalid TransportStatus: " + fmt.Sprint(tk.TransportStatus))
+		}
 
-	if tk.FailingGateways != nil {
-		t.Fatal("unexpected amount of failing gateways. Only locations under test should be evaluated." + fmt.Sprint(tk.FailingGateways))
-	}
+		if tk.FailingGateways != nil {
+			t.Fatal("unexpected amount of failing gateways. Only locations under test should be evaluated." + fmt.Sprint(tk.FailingGateways))
+		}
+	*/
 }
 
 func TestIgnoreGatewaysNotIncludedInGeoAPIResponse(t *testing.T) {
@@ -859,10 +644,16 @@ func TestIgnoreGatewaysNotIncludedInGeoAPIResponse(t *testing.T) {
 
 	tk := measurement.TestKeys.(*riseupvpn.TestKeys)
 
-	if tk.FailingGateways != nil {
-		t.Fatal("unexpected amount of failing gateways. " + fmt.Sprint(tk.FailingGateways))
+	for _, tcpConnect := range tk.TCPConnect {
+		if tcpConnect.IP == "123.12.123.11" { // Seattle
+			t.Fatal("Locations with that are not part of the geoip response should be ignored")
+		}
 	}
-
+	/*
+		if tk.FailingGateways != nil {
+			t.Fatal("unexpected amount of failing gateways. " + fmt.Sprint(tk.FailingGateways))
+		}
+	*/
 }
 
 func TestHandleInvalidGeoAPIResponse(t *testing.T) {
@@ -902,10 +693,10 @@ func TestHandleInvalidGeoAPIResponse(t *testing.T) {
 
 	tk := measurement.TestKeys.(*riseupvpn.TestKeys)
 
-	if tk.FailingGateways == nil || len(tk.FailingGateways) != 2 {
-		t.Fatal("unexpected amount of failing gateways. " + fmt.Sprint(tk.FailingGateways))
-	}
-
+	/*	if tk.FailingGateways == nil || len(tk.FailingGateways) != 2 {
+			t.Fatal("unexpected amount of failing gateways. " + fmt.Sprint(tk.FailingGateways))
+		}
+	*/
 	foundFailure := false
 	for _, failure := range tk.APIFailure {
 		if failure == "invalid_geoservice_response" {
@@ -919,102 +710,15 @@ func TestHandleInvalidGeoAPIResponse(t *testing.T) {
 	}
 }
 
-func TestSummaryKeysInvalidType(t *testing.T) {
+func TestSummaryKeysAlwaysReturnIsAnomalyFalse(t *testing.T) {
 	measurement := new(model.Measurement)
 	m := &riseupvpn.Measurer{}
-	_, err := m.GetSummaryKeys(measurement)
-	if err.Error() != "invalid test keys type" {
-		t.Fatal("not the error we expected")
+	result, err := m.GetSummaryKeys(measurement)
+	if err != nil {
+		t.Fatal("GetSummaryKeys should never return an error")
 	}
-}
-
-func TestSummaryKeysWorksAsIntended(t *testing.T) {
-	tests := []struct {
-		tk riseupvpn.TestKeys
-		sk riseupvpn.SummaryKeys
-	}{{
-		tk: riseupvpn.TestKeys{
-			APIStatus:       "blocked",
-			CACertStatus:    true,
-			FailingGateways: nil,
-			TransportStatus: nil,
-		},
-		sk: riseupvpn.SummaryKeys{
-			APIBlocked:      true,
-			ValidCACert:     true,
-			IsAnomaly:       true,
-			TransportStatus: nil,
-			FailingGateways: 0,
-		},
-	}, {
-		tk: riseupvpn.TestKeys{
-			APIStatus:       "ok",
-			CACertStatus:    false,
-			FailingGateways: nil,
-			TransportStatus: nil,
-		},
-		sk: riseupvpn.SummaryKeys{
-			ValidCACert:     false,
-			IsAnomaly:       true,
-			FailingGateways: 0,
-			TransportStatus: nil,
-		},
-	}, {
-		tk: riseupvpn.TestKeys{
-			APIStatus:    "ok",
-			CACertStatus: true,
-			FailingGateways: []riseupvpn.GatewayConnection{{
-				IP:            "1.1.1.1",
-				Port:          443,
-				TransportType: "obfs4",
-			}},
-			TransportStatus: map[string]string{
-				"obfs4":   "blocked",
-				"openvpn": "ok",
-			},
-		},
-		sk: riseupvpn.SummaryKeys{
-			FailingGateways: 1,
-			IsAnomaly:       true,
-			ValidCACert:     true,
-			TransportStatus: map[string]string{
-				"obfs4":   "blocked",
-				"openvpn": "ok",
-			},
-		},
-	}, {
-		tk: riseupvpn.TestKeys{
-			APIStatus:       "ok",
-			CACertStatus:    true,
-			FailingGateways: nil,
-			TransportStatus: map[string]string{
-				"openvpn": "ok",
-			},
-		},
-		sk: riseupvpn.SummaryKeys{
-			ValidCACert:     true,
-			IsAnomaly:       false,
-			FailingGateways: 0,
-			TransportStatus: map[string]string{
-				"openvpn": "ok",
-			},
-		},
-	},
-	}
-	for idx, tt := range tests {
-		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
-			m := &riseupvpn.Measurer{}
-			measurement := &model.Measurement{TestKeys: &tt.tk}
-			got, err := m.GetSummaryKeys(measurement)
-			if err != nil {
-				t.Fatal(err)
-				return
-			}
-			sk := got.(riseupvpn.SummaryKeys)
-			if diff := cmp.Diff(tt.sk, sk); diff != "" {
-				t.Fatal(diff)
-			}
-		})
+	if result.(riseupvpn.SummaryKeys).IsAnomaly {
+		t.Fatal("GetSummaryKeys should never return IsAnomaly true")
 	}
 }
 
@@ -1077,6 +781,7 @@ func generateMockGetter(requestResponse map[string]string, responseStatus map[st
 						Value: responseBody,
 					},
 					BodyIsTruncated: false,
+					Code:            responseStatus,
 				}},
 			},
 			TCPConnect: []tracex.TCPConnectEntry{tcpConnect},
@@ -1125,9 +830,9 @@ func addObfs4Capability(gateway *riseupvpn.GatewayV3) {
 	gateway.Capabilities.Transport = transports
 }
 
-func addGateway(service *riseupvpn.EipService, host string, ipAddress string, location string) {
+func addGateway(service *riseupvpn.EipServiceV3, host string, ipAddress string, location string) {
 	gateway := riseupvpn.GatewayV3{
-		Capabilities: riseupvpn.Capabilities{},
+		Capabilities: riseupvpn.CapabilitiesV3{},
 		Host:         host,
 		IPAddress:    ipAddress,
 		Location:     location,
