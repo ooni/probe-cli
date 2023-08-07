@@ -114,6 +114,9 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 			MockClose: func() error {
 				return nil
 			},
+			MockSetReadBuffer: func(n int) error {
+				return nil
+			},
 		}
 		listener := &mocks.UDPListener{
 			MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
@@ -225,6 +228,9 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 				return nil, mockedErr
 			},
 			MockClose: func() error {
+				return nil
+			},
+			MockSetReadBuffer: func(n int) error {
 				return nil
 			},
 		}

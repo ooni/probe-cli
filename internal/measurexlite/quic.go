@@ -60,7 +60,7 @@ func (tx *Trace) OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn
 
 	state := tls.ConnectionState{}
 	if qconn != nil {
-		state = qconn.ConnectionState().TLS.ConnectionState
+		state = qconn.ConnectionState().TLS
 	}
 
 	select {

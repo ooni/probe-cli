@@ -93,7 +93,7 @@ func (h *QUICDialerSaver) CloseIdleConnections() {
 
 // quicConnectionState returns the ConnectionState of a QUIC Session.
 func quicConnectionState(sess quic.EarlyConnection) tls.ConnectionState {
-	return sess.ConnectionState().TLS.ConnectionState
+	return sess.ConnectionState().TLS
 }
 
 // UDPListenerSaver is a UDPListener that also implements saving events.

@@ -81,7 +81,7 @@ func TestQUICDialerSaver(t *testing.T) {
 			returnedConn := &mocks.QUICEarlyConnection{
 				MockConnectionState: func() quic.ConnectionState {
 					cs := quic.ConnectionState{}
-					cs.TLS.ConnectionState.CipherSuite = tls.TLS_RSA_WITH_RC4_128_SHA
+					cs.TLS.CipherSuite = tls.TLS_RSA_WITH_RC4_128_SHA
 					cs.TLS.NegotiatedProtocol = "h3"
 					cs.TLS.PeerCertificates = []*x509.Certificate{{
 						Raw: []byte{1, 2, 3, 4},

@@ -60,7 +60,7 @@ type QUICEarlyConnection struct {
 	MockHandshakeComplete func() <-chan struct{}
 	MockNextConnection    func() quic.Connection
 	MockSendMessage       func(b []byte) error
-	MockReceiveMessage    func() ([]byte, error)
+	MockReceiveMessage    func(ctx context.Context) ([]byte, error)
 }
 
 var _ quic.EarlyConnection = &QUICEarlyConnection{}
@@ -137,8 +137,8 @@ func (s *QUICEarlyConnection) SendMessage(b []byte) error {
 }
 
 // ReceiveMessage calls MockReceiveMessage.
-func (s *QUICEarlyConnection) ReceiveMessage() ([]byte, error) {
-	return s.MockReceiveMessage()
+func (s *QUICEarlyConnection) ReceiveMessage(ctx context.Context) ([]byte, error) {
+	return s.MockReceiveMessage(ctx)
 }
 
 // UDPLikeConn is an UDP conn used by QUIC.

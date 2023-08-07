@@ -105,7 +105,7 @@ func dialQUIC(ctx context.Context, address string,
 	// we returned in the previous chapters.
 	//
 	// ```Go
-	return qconn, qconn.ConnectionState().TLS.ConnectionState, nil
+	return qconn, qconn.ConnectionState().TLS, nil
 }
 
 // ```

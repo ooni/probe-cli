@@ -274,12 +274,13 @@ func TestQUICEarlyConnection(t *testing.T) {
 
 	t.Run("ReceiveMessage", func(t *testing.T) {
 		expected := errors.New("mocked error")
+		ctx := context.Background()
 		qconn := &QUICEarlyConnection{
-			MockReceiveMessage: func() ([]byte, error) {
+			MockReceiveMessage: func(ctx context.Context) ([]byte, error) {
 				return nil, expected
 			},
 		}
-		b, err := qconn.ReceiveMessage()
+		b, err := qconn.ReceiveMessage(ctx)
 		if !errors.Is(err, expected) {
 			t.Fatal("not the error we expected", err)
 		}

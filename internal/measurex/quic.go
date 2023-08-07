@@ -119,7 +119,7 @@ func (qh *quicDialerDB) DialContext(ctx context.Context, address string,
 	sess, err := dialer.DialContext(ctx, address, tlsConfig, quicConfig)
 	if err == nil {
 		<-sess.HandshakeComplete() // robustness (the dialer already does that)
-		state = sess.ConnectionState().TLS.ConnectionState
+		state = sess.ConnectionState().TLS
 	}
 	finished := time.Since(qh.begin).Seconds()
 	qh.db.InsertIntoQUICHandshake(&QUICTLSHandshakeEvent{

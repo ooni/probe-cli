@@ -119,7 +119,7 @@ func (f *quicHandshakeFunc) Apply(
 	var tlsState tls.ConnectionState
 	if quicConn != nil {
 		closerConn = &quicCloserConn{quicConn}
-		tlsState = quicConn.ConnectionState().TLS.ConnectionState // only quicConn can be nil
+		tlsState = quicConn.ConnectionState().TLS // only quicConn can be nil
 	}
 
 	// possibly track established conn for late close
