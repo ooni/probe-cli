@@ -32,7 +32,7 @@ const (
 
 const (
 	testName    = "quicping"
-	testVersion = "0.1.0"
+	testVersion = "0.1.1"
 )
 
 // Config contains the experiment configuration.
