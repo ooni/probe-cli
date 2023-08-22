@@ -3,69 +3,39 @@ package netemx_test
 import (
 	"context"
 	"net/http"
+	"os"
 	"testing"
 
+	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/randx"
 )
 
-// NewEnvironment creates a new QA environment. This function
-// calls [runtimex.PanicOnError] in case of failure.
-func NewEnvironment() *netemx.Environment {
-	return netemx.NewEnvironment(clientConf(), serverConf())
-}
-
-// dnsConf creates the configuration for the DNS server
-func dnsConf() *netem.DNSConfig {
-	dnsConfig := netem.NewDNSConfig()
-	dnsConfig.AddRecord(
-		"www.example.com",
-		"private.example.com", // CNAME
-		"10.0.17.1",
-		"10.0.17.2",
-		"10.0.17.3",
-	)
-	dnsConfig.AddRecord(
-		"quad8.com",
-		"", // CNAME
-		"8.8.8.8",
-	)
-	return dnsConfig
-}
-
-// clientConf creates the configuration for the client in the topology
-func clientConf() *netemx.ClientConfig {
-	return &netemx.ClientConfig{
-		DNSConfig: dnsConf(),
-	}
-}
-
-// serverConf creates the configuration for the server in the topology
-func serverConf() *netemx.ServersConfig {
-	s := netemx.ConfigServerStack{
-		ServerAddr:  "8.8.8.8",
-		HTTPServers: []netemx.ConfigHTTPServer{{Port: 443}, {Port: 443, QUIC: true}},
-	}
-	return &netemx.ServersConfig{
-		DNSConfig: dnsConf(),
-		Servers:   []netemx.ConfigServerStack{s},
-	}
-}
-
-// TestWithCustomTProxy ensures that we can use a [netem.UnderlyingNetwork] to
-// hijack [netxlite] function calls to use TCP/IP in userspace.
-func TestWithCustomTProxy(t *testing.T) {
+// TestQAEnv ensures that we can use a [netemx.QAEnv] to hijack [netxlite] function calls.
+func TestQAEnv(t *testing.T) {
 
 	// Here we're testing that:
 	//
 	// 1. we can get the expected private answer for www.example.com, meaning that
 	// we are using the userspace TCP/IP stack defined by [Environment].
 	t.Run("we can hijack getaddrinfo lookups", func(t *testing.T) {
-		env := NewEnvironment()
+		// create QA env
+		env := netemx.NewQAEnv()
 		defer env.Close()
+
+		// configure DNS
+		env.AddRecordToAllResolvers(
+			"www.example.com",
+			"netem.example.com", // CNAME
+			"10.0.17.1",
+			"10.0.17.2",
+			"10.0.17.3",
+		)
+
 		env.Do(func() {
 			// create stdlib resolver, which will use the underlying client stack
 			// GetaddrinfoLookupANY method for the DNS lookup
@@ -103,8 +73,19 @@ func TestWithCustomTProxy(t *testing.T) {
 	// If all of this works, it means we're using the userspace TCP/IP
 	// stack exported by the [Environment] struct.
 	t.Run("we can hijack HTTPS requests", func(t *testing.T) {
-		env := NewEnvironment()
+		// create QA env
+		env := netemx.NewQAEnv(
+			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandler()),
+		)
 		defer env.Close()
+
+		// configure DNS
+		env.AddRecordToAllResolvers(
+			"quad8.com",
+			"", // CNAME
+			"8.8.8.8",
+		)
+
 		env.Do(func() {
 			// create client, which will use the underlying client stack's
 			// DialContext method to dial connections
@@ -130,7 +111,7 @@ func TestWithCustomTProxy(t *testing.T) {
 			if resp.StatusCode != 200 {
 				t.Fatal("expected to see 200, got", resp.StatusCode)
 			}
-			expectBody := []byte(`hello, world`)
+			expectBody := []byte(netemx.QAEnvDefaultWebPage)
 			gotBody, err := netxlite.ReadAllContext(context.Background(), resp.Body)
 			if err != nil {
 				t.Fatal(err)
@@ -152,8 +133,19 @@ func TestWithCustomTProxy(t *testing.T) {
 	// If all of this works, it means we're using the userspace TCP/IP
 	// stack exported by the [Environment] struct.
 	t.Run("we can hijack HTTP3 requests", func(t *testing.T) {
-		env := NewEnvironment()
+		// create QA env
+		env := netemx.NewQAEnv(
+			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandler()),
+		)
 		defer env.Close()
+
+		// configure DNS
+		env.AddRecordToAllResolvers(
+			"quad8.com",
+			"", // CNAME
+			"8.8.8.8",
+		)
+
 		env.Do(func() {
 			// create an HTTP3 client
 			txp := netxlite.NewHTTP3TransportStdlib(model.DiscardLogger)
@@ -176,7 +168,7 @@ func TestWithCustomTProxy(t *testing.T) {
 			if resp.StatusCode != 200 {
 				t.Fatal("expected to see 200, got", resp.StatusCode)
 			}
-			expectBody := []byte(`hello, world`)
+			expectBody := []byte(netemx.QAEnvDefaultWebPage)
 			gotBody, err := netxlite.ReadAllContext(context.Background(), resp.Body)
 			if err != nil {
 				t.Fatal(err)
@@ -190,8 +182,18 @@ func TestWithCustomTProxy(t *testing.T) {
 	// This is like the one where we test for HTTPS. The idea here is to
 	// be sure that we can set DPI rules affecting the client stack.
 	t.Run("we can configure DPI rules", func(t *testing.T) {
-		env := NewEnvironment()
+		// create QA env
+		env := netemx.NewQAEnv(
+			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandler()),
+		)
 		defer env.Close()
+
+		// configure DNS
+		env.AddRecordToAllResolvers(
+			"quad8.com",
+			"", // CNAME
+			"8.8.8.8",
+		)
 
 		// create DPI rule blocking the quad8.com SNI with RST
 		dpi := env.DPIEngine()
@@ -222,5 +224,68 @@ func TestWithCustomTProxy(t *testing.T) {
 				t.Fatal("expected nil response")
 			}
 		})
+	})
+
+	t.Run("we can collect PCAPs", func(t *testing.T) {
+		// create random PCAP file name
+		pcapFilename := randx.Letters(10) + ".pcap"
+		t.Log(pcapFilename)
+
+		// create PCAP dumper
+		dumper := netem.NewPCAPDumper(pcapFilename, log.Log)
+
+		// create QA env
+		env := netemx.NewQAEnv(
+			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandler()),
+			netemx.QAEnvOptionClientNICWrapper(dumper),
+		)
+		defer env.Close()
+
+		// configure DNS
+		env.AddRecordToAllResolvers(
+			"quad8.com",
+			"", // CNAME
+			"8.8.8.8",
+		)
+
+		env.Do(func() {
+			// create client, which will use the underlying client stack's
+			// DialContext method to dial connections
+			client := netxlite.NewHTTPClientStdlib(model.DiscardLogger)
+
+			// create the request
+			req, err := http.NewRequest("GET", "https://quad8.com/", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// issue the request
+			resp, err := client.Do(req)
+
+			// make sure everything is working as intended
+			if err != nil {
+				t.Fatal("unexpected failed", err)
+			}
+			if resp == nil {
+				t.Fatal("expected non-nil response")
+			}
+		})
+
+		// explicit close to make sure the PCAP is fully flushed and written
+		// given that we will access the file as part of the same test, so we
+		// cannot rely on the file being written by `defer env.Close()`
+		env.Close()
+
+		// make sure that the PCAP file exists
+		stat, err := os.Stat(pcapFilename)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !stat.Mode().IsRegular() {
+			t.Fatal("expected a regular file")
+		}
+		if stat.Size() < 1 {
+			t.Fatal("expected non-empty file")
+		}
 	})
 }

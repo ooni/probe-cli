@@ -1,4 +1,4 @@
-package main
+package oohelperd
 
 //
 // Generates IP and endpoint information.

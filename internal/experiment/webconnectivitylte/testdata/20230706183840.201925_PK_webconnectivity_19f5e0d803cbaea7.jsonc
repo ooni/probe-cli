@@ -1,0 +1,2548 @@
+// See https://explorer.ooni.org/m/20230706183840.201925_PK_webconnectivity_19f5e0d803cbaea7
+// See https://github.com/ooni/probe/issues/2517
+{
+	"agent": "redirect",
+	"client_resolver": "",
+	"retries": null,
+	"socksproxy": null,
+	"network_events": [
+		{
+			"address": "172.224.19.5:443",
+			"failure": null,
+			"operation": "connect",
+			"proto": "tcp",
+			"t0": 0.647992083,
+			"t": 0.828584374,
+			"transaction_id": 13
+		},
+		{
+			"address": "172.224.19.9:443",
+			"failure": null,
+			"operation": "connect",
+			"proto": "tcp",
+			"t0": 0.644046249,
+			"t": 0.83118651,
+			"transaction_id": 4
+		},
+		{
+			"address": "172.224.19.6:443",
+			"failure": null,
+			"operation": "connect",
+			"proto": "tcp",
+			"t0": 0.645248802,
+			"t": 0.837656197,
+			"transaction_id": 10
+		},
+		{
+			"address": "172.224.19.11:443",
+			"failure": null,
+			"operation": "connect",
+			"proto": "tcp",
+			"t0": 0.64285276,
+			"t": 0.853998801,
+			"transaction_id": 12
+		},
+		{
+			"address": "172.224.19.4:443",
+			"failure": null,
+			"operation": "connect",
+			"proto": "tcp",
+			"t0": 0.647470677,
+			"t": 0.875613489,
+			"transaction_id": 11
+		},
+		{
+			"address": "172.224.19.17:443",
+			"failure": null,
+			"operation": "connect",
+			"proto": "tcp",
+			"t0": 0.639707135,
+			"t": 0.890140937,
+			"transaction_id": 16
+		},
+		{
+			"address": "172.224.19.12:443",
+			"failure": null,
+			"operation": "connect",
+			"proto": "tcp",
+			"t0": 0.651957604,
+			"t": 0.938458072,
+			"transaction_id": 7
+		},
+		{
+			"address": "172.224.19.10:443",
+			"failure": null,
+			"operation": "connect",
+			"proto": "tcp",
+			"t0": 0.642524218,
+			"t": 0.938851926,
+			"transaction_id": 6
+		},
+		{
+			"address": "172.224.19.3:443",
+			"failure": null,
+			"operation": "connect",
+			"proto": "tcp",
+			"t0": 0.64161401,
+			"t": 0.961340312,
+			"transaction_id": 22
+		},
+		{
+			"address": "172.224.19.14:443",
+			"failure": null,
+			"operation": "connect",
+			"proto": "tcp",
+			"t0": 0.640995208,
+			"t": 0.983774999,
+			"transaction_id": 17
+		},
+		{
+			"address": "172.224.19.15:443",
+			"failure": null,
+			"operation": "connect",
+			"proto": "tcp",
+			"t0": 0.641014947,
+			"t": 0.993532343,
+			"transaction_id": 15
+		},
+		{
+			"address": "172.224.19.13:443",
+			"failure": null,
+			"operation": "connect",
+			"proto": "tcp",
+			"t0": 0.647940833,
+			"t": 1.011784583,
+			"transaction_id": 23
+		},
+		{
+			"address": "172.224.19.7:443",
+			"failure": null,
+			"operation": "connect",
+			"proto": "tcp",
+			"t0": 0.641673541,
+			"t": 1.021420572,
+			"transaction_id": 18
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_start",
+			"t0": 1.049385676,
+			"t": 1.049385676,
+			"transaction_id": 11
+		},
+		{
+			"address": "172.224.19.4:443",
+			"failure": null,
+			"num_bytes": 281,
+			"operation": "write",
+			"proto": "tcp",
+			"t0": 1.050935728,
+			"t": 1.051175885,
+			"transaction_id": 11
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_start",
+			"t0": 1.093026926,
+			"t": 1.093026926,
+			"transaction_id": 12
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_start",
+			"t0": 1.100440624,
+			"t": 1.100440624,
+			"transaction_id": 16
+		},
+		{
+			"address": "172.224.19.17:443",
+			"failure": null,
+			"num_bytes": 281,
+			"operation": "write",
+			"proto": "tcp",
+			"t0": 1.107928801,
+			"t": 1.108121197,
+			"transaction_id": 16
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_start",
+			"t0": 1.108909947,
+			"t": 1.108909947,
+			"transaction_id": 22
+		},
+		{
+			"address": "172.224.19.3:443",
+			"failure": null,
+			"num_bytes": 281,
+			"operation": "write",
+			"proto": "tcp",
+			"t0": 1.109586145,
+			"t": 1.109668958,
+			"transaction_id": 22
+		},
+		{
+			"address": "172.224.19.11:443",
+			"failure": null,
+			"num_bytes": 281,
+			"operation": "write",
+			"proto": "tcp",
+			"t0": 1.109717343,
+			"t": 1.109756822,
+			"transaction_id": 12
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_start",
+			"t0": 1.117443385,
+			"t": 1.117443385,
+			"transaction_id": 6
+		},
+		{
+			"address": "172.224.19.10:443",
+			"failure": null,
+			"num_bytes": 281,
+			"operation": "write",
+			"proto": "tcp",
+			"t0": 1.118210624,
+			"t": 1.123715364,
+			"transaction_id": 6
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_start",
+			"t0": 1.126307239,
+			"t": 1.126307239,
+			"transaction_id": 15
+		},
+		{
+			"address": "172.224.19.15:443",
+			"failure": null,
+			"num_bytes": 281,
+			"operation": "write",
+			"proto": "tcp",
+			"t0": 1.127039687,
+			"t": 1.127219947,
+			"transaction_id": 15
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_start",
+			"t0": 1.150245572,
+			"t": 1.150245572,
+			"transaction_id": 13
+		},
+		{
+			"address": "172.224.19.5:443",
+			"failure": null,
+			"num_bytes": 281,
+			"operation": "write",
+			"proto": "tcp",
+			"t0": 1.1585027079999999,
+			"t": 1.1586842179999999,
+			"transaction_id": 13
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_start",
+			"t0": 1.15924802,
+			"t": 1.15924802,
+			"transaction_id": 4
+		},
+		{
+			"address": "172.224.19.9:443",
+			"failure": null,
+			"num_bytes": 281,
+			"operation": "write",
+			"proto": "tcp",
+			"t0": 1.159853749,
+			"t": 1.15991427,
+			"transaction_id": 4
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_start",
+			"t0": 1.160233437,
+			"t": 1.160233437,
+			"transaction_id": 10
+		},
+		{
+			"address": "172.224.19.6:443",
+			"failure": null,
+			"num_bytes": 281,
+			"operation": "write",
+			"proto": "tcp",
+			"t0": 1.160952343,
+			"t": 1.161090885,
+			"transaction_id": 10
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_start",
+			"t0": 1.161933593,
+			"t": 1.161933593,
+			"transaction_id": 23
+		},
+		{
+			"address": "172.224.19.13:443",
+			"failure": null,
+			"num_bytes": 281,
+			"operation": "write",
+			"proto": "tcp",
+			"t0": 1.162591353,
+			"t": 1.16272677,
+			"transaction_id": 23
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_start",
+			"t0": 1.163566458,
+			"t": 1.163566458,
+			"transaction_id": 17
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_start",
+			"t0": 1.1636579679999999,
+			"t": 1.1636579679999999,
+			"transaction_id": 7
+		},
+		{
+			"address": "172.224.19.14:443",
+			"failure": null,
+			"num_bytes": 281,
+			"operation": "write",
+			"proto": "tcp",
+			"t0": 1.164261093,
+			"t": 1.1644004159999999,
+			"transaction_id": 17
+		},
+		{
+			"address": "172.224.19.12:443",
+			"failure": null,
+			"num_bytes": 281,
+			"operation": "write",
+			"proto": "tcp",
+			"t0": 1.167781405,
+			"t": 1.16796026,
+			"transaction_id": 7
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_start",
+			"t0": 1.168220103,
+			"t": 1.168220103,
+			"transaction_id": 18
+		},
+		{
+			"address": "172.224.19.7:443",
+			"failure": null,
+			"num_bytes": 281,
+			"operation": "write",
+			"proto": "tcp",
+			"t0": 1.16909901,
+			"t": 1.169175885,
+			"transaction_id": 18
+		},
+		{
+			"address": "172.224.19.4:443",
+			"failure": "eof_error",
+			"operation": "read",
+			"proto": "tcp",
+			"t0": 1.051207083,
+			"t": 1.249774635,
+			"transaction_id": 11
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_done",
+			"t0": 1.249949166,
+			"t": 1.249949166,
+			"transaction_id": 11
+		},
+		{
+			"address": "172.224.19.11:443",
+			"failure": "eof_error",
+			"operation": "read",
+			"proto": "tcp",
+			"t0": 1.10977302,
+			"t": 1.29326776,
+			"transaction_id": 12
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_done",
+			"t0": 1.293339166,
+			"t": 1.293339166,
+			"transaction_id": 12
+		},
+		{
+			"address": "172.224.19.17:443",
+			"failure": "eof_error",
+			"operation": "read",
+			"proto": "tcp",
+			"t0": 1.108144426,
+			"t": 1.3120958329999999,
+			"transaction_id": 16
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_done",
+			"t0": 1.312242968,
+			"t": 1.312242968,
+			"transaction_id": 16
+		},
+		{
+			"address": "172.224.19.5:443",
+			"failure": "eof_error",
+			"operation": "read",
+			"proto": "tcp",
+			"t0": 1.15870802,
+			"t": 1.34106302,
+			"transaction_id": 13
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_done",
+			"t0": 1.34125828,
+			"t": 1.34125828,
+			"transaction_id": 13
+		},
+		{
+			"address": "172.224.19.6:443",
+			"failure": "eof_error",
+			"operation": "read",
+			"proto": "tcp",
+			"t0": 1.16111401,
+			"t": 1.359082916,
+			"transaction_id": 10
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_done",
+			"t0": 1.3592458330000001,
+			"t": 1.3592458330000001,
+			"transaction_id": 10
+		},
+		{
+			"address": "172.224.19.9:443",
+			"failure": "eof_error",
+			"operation": "read",
+			"proto": "tcp",
+			"t0": 1.159923281,
+			"t": 1.359430885,
+			"transaction_id": 4
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_done",
+			"t0": 1.359494791,
+			"t": 1.359494791,
+			"transaction_id": 4
+		},
+		{
+			"address": "172.224.19.10:443",
+			"failure": "eof_error",
+			"operation": "read",
+			"proto": "tcp",
+			"t0": 1.125800833,
+			"t": 1.390968124,
+			"transaction_id": 6
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_done",
+			"t0": 1.391101145,
+			"t": 1.391101145,
+			"transaction_id": 6
+		},
+		{
+			"address": "172.224.19.3:443",
+			"failure": "eof_error",
+			"operation": "read",
+			"proto": "tcp",
+			"t0": 1.109679739,
+			"t": 1.413400207,
+			"transaction_id": 22
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_done",
+			"t0": 1.413539895,
+			"t": 1.413539895,
+			"transaction_id": 22
+		},
+		{
+			"address": "17.248.248.119:443",
+			"failure": null,
+			"operation": "connect",
+			"proto": "tcp",
+			"t0": 1.282968385,
+			"t": 1.42400526,
+			"transaction_id": 28
+		},
+		{
+			"address": "172.224.19.15:443",
+			"failure": "eof_error",
+			"operation": "read",
+			"proto": "tcp",
+			"t0": 1.127235572,
+			"t": 1.424205312,
+			"transaction_id": 15
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_done",
+			"t0": 1.4243346350000001,
+			"t": 1.4243346350000001,
+			"transaction_id": 15
+		},
+		{
+			"address": "17.248.248.121:443",
+			"failure": null,
+			"operation": "connect",
+			"proto": "tcp",
+			"t0": 1.284709166,
+			"t": 1.428987864,
+			"transaction_id": 31
+		},
+		{
+			"address": "17.248.248.105:443",
+			"failure": null,
+			"operation": "connect",
+			"proto": "tcp",
+			"t0": 1.286905989,
+			"t": 1.445038176,
+			"transaction_id": 26
+		},
+		{
+			"address": "17.248.248.103:443",
+			"failure": null,
+			"operation": "connect",
+			"proto": "tcp",
+			"t0": 1.288038437,
+			"t": 1.45821776,
+			"transaction_id": 37
+		},
+		{
+			"address": "17.248.248.117:443",
+			"failure": null,
+			"operation": "connect",
+			"proto": "tcp",
+			"t0": 1.287588801,
+			"t": 1.46354828,
+			"transaction_id": 35
+		},
+		{
+			"address": "172.224.19.14:443",
+			"failure": "eof_error",
+			"operation": "read",
+			"proto": "tcp",
+			"t0": 1.164421197,
+			"t": 1.46654526,
+			"transaction_id": 17
+		},
+		{
+			"address": "17.248.248.100:443",
+			"failure": null,
+			"operation": "connect",
+			"proto": "tcp",
+			"t0": 1.286056041,
+			"t": 1.466569166,
+			"transaction_id": 27
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_done",
+			"t0": 1.4666493219999999,
+			"t": 1.4666493219999999,
+			"transaction_id": 17
+		},
+		{
+			"address": "17.248.248.101:443",
+			"failure": null,
+			"operation": "connect",
+			"proto": "tcp",
+			"t0": 1.286953124,
+			"t": 1.482221614,
+			"transaction_id": 25
+		},
+		{
+			"address": "172.224.19.12:443",
+			"failure": "eof_error",
+			"operation": "read",
+			"proto": "tcp",
+			"t0": 1.168003072,
+			"t": 1.48424802,
+			"transaction_id": 7
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_done",
+			"t0": 1.49204276,
+			"t": 1.49204276,
+			"transaction_id": 7
+		},
+		{
+			"address": "172.224.19.13:443",
+			"failure": "eof_error",
+			"operation": "read",
+			"proto": "tcp",
+			"t0": 1.162745208,
+			"t": 1.497668749,
+			"transaction_id": 23
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_done",
+			"t0": 1.497754322,
+			"t": 1.497754322,
+			"transaction_id": 23
+		},
+		{
+			"address": "17.248.248.104:443",
+			"failure": null,
+			"operation": "connect",
+			"proto": "tcp",
+			"t0": 1.289146458,
+			"t": 1.51112776,
+			"transaction_id": 33
+		},
+		{
+			"address": "172.224.19.7:443",
+			"failure": "eof_error",
+			"operation": "read",
+			"proto": "tcp",
+			"t0": 1.169351666,
+			"t": 1.547908176,
+			"transaction_id": 18
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_done",
+			"t0": 1.547983437,
+			"t": 1.547983437,
+			"transaction_id": 18
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_start",
+			"t0": 1.576513437,
+			"t": 1.576513437,
+			"transaction_id": 25
+		},
+		{
+			"address": "17.248.248.101:443",
+			"failure": null,
+			"num_bytes": 281,
+			"operation": "write",
+			"proto": "tcp",
+			"t0": 1.5774481759999999,
+			"t": 1.577768072,
+			"transaction_id": 25
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_start",
+			"t0": 1.583715207,
+			"t": 1.583715207,
+			"transaction_id": 28
+		},
+		{
+			"address": "17.248.248.119:443",
+			"failure": null,
+			"num_bytes": 281,
+			"operation": "write",
+			"proto": "tcp",
+			"t0": 1.584435312,
+			"t": 1.584596093,
+			"transaction_id": 28
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_start",
+			"t0": 1.590572655,
+			"t": 1.590572655,
+			"transaction_id": 37
+		},
+		{
+			"address": "17.248.248.103:443",
+			"failure": null,
+			"num_bytes": 281,
+			"operation": "write",
+			"proto": "tcp",
+			"t0": 1.59246052,
+			"t": 1.592648697,
+			"transaction_id": 37
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_start",
+			"t0": 1.6050547910000001,
+			"t": 1.6050547910000001,
+			"transaction_id": 35
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_start",
+			"t0": 1.605116666,
+			"t": 1.605116666,
+			"transaction_id": 26
+		},
+		{
+			"address": "17.248.248.105:443",
+			"failure": null,
+			"num_bytes": 281,
+			"operation": "write",
+			"proto": "tcp",
+			"t0": 1.605997187,
+			"t": 1.606105468,
+			"transaction_id": 26
+		},
+		{
+			"address": "17.248.248.117:443",
+			"failure": null,
+			"num_bytes": 281,
+			"operation": "write",
+			"proto": "tcp",
+			"t0": 1.605935728,
+			"t": 1.606204009,
+			"transaction_id": 35
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_start",
+			"t0": 1.608131353,
+			"t": 1.608131353,
+			"transaction_id": 27
+		},
+		{
+			"address": "17.248.248.100:443",
+			"failure": null,
+			"num_bytes": 281,
+			"operation": "write",
+			"proto": "tcp",
+			"t0": 1.609988749,
+			"t": 1.610127291,
+			"transaction_id": 27
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_start",
+			"t0": 1.612246509,
+			"t": 1.612246509,
+			"transaction_id": 33
+		},
+		{
+			"address": "17.248.248.104:443",
+			"failure": null,
+			"num_bytes": 281,
+			"operation": "write",
+			"proto": "tcp",
+			"t0": 1.612910416,
+			"t": 1.6130053119999999,
+			"transaction_id": 33
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_start",
+			"t0": 1.6147980720000001,
+			"t": 1.6147980720000001,
+			"transaction_id": 31
+		},
+		{
+			"address": "17.248.248.121:443",
+			"failure": null,
+			"num_bytes": 281,
+			"operation": "write",
+			"proto": "tcp",
+			"t0": 1.616766666,
+			"t": 1.6168616139999998,
+			"transaction_id": 31
+		},
+		{
+			"address": "17.248.248.101:443",
+			"failure": "eof_error",
+			"operation": "read",
+			"proto": "tcp",
+			"t0": 1.5777949470000001,
+			"t": 1.726945884,
+			"transaction_id": 25
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_done",
+			"t0": 1.727211718,
+			"t": 1.727211718,
+			"transaction_id": 25
+		},
+		{
+			"address": "17.248.248.119:443",
+			"failure": "eof_error",
+			"operation": "read",
+			"proto": "tcp",
+			"t0": 1.5846103120000001,
+			"t": 1.728394843,
+			"transaction_id": 28
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_done",
+			"t0": 1.728489478,
+			"t": 1.728489478,
+			"transaction_id": 28
+		},
+		{
+			"address": "17.248.248.103:443",
+			"failure": "eof_error",
+			"operation": "read",
+			"proto": "tcp",
+			"t0": 1.5926761969999998,
+			"t": 1.746306822,
+			"transaction_id": 37
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_done",
+			"t0": 1.746924218,
+			"t": 1.746924218,
+			"transaction_id": 37
+		},
+		{
+			"address": "17.248.248.105:443",
+			"failure": "eof_error",
+			"operation": "read",
+			"proto": "tcp",
+			"t0": 1.606130468,
+			"t": 1.7514027589999999,
+			"transaction_id": 26
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_done",
+			"t0": 1.7516120819999998,
+			"t": 1.7516120819999998,
+			"transaction_id": 26
+		},
+		{
+			"address": "17.248.248.104:443",
+			"failure": "eof_error",
+			"operation": "read",
+			"proto": "tcp",
+			"t0": 1.613022447,
+			"t": 1.797098176,
+			"transaction_id": 33
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_done",
+			"t0": 1.7972129159999999,
+			"t": 1.7972129159999999,
+			"transaction_id": 33
+		},
+		{
+			"address": "17.248.248.117:443",
+			"failure": "eof_error",
+			"operation": "read",
+			"proto": "tcp",
+			"t0": 1.606220728,
+			"t": 1.7977510410000002,
+			"transaction_id": 35
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_done",
+			"t0": 1.79781828,
+			"t": 1.79781828,
+			"transaction_id": 35
+		},
+		{
+			"address": "17.248.248.121:443",
+			"failure": "eof_error",
+			"operation": "read",
+			"proto": "tcp",
+			"t0": 1.6168797910000001,
+			"t": 1.798084374,
+			"transaction_id": 31
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_done",
+			"t0": 1.798134999,
+			"t": 1.798134999,
+			"transaction_id": 31
+		},
+		{
+			"address": "17.248.248.100:443",
+			"failure": "eof_error",
+			"operation": "read",
+			"proto": "tcp",
+			"t0": 1.610156197,
+			"t": 1.798393176,
+			"transaction_id": 27
+		},
+		{
+			"failure": null,
+			"operation": "tls_handshake_done",
+			"t0": 1.79844453,
+			"t": 1.79844453,
+			"transaction_id": 27
+		}
+	],
+	"x_dns_whoami": {
+		"system_v4": [
+			{
+				"address": "34.153.64.65"
+			}
+		],
+		"udp_v4": {
+			"8.8.4.4:53": [
+				{
+					"address": "172.253.244.197"
+				}
+			]
+		}
+	},
+	"x_doh": {
+		"network_events": [],
+		"queries": [],
+		"requests": [],
+		"tcp_connect": [],
+		"tls_handshakes": []
+	},
+	"x_do53": {
+		"network_events": [
+			{
+				"failure": null,
+				"operation": "resolve_start",
+				"t0": 0.011388229,
+				"t": 0.011388229,
+				"transaction_id": 1
+			},
+			{
+				"address": "8.8.4.4:53",
+				"failure": null,
+				"num_bytes": 33,
+				"operation": "write",
+				"proto": "udp",
+				"t0": 0.014473229,
+				"t": 0.015155625,
+				"transaction_id": 1
+			},
+			{
+				"address": "8.8.4.4:53",
+				"failure": null,
+				"num_bytes": 33,
+				"operation": "write",
+				"proto": "udp",
+				"t0": 0.030758958,
+				"t": 0.033727812,
+				"transaction_id": 1
+			},
+			{
+				"address": "8.8.4.4:53",
+				"failure": null,
+				"num_bytes": 289,
+				"operation": "read",
+				"proto": "udp",
+				"t0": 0.034104635,
+				"t": 0.565231302,
+				"transaction_id": 1
+			},
+			{
+				"address": "8.8.4.4:53",
+				"failure": null,
+				"num_bytes": 193,
+				"operation": "read",
+				"proto": "udp",
+				"t0": 0.015575937,
+				"t": 0.586398958,
+				"transaction_id": 1
+			},
+			{
+				"failure": null,
+				"operation": "resolve_done",
+				"t0": 0.590423802,
+				"t": 0.590423802,
+				"transaction_id": 1
+			}
+		],
+		"queries": []
+	},
+	"x_dns_duplicate_responses": [],
+	"queries": [
+		{
+			"answers": [
+				{
+					"asn": 36183,
+					"as_org_name": "Akamai Technologies, Inc.",
+					"answer_type": "AAAA",
+					"ipv6": "2a02:26f7:6:0:ace0:1309::",
+					"ttl": null
+				},
+				{
+					"asn": 36183,
+					"as_org_name": "Akamai Technologies, Inc.",
+					"answer_type": "AAAA",
+					"ipv6": "2a02:26f7:6:0:ace0:130b::",
+					"ttl": null
+				},
+				{
+					"asn": 36183,
+					"as_org_name": "Akamai Technologies, Inc.",
+					"answer_type": "AAAA",
+					"ipv6": "2a02:26f7:6:0:ace0:130c::",
+					"ttl": null
+				},
+				{
+					"asn": 36183,
+					"as_org_name": "Akamai Technologies, Inc.",
+					"answer_type": "AAAA",
+					"ipv6": "2a02:26f7:6:0:ace0:1311::",
+					"ttl": null
+				},
+				{
+					"asn": 36183,
+					"as_org_name": "Akamai Technologies, Inc.",
+					"answer_type": "AAAA",
+					"ipv6": "2a02:26f7:6:0:ace0:1303::",
+					"ttl": null
+				},
+				{
+					"asn": 36183,
+					"as_org_name": "Akamai Technologies, Inc.",
+					"answer_type": "AAAA",
+					"ipv6": "2a02:26f7:6:0:ace0:1306::",
+					"ttl": null
+				},
+				{
+					"asn": 36183,
+					"as_org_name": "Akamai Technologies, Inc.",
+					"answer_type": "AAAA",
+					"ipv6": "2a02:26f7:6:0:ace0:1310::",
+					"ttl": null
+				},
+				{
+					"asn": 36183,
+					"as_org_name": "Akamai Technologies, Inc.",
+					"answer_type": "AAAA",
+					"ipv6": "2a02:26f7:6:0:ace0:1308::",
+					"ttl": null
+				},
+				{
+					"answer_type": "CNAME",
+					"hostname": "mask.apple-dns.net.",
+					"ttl": null
+				}
+			],
+			"engine": "udp",
+			"failure": null,
+			"hostname": "mask.icloud.com",
+			"query_type": "AAAA",
+			"raw_response": "2NmBgAABAAkAAAAABG1hc2sGaWNsb3VkA2NvbQAAHAABwAwABQABAABL\/AAUBG1hc2sJYXBwbGUtZG5zA25ldADALQAcAAEAAAA8ABAqAib3AAYAAKzgEwkAAAAAwC0AHAABAAAAPAAQKgIm9wAGAACs4BMLAAAAAMAtABwAAQAAADwAECoCJvcABgAArOATDAAAAADALQAcAAEAAAA8ABAqAib3AAYAAKzgExEAAAAAwC0AHAABAAAAPAAQKgIm9wAGAACs4BMDAAAAAMAtABwAAQAAADwAECoCJvcABgAArOATBgAAAADALQAcAAEAAAA8ABAqAib3AAYAAKzgExAAAAAAwC0AHAABAAAAPAAQKgIm9wAGAACs4BMIAAAAAA==",
+			"resolver_hostname": null,
+			"resolver_port": null,
+			"resolver_address": "8.8.4.4:53",
+			"t0": 0.012302343,
+			"t": 0.565430468,
+			"transaction_id": 1
+		},
+		{
+			"answers": [
+				{
+					"asn": 36183,
+					"as_org_name": "Akamai Technologies, Inc.",
+					"answer_type": "A",
+					"ipv4": "172.224.19.13",
+					"ttl": null
+				},
+				{
+					"asn": 36183,
+					"as_org_name": "Akamai Technologies, Inc.",
+					"answer_type": "A",
+					"ipv4": "172.224.19.14",
+					"ttl": null
+				},
+				{
+					"asn": 36183,
+					"as_org_name": "Akamai Technologies, Inc.",
+					"answer_type": "A",
+					"ipv4": "172.224.19.11",
+					"ttl": null
+				},
+				{
+					"asn": 36183,
+					"as_org_name": "Akamai Technologies, Inc.",
+					"answer_type": "A",
+					"ipv4": "172.224.19.5",
+					"ttl": null
+				},
+				{
+					"asn": 36183,
+					"as_org_name": "Akamai Technologies, Inc.",
+					"answer_type": "A",
+					"ipv4": "172.224.19.15",
+					"ttl": null
+				},
+				{
+					"asn": 36183,
+					"as_org_name": "Akamai Technologies, Inc.",
+					"answer_type": "A",
+					"ipv4": "172.224.19.7",
+					"ttl": null
+				},
+				{
+					"asn": 36183,
+					"as_org_name": "Akamai Technologies, Inc.",
+					"answer_type": "A",
+					"ipv4": "172.224.19.6",
+					"ttl": null
+				},
+				{
+					"asn": 36183,
+					"as_org_name": "Akamai Technologies, Inc.",
+					"answer_type": "A",
+					"ipv4": "172.224.19.4",
+					"ttl": null
+				},
+				{
+					"answer_type": "CNAME",
+					"hostname": "mask.apple-dns.net.",
+					"ttl": null
+				}
+			],
+			"engine": "udp",
+			"failure": null,
+			"hostname": "mask.icloud.com",
+			"query_type": "A",
+			"raw_response": "eW2BgAABAAkAAAAABG1hc2sGaWNsb3VkA2NvbQAAAQABwAwABQABAABISgAUBG1hc2sJYXBwbGUtZG5zA25ldADALQABAAEAAAA8AASs4BMNwC0AAQABAAAAPAAErOATDsAtAAEAAQAAADwABKzgEwvALQABAAEAAAA8AASs4BMFwC0AAQABAAAAPAAErOATD8AtAAEAAQAAADwABKzgEwfALQABAAEAAAA8AASs4BMGwC0AAQABAAAAPAAErOATBA==",
+			"resolver_hostname": null,
+			"resolver_port": null,
+			"resolver_address": "8.8.4.4:53",
+			"t0": 0.012589166,
+			"t": 0.587889218,
+			"transaction_id": 1
+		},
+		{
+			"answers": [
+				{
+					"asn": 36183,
+					"as_org_name": "Akamai Technologies, Inc.",
+					"answer_type": "A",
+					"ipv4": "172.224.19.9",
+					"ttl": null
+				},
+				{
+					"asn": 36183,
+					"as_org_name": "Akamai Technologies, Inc.",
+					"answer_type": "A",
+					"ipv4": "172.224.19.6",
+					"ttl": null
+				},
+				{
+					"asn": 36183,
+					"as_org_name": "Akamai Technologies, Inc.",
+					"answer_type": "A",
+					"ipv4": "172.224.19.4",
+					"ttl": null
+				},
+				{
+					"asn": 36183,
+					"as_org_name": "Akamai Technologies, Inc.",
+					"answer_type": "A",
+					"ipv4": "172.224.19.3",
+					"ttl": null
+				},
+				{
+					"asn": 36183,
+					"as_org_name": "Akamai Technologies, Inc.",
+					"answer_type": "A",
+					"ipv4": "172.224.19.10",
+					"ttl": null
+				},
+				{
+					"asn": 36183,
+					"as_org_name": "Akamai Technologies, Inc.",
+					"answer_type": "A",
+					"ipv4": "172.224.19.12",
+					"ttl": null
+				},
+				{
+					"asn": 36183,
+					"as_org_name": "Akamai Technologies, Inc.",
+					"answer_type": "A",
+					"ipv4": "172.224.19.15",
+					"ttl": null
+				},
+				{
+					"asn": 36183,
+					"as_org_name": "Akamai Technologies, Inc.",
+					"answer_type": "A",
+					"ipv4": "172.224.19.17",
+					"ttl": null
+				},
+				{
+					"answer_type": "CNAME",
+					"hostname": "mask.apple-dns.net.",
+					"ttl": null
+				}
+			],
+			"engine": "getaddrinfo",
+			"failure": null,
+			"hostname": "mask.icloud.com",
+			"query_type": "ANY",
+			"resolver_hostname": null,
+			"resolver_port": null,
+			"resolver_address": "",
+			"t0": 0.012520729,
+			"t": 0.633253697,
+			"transaction_id": 2
+		}
+	],
+	"requests": [],
+	"tcp_connect": [
+		{
+			"ip": "2a02:26f7:6:0:ace0:1309::",
+			"port": 443,
+			"status": {
+				"failure": "network_unreachable",
+				"success": false
+			},
+			"t0": 0.639368541,
+			"t": 0.640504062,
+			"transaction_id": 14
+		},
+		{
+			"ip": "2a02:26f7:6:0:ace0:130c::",
+			"port": 443,
+			"status": {
+				"failure": "network_unreachable",
+				"success": false
+			},
+			"t0": 0.639237812,
+			"t": 0.641509843,
+			"transaction_id": 19
+		},
+		{
+			"ip": "2a02:26f7:6:0:ace0:1303::",
+			"port": 443,
+			"status": {
+				"failure": "network_unreachable",
+				"success": false
+			},
+			"t0": 0.641928749,
+			"t": 0.642194895,
+			"transaction_id": 20
+		},
+		{
+			"ip": "2a02:26f7:6:0:ace0:1310::",
+			"port": 443,
+			"status": {
+				"failure": "network_unreachable",
+				"success": false
+			},
+			"t0": 0.643281406,
+			"t": 0.643817291,
+			"transaction_id": 3
+		},
+		{
+			"ip": "2a02:26f7:6:0:ace0:1306::",
+			"port": 443,
+			"status": {
+				"failure": "network_unreachable",
+				"success": false
+			},
+			"t0": 0.644611406,
+			"t": 0.644933541,
+			"transaction_id": 5
+		},
+		{
+			"ip": "2a02:26f7:6:0:ace0:130b::",
+			"port": 443,
+			"status": {
+				"failure": "network_unreachable",
+				"success": false
+			},
+			"t0": 0.646359739,
+			"t": 0.646787291,
+			"transaction_id": 8
+		},
+		{
+			"ip": "2a02:26f7:6:0:ace0:1311::",
+			"port": 443,
+			"status": {
+				"failure": "network_unreachable",
+				"success": false
+			},
+			"t0": 0.647014374,
+			"t": 0.647276718,
+			"transaction_id": 9
+		},
+		{
+			"ip": "2a02:26f7:6:0:ace0:1308::",
+			"port": 443,
+			"status": {
+				"failure": "network_unreachable",
+				"success": false
+			},
+			"t0": 0.652762031,
+			"t": 0.653166197,
+			"transaction_id": 21
+		},
+		{
+			"ip": "172.224.19.5",
+			"port": 443,
+			"status": {
+				"blocked": false,
+				"failure": null,
+				"success": true
+			},
+			"t0": 0.647992083,
+			"t": 0.828584374,
+			"transaction_id": 13
+		},
+		{
+			"ip": "172.224.19.9",
+			"port": 443,
+			"status": {
+				"blocked": false,
+				"failure": null,
+				"success": true
+			},
+			"t0": 0.644046249,
+			"t": 0.83118651,
+			"transaction_id": 4
+		},
+		{
+			"ip": "172.224.19.6",
+			"port": 443,
+			"status": {
+				"blocked": false,
+				"failure": null,
+				"success": true
+			},
+			"t0": 0.645248802,
+			"t": 0.837656197,
+			"transaction_id": 10
+		},
+		{
+			"ip": "172.224.19.11",
+			"port": 443,
+			"status": {
+				"blocked": false,
+				"failure": null,
+				"success": true
+			},
+			"t0": 0.64285276,
+			"t": 0.853998801,
+			"transaction_id": 12
+		},
+		{
+			"ip": "172.224.19.4",
+			"port": 443,
+			"status": {
+				"blocked": false,
+				"failure": null,
+				"success": true
+			},
+			"t0": 0.647470677,
+			"t": 0.875613489,
+			"transaction_id": 11
+		},
+		{
+			"ip": "172.224.19.17",
+			"port": 443,
+			"status": {
+				"blocked": false,
+				"failure": null,
+				"success": true
+			},
+			"t0": 0.639707135,
+			"t": 0.890140937,
+			"transaction_id": 16
+		},
+		{
+			"ip": "172.224.19.12",
+			"port": 443,
+			"status": {
+				"blocked": false,
+				"failure": null,
+				"success": true
+			},
+			"t0": 0.651957604,
+			"t": 0.938458072,
+			"transaction_id": 7
+		},
+		{
+			"ip": "172.224.19.10",
+			"port": 443,
+			"status": {
+				"blocked": false,
+				"failure": null,
+				"success": true
+			},
+			"t0": 0.642524218,
+			"t": 0.938851926,
+			"transaction_id": 6
+		},
+		{
+			"ip": "172.224.19.3",
+			"port": 443,
+			"status": {
+				"blocked": false,
+				"failure": null,
+				"success": true
+			},
+			"t0": 0.64161401,
+			"t": 0.961340312,
+			"transaction_id": 22
+		},
+		{
+			"ip": "172.224.19.14",
+			"port": 443,
+			"status": {
+				"blocked": false,
+				"failure": null,
+				"success": true
+			},
+			"t0": 0.640995208,
+			"t": 0.983774999,
+			"transaction_id": 17
+		},
+		{
+			"ip": "172.224.19.15",
+			"port": 443,
+			"status": {
+				"blocked": false,
+				"failure": null,
+				"success": true
+			},
+			"t0": 0.641014947,
+			"t": 0.993532343,
+			"transaction_id": 15
+		},
+		{
+			"ip": "172.224.19.13",
+			"port": 443,
+			"status": {
+				"blocked": false,
+				"failure": null,
+				"success": true
+			},
+			"t0": 0.647940833,
+			"t": 1.011784583,
+			"transaction_id": 23
+		},
+		{
+			"ip": "172.224.19.7",
+			"port": 443,
+			"status": {
+				"blocked": false,
+				"failure": null,
+				"success": true
+			},
+			"t0": 0.641673541,
+			"t": 1.021420572,
+			"transaction_id": 18
+		},
+		{
+			"ip": "2a01:b740:a41:213::9",
+			"port": 443,
+			"status": {
+				"failure": "network_unreachable",
+				"success": false
+			},
+			"t0": 1.282121301,
+			"t": 1.282685572,
+			"transaction_id": 39
+		},
+		{
+			"ip": "2a01:b740:a41:212::5",
+			"port": 443,
+			"status": {
+				"failure": "network_unreachable",
+				"success": false
+			},
+			"t0": 1.283679062,
+			"t": 1.284082291,
+			"transaction_id": 29
+		},
+		{
+			"ip": "2a01:b740:a41:212::6",
+			"port": 443,
+			"status": {
+				"failure": "network_unreachable",
+				"success": false
+			},
+			"t0": 1.284279791,
+			"t": 1.284555885,
+			"transaction_id": 30
+		},
+		{
+			"ip": "2a01:b740:a41:213::5",
+			"port": 443,
+			"status": {
+				"failure": "network_unreachable",
+				"success": false
+			},
+			"t0": 1.2874640099999999,
+			"t": 1.287841926,
+			"transaction_id": 24
+		},
+		{
+			"ip": "2a01:b740:a41:212::4",
+			"port": 443,
+			"status": {
+				"failure": "network_unreachable",
+				"success": false
+			},
+			"t0": 1.288423853,
+			"t": 1.28862203,
+			"transaction_id": 36
+		},
+		{
+			"ip": "2a01:b740:a41:213::7",
+			"port": 443,
+			"status": {
+				"failure": "network_unreachable",
+				"success": false
+			},
+			"t0": 1.288761197,
+			"t": 1.289040416,
+			"transaction_id": 34
+		},
+		{
+			"ip": "2a01:b740:a41:212::8",
+			"port": 443,
+			"status": {
+				"failure": "network_unreachable",
+				"success": false
+			},
+			"t0": 1.290616562,
+			"t": 1.292891458,
+			"transaction_id": 32
+		},
+		{
+			"ip": "2a01:b740:a41:212::7",
+			"port": 443,
+			"status": {
+				"failure": "network_unreachable",
+				"success": false
+			},
+			"t0": 1.294181353,
+			"t": 1.295991822,
+			"transaction_id": 38
+		},
+		{
+			"ip": "17.248.248.119",
+			"port": 443,
+			"status": {
+				"blocked": false,
+				"failure": null,
+				"success": true
+			},
+			"t0": 1.282968385,
+			"t": 1.42400526,
+			"transaction_id": 28
+		},
+		{
+			"ip": "17.248.248.121",
+			"port": 443,
+			"status": {
+				"blocked": false,
+				"failure": null,
+				"success": true
+			},
+			"t0": 1.284709166,
+			"t": 1.428987864,
+			"transaction_id": 31
+		},
+		{
+			"ip": "17.248.248.105",
+			"port": 443,
+			"status": {
+				"blocked": false,
+				"failure": null,
+				"success": true
+			},
+			"t0": 1.286905989,
+			"t": 1.445038176,
+			"transaction_id": 26
+		},
+		{
+			"ip": "17.248.248.103",
+			"port": 443,
+			"status": {
+				"blocked": false,
+				"failure": null,
+				"success": true
+			},
+			"t0": 1.288038437,
+			"t": 1.45821776,
+			"transaction_id": 37
+		},
+		{
+			"ip": "17.248.248.117",
+			"port": 443,
+			"status": {
+				"blocked": false,
+				"failure": null,
+				"success": true
+			},
+			"t0": 1.287588801,
+			"t": 1.46354828,
+			"transaction_id": 35
+		},
+		{
+			"ip": "17.248.248.100",
+			"port": 443,
+			"status": {
+				"blocked": false,
+				"failure": null,
+				"success": true
+			},
+			"t0": 1.286056041,
+			"t": 1.466569166,
+			"transaction_id": 27
+		},
+		{
+			"ip": "17.248.248.101",
+			"port": 443,
+			"status": {
+				"blocked": false,
+				"failure": null,
+				"success": true
+			},
+			"t0": 1.286953124,
+			"t": 1.482221614,
+			"transaction_id": 25
+		},
+		{
+			"ip": "17.248.248.104",
+			"port": 443,
+			"status": {
+				"blocked": false,
+				"failure": null,
+				"success": true
+			},
+			"t0": 1.289146458,
+			"t": 1.51112776,
+			"transaction_id": 33
+		}
+	],
+	"tls_handshakes": [
+		{
+			"network": "tcp",
+			"address": "172.224.19.4:443",
+			"cipher_suite": "",
+			"failure": "eof_error",
+			"negotiated_protocol": "",
+			"no_tls_verify": false,
+			"peer_certificates": [],
+			"server_name": "mask.icloud.com",
+			"t0": 1.049385676,
+			"t": 1.249949166,
+			"tags": [],
+			"tls_version": "",
+			"transaction_id": 11
+		},
+		{
+			"network": "tcp",
+			"address": "172.224.19.11:443",
+			"cipher_suite": "",
+			"failure": "eof_error",
+			"negotiated_protocol": "",
+			"no_tls_verify": false,
+			"peer_certificates": [],
+			"server_name": "mask.icloud.com",
+			"t0": 1.093026926,
+			"t": 1.293339166,
+			"tags": [],
+			"tls_version": "",
+			"transaction_id": 12
+		},
+		{
+			"network": "tcp",
+			"address": "172.224.19.17:443",
+			"cipher_suite": "",
+			"failure": "eof_error",
+			"negotiated_protocol": "",
+			"no_tls_verify": false,
+			"peer_certificates": [],
+			"server_name": "mask.icloud.com",
+			"t0": 1.100440624,
+			"t": 1.312242968,
+			"tags": [],
+			"tls_version": "",
+			"transaction_id": 16
+		},
+		{
+			"network": "tcp",
+			"address": "172.224.19.5:443",
+			"cipher_suite": "",
+			"failure": "eof_error",
+			"negotiated_protocol": "",
+			"no_tls_verify": false,
+			"peer_certificates": [],
+			"server_name": "mask.icloud.com",
+			"t0": 1.150245572,
+			"t": 1.34125828,
+			"tags": [],
+			"tls_version": "",
+			"transaction_id": 13
+		},
+		{
+			"network": "tcp",
+			"address": "172.224.19.6:443",
+			"cipher_suite": "",
+			"failure": "eof_error",
+			"negotiated_protocol": "",
+			"no_tls_verify": false,
+			"peer_certificates": [],
+			"server_name": "mask.icloud.com",
+			"t0": 1.160233437,
+			"t": 1.3592458330000001,
+			"tags": [],
+			"tls_version": "",
+			"transaction_id": 10
+		},
+		{
+			"network": "tcp",
+			"address": "172.224.19.9:443",
+			"cipher_suite": "",
+			"failure": "eof_error",
+			"negotiated_protocol": "",
+			"no_tls_verify": false,
+			"peer_certificates": [],
+			"server_name": "mask.icloud.com",
+			"t0": 1.15924802,
+			"t": 1.359494791,
+			"tags": [],
+			"tls_version": "",
+			"transaction_id": 4
+		},
+		{
+			"network": "tcp",
+			"address": "172.224.19.10:443",
+			"cipher_suite": "",
+			"failure": "eof_error",
+			"negotiated_protocol": "",
+			"no_tls_verify": false,
+			"peer_certificates": [],
+			"server_name": "mask.icloud.com",
+			"t0": 1.117443385,
+			"t": 1.391101145,
+			"tags": [],
+			"tls_version": "",
+			"transaction_id": 6
+		},
+		{
+			"network": "tcp",
+			"address": "172.224.19.3:443",
+			"cipher_suite": "",
+			"failure": "eof_error",
+			"negotiated_protocol": "",
+			"no_tls_verify": false,
+			"peer_certificates": [],
+			"server_name": "mask.icloud.com",
+			"t0": 1.108909947,
+			"t": 1.413539895,
+			"tags": [],
+			"tls_version": "",
+			"transaction_id": 22
+		},
+		{
+			"network": "tcp",
+			"address": "172.224.19.15:443",
+			"cipher_suite": "",
+			"failure": "eof_error",
+			"negotiated_protocol": "",
+			"no_tls_verify": false,
+			"peer_certificates": [],
+			"server_name": "mask.icloud.com",
+			"t0": 1.126307239,
+			"t": 1.4243346350000001,
+			"tags": [],
+			"tls_version": "",
+			"transaction_id": 15
+		},
+		{
+			"network": "tcp",
+			"address": "172.224.19.14:443",
+			"cipher_suite": "",
+			"failure": "eof_error",
+			"negotiated_protocol": "",
+			"no_tls_verify": false,
+			"peer_certificates": [],
+			"server_name": "mask.icloud.com",
+			"t0": 1.163566458,
+			"t": 1.4666493219999999,
+			"tags": [],
+			"tls_version": "",
+			"transaction_id": 17
+		},
+		{
+			"network": "tcp",
+			"address": "172.224.19.12:443",
+			"cipher_suite": "",
+			"failure": "eof_error",
+			"negotiated_protocol": "",
+			"no_tls_verify": false,
+			"peer_certificates": [],
+			"server_name": "mask.icloud.com",
+			"t0": 1.1636579679999999,
+			"t": 1.49204276,
+			"tags": [],
+			"tls_version": "",
+			"transaction_id": 7
+		},
+		{
+			"network": "tcp",
+			"address": "172.224.19.13:443",
+			"cipher_suite": "",
+			"failure": "eof_error",
+			"negotiated_protocol": "",
+			"no_tls_verify": false,
+			"peer_certificates": [],
+			"server_name": "mask.icloud.com",
+			"t0": 1.161933593,
+			"t": 1.497754322,
+			"tags": [],
+			"tls_version": "",
+			"transaction_id": 23
+		},
+		{
+			"network": "tcp",
+			"address": "172.224.19.7:443",
+			"cipher_suite": "",
+			"failure": "eof_error",
+			"negotiated_protocol": "",
+			"no_tls_verify": false,
+			"peer_certificates": [],
+			"server_name": "mask.icloud.com",
+			"t0": 1.168220103,
+			"t": 1.547983437,
+			"tags": [],
+			"tls_version": "",
+			"transaction_id": 18
+		},
+		{
+			"network": "tcp",
+			"address": "17.248.248.101:443",
+			"cipher_suite": "",
+			"failure": "eof_error",
+			"negotiated_protocol": "",
+			"no_tls_verify": false,
+			"peer_certificates": [],
+			"server_name": "mask.icloud.com",
+			"t0": 1.576513437,
+			"t": 1.727211718,
+			"tags": [],
+			"tls_version": "",
+			"transaction_id": 25
+		},
+		{
+			"network": "tcp",
+			"address": "17.248.248.119:443",
+			"cipher_suite": "",
+			"failure": "eof_error",
+			"negotiated_protocol": "",
+			"no_tls_verify": false,
+			"peer_certificates": [],
+			"server_name": "mask.icloud.com",
+			"t0": 1.583715207,
+			"t": 1.728489478,
+			"tags": [],
+			"tls_version": "",
+			"transaction_id": 28
+		},
+		{
+			"network": "tcp",
+			"address": "17.248.248.103:443",
+			"cipher_suite": "",
+			"failure": "eof_error",
+			"negotiated_protocol": "",
+			"no_tls_verify": false,
+			"peer_certificates": [],
+			"server_name": "mask.icloud.com",
+			"t0": 1.590572655,
+			"t": 1.746924218,
+			"tags": [],
+			"tls_version": "",
+			"transaction_id": 37
+		},
+		{
+			"network": "tcp",
+			"address": "17.248.248.105:443",
+			"cipher_suite": "",
+			"failure": "eof_error",
+			"negotiated_protocol": "",
+			"no_tls_verify": false,
+			"peer_certificates": [],
+			"server_name": "mask.icloud.com",
+			"t0": 1.605116666,
+			"t": 1.7516120819999998,
+			"tags": [],
+			"tls_version": "",
+			"transaction_id": 26
+		},
+		{
+			"network": "tcp",
+			"address": "17.248.248.104:443",
+			"cipher_suite": "",
+			"failure": "eof_error",
+			"negotiated_protocol": "",
+			"no_tls_verify": false,
+			"peer_certificates": [],
+			"server_name": "mask.icloud.com",
+			"t0": 1.612246509,
+			"t": 1.7972129159999999,
+			"tags": [],
+			"tls_version": "",
+			"transaction_id": 33
+		},
+		{
+			"network": "tcp",
+			"address": "17.248.248.117:443",
+			"cipher_suite": "",
+			"failure": "eof_error",
+			"negotiated_protocol": "",
+			"no_tls_verify": false,
+			"peer_certificates": [],
+			"server_name": "mask.icloud.com",
+			"t0": 1.6050547910000001,
+			"t": 1.79781828,
+			"tags": [],
+			"tls_version": "",
+			"transaction_id": 35
+		},
+		{
+			"network": "tcp",
+			"address": "17.248.248.121:443",
+			"cipher_suite": "",
+			"failure": "eof_error",
+			"negotiated_protocol": "",
+			"no_tls_verify": false,
+			"peer_certificates": [],
+			"server_name": "mask.icloud.com",
+			"t0": 1.6147980720000001,
+			"t": 1.798134999,
+			"tags": [],
+			"tls_version": "",
+			"transaction_id": 31
+		},
+		{
+			"network": "tcp",
+			"address": "17.248.248.100:443",
+			"cipher_suite": "",
+			"failure": "eof_error",
+			"negotiated_protocol": "",
+			"no_tls_verify": false,
+			"peer_certificates": [],
+			"server_name": "mask.icloud.com",
+			"t0": 1.608131353,
+			"t": 1.79844453,
+			"tags": [],
+			"tls_version": "",
+			"transaction_id": 27
+		}
+	],
+	"x_control_request": {
+		"http_request": "https:\/\/mask.icloud.com\/",
+		"http_request_headers": {
+			"Accept": [
+				"text\/html,application\/xhtml+xml,application\/xml;q=0.9,*\/*;q=0.8"
+			],
+			"Accept-Language": [
+				"en-US,en;q=0.9"
+			],
+			"User-Agent": [
+				"Mozilla\/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/108.0.0.0 Safari\/537.36"
+			]
+		},
+		"tcp_connect": [
+			"[2a02:26f7:6:0:ace0:1310::]:443",
+			"[2a02:26f7:6:0:ace0:1310::]:80",
+			"172.224.19.9:443",
+			"172.224.19.9:80",
+			"[2a02:26f7:6:0:ace0:1306::]:443",
+			"[2a02:26f7:6:0:ace0:1306::]:80",
+			"172.224.19.10:443",
+			"172.224.19.10:80",
+			"172.224.19.12:443",
+			"172.224.19.12:80",
+			"[2a02:26f7:6:0:ace0:130b::]:443",
+			"[2a02:26f7:6:0:ace0:130b::]:80",
+			"[2a02:26f7:6:0:ace0:1311::]:443",
+			"[2a02:26f7:6:0:ace0:1311::]:80",
+			"172.224.19.6:443",
+			"172.224.19.6:80",
+			"172.224.19.4:443",
+			"172.224.19.4:80",
+			"172.224.19.11:443",
+			"172.224.19.11:80",
+			"172.224.19.5:443",
+			"172.224.19.5:80",
+			"[2a02:26f7:6:0:ace0:1309::]:443",
+			"[2a02:26f7:6:0:ace0:1309::]:80",
+			"172.224.19.15:443",
+			"172.224.19.15:80",
+			"172.224.19.17:443",
+			"172.224.19.17:80",
+			"172.224.19.14:443",
+			"172.224.19.14:80",
+			"172.224.19.7:443",
+			"172.224.19.7:80",
+			"[2a02:26f7:6:0:ace0:130c::]:443",
+			"[2a02:26f7:6:0:ace0:130c::]:80",
+			"[2a02:26f7:6:0:ace0:1303::]:443",
+			"[2a02:26f7:6:0:ace0:1303::]:80",
+			"[2a02:26f7:6:0:ace0:1308::]:443",
+			"[2a02:26f7:6:0:ace0:1308::]:80",
+			"172.224.19.3:443",
+			"172.224.19.3:80",
+			"172.224.19.13:443",
+			"172.224.19.13:80"
+		],
+		"x_quic_enabled": false
+	},
+	"control": {
+		"tcp_connect": {
+			"17.248.248.100:443": {
+				"status": true,
+				"failure": null
+			},
+			"17.248.248.101:443": {
+				"status": true,
+				"failure": null
+			},
+			"17.248.248.103:443": {
+				"status": true,
+				"failure": null
+			},
+			"17.248.248.104:443": {
+				"status": true,
+				"failure": null
+			},
+			"17.248.248.105:443": {
+				"status": true,
+				"failure": null
+			},
+			"17.248.248.117:443": {
+				"status": true,
+				"failure": null
+			},
+			"17.248.248.119:443": {
+				"status": true,
+				"failure": null
+			},
+			"17.248.248.121:443": {
+				"status": true,
+				"failure": null
+			},
+			"172.224.19.10:443": {
+				"status": true,
+				"failure": null
+			},
+			"172.224.19.11:443": {
+				"status": true,
+				"failure": null
+			},
+			"172.224.19.12:443": {
+				"status": true,
+				"failure": null
+			},
+			"172.224.19.13:443": {
+				"status": true,
+				"failure": null
+			},
+			"172.224.19.14:443": {
+				"status": true,
+				"failure": null
+			},
+			"172.224.19.15:443": {
+				"status": true,
+				"failure": null
+			},
+			"172.224.19.17:443": {
+				"status": true,
+				"failure": null
+			},
+			"172.224.19.3:443": {
+				"status": true,
+				"failure": null
+			},
+			"172.224.19.4:443": {
+				"status": true,
+				"failure": null
+			},
+			"172.224.19.5:443": {
+				"status": true,
+				"failure": null
+			},
+			"172.224.19.6:443": {
+				"status": true,
+				"failure": null
+			},
+			"172.224.19.7:443": {
+				"status": true,
+				"failure": null
+			},
+			"172.224.19.9:443": {
+				"status": true,
+				"failure": null
+			},
+			"[2a01:b740:a41:212::4]:443": {
+				"status": true,
+				"failure": null
+			},
+			"[2a01:b740:a41:212::5]:443": {
+				"status": true,
+				"failure": null
+			},
+			"[2a01:b740:a41:212::6]:443": {
+				"status": true,
+				"failure": null
+			},
+			"[2a01:b740:a41:212::7]:443": {
+				"status": true,
+				"failure": null
+			},
+			"[2a01:b740:a41:212::8]:443": {
+				"status": true,
+				"failure": null
+			},
+			"[2a01:b740:a41:213::5]:443": {
+				"status": true,
+				"failure": null
+			},
+			"[2a01:b740:a41:213::7]:443": {
+				"status": true,
+				"failure": null
+			},
+			"[2a01:b740:a41:213::9]:443": {
+				"status": true,
+				"failure": null
+			},
+			"[2a02:26f7:6:0:ace0:1303::]:443": {
+				"status": true,
+				"failure": null
+			},
+			"[2a02:26f7:6:0:ace0:1306::]:443": {
+				"status": true,
+				"failure": null
+			},
+			"[2a02:26f7:6:0:ace0:1308::]:443": {
+				"status": true,
+				"failure": null
+			},
+			"[2a02:26f7:6:0:ace0:1309::]:443": {
+				"status": true,
+				"failure": null
+			},
+			"[2a02:26f7:6:0:ace0:130b::]:443": {
+				"status": true,
+				"failure": null
+			},
+			"[2a02:26f7:6:0:ace0:130c::]:443": {
+				"status": true,
+				"failure": null
+			},
+			"[2a02:26f7:6:0:ace0:1310::]:443": {
+				"status": true,
+				"failure": null
+			},
+			"[2a02:26f7:6:0:ace0:1311::]:443": {
+				"status": true,
+				"failure": null
+			}
+		},
+		"tls_handshake": {
+			"17.248.248.100:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"17.248.248.101:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"17.248.248.103:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"17.248.248.104:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"17.248.248.105:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"17.248.248.117:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"17.248.248.119:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"17.248.248.121:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"172.224.19.10:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"172.224.19.11:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"172.224.19.12:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"172.224.19.13:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"172.224.19.14:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"172.224.19.15:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"172.224.19.17:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"172.224.19.3:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"172.224.19.4:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"172.224.19.5:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"172.224.19.6:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"172.224.19.7:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"172.224.19.9:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"[2a01:b740:a41:212::4]:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"[2a01:b740:a41:212::5]:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"[2a01:b740:a41:212::6]:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"[2a01:b740:a41:212::7]:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"[2a01:b740:a41:212::8]:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"[2a01:b740:a41:213::5]:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"[2a01:b740:a41:213::7]:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"[2a01:b740:a41:213::9]:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"[2a02:26f7:6:0:ace0:1303::]:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"[2a02:26f7:6:0:ace0:1306::]:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"[2a02:26f7:6:0:ace0:1308::]:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"[2a02:26f7:6:0:ace0:1309::]:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"[2a02:26f7:6:0:ace0:130b::]:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"[2a02:26f7:6:0:ace0:130c::]:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"[2a02:26f7:6:0:ace0:1310::]:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			},
+			"[2a02:26f7:6:0:ace0:1311::]:443": {
+				"server_name": "mask.icloud.com",
+				"status": false,
+				"failure": "eof_error"
+			}
+		},
+		"quic_handshake": {},
+		"http_request": {
+			"body_length": -1,
+			"discovered_h3_endpoint": "",
+			"failure": "unknown_error",
+			"title": "",
+			"headers": {},
+			"status_code": -1
+		},
+		"http3_request": null,
+		"dns": {
+			"failure": null,
+			"addrs": [
+				"17.248.248.104",
+				"17.248.248.117",
+				"17.248.248.103",
+				"17.248.248.101",
+				"17.248.248.105",
+				"17.248.248.100",
+				"17.248.248.121",
+				"17.248.248.119",
+				"2a01:b740:a41:212::5",
+				"2a01:b740:a41:213::5",
+				"2a01:b740:a41:212::8",
+				"2a01:b740:a41:212::6",
+				"2a01:b740:a41:212::7",
+				"2a01:b740:a41:213::9",
+				"2a01:b740:a41:213::7",
+				"2a01:b740:a41:212::4"
+			]
+		},
+		"ip_info": {
+			"17.248.248.100": {
+				"asn": 714,
+				"flags": 2
+			},
+			"17.248.248.101": {
+				"asn": 714,
+				"flags": 2
+			},
+			"17.248.248.103": {
+				"asn": 714,
+				"flags": 2
+			},
+			"17.248.248.104": {
+				"asn": 714,
+				"flags": 2
+			},
+			"17.248.248.105": {
+				"asn": 714,
+				"flags": 2
+			},
+			"17.248.248.117": {
+				"asn": 714,
+				"flags": 2
+			},
+			"17.248.248.119": {
+				"asn": 714,
+				"flags": 2
+			},
+			"17.248.248.121": {
+				"asn": 714,
+				"flags": 2
+			},
+			"172.224.19.10": {
+				"asn": 36183,
+				"flags": 1
+			},
+			"172.224.19.11": {
+				"asn": 36183,
+				"flags": 1
+			},
+			"172.224.19.12": {
+				"asn": 36183,
+				"flags": 1
+			},
+			"172.224.19.13": {
+				"asn": 36183,
+				"flags": 1
+			},
+			"172.224.19.14": {
+				"asn": 36183,
+				"flags": 1
+			},
+			"172.224.19.15": {
+				"asn": 36183,
+				"flags": 1
+			},
+			"172.224.19.17": {
+				"asn": 36183,
+				"flags": 1
+			},
+			"172.224.19.3": {
+				"asn": 36183,
+				"flags": 1
+			},
+			"172.224.19.4": {
+				"asn": 36183,
+				"flags": 1
+			},
+			"172.224.19.5": {
+				"asn": 36183,
+				"flags": 1
+			},
+			"172.224.19.6": {
+				"asn": 36183,
+				"flags": 1
+			},
+			"172.224.19.7": {
+				"asn": 36183,
+				"flags": 1
+			},
+			"172.224.19.9": {
+				"asn": 36183,
+				"flags": 1
+			},
+			"2a01:b740:a41:212::4": {
+				"asn": 714,
+				"flags": 2
+			},
+			"2a01:b740:a41:212::5": {
+				"asn": 714,
+				"flags": 2
+			},
+			"2a01:b740:a41:212::6": {
+				"asn": 714,
+				"flags": 2
+			},
+			"2a01:b740:a41:212::7": {
+				"asn": 714,
+				"flags": 2
+			},
+			"2a01:b740:a41:212::8": {
+				"asn": 714,
+				"flags": 2
+			},
+			"2a01:b740:a41:213::5": {
+				"asn": 714,
+				"flags": 2
+			},
+			"2a01:b740:a41:213::7": {
+				"asn": 714,
+				"flags": 2
+			},
+			"2a01:b740:a41:213::9": {
+				"asn": 714,
+				"flags": 2
+			},
+			"2a02:26f7:6:0:ace0:1303::": {
+				"asn": 36183,
+				"flags": 1
+			},
+			"2a02:26f7:6:0:ace0:1306::": {
+				"asn": 36183,
+				"flags": 1
+			},
+			"2a02:26f7:6:0:ace0:1308::": {
+				"asn": 36183,
+				"flags": 1
+			},
+			"2a02:26f7:6:0:ace0:1309::": {
+				"asn": 36183,
+				"flags": 1
+			},
+			"2a02:26f7:6:0:ace0:130b::": {
+				"asn": 36183,
+				"flags": 1
+			},
+			"2a02:26f7:6:0:ace0:130c::": {
+				"asn": 36183,
+				"flags": 1
+			},
+			"2a02:26f7:6:0:ace0:1310::": {
+				"asn": 36183,
+				"flags": 1
+			},
+			"2a02:26f7:6:0:ace0:1311::": {
+				"asn": 36183,
+				"flags": 1
+			}
+		}
+	},
+	"x_conn_priority_log": [
+		{
+			"msg": "create with [{Addr:2a02:26f7:6:0:ace0:1310:: Flags:2} {Addr:172.224.19.9 Flags:1} {Addr:2a02:26f7:6:0:ace0:1306:: Flags:2} {Addr:172.224.19.10 Flags:1} {Addr:172.224.19.12 Flags:1} {Addr:2a02:26f7:6:0:ace0:130b:: Flags:2} {Addr:2a02:26f7:6:0:ace0:1311:: Flags:2} {Addr:172.224.19.6 Flags:3} {Addr:172.224.19.4 Flags:3} {Addr:172.224.19.11 Flags:2} {Addr:172.224.19.5 Flags:2} {Addr:2a02:26f7:6:0:ace0:1309:: Flags:2} {Addr:172.224.19.15 Flags:3} {Addr:172.224.19.17 Flags:1} {Addr:172.224.19.14 Flags:2} {Addr:172.224.19.7 Flags:2} {Addr:2a02:26f7:6:0:ace0:130c:: Flags:2} {Addr:2a02:26f7:6:0:ace0:1303:: Flags:2} {Addr:2a02:26f7:6:0:ace0:1308:: Flags:2} {Addr:172.224.19.3 Flags:1} {Addr:172.224.19.13 Flags:2}]",
+			"t": 0.634751354
+		}
+	],
+	"control_failure": null,
+	"x_dns_flags": 4,
+	"dns_experiment_failure": null,
+	"dns_consistency": "inconsistent",
+	"http_experiment_failure": null,
+	"x_blocking_flags": 1,
+	"x_null_null_flags": 0,
+	"body_length_match": null,
+	"headers_match": null,
+	"status_code_match": null,
+	"title_match": null,
+	"blocking": "dns",
+	"accessible": false
+}

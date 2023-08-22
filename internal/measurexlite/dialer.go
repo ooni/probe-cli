@@ -14,15 +14,10 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
 // NewDialerWithoutResolver is equivalent to netxlite.NewDialerWithoutResolver
 // except that it returns a model.Dialer that uses this trace.
-//
-// Note: unlike code in netx or measurex, this factory DOES NOT return you a
-// dialer that also performs wrapping of a net.Conn in case of success. If you
-// want to wrap the conn, you need to wrap it explicitly using model.Trace.WrapNetConn.
 func (tx *Trace) NewDialerWithoutResolver(dl model.DebugLogger) model.Dialer {
 	return &dialerTrace{
 		d:  tx.newDialerWithoutResolver(dl),
@@ -100,7 +95,7 @@ func NewArchivalTCPConnectResult(index int64, started time.Duration, address str
 		Port: archivalPortToString(port),
 		Status: model.ArchivalTCPConnectStatus{
 			Blocked: nil,
-			Failure: tracex.NewFailure(err),
+			Failure: NewFailure(err),
 			Success: err == nil,
 		},
 		T0:            started.Seconds(),

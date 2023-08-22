@@ -5,6 +5,7 @@ package measurexlite
 //
 
 import (
+	"sync"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -12,22 +13,32 @@ import (
 	utls "gitlab.com/yawning/utls.git"
 )
 
-// Trace implements model.Trace.
+// Trace implements [model.Trace]. We use a [context.Context] to register ourselves
+// as the [model.Trace] and we implement the [model.Trace] callbacks to route events
+// into internal buffered channels as explained in by the [measurexlite] package
+// documentation. The zero-value of this struct is invalid. To construct use [NewTrace].
 //
-// The zero-value of this struct is invalid. To construct use NewTrace.
-//
-// # Buffered channels
-//
-// NewTrace uses reasonable buffer sizes for the channels used for collecting
+// [NewTrace] uses reasonable buffer sizes for the channels used for collecting
 // events. You should drain the channels used by this implementation after
-// each operation you perform (i.e., we expect you to peform step-by-step
-// measurements). We have convenience methods for extracting events from the
-// buffered channels.
+// each operation you perform (that is, we expect you to peform [step-by-step
+// measurements]). As mentioned in the [measurexlite] package documentation,
+// there are several methods for extracting events from the [*Trace].
+//
+// [step-by-step measurements]: https://github.com/ooni/probe-cli/blob/master/docs/design/dd-003-step-by-step.md
 type Trace struct {
 	// Index is the unique index of this trace within the
 	// current measurement. Note that this field MUST be read-only. Writing it
 	// once you have constructed a trace MAY lead to data races.
 	Index int64
+
+	// bytesReceivedMap maps a remote host with the bytes we received
+	// from such a remote host. Accessing this map requires one to
+	// additionally hold the bytesReceivedMu mutex.
+	bytesReceivedMap map[string]int64
+
+	// bytesReceivedMu protects the bytesReceivedMap from concurrent
+	// access from multiple goroutines.
+	bytesReceivedMu *sync.Mutex
 
 	// networkEvent is MANDATORY and buffers network events.
 	networkEvent chan *model.ArchivalNetworkEvent
@@ -88,31 +99,23 @@ type Trace struct {
 	ZeroTime time.Time
 }
 
-const (
-	// NetworkEventBufferSize is the buffer size for constructing
-	// the internal Trace's networkEvent buffered channel.
-	NetworkEventBufferSize = 64
+// NetworkEventBufferSize is the [*Trace] buffer size for network I/O events.
+const NetworkEventBufferSize = 64
 
-	// DNSLookupBufferSize is the buffer size for constructing
-	// the internal Trace's dnsLookup buffered channel.
-	DNSLookupBufferSize = 8
+// DNSLookupBufferSize is the [*Trace] buffer size for DNS lookup events.
+const DNSLookupBufferSize = 8
 
-	// DNSResponseBufferSize is the buffer size for constructing
-	// the internal Trace's dnsDelayedResponse buffered channel.
-	DelayedDNSResponseBufferSize = 8
+// DNSResponseBufferSize is the [*Trace] buffer size for delayed DNS responses events.
+const DelayedDNSResponseBufferSize = 8
 
-	// TCPConnectBufferSize is the buffer size for constructing
-	// the internal Trace's tcpConnect buffered channel.
-	TCPConnectBufferSize = 8
+// TCPConnectBufferSize is the [*Trace] buffer size for TCP connect events.
+const TCPConnectBufferSize = 8
 
-	// TLSHandshakeBufferSize is the buffer for construcing
-	// the internal Trace's tlsHandshake buffered channel.
-	TLSHandshakeBufferSize = 8
+// TLSHandshakeBufferSize is the [*Trace] buffer size for TLS handshake events.
+const TLSHandshakeBufferSize = 8
 
-	// QUICHandshakeBufferSize is the buffer for constructing
-	// the internal Trace's quicHandshake buffered channel.
-	QUICHandshakeBufferSize = 8
-)
+// QUICHandshakeBufferSize is the [*Trace] buffer size for QUIC handshake events.
+const QUICHandshakeBufferSize = 8
 
 // NewTrace creates a new instance of Trace using default settings.
 //
@@ -130,7 +133,9 @@ const (
 // to identify that some traces belong to some submeasurements).
 func NewTrace(index int64, zeroTime time.Time, tags ...string) *Trace {
 	return &Trace{
-		Index: index,
+		Index:            index,
+		bytesReceivedMap: make(map[string]int64),
+		bytesReceivedMu:  &sync.Mutex{},
 		networkEvent: make(
 			chan *model.ArchivalNetworkEvent,
 			NetworkEventBufferSize,

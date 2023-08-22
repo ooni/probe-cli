@@ -107,8 +107,7 @@ func (tx *Trace) FirstQUICHandshakeOrNil() *model.ArchivalTLSOrQUICHandshakeResu
 	return ev[0]
 }
 
-// MaybeCloseQUICConn is a convenience function for closing a quic.EarlyConnection only when such a conn
-// isn't nil.
+// MaybeCloseQUICConn is a convenience function for closing a [quic.EarlyConnection] when it is not nil.
 func MaybeCloseQUICConn(conn quic.EarlyConnection) (err error) {
 	if conn != nil {
 		err = conn.CloseWithError(0, "")
