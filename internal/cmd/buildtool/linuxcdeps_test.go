@@ -40,12 +40,12 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://zlib.net/zlib-1.2.13.tar.gz",
+				"curl", "-fsSLO", "https://zlib.net/zlib-1.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "zlib-1.2.13.tar.gz",
+				"tar", "-xf", "zlib-1.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -299,12 +299,12 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.7.13.tar.gz",
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.7.14.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "tor-0.4.7.13.tar.gz",
+				"tar", "-xf", "tor-0.4.7.14.tar.gz",
 			},
 		}, {
 			Env: []string{},

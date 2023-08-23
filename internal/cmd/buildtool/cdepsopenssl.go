@@ -47,15 +47,17 @@ func cdepsOpenSSLBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencie
 	mergedEnv := cBuildMerge(globalEnv, localEnv)
 	envp := cBuildExportOpenSSL(mergedEnv)
 
-	// QUIRK: OpenSSL-3.1.2 wants ANDROID_NDK_HOME
-	// TODO(bassosimone): 	Do we still need this? It seems to work without,
-	//						but I can't find reliable information on this.
+	// QUIRK: OpenSSL-1.1.1v wanted ANDROID_NDK_HOME
+	// TODO(bassosimone): do we still need this? It seems to work without,
+	// but I can't find reliable information on this.
 	if mergedEnv.ANDROID_NDK_ROOT != "" {
 		envp.Append("ANDROID_NDK_HOME", mergedEnv.ANDROID_NDK_ROOT)
 	}
 
-	// QUIRK: OpenSSL-3.1.2 wants the PATH to contain the
+	// QUIRK: OpenSSL-1.1.1v wanted the PATH to contain the
 	// directory where the Android compiler lives.
+	// TODO(bassosimone): do we still need this? It seems to work without,
+	// but I can't find reliable information on this.
 	if mergedEnv.BINPATH != "" {
 		envp.Append("PATH", cdepsPrependToPath(mergedEnv.BINPATH))
 	}
