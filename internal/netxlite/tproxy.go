@@ -10,6 +10,22 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
+// tproxyNilSafeProvider is a nil-safe [model.UnderlyingNetwork] provider. When the pointer
+// to the [tproxyNilSafeProvider] is nil or the underlying field is nil, the get method of the
+// [tproxyNilSafeProvider] falls back to calling [tproxySingleton].
+type tproxyNilSafeProvider struct {
+	underlying model.UnderlyingNetwork
+}
+
+// Get returns the [model.UnderlyingNetwork] returned by [tproxySingleton] if p is nil or the
+// underlying field is nil and otherwise returns the value of the underlying field.
+func (p *tproxyNilSafeProvider) Get() model.UnderlyingNetwork {
+	if p == nil || p.underlying == nil {
+		return tproxySingleton()
+	}
+	return p.underlying
+}
+
 // tproxySingletonInst refers to the UnderlyingNetwork implementation. By overriding this
 // variable you can force netxlite to use alternative network primitives.
 var tproxySingletonInst model.UnderlyingNetwork = &DefaultTProxy{}

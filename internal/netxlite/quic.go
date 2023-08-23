@@ -19,21 +19,20 @@ import (
 // NewQUICListener creates a new QUICListener using the standard
 // library to create listening UDP sockets.
 func NewQUICListener() model.QUICListener {
-	return &quicListenerErrWrapper{&quicListenerStdlib{underlying: tproxySingleton()}}
+	return &quicListenerErrWrapper{&quicListenerStdlib{}}
 }
 
 // quicListenerStdlib is a QUICListener using the standard library.
 type quicListenerStdlib struct {
-	// underlying is the MANDATORY custom [UnderlyingNetwork].
-	// If nil, we will use tproxySingleton() as underlying network.
-	underlying model.UnderlyingNetwork
+	// provider is the OPTIONAL nil-safe [model.UnderlyingNetwork] provider.
+	provider *tproxyNilSafeProvider
 }
 
 var _ model.QUICListener = &quicListenerStdlib{}
 
 // Listen implements QUICListener.Listen.
 func (qls *quicListenerStdlib) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
-	return qls.underlying.ListenUDP("udp", addr)
+	return qls.provider.Get().ListenUDP("udp", addr)
 }
 
 // NewQUICDialerWithResolver is the WrapDialer equivalent for QUIC where
