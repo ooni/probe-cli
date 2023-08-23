@@ -26,14 +26,14 @@ func cdepsOpenSSLBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencie
 	restore := cdepsMustChdir(work)
 	defer restore()
 
-	// See https://github.com/Homebrew/homebrew-core/blob/master/Formula/openssl@1.1.rb
-	cdepsMustFetch("https://www.openssl.org/source/openssl-1.1.1u.tar.gz")
+	// See https://github.com/Homebrew/homebrew-core/blob/master/Formula/openssl@3.rb
+	cdepsMustFetch("https://www.openssl.org/source/openssl-3.1.2.tar.gz")
 	deps.VerifySHA256( // must be mockable
-		"e2f8d84b523eecd06c7be7626830370300fbcc15386bf5142d72758f6963ebc6",
-		"openssl-1.1.1u.tar.gz",
+		"a0ce69b8b97ea6a35b96875235aa453b966ba3cba8af2de23657d8b6767d6539",
+		"openssl-3.1.2.tar.gz",
 	)
-	must.Run(log.Log, "tar", "-xf", "openssl-1.1.1u.tar.gz")
-	_ = deps.MustChdir("openssl-1.1.1u") // must be mockable
+	must.Run(log.Log, "tar", "-xf", "openssl-3.1.2.tar.gz")
+	_ = deps.MustChdir("openssl-3.1.2") // must be mockable
 
 	mydir := filepath.Join(topdir, "CDEPS", "openssl")
 	for _, patch := range cdepsMustListPatches(mydir) {
@@ -47,23 +47,25 @@ func cdepsOpenSSLBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencie
 	mergedEnv := cBuildMerge(globalEnv, localEnv)
 	envp := cBuildExportOpenSSL(mergedEnv)
 
-	// QUIRK: OpenSSL-1.1.1u wants ANDROID_NDK_HOME
+	// QUIRK: OpenSSL-1.1.1v wanted ANDROID_NDK_HOME
+	// TODO(bassosimone): do we still need this? It seems to work without,
+	// but I can't find reliable information on this.
 	if mergedEnv.ANDROID_NDK_ROOT != "" {
 		envp.Append("ANDROID_NDK_HOME", mergedEnv.ANDROID_NDK_ROOT)
 	}
 
-	// QUIRK: OpenSSL-1.1.1u wants the PATH to contain the
+	// QUIRK: OpenSSL-1.1.1v wanted the PATH to contain the
 	// directory where the Android compiler lives.
+	// TODO(bassosimone): do we still need this?
 	if mergedEnv.BINPATH != "" {
 		envp.Append("PATH", cdepsPrependToPath(mergedEnv.BINPATH))
 	}
 
 	argv := runtimex.Try1(shellx.NewArgv(
 		"./Configure", "no-comp", "no-dtls", "no-ec2m", "no-psk", "no-srp",
-		"no-ssl2", "no-ssl3", "no-camellia", "no-idea", "no-md2", "no-md4",
-		"no-mdc2", "no-rc2", "no-rc4", "no-rc5", "no-rmd160", "no-whirlpool",
-		"no-dso", "no-hw", "no-ui-console", "no-shared", "no-unit-test",
-		globalEnv.OPENSSL_COMPILER,
+		"no-ssl3", "no-camellia", "no-idea", "no-md2", "no-md4", "no-mdc2",
+		"no-rc2", "no-rc4", "no-rc5", "no-rmd160", "no-whirlpool", "no-dso",
+		"no-ui-console", "no-shared", "no-unit-test", globalEnv.OPENSSL_COMPILER,
 	))
 	if globalEnv.OPENSSL_API_DEFINE != "" {
 		argv.Append(globalEnv.OPENSSL_API_DEFINE)
