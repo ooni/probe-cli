@@ -164,7 +164,7 @@ var _ TLSConn = &tls.Conn{}
 // 3. that we are going to use Mozilla CA if the [tls.Config]
 // RootCAs field is zero initialized.
 func NewTLSHandshakerStdlib(logger model.DebugLogger) model.TLSHandshaker {
-	return newTLSHandshakerLogger(&tlsHandshakerConfigurable{underlying: tproxySingleton()}, logger)
+	return newTLSHandshakerLogger(&tlsHandshakerConfigurable{}, logger)
 }
 
 // newTLSHandshakerLogger creates a new tlsHandshakerLogger instance.

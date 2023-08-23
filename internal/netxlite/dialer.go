@@ -25,7 +25,7 @@ func NewDialerWithStdlibResolver(dl model.DebugLogger) model.Dialer {
 // NewDialerWithResolver is equivalent to calling WrapDialer with
 // the dialer argument being equal to &DialerSystem{}.
 func NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...model.DialerWrapper) model.Dialer {
-	return WrapDialer(dl, r, &DialerSystem{underlying: tproxySingleton()}, w...)
+	return WrapDialer(dl, r, &DialerSystem{}, w...)
 }
 
 // WrapDialer wraps an existing Dialer to add extra functionality

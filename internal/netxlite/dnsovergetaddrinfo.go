@@ -29,7 +29,7 @@ type dnsOverGetaddrinfoTransport struct {
 
 // NewDNSOverGetaddrinfoTransport creates a new dns-over-getaddrinfo transport.
 func NewDNSOverGetaddrinfoTransport() model.DNSTransport {
-	return &dnsOverGetaddrinfoTransport{underlying: tproxySingleton()}
+	return &dnsOverGetaddrinfoTransport{}
 }
 
 var _ model.DNSTransport = &dnsOverGetaddrinfoTransport{}

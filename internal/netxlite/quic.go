@@ -19,7 +19,7 @@ import (
 // NewQUICListener creates a new QUICListener using the standard
 // library to create listening UDP sockets.
 func NewQUICListener() model.QUICListener {
-	return &quicListenerErrWrapper{&quicListenerStdlib{underlying: tproxySingleton()}}
+	return &quicListenerErrWrapper{&quicListenerStdlib{}}
 }
 
 // quicListenerStdlib is a QUICListener using the standard library.
@@ -99,10 +99,6 @@ func NewQUICDialerWithoutResolver(listener model.QUICListener,
 type quicDialerQUICGo struct {
 	// QUICListener is the underlying QUICListener to use.
 	QUICListener model.QUICListener
-
-	// underlying is the MANDATORY custom [UnderlyingNetwork].
-	// If nil, we will use tproxySingleton() as underlying network.
-	underlying model.UnderlyingNetwork
 
 	// mockDialEarlyContext allows to mock quic.DialEarlyContext.
 	mockDialEarlyContext func(ctx context.Context, pconn net.PacketConn,

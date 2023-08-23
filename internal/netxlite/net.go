@@ -14,11 +14,15 @@ type Net struct {
 	Underlying model.UnderlyingNetwork
 }
 
+func (n *Net) tproxyNilSafeProvider() *tproxyNilSafeProvider {
+	return &tproxyNilSafeProvider{n.Underlying}
+}
+
 // NewStdlibResolver is like netxlite.NewStdlibResolver but
 // the constructed resolver uses the given [UnderlyingNetwork].
 func (n *Net) NewStdlibResolver(logger model.DebugLogger, wrappers ...model.DNSTransportWrapper) model.Resolver {
 	unwrapped := &resolverSystem{
-		t: WrapDNSTransport(&dnsOverGetaddrinfoTransport{underlying: n.Underlying}, wrappers...),
+		t: WrapDNSTransport(&dnsOverGetaddrinfoTransport{provider: n.tproxyNilSafeProvider()}, wrappers...),
 	}
 	return WrapResolver(logger, unwrapped)
 }
@@ -26,13 +30,13 @@ func (n *Net) NewStdlibResolver(logger model.DebugLogger, wrappers ...model.DNST
 // NewDialerWithResolver is like netxlite.NewDialerWithResolver but
 // the constructed dialer uses the given [UnderlyingNetwork].
 func (n *Net) NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...model.DialerWrapper) model.Dialer {
-	return WrapDialer(dl, r, &DialerSystem{underlying: n.Underlying}, w...)
+	return WrapDialer(dl, r, &DialerSystem{provider: n.tproxyNilSafeProvider()}, w...)
 }
 
 // NewQUICListener is like netxlite.NewQUICListener but
 // the constructed listener uses the given [UnderlyingNetwork].
 func (n *Net) NewQUICListener() model.QUICListener {
-	return &quicListenerErrWrapper{&quicListenerStdlib{underlying: n.Underlying}}
+	return &quicListenerErrWrapper{&quicListenerStdlib{provider: n.tproxyNilSafeProvider()}}
 }
 
 // NewQUICDialerWithResolver is like netxlite.NewQUICDialerWithResolver but
@@ -41,7 +45,7 @@ func (n *Net) NewQUICDialerWithResolver(listener model.QUICListener, logger mode
 	resolver model.Resolver, wrappers ...model.QUICDialerWrapper) (outDialer model.QUICDialer) {
 	baseDialer := &quicDialerQUICGo{
 		QUICListener: listener,
-		underlying:   n.Underlying,
+		provider:     n.tproxyNilSafeProvider(),
 	}
 	return WrapQUICDialer(logger, resolver, baseDialer, wrappers...)
 }
@@ -49,7 +53,7 @@ func (n *Net) NewQUICDialerWithResolver(listener model.QUICListener, logger mode
 // NewTLSHandshakerStdlib is like netxlite.NewTLSHandshakerStdlib but
 // the constructed handshaker uses the given [UnderlyingNetwork].
 func (n *Net) NewTLSHandshakerStdlib(logger model.DebugLogger) model.TLSHandshaker {
-	return newTLSHandshakerLogger(&tlsHandshakerConfigurable{underlying: n.Underlying}, logger)
+	return newTLSHandshakerLogger(&tlsHandshakerConfigurable{provider: n.tproxyNilSafeProvider()}, logger)
 }
 
 // NewHTTPTransportStdlib is like netxlite.NewHTTPTransportStdlib but
