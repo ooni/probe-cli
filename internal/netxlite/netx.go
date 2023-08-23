@@ -1,7 +1,7 @@
 package netxlite
 
 //
-// Net is a high-level structure that provides constructors for basic netxlite
+// Netx is a high-level structure that provides constructors for basic netxlite
 // network operations using a custom model.UnderlyingNetwork.
 //
 
