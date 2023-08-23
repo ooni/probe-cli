@@ -235,10 +235,9 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	}
 	var service string
 	if port == "" {
-		service = net.JoinHostPort(host, m.config.port())
-	} else {
-		service = net.JoinHostPort(host, port)
+		port = m.config.port()
 	}
+	service = net.JoinHostPort(host, port)
 	udpAddr, err := net.ResolveUDPAddr("udp", service)
 	if err != nil {
 		return err
