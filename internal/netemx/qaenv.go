@@ -36,8 +36,8 @@ type qaEnvConfig struct {
 	// dnsOverUDPResolvers contains the DNS-over-UDP resolvers to create.
 	dnsOverUDPResolvers []string
 
-	// httpServers contains factory functions for the HTTP servers to create.
-	httpServers map[string]QAEnvHTTPHandlerFactory
+	// httpServers contains the HTTP servers to create.
+	httpServers map[string]http.Handler
 
 	// ispResolver is the ISP resolver to use.
 	ispResolver string
@@ -80,36 +80,14 @@ func QAEnvOptionDNSOverUDPResolvers(ipAddrs ...string) QAEnvOption {
 	}
 }
 
-// QAEnvHTTPHandlerFactory constructs an [http.Handler] using the given underlying network.
-type QAEnvHTTPHandlerFactory interface {
-	NewHandler(net netem.UnderlyingNetwork) http.Handler
-}
-
-// QAEnvOptionHTTPServerWithFactory adds the given HTTP server as a factory function.
-// If you do not set this option we will not create any HTTP server.
-func QAEnvOptionHTTPServerWithFactory(ipAddr string, factory QAEnvHTTPHandlerFactory) QAEnvOption {
+// QAEnvOptionHTTPServer adds the given HTTP server. If you do not set this option
+// we will not create any HTTP server.
+func QAEnvOptionHTTPServer(ipAddr string, handler http.Handler) QAEnvOption {
 	runtimex.Assert(net.ParseIP(ipAddr) != nil, "not an IP addr")
-	runtimex.Assert(factory != nil, "passed a nil handler factory")
-
+	runtimex.Assert(handler != nil, "passed a nil handler")
 	return func(config *qaEnvConfig) {
-		config.httpServers[ipAddr] = factory
+		config.httpServers[ipAddr] = handler
 	}
-}
-
-// defaultHTTPHandlerFactory is the default handler factory that just returns a given [http.Handler].
-type defaultHTTPHandlerFactory struct {
-	handler http.Handler
-}
-
-// NewHandler implements QAEnvHTTPHandlerFactory.NewHandler.
-func (f defaultHTTPHandlerFactory) NewHandler(net netem.UnderlyingNetwork) http.Handler {
-	return f.handler
-}
-
-// QAEnvAlwaysReturnThisHandler returns a QAEnvHTTPHandlerFactory such that we can always use the
-// new API that requires a httpHandlerFactory.
-func QAEnvAlwaysReturnThisHandler(handler http.Handler) QAEnvHTTPHandlerFactory {
-	return &defaultHTTPHandlerFactory{handler}
 }
 
 // QAEnvOptionISPResolverAddress sets the ISP's resolver IP address. If you do not set this option
@@ -164,9 +142,6 @@ type QAEnv struct {
 	// clientStack is the client stack to use.
 	clientStack *netem.UNetStack
 
-	// serverStacks are the server stacks to use.
-	serverStacks map[string]*netem.UNetStack
-
 	// closables contains all entities where we have to take care of closing.
 	closables []io.Closer
 
@@ -186,11 +161,6 @@ type QAEnv struct {
 	topology *netem.StarTopology
 }
 
-// GetServerStack returns the server stack at the given address.
-func (env *QAEnv) GetServerStack(addr string) *netem.UNetStack {
-	return env.serverStacks[addr]
-}
-
 // NewQAEnv creates a new [QAEnv].
 func NewQAEnv(options ...QAEnvOption) *QAEnv {
 	// initialize the configuration
@@ -198,7 +168,7 @@ func NewQAEnv(options ...QAEnvOption) *QAEnv {
 		clientAddress:       QAEnvDefaultClientAddress,
 		clientNICWrapper:    nil,
 		dnsOverUDPResolvers: []string{},
-		httpServers:         map[string]QAEnvHTTPHandlerFactory{},
+		httpServers:         map[string]http.Handler{},
 		ispResolver:         QAEnvDefaultISPResolverAddress,
 		logger:              model.DiscardLogger,
 		netStacks:           map[string]QAEnvNetStackHandler{},
@@ -214,7 +184,6 @@ func NewQAEnv(options ...QAEnvOption) *QAEnv {
 	env := &QAEnv{
 		clientNICWrapper:     config.clientNICWrapper,
 		clientStack:          nil,
-		serverStacks:         make(map[string]*netem.UNetStack),
 		closables:            []io.Closer{},
 		ispResolverConfig:    netem.NewDNSConfig(),
 		dpi:                  netem.NewDPIEngine(config.logger),
@@ -312,7 +281,7 @@ func (env *QAEnv) mustNewHTTPServers(config *qaEnvConfig) (closables []io.Closer
 	runtimex.Assert(len(config.dnsOverUDPResolvers) >= 1, "expected at least one DNS resolver")
 	resolver := config.dnsOverUDPResolvers[0]
 
-	for addr, factory := range config.httpServers {
+	for addr, handler := range config.httpServers {
 		// Create the server's TCP/IP stack
 		//
 		// Note: because the stack is created using topology.AddHost, we don't
@@ -326,40 +295,34 @@ func (env *QAEnv) mustNewHTTPServers(config *qaEnvConfig) (closables []io.Closer
 				RightToLeftDelay: time.Millisecond,
 			},
 		))
-		env.serverStacks[addr] = stack
 
-		handler := factory.NewHandler(stack)
-		closables = env.serverListen(stack, handler, addr)
-	}
-	return
-}
+		ipAddr := net.ParseIP(addr)
+		runtimex.Assert(ipAddr != nil, "invalid IP addr")
 
-func (env *QAEnv) serverListen(stack *netem.UNetStack, handler http.Handler, addr string) (closables []io.Closer) {
-	ipAddr := net.ParseIP(addr)
-	runtimex.Assert(ipAddr != nil, "invalid IP addr")
+		// listen for HTTP
+		{
+			listener := runtimex.Try1(stack.ListenTCP("tcp", &net.TCPAddr{IP: ipAddr, Port: 80}))
+			srv := &http.Server{Handler: handler}
+			closables = append(closables, srv)
+			go srv.Serve(listener)
+		}
 
-	// listen for HTTP
-	{
-		listener := runtimex.Try1(stack.ListenTCP("tcp", &net.TCPAddr{IP: ipAddr, Port: 80}))
-		srv := &http.Server{Handler: handler}
-		closables = append(closables, srv)
-		go srv.Serve(listener)
-	}
+		// listen for HTTPS
+		{
+			listener := runtimex.Try1(stack.ListenTCP("tcp", &net.TCPAddr{IP: ipAddr, Port: 443}))
+			srv := &http.Server{TLSConfig: stack.ServerTLSConfig(), Handler: handler}
+			closables = append(closables, srv)
+			go srv.ServeTLS(listener, "", "")
+		}
 
-	// listen for HTTPS
-	{
-		listener := runtimex.Try1(stack.ListenTCP("tcp", &net.TCPAddr{IP: ipAddr, Port: 443}))
-		srv := &http.Server{TLSConfig: stack.ServerTLSConfig(), Handler: handler}
-		closables = append(closables, srv)
-		go srv.ServeTLS(listener, "", "")
-	}
+		// listen for HTTP3
+		{
+			listener := runtimex.Try1(stack.ListenUDP("udp", &net.UDPAddr{IP: ipAddr, Port: 443}))
+			srv := &http3.Server{TLSConfig: stack.ServerTLSConfig(), Handler: handler}
+			closables = append(closables, listener, srv)
+			go srv.Serve(listener)
 
-	// listen for HTTP3
-	{
-		listener := runtimex.Try1(stack.ListenUDP("udp", &net.UDPAddr{IP: ipAddr, Port: 443}))
-		srv := &http3.Server{TLSConfig: stack.ServerTLSConfig(), Handler: handler}
-		closables = append(closables, listener, srv)
-		go srv.Serve(listener)
+		}
 	}
 	return
 }
