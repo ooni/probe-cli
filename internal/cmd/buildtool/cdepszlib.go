@@ -24,14 +24,14 @@ func cdepsZlibBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencies) 
 	restore := cdepsMustChdir(work)
 	defer restore()
 
-	// See https://github.com/Homebrew/homebrew-core/blob/master/Formula/zlib.rb
-	cdepsMustFetch("https://zlib.net/zlib-1.2.13.tar.gz")
+	// See https://github.com/Homebrew/homebrew-core/blob/master/Formula/z/zlib.rb
+	cdepsMustFetch("https://zlib.net/zlib-1.3.tar.gz")
 	deps.VerifySHA256( // must be mockable
-		"b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30",
-		"zlib-1.2.13.tar.gz",
+		"ff0ba4c292013dbc27530b3a81e1f9a813cd39de01ca5e0f8bf355702efa593e",
+		"zlib-1.3.tar.gz",
 	)
-	must.Run(log.Log, "tar", "-xf", "zlib-1.2.13.tar.gz")
-	_ = deps.MustChdir("zlib-1.2.13") // must be mockable
+	must.Run(log.Log, "tar", "-xf", "zlib-1.3.tar.gz")
+	_ = deps.MustChdir("zlib-1.3") // must be mockable
 
 	mydir := filepath.Join(topdir, "CDEPS", "zlib")
 	for _, patch := range cdepsMustListPatches(mydir) {
