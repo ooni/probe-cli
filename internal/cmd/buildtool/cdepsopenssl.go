@@ -56,8 +56,7 @@ func cdepsOpenSSLBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencie
 
 	// QUIRK: OpenSSL-1.1.1v wanted the PATH to contain the
 	// directory where the Android compiler lives.
-	// TODO(bassosimone): do we still need this? It seems to work without,
-	// but I can't find reliable information on this.
+	// TODO(bassosimone): do we still need this?
 	if mergedEnv.BINPATH != "" {
 		envp.Append("PATH", cdepsPrependToPath(mergedEnv.BINPATH))
 	}
