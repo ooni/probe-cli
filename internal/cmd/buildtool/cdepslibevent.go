@@ -26,7 +26,7 @@ func cdepsLibeventBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependenci
 	restore := cdepsMustChdir(work)
 	defer restore()
 
-	// See https://github.com/Homebrew/homebrew-core/blob/master/Formula/libevent.rb
+	// See https://github.com/Homebrew/homebrew-core/blob/master/Formula/lib/libevent.rb
 	cdepsMustFetch("https://github.com/libevent/libevent/archive/release-2.1.12-stable.tar.gz")
 	deps.VerifySHA256( // must be mockable
 		"7180a979aaa7000e1264da484f712d403fcf7679b1e9212c4e3d09f5c93efc24",

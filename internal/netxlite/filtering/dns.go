@@ -174,6 +174,9 @@ func dnsComposeQuery(domain string, qtype uint16) *dns.Msg {
 	return query
 }
 
+// DNSComposeResponse composes a DNS response using the given IP addresses. If given no
+// addresses, this function returns a successful, empty response. This function PANICS if
+// the query argument does not contain EXACTLY one question.
 func DNSComposeResponse(query *dns.Msg, ips ...net.IP) *dns.Msg {
 	runtimex.PanicIfTrue(len(query.Question) != 1, "expecting a single question")
 	question := query.Question[0]

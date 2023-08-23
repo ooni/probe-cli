@@ -244,7 +244,7 @@ func main() {
 // You can now run this code as follows:
 //
 // ```
-// $ go run ./experiment/torsf/chapter01 | jq
+// $ go run ./experiment/torsf/chapter01 | tail -n 1 | jq
 // [snip]
 // {
 //   "data_format_version": "",
