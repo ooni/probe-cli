@@ -33,8 +33,7 @@ import (
 // Passing a nil `id` will make this function panic.
 func NewTLSHandshakerUTLS(logger model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker {
 	return newTLSHandshakerLogger(&tlsHandshakerConfigurable{
-		NewConn:    newUTLSConnFactory(id),
-		underlying: tproxySingleton(),
+		NewConn: newUTLSConnFactory(id),
 	}, logger)
 }
 

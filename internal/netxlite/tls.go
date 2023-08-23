@@ -164,7 +164,7 @@ var _ TLSConn = &tls.Conn{}
 // 3. that we are going to use Mozilla CA if the [tls.Config]
 // RootCAs field is zero initialized.
 func NewTLSHandshakerStdlib(logger model.DebugLogger) model.TLSHandshaker {
-	return newTLSHandshakerLogger(&tlsHandshakerConfigurable{underlying: tproxySingleton()}, logger)
+	return newTLSHandshakerLogger(&tlsHandshakerConfigurable{}, logger)
 }
 
 // newTLSHandshakerLogger creates a new tlsHandshakerLogger instance.
@@ -187,10 +187,6 @@ type tlsHandshakerConfigurable struct {
 	// Timeout is the OPTIONAL timeout imposed on the TLS handshake. If zero
 	// or negative, we will use default timeout of 10 seconds.
 	Timeout time.Duration
-
-	// underlying is the MANDATORY custom [UnderlyingNetwork].
-	// If nil, we will use tproxySingleton() as underlying network.
-	underlying model.UnderlyingNetwork
 }
 
 var _ model.TLSHandshaker = &tlsHandshakerConfigurable{}
@@ -221,7 +217,7 @@ func (h *tlsHandshakerConfigurable) Handshake(
 	if config.RootCAs == nil {
 		config = config.Clone()
 		// See https://github.com/ooni/probe/issues/2413 for context
-		config.RootCAs = h.underlying.DefaultCertPool()
+		config.RootCAs = tproxySingleton().DefaultCertPool()
 	}
 	tlsconn, err := h.newConn(conn, config)
 	if err != nil {

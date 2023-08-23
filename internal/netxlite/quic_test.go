@@ -3,12 +3,9 @@ package netxlite
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"errors"
 	"io"
 	"net"
-	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -132,8 +129,7 @@ func TestQUICDialerQUICGo(t *testing.T) {
 				ServerName: "www.google.com",
 			}
 			systemdialer := quicDialerQUICGo{
-				QUICListener: &quicListenerStdlib{underlying: tproxySingleton()},
-				underlying:   tproxySingleton(),
+				QUICListener: &quicListenerStdlib{},
 			}
 			defer systemdialer.CloseIdleConnections() // just to see it running
 			ctx := context.Background()
@@ -152,8 +148,7 @@ func TestQUICDialerQUICGo(t *testing.T) {
 				ServerName: "www.google.com",
 			}
 			systemdialer := quicDialerQUICGo{
-				QUICListener: &quicListenerStdlib{underlying: tproxySingleton()},
-				underlying:   tproxySingleton(),
+				QUICListener: &quicListenerStdlib{},
 			}
 			ctx := context.Background()
 			qconn, err := systemdialer.DialContext(
@@ -171,8 +166,7 @@ func TestQUICDialerQUICGo(t *testing.T) {
 				ServerName: "www.google.com",
 			}
 			systemdialer := quicDialerQUICGo{
-				QUICListener: &quicListenerStdlib{underlying: tproxySingleton()},
-				underlying:   tproxySingleton(),
+				QUICListener: &quicListenerStdlib{},
 			}
 			ctx := context.Background()
 			qconn, err := systemdialer.DialContext(
@@ -196,7 +190,6 @@ func TestQUICDialerQUICGo(t *testing.T) {
 						return nil, expected
 					},
 				},
-				underlying: tproxySingleton(),
 			}
 			ctx := context.Background()
 			qconn, err := systemdialer.DialContext(
@@ -214,8 +207,7 @@ func TestQUICDialerQUICGo(t *testing.T) {
 				ServerName: "dns.google",
 			}
 			systemdialer := quicDialerQUICGo{
-				QUICListener: &quicListenerStdlib{underlying: tproxySingleton()},
-				underlying:   tproxySingleton(),
+				QUICListener: &quicListenerStdlib{},
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel() // fail immediately
@@ -236,14 +228,13 @@ func TestQUICDialerQUICGo(t *testing.T) {
 				ServerName: "dns.google",
 			}
 			systemdialer := quicDialerQUICGo{
-				QUICListener: &quicListenerStdlib{underlying: tproxySingleton()},
+				QUICListener: &quicListenerStdlib{},
 				mockDialEarlyContext: func(ctx context.Context, pconn net.PacketConn,
 					remoteAddr net.Addr, host string, tlsConfig *tls.Config,
 					quicConfig *quic.Config) (quic.EarlyConnection, error) {
 					gotTLSConfig = tlsConfig
 					return nil, expected
 				},
-				underlying: tproxySingleton(),
 			}
 			ctx := context.Background()
 			qconn, err := systemdialer.DialContext(
@@ -278,14 +269,13 @@ func TestQUICDialerQUICGo(t *testing.T) {
 				ServerName: "dns.google",
 			}
 			systemdialer := quicDialerQUICGo{
-				QUICListener: &quicListenerStdlib{underlying: tproxySingleton()},
+				QUICListener: &quicListenerStdlib{},
 				mockDialEarlyContext: func(ctx context.Context, pconn net.PacketConn,
 					remoteAddr net.Addr, host string, tlsConfig *tls.Config,
 					quicConfig *quic.Config) (quic.EarlyConnection, error) {
 					gotTLSConfig = tlsConfig
 					return nil, expected
 				},
-				underlying: tproxySingleton(),
 			}
 			ctx := context.Background()
 			qconn, err := systemdialer.DialContext(
@@ -319,13 +309,12 @@ func TestQUICDialerQUICGo(t *testing.T) {
 			}
 			fakeconn := &mocks.QUICEarlyConnection{}
 			systemdialer := quicDialerQUICGo{
-				QUICListener: &quicListenerStdlib{underlying: tproxySingleton()},
+				QUICListener: &quicListenerStdlib{},
 				mockDialEarlyContext: func(ctx context.Context, pconn net.PacketConn,
 					remoteAddr net.Addr, host string, tlsConfig *tls.Config,
 					quicConfig *quic.Config) (quic.EarlyConnection, error) {
 					return fakeconn, nil
 				},
-				underlying: tproxySingleton(),
 			}
 			ctx := context.Background()
 			qconn, err := systemdialer.DialContext(
@@ -338,73 +327,6 @@ func TestQUICDialerQUICGo(t *testing.T) {
 				t.Fatal("invalid underlying conn")
 			}
 		})
-	})
-}
-
-func TestQUICDialerWithCustomUnderlyingNetwork(t *testing.T) {
-	tlsConf := &tls.Config{ServerName: "dns.google"}
-	qConf := &quic.Config{}
-	ctx := context.Background()
-
-	t.Run("UDP listen", func(t *testing.T) {
-		expected := errors.New("mocked underlying network")
-		proxy := &mocks.UnderlyingNetwork{
-			MockListenUDP: func(network string, addr *net.UDPAddr) (model.UDPLikeConn, error) {
-				return nil, expected
-			},
-		}
-		systemdialer := &quicDialerQUICGo{
-			QUICListener: &quicListenerStdlib{underlying: proxy},
-			underlying:   tproxySingleton(),
-		}
-		qconn, err := systemdialer.DialContext(ctx, "8.8.8.8:443", tlsConf, qConf)
-		if qconn != nil {
-			t.Fatal("unexpected conn")
-		}
-		if err != expected {
-			t.Fatal("unexpected err")
-		}
-	})
-	t.Run("DefaultCertPool", func(t *testing.T) {
-		srvr := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(444)
-		}))
-		defer srvr.Close()
-
-		expectedPool := x509.NewCertPool()
-		expectedPool.AddCert(srvr.Certificate())
-
-		// TODO(bassosimone): we need a more compact and ergonomic
-		// way of overriding the underlying network
-		proxy := &mocks.UnderlyingNetwork{
-			MockDefaultCertPool: func() *x509.CertPool {
-				return expectedPool
-			},
-		}
-		expected := errors.New("mocked")
-		var gotTLSConfig *tls.Config
-		systemdialer := &quicDialerQUICGo{
-			QUICListener: &quicListenerStdlib{underlying: tproxySingleton()},
-			underlying:   proxy,
-			mockDialEarlyContext: func(ctx context.Context, pconn net.PacketConn, remoteAddr net.Addr,
-				host string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
-				gotTLSConfig = tlsConfig
-				return nil, expected
-			},
-		}
-		qconn, err := systemdialer.DialContext(ctx, "8.8.8.8:443", tlsConf, qConf)
-		if qconn != nil {
-			t.Fatal("unexpected conn, should be nil")
-		}
-		if !errors.Is(err, expected) {
-			t.Fatal("not the error we expected", err)
-		}
-		if tlsConf.RootCAs != nil {
-			t.Fatal("tlsConf.RootCAs should still be nil")
-		}
-		if gotTLSConfig.RootCAs != expectedPool {
-			t.Fatal("gotTLSConfig.RootCAs has not been correctly set")
-		}
 	})
 }
 
@@ -565,7 +487,7 @@ func TestQUICDialerResolver(t *testing.T) {
 			tlsConfig := &tls.Config{}
 			dialer := &quicDialerResolver{
 				Resolver: NewStdlibResolver(log.Log),
-				Dialer:   &quicDialerQUICGo{underlying: tproxySingleton()}}
+				Dialer:   &quicDialerQUICGo{}}
 			qconn, err := dialer.DialContext(
 				context.Background(), "www.google.com",
 				tlsConfig, &quic.Config{})
@@ -603,8 +525,7 @@ func TestQUICDialerResolver(t *testing.T) {
 			dialer := &quicDialerResolver{
 				Resolver: NewStdlibResolver(log.Log),
 				Dialer: &quicDialerQUICGo{
-					QUICListener: &quicListenerStdlib{underlying: tproxySingleton()},
-					underlying:   tproxySingleton(),
+					QUICListener: &quicListenerStdlib{},
 				}}
 			qconn, err := dialer.DialContext(
 				context.Background(), "8.8.4.4:x",
