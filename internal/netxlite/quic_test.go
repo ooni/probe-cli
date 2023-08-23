@@ -3,9 +3,12 @@ package netxlite
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"io"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -327,6 +330,73 @@ func TestQUICDialerQUICGo(t *testing.T) {
 				t.Fatal("invalid underlying conn")
 			}
 		})
+	})
+}
+
+func TestQUICDialerWithCustomUnderlyingNetwork(t *testing.T) {
+	tlsConf := &tls.Config{ServerName: "dns.google"}
+	qConf := &quic.Config{}
+	ctx := context.Background()
+
+	t.Run("UDP listen", func(t *testing.T) {
+		expected := errors.New("mocked underlying network")
+		proxy := &mocks.UnderlyingNetwork{
+			MockListenUDP: func(network string, addr *net.UDPAddr) (model.UDPLikeConn, error) {
+				return nil, expected
+			},
+		}
+		systemdialer := &quicDialerQUICGo{
+			QUICListener: &quicListenerStdlib{provider: &tproxyNilSafeProvider{proxy}},
+		}
+		qconn, err := systemdialer.DialContext(ctx, "8.8.8.8:443", tlsConf, qConf)
+		if qconn != nil {
+			t.Fatal("unexpected conn")
+		}
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected err")
+		}
+	})
+
+	t.Run("DefaultCertPool", func(t *testing.T) {
+		srvr := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(444)
+		}))
+		defer srvr.Close()
+
+		expectedPool := x509.NewCertPool()
+		expectedPool.AddCert(srvr.Certificate())
+
+		// TODO(bassosimone): we need a more compact and ergonomic
+		// way of overriding the underlying network
+		proxy := &mocks.UnderlyingNetwork{
+			MockDefaultCertPool: func() *x509.CertPool {
+				return expectedPool
+			},
+		}
+		expected := errors.New("mocked")
+		var gotTLSConfig *tls.Config
+		systemdialer := &quicDialerQUICGo{
+			QUICListener: &quicListenerStdlib{},
+			mockDialEarlyContext: func(ctx context.Context, pconn net.PacketConn, remoteAddr net.Addr,
+				host string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
+				gotTLSConfig = tlsConfig
+				return nil, expected
+			},
+			provider: &tproxyNilSafeProvider{proxy},
+		}
+		qconn, err := systemdialer.DialContext(ctx, "8.8.8.8:443", tlsConf, qConf)
+		if qconn != nil {
+			t.Fatal("unexpected conn, should be nil")
+		}
+		if !errors.Is(err, expected) {
+			t.Fatal("not the error we expected", err)
+		}
+		if tlsConf.RootCAs != nil {
+			t.Fatal("tlsConf.RootCAs should still be nil")
+		}
+		if gotTLSConfig.RootCAs != expectedPool {
+			t.Fatal("gotTLSConfig.RootCAs has not been correctly set")
+		}
 	})
 }
 
