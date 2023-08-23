@@ -56,7 +56,6 @@ func NewQUICDialerWithResolver(listener model.QUICListener, logger model.DebugLo
 	resolver model.Resolver, wrappers ...model.QUICDialerWrapper) (outDialer model.QUICDialer) {
 	baseDialer := &quicDialerQUICGo{
 		QUICListener: listener,
-		underlying:   tproxySingleton(),
 	}
 	return WrapQUICDialer(logger, resolver, baseDialer, wrappers...)
 }
@@ -99,14 +98,13 @@ type quicDialerQUICGo struct {
 	// QUICListener is the underlying QUICListener to use.
 	QUICListener model.QUICListener
 
-	// underlying is the MANDATORY custom [UnderlyingNetwork].
-	// If nil, we will use tproxySingleton() as underlying network.
-	underlying model.UnderlyingNetwork
-
 	// mockDialEarlyContext allows to mock quic.DialEarlyContext.
 	mockDialEarlyContext func(ctx context.Context, pconn net.PacketConn,
 		remoteAddr net.Addr, host string, tlsConfig *tls.Config,
 		quicConfig *quic.Config) (quic.EarlyConnection, error)
+
+	// provider is the OPTIONAL nil-safe [model.UnderlyingNetwork] provider.
+	provider *tproxyNilSafeProvider
 }
 
 var _ model.QUICDialer = &quicDialerQUICGo{}
@@ -190,7 +188,7 @@ func (d *quicDialerQUICGo) maybeApplyTLSDefaults(config *tls.Config, port int) *
 	config = config.Clone()
 	if config.RootCAs == nil {
 		// See https://github.com/ooni/probe/issues/2413 for context
-		config.RootCAs = d.underlying.DefaultCertPool()
+		config.RootCAs = d.provider.Get().DefaultCertPool()
 	}
 	if len(config.NextProtos) <= 0 {
 		switch port {
