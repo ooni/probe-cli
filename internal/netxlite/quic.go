@@ -24,16 +24,15 @@ func NewQUICListener() model.QUICListener {
 
 // quicListenerStdlib is a QUICListener using the standard library.
 type quicListenerStdlib struct {
-	// underlying is the MANDATORY custom [UnderlyingNetwork].
-	// If nil, we will use tproxySingleton() as underlying network.
-	underlying model.UnderlyingNetwork
+	// provider is the OPTIONAL nil-safe [model.UnderlyingNetwork] provider.
+	provider *tproxyNilSafeProvider
 }
 
 var _ model.QUICListener = &quicListenerStdlib{}
 
 // Listen implements QUICListener.Listen.
 func (qls *quicListenerStdlib) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
-	return qls.underlying.ListenUDP("udp", addr)
+	return qls.provider.Get().ListenUDP("udp", addr)
 }
 
 // NewQUICDialerWithResolver is the WrapDialer equivalent for QUIC where
@@ -57,11 +56,12 @@ func NewQUICDialerWithResolver(listener model.QUICListener, logger model.DebugLo
 	resolver model.Resolver, wrappers ...model.QUICDialerWrapper) (outDialer model.QUICDialer) {
 	baseDialer := &quicDialerQUICGo{
 		QUICListener: listener,
-		underlying:   tproxySingleton(),
 	}
 	return WrapQUICDialer(logger, resolver, baseDialer, wrappers...)
 }
 
+// WrapQUICDialer is similar to NewQUICDialerWithResolver except that it takes as
+// input an already constructed [model.QUICDialer] instead of creating one.
 func WrapQUICDialer(logger model.DebugLogger, resolver model.Resolver,
 	baseDialer model.QUICDialer, wrappers ...model.QUICDialerWrapper) (outDialer model.QUICDialer) {
 	outDialer = &quicDialerErrWrapper{
@@ -108,6 +108,9 @@ type quicDialerQUICGo struct {
 	mockDialEarlyContext func(ctx context.Context, pconn net.PacketConn,
 		remoteAddr net.Addr, host string, tlsConfig *tls.Config,
 		quicConfig *quic.Config) (quic.EarlyConnection, error)
+
+	// provider is the OPTIONAL nil-safe [model.UnderlyingNetwork] provider.
+	provider *tproxyNilSafeProvider
 }
 
 var _ model.QUICDialer = &quicDialerQUICGo{}
@@ -191,7 +194,7 @@ func (d *quicDialerQUICGo) maybeApplyTLSDefaults(config *tls.Config, port int) *
 	config = config.Clone()
 	if config.RootCAs == nil {
 		// See https://github.com/ooni/probe/issues/2413 for context
-		config.RootCAs = d.underlying.DefaultCertPool()
+		config.RootCAs = d.provider.Get().DefaultCertPool()
 	}
 	if len(config.NextProtos) <= 0 {
 		switch port {

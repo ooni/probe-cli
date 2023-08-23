@@ -303,7 +303,7 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 						},
 					}, nil
 				},
-				underlying: proxy,
+				provider: &tproxyNilSafeProvider{proxy},
 			}
 			ctx := context.Background()
 			config := &tls.Config{ServerName: "dns.google"}

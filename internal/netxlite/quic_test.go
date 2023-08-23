@@ -354,17 +354,17 @@ func TestQUICDialerWithCustomUnderlyingNetwork(t *testing.T) {
 			},
 		}
 		systemdialer := &quicDialerQUICGo{
-			QUICListener: &quicListenerStdlib{underlying: proxy},
-			underlying:   tproxySingleton(),
+			QUICListener: &quicListenerStdlib{provider: &tproxyNilSafeProvider{proxy}},
 		}
 		qconn, err := systemdialer.DialContext(ctx, "8.8.8.8:443", tlsConf, qConf)
 		if qconn != nil {
 			t.Fatal("unexpected conn")
 		}
-		if err != expected {
+		if !errors.Is(err, expected) {
 			t.Fatal("unexpected err")
 		}
 	})
+
 	t.Run("DefaultCertPool", func(t *testing.T) {
 		srvr := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(444)
@@ -384,13 +384,13 @@ func TestQUICDialerWithCustomUnderlyingNetwork(t *testing.T) {
 		expected := errors.New("mocked")
 		var gotTLSConfig *tls.Config
 		systemdialer := &quicDialerQUICGo{
-			QUICListener: &quicListenerStdlib{underlying: tproxySingleton()},
-			underlying:   proxy,
+			QUICListener: &quicListenerStdlib{},
 			mockDialEarlyContext: func(ctx context.Context, pconn net.PacketConn, remoteAddr net.Addr,
 				host string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
 				gotTLSConfig = tlsConfig
 				return nil, expected
 			},
+			provider: &tproxyNilSafeProvider{proxy},
 		}
 		qconn, err := systemdialer.DialContext(ctx, "8.8.8.8:443", tlsConf, qConf)
 		if qconn != nil {

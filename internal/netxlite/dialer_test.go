@@ -142,12 +142,12 @@ func TestDialerSystem(t *testing.T) {
 					return nil, expected
 				},
 			}
-			d := &DialerSystem{underlying: proxy}
+			d := &DialerSystem{provider: &tproxyNilSafeProvider{proxy}}
 			conn, err := d.DialContext(context.Background(), "tcp", "dns.google:443")
 			if conn != nil {
 				t.Fatal("unexpected conn")
 			}
-			if err != expected {
+			if !errors.Is(err, expected) {
 				t.Fatal("unexpected err")
 			}
 		})

@@ -206,7 +206,7 @@ func TestGetaddrinfoWithCustomUnderlyingNetwork(t *testing.T) {
 		},
 	}
 	txp := &dnsOverGetaddrinfoTransport{
-		underlying: proxy,
+		provider: &tproxyNilSafeProvider{proxy},
 	}
 	encoder := &DNSEncoderMiekg{}
 	query := encoder.Encode("dns.google", dns.TypeANY, false)
