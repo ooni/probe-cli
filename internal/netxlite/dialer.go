@@ -149,6 +149,9 @@ func NewDialerWithoutResolver(dl model.DebugLogger, w ...model.DialerWrapper) mo
 type DialerSystem struct {
 	// timeout is the OPTIONAL timeout (for testing).
 	timeout time.Duration
+
+	// provider is the OPTIONAL nil-safe [model.UnderlyingNetwork] provider.
+	provider *tproxyNilSafeProvider
 }
 
 var _ model.Dialer = &DialerSystem{}
@@ -164,7 +167,7 @@ func (d *DialerSystem) configuredTimeout() time.Duration {
 }
 
 func (d *DialerSystem) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
-	return tproxySingleton().DialContext(ctx, d.configuredTimeout(), network, address)
+	return d.provider.Get().DialContext(ctx, d.configuredTimeout(), network, address)
 }
 
 func (d *DialerSystem) CloseIdleConnections() {

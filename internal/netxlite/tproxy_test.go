@@ -15,6 +15,42 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
+func TestTproxyNilSafeProvider(t *testing.T) {
+	type testingstruct struct {
+		provider *tproxyNilSafeProvider
+	}
+
+	t.Run("when the pointer is nil", func(t *testing.T) {
+		tsp := &testingstruct{}
+		if tsp.provider.Get() != tproxySingleton() {
+			t.Fatal("unexpected result")
+		}
+	})
+
+	t.Run("when underlying is nil", func(t *testing.T) {
+		tsp := &testingstruct{
+			provider: &tproxyNilSafeProvider{
+				underlying: nil,
+			},
+		}
+		if tsp.provider.Get() != tproxySingleton() {
+			t.Fatal("unexpected result")
+		}
+	})
+
+	t.Run("when underlying is set", func(t *testing.T) {
+		expected := &mocks.UnderlyingNetwork{}
+		tsp := &testingstruct{
+			provider: &tproxyNilSafeProvider{
+				underlying: expected,
+			},
+		}
+		if tsp.provider.Get() != expected {
+			t.Fatal("unexpected result")
+		}
+	})
+}
+
 func TestDefaultTProxy(t *testing.T) {
 	t.Run("DialContext honours the timeout", func(t *testing.T) {
 		if runtime.GOOS == "windows" {
