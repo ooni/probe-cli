@@ -11,7 +11,7 @@ import (
 )
 
 // tproxyNilSafeProvider is a nil-safe [model.UnderlyingNetwork] provider. When the pointer
-// to the [tproxyNilSafeProvider] is nil or the underlying field is nil, the get method of the
+// to the [tproxyNilSafeProvider] is nil or the underlying field is nil, the Get method of the
 // [tproxyNilSafeProvider] falls back to calling [tproxySingleton].
 type tproxyNilSafeProvider struct {
 	underlying model.UnderlyingNetwork

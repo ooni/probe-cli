@@ -352,10 +352,11 @@ func TestQUICDialerWithCustomUnderlyingNetwork(t *testing.T) {
 		if qconn != nil {
 			t.Fatal("unexpected conn")
 		}
-		if err != expected {
+		if !errors.Is(err, expected) {
 			t.Fatal("unexpected err")
 		}
 	})
+
 	t.Run("DefaultCertPool", func(t *testing.T) {
 		srvr := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(444)

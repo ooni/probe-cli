@@ -147,7 +147,7 @@ func TestDialerSystem(t *testing.T) {
 			if conn != nil {
 				t.Fatal("unexpected conn")
 			}
-			if err != expected {
+			if !errors.Is(err, expected) {
 				t.Fatal("unexpected err")
 			}
 		})

@@ -60,6 +60,8 @@ func NewQUICDialerWithResolver(listener model.QUICListener, logger model.DebugLo
 	return WrapQUICDialer(logger, resolver, baseDialer, wrappers...)
 }
 
+// WrapQUICDialer is similar to NewQUICDialerWithResolver except that it takes as
+// input an already constructed [model.QUICDialer] instead of creating one.
 func WrapQUICDialer(logger model.DebugLogger, resolver model.Resolver,
 	baseDialer model.QUICDialer, wrappers ...model.QUICDialerWrapper) (outDialer model.QUICDialer) {
 	outDialer = &quicDialerErrWrapper{
