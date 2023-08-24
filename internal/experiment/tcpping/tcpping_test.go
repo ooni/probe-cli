@@ -90,7 +90,7 @@ func TestMeasurer_run(t *testing.T) {
 	})
 
 	t.Run("with netem: without DPI: expect success", func(t *testing.T) {
-		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandlerFactory()))
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.ExampleWebPageHandlerFactory()))
 		defer env.Close()
 
 		env.Do(func() {
@@ -132,7 +132,7 @@ func TestMeasurer_run(t *testing.T) {
 
 	t.Run("with netem: with DPI that drops TCP segments to 8.8.8.8:443: expect failure", func(t *testing.T) {
 		// create a new test environment
-		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandlerFactory()))
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.ExampleWebPageHandlerFactory()))
 		defer env.Close()
 
 		// add DPI engine to emulate the censorship condition
