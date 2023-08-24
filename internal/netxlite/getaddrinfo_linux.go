@@ -79,13 +79,13 @@ func (state *getaddrinfoState) toError(code int64, err error, goos string) error
 			// comes up again. golang.org/issue/6232.
 			err = syscall.EMFILE
 		}
-		return newErrGetaddrinfo(code, err)
+		return NewErrGetaddrinfo(code, err)
 	case C.EAI_NONAME:
-		return newErrGetaddrinfo(code, ErrOODNSNoSuchHost)
+		return NewErrGetaddrinfo(code, ErrOODNSNoSuchHost)
 	case C.EAI_NODATA:
 		return state.toErrorNODATA(err, goos)
 	default:
-		return newErrGetaddrinfo(code, ErrOODNSMisbehaving)
+		return NewErrGetaddrinfo(code, ErrOODNSMisbehaving)
 	}
 }
 
@@ -154,8 +154,8 @@ func (state *getaddrinfoState) toError(code int64, err error, goos string) error
 func (state *getaddrinfoState) toErrorNODATA(err error, goos string) error {
 	switch goos {
 	case "android":
-		return newErrGetaddrinfo(C.EAI_NODATA, ErrAndroidDNSCacheNoData)
+		return NewErrGetaddrinfo(C.EAI_NODATA, ErrAndroidDNSCacheNoData)
 	default:
-		return newErrGetaddrinfo(C.EAI_NODATA, ErrOODNSNoAnswer)
+		return NewErrGetaddrinfo(C.EAI_NODATA, ErrOODNSNoAnswer)
 	}
 }

@@ -49,7 +49,7 @@ func TestErrorToGetaddrinfoRetval(t *testing.T) {
 	}
 }
 
-func Test_newErrGetaddrinfo(t *testing.T) {
+func TestNewErrGetaddrinfo(t *testing.T) {
 	type args struct {
 		code int64
 		err  error
