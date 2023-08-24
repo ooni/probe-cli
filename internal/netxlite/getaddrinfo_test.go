@@ -28,7 +28,7 @@ func TestErrorToGetaddrinfoRetval(t *testing.T) {
 	}{{
 		name: "with valid getaddrinfo error",
 		args: args{
-			newErrGetaddrinfo(144, nil),
+			NewErrGetaddrinfo(144, nil),
 		},
 		want: 144,
 	}, {
@@ -49,7 +49,7 @@ func TestErrorToGetaddrinfoRetval(t *testing.T) {
 	}
 }
 
-func Test_newErrGetaddrinfo(t *testing.T) {
+func TestNewErrGetaddrinfo(t *testing.T) {
 	type args struct {
 		code int64
 		err  error
@@ -66,7 +66,7 @@ func Test_newErrGetaddrinfo(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := newErrGetaddrinfo(tt.args.code, tt.args.err)
+			err := NewErrGetaddrinfo(tt.args.code, tt.args.err)
 			if err == nil {
 				t.Fatal("expected non-nil error")
 			}
