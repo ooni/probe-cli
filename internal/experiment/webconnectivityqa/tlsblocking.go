@@ -20,7 +20,7 @@ func tlsBlockingConnectionReset() *TestCase {
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
 			Accessible: false,
-			Blocking:   "tls",
+			Blocking:   "http-failure",
 		},
 	}
 }

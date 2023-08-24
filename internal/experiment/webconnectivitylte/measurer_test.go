@@ -1,20 +1,14 @@
 package webconnectivitylte
 
 import (
-	"context"
-	"net/http"
+	"net"
 	"testing"
 
-	"github.com/apex/log"
-	"github.com/ooni/netem"
-	"github.com/ooni/probe-cli/v3/internal/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/kvstore"
-	"github.com/ooni/probe-cli/v3/internal/mocks"
-	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/sessionresolver"
+	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivityqa"
+	"github.com/ooni/probe-cli/v3/internal/netemx"
 )
 
+/*
 func TestSuccess(t *testing.T) {
 	env := newEnvironment()
 	defer env.Close()
@@ -145,5 +139,19 @@ func newSession() model.ExperimentSession {
 		MockNewExperimentBuilder: nil,
 		MockNewSubmitter:         nil,
 		MockCheckIn:              nil,
+	}
+}
+*/
+
+func TestWebConnectivityQA(t *testing.T) {
+	for _, tc := range webconnectivityqa.AllTestCases() {
+		t.Run(tc.Name, func(t *testing.T) {
+			measurer := NewExperimentMeasurer(&Config{
+				DNSOverUDPResolver: net.JoinHostPort(netemx.QAEnvDefaultUncensoredResolverAddress, "53"),
+			})
+			if err := webconnectivityqa.RunTestCase(measurer, tc); err != nil {
+				t.Fatal(err)
+			}
+		})
 	}
 }

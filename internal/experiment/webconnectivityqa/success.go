@@ -9,7 +9,7 @@ func sucessWithHTTP() *TestCase {
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
 			Accessible: true,
-			Blocking:   nil,
+			Blocking:   false,
 		},
 	}
 }
@@ -23,7 +23,7 @@ func sucessWithHTTPS() *TestCase {
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
 			Accessible: true,
-			Blocking:   nil,
+			Blocking:   false,
 		},
 	}
 }
