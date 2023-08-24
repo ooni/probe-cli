@@ -11,6 +11,8 @@ import (
 // OOAPIHandler is an [http.Handler] implementing the OONI API.
 type OOAPIHandler struct{}
 
+var _ http.Handler = &OOAPIHandler{}
+
 // ServeHTTP implements [http.Handler].
 func (p *OOAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch {

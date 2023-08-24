@@ -33,8 +33,8 @@ func TestOOAPIHandler(t *testing.T) {
 		}
 
 		expectedBody := `{"web-connectivity":[{"address":"https://2.th.ooni.org","type":"https"},{"address":"https://3.th.ooni.org","type":"https"},{"address":"https://0.th.ooni.org","type":"https"},{"address":"https://1.th.ooni.org","type":"https"}]}`
-		t.Log(string(body))
 
+		t.Log(string(body))
 		if diff := cmp.Diff([]byte(expectedBody), body); diff != "" {
 			t.Fatal(diff)
 		}
