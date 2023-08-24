@@ -1,4 +1,4 @@
-package webconnectivitylte
+package webconnectivitylte_test
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/netem"
+	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivitylte"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
@@ -117,7 +118,7 @@ func qaAddTHDomains(config *netem.DNSConfig) {
 
 // qaNewEnvironment creates a new environment for running QA.
 func qaNewEnvironment() *netemx.QAEnv {
-	return netemx.MustNewQAEnv(
+	return netemx.NewQAEnv(
 		netemx.QAEnvOptionDNSOverUDPResolvers("8.8.4.4"),
 		netemx.QAEnvOptionHTTPServer(qaWebServerAddress, netemx.ExampleWebPageHandlerFactory()),
 		netemx.QAEnvOptionHTTPServer(qaZeroTHOoniOrg, qaNewMockedTestHelperFactory()),
@@ -194,7 +195,7 @@ func qaRunWithURL(input string, setISPResolverConfig func(*netem.DNSConfig),
 	setDPI(env.DPIEngine())
 
 	// create the measurer and the context
-	measurer := NewExperimentMeasurer(&Config{})
+	measurer := webconnectivitylte.NewExperimentMeasurer(&webconnectivitylte.Config{})
 	ctx := context.Background()
 
 	// create a new measurement
