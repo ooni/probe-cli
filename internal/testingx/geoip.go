@@ -1,12 +1,24 @@
-package netemx
+package testingx
 
-import "net/http"
+import (
+	"fmt"
+	"net/http"
+)
 
-type GeoIPLookup struct{}
+// GeoIPHandlerUbuntu is an [http.Handler] implementing Ubuntu's GeoIP lookup.
+type GeoIPHandlerUbuntu struct {
+	// ProbeIP is the MANDATORY probe IP to return.
+	ProbeIP string
+}
 
-func (p *GeoIPLookup) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	resp := `<?xml version="1.0" encoding="UTF-8"?><Response><Ip>99.83.231.61</Ip><Status>OK</Status><CountryCode>US</CountryCode><CountryCode3>USA</CountryCode3><CountryName>United States of America</CountryName><RegionName>Washington</RegionName><City>Seattle</City><ZipPostalCode>98108</ZipPostalCode><Latitude>47.5413</Latitude><Longitude>-122.3129</Longitude><TimeZone>America/Los_Angeles</TimeZone></Response>`
+var _ http.Handler = &GeoIPHandlerUbuntu{}
 
+// ServeHTTP implements [http.Handler].
+func (p *GeoIPHandlerUbuntu) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	resp := fmt.Sprintf(
+		`<?xml version="1.0" encoding="UTF-8"?><Response><Ip>%s</Ip></Response>`,
+		p.ProbeIP,
+	)
 	w.Header().Add("Content-Type", "text/xml")
 	w.Write([]byte(resp))
 }
