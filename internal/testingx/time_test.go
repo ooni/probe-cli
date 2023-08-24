@@ -5,6 +5,17 @@ import (
 	"time"
 )
 
+func TestNewTimeDeterministic(t *testing.T) {
+	zero := time.Date(2023, 8, 24, 11, 45, 00, 0, time.UTC)
+	td := NewTimeDeterministic(zero)
+	if !td.zeroTime.Equal(zero) {
+		t.Fatal("unexpected zero time")
+	}
+	if td.counter != 0 {
+		t.Fatal("unexpected counter")
+	}
+}
+
 func TestTimeDeterministic(t *testing.T) {
 	td := &TimeDeterministic{}
 	t0 := td.Now()

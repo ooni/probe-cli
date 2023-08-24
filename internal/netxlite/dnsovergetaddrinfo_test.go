@@ -190,6 +190,34 @@ func TestDNSOverGetaddrinfo(t *testing.T) {
 	})
 }
 
+func TestGetaddrinfoWithCustomUnderlyingNetwork(t *testing.T) {
+	expected := errors.New("mocked underlying network")
+	proxy := &mocks.UnderlyingNetwork{
+		MockGetaddrinfoLookupANY: func(ctx context.Context, domain string) ([]string, string, error) {
+			return nil, "", expected
+		},
+		MockGetaddrinfoResolverNetwork: func() string {
+			return "mocked"
+		},
+	}
+	txp := &dnsOverGetaddrinfoTransport{
+		provider: &tproxyNilSafeProvider{proxy},
+	}
+	encoder := &DNSEncoderMiekg{}
+	query := encoder.Encode("dns.google", dns.TypeANY, false)
+	ctx := context.Background()
+	resp, err := txp.RoundTrip(ctx, query)
+	if resp != nil {
+		t.Fatal("unexpected non-nil response")
+	}
+	if err != expected {
+		t.Fatal("unexpected error")
+	}
+	if txp.Network() != "mocked" {
+		t.Fatal("unexpected network string")
+	}
+}
+
 func TestDNSOverGetaddrinfoResponse(t *testing.T) {
 	t.Run("Query works as intended", func(t *testing.T) {
 		t.Run("when query is not nil", func(t *testing.T) {

@@ -75,7 +75,7 @@ func TestQAEnv(t *testing.T) {
 	t.Run("we can hijack HTTPS requests", func(t *testing.T) {
 		// create QA env
 		env := netemx.NewQAEnv(
-			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandler()),
+			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.ExampleWebPageHandlerFactory()),
 		)
 		defer env.Close()
 
@@ -111,7 +111,7 @@ func TestQAEnv(t *testing.T) {
 			if resp.StatusCode != 200 {
 				t.Fatal("expected to see 200, got", resp.StatusCode)
 			}
-			expectBody := []byte(netemx.QAEnvDefaultWebPage)
+			expectBody := []byte(netemx.ExampleWebPage)
 			gotBody, err := netxlite.ReadAllContext(context.Background(), resp.Body)
 			if err != nil {
 				t.Fatal(err)
@@ -135,7 +135,7 @@ func TestQAEnv(t *testing.T) {
 	t.Run("we can hijack HTTP3 requests", func(t *testing.T) {
 		// create QA env
 		env := netemx.NewQAEnv(
-			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandler()),
+			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.ExampleWebPageHandlerFactory()),
 		)
 		defer env.Close()
 
@@ -168,7 +168,7 @@ func TestQAEnv(t *testing.T) {
 			if resp.StatusCode != 200 {
 				t.Fatal("expected to see 200, got", resp.StatusCode)
 			}
-			expectBody := []byte(netemx.QAEnvDefaultWebPage)
+			expectBody := []byte(netemx.ExampleWebPage)
 			gotBody, err := netxlite.ReadAllContext(context.Background(), resp.Body)
 			if err != nil {
 				t.Fatal(err)
@@ -184,7 +184,7 @@ func TestQAEnv(t *testing.T) {
 	t.Run("we can configure DPI rules", func(t *testing.T) {
 		// create QA env
 		env := netemx.NewQAEnv(
-			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandler()),
+			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.ExampleWebPageHandlerFactory()),
 		)
 		defer env.Close()
 
@@ -236,7 +236,7 @@ func TestQAEnv(t *testing.T) {
 
 		// create QA env
 		env := netemx.NewQAEnv(
-			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandler()),
+			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.ExampleWebPageHandlerFactory()),
 			netemx.QAEnvOptionClientNICWrapper(dumper),
 		)
 		defer env.Close()

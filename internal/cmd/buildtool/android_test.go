@@ -440,12 +440,12 @@ func TestAndroidBuildCdepsZlib(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://zlib.net/zlib-1.2.13.tar.gz",
+				"curl", "-fsSLO", "https://zlib.net/zlib-1.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "zlib-1.2.13.tar.gz",
+				"tar", "-xf", "zlib-1.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -493,12 +493,12 @@ func TestAndroidBuildCdepsZlib(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://zlib.net/zlib-1.2.13.tar.gz",
+				"curl", "-fsSLO", "https://zlib.net/zlib-1.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "zlib-1.2.13.tar.gz",
+				"tar", "-xf", "zlib-1.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -546,12 +546,12 @@ func TestAndroidBuildCdepsZlib(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://zlib.net/zlib-1.2.13.tar.gz",
+				"curl", "-fsSLO", "https://zlib.net/zlib-1.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "zlib-1.2.13.tar.gz",
+				"tar", "-xf", "zlib-1.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -599,12 +599,12 @@ func TestAndroidBuildCdepsZlib(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://zlib.net/zlib-1.2.13.tar.gz",
+				"curl", "-fsSLO", "https://zlib.net/zlib-1.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "zlib-1.2.13.tar.gz",
+				"tar", "-xf", "zlib-1.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -702,12 +702,12 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-1.1.1u.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.1.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-1.1.1u.tar.gz",
+				"tar", "-xf", "openssl-3.1.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -730,10 +730,10 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 			},
 			Argv: []string{
 				"./Configure", "no-comp", "no-dtls", "no-ec2m", "no-psk", "no-srp",
-				"no-ssl2", "no-ssl3", "no-camellia", "no-idea", "no-md2", "no-md4",
-				"no-mdc2", "no-rc2", "no-rc4", "no-rc5", "no-rmd160", "no-whirlpool",
-				"no-dso", "no-hw", "no-ui-console", "no-shared", "no-unit-test",
-				"android-arm", "-D__ANDROID_API__=21", "--libdir=lib", "--prefix=/", "--openssldir=/",
+				"no-ssl3", "no-camellia", "no-idea", "no-md2", "no-md4", "no-mdc2",
+				"no-rc2", "no-rc4", "no-rc5", "no-rmd160", "no-whirlpool", "no-dso",
+				"no-ui-console", "no-shared", "no-unit-test", "android-arm",
+				"-D__ANDROID_API__=21", "--libdir=lib", "--prefix=/", "--openssldir=/",
 			},
 		}, {
 			Env: []string{
@@ -763,12 +763,12 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-1.1.1u.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.1.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-1.1.1u.tar.gz",
+				"tar", "-xf", "openssl-3.1.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -791,10 +791,10 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 			},
 			Argv: []string{
 				"./Configure", "no-comp", "no-dtls", "no-ec2m", "no-psk", "no-srp",
-				"no-ssl2", "no-ssl3", "no-camellia", "no-idea", "no-md2", "no-md4",
-				"no-mdc2", "no-rc2", "no-rc4", "no-rc5", "no-rmd160", "no-whirlpool",
-				"no-dso", "no-hw", "no-ui-console", "no-shared", "no-unit-test",
-				"android-arm64", "-D__ANDROID_API__=21", "--libdir=lib", "--prefix=/", "--openssldir=/",
+				"no-ssl3", "no-camellia", "no-idea", "no-md2", "no-md4", "no-mdc2",
+				"no-rc2", "no-rc4", "no-rc5", "no-rmd160", "no-whirlpool", "no-dso",
+				"no-ui-console", "no-shared", "no-unit-test", "android-arm64",
+				"-D__ANDROID_API__=21", "--libdir=lib", "--prefix=/", "--openssldir=/",
 			},
 		}, {
 			Env: []string{
@@ -824,12 +824,12 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-1.1.1u.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.1.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-1.1.1u.tar.gz",
+				"tar", "-xf", "openssl-3.1.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -852,10 +852,10 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 			},
 			Argv: []string{
 				"./Configure", "no-comp", "no-dtls", "no-ec2m", "no-psk", "no-srp",
-				"no-ssl2", "no-ssl3", "no-camellia", "no-idea", "no-md2", "no-md4",
-				"no-mdc2", "no-rc2", "no-rc4", "no-rc5", "no-rmd160", "no-whirlpool",
-				"no-dso", "no-hw", "no-ui-console", "no-shared", "no-unit-test",
-				"android-x86", "-D__ANDROID_API__=21", "--libdir=lib", "--prefix=/", "--openssldir=/",
+				"no-ssl3", "no-camellia", "no-idea", "no-md2", "no-md4", "no-mdc2",
+				"no-rc2", "no-rc4", "no-rc5", "no-rmd160", "no-whirlpool", "no-dso",
+				"no-ui-console", "no-shared", "no-unit-test", "android-x86",
+				"-D__ANDROID_API__=21", "--libdir=lib", "--prefix=/", "--openssldir=/",
 			},
 		}, {
 			Env: []string{
@@ -885,12 +885,12 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-1.1.1u.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.1.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-1.1.1u.tar.gz",
+				"tar", "-xf", "openssl-3.1.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -913,10 +913,10 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 			},
 			Argv: []string{
 				"./Configure", "no-comp", "no-dtls", "no-ec2m", "no-psk", "no-srp",
-				"no-ssl2", "no-ssl3", "no-camellia", "no-idea", "no-md2", "no-md4",
-				"no-mdc2", "no-rc2", "no-rc4", "no-rc5", "no-rmd160", "no-whirlpool",
-				"no-dso", "no-hw", "no-ui-console", "no-shared", "no-unit-test",
-				"android-x86_64", "-D__ANDROID_API__=21", "--libdir=lib", "--prefix=/", "--openssldir=/",
+				"no-ssl3", "no-camellia", "no-idea", "no-md2", "no-md4", "no-mdc2",
+				"no-rc2", "no-rc4", "no-rc5", "no-rmd160", "no-whirlpool", "no-dso",
+				"no-ui-console", "no-shared", "no-unit-test", "android-x86_64",
+				"-D__ANDROID_API__=21", "--libdir=lib", "--prefix=/", "--openssldir=/",
 			},
 		}, {
 			Env: []string{
@@ -1646,12 +1646,12 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.7.13.tar.gz",
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.7.14.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "tor-0.4.7.13.tar.gz",
+				"tar", "-xf", "tor-0.4.7.14.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -1722,12 +1722,12 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.7.13.tar.gz",
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.7.14.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "tor-0.4.7.13.tar.gz",
+				"tar", "-xf", "tor-0.4.7.14.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -1798,12 +1798,12 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.7.13.tar.gz",
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.7.14.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "tor-0.4.7.13.tar.gz",
+				"tar", "-xf", "tor-0.4.7.14.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -1874,12 +1874,12 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.7.13.tar.gz",
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.7.14.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "tor-0.4.7.13.tar.gz",
+				"tar", "-xf", "tor-0.4.7.14.tar.gz",
 			},
 		}, {
 			Env: []string{},

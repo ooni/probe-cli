@@ -74,7 +74,7 @@ func TestMeasurerRun(t *testing.T) {
 		}
 
 		// create a new test environment
-		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(servicesAddr, netemx.QAEnvDefaultHTTPHandler()))
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(servicesAddr, netemx.ExampleWebPageHandlerFactory()))
 		defer env.Close()
 
 		// configure the DNS for all resolvers
@@ -125,7 +125,7 @@ func TestMeasurerRun(t *testing.T) {
 		}
 
 		// create a new test environment
-		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(servicesAddr, netemx.QAEnvDefaultHTTPHandler()))
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(servicesAddr, netemx.ExampleWebPageHandlerFactory()))
 		defer env.Close()
 
 		// configure the DNS for all resolvers
@@ -185,7 +185,7 @@ func TestMeasurerRun(t *testing.T) {
 		}()
 
 		// create a new test environment
-		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(servicesAddr, netemx.QAEnvDefaultHTTPHandler()))
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(servicesAddr, netemx.ExampleWebPageHandlerFactory()))
 		defer env.Close()
 
 		// configure the DNS for all resolvers
@@ -245,7 +245,7 @@ func TestMeasurerRun(t *testing.T) {
 		}
 
 		// create a new test environment
-		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(servicesAddr, netemx.QAEnvDefaultHTTPHandler()))
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(servicesAddr, netemx.ExampleWebPageHandlerFactory()))
 		defer env.Close()
 
 		// configure all DNS servers but the ISP's one

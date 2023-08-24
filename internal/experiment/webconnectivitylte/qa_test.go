@@ -25,81 +25,83 @@ const qaWebServerAddress = "93.184.216.34"
 // qaZeroTHOoniOrg is the address of 0.th.ooni.org.
 const qaZeroTHOoniOrg = "104.248.30.161"
 
-// qaNewMockedTestHelper returns an [http.Handler] that returns the expected TH response
-// based on the configuration we setup in [qaNewEnvironment].
-func qaNewMockedTestHelper() http.Handler {
+// qaNewMockedTestHelperFactory returns a [netemx.QAEnvHTTPHandlerFactory] that returns the expected
+// TH response based on the configuration we setup in [qaNewEnvironment].
+func qaNewMockedTestHelperFactory() netemx.QAEnvHTTPHandlerFactory {
 	// TODO(bassosimone,kelmenhorst): we should use the real TH code rather than this fragile mock
 
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// read raw request body
-		rawRequest, err := netxlite.ReadAllContext(r.Context(), r.Body)
-		if err != nil {
-			// it does not make sense to send a response here because the connection
-			// has been closed while reading the body
-			return
-		}
+	return netemx.QAEnvHTTPHandlerFactoryFunc(func(_ netem.UnderlyingNetwork) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// read raw request body
+			rawRequest, err := netxlite.ReadAllContext(r.Context(), r.Body)
+			if err != nil {
+				// it does not make sense to send a response here because the connection
+				// has been closed while reading the body
+				return
+			}
 
-		// parse raw request body
-		var request model.THRequest
-		if err := json.Unmarshal(rawRequest, &request); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
+			// parse raw request body
+			var request model.THRequest
+			if err := json.Unmarshal(rawRequest, &request); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
 
-		// parse the raw request URL
-		URL, err := url.Parse(request.HTTPRequest)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
+			// parse the raw request URL
+			URL, err := url.Parse(request.HTTPRequest)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
 
-		// create a fake response
-		response := &model.THResponse{
-			TCPConnect: map[string]model.THTCPConnectResult{
-				net.JoinHostPort(qaWebServerAddress, "80"): {
-					Status:  true,
+			// create a fake response
+			response := &model.THResponse{
+				TCPConnect: map[string]model.THTCPConnectResult{
+					net.JoinHostPort(qaWebServerAddress, "80"): {
+						Status:  true,
+						Failure: nil,
+					},
+				},
+				TLSHandshake: map[string]model.THTLSHandshakeResult{
+					net.JoinHostPort(qaWebServerAddress, "443"): {
+						ServerName: URL.Hostname(),
+						Status:     true,
+						Failure:    nil,
+					},
+				},
+				QUICHandshake: map[string]model.THTLSHandshakeResult{},
+				HTTPRequest: model.THHTTPRequestResult{
+					BodyLength:           int64(len(netemx.ExampleWebPage)),
+					DiscoveredH3Endpoint: "",
+					Failure:              nil,
+					Title:                "Default Web Page",
+					Headers:              map[string]string{},
+					StatusCode:           200,
+				},
+				HTTP3Request: nil,
+				DNS: model.THDNSResult{
 					Failure: nil,
+					Addrs:   []string{qaWebServerAddress},
+					ASNs:    []int64{15133},
 				},
-			},
-			TLSHandshake: map[string]model.THTLSHandshakeResult{
-				net.JoinHostPort(qaWebServerAddress, "443"): {
-					ServerName: URL.Hostname(),
-					Status:     true,
-					Failure:    nil,
+				IPInfo: map[string]*model.THIPInfo{
+					qaWebServerAddress: {
+						ASN:   15133,
+						Flags: model.THIPInfoFlagResolvedByTH | model.THIPInfoFlagResolvedByProbe,
+					},
 				},
-			},
-			QUICHandshake: map[string]model.THTLSHandshakeResult{},
-			HTTPRequest: model.THHTTPRequestResult{
-				BodyLength:           int64(len(netemx.QAEnvDefaultWebPage)),
-				DiscoveredH3Endpoint: "",
-				Failure:              nil,
-				Title:                "Default Web Page",
-				Headers:              map[string]string{},
-				StatusCode:           200,
-			},
-			HTTP3Request: nil,
-			DNS: model.THDNSResult{
-				Failure: nil,
-				Addrs:   []string{qaWebServerAddress},
-				ASNs:    []int64{15133},
-			},
-			IPInfo: map[string]*model.THIPInfo{
-				qaWebServerAddress: {
-					ASN:   15133,
-					Flags: model.THIPInfoFlagResolvedByTH | model.THIPInfoFlagResolvedByProbe,
-				},
-			},
-		}
+			}
 
-		// serialize the response
-		rawResponse, err := json.Marshal(response)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+			// serialize the response
+			rawResponse, err := json.Marshal(response)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
 
-		// write the response
-		w.Write(rawResponse)
+			// write the response
+			w.Write(rawResponse)
+		})
 	})
 }
 
@@ -118,8 +120,8 @@ func qaAddTHDomains(config *netem.DNSConfig) {
 func qaNewEnvironment() *netemx.QAEnv {
 	return netemx.NewQAEnv(
 		netemx.QAEnvOptionDNSOverUDPResolvers("8.8.4.4"),
-		netemx.QAEnvOptionHTTPServer(qaWebServerAddress, netemx.QAEnvDefaultHTTPHandler()),
-		netemx.QAEnvOptionHTTPServer(qaZeroTHOoniOrg, qaNewMockedTestHelper()),
+		netemx.QAEnvOptionHTTPServer(qaWebServerAddress, netemx.ExampleWebPageHandlerFactory()),
+		netemx.QAEnvOptionHTTPServer(qaZeroTHOoniOrg, qaNewMockedTestHelperFactory()),
 	)
 }
 

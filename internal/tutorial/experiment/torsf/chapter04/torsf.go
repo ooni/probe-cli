@@ -228,7 +228,7 @@ func (m *Measurer) run(ctx context.Context,
 // We can now run the code as follows to obtain:
 //
 // ```
-// $ go run ./experiment/torsf/chapter04 | jq
+// $ go run ./experiment/torsf/chapter04 | tail -n 1 | jq
 // [...]
 // Jun 21 23:40:50.000 [notice] Bootstrapped 100% (done): Done
 // 2021/06/21 23:40:50  info [100.0%] torsf experiment is finished
