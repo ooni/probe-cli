@@ -37,4 +37,10 @@ func TestNewSession(t *testing.T) {
 			t.Fatal("expected non-empty user agent")
 		}
 	})
+
+	t.Run("we have a resolver IP", func(t *testing.T) {
+		if sess.ResolverIP() == "" {
+			t.Fatal("expected non-empty resolver IP")
+		}
+	})
 }
