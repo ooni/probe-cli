@@ -329,8 +329,8 @@ func (env *QAEnv) mustCreateAllHTTPServers(
 		srv := &http3.Server{TLSConfig: stack.ServerTLSConfig(), Handler: handler}
 		closables = append(closables, listener, srv)
 		go srv.Serve(listener)
-
 	}
+
 	return
 }
 
