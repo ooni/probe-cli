@@ -4,6 +4,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netemx"
 )
 
 // nwSession creates a new [model.ExperimentSession].
@@ -56,7 +57,9 @@ func newSession(client model.HTTPClient) model.ExperimentSession {
 
 		MockProxyURL: nil,
 
-		MockResolverIP: nil,
+		MockResolverIP: func() string {
+			return netemx.QAEnvDefaultISPResolverAddress
+		},
 
 		MockSoftwareName: nil,
 
