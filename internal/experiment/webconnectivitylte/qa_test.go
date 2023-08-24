@@ -1,4 +1,4 @@
-package webconnectivitylte
+package webconnectivitylte_test
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/netem"
+	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivitylte"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
@@ -117,14 +118,8 @@ func qaAddTHDomains(config *netem.DNSConfig) {
 func qaNewEnvironment() *netemx.QAEnv {
 	return netemx.NewQAEnv(
 		netemx.QAEnvOptionDNSOverUDPResolvers("8.8.4.4"),
-		netemx.QAEnvOptionHTTPServerWithFactory(
-			qaWebServerAddress,
-			netemx.QAEnvAlwaysReturnThisHandler(netemx.QAEnvDefaultHTTPHandler()),
-		),
-		netemx.QAEnvOptionHTTPServerWithFactory(
-			qaZeroTHOoniOrg,
-			netemx.QAEnvAlwaysReturnThisHandler(qaNewMockedTestHelper()),
-		),
+		netemx.QAEnvOptionHTTPServer(qaWebServerAddress, netemx.QAEnvDefaultHTTPHandler()),
+		netemx.QAEnvOptionHTTPServer(qaZeroTHOoniOrg, qaNewMockedTestHelper()),
 	)
 }
 
@@ -198,7 +193,7 @@ func qaRunWithURL(input string, setISPResolverConfig func(*netem.DNSConfig),
 	setDPI(env.DPIEngine())
 
 	// create the measurer and the context
-	measurer := NewExperimentMeasurer(&Config{})
+	measurer := webconnectivitylte.NewExperimentMeasurer(&webconnectivitylte.Config{})
 	ctx := context.Background()
 
 	// create a new measurement
