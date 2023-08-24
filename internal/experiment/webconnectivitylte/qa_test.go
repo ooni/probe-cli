@@ -71,7 +71,7 @@ func qaNewMockedTestHelperFactory() netemx.QAEnvHTTPHandlerFactory {
 				},
 				QUICHandshake: map[string]model.THTLSHandshakeResult{},
 				HTTPRequest: model.THHTTPRequestResult{
-					BodyLength:           int64(len(netemx.QAEnvDefaultWebPage)),
+					BodyLength:           int64(len(netemx.ExampleWebPage)),
 					DiscoveredH3Endpoint: "",
 					Failure:              nil,
 					Title:                "Default Web Page",
@@ -120,7 +120,7 @@ func qaAddTHDomains(config *netem.DNSConfig) {
 func qaNewEnvironment() *netemx.QAEnv {
 	return netemx.NewQAEnv(
 		netemx.QAEnvOptionDNSOverUDPResolvers("8.8.4.4"),
-		netemx.QAEnvOptionHTTPServer(qaWebServerAddress, netemx.QAEnvDefaultHTTPHandlerFactory()),
+		netemx.QAEnvOptionHTTPServer(qaWebServerAddress, netemx.ExampleWebPageHandlerFactory()),
 		netemx.QAEnvOptionHTTPServer(qaZeroTHOoniOrg, qaNewMockedTestHelperFactory()),
 	)
 }
