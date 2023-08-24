@@ -152,9 +152,7 @@ func TestSummarize(t *testing.T) {
 			BlockingReason: &dns,
 			Blocking:       &dns,
 			Accessible:     &falseValue,
-			Status: webconnectivity.StatusAnomalyConnect |
-				webconnectivity.StatusExperimentConnect |
-				webconnectivity.StatusAnomalyDNS,
+			Status:         webconnectivity.StatusAnomalyDNS | webconnectivity.StatusExperimentDNS,
 		},
 	}, {
 		name: "with TCP total failure and unexpected DNS consistency",
@@ -350,9 +348,7 @@ func TestSummarize(t *testing.T) {
 			BlockingReason: &dns,
 			Blocking:       &dns,
 			Accessible:     &falseValue,
-			Status: webconnectivity.StatusExperimentHTTP |
-				webconnectivity.StatusAnomalyTLSHandshake |
-				webconnectivity.StatusAnomalyDNS,
+			Status:         webconnectivity.StatusExperimentDNS | webconnectivity.StatusAnomalyDNS,
 		},
 	}, {
 		name: "with SSL unknown auth _and_ untrustworthy DNS _and_ a longer chain",
@@ -367,11 +363,10 @@ func TestSummarize(t *testing.T) {
 			},
 		},
 		wantOut: webconnectivity.Summary{
-			BlockingReason: &httpFailure,
-			Blocking:       &httpFailure,
+			BlockingReason: &dns,
+			Blocking:       &dns,
 			Accessible:     &falseValue,
-			Status: webconnectivity.StatusExperimentHTTP |
-				webconnectivity.StatusAnomalyTLSHandshake,
+			Status:         webconnectivity.StatusExperimentDNS | webconnectivity.StatusAnomalyDNS,
 		},
 	}, {
 		name: "with status code and body length matching",
@@ -442,8 +437,7 @@ func TestSummarize(t *testing.T) {
 			BlockingReason: &dns,
 			Blocking:       &dns,
 			Accessible:     &falseValue,
-			Status: webconnectivity.StatusAnomalyHTTPDiff |
-				webconnectivity.StatusAnomalyDNS,
+			Status:         webconnectivity.StatusExperimentDNS | webconnectivity.StatusAnomalyDNS,
 		},
 	}, {
 		name: "with suspect http-diff and consistent DNS",

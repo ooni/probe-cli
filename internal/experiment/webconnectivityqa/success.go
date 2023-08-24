@@ -4,12 +4,14 @@ package webconnectivityqa
 func sucessWithHTTP() *TestCase {
 	return &TestCase{
 		Name:      "measuring http://www.example.com/ without censorship",
+		Flags:     0,
 		Input:     "http://www.example.com/",
 		Configure: nil,
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
-			Accessible: true,
-			Blocking:   false,
+			DNSConsistency: "consistent",
+			Accessible:     true,
+			Blocking:       false,
 		},
 	}
 }
@@ -18,12 +20,14 @@ func sucessWithHTTP() *TestCase {
 func sucessWithHTTPS() *TestCase {
 	return &TestCase{
 		Name:      "measuring https://www.example.com/ without censorship",
+		Flags:     0,
 		Input:     "https://www.example.com/",
 		Configure: nil,
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
-			Accessible: true,
-			Blocking:   false,
+			DNSConsistency: "consistent",
+			Accessible:     true,
+			Blocking:       false,
 		},
 	}
 }

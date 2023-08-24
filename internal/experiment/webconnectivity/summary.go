@@ -100,6 +100,7 @@ func Summarize(tk *TestKeys) (out Summary) {
 	defer func() {
 		out.Blocking = DetermineBlocking(out)
 	}()
+
 	var (
 		accessible   = true
 		inaccessible = false
@@ -108,6 +109,7 @@ func Summarize(tk *TestKeys) (out Summary) {
 		httpFailure  = "http-failure"
 		tcpIP        = "tcp_ip"
 	)
+
 	// If the measurement was for an HTTPS website and the HTTP experiment
 	// succeeded, then either there is a compromised CA in our pool (which is
 	// certifi-go), or there is transparent proxying, or we are actually
@@ -119,11 +121,13 @@ func Summarize(tk *TestKeys) (out Summary) {
 		out.Status |= StatusSuccessSecure
 		return
 	}
+
 	// If we couldn't contact the control, we cannot do much more here.
 	if tk.ControlFailure != nil {
 		out.Status |= StatusAnomalyControlUnreachable
 		return
 	}
+
 	// If DNS failed with NXDOMAIN and the control DNS is consistent, then it
 	// means this website does not exist anymore. We need to include the weird
 	// cache failure on Android into this analysis because that failure means
@@ -142,15 +146,16 @@ func Summarize(tk *TestKeys) (out Summary) {
 		out.Status |= StatusSuccessNXDOMAIN | StatusExperimentDNS
 		return
 	}
-	// Otherwise, if DNS failed with NXDOMAIN, it's DNS based blocking.
-	// TODO(bassosimone): do we wanna include other errors here? Like timeout?
-	if tk.DNSExperimentFailure != nil &&
-		*tk.DNSExperimentFailure == netxlite.FailureDNSNXDOMAINError {
+
+	// Otherwise, if the DNS is inconsistent, flag a DNS failure. Note that this
+	// case also includes when the probe lookup fails and the TH one does not.
+	if tk.DNSConsistency != nil && *tk.DNSConsistency == DNSInconsistent {
 		out.Accessible = &inaccessible
 		out.BlockingReason = &dns
 		out.Status |= StatusAnomalyDNS | StatusExperimentDNS
 		return
 	}
+
 	// If we tried to connect more than once and never succedeed and we were
 	// able to measure DNS consistency, then we can conclude something.
 	if tk.TCPConnectAttempts > 0 && tk.TCPConnectSuccesses <= 0 && tk.DNSConsistency != nil {

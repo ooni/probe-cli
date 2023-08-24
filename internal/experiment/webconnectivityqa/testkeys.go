@@ -11,6 +11,9 @@ import (
 
 // testKeys is the test keys structure returned by this package.
 type testKeys struct {
+	// DNSConsistency indicates whether the DNS is consistent with the TH.
+	DNSConsistency any `json:"dns_consistency"`
+
 	// Accessible indicates whether the URL was accessible.
 	Accessible any `json:"accessible"`
 

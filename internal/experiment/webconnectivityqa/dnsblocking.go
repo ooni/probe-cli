@@ -9,7 +9,7 @@ import (
 func dnsBlockingAndroidDNSCacheNoData() *TestCase {
 	return &TestCase{
 		Name:  "measuring https://www.example.com/ with getaddrinfo errors and android_dns_cache_no_data",
-		Flags: TestCaseFlagNoV04,
+		Flags: 0,
 		Input: "https://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 			// make sure the env knows we want to emulate our getaddrinfo wrapper behavior
@@ -19,7 +19,11 @@ func dnsBlockingAndroidDNSCacheNoData() *TestCase {
 			// converted into android_dns_cache_no_data by the emulation layer
 			env.ISPResolverConfig().RemoveRecord("www.example.com")
 		},
-		ExpectErr:      false,
-		ExpectTestKeys: &testKeys{Accessible: false, Blocking: "dns"},
+		ExpectErr: false,
+		ExpectTestKeys: &testKeys{
+			DNSConsistency: "inconsistent",
+			Accessible:     false,
+			Blocking:       "dns",
+		},
 	}
 }

@@ -10,6 +10,7 @@ import (
 func tlsBlockingConnectionReset() *TestCase {
 	return &TestCase{
 		Name:  "measuring https://www.example.com/ with TLS blocking of the SNI",
+		Flags: 0,
 		Input: "https://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 			env.DPIEngine().AddRule(&netem.DPIResetTrafficForTLSSNI{
@@ -19,8 +20,9 @@ func tlsBlockingConnectionReset() *TestCase {
 		},
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
-			Accessible: false,
-			Blocking:   "http-failure",
+			DNSConsistency: "consistent",
+			Accessible:     false,
+			Blocking:       "http-failure",
 		},
 	}
 }
