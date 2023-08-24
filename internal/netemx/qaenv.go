@@ -327,13 +327,14 @@ func (env *QAEnv) mustNewHTTPServers(config *qaEnvConfig) (closables []io.Closer
 		))
 		env.serverStacks[addr] = stack
 
-		handler := factory.NewHandler(stack)
-		closables = env.serverListen(stack, handler, addr)
+		// create HTTP, HTTPS and HTTP/3 servers for this stack
+		closables = append(closables, env.mustCreateAllHTTPServers(stack, handler, addr)...)
 	}
 	return
 }
 
-func (env *QAEnv) serverListen(stack *netem.UNetStack, handler http.Handler, addr string) (closables []io.Closer) {
+func (env *QAEnv) mustCreateAllHTTPServers(
+	stack *netem.UNetStack, handler http.Handler, addr string) (closables []io.Closer) {
 	ipAddr := net.ParseIP(addr)
 	runtimex.Assert(ipAddr != nil, "invalid IP addr")
 
@@ -360,6 +361,7 @@ func (env *QAEnv) serverListen(stack *netem.UNetStack, handler http.Handler, add
 		closables = append(closables, listener, srv)
 		go srv.Serve(listener)
 	}
+
 	return
 }
 
