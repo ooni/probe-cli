@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-// GeoIPHandlerUbuntu is an [http.Handler] implementing Ubuntu's GeoIP lookup.
+// GeoIPHandlerUbuntu is an [http.Handler] implementing Ubuntu's GeoIP lookup service.
 type GeoIPHandlerUbuntu struct {
 	// ProbeIP is the MANDATORY probe IP to return.
 	ProbeIP string
