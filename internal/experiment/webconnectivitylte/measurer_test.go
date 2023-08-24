@@ -2,9 +2,7 @@ package webconnectivitylte
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
-	"net/http/cookiejar"
 	"testing"
 
 	"github.com/apex/log"
@@ -15,10 +13,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/oohelperd"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/sessionresolver"
-	"golang.org/x/net/publicsuffix"
 )
 
 func newEnvironment() *netemx.QAEnv {
@@ -32,7 +27,7 @@ func newEnvironment() *netemx.QAEnv {
 	dohServer.AddRecord("2.th.ooni.org", "104.248.30.161")
 	dohServer.AddRecord("3.th.ooni.org", "104.248.30.161")
 
-	env := netemx.NewQAEnv(
+	env := netemx.MustNewQAEnv(
 		netemx.QAEnvOptionDNSOverUDPResolvers("8.8.4.4"),
 		netemx.QAEnvOptionHTTPServerWithFactory(
 			"93.184.216.34",
@@ -83,52 +78,6 @@ func newEnvironment() *netemx.QAEnv {
 		"93.184.216.34",
 	)
 	return env
-}
-
-// testHelperFactory is the factory to create a oohelperd testhelper using the given underlying network.
-type testHelperFactory struct{}
-
-// NewHandler implements QAEnvHTTPHandlerFactory.NewHandler.
-func (f testHelperFactory) NewHandler(net netem.UnderlyingNetwork) http.Handler {
-	n := netxlite.Net{Underlying: netemx.GetCustomTProxy(net)}
-	helperHandler := oohelperd.NewHandler()
-	helperHandler.NewDialer = func(logger model.Logger) model.Dialer {
-		return n.NewDialerWithResolver(logger, n.NewStdlibResolver(logger))
-	}
-	helperHandler.NewQUICDialer = func(logger model.Logger) model.QUICDialer {
-		return n.NewQUICDialerWithResolver(
-			n.NewQUICListener(),
-			logger,
-			n.NewStdlibResolver(logger),
-		)
-	}
-	helperHandler.NewResolver = func(logger model.Logger) model.Resolver {
-		return n.NewStdlibResolver(logger)
-	}
-
-	helperHandler.NewHTTPClient = func(logger model.Logger) model.HTTPClient {
-		cookieJar, _ := cookiejar.New(&cookiejar.Options{
-			PublicSuffixList: publicsuffix.List,
-		})
-		return &http.Client{
-			Transport:     n.NewHTTPTransportStdlib(logger),
-			CheckRedirect: nil,
-			Jar:           cookieJar,
-			Timeout:       0,
-		}
-	}
-	helperHandler.NewHTTP3Client = func(logger model.Logger) model.HTTPClient {
-		cookieJar, _ := cookiejar.New(&cookiejar.Options{
-			PublicSuffixList: publicsuffix.List,
-		})
-		return &http.Client{
-			Transport:     n.NewHTTP3TransportStdlib(logger),
-			CheckRedirect: nil,
-			Jar:           cookieJar,
-			Timeout:       0,
-		}
-	}
-	return helperHandler
 }
 
 func TestSuccess(t *testing.T) {
@@ -196,40 +145,6 @@ func TestDPITarget(t *testing.T) {
 			t.Fatal("unexpected accessible flag: should be false")
 		}
 	})
-}
-
-type probeService struct{}
-
-type th struct {
-	Addr string `json:"address"`
-	T    string `json:"type"`
-}
-
-func (p *probeService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	resp := map[string][]th{
-		"web-connectivity": {
-			{
-				Addr: "https://2.th.ooni.org",
-				T:    "https",
-			},
-			{
-				Addr: "https://3.th.ooni.org",
-				T:    "https",
-			},
-			{
-				Addr: "https://0.th.ooni.org",
-				T:    "https",
-			},
-			{
-				Addr: "https://1.th.ooni.org",
-				T:    "https",
-			},
-		},
-	}
-	data, err := json.Marshal(resp)
-	runtimex.PanicOnError(err, "json.Marshal failed")
-	w.Header().Add("Content-Type", "application/json")
-	w.Write(data)
 }
 
 // newSession creates a new [mocks.Session].
