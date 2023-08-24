@@ -25,6 +25,8 @@ const ExampleWebPage = `<!doctype html>
 func ExampleWebPageHandlerFactory() QAEnvHTTPHandlerFactory {
 	return QAEnvHTTPHandlerFactoryFunc(func(_ netem.UnderlyingNetwork) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Add("Alt-Svc", `h3=":443"`)
+			w.Header().Add("Date", "Thu, 24 Aug 2023 14:35:29 GMT")
 			w.Write([]byte(ExampleWebPage))
 		})
 	})
