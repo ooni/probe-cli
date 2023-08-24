@@ -214,7 +214,7 @@ func configureDNSWithDefaults(config *netem.DNSConfig) {
 func TestMeasurerWithInvalidInput(t *testing.T) {
 	t.Run("with no measurement input: expect input error", func(t *testing.T) {
 		// create a new test environment
-		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(exampleOrgAddr, netemx.QAEnvDefaultHTTPHandler()))
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(exampleOrgAddr, netemx.QAEnvDefaultHTTPHandlerFactory()))
 		defer env.Close()
 
 		// we use the same valid DNS config for client and servers here
@@ -237,7 +237,7 @@ func TestMeasurerWithInvalidInput(t *testing.T) {
 
 	t.Run("with invalid MeasurementInput: expect parsing error", func(t *testing.T) {
 		// create a new test environment
-		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(exampleOrgAddr, netemx.QAEnvDefaultHTTPHandler()))
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(exampleOrgAddr, netemx.QAEnvDefaultHTTPHandlerFactory()))
 		defer env.Close()
 
 		// we use the same valid DNS config for client and servers here
@@ -269,7 +269,7 @@ func TestMeasurerWithInvalidInput(t *testing.T) {
 func TestMeasurerRun(t *testing.T) {
 	t.Run("without DPI: expect success", func(t *testing.T) {
 		// create a new test environment
-		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(exampleOrgAddr, netemx.QAEnvDefaultHTTPHandler()))
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(exampleOrgAddr, netemx.QAEnvDefaultHTTPHandlerFactory()))
 		defer env.Close()
 
 		// we use the same valid DNS config for client and servers here
@@ -424,7 +424,7 @@ func TestMeasurerRun(t *testing.T) {
 
 	t.Run("with cache: expect to see cached entry", func(t *testing.T) {
 		// create a new test environment
-		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(exampleOrgAddr, netemx.QAEnvDefaultHTTPHandler()))
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(exampleOrgAddr, netemx.QAEnvDefaultHTTPHandlerFactory()))
 		defer env.Close()
 
 		// we use the same valid DNS config for client and servers here
@@ -480,7 +480,7 @@ func TestMeasurerRun(t *testing.T) {
 
 	t.Run("with DPI that blocks target SNI", func(t *testing.T) {
 		// create a new test environment
-		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(exampleOrgAddr, netemx.QAEnvDefaultHTTPHandler()))
+		env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(exampleOrgAddr, netemx.QAEnvDefaultHTTPHandlerFactory()))
 		defer env.Close()
 
 		// we use the same valid DNS config for client and servers here
@@ -529,7 +529,7 @@ func TestMeasurerRun(t *testing.T) {
 
 func TestMeasureonewithcacheWorks(t *testing.T) {
 	// create a new test environment
-	env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(exampleOrgAddr, netemx.QAEnvDefaultHTTPHandler()))
+	env := netemx.NewQAEnv(netemx.QAEnvOptionHTTPServer(exampleOrgAddr, netemx.QAEnvDefaultHTTPHandlerFactory()))
 	defer env.Close()
 
 	// we use the same valid DNS config for client and servers here

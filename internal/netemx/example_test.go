@@ -33,7 +33,7 @@ func exampleNewEnvironment() *netemx.QAEnv {
 		netemx.QAEnvOptionDNSOverUDPResolvers("8.8.4.4", "9.9.9.9"),
 		netemx.QAEnvOptionClientAddress(exampleClientAddress),
 		netemx.QAEnvOptionISPResolverAddress(exampleISPResolverAddress),
-		netemx.QAEnvOptionHTTPServer(exampleExampleComAddress, netemx.QAEnvDefaultHTTPHandler()),
+		netemx.QAEnvOptionHTTPServer(exampleExampleComAddress, netemx.QAEnvDefaultHTTPHandlerFactory()),
 		netemx.QAEnvOptionLogger(log.Log),
 	)
 }
