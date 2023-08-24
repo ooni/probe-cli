@@ -82,10 +82,10 @@ func QAEnvOptionDNSOverUDPResolvers(ipAddrs ...string) QAEnvOption {
 
 // QAEnvHTTPHandlerFactory constructs an [http.Handler] using the given underlying network.
 type QAEnvHTTPHandlerFactory interface {
-	NewHandler(net netem.UnderlyingNetwork) http.Handler
+	NewHandler(unet netem.UnderlyingNetwork) http.Handler
 }
 
-// QAEnvOptionHTTPServer adds the given HTTP server as a factory function. If you do
+// QAEnvOptionHTTPServer adds the given HTTP handler factory. If you do
 // not set this option we will not create any HTTP server.
 func QAEnvOptionHTTPServer(ipAddr string, factory QAEnvHTTPHandlerFactory) QAEnvOption {
 	runtimex.Assert(net.ParseIP(ipAddr) != nil, "not an IP addr")
@@ -431,18 +431,18 @@ const QAEnvDefaultWebPage = `<!doctype html>
 `
 
 // QAEnvHTTPHandlerFactoryFunc allows a func to become a [QAEnvHTTPHandlerFactory].
-type QAEnvHTTPHandlerFactoryFunc func(net netem.UnderlyingNetwork) http.Handler
+type QAEnvHTTPHandlerFactoryFunc func(unet netem.UnderlyingNetwork) http.Handler
 
 var _ QAEnvHTTPHandlerFactory = QAEnvHTTPHandlerFactoryFunc(nil)
 
 // NewHandler implements QAEnvHTTPHandlerFactory.
-func (fx QAEnvHTTPHandlerFactoryFunc) NewHandler(net netem.UnderlyingNetwork) http.Handler {
-	return fx(net)
+func (fx QAEnvHTTPHandlerFactoryFunc) NewHandler(unet netem.UnderlyingNetwork) http.Handler {
+	return fx(unet)
 }
 
 // QAEnvDefaultHTTPHandlerFactory returns the default HTTP handler factory.
 func QAEnvDefaultHTTPHandlerFactory() QAEnvHTTPHandlerFactory {
-	return QAEnvHTTPHandlerFactoryFunc(func(net netem.UnderlyingNetwork) http.Handler {
+	return QAEnvHTTPHandlerFactoryFunc(func(_ netem.UnderlyingNetwork) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(QAEnvDefaultWebPage))
 		})
