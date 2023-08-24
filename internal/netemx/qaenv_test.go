@@ -75,7 +75,7 @@ func TestQAEnv(t *testing.T) {
 	t.Run("we can hijack HTTPS requests", func(t *testing.T) {
 		// create QA env
 		env := netemx.NewQAEnv(
-			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandler()),
+			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandlerFactory()),
 		)
 		defer env.Close()
 
@@ -135,7 +135,7 @@ func TestQAEnv(t *testing.T) {
 	t.Run("we can hijack HTTP3 requests", func(t *testing.T) {
 		// create QA env
 		env := netemx.NewQAEnv(
-			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandler()),
+			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandlerFactory()),
 		)
 		defer env.Close()
 
@@ -184,7 +184,7 @@ func TestQAEnv(t *testing.T) {
 	t.Run("we can configure DPI rules", func(t *testing.T) {
 		// create QA env
 		env := netemx.NewQAEnv(
-			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandler()),
+			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandlerFactory()),
 		)
 		defer env.Close()
 
@@ -236,7 +236,7 @@ func TestQAEnv(t *testing.T) {
 
 		// create QA env
 		env := netemx.NewQAEnv(
-			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandler()),
+			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.QAEnvDefaultHTTPHandlerFactory()),
 			netemx.QAEnvOptionClientNICWrapper(dumper),
 		)
 		defer env.Close()

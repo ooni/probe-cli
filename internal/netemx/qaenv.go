@@ -36,8 +36,8 @@ type qaEnvConfig struct {
 	// dnsOverUDPResolvers contains the DNS-over-UDP resolvers to create.
 	dnsOverUDPResolvers []string
 
-	// httpServers contains the HTTP servers to create.
-	httpServers map[string]http.Handler
+	// httpServers contains factories for the HTTP servers to create.
+	httpServers map[string]QAEnvHTTPHandlerFactory
 
 	// ispResolver is the ISP resolver to use.
 	ispResolver string
@@ -80,13 +80,18 @@ func QAEnvOptionDNSOverUDPResolvers(ipAddrs ...string) QAEnvOption {
 	}
 }
 
-// QAEnvOptionHTTPServer adds the given HTTP server. If you do not set this option
-// we will not create any HTTP server.
-func QAEnvOptionHTTPServer(ipAddr string, handler http.Handler) QAEnvOption {
+// QAEnvHTTPHandlerFactory constructs an [http.Handler] using the given underlying network.
+type QAEnvHTTPHandlerFactory interface {
+	NewHandler(unet netem.UnderlyingNetwork) http.Handler
+}
+
+// QAEnvOptionHTTPServer adds the given HTTP handler factory. If you do
+// not set this option we will not create any HTTP server.
+func QAEnvOptionHTTPServer(ipAddr string, factory QAEnvHTTPHandlerFactory) QAEnvOption {
 	runtimex.Assert(net.ParseIP(ipAddr) != nil, "not an IP addr")
-	runtimex.Assert(handler != nil, "passed a nil handler")
+	runtimex.Assert(factory != nil, "passed a nil handler factory")
 	return func(config *qaEnvConfig) {
-		config.httpServers[ipAddr] = handler
+		config.httpServers[ipAddr] = factory
 	}
 }
 
@@ -168,7 +173,7 @@ func NewQAEnv(options ...QAEnvOption) *QAEnv {
 		clientAddress:       QAEnvDefaultClientAddress,
 		clientNICWrapper:    nil,
 		dnsOverUDPResolvers: []string{},
-		httpServers:         map[string]http.Handler{},
+		httpServers:         map[string]QAEnvHTTPHandlerFactory{},
 		ispResolver:         QAEnvDefaultISPResolverAddress,
 		logger:              model.DiscardLogger,
 		netStacks:           map[string]QAEnvNetStackHandler{},
@@ -281,7 +286,7 @@ func (env *QAEnv) mustNewHTTPServers(config *qaEnvConfig) (closables []io.Closer
 	runtimex.Assert(len(config.dnsOverUDPResolvers) >= 1, "expected at least one DNS resolver")
 	resolver := config.dnsOverUDPResolvers[0]
 
-	for addr, handler := range config.httpServers {
+	for addr, factory := range config.httpServers {
 		// Create the server's TCP/IP stack
 		//
 		// Note: because the stack is created using topology.AddHost, we don't
@@ -297,6 +302,7 @@ func (env *QAEnv) mustNewHTTPServers(config *qaEnvConfig) (closables []io.Closer
 		))
 
 		// create HTTP, HTTPS and HTTP/3 servers for this stack
+		handler := factory.NewHandler(stack)
 		closables = append(closables, env.mustCreateAllHTTPServers(stack, handler, addr)...)
 	}
 	return
@@ -424,10 +430,22 @@ const QAEnvDefaultWebPage = `<!doctype html>
 </html>
 `
 
-// QAEnvDefaultHTTPHandler returns the default HTTP handler.
-func QAEnvDefaultHTTPHandler() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(QAEnvDefaultWebPage))
+// QAEnvHTTPHandlerFactoryFunc allows a func to become a [QAEnvHTTPHandlerFactory].
+type QAEnvHTTPHandlerFactoryFunc func(unet netem.UnderlyingNetwork) http.Handler
+
+var _ QAEnvHTTPHandlerFactory = QAEnvHTTPHandlerFactoryFunc(nil)
+
+// NewHandler implements QAEnvHTTPHandlerFactory.
+func (fx QAEnvHTTPHandlerFactoryFunc) NewHandler(unet netem.UnderlyingNetwork) http.Handler {
+	return fx(unet)
+}
+
+// QAEnvDefaultHTTPHandlerFactory returns the default HTTP handler factory.
+func QAEnvDefaultHTTPHandlerFactory() QAEnvHTTPHandlerFactory {
+	return QAEnvHTTPHandlerFactoryFunc(func(_ netem.UnderlyingNetwork) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(QAEnvDefaultWebPage))
+		})
 	})
 }
 
