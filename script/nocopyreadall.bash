@@ -2,6 +2,12 @@
 set -euo pipefail
 exitcode=0
 for file in $(find . -type f -name \*.go); do
+	if [ "$file" = "./internal/netemx/ooapi_test.go" ]; then
+		# We're allowed to use ReadAll and Copy in this file because
+		# it's code that we only use for testing purposes.
+		continue
+	fi
+
 	if [ "$file" = "./internal/netxlite/iox.go" ]; then
 		# We're allowed to use ReadAll and Copy in this file to
 		# implement safer wrappers for these functions.
