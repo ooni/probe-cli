@@ -36,7 +36,7 @@ type qaEnvConfig struct {
 	// dnsOverUDPResolvers contains the DNS-over-UDP resolvers to create.
 	dnsOverUDPResolvers []string
 
-	// httpServers contains factory functions for the HTTP servers to create.
+	// httpServers contains factories for the HTTP servers to create.
 	httpServers map[string]QAEnvHTTPHandlerFactory
 
 	// ispResolver is the ISP resolver to use.
