@@ -3,27 +3,27 @@ package netemx
 import "github.com/ooni/netem"
 
 const (
-	// ScenarioFlagDNSOverHTTPS means we should create a DNS-over-HTTPS server.
-	ScenarioFlagDNSOverHTTPS = 1 << iota
+	// ScenarioRoleDNSOverHTTPS means we should create a DNS-over-HTTPS server.
+	ScenarioRoleDNSOverHTTPS = iota
 
-	// ScenarioFlagExampleLikeWebServer means we should instantiate a www.example.com-like web server.
-	ScenarioFlagExampleLikeWebServer
+	// ScenarioRoleExampleLikeWebServer means we should instantiate a www.example.com-like web server.
+	ScenarioRoleExampleLikeWebServer
 
-	// ScenarioFlagOONIAPI means we should instantiate the OONI API.
-	ScenarioFlagOONIAPI
+	// ScenarioRoleOONIAPI means we should instantiate the OONI API.
+	ScenarioRoleOONIAPI
 
-	// ScenarioFlagUbuntuGeoIP means we should instantiate the Ubuntu geoip service.
-	ScenarioFlagUbuntuGeoIP
+	// ScenarioRoleUbuntuGeoIP means we should instantiate the Ubuntu geoip service.
+	ScenarioRoleUbuntuGeoIP
 
-	// ScenarioFlagOONITestHelper means we should instantiate the oohelperd.
-	ScenarioFlagOONITestHelper
+	// ScenarioRoleOONITestHelper means we should instantiate the oohelperd.
+	ScenarioRoleOONITestHelper
 )
 
 // ScenarioDomainAddresses describes a domain and address used in a scenario.
 type ScenarioDomainAddresses struct {
 	Domain    string
 	Addresses []string
-	Flags     uint64
+	Role      uint64
 }
 
 // InternetScenario contains the domains and addresses used by [NewInternetScenario].
@@ -35,43 +35,43 @@ type ScenarioDomainAddresses struct {
 var InternetScenario = []*ScenarioDomainAddresses{{
 	Domain:    "api.ooni.io",
 	Addresses: []string{"130.192.91.5"},
-	Flags:     ScenarioFlagOONIAPI,
+	Role:      ScenarioRoleOONIAPI,
 }, {
 	Domain:    "geoip.ubuntu.com",
 	Addresses: []string{"130.192.91.6"},
-	Flags:     ScenarioFlagUbuntuGeoIP,
+	Role:      ScenarioRoleUbuntuGeoIP,
 }, {
 	Domain:    "www.example.com",
 	Addresses: []string{"130.192.91.7"},
-	Flags:     ScenarioFlagExampleLikeWebServer,
+	Role:      ScenarioRoleExampleLikeWebServer,
 }, {
 	Domain:    "0.th.ooni.org",
 	Addresses: []string{"130.192.91.8"},
-	Flags:     ScenarioFlagOONITestHelper,
+	Role:      ScenarioRoleOONITestHelper,
 }, {
 	Domain:    "1.th.ooni.org",
 	Addresses: []string{"130.192.91.9"},
-	Flags:     ScenarioFlagOONITestHelper,
+	Role:      ScenarioRoleOONITestHelper,
 }, {
 	Domain:    "2.th.ooni.org",
 	Addresses: []string{"130.192.91.10"},
-	Flags:     ScenarioFlagOONITestHelper,
+	Role:      ScenarioRoleOONITestHelper,
 }, {
 	Domain:    "3.th.ooni.org",
 	Addresses: []string{"130.192.91.11"},
-	Flags:     ScenarioFlagOONITestHelper,
+	Role:      ScenarioRoleOONITestHelper,
 }, {
 	Domain:    "dns.quad9.net",
 	Addresses: []string{"130.192.91.12"},
-	Flags:     ScenarioFlagDNSOverHTTPS,
+	Role:      ScenarioRoleDNSOverHTTPS,
 }, {
 	Domain:    "mozilla.cloudflare-dns.com",
 	Addresses: []string{"130.192.91.13"},
-	Flags:     ScenarioFlagDNSOverHTTPS,
+	Role:      ScenarioRoleDNSOverHTTPS,
 }, {
 	Domain:    "dns.google",
 	Addresses: []string{"130.192.91.14"},
-	Flags:     ScenarioFlagDNSOverHTTPS,
+	Role:      ScenarioRoleDNSOverHTTPS,
 }}
 
 // NewScenario constructs a complete testing scenario using the domains and IP
@@ -90,33 +90,30 @@ func NewScenario(cfg []*ScenarioDomainAddresses) *QAEnv {
 
 	// fill options based on the scenario config
 	for _, sad := range cfg {
-		if (sad.Flags & ScenarioFlagDNSOverHTTPS) != 0 {
+		switch sad.Role {
+		case ScenarioRoleDNSOverHTTPS:
 			for _, addr := range sad.Addresses {
 				opts = append(opts, QAEnvOptionHTTPServer(addr, &DNSOverHTTPSHandlerFactory{
 					Config: dohConfig,
 				}))
 			}
-		}
 
-		if (sad.Flags & ScenarioFlagExampleLikeWebServer) != 0 {
+		case ScenarioRoleExampleLikeWebServer:
 			for _, addr := range sad.Addresses {
 				opts = append(opts, QAEnvOptionHTTPServer(addr, ExampleWebPageHandlerFactory()))
 			}
-		}
 
-		if (sad.Flags & ScenarioFlagOONIAPI) != 0 {
+		case ScenarioRoleOONIAPI:
 			for _, addr := range sad.Addresses {
 				opts = append(opts, QAEnvOptionHTTPServer(addr, &OOAPIHandlerFactory{}))
 			}
-		}
 
-		if (sad.Flags & ScenarioFlagOONITestHelper) != 0 {
+		case ScenarioRoleOONITestHelper:
 			for _, addr := range sad.Addresses {
 				opts = append(opts, QAEnvOptionHTTPServer(addr, &OOHelperDFactory{}))
 			}
-		}
 
-		if (sad.Flags & ScenarioFlagUbuntuGeoIP) != 0 {
+		case ScenarioRoleUbuntuGeoIP:
 			for _, addr := range sad.Addresses {
 				opts = append(opts, QAEnvOptionHTTPServer(addr, &GeoIPHandlerFactoryUbuntu{
 					ProbeIP: QAEnvDefaultClientAddress,
