@@ -296,34 +296,41 @@ func (env *QAEnv) mustNewHTTPServers(config *qaEnvConfig) (closables []io.Closer
 			},
 		))
 
-		ipAddr := net.ParseIP(addr)
-		runtimex.Assert(ipAddr != nil, "invalid IP addr")
-
-		// listen for HTTP
-		{
-			listener := runtimex.Try1(stack.ListenTCP("tcp", &net.TCPAddr{IP: ipAddr, Port: 80}))
-			srv := &http.Server{Handler: handler}
-			closables = append(closables, srv)
-			go srv.Serve(listener)
-		}
-
-		// listen for HTTPS
-		{
-			listener := runtimex.Try1(stack.ListenTCP("tcp", &net.TCPAddr{IP: ipAddr, Port: 443}))
-			srv := &http.Server{TLSConfig: stack.ServerTLSConfig(), Handler: handler}
-			closables = append(closables, srv)
-			go srv.ServeTLS(listener, "", "")
-		}
-
-		// listen for HTTP3
-		{
-			listener := runtimex.Try1(stack.ListenUDP("udp", &net.UDPAddr{IP: ipAddr, Port: 443}))
-			srv := &http3.Server{TLSConfig: stack.ServerTLSConfig(), Handler: handler}
-			closables = append(closables, listener, srv)
-			go srv.Serve(listener)
-
-		}
+		// create HTTP, HTTPS and HTTP/3 servers for this stack
+		closables = append(closables, env.mustCreateAllHTTPServers(stack, handler, addr)...)
 	}
+	return
+}
+
+func (env *QAEnv) mustCreateAllHTTPServers(
+	stack *netem.UNetStack, handler http.Handler, addr string) (closables []io.Closer) {
+	ipAddr := net.ParseIP(addr)
+	runtimex.Assert(ipAddr != nil, "invalid IP addr")
+
+	// listen for HTTP
+	{
+		listener := runtimex.Try1(stack.ListenTCP("tcp", &net.TCPAddr{IP: ipAddr, Port: 80}))
+		srv := &http.Server{Handler: handler}
+		closables = append(closables, srv)
+		go srv.Serve(listener)
+	}
+
+	// listen for HTTPS
+	{
+		listener := runtimex.Try1(stack.ListenTCP("tcp", &net.TCPAddr{IP: ipAddr, Port: 443}))
+		srv := &http.Server{TLSConfig: stack.ServerTLSConfig(), Handler: handler}
+		closables = append(closables, srv)
+		go srv.ServeTLS(listener, "", "")
+	}
+
+	// listen for HTTP3
+	{
+		listener := runtimex.Try1(stack.ListenUDP("udp", &net.UDPAddr{IP: ipAddr, Port: 443}))
+		srv := &http3.Server{TLSConfig: stack.ServerTLSConfig(), Handler: handler}
+		closables = append(closables, listener, srv)
+		go srv.Serve(listener)
+	}
+
 	return
 }
 
