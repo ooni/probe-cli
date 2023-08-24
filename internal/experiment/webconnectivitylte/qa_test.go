@@ -117,7 +117,7 @@ func qaAddTHDomains(config *netem.DNSConfig) {
 
 // qaNewEnvironment creates a new environment for running QA.
 func qaNewEnvironment() *netemx.QAEnv {
-	return netemx.NewQAEnv(
+	return netemx.MustNewQAEnv(
 		netemx.QAEnvOptionDNSOverUDPResolvers("8.8.4.4"),
 		netemx.QAEnvOptionHTTPServer(qaWebServerAddress, netemx.ExampleWebPageHandlerFactory()),
 		netemx.QAEnvOptionHTTPServer(qaZeroTHOoniOrg, qaNewMockedTestHelperFactory()),

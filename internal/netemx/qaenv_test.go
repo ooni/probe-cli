@@ -24,7 +24,7 @@ func TestQAEnv(t *testing.T) {
 	// we are using the userspace TCP/IP stack defined by [Environment].
 	t.Run("we can hijack getaddrinfo lookups", func(t *testing.T) {
 		// create QA env
-		env := netemx.NewQAEnv()
+		env := netemx.MustNewQAEnv()
 		defer env.Close()
 
 		// configure DNS
@@ -74,7 +74,7 @@ func TestQAEnv(t *testing.T) {
 	// stack exported by the [Environment] struct.
 	t.Run("we can hijack HTTPS requests", func(t *testing.T) {
 		// create QA env
-		env := netemx.NewQAEnv(
+		env := netemx.MustNewQAEnv(
 			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.ExampleWebPageHandlerFactory()),
 		)
 		defer env.Close()
@@ -134,7 +134,7 @@ func TestQAEnv(t *testing.T) {
 	// stack exported by the [Environment] struct.
 	t.Run("we can hijack HTTP3 requests", func(t *testing.T) {
 		// create QA env
-		env := netemx.NewQAEnv(
+		env := netemx.MustNewQAEnv(
 			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.ExampleWebPageHandlerFactory()),
 		)
 		defer env.Close()
@@ -183,7 +183,7 @@ func TestQAEnv(t *testing.T) {
 	// be sure that we can set DPI rules affecting the client stack.
 	t.Run("we can configure DPI rules", func(t *testing.T) {
 		// create QA env
-		env := netemx.NewQAEnv(
+		env := netemx.MustNewQAEnv(
 			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.ExampleWebPageHandlerFactory()),
 		)
 		defer env.Close()
@@ -235,7 +235,7 @@ func TestQAEnv(t *testing.T) {
 		dumper := netem.NewPCAPDumper(pcapFilename, log.Log)
 
 		// create QA env
-		env := netemx.NewQAEnv(
+		env := netemx.MustNewQAEnv(
 			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.ExampleWebPageHandlerFactory()),
 			netemx.QAEnvOptionClientNICWrapper(dumper),
 		)

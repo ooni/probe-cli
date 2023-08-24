@@ -24,7 +24,7 @@ func TestOOHelperDHandler(t *testing.T) {
 		exampleComAddr    = "130.192.91.231"
 	)
 
-	env := NewQAEnv(
+	env := MustNewQAEnv(
 		QAEnvOptionHTTPServer(zeroThOONIOrgAddr, &OOHelperDFactory{}),
 		QAEnvOptionHTTPServer(exampleComAddr, ExampleWebPageHandlerFactory()),
 	)
@@ -96,20 +96,20 @@ func TestOOHelperDHandler(t *testing.T) {
 				},
 			},
 			HTTPRequest: model.THHTTPRequestResult{
-				BodyLength:           203,
+				BodyLength:           194,
 				DiscoveredH3Endpoint: "example.com:443",
 				Failure:              nil,
 				Title:                "Default Web Page",
 				Headers: map[string]string{
 					"Alt-Svc":        `h3=":443"`,
-					"Content-Length": "203",
+					"Content-Length": "194",
 					"Content-Type":   "text/html; charset=utf-8",
 					"Date":           "Thu, 24 Aug 2023 14:35:29 GMT",
 				},
 				StatusCode: 200,
 			},
 			HTTP3Request: &model.THHTTPRequestResult{
-				BodyLength:           203,
+				BodyLength:           194,
 				DiscoveredH3Endpoint: "",
 				Failure:              nil,
 				Title:                "Default Web Page",

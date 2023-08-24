@@ -18,13 +18,25 @@ import (
 )
 
 // QAEnvDefaultClientAddress is the default client IP address.
-const QAEnvDefaultClientAddress = "10.0.0.17"
+//
+// The 130.192.91.x address space belongs to polito.it and is not used for hosting a DNS server, which
+// gives us additional robustness in case netem is not working as intended. (We have several
+// tests making sure of that, but additional robustness won't hurt.)
+const QAEnvDefaultClientAddress = "130.192.91.2"
 
 // QAEnvDefaultISPResolverAddress is the default IP address of the client ISP resolver.
-const QAEnvDefaultISPResolverAddress = "10.0.0.34"
+//
+// The 130.192.91.x address space belongs to polito.it and is not used for hosting a DNS server, which
+// gives us additional robustness in case netem is not working as intended. (We have several
+// tests making sure of that, but additional robustness won't hurt.)
+const QAEnvDefaultISPResolverAddress = "130.192.91.3"
 
 // QAEnvDefaultUncensoredResolverAddress is the default uncensored resolver IP address.
-const QAEnvDefaultUncensoredResolverAddress = "1.1.1.1"
+//
+// The 130.192.91.x address space belongs to polito.it and is not used for hosting a DNS server, which
+// gives us additional robustness in case netem is not working as intended. (We have several
+// tests making sure of that, but additional robustness won't hurt.)
+const QAEnvDefaultUncensoredResolverAddress = "130.192.91.4"
 
 type qaEnvConfig struct {
 	// clientAddress is the client IP address to use.
@@ -166,8 +178,8 @@ type QAEnv struct {
 	topology *netem.StarTopology
 }
 
-// NewQAEnv creates a new [QAEnv].
-func NewQAEnv(options ...QAEnvOption) *QAEnv {
+// MustNewQAEnv creates a new [QAEnv]. This function PANICs on failure.
+func MustNewQAEnv(options ...QAEnvOption) *QAEnv {
 	// initialize the configuration
 	config := &qaEnvConfig{
 		clientAddress:       QAEnvDefaultClientAddress,
