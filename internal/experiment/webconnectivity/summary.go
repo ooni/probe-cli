@@ -148,7 +148,9 @@ func Summarize(tk *TestKeys) (out Summary) {
 	}
 
 	// Otherwise, if the DNS is inconsistent, flag a DNS failure. Note that this
-	// case also includes when the probe lookup fails and the TH one does not.
+	// case also includes when the probe lookup fails and the TH one does not because
+	// in such case all the addresses found by the TH do not belong to the probe,
+	// which failed and did not resolve any IP address.
 	if tk.DNSConsistency != nil && *tk.DNSConsistency == DNSInconsistent {
 		out.Accessible = &inaccessible
 		out.BlockingReason = &dns
