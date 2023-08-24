@@ -95,22 +95,6 @@ func QAEnvOptionHTTPServer(ipAddr string, factory QAEnvHTTPHandlerFactory) QAEnv
 	}
 }
 
-// defaultHTTPHandlerFactory is the default handler factory that just returns a given [http.Handler].
-type defaultHTTPHandlerFactory struct {
-	handler http.Handler
-}
-
-// NewHandler implements QAEnvHTTPHandlerFactory.NewHandler.
-func (f defaultHTTPHandlerFactory) NewHandler(net netem.UnderlyingNetwork) http.Handler {
-	return f.handler
-}
-
-// QAEnvAlwaysReturnThisHandler returns a QAEnvHTTPHandlerFactory such that we can always use the
-// new API that requires a httpHandlerFactory.
-func QAEnvAlwaysReturnThisHandler(handler http.Handler) QAEnvHTTPHandlerFactory {
-	return &defaultHTTPHandlerFactory{handler}
-}
-
 // QAEnvOptionISPResolverAddress sets the ISP's resolver IP address. If you do not set this option
 // we will use [QAEnvDefaultISPResolverAddress] as the address.
 func QAEnvOptionISPResolverAddress(ipAddr string) QAEnvOption {
@@ -163,9 +147,6 @@ type QAEnv struct {
 	// clientStack is the client stack to use.
 	clientStack *netem.UNetStack
 
-	// serverStacks are the server stacks to use.
-	serverStacks map[string]*netem.UNetStack
-
 	// closables contains all entities where we have to take care of closing.
 	closables []io.Closer
 
@@ -183,11 +164,6 @@ type QAEnv struct {
 
 	// topology is the topology we're using.
 	topology *netem.StarTopology
-}
-
-// GetServerStack returns the server stack at the given address.
-func (env *QAEnv) GetServerStack(addr string) *netem.UNetStack {
-	return env.serverStacks[addr]
 }
 
 // NewQAEnv creates a new [QAEnv].
@@ -213,7 +189,6 @@ func NewQAEnv(options ...QAEnvOption) *QAEnv {
 	env := &QAEnv{
 		clientNICWrapper:     config.clientNICWrapper,
 		clientStack:          nil,
-		serverStacks:         make(map[string]*netem.UNetStack),
 		closables:            []io.Closer{},
 		ispResolverConfig:    netem.NewDNSConfig(),
 		dpi:                  netem.NewDPIEngine(config.logger),
@@ -325,7 +300,6 @@ func (env *QAEnv) mustNewHTTPServers(config *qaEnvConfig) (closables []io.Closer
 				RightToLeftDelay: time.Millisecond,
 			},
 		))
-		env.serverStacks[addr] = stack
 
 		// create HTTP, HTTPS and HTTP/3 servers for this stack
 		handler := factory.NewHandler(stack)
