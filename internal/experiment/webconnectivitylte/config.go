@@ -5,6 +5,4 @@ package webconnectivitylte
 //
 
 // Config contains webconnectivity experiment configuration.
-type Config struct {
-	DNSOverUDPResolver string
-}
+type Config struct{}
