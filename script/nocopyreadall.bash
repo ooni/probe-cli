@@ -34,6 +34,12 @@ for file in $(find . -type f -name \*.go); do
 		continue
 	fi
 
+	if [ "$file" = "./internal/testingx/geoip_test.go" ]; then
+		# We're allowed to use ReadAll and Copy in this file because
+		# it's code that we only use for testing purposes.
+		continue
+	fi
+
 	if grep -q 'io\.ReadAll' $file; then
 		echo "in $file: do not use io.ReadAll, use netxlite.ReadAllContext" 1>&2
 		exitcode=1
