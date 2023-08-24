@@ -10,12 +10,12 @@ import (
 const ExampleWebPage = `<!doctype html>
 <html>
 <head>
-    <title>Default Web Page</title>
+	<title>Default Web Page</title>
 </head>
 <body>
 <div>
-    <h1>Default Web Page</h1>
-    <p>This is the default web page of the default domain.</p>
+	<h1>Default Web Page</h1>
+	<p>This is the default web page of the default domain.</p>
 </div>
 </body>
 </html>

@@ -360,7 +360,7 @@ func newQAEnvironment(ipaddrs ...string) *netemx.QAEnv {
 	options = append(options, netemx.QAEnvOptionHTTPServer(telegramWebAddr, netemx.ExampleWebPageHandlerFactory()))
 
 	// create the environment proper with all the options
-	env := netemx.NewQAEnv(options...)
+	env := netemx.MustNewQAEnv(options...)
 
 	// register with all the possible resolvers the correct DNS records - registering again
 	// inside individual tests will override the values we're setting here
