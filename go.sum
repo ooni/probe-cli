@@ -489,8 +489,8 @@ github.com/onsi/gomega v1.17.0/go.mod h1:HnhC7FXeEQY45zxNK3PPoIUhzk/80Xly9PcubAl
 github.com/onsi/gomega v1.27.7 h1:fVih9JD6ogIiHUN6ePK7HJidyEDpWGVB5mzM7cWNXoU=
 github.com/ooni/go-libtor v1.1.8 h1:Wo3V3DVTxl5vZdxtQakqYP+DAHx7pPtAFSl1bnAa08w=
 github.com/ooni/go-libtor v1.1.8/go.mod h1:q1YyLwRD9GeMyeerVvwc0vJ2YgwDLTp2bdVcrh/JXyI=
-github.com/ooni/netem v0.0.0-20230606061801-6bfb478aadf7 h1:YmDaAoEKSSVcoEEpeDeqSzgTHUBvPrnC2VYd77z7buA=
-github.com/ooni/netem v0.0.0-20230606061801-6bfb478aadf7/go.mod h1:3LJOzTIu2O4ADDJN2ILG4ViJOqyH/u9fKY8QT2Rma8Y=
+github.com/ooni/netem v0.0.0-20230824091252-b50edc007f81 h1:tkDAxLyszxPct9r94Wqr/gnYs7rfm34ynx4xxaVEVuc=
+github.com/ooni/netem v0.0.0-20230824091252-b50edc007f81/go.mod h1:3LJOzTIu2O4ADDJN2ILG4ViJOqyH/u9fKY8QT2Rma8Y=
 github.com/ooni/oocrypto v0.5.3 h1:CAb0Ze6q/EWD1PRGl9KqpzMfkut4O3XMaiKYsyxrWOs=
 github.com/ooni/oocrypto v0.5.3/go.mod h1:HjEQ5pQBl6btcWgAsKKq1tFo8CfBrZu63C/vPAUGIDk=
 github.com/ooni/oohttp v0.6.3 h1:MHydpeAPU/LSDSI/hIFJwZm4afBhd2Yo+rNxxFdeMCY=

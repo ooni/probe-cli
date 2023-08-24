@@ -176,7 +176,7 @@ func httpServeDNSOverHTTPS(w http.ResponseWriter, r *http.Request) {
 	err = query.Unpack(rawQuery)
 	runtimex.PanicOnError(err, "query.Unpack failed")
 	runtimex.PanicIfTrue(query.Response, "is a response")
-	response := dnsComposeResponse(query, net.IPv4(8, 8, 8, 8), net.IPv4(8, 8, 4, 4))
+	response := DNSComposeResponse(query, net.IPv4(8, 8, 8, 8), net.IPv4(8, 8, 4, 4))
 	rawResponse, err := response.Pack()
 	runtimex.PanicOnError(err, "response.Pack failed")
 	w.Write(rawResponse)

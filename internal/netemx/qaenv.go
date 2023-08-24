@@ -36,8 +36,8 @@ type qaEnvConfig struct {
 	// dnsOverUDPResolvers contains the DNS-over-UDP resolvers to create.
 	dnsOverUDPResolvers []string
 
-	// httpServers contains the HTTP servers to create.
-	httpServers map[string]http.Handler
+	// httpServers contains factories for the HTTP servers to create.
+	httpServers map[string]QAEnvHTTPHandlerFactory
 
 	// ispResolver is the ISP resolver to use.
 	ispResolver string
@@ -80,13 +80,18 @@ func QAEnvOptionDNSOverUDPResolvers(ipAddrs ...string) QAEnvOption {
 	}
 }
 
-// QAEnvOptionHTTPServer adds the given HTTP server. If you do not set this option
-// we will not create any HTTP server.
-func QAEnvOptionHTTPServer(ipAddr string, handler http.Handler) QAEnvOption {
+// QAEnvHTTPHandlerFactory constructs an [http.Handler] using the given underlying network.
+type QAEnvHTTPHandlerFactory interface {
+	NewHandler(unet netem.UnderlyingNetwork) http.Handler
+}
+
+// QAEnvOptionHTTPServer adds the given HTTP handler factory. If you do
+// not set this option we will not create any HTTP server.
+func QAEnvOptionHTTPServer(ipAddr string, factory QAEnvHTTPHandlerFactory) QAEnvOption {
 	runtimex.Assert(net.ParseIP(ipAddr) != nil, "not an IP addr")
-	runtimex.Assert(handler != nil, "passed a nil handler")
+	runtimex.Assert(factory != nil, "passed a nil handler factory")
 	return func(config *qaEnvConfig) {
-		config.httpServers[ipAddr] = handler
+		config.httpServers[ipAddr] = factory
 	}
 }
 
@@ -168,7 +173,7 @@ func NewQAEnv(options ...QAEnvOption) *QAEnv {
 		clientAddress:       QAEnvDefaultClientAddress,
 		clientNICWrapper:    nil,
 		dnsOverUDPResolvers: []string{},
-		httpServers:         map[string]http.Handler{},
+		httpServers:         map[string]QAEnvHTTPHandlerFactory{},
 		ispResolver:         QAEnvDefaultISPResolverAddress,
 		logger:              model.DiscardLogger,
 		netStacks:           map[string]QAEnvNetStackHandler{},
@@ -281,7 +286,7 @@ func (env *QAEnv) mustNewHTTPServers(config *qaEnvConfig) (closables []io.Closer
 	runtimex.Assert(len(config.dnsOverUDPResolvers) >= 1, "expected at least one DNS resolver")
 	resolver := config.dnsOverUDPResolvers[0]
 
-	for addr, handler := range config.httpServers {
+	for addr, factory := range config.httpServers {
 		// Create the server's TCP/IP stack
 		//
 		// Note: because the stack is created using topology.AddHost, we don't
@@ -296,34 +301,42 @@ func (env *QAEnv) mustNewHTTPServers(config *qaEnvConfig) (closables []io.Closer
 			},
 		))
 
-		ipAddr := net.ParseIP(addr)
-		runtimex.Assert(ipAddr != nil, "invalid IP addr")
-
-		// listen for HTTP
-		{
-			listener := runtimex.Try1(stack.ListenTCP("tcp", &net.TCPAddr{IP: ipAddr, Port: 80}))
-			srv := &http.Server{Handler: handler}
-			closables = append(closables, srv)
-			go srv.Serve(listener)
-		}
-
-		// listen for HTTPS
-		{
-			listener := runtimex.Try1(stack.ListenTCP("tcp", &net.TCPAddr{IP: ipAddr, Port: 443}))
-			srv := &http.Server{TLSConfig: stack.ServerTLSConfig(), Handler: handler}
-			closables = append(closables, srv)
-			go srv.ServeTLS(listener, "", "")
-		}
-
-		// listen for HTTP3
-		{
-			listener := runtimex.Try1(stack.ListenUDP("udp", &net.UDPAddr{IP: ipAddr, Port: 443}))
-			srv := &http3.Server{TLSConfig: stack.ServerTLSConfig(), Handler: handler}
-			closables = append(closables, listener, srv)
-			go srv.Serve(listener)
-
-		}
+		// create HTTP, HTTPS and HTTP/3 servers for this stack
+		handler := factory.NewHandler(stack)
+		closables = append(closables, env.mustCreateAllHTTPServers(stack, handler, addr)...)
 	}
+	return
+}
+
+func (env *QAEnv) mustCreateAllHTTPServers(
+	stack *netem.UNetStack, handler http.Handler, addr string) (closables []io.Closer) {
+	ipAddr := net.ParseIP(addr)
+	runtimex.Assert(ipAddr != nil, "invalid IP addr")
+
+	// listen for HTTP
+	{
+		listener := runtimex.Try1(stack.ListenTCP("tcp", &net.TCPAddr{IP: ipAddr, Port: 80}))
+		srv := &http.Server{Handler: handler}
+		closables = append(closables, srv)
+		go srv.Serve(listener)
+	}
+
+	// listen for HTTPS
+	{
+		listener := runtimex.Try1(stack.ListenTCP("tcp", &net.TCPAddr{IP: ipAddr, Port: 443}))
+		srv := &http.Server{TLSConfig: stack.ServerTLSConfig(), Handler: handler}
+		closables = append(closables, srv)
+		go srv.ServeTLS(listener, "", "")
+	}
+
+	// listen for HTTP3
+	{
+		listener := runtimex.Try1(stack.ListenUDP("udp", &net.UDPAddr{IP: ipAddr, Port: 443}))
+		srv := &http3.Server{TLSConfig: stack.ServerTLSConfig(), Handler: handler}
+		closables = append(closables, listener, srv)
+		go srv.Serve(listener)
+	}
+
 	return
 }
 
@@ -401,111 +414,12 @@ func (env *QAEnv) Close() error {
 	return nil
 }
 
-// QAEnvDefaultWebPage is the webpage returned by [QAEnvDefaultHTTPHandler].
-// created for [ConfigHTTPServer].
-const QAEnvDefaultWebPage = `<!doctype html>
-<html>
-<head>
-    <title>Default Web Page</title>
-</head>
-<body>
-<div>
-    <h1>Default Web Page</h1>
-    <p>This is the default web page of the default domain.</p>
-</div>
-</body>
-</html>
-`
+// QAEnvHTTPHandlerFactoryFunc allows a func to become a [QAEnvHTTPHandlerFactory].
+type QAEnvHTTPHandlerFactoryFunc func(unet netem.UnderlyingNetwork) http.Handler
 
-// QAEnvDefaultHTTPHandler returns the default HTTP handler.
-func QAEnvDefaultHTTPHandler() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(QAEnvDefaultWebPage))
-	})
-}
+var _ QAEnvHTTPHandlerFactory = QAEnvHTTPHandlerFactoryFunc(nil)
 
-// QAEnvNetStackTCPEcho is a [QAEnvNetStackHandler] implementing a TCP echo service.
-func QAEnvNetStackTCPEcho(logger model.Logger, ports ...uint16) QAEnvNetStackHandler {
-	return &qaEnvNetStackTCPEcho{
-		closers: []io.Closer{},
-		logger:  logger,
-		mu:      sync.Mutex{},
-		ports:   ports,
-	}
-}
-
-type qaEnvNetStackTCPEcho struct {
-	closers []io.Closer
-	logger  model.Logger
-	mu      sync.Mutex
-	ports   []uint16
-}
-
-// Close implements QAEnvNetStackHandler.
-func (echo *qaEnvNetStackTCPEcho) Close() error {
-	// "this method MUST be CONCURRENCY SAFE"
-	defer echo.mu.Unlock()
-	echo.mu.Lock()
-
-	// make sure we close all the child listeners
-	for _, closer := range echo.closers {
-		_ = closer.Close()
-	}
-
-	// "this method MUST be IDEMPOTENT"
-	echo.closers = []io.Closer{}
-
-	return nil
-}
-
-// Listen implements QAEnvNetStackHandler.
-func (echo *qaEnvNetStackTCPEcho) Listen(stack *netem.UNetStack) error {
-	// "this method MUST be CONCURRENCY SAFE"
-	defer echo.mu.Unlock()
-	echo.mu.Lock()
-
-	// for each port of interest - note that here we panic liberally because we are
-	// allowed to do so by the [QAEnvNetStackHandler] documentation.
-	for _, port := range echo.ports {
-		// create the endpoint address
-		ipAddr := net.ParseIP(stack.IPAddress())
-		runtimex.Assert(ipAddr != nil, "invalid IP address")
-		epnt := &net.TCPAddr{IP: ipAddr, Port: int(port)}
-
-		// attempt to listen
-		listener := runtimex.Try1(stack.ListenTCP("tcp", epnt))
-
-		// spawn goroutine for accepting
-		go echo.acceptLoop(listener)
-
-		// track this listener as something to close later
-		echo.closers = append(echo.closers, listener)
-	}
-	return nil
-}
-
-func (echo *qaEnvNetStackTCPEcho) acceptLoop(listener net.Listener) {
-	// Implementation note: because this function is only used for writing QA tests, it is
-	// fine that we are using runtimex.Try1 and ignoring any panic.
-	defer runtimex.CatchLogAndIgnorePanic(echo.logger, "qaEnvNetStackTCPEcho.acceptLoop")
-	for {
-		conn := runtimex.Try1(listener.Accept())
-		go echo.serve(conn)
-	}
-}
-
-func (echo *qaEnvNetStackTCPEcho) serve(conn net.Conn) {
-	// Implementation note: because this function is only used for writing QA tests, it is
-	// fine that we are using runtimex.Try1 and ignoring any panic.
-	defer runtimex.CatchLogAndIgnorePanic(echo.logger, "qaEnvTCPListenerEcho.serve")
-
-	// make sure we close the conn
-	defer conn.Close()
-
-	// loop until there is an I/O error
-	for {
-		buffer := make([]byte, 4096)
-		count := runtimex.Try1(conn.Read(buffer))
-		_, _ = conn.Write(buffer[:count])
-	}
+// NewHandler implements QAEnvHTTPHandlerFactory.
+func (fx QAEnvHTTPHandlerFactoryFunc) NewHandler(unet netem.UnderlyingNetwork) http.Handler {
+	return fx(unet)
 }
