@@ -74,9 +74,9 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 	Role:      ScenarioRoleDNSOverHTTPS,
 }}
 
-// NewScenario constructs a complete testing scenario using the domains and IP
+// MustNewScenario constructs a complete testing scenario using the domains and IP
 // addresses contained by the given [ScenarioDomainAddresses] array.
-func NewScenario(cfg []*ScenarioDomainAddresses) *QAEnv {
+func MustNewScenario(cfg []*ScenarioDomainAddresses) *QAEnv {
 	var opts []QAEnvOption
 
 	// create a common configuration for DoH servers
