@@ -357,7 +357,7 @@ func newQAEnvironment(ipaddrs ...string) *netemx.QAEnv {
 
 	// add handler for telegram web (we're using a different-from-reality HTTP handler
 	// but we're not testing for the returned webpage, so we should be fine)
-	options = append(options, netemx.QAEnvOptionHTTPServer(telegramWebAddr, netemx.QAEnvDefaultHTTPHandlerFactory()))
+	options = append(options, netemx.QAEnvOptionHTTPServer(telegramWebAddr, netemx.ExampleWebPageHandlerFactory()))
 
 	// create the environment proper with all the options
 	env := netemx.NewQAEnv(options...)

@@ -33,7 +33,7 @@ func exampleNewEnvironment() *netemx.QAEnv {
 		netemx.QAEnvOptionDNSOverUDPResolvers("8.8.4.4", "9.9.9.9"),
 		netemx.QAEnvOptionClientAddress(exampleClientAddress),
 		netemx.QAEnvOptionISPResolverAddress(exampleISPResolverAddress),
-		netemx.QAEnvOptionHTTPServer(exampleExampleComAddress, netemx.QAEnvDefaultHTTPHandlerFactory()),
+		netemx.QAEnvOptionHTTPServer(exampleExampleComAddress, netemx.ExampleWebPageHandlerFactory()),
 		netemx.QAEnvOptionLogger(log.Log),
 	)
 }
@@ -157,7 +157,7 @@ func Example_customNetStackHandler() {
 
 	// create the QA environment
 	env := netemx.NewQAEnv(
-		netemx.QAEnvOptionNetStack(e1WhatsappNet, netemx.QAEnvNetStackTCPEcho(log.Log, 5222)),
+		netemx.QAEnvOptionNetStack(e1WhatsappNet, netemx.TCPEchoNetStack(log.Log, 5222)),
 		netemx.QAEnvOptionLogger(log.Log),
 	)
 
