@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/ooni/netem"
@@ -162,6 +163,10 @@ type QAEnv struct {
 	// closables contains all entities where we have to take care of closing.
 	closables []io.Closer
 
+	// emulateAndroidGetaddrinfo controls whether to emulate the behavior of our wrapper for
+	// the android implementation of getaddrinfo returning android_dns_cache_no_data
+	emulateAndroidGetaddrinfo *atomic.Bool
+
 	// ispResolverConfig is the DNS config used by the ISP resolver.
 	ispResolverConfig *netem.DNSConfig
 
@@ -199,14 +204,15 @@ func MustNewQAEnv(options ...QAEnvOption) *QAEnv {
 
 	// create an empty QAEnv
 	env := &QAEnv{
-		clientNICWrapper:     config.clientNICWrapper,
-		clientStack:          nil,
-		closables:            []io.Closer{},
-		ispResolverConfig:    netem.NewDNSConfig(),
-		dpi:                  netem.NewDPIEngine(config.logger),
-		once:                 sync.Once{},
-		otherResolversConfig: netem.NewDNSConfig(),
-		topology:             runtimex.Try1(netem.NewStarTopology(config.logger)),
+		clientNICWrapper:          config.clientNICWrapper,
+		clientStack:               nil,
+		closables:                 []io.Closer{},
+		emulateAndroidGetaddrinfo: &atomic.Bool{},
+		ispResolverConfig:         netem.NewDNSConfig(),
+		dpi:                       netem.NewDPIEngine(config.logger),
+		once:                      sync.Once{},
+		otherResolversConfig:      netem.NewDNSConfig(),
+		topology:                  runtimex.Try1(netem.NewStarTopology(config.logger)),
 	}
 
 	// create all the required internals
@@ -406,10 +412,21 @@ func (env *QAEnv) DPIEngine() *netem.DPIEngine {
 	return env.dpi
 }
 
+// EmulateAndroidGetaddrinfo configures [QAEnv] such that the Do method wraps
+// the underlying client stack to return android_dns_cache_no_data on any error
+// that occurs. This method can be safely called by multiple goroutines.
+func (env *QAEnv) EmulateAndroidGetaddrinfo(value bool) {
+	env.emulateAndroidGetaddrinfo.Store(value)
+}
+
 // Do executes the given function such that [netxlite] code uses the
 // underlying clientStack rather than ordinary networking code.
 func (env *QAEnv) Do(function func()) {
-	WithCustomTProxy(env.clientStack, function)
+	var stack netem.UnderlyingNetwork = env.clientStack
+	if env.emulateAndroidGetaddrinfo.Load() {
+		stack = &androidStack{stack}
+	}
+	WithCustomTProxy(stack, function)
 }
 
 // Close closes all the resources used by [QAEnv].

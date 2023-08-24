@@ -28,8 +28,8 @@ type ErrGetaddrinfo struct {
 	Code int64
 }
 
-// newErrGetaddrinfo creates a new instance of the ErrGetaddrinfo type.
-func newErrGetaddrinfo(code int64, err error) *ErrGetaddrinfo {
+// NewErrGetaddrinfo creates a new instance of the ErrGetaddrinfo type.
+func NewErrGetaddrinfo(code int64, err error) *ErrGetaddrinfo {
 	return &ErrGetaddrinfo{
 		Underlying: err,
 		Code:       code,

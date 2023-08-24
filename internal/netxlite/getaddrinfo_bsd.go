@@ -47,12 +47,12 @@ func (state *getaddrinfoState) toError(code int64, err error, goos string) error
 			// comes up again. golang.org/issue/6232.
 			err = syscall.EMFILE
 		}
-		return newErrGetaddrinfo(code, err)
+		return NewErrGetaddrinfo(code, err)
 	case C.EAI_NONAME:
 		err = ErrOODNSNoSuchHost // so it becomes FailureDNSNXDOMAIN
-		return newErrGetaddrinfo(code, err)
+		return NewErrGetaddrinfo(code, err)
 	default:
 		err = ErrOODNSMisbehaving // so it becomes FailureDNSServerMisbehaving
-		return newErrGetaddrinfo(code, err)
+		return NewErrGetaddrinfo(code, err)
 	}
 }

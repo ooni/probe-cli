@@ -2,10 +2,18 @@ package webconnectivityqa
 
 import "github.com/ooni/probe-cli/v3/internal/netemx"
 
+const (
+	// TestCaseFlagNoV04 means that this test case should not be run by v0.4
+	TestCaseFlagNoV04 = 1 << iota
+)
+
 // TestCase is a test case we could run with this package.
 type TestCase struct {
 	// Name is the test case name
 	Name string
+
+	// Flags contains binary flags describing this test case.
+	Flags int64
 
 	// Input is the input URL
 	Input string
@@ -23,6 +31,8 @@ type TestCase struct {
 // AllTestCases returns all the defined test cases.
 func AllTestCases() []*TestCase {
 	return []*TestCase{
+		dnsBlockingAndroidDNSCacheNoData(),
+
 		tlsBlockingConnectionReset(),
 
 		sucessWithHTTP(),
