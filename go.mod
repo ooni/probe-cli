@@ -27,7 +27,7 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.7.1
 	github.com/ooni/go-libtor v1.1.8
-	github.com/ooni/netem v0.0.0-20230606061801-6bfb478aadf7
+	github.com/ooni/netem v0.0.0-20230824091252-b50edc007f81
 	github.com/ooni/oocrypto v0.5.3
 	github.com/ooni/oohttp v0.6.3
 	github.com/ooni/probe-assets v0.18.0
