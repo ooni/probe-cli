@@ -210,7 +210,7 @@ func Example_customNetStackHandler() {
 
 // This example shows how the [InternetScenario] defines DoH servers.
 func Example_dohWithInternetScenario() {
-	env := netemx.NewScenario(netemx.InternetScenario)
+	env := netemx.MustNewScenario(netemx.InternetScenario)
 	defer env.Close()
 
 	env.Do(func() {
@@ -231,7 +231,7 @@ func Example_dohWithInternetScenario() {
 
 // This example shows how the [InternetScenario] defines DNS-over-UDP servers.
 func Example_dnsOverUDPWithInternetScenario() {
-	env := netemx.NewScenario(netemx.InternetScenario)
+	env := netemx.MustNewScenario(netemx.InternetScenario)
 	defer env.Close()
 
 	env.Do(func() {
@@ -261,7 +261,7 @@ func Example_dnsOverUDPWithInternetScenario() {
 
 // This example shows how the [InternetScenario] supports calling getaddrinfo.
 func Example_getaddrinfoWithInternetScenario() {
-	env := netemx.NewScenario(netemx.InternetScenario)
+	env := netemx.MustNewScenario(netemx.InternetScenario)
 	defer env.Close()
 
 	env.Do(func() {
@@ -282,7 +282,7 @@ func Example_getaddrinfoWithInternetScenario() {
 
 // This example shows how the [InternetScenario] defines an example.com-like webserver.
 func Example_exampleWebServerWithInternetScenario() {
-	env := netemx.NewScenario(netemx.InternetScenario)
+	env := netemx.MustNewScenario(netemx.InternetScenario)
 	defer env.Close()
 
 	env.Do(func() {
@@ -323,7 +323,7 @@ func Example_exampleWebServerWithInternetScenario() {
 
 // This example shows how the [InternetScenario] defines an OONI-API-like service.
 func Example_ooniAPIWithInternetScenario() {
-	env := netemx.NewScenario(netemx.InternetScenario)
+	env := netemx.MustNewScenario(netemx.InternetScenario)
 	defer env.Close()
 
 	env.Do(func() {
@@ -353,7 +353,7 @@ func Example_ooniAPIWithInternetScenario() {
 
 // This example shows how the [InternetScenario] defines an oohelperd instance.
 func Example_oohelperdWithInternetScenario() {
-	env := netemx.NewScenario(netemx.InternetScenario)
+	env := netemx.MustNewScenario(netemx.InternetScenario)
 	defer env.Close()
 
 	env.Do(func() {
@@ -386,7 +386,7 @@ func Example_oohelperdWithInternetScenario() {
 
 // This example shows how the [InternetScenario] defines a GeoIP service like Ubuntu's one.
 func Example_ubuntuGeoIPWithInternetScenario() {
-	env := netemx.NewScenario(netemx.InternetScenario)
+	env := netemx.MustNewScenario(netemx.InternetScenario)
 	defer env.Close()
 
 	env.Do(func() {
