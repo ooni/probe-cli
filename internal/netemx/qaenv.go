@@ -85,12 +85,11 @@ type QAEnvHTTPHandlerFactory interface {
 	NewHandler(net netem.UnderlyingNetwork) http.Handler
 }
 
-// QAEnvOptionHTTPServerWithFactory adds the given HTTP server as a factory function.
-// If you do not set this option we will not create any HTTP server.
-func QAEnvOptionHTTPServerWithFactory(ipAddr string, factory QAEnvHTTPHandlerFactory) QAEnvOption {
+// QAEnvOptionHTTPServer adds the given HTTP server as a factory function. If you do
+// not set this option we will not create any HTTP server.
+func QAEnvOptionHTTPServer(ipAddr string, factory QAEnvHTTPHandlerFactory) QAEnvOption {
 	runtimex.Assert(net.ParseIP(ipAddr) != nil, "not an IP addr")
 	runtimex.Assert(factory != nil, "passed a nil handler factory")
-
 	return func(config *qaEnvConfig) {
 		config.httpServers[ipAddr] = factory
 	}
