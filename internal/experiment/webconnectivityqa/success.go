@@ -1,7 +1,5 @@
 package webconnectivityqa
 
-import "github.com/ooni/probe-cli/v3/internal/optional"
-
 // successWithHTTP ensures we can successfully measure an HTTP URL.
 func sucessWithHTTP() *TestCase {
 	return &TestCase{
@@ -10,8 +8,8 @@ func sucessWithHTTP() *TestCase {
 		Configure: nil,
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
-			Accessible: optional.Some(true),
-			Blocking:   optional.None[bool](),
+			Accessible: true,
+			Blocking:   nil,
 		},
 	}
 }
@@ -24,8 +22,8 @@ func sucessWithHTTPS() *TestCase {
 		Configure: nil,
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
-			Accessible: optional.Some(true),
-			Blocking:   optional.None[bool](),
+			Accessible: true,
+			Blocking:   nil,
 		},
 	}
 }

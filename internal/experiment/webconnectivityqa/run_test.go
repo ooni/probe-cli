@@ -9,7 +9,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
-	"github.com/ooni/probe-cli/v3/internal/optional"
 )
 
 func TestRunTestCase(t *testing.T) {
@@ -70,8 +69,8 @@ func TestRunTestCase(t *testing.T) {
 			Configure: nil,
 			ExpectErr: false,
 			ExpectTestKeys: &testKeys{
-				Accessible: optional.Some(true),
-				Blocking:   optional.None[bool](),
+				Accessible: true,
+				Blocking:   nil,
 			},
 		}
 		measurer := &mocks.ExperimentMeasurer{
@@ -102,8 +101,8 @@ func TestRunTestCase(t *testing.T) {
 			},
 			ExpectErr: false,
 			ExpectTestKeys: &testKeys{
-				Accessible: optional.Some(true),
-				Blocking:   optional.None[bool](),
+				Accessible: true,
+				Blocking:   nil,
 			},
 		}
 		measurer := &mocks.ExperimentMeasurer{
@@ -115,8 +114,8 @@ func TestRunTestCase(t *testing.T) {
 			},
 			MockRun: func(ctx context.Context, args *model.ExperimentArgs) error {
 				args.Measurement.TestKeys = &testKeys{
-					Accessible: optional.Some(true),
-					Blocking:   optional.None[bool](),
+					Accessible: true,
+					Blocking:   nil,
 				}
 				return nil
 			},

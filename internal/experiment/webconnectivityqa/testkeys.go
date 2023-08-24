@@ -6,17 +6,16 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/optional"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // testKeys is the test keys structure returned by this package.
 type testKeys struct {
 	// Accessible indicates whether the URL was accessible.
-	Accessible optional.Value[bool] `json:"accessible"`
+	Accessible any `json:"accessible"`
 
 	// Blocking is either nil or a string classifying the blocking type.
-	Blocking optional.Value[bool] `json:"blocking"`
+	Blocking any `json:"blocking"`
 }
 
 // newTestKeys constructs the test keys from the measurement.
