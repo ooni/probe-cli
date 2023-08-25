@@ -75,8 +75,8 @@ func (tp *DefaultTProxy) DefaultCertPool() *x509.CertPool {
 
 const defaultDialTimeout = 15 * time.Second
 
-// DefaultDialTimeout implements model.UnderlyingNetwork
-func (tp *DefaultTProxy) DefaultDialTimeout() time.Duration {
+// DialTimeout implements model.UnderlyingNetwork
+func (tp *DefaultTProxy) DialTimeout() time.Duration {
 	return defaultDialTimeout
 }
 

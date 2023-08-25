@@ -23,8 +23,8 @@ func (a *NetemUnderlyingNetworkAdapter) DefaultCertPool() *x509.CertPool {
 	return runtimex.Try1(a.UNet.DefaultCertPool())
 }
 
-// DefaultDialTimeout implements model.UnderlyingNetwork
-func (a *NetemUnderlyingNetworkAdapter) DefaultDialTimeout() time.Duration {
+// DialTimeout implements model.UnderlyingNetwork
+func (a *NetemUnderlyingNetworkAdapter) DialTimeout() time.Duration {
 	return defaultDialTimeout
 }
 

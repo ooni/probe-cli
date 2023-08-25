@@ -492,8 +492,8 @@ type UnderlyingNetwork interface {
 	// a copy of the default cert pool that you can modify.
 	DefaultCertPool() *x509.CertPool
 
-	// DefaultDialTimeout returns the default timeout to use for dialing.
-	DefaultDialTimeout() time.Duration
+	// DialTimeout returns the default timeout to use for dialing.
+	DialTimeout() time.Duration
 
 	// DialContext is equivalent to net.Dialer.DialContext.
 	DialContext(ctx context.Context, network, address string) (net.Conn, error)

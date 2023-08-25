@@ -65,7 +65,7 @@ func TestWithCustomTProxy(t *testing.T) {
 				pool.AddCert(srvr.Certificate())
 				return pool
 			},
-			MockDefaultDialTimeout: func() time.Duration {
+			MockDialTimeout: func() time.Duration {
 				return defaultDialTimeout
 			},
 			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {

@@ -30,7 +30,7 @@ type adapterReduceTimeouts struct {
 	model.UnderlyingNetwork
 }
 
-// DefaultDialTimeout implements [model.UnderlyingNetwork].
-func (art *adapterReduceTimeouts) DefaultDialTimeout() time.Duration {
+// DialTimeout implements [model.UnderlyingNetwork].
+func (art *adapterReduceTimeouts) DialTimeout() time.Duration {
 	return time.Second
 }

@@ -25,14 +25,14 @@ func TestUnderlyingNetwork(t *testing.T) {
 		}
 	})
 
-	t.Run("DefaultDialTimeout", func(t *testing.T) {
+	t.Run("DialTimeout", func(t *testing.T) {
 		expect := 22 * time.Second
 		un := &UnderlyingNetwork{
-			MockDefaultDialTimeout: func() time.Duration {
+			MockDialTimeout: func() time.Duration {
 				return expect
 			},
 		}
-		got := un.DefaultDialTimeout()
+		got := un.DialTimeout()
 		if got != expect {
 			t.Fatal("unexpected result")
 		}

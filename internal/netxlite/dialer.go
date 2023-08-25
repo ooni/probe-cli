@@ -153,9 +153,10 @@ type DialerSystem struct {
 var _ model.Dialer = &DialerSystem{}
 
 func (d *DialerSystem) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
-	ctx, cancel := context.WithTimeout(ctx, d.provider.Get().DefaultDialTimeout())
+	p := d.provider.Get()
+	ctx, cancel := context.WithTimeout(ctx, p.DialTimeout())
 	defer cancel()
-	return d.provider.Get().DialContext(ctx, network, address)
+	return p.DialContext(ctx, network, address)
 }
 
 func (d *DialerSystem) CloseIdleConnections() {

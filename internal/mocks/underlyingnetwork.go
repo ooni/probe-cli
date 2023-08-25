@@ -13,7 +13,7 @@ import (
 type UnderlyingNetwork struct {
 	MockDefaultCertPool func() *x509.CertPool
 
-	MockDefaultDialTimeout func() time.Duration
+	MockDialTimeout func() time.Duration
 
 	MockDialContext func(ctx context.Context, network, address string) (net.Conn, error)
 
@@ -30,8 +30,8 @@ func (un *UnderlyingNetwork) DefaultCertPool() *x509.CertPool {
 	return un.MockDefaultCertPool()
 }
 
-func (un *UnderlyingNetwork) DefaultDialTimeout() time.Duration {
-	return un.MockDefaultDialTimeout()
+func (un *UnderlyingNetwork) DialTimeout() time.Duration {
+	return un.MockDialTimeout()
 }
 
 func (un *UnderlyingNetwork) DialContext(ctx context.Context, network, address string) (net.Conn, error) {

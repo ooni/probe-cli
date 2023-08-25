@@ -103,7 +103,7 @@ func TestDialerSystem(t *testing.T) {
 		t.Run("honours the dial timeout configured by the underlying network", func(t *testing.T) {
 			defaultTp := &DefaultTProxy{}
 			tp := &mocks.UnderlyingNetwork{
-				MockDefaultDialTimeout: func() time.Duration {
+				MockDialTimeout: func() time.Duration {
 					return time.Nanosecond
 				},
 				MockDialContext: defaultTp.DialContext,
@@ -127,7 +127,7 @@ func TestDialerSystem(t *testing.T) {
 		t.Run("with custom underlying network", func(t *testing.T) {
 			expected := errors.New("mocked underlying network")
 			proxy := &mocks.UnderlyingNetwork{
-				MockDefaultDialTimeout: func() time.Duration {
+				MockDialTimeout: func() time.Duration {
 					return defaultDialTimeout
 				},
 				MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
