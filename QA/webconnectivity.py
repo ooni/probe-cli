@@ -193,48 +193,6 @@ def webconnectivity_dns_hijacking(ooni_exe, outfile):
     assert_status_flags_are(ooni_exe, tk, 1)
 
 
-def webconnectivity_nonexistent_domain(ooni_exe, outfile):
-    """Test case where the domain does not exist"""
-    args = []
-    tk = execute_jafar_and_return_validated_test_keys(
-        ooni_exe,
-        outfile,
-        "-i http://www.ooni.nonexistent web_connectivity",
-        "webconnectivity_nonexistent_domain",
-        args,
-    )
-    # TODO(bassosimone): Debateable result. We need to do better here.
-    # See <https://github.com/ooni/probe-engine/issues/579>.
-    #
-    # Note that MK is not doing it right here because it's suppressing the
-    # dns_nxdomain_error that instead is very informative. Yet, it is reporting
-    # a failure in HTTP, which miniooni does not because it does not make
-    # sense to perform HTTP when there are no IP addresses.
-    #
-    # The following seems indeed a bug in MK where we don't properly record the
-    # actual error that occurred when performing the DNS experiment.
-    #
-    # See <https://github.com/measurement-kit/measurement-kit/issues/1931>.
-    if "miniooni" in ooni_exe:
-        assert tk["dns_experiment_failure"] == "dns_nxdomain_error"
-    else:
-        assert tk["dns_experiment_failure"] == None
-    assert tk["dns_consistency"] == "consistent"
-    assert tk["control_failure"] == None
-    if "miniooni" in ooni_exe:
-        assert tk["http_experiment_failure"] == None
-    else:
-        assert tk["http_experiment_failure"] == "dns_lookup_error"
-    assert tk["body_length_match"] == None
-    assert tk["body_proportion"] == 0
-    assert tk["status_code_match"] == None
-    assert tk["headers_match"] == None
-    assert tk["title_match"] == None
-    assert tk["blocking"] == False
-    assert tk["accessible"] == True
-    assert_status_flags_are(ooni_exe, tk, 2052)
-
-
 def webconnectivity_tcpip_blocking_with_consistent_dns(ooni_exe, outfile):
     """Test case where there's TCP/IP blocking w/ consistent DNS"""
     ip = socket.gethostbyname("nexa.polito.it")
@@ -839,7 +797,6 @@ def main():
         webconnectivity_transparent_http_proxy,
         webconnectivity_transparent_https_proxy,
         webconnectivity_dns_hijacking,
-        webconnectivity_nonexistent_domain,
         webconnectivity_tcpip_blocking_with_consistent_dns,
         webconnectivity_tcpip_blocking_with_inconsistent_dns,
         webconnectivity_http_connection_refused_with_consistent_dns,

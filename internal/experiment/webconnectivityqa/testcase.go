@@ -40,5 +40,7 @@ func AllTestCases() []*TestCase {
 
 		sucessWithHTTP(),
 		sucessWithHTTPS(),
+
+		websiteDownNXDOMAIN(),
 	}
 }
