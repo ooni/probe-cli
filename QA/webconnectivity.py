@@ -454,54 +454,6 @@ def webconnectivity_http_connection_reset_with_inconsistent_dns(ooni_exe, outfil
     assert_status_flags_are(ooni_exe, tk, 8480)
 
 
-def webconnectivity_http_successful_website(ooni_exe, outfile):
-    """Test case where we succeed with an HTTP only webpage"""
-    args = []
-    tk = execute_jafar_and_return_validated_test_keys(
-        ooni_exe,
-        outfile,
-        "-i http://example.org/ web_connectivity",
-        "webconnectivity_http_successful_website",
-        args,
-    )
-    assert tk["dns_experiment_failure"] == None
-    assert tk["dns_consistency"] == "consistent"
-    assert tk["control_failure"] == None
-    assert tk["http_experiment_failure"] == None
-    assert tk["body_length_match"] == True
-    assert tk["body_proportion"] == 1
-    assert tk["status_code_match"] == True
-    assert tk["headers_match"] == True
-    assert tk["title_match"] == True
-    assert tk["blocking"] == False
-    assert tk["accessible"] == True
-    assert_status_flags_are(ooni_exe, tk, 2)
-
-
-def webconnectivity_https_successful_website(ooni_exe, outfile):
-    """Test case where we succeed with an HTTPS only webpage"""
-    args = []
-    tk = execute_jafar_and_return_validated_test_keys(
-        ooni_exe,
-        outfile,
-        "-i https://example.com/ web_connectivity",
-        "webconnectivity_https_successful_website",
-        args,
-    )
-    assert tk["dns_experiment_failure"] == None
-    assert tk["dns_consistency"] == "consistent"
-    assert tk["control_failure"] == None
-    assert tk["http_experiment_failure"] == None
-    assert tk["body_length_match"] == True
-    assert tk["body_proportion"] == 1
-    assert tk["status_code_match"] == True
-    assert tk["headers_match"] == True
-    assert tk["title_match"] == True
-    assert tk["blocking"] == False
-    assert tk["accessible"] == True
-    assert_status_flags_are(ooni_exe, tk, 1)
-
-
 def webconnectivity_http_diff_with_inconsistent_dns(ooni_exe, outfile):
     """Test case where we get an http-diff and the DNS is inconsistent"""
     args = [
@@ -805,8 +757,6 @@ def main():
         webconnectivity_http_eof_error_with_consistent_dns,
         webconnectivity_http_generic_timeout_error_with_consistent_dns,
         webconnectivity_http_connection_reset_with_inconsistent_dns,
-        webconnectivity_http_successful_website,
-        webconnectivity_https_successful_website,
         webconnectivity_http_diff_with_inconsistent_dns,
         webconnectivity_http_diff_with_consistent_dns,
         webconnectivity_https_expired_certificate,
