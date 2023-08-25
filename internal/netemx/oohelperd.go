@@ -1,10 +1,12 @@
 package netemx
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/cookiejar"
 
 	"github.com/ooni/netem"
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/oohelperd"
@@ -21,6 +23,11 @@ var _ QAEnvHTTPHandlerFactory = &OOHelperDFactory{}
 func (f *OOHelperDFactory) NewHandler(unet netem.UnderlyingNetwork) http.Handler {
 	netx := netxlite.Netx{Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: unet}}
 	handler := oohelperd.NewHandler()
+
+	handler.BaseLogger = &logx.PrefixLogger{
+		Prefix: fmt.Sprintf("%-16s", "TH_HANDLER"),
+		Logger: handler.BaseLogger,
+	}
 
 	handler.NewDialer = func(logger model.Logger) model.Dialer {
 		return netx.NewDialerWithResolver(logger, netx.NewStdlibResolver(logger))

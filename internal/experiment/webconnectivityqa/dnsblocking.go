@@ -8,8 +8,8 @@ import (
 // resolver returns the android_dns_cache_no_data error.
 func dnsBlockingAndroidDNSCacheNoData() *TestCase {
 	return &TestCase{
-		Name:  "measuring https://www.example.com/ with getaddrinfo errors and android_dns_cache_no_data",
-		Flags: TestCaseFlagNoV04,
+		Name:  "dnsBlockingAndroidDNSCacheNoData",
+		Flags: TestCaseFlagNoV04, // see https://github.com/ooni/probe-cli/pull/1211
 		Input: "https://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 			// make sure the env knows we want to emulate our getaddrinfo wrapper behavior
@@ -19,7 +19,14 @@ func dnsBlockingAndroidDNSCacheNoData() *TestCase {
 			// converted into android_dns_cache_no_data by the emulation layer
 			env.ISPResolverConfig().RemoveRecord("www.example.com")
 		},
-		ExpectErr:      false,
-		ExpectTestKeys: &testKeys{Accessible: false, Blocking: "dns"},
+		ExpectErr: false,
+		ExpectTestKeys: &testKeys{
+			DNSExperimentFailure: "android_dns_cache_no_data",
+			DNSConsistency:       "inconsistent",
+			XDNSFlags:            2,
+			XBlockingFlags:       33,
+			Accessible:           false,
+			Blocking:             "dns",
+		},
 	}
 }
