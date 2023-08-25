@@ -10,7 +10,6 @@ import (
 	"sync/atomic"
 	"syscall"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
@@ -454,8 +453,8 @@ func TestResolverWorkingAsIntendedWithMocks(t *testing.T) {
 				// without creating a new one from scratch.
 				return (&netxlite.DefaultTProxy{}).DefaultCertPool()
 			},
-			MockDialContext: func(ctx context.Context, timeout time.Duration, network string, address string) (net.Conn, error) {
-				dialer := &net.Dialer{Timeout: timeout}
+			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+				dialer := &net.Dialer{}
 				return dialer.DialContext(ctx, network, address)
 			},
 			MockListenUDP: func(network string, addr *net.UDPAddr) (model.UDPLikeConn, error) {
@@ -486,7 +485,7 @@ func TestResolverWorkingAsIntendedWithMocks(t *testing.T) {
 				// without creating a new one from scratch.
 				return (&netxlite.DefaultTProxy{}).DefaultCertPool()
 			},
-			MockDialContext: func(ctx context.Context, timeout time.Duration, network string, address string) (net.Conn, error) {
+			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 				return nil, syscall.ECONNREFUSED
 			},
 			MockListenUDP: func(network string, addr *net.UDPAddr) (model.UDPLikeConn, error) {

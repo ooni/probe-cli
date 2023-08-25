@@ -25,15 +25,28 @@ func TestUnderlyingNetwork(t *testing.T) {
 		}
 	})
 
+	t.Run("DialTimeout", func(t *testing.T) {
+		expect := 22 * time.Second
+		un := &UnderlyingNetwork{
+			MockDialTimeout: func() time.Duration {
+				return expect
+			},
+		}
+		got := un.DialTimeout()
+		if got != expect {
+			t.Fatal("unexpected result")
+		}
+	})
+
 	t.Run("DialContext", func(t *testing.T) {
 		expect := errors.New("mocked error")
 		un := &UnderlyingNetwork{
-			MockDialContext: func(ctx context.Context, timeout time.Duration, network, address string) (net.Conn, error) {
+			MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
 				return nil, expect
 			},
 		}
 		ctx := context.Background()
-		conn, err := un.DialContext(ctx, time.Second, "tcp", "1.1.1.1:443")
+		conn, err := un.DialContext(ctx, "tcp", "1.1.1.1:443")
 		if !errors.Is(err, expect) {
 			t.Fatal("unexpected err", err)
 		}

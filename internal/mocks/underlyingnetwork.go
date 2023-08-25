@@ -13,7 +13,9 @@ import (
 type UnderlyingNetwork struct {
 	MockDefaultCertPool func() *x509.CertPool
 
-	MockDialContext func(ctx context.Context, timeout time.Duration, network, address string) (net.Conn, error)
+	MockDialTimeout func() time.Duration
+
+	MockDialContext func(ctx context.Context, network, address string) (net.Conn, error)
 
 	MockListenUDP func(network string, addr *net.UDPAddr) (model.UDPLikeConn, error)
 
@@ -28,8 +30,12 @@ func (un *UnderlyingNetwork) DefaultCertPool() *x509.CertPool {
 	return un.MockDefaultCertPool()
 }
 
-func (un *UnderlyingNetwork) DialContext(ctx context.Context, timeout time.Duration, network, address string) (net.Conn, error) {
-	return un.MockDialContext(ctx, timeout, network, address)
+func (un *UnderlyingNetwork) DialTimeout() time.Duration {
+	return un.MockDialTimeout()
+}
+
+func (un *UnderlyingNetwork) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+	return un.MockDialContext(ctx, network, address)
 }
 
 func (un *UnderlyingNetwork) ListenUDP(network string, addr *net.UDPAddr) (model.UDPLikeConn, error) {

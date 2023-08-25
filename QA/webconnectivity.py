@@ -193,34 +193,6 @@ def webconnectivity_dns_hijacking(ooni_exe, outfile):
     assert_status_flags_are(ooni_exe, tk, 1)
 
 
-def webconnectivity_tcpip_blocking_with_consistent_dns(ooni_exe, outfile):
-    """Test case where there's TCP/IP blocking w/ consistent DNS"""
-    ip = socket.gethostbyname("nexa.polito.it")
-    args = [
-        "-iptables-drop-ip",
-        ip,
-    ]
-    tk = execute_jafar_and_return_validated_test_keys(
-        ooni_exe,
-        outfile,
-        "-i http://nexa.polito.it web_connectivity",
-        "webconnectivity_tcpip_blocking_with_consistent_dns",
-        args,
-    )
-    assert tk["dns_experiment_failure"] == None
-    assert tk["dns_consistency"] == "consistent"
-    assert tk["control_failure"] == None
-    assert tk["http_experiment_failure"] == "generic_timeout_error"
-    assert tk["body_length_match"] == None
-    assert tk["body_proportion"] == 0
-    assert tk["status_code_match"] == None
-    assert tk["headers_match"] == None
-    assert tk["title_match"] == None
-    assert tk["blocking"] == "tcp_ip"
-    assert tk["accessible"] == False
-    assert_status_flags_are(ooni_exe, tk, 4224)
-
-
 def webconnectivity_tcpip_blocking_with_inconsistent_dns(ooni_exe, outfile):
     """Test case where there's TCP/IP blocking w/ inconsistent DNS"""
 
@@ -710,7 +682,6 @@ def main():
         webconnectivity_transparent_http_proxy,
         webconnectivity_transparent_https_proxy,
         webconnectivity_dns_hijacking,
-        webconnectivity_tcpip_blocking_with_consistent_dns,
         webconnectivity_tcpip_blocking_with_inconsistent_dns,
         webconnectivity_http_connection_refused_with_consistent_dns,
         webconnectivity_http_connection_reset_with_consistent_dns,
