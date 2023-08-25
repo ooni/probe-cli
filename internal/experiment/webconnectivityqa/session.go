@@ -1,14 +1,13 @@
 package webconnectivityqa
 
 import (
-	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 )
 
 // nwSession creates a new [model.ExperimentSession].
-func newSession(client model.HTTPClient) model.ExperimentSession {
+func newSession(client model.HTTPClient, logger model.Logger) model.ExperimentSession {
 	return &mocks.Session{
 		MockGetTestHelpersByName: func(name string) ([]model.OOAPIService, bool) {
 			output := []model.OOAPIService{{
@@ -42,7 +41,7 @@ func newSession(client model.HTTPClient) model.ExperimentSession {
 		MockKeyValueStore: nil,
 
 		MockLogger: func() model.Logger {
-			return log.Log
+			return logger
 		},
 
 		MockMaybeResolverIP: nil,

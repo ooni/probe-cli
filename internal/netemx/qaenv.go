@@ -5,6 +5,7 @@ package netemx
 //
 
 import (
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/ooni/netem"
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/quic-go/quic-go/http3"
@@ -202,6 +204,12 @@ func MustNewQAEnv(options ...QAEnvOption) *QAEnv {
 		config.dnsOverUDPResolvers = append(config.dnsOverUDPResolvers, QAEnvDefaultUncensoredResolverAddress)
 	}
 
+	// use a prefix logger for the QA env
+	prefixLogger := &logx.PrefixLogger{
+		Prefix: fmt.Sprintf("%-16s", "NETEM"),
+		Logger: config.logger,
+	}
+
 	// create an empty QAEnv
 	env := &QAEnv{
 		clientNICWrapper:          config.clientNICWrapper,
@@ -209,10 +217,10 @@ func MustNewQAEnv(options ...QAEnvOption) *QAEnv {
 		closables:                 []io.Closer{},
 		emulateAndroidGetaddrinfo: &atomic.Bool{},
 		ispResolverConfig:         netem.NewDNSConfig(),
-		dpi:                       netem.NewDPIEngine(config.logger),
+		dpi:                       netem.NewDPIEngine(prefixLogger),
 		once:                      sync.Once{},
 		otherResolversConfig:      netem.NewDNSConfig(),
-		topology:                  runtimex.Try1(netem.NewStarTopology(config.logger)),
+		topology:                  runtimex.Try1(netem.NewStarTopology(prefixLogger)),
 	}
 
 	// create all the required internals
@@ -240,9 +248,15 @@ func (env *QAEnv) mustNewISPResolverStack(config *qaEnvConfig) io.Closer {
 		},
 	))
 
+	// Use a prefix logger for the DNS server
+	prefixLogger := &logx.PrefixLogger{
+		Prefix: fmt.Sprintf("%-16s", "ISP_RESOLVER"),
+		Logger: config.logger,
+	}
+
 	// Create the client's DNS server using the stack.
 	server := runtimex.Try1(netem.NewDNSServer(
-		model.DiscardLogger,
+		prefixLogger,
 		stack,
 		config.ispResolver,
 		env.ispResolverConfig,
@@ -286,9 +300,15 @@ func (env *QAEnv) mustNewResolvers(config *qaEnvConfig) (closables []io.Closer) 
 			},
 		))
 
+		// Use a prefix logger for the DNS server
+		prefixLogger := &logx.PrefixLogger{
+			Prefix: fmt.Sprintf("%-16s", "RESOLVER"),
+			Logger: config.logger,
+		}
+
 		// create DNS server
 		server := runtimex.Try1(netem.NewDNSServer(
-			model.DiscardLogger,
+			prefixLogger,
 			stack,
 			addr,
 			env.otherResolversConfig,
