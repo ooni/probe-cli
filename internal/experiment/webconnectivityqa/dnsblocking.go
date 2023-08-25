@@ -23,8 +23,8 @@ func dnsBlockingAndroidDNSCacheNoData() *TestCase {
 		ExpectTestKeys: &testKeys{
 			DNSExperimentFailure: "android_dns_cache_no_data",
 			DNSConsistency:       "inconsistent",
-			XDNSFlags:            2,
-			XBlockingFlags:       33,
+			XDNSFlags:            2,  // AnalysisDNSUnexpectedFailure
+			XBlockingFlags:       33, // analysisFlagDNSBlocking | analysisFlagSuccess
 			Accessible:           false,
 			Blocking:             "dns",
 		},
@@ -54,9 +54,9 @@ func dnsBlockingNXDOMAIN() *TestCase {
 		ExpectTestKeys: &testKeys{
 			DNSExperimentFailure: "dns_nxdomain_error",
 			DNSConsistency:       "inconsistent",
-			XStatus:              2080,
-			XDNSFlags:            2,
-			XBlockingFlags:       33,
+			XStatus:              2080, // StatusExperimentDNS | StatusAnomalyDNS
+			XDNSFlags:            2,    // AnalysisDNSUnexpectedFailure
+			XBlockingFlags:       33,   // analysisFlagDNSBlocking | analysisFlagSuccess
 			Accessible:           false,
 			Blocking:             "dns",
 		},

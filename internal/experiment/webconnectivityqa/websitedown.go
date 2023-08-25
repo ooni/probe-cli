@@ -28,9 +28,9 @@ func websiteDownNXDOMAIN() *TestCase {
 		ExpectTestKeys: &testKeys{
 			DNSExperimentFailure: "dns_nxdomain_error",
 			DNSConsistency:       "consistent",
-			XStatus:              2052,
+			XStatus:              2052, // StatusExperimentDNS | StatusSuccessNXDOMAIN
 			XBlockingFlags:       0,
-			XNullNullFlags:       1,
+			XNullNullFlags:       1, // analysisFlagNullNullNoAddrs
 			Accessible:           false,
 			Blocking:             false,
 		},

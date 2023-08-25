@@ -73,11 +73,16 @@ func (tp *DefaultTProxy) DefaultCertPool() *x509.CertPool {
 	return tproxyDefaultCertPool
 }
 
+const defaultDialTimeout = 15 * time.Second
+
+// DefaultDialTimeout implements model.UnderlyingNetwork
+func (tp *DefaultTProxy) DefaultDialTimeout() time.Duration {
+	return defaultDialTimeout
+}
+
 // DialContext implements UnderlyingNetwork.
-func (tp *DefaultTProxy) DialContext(ctx context.Context, timeout time.Duration, network, address string) (net.Conn, error) {
-	d := &net.Dialer{
-		Timeout: timeout,
-	}
+func (tp *DefaultTProxy) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+	d := &net.Dialer{}
 	return d.DialContext(ctx, network, address)
 }
 

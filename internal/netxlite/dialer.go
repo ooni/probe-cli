@@ -146,27 +146,16 @@ func NewDialerWithoutResolver(dl model.DebugLogger, w ...model.DialerWrapper) mo
 // to construct the new SimpleDialer used for dialing. This dialer has
 // a fixed timeout for each connect operation equal to 15 seconds.
 type DialerSystem struct {
-	// timeout is the OPTIONAL timeout (for testing).
-	timeout time.Duration
-
 	// provider is the OPTIONAL nil-safe [model.UnderlyingNetwork] provider.
 	provider *tproxyNilSafeProvider
 }
 
 var _ model.Dialer = &DialerSystem{}
 
-const dialerDefaultTimeout = 15 * time.Second
-
-func (d *DialerSystem) configuredTimeout() time.Duration {
-	t := d.timeout
-	if t <= 0 {
-		t = dialerDefaultTimeout
-	}
-	return t
-}
-
 func (d *DialerSystem) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
-	return d.provider.Get().DialContext(ctx, d.configuredTimeout(), network, address)
+	ctx, cancel := context.WithTimeout(ctx, d.provider.Get().DefaultDialTimeout())
+	defer cancel()
+	return d.provider.Get().DialContext(ctx, network, address)
 }
 
 func (d *DialerSystem) CloseIdleConnections() {
