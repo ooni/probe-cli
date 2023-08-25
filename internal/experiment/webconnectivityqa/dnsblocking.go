@@ -54,7 +54,8 @@ func dnsBlockingNXDOMAIN() *TestCase {
 		ExpectTestKeys: &testKeys{
 			DNSExperimentFailure: "dns_nxdomain_error",
 			DNSConsistency:       "inconsistent",
-			XDNSFlags:            2080,
+			XStatus:              2080,
+			XDNSFlags:            2,
 			XBlockingFlags:       33,
 			Accessible:           false,
 			Blocking:             "dns",
