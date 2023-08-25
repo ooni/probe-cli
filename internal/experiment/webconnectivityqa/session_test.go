@@ -3,10 +3,12 @@ package webconnectivityqa
 import (
 	"net/http"
 	"testing"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestNewSession(t *testing.T) {
-	sess := newSession(http.DefaultClient)
+	sess := newSession(http.DefaultClient, model.DiscardLogger)
 
 	t.Run("GetTestHelpers returns Web Connectivity test helpers", func(t *testing.T) {
 		// using the empty string such that, when we eventually complicate the

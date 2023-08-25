@@ -5,6 +5,9 @@ import "github.com/ooni/probe-cli/v3/internal/netemx"
 const (
 	// TestCaseFlagNoV04 means that this test case should not be run by v0.4
 	TestCaseFlagNoV04 = 1 << iota
+
+	// TestCaseFlagNoLTE means that this test case should not be run by LTE
+	TestCaseFlagNoLTE
 )
 
 // TestCase is a test case we could run with this package.

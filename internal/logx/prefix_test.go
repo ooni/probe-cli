@@ -1,4 +1,4 @@
-package oohelperd
+package logx
 
 import (
 	"testing"
@@ -16,9 +16,9 @@ func TestPrefixLogger(t *testing.T) {
 				}
 			},
 		}
-		logger := &prefixLogger{
-			indexstr: "<0>",
-			logger:   base,
+		logger := &PrefixLogger{
+			Prefix: "<0>",
+			Logger: base,
 		}
 		logger.Debug("antani")
 	})
@@ -32,9 +32,9 @@ func TestPrefixLogger(t *testing.T) {
 				}
 			},
 		}
-		logger := &prefixLogger{
-			indexstr: "<0>",
-			logger:   base,
+		logger := &PrefixLogger{
+			Prefix: "<0>",
+			Logger: base,
 		}
 		logger.Info("antani")
 	})
@@ -48,9 +48,9 @@ func TestPrefixLogger(t *testing.T) {
 				}
 			},
 		}
-		logger := &prefixLogger{
-			indexstr: "<0>",
-			logger:   base,
+		logger := &PrefixLogger{
+			Prefix: "<0>",
+			Logger: base,
 		}
 		logger.Warn("antani")
 	})
@@ -64,9 +64,9 @@ func TestPrefixLogger(t *testing.T) {
 				}
 			},
 		}
-		logger := &prefixLogger{
-			indexstr: "<0>",
-			logger:   base,
+		logger := &PrefixLogger{
+			Prefix: "<0>",
+			Logger: base,
 		}
 		logger.Debugf("antani%d", 11)
 	})
@@ -80,9 +80,9 @@ func TestPrefixLogger(t *testing.T) {
 				}
 			},
 		}
-		logger := &prefixLogger{
-			indexstr: "<0>",
-			logger:   base,
+		logger := &PrefixLogger{
+			Prefix: "<0>",
+			Logger: base,
 		}
 		logger.Infof("antani%d", 11)
 	})
@@ -96,9 +96,9 @@ func TestPrefixLogger(t *testing.T) {
 				}
 			},
 		}
-		logger := &prefixLogger{
-			indexstr: "<0>",
-			logger:   base,
+		logger := &PrefixLogger{
+			Prefix: "<0>",
+			Logger: base,
 		}
 		logger.Warnf("antani%d", 11)
 	})

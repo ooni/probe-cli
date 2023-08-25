@@ -9,7 +9,7 @@ import (
 // tlsBlockingConnectionReset resets the connection for the SNI we're using.
 func tlsBlockingConnectionReset() *TestCase {
 	return &TestCase{
-		Name:  "measuring https://www.example.com/ with TLS blocking of the SNI",
+		Name:  "tlsBlockingConnectionReset",
 		Input: "https://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 			env.DPIEngine().AddRule(&netem.DPIResetTrafficForTLSSNI{
@@ -19,8 +19,12 @@ func tlsBlockingConnectionReset() *TestCase {
 		},
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
-			Accessible: false,
-			Blocking:   "http-failure",
+			DNSConsistency:        "consistent",
+			HTTPExperimentFailure: "connection_reset",
+			XStatus:               8448,
+			XBlockingFlags:        4,
+			Accessible:            false,
+			Blocking:              "http-failure",
 		},
 	}
 }
