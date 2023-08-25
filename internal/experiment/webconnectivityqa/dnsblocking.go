@@ -30,3 +30,34 @@ func dnsBlockingAndroidDNSCacheNoData() *TestCase {
 		},
 	}
 }
+
+// dnsBlockingNXDOMAIN is the case where there's DNS blocking using NXDOMAIN.
+func dnsBlockingNXDOMAIN() *TestCase {
+	/*
+		Historical note:
+
+		With this test case there was an MK bug where we didn't properly record the
+		actual error that occurred when performing the DNS experiment.
+
+		See <https://github.com/measurement-kit/measurement-kit/issues/1931>.
+	*/
+	return &TestCase{
+		Name:  "dnsBlockingNXDOMAIN",
+		Flags: 0,
+		Input: "https://www.example.com/",
+		Configure: func(env *netemx.QAEnv) {
+			// remove the record so that the DNS query returns NXDOMAIN, which is then
+			// converted into android_dns_cache_no_data by the emulation layer
+			env.ISPResolverConfig().RemoveRecord("www.example.com")
+		},
+		ExpectErr: false,
+		ExpectTestKeys: &testKeys{
+			DNSExperimentFailure: "dns_nxdomain_error",
+			DNSConsistency:       "inconsistent",
+			XDNSFlags:            2080,
+			XBlockingFlags:       33,
+			Accessible:           false,
+			Blocking:             "dns",
+		},
+	}
+}

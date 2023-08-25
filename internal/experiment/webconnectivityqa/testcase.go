@@ -35,6 +35,7 @@ type TestCase struct {
 func AllTestCases() []*TestCase {
 	return []*TestCase{
 		dnsBlockingAndroidDNSCacheNoData(),
+		dnsBlockingNXDOMAIN(),
 
 		tlsBlockingConnectionReset(),
 

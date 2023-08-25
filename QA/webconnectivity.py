@@ -662,45 +662,6 @@ def webconnectivity_https_untrusted_root(ooni_exe, outfile):
     assert_status_flags_are(ooni_exe, tk, 16)
 
 
-def webconnectivity_dns_blocking_nxdomain(ooni_exe, outfile):
-    """Test case where there is blocking using NXDOMAIN"""
-    args = [
-        "-iptables-hijack-dns-to",
-        "127.0.0.1:53",
-        "-dns-proxy-block",
-        "example.com",
-    ]
-    tk = execute_jafar_and_return_validated_test_keys(
-        ooni_exe,
-        outfile,
-        "-i https://example.com/ web_connectivity",
-        "webconnectivity_dns_blocking_nxdomain",
-        args,
-    )
-    # The following seems a bug in MK where we don't properly record the
-    # actual error that occurred when performing the DNS experiment.
-    #
-    # See <https://github.com/measurement-kit/measurement-kit/issues/1931>.
-    if "miniooni" in ooni_exe:
-        assert tk["dns_experiment_failure"] == "dns_nxdomain_error"
-    else:
-        assert tk["dns_experiment_failure"] == None
-    assert tk["dns_consistency"] == "inconsistent"
-    assert tk["control_failure"] == None
-    if "miniooni" in ooni_exe:
-        assert tk["http_experiment_failure"] == None
-    else:
-        assert tk["http_experiment_failure"] == "dns_lookup_error"
-    assert tk["body_length_match"] == None
-    assert tk["body_proportion"] == 0
-    assert tk["status_code_match"] == None
-    assert tk["headers_match"] == None
-    assert tk["title_match"] == None
-    assert tk["blocking"] == "dns"
-    assert tk["accessible"] == False
-    assert_status_flags_are(ooni_exe, tk, 2080)
-
-
 def webconnectivity_https_unknown_authority_with_inconsistent_dns(ooni_exe, outfile):
     """Test case where the DNS is sending us towards a website where
     we're served an invalid certificate"""
@@ -763,7 +724,6 @@ def main():
         webconnectivity_https_wrong_host,
         webconnectivity_https_self_signed,
         webconnectivity_https_untrusted_root,
-        webconnectivity_dns_blocking_nxdomain,
         webconnectivity_https_unknown_authority_with_inconsistent_dns,
     ]
     for test in tests:
