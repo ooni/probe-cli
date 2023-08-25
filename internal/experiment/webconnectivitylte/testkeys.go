@@ -373,8 +373,8 @@ func NewTestKeys() *TestKeys {
 
 // Finalize performs any delayed computation on the test keys. This function
 // must be called from the measurer after all the tasks have completed.
-func (tk *TestKeys) Finalize(logger model.Logger) {
-	tk.analysisToplevel(logger)
+func (tk *TestKeys) Finalize(logger model.Logger, lookupper model.GeoIPASNLookupper) {
+	tk.analysisToplevel(logger, lookupper)
 	// Note: sort.SliceStable is WAI when the input slice is nil
 	// as demonstrated by https://go.dev/play/p/znA4MyGFVHC
 	sort.SliceStable(tk.NetworkEvents, func(i, j int) bool {

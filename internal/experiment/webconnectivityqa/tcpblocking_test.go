@@ -25,3 +25,20 @@ func TestTCPBlockingConnectTimeout(t *testing.T) {
 		}
 	})
 }
+
+func TestTCPBlockingConnectionRefusedWithInconsistentDNS(t *testing.T) {
+	env := netemx.MustNewScenario(netemx.InternetScenario)
+	tc := tcpBlockingConnectionRefusedWithInconsistentDNS()
+	tc.Configure(env)
+
+	env.Do(func() {
+		dialer := netxlite.NewDialerWithResolver(log.Log, netxlite.NewStdlibResolver(log.Log))
+		conn, err := dialer.DialContext(context.Background(), "tcp", "www.example.org:443")
+		if err == nil || err.Error() != netxlite.FailureConnectionRefused {
+			t.Fatal("unexpected error", err)
+		}
+		if conn != nil {
+			t.Fatal("expected to see nil conn")
+		}
+	})
+}

@@ -26,6 +26,9 @@ type ExperimentSession interface {
 	// Logger returns the logger used by the session.
 	Logger() Logger
 
+	// LookupASN lookups the ASN and organization of the given IP addr.
+	LookupASN(ip string) (asn uint, org string, err error)
+
 	// ProbeCC returns the country code.
 	ProbeCC() string
 

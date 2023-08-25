@@ -3,7 +3,6 @@ package webconnectivity
 import (
 	"context"
 
-	"github.com/ooni/probe-cli/v3/internal/geoipx"
 	"github.com/ooni/probe-cli/v3/internal/httpapi"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -36,7 +35,7 @@ func Control(
 		err = netxlite.NewTopLevelGenericErrWrapper(err)
 		return ControlResponse{}, nil, err
 	}
-	fillASNs(&out.DNS)
+	fillASNs(sess, &out.DNS)
 	runtimex.Assert(idx >= 0 && idx < len(testhelpers), "idx out of bounds")
 	runtimex.Assert(out != nil, "out is nil")
 	return *out, &testhelpers[idx], nil
@@ -47,10 +46,10 @@ func Control(
 //
 // This is very useful to know what ASNs were the IP addresses returned by
 // the control according to the probe's ASN database.
-func fillASNs(dns *ControlDNSResult) {
+func fillASNs(sess model.ExperimentSession, dns *ControlDNSResult) {
 	dns.ASNs = []int64{}
 	for _, ip := range dns.Addrs {
-		asn, _, _ := geoipx.LookupASN(ip)
+		asn, _, _ := sess.LookupASN(ip)
 		dns.ASNs = append(dns.ASNs, int64(asn))
 	}
 }
