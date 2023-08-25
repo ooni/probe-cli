@@ -37,10 +37,12 @@ func AllTestCases() []*TestCase {
 		dnsBlockingAndroidDNSCacheNoData(),
 		dnsBlockingNXDOMAIN(),
 
-		tlsBlockingConnectionReset(),
-
 		sucessWithHTTP(),
 		sucessWithHTTPS(),
+
+		tcpBlockingConnectTimeout(),
+
+		tlsBlockingConnectionReset(),
 
 		websiteDownNXDOMAIN(),
 	}

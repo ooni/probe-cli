@@ -21,8 +21,8 @@ func tlsBlockingConnectionReset() *TestCase {
 		ExpectTestKeys: &testKeys{
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: "connection_reset",
-			XStatus:               8448,
-			XBlockingFlags:        4,
+			XStatus:               8448, // StatusExperimentHTTP | StatusAnomalyReadWrite
+			XBlockingFlags:        4,    // analysisFlagTLSBlocking
 			Accessible:            false,
 			Blocking:              "http-failure",
 		},
