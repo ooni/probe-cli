@@ -26,3 +26,20 @@ func TestDNSBlockingAndroidDNSCacheNoData(t *testing.T) {
 		}
 	})
 }
+
+func TestDNSBlockingNXDOMAIN(t *testing.T) {
+	env := netemx.MustNewScenario(netemx.InternetScenario)
+	tc := dnsBlockingNXDOMAIN()
+	tc.Configure(env)
+
+	env.Do(func() {
+		reso := netxlite.NewStdlibResolver(log.Log)
+		addrs, err := reso.LookupHost(context.Background(), "www.example.com")
+		if err == nil || err.Error() != netxlite.FailureDNSNXDOMAINError {
+			t.Fatal("unexpected error", err)
+		}
+		if len(addrs) != 0 {
+			t.Fatal("expected to see no addresses")
+		}
+	})
+}
