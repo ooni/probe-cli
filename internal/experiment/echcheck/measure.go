@@ -14,9 +14,9 @@ import (
 )
 
 const (
-	testName      = "echcheck"
-	testVersion   = "0.1.1"
-	defaultDomain = "https://example.org"
+	testName    = "echcheck"
+	testVersion = "0.1.1"
+	defaultURL  = "https://crypto.cloudflare.com/cdn-cgi/trace"
 )
 
 var (
@@ -54,7 +54,7 @@ func (m *Measurer) Run(
 	args *model.ExperimentArgs,
 ) error {
 	if args.Measurement.Input == "" {
-		args.Measurement.Input = defaultDomain
+		args.Measurement.Input = defaultURL
 	}
 	parsed, err := url.Parse(string(args.Measurement.Input))
 	if err != nil {

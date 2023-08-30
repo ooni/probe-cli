@@ -19,11 +19,11 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	}
 }
 
-// qaenv creates a [netemx.QAEnv] with a single example.org test server and a DoH server.
+// qaenv creates a [netemx.QAEnv] with a single crypto.cloudflare.com test server and a DoH server.
 func qaenv() *netemx.QAEnv {
 	cfg := []*netemx.ScenarioDomainAddresses{
 		{
-			Domain:    "example.org",
+			Domain:    "crypto.cloudflare.com",
 			Addresses: []string{"130.192.91.7"},
 			Role:      netemx.ScenarioRoleExampleLikeWebServer,
 		},
@@ -75,7 +75,7 @@ func TestMeasurerMeasureWithInvalidInput(t *testing.T) {
 		Callbacks: model.NewPrinterCallbacks(model.DiscardLogger),
 		Measurement: &model.Measurement{
 			// leading space to test url.Parse failure
-			Input: " https://example.org",
+			Input: " https://crypto.cloudflare.com/cdn-cgi/trace",
 		},
 		Session: &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
 	}
