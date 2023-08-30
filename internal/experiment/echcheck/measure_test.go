@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netemx"
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
@@ -19,77 +19,98 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	}
 }
 
-func TestMeasurerMeasureWithInvalidInput(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // immediately cancel the context
-	sess := &mockable.Session{MockableLogger: log.Log}
-	callbacks := model.NewPrinterCallbacks(sess.Logger())
-	measurer := NewExperimentMeasurer(Config{})
-	measurement := &model.Measurement{
-		Input: "http://example.org",
+// qaenv creates a [netemx.QAEnv] with a single example.org test server and a DoH server.
+func qaenv() *netemx.QAEnv {
+	cfg := []*netemx.ScenarioDomainAddresses{
+		{
+			Domain:    "example.org",
+			Addresses: []string{"130.192.91.7"},
+			Role:      netemx.ScenarioRoleExampleLikeWebServer,
+		},
+		{
+			Domain:    "mozilla.cloudflare-dns.com",
+			Addresses: []string{"130.192.91.13"},
+			Role:      netemx.ScenarioRoleDNSOverHTTPS,
+		},
 	}
-	args := &model.ExperimentArgs{
-		Callbacks:   callbacks,
-		Measurement: measurement,
-		Session:     sess,
-	}
-	err := measurer.Run(
-		ctx,
-		args,
-	)
-	if err == nil {
-		t.Fatal("expected an error here")
-	}
+	return netemx.MustNewScenario(cfg)
 }
 
-func TestMeasurerMeasureWithInvalidInput2(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // immediately cancel the context
-	sess := &mockable.Session{MockableLogger: log.Log}
-	callbacks := model.NewPrinterCallbacks(sess.Logger())
+func TestMeasurerMeasureWithCancelledContext(t *testing.T) {
+	// create QAEnv
+	env := qaenv()
+	defer env.Close()
+
+	env.Do(func() {
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel() // immediately cancel the context
+
+		// create measurer
+		measurer := NewExperimentMeasurer(Config{})
+		args := &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
+		}
+		// run measurement
+		err := measurer.Run(ctx, args)
+		if err == nil {
+			t.Fatal("expected an error here")
+		}
+		if err.Error() != "interrupted" {
+			t.Fatal("unexpected error type")
+		}
+	})
+
+}
+
+func TestMeasurerMeasureWithInvalidInput(t *testing.T) {
+	// create QAEnv
+	env := qaenv()
+	defer env.Close()
+
+	// create measurer
 	measurer := NewExperimentMeasurer(Config{})
-	measurement := &model.Measurement{
-		// leading space to test url.Parse failure
-		Input: " https://example.org",
-	}
 	args := &model.ExperimentArgs{
-		Callbacks:   callbacks,
-		Measurement: measurement,
-		Session:     sess,
+		Callbacks: model.NewPrinterCallbacks(model.DiscardLogger),
+		Measurement: &model.Measurement{
+			// leading space to test url.Parse failure
+			Input: " https://example.org",
+		},
+		Session: &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
 	}
-	err := measurer.Run(
-		ctx,
-		args,
-	)
+	// run measurement
+	err := measurer.Run(context.Background(), args)
 	if err == nil {
 		t.Fatal("expected an error here")
+	}
+	if err.Error() != "input is not an URL" {
+		t.Fatal("unexpected error type")
 	}
 }
 
 func TestMeasurementSuccess(t *testing.T) {
-	sess := &mockable.Session{MockableLogger: log.Log}
-	callbacks := model.NewPrinterCallbacks(sess.Logger())
-	measurer := NewExperimentMeasurer(Config{})
-	args := &model.ExperimentArgs{
-		Callbacks:   callbacks,
-		Measurement: &model.Measurement{},
-		Session:     sess,
-	}
-	err := measurer.Run(
-		context.Background(),
-		args,
-	)
-	if err != nil {
-		t.Fatal("unexpected error: ", err)
-	}
+	env := qaenv()
+	defer env.Close()
 
-	summary, err := measurer.GetSummaryKeys(&model.Measurement{})
+	env.Do(func() {
+		measurer := NewExperimentMeasurer(Config{})
+		args := &model.ExperimentArgs{
+			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+			Measurement: &model.Measurement{},
+			Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
+		}
 
-	if summary.(SummaryKeys).IsAnomaly != false {
-		t.Fatal("expected false")
-	}
-}
-
-func newsession() model.ExperimentSession {
-	return &mockable.Session{MockableLogger: log.Log}
+		err := measurer.Run(context.Background(), args)
+		if err != nil {
+			t.Fatal("unexpected error", err)
+		}
+		summary, err := measurer.GetSummaryKeys(&model.Measurement{})
+		if err != nil {
+			t.Fatal("unexpected error GetSummaryKeys", err)
+		}
+		if summary.(SummaryKeys).IsAnomaly != false {
+			t.Fatal("expected false")
+		}
+	})
 }
