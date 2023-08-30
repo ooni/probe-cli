@@ -89,18 +89,22 @@ func TestMeasurerMeasureWithInvalidInput(t *testing.T) {
 	}
 }
 
-func TestMeasurementSuccess(t *testing.T) {
+func TestMeasurerSuccess(t *testing.T) {
+	// create QAEnv
 	env := qaenv()
 	defer env.Close()
 
 	env.Do(func() {
+		// create measurer
 		measurer := NewExperimentMeasurer(Config{})
+		msrmnt := &model.Measurement{}
 		args := &model.ExperimentArgs{
 			Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
-			Measurement: &model.Measurement{},
+			Measurement: msrmnt,
 			Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
 		}
 
+		// run measurement
 		err := measurer.Run(context.Background(), args)
 		if err != nil {
 			t.Fatal("unexpected error", err)
@@ -112,5 +116,44 @@ func TestMeasurementSuccess(t *testing.T) {
 		if summary.(SummaryKeys).IsAnomaly != false {
 			t.Fatal("expected false")
 		}
+		tk := msrmnt.TestKeys.(TestKeys)
+		if tk.Control.Failure == nil || tk.Target.Failure == nil {
+			// we expect errors here because we cannot do ECH with netem yet
+			t.Fatal("expected an error here")
+		}
 	})
+}
+
+func TestMeasurementSuccessRealWorld(t *testing.T) {
+	if testing.Short() {
+		// this test uses the real internet so we want to skip this in short mode
+		t.Skip("skip test in short mode")
+	}
+	// create measurer
+	measurer := NewExperimentMeasurer(Config{})
+	msrmnt := &model.Measurement{}
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
+		Measurement: msrmnt,
+		Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
+	}
+	// run measurement
+	err := measurer.Run(context.Background(), args)
+	if err != nil {
+		t.Fatal("unexpected error: ", err)
+	}
+	summary, err := measurer.GetSummaryKeys(&model.Measurement{})
+	if err != nil {
+		t.Fatal("unexpected error: ", err)
+	}
+	if summary.(SummaryKeys).IsAnomaly != false {
+		t.Fatal("expected false")
+	}
+	tk := msrmnt.TestKeys.(TestKeys)
+	if tk.Control.Failure != nil {
+		t.Fatal("unexpected control failure:", *tk.Control.Failure)
+	}
+	if tk.Target.Failure != nil {
+		t.Fatal("unexpected target failure:", *tk.Target.Failure)
+	}
 }
