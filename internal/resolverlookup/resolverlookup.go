@@ -1,4 +1,4 @@
-package geolocate
+package resolverlookup
 
 import (
 	"context"
@@ -8,11 +8,17 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-type resolverLookupClient struct {
+type ResolverLookupClient struct {
 	Logger model.Logger
 }
 
-func (rlc resolverLookupClient) LookupResolverIP(ctx context.Context) (string, error) {
+func NewResolverLookupClient(logger model.Logger) *ResolverLookupClient {
+	return &ResolverLookupClient{
+		Logger: logger,
+	}
+}
+
+func (rlc ResolverLookupClient) LookupResolverIP(ctx context.Context) (string, error) {
 	// MUST be the system resolver! See https://github.com/ooni/probe/issues/2360
 	reso := netxlite.NewStdlibResolver(rlc.Logger)
 	var ips []string

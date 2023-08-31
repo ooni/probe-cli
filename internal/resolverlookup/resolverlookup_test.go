@@ -1,4 +1,4 @@
-package geolocate
+package resolverlookup
 
 import (
 	"context"
@@ -9,9 +9,7 @@ import (
 )
 
 func TestLookupResolverIPSuccess(t *testing.T) {
-	rlc := resolverLookupClient{
-		Logger: model.DiscardLogger,
-	}
+	rlc := NewResolverLookupClient(model.DiscardLogger)
 	addr, err := rlc.LookupResolverIP(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -22,9 +20,7 @@ func TestLookupResolverIPSuccess(t *testing.T) {
 }
 
 func TestLookupResolverIPFailure(t *testing.T) {
-	rlc := resolverLookupClient{
-		Logger: model.DiscardLogger,
-	}
+	rlc := NewResolverLookupClient(model.DiscardLogger)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // stop immediately
 	addr, err := rlc.LookupResolverIP(ctx)

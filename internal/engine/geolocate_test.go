@@ -1,4 +1,4 @@
-package geolocate
+package engine
 
 import (
 	"context"
@@ -19,7 +19,7 @@ func (c taskProbeIPLookupper) LookupProbeIP(ctx context.Context) (string, error)
 
 func TestLocationLookupCannotLookupProbeIP(t *testing.T) {
 	expected := errors.New("mocked error")
-	op := Task{
+	op := &GeolocateTask{
 		probeIPLookupper: taskProbeIPLookupper{err: expected},
 	}
 	ctx := context.Background()
@@ -62,7 +62,7 @@ func (c taskASNLookupper) LookupASN(ip string) (uint, string, error) {
 
 func TestLocationLookupCannotLookupProbeASN(t *testing.T) {
 	expected := errors.New("mocked error")
-	op := Task{
+	op := &GeolocateTask{
 		probeIPLookupper:  taskProbeIPLookupper{ip: "1.2.3.4"},
 		probeASNLookupper: taskASNLookupper{err: expected},
 	}
@@ -105,7 +105,7 @@ func (c taskCCLookupper) LookupCC(ip string) (string, error) {
 
 func TestLocationLookupCannotLookupProbeCC(t *testing.T) {
 	expected := errors.New("mocked error")
-	op := Task{
+	op := &GeolocateTask{
 		probeIPLookupper:  taskProbeIPLookupper{ip: "1.2.3.4"},
 		probeASNLookupper: taskASNLookupper{asn: 1234, name: "1234.com"},
 		countryLookupper:  taskCCLookupper{cc: "US", err: expected},
@@ -149,7 +149,7 @@ func (c taskResolverIPLookupper) LookupResolverIP(ctx context.Context) (string, 
 
 func TestLocationLookupCannotLookupResolverIP(t *testing.T) {
 	expected := errors.New("mocked error")
-	op := Task{
+	op := &GeolocateTask{
 		probeIPLookupper:    taskProbeIPLookupper{ip: "1.2.3.4"},
 		probeASNLookupper:   taskASNLookupper{asn: 1234, name: "1234.com"},
 		countryLookupper:    taskCCLookupper{cc: "IT"},
@@ -188,7 +188,7 @@ func TestLocationLookupCannotLookupResolverIP(t *testing.T) {
 
 func TestLocationLookupCannotLookupResolverNetworkName(t *testing.T) {
 	expected := errors.New("mocked error")
-	op := Task{
+	op := &GeolocateTask{
 		probeIPLookupper:     taskProbeIPLookupper{ip: "1.2.3.4"},
 		probeASNLookupper:    taskASNLookupper{asn: 1234, name: "1234.com"},
 		countryLookupper:     taskCCLookupper{cc: "IT"},
@@ -227,7 +227,7 @@ func TestLocationLookupCannotLookupResolverNetworkName(t *testing.T) {
 }
 
 func TestLocationLookupSuccessWithResolverLookup(t *testing.T) {
-	op := Task{
+	op := &GeolocateTask{
 		probeIPLookupper:     taskProbeIPLookupper{ip: "1.2.3.4"},
 		probeASNLookupper:    taskASNLookupper{asn: 1234, name: "1234.com"},
 		countryLookupper:     taskCCLookupper{cc: "IT"},
@@ -266,8 +266,8 @@ func TestLocationLookupSuccessWithResolverLookup(t *testing.T) {
 }
 
 func TestSmoke(t *testing.T) {
-	config := Config{}
-	task := NewTask(config)
+	config := GeolocateConfig{}
+	task := NewGeolocateTask(config)
 	result, err := task.Run(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -280,7 +280,7 @@ func TestSmoke(t *testing.T) {
 }
 
 func TestASNStringWorks(t *testing.T) {
-	r := Results{ASN: 1234}
+	r := &GeolocateResults{ASN: 1234}
 	if r.ASNString() != "AS1234" {
 		t.Fatal("unexpected result")
 	}

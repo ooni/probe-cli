@@ -1,4 +1,4 @@
-package geolocate
+package iplookup
 
 import (
 	"context"

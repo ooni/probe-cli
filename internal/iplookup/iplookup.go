@@ -1,4 +1,4 @@
-package geolocate
+package iplookup
 
 import (
 	"context"
@@ -56,7 +56,7 @@ var (
 	}
 )
 
-type ipLookupClient struct {
+type IpLookupClient struct {
 	// Resolver is the resolver to use for HTTP.
 	Resolver model.Resolver
 
@@ -77,7 +77,7 @@ func makeSlice() []method {
 	return ret
 }
 
-func (c ipLookupClient) doWithCustomFunc(
+func (c IpLookupClient) doWithCustomFunc(
 	ctx context.Context, fn lookupFunc,
 ) (string, error) {
 	// Reliability fix: let these mechanisms timeout earlier.
@@ -101,7 +101,7 @@ func (c ipLookupClient) doWithCustomFunc(
 	return ip, nil
 }
 
-func (c ipLookupClient) LookupProbeIP(ctx context.Context) (string, error) {
+func (c IpLookupClient) LookupProbeIP(ctx context.Context) (string, error) {
 	union := multierror.New(ErrAllIPLookuppersFailed)
 	for _, method := range makeSlice() {
 		c.Logger.Infof("iplookup: using %s", method.name)

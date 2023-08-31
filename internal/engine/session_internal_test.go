@@ -13,7 +13,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/checkincache"
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivitylte"
-	"github.com/ooni/probe-cli/v3/internal/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/registry"
@@ -85,7 +84,7 @@ func TestSessionCheckInSuccessful(t *testing.T) {
 		},
 	}
 	s := &Session{
-		location: &geolocate.Results{
+		location: &GeolocateResults{
 			ASN:         137,
 			CountryCode: "IT",
 		},
@@ -136,7 +135,7 @@ func TestSessionCheckInNetworkError(t *testing.T) {
 		Error: expect,
 	}
 	s := &Session{
-		location: &geolocate.Results{
+		location: &GeolocateResults{
 			ASN:         137,
 			CountryCode: "IT",
 		},
@@ -178,7 +177,7 @@ func TestSessionCheckInCannotLookupLocation(t *testing.T) {
 func TestSessionCheckInCannotCreateProbeServicesClient(t *testing.T) {
 	errMocked := errors.New("mocked error")
 	s := &Session{
-		location: &geolocate.Results{
+		location: &GeolocateResults{
 			ASN:         137,
 			CountryCode: "IT",
 		},
@@ -240,7 +239,7 @@ func TestSessionNewSubmitterWithCancelledContext(t *testing.T) {
 func TestSessionMaybeLookupLocationContextLookupLocationContextFailure(t *testing.T) {
 	errMocked := errors.New("mocked error")
 	sess := newSessionForTestingNoLookups(t)
-	sess.testLookupLocationContext = func(ctx context.Context) (*geolocate.Results, error) {
+	sess.testLookupLocationContext = func(ctx context.Context) (*GeolocateResults, error) {
 		return nil, errMocked
 	}
 	err := sess.MaybeLookupLocationContext(context.Background())

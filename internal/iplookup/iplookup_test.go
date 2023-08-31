@@ -1,4 +1,4 @@
-package geolocate
+package iplookup
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 )
 
 func TestIPLookupGood(t *testing.T) {
-	ip, err := (ipLookupClient{
+	ip, err := (IpLookupClient{
 		Logger:    log.Log,
 		Resolver:  netxlite.NewStdlibResolver(model.DiscardLogger),
 		UserAgent: "ooniprobe-engine/0.1.0",
@@ -28,7 +28,7 @@ func TestIPLookupGood(t *testing.T) {
 func TestIPLookupAllFailed(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // immediately cancel to cause Do() to fail
-	ip, err := (ipLookupClient{
+	ip, err := (IpLookupClient{
 		Logger:    log.Log,
 		Resolver:  netxlite.NewStdlibResolver(model.DiscardLogger),
 		UserAgent: "ooniprobe-engine/0.1.0",
@@ -43,7 +43,7 @@ func TestIPLookupAllFailed(t *testing.T) {
 
 func TestIPLookupInvalidIP(t *testing.T) {
 	ctx := context.Background()
-	ip, err := (ipLookupClient{
+	ip, err := (IpLookupClient{
 		Logger:    log.Log,
 		Resolver:  netxlite.NewStdlibResolver(model.DiscardLogger),
 		UserAgent: "ooniprobe-engine/0.1.0",
