@@ -15,7 +15,7 @@ import (
 
 func TestTproxyNilSafeProvider(t *testing.T) {
 	type testingstruct struct {
-		provider *tproxyNilSafeProvider
+		provider *MaybeCustomUnderlyingNetwork
 	}
 
 	t.Run("when the pointer is nil", func(t *testing.T) {
@@ -27,7 +27,7 @@ func TestTproxyNilSafeProvider(t *testing.T) {
 
 	t.Run("when underlying is nil", func(t *testing.T) {
 		tsp := &testingstruct{
-			provider: &tproxyNilSafeProvider{
+			provider: &MaybeCustomUnderlyingNetwork{
 				underlying: nil,
 			},
 		}
@@ -39,7 +39,7 @@ func TestTproxyNilSafeProvider(t *testing.T) {
 	t.Run("when underlying is set", func(t *testing.T) {
 		expected := &mocks.UnderlyingNetwork{}
 		tsp := &testingstruct{
-			provider: &tproxyNilSafeProvider{
+			provider: &MaybeCustomUnderlyingNetwork{
 				underlying: expected,
 			},
 		}

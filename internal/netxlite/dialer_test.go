@@ -108,7 +108,7 @@ func TestDialerSystem(t *testing.T) {
 				},
 				MockDialContext: defaultTp.DialContext,
 			}
-			d := &DialerSystem{provider: &tproxyNilSafeProvider{tp}}
+			d := &DialerSystem{provider: &MaybeCustomUnderlyingNetwork{tp}}
 			ctx := context.Background()
 			start := time.Now()
 			conn, err := d.DialContext(ctx, "tcp", "dns.google:443")
@@ -134,7 +134,7 @@ func TestDialerSystem(t *testing.T) {
 					return nil, expected
 				},
 			}
-			d := &DialerSystem{provider: &tproxyNilSafeProvider{proxy}}
+			d := &DialerSystem{provider: &MaybeCustomUnderlyingNetwork{proxy}}
 			conn, err := d.DialContext(context.Background(), "tcp", "dns.google:443")
 			if conn != nil {
 				t.Fatal("unexpected conn")
