@@ -25,7 +25,7 @@ func NewQUICListener() model.QUICListener {
 // quicListenerStdlib is a QUICListener using the standard library.
 type quicListenerStdlib struct {
 	// provider is the OPTIONAL nil-safe [model.UnderlyingNetwork] provider.
-	provider *tproxyNilSafeProvider
+	provider *MaybeCustomUnderlyingNetwork
 }
 
 var _ model.QUICListener = &quicListenerStdlib{}
@@ -106,7 +106,7 @@ type quicDialerQUICGo struct {
 		quicConfig *quic.Config) (quic.EarlyConnection, error)
 
 	// provider is the OPTIONAL nil-safe [model.UnderlyingNetwork] provider.
-	provider *tproxyNilSafeProvider
+	provider *MaybeCustomUnderlyingNetwork
 }
 
 var _ model.QUICDialer = &quicDialerQUICGo{}
