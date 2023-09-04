@@ -404,7 +404,7 @@ func Example_ubuntuGeoIPWithInternetScenario() {
 	// <?xml version="1.0" encoding="UTF-8"?><Response><Ip>130.192.91.211</Ip></Response>
 }
 
-// This example shows how the [InternetScenario] defines a public blockpahe server.
+// This example shows how the [InternetScenario] defines a public blockpage server.
 func Example_examplePublicBlockpage() {
 	env := netemx.MustNewScenario(netemx.InternetScenario)
 	defer env.Close()
