@@ -17,7 +17,7 @@ func TestTCPBlockingConnectTimeout(t *testing.T) {
 
 	env.Do(func() {
 		dialer := netxlite.NewDialerWithoutResolver(log.Log)
-		endpoint := net.JoinHostPort(netemx.InternetScenarioAddressWwwExampleCom, "443")
+		endpoint := net.JoinHostPort(netemx.AddressWwwExampleCom, "443")
 		conn, err := dialer.DialContext(context.Background(), "tcp", endpoint)
 		if err == nil || err.Error() != netxlite.FailureGenericTimeoutError {
 			t.Fatal("unexpected error", err)

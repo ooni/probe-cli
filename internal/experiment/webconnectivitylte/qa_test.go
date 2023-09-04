@@ -16,7 +16,7 @@ func TestQA(t *testing.T) {
 			}
 			measurer := NewExperimentMeasurer(&Config{
 				// We override the resolver to use the one we should be using with netem
-				DNSOverUDPResolver: net.JoinHostPort(netemx.QAEnvDefaultUncensoredResolverAddress, "53"),
+				DNSOverUDPResolver: net.JoinHostPort(netemx.DefaultUncensoredResolverAddress, "53"),
 			})
 			if err := webconnectivityqa.RunTestCase(measurer, tc); err != nil {
 				t.Fatal(err)

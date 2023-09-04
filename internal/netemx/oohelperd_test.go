@@ -26,7 +26,7 @@ func TestOOHelperDHandler(t *testing.T) {
 				"accept-language": {model.HTTPHeaderAcceptLanguage},
 				"user-agent":      {model.HTTPHeaderUserAgent},
 			},
-			TCPConnect:   []string{InternetScenarioAddressWwwExampleCom},
+			TCPConnect:   []string{AddressWwwExampleCom},
 			XQUICEnabled: true,
 		}
 		thReqRaw := runtimex.Try1(json.Marshal(thReq))

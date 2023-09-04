@@ -76,7 +76,7 @@ func TestQAEnv(t *testing.T) {
 		// create QA env
 		env := netemx.MustNewQAEnv(
 			netemx.QAEnvOptionHTTPServer(
-				netemx.InternetScenarioAddressWwwExampleCom,
+				netemx.AddressWwwExampleCom,
 				netemx.ExampleWebPageHandlerFactory(),
 			),
 		)
@@ -86,7 +86,7 @@ func TestQAEnv(t *testing.T) {
 		env.AddRecordToAllResolvers(
 			"www.example.com",
 			"", // CNAME
-			netemx.InternetScenarioAddressWwwExampleCom,
+			netemx.AddressWwwExampleCom,
 		)
 
 		env.Do(func() {
@@ -139,7 +139,7 @@ func TestQAEnv(t *testing.T) {
 		// create QA env
 		env := netemx.MustNewQAEnv(
 			netemx.QAEnvOptionHTTPServer(
-				netemx.InternetScenarioAddressWwwExampleCom,
+				netemx.AddressWwwExampleCom,
 				netemx.ExampleWebPageHandlerFactory(),
 			),
 		)
@@ -149,7 +149,7 @@ func TestQAEnv(t *testing.T) {
 		env.AddRecordToAllResolvers(
 			"www.example.com",
 			"", // CNAME
-			netemx.InternetScenarioAddressWwwExampleCom,
+			netemx.AddressWwwExampleCom,
 		)
 
 		env.Do(func() {

@@ -34,110 +34,72 @@ type ScenarioDomainAddresses struct {
 	WebServerFactory QAEnvHTTPHandlerFactory
 }
 
-const (
-	// InternetScenarioAddressApiOONIIo is the IP address we use for api.ooni.io in the [InternetScenario].
-	InternetScenarioAddressApiOONIIo = "162.55.247.208"
-
-	// InternetScenarioAddressGeoIPUbuntuCom is the IP address we use for geoip.ubuntu.com in the [InternetScenario].
-	InternetScenarioAddressGeoIPUbuntuCom = "185.125.188.132"
-
-	// InternetScenarioAddressWwwExampleCom is the IP address we use for www.example.com in the [InternetScenario].
-	InternetScenarioAddressWwwExampleCom = "93.184.216.34"
-
-	// InternetScenarioAddressZeroThOONIOrg is the IP address we use for 0.th.ooni.org in the [InternetScenario].
-	InternetScenarioAddressZeroThOONIOrg = "68.183.70.80"
-
-	// InternetScenarioAddressOneThOONIOrg is the IP address we use for 1.th.ooni.org in the [InternetScenario].
-	InternetScenarioAddressOneThOONIOrg = "137.184.235.44"
-
-	// InternetScenarioAddressTwoThOONIOrg is the IP address we use for 2.th.ooni.org in the [InternetScenario].
-	InternetScenarioAddressTwoThOONIOrg = "178.62.195.24"
-
-	// InternetScenarioAddressThreeThOONIOrg is the IP address we use for 3.th.ooni.org in the [InternetScenario].
-	InternetScenarioAddressThreeThOONIOrg = "209.97.183.73"
-
-	// InternetScenarioAddressDNSQuad9Net is the IP address we use for dns.quad9.net in the [InternetScenario].
-	InternetScenarioAddressDNSQuad9Net = "9.9.9.9"
-
-	// InternetScenarioAddressMozillaCloudflareDNSCom is the IP address we use for mozilla.cloudflare-dns.com
-	// in the [InternetScenario].
-	InternetScenarioAddressMozillaCloudflareDNSCom = "172.64.41.4"
-
-	// InternetScenarioAddressDNSGoogle is the IP address we use for dns.google in the [InternetScenario].
-	InternetScenarioAddressDNSGoogle = "8.8.4.4"
-
-	// InternetScenarioAddressPublicBlockpage is the IP address we use for modeling a public IP address
-	// that is serving blockpages to its users. As of 2023-09-04, this is the IP address resolving for
-	// thepiratebay.com when you're attempting to access this website from Italy.
-	InternetScenarioAddressPublicBlockpage = "83.224.65.41"
-)
-
 // InternetScenario contains the domains and addresses used by [NewInternetScenario].
 var InternetScenario = []*ScenarioDomainAddresses{{
 	Domains: []string{"api.ooni.io"},
 	Addresses: []string{
-		InternetScenarioAddressApiOONIIo,
+		AddressApiOONIIo,
 	},
 	Role: ScenarioRoleOONIAPI,
 }, {
 	Domains: []string{"geoip.ubuntu.com"},
 	Addresses: []string{
-		InternetScenarioAddressGeoIPUbuntuCom,
+		AddressGeoIPUbuntuCom,
 	},
 	Role: ScenarioRoleUbuntuGeoIP,
 }, {
 	Domains: []string{"www.example.com", "example.com", "www.example.org", "example.org"},
 	Addresses: []string{
-		InternetScenarioAddressWwwExampleCom,
+		AddressWwwExampleCom,
 	},
 	Role:             ScenarioRoleWebServer,
 	WebServerFactory: ExampleWebPageHandlerFactory(),
 }, {
 	Domains: []string{"0.th.ooni.org"},
 	Addresses: []string{
-		InternetScenarioAddressZeroThOONIOrg,
+		AddressZeroThOONIOrg,
 	},
 	Role: ScenarioRoleOONITestHelper,
 }, {
 	Domains: []string{"1.th.ooni.org"},
 	Addresses: []string{
-		InternetScenarioAddressOneThOONIOrg,
+		AddressOneThOONIOrg,
 	},
 	Role: ScenarioRoleOONITestHelper,
 }, {
 	Domains: []string{"2.th.ooni.org"},
 	Addresses: []string{
-		InternetScenarioAddressTwoThOONIOrg,
+		AddressTwoThOONIOrg,
 	},
 	Role: ScenarioRoleOONITestHelper,
 }, {
 	Domains: []string{"3.th.ooni.org"},
 	Addresses: []string{
-		InternetScenarioAddressThreeThOONIOrg,
+		AddressThreeThOONIOrg,
 	},
 	Role: ScenarioRoleOONITestHelper,
 }, {
 	Domains: []string{"dns.quad9.net"},
 	Addresses: []string{
-		InternetScenarioAddressDNSQuad9Net,
+		AddressDNSQuad9Net,
 	},
 	Role: ScenarioRoleDNSOverHTTPS,
 }, {
 	Domains: []string{"mozilla.cloudflare-dns.com"},
 	Addresses: []string{
-		InternetScenarioAddressMozillaCloudflareDNSCom,
+		AddressMozillaCloudflareDNSCom,
 	},
 	Role: ScenarioRoleDNSOverHTTPS,
 }, {
 	Domains: []string{"dns.google"},
 	Addresses: []string{
-		InternetScenarioAddressDNSGoogle,
+		AddressDNSGoogle,
 	},
 	Role: ScenarioRoleDNSOverHTTPS,
 }, {
 	Domains: []string{},
 	Addresses: []string{
-		InternetScenarioAddressPublicBlockpage,
+		AddressPublicBlockpage,
 	},
 	Role:             ScenarioRoleWebServer,
 	WebServerFactory: BlockpageHandlerFactory(),
@@ -162,7 +124,7 @@ func MustNewScenario(config []*ScenarioDomainAddresses) *QAEnv {
 	}
 
 	// explicitly create the uncensored resolver
-	opts = append(opts, QAEnvOptionDNSOverUDPResolvers(QAEnvDefaultUncensoredResolverAddress))
+	opts = append(opts, QAEnvOptionDNSOverUDPResolvers(DefaultUncensoredResolverAddress))
 
 	// fill options based on the scenario config
 	for _, sad := range config {
@@ -192,7 +154,7 @@ func MustNewScenario(config []*ScenarioDomainAddresses) *QAEnv {
 		case ScenarioRoleUbuntuGeoIP:
 			for _, addr := range sad.Addresses {
 				opts = append(opts, QAEnvOptionHTTPServer(addr, &GeoIPHandlerFactoryUbuntu{
-					ProbeIP: QAEnvDefaultClientAddress,
+					ProbeIP: DefaultClientAddress,
 				}))
 			}
 		}
