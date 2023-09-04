@@ -74,7 +74,10 @@ const Blockpage = `<!doctype html>
 </html>
 `
 
-// BlockpageHandlerFactory returns a webpage similar to example.org's one.
+// TODO(bassosimone): it is not realistic that this webserver is able to serve valid
+// blockpages over TLS but unfortunately this is currently a netem limitation.
+
+// BlockpageHandlerFactory returns a blockpage regardless of the incoming domain.
 func BlockpageHandlerFactory() QAEnvHTTPHandlerFactory {
 	return QAEnvHTTPHandlerFactoryFunc(func(_ netem.UnderlyingNetwork) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

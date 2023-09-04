@@ -65,6 +65,11 @@ const (
 
 	// InternetScenarioAddressDNSGoogle is the IP address we use for dns.google in the [InternetScenario].
 	InternetScenarioAddressDNSGoogle = "8.8.4.4"
+
+	// InternetScenarioAddressPublicBlockpage is the IP address we use for modeling a public IP address
+	// that is serving blockpages to its users. As of 2023-09-04, this is the IP address resolving for
+	// thepiratebay.com when you're attempting to access this website from Italy.
+	InternetScenarioAddressPublicBlockpage = "83.224.65.41"
 )
 
 // InternetScenario contains the domains and addresses used by [NewInternetScenario].
@@ -129,6 +134,13 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 		InternetScenarioAddressDNSGoogle,
 	},
 	Role: ScenarioRoleDNSOverHTTPS,
+}, {
+	Domains: []string{},
+	Addresses: []string{
+		InternetScenarioAddressPublicBlockpage,
+	},
+	Role:             ScenarioRoleWebServer,
+	WebServerFactory: BlockpageHandlerFactory(),
 }}
 
 // MustNewScenario constructs a complete testing scenario using the domains and IP
