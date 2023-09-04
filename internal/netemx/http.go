@@ -12,17 +12,17 @@ import (
 
 // HTTPHandlerFactory constructs an [http.Handler].
 type HTTPHandlerFactory interface {
-	NewHandler() http.Handler
+	NewHandler(stack *netem.UNetStack) http.Handler
 }
 
 // HTTPHandlerFactoryFunc allows a func to become an [HTTPHandlerFactory].
-type HTTPHandlerFactoryFunc func() http.Handler
+type HTTPHandlerFactoryFunc func(stack *netem.UNetStack) http.Handler
 
 var _ HTTPHandlerFactory = HTTPHandlerFactoryFunc(nil)
 
 // NewHandler implements HTTPHandlerFactory.
-func (fx HTTPHandlerFactoryFunc) NewHandler() http.Handler {
-	return fx()
+func (fx HTTPHandlerFactoryFunc) NewHandler(stack *netem.UNetStack) http.Handler {
+	return fx(stack)
 }
 
 // HTTPCleartextServerFactory implements [NetStackServerFactory] for cleartext HTTP.
@@ -80,7 +80,7 @@ func (srv *httpCleartextServer) MustStart() {
 	srv.mu.Lock()
 
 	// create the handler
-	handler := srv.factory.NewHandler()
+	handler := srv.factory.NewHandler(srv.unet)
 
 	// create the listening address
 	ipAddr := net.ParseIP(srv.unet.IPAddress())

@@ -6,6 +6,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -13,7 +14,7 @@ import (
 func TestHTTPCleartextServerFactory(t *testing.T) {
 	env := MustNewQAEnv(
 		QAEnvOptionNetStack(AddressWwwExampleCom, &HTTPCleartextServerFactory{
-			Factory: HTTPHandlerFactoryFunc(func() http.Handler {
+			Factory: HTTPHandlerFactoryFunc(func(_ *netem.UNetStack) http.Handler {
 				return ExampleWebPageHandler()
 			}),
 			Ports: []int{80},
