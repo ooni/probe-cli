@@ -32,7 +32,7 @@ type qaEnvConfig struct {
 	dnsOverUDPResolvers []string
 
 	// httpServers contains factories for the HTTP servers to create.
-	httpServers map[string]QAEnvHTTPHandlerFactory
+	httpServers map[string]HTTPHandlerFactory
 
 	// ispResolver is the ISP resolver to use.
 	ispResolver string
@@ -41,7 +41,7 @@ type qaEnvConfig struct {
 	logger model.Logger
 
 	// netStacks contains information about the net stacks to create.
-	netStacks map[string]NetStackServerFactory
+	netStacks map[string][]NetStackServerFactory
 }
 
 // QAEnvOption is an option to modify [NewQAEnv] default behavior.
@@ -75,14 +75,9 @@ func QAEnvOptionDNSOverUDPResolvers(ipAddrs ...string) QAEnvOption {
 	}
 }
 
-// QAEnvHTTPHandlerFactory constructs an [http.Handler] using the given underlying network.
-type QAEnvHTTPHandlerFactory interface {
-	NewHandler(unet netem.UnderlyingNetwork) http.Handler
-}
-
 // QAEnvOptionHTTPServer adds the given HTTP handler factory. If you do
 // not set this option we will not create any HTTP server.
-func QAEnvOptionHTTPServer(ipAddr string, factory QAEnvHTTPHandlerFactory) QAEnvOption {
+func QAEnvOptionHTTPServer(ipAddr string, factory HTTPHandlerFactory) QAEnvOption {
 	runtimex.Assert(net.ParseIP(ipAddr) != nil, "not an IP addr")
 	runtimex.Assert(factory != nil, "passed a nil handler factory")
 	return func(config *qaEnvConfig) {
@@ -108,12 +103,25 @@ func QAEnvOptionLogger(logger model.Logger) QAEnvOption {
 }
 
 // QAEnvOptionNetStack creates an userspace network stack with the given IP address and binds it
-// to the given handler, which will be responsible to create listening sockets and closing them
-// when we're done running. This option is lower-level than [QAEnvOptionHTTPServer], so you should
-// probably use [QAEnvOptionHTTPServer] unless you need to do something custom.
-func QAEnvOptionNetStack(ipAddr string, handler NetStackServerFactory) QAEnvOption {
+// to the given factory, which will be responsible to create listening sockets and closing them
+// when we're done running. Examples of factories you can use with this method are:
+//
+// - [NewTCPEchoServerFactory];
+//
+// - [HTTPCleartextServerFactory];
+//
+// - [HTTPSecureServerFactory];
+//
+// - [HTTP3ServerFactory];
+//
+// - [UDPResolverFactory].
+//
+// Calling this method multiple times is equivalent to calling this method once with several
+// factories. This would work as long as you do not specify the same port multiple times, otherwise
+// the second bind attempt for an already bound port would fail.
+func QAEnvOptionNetStack(ipAddr string, factories ...NetStackServerFactory) QAEnvOption {
 	return func(config *qaEnvConfig) {
-		config.netStacks[ipAddr] = handler
+		config.netStacks[ipAddr] = append(config.netStacks[ipAddr], factories...)
 	}
 }
 
@@ -159,10 +167,10 @@ func MustNewQAEnv(options ...QAEnvOption) *QAEnv {
 		clientAddress:       DefaultClientAddress,
 		clientNICWrapper:    nil,
 		dnsOverUDPResolvers: []string{},
-		httpServers:         map[string]QAEnvHTTPHandlerFactory{},
+		httpServers:         map[string]HTTPHandlerFactory{},
 		ispResolver:         DefaultISPResolverAddress,
 		logger:              model.DiscardLogger,
-		netStacks:           map[string]NetStackServerFactory{},
+		netStacks:           map[string][]NetStackServerFactory{},
 	}
 	for _, option := range options {
 		option(config)
@@ -350,7 +358,7 @@ func (env *QAEnv) mustNewNetStacks(config *qaEnvConfig) (closables []io.Closer) 
 	runtimex.Assert(len(config.dnsOverUDPResolvers) >= 1, "expected at least one DNS resolver")
 	resolver := config.dnsOverUDPResolvers[0]
 
-	for ipAddr, factory := range config.netStacks {
+	for ipAddr, factories := range config.netStacks {
 		// Create the server's TCP/IP stack
 		//
 		// Note: because the stack is created using topology.AddHost, we don't
@@ -365,14 +373,16 @@ func (env *QAEnv) mustNewNetStacks(config *qaEnvConfig) (closables []io.Closer) 
 			},
 		))
 
-		// instantiate a server with the given underlying network
-		server := factory.MustNewServer(env, stack)
+		for _, factory := range factories {
+			// instantiate a server with the given underlying network
+			server := factory.MustNewServer(env, stack)
 
-		// listen and start serving in the background
-		server.MustStart()
+			// listen and start serving in the background
+			server.MustStart()
 
-		// track the server as the something that needs to be closed
-		closables = append(closables, server)
+			// track the server as the something that needs to be closed
+			closables = append(closables, server)
+		}
 	}
 	return
 }
@@ -437,14 +447,4 @@ func (env *QAEnv) Close() error {
 		env.topology.Close()
 	})
 	return nil
-}
-
-// QAEnvHTTPHandlerFactoryFunc allows a func to become a [QAEnvHTTPHandlerFactory].
-type QAEnvHTTPHandlerFactoryFunc func(unet netem.UnderlyingNetwork) http.Handler
-
-var _ QAEnvHTTPHandlerFactory = QAEnvHTTPHandlerFactoryFunc(nil)
-
-// NewHandler implements QAEnvHTTPHandlerFactory.
-func (fx QAEnvHTTPHandlerFactoryFunc) NewHandler(unet netem.UnderlyingNetwork) http.Handler {
-	return fx(unet)
 }
