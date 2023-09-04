@@ -21,57 +21,110 @@ const (
 
 // ScenarioDomainAddresses describes a domain and address used in a scenario.
 type ScenarioDomainAddresses struct {
-	Domain    string
+	// Domain is the related domain name (e.g., api.ooni.io).
+	Domain string
+
+	// Addresses contains the related IP addresses.
 	Addresses []string
-	Role      uint64
+
+	// Role is the role for this domain (e.g., ScenarioRoleOONIAPI).
+	Role uint64
 }
 
+const (
+	// InternetScenarioAddressApiOONIIo is the IP address we use for api.ooni.io in the [InternetScenario].
+	InternetScenarioAddressApiOONIIo = "162.55.247.208"
+
+	// InternetScenarioAddressGeoIPUbuntuCom is the IP address we use for geoip.ubuntu.com in the [InternetScenario].
+	InternetScenarioAddressGeoIPUbuntuCom = "185.125.188.132"
+
+	// InternetScenarioAddressWwwExampleCom is the IP address we use for www.example.com in the [InternetScenario].
+	InternetScenarioAddressWwwExampleCom = "93.184.216.34"
+
+	// InternetScenarioAddressZeroThOONIOrg is the IP address we use for 0.th.ooni.org in the [InternetScenario].
+	InternetScenarioAddressZeroThOONIOrg = "68.183.70.80"
+
+	// InternetScenarioAddressOneThOONIOrg is the IP address we use for 1.th.ooni.org in the [InternetScenario].
+	InternetScenarioAddressOneThOONIOrg = "137.184.235.44"
+
+	// InternetScenarioAddressTwoThOONIOrg is the IP address we use for 2.th.ooni.org in the [InternetScenario].
+	InternetScenarioAddressTwoThOONIOrg = "178.62.195.24"
+
+	// InternetScenarioAddressThreeThOONIOrg is the IP address we use for 3.th.ooni.org in the [InternetScenario].
+	InternetScenarioAddressThreeThOONIOrg = "209.97.183.73"
+
+	// InternetScenarioAddressDNSQuad9Net is the IP address we use for dns.quad9.net in the [InternetScenario].
+	InternetScenarioAddressDNSQuad9Net = "9.9.9.9"
+
+	// InternetScenarioAddressMozillaCloudflareDNSCom is the IP address we use for mozilla.cloudflare-dns.com
+	// in the [InternetScenario].
+	InternetScenarioAddressMozillaCloudflareDNSCom = "172.64.41.4"
+
+	// InternetScenarioAddressDNSGoogle is the IP address we use for dns.google in the [InternetScenario].
+	InternetScenarioAddressDNSGoogle = "8.8.4.4"
+)
+
 // InternetScenario contains the domains and addresses used by [NewInternetScenario].
-//
-// Note that the 130.192.91.x address space belongs to polito.it and is not used for hosting
-// servers, therefore we're more confident that tests using this scenario will break in bad
-// way if for some reason netem is not working as intended. (We have several tests making sure
-// of that, but some extra robustness won't hurt.)
 var InternetScenario = []*ScenarioDomainAddresses{{
-	Domain:    "api.ooni.io",
-	Addresses: []string{"130.192.91.5"},
-	Role:      ScenarioRoleOONIAPI,
+	Domain: "api.ooni.io",
+	Addresses: []string{
+		InternetScenarioAddressApiOONIIo,
+	},
+	Role: ScenarioRoleOONIAPI,
 }, {
-	Domain:    "geoip.ubuntu.com",
-	Addresses: []string{"130.192.91.6"},
-	Role:      ScenarioRoleUbuntuGeoIP,
+	Domain: "geoip.ubuntu.com",
+	Addresses: []string{
+		InternetScenarioAddressGeoIPUbuntuCom,
+	},
+	Role: ScenarioRoleUbuntuGeoIP,
 }, {
-	Domain:    "www.example.com",
-	Addresses: []string{"130.192.91.7"},
-	Role:      ScenarioRoleExampleLikeWebServer,
+	Domain: "www.example.com",
+	Addresses: []string{
+		InternetScenarioAddressWwwExampleCom,
+	},
+	Role: ScenarioRoleExampleLikeWebServer,
 }, {
-	Domain:    "0.th.ooni.org",
-	Addresses: []string{"130.192.91.8"},
-	Role:      ScenarioRoleOONITestHelper,
+	Domain: "0.th.ooni.org",
+	Addresses: []string{
+		InternetScenarioAddressZeroThOONIOrg,
+	},
+	Role: ScenarioRoleOONITestHelper,
 }, {
-	Domain:    "1.th.ooni.org",
-	Addresses: []string{"130.192.91.9"},
-	Role:      ScenarioRoleOONITestHelper,
+	Domain: "1.th.ooni.org",
+	Addresses: []string{
+		InternetScenarioAddressOneThOONIOrg,
+	},
+	Role: ScenarioRoleOONITestHelper,
 }, {
-	Domain:    "2.th.ooni.org",
-	Addresses: []string{"130.192.91.10"},
-	Role:      ScenarioRoleOONITestHelper,
+	Domain: "2.th.ooni.org",
+	Addresses: []string{
+		InternetScenarioAddressTwoThOONIOrg,
+	},
+	Role: ScenarioRoleOONITestHelper,
 }, {
-	Domain:    "3.th.ooni.org",
-	Addresses: []string{"130.192.91.11"},
-	Role:      ScenarioRoleOONITestHelper,
+	Domain: "3.th.ooni.org",
+	Addresses: []string{
+		InternetScenarioAddressThreeThOONIOrg,
+	},
+	Role: ScenarioRoleOONITestHelper,
 }, {
-	Domain:    "dns.quad9.net",
-	Addresses: []string{"130.192.91.12"},
-	Role:      ScenarioRoleDNSOverHTTPS,
+	Domain: "dns.quad9.net",
+	Addresses: []string{
+		InternetScenarioAddressDNSQuad9Net,
+	},
+	Role: ScenarioRoleDNSOverHTTPS,
 }, {
-	Domain:    "mozilla.cloudflare-dns.com",
-	Addresses: []string{"130.192.91.13"},
-	Role:      ScenarioRoleDNSOverHTTPS,
+	Domain: "mozilla.cloudflare-dns.com",
+	Addresses: []string{
+		InternetScenarioAddressMozillaCloudflareDNSCom,
+	},
+	Role: ScenarioRoleDNSOverHTTPS,
 }, {
-	Domain:    "dns.google",
-	Addresses: []string{"130.192.91.14"},
-	Role:      ScenarioRoleDNSOverHTTPS,
+	Domain: "dns.google",
+	Addresses: []string{
+		InternetScenarioAddressDNSGoogle,
+	},
+	Role: ScenarioRoleDNSOverHTTPS,
 }}
 
 // MustNewScenario constructs a complete testing scenario using the domains and IP
@@ -86,7 +139,7 @@ func MustNewScenario(cfg []*ScenarioDomainAddresses) *QAEnv {
 	}
 
 	// explicitly create the uncensored resolver
-	opts = append(opts, QAEnvOptionDNSOverUDPResolvers("130.192.91.4"))
+	opts = append(opts, QAEnvOptionDNSOverUDPResolvers(QAEnvDefaultUncensoredResolverAddress))
 
 	// fill options based on the scenario config
 	for _, sad := range cfg {
