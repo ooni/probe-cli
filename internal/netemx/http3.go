@@ -83,7 +83,8 @@ func (srv *http3Server) MustStart() {
 
 func (srv *http3Server) mustListenPortLocked(handler http.Handler, ipAddr net.IP, port int) {
 	// create the listening socket
-	listener := runtimex.Try1(srv.unet.ListenUDP("udp", &net.UDPAddr{IP: ipAddr, Port: 443}))
+	addr := &net.UDPAddr{IP: ipAddr, Port: port}
+	listener := runtimex.Try1(srv.unet.ListenUDP("udp", addr))
 
 	// use the netstack TLS config or the custom one configured by the user
 	tlsConfig := srv.tlsConfig
