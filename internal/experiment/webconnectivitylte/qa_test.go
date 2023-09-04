@@ -15,9 +15,7 @@ func TestQA(t *testing.T) {
 				t.Skip("this nettest cannot run on Web Connectivity LTE")
 			}
 			measurer := NewExperimentMeasurer(&Config{
-				// We override the resolver used by default because the QA environment uses
-				// only IP addresses in the 130.192.91.x namespace for extra robustness in case
-				// netem is not working as intended and we're using the real network.
+				// We override the resolver to use the one we should be using with netem
 				DNSOverUDPResolver: net.JoinHostPort(netemx.QAEnvDefaultUncensoredResolverAddress, "53"),
 			})
 			if err := webconnectivityqa.RunTestCase(measurer, tc); err != nil {

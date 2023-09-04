@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 
 	"github.com/apex/log"
@@ -14,26 +15,15 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// exampleExampleComAddress is the address of example.com
-const exampleExampleComAddress = "93.184.216.34"
-
-// exampleClientAddress is the address used by the client
-const exampleClientAddress = "130.192.91.211"
-
-// exampleISPResolverAddress is the address used by the resolver.
-const exampleISPResolverAddress = "130.192.3.24"
-
-// exampleCensoredAddress is a censored IP address.
-const exampleCensoredAddress = "10.10.34.35"
-
 // exampleNewEnvironment creates a QA environment setting all possible options. We're going
 // to use this QA environment in all the examples for this package.
 func exampleNewEnvironment() *netemx.QAEnv {
 	return netemx.MustNewQAEnv(
 		netemx.QAEnvOptionDNSOverUDPResolvers("8.8.4.4", "9.9.9.9"),
-		netemx.QAEnvOptionClientAddress(exampleClientAddress),
-		netemx.QAEnvOptionISPResolverAddress(exampleISPResolverAddress),
-		netemx.QAEnvOptionHTTPServer(exampleExampleComAddress, netemx.ExampleWebPageHandlerFactory()),
+		netemx.QAEnvOptionClientAddress(netemx.QAEnvDefaultClientAddress),
+		netemx.QAEnvOptionISPResolverAddress(netemx.QAEnvDefaultISPResolverAddress),
+		netemx.QAEnvOptionHTTPServer(
+			netemx.InternetScenarioAddressWwwExampleCom, netemx.ExampleWebPageHandlerFactory()),
 		netemx.QAEnvOptionLogger(log.Log),
 	)
 }
@@ -44,7 +34,7 @@ func exampleAddRecordToAllResolvers(env *netemx.QAEnv) {
 	env.AddRecordToAllResolvers(
 		"example.com",
 		"", // CNAME
-		exampleExampleComAddress,
+		netemx.InternetScenarioAddressWwwExampleCom,
 	)
 }
 
@@ -103,14 +93,14 @@ func Example_resolverConfig() {
 	env.OtherResolversConfig().AddRecord(
 		"example.com",
 		"", // CNAME
-		exampleExampleComAddress,
+		netemx.InternetScenarioAddressWwwExampleCom,
 	)
 
 	// create a censored configuration for getaddrinfo
 	env.ISPResolverConfig().AddRecord(
 		"example.com",
 		"",
-		exampleCensoredAddress,
+		"10.10.34.35",
 	)
 
 	// collect the overall results
@@ -226,7 +216,7 @@ func Example_dohWithInternetScenario() {
 	})
 
 	// Output:
-	// [130.192.91.7]
+	// [93.184.216.34]
 }
 
 // This example shows how the [InternetScenario] defines DNS-over-UDP servers.
@@ -236,8 +226,8 @@ func Example_dnsOverUDPWithInternetScenario() {
 
 	env.Do(func() {
 		resolvers := []string{
-			"130.192.91.3:53", // possibly censored and used by the client's getaddrinfo
-			"130.192.91.4:53", // uncensored and used by the servers
+			net.JoinHostPort(netemx.QAEnvDefaultISPResolverAddress, "53"),
+			net.JoinHostPort(netemx.QAEnvDefaultUncensoredResolverAddress, "53"),
 		}
 
 		for _, endpoint := range resolvers {
@@ -255,8 +245,8 @@ func Example_dnsOverUDPWithInternetScenario() {
 	})
 
 	// Output:
-	// [130.192.91.7]
-	// [130.192.91.7]
+	// [93.184.216.34]
+	// [93.184.216.34]
 }
 
 // This example shows how the [InternetScenario] supports calling getaddrinfo.
@@ -277,7 +267,7 @@ func Example_getaddrinfoWithInternetScenario() {
 	})
 
 	// Output:
-	// [130.192.91.7]
+	// [93.184.216.34]
 }
 
 // This example shows how the [InternetScenario] defines an example.com-like webserver.
@@ -358,7 +348,7 @@ func Example_oohelperdWithInternetScenario() {
 
 	env.Do(func() {
 		client := netxlite.NewHTTPClientStdlib(log.Log)
-		thRequest := []byte(`{"http_request": "https://www.example.com/","http_request_headers":{},"tcp_connect":["130.192.91.7"]}`)
+		thRequest := []byte(`{"http_request": "https://www.example.com/","http_request_headers":{},"tcp_connect":["93.184.216.34:443"]}`)
 
 		req, err := http.NewRequest("POST", "https://0.th.ooni.org/", bytes.NewReader(thRequest))
 		if err != nil {
@@ -381,7 +371,7 @@ func Example_oohelperdWithInternetScenario() {
 	})
 
 	// Output:
-	// {"tcp_connect":{"130.192.91.7:443":{"status":true,"failure":null}},"tls_handshake":{"130.192.91.7:443":{"server_name":"www.example.com","status":true,"failure":null}},"quic_handshake":{},"http_request":{"body_length":194,"discovered_h3_endpoint":"www.example.com:443","failure":null,"title":"Default Web Page","headers":{"Alt-Svc":"h3=\":443\"","Content-Length":"194","Content-Type":"text/html; charset=utf-8","Date":"Thu, 24 Aug 2023 14:35:29 GMT"},"status_code":200},"http3_request":null,"dns":{"failure":null,"addrs":["130.192.91.7"]},"ip_info":{"130.192.91.7":{"asn":137,"flags":10}}}
+	// {"tcp_connect":{"93.184.216.34:443":{"status":true,"failure":null}},"tls_handshake":{"93.184.216.34:443":{"server_name":"www.example.com","status":true,"failure":null}},"quic_handshake":{},"http_request":{"body_length":194,"discovered_h3_endpoint":"www.example.com:443","failure":null,"title":"Default Web Page","headers":{"Alt-Svc":"h3=\":443\"","Content-Length":"194","Content-Type":"text/html; charset=utf-8","Date":"Thu, 24 Aug 2023 14:35:29 GMT"},"status_code":200},"http3_request":null,"dns":{"failure":null,"addrs":["93.184.216.34"]},"ip_info":{"93.184.216.34":{"asn":15133,"flags":11}}}
 }
 
 // This example shows how the [InternetScenario] defines a GeoIP service like Ubuntu's one.
@@ -411,5 +401,5 @@ func Example_ubuntuGeoIPWithInternetScenario() {
 	})
 
 	// Output:
-	// <?xml version="1.0" encoding="UTF-8"?><Response><Ip>130.192.91.2</Ip></Response>
+	// <?xml version="1.0" encoding="UTF-8"?><Response><Ip>130.192.91.211</Ip></Response>
 }

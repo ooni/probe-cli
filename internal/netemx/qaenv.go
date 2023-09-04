@@ -21,25 +21,13 @@ import (
 )
 
 // QAEnvDefaultClientAddress is the default client IP address.
-//
-// The 130.192.91.x address space belongs to polito.it and is not used for hosting a DNS server, which
-// gives us additional robustness in case netem is not working as intended. (We have several
-// tests making sure of that, but additional robustness won't hurt.)
-const QAEnvDefaultClientAddress = "130.192.91.2"
+const QAEnvDefaultClientAddress = "130.192.91.211"
 
 // QAEnvDefaultISPResolverAddress is the default IP address of the client ISP resolver.
-//
-// The 130.192.91.x address space belongs to polito.it and is not used for hosting a DNS server, which
-// gives us additional robustness in case netem is not working as intended. (We have several
-// tests making sure of that, but additional robustness won't hurt.)
-const QAEnvDefaultISPResolverAddress = "130.192.91.3"
+const QAEnvDefaultISPResolverAddress = "130.192.3.21"
 
 // QAEnvDefaultUncensoredResolverAddress is the default uncensored resolver IP address.
-//
-// The 130.192.91.x address space belongs to polito.it and is not used for hosting a DNS server, which
-// gives us additional robustness in case netem is not working as intended. (We have several
-// tests making sure of that, but additional robustness won't hurt.)
-const QAEnvDefaultUncensoredResolverAddress = "130.192.91.4"
+const QAEnvDefaultUncensoredResolverAddress = "1.1.1.1"
 
 type qaEnvConfig struct {
 	// clientAddress is the client IP address to use.
