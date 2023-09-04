@@ -136,10 +136,29 @@ func TestQAEnv(t *testing.T) {
 	// If all of this works, it means we're using the userspace TCP/IP
 	// stack exported by the [Environment] struct.
 	t.Run("we can hijack HTTP3 requests", func(t *testing.T) {
+		/*
+			 __      ________________________
+			/  \    /  \__    ___/\_   _____/
+			\   \/\/   / |    |    |    __)
+			 \        /  |    |    |     \
+			  \__/\  /   |____|    \___  /
+			       \/                  \/
+
+			I originally wrote this test to use AddressWwwExampleCom and the test
+			failed with generic_timeout_error. Now, instead, if I change it to use
+			10.55.56.101, the test is working as intended. I am wondering whether
+			I am not fully understanding how quic-go/quic-go works.
+
+			My (limited?) understanding: just a single test can use AddressWwwExampleCom
+			and, if I use it in other tests, there are issues leading to timeouts.
+
+			See https://github.com/ooni/probe/issues/2527.
+		*/
+
 		// create QA env
 		env := netemx.MustNewQAEnv(
 			netemx.QAEnvOptionHTTPServer(
-				netemx.AddressWwwExampleCom,
+				"10.55.56.101",
 				netemx.ExampleWebPageHandlerFactory(),
 			),
 		)
@@ -149,7 +168,7 @@ func TestQAEnv(t *testing.T) {
 		env.AddRecordToAllResolvers(
 			"www.example.com",
 			"", // CNAME
-			netemx.AddressWwwExampleCom,
+			"10.55.56.101",
 		)
 
 		env.Do(func() {

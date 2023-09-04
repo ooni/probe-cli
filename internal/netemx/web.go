@@ -26,7 +26,7 @@ const ExampleWebPage = `<!doctype html>
 // is www.example.{com,org} and redirecting to www. when the domain is example.{com,org}.
 func ExampleWebPageHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Alt-Svc", `h3=":443"`)
+		//w.Header().Add("Alt-Svc", `h3=":443"`) // see https://github.com/ooni/probe/issues/2527
 		w.Header().Add("Date", "Thu, 24 Aug 2023 14:35:29 GMT")
 
 		// According to Go documentation, the host header is removed from the
@@ -59,8 +59,8 @@ func ExampleWebPageHandler() http.Handler {
 
 // ExampleWebPageHandlerFactory returns a webpage similar to example.org's one when the domain is
 // www.example.{com,org} and redirects to www.example.{com,org} when it is example.{com,org}.
-func ExampleWebPageHandlerFactory() QAEnvHTTPHandlerFactory {
-	return QAEnvHTTPHandlerFactoryFunc(func(_ netem.UnderlyingNetwork) http.Handler {
+func ExampleWebPageHandlerFactory() HTTPHandlerFactory {
+	return HTTPHandlerFactoryFunc(func(_ *netem.UNetStack) http.Handler {
 		return ExampleWebPageHandler()
 	})
 }
@@ -84,10 +84,10 @@ const Blockpage = `<!doctype html>
 // blockpages over TLS but unfortunately this is currently a netem limitation.
 
 // BlockpageHandlerFactory returns a blockpage regardless of the incoming domain.
-func BlockpageHandlerFactory() QAEnvHTTPHandlerFactory {
-	return QAEnvHTTPHandlerFactoryFunc(func(_ netem.UnderlyingNetwork) http.Handler {
+func BlockpageHandlerFactory() HTTPHandlerFactory {
+	return HTTPHandlerFactoryFunc(func(_ *netem.UNetStack) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Add("Alt-Svc", `h3=":443"`)
+			//w.Header().Add("Alt-Svc", `h3=":443"`) // see https://github.com/ooni/probe/issues/2527
 			w.Header().Add("Date", "Thu, 24 Aug 2023 14:35:29 GMT")
 			w.Write([]byte(Blockpage))
 		})
