@@ -13,27 +13,8 @@ import (
 
 func TestHTTP3ServerFactory(t *testing.T) {
 	t.Run("when using the TLSConfig provided by netem", func(t *testing.T) {
-		/*
-			 __      ________________________
-			/  \    /  \__    ___/\_   _____/
-			\   \/\/   / |    |    |    __)
-			 \        /  |    |    |     \
-			  \__/\  /   |____|    \___  /
-			       \/                  \/
-
-			I originally wrote this test to use AddressWwwExampleCom and the test
-			failed with generic_timeout_error. Now, instead, if I change it to use
-			10.55.56.57, the test is working as intended. I am wondering whether
-			I am not fully understanding how quic-go/quic-go works.
-
-			My (limited?) understanding: just a single test can use AddressWwwExampleCom
-			and, if I use it in other tests, there are issues leading to timeouts.
-
-			See https://github.com/ooni/probe/issues/2527.
-		*/
-
 		env := MustNewQAEnv(
-			QAEnvOptionNetStack("10.55.56.57", &HTTP3ServerFactory{
+			QAEnvOptionNetStack(AddressWwwExampleCom, &HTTP3ServerFactory{
 				Factory: HTTPHandlerFactoryFunc(func(_ *netem.UNetStack) http.Handler {
 					return ExampleWebPageHandler()
 				}),
@@ -43,7 +24,7 @@ func TestHTTP3ServerFactory(t *testing.T) {
 		)
 		defer env.Close()
 
-		env.AddRecordToAllResolvers("www.example.com", "", "10.55.56.57")
+		env.AddRecordToAllResolvers("www.example.com", "", AddressWwwExampleCom)
 
 		env.Do(func() {
 			client := netxlite.NewHTTP3ClientWithResolver(log.Log, netxlite.NewStdlibResolver(log.Log))
@@ -67,31 +48,12 @@ func TestHTTP3ServerFactory(t *testing.T) {
 	})
 
 	t.Run("when using an incompatible TLS config", func(t *testing.T) {
-		/*
-			 __      ________________________
-			/  \    /  \__    ___/\_   _____/
-			\   \/\/   / |    |    |    __)
-			 \        /  |    |    |     \
-			  \__/\  /   |____|    \___  /
-			       \/                  \/
-
-			I originally wrote this test to use AddressWwwExampleCom and the test
-			failed with generic_timeout_error. Now, instead, if I change it to use
-			10.55.56.100, the test is working as intended. I am wondering whether
-			I am not fully understanding how quic-go/quic-go works.
-
-			My (limited?) understanding: just a single test can use AddressWwwExampleCom
-			and, if I use it in other tests, there are issues leading to timeouts.
-
-			See https://github.com/ooni/probe/issues/2527.
-		*/
-
 		// we're creating a distinct MITM TLS config and we're using it, so we expect
 		// that we're not able to verify certificates in client code
 		mitmConfig := runtimex.Try1(netem.NewTLSMITMConfig())
 
 		env := MustNewQAEnv(
-			QAEnvOptionNetStack("10.55.56.100", &HTTP3ServerFactory{
+			QAEnvOptionNetStack(AddressWwwExampleCom, &HTTP3ServerFactory{
 				Factory: HTTPHandlerFactoryFunc(func(_ *netem.UNetStack) http.Handler {
 					return ExampleWebPageHandler()
 				}),
@@ -101,7 +63,7 @@ func TestHTTP3ServerFactory(t *testing.T) {
 		)
 		defer env.Close()
 
-		env.AddRecordToAllResolvers("www.example.com", "", "10.55.56.100")
+		env.AddRecordToAllResolvers("www.example.com", "", AddressWwwExampleCom)
 
 		env.Do(func() {
 			client := netxlite.NewHTTP3ClientWithResolver(log.Log, netxlite.NewStdlibResolver(log.Log))

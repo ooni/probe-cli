@@ -74,20 +74,38 @@ func TestOOHelperDHandler(t *testing.T) {
 					Failure:    nil,
 				},
 			},
-			QUICHandshake: map[string]model.THTLSHandshakeResult{},
+			QUICHandshake: map[string]model.THTLSHandshakeResult{
+				"93.184.216.34:443": {
+					ServerName: "www.example.com",
+					Status:     true,
+					Failure:    nil,
+				},
+			},
 			HTTPRequest: model.THHTTPRequestResult{
 				BodyLength:           194,
-				DiscoveredH3Endpoint: "",
+				DiscoveredH3Endpoint: "www.example.com:443",
 				Failure:              nil,
 				Title:                "Default Web Page",
 				Headers: map[string]string{
+					"Alt-Svc":        `h3=":443"`,
 					"Content-Length": "194",
 					"Content-Type":   "text/html; charset=utf-8",
 					"Date":           "Thu, 24 Aug 2023 14:35:29 GMT",
 				},
 				StatusCode: 200,
 			},
-			HTTP3Request: nil,
+			HTTP3Request: &model.THHTTPRequestResult{
+				BodyLength:           194,
+				DiscoveredH3Endpoint: "",
+				Failure:              nil,
+				Title:                "Default Web Page",
+				Headers: map[string]string{
+					"Alt-Svc":      `h3=":443"`,
+					"Content-Type": "text/html; charset=utf-8",
+					"Date":         "Thu, 24 Aug 2023 14:35:29 GMT",
+				},
+				StatusCode: 200,
+			},
 			DNS: model.THDNSResult{
 				Failure: nil,
 				Addrs:   []string{"93.184.216.34"},
