@@ -71,7 +71,7 @@ func (srv *httpSecureServer) MustStart() {
 	srv.mu.Lock()
 
 	// create the handler
-	handler := srv.factory.NewHandler()
+	handler := srv.factory.NewHandler(srv.unet)
 
 	// create the listening address
 	ipAddr := net.ParseIP(srv.unet.IPAddress())

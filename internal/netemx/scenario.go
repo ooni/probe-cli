@@ -143,18 +143,30 @@ func MustNewScenario(config []*ScenarioDomainAddresses) *QAEnv {
 
 		case ScenarioRoleOONIAPI:
 			for _, addr := range sad.Addresses {
-				opts = append(opts, QAEnvOptionHTTPServer(addr, &OOAPIHandlerFactory{}))
+				opts = append(opts, QAEnvOptionNetStack(addr, &HTTPSecureServerFactory{
+					Factory:   &OOAPIHandlerFactory{},
+					Ports:     []int{443},
+					TLSConfig: nil, // use netem's default
+				}))
 			}
 
 		case ScenarioRoleOONITestHelper:
 			for _, addr := range sad.Addresses {
-				opts = append(opts, QAEnvOptionHTTPServer(addr, &OOHelperDFactory{}))
+				opts = append(opts, QAEnvOptionNetStack(addr, &HTTPSecureServerFactory{
+					Factory:   &OOHelperDFactory{},
+					Ports:     []int{443},
+					TLSConfig: nil, // use netem's default
+				}))
 			}
 
 		case ScenarioRoleUbuntuGeoIP:
 			for _, addr := range sad.Addresses {
-				opts = append(opts, QAEnvOptionHTTPServer(addr, &GeoIPHandlerFactoryUbuntu{
-					ProbeIP: DefaultClientAddress,
+				opts = append(opts, QAEnvOptionNetStack(addr, &HTTPSecureServerFactory{
+					Factory: &GeoIPHandlerFactoryUbuntu{
+						ProbeIP: DefaultClientAddress,
+					},
+					Ports:     []int{443},
+					TLSConfig: nil, // use netem's default
 				}))
 			}
 		}
