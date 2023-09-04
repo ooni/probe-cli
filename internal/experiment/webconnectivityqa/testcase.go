@@ -41,6 +41,7 @@ func AllTestCases() []*TestCase {
 		sucessWithHTTPS(),
 
 		tcpBlockingConnectTimeout(),
+		tcpBlockingConnectionRefusedWithInconsistentDNS(),
 
 		tlsBlockingConnectionReset(),
 

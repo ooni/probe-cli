@@ -34,3 +34,43 @@ func tcpBlockingConnectTimeout() *TestCase {
 		},
 	}
 }
+
+// tcpBlockingConnectionRefusedWithInconsistentDNS verifies that we correctly handle the case
+// where the DNS is inconsistent and there's TCP blocking.
+func tcpBlockingConnectionRefusedWithInconsistentDNS() *TestCase {
+	return &TestCase{
+		Name:  "tcpBlockingConnectionRefusedWithInconsistentDNS",
+		Flags: 0,
+		Input: "https://www.example.org/",
+		Configure: func(env *netemx.QAEnv) {
+
+			// spoof the DNS response to force using the server serving blockpages
+			env.DPIEngine().AddRule(&netem.DPISpoofDNSResponse{
+				Addresses: []string{
+					netemx.InternetScenarioAddressPublicBlockpage,
+				},
+				Logger: log.Log,
+				Domain: "www.example.org",
+			})
+
+			// make sure we cannot connect to the public blockpage address
+			env.DPIEngine().AddRule(&netem.DPICloseConnectionForServerEndpoint{
+				Logger:          log.Log,
+				ServerIPAddress: netemx.InternetScenarioAddressPublicBlockpage,
+				ServerPort:      443,
+			})
+
+		},
+		ExpectErr: false,
+		ExpectTestKeys: &testKeys{
+			DNSExperimentFailure:  nil,
+			DNSConsistency:        "inconsistent",
+			HTTPExperimentFailure: "connection_refused",
+			XStatus:               4256, // StatusExperimentConnect | StatusAnomalyConnect | StatusAnomalyDNS
+			XDNSFlags:             4,    // AnalysisDNSUnexpectedAddrs
+			XBlockingFlags:        35,   // analysisFlagSuccess | analysisFlagDNSBlocking | analysisFlagTCPIPBlocking
+			Accessible:            false,
+			Blocking:              "dns",
+		},
+	}
+}
