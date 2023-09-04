@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
-	"sync"
 	"testing"
 
 	"github.com/apex/log"
@@ -18,7 +16,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
@@ -279,82 +276,17 @@ func configureDNSWithDefaults(config *netem.DNSConfig) {
 	configureDNSWithAddr(config, telegramWebAddr)
 }
 
-// telegramHTTPServerNetStackServerFactory is a [netemx.NetStackServerFactory] that serves HTTP requests
-// on the given addr and ports 443 and 80 as required by the telegram nettest
-type telegramHTTPServerNetStackServerFactory struct{}
-
-var _ netemx.NetStackServerFactory = &telegramHTTPServerNetStackServerFactory{}
-
-// MustNewServer implements netemx.NetStackServerFactory.
-func (f *telegramHTTPServerNetStackServerFactory) MustNewServer(stack *netem.UNetStack) netemx.NetStackServer {
-	return &telegramHTTPServerNetStackServer{
-		closers: []io.Closer{},
-		mu:      sync.Mutex{},
-		unet:    stack,
-	}
-}
-
-// telegramHTTPServerNetStackServer is a [netemx.NetStackServer] that serves HTTP requests
-// on the given addr and ports 443 and 80 as required by the telegram nettest
-type telegramHTTPServerNetStackServer struct {
-	closers []io.Closer
-	mu      sync.Mutex
-	unet    *netem.UNetStack
-}
-
-// Close implements netemx.NetStackServer.
-func (nsh *telegramHTTPServerNetStackServer) Close() error {
-	// make the method locked as requested by the documentation
-	defer nsh.mu.Unlock()
-	nsh.mu.Lock()
-
-	// close each of the closers
-	for _, closer := range nsh.closers {
-		_ = closer.Close()
-	}
-
-	// be idempotent
-	nsh.closers = []io.Closer{}
-	return nil
-}
-
-// MustStart implements netemx.NetStackServer.
-func (nsh *telegramHTTPServerNetStackServer) MustStart() {
-	// make the method locked as requested by the documentation
-	defer nsh.mu.Unlock()
-	nsh.mu.Lock()
-
-	// we create an empty mux, which should cause a 404 for each webpage, which seems what
-	// the servers used by telegram DC do as of 2023-07-11
-	mux := http.NewServeMux()
-
-	// listen on port 80
-	nsh.listenPort(nsh.unet, mux, 80)
-
-	// listen on port 443
-	nsh.listenPort(nsh.unet, mux, 443)
-}
-
-func (nsh *telegramHTTPServerNetStackServer) listenPort(stack *netem.UNetStack, mux *http.ServeMux, port uint16) {
-	// create the listening address
-	ipAddr := net.ParseIP(stack.IPAddress())
-	runtimex.Assert(ipAddr != nil, "expected valid IP address")
-	addr := &net.TCPAddr{IP: ipAddr, Port: int(port)}
-	listener := runtimex.Try1(stack.ListenTCP("tcp", addr))
-	srvr := &http.Server{Handler: mux}
-
-	// serve requests in a background goroutine
-	go srvr.Serve(listener)
-
-	// make sure we track the server (the .Serve method will close the
-	// listener once we close the server itself)
-	nsh.closers = append(nsh.closers, srvr)
-}
-
 // newQAEnvironment creates a QA environment for testing using the given addresses.
 func newQAEnvironment(ipaddrs ...string) *netemx.QAEnv {
 	// create a single factory for handling all the requests
-	factory := &telegramHTTPServerNetStackServerFactory{}
+	factory := &netemx.HTTPCleartextServerFactory{
+		Factory: netemx.HTTPHandlerFactoryFunc(func() http.Handler {
+			// we create an empty mux, which should cause a 404 for each webpage, which seems what
+			// the servers used by telegram DC do as of 2023-07-11
+			return http.NewServeMux()
+		}),
+		Ports: []int{80, 443},
+	}
 
 	// create the options for constructing the env
 	var options []netemx.QAEnvOption
