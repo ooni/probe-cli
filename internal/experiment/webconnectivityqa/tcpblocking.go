@@ -43,6 +43,7 @@ func tcpBlockingConnectionRefusedWithInconsistentDNS() *TestCase {
 		Flags: 0,
 		Input: "https://www.example.org/",
 		Configure: func(env *netemx.QAEnv) {
+
 			// spoof the DNS response to force using the server serving blockpages
 			env.DPIEngine().AddRule(&netem.DPISpoofDNSResponse{
 				Addresses: []string{
