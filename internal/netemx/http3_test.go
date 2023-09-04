@@ -48,6 +48,8 @@ func TestHTTP3ServerFactory(t *testing.T) {
 	})
 
 	t.Run("when using an incompatible TLS config", func(t *testing.T) {
+		t.Skip("https://github.com/ooni/probe/issues/2527")
+
 		// we're creating a distinct MITM TLS config and we're using it, so we expect
 		// that we're not able to verify certificates in client code
 		mitmConfig := runtimex.Try1(netem.NewTLSMITMConfig())
