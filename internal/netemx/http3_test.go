@@ -34,7 +34,7 @@ func TestHTTP3ServerFactory(t *testing.T) {
 
 		env := MustNewQAEnv(
 			QAEnvOptionNetStack("10.55.56.57", &HTTP3ServerFactory{
-				Factory: HTTPHandlerFactoryFunc(func() http.Handler {
+				Factory: HTTPHandlerFactoryFunc(func(_ *netem.UNetStack) http.Handler {
 					return ExampleWebPageHandler()
 				}),
 				Ports:     []int{443},
@@ -92,7 +92,7 @@ func TestHTTP3ServerFactory(t *testing.T) {
 
 		env := MustNewQAEnv(
 			QAEnvOptionNetStack("10.55.56.100", &HTTP3ServerFactory{
-				Factory: HTTPHandlerFactoryFunc(func() http.Handler {
+				Factory: HTTPHandlerFactoryFunc(func(_ *netem.UNetStack) http.Handler {
 					return ExampleWebPageHandler()
 				}),
 				Ports:     []int{443},
