@@ -6,8 +6,8 @@ const (
 	// ScenarioRoleDNSOverHTTPS means we should create a DNS-over-HTTPS server.
 	ScenarioRoleDNSOverHTTPS = iota
 
-	// ScenarioRoleExampleLikeWebServer means we should instantiate a www.example.com-like web server.
-	ScenarioRoleExampleLikeWebServer
+	// ScenarioRoleWebServer means we should instantiate a webserver using a specific factory.
+	ScenarioRoleWebServer
 
 	// ScenarioRoleOONIAPI means we should instantiate the OONI API.
 	ScenarioRoleOONIAPI
@@ -21,14 +21,17 @@ const (
 
 // ScenarioDomainAddresses describes a domain and address used in a scenario.
 type ScenarioDomainAddresses struct {
-	// Domain is the related domain name (e.g., api.ooni.io).
-	Domain string
+	// Domains contains a related set of domains domains (MANDATORY field).
+	Domains []string
 
-	// Addresses contains the related IP addresses.
+	// Addresses contains the MANDATORY list of addresses belonging to the domain.
 	Addresses []string
 
-	// Role is the role for this domain (e.g., ScenarioRoleOONIAPI).
+	// Role is the MANDATORY role of this domain (e.g., ScenarioRoleOONIAPI).
 	Role uint64
+
+	// WebServerFactory is the factory to use when Role is ScenarioRoleWebServer.
+	WebServerFactory QAEnvHTTPHandlerFactory
 }
 
 const (
@@ -62,87 +65,107 @@ const (
 
 	// InternetScenarioAddressDNSGoogle is the IP address we use for dns.google in the [InternetScenario].
 	InternetScenarioAddressDNSGoogle = "8.8.4.4"
+
+	// InternetScenarioAddressPublicBlockpage is the IP address we use for modeling a public IP address
+	// that is serving blockpages to its users. As of 2023-09-04, this is the IP address resolving for
+	// thepiratebay.com when you're attempting to access this website from Italy.
+	InternetScenarioAddressPublicBlockpage = "83.224.65.41"
 )
 
 // InternetScenario contains the domains and addresses used by [NewInternetScenario].
 var InternetScenario = []*ScenarioDomainAddresses{{
-	Domain: "api.ooni.io",
+	Domains: []string{"api.ooni.io"},
 	Addresses: []string{
 		InternetScenarioAddressApiOONIIo,
 	},
 	Role: ScenarioRoleOONIAPI,
 }, {
-	Domain: "geoip.ubuntu.com",
+	Domains: []string{"geoip.ubuntu.com"},
 	Addresses: []string{
 		InternetScenarioAddressGeoIPUbuntuCom,
 	},
 	Role: ScenarioRoleUbuntuGeoIP,
 }, {
-	Domain: "www.example.com",
+	Domains: []string{"www.example.com", "example.com", "www.example.org", "example.org"},
 	Addresses: []string{
 		InternetScenarioAddressWwwExampleCom,
 	},
-	Role: ScenarioRoleExampleLikeWebServer,
+	Role:             ScenarioRoleWebServer,
+	WebServerFactory: ExampleWebPageHandlerFactory(),
 }, {
-	Domain: "0.th.ooni.org",
+	Domains: []string{"0.th.ooni.org"},
 	Addresses: []string{
 		InternetScenarioAddressZeroThOONIOrg,
 	},
 	Role: ScenarioRoleOONITestHelper,
 }, {
-	Domain: "1.th.ooni.org",
+	Domains: []string{"1.th.ooni.org"},
 	Addresses: []string{
 		InternetScenarioAddressOneThOONIOrg,
 	},
 	Role: ScenarioRoleOONITestHelper,
 }, {
-	Domain: "2.th.ooni.org",
+	Domains: []string{"2.th.ooni.org"},
 	Addresses: []string{
 		InternetScenarioAddressTwoThOONIOrg,
 	},
 	Role: ScenarioRoleOONITestHelper,
 }, {
-	Domain: "3.th.ooni.org",
+	Domains: []string{"3.th.ooni.org"},
 	Addresses: []string{
 		InternetScenarioAddressThreeThOONIOrg,
 	},
 	Role: ScenarioRoleOONITestHelper,
 }, {
-	Domain: "dns.quad9.net",
+	Domains: []string{"dns.quad9.net"},
 	Addresses: []string{
 		InternetScenarioAddressDNSQuad9Net,
 	},
 	Role: ScenarioRoleDNSOverHTTPS,
 }, {
-	Domain: "mozilla.cloudflare-dns.com",
+	Domains: []string{"mozilla.cloudflare-dns.com"},
 	Addresses: []string{
 		InternetScenarioAddressMozillaCloudflareDNSCom,
 	},
 	Role: ScenarioRoleDNSOverHTTPS,
 }, {
-	Domain: "dns.google",
+	Domains: []string{"dns.google"},
 	Addresses: []string{
 		InternetScenarioAddressDNSGoogle,
 	},
 	Role: ScenarioRoleDNSOverHTTPS,
+}, {
+	Domains: []string{},
+	Addresses: []string{
+		InternetScenarioAddressPublicBlockpage,
+	},
+	Role:             ScenarioRoleWebServer,
+	WebServerFactory: BlockpageHandlerFactory(),
 }}
 
 // MustNewScenario constructs a complete testing scenario using the domains and IP
 // addresses contained by the given [ScenarioDomainAddresses] array.
-func MustNewScenario(cfg []*ScenarioDomainAddresses) *QAEnv {
+func MustNewScenario(config []*ScenarioDomainAddresses) *QAEnv {
 	var opts []QAEnvOption
+
+	// TODO(bassosimone): it's currently a bottleneck that the same server cannot be _at the
+	// same time_ both a DNS over cleartext and a DNS over HTTPS server.
+	//
+	// As a result, the code below for initializing $stuff is more complex than it should.
 
 	// create a common configuration for DoH servers
 	dohConfig := netem.NewDNSConfig()
-	for _, sad := range cfg {
-		dohConfig.AddRecord(sad.Domain, "", sad.Addresses...)
+	for _, sad := range config {
+		for _, domain := range sad.Domains {
+			dohConfig.AddRecord(domain, "", sad.Addresses...)
+		}
 	}
 
 	// explicitly create the uncensored resolver
 	opts = append(opts, QAEnvOptionDNSOverUDPResolvers(QAEnvDefaultUncensoredResolverAddress))
 
 	// fill options based on the scenario config
-	for _, sad := range cfg {
+	for _, sad := range config {
 		switch sad.Role {
 		case ScenarioRoleDNSOverHTTPS:
 			for _, addr := range sad.Addresses {
@@ -151,9 +174,9 @@ func MustNewScenario(cfg []*ScenarioDomainAddresses) *QAEnv {
 				}))
 			}
 
-		case ScenarioRoleExampleLikeWebServer:
+		case ScenarioRoleWebServer:
 			for _, addr := range sad.Addresses {
-				opts = append(opts, QAEnvOptionHTTPServer(addr, ExampleWebPageHandlerFactory()))
+				opts = append(opts, QAEnvOptionHTTPServer(addr, sad.WebServerFactory))
 			}
 
 		case ScenarioRoleOONIAPI:
@@ -179,8 +202,10 @@ func MustNewScenario(cfg []*ScenarioDomainAddresses) *QAEnv {
 	env := MustNewQAEnv(opts...)
 
 	// configure all the domain names
-	for _, sad := range cfg {
-		env.AddRecordToAllResolvers(sad.Domain, "", sad.Addresses...)
+	for _, sad := range config {
+		for _, domain := range sad.Domains {
+			env.AddRecordToAllResolvers(domain, "", sad.Addresses...)
+		}
 	}
 
 	return env

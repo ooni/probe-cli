@@ -193,41 +193,6 @@ def webconnectivity_dns_hijacking(ooni_exe, outfile):
     assert_status_flags_are(ooni_exe, tk, 1)
 
 
-def webconnectivity_tcpip_blocking_with_inconsistent_dns(ooni_exe, outfile):
-    """Test case where there's TCP/IP blocking w/ inconsistent DNS"""
-
-    def runner(port):
-        args = [
-            "-dns-proxy-hijack",
-            "nexa.polito.it",
-            "-iptables-hijack-dns-to",
-            "127.0.0.1:53",
-            "-iptables-hijack-http-to",
-            "127.0.0.1:{}".format(port),
-        ]
-        tk = execute_jafar_and_return_validated_test_keys(
-            ooni_exe,
-            outfile,
-            "-i http://nexa.polito.it web_connectivity",
-            "webconnectivity_tcpip_blocking_with_inconsistent_dns",
-            args,
-        )
-        assert tk["dns_experiment_failure"] == None
-        assert tk["dns_consistency"] == "inconsistent"
-        assert tk["control_failure"] == None
-        assert tk["http_experiment_failure"] == "connection_refused"
-        assert tk["body_length_match"] == None
-        assert tk["body_proportion"] == 0
-        assert tk["status_code_match"] == None
-        assert tk["headers_match"] == None
-        assert tk["title_match"] == None
-        assert tk["blocking"] == "dns"
-        assert tk["accessible"] == False
-        assert_status_flags_are(ooni_exe, tk, 4256)
-
-    common.with_free_port(runner)
-
-
 def webconnectivity_http_connection_refused_with_consistent_dns(ooni_exe, outfile):
     """Test case where there's TCP/IP blocking w/ consistent DNS that occurs
     while we're following the chain of redirects."""
@@ -682,7 +647,6 @@ def main():
         webconnectivity_transparent_http_proxy,
         webconnectivity_transparent_https_proxy,
         webconnectivity_dns_hijacking,
-        webconnectivity_tcpip_blocking_with_inconsistent_dns,
         webconnectivity_http_connection_refused_with_consistent_dns,
         webconnectivity_http_connection_reset_with_consistent_dns,
         webconnectivity_http_nxdomain_with_consistent_dns,
