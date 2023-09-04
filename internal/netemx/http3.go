@@ -105,6 +105,7 @@ func (srv *http3Server) mustListenPortLocked(handler http.Handler, ipAddr net.IP
 
 	// make sure we track and close the listener: assuming the server was closing the
 	// listener seems to be the root cause of https://github.com/ooni/probe/issues/2527
+	// and closing the listener completely fixes the issue.
 	srv.closers = append(srv.closers, listener)
 
 	// make sure we track the server
