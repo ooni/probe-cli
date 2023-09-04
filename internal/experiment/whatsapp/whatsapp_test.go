@@ -64,7 +64,7 @@ func configureDNSWithDefaults(config *netem.DNSConfig) {
 
 // newQAEnvironment creates a [*netemx.QAEnv] using the default configuration
 func newQAEnvironment() *netemx.QAEnv {
-	endpointsNetStack := netemx.TCPEchoNetStack(log.Log, 443, 5222)
+	endpointsNetStack := netemx.NewTCPEchoServerFactory(log.Log, 443, 5222)
 
 	// We need:
 	//
