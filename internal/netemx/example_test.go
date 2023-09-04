@@ -147,7 +147,7 @@ func Example_customNetStackHandler() {
 
 	// create the QA environment
 	env := netemx.MustNewQAEnv(
-		netemx.QAEnvOptionNetStack(e1WhatsappNet, netemx.TCPEchoNetStack(log.Log, 5222)),
+		netemx.QAEnvOptionNetStack(e1WhatsappNet, netemx.NewTCPEchoServerFactory(log.Log, 5222)),
 		netemx.QAEnvOptionLogger(log.Log),
 	)
 

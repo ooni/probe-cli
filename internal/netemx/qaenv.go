@@ -20,6 +20,7 @@ import (
 	"github.com/quic-go/quic-go/http3"
 )
 
+// qaEnvConfig is the private configuration for [MustNewQAEnv].
 type qaEnvConfig struct {
 	// clientAddress is the client IP address to use.
 	clientAddress string
@@ -40,7 +41,7 @@ type qaEnvConfig struct {
 	logger model.Logger
 
 	// netStacks contains information about the net stacks to create.
-	netStacks map[string]QAEnvNetStackHandler
+	netStacks map[string]NetStackServerFactory
 }
 
 // QAEnvOption is an option to modify [NewQAEnv] default behavior.
@@ -106,27 +107,11 @@ func QAEnvOptionLogger(logger model.Logger) QAEnvOption {
 	}
 }
 
-// QAEnvNetStackHandler handles a [*netem.UNetStack] created using [QAEnvOptionNetStack].
-type QAEnvNetStackHandler interface {
-	// Listen should use the stack to create all the listening TCP and UDP sockets
-	// required by the specific test case, as well as to start the required background
-	// goroutines servicing incoming requests for the created listeners. This method
-	// MUST BE CONCURRENCY SAFE and it MUST NOT arrange for the Close method to close
-	// the stack because it is managed by the [QAEnv]. This method MAY call PANIC
-	// in case of listening failure: the caller calls PANIC on error anyway.
-	Listen(stack *netem.UNetStack) error
-
-	// Close should close the listening TCP and UDP sockets and the background
-	// goroutines created by Listen. This method MUST BE CONCURRENCY SAFE and IDEMPOTENT and
-	// it MUST NOT close the stack passed to Listen because it is managed by [QAEnv].
-	Close() error
-}
-
 // QAEnvOptionNetStack creates an userspace network stack with the given IP address and binds it
 // to the given handler, which will be responsible to create listening sockets and closing them
 // when we're done running. This option is lower-level than [QAEnvOptionHTTPServer], so you should
 // probably use [QAEnvOptionHTTPServer] unless you need to do something custom.
-func QAEnvOptionNetStack(ipAddr string, handler QAEnvNetStackHandler) QAEnvOption {
+func QAEnvOptionNetStack(ipAddr string, handler NetStackServerFactory) QAEnvOption {
 	return func(config *qaEnvConfig) {
 		config.netStacks[ipAddr] = handler
 	}
@@ -174,7 +159,7 @@ func MustNewQAEnv(options ...QAEnvOption) *QAEnv {
 		httpServers:         map[string]QAEnvHTTPHandlerFactory{},
 		ispResolver:         DefaultISPResolverAddress,
 		logger:              model.DiscardLogger,
-		netStacks:           map[string]QAEnvNetStackHandler{},
+		netStacks:           map[string]NetStackServerFactory{},
 	}
 	for _, option := range options {
 		option(config)
@@ -361,7 +346,7 @@ func (env *QAEnv) mustNewNetStacks(config *qaEnvConfig) (closables []io.Closer) 
 	runtimex.Assert(len(config.dnsOverUDPResolvers) >= 1, "expected at least one DNS resolver")
 	resolver := config.dnsOverUDPResolvers[0]
 
-	for ipAddr, handler := range config.netStacks {
+	for ipAddr, factory := range config.netStacks {
 		// Create the server's TCP/IP stack
 		//
 		// Note: because the stack is created using topology.AddHost, we don't
@@ -376,11 +361,14 @@ func (env *QAEnv) mustNewNetStacks(config *qaEnvConfig) (closables []io.Closer) 
 			},
 		))
 
-		// create the required listeners
-		runtimex.Try0(handler.Listen(stack))
+		// instantiate a server with the given underlying network
+		server := factory.MustNewServer(stack)
 
-		// track the handler as the something that needs to be closed
-		closables = append(closables, handler)
+		// listen and start serving in the background
+		server.MustStart()
+
+		// track the server as the something that needs to be closed
+		closables = append(closables, server)
 	}
 	return
 }
