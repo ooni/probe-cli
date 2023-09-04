@@ -10,16 +10,16 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// tproxyNilSafeProvider is a nil-safe [model.UnderlyingNetwork] provider. When the pointer
-// to the [tproxyNilSafeProvider] is nil or the underlying field is nil, the Get method of the
-// [tproxyNilSafeProvider] falls back to calling [tproxySingleton].
-type tproxyNilSafeProvider struct {
+// MaybeCustomUnderlyingNetwork is a nil-safe [model.UnderlyingNetwork] provider. When the pointer
+// to the [MaybeCustomUnderlyingNetwork] is nil or the underlying field is nil, the Get method of the
+// [MaybeCustomUnderlyingNetwork] falls back to calling [tproxySingleton].
+type MaybeCustomUnderlyingNetwork struct {
 	underlying model.UnderlyingNetwork
 }
 
 // Get returns the [model.UnderlyingNetwork] returned by [tproxySingleton] if p is nil or the
 // underlying field is nil and otherwise returns the value of the underlying field.
-func (p *tproxyNilSafeProvider) Get() model.UnderlyingNetwork {
+func (p *MaybeCustomUnderlyingNetwork) Get() model.UnderlyingNetwork {
 	if p == nil || p.underlying == nil {
 		return tproxySingleton()
 	}

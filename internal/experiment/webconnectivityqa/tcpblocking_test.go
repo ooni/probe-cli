@@ -2,6 +2,7 @@ package webconnectivityqa
 
 import (
 	"context"
+	"net"
 	"testing"
 
 	"github.com/apex/log"
@@ -16,7 +17,8 @@ func TestTCPBlockingConnectTimeout(t *testing.T) {
 
 	env.Do(func() {
 		dialer := netxlite.NewDialerWithoutResolver(log.Log)
-		conn, err := dialer.DialContext(context.Background(), "tcp", "130.192.91.7:443")
+		endpoint := net.JoinHostPort(netemx.InternetScenarioAddressWwwExampleCom, "443")
+		conn, err := dialer.DialContext(context.Background(), "tcp", endpoint)
 		if err == nil || err.Error() != netxlite.FailureGenericTimeoutError {
 			t.Fatal("unexpected error", err)
 		}

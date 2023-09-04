@@ -17,7 +17,7 @@ func tcpBlockingConnectTimeout() *TestCase {
 		Configure: func(env *netemx.QAEnv) {
 			env.DPIEngine().AddRule(&netem.DPIDropTrafficForServerEndpoint{
 				Logger:          log.Log,
-				ServerIPAddress: "130.192.91.7", // www.example.com
+				ServerIPAddress: netemx.InternetScenarioAddressWwwExampleCom,
 				ServerPort:      443,
 				ServerProtocol:  layers.IPProtocolTCP,
 			})

@@ -147,7 +147,7 @@ func NewDialerWithoutResolver(dl model.DebugLogger, w ...model.DialerWrapper) mo
 // a fixed timeout for each connect operation equal to 15 seconds.
 type DialerSystem struct {
 	// provider is the OPTIONAL nil-safe [model.UnderlyingNetwork] provider.
-	provider *tproxyNilSafeProvider
+	provider *MaybeCustomUnderlyingNetwork
 }
 
 var _ model.Dialer = &DialerSystem{}
