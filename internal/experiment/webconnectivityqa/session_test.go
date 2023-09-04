@@ -34,34 +34,6 @@ func TestNewSession(t *testing.T) {
 		}
 	})
 
-	t.Run("LookupASN works as intended", func(t *testing.T) {
-		t.Run("for IP addresses inside the 130.192.91.x address space", func(t *testing.T) {
-			asn, org, err := sess.LookupASN("130.192.91.155")
-			if err != nil {
-				t.Fatal(err)
-			}
-			if asn != 155 {
-				t.Fatal("unexpected ASN")
-			}
-			if org != "Org 155" {
-				t.Fatal("unexpected org")
-			}
-		})
-
-		t.Run("outside of the address space", func(t *testing.T) {
-			asn, org, err := sess.LookupASN("10.0.0.1")
-			if err == nil {
-				t.Fatal("expected an error here")
-			}
-			if asn != 0 {
-				t.Fatal("unexpected ASN")
-			}
-			if org != "" {
-				t.Fatal("unexpected org")
-			}
-		})
-	})
-
 	t.Run("we have an user agent", func(t *testing.T) {
 		if sess.UserAgent() == "" {
 			t.Fatal("expected non-empty user agent")

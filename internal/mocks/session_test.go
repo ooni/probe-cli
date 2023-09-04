@@ -106,25 +106,6 @@ func TestSession(t *testing.T) {
 		}
 	})
 
-	t.Run("Logger", func(t *testing.T) {
-		expect := errors.New("xx")
-		s := &Session{
-			MockLookupASN: func(ip string) (asn uint, org string, err error) {
-				return 0, "", expect
-			},
-		}
-		asn, org, err := s.LookupASN("1.2.3.4")
-		if !errors.Is(err, expect) {
-			t.Fatal("unexpected error", err)
-		}
-		if asn != 0 {
-			t.Fatal("unexpected ASN")
-		}
-		if org != "" {
-			t.Fatal("unexpected org")
-		}
-	})
-
 	t.Run("MaybeResolverIP", func(t *testing.T) {
 		expect := "xx"
 		s := &Session{

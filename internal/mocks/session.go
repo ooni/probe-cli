@@ -22,8 +22,6 @@ type Session struct {
 
 	MockLogger func() model.Logger
 
-	MockLookupASN func(ip string) (asn uint, org string, err error)
-
 	MockMaybeResolverIP func() string
 
 	MockProbeASNString func() string
@@ -83,10 +81,6 @@ func (sess *Session) KeyValueStore() model.KeyValueStore {
 
 func (sess *Session) Logger() model.Logger {
 	return sess.MockLogger()
-}
-
-func (sess *Session) LookupASN(ip string) (asn uint, org string, err error) {
-	return sess.MockLookupASN(ip)
 }
 
 func (sess *Session) MaybeResolverIP() string {

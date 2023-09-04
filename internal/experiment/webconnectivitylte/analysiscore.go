@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/url"
 
+	"github.com/ooni/probe-cli/v3/internal/geoipx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -93,12 +94,12 @@ const (
 //
 // As an improvement over Web Connectivity v0.4, we also attempt to identify
 // special subcases of a null, null result to provide the user with more information.
-func (tk *TestKeys) analysisToplevel(logger model.Logger, lookupper model.GeoIPASNLookupper) {
+func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 	// Since we run after all tasks have completed (or so we assume) we're
 	// not going to use any form of locking here.
 
 	// these functions compute the value of XBlockingFlags
-	tk.analysisDNSToplevel(logger, lookupper)
+	tk.analysisDNSToplevel(logger, model.GeoIPASNLookupperFunc(geoipx.LookupASN))
 	tk.analysisTCPIPToplevel(logger)
 	tk.analysisTLSToplevel(logger)
 	tk.analysisHTTPToplevel(logger)

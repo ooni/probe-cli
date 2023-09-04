@@ -13,7 +13,6 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/checkincache"
-	"github.com/ooni/probe-cli/v3/internal/geoipx"
 	"github.com/ooni/probe-cli/v3/internal/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -382,11 +381,6 @@ func (s *Session) KeyValueStore() model.KeyValueStore {
 // Logger returns the logger used by the session.
 func (s *Session) Logger() model.Logger {
 	return s.logger
-}
-
-// LookupASN performs an ASN lookup.
-func (s *Session) LookupASN(ip string) (asn uint, org string, err error) {
-	return geoipx.LookupASN(ip)
 }
 
 // MaybeLookupLocation is a caching location lookup call.

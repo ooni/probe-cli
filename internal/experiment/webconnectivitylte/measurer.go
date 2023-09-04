@@ -128,7 +128,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	}
 
 	// perform any deferred computation on the test keys
-	tk.Finalize(sess.Logger(), sess)
+	tk.Finalize(sess.Logger())
 
 	// set the test helper we used
 	// TODO(bassosimone): it may be more informative to know about all the

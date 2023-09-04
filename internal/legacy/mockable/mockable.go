@@ -16,9 +16,6 @@ type Session struct {
 	MockableTestHelpers              map[string][]model.OOAPIService
 	MockableHTTPClient               model.HTTPClient
 	MockableLogger                   model.Logger
-	MockableLookupASNASN             uint
-	MockableLookupASNOrg             string
-	MockableLookupASNErr             error
 	MockableMaybeResolverIP          string
 	MockableProbeASNString           string
 	MockableProbeCC                  string
@@ -71,11 +68,6 @@ func (sess *Session) KeyValueStore() model.KeyValueStore {
 // Logger implements ExperimentSession.Logger
 func (sess *Session) Logger() model.Logger {
 	return sess.MockableLogger
-}
-
-// LookupASN implements ExperimentSession.LookupASN
-func (sess *Session) LookupASN(ip string) (asn uint, org string, err error) {
-	return sess.MockableLookupASNASN, sess.MockableLookupASNOrg, sess.MockableLookupASNErr
 }
 
 // MaybeResolverIP implements ExperimentSession.MaybeResolverIP.
