@@ -12,17 +12,17 @@ import (
 
 // HTTPHandlerFactory constructs an [http.Handler].
 type HTTPHandlerFactory interface {
-	NewHandler(stack *netem.UNetStack) http.Handler
+	NewHandler(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler
 }
 
 // HTTPHandlerFactoryFunc allows a func to become an [HTTPHandlerFactory].
-type HTTPHandlerFactoryFunc func(stack *netem.UNetStack) http.Handler
+type HTTPHandlerFactoryFunc func(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler
 
 var _ HTTPHandlerFactory = HTTPHandlerFactoryFunc(nil)
 
 // NewHandler implements HTTPHandlerFactory.
-func (fx HTTPHandlerFactoryFunc) NewHandler(stack *netem.UNetStack) http.Handler {
-	return fx(stack)
+func (fx HTTPHandlerFactoryFunc) NewHandler(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
+	return fx(env, stack)
 }
 
 // HTTPCleartextServerFactory implements [NetStackServerFactory] for cleartext HTTP.
@@ -39,9 +39,10 @@ type HTTPCleartextServerFactory struct {
 var _ NetStackServerFactory = &HTTPCleartextServerFactory{}
 
 // MustNewServer implements NetStackServerFactory.
-func (f *HTTPCleartextServerFactory) MustNewServer(_ NetStackServerFactoryEnv, stack *netem.UNetStack) NetStackServer {
+func (f *HTTPCleartextServerFactory) MustNewServer(env NetStackServerFactoryEnv, stack *netem.UNetStack) NetStackServer {
 	return &httpCleartextServer{
 		closers: []io.Closer{},
+		env:     env,
 		factory: f.Factory,
 		mu:      sync.Mutex{},
 		ports:   f.Ports,
@@ -51,6 +52,7 @@ func (f *HTTPCleartextServerFactory) MustNewServer(_ NetStackServerFactoryEnv, s
 
 type httpCleartextServer struct {
 	closers []io.Closer
+	env     NetStackServerFactoryEnv
 	factory HTTPHandlerFactory
 	mu      sync.Mutex
 	ports   []int
@@ -80,7 +82,7 @@ func (srv *httpCleartextServer) MustStart() {
 	srv.mu.Lock()
 
 	// create the handler
-	handler := srv.factory.NewHandler(srv.unet)
+	handler := srv.factory.NewHandler(srv.env, srv.unet)
 
 	// create the listening address
 	ipAddr := net.ParseIP(srv.unet.IPAddress())
