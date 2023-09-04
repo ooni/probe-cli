@@ -31,7 +31,7 @@ type ScenarioDomainAddresses struct {
 	Role uint64
 
 	// WebServerFactory is the factory to use when Role is ScenarioRoleWebServer.
-	WebServerFactory QAEnvHTTPHandlerFactory
+	WebServerFactory HTTPHandlerFactory
 }
 
 // InternetScenario contains the domains and addresses used by [NewInternetScenario].
@@ -138,7 +138,14 @@ func MustNewScenario(config []*ScenarioDomainAddresses) *QAEnv {
 
 		case ScenarioRoleWebServer:
 			for _, addr := range sad.Addresses {
-				opts = append(opts, QAEnvOptionHTTPServer(addr, sad.WebServerFactory))
+				opts = append(opts, QAEnvOptionNetStack(addr, &HTTPCleartextServerFactory{
+					Factory: sad.WebServerFactory,
+					Ports:   []int{80},
+				}, &HTTPSecureServerFactory{
+					Factory:   sad.WebServerFactory,
+					Ports:     []int{443},
+					TLSConfig: nil, // use netem's default
+				}))
 			}
 
 		case ScenarioRoleOONIAPI:
