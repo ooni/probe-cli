@@ -17,7 +17,7 @@ func tcpBlockingConnectTimeout() *TestCase {
 		Configure: func(env *netemx.QAEnv) {
 			env.DPIEngine().AddRule(&netem.DPIDropTrafficForServerEndpoint{
 				Logger:          log.Log,
-				ServerIPAddress: netemx.InternetScenarioAddressWwwExampleCom,
+				ServerIPAddress: netemx.AddressWwwExampleCom,
 				ServerPort:      443,
 				ServerProtocol:  layers.IPProtocolTCP,
 			})
@@ -47,7 +47,7 @@ func tcpBlockingConnectionRefusedWithInconsistentDNS() *TestCase {
 			// spoof the DNS response to force using the server serving blockpages
 			env.DPIEngine().AddRule(&netem.DPISpoofDNSResponse{
 				Addresses: []string{
-					netemx.InternetScenarioAddressPublicBlockpage,
+					netemx.AddressPublicBlockpage,
 				},
 				Logger: log.Log,
 				Domain: "www.example.org",
@@ -56,7 +56,7 @@ func tcpBlockingConnectionRefusedWithInconsistentDNS() *TestCase {
 			// make sure we cannot connect to the public blockpage address
 			env.DPIEngine().AddRule(&netem.DPICloseConnectionForServerEndpoint{
 				Logger:          log.Log,
-				ServerIPAddress: netemx.InternetScenarioAddressPublicBlockpage,
+				ServerIPAddress: netemx.AddressPublicBlockpage,
 				ServerPort:      443,
 			})
 

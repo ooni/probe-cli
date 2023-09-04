@@ -1,9 +1,5 @@
 package netemx
 
-//
-// Code to adapt [netem.UnderlyingNetwork] to [model.UnderlyingNetwork].
-//
-
 import (
 	"time"
 

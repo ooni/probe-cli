@@ -20,15 +20,6 @@ import (
 	"github.com/quic-go/quic-go/http3"
 )
 
-// QAEnvDefaultClientAddress is the default client IP address.
-const QAEnvDefaultClientAddress = "130.192.91.211"
-
-// QAEnvDefaultISPResolverAddress is the default IP address of the client ISP resolver.
-const QAEnvDefaultISPResolverAddress = "130.192.3.21"
-
-// QAEnvDefaultUncensoredResolverAddress is the default uncensored resolver IP address.
-const QAEnvDefaultUncensoredResolverAddress = "1.1.1.1"
-
 type qaEnvConfig struct {
 	// clientAddress is the client IP address to use.
 	clientAddress string
@@ -56,7 +47,7 @@ type qaEnvConfig struct {
 type QAEnvOption func(config *qaEnvConfig)
 
 // QAEnvOptionClientAddress sets the client IP address. If you do not set this option
-// we will use [QAEnvDefaultClientAddress].
+// we will use [DefaultClientAddress].
 func QAEnvOptionClientAddress(ipAddr string) QAEnvOption {
 	runtimex.Assert(net.ParseIP(ipAddr) != nil, "not an IP addr")
 	return func(config *qaEnvConfig) {
@@ -73,7 +64,7 @@ func QAEnvOptionClientNICWrapper(wrapper netem.LinkNICWrapper) QAEnvOption {
 }
 
 // QAEnvOptionDNSOverUDPResolvers adds the given DNS-over-UDP resolvers. If you do not set this option
-// we will create a single resolver using [QAEnvDefaultUncensoredResolverAddress].
+// we will create a single resolver using [DefaultUncensoredResolverAddress].
 func QAEnvOptionDNSOverUDPResolvers(ipAddrs ...string) QAEnvOption {
 	for _, a := range ipAddrs {
 		runtimex.Assert(net.ParseIP(a) != nil, "not an IP addr")
@@ -99,7 +90,7 @@ func QAEnvOptionHTTPServer(ipAddr string, factory QAEnvHTTPHandlerFactory) QAEnv
 }
 
 // QAEnvOptionISPResolverAddress sets the ISP's resolver IP address. If you do not set this option
-// we will use [QAEnvDefaultISPResolverAddress] as the address.
+// we will use [DefaultISPResolverAddress] as the address.
 func QAEnvOptionISPResolverAddress(ipAddr string) QAEnvOption {
 	runtimex.Assert(net.ParseIP(ipAddr) != nil, "not an IP addr")
 	return func(config *qaEnvConfig) {
@@ -177,11 +168,11 @@ type QAEnv struct {
 func MustNewQAEnv(options ...QAEnvOption) *QAEnv {
 	// initialize the configuration
 	config := &qaEnvConfig{
-		clientAddress:       QAEnvDefaultClientAddress,
+		clientAddress:       DefaultClientAddress,
 		clientNICWrapper:    nil,
 		dnsOverUDPResolvers: []string{},
 		httpServers:         map[string]QAEnvHTTPHandlerFactory{},
-		ispResolver:         QAEnvDefaultISPResolverAddress,
+		ispResolver:         DefaultISPResolverAddress,
 		logger:              model.DiscardLogger,
 		netStacks:           map[string]QAEnvNetStackHandler{},
 	}
@@ -189,7 +180,7 @@ func MustNewQAEnv(options ...QAEnvOption) *QAEnv {
 		option(config)
 	}
 	if len(config.dnsOverUDPResolvers) < 1 {
-		config.dnsOverUDPResolvers = append(config.dnsOverUDPResolvers, QAEnvDefaultUncensoredResolverAddress)
+		config.dnsOverUDPResolvers = append(config.dnsOverUDPResolvers, DefaultUncensoredResolverAddress)
 	}
 
 	// use a prefix logger for the QA env
@@ -261,7 +252,7 @@ func (env *QAEnv) mustNewClientStack(config *qaEnvConfig) *netem.UNetStack {
 	// TODO(bassosimone,kelmenhorst): consider allowing to configure the
 	// delays and losses should the need for this arise in the future.
 	return runtimex.Try1(env.topology.AddHost(
-		QAEnvDefaultClientAddress,
+		DefaultClientAddress,
 		config.ispResolver,
 		&netem.LinkConfig{
 			DPIEngine:        env.dpi,
