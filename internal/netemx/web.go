@@ -26,7 +26,7 @@ const ExampleWebPage = `<!doctype html>
 // is www.example.{com,org} and redirecting to www. when the domain is example.{com,org}.
 func ExampleWebPageHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		//w.Header().Add("Alt-Svc", `h3=":443"`) // see https://github.com/ooni/probe/issues/2527
+		w.Header().Add("Alt-Svc", `h3=":443"`)
 		w.Header().Add("Date", "Thu, 24 Aug 2023 14:35:29 GMT")
 
 		// According to Go documentation, the host header is removed from the
@@ -87,7 +87,7 @@ const Blockpage = `<!doctype html>
 func BlockpageHandlerFactory() HTTPHandlerFactory {
 	return HTTPHandlerFactoryFunc(func(_ *netem.UNetStack) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			//w.Header().Add("Alt-Svc", `h3=":443"`) // see https://github.com/ooni/probe/issues/2527
+			w.Header().Add("Alt-Svc", `h3=":443"`)
 			w.Header().Add("Date", "Thu, 24 Aug 2023 14:35:29 GMT")
 			w.Write([]byte(Blockpage))
 		})
