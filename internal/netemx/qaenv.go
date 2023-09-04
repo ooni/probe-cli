@@ -316,7 +316,7 @@ func (env *QAEnv) mustNewHTTPServers(config *qaEnvConfig) (closables []io.Closer
 		))
 
 		// create HTTP, HTTPS and HTTP/3 servers for this stack
-		handler := factory.NewHandler(stack)
+		handler := factory.NewHandler(env, stack)
 		closables = append(closables, env.mustCreateAllHTTPServers(stack, handler, addr)...)
 	}
 	return

@@ -403,3 +403,44 @@ func Example_ubuntuGeoIPWithInternetScenario() {
 	// Output:
 	// <?xml version="1.0" encoding="UTF-8"?><Response><Ip>130.192.91.211</Ip></Response>
 }
+
+// This example shows how the [InternetScenario] defines a public blockpahe server.
+func Example_examplePublicBlockpage() {
+	env := netemx.MustNewScenario(netemx.InternetScenario)
+	defer env.Close()
+
+	env.Do(func() {
+		client := netxlite.NewHTTPClientStdlib(log.Log)
+
+		req, err := http.NewRequest("GET", "https://"+netemx.AddressPublicBlockpage+"/", nil)
+		if err != nil {
+			log.Fatalf("http.NewRequest failed: %s", err.Error())
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Fatalf("client.Do failed: %s", err.Error())
+		}
+		defer resp.Body.Close()
+		body, err := netxlite.ReadAllContext(req.Context(), resp.Body)
+		if err != nil {
+			log.Fatalf("netxlite.ReadAllContext failed: %s", err.Error())
+		}
+
+		fmt.Printf("%+v\n", string(body))
+	})
+
+	// Output:
+	// <!doctype html>
+	// <html>
+	// <head>
+	// 	<title>Access Denied</title>
+	// </head>
+	// <body>
+	// <div>
+	// 	<h1>Access Denied</h1>
+	// 	<p>This request cannot be served in your jurisdiction.</p>
+	// </div>
+	// </body>
+	// </html>
+}

@@ -60,7 +60,7 @@ func ExampleWebPageHandler() http.Handler {
 // ExampleWebPageHandlerFactory returns a webpage similar to example.org's one when the domain is
 // www.example.{com,org} and redirects to www.example.{com,org} when it is example.{com,org}.
 func ExampleWebPageHandlerFactory() HTTPHandlerFactory {
-	return HTTPHandlerFactoryFunc(func(_ *netem.UNetStack) http.Handler {
+	return HTTPHandlerFactoryFunc(func(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
 		return ExampleWebPageHandler()
 	})
 }
@@ -85,7 +85,7 @@ const Blockpage = `<!doctype html>
 
 // BlockpageHandlerFactory returns a blockpage regardless of the incoming domain.
 func BlockpageHandlerFactory() HTTPHandlerFactory {
-	return HTTPHandlerFactoryFunc(func(_ *netem.UNetStack) http.Handler {
+	return HTTPHandlerFactoryFunc(func(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add("Alt-Svc", `h3=":443"`)
 			w.Header().Add("Date", "Thu, 24 Aug 2023 14:35:29 GMT")

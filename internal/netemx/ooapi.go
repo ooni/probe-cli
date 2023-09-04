@@ -15,7 +15,7 @@ type OOAPIHandlerFactory struct{}
 var _ HTTPHandlerFactory = &OOAPIHandlerFactory{}
 
 // NewHandler implements QAEnvHTTPHandlerFactory.
-func (*OOAPIHandlerFactory) NewHandler(_ *netem.UNetStack) http.Handler {
+func (*OOAPIHandlerFactory) NewHandler(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
 	return &OOAPIHandler{}
 }
 
