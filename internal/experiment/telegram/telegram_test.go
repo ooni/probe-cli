@@ -280,7 +280,7 @@ func configureDNSWithDefaults(config *netem.DNSConfig) {
 func newQAEnvironment(ipaddrs ...string) *netemx.QAEnv {
 	// create a single factory for handling all the requests
 	factory := &netemx.HTTPCleartextServerFactory{
-		Factory: netemx.HTTPHandlerFactoryFunc(func(_ *netem.UNetStack) http.Handler {
+		Factory: netemx.HTTPHandlerFactoryFunc(func(env netemx.NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
 			// we create an empty mux, which should cause a 404 for each webpage, which seems what
 			// the servers used by telegram DC do as of 2023-07-11
 			return http.NewServeMux()

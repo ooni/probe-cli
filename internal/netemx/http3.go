@@ -29,9 +29,10 @@ type HTTP3ServerFactory struct {
 var _ NetStackServerFactory = &HTTP3ServerFactory{}
 
 // MustNewServer implements NetStackServerFactory.
-func (f *HTTP3ServerFactory) MustNewServer(_ NetStackServerFactoryEnv, stack *netem.UNetStack) NetStackServer {
+func (f *HTTP3ServerFactory) MustNewServer(env NetStackServerFactoryEnv, stack *netem.UNetStack) NetStackServer {
 	return &http3Server{
 		closers:   []io.Closer{},
+		env:       env,
 		factory:   f.Factory,
 		mu:        sync.Mutex{},
 		ports:     f.Ports,
@@ -42,6 +43,7 @@ func (f *HTTP3ServerFactory) MustNewServer(_ NetStackServerFactoryEnv, stack *ne
 
 type http3Server struct {
 	closers   []io.Closer
+	env       NetStackServerFactoryEnv
 	factory   HTTPHandlerFactory
 	mu        sync.Mutex
 	ports     []int
@@ -72,7 +74,7 @@ func (srv *http3Server) MustStart() {
 	srv.mu.Lock()
 
 	// create the handler
-	handler := srv.factory.NewHandler(srv.unet)
+	handler := srv.factory.NewHandler(srv.env, srv.unet)
 
 	// create the listening address
 	ipAddr := net.ParseIP(srv.unet.IPAddress())

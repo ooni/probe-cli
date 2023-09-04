@@ -14,7 +14,7 @@ import (
 func TestHTTPCleartextServerFactory(t *testing.T) {
 	env := MustNewQAEnv(
 		QAEnvOptionNetStack(AddressWwwExampleCom, &HTTPCleartextServerFactory{
-			Factory: HTTPHandlerFactoryFunc(func(_ *netem.UNetStack) http.Handler {
+			Factory: HTTPHandlerFactoryFunc(func(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
 				return ExampleWebPageHandler()
 			}),
 			Ports: []int{80},

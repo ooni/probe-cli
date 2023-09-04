@@ -15,7 +15,7 @@ func TestHTTPSecureServerFactory(t *testing.T) {
 	t.Run("when using the TLSConfig provided by netem", func(t *testing.T) {
 		env := MustNewQAEnv(
 			QAEnvOptionNetStack(AddressWwwExampleCom, &HTTPSecureServerFactory{
-				Factory: HTTPHandlerFactoryFunc(func(_ *netem.UNetStack) http.Handler {
+				Factory: HTTPHandlerFactoryFunc(func(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
 					return ExampleWebPageHandler()
 				}),
 				Ports:     []int{443},
@@ -54,7 +54,7 @@ func TestHTTPSecureServerFactory(t *testing.T) {
 
 		env := MustNewQAEnv(
 			QAEnvOptionNetStack(AddressWwwExampleCom, &HTTPSecureServerFactory{
-				Factory: HTTPHandlerFactoryFunc(func(_ *netem.UNetStack) http.Handler {
+				Factory: HTTPHandlerFactoryFunc(func(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
 					return ExampleWebPageHandler()
 				}),
 				Ports:     []int{443},

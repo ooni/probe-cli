@@ -28,9 +28,10 @@ type HTTPSecureServerFactory struct {
 var _ NetStackServerFactory = &HTTPSecureServerFactory{}
 
 // MustNewServer implements NetStackServerFactory.
-func (f *HTTPSecureServerFactory) MustNewServer(_ NetStackServerFactoryEnv, stack *netem.UNetStack) NetStackServer {
+func (f *HTTPSecureServerFactory) MustNewServer(env NetStackServerFactoryEnv, stack *netem.UNetStack) NetStackServer {
 	return &httpSecureServer{
 		closers:   []io.Closer{},
+		env:       env,
 		factory:   f.Factory,
 		mu:        sync.Mutex{},
 		ports:     f.Ports,
@@ -41,6 +42,7 @@ func (f *HTTPSecureServerFactory) MustNewServer(_ NetStackServerFactoryEnv, stac
 
 type httpSecureServer struct {
 	closers   []io.Closer
+	env       NetStackServerFactoryEnv
 	factory   HTTPHandlerFactory
 	mu        sync.Mutex
 	ports     []int
@@ -71,7 +73,7 @@ func (srv *httpSecureServer) MustStart() {
 	srv.mu.Lock()
 
 	// create the handler
-	handler := srv.factory.NewHandler(srv.unet)
+	handler := srv.factory.NewHandler(srv.env, srv.unet)
 
 	// create the listening address
 	ipAddr := net.ParseIP(srv.unet.IPAddress())

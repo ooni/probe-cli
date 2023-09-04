@@ -110,10 +110,8 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 func MustNewScenario(config []*ScenarioDomainAddresses) *QAEnv {
 	var opts []QAEnvOption
 
-	// TODO(bassosimone): it's currently a bottleneck that the same server cannot be _at the
-	// same time_ both a DNS over cleartext and a DNS over HTTPS server.
-	//
-	// As a result, the code below for initializing $stuff is more complex than it should.
+	// TODO(bassosimone): we removed the bottleneck that we could not have more than one
+	// server per IP address, so it's time to take advantage of this below.
 
 	// create a common configuration for DoH servers
 	dohConfig := netem.NewDNSConfig()
@@ -131,8 +129,10 @@ func MustNewScenario(config []*ScenarioDomainAddresses) *QAEnv {
 		switch sad.Role {
 		case ScenarioRoleDNSOverHTTPS:
 			for _, addr := range sad.Addresses {
-				opts = append(opts, QAEnvOptionHTTPServer(addr, &DNSOverHTTPSHandlerFactory{
-					Config: dohConfig,
+				opts = append(opts, QAEnvOptionNetStack(addr, &HTTPSecureServerFactory{
+					Factory:   &DNSOverHTTPSHandlerFactory{},
+					Ports:     []int{443},
+					TLSConfig: nil, // use netem's default
 				}))
 			}
 
