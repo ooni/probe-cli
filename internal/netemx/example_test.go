@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 
 	"github.com/apex/log"
 	"github.com/ooni/netem"
@@ -198,24 +199,49 @@ func Example_customNetStackHandler() {
 	// true
 }
 
-// This example shows how the [InternetScenario] defines DoH servers.
+// This example shows how the [InternetScenario] defines DNS-over-HTTPS and DNS-over-UDP servers.
 func Example_dohWithInternetScenario() {
 	env := netemx.MustNewScenario(netemx.InternetScenario)
 	defer env.Close()
 
 	env.Do(func() {
-		reso := netxlite.NewParallelDNSOverHTTPSResolver(log.Log, "https://dns.google/dns-query")
-		defer reso.CloseIdleConnections()
+		for _, domain := range []string{"mozilla.cloudflare-dns.com", "dns.google", "dns.quad9.net"} {
+			// DNS-over-UDP
+			{
+				dialer := netxlite.NewDialerWithResolver(log.Log, netxlite.NewStdlibResolver(log.Log))
+				reso := netxlite.NewParallelUDPResolver(log.Log, dialer, net.JoinHostPort(domain, "53"))
+				defer reso.CloseIdleConnections()
 
-		addrs, err := reso.LookupHost(context.Background(), "www.example.com")
-		if err != nil {
-			log.Fatalf("reso.LookupHost failed: %s", err.Error())
+				addrs, err := reso.LookupHost(context.Background(), "www.example.com")
+				if err != nil {
+					log.Fatalf("reso.LookupHost failed: %s", err.Error())
+				}
+
+				fmt.Printf("%+v\n", addrs)
+			}
+
+			// DNS-over-HTTPS
+			{
+				URL := &url.URL{Scheme: "https", Host: domain, Path: "/dns-query"}
+				reso := netxlite.NewParallelDNSOverHTTPSResolver(log.Log, URL.String())
+				defer reso.CloseIdleConnections()
+
+				addrs, err := reso.LookupHost(context.Background(), "www.example.com")
+				if err != nil {
+					log.Fatalf("reso.LookupHost failed: %s", err.Error())
+				}
+
+				fmt.Printf("%+v\n", addrs)
+			}
 		}
-
-		fmt.Printf("%+v\n", addrs)
 	})
 
 	// Output:
+	// [93.184.216.34]
+	// [93.184.216.34]
+	// [93.184.216.34]
+	// [93.184.216.34]
+	// [93.184.216.34]
 	// [93.184.216.34]
 }
 
@@ -228,6 +254,9 @@ func Example_dnsOverUDPWithInternetScenario() {
 		resolvers := []string{
 			net.JoinHostPort(netemx.DefaultISPResolverAddress, "53"),
 			net.JoinHostPort(netemx.DefaultUncensoredResolverAddress, "53"),
+			net.JoinHostPort(netemx.AddressDNSGoogle, "53"),
+			net.JoinHostPort(netemx.AddressDNSQuad9Net, "53"),
+			net.JoinHostPort(netemx.AddressMozillaCloudflareDNSCom, "53"),
 		}
 
 		for _, endpoint := range resolvers {
@@ -245,6 +274,9 @@ func Example_dnsOverUDPWithInternetScenario() {
 	})
 
 	// Output:
+	// [93.184.216.34]
+	// [93.184.216.34]
+	// [93.184.216.34]
 	// [93.184.216.34]
 	// [93.184.216.34]
 }

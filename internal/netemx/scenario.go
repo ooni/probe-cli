@@ -1,10 +1,8 @@
 package netemx
 
-import "github.com/ooni/netem"
-
 const (
-	// ScenarioRoleDNSOverHTTPS means we should create a DNS-over-HTTPS server.
-	ScenarioRoleDNSOverHTTPS = iota
+	// ScenarioRolePublicDNS means we should create DNS-over-HTTPS and DNS-over-UDP servers.
+	ScenarioRolePublicDNS = iota
 
 	// ScenarioRoleWebServer means we should instantiate a webserver using a specific factory.
 	ScenarioRoleWebServer
@@ -83,19 +81,19 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 	Addresses: []string{
 		AddressDNSQuad9Net,
 	},
-	Role: ScenarioRoleDNSOverHTTPS,
+	Role: ScenarioRolePublicDNS,
 }, {
 	Domains: []string{"mozilla.cloudflare-dns.com"},
 	Addresses: []string{
 		AddressMozillaCloudflareDNSCom,
 	},
-	Role: ScenarioRoleDNSOverHTTPS,
+	Role: ScenarioRolePublicDNS,
 }, {
 	Domains: []string{"dns.google"},
 	Addresses: []string{
 		AddressDNSGoogle,
 	},
-	Role: ScenarioRoleDNSOverHTTPS,
+	Role: ScenarioRolePublicDNS,
 }, {
 	Domains: []string{},
 	Addresses: []string{
@@ -110,30 +108,23 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 func MustNewScenario(config []*ScenarioDomainAddresses) *QAEnv {
 	var opts []QAEnvOption
 
-	// TODO(bassosimone): we removed the bottleneck that we could not have more than one
-	// server per IP address, so it's time to take advantage of this below.
-
-	// create a common configuration for DoH servers
-	dohConfig := netem.NewDNSConfig()
-	for _, sad := range config {
-		for _, domain := range sad.Domains {
-			dohConfig.AddRecord(domain, "", sad.Addresses...)
-		}
-	}
-
 	// explicitly create the uncensored resolver
 	opts = append(opts, QAEnvOptionDNSOverUDPResolvers(DefaultUncensoredResolverAddress))
 
 	// fill options based on the scenario config
 	for _, sad := range config {
 		switch sad.Role {
-		case ScenarioRoleDNSOverHTTPS:
+		case ScenarioRolePublicDNS:
 			for _, addr := range sad.Addresses {
-				opts = append(opts, QAEnvOptionNetStack(addr, &HTTPSecureServerFactory{
-					Factory:   &DNSOverHTTPSHandlerFactory{},
-					Ports:     []int{443},
-					TLSConfig: nil, // use netem's default
-				}))
+				opts = append(opts, QAEnvOptionNetStack(
+					addr,
+					&UDPResolverFactory{},
+					&HTTPSecureServerFactory{
+						Factory:   &DNSOverHTTPSHandlerFactory{},
+						Ports:     []int{443},
+						TLSConfig: nil, // use netem's default
+					},
+				))
 			}
 
 		case ScenarioRoleWebServer:
