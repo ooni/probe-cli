@@ -120,6 +120,9 @@ func QAEnvOptionNetStack(ipAddr string, handler NetStackServerFactory) QAEnvOpti
 // QAEnv is the environment for running QA tests using [github.com/ooni/netem]. The zero
 // value of this struct is invalid; please, use [NewQAEnv].
 type QAEnv struct {
+	// baseLogger is the base [model.Logger] to use.
+	baseLogger model.Logger
+
 	// clientNICWrapper is the OPTIONAL wrapper for the client NIC.
 	clientNICWrapper netem.LinkNICWrapper
 
@@ -176,6 +179,7 @@ func MustNewQAEnv(options ...QAEnvOption) *QAEnv {
 
 	// create an empty QAEnv
 	env := &QAEnv{
+		baseLogger:                config.logger,
 		clientNICWrapper:          config.clientNICWrapper,
 		clientStack:               nil,
 		closables:                 []io.Closer{},
@@ -362,7 +366,7 @@ func (env *QAEnv) mustNewNetStacks(config *qaEnvConfig) (closables []io.Closer) 
 		))
 
 		// instantiate a server with the given underlying network
-		server := factory.MustNewServer(stack)
+		server := factory.MustNewServer(env, stack)
 
 		// listen and start serving in the background
 		server.MustStart()
@@ -384,6 +388,11 @@ func (env *QAEnv) AddRecordToAllResolvers(domain string, cname string, addrs ...
 // add new DNS records from concurrent goroutines at any time.
 func (env *QAEnv) ISPResolverConfig() *netem.DNSConfig {
 	return env.ispResolverConfig
+}
+
+// Logger is the [model.Logger] configured for this [*QAEnv],
+func (env *QAEnv) Logger() model.Logger {
+	return env.baseLogger
 }
 
 // OtherResolversConfig returns the [*netem.DNSConfig] of the non-ISP resolvers. Note that can safely

@@ -12,6 +12,8 @@ import (
 )
 
 // HTTPSecureServerFactory implements [NetStackServerFactory] for HTTP-over-TLS (i.e., HTTPS).
+//
+// Use this factory along with [QAEnvOptionNetStack] to create HTTPS servers.
 type HTTPSecureServerFactory struct {
 	// Factory is the MANDATORY factory for creating the [http.Handler].
 	Factory HTTPHandlerFactory
@@ -26,7 +28,7 @@ type HTTPSecureServerFactory struct {
 var _ NetStackServerFactory = &HTTPSecureServerFactory{}
 
 // MustNewServer implements NetStackServerFactory.
-func (f *HTTPSecureServerFactory) MustNewServer(stack *netem.UNetStack) NetStackServer {
+func (f *HTTPSecureServerFactory) MustNewServer(_ NetStackServerFactoryEnv, stack *netem.UNetStack) NetStackServer {
 	return &httpSecureServer{
 		closers:   []io.Closer{},
 		factory:   f.Factory,

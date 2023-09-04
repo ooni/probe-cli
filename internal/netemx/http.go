@@ -26,6 +26,8 @@ func (fx HTTPHandlerFactoryFunc) NewHandler() http.Handler {
 }
 
 // HTTPCleartextServerFactory implements [NetStackServerFactory] for cleartext HTTP.
+//
+// Use this factory along with [QAEnvOptionNetStack] to create cleartext HTTP servers.
 type HTTPCleartextServerFactory struct {
 	// Factory is the MANDATORY factory for creating the [http.Handler].
 	Factory HTTPHandlerFactory
@@ -37,7 +39,7 @@ type HTTPCleartextServerFactory struct {
 var _ NetStackServerFactory = &HTTPCleartextServerFactory{}
 
 // MustNewServer implements NetStackServerFactory.
-func (f *HTTPCleartextServerFactory) MustNewServer(stack *netem.UNetStack) NetStackServer {
+func (f *HTTPCleartextServerFactory) MustNewServer(_ NetStackServerFactoryEnv, stack *netem.UNetStack) NetStackServer {
 	return &httpCleartextServer{
 		closers: []io.Closer{},
 		factory: f.Factory,
