@@ -66,7 +66,7 @@ func (srv *tcpEchoServer) MustStart() {
 	srv.mu.Lock()
 
 	// for each port of interest - note that here we panic liberally because we are
-	// allowed to do so by the [QAEnvNetStackHandler] documentation.
+	// allowed to do so by the [NetStackServer] documentation.
 	for _, port := range srv.ports {
 		// create the endpoint address
 		ipAddr := net.ParseIP(srv.unet.IPAddress())
@@ -87,7 +87,7 @@ func (srv *tcpEchoServer) MustStart() {
 func (srv *tcpEchoServer) acceptLoop(listener net.Listener) {
 	// Implementation note: because this function is only used for writing QA tests, it is
 	// fine that we are using runtimex.Try1 and ignoring any panic.
-	defer runtimex.CatchLogAndIgnorePanic(srv.logger, "qaEnvNetStackTCPEcho.acceptLoop")
+	defer runtimex.CatchLogAndIgnorePanic(srv.logger, "tcpEchoServer.acceptLoop")
 	for {
 		conn := runtimex.Try1(listener.Accept())
 		go srv.serve(conn)
@@ -97,7 +97,7 @@ func (srv *tcpEchoServer) acceptLoop(listener net.Listener) {
 func (srv *tcpEchoServer) serve(conn net.Conn) {
 	// Implementation note: because this function is only used for writing QA tests, it is
 	// fine that we are using runtimex.Try1 and ignoring any panic.
-	defer runtimex.CatchLogAndIgnorePanic(srv.logger, "qaEnvTCPListenerEcho.serve")
+	defer runtimex.CatchLogAndIgnorePanic(srv.logger, "tcpEchoServer.serve")
 
 	// make sure we close the conn
 	defer conn.Close()

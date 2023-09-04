@@ -279,17 +279,31 @@ func configureDNSWithDefaults(config *netem.DNSConfig) {
 	configureDNSWithAddr(config, telegramWebAddr)
 }
 
-// telegramHTTPServerNetStackHandler is a [netemx.QAEnvNetStackHandler] that serves HTTP requests
+// telegramHTTPServerNetStackServerFactory is a [netemx.NetStackServerFactory] that serves HTTP requests
 // on the given addr and ports 443 and 80 as required by the telegram nettest
-type telegramHTTPServerNetStackHandler struct {
-	closers []io.Closer
-	mu      sync.Mutex
+type telegramHTTPServerNetStackServerFactory struct{}
+
+var _ netemx.NetStackServerFactory = &telegramHTTPServerNetStackServerFactory{}
+
+// MustNewServer implements netemx.NetStackServerFactory.
+func (f *telegramHTTPServerNetStackServerFactory) MustNewServer(stack *netem.UNetStack) netemx.NetStackServer {
+	return &telegramHTTPServerNetStackServer{
+		closers: []io.Closer{},
+		mu:      sync.Mutex{},
+		unet:    stack,
+	}
 }
 
-var _ netemx.QAEnvNetStackHandler = &telegramHTTPServerNetStackHandler{}
+// telegramHTTPServerNetStackServer is a [netemx.NetStackServer] that serves HTTP requests
+// on the given addr and ports 443 and 80 as required by the telegram nettest
+type telegramHTTPServerNetStackServer struct {
+	closers []io.Closer
+	mu      sync.Mutex
+	unet    *netem.UNetStack
+}
 
-// Close implements netemx.QAEnvNetStackHandler.
-func (nsh *telegramHTTPServerNetStackHandler) Close() error {
+// Close implements netemx.NetStackServer.
+func (nsh *telegramHTTPServerNetStackServer) Close() error {
 	// make the method locked as requested by the documentation
 	defer nsh.mu.Unlock()
 	nsh.mu.Lock()
@@ -304,8 +318,8 @@ func (nsh *telegramHTTPServerNetStackHandler) Close() error {
 	return nil
 }
 
-// Listen implements netemx.QAEnvNetStackHandler.
-func (nsh *telegramHTTPServerNetStackHandler) Listen(stack *netem.UNetStack) error {
+// MustStart implements netemx.NetStackServer.
+func (nsh *telegramHTTPServerNetStackServer) MustStart() {
 	// make the method locked as requested by the documentation
 	defer nsh.mu.Unlock()
 	nsh.mu.Lock()
@@ -315,14 +329,13 @@ func (nsh *telegramHTTPServerNetStackHandler) Listen(stack *netem.UNetStack) err
 	mux := http.NewServeMux()
 
 	// listen on port 80
-	nsh.listenPort(stack, mux, 80)
+	nsh.listenPort(nsh.unet, mux, 80)
 
 	// listen on port 443
-	nsh.listenPort(stack, mux, 443)
-	return nil
+	nsh.listenPort(nsh.unet, mux, 443)
 }
 
-func (nsh *telegramHTTPServerNetStackHandler) listenPort(stack *netem.UNetStack, mux *http.ServeMux, port uint16) {
+func (nsh *telegramHTTPServerNetStackServer) listenPort(stack *netem.UNetStack, mux *http.ServeMux, port uint16) {
 	// create the listening address
 	ipAddr := net.ParseIP(stack.IPAddress())
 	runtimex.Assert(ipAddr != nil, "expected valid IP address")
@@ -340,16 +353,13 @@ func (nsh *telegramHTTPServerNetStackHandler) listenPort(stack *netem.UNetStack,
 
 // newQAEnvironment creates a QA environment for testing using the given addresses.
 func newQAEnvironment(ipaddrs ...string) *netemx.QAEnv {
-	// create a single handler for handling all the requests
-	handler := &telegramHTTPServerNetStackHandler{
-		closers: []io.Closer{},
-		mu:      sync.Mutex{},
-	}
+	// create a single factory for handling all the requests
+	factory := &telegramHTTPServerNetStackServerFactory{}
 
 	// create the options for constructing the env
 	var options []netemx.QAEnvOption
 	for _, ipaddr := range ipaddrs {
-		options = append(options, netemx.QAEnvOptionNetStack(ipaddr, handler))
+		options = append(options, netemx.QAEnvOptionNetStack(ipaddr, factory))
 	}
 
 	// add explicit logging which helps to inspect the tests results
