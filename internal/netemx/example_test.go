@@ -20,10 +20,10 @@ import (
 func exampleNewEnvironment() *netemx.QAEnv {
 	return netemx.MustNewQAEnv(
 		netemx.QAEnvOptionDNSOverUDPResolvers("8.8.4.4", "9.9.9.9"),
-		netemx.QAEnvOptionClientAddress(netemx.QAEnvDefaultClientAddress),
-		netemx.QAEnvOptionISPResolverAddress(netemx.QAEnvDefaultISPResolverAddress),
+		netemx.QAEnvOptionClientAddress(netemx.DefaultClientAddress),
+		netemx.QAEnvOptionISPResolverAddress(netemx.DefaultISPResolverAddress),
 		netemx.QAEnvOptionHTTPServer(
-			netemx.InternetScenarioAddressWwwExampleCom, netemx.ExampleWebPageHandlerFactory()),
+			netemx.AddressWwwExampleCom, netemx.ExampleWebPageHandlerFactory()),
 		netemx.QAEnvOptionLogger(log.Log),
 	)
 }
@@ -34,7 +34,7 @@ func exampleAddRecordToAllResolvers(env *netemx.QAEnv) {
 	env.AddRecordToAllResolvers(
 		"example.com",
 		"", // CNAME
-		netemx.InternetScenarioAddressWwwExampleCom,
+		netemx.AddressWwwExampleCom,
 	)
 }
 
@@ -93,7 +93,7 @@ func Example_resolverConfig() {
 	env.OtherResolversConfig().AddRecord(
 		"example.com",
 		"", // CNAME
-		netemx.InternetScenarioAddressWwwExampleCom,
+		netemx.AddressWwwExampleCom,
 	)
 
 	// create a censored configuration for getaddrinfo
@@ -226,8 +226,8 @@ func Example_dnsOverUDPWithInternetScenario() {
 
 	env.Do(func() {
 		resolvers := []string{
-			net.JoinHostPort(netemx.QAEnvDefaultISPResolverAddress, "53"),
-			net.JoinHostPort(netemx.QAEnvDefaultUncensoredResolverAddress, "53"),
+			net.JoinHostPort(netemx.DefaultISPResolverAddress, "53"),
+			net.JoinHostPort(netemx.DefaultUncensoredResolverAddress, "53"),
 		}
 
 		for _, endpoint := range resolvers {
