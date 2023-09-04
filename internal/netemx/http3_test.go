@@ -26,6 +26,9 @@ func TestHTTP3ServerFactory(t *testing.T) {
 			10.55.56.57, the test is working as intended. I am wondering whether
 			I am not fully understanding how quic-go/quic-go works.
 
+			My (limited?) understanding: just a single test can use AddressWwwExampleCom
+			and, if I use it in other tests, there are issues leading to timeouts.
+
 			See https://github.com/ooni/probe/issues/2527.
 		*/
 
@@ -76,6 +79,9 @@ func TestHTTP3ServerFactory(t *testing.T) {
 			failed with generic_timeout_error. Now, instead, if I change it to use
 			10.55.56.100, the test is working as intended. I am wondering whether
 			I am not fully understanding how quic-go/quic-go works.
+
+			My (limited?) understanding: just a single test can use AddressWwwExampleCom
+			and, if I use it in other tests, there are issues leading to timeouts.
 
 			See https://github.com/ooni/probe/issues/2527.
 		*/
