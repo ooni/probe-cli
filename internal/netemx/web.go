@@ -1,6 +1,7 @@
 package netemx
 
 import (
+	"net"
 	"net/http"
 
 	"github.com/ooni/netem"
@@ -29,7 +30,17 @@ func ExampleWebPageHandlerFactory() QAEnvHTTPHandlerFactory {
 			w.Header().Add("Alt-Svc", `h3=":443"`)
 			w.Header().Add("Date", "Thu, 24 Aug 2023 14:35:29 GMT")
 
-			switch r.Host {
+			// According to Go documentation, the host header is removed from the
+			// header fields and included as (*Request).Host
+			//
+			// Empirically, this field could either contain an host name or it could
+			// be an endpoint, i.e., it could also contain an optional port
+			host := r.Host
+			if h, _, err := net.SplitHostPort(host); err == nil {
+				host = h
+			}
+
+			switch host {
 			case "www.example.com", "www.example.org":
 				w.Write([]byte(ExampleWebPage))
 
