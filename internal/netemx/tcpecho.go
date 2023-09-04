@@ -10,7 +10,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// NewTCPEchoServerFactory is a [QAEnvNetStackHandler] implementing a TCP echo service.
+// NewTCPEchoServerFactory is a [NetStackServerFactory] for the TCP echo service.
 func NewTCPEchoServerFactory(logger model.Logger, ports ...uint16) NetStackServerFactory {
 	return &tcpEchoServerFactory{
 		logger: logger,
