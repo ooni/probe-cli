@@ -33,8 +33,6 @@ func (f *OOHelperDFactory) NewHandler(unet *netem.UNetStack) http.Handler {
 		return netx.NewDialerWithResolver(logger, netx.NewStdlibResolver(logger))
 	}
 
-	// hard to test because of https://github.com/ooni/probe/issues/2527, which
-	// makes tests become flaky and fragile in an instant
 	handler.NewQUICDialer = func(logger model.Logger) model.QUICDialer {
 		return netx.NewQUICDialerWithResolver(
 			netx.NewQUICListener(),
@@ -59,8 +57,6 @@ func (f *OOHelperDFactory) NewHandler(unet *netem.UNetStack) http.Handler {
 		}
 	}
 
-	// hard to test because of https://github.com/ooni/probe/issues/2527, which
-	// makes tests become flaky and fragile in an instant
 	handler.NewHTTP3Client = func(logger model.Logger) model.HTTPClient {
 		cookieJar, _ := cookiejar.New(&cookiejar.Options{
 			PublicSuffixList: publicsuffix.List,

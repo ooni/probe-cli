@@ -145,6 +145,10 @@ func MustNewScenario(config []*ScenarioDomainAddresses) *QAEnv {
 					Factory:   sad.WebServerFactory,
 					Ports:     []int{443},
 					TLSConfig: nil, // use netem's default
+				}, &HTTP3ServerFactory{
+					Factory:   sad.WebServerFactory,
+					Ports:     []int{443},
+					TLSConfig: nil, // use netem's default
 				}))
 			}
 
