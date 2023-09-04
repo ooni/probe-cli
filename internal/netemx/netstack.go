@@ -1,13 +1,26 @@
 package netemx
 
-import "github.com/ooni/netem"
+import (
+	"github.com/ooni/netem"
+	"github.com/ooni/probe-cli/v3/internal/model"
+)
+
+// NetStackServerFactoryEnv is [NetStackServerFactory] view of [*QAEnv].
+type NetStackServerFactoryEnv interface {
+	// Logger returns the base logger configured for the [*QAEnv].
+	Logger() model.Logger
+
+	// OtherResolversConfig returns the configuration used by all the
+	// DNS resolvers except the ISP's DNS resolver.
+	OtherResolversConfig() *netem.DNSConfig
+}
 
 // NetStackServerFactory constructs a new [NetStackServer].
 type NetStackServerFactory interface {
 	// MustNewServer constructs a [NetStackServer] BORROWING a reference to an
 	// underlying network attached to an userspace TCP/IP stack. This method MAY
 	// call PANIC in case of failure.
-	MustNewServer(stack *netem.UNetStack) NetStackServer
+	MustNewServer(env NetStackServerFactoryEnv, stack *netem.UNetStack) NetStackServer
 }
 
 // NetStackServer handles the lifecycle of a server using a TCP/IP stack in userspace.

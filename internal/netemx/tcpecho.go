@@ -24,7 +24,7 @@ type tcpEchoServerFactory struct {
 }
 
 // MustNewServer implements NetStackServerFactory.
-func (f *tcpEchoServerFactory) MustNewServer(stack *netem.UNetStack) NetStackServer {
+func (f *tcpEchoServerFactory) MustNewServer(_ NetStackServerFactoryEnv, stack *netem.UNetStack) NetStackServer {
 	return &tcpEchoServer{
 		closers: []io.Closer{},
 		logger:  f.logger,
