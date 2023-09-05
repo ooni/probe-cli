@@ -14,7 +14,7 @@ import (
 type DNSNumBogusResponses int
 
 // DNSSimulateGWFListener is a DNS-over-UDP listener that simulates the GFW behavior by
-// responding with three answers, where the first two answers are invalid for the domain
+// responding with N+1 answers, where the first N answers are invalid for the domain
 // and the last answer is correct for the domain. The zero value of this struct is
 // invalid, please use [NewDNSSimulateGWFListener].
 type DNSSimulateGWFListener struct {
