@@ -3,6 +3,7 @@ package netxlite_test
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -18,6 +19,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quictesting"
 	"github.com/ooni/probe-cli/v3/internal/randx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
 	"github.com/quic-go/quic-go"
 	utls "gitlab.com/yawning/utls.git"
 )
@@ -117,15 +119,12 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 	})
 
 	t.Run("for nxdomain", func(t *testing.T) {
-		proxy := &filtering.DNSServer{
-			OnQuery: func(domain string) filtering.DNSAction {
-				return filtering.DNSActionNXDOMAIN
-			},
+		udpAddr := &net.UDPAddr{
+			IP:   net.IPv4(127, 0, 0, 1),
+			Port: 0,
 		}
-		listener, err := proxy.Start("127.0.0.1:0")
-		if err != nil {
-			t.Fatal(err)
-		}
+		dnsRtx := testingx.NewDNSRoundTripperNXDOMAIN()
+		listener := testingx.MustNewDNSOverUDPListener(udpAddr, &testingx.DNSOverUDPStdlibListener{}, dnsRtx)
 		defer listener.Close()
 		dlr := netxlite.NewDialerWithoutResolver(log.Log)
 		r := netxlite.NewParallelUDPResolver(log.Log, dlr, listener.LocalAddr().String())
@@ -141,15 +140,12 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 	})
 
 	t.Run("for refused", func(t *testing.T) {
-		proxy := &filtering.DNSServer{
-			OnQuery: func(domain string) filtering.DNSAction {
-				return filtering.DNSActionRefused
-			},
+		udpAddr := &net.UDPAddr{
+			IP:   net.IPv4(127, 0, 0, 1),
+			Port: 0,
 		}
-		listener, err := proxy.Start("127.0.0.1:0")
-		if err != nil {
-			t.Fatal(err)
-		}
+		dnsRtx := testingx.NewDNSRoundTripperRefused()
+		listener := testingx.MustNewDNSOverUDPListener(udpAddr, &testingx.DNSOverUDPStdlibListener{}, dnsRtx)
 		defer listener.Close()
 		dlr := netxlite.NewDialerWithoutResolver(log.Log)
 		r := netxlite.NewParallelUDPResolver(log.Log, dlr, listener.LocalAddr().String())
@@ -165,15 +161,12 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 	})
 
 	t.Run("for timeout", func(t *testing.T) {
-		proxy := &filtering.DNSServer{
-			OnQuery: func(domain string) filtering.DNSAction {
-				return filtering.DNSActionTimeout
-			},
+		udpAddr := &net.UDPAddr{
+			IP:   net.IPv4(127, 0, 0, 1),
+			Port: 0,
 		}
-		listener, err := proxy.Start("127.0.0.1:0")
-		if err != nil {
-			t.Fatal(err)
-		}
+		dnsRtx := testingx.NewDNSRoundTripperSimulateTimeout(time.Millisecond, errors.New("mocked error"))
+		listener := testingx.MustNewDNSOverUDPListener(udpAddr, &testingx.DNSOverUDPStdlibListener{}, dnsRtx)
 		defer listener.Close()
 		dlr := netxlite.NewDialerWithoutResolver(log.Log)
 		r := netxlite.NewParallelUDPResolver(log.Log, dlr, listener.LocalAddr().String())

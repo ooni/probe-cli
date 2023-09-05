@@ -11,37 +11,37 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// UDPResolverFactory implements [NetStackServerFactory] for DNS-over-UDP servers.
+// DNSOverUDPServerFactory implements [NetStackServerFactory] for DNS-over-UDP servers.
 //
 // When this factory constructs a [NetStackServer], it will use:
 //
 // 1. the [NetStackServerFactoryEnv.OtherResolversConfig] as DNS configuration;
 //
-// 2. the [NetStackServerFactoryEnv.Logger] as the logger.
+// 2. the [NetStackServerFactoryEnv.Logger] as logger.
 //
 // Use this factory along with [QAEnvOptionNetStack] to create DNS-over-UDP servers.
-type UDPResolverFactory struct{}
+type DNSOverUDPServerFactory struct{}
 
-var _ NetStackServerFactory = &UDPResolverFactory{}
-
-// MustNewServer implements NetStackServerFactory.
-func (f *UDPResolverFactory) MustNewServer(env NetStackServerFactoryEnv, stack *netem.UNetStack) NetStackServer {
-	return udpResolverMustNewServer(env.OtherResolversConfig(), env.Logger(), stack)
-}
-
-type udpResolverFactoryForGetaddrinfo struct{}
-
-var _ NetStackServerFactory = &udpResolverFactoryForGetaddrinfo{}
+var _ NetStackServerFactory = &DNSOverUDPServerFactory{}
 
 // MustNewServer implements NetStackServerFactory.
-func (f *udpResolverFactoryForGetaddrinfo) MustNewServer(env NetStackServerFactoryEnv, stack *netem.UNetStack) NetStackServer {
-	return udpResolverMustNewServer(env.ISPResolverConfig(), env.Logger(), stack)
+func (f *DNSOverUDPServerFactory) MustNewServer(env NetStackServerFactoryEnv, stack *netem.UNetStack) NetStackServer {
+	return dnsOverUDPResolverMustNewServer(env.OtherResolversConfig(), env.Logger(), stack)
 }
 
-// udpResolverMustNewServer is an internal factory for creating a [NetStackServer] that
+type dnsOverUDPServerFactoryForGetaddrinfo struct{}
+
+var _ NetStackServerFactory = &dnsOverUDPServerFactoryForGetaddrinfo{}
+
+// MustNewServer implements NetStackServerFactory.
+func (f *dnsOverUDPServerFactoryForGetaddrinfo) MustNewServer(env NetStackServerFactoryEnv, stack *netem.UNetStack) NetStackServer {
+	return dnsOverUDPResolverMustNewServer(env.ISPResolverConfig(), env.Logger(), stack)
+}
+
+// dnsOverUDPResolverMustNewServer is an internal factory for creating a [NetStackServer] that
 // runs a DNS-over-UDP server using the configured logger, DNS config, and stack.
-func udpResolverMustNewServer(config *netem.DNSConfig, logger model.Logger, stack *netem.UNetStack) NetStackServer {
-	return &udpResolver{
+func dnsOverUDPResolverMustNewServer(config *netem.DNSConfig, logger model.Logger, stack *netem.UNetStack) NetStackServer {
+	return &dnsOverUDPResolver{
 		closers: []io.Closer{},
 		config:  config,
 		logger:  logger,
@@ -50,7 +50,7 @@ func udpResolverMustNewServer(config *netem.DNSConfig, logger model.Logger, stac
 	}
 }
 
-type udpResolver struct {
+type dnsOverUDPResolver struct {
 	closers []io.Closer
 	config  *netem.DNSConfig
 	logger  model.Logger
@@ -59,7 +59,7 @@ type udpResolver struct {
 }
 
 // Close implements NetStackServer.
-func (srv *udpResolver) Close() error {
+func (srv *dnsOverUDPResolver) Close() error {
 	// make the method locked as requested by the documentation
 	defer srv.mu.Unlock()
 	srv.mu.Lock()
@@ -75,7 +75,7 @@ func (srv *udpResolver) Close() error {
 }
 
 // MustStart implements NetStackServer.
-func (srv *udpResolver) MustStart() {
+func (srv *dnsOverUDPResolver) MustStart() {
 	// make the method locked as requested by the documentation
 	defer srv.mu.Unlock()
 	srv.mu.Lock()
