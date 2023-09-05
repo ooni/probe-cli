@@ -43,6 +43,12 @@ func AllTestCases() []*TestCase {
 		dnsHijackingToProxyWithHTTPURL(),
 		dnsHijackingToProxyWithHTTPSURL(),
 
+		redirectWithConsistentDNSAndThenConnectionRefusedForHTTP(),
+		redirectWithConsistentDNSAndThenConnectionRefusedForHTTPS(),
+		redirectWithConsistentDNSAndThenConnectionResetForHTTP(),
+		redirectWithConsistentDNSAndThenConnectionResetForHTTPS(),
+		redirectWithConsistentDNSAndThenNXDOMAIN(),
+
 		sucessWithHTTP(),
 		sucessWithHTTPS(),
 

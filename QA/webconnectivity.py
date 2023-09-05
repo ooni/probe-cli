@@ -47,102 +47,6 @@ def assert_status_flags_are(ooni_exe, tk, desired):
     assert tk["x_status"] == desired
 
 
-def webconnectivity_http_connection_refused_with_consistent_dns(ooni_exe, outfile):
-    """Test case where there's TCP/IP blocking w/ consistent DNS that occurs
-    while we're following the chain of redirects."""
-    # We use a bit.ly link redirecting to nexa.polito.it. We block the IP address
-    # used by nexa.polito.it. So the error should happen in the redirect chain.
-    ip = socket.gethostbyname("nexa.polito.it")
-    args = [
-        "-iptables-reset-ip",
-        ip,
-    ]
-    tk = execute_jafar_and_return_validated_test_keys(
-        ooni_exe,
-        outfile,
-        "-i https://bit.ly/3h9EJR3 web_connectivity",
-        "webconnectivity_http_connection_refused_with_consistent_dns",
-        args,
-    )
-    assert tk["dns_experiment_failure"] == None
-    assert tk["dns_consistency"] == "consistent"
-    assert tk["control_failure"] == None
-    assert tk["http_experiment_failure"] == "connection_refused"
-    assert tk["body_length_match"] == None
-    assert tk["body_proportion"] == 0
-    assert tk["status_code_match"] == None
-    assert tk["headers_match"] == None
-    assert tk["title_match"] == None
-    assert tk["blocking"] == "http-failure"
-    assert tk["accessible"] == False
-    assert_status_flags_are(ooni_exe, tk, 8320)
-
-
-def webconnectivity_http_connection_reset_with_consistent_dns(ooni_exe, outfile):
-    """Test case where there's RST-based blocking blocking w/ consistent DNS that
-    occurs while we're following the chain of redirects."""
-    # We use a bit.ly link redirecting to nexa.polito.it. We block the Host header
-    # used for nexa.polito.it. So the error should happen in the redirect chain.
-    args = [
-        "-iptables-reset-keyword",
-        "Host: nexa",
-    ]
-    tk = execute_jafar_and_return_validated_test_keys(
-        ooni_exe,
-        outfile,
-        "-i https://bit.ly/3h9EJR3 web_connectivity",
-        "webconnectivity_http_connection_reset_with_consistent_dns",
-        args,
-    )
-    assert tk["dns_experiment_failure"] == None
-    assert tk["dns_consistency"] == "consistent"
-    assert tk["control_failure"] == None
-    assert tk["http_experiment_failure"] == "connection_reset"
-    assert tk["body_length_match"] == None
-    assert tk["body_proportion"] == 0
-    assert tk["status_code_match"] == None
-    assert tk["headers_match"] == None
-    assert tk["title_match"] == None
-    assert tk["blocking"] == "http-failure"
-    assert tk["accessible"] == False
-    assert_status_flags_are(ooni_exe, tk, 8448)
-
-
-def webconnectivity_http_nxdomain_with_consistent_dns(ooni_exe, outfile):
-    """Test case where there's a redirection and the redirected request cannot
-    continue because a NXDOMAIN error occurs."""
-    # We use a bit.ly link redirecting to nexa.polito.it. We block the DNS request
-    # for nexa.polito.it. So the error should happen in the redirect chain.
-    args = [
-        "-iptables-hijack-dns-to",
-        "127.0.0.1:53",
-        "-dns-proxy-block",
-        "nexa.polito.it",
-    ]
-    tk = execute_jafar_and_return_validated_test_keys(
-        ooni_exe,
-        outfile,
-        "-i https://bit.ly/3h9EJR3 web_connectivity",
-        "webconnectivity_http_nxdomain_with_consistent_dns",
-        args,
-    )
-    assert tk["dns_experiment_failure"] == None
-    assert tk["dns_consistency"] == "consistent"
-    assert tk["control_failure"] == None
-    assert (
-        tk["http_experiment_failure"] == "dns_nxdomain_error"  # miniooni
-        or tk["http_experiment_failure"] == "dns_lookup_error"  # MK
-    )
-    assert tk["body_length_match"] == None
-    assert tk["body_proportion"] == 0
-    assert tk["status_code_match"] == None
-    assert tk["headers_match"] == None
-    assert tk["title_match"] == None
-    assert tk["blocking"] == "dns"
-    assert tk["accessible"] == False
-    assert_status_flags_are(ooni_exe, tk, 8224)
-
-
 def webconnectivity_http_eof_error_with_consistent_dns(ooni_exe, outfile):
     """Test case where there's a redirection and the redirected request cannot
     continue because an eof_error error occurs."""
@@ -496,9 +400,6 @@ def main():
     outfile = "webconnectivity.jsonl"
     ooni_exe = sys.argv[1]
     tests = [
-        webconnectivity_http_connection_refused_with_consistent_dns,
-        webconnectivity_http_connection_reset_with_consistent_dns,
-        webconnectivity_http_nxdomain_with_consistent_dns,
         webconnectivity_http_eof_error_with_consistent_dns,
         webconnectivity_http_generic_timeout_error_with_consistent_dns,
         webconnectivity_http_connection_reset_with_inconsistent_dns,
