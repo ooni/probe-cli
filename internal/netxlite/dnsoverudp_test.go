@@ -259,7 +259,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			dnsConfig := netem.NewDNSConfig()
 			dnsConfig.AddRecord("dns.google", "", "8.8.8.8")
 			dnsRtx := testingx.NewDNSRoundTripperWithDNSConfig(dnsConfig)
-			listener := testingx.MustNewDNSOverUDPListener(udpAddr, &testingx.DNSOverUDPStdlibListener{}, dnsRtx)
+			listener := testingx.MustNewDNSOverUDPListener(udpAddr, &testingx.DNSOverUDPListenerStdlib{}, dnsRtx)
 			defer listener.Close()
 			dialer := NewDialerWithoutResolver(model.DiscardLogger)
 			txp := NewUnwrappedDNSOverUDPTransport(dialer, listener.LocalAddr().String())
@@ -292,7 +292,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 				Port: 0,
 			}
 			listener := testingx.MustNewDNSSimulateGWFListener(
-				udpAddr, &testingx.DNSOverUDPStdlibListener{}, dnsConfigBogus,
+				udpAddr, &testingx.DNSOverUDPListenerStdlib{}, dnsConfigBogus,
 				dnsConfigGood, testingx.DNSNumBogusResponses(1))
 			dialer := NewDialerWithoutResolver(model.DiscardLogger)
 			expectedAddress := listener.LocalAddr().String()
@@ -326,7 +326,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 				Port: 0,
 			}
 			listener := testingx.MustNewDNSSimulateGWFListener(
-				udpAddr, &testingx.DNSOverUDPStdlibListener{}, dnsConfigBogus,
+				udpAddr, &testingx.DNSOverUDPListenerStdlib{}, dnsConfigBogus,
 				dnsConfigGood, testingx.DNSNumBogusResponses(1))
 			defer listener.Close()
 			dialer := NewDialerWithoutResolver(model.DiscardLogger)
@@ -417,7 +417,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			}
 			// Note: the config here is empty so we should get a "no such host" error from the server.
 			listener := testingx.MustNewDNSSimulateGWFListener(
-				udpAddr, &testingx.DNSOverUDPStdlibListener{}, dnsConfigBogus,
+				udpAddr, &testingx.DNSOverUDPListenerStdlib{}, dnsConfigBogus,
 				netem.NewDNSConfig(), testingx.DNSNumBogusResponses(1))
 			defer listener.Close()
 			dialer := NewDialerWithoutResolver(model.DiscardLogger)

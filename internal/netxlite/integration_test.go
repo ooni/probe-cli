@@ -124,7 +124,7 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 			Port: 0,
 		}
 		dnsRtx := testingx.NewDNSRoundTripperNXDOMAIN()
-		listener := testingx.MustNewDNSOverUDPListener(udpAddr, &testingx.DNSOverUDPStdlibListener{}, dnsRtx)
+		listener := testingx.MustNewDNSOverUDPListener(udpAddr, &testingx.DNSOverUDPListenerStdlib{}, dnsRtx)
 		defer listener.Close()
 		dlr := netxlite.NewDialerWithoutResolver(log.Log)
 		r := netxlite.NewParallelUDPResolver(log.Log, dlr, listener.LocalAddr().String())
@@ -145,7 +145,7 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 			Port: 0,
 		}
 		dnsRtx := testingx.NewDNSRoundTripperRefused()
-		listener := testingx.MustNewDNSOverUDPListener(udpAddr, &testingx.DNSOverUDPStdlibListener{}, dnsRtx)
+		listener := testingx.MustNewDNSOverUDPListener(udpAddr, &testingx.DNSOverUDPListenerStdlib{}, dnsRtx)
 		defer listener.Close()
 		dlr := netxlite.NewDialerWithoutResolver(log.Log)
 		r := netxlite.NewParallelUDPResolver(log.Log, dlr, listener.LocalAddr().String())
@@ -166,7 +166,7 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 			Port: 0,
 		}
 		dnsRtx := testingx.NewDNSRoundTripperSimulateTimeout(time.Millisecond, errors.New("mocked error"))
-		listener := testingx.MustNewDNSOverUDPListener(udpAddr, &testingx.DNSOverUDPStdlibListener{}, dnsRtx)
+		listener := testingx.MustNewDNSOverUDPListener(udpAddr, &testingx.DNSOverUDPListenerStdlib{}, dnsRtx)
 		defer listener.Close()
 		dlr := netxlite.NewDialerWithoutResolver(log.Log)
 		r := netxlite.NewParallelUDPResolver(log.Log, dlr, listener.LocalAddr().String())
