@@ -307,7 +307,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			if _, err := rch.DecodeLookupHost(); err != nil {
 				t.Fatal(err)
 			}
-			// Now wait for the delayed responses to arrive. We don't care much
+			// Now wait for the delayed response to arrive. We don't care much
 			// about observing it here, rather we want to know it happened.
 			<-txp.lateResponses
 		})
