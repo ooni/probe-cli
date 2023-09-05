@@ -47,72 +47,6 @@ def assert_status_flags_are(ooni_exe, tk, desired):
     assert tk["x_status"] == desired
 
 
-def webconnectivity_https_ok_with_control_failure(ooni_exe, outfile):
-    """Successful HTTPS measurement but control failure."""
-    # Note: this QA check will increasingly become more difficult to implement
-    # as we continue to improve our fallback TH strategies
-    args = [
-        "-iptables-reset-keyword",
-        "th.ooni.org",
-        "-iptables-reset-keyword",
-        "d33d1gs9kpq1c5.cloudfront.net",
-    ]
-    tk = execute_jafar_and_return_validated_test_keys(
-        ooni_exe,
-        outfile,
-        "-i https://example.com/ web_connectivity",
-        "webconnectivity_https_ok_with_control_failure",
-        args,
-    )
-    assert tk["dns_experiment_failure"] == None
-    assert tk["dns_consistency"] == None
-    assert "connection_reset" in tk["control_failure"]
-    assert tk["http_experiment_failure"] == None
-    assert tk["body_length_match"] == None
-    assert tk["body_proportion"] == 0
-    assert tk["status_code_match"] == None
-    assert tk["headers_match"] == None
-    assert tk["title_match"] == None
-    if "miniooni" in ooni_exe:
-        assert tk["blocking"] == False
-        assert tk["accessible"] == True
-    else:
-        assert tk["blocking"] == None
-        assert tk["accessible"] == None
-    assert_status_flags_are(ooni_exe, tk, 1)
-
-
-def webconnectivity_http_ok_with_control_failure(ooni_exe, outfile):
-    """Successful HTTP measurement but control failure."""
-    # Note: this QA check will increasingly become more difficult to implement
-    # as we continue to improve our fallback TH strategies
-    args = [
-        "-iptables-reset-keyword",
-        "th.ooni.org",
-        "-iptables-reset-keyword",
-        "d33d1gs9kpq1c5.cloudfront.net",
-    ]
-    tk = execute_jafar_and_return_validated_test_keys(
-        ooni_exe,
-        outfile,
-        "-i http://example.org/ web_connectivity",
-        "webconnectivity_http_ok_with_control_failure",
-        args,
-    )
-    assert tk["dns_experiment_failure"] == None
-    assert tk["dns_consistency"] == None
-    assert "connection_reset" in tk["control_failure"]
-    assert tk["http_experiment_failure"] == None
-    assert tk["body_length_match"] == None
-    assert tk["body_proportion"] == 0
-    assert tk["status_code_match"] == None
-    assert tk["headers_match"] == None
-    assert tk["title_match"] == None
-    assert tk["blocking"] == None
-    assert tk["accessible"] == None
-    assert_status_flags_are(ooni_exe, tk, 8)
-
-
 def webconnectivity_transparent_http_proxy(ooni_exe, outfile):
     """Test case where we pass through a transparent HTTP proxy"""
     args = []
@@ -642,8 +576,6 @@ def main():
     outfile = "webconnectivity.jsonl"
     ooni_exe = sys.argv[1]
     tests = [
-        webconnectivity_https_ok_with_control_failure,
-        webconnectivity_http_ok_with_control_failure,
         webconnectivity_transparent_http_proxy,
         webconnectivity_transparent_https_proxy,
         webconnectivity_dns_hijacking,
