@@ -3,11 +3,11 @@ package netemx
 // DefaultClientAddress is the default client IP address.
 const DefaultClientAddress = "130.192.91.211"
 
-// DefaultISPResolverAddress is the default IP address of the client ISP resolver.
-const DefaultISPResolverAddress = "130.192.3.21"
+// ISPResolverAddress is the IP address of the client ISP resolver.
+const ISPResolverAddress = "130.192.3.21"
 
-// DefaultUncensoredResolverAddress is the default uncensored resolver IP address.
-const DefaultUncensoredResolverAddress = "1.1.1.1"
+// RootResolverAddress is the root resolver resolver IP address.
+const RootResolverAddress = "193.0.14.129"
 
 // AddressApiOONIIo is the IP address for api.ooni.io.
 const AddressApiOONIIo = "162.55.247.208"
@@ -36,8 +36,11 @@ const AddressDNSQuad9Net = "9.9.9.9"
 // AddressMozillaCloudflareDNSCom is the IP address for mozilla.cloudflare-dns.com.
 const AddressMozillaCloudflareDNSCom = "172.64.41.4"
 
-// AddressDNSGoogle is the IP address for dns.google.
-const AddressDNSGoogle = "8.8.4.4"
+// AddressDNSGoogle8844 is the 8.8.4.4 address for dns.google.
+const AddressDNSGoogle8844 = "8.8.4.4"
+
+// AddressDNSGoogle8888 is the 8.8.8.8 address for dns.google.
+const AddressDNSGoogle8888 = "8.8.8.8"
 
 // AddressPublicBlockpage is the IP address we use for modeling a public IP address that is serving
 // blockpages to its users. As of 2023-09-04, this is the IP address resolving for thepiratebay.com when

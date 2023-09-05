@@ -7,6 +7,9 @@ import (
 
 // NetStackServerFactoryEnv is [NetStackServerFactory] view of [*QAEnv].
 type NetStackServerFactoryEnv interface {
+	// ISPResolverConfig returns the configuration used by the ISP's resolver.
+	ISPResolverConfig() *netem.DNSConfig
+
 	// Logger returns the base logger configured for the [*QAEnv].
 	Logger() model.Logger
 
