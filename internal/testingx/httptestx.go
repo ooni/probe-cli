@@ -129,7 +129,7 @@ func HTTPHandlerReset() http.Handler {
 }
 
 // HTTPHandlerTimeout returns a handler that never returns a response and instead
-// blocks on the request context, this causing a client timeout.
+// blocks on the request context, thus causing a client timeout.
 func HTTPHandlerTimeout() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		httpHandlerHijack(w, r, "timeout")
