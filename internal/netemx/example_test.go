@@ -478,3 +478,32 @@ func Example_examplePublicBlockpage() {
 	// </body>
 	// </html>
 }
+
+// This example shows how the [InternetScenario] includes an URL shortener.
+func Example_exampleURLShortener() {
+	env := netemx.MustNewScenario(netemx.InternetScenario)
+	defer env.Close()
+
+	env.Do(func() {
+		client := netxlite.NewHTTPTransportStdlib(log.Log)
+
+		req, err := http.NewRequest("GET", "https://bit.ly/21645", nil)
+		if err != nil {
+			log.Fatalf("http.NewRequest failed: %s", err.Error())
+		}
+
+		resp, err := client.RoundTrip(req)
+		if err != nil {
+			log.Fatalf("client.Do failed: %s", err.Error())
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusPermanentRedirect {
+			log.Fatalf("got unexpected status code: %d", resp.StatusCode)
+		}
+
+		fmt.Printf("%+v\n", resp.Header.Get("Location"))
+	})
+
+	// Output:
+	// https://www.example.com/
+}

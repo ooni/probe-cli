@@ -89,3 +89,31 @@ func BlockpageHandlerFactory() HTTPHandlerFactory {
 		})
 	})
 }
+
+// DefaultURLShortenerMapping is the default URL shortener mapping we use.
+var DefaultURLShortenerMapping = map[string]string{
+	"/21645": "https://www.example.com/",
+	"/32447": "http://www.example.com/",
+	"/24561": "https://example.com/",
+	"/21309": "http://example.com/",
+	"/30744": "https://www.example.org/",
+	"/23894": "http://www.example.org/",
+	"/30179": "https://example.org/",
+	"/11372": "http://example.org/",
+}
+
+// URLShortenerFactory returns an [HTTPHandlerFactory] that eventually redirects
+// requests using the map provided as argument or returns 404.
+func URLShortenerFactory(mapping map[string]string) HTTPHandlerFactory {
+	return HTTPHandlerFactoryFunc(func(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			location, found := mapping[r.URL.Path]
+			if !found {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+			w.Header().Set("Location", location)
+			w.WriteHeader(http.StatusPermanentRedirect)
+		})
+	})
+}
