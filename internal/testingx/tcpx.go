@@ -20,6 +20,8 @@ func (*TCPListenerStdlib) ListenTCP(network string, addr *net.TCPAddr) (net.List
 
 // tcpMaybeResetNetConn is a portable mechanism to reset a net.Conn that takes into account
 // both TLS wrapping with any library and stdlib vs. netem concerns.
+//
+// Bug: netem is not WAI because there's no *gonet.TCPConn.SetLinger method.
 func tcpMaybeResetNetConn(conn net.Conn) {
 	// first, let's try to get the underlying conn, when we're using TLS
 	type connUnwrapper interface {
