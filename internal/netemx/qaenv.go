@@ -182,10 +182,10 @@ func MustNewQAEnv(options ...QAEnvOption) *QAEnv {
 	}
 
 	// make sure we're going to create the ISP's DNS resolver.
-	qaEnvOptionNetStack(config.ispResolver, &udpResolverFactoryForGetaddrinfo{})(config)
+	qaEnvOptionNetStack(config.ispResolver, &dnsOverUDPServerFactoryForGetaddrinfo{})(config)
 
 	// make sure we're going to create the root DNS resolver.
-	qaEnvOptionNetStack(config.rootResolver, &UDPResolverFactory{})(config)
+	qaEnvOptionNetStack(config.rootResolver, &DNSOverUDPServerFactory{})(config)
 
 	// use a prefix logger for the QA env
 	prefixLogger := &logx.PrefixLogger{

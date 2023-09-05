@@ -125,7 +125,7 @@ func MustNewScenario(config []*ScenarioDomainAddresses) *QAEnv {
 			for _, addr := range sad.Addresses {
 				opts = append(opts, QAEnvOptionNetStack(
 					addr,
-					&UDPResolverFactory{},
+					&DNSOverUDPServerFactory{},
 					&HTTPSecureServerFactory{
 						Factory:   &DNSOverHTTPSHandlerFactory{},
 						Ports:     []int{443},

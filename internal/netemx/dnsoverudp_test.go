@@ -10,9 +10,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-func TestUDPResolverFactory(t *testing.T) {
+func TestDNSOverUDPServerFactory(t *testing.T) {
 	env := MustNewQAEnv(
-		QAEnvOptionNetStack(AddressDNSGoogle8844, &UDPResolverFactory{}),
+		QAEnvOptionNetStack(AddressDNSGoogle8844, &DNSOverUDPServerFactory{}),
 	)
 	defer env.Close()
 

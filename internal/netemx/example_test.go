@@ -20,8 +20,8 @@ import (
 // to use this QA environment in all the examples for this package.
 func exampleNewEnvironment() *netemx.QAEnv {
 	return netemx.MustNewQAEnv(
-		netemx.QAEnvOptionNetStack("8.8.4.4", &netemx.UDPResolverFactory{}),
-		netemx.QAEnvOptionNetStack("9.9.9.9", &netemx.UDPResolverFactory{}),
+		netemx.QAEnvOptionNetStack("8.8.4.4", &netemx.DNSOverUDPServerFactory{}),
+		netemx.QAEnvOptionNetStack("9.9.9.9", &netemx.DNSOverUDPServerFactory{}),
 		netemx.QAEnvOptionClientAddress(netemx.DefaultClientAddress),
 		netemx.QAEnvOptionHTTPServer(
 			netemx.AddressWwwExampleCom, netemx.ExampleWebPageHandlerFactory()),
