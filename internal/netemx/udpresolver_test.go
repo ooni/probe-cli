@@ -12,7 +12,7 @@ import (
 
 func TestUDPResolverFactory(t *testing.T) {
 	env := MustNewQAEnv(
-		QAEnvOptionNetStack(AddressDNSGoogle, &UDPResolverFactory{}),
+		QAEnvOptionNetStack(AddressDNSGoogle8844, &UDPResolverFactory{}),
 	)
 	defer env.Close()
 
@@ -21,7 +21,7 @@ func TestUDPResolverFactory(t *testing.T) {
 	env.Do(func() {
 		reso := netxlite.NewParallelUDPResolver(
 			log.Log, netxlite.NewDialerWithoutResolver(log.Log),
-			net.JoinHostPort(AddressDNSGoogle, "53"))
+			net.JoinHostPort(AddressDNSGoogle8844, "53"))
 		addrs, err := reso.LookupHost(context.Background(), "www.example.com")
 		if err != nil {
 			t.Fatal(err)

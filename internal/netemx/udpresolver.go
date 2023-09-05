@@ -29,6 +29,15 @@ func (f *UDPResolverFactory) MustNewServer(env NetStackServerFactoryEnv, stack *
 	return udpResolverMustNewServer(env.OtherResolversConfig(), env.Logger(), stack)
 }
 
+type udpResolverFactoryForGetaddrinfo struct{}
+
+var _ NetStackServerFactory = &udpResolverFactoryForGetaddrinfo{}
+
+// MustNewServer implements NetStackServerFactory.
+func (f *udpResolverFactoryForGetaddrinfo) MustNewServer(env NetStackServerFactoryEnv, stack *netem.UNetStack) NetStackServer {
+	return udpResolverMustNewServer(env.ISPResolverConfig(), env.Logger(), stack)
+}
+
 // udpResolverMustNewServer is an internal factory for creating a [NetStackServer] that
 // runs a DNS-over-UDP server using the configured logger, DNS config, and stack.
 func udpResolverMustNewServer(config *netem.DNSConfig, logger model.Logger, stack *netem.UNetStack) NetStackServer {
