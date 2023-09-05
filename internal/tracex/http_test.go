@@ -12,7 +12,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
@@ -142,7 +141,7 @@ func TestHTTPTransportSaver(t *testing.T) {
 			if len(value.HTTPResponseHeaders) <= 0 {
 				t.Fatal("expected at least one response header")
 			}
-			if !bytes.Equal(value.HTTPResponseBody, filtering.HTTPBlockpage451) {
+			if !bytes.Equal(value.HTTPResponseBody, testingx.HTTPBlockpage451) {
 				t.Fatal("unexpected value for response body")
 			}
 			if value.HTTPStatusCode != 451 {
@@ -172,7 +171,7 @@ func TestHTTPTransportSaver(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !bytes.Equal(data, filtering.HTTPBlockpage451) {
+			if !bytes.Equal(data, testingx.HTTPBlockpage451) {
 				t.Fatal("we cannot re-read the same body")
 			}
 		})
