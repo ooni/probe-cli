@@ -39,7 +39,7 @@ type TLSSNIProxy struct {
 }
 
 // TODO(bassosimone): MustNewTLSSNIProxyEx prototype would be simpler if
-// netx.SNI was also able to create listening TCP connections
+// netxlite.Netx was also able to create listening TCP connections
 
 // MustNewTLSSNIProxyEx creates a new [*TLSSNIProxy].
 func MustNewTLSSNIProxyEx(
