@@ -1,7 +1,6 @@
 package testingx
 
 import (
-	"context"
 	"errors"
 	"net"
 	"sync"
@@ -20,7 +19,6 @@ type DNSNumBogusResponses int
 // invalid, please use [NewDNSSimulateGWFListener].
 type DNSSimulateGWFListener struct {
 	bogusConfig *netem.DNSConfig
-	cancel      context.CancelFunc
 	closeOnce   sync.Once
 	goodConfig  *netem.DNSConfig
 	numBogus    DNSNumBogusResponses
@@ -41,13 +39,11 @@ func MustNewDNSSimulateGWFListener(
 	numBogusResponses DNSNumBogusResponses,
 ) *DNSSimulateGWFListener {
 	pconn := runtimex.Try1(dul.ListenUDP("udp", addr))
-	ctx, cancel := context.WithCancel(context.Background())
 	if numBogusResponses < 1 {
 		numBogusResponses = 1 // as documented
 	}
 	dl := &DNSSimulateGWFListener{
 		bogusConfig: bogusConfig,
-		cancel:      cancel,
 		closeOnce:   sync.Once{},
 		goodConfig:  goodConfig,
 		numBogus:    numBogusResponses,
@@ -55,7 +51,7 @@ func MustNewDNSSimulateGWFListener(
 		wg:          sync.WaitGroup{},
 	}
 	dl.wg.Add(1)
-	go dl.mainloop(ctx)
+	go dl.mainloop()
 	return dl
 }
 
@@ -69,13 +65,14 @@ func (dl *DNSSimulateGWFListener) Close() (err error) {
 	dl.closeOnce.Do(func() {
 		// close the connection to interrupt ReadFrom or WriteTo
 		err = dl.pconn.Close()
-		dl.cancel()
+
+		// wait for the background goroutine to join
 		dl.wg.Wait()
 	})
 	return err
 }
 
-func (dl *DNSSimulateGWFListener) mainloop(ctx context.Context) {
+func (dl *DNSSimulateGWFListener) mainloop() {
 	// synchronize with Close
 	defer dl.wg.Done()
 
@@ -97,14 +94,13 @@ func (dl *DNSSimulateGWFListener) mainloop(ctx context.Context) {
 
 		// emit N >= 1 bogus responses followed by a valid response
 		for idx := DNSNumBogusResponses(0); idx < dl.numBogus; idx++ {
-			dl.writeResponse(ctx, addr, dl.bogusConfig, rawReq)
+			dl.writeResponse(addr, dl.bogusConfig, rawReq)
 		}
-		dl.writeResponse(ctx, addr, dl.goodConfig, rawReq)
+		dl.writeResponse(addr, dl.goodConfig, rawReq)
 	}
 }
 
-func (dl *DNSSimulateGWFListener) writeResponse(
-	ctx context.Context, addr net.Addr, config *netem.DNSConfig, rawReq []byte) {
+func (dl *DNSSimulateGWFListener) writeResponse(addr net.Addr, config *netem.DNSConfig, rawReq []byte) {
 	// perform the round trip
 	rawResp, err := netem.DNSServerRoundTrip(config, rawReq)
 

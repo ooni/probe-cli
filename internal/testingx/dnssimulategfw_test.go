@@ -1,7 +1,6 @@
 package testingx
 
 import (
-	"context"
 	"errors"
 	"net"
 	"os"
@@ -224,10 +223,8 @@ func TestDNSSimulateGFW(t *testing.T) {
 		called := &atomic.Bool{}
 		rtx := &DNSSimulateGWFListener{
 			bogusConfig: netem.NewDNSConfig(),
-			cancel: func() {
-			},
-			closeOnce:  sync.Once{},
-			goodConfig: netem.NewDNSConfig(),
+			closeOnce:   sync.Once{},
+			goodConfig:  netem.NewDNSConfig(),
 			pconn: &mocks.UDPLikeConn{MockReadFrom: func(p []byte) (int, net.Addr, error) {
 				if called.Load() {
 					return 0, nil, net.ErrClosed
@@ -239,7 +236,7 @@ func TestDNSSimulateGFW(t *testing.T) {
 		}
 
 		rtx.wg.Add(1)
-		go rtx.mainloop(context.Background())
+		go rtx.mainloop()
 		rtx.wg.Wait()
 	})
 

@@ -44,6 +44,7 @@ func MustNewDNSOverUDPListener(addr *net.UDPAddr, dul DNSOverUDPUnderlyingListen
 		closeOnce: sync.Once{},
 		pconn:     pconn,
 		rtx:       rtx,
+		wg:        sync.WaitGroup{},
 	}
 	dl.wg.Add(1)
 	go dl.mainloop(ctx)
@@ -60,7 +61,11 @@ func (dl *DNSOverUDPListener) Close() (err error) {
 	dl.closeOnce.Do(func() {
 		// close the connection to interrupt ReadFrom or WriteTo
 		err = dl.pconn.Close()
+
+		// cancel the context to interrupt the round tripper
 		dl.cancel()
+
+		// wait for the background goroutine to join
 		dl.wg.Wait()
 	})
 	return err
