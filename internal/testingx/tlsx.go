@@ -89,6 +89,9 @@ type TLSServer struct {
 
 	// listener is the listening socket controller.
 	listener net.Listener
+
+	// wg waits until the listening loop has finished running.
+	wg sync.WaitGroup
 }
 
 // MustNewTLSServer is a simplified [MustNewTLSServerEx] that uses the stdlib and localhost.
@@ -113,9 +116,11 @@ func MustNewTLSServerEx(addr *net.TCPAddr, tcpListener TCPListener, handler TLSH
 		endpoint:  listener.Addr().String(),
 		handler:   handler,
 		listener:  listener,
+		wg:        sync.WaitGroup{},
 	}
 
 	// handle TCP connections
+	srv.wg.Add(1)
 	go srv.mainloop(ctx)
 
 	return srv
@@ -131,11 +136,14 @@ func (p *TLSServer) Close() (err error) {
 	p.closeOnce.Do(func() {
 		err = p.listener.Close()
 		p.cancel()
+		p.wg.Wait()
 	})
 	return
 }
 
 func (p *TLSServer) mainloop(ctx context.Context) {
+	defer p.wg.Done()
+
 	for {
 		conn, err := p.listener.Accept()
 		if errors.Is(err, net.ErrClosed) {
@@ -182,18 +190,22 @@ func (p *TLSServer) handle(ctx context.Context, tcpConn net.Conn) {
 // TLSHandlerTimeout returns a [TLSHandler] that reads data and never writes
 // eventually causing the client connection to timeout.
 func TLSHandlerTimeout() TLSHandler {
-	return &tlsHandlerTimeout{}
+	return &tlsHandlerTimeout{
+		timeout: 300 * time.Second,
+	}
 }
 
-type tlsHandlerTimeout struct{}
+type tlsHandlerTimeout struct {
+	timeout time.Duration
+}
 
 // GetCertificate implements TLSHandler.
-func (*tlsHandlerTimeout) GetCertificate(
+func (thx *tlsHandlerTimeout) GetCertificate(
 	ctx context.Context, tcpConn net.Conn, chi *tls.ClientHelloInfo) (*tls.Certificate, error) {
 	defer tcpConn.Close() // one way or another we want to close the TCP conn in the middle of the handshake
 	select {
-	case <-time.After(300 * time.Second):
-		return nil, context.DeadlineExceeded
+	case <-time.After(thx.timeout):
+		return nil, errors.New("internal error")
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
