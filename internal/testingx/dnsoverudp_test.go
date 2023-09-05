@@ -225,7 +225,7 @@ func TestDNSOverUDPHandler(t *testing.T) {
 				IP:   net.IPv4(127, 0, 0, 1),
 				Port: 0,
 			}
-			listener := MustNewDNSOverUDPListener(udpAddr, &DNSOverUDPStdlibListener{}, tc.newRoundTripper())
+			listener := MustNewDNSOverUDPListener(udpAddr, &DNSOverUDPListenerStdlib{}, tc.newRoundTripper())
 			defer listener.Close()
 
 			pconn, err := net.Dial("udp", listener.LocalAddr().String())
