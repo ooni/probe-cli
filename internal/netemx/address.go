@@ -30,6 +30,9 @@ const AddressTwoThOONIOrg = "178.62.195.24"
 // AddressThreeThOONIOrg is the IP address for 3.th.ooni.org.
 const AddressThreeThOONIOrg = "209.97.183.73"
 
+// AddressTHCloudfront is the IP address for d33d1gs9kpq1c5.cloudfront.net.
+const AddressTHCloudfront = "52.85.15.84"
+
 // AddressDNSQuad9Net is the IP address for dns.quad9.net.
 const AddressDNSQuad9Net = "9.9.9.9"
 
