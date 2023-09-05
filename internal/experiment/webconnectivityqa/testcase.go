@@ -40,6 +40,9 @@ func AllTestCases() []*TestCase {
 		dnsBlockingAndroidDNSCacheNoData(),
 		dnsBlockingNXDOMAIN(),
 
+		dnsHijackingToProxyWithHTTPURL(),
+		dnsHijackingToProxyWithHTTPSURL(),
+
 		sucessWithHTTP(),
 		sucessWithHTTPS(),
 
