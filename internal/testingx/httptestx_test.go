@@ -374,7 +374,7 @@ func TestHTTPTestxWithNetem(t *testing.T) {
 				t.Skip(tc.reasonToSkip)
 			}
 
-			// create a start topology for hosting the test
+			// create a star topology for hosting the test
 			topology := runtimex.Try1(netem.NewStarTopology(log.Log))
 			defer topology.Close()
 
