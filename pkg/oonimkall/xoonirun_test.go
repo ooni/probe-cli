@@ -27,7 +27,7 @@ func TestOONIRunFetch(t *testing.T) {
 		}
 
 		expect := map[string]any{
-			"archived": false,
+			"archived":                 false,
 			"descriptor_creation_time": "2023-07-18T15:38:21Z",
 			"descriptor": map[string]any{
 				"author":           "simone@openobservatory.org",
@@ -49,7 +49,7 @@ func TestOONIRunFetch(t *testing.T) {
 				"short_description":      "Integration testing descriptor for ooni/probe-cli/v3/pkg/oonimkall.",
 				"short_description_intl": map[string]any{},
 			},
-			"mine": false,
+			"mine":                      false,
 			"translation_creation_time": "2023-07-18T15:38:21Z",
 			"v":                         1.0,
 		}

@@ -166,7 +166,7 @@ func TestDNSSimulateGFW(t *testing.T) {
 				Port: 0,
 			}
 			listener := MustNewDNSSimulateGWFListener(
-				udpAddr, &DNSOverUDPStdlibListener{}, bogusConfig,
+				udpAddr, &DNSOverUDPListenerStdlib{}, bogusConfig,
 				goodConfig, DNSNumBogusResponses(2))
 			defer listener.Close()
 
@@ -246,7 +246,7 @@ func TestDNSSimulateGFW(t *testing.T) {
 				IP:   net.IPv4(127, 0, 0, 1),
 				Port: 0,
 			},
-			&DNSOverUDPStdlibListener{},
+			&DNSOverUDPListenerStdlib{},
 			netem.NewDNSConfig(),
 			netem.NewDNSConfig(),
 			DNSNumBogusResponses(0),

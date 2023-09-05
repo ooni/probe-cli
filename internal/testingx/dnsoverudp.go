@@ -14,13 +14,13 @@ type DNSOverUDPUnderlyingListener interface {
 	ListenUDP(network string, addr *net.UDPAddr) (net.PacketConn, error)
 }
 
-// DNSOverUDPStdlibListener implements [DNSOverUDPUnderlyingListener] using the standard library.
-type DNSOverUDPStdlibListener struct{}
+// DNSOverUDPListenerStdlib implements [DNSOverUDPUnderlyingListener] using the standard library.
+type DNSOverUDPListenerStdlib struct{}
 
-var _ DNSOverUDPUnderlyingListener = &DNSOverUDPStdlibListener{}
+var _ DNSOverUDPUnderlyingListener = &DNSOverUDPListenerStdlib{}
 
 // ListenUDP implements DNSOverUDPUnderlyingListener.
-func (*DNSOverUDPStdlibListener) ListenUDP(network string, addr *net.UDPAddr) (net.PacketConn, error) {
+func (*DNSOverUDPListenerStdlib) ListenUDP(network string, addr *net.UDPAddr) (net.PacketConn, error) {
 	return net.ListenUDP(network, addr)
 }
 
