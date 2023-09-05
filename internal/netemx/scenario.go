@@ -1,5 +1,14 @@
 package netemx
 
+import (
+	"net/http"
+
+	"github.com/apex/log"
+	"github.com/ooni/netem"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
+)
+
 const (
 	// ScenarioRolePublicDNS means we should create DNS-over-HTTPS and DNS-over-UDP servers.
 	ScenarioRolePublicDNS = iota
@@ -18,6 +27,9 @@ const (
 
 	// ScenarioRoleBlockpageServer means we should serve a blockpage using HTTP.
 	ScenarioRoleBlockpageServer
+
+	// ScenarioRoleProxy means the host is a transparent proxy.
+	ScenarioRoleProxy
 )
 
 // ScenarioDomainAddresses describes a domain and address used in a scenario.
@@ -111,6 +123,13 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 	},
 	Role:             ScenarioRoleBlockpageServer,
 	WebServerFactory: BlockpageHandlerFactory(),
+}, {
+	Domains: []string{},
+	Addresses: []string{
+		ISPProxyAddress,
+	},
+	Role:             ScenarioRoleProxy,
+	WebServerFactory: nil,
 }}
 
 // MustNewScenario constructs a complete testing scenario using the domains and IP
@@ -174,6 +193,20 @@ func MustNewScenario(config []*ScenarioDomainAddresses) *QAEnv {
 					Factory: BlockpageHandlerFactory(),
 					Ports:   []int{80},
 				}))
+			}
+
+		case ScenarioRoleProxy:
+			for _, addr := range sad.Addresses {
+				opts = append(opts, QAEnvOptionNetStack(addr,
+					&HTTPCleartextServerFactory{
+						Factory: HTTPHandlerFactoryFunc(func(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
+							return testingx.HTTPHandlerProxy(env.Logger(), &netxlite.Netx{
+								Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: stack}})
+						}),
+						Ports: []int{80},
+					},
+					NewTLSProxyServerFactory(log.Log, 443),
+				))
 			}
 		}
 	}

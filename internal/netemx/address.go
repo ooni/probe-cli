@@ -49,3 +49,6 @@ const AddressDNSGoogle8888 = "8.8.8.8"
 // blockpages to its users. As of 2023-09-04, this is the IP address resolving for thepiratebay.com when
 // you're attempting to access this website from Italy.
 const AddressPublicBlockpage = "83.224.65.41"
+
+// ISPProxyAddress is the IP address of the ISP's HTTP transparent proxy.
+const ISPProxyAddress = "130.192.182.17"
