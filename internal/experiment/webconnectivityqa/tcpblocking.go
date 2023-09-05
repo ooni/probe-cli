@@ -40,8 +40,8 @@ func tcpBlockingConnectTimeout() *TestCase {
 func tcpBlockingConnectionRefusedWithInconsistentDNS() *TestCase {
 	return &TestCase{
 		Name:  "tcpBlockingConnectionRefusedWithInconsistentDNS",
-		Flags: 0,
-		Input: "https://www.example.org/",
+		Flags: TestCaseFlagNoLTE, // with LTE we can bypass the blocking
+		Input: "http://www.example.org/",
 		Configure: func(env *netemx.QAEnv) {
 
 			// spoof the DNS response to force using the server serving blockpages
@@ -57,7 +57,7 @@ func tcpBlockingConnectionRefusedWithInconsistentDNS() *TestCase {
 			env.DPIEngine().AddRule(&netem.DPICloseConnectionForServerEndpoint{
 				Logger:          log.Log,
 				ServerIPAddress: netemx.AddressPublicBlockpage,
-				ServerPort:      443,
+				ServerPort:      80,
 			})
 
 		},

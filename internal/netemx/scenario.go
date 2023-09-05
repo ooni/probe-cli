@@ -15,6 +15,9 @@ const (
 
 	// ScenarioRoleOONITestHelper means we should instantiate the oohelperd.
 	ScenarioRoleOONITestHelper
+
+	// ScenarioRoleBlockpageServer means we should serve a blockpage using HTTP.
+	ScenarioRoleBlockpageServer
 )
 
 // ScenarioDomainAddresses describes a domain and address used in a scenario.
@@ -100,7 +103,7 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 	Addresses: []string{
 		AddressPublicBlockpage,
 	},
-	Role:             ScenarioRoleWebServer,
+	Role:             ScenarioRoleBlockpageServer,
 	WebServerFactory: BlockpageHandlerFactory(),
 }}
 
@@ -127,18 +130,7 @@ func MustNewScenario(config []*ScenarioDomainAddresses) *QAEnv {
 
 		case ScenarioRoleWebServer:
 			for _, addr := range sad.Addresses {
-				opts = append(opts, QAEnvOptionNetStack(addr, &HTTPCleartextServerFactory{
-					Factory: sad.WebServerFactory,
-					Ports:   []int{80},
-				}, &HTTPSecureServerFactory{
-					Factory:   sad.WebServerFactory,
-					Ports:     []int{443},
-					TLSConfig: nil, // use netem's default
-				}, &HTTP3ServerFactory{
-					Factory:   sad.WebServerFactory,
-					Ports:     []int{443},
-					TLSConfig: nil, // use netem's default
-				}))
+				opts = append(opts, QAEnvOptionHTTPServer(addr, sad.WebServerFactory))
 			}
 
 		case ScenarioRoleOONIAPI:
@@ -167,6 +159,14 @@ func MustNewScenario(config []*ScenarioDomainAddresses) *QAEnv {
 					},
 					Ports:     []int{443},
 					TLSConfig: nil, // use netem's default
+				}))
+			}
+
+		case ScenarioRoleBlockpageServer:
+			for _, addr := range sad.Addresses {
+				opts = append(opts, QAEnvOptionNetStack(addr, &HTTPCleartextServerFactory{
+					Factory: BlockpageHandlerFactory(),
+					Ports:   []int{80},
 				}))
 			}
 		}
