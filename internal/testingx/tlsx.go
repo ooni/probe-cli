@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/apex/log"
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -142,16 +143,16 @@ func (p *TLSServer) Close() (err error) {
 }
 
 func (p *TLSServer) mainloop(ctx context.Context) {
+	defer runtimex.CatchLogAndIgnorePanic(log.Log, "TLSServer.mainloop")
 	defer p.wg.Done()
 
 	for {
 		conn, err := p.listener.Accept()
-		if errors.Is(err, net.ErrClosed) {
-			return
-		}
-		if err != nil {
-			continue
-		}
+
+		// because this is a testing server and because golang returns net.ErrClosed while
+		// gvisor returns "invalid argument", here we're using panic to handle the error
+		// such that we can quickly exit and we don't need to test these implementation details
+		runtimex.PanicOnError(err, "p.listener.Accept")
 
 		// create a goroutine for connection, which is overkill in general
 		// but reasonable for a server designed for testing
