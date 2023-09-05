@@ -89,9 +89,10 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 	},
 	Role: ScenarioRolePublicDNS,
 }, {
-	Domains: []string{"dns.google"},
+	Domains: []string{"dns.google", "dns.google.com"},
 	Addresses: []string{
-		AddressDNSGoogle,
+		AddressDNSGoogle8844,
+		AddressDNSGoogle8888,
 	},
 	Role: ScenarioRolePublicDNS,
 }, {
@@ -107,9 +108,6 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 // addresses contained by the given [ScenarioDomainAddresses] array.
 func MustNewScenario(config []*ScenarioDomainAddresses) *QAEnv {
 	var opts []QAEnvOption
-
-	// explicitly create the uncensored resolver
-	opts = append(opts, QAEnvOptionDNSOverUDPResolvers(DefaultUncensoredResolverAddress))
 
 	// fill options based on the scenario config
 	for _, sad := range config {

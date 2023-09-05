@@ -20,9 +20,9 @@ import (
 // to use this QA environment in all the examples for this package.
 func exampleNewEnvironment() *netemx.QAEnv {
 	return netemx.MustNewQAEnv(
-		netemx.QAEnvOptionDNSOverUDPResolvers("8.8.4.4", "9.9.9.9"),
+		netemx.QAEnvOptionNetStack("8.8.4.4", &netemx.UDPResolverFactory{}),
+		netemx.QAEnvOptionNetStack("9.9.9.9", &netemx.UDPResolverFactory{}),
 		netemx.QAEnvOptionClientAddress(netemx.DefaultClientAddress),
-		netemx.QAEnvOptionISPResolverAddress(netemx.DefaultISPResolverAddress),
 		netemx.QAEnvOptionHTTPServer(
 			netemx.AddressWwwExampleCom, netemx.ExampleWebPageHandlerFactory()),
 		netemx.QAEnvOptionLogger(log.Log),
@@ -252,9 +252,10 @@ func Example_dnsOverUDPWithInternetScenario() {
 
 	env.Do(func() {
 		resolvers := []string{
-			net.JoinHostPort(netemx.DefaultISPResolverAddress, "53"),
-			net.JoinHostPort(netemx.DefaultUncensoredResolverAddress, "53"),
-			net.JoinHostPort(netemx.AddressDNSGoogle, "53"),
+			net.JoinHostPort(netemx.ISPResolverAddress, "53"),
+			net.JoinHostPort(netemx.RootResolverAddress, "53"),
+			net.JoinHostPort(netemx.AddressDNSGoogle8844, "53"),
+			net.JoinHostPort(netemx.AddressDNSGoogle8888, "53"),
 			net.JoinHostPort(netemx.AddressDNSQuad9Net, "53"),
 			net.JoinHostPort(netemx.AddressMozillaCloudflareDNSCom, "53"),
 		}
@@ -274,6 +275,7 @@ func Example_dnsOverUDPWithInternetScenario() {
 	})
 
 	// Output:
+	// [93.184.216.34]
 	// [93.184.216.34]
 	// [93.184.216.34]
 	// [93.184.216.34]

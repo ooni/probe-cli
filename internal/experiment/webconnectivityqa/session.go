@@ -57,7 +57,7 @@ func newSession(client model.HTTPClient, logger model.Logger) model.ExperimentSe
 		MockProxyURL: nil,
 
 		MockResolverIP: func() string {
-			return netemx.DefaultISPResolverAddress
+			return netemx.ISPResolverAddress
 		},
 
 		MockSoftwareName: nil,
