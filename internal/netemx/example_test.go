@@ -446,7 +446,7 @@ func Example_examplePublicBlockpage() {
 	env.Do(func() {
 		client := netxlite.NewHTTPClientStdlib(log.Log)
 
-		req, err := http.NewRequest("GET", "https://"+netemx.AddressPublicBlockpage+"/", nil)
+		req, err := http.NewRequest("GET", "http://"+netemx.AddressPublicBlockpage+"/", nil)
 		if err != nil {
 			log.Fatalf("http.NewRequest failed: %s", err.Error())
 		}
