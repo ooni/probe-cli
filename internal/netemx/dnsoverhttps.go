@@ -14,5 +14,7 @@ var _ HTTPHandlerFactory = &DNSOverHTTPSHandlerFactory{}
 
 // NewHandler implements QAEnvHTTPHandlerFactory.
 func (f *DNSOverHTTPSHandlerFactory) NewHandler(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
-	return &testingx.DNSOverHTTPSHandler{Config: env.OtherResolversConfig()}
+	return &testingx.DNSOverHTTPSHandler{
+		RoundTripper: testingx.NewDNSRoundTripperWithDNSConfig(env.OtherResolversConfig()),
+	}
 }
