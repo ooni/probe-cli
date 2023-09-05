@@ -80,6 +80,12 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 	},
 	Role: ScenarioRoleOONITestHelper,
 }, {
+	Domains: []string{"d33d1gs9kpq1c5.cloudfront.net"},
+	Addresses: []string{
+		AddressTHCloudfront,
+	},
+	Role: ScenarioRoleOONITestHelper,
+}, {
 	Domains: []string{"dns.quad9.net"},
 	Addresses: []string{
 		AddressDNSQuad9Net,
