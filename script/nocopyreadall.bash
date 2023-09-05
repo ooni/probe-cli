@@ -14,13 +14,6 @@ for file in $(find . -type f -name \*.go); do
 		continue
 	fi
 
-	if [ "$file" = "./internal/netxlite/filtering/http.go" ]; then
-		# We're allowed to use ReadAll and Copy in this file to
-		# avoid depending on netxlite, so we can use filtering
-		# inside of netxlite's own test suite.
-		continue
-	fi
-
 	if [ "$file" = "./internal/must/must_test.go" ]; then
 		# We're allowed to use ReadAll and Copy in this file to
 		# avoid depending on netxlite, given that netxlite's test
@@ -41,6 +34,12 @@ for file in $(find . -type f -name \*.go); do
 	fi
 
 	if [ "$file" = "./internal/testingx/httptestx_test.go" ]; then
+		# We're allowed to use ReadAll and Copy in this file because
+		# it's code that we only use for testing purposes.
+		continue
+	fi
+
+	if [ "$file" = "./internal/testingx/tlsx_test.go" ]; then
 		# We're allowed to use ReadAll and Copy in this file because
 		# it's code that we only use for testing purposes.
 		continue
