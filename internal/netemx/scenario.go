@@ -30,6 +30,9 @@ const (
 
 	// ScenarioRoleProxy means the host is a transparent proxy.
 	ScenarioRoleProxy
+
+	// ScenarioRoleURLShortener means that the host is an URL shortener.
+	ScenarioRoleURLShortener
 )
 
 // ScenarioDomainAddresses describes a domain and address used in a scenario.
@@ -130,6 +133,13 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 	},
 	Role:             ScenarioRoleProxy,
 	WebServerFactory: nil,
+}, {
+	Domains: []string{"bit.ly", "bitly.com"},
+	Addresses: []string{
+		"67.199.248.11",
+	},
+	Role:             ScenarioRoleURLShortener,
+	WebServerFactory: nil,
 }}
 
 // MustNewScenario constructs a complete testing scenario using the domains and IP
@@ -207,6 +217,11 @@ func MustNewScenario(config []*ScenarioDomainAddresses) *QAEnv {
 					},
 					NewTLSProxyServerFactory(log.Log, 443),
 				))
+			}
+
+		case ScenarioRoleURLShortener:
+			for _, addr := range sad.Addresses {
+				opts = append(opts, QAEnvOptionHTTPServer(addr, URLShortenerFactory(DefaultURLShortenerMapping)))
 			}
 		}
 	}

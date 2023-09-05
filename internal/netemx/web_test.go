@@ -1,6 +1,7 @@
 package netemx
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -59,6 +60,56 @@ func TestExampleWebPageHandler(t *testing.T) {
 		result := rr.Result()
 		if result.StatusCode != http.StatusBadRequest {
 			t.Fatal("unexpected status code", result.StatusCode)
+		}
+	})
+}
+
+func TestURLShortenerFactory(t *testing.T) {
+	handler := URLShortenerFactory(DefaultURLShortenerMapping).NewHandler(nil, nil)
+
+	for key, value := range DefaultURLShortenerMapping {
+		t.Run(fmt.Sprintf("for %s => %s", key, value), func(t *testing.T) {
+			rr := httptest.NewRecorder()
+
+			req := &http.Request{
+				URL: &url.URL{
+					Path: key,
+				},
+			}
+
+			handler.ServeHTTP(rr, req)
+
+			res := rr.Result()
+
+			if res.StatusCode != http.StatusPermanentRedirect {
+				t.Fatal("unexpected StatusCode", res.StatusCode)
+			}
+			loc := res.Header.Get("Location")
+			if loc != value {
+				t.Fatal("expected", value, "got", loc)
+			}
+		})
+	}
+
+	t.Run("for nonexistent mapping", func(t *testing.T) {
+		rr := httptest.NewRecorder()
+
+		req := &http.Request{
+			URL: &url.URL{
+				Path: "/antani",
+			},
+		}
+
+		handler.ServeHTTP(rr, req)
+
+		res := rr.Result()
+
+		if res.StatusCode != http.StatusNotFound {
+			t.Fatal("unexpected StatusCode", res.StatusCode)
+		}
+		loc := res.Header.Get("Location")
+		if loc != "" {
+			t.Fatal("expected", `""`, "got", loc)
 		}
 	})
 }
