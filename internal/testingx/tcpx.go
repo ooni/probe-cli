@@ -2,7 +2,7 @@ package testingx
 
 import "net"
 
-// TCPListener creates TCP connections for HTTP. This type should work both
+// TCPListener creates TCP connections for HTTP, TLS, etc. This type should work both
 // with the standard library and with netem as its backend.
 type TCPListener interface {
 	ListenTCP(network string, addr *net.TCPAddr) (net.Listener, error)
