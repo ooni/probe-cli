@@ -1,4 +1,4 @@
-package logx
+package logx_test
 
 import (
 	"fmt"
@@ -8,12 +8,13 @@ import (
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
 func TestNewHandlerWithDefaultSettings(t *testing.T) {
-	lh := NewHandlerWithDefaultSettings()
+	lh := logx.NewHandlerWithDefaultSettings()
 	if lh.Emoji {
 		t.Fatal("expected false")
 	}
@@ -27,8 +28,8 @@ func TestNewHandlerWithDefaultSettings(t *testing.T) {
 }
 
 // creates a new handler with deterministic time to help with testing
-func newHandlerForTesting() *Handler {
-	lh := NewHandlerWithDefaultSettings()
+func newHandlerForTesting() *logx.Handler {
+	lh := logx.NewHandlerWithDefaultSettings()
 	dtime := testingx.NewTimeDeterministic(time.Now())
 	lh.Now = dtime.Now
 	lh.StartTime = dtime.Now()
