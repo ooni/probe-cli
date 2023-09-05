@@ -190,6 +190,7 @@ type tlsHandlerTimeout struct{}
 // GetCertificate implements TLSHandler.
 func (*tlsHandlerTimeout) GetCertificate(
 	ctx context.Context, tcpConn net.Conn, chi *tls.ClientHelloInfo) (*tls.Certificate, error) {
+	defer tcpConn.Close() // one way or another we want to close the TCP conn in the middle of the handshake
 	select {
 	case <-time.After(300 * time.Second):
 		return nil, context.DeadlineExceeded
@@ -228,7 +229,7 @@ func (thx *tlsHandlerSendAlert) GetCertificate(
 		thx.alert,
 	}
 	_, _ = tcpConn.Write(alertdata)
-	_ = tcpConn.Close()
+	_ = tcpConn.Close() // close connection to avoid the caller trying to send another alert
 	return nil, errors.New("internal error")
 }
 
@@ -241,7 +242,7 @@ type tlsHandlerEOF struct{}
 
 // GetCertificate implements TLSHandler.
 func (*tlsHandlerEOF) GetCertificate(ctx context.Context, tcpConn net.Conn, chi *tls.ClientHelloInfo) (*tls.Certificate, error) {
-	tcpConn.Close()
+	tcpConn.Close() // close the TCP connection to force EOF during the handshake
 	return nil, errors.New("internal error")
 }
 
@@ -257,7 +258,7 @@ type tlsHandlerReset struct{}
 // GetCertificate implements TLSHandler.
 func (*tlsHandlerReset) GetCertificate(ctx context.Context, tcpConn net.Conn, chi *tls.ClientHelloInfo) (*tls.Certificate, error) {
 	tcpMaybeResetNetConn(tcpConn)
-	tcpConn.Close() // just in case to avoid the error returned here to be sent remotely
+	tcpConn.Close() // just in case to avoid the error returned here to be sent remotely as an alert
 	return nil, errors.New("internal error")
 }
 
@@ -286,5 +287,6 @@ func (thx *tlsHandlerHandshakeAndWriteText) GetCertificate(ctx context.Context, 
 // HandleTLSConn implements TLSHandler.
 func (thx *tlsHandlerHandshakeAndWriteText) HandleTLSConn(conn TLSConn) {
 	_, _ = conn.Write(thx.text)
-	// Note that the caller closes the connection for us
+	// Note that the caller closes the connection for us and this is fine because
+	// we already have an established TCP conn we want to gracefully close
 }

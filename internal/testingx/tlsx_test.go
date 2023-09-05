@@ -1,6 +1,6 @@
 package testingx_test
 
-// This test is in a separate package because we need to import netxlite
+// These tests are in a separate package because we need to import netxlite
 // which otherwise creates a circular dependency with netxlite tests
 
 import (
