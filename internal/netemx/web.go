@@ -80,14 +80,10 @@ const Blockpage = `<!doctype html>
 </html>
 `
 
-// TODO(bassosimone): it is not realistic that this webserver is able to serve valid
-// blockpages over TLS but unfortunately this is currently a netem limitation.
-
 // BlockpageHandlerFactory returns a blockpage regardless of the incoming domain.
 func BlockpageHandlerFactory() HTTPHandlerFactory {
 	return HTTPHandlerFactoryFunc(func(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Add("Alt-Svc", `h3=":443"`)
 			w.Header().Add("Date", "Thu, 24 Aug 2023 14:35:29 GMT")
 			w.Write([]byte(Blockpage))
 		})

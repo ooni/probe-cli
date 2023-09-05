@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -17,7 +16,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
-	"github.com/quic-go/quic-go/http3"
 )
 
 // qaEnvConfig is the private configuration for [MustNewQAEnv].
@@ -27,9 +25,6 @@ type qaEnvConfig struct {
 
 	// clientNICWrapper is the OPTIONAL wrapper for the client NIC.
 	clientNICWrapper netem.LinkNICWrapper
-
-	// httpServers contains factories for the HTTP servers to create.
-	httpServers map[string]HTTPHandlerFactory
 
 	// ispResolver is the ISP resolver to use.
 	ispResolver string
@@ -65,13 +60,33 @@ func QAEnvOptionClientNICWrapper(wrapper netem.LinkNICWrapper) QAEnvOption {
 }
 
 // QAEnvOptionHTTPServer adds the given HTTP handler factory. If you do
-// not set this option we will not create any HTTP server.
+// not set this option we will not create any HTTP server. Note that this
+// option is just syntactic sugar for calling [QAEnvOptionNetStack]
+// with the following three factories as argument:
+//
+// - [HTTPCleartextServerFactory] with port 80/tcp;
+//
+// - [HTTPSecureServerFactory] with port 443/tcp and nil TLSConfig;
+//
+// - [HTTP3ServerFactory] with port 443/udp and nil TLSConfig.
+//
+// We wrote this syntactic sugar factory because it covers the common case
+// where you want support for HTTP, HTTPS, and HTTP3.
 func QAEnvOptionHTTPServer(ipAddr string, factory HTTPHandlerFactory) QAEnvOption {
 	runtimex.Assert(net.ParseIP(ipAddr) != nil, "not an IP addr")
 	runtimex.Assert(factory != nil, "passed a nil handler factory")
-	return func(config *qaEnvConfig) {
-		config.httpServers[ipAddr] = factory
-	}
+	return qaEnvOptionNetStack(ipAddr, &HTTPCleartextServerFactory{
+		Factory: factory,
+		Ports:   []int{80},
+	}, &HTTPSecureServerFactory{
+		Factory:   factory,
+		Ports:     []int{443},
+		TLSConfig: nil, // use netem's default
+	}, &HTTP3ServerFactory{
+		Factory:   factory,
+		Ports:     []int{443},
+		TLSConfig: nil, // use netem's default
+	})
 }
 
 // QAEnvOptionLogger sets the logger to use. If you do not set this option we
@@ -157,7 +172,6 @@ func MustNewQAEnv(options ...QAEnvOption) *QAEnv {
 	config := &qaEnvConfig{
 		clientAddress:    DefaultClientAddress,
 		clientNICWrapper: nil,
-		httpServers:      map[string]HTTPHandlerFactory{},
 		ispResolver:      ISPResolverAddress,
 		logger:           model.DiscardLogger,
 		rootResolver:     RootResolverAddress,
@@ -195,7 +209,6 @@ func MustNewQAEnv(options ...QAEnvOption) *QAEnv {
 
 	// create all the required internals
 	env.clientStack = env.mustNewClientStack(config)
-	env.closables = append(env.closables, env.mustNewHTTPServers(config)...)
 	env.closables = append(env.closables, env.mustNewNetStacks(config)...)
 
 	return env
@@ -218,63 +231,6 @@ func (env *QAEnv) mustNewClientStack(config *qaEnvConfig) *netem.UNetStack {
 			RightToLeftDelay: time.Millisecond,
 		},
 	))
-}
-
-func (env *QAEnv) mustNewHTTPServers(config *qaEnvConfig) (closables []io.Closer) {
-	resolver := config.rootResolver
-
-	for addr, factory := range config.httpServers {
-		// Create the server's TCP/IP stack
-		//
-		// Note: because the stack is created using topology.AddHost, we don't
-		// need to call Close when done using it, since the topology will do that
-		// for us when we call the topology's Close method.
-		stack := runtimex.Try1(env.topology.AddHost(
-			addr,     // IP address
-			resolver, // default resolver address
-			&netem.LinkConfig{
-				LeftToRightDelay: time.Millisecond,
-				RightToLeftDelay: time.Millisecond,
-			},
-		))
-
-		// create HTTP, HTTPS and HTTP/3 servers for this stack
-		handler := factory.NewHandler(env, stack)
-		closables = append(closables, env.mustCreateAllHTTPServers(stack, handler, addr)...)
-	}
-	return
-}
-
-func (env *QAEnv) mustCreateAllHTTPServers(
-	stack *netem.UNetStack, handler http.Handler, addr string) (closables []io.Closer) {
-	ipAddr := net.ParseIP(addr)
-	runtimex.Assert(ipAddr != nil, "invalid IP addr")
-
-	// listen for HTTP
-	{
-		listener := runtimex.Try1(stack.ListenTCP("tcp", &net.TCPAddr{IP: ipAddr, Port: 80}))
-		srv := &http.Server{Handler: handler}
-		closables = append(closables, srv)
-		go srv.Serve(listener)
-	}
-
-	// listen for HTTPS
-	{
-		listener := runtimex.Try1(stack.ListenTCP("tcp", &net.TCPAddr{IP: ipAddr, Port: 443}))
-		srv := &http.Server{TLSConfig: stack.ServerTLSConfig(), Handler: handler}
-		closables = append(closables, srv)
-		go srv.ServeTLS(listener, "", "")
-	}
-
-	// listen for HTTP3
-	{
-		listener := runtimex.Try1(stack.ListenUDP("udp", &net.UDPAddr{IP: ipAddr, Port: 443}))
-		srv := &http3.Server{TLSConfig: stack.ServerTLSConfig(), Handler: handler}
-		closables = append(closables, listener, srv)
-		go srv.Serve(listener)
-	}
-
-	return
 }
 
 func (env *QAEnv) mustNewNetStacks(config *qaEnvConfig) (closables []io.Closer) {
