@@ -15,7 +15,6 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quictesting"
 	"github.com/ooni/probe-cli/v3/internal/randx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -301,7 +300,7 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 	}
 
 	connectionResetFlow := func(th model.TLSHandshaker) error {
-		server := filtering.NewTLSServer(filtering.TLSActionReset)
+		server := testingx.MustNewTLSServer(testingx.TLSHandlerReset())
 		defer server.Close()
 		ctx := context.Background()
 		conn, err := dial(ctx, server.Endpoint())
@@ -331,7 +330,7 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 	}
 
 	timeoutFlow := func(th model.TLSHandshaker) error {
-		server := filtering.NewTLSServer(filtering.TLSActionTimeout)
+		server := testingx.MustNewTLSServer(testingx.TLSHandlerTimeout())
 		defer server.Close()
 		ctx := context.Background()
 		conn, err := dial(ctx, server.Endpoint())
@@ -361,7 +360,7 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 	}
 
 	tlsUnrecognizedNameFlow := func(th model.TLSHandshaker) error {
-		server := filtering.NewTLSServer(filtering.TLSActionAlertUnrecognizedName)
+		server := testingx.MustNewTLSServer(testingx.TLSHandlerSendAlert(testingx.TLSAlertUnrecognizedName))
 		defer server.Close()
 		ctx := context.Background()
 		conn, err := dial(ctx, server.Endpoint())
