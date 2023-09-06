@@ -47,66 +47,6 @@ def assert_status_flags_are(ooni_exe, tk, desired):
     assert tk["x_status"] == desired
 
 
-def webconnectivity_http_diff_with_inconsistent_dns(ooni_exe, outfile):
-    """Test case where we get an http-diff and the DNS is inconsistent"""
-    args = [
-        "-iptables-hijack-dns-to",
-        "127.0.0.1:53",
-        "-dns-proxy-hijack",
-        "example.org",
-        "-http-proxy-block",
-        "example.org",
-    ]
-    tk = execute_jafar_and_return_validated_test_keys(
-        ooni_exe,
-        outfile,
-        "-i http://example.org/ web_connectivity",
-        "webconnectivity_http_diff_with_inconsistent_dns",
-        args,
-    )
-    assert tk["dns_experiment_failure"] == None
-    assert tk["dns_consistency"] == "inconsistent"
-    assert tk["control_failure"] == None
-    assert tk["http_experiment_failure"] == None
-    assert tk["body_length_match"] == False
-    assert tk["body_proportion"] < 1
-    assert tk["status_code_match"] == False
-    assert tk["headers_match"] == True
-    assert tk["title_match"] == False
-    assert tk["blocking"] == "dns"
-    assert tk["accessible"] == False
-    assert_status_flags_are(ooni_exe, tk, 96)
-
-
-def webconnectivity_http_diff_with_consistent_dns(ooni_exe, outfile):
-    """Test case where we get an http-diff and the DNS is consistent"""
-    args = [
-        "-iptables-hijack-http-to",
-        "127.0.0.1:80",
-        "-http-proxy-block",
-        "example.org",
-    ]
-    tk = execute_jafar_and_return_validated_test_keys(
-        ooni_exe,
-        outfile,
-        "-i http://example.org/ web_connectivity",
-        "webconnectivity_http_diff_with_consistent_dns",
-        args,
-    )
-    assert tk["dns_experiment_failure"] == None
-    assert tk["dns_consistency"] == "consistent"
-    assert tk["control_failure"] == None
-    assert tk["http_experiment_failure"] == None
-    assert tk["body_length_match"] == False
-    assert tk["body_proportion"] < 1
-    assert tk["status_code_match"] == False
-    assert tk["headers_match"] == True
-    assert tk["title_match"] == False
-    assert tk["blocking"] == "http-diff"
-    assert tk["accessible"] == False
-    assert_status_flags_are(ooni_exe, tk, 64)
-
-
 def webconnectivity_https_expired_certificate(ooni_exe, outfile):
     """Test case where the domain's certificate is expired"""
     args = []
@@ -298,8 +238,6 @@ def main():
     outfile = "webconnectivity.jsonl"
     ooni_exe = sys.argv[1]
     tests = [
-        webconnectivity_http_diff_with_inconsistent_dns,
-        webconnectivity_http_diff_with_consistent_dns,
         webconnectivity_https_expired_certificate,
         webconnectivity_https_wrong_host,
         webconnectivity_https_self_signed,
