@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
@@ -110,6 +111,72 @@ func TestRedirectWithConsistentDNSAndThenNXDOMAIN(t *testing.T) {
 						t.Fatal("expected zero length addrs")
 					}
 				})
+			})
+		})
+	}
+}
+
+func TestRedirectWithConsistentDNSAndThenEOF(t *testing.T) {
+	testcases := []*TestCase{
+		redirectWithConsistentDNSAndThenEOFForHTTP(),
+		redirectWithConsistentDNSAndThenEOFForHTTPS(),
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.Name, func(t *testing.T) {
+			env := netemx.MustNewScenario(netemx.InternetScenario)
+			tc.Configure(env)
+
+			env.Do(func() {
+				urls := []string{"http://www.example.com/", "https://www.example.com/"}
+
+				for _, URL := range urls {
+					t.Run(fmt.Sprintf("for URL %s", URL), func(t *testing.T) {
+						client := netxlite.NewHTTPClientStdlib(log.Log)
+						req := runtimex.Try1(http.NewRequest("GET", URL, nil))
+						resp, err := client.Do(req)
+						if err == nil || err.Error() != netxlite.FailureEOFError {
+							t.Fatal("unexpected err", err)
+						}
+						if resp != nil {
+							t.Fatal("expected nil resp")
+						}
+					})
+				}
+			})
+		})
+	}
+}
+
+func TestRedirectWithConsistentDNSAndThenTimeout(t *testing.T) {
+	testcases := []*TestCase{
+		redirectWithConsistentDNSAndThenTimeoutForHTTP(),
+		redirectWithConsistentDNSAndThenTimeoutForHTTPS(),
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.Name, func(t *testing.T) {
+			env := netemx.MustNewScenario(netemx.InternetScenario)
+			tc.Configure(env)
+
+			env.Do(func() {
+				urls := []string{"http://www.example.com/", "https://www.example.com/"}
+
+				for _, URL := range urls {
+					t.Run(fmt.Sprintf("for URL %s", URL), func(t *testing.T) {
+						ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+						defer cancel()
+						client := netxlite.NewHTTPClientStdlib(log.Log)
+						req := runtimex.Try1(http.NewRequestWithContext(ctx, "GET", URL, nil))
+						resp, err := client.Do(req)
+						if err == nil || err.Error() != netxlite.FailureGenericTimeoutError {
+							t.Fatal("unexpected err", err)
+						}
+						if resp != nil {
+							t.Fatal("expected nil resp")
+						}
+					})
+				}
 			})
 		})
 	}

@@ -21,6 +21,9 @@ type TestCase struct {
 	// Input is the input URL
 	Input string
 
+	// LongTest indicates that this is a long test.
+	LongTest bool
+
 	// Configure is an OPTIONAL hook for further configuring the scenario.
 	Configure func(env *netemx.QAEnv)
 
@@ -48,6 +51,10 @@ func AllTestCases() []*TestCase {
 		redirectWithConsistentDNSAndThenConnectionResetForHTTP(),
 		redirectWithConsistentDNSAndThenConnectionResetForHTTPS(),
 		redirectWithConsistentDNSAndThenNXDOMAIN(),
+		redirectWithConsistentDNSAndThenEOFForHTTP(),
+		redirectWithConsistentDNSAndThenEOFForHTTPS(),
+		redirectWithConsistentDNSAndThenTimeoutForHTTP(),
+		redirectWithConsistentDNSAndThenTimeoutForHTTPS(),
 
 		sucessWithHTTP(),
 		sucessWithHTTPS(),
@@ -55,7 +62,8 @@ func AllTestCases() []*TestCase {
 		tcpBlockingConnectTimeout(),
 		tcpBlockingConnectionRefusedWithInconsistentDNS(),
 
-		tlsBlockingConnectionReset(),
+		tlsBlockingConnectionResetWithConsistentDNS(),
+		tlsBlockingConnectionResetWithInconsistentDNS(),
 
 		websiteDownNXDOMAIN(),
 	}
