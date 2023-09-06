@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/ooni/netem"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // ExampleWebPage is the webpage returned by [ExampleWebPageHandlerFactory].
@@ -16,11 +17,43 @@ const ExampleWebPage = `<!doctype html>
 <body>
 <div>
 	<h1>Default Web Page</h1>
+
 	<p>This is the default web page of the default domain.</p>
+
+	<p>We detect webpage blocking by checking for the status code first. If the status
+	code is different, we consider the measurement http-diff. On the contrary when
+	the status code matches, we say it's all good if one of the following check succeeds:</p>
+
+	<p><ol>
+		<li>the body length does not match (we say they match is the smaller of the two
+		webpages is 70% or more of the size of the larger webpage);</li>
+
+		<li>the uncommon headers match;</li>
+
+		<li>the webpage title contains mostly the same words.</li>
+	</ol></p>
+
+	<p>If the three above checks fail, then we also say that there is http-diff. Because
+	we need QA checks to work as intended, the size of THIS webpage you are reading
+	has been increased, by adding this description, such that the body length check fails. The
+	original webpage size was too close to the blockpage in size, and therefore we did see
+	that there was no http-diff, as it ought to be.</p>
+
+	<p>To make sure we're not going to have this issue in the future, there is now a runtime
+	check that causes our code to crash if this web page size is too similar to the one of
+	the default blockpage. We chose to add this text for additional clarity.</p>
+
+	<p>Also, note that the blockpage MUST be very small, because in some cases we need
+	to spoof it into a single TCP segment using ooni/netem's DPI.</p>
 </div>
 </body>
 </html>
 `
+
+func init() {
+	ratio := float64(len(Blockpage)) / float64(len(ExampleWebPage))
+	runtimex.Assert(ratio < 0.7, "The ExampleWebPage is too short and would be confused with the Blockpage")
+}
 
 // ExampleWebPageHandler returns a handler returning a webpage similar to example.org's one when the domain
 // is www.example.{com,org} and redirecting to www. when the domain is example.{com,org}.
