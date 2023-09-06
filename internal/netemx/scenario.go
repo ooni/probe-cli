@@ -33,6 +33,10 @@ const (
 
 	// ScenarioRoleURLShortener means that the host is an URL shortener.
 	ScenarioRoleURLShortener
+
+	// ScenarioRoleBadSSL means that the host hosts services to
+	// measure against common TLS issues.
+	ScenarioRoleBadSSL
 )
 
 // ScenarioDomainAddresses describes a domain and address used in a scenario.
@@ -136,10 +140,19 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 }, {
 	Domains: []string{"bit.ly", "bitly.com"},
 	Addresses: []string{
-		"67.199.248.11",
+		AddressBitly,
 	},
-	Role:             ScenarioRoleURLShortener,
-	WebServerFactory: nil,
+	Role: ScenarioRoleURLShortener,
+}, {
+	Domains: []string{
+		"wrong.host.badssl.com",
+		"untrusted-root.badssl.com",
+		"expired.badssl.com",
+	},
+	Addresses: []string{
+		AddressBadSSLCom,
+	},
+	Role: ScenarioRoleBadSSL,
 }}
 
 // MustNewScenario constructs a complete testing scenario using the domains and IP
@@ -222,6 +235,11 @@ func MustNewScenario(config []*ScenarioDomainAddresses) *QAEnv {
 		case ScenarioRoleURLShortener:
 			for _, addr := range sad.Addresses {
 				opts = append(opts, QAEnvOptionHTTPServer(addr, URLShortenerFactory(DefaultURLShortenerMapping)))
+			}
+
+		case ScenarioRoleBadSSL:
+			for _, addr := range sad.Addresses {
+				opts = append(opts, qaEnvOptionNetStack(addr, &BadSSLServerFactory{}))
 			}
 		}
 	}

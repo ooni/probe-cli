@@ -52,3 +52,9 @@ const AddressPublicBlockpage = "83.224.65.41"
 
 // ISPProxyAddress is the IP address of the ISP's HTTP transparent proxy.
 const ISPProxyAddress = "130.192.182.17"
+
+// AddressBitly is the IP address of bitly.com.
+const AddressBitly = "67.199.248.11"
+
+// AddressBadSSLCom is the IP address of badssl.com.
+const AddressBadSSLCom = "104.154.89.105"
