@@ -327,19 +327,57 @@ func Example_exampleWebServerWithInternetScenario() {
 			log.Fatalf("netxlite.ReadAllContext failed: %s", err.Error())
 		}
 
-		fmt.Printf("%+v\n", string(body))
+		// simplify comparison by stripping all the leading whitespaces
+		simplifyBody := func(body []byte) (output []byte) {
+			lines := bytes.Split(body, []byte("\n"))
+			for _, line := range lines {
+				line = bytes.TrimSpace(line)
+				line = append(line, '\n')
+				output = append(output, line...)
+			}
+			return output
+		}
+
+		fmt.Printf("%+v\n", string(simplifyBody(body)))
 	})
 
 	// Output:
 	// <!doctype html>
 	// <html>
 	// <head>
-	// 	<title>Default Web Page</title>
+	// <title>Default Web Page</title>
 	// </head>
 	// <body>
 	// <div>
-	// 	<h1>Default Web Page</h1>
-	// 	<p>This is the default web page of the default domain.</p>
+	// <h1>Default Web Page</h1>
+	//
+	// <p>This is the default web page of the default domain.</p>
+	//
+	// <p>We detect webpage blocking by checking for the status code first. If the status
+	// code is different, we consider the measurement http-diff. On the contrary when
+	// the status code matches, we say it's all good if one of the following check succeeds:</p>
+	//
+	// <p><ol>
+	// <li>the body length does not match (we say they match is the smaller of the two
+	// webpages is 70% or more of the size of the larger webpage);</li>
+	//
+	// <li>the uncommon headers match;</li>
+	//
+	// <li>the webpage title contains mostly the same words.</li>
+	// </ol></p>
+	//
+	// <p>If the three above checks fail, then we also say that there is http-diff. Because
+	// we need QA checks to work as intended, the size of THIS webpage you are reading
+	// has been increased, by adding this description, such that the body length check fails. The
+	// original webpage size was too close to the blockpage in size, and therefore we did see
+	// that there was no http-diff, as it ought to be.</p>
+	//
+	// <p>To make sure we're not going to have this issue in the future, there is now a runtime
+	// check that causes our code to crash if this web page size is too similar to the one of
+	// the default blockpage. We chose to add this text for additional clarity.</p>
+	//
+	// <p>Also, note that the blockpage MUST be very small, because in some cases we need
+	// to spoof it into a single TCP segment using ooni/netem's DPI.</p>
 	// </div>
 	// </body>
 	// </html>
@@ -405,7 +443,7 @@ func Example_oohelperdWithInternetScenario() {
 	})
 
 	// Output:
-	// {"tcp_connect":{"93.184.216.34:443":{"status":true,"failure":null}},"tls_handshake":{"93.184.216.34:443":{"server_name":"www.example.com","status":true,"failure":null}},"quic_handshake":{},"http_request":{"body_length":194,"discovered_h3_endpoint":"www.example.com:443","failure":null,"title":"Default Web Page","headers":{"Alt-Svc":"h3=\":443\"","Content-Length":"194","Content-Type":"text/html; charset=utf-8","Date":"Thu, 24 Aug 2023 14:35:29 GMT"},"status_code":200},"http3_request":null,"dns":{"failure":null,"addrs":["93.184.216.34"]},"ip_info":{"93.184.216.34":{"asn":15133,"flags":11}}}
+	// {"tcp_connect":{"93.184.216.34:443":{"status":true,"failure":null}},"tls_handshake":{"93.184.216.34:443":{"server_name":"www.example.com","status":true,"failure":null}},"quic_handshake":{},"http_request":{"body_length":1533,"discovered_h3_endpoint":"www.example.com:443","failure":null,"title":"Default Web Page","headers":{"Alt-Svc":"h3=\":443\"","Content-Length":"1533","Content-Type":"text/html; charset=utf-8","Date":"Thu, 24 Aug 2023 14:35:29 GMT"},"status_code":200},"http3_request":null,"dns":{"failure":null,"addrs":["93.184.216.34"]},"ip_info":{"93.184.216.34":{"asn":15133,"flags":11}}}
 }
 
 // This example shows how the [InternetScenario] defines a GeoIP service like Ubuntu's one.
