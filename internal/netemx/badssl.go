@@ -101,6 +101,8 @@ func (thx *tlsHandlerForBadSSLServer) GetCertificate(
 		})
 
 	case "untrusted-root.badssl.com":
+		fallthrough
+	default:
 		// Create a custom MITM config and use it to negotiate TLS. Because this would be
 		// a different root CA, validating certs will fail the handshake.
 		//
@@ -119,9 +121,5 @@ func (thx *tlsHandlerForBadSSLServer) GetCertificate(
 				return time.Date(2017, time.July, 17, 0, 0, 0, 0, time.UTC)
 			},
 		)
-
-	default:
-		// The default is to just clone the TCP connection for good
-		return (testingx.TLSHandlerEOF()).GetCertificate(ctx, tcpConn, chi)
 	}
 }

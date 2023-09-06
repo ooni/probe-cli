@@ -84,43 +84,6 @@ def webconnectivity_https_self_signed(ooni_exe, outfile):
     assert_status_flags_are(ooni_exe, tk, 16)
 
 
-def webconnectivity_https_unknown_authority_with_inconsistent_dns(ooni_exe, outfile):
-    """Test case where the DNS is sending us towards a website where
-    we're served an invalid certificate"""
-    args = [
-        "-iptables-hijack-dns-to",
-        "127.0.0.1:53",
-        "-dns-proxy-hijack",
-        "example.org",
-        "-bad-proxy-address-tls",
-        "127.0.0.1:443",
-        "-tls-proxy-address",
-        "127.0.0.1:4114",
-    ]
-    tk = execute_jafar_and_return_validated_test_keys(
-        ooni_exe,
-        outfile,
-        "-i https://example.org/ web_connectivity",
-        "webconnectivity_https_unknown_authority_with_inconsistent_dns",
-        args,
-    )
-    assert tk["dns_experiment_failure"] == None
-    assert tk["dns_consistency"] == "inconsistent"
-    assert tk["control_failure"] == None
-    if "miniooni" in ooni_exe:
-        assert tk["http_experiment_failure"] == "ssl_unknown_authority"
-    else:
-        assert "certificate verify failed" in tk["http_experiment_failure"]
-    assert tk["body_length_match"] == None
-    assert tk["body_proportion"] == 0
-    assert tk["status_code_match"] == None
-    assert tk["headers_match"] == None
-    assert tk["title_match"] == None
-    assert tk["blocking"] == "dns"
-    assert tk["accessible"] == False
-    assert_status_flags_are(ooni_exe, tk, 9248)
-
-
 def main():
     if len(sys.argv) != 2:
         sys.exit("usage: %s /path/to/ooniprobelegacy-like/binary" % sys.argv[0])
@@ -128,7 +91,6 @@ def main():
     ooni_exe = sys.argv[1]
     tests = [
         webconnectivity_https_self_signed,
-        webconnectivity_https_unknown_authority_with_inconsistent_dns,
     ]
     for test in tests:
         test(ooni_exe, outfile)

@@ -11,22 +11,35 @@ import (
 )
 
 func TestBadSSLConditions(t *testing.T) {
-	testcases := map[string]*TestCase{
-		"ssl_unknown_authority":   badSSLWithUnknownAuthority(),
-		"ssl_invalid_certificate": badSSLWithExpiredCertificate(),
-		"ssl_invalid_hostname":    badSSLWithWrongServerName(),
+	type testCaseConfig struct {
+		expectedErr string
+		testCase    *TestCase
 	}
 
-	for expectedErr, tc := range testcases {
-		t.Run(tc.Name, func(t *testing.T) {
+	testcases := []*testCaseConfig{{
+		expectedErr: "ssl_unknown_authority",
+		testCase:    badSSLWithUnknownAuthorityWithConsistentDNS(),
+	}, {
+		expectedErr: "ssl_invalid_certificate",
+		testCase:    badSSLWithExpiredCertificate(),
+	}, {
+		expectedErr: "ssl_invalid_hostname",
+		testCase:    badSSLWithWrongServerName(),
+	}, {
+		expectedErr: "ssl_unknown_authority",
+		testCase:    badSSLWithUnknownAuthorityWithInconsistentDNS(),
+	}}
+
+	for _, tc := range testcases {
+		t.Run(tc.testCase.Name, func(t *testing.T) {
 			env := netemx.MustNewScenario(netemx.InternetScenario)
-			tc.Configure(env)
+			tc.testCase.Configure(env)
 
 			env.Do(func() {
 				client := netxlite.NewHTTPClientStdlib(log.Log)
-				req := runtimex.Try1(http.NewRequest("GET", tc.Input, nil))
+				req := runtimex.Try1(http.NewRequest("GET", tc.testCase.Input, nil))
 				resp, err := client.Do(req)
-				if err == nil || err.Error() != expectedErr {
+				if err == nil || err.Error() != tc.expectedErr {
 					t.Fatal("unexpected err", err)
 				}
 				if resp != nil {

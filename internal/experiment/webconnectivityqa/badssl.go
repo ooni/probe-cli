@@ -1,6 +1,9 @@
 package webconnectivityqa
 
-import "github.com/ooni/probe-cli/v3/internal/netemx"
+import (
+	"github.com/ooni/netem"
+	"github.com/ooni/probe-cli/v3/internal/netemx"
+)
 
 // Sometimes people we measure the websites of let their certificates expire and
 // we want to be confident about correctly measuring this condition
@@ -47,9 +50,9 @@ func badSSLWithWrongServerName() *TestCase {
 }
 
 // Let's be sure we correctly flag a website using an unknown-to-us authority.
-func badSSLWithUnknownAuthority() *TestCase {
+func badSSLWithUnknownAuthorityWithConsistentDNS() *TestCase {
 	return &TestCase{
-		Name:  "badSSLWithUnknownAuthority",
+		Name:  "badSSLWithUnknownAuthorityWithConsistentDNS",
 		Flags: TestCaseFlagNoLTE, // LTE flags it correctly but let's focus on v0.4 for now
 		Input: "https://untrusted-root.badssl.com/",
 		Configure: func(env *netemx.QAEnv) {
@@ -63,6 +66,36 @@ func badSSLWithUnknownAuthority() *TestCase {
 			XNullNullFlags:        4,  // analysisFlagNullNullTLSMisconfigured
 			Accessible:            nil,
 			Blocking:              nil,
+		},
+	}
+}
+
+// This test case models when we're redirected to a blockpage website using a custom CA.
+func badSSLWithUnknownAuthorityWithInconsistentDNS() *TestCase {
+	return &TestCase{
+		Name:  "badSSLWithUnknownAuthorityWithInconsistentDNS",
+		Flags: 0,
+		Input: "https://www.example.com/",
+		Configure: func(env *netemx.QAEnv) {
+
+			// add DPI rule to force all the cleartext DNS queries to
+			// point the client to used the ISPProxyAddress
+			env.DPIEngine().AddRule(&netem.DPISpoofDNSResponse{
+				Addresses: []string{netemx.AddressBadSSLCom},
+				Logger:    env.Logger(),
+				Domain:    "www.example.com",
+			})
+
+		},
+		ExpectErr: false,
+		ExpectTestKeys: &testKeys{
+			DNSConsistency:        "inconsistent",
+			HTTPExperimentFailure: "ssl_unknown_authority",
+			XStatus:               9248, // StatusExperimentHTTP | StatusAnomalyTLSHandshake | StatusAnomalyDNS
+			XDNSFlags:             4,    // AnalysisDNSUnexpectedAddrs
+			XBlockingFlags:        33,   // analysisFlagSuccess | analysisFlagDNSBlocking
+			Accessible:            false,
+			Blocking:              "dns",
 		},
 	}
 }
