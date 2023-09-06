@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/cmd/jafar/flagx"
+	"github.com/ooni/probe-cli/v3/internal/flagx"
 )
 
 func TestStringArray(t *testing.T) {
@@ -71,3 +71,7 @@ func TestStringArray(t *testing.T) {
 func assertFlagGetterStringArray(b flagx.StringArray) {
 	func(in flag.Getter) {}(&b)
 }
+
+// Make sure the compiler does not complain about an unused function, otherwise next
+// time I may end up removing it without noticing it's actually necessary.
+var _ = assertFlagGetterStringArray
