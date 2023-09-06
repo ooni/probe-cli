@@ -37,6 +37,10 @@ type TestCase struct {
 // AllTestCases returns all the defined test cases.
 func AllTestCases() []*TestCase {
 	return []*TestCase{
+		badSSLWithUnknownAuthority(),
+		badSSLWithExpiredCertificate(),
+		badSSLWithWrongServerName(),
+
 		controlFailureWithSuccessfulHTTPWebsite(),
 		controlFailureWithSuccessfulHTTPSWebsite(),
 
