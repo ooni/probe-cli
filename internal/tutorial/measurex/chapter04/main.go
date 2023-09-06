@@ -222,14 +222,14 @@ func main() {
 // possibility is building Jafar with this command:
 //
 // ```
-// go build -v ./internal/cmd/jafar
+// go build -v ./internal/cmd/tinyjafar
 // ```
 //
 // Then, for example, to provoke a connection reset you
 // can run in a terminal:
 //
 // ```
-// sudo ./jafar -iptables-reset-keyword dns.google
+// sudo ./tinyjafar -iptables-reset-keyword dns.google
 // ```
 //
 // and you can run this tutorial with `dns.google` as
