@@ -32,6 +32,9 @@ func TestBadSSL(t *testing.T) {
 		}, {
 			serverName: "expired.badssl.com",
 			expectErr:  netxlite.FailureSSLInvalidCertificate,
+		}, {
+			serverName: "unsupported.badssl.com",
+			expectErr:  netxlite.FailureEOFError,
 		}}
 
 		for _, tc := range testcases {
