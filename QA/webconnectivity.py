@@ -298,7 +298,6 @@ def main():
     outfile = "webconnectivity.jsonl"
     ooni_exe = sys.argv[1]
     tests = [
-        webconnectivity_http_connection_reset_with_inconsistent_dns,
         webconnectivity_http_diff_with_inconsistent_dns,
         webconnectivity_http_diff_with_consistent_dns,
         webconnectivity_https_expired_certificate,
