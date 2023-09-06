@@ -5,6 +5,7 @@ package flagx_test
 // version 2.0 of the Apache License <https://git.io/JJ8Ux>.
 
 import (
+	"flag"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -64,3 +65,13 @@ func TestStringArray(t *testing.T) {
 		})
 	}
 }
+
+// Successful compilation of this function means that StringArray implements the
+// flag.Getter interface. The function need not be called.
+func assertFlagGetterStringArray(b flagx.StringArray) {
+	func(in flag.Getter) {}(&b)
+}
+
+// Make sure the compiler does not complain about an unused function, otherwise next
+// time I may end up removing it without noticing it's actually necessary.
+var _ = assertFlagGetterStringArray
