@@ -815,10 +815,10 @@ func TestTestKeysFillToplevelKeysCoverMissingFields(t *testing.T) {
 	failureString := "eof_error"
 	tk := &TestKeys{
 		Targets: map[string]TargetResults{
-			"foobar":  {Failure: &failureString, TargetProtocol: "dir_port"},
-			"baz":     {TargetProtocol: "dir_port"},
-			"jafar":   {Failure: &failureString, TargetProtocol: "or_port_dirauth"},
-			"jasmine": {TargetProtocol: "or_port_dirauth"},
+			"foobar":    {Failure: &failureString, TargetProtocol: "dir_port"},
+			"baz":       {TargetProtocol: "dir_port"},
+			"ariel":     {Failure: &failureString, TargetProtocol: "or_port_dirauth"},
+			"sebastian": {TargetProtocol: "or_port_dirauth"},
 		},
 	}
 	tk.fillToplevelKeys()
