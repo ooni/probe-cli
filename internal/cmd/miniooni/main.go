@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"path"
 	"runtime/debug"
@@ -17,7 +18,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/registry"
+	"github.com/ooni/probe-cli/v3/internal/remote"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
 	"github.com/spf13/cobra"
@@ -300,6 +303,32 @@ func MainWithConfiguration(experimentName string, currentOptions *Options) {
 		currentOptions.ReportFile = "report.jsonl"
 	}
 	log.Log = logger
+
+	if remoteURL := os.Getenv("OONI_REMOTE"); remoteURL != "" {
+		parsed := runtimex.Try1(url.Parse(remoteURL))
+		runtimex.Assert(parsed.Scheme == "tcp", "remote: we only support the tcp:// scheme")
+		runtimex.Assert(
+			currentOptions.Proxy == "" && currentOptions.Tunnel == "",
+			"remote: incompatible with using a --proxy or --tunnel",
+		)
+		log.Infof("Warning: the OONI_REMOTE functionality is experimental. It may change at any time")
+		log.Infof("or be removed in the future without notice.")
+		conn := runtimex.Try1(remote.DialTCP(context.Background(), parsed.Host))
+		cfg := &remote.UnderlyingNetworkConfig{
+			Conn:            conn,
+			LocalAddress:    "10.14.17.11",
+			Logger:          logger,
+			MTU:             0,
+			ResolverAddress: "",
+			RemoteAddress:   "10.14.17.1",
+		}
+		unet := runtimex.Try1(remote.NewUnderlyingNetwork(cfg))
+		netxlite.WithCustomTProxy(unet, func() {
+			mainSingleIteration(logger, experimentName, currentOptions)
+		})
+		return
+	}
+
 	for {
 		mainSingleIteration(logger, experimentName, currentOptions)
 		if currentOptions.RepeatEvery <= 0 {

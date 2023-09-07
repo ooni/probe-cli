@@ -16,7 +16,6 @@ require (
 	github.com/fatih/color v1.15.0
 	github.com/google/go-cmp v0.5.9
 	github.com/google/gopacket v1.1.19
-	github.com/google/martian/v3 v3.3.2
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.5.0
@@ -38,6 +37,7 @@ require (
 	github.com/rogpeppe/go-internal v1.11.0
 	github.com/rubenv/sql-migrate v1.5.1
 	github.com/schollz/progressbar/v3 v3.13.1
+	github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8
 	github.com/upper/db/v4 v4.6.0
 	gitlab.com/yawning/obfs4.git v0.0.0-20230519154740-645026c2ada4
 	gitlab.com/yawning/utls.git v0.0.12-1
@@ -61,6 +61,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5 // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/google/btree v1.1.2 // indirect
+	github.com/google/martian/v3 v3.3.2 // indirect
 	github.com/google/pprof v0.0.0-20230602150820-91b7bce49751 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/klauspost/compress v1.16.5 // indirect
