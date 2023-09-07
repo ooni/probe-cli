@@ -89,7 +89,9 @@ func TestMeasurerMeasureWithInvalidInput(t *testing.T) {
 	}
 }
 
-func TestMeasurerSuccess(t *testing.T) {
+// TODO(bassosimone,kelmenhorst): this test currently fails because netem does not support ECH; we
+// should consider implementing ECH such that this experiment succeeds in a proper sense.
+func TestMeasurerNetemWithoutInterference(t *testing.T) {
 	// create QAEnv
 	env := qaenv()
 	defer env.Close()
@@ -121,6 +123,7 @@ func TestMeasurerSuccess(t *testing.T) {
 			// we expect errors here because we cannot do ECH with netem yet
 			t.Fatal("expected an error here")
 		}
+		t.Skip("netem does not support ECH so we cannot declare this test as successful")
 	})
 }
 
