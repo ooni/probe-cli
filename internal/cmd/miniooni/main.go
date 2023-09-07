@@ -316,11 +316,10 @@ func MainWithConfiguration(experimentName string, currentOptions *Options) {
 		conn := runtimex.Try1(remote.DialTCP(context.Background(), parsed.Host))
 		cfg := &remote.UnderlyingNetworkConfig{
 			Conn:            conn,
-			LocalAddress:    "10.14.17.11",
+			LocalAddress:    "10.14.17.1",
 			Logger:          logger,
 			MTU:             0,
 			ResolverAddress: "8.8.8.8",
-			RemoteAddress:   "10.14.17.1",
 		}
 		unet := runtimex.Try1(remote.NewUnderlyingNetwork(cfg))
 		netxlite.WithCustomTProxy(unet, func() {

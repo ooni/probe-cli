@@ -29,9 +29,6 @@ type UnderlyingNetworkConfig struct {
 
 	// ResolverAddress is the OPTIONAL default resolver address.
 	ResolverAddress string
-
-	// RemoteAddress is the MANDATORY remote address.
-	RemoteAddress string
 }
 
 // NewUnderlyingNetwork creates a new [model.UnderlyingNetwork] that

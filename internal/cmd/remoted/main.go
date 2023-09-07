@@ -129,7 +129,7 @@ func (rs *remoteServer) cleanupIPTables() {
 
 func (rs *remoteServer) route(clientConn net.Conn, tunDevice io.ReadWriter) {
 	go func() {
-		runtimex.CatchLogAndIgnorePanic(rs.logger, "remoted")
+		defer runtimex.CatchLogAndIgnorePanic(rs.logger, "remoted")
 		for {
 			ipPacket := runtimex.Try1(remote.ReadPacket(clientConn))
 			_ = runtimex.Try1(tunDevice.Write(ipPacket))
@@ -137,7 +137,7 @@ func (rs *remoteServer) route(clientConn net.Conn, tunDevice io.ReadWriter) {
 	}()
 
 	go func() {
-		runtimex.CatchLogAndIgnorePanic(rs.logger, "remoted")
+		defer runtimex.CatchLogAndIgnorePanic(rs.logger, "remoted")
 		for {
 			buffer := make([]byte, remote.MaxPacketSize)
 			count := runtimex.Try1(tunDevice.Read(buffer))
