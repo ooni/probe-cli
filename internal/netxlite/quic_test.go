@@ -346,7 +346,7 @@ func TestQUICDialerWithCustomUnderlyingNetwork(t *testing.T) {
 			},
 		}
 		systemdialer := &quicDialerQUICGo{
-			UDPListener: &udpListenerStdlib{provider: &tproxyNilSafeProvider{proxy}},
+			UDPListener: &udpListenerStdlib{provider: &MaybeCustomUnderlyingNetwork{proxy}},
 		}
 		qconn, err := systemdialer.DialContext(ctx, "8.8.8.8:443", tlsConf, qConf)
 		if qconn != nil {
