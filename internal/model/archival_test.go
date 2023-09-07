@@ -1,16 +1,17 @@
-package model
+package model_test
 
 import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
 func TestArchivalExtSpec(t *testing.T) {
 	t.Run("AddTo", func(t *testing.T) {
-		m := &Measurement{}
-		ArchivalExtDNS.AddTo(m)
+		m := &model.Measurement{}
+		model.ArchivalExtDNS.AddTo(m)
 		expected := map[string]int64{"dnst": 0}
 		if d := cmp.Diff(m.Extensions, expected); d != "" {
 			t.Fatal(d)
@@ -56,7 +57,7 @@ func TestMaybeBinaryValue(t *testing.T) {
 		}}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				hb := ArchivalMaybeBinaryData{
+				hb := model.ArchivalMaybeBinaryData{
 					Value: tt.input,
 				}
 				got, err := hb.MarshalJSON()
@@ -109,7 +110,7 @@ func TestMaybeBinaryValue(t *testing.T) {
 		}}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				hb := &ArchivalMaybeBinaryData{}
+				hb := &model.ArchivalMaybeBinaryData{}
 				if err := hb.UnmarshalJSON(tt.input); (err != nil) != tt.wantErr {
 					t.Fatalf("ArchivalMaybeBinaryData.UnmarshalJSON() error = %v, wantErr %v", err, tt.wantErr)
 				}
@@ -124,15 +125,15 @@ func TestMaybeBinaryValue(t *testing.T) {
 func TestHTTPHeader(t *testing.T) {
 	t.Run("MarshalJSON", func(t *testing.T) {
 		tests := []struct {
-			name    string             // test name
-			input   ArchivalHTTPHeader // what to marshal
-			want    []byte             // expected data
-			wantErr bool               // whether we expect an error
+			name    string                   // test name
+			input   model.ArchivalHTTPHeader // what to marshal
+			want    []byte                   // expected data
+			wantErr bool                     // whether we expect an error
 		}{{
 			name: "with string value",
-			input: ArchivalHTTPHeader{
+			input: model.ArchivalHTTPHeader{
 				Key: "Content-Type",
-				Value: ArchivalMaybeBinaryData{
+				Value: model.ArchivalMaybeBinaryData{
 					Value: "text/plain",
 				},
 			},
@@ -140,9 +141,9 @@ func TestHTTPHeader(t *testing.T) {
 			wantErr: false,
 		}, {
 			name: "with binary value",
-			input: ArchivalHTTPHeader{
+			input: model.ArchivalHTTPHeader{
 				Key: "Content-Type",
-				Value: ArchivalMaybeBinaryData{
+				Value: model.ArchivalMaybeBinaryData{
 					Value: string(archivalBinaryInput),
 				},
 			},
@@ -164,40 +165,40 @@ func TestHTTPHeader(t *testing.T) {
 
 	t.Run("UnmarshalJSON", func(t *testing.T) {
 		tests := []struct {
-			name    string             // test name
-			input   []byte             // input for the test
-			want    ArchivalHTTPHeader // expected output
-			wantErr bool               // whether we want an error
+			name    string                   // test name
+			input   []byte                   // input for the test
+			want    model.ArchivalHTTPHeader // expected output
+			wantErr bool                     // whether we want an error
 		}{{
 			name:  "with invalid input",
 			input: []byte(`{}`),
-			want: ArchivalHTTPHeader{
+			want: model.ArchivalHTTPHeader{
 				Key:   "",
-				Value: ArchivalMaybeBinaryData{Value: ""},
+				Value: model.ArchivalMaybeBinaryData{Value: ""},
 			},
 			wantErr: true,
 		}, {
 			name:  "with unexpected number of items",
 			input: []byte(`[]`),
-			want: ArchivalHTTPHeader{
+			want: model.ArchivalHTTPHeader{
 				Key:   "",
-				Value: ArchivalMaybeBinaryData{Value: ""},
+				Value: model.ArchivalMaybeBinaryData{Value: ""},
 			},
 			wantErr: true,
 		}, {
 			name:  "with first item not being a string",
 			input: []byte(`[0,0]`),
-			want: ArchivalHTTPHeader{
+			want: model.ArchivalHTTPHeader{
 				Key:   "",
-				Value: ArchivalMaybeBinaryData{Value: ""},
+				Value: model.ArchivalMaybeBinaryData{Value: ""},
 			},
 			wantErr: true,
 		}, {
 			name:  "with both items being a string",
 			input: []byte(`["x","y"]`),
-			want: ArchivalHTTPHeader{
+			want: model.ArchivalHTTPHeader{
 				Key: "x",
-				Value: ArchivalMaybeBinaryData{
+				Value: model.ArchivalMaybeBinaryData{
 					Value: "y",
 				},
 			},
@@ -205,9 +206,9 @@ func TestHTTPHeader(t *testing.T) {
 		}, {
 			name:  "with second item not being a map[string]interface{}",
 			input: []byte(`["x",[]]`),
-			want: ArchivalHTTPHeader{
+			want: model.ArchivalHTTPHeader{
 				Key: "",
-				Value: ArchivalMaybeBinaryData{
+				Value: model.ArchivalMaybeBinaryData{
 					Value: "",
 				},
 			},
@@ -215,9 +216,9 @@ func TestHTTPHeader(t *testing.T) {
 		}, {
 			name:  "with missing format key in second item",
 			input: []byte(`["x",{}]`),
-			want: ArchivalHTTPHeader{
+			want: model.ArchivalHTTPHeader{
 				Key: "",
-				Value: ArchivalMaybeBinaryData{
+				Value: model.ArchivalMaybeBinaryData{
 					Value: "",
 				},
 			},
@@ -225,9 +226,9 @@ func TestHTTPHeader(t *testing.T) {
 		}, {
 			name:  "with format value not being base64",
 			input: []byte(`["x",{"format":1}]`),
-			want: ArchivalHTTPHeader{
+			want: model.ArchivalHTTPHeader{
 				Key: "",
-				Value: ArchivalMaybeBinaryData{
+				Value: model.ArchivalMaybeBinaryData{
 					Value: "",
 				},
 			},
@@ -235,9 +236,9 @@ func TestHTTPHeader(t *testing.T) {
 		}, {
 			name:  "with missing data field",
 			input: []byte(`["x",{"format":"base64"}]`),
-			want: ArchivalHTTPHeader{
+			want: model.ArchivalHTTPHeader{
 				Key: "",
-				Value: ArchivalMaybeBinaryData{
+				Value: model.ArchivalMaybeBinaryData{
 					Value: "",
 				},
 			},
@@ -245,9 +246,9 @@ func TestHTTPHeader(t *testing.T) {
 		}, {
 			name:  "with data not being a string",
 			input: []byte(`["x",{"format":"base64","data":1}]`),
-			want: ArchivalHTTPHeader{
+			want: model.ArchivalHTTPHeader{
 				Key: "",
-				Value: ArchivalMaybeBinaryData{
+				Value: model.ArchivalMaybeBinaryData{
 					Value: "",
 				},
 			},
@@ -255,9 +256,9 @@ func TestHTTPHeader(t *testing.T) {
 		}, {
 			name:  "with data not being base64",
 			input: []byte(`["x",{"format":"base64","data":"xx"}]`),
-			want: ArchivalHTTPHeader{
+			want: model.ArchivalHTTPHeader{
 				Key: "",
-				Value: ArchivalMaybeBinaryData{
+				Value: model.ArchivalMaybeBinaryData{
 					Value: "",
 				},
 			},
@@ -265,9 +266,9 @@ func TestHTTPHeader(t *testing.T) {
 		}, {
 			name:  "with correctly encoded base64 data",
 			input: []byte(`["x",` + string(archivalEncodedBinaryInput) + `]`),
-			want: ArchivalHTTPHeader{
+			want: model.ArchivalHTTPHeader{
 				Key: "x",
-				Value: ArchivalMaybeBinaryData{
+				Value: model.ArchivalMaybeBinaryData{
 					Value: string(archivalBinaryInput),
 				},
 			},
@@ -275,7 +276,7 @@ func TestHTTPHeader(t *testing.T) {
 		}}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				hh := &ArchivalHTTPHeader{}
+				hh := &model.ArchivalHTTPHeader{}
 				if err := hh.UnmarshalJSON(tt.input); (err != nil) != tt.wantErr {
 					t.Fatalf("ArchivalHTTPHeader.UnmarshalJSON() error = %v, wantErr %v", err, tt.wantErr)
 				}
@@ -300,10 +301,10 @@ func TestHTTPBody(t *testing.T) {
 	// However, cmp.Diff also takes into account the data type. Hence, if
 	// we make a mistake and apply the above change (which will in turn
 	// break correct JSON serialization), the this test will fail.
-	var body ArchivalHTTPBody
+	var body model.ArchivalHTTPBody
 	ff := &testingx.FakeFiller{}
 	ff.Fill(&body)
-	data := ArchivalMaybeBinaryData(body)
+	data := model.ArchivalMaybeBinaryData(body)
 	if diff := cmp.Diff(body, data); diff != "" {
 		t.Fatal(diff)
 	}

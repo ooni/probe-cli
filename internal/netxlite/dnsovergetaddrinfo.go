@@ -24,7 +24,7 @@ type dnsOverGetaddrinfoTransport struct {
 	testableLookupANY func(ctx context.Context, domain string) ([]string, string, error)
 
 	// provider is the OPTIONAL nil-safe [model.UnderlyingNetwork] provider.
-	provider *tproxyNilSafeProvider
+	provider *MaybeCustomUnderlyingNetwork
 }
 
 // NewDNSOverGetaddrinfoTransport creates a new dns-over-getaddrinfo transport.

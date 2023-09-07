@@ -12,7 +12,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
 func TestMaybeWrapHTTPTransport(t *testing.T) {
@@ -140,7 +141,7 @@ func TestHTTPTransportSaver(t *testing.T) {
 			if len(value.HTTPResponseHeaders) <= 0 {
 				t.Fatal("expected at least one response header")
 			}
-			if !bytes.Equal(value.HTTPResponseBody, filtering.HTTPBlockpage451) {
+			if !bytes.Equal(value.HTTPResponseBody, testingx.HTTPBlockpage451) {
 				t.Fatal("unexpected value for response body")
 			}
 			if value.HTTPStatusCode != 451 {
@@ -149,9 +150,10 @@ func TestHTTPTransportSaver(t *testing.T) {
 		}
 
 		t.Run("on success", func(t *testing.T) {
-			server := filtering.NewHTTPServerCleartext(filtering.HTTPAction451)
+			server := testingx.MustNewHTTPServer(testingx.HTTPHandlerBlockpage451())
 			defer server.Close()
-			resp, saver, err := measureHTTP(t, server.URL())
+			serverURL := runtimex.Try1(url.Parse(server.URL))
+			resp, saver, err := measureHTTP(t, serverURL)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -163,13 +165,13 @@ func TestHTTPTransportSaver(t *testing.T) {
 			if len(events) != 2 {
 				t.Fatal("unexpected number of events")
 			}
-			validateRequest(t, events[0], server.URL())
-			validateResponseSuccess(t, events[1], server.URL())
+			validateRequest(t, events[0], serverURL)
+			validateResponseSuccess(t, events[1], serverURL)
 			data, err := netxlite.ReadAllContext(context.Background(), resp.Body)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !bytes.Equal(data, filtering.HTTPBlockpage451) {
+			if !bytes.Equal(data, testingx.HTTPBlockpage451) {
 				t.Fatal("we cannot re-read the same body")
 			}
 		})
@@ -201,9 +203,10 @@ func TestHTTPTransportSaver(t *testing.T) {
 		}
 
 		t.Run("on round trip failure", func(t *testing.T) {
-			server := filtering.NewHTTPServerCleartext(filtering.HTTPActionReset)
+			server := testingx.MustNewHTTPServer(testingx.HTTPHandlerReset())
 			defer server.Close()
-			resp, saver, err := measureHTTP(t, server.URL())
+			serverURL := runtimex.Try1(url.Parse(server.URL))
+			resp, saver, err := measureHTTP(t, serverURL)
 			if err == nil || err.Error() != "connection_reset" {
 				t.Fatal("unexpected err", err)
 			}
@@ -214,8 +217,8 @@ func TestHTTPTransportSaver(t *testing.T) {
 			if len(events) != 2 {
 				t.Fatal("unexpected number of events")
 			}
-			validateRequest(t, events[0], server.URL())
-			validateResponseFailure(t, events[1], server.URL())
+			validateRequest(t, events[0], serverURL)
+			validateResponseFailure(t, events[1], serverURL)
 		})
 
 		// Sometimes useful for testing

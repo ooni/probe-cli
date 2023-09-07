@@ -492,9 +492,11 @@ type UnderlyingNetwork interface {
 	// a copy of the default cert pool that you can modify.
 	DefaultCertPool() *x509.CertPool
 
-	// DialContext is equivalent to net.Dialer.DialContext except that
-	// there is also an explicit timeout for dialing.
-	DialContext(ctx context.Context, timeout time.Duration, network, address string) (net.Conn, error)
+	// DialTimeout returns the default timeout to use for dialing.
+	DialTimeout() time.Duration
+
+	// DialContext is equivalent to net.Dialer.DialContext.
+	DialContext(ctx context.Context, network, address string) (net.Conn, error)
 
 	// GetaddrinfoLookupANY is like net.Resolver.LookupHost except that it
 	// also returns to the caller the CNAME when it is available.

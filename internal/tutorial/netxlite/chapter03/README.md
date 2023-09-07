@@ -158,11 +158,11 @@ named `ssl_invalid_hostname`).
 
 ### TLS handshake reset
 
-If you're on Linux, build Jafar (`go build -v ./internal/cmd/jafar`)
+If you're on Linux, build Jafar (`go build -v ./internal/cmd/tinyjafar`)
 and then run:
 
 ```bash
-sudo ./jafar -iptables-reset-keyword dns.google
+sudo ./tinyjafar -iptables-reset-keyword dns.google
 ```
 
 Then run in another terminal
@@ -175,11 +175,11 @@ Then you can interrupt Jafar using ^C.
 
 ### TLS handshake timeout
 
-If you're on Linux, build Jafar (`go build -v ./internal/cmd/jafar`)
+If you're on Linux, build Jafar (`go build -v ./internal/cmd/tinyjafar`)
 and then run:
 
 ```bash
-sudo ./jafar -iptables-drop-keyword dns.google
+sudo ./tinyjafar -iptables-drop-keyword dns.google
 ```
 
 Then run in another terminal

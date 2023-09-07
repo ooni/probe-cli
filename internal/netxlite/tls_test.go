@@ -19,7 +19,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
@@ -302,7 +301,7 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 						},
 					}, nil
 				},
-				provider: &tproxyNilSafeProvider{proxy},
+				provider: &MaybeCustomUnderlyingNetwork{proxy},
 			}
 			ctx := context.Background()
 			config := &tls.Config{ServerName: "dns.google"}
@@ -382,7 +381,8 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 				startCalled                 bool
 				doneCalled                  bool
 			)
-			server := filtering.NewTLSServer(filtering.TLSActionBlockText)
+			mitm := testingx.MustNewTLSMITMProviderNetem()
+			server := testingx.MustNewTLSServer(testingx.TLSHandlerHandshakeAndWriteText(mitm, testingx.HTTPBlockpage451))
 			defer server.Close()
 			zeroTime := time.Now()
 			deterministicTime := testingx.NewTimeDeterministic(zeroTime)

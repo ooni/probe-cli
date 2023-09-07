@@ -1,7 +1,6 @@
 # Runs tests for internal/libtor with -tags=ooni_libtor
 name: libtorlinux
 on:
-  pull_request:
   push:
     branches:
       - "master"

@@ -16,7 +16,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -168,9 +167,9 @@ func (t *DNSResolvers) Run(parentCtx context.Context) {
 		// insert the addresses we just looked us into the cache
 		t.DNSCache.Set(t.Domain, addresses)
 
-		log.Infof("using resolved addrs: %+v", addresses)
+		t.Logger.Infof("using resolved addrs: %+v", addresses)
 	} else {
-		log.Infof("using previously-cached addrs: %+v", addresses)
+		t.Logger.Infof("using previously-cached addrs: %+v", addresses)
 	}
 
 	// create priority selector

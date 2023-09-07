@@ -1,5 +1,8 @@
 # Using the measurex package to write network experiments
 
+**Note**: measurex is deprecated. We will remove this tutorial
+once we have a tutorial for the new DSL-based measurement package.
+
 This tutorial teaches you how to write OONI network
 experiments using the primitives in the `./internal/measurex`
 package. The name of this package means either "measure

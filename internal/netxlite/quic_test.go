@@ -382,7 +382,7 @@ func TestQUICDialerWithCustomUnderlyingNetwork(t *testing.T) {
 				gotTLSConfig = tlsConfig
 				return nil, expected
 			},
-			provider: &tproxyNilSafeProvider{proxy},
+			provider: &MaybeCustomUnderlyingNetwork{proxy},
 		}
 		qconn, err := systemdialer.DialContext(ctx, "8.8.8.8:443", tlsConf, qConf)
 		if qconn != nil {

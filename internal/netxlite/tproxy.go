@@ -10,16 +10,16 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// tproxyNilSafeProvider is a nil-safe [model.UnderlyingNetwork] provider. When the pointer
-// to the [tproxyNilSafeProvider] is nil or the underlying field is nil, the Get method of the
-// [tproxyNilSafeProvider] falls back to calling [tproxySingleton].
-type tproxyNilSafeProvider struct {
+// MaybeCustomUnderlyingNetwork is a nil-safe [model.UnderlyingNetwork] provider. When the pointer
+// to the [MaybeCustomUnderlyingNetwork] is nil or the underlying field is nil, the Get method of the
+// [MaybeCustomUnderlyingNetwork] falls back to calling [tproxySingleton].
+type MaybeCustomUnderlyingNetwork struct {
 	underlying model.UnderlyingNetwork
 }
 
 // Get returns the [model.UnderlyingNetwork] returned by [tproxySingleton] if p is nil or the
 // underlying field is nil and otherwise returns the value of the underlying field.
-func (p *tproxyNilSafeProvider) Get() model.UnderlyingNetwork {
+func (p *MaybeCustomUnderlyingNetwork) Get() model.UnderlyingNetwork {
 	if p == nil || p.underlying == nil {
 		return tproxySingleton()
 	}
@@ -73,11 +73,16 @@ func (tp *DefaultTProxy) DefaultCertPool() *x509.CertPool {
 	return tproxyDefaultCertPool
 }
 
+const defaultDialTimeout = 15 * time.Second
+
+// DialTimeout implements model.UnderlyingNetwork
+func (tp *DefaultTProxy) DialTimeout() time.Duration {
+	return defaultDialTimeout
+}
+
 // DialContext implements UnderlyingNetwork.
-func (tp *DefaultTProxy) DialContext(ctx context.Context, timeout time.Duration, network, address string) (net.Conn, error) {
-	d := &net.Dialer{
-		Timeout: timeout,
-	}
+func (tp *DefaultTProxy) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+	d := &net.Dialer{}
 	return d.DialContext(ctx, network, address)
 }
 

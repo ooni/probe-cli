@@ -25,7 +25,7 @@ func NewUDPListener() model.UDPListener {
 // udpListenerStdlib is a UDPListener using the standard library.
 type udpListenerStdlib struct {
 	// provider is the OPTIONAL nil-safe [model.UnderlyingNetwork] provider.
-	provider *tproxyNilSafeProvider
+	provider *MaybeCustomUnderlyingNetwork
 }
 
 var _ model.UDPListener = &udpListenerStdlib{}
@@ -106,7 +106,7 @@ type quicDialerQUICGo struct {
 		quicConfig *quic.Config) (quic.EarlyConnection, error)
 
 	// provider is the OPTIONAL nil-safe [model.UnderlyingNetwork] provider.
-	provider *tproxyNilSafeProvider
+	provider *MaybeCustomUnderlyingNetwork
 }
 
 var _ model.QUICDialer = &quicDialerQUICGo{}

@@ -81,23 +81,6 @@ func TestNewDialer(t *testing.T) {
 }
 
 func TestDialerSystem(t *testing.T) {
-	t.Run("has a default timeout", func(t *testing.T) {
-		d := &DialerSystem{}
-		timeout := d.configuredTimeout()
-		if timeout != dialerDefaultTimeout {
-			t.Fatal("unexpected default timeout")
-		}
-	})
-
-	t.Run("we can change the timeout for testing", func(t *testing.T) {
-		const smaller = 1 * time.Second
-		d := &DialerSystem{timeout: smaller}
-		timeout := d.configuredTimeout()
-		if timeout != smaller {
-			t.Fatal("unexpected timeout")
-		}
-	})
-
 	t.Run("CloseIdleConnections", func(t *testing.T) {
 		d := &DialerSystem{}
 		d.CloseIdleConnections() // to avoid missing coverage
@@ -117,9 +100,15 @@ func TestDialerSystem(t *testing.T) {
 			}
 		})
 
-		t.Run("enforces the configured timeout", func(t *testing.T) {
-			const timeout = 1 * time.Nanosecond
-			d := &DialerSystem{timeout: timeout}
+		t.Run("honours the dial timeout configured by the underlying network", func(t *testing.T) {
+			defaultTp := &DefaultTProxy{}
+			tp := &mocks.UnderlyingNetwork{
+				MockDialTimeout: func() time.Duration {
+					return time.Nanosecond
+				},
+				MockDialContext: defaultTp.DialContext,
+			}
+			d := &DialerSystem{provider: &MaybeCustomUnderlyingNetwork{tp}}
 			ctx := context.Background()
 			start := time.Now()
 			conn, err := d.DialContext(ctx, "tcp", "dns.google:443")
@@ -138,11 +127,14 @@ func TestDialerSystem(t *testing.T) {
 		t.Run("with custom underlying network", func(t *testing.T) {
 			expected := errors.New("mocked underlying network")
 			proxy := &mocks.UnderlyingNetwork{
-				MockDialContext: func(ctx context.Context, timeout time.Duration, network string, address string) (net.Conn, error) {
+				MockDialTimeout: func() time.Duration {
+					return defaultDialTimeout
+				},
+				MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 					return nil, expected
 				},
 			}
-			d := &DialerSystem{provider: &tproxyNilSafeProvider{proxy}}
+			d := &DialerSystem{provider: &MaybeCustomUnderlyingNetwork{proxy}}
 			conn, err := d.DialContext(context.Background(), "tcp", "dns.google:443")
 			if conn != nil {
 				t.Fatal("unexpected conn")

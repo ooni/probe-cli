@@ -18,8 +18,8 @@ type Netx struct {
 }
 
 // tproxyNilSafeProvider wraps the [model.UnderlyingNetwork] using a [tproxyNilSafeProvider].
-func (n *Netx) tproxyNilSafeProvider() *tproxyNilSafeProvider {
-	return &tproxyNilSafeProvider{n.Underlying}
+func (n *Netx) tproxyNilSafeProvider() *MaybeCustomUnderlyingNetwork {
+	return &MaybeCustomUnderlyingNetwork{n.Underlying}
 }
 
 // NewStdlibResolver is like [netxlite.NewStdlibResolver] but the constructed [model.Resolver]

@@ -189,7 +189,7 @@ type tlsHandshakerConfigurable struct {
 	Timeout time.Duration
 
 	// provider is the OPTIONAL nil-safe [model.UnderlyingNetwork] provider.
-	provider *tproxyNilSafeProvider
+	provider *MaybeCustomUnderlyingNetwork
 }
 
 var _ model.TLSHandshaker = &tlsHandshakerConfigurable{}

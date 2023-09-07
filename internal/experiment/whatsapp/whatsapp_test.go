@@ -64,14 +64,14 @@ func configureDNSWithDefaults(config *netem.DNSConfig) {
 
 // newQAEnvironment creates a [*netemx.QAEnv] using the default configuration
 func newQAEnvironment() *netemx.QAEnv {
-	endpointsNetStack := netemx.TCPEchoNetStack(log.Log, 443, 5222)
+	endpointsNetStack := netemx.NewTCPEchoServerFactory(log.Log, 443, 5222)
 
 	// We need:
 	//
 	// - HTTPS listeners for whatsappWebAddr on port 443
 	//
 	// - TCP listeners for endpoints on 443 and 5222
-	env := netemx.NewQAEnv(
+	env := netemx.MustNewQAEnv(
 		netemx.QAEnvOptionLogger(log.Log),
 		netemx.QAEnvOptionHTTPServer(whatsappWebAddr, netemx.ExampleWebPageHandlerFactory()),
 		netemx.QAEnvOptionNetStack(whatsappEndpointAddr, endpointsNetStack),

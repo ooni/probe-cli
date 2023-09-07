@@ -4,9 +4,20 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
+
+// OOAPIHandlerFactory is a [QAEnvHTTPHandlerFactory] that creates [OOAPIHandler] instances.
+type OOAPIHandlerFactory struct{}
+
+var _ HTTPHandlerFactory = &OOAPIHandlerFactory{}
+
+// NewHandler implements QAEnvHTTPHandlerFactory.
+func (*OOAPIHandlerFactory) NewHandler(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
+	return &OOAPIHandler{}
+}
 
 // OOAPIHandler is an [http.Handler] implementing the OONI API.
 type OOAPIHandler struct{}

@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"sync"
 
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -26,9 +27,9 @@ type (
 // returns the corresponding response or an error.
 func measure(ctx context.Context, config *Handler, creq *ctrlRequest) (*ctrlResponse, error) {
 	// create indexed logger
-	logger := &prefixLogger{
-		indexstr: fmt.Sprintf("<#%d> ", config.Indexer.Add(1)),
-		logger:   config.BaseLogger,
+	logger := &logx.PrefixLogger{
+		Prefix: fmt.Sprintf("<#%d> ", config.Indexer.Add(1)),
+		Logger: config.BaseLogger,
 	}
 
 	// parse input for correctness
