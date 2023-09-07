@@ -312,14 +312,14 @@ func MainWithConfiguration(experimentName string, currentOptions *Options) {
 			"remote: incompatible with using a --proxy or --tunnel",
 		)
 		log.Infof("Warning: the OONI_REMOTE functionality is experimental. It may change at any time")
-		log.Infof("or be removed in the future without notice.")
+		log.Infof("Warning: or be removed in the future without notice.")
 		conn := runtimex.Try1(remote.DialTCP(context.Background(), parsed.Host))
 		cfg := &remote.UnderlyingNetworkConfig{
 			Conn:            conn,
 			LocalAddress:    "10.14.17.11",
 			Logger:          logger,
 			MTU:             0,
-			ResolverAddress: "",
+			ResolverAddress: "8.8.8.8",
 			RemoteAddress:   "10.14.17.1",
 		}
 		unet := runtimex.Try1(remote.NewUnderlyingNetwork(cfg))

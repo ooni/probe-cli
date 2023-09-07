@@ -38,7 +38,7 @@ func main() {
 	flags.StringVar(&rs.outputIface, "output-interface", "eth0", "Interface where to emit traffic")
 	flags.StringVar(&rs.tunDeviceAddr, "tun-device-address", "10.14.17.1", "Address of the TUN device")
 	flags.StringVar(&rs.tunDeviceName, "tun-device-name", "miniooni0", "TUN device name")
-	bindAddr := flag.String("bind", "127.0.0.1:5555", "Address to bind")
+	bindAddr := flag.String("bind", ":5555", "Address to bind")
 
 	runtimex.Try0(flags.Parse(os.Args[1:]))
 
@@ -118,18 +118,18 @@ func (rs *remoteServer) mustAssignAddress() {
 		"sysctl net.ipv4.ip_forward=1",
 	}
 	for _, cmd := range script {
-		runtimex.Try0(shellx.Run(rs.logger, cmd))
+		runtimex.Try0(shellx.RunCommandLine(rs.logger, cmd))
 	}
 }
 
 func (rs *remoteServer) cleanupIPTables() {
-	_ = shellx.Run(rs.logger, fmt.Sprintf("iptables -t nat -D POSTROUTING -o %s -j MASQUERADE", rs.outputIface))
+	_ = shellx.RunCommandLine(rs.logger, fmt.Sprintf(
+		"iptables -t nat -D POSTROUTING -o %s -j MASQUERADE", rs.outputIface))
 }
 
 func (rs *remoteServer) route(clientConn net.Conn, tunDevice io.ReadWriter) {
-	runtimex.CatchLogAndIgnorePanic(rs.logger, "remoted")
-
 	go func() {
+		runtimex.CatchLogAndIgnorePanic(rs.logger, "remoted")
 		for {
 			ipPacket := runtimex.Try1(remote.ReadPacket(clientConn))
 			_ = runtimex.Try1(tunDevice.Write(ipPacket))
@@ -137,6 +137,7 @@ func (rs *remoteServer) route(clientConn net.Conn, tunDevice io.ReadWriter) {
 	}()
 
 	go func() {
+		runtimex.CatchLogAndIgnorePanic(rs.logger, "remoted")
 		for {
 			buffer := make([]byte, remote.MaxPacketSize)
 			count := runtimex.Try1(tunDevice.Read(buffer))
