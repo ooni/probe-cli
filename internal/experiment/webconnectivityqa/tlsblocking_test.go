@@ -14,6 +14,8 @@ import (
 
 func TestBlockingTLSConnectionResetWithConsistentDNS(t *testing.T) {
 	env := netemx.MustNewScenario(netemx.InternetScenario)
+	defer env.Close()
+
 	tc := tlsBlockingConnectionResetWithConsistentDNS()
 	tc.Configure(env)
 
@@ -40,6 +42,8 @@ func TestBlockingTLSConnectionResetWithConsistentDNS(t *testing.T) {
 
 func TestBlockingTLSConnectionResetWithInconsistentDNS(t *testing.T) {
 	env := netemx.MustNewScenario(netemx.InternetScenario)
+	defer env.Close()
+
 	tc := tlsBlockingConnectionResetWithInconsistentDNS()
 	tc.Configure(env)
 

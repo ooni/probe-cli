@@ -12,6 +12,8 @@ import (
 
 func TestDNSBlockingAndroidDNSCacheNoData(t *testing.T) {
 	env := netemx.MustNewScenario(netemx.InternetScenario)
+	defer env.Close()
+
 	tc := dnsBlockingAndroidDNSCacheNoData()
 	tc.Configure(env)
 
@@ -29,6 +31,8 @@ func TestDNSBlockingAndroidDNSCacheNoData(t *testing.T) {
 
 func TestDNSBlockingNXDOMAIN(t *testing.T) {
 	env := netemx.MustNewScenario(netemx.InternetScenario)
+	defer env.Close()
+
 	tc := dnsBlockingNXDOMAIN()
 	tc.Configure(env)
 

@@ -12,6 +12,8 @@ import (
 
 func TestControlFailureWithSuccessfulHTTPWebsite(t *testing.T) {
 	env := netemx.MustNewScenario(netemx.InternetScenario)
+	defer env.Close()
+
 	tc := controlFailureWithSuccessfulHTTPWebsite()
 	tc.Configure(env)
 
@@ -33,6 +35,8 @@ func TestControlFailureWithSuccessfulHTTPWebsite(t *testing.T) {
 
 func TestControlFailureWithSuccessfulHTTPSWebsite(t *testing.T) {
 	env := netemx.MustNewScenario(netemx.InternetScenario)
+	defer env.Close()
+
 	tc := controlFailureWithSuccessfulHTTPSWebsite()
 	tc.Configure(env)
 
