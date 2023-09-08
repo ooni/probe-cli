@@ -19,6 +19,8 @@ func TestDNSHijackingTestCases(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.Name, func(t *testing.T) {
 			env := netemx.MustNewScenario(netemx.InternetScenario)
+			defer env.Close()
+
 			tc.Configure(env)
 
 			env.Do(func() {

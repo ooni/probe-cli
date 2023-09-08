@@ -12,6 +12,8 @@ import (
 
 func TestTCPBlockingConnectTimeout(t *testing.T) {
 	env := netemx.MustNewScenario(netemx.InternetScenario)
+	defer env.Close()
+
 	tc := tcpBlockingConnectTimeout()
 	tc.Configure(env)
 
@@ -30,6 +32,8 @@ func TestTCPBlockingConnectTimeout(t *testing.T) {
 
 func TestTCPBlockingConnectionRefusedWithInconsistentDNS(t *testing.T) {
 	env := netemx.MustNewScenario(netemx.InternetScenario)
+	defer env.Close()
+
 	tc := tcpBlockingConnectionRefusedWithInconsistentDNS()
 	tc.Configure(env)
 
