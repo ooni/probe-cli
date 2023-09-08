@@ -17,10 +17,10 @@ import (
 // test helper using a specific [netem.UnderlyingNetwork].
 type OOHelperDFactory struct{}
 
-var _ QAEnvHTTPHandlerFactory = &OOHelperDFactory{}
+var _ HTTPHandlerFactory = &OOHelperDFactory{}
 
 // NewHandler implements QAEnvHTTPHandlerFactory.NewHandler.
-func (f *OOHelperDFactory) NewHandler(unet netem.UnderlyingNetwork) http.Handler {
+func (f *OOHelperDFactory) NewHandler(env NetStackServerFactoryEnv, unet *netem.UNetStack) http.Handler {
 	netx := netxlite.Netx{Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: unet}}
 	handler := oohelperd.NewHandler()
 

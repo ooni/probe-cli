@@ -128,7 +128,7 @@ func (m *Measurer) run(ctx context.Context,
 It's now time to run the new code we've written:
 
 ```
-$ go run ./experiment/torsf/chapter03 | jq
+$ go run ./experiment/torsf/chapter03 | tail -n 1 | jq
 2021/06/21 21:21:18  info [  0.1%] torsf experiment is running
 2021/06/21 21:21:19  info [  0.2%] torsf experiment is running
 [...]

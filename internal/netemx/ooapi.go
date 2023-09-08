@@ -12,10 +12,10 @@ import (
 // OOAPIHandlerFactory is a [QAEnvHTTPHandlerFactory] that creates [OOAPIHandler] instances.
 type OOAPIHandlerFactory struct{}
 
-var _ QAEnvHTTPHandlerFactory = &OOAPIHandlerFactory{}
+var _ HTTPHandlerFactory = &OOAPIHandlerFactory{}
 
 // NewHandler implements QAEnvHTTPHandlerFactory.
-func (*OOAPIHandlerFactory) NewHandler(unet netem.UnderlyingNetwork) http.Handler {
+func (*OOAPIHandlerFactory) NewHandler(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
 	return &OOAPIHandler{}
 }
 

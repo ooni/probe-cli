@@ -508,7 +508,7 @@ func TestTrace(t *testing.T) {
 		t.Run("when not nil", func(t *testing.T) {
 			mockedErr := errors.New("mocked")
 			tx := &Trace{
-				newQUICDialerWithoutResolverFn: func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer {
+				newQUICDialerWithoutResolverFn: func(listener model.UDPListener, dl model.DebugLogger) model.QUICDialer {
 					return &mocks.QUICDialer{
 						MockDialContext: func(ctx context.Context, address string,
 							tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
@@ -517,7 +517,7 @@ func TestTrace(t *testing.T) {
 					}
 				},
 			}
-			qdx := tx.newQUICDialerWithoutResolver(&mocks.QUICListener{}, model.DiscardLogger)
+			qdx := tx.newQUICDialerWithoutResolver(&mocks.UDPListener{}, model.DiscardLogger)
 			ctx := context.Background()
 			qconn, err := qdx.DialContext(ctx, "1.1.1.1:443", &tls.Config{}, &quic.Config{})
 			if !errors.Is(err, mockedErr) {
@@ -536,6 +536,9 @@ func TestTrace(t *testing.T) {
 			pconn := &mocks.UDPLikeConn{
 				MockLocalAddr: func() net.Addr {
 					return &net.UDPAddr{
+						// quic-go does not allow the use of the same net.PacketConn for multiple "Dial"
+						// calls (unless a quic.Transport is used), so we have to make sure to mock local
+						// addresses with different ports, as tests run in parallel.
 						Port: 0,
 					}
 				},
@@ -550,8 +553,11 @@ func TestTrace(t *testing.T) {
 				MockClose: func() error {
 					return nil
 				},
+				MockSetReadBuffer: func(n int) error {
+					return nil
+				},
 			}
-			listener := &mocks.QUICListener{
+			listener := &mocks.UDPListener{
 				MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 					return pconn, nil
 				},

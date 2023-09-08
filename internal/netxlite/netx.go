@@ -18,8 +18,8 @@ type Netx struct {
 }
 
 // tproxyNilSafeProvider wraps the [model.UnderlyingNetwork] using a [tproxyNilSafeProvider].
-func (n *Netx) tproxyNilSafeProvider() *tproxyNilSafeProvider {
-	return &tproxyNilSafeProvider{n.Underlying}
+func (n *Netx) tproxyNilSafeProvider() *MaybeCustomUnderlyingNetwork {
+	return &MaybeCustomUnderlyingNetwork{n.Underlying}
 }
 
 // NewStdlibResolver is like [netxlite.NewStdlibResolver] but the constructed [model.Resolver]
@@ -39,17 +39,17 @@ func (n *Netx) NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w .
 
 // NewQUICListener is like [netxlite.NewQUICListener] but the constructed [model.QUICListener]
 // uses the [UnderlyingNetwork] configured inside the [Net] structure.
-func (n *Netx) NewQUICListener() model.QUICListener {
-	return &quicListenerErrWrapper{&quicListenerStdlib{provider: n.tproxyNilSafeProvider()}}
+func (n *Netx) NewQUICListener() model.UDPListener {
+	return &udpListenerErrWrapper{&udpListenerStdlib{provider: n.tproxyNilSafeProvider()}}
 }
 
 // NewQUICDialerWithResolver is like [netxlite.NewQUICDialerWithResolver] but the constructed
 // [model.QUICDialer] uses the [UnderlyingNetwork] configured inside the [Net] structure.
-func (n *Netx) NewQUICDialerWithResolver(listener model.QUICListener, logger model.DebugLogger,
+func (n *Netx) NewQUICDialerWithResolver(listener model.UDPListener, logger model.DebugLogger,
 	resolver model.Resolver, wrappers ...model.QUICDialerWrapper) (outDialer model.QUICDialer) {
 	baseDialer := &quicDialerQUICGo{
-		QUICListener: listener,
-		provider:     n.tproxyNilSafeProvider(),
+		UDPListener: listener,
+		provider:    n.tproxyNilSafeProvider(),
 	}
 	return WrapQUICDialer(logger, resolver, baseDialer, wrappers...)
 }

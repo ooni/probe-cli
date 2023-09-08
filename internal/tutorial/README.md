@@ -18,7 +18,9 @@ you should check how we do that in [internal/registry](../registry).
 - [Using the measurex package to write network experiments](measurex): this
 tutorial explains to you how to use the `measurex` library to write networking
 code that generates measurements using the OONI data format. You will learn
-how to perform DNS, TCP, TLS, QUIC, HTTP, HTTPS, and HTTP3 measurements.
+how to perform DNS, TCP, TLS, QUIC, HTTP, HTTPS, and HTTP3 measurements. (Note
+that `measurex` is currently deprecated and we need to publish a new tutorial
+about an improved approach to measuring, based on a DSL.)
 
 - [Low-level networking using netxlite](netxlite): this tutorial introduces
 you to the `netxlite` networking library. This is the underlying library

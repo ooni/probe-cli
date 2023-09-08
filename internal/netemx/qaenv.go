@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -17,42 +16,15 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
-	"github.com/quic-go/quic-go/http3"
 )
 
-// QAEnvDefaultClientAddress is the default client IP address.
-//
-// The 130.192.91.x address space belongs to polito.it and is not used for hosting a DNS server, which
-// gives us additional robustness in case netem is not working as intended. (We have several
-// tests making sure of that, but additional robustness won't hurt.)
-const QAEnvDefaultClientAddress = "130.192.91.2"
-
-// QAEnvDefaultISPResolverAddress is the default IP address of the client ISP resolver.
-//
-// The 130.192.91.x address space belongs to polito.it and is not used for hosting a DNS server, which
-// gives us additional robustness in case netem is not working as intended. (We have several
-// tests making sure of that, but additional robustness won't hurt.)
-const QAEnvDefaultISPResolverAddress = "130.192.91.3"
-
-// QAEnvDefaultUncensoredResolverAddress is the default uncensored resolver IP address.
-//
-// The 130.192.91.x address space belongs to polito.it and is not used for hosting a DNS server, which
-// gives us additional robustness in case netem is not working as intended. (We have several
-// tests making sure of that, but additional robustness won't hurt.)
-const QAEnvDefaultUncensoredResolverAddress = "130.192.91.4"
-
+// qaEnvConfig is the private configuration for [MustNewQAEnv].
 type qaEnvConfig struct {
 	// clientAddress is the client IP address to use.
 	clientAddress string
 
 	// clientNICWrapper is the OPTIONAL wrapper for the client NIC.
 	clientNICWrapper netem.LinkNICWrapper
-
-	// dnsOverUDPResolvers contains the DNS-over-UDP resolvers to create.
-	dnsOverUDPResolvers []string
-
-	// httpServers contains factories for the HTTP servers to create.
-	httpServers map[string]QAEnvHTTPHandlerFactory
 
 	// ispResolver is the ISP resolver to use.
 	ispResolver string
@@ -61,14 +33,17 @@ type qaEnvConfig struct {
 	logger model.Logger
 
 	// netStacks contains information about the net stacks to create.
-	netStacks map[string]QAEnvNetStackHandler
+	netStacks map[string][]NetStackServerFactory
+
+	// rootResolver is the root resolver address to use.
+	rootResolver string
 }
 
 // QAEnvOption is an option to modify [NewQAEnv] default behavior.
 type QAEnvOption func(config *qaEnvConfig)
 
 // QAEnvOptionClientAddress sets the client IP address. If you do not set this option
-// we will use [QAEnvDefaultClientAddress].
+// we will use [DefaultClientAddress].
 func QAEnvOptionClientAddress(ipAddr string) QAEnvOption {
 	runtimex.Assert(net.ParseIP(ipAddr) != nil, "not an IP addr")
 	return func(config *qaEnvConfig) {
@@ -84,39 +59,34 @@ func QAEnvOptionClientNICWrapper(wrapper netem.LinkNICWrapper) QAEnvOption {
 	}
 }
 
-// QAEnvOptionDNSOverUDPResolvers adds the given DNS-over-UDP resolvers. If you do not set this option
-// we will create a single resolver using [QAEnvDefaultUncensoredResolverAddress].
-func QAEnvOptionDNSOverUDPResolvers(ipAddrs ...string) QAEnvOption {
-	for _, a := range ipAddrs {
-		runtimex.Assert(net.ParseIP(a) != nil, "not an IP addr")
-	}
-	return func(config *qaEnvConfig) {
-		config.dnsOverUDPResolvers = append(config.dnsOverUDPResolvers, ipAddrs...)
-	}
-}
-
-// QAEnvHTTPHandlerFactory constructs an [http.Handler] using the given underlying network.
-type QAEnvHTTPHandlerFactory interface {
-	NewHandler(unet netem.UnderlyingNetwork) http.Handler
-}
-
 // QAEnvOptionHTTPServer adds the given HTTP handler factory. If you do
-// not set this option we will not create any HTTP server.
-func QAEnvOptionHTTPServer(ipAddr string, factory QAEnvHTTPHandlerFactory) QAEnvOption {
+// not set this option we will not create any HTTP server. Note that this
+// option is just syntactic sugar for calling [QAEnvOptionNetStack]
+// with the following three factories as argument:
+//
+// - [HTTPCleartextServerFactory] with port 80/tcp;
+//
+// - [HTTPSecureServerFactory] with port 443/tcp and nil TLSConfig;
+//
+// - [HTTP3ServerFactory] with port 443/udp and nil TLSConfig.
+//
+// We wrote this syntactic sugar factory because it covers the common case
+// where you want support for HTTP, HTTPS, and HTTP3.
+func QAEnvOptionHTTPServer(ipAddr string, factory HTTPHandlerFactory) QAEnvOption {
 	runtimex.Assert(net.ParseIP(ipAddr) != nil, "not an IP addr")
 	runtimex.Assert(factory != nil, "passed a nil handler factory")
-	return func(config *qaEnvConfig) {
-		config.httpServers[ipAddr] = factory
-	}
-}
-
-// QAEnvOptionISPResolverAddress sets the ISP's resolver IP address. If you do not set this option
-// we will use [QAEnvDefaultISPResolverAddress] as the address.
-func QAEnvOptionISPResolverAddress(ipAddr string) QAEnvOption {
-	runtimex.Assert(net.ParseIP(ipAddr) != nil, "not an IP addr")
-	return func(config *qaEnvConfig) {
-		config.ispResolver = ipAddr
-	}
+	return qaEnvOptionNetStack(ipAddr, &HTTPCleartextServerFactory{
+		Factory: factory,
+		Ports:   []int{80},
+	}, &HTTPSecureServerFactory{
+		Factory:   factory,
+		Ports:     []int{443},
+		TLSConfig: nil, // use netem's default
+	}, &HTTP3ServerFactory{
+		Factory:   factory,
+		Ports:     []int{443},
+		TLSConfig: nil, // use netem's default
+	})
 }
 
 // QAEnvOptionLogger sets the logger to use. If you do not set this option we
@@ -127,35 +97,46 @@ func QAEnvOptionLogger(logger model.Logger) QAEnvOption {
 	}
 }
 
-// QAEnvNetStackHandler handles a [*netem.UNetStack] created using [QAEnvOptionNetStack].
-type QAEnvNetStackHandler interface {
-	// Listen should use the stack to create all the listening TCP and UDP sockets
-	// required by the specific test case, as well as to start the required background
-	// goroutines servicing incoming requests for the created listeners. This method
-	// MUST BE CONCURRENCY SAFE and it MUST NOT arrange for the Close method to close
-	// the stack because it is managed by the [QAEnv]. This method MAY call PANIC
-	// in case of listening failure: the caller calls PANIC on error anyway.
-	Listen(stack *netem.UNetStack) error
-
-	// Close should close the listening TCP and UDP sockets and the background
-	// goroutines created by Listen. This method MUST BE CONCURRENCY SAFE and IDEMPOTENT and
-	// it MUST NOT close the stack passed to Listen because it is managed by [QAEnv].
-	Close() error
+// QAEnvOptionNetStack creates an userspace network stack with the given IP address and binds it
+// to the given factory, which will be responsible to create listening sockets and closing them
+// when we're done running. Examples of factories you can use with this method are:
+//
+// - [NewTCPEchoServerFactory];
+//
+// - [HTTPCleartextServerFactory];
+//
+// - [HTTPSecureServerFactory];
+//
+// - [HTTP3ServerFactory];
+//
+// - [UDPResolverFactory].
+//
+// Calling this method multiple times is equivalent to calling this method once with several
+// factories. This would work as long as you do not specify the same port multiple times, otherwise
+// the second bind attempt for an already bound port would fail.
+//
+// This function PANICS if you try to configure [ISPResolverAddress] or [RootResolverAddress]
+// because these two addresses are already configured by [MustNewQAEnv].
+func QAEnvOptionNetStack(ipAddr string, factories ...NetStackServerFactory) QAEnvOption {
+	runtimex.Assert(
+		ipAddr != ISPResolverAddress && ipAddr != RootResolverAddress,
+		"QAEnvOptionNetStack: cannot configure RootResolverAddress or ISPResolverAddress",
+	)
+	return qaEnvOptionNetStack(ipAddr, factories...)
 }
 
-// QAEnvOptionNetStack creates an userspace network stack with the given IP address and binds it
-// to the given handler, which will be responsible to create listening sockets and closing them
-// when we're done running. This option is lower-level than [QAEnvOptionHTTPServer], so you should
-// probably use [QAEnvOptionHTTPServer] unless you need to do something custom.
-func QAEnvOptionNetStack(ipAddr string, handler QAEnvNetStackHandler) QAEnvOption {
+func qaEnvOptionNetStack(ipAddr string, factories ...NetStackServerFactory) QAEnvOption {
 	return func(config *qaEnvConfig) {
-		config.netStacks[ipAddr] = handler
+		config.netStacks[ipAddr] = append(config.netStacks[ipAddr], factories...)
 	}
 }
 
 // QAEnv is the environment for running QA tests using [github.com/ooni/netem]. The zero
 // value of this struct is invalid; please, use [NewQAEnv].
 type QAEnv struct {
+	// baseLogger is the base [model.Logger] to use.
+	baseLogger model.Logger
+
 	// clientNICWrapper is the OPTIONAL wrapper for the client NIC.
 	clientNICWrapper netem.LinkNICWrapper
 
@@ -189,20 +170,22 @@ type QAEnv struct {
 func MustNewQAEnv(options ...QAEnvOption) *QAEnv {
 	// initialize the configuration
 	config := &qaEnvConfig{
-		clientAddress:       QAEnvDefaultClientAddress,
-		clientNICWrapper:    nil,
-		dnsOverUDPResolvers: []string{},
-		httpServers:         map[string]QAEnvHTTPHandlerFactory{},
-		ispResolver:         QAEnvDefaultISPResolverAddress,
-		logger:              model.DiscardLogger,
-		netStacks:           map[string]QAEnvNetStackHandler{},
+		clientAddress:    DefaultClientAddress,
+		clientNICWrapper: nil,
+		ispResolver:      ISPResolverAddress,
+		logger:           model.DiscardLogger,
+		rootResolver:     RootResolverAddress,
+		netStacks:        map[string][]NetStackServerFactory{},
 	}
 	for _, option := range options {
 		option(config)
 	}
-	if len(config.dnsOverUDPResolvers) < 1 {
-		config.dnsOverUDPResolvers = append(config.dnsOverUDPResolvers, QAEnvDefaultUncensoredResolverAddress)
-	}
+
+	// make sure we're going to create the ISP's DNS resolver.
+	qaEnvOptionNetStack(config.ispResolver, &dnsOverUDPServerFactoryForGetaddrinfo{})(config)
+
+	// make sure we're going to create the root DNS resolver.
+	qaEnvOptionNetStack(config.rootResolver, &DNSOverUDPServerFactory{})(config)
 
 	// use a prefix logger for the QA env
 	prefixLogger := &logx.PrefixLogger{
@@ -212,6 +195,7 @@ func MustNewQAEnv(options ...QAEnvOption) *QAEnv {
 
 	// create an empty QAEnv
 	env := &QAEnv{
+		baseLogger:                config.logger,
 		clientNICWrapper:          config.clientNICWrapper,
 		clientStack:               nil,
 		closables:                 []io.Closer{},
@@ -224,45 +208,10 @@ func MustNewQAEnv(options ...QAEnvOption) *QAEnv {
 	}
 
 	// create all the required internals
-	env.closables = append(env.closables, env.mustNewISPResolverStack(config))
 	env.clientStack = env.mustNewClientStack(config)
-	env.closables = append(env.closables, env.mustNewResolvers(config)...)
-	env.closables = append(env.closables, env.mustNewHTTPServers(config)...)
 	env.closables = append(env.closables, env.mustNewNetStacks(config)...)
 
 	return env
-}
-
-func (env *QAEnv) mustNewISPResolverStack(config *qaEnvConfig) io.Closer {
-	// Create the ISP's DNS server TCP/IP stack.
-	//
-	// Note: because the stack is created using topology.AddHost, we don't
-	// need to call Close when done using it, since the topology will do that
-	// for us when we call the topology's Close method.
-	stack := runtimex.Try1(env.topology.AddHost(
-		config.ispResolver, // server IP address
-		config.ispResolver, // default resolver address
-		&netem.LinkConfig{
-			LeftToRightDelay: time.Millisecond,
-			RightToLeftDelay: time.Millisecond,
-		},
-	))
-
-	// Use a prefix logger for the DNS server
-	prefixLogger := &logx.PrefixLogger{
-		Prefix: fmt.Sprintf("%-16s", "ISP_RESOLVER"),
-		Logger: config.logger,
-	}
-
-	// Create the client's DNS server using the stack.
-	server := runtimex.Try1(netem.NewDNSServer(
-		prefixLogger,
-		stack,
-		config.ispResolver,
-		env.ispResolverConfig,
-	))
-
-	return server
 }
 
 func (env *QAEnv) mustNewClientStack(config *qaEnvConfig) *netem.UNetStack {
@@ -273,7 +222,7 @@ func (env *QAEnv) mustNewClientStack(config *qaEnvConfig) *netem.UNetStack {
 	// TODO(bassosimone,kelmenhorst): consider allowing to configure the
 	// delays and losses should the need for this arise in the future.
 	return runtimex.Try1(env.topology.AddHost(
-		QAEnvDefaultClientAddress,
+		DefaultClientAddress,
 		config.ispResolver,
 		&netem.LinkConfig{
 			DPIEngine:        env.dpi,
@@ -284,105 +233,10 @@ func (env *QAEnv) mustNewClientStack(config *qaEnvConfig) *netem.UNetStack {
 	))
 }
 
-func (env *QAEnv) mustNewResolvers(config *qaEnvConfig) (closables []io.Closer) {
-	for _, addr := range config.dnsOverUDPResolvers {
-		// Create the server's TCP/IP stack
-		//
-		// Note: because the stack is created using topology.AddHost, we don't
-		// need to call Close when done using it, since the topology will do that
-		// for us when we call the topology's Close method.
-		stack := runtimex.Try1(env.topology.AddHost(
-			addr, // IP address
-			addr, // default resolver address
-			&netem.LinkConfig{
-				LeftToRightDelay: time.Millisecond,
-				RightToLeftDelay: time.Millisecond,
-			},
-		))
-
-		// Use a prefix logger for the DNS server
-		prefixLogger := &logx.PrefixLogger{
-			Prefix: fmt.Sprintf("%-16s", "RESOLVER"),
-			Logger: config.logger,
-		}
-
-		// create DNS server
-		server := runtimex.Try1(netem.NewDNSServer(
-			prefixLogger,
-			stack,
-			addr,
-			env.otherResolversConfig,
-		))
-
-		// track this closable
-		closables = append(closables, server)
-	}
-	return
-}
-
-func (env *QAEnv) mustNewHTTPServers(config *qaEnvConfig) (closables []io.Closer) {
-	runtimex.Assert(len(config.dnsOverUDPResolvers) >= 1, "expected at least one DNS resolver")
-	resolver := config.dnsOverUDPResolvers[0]
-
-	for addr, factory := range config.httpServers {
-		// Create the server's TCP/IP stack
-		//
-		// Note: because the stack is created using topology.AddHost, we don't
-		// need to call Close when done using it, since the topology will do that
-		// for us when we call the topology's Close method.
-		stack := runtimex.Try1(env.topology.AddHost(
-			addr,     // IP address
-			resolver, // default resolver address
-			&netem.LinkConfig{
-				LeftToRightDelay: time.Millisecond,
-				RightToLeftDelay: time.Millisecond,
-			},
-		))
-
-		// create HTTP, HTTPS and HTTP/3 servers for this stack
-		handler := factory.NewHandler(stack)
-		closables = append(closables, env.mustCreateAllHTTPServers(stack, handler, addr)...)
-	}
-	return
-}
-
-func (env *QAEnv) mustCreateAllHTTPServers(
-	stack *netem.UNetStack, handler http.Handler, addr string) (closables []io.Closer) {
-	ipAddr := net.ParseIP(addr)
-	runtimex.Assert(ipAddr != nil, "invalid IP addr")
-
-	// listen for HTTP
-	{
-		listener := runtimex.Try1(stack.ListenTCP("tcp", &net.TCPAddr{IP: ipAddr, Port: 80}))
-		srv := &http.Server{Handler: handler}
-		closables = append(closables, srv)
-		go srv.Serve(listener)
-	}
-
-	// listen for HTTPS
-	{
-		listener := runtimex.Try1(stack.ListenTCP("tcp", &net.TCPAddr{IP: ipAddr, Port: 443}))
-		srv := &http.Server{TLSConfig: stack.ServerTLSConfig(), Handler: handler}
-		closables = append(closables, srv)
-		go srv.ServeTLS(listener, "", "")
-	}
-
-	// listen for HTTP3
-	{
-		listener := runtimex.Try1(stack.ListenUDP("udp", &net.UDPAddr{IP: ipAddr, Port: 443}))
-		srv := &http3.Server{TLSConfig: stack.ServerTLSConfig(), Handler: handler}
-		closables = append(closables, listener, srv)
-		go srv.Serve(listener)
-	}
-
-	return
-}
-
 func (env *QAEnv) mustNewNetStacks(config *qaEnvConfig) (closables []io.Closer) {
-	runtimex.Assert(len(config.dnsOverUDPResolvers) >= 1, "expected at least one DNS resolver")
-	resolver := config.dnsOverUDPResolvers[0]
+	resolver := config.rootResolver
 
-	for ipAddr, handler := range config.netStacks {
+	for ipAddr, factories := range config.netStacks {
 		// Create the server's TCP/IP stack
 		//
 		// Note: because the stack is created using topology.AddHost, we don't
@@ -397,11 +251,16 @@ func (env *QAEnv) mustNewNetStacks(config *qaEnvConfig) (closables []io.Closer) 
 			},
 		))
 
-		// create the required listeners
-		runtimex.Try0(handler.Listen(stack))
+		for _, factory := range factories {
+			// instantiate a server with the given underlying network
+			server := factory.MustNewServer(env, stack)
 
-		// track the handler as the something that needs to be closed
-		closables = append(closables, handler)
+			// listen and start serving in the background
+			server.MustStart()
+
+			// track the server as the something that needs to be closed
+			closables = append(closables, server)
+		}
 	}
 	return
 }
@@ -417,6 +276,11 @@ func (env *QAEnv) AddRecordToAllResolvers(domain string, cname string, addrs ...
 // add new DNS records from concurrent goroutines at any time.
 func (env *QAEnv) ISPResolverConfig() *netem.DNSConfig {
 	return env.ispResolverConfig
+}
+
+// Logger is the [model.Logger] configured for this [*QAEnv],
+func (env *QAEnv) Logger() model.Logger {
+	return env.baseLogger
 }
 
 // OtherResolversConfig returns the [*netem.DNSConfig] of the non-ISP resolvers. Note that can safely
@@ -461,14 +325,4 @@ func (env *QAEnv) Close() error {
 		env.topology.Close()
 	})
 	return nil
-}
-
-// QAEnvHTTPHandlerFactoryFunc allows a func to become a [QAEnvHTTPHandlerFactory].
-type QAEnvHTTPHandlerFactoryFunc func(unet netem.UnderlyingNetwork) http.Handler
-
-var _ QAEnvHTTPHandlerFactory = QAEnvHTTPHandlerFactoryFunc(nil)
-
-// NewHandler implements QAEnvHTTPHandlerFactory.
-func (fx QAEnvHTTPHandlerFactoryFunc) NewHandler(unet netem.UnderlyingNetwork) http.Handler {
-	return fx(unet)
 }

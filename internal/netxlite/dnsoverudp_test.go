@@ -12,9 +12,9 @@ import (
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/miekg/dns"
+	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
@@ -252,18 +252,14 @@ func TestDNSOverUDPTransport(t *testing.T) {
 		})
 
 		t.Run("using a real server", func(t *testing.T) {
-			srvr := &filtering.DNSServer{
-				OnQuery: func(domain string) filtering.DNSAction {
-					return filtering.DNSActionCache
-				},
-				Cache: map[string][]string{
-					"dns.google.": {"8.8.8.8"},
-				},
+			udpAddr := &net.UDPAddr{
+				IP:   net.IPv4(127, 0, 0, 1),
+				Port: 0,
 			}
-			listener, err := srvr.Start("127.0.0.1:0")
-			if err != nil {
-				t.Fatal(err)
-			}
+			dnsConfig := netem.NewDNSConfig()
+			dnsConfig.AddRecord("dns.google", "", "8.8.8.8")
+			dnsRtx := testingx.NewDNSRoundTripperWithDNSConfig(dnsConfig)
+			listener := testingx.MustNewDNSOverUDPListener(udpAddr, &testingx.DNSOverUDPListenerStdlib{}, dnsRtx)
 			defer listener.Close()
 			dialer := NewDialerWithoutResolver(model.DiscardLogger)
 			txp := NewUnwrappedDNSOverUDPTransport(dialer, listener.LocalAddr().String())
@@ -284,20 +280,20 @@ func TestDNSOverUDPTransport(t *testing.T) {
 	})
 
 	t.Run("recording delayed DNS responses", func(t *testing.T) {
+		dnsConfigGood := netem.NewDNSConfig()
+		dnsConfigGood.AddRecord("dns.google", "", "8.8.8.8")
+
+		dnsConfigBogus := netem.NewDNSConfig()
+		dnsConfigBogus.AddRecord("dns.google", "", "127.0.0.1")
+
 		t.Run("without any context-injected traces", func(t *testing.T) {
-			srvr := &filtering.DNSServer{
-				OnQuery: func(domain string) filtering.DNSAction {
-					return filtering.DNSActionLocalHostPlusCache
-				},
-				Cache: map[string][]string{
-					"dns.google.": {"8.8.8.8"},
-				},
+			udpAddr := &net.UDPAddr{
+				IP:   net.IPv4(127, 0, 0, 1),
+				Port: 0,
 			}
-			listener, err := srvr.Start("127.0.0.1:0")
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer listener.Close()
+			listener := testingx.MustNewDNSSimulateGWFListener(
+				udpAddr, &testingx.DNSOverUDPListenerStdlib{}, dnsConfigBogus,
+				dnsConfigGood, testingx.DNSNumBogusResponses(1))
 			dialer := NewDialerWithoutResolver(model.DiscardLogger)
 			expectedAddress := listener.LocalAddr().String()
 			txp := NewUnwrappedDNSOverUDPTransport(dialer, expectedAddress)
@@ -325,18 +321,13 @@ func TestDNSOverUDPTransport(t *testing.T) {
 				goodLookupAddrs          bool
 				goodError                bool
 			)
-			srvr := &filtering.DNSServer{
-				OnQuery: func(domain string) filtering.DNSAction {
-					return filtering.DNSActionLocalHostPlusCache
-				},
-				Cache: map[string][]string{
-					"dns.google.": {"8.8.8.8"},
-				},
+			udpAddr := &net.UDPAddr{
+				IP:   net.IPv4(127, 0, 0, 1),
+				Port: 0,
 			}
-			listener, err := srvr.Start("127.0.0.1:0")
-			if err != nil {
-				t.Fatal(err)
-			}
+			listener := testingx.MustNewDNSSimulateGWFListener(
+				udpAddr, &testingx.DNSOverUDPListenerStdlib{}, dnsConfigBogus,
+				dnsConfigGood, testingx.DNSNumBogusResponses(1))
 			defer listener.Close()
 			dialer := NewDialerWithoutResolver(model.DiscardLogger)
 			expectedAddress := listener.LocalAddr().String()
@@ -420,19 +411,14 @@ func TestDNSOverUDPTransport(t *testing.T) {
 				goodLookupAddrs          bool
 				goodError                bool
 			)
-			srvr := &filtering.DNSServer{
-				OnQuery: func(domain string) filtering.DNSAction {
-					return filtering.DNSActionLocalHostPlusCache
-				},
-				Cache: map[string][]string{
-					// Note: the cache here is nonexistent so we should
-					// get a "no such host" error from the server.
-				},
+			udpAddr := &net.UDPAddr{
+				IP:   net.IPv4(127, 0, 0, 1),
+				Port: 0,
 			}
-			listener, err := srvr.Start("127.0.0.1:0")
-			if err != nil {
-				t.Fatal(err)
-			}
+			// Note: the config here is empty so we should get a "no such host" error from the server.
+			listener := testingx.MustNewDNSSimulateGWFListener(
+				udpAddr, &testingx.DNSOverUDPListenerStdlib{}, dnsConfigBogus,
+				netem.NewDNSConfig(), testingx.DNSNumBogusResponses(1))
 			defer listener.Close()
 			dialer := NewDialerWithoutResolver(model.DiscardLogger)
 			expectedAddress := listener.LocalAddr().String()

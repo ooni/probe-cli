@@ -8,13 +8,13 @@ import (
 )
 
 // DNSOverHTTPSHandlerFactory is a [QAEnvHTTPHandlerFactory] for [testingx.GeoIPHandlerUbuntu].
-type DNSOverHTTPSHandlerFactory struct {
-	Config *netem.DNSConfig
-}
+type DNSOverHTTPSHandlerFactory struct{}
 
-var _ QAEnvHTTPHandlerFactory = &DNSOverHTTPSHandlerFactory{}
+var _ HTTPHandlerFactory = &DNSOverHTTPSHandlerFactory{}
 
 // NewHandler implements QAEnvHTTPHandlerFactory.
-func (f *DNSOverHTTPSHandlerFactory) NewHandler(unet netem.UnderlyingNetwork) http.Handler {
-	return &testingx.DNSOverHTTPSHandler{Config: f.Config}
+func (f *DNSOverHTTPSHandlerFactory) NewHandler(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
+	return &testingx.DNSOverHTTPSHandler{
+		RoundTripper: testingx.NewDNSRoundTripperWithDNSConfig(env.OtherResolversConfig()),
+	}
 }

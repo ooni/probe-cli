@@ -1,8 +1,9 @@
-package logx
+package logx_test
 
 import (
 	"testing"
 
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 )
 
@@ -16,7 +17,7 @@ func TestPrefixLogger(t *testing.T) {
 				}
 			},
 		}
-		logger := &PrefixLogger{
+		logger := &logx.PrefixLogger{
 			Prefix: "<0>",
 			Logger: base,
 		}
@@ -32,7 +33,7 @@ func TestPrefixLogger(t *testing.T) {
 				}
 			},
 		}
-		logger := &PrefixLogger{
+		logger := &logx.PrefixLogger{
 			Prefix: "<0>",
 			Logger: base,
 		}
@@ -48,7 +49,7 @@ func TestPrefixLogger(t *testing.T) {
 				}
 			},
 		}
-		logger := &PrefixLogger{
+		logger := &logx.PrefixLogger{
 			Prefix: "<0>",
 			Logger: base,
 		}
@@ -64,7 +65,7 @@ func TestPrefixLogger(t *testing.T) {
 				}
 			},
 		}
-		logger := &PrefixLogger{
+		logger := &logx.PrefixLogger{
 			Prefix: "<0>",
 			Logger: base,
 		}
@@ -80,7 +81,7 @@ func TestPrefixLogger(t *testing.T) {
 				}
 			},
 		}
-		logger := &PrefixLogger{
+		logger := &logx.PrefixLogger{
 			Prefix: "<0>",
 			Logger: base,
 		}
@@ -96,7 +97,7 @@ func TestPrefixLogger(t *testing.T) {
 				}
 			},
 		}
-		logger := &PrefixLogger{
+		logger := &logx.PrefixLogger{
 			Prefix: "<0>",
 			Logger: base,
 		}

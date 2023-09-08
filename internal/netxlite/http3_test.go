@@ -162,7 +162,7 @@ func TestNewHTTP3ClientWithResolver(t *testing.T) {
 	if dialerReso.Resolver != reso {
 		t.Fatal("invalid resolver")
 	}
-	if dialerQUICGo.QUICListener == nil {
-		t.Fatal("QUICListener should not be nil")
+	if dialerQUICGo.UDPListener == nil {
+		t.Fatal("UDPListener should not be nil")
 	}
 }

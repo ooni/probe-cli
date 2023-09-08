@@ -21,6 +21,9 @@ type TestCase struct {
 	// Input is the input URL
 	Input string
 
+	// LongTest indicates that this is a long test.
+	LongTest bool
+
 	// Configure is an OPTIONAL hook for further configuring the scenario.
 	Configure func(env *netemx.QAEnv)
 
@@ -34,15 +37,41 @@ type TestCase struct {
 // AllTestCases returns all the defined test cases.
 func AllTestCases() []*TestCase {
 	return []*TestCase{
+		badSSLWithUnknownAuthorityWithConsistentDNS(),
+		badSSLWithExpiredCertificate(),
+		badSSLWithWrongServerName(),
+		badSSLWithUnknownAuthorityWithInconsistentDNS(),
+
+		controlFailureWithSuccessfulHTTPWebsite(),
+		controlFailureWithSuccessfulHTTPSWebsite(),
+
 		dnsBlockingAndroidDNSCacheNoData(),
 		dnsBlockingNXDOMAIN(),
+
+		dnsHijackingToProxyWithHTTPURL(),
+		dnsHijackingToProxyWithHTTPSURL(),
+
+		httpDiffWithConsistentDNS(),
+		httpDiffWithInconsistentDNS(),
+
+		redirectWithConsistentDNSAndThenConnectionRefusedForHTTP(),
+		redirectWithConsistentDNSAndThenConnectionRefusedForHTTPS(),
+		redirectWithConsistentDNSAndThenConnectionResetForHTTP(),
+		redirectWithConsistentDNSAndThenConnectionResetForHTTPS(),
+		redirectWithConsistentDNSAndThenNXDOMAIN(),
+		redirectWithConsistentDNSAndThenEOFForHTTP(),
+		redirectWithConsistentDNSAndThenEOFForHTTPS(),
+		redirectWithConsistentDNSAndThenTimeoutForHTTP(),
+		redirectWithConsistentDNSAndThenTimeoutForHTTPS(),
 
 		sucessWithHTTP(),
 		sucessWithHTTPS(),
 
 		tcpBlockingConnectTimeout(),
+		tcpBlockingConnectionRefusedWithInconsistentDNS(),
 
-		tlsBlockingConnectionReset(),
+		tlsBlockingConnectionResetWithConsistentDNS(),
+		tlsBlockingConnectionResetWithInconsistentDNS(),
 
 		websiteDownNXDOMAIN(),
 	}

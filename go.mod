@@ -27,14 +27,14 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.7.1
 	github.com/ooni/go-libtor v1.1.8
-	github.com/ooni/netem v0.0.0-20230824211724-219d252971fc
+	github.com/ooni/netem v0.0.0-20230906091637-85d962536ff3
 	github.com/ooni/oocrypto v0.5.3
 	github.com/ooni/oohttp v0.6.3
 	github.com/ooni/probe-assets v0.18.0
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/pion/stun v0.6.1
 	github.com/pkg/errors v0.9.1
-	github.com/quic-go/quic-go v0.33.0
+	github.com/quic-go/quic-go v0.37.3
 	github.com/rogpeppe/go-internal v1.11.0
 	github.com/rubenv/sql-migrate v1.5.1
 	github.com/schollz/progressbar/v3 v3.13.1
@@ -74,7 +74,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/quic-go/qpack v0.4.0 // indirect
 	github.com/quic-go/qtls-go1-19 v0.3.2 // indirect
-	github.com/quic-go/qtls-go1-20 v0.2.2 // indirect
+	github.com/quic-go/qtls-go1-20 v0.3.1 // indirect
 	github.com/refraction-networking/conjure v0.4.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/segmentio/fasthash v1.0.3 // indirect

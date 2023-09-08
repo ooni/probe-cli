@@ -15,7 +15,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
@@ -239,7 +239,8 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 	})
 
 	t.Run("we collect the desired data with a local TLS server", func(t *testing.T) {
-		server := filtering.NewTLSServer(filtering.TLSActionBlockText)
+		mitm := testingx.MustNewTLSMITMProviderNetem()
+		server := testingx.MustNewTLSServer(testingx.TLSHandlerHandshakeAndWriteText(mitm, testingx.HTTPBlockpage451))
 		dialer := netxlite.NewDialerWithoutResolver(model.DiscardLogger)
 		ctx := context.Background()
 		conn, err := dialer.DialContext(ctx, "tcp", server.Endpoint())
@@ -253,7 +254,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 		trace.timeNowFn = dt.Now // deterministic timing
 		thx := trace.NewTLSHandshakerStdlib(model.DiscardLogger)
 		tlsConfig := &tls.Config{
-			RootCAs:    server.CertPool(),
+			RootCAs:    runtimex.Try1(mitm.DefaultCertPool()),
 			ServerName: "dns.google",
 		}
 		tlsConn, connState, err := thx.Handshake(ctx, conn, tlsConfig)
@@ -265,7 +266,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !bytes.Equal(data, filtering.HTTPBlockpage451) {
+		if !bytes.Equal(data, testingx.HTTPBlockpage451) {
 			t.Fatal("bytes should match")
 		}
 

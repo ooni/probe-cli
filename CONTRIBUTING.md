@@ -88,10 +88,9 @@ will understand you want to use the default pool)
 ## Code testing requirements
 
 Make sure all tests pass with `go test -race ./...` run from the
-top-level directory of this repository. (Integration tests may be
-flaky, so there may be some failures here and and there; we know
-in particular that `./internal/cmd/jafar` is one of the usual
-suspects and that it's not super pleasant to test it under Linux.)
+top-level directory of this repository. (Running [netem](
+https://github.com/ooni/netem) based tests may not work as intended
+with `-race` with macOS.)
 
 ## Writing a new OONI experiment
 

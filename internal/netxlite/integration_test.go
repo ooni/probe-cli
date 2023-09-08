@@ -3,6 +3,7 @@ package netxlite_test
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -14,10 +15,10 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quictesting"
 	"github.com/ooni/probe-cli/v3/internal/randx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
 	"github.com/quic-go/quic-go"
 	utls "gitlab.com/yawning/utls.git"
 )
@@ -117,15 +118,12 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 	})
 
 	t.Run("for nxdomain", func(t *testing.T) {
-		proxy := &filtering.DNSServer{
-			OnQuery: func(domain string) filtering.DNSAction {
-				return filtering.DNSActionNXDOMAIN
-			},
+		udpAddr := &net.UDPAddr{
+			IP:   net.IPv4(127, 0, 0, 1),
+			Port: 0,
 		}
-		listener, err := proxy.Start("127.0.0.1:0")
-		if err != nil {
-			t.Fatal(err)
-		}
+		dnsRtx := testingx.NewDNSRoundTripperNXDOMAIN()
+		listener := testingx.MustNewDNSOverUDPListener(udpAddr, &testingx.DNSOverUDPListenerStdlib{}, dnsRtx)
 		defer listener.Close()
 		dlr := netxlite.NewDialerWithoutResolver(log.Log)
 		r := netxlite.NewParallelUDPResolver(log.Log, dlr, listener.LocalAddr().String())
@@ -141,15 +139,12 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 	})
 
 	t.Run("for refused", func(t *testing.T) {
-		proxy := &filtering.DNSServer{
-			OnQuery: func(domain string) filtering.DNSAction {
-				return filtering.DNSActionRefused
-			},
+		udpAddr := &net.UDPAddr{
+			IP:   net.IPv4(127, 0, 0, 1),
+			Port: 0,
 		}
-		listener, err := proxy.Start("127.0.0.1:0")
-		if err != nil {
-			t.Fatal(err)
-		}
+		dnsRtx := testingx.NewDNSRoundTripperRefused()
+		listener := testingx.MustNewDNSOverUDPListener(udpAddr, &testingx.DNSOverUDPListenerStdlib{}, dnsRtx)
 		defer listener.Close()
 		dlr := netxlite.NewDialerWithoutResolver(log.Log)
 		r := netxlite.NewParallelUDPResolver(log.Log, dlr, listener.LocalAddr().String())
@@ -165,15 +160,12 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 	})
 
 	t.Run("for timeout", func(t *testing.T) {
-		proxy := &filtering.DNSServer{
-			OnQuery: func(domain string) filtering.DNSAction {
-				return filtering.DNSActionTimeout
-			},
+		udpAddr := &net.UDPAddr{
+			IP:   net.IPv4(127, 0, 0, 1),
+			Port: 0,
 		}
-		listener, err := proxy.Start("127.0.0.1:0")
-		if err != nil {
-			t.Fatal(err)
-		}
+		dnsRtx := testingx.NewDNSRoundTripperSimulateTimeout(time.Millisecond, errors.New("mocked error"))
+		listener := testingx.MustNewDNSOverUDPListener(udpAddr, &testingx.DNSOverUDPListenerStdlib{}, dnsRtx)
 		defer listener.Close()
 		dlr := netxlite.NewDialerWithoutResolver(log.Log)
 		r := netxlite.NewParallelUDPResolver(log.Log, dlr, listener.LocalAddr().String())
@@ -308,7 +300,7 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 	}
 
 	connectionResetFlow := func(th model.TLSHandshaker) error {
-		server := filtering.NewTLSServer(filtering.TLSActionReset)
+		server := testingx.MustNewTLSServer(testingx.TLSHandlerReset())
 		defer server.Close()
 		ctx := context.Background()
 		conn, err := dial(ctx, server.Endpoint())
@@ -338,7 +330,7 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 	}
 
 	timeoutFlow := func(th model.TLSHandshaker) error {
-		server := filtering.NewTLSServer(filtering.TLSActionTimeout)
+		server := testingx.MustNewTLSServer(testingx.TLSHandlerTimeout())
 		defer server.Close()
 		ctx := context.Background()
 		conn, err := dial(ctx, server.Endpoint())
@@ -368,7 +360,7 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 	}
 
 	tlsUnrecognizedNameFlow := func(th model.TLSHandshaker) error {
-		server := filtering.NewTLSServer(filtering.TLSActionAlertUnrecognizedName)
+		server := testingx.MustNewTLSServer(testingx.TLSHandlerSendAlert(testingx.TLSAlertUnrecognizedName))
 		defer server.Close()
 		ctx := context.Background()
 		conn, err := dial(ctx, server.Endpoint())
@@ -483,7 +475,7 @@ func TestMeasureWithQUICDialer(t *testing.T) {
 	//
 
 	t.Run("on success", func(t *testing.T) {
-		ql := netxlite.NewQUICListener()
+		ql := netxlite.NewUDPListener()
 		d := netxlite.NewQUICDialerWithoutResolver(ql, log.Log)
 		defer d.CloseIdleConnections()
 		ctx := context.Background()
@@ -506,7 +498,7 @@ func TestMeasureWithQUICDialer(t *testing.T) {
 	})
 
 	t.Run("on timeout", func(t *testing.T) {
-		ql := netxlite.NewQUICListener()
+		ql := netxlite.NewUDPListener()
 		d := netxlite.NewQUICDialerWithoutResolver(ql, log.Log)
 		defer d.CloseIdleConnections()
 		ctx := context.Background()
@@ -584,7 +576,7 @@ func TestHTTP3Transport(t *testing.T) {
 
 	t.Run("works as intended", func(t *testing.T) {
 		d := netxlite.NewQUICDialerWithResolver(
-			netxlite.NewQUICListener(),
+			netxlite.NewUDPListener(),
 			log.Log,
 			netxlite.NewStdlibResolver(log.Log),
 		)

@@ -1,13 +1,20 @@
 package netemx
 
-import "github.com/ooni/netem"
+import (
+	"net/http"
+
+	"github.com/apex/log"
+	"github.com/ooni/netem"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
+)
 
 const (
-	// ScenarioRoleDNSOverHTTPS means we should create a DNS-over-HTTPS server.
-	ScenarioRoleDNSOverHTTPS = iota
+	// ScenarioRolePublicDNS means we should create DNS-over-HTTPS and DNS-over-UDP servers.
+	ScenarioRolePublicDNS = iota
 
-	// ScenarioRoleExampleLikeWebServer means we should instantiate a www.example.com-like web server.
-	ScenarioRoleExampleLikeWebServer
+	// ScenarioRoleWebServer means we should instantiate a webserver using a specific factory.
+	ScenarioRoleWebServer
 
 	// ScenarioRoleOONIAPI means we should instantiate the OONI API.
 	ScenarioRoleOONIAPI
@@ -17,107 +24,222 @@ const (
 
 	// ScenarioRoleOONITestHelper means we should instantiate the oohelperd.
 	ScenarioRoleOONITestHelper
+
+	// ScenarioRoleBlockpageServer means we should serve a blockpage using HTTP.
+	ScenarioRoleBlockpageServer
+
+	// ScenarioRoleProxy means the host is a transparent proxy.
+	ScenarioRoleProxy
+
+	// ScenarioRoleURLShortener means that the host is an URL shortener.
+	ScenarioRoleURLShortener
+
+	// ScenarioRoleBadSSL means that the host hosts services to
+	// measure against common TLS issues.
+	ScenarioRoleBadSSL
 )
 
 // ScenarioDomainAddresses describes a domain and address used in a scenario.
 type ScenarioDomainAddresses struct {
-	Domain    string
+	// Domains contains a related set of domains domains (MANDATORY field).
+	Domains []string
+
+	// Addresses contains the MANDATORY list of addresses belonging to the domain.
 	Addresses []string
-	Role      uint64
+
+	// Role is the MANDATORY role of this domain (e.g., ScenarioRoleOONIAPI).
+	Role uint64
+
+	// WebServerFactory is the factory to use when Role is ScenarioRoleWebServer.
+	WebServerFactory HTTPHandlerFactory
 }
 
 // InternetScenario contains the domains and addresses used by [NewInternetScenario].
-//
-// Note that the 130.192.91.x address space belongs to polito.it and is not used for hosting
-// servers, therefore we're more confident that tests using this scenario will break in bad
-// way if for some reason netem is not working as intended. (We have several tests making sure
-// of that, but some extra robustness won't hurt.)
 var InternetScenario = []*ScenarioDomainAddresses{{
-	Domain:    "api.ooni.io",
-	Addresses: []string{"130.192.91.5"},
-	Role:      ScenarioRoleOONIAPI,
+	Domains: []string{"api.ooni.io"},
+	Addresses: []string{
+		AddressApiOONIIo,
+	},
+	Role: ScenarioRoleOONIAPI,
 }, {
-	Domain:    "geoip.ubuntu.com",
-	Addresses: []string{"130.192.91.6"},
-	Role:      ScenarioRoleUbuntuGeoIP,
+	Domains: []string{"geoip.ubuntu.com"},
+	Addresses: []string{
+		AddressGeoIPUbuntuCom,
+	},
+	Role: ScenarioRoleUbuntuGeoIP,
 }, {
-	Domain:    "www.example.com",
-	Addresses: []string{"130.192.91.7"},
-	Role:      ScenarioRoleExampleLikeWebServer,
+	Domains: []string{"www.example.com", "example.com", "www.example.org", "example.org"},
+	Addresses: []string{
+		AddressWwwExampleCom,
+	},
+	Role:             ScenarioRoleWebServer,
+	WebServerFactory: ExampleWebPageHandlerFactory(),
 }, {
-	Domain:    "0.th.ooni.org",
-	Addresses: []string{"130.192.91.8"},
-	Role:      ScenarioRoleOONITestHelper,
+	Domains: []string{"0.th.ooni.org"},
+	Addresses: []string{
+		AddressZeroThOONIOrg,
+	},
+	Role: ScenarioRoleOONITestHelper,
 }, {
-	Domain:    "1.th.ooni.org",
-	Addresses: []string{"130.192.91.9"},
-	Role:      ScenarioRoleOONITestHelper,
+	Domains: []string{"1.th.ooni.org"},
+	Addresses: []string{
+		AddressOneThOONIOrg,
+	},
+	Role: ScenarioRoleOONITestHelper,
 }, {
-	Domain:    "2.th.ooni.org",
-	Addresses: []string{"130.192.91.10"},
-	Role:      ScenarioRoleOONITestHelper,
+	Domains: []string{"2.th.ooni.org"},
+	Addresses: []string{
+		AddressTwoThOONIOrg,
+	},
+	Role: ScenarioRoleOONITestHelper,
 }, {
-	Domain:    "3.th.ooni.org",
-	Addresses: []string{"130.192.91.11"},
-	Role:      ScenarioRoleOONITestHelper,
+	Domains: []string{"3.th.ooni.org"},
+	Addresses: []string{
+		AddressThreeThOONIOrg,
+	},
+	Role: ScenarioRoleOONITestHelper,
 }, {
-	Domain:    "dns.quad9.net",
-	Addresses: []string{"130.192.91.12"},
-	Role:      ScenarioRoleDNSOverHTTPS,
+	Domains: []string{"d33d1gs9kpq1c5.cloudfront.net"},
+	Addresses: []string{
+		AddressTHCloudfront,
+	},
+	Role: ScenarioRoleOONITestHelper,
 }, {
-	Domain:    "mozilla.cloudflare-dns.com",
-	Addresses: []string{"130.192.91.13"},
-	Role:      ScenarioRoleDNSOverHTTPS,
+	Domains: []string{"dns.quad9.net"},
+	Addresses: []string{
+		AddressDNSQuad9Net,
+	},
+	Role: ScenarioRolePublicDNS,
 }, {
-	Domain:    "dns.google",
-	Addresses: []string{"130.192.91.14"},
-	Role:      ScenarioRoleDNSOverHTTPS,
+	Domains: []string{"mozilla.cloudflare-dns.com"},
+	Addresses: []string{
+		AddressMozillaCloudflareDNSCom,
+	},
+	Role: ScenarioRolePublicDNS,
+}, {
+	Domains: []string{"dns.google", "dns.google.com"},
+	Addresses: []string{
+		AddressDNSGoogle8844,
+		AddressDNSGoogle8888,
+	},
+	Role: ScenarioRolePublicDNS,
+}, {
+	Domains: []string{},
+	Addresses: []string{
+		AddressPublicBlockpage,
+	},
+	Role:             ScenarioRoleBlockpageServer,
+	WebServerFactory: BlockpageHandlerFactory(),
+}, {
+	Domains: []string{},
+	Addresses: []string{
+		ISPProxyAddress,
+	},
+	Role:             ScenarioRoleProxy,
+	WebServerFactory: nil,
+}, {
+	Domains: []string{"bit.ly", "bitly.com"},
+	Addresses: []string{
+		AddressBitly,
+	},
+	Role: ScenarioRoleURLShortener,
+}, {
+	Domains: []string{
+		"wrong.host.badssl.com",
+		"untrusted-root.badssl.com",
+		"expired.badssl.com",
+	},
+	Addresses: []string{
+		AddressBadSSLCom,
+	},
+	Role: ScenarioRoleBadSSL,
 }}
 
 // MustNewScenario constructs a complete testing scenario using the domains and IP
 // addresses contained by the given [ScenarioDomainAddresses] array.
-func MustNewScenario(cfg []*ScenarioDomainAddresses) *QAEnv {
+func MustNewScenario(config []*ScenarioDomainAddresses) *QAEnv {
 	var opts []QAEnvOption
 
-	// create a common configuration for DoH servers
-	dohConfig := netem.NewDNSConfig()
-	for _, sad := range cfg {
-		dohConfig.AddRecord(sad.Domain, "", sad.Addresses...)
-	}
-
-	// explicitly create the uncensored resolver
-	opts = append(opts, QAEnvOptionDNSOverUDPResolvers("130.192.91.4"))
-
 	// fill options based on the scenario config
-	for _, sad := range cfg {
+	for _, sad := range config {
 		switch sad.Role {
-		case ScenarioRoleDNSOverHTTPS:
+		case ScenarioRolePublicDNS:
 			for _, addr := range sad.Addresses {
-				opts = append(opts, QAEnvOptionHTTPServer(addr, &DNSOverHTTPSHandlerFactory{
-					Config: dohConfig,
-				}))
+				opts = append(opts, QAEnvOptionNetStack(
+					addr,
+					&DNSOverUDPServerFactory{},
+					&HTTPSecureServerFactory{
+						Factory:   &DNSOverHTTPSHandlerFactory{},
+						Ports:     []int{443},
+						TLSConfig: nil, // use netem's default
+					},
+				))
 			}
 
-		case ScenarioRoleExampleLikeWebServer:
+		case ScenarioRoleWebServer:
 			for _, addr := range sad.Addresses {
-				opts = append(opts, QAEnvOptionHTTPServer(addr, ExampleWebPageHandlerFactory()))
+				opts = append(opts, QAEnvOptionHTTPServer(addr, sad.WebServerFactory))
 			}
 
 		case ScenarioRoleOONIAPI:
 			for _, addr := range sad.Addresses {
-				opts = append(opts, QAEnvOptionHTTPServer(addr, &OOAPIHandlerFactory{}))
+				opts = append(opts, QAEnvOptionNetStack(addr, &HTTPSecureServerFactory{
+					Factory:   &OOAPIHandlerFactory{},
+					Ports:     []int{443},
+					TLSConfig: nil, // use netem's default
+				}))
 			}
 
 		case ScenarioRoleOONITestHelper:
 			for _, addr := range sad.Addresses {
-				opts = append(opts, QAEnvOptionHTTPServer(addr, &OOHelperDFactory{}))
+				opts = append(opts, QAEnvOptionNetStack(addr, &HTTPSecureServerFactory{
+					Factory:   &OOHelperDFactory{},
+					Ports:     []int{443},
+					TLSConfig: nil, // use netem's default
+				}))
 			}
 
 		case ScenarioRoleUbuntuGeoIP:
 			for _, addr := range sad.Addresses {
-				opts = append(opts, QAEnvOptionHTTPServer(addr, &GeoIPHandlerFactoryUbuntu{
-					ProbeIP: QAEnvDefaultClientAddress,
+				opts = append(opts, QAEnvOptionNetStack(addr, &HTTPSecureServerFactory{
+					Factory: &GeoIPHandlerFactoryUbuntu{
+						ProbeIP: DefaultClientAddress,
+					},
+					Ports:     []int{443},
+					TLSConfig: nil, // use netem's default
 				}))
+			}
+
+		case ScenarioRoleBlockpageServer:
+			for _, addr := range sad.Addresses {
+				opts = append(opts, QAEnvOptionNetStack(addr, &HTTPCleartextServerFactory{
+					Factory: BlockpageHandlerFactory(),
+					Ports:   []int{80},
+				}))
+			}
+
+		case ScenarioRoleProxy:
+			for _, addr := range sad.Addresses {
+				opts = append(opts, QAEnvOptionNetStack(addr,
+					&HTTPCleartextServerFactory{
+						Factory: HTTPHandlerFactoryFunc(func(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
+							return testingx.HTTPHandlerProxy(env.Logger(), &netxlite.Netx{
+								Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: stack}})
+						}),
+						Ports: []int{80},
+					},
+					NewTLSProxyServerFactory(log.Log, 443),
+				))
+			}
+
+		case ScenarioRoleURLShortener:
+			for _, addr := range sad.Addresses {
+				opts = append(opts, QAEnvOptionHTTPServer(addr, URLShortenerFactory(DefaultURLShortenerMapping)))
+			}
+
+		case ScenarioRoleBadSSL:
+			for _, addr := range sad.Addresses {
+				opts = append(opts, qaEnvOptionNetStack(addr, &BadSSLServerFactory{}))
 			}
 		}
 	}
@@ -126,8 +248,10 @@ func MustNewScenario(cfg []*ScenarioDomainAddresses) *QAEnv {
 	env := MustNewQAEnv(opts...)
 
 	// configure all the domain names
-	for _, sad := range cfg {
-		env.AddRecordToAllResolvers(sad.Domain, "", sad.Addresses...)
+	for _, sad := range config {
+		for _, domain := range sad.Domains {
+			env.AddRecordToAllResolvers(domain, "", sad.Addresses...)
+		}
 	}
 
 	return env

@@ -9,7 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
 func TestNewArchivalHTTPRequestResult(t *testing.T) {
@@ -181,7 +181,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 				},
 			},
 			maxRespBodySize: 1 << 19,
-			body:            filtering.HTTPBlockpage451,
+			body:            testingx.HTTPBlockpage451,
 			err:             nil,
 			finished:        1500 * time.Millisecond,
 			tags:            []string{"antani"},
@@ -216,7 +216,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 			},
 			Response: model.ArchivalHTTPResponse{
 				Body: model.ArchivalMaybeBinaryData{
-					Value: string(filtering.HTTPBlockpage451),
+					Value: string(testingx.HTTPBlockpage451),
 				},
 				BodyIsTruncated: false,
 				Code:            200,

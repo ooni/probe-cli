@@ -15,32 +15,18 @@ import (
 )
 
 func TestOOHelperDHandler(t *testing.T) {
-	// we use completely unrelated IP addresses such that, in the unlikely event in
-	// which we're not using netem, the test is poised to fail.
-	//
-	// (These were two IP addresses assigned to me when I was at polito.it.)
-	const (
-		zeroThOONIOrgAddr = "130.192.91.211"
-		exampleComAddr    = "130.192.91.231"
-	)
-
-	env := MustNewQAEnv(
-		QAEnvOptionHTTPServer(zeroThOONIOrgAddr, &OOHelperDFactory{}),
-		QAEnvOptionHTTPServer(exampleComAddr, ExampleWebPageHandlerFactory()),
-	)
-	env.AddRecordToAllResolvers("example.com", "web01.example.com", exampleComAddr)
-	env.AddRecordToAllResolvers("0.th.ooni.org", "0-th.ooni.org", zeroThOONIOrgAddr)
+	env := MustNewScenario(InternetScenario)
 	defer env.Close()
 
 	env.Do(func() {
 		thReq := &model.THRequest{
-			HTTPRequest: "https://example.com/",
+			HTTPRequest: "https://www.example.com/",
 			HTTPRequestHeaders: map[string][]string{
 				"accept":          {model.HTTPHeaderAccept},
 				"accept-language": {model.HTTPHeaderAcceptLanguage},
 				"user-agent":      {model.HTTPHeaderUserAgent},
 			},
-			TCPConnect:   []string{exampleComAddr},
+			TCPConnect:   []string{AddressWwwExampleCom},
 			XQUICEnabled: true,
 		}
 		thReqRaw := runtimex.Try1(json.Marshal(thReq))
@@ -76,40 +62,40 @@ func TestOOHelperDHandler(t *testing.T) {
 
 		expectedTHResp := &model.THResponse{
 			TCPConnect: map[string]model.THTCPConnectResult{
-				"130.192.91.231:443": {
+				"93.184.216.34:443": {
 					Status:  true,
 					Failure: nil,
 				},
 			},
 			TLSHandshake: map[string]model.THTLSHandshakeResult{
-				"130.192.91.231:443": {
-					ServerName: "example.com",
+				"93.184.216.34:443": {
+					ServerName: "www.example.com",
 					Status:     true,
 					Failure:    nil,
 				},
 			},
 			QUICHandshake: map[string]model.THTLSHandshakeResult{
-				"130.192.91.231:443": {
-					ServerName: "example.com",
+				"93.184.216.34:443": {
+					ServerName: "www.example.com",
 					Status:     true,
 					Failure:    nil,
 				},
 			},
 			HTTPRequest: model.THHTTPRequestResult{
-				BodyLength:           194,
-				DiscoveredH3Endpoint: "example.com:443",
+				BodyLength:           1533,
+				DiscoveredH3Endpoint: "www.example.com:443",
 				Failure:              nil,
 				Title:                "Default Web Page",
 				Headers: map[string]string{
 					"Alt-Svc":        `h3=":443"`,
-					"Content-Length": "194",
+					"Content-Length": "1533",
 					"Content-Type":   "text/html; charset=utf-8",
 					"Date":           "Thu, 24 Aug 2023 14:35:29 GMT",
 				},
 				StatusCode: 200,
 			},
 			HTTP3Request: &model.THHTTPRequestResult{
-				BodyLength:           194,
+				BodyLength:           1533,
 				DiscoveredH3Endpoint: "",
 				Failure:              nil,
 				Title:                "Default Web Page",
@@ -122,12 +108,12 @@ func TestOOHelperDHandler(t *testing.T) {
 			},
 			DNS: model.THDNSResult{
 				Failure: nil,
-				Addrs:   []string{"130.192.91.231"},
+				Addrs:   []string{"93.184.216.34"},
 				ASNs:    nil,
 			},
 			IPInfo: map[string]*model.THIPInfo{
-				"130.192.91.231": {
-					ASN:   137,
+				"93.184.216.34": {
+					ASN:   15133,
 					Flags: 10,
 				},
 			},
