@@ -171,7 +171,7 @@ func (m *Measurer) quicHandshake(ctx context.Context, index int64,
 	alpn := strings.Split(m.config.alpn(), " ")
 	trace := measurexlite.NewTrace(index, zeroTime)
 	ol := measurexlite.NewOperationLogger(logger, "SimpleQUICPing #%d %s %s %v", index, address, sni, alpn)
-	listener := netxlite.NewQUICListener()
+	listener := netxlite.NewUDPListener()
 	dialer := trace.NewQUICDialerWithoutResolver(listener, logger)
 	// See https://github.com/ooni/probe/issues/2413 to understand
 	// why we're using nil to force netxlite to use the cached

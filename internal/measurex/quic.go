@@ -17,14 +17,14 @@ import (
 	"github.com/quic-go/quic-go"
 )
 
-type quicListenerDB struct {
-	model.QUICListener
+type udpListenerDB struct {
+	model.UDPListener
 	begin time.Time
 	db    WritableDB
 }
 
-func (ql *quicListenerDB) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
-	pconn, err := ql.QUICListener.Listen(addr)
+func (ql *udpListenerDB) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
+	pconn, err := ql.UDPListener.Listen(addr)
 	if err != nil {
 		return nil, err
 	}
@@ -109,17 +109,17 @@ func (qh *quicDialerDB) DialContext(ctx context.Context, address string,
 	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
 	started := time.Since(qh.begin).Seconds()
 	var state tls.ConnectionState
-	listener := &quicListenerDB{
-		QUICListener: netxlite.NewQUICListener(),
-		begin:        qh.begin,
-		db:           qh.db,
+	listener := &udpListenerDB{
+		UDPListener: netxlite.NewUDPListener(),
+		begin:       qh.begin,
+		db:          qh.db,
 	}
 	dialer := netxlite.NewQUICDialerWithoutResolver(listener, qh.logger)
 	defer dialer.CloseIdleConnections()
 	sess, err := dialer.DialContext(ctx, address, tlsConfig, quicConfig)
 	if err == nil {
-		<-sess.HandshakeComplete().Done() // robustness (the dialer already does that)
-		state = sess.ConnectionState().TLS.ConnectionState
+		<-sess.HandshakeComplete() // robustness (the dialer already does that)
+		state = sess.ConnectionState().TLS
 	}
 	finished := time.Since(qh.begin).Seconds()
 	qh.db.InsertIntoQUICHandshake(&QUICTLSHandshakeEvent{

@@ -475,7 +475,7 @@ func TestMeasureWithQUICDialer(t *testing.T) {
 	//
 
 	t.Run("on success", func(t *testing.T) {
-		ql := netxlite.NewQUICListener()
+		ql := netxlite.NewUDPListener()
 		d := netxlite.NewQUICDialerWithoutResolver(ql, log.Log)
 		defer d.CloseIdleConnections()
 		ctx := context.Background()
@@ -498,7 +498,7 @@ func TestMeasureWithQUICDialer(t *testing.T) {
 	})
 
 	t.Run("on timeout", func(t *testing.T) {
-		ql := netxlite.NewQUICListener()
+		ql := netxlite.NewUDPListener()
 		d := netxlite.NewQUICDialerWithoutResolver(ql, log.Log)
 		defer d.CloseIdleConnections()
 		ctx := context.Background()
@@ -576,7 +576,7 @@ func TestHTTP3Transport(t *testing.T) {
 
 	t.Run("works as intended", func(t *testing.T) {
 		d := netxlite.NewQUICDialerWithResolver(
-			netxlite.NewQUICListener(),
+			netxlite.NewUDPListener(),
 			log.Log,
 			netxlite.NewStdlibResolver(log.Log),
 		)

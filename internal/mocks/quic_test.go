@@ -15,10 +15,10 @@ import (
 	"github.com/quic-go/quic-go"
 )
 
-func TestQUICListenerListen(t *testing.T) {
+func TestUDPListenerListen(t *testing.T) {
 	t.Run("Listen", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		ql := &QUICListener{
+		ql := &UDPListener{
 			MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 				return nil, expected
 			},
@@ -235,13 +235,13 @@ func TestQUICEarlyConnection(t *testing.T) {
 	t.Run("HandshakeComplete", func(t *testing.T) {
 		ctx := context.Background()
 		qconn := &QUICEarlyConnection{
-			MockHandshakeComplete: func() context.Context {
-				return ctx
+			MockHandshakeComplete: func() <-chan struct{} {
+				return ctx.Done()
 			},
 		}
 		out := qconn.HandshakeComplete()
-		if !reflect.DeepEqual(ctx, out) {
-			t.Fatal("not the context we expected")
+		if !reflect.DeepEqual(ctx.Done(), out) {
+			t.Fatal("not the channel we expected")
 		}
 	})
 
@@ -274,12 +274,13 @@ func TestQUICEarlyConnection(t *testing.T) {
 
 	t.Run("ReceiveMessage", func(t *testing.T) {
 		expected := errors.New("mocked error")
+		ctx := context.Background()
 		qconn := &QUICEarlyConnection{
-			MockReceiveMessage: func() ([]byte, error) {
+			MockReceiveMessage: func(ctx context.Context) ([]byte, error) {
 				return nil, expected
 			},
 		}
-		b, err := qconn.ReceiveMessage()
+		b, err := qconn.ReceiveMessage(ctx)
 		if !errors.Is(err, expected) {
 			t.Fatal("not the error we expected", err)
 		}
