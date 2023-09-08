@@ -33,6 +33,8 @@ func TestBadSSLConditions(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.testCase.Name, func(t *testing.T) {
 			env := netemx.MustNewScenario(netemx.InternetScenario)
+			defer env.Close()
+
 			tc.testCase.Configure(env)
 
 			env.Do(func() {
