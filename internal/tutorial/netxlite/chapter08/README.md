@@ -104,7 +104,7 @@ exactly like what we've seen in chapter04.
 
 func dialQUIC(ctx context.Context, address string,
 	config *tls.Config) (quic.EarlyConnection, tls.ConnectionState, error) {
-	ql := netxlite.NewQUICListener()
+	ql := netxlite.NewUDPListener()
 	d := netxlite.NewQUICDialerWithoutResolver(ql, log.Log)
 	qconn, err := d.DialContext(ctx, address, config, &quic.Config{})
 	if err != nil {

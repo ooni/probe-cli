@@ -69,7 +69,7 @@ type Trace struct {
 
 	// NewDialerWithoutResolverFn is OPTIONAL and can be used to override
 	// calls to the netxlite.NewQUICDialerWithoutResolver factory.
-	newQUICDialerWithoutResolverFn func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer
+	newQUICDialerWithoutResolverFn func(listener model.UDPListener, dl model.DebugLogger) model.QUICDialer
 
 	// dnsLookup is MANDATORY and buffers DNS Lookup observations.
 	dnsLookup chan *model.ArchivalDNSLookupResult
@@ -229,7 +229,7 @@ func (tx *Trace) newTLSHandshakerUTLS(dl model.DebugLogger, id *utls.ClientHello
 
 // newQUICDialerWithoutResolver indirectly calls netxlite.NewQUICDialerWithoutResolver
 // thus allowing us to mock this func for testing.
-func (tx *Trace) newQUICDialerWithoutResolver(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer {
+func (tx *Trace) newQUICDialerWithoutResolver(listener model.UDPListener, dl model.DebugLogger) model.QUICDialer {
 	if tx.newQUICDialerWithoutResolverFn != nil {
 		return tx.newQUICDialerWithoutResolverFn(listener, dl)
 	}

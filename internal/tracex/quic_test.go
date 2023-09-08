@@ -81,7 +81,7 @@ func TestQUICDialerSaver(t *testing.T) {
 			returnedConn := &mocks.QUICEarlyConnection{
 				MockConnectionState: func() quic.ConnectionState {
 					cs := quic.ConnectionState{}
-					cs.TLS.ConnectionState.CipherSuite = tls.TLS_RSA_WITH_RC4_128_SHA
+					cs.TLS.CipherSuite = tls.TLS_RSA_WITH_RC4_128_SHA
 					cs.TLS.NegotiatedProtocol = "h3"
 					cs.TLS.PeerCertificates = []*x509.Certificate{{
 						Raw: []byte{1, 2, 3, 4},
@@ -177,19 +177,19 @@ func TestQUICDialerSaver(t *testing.T) {
 	})
 }
 
-func TestWrapQUICListener(t *testing.T) {
+func TestWrapUDPListener(t *testing.T) {
 	var saver *Saver
-	ql := &mocks.QUICListener{}
-	if saver.WrapQUICListener(ql) != ql {
+	ql := &mocks.UDPListener{}
+	if saver.WrapUDPListener(ql) != ql {
 		t.Fatal("unexpected result")
 	}
 }
 
-func TestQUICListenerSaver(t *testing.T) {
+func TestUDPListenerSaver(t *testing.T) {
 	t.Run("on failure", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		saver := &Saver{}
-		qls := saver.WrapQUICListener(&mocks.QUICListener{
+		qls := saver.WrapUDPListener(&mocks.UDPListener{
 			MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 				return nil, expected
 			},
@@ -210,7 +210,7 @@ func TestQUICListenerSaver(t *testing.T) {
 	t.Run("on success", func(t *testing.T) {
 		saver := &Saver{}
 		returnedConn := &mocks.UDPLikeConn{}
-		qls := saver.WrapQUICListener(&mocks.QUICListener{
+		qls := saver.WrapUDPListener(&mocks.UDPListener{
 			MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 				return returnedConn, nil
 			},
