@@ -8,7 +8,7 @@ package netxlite
 import "github.com/ooni/probe-cli/v3/internal/model"
 
 // TODO(bassosimone,kelmenhorst): we should gradually refactor the top-level netxlite
-// functions to operate on a [Net] struct using a nil-initialized Underlying field.
+// functions to operate on a [Netx] struct using a nil-initialized Underlying field.
 
 // Netx allows constructing netxlite data types using a specific [model.UnderlyingNetwork].
 type Netx struct {
@@ -23,7 +23,7 @@ func (n *Netx) tproxyNilSafeProvider() *MaybeCustomUnderlyingNetwork {
 }
 
 // NewStdlibResolver is like [netxlite.NewStdlibResolver] but the constructed [model.Resolver]
-// uses the [UnderlyingNetwork] configured inside the [Net] structure.
+// uses the [model.UnderlyingNetwork] configured inside the [Netx] structure.
 func (n *Netx) NewStdlibResolver(logger model.DebugLogger, wrappers ...model.DNSTransportWrapper) model.Resolver {
 	unwrapped := &resolverSystem{
 		t: WrapDNSTransport(&dnsOverGetaddrinfoTransport{provider: n.tproxyNilSafeProvider()}, wrappers...),
@@ -32,19 +32,19 @@ func (n *Netx) NewStdlibResolver(logger model.DebugLogger, wrappers ...model.DNS
 }
 
 // NewDialerWithResolver is like [netxlite.NewDialerWithResolver] but the constructed [model.Dialer]
-// uses the [UnderlyingNetwork] configured inside the [Net] structure.
+// uses the [model.UnderlyingNetwork] configured inside the [Netx] structure.
 func (n *Netx) NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...model.DialerWrapper) model.Dialer {
 	return WrapDialer(dl, r, &DialerSystem{provider: n.tproxyNilSafeProvider()}, w...)
 }
 
-// NewQUICListener is like [netxlite.NewQUICListener] but the constructed [model.QUICListener]
-// uses the [UnderlyingNetwork] configured inside the [Net] structure.
-func (n *Netx) NewQUICListener() model.UDPListener {
+// NewUDPListener is like [netxlite.NewUDPListener] but the constructed [model.UDPListener]
+// uses the [model.UnderlyingNetwork] configured inside the [Netx] structure.
+func (n *Netx) NewUDPListener() model.UDPListener {
 	return &udpListenerErrWrapper{&udpListenerStdlib{provider: n.tproxyNilSafeProvider()}}
 }
 
 // NewQUICDialerWithResolver is like [netxlite.NewQUICDialerWithResolver] but the constructed
-// [model.QUICDialer] uses the [UnderlyingNetwork] configured inside the [Net] structure.
+// [model.QUICDialer] uses the [model.UnderlyingNetwork] configured inside the [Netx] structure.
 func (n *Netx) NewQUICDialerWithResolver(listener model.UDPListener, logger model.DebugLogger,
 	resolver model.Resolver, wrappers ...model.QUICDialerWrapper) (outDialer model.QUICDialer) {
 	baseDialer := &quicDialerQUICGo{
@@ -55,13 +55,13 @@ func (n *Netx) NewQUICDialerWithResolver(listener model.UDPListener, logger mode
 }
 
 // NewTLSHandshakerStdlib is like [netxlite.NewTLSHandshakerStdlib] but the constructed [model.TLSHandshaker]
-// uses the [UnderlyingNetwork] configured inside the [Net] structure.
+// uses the [model.UnderlyingNetwork] configured inside the [Netx] structure.
 func (n *Netx) NewTLSHandshakerStdlib(logger model.DebugLogger) model.TLSHandshaker {
 	return newTLSHandshakerLogger(&tlsHandshakerConfigurable{provider: n.tproxyNilSafeProvider()}, logger)
 }
 
 // NewHTTPTransportStdlib is like [netxlite.NewHTTPTransportStdlib] but the constructed [model.HTTPTransport]
-// uses the [UnderlyingNetwork] configured inside the [Net] structure.
+// uses the [model.UnderlyingNetwork] configured inside the [Netx] structure.
 func (n *Netx) NewHTTPTransportStdlib(logger model.DebugLogger) model.HTTPTransport {
 	dialer := n.NewDialerWithResolver(logger, n.NewStdlibResolver(logger))
 	tlsDialer := NewTLSDialer(dialer, n.NewTLSHandshakerStdlib(logger))
@@ -69,9 +69,9 @@ func (n *Netx) NewHTTPTransportStdlib(logger model.DebugLogger) model.HTTPTransp
 }
 
 // NewHTTP3TransportStdlib is like [netxlite.NewHTTP3TransportStdlib] but the constructed [model.HTTPTransport]
-// uses the [UnderlyingNetwork] configured inside the [Net] structure.
+// uses the [model.UnderlyingNetwork] configured inside the [Netx] structure.
 func (n *Netx) NewHTTP3TransportStdlib(logger model.DebugLogger) model.HTTPTransport {
-	ql := n.NewQUICListener()
+	ql := n.NewUDPListener()
 	reso := n.NewStdlibResolver(logger)
 	qd := n.NewQUICDialerWithResolver(ql, logger, reso)
 	return NewHTTP3Transport(logger, qd, nil)
