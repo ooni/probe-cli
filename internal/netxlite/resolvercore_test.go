@@ -17,22 +17,61 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
-func typecheckForSystemResolver(t *testing.T, resolver model.Resolver, logger model.DebugLogger) {
+type dnsTransportWrapperForTesting struct {
+	txp model.DNSTransport
+}
+
+var _ model.DNSTransport = &dnsTransportWrapperForTesting{}
+
+// Address implements model.DNSTransport.
+func (t *dnsTransportWrapperForTesting) Address() string {
+	return t.txp.Address()
+}
+
+// CloseIdleConnections implements model.DNSTransport.
+func (t *dnsTransportWrapperForTesting) CloseIdleConnections() {
+	t.txp.CloseIdleConnections()
+}
+
+// Network implements model.DNSTransport.
+func (t *dnsTransportWrapperForTesting) Network() string {
+	return t.txp.Network()
+}
+
+// RequiresPadding implements model.DNSTransport.
+func (t *dnsTransportWrapperForTesting) RequiresPadding() bool {
+	return t.txp.RequiresPadding()
+}
+
+// RoundTrip implements model.DNSTransport.
+func (t *dnsTransportWrapperForTesting) RoundTrip(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
+	return t.txp.RoundTrip(ctx, query)
+}
+
+type dnsTransportWrapperFactoryForTesting struct{}
+
+var _ model.DNSTransportWrapper = &dnsTransportWrapperFactoryForTesting{}
+
+// WrapDNSTransport implements model.DNSTransportWrapper.
+func (*dnsTransportWrapperFactoryForTesting) WrapDNSTransport(txp model.DNSTransport) model.DNSTransport {
+	return &dnsTransportWrapperForTesting{txp}
+}
+
+func TestNewResolverSystem(t *testing.T) {
+	// TODO(bassosimone): we need to extend this test to make sure we honour wrapping.
+	resolver := NewStdlibResolver(model.DiscardLogger, &dnsTransportWrapperFactoryForTesting{})
+
 	idna := resolver.(*resolverIDNA)
 	loggerReso := idna.Resolver.(*resolverLogger)
-	if loggerReso.Logger != logger {
+	if loggerReso.Logger != model.DiscardLogger {
 		t.Fatal("invalid logger")
 	}
 	shortCircuit := loggerReso.Resolver.(*resolverShortCircuitIPAddr)
 	errWrapper := shortCircuit.Resolver.(*resolverErrWrapper)
 	reso := errWrapper.Resolver.(*resolverSystem)
-	txpErrWrapper := reso.t.(*dnsTransportErrWrapper)
+	txpExternal := reso.t.(*dnsTransportWrapperForTesting)
+	txpErrWrapper := txpExternal.txp.(*dnsTransportErrWrapper)
 	_ = txpErrWrapper.DNSTransport.(*dnsOverGetaddrinfoTransport)
-}
-
-func TestNewResolverSystem(t *testing.T) {
-	resolver := NewStdlibResolver(model.DiscardLogger)
-	typecheckForSystemResolver(t, resolver, model.DiscardLogger)
 }
 
 func TestNewSerialUDPResolver(t *testing.T) {
