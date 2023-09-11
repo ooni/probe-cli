@@ -10,8 +10,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// WrapDNSTransport wraps a DNSTransport to provide error wrapping.
-func WrapDNSTransport(txp model.DNSTransport) (out model.DNSTransport) {
+// wrapDNSTransport wraps a DNSTransport to provide error wrapping.
+func wrapDNSTransport(txp model.DNSTransport) (out model.DNSTransport) {
 	out = &dnsTransportErrWrapper{
 		DNSTransport: txp,
 	}

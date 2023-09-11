@@ -41,13 +41,13 @@ func NewStdlibResolver(logger model.DebugLogger) model.Resolver {
 // all the building blocks and calls WrapResolver on the returned resolver.
 func NewParallelDNSOverHTTPSResolver(logger model.DebugLogger, URL string) model.Resolver {
 	client := &http.Client{Transport: NewHTTPTransportStdlib(logger)}
-	txp := WrapDNSTransport(NewUnwrappedDNSOverHTTPSTransport(client, URL))
+	txp := wrapDNSTransport(NewUnwrappedDNSOverHTTPSTransport(client, URL))
 	return WrapResolver(logger, NewUnwrappedParallelResolver(txp))
 }
 
 func (netx *Netx) newUnwrappedStdlibResolver() model.Resolver {
 	return &resolverSystem{
-		t: WrapDNSTransport(netx.newDNSOverGetaddrinfoTransport()),
+		t: wrapDNSTransport(netx.newDNSOverGetaddrinfoTransport()),
 	}
 }
 
@@ -73,7 +73,7 @@ func NewUnwrappedStdlibResolver() model.Resolver {
 // - address is the server address (e.g., 1.1.1.1:53)
 func NewSerialUDPResolver(logger model.DebugLogger, dialer model.Dialer, address string) model.Resolver {
 	return WrapResolver(logger, NewUnwrappedSerialResolver(
-		WrapDNSTransport(NewUnwrappedDNSOverUDPTransport(dialer, address)),
+		wrapDNSTransport(NewUnwrappedDNSOverUDPTransport(dialer, address)),
 	))
 }
 
@@ -90,7 +90,7 @@ func NewSerialUDPResolver(logger model.DebugLogger, dialer model.Dialer, address
 func NewParallelUDPResolver(logger model.DebugLogger, dialer model.Dialer,
 	address string) model.Resolver {
 	return WrapResolver(logger, NewUnwrappedParallelResolver(
-		WrapDNSTransport(NewUnwrappedDNSOverUDPTransport(dialer, address)),
+		wrapDNSTransport(NewUnwrappedDNSOverUDPTransport(dialer, address)),
 	))
 }
 

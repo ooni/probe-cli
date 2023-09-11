@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
-	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -255,12 +254,11 @@ func (s *Subcommand) dnsLookupHost(domain string) ([]string, error) {
 	defer cancel()
 
 	// create DNS transport using HTTP default client
-	dnsTransport := netxlite.WrapDNSTransport(&netxlite.DNSOverHTTPSTransport{
-		Client:       http.DefaultClient,
-		Decoder:      &netxlite.DNSDecoderMiekg{},
-		URL:          s.DNSOverHTTPSServerURL,
-		HostOverride: "",
-	})
+	dnsTransport := netxlite.NewDNSOverHTTPSTransportWithHTTPTransport(
+		netxlite.NewHTTPTransportStdlib(log.Log),
+		s.DNSOverHTTPSServerURL,
+	)
+	defer dnsTransport.CloseIdleConnections()
 
 	// create DNS resolver
 	dnsResolver := netxlite.WrapResolver(
