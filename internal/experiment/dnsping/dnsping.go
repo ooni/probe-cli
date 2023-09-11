@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -136,7 +137,7 @@ func (m *Measurer) dnsRoundTrip(ctx context.Context, index int64, zeroTime time.
 	defer wg.Done()
 	pings := []*SinglePing{}
 	trace := measurexlite.NewTrace(index, zeroTime)
-	ol := measurexlite.NewOperationLogger(logger, "DNSPing #%d %s %s", index, address, domain)
+	ol := logx.NewOperationLogger(logger, "DNSPing #%d %s %s", index, address, domain)
 	// TODO(bassosimone, DecFox): what should we do if the user passes us a resolver with a
 	// domain name in terms of saving its results? Shall we save also the system resolver's lookups?
 	// Shall we, otherwise, pre-resolve the domain name to IP addresses once and for all? In such

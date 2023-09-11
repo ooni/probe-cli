@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/measurexlite"
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/multierror"
 )
@@ -139,7 +139,7 @@ func (r *Resolver) lookupHost(ctx context.Context, ri *resolverinfo, hostname st
 		ri.Score = 0 // this is a hard error
 		return nil, err
 	}
-	op := measurexlite.NewOperationLogger(
+	op := logx.NewOperationLogger(
 		r.logger(), "sessionresolver: lookup %s using %s", hostname, ri.URL)
 	addrs, err := timeLimitedLookup(ctx, re, hostname)
 	op.Stop(err)
