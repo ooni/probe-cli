@@ -17,6 +17,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -114,7 +115,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	}()
 
 	// start the operation logger
-	ol := measurexlite.NewOperationLogger(
+	ol := logx.NewOperationLogger(
 		t.Logger, "[#%d] GET https://%s using %s", index, t.HostHeader, t.Address,
 	)
 

@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -72,7 +73,7 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 	// 1. Connect to the target IP
 	// TODO(DecFox, bassosimone): Do we need a trace for this TCP connect?
 	d := NewDialerTTLWrapper()
-	ol := measurexlite.NewOperationLogger(logger, "Handshake Trace #%d TTL %d %s %s", index, ttl, address, sni)
+	ol := logx.NewOperationLogger(logger, "Handshake Trace #%d TTL %d %s %s", index, ttl, address, sni)
 	conn, err := d.DialContext(ctx, "tcp", address)
 	if err != nil {
 		iteration := newIterationFromHandshake(ttl, err, nil, nil)

@@ -1,6 +1,6 @@
 package measurex
 
-import "github.com/ooni/probe-cli/v3/internal/measurexlite"
+import "github.com/ooni/probe-cli/v3/internal/logx"
 
 //
 // Logger
@@ -9,7 +9,7 @@ import "github.com/ooni/probe-cli/v3/internal/measurexlite"
 //
 
 // NewOperationLogger is an alias for measurex.NewOperationLogger.
-var NewOperationLogger = measurexlite.NewOperationLogger
+var NewOperationLogger = logx.NewOperationLogger
 
 // OperationLogger is an alias for measurex.OperationLogger.
-type OperationLogger = measurexlite.OperationLogger
+type OperationLogger = logx.OperationLogger
