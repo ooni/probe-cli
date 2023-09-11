@@ -27,8 +27,15 @@ var ErrNoDNSTransport = errors.New("operation requires a DNS transport")
 // with an internal "stdlib" resolver type. The list of optional wrappers
 // allow to wrap the underlying getaddrinfo transport. Any nil wrapper
 // will be silently ignored by the code that performs the wrapping.
+func (netx *Netx) NewStdlibResolver(logger model.DebugLogger, wrappers ...model.DNSTransportWrapper) model.Resolver {
+	return WrapResolver(logger, netx.newUnwrappedStdlibResolver(wrappers...))
+}
+
+// NewStdlibResolver is equivalent to creating an empty [*Netx]
+// and callings its NewStdlibResolver method.
 func NewStdlibResolver(logger model.DebugLogger, wrappers ...model.DNSTransportWrapper) model.Resolver {
-	return WrapResolver(logger, NewUnwrappedStdlibResolver(wrappers...))
+	netx := &Netx{Underlying: nil}
+	return netx.NewStdlibResolver(logger, wrappers...)
 }
 
 // NewParallelDNSOverHTTPSResolver creates a new DNS over HTTPS resolver
@@ -40,13 +47,18 @@ func NewParallelDNSOverHTTPSResolver(logger model.DebugLogger, URL string) model
 	return WrapResolver(logger, NewUnwrappedParallelResolver(txp))
 }
 
+func (netx *Netx) newUnwrappedStdlibResolver(wrappers ...model.DNSTransportWrapper) model.Resolver {
+	return &resolverSystem{
+		t: WrapDNSTransport(netx.newDNSOverGetaddrinfoTransport(), wrappers...),
+	}
+}
+
 // NewUnwrappedStdlibResolver returns a new, unwrapped resolver using the standard
 // library (i.e., getaddrinfo if possible and &net.Resolver{} otherwise). As the name
 // implies, this function returns an unwrapped resolver.
 func NewUnwrappedStdlibResolver(wrappers ...model.DNSTransportWrapper) model.Resolver {
-	return &resolverSystem{
-		t: WrapDNSTransport(NewDNSOverGetaddrinfoTransport(), wrappers...),
-	}
+	netx := &Netx{Underlying: nil}
+	return netx.newUnwrappedStdlibResolver(wrappers...)
 }
 
 // NewSerialUDPResolver creates a new Resolver using DNS-over-UDP

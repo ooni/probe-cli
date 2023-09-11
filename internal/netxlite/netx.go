@@ -18,17 +18,8 @@ type Netx struct {
 }
 
 // tproxyNilSafeProvider wraps the [model.UnderlyingNetwork] using a [tproxyNilSafeProvider].
-func (n *Netx) tproxyNilSafeProvider() *MaybeCustomUnderlyingNetwork {
-	return &MaybeCustomUnderlyingNetwork{n.Underlying}
-}
-
-// NewStdlibResolver is like [netxlite.NewStdlibResolver] but the constructed [model.Resolver]
-// uses the [model.UnderlyingNetwork] configured inside the [Netx] structure.
-func (n *Netx) NewStdlibResolver(logger model.DebugLogger, wrappers ...model.DNSTransportWrapper) model.Resolver {
-	unwrapped := &resolverSystem{
-		t: WrapDNSTransport(&dnsOverGetaddrinfoTransport{provider: n.tproxyNilSafeProvider()}, wrappers...),
-	}
-	return WrapResolver(logger, unwrapped)
+func (netx *Netx) tproxyNilSafeProvider() *MaybeCustomUnderlyingNetwork {
+	return &MaybeCustomUnderlyingNetwork{netx.Underlying}
 }
 
 // NewDialerWithResolver is like [netxlite.NewDialerWithResolver] but the constructed [model.Dialer]
