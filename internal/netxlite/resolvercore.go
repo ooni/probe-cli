@@ -87,8 +87,7 @@ func NewSerialUDPResolver(logger model.DebugLogger, dialer model.Dialer, address
 // - dialer is the dialer to create and connect UDP conns
 //
 // - address is the server address (e.g., 1.1.1.1:53)
-func NewParallelUDPResolver(logger model.DebugLogger, dialer model.Dialer,
-	address string) model.Resolver {
+func NewParallelUDPResolver(logger model.DebugLogger, dialer model.Dialer, address string) model.Resolver {
 	return WrapResolver(logger, NewUnwrappedParallelResolver(
 		wrapDNSTransport(NewUnwrappedDNSOverUDPTransport(dialer, address)),
 	))
