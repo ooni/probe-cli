@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -56,7 +57,7 @@ type httpConfig struct {
 
 // httpDo performs the HTTP check.
 func httpDo(ctx context.Context, config *httpConfig) {
-	ol := measurexlite.NewOperationLogger(config.Logger, "GET %s", config.URL)
+	ol := logx.NewOperationLogger(config.Logger, "GET %s", config.URL)
 	const timeout = 15 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()

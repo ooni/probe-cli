@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -99,7 +100,7 @@ func (f *tlsHandshakeFunc) Apply(
 	nextProto := f.nextProto()
 
 	// start the operation logger
-	ol := measurexlite.NewOperationLogger(
+	ol := logx.NewOperationLogger(
 		input.Logger,
 		"[#%d] TLSHandshake with %s SNI=%s ALPN=%v",
 		trace.Index,

@@ -1,4 +1,4 @@
-package measurexlite
+package logx
 
 import (
 	"fmt"
