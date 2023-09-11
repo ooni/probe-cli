@@ -35,7 +35,7 @@ func (f *OOHelperDFactory) NewHandler(env NetStackServerFactoryEnv, unet *netem.
 
 	handler.NewQUICDialer = func(logger model.Logger) model.QUICDialer {
 		return netx.NewQUICDialerWithResolver(
-			netx.NewQUICListener(),
+			netx.NewUDPListener(),
 			logger,
 			netx.NewStdlibResolver(logger),
 		)
