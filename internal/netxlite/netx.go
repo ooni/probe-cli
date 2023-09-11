@@ -17,21 +17,21 @@ type Netx struct {
 	Underlying model.UnderlyingNetwork
 }
 
-// tproxyNilSafeProvider wraps the [model.UnderlyingNetwork] using a [tproxyNilSafeProvider].
-func (netx *Netx) tproxyNilSafeProvider() *MaybeCustomUnderlyingNetwork {
+// maybeCustomUnderlyingNetwork wraps the [model.UnderlyingNetwork] using a [*MaybeCustomUnderlyingNetwork].
+func (netx *Netx) maybeCustomUnderlyingNetwork() *MaybeCustomUnderlyingNetwork {
 	return &MaybeCustomUnderlyingNetwork{netx.Underlying}
 }
 
 // NewDialerWithResolver is like [netxlite.NewDialerWithResolver] but the constructed [model.Dialer]
 // uses the [model.UnderlyingNetwork] configured inside the [Netx] structure.
 func (n *Netx) NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...model.DialerWrapper) model.Dialer {
-	return WrapDialer(dl, r, &DialerSystem{provider: n.tproxyNilSafeProvider()}, w...)
+	return WrapDialer(dl, r, &DialerSystem{provider: n.maybeCustomUnderlyingNetwork()}, w...)
 }
 
 // NewUDPListener is like [netxlite.NewUDPListener] but the constructed [model.UDPListener]
 // uses the [model.UnderlyingNetwork] configured inside the [Netx] structure.
 func (n *Netx) NewUDPListener() model.UDPListener {
-	return &udpListenerErrWrapper{&udpListenerStdlib{provider: n.tproxyNilSafeProvider()}}
+	return &udpListenerErrWrapper{&udpListenerStdlib{provider: n.maybeCustomUnderlyingNetwork()}}
 }
 
 // NewQUICDialerWithResolver is like [netxlite.NewQUICDialerWithResolver] but the constructed
@@ -40,7 +40,7 @@ func (n *Netx) NewQUICDialerWithResolver(listener model.UDPListener, logger mode
 	resolver model.Resolver, wrappers ...model.QUICDialerWrapper) (outDialer model.QUICDialer) {
 	baseDialer := &quicDialerQUICGo{
 		UDPListener: listener,
-		provider:    n.tproxyNilSafeProvider(),
+		provider:    n.maybeCustomUnderlyingNetwork(),
 	}
 	return WrapQUICDialer(logger, resolver, baseDialer, wrappers...)
 }
@@ -48,7 +48,7 @@ func (n *Netx) NewQUICDialerWithResolver(listener model.UDPListener, logger mode
 // NewTLSHandshakerStdlib is like [netxlite.NewTLSHandshakerStdlib] but the constructed [model.TLSHandshaker]
 // uses the [model.UnderlyingNetwork] configured inside the [Netx] structure.
 func (n *Netx) NewTLSHandshakerStdlib(logger model.DebugLogger) model.TLSHandshaker {
-	return newTLSHandshakerLogger(&tlsHandshakerConfigurable{provider: n.tproxyNilSafeProvider()}, logger)
+	return newTLSHandshakerLogger(&tlsHandshakerConfigurable{provider: n.maybeCustomUnderlyingNetwork()}, logger)
 }
 
 // NewHTTPTransportStdlib is like [netxlite.NewHTTPTransportStdlib] but the constructed [model.HTTPTransport]
