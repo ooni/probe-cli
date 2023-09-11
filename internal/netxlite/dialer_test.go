@@ -24,7 +24,7 @@ func TestNewDialerWithStdlibResolver(t *testing.T) {
 	}
 	// typecheck the resolver
 	reso := logger.Dialer.(*dialerResolverWithTracing)
-	typecheckForSystemResolver(t, reso.Resolver, model.DiscardLogger) // FIXME
+	typeCheckForSystemResolver(t, reso.Resolver, model.DiscardLogger) // FIXME
 	// typecheck the dialer
 	logger = reso.Dialer.(*dialerLogger)
 	if logger.DebugLogger != model.DiscardLogger {

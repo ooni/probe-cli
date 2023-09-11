@@ -24,18 +24,16 @@ import (
 var ErrNoDNSTransport = errors.New("operation requires a DNS transport")
 
 // NewStdlibResolver creates a new Resolver by combining WrapResolver
-// with an internal "stdlib" resolver type. The list of optional wrappers
-// allow to wrap the underlying getaddrinfo transport. Any nil wrapper
-// will be silently ignored by the code that performs the wrapping.
-func (netx *Netx) NewStdlibResolver(logger model.DebugLogger, wrappers ...model.DNSTransportWrapper) model.Resolver {
-	return WrapResolver(logger, netx.newUnwrappedStdlibResolver(wrappers...))
+// with an internal "stdlib" resolver type.
+func (netx *Netx) NewStdlibResolver(logger model.DebugLogger) model.Resolver {
+	return WrapResolver(logger, netx.newUnwrappedStdlibResolver())
 }
 
 // NewStdlibResolver is equivalent to creating an empty [*Netx]
 // and callings its NewStdlibResolver method.
-func NewStdlibResolver(logger model.DebugLogger, wrappers ...model.DNSTransportWrapper) model.Resolver {
+func NewStdlibResolver(logger model.DebugLogger) model.Resolver {
 	netx := &Netx{Underlying: nil}
-	return netx.NewStdlibResolver(logger, wrappers...)
+	return netx.NewStdlibResolver(logger)
 }
 
 // NewParallelDNSOverHTTPSResolver creates a new DNS over HTTPS resolver
@@ -47,18 +45,18 @@ func NewParallelDNSOverHTTPSResolver(logger model.DebugLogger, URL string) model
 	return WrapResolver(logger, NewUnwrappedParallelResolver(txp))
 }
 
-func (netx *Netx) newUnwrappedStdlibResolver(wrappers ...model.DNSTransportWrapper) model.Resolver {
+func (netx *Netx) newUnwrappedStdlibResolver() model.Resolver {
 	return &resolverSystem{
-		t: WrapDNSTransport(netx.newDNSOverGetaddrinfoTransport(), wrappers...),
+		t: WrapDNSTransport(netx.newDNSOverGetaddrinfoTransport()),
 	}
 }
 
 // NewUnwrappedStdlibResolver returns a new, unwrapped resolver using the standard
 // library (i.e., getaddrinfo if possible and &net.Resolver{} otherwise). As the name
 // implies, this function returns an unwrapped resolver.
-func NewUnwrappedStdlibResolver(wrappers ...model.DNSTransportWrapper) model.Resolver {
+func NewUnwrappedStdlibResolver() model.Resolver {
 	netx := &Netx{Underlying: nil}
-	return netx.newUnwrappedStdlibResolver(wrappers...)
+	return netx.newUnwrappedStdlibResolver()
 }
 
 // NewSerialUDPResolver creates a new Resolver using DNS-over-UDP
@@ -73,13 +71,9 @@ func NewUnwrappedStdlibResolver(wrappers ...model.DNSTransportWrapper) model.Res
 // - dialer is the dialer to create and connect UDP conns
 //
 // - address is the server address (e.g., 1.1.1.1:53)
-//
-// - wrappers is the optional list of wrappers to wrap the underlying
-// transport.  Any nil wrapper will be silently ignored.
-func NewSerialUDPResolver(logger model.DebugLogger, dialer model.Dialer,
-	address string, wrappers ...model.DNSTransportWrapper) model.Resolver {
+func NewSerialUDPResolver(logger model.DebugLogger, dialer model.Dialer, address string) model.Resolver {
 	return WrapResolver(logger, NewUnwrappedSerialResolver(
-		WrapDNSTransport(NewUnwrappedDNSOverUDPTransport(dialer, address), wrappers...),
+		WrapDNSTransport(NewUnwrappedDNSOverUDPTransport(dialer, address)),
 	))
 }
 
@@ -93,13 +87,10 @@ func NewSerialUDPResolver(logger model.DebugLogger, dialer model.Dialer,
 // - dialer is the dialer to create and connect UDP conns
 //
 // - address is the server address (e.g., 1.1.1.1:53)
-//
-// - wrappers is the optional list of wrappers to wrap the underlying
-// transport.  Any nil wrapper will be silently ignored.
 func NewParallelUDPResolver(logger model.DebugLogger, dialer model.Dialer,
-	address string, wrappers ...model.DNSTransportWrapper) model.Resolver {
+	address string) model.Resolver {
 	return WrapResolver(logger, NewUnwrappedParallelResolver(
-		WrapDNSTransport(NewUnwrappedDNSOverUDPTransport(dialer, address), wrappers...),
+		WrapDNSTransport(NewUnwrappedDNSOverUDPTransport(dialer, address)),
 	))
 }
 

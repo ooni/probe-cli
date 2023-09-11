@@ -32,12 +32,7 @@ func (*dnsTransportWrapperSecond) WrapDNSTransport(txp model.DNSTransport) model
 
 func TestWrapDNSTransport(t *testing.T) {
 	orig := &mocks.DNSTransport{}
-	extensions := []model.DNSTransportWrapper{
-		&dnsTransportWrapperFirst{},
-		nil, // explicitly test for documented use case
-		&dnsTransportWrapperSecond{},
-	}
-	txp := WrapDNSTransport(orig, extensions...)
+	txp := WrapDNSTransport(orig)
 	ext2 := txp.(*dnsTransportExtensionSecond)
 	ext1 := ext2.DNSTransport.(*dnsTransportExtensionFirst)
 	errWrapper := ext1.DNSTransport.(*dnsTransportErrWrapper)

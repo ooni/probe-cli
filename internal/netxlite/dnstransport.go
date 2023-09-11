@@ -10,19 +10,10 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// WrapDNSTransport wraps a DNSTransport to provide error wrapping. This function will
-// apply all the provided wrappers around the default transport wrapping. If any of the
-// wrappers is nil, we just silently and gracefully ignore it.
-func WrapDNSTransport(txp model.DNSTransport,
-	wrappers ...model.DNSTransportWrapper) (out model.DNSTransport) {
+// WrapDNSTransport wraps a DNSTransport to provide error wrapping.
+func WrapDNSTransport(txp model.DNSTransport) (out model.DNSTransport) {
 	out = &dnsTransportErrWrapper{
 		DNSTransport: txp,
-	}
-	for _, wrapper := range wrappers {
-		if wrapper == nil {
-			continue // skip as documented
-		}
-		out = wrapper.WrapDNSTransport(out) // compose with user-provided wrappers
 	}
 	return
 }
