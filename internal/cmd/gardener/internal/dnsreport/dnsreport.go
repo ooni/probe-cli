@@ -253,18 +253,8 @@ func (s *Subcommand) dnsLookupHost(domain string) ([]string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// create DNS transport using HTTP default client
-	dnsTransport := netxlite.NewDNSOverHTTPSTransportWithHTTPTransport(
-		netxlite.NewHTTPTransportStdlib(log.Log),
-		s.DNSOverHTTPSServerURL,
-	)
-	defer dnsTransport.CloseIdleConnections()
-
-	// create DNS resolver
-	dnsResolver := netxlite.WrapResolver(
-		log.Log,
-		netxlite.NewUnwrappedParallelResolver(dnsTransport),
-	)
+	dnsResolver := netxlite.NewParallelDNSOverHTTPSResolver(log.Log, s.DNSOverHTTPSServerURL)
+	defer dnsResolver.CloseIdleConnections()
 
 	// lookup for both A and AAAA entries
 	return dnsResolver.LookupHost(ctx, domain)
