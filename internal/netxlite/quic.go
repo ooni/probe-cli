@@ -16,23 +16,7 @@ import (
 	"github.com/quic-go/quic-go"
 )
 
-// NewQUICDialerWithResolver is the WrapDialer equivalent for QUIC where
-// we return a composed QUICDialer modified by optional wrappers.
-//
-// The returned dialer guarantees:
-//
-// 1. logging;
-//
-// 2. error wrapping;
-//
-// 3. that we are going to use Mozilla CA if the [tls.Config]
-// RootCAs field is zero initialized.
-//
-// Please, note that this fuunction will just ignore any nil wrapper.
-//
-// Unlike the dialer returned by NewDialerWithResolver, this dialer MAY attempt
-// happy eyeballs, perform parallel dial attempts, and return an error
-// that aggregates all the errors that occurred.
+// NewQUICDialerWithResolver implements [model.MeasuringNetwork].
 func (netx *Netx) NewQUICDialerWithResolver(listener model.UDPListener, logger model.DebugLogger,
 	resolver model.Resolver, wrappers ...model.QUICDialerWrapper) (outDialer model.QUICDialer) {
 	baseDialer := &quicDialerQUICGo{

@@ -14,7 +14,6 @@ import (
 	"time"
 
 	ootls "github.com/ooni/oocrypto/tls"
-	oohttp "github.com/ooni/oohttp"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -142,27 +141,11 @@ func ConfigureTLSVersion(config *tls.Config, version string) error {
 	return nil
 }
 
-// TLSConn is the type of connection that oohttp expects from
-// any library that implements TLS functionality. By using this
-// kind of TLSConn we're able to use both the standard library
-// and gitlab.com/yawning/utls.git to perform TLS operations. Note
-// that the stdlib's tls.Conn implements this interface.
-type TLSConn = oohttp.TLSConn
+// The TLSConn alias was originally defined here in [netxlite] and we
+// want to keep it available to other packages for now.
+type TLSConn = model.TLSConn
 
-// Ensures that a tls.Conn implements the TLSConn interface.
-var _ TLSConn = &tls.Conn{}
-
-// NewTLSHandshakerStdlib creates a new TLS handshaker using the
-// go standard library to manage TLS.
-//
-// The handshaker guarantees:
-//
-// 1. logging;
-//
-// 2. error wrapping;
-//
-// 3. that we are going to use Mozilla CA if the [tls.Config]
-// RootCAs field is zero initialized.
+// NewTLSHandshakerStdlib implements [model.MeasuringNetwork].
 func (netx *Netx) NewTLSHandshakerStdlib(logger model.DebugLogger) model.TLSHandshaker {
 	return newTLSHandshakerLogger(
 		&tlsHandshakerConfigurable{provider: netx.maybeCustomUnderlyingNetwork()},
