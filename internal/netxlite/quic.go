@@ -16,25 +16,6 @@ import (
 	"github.com/quic-go/quic-go"
 )
 
-// NewUDPListener creates a new UDPListener using the standard
-// library to create listening UDP sockets.
-func NewUDPListener() model.UDPListener {
-	return &udpListenerErrWrapper{&udpListenerStdlib{}}
-}
-
-// udpListenerStdlib is a UDPListener using the standard library.
-type udpListenerStdlib struct {
-	// provider is the OPTIONAL nil-safe [model.UnderlyingNetwork] provider.
-	provider *MaybeCustomUnderlyingNetwork
-}
-
-var _ model.UDPListener = &udpListenerStdlib{}
-
-// Listen implements UDPListener.Listen.
-func (qls *udpListenerStdlib) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
-	return qls.provider.Get().ListenUDP("udp", addr)
-}
-
 // NewQUICDialerWithResolver is the WrapDialer equivalent for QUIC where
 // we return a composed QUICDialer modified by optional wrappers.
 //
