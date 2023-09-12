@@ -93,17 +93,17 @@ func (r *resolverTrace) LookupNS(ctx context.Context, domain string) ([]*net.NS,
 
 // NewStdlibResolver returns a trace-ware system resolver
 func (tx *Trace) NewStdlibResolver(logger model.Logger) model.Resolver {
-	return tx.wrapResolver(tx.newStdlibResolver(logger))
+	return tx.wrapResolver(tx.Netx.NewStdlibResolver(logger))
 }
 
 // NewParallelUDPResolver returns a trace-ware parallel UDP resolver
 func (tx *Trace) NewParallelUDPResolver(logger model.Logger, dialer model.Dialer, address string) model.Resolver {
-	return tx.wrapResolver(tx.newParallelUDPResolver(logger, dialer, address))
+	return tx.wrapResolver(tx.Netx.NewParallelUDPResolver(logger, dialer, address))
 }
 
 // NewParallelDNSOverHTTPSResolver returns a trace-aware parallel DoH resolver
 func (tx *Trace) NewParallelDNSOverHTTPSResolver(logger model.Logger, URL string) model.Resolver {
-	return tx.wrapResolver(tx.newParallelDNSOverHTTPSResolver(logger, URL))
+	return tx.wrapResolver(tx.Netx.NewParallelDNSOverHTTPSResolver(logger, URL))
 }
 
 // OnDNSRoundTripForLookupHost implements model.Trace.OnDNSRoundTripForLookupHost
