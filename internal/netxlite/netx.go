@@ -22,12 +22,6 @@ func (netx *Netx) maybeCustomUnderlyingNetwork() *MaybeCustomUnderlyingNetwork {
 	return &MaybeCustomUnderlyingNetwork{netx.Underlying}
 }
 
-// NewTLSHandshakerStdlib is like [netxlite.NewTLSHandshakerStdlib] but the constructed [model.TLSHandshaker]
-// uses the [model.UnderlyingNetwork] configured inside the [Netx] structure.
-func (n *Netx) NewTLSHandshakerStdlib(logger model.DebugLogger) model.TLSHandshaker {
-	return newTLSHandshakerLogger(&tlsHandshakerConfigurable{provider: n.maybeCustomUnderlyingNetwork()}, logger)
-}
-
 // NewHTTPTransportStdlib is like [netxlite.NewHTTPTransportStdlib] but the constructed [model.HTTPTransport]
 // uses the [model.UnderlyingNetwork] configured inside the [Netx] structure.
 func (n *Netx) NewHTTPTransportStdlib(logger model.DebugLogger) model.HTTPTransport {
