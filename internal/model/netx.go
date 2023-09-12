@@ -189,6 +189,10 @@ type MeasuringNetwork interface {
 	// sequentially. In case of failure, such a resolver will return the first
 	// error that occurred. This implementation strategy is a QUIRK that is
 	// documented at TODO(https://github.com/ooni/probe/issues/1779).
+	//
+	// The [DialerWrapper] arguments wrap the returned dialer in such a way
+	// that we can implement the legacy [netx] package. New code MUST NOT
+	// use this functionality, which we'd like to remove ASAP.
 	NewDialerWithResolver(dl DebugLogger, r Resolver, w ...DialerWrapper) Dialer
 
 	// NewParallelDNSOverHTTPSResolver creates a new DNS-over-HTTPS resolver with error wrapping.
@@ -205,6 +209,10 @@ type MeasuringNetwork interface {
 	// Unlike the dialer returned by NewDialerWithResolver, this dialer MAY attempt
 	// happy eyeballs, perform parallel dial attempts, and return an error
 	// that aggregates all the errors that occurred.
+	//
+	// The [QUICDialerWrapper] arguments wrap the returned dialer in such a way
+	// that we can implement the legacy [netx] package. New code MUST NOT
+	// use this functionality, which we'd like to remove ASAP.
 	NewQUICDialerWithResolver(
 		listener UDPListener, logger DebugLogger, resolver Resolver, w ...QUICDialerWrapper) QUICDialer
 
