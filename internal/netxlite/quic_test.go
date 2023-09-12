@@ -19,12 +19,6 @@ import (
 	"github.com/quic-go/quic-go"
 )
 
-func TestNewUDPListener(t *testing.T) {
-	ql := NewUDPListener()
-	qew := ql.(*udpListenerErrWrapper)
-	_ = qew.UDPListener.(*udpListenerStdlib)
-}
-
 type extensionQUICDialerFirst struct {
 	model.QUICDialer
 }
