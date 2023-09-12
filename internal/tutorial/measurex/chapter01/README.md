@@ -50,7 +50,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/measurex"
+	"github.com/ooni/probe-cli/v3/internal/legacy/measurex"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 

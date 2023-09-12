@@ -110,7 +110,7 @@ func dialQUIC(ctx context.Context, address string,
 	if err != nil {
 		return nil, tls.ConnectionState{}, err
 	}
-	return qconn, qconn.ConnectionState().TLS.ConnectionState, nil
+	return qconn, qconn.ConnectionState().TLS, nil
 }
 
 func fatal(err error) {
