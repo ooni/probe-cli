@@ -17,7 +17,7 @@ import (
 // TLSSNIProxyNetx is how [TLSSNIProxy] views [*netxlite.Netx].
 type TLSSNIProxyNetx interface {
 	NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...model.DialerWrapper) model.Dialer
-	NewStdlibResolver(logger model.DebugLogger, wrappers ...model.DNSTransportWrapper) model.Resolver
+	NewStdlibResolver(logger model.DebugLogger) model.Resolver
 }
 
 // TLSSNIProxy is a proxy using the SNI to figure out where to connect to.
