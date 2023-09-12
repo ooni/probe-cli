@@ -20,7 +20,7 @@ import (
 // except that it returns a model.TLSHandshaker that uses this trace.
 func (tx *Trace) NewTLSHandshakerStdlib(dl model.DebugLogger) model.TLSHandshaker {
 	return &tlsHandshakerTrace{
-		thx: tx.newTLSHandshakerStdlib(dl),
+		thx: tx.Netx.NewTLSHandshakerStdlib(dl),
 		tx:  tx,
 	}
 }

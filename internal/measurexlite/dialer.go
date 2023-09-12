@@ -20,7 +20,7 @@ import (
 // except that it returns a model.Dialer that uses this trace.
 func (tx *Trace) NewDialerWithoutResolver(dl model.DebugLogger) model.Dialer {
 	return &dialerTrace{
-		d:  tx.newDialerWithoutResolver(dl),
+		d:  tx.Netx.NewDialerWithoutResolver(dl),
 		tx: tx,
 	}
 }

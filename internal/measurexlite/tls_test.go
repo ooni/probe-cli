@@ -24,8 +24,10 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 		underlying := &mocks.TLSHandshaker{}
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		trace.newTLSHandshakerStdlibFn = func(dl model.DebugLogger) model.TLSHandshaker {
-			return underlying
+		trace.Netx = &mocks.MeasuringNetwork{
+			MockNewTLSHandshakerStdlib: func(logger model.DebugLogger) model.TLSHandshaker {
+				return underlying
+			},
 		}
 		thx := trace.NewTLSHandshakerStdlib(model.DiscardLogger)
 		thxt := thx.(*tlsHandshakerTrace)
@@ -49,8 +51,10 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 				return nil, tls.ConnectionState{}, expectedErr
 			},
 		}
-		trace.newTLSHandshakerStdlibFn = func(dl model.DebugLogger) model.TLSHandshaker {
-			return underlying
+		trace.Netx = &mocks.MeasuringNetwork{
+			MockNewTLSHandshakerStdlib: func(logger model.DebugLogger) model.TLSHandshaker {
+				return underlying
+			},
 		}
 		thx := trace.NewTLSHandshakerStdlib(model.DiscardLogger)
 		ctx := context.Background()
