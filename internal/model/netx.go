@@ -186,7 +186,7 @@ type MeasuringNetwork interface {
 	// NewDialerWithoutResolver creates a [Dialer] with error wrapping and without an attached
 	// resolver, meaning that you MUST pass TCP or UDP endpoint addresses to this dialer.
 	//
-	// The [DialerWrapper] arguments wrap the returned dialer in such a way that we can implement
+	// The [DialerWrapper] arguments wraps the returned dialer in such a way that we can implement
 	// the legacy [netx] package. New code MUST NOT use this functionality, which we'd like to remove ASAP.
 	NewDialerWithoutResolver(dl DebugLogger, w ...DialerWrapper) Dialer
 
@@ -202,7 +202,7 @@ type MeasuringNetwork interface {
 	// NewQUICDialerWithoutResolver creates a [QUICDialer] with error wrapping and without an attached
 	// resolver, meaning that you MUST pass UDP endpoint addresses to this dialer.
 	//
-	// The [QUICDialerWrapper] arguments wrap the returned dialer in such a way
+	// The [QUICDialerWrapper] arguments wraps the returned dialer in such a way
 	// that we can implement the legacy [netx] package. New code MUST NOT
 	// use this functionality, which we'd like to remove ASAP.
 	NewQUICDialerWithoutResolver(
