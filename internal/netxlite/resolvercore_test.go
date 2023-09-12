@@ -17,7 +17,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
-func typecheckForSystemResolver(t *testing.T, resolver model.Resolver, logger model.DebugLogger) {
+func typeCheckForSystemResolver(t *testing.T, resolver model.Resolver, logger model.DebugLogger) {
 	idna := resolver.(*resolverIDNA)
 	loggerReso := idna.Resolver.(*resolverLogger)
 	if loggerReso.Logger != logger {
@@ -32,7 +32,7 @@ func typecheckForSystemResolver(t *testing.T, resolver model.Resolver, logger mo
 
 func TestNewResolverSystem(t *testing.T) {
 	resolver := NewStdlibResolver(model.DiscardLogger)
-	typecheckForSystemResolver(t, resolver, model.DiscardLogger)
+	typeCheckForSystemResolver(t, resolver, model.DiscardLogger)
 }
 
 func TestNewSerialUDPResolver(t *testing.T) {

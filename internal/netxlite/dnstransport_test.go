@@ -10,37 +10,10 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-type dnsTransportExtensionFirst struct {
-	model.DNSTransport
-}
-
-type dnsTransportWrapperFirst struct{}
-
-func (*dnsTransportWrapperFirst) WrapDNSTransport(txp model.DNSTransport) model.DNSTransport {
-	return &dnsTransportExtensionFirst{txp}
-}
-
-type dnsTransportExtensionSecond struct {
-	model.DNSTransport
-}
-
-type dnsTransportWrapperSecond struct{}
-
-func (*dnsTransportWrapperSecond) WrapDNSTransport(txp model.DNSTransport) model.DNSTransport {
-	return &dnsTransportExtensionSecond{txp}
-}
-
 func TestWrapDNSTransport(t *testing.T) {
 	orig := &mocks.DNSTransport{}
-	extensions := []model.DNSTransportWrapper{
-		&dnsTransportWrapperFirst{},
-		nil, // explicitly test for documented use case
-		&dnsTransportWrapperSecond{},
-	}
-	txp := WrapDNSTransport(orig, extensions...)
-	ext2 := txp.(*dnsTransportExtensionSecond)
-	ext1 := ext2.DNSTransport.(*dnsTransportExtensionFirst)
-	errWrapper := ext1.DNSTransport.(*dnsTransportErrWrapper)
+	txp := wrapDNSTransport(orig)
+	errWrapper := txp.(*dnsTransportErrWrapper)
 	underlying := errWrapper.DNSTransport
 	if orig != underlying {
 		t.Fatal("unexpected underlying transport")
