@@ -163,8 +163,18 @@ var _ TLSConn = &tls.Conn{}
 //
 // 3. that we are going to use Mozilla CA if the [tls.Config]
 // RootCAs field is zero initialized.
+func (netx *Netx) NewTLSHandshakerStdlib(logger model.DebugLogger) model.TLSHandshaker {
+	return newTLSHandshakerLogger(
+		&tlsHandshakerConfigurable{provider: netx.maybeCustomUnderlyingNetwork()},
+		logger,
+	)
+}
+
+// NewTLSHandshakerStdlib is equivalent to creating an empty [*Netx]
+// and calling its NewTLSHandshakerStdlib method.
 func NewTLSHandshakerStdlib(logger model.DebugLogger) model.TLSHandshaker {
-	return newTLSHandshakerLogger(&tlsHandshakerConfigurable{}, logger)
+	netx := &Netx{Underlying: nil}
+	return netx.NewTLSHandshakerStdlib(logger)
 }
 
 // newTLSHandshakerLogger creates a new tlsHandshakerLogger instance.
