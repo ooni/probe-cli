@@ -39,10 +39,17 @@ func NewStdlibResolver(logger model.DebugLogger) model.Resolver {
 // NewParallelDNSOverHTTPSResolver creates a new DNS over HTTPS resolver
 // that uses the standard library for all operations. This function constructs
 // all the building blocks and calls WrapResolver on the returned resolver.
-func NewParallelDNSOverHTTPSResolver(logger model.DebugLogger, URL string) model.Resolver {
-	client := &http.Client{Transport: NewHTTPTransportStdlib(logger)}
+func (netx *Netx) NewParallelDNSOverHTTPSResolver(logger model.DebugLogger, URL string) model.Resolver {
+	client := &http.Client{Transport: netx.NewHTTPTransportStdlib(logger)}
 	txp := wrapDNSTransport(NewUnwrappedDNSOverHTTPSTransport(client, URL))
 	return WrapResolver(logger, NewUnwrappedParallelResolver(txp))
+}
+
+// NewParallelDNSOverHTTPSResolver is equivalent to creating an empty [*Netx]
+// and calling its NewParallelDNSOverHTTPSResolver method.
+func NewParallelDNSOverHTTPSResolver(logger model.DebugLogger, URL string) model.Resolver {
+	netx := &Netx{Underlying: nil}
+	return netx.NewParallelDNSOverHTTPSResolver(logger, URL)
 }
 
 func (netx *Netx) newUnwrappedStdlibResolver() model.Resolver {
