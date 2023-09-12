@@ -30,7 +30,7 @@ func (netx *Netx) NewStdlibResolver(logger model.DebugLogger) model.Resolver {
 }
 
 // NewStdlibResolver is equivalent to creating an empty [*Netx]
-// and callings its NewStdlibResolver method.
+// and calling its NewStdlibResolver method.
 func NewStdlibResolver(logger model.DebugLogger) model.Resolver {
 	netx := &Netx{Underlying: nil}
 	return netx.NewStdlibResolver(logger)

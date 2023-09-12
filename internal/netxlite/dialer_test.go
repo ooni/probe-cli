@@ -31,7 +31,7 @@ func TestNewDialerWithStdlibResolver(t *testing.T) {
 		t.Fatal("invalid logger")
 	}
 	errWrapper := logger.Dialer.(*dialerErrWrapper)
-	_ = errWrapper.Dialer.(*DialerSystem)
+	_ = errWrapper.Dialer.(*dialerSystem)
 }
 
 type extensionDialerFirst struct {
@@ -76,19 +76,19 @@ func TestNewDialer(t *testing.T) {
 		ext2 := logger.Dialer.(*extensionDialerSecond)
 		ext1 := ext2.Dialer.(*extensionDialerFirst)
 		errWrapper := ext1.Dialer.(*dialerErrWrapper)
-		_ = errWrapper.Dialer.(*DialerSystem)
+		_ = errWrapper.Dialer.(*dialerSystem)
 	})
 }
 
 func TestDialerSystem(t *testing.T) {
 	t.Run("CloseIdleConnections", func(t *testing.T) {
-		d := &DialerSystem{}
+		d := &dialerSystem{}
 		d.CloseIdleConnections() // to avoid missing coverage
 	})
 
 	t.Run("DialContext", func(t *testing.T) {
 		t.Run("with canceled context", func(t *testing.T) {
-			d := &DialerSystem{}
+			d := &dialerSystem{}
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel() // immediately!
 			conn, err := d.DialContext(ctx, "tcp", "8.8.8.8:443")
@@ -108,7 +108,7 @@ func TestDialerSystem(t *testing.T) {
 				},
 				MockDialContext: defaultTp.DialContext,
 			}
-			d := &DialerSystem{provider: &MaybeCustomUnderlyingNetwork{tp}}
+			d := &dialerSystem{provider: &MaybeCustomUnderlyingNetwork{tp}}
 			ctx := context.Background()
 			start := time.Now()
 			conn, err := d.DialContext(ctx, "tcp", "dns.google:443")
@@ -134,7 +134,7 @@ func TestDialerSystem(t *testing.T) {
 					return nil, expected
 				},
 			}
-			d := &DialerSystem{provider: &MaybeCustomUnderlyingNetwork{proxy}}
+			d := &dialerSystem{provider: &MaybeCustomUnderlyingNetwork{proxy}}
 			conn, err := d.DialContext(context.Background(), "tcp", "dns.google:443")
 			if conn != nil {
 				t.Fatal("unexpected conn")
@@ -150,7 +150,7 @@ func TestDialerResolverWithTracing(t *testing.T) {
 	t.Run("DialContext", func(t *testing.T) {
 		t.Run("fails without a port", func(t *testing.T) {
 			d := &dialerResolverWithTracing{
-				Dialer:   &DialerSystem{},
+				Dialer:   &dialerSystem{},
 				Resolver: NewUnwrappedStdlibResolver(),
 			}
 			const missingPort = "ooni.nu"
@@ -497,7 +497,7 @@ func TestDialerResolverWithTracing(t *testing.T) {
 	t.Run("lookupHost", func(t *testing.T) {
 		t.Run("handles addresses correctly", func(t *testing.T) {
 			dialer := &dialerResolverWithTracing{
-				Dialer:   &DialerSystem{},
+				Dialer:   &dialerSystem{},
 				Resolver: &NullResolver{},
 			}
 			addrs, err := dialer.lookupHost(context.Background(), "1.1.1.1")
@@ -511,7 +511,7 @@ func TestDialerResolverWithTracing(t *testing.T) {
 
 		t.Run("fails correctly on lookup error", func(t *testing.T) {
 			dialer := &dialerResolverWithTracing{
-				Dialer:   &DialerSystem{},
+				Dialer:   &dialerSystem{},
 				Resolver: &NullResolver{},
 			}
 			ctx := context.Background()

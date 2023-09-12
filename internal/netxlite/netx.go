@@ -22,12 +22,6 @@ func (netx *Netx) maybeCustomUnderlyingNetwork() *MaybeCustomUnderlyingNetwork {
 	return &MaybeCustomUnderlyingNetwork{netx.Underlying}
 }
 
-// NewDialerWithResolver is like [netxlite.NewDialerWithResolver] but the constructed [model.Dialer]
-// uses the [model.UnderlyingNetwork] configured inside the [Netx] structure.
-func (n *Netx) NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...model.DialerWrapper) model.Dialer {
-	return WrapDialer(dl, r, &DialerSystem{provider: n.maybeCustomUnderlyingNetwork()}, w...)
-}
-
 // NewUDPListener is like [netxlite.NewUDPListener] but the constructed [model.UDPListener]
 // uses the [model.UnderlyingNetwork] configured inside the [Netx] structure.
 func (n *Netx) NewUDPListener() model.UDPListener {
