@@ -165,7 +165,9 @@ var _ TLSConn = &tls.Conn{}
 // RootCAs field is zero initialized.
 func (netx *Netx) NewTLSHandshakerStdlib(logger model.DebugLogger) model.TLSHandshaker {
 	return newTLSHandshakerLogger(
-		&tlsHandshakerConfigurable{provider: netx.maybeCustomUnderlyingNetwork()}, logger)
+		&tlsHandshakerConfigurable{provider: netx.maybeCustomUnderlyingNetwork()},
+		logger,
+	)
 }
 
 // NewTLSHandshakerStdlib is equivalent to creating an empty [*Netx]
