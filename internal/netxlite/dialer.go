@@ -29,7 +29,7 @@ func (netx *Netx) NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, 
 }
 
 // NewDialerWithResolver is equivalent to creating an empty [*Netx]
-// and callings its NewDialerWithResolver method.
+// and calling its NewDialerWithResolver method.
 func NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...model.DialerWrapper) model.Dialer {
 	netx := &Netx{Underlying: nil}
 	return netx.NewDialerWithResolver(dl, r, w...)
