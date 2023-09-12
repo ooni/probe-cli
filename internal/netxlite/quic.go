@@ -16,7 +16,15 @@ import (
 	"github.com/quic-go/quic-go"
 )
 
-// NewQUICDialerWithResolver implements [model.MeasuringNetwork].
+// NewQUICDialerWithResolver creates a QUICDialer with error wrapping.
+//
+// Unlike the dialer returned by NewDialerWithResolver, this dialer MAY attempt
+// happy eyeballs, perform parallel dial attempts, and return an error
+// that aggregates all the errors that occurred.
+//
+// The [model.QUICDialerWrapper] arguments wrap the returned dialer in such a way
+// that we can implement the legacy [netx] package. New code MUST NOT
+// use this functionality, which we'd like to remove ASAP.
 func (netx *Netx) NewQUICDialerWithResolver(listener model.UDPListener, logger model.DebugLogger,
 	resolver model.Resolver, wrappers ...model.QUICDialerWrapper) (outDialer model.QUICDialer) {
 	baseDialer := &quicDialerQUICGo{
@@ -62,11 +70,18 @@ func wrapQUICDialer(logger model.DebugLogger, resolver model.Resolver,
 	}
 }
 
-// NewQUICDialerWithoutResolver is equivalent to calling NewQUICDialerWithResolver
-// with the resolver argument set to &NullResolver{}.
+// NewQUICDialerWithoutResolver implements [model.MeasuringNetwork].
+func (netx *Netx) NewQUICDialerWithoutResolver(listener model.UDPListener,
+	logger model.DebugLogger, wrappers ...model.QUICDialerWrapper) model.QUICDialer {
+	return netx.NewQUICDialerWithResolver(listener, logger, &NullResolver{}, wrappers...)
+}
+
+// NewQUICDialerWithoutResolver is equivalent to creating an empty [*Netx]
+// and calling its NewQUICDialerWithoutResolver method.
 func NewQUICDialerWithoutResolver(listener model.UDPListener,
 	logger model.DebugLogger, wrappers ...model.QUICDialerWrapper) model.QUICDialer {
-	return NewQUICDialerWithResolver(listener, logger, &NullResolver{}, wrappers...)
+	netx := &Netx{Underlying: nil}
+	return netx.NewQUICDialerWithoutResolver(listener, logger, wrappers...)
 }
 
 // quicDialerQUICGo dials using the quic-go/quic-go library.
