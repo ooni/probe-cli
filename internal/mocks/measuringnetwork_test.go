@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
-	tls "gitlab.com/yawning/utls.git"
+	utls "gitlab.com/yawning/utls.git"
 )
 
 func TestMeasuringN(t *testing.T) {
@@ -89,7 +89,7 @@ func TestMeasuringN(t *testing.T) {
 	t.Run("MockNewTLSHandshakerUTLS", func(t *testing.T) {
 		expected := &TLSHandshaker{}
 		mn := &MeasuringNetwork{
-			MockNewTLSHandshakerUTLS: func(logger model.DebugLogger, id *tls.ClientHelloID) model.TLSHandshaker {
+			MockNewTLSHandshakerUTLS: func(logger model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker {
 				return expected
 			},
 		}

@@ -2,7 +2,7 @@ package mocks
 
 import (
 	"github.com/ooni/probe-cli/v3/internal/model"
-	tls "gitlab.com/yawning/utls.git"
+	utls "gitlab.com/yawning/utls.git"
 )
 
 // MeasuringNetwork allows mocking [model.MeasuringNetwork].
@@ -19,7 +19,7 @@ type MeasuringNetwork struct {
 
 	MockNewTLSHandshakerStdlib func(logger model.DebugLogger) model.TLSHandshaker
 
-	MockNewTLSHandshakerUTLS func(logger model.DebugLogger, id *tls.ClientHelloID) model.TLSHandshaker
+	MockNewTLSHandshakerUTLS func(logger model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker
 
 	MockNewUDPListener func() model.UDPListener
 }
@@ -57,7 +57,7 @@ func (mn *MeasuringNetwork) NewTLSHandshakerStdlib(logger model.DebugLogger) mod
 }
 
 // NewTLSHandshakerUTLS implements model.MeasuringNetwork.
-func (mn *MeasuringNetwork) NewTLSHandshakerUTLS(logger model.DebugLogger, id *tls.ClientHelloID) model.TLSHandshaker {
+func (mn *MeasuringNetwork) NewTLSHandshakerUTLS(logger model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker {
 	return mn.MockNewTLSHandshakerUTLS(logger, id)
 }
 
