@@ -22,7 +22,7 @@ import (
 // happy eyeballs, perform parallel dial attempts, and return an error
 // that aggregates all the errors that occurred.
 //
-// The [model.QUICDialerWrapper] arguments wrap the returned dialer in such a way
+// The [model.QUICDialerWrapper] arguments wraps the returned dialer in such a way
 // that we can implement the legacy [netx] package. New code MUST NOT
 // use this functionality, which we'd like to remove ASAP.
 func (netx *Netx) NewQUICDialerWithResolver(listener model.UDPListener, logger model.DebugLogger,
