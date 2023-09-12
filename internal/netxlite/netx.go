@@ -22,12 +22,6 @@ func (netx *Netx) maybeCustomUnderlyingNetwork() *MaybeCustomUnderlyingNetwork {
 	return &MaybeCustomUnderlyingNetwork{netx.Underlying}
 }
 
-// NewUDPListener is like [netxlite.NewUDPListener] but the constructed [model.UDPListener]
-// uses the [model.UnderlyingNetwork] configured inside the [Netx] structure.
-func (n *Netx) NewUDPListener() model.UDPListener {
-	return &udpListenerErrWrapper{&udpListenerStdlib{provider: n.maybeCustomUnderlyingNetwork()}}
-}
-
 // NewQUICDialerWithResolver is like [netxlite.NewQUICDialerWithResolver] but the constructed
 // [model.QUICDialer] uses the [model.UnderlyingNetwork] configured inside the [Netx] structure.
 func (n *Netx) NewQUICDialerWithResolver(listener model.UDPListener, logger model.DebugLogger,
