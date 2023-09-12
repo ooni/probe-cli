@@ -23,8 +23,7 @@ func NewDialerWithStdlibResolver(dl model.DebugLogger) model.Dialer {
 	return NewDialerWithResolver(dl, reso)
 }
 
-// NewDialerWithResolver is equivalent to calling WrapDialer with a dialer using the
-// the [*Netx] UnderlyingNetwork for dialing new connections.
+// NewDialerWithResolver implements [model.MeasuringNetwork].
 func (netx *Netx) NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...model.DialerWrapper) model.Dialer {
 	return WrapDialer(dl, r, &dialerSystem{provider: netx.maybeCustomUnderlyingNetwork()}, w...)
 }
@@ -110,7 +109,7 @@ func NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...model.Di
 // When the resolver is &NullResolver{} any attempt to perform DNS resolutions
 // in the dialer at index N+2 will fail with ErrNoResolver.
 //
-// Otherwise, the dialer at index N+2 will try each resolver IP address
+// Otherwise, the dialer at index N+2 will try each resolved IP address
 // sequentially. In case of failure, such a resolver will return the first
 // error that occurred. This implementation strategy is a QUIRK that is
 // documented at TODO(https://github.com/ooni/probe/issues/1779).

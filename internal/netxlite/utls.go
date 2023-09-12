@@ -16,21 +16,7 @@ import (
 	utls "gitlab.com/yawning/utls.git"
 )
 
-// NewTLSHandshakerUTLS creates a new TLS handshaker using
-// gitlab.com/yawning/utls for TLS.
-//
-// The id is the address of something like utls.HelloFirefox_55.
-//
-// The handshaker guarantees:
-//
-// 1. logging;
-//
-// 2. error wrapping;
-//
-// 3. that we are going to use Mozilla CA if the [tls.Config]
-// RootCAs field is zero initialized.
-//
-// Passing a nil `id` will make this function panic.
+// NewTLSHandshakerUTLS implements [model.MeasuringNetwork].
 func (netx *Netx) NewTLSHandshakerUTLS(logger model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker {
 	return newTLSHandshakerLogger(&tlsHandshakerConfigurable{
 		NewConn:  newUTLSConnFactory(id),
