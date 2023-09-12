@@ -21,12 +21,3 @@ type Netx struct {
 func (netx *Netx) maybeCustomUnderlyingNetwork() *MaybeCustomUnderlyingNetwork {
 	return &MaybeCustomUnderlyingNetwork{netx.Underlying}
 }
-
-// NewHTTP3TransportStdlib is like [netxlite.NewHTTP3TransportStdlib] but the constructed [model.HTTPTransport]
-// uses the [model.UnderlyingNetwork] configured inside the [Netx] structure.
-func (n *Netx) NewHTTP3TransportStdlib(logger model.DebugLogger) model.HTTPTransport {
-	ql := n.NewUDPListener()
-	reso := n.NewStdlibResolver(logger)
-	qd := n.NewQUICDialerWithResolver(ql, logger, reso)
-	return NewHTTP3Transport(logger, qd, nil)
-}
