@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/tracex"
+	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 )
 
 func TestNewDNSClientInvalidURL(t *testing.T) {

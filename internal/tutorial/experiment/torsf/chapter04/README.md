@@ -38,7 +38,7 @@ The `tracex` package contains code used to format internal
 measurements representations to the OONI data format.
 
 ```Go
-	"github.com/ooni/probe-cli/v3/internal/tracex"
+	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 
 ```
 
