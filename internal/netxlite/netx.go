@@ -22,14 +22,6 @@ func (netx *Netx) maybeCustomUnderlyingNetwork() *MaybeCustomUnderlyingNetwork {
 	return &MaybeCustomUnderlyingNetwork{netx.Underlying}
 }
 
-// NewHTTPTransportStdlib is like [netxlite.NewHTTPTransportStdlib] but the constructed [model.HTTPTransport]
-// uses the [model.UnderlyingNetwork] configured inside the [Netx] structure.
-func (n *Netx) NewHTTPTransportStdlib(logger model.DebugLogger) model.HTTPTransport {
-	dialer := n.NewDialerWithResolver(logger, n.NewStdlibResolver(logger))
-	tlsDialer := NewTLSDialer(dialer, n.NewTLSHandshakerStdlib(logger))
-	return NewHTTPTransport(logger, dialer, tlsDialer)
-}
-
 // NewHTTP3TransportStdlib is like [netxlite.NewHTTP3TransportStdlib] but the constructed [model.HTTPTransport]
 // uses the [model.UnderlyingNetwork] configured inside the [Netx] structure.
 func (n *Netx) NewHTTP3TransportStdlib(logger model.DebugLogger) model.HTTPTransport {

@@ -342,10 +342,17 @@ func (c *httpTLSConnWithReadTimeout) Read(b []byte) (int, error) {
 //
 // This factory and NewHTTPTransport are the recommended
 // ways of creating a new HTTPTransport.
-func NewHTTPTransportStdlib(logger model.DebugLogger) model.HTTPTransport {
-	dialer := NewDialerWithResolver(logger, NewStdlibResolver(logger))
-	tlsDialer := NewTLSDialer(dialer, NewTLSHandshakerStdlib(logger))
+func (netx *Netx) NewHTTPTransportStdlib(logger model.DebugLogger) model.HTTPTransport {
+	dialer := netx.NewDialerWithResolver(logger, netx.NewStdlibResolver(logger))
+	tlsDialer := NewTLSDialer(dialer, netx.NewTLSHandshakerStdlib(logger))
 	return NewHTTPTransport(logger, dialer, tlsDialer)
+}
+
+// NewHTTPTransportStdlib is equivalent to creating an empty [*Netx]
+// and calling its NewHTTPTransportStdlib method.
+func NewHTTPTransportStdlib(logger model.DebugLogger) model.HTTPTransport {
+	netx := &Netx{Underlying: nil}
+	return netx.NewHTTPTransportStdlib(logger)
 }
 
 // NewHTTPClientStdlib creates a new HTTPClient that uses the
