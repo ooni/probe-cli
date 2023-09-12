@@ -22,8 +22,8 @@ func NewDialerWithStdlibResolver(dl model.DebugLogger) model.Dialer {
 	return NewDialerWithResolver(dl, reso)
 }
 
-// NewDialerWithResolver is equivalent to calling WrapDialer with a dialer using the stdlib
-// where the underlying dialer uses the [*Netx] UnderlyingNetwork for dialing.
+// NewDialerWithResolver is equivalent to calling WrapDialer with a dialer using the
+// the [*Netx] UnderlyingNetwork for dialing new connections.
 func (netx *Netx) NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...model.DialerWrapper) model.Dialer {
 	return WrapDialer(dl, r, &dialerSystem{provider: netx.maybeCustomUnderlyingNetwork()}, w...)
 }
