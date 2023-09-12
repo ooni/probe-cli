@@ -62,8 +62,6 @@ func NewHTTP3Transport(
 	})
 }
 
-// NewHTTP3TransportStdlib creates a new HTTPTransport using http3 that
-// uses standard functionality for everything but the logger.
 func (netx *Netx) NewHTTP3TransportStdlib(logger model.DebugLogger) model.HTTPTransport {
 	ql := netx.NewUDPListener()
 	reso := netx.NewStdlibResolver(logger)

@@ -23,8 +23,7 @@ import (
 // but you are using the "stdlib" resolver instead.
 var ErrNoDNSTransport = errors.New("operation requires a DNS transport")
 
-// NewStdlibResolver creates a new Resolver by combining WrapResolver
-// with an internal "stdlib" resolver type.
+// NewStdlibResolver implements [model.MeasuringNetwork].
 func (netx *Netx) NewStdlibResolver(logger model.DebugLogger) model.Resolver {
 	return WrapResolver(logger, netx.newUnwrappedStdlibResolver())
 }
@@ -36,9 +35,7 @@ func NewStdlibResolver(logger model.DebugLogger) model.Resolver {
 	return netx.NewStdlibResolver(logger)
 }
 
-// NewParallelDNSOverHTTPSResolver creates a new DNS over HTTPS resolver
-// that uses the standard library for all operations. This function constructs
-// all the building blocks and calls WrapResolver on the returned resolver.
+// NewParallelDNSOverHTTPSResolver implements [model.MeasuringNetwork].
 func (netx *Netx) NewParallelDNSOverHTTPSResolver(logger model.DebugLogger, URL string) model.Resolver {
 	client := &http.Client{Transport: netx.NewHTTPTransportStdlib(logger)}
 	txp := wrapDNSTransport(NewUnwrappedDNSOverHTTPSTransport(client, URL))
@@ -84,16 +81,7 @@ func NewSerialUDPResolver(logger model.DebugLogger, dialer model.Dialer, address
 	))
 }
 
-// NewParallelUDPResolver creates a new Resolver using DNS-over-UDP
-// that performs parallel A/AAAA lookups during LookupHost.
-//
-// Arguments:
-//
-// - logger is the logger to use
-//
-// - dialer is the dialer to create and connect UDP conns
-//
-// - address is the server address (e.g., 1.1.1.1:53)
+// NewParallelUDPResolver implements [model.MeasuringNetwork].
 func (netx *Netx) NewParallelUDPResolver(logger model.DebugLogger, dialer model.Dialer, address string) model.Resolver {
 	return WrapResolver(logger, NewUnwrappedParallelResolver(
 		wrapDNSTransport(NewUnwrappedDNSOverUDPTransport(dialer, address)),

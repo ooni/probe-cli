@@ -11,16 +11,6 @@ import (
 	"github.com/quic-go/quic-go"
 )
 
-// UDPListener is a mockable netxlite.UDPListener.
-type UDPListener struct {
-	MockListen func(addr *net.UDPAddr) (model.UDPLikeConn, error)
-}
-
-// Listen calls MockListen.
-func (ql *UDPListener) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
-	return ql.MockListen(addr)
-}
-
 // QUICDialer is a mockable netxlite.QUICDialer.
 type QUICDialer struct {
 	// MockDialContext allows mocking DialContext.
