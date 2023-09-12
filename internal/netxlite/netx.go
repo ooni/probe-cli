@@ -22,17 +22,6 @@ func (netx *Netx) maybeCustomUnderlyingNetwork() *MaybeCustomUnderlyingNetwork {
 	return &MaybeCustomUnderlyingNetwork{netx.Underlying}
 }
 
-// NewQUICDialerWithResolver is like [netxlite.NewQUICDialerWithResolver] but the constructed
-// [model.QUICDialer] uses the [model.UnderlyingNetwork] configured inside the [Netx] structure.
-func (n *Netx) NewQUICDialerWithResolver(listener model.UDPListener, logger model.DebugLogger,
-	resolver model.Resolver, wrappers ...model.QUICDialerWrapper) (outDialer model.QUICDialer) {
-	baseDialer := &quicDialerQUICGo{
-		UDPListener: listener,
-		provider:    n.maybeCustomUnderlyingNetwork(),
-	}
-	return WrapQUICDialer(logger, resolver, baseDialer, wrappers...)
-}
-
 // NewTLSHandshakerStdlib is like [netxlite.NewTLSHandshakerStdlib] but the constructed [model.TLSHandshaker]
 // uses the [model.UnderlyingNetwork] configured inside the [Netx] structure.
 func (n *Netx) NewTLSHandshakerStdlib(logger model.DebugLogger) model.TLSHandshaker {
