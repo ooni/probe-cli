@@ -16,7 +16,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
-	"github.com/ooni/probe-cli/v3/internal/tracex"
+	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 )
 
 // servicesAddr is the IP address implementing al fbmessenger services in netem-based tests

@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/tracex"
+	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 )
 
 // CompleteTrace records the result of the network trace

@@ -104,7 +104,7 @@ QUIC code to be of the same type of the ConnectionState that
 we returned in the previous chapters.
 
 ```Go
-	return qconn, qconn.ConnectionState().TLS.ConnectionState, nil
+	return qconn, qconn.ConnectionState().TLS, nil
 }
 
 ```

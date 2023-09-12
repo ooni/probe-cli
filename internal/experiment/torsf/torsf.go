@@ -15,7 +15,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/ptx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/torlogs"
-	"github.com/ooni/probe-cli/v3/internal/tracex"
+	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/tunnel"
 )
 

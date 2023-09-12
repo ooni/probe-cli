@@ -18,7 +18,7 @@ import (
 	_ "crypto/sha256"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/tracex"
+	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 )
 
 // A connectionID in QUIC

@@ -10,7 +10,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/tracex"
+	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 )
 
 // Config contains configuration for creating new transports, dialers, etc. When
