@@ -8,14 +8,14 @@ import (
 )
 
 func TestMeasuringN(t *testing.T) {
-	t.Run("MockNewDialerWithResolver", func(t *testing.T) {
+	t.Run("MockNewDialerWithoutResolver", func(t *testing.T) {
 		expected := &Dialer{}
 		mn := &MeasuringNetwork{
-			MockNewDialerWithResolver: func(dl model.DebugLogger, r model.Resolver, w ...model.DialerWrapper) model.Dialer {
+			MockNewDialerWithoutResolver: func(dl model.DebugLogger, w ...model.DialerWrapper) model.Dialer {
 				return expected
 			},
 		}
-		got := mn.NewDialerWithResolver(nil, nil)
+		got := mn.NewDialerWithoutResolver(nil, nil)
 		if expected != got {
 			t.Fatal("unexpected result")
 		}
@@ -47,14 +47,14 @@ func TestMeasuringN(t *testing.T) {
 		}
 	})
 
-	t.Run("MockNewQUICDialerWithResolver", func(t *testing.T) {
+	t.Run("MockNewQUICDialerWithoutResolver", func(t *testing.T) {
 		expected := &QUICDialer{}
 		mn := &MeasuringNetwork{
-			MockNewQUICDialerWithResolver: func(listener model.UDPListener, logger model.DebugLogger, resolver model.Resolver, w ...model.QUICDialerWrapper) model.QUICDialer {
+			MockNewQUICDialerWithoutResolver: func(listener model.UDPListener, logger model.DebugLogger, w ...model.QUICDialerWrapper) model.QUICDialer {
 				return expected
 			},
 		}
-		got := mn.NewQUICDialerWithResolver(nil, nil, nil)
+		got := mn.NewQUICDialerWithoutResolver(nil, nil, nil)
 		if expected != got {
 			t.Fatal("unexpected result")
 		}

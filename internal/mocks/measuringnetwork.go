@@ -7,13 +7,13 @@ import (
 
 // MeasuringNetwork allows mocking [model.MeasuringNetwork].
 type MeasuringNetwork struct {
-	MockNewDialerWithResolver func(dl model.DebugLogger, r model.Resolver, w ...model.DialerWrapper) model.Dialer
+	MockNewDialerWithoutResolver func(dl model.DebugLogger, w ...model.DialerWrapper) model.Dialer
 
 	MockNewParallelDNSOverHTTPSResolver func(logger model.DebugLogger, URL string) model.Resolver
 
 	MockNewParallelUDPResolver func(logger model.DebugLogger, dialer model.Dialer, address string) model.Resolver
 
-	MockNewQUICDialerWithResolver func(listener model.UDPListener, logger model.DebugLogger, resolver model.Resolver, w ...model.QUICDialerWrapper) model.QUICDialer
+	MockNewQUICDialerWithoutResolver func(listener model.UDPListener, logger model.DebugLogger, w ...model.QUICDialerWrapper) model.QUICDialer
 
 	MockNewStdlibResolver func(logger model.DebugLogger) model.Resolver
 
@@ -26,9 +26,9 @@ type MeasuringNetwork struct {
 
 var _ model.MeasuringNetwork = &MeasuringNetwork{}
 
-// NewDialerWithResolver implements model.MeasuringNetwork.
-func (mn *MeasuringNetwork) NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...model.DialerWrapper) model.Dialer {
-	return mn.MockNewDialerWithResolver(dl, r, w...)
+// NewDialerWithoutResolver implements model.MeasuringNetwork.
+func (mn *MeasuringNetwork) NewDialerWithoutResolver(dl model.DebugLogger, w ...model.DialerWrapper) model.Dialer {
+	return mn.MockNewDialerWithoutResolver(dl, w...)
 }
 
 // NewParallelDNSOverHTTPSResolver implements model.MeasuringNetwork.
@@ -41,9 +41,9 @@ func (mn *MeasuringNetwork) NewParallelUDPResolver(logger model.DebugLogger, dia
 	return mn.MockNewParallelUDPResolver(logger, dialer, address)
 }
 
-// NewQUICDialerWithResolver implements model.MeasuringNetwork.
-func (mn *MeasuringNetwork) NewQUICDialerWithResolver(listener model.UDPListener, logger model.DebugLogger, resolver model.Resolver, w ...model.QUICDialerWrapper) model.QUICDialer {
-	return mn.MockNewQUICDialerWithResolver(listener, logger, resolver, w...)
+// NewQUICDialerWithoutResolver implements model.MeasuringNetwork.
+func (mn *MeasuringNetwork) NewQUICDialerWithoutResolver(listener model.UDPListener, logger model.DebugLogger, w ...model.QUICDialerWrapper) model.QUICDialer {
+	return mn.MockNewQUICDialerWithoutResolver(listener, logger, w...)
 }
 
 // NewStdlibResolver implements model.MeasuringNetwork.

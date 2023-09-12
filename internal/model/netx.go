@@ -183,17 +183,12 @@ type HTTPSSvc struct {
 // implementation of this interface. This interface SHOULD always be implemented in terms of
 // an [UnderlyingNetwork] that allows to switch between the host network and [netemx].
 type MeasuringNetwork interface {
-	// NewDialerWithResolver creates a [Dialer] with error wrapping.
+	// NewDialerWithoutResolver creates a [Dialer] with error wrapping and without an attached
+	// resolver, meaning that you MUST pass TCP or UDP endpoint addresses to this dialer.
 	//
-	// This dialer will try to connect to each of the resolved IP address
-	// sequentially. In case of failure, such a resolver will return the first
-	// error that occurred. This implementation strategy is a QUIRK that is
-	// documented at TODO(https://github.com/ooni/probe/issues/1779).
-	//
-	// The [DialerWrapper] arguments wrap the returned dialer in such a way
-	// that we can implement the legacy [netx] package. New code MUST NOT
-	// use this functionality, which we'd like to remove ASAP.
-	NewDialerWithResolver(dl DebugLogger, r Resolver, w ...DialerWrapper) Dialer
+	// The [DialerWrapper] arguments wraps the returned dialer in such a way that we can implement
+	// the legacy [netx] package. New code MUST NOT use this functionality, which we'd like to remove ASAP.
+	NewDialerWithoutResolver(dl DebugLogger, w ...DialerWrapper) Dialer
 
 	// NewParallelDNSOverHTTPSResolver creates a new DNS-over-HTTPS resolver with error wrapping.
 	NewParallelDNSOverHTTPSResolver(logger DebugLogger, URL string) Resolver
@@ -204,17 +199,14 @@ type MeasuringNetwork interface {
 	// The address argument is the UDP endpoint address (e.g., 1.1.1.1:53, [::1]:53).
 	NewParallelUDPResolver(logger DebugLogger, dialer Dialer, address string) Resolver
 
-	// NewQUICDialerWithResolver creates a QUICDialer with error wrapping.
+	// NewQUICDialerWithoutResolver creates a [QUICDialer] with error wrapping and without an attached
+	// resolver, meaning that you MUST pass UDP endpoint addresses to this dialer.
 	//
-	// Unlike the dialer returned by NewDialerWithResolver, this dialer MAY attempt
-	// happy eyeballs, perform parallel dial attempts, and return an error
-	// that aggregates all the errors that occurred.
-	//
-	// The [QUICDialerWrapper] arguments wrap the returned dialer in such a way
+	// The [QUICDialerWrapper] arguments wraps the returned dialer in such a way
 	// that we can implement the legacy [netx] package. New code MUST NOT
 	// use this functionality, which we'd like to remove ASAP.
-	NewQUICDialerWithResolver(
-		listener UDPListener, logger DebugLogger, resolver Resolver, w ...QUICDialerWrapper) QUICDialer
+	NewQUICDialerWithoutResolver(
+		listener UDPListener, logger DebugLogger, w ...QUICDialerWrapper) QUICDialer
 
 	// NewStdlibResolver creates a new Resolver with error wrapping using
 	// getaddrinfo or &net.Resolver{} depending on `-tags netgo`.
