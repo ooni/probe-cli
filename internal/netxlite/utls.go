@@ -31,10 +31,18 @@ import (
 // RootCAs field is zero initialized.
 //
 // Passing a nil `id` will make this function panic.
-func NewTLSHandshakerUTLS(logger model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker {
+func (netx *Netx) NewTLSHandshakerUTLS(logger model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker {
 	return newTLSHandshakerLogger(&tlsHandshakerConfigurable{
-		NewConn: newUTLSConnFactory(id),
+		NewConn:  newUTLSConnFactory(id),
+		provider: netx.maybeCustomUnderlyingNetwork(),
 	}, logger)
+}
+
+// NewTLSHandshakerUTLS is equivalent to creating an empty [*Netx]
+// and calling its NewTLSHandshakerUTLS method.
+func NewTLSHandshakerUTLS(logger model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker {
+	netx := &Netx{Underlying: nil}
+	return netx.NewTLSHandshakerUTLS(logger, id)
 }
 
 // UTLSConn implements TLSConn and uses a utls UConn as its underlying connection
