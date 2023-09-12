@@ -104,6 +104,7 @@ func TestDialerSystem(t *testing.T) {
 			defaultTp := &DefaultTProxy{}
 			tp := &mocks.UnderlyingNetwork{
 				MockDialTimeout: func() time.Duration {
+					// Note: this test is notoriously flaky on Windows
 					return time.Nanosecond
 				},
 				MockDialContext: defaultTp.DialContext,
