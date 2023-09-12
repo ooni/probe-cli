@@ -94,10 +94,17 @@ func NewSerialUDPResolver(logger model.DebugLogger, dialer model.Dialer, address
 // - dialer is the dialer to create and connect UDP conns
 //
 // - address is the server address (e.g., 1.1.1.1:53)
-func NewParallelUDPResolver(logger model.DebugLogger, dialer model.Dialer, address string) model.Resolver {
+func (netx *Netx) NewParallelUDPResolver(logger model.DebugLogger, dialer model.Dialer, address string) model.Resolver {
 	return WrapResolver(logger, NewUnwrappedParallelResolver(
 		wrapDNSTransport(NewUnwrappedDNSOverUDPTransport(dialer, address)),
 	))
+}
+
+// NewParallelUDPResolver is equivalent to creating an empty [*Netx]
+// and calling its NewParallelUDPResolver method.
+func NewParallelUDPResolver(logger model.DebugLogger, dialer model.Dialer, address string) model.Resolver {
+	netx := &Netx{Underlying: nil}
+	return netx.NewParallelUDPResolver(logger, dialer, address)
 }
 
 // WrapResolver creates a new resolver that wraps an
