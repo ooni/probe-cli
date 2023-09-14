@@ -1,18 +1,18 @@
-package sessionresolver_test
+package engineresolver_test
 
 import (
 	"context"
 	"testing"
 
+	"github.com/ooni/probe-cli/v3/internal/engineresolver"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
-	"github.com/ooni/probe-cli/v3/internal/sessionresolver"
 )
 
 func TestSessionResolverGood(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	reso := &sessionresolver.Resolver{
+	reso := &engineresolver.Resolver{
 		KVStore: &kvstore.Memory{},
 	}
 	defer reso.CloseIdleConnections()

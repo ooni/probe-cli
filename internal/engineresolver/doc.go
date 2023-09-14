@@ -1,4 +1,4 @@
-// Package sessionresolver contains the resolver used by the session. This
+// Package engineresolver contains the resolver used by the OONI engine. This
 // resolver will try to figure out which is the best service for running
 // domain name resolutions and will consistently use it.
 //
@@ -21,4 +21,4 @@
 // We also support a socks5 proxy. When such a proxy is configured,
 // the code WILL skip http3 resolvers AS WELL AS the system
 // resolver, in an attempt to avoid leaking your queries.
-package sessionresolver
+package engineresolver
