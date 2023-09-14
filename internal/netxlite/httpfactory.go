@@ -18,7 +18,7 @@ type HTTPTransportOption func(txp *oohttp.Transport)
 //
 // This factory clones the default github.com/ooni/oohttp transport and
 // configures the provided dialer and TLS dialer by setting the .DialContext
-// and .DialTLSContext fields of the transport. We'll wrap the provided
+// and .DialTLSContext fields of the transport. We also wrap the provided
 // dialers to address https://github.com/ooni/probe/issues/1609.
 //
 // Apart from that, the only non-default options set by this factory are these:
@@ -73,6 +73,7 @@ func NewHTTPTransportWithOptions(logger model.Logger,
 func HTTPTransportOptionProxyURL(proxyURL *url.URL) HTTPTransportOption {
 	return func(txp *oohttp.Transport) {
 		txp.Proxy = func(r *oohttp.Request) (*url.URL, error) {
+			// "If Proxy is nil or returns a nil *URL, no proxy is used."
 			return proxyURL, nil
 		}
 	}
