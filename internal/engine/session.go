@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"net/url"
 	"os"
 	"sync"
@@ -14,10 +13,10 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/checkincache"
 	"github.com/ooni/probe-cli/v3/internal/enginelocate"
+	"github.com/ooni/probe-cli/v3/internal/enginenetx"
 	"github.com/ooni/probe-cli/v3/internal/engineresolver"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/platform"
 	"github.com/ooni/probe-cli/v3/internal/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/registry"
@@ -58,7 +57,7 @@ type Session struct {
 	availableProbeServices   []model.OOAPIService
 	availableTestHelpers     map[string][]model.OOAPIService
 	byteCounter              *bytecounter.Counter
-	httpDefaultTransport     model.HTTPTransport
+	httpDefaultTransport     *enginenetx.HTTPTransport
 	kvStore                  model.KeyValueStore
 	location                 *enginelocate.Results
 	logger                   model.Logger
@@ -214,11 +213,12 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 		Logger:      sess.logger,
 		ProxyURL:    proxyURL,
 	}
-	txp := netxlite.NewHTTPTransportWithLoggerResolverAndOptionalProxyURL(
-		sess.logger, sess.resolver, sess.proxyURL,
+	sess.httpDefaultTransport = enginenetx.NewHTTPTransport(
+		sess.byteCounter,
+		sess.logger,
+		proxyURL,
+		sess.resolver,
 	)
-	txp = bytecounter.WrapHTTPTransport(txp, sess.byteCounter)
-	sess.httpDefaultTransport = txp
 	return sess, nil
 }
 
@@ -360,7 +360,7 @@ func (s *Session) GetTestHelpersByName(name string) ([]model.OOAPIService, bool)
 
 // DefaultHTTPClient returns the session's default HTTP client.
 func (s *Session) DefaultHTTPClient() model.HTTPClient {
-	return &http.Client{Transport: s.httpDefaultTransport}
+	return s.httpDefaultTransport.NewHTTPClient()
 }
 
 // FetchTorTargets fetches tor targets from the API.
