@@ -157,13 +157,3 @@ func TestNewHTTPClientWithResolver(t *testing.T) {
 		t.Fatal("invalid resolver")
 	}
 }
-
-func TestWrapHTTPClient(t *testing.T) {
-	origClient := &http.Client{}
-	wrapped := WrapHTTPClient(origClient)
-	errWrapper := wrapped.(*httpClientErrWrapper)
-	innerClient := errWrapper.HTTPClient.(*http.Client)
-	if innerClient != origClient {
-		t.Fatal("not the inner client we expected")
-	}
-}

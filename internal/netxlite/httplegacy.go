@@ -1,7 +1,7 @@
 package netxlite
 
 //
-// HTTP/1.1 and HTTP2 code
+// Legacy HTTP code and behavior assumed by ./legacy/netx 😅
 //
 
 import (
@@ -91,17 +91,6 @@ func newOOHTTPBaseTransport(dialer model.Dialer, tlsDialer model.TLSDialer) mode
 	}
 }
 
-// WrapHTTPTransport creates an HTTPTransport using the given logger
-// and guarantees that returned errors are wrapped.
-//
-// This is a low level factory. Consider not using it directly.
-func WrapHTTPTransport(logger model.DebugLogger, txp model.HTTPTransport) model.HTTPTransport {
-	return &httpTransportLogger{
-		HTTPTransport: &httpTransportErrWrapper{txp},
-		Logger:        logger,
-	}
-}
-
 // NewHTTPTransportStdlib creates a new HTTPTransport using
 // the stdlib for DNS resolutions and TLS.
 //
@@ -138,9 +127,4 @@ func NewHTTPClientWithResolver(logger model.Logger, reso model.Resolver) model.H
 // NewHTTPClient creates a new, wrapped HTTPClient using the given transport.
 func NewHTTPClient(txp model.HTTPTransport) model.HTTPClient {
 	return WrapHTTPClient(&http.Client{Transport: txp})
-}
-
-// WrapHTTPClient wraps an HTTP client to add error wrapping capabilities.
-func WrapHTTPClient(clnt model.HTTPClient) model.HTTPClient {
-	return &httpClientErrWrapper{clnt}
 }
