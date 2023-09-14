@@ -57,6 +57,7 @@ func TestNewHTTPTransportWithOptions(t *testing.T) {
 				oohttp.Transport{},
 				"DialContext",
 				"DialTLSContext",
+				"DisableCompression",
 				"Proxy",
 				"ForceAttemptHTTP2",
 			),
@@ -77,6 +78,9 @@ func TestNewHTTPTransportWithOptions(t *testing.T) {
 		}
 		if !underlying.ForceAttemptHTTP2 {
 			t.Fatal("expected true .ForceAttemptHTTP2")
+		}
+		if !underlying.DisableCompression {
+			t.Fatal("expected true .DisableCompression")
 		}
 	})
 

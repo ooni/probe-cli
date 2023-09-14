@@ -27,7 +27,12 @@ type HTTPTransportOption func(txp *oohttp.Transport)
 // HTTP_PROXY and HTTPS_PROXY environment variables, which is required if
 // we want to use this code for measuring;
 //
-// 2. the .ForceAttemptHTTP2 field is set to true.
+// 2. the .ForceAttemptHTTP2 field is set to true;
+//
+// 3. the .DisableCompression field is set to true, again required if we
+// want to use this code for measuring, and we should make sure the defaults
+// we're using are suitable for measuring, since the impact of making a
+// mistake in measuring code is a data quality issue 😅.
 //
 // The returned transport supports logging and error wrapping because
 // internally this function calls [WrapHTTPTransport] before we return.
@@ -46,6 +51,7 @@ func NewHTTPTransportWithOptions(logger model.Logger,
 	txp.DialTLSContext = tlsDialer.DialTLSContext
 
 	// As documented, disable proxies and force HTTP/2
+	txp.DisableCompression = true
 	txp.Proxy = nil
 	txp.ForceAttemptHTTP2 = true
 
