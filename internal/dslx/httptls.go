@@ -26,7 +26,7 @@ type httpTransportTLSFunc struct{}
 // Apply implements Func.
 func (f *httpTransportTLSFunc) Apply(
 	ctx context.Context, input *TLSConnection) *Maybe[*HTTPTransport] {
-	httpTransport := netxlite.NewHTTPTransport(
+	httpTransport := netxlite.NewHTTPTransportLegacy(
 		input.Logger,
 		netxlite.NewNullDialer(),
 		netxlite.NewSingleUseTLSDialer(input.Conn),

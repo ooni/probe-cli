@@ -25,7 +25,7 @@ func TestHTTPDiffWithConsistentDNS(t *testing.T) {
 			tc.Configure(env)
 
 			env.Do(func() {
-				client := netxlite.NewHTTPClientStdlib(log.Log)
+				client := netxlite.NewHTTPClientStdlibLegacy(log.Log)
 				req := runtimex.Try1(http.NewRequest("GET", "http://www.example.com/", nil))
 				resp, err := client.Do(req)
 				if err != nil {
@@ -58,7 +58,7 @@ func TestHTTPDiffWithInconsistentDNS(t *testing.T) {
 
 			env.Do(func() {
 				t.Run("there is blockpage spoofing", func(t *testing.T) {
-					client := netxlite.NewHTTPClientStdlib(log.Log)
+					client := netxlite.NewHTTPClientStdlibLegacy(log.Log)
 					req := runtimex.Try1(http.NewRequest("GET", "http://www.example.com/", nil))
 					resp, err := client.Do(req)
 					if err != nil {

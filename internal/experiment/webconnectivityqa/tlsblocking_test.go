@@ -23,7 +23,7 @@ func TestBlockingTLSConnectionResetWithConsistentDNS(t *testing.T) {
 		urls := []string{"https://www.example.com/", "https://www.example.com/"}
 		for _, URL := range urls {
 			t.Run(fmt.Sprintf("for %s", URL), func(t *testing.T) {
-				client := netxlite.NewHTTPClientStdlib(log.Log)
+				client := netxlite.NewHTTPClientStdlibLegacy(log.Log)
 				req, err := http.NewRequest("GET", URL, nil)
 				if err != nil {
 					t.Fatal(err)
@@ -51,7 +51,7 @@ func TestBlockingTLSConnectionResetWithInconsistentDNS(t *testing.T) {
 		urls := []string{"https://www.example.com/", "https://www.example.com/"}
 		for _, URL := range urls {
 			t.Run(fmt.Sprintf("for %s", URL), func(t *testing.T) {
-				client := netxlite.NewHTTPClientStdlib(log.Log)
+				client := netxlite.NewHTTPClientStdlibLegacy(log.Log)
 				req, err := http.NewRequest("GET", URL, nil)
 				if err != nil {
 					t.Fatal(err)

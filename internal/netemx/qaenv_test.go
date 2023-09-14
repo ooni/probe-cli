@@ -92,7 +92,7 @@ func TestQAEnv(t *testing.T) {
 		env.Do(func() {
 			// create client, which will use the underlying client stack's
 			// DialContext method to dial connections
-			client := netxlite.NewHTTPClientStdlib(model.DiscardLogger)
+			client := netxlite.NewHTTPClientStdlibLegacy(model.DiscardLogger)
 
 			// create request using a domain that has been configured in the
 			// [Environment] we're using as valid. Note that we're using https
@@ -211,7 +211,7 @@ func TestQAEnv(t *testing.T) {
 		env.Do(func() {
 			// create client, which will use the underlying client stack's
 			// DialContext method to dial connections
-			client := netxlite.NewHTTPClientStdlib(model.DiscardLogger)
+			client := netxlite.NewHTTPClientStdlibLegacy(model.DiscardLogger)
 
 			// create the request
 			req, err := http.NewRequest("GET", "https://quad8.com/", nil)
@@ -257,7 +257,7 @@ func TestQAEnv(t *testing.T) {
 		env.Do(func() {
 			// create client, which will use the underlying client stack's
 			// DialContext method to dial connections
-			client := netxlite.NewHTTPClientStdlib(model.DiscardLogger)
+			client := netxlite.NewHTTPClientStdlibLegacy(model.DiscardLogger)
 
 			// create the request
 			req, err := http.NewRequest("GET", "https://quad8.com/", nil)

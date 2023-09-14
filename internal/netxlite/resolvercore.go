@@ -37,7 +37,8 @@ func NewStdlibResolver(logger model.DebugLogger) model.Resolver {
 
 // NewParallelDNSOverHTTPSResolver implements [model.MeasuringNetwork].
 func (netx *Netx) NewParallelDNSOverHTTPSResolver(logger model.DebugLogger, URL string) model.Resolver {
-	client := &http.Client{Transport: netx.NewHTTPTransportStdlib(logger)}
+	// TODO(bassosimone): could this legacy invocation become non-legacy?
+	client := &http.Client{Transport: netx.NewHTTPTransportStdlibLegacy(logger)}
 	txp := wrapDNSTransport(NewUnwrappedDNSOverHTTPSTransport(client, URL))
 	return WrapResolver(logger, NewUnwrappedParallelResolver(txp))
 }

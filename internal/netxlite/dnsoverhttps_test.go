@@ -15,7 +15,7 @@ import (
 
 func TestNewDNSOverHTTPSTransport(t *testing.T) {
 	const URL = "https://1.1.1.1/dns-query"
-	clnt := NewHTTPClientStdlib(model.DiscardLogger)
+	clnt := NewHTTPClientStdlibLegacy(model.DiscardLogger)
 	txp := NewDNSOverHTTPSTransport(clnt, URL)
 	ew := txp.(*dnsTransportErrWrapper)
 	https := ew.DNSTransport.(*DNSOverHTTPSTransport)
@@ -29,7 +29,7 @@ func TestNewDNSOverHTTPSTransport(t *testing.T) {
 
 func TestNewDNSOverHTTPSTransportWithHTTPTransport(t *testing.T) {
 	const URL = "https://1.1.1.1/dns-query"
-	httpTxp := NewHTTPTransportStdlib(model.DiscardLogger)
+	httpTxp := NewHTTPTransportStdlibLegacy(model.DiscardLogger)
 	txp := NewDNSOverHTTPSTransportWithHTTPTransport(httpTxp, URL)
 	ew := txp.(*dnsTransportErrWrapper)
 	https := ew.DNSTransport.(*DNSOverHTTPSTransport)

@@ -166,7 +166,7 @@ func httpHandlerHijack(w http.ResponseWriter, r *http.Request, policy string) {
 
 // HTTPHandlerProxyNetx is [netxlite.Netx] as seen by [HTTPHandlerProxy].
 type HTTPHandlerProxyNetx interface {
-	NewHTTPTransportStdlib(logger model.DebugLogger) model.HTTPTransport
+	NewHTTPTransportStdlibLegacy(logger model.DebugLogger) model.HTTPTransport
 }
 
 // HTTPHandlerProxy is a handler implementing an HTTP proxy using the host header
@@ -205,7 +205,7 @@ func HTTPHandlerProxy(logger model.Logger, netx HTTPHandlerProxyNetx) http.Handl
 		logger.Debugf("PROXY: sending request: %s", req)
 
 		// create HTTP client using netx
-		txp := netx.NewHTTPTransportStdlib(logger)
+		txp := netx.NewHTTPTransportStdlibLegacy(logger)
 
 		// obtain response
 		resp, err := txp.RoundTrip(req)

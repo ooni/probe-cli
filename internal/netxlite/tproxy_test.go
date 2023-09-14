@@ -83,7 +83,7 @@ func TestWithCustomTProxy(t *testing.T) {
 		}
 
 		WithCustomTProxy(tproxy, func() {
-			clnt := NewHTTPClientStdlib(model.DiscardLogger)
+			clnt := NewHTTPClientStdlibLegacy(model.DiscardLogger)
 			req, err := http.NewRequestWithContext(context.Background(), "GET", srvr.URL, nil)
 			if err != nil {
 				t.Fatal(err)

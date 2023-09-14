@@ -25,7 +25,7 @@ func TestHTTPCleartextServerFactory(t *testing.T) {
 	env.AddRecordToAllResolvers("www.example.com", "", AddressWwwExampleCom)
 
 	env.Do(func() {
-		client := netxlite.NewHTTPClientStdlib(log.Log)
+		client := netxlite.NewHTTPClientStdlibLegacy(log.Log)
 		req := runtimex.Try1(http.NewRequest("GET", "http://www.example.com/", nil))
 		resp, err := client.Do(req)
 		if err != nil {

@@ -38,7 +38,7 @@ func TestBadSSLConditions(t *testing.T) {
 			tc.testCase.Configure(env)
 
 			env.Do(func() {
-				client := netxlite.NewHTTPClientStdlib(log.Log)
+				client := netxlite.NewHTTPClientStdlibLegacy(log.Log)
 				req := runtimex.Try1(http.NewRequest("GET", tc.testCase.Input, nil))
 				resp, err := client.Do(req)
 				if err == nil || err.Error() != tc.expectedErr {

@@ -88,5 +88,5 @@ func NewHTTP3TransportWithResolver(logger model.DebugLogger, reso model.Resolver
 // NewHTTP3ClientWithResolver creates a new HTTP3Transport using the
 // given resolver and then from that builds an HTTPClient.
 func NewHTTP3ClientWithResolver(logger model.Logger, reso model.Resolver) model.HTTPClient {
-	return NewHTTPClient(NewHTTP3TransportWithResolver(logger, reso))
+	return NewHTTPClientLegacy(NewHTTP3TransportWithResolver(logger, reso))
 }

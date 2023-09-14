@@ -51,7 +51,7 @@ func NewHTTPTransport(
 	dialer = netxlite.MaybeWrapWithProxyDialer(dialer, proxyURL)
 	handshaker := netxlite.NewTLSHandshakerStdlib(logger)
 	tlsDialer := netxlite.NewTLSDialer(dialer, handshaker)
-	txp := netxlite.NewHTTPTransport(logger, dialer, tlsDialer)
+	txp := netxlite.NewHTTPTransportLegacy(logger, dialer, tlsDialer)
 	txp = bytecounter.WrapHTTPTransport(txp, counter)
 	return &HTTPTransport{txp}
 }

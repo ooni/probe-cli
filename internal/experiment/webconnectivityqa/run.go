@@ -34,7 +34,7 @@ func RunTestCase(measurer model.ExperimentMeasurer, tc *TestCase) error {
 	var err error
 	env.Do(func() {
 		// create an HTTP client inside the env.Do function so we're using netem
-		httpClient := netxlite.NewHTTPClientStdlib(prefixLogger)
+		httpClient := netxlite.NewHTTPClientStdlibLegacy(prefixLogger)
 		arguments := &model.ExperimentArgs{
 			Callbacks:   model.NewPrinterCallbacks(prefixLogger),
 			Measurement: measurement,

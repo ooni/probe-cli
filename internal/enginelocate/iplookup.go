@@ -87,7 +87,7 @@ func (c ipLookupClient) doWithCustomFunc(
 	// Implementation note: we MUST use an HTTP client that we're
 	// sure IS NOT using any proxy. To this end, we construct a
 	// client ourself that we know is not proxied.
-	txp := netxlite.NewHTTPTransportWithResolver(c.Logger, c.Resolver)
+	txp := netxlite.NewHTTPTransportWithResolverLegacy(c.Logger, c.Resolver)
 	clnt := &http.Client{Transport: txp}
 	defer clnt.CloseIdleConnections()
 	ip, err := fn(ctx, clnt, c.Logger, c.UserAgent, c.Resolver)

@@ -529,7 +529,7 @@ func TestHTTPTransport(t *testing.T) {
 	t.Run("works as intended", func(t *testing.T) {
 		d := netxlite.NewDialerWithResolver(log.Log, netxlite.NewStdlibResolver(log.Log))
 		td := netxlite.NewTLSDialer(d, netxlite.NewTLSHandshakerStdlib(log.Log))
-		txp := netxlite.NewHTTPTransport(log.Log, d, td)
+		txp := netxlite.NewHTTPTransportLegacy(log.Log, d, td)
 		client := &http.Client{Transport: txp}
 		resp, err := client.Get("https://www.google.com/robots.txt")
 		if err != nil {
@@ -551,7 +551,7 @@ func TestHTTPTransport(t *testing.T) {
 			conn.Close()
 		}))
 		defer srvr.Close()
-		txp := netxlite.NewHTTPTransportStdlib(model.DiscardLogger)
+		txp := netxlite.NewHTTPTransportStdlibLegacy(model.DiscardLogger)
 		req, err := http.NewRequest("GET", srvr.URL, nil)
 		if err != nil {
 			t.Fatal(err)

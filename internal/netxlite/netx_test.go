@@ -75,7 +75,7 @@ func TestNetx(t *testing.T) {
 	netx := &Netx{underlyingNetwork}
 
 	t.Run("HTTPS fetch", func(t *testing.T) {
-		txp := netx.NewHTTPTransportStdlib(log.Log)
+		txp := netx.NewHTTPTransportStdlibLegacy(log.Log)
 		client := &http.Client{Transport: txp}
 		resp, err := client.Get("https://www.example.com/")
 		if err != nil {

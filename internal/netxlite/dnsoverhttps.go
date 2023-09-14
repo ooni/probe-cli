@@ -52,7 +52,7 @@ func NewDNSOverHTTPSTransport(client model.HTTPClient, URL string) model.DNSTran
 // NewDNSOverHTTPSTransportWithHTTPTransport is like NewDNSOverHTTPSTransport
 // but takes in input an HTTPTransport rather than an HTTPClient.
 func NewDNSOverHTTPSTransportWithHTTPTransport(txp model.HTTPTransport, URL string) model.DNSTransport {
-	return wrapDNSTransport(NewUnwrappedDNSOverHTTPSTransport(NewHTTPClient(txp), URL))
+	return wrapDNSTransport(NewUnwrappedDNSOverHTTPSTransport(NewHTTPClientLegacy(txp), URL))
 }
 
 // NewUnwrappedDNSOverHTTPSTransportWithHostOverride creates a new DNSOverHTTPSTransport

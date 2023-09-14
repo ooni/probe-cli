@@ -74,7 +74,7 @@ func NewHandler() *Handler {
 		NewHTTPClient: func(logger model.Logger) model.HTTPClient {
 			return newHTTPClientWithTransportFactory(
 				logger,
-				netxlite.NewHTTPTransportWithResolver,
+				netxlite.NewHTTPTransportWithResolverLegacy,
 			)
 		},
 

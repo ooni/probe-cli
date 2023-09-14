@@ -20,7 +20,7 @@ func TestNewHTTPTransportWithResolver(t *testing.T) {
 			return nil, expected
 		},
 	}
-	txp := NewHTTPTransportWithResolver(model.DiscardLogger, reso)
+	txp := NewHTTPTransportWithResolverLegacy(model.DiscardLogger, reso)
 	req, err := http.NewRequest("GET", "http://x.org", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -51,7 +51,7 @@ func TestNewHTTPTransport(t *testing.T) {
 			Resolver: NewStdlibResolver(log.Log),
 		}
 		td := NewTLSDialer(d, NewTLSHandshakerStdlib(log.Log))
-		txp := NewHTTPTransport(log.Log, d, td)
+		txp := NewHTTPTransportLegacy(log.Log, d, td)
 		client := &http.Client{Transport: txp}
 		resp, err := client.Get("https://8.8.4.4/robots.txt")
 		if !errors.Is(err, expected) {
@@ -69,7 +69,7 @@ func TestNewHTTPTransport(t *testing.T) {
 	t.Run("creates the correct type chain", func(t *testing.T) {
 		d := &mocks.Dialer{}
 		td := &mocks.TLSDialer{}
-		txp := NewHTTPTransport(log.Log, d, td)
+		txp := NewHTTPTransportLegacy(log.Log, d, td)
 		logger := txp.(*httpTransportLogger)
 		if logger.Logger != log.Log {
 			t.Fatal("invalid logger")
@@ -104,7 +104,7 @@ func TestNewHTTPTransport(t *testing.T) {
 }
 
 func TestNewHTTPTransportStdlib(t *testing.T) {
-	txp := NewHTTPTransportStdlib(log.Log)
+	txp := NewHTTPTransportStdlibLegacy(log.Log)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // immediately!
 	req, err := http.NewRequestWithContext(ctx, "GET", "http://x.org", nil)
@@ -125,7 +125,7 @@ func TestNewHTTPTransportStdlib(t *testing.T) {
 }
 
 func TestNewHTTPClientStdlib(t *testing.T) {
-	clnt := NewHTTPClientStdlib(model.DiscardLogger)
+	clnt := NewHTTPClientStdlibLegacy(model.DiscardLogger)
 	ewc, ok := clnt.(*httpClientErrWrapper)
 	if !ok {
 		t.Fatal("expected *httpClientErrWrapper")
@@ -138,7 +138,7 @@ func TestNewHTTPClientStdlib(t *testing.T) {
 
 func TestNewHTTPClientWithResolver(t *testing.T) {
 	reso := &mocks.Resolver{}
-	clnt := NewHTTPClientWithResolver(model.DiscardLogger, reso)
+	clnt := NewHTTPClientWithResolverLegacy(model.DiscardLogger, reso)
 	ewc, ok := clnt.(*httpClientErrWrapper)
 	if !ok {
 		t.Fatal("expected *httpClientErrWrapper")
@@ -155,15 +155,5 @@ func TestNewHTTPClientWithResolver(t *testing.T) {
 	dialerReso := dialerLogger.Dialer.(*dialerResolverWithTracing)
 	if dialerReso.Resolver != reso {
 		t.Fatal("invalid resolver")
-	}
-}
-
-func TestWrapHTTPClient(t *testing.T) {
-	origClient := &http.Client{}
-	wrapped := WrapHTTPClient(origClient)
-	errWrapper := wrapped.(*httpClientErrWrapper)
-	innerClient := errWrapper.HTTPClient.(*http.Client)
-	if innerClient != origClient {
-		t.Fatal("not the inner client we expected")
 	}
 }

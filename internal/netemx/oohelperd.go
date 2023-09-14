@@ -50,7 +50,7 @@ func (f *OOHelperDFactory) NewHandler(env NetStackServerFactoryEnv, unet *netem.
 			PublicSuffixList: publicsuffix.List,
 		})
 		return &http.Client{
-			Transport:     netx.NewHTTPTransportStdlib(logger),
+			Transport:     netx.NewHTTPTransportStdlibLegacy(logger),
 			CheckRedirect: nil,
 			Jar:           cookieJar,
 			Timeout:       0,

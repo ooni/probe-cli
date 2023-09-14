@@ -33,7 +33,7 @@ func TestOOHelperDHandler(t *testing.T) {
 
 		//log.SetLevel(log.DebugLevel)
 
-		httpClient := netxlite.NewHTTPClientStdlib(log.Log)
+		httpClient := netxlite.NewHTTPClientStdlibLegacy(log.Log)
 
 		req, err := http.NewRequest(http.MethodPost, "https://0.th.ooni.org/", bytes.NewReader(thReqRaw))
 		if err != nil {

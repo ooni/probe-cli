@@ -66,7 +66,7 @@ func Example_dpiRule() {
 		reso := netxlite.NewStdlibResolver(model.DiscardLogger)
 
 		// create the HTTP client
-		client := netxlite.NewHTTPClientWithResolver(model.DiscardLogger, reso)
+		client := netxlite.NewHTTPClientWithResolverLegacy(model.DiscardLogger, reso)
 
 		// create the HTTP request
 		req := runtimex.Try1(http.NewRequest("GET", "https://example.com", nil))
@@ -310,7 +310,7 @@ func Example_exampleWebServerWithInternetScenario() {
 	defer env.Close()
 
 	env.Do(func() {
-		client := netxlite.NewHTTPClientStdlib(log.Log)
+		client := netxlite.NewHTTPClientStdlibLegacy(log.Log)
 
 		req, err := http.NewRequest("GET", "https://www.example.com/", nil)
 		if err != nil {
@@ -389,7 +389,7 @@ func Example_ooniAPIWithInternetScenario() {
 	defer env.Close()
 
 	env.Do(func() {
-		client := netxlite.NewHTTPClientStdlib(log.Log)
+		client := netxlite.NewHTTPClientStdlibLegacy(log.Log)
 
 		req, err := http.NewRequest("GET", "https://api.ooni.io/api/v1/test-helpers", nil)
 		if err != nil {
@@ -419,7 +419,7 @@ func Example_oohelperdWithInternetScenario() {
 	defer env.Close()
 
 	env.Do(func() {
-		client := netxlite.NewHTTPClientStdlib(log.Log)
+		client := netxlite.NewHTTPClientStdlibLegacy(log.Log)
 		thRequest := []byte(`{"http_request": "https://www.example.com/","http_request_headers":{},"tcp_connect":["93.184.216.34:443"]}`)
 
 		req, err := http.NewRequest("POST", "https://0.th.ooni.org/", bytes.NewReader(thRequest))
@@ -452,7 +452,7 @@ func Example_ubuntuGeoIPWithInternetScenario() {
 	defer env.Close()
 
 	env.Do(func() {
-		client := netxlite.NewHTTPClientStdlib(log.Log)
+		client := netxlite.NewHTTPClientStdlibLegacy(log.Log)
 
 		req, err := http.NewRequest("GET", "https://geoip.ubuntu.com/lookup", nil)
 		if err != nil {
@@ -482,7 +482,7 @@ func Example_examplePublicBlockpage() {
 	defer env.Close()
 
 	env.Do(func() {
-		client := netxlite.NewHTTPClientStdlib(log.Log)
+		client := netxlite.NewHTTPClientStdlibLegacy(log.Log)
 
 		req, err := http.NewRequest("GET", "http://"+netemx.AddressPublicBlockpage+"/", nil)
 		if err != nil {
@@ -523,7 +523,7 @@ func Example_exampleURLShortener() {
 	defer env.Close()
 
 	env.Do(func() {
-		client := netxlite.NewHTTPTransportStdlib(log.Log)
+		client := netxlite.NewHTTPTransportStdlibLegacy(log.Log)
 
 		req, err := http.NewRequest("GET", "https://bit.ly/21645", nil)
 		if err != nil {

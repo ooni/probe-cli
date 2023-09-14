@@ -149,8 +149,8 @@ func TestHTTPTestxWithStdlib(t *testing.T) {
 			tlsHandshaker := netxlite.NewTLSHandshakerStdlib(log.Log)
 			tlsDialer := netxlite.NewTLSDialerWithConfig(
 				tcpDialer, tlsHandshaker, &tls.Config{RootCAs: srvr.X509CertPool})
-			txp := netxlite.NewHTTPTransport(log.Log, tcpDialer, tlsDialer)
-			client := netxlite.NewHTTPClient(txp)
+			txp := netxlite.NewHTTPTransportLegacy(log.Log, tcpDialer, tlsDialer)
+			client := netxlite.NewHTTPClientLegacy(txp)
 
 			// issue the request and get the response headers
 			resp, err := client.Do(req)
@@ -421,8 +421,8 @@ func TestHTTPTestxWithNetem(t *testing.T) {
 				tlsHandshaker := netxlite.NewTLSHandshakerStdlib(log.Log)
 				tlsDialer := netxlite.NewTLSDialerWithConfig(
 					tcpDialer, tlsHandshaker, &tls.Config{RootCAs: srvr.X509CertPool})
-				txp := netxlite.NewHTTPTransport(log.Log, tcpDialer, tlsDialer)
-				client := netxlite.NewHTTPClient(txp)
+				txp := netxlite.NewHTTPTransportLegacy(log.Log, tcpDialer, tlsDialer)
+				client := netxlite.NewHTTPClientLegacy(txp)
 
 				// issue the request and get the response headers
 				resp, err := client.Do(req)
@@ -560,8 +560,8 @@ func TestHTTPHandlerProxy(t *testing.T) {
 
 			//log.SetLevel(log.DebugLevel)
 
-			txp := netx.NewHTTPTransportStdlib(log.Log)
-			client := netxlite.NewHTTPClient(txp)
+			txp := netx.NewHTTPTransportStdlibLegacy(log.Log)
+			client := netxlite.NewHTTPClientLegacy(txp)
 
 			resp, err := client.Do(req)
 			if err != nil {

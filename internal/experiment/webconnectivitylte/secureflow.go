@@ -171,7 +171,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	}
 
 	// create HTTP transport
-	httpTransport := netxlite.NewHTTPTransport(
+	httpTransport := netxlite.NewHTTPTransportLegacy(
 		t.Logger,
 		netxlite.NewNullDialer(),
 		// note: netxlite guarantees that here tlsConn is a netxlite.TLSConn

@@ -78,5 +78,5 @@ func newHTTP3Transport(config httpTransportConfig) model.HTTPTransport {
 
 // newHTTPTransport creates a new "system" HTTP transport.
 func newHTTPTransport(config httpTransportConfig) model.HTTPTransport {
-	return netxlite.NewHTTPTransport(config.Logger, config.Dialer, config.TLSDialer)
+	return netxlite.NewHTTPTransportLegacy(config.Logger, config.Dialer, config.TLSDialer)
 }

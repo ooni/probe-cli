@@ -26,7 +26,7 @@ import (
 )
 
 func newclient() probeservices.Client {
-	txp := netxlite.NewHTTPTransportStdlib(log.Log)
+	txp := netxlite.NewHTTPTransportStdlibLegacy(log.Log)
 	ua := fmt.Sprintf("apitool/%s ooniprobe-engine/%s", version.Version, version.Version)
 	return probeservices.Client{
 		APIClientTemplate: httpx.APIClientTemplate{

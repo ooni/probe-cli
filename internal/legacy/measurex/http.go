@@ -80,7 +80,7 @@ func WrapHTTPTransport(
 // does not dial and only uses the given conn.
 func (mx *Measurer) NewHTTPTransportWithConn(
 	logger model.Logger, db WritableDB, conn Conn) *HTTPTransportDB {
-	return mx.WrapHTTPTransport(db, netxlite.NewHTTPTransport(
+	return mx.WrapHTTPTransport(db, netxlite.NewHTTPTransportLegacy(
 		logger, netxlite.NewSingleUseDialer(conn), netxlite.NewNullTLSDialer()))
 }
 
@@ -88,7 +88,7 @@ func (mx *Measurer) NewHTTPTransportWithConn(
 // does not dial and only uses the given conn.
 func (mx *Measurer) NewHTTPTransportWithTLSConn(
 	logger model.Logger, db WritableDB, conn netxlite.TLSConn) *HTTPTransportDB {
-	return mx.WrapHTTPTransport(db, netxlite.NewHTTPTransport(
+	return mx.WrapHTTPTransport(db, netxlite.NewHTTPTransportLegacy(
 		logger, netxlite.NewNullDialer(), netxlite.NewSingleUseTLSDialer(conn)))
 }
 

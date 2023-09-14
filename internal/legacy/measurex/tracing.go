@@ -36,7 +36,7 @@ func NewTracingHTTPTransport(logger model.Logger, begin time.Time, db WritableDB
 	dialer = netxlite.WrapDialer(logger, resolver, WrapDialer(begin, db, dialer))
 	tlsDialer := netxlite.NewTLSDialer(dialer, handshaker)
 	return WrapHTTPTransport(
-		begin, db, netxlite.NewHTTPTransport(logger, dialer, tlsDialer),
+		begin, db, netxlite.NewHTTPTransportLegacy(logger, dialer, tlsDialer),
 		maxBodySnapshotSize)
 }
 

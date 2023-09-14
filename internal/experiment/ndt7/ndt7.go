@@ -77,7 +77,7 @@ type Measurer struct {
 
 func (m *Measurer) discover(
 	ctx context.Context, sess model.ExperimentSession) (*mlablocatev2.NDT7Result, error) {
-	httpClient := netxlite.NewHTTPClientStdlib(sess.Logger())
+	httpClient := netxlite.NewHTTPClientStdlibLegacy(sess.Logger())
 	defer httpClient.CloseIdleConnections()
 	client := mlablocatev2.NewClient(httpClient, sess.Logger(), sess.UserAgent())
 	out, err := client.QueryNDT7(ctx)

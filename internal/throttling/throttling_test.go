@@ -44,7 +44,7 @@ func TestSamplerWorkingAsIntended(t *testing.T) {
 	dialer := tx.NewDialerWithoutResolver(model.DiscardLogger)
 
 	// create an HTTP transport
-	txp := netxlite.NewHTTPTransport(model.DiscardLogger, dialer, netxlite.NewNullTLSDialer())
+	txp := netxlite.NewHTTPTransportLegacy(model.DiscardLogger, dialer, netxlite.NewNullTLSDialer())
 
 	// create the HTTP request to issue
 	req := runtimex.Try1(http.NewRequest("GET", server.URL, nil))

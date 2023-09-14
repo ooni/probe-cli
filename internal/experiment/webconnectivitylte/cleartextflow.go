@@ -137,7 +137,7 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) error {
 	}
 
 	// create HTTP transport
-	httpTransport := netxlite.NewHTTPTransport(
+	httpTransport := netxlite.NewHTTPTransportLegacy(
 		t.Logger,
 		netxlite.NewSingleUseDialer(tcpConn),
 		netxlite.NewNullTLSDialer(),

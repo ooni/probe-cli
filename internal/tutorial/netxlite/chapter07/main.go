@@ -83,7 +83,7 @@ func main() {
 	// see how to do the same using QUIC.)
 	//
 	// ```Go
-	clnt := &http.Client{Transport: netxlite.NewHTTPTransport(
+	clnt := &http.Client{Transport: netxlite.NewHTTPTransportLegacy(
 		log.Log, netxlite.NewNullDialer(),
 		netxlite.NewSingleUseTLSDialer(conn.(netxlite.TLSConn)),
 	)}
