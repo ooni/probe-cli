@@ -1,4 +1,4 @@
-package geolocate
+package enginelocate
 
 import (
 	"github.com/ooni/probe-cli/v3/internal/geoipx"

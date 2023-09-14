@@ -1,5 +1,5 @@
-// Package geolocate implements IP lookup, resolver lookup, and geolocation.
-package geolocate
+// Package enginelocate implements IP lookup, resolver lookup, and geolocation.
+package enginelocate
 
 import (
 	"context"
