@@ -1,4 +1,4 @@
-package sessionresolver
+package engineresolver
 
 import (
 	"strings"

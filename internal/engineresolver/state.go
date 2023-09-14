@@ -1,4 +1,4 @@
-package sessionresolver
+package engineresolver
 
 //
 // Persistent on-disk state
@@ -8,6 +8,9 @@ import (
 	"errors"
 	"sort"
 )
+
+// TODO(bassosimone): we may want to change the key and rename or
+// remove the old file inside the statedir
 
 // storekey is the key used by the key value store to store
 // the state required by this package.

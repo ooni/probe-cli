@@ -1,4 +1,4 @@
-package sessionresolver
+package engineresolver
 
 //
 // Implementation of model.Resolver

@@ -14,6 +14,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/checkincache"
 	"github.com/ooni/probe-cli/v3/internal/enginelocate"
+	"github.com/ooni/probe-cli/v3/internal/engineresolver"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -21,7 +22,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/registry"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
-	"github.com/ooni/probe-cli/v3/internal/sessionresolver"
 	"github.com/ooni/probe-cli/v3/internal/tunnel"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
@@ -64,7 +64,7 @@ type Session struct {
 	logger                   model.Logger
 	proxyURL                 *url.URL
 	queryProbeServicesCount  *atomic.Int64
-	resolver                 *sessionresolver.Resolver
+	resolver                 *engineresolver.Resolver
 	selectedProbeServiceHook func(*model.OOAPIService)
 	selectedProbeService     *model.OOAPIService
 	softwareName             string
@@ -132,8 +132,8 @@ type sessionProbeServicesClientForCheckIn interface {
 //
 // 5. Create a compound resolver for the session that will attempt
 // to use a bunch of DoT/DoH servers before falling back to the system
-// resolver if nothing else works (see the sessionresolver pkg). This
-// sessionresolver will be using the configured proxy, if any.
+// resolver if nothing else works (see the engineresolver pkg). This
+// engineresolver will be using the configured proxy, if any.
 //
 // 6. Create the default HTTP transport that we should be using when
 // we communicate with the OONI backends. This transport will be
@@ -208,7 +208,7 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 		}
 	}
 	sess.proxyURL = proxyURL
-	sess.resolver = &sessionresolver.Resolver{
+	sess.resolver = &engineresolver.Resolver{
 		ByteCounter: sess.byteCounter,
 		KVStore:     config.KVStore,
 		Logger:      sess.logger,
