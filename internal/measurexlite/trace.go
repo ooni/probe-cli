@@ -75,6 +75,8 @@ type Trace struct {
 	ZeroTime time.Time
 }
 
+var _ model.MeasuringNetwork = &Trace{}
+
 // NetworkEventBufferSize is the [*Trace] buffer size for network I/O events.
 const NetworkEventBufferSize = 64
 
