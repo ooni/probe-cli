@@ -46,7 +46,6 @@ func TestNewHTTPTransportWithOptions(t *testing.T) {
 		underlying := oohttpStdlibAdapter.Transport
 
 		// now let's check that everything is configured as intended
-		// by applying the expected changes to a cloned default transport
 		expectedTxp := oohttp.DefaultTransport.(*oohttp.Transport).Clone()
 		diff := cmp.Diff(
 			expectedTxp,
