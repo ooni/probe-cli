@@ -47,9 +47,11 @@ func NewHTTPTransport(
 	proxyURL *url.URL,
 	resolver model.Resolver,
 ) *HTTPTransport {
-	txp := netxlite.NewHTTPTransportWithLoggerResolverAndOptionalProxyURL(
-		logger, resolver, proxyURL,
-	)
+	dialer := netxlite.NewDialerWithResolver(logger, resolver)
+	dialer = netxlite.MaybeWrapWithProxyDialer(dialer, proxyURL)
+	handshaker := netxlite.NewTLSHandshakerStdlib(logger)
+	tlsDialer := netxlite.NewTLSDialer(dialer, handshaker)
+	txp := netxlite.NewHTTPTransport(logger, dialer, tlsDialer)
 	txp = bytecounter.WrapHTTPTransport(txp, counter)
 	return &HTTPTransport{txp}
 }
