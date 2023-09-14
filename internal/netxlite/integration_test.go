@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"runtime"
 	"testing"
 	"time"
 
@@ -78,6 +79,9 @@ func TestMeasureWithSystemResolver(t *testing.T) {
 		// e.g. a domain containing a few random letters
 		addrs, err := r.LookupHost(ctx, randx.Letters(7)+".ooni.nonexistent")
 		if err == nil || err.Error() != netxlite.FailureGenericTimeoutError {
+			if runtime.GOOS == "windows" {
+				t.Skip("https://github.com/ooni/probe/issues/2535")
+			}
 			t.Fatal("not the error we expected", err)
 		}
 		if addrs != nil {
