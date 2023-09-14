@@ -137,6 +137,9 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) error {
 	}
 
 	// create HTTP transport
+	// TODO(https://github.com/ooni/probe/issues/2534): here we're using the QUIRKY netxlite.NewHTTPTransport
+	// function, but we can probably avoid using it, given that this code is
+	// not using tracing and does not care about those quirks.
 	httpTransport := netxlite.NewHTTPTransport(
 		t.Logger,
 		netxlite.NewSingleUseDialer(tcpConn),

@@ -87,6 +87,8 @@ func (c ipLookupClient) doWithCustomFunc(
 	// Implementation note: we MUST use an HTTP client that we're
 	// sure IS NOT using any proxy. To this end, we construct a
 	// client ourself that we know is not proxied.
+	// TODO(https://github.com/ooni/probe/issues/2534): the NewHTTPTransportWithResolver has QUIRKS but
+	// we don't care about them in this context
 	txp := netxlite.NewHTTPTransportWithResolver(c.Logger, c.Resolver)
 	clnt := &http.Client{Transport: txp}
 	defer clnt.CloseIdleConnections()

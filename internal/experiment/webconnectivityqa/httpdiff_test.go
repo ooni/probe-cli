@@ -25,6 +25,7 @@ func TestHTTPDiffWithConsistentDNS(t *testing.T) {
 			tc.Configure(env)
 
 			env.Do(func() {
+				// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS but they're not needed here
 				client := netxlite.NewHTTPClientStdlib(log.Log)
 				req := runtimex.Try1(http.NewRequest("GET", "http://www.example.com/", nil))
 				resp, err := client.Do(req)
@@ -58,6 +59,7 @@ func TestHTTPDiffWithInconsistentDNS(t *testing.T) {
 
 			env.Do(func() {
 				t.Run("there is blockpage spoofing", func(t *testing.T) {
+					// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS but they're not needed here
 					client := netxlite.NewHTTPClientStdlib(log.Log)
 					req := runtimex.Try1(http.NewRequest("GET", "http://www.example.com/", nil))
 					resp, err := client.Do(req)
