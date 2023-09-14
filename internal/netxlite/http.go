@@ -9,7 +9,6 @@ import (
 	"errors"
 	"net"
 	"net/http"
-	"net/url"
 	"time"
 
 	oohttp "github.com/ooni/oohttp"
@@ -104,25 +103,6 @@ func (txp *httpTransportConnectionsCloser) CloseIdleConnections() {
 	txp.HTTPTransport.CloseIdleConnections()
 	txp.Dialer.CloseIdleConnections()
 	txp.TLSDialer.CloseIdleConnections()
-}
-
-// NewHTTPTransportWithLoggerResolverAndOptionalProxyURL creates an HTTPTransport using
-// the given logger and resolver and an optional proxy URL.
-//
-// Arguments:
-//
-// - logger is the MANDATORY logger;
-//
-// - resolver is the MANDATORY resolver;
-//
-// - purl is the OPTIONAL proxy URL.
-func NewHTTPTransportWithLoggerResolverAndOptionalProxyURL(
-	logger model.DebugLogger, resolver model.Resolver, purl *url.URL) model.HTTPTransport {
-	dialer := NewDialerWithResolver(logger, resolver)
-	dialer = MaybeWrapWithProxyDialer(dialer, purl)
-	handshaker := NewTLSHandshakerStdlib(logger)
-	tlsDialer := NewTLSDialer(dialer, handshaker)
-	return NewHTTPTransport(logger, dialer, tlsDialer)
 }
 
 // NewHTTPTransportWithResolver creates a new HTTP transport using

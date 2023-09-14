@@ -6,7 +6,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"net/url"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -16,48 +15,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
-
-func TestNewHTTPTransportWithLoggerResolverAndOptionalProxyURL(t *testing.T) {
-	t.Run("without proxy URL", func(t *testing.T) {
-		logger := &mocks.Logger{}
-		resolver := &mocks.Resolver{}
-		txp := NewHTTPTransportWithLoggerResolverAndOptionalProxyURL(logger, resolver, nil)
-		txpLogger := txp.(*httpTransportLogger)
-		if txpLogger.Logger != logger {
-			t.Fatal("unexpected logger")
-		}
-		txpErrWrapper := txpLogger.HTTPTransport.(*httpTransportErrWrapper)
-		txpCc := txpErrWrapper.HTTPTransport.(*httpTransportConnectionsCloser)
-		dialer := txpCc.Dialer
-		dialerWithReadTimeout := dialer.(*httpDialerWithReadTimeout)
-		dialerLog := dialerWithReadTimeout.Dialer.(*dialerLogger)
-		dialerReso := dialerLog.Dialer.(*dialerResolverWithTracing)
-		if dialerReso.Resolver != resolver {
-			t.Fatal("invalid resolver")
-		}
-	})
-
-	t.Run("with proxy URL", func(t *testing.T) {
-		URL := &url.URL{}
-		logger := &mocks.Logger{}
-		resolver := &mocks.Resolver{}
-		txp := NewHTTPTransportWithLoggerResolverAndOptionalProxyURL(logger, resolver, URL)
-		txpLogger := txp.(*httpTransportLogger)
-		if txpLogger.Logger != logger {
-			t.Fatal("unexpected logger")
-		}
-		txpErrWrapper := txpLogger.HTTPTransport.(*httpTransportErrWrapper)
-		txpCc := txpErrWrapper.HTTPTransport.(*httpTransportConnectionsCloser)
-		dialer := txpCc.Dialer
-		dialerWithReadTimeout := dialer.(*httpDialerWithReadTimeout)
-		dialerProxy := dialerWithReadTimeout.Dialer.(*proxyDialer)
-		dialerLog := dialerProxy.Dialer.(*dialerLogger)
-		dialerReso := dialerLog.Dialer.(*dialerResolverWithTracing)
-		if dialerReso.Resolver != resolver {
-			t.Fatal("invalid resolver")
-		}
-	})
-}
 
 func TestNewHTTPTransportWithResolver(t *testing.T) {
 	expected := errors.New("mocked error")
