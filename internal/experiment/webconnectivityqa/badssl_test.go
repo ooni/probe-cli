@@ -38,6 +38,7 @@ func TestBadSSLConditions(t *testing.T) {
 			tc.testCase.Configure(env)
 
 			env.Do(func() {
+				// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS but they're not needed here
 				client := netxlite.NewHTTPClientStdlib(log.Log)
 				req := runtimex.Try1(http.NewRequest("GET", tc.testCase.Input, nil))
 				resp, err := client.Do(req)

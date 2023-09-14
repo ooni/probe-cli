@@ -149,6 +149,9 @@ func TestHTTPTestxWithStdlib(t *testing.T) {
 			tlsHandshaker := netxlite.NewTLSHandshakerStdlib(log.Log)
 			tlsDialer := netxlite.NewTLSDialerWithConfig(
 				tcpDialer, tlsHandshaker, &tls.Config{RootCAs: srvr.X509CertPool})
+			// TODO(https://github.com/ooni/probe/issues/2534): here we're using the QUIRKY netxlite.NewHTTPTransport
+			// function, but we can probably avoid using it, given that this code is
+			// not using tracing and does not care about those quirks.
 			txp := netxlite.NewHTTPTransport(log.Log, tcpDialer, tlsDialer)
 			client := netxlite.NewHTTPClient(txp)
 
@@ -421,6 +424,9 @@ func TestHTTPTestxWithNetem(t *testing.T) {
 				tlsHandshaker := netxlite.NewTLSHandshakerStdlib(log.Log)
 				tlsDialer := netxlite.NewTLSDialerWithConfig(
 					tcpDialer, tlsHandshaker, &tls.Config{RootCAs: srvr.X509CertPool})
+				// TODO(https://github.com/ooni/probe/issues/2534): here we're using the QUIRKY netxlite.NewHTTPTransport
+				// function, but we can probably avoid using it, given that this code is
+				// not using tracing and does not care about those quirks.
 				txp := netxlite.NewHTTPTransport(log.Log, tcpDialer, tlsDialer)
 				client := netxlite.NewHTTPClient(txp)
 

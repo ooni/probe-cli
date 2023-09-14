@@ -26,6 +26,9 @@ type httpTransportTCPFunc struct{}
 // Apply implements Func
 func (f *httpTransportTCPFunc) Apply(
 	ctx context.Context, input *TCPConnection) *Maybe[*HTTPTransport] {
+	// TODO(https://github.com/ooni/probe/issues/2534): here we're using the QUIRKY netxlite.NewHTTPTransport
+	// function, but we can probably avoid using it, given that this code is
+	// not using tracing and does not care about those quirks.
 	httpTransport := netxlite.NewHTTPTransport(
 		input.Logger,
 		netxlite.NewSingleUseDialer(input.Conn),

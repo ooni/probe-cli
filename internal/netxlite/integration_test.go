@@ -551,6 +551,8 @@ func TestHTTPTransport(t *testing.T) {
 			conn.Close()
 		}))
 		defer srvr.Close()
+		// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPTransportStdlib has QUIRKS but we
+		// don't actually care about those QUIRKS in this context
 		txp := netxlite.NewHTTPTransportStdlib(model.DiscardLogger)
 		req, err := http.NewRequest("GET", srvr.URL, nil)
 		if err != nil {

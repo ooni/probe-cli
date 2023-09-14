@@ -34,6 +34,7 @@ func RunTestCase(measurer model.ExperimentMeasurer, tc *TestCase) error {
 	var err error
 	env.Do(func() {
 		// create an HTTP client inside the env.Do function so we're using netem
+		// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS but they're not needed here
 		httpClient := netxlite.NewHTTPClientStdlib(prefixLogger)
 		arguments := &model.ExperimentArgs{
 			Callbacks:   model.NewPrinterCallbacks(prefixLogger),
