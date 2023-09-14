@@ -88,7 +88,7 @@ func HTTPTransportOptionMaxConnsPerHost(value int) HTTPTransportOption {
 }
 
 // HTTPTransportOptionDisableCompression configures the .DisableCompression field, which
-// otherwise uses the default set in github.com/ooni/oohttp, i.e., false.
+// otherwise is set to true, so that this code is ready for measuring out of the box.
 func HTTPTransportOptionDisableCompression(value bool) HTTPTransportOption {
 	return func(txp *oohttp.Transport) {
 		txp.DisableCompression = value
