@@ -81,11 +81,10 @@ a single request using the given TLS conn.
 uses a cleartext TCP connection. In the next chapter we'll
 see how to do the same using QUIC.)
 
-```Go
-
 TODO(https://github.com/ooni/probe/issues/2534): here we're using the QUIRKY netxlite.NewHTTPTransport
 function, but we can probably avoid using it, given that this code is
 not using tracing and does not care about those quirks.
+```Go
 	clnt := &http.Client{Transport: netxlite.NewHTTPTransport(
 		log.Log, netxlite.NewNullDialer(),
 		netxlite.NewSingleUseTLSDialer(conn.(netxlite.TLSConn)),
