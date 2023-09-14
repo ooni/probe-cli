@@ -5,8 +5,12 @@ package netxlite
 //
 // Ideally, we should not modify this code or apply minimal and obvious changes.
 //
+// TODO(https://github.com/ooni/probe/issues/2534)
+//
 
 import (
+	"net/http"
+
 	oohttp "github.com/ooni/oohttp"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -128,4 +132,13 @@ func NewHTTPClientStdlib(logger model.DebugLogger) model.HTTPClient {
 // This function behavior is QUIRKY as documented in [NewHTTPTransport].
 func NewHTTPClientWithResolver(logger model.Logger, reso model.Resolver) model.HTTPClient {
 	return NewHTTPClient(NewHTTPTransportWithResolver(logger, reso))
+}
+
+// NewHTTPClient creates a new, wrapped HTTPClient using the given transport.
+//
+// This function behavior is QUIRKY because it does not configure a cookie jar, which
+// is probably not the right thing to do in many cases, but legacy code MAY depend
+// on this behavior. TODO(https://github.com/ooni/probe/issues/2534).
+func NewHTTPClient(txp model.HTTPTransport) model.HTTPClient {
+	return WrapHTTPClient(&http.Client{Transport: txp})
 }
