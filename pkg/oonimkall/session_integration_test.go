@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/geolocate"
+	"github.com/ooni/probe-cli/v3/internal/enginelocate"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/pkg/oonimkall"
 )
@@ -50,7 +50,7 @@ func ReduceErrorForGeolocate(err error) error {
 	if errors.Is(err, context.Canceled) {
 		return nil // when we have not downloaded the resources yet
 	}
-	if !errors.Is(err, geolocate.ErrAllIPLookuppersFailed) {
+	if !errors.Is(err, enginelocate.ErrAllIPLookuppersFailed) {
 		return nil // otherwise
 	}
 	return fmt.Errorf("not the error we expected: %w", err)
@@ -295,7 +295,7 @@ func TestCheckInLookupLocationFailure(t *testing.T) {
 	config.WebConnectivity.AddCategory("CULTR")
 	ctx.Cancel() // immediate failure
 	result, err := sess.CheckIn(ctx, &config)
-	if !errors.Is(err, geolocate.ErrAllIPLookuppersFailed) {
+	if !errors.Is(err, enginelocate.ErrAllIPLookuppersFailed) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
 	if result != nil {
