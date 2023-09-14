@@ -1,18 +1,20 @@
 package netxlite
 
 //
-// HTTP/1.1 and HTTP2 code
+// QUIRKy Legacy HTTP code and behavior assumed by ./legacy/netx 😅
+//
+// Ideally, we should not modify this code or apply minimal and obvious changes.
 //
 
 import (
-	"net/http"
-
 	oohttp "github.com/ooni/oohttp"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // NewHTTPTransportWithResolver creates a new HTTP transport using
 // the stdlib for everything but the given resolver.
+//
+// This function behavior is QUIRKY as documented in [NewHTTPTransport].
 func NewHTTPTransportWithResolver(logger model.DebugLogger, reso model.Resolver) model.HTTPTransport {
 	dialer := NewDialerWithResolver(logger, reso)
 	thx := NewTLSHandshakerStdlib(logger)
@@ -43,9 +45,6 @@ func NewHTTPTransportWithResolver(logger model.DebugLogger, reso model.Resolver)
 // necessary to perform sane measurements with tracing. We will be
 // able to possibly relax this requirement after we change the
 // way in which we perform measurements.
-//
-// This factory and NewHTTPTransportStdlib are the recommended
-// ways of creating a new HTTPTransport.
 func NewHTTPTransport(logger model.DebugLogger, dialer model.Dialer, tlsDialer model.TLSDialer) model.HTTPTransport {
 	return WrapHTTPTransport(logger, newOOHTTPBaseTransport(dialer, tlsDialer))
 }
@@ -54,6 +53,8 @@ func NewHTTPTransport(logger model.DebugLogger, dialer model.Dialer, tlsDialer m
 // to create a new, suitable HTTPTransport for HTTP2 and HTTP/1.1.
 //
 // This factory uses github.com/ooni/oohttp, hence its name.
+//
+// This function behavior is QUIRKY as documented in [NewHTTPTransport].
 func newOOHTTPBaseTransport(dialer model.Dialer, tlsDialer model.TLSDialer) model.HTTPTransport {
 	// Using oohttp to support any TLS library.
 	txp := oohttp.DefaultTransport.(*oohttp.Transport).Clone()
@@ -91,24 +92,12 @@ func newOOHTTPBaseTransport(dialer model.Dialer, tlsDialer model.TLSDialer) mode
 	}
 }
 
-// WrapHTTPTransport creates an HTTPTransport using the given logger
-// and guarantees that returned errors are wrapped.
-//
-// This is a low level factory. Consider not using it directly.
-func WrapHTTPTransport(logger model.DebugLogger, txp model.HTTPTransport) model.HTTPTransport {
-	return &httpTransportLogger{
-		HTTPTransport: &httpTransportErrWrapper{txp},
-		Logger:        logger,
-	}
-}
-
 // NewHTTPTransportStdlib creates a new HTTPTransport using
 // the stdlib for DNS resolutions and TLS.
 //
 // This factory calls NewHTTPTransport with suitable dialers.
 //
-// This factory and NewHTTPTransport are the recommended
-// ways of creating a new HTTPTransport.
+// This function behavior is QUIRKY as documented in [NewHTTPTransport].
 func (netx *Netx) NewHTTPTransportStdlib(logger model.DebugLogger) model.HTTPTransport {
 	dialer := netx.NewDialerWithResolver(logger, netx.NewStdlibResolver(logger))
 	tlsDialer := NewTLSDialer(dialer, netx.NewTLSHandshakerStdlib(logger))
@@ -117,6 +106,8 @@ func (netx *Netx) NewHTTPTransportStdlib(logger model.DebugLogger) model.HTTPTra
 
 // NewHTTPTransportStdlib is equivalent to creating an empty [*Netx]
 // and calling its NewHTTPTransportStdlib method.
+//
+// This function behavior is QUIRKY as documented in [NewHTTPTransport].
 func NewHTTPTransportStdlib(logger model.DebugLogger) model.HTTPTransport {
 	netx := &Netx{Underlying: nil}
 	return netx.NewHTTPTransportStdlib(logger)
@@ -124,6 +115,8 @@ func NewHTTPTransportStdlib(logger model.DebugLogger) model.HTTPTransport {
 
 // NewHTTPClientStdlib creates a new HTTPClient that uses the
 // standard library for TLS and DNS resolutions.
+//
+// This function behavior is QUIRKY as documented in [NewHTTPTransport].
 func NewHTTPClientStdlib(logger model.DebugLogger) model.HTTPClient {
 	txp := NewHTTPTransportStdlib(logger)
 	return NewHTTPClient(txp)
@@ -131,16 +124,8 @@ func NewHTTPClientStdlib(logger model.DebugLogger) model.HTTPClient {
 
 // NewHTTPClientWithResolver creates a new HTTPTransport using the
 // given resolver and then from that builds an HTTPClient.
+//
+// This function behavior is QUIRKY as documented in [NewHTTPTransport].
 func NewHTTPClientWithResolver(logger model.Logger, reso model.Resolver) model.HTTPClient {
 	return NewHTTPClient(NewHTTPTransportWithResolver(logger, reso))
-}
-
-// NewHTTPClient creates a new, wrapped HTTPClient using the given transport.
-func NewHTTPClient(txp model.HTTPTransport) model.HTTPClient {
-	return WrapHTTPClient(&http.Client{Transport: txp})
-}
-
-// WrapHTTPClient wraps an HTTP client to add error wrapping capabilities.
-func WrapHTTPClient(clnt model.HTTPClient) model.HTTPClient {
-	return &httpClientErrWrapper{clnt}
 }

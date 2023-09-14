@@ -44,6 +44,9 @@ func TestSamplerWorkingAsIntended(t *testing.T) {
 	dialer := tx.NewDialerWithoutResolver(model.DiscardLogger)
 
 	// create an HTTP transport
+	// TODO(https://github.com/ooni/probe/issues/2534): here we're using the QUIRKY netxlite.NewHTTPTransport
+	// function, but we can probably avoid using it, given that this code is
+	// not using tracing and does not care about those quirks.
 	txp := netxlite.NewHTTPTransport(model.DiscardLogger, dialer, netxlite.NewNullTLSDialer())
 
 	// create the HTTP request to issue

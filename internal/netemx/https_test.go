@@ -27,6 +27,7 @@ func TestHTTPSecureServerFactory(t *testing.T) {
 		env.AddRecordToAllResolvers("www.example.com", "", AddressWwwExampleCom)
 
 		env.Do(func() {
+			// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS but they're not needed here
 			client := netxlite.NewHTTPClientStdlib(log.Log)
 			req := runtimex.Try1(http.NewRequest("GET", "https://www.example.com/", nil))
 			resp, err := client.Do(req)
@@ -66,6 +67,7 @@ func TestHTTPSecureServerFactory(t *testing.T) {
 		env.AddRecordToAllResolvers("www.example.com", "", AddressWwwExampleCom)
 
 		env.Do(func() {
+			// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS but they're not needed here
 			client := netxlite.NewHTTPClientStdlib(log.Log)
 			req := runtimex.Try1(http.NewRequest("GET", "https://www.example.com/", nil))
 			resp, err := client.Do(req)

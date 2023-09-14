@@ -77,6 +77,10 @@ type Measurer struct {
 
 func (m *Measurer) discover(
 	ctx context.Context, sess model.ExperimentSession) (*mlablocatev2.NDT7Result, error) {
+	// Implementation note: here we cannot use the session's HTTP client because it MAY be proxied
+	// and instead we need to connect directly to M-Lab's locate service.
+	//
+	// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS and maybe here it doesn't matter?
 	httpClient := netxlite.NewHTTPClientStdlib(sess.Logger())
 	defer httpClient.CloseIdleConnections()
 	client := mlablocatev2.NewClient(httpClient, sess.Logger(), sess.UserAgent())

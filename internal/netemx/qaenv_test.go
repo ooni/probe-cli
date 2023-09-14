@@ -92,6 +92,7 @@ func TestQAEnv(t *testing.T) {
 		env.Do(func() {
 			// create client, which will use the underlying client stack's
 			// DialContext method to dial connections
+			// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS but they're not needed here
 			client := netxlite.NewHTTPClientStdlib(model.DiscardLogger)
 
 			// create request using a domain that has been configured in the
@@ -211,6 +212,7 @@ func TestQAEnv(t *testing.T) {
 		env.Do(func() {
 			// create client, which will use the underlying client stack's
 			// DialContext method to dial connections
+			// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS but they're not needed here
 			client := netxlite.NewHTTPClientStdlib(model.DiscardLogger)
 
 			// create the request
@@ -257,6 +259,7 @@ func TestQAEnv(t *testing.T) {
 		env.Do(func() {
 			// create client, which will use the underlying client stack's
 			// DialContext method to dial connections
+			// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS but they're not needed here
 			client := netxlite.NewHTTPClientStdlib(model.DiscardLogger)
 
 			// create the request

@@ -83,6 +83,7 @@ func TestWithCustomTProxy(t *testing.T) {
 		}
 
 		WithCustomTProxy(tproxy, func() {
+			// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS but they're not needed here
 			clnt := NewHTTPClientStdlib(model.DiscardLogger)
 			req, err := http.NewRequestWithContext(context.Background(), "GET", srvr.URL, nil)
 			if err != nil {

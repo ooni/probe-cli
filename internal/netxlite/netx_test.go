@@ -75,6 +75,8 @@ func TestNetx(t *testing.T) {
 	netx := &Netx{underlyingNetwork}
 
 	t.Run("HTTPS fetch", func(t *testing.T) {
+		// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPTransportStdlib is QUIRKY but we probably
+		// don't care about using a QUIRKY function here?
 		txp := netx.NewHTTPTransportStdlib(log.Log)
 		client := &http.Client{Transport: txp}
 		resp, err := client.Get("https://www.example.com/")
