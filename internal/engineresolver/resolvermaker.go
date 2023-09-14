@@ -1,4 +1,4 @@
-package sessionresolver
+package engineresolver
 
 //
 // High-level code for creating a new child resolver
