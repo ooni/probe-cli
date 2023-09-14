@@ -67,6 +67,7 @@ func NewHTTPTransportWithOptions(logger model.Logger,
 func HTTPTransportOptionProxyURL(proxyURL *url.URL) HTTPTransportOption {
 	return func(txp *oohttp.Transport) {
 		txp.Proxy = func(r *oohttp.Request) (*url.URL, error) {
+			// "If Proxy is nil or returns a nil *URL, no proxy is used."
 			return proxyURL, nil
 		}
 	}
