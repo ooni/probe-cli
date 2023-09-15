@@ -6,11 +6,13 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func TestTproxyNilSafeProvider(t *testing.T) {
@@ -98,4 +100,34 @@ func TestWithCustomTProxy(t *testing.T) {
 			}
 		})
 	})
+}
+
+// We generally do not listen here as part of other tests, since the listening
+// functionality is mainly only use for testingx. So, here's a specific test for that.
+func TestTproxyListenTCP(t *testing.T) {
+	tproxy := &DefaultTProxy{}
+
+	listener := runtimex.Try1(tproxy.ListenTCP("tcp", &net.TCPAddr{}))
+	serverEndpoint := listener.Addr().String()
+
+	// listen in a background goroutine
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		conn := runtimex.Try1(listener.Accept())
+		conn.Close()
+		wg.Done()
+	}()
+
+	// dial in a background goroutine
+	wg.Add(1)
+	go func() {
+		ctx := context.Background()
+		conn := runtimex.Try1(tproxy.DialContext(ctx, "tcp", serverEndpoint))
+		conn.Close()
+		wg.Done()
+	}()
+
+	// wait for the goroutines to finish
+	wg.Wait()
 }

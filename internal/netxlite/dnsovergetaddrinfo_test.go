@@ -13,6 +13,14 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 )
 
+func TestNewDNSOverGetaddrinfoTransport(t *testing.T) {
+	txp := NewDNSOverGetaddrinfoTransport()
+	underlying := txp.(*dnsOverGetaddrinfoTransport)
+	if underlying.provider.underlying != nil {
+		t.Fatal("expected to see a nil underlying network")
+	}
+}
+
 func TestDNSOverGetaddrinfo(t *testing.T) {
 	t.Run("RequiresPadding", func(t *testing.T) {
 		txp := &dnsOverGetaddrinfoTransport{}

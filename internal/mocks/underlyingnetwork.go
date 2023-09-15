@@ -17,6 +17,8 @@ type UnderlyingNetwork struct {
 
 	MockDialContext func(ctx context.Context, network, address string) (net.Conn, error)
 
+	MockListenTCP func(network string, addr *net.TCPAddr) (net.Listener, error)
+
 	MockListenUDP func(network string, addr *net.UDPAddr) (model.UDPLikeConn, error)
 
 	MockGetaddrinfoLookupANY func(ctx context.Context, domain string) ([]string, string, error)
@@ -36,6 +38,10 @@ func (un *UnderlyingNetwork) DialTimeout() time.Duration {
 
 func (un *UnderlyingNetwork) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	return un.MockDialContext(ctx, network, address)
+}
+
+func (un *UnderlyingNetwork) ListenTCP(network string, addr *net.TCPAddr) (net.Listener, error) {
+	return un.MockListenTCP(network, addr)
 }
 
 func (un *UnderlyingNetwork) ListenUDP(network string, addr *net.UDPAddr) (model.UDPLikeConn, error) {

@@ -86,6 +86,11 @@ func (tp *DefaultTProxy) DialContext(ctx context.Context, network, address strin
 	return d.DialContext(ctx, network, address)
 }
 
+// ListenTCP implements UnderlyingNetwork.
+func (tp *DefaultTProxy) ListenTCP(network string, addr *net.TCPAddr) (net.Listener, error) {
+	return net.ListenTCP(network, addr)
+}
+
 // ListenUDP implements UnderlyingNetwork.
 func (tp *DefaultTProxy) ListenUDP(network string, addr *net.UDPAddr) (model.UDPLikeConn, error) {
 	return net.ListenUDP(network, addr)
