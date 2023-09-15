@@ -79,7 +79,6 @@ func (srv *tlsProxyServer) MustStart() {
 			srv.logger,
 			&netxlite.Netx{Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: srv.unet}},
 			epnt,
-			srv.unet,
 		)
 
 		// track this server as something to close later

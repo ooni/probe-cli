@@ -89,6 +89,7 @@ func mustNewHTTPServer(
 		X509CertPool: nil, // the default when not using TLS
 	}
 	baseURL := &url.URL{Host: listener.Addr().String()}
+
 	switch !tlsConfig.IsNone() {
 	case true:
 		baseURL.Scheme = "https"
@@ -97,10 +98,12 @@ func mustNewHTTPServer(
 		srv.Config.TLSConfig = srv.TLS
 		srv.X509CertPool = runtimex.Try1(tlsConfig.Unwrap().DefaultCertPool())
 		go srv.Config.ServeTLS(listener, "", "") // using server.TLSConfig
+
 	default:
 		baseURL.Scheme = "http"
 		go srv.Config.Serve(listener)
 	}
+
 	srv.URL = baseURL.String()
 	return srv
 }
