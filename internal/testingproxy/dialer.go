@@ -10,6 +10,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
+// dialerWithAssertions ensures that we're dialing with the proxy address.
 type dialerWithAssertions struct {
 	// ExpectAddress is the expected IP address to dial
 	ExpectAddress string

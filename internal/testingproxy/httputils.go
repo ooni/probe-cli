@@ -40,7 +40,6 @@ func (t *httpTestingTMock) Logf(format string, v ...any) {
 }
 
 func httpCheckResponse(t httpTestingT, client httpClient, targetURL string) {
-	// get the homepage and assert we're getting a succesful response
 	resp, err := client.Get(targetURL)
 	if err != nil {
 		t.Fatal(err)
