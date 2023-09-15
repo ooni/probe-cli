@@ -102,37 +102,10 @@ func (tc *netemTestCaseWithHTTPWithTLS) Run(t *testing.T) {
 	)
 	defer proxyServer.Close()
 
-	// crete the netx instance for the client
+	// create the netx instance for the client
 	netx := &netxlite.Netx{Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: clientStack}}
 
-	log.SetLevel(log.DebugLevel)
-
-	/*
-		 ,ggg,      gg      ,gg,ggggggggggggggg ,gggggggggggggg
-		dP""Y8a     88     ,8PdP""""""88"""""""dP""""""88""""""
-		Yb, `88     88     d8'Yb,_    88       Yb,_    88
-		 `"  88     88     88  `""    88        `""    88
-		     88     88     88         88            ggg88gggg
-		     88     88     88         88               88   8
-		     88     88     88         88               88
-		     Y8    ,88,    8P   gg,   88         gg,   88
-		      Yb,,d8""8b,,dP     "Yb,,8P          "Yb,,8P
-		       "88"    "88"        "Y8P'            "Y8P'
-
-
-		Not necessarily wrong, but certainly I did not expect this! When we are
-		using an HTTPS proxy, the stdlib/oohttp *Transport uses the DialTLSContext for
-		dialing with the proxy but then uses its own TLS for handshaking over
-		the TLS connection with the proxy.
-
-		So, the naive implementation of this test case fails with an X.509
-		certificate error when we're using netem, because we're not using the
-		overriden DialTLSContext anymore, and the *Transport does not
-		otherwise know about the root CA used by netem.
-
-		The current fix is to use netxlite.HTTPTransportOptionTLSClientConfig
-		below. However, I'm now wondering if we're using the right default.
-	*/
+	//log.SetLevel(log.DebugLevel)
 
 	// create an HTTP client configured to use the given proxy
 	//
@@ -146,7 +119,7 @@ func (tc *netemTestCaseWithHTTPWithTLS) Run(t *testing.T) {
 	txp := netxlite.NewHTTPTransportWithOptions(log.Log, dialer, tlsDialer,
 		netxlite.HTTPTransportOptionProxyURL(runtimex.Try1(url.Parse(proxyServer.URL))),
 
-		// see above WTF comment
+		// TODO(https://github.com/ooni/probe/issues/2536)
 		netxlite.HTTPTransportOptionTLSClientConfig(&tls.Config{
 			RootCAs: runtimex.Try1(clientStack.DefaultCertPool()),
 		}),

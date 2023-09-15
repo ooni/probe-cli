@@ -24,11 +24,11 @@ var AllTestCases = []TestCase{
 	WithHostNetworkHTTPWithTLSProxyAndURL("http://www.example.com/"),
 	WithHostNetworkHTTPWithTLSProxyAndURL("https://www.example.com/"),
 
-	// netem and HTTP proxy
+	// with netem and HTTP proxy
 	WithNetemHTTPProxyAndURL("http://www.example.com/"),
 	WithNetemHTTPProxyAndURL("https://www.example.com/"),
 
-	// netem and HTTPS proxy
+	// with netem and HTTPS proxy
 	WithNetemHTTPWithTLSProxyAndURL("http://www.example.com/"),
 	WithNetemHTTPWithTLSProxyAndURL("https://www.example.com/"),
 }
