@@ -10,12 +10,15 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/netem"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
@@ -472,4 +475,199 @@ func TestHTTPTestxWithNetem(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestHTTPHandlerProxy(t *testing.T) {
+	expectedBody := []byte("Google is built by a large team of engineers, designers, researchers, robots, and others in many different sites across the globe. It is updated continuously, and built with more tools and technologies than we can shake a stick at. If you'd like to help us out, see careers.google.com.\n")
+
+	type testcase struct {
+		name      string
+		construct func() (*netxlite.Netx, string, []io.Closer)
+		short     bool
+	}
+
+	testcases := []testcase{
+		{
+			name: "using the real network",
+			construct: func() (*netxlite.Netx, string, []io.Closer) {
+				var closers []io.Closer
+
+				netx := &netxlite.Netx{
+					Underlying: nil, // so we're using the real network
+				}
+
+				proxyServer := testingx.MustNewHTTPServer(testingx.HTTPHandlerProxy(log.Log, netx))
+				closers = append(closers, proxyServer)
+
+				return netx, proxyServer.URL, closers
+			},
+			short: false,
+		},
+
+		{
+			name: "using netem",
+			construct: func() (*netxlite.Netx, string, []io.Closer) {
+				var closers []io.Closer
+
+				topology := runtimex.Try1(netem.NewStarTopology(log.Log))
+				closers = append(closers, topology)
+
+				wwwStack := runtimex.Try1(topology.AddHost("142.251.209.14", "142.251.209.14", &netem.LinkConfig{}))
+				proxyStack := runtimex.Try1(topology.AddHost("10.0.0.1", "142.251.209.14", &netem.LinkConfig{}))
+				clientStack := runtimex.Try1(topology.AddHost("10.0.0.2", "142.251.209.14", &netem.LinkConfig{}))
+
+				dnsConfig := netem.NewDNSConfig()
+				dnsConfig.AddRecord("www.google.com", "", "142.251.209.14")
+				dnsServer := runtimex.Try1(netem.NewDNSServer(log.Log, wwwStack, "142.251.209.14", dnsConfig))
+				closers = append(closers, dnsServer)
+
+				wwwServer := testingx.MustNewHTTPServerEx(
+					&net.TCPAddr{IP: net.IPv4(142, 251, 209, 14), Port: 80},
+					wwwStack,
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						w.Write(expectedBody)
+					}),
+				)
+				closers = append(closers, wwwServer)
+
+				proxyServer := testingx.MustNewHTTPServerEx(
+					&net.TCPAddr{IP: net.IPv4(10, 0, 0, 1), Port: 80},
+					proxyStack,
+					testingx.HTTPHandlerProxy(log.Log, &netxlite.Netx{
+						Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: proxyStack},
+					}),
+				)
+				closers = append(closers, proxyServer)
+
+				clientNet := &netxlite.Netx{Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: clientStack}}
+				return clientNet, proxyServer.URL, closers
+			},
+			short: true,
+		}}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			if !tc.short && testing.Short() {
+				t.Skip("skip test in short mode")
+			}
+
+			netx, proxyURL, closers := tc.construct()
+			defer func() {
+				for _, closer := range closers {
+					closer.Close()
+				}
+			}()
+
+			URL := runtimex.Try1(url.Parse(proxyURL))
+			URL.Path = "/humans.txt"
+
+			req := runtimex.Try1(http.NewRequest("GET", URL.String(), nil))
+			req.Host = "www.google.com"
+
+			//log.SetLevel(log.DebugLevel)
+
+			txp := netx.NewHTTPTransportStdlib(log.Log)
+			client := netxlite.NewHTTPClient(txp)
+
+			resp, err := client.Do(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != 200 {
+				t.Fatal("expected to see 200, got", resp.StatusCode)
+			}
+
+			t.Logf("%+v", resp)
+
+			body, err := netxlite.ReadAllContext(req.Context(), resp.Body)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			t.Logf("%s", string(body))
+
+			if diff := cmp.Diff(expectedBody, body); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+	}
+
+	t.Run("rejects requests without a host header", func(t *testing.T) {
+		rr := httptest.NewRecorder()
+		netx := &netxlite.Netx{Underlying: &mocks.UnderlyingNetwork{
+			// all nil: panic if we hit the network
+		}}
+		handler := testingx.HTTPHandlerProxy(log.Log, netx)
+		req := &http.Request{
+			Host: "", // explicitly empty
+		}
+		handler.ServeHTTP(rr, req)
+		res := rr.Result()
+		if res.StatusCode != http.StatusBadRequest {
+			t.Fatal("unexpected status code", res.StatusCode)
+		}
+	})
+
+	t.Run("rejects requests with a via header", func(t *testing.T) {
+		rr := httptest.NewRecorder()
+		netx := &netxlite.Netx{Underlying: &mocks.UnderlyingNetwork{
+			// all nil: panic if we hit the network
+		}}
+		handler := testingx.HTTPHandlerProxy(log.Log, netx)
+		req := &http.Request{
+			Host: "www.example.com",
+			Header: http.Header{
+				"Via": {"antani/0.1.0"},
+			},
+		}
+		handler.ServeHTTP(rr, req)
+		res := rr.Result()
+		if res.StatusCode != http.StatusBadRequest {
+			t.Fatal("unexpected status code", res.StatusCode)
+		}
+	})
+
+	t.Run("rejects requests with a POST method", func(t *testing.T) {
+		rr := httptest.NewRecorder()
+		netx := &netxlite.Netx{Underlying: &mocks.UnderlyingNetwork{
+			// all nil: panic if we hit the network
+		}}
+		handler := testingx.HTTPHandlerProxy(log.Log, netx)
+		req := &http.Request{
+			Host:   "www.example.com",
+			Header: http.Header{},
+			Method: http.MethodPost,
+		}
+		handler.ServeHTTP(rr, req)
+		res := rr.Result()
+		if res.StatusCode != http.StatusNotImplemented {
+			t.Fatal("unexpected status code", res.StatusCode)
+		}
+	})
+
+	t.Run("returns 502 when the round trip fails", func(t *testing.T) {
+		rr := httptest.NewRecorder()
+		netx := &netxlite.Netx{Underlying: &mocks.UnderlyingNetwork{
+			MockGetaddrinfoLookupANY: func(ctx context.Context, domain string) ([]string, string, error) {
+				return nil, "", errors.New("mocked error")
+			},
+			MockGetaddrinfoResolverNetwork: func() string {
+				return "antani"
+			},
+		}}
+		handler := testingx.HTTPHandlerProxy(log.Log, netx)
+		req := &http.Request{
+			Host:   "www.example.com",
+			Header: http.Header{},
+			Method: http.MethodGet,
+			URL:    &url.URL{},
+		}
+		handler.ServeHTTP(rr, req)
+		res := rr.Result()
+		if res.StatusCode != http.StatusBadGateway {
+			t.Fatal("unexpected status code", res.StatusCode)
+		}
+	})
 }
