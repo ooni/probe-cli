@@ -33,6 +33,12 @@ for file in $(find . -type f -name \*.go); do
 		continue
 	fi
 
+	if [ "$file" = "./internal/testingx/httpproxy.go" ]; then
+		# We're allowed to use ReadAll and Copy in this file because
+		# it's code that we only use for testing purposes.
+		continue
+	fi
+
 	if [ "$file" = "./internal/testingx/httptestx.go" ]; then
 		# We're allowed to use ReadAll and Copy in this file because
 		# it's code that we only use for testing purposes.

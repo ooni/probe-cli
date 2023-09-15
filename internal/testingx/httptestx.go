@@ -21,20 +21,35 @@ import (
 // transitioning the code from that struct to this one.
 type HTTPServer struct {
 	// Config contains the server started by the constructor.
+	//
+	// This field also exists in the [*net/http/httptest.Server] struct.
 	Config *http.Server
 
 	// Listener is the underlying [net.Listener].
+	//
+	// This field also exists in the [*net/http/httptest.Server] struct.
 	Listener net.Listener
 
 	// TLS contains the TLS configuration used by the constructor, or nil
 	// if you constructed a server that does not use TLS.
+	//
+	// This field also exists in the [*net/http/httptest.Server] struct.
 	TLS *tls.Config
 
 	// URL is the base URL used by the server.
+	//
+	// This field also exists in the [*net/http/httptest.Server] struct.
 	URL string
 
 	// X509CertPool is the X.509 cert pool we're using or nil.
+	//
+	// This field is an extension that is not present in the httptest package.
 	X509CertPool *x509.CertPool
+
+	// CACert is the CA used by this server.
+	//
+	// This field is an extension that is not present in the httptest package.
+	CACert *x509.Certificate
 }
 
 // MustNewHTTPServer is morally equivalent to [httptest.NewHTTPServer].
@@ -79,6 +94,7 @@ func mustNewHTTPServer(
 	switch !tlsConfig.IsNone() {
 	case true:
 		baseURL.Scheme = "https"
+		srv.CACert = tlsConfig.Unwrap().CACert()
 		srv.TLS = tlsConfig.Unwrap().ServerTLSConfig()
 		srv.Config.TLSConfig = srv.TLS
 		srv.X509CertPool = runtimex.Try1(tlsConfig.Unwrap().DefaultCertPool())
