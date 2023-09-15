@@ -102,7 +102,7 @@ func (tc *netemTestCaseWithHTTPWithTLS) Run(t *testing.T) {
 	)
 	defer proxyServer.Close()
 
-	// crete the netx instance for the client
+	// create the netx instance for the client
 	netx := &netxlite.Netx{Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: clientStack}}
 
 	//log.SetLevel(log.DebugLevel)
