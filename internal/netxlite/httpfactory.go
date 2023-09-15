@@ -1,6 +1,7 @@
 package netxlite
 
 import (
+	"crypto/tls"
 	"net/url"
 
 	oohttp "github.com/ooni/oohttp"
@@ -92,5 +93,18 @@ func HTTPTransportOptionMaxConnsPerHost(value int) HTTPTransportOption {
 func HTTPTransportOptionDisableCompression(value bool) HTTPTransportOption {
 	return func(txp *oohttp.Transport) {
 		txp.DisableCompression = value
+	}
+}
+
+// HTTPTransportOptionTLSClientConfig configures the .TLSClientConfig field,
+// which otherwise is nil, to imply using the default config.
+//
+// TODO(https://github.com/ooni/probe/issues/2536): using the default config breaks
+// tests using netem and this option is the workaround we're using to address
+// this limitation. Future releases MIGHT use a different technique and, as such,
+// we MAY remove this option when we don't need it anymore.
+func HTTPTransportOptionTLSClientConfig(config *tls.Config) HTTPTransportOption {
+	return func(txp *oohttp.Transport) {
+		txp.TLSClientConfig = config
 	}
 }
