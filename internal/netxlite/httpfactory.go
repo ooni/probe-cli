@@ -96,11 +96,13 @@ func HTTPTransportOptionDisableCompression(value bool) HTTPTransportOption {
 	}
 }
 
-// HTTPTransportOptionTLSClientConfig configures the .TLSClientConfig field, which
-// otherwise is left nil, meaning we're using the crypto/tls or ooni/ootls defaults
-// including the default cert pool. Because leaving the default .TLSClientConfig
-// has implications when dialing TLS connections over an HTTP proxy, be aware that
-// this default value could change in a future release of ooni/probe-cli.
+// HTTPTransportOptionTLSClientConfig configures the .TLSClientConfig field,
+// which otherwise is nil, to imply using the default config.
+//
+// TODO(https://github.com/ooni/probe/issues/2536): using the default config breaks
+// tests using netem and this option is the workaround we're using to address
+// this limitation. Future releases MIGHT use a different technique and, as such,
+// we MAY remove this option when we don't need it anymore.
 func HTTPTransportOptionTLSClientConfig(config *tls.Config) HTTPTransportOption {
 	return func(txp *oohttp.Transport) {
 		txp.TLSClientConfig = config
