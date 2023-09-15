@@ -67,10 +67,12 @@ func (ph *httpProxyHandler) connect(rw http.ResponseWriter, req *http.Request) {
 		rw.WriteHeader(http.StatusBadGateway)
 		return
 	}
+	defer sconn.Close()
 
 	hijacker := rw.(http.Hijacker)
 	cconn, buffered := runtimex.Try2(hijacker.Hijack())
 	runtimex.Assert(buffered.Reader.Buffered() <= 0, "data before finishing HTTP handshake")
+	defer cconn.Close()
 
 	_, _ = cconn.Write([]byte("HTTP/1.1 200 Ok\r\n\r\n"))
 
@@ -116,6 +118,7 @@ func (ph *httpProxyHandler) get(rw http.ResponseWriter, req *http.Request) {
 
 	// create HTTP client using netx
 	txp := ph.Netx.NewHTTPTransportStdlib(ph.Logger)
+	defer txp.CloseIdleConnections()
 
 	// obtain response
 	resp, err := txp.RoundTrip(req)
