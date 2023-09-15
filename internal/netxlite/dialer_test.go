@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -104,7 +105,8 @@ func TestDialerSystem(t *testing.T) {
 			defaultTp := &DefaultTProxy{}
 			tp := &mocks.UnderlyingNetwork{
 				MockDialTimeout: func() time.Duration {
-					// Note: this test is notoriously flaky on Windows
+					// Note: this test is notoriously flaky on Windows as documented by
+					// TODO(https://github.com/ooni/probe/issues/2537)
 					return time.Nanosecond
 				},
 				MockDialContext: defaultTp.DialContext,
@@ -115,7 +117,10 @@ func TestDialerSystem(t *testing.T) {
 			conn, err := d.DialContext(ctx, "tcp", "dns.google:443")
 			stop := time.Now()
 			if err == nil || !strings.HasSuffix(err.Error(), "i/o timeout") {
-				t.Fatal(err)
+				if runtime.GOOS == "windows" {
+					t.Skip("https://github.com/ooni/probe/issues/2537")
+				}
+				t.Fatal("unexpected error", err)
 			}
 			if conn != nil {
 				t.Fatal("unexpected conn")
