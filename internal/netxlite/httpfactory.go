@@ -1,6 +1,7 @@
 package netxlite
 
 import (
+	"crypto/tls"
 	"net/url"
 
 	oohttp "github.com/ooni/oohttp"
@@ -92,5 +93,16 @@ func HTTPTransportOptionMaxConnsPerHost(value int) HTTPTransportOption {
 func HTTPTransportOptionDisableCompression(value bool) HTTPTransportOption {
 	return func(txp *oohttp.Transport) {
 		txp.DisableCompression = value
+	}
+}
+
+// HTTPTransportOptionTLSClientConfig configures the .TLSClientConfig field, which
+// otherwise is left nil, meaning we're using the crypto/tls or ooni/ootls defaults
+// including the default cert pool. Because leaving the default .TLSClientConfig
+// has implications when dialing TLS connections over an HTTP proxy, be aware that
+// this default value could change in a future release of ooni/probe-cli.
+func HTTPTransportOptionTLSClientConfig(config *tls.Config) HTTPTransportOption {
+	return func(txp *oohttp.Transport) {
+		txp.TLSClientConfig = config
 	}
 }

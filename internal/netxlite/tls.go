@@ -255,18 +255,18 @@ func (h *tlsHandshakerLogger) Handshake(
 	ctx context.Context, conn net.Conn, config *tls.Config,
 ) (net.Conn, tls.ConnectionState, error) {
 	h.DebugLogger.Debugf(
-		"tls {sni=%s next=%+v}...", config.ServerName, config.NextProtos)
+		"tls_handshake {sni=%s next=%+v}...", config.ServerName, config.NextProtos)
 	start := time.Now()
 	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
 	elapsed := time.Since(start)
 	if err != nil {
 		h.DebugLogger.Debugf(
-			"tls {sni=%s next=%+v}... %s in %s", config.ServerName,
+			"tls_handshake {sni=%s next=%+v}... %s in %s", config.ServerName,
 			config.NextProtos, err, elapsed)
 		return nil, tls.ConnectionState{}, err
 	}
 	h.DebugLogger.Debugf(
-		"tls {sni=%s next=%+v}... ok in %s {next=%s cipher=%s v=%s}",
+		"tls_handshake {sni=%s next=%+v}... ok in %s {next=%s cipher=%s v=%s}",
 		config.ServerName, config.NextProtos, elapsed, state.NegotiatedProtocol,
 		TLSCipherSuiteString(state.CipherSuite),
 		TLSVersionString(state.Version))

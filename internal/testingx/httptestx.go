@@ -3,12 +3,10 @@ package testingx
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"io"
 	"net"
 	"net/http"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/optional"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -21,20 +19,35 @@ import (
 // transitioning the code from that struct to this one.
 type HTTPServer struct {
 	// Config contains the server started by the constructor.
+	//
+	// This field also exists in the [*net/http/httptest.Server] struct.
 	Config *http.Server
 
 	// Listener is the underlying [net.Listener].
+	//
+	// This field also exists in the [*net/http/httptest.Server] struct.
 	Listener net.Listener
 
 	// TLS contains the TLS configuration used by the constructor, or nil
 	// if you constructed a server that does not use TLS.
+	//
+	// This field also exists in the [*net/http/httptest.Server] struct.
 	TLS *tls.Config
 
 	// URL is the base URL used by the server.
+	//
+	// This field also exists in the [*net/http/httptest.Server] struct.
 	URL string
 
 	// X509CertPool is the X.509 cert pool we're using or nil.
+	//
+	// This field is an extension that is not present in the httptest package.
 	X509CertPool *x509.CertPool
+
+	// CACert is the CA used by this server.
+	//
+	// This field is an extension that is not present in the httptest package.
+	CACert *x509.Certificate
 }
 
 // MustNewHTTPServer is morally equivalent to [httptest.NewHTTPServer].
@@ -79,6 +92,7 @@ func mustNewHTTPServer(
 	switch !tlsConfig.IsNone() {
 	case true:
 		baseURL.Scheme = "https"
+		srv.CACert = tlsConfig.Unwrap().CACert()
 		srv.TLS = tlsConfig.Unwrap().ServerTLSConfig()
 		srv.Config.TLSConfig = srv.TLS
 		srv.X509CertPool = runtimex.Try1(tlsConfig.Unwrap().DefaultCertPool())
@@ -159,71 +173,4 @@ func httpHandlerHijack(w http.ResponseWriter, r *http.Request, policy string) {
 	case "eof":
 		// nothing
 	}
-}
-
-// TODO(bassosimone): eventually we may want to have a model type
-// that models the equivalent of [netxlite.Netx].
-
-// HTTPHandlerProxyNetx is [netxlite.Netx] as seen by [HTTPHandlerProxy].
-type HTTPHandlerProxyNetx interface {
-	NewHTTPTransportStdlib(logger model.DebugLogger) model.HTTPTransport
-}
-
-// HTTPHandlerProxy is a handler implementing an HTTP proxy using the host header
-// to determine who to connect to. We additionally use the via header to avoid sending
-// requests to ourself. Please, note that we designed this proxy ONLY to be used for
-// testing purposes and that it's rather simplistic.
-func HTTPHandlerProxy(logger model.Logger, netx HTTPHandlerProxyNetx) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		// reject requests that already visited the proxy and requests we cannot route
-		if req.Host == "" || req.Header.Get("Via") != "" {
-			rw.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		// be explicit about not supporting request bodies
-		if req.Method != http.MethodGet {
-			rw.WriteHeader(http.StatusNotImplemented)
-			return
-		}
-
-		// clone the request before modifying it
-		req = req.Clone(req.Context())
-
-		// include proxy header to prevent sending requests to ourself
-		req.Header.Add("Via", "testingx/0.1.0")
-
-		// fix: "http: Request.RequestURI can't be set in client requests"
-		req.RequestURI = ""
-
-		// fix: `http: unsupported protocol scheme ""`
-		req.URL.Host = req.Host
-
-		// fix: "http: no Host in request URL"
-		req.URL.Scheme = "http"
-
-		logger.Debugf("PROXY: sending request: %s", req)
-
-		// create HTTP client using netx
-		txp := netx.NewHTTPTransportStdlib(logger)
-
-		// obtain response
-		resp, err := txp.RoundTrip(req)
-		if err != nil {
-			logger.Warnf("PROXY: request failed: %s", err.Error())
-			rw.WriteHeader(http.StatusBadGateway)
-			return
-		}
-
-		// write response
-		rw.WriteHeader(resp.StatusCode)
-		for key, values := range resp.Header {
-			for _, value := range values {
-				rw.Header().Add(key, value)
-			}
-		}
-
-		// write response body
-		_, _ = io.Copy(rw, resp.Body)
-	})
 }
