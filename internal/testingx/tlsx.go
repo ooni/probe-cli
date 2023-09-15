@@ -25,10 +25,6 @@ import (
 //
 // Use the former when you're using netem; the latter when using the stdlib.
 type TLSMITMProvider interface {
-	// CACert returns the CA certificate used by the server, which
-	// allows you to add to an existing [*x509.CertPool].
-	CACert() *x509.Certificate
-
 	// DefaultCertPool returns the default cert pool to use.
 	DefaultCertPool() (*x509.CertPool, error)
 
@@ -45,11 +41,6 @@ func MustNewTLSMITMProviderNetem() TLSMITMProvider {
 
 type netemTLSMITMProvider struct {
 	cfg *netem.TLSMITMConfig
-}
-
-// CACert implements TLSMITMProvider.
-func (p *netemTLSMITMProvider) CACert() *x509.Certificate {
-	return p.cfg.Cert
 }
 
 // DefaultCertPool implements TLSMITMProvider.
