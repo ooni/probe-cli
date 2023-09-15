@@ -562,6 +562,9 @@ type UnderlyingNetwork interface {
 	// GetaddrinfoResolverNetwork returns the resolver network.
 	GetaddrinfoResolverNetwork() string
 
+	// ListenTCP is equivalent to net.ListenTCP.
+	ListenTCP(network string, addr *net.TCPAddr) (net.Listener, error)
+
 	// ListenUDP is equivalent to net.ListenUDP.
 	ListenUDP(network string, addr *net.UDPAddr) (UDPLikeConn, error)
 }
