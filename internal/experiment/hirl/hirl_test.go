@@ -10,9 +10,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/experiment/hirl"
 	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
 	"github.com/ooni/probe-cli/v3/internal/legacy/netx"
+	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {

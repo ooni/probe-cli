@@ -6,8 +6,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivity"
-	"github.com/ooni/probe-cli/v3/internal/randx"
 	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
+	"github.com/ooni/probe-cli/v3/internal/randx"
 )
 
 func TestHTTPBodyLengthChecks(t *testing.T) {
