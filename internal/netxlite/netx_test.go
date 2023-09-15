@@ -14,7 +14,8 @@ import (
 	"github.com/quic-go/quic-go/http3"
 )
 
-func TestNetx(t *testing.T) {
+// This test ensures that a Netx wrapping a netem.UNet is WAI
+func TestNetxWithNetem(t *testing.T) {
 	// create a star network topology
 	topology := runtimex.Try1(netem.NewStarTopology(log.Log))
 	defer topology.Close()

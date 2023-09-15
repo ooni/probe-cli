@@ -6,7 +6,19 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 )
+
+func TestMeasurementFormatTimeNowUTC(t *testing.T) {
+	t.Run("produces a string using the correct date format", func(t *testing.T) {
+		out := MeasurementFormatTimeNowUTC()
+		result, err := time.Parse(MeasurementDateFormat, out)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = result
+	})
+}
 
 func TestMeasurementTargetMarshalJSON(t *testing.T) {
 	var mt MeasurementTarget

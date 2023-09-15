@@ -43,6 +43,11 @@ func (a *NetemUnderlyingNetworkAdapter) GetaddrinfoResolverNetwork() string {
 	return a.UNet.GetaddrinfoResolverNetwork()
 }
 
+// ListenTCP implements model.UnderlyingNetwork
+func (a *NetemUnderlyingNetworkAdapter) ListenTCP(network string, addr *net.TCPAddr) (net.Listener, error) {
+	return a.UNet.ListenTCP(network, addr)
+}
+
 // ListenUDP implements model.UnderlyingNetwork
 func (a *NetemUnderlyingNetworkAdapter) ListenUDP(network string, addr *net.UDPAddr) (model.UDPLikeConn, error) {
 	return a.UNet.ListenUDP(network, addr)
