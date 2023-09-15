@@ -32,9 +32,8 @@ func TestTLSSNIProxy(t *testing.T) {
 				Underlying: nil, // use the network
 			}
 			tcpAddr := &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1)}
-			tcpListener := &testingx.TCPListenerStdlib{}
 
-			proxy := testingx.MustNewTLSSNIProxyEx(log.Log, netxProxy, tcpAddr, tcpListener)
+			proxy := testingx.MustNewTLSSNIProxyEx(log.Log, netxProxy, tcpAddr)
 			closers = append(closers, proxy)
 
 			netxClient := &netxlite.Netx{
@@ -75,7 +74,6 @@ func TestTLSSNIProxy(t *testing.T) {
 				log.Log,
 				&netxlite.Netx{Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: proxyStack}},
 				&net.TCPAddr{IP: net.IPv4(10, 0, 0, 1), Port: 443},
-				proxyStack,
 			)
 			closers = append(closers, proxy)
 

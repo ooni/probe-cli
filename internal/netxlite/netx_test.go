@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"sync"
 	"testing"
 
 	"github.com/apex/log"
@@ -116,4 +117,35 @@ func TestNetxWithNetem(t *testing.T) {
 			t.Fatal(diff)
 		}
 	})
+}
+
+// We generally do not listen here as part of other tests, since the listening
+// functionality is mainly only use for testingx. So, here's a specific test for that.
+func TestNetxListenTCP(t *testing.T) {
+	netx := &Netx{Underlying: nil}
+
+	listener := runtimex.Try1(netx.ListenTCP("tcp", &net.TCPAddr{}))
+	serverEndpoint := listener.Addr().String()
+
+	// listen in a background goroutine
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		conn := runtimex.Try1(listener.Accept())
+		conn.Close()
+		wg.Done()
+	}()
+
+	// dial in a background goroutine
+	wg.Add(1)
+	go func() {
+		ctx := context.Background()
+		dialer := netx.NewDialerWithoutResolver(log.Log)
+		conn := runtimex.Try1(dialer.DialContext(ctx, "tcp", serverEndpoint))
+		conn.Close()
+		wg.Done()
+	}()
+
+	// wait for the goroutines to finish
+	wg.Wait()
 }
