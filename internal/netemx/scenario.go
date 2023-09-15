@@ -223,7 +223,7 @@ func MustNewScenario(config []*ScenarioDomainAddresses) *QAEnv {
 				opts = append(opts, QAEnvOptionNetStack(addr,
 					&HTTPCleartextServerFactory{
 						Factory: HTTPHandlerFactoryFunc(func(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
-							return testingx.NewHTTPProxyHandler(env.Logger(), &netxlite.Netx{
+							return testingx.HTTPHandlerProxy(env.Logger(), &netxlite.Netx{
 								Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: stack}})
 						}),
 						Ports: []int{80},
