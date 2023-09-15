@@ -12,8 +12,8 @@ import (
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivity"
-	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // TestKeys contains the results produced by web_connectivity.

@@ -11,12 +11,12 @@ import (
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/experiment/fbmessenger"
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
+	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
-	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 )
 
 // servicesAddr is the IP address implementing al fbmessenger services in netem-based tests

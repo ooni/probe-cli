@@ -10,8 +10,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // WrapDNSXRoundTripper creates a new DNSXRoundTripper that
