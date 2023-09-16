@@ -54,7 +54,7 @@ type request struct {
 	DestAddr *addrSpec
 }
 
-// newRequest creates a new Request from the tcp connection
+// newRequest creates a new request from the tcp connection
 func newRequest(cconn net.Conn) (*request, error) {
 	// Read the version byte
 	header := []byte{0, 0, 0}
@@ -101,6 +101,8 @@ func (s *Server) handleConnect(ctx context.Context, cconn net.Conn, req *request
 	dialer := s.netx.NewDialerWithResolver(s.logger, s.netx.NewStdlibResolver(s.logger))
 	sconn, err := dialer.DialContext(ctx, "tcp", endpoint)
 	if err != nil {
+		// Note: the original go-socks5 selects the proper error but it does not
+		// matter for our purposes, so we always return hostUnreachable. 
 		return sendReply(cconn, hostUnreachable, &net.TCPAddr{})
 	}
 	defer sconn.Close()
@@ -127,7 +129,7 @@ func (s *Server) handleConnect(ctx context.Context, cconn net.Conn, req *request
 }
 
 // readAddrSpec is used to read AddrSpec.
-// Expects an address type byte, follwed by the address and port
+// Expects an address type byte, follwed by the address and port.
 func readAddrSpec(cconn net.Conn) (*addrSpec, error) {
 	d := &addrSpec{}
 

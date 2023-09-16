@@ -21,7 +21,7 @@ import (
 //
 // - using the github.com/ooni.netem;
 //
-// - and an HTTP proxy.
+// - and a SOCKS5 proxy.
 //
 // Because this [TestCase] uses netem, it also runs in -short mode.
 func WithNetemSOCKSProxyAndURL(URL string) TestCase {
@@ -38,7 +38,7 @@ var _ TestCase = &netemTestCaseWithSOCKS{}
 
 // Name implements TestCase.
 func (tc *netemTestCaseWithSOCKS) Name() string {
-	return fmt.Sprintf("fetching %s using netem and an HTTP proxy", tc.TargetURL)
+	return fmt.Sprintf("fetching %s using netem and a SOCKS5 proxy", tc.TargetURL)
 }
 
 // Run implements TestCase.

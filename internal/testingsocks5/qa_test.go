@@ -39,7 +39,7 @@ func TestNetemDialFailure(t *testing.T) {
 
 	// create:
 	//
-	// - a www stack modeling www.example.com
+	// - a www stack modeling www.example.com (but w/o any listener, so connect will fail)
 	//
 	// - a proxy stack
 	//

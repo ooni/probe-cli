@@ -291,7 +291,7 @@ func TestUnrecognizedAddrType(t *testing.T) {
 	)
 	defer server.Close()
 
-	// Note: we only support the connect command
+	// Note: 55 is an invalid address type
 	conn := runtimex.Try1(net.Dial("tcp", server.Endpoint()))
 	_ = runtimex.Try1(conn.Write([]byte{}))
 	defer conn.Close()
@@ -332,7 +332,7 @@ func TestReadAddrSpecFailureReadingAddrType(t *testing.T) {
 	)
 	defer server.Close()
 
-	// Note: we only support the connect command
+	// Note: here there is nothing after the reserved byte
 	conn := runtimex.Try1(net.Dial("tcp", server.Endpoint()))
 	_ = runtimex.Try1(conn.Write([]byte{}))
 	defer conn.Close()
@@ -370,7 +370,7 @@ func TestReadAddrSpecFailureReadingIPv4Address(t *testing.T) {
 	)
 	defer server.Close()
 
-	// Note: we only support the connect command
+	// Note: here the IPv4 address bytes are missing
 	conn := runtimex.Try1(net.Dial("tcp", server.Endpoint()))
 	_ = runtimex.Try1(conn.Write([]byte{}))
 	defer conn.Close()
@@ -409,7 +409,7 @@ func TestReadAddrSpecFailureReadingIPv6Address(t *testing.T) {
 	)
 	defer server.Close()
 
-	// Note: we only support the connect command
+	// Note: here the IPv6 address bytes are missing
 	conn := runtimex.Try1(net.Dial("tcp", server.Endpoint()))
 	_ = runtimex.Try1(conn.Write([]byte{}))
 	defer conn.Close()
@@ -448,7 +448,7 @@ func TestReadAddrSpecFailureReadingFQDNLength(t *testing.T) {
 	)
 	defer server.Close()
 
-	// Note: we only support the connect command
+	// Note: here the length of the FQDN is missing
 	conn := runtimex.Try1(net.Dial("tcp", server.Endpoint()))
 	_ = runtimex.Try1(conn.Write([]byte{}))
 	defer conn.Close()
@@ -487,7 +487,7 @@ func TestReadAddrSpecFailureReadingFQDNString(t *testing.T) {
 	)
 	defer server.Close()
 
-	// Note: we only support the connect command
+	// Note: here the bytes of the FQDN are missing
 	conn := runtimex.Try1(net.Dial("tcp", server.Endpoint()))
 	_ = runtimex.Try1(conn.Write([]byte{}))
 	defer conn.Close()
@@ -527,7 +527,7 @@ func TestReadAddrSpecFailureReadingPortWithIPv6(t *testing.T) {
 	)
 	defer server.Close()
 
-	// Note: we only support the connect command
+	// Note: here the ports bytes are missing
 	conn := runtimex.Try1(net.Dial("tcp", server.Endpoint()))
 	_ = runtimex.Try1(conn.Write([]byte{}))
 	defer conn.Close()

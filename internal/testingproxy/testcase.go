@@ -16,15 +16,15 @@ type TestCase interface {
 
 // SOCKSTestCases contains the SOCKS test cases.
 var SOCKSTestCases = []TestCase{
-	// with host network and SOCKS5 proxy
+	// with host network
 	WithHostNetworkSOCKSProxyAndURL("http://www.example.com/"),
 	WithHostNetworkSOCKSProxyAndURL("https://www.example.com/"),
 
-	// with netem and SOCKS5 proxy
+	// with netem
 	WithNetemSOCKSProxyAndURL("http://www.example.com/"),
 	WithNetemSOCKSProxyAndURL("https://www.example.com/"),
 
-	// with netem and IPv4 addresses
+	// with netem and IPv4 addresses so we test another SOCKS5 dialing mode
 	WithNetemSOCKSProxyAndURL("http://93.184.216.34/"),
 	WithNetemSOCKSProxyAndURL("https://93.184.216.34/"),
 }

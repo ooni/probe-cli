@@ -17,7 +17,7 @@ import (
 //
 // - using the host network;
 //
-// - and an HTTP proxy.
+// - and a SOCKS5 proxy.
 //
 // Because this [TestCase] uses the host network, it does not run in -short mode.
 func WithHostNetworkSOCKSProxyAndURL(URL string) TestCase {
@@ -34,7 +34,7 @@ var _ TestCase = &hostNetworkTestCaseWithSOCKS{}
 
 // Name implements TestCase.
 func (tc *hostNetworkTestCaseWithSOCKS) Name() string {
-	return fmt.Sprintf("fetching %s using the host network and an HTTP proxy", tc.TargetURL)
+	return fmt.Sprintf("fetching %s using the host network and a SOCKS5 proxy", tc.TargetURL)
 }
 
 // Run implements TestCase.

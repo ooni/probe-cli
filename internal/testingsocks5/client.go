@@ -15,6 +15,9 @@ type client struct {
 	exchanges []exchange
 }
 
+// exchange is a byte exchange between the client and the server: the client
+// sends the bytes to send and then reads and checks whether it has received
+// the expected response from the server.
 type exchange struct {
 	send   []byte
 	expect []byte
