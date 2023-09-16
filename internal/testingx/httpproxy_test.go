@@ -16,7 +16,7 @@ import (
 )
 
 func TestHTTPProxyHandler(t *testing.T) {
-	for _, testCase := range testingproxy.AllTestCases {
+	for _, testCase := range testingproxy.HTTPTestCases {
 		t.Run(testCase.Name(), func(t *testing.T) {
 			short := testCase.Short()
 			if !short && testing.Short() {

@@ -14,13 +14,28 @@ type TestCase interface {
 	Short() bool
 }
 
-// AllTestCases contains all the test cases.
-var AllTestCases = []TestCase{
-	// host network and HTTP proxy
+// SOCKSTestCases contains the SOCKS test cases.
+var SOCKSTestCases = []TestCase{
+	// with host network and SOCKS5 proxy
+	WithHostNetworkSOCKSProxyAndURL("http://www.example.com/"),
+	WithHostNetworkSOCKSProxyAndURL("https://www.example.com/"),
+
+	// with netem and SOCKS5 proxy
+	WithNetemSOCKSProxyAndURL("http://www.example.com/"),
+	WithNetemSOCKSProxyAndURL("https://www.example.com/"),
+
+	// with netem and IPv4 addresses
+	WithNetemSOCKSProxyAndURL("http://93.184.216.34/"),
+	WithNetemSOCKSProxyAndURL("https://93.184.216.34/"),
+}
+
+// HTTPTestCases contains the HTTP test cases.
+var HTTPTestCases = []TestCase{
+	// with host network and HTTP proxy
 	WithHostNetworkHTTPProxyAndURL("http://www.example.com/"),
 	WithHostNetworkHTTPProxyAndURL("https://www.example.com/"),
 
-	// host network and HTTPS proxy
+	// with host network and HTTPS proxy
 	WithHostNetworkHTTPWithTLSProxyAndURL("http://www.example.com/"),
 	WithHostNetworkHTTPWithTLSProxyAndURL("https://www.example.com/"),
 
