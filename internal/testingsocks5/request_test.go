@@ -72,6 +72,25 @@ func TestServerHandleConnect(t *testing.T) {
 }
 
 func TestSendReply(t *testing.T) {
+	t.Run("we can serialize an IPv4 address", func(t *testing.T) {
+		buffer := &bytes.Buffer{}
+		err := sendReply(buffer, successReply, &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 80})
+		if err != nil {
+			t.Fatal(err)
+		}
+		expected := []byte{
+			0x05,                   // version
+			0x00,                   // successful response
+			0x00,                   // reserved
+			0x01,                   // IPv4
+			0x7f, 0x00, 0x00, 0x01, // 127.0.0.1
+			0x00, 0x50, // port 80
+		}
+		if diff := cmp.Diff(expected, buffer.Bytes()); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
 	t.Run("we can serialize an IPv6 address", func(t *testing.T) {
 		buffer := &bytes.Buffer{}
 		err := sendReply(buffer, successReply, &net.TCPAddr{IP: net.ParseIP("::1"), Port: 80})
@@ -88,6 +107,25 @@ func TestSendReply(t *testing.T) {
 			0x00, 0x00, 0x00, 0x00, // ::1 (3/4)
 			0x00, 0x00, 0x00, 0x01, // ::1 (4/4)
 			0x00, 0x50, // port 80
+		}
+		if diff := cmp.Diff(expected, buffer.Bytes()); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
+	t.Run("we correctly handle the neither-IPv4-nor-IPv6 case", func(t *testing.T) {
+		buffer := &bytes.Buffer{}
+		err := sendReply(buffer, successReply, &net.TCPAddr{IP: nil, Port: 80})
+		if err != nil {
+			t.Fatal(err)
+		}
+		expected := []byte{
+			0x05,                   // version
+			0x00,                   // successful response
+			0x00,                   // reserved
+			0x01,                   // IPv4
+			0x00, 0x00, 0x00, 0x00, // 0.0.0.0
+			0x00, 0x00, // port 0
 		}
 		if diff := cmp.Diff(expected, buffer.Bytes()); diff != "" {
 			t.Fatal(diff)
