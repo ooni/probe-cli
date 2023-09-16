@@ -104,8 +104,6 @@ func (tc *netemTestCaseWithSOCKS) Run(t *testing.T) {
 	// create the netx instance for the client
 	netx := &netxlite.Netx{Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: clientStack}}
 
-	//log.SetLevel(log.DebugLevel)
-
 	// create an HTTP client configured to use the given proxy
 	//
 	// note how we use a dialer that asserts that we're using the proxy IP address

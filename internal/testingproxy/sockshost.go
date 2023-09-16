@@ -48,8 +48,6 @@ func (tc *hostNetworkTestCaseWithSOCKS) Run(t *testing.T) {
 	proxyServer := testingsocks5.MustNewServer(log.Log, netx, endpoint)
 	defer proxyServer.Close()
 
-	//log.SetLevel(log.DebugLevel)
-
 	// create an HTTP client configured to use the given proxy
 	//
 	// note how we use a dialer that asserts that we're using the proxy IP address

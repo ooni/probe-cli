@@ -215,8 +215,6 @@ func TestTLSHandlerWithNetem(t *testing.T) {
 				t.Skip(tc.reasonToSkip)
 			}
 
-			//log.SetLevel(log.DebugLevel)
-
 			// create a star topology for this test case
 			topology := runtimex.Try1(netem.NewStarTopology(log.Log))
 			defer topology.Close()

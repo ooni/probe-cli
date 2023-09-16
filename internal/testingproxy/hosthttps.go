@@ -49,8 +49,6 @@ func (tc *hostNetworkTestCaseWithHTTPWithTLS) Run(t *testing.T) {
 	proxyServer := testingx.MustNewHTTPServerTLS(testingx.NewHTTPProxyHandler(log.Log, netx))
 	defer proxyServer.Close()
 
-	//log.SetLevel(log.DebugLevel)
-
 	// extend the default cert pool with the proxy's own CA
 	pool := netxlite.NewMozillaCertPool()
 	pool.AddCert(proxyServer.CACert)

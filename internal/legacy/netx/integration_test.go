@@ -15,7 +15,6 @@ func TestHTTPTransportWorkingAsIntended(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	log.SetLevel(log.DebugLevel)
 	counter := bytecounter.New()
 	config := Config{
 		BogonIsError:        true,

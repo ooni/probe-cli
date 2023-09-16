@@ -68,8 +68,6 @@ func TestNetemDialFailure(t *testing.T) {
 	// create the netx instance for the client
 	netx := &netxlite.Netx{Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: clientStack}}
 
-	//log.SetLevel(log.DebugLevel)
-
 	// create an HTTP client configured to use the given proxy
 	dialer := netx.NewDialerWithResolver(log.Log, netx.NewStdlibResolver(log.Log))
 	tlsDialer := netxlite.NewTLSDialer(dialer, netx.NewTLSHandshakerStdlib(log.Log))
