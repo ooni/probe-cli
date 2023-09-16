@@ -5,44 +5,44 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"net/url"
 	"testing"
 
 	"github.com/apex/log"
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/testingsocks5"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
-// WithNetemHTTPProxyAndURL returns a [TestCase] where:
+// WithNetemSOCKSProxyAndURL returns a [TestCase] where:
 //
 // - we fetch a URL;
 //
 // - using the github.com/ooni.netem;
 //
-// - and an HTTP proxy.
+// - and a SOCKS5 proxy.
 //
 // Because this [TestCase] uses netem, it also runs in -short mode.
-func WithNetemHTTPProxyAndURL(URL string) TestCase {
-	return &netemTestCaseWithHTTP{
+func WithNetemSOCKSProxyAndURL(URL string) TestCase {
+	return &netemTestCaseWithSOCKS{
 		TargetURL: URL,
 	}
 }
 
-type netemTestCaseWithHTTP struct {
+type netemTestCaseWithSOCKS struct {
 	TargetURL string
 }
 
-var _ TestCase = &netemTestCaseWithHTTP{}
+var _ TestCase = &netemTestCaseWithSOCKS{}
 
 // Name implements TestCase.
-func (tc *netemTestCaseWithHTTP) Name() string {
-	return fmt.Sprintf("fetching %s using netem and an HTTP proxy", tc.TargetURL)
+func (tc *netemTestCaseWithSOCKS) Name() string {
+	return fmt.Sprintf("fetching %s using netem and a SOCKS5 proxy", tc.TargetURL)
 }
 
 // Run implements TestCase.
-func (tc *netemTestCaseWithHTTP) Run(t *testing.T) {
+func (tc *netemTestCaseWithSOCKS) Run(t *testing.T) {
 	topology := runtimex.Try1(netem.NewStarTopology(log.Log))
 	defer topology.Close()
 
@@ -92,12 +92,12 @@ func (tc *netemTestCaseWithHTTP) Run(t *testing.T) {
 	)
 	defer wwwServer443.Close()
 
-	// configure the proxyStack to implement the HTTP proxy on port 8080
-	proxyServer := testingx.MustNewHTTPServerEx(
-		&net.TCPAddr{IP: net.ParseIP(proxyIPAddr), Port: 8080},
-		proxyStack,
-		testingx.NewHTTPProxyHandler(log.Log, &netxlite.Netx{
-			Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: proxyStack}}),
+	// configure the proxyStack to implement the SOCKS proxy on port 9050
+	proxyServer := testingsocks5.MustNewServer(
+		log.Log,
+		&netxlite.Netx{
+			Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: proxyStack}},
+		&net.TCPAddr{IP: net.ParseIP(proxyIPAddr), Port: 9050},
 	)
 	defer proxyServer.Close()
 
@@ -114,7 +114,7 @@ func (tc *netemTestCaseWithHTTP) Run(t *testing.T) {
 	}
 	tlsDialer := netxlite.NewTLSDialer(dialer, netx.NewTLSHandshakerStdlib(log.Log))
 	txp := netxlite.NewHTTPTransportWithOptions(log.Log, dialer, tlsDialer,
-		netxlite.HTTPTransportOptionProxyURL(runtimex.Try1(url.Parse(proxyServer.URL))),
+		netxlite.HTTPTransportOptionProxyURL(proxyServer.URL()),
 
 		// TODO(https://github.com/ooni/probe/issues/2536)
 		netxlite.HTTPTransportOptionTLSClientConfig(&tls.Config{
@@ -129,6 +129,6 @@ func (tc *netemTestCaseWithHTTP) Run(t *testing.T) {
 }
 
 // Short implements TestCase.
-func (tc *netemTestCaseWithHTTP) Short() bool {
+func (tc *netemTestCaseWithSOCKS) Short() bool {
 	return true
 }

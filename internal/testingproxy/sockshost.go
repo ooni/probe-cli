@@ -1,58 +1,52 @@
 package testingproxy
 
 import (
-	"crypto/tls"
 	"fmt"
+	"net"
 	"net/http"
-	"net/url"
 	"testing"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
-	"github.com/ooni/probe-cli/v3/internal/testingx"
+	"github.com/ooni/probe-cli/v3/internal/testingsocks5"
 )
 
-// WithHostNetworkHTTPWithTLSProxyAndURL returns a [TestCase] where:
+// WithHostNetworkSOCKSProxyAndURL returns a [TestCase] where:
 //
 // - we fetch a URL;
 //
 // - using the host network;
 //
-// - and an HTTPS proxy.
+// - and a SOCKS5 proxy.
 //
 // Because this [TestCase] uses the host network, it does not run in -short mode.
-func WithHostNetworkHTTPWithTLSProxyAndURL(URL string) TestCase {
-	return &hostNetworkTestCaseWithHTTPWithTLS{
+func WithHostNetworkSOCKSProxyAndURL(URL string) TestCase {
+	return &hostNetworkTestCaseWithSOCKS{
 		TargetURL: URL,
 	}
 }
 
-type hostNetworkTestCaseWithHTTPWithTLS struct {
+type hostNetworkTestCaseWithSOCKS struct {
 	TargetURL string
 }
 
-var _ TestCase = &hostNetworkTestCaseWithHTTPWithTLS{}
+var _ TestCase = &hostNetworkTestCaseWithSOCKS{}
 
 // Name implements TestCase.
-func (tc *hostNetworkTestCaseWithHTTPWithTLS) Name() string {
-	return fmt.Sprintf("fetching %s using the host network and an HTTPS proxy", tc.TargetURL)
+func (tc *hostNetworkTestCaseWithSOCKS) Name() string {
+	return fmt.Sprintf("fetching %s using the host network and a SOCKS5 proxy", tc.TargetURL)
 }
 
 // Run implements TestCase.
-func (tc *hostNetworkTestCaseWithHTTPWithTLS) Run(t *testing.T) {
+func (tc *hostNetworkTestCaseWithSOCKS) Run(t *testing.T) {
 	// create an instance of Netx where the underlying network is nil,
 	// which means we're using the host's network
 	netx := &netxlite.Netx{Underlying: nil}
 
 	// create the proxy server using the host network
-	proxyServer := testingx.MustNewHTTPServerTLS(testingx.NewHTTPProxyHandler(log.Log, netx))
+	endpoint := &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 0}
+	proxyServer := testingsocks5.MustNewServer(log.Log, netx, endpoint)
 	defer proxyServer.Close()
-
-	// extend the default cert pool with the proxy's own CA
-	pool := netxlite.NewMozillaCertPool()
-	pool.AddCert(proxyServer.CACert)
-	tlsConfig := &tls.Config{RootCAs: pool}
 
 	// create an HTTP client configured to use the given proxy
 	//
@@ -62,12 +56,9 @@ func (tc *hostNetworkTestCaseWithHTTPWithTLS) Run(t *testing.T) {
 		ExpectAddress: "127.0.0.1",
 		Dialer:        netx.NewDialerWithResolver(log.Log, netx.NewStdlibResolver(log.Log)),
 	}
-	tlsDialer := netxlite.NewTLSDialerWithConfig(
-		dialer, netxlite.NewTLSHandshakerStdlib(log.Log),
-		tlsConfig,
-	)
+	tlsDialer := netxlite.NewTLSDialer(dialer, netxlite.NewTLSHandshakerStdlib(log.Log))
 	txp := netxlite.NewHTTPTransportWithOptions(log.Log, dialer, tlsDialer,
-		netxlite.HTTPTransportOptionProxyURL(runtimex.Try1(url.Parse(proxyServer.URL))))
+		netxlite.HTTPTransportOptionProxyURL(proxyServer.URL()))
 	client := &http.Client{Transport: txp}
 	defer client.CloseIdleConnections()
 
@@ -76,6 +67,6 @@ func (tc *hostNetworkTestCaseWithHTTPWithTLS) Run(t *testing.T) {
 }
 
 // Short implements TestCase.
-func (tc *hostNetworkTestCaseWithHTTPWithTLS) Short() bool {
+func (tc *hostNetworkTestCaseWithSOCKS) Short() bool {
 	return false
 }

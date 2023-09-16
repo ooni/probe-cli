@@ -96,8 +96,6 @@ func TestTLSSNIProxy(t *testing.T) {
 				}
 			}()
 
-			//log.SetLevel(log.DebugLevel)
-
 			tlsConfig := &tls.Config{
 				ServerName: "www.google.com",
 			}
