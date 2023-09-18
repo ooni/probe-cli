@@ -45,7 +45,5 @@ func (t *tlsHandshakerWithExtensions) Handshake(
 		return nil, err
 	}
 
-	// TODO(bassosimone): I don't understand why we're storing the conn inside
-	// of the TLS handshaker with extensions structure, but I don't like it
 	return tlsConn, nil
 }
