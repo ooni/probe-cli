@@ -162,7 +162,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	}
 	defer tlsConn.Close()
 
-	tlsConnState := tlsConn.ConnectionState()
+	tlsConnState := netxlite.MaybeTLSConnectionState(tlsConn)
 	alpn := tlsConnState.NegotiatedProtocol
 
 	// Determine whether we're allowed to fetch the webpage
@@ -178,7 +178,6 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	httpTransport := netxlite.NewHTTPTransport(
 		t.Logger,
 		netxlite.NewNullDialer(),
-		// note: netxlite guarantees that here tlsConn is a netxlite.TLSConn
 		netxlite.NewSingleUseTLSDialer(tlsConn),
 	)
 
