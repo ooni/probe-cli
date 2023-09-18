@@ -154,7 +154,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	const tlsTimeout = 10 * time.Second
 	tlsCtx, tlsCancel := context.WithTimeout(parentCtx, tlsTimeout)
 	defer tlsCancel()
-	tlsConn, tlsConnState, err := tlsHandshaker.Handshake(tlsCtx, tcpConn, tlsConfig)
+	tlsConn, err := tlsHandshaker.Handshake(tlsCtx, tcpConn, tlsConfig)
 	t.TestKeys.AppendTLSHandshakes(trace.TLSHandshakes()...)
 	if err != nil {
 		ol.Stop(err)
@@ -162,6 +162,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	}
 	defer tlsConn.Close()
 
+	tlsConnState := tlsConn.ConnectionState()
 	alpn := tlsConnState.NegotiatedProtocol
 
 	// Determine whether we're allowed to fetch the webpage
@@ -178,7 +179,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 		t.Logger,
 		netxlite.NewNullDialer(),
 		// note: netxlite guarantees that here tlsConn is a netxlite.TLSConn
-		netxlite.NewSingleUseTLSDialer(tlsConn.(netxlite.TLSConn)),
+		netxlite.NewSingleUseTLSDialer(tlsConn),
 	)
 
 	// create HTTP request

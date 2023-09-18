@@ -42,7 +42,7 @@ func (s *Saver) WrapTLSHandshaker(thx model.TLSHandshaker) model.TLSHandshaker {
 
 // Handshake implements model.TLSHandshaker.Handshake
 func (h *TLSHandshakerSaver) Handshake(
-	ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
+	ctx context.Context, conn net.Conn, config *tls.Config) (model.TLSConn, error) {
 	proto := conn.RemoteAddr().Network()
 	remoteAddr := conn.RemoteAddr().String()
 	start := time.Now()
@@ -54,23 +54,24 @@ func (h *TLSHandshakerSaver) Handshake(
 		TLSServerName: config.ServerName,
 		Time:          start,
 	}})
-	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
+	tlsconn, err := h.TLSHandshaker.Handshake(ctx, conn, config)
 	stop := time.Now()
+	tstate := netxlite.MaybeTLSConnectionState(tlsconn)
 	h.Saver.Write(&EventTLSHandshakeDone{&EventValue{
 		Address:            remoteAddr,
 		Duration:           stop.Sub(start),
 		Err:                NewFailureStr(err),
 		NoTLSVerify:        config.InsecureSkipVerify,
 		Proto:              proto,
-		TLSCipherSuite:     netxlite.TLSCipherSuiteString(state.CipherSuite),
-		TLSNegotiatedProto: state.NegotiatedProtocol,
+		TLSCipherSuite:     netxlite.TLSCipherSuiteString(tstate.CipherSuite),
+		TLSNegotiatedProto: tstate.NegotiatedProtocol,
 		TLSNextProtos:      config.NextProtos,
-		TLSPeerCerts:       tlsPeerCerts(state, err),
+		TLSPeerCerts:       tlsPeerCerts(tstate, err),
 		TLSServerName:      config.ServerName,
-		TLSVersion:         netxlite.TLSVersionString(state.Version),
+		TLSVersion:         netxlite.TLSVersionString(tstate.Version),
 		Time:               stop,
 	}})
-	return tlsconn, state, err
+	return tlsconn, err
 }
 
 var _ model.TLSHandshaker = &TLSHandshakerSaver{}

@@ -32,8 +32,8 @@ func newHandshakerWithExtensions(extensions []utls.TLSExtension) func(dl model.D
 	}
 }
 
-func (t *tlsHandshakerWithExtensions) Handshake(ctx context.Context, conn net.Conn, tlsConfig *tls.Config) (
-	net.Conn, tls.ConnectionState, error) {
+func (t *tlsHandshakerWithExtensions) Handshake(
+	ctx context.Context, conn net.Conn, tlsConfig *tls.Config) (model.TLSConn, error) {
 	var err error
 	t.conn, err = netxlite.NewUTLSConn(conn, tlsConfig, t.id)
 	runtimex.Assert(err == nil, "unexpected error when creating UTLSConn")
@@ -43,7 +43,11 @@ func (t *tlsHandshakerWithExtensions) Handshake(ctx context.Context, conn net.Co
 		t.conn.Extensions = append(t.conn.Extensions, t.extensions...)
 	}
 
-	err = t.conn.Handshake()
+	if err := t.conn.Handshake(); err != nil {
+		return nil, err
+	}
 
-	return t.conn.NetConn(), t.conn.ConnectionState(), err
+	// TODO(bassosimone): I don't understand why we're storing the conn inside
+	// of the TLS handshaker with extensions structure, but I don't like it
+	return t.conn, nil
 }

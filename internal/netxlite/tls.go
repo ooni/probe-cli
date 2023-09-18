@@ -111,6 +111,15 @@ func NewMozillaCertPool() *x509.CertPool {
 	return pool
 }
 
+// MaybeTLSConnectionState is a convenience function that returns an
+// empty [tls.ConnectionState] when the [model.TLSConn] is nil.
+func MaybeTLSConnectionState(conn model.TLSConn) (state tls.ConnectionState) {
+	if conn != nil {
+		state = conn.ConnectionState()
+	}
+	return
+}
+
 // ErrInvalidTLSVersion indicates that you passed us a string
 // that does not represent a valid TLS version.
 var ErrInvalidTLSVersion = errors.New("invalid TLS version")
@@ -203,7 +212,7 @@ func tlsMaybeConnectionState(conn TLSConn, err error) tls.ConnectionState {
 // This function will also emit TLS-handshake-related tracing events.
 func (h *tlsHandshakerConfigurable) Handshake(
 	ctx context.Context, conn net.Conn, config *tls.Config,
-) (net.Conn, tls.ConnectionState, error) {
+) (model.TLSConn, error) {
 	timeout := h.Timeout
 	if timeout <= 0 {
 		timeout = 10 * time.Second
@@ -217,7 +226,7 @@ func (h *tlsHandshakerConfigurable) Handshake(
 	}
 	tlsconn, err := h.newConn(conn, config)
 	if err != nil {
-		return nil, tls.ConnectionState{}, err
+		return nil, err
 	}
 	remoteAddr := conn.RemoteAddr().String()
 	trace := ContextTraceOrDefault(ctx)
@@ -229,9 +238,9 @@ func (h *tlsHandshakerConfigurable) Handshake(
 	state := tlsMaybeConnectionState(tlsconn, err)
 	trace.OnTLSHandshakeDone(started, remoteAddr, config, state, err, finished)
 	if err != nil {
-		return nil, tls.ConnectionState{}, err
+		return nil, err
 	}
-	return tlsconn, state, nil
+	return tlsconn, nil
 }
 
 // newConn creates a new TLSConn.
@@ -253,24 +262,25 @@ var _ model.TLSHandshaker = &tlsHandshakerLogger{}
 // Handshake implements Handshaker.Handshake
 func (h *tlsHandshakerLogger) Handshake(
 	ctx context.Context, conn net.Conn, config *tls.Config,
-) (net.Conn, tls.ConnectionState, error) {
+) (model.TLSConn, error) {
 	h.DebugLogger.Debugf(
 		"tls_handshake {sni=%s next=%+v}...", config.ServerName, config.NextProtos)
 	start := time.Now()
-	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
+	tlsconn, err := h.TLSHandshaker.Handshake(ctx, conn, config)
 	elapsed := time.Since(start)
 	if err != nil {
 		h.DebugLogger.Debugf(
 			"tls_handshake {sni=%s next=%+v}... %s in %s", config.ServerName,
 			config.NextProtos, err, elapsed)
-		return nil, tls.ConnectionState{}, err
+		return nil, err
 	}
+	state := MaybeTLSConnectionState(tlsconn)
 	h.DebugLogger.Debugf(
 		"tls_handshake {sni=%s next=%+v}... ok in %s {next=%s cipher=%s v=%s}",
 		config.ServerName, config.NextProtos, elapsed, state.NegotiatedProtocol,
 		TLSCipherSuiteString(state.CipherSuite),
 		TLSVersionString(state.Version))
-	return tlsconn, state, nil
+	return tlsconn, nil
 }
 
 // NewTLSDialer creates a new TLS dialer using the given dialer and handshaker.
@@ -313,7 +323,7 @@ func (d *tlsDialer) DialTLSContext(ctx context.Context, network, address string)
 		return nil, err
 	}
 	config := d.config(host, port)
-	tlsconn, _, err := d.TLSHandshaker.Handshake(ctx, conn, config)
+	tlsconn, err := d.TLSHandshaker.Handshake(ctx, conn, config)
 	if err != nil {
 		conn.Close()
 		return nil, err

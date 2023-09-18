@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"net"
-	"reflect"
 	"syscall"
 	"testing"
 	"time"
@@ -261,12 +260,9 @@ func TestTrace(t *testing.T) {
 			InsecureSkipVerify: true,
 		}
 		ctx := context.Background()
-		conn, state, err := thx.Handshake(ctx, tcpConn, tlsConfig)
+		conn, err := thx.Handshake(ctx, tcpConn, tlsConfig)
 		if !errors.Is(err, mockedErr) {
 			t.Fatal("unexpected err", err)
-		}
-		if !reflect.ValueOf(state).IsZero() {
-			t.Fatal("state is not a zero value")
 		}
 		if conn != nil {
 			t.Fatal("expected nil conn")
@@ -302,12 +298,9 @@ func TestTrace(t *testing.T) {
 			InsecureSkipVerify: true,
 		}
 		ctx := context.Background()
-		conn, state, err := thx.Handshake(ctx, tcpConn, tlsConfig)
+		conn, err := thx.Handshake(ctx, tcpConn, tlsConfig)
 		if !errors.Is(err, mockedErr) {
 			t.Fatal("unexpected err", err)
-		}
-		if !reflect.ValueOf(state).IsZero() {
-			t.Fatal("state is not a zero value")
 		}
 		if conn != nil {
 			t.Fatal("expected nil conn")

@@ -41,9 +41,10 @@ func handshakeWithExtension(ctx context.Context, conn net.Conn, zeroTime time.Ti
 	tracedHandshaker := handshakerConstructor(log.Log, &utls.HelloFirefox_Auto)
 
 	start := time.Now()
-	_, connState, err := tracedHandshaker.Handshake(ctx, conn, tlsConfig)
+	maybeTLSConn, err := tracedHandshaker.Handshake(ctx, conn, tlsConfig)
 	finish := time.Now()
 
+	connState := netxlite.MaybeTLSConnectionState(maybeTLSConn)
 	return measurexlite.NewArchivalTLSOrQUICHandshakeResult(0, start.Sub(zeroTime), "tcp", address, tlsConfig,
 		connState, err, finish.Sub(zeroTime))
 }

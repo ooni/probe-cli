@@ -124,7 +124,7 @@ func (f *tlsHandshakeFunc) Apply(
 	defer cancel()
 
 	// handshake
-	conn, tlsState, err := handshaker.Handshake(ctx, input.Conn, config)
+	conn, err := handshaker.Handshake(ctx, input.Conn, config)
 
 	// possibly register established conn for late close
 	f.Pool.MaybeTrack(conn)
@@ -132,19 +132,14 @@ func (f *tlsHandshakeFunc) Apply(
 	// stop the operation logger
 	ol.Stop(err)
 
-	var tlsConn netxlite.TLSConn
-	if conn != nil {
-		tlsConn = conn.(netxlite.TLSConn) // guaranteed to work
-	}
-
 	state := &TLSConnection{
 		Address:     input.Address,
-		Conn:        tlsConn, // possibly nil
+		Conn:        conn, // possibly nil
 		Domain:      input.Domain,
 		IDGenerator: input.IDGenerator,
 		Logger:      input.Logger,
 		Network:     input.Network,
-		TLSState:    tlsState,
+		TLSState:    conn.ConnectionState(),
 		Trace:       trace,
 		ZeroTime:    input.ZeroTime,
 	}

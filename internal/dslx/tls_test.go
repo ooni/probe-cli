@@ -73,14 +73,14 @@ func TestTLSHandshake(t *testing.T) {
 		tlsConn := &mocks.TLSConn{Conn: tcpConn}
 
 		eofHandshaker := &mocks.TLSHandshaker{
-			MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
-				return nil, tls.ConnectionState{}, io.EOF
+			MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (model.TLSConn, error) {
+				return nil, io.EOF
 			},
 		}
 
 		goodHandshaker := &mocks.TLSHandshaker{
-			MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
-				return tlsConn, tls.ConnectionState{}, nil
+			MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (model.TLSConn, error) {
+				return tlsConn, nil
 			},
 		}
 
