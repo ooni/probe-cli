@@ -17,6 +17,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
@@ -904,6 +905,42 @@ func TestMaybeConnectionState(t *testing.T) {
 		state := tlsMaybeConnectionState(conn, nil)
 		if reflect.ValueOf(state).IsZero() {
 			t.Fatal("expected to see a nonzero connection state")
+		}
+	})
+}
+
+func TestMaybeTLSConnectionState(t *testing.T) {
+	t.Run("when the TLSConn is nil", func(t *testing.T) {
+		expected := tls.ConnectionState{ /* empty */ }
+		got := MaybeTLSConnectionState(nil)
+		if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(tls.ConnectionState{})); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
+	t.Run("when the TLSConn is not nil", func(t *testing.T) {
+		expected := tls.ConnectionState{
+			Version:                     tls.VersionTLS13,
+			HandshakeComplete:           true,
+			DidResume:                   false,
+			CipherSuite:                 tls.TLS_AES_128_GCM_SHA256,
+			NegotiatedProtocol:          "h2",
+			NegotiatedProtocolIsMutual:  true,
+			ServerName:                  "dns.google",
+			PeerCertificates:            []*x509.Certificate{},
+			VerifiedChains:              [][]*x509.Certificate{},
+			SignedCertificateTimestamps: [][]byte{},
+			OCSPResponse:                []byte{},
+			TLSUnique:                   []byte{},
+		}
+		conn := &mocks.TLSConn{
+			MockConnectionState: func() tls.ConnectionState {
+				return expected
+			},
+		}
+		got := MaybeTLSConnectionState(conn)
+		if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(tls.ConnectionState{})); diff != "" {
+			t.Fatal(diff)
 		}
 	})
 }
