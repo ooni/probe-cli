@@ -70,7 +70,12 @@ func TestTLSHandshake(t *testing.T) {
 				return nil
 			},
 		}
-		tlsConn := &mocks.TLSConn{Conn: tcpConn}
+		tlsConn := &mocks.TLSConn{
+			Conn: tcpConn,
+			MockConnectionState: func() tls.ConnectionState {
+				return tls.ConnectionState{}
+			},
+		}
 
 		eofHandshaker := &mocks.TLSHandshaker{
 			MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (model.TLSConn, error) {
