@@ -139,7 +139,7 @@ func (f *tlsHandshakeFunc) Apply(
 		IDGenerator: input.IDGenerator,
 		Logger:      input.Logger,
 		Network:     input.Network,
-		TLSState:    conn.ConnectionState(),
+		TLSState:    netxlite.MaybeTLSConnectionState(conn),
 		Trace:       trace,
 		ZeroTime:    input.ZeroTime,
 	}
