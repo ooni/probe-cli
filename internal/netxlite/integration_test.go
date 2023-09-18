@@ -295,7 +295,7 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 			NextProtos: []string{"h2", "http/1.1"},
 			RootCAs:    nil,
 		}
-		tconn, _, err := th.Handshake(ctx, conn, config)
+		tconn, err := th.Handshake(ctx, conn, config)
 		if err != nil {
 			return fmt.Errorf("tls handshake failed: %w", err)
 		}
@@ -320,7 +320,7 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 			NextProtos: []string{"h2", "http/1.1"},
 			RootCAs:    nil,
 		}
-		tconn, _, err := th.Handshake(ctx, conn, config)
+		tconn, err := th.Handshake(ctx, conn, config)
 		if err == nil {
 			return fmt.Errorf("tls handshake succeded unexpectedly")
 		}
@@ -350,7 +350,7 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 			NextProtos: []string{"h2", "http/1.1"},
 			RootCAs:    nil,
 		}
-		tconn, _, err := th.Handshake(ctx, conn, config)
+		tconn, err := th.Handshake(ctx, conn, config)
 		if err == nil {
 			return fmt.Errorf("tls handshake succeded unexpectedly")
 		}
@@ -380,7 +380,7 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 			NextProtos: []string{"h2", "http/1.1"},
 			RootCAs:    nil,
 		}
-		tconn, _, err := th.Handshake(ctx, conn, config)
+		tconn, err := th.Handshake(ctx, conn, config)
 		if err == nil {
 			return fmt.Errorf("tls handshake succeded unexpectedly")
 		}

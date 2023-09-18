@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestWrapTLSHandshaker(t *testing.T) {
@@ -98,9 +99,8 @@ func TestTLSHandshakerSaver(t *testing.T) {
 				},
 			}
 			thx := saver.WrapTLSHandshaker(&mocks.TLSHandshaker{
-				MockHandshake: func(ctx context.Context, conn net.Conn,
-					config *tls.Config) (net.Conn, tls.ConnectionState, error) {
-					return returnedConn, returnedConnState, nil
+				MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (model.TLSConn, error) {
+					return returnedConn, nil
 				},
 			})
 			ctx := context.Background()
@@ -121,7 +121,7 @@ func TestTLSHandshakerSaver(t *testing.T) {
 					}
 				},
 			}
-			conn, _, err := thx.Handshake(ctx, tcpConn, tlsConfig)
+			conn, err := thx.Handshake(ctx, tcpConn, tlsConfig)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -161,9 +161,8 @@ func TestTLSHandshakerSaver(t *testing.T) {
 			expected := errors.New("mocked error")
 			saver := &Saver{}
 			thx := saver.WrapTLSHandshaker(&mocks.TLSHandshaker{
-				MockHandshake: func(ctx context.Context, conn net.Conn,
-					config *tls.Config) (net.Conn, tls.ConnectionState, error) {
-					return nil, tls.ConnectionState{}, expected
+				MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (model.TLSConn, error) {
+					return nil, expected
 				},
 			})
 			ctx := context.Background()
@@ -184,7 +183,7 @@ func TestTLSHandshakerSaver(t *testing.T) {
 					}
 				},
 			}
-			conn, _, err := thx.Handshake(ctx, tcpConn, tlsConfig)
+			conn, err := thx.Handshake(ctx, tcpConn, tlsConfig)
 			if !errors.Is(err, expected) {
 				t.Fatal("unexpected err", err)
 			}
