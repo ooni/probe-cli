@@ -12,7 +12,6 @@ import (
 )
 
 type tlsHandshakerWithExtensions struct {
-	conn       *netxlite.UTLSConn
 	extensions []utls.TLSExtension
 	dl         model.DebugLogger
 	id         *utls.ClientHelloID
@@ -33,21 +32,20 @@ func newHandshakerWithExtensions(extensions []utls.TLSExtension) func(dl model.D
 }
 
 func (t *tlsHandshakerWithExtensions) Handshake(
-	ctx context.Context, conn net.Conn, tlsConfig *tls.Config) (model.TLSConn, error) {
-	var err error
-	t.conn, err = netxlite.NewUTLSConn(conn, tlsConfig, t.id)
+	ctx context.Context, tcpConn net.Conn, tlsConfig *tls.Config) (model.TLSConn, error) {
+	tlsConn, err := netxlite.NewUTLSConn(tcpConn, tlsConfig, t.id)
 	runtimex.Assert(err == nil, "unexpected error when creating UTLSConn")
 
 	if t.extensions != nil && len(t.extensions) != 0 {
-		t.conn.BuildHandshakeState()
-		t.conn.Extensions = append(t.conn.Extensions, t.extensions...)
+		tlsConn.BuildHandshakeState()
+		tlsConn.Extensions = append(tlsConn.Extensions, t.extensions...)
 	}
 
-	if err := t.conn.Handshake(); err != nil {
+	if err := tlsConn.Handshake(); err != nil {
 		return nil, err
 	}
 
 	// TODO(bassosimone): I don't understand why we're storing the conn inside
 	// of the TLS handshaker with extensions structure, but I don't like it
-	return t.conn, nil
+	return tlsConn, nil
 }
