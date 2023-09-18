@@ -108,7 +108,7 @@ func tcpTLSDo(ctx context.Context, config *tcpTLSConfig) {
 		ServerName: config.URLHostname,
 	}
 	thx := config.NewTSLHandshaker(config.Logger)
-	tlsConn, _, err := thx.Handshake(ctx, conn, tlsConfig)
+	tlsConn, err := thx.Handshake(ctx, conn, tlsConfig)
 	ol.Stop(err)
 	out.TLS = &ctrlTLSResult{
 		ServerName: config.URLHostname,

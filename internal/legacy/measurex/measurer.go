@@ -355,13 +355,12 @@ func (mx *Measurer) TLSConnectAndHandshakeWithDB(ctx context.Context,
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	th := mx.WrapTLSHandshaker(db, mx.TLSHandshaker)
-	tlsConn, _, err := th.Handshake(ctx, conn, config)
+	tlsConn, err := th.Handshake(ctx, conn, config)
 	ol.Stop(err)
 	if err != nil {
 		return nil, err
 	}
-	// cast safe according to the docs of netxlite's handshaker
-	return tlsConn.(netxlite.TLSConn), nil
+	return tlsConn, nil
 }
 
 // QUICHandshake connects and TLS handshakes with a QUIC endpoint.

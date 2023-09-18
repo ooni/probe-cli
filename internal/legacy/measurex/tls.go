@@ -11,7 +11,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
-	"net"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -53,13 +52,13 @@ type QUICTLSHandshakeEvent struct {
 	Started         float64
 }
 
-func (thx *tlsHandshakerDB) Handshake(ctx context.Context,
-	conn Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
+func (thx *tlsHandshakerDB) Handshake(ctx context.Context, conn Conn, config *tls.Config) (model.TLSConn, error) {
 	network := conn.RemoteAddr().Network()
 	remoteAddr := conn.RemoteAddr().String()
 	started := time.Since(thx.begin).Seconds()
-	tconn, state, err := thx.TLSHandshaker.Handshake(ctx, conn, config)
+	tconn, err := thx.TLSHandshaker.Handshake(ctx, conn, config)
 	finished := time.Since(thx.begin).Seconds()
+	tstate := netxlite.MaybeTLSConnectionState(tconn)
 	thx.db.InsertIntoTLSHandshake(&QUICTLSHandshakeEvent{
 		Network:         network,
 		RemoteAddr:      remoteAddr,
@@ -70,12 +69,12 @@ func (thx *tlsHandshakerDB) Handshake(ctx context.Context,
 		Finished:        finished,
 		Failure:         NewFailure(err),
 		Oddity:          thx.computeOddity(err),
-		TLSVersion:      netxlite.TLSVersionString(state.Version),
-		CipherSuite:     netxlite.TLSCipherSuiteString(state.CipherSuite),
-		NegotiatedProto: state.NegotiatedProtocol,
-		PeerCerts:       peerCerts(err, &state),
+		TLSVersion:      netxlite.TLSVersionString(tstate.Version),
+		CipherSuite:     netxlite.TLSCipherSuiteString(tstate.CipherSuite),
+		NegotiatedProto: tstate.NegotiatedProtocol,
+		PeerCerts:       peerCerts(err, &tstate),
 	})
-	return tconn, state, err
+	return tconn, err
 }
 
 func (thx *tlsHandshakerDB) computeOddity(err error) Oddity {

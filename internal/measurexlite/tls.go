@@ -35,7 +35,7 @@ var _ model.TLSHandshaker = &tlsHandshakerTrace{}
 
 // Handshake implements model.TLSHandshaker.Handshake.
 func (thx *tlsHandshakerTrace) Handshake(
-	ctx context.Context, conn net.Conn, tlsConfig *tls.Config) (net.Conn, tls.ConnectionState, error) {
+	ctx context.Context, conn net.Conn, tlsConfig *tls.Config) (model.TLSConn, error) {
 	return thx.thx.Handshake(netxlite.ContextWithTrace(ctx, thx.tx), conn, tlsConfig)
 }
 

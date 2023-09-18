@@ -109,7 +109,7 @@ func TestTLSSNIProxy(t *testing.T) {
 			}
 			defer conn.Close()
 
-			tconn := conn.(netxlite.TLSConn)
+			tconn := conn.(netxlite.TLSConn) // cast safe according to documentation
 			connstate := tconn.ConnectionState()
 			t.Logf("%+v", connstate)
 		})

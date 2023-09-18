@@ -332,12 +332,7 @@ type TLSHandshaker interface {
 	//
 	// - set NextProtos to []string{"h2", "http/1.1"} for HTTPS
 	// and []string{"dot"} for DNS-over-TLS.
-	//
-	// QUIRK: The returned connection will always implement the TLSConn interface
-	// exposed by ooni/oohttp. A future version of this interface may instead
-	// return directly a TLSConn to avoid unconditional castings.
-	Handshake(ctx context.Context, conn net.Conn, tlsConfig *tls.Config) (
-		net.Conn, tls.ConnectionState, error)
+	Handshake(ctx context.Context, conn net.Conn, tlsConfig *tls.Config) (TLSConn, error)
 }
 
 // Trace allows to collect measurement traces. A trace is injected into

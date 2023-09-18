@@ -189,7 +189,7 @@ func (m *Measurer) tlsConnectAndHandshake(ctx context.Context, index int64,
 		RootCAs:    nil,
 		ServerName: sni,
 	}
-	_, _, err = thx.Handshake(ctx, conn, config)
+	_, err = thx.Handshake(ctx, conn, config)
 	ol.Stop(err)
 	sp.TLSHandshake = trace.FirstTLSHandshakeOrNil() // record the first handshake from the buffer
 	sp.NetworkEvents = trace.NetworkEvents()

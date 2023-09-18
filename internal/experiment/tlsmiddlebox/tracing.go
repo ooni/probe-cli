@@ -97,7 +97,7 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 	if clientId > 0 {
 		thx = trace.NewTLSHandshakerUTLS(logger, ClientIDs[clientId])
 	}
-	_, _, err = thx.Handshake(ctx, conn, genTLSConfig(sni))
+	_, err = thx.Handshake(ctx, conn, genTLSConfig(sni))
 	ol.Stop(err)
 	soErr := extractSoError(conn)
 	// 4. reset the TTL value to ensure that conn closes successfully
