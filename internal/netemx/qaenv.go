@@ -140,8 +140,8 @@ type QAEnv struct {
 	// clientNICWrapper is the OPTIONAL wrapper for the client NIC.
 	clientNICWrapper netem.LinkNICWrapper
 
-	// clientStack is the client stack to use.
-	clientStack *netem.UNetStack
+	// ClientStack is the client stack to use.
+	ClientStack *netem.UNetStack
 
 	// closables contains all entities where we have to take care of closing.
 	closables []io.Closer
@@ -197,7 +197,7 @@ func MustNewQAEnv(options ...QAEnvOption) *QAEnv {
 	env := &QAEnv{
 		baseLogger:                config.logger,
 		clientNICWrapper:          config.clientNICWrapper,
-		clientStack:               nil,
+		ClientStack:               nil,
 		closables:                 []io.Closer{},
 		emulateAndroidGetaddrinfo: &atomic.Bool{},
 		ispResolverConfig:         netem.NewDNSConfig(),
@@ -208,7 +208,7 @@ func MustNewQAEnv(options ...QAEnvOption) *QAEnv {
 	}
 
 	// create all the required internals
-	env.clientStack = env.mustNewClientStack(config)
+	env.ClientStack = env.mustNewClientStack(config)
 	env.closables = append(env.closables, env.mustNewNetStacks(config)...)
 
 	return env
@@ -306,7 +306,7 @@ func (env *QAEnv) EmulateAndroidGetaddrinfo(value bool) {
 // Do executes the given function such that [netxlite] code uses the
 // underlying clientStack rather than ordinary networking code.
 func (env *QAEnv) Do(function func()) {
-	var stack netem.UnderlyingNetwork = env.clientStack
+	var stack netem.UnderlyingNetwork = env.ClientStack
 	if env.emulateAndroidGetaddrinfo.Load() {
 		stack = &androidStack{stack}
 	}
