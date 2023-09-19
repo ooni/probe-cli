@@ -165,7 +165,7 @@ func TestHTTPTransportWAI(t *testing.T) {
 				t.Fatal("unexpected status code")
 			}
 
-			// make sure that we only connected to the SOCKS5 proxy
+			// make sure that we only connected to the HTTP proxy
 			tcpConnects := trace.TCPConnects()
 			if len(tcpConnects) <= 0 {
 				t.Fatal("expected at least one TCP connect")
@@ -234,7 +234,7 @@ func TestHTTPTransportWAI(t *testing.T) {
 				t.Fatal("unexpected status code")
 			}
 
-			// make sure that we only connected to the SOCKS5 proxy
+			// make sure that we only connected to the HTTPS proxy
 			tcpConnects := trace.TCPConnects()
 			if len(tcpConnects) <= 0 {
 				t.Fatal("expected at least one TCP connect")
