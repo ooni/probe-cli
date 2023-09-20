@@ -199,6 +199,9 @@ func TestHTTPSDialerWAI(t *testing.T) {
 		},
 		expectErr: "connection_reset\nconnection_reset",
 	}, {
+		// Note: this is where we test that TLS verification is WAI. The netemx scenario role
+		// constructs the equivalent of real world's badssl.com and we're checking whether
+		// we would accept a certificate valid for another hostname. The answer should be "NO!".
 		name:     "with TLS verification errors",
 		short:    true,
 		policy:   &enginenetx.HTTPSDialerNullPolicy{},
@@ -301,7 +304,7 @@ func TestHTTPSDialerWAI(t *testing.T) {
 			)
 			defer dialer.CloseIdleConnections()
 
-			// configure context and possibly add timeout
+			// configure cancellable context--some tests are going to use cancel
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
@@ -328,14 +331,15 @@ func TestHTTPSDialerWAI(t *testing.T) {
 				if diff := cmp.Diff(tc.expectErr, err.Error()); diff != "" {
 					t.Fatal(diff)
 				}
-				return
 
 			case err == nil && tc.expectErr == "":
 				// all good
 			}
 
 			// make sure we close the conn
-			defer tlsConn.Close()
+			if tlsConn != nil {
+				defer tlsConn.Close()
+			}
 
 			// wait for background connections to join
 			dialer.WaitGroup().Wait()
