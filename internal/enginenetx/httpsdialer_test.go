@@ -102,175 +102,251 @@ func TestHTTPSDialerWAI(t *testing.T) {
 		expectErr string
 	}
 
-	allTestCases := []testcase{{
-		name:     "net.SplitHostPort failure",
-		short:    true,
-		policy:   &enginenetx.HTTPSDialerNullPolicy{},
-		endpoint: "www.example.com", // note: here the port is missing
-		scenario: netemx.InternetScenario,
-		configureDPI: func(dpi *netem.DPIEngine) {
-			// nothing
+	allTestCases := []testcase{
+
+		// This test case ensures that we handle the corner case of a missing port
+		{
+			name:     "net.SplitHostPort failure",
+			short:    true,
+			policy:   &enginenetx.HTTPSDialerNullPolicy{},
+			endpoint: "www.example.com", // note: here the port is missing
+			scenario: netemx.InternetScenario,
+			configureDPI: func(dpi *netem.DPIEngine) {
+				// nothing
+			},
+			expectErr: "address www.example.com: missing port in address",
 		},
-		expectErr: "address www.example.com: missing port in address",
-	}, {
-		name:     "hd.policy.LookupTactics failure",
-		short:    true,
-		policy:   &enginenetx.HTTPSDialerNullPolicy{},
-		endpoint: "www.example.nonexistent:443", // note: the domain does not exist
-		scenario: netemx.InternetScenario,
-		configureDPI: func(dpi *netem.DPIEngine) {
-			// nothing
+
+		// This test case ensures that we handle the case of a nonexistent domain
+		{
+			name:     "hd.policy.LookupTactics failure",
+			short:    true,
+			policy:   &enginenetx.HTTPSDialerNullPolicy{},
+			endpoint: "www.example.nonexistent:443", // note: the domain does not exist
+			scenario: netemx.InternetScenario,
+			configureDPI: func(dpi *netem.DPIEngine) {
+				// nothing
+			},
+			expectErr: "dns_nxdomain_error",
 		},
-		expectErr: "dns_nxdomain_error",
-	}, {
-		name:     "successful dial with multiple addresses",
-		short:    true,
-		policy:   &enginenetx.HTTPSDialerNullPolicy{},
-		endpoint: "www.example.com:443",
-		scenario: []*netemx.ScenarioDomainAddresses{{
-			Domains: []string{
-				"www.example.com",
+
+		// This test case is the common case: all is good with multiple addresses to dial (I am
+		// not testing the case of a single address because it's a subcase of this one)
+		{
+			name:     "successful dial with multiple addresses",
+			short:    true,
+			policy:   &enginenetx.HTTPSDialerNullPolicy{},
+			endpoint: "www.example.com:443",
+			scenario: []*netemx.ScenarioDomainAddresses{{
+				Domains: []string{
+					"www.example.com",
+				},
+				Addresses: []string{
+					"93.184.216.34",
+					"93.184.216.35",
+					"93.184.216.36",
+					"93.184.216.37",
+				},
+				Role:             netemx.ScenarioRoleWebServer,
+				WebServerFactory: netemx.ExampleWebPageHandlerFactory(),
+			}},
+			configureDPI: func(dpi *netem.DPIEngine) {
+				// nothing
 			},
-			Addresses: []string{
-				"93.184.216.34",
-				"93.184.216.35",
-				"93.184.216.36",
-				"93.184.216.37",
-			},
-			Role:             netemx.ScenarioRoleWebServer,
-			WebServerFactory: netemx.ExampleWebPageHandlerFactory(),
-		}},
-		configureDPI: func(dpi *netem.DPIEngine) {
-			// nothing
+			expectErr: "",
 		},
-		expectErr: "",
-	}, {
-		name:     "with TCP connect errors",
-		short:    true,
-		policy:   &enginenetx.HTTPSDialerNullPolicy{},
-		endpoint: "www.example.com:443",
-		scenario: []*netemx.ScenarioDomainAddresses{{
-			Domains: []string{
-				"www.example.com",
+
+		// Here we make sure that we're doing OK if the addresses are TCP-blocked
+		{
+			name:     "with TCP connect errors",
+			short:    true,
+			policy:   &enginenetx.HTTPSDialerNullPolicy{},
+			endpoint: "www.example.com:443",
+			scenario: []*netemx.ScenarioDomainAddresses{{
+				Domains: []string{
+					"www.example.com",
+				},
+				Addresses: []string{
+					"93.184.216.34",
+					"93.184.216.35",
+				},
+				Role:             netemx.ScenarioRoleWebServer,
+				WebServerFactory: netemx.ExampleWebPageHandlerFactory(),
+			}},
+			configureDPI: func(dpi *netem.DPIEngine) {
+				// we force closing the connection for all the known server endpoints
+				dpi.AddRule(&netem.DPICloseConnectionForServerEndpoint{
+					Logger:          log.Log,
+					ServerIPAddress: "93.184.216.34",
+					ServerPort:      443,
+				})
+				dpi.AddRule(&netem.DPICloseConnectionForServerEndpoint{
+					Logger:          log.Log,
+					ServerIPAddress: "93.184.216.35",
+					ServerPort:      443,
+				})
 			},
-			Addresses: []string{
-				"93.184.216.34",
-				"93.184.216.35",
-			},
-			Role:             netemx.ScenarioRoleWebServer,
-			WebServerFactory: netemx.ExampleWebPageHandlerFactory(),
-		}},
-		configureDPI: func(dpi *netem.DPIEngine) {
-			// we force closing the connection for all the known server endpoints
-			dpi.AddRule(&netem.DPICloseConnectionForServerEndpoint{
-				Logger:          log.Log,
-				ServerIPAddress: "93.184.216.34",
-				ServerPort:      443,
-			})
-			dpi.AddRule(&netem.DPICloseConnectionForServerEndpoint{
-				Logger:          log.Log,
-				ServerIPAddress: "93.184.216.35",
-				ServerPort:      443,
-			})
+			expectErr: "connection_refused\nconnection_refused",
 		},
-		expectErr: "connection_refused\nconnection_refused",
-	}, {
-		name:     "with TLS handshake errors",
-		short:    true,
-		policy:   &enginenetx.HTTPSDialerNullPolicy{},
-		endpoint: "www.example.com:443",
-		scenario: []*netemx.ScenarioDomainAddresses{{
-			Domains: []string{
-				"www.example.com",
+
+		// Here we're making sure it's all WAI when there is TLS interference
+		{
+			name:     "with TLS handshake errors",
+			short:    true,
+			policy:   &enginenetx.HTTPSDialerNullPolicy{},
+			endpoint: "www.example.com:443",
+			scenario: []*netemx.ScenarioDomainAddresses{{
+				Domains: []string{
+					"www.example.com",
+				},
+				Addresses: []string{
+					"93.184.216.34",
+					"93.184.216.35",
+				},
+				Role:             netemx.ScenarioRoleWebServer,
+				WebServerFactory: netemx.ExampleWebPageHandlerFactory(),
+			}},
+			configureDPI: func(dpi *netem.DPIEngine) {
+				// we force resetting the connection for www.example.com
+				dpi.AddRule(&netem.DPIResetTrafficForTLSSNI{
+					Logger: log.Log,
+					SNI:    "www.example.com",
+				})
 			},
-			Addresses: []string{
-				"93.184.216.34",
-				"93.184.216.35",
-			},
-			Role:             netemx.ScenarioRoleWebServer,
-			WebServerFactory: netemx.ExampleWebPageHandlerFactory(),
-		}},
-		configureDPI: func(dpi *netem.DPIEngine) {
-			// we force resetting the connection for www.example.com
-			dpi.AddRule(&netem.DPIResetTrafficForTLSSNI{
-				Logger: log.Log,
-				SNI:    "www.example.com",
-			})
+			expectErr: "connection_reset\nconnection_reset",
 		},
-		expectErr: "connection_reset\nconnection_reset",
-	}, {
+
 		// Note: this is where we test that TLS verification is WAI. The netemx scenario role
 		// constructs the equivalent of real world's badssl.com and we're checking whether
 		// we would accept a certificate valid for another hostname. The answer should be "NO!".
-		name:     "with TLS verification errors",
-		short:    true,
-		policy:   &enginenetx.HTTPSDialerNullPolicy{},
-		endpoint: "wrong.host.badssl.com:443",
-		scenario: []*netemx.ScenarioDomainAddresses{{
-			Domains: []string{
-				"wrong.host.badssl.com",
-				"untrusted-root.badssl.com",
-				"expired.badssl.com",
+		{
+			name:     "with a TLS certificate valid for ANOTHER domain",
+			short:    true,
+			policy:   &enginenetx.HTTPSDialerNullPolicy{},
+			endpoint: "wrong.host.badssl.com:443",
+			scenario: []*netemx.ScenarioDomainAddresses{{
+				Domains: []string{
+					"wrong.host.badssl.com",
+					"untrusted-root.badssl.com",
+					"expired.badssl.com",
+				},
+				Addresses: []string{
+					"93.184.216.34",
+					"93.184.216.35",
+				},
+				Role: netemx.ScenarioRoleBadSSL,
+			}},
+			configureDPI: func(dpi *netem.DPIEngine) {
+				// nothing
 			},
-			Addresses: []string{
-				"93.184.216.34",
-				"93.184.216.35",
-			},
-			Role: netemx.ScenarioRoleBadSSL,
-		}},
-		configureDPI: func(dpi *netem.DPIEngine) {
-			// nothing
+			expectErr: "ssl_invalid_hostname\nssl_invalid_hostname",
 		},
-		expectErr: "ssl_invalid_hostname\nssl_invalid_hostname",
-	}, {
-		name:  "with context being canceled in OnStarting",
-		short: true,
-		policy: &httpsDialerPolicyCancelingContext{
-			cancel: nil,
-			flags:  httpsDialerPolicyCancelingContextOnStarting,
-			policy: &enginenetx.HTTPSDialerNullPolicy{},
-		},
-		endpoint: "www.example.com:443",
-		scenario: []*netemx.ScenarioDomainAddresses{{
-			Domains: []string{
-				"www.example.com",
+
+		// Note: this is another TLS related test case where we make sure that
+		// we can handle an untrusted root/self signed certificate
+		{
+			name:     "with TLS certificate signed by an unknown authority",
+			short:    true,
+			policy:   &enginenetx.HTTPSDialerNullPolicy{},
+			endpoint: "untrusted-root.badssl.com:443",
+			scenario: []*netemx.ScenarioDomainAddresses{{
+				Domains: []string{
+					"wrong.host.badssl.com",
+					"untrusted-root.badssl.com",
+					"expired.badssl.com",
+				},
+				Addresses: []string{
+					"93.184.216.34",
+					"93.184.216.35",
+				},
+				Role: netemx.ScenarioRoleBadSSL,
+			}},
+			configureDPI: func(dpi *netem.DPIEngine) {
+				// nothing
 			},
-			Addresses: []string{
-				"93.184.216.34",
-				"93.184.216.35",
-			},
-			Role:             netemx.ScenarioRoleWebServer,
-			WebServerFactory: netemx.ExampleWebPageHandlerFactory(),
-		}},
-		configureDPI: func(dpi *netem.DPIEngine) {
-			// nothing
+			expectErr: "ssl_unknown_authority\nssl_unknown_authority",
 		},
-		expectErr: "context canceled",
-	}, {
-		name:  "with context being canceled in OnSuccess for the first success",
-		short: true,
-		policy: &httpsDialerPolicyCancelingContext{
-			cancel: nil,
-			flags:  httpsDialerPolicyCancelingContextOnSuccess,
-			policy: &enginenetx.HTTPSDialerNullPolicy{},
-		},
-		endpoint: "www.example.com:443",
-		scenario: []*netemx.ScenarioDomainAddresses{{
-			Domains: []string{
-				"www.example.com",
+
+		// Note: this is another TLS related test case where we make sure that
+		// we can handle a certificate that has now expired.
+		{
+			name:     "with expired TLS certificate",
+			short:    true,
+			policy:   &enginenetx.HTTPSDialerNullPolicy{},
+			endpoint: "expired.badssl.com:443",
+			scenario: []*netemx.ScenarioDomainAddresses{{
+				Domains: []string{
+					"wrong.host.badssl.com",
+					"untrusted-root.badssl.com",
+					"expired.badssl.com",
+				},
+				Addresses: []string{
+					"93.184.216.34",
+					"93.184.216.35",
+				},
+				Role: netemx.ScenarioRoleBadSSL,
+			}},
+			configureDPI: func(dpi *netem.DPIEngine) {
+				// nothing
 			},
-			Addresses: []string{
-				"93.184.216.34",
-				"93.184.216.35",
-			},
-			Role:             netemx.ScenarioRoleWebServer,
-			WebServerFactory: netemx.ExampleWebPageHandlerFactory(),
-		}},
-		configureDPI: func(dpi *netem.DPIEngine) {
-			// nothing
+			expectErr: "ssl_invalid_certificate\nssl_invalid_certificate",
 		},
-		expectErr: "context canceled",
-	}}
+
+		// This is a corner case: what if the context is canceled after the DNS lookup
+		// but before we start dialing? Are we closing all goroutines and returning correctly?
+		{
+			name:  "with context being canceled in OnStarting",
+			short: true,
+			policy: &httpsDialerPolicyCancelingContext{
+				cancel: nil,
+				flags:  httpsDialerPolicyCancelingContextOnStarting,
+				policy: &enginenetx.HTTPSDialerNullPolicy{},
+			},
+			endpoint: "www.example.com:443",
+			scenario: []*netemx.ScenarioDomainAddresses{{
+				Domains: []string{
+					"www.example.com",
+				},
+				Addresses: []string{
+					"93.184.216.34",
+					"93.184.216.35",
+				},
+				Role:             netemx.ScenarioRoleWebServer,
+				WebServerFactory: netemx.ExampleWebPageHandlerFactory(),
+			}},
+			configureDPI: func(dpi *netem.DPIEngine) {
+				// nothing
+			},
+			expectErr: "context canceled",
+		},
+
+		// This is another corner case: what happens if the context is canceled after we
+		// have a good connection but before we're able to report it to the caller?
+		{
+			name:  "with context being canceled in OnSuccess for the first success",
+			short: true,
+			policy: &httpsDialerPolicyCancelingContext{
+				cancel: nil,
+				flags:  httpsDialerPolicyCancelingContextOnSuccess,
+				policy: &enginenetx.HTTPSDialerNullPolicy{},
+			},
+			endpoint: "www.example.com:443",
+			scenario: []*netemx.ScenarioDomainAddresses{{
+				Domains: []string{
+					"www.example.com",
+				},
+				Addresses: []string{
+					"93.184.216.34",
+					"93.184.216.35",
+				},
+				Role:             netemx.ScenarioRoleWebServer,
+				WebServerFactory: netemx.ExampleWebPageHandlerFactory(),
+			}},
+			configureDPI: func(dpi *netem.DPIEngine) {
+				// nothing
+			},
+			expectErr: "context canceled",
+		}}
 
 	for _, tc := range allTestCases {
 		t.Run(tc.name, func(t *testing.T) {
