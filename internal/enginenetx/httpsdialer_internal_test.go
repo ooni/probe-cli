@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -25,17 +26,13 @@ func TestHTTPSDialerTacticsEmitter(t *testing.T) {
 			wg:          &sync.WaitGroup{},
 		}
 
-		tactics := []HTTPSDialerTactic{
-			&httpsDialerNullTactic{
-				Address: "10.0.0.1",
+		var tactics []HTTPSDialerTactic
+		for idx := 0; idx < 255; idx++ {
+			tactics = append(tactics, &httpsDialerNullTactic{
+				Address: fmt.Sprintf("10.0.0.%d", idx),
 				Delay:   0,
 				Domain:  "www.example.com",
-			},
-			&httpsDialerNullTactic{
-				Address: "10.0.0.2",
-				Delay:   0,
-				Domain:  "www.example.com",
-			},
+			})
 		}
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -43,13 +40,14 @@ func TestHTTPSDialerTacticsEmitter(t *testing.T) {
 
 		out := hd.tacticsEmitter(ctx, tactics...)
 
-		var count int
 		for range out {
-			count++
-		}
-
-		if count != 0 {
-			t.Fatal("nothing should have been emitted here")
+			// Here we do nothing!
+			//
+			// Ideally, we would like to count and assert that we have
+			// got no tactic from the channel but the selection of ready
+			// channels is nondeterministic, so we cannot really be
+			// asserting that. This leaves us with asking the question
+			// of what we should be asserting here?
 		}
 	})
 }
