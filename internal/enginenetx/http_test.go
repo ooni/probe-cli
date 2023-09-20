@@ -194,6 +194,7 @@ func TestHTTPTransportWAI(t *testing.T) {
 			testingx.NewHTTPProxyHandler(log.Log, &netxlite.Netx{
 				Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: env.ClientStack}}),
 			env.ClientStack,
+			"proxy.local",
 		)
 		defer proxy.Close()
 

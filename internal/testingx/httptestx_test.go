@@ -43,6 +43,9 @@ func TestHTTPTestxWithStdlib(t *testing.T) {
 		expectBody []byte
 	}
 
+	// create server's CA
+	serverCA := netem.MustNewCA()
+
 	testcases := []testcase{
 		/*
 		 * HTTP
@@ -91,7 +94,11 @@ func TestHTTPTestxWithStdlib(t *testing.T) {
 		{
 			name: "with HTTPS and the HTTPHandlerBlockpage451 handler",
 			constructor: func() *testingx.HTTPServer {
-				return testingx.MustNewHTTPServerTLS(testingx.HTTPHandlerBlockpage451())
+				return testingx.MustNewHTTPServerTLS(
+					testingx.HTTPHandlerBlockpage451(),
+					serverCA,
+					"webserver.local",
+				)
 			},
 			timeout:    10 * time.Second,
 			expectErr:  nil,
@@ -100,7 +107,11 @@ func TestHTTPTestxWithStdlib(t *testing.T) {
 		}, {
 			name: "with HTTPS and the HTTPHandlerEOF handler",
 			constructor: func() *testingx.HTTPServer {
-				return testingx.MustNewHTTPServerTLS(testingx.HTTPHandlerEOF())
+				return testingx.MustNewHTTPServerTLS(
+					testingx.HTTPHandlerEOF(),
+					serverCA,
+					"webserver.local",
+				)
 			},
 			timeout:    10 * time.Second,
 			expectErr:  io.EOF,
@@ -109,7 +120,11 @@ func TestHTTPTestxWithStdlib(t *testing.T) {
 		}, {
 			name: "with HTTPS and the HTTPHandlerReset handler",
 			constructor: func() *testingx.HTTPServer {
-				return testingx.MustNewHTTPServerTLS(testingx.HTTPHandlerReset())
+				return testingx.MustNewHTTPServerTLS(
+					testingx.HTTPHandlerReset(),
+					serverCA,
+					"webserver.local",
+				)
 			},
 			timeout:    10 * time.Second,
 			expectErr:  netxlite.ECONNRESET,
@@ -118,7 +133,11 @@ func TestHTTPTestxWithStdlib(t *testing.T) {
 		}, {
 			name: "with HTTPS and the HTTPHandlerTimeout handler",
 			constructor: func() *testingx.HTTPServer {
-				return testingx.MustNewHTTPServerTLS(testingx.HTTPHandlerTimeout())
+				return testingx.MustNewHTTPServerTLS(
+					testingx.HTTPHandlerTimeout(),
+					serverCA,
+					"webserver.local",
+				)
 			},
 			timeout:    1 * time.Second,
 			expectErr:  context.DeadlineExceeded,
@@ -309,6 +328,7 @@ func TestHTTPTestxWithNetem(t *testing.T) {
 					unet,
 					testingx.HTTPHandlerBlockpage451(),
 					unet,
+					"webserver.local",
 				)
 			},
 			timeout:    10 * time.Second,
@@ -326,6 +346,7 @@ func TestHTTPTestxWithNetem(t *testing.T) {
 					unet,
 					testingx.HTTPHandlerEOF(),
 					unet,
+					"webserver.local",
 				)
 			},
 			timeout:    10 * time.Second,
@@ -344,6 +365,7 @@ func TestHTTPTestxWithNetem(t *testing.T) {
 					unet,
 					testingx.HTTPHandlerReset(),
 					unet,
+					"webserver.local",
 				)
 			},
 			timeout:    10 * time.Second,
@@ -361,6 +383,7 @@ func TestHTTPTestxWithNetem(t *testing.T) {
 					unet,
 					testingx.HTTPHandlerTimeout(),
 					unet,
+					"webserver.local",
 				)
 			},
 			timeout:    1 * time.Second,
@@ -378,7 +401,7 @@ func TestHTTPTestxWithNetem(t *testing.T) {
 			}
 
 			// create a star topology for hosting the test
-			topology := runtimex.Try1(netem.NewStarTopology(log.Log))
+			topology := netem.MustNewStarTopology(log.Log)
 			defer topology.Close()
 
 			// create a common link config

@@ -59,36 +59,6 @@ func QAEnvOptionClientNICWrapper(wrapper netem.LinkNICWrapper) QAEnvOption {
 	}
 }
 
-// QAEnvOptionHTTPServer adds the given HTTP handler factory. If you do
-// not set this option we will not create any HTTP server. Note that this
-// option is just syntactic sugar for calling [QAEnvOptionNetStack]
-// with the following three factories as argument:
-//
-// - [HTTPCleartextServerFactory] with port 80/tcp;
-//
-// - [HTTPSecureServerFactory] with port 443/tcp and nil TLSConfig;
-//
-// - [HTTP3ServerFactory] with port 443/udp and nil TLSConfig.
-//
-// We wrote this syntactic sugar factory because it covers the common case
-// where you want support for HTTP, HTTPS, and HTTP3.
-func QAEnvOptionHTTPServer(ipAddr string, factory HTTPHandlerFactory) QAEnvOption {
-	runtimex.Assert(net.ParseIP(ipAddr) != nil, "not an IP addr")
-	runtimex.Assert(factory != nil, "passed a nil handler factory")
-	return qaEnvOptionNetStack(ipAddr, &HTTPCleartextServerFactory{
-		Factory: factory,
-		Ports:   []int{80},
-	}, &HTTPSecureServerFactory{
-		Factory:   factory,
-		Ports:     []int{443},
-		TLSConfig: nil, // use netem's default
-	}, &HTTP3ServerFactory{
-		Factory:   factory,
-		Ports:     []int{443},
-		TLSConfig: nil, // use netem's default
-	})
-}
-
 // QAEnvOptionLogger sets the logger to use. If you do not set this option we
 // will use [model.DiscardLogger] as the logger.
 func QAEnvOptionLogger(logger model.Logger) QAEnvOption {
@@ -204,7 +174,7 @@ func MustNewQAEnv(options ...QAEnvOption) *QAEnv {
 		dpi:                       netem.NewDPIEngine(prefixLogger),
 		once:                      sync.Once{},
 		otherResolversConfig:      netem.NewDNSConfig(),
-		topology:                  runtimex.Try1(netem.NewStarTopology(prefixLogger)),
+		topology:                  netem.MustNewStarTopology(prefixLogger),
 	}
 
 	// create all the required internals

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/optional"
+	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -44,7 +44,7 @@ type HTTPServer struct {
 	// This field is an extension that is not present in the httptest package.
 	X509CertPool *x509.CertPool
 
-	// CACert is the CA used by this server.
+	// CACert is the CA used by this server or nil.
 	//
 	// This field is an extension that is not present in the httptest package.
 	CACert *x509.Certificate
@@ -56,55 +56,72 @@ func MustNewHTTPServer(handler http.Handler) *HTTPServer {
 	return MustNewHTTPServerEx(addr, &TCPListenerStdlib{}, handler)
 }
 
-// MustNewHTTPServerTLS is morally equivalent to [httptest.NewHTTPServerTLS].
-func MustNewHTTPServerTLS(handler http.Handler) *HTTPServer {
-	addr := &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 0}
-	provider := MustNewTLSMITMProviderNetem()
-	return MustNewHTTPServerTLSEx(addr, &TCPListenerStdlib{}, handler, provider)
-}
-
 // MustNewHTTPServerEx creates a new [HTTPServer] using HTTP or PANICS.
-func MustNewHTTPServerEx(addr *net.TCPAddr, listener TCPListener, handler http.Handler) *HTTPServer {
-	return mustNewHTTPServer(addr, listener, handler, optional.None[TLSMITMProvider]())
-}
-
-// MustNewHTTPServerTLSEx creates a new [HTTPServer] using HTTPS or PANICS.
-func MustNewHTTPServerTLSEx(addr *net.TCPAddr, listener TCPListener, handler http.Handler, mitm TLSMITMProvider) *HTTPServer {
-	return mustNewHTTPServer(addr, listener, handler, optional.Some(mitm))
-}
-
-// newHTTPOrHTTPSServer is an internal factory for creating a new instance.
-func mustNewHTTPServer(
-	addr *net.TCPAddr,
-	httpListener TCPListener,
-	handler http.Handler,
-	tlsConfig optional.Value[TLSMITMProvider],
-) *HTTPServer {
+func MustNewHTTPServerEx(addr *net.TCPAddr, httpListener TCPListener, handler http.Handler) *HTTPServer {
 	listener := runtimex.Try1(httpListener.ListenTCP("tcp", addr))
+
+	baseURL := &url.URL{
+		Scheme: "http",
+		Host:   listener.Addr().String(),
+		Path:   "/",
+	}
 	srv := &HTTPServer{
 		Config:       &http.Server{Handler: handler},
 		Listener:     listener,
-		TLS:          nil, // the default when not using TLS
-		URL:          "",  // filled later
-		X509CertPool: nil, // the default when not using TLS
-	}
-	baseURL := &url.URL{Host: listener.Addr().String()}
-
-	switch !tlsConfig.IsNone() {
-	case true:
-		baseURL.Scheme = "https"
-		srv.CACert = tlsConfig.Unwrap().CACert()
-		srv.TLS = tlsConfig.Unwrap().ServerTLSConfig()
-		srv.Config.TLSConfig = srv.TLS
-		srv.X509CertPool = runtimex.Try1(tlsConfig.Unwrap().DefaultCertPool())
-		go srv.Config.ServeTLS(listener, "", "") // using server.TLSConfig
-
-	default:
-		baseURL.Scheme = "http"
-		go srv.Config.Serve(listener)
+		TLS:          nil,
+		URL:          baseURL.String(),
+		X509CertPool: nil,
+		CACert:       nil,
 	}
 
-	srv.URL = baseURL.String()
+	go srv.Config.Serve(listener)
+
+	return srv
+}
+
+// MustNewHTTPServerTLS is morally equivalent to [httptest.NewHTTPServerTLS].
+func MustNewHTTPServerTLS(
+	handler http.Handler,
+	ca netem.CertificationAuthority,
+	commonName string,
+	extraSNIs ...string,
+) *HTTPServer {
+	addr := &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 0}
+	return MustNewHTTPServerTLSEx(addr, &TCPListenerStdlib{}, handler, ca, commonName, extraSNIs...)
+}
+
+// MustNewHTTPServerTLSEx creates a new [HTTPServer] using HTTPS or PANICS.
+func MustNewHTTPServerTLSEx(
+	addr *net.TCPAddr,
+	httpListener TCPListener,
+	handler http.Handler,
+	ca netem.CertificationAuthority,
+	commonName string,
+	extraSNIs ...string,
+) *HTTPServer {
+	listener := runtimex.Try1(httpListener.ListenTCP("tcp", addr))
+
+	baseURL := &url.URL{
+		Scheme: "https",
+		Host:   listener.Addr().String(),
+		Path:   "/",
+	}
+
+	otherNames := append([]string{}, addr.IP.String())
+	otherNames = append(otherNames, extraSNIs...)
+
+	srv := &HTTPServer{
+		Config:       &http.Server{Handler: handler},
+		Listener:     listener,
+		TLS:          ca.MustNewServerTLSConfig(commonName, otherNames...),
+		URL:          baseURL.String(),
+		X509CertPool: ca.DefaultCertPool(),
+		CACert:       ca.CACert(),
+	}
+
+	srv.Config.TLSConfig = srv.TLS
+	go srv.Config.ServeTLS(listener, "", "") // using server.TLSConfig
+
 	return srv
 }
 

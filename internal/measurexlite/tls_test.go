@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
@@ -233,8 +233,9 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 	})
 
 	t.Run("we collect the desired data with a local TLS server", func(t *testing.T) {
-		mitm := testingx.MustNewTLSMITMProviderNetem()
-		server := testingx.MustNewTLSServer(testingx.TLSHandlerHandshakeAndWriteText(mitm, testingx.HTTPBlockpage451))
+		ca := netem.MustNewCA()
+		cert := ca.MustNewTLSCertificate("dns.google")
+		server := testingx.MustNewTLSServer(testingx.TLSHandlerHandshakeAndWriteText(cert, testingx.HTTPBlockpage451))
 		dialer := netxlite.NewDialerWithoutResolver(model.DiscardLogger)
 		ctx := context.Background()
 		conn, err := dialer.DialContext(ctx, "tcp", server.Endpoint())
@@ -248,7 +249,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 		trace.timeNowFn = dt.Now // deterministic timing
 		thx := trace.NewTLSHandshakerStdlib(model.DiscardLogger)
 		tlsConfig := &tls.Config{
-			RootCAs:    runtimex.Try1(mitm.DefaultCertPool()),
+			RootCAs:    ca.DefaultCertPool(),
 			ServerName: "dns.google",
 		}
 		tlsConn, err := thx.Handshake(ctx, conn, tlsConfig)

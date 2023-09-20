@@ -43,7 +43,7 @@ func (tc *netemTestCaseWithHTTP) Name() string {
 
 // Run implements TestCase.
 func (tc *netemTestCaseWithHTTP) Run(t *testing.T) {
-	topology := runtimex.Try1(netem.NewStarTopology(log.Log))
+	topology := netem.MustNewStarTopology(log.Log)
 	defer topology.Close()
 
 	const (
@@ -89,6 +89,7 @@ func (tc *netemTestCaseWithHTTP) Run(t *testing.T) {
 			w.Write([]byte("Bonsoir, Elliot!\r\n"))
 		}),
 		wwwStack,
+		"www.example.com",
 	)
 	defer wwwServer443.Close()
 
@@ -118,7 +119,7 @@ func (tc *netemTestCaseWithHTTP) Run(t *testing.T) {
 
 		// TODO(https://github.com/ooni/probe/issues/2536)
 		netxlite.HTTPTransportOptionTLSClientConfig(&tls.Config{
-			RootCAs: runtimex.Try1(clientStack.DefaultCertPool()),
+			RootCAs: clientStack.DefaultCertPool(),
 		}),
 	)
 	client := &http.Client{Transport: txp}
