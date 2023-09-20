@@ -134,15 +134,8 @@ func TestCircoQA(t *testing.T) {
 				)
 				defer dialer.CloseIdleConnections()
 
-				// configure cancellable context--some tests are going to use cancel
-				ctx, cancel := context.WithCancel(context.Background())
-				defer cancel()
-
-				// Possibly tell the httpsDialerPolicyCancelingContext about the cancel func
-				// depending on which flags have been configured.
-				if p, ok := tc.policy.(*httpsDialerPolicyCancelingContext); ok {
-					p.cancel = cancel
-				}
+				// configure context
+				ctx := context.Background()
 
 				// dial the TLS connection
 				tlsConn, err := dialer.DialTLSContext(ctx, "tcp", tc.endpoint)
