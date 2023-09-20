@@ -510,9 +510,6 @@ func httpsDialerVerifyCertificateChain(hostname string, conn model.TLSConn, root
 		Intermediates: x509.NewCertPool(),
 		Roots:         rootCAs,
 	}
-	for _, cert := range state.PeerCertificates[1:] {
-		opts.Intermediates.AddCert(cert)
-	}
 
 	// The following check is rather paranoid and it's not part of the Go codebase
 	// from which we copied it, but I think it's important to be defensive.
@@ -520,6 +517,10 @@ func httpsDialerVerifyCertificateChain(hostname string, conn model.TLSConn, root
 	// Because of that, I don't want to just drop an assertion here.
 	if len(state.PeerCertificates) < 1 {
 		return errNoPeerCertificate
+	}
+
+	for _, cert := range state.PeerCertificates[1:] {
+		opts.Intermediates.AddCert(cert)
 	}
 
 	if _, err := state.PeerCertificates[0].Verify(opts); err != nil {
