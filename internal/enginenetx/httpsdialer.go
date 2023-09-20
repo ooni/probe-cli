@@ -21,6 +21,9 @@ import (
 type HTTPSDialerPolicy interface {
 	// LookupTactics performs a DNS lookup for the given domain using the given resolver and
 	// returns either a list of tactics for dialing or an error.
+	//
+	// This functoion MUST NOT return an empty list and a nil error. If this happens the
+	// code inside [HTTPSDialer] will panic.
 	LookupTactics(ctx context.Context, domain string, reso model.Resolver) ([]HTTPSDialerTactic, error)
 
 	// Parallelism returns the number of goroutines to create when TLS dialing. The
@@ -88,7 +91,7 @@ func (*HTTPSDialerNullPolicy) LookupTactics(
 	for idx, addr := range addrs {
 		tactics = append(tactics, &httpsDialerNullTactic{
 			Address: addr,
-			Delay:   time.Duration(idx) * delay,
+			Delay:   time.Duration(idx) * delay, // zero for the first dial
 			Domain:  domain,
 		})
 	}
@@ -238,7 +241,8 @@ func NewHTTPSDialer(
 
 var _ model.TLSDialer = &HTTPSDialer{}
 
-// WaitGroup returns the [*sync.WaitGroup] tracking the number of background goroutines.
+// WaitGroup returns the [*sync.WaitGroup] tracking the number of background goroutines,
+// which is definitely useful in testing to make sure we join all the goroutines.
 func (hd *HTTPSDialer) WaitGroup() *sync.WaitGroup {
 	return hd.wg
 }
@@ -280,6 +284,7 @@ func (hd *HTTPSDialer) DialTLSContext(ctx context.Context, network string, endpo
 		return nil, err
 	}
 	ol.Stop(tactics)
+	runtimex.Assert(len(tactics) >= 1, "expected at least one tactic here")
 
 	emitter := hd.tacticsEmitter(ctx, tactics...)
 	collector := make(chan *httpsDialerErrorOrConn)
@@ -308,6 +313,10 @@ func (hd *HTTPSDialer) DialTLSContext(ctx context.Context, network string, endpo
 				errorv = append(errorv, result.Err)
 				continue
 			}
+
+			// Returning early cancels the context and this cancellation
+			// causes other background goroutines to interrupt their long
+			// running network operations or unblocks them while sending
 			return result.Conn, nil
 		}
 	}
@@ -347,6 +356,9 @@ func (hd *HTTPSDialer) worker(
 	port string,
 	writer chan<- *httpsDialerErrorOrConn,
 ) {
+	// Note: no need to be concerned with the wait group here because
+	// we're managing it inside DialTLSContext so Add and Done live together
+
 	for {
 		select {
 		case tactic, good := <-reader:
@@ -471,6 +483,9 @@ func httpsDialerTacticWaitReady(ctx context.Context, tactic HTTPSDialerTactic) e
 	}
 }
 
+// errNoPeerCertificate is an internal error returned when we don't have any peer certificate.
+var errNoPeerCertificate = errors.New("no peer certificate")
+
 // httpsDialerVerifyCertificateChain verifies the certificate chain with the given hostname.
 func httpsDialerVerifyCertificateChain(hostname string, conn model.TLSConn, rootCAs *x509.CertPool) error {
 	// This code comes from the example in the Go source tree that shows
@@ -497,6 +512,14 @@ func httpsDialerVerifyCertificateChain(hostname string, conn model.TLSConn, root
 	}
 	for _, cert := range state.PeerCertificates[1:] {
 		opts.Intermediates.AddCert(cert)
+	}
+
+	// The following check is rather paranoid and it's not part of the Go codebase
+	// from which we copied it, but I think it's important to be defensive.
+	//
+	// Because of that, I don't want to just drop an assertion here.
+	if len(state.PeerCertificates) < 1 {
+		return errNoPeerCertificate
 	}
 
 	if _, err := state.PeerCertificates[0].Verify(opts); err != nil {
