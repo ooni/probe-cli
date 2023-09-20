@@ -18,7 +18,7 @@ import (
 // This test ensures that a Netx wrapping a netem.UNet is WAI
 func TestNetxWithNetem(t *testing.T) {
 	// create a star network topology
-	topology := runtimex.Try1(netem.NewStarTopology(log.Log))
+	topology := netem.MustNewStarTopology(log.Log)
 	defer topology.Close()
 
 	// constants for the IP address we're using
@@ -42,6 +42,9 @@ func TestNetxWithNetem(t *testing.T) {
 		w.Write(bonsoirElliot)
 	})
 
+	// create common certificate for HTTPS and HTTP3
+	webServerTLSConfig := webServerStack.MustNewServerTLSConfig("www.example.com", "web01.example.com")
+
 	// listen for HTTPS requests using the above handler
 	webServerTCPAddress := &net.TCPAddr{
 		IP:   net.ParseIP(exampleComAddress),
@@ -51,7 +54,7 @@ func TestNetxWithNetem(t *testing.T) {
 	webServerTCPListener := runtimex.Try1(webServerStack.ListenTCP("tcp", webServerTCPAddress))
 	webServerTCPServer := &http.Server{
 		Handler:   webServerHandler,
-		TLSConfig: webServerStack.ServerTLSConfig(),
+		TLSConfig: webServerTLSConfig,
 	}
 	go webServerTCPServer.ServeTLS(webServerTCPListener, "", "")
 	defer webServerTCPServer.Close()
@@ -64,7 +67,7 @@ func TestNetxWithNetem(t *testing.T) {
 	}
 	webServerUDPListener := runtimex.Try1(webServerStack.ListenUDP("udp", webServerUDPAddress))
 	webServerUDPServer := &http3.Server{
-		TLSConfig:  webServerStack.ServerTLSConfig(),
+		TLSConfig:  webServerTLSConfig,
 		QuicConfig: &quic.Config{},
 		Handler:    webServerHandler,
 	}

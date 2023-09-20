@@ -26,7 +26,7 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.7.1
 	github.com/ooni/go-libtor v1.1.8
-	github.com/ooni/netem v0.0.0-20230915101649-ab0dc13be014
+	github.com/ooni/netem v0.0.0-20230920215742-15f3ffec0107
 	github.com/ooni/oocrypto v0.5.3
 	github.com/ooni/oohttp v0.6.3
 	github.com/ooni/probe-assets v0.18.0
@@ -60,7 +60,6 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5 // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/google/btree v1.1.2 // indirect
-	github.com/google/martian/v3 v3.3.2 // indirect
 	github.com/google/pprof v0.0.0-20230602150820-91b7bce49751 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/klauspost/compress v1.16.5 // indirect

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/apex/log"
+	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
@@ -45,8 +46,15 @@ func (tc *hostNetworkTestCaseWithHTTPWithTLS) Run(t *testing.T) {
 	// which means we're using the host's network
 	netx := &netxlite.Netx{Underlying: nil}
 
+	// create CA
+	proxyCA := netem.MustNewCA()
+
 	// create the proxy server using the host network
-	proxyServer := testingx.MustNewHTTPServerTLS(testingx.NewHTTPProxyHandler(log.Log, netx))
+	proxyServer := testingx.MustNewHTTPServerTLS(
+		testingx.NewHTTPProxyHandler(log.Log, netx),
+		proxyCA,
+		"proxy.local",
+	)
 	defer proxyServer.Close()
 
 	// extend the default cert pool with the proxy's own CA

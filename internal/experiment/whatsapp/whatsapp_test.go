@@ -73,7 +73,17 @@ func newQAEnvironment() *netemx.QAEnv {
 	// - TCP listeners for endpoints on 443 and 5222
 	env := netemx.MustNewQAEnv(
 		netemx.QAEnvOptionLogger(log.Log),
-		netemx.QAEnvOptionHTTPServer(whatsappWebAddr, netemx.ExampleWebPageHandlerFactory()),
+		netemx.QAEnvOptionNetStack(
+			whatsappWebAddr,
+			&netemx.HTTPSecureServerFactory{
+				Factory:        netemx.ExampleWebPageHandlerFactory(),
+				Ports:          []int{443},
+				ServerNameMain: "web.whatsapp.com",
+				ServerNameExtras: []string{
+					"v.whatsapp.net",
+				},
+			},
+		),
 		netemx.QAEnvOptionNetStack(whatsappEndpointAddr, endpointsNetStack),
 	)
 
