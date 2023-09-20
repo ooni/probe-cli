@@ -23,8 +23,25 @@ func exampleNewEnvironment() *netemx.QAEnv {
 		netemx.QAEnvOptionNetStack("8.8.4.4", &netemx.DNSOverUDPServerFactory{}),
 		netemx.QAEnvOptionNetStack("9.9.9.9", &netemx.DNSOverUDPServerFactory{}),
 		netemx.QAEnvOptionClientAddress(netemx.DefaultClientAddress),
-		netemx.QAEnvOptionHTTPServer(
-			netemx.AddressWwwExampleCom, netemx.ExampleWebPageHandlerFactory()),
+		netemx.QAEnvOptionNetStack(
+			netemx.AddressWwwExampleCom,
+			&netemx.HTTPCleartextServerFactory{
+				Factory: netemx.ExampleWebPageHandlerFactory(),
+				Ports:   []int{80},
+			},
+			&netemx.HTTPSecureServerFactory{
+				Factory:          netemx.ExampleWebPageHandlerFactory(),
+				Ports:            []int{443},
+				ServerNameMain:   "www.example.com",
+				ServerNameExtras: []string{},
+			},
+			&netemx.HTTP3ServerFactory{
+				Factory:          netemx.ExampleWebPageHandlerFactory(),
+				Ports:            []int{443},
+				ServerNameMain:   "www.example.com",
+				ServerNameExtras: []string{},
+			},
+		),
 		netemx.QAEnvOptionLogger(log.Log),
 	)
 }

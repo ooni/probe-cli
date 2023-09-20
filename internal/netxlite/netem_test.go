@@ -16,7 +16,7 @@ func TestNetemUnderlyingNetworkAdapter(t *testing.T) {
 	// This test case explicitly ensures we can use the adapter to listen for TCP
 	t.Run("ListenTCP", func(t *testing.T) {
 		// create a star network topology
-		topology := runtimex.Try1(netem.NewStarTopology(log.Log))
+		topology := netem.MustNewStarTopology(log.Log)
 		defer topology.Close()
 
 		// constants for the IP address we're using

@@ -18,6 +18,7 @@ import (
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
@@ -371,8 +372,9 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 				startCalled                 bool
 				doneCalled                  bool
 			)
-			mitm := testingx.MustNewTLSMITMProviderNetem()
-			server := testingx.MustNewTLSServer(testingx.TLSHandlerHandshakeAndWriteText(mitm, testingx.HTTPBlockpage451))
+			ca := netem.MustNewCA()
+			cert := ca.MustNewTLSCertificate(expectedSNI)
+			server := testingx.MustNewTLSServer(testingx.TLSHandlerHandshakeAndWriteText(cert, testingx.HTTPBlockpage451))
 			defer server.Close()
 			zeroTime := time.Now()
 			deterministicTime := testingx.NewTimeDeterministic(zeroTime)

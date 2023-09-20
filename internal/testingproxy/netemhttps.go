@@ -43,7 +43,7 @@ func (tc *netemTestCaseWithHTTPWithTLS) Name() string {
 
 // Run implements TestCase.
 func (tc *netemTestCaseWithHTTPWithTLS) Run(t *testing.T) {
-	topology := runtimex.Try1(netem.NewStarTopology(log.Log))
+	topology := netem.MustNewStarTopology(log.Log)
 	defer topology.Close()
 
 	const (
@@ -89,16 +89,18 @@ func (tc *netemTestCaseWithHTTPWithTLS) Run(t *testing.T) {
 			w.Write([]byte("Bonsoir, Elliot!\r\n"))
 		}),
 		wwwStack,
+		"www.example.com",
 	)
 	defer wwwServer443.Close()
 
-	// configure the proxyStack to implement the HTTP proxy on port 8080
+	// configure the proxyStack to implement the HTTP proxy on port 80443
 	proxyServer := testingx.MustNewHTTPServerTLSEx(
 		&net.TCPAddr{IP: net.ParseIP(proxyIPAddr), Port: 80443},
 		proxyStack,
 		testingx.NewHTTPProxyHandler(log.Log, &netxlite.Netx{
 			Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: proxyStack}}),
 		proxyStack,
+		"proxy.local",
 	)
 	defer proxyServer.Close()
 
@@ -119,7 +121,7 @@ func (tc *netemTestCaseWithHTTPWithTLS) Run(t *testing.T) {
 
 		// TODO(https://github.com/ooni/probe/issues/2536)
 		netxlite.HTTPTransportOptionTLSClientConfig(&tls.Config{
-			RootCAs: runtimex.Try1(clientStack.DefaultCertPool()),
+			RootCAs: clientStack.DefaultCertPool(),
 		}),
 	)
 	client := &http.Client{Transport: txp}

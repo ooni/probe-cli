@@ -48,7 +48,7 @@ func TestTLSSNIProxy(t *testing.T) {
 		construct: func() (*testingx.TLSSNIProxy, *netxlite.Netx, []io.Closer) {
 			var closers []io.Closer
 
-			topology := runtimex.Try1(netem.NewStarTopology(log.Log))
+			topology := netem.MustNewStarTopology(log.Log)
 			closers = append(closers, topology)
 
 			wwwStack := runtimex.Try1(topology.AddHost("142.251.209.14", "142.251.209.14", &netem.LinkConfig{}))
@@ -67,6 +67,7 @@ func TestTLSSNIProxy(t *testing.T) {
 					w.Write([]byte("Bonsoir, Elliot!"))
 				}),
 				wwwStack,
+				"www.google.com",
 			)
 			closers = append(closers, wwwServer)
 

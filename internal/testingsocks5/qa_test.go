@@ -28,7 +28,7 @@ func TestNetem(t *testing.T) {
 }
 
 func TestNetemDialFailure(t *testing.T) {
-	topology := runtimex.Try1(netem.NewStarTopology(log.Log))
+	topology := netem.MustNewStarTopology(log.Log)
 	defer topology.Close()
 
 	const (
@@ -76,7 +76,7 @@ func TestNetemDialFailure(t *testing.T) {
 
 		// TODO(https://github.com/ooni/probe/issues/2536)
 		netxlite.HTTPTransportOptionTLSClientConfig(&tls.Config{
-			RootCAs: runtimex.Try1(clientStack.DefaultCertPool()),
+			RootCAs: clientStack.DefaultCertPool(),
 		}),
 	)
 	client := &http.Client{Transport: txp}

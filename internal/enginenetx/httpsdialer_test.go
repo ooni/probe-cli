@@ -149,6 +149,7 @@ func TestHTTPSDialerWAI(t *testing.T) {
 					"93.184.216.37",
 				},
 				Role:             netemx.ScenarioRoleWebServer,
+				ServerNameMain:   "www.example.com",
 				WebServerFactory: netemx.ExampleWebPageHandlerFactory(),
 			}},
 			configureDPI: func(dpi *netem.DPIEngine) {
@@ -172,6 +173,7 @@ func TestHTTPSDialerWAI(t *testing.T) {
 					"93.184.216.35",
 				},
 				Role:             netemx.ScenarioRoleWebServer,
+				ServerNameMain:   "www.example.com",
 				WebServerFactory: netemx.ExampleWebPageHandlerFactory(),
 			}},
 			configureDPI: func(dpi *netem.DPIEngine) {
@@ -205,6 +207,7 @@ func TestHTTPSDialerWAI(t *testing.T) {
 					"93.184.216.35",
 				},
 				Role:             netemx.ScenarioRoleWebServer,
+				ServerNameMain:   "www.example.com",
 				WebServerFactory: netemx.ExampleWebPageHandlerFactory(),
 			}},
 			configureDPI: func(dpi *netem.DPIEngine) {
@@ -313,6 +316,7 @@ func TestHTTPSDialerWAI(t *testing.T) {
 					"93.184.216.35",
 				},
 				Role:             netemx.ScenarioRoleWebServer,
+				ServerNameMain:   "www.example.com",
 				WebServerFactory: netemx.ExampleWebPageHandlerFactory(),
 			}},
 			configureDPI: func(dpi *netem.DPIEngine) {
@@ -341,6 +345,7 @@ func TestHTTPSDialerWAI(t *testing.T) {
 					"93.184.216.35",
 				},
 				Role:             netemx.ScenarioRoleWebServer,
+				ServerNameMain:   "www.example.com",
 				WebServerFactory: netemx.ExampleWebPageHandlerFactory(),
 			}},
 			configureDPI: func(dpi *netem.DPIEngine) {
