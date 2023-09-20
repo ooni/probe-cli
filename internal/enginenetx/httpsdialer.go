@@ -22,8 +22,8 @@ type HTTPSDialerPolicy interface {
 	// LookupTactics performs a DNS lookup for the given domain using the given resolver and
 	// returns either a list of tactics for dialing or an error.
 	//
-	// This functoion MUST NOT return an empty list and a nil error. If this happens the
-	// code inside [HTTPSDialer] will panic.
+	// This function MUST NOT return an empty list and a nil error. If this happens the
+	// code inside [HTTPSDialer] will PANIC.
 	LookupTactics(ctx context.Context, domain string, reso model.Resolver) ([]HTTPSDialerTactic, error)
 
 	// Parallelism returns the number of goroutines to create when TLS dialing. The
@@ -47,10 +47,16 @@ type HTTPSDialerTactic interface {
 	// These callbacks are invoked during the TLS handshake to inform this
 	// tactic about events that occurred. A tactic SHOULD keep track of which
 	// addresses, SNIs, etc. work and return them more frequently.
+	//
+	// Callbacks that take an error as argument also take a context as
+	// argument and MUST check whether the context has been canceled or
+	// its timeout has expired (i.e., using ctx.Err()) to determine
+	// whether the operation failed or was merely canceled. In the latter
+	// case, obviously, the policy MUST NOT consider the tactic failed.
 	OnStarting()
-	OnTCPConnectError(err error)
-	OnTLSHandshakeError(err error)
-	OnTLSVerifyError(err error)
+	OnTCPConnectError(ctx context.Context, err error)
+	OnTLSHandshakeError(ctx context.Context, err error)
+	OnTLSVerifyError(ctz context.Context, err error)
 	OnSuccess()
 
 	// SNI returns the SNI to send in the TLS Client Hello.
@@ -146,17 +152,17 @@ func (*httpsDialerNullTactic) OnSuccess() {
 }
 
 // OnTCPConnectError implements HTTPSDialerTactic.
-func (*httpsDialerNullTactic) OnTCPConnectError(err error) {
+func (*httpsDialerNullTactic) OnTCPConnectError(ctx context.Context, err error) {
 	// nothing
 }
 
 // OnTLSHandshakeError implements HTTPSDialerTactic.
-func (*httpsDialerNullTactic) OnTLSHandshakeError(err error) {
+func (*httpsDialerNullTactic) OnTLSHandshakeError(ctx context.Context, err error) {
 	// nothing
 }
 
 // OnTLSVerifyError implements HTTPSDialerTactic.
-func (*httpsDialerNullTactic) OnTLSVerifyError(err error) {
+func (*httpsDialerNullTactic) OnTLSVerifyError(ctx context.Context, err error) {
 	// nothing
 }
 
@@ -413,7 +419,7 @@ func (hd *HTTPSDialer) dialTLS(ctx context.Context,
 
 	// handle a dialing error
 	if err != nil {
-		tactic.OnTCPConnectError(err)
+		tactic.OnTCPConnectError(ctx, err)
 		return nil, err
 	}
 
@@ -439,7 +445,7 @@ func (hd *HTTPSDialer) dialTLS(ctx context.Context,
 
 	// handle handshake error
 	if err != nil {
-		tactic.OnTLSHandshakeError(err)
+		tactic.OnTLSHandshakeError(ctx, err)
 		tcpConn.Close()
 		return nil, err
 	}
@@ -451,7 +457,7 @@ func (hd *HTTPSDialer) dialTLS(ctx context.Context,
 
 	// handle verification error
 	if err != nil {
-		tactic.OnTLSVerifyError(err)
+		tactic.OnTLSVerifyError(ctx, err)
 		tlsConn.Close()
 		return nil, err
 	}
