@@ -25,10 +25,9 @@ const (
 // This struct helps with testing [enginenetx.HTTPSDialer] is WAI when the context
 // has been canceled and we correctly shutdown all goroutines.
 type httpsDialerPolicyCancelingContext struct {
-	cancelOnStarting context.CancelFunc
-	cancelOnSuccess  context.CancelFunc
-	flags            int
-	policy           enginenetx.HTTPSDialerPolicy
+	cancel context.CancelFunc
+	flags  int
+	policy enginenetx.HTTPSDialerPolicy
 }
 
 var _ enginenetx.HTTPSDialerPolicy = &httpsDialerPolicyCancelingContext{}
@@ -43,8 +42,8 @@ func (p *httpsDialerPolicyCancelingContext) LookupTactics(ctx context.Context, d
 	for _, tactic := range tactics {
 		out = append(out, &httpsDialerTacticCancelingContext{
 			HTTPSDialerTactic: tactic,
-			cancelOnStarting:  p.cancelOnStarting,
-			cancelOnSuccess:   p.cancelOnSuccess,
+			cancel:            p.cancel,
+			flags:             p.flags,
 		})
 	}
 	return out, nil
@@ -58,21 +57,21 @@ func (p *httpsDialerPolicyCancelingContext) Parallelism() int {
 // httpsDialerTacticCancelingContext is the tactic returned by [httpsDialerPolicyCancelingContext].
 type httpsDialerTacticCancelingContext struct {
 	enginenetx.HTTPSDialerTactic
-	cancelOnStarting context.CancelFunc
-	cancelOnSuccess  context.CancelFunc
+	cancel context.CancelFunc
+	flags  int
 }
 
 // OnStarting implements enginenetx.HTTPSDialerTactic.
 func (t *httpsDialerTacticCancelingContext) OnStarting() {
-	if t.cancelOnStarting != nil {
-		t.cancelOnStarting()
+	if (t.flags & httpsDialerPolicyCancelingContextOnStarting) != 0 {
+		t.cancel()
 	}
 }
 
 // OnSuccess implements enginenetx.HTTPSDialerTactic.
 func (t *httpsDialerTacticCancelingContext) OnSuccess() {
-	if t.cancelOnSuccess != nil {
-		t.cancelOnSuccess()
+	if (p.flags & httpsDialerPolicyCancelingContextOnSuccess) != 0 {
+		t.cancel()
 	}
 }
 
@@ -224,10 +223,9 @@ func TestHTTPSDialerWAI(t *testing.T) {
 		name:  "with context being canceled in OnStarting",
 		short: true,
 		policy: &httpsDialerPolicyCancelingContext{
-			cancelOnStarting: nil,
-			cancelOnSuccess:  nil,
-			flags:            httpsDialerPolicyCancelingContextOnStarting,
-			policy:           &enginenetx.HTTPSDialerNullPolicy{},
+			cancel: nil,
+			flags:  httpsDialerPolicyCancelingContextOnStarting,
+			policy: &enginenetx.HTTPSDialerNullPolicy{},
 		},
 		endpoint: "www.example.com:443",
 		scenario: []*netemx.ScenarioDomainAddresses{{
@@ -249,10 +247,9 @@ func TestHTTPSDialerWAI(t *testing.T) {
 		name:  "with context being canceled in OnSuccess for the first success",
 		short: true,
 		policy: &httpsDialerPolicyCancelingContext{
-			cancelOnStarting: nil,
-			cancelOnSuccess:  nil,
-			flags:            httpsDialerPolicyCancelingContextOnSuccess,
-			policy:           &enginenetx.HTTPSDialerNullPolicy{},
+			cancel: nil,
+			flags:  httpsDialerPolicyCancelingContextOnSuccess,
+			policy: &enginenetx.HTTPSDialerNullPolicy{},
 		},
 		endpoint: "www.example.com:443",
 		scenario: []*netemx.ScenarioDomainAddresses{{
@@ -311,12 +308,7 @@ func TestHTTPSDialerWAI(t *testing.T) {
 			// Possibly tell the httpsDialerPolicyCancelingContext about the cancel func
 			// depending on which flags have been configured.
 			if p, ok := tc.policy.(*httpsDialerPolicyCancelingContext); ok {
-				if (p.flags & httpsDialerPolicyCancelingContextOnStarting) != 0 {
-					p.cancelOnStarting = cancel
-				}
-				if (p.flags & httpsDialerPolicyCancelingContextOnSuccess) != 0 {
-					p.cancelOnSuccess = cancel
-				}
+				p.cancel = cancel
 			}
 
 			// dial the TLS connection
