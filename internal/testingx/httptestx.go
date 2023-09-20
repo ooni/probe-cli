@@ -44,7 +44,7 @@ type HTTPServer struct {
 	// This field is an extension that is not present in the httptest package.
 	X509CertPool *x509.CertPool
 
-	// CACert is the CA used by this server.
+	// CACert is the CA used by this server or nil.
 	//
 	// This field is an extension that is not present in the httptest package.
 	CACert *x509.Certificate
@@ -68,9 +68,10 @@ func MustNewHTTPServerEx(addr *net.TCPAddr, httpListener TCPListener, handler ht
 	srv := &HTTPServer{
 		Config:       &http.Server{Handler: handler},
 		Listener:     listener,
-		TLS:          nil, // the default when not using TLS
+		TLS:          nil,
 		URL:          baseURL.String(),
-		X509CertPool: nil, // the default when not using TLS
+		X509CertPool: nil,
+		CACert:       nil,
 	}
 
 	go srv.Config.Serve(listener)
