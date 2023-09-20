@@ -70,7 +70,7 @@ func (t *httpsDialerTacticCancelingContext) OnStarting() {
 
 // OnSuccess implements enginenetx.HTTPSDialerTactic.
 func (t *httpsDialerTacticCancelingContext) OnSuccess() {
-	if (p.flags & httpsDialerPolicyCancelingContextOnSuccess) != 0 {
+	if (t.flags & httpsDialerPolicyCancelingContextOnSuccess) != 0 {
 		t.cancel()
 	}
 }
