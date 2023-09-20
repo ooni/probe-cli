@@ -93,9 +93,9 @@ func (tc *netemTestCaseWithHTTPWithTLS) Run(t *testing.T) {
 	)
 	defer wwwServer443.Close()
 
-	// configure the proxyStack to implement the HTTP proxy on port 80443
+	// configure the proxyStack to implement the HTTP proxy on port 4443
 	proxyServer := testingx.MustNewHTTPServerTLSEx(
-		&net.TCPAddr{IP: net.ParseIP(proxyIPAddr), Port: 80443},
+		&net.TCPAddr{IP: net.ParseIP(proxyIPAddr), Port: 4443},
 		proxyStack,
 		testingx.NewHTTPProxyHandler(log.Log, &netxlite.Netx{
 			Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: proxyStack}}),
