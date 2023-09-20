@@ -11,6 +11,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
 // Flags controlling when [httpsDialerPolicyCancelingContext] cancels the context
@@ -355,70 +356,81 @@ func TestHTTPSDialerWAI(t *testing.T) {
 				t.Skip("skip test in short mode")
 			}
 
-			// create the QA environment
-			env := netemx.MustNewScenario(tc.scenario)
-			defer env.Close()
+			// track all the connections so we can check whether we close them all
+			cv := &testingx.CloseVerify{}
 
-			// possibly add specific DPI rules
-			tc.configureDPI(env.DPIEngine())
+			func() {
+				// create the QA environment
+				env := netemx.MustNewScenario(tc.scenario)
+				defer env.Close()
 
-			// create the proper underlying network
-			unet := &netxlite.NetemUnderlyingNetworkAdapter{UNet: env.ClientStack}
+				// possibly add specific DPI rules
+				tc.configureDPI(env.DPIEngine())
 
-			// create the network proper
-			netx := &netxlite.Netx{Underlying: unet}
+				// create the proper underlying network and wrap it such that
+				// we track whether we close all the connections
+				unet := cv.WrapUnderlyingNetwork(&netxlite.NetemUnderlyingNetworkAdapter{UNet: env.ClientStack})
 
-			// create the getaddrinfo resolver
-			resolver := netx.NewStdlibResolver(log.Log)
+				// create the network proper
+				netx := &netxlite.Netx{Underlying: unet}
 
-			// create the TLS dialer
-			dialer := enginenetx.NewHTTPSDialer(
-				log.Log,
-				tc.policy,
-				resolver,
-				unet,
-			)
-			defer dialer.CloseIdleConnections()
+				// create the getaddrinfo resolver
+				resolver := netx.NewStdlibResolver(log.Log)
 
-			// configure cancellable context--some tests are going to use cancel
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+				// create the TLS dialer
+				dialer := enginenetx.NewHTTPSDialer(
+					log.Log,
+					tc.policy,
+					resolver,
+					unet,
+				)
+				defer dialer.CloseIdleConnections()
 
-			// Possibly tell the httpsDialerPolicyCancelingContext about the cancel func
-			// depending on which flags have been configured.
-			if p, ok := tc.policy.(*httpsDialerPolicyCancelingContext); ok {
-				p.cancel = cancel
-			}
+				// configure cancellable context--some tests are going to use cancel
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel()
 
-			// dial the TLS connection
-			tlsConn, err := dialer.DialTLSContext(ctx, "tcp", tc.endpoint)
-
-			t.Logf("%+v %+v", tlsConn, err)
-
-			// make sure the error is the one we expected
-			switch {
-			case err != nil && tc.expectErr == "":
-				t.Fatal("expected", tc.expectErr, "got", err)
-
-			case err == nil && tc.expectErr != "":
-				t.Fatal("expected", tc.expectErr, "got", err)
-
-			case err != nil && tc.expectErr != "":
-				if diff := cmp.Diff(tc.expectErr, err.Error()); diff != "" {
-					t.Fatal(diff)
+				// Possibly tell the httpsDialerPolicyCancelingContext about the cancel func
+				// depending on which flags have been configured.
+				if p, ok := tc.policy.(*httpsDialerPolicyCancelingContext); ok {
+					p.cancel = cancel
 				}
 
-			case err == nil && tc.expectErr == "":
-				// all good
-			}
+				// dial the TLS connection
+				tlsConn, err := dialer.DialTLSContext(ctx, "tcp", tc.endpoint)
 
-			// make sure we close the conn
-			if tlsConn != nil {
-				defer tlsConn.Close()
-			}
+				t.Logf("%+v %+v", tlsConn, err)
 
-			// wait for background connections to join
-			dialer.WaitGroup().Wait()
+				// make sure the error is the one we expected
+				switch {
+				case err != nil && tc.expectErr == "":
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err == nil && tc.expectErr != "":
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err != nil && tc.expectErr != "":
+					if diff := cmp.Diff(tc.expectErr, err.Error()); diff != "" {
+						t.Fatal(diff)
+					}
+
+				case err == nil && tc.expectErr == "":
+					// all good
+				}
+
+				// make sure we close the conn
+				if tlsConn != nil {
+					defer tlsConn.Close()
+				}
+
+				// wait for background connections to join
+				dialer.WaitGroup().Wait()
+			}()
+
+			// now verify that we have closed all the connections
+			if err := cv.CheckForOpenConns(); err != nil {
+				t.Fatal(err)
+			}
 		})
 	}
 }
