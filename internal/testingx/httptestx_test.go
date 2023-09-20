@@ -43,7 +43,7 @@ func TestHTTPTestxWithStdlib(t *testing.T) {
 		expectBody []byte
 	}
 
-	// create server's CA and leaf certificate
+	// create server's CA
 	serverCA := netem.MustNewCA()
 
 	testcases := []testcase{
