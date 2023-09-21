@@ -28,10 +28,13 @@ func TestHTTPSDialerTacticsEmitter(t *testing.T) {
 
 		var tactics []HTTPSDialerTactic
 		for idx := 0; idx < 255; idx++ {
-			tactics = append(tactics, &httpsDialerNullTactic{
-				Address: fmt.Sprintf("10.0.0.%d", idx),
-				Delay:   0,
-				Domain:  "www.example.com",
+			tactics = append(tactics, &HTTPSDialerLoadableTacticWrapper{
+				Tactic: &HTTPSDialerLoadableTactic{
+					IPAddr:         fmt.Sprintf("10.0.0.%d", idx),
+					InitialDelay:   0,
+					SNI:            "www.example.com",
+					VerifyHostname: "www.example.com",
+				},
 			})
 		}
 

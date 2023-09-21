@@ -2,7 +2,9 @@ package enginenetx_test
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
@@ -11,6 +13,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
@@ -435,6 +438,131 @@ func TestHTTPSDialerWAI(t *testing.T) {
 			// now verify that we have closed all the connections
 			if err := cv.CheckForOpenConns(); err != nil {
 				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestLoadHTTPSDialerPolicy(t *testing.T) {
+	// testcase is a test case implemented by this function
+	type testcase struct {
+		// name is the test case name
+		name string
+
+		// input contains the serialized input bytes
+		input []byte
+
+		// expectErr contains the expected error string or the empty string on success
+		expectErr string
+
+		// expectPolicy contains the expected policy we loaded or nil
+		expectedPolicy *enginenetx.HTTPSDialerLoadablePolicy
+	}
+
+	cases := []testcase{{
+		name:           "with nil input",
+		input:          nil,
+		expectErr:      "unexpected end of JSON input",
+		expectedPolicy: nil,
+	}, {
+		name:           "with invalid serialized JSON",
+		input:          []byte(`{`),
+		expectErr:      "unexpected end of JSON input",
+		expectedPolicy: nil,
+	}, {
+		name:           "with empty serialized JSON",
+		input:          []byte(`{}`),
+		expectErr:      "",
+		expectedPolicy: &enginenetx.HTTPSDialerLoadablePolicy{},
+	}, {
+		name: "with real serialized policy",
+		input: (func() []byte {
+			return runtimex.Try1(json.Marshal(&enginenetx.HTTPSDialerLoadablePolicy{
+				Domains: map[string][]*enginenetx.HTTPSDialerLoadableTactic{
+					"api.ooni.io": {{
+						IPAddr:         "162.55.247.208",
+						InitialDelay:   0,
+						SNI:            "api.ooni.io",
+						VerifyHostname: "api.ooni.io",
+					}, {
+						IPAddr:         "46.101.82.151",
+						InitialDelay:   300 * time.Millisecond,
+						SNI:            "api.ooni.io",
+						VerifyHostname: "api.ooni.io",
+					}, {
+						IPAddr:         "2a03:b0c0:1:d0::ec4:9001",
+						InitialDelay:   600 * time.Millisecond,
+						SNI:            "api.ooni.io",
+						VerifyHostname: "api.ooni.io",
+					}, {
+						IPAddr:         "46.101.82.151",
+						InitialDelay:   3000 * time.Millisecond,
+						SNI:            "www.example.com",
+						VerifyHostname: "api.ooni.io",
+					}, {
+						IPAddr:         "2a03:b0c0:1:d0::ec4:9001",
+						InitialDelay:   3300 * time.Millisecond,
+						SNI:            "www.example.com",
+						VerifyHostname: "api.ooni.io",
+					}},
+				},
+			}))
+		})(),
+		expectErr: "",
+		expectedPolicy: &enginenetx.HTTPSDialerLoadablePolicy{
+			Domains: map[string][]*enginenetx.HTTPSDialerLoadableTactic{
+				"api.ooni.io": {{
+					IPAddr:         "162.55.247.208",
+					InitialDelay:   0,
+					SNI:            "api.ooni.io",
+					VerifyHostname: "api.ooni.io",
+				}, {
+					IPAddr:         "46.101.82.151",
+					InitialDelay:   300 * time.Millisecond,
+					SNI:            "api.ooni.io",
+					VerifyHostname: "api.ooni.io",
+				}, {
+					IPAddr:         "2a03:b0c0:1:d0::ec4:9001",
+					InitialDelay:   600 * time.Millisecond,
+					SNI:            "api.ooni.io",
+					VerifyHostname: "api.ooni.io",
+				}, {
+					IPAddr:         "46.101.82.151",
+					InitialDelay:   3000 * time.Millisecond,
+					SNI:            "www.example.com",
+					VerifyHostname: "api.ooni.io",
+				}, {
+					IPAddr:         "2a03:b0c0:1:d0::ec4:9001",
+					InitialDelay:   3300 * time.Millisecond,
+					SNI:            "www.example.com",
+					VerifyHostname: "api.ooni.io",
+				}},
+			},
+		},
+	}}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			policy, err := enginenetx.LoadHTTPSDialerPolicy(tc.input)
+
+			switch {
+			case err != nil && tc.expectErr == "":
+				t.Fatal("expected", tc.expectErr, "got", err)
+
+			case err == nil && tc.expectErr != "":
+				t.Fatal("expected", tc.expectErr, "got", err)
+
+			case err != nil && tc.expectErr != "":
+				if diff := cmp.Diff(tc.expectErr, err.Error()); diff != "" {
+					t.Fatal(diff)
+				}
+
+			case err == nil && tc.expectErr == "":
+				// all good
+			}
+
+			if diff := cmp.Diff(tc.expectedPolicy, policy); diff != "" {
+				t.Fatal(diff)
 			}
 		})
 	}
