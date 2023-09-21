@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"net"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -29,7 +30,7 @@ func TestHTTPSDialerTacticsEmitter(t *testing.T) {
 		var tactics []*HTTPSDialerTactic
 		for idx := 0; idx < 255; idx++ {
 			tactics = append(tactics, &HTTPSDialerTactic{
-				IPAddr:         fmt.Sprintf("10.0.0.%d", idx),
+				Endpoint:       net.JoinHostPort(fmt.Sprintf("10.0.0.%d", idx), "443"),
 				InitialDelay:   0,
 				SNI:            "www.example.com",
 				VerifyHostname: "www.example.com",
