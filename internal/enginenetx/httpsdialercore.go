@@ -357,7 +357,7 @@ func (hd *HTTPSDialer) dialTLS(ctx context.Context,
 
 	// handle verification error
 	if err != nil {
-		//tactic.OnTLSVerifyError(ctx, err)
+		hd.stats.OnTLSVerifyError(ctx, tactic, err)
 		tlsConn.Close()
 		return nil, err
 	}
