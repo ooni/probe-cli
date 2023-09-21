@@ -20,8 +20,8 @@ import (
 
 // HTTPSDialerTactic is a tactic to establish a TLS connection.
 type HTTPSDialerTactic struct {
-	// IPAddr is the IP address to use for dialing.
-	IPAddr string
+	// Endpoint is the TCP endpoint to use for dialing.
+	Endpoint string
 
 	// InitialDelay is the time in nanoseconds after which
 	// you would like to start this policy.
@@ -37,9 +37,35 @@ type HTTPSDialerTactic struct {
 
 var _ fmt.Stringer = &HTTPSDialerTactic{}
 
+// Clone makes a deep copy of this [HTTPSDialerTactic].
+func (dt *HTTPSDialerTactic) Clone() *HTTPSDialerTactic {
+	return &HTTPSDialerTactic{
+		Endpoint:       dt.Endpoint,
+		InitialDelay:   dt.InitialDelay,
+		SNI:            dt.SNI,
+		VerifyHostname: dt.VerifyHostname,
+	}
+}
+
 // String implements fmt.Stringer.
 func (dt *HTTPSDialerTactic) String() string {
 	return string(runtimex.Try1(json.Marshal(dt)))
+}
+
+// Summary returns a string summarizing this [HTTPSDialerTactic] for the
+// specific purpose of inserting the struct into a map.
+//
+// The fields used to compute the summary are:
+//
+// - IPAddr
+//
+// - SNI
+//
+// - VerifyHostname
+//
+// The returned string contains the above fields separated by space.
+func (dt *HTTPSDialerTactic) Summary() string {
+	return fmt.Sprintf("%v sni=%v verify=%v", dt.Endpoint, dt.SNI, dt.VerifyHostname)
 }
 
 // HTTPSDialerPolicy describes the policy used by the [*HTTPSDialer].
@@ -49,7 +75,7 @@ type HTTPSDialerPolicy interface {
 	//
 	// This function MUST NOT return an empty list and a nil error. If this happens the
 	// code inside [HTTPSDialer] will PANIC.
-	LookupTactics(ctx context.Context, domain string, reso model.Resolver) ([]*HTTPSDialerTactic, error)
+	LookupTactics(ctx context.Context, domain, port string, reso model.Resolver) ([]*HTTPSDialerTactic, error)
 
 	// Parallelism returns the number of goroutines to create when TLS dialing. The
 	// [HTTPSDialer] will PANIC if the returned number is less than 1.
@@ -70,7 +96,7 @@ type HTTPSDialerStatsTracker interface {
 	OnStarting(tactic *HTTPSDialerTactic)
 	OnTCPConnectError(ctx context.Context, tactic *HTTPSDialerTactic, err error)
 	OnTLSHandshakeError(ctx context.Context, tactic *HTTPSDialerTactic, err error)
-	OnTLSVerifyError(ctz context.Context, tactic *HTTPSDialerTactic, err error)
+	OnTLSVerifyError(ctx context.Context, tactic *HTTPSDialerTactic, err error)
 	OnSuccess(tactic *HTTPSDialerTactic)
 }
 
@@ -183,8 +209,8 @@ func (hd *HTTPSDialer) DialTLSContext(ctx context.Context, network string, endpo
 		Prefix: fmt.Sprintf("[#%d] ", hd.idGenerator.Add(1)),
 		Logger: hd.logger,
 	}
-	ol := logx.NewOperationLogger(logger, "LookupTactics: %s", hostname)
-	tactics, err := hd.policy.LookupTactics(ctx, hostname, hd.resolver)
+	ol := logx.NewOperationLogger(logger, "LookupTactics: %s", net.JoinHostPort(hostname, port))
+	tactics, err := hd.policy.LookupTactics(ctx, hostname, port, hd.resolver)
 	if err != nil {
 		ol.Stop(err)
 		return nil, err
@@ -201,7 +227,7 @@ func (hd *HTTPSDialer) DialTLSContext(ctx context.Context, network string, endpo
 		hd.wg.Add(1)
 		go func() {
 			defer hd.wg.Done()
-			hd.worker(ctx, hostname, emitter, port, collector)
+			hd.worker(ctx, hostname, emitter, collector)
 		}()
 	}
 
@@ -259,7 +285,6 @@ func (hd *HTTPSDialer) worker(
 	ctx context.Context,
 	hostname string,
 	reader <-chan *HTTPSDialerTactic,
-	port string,
 	writer chan<- *httpsDialerErrorOrConn,
 ) {
 	// Note: no need to be concerned with the wait group here because
@@ -277,7 +302,7 @@ func (hd *HTTPSDialer) worker(
 				Prefix: fmt.Sprintf("[#%d] ", hd.idGenerator.Add(1)),
 				Logger: hd.logger,
 			}
-			conn, err := hd.dialTLS(ctx, logger, tactic, port)
+			conn, err := hd.dialTLS(ctx, logger, tactic)
 
 			select {
 			case <-ctx.Done():
@@ -297,8 +322,8 @@ func (hd *HTTPSDialer) worker(
 }
 
 // dialTLS performs the actual TLS dial.
-func (hd *HTTPSDialer) dialTLS(ctx context.Context,
-	logger model.Logger, tactic *HTTPSDialerTactic, port string) (model.TLSConn, error) {
+func (hd *HTTPSDialer) dialTLS(
+	ctx context.Context, logger model.Logger, tactic *HTTPSDialerTactic) (model.TLSConn, error) {
 	// wait for the tactic to be ready to run
 	if err := httpsDialerTacticWaitReady(ctx, tactic); err != nil {
 		return nil, err
@@ -311,10 +336,9 @@ func (hd *HTTPSDialer) dialTLS(ctx context.Context,
 	netx := &netxlite.Netx{Underlying: hd.unet}
 
 	// create dialer and establish TCP connection
-	endpoint := net.JoinHostPort(tactic.IPAddr, port)
-	ol := logx.NewOperationLogger(logger, "TCPConnect %s", endpoint)
+	ol := logx.NewOperationLogger(logger, "TCPConnect %s", tactic.Endpoint)
 	dialer := netx.NewDialerWithoutResolver(logger)
-	tcpConn, err := dialer.DialContext(ctx, "tcp", endpoint)
+	tcpConn, err := dialer.DialContext(ctx, "tcp", tactic.Endpoint)
 	ol.Stop(err)
 
 	// handle a dialing error
@@ -335,7 +359,7 @@ func (hd *HTTPSDialer) dialTLS(ctx context.Context,
 	ol = logx.NewOperationLogger(
 		logger,
 		"TLSHandshake with %s SNI=%s ALPN=%v",
-		endpoint,
+		tactic.Endpoint,
 		tlsConfig.ServerName,
 		tlsConfig.NextProtos,
 	)
