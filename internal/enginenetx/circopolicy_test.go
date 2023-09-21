@@ -72,7 +72,7 @@ func TestCircoPolicy(t *testing.T) {
 
 			// When the DNS succeeds with bogons and there is no beacon available
 			{
-				name:   "with lookup host success and non-beacon domain",
+				name:   "with lookup host with bogons and non-beacon domain",
 				domain: "www.example.com",
 				reso: &mocks.Resolver{
 					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
@@ -205,7 +205,47 @@ func TestCircoPolicy(t *testing.T) {
 						X509VerifyHostname: "api.ooni.io",
 					},
 				},
-			}}
+			},
+
+			// The lookup returns bogons but this domain is a beacon
+			{
+				name:   "with lookup host with bogons and beacon domain",
+				domain: "api.ooni.io",
+				reso: &mocks.Resolver{
+					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+						addrs := []string{"10.10.34.35"}
+						return addrs, nil
+					},
+				},
+				expectErr: "",
+				tactics: []HTTPSDialerTactic{
+					&circoTactic{
+						Address:            "142.250.180.174",
+						InitialWaitTime:    0,
+						TLSServerName:      "api.ooni.io",
+						X509VerifyHostname: "api.ooni.io",
+					},
+					&circoTactic{
+						Address:            "2a00:1450:4002:809::200e",
+						InitialWaitTime:    300 * time.Millisecond,
+						TLSServerName:      "api.ooni.io",
+						X509VerifyHostname: "api.ooni.io",
+					},
+					&circoTactic{
+						Address:            "142.250.180.174",
+						InitialWaitTime:    3000 * time.Millisecond,
+						TLSServerName:      "www.youtube.com",
+						X509VerifyHostname: "api.ooni.io",
+					},
+					&circoTactic{
+						Address:            "2a00:1450:4002:809::200e",
+						InitialWaitTime:    3300 * time.Millisecond,
+						TLSServerName:      "www.youtube.com",
+						X509VerifyHostname: "api.ooni.io",
+					},
+				},
+			},
+		}
 
 		for _, tc := range cases {
 			t.Run(tc.name, func(t *testing.T) {

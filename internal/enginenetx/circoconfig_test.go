@@ -24,6 +24,7 @@ func TestCircoConfig(t *testing.T) {
 			},
 			Version: 0,
 		}
+
 		t.Run("for known beacon", func(t *testing.T) {
 			expect := []string{"162.55.247.208"}
 			got := circo.beaconsIPAddrsForDomain("api.ooni.io")
@@ -61,8 +62,8 @@ func TestCircoConfig(t *testing.T) {
 		})
 
 		t.Run("for another host", func(t *testing.T) {
-			expect := []string{"x.org"}
-			got := circo.allServerNamesForDomainIncludingDomain("x.org")
+			expect := []string{"twitter.com"}
+			got := circo.allServerNamesForDomainIncludingDomain("twitter.com")
 			if diff := cmp.Diff(expect, got); diff != "" {
 				t.Fatal(diff)
 			}
