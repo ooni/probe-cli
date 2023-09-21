@@ -66,6 +66,10 @@ func (p *CircoPolicy) LookupTactics(
 	sniv := p.Config.allServerNamesForDomainIncludingDomain(domain)
 	runtimex.Assert(len(sniv) > 0, "expected at least one SNI in the SNI vector")
 
+	// TODO(bassosimone): I am wondering whether this scheduling where
+	// we always try the default SNI first is good in case there is
+	// residual censorship blocking the endpoints.
+
 	// build the tactics and make sure there is an extra delay for beacons
 	// tactics such that normal tactics are used first
 	//
