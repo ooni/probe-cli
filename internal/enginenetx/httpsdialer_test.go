@@ -10,72 +10,56 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/enginenetx"
-	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
-// Flags controlling when [httpsDialerPolicyCancelingContext] cancels the context
+// Flags controlling when [httpsDialerCancelingContextStatsTracker] cancels the context
 const (
-	httpsDialerPolicyCancelingContextOnStarting = 1 << iota
-	httpsDialerPolicyCancelingContextOnSuccess
+	httpsDialerCancelingContextStatsTrackerOnStarting = 1 << iota
+	httpsDialerCancelingContextStatsTrackerOnSuccess
 )
 
-// httpsDialerPolicyCancelingContext is an [enginenetsx.HTTPSDialerPolicy] with a cancel
+// httpsDialerCancelingContextStatsTracker is an [enginenetx.HTTPSDialerStatsTracker] with a cancel
 // function that causes the context to be canceled once we start dialing.
 //
 // This struct helps with testing [enginenetx.HTTPSDialer] is WAI when the context
 // has been canceled and we correctly shutdown all goroutines.
-type httpsDialerPolicyCancelingContext struct {
-	cancel context.CancelFunc
-	flags  int
-	policy enginenetx.HTTPSDialerPolicy
-}
-
-var _ enginenetx.HTTPSDialerPolicy = &httpsDialerPolicyCancelingContext{}
-
-// LookupTactics implements enginenetx.HTTPSDialerPolicy.
-func (p *httpsDialerPolicyCancelingContext) LookupTactics(ctx context.Context, domain string, reso model.Resolver) ([]enginenetx.HTTPSDialerTactic, error) {
-	tactics, err := p.policy.LookupTactics(ctx, domain, reso)
-	if err != nil {
-		return nil, err
-	}
-	var out []enginenetx.HTTPSDialerTactic
-	for _, tactic := range tactics {
-		out = append(out, &httpsDialerTacticCancelingContext{
-			HTTPSDialerTactic: tactic,
-			cancel:            p.cancel,
-			flags:             p.flags,
-		})
-	}
-	return out, nil
-}
-
-// Parallelism implements enginenetx.HTTPSDialerPolicy.
-func (p *httpsDialerPolicyCancelingContext) Parallelism() int {
-	return p.policy.Parallelism()
-}
-
-// httpsDialerTacticCancelingContext is the tactic returned by [httpsDialerPolicyCancelingContext].
-type httpsDialerTacticCancelingContext struct {
-	enginenetx.HTTPSDialerTactic
+type httpsDialerCancelingContextStatsTracker struct {
 	cancel context.CancelFunc
 	flags  int
 }
 
-// OnStarting implements enginenetx.HTTPSDialerTactic.
-func (t *httpsDialerTacticCancelingContext) OnStarting() {
-	if (t.flags & httpsDialerPolicyCancelingContextOnStarting) != 0 {
-		t.cancel()
+var _ enginenetx.HTTPSDialerStatsTracker = &httpsDialerCancelingContextStatsTracker{}
+
+// OnStarting implements enginenetx.HTTPSDialerStatsTracker.
+func (st *httpsDialerCancelingContextStatsTracker) OnStarting(tactic *enginenetx.HTTPSDialerTactic) {
+	if (st.flags & httpsDialerCancelingContextStatsTrackerOnStarting) != 0 {
+		st.cancel()
 	}
 }
 
-// OnSuccess implements enginenetx.HTTPSDialerTactic.
-func (t *httpsDialerTacticCancelingContext) OnSuccess() {
-	if (t.flags & httpsDialerPolicyCancelingContextOnSuccess) != 0 {
-		t.cancel()
+// OnTCPConnectError implements enginenetx.HTTPSDialerStatsTracker.
+func (*httpsDialerCancelingContextStatsTracker) OnTCPConnectError(ctx context.Context, tactic *enginenetx.HTTPSDialerTactic, err error) {
+	// nothing
+}
+
+// OnTLSHandshakeError implements enginenetx.HTTPSDialerStatsTracker.
+func (*httpsDialerCancelingContextStatsTracker) OnTLSHandshakeError(ctx context.Context, tactic *enginenetx.HTTPSDialerTactic, err error) {
+	// nothing
+}
+
+// OnTLSVerifyError implements enginenetx.HTTPSDialerStatsTracker.
+func (*httpsDialerCancelingContextStatsTracker) OnTLSVerifyError(ctz context.Context, tactic *enginenetx.HTTPSDialerTactic, err error) {
+	// nothing
+}
+
+// OnSuccess implements enginenetx.HTTPSDialerStatsTracker.
+func (st *httpsDialerCancelingContextStatsTracker) OnSuccess(tactic *enginenetx.HTTPSDialerTactic) {
+	if (st.flags & httpsDialerCancelingContextStatsTrackerOnSuccess) != 0 {
+		st.cancel()
 	}
 }
 
@@ -90,6 +74,9 @@ func TestHTTPSDialerWAI(t *testing.T) {
 
 		// policy is the dialer policy
 		policy enginenetx.HTTPSDialerPolicy
+
+		// stats is the stats tracker to use.
+		stats enginenetx.HTTPSDialerStatsTracker
 
 		// endpoint is the endpoint to connect to consisting of a domain
 		// name or IP address followed by a TCP port
@@ -113,6 +100,7 @@ func TestHTTPSDialerWAI(t *testing.T) {
 			name:     "net.SplitHostPort failure",
 			short:    true,
 			policy:   &enginenetx.HTTPSDialerNullPolicy{},
+			stats:    &enginenetx.HTTPSDialerNullStatsTracker{},
 			endpoint: "www.example.com", // note: here the port is missing
 			scenario: netemx.InternetScenario,
 			configureDPI: func(dpi *netem.DPIEngine) {
@@ -126,6 +114,7 @@ func TestHTTPSDialerWAI(t *testing.T) {
 			name:     "hd.policy.LookupTactics failure",
 			short:    true,
 			policy:   &enginenetx.HTTPSDialerNullPolicy{},
+			stats:    &enginenetx.HTTPSDialerNullStatsTracker{},
 			endpoint: "www.example.nonexistent:443", // note: the domain does not exist
 			scenario: netemx.InternetScenario,
 			configureDPI: func(dpi *netem.DPIEngine) {
@@ -140,6 +129,7 @@ func TestHTTPSDialerWAI(t *testing.T) {
 			name:     "successful dial with multiple addresses",
 			short:    true,
 			policy:   &enginenetx.HTTPSDialerNullPolicy{},
+			stats:    &enginenetx.HTTPSDialerNullStatsTracker{},
 			endpoint: "www.example.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
 				Domains: []string{
@@ -166,6 +156,7 @@ func TestHTTPSDialerWAI(t *testing.T) {
 			name:     "with TCP connect errors",
 			short:    true,
 			policy:   &enginenetx.HTTPSDialerNullPolicy{},
+			stats:    &enginenetx.HTTPSDialerNullStatsTracker{},
 			endpoint: "www.example.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
 				Domains: []string{
@@ -200,6 +191,7 @@ func TestHTTPSDialerWAI(t *testing.T) {
 			name:     "with TLS handshake errors",
 			short:    true,
 			policy:   &enginenetx.HTTPSDialerNullPolicy{},
+			stats:    &enginenetx.HTTPSDialerNullStatsTracker{},
 			endpoint: "www.example.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
 				Domains: []string{
@@ -230,6 +222,7 @@ func TestHTTPSDialerWAI(t *testing.T) {
 			name:     "with a TLS certificate valid for ANOTHER domain",
 			short:    true,
 			policy:   &enginenetx.HTTPSDialerNullPolicy{},
+			stats:    &enginenetx.HTTPSDialerNullStatsTracker{},
 			endpoint: "wrong.host.badssl.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
 				Domains: []string{
@@ -255,6 +248,7 @@ func TestHTTPSDialerWAI(t *testing.T) {
 			name:     "with TLS certificate signed by an unknown authority",
 			short:    true,
 			policy:   &enginenetx.HTTPSDialerNullPolicy{},
+			stats:    &enginenetx.HTTPSDialerNullStatsTracker{},
 			endpoint: "untrusted-root.badssl.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
 				Domains: []string{
@@ -280,6 +274,7 @@ func TestHTTPSDialerWAI(t *testing.T) {
 			name:     "with expired TLS certificate",
 			short:    true,
 			policy:   &enginenetx.HTTPSDialerNullPolicy{},
+			stats:    &enginenetx.HTTPSDialerNullStatsTracker{},
 			endpoint: "expired.badssl.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
 				Domains: []string{
@@ -302,12 +297,12 @@ func TestHTTPSDialerWAI(t *testing.T) {
 		// This is a corner case: what if the context is canceled after the DNS lookup
 		// but before we start dialing? Are we closing all goroutines and returning correctly?
 		{
-			name:  "with context being canceled in OnStarting",
-			short: true,
-			policy: &httpsDialerPolicyCancelingContext{
+			name:   "with context being canceled in OnStarting",
+			short:  true,
+			policy: &enginenetx.HTTPSDialerNullPolicy{},
+			stats: &httpsDialerCancelingContextStatsTracker{
 				cancel: nil,
-				flags:  httpsDialerPolicyCancelingContextOnStarting,
-				policy: &enginenetx.HTTPSDialerNullPolicy{},
+				flags:  httpsDialerCancelingContextStatsTrackerOnStarting,
 			},
 			endpoint: "www.example.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
@@ -331,12 +326,12 @@ func TestHTTPSDialerWAI(t *testing.T) {
 		// This is another corner case: what happens if the context is canceled after we
 		// have a good connection but before we're able to report it to the caller?
 		{
-			name:  "with context being canceled in OnSuccess for the first success",
-			short: true,
-			policy: &httpsDialerPolicyCancelingContext{
+			name:   "with context being canceled in OnSuccess for the first success",
+			short:  true,
+			policy: &enginenetx.HTTPSDialerNullPolicy{},
+			stats: &httpsDialerCancelingContextStatsTracker{
 				cancel: nil,
-				flags:  httpsDialerPolicyCancelingContextOnSuccess,
-				policy: &enginenetx.HTTPSDialerNullPolicy{},
+				flags:  httpsDialerCancelingContextStatsTrackerOnSuccess,
 			},
 			endpoint: "www.example.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
@@ -390,6 +385,7 @@ func TestHTTPSDialerWAI(t *testing.T) {
 					log.Log,
 					tc.policy,
 					resolver,
+					tc.stats,
 					unet,
 				)
 				defer dialer.CloseIdleConnections()
@@ -398,9 +394,9 @@ func TestHTTPSDialerWAI(t *testing.T) {
 				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
 
-				// Possibly tell the httpsDialerPolicyCancelingContext about the cancel func
+				// Possibly tell the httpsDialerCancelingContextStatsTracker about the cancel func
 				// depending on which flags have been configured.
-				if p, ok := tc.policy.(*httpsDialerPolicyCancelingContext); ok {
+				if p, ok := tc.stats.(*httpsDialerCancelingContextStatsTracker); ok {
 					p.cancel = cancel
 				}
 
@@ -478,7 +474,7 @@ func TestLoadHTTPSDialerPolicy(t *testing.T) {
 		name: "with real serialized policy",
 		input: (func() []byte {
 			return runtimex.Try1(json.Marshal(&enginenetx.HTTPSDialerLoadablePolicy{
-				Domains: map[string][]*enginenetx.HTTPSDialerLoadableTactic{
+				Domains: map[string][]*enginenetx.HTTPSDialerTactic{
 					"api.ooni.io": {{
 						IPAddr:         "162.55.247.208",
 						InitialDelay:   0,
@@ -510,7 +506,7 @@ func TestLoadHTTPSDialerPolicy(t *testing.T) {
 		})(),
 		expectErr: "",
 		expectedPolicy: &enginenetx.HTTPSDialerLoadablePolicy{
-			Domains: map[string][]*enginenetx.HTTPSDialerLoadableTactic{
+			Domains: map[string][]*enginenetx.HTTPSDialerTactic{
 				"api.ooni.io": {{
 					IPAddr:         "162.55.247.208",
 					InitialDelay:   0,
@@ -568,68 +564,18 @@ func TestLoadHTTPSDialerPolicy(t *testing.T) {
 	}
 }
 
-func TestHTTPSDialerLoadableTacticWrapper(t *testing.T) {
-	t.Run("IPAddr", func(t *testing.T) {
-		expected := "10.0.0.1"
-		ldt := &enginenetx.HTTPSDialerLoadableTacticWrapper{
-			Tactic: &enginenetx.HTTPSDialerLoadableTactic{
-				IPAddr: expected,
-			},
-		}
-		if got := ldt.IPAddr(); got != expected {
-			t.Fatal("expected", expected, "got", got)
-		}
-	})
-
-	t.Run("InitialDelay", func(t *testing.T) {
-		expected := time.Millisecond
-		ldt := &enginenetx.HTTPSDialerLoadableTacticWrapper{
-			Tactic: &enginenetx.HTTPSDialerLoadableTactic{
-				InitialDelay: expected,
-			},
-		}
-		if got := ldt.InitialDelay(); got != expected {
-			t.Fatal("expected", expected, "got", got)
-		}
-	})
-
-	t.Run("SNI", func(t *testing.T) {
-		expected := "x.org"
-		ldt := &enginenetx.HTTPSDialerLoadableTacticWrapper{
-			Tactic: &enginenetx.HTTPSDialerLoadableTactic{
-				SNI: expected,
-			},
-		}
-		if got := ldt.SNI(); got != expected {
-			t.Fatal("expected", expected, "got", got)
-		}
-	})
-
+func TestHTTPSDialerTactic(t *testing.T) {
 	t.Run("String", func(t *testing.T) {
-		expected := "&{IPAddr:162.55.247.208 InitialDelay:150ms SNI:www.example.com VerifyHostname:api.ooni.io}"
-		ldt := &enginenetx.HTTPSDialerLoadableTacticWrapper{
-			Tactic: &enginenetx.HTTPSDialerLoadableTactic{
-				IPAddr:         "162.55.247.208",
-				InitialDelay:   150 * time.Millisecond,
-				SNI:            "www.example.com",
-				VerifyHostname: "api.ooni.io",
-			},
+		expected := `{"IPAddr":"162.55.247.208","InitialDelay":150000000,"SNI":"www.example.com","VerifyHostname":"api.ooni.io"}`
+		ldt := &enginenetx.HTTPSDialerTactic{
+			IPAddr:         "162.55.247.208",
+			InitialDelay:   150 * time.Millisecond,
+			SNI:            "www.example.com",
+			VerifyHostname: "api.ooni.io",
 		}
 		got := ldt.String()
 		if diff := cmp.Diff(expected, got); diff != "" {
 			t.Fatal(diff)
-		}
-	})
-
-	t.Run("VerifyHostname", func(t *testing.T) {
-		expected := "x.org"
-		ldt := &enginenetx.HTTPSDialerLoadableTacticWrapper{
-			Tactic: &enginenetx.HTTPSDialerLoadableTactic{
-				VerifyHostname: expected,
-			},
-		}
-		if got := ldt.VerifyHostname(); got != expected {
-			t.Fatal("expected", expected, "got", got)
 		}
 	})
 }

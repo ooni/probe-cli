@@ -23,22 +23,20 @@ var _ HTTPSDialerPolicy = &HTTPSDialerNullPolicy{}
 
 // LookupTactics implements HTTPSDialerPolicy.
 func (*HTTPSDialerNullPolicy) LookupTactics(
-	ctx context.Context, domain string, reso model.Resolver) ([]HTTPSDialerTactic, error) {
+	ctx context.Context, domain string, reso model.Resolver) ([]*HTTPSDialerTactic, error) {
 	addrs, err := reso.LookupHost(ctx, domain)
 	if err != nil {
 		return nil, err
 	}
 
 	const delay = 300 * time.Millisecond
-	var tactics []HTTPSDialerTactic
+	var tactics []*HTTPSDialerTactic
 	for idx, addr := range addrs {
-		tactics = append(tactics, &HTTPSDialerLoadableTacticWrapper{
-			Tactic: &HTTPSDialerLoadableTactic{
-				IPAddr:         addr,
-				InitialDelay:   time.Duration(idx) * delay, // zero for the first dial
-				SNI:            domain,
-				VerifyHostname: domain,
-			},
+		tactics = append(tactics, &HTTPSDialerTactic{
+			IPAddr:         addr,
+			InitialDelay:   time.Duration(idx) * delay, // zero for the first dial
+			SNI:            domain,
+			VerifyHostname: domain,
 		})
 	}
 
@@ -48,4 +46,34 @@ func (*HTTPSDialerNullPolicy) LookupTactics(
 // Parallelism implements HTTPSDialerPolicy.
 func (*HTTPSDialerNullPolicy) Parallelism() int {
 	return 16
+}
+
+// HTTPSDialerNullStatsTracker is the "null" [HTTPSDialerStatsTracker].
+type HTTPSDialerNullStatsTracker struct{}
+
+var _ HTTPSDialerStatsTracker = &HTTPSDialerNullStatsTracker{}
+
+// OnStarting implements HTTPSDialerStatsTracker.
+func (*HTTPSDialerNullStatsTracker) OnStarting(tactic *HTTPSDialerTactic) {
+	// nothing
+}
+
+// OnSuccess implements HTTPSDialerStatsTracker.
+func (*HTTPSDialerNullStatsTracker) OnSuccess(tactic *HTTPSDialerTactic) {
+	// nothing
+}
+
+// OnTCPConnectError implements HTTPSDialerStatsTracker.
+func (*HTTPSDialerNullStatsTracker) OnTCPConnectError(ctx context.Context, tactic *HTTPSDialerTactic, err error) {
+	// nothing
+}
+
+// OnTLSHandshakeError implements HTTPSDialerStatsTracker.
+func (*HTTPSDialerNullStatsTracker) OnTLSHandshakeError(ctx context.Context, tactic *HTTPSDialerTactic, err error) {
+	// nothing
+}
+
+// OnTLSVerifyError implements HTTPSDialerStatsTracker.
+func (*HTTPSDialerNullStatsTracker) OnTLSVerifyError(ctz context.Context, tactic *HTTPSDialerTactic, err error) {
+	// nothing
 }
