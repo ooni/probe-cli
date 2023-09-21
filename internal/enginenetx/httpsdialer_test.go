@@ -567,3 +567,53 @@ func TestLoadHTTPSDialerPolicy(t *testing.T) {
 		})
 	}
 }
+
+func TestHTTPSDialerLoadableTacticWrapper(t *testing.T) {
+	t.Run("IPAddr", func(t *testing.T) {
+		expected := "10.0.0.1"
+		ldt := &enginenetx.HTTPSDialerLoadableTacticWrapper{
+			Tactic: &enginenetx.HTTPSDialerLoadableTactic{
+				IPAddr: expected,
+			},
+		}
+		if got := ldt.IPAddr(); got != expected {
+			t.Fatal("expected", expected, "got", got)
+		}
+	})
+
+	t.Run("InitialDelay", func(t *testing.T) {
+		expected := time.Millisecond
+		ldt := &enginenetx.HTTPSDialerLoadableTacticWrapper{
+			Tactic: &enginenetx.HTTPSDialerLoadableTactic{
+				InitialDelay: expected,
+			},
+		}
+		if got := ldt.InitialDelay(); got != expected {
+			t.Fatal("expected", expected, "got", got)
+		}
+	})
+
+	t.Run("SNI", func(t *testing.T) {
+		expected := "x.org"
+		ldt := &enginenetx.HTTPSDialerLoadableTacticWrapper{
+			Tactic: &enginenetx.HTTPSDialerLoadableTactic{
+				SNI: expected,
+			},
+		}
+		if got := ldt.SNI(); got != expected {
+			t.Fatal("expected", expected, "got", got)
+		}
+	})
+
+	t.Run("VerifyHostname", func(t *testing.T) {
+		expected := "x.org"
+		ldt := &enginenetx.HTTPSDialerLoadableTacticWrapper{
+			Tactic: &enginenetx.HTTPSDialerLoadableTactic{
+				VerifyHostname: expected,
+			},
+		}
+		if got := ldt.VerifyHostname(); got != expected {
+			t.Fatal("expected", expected, "got", got)
+		}
+	})
+}
