@@ -26,15 +26,13 @@ func TestHTTPSDialerTacticsEmitter(t *testing.T) {
 			wg:          &sync.WaitGroup{},
 		}
 
-		var tactics []HTTPSDialerTactic
+		var tactics []*HTTPSDialerTactic
 		for idx := 0; idx < 255; idx++ {
-			tactics = append(tactics, &HTTPSDialerLoadableTacticWrapper{
-				Tactic: &HTTPSDialerLoadableTactic{
-					IPAddr:         fmt.Sprintf("10.0.0.%d", idx),
-					InitialDelay:   0,
-					SNI:            "www.example.com",
-					VerifyHostname: "www.example.com",
-				},
+			tactics = append(tactics, &HTTPSDialerTactic{
+				IPAddr:         fmt.Sprintf("10.0.0.%d", idx),
+				InitialDelay:   0,
+				SNI:            "www.example.com",
+				VerifyHostname: "www.example.com",
 			})
 		}
 
