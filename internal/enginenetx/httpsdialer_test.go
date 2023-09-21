@@ -605,6 +605,22 @@ func TestHTTPSDialerLoadableTacticWrapper(t *testing.T) {
 		}
 	})
 
+	t.Run("String", func(t *testing.T) {
+		expected := "&{IPAddr:162.55.247.208 InitialDelay:150ms SNI:www.example.com VerifyHostname:api.ooni.io}"
+		ldt := &enginenetx.HTTPSDialerLoadableTacticWrapper{
+			Tactic: &enginenetx.HTTPSDialerLoadableTactic{
+				IPAddr:         "162.55.247.208",
+				InitialDelay:   150 * time.Millisecond,
+				SNI:            "www.example.com",
+				VerifyHostname: "api.ooni.io",
+			},
+		}
+		got := ldt.String()
+		if diff := cmp.Diff(expected, got); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
 	t.Run("VerifyHostname", func(t *testing.T) {
 		expected := "x.org"
 		ldt := &enginenetx.HTTPSDialerLoadableTacticWrapper{

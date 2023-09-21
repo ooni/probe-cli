@@ -68,4 +68,17 @@ func TestHTTPSDialerVerifyCertificateChain(t *testing.T) {
 			t.Fatal("unexpected error", err)
 		}
 	})
+
+	t.Run("with an empty hostname", func(t *testing.T) {
+		tlsConn := &mocks.TLSConn{
+			MockConnectionState: func() tls.ConnectionState {
+				return tls.ConnectionState{} // empty but should not be an issue
+			},
+		}
+		certPool := netxlite.NewMozillaCertPool()
+		err := httpsDialerVerifyCertificateChain("", tlsConn, certPool)
+		if !errors.Is(err, errEmptyVerifyHostname) {
+			t.Fatal("unexpected error", err)
+		}
+	})
 }
