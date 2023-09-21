@@ -588,4 +588,18 @@ func TestHTTPSDialerTactic(t *testing.T) {
 			t.Fatal(diff)
 		}
 	})
+
+	t.Run("Summary", func(t *testing.T) {
+		expected := `162.55.247.208:443 sni=www.example.com verify=api.ooni.io`
+		ldt := &enginenetx.HTTPSDialerTactic{
+			Endpoint:       "162.55.247.208:443",
+			InitialDelay:   150 * time.Millisecond,
+			SNI:            "www.example.com",
+			VerifyHostname: "api.ooni.io",
+		}
+		got := ldt.Summary()
+		if diff := cmp.Diff(expected, got); diff != "" {
+			t.Fatal(diff)
+		}
+	})
 }
