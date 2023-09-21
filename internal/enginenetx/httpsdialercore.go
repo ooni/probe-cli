@@ -381,6 +381,9 @@ func httpsDialerTacticWaitReady(ctx context.Context, tactic HTTPSDialerTactic) e
 // errNoPeerCertificate is an internal error returned when we don't have any peer certificate.
 var errNoPeerCertificate = errors.New("no peer certificate")
 
+// errEmptyVerifyHostname indicates there is no hostname to verify against
+var errEmptyVerifyHostname = errors.New("empty VerifyHostname")
+
 // httpsDialerVerifyCertificateChain verifies the certificate chain with the given hostname.
 func httpsDialerVerifyCertificateChain(hostname string, conn model.TLSConn, rootCAs *x509.CertPool) error {
 	// This code comes from the example in the Go source tree that shows
@@ -398,6 +401,12 @@ func httpsDialerVerifyCertificateChain(hostname string, conn model.TLSConn, root
 	// implementation of the verification code we added below.
 	//
 	// See https://github.com/golang/go/blob/go1.21.0/src/crypto/tls/handshake_client.go#L962.
+
+	// Protect against a programming or configuration error where the
+	// programmer or user has not set the hostname.
+	if hostname == "" {
+		return errEmptyVerifyHostname
+	}
 
 	state := conn.ConnectionState()
 	opts := x509.VerifyOptions{
