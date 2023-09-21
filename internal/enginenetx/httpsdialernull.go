@@ -2,6 +2,7 @@ package enginenetx
 
 import (
 	"context"
+	"net"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -23,7 +24,7 @@ var _ HTTPSDialerPolicy = &HTTPSDialerNullPolicy{}
 
 // LookupTactics implements HTTPSDialerPolicy.
 func (*HTTPSDialerNullPolicy) LookupTactics(
-	ctx context.Context, domain string, reso model.Resolver) ([]*HTTPSDialerTactic, error) {
+	ctx context.Context, domain, port string, reso model.Resolver) ([]*HTTPSDialerTactic, error) {
 	addrs, err := reso.LookupHost(ctx, domain)
 	if err != nil {
 		return nil, err
@@ -33,7 +34,7 @@ func (*HTTPSDialerNullPolicy) LookupTactics(
 	var tactics []*HTTPSDialerTactic
 	for idx, addr := range addrs {
 		tactics = append(tactics, &HTTPSDialerTactic{
-			IPAddr:         addr,
+			Endpoint:       net.JoinHostPort(addr, port),
 			InitialDelay:   time.Duration(idx) * delay, // zero for the first dial
 			SNI:            domain,
 			VerifyHostname: domain,

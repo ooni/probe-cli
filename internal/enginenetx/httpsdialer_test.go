@@ -476,27 +476,27 @@ func TestLoadHTTPSDialerPolicy(t *testing.T) {
 			return runtimex.Try1(json.Marshal(&enginenetx.HTTPSDialerLoadablePolicy{
 				Domains: map[string][]*enginenetx.HTTPSDialerTactic{
 					"api.ooni.io": {{
-						IPAddr:         "162.55.247.208",
+						Endpoint:       "162.55.247.208:443",
 						InitialDelay:   0,
 						SNI:            "api.ooni.io",
 						VerifyHostname: "api.ooni.io",
 					}, {
-						IPAddr:         "46.101.82.151",
+						Endpoint:       "46.101.82.151:443",
 						InitialDelay:   300 * time.Millisecond,
 						SNI:            "api.ooni.io",
 						VerifyHostname: "api.ooni.io",
 					}, {
-						IPAddr:         "2a03:b0c0:1:d0::ec4:9001",
+						Endpoint:       "[2a03:b0c0:1:d0::ec4:9001]:443",
 						InitialDelay:   600 * time.Millisecond,
 						SNI:            "api.ooni.io",
 						VerifyHostname: "api.ooni.io",
 					}, {
-						IPAddr:         "46.101.82.151",
+						Endpoint:       "46.101.82.151:443",
 						InitialDelay:   3000 * time.Millisecond,
 						SNI:            "www.example.com",
 						VerifyHostname: "api.ooni.io",
 					}, {
-						IPAddr:         "2a03:b0c0:1:d0::ec4:9001",
+						Endpoint:       "[2a03:b0c0:1:d0::ec4:9001]:443",
 						InitialDelay:   3300 * time.Millisecond,
 						SNI:            "www.example.com",
 						VerifyHostname: "api.ooni.io",
@@ -508,27 +508,27 @@ func TestLoadHTTPSDialerPolicy(t *testing.T) {
 		expectedPolicy: &enginenetx.HTTPSDialerLoadablePolicy{
 			Domains: map[string][]*enginenetx.HTTPSDialerTactic{
 				"api.ooni.io": {{
-					IPAddr:         "162.55.247.208",
+					Endpoint:       "162.55.247.208:443",
 					InitialDelay:   0,
 					SNI:            "api.ooni.io",
 					VerifyHostname: "api.ooni.io",
 				}, {
-					IPAddr:         "46.101.82.151",
+					Endpoint:       "46.101.82.151:443",
 					InitialDelay:   300 * time.Millisecond,
 					SNI:            "api.ooni.io",
 					VerifyHostname: "api.ooni.io",
 				}, {
-					IPAddr:         "2a03:b0c0:1:d0::ec4:9001",
+					Endpoint:       "[2a03:b0c0:1:d0::ec4:9001]:443",
 					InitialDelay:   600 * time.Millisecond,
 					SNI:            "api.ooni.io",
 					VerifyHostname: "api.ooni.io",
 				}, {
-					IPAddr:         "46.101.82.151",
+					Endpoint:       "46.101.82.151:443",
 					InitialDelay:   3000 * time.Millisecond,
 					SNI:            "www.example.com",
 					VerifyHostname: "api.ooni.io",
 				}, {
-					IPAddr:         "2a03:b0c0:1:d0::ec4:9001",
+					Endpoint:       "[2a03:b0c0:1:d0::ec4:9001]:443",
 					InitialDelay:   3300 * time.Millisecond,
 					SNI:            "www.example.com",
 					VerifyHostname: "api.ooni.io",
@@ -566,14 +566,38 @@ func TestLoadHTTPSDialerPolicy(t *testing.T) {
 
 func TestHTTPSDialerTactic(t *testing.T) {
 	t.Run("String", func(t *testing.T) {
-		expected := `{"IPAddr":"162.55.247.208","InitialDelay":150000000,"SNI":"www.example.com","VerifyHostname":"api.ooni.io"}`
+		expected := `{"Endpoint":"162.55.247.208:443","InitialDelay":150000000,"SNI":"www.example.com","VerifyHostname":"api.ooni.io"}`
 		ldt := &enginenetx.HTTPSDialerTactic{
-			IPAddr:         "162.55.247.208",
+			Endpoint:       "162.55.247.208:443",
 			InitialDelay:   150 * time.Millisecond,
 			SNI:            "www.example.com",
 			VerifyHostname: "api.ooni.io",
 		}
 		got := ldt.String()
+		if diff := cmp.Diff(expected, got); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
+	t.Run("Clone", func(t *testing.T) {
+		ff := &testingx.FakeFiller{}
+		var expect enginenetx.HTTPSDialerTactic
+		ff.Fill(&expect)
+		got := expect.Clone()
+		if diff := cmp.Diff(expect.String(), got.String()); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
+	t.Run("Summary", func(t *testing.T) {
+		expected := `162.55.247.208:443 sni=www.example.com verify=api.ooni.io`
+		ldt := &enginenetx.HTTPSDialerTactic{
+			Endpoint:       "162.55.247.208:443",
+			InitialDelay:   150 * time.Millisecond,
+			SNI:            "www.example.com",
+			VerifyHostname: "api.ooni.io",
+		}
+		got := ldt.Summary()
 		if diff := cmp.Diff(expected, got); diff != "" {
 			t.Fatal(diff)
 		}
