@@ -40,7 +40,9 @@ Long-running tests should be skipped when running tests in short mode
 using `go test -short`. We prefer internal testing to external
 testing. We generally have a file called `foo_test.go` with tests
 for every `foo.go` file. Sometimes we separate long running
-integration tests in a `foo_integration_test.go` file.
+integration tests in a `foo_integration_test.go` file. We also
+sometimes have `foo_internal_test.go` when the main body of tests
+for `foo`, i.e., `foo_test.go` uses external testing.
 
 If there is a top-level DESIGN.md document, make sure such document is
 kept in sync with code changes you have applied.
