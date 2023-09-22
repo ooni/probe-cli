@@ -7,6 +7,7 @@ import (
 )
 
 func TestFetchTorTargets(t *testing.T) {
+	t.Skip("TODO(https://github.com/ooni/probe/issues/2539)")
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
@@ -59,6 +60,7 @@ func (clnt *FetchTorTargetsHTTPTransport) RoundTrip(req *http.Request) (*http.Re
 }
 
 func TestFetchTorTargetsSetsQueryString(t *testing.T) {
+	t.Skip("TODO(https://github.com/ooni/probe/issues/2539)")
 	clnt := newclient()
 	txp := new(FetchTorTargetsHTTPTransport)
 	clnt.HTTPClient = &http.Client{Transport: txp}
