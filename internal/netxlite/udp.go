@@ -9,7 +9,7 @@ import (
 // NewUDPListener creates a new UDPListener using the underlying
 // [*Netx] structure to create listening UDP sockets.
 func (netx *Netx) NewUDPListener() model.UDPListener {
-	return &udpListenerErrWrapper{&udpListenerStdlib{provider: netx.maybeCustomUnderlyingNetwork()}}
+	return &udpListenerErrWrapper{&udpListenerStdlib{provider: netx.MaybeCustomUnderlyingNetwork()}}
 }
 
 // NewUDPListener is equivalent to creating an empty [*Netx]

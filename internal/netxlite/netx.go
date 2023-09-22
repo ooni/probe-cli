@@ -20,12 +20,12 @@ type Netx struct {
 
 var _ model.MeasuringNetwork = &Netx{}
 
-// maybeCustomUnderlyingNetwork wraps the [model.UnderlyingNetwork] using a [*MaybeCustomUnderlyingNetwork].
-func (netx *Netx) maybeCustomUnderlyingNetwork() *MaybeCustomUnderlyingNetwork {
+// MaybeCustomUnderlyingNetwork wraps the [model.UnderlyingNetwork] using a [*MaybeCustomUnderlyingNetwork].
+func (netx *Netx) MaybeCustomUnderlyingNetwork() *MaybeCustomUnderlyingNetwork {
 	return &MaybeCustomUnderlyingNetwork{netx.Underlying}
 }
 
 // ListenTCP creates a new listening TCP socket using the given address.
 func (netx *Netx) ListenTCP(network string, addr *net.TCPAddr) (net.Listener, error) {
-	return netx.maybeCustomUnderlyingNetwork().Get().ListenTCP(network, addr)
+	return netx.MaybeCustomUnderlyingNetwork().Get().ListenTCP(network, addr)
 }

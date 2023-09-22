@@ -114,7 +114,7 @@ func NewParallelUDPResolver(logger model.DebugLogger, dialer model.Dialer, addre
 func WrapResolver(logger model.DebugLogger, resolver model.Resolver) model.Resolver {
 	return &resolverIDNA{
 		Resolver: &resolverLogger{
-			Resolver: &resolverShortCircuitIPAddr{
+			Resolver: &ResolverShortCircuitIPAddr{
 				Resolver: &resolverErrWrapper{
 					Resolver: resolver,
 				},
@@ -283,22 +283,22 @@ func (r *resolverIDNA) LookupNS(
 	return r.Resolver.LookupNS(ctx, host)
 }
 
-// resolverShortCircuitIPAddr recognizes when the input hostname is an
+// ResolverShortCircuitIPAddr recognizes when the input hostname is an
 // IP address and returns it immediately to the caller.
-type resolverShortCircuitIPAddr struct {
+type ResolverShortCircuitIPAddr struct {
 	Resolver model.Resolver
 }
 
-var _ model.Resolver = &resolverShortCircuitIPAddr{}
+var _ model.Resolver = &ResolverShortCircuitIPAddr{}
 
-func (r *resolverShortCircuitIPAddr) LookupHost(ctx context.Context, hostname string) ([]string, error) {
+func (r *ResolverShortCircuitIPAddr) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	if net.ParseIP(hostname) != nil {
 		return []string{hostname}, nil
 	}
 	return r.Resolver.LookupHost(ctx, hostname)
 }
 
-func (r *resolverShortCircuitIPAddr) LookupHTTPS(ctx context.Context, hostname string) (*model.HTTPSSvc, error) {
+func (r *ResolverShortCircuitIPAddr) LookupHTTPS(ctx context.Context, hostname string) (*model.HTTPSSvc, error) {
 	if net.ParseIP(hostname) != nil {
 		https := &model.HTTPSSvc{}
 		if isIPv6(hostname) {
@@ -311,15 +311,15 @@ func (r *resolverShortCircuitIPAddr) LookupHTTPS(ctx context.Context, hostname s
 	return r.Resolver.LookupHTTPS(ctx, hostname)
 }
 
-func (r *resolverShortCircuitIPAddr) Network() string {
+func (r *ResolverShortCircuitIPAddr) Network() string {
 	return r.Resolver.Network()
 }
 
-func (r *resolverShortCircuitIPAddr) Address() string {
+func (r *ResolverShortCircuitIPAddr) Address() string {
 	return r.Resolver.Address()
 }
 
-func (r *resolverShortCircuitIPAddr) CloseIdleConnections() {
+func (r *ResolverShortCircuitIPAddr) CloseIdleConnections() {
 	r.Resolver.CloseIdleConnections()
 }
 
@@ -327,7 +327,7 @@ func (r *resolverShortCircuitIPAddr) CloseIdleConnections() {
 // function that only works with domain names.
 var ErrDNSIPAddress = errors.New("ooresolver: expected domain, found IP address")
 
-func (r *resolverShortCircuitIPAddr) LookupNS(
+func (r *ResolverShortCircuitIPAddr) LookupNS(
 	ctx context.Context, hostname string) ([]*net.NS, error) {
 	if net.ParseIP(hostname) != nil {
 		return nil, ErrDNSIPAddress

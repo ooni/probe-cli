@@ -20,10 +20,10 @@ func TestHTTPSDialerTacticsEmitter(t *testing.T) {
 		hd := &HTTPSDialer{
 			idGenerator: &atomic.Int64{},
 			logger:      model.DiscardLogger,
+			netx:        &netxlite.Netx{Underlying: nil}, // nil means: use netxlite's singleton
 			policy:      &HTTPSDialerNullPolicy{},
 			resolver:    netxlite.NewStdlibResolver(model.DiscardLogger),
 			rootCAs:     netxlite.NewMozillaCertPool(),
-			unet:        &netxlite.DefaultTProxy{},
 			wg:          &sync.WaitGroup{},
 		}
 
