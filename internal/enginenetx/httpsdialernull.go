@@ -22,6 +22,12 @@ type HTTPSDialerNullPolicy struct{}
 
 var _ HTTPSDialerPolicy = &HTTPSDialerNullPolicy{}
 
+// httpsDialerHappyEyeballsDelay is the delay after which we should start a new TCP
+// connect and TLS handshake using another tactic. The standard Go library uses a 300ms
+// delay for connecting. Because a TCP connect is one round trip and the TLS handshake
+// is two round trips (roughly), we multiply this value by three.
+const httpsDialerHappyEyeballsDelay = 900 * time.Millisecond
+
 // LookupTactics implements HTTPSDialerPolicy.
 func (*HTTPSDialerNullPolicy) LookupTactics(
 	ctx context.Context, domain, port string, reso model.Resolver) ([]*HTTPSDialerTactic, error) {
@@ -30,12 +36,11 @@ func (*HTTPSDialerNullPolicy) LookupTactics(
 		return nil, err
 	}
 
-	const delay = 300 * time.Millisecond
 	var tactics []*HTTPSDialerTactic
 	for idx, addr := range addrs {
 		tactics = append(tactics, &HTTPSDialerTactic{
 			Endpoint:       net.JoinHostPort(addr, port),
-			InitialDelay:   time.Duration(idx) * delay, // zero for the first dial
+			InitialDelay:   happyEyeballsDelay(httpsDialerHappyEyeballsDelay, idx),
 			SNI:            domain,
 			VerifyHostname: domain,
 		})
