@@ -15,6 +15,7 @@ func TestHappyEyeballsDelay(t *testing.T) {
 	const delay = 900 * time.Millisecond
 
 	cases := []testcase{
+		{-1, 0}, // make sure we gracefully handle negative numbers (i.e., we don't crash)
 		{0, 0},
 		{1, delay},
 		{2, delay * 2},
