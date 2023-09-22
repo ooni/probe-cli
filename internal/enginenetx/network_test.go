@@ -11,6 +11,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/enginenetx"
+	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
@@ -19,14 +20,15 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
-func TestHTTPTransportWAI(t *testing.T) {
+func TestNetworkQA(t *testing.T) {
 	t.Run("is WAI when not using any proxy", func(t *testing.T) {
 		env := netemx.MustNewScenario(netemx.InternetScenario)
 		defer env.Close()
 
 		env.Do(func() {
-			txp := enginenetx.NewHTTPTransport(
+			txp := enginenetx.NewNetwork(
 				bytecounter.New(),
+				&kvstore.Memory{},
 				model.DiscardLogger,
 				nil,
 				netxlite.NewStdlibResolver(model.DiscardLogger),
@@ -61,8 +63,9 @@ func TestHTTPTransportWAI(t *testing.T) {
 		defer proxy.Close()
 
 		env.Do(func() {
-			txp := enginenetx.NewHTTPTransport(
+			txp := enginenetx.NewNetwork(
 				bytecounter.New(),
+				&kvstore.Memory{},
 				model.DiscardLogger,
 				&url.URL{
 					Scheme: "socks5",
@@ -129,8 +132,9 @@ func TestHTTPTransportWAI(t *testing.T) {
 		defer proxy.Close()
 
 		env.Do(func() {
-			txp := enginenetx.NewHTTPTransport(
+			txp := enginenetx.NewNetwork(
 				bytecounter.New(),
+				&kvstore.Memory{},
 				model.DiscardLogger,
 				&url.URL{
 					Scheme: "http",
@@ -199,8 +203,9 @@ func TestHTTPTransportWAI(t *testing.T) {
 		defer proxy.Close()
 
 		env.Do(func() {
-			txp := enginenetx.NewHTTPTransport(
+			txp := enginenetx.NewNetwork(
 				bytecounter.New(),
+				&kvstore.Memory{},
 				model.DiscardLogger,
 				&url.URL{
 					Scheme: "https",
@@ -253,8 +258,9 @@ func TestHTTPTransportWAI(t *testing.T) {
 	})
 
 	t.Run("NewHTTPClient returns a client with a cookie jar", func(t *testing.T) {
-		txp := enginenetx.NewHTTPTransport(
+		txp := enginenetx.NewNetwork(
 			bytecounter.New(),
+			&kvstore.Memory{},
 			model.DiscardLogger,
 			nil,
 			netxlite.NewStdlibResolver(model.DiscardLogger),

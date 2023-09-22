@@ -11,6 +11,8 @@ import (
 var ErrNoSuchKey = errors.New("no such key")
 
 // Memory is an in-memory key-value store.
+//
+// The zero value is ready to use.
 type Memory struct {
 	// m is the underlying map.
 	m map[string][]byte
