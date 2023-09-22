@@ -28,7 +28,7 @@ type dnsOverGetaddrinfoTransport struct {
 }
 
 func (netx *Netx) newDNSOverGetaddrinfoTransport() model.DNSTransport {
-	return &dnsOverGetaddrinfoTransport{provider: netx.maybeCustomUnderlyingNetwork()}
+	return &dnsOverGetaddrinfoTransport{provider: netx.MaybeCustomUnderlyingNetwork()}
 }
 
 // NewDNSOverGetaddrinfoTransport creates a new dns-over-getaddrinfo transport.

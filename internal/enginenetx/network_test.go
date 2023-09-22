@@ -13,7 +13,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/enginenetx"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
-	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/testingsocks5"
@@ -29,9 +28,9 @@ func TestNetworkQA(t *testing.T) {
 			txp := enginenetx.NewNetwork(
 				bytecounter.New(),
 				&kvstore.Memory{},
-				model.DiscardLogger,
+				log.Log,
 				nil,
-				netxlite.NewStdlibResolver(model.DiscardLogger),
+				netxlite.NewStdlibResolver(log.Log),
 			)
 			client := txp.NewHTTPClient()
 			resp, err := client.Get("https://www.example.com/")
@@ -66,13 +65,13 @@ func TestNetworkQA(t *testing.T) {
 			txp := enginenetx.NewNetwork(
 				bytecounter.New(),
 				&kvstore.Memory{},
-				model.DiscardLogger,
+				log.Log,
 				&url.URL{
 					Scheme: "socks5",
 					Host:   net.JoinHostPort(env.ClientStack.IPAddress(), "9050"),
 					Path:   "/",
 				},
-				netxlite.NewStdlibResolver(model.DiscardLogger),
+				netxlite.NewStdlibResolver(log.Log),
 			)
 			client := txp.NewHTTPClient()
 
@@ -135,13 +134,13 @@ func TestNetworkQA(t *testing.T) {
 			txp := enginenetx.NewNetwork(
 				bytecounter.New(),
 				&kvstore.Memory{},
-				model.DiscardLogger,
+				log.Log,
 				&url.URL{
 					Scheme: "http",
 					Host:   net.JoinHostPort(env.ClientStack.IPAddress(), "8080"),
 					Path:   "/",
 				},
-				netxlite.NewStdlibResolver(model.DiscardLogger),
+				netxlite.NewStdlibResolver(log.Log),
 			)
 			client := txp.NewHTTPClient()
 
@@ -206,13 +205,13 @@ func TestNetworkQA(t *testing.T) {
 			txp := enginenetx.NewNetwork(
 				bytecounter.New(),
 				&kvstore.Memory{},
-				model.DiscardLogger,
+				log.Log,
 				&url.URL{
 					Scheme: "https",
 					Host:   net.JoinHostPort(env.ClientStack.IPAddress(), "4443"),
 					Path:   "/",
 				},
-				netxlite.NewStdlibResolver(model.DiscardLogger),
+				netxlite.NewStdlibResolver(log.Log),
 			)
 			client := txp.NewHTTPClient()
 
@@ -261,9 +260,9 @@ func TestNetworkQA(t *testing.T) {
 		txp := enginenetx.NewNetwork(
 			bytecounter.New(),
 			&kvstore.Memory{},
-			model.DiscardLogger,
+			log.Log,
 			nil,
-			netxlite.NewStdlibResolver(model.DiscardLogger),
+			netxlite.NewStdlibResolver(log.Log),
 		)
 		client := txp.NewHTTPClient()
 		if client.Jar == nil {

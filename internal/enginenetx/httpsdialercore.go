@@ -113,6 +113,9 @@ type HTTPSDialer struct {
 	// logger is the logger to use.
 	logger model.Logger
 
+	// netx is the [*netxlite.Netx] to use.
+	netx *netxlite.Netx
+
 	// policy defines the dialing policy to use.
 	policy HTTPSDialerPolicy
 
@@ -125,9 +128,6 @@ type HTTPSDialer struct {
 	// stats tracks what happens while dialing.
 	stats HTTPSDialerStatsTracker
 
-	// unet is the underlying network.
-	unet model.UnderlyingNetwork
-
 	// wg is the wait group for knowing when all goroutines
 	// started in the background joined (for testing).
 	wg *sync.WaitGroup
@@ -139,22 +139,22 @@ type HTTPSDialer struct {
 //
 // - logger is the logger to use for logging;
 //
+// - netx is the [*netxlite.Netx] to use;
+//
 // - policy defines the dialer policy;
 //
 // - resolver is the resolver to use;
 //
-// - stats tracks what happens while we're dialing;
-//
-// - unet is the underlying network to use.
+// - stats tracks what happens while we're dialing.
 //
 // The returned [*HTTPSDialer] would use the underlying network's
 // DefaultCertPool to create and cache the cert pool to use.
 func NewHTTPSDialer(
 	logger model.Logger,
+	netx *netxlite.Netx,
 	policy HTTPSDialerPolicy,
 	resolver model.Resolver,
 	stats HTTPSDialerStatsTracker,
-	unet model.UnderlyingNetwork,
 ) *HTTPSDialer {
 	return &HTTPSDialer{
 		idGenerator: &atomic.Int64{},
@@ -162,11 +162,11 @@ func NewHTTPSDialer(
 			Prefix: "HTTPSDialer: ",
 			Logger: logger,
 		},
+		netx:     netx,
 		policy:   policy,
 		resolver: resolver,
-		rootCAs:  unet.DefaultCertPool(),
+		rootCAs:  netx.MaybeCustomUnderlyingNetwork().Get().DefaultCertPool(),
 		stats:    stats,
-		unet:     unet,
 		wg:       &sync.WaitGroup{},
 	}
 }
@@ -205,12 +205,16 @@ func (hd *HTTPSDialer) DialTLSContext(ctx context.Context, network string, endpo
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	// See https://github.com/ooni/probe-cli/pull/1295#issuecomment-1731243994 for context
+	// on why here we MUST make sure we short-circuit IP addresses.
+	resoWithShortCircuit := &netxlite.ResolverShortCircuitIPAddr{Resolver: hd.resolver}
+
 	logger := &logx.PrefixLogger{
 		Prefix: fmt.Sprintf("[#%d] ", hd.idGenerator.Add(1)),
 		Logger: hd.logger,
 	}
 	ol := logx.NewOperationLogger(logger, "LookupTactics: %s", net.JoinHostPort(hostname, port))
-	tactics, err := hd.policy.LookupTactics(ctx, hostname, port, hd.resolver)
+	tactics, err := hd.policy.LookupTactics(ctx, hostname, port, resoWithShortCircuit)
 	if err != nil {
 		ol.Stop(err)
 		return nil, err
@@ -332,12 +336,9 @@ func (hd *HTTPSDialer) dialTLS(
 	// tell the tactic that we're starting
 	hd.stats.OnStarting(tactic)
 
-	// create a network abstraction using the underlying network
-	netx := &netxlite.Netx{Underlying: hd.unet}
-
 	// create dialer and establish TCP connection
 	ol := logx.NewOperationLogger(logger, "TCPConnect %s", tactic.Endpoint)
-	dialer := netx.NewDialerWithoutResolver(logger)
+	dialer := hd.netx.NewDialerWithoutResolver(logger)
 	tcpConn, err := dialer.DialContext(ctx, "tcp", tactic.Endpoint)
 	ol.Stop(err)
 
@@ -363,7 +364,7 @@ func (hd *HTTPSDialer) dialTLS(
 		tlsConfig.ServerName,
 		tlsConfig.NextProtos,
 	)
-	thx := netx.NewTLSHandshakerStdlib(logger)
+	thx := hd.netx.NewTLSHandshakerStdlib(logger)
 	tlsConn, err := thx.Handshake(ctx, tcpConn, tlsConfig)
 	ol.Stop(err)
 
