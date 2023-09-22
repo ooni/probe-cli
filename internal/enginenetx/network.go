@@ -116,7 +116,7 @@ func NewNetwork(
 	// the code currently falls back to using the standard library's tls
 	// client code for establishing TLS connections over the proxy. The main
 	// implication here is that we're not using our custom mozilla CA for
-	// validating TLS certificates, rather we're using the cert store.
+	// validating TLS certificates, rather we're using the system's cert store.
 	//
 	// Fixing this issue is TODO(https://github.com/ooni/probe/issues/2536).
 	txp := netxlite.NewHTTPTransportWithOptions(
