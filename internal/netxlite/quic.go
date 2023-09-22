@@ -29,7 +29,7 @@ func (netx *Netx) NewQUICDialerWithResolver(listener model.UDPListener, logger m
 	resolver model.Resolver, wrappers ...model.QUICDialerWrapper) (outDialer model.QUICDialer) {
 	baseDialer := &quicDialerQUICGo{
 		UDPListener: listener,
-		provider:    netx.maybeCustomUnderlyingNetwork(),
+		provider:    netx.MaybeCustomUnderlyingNetwork(),
 	}
 	return wrapQUICDialer(logger, resolver, baseDialer, wrappers...)
 }

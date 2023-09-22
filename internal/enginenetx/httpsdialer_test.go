@@ -63,7 +63,7 @@ func (st *httpsDialerCancelingContextStatsTracker) OnSuccess(tactic *enginenetx.
 	}
 }
 
-func TestHTTPSDialerWAI(t *testing.T) {
+func TestHTTPSDialerNetemQA(t *testing.T) {
 	// testcase is a test case implemented by this function
 	type testcase struct {
 		// name is the name of the test case
@@ -383,10 +383,10 @@ func TestHTTPSDialerWAI(t *testing.T) {
 				// create the TLS dialer
 				dialer := enginenetx.NewHTTPSDialer(
 					log.Log,
+					netx,
 					tc.policy,
 					resolver,
 					tc.stats,
-					unet,
 				)
 				defer dialer.CloseIdleConnections()
 

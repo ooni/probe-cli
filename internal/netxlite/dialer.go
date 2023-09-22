@@ -33,7 +33,7 @@ func NewDialerWithStdlibResolver(dl model.DebugLogger) model.Dialer {
 // that we can implement the legacy [netx] package. New code MUST NOT
 // use this functionality, which we'd like to remove ASAP.
 func (netx *Netx) NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...model.DialerWrapper) model.Dialer {
-	return WrapDialer(dl, r, &dialerSystem{provider: netx.maybeCustomUnderlyingNetwork()}, w...)
+	return WrapDialer(dl, r, &dialerSystem{provider: netx.MaybeCustomUnderlyingNetwork()}, w...)
 }
 
 // NewDialerWithResolver is equivalent to creating an empty [*Netx]

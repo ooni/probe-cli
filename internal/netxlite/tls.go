@@ -157,7 +157,7 @@ type TLSConn = model.TLSConn
 // NewTLSHandshakerStdlib implements [model.MeasuringNetwork].
 func (netx *Netx) NewTLSHandshakerStdlib(logger model.DebugLogger) model.TLSHandshaker {
 	return newTLSHandshakerLogger(
-		&tlsHandshakerConfigurable{provider: netx.maybeCustomUnderlyingNetwork()},
+		&tlsHandshakerConfigurable{provider: netx.MaybeCustomUnderlyingNetwork()},
 		logger,
 	)
 }

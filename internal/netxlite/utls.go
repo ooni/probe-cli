@@ -20,7 +20,7 @@ import (
 func (netx *Netx) NewTLSHandshakerUTLS(logger model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker {
 	return newTLSHandshakerLogger(&tlsHandshakerConfigurable{
 		NewConn:  newUTLSConnFactory(id),
-		provider: netx.maybeCustomUnderlyingNetwork(),
+		provider: netx.MaybeCustomUnderlyingNetwork(),
 	}, logger)
 }
 

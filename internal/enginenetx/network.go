@@ -86,16 +86,13 @@ func NewNetwork(
 	// - for now, we're using a "null" policy that does happy eyeballs but otherwise
 	// does not use beacons or other TLS handshake tricks;
 	//
-	// - for now, we're using a "null" stats tracker, meaning we don't track stats;
-	//
-	// - we're unconditionally using netxlite's DefaultTProxy, which means that
-	// the returned Network cannot be tested using netem.
+	// - for now, we're using a "null" stats tracker, meaning we don't track stats.
 	httpsDialer := NewHTTPSDialer(
 		logger,
+		&netxlite.Netx{Underlying: nil}, // nil means using netxlite's singleton
 		&HTTPSDialerNullPolicy{},
 		resolver,
 		&HTTPSDialerNullStatsTracker{},
-		&netxlite.DefaultTProxy{},
 	)
 
 	// Here we're creating a "new style" HTTPS transport, which has less
