@@ -83,14 +83,11 @@ func NewNetwork(
 	// Additionally, please note the following limitations (to be overcome through
 	// future refactoring of this func):
 	//
-	// - for now, we're using a "null" policy that does happy eyeballs but otherwise
-	// does not use beacons or other TLS handshake tricks;
-	//
 	// - for now, we're using a "null" stats tracker, meaning we don't track stats.
 	httpsDialer := NewHTTPSDialer(
 		logger,
 		&netxlite.Netx{Underlying: nil}, // nil means using netxlite's singleton
-		&HTTPSDialerNullPolicy{},
+		newHTTPSDialerPolicy(kvStore),
 		resolver,
 		&HTTPSDialerNullStatsTracker{},
 	)
@@ -126,4 +123,18 @@ func NewNetwork(
 	txp = bytecounter.WrapHTTPTransport(txp, counter)
 
 	return &Network{txp}
+}
+
+// newHTTPSDialerPolicy contains the logic to select the [HTTPSDialerPolicy] to use.
+func newHTTPSDialerPolicy(kvStore model.KeyValueStore) HTTPSDialerPolicy {
+	// the fallback policy we're using is the "null" policy
+	fallback := &HTTPSDialerNullPolicy{}
+
+	// make sure we honor a user-provided policy
+	policy, err := NewHTTPSDialerStaticPolicy(kvStore, fallback)
+	if err != nil {
+		return fallback
+	}
+
+	return policy
 }
