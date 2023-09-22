@@ -10,7 +10,7 @@ import (
 )
 
 // HTTPSDialerStaticPolicy is an [HTTPSDialerPolicy] incorporating verbatim
-// a static polict loaded from the engine's key-value store.
+// a static policy loaded from the engine's key-value store.
 //
 // This policy is very useful for exploration and experimentation.
 type HTTPSDialerStaticPolicy struct {
