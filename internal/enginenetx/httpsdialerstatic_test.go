@@ -180,7 +180,7 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 			}
 
 			p := &HTTPSDialerStaticPolicy{
-				Fallback: nil, // explicitly such that there is a panic if we access it
+				Fallback: nil, // explicitly nil such that there is a panic if we access it
 				Root: &HTTPSDialerStaticPolicyRoot{
 					Domains: map[string][]*HTTPSDialerTactic{
 						"api.ooni.io": expect,
