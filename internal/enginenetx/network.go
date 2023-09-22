@@ -36,7 +36,11 @@ func (n *Network) NewHTTPClient() *http.Client {
 
 // Close ensures that we close idle connections and persist statistics.
 func (n *Network) Close() error {
-	// nothing for now!
+	// TODO(bassosimone): do we want to introduce "once" semantics in this method?
+
+	// make sure we close the transport's idle connections
+	n.txp.CloseIdleConnections()
+
 	return nil
 }
 
