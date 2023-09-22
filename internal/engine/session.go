@@ -57,7 +57,7 @@ type Session struct {
 	availableProbeServices   []model.OOAPIService
 	availableTestHelpers     map[string][]model.OOAPIService
 	byteCounter              *bytecounter.Counter
-	httpDefaultTransport     *enginenetx.HTTPTransport
+	network                  *enginenetx.Network
 	kvStore                  model.KeyValueStore
 	location                 *enginelocate.Results
 	logger                   model.Logger
@@ -213,8 +213,9 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 		Logger:      sess.logger,
 		ProxyURL:    proxyURL,
 	}
-	sess.httpDefaultTransport = enginenetx.NewHTTPTransport(
+	sess.network = enginenetx.NewNetwork(
 		sess.byteCounter,
+		config.KVStore,
 		sess.logger,
 		proxyURL,
 		sess.resolver,
@@ -341,7 +342,9 @@ func (s *Session) Close() error {
 
 // doClose implements Close. This function is called just once.
 func (s *Session) doClose() {
-	s.httpDefaultTransport.CloseIdleConnections()
+	// make sure we close open connections and persist stats to the key-value store
+	s.network.Close()
+
 	s.resolver.CloseIdleConnections()
 	if s.tunnel != nil {
 		s.tunnel.Stop()
@@ -360,7 +363,7 @@ func (s *Session) GetTestHelpersByName(name string) ([]model.OOAPIService, bool)
 
 // DefaultHTTPClient returns the session's default HTTP client.
 func (s *Session) DefaultHTTPClient() model.HTTPClient {
-	return s.httpDefaultTransport.NewHTTPClient()
+	return s.network.NewHTTPClient()
 }
 
 // FetchTorTargets fetches tor targets from the API.
