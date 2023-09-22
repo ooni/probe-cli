@@ -20,7 +20,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
-func TestNetwork(t *testing.T) {
+func TestNetworkQA(t *testing.T) {
 	t.Run("is WAI when not using any proxy", func(t *testing.T) {
 		env := netemx.MustNewScenario(netemx.InternetScenario)
 		defer env.Close()
