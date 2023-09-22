@@ -133,8 +133,17 @@ type DialerWrapper interface {
 
 // SimpleDialer establishes network connections.
 type SimpleDialer interface {
-	// DialContext behaves like net.Dialer.DialContext.
-	DialContext(ctx context.Context, network, address string) (net.Conn, error)
+	// DialContext creates a new TCP/UDP connection like [net.DialContext] would do.
+	//
+	// The endpoint is an endpoint like the ones accepted by [net.DialContext]. For example,
+	// x.org:443, 130.192.91.211:443 and [::1]:443. Note that IPv6 addrs are quoted.
+	//
+	// This function MUST gracefully handle the case where the endpoint contains an IPv4
+	// or IPv6 address by skipping DNS resolution and directly using the endpoint.
+	//
+	// See https://github.com/ooni/probe-cli/pull/1295#issuecomment-1731243994 for more
+	// details on why DialContext MUST do that.
+	DialContext(ctx context.Context, network, endpoint string) (net.Conn, error)
 }
 
 // Dialer is a SimpleDialer with the possibility of closing open connections.
@@ -258,7 +267,9 @@ type QUICDialer interface {
 
 // Resolver performs domain name resolutions.
 type Resolver interface {
-	// LookupHost behaves like net.Resolver.LookupHost.
+	// LookupHost resolves the given hostname to IP addreses. This function SHOULD handle the
+	// case in which hostname is an IP address by returning a 1-element list containing the hostname,
+	// for consistency with [net.Resolver] behaviour.
 	LookupHost(ctx context.Context, hostname string) (addrs []string, err error)
 
 	// Network returns the resolver type. It should be one of:
@@ -315,6 +326,15 @@ type TLSDialer interface {
 
 	// DialTLSContext dials a TLS connection. This method will always return
 	// to you a oohttp.TLSConn, so you can always safely cast to it.
+	//
+	// The endpoint is an endpoint like the ones accepted by [net.DialContext]. For example,
+	// x.org:443, 130.192.91.211:443 and [::1]:443. Note that IPv6 addrs are quoted.
+	//
+	// This function MUST gracefully handle the case where the endpoint contains an IPv4
+	// or IPv6 address by skipping DNS resolution and directly using the endpoint.
+	//
+	// See https://github.com/ooni/probe-cli/pull/1295#issuecomment-1731243994 for more
+	// details on why DialTLSContext MUST do that.
 	DialTLSContext(ctx context.Context, network, address string) (net.Conn, error)
 }
 

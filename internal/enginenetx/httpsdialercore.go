@@ -205,12 +205,16 @@ func (hd *HTTPSDialer) DialTLSContext(ctx context.Context, network string, endpo
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	// See https://github.com/ooni/probe-cli/pull/1295#issuecomment-1731243994 for context
+	// on why here we MUST make sure we short-circuit IP addresses.
+	resoWithShortCircuit := &netxlite.ResolverShortCircuitIPAddr{Resolver: hd.resolver}
+
 	logger := &logx.PrefixLogger{
 		Prefix: fmt.Sprintf("[#%d] ", hd.idGenerator.Add(1)),
 		Logger: hd.logger,
 	}
 	ol := logx.NewOperationLogger(logger, "LookupTactics: %s", net.JoinHostPort(hostname, port))
-	tactics, err := hd.policy.LookupTactics(ctx, hostname, port, hd.resolver)
+	tactics, err := hd.policy.LookupTactics(ctx, hostname, port, resoWithShortCircuit)
 	if err != nil {
 		ol.Stop(err)
 		return nil, err

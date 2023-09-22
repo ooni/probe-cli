@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/enginelocate"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/pkg/oonimkall"
@@ -19,6 +20,7 @@ import (
 func NewSessionForTestingWithAssetsDir(assetsDir string) (*oonimkall.Session, error) {
 	return oonimkall.NewSession(&oonimkall.SessionConfig{
 		AssetsDir:        assetsDir,
+		Logger:           log.Log,
 		ProbeServicesURL: "https://ams-pg-test.ooni.org/",
 		SoftwareName:     "oonimkall-test",
 		SoftwareVersion:  "0.1.0",

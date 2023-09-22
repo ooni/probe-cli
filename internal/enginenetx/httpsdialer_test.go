@@ -2,7 +2,9 @@ package enginenetx_test
 
 import (
 	"context"
+	"crypto/x509"
 	"encoding/json"
+	"net/url"
 	"testing"
 	"time"
 
@@ -10,6 +12,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/enginenetx"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -601,5 +604,50 @@ func TestHTTPSDialerTactic(t *testing.T) {
 		if diff := cmp.Diff(expected, got); diff != "" {
 			t.Fatal(diff)
 		}
+	})
+}
+
+func TestHTTPSDialerHostNetworkQA(t *testing.T) {
+	t.Run("HTTPSDialerNullPolicy allows connecting to https://127.0.0.1/ using a custom CA", func(t *testing.T) {
+		ca := netem.MustNewCA()
+		server := testingx.MustNewHTTPServerTLS(
+			testingx.HTTPHandlerBlockpage451(),
+			ca,
+			"server.local",
+		)
+		defer server.Close()
+
+		tproxy := &netxlite.DefaultTProxy{}
+
+		// The resolver we're creating here reproduces the test case described by
+		// https://github.com/ooni/probe-cli/pull/1295#issuecomment-1731243994
+		resolver := netxlite.MaybeWrapWithBogonResolver(true, netxlite.NewStdlibResolver(log.Log))
+
+		httpsDialer := enginenetx.NewHTTPSDialer(
+			log.Log,
+			&netxlite.Netx{Underlying: &mocks.UnderlyingNetwork{
+				MockDefaultCertPool: func() *x509.CertPool {
+					return ca.DefaultCertPool() // just override the CA
+				},
+				MockDialTimeout:                tproxy.DialTimeout,
+				MockDialContext:                tproxy.DialContext,
+				MockListenTCP:                  tproxy.ListenTCP,
+				MockListenUDP:                  tproxy.ListenUDP,
+				MockGetaddrinfoLookupANY:       tproxy.GetaddrinfoLookupANY,
+				MockGetaddrinfoResolverNetwork: tproxy.GetaddrinfoResolverNetwork,
+			}},
+			&enginenetx.HTTPSDialerNullPolicy{},
+			resolver,
+			&enginenetx.HTTPSDialerNullStatsTracker{},
+		)
+
+		URL := runtimex.Try1(url.Parse(server.URL))
+
+		ctx := context.Background()
+		tlsConn, err := httpsDialer.DialTLSContext(ctx, "tcp", URL.Host)
+		if err != nil {
+			t.Fatal(err)
+		}
+		tlsConn.Close()
 	})
 }
