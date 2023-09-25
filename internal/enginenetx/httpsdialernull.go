@@ -80,6 +80,6 @@ func (*HTTPSDialerNullStatsTracker) OnTLSHandshakeError(ctx context.Context, tac
 }
 
 // OnTLSVerifyError implements HTTPSDialerStatsTracker.
-func (*HTTPSDialerNullStatsTracker) OnTLSVerifyError(ctz context.Context, tactic *HTTPSDialerTactic, err error) {
+func (*HTTPSDialerNullStatsTracker) OnTLSVerifyError(tactic *HTTPSDialerTactic, err error) {
 	// nothing
 }
