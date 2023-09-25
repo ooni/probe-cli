@@ -104,7 +104,7 @@ func TestHTTPSDialerReduceResult(t *testing.T) {
 		}
 	})
 
-	t.Run("we return errDNSNoAnswer if we don't any conns or errors to return", func(t *testing.T) {
+	t.Run("we return errDNSNoAnswer if we don't have any conns or errors to return", func(t *testing.T) {
 		conn, err := httpsDialerReduceResult(nil, nil)
 		if !errors.Is(err, errDNSNoAnswer) {
 			t.Fatal("unexpected error", err)
