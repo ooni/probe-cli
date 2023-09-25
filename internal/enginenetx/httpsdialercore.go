@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -70,16 +69,8 @@ func (dt *HTTPSDialerTactic) Summary() string {
 
 // HTTPSDialerPolicy describes the policy used by the [*HTTPSDialer].
 type HTTPSDialerPolicy interface {
-	// LookupTactics performs a DNS lookup for the given domain using the given resolver and
-	// returns either a list of tactics for dialing or an error.
-	//
-	// This function MUST NOT return an empty list and a nil error. If this happens the
-	// code inside [HTTPSDialer] will PANIC.
-	LookupTactics(ctx context.Context, domain, port string, reso model.Resolver) ([]*HTTPSDialerTactic, error)
-
-	// Parallelism returns the number of goroutines to create when TLS dialing. The
-	// [HTTPSDialer] will PANIC if the returned number is less than 1.
-	Parallelism() int
+	// LookupTactics returns zero or more tactics for the given host and port.
+	LookupTactics(ctx context.Context, domain, port string) <-chan *HTTPSDialerTactic
 }
 
 // HTTPSDialerStatsTracker tracks what happens while dialing TLS connections.
@@ -119,18 +110,11 @@ type HTTPSDialer struct {
 	// policy defines the dialing policy to use.
 	policy HTTPSDialerPolicy
 
-	// resolver is the DNS resolver to use.
-	resolver model.Resolver
-
 	// rootCAs contains the root certificate pool we should use.
 	rootCAs *x509.CertPool
 
 	// stats tracks what happens while dialing.
 	stats HTTPSDialerStatsTracker
-
-	// wg is the wait group for knowing when all goroutines
-	// started in the background joined (for testing).
-	wg *sync.WaitGroup
 }
 
 // NewHTTPSDialer constructs a new [*HTTPSDialer] instance.
@@ -143,8 +127,6 @@ type HTTPSDialer struct {
 //
 // - policy defines the dialer policy;
 //
-// - resolver is the resolver to use;
-//
 // - stats tracks what happens while we're dialing.
 //
 // The returned [*HTTPSDialer] would use the underlying network's
@@ -153,7 +135,6 @@ func NewHTTPSDialer(
 	logger model.Logger,
 	netx *netxlite.Netx,
 	policy HTTPSDialerPolicy,
-	resolver model.Resolver,
 	stats HTTPSDialerStatsTracker,
 ) *HTTPSDialer {
 	return &HTTPSDialer{
@@ -162,26 +143,18 @@ func NewHTTPSDialer(
 			Prefix: "HTTPSDialer: ",
 			Logger: logger,
 		},
-		netx:     netx,
-		policy:   policy,
-		resolver: resolver,
-		rootCAs:  netx.MaybeCustomUnderlyingNetwork().Get().DefaultCertPool(),
-		stats:    stats,
-		wg:       &sync.WaitGroup{},
+		netx:    netx,
+		policy:  policy,
+		rootCAs: netx.MaybeCustomUnderlyingNetwork().Get().DefaultCertPool(),
+		stats:   stats,
 	}
 }
 
 var _ model.TLSDialer = &HTTPSDialer{}
 
-// WaitGroup returns the [*sync.WaitGroup] tracking the number of background goroutines,
-// which is definitely useful in testing to make sure we join all the goroutines.
-func (hd *HTTPSDialer) WaitGroup() *sync.WaitGroup {
-	return hd.wg
-}
-
 // CloseIdleConnections implements model.TLSDialer.
 func (hd *HTTPSDialer) CloseIdleConnections() {
-	hd.resolver.CloseIdleConnections()
+	// nothing
 }
 
 // httpsDialerErrorOrConn contains either an error or a valid conn.
@@ -192,6 +165,13 @@ type httpsDialerErrorOrConn struct {
 	// Err is the error or nil.
 	Err error
 }
+
+// errDNSNoAnswer is the error returned when we have no tactic to try
+var errDNSNoAnswer = netxlite.NewErrWrapper(
+	netxlite.ClassifyResolverError,
+	netxlite.DNSRoundTripOperation,
+	netxlite.ErrOODNSNoAnswer,
+)
 
 // DialTLSContext implements model.TLSDialer.
 func (hd *HTTPSDialer) DialTLSContext(ctx context.Context, network string, endpoint string) (net.Conn, error) {
@@ -205,123 +185,77 @@ func (hd *HTTPSDialer) DialTLSContext(ctx context.Context, network string, endpo
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	// See https://github.com/ooni/probe-cli/pull/1295#issuecomment-1731243994 for context
-	// on why here we MUST make sure we short-circuit IP addresses.
-	resoWithShortCircuit := &netxlite.ResolverShortCircuitIPAddr{Resolver: hd.resolver}
-
-	logger := &logx.PrefixLogger{
-		Prefix: fmt.Sprintf("[#%d] ", hd.idGenerator.Add(1)),
-		Logger: hd.logger,
-	}
-	ol := logx.NewOperationLogger(logger, "LookupTactics: %s", net.JoinHostPort(hostname, port))
-	tactics, err := hd.policy.LookupTactics(ctx, hostname, port, resoWithShortCircuit)
-	if err != nil {
-		ol.Stop(err)
-		return nil, err
-	}
-	ol.Stop(tactics)
-	runtimex.Assert(len(tactics) >= 1, "expected at least one tactic here")
-
-	emitter := hd.tacticsEmitter(ctx, tactics...)
+	// The emitter will emit tactics and then close the channel when done. We spawn 1+ workers
+	// that handle tactics in paralellel and posts on the collector channel.
+	emitter := hd.policy.LookupTactics(ctx, hostname, port)
 	collector := make(chan *httpsDialerErrorOrConn)
-
-	parallelism := hd.policy.Parallelism()
-	runtimex.Assert(parallelism >= 1, "expected parallelism to be >= 1")
+	joiner := make(chan any)
+	const parallelism = 16
 	for idx := 0; idx < parallelism; idx++ {
-		hd.wg.Add(1)
-		go func() {
-			defer hd.wg.Done()
-			hd.worker(ctx, hostname, emitter, collector)
-		}()
+		go hd.worker(ctx, joiner, emitter, collector)
 	}
 
+	// wait until all goroutines have joined
 	var (
-		numDials = len(tactics)
-		errorv   = []error{}
+		connv     = []model.TLSConn{}
+		errorv    = []error{}
+		numJoined = 0
 	)
-	for idx := 0; idx < numDials; idx++ {
+	for numJoined < parallelism {
 		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
+		case <-joiner:
+			numJoined++
 
 		case result := <-collector:
+			// If the goroutine failed, record the error and continue processing results
 			if result.Err != nil {
 				errorv = append(errorv, result.Err)
 				continue
 			}
 
-			// Returning early cancels the context and this cancellation
-			// causes other background goroutines to interrupt their long
-			// running network operations or unblocks them while sending
-			return result.Conn, nil
+			// Save the conn and tell goroutines to stop ASAP
+			connv = append(connv, result.Conn)
+			cancel()
 		}
 	}
 
-	return nil, errors.Join(errorv...)
+	return httpsDialerReduceResult(connv, errorv)
 }
 
-// tacticsEmitter returns a channel closed once we have emitted all the tactics or the context is done.
-func (hd *HTTPSDialer) tacticsEmitter(ctx context.Context, tactics ...*HTTPSDialerTactic) <-chan *HTTPSDialerTactic {
-	out := make(chan *HTTPSDialerTactic)
-
-	hd.wg.Add(1)
-	go func() {
-		defer hd.wg.Done()
-		defer close(out)
-
-		for _, tactic := range tactics {
-			select {
-			case out <- tactic:
-				continue
-
-			case <-ctx.Done():
-				return
-			}
+// httpsDialerReduceResult returns either an established conn or an error, using [errDNSNoAnswer] in
+// case the list of connections and the list of errors are empty.
+func httpsDialerReduceResult(connv []model.TLSConn, errorv []error) (model.TLSConn, error) {
+	switch {
+	case len(connv) >= 1:
+		for _, c := range connv[1:] {
+			c.Close()
 		}
-	}()
+		return connv[0], nil
 
-	return out
+	case len(errorv) >= 1:
+		return nil, errors.Join(errorv...)
+
+	default:
+		return nil, errDNSNoAnswer
+	}
 }
 
 // worker attempts to establish a TLS connection using and emits a single
 // [*httpsDialerErrorOrConn] for each tactic.
-func (hd *HTTPSDialer) worker(
-	ctx context.Context,
-	hostname string,
-	reader <-chan *HTTPSDialerTactic,
-	writer chan<- *httpsDialerErrorOrConn,
-) {
-	// Note: no need to be concerned with the wait group here because
-	// we're managing it inside DialTLSContext so Add and Done live together
+func (hd *HTTPSDialer) worker(ctx context.Context, joiner chan<- any,
+	reader <-chan *HTTPSDialerTactic, writer chan<- *httpsDialerErrorOrConn) {
+	// let the parent know that we terminated
+	defer func() { joiner <- true }()
 
-	for {
-		select {
-		case tactic, good := <-reader:
-			if !good {
-				// This happens when the emitter goroutine has closed the channel
-				return
-			}
-
-			logger := &logx.PrefixLogger{
-				Prefix: fmt.Sprintf("[#%d] ", hd.idGenerator.Add(1)),
-				Logger: hd.logger,
-			}
-			conn, err := hd.dialTLS(ctx, logger, tactic)
-
-			select {
-			case <-ctx.Done():
-				if conn != nil {
-					conn.Close() // we own the connection
-				}
-				return
-
-			case writer <- &httpsDialerErrorOrConn{Conn: conn, Err: err}:
-				continue
-			}
-
-		case <-ctx.Done():
-			return
+	for tactic := range reader {
+		prefixLogger := &logx.PrefixLogger{
+			Prefix: fmt.Sprintf("[#%d] ", hd.idGenerator.Add(1)),
+			Logger: hd.logger,
 		}
+
+		conn, err := hd.dialTLS(ctx, prefixLogger, tactic)
+
+		writer <- &httpsDialerErrorOrConn{Conn: conn, Err: err}
 	}
 }
 
@@ -410,7 +344,7 @@ func httpsDialerTacticWaitReady(ctx context.Context, tactic *HTTPSDialerTactic) 
 		return nil
 
 	case <-ctx.Done():
-		return ctx.Err()
+		return netxlite.NewTopLevelGenericErrWrapper(ctx.Err())
 	}
 }
 

@@ -27,6 +27,11 @@ func TestNetworkUnit(t *testing.T) {
 			},
 		}
 		netx := &Network{
+			reso: &mocks.Resolver{
+				MockCloseIdleConnections: func() {
+					// nothing
+				},
+			},
 			stats: &HTTPSDialerStatsManager{
 				TimeNow: time.Now,
 				kvStore: &kvstore.Memory{},
@@ -35,6 +40,36 @@ func TestNetworkUnit(t *testing.T) {
 				root:    &HTTPSDialerStatsRootContainer{},
 			},
 			txp: expected,
+		}
+		if err := netx.Close(); err != nil {
+			t.Fatal(err)
+		}
+		if !called {
+			t.Fatal("did not call the transport's CloseIdleConnections")
+		}
+	})
+
+	t.Run("Close calls the resolvers's CloseIdleConnections method", func(t *testing.T) {
+		var called bool
+		expected := &mocks.Resolver{
+			MockCloseIdleConnections: func() {
+				called = true
+			},
+		}
+		netx := &Network{
+			reso: expected,
+			stats: &HTTPSDialerStatsManager{
+				TimeNow: time.Now,
+				kvStore: &kvstore.Memory{},
+				logger:  model.DiscardLogger,
+				mu:      sync.Mutex{},
+				root:    &HTTPSDialerStatsRootContainer{},
+			},
+			txp: &mocks.HTTPTransport{
+				MockCloseIdleConnections: func() {
+					// nothing
+				},
+			},
 		}
 		if err := netx.Close(); err != nil {
 			t.Fatal(err)

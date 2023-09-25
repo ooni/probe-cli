@@ -74,9 +74,6 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		// short indicates whether this is a short test
 		short bool
 
-		// policy is the dialer policy
-		policy enginenetx.HTTPSDialerPolicy
-
 		// stats is the stats tracker to use.
 		stats enginenetx.HTTPSDialerStatsTracker
 
@@ -101,7 +98,6 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "net.SplitHostPort failure",
 			short:    true,
-			policy:   &enginenetx.HTTPSDialerNullPolicy{},
 			stats:    &enginenetx.HTTPSDialerNullStatsTracker{},
 			endpoint: "www.example.com", // note: here the port is missing
 			scenario: netemx.InternetScenario,
@@ -112,17 +108,19 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		},
 
 		// This test case ensures that we handle the case of a nonexistent domain
+		// where we get a dns_no_answer error. The original DNS error is lost in
+		// background goroutines and what we report to the caller is just that there
+		// is no available IP address and tactic to attempt using.
 		{
 			name:     "hd.policy.LookupTactics failure",
 			short:    true,
-			policy:   &enginenetx.HTTPSDialerNullPolicy{},
 			stats:    &enginenetx.HTTPSDialerNullStatsTracker{},
 			endpoint: "www.example.nonexistent:443", // note: the domain does not exist
 			scenario: netemx.InternetScenario,
 			configureDPI: func(dpi *netem.DPIEngine) {
 				// nothing
 			},
-			expectErr: "dns_nxdomain_error",
+			expectErr: "dns_no_answer",
 		},
 
 		// This test case is the common case: all is good with multiple addresses to dial (I am
@@ -130,7 +128,6 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "successful dial with multiple addresses",
 			short:    true,
-			policy:   &enginenetx.HTTPSDialerNullPolicy{},
 			stats:    &enginenetx.HTTPSDialerNullStatsTracker{},
 			endpoint: "www.example.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
@@ -157,7 +154,6 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "with TCP connect errors",
 			short:    true,
-			policy:   &enginenetx.HTTPSDialerNullPolicy{},
 			stats:    &enginenetx.HTTPSDialerNullStatsTracker{},
 			endpoint: "www.example.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
@@ -192,7 +188,6 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "with TLS handshake errors",
 			short:    true,
-			policy:   &enginenetx.HTTPSDialerNullPolicy{},
 			stats:    &enginenetx.HTTPSDialerNullStatsTracker{},
 			endpoint: "www.example.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
@@ -223,7 +218,6 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "with a TLS certificate valid for ANOTHER domain",
 			short:    true,
-			policy:   &enginenetx.HTTPSDialerNullPolicy{},
 			stats:    &enginenetx.HTTPSDialerNullStatsTracker{},
 			endpoint: "wrong.host.badssl.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
@@ -249,7 +243,6 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "with TLS certificate signed by an unknown authority",
 			short:    true,
-			policy:   &enginenetx.HTTPSDialerNullPolicy{},
 			stats:    &enginenetx.HTTPSDialerNullStatsTracker{},
 			endpoint: "untrusted-root.badssl.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
@@ -275,7 +268,6 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "with expired TLS certificate",
 			short:    true,
-			policy:   &enginenetx.HTTPSDialerNullPolicy{},
 			stats:    &enginenetx.HTTPSDialerNullStatsTracker{},
 			endpoint: "expired.badssl.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
@@ -299,9 +291,8 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		// This is a corner case: what if the context is canceled after the DNS lookup
 		// but before we start dialing? Are we closing all goroutines and returning correctly?
 		{
-			name:   "with context being canceled in OnStarting",
-			short:  true,
-			policy: &enginenetx.HTTPSDialerNullPolicy{},
+			name:  "with context being canceled in OnStarting",
+			short: true,
 			stats: &httpsDialerCancelingContextStatsTracker{
 				cancel: nil,
 				flags:  httpsDialerCancelingContextStatsTrackerOnStarting,
@@ -322,15 +313,15 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 			configureDPI: func(dpi *netem.DPIEngine) {
 				// nothing
 			},
-			expectErr: "context canceled",
+			expectErr: "interrupted\ninterrupted",
 		},
 
-		// This is another corner case: what happens if the context is canceled after we
-		// have a good connection but before we're able to report it to the caller?
+		// This is another corner case: what happens if the context is canceled
+		// right after we eastablish a connection? Because of how the current code
+		// is written, the easiest thing to do is to just return the conn.
 		{
-			name:   "with context being canceled in OnSuccess for the first success",
-			short:  true,
-			policy: &enginenetx.HTTPSDialerNullPolicy{},
+			name:  "with context being canceled in OnSuccess for the first success",
+			short: true,
 			stats: &httpsDialerCancelingContextStatsTracker{
 				cancel: nil,
 				flags:  httpsDialerCancelingContextStatsTrackerOnSuccess,
@@ -351,7 +342,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 			configureDPI: func(dpi *netem.DPIEngine) {
 				// nothing
 			},
-			expectErr: "context canceled",
+			expectErr: "",
 		}}
 
 	for _, tc := range allTestCases {
@@ -382,12 +373,16 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 				// create the getaddrinfo resolver
 				resolver := netx.NewStdlibResolver(log.Log)
 
+				policy := &enginenetx.HTTPSDialerNullPolicy{
+					Logger:   log.Log,
+					Resolver: resolver,
+				}
+
 				// create the TLS dialer
 				dialer := enginenetx.NewHTTPSDialer(
 					log.Log,
 					netx,
-					tc.policy,
-					resolver,
+					policy,
 					tc.stats,
 				)
 				defer dialer.CloseIdleConnections()
@@ -428,9 +423,6 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 				if tlsConn != nil {
 					defer tlsConn.Close()
 				}
-
-				// wait for background connections to join
-				dialer.WaitGroup().Wait()
 			}()
 
 			// now verify that we have closed all the connections
@@ -510,8 +502,10 @@ func TestHTTPSDialerHostNetworkQA(t *testing.T) {
 				MockGetaddrinfoLookupANY:       tproxy.GetaddrinfoLookupANY,
 				MockGetaddrinfoResolverNetwork: tproxy.GetaddrinfoResolverNetwork,
 			}},
-			&enginenetx.HTTPSDialerNullPolicy{},
-			resolver,
+			&enginenetx.HTTPSDialerNullPolicy{
+				Logger:   log.Log,
+				Resolver: resolver,
+			},
 			&enginenetx.HTTPSDialerNullStatsTracker{},
 		)
 
