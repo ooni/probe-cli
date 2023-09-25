@@ -1,9 +1,13 @@
 package enginenetx
 
 import (
+	"sync"
 	"testing"
+	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestNetworkUnit(t *testing.T) {
@@ -22,7 +26,16 @@ func TestNetworkUnit(t *testing.T) {
 				called = true
 			},
 		}
-		netx := &Network{txp: expected}
+		netx := &Network{
+			stats: &HTTPSDialerStatsManager{
+				TimeNow: time.Now,
+				kvStore: &kvstore.Memory{},
+				logger:  model.DiscardLogger,
+				mu:      sync.Mutex{},
+				root:    &HTTPSDialerStatsRootContainer{},
+			},
+			txp: expected,
+		}
 		if err := netx.Close(); err != nil {
 			t.Fatal(err)
 		}
