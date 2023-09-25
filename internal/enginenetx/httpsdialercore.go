@@ -180,7 +180,7 @@ func (hd *HTTPSDialer) DialTLSContext(ctx context.Context, network string, endpo
 		return nil, err
 	}
 
-	// We need a cancellable child context to interrupt the tactics emitter early when we
+	// We need a cancellable context to interrupt the tactics emitter early when we
 	// immediately get a valid response and we don't need to use other tactics.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
