@@ -78,7 +78,7 @@ func TestHTTPSDialerReduceResult(t *testing.T) {
 
 	t.Run("we join together a list of errors", func(t *testing.T) {
 		expectErr := "connection_refused\ninterrupted"
-		errorv := []error{errors.New("connection_refused\ninterrupted")}
+		errorv := []error{errors.New("connection_refused"), errors.New("interrupted")}
 
 		conn, err := httpsDialerReduceResult(nil, errorv)
 		if err == nil || err.Error() != expectErr {
