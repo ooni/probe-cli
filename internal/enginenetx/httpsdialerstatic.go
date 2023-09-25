@@ -80,15 +80,18 @@ var _ HTTPSDialerPolicy = &HTTPSDialerStaticPolicy{}
 
 // LookupTactics implements HTTPSDialerPolicy.
 func (ldp *HTTPSDialerStaticPolicy) LookupTactics(
-	ctx context.Context, domain string, port string, reso model.Resolver) ([]*HTTPSDialerTactic, error) {
+	ctx context.Context, domain string, port string) <-chan *HTTPSDialerTactic {
 	tactics, found := ldp.Root.Domains[domain]
 	if !found {
-		return ldp.Fallback.LookupTactics(ctx, domain, port, reso)
+		return ldp.Fallback.LookupTactics(ctx, domain, port)
 	}
-	return tactics, nil
-}
 
-// Parallelism implements HTTPSDialerPolicy.
-func (ldp *HTTPSDialerStaticPolicy) Parallelism() int {
-	return 16
+	out := make(chan *HTTPSDialerTactic)
+	go func() {
+		defer close(out)
+		for _, tactic := range tactics {
+			out <- tactic
+		}
+	}()
+	return out
 }

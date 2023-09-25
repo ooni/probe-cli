@@ -6,19 +6,21 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// HTTPSDialerNullPolicy is the default "null" policy where we use the default
-// resolver provided to LookupTactics and we use the correct SNI.
+// HTTPSDialerNullPolicy is the default "null" policy where we use the
+// given resolver and the domain as the SNI.
 //
 // We say that this is the "null" policy because this is what you would get
 // by default if you were not using any policy.
 //
 // This policy uses an Happy-Eyeballs-like algorithm. Dial attempts are
-// staggered by 300 milliseconds and up to sixteen dial attempts could be
-// active at the same time. Further dials will run once one of the
-// sixteen active concurrent dials have failed to connect.
-type HTTPSDialerNullPolicy struct{}
+// staggered by httpsDialerHappyEyeballsDelay.
+type HTTPSDialerNullPolicy struct {
+	Logger   model.Logger
+	Resolver model.Resolver
+}
 
 var _ HTTPSDialerPolicy = &HTTPSDialerNullPolicy{}
 
@@ -29,29 +31,36 @@ var _ HTTPSDialerPolicy = &HTTPSDialerNullPolicy{}
 const httpsDialerHappyEyeballsDelay = 900 * time.Millisecond
 
 // LookupTactics implements HTTPSDialerPolicy.
-func (*HTTPSDialerNullPolicy) LookupTactics(
-	ctx context.Context, domain, port string, reso model.Resolver) ([]*HTTPSDialerTactic, error) {
-	addrs, err := reso.LookupHost(ctx, domain)
-	if err != nil {
-		return nil, err
-	}
+func (p *HTTPSDialerNullPolicy) LookupTactics(
+	ctx context.Context, domain, port string) <-chan *HTTPSDialerTactic {
+	out := make(chan *HTTPSDialerTactic)
 
-	var tactics []*HTTPSDialerTactic
-	for idx, addr := range addrs {
-		tactics = append(tactics, &HTTPSDialerTactic{
-			Endpoint:       net.JoinHostPort(addr, port),
-			InitialDelay:   happyEyeballsDelay(httpsDialerHappyEyeballsDelay, idx),
-			SNI:            domain,
-			VerifyHostname: domain,
-		})
-	}
+	go func() {
+		// make sure we close the output channel when done
+		defer close(out)
 
-	return tactics, nil
-}
+		// See https://github.com/ooni/probe-cli/pull/1295#issuecomment-1731243994 for context
+		// on why here we MUST make sure we short-circuit IP addresses.
+		resoWithShortCircuit := &netxlite.ResolverShortCircuitIPAddr{Resolver: p.Resolver}
 
-// Parallelism implements HTTPSDialerPolicy.
-func (*HTTPSDialerNullPolicy) Parallelism() int {
-	return 16
+		addrs, err := resoWithShortCircuit.LookupHost(ctx, domain)
+		if err != nil {
+			p.Logger.Warnf("resoWithShortCircuit.LookupHost: %s", err.Error())
+			return
+		}
+
+		for idx, addr := range addrs {
+			tactic := &HTTPSDialerTactic{
+				Endpoint:       net.JoinHostPort(addr, port),
+				InitialDelay:   happyEyeballsDelay(httpsDialerHappyEyeballsDelay, idx),
+				SNI:            domain,
+				VerifyHostname: domain,
+			}
+			out <- tactic
+		}
+	}()
+
+	return out
 }
 
 // HTTPSDialerNullStatsTracker is the "null" [HTTPSDialerStatsTracker].
