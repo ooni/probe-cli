@@ -96,7 +96,7 @@ type HTTPSDialerStatsTracker interface {
 	OnStarting(tactic *HTTPSDialerTactic)
 	OnTCPConnectError(ctx context.Context, tactic *HTTPSDialerTactic, err error)
 	OnTLSHandshakeError(ctx context.Context, tactic *HTTPSDialerTactic, err error)
-	OnTLSVerifyError(ctx context.Context, tactic *HTTPSDialerTactic, err error)
+	OnTLSVerifyError(tactic *HTTPSDialerTactic, err error)
 	OnSuccess(tactic *HTTPSDialerTactic)
 }
 
@@ -382,7 +382,7 @@ func (hd *HTTPSDialer) dialTLS(
 
 	// handle verification error
 	if err != nil {
-		hd.stats.OnTLSVerifyError(ctx, tactic, err)
+		hd.stats.OnTLSVerifyError(tactic, err)
 		tlsConn.Close()
 		return nil, err
 	}

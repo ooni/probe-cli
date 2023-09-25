@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -202,7 +203,8 @@ func TestHTTPSDialerStatsManagerCallbacks(t *testing.T) {
 					"api.ooni.io": {
 						Tactics: map[string]*HTTPSDialerStatsTacticRecord{
 							"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
-								CountStarted: 1,
+								CountStarted:             1,
+								CountTCPConnectInterrupt: 1,
 							},
 						},
 					},
@@ -273,7 +275,8 @@ func TestHTTPSDialerStatsManagerCallbacks(t *testing.T) {
 					"api.ooni.io": {
 						Tactics: map[string]*HTTPSDialerStatsTacticRecord{
 							"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
-								CountStarted: 1,
+								CountStarted:               1,
+								CountTLSHandshakeInterrupt: 1,
 							},
 						},
 					},
@@ -309,50 +312,6 @@ func TestHTTPSDialerStatsManagerCallbacks(t *testing.T) {
 			},
 		},
 
-		// When TLS verification fails and the reason is a canceled context
-		{
-			name: "OnTLSVerifyError with ctx.Error() != nil",
-			initialRoot: &HTTPSDialerStatsRootContainer{
-				Domains: map[string]*HTTPSDialerStatsTacticsContainer{
-					"api.ooni.io": {
-						Tactics: map[string]*HTTPSDialerStatsTacticRecord{
-							"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
-								CountStarted: 1,
-							},
-						},
-					},
-				},
-				Version: HTTPSDialerStatsContainerVersion,
-			},
-			do: func(stats *HTTPSDialerStatsManager) {
-				ctx, cancel := context.WithCancel(context.Background())
-				cancel() // immediately!
-
-				tactic := &HTTPSDialerTactic{
-					Endpoint:       "162.55.247.208:443",
-					InitialDelay:   0,
-					SNI:            "www.example.com",
-					VerifyHostname: "api.ooni.io",
-				}
-				err := errors.New("generic_timeout_error")
-
-				stats.OnTLSVerifyError(ctx, tactic, err)
-			},
-			expectWarnf: 0,
-			expectRoot: &HTTPSDialerStatsRootContainer{
-				Domains: map[string]*HTTPSDialerStatsTacticsContainer{
-					"api.ooni.io": {
-						Tactics: map[string]*HTTPSDialerStatsTacticRecord{
-							"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
-								CountStarted: 1,
-							},
-						},
-					},
-				},
-				Version: HTTPSDialerStatsContainerVersion,
-			},
-		},
-
 		// When TLS verification fails and we don't already have a policy record
 		{
 			name: "OnTLSVerifyError when we are missing the stats record for the domain",
@@ -361,8 +320,6 @@ func TestHTTPSDialerStatsManagerCallbacks(t *testing.T) {
 				Version: HTTPSDialerStatsContainerVersion,
 			},
 			do: func(stats *HTTPSDialerStatsManager) {
-				ctx := context.Background()
-
 				tactic := &HTTPSDialerTactic{
 					Endpoint:       "162.55.247.208:443",
 					InitialDelay:   0,
@@ -371,7 +328,7 @@ func TestHTTPSDialerStatsManagerCallbacks(t *testing.T) {
 				}
 				err := errors.New("generic_timeout_error")
 
-				stats.OnTLSVerifyError(ctx, tactic, err)
+				stats.OnTLSVerifyError(tactic, err)
 			},
 			expectWarnf: 1,
 			expectRoot: &HTTPSDialerStatsRootContainer{
@@ -427,6 +384,11 @@ func TestHTTPSDialerStatsManagerCallbacks(t *testing.T) {
 			// invoke the proper stats callback
 			tc.do(stats)
 
+			// close the stats to trigger a kvstore write
+			if err := stats.Close(); err != nil {
+				t.Fatal(err)
+			}
+
 			// extract the possibly modified stats from the kvstore
 			var root *HTTPSDialerStatsRootContainer
 			rawRoot, err := kvStore.Get(HTTPSDialerStatsKey)
@@ -438,7 +400,10 @@ func TestHTTPSDialerStatsManagerCallbacks(t *testing.T) {
 			}
 
 			// make sure the stats are the ones we expect
-			if diff := cmp.Diff(tc.expectRoot, root); diff != "" {
+			diffOptions := []cmp.Option{
+				cmpopts.IgnoreFields(HTTPSDialerStatsTacticRecord{}, "LastUpdated"),
+			}
+			if diff := cmp.Diff(tc.expectRoot, root, diffOptions...); diff != "" {
 				t.Fatal(diff)
 			}
 

@@ -20,8 +20,14 @@ type HTTPSDialerStatsTacticRecord struct {
 	// CountTCPConnectError counts the number of TCP connect errors.
 	CountTCPConnectError int64
 
+	// CountTCPConnectInterrupt counts the number of interrupted TCP connect attempts.
+	CountTCPConnectInterrupt int64
+
 	// CountTLSHandshakeError counts the number of TLS handshake errors.
 	CountTLSHandshakeError int64
+
+	// CountTLSHandshakeInterrupt counts the number of interrupted TLS handshakes.
+	CountTLSHandshakeInterrupt int64
 
 	// CountTLSVerificationError counts the number of TLS verification errors.
 	CountTLSVerificationError int64
@@ -56,7 +62,7 @@ const HTTPSDialerStatsContainerVersion = 2
 
 // HTTPSDialerStatsRootContainer is the root container for stats.
 //
-// The zero value is invalid; construct using [NewHTTPSDialerStatsContainer].
+// The zero value is invalid; construct using [NewHTTPSDialerStatsRootContainer].
 type HTTPSDialerStatsRootContainer struct {
 	// Domains maps a domain name to its tactics
 	Domains map[string]*HTTPSDialerStatsTacticsContainer
@@ -98,7 +104,7 @@ func (c *HTTPSDialerStatsRootContainer) SetLocked(tactic *HTTPSDialerTactic, rec
 	domainRecord.Tactics[tactic.Summary()] = record
 }
 
-// NewHTTPSDialerStatsRootContainer creates a new empty [*HTTPSDialerStatsContainer].
+// NewHTTPSDialerStatsRootContainer creates a new empty [*HTTPSDialerStatsRootContainer].
 func NewHTTPSDialerStatsRootContainer() *HTTPSDialerStatsRootContainer {
 	return &HTTPSDialerStatsRootContainer{
 		Domains: map[string]*HTTPSDialerStatsTacticsContainer{},
@@ -107,7 +113,7 @@ func NewHTTPSDialerStatsRootContainer() *HTTPSDialerStatsRootContainer {
 }
 
 // HTTPSDialerStatsManager implements [HTTPSDialerStatsTracker] by storing
-// the relevant statistics in a given kvstore.
+// the relevant statistics in a [model.KeyValueStore].
 //
 // The zero value of this structure is not ready to use; please, use the
 // [NewHTTPSDialerStatsManager] factory to create a new instance.
@@ -137,7 +143,7 @@ var errDialerStatsContainerWrongVersion = errors.New("wrong stats container vers
 
 // loadHTTPSDialerStatsRootContainer loads a state container from the given key-value store.
 func loadHTTPSDialerStatsRootContainer(kvStore model.KeyValueStore) (*HTTPSDialerStatsRootContainer, error) {
-	// load data from disk
+	// load data from the kvstore
 	data, err := kvStore.Get(HTTPSDialerStatsKey)
 	if err != nil {
 		return nil, err
@@ -213,11 +219,6 @@ func (mt *HTTPSDialerStatsManager) OnStarting(tactic *HTTPSDialerTactic) {
 
 // OnTCPConnectError implements HTTPSDialerStatsManager.
 func (mt *HTTPSDialerStatsManager) OnTCPConnectError(ctx context.Context, tactic *HTTPSDialerTactic, err error) {
-	// avoid updating stats if the operation has been interrupted
-	if ctx.Err() != nil {
-		return
-	}
-
 	// get exclusive access
 	defer mt.mu.Unlock()
 	mt.mu.Lock()
@@ -230,17 +231,17 @@ func (mt *HTTPSDialerStatsManager) OnTCPConnectError(ctx context.Context, tactic
 	}
 
 	// update stats
+	record.LastUpdated = mt.TimeNow()
+	if ctx.Err() != nil {
+		record.CountTCPConnectInterrupt++
+		return
+	}
 	record.CountTCPConnectError++
 	record.HistoTCPConnectError[err.Error()]++
-	record.LastUpdated = mt.TimeNow()
 }
 
 // OnTLSHandshakeError implements HTTPSDialerStatsManager.
 func (mt *HTTPSDialerStatsManager) OnTLSHandshakeError(ctx context.Context, tactic *HTTPSDialerTactic, err error) {
-	// avoid updating stats if the operation has been interrupted
-	if ctx.Err() != nil {
-		return
-	}
 
 	// get exclusive access
 	defer mt.mu.Unlock()
@@ -254,18 +255,17 @@ func (mt *HTTPSDialerStatsManager) OnTLSHandshakeError(ctx context.Context, tact
 	}
 
 	// update stats
+	record.LastUpdated = mt.TimeNow()
+	if ctx.Err() != nil {
+		record.CountTLSHandshakeInterrupt++
+		return
+	}
 	record.CountTLSHandshakeError++
 	record.HistoTLSHandshakeError[err.Error()]++
-	record.LastUpdated = mt.TimeNow()
 }
 
 // OnTLSVerifyError implements HTTPSDialerStatsManager.
-func (mt *HTTPSDialerStatsManager) OnTLSVerifyError(ctx context.Context, tactic *HTTPSDialerTactic, err error) {
-	// avoid updating stats if the operation has been interrupted
-	if ctx.Err() != nil {
-		return
-	}
-
+func (mt *HTTPSDialerStatsManager) OnTLSVerifyError(tactic *HTTPSDialerTactic, err error) {
 	// get exclusive access
 	defer mt.mu.Unlock()
 	mt.mu.Lock()
