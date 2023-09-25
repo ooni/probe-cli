@@ -22,8 +22,8 @@ type HTTPSDialerStaticPolicy struct {
 	Root *HTTPSDialerStaticPolicyRoot
 }
 
-// httpsDialerStaticPolicyKey is the kvstore key used to retrieve the static policy.
-const httpsDialerStaticPolicyKey = "httpsdialer.conf"
+// HTTPSDialerStaticPolicyKey is the kvstore key used to retrieve the static policy.
+const HTTPSDialerStaticPolicyKey = "httpsdialerstatic.conf"
 
 // errDialerStaticPolicyWrongVersion means that the static policy document has the wrong version number.
 var errDialerStaticPolicyWrongVersion = errors.New("wrong static policy version")
@@ -34,7 +34,7 @@ var errDialerStaticPolicyWrongVersion = errors.New("wrong static policy version"
 func NewHTTPSDialerStaticPolicy(
 	kvStore model.KeyValueStore, fallback HTTPSDialerPolicy) (*HTTPSDialerStaticPolicy, error) {
 	// attempt to read the static policy bytes from the kvstore
-	data, err := kvStore.Get(httpsDialerStaticPolicyKey)
+	data, err := kvStore.Get(HTTPSDialerStaticPolicyKey)
 	if err != nil {
 		return nil, err
 	}
@@ -46,12 +46,12 @@ func NewHTTPSDialerStaticPolicy(
 	}
 
 	// make sure the version is OK
-	if root.Version != httpsDialerStaticPolicyVersion {
+	if root.Version != HTTPSDialerStaticPolicyVersion {
 		err := fmt.Errorf(
 			"%s: %w: expected=%d got=%d",
-			httpsDialerStaticPolicyKey,
+			HTTPSDialerStaticPolicyKey,
 			errDialerStaticPolicyWrongVersion,
-			httpsDialerStaticPolicyVersion,
+			HTTPSDialerStaticPolicyVersion,
 			root.Version,
 		)
 		return nil, err
@@ -64,8 +64,8 @@ func NewHTTPSDialerStaticPolicy(
 	return out, nil
 }
 
-// httpsDialerStaticPolicyVersion is the current version of the static policy file.
-const httpsDialerStaticPolicyVersion = 1
+// HTTPSDialerStaticPolicyVersion is the current version of the static policy file.
+const HTTPSDialerStaticPolicyVersion = 1
 
 // HTTPSDialerStaticPolicyRoot is the root of a statically loaded policy.
 type HTTPSDialerStaticPolicyRoot struct {

@@ -43,25 +43,25 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 			expectedPolicy: nil,
 		}, {
 			name:           "with nil input",
-			key:            httpsDialerStaticPolicyKey,
+			key:            HTTPSDialerStaticPolicyKey,
 			input:          nil,
 			expectErr:      "hujson: line 1, column 1: parsing value: unexpected EOF",
 			expectedPolicy: nil,
 		}, {
 			name:           "with invalid serialized JSON",
-			key:            httpsDialerStaticPolicyKey,
+			key:            HTTPSDialerStaticPolicyKey,
 			input:          []byte(`{`),
 			expectErr:      "hujson: line 1, column 2: parsing value: unexpected EOF",
 			expectedPolicy: nil,
 		}, {
 			name:           "with empty JSON",
-			key:            httpsDialerStaticPolicyKey,
+			key:            HTTPSDialerStaticPolicyKey,
 			input:          []byte(`{}`),
-			expectErr:      "httpsdialer.conf: wrong static policy version: expected=1 got=0",
+			expectErr:      "httpsdialerstatic.conf: wrong static policy version: expected=1 got=0",
 			expectedPolicy: nil,
 		}, {
 			name: "with real serialized policy",
-			key:  httpsDialerStaticPolicyKey,
+			key:  HTTPSDialerStaticPolicyKey,
 			input: (func() []byte {
 				return runtimex.Try1(json.Marshal(&HTTPSDialerStaticPolicyRoot{
 					Domains: map[string][]*HTTPSDialerTactic{
@@ -92,7 +92,7 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 							VerifyHostname: "api.ooni.io",
 						}},
 					},
-					Version: httpsDialerStaticPolicyVersion,
+					Version: HTTPSDialerStaticPolicyVersion,
 				}))
 			})(),
 			expectErr: "",
@@ -127,7 +127,7 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 							VerifyHostname: "api.ooni.io",
 						}},
 					},
-					Version: httpsDialerStaticPolicyVersion,
+					Version: HTTPSDialerStaticPolicyVersion,
 				},
 			},
 		}}
@@ -185,7 +185,7 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 					Domains: map[string][]*HTTPSDialerTactic{
 						"api.ooni.io": expect,
 					},
-					Version: httpsDialerStaticPolicyVersion,
+					Version: HTTPSDialerStaticPolicyVersion,
 				},
 			}
 
@@ -214,7 +214,7 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 				Fallback: &HTTPSDialerNullPolicy{},
 				Root: &HTTPSDialerStaticPolicyRoot{
 					Domains: nil, // empty so we fallback for all domains
-					Version: httpsDialerStaticPolicyVersion,
+					Version: HTTPSDialerStaticPolicyVersion,
 				},
 			}
 
