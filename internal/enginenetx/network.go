@@ -14,6 +14,7 @@ import (
 
 // Network is the network abstraction used by the OONI engine.
 type Network struct {
+	reso  model.Resolver
 	stats *HTTPSDialerStatsManager
 	txp   model.HTTPTransport
 }
@@ -41,6 +42,9 @@ func (n *Network) Close() error {
 
 	// make sure we close the transport's idle connections
 	n.txp.CloseIdleConnections()
+
+	// same as above but for the resolver's connections
+	n.reso.CloseIdleConnections()
 
 	// make sure we sync stats to disk
 	return n.stats.Close()
@@ -87,8 +91,7 @@ func NewNetwork(
 	httpsDialer := NewHTTPSDialer(
 		logger,
 		&netxlite.Netx{Underlying: nil}, // nil means using netxlite's singleton
-		newHTTPSDialerPolicy(kvStore),
-		resolver,
+		newHTTPSDialerPolicy(kvStore, logger, resolver),
 		stats,
 	)
 
@@ -123,6 +126,7 @@ func NewNetwork(
 	txp = bytecounter.WrapHTTPTransport(txp, counter)
 
 	netx := &Network{
+		reso:  resolver,
 		stats: stats,
 		txp:   txp,
 	}
@@ -130,9 +134,9 @@ func NewNetwork(
 }
 
 // newHTTPSDialerPolicy contains the logic to select the [HTTPSDialerPolicy] to use.
-func newHTTPSDialerPolicy(kvStore model.KeyValueStore) HTTPSDialerPolicy {
+func newHTTPSDialerPolicy(kvStore model.KeyValueStore, logger model.Logger, resolver model.Resolver) HTTPSDialerPolicy {
 	// the fallback policy we're using is the "null" policy
-	fallback := &HTTPSDialerNullPolicy{}
+	fallback := &HTTPSDialerNullPolicy{logger, resolver}
 
 	// make sure we honor a user-provided policy
 	policy, err := NewHTTPSDialerStaticPolicy(kvStore, fallback)
