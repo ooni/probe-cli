@@ -203,7 +203,7 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 			}
 		})
 
-		t.Run("with fallback policy", func(t *testing.T) {
+		t.Run("we fallback if needed", func(t *testing.T) {
 			ctx := context.Background()
 
 			fallback := &HTTPSDialerNullPolicy{
