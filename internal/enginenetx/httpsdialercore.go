@@ -110,9 +110,6 @@ type HTTPSDialer struct {
 	// policy defines the dialing policy to use.
 	policy HTTPSDialerPolicy
 
-	// resolver is the DNS resolver to use.
-	//resolver model.Resolver
-
 	// rootCAs contains the root certificate pool we should use.
 	rootCAs *x509.CertPool
 
