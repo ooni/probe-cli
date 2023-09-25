@@ -198,16 +198,18 @@ func (mt *HTTPSDialerStatsManager) OnStarting(tactic *HTTPSDialerTactic) {
 	record, found := mt.root.GetLocked(tactic)
 	if !found {
 		record = &HTTPSDialerStatsTacticRecord{
-			CountStarted:              0,
-			CountTCPConnectError:      0,
-			CountTLSHandshakeError:    0,
-			CountTLSVerificationError: 0,
-			CountSuccess:              0,
-			HistoTCPConnectError:      map[string]int64{},
-			HistoTLSHandshakeError:    map[string]int64{},
-			HistoTLSVerificationError: map[string]int64{},
-			LastUpdated:               time.Time{},
-			Tactic:                    tactic.Clone(), // avoid storing the original
+			CountStarted:               0,
+			CountTCPConnectError:       0,
+			CountTCPConnectInterrupt:   0,
+			CountTLSHandshakeError:     0,
+			CountTLSHandshakeInterrupt: 0,
+			CountTLSVerificationError:  0,
+			CountSuccess:               0,
+			HistoTCPConnectError:       map[string]int64{},
+			HistoTLSHandshakeError:     map[string]int64{},
+			HistoTLSVerificationError:  map[string]int64{},
+			LastUpdated:                time.Time{},
+			Tactic:                     tactic.Clone(), // avoid storing the original
 		}
 		mt.root.SetLocked(tactic, record)
 	}
@@ -242,7 +244,6 @@ func (mt *HTTPSDialerStatsManager) OnTCPConnectError(ctx context.Context, tactic
 
 // OnTLSHandshakeError implements HTTPSDialerStatsManager.
 func (mt *HTTPSDialerStatsManager) OnTLSHandshakeError(ctx context.Context, tactic *HTTPSDialerTactic, err error) {
-
 	// get exclusive access
 	defer mt.mu.Unlock()
 	mt.mu.Lock()
