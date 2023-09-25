@@ -54,7 +54,7 @@ func (*httpsDialerCancelingContextStatsTracker) OnTLSHandshakeError(ctx context.
 }
 
 // OnTLSVerifyError implements enginenetx.HTTPSDialerStatsTracker.
-func (*httpsDialerCancelingContextStatsTracker) OnTLSVerifyError(ctz context.Context, tactic *enginenetx.HTTPSDialerTactic, err error) {
+func (*httpsDialerCancelingContextStatsTracker) OnTLSVerifyError(tactic *enginenetx.HTTPSDialerTactic, err error) {
 	// nothing
 }
 

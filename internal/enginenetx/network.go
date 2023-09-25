@@ -14,7 +14,8 @@ import (
 
 // Network is the network abstraction used by the OONI engine.
 type Network struct {
-	txp model.HTTPTransport
+	stats *HTTPSDialerStatsManager
+	txp   model.HTTPTransport
 }
 
 // HTTPTransport returns the [model.HTTPTransport] that the engine should use.
@@ -41,7 +42,8 @@ func (n *Network) Close() error {
 	// make sure we close the transport's idle connections
 	n.txp.CloseIdleConnections()
 
-	return nil
+	// make sure we sync stats to disk
+	return n.stats.Close()
 }
 
 // NewNetwork creates a new [*Network] for the engine. This network MUST NOT be
@@ -77,19 +79,17 @@ func NewNetwork(
 	// reasonably fine to use the legacy sequential dialer implemented in netxlite.
 	dialer := netxlite.NewDialerWithResolver(logger, resolver)
 
+	// Create manager for keeping track of statistics
+	stats := NewHTTPSDialerStatsManager(kvStore, logger)
+
 	// Create a TLS dialer ONLY used for dialing TLS connections. This dialer will use
 	// happy-eyeballs and possibly custom policies for dialing TLS connections.
-	//
-	// Additionally, please note the following limitations (to be overcome through
-	// future refactoring of this func):
-	//
-	// - for now, we're using a "null" stats tracker, meaning we don't track stats.
 	httpsDialer := NewHTTPSDialer(
 		logger,
 		&netxlite.Netx{Underlying: nil}, // nil means using netxlite's singleton
 		newHTTPSDialerPolicy(kvStore),
 		resolver,
-		&HTTPSDialerNullStatsTracker{},
+		stats,
 	)
 
 	// Here we're creating a "new style" HTTPS transport, which has less
@@ -122,7 +122,11 @@ func NewNetwork(
 	// Make sure we count the bytes sent and received as part of the session
 	txp = bytecounter.WrapHTTPTransport(txp, counter)
 
-	return &Network{txp}
+	netx := &Network{
+		stats: stats,
+		txp:   txp,
+	}
+	return netx
 }
 
 // newHTTPSDialerPolicy contains the logic to select the [HTTPSDialerPolicy] to use.
