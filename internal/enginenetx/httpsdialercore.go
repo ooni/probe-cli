@@ -191,8 +191,9 @@ func (hd *HTTPSDialer) DialTLSContext(ctx context.Context, network string, endpo
 	collector := make(chan *httpsDialerErrorOrConn)
 	joiner := make(chan any)
 	const parallelism = 16
+	t0 := time.Now()
 	for idx := 0; idx < parallelism; idx++ {
-		go hd.worker(ctx, joiner, emitter, collector)
+		go hd.worker(ctx, joiner, emitter, t0, collector)
 	}
 
 	// wait until all goroutines have joined
@@ -242,8 +243,13 @@ func httpsDialerReduceResult(connv []model.TLSConn, errorv []error) (model.TLSCo
 
 // worker attempts to establish a TLS connection using and emits a single
 // [*httpsDialerErrorOrConn] for each tactic.
-func (hd *HTTPSDialer) worker(ctx context.Context, joiner chan<- any,
-	reader <-chan *HTTPSDialerTactic, writer chan<- *httpsDialerErrorOrConn) {
+func (hd *HTTPSDialer) worker(
+	ctx context.Context,
+	joiner chan<- any,
+	reader <-chan *HTTPSDialerTactic,
+	t0 time.Time,
+	writer chan<- *httpsDialerErrorOrConn,
+) {
 	// let the parent know that we terminated
 	defer func() { joiner <- true }()
 
@@ -253,7 +259,7 @@ func (hd *HTTPSDialer) worker(ctx context.Context, joiner chan<- any,
 			Logger: hd.logger,
 		}
 
-		conn, err := hd.dialTLS(ctx, prefixLogger, tactic)
+		conn, err := hd.dialTLS(ctx, prefixLogger, t0, tactic)
 
 		writer <- &httpsDialerErrorOrConn{Conn: conn, Err: err}
 	}
@@ -261,9 +267,13 @@ func (hd *HTTPSDialer) worker(ctx context.Context, joiner chan<- any,
 
 // dialTLS performs the actual TLS dial.
 func (hd *HTTPSDialer) dialTLS(
-	ctx context.Context, logger model.Logger, tactic *HTTPSDialerTactic) (model.TLSConn, error) {
+	ctx context.Context,
+	logger model.Logger,
+	t0 time.Time,
+	tactic *HTTPSDialerTactic,
+) (model.TLSConn, error) {
 	// wait for the tactic to be ready to run
-	if err := httpsDialerTacticWaitReady(ctx, tactic); err != nil {
+	if err := httpsDialerTacticWaitReady(ctx, t0, tactic); err != nil {
 		return nil, err
 	}
 
@@ -330,13 +340,18 @@ func (hd *HTTPSDialer) dialTLS(
 // httpsDialerWaitReady waits for the given delay to expire or the context to be canceled. If the
 // delay is zero or negative, we immediately return nil. We also return nil when the delay expires. We
 // return the context error if the context expires.
-func httpsDialerTacticWaitReady(ctx context.Context, tactic *HTTPSDialerTactic) error {
-	delay := tactic.InitialDelay
-	if delay <= 0 {
+func httpsDialerTacticWaitReady(
+	ctx context.Context,
+	t0 time.Time,
+	tactic *HTTPSDialerTactic,
+) error {
+	deadline := t0.Add(tactic.InitialDelay)
+	delta := time.Until(deadline)
+	if delta <= 0 {
 		return nil
 	}
 
-	timer := time.NewTimer(delay)
+	timer := time.NewTimer(delta)
 	defer timer.Stop()
 
 	select {

@@ -3,7 +3,6 @@ package enginenetx
 import (
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
@@ -33,7 +32,6 @@ func TestNetworkUnit(t *testing.T) {
 				},
 			},
 			stats: &HTTPSDialerStatsManager{
-				TimeNow: time.Now,
 				kvStore: &kvstore.Memory{},
 				logger:  model.DiscardLogger,
 				mu:      sync.Mutex{},
@@ -59,7 +57,6 @@ func TestNetworkUnit(t *testing.T) {
 		netx := &Network{
 			reso: expected,
 			stats: &HTTPSDialerStatsManager{
-				TimeNow: time.Now,
 				kvStore: &kvstore.Memory{},
 				logger:  model.DiscardLogger,
 				mu:      sync.Mutex{},
