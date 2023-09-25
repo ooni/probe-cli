@@ -12,13 +12,18 @@ import (
 // HTTPSDialerNullPolicy is the default "null" policy where we use the
 // given resolver and the domain as the SNI.
 //
+// The zero value is invalid; please, init all MANDATORY fields.
+//
 // We say that this is the "null" policy because this is what you would get
 // by default if you were not using any policy.
 //
 // This policy uses an Happy-Eyeballs-like algorithm. Dial attempts are
 // staggered by httpsDialerHappyEyeballsDelay.
 type HTTPSDialerNullPolicy struct {
-	Logger   model.Logger
+	// Logger is the MANDATORY logger.
+	Logger model.Logger
+
+	// Resolver is the MANDATORY resolver.
 	Resolver model.Resolver
 }
 

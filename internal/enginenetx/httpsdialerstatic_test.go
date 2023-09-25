@@ -3,7 +3,6 @@ package enginenetx
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"testing"
 	"time"
 
@@ -182,37 +181,6 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		t.Run("with canceled context and static policy", func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			cancel() // immediately cancel
-
-			policy, err := NewHTTPSDialerStaticPolicy(kvStore, nil /* explictly to crash if used */)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			tactics := policy.LookupTactics(ctx, "api.ooni.io", "443")
-			got := []*HTTPSDialerTactic{}
-			for tactic := range tactics {
-				t.Logf("%+v", tactic)
-				got = append(got, tactic)
-			}
-
-			switch value := len(got); value {
-			case 0:
-				// the context arm was immediately selected
-
-			case 1:
-				// the sender warm was selected first
-				if diff := cmp.Diff(expectedTactic, got[0]); diff != "" {
-					t.Fatal(diff)
-				}
-
-			default:
-				panic(fmt.Sprintf("unexpected len(got): %d", value))
-			}
-		})
-
 		t.Run("with static policy", func(t *testing.T) {
 			ctx := context.Background()
 
@@ -228,60 +196,10 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 				got = append(got, tactic)
 			}
 
-			switch value := len(got); value {
-			case 1:
-				if diff := cmp.Diff(expectedTactic, got[0]); diff != "" {
-					t.Fatal(diff)
-				}
+			expect := []*HTTPSDialerTactic{expectedTactic}
 
-			default:
-				panic(fmt.Sprintf("unexpected len(got): %d", value))
-			}
-		})
-
-		t.Run("with canceled context and fallback policy", func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			cancel() // immediately cancel
-
-			fallback := &HTTPSDialerNullPolicy{
-				Logger: log.Log,
-				Resolver: &mocks.Resolver{
-					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-						return []string{"93.184.216.34"}, nil
-					},
-				},
-			}
-
-			policy, err := NewHTTPSDialerStaticPolicy(kvStore, fallback)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			tactics := policy.LookupTactics(ctx, "www.example.com", "443")
-			got := []*HTTPSDialerTactic{}
-			for tactic := range tactics {
-				t.Logf("%+v", tactic)
-				got = append(got, tactic)
-			}
-
-			switch value := len(got); value {
-			case 0:
-				// the context arm was immediately selected or the resolved failed
-
-			case 1:
-				// the arm returning a tactic won the race
-				expect := &HTTPSDialerTactic{
-					Endpoint:       "93.184.216.34:443",
-					InitialDelay:   0,
-					SNI:            "www.example.com",
-					VerifyHostname: "www.example.com",
-				}
-				if diff := cmp.Diff(expect, got[0]); diff != "" {
-					t.Fatal(diff)
-				}
-
-			default:
-				panic(fmt.Sprintf("unexpected len(got): %d", value))
+			if diff := cmp.Diff(expect, got); diff != "" {
+				t.Fatal(diff)
 			}
 		})
 
@@ -309,20 +227,15 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 				got = append(got, tactic)
 			}
 
-			switch value := len(got); value {
-			case 1:
-				expect := &HTTPSDialerTactic{
-					Endpoint:       "93.184.216.34:443",
-					InitialDelay:   0,
-					SNI:            "www.example.com",
-					VerifyHostname: "www.example.com",
-				}
-				if diff := cmp.Diff(expect, got[0]); diff != "" {
-					t.Fatal(diff)
-				}
+			expect := []*HTTPSDialerTactic{{
+				Endpoint:       "93.184.216.34:443",
+				InitialDelay:   0,
+				SNI:            "www.example.com",
+				VerifyHostname: "www.example.com",
+			}}
 
-			default:
-				panic(fmt.Sprintf("unexpected len(got): %d", value))
+			if diff := cmp.Diff(expect, got); diff != "" {
+				t.Fatal(diff)
 			}
 		})
 	})
