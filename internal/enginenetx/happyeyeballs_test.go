@@ -12,30 +12,28 @@ func TestHappyEyeballsDelay(t *testing.T) {
 		expect time.Duration
 	}
 
-	const delay = 900 * time.Millisecond
-
 	cases := []testcase{
 		{-1, 0}, // make sure we gracefully handle negative numbers (i.e., we don't crash)
 		{0, 0},
-		{1, delay},
-		{2, delay * 2},
-		{3, delay * 4},
-		{4, delay * 8},
-		{5, delay * 16},
-		{6, 15 * time.Second},
-		{7, 30 * time.Second},
-		{8, 45 * time.Second},
-		{9, 60 * time.Second},
-		{10, 75 * time.Second},
+		{1, time.Second},
+		{2, 2 * time.Second},
+		{3, 4 * time.Second},
+		{4, 8 * time.Second},
+		{5, 2 * 8 * time.Second},
+		{6, 3 * 8 * time.Second},
+		{7, 4 * 8 * time.Second},
+		{8, 5 * 8 * time.Second},
+		{9, 6 * 8 * time.Second},
+		{10, 7 * 8 * time.Second},
 	}
 
 	for _, tc := range cases {
-		t.Run(fmt.Sprintf("delay=%v tc.idx=%v", delay, tc.idx), func(t *testing.T) {
-			got := happyEyeballsDelay(delay, tc.idx)
+		t.Run(fmt.Sprintf("tc.idx=%v", tc.idx), func(t *testing.T) {
+			got := happyEyeballsDelay(tc.idx)
 			if got != tc.expect {
-				t.Fatalf("with delay=%v tc.idx=%v we got %v but expected %v", delay, tc.idx, got, tc.expect)
+				t.Fatalf("with tc.idx=%v we got %v but expected %v", tc.idx, got, tc.expect)
 			}
-			t.Logf("with delay=%v tc.idx=%v: got %v", delay, tc.idx, got)
+			t.Logf("with tc.idx=%v: got %v", tc.idx, got)
 		})
 	}
 }
