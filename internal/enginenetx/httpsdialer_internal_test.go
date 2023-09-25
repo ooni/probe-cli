@@ -95,7 +95,7 @@ func TestHTTPSDialerReduceResult(t *testing.T) {
 		errorv := []error{expected}
 
 		conn, err := httpsDialerReduceResult(nil, errorv)
-		if err == nil || err.Error() != expected.Error() {
+		if !errors.Is(err, expected) {
 			t.Fatal("unexpected err", err)
 		}
 
