@@ -118,10 +118,6 @@ func NewHTTPSDialerStatsRootContainer() *HTTPSDialerStatsRootContainer {
 // The zero value of this structure is not ready to use; please, use the
 // [NewHTTPSDialerStatsManager] factory to create a new instance.
 type HTTPSDialerStatsManager struct {
-	// TimeNow is a field that allows you to override how we obtain the
-	// current time; modify this field BEFORE using this structure.
-	TimeNow func() time.Time
-
 	// kvStore is the key-value store we're using
 	kvStore model.KeyValueStore
 
@@ -178,7 +174,6 @@ func NewHTTPSDialerStatsManager(kvStore model.KeyValueStore, logger model.Logger
 	}
 
 	return &HTTPSDialerStatsManager{
-		TimeNow: time.Now,
 		root:    root,
 		kvStore: kvStore,
 		logger:  logger,
@@ -216,7 +211,7 @@ func (mt *HTTPSDialerStatsManager) OnStarting(tactic *HTTPSDialerTactic) {
 
 	// update stats
 	record.CountStarted++
-	record.LastUpdated = mt.TimeNow()
+	record.LastUpdated = time.Now()
 }
 
 // OnTCPConnectError implements HTTPSDialerStatsManager.
@@ -233,7 +228,7 @@ func (mt *HTTPSDialerStatsManager) OnTCPConnectError(ctx context.Context, tactic
 	}
 
 	// update stats
-	record.LastUpdated = mt.TimeNow()
+	record.LastUpdated = time.Now()
 	if ctx.Err() != nil {
 		record.CountTCPConnectInterrupt++
 		return
@@ -256,7 +251,7 @@ func (mt *HTTPSDialerStatsManager) OnTLSHandshakeError(ctx context.Context, tact
 	}
 
 	// update stats
-	record.LastUpdated = mt.TimeNow()
+	record.LastUpdated = time.Now()
 	if ctx.Err() != nil {
 		record.CountTLSHandshakeInterrupt++
 		return
@@ -281,7 +276,7 @@ func (mt *HTTPSDialerStatsManager) OnTLSVerifyError(tactic *HTTPSDialerTactic, e
 	// update stats
 	record.CountTLSVerificationError++
 	record.HistoTLSVerificationError[err.Error()]++
-	record.LastUpdated = mt.TimeNow()
+	record.LastUpdated = time.Now()
 }
 
 // OnSuccess implements HTTPSDialerStatsManager.
@@ -299,7 +294,7 @@ func (mt *HTTPSDialerStatsManager) OnSuccess(tactic *HTTPSDialerTactic) {
 
 	// update stats
 	record.CountSuccess++
-	record.LastUpdated = mt.TimeNow()
+	record.LastUpdated = time.Now()
 }
 
 // Close implements io.Closer
