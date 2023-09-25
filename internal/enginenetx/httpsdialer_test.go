@@ -316,8 +316,9 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 			expectErr: "interrupted\ninterrupted",
 		},
 
-		// This is another corner case: what happens if the context is canceled after the
-		// context is canceled right after we eastablish a connection?
+		// This is another corner case: what happens if the context is canceled
+		// right after we eastablish a connection? Because of how the current code
+		// is written, the easiest thing to do is to just return the conn.
 		{
 			name:  "with context being canceled in OnSuccess for the first success",
 			short: true,
