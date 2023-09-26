@@ -18,18 +18,20 @@ import (
 )
 
 // Network is the network abstraction used by the OONI engine.
+//
+// The zero value is invalid; construct using the [NewNetwork] func.
 type Network struct {
 	reso  model.Resolver
 	stats *statsManager
 	txp   model.HTTPTransport
 }
 
-// HTTPTransport returns the [model.HTTPTransport] that the engine should use.
+// HTTPTransport returns the underlying [model.HTTPTransport].
 func (n *Network) HTTPTransport() model.HTTPTransport {
 	return n.txp
 }
 
-// NewHTTPClient is a convenience function for building a [model.HTTPClient] using
+// NewHTTPClient is a convenience function for building an [*http.Client] using
 // the underlying [model.HTTPTransport] and the correct cookies configuration.
 func (n *Network) NewHTTPClient() *http.Client {
 	// Note: cookiejar.New cannot fail, so we're using runtimex.Try1 here
@@ -43,7 +45,8 @@ func (n *Network) NewHTTPClient() *http.Client {
 
 // Close ensures that we close idle connections and persist statistics.
 func (n *Network) Close() error {
-	// TODO(bassosimone): do we want to introduce "once" semantics in this method?
+	// TODO(bassosimone): do we want to introduce "once" semantics in this method? It
+	// does not seem necessary since there's no resource we can close just once.
 
 	// make sure we close the transport's idle connections
 	n.txp.CloseIdleConnections()
@@ -63,7 +66,7 @@ func (n *Network) Close() error {
 //
 // Arguments:
 //
-// - counter is the [*bytecounter.Counter] to use.
+// - counter is the [*bytecounter.Counter] to use;
 //
 // - kvStore is a [model.KeyValueStore] for persisting stats;
 //
@@ -73,7 +76,7 @@ func (n *Network) Close() error {
 //
 // - resolver is the [model.Resolver] to use.
 //
-// The presence of the proxyURL will cause this function to possibly build a
+// The presence of the proxyURL MAY cause this function to possibly build a
 // network with different behavior with respect to circumvention. If there is
 // an upstream proxy we're going to trust it is doing circumvention for us.
 func NewNetwork(
@@ -90,6 +93,9 @@ func NewNetwork(
 
 	// Create manager for keeping track of statistics
 	stats := newStatsManager(kvStore, logger)
+
+	// TODO(bassosimone): the documentation says we MAY avoid specific policies
+	// when using a proxy, should we actually implement that?
 
 	// Create a TLS dialer ONLY used for dialing TLS connections. This dialer will use
 	// happy-eyeballs and possibly custom policies for dialing TLS connections.

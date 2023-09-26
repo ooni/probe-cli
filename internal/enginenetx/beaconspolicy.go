@@ -30,17 +30,19 @@ func (p *beaconsPolicy) LookupTactics(ctx context.Context, domain, port string) 
 	out := make(chan *httpsDialerTactic)
 
 	go func() {
-		defer close(out)
+		defer close(out) // tell the parent when we're done
 		index := 0
 
-		// emit beacons related tactics first
+		// emit beacons related tactics first which are empty if there are
+		// no beacons for the givend domain and port
 		for tx := range p.tacticsForDomain(domain, port) {
 			tx.InitialDelay = happyEyeballsDelay(index)
 			index += 1
 			out <- tx
 		}
 
-		// now emit tactics using the DNS
+		// now fallback to get more tactics (typically here the fallback
+		// uses the DNS and obtains some extra tactics)
 		for tx := range p.Fallback.LookupTactics(ctx, domain, port) {
 			tx.InitialDelay = happyEyeballsDelay(index)
 			index += 1
@@ -55,7 +57,7 @@ func (p *beaconsPolicy) tacticsForDomain(domain, port string) <-chan *httpsDiale
 	out := make(chan *httpsDialerTactic)
 
 	go func() {
-		defer close(out)
+		defer close(out) // tell the parent when we're done
 
 		// we currently only have beacons for api.ooni.io
 		if domain != "api.ooni.io" {
@@ -68,9 +70,7 @@ func (p *beaconsPolicy) tacticsForDomain(domain, port string) <-chan *httpsDiale
 			snis[i], snis[j] = snis[j], snis[i]
 		})
 
-		ipAddrs := p.beaconsAddrs()
-
-		for _, ipAddr := range ipAddrs {
+		for _, ipAddr := range p.beaconsAddrs() {
 			for _, sni := range snis {
 				out <- &httpsDialerTactic{
 					Address:        ipAddr,

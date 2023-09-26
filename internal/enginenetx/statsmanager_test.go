@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"sort"
+	"sync"
 	"testing"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -383,6 +385,50 @@ func TestLoadStatsContainer(t *testing.T) {
 									VerifyHostname: "api.ooni.io",
 								},
 							},
+							"162.55.247.208:443 sni=www.example.tk verify=api.ooni.io": { // should be skipped b/c time is zero
+								CountStarted:              4,
+								CountTCPConnectError:      1,
+								CountTLSHandshakeError:    1,
+								CountTLSVerificationError: 1,
+								CountSuccess:              1,
+								HistoTCPConnectError: map[string]int64{
+									"connection_refused": 1,
+								},
+								HistoTLSHandshakeError: map[string]int64{
+									"generic_timeout_error": 1,
+								},
+								HistoTLSVerificationError: map[string]int64{
+									"ssl_invalid_hostname": 1,
+								},
+								LastUpdated: time.Time{}, // zero value!
+								Tactic: &httpsDialerTactic{
+									Address:        "162.55.247.208",
+									InitialDelay:   0,
+									Port:           "443",
+									SNI:            "www.example.org",
+									VerifyHostname: "api.ooni.io",
+								},
+							},
+
+							"162.55.247.208:443 sni=www.example.xyz verify=api.ooni.io": nil, // should be skipped because nil
+							"162.55.247.208:443 sni=www.example.it verify=api.ooni.io": { // should be skipped because nil tactic
+								CountStarted:              4,
+								CountTCPConnectError:      1,
+								CountTLSHandshakeError:    1,
+								CountTLSVerificationError: 1,
+								CountSuccess:              1,
+								HistoTCPConnectError: map[string]int64{
+									"connection_refused": 1,
+								},
+								HistoTLSHandshakeError: map[string]int64{
+									"generic_timeout_error": 1,
+								},
+								HistoTLSVerificationError: map[string]int64{
+									"ssl_invalid_hostname": 1,
+								},
+								LastUpdated: fourtyFiveMinutesAgo,
+								Tactic:      nil,
+							},
 						},
 					},
 					"www.kernel.org:443": { // this whole entry should be skipped because it's too old
@@ -413,6 +459,7 @@ func TestLoadStatsContainer(t *testing.T) {
 							},
 						},
 					},
+					"www.kerneltrap.org:443": nil, // this whole entry should be skipped because it's nil
 				},
 				Version: statsContainerVersion,
 			}
@@ -747,7 +794,6 @@ func TestStatsManagerCallbacks(t *testing.T) {
 			// make sure the stats are the ones we expect
 			diffOptions := []cmp.Option{
 				cmpopts.IgnoreFields(statsTactic{}, "LastUpdated"),
-				cmpopts.EquateEmpty(),
 			}
 			if diff := cmp.Diff(tc.expectRoot, root, diffOptions...); diff != "" {
 				t.Fatal(diff)
@@ -762,7 +808,7 @@ func TestStatsManagerCallbacks(t *testing.T) {
 }
 
 // Make sure that we can safely obtain statistics for a domain and a port.
-func TestStatsManagerLookupTacticsStats(t *testing.T) {
+func TestStatsManagerLookupTactics(t *testing.T) {
 
 	// prepare the content of the stats
 	twentyMinutesAgo := time.Now().Add(-20 * time.Minute)
@@ -882,6 +928,91 @@ func TestStatsManagerLookupTacticsStats(t *testing.T) {
 		}
 		if len(tactics) != 0 {
 			t.Fatal("unexpected tactics length")
+		}
+	})
+
+	t.Run("when the stats manager is manually configured to have an empty container", func(t *testing.T) {
+		stats := &statsManager{
+			container: &statsContainer{ /* explicitly empty */ },
+			kvStore:   kvStore,
+			logger:    model.DiscardLogger,
+			mu:        sync.Mutex{},
+		}
+		tactics, good := stats.LookupTactics("api.ooni.io", "443")
+		if good {
+			t.Fatal("expected !good")
+		}
+		if len(tactics) != 0 {
+			t.Fatal("unexpected tactics length")
+		}
+	})
+
+	t.Run("when the stats manager is manually configured to have nil tactics", func(t *testing.T) {
+		stats := &statsManager{
+			container: &statsContainer{
+				DomainEndpoints: map[string]*statsDomainEndpoint{
+					"api.ooni.io:443": nil,
+				},
+				Version: 0,
+			},
+			kvStore: kvStore,
+			logger:  model.DiscardLogger,
+			mu:      sync.Mutex{},
+		}
+		tactics, good := stats.LookupTactics("api.ooni.io", "443")
+		if good {
+			t.Fatal("expected !good")
+		}
+		if len(tactics) != 0 {
+			t.Fatal("unexpected tactics length")
+		}
+	})
+
+	t.Run("when the stats manager is manually configured to have empty tactics", func(t *testing.T) {
+		stats := &statsManager{
+			container: &statsContainer{
+				DomainEndpoints: map[string]*statsDomainEndpoint{
+					"api.ooni.io:443": { /* explicitly left empty */ },
+				},
+				Version: 0,
+			},
+			kvStore: kvStore,
+			logger:  model.DiscardLogger,
+			mu:      sync.Mutex{},
+		}
+		tactics, good := stats.LookupTactics("api.ooni.io", "443")
+		if good {
+			t.Fatal("expected !good")
+		}
+		if len(tactics) != 0 {
+			t.Fatal("unexpected tactics length")
+		}
+	})
+}
+
+func TestStatsSafeIncrementMapStringInt64(t *testing.T) {
+	t.Run("with a nil map", func(t *testing.T) {
+		var m map[string]int64
+		statsSafeIncrementMapStringInt64(&m, "foo")
+		if m["foo"] != 1 {
+			t.Fatal("unexpected result")
+		}
+	})
+
+	t.Run("with a non-nil map", func(t *testing.T) {
+		m := make(map[string]int64)
+		statsSafeIncrementMapStringInt64(&m, "foo")
+		if m["foo"] != 1 {
+			t.Fatal("unexpected result")
+		}
+	})
+
+	t.Run("with an already-initialized map", func(t *testing.T) {
+		m := make(map[string]int64)
+		m["foo"] = 16
+		statsSafeIncrementMapStringInt64(&m, "foo")
+		if m["foo"] != 17 {
+			t.Fatal("unexpected result")
 		}
 	})
 }

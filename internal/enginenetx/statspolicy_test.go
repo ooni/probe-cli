@@ -28,7 +28,7 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 		CountTLSHandshakeError:     0,
 		CountTLSHandshakeInterrupt: 0,
 		CountTLSVerificationError:  0,
-		CountSuccess:               5,
+		CountSuccess:               5, // this one always succeeds, so it should be there
 		HistoTCPConnectError:       map[string]int64{},
 		HistoTLSHandshakeError:     map[string]int64{},
 		HistoTLSVerificationError:  map[string]int64{},
@@ -47,7 +47,7 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 		CountTLSHandshakeError:     1,
 		CountTLSHandshakeInterrupt: 0,
 		CountTLSVerificationError:  0,
-		CountSuccess:               2,
+		CountSuccess:               2, // this one sometimes succeded so it should be added
 		HistoTCPConnectError:       map[string]int64{},
 		HistoTLSHandshakeError:     map[string]int64{},
 		HistoTLSVerificationError:  map[string]int64{},
@@ -63,7 +63,7 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 		CountStarted:               3,
 		CountTCPConnectError:       0,
 		CountTCPConnectInterrupt:   0,
-		CountTLSHandshakeError:     3,
+		CountTLSHandshakeError:     3, // this one always failed, so should not be added
 		CountTLSHandshakeInterrupt: 0,
 		CountTLSVerificationError:  0,
 		CountSuccess:               0,
@@ -76,6 +76,38 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 			InitialDelay:   0,
 			Port:           "443",
 			SNI:            "theconversation.com",
+			VerifyHostname: "api.ooni.io",
+		},
+	}, {
+		CountStarted:               4,
+		CountTCPConnectError:       0,
+		CountTCPConnectInterrupt:   0,
+		CountTLSHandshakeError:     0,
+		CountTLSHandshakeInterrupt: 0,
+		CountTLSVerificationError:  0,
+		CountSuccess:               4,
+		HistoTCPConnectError:       map[string]int64{},
+		HistoTLSHandshakeError:     map[string]int64{},
+		HistoTLSVerificationError:  map[string]int64{},
+		LastUpdated:                twentyMinutesAgo,
+		Tactic:                     nil, // the nil policy here should cause this entry to be filtered out
+	}, {
+		CountStarted:               0,
+		CountTCPConnectError:       0,
+		CountTCPConnectInterrupt:   0,
+		CountTLSHandshakeError:     0,
+		CountTLSHandshakeInterrupt: 0,
+		CountTLSVerificationError:  0,
+		CountSuccess:               0,
+		HistoTCPConnectError:       map[string]int64{},
+		HistoTLSHandshakeError:     map[string]int64{},
+		HistoTLSVerificationError:  map[string]int64{},
+		LastUpdated:                time.Time{}, // the zero time should exclude this one
+		Tactic: &httpsDialerTactic{
+			Address:        beaconAddress,
+			InitialDelay:   0,
+			Port:           "443",
+			SNI:            "ilpost.it",
 			VerifyHostname: "api.ooni.io",
 		},
 	}}
@@ -92,7 +124,9 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 		}
 
 		for _, tx := range tactics {
-			container.DomainEndpoints[domainEndpoint].Tactics[tx.Tactic.tacticSummaryKey()] = tx
+			if tx.Tactic != nil {
+				container.DomainEndpoints[domainEndpoint].Tactics[tx.Tactic.tacticSummaryKey()] = tx
+			}
 		}
 
 		kvStore := &kvstore.Memory{}
@@ -135,7 +169,7 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 		var expect []*httpsDialerTactic
 		idx := 0
 		for _, entry := range expectTacticsStats {
-			if entry.CountSuccess <= 0 {
+			if entry.CountSuccess <= 0 || entry.Tactic == nil {
 				continue // we SHOULD NOT include entries that systematically failed
 			}
 			t := entry.Tactic.Clone()
@@ -199,7 +233,7 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 		var expect []*httpsDialerTactic
 		idx := 0
 		for _, entry := range expectTacticsStats {
-			if entry.CountSuccess <= 0 {
+			if entry.CountSuccess <= 0 || entry.Tactic == nil {
 				continue // we SHOULD NOT include entries that systematically failed
 			}
 			t := entry.Tactic.Clone()
@@ -222,4 +256,61 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 			t.Fatal(diff)
 		}
 	})
+
+	t.Run("we avoid manipulating nil tactics", func(t *testing.T) {
+		// create stats manager
+		stats := createStatsManager("api.ooni.io:443", expectTacticsStats...)
+
+		// create the composed policy
+		policy := &statsPolicy{
+			Fallback: &mocksPolicy{
+				MockLookupTactics: func(ctx context.Context, domain, port string) <-chan *httpsDialerTactic {
+					out := make(chan *httpsDialerTactic)
+					go func() {
+						defer close(out)
+
+						// explicitly send nil on the channel
+						out <- nil
+					}()
+					return out
+				},
+			},
+			Stats: stats,
+		}
+
+		// obtain the tactics from the saved stats
+		var tactics []*httpsDialerTactic
+		for entry := range policy.LookupTactics(context.Background(), "api.ooni.io", "443") {
+			tactics = append(tactics, entry)
+		}
+
+		// compute the list of results we expect to see from the stats data
+		var expect []*httpsDialerTactic
+		idx := 0
+		for _, entry := range expectTacticsStats {
+			if entry.CountSuccess <= 0 || entry.Tactic == nil {
+				continue // we SHOULD NOT include entries that systematically failed
+			}
+			t := entry.Tactic.Clone()
+			t.InitialDelay = happyEyeballsDelay(idx)
+			expect = append(expect, t)
+			idx++
+		}
+
+		// perform the actual comparison
+		if diff := cmp.Diff(expect, tactics); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+}
+
+type mocksPolicy struct {
+	MockLookupTactics func(ctx context.Context, domain string, port string) <-chan *httpsDialerTactic
+}
+
+var _ httpsDialerPolicy = &mocksPolicy{}
+
+// LookupTactics implements httpsDialerPolicy.
+func (p *mocksPolicy) LookupTactics(ctx context.Context, domain string, port string) <-chan *httpsDialerTactic {
+	return p.MockLookupTactics(ctx, domain, port)
 }

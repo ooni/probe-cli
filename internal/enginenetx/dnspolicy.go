@@ -35,6 +35,7 @@ func (p *dnsPolicy) LookupTactics(
 
 	go func() {
 		// make sure we close the output channel when done
+		// so the reader knows that we're done
 		defer close(out)
 
 		// Do not even start the DNS lookup if the context has already been canceled, which
@@ -54,6 +55,7 @@ func (p *dnsPolicy) LookupTactics(
 			return
 		}
 
+		// The tactics we generate here have SNI == VerifyHostname == domain
 		for idx, addr := range addrs {
 			tactic := &httpsDialerTactic{
 				Address:        addr,
