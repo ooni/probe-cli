@@ -1,7 +1,7 @@
 package enginenetx
 
 //
-// Schedling policy based on stats that fallbacks to
+// Scheduling policy based on stats that fallbacks to
 // another policy after it has produced all the tactics
 // we can produce given the current stats.
 //
@@ -38,7 +38,7 @@ func (p *statsPolicy) LookupTactics(ctx context.Context, domain string, port str
 		// make sure we don't emit two equal policy in a single run
 		uniq := make(map[string]int)
 
-		// function that maybeEmitTactic a given tactic
+		// function that emits a given tactic unless we already emitted it
 		maybeEmitTactic := func(t *httpsDialerTactic) {
 			key := t.tacticSummaryKey()
 			if uniq[key] > 0 {
