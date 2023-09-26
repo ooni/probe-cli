@@ -487,6 +487,8 @@ func TestStatsManagerCallbacks(t *testing.T) {
 		expectRoot  *statsContainer
 	}
 
+	fourtyFiveMinutesAgo := time.Now().Add(-45 * time.Minute)
+
 	cases := []testcase{
 
 		// When TCP connect fails and the reason is a canceled context
@@ -498,6 +500,8 @@ func TestStatsManagerCallbacks(t *testing.T) {
 						Tactics: map[string]*statsTactic{
 							"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
 								CountStarted: 1,
+								LastUpdated:  fourtyFiveMinutesAgo,
+								Tactic:       &HTTPSDialerTactic{}, // only required for cloning
 							},
 						},
 					},
@@ -526,6 +530,7 @@ func TestStatsManagerCallbacks(t *testing.T) {
 							"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
 								CountStarted:             1,
 								CountTCPConnectInterrupt: 1,
+								Tactic:                   &HTTPSDialerTactic{},
 							},
 						},
 					},
@@ -570,6 +575,8 @@ func TestStatsManagerCallbacks(t *testing.T) {
 						Tactics: map[string]*statsTactic{
 							"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
 								CountStarted: 1,
+								LastUpdated:  fourtyFiveMinutesAgo,
+								Tactic:       &HTTPSDialerTactic{}, // only for cloning
 							},
 						},
 					},
@@ -598,6 +605,7 @@ func TestStatsManagerCallbacks(t *testing.T) {
 							"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
 								CountStarted:               1,
 								CountTLSHandshakeInterrupt: 1,
+								Tactic:                     &HTTPSDialerTactic{},
 							},
 						},
 					},

@@ -52,8 +52,10 @@ type statsTactic struct {
 }
 
 func statsCloneMapStringInt64(input map[string]int64) (output map[string]int64) {
-	output = make(map[string]int64)
 	for key, value := range input {
+		if output == nil {
+			output = make(map[string]int64) // the idea here is to clone a nil map to a nil map
+		}
 		output[key] = value
 	}
 	return
