@@ -96,7 +96,7 @@ func NewNetwork(
 	httpsDialer := newHTTPSDialer(
 		logger,
 		&netxlite.Netx{Underlying: nil}, // nil means using netxlite's singleton
-		newHTTPSDialerPolicy(kvStore, logger, resolver),
+		newHTTPSDialerPolicy(kvStore, logger, resolver, stats),
 		stats,
 	)
 
@@ -139,10 +139,16 @@ func NewNetwork(
 }
 
 // newHTTPSDialerPolicy contains the logic to select the [HTTPSDialerPolicy] to use.
-func newHTTPSDialerPolicy(kvStore model.KeyValueStore, logger model.Logger, resolver model.Resolver) httpsDialerPolicy {
+func newHTTPSDialerPolicy(
+	kvStore model.KeyValueStore,
+	logger model.Logger,
+	resolver model.Resolver,
+	stats *statsManager,
+) httpsDialerPolicy {
 	// create a composed fallback TLS dialer policy
-	fallback := &beaconsPolicy{
-		Fallback: &dnsPolicy{logger, resolver},
+	fallback := &statsPolicy{
+		Fallback: &beaconsPolicy{Fallback: &dnsPolicy{logger, resolver}},
+		Stats:    stats,
 	}
 
 	// make sure we honor a user-provided policy

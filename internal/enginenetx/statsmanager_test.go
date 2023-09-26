@@ -848,24 +848,40 @@ func TestStatsManagerLookupTacticsStats(t *testing.T) {
 	// create the stats manager
 	stats := newStatsManager(kvStore, log.Log)
 
-	// obtain tactics
-	tactics := stats.LookupTactics("api.ooni.io", "443")
-	if len(tactics) != 3 {
-		t.Fatal("unexpected tactics length")
-	}
+	t.Run("when we're searching for a domain endpoint we know about", func(t *testing.T) {
+		// obtain tactics
+		tactics, good := stats.LookupTactics("api.ooni.io", "443")
+		if !good {
+			t.Fatal("expected good")
+		}
+		if len(tactics) != 3 {
+			t.Fatal("unexpected tactics length")
+		}
 
-	// sort obtained tactics lexicographically
-	sort.SliceStable(tactics, func(i, j int) bool {
-		return tactics[i].Tactic.tacticSummaryKey() < tactics[j].Tactic.tacticSummaryKey()
+		// sort obtained tactics lexicographically
+		sort.SliceStable(tactics, func(i, j int) bool {
+			return tactics[i].Tactic.tacticSummaryKey() < tactics[j].Tactic.tacticSummaryKey()
+		})
+
+		// sort the initial tactics as well
+		sort.SliceStable(expectTactics, func(i, j int) bool {
+			return expectTactics[i].Tactic.tacticSummaryKey() < expectTactics[j].Tactic.tacticSummaryKey()
+		})
+
+		// compare once we have sorted
+		if diff := cmp.Diff(expectTactics, tactics); diff != "" {
+			t.Fatal(diff)
+		}
 	})
 
-	// sort the initial tactics as well
-	sort.SliceStable(expectTactics, func(i, j int) bool {
-		return expectTactics[i].Tactic.tacticSummaryKey() < expectTactics[j].Tactic.tacticSummaryKey()
+	t.Run("when we don't have information about a domain endpoint", func(t *testing.T) {
+		// obtain tactics
+		tactics, good := stats.LookupTactics("api.ooni.io", "444") // note: different port!
+		if good {
+			t.Fatal("expected !good")
+		}
+		if len(tactics) != 0 {
+			t.Fatal("unexpected tactics length")
+		}
 	})
-
-	// compare once we have sorted
-	if diff := cmp.Diff(expectTactics, tactics); diff != "" {
-		t.Fatal(diff)
-	}
 }

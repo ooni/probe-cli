@@ -65,7 +65,10 @@ func (p *statsPolicy) LookupTactics(ctx context.Context, domain string, port str
 }
 
 func (p *statsPolicy) statsLookupTactics(domain string, port string) (out []*httpsDialerTactic) {
-	tactics := p.Stats.LookupTactics(domain, port)
+	tactics, good := p.Stats.LookupTactics(domain, port)
+	if !good {
+		return
+	}
 
 	successRate := func(t *statsTactic) (rate float64) {
 		if t.CountStarted > 0 {
