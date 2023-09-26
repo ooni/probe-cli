@@ -194,6 +194,13 @@ func TestStaticPolicy(t *testing.T) {
 					expectedTactic,
 					nil,
 				},
+
+				// We add additional entries to make sure that in those
+				// cases we are going to fallback as they're basically empty
+				// and so non-actionable for us.
+				"api.ooni.xyz:443": nil,
+				"api.ooni.org:443": {},
+				"api.ooni.com:443": {nil, nil, nil},
 			},
 			Version: staticPolicyVersion,
 		}
@@ -225,7 +232,7 @@ func TestStaticPolicy(t *testing.T) {
 			}
 		})
 
-		t.Run("we fallback if needed", func(t *testing.T) {
+		t.Run("we fallback if there is no entry in the static policy", func(t *testing.T) {
 			ctx := context.Background()
 
 			fallback := &dnsPolicy{
@@ -259,6 +266,48 @@ func TestStaticPolicy(t *testing.T) {
 
 			if diff := cmp.Diff(expect, got); diff != "" {
 				t.Fatal(diff)
+			}
+		})
+
+		t.Run("we fallback if the entry in the static policy is ~empty", func(t *testing.T) {
+			ctx := context.Background()
+
+			fallback := &dnsPolicy{
+				Logger: log.Log,
+				Resolver: &mocks.Resolver{
+					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+						return []string{"93.184.216.34"}, nil
+					},
+				},
+			}
+
+			policy, err := newStaticPolicy(kvStore, fallback)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// these cases are specially constructed to be empty/invalid static policies
+			for _, domain := range []string{"api.ooni.xyz", "api.ooni.org", "api.ooni.com"} {
+				t.Run(domain, func(t *testing.T) {
+					tactics := policy.LookupTactics(ctx, domain, "443")
+					got := []*httpsDialerTactic{}
+					for tactic := range tactics {
+						t.Logf("%+v", tactic)
+						got = append(got, tactic)
+					}
+
+					expect := []*httpsDialerTactic{{
+						Address:        "93.184.216.34",
+						InitialDelay:   0,
+						Port:           "443",
+						SNI:            domain,
+						VerifyHostname: domain,
+					}}
+
+					if diff := cmp.Diff(expect, got); diff != "" {
+						t.Fatal(diff)
+					}
+				})
 			}
 		})
 	})

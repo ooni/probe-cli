@@ -385,6 +385,31 @@ func TestLoadStatsContainer(t *testing.T) {
 									VerifyHostname: "api.ooni.io",
 								},
 							},
+							"162.55.247.208:443 sni=www.example.tk verify=api.ooni.io": { // should be skipped b/c time is zero
+								CountStarted:              4,
+								CountTCPConnectError:      1,
+								CountTLSHandshakeError:    1,
+								CountTLSVerificationError: 1,
+								CountSuccess:              1,
+								HistoTCPConnectError: map[string]int64{
+									"connection_refused": 1,
+								},
+								HistoTLSHandshakeError: map[string]int64{
+									"generic_timeout_error": 1,
+								},
+								HistoTLSVerificationError: map[string]int64{
+									"ssl_invalid_hostname": 1,
+								},
+								LastUpdated: time.Time{}, // zero value!
+								Tactic: &httpsDialerTactic{
+									Address:        "162.55.247.208",
+									InitialDelay:   0,
+									Port:           "443",
+									SNI:            "www.example.org",
+									VerifyHostname: "api.ooni.io",
+								},
+							},
+
 							"162.55.247.208:443 sni=www.example.xyz verify=api.ooni.io": nil, // should be skipped because nil
 							"162.55.247.208:443 sni=www.example.it verify=api.ooni.io": { // should be skipped because nil tactic
 								CountStarted:              4,
@@ -769,7 +794,6 @@ func TestStatsManagerCallbacks(t *testing.T) {
 			// make sure the stats are the ones we expect
 			diffOptions := []cmp.Option{
 				cmpopts.IgnoreFields(statsTactic{}, "LastUpdated"),
-				cmpopts.EquateEmpty(),
 			}
 			if diff := cmp.Diff(tc.expectRoot, root, diffOptions...); diff != "" {
 				t.Fatal(diff)
@@ -962,6 +986,33 @@ func TestStatsManagerLookupTactics(t *testing.T) {
 		}
 		if len(tactics) != 0 {
 			t.Fatal("unexpected tactics length")
+		}
+	})
+}
+
+func TestStatsSafeIncrementMapStringInt64(t *testing.T) {
+	t.Run("with a nil map", func(t *testing.T) {
+		var m map[string]int64
+		statsSafeIncrementMapStringInt64(&m, "foo")
+		if m["foo"] != 1 {
+			t.Fatal("unexpected result")
+		}
+	})
+
+	t.Run("with a non-nil map", func(t *testing.T) {
+		m := make(map[string]int64)
+		statsSafeIncrementMapStringInt64(&m, "foo")
+		if m["foo"] != 1 {
+			t.Fatal("unexpected result")
+		}
+	})
+
+	t.Run("with an already-initialized map", func(t *testing.T) {
+		m := make(map[string]int64)
+		m["foo"] = 16
+		statsSafeIncrementMapStringInt64(&m, "foo")
+		if m["foo"] != 17 {
+			t.Fatal("unexpected result")
 		}
 	})
 }

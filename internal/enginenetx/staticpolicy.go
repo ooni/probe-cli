@@ -91,8 +91,16 @@ var _ httpsDialerPolicy = &staticPolicy{}
 func (ldp *staticPolicy) LookupTactics(
 	ctx context.Context, domain string, port string) <-chan *httpsDialerTactic {
 	// check whether an entry exists in the user-provided map, which MAY be nil
+	// if/when the user has chosen the static policy to be as such
 	tactics, found := ldp.Root.DomainEndpoints[net.JoinHostPort(domain, port)]
 	if !found {
+		return ldp.Fallback.LookupTactics(ctx, domain, port)
+	}
+
+	// note that we also need to fallback when the tactics contains an empty list
+	// or a list that only contains nil entries
+	tactics = staticPolicyRemoveNilEntries(tactics)
+	if len(tactics) <= 0 {
 		return ldp.Fallback.LookupTactics(ctx, domain, port)
 	}
 
@@ -101,15 +109,17 @@ func (ldp *staticPolicy) LookupTactics(
 	go func() {
 		defer close(out) // let the caller know we're done
 		for _, tactic := range tactics {
-
-			// We read this data from disk, we se cannot exclude the case where a user
-			// provides a file containing an explicitly nil tactic
-			if tactic == nil {
-				continue
-			}
-
 			out <- tactic
 		}
 	}()
 	return out
+}
+
+func staticPolicyRemoveNilEntries(input []*httpsDialerTactic) (output []*httpsDialerTactic) {
+	for _, entry := range input {
+		if entry != nil {
+			output = append(output, entry)
+		}
+	}
+	return
 }

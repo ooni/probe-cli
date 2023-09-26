@@ -87,12 +87,21 @@ type statsTactic struct {
 	Tactic *httpsDialerTactic
 }
 
-func statsCloneMapStringInt64(input map[string]int64) (output map[string]int64) {
-	// ~BUG: this function always returns an initialized map even when the
-	// original map is nil--is this an issue? No!
+func statsMaybeCloneMapStringInt64(input map[string]int64) (output map[string]int64) {
+	// distinguish and preserve nil versus empty
+	if input == nil {
+		return
+	}
 	output = make(map[string]int64)
 	for key, value := range input {
 		output[key] = value
+	}
+	return
+}
+
+func statsMaybeCloneTactic(input *httpsDialerTactic) (output *httpsDialerTactic) {
+	if input != nil {
+		output = input.Clone()
 	}
 	return
 }
@@ -102,6 +111,9 @@ func (st *statsTactic) Clone() *statsTactic {
 	// Implementation note: a time.Time consists of an uint16, an int64 and
 	// a pointer to a location which is typically immutable, so it's perfectly
 	// fine to copy the LastUpdate field by assignment.
+	//
+	// here we're using a bunch of robustness aware mechanisms to clone
+	// considering that the struct may be edited by the user
 	return &statsTactic{
 		CountStarted:               st.CountStarted,
 		CountTCPConnectError:       st.CountTCPConnectError,
@@ -110,11 +122,11 @@ func (st *statsTactic) Clone() *statsTactic {
 		CountTLSHandshakeInterrupt: st.CountTLSHandshakeInterrupt,
 		CountTLSVerificationError:  st.CountTLSVerificationError,
 		CountSuccess:               st.CountSuccess,
-		HistoTCPConnectError:       statsCloneMapStringInt64(st.HistoTCPConnectError),
-		HistoTLSHandshakeError:     statsCloneMapStringInt64(st.HistoTLSHandshakeError),
-		HistoTLSVerificationError:  statsCloneMapStringInt64(st.HistoTLSVerificationError),
+		HistoTCPConnectError:       statsMaybeCloneMapStringInt64(st.HistoTCPConnectError),
+		HistoTLSHandshakeError:     statsMaybeCloneMapStringInt64(st.HistoTLSHandshakeError),
+		HistoTLSVerificationError:  statsMaybeCloneMapStringInt64(st.HistoTLSVerificationError),
 		LastUpdated:                st.LastUpdated,
-		Tactic:                     st.Tactic.Clone(),
+		Tactic:                     statsMaybeCloneTactic(st.Tactic),
 	}
 }
 
@@ -130,6 +142,8 @@ func statsDomainEndpointRemoveOldEntries(input *statsDomainEndpoint) (output *st
 	}
 	oneWeek := 7 * 24 * time.Hour
 	now := time.Now()
+
+	// if .Tactics is empty here we're just going to do nothing
 	for summary, tactic := range input.Tactics {
 
 		// we serialize stats to disk, so we cannot rule out the case where the user
@@ -138,6 +152,12 @@ func statsDomainEndpointRemoveOldEntries(input *statsDomainEndpoint) (output *st
 			continue
 		}
 
+		// When .LastUpdated is the zero time.Time value, the check is going to fail
+		// exactly like the time was 1 or 5 or 10 years ago instead.
+		//
+		// See https://go.dev/play/p/HGQT17ueIkq where we show that the zero time
+		// is handled exactly like any time in the past (it was kinda obvious, but
+		// sometimes it also make sense to double check assumptions!)
 		if delta := now.Sub(tactic.LastUpdated); delta > oneWeek {
 			continue
 		}
@@ -163,6 +183,8 @@ type statsContainer struct {
 // statsDomainRemoveOldEntries returns a copy of a [*statsContainer] with old entries removed.
 func statsContainerRemoveOldEntries(input *statsContainer) (output *statsContainer) {
 	output = newStatsContainer()
+
+	// if .DomainEndpoints is nil here we're just going to do nothing
 	for domainEpnt, inputStats := range input.DomainEndpoints {
 
 		// We serialize this data to disk, so we need to account for the case
@@ -330,6 +352,14 @@ func (mt *statsManager) OnStarting(tactic *httpsDialerTactic) {
 	record.LastUpdated = time.Now()
 }
 
+func statsSafeIncrementMapStringInt64(input *map[string]int64, value string) {
+	runtimex.Assert(input != nil, "passed nil pointer to a map")
+	if *input == nil {
+		*input = make(map[string]int64)
+	}
+	(*input)[value]++
+}
+
 // OnTCPConnectError implements httpsDialerEventsHandler.
 func (mt *statsManager) OnTCPConnectError(ctx context.Context, tactic *httpsDialerTactic, err error) {
 	// get exclusive access
@@ -349,8 +379,10 @@ func (mt *statsManager) OnTCPConnectError(ctx context.Context, tactic *httpsDial
 		record.CountTCPConnectInterrupt++
 		return
 	}
+
+	runtimex.Assert(err != nil, "OnTCPConnectError passed a nil error")
 	record.CountTCPConnectError++
-	record.HistoTCPConnectError[err.Error()]++
+	statsSafeIncrementMapStringInt64(&record.HistoTCPConnectError, err.Error())
 }
 
 // OnTLSHandshakeError implements httpsDialerEventsHandler.
@@ -372,8 +404,10 @@ func (mt *statsManager) OnTLSHandshakeError(ctx context.Context, tactic *httpsDi
 		record.CountTLSHandshakeInterrupt++
 		return
 	}
+
+	runtimex.Assert(err != nil, "OnTLSHandshakeError passed a nil error")
 	record.CountTLSHandshakeError++
-	record.HistoTLSHandshakeError[err.Error()]++
+	statsSafeIncrementMapStringInt64(&record.HistoTLSHandshakeError, err.Error())
 }
 
 // OnTLSVerifyError implements httpsDialerEventsHandler.
@@ -390,8 +424,9 @@ func (mt *statsManager) OnTLSVerifyError(tactic *httpsDialerTactic, err error) {
 	}
 
 	// update stats
+	runtimex.Assert(err != nil, "OnTLSVerifyError passed a nil error")
 	record.CountTLSVerificationError++
-	record.HistoTLSVerificationError[err.Error()]++
+	statsSafeIncrementMapStringInt64(&record.HistoTLSVerificationError, err.Error())
 	record.LastUpdated = time.Now()
 }
 
