@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"sync"
 	"time"
 
@@ -87,10 +88,8 @@ type statsTactic struct {
 }
 
 func statsCloneMapStringInt64(input map[string]int64) (output map[string]int64) {
+	output = make(map[string]int64)
 	for key, value := range input {
-		if output == nil {
-			output = make(map[string]int64) // the idea here is to clone a nil map to a nil map
-		}
 		output[key] = value
 	}
 	return
@@ -400,4 +399,21 @@ func (mt *statsManager) Close() error {
 
 	// write updated stats into the underlying key-value store
 	return mt.kvStore.Set(statsKey, runtimex.Try1(json.Marshal(mt.container)))
+}
+
+// LookupTacticsStats returns stats about tactics for a given domain and port. The returned
+// list is a clone of the one stored by [*statsManager] so, it can easily be modified.
+func (mt *statsManager) LookupTactics(domain string, port string) []*statsTactic {
+	out := []*statsTactic{}
+
+	// get exclusive access
+	defer mt.mu.Unlock()
+	mt.mu.Lock()
+
+	// return a copy of each entry
+	domainEpnts := mt.container.DomainEndpoints[net.JoinHostPort(domain, port)]
+	for _, entry := range domainEpnts.Tactics {
+		out = append(out, entry.Clone())
+	}
+	return out
 }
