@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"net"
 	"testing"
 	"time"
 
@@ -61,8 +60,9 @@ func TestNetworkCollectsStats(t *testing.T) {
 						// This policy has a different SNI and VerifyHostname, which gives
 						// us confidence that the stats are using the latter
 						"api.ooni.io": {{
-							Endpoint:       net.JoinHostPort(netemx.AddressApiOONIIo, "443"),
+							Address:        netemx.AddressApiOONIIo,
 							InitialDelay:   0,
+							Port:           "443",
 							SNI:            "www.example.com",
 							VerifyHostname: "api.ooni.io",
 						}},
@@ -94,8 +94,9 @@ func TestNetworkCollectsStats(t *testing.T) {
 				HistoTLSVerificationError: map[string]int64{},
 				LastUpdated:               time.Time{},
 				Tactic: &HTTPSDialerTactic{
-					Endpoint:       "162.55.247.208:443",
+					Address:        "162.55.247.208",
 					InitialDelay:   0,
+					Port:           "443",
 					SNI:            "www.example.com",
 					VerifyHostname: "api.ooni.io",
 				},
@@ -111,8 +112,9 @@ func TestNetworkCollectsStats(t *testing.T) {
 						// This policy has a different SNI and VerifyHostname, which gives
 						// us confidence that the stats are using the latter
 						"api.ooni.io": {{
-							Endpoint:       net.JoinHostPort(netemx.AddressApiOONIIo, "443"),
+							Address:        netemx.AddressApiOONIIo,
 							InitialDelay:   0,
+							Port:           "443",
 							SNI:            "www.example.com",
 							VerifyHostname: "api.ooni.io",
 						}},
@@ -143,8 +145,9 @@ func TestNetworkCollectsStats(t *testing.T) {
 				HistoTLSVerificationError: map[string]int64{},
 				LastUpdated:               time.Time{},
 				Tactic: &HTTPSDialerTactic{
-					Endpoint:       "162.55.247.208:443",
+					Address:        "162.55.247.208",
 					InitialDelay:   0,
+					Port:           "443",
 					SNI:            "www.example.com",
 					VerifyHostname: "api.ooni.io",
 				},
@@ -160,8 +163,9 @@ func TestNetworkCollectsStats(t *testing.T) {
 						// This policy has a different SNI and VerifyHostname, which gives
 						// us confidence that the stats are using the latter
 						"api.ooni.io": {{
-							Endpoint:       net.JoinHostPort(netemx.AddressBadSSLCom, "443"),
+							Address:        netemx.AddressBadSSLCom,
 							InitialDelay:   0,
+							Port:           "443",
 							SNI:            "untrusted-root.badssl.com",
 							VerifyHostname: "api.ooni.io",
 						}},
@@ -189,8 +193,9 @@ func TestNetworkCollectsStats(t *testing.T) {
 				},
 				LastUpdated: time.Time{},
 				Tactic: &HTTPSDialerTactic{
-					Endpoint:       "104.154.89.105:443",
+					Address:        "104.154.89.105",
 					InitialDelay:   0,
+					Port:           "443",
 					SNI:            "untrusted-root.badssl.com",
 					VerifyHostname: "api.ooni.io",
 				},
@@ -346,8 +351,9 @@ func TestLoadStatsContainer(t *testing.T) {
 								},
 								LastUpdated: fourtyFiveMinutesAgo,
 								Tactic: &HTTPSDialerTactic{
-									Endpoint:       "162.55.247.208:443",
+									Address:        "162.55.247.208",
 									InitialDelay:   0,
+									Port:           "443",
 									SNI:            "www.example.com",
 									VerifyHostname: "api.ooni.io",
 								},
@@ -369,8 +375,9 @@ func TestLoadStatsContainer(t *testing.T) {
 								},
 								LastUpdated: twoWeeksAgo,
 								Tactic: &HTTPSDialerTactic{
-									Endpoint:       "162.55.247.208:443",
+									Address:        "162.55.247.208",
 									InitialDelay:   0,
+									Port:           "443",
 									SNI:            "www.example.org",
 									VerifyHostname: "api.ooni.io",
 								},
@@ -396,8 +403,9 @@ func TestLoadStatsContainer(t *testing.T) {
 								},
 								LastUpdated: twoWeeksAgo,
 								Tactic: &HTTPSDialerTactic{
-									Endpoint:       "162.55.247.208:443",
+									Address:        "162.55.247.208",
 									InitialDelay:   0,
+									Port:           "443",
 									SNI:            "www.example.com",
 									VerifyHostname: "www.kernel.org",
 								},
@@ -431,8 +439,9 @@ func TestLoadStatsContainer(t *testing.T) {
 							},
 							LastUpdated: fourtyFiveMinutesAgo,
 							Tactic: &HTTPSDialerTactic{
-								Endpoint:       "162.55.247.208:443",
+								Address:        "162.55.247.208",
 								InitialDelay:   0,
+								Port:           "443",
 								SNI:            "www.example.com",
 								VerifyHostname: "api.ooni.io",
 							},
@@ -513,8 +522,9 @@ func TestStatsManagerCallbacks(t *testing.T) {
 				cancel() // immediately!
 
 				tactic := &HTTPSDialerTactic{
-					Endpoint:       "162.55.247.208:443",
+					Address:        "162.55.247.208",
 					InitialDelay:   0,
+					Port:           "443",
 					SNI:            "www.example.com",
 					VerifyHostname: "api.ooni.io",
 				}
@@ -550,8 +560,9 @@ func TestStatsManagerCallbacks(t *testing.T) {
 				ctx := context.Background()
 
 				tactic := &HTTPSDialerTactic{
-					Endpoint:       "162.55.247.208:443",
+					Address:        "162.55.247.208",
 					InitialDelay:   0,
+					Port:           "443",
 					SNI:            "www.example.com",
 					VerifyHostname: "api.ooni.io",
 				}
@@ -588,8 +599,9 @@ func TestStatsManagerCallbacks(t *testing.T) {
 				cancel() // immediately!
 
 				tactic := &HTTPSDialerTactic{
-					Endpoint:       "162.55.247.208:443",
+					Address:        "162.55.247.208",
 					InitialDelay:   0,
+					Port:           "443",
 					SNI:            "www.example.com",
 					VerifyHostname: "api.ooni.io",
 				}
@@ -625,8 +637,9 @@ func TestStatsManagerCallbacks(t *testing.T) {
 				ctx := context.Background()
 
 				tactic := &HTTPSDialerTactic{
-					Endpoint:       "162.55.247.208:443",
+					Address:        "162.55.247.208",
 					InitialDelay:   0,
+					Port:           "443",
 					SNI:            "www.example.com",
 					VerifyHostname: "api.ooni.io",
 				}
@@ -650,8 +663,9 @@ func TestStatsManagerCallbacks(t *testing.T) {
 			},
 			do: func(stats *statsManager) {
 				tactic := &HTTPSDialerTactic{
-					Endpoint:       "162.55.247.208:443",
+					Address:        "162.55.247.208",
 					InitialDelay:   0,
+					Port:           "443",
 					SNI:            "www.example.com",
 					VerifyHostname: "api.ooni.io",
 				}
@@ -675,8 +689,9 @@ func TestStatsManagerCallbacks(t *testing.T) {
 			},
 			do: func(stats *statsManager) {
 				tactic := &HTTPSDialerTactic{
-					Endpoint:       "162.55.247.208:443",
+					Address:        "162.55.247.208",
 					InitialDelay:   0,
+					Port:           "443",
 					SNI:            "www.example.com",
 					VerifyHostname: "api.ooni.io",
 				}

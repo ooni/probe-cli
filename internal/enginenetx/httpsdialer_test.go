@@ -437,8 +437,9 @@ func TestHTTPSDialerTactic(t *testing.T) {
 	t.Run("String", func(t *testing.T) {
 		expected := `{"Endpoint":"162.55.247.208:443","InitialDelay":150000000,"SNI":"www.example.com","VerifyHostname":"api.ooni.io"}`
 		ldt := &enginenetx.HTTPSDialerTactic{
-			Endpoint:       "162.55.247.208:443",
+			Address:        "162.55.247.208",
 			InitialDelay:   150 * time.Millisecond,
+			Port:           "443",
 			SNI:            "www.example.com",
 			VerifyHostname: "api.ooni.io",
 		}
@@ -461,8 +462,9 @@ func TestHTTPSDialerTactic(t *testing.T) {
 	t.Run("Summary", func(t *testing.T) {
 		expected := `162.55.247.208:443 sni=www.example.com verify=api.ooni.io`
 		ldt := &enginenetx.HTTPSDialerTactic{
-			Endpoint:       "162.55.247.208:443",
+			Address:        "162.55.247.208",
 			InitialDelay:   150 * time.Millisecond,
+			Port:           "443",
 			SNI:            "www.example.com",
 			VerifyHostname: "api.ooni.io",
 		}

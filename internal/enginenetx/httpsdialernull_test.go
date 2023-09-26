@@ -51,7 +51,10 @@ func TestHTTPSDialerNullPolicy(t *testing.T) {
 		for tactic := range tactics {
 			count++
 
-			if tactic.Endpoint != "130.192.91.211:443" {
+			if tactic.Address != "130.192.91.211" {
+				t.Fatal("invalid endpoint")
+			}
+			if tactic.Port != "443" {
 				t.Fatal("invalid endpoint")
 			}
 			if tactic.SNI != "130.192.91.211" {

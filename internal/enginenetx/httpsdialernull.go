@@ -2,7 +2,6 @@ package enginenetx
 
 import (
 	"context"
-	"net"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -56,8 +55,9 @@ func (p *HTTPSDialerNullPolicy) LookupTactics(
 
 		for idx, addr := range addrs {
 			tactic := &HTTPSDialerTactic{
-				Endpoint:       net.JoinHostPort(addr, port),
+				Address:        addr,
 				InitialDelay:   happyEyeballsDelay(idx),
+				Port:           port,
 				SNI:            domain,
 				VerifyHostname: domain,
 			}

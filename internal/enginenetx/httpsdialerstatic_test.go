@@ -66,28 +66,33 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 				return runtimex.Try1(json.Marshal(&HTTPSDialerStaticPolicyRoot{
 					Domains: map[string][]*HTTPSDialerTactic{
 						"api.ooni.io": {{
-							Endpoint:       "162.55.247.208:443",
+							Address:        "162.55.247.208",
 							InitialDelay:   0,
+							Port:           "443",
 							SNI:            "api.ooni.io",
 							VerifyHostname: "api.ooni.io",
 						}, {
-							Endpoint:       "46.101.82.151:443",
+							Address:        "46.101.82.151",
 							InitialDelay:   300 * time.Millisecond,
+							Port:           "443",
 							SNI:            "api.ooni.io",
 							VerifyHostname: "api.ooni.io",
 						}, {
-							Endpoint:       "[2a03:b0c0:1:d0::ec4:9001]:443",
+							Address:        "2a03:b0c0:1:d0::ec4:9001",
 							InitialDelay:   600 * time.Millisecond,
+							Port:           "443",
 							SNI:            "api.ooni.io",
 							VerifyHostname: "api.ooni.io",
 						}, {
-							Endpoint:       "46.101.82.151:443",
+							Address:        "46.101.82.151",
 							InitialDelay:   3000 * time.Millisecond,
+							Port:           "443",
 							SNI:            "www.example.com",
 							VerifyHostname: "api.ooni.io",
 						}, {
-							Endpoint:       "[2a03:b0c0:1:d0::ec4:9001]:443",
+							Address:        "2a03:b0c0:1:d0::ec4:9001",
 							InitialDelay:   3300 * time.Millisecond,
+							Port:           "443",
 							SNI:            "www.example.com",
 							VerifyHostname: "api.ooni.io",
 						}},
@@ -101,28 +106,33 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 				Root: &HTTPSDialerStaticPolicyRoot{
 					Domains: map[string][]*HTTPSDialerTactic{
 						"api.ooni.io": {{
-							Endpoint:       "162.55.247.208:443",
+							Address:        "162.55.247.208",
 							InitialDelay:   0,
+							Port:           "443",
 							SNI:            "api.ooni.io",
 							VerifyHostname: "api.ooni.io",
 						}, {
-							Endpoint:       "46.101.82.151:443",
+							Address:        "46.101.82.151",
 							InitialDelay:   300 * time.Millisecond,
+							Port:           "443",
 							SNI:            "api.ooni.io",
 							VerifyHostname: "api.ooni.io",
 						}, {
-							Endpoint:       "[2a03:b0c0:1:d0::ec4:9001]:443",
+							Address:        "2a03:b0c0:1:d0::ec4:9001",
 							InitialDelay:   600 * time.Millisecond,
+							Port:           "443",
 							SNI:            "api.ooni.io",
 							VerifyHostname: "api.ooni.io",
 						}, {
-							Endpoint:       "46.101.82.151:443",
+							Address:        "46.101.82.151",
 							InitialDelay:   3000 * time.Millisecond,
+							Port:           "443",
 							SNI:            "www.example.com",
 							VerifyHostname: "api.ooni.io",
 						}, {
-							Endpoint:       "[2a03:b0c0:1:d0::ec4:9001]:443",
+							Address:        "2a03:b0c0:1:d0::ec4:9001",
 							InitialDelay:   3300 * time.Millisecond,
+							Port:           "443",
 							SNI:            "www.example.com",
 							VerifyHostname: "api.ooni.io",
 						}},
@@ -164,8 +174,9 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 
 	t.Run("LookupTactics", func(t *testing.T) {
 		expectedTactic := &HTTPSDialerTactic{
-			Endpoint:       "162.55.247.208:443",
+			Address:        "162.55.247.208",
 			InitialDelay:   0,
+			Port:           "443",
 			SNI:            "www.example.com",
 			VerifyHostname: "api.ooni.io",
 		}
@@ -228,8 +239,9 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 			}
 
 			expect := []*HTTPSDialerTactic{{
-				Endpoint:       "93.184.216.34:443",
+				Address:        "93.184.216.34",
 				InitialDelay:   0,
+				Port:           "443",
 				SNI:            "www.example.com",
 				VerifyHostname: "www.example.com",
 			}}

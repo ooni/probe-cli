@@ -303,8 +303,9 @@ func TestNetworkQA(t *testing.T) {
 					policy := &enginenetx.HTTPSDialerStaticPolicyRoot{
 						Domains: map[string][]*enginenetx.HTTPSDialerTactic{
 							"www.example.com": {{
-								Endpoint:       net.JoinHostPort(netemx.AddressApiOONIIo, "443"),
+								Address:        netemx.AddressApiOONIIo,
 								InitialDelay:   0,
+								Port:           "443",
 								SNI:            "www.example.com",
 								VerifyHostname: "api.ooni.io",
 							}},
