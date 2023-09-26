@@ -31,11 +31,11 @@ func TestNetworkUnit(t *testing.T) {
 					// nothing
 				},
 			},
-			stats: &HTTPSDialerStatsManager{
+			stats: &statsManager{
 				kvStore: &kvstore.Memory{},
 				logger:  model.DiscardLogger,
 				mu:      sync.Mutex{},
-				root:    &HTTPSDialerStatsRootContainer{},
+				root:    &statsContainer{},
 			},
 			txp: expected,
 		}
@@ -56,11 +56,11 @@ func TestNetworkUnit(t *testing.T) {
 		}
 		netx := &Network{
 			reso: expected,
-			stats: &HTTPSDialerStatsManager{
+			stats: &statsManager{
 				kvStore: &kvstore.Memory{},
 				logger:  model.DiscardLogger,
 				mu:      sync.Mutex{},
-				root:    &HTTPSDialerStatsRootContainer{},
+				root:    &statsContainer{},
 			},
 			txp: &mocks.HTTPTransport{
 				MockCloseIdleConnections: func() {

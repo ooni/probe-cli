@@ -15,7 +15,7 @@ import (
 // Network is the network abstraction used by the OONI engine.
 type Network struct {
 	reso  model.Resolver
-	stats *HTTPSDialerStatsManager
+	stats *statsManager
 	txp   model.HTTPTransport
 }
 
@@ -84,7 +84,7 @@ func NewNetwork(
 	dialer := netxlite.NewDialerWithResolver(logger, resolver)
 
 	// Create manager for keeping track of statistics
-	stats := NewHTTPSDialerStatsManager(kvStore, logger)
+	stats := newStatsManager(kvStore, logger)
 
 	// Create a TLS dialer ONLY used for dialing TLS connections. This dialer will use
 	// happy-eyeballs and possibly custom policies for dialing TLS connections.
