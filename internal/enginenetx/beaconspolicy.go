@@ -33,7 +33,7 @@ func (p *beaconsPolicy) LookupTactics(ctx context.Context, domain, port string) 
 		defer close(out) // tell the parent when we're done
 		index := 0
 
-		// emit beacons related tactics first which is empty if there are
+		// emit beacons related tactics first which are empty if there are
 		// no beacons for the givend domain and port
 		for tx := range p.tacticsForDomain(domain, port) {
 			tx.InitialDelay = happyEyeballsDelay(index)
@@ -42,7 +42,7 @@ func (p *beaconsPolicy) LookupTactics(ctx context.Context, domain, port string) 
 		}
 
 		// now fallback to get more tactics (typically here the fallback
-		// uses the DNS and obtains some extra tactic)
+		// uses the DNS and obtains some extra tactics)
 		for tx := range p.Fallback.LookupTactics(ctx, domain, port) {
 			tx.InitialDelay = happyEyeballsDelay(index)
 			index += 1

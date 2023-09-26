@@ -83,7 +83,7 @@ func (dt *httpsDialerTactic) tacticSummaryKey() string {
 
 // domainEndpointKey returns a string consisting of the domain endpoint only.
 //
-// We always use the VerifyHostname to construct the domain endpoint.
+// We always use the VerifyHostname and the Port to construct the domain endpoint.
 func (dt *httpsDialerTactic) domainEndpointKey() string {
 	return net.JoinHostPort(dt.VerifyHostname, dt.Port)
 }
@@ -286,7 +286,7 @@ func (hd *httpsDialer) worker(
 		// perform the actual dial
 		conn, err := hd.dialTLS(ctx, prefixLogger, t0, tactic)
 
-		// send result to the parent
+		// send results to the parent
 		writer <- &httpsDialerErrorOrConn{Conn: conn, Err: err}
 	}
 }

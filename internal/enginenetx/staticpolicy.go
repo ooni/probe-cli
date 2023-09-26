@@ -90,7 +90,7 @@ var _ httpsDialerPolicy = &staticPolicy{}
 // LookupTactics implements httpsDialerPolicy.
 func (ldp *staticPolicy) LookupTactics(
 	ctx context.Context, domain string, port string) <-chan *httpsDialerTactic {
-	// check whether an entry exists in the user-provided map
+	// check whether an entry exists in the user-provided map, which MAY be nil
 	tactics, found := ldp.Root.DomainEndpoints[net.JoinHostPort(domain, port)]
 	if !found {
 		return ldp.Fallback.LookupTactics(ctx, domain, port)

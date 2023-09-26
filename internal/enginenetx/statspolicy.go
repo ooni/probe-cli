@@ -104,7 +104,7 @@ func (p *statsPolicy) statsLookupTactics(domain string, port string) (out []*htt
 		// fallback policy to generate new tactics to test
 		//
 		// additionally, as a precautionary and defensive measure, make sure t.Tactic
-		// is nil before adding the real tactic to the return list
+		// is not nil before adding the real tactic to the return list
 		if t.CountSuccess > 0 && t.Tactic != nil {
 			out = append(out, t.Tactic)
 		}
