@@ -17,6 +17,36 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
+// nullStatsTracker is the "null" [HTTPSDialerStatsTracker].
+type nullStatsTracker struct{}
+
+var _ HTTPSDialerStatsTracker = &nullStatsTracker{}
+
+// OnStarting implements HTTPSDialerStatsTracker.
+func (*nullStatsTracker) OnStarting(tactic *HTTPSDialerTactic) {
+	// nothing
+}
+
+// OnSuccess implements HTTPSDialerStatsTracker.
+func (*nullStatsTracker) OnSuccess(tactic *HTTPSDialerTactic) {
+	// nothing
+}
+
+// OnTCPConnectError implements HTTPSDialerStatsTracker.
+func (*nullStatsTracker) OnTCPConnectError(ctx context.Context, tactic *HTTPSDialerTactic, err error) {
+	// nothing
+}
+
+// OnTLSHandshakeError implements HTTPSDialerStatsTracker.
+func (*nullStatsTracker) OnTLSHandshakeError(ctx context.Context, tactic *HTTPSDialerTactic, err error) {
+	// nothing
+}
+
+// OnTLSVerifyError implements HTTPSDialerStatsTracker.
+func (*nullStatsTracker) OnTLSVerifyError(tactic *HTTPSDialerTactic, err error) {
+	// nothing
+}
+
 // statsTactic keeps stats about an [*HTTPSDialerTactic].
 type statsTactic struct {
 	// CountStarted counts the number of operations we started.

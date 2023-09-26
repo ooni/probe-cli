@@ -100,7 +100,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "net.SplitHostPort failure",
 			short:    true,
-			stats:    &HTTPSDialerNullStatsTracker{},
+			stats:    &nullStatsTracker{},
 			endpoint: "www.example.com", // note: here the port is missing
 			scenario: netemx.InternetScenario,
 			configureDPI: func(dpi *netem.DPIEngine) {
@@ -116,7 +116,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "hd.policy.LookupTactics failure",
 			short:    true,
-			stats:    &HTTPSDialerNullStatsTracker{},
+			stats:    &nullStatsTracker{},
 			endpoint: "www.example.nonexistent:443", // note: the domain does not exist
 			scenario: netemx.InternetScenario,
 			configureDPI: func(dpi *netem.DPIEngine) {
@@ -130,7 +130,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "successful dial with multiple addresses",
 			short:    true,
-			stats:    &HTTPSDialerNullStatsTracker{},
+			stats:    &nullStatsTracker{},
 			endpoint: "www.example.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
 				Domains: []string{
@@ -156,7 +156,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "with TCP connect errors",
 			short:    true,
-			stats:    &HTTPSDialerNullStatsTracker{},
+			stats:    &nullStatsTracker{},
 			endpoint: "www.example.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
 				Domains: []string{
@@ -190,7 +190,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "with TLS handshake errors",
 			short:    true,
-			stats:    &HTTPSDialerNullStatsTracker{},
+			stats:    &nullStatsTracker{},
 			endpoint: "www.example.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
 				Domains: []string{
@@ -220,7 +220,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "with a TLS certificate valid for ANOTHER domain",
 			short:    true,
-			stats:    &HTTPSDialerNullStatsTracker{},
+			stats:    &nullStatsTracker{},
 			endpoint: "wrong.host.badssl.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
 				Domains: []string{
@@ -245,7 +245,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "with TLS certificate signed by an unknown authority",
 			short:    true,
-			stats:    &HTTPSDialerNullStatsTracker{},
+			stats:    &nullStatsTracker{},
 			endpoint: "untrusted-root.badssl.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
 				Domains: []string{
@@ -270,7 +270,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "with expired TLS certificate",
 			short:    true,
-			stats:    &HTTPSDialerNullStatsTracker{},
+			stats:    &nullStatsTracker{},
 			endpoint: "expired.badssl.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
 				Domains: []string{
@@ -510,7 +510,7 @@ func TestHTTPSDialerHostNetworkQA(t *testing.T) {
 				Logger:   log.Log,
 				Resolver: resolver,
 			},
-			&HTTPSDialerNullStatsTracker{},
+			&nullStatsTracker{},
 		)
 
 		URL := runtimex.Try1(url.Parse(server.URL))
