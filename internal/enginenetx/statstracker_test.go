@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"sort"
 	"testing"
 	"time"
 
@@ -746,6 +747,7 @@ func TestStatsManagerCallbacks(t *testing.T) {
 			// make sure the stats are the ones we expect
 			diffOptions := []cmp.Option{
 				cmpopts.IgnoreFields(statsTactic{}, "LastUpdated"),
+				cmpopts.EquateEmpty(),
 			}
 			if diff := cmp.Diff(tc.expectRoot, root, diffOptions...); diff != "" {
 				t.Fatal(diff)
@@ -756,5 +758,114 @@ func TestStatsManagerCallbacks(t *testing.T) {
 				t.Fatal("expected", tc.expectWarnf, "got", warnfCount)
 			}
 		})
+	}
+}
+
+// Make sure that we can safely obtain statistics for a domain and a port.
+func TestStatsManagerLookupTacticsStats(t *testing.T) {
+
+	// prepare the content of the stats
+	twentyMinutesAgo := time.Now().Add(-20 * time.Minute)
+
+	expectTactics := []*statsTactic{{
+		CountStarted:               5,
+		CountTCPConnectError:       0,
+		CountTCPConnectInterrupt:   0,
+		CountTLSHandshakeError:     0,
+		CountTLSHandshakeInterrupt: 0,
+		CountTLSVerificationError:  0,
+		CountSuccess:               5,
+		HistoTCPConnectError:       map[string]int64{},
+		HistoTLSHandshakeError:     map[string]int64{},
+		HistoTLSVerificationError:  map[string]int64{},
+		LastUpdated:                twentyMinutesAgo,
+		Tactic: &httpsDialerTactic{
+			Address:        "162.55.247.208",
+			InitialDelay:   0,
+			Port:           "443",
+			SNI:            "www.repubblica.it",
+			VerifyHostname: "api.ooni.io",
+		},
+	}, {
+		CountStarted:               1,
+		CountTCPConnectError:       0,
+		CountTCPConnectInterrupt:   0,
+		CountTLSHandshakeError:     0,
+		CountTLSHandshakeInterrupt: 0,
+		CountTLSVerificationError:  0,
+		CountSuccess:               1,
+		HistoTCPConnectError:       map[string]int64{},
+		HistoTLSHandshakeError:     map[string]int64{},
+		HistoTLSVerificationError:  map[string]int64{},
+		LastUpdated:                twentyMinutesAgo,
+		Tactic: &httpsDialerTactic{
+			Address:        "162.55.247.208",
+			InitialDelay:   0,
+			Port:           "443",
+			SNI:            "www.kernel.org",
+			VerifyHostname: "api.ooni.io",
+		},
+	}, {
+		CountStarted:               3,
+		CountTCPConnectError:       0,
+		CountTCPConnectInterrupt:   0,
+		CountTLSHandshakeError:     0,
+		CountTLSHandshakeInterrupt: 0,
+		CountTLSVerificationError:  0,
+		CountSuccess:               3,
+		HistoTCPConnectError:       map[string]int64{},
+		HistoTLSHandshakeError:     map[string]int64{},
+		HistoTLSVerificationError:  map[string]int64{},
+		LastUpdated:                twentyMinutesAgo,
+		Tactic: &httpsDialerTactic{
+			Address:        "162.55.247.208",
+			InitialDelay:   0,
+			Port:           "443",
+			SNI:            "theconversation.com",
+			VerifyHostname: "api.ooni.io",
+		},
+	}}
+
+	expectContainer := &statsContainer{
+		DomainEndpoints: map[string]*statsDomainEndpoint{
+			"api.ooni.io:443": {
+				Tactics: map[string]*statsTactic{},
+			},
+		},
+		Version: statsContainerVersion,
+	}
+
+	for _, tactic := range expectTactics {
+		expectContainer.DomainEndpoints["api.ooni.io:443"].Tactics[tactic.Tactic.tacticSummaryKey()] = tactic
+	}
+
+	// configure the initial value of the stats
+	kvStore := &kvstore.Memory{}
+	if err := kvStore.Set(statsKey, runtimex.Try1(json.Marshal(expectContainer))); err != nil {
+		t.Fatal(err)
+	}
+
+	// create the stats manager
+	stats := newStatsManager(kvStore, log.Log)
+
+	// obtain tactics
+	tactics := stats.LookupTactics("api.ooni.io", "443")
+	if len(tactics) != 3 {
+		t.Fatal("unexpected tactics length")
+	}
+
+	// sort obtained tactics lexicographically
+	sort.SliceStable(tactics, func(i, j int) bool {
+		return tactics[i].Tactic.tacticSummaryKey() < tactics[j].Tactic.tacticSummaryKey()
+	})
+
+	// sort the initial tactics as well
+	sort.SliceStable(expectTactics, func(i, j int) bool {
+		return expectTactics[i].Tactic.tacticSummaryKey() < expectTactics[j].Tactic.tacticSummaryKey()
+	})
+
+	// compare once we have sorted
+	if diff := cmp.Diff(expectTactics, tactics); diff != "" {
+		t.Fatal(diff)
 	}
 }
