@@ -8,7 +8,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-func TestHTTPSDialerNull(t *testing.T) {
+func TestHTTPSDialerNullPolicy(t *testing.T) {
 	t.Run("LookupTactics with canceled context", func(t *testing.T) {
 		var called int
 
