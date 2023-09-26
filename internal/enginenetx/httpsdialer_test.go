@@ -26,47 +26,48 @@ const (
 	httpsDialerCancelingContextStatsTrackerOnSuccess
 )
 
-// httpsDialerCancelingContextStatsTracker is an [HTTPSDialerStatsTracker] with a cancel
+// httpsDialerCancelingContextStatsTracker is an [httpsDialerStatsTracker] with a cancel
 // function that causes the context to be canceled once we start dialing.
 //
-// This struct helps with testing [HTTPSDialer] is WAI when the context
+// This struct helps with testing [httpsDialer] is WAI when the context
 // has been canceled and we correctly shutdown all goroutines.
 type httpsDialerCancelingContextStatsTracker struct {
 	cancel context.CancelFunc
 	flags  int
 }
 
-var _ HTTPSDialerStatsTracker = &httpsDialerCancelingContextStatsTracker{}
+var _ httpsDialerStatsTracker = &httpsDialerCancelingContextStatsTracker{}
 
-// OnStarting implements HTTPSDialerStatsTracker.
-func (st *httpsDialerCancelingContextStatsTracker) OnStarting(tactic *HTTPSDialerTactic) {
+// OnStarting implements httpsDialerStatsTracker.
+func (st *httpsDialerCancelingContextStatsTracker) OnStarting(tactic *httpsDialerTactic) {
 	if (st.flags & httpsDialerCancelingContextStatsTrackerOnStarting) != 0 {
 		st.cancel()
 	}
 }
 
-// OnTCPConnectError implements HTTPSDialerStatsTracker.
-func (*httpsDialerCancelingContextStatsTracker) OnTCPConnectError(ctx context.Context, tactic *HTTPSDialerTactic, err error) {
+// OnTCPConnectError implements httpsDialerStatsTracker.
+func (*httpsDialerCancelingContextStatsTracker) OnTCPConnectError(ctx context.Context, tactic *httpsDialerTactic, err error) {
 	// nothing
 }
 
-// OnTLSHandshakeError implements HTTPSDialerStatsTracker.
-func (*httpsDialerCancelingContextStatsTracker) OnTLSHandshakeError(ctx context.Context, tactic *HTTPSDialerTactic, err error) {
+// OnTLSHandshakeError implements httpsDialerStatsTracker.
+func (*httpsDialerCancelingContextStatsTracker) OnTLSHandshakeError(ctx context.Context, tactic *httpsDialerTactic, err error) {
 	// nothing
 }
 
-// OnTLSVerifyError implements HTTPSDialerStatsTracker.
-func (*httpsDialerCancelingContextStatsTracker) OnTLSVerifyError(tactic *HTTPSDialerTactic, err error) {
+// OnTLSVerifyError implements httpsDialerStatsTracker.
+func (*httpsDialerCancelingContextStatsTracker) OnTLSVerifyError(tactic *httpsDialerTactic, err error) {
 	// nothing
 }
 
-// OnSuccess implements HTTPSDialerStatsTracker.
-func (st *httpsDialerCancelingContextStatsTracker) OnSuccess(tactic *HTTPSDialerTactic) {
+// OnSuccess implements httpsDialerStatsTracker.
+func (st *httpsDialerCancelingContextStatsTracker) OnSuccess(tactic *httpsDialerTactic) {
 	if (st.flags & httpsDialerCancelingContextStatsTrackerOnSuccess) != 0 {
 		st.cancel()
 	}
 }
 
+// QA using netem
 func TestHTTPSDialerNetemQA(t *testing.T) {
 	// testcase is a test case implemented by this function
 	type testcase struct {
@@ -77,7 +78,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		short bool
 
 		// stats is the stats tracker to use.
-		stats HTTPSDialerStatsTracker
+		stats httpsDialerStatsTracker
 
 		// endpoint is the endpoint to connect to consisting of a domain
 		// name or IP address followed by a TCP port
@@ -381,7 +382,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 				}
 
 				// create the TLS dialer
-				dialer := NewHTTPSDialer(
+				dialer := newHTTPSDialer(
 					log.Log,
 					netx,
 					policy,
@@ -438,7 +439,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 func TestHTTPSDialerTactic(t *testing.T) {
 	t.Run("String", func(t *testing.T) {
 		expected := `{"Address":"162.55.247.208","InitialDelay":150000000,"Port":"443","SNI":"www.example.com","VerifyHostname":"api.ooni.io"}`
-		ldt := &HTTPSDialerTactic{
+		ldt := &httpsDialerTactic{
 			Address:        "162.55.247.208",
 			InitialDelay:   150 * time.Millisecond,
 			Port:           "443",
@@ -453,7 +454,7 @@ func TestHTTPSDialerTactic(t *testing.T) {
 
 	t.Run("Clone", func(t *testing.T) {
 		ff := &testingx.FakeFiller{}
-		var expect HTTPSDialerTactic
+		var expect httpsDialerTactic
 		ff.Fill(&expect)
 		got := expect.Clone()
 		if diff := cmp.Diff(expect.String(), got.String()); diff != "" {
@@ -463,22 +464,23 @@ func TestHTTPSDialerTactic(t *testing.T) {
 
 	t.Run("Summary", func(t *testing.T) {
 		expected := `162.55.247.208:443 sni=www.example.com verify=api.ooni.io`
-		ldt := &HTTPSDialerTactic{
+		ldt := &httpsDialerTactic{
 			Address:        "162.55.247.208",
 			InitialDelay:   150 * time.Millisecond,
 			Port:           "443",
 			SNI:            "www.example.com",
 			VerifyHostname: "api.ooni.io",
 		}
-		got := ldt.Summary()
+		got := ldt.tacticSummaryKey()
 		if diff := cmp.Diff(expected, got); diff != "" {
 			t.Fatal(diff)
 		}
 	})
 }
 
+// QA using the host network
 func TestHTTPSDialerHostNetworkQA(t *testing.T) {
-	t.Run("HTTPSDialerNullPolicy allows connecting to https://127.0.0.1/ using a custom CA", func(t *testing.T) {
+	t.Run("dnsPolicy allows connecting to https://127.0.0.1/ using a custom CA", func(t *testing.T) {
 		ca := netem.MustNewCA()
 		server := testingx.MustNewHTTPServerTLS(
 			testingx.HTTPHandlerBlockpage451(),
@@ -493,7 +495,7 @@ func TestHTTPSDialerHostNetworkQA(t *testing.T) {
 		// https://github.com/ooni/probe-cli/pull/1295#issuecomment-1731243994
 		resolver := netxlite.MaybeWrapWithBogonResolver(true, netxlite.NewStdlibResolver(log.Log))
 
-		httpsDialer := NewHTTPSDialer(
+		httpsDialer := newHTTPSDialer(
 			log.Log,
 			&netxlite.Netx{Underlying: &mocks.UnderlyingNetwork{
 				MockDefaultCertPool: func() *x509.CertPool {

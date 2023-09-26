@@ -84,7 +84,7 @@ func TestNetworkUnit(t *testing.T) {
 		}
 	})
 
-	t.Run("NewNetwork uses the correct HTTPSDialerPolicy", func(t *testing.T) {
+	t.Run("NewNetwork uses the correct httpsDialerPolicy", func(t *testing.T) {
 		// testcase is a test case run by this func
 		type testcase struct {
 			name         string
@@ -111,7 +111,7 @@ func TestNetworkUnit(t *testing.T) {
 				name: "when there's a user-provided policy",
 				kvStore: func() model.KeyValueStore {
 					policy := &staticPolicyRoot{
-						DomainEndpoints: map[string][]*HTTPSDialerTactic{
+						DomainEndpoints: map[string][]*httpsDialerTactic{
 							"www.example.com:443": {{
 								Address:        netemx.AddressApiOONIIo,
 								InitialDelay:   0,

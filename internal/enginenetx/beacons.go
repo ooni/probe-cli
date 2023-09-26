@@ -20,14 +20,14 @@ import (
 // The zero value is invalid; please, init MANDATORY fields.
 type beaconsPolicy struct {
 	// Fallback is the MANDATORY fallback policy.
-	Fallback HTTPSDialerPolicy
+	Fallback httpsDialerPolicy
 }
 
-var _ HTTPSDialerPolicy = &beaconsPolicy{}
+var _ httpsDialerPolicy = &beaconsPolicy{}
 
-// LookupTactics implements HTTPSDialerPolicy.
-func (p *beaconsPolicy) LookupTactics(ctx context.Context, domain, port string) <-chan *HTTPSDialerTactic {
-	out := make(chan *HTTPSDialerTactic)
+// LookupTactics implements httpsDialerPolicy.
+func (p *beaconsPolicy) LookupTactics(ctx context.Context, domain, port string) <-chan *httpsDialerTactic {
+	out := make(chan *httpsDialerTactic)
 
 	go func() {
 		defer close(out)
@@ -51,8 +51,8 @@ func (p *beaconsPolicy) LookupTactics(ctx context.Context, domain, port string) 
 	return out
 }
 
-func (p *beaconsPolicy) tacticsForDomain(domain, port string) <-chan *HTTPSDialerTactic {
-	out := make(chan *HTTPSDialerTactic)
+func (p *beaconsPolicy) tacticsForDomain(domain, port string) <-chan *httpsDialerTactic {
+	out := make(chan *httpsDialerTactic)
 
 	go func() {
 		defer close(out)
@@ -72,7 +72,7 @@ func (p *beaconsPolicy) tacticsForDomain(domain, port string) <-chan *HTTPSDiale
 
 		for _, ipAddr := range ipAddrs {
 			for _, sni := range snis {
-				out <- &HTTPSDialerTactic{
+				out <- &httpsDialerTactic{
 					Address:        ipAddr,
 					InitialDelay:   0,
 					Port:           port,

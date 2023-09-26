@@ -26,12 +26,12 @@ type dnsPolicy struct {
 	Resolver model.Resolver
 }
 
-var _ HTTPSDialerPolicy = &dnsPolicy{}
+var _ httpsDialerPolicy = &dnsPolicy{}
 
-// LookupTactics implements HTTPSDialerPolicy.
+// LookupTactics implements httpsDialerPolicy.
 func (p *dnsPolicy) LookupTactics(
-	ctx context.Context, domain, port string) <-chan *HTTPSDialerTactic {
-	out := make(chan *HTTPSDialerTactic)
+	ctx context.Context, domain, port string) <-chan *httpsDialerTactic {
+	out := make(chan *httpsDialerTactic)
 
 	go func() {
 		// make sure we close the output channel when done
@@ -40,7 +40,7 @@ func (p *dnsPolicy) LookupTactics(
 		// Do not even start the DNS lookup if the context has already been canceled, which
 		// happens if some policy running before us had successfully connected
 		if err := ctx.Err(); err != nil {
-			p.Logger.Debugf("HTTPSDialerNullPolicy: LookupTactics: %s", err.Error())
+			p.Logger.Debugf("dnsPolicy: LookupTactics: %s", err.Error())
 			return
 		}
 
@@ -55,7 +55,7 @@ func (p *dnsPolicy) LookupTactics(
 		}
 
 		for idx, addr := range addrs {
-			tactic := &HTTPSDialerTactic{
+			tactic := &httpsDialerTactic{
 				Address:        addr,
 				InitialDelay:   happyEyeballsDelay(idx),
 				Port:           port,

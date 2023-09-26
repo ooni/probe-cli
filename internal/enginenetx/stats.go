@@ -17,37 +17,37 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// nullStatsTracker is the "null" [HTTPSDialerStatsTracker].
+// nullStatsTracker is the "null" [httpsDialerStatsTracker].
 type nullStatsTracker struct{}
 
-var _ HTTPSDialerStatsTracker = &nullStatsTracker{}
+var _ httpsDialerStatsTracker = &nullStatsTracker{}
 
-// OnStarting implements HTTPSDialerStatsTracker.
-func (*nullStatsTracker) OnStarting(tactic *HTTPSDialerTactic) {
+// OnStarting implements httpsDialerStatsTracker.
+func (*nullStatsTracker) OnStarting(tactic *httpsDialerTactic) {
 	// nothing
 }
 
-// OnSuccess implements HTTPSDialerStatsTracker.
-func (*nullStatsTracker) OnSuccess(tactic *HTTPSDialerTactic) {
+// OnSuccess implements httpsDialerStatsTracker.
+func (*nullStatsTracker) OnSuccess(tactic *httpsDialerTactic) {
 	// nothing
 }
 
-// OnTCPConnectError implements HTTPSDialerStatsTracker.
-func (*nullStatsTracker) OnTCPConnectError(ctx context.Context, tactic *HTTPSDialerTactic, err error) {
+// OnTCPConnectError implements httpsDialerStatsTracker.
+func (*nullStatsTracker) OnTCPConnectError(ctx context.Context, tactic *httpsDialerTactic, err error) {
 	// nothing
 }
 
-// OnTLSHandshakeError implements HTTPSDialerStatsTracker.
-func (*nullStatsTracker) OnTLSHandshakeError(ctx context.Context, tactic *HTTPSDialerTactic, err error) {
+// OnTLSHandshakeError implements httpsDialerStatsTracker.
+func (*nullStatsTracker) OnTLSHandshakeError(ctx context.Context, tactic *httpsDialerTactic, err error) {
 	// nothing
 }
 
-// OnTLSVerifyError implements HTTPSDialerStatsTracker.
-func (*nullStatsTracker) OnTLSVerifyError(tactic *HTTPSDialerTactic, err error) {
+// OnTLSVerifyError implements httpsDialerStatsTracker.
+func (*nullStatsTracker) OnTLSVerifyError(tactic *httpsDialerTactic, err error) {
 	// nothing
 }
 
-// statsTactic keeps stats about an [*HTTPSDialerTactic].
+// statsTactic keeps stats about an [*httpsDialerTactic].
 type statsTactic struct {
 	// CountStarted counts the number of operations we started.
 	CountStarted int64
@@ -83,7 +83,7 @@ type statsTactic struct {
 	LastUpdated time.Time
 
 	// Tactic is the underlying tactic.
-	Tactic *HTTPSDialerTactic
+	Tactic *httpsDialerTactic
 }
 
 func statsCloneMapStringInt64(input map[string]int64) (output map[string]int64) {
@@ -165,19 +165,19 @@ func statsContainerRemoveOldEntries(input *statsContainer) (output *statsContain
 // GetStatsTacticLocked returns the tactic record for the given [*statsTactic] instance.
 //
 // At the name implies, this function MUST be called while holding the [*statsManager] mutex.
-func (c *statsContainer) GetStatsTacticLocked(tactic *HTTPSDialerTactic) (*statsTactic, bool) {
+func (c *statsContainer) GetStatsTacticLocked(tactic *httpsDialerTactic) (*statsTactic, bool) {
 	domainEpntRecord, found := c.DomainEndpoints[tactic.domainEndpointKey()]
 	if !found {
 		return nil, false
 	}
-	tacticRecord, found := domainEpntRecord.Tactics[tactic.Summary()]
+	tacticRecord, found := domainEpntRecord.Tactics[tactic.tacticSummaryKey()]
 	return tacticRecord, found
 }
 
 // SetStatsTacticLocked sets the tactic record for the given the given [*statsTactic] instance.
 //
 // At the name implies, this function MUST be called while holding the [*statsManager] mutex.
-func (c *statsContainer) SetStatsTacticLocked(tactic *HTTPSDialerTactic, record *statsTactic) {
+func (c *statsContainer) SetStatsTacticLocked(tactic *httpsDialerTactic, record *statsTactic) {
 	domainEpntRecord, found := c.DomainEndpoints[tactic.domainEndpointKey()]
 	if !found {
 		domainEpntRecord = &statsDomainEndpoint{
@@ -192,7 +192,7 @@ func (c *statsContainer) SetStatsTacticLocked(tactic *HTTPSDialerTactic, record 
 		c.DomainEndpoints[tactic.domainEndpointKey()] = domainEpntRecord
 		// fallthrough
 	}
-	domainEpntRecord.Tactics[tactic.Summary()] = record
+	domainEpntRecord.Tactics[tactic.tacticSummaryKey()] = record
 }
 
 // newStatsContainer creates a new empty [*statsContainer].
@@ -203,7 +203,7 @@ func newStatsContainer() *statsContainer {
 	}
 }
 
-// statsManager implements [HTTPSDialerStatsTracker] by storing
+// statsManager implements [httpsDialerStatsTracker] by storing
 // the relevant statistics in a [model.KeyValueStore].
 //
 // The zero value of this structure is not ready to use; please, use the
@@ -274,10 +274,10 @@ func newStatsManager(kvStore model.KeyValueStore, logger model.Logger) *statsMan
 	}
 }
 
-var _ HTTPSDialerStatsTracker = &statsManager{}
+var _ httpsDialerStatsTracker = &statsManager{}
 
-// OnStarting implements HTTPSDialerStatsManager.
-func (mt *statsManager) OnStarting(tactic *HTTPSDialerTactic) {
+// OnStarting implements httpsDialerStatsManager.
+func (mt *statsManager) OnStarting(tactic *httpsDialerTactic) {
 	// get exclusive access
 	defer mt.mu.Unlock()
 	mt.mu.Lock()
@@ -307,8 +307,8 @@ func (mt *statsManager) OnStarting(tactic *HTTPSDialerTactic) {
 	record.LastUpdated = time.Now()
 }
 
-// OnTCPConnectError implements HTTPSDialerStatsManager.
-func (mt *statsManager) OnTCPConnectError(ctx context.Context, tactic *HTTPSDialerTactic, err error) {
+// OnTCPConnectError implements httpsDialerStatsManager.
+func (mt *statsManager) OnTCPConnectError(ctx context.Context, tactic *httpsDialerTactic, err error) {
 	// get exclusive access
 	defer mt.mu.Unlock()
 	mt.mu.Lock()
@@ -316,7 +316,7 @@ func (mt *statsManager) OnTCPConnectError(ctx context.Context, tactic *HTTPSDial
 	// get the record
 	record, found := mt.container.GetStatsTacticLocked(tactic)
 	if !found {
-		mt.logger.Warnf("HTTPSDialerStatsManager.OnTCPConnectError: not found: %+v", tactic)
+		mt.logger.Warnf("statsManager.OnTCPConnectError: not found: %+v", tactic)
 		return
 	}
 
@@ -330,8 +330,8 @@ func (mt *statsManager) OnTCPConnectError(ctx context.Context, tactic *HTTPSDial
 	record.HistoTCPConnectError[err.Error()]++
 }
 
-// OnTLSHandshakeError implements HTTPSDialerStatsManager.
-func (mt *statsManager) OnTLSHandshakeError(ctx context.Context, tactic *HTTPSDialerTactic, err error) {
+// OnTLSHandshakeError implements httpsDialerStatsManager.
+func (mt *statsManager) OnTLSHandshakeError(ctx context.Context, tactic *httpsDialerTactic, err error) {
 	// get exclusive access
 	defer mt.mu.Unlock()
 	mt.mu.Lock()
@@ -339,7 +339,7 @@ func (mt *statsManager) OnTLSHandshakeError(ctx context.Context, tactic *HTTPSDi
 	// get the record
 	record, found := mt.container.GetStatsTacticLocked(tactic)
 	if !found {
-		mt.logger.Warnf("HTTPSDialerStatsManager.OnTLSHandshakeError: not found: %+v", tactic)
+		mt.logger.Warnf("statsManager.OnTLSHandshakeError: not found: %+v", tactic)
 		return
 	}
 
@@ -353,8 +353,8 @@ func (mt *statsManager) OnTLSHandshakeError(ctx context.Context, tactic *HTTPSDi
 	record.HistoTLSHandshakeError[err.Error()]++
 }
 
-// OnTLSVerifyError implements HTTPSDialerStatsManager.
-func (mt *statsManager) OnTLSVerifyError(tactic *HTTPSDialerTactic, err error) {
+// OnTLSVerifyError implements httpsDialerStatsManager.
+func (mt *statsManager) OnTLSVerifyError(tactic *httpsDialerTactic, err error) {
 	// get exclusive access
 	defer mt.mu.Unlock()
 	mt.mu.Lock()
@@ -362,7 +362,7 @@ func (mt *statsManager) OnTLSVerifyError(tactic *HTTPSDialerTactic, err error) {
 	// get the record
 	record, found := mt.container.GetStatsTacticLocked(tactic)
 	if !found {
-		mt.logger.Warnf("HTTPSDialerStatsManager.OnTLSVerificationError: not found: %+v", tactic)
+		mt.logger.Warnf("statsManager.OnTLSVerificationError: not found: %+v", tactic)
 		return
 	}
 
@@ -372,8 +372,8 @@ func (mt *statsManager) OnTLSVerifyError(tactic *HTTPSDialerTactic, err error) {
 	record.LastUpdated = time.Now()
 }
 
-// OnSuccess implements HTTPSDialerStatsManager.
-func (mt *statsManager) OnSuccess(tactic *HTTPSDialerTactic) {
+// OnSuccess implements httpsSDialerStatsManager.
+func (mt *statsManager) OnSuccess(tactic *httpsDialerTactic) {
 	// get exclusive access
 	defer mt.mu.Unlock()
 	mt.mu.Lock()
@@ -381,7 +381,7 @@ func (mt *statsManager) OnSuccess(tactic *HTTPSDialerTactic) {
 	// get the record
 	record, found := mt.container.GetStatsTacticLocked(tactic)
 	if !found {
-		mt.logger.Warnf("HTTPSDialerStatsManager.OnSuccess: not found: %+v", tactic)
+		mt.logger.Warnf("statsManager.OnSuccess: not found: %+v", tactic)
 		return
 	}
 

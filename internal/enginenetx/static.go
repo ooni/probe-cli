@@ -18,14 +18,14 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// staticPolicy is an [HTTPSDialerPolicy] incorporating verbatim
+// staticPolicy is an [httpsDialerPolicy] incorporating verbatim
 // a static policy loaded from the engine's key-value store.
 //
 // This policy is very useful for exploration and experimentation.
 type staticPolicy struct {
 	// Fallback is the fallback policy in case the static one does not
 	// contain a rule for a specific domain.
-	Fallback HTTPSDialerPolicy
+	Fallback httpsDialerPolicy
 
 	// Root is the root of the statically loaded policy.
 	Root *staticPolicyRoot
@@ -41,7 +41,7 @@ var errStaticPolicyWrongVersion = errors.New("wrong static policy version")
 // policy and either returns a good policy or an error. The typical error case is the one
 // in which there's no httpsDialerStaticPolicyKey in the key-value store.
 func newStaticPolicy(
-	kvStore model.KeyValueStore, fallback HTTPSDialerPolicy) (*staticPolicy, error) {
+	kvStore model.KeyValueStore, fallback httpsDialerPolicy) (*staticPolicy, error) {
 	// attempt to read the static policy bytes from the kvstore
 	data, err := kvStore.Get(staticPolicyKey)
 	if err != nil {
@@ -79,23 +79,23 @@ const staticPolicyVersion = 3
 // staticPolicyRoot is the root of a statically loaded policy.
 type staticPolicyRoot struct {
 	// DomainEndpoints maps each domain endpoint to its policies.
-	DomainEndpoints map[string][]*HTTPSDialerTactic
+	DomainEndpoints map[string][]*httpsDialerTactic
 
 	// Version is the data structure version.
 	Version int
 }
 
-var _ HTTPSDialerPolicy = &staticPolicy{}
+var _ httpsDialerPolicy = &staticPolicy{}
 
-// LookupTactics implements HTTPSDialerPolicy.
+// LookupTactics implements httpsDialerPolicy.
 func (ldp *staticPolicy) LookupTactics(
-	ctx context.Context, domain string, port string) <-chan *HTTPSDialerTactic {
+	ctx context.Context, domain string, port string) <-chan *httpsDialerTactic {
 	tactics, found := ldp.Root.DomainEndpoints[net.JoinHostPort(domain, port)]
 	if !found {
 		return ldp.Fallback.LookupTactics(ctx, domain, port)
 	}
 
-	out := make(chan *HTTPSDialerTactic)
+	out := make(chan *httpsDialerTactic)
 	go func() {
 		defer close(out)
 		for _, tactic := range tactics {
