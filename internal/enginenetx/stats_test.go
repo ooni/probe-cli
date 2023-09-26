@@ -56,7 +56,7 @@ func TestNetworkCollectsStats(t *testing.T) {
 			URL:  "https://api.ooni.io/",
 			initialPolicy: func() []byte {
 				p0 := &staticPolicyRoot{
-					DomainEndpoints: map[string][]*HTTPSDialerTactic{
+					DomainEndpoints: map[string][]*httpsDialerTactic{
 						// This policy has a different SNI and VerifyHostname, which gives
 						// us confidence that the stats are using the latter
 						"api.ooni.io:443": {{
@@ -93,7 +93,7 @@ func TestNetworkCollectsStats(t *testing.T) {
 				HistoTLSHandshakeError:    map[string]int64{},
 				HistoTLSVerificationError: map[string]int64{},
 				LastUpdated:               time.Time{},
-				Tactic: &HTTPSDialerTactic{
+				Tactic: &httpsDialerTactic{
 					Address:        "162.55.247.208",
 					InitialDelay:   0,
 					Port:           "443",
@@ -108,7 +108,7 @@ func TestNetworkCollectsStats(t *testing.T) {
 			URL:  "https://api.ooni.io/",
 			initialPolicy: func() []byte {
 				p0 := &staticPolicyRoot{
-					DomainEndpoints: map[string][]*HTTPSDialerTactic{
+					DomainEndpoints: map[string][]*httpsDialerTactic{
 						// This policy has a different SNI and VerifyHostname, which gives
 						// us confidence that the stats are using the latter
 						"api.ooni.io:443": {{
@@ -144,7 +144,7 @@ func TestNetworkCollectsStats(t *testing.T) {
 				},
 				HistoTLSVerificationError: map[string]int64{},
 				LastUpdated:               time.Time{},
-				Tactic: &HTTPSDialerTactic{
+				Tactic: &httpsDialerTactic{
 					Address:        "162.55.247.208",
 					InitialDelay:   0,
 					Port:           "443",
@@ -159,7 +159,7 @@ func TestNetworkCollectsStats(t *testing.T) {
 			URL:  "https://api.ooni.io/",
 			initialPolicy: func() []byte {
 				p0 := &staticPolicyRoot{
-					DomainEndpoints: map[string][]*HTTPSDialerTactic{
+					DomainEndpoints: map[string][]*httpsDialerTactic{
 						// This policy has a different SNI and VerifyHostname, which gives
 						// us confidence that the stats are using the latter
 						"api.ooni.io:443": {{
@@ -192,7 +192,7 @@ func TestNetworkCollectsStats(t *testing.T) {
 					"ssl_invalid_hostname": 1,
 				},
 				LastUpdated: time.Time{},
-				Tactic: &HTTPSDialerTactic{
+				Tactic: &httpsDialerTactic{
 					Address:        "104.154.89.105",
 					InitialDelay:   0,
 					Port:           "443",
@@ -350,7 +350,7 @@ func TestLoadStatsContainer(t *testing.T) {
 									"ssl_invalid_hostname": 1,
 								},
 								LastUpdated: fourtyFiveMinutesAgo,
-								Tactic: &HTTPSDialerTactic{
+								Tactic: &httpsDialerTactic{
 									Address:        "162.55.247.208",
 									InitialDelay:   0,
 									Port:           "443",
@@ -374,7 +374,7 @@ func TestLoadStatsContainer(t *testing.T) {
 									"ssl_invalid_hostname": 1,
 								},
 								LastUpdated: twoWeeksAgo,
-								Tactic: &HTTPSDialerTactic{
+								Tactic: &httpsDialerTactic{
 									Address:        "162.55.247.208",
 									InitialDelay:   0,
 									Port:           "443",
@@ -402,7 +402,7 @@ func TestLoadStatsContainer(t *testing.T) {
 									"ssl_invalid_hostname": 1,
 								},
 								LastUpdated: twoWeeksAgo,
-								Tactic: &HTTPSDialerTactic{
+								Tactic: &httpsDialerTactic{
 									Address:        "162.55.247.208",
 									InitialDelay:   0,
 									Port:           "443",
@@ -438,7 +438,7 @@ func TestLoadStatsContainer(t *testing.T) {
 								"ssl_invalid_hostname": 1,
 							},
 							LastUpdated: fourtyFiveMinutesAgo,
-							Tactic: &HTTPSDialerTactic{
+							Tactic: &httpsDialerTactic{
 								Address:        "162.55.247.208",
 								InitialDelay:   0,
 								Port:           "443",
@@ -510,7 +510,7 @@ func TestStatsManagerCallbacks(t *testing.T) {
 							"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
 								CountStarted: 1,
 								LastUpdated:  fourtyFiveMinutesAgo,
-								Tactic:       &HTTPSDialerTactic{}, // only required for cloning
+								Tactic:       &httpsDialerTactic{}, // only required for cloning
 							},
 						},
 					},
@@ -521,7 +521,7 @@ func TestStatsManagerCallbacks(t *testing.T) {
 				ctx, cancel := context.WithCancel(context.Background())
 				cancel() // immediately!
 
-				tactic := &HTTPSDialerTactic{
+				tactic := &httpsDialerTactic{
 					Address:        "162.55.247.208",
 					InitialDelay:   0,
 					Port:           "443",
@@ -540,7 +540,7 @@ func TestStatsManagerCallbacks(t *testing.T) {
 							"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
 								CountStarted:             1,
 								CountTCPConnectInterrupt: 1,
-								Tactic:                   &HTTPSDialerTactic{},
+								Tactic:                   &httpsDialerTactic{},
 							},
 						},
 					},
@@ -559,7 +559,7 @@ func TestStatsManagerCallbacks(t *testing.T) {
 			do: func(stats *statsManager) {
 				ctx := context.Background()
 
-				tactic := &HTTPSDialerTactic{
+				tactic := &httpsDialerTactic{
 					Address:        "162.55.247.208",
 					InitialDelay:   0,
 					Port:           "443",
@@ -587,7 +587,7 @@ func TestStatsManagerCallbacks(t *testing.T) {
 							"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
 								CountStarted: 1,
 								LastUpdated:  fourtyFiveMinutesAgo,
-								Tactic:       &HTTPSDialerTactic{}, // only for cloning
+								Tactic:       &httpsDialerTactic{}, // only for cloning
 							},
 						},
 					},
@@ -598,7 +598,7 @@ func TestStatsManagerCallbacks(t *testing.T) {
 				ctx, cancel := context.WithCancel(context.Background())
 				cancel() // immediately!
 
-				tactic := &HTTPSDialerTactic{
+				tactic := &httpsDialerTactic{
 					Address:        "162.55.247.208",
 					InitialDelay:   0,
 					Port:           "443",
@@ -617,7 +617,7 @@ func TestStatsManagerCallbacks(t *testing.T) {
 							"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
 								CountStarted:               1,
 								CountTLSHandshakeInterrupt: 1,
-								Tactic:                     &HTTPSDialerTactic{},
+								Tactic:                     &httpsDialerTactic{},
 							},
 						},
 					},
@@ -636,7 +636,7 @@ func TestStatsManagerCallbacks(t *testing.T) {
 			do: func(stats *statsManager) {
 				ctx := context.Background()
 
-				tactic := &HTTPSDialerTactic{
+				tactic := &httpsDialerTactic{
 					Address:        "162.55.247.208",
 					InitialDelay:   0,
 					Port:           "443",
@@ -662,7 +662,7 @@ func TestStatsManagerCallbacks(t *testing.T) {
 				Version:         statsContainerVersion,
 			},
 			do: func(stats *statsManager) {
-				tactic := &HTTPSDialerTactic{
+				tactic := &httpsDialerTactic{
 					Address:        "162.55.247.208",
 					InitialDelay:   0,
 					Port:           "443",
@@ -688,7 +688,7 @@ func TestStatsManagerCallbacks(t *testing.T) {
 				Version:         statsContainerVersion,
 			},
 			do: func(stats *statsManager) {
-				tactic := &HTTPSDialerTactic{
+				tactic := &httpsDialerTactic{
 					Address:        "162.55.247.208",
 					InitialDelay:   0,
 					Port:           "443",
