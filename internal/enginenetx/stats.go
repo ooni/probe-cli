@@ -1,5 +1,10 @@
 package enginenetx
 
+//
+// Code to keep statistics about the TLS dialing
+// tactics that work and the ones that don't
+//
+
 import (
 	"context"
 	"encoding/json"

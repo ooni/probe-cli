@@ -1,5 +1,13 @@
 package enginenetx
 
+//
+// static policy - the possibility of loading a static policy from a JSON
+// document named `httpsdialerstatic.conf` in $OONI_HOME/engine that contains
+// a specific policy for TLS dialing for specific endpoints.
+//
+// This policy helps a lot with exploration and experimentation.
+//
+
 import (
 	"context"
 	"errors"
@@ -10,66 +18,66 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// HTTPSDialerStaticPolicy is an [HTTPSDialerPolicy] incorporating verbatim
+// staticPolicy is an [HTTPSDialerPolicy] incorporating verbatim
 // a static policy loaded from the engine's key-value store.
 //
 // This policy is very useful for exploration and experimentation.
-type HTTPSDialerStaticPolicy struct {
+type staticPolicy struct {
 	// Fallback is the fallback policy in case the static one does not
 	// contain a rule for a specific domain.
 	Fallback HTTPSDialerPolicy
 
 	// Root is the root of the statically loaded policy.
-	Root *HTTPSDialerStaticPolicyRoot
+	Root *staticPolicyRoot
 }
 
-// HTTPSDialerStaticPolicyKey is the kvstore key used to retrieve the static policy.
-const HTTPSDialerStaticPolicyKey = "httpsdialerstatic.conf"
+// staticPolicyKey is the kvstore key used to retrieve the static policy.
+const staticPolicyKey = "httpsdialerstatic.conf"
 
-// errDialerStaticPolicyWrongVersion means that the static policy document has the wrong version number.
-var errDialerStaticPolicyWrongVersion = errors.New("wrong static policy version")
+// errStaticPolicyWrongVersion means that the static policy document has the wrong version number.
+var errStaticPolicyWrongVersion = errors.New("wrong static policy version")
 
-// NewHTTPSDialerStaticPolicy attempts to constructs a static policy using a given fallback
+// newStaticPolicy attempts to constructs a static policy using a given fallback
 // policy and either returns a good policy or an error. The typical error case is the one
 // in which there's no httpsDialerStaticPolicyKey in the key-value store.
-func NewHTTPSDialerStaticPolicy(
-	kvStore model.KeyValueStore, fallback HTTPSDialerPolicy) (*HTTPSDialerStaticPolicy, error) {
+func newStaticPolicy(
+	kvStore model.KeyValueStore, fallback HTTPSDialerPolicy) (*staticPolicy, error) {
 	// attempt to read the static policy bytes from the kvstore
-	data, err := kvStore.Get(HTTPSDialerStaticPolicyKey)
+	data, err := kvStore.Get(staticPolicyKey)
 	if err != nil {
 		return nil, err
 	}
 
 	// attempt to parse the static policy using human-readable JSON
-	var root HTTPSDialerStaticPolicyRoot
+	var root staticPolicyRoot
 	if err := hujsonx.Unmarshal(data, &root); err != nil {
 		return nil, err
 	}
 
 	// make sure the version is OK
-	if root.Version != HTTPSDialerStaticPolicyVersion {
+	if root.Version != staticPolicyVersion {
 		err := fmt.Errorf(
 			"%s: %w: expected=%d got=%d",
-			HTTPSDialerStaticPolicyKey,
-			errDialerStaticPolicyWrongVersion,
-			HTTPSDialerStaticPolicyVersion,
+			staticPolicyKey,
+			errStaticPolicyWrongVersion,
+			staticPolicyVersion,
 			root.Version,
 		)
 		return nil, err
 	}
 
-	out := &HTTPSDialerStaticPolicy{
+	out := &staticPolicy{
 		Fallback: fallback,
 		Root:     &root,
 	}
 	return out, nil
 }
 
-// HTTPSDialerStaticPolicyVersion is the current version of the static policy file.
-const HTTPSDialerStaticPolicyVersion = 3
+// staticPolicyVersion is the current version of the static policy file.
+const staticPolicyVersion = 3
 
-// HTTPSDialerStaticPolicyRoot is the root of a statically loaded policy.
-type HTTPSDialerStaticPolicyRoot struct {
+// staticPolicyRoot is the root of a statically loaded policy.
+type staticPolicyRoot struct {
 	// DomainEndpoints maps each domain endpoint to its policies.
 	DomainEndpoints map[string][]*HTTPSDialerTactic
 
@@ -77,10 +85,10 @@ type HTTPSDialerStaticPolicyRoot struct {
 	Version int
 }
 
-var _ HTTPSDialerPolicy = &HTTPSDialerStaticPolicy{}
+var _ HTTPSDialerPolicy = &staticPolicy{}
 
 // LookupTactics implements HTTPSDialerPolicy.
-func (ldp *HTTPSDialerStaticPolicy) LookupTactics(
+func (ldp *staticPolicy) LookupTactics(
 	ctx context.Context, domain string, port string) <-chan *HTTPSDialerTactic {
 	tactics, found := ldp.Root.DomainEndpoints[net.JoinHostPort(domain, port)]
 	if !found {

@@ -1,5 +1,10 @@
 package enginenetx
 
+//
+// beacons policy - a policy where we treat some IP addresses as special for
+// some domains, bypassing DNS lookups and using custom SNIs
+//
+
 import (
 	"context"
 	"math/rand"
