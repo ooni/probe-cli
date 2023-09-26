@@ -94,15 +94,12 @@ func NewNetwork(
 	// Create manager for keeping track of statistics
 	stats := newStatsManager(kvStore, logger)
 
-	// TODO(bassosimone): the documentation says we MAY avoid specific policies
-	// when using a proxy, should we actually implement that?
-
 	// Create a TLS dialer ONLY used for dialing TLS connections. This dialer will use
 	// happy-eyeballs and possibly custom policies for dialing TLS connections.
 	httpsDialer := newHTTPSDialer(
 		logger,
 		&netxlite.Netx{Underlying: nil}, // nil means using netxlite's singleton
-		newHTTPSDialerPolicy(kvStore, logger, resolver, stats),
+		newHTTPSDialerPolicy(kvStore, logger, proxyURL, resolver, stats),
 		stats,
 	)
 
@@ -148,9 +145,16 @@ func NewNetwork(
 func newHTTPSDialerPolicy(
 	kvStore model.KeyValueStore,
 	logger model.Logger,
+	proxyURL *url.URL, // optional!
 	resolver model.Resolver,
 	stats *statsManager,
 ) httpsDialerPolicy {
+	// in case there's a proxy URL, we're going to trust the proxy to do the right thing and
+	// know what it's doing, hence we'll have a very simple DNS policy
+	if proxyURL != nil {
+		return &dnsPolicy{logger, resolver}
+	}
+
 	// create a composed fallback TLS dialer policy
 	fallback := &statsPolicy{
 		Fallback: &beaconsPolicy{Fallback: &dnsPolicy{logger, resolver}},
@@ -158,7 +162,7 @@ func newHTTPSDialerPolicy(
 	}
 
 	// make sure we honor a user-provided policy
-	policy, err := newStaticPolicy(kvStore, fallback)
+	policy, err := newUserPolicy(kvStore, fallback)
 	if err != nil {
 		return fallback
 	}

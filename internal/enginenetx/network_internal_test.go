@@ -3,6 +3,8 @@ package enginenetx
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"net/url"
 	"sync"
 	"testing"
 
@@ -110,7 +112,7 @@ func TestNetworkUnit(t *testing.T) {
 			{
 				name: "when there's a user-provided policy",
 				kvStore: func() model.KeyValueStore {
-					policy := &staticPolicyRoot{
+					policy := &userPolicyRoot{
 						DomainEndpoints: map[string][]*httpsDialerTactic{
 							"www.example.com:443": {{
 								Address:        netemx.AddressApiOONIIo,
@@ -120,11 +122,11 @@ func TestNetworkUnit(t *testing.T) {
 								VerifyHostname: "api.ooni.io",
 							}},
 						},
-						Version: staticPolicyVersion,
+						Version: userPolicyVersion,
 					}
 					rawPolicy := runtimex.Try1(json.Marshal(policy))
 					kvStore := &kvstore.Memory{}
-					runtimex.Try0(kvStore.Set(staticPolicyKey, rawPolicy))
+					runtimex.Try0(kvStore.Set(userPolicyKey, rawPolicy))
 					return kvStore
 				},
 				expectStatus: 404,
@@ -167,4 +169,87 @@ func TestNetworkUnit(t *testing.T) {
 			})
 		}
 	})
+}
+
+// Make sure we get the correct policy type depending on how we call newHTTPSDialerPolicy
+func TestNewHTTPSDialerPolicy(t *testing.T) {
+	// testcase is a test case implemented by this function
+	type testcase struct {
+		// name is the name of the test case
+		name string
+
+		// kvStore constructs the kvstore to use
+		kvStore func() model.KeyValueStore
+
+		// proxyURL is the OPTIONAL proxy URL to use
+		proxyURL *url.URL
+
+		// expectType is the string representation of the
+		// type constructed using these params
+		expectType string
+	}
+
+	minimalUserPolicy := []byte(`{"Version":3}`)
+
+	cases := []testcase{{
+		name: "when there is a proxy URL and there is a user policy",
+		kvStore: func() model.KeyValueStore {
+			store := &kvstore.Memory{}
+			// this policy is mostly empty but it's enough to load
+			runtimex.Try0(store.Set(userPolicyKey, minimalUserPolicy))
+			return store
+		},
+		proxyURL: &url.URL{
+			Scheme: "socks5",
+			Host:   "127.0.0.1:9050",
+			Path:   "/",
+		},
+		expectType: "*enginenetx.dnsPolicy",
+	}, {
+		name: "when there is a proxy URL and there is no user policy",
+		kvStore: func() model.KeyValueStore {
+			return &kvstore.Memory{}
+		},
+		proxyURL: &url.URL{
+			Scheme: "socks5",
+			Host:   "127.0.0.1:9050",
+			Path:   "/",
+		},
+		expectType: "*enginenetx.dnsPolicy",
+	}, {
+		name: "when there is no proxy URL and there is a user policy",
+		kvStore: func() model.KeyValueStore {
+			store := &kvstore.Memory{}
+			// this policy is mostly empty but it's enough to load
+			runtimex.Try0(store.Set(userPolicyKey, minimalUserPolicy))
+			return store
+		},
+		proxyURL:   nil,
+		expectType: "*enginenetx.userPolicy",
+	}, {
+		name: "when there is no proxy URL and there is no user policy",
+		kvStore: func() model.KeyValueStore {
+			return &kvstore.Memory{}
+		},
+		proxyURL:   nil,
+		expectType: "*enginenetx.statsPolicy",
+	}}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			p := newHTTPSDialerPolicy(
+				tc.kvStore(),
+				model.DiscardLogger,
+				tc.proxyURL,       // possibly nil
+				&mocks.Resolver{}, // we are not using `out` so it does not matter
+				&statsManager{},   // ditto
+			)
+
+			got := fmt.Sprintf("%T", p)
+			if diff := cmp.Diff(tc.expectType, got); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+	}
 }
