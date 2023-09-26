@@ -37,6 +37,13 @@ func (p *HTTPSDialerNullPolicy) LookupTactics(
 		// make sure we close the output channel when done
 		defer close(out)
 
+		// Do not even start the DNS lookup if the context has already been canceled, which
+		// happens if some policy running before us had successfully connected
+		if err := ctx.Err(); err != nil {
+			p.Logger.Debugf("HTTPSDialerNullPolicy: LookupTactics: %s", err.Error())
+			return
+		}
+
 		// See https://github.com/ooni/probe-cli/pull/1295#issuecomment-1731243994 for context
 		// on why here we MUST make sure we short-circuit IP addresses.
 		resoWithShortCircuit := &netxlite.ResolverShortCircuitIPAddr{Resolver: p.Resolver}
