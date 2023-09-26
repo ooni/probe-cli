@@ -71,7 +71,7 @@ func (dt *HTTPSDialerTactic) Summary() string {
 	return fmt.Sprintf("%v sni=%v verify=%v", net.JoinHostPort(dt.Address, dt.Port), dt.SNI, dt.VerifyHostname)
 }
 
-// domainEndpointKey returns the key domain endpoint key for storing into a map.
+// domainEndpointKey returns the domain's endpoint string key for storing into a map.
 func (dt *HTTPSDialerTactic) domainEndpointKey() string {
 	return net.JoinHostPort(dt.VerifyHostname, dt.Port)
 }
