@@ -65,7 +65,7 @@ func NewHTTPSDialerStaticPolicy(
 }
 
 // HTTPSDialerStaticPolicyVersion is the current version of the static policy file.
-const HTTPSDialerStaticPolicyVersion = 1
+const HTTPSDialerStaticPolicyVersion = 2
 
 // HTTPSDialerStaticPolicyRoot is the root of a statically loaded policy.
 type HTTPSDialerStaticPolicyRoot struct {
