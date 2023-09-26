@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 
 	"github.com/ooni/probe-cli/v3/internal/hujsonx"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -65,12 +66,12 @@ func NewHTTPSDialerStaticPolicy(
 }
 
 // HTTPSDialerStaticPolicyVersion is the current version of the static policy file.
-const HTTPSDialerStaticPolicyVersion = 2
+const HTTPSDialerStaticPolicyVersion = 3
 
 // HTTPSDialerStaticPolicyRoot is the root of a statically loaded policy.
 type HTTPSDialerStaticPolicyRoot struct {
-	// Domains maps each domain to its policy.
-	Domains map[string][]*HTTPSDialerTactic
+	// DomainEndpoints maps each domain endpoint to its policies.
+	DomainEndpoints map[string][]*HTTPSDialerTactic
 
 	// Version is the data structure version.
 	Version int
@@ -81,7 +82,7 @@ var _ HTTPSDialerPolicy = &HTTPSDialerStaticPolicy{}
 // LookupTactics implements HTTPSDialerPolicy.
 func (ldp *HTTPSDialerStaticPolicy) LookupTactics(
 	ctx context.Context, domain string, port string) <-chan *HTTPSDialerTactic {
-	tactics, found := ldp.Root.Domains[domain]
+	tactics, found := ldp.Root.DomainEndpoints[net.JoinHostPort(domain, port)]
 	if !found {
 		return ldp.Fallback.LookupTactics(ctx, domain, port)
 	}

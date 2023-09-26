@@ -71,6 +71,11 @@ func (dt *HTTPSDialerTactic) Summary() string {
 	return fmt.Sprintf("%v sni=%v verify=%v", net.JoinHostPort(dt.Address, dt.Port), dt.SNI, dt.VerifyHostname)
 }
 
+// domainEndpointKey returns the domain's endpoint string key for storing into a map.
+func (dt *HTTPSDialerTactic) domainEndpointKey() string {
+	return net.JoinHostPort(dt.VerifyHostname, dt.Port)
+}
+
 // HTTPSDialerPolicy describes the policy used by the [*HTTPSDialer].
 type HTTPSDialerPolicy interface {
 	// LookupTactics returns zero or more tactics for the given host and port.

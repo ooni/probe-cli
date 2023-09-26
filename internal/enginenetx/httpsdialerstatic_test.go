@@ -57,15 +57,15 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 			name:           "with empty JSON",
 			key:            HTTPSDialerStaticPolicyKey,
 			input:          []byte(`{}`),
-			expectErr:      "httpsdialerstatic.conf: wrong static policy version: expected=2 got=0",
+			expectErr:      "httpsdialerstatic.conf: wrong static policy version: expected=3 got=0",
 			expectedPolicy: nil,
 		}, {
 			name: "with real serialized policy",
 			key:  HTTPSDialerStaticPolicyKey,
 			input: (func() []byte {
 				return runtimex.Try1(json.Marshal(&HTTPSDialerStaticPolicyRoot{
-					Domains: map[string][]*HTTPSDialerTactic{
-						"api.ooni.io": {{
+					DomainEndpoints: map[string][]*HTTPSDialerTactic{
+						"api.ooni.io:443": {{
 							Address:        "162.55.247.208",
 							InitialDelay:   0,
 							Port:           "443",
@@ -104,8 +104,8 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 			expectedPolicy: &HTTPSDialerStaticPolicy{
 				Fallback: fallback,
 				Root: &HTTPSDialerStaticPolicyRoot{
-					Domains: map[string][]*HTTPSDialerTactic{
-						"api.ooni.io": {{
+					DomainEndpoints: map[string][]*HTTPSDialerTactic{
+						"api.ooni.io:443": {{
 							Address:        "162.55.247.208",
 							InitialDelay:   0,
 							Port:           "443",
@@ -181,8 +181,8 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 			VerifyHostname: "api.ooni.io",
 		}
 		staticPolicyRoot := &HTTPSDialerStaticPolicyRoot{
-			Domains: map[string][]*HTTPSDialerTactic{
-				"api.ooni.io": {expectedTactic},
+			DomainEndpoints: map[string][]*HTTPSDialerTactic{
+				"api.ooni.io:443": {expectedTactic},
 			},
 			Version: HTTPSDialerStaticPolicyVersion,
 		}

@@ -38,8 +38,8 @@ func TestNetworkCollectsStats(t *testing.T) {
 		// expectErr is the expected error string
 		expectErr string
 
-		// statsDomain is the domain to lookup inside the stats
-		statsDomain string
+		// statsDomainEpnt is the domain endpoint to lookup inside the stats
+		statsDomainEpnt string
 
 		// statsTacticsSummary is the summary to lookup inside the stats
 		// once we have used the statsDomain to get a record
@@ -56,10 +56,10 @@ func TestNetworkCollectsStats(t *testing.T) {
 			URL:  "https://api.ooni.io/",
 			initialPolicy: func() []byte {
 				p0 := &HTTPSDialerStaticPolicyRoot{
-					Domains: map[string][]*HTTPSDialerTactic{
+					DomainEndpoints: map[string][]*HTTPSDialerTactic{
 						// This policy has a different SNI and VerifyHostname, which gives
 						// us confidence that the stats are using the latter
-						"api.ooni.io": {{
+						"api.ooni.io:443": {{
 							Address:        netemx.AddressApiOONIIo,
 							InitialDelay:   0,
 							Port:           "443",
@@ -79,7 +79,7 @@ func TestNetworkCollectsStats(t *testing.T) {
 				})
 			},
 			expectErr:           `Get "https://api.ooni.io/": connection_refused`,
-			statsDomain:         "api.ooni.io",
+			statsDomainEpnt:     "api.ooni.io:443",
 			statsTacticsSummary: "162.55.247.208:443 sni=www.example.com verify=api.ooni.io",
 			expectStats: &statsTactic{
 				CountStarted:              1,
@@ -108,10 +108,10 @@ func TestNetworkCollectsStats(t *testing.T) {
 			URL:  "https://api.ooni.io/",
 			initialPolicy: func() []byte {
 				p0 := &HTTPSDialerStaticPolicyRoot{
-					Domains: map[string][]*HTTPSDialerTactic{
+					DomainEndpoints: map[string][]*HTTPSDialerTactic{
 						// This policy has a different SNI and VerifyHostname, which gives
 						// us confidence that the stats are using the latter
-						"api.ooni.io": {{
+						"api.ooni.io:443": {{
 							Address:        netemx.AddressApiOONIIo,
 							InitialDelay:   0,
 							Port:           "443",
@@ -130,7 +130,7 @@ func TestNetworkCollectsStats(t *testing.T) {
 				})
 			},
 			expectErr:           `Get "https://api.ooni.io/": connection_reset`,
-			statsDomain:         "api.ooni.io",
+			statsDomainEpnt:     "api.ooni.io:443",
 			statsTacticsSummary: "162.55.247.208:443 sni=www.example.com verify=api.ooni.io",
 			expectStats: &statsTactic{
 				CountStarted:              1,
@@ -159,10 +159,10 @@ func TestNetworkCollectsStats(t *testing.T) {
 			URL:  "https://api.ooni.io/",
 			initialPolicy: func() []byte {
 				p0 := &HTTPSDialerStaticPolicyRoot{
-					Domains: map[string][]*HTTPSDialerTactic{
+					DomainEndpoints: map[string][]*HTTPSDialerTactic{
 						// This policy has a different SNI and VerifyHostname, which gives
 						// us confidence that the stats are using the latter
-						"api.ooni.io": {{
+						"api.ooni.io:443": {{
 							Address:        netemx.AddressBadSSLCom,
 							InitialDelay:   0,
 							Port:           "443",
@@ -178,7 +178,7 @@ func TestNetworkCollectsStats(t *testing.T) {
 				// nothing
 			},
 			expectErr:           `Get "https://api.ooni.io/": ssl_invalid_hostname`,
-			statsDomain:         "api.ooni.io",
+			statsDomainEpnt:     "api.ooni.io:443",
 			statsTacticsSummary: "104.154.89.105:443 sni=untrusted-root.badssl.com verify=api.ooni.io",
 			expectStats: &statsTactic{
 				CountStarted:              1,
@@ -261,9 +261,9 @@ func TestNetworkCollectsStats(t *testing.T) {
 			if err := json.Unmarshal(rawStats, &rootStats); err != nil {
 				t.Fatal(err)
 			}
-			tactics, good := rootStats.Domains[tc.statsDomain]
+			tactics, good := rootStats.DomainEndpoints[tc.statsDomainEpnt]
 			if !good {
-				t.Fatalf("no such record for `%s`", tc.statsDomain)
+				t.Fatalf("no such record for `%s`", tc.statsDomainEpnt)
 			}
 			t.Logf("%+v", tactics)
 
@@ -325,14 +325,14 @@ func TestLoadStatsContainer(t *testing.T) {
 		input: func() []byte {
 			return []byte(`{"Version":1}`)
 		},
-		expectErr:  "httpsdialerstats.state: wrong stats container version: expected=4 got=1",
+		expectErr:  "httpsdialerstats.state: wrong stats container version: expected=5 got=1",
 		expectRoot: nil,
 	}, {
 		name: "on success including correct entries pruning",
 		input: func() []byte {
 			root := &statsContainer{
-				Domains: map[string]*statsDomain{
-					"api.ooni.io": {
+				DomainEndpoints: map[string]*statsDomainEndpoint{
+					"api.ooni.io:443": {
 						Tactics: map[string]*statsTactic{
 							"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
 								CountStarted:              4,
@@ -384,7 +384,7 @@ func TestLoadStatsContainer(t *testing.T) {
 							},
 						},
 					},
-					"www.kernel.org": { // this whole entry should be skipped because it's too old
+					"www.kernel.org:443": { // this whole entry should be skipped because it's too old
 						Tactics: map[string]*statsTactic{
 							"162.55.247.208:443 sni=www.example.com verify=www.kernel.org": {
 								CountStarted:              4,
@@ -419,8 +419,8 @@ func TestLoadStatsContainer(t *testing.T) {
 		},
 		expectErr: "",
 		expectRoot: &statsContainer{
-			Domains: map[string]*statsDomain{
-				"api.ooni.io": {
+			DomainEndpoints: map[string]*statsDomainEndpoint{
+				"api.ooni.io:443": {
 					Tactics: map[string]*statsTactic{
 						"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
 							CountStarted:              4,
@@ -504,8 +504,8 @@ func TestStatsManagerCallbacks(t *testing.T) {
 		{
 			name: "OnTCPConnectError with ctx.Error() != nil",
 			initialRoot: &statsContainer{
-				Domains: map[string]*statsDomain{
-					"api.ooni.io": {
+				DomainEndpoints: map[string]*statsDomainEndpoint{
+					"api.ooni.io:443": {
 						Tactics: map[string]*statsTactic{
 							"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
 								CountStarted: 1,
@@ -534,8 +534,8 @@ func TestStatsManagerCallbacks(t *testing.T) {
 			},
 			expectWarnf: 0,
 			expectRoot: &statsContainer{
-				Domains: map[string]*statsDomain{
-					"api.ooni.io": {
+				DomainEndpoints: map[string]*statsDomainEndpoint{
+					"api.ooni.io:443": {
 						Tactics: map[string]*statsTactic{
 							"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
 								CountStarted:             1,
@@ -553,8 +553,8 @@ func TestStatsManagerCallbacks(t *testing.T) {
 		{
 			name: "OnTCPConnectError when we are missing the stats record for the domain",
 			initialRoot: &statsContainer{
-				Domains: map[string]*statsDomain{},
-				Version: statsContainerVersion,
+				DomainEndpoints: map[string]*statsDomainEndpoint{},
+				Version:         statsContainerVersion,
 			},
 			do: func(stats *statsManager) {
 				ctx := context.Background()
@@ -572,8 +572,8 @@ func TestStatsManagerCallbacks(t *testing.T) {
 			},
 			expectWarnf: 1,
 			expectRoot: &statsContainer{
-				Domains: map[string]*statsDomain{},
-				Version: statsContainerVersion,
+				DomainEndpoints: map[string]*statsDomainEndpoint{},
+				Version:         statsContainerVersion,
 			},
 		},
 
@@ -581,8 +581,8 @@ func TestStatsManagerCallbacks(t *testing.T) {
 		{
 			name: "OnTLSHandshakeError with ctx.Error() != nil",
 			initialRoot: &statsContainer{
-				Domains: map[string]*statsDomain{
-					"api.ooni.io": {
+				DomainEndpoints: map[string]*statsDomainEndpoint{
+					"api.ooni.io:443": {
 						Tactics: map[string]*statsTactic{
 							"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
 								CountStarted: 1,
@@ -611,8 +611,8 @@ func TestStatsManagerCallbacks(t *testing.T) {
 			},
 			expectWarnf: 0,
 			expectRoot: &statsContainer{
-				Domains: map[string]*statsDomain{
-					"api.ooni.io": {
+				DomainEndpoints: map[string]*statsDomainEndpoint{
+					"api.ooni.io:443": {
 						Tactics: map[string]*statsTactic{
 							"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
 								CountStarted:               1,
@@ -630,8 +630,8 @@ func TestStatsManagerCallbacks(t *testing.T) {
 		{
 			name: "OnTLSHandshakeError when we are missing the stats record for the domain",
 			initialRoot: &statsContainer{
-				Domains: map[string]*statsDomain{},
-				Version: statsContainerVersion,
+				DomainEndpoints: map[string]*statsDomainEndpoint{},
+				Version:         statsContainerVersion,
 			},
 			do: func(stats *statsManager) {
 				ctx := context.Background()
@@ -649,8 +649,8 @@ func TestStatsManagerCallbacks(t *testing.T) {
 			},
 			expectWarnf: 1,
 			expectRoot: &statsContainer{
-				Domains: map[string]*statsDomain{},
-				Version: statsContainerVersion,
+				DomainEndpoints: map[string]*statsDomainEndpoint{},
+				Version:         statsContainerVersion,
 			},
 		},
 
@@ -658,8 +658,8 @@ func TestStatsManagerCallbacks(t *testing.T) {
 		{
 			name: "OnTLSVerifyError when we are missing the stats record for the domain",
 			initialRoot: &statsContainer{
-				Domains: map[string]*statsDomain{},
-				Version: statsContainerVersion,
+				DomainEndpoints: map[string]*statsDomainEndpoint{},
+				Version:         statsContainerVersion,
 			},
 			do: func(stats *statsManager) {
 				tactic := &HTTPSDialerTactic{
@@ -675,8 +675,8 @@ func TestStatsManagerCallbacks(t *testing.T) {
 			},
 			expectWarnf: 1,
 			expectRoot: &statsContainer{
-				Domains: map[string]*statsDomain{},
-				Version: statsContainerVersion,
+				DomainEndpoints: map[string]*statsDomainEndpoint{},
+				Version:         statsContainerVersion,
 			},
 		},
 
@@ -684,8 +684,8 @@ func TestStatsManagerCallbacks(t *testing.T) {
 		{
 			name: "OnSuccess when we are missing the stats record for the domain",
 			initialRoot: &statsContainer{
-				Domains: map[string]*statsDomain{},
-				Version: statsContainerVersion,
+				DomainEndpoints: map[string]*statsDomainEndpoint{},
+				Version:         statsContainerVersion,
 			},
 			do: func(stats *statsManager) {
 				tactic := &HTTPSDialerTactic{
@@ -700,8 +700,8 @@ func TestStatsManagerCallbacks(t *testing.T) {
 			},
 			expectWarnf: 1,
 			expectRoot: &statsContainer{
-				Domains: map[string]*statsDomain{},
-				Version: statsContainerVersion,
+				DomainEndpoints: map[string]*statsDomainEndpoint{},
+				Version:         statsContainerVersion,
 			},
 		},
 	}

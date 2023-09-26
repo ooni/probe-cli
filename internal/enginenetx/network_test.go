@@ -301,8 +301,8 @@ func TestNetworkQA(t *testing.T) {
 				name: "when there's a user-provided policy",
 				kvStore: func() model.KeyValueStore {
 					policy := &enginenetx.HTTPSDialerStaticPolicyRoot{
-						Domains: map[string][]*enginenetx.HTTPSDialerTactic{
-							"www.example.com": {{
+						DomainEndpoints: map[string][]*enginenetx.HTTPSDialerTactic{
+							"www.example.com:443": {{
 								Address:        netemx.AddressApiOONIIo,
 								InitialDelay:   0,
 								Port:           "443",
