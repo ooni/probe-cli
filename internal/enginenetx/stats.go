@@ -84,8 +84,8 @@ type statsDomainEndpoint struct {
 	Tactics map[string]*statsTactic
 }
 
-// statsDomainRemoveOldEntries returns a copy of a [*statsDomain] with old entries removed.
-func statsDomainRemoveOldEntries(input *statsDomainEndpoint) (output *statsDomainEndpoint) {
+// statsDomainEndpointRemoveOldEntries returns a copy of a [*statsDomainEndpoint] with old entries removed.
+func statsDomainEndpointRemoveOldEntries(input *statsDomainEndpoint) (output *statsDomainEndpoint) {
 	output = &statsDomainEndpoint{
 		Tactics: map[string]*statsTactic{},
 	}
@@ -118,7 +118,7 @@ type statsContainer struct {
 func statsContainerRemoveOldEntries(input *statsContainer) (output *statsContainer) {
 	output = newStatsContainer()
 	for domainEpnt, inputStats := range input.DomainEndpoints {
-		prunedStats := statsDomainRemoveOldEntries(inputStats)
+		prunedStats := statsDomainEndpointRemoveOldEntries(inputStats)
 		if len(prunedStats.Tactics) <= 0 {
 			continue
 		}
