@@ -1,5 +1,11 @@
 package enginenetx
 
+//
+// Schedling policy based on stats that fallbacks to
+// another policy after it has produced all the tactics
+// we can produce given the current stats.
+//
+
 import (
 	"context"
 	"sort"
