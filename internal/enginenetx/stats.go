@@ -12,8 +12,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// HTTPSDialerStatsTacticRecord keeps stats about an [HTTPSDialerTactic].
-type HTTPSDialerStatsTacticRecord struct {
+// statsTactic keeps stats about an [*HTTPSDialerTactic].
+type statsTactic struct {
 	// CountStarted counts the number of operations we started.
 	CountStarted int64
 
@@ -51,30 +51,29 @@ type HTTPSDialerStatsTacticRecord struct {
 	Tactic *HTTPSDialerTactic
 }
 
-// HTTPSDialerStatsTacticsContainer contains tactics.
-type HTTPSDialerStatsTacticsContainer struct {
-	// Tactic maps the summary of a tactic to the tactic record.
-	Tactics map[string]*HTTPSDialerStatsTacticRecord
+// statsDomain contains stats associated with a domain.
+type statsDomain struct {
+	Tactics map[string]*statsTactic
 }
 
-// HTTPSDialerStatsContainerVersion is the current version of [HTTPSDialerStatsContainer].
-const HTTPSDialerStatsContainerVersion = 2
+// statsContainerVersion is the current version of [statsContainer].
+const statsContainerVersion = 2
 
-// HTTPSDialerStatsRootContainer is the root container for stats.
+// statsContainer is the root container for stats.
 //
-// The zero value is invalid; construct using [NewHTTPSDialerStatsRootContainer].
-type HTTPSDialerStatsRootContainer struct {
+// The zero value is invalid; construct using [newStatsContainer].
+type statsContainer struct {
 	// Domains maps a domain name to its tactics
-	Domains map[string]*HTTPSDialerStatsTacticsContainer
+	Domains map[string]*statsDomain
 
 	// Version is the version of the container data format.
 	Version int
 }
 
-// Get returns the tactic record for the given [*HTTPSDialerTactic] instance.
+// Get returns the tactic record for the given [*statsTactic] instance.
 //
-// At the name implies, this function MUST be called while holding the [HTTPSDialerStatsManager] mutex.
-func (c *HTTPSDialerStatsRootContainer) GetLocked(tactic *HTTPSDialerTactic) (*HTTPSDialerStatsTacticRecord, bool) {
+// At the name implies, this function MUST be called while holding the [*statsManager] mutex.
+func (c *statsContainer) GetLocked(tactic *HTTPSDialerTactic) (*statsTactic, bool) {
 	domainRecord, found := c.Domains[tactic.VerifyHostname]
 	if !found {
 		return nil, false
@@ -83,19 +82,19 @@ func (c *HTTPSDialerStatsRootContainer) GetLocked(tactic *HTTPSDialerTactic) (*H
 	return tacticRecord, found
 }
 
-// Set sets the tactic record for the given the given [*HTTPSDialerTactic] instance.
+// Set sets the tactic record for the given the given [*statsTactic] instance.
 //
-// At the name implies, this function MUST be called while holding the [HTTPSDialerStatsManager] mutex.
-func (c *HTTPSDialerStatsRootContainer) SetLocked(tactic *HTTPSDialerTactic, record *HTTPSDialerStatsTacticRecord) {
+// At the name implies, this function MUST be called while holding the [*statsManager] mutex.
+func (c *statsContainer) SetLocked(tactic *HTTPSDialerTactic, record *statsTactic) {
 	domainRecord, found := c.Domains[tactic.VerifyHostname]
 	if !found {
-		domainRecord = &HTTPSDialerStatsTacticsContainer{
-			Tactics: map[string]*HTTPSDialerStatsTacticRecord{},
+		domainRecord = &statsDomain{
+			Tactics: map[string]*statsTactic{},
 		}
 
 		// make sure the map is initialized
 		if len(c.Domains) <= 0 {
-			c.Domains = make(map[string]*HTTPSDialerStatsTacticsContainer)
+			c.Domains = make(map[string]*statsDomain)
 		}
 
 		c.Domains[tactic.VerifyHostname] = domainRecord
@@ -104,20 +103,20 @@ func (c *HTTPSDialerStatsRootContainer) SetLocked(tactic *HTTPSDialerTactic, rec
 	domainRecord.Tactics[tactic.Summary()] = record
 }
 
-// NewHTTPSDialerStatsRootContainer creates a new empty [*HTTPSDialerStatsRootContainer].
-func NewHTTPSDialerStatsRootContainer() *HTTPSDialerStatsRootContainer {
-	return &HTTPSDialerStatsRootContainer{
-		Domains: map[string]*HTTPSDialerStatsTacticsContainer{},
-		Version: HTTPSDialerStatsContainerVersion,
+// newStatsContainer creates a new empty [*statsContainer].
+func newStatsContainer() *statsContainer {
+	return &statsContainer{
+		Domains: map[string]*statsDomain{},
+		Version: statsContainerVersion,
 	}
 }
 
-// HTTPSDialerStatsManager implements [HTTPSDialerStatsTracker] by storing
+// statsManager implements [HTTPSDialerStatsTracker] by storing
 // the relevant statistics in a [model.KeyValueStore].
 //
 // The zero value of this structure is not ready to use; please, use the
-// [NewHTTPSDialerStatsManager] factory to create a new instance.
-type HTTPSDialerStatsManager struct {
+// [newStatsManager] factory to create a new instance.
+type statsManager struct {
 	// kvStore is the key-value store we're using
 	kvStore model.KeyValueStore
 
@@ -128,36 +127,36 @@ type HTTPSDialerStatsManager struct {
 	mu sync.Mutex
 
 	// root is the root container for stats
-	root *HTTPSDialerStatsRootContainer
+	root *statsContainer
 }
 
-// HTTPSDialerStatsKey is the key used in the key-value store to access the state.
-const HTTPSDialerStatsKey = "httpsdialerstats.state"
+// statsKey is the key used in the key-value store to access the state.
+const statsKey = "httpsdialerstats.state"
 
-// errDialerStatsContainerWrongVersion means that the stats container document has the wrong version number.
-var errDialerStatsContainerWrongVersion = errors.New("wrong stats container version")
+// errStatsContainerWrongVersion means that the stats container document has the wrong version number.
+var errStatsContainerWrongVersion = errors.New("wrong stats container version")
 
-// loadHTTPSDialerStatsRootContainer loads a state container from the given key-value store.
-func loadHTTPSDialerStatsRootContainer(kvStore model.KeyValueStore) (*HTTPSDialerStatsRootContainer, error) {
+// loadStatsContainer loads a state container from the given key-value store.
+func loadStatsContainer(kvStore model.KeyValueStore) (*statsContainer, error) {
 	// load data from the kvstore
-	data, err := kvStore.Get(HTTPSDialerStatsKey)
+	data, err := kvStore.Get(statsKey)
 	if err != nil {
 		return nil, err
 	}
 
 	// parse as JSON
-	var container HTTPSDialerStatsRootContainer
+	var container statsContainer
 	if err := json.Unmarshal(data, &container); err != nil {
 		return nil, err
 	}
 
 	// make sure the version is OK
-	if container.Version != HTTPSDialerStatsContainerVersion {
+	if container.Version != statsContainerVersion {
 		err := fmt.Errorf(
 			"%s: %w: expected=%d got=%d",
-			HTTPSDialerStatsKey,
-			errDialerStatsContainerWrongVersion,
-			HTTPSDialerStatsContainerVersion,
+			statsKey,
+			errStatsContainerWrongVersion,
+			statsContainerVersion,
 			container.Version,
 		)
 		return nil, err
@@ -166,14 +165,14 @@ func loadHTTPSDialerStatsRootContainer(kvStore model.KeyValueStore) (*HTTPSDiale
 	return &container, nil
 }
 
-// NewHTTPSDialerStatsManager constructs a new instance of [*HTTPSDialerStatsManager].
-func NewHTTPSDialerStatsManager(kvStore model.KeyValueStore, logger model.Logger) *HTTPSDialerStatsManager {
-	root, err := loadHTTPSDialerStatsRootContainer(kvStore)
+// newStatsManager constructs a new instance of [*statsManager].
+func newStatsManager(kvStore model.KeyValueStore, logger model.Logger) *statsManager {
+	root, err := loadStatsContainer(kvStore)
 	if err != nil {
-		root = NewHTTPSDialerStatsRootContainer()
+		root = newStatsContainer()
 	}
 
-	return &HTTPSDialerStatsManager{
+	return &statsManager{
 		root:    root,
 		kvStore: kvStore,
 		logger:  logger,
@@ -181,10 +180,10 @@ func NewHTTPSDialerStatsManager(kvStore model.KeyValueStore, logger model.Logger
 	}
 }
 
-var _ HTTPSDialerStatsTracker = &HTTPSDialerStatsManager{}
+var _ HTTPSDialerStatsTracker = &statsManager{}
 
 // OnStarting implements HTTPSDialerStatsManager.
-func (mt *HTTPSDialerStatsManager) OnStarting(tactic *HTTPSDialerTactic) {
+func (mt *statsManager) OnStarting(tactic *HTTPSDialerTactic) {
 	// get exclusive access
 	defer mt.mu.Unlock()
 	mt.mu.Lock()
@@ -192,7 +191,7 @@ func (mt *HTTPSDialerStatsManager) OnStarting(tactic *HTTPSDialerTactic) {
 	// get the record
 	record, found := mt.root.GetLocked(tactic)
 	if !found {
-		record = &HTTPSDialerStatsTacticRecord{
+		record = &statsTactic{
 			CountStarted:               0,
 			CountTCPConnectError:       0,
 			CountTCPConnectInterrupt:   0,
@@ -215,7 +214,7 @@ func (mt *HTTPSDialerStatsManager) OnStarting(tactic *HTTPSDialerTactic) {
 }
 
 // OnTCPConnectError implements HTTPSDialerStatsManager.
-func (mt *HTTPSDialerStatsManager) OnTCPConnectError(ctx context.Context, tactic *HTTPSDialerTactic, err error) {
+func (mt *statsManager) OnTCPConnectError(ctx context.Context, tactic *HTTPSDialerTactic, err error) {
 	// get exclusive access
 	defer mt.mu.Unlock()
 	mt.mu.Lock()
@@ -238,7 +237,7 @@ func (mt *HTTPSDialerStatsManager) OnTCPConnectError(ctx context.Context, tactic
 }
 
 // OnTLSHandshakeError implements HTTPSDialerStatsManager.
-func (mt *HTTPSDialerStatsManager) OnTLSHandshakeError(ctx context.Context, tactic *HTTPSDialerTactic, err error) {
+func (mt *statsManager) OnTLSHandshakeError(ctx context.Context, tactic *HTTPSDialerTactic, err error) {
 	// get exclusive access
 	defer mt.mu.Unlock()
 	mt.mu.Lock()
@@ -261,7 +260,7 @@ func (mt *HTTPSDialerStatsManager) OnTLSHandshakeError(ctx context.Context, tact
 }
 
 // OnTLSVerifyError implements HTTPSDialerStatsManager.
-func (mt *HTTPSDialerStatsManager) OnTLSVerifyError(tactic *HTTPSDialerTactic, err error) {
+func (mt *statsManager) OnTLSVerifyError(tactic *HTTPSDialerTactic, err error) {
 	// get exclusive access
 	defer mt.mu.Unlock()
 	mt.mu.Lock()
@@ -280,7 +279,7 @@ func (mt *HTTPSDialerStatsManager) OnTLSVerifyError(tactic *HTTPSDialerTactic, e
 }
 
 // OnSuccess implements HTTPSDialerStatsManager.
-func (mt *HTTPSDialerStatsManager) OnSuccess(tactic *HTTPSDialerTactic) {
+func (mt *statsManager) OnSuccess(tactic *HTTPSDialerTactic) {
 	// get exclusive access
 	defer mt.mu.Unlock()
 	mt.mu.Lock()
@@ -298,7 +297,7 @@ func (mt *HTTPSDialerStatsManager) OnSuccess(tactic *HTTPSDialerTactic) {
 }
 
 // Close implements io.Closer
-func (mt *HTTPSDialerStatsManager) Close() error {
+func (mt *statsManager) Close() error {
 	// TODO(bassosimone): do we need to apply a "once" semantics to this method?
 
 	// get exclusive access
@@ -306,5 +305,5 @@ func (mt *HTTPSDialerStatsManager) Close() error {
 	mt.mu.Lock()
 
 	// write updated stats into the underlying key-value store
-	return mt.kvStore.Set(HTTPSDialerStatsKey, runtimex.Try1(json.Marshal(mt.root)))
+	return mt.kvStore.Set(statsKey, runtimex.Try1(json.Marshal(mt.root)))
 }
