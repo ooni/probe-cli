@@ -136,7 +136,7 @@ func NewNetwork(
 // newHTTPSDialerPolicy contains the logic to select the [HTTPSDialerPolicy] to use.
 func newHTTPSDialerPolicy(kvStore model.KeyValueStore, logger model.Logger, resolver model.Resolver) HTTPSDialerPolicy {
 	// create a composed fallback TLS dialer policy
-	fallback := &BeaconsPolicy{
+	fallback := &beaconsPolicy{
 		Fallback: &HTTPSDialerNullPolicy{logger, resolver},
 	}
 
