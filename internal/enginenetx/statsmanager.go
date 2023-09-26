@@ -403,17 +403,22 @@ func (mt *statsManager) Close() error {
 
 // LookupTacticsStats returns stats about tactics for a given domain and port. The returned
 // list is a clone of the one stored by [*statsManager] so, it can easily be modified.
-func (mt *statsManager) LookupTactics(domain string, port string) []*statsTactic {
+func (mt *statsManager) LookupTactics(domain string, port string) ([]*statsTactic, bool) {
 	out := []*statsTactic{}
 
 	// get exclusive access
 	defer mt.mu.Unlock()
 	mt.mu.Lock()
 
+	// check whether we have information on this endpoint
+	domainEpnts, good := mt.container.DomainEndpoints[net.JoinHostPort(domain, port)]
+	if !good {
+		return out, len(out) > 0
+	}
+
 	// return a copy of each entry
-	domainEpnts := mt.container.DomainEndpoints[net.JoinHostPort(domain, port)]
 	for _, entry := range domainEpnts.Tactics {
 		out = append(out, entry.Clone())
 	}
-	return out
+	return out, len(out) > 0
 }
