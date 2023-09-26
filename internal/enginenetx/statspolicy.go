@@ -91,7 +91,7 @@ func (p *statsPolicy) statsLookupTactics(domain string, port string) (out []*htt
 	}
 
 	// Implementation note: the function should implement the "less" semantics
-	// but we want descending sort, so we're using a "more" semantics
+	// but we want descending sorting not ascending, so we're using a "more" semantics
 	sort.SliceStable(tactics, func(i, j int) bool {
 		// TODO(bassosimone): should we also consider the number of samples
 		// we have and how recent a sample is?

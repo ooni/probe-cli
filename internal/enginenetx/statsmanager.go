@@ -195,7 +195,7 @@ func statsContainerRemoveOldEntries(input *statsContainer) (output *statsContain
 
 		prunedStats := statsDomainEndpointRemoveOldEntries(inputStats)
 
-		// We don't want to include an entry when it's not empty because all the
+		// We don't want to include an entry when it's empty because all the
 		// stats inside it have just been pruned
 		if len(prunedStats.Tactics) <= 0 {
 			continue
