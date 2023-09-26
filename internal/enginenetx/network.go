@@ -93,7 +93,7 @@ func NewNetwork(
 
 	// Create a TLS dialer ONLY used for dialing TLS connections. This dialer will use
 	// happy-eyeballs and possibly custom policies for dialing TLS connections.
-	httpsDialer := NewHTTPSDialer(
+	httpsDialer := newHTTPSDialer(
 		logger,
 		&netxlite.Netx{Underlying: nil}, // nil means using netxlite's singleton
 		newHTTPSDialerPolicy(kvStore, logger, resolver),
@@ -139,7 +139,7 @@ func NewNetwork(
 }
 
 // newHTTPSDialerPolicy contains the logic to select the [HTTPSDialerPolicy] to use.
-func newHTTPSDialerPolicy(kvStore model.KeyValueStore, logger model.Logger, resolver model.Resolver) HTTPSDialerPolicy {
+func newHTTPSDialerPolicy(kvStore model.KeyValueStore, logger model.Logger, resolver model.Resolver) httpsDialerPolicy {
 	// create a composed fallback TLS dialer policy
 	fallback := &beaconsPolicy{
 		Fallback: &dnsPolicy{logger, resolver},

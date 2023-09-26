@@ -17,8 +17,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// HTTPSDialerTactic is a tactic to establish a TLS connection.
-type HTTPSDialerTactic struct {
+// httpsDialerTactic is a tactic to establish a TLS connection.
+type httpsDialerTactic struct {
 	// Address is the IPv4/IPv6 address for dialing.
 	Address string
 
@@ -37,11 +37,11 @@ type HTTPSDialerTactic struct {
 	VerifyHostname string
 }
 
-var _ fmt.Stringer = &HTTPSDialerTactic{}
+var _ fmt.Stringer = &httpsDialerTactic{}
 
-// Clone makes a deep copy of this [HTTPSDialerTactic].
-func (dt *HTTPSDialerTactic) Clone() *HTTPSDialerTactic {
-	return &HTTPSDialerTactic{
+// Clone makes a deep copy of this [httpsDialerTactic].
+func (dt *httpsDialerTactic) Clone() *httpsDialerTactic {
+	return &httpsDialerTactic{
 		Address:        dt.Address,
 		InitialDelay:   dt.InitialDelay,
 		Port:           dt.Port,
@@ -51,39 +51,41 @@ func (dt *HTTPSDialerTactic) Clone() *HTTPSDialerTactic {
 }
 
 // String implements fmt.Stringer.
-func (dt *HTTPSDialerTactic) String() string {
+func (dt *httpsDialerTactic) String() string {
 	return string(runtimex.Try1(json.Marshal(dt)))
 }
 
-// Summary returns a string summarizing this [HTTPSDialerTactic] for the
-// specific purpose of inserting the struct into a map.
+// tacticSummaryKey returns a string summarizing this [httpsDialerTactic] for
+// the specific purpose of inserting the struct into a map.
 //
 // The fields used to compute the summary are:
 //
 // - IPAddr
+//
+// - Port
 //
 // - SNI
 //
 // - VerifyHostname
 //
 // The returned string contains the above fields separated by space.
-func (dt *HTTPSDialerTactic) Summary() string {
+func (dt *httpsDialerTactic) tacticSummaryKey() string {
 	return fmt.Sprintf("%v sni=%v verify=%v", net.JoinHostPort(dt.Address, dt.Port), dt.SNI, dt.VerifyHostname)
 }
 
 // domainEndpointKey returns the domain's endpoint string key for storing into a map.
-func (dt *HTTPSDialerTactic) domainEndpointKey() string {
+func (dt *httpsDialerTactic) domainEndpointKey() string {
 	return net.JoinHostPort(dt.VerifyHostname, dt.Port)
 }
 
-// HTTPSDialerPolicy describes the policy used by the [*HTTPSDialer].
-type HTTPSDialerPolicy interface {
+// httpsDialerPolicy describes the policy used by the [*httpsDialer].
+type httpsDialerPolicy interface {
 	// LookupTactics returns zero or more tactics for the given host and port.
-	LookupTactics(ctx context.Context, domain, port string) <-chan *HTTPSDialerTactic
+	LookupTactics(ctx context.Context, domain, port string) <-chan *httpsDialerTactic
 }
 
-// HTTPSDialerStatsTracker tracks what happens while dialing TLS connections.
-type HTTPSDialerStatsTracker interface {
+// httpsDialerStatsTracker tracks what happens while dialing TLS connections.
+type httpsDialerStatsTracker interface {
 	// These callbacks are invoked during the TLS handshake to inform this
 	// tactic about events that occurred. A tactic SHOULD keep track of which
 	// addresses, SNIs, etc. work and return them more frequently.
@@ -93,20 +95,20 @@ type HTTPSDialerStatsTracker interface {
 	// its timeout has expired (i.e., using ctx.Err()) to determine
 	// whether the operation failed or was merely canceled. In the latter
 	// case, obviously, the policy MUST NOT consider the tactic failed.
-	OnStarting(tactic *HTTPSDialerTactic)
-	OnTCPConnectError(ctx context.Context, tactic *HTTPSDialerTactic, err error)
-	OnTLSHandshakeError(ctx context.Context, tactic *HTTPSDialerTactic, err error)
-	OnTLSVerifyError(tactic *HTTPSDialerTactic, err error)
-	OnSuccess(tactic *HTTPSDialerTactic)
+	OnStarting(tactic *httpsDialerTactic)
+	OnTCPConnectError(ctx context.Context, tactic *httpsDialerTactic, err error)
+	OnTLSHandshakeError(ctx context.Context, tactic *httpsDialerTactic, err error)
+	OnTLSVerifyError(tactic *httpsDialerTactic, err error)
+	OnSuccess(tactic *httpsDialerTactic)
 }
 
-// HTTPSDialer is the [model.TLSDialer] used by the engine to dial HTTPS connections.
+// httpsDialer is the [model.TLSDialer] used by the engine to dial HTTPS connections.
 //
-// The zero value of this struct is invalid; construct using [NewHTTPSDialer].
+// The zero value of this struct is invalid; construct using [newHTTPSDialer].
 //
 // This dialer MAY use an happy-eyeballs-like policy where we may try several IP addresses,
 // including IPv4 and IPv6, and dialing tactics in parallel.
-type HTTPSDialer struct {
+type httpsDialer struct {
 	// idGenerator is the ID generator.
 	idGenerator *atomic.Int64
 
@@ -117,16 +119,16 @@ type HTTPSDialer struct {
 	netx *netxlite.Netx
 
 	// policy defines the dialing policy to use.
-	policy HTTPSDialerPolicy
+	policy httpsDialerPolicy
 
 	// rootCAs contains the root certificate pool we should use.
 	rootCAs *x509.CertPool
 
 	// stats tracks what happens while dialing.
-	stats HTTPSDialerStatsTracker
+	stats httpsDialerStatsTracker
 }
 
-// NewHTTPSDialer constructs a new [*HTTPSDialer] instance.
+// newHTTPSDialer constructs a new [*httpsDialer] instance.
 //
 // Arguments:
 //
@@ -138,18 +140,18 @@ type HTTPSDialer struct {
 //
 // - stats tracks what happens while we're dialing.
 //
-// The returned [*HTTPSDialer] would use the underlying network's
+// The returned [*httpsDialer] would use the underlying network's
 // DefaultCertPool to create and cache the cert pool to use.
-func NewHTTPSDialer(
+func newHTTPSDialer(
 	logger model.Logger,
 	netx *netxlite.Netx,
-	policy HTTPSDialerPolicy,
-	stats HTTPSDialerStatsTracker,
-) *HTTPSDialer {
-	return &HTTPSDialer{
+	policy httpsDialerPolicy,
+	stats httpsDialerStatsTracker,
+) *httpsDialer {
+	return &httpsDialer{
 		idGenerator: &atomic.Int64{},
 		logger: &logx.PrefixLogger{
-			Prefix: "HTTPSDialer: ",
+			Prefix: "httpsDialer: ",
 			Logger: logger,
 		},
 		netx:    netx,
@@ -159,10 +161,10 @@ func NewHTTPSDialer(
 	}
 }
 
-var _ model.TLSDialer = &HTTPSDialer{}
+var _ model.TLSDialer = &httpsDialer{}
 
 // CloseIdleConnections implements model.TLSDialer.
-func (hd *HTTPSDialer) CloseIdleConnections() {
+func (hd *httpsDialer) CloseIdleConnections() {
 	// nothing
 }
 
@@ -183,7 +185,7 @@ var errDNSNoAnswer = netxlite.NewErrWrapper(
 )
 
 // DialTLSContext implements model.TLSDialer.
-func (hd *HTTPSDialer) DialTLSContext(ctx context.Context, network string, endpoint string) (net.Conn, error) {
+func (hd *httpsDialer) DialTLSContext(ctx context.Context, network string, endpoint string) (net.Conn, error) {
 	hostname, port, err := net.SplitHostPort(endpoint)
 	if err != nil {
 		return nil, err
@@ -252,10 +254,10 @@ func httpsDialerReduceResult(connv []model.TLSConn, errorv []error) (model.TLSCo
 
 // worker attempts to establish a TLS connection using and emits a single
 // [*httpsDialerErrorOrConn] for each tactic.
-func (hd *HTTPSDialer) worker(
+func (hd *httpsDialer) worker(
 	ctx context.Context,
 	joiner chan<- any,
-	reader <-chan *HTTPSDialerTactic,
+	reader <-chan *httpsDialerTactic,
 	t0 time.Time,
 	writer chan<- *httpsDialerErrorOrConn,
 ) {
@@ -275,11 +277,11 @@ func (hd *HTTPSDialer) worker(
 }
 
 // dialTLS performs the actual TLS dial.
-func (hd *HTTPSDialer) dialTLS(
+func (hd *httpsDialer) dialTLS(
 	ctx context.Context,
 	logger model.Logger,
 	t0 time.Time,
-	tactic *HTTPSDialerTactic,
+	tactic *httpsDialerTactic,
 ) (model.TLSConn, error) {
 	// wait for the tactic to be ready to run
 	if err := httpsDialerTacticWaitReady(ctx, t0, tactic); err != nil {
@@ -353,7 +355,7 @@ func (hd *HTTPSDialer) dialTLS(
 func httpsDialerTacticWaitReady(
 	ctx context.Context,
 	t0 time.Time,
-	tactic *HTTPSDialerTactic,
+	tactic *httpsDialerTactic,
 ) error {
 	deadline := t0.Add(tactic.InitialDelay)
 	delta := time.Until(deadline)

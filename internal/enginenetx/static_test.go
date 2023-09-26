@@ -13,8 +13,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-func TestHTTPSDialerStaticPolicy(t *testing.T) {
-	t.Run("NewHTTPSDialerStaticPolicy", func(t *testing.T) {
+func TestStaticPolicy(t *testing.T) {
+	t.Run("newStaticPolicy", func(t *testing.T) {
 		// testcase is a test case implemented by this function
 		type testcase struct {
 			// name is the test case name
@@ -64,7 +64,7 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 			key:  staticPolicyKey,
 			input: (func() []byte {
 				return runtimex.Try1(json.Marshal(&staticPolicyRoot{
-					DomainEndpoints: map[string][]*HTTPSDialerTactic{
+					DomainEndpoints: map[string][]*httpsDialerTactic{
 						"api.ooni.io:443": {{
 							Address:        "162.55.247.208",
 							InitialDelay:   0,
@@ -104,7 +104,7 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 			expectedPolicy: &staticPolicy{
 				Fallback: fallback,
 				Root: &staticPolicyRoot{
-					DomainEndpoints: map[string][]*HTTPSDialerTactic{
+					DomainEndpoints: map[string][]*httpsDialerTactic{
 						"api.ooni.io:443": {{
 							Address:        "162.55.247.208",
 							InitialDelay:   0,
@@ -173,7 +173,7 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 	})
 
 	t.Run("LookupTactics", func(t *testing.T) {
-		expectedTactic := &HTTPSDialerTactic{
+		expectedTactic := &httpsDialerTactic{
 			Address:        "162.55.247.208",
 			InitialDelay:   0,
 			Port:           "443",
@@ -181,7 +181,7 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 			VerifyHostname: "api.ooni.io",
 		}
 		staticPolicyRoot := &staticPolicyRoot{
-			DomainEndpoints: map[string][]*HTTPSDialerTactic{
+			DomainEndpoints: map[string][]*httpsDialerTactic{
 				"api.ooni.io:443": {expectedTactic},
 			},
 			Version: staticPolicyVersion,
@@ -201,13 +201,13 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 			}
 
 			tactics := policy.LookupTactics(ctx, "api.ooni.io", "443")
-			got := []*HTTPSDialerTactic{}
+			got := []*httpsDialerTactic{}
 			for tactic := range tactics {
 				t.Logf("%+v", tactic)
 				got = append(got, tactic)
 			}
 
-			expect := []*HTTPSDialerTactic{expectedTactic}
+			expect := []*httpsDialerTactic{expectedTactic}
 
 			if diff := cmp.Diff(expect, got); diff != "" {
 				t.Fatal(diff)
@@ -232,13 +232,13 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 			}
 
 			tactics := policy.LookupTactics(ctx, "www.example.com", "443")
-			got := []*HTTPSDialerTactic{}
+			got := []*httpsDialerTactic{}
 			for tactic := range tactics {
 				t.Logf("%+v", tactic)
 				got = append(got, tactic)
 			}
 
-			expect := []*HTTPSDialerTactic{{
+			expect := []*httpsDialerTactic{{
 				Address:        "93.184.216.34",
 				InitialDelay:   0,
 				Port:           "443",
