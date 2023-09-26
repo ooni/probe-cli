@@ -65,13 +65,16 @@ func TestStaticPolicy(t *testing.T) {
 			input: (func() []byte {
 				return runtimex.Try1(json.Marshal(&staticPolicyRoot{
 					DomainEndpoints: map[string][]*httpsDialerTactic{
+
+						// Please, note how the input includes explicitly nil entries
+						// with the purpose of making sure the code can handle them
 						"api.ooni.io:443": {{
 							Address:        "162.55.247.208",
 							InitialDelay:   0,
 							Port:           "443",
 							SNI:            "api.ooni.io",
 							VerifyHostname: "api.ooni.io",
-						}, {
+						}, nil, {
 							Address:        "46.101.82.151",
 							InitialDelay:   300 * time.Millisecond,
 							Port:           "443",
@@ -83,7 +86,7 @@ func TestStaticPolicy(t *testing.T) {
 							Port:           "443",
 							SNI:            "api.ooni.io",
 							VerifyHostname: "api.ooni.io",
-						}, {
+						}, nil, {
 							Address:        "46.101.82.151",
 							InitialDelay:   3000 * time.Millisecond,
 							Port:           "443",
@@ -95,7 +98,9 @@ func TestStaticPolicy(t *testing.T) {
 							Port:           "443",
 							SNI:            "www.example.com",
 							VerifyHostname: "api.ooni.io",
-						}},
+						}, nil},
+						//
+
 					},
 					Version: staticPolicyVersion,
 				}))
@@ -111,7 +116,7 @@ func TestStaticPolicy(t *testing.T) {
 							Port:           "443",
 							SNI:            "api.ooni.io",
 							VerifyHostname: "api.ooni.io",
-						}, {
+						}, nil, {
 							Address:        "46.101.82.151",
 							InitialDelay:   300 * time.Millisecond,
 							Port:           "443",
@@ -123,7 +128,7 @@ func TestStaticPolicy(t *testing.T) {
 							Port:           "443",
 							SNI:            "api.ooni.io",
 							VerifyHostname: "api.ooni.io",
-						}, {
+						}, nil, {
 							Address:        "46.101.82.151",
 							InitialDelay:   3000 * time.Millisecond,
 							Port:           "443",
@@ -135,7 +140,7 @@ func TestStaticPolicy(t *testing.T) {
 							Port:           "443",
 							SNI:            "www.example.com",
 							VerifyHostname: "api.ooni.io",
-						}},
+						}, nil},
 					},
 					Version: staticPolicyVersion,
 				},
@@ -182,7 +187,13 @@ func TestStaticPolicy(t *testing.T) {
 		}
 		staticPolicyRoot := &staticPolicyRoot{
 			DomainEndpoints: map[string][]*httpsDialerTactic{
-				"api.ooni.io:443": {expectedTactic},
+				// Note that here we're adding explicitly nil entries
+				// to make sure that the code correctly handles 'em
+				"api.ooni.io:443": {
+					nil,
+					expectedTactic,
+					nil,
+				},
 			},
 			Version: staticPolicyVersion,
 		}

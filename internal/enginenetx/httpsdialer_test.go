@@ -26,7 +26,7 @@ const (
 	httpsDialerCancelingContextStatsTrackerOnSuccess
 )
 
-// httpsDialerCancelingContextStatsTracker is an [httpsDialerStatsTracker] with a cancel
+// httpsDialerCancelingContextStatsTracker is an [httpsDialerEventsHandler] with a cancel
 // function that causes the context to be canceled once we start dialing.
 //
 // This struct helps with testing [httpsDialer] is WAI when the context
@@ -36,31 +36,31 @@ type httpsDialerCancelingContextStatsTracker struct {
 	flags  int
 }
 
-var _ httpsDialerStatsTracker = &httpsDialerCancelingContextStatsTracker{}
+var _ httpsDialerEventsHandler = &httpsDialerCancelingContextStatsTracker{}
 
-// OnStarting implements httpsDialerStatsTracker.
+// OnStarting implements httpsDialerEventsHandler.
 func (st *httpsDialerCancelingContextStatsTracker) OnStarting(tactic *httpsDialerTactic) {
 	if (st.flags & httpsDialerCancelingContextStatsTrackerOnStarting) != 0 {
 		st.cancel()
 	}
 }
 
-// OnTCPConnectError implements httpsDialerStatsTracker.
+// OnTCPConnectError implements httpsDialerEventsHandler.
 func (*httpsDialerCancelingContextStatsTracker) OnTCPConnectError(ctx context.Context, tactic *httpsDialerTactic, err error) {
 	// nothing
 }
 
-// OnTLSHandshakeError implements httpsDialerStatsTracker.
+// OnTLSHandshakeError implements httpsDialerEventsHandler.
 func (*httpsDialerCancelingContextStatsTracker) OnTLSHandshakeError(ctx context.Context, tactic *httpsDialerTactic, err error) {
 	// nothing
 }
 
-// OnTLSVerifyError implements httpsDialerStatsTracker.
+// OnTLSVerifyError implements httpsDialerEventsHandler.
 func (*httpsDialerCancelingContextStatsTracker) OnTLSVerifyError(tactic *httpsDialerTactic, err error) {
 	// nothing
 }
 
-// OnSuccess implements httpsDialerStatsTracker.
+// OnSuccess implements httpsDialerEventsHandler.
 func (st *httpsDialerCancelingContextStatsTracker) OnSuccess(tactic *httpsDialerTactic) {
 	if (st.flags & httpsDialerCancelingContextStatsTrackerOnSuccess) != 0 {
 		st.cancel()
@@ -78,7 +78,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		short bool
 
 		// stats is the stats tracker to use.
-		stats httpsDialerStatsTracker
+		stats httpsDialerEventsHandler
 
 		// endpoint is the endpoint to connect to consisting of a domain
 		// name or IP address followed by a TCP port
@@ -101,7 +101,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "net.SplitHostPort failure",
 			short:    true,
-			stats:    &nullStatsTracker{},
+			stats:    &nullStatsManager{},
 			endpoint: "www.example.com", // note: here the port is missing
 			scenario: netemx.InternetScenario,
 			configureDPI: func(dpi *netem.DPIEngine) {
@@ -117,7 +117,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "hd.policy.LookupTactics failure",
 			short:    true,
-			stats:    &nullStatsTracker{},
+			stats:    &nullStatsManager{},
 			endpoint: "www.example.nonexistent:443", // note: the domain does not exist
 			scenario: netemx.InternetScenario,
 			configureDPI: func(dpi *netem.DPIEngine) {
@@ -131,7 +131,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "successful dial with multiple addresses",
 			short:    true,
-			stats:    &nullStatsTracker{},
+			stats:    &nullStatsManager{},
 			endpoint: "www.example.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
 				Domains: []string{
@@ -157,7 +157,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "with TCP connect errors",
 			short:    true,
-			stats:    &nullStatsTracker{},
+			stats:    &nullStatsManager{},
 			endpoint: "www.example.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
 				Domains: []string{
@@ -191,7 +191,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "with TLS handshake errors",
 			short:    true,
-			stats:    &nullStatsTracker{},
+			stats:    &nullStatsManager{},
 			endpoint: "www.example.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
 				Domains: []string{
@@ -221,7 +221,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "with a TLS certificate valid for ANOTHER domain",
 			short:    true,
-			stats:    &nullStatsTracker{},
+			stats:    &nullStatsManager{},
 			endpoint: "wrong.host.badssl.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
 				Domains: []string{
@@ -246,7 +246,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "with TLS certificate signed by an unknown authority",
 			short:    true,
-			stats:    &nullStatsTracker{},
+			stats:    &nullStatsManager{},
 			endpoint: "untrusted-root.badssl.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
 				Domains: []string{
@@ -271,7 +271,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "with expired TLS certificate",
 			short:    true,
-			stats:    &nullStatsTracker{},
+			stats:    &nullStatsManager{},
 			endpoint: "expired.badssl.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
 				Domains: []string{
@@ -512,7 +512,7 @@ func TestHTTPSDialerHostNetworkQA(t *testing.T) {
 				Logger:   log.Log,
 				Resolver: resolver,
 			},
-			&nullStatsTracker{},
+			&nullStatsManager{},
 		)
 
 		URL := runtimex.Try1(url.Parse(server.URL))

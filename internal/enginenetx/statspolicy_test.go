@@ -222,4 +222,59 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 			t.Fatal(diff)
 		}
 	})
+
+	t.Run("we avoid manipulating nil tactics", func(t *testing.T) {
+		// create stats manager
+		stats := createStatsManager("api.ooni.io:443", expectTacticsStats...)
+
+		// create the composed policy
+		policy := &statsPolicy{
+			Fallback: &mocksPolicy{
+				MockLookupTactics: func(ctx context.Context, domain, port string) <-chan *httpsDialerTactic {
+					out := make(chan *httpsDialerTactic)
+					go func() {
+						defer close(out)
+						out <- nil // explicitly send nil on the channel
+					}()
+					return out
+				},
+			},
+			Stats: stats,
+		}
+
+		// obtain the tactics from the saved stats
+		var tactics []*httpsDialerTactic
+		for entry := range policy.LookupTactics(context.Background(), "api.ooni.io", "443") {
+			tactics = append(tactics, entry)
+		}
+
+		// compute the list of results we expect to see from the stats data
+		var expect []*httpsDialerTactic
+		idx := 0
+		for _, entry := range expectTacticsStats {
+			if entry.CountSuccess <= 0 {
+				continue // we SHOULD NOT include entries that systematically failed
+			}
+			t := entry.Tactic.Clone()
+			t.InitialDelay = happyEyeballsDelay(idx)
+			expect = append(expect, t)
+			idx++
+		}
+
+		// perform the actual comparison
+		if diff := cmp.Diff(expect, tactics); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+}
+
+type mocksPolicy struct {
+	MockLookupTactics func(ctx context.Context, domain string, port string) <-chan *httpsDialerTactic
+}
+
+var _ httpsDialerPolicy = &mocksPolicy{}
+
+// LookupTactics implements httpsDialerPolicy.
+func (p *mocksPolicy) LookupTactics(ctx context.Context, domain string, port string) <-chan *httpsDialerTactic {
+	return p.MockLookupTactics(ctx, domain, port)
 }

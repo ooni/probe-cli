@@ -90,15 +90,24 @@ var _ httpsDialerPolicy = &staticPolicy{}
 // LookupTactics implements httpsDialerPolicy.
 func (ldp *staticPolicy) LookupTactics(
 	ctx context.Context, domain string, port string) <-chan *httpsDialerTactic {
+	// check whether an entry exists in the user-provided map
 	tactics, found := ldp.Root.DomainEndpoints[net.JoinHostPort(domain, port)]
 	if !found {
 		return ldp.Fallback.LookupTactics(ctx, domain, port)
 	}
 
+	// emit the resuults, which may possibly be empty
 	out := make(chan *httpsDialerTactic)
 	go func() {
-		defer close(out)
+		defer close(out) // let the caller know we're done
 		for _, tactic := range tactics {
+
+			// We read this data from disk, we se cannot exclude the case where a user
+			// provides a file containing an explicitly nil tactic
+			if tactic == nil {
+				continue
+			}
+
 			out <- tactic
 		}
 	}()

@@ -18,33 +18,33 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// nullStatsTracker is the "null" [httpsDialerStatsTracker].
-type nullStatsTracker struct{}
+// nullStatsManager is the "null" [httpsDialerEventsHandler].
+type nullStatsManager struct{}
 
-var _ httpsDialerStatsTracker = &nullStatsTracker{}
+var _ httpsDialerEventsHandler = &nullStatsManager{}
 
-// OnStarting implements httpsDialerStatsTracker.
-func (*nullStatsTracker) OnStarting(tactic *httpsDialerTactic) {
+// OnStarting implements httpsDialerEventsHandler.
+func (*nullStatsManager) OnStarting(tactic *httpsDialerTactic) {
 	// nothing
 }
 
-// OnSuccess implements httpsDialerStatsTracker.
-func (*nullStatsTracker) OnSuccess(tactic *httpsDialerTactic) {
+// OnSuccess implements httpsDialerEventsHandler.
+func (*nullStatsManager) OnSuccess(tactic *httpsDialerTactic) {
 	// nothing
 }
 
-// OnTCPConnectError implements httpsDialerStatsTracker.
-func (*nullStatsTracker) OnTCPConnectError(ctx context.Context, tactic *httpsDialerTactic, err error) {
+// OnTCPConnectError implements httpsDialerEventsHandler.
+func (*nullStatsManager) OnTCPConnectError(ctx context.Context, tactic *httpsDialerTactic, err error) {
 	// nothing
 }
 
-// OnTLSHandshakeError implements httpsDialerStatsTracker.
-func (*nullStatsTracker) OnTLSHandshakeError(ctx context.Context, tactic *httpsDialerTactic, err error) {
+// OnTLSHandshakeError implements httpsDialerEventsHandler.
+func (*nullStatsManager) OnTLSHandshakeError(ctx context.Context, tactic *httpsDialerTactic, err error) {
 	// nothing
 }
 
-// OnTLSVerifyError implements httpsDialerStatsTracker.
-func (*nullStatsTracker) OnTLSVerifyError(tactic *httpsDialerTactic, err error) {
+// OnTLSVerifyError implements httpsDialerEventsHandler.
+func (*nullStatsManager) OnTLSVerifyError(tactic *httpsDialerTactic, err error) {
 	// nothing
 }
 
@@ -88,6 +88,8 @@ type statsTactic struct {
 }
 
 func statsCloneMapStringInt64(input map[string]int64) (output map[string]int64) {
+	// ~BUG: this function always returns an initialized map even when the
+	// original map is nil--is this an issue? No!
 	output = make(map[string]int64)
 	for key, value := range input {
 		output[key] = value
@@ -97,6 +99,9 @@ func statsCloneMapStringInt64(input map[string]int64) (output map[string]int64) 
 
 // Clone clones a given [*statsTactic]
 func (st *statsTactic) Clone() *statsTactic {
+	// Implementation note: a time.Time consists of an uint16, an int64 and
+	// a pointer to a location which is typically immutable, so it's perfectly
+	// fine to copy the LastUpdate field by assignment.
 	return &statsTactic{
 		CountStarted:               st.CountStarted,
 		CountTCPConnectError:       st.CountTCPConnectError,
@@ -126,6 +131,13 @@ func statsDomainEndpointRemoveOldEntries(input *statsDomainEndpoint) (output *st
 	oneWeek := 7 * 24 * time.Hour
 	now := time.Now()
 	for summary, tactic := range input.Tactics {
+
+		// we serialize stats to disk, so we cannot rule out the case where the user
+		// explicitly edits the stats to include a malformed entry
+		if tactic == nil || tactic.Tactic == nil {
+			continue
+		}
+
 		if delta := now.Sub(tactic.LastUpdated); delta > oneWeek {
 			continue
 		}
@@ -152,10 +164,21 @@ type statsContainer struct {
 func statsContainerRemoveOldEntries(input *statsContainer) (output *statsContainer) {
 	output = newStatsContainer()
 	for domainEpnt, inputStats := range input.DomainEndpoints {
+
+		// We serialize this data to disk, so we need to account for the case
+		// where a user has manually edited the JSON to add a nil value
+		if inputStats == nil {
+			continue
+		}
+
 		prunedStats := statsDomainEndpointRemoveOldEntries(inputStats)
+
+		// We don't want to include an entry when it's not empty because all the
+		// stats inside it have just been pruned
 		if len(prunedStats.Tactics) <= 0 {
 			continue
 		}
+
 		output.DomainEndpoints[domainEpnt] = prunedStats
 	}
 	return
@@ -183,7 +206,8 @@ func (c *statsContainer) SetStatsTacticLocked(tactic *httpsDialerTactic, record 
 			Tactics: map[string]*statsTactic{},
 		}
 
-		// make sure the map is initialized
+		// make sure the map is initialized -- not a void concern given that we're
+		// reading this structure from the disk
 		if len(c.DomainEndpoints) <= 0 {
 			c.DomainEndpoints = make(map[string]*statsDomainEndpoint)
 		}
@@ -202,8 +226,8 @@ func newStatsContainer() *statsContainer {
 	}
 }
 
-// statsManager implements [httpsDialerStatsTracker] by storing
-// the relevant statistics in a [model.KeyValueStore].
+// statsManager implements [httpsDialerEventsHandler] by storing the
+// relevant statistics in a [model.KeyValueStore].
 //
 // The zero value of this structure is not ready to use; please, use the
 // [newStatsManager] factory to create a new instance.
@@ -273,9 +297,9 @@ func newStatsManager(kvStore model.KeyValueStore, logger model.Logger) *statsMan
 	}
 }
 
-var _ httpsDialerStatsTracker = &statsManager{}
+var _ httpsDialerEventsHandler = &statsManager{}
 
-// OnStarting implements httpsDialerStatsManager.
+// OnStarting implements httpsDialerEventsHandler.
 func (mt *statsManager) OnStarting(tactic *httpsDialerTactic) {
 	// get exclusive access
 	defer mt.mu.Unlock()
@@ -306,7 +330,7 @@ func (mt *statsManager) OnStarting(tactic *httpsDialerTactic) {
 	record.LastUpdated = time.Now()
 }
 
-// OnTCPConnectError implements httpsDialerStatsManager.
+// OnTCPConnectError implements httpsDialerEventsHandler.
 func (mt *statsManager) OnTCPConnectError(ctx context.Context, tactic *httpsDialerTactic, err error) {
 	// get exclusive access
 	defer mt.mu.Unlock()
@@ -329,7 +353,7 @@ func (mt *statsManager) OnTCPConnectError(ctx context.Context, tactic *httpsDial
 	record.HistoTCPConnectError[err.Error()]++
 }
 
-// OnTLSHandshakeError implements httpsDialerStatsManager.
+// OnTLSHandshakeError implements httpsDialerEventsHandler.
 func (mt *statsManager) OnTLSHandshakeError(ctx context.Context, tactic *httpsDialerTactic, err error) {
 	// get exclusive access
 	defer mt.mu.Unlock()
@@ -352,7 +376,7 @@ func (mt *statsManager) OnTLSHandshakeError(ctx context.Context, tactic *httpsDi
 	record.HistoTLSHandshakeError[err.Error()]++
 }
 
-// OnTLSVerifyError implements httpsDialerStatsManager.
+// OnTLSVerifyError implements httpsDialerEventsHandler.
 func (mt *statsManager) OnTLSVerifyError(tactic *httpsDialerTactic, err error) {
 	// get exclusive access
 	defer mt.mu.Unlock()
@@ -371,7 +395,7 @@ func (mt *statsManager) OnTLSVerifyError(tactic *httpsDialerTactic, err error) {
 	record.LastUpdated = time.Now()
 }
 
-// OnSuccess implements httpsSDialerStatsManager.
+// OnSuccess implements httpsDialerEventsHandler.
 func (mt *statsManager) OnSuccess(tactic *httpsDialerTactic) {
 	// get exclusive access
 	defer mt.mu.Unlock()
@@ -391,7 +415,8 @@ func (mt *statsManager) OnSuccess(tactic *httpsDialerTactic) {
 
 // Close implements io.Closer
 func (mt *statsManager) Close() error {
-	// TODO(bassosimone): do we need to apply a "once" semantics to this method?
+	// TODO(bassosimone): do we need to apply a "once" semantics to this method? Perhaps no
+	// given that there is no resource that we can close only once...
 
 	// get exclusive access
 	defer mt.mu.Unlock()
@@ -411,12 +436,21 @@ func (mt *statsManager) LookupTactics(domain string, port string) ([]*statsTacti
 	mt.mu.Lock()
 
 	// check whether we have information on this endpoint
+	//
+	// Note: in case mt.container.DomainEndpoints is nil, this access pattern
+	// will return to us a nil pointer and false
+	//
+	// we also protect against the case where a user has configured a nil
+	// domainEpnts value inside the serialized JSON to crash us
 	domainEpnts, good := mt.container.DomainEndpoints[net.JoinHostPort(domain, port)]
-	if !good {
-		return out, len(out) > 0
+	if !good || domainEpnts == nil {
+		return out, false
 	}
 
 	// return a copy of each entry
+	//
+	// Note: if Tactics here is nil, we're just not going to have
+	// anything to include into the out list
 	for _, entry := range domainEpnts.Tactics {
 		out = append(out, entry.Clone())
 	}
