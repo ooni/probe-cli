@@ -101,7 +101,7 @@ func statsDomainRemoveOldEntries(input *statsDomain) (output *statsDomain) {
 }
 
 // statsContainerVersion is the current version of [statsContainer].
-const statsContainerVersion = 2
+const statsContainerVersion = 4
 
 // statsContainer is the root container for the stats.
 //

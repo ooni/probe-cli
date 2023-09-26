@@ -3,7 +3,6 @@ package enginenetx
 import (
 	"context"
 	"errors"
-	"net"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/mocks"
@@ -56,14 +55,10 @@ func TestBeaconsPolicy(t *testing.T) {
 		for tactic := range tactics {
 			count++
 
-			host, port, err := net.SplitHostPort(tactic.Endpoint)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if port != "443" {
+			if tactic.Port != "443" {
 				t.Fatal("the port should always be 443")
 			}
-			if host != "93.184.216.34" {
+			if tactic.Address != "93.184.216.34" {
 				t.Fatal("the host should always be 93.184.216.34")
 			}
 
@@ -101,14 +96,10 @@ func TestBeaconsPolicy(t *testing.T) {
 		for tactic := range tactics {
 			count++
 
-			host, port, err := net.SplitHostPort(tactic.Endpoint)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if port != "443" {
+			if tactic.Port != "443" {
 				t.Fatal("the port should always be 443")
 			}
-			if host != "162.55.247.208" {
+			if tactic.Address != "162.55.247.208" {
 				t.Fatal("the host should always be 162.55.247.208")
 			}
 

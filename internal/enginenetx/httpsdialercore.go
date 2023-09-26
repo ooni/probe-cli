@@ -19,12 +19,15 @@ import (
 
 // HTTPSDialerTactic is a tactic to establish a TLS connection.
 type HTTPSDialerTactic struct {
-	// Endpoint is the TCP endpoint to use for dialing.
-	Endpoint string
+	// Address is the IPv4/IPv6 address for dialing.
+	Address string
 
 	// InitialDelay is the time in nanoseconds after which
 	// you would like to start this policy.
 	InitialDelay time.Duration
+
+	// Port is the TCP port for dialing.
+	Port string
 
 	// SNI is the TLS ServerName to send over the wire.
 	SNI string
@@ -39,8 +42,9 @@ var _ fmt.Stringer = &HTTPSDialerTactic{}
 // Clone makes a deep copy of this [HTTPSDialerTactic].
 func (dt *HTTPSDialerTactic) Clone() *HTTPSDialerTactic {
 	return &HTTPSDialerTactic{
-		Endpoint:       dt.Endpoint,
+		Address:        dt.Address,
 		InitialDelay:   dt.InitialDelay,
+		Port:           dt.Port,
 		SNI:            dt.SNI,
 		VerifyHostname: dt.VerifyHostname,
 	}
@@ -64,7 +68,7 @@ func (dt *HTTPSDialerTactic) String() string {
 //
 // The returned string contains the above fields separated by space.
 func (dt *HTTPSDialerTactic) Summary() string {
-	return fmt.Sprintf("%v sni=%v verify=%v", dt.Endpoint, dt.SNI, dt.VerifyHostname)
+	return fmt.Sprintf("%v sni=%v verify=%v", net.JoinHostPort(dt.Address, dt.Port), dt.SNI, dt.VerifyHostname)
 }
 
 // HTTPSDialerPolicy describes the policy used by the [*HTTPSDialer].
@@ -281,9 +285,10 @@ func (hd *HTTPSDialer) dialTLS(
 	hd.stats.OnStarting(tactic)
 
 	// create dialer and establish TCP connection
-	ol := logx.NewOperationLogger(logger, "TCPConnect %s", tactic.Endpoint)
+	endpoint := net.JoinHostPort(tactic.Address, tactic.Port)
+	ol := logx.NewOperationLogger(logger, "TCPConnect %s", endpoint)
 	dialer := hd.netx.NewDialerWithoutResolver(logger)
-	tcpConn, err := dialer.DialContext(ctx, "tcp", tactic.Endpoint)
+	tcpConn, err := dialer.DialContext(ctx, "tcp", endpoint)
 	ol.Stop(err)
 
 	// handle a dialing error
@@ -304,7 +309,7 @@ func (hd *HTTPSDialer) dialTLS(
 	ol = logx.NewOperationLogger(
 		logger,
 		"TLSHandshake with %s SNI=%s ALPN=%v",
-		tactic.Endpoint,
+		endpoint,
 		tlsConfig.ServerName,
 		tlsConfig.NextProtos,
 	)

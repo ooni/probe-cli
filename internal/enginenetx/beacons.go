@@ -3,7 +3,6 @@ package enginenetx
 import (
 	"context"
 	"math/rand"
-	"net"
 	"time"
 )
 
@@ -69,8 +68,9 @@ func (p *beaconsPolicy) tacticsForDomain(domain, port string) <-chan *HTTPSDiale
 		for _, ipAddr := range ipAddrs {
 			for _, sni := range snis {
 				out <- &HTTPSDialerTactic{
-					Endpoint:       net.JoinHostPort(ipAddr, port),
+					Address:        ipAddr,
 					InitialDelay:   0,
+					Port:           port,
 					SNI:            sni,
 					VerifyHostname: domain,
 				}
