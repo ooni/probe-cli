@@ -55,8 +55,7 @@ func (dt *httpsDialerTactic) String() string {
 	return string(runtimex.Try1(json.Marshal(dt)))
 }
 
-// tacticSummaryKey returns a string summarizing this [httpsDialerTactic] for
-// the specific purpose of inserting the struct into a map.
+// tacticSummaryKey returns a string summarizing the tactic's features.
 //
 // The fields used to compute the summary are:
 //
@@ -68,33 +67,45 @@ func (dt *httpsDialerTactic) String() string {
 //
 // - VerifyHostname
 //
-// The returned string contains the above fields separated by space.
+// The returned string contains the above fields separated by space with
+// `sni=` before the SNI and `verify=` before the verify hostname.
+//
+// We should be careful not to change this format unless we also change the
+// format version used by static policies and by the state management.
 func (dt *httpsDialerTactic) tacticSummaryKey() string {
-	return fmt.Sprintf("%v sni=%v verify=%v", net.JoinHostPort(dt.Address, dt.Port), dt.SNI, dt.VerifyHostname)
+	return fmt.Sprintf(
+		"%v sni=%v verify=%v",
+		net.JoinHostPort(dt.Address, dt.Port),
+		dt.SNI,
+		dt.VerifyHostname,
+	)
 }
 
-// domainEndpointKey returns the domain's endpoint string key for storing into a map.
+// domainEndpointKey returns a string consisting of the domain endpoint only.
+//
+// We always use the VerifyHostname and the Port to construct the domain endpoint.
 func (dt *httpsDialerTactic) domainEndpointKey() string {
 	return net.JoinHostPort(dt.VerifyHostname, dt.Port)
 }
 
-// httpsDialerPolicy describes the policy used by the [*httpsDialer].
+// httpsDialerPolicy is a policy used by the [*httpsDialer].
 type httpsDialerPolicy interface {
-	// LookupTactics returns zero or more tactics for the given host and port.
+	// LookupTactics emits zero or more tactics for the given host and port
+	// through the returned channel, which is closed when done.
 	LookupTactics(ctx context.Context, domain, port string) <-chan *httpsDialerTactic
 }
 
-// httpsDialerStatsTracker tracks what happens while dialing TLS connections.
-type httpsDialerStatsTracker interface {
+// httpsDialerEventsHandler handles events occurring while we try dialing TLS.
+type httpsDialerEventsHandler interface {
 	// These callbacks are invoked during the TLS handshake to inform this
-	// tactic about events that occurred. A tactic SHOULD keep track of which
+	// interface about events that occurred. A policy SHOULD keep track of which
 	// addresses, SNIs, etc. work and return them more frequently.
 	//
 	// Callbacks that take an error as argument also take a context as
 	// argument and MUST check whether the context has been canceled or
 	// its timeout has expired (i.e., using ctx.Err()) to determine
 	// whether the operation failed or was merely canceled. In the latter
-	// case, obviously, the policy MUST NOT consider the tactic failed.
+	// case, obviously, you MUST NOT consider the tactic failed.
 	OnStarting(tactic *httpsDialerTactic)
 	OnTCPConnectError(ctx context.Context, tactic *httpsDialerTactic, err error)
 	OnTLSHandshakeError(ctx context.Context, tactic *httpsDialerTactic, err error)
@@ -125,7 +136,7 @@ type httpsDialer struct {
 	rootCAs *x509.CertPool
 
 	// stats tracks what happens while dialing.
-	stats httpsDialerStatsTracker
+	stats httpsDialerEventsHandler
 }
 
 // newHTTPSDialer constructs a new [*httpsDialer] instance.
@@ -146,7 +157,7 @@ func newHTTPSDialer(
 	logger model.Logger,
 	netx *netxlite.Netx,
 	policy httpsDialerPolicy,
-	stats httpsDialerStatsTracker,
+	stats httpsDialerEventsHandler,
 ) *httpsDialer {
 	return &httpsDialer{
 		idGenerator: &atomic.Int64{},
@@ -196,8 +207,8 @@ func (hd *httpsDialer) DialTLSContext(ctx context.Context, network string, endpo
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	// The emitter will emit tactics and then close the channel when done. We spawn 1+ workers
-	// that handle tactics in paralellel and posts on the collector channel.
+	// The emitter will emit tactics and then close the channel when done. We spawn 16 workers
+	// that handle tactics in parallel and post results on the collector channel.
 	emitter := hd.policy.LookupTactics(ctx, hostname, port)
 	collector := make(chan *httpsDialerErrorOrConn)
 	joiner := make(chan any)
@@ -252,8 +263,10 @@ func httpsDialerReduceResult(connv []model.TLSConn, errorv []error) (model.TLSCo
 	}
 }
 
-// worker attempts to establish a TLS connection using and emits a single
-// [*httpsDialerErrorOrConn] for each tactic.
+// worker attempts to establish a TLS connection and emits the result using
+// a [*httpsDialerErrorOrConn] for each tactic, until there are no more tactics
+// and the reader channel is closed. At which point it posts on joiner to let
+// the parent know that this goroutine has done its job.
 func (hd *httpsDialer) worker(
 	ctx context.Context,
 	joiner chan<- any,
@@ -270,8 +283,10 @@ func (hd *httpsDialer) worker(
 			Logger: hd.logger,
 		}
 
+		// perform the actual dial
 		conn, err := hd.dialTLS(ctx, prefixLogger, t0, tactic)
 
+		// send results to the parent
 		writer <- &httpsDialerErrorOrConn{Conn: conn, Err: err}
 	}
 }
@@ -283,12 +298,12 @@ func (hd *httpsDialer) dialTLS(
 	t0 time.Time,
 	tactic *httpsDialerTactic,
 ) (model.TLSConn, error) {
-	// wait for the tactic to be ready to run
+	// honor happy-eyeballs delays and wait for the tactic to be ready to run
 	if err := httpsDialerTacticWaitReady(ctx, t0, tactic); err != nil {
 		return nil, err
 	}
 
-	// tell the tactic that we're starting
+	// tell the observer that we're starting
 	hd.stats.OnStarting(tactic)
 
 	// create dialer and establish TCP connection
@@ -306,7 +321,7 @@ func (hd *httpsDialer) dialTLS(
 
 	// create TLS configuration
 	tlsConfig := &tls.Config{
-		InsecureSkipVerify: true, // Note: we're going to verify at the end of the func
+		InsecureSkipVerify: true, // Note: we're going to verify at the end of the func!
 		NextProtos:         []string{"h2", "http/1.1"},
 		RootCAs:            hd.rootCAs,
 		ServerName:         tactic.SNI,
@@ -343,7 +358,7 @@ func (hd *httpsDialer) dialTLS(
 		return nil, err
 	}
 
-	// make sure the tactic know it worked
+	// make sure the observer knows it worked
 	hd.stats.OnSuccess(tactic)
 
 	return tlsConn, nil
