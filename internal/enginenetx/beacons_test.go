@@ -13,7 +13,7 @@ func TestBeaconsPolicy(t *testing.T) {
 	t.Run("for domains for which we don't have beacons and DNS failure", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		policy := &beaconsPolicy{
-			Fallback: &HTTPSDialerNullPolicy{
+			Fallback: &dnsPolicy{
 				Logger: model.DiscardLogger,
 				Resolver: &mocks.Resolver{
 					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
@@ -38,7 +38,7 @@ func TestBeaconsPolicy(t *testing.T) {
 
 	t.Run("for domains for which we don't have beacons and DNS success", func(t *testing.T) {
 		policy := &beaconsPolicy{
-			Fallback: &HTTPSDialerNullPolicy{
+			Fallback: &dnsPolicy{
 				Logger: model.DiscardLogger,
 				Resolver: &mocks.Resolver{
 					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
@@ -79,7 +79,7 @@ func TestBeaconsPolicy(t *testing.T) {
 	t.Run("for the api.ooni.io domain", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		policy := &beaconsPolicy{
-			Fallback: &HTTPSDialerNullPolicy{
+			Fallback: &dnsPolicy{
 				Logger: model.DiscardLogger,
 				Resolver: &mocks.Resolver{
 					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
