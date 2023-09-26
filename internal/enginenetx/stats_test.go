@@ -296,6 +296,10 @@ func TestLoadStatsContainer(t *testing.T) {
 		expectRoot *statsContainer
 	}
 
+	fourtyFiveMinutesAgo := time.Now().Add(-45 * time.Minute)
+
+	twoWeeksAgo := time.Now().Add(-14 * 24 * time.Hour)
+
 	cases := []testcase{{
 		name: "when the key-value store does not contain any data",
 		input: func() []byte {
@@ -319,7 +323,7 @@ func TestLoadStatsContainer(t *testing.T) {
 		expectErr:  "httpsdialerstats.state: wrong stats container version: expected=2 got=1",
 		expectRoot: nil,
 	}, {
-		name: "on success",
+		name: "on success including correct entries pruning",
 		input: func() []byte {
 			root := &statsContainer{
 				Domains: map[string]*statsDomain{
@@ -340,12 +344,62 @@ func TestLoadStatsContainer(t *testing.T) {
 								HistoTLSVerificationError: map[string]int64{
 									"ssl_invalid_hostname": 1,
 								},
-								LastUpdated: time.Date(2023, 9, 25, 0, 0, 0, 0, time.UTC),
+								LastUpdated: fourtyFiveMinutesAgo,
 								Tactic: &HTTPSDialerTactic{
 									Endpoint:       "162.55.247.208:443",
 									InitialDelay:   0,
 									SNI:            "www.example.com",
 									VerifyHostname: "api.ooni.io",
+								},
+							},
+							"162.55.247.208:443 sni=www.example.org verify=api.ooni.io": { // should be skipped b/c it's old
+								CountStarted:              4,
+								CountTCPConnectError:      1,
+								CountTLSHandshakeError:    1,
+								CountTLSVerificationError: 1,
+								CountSuccess:              1,
+								HistoTCPConnectError: map[string]int64{
+									"connection_refused": 1,
+								},
+								HistoTLSHandshakeError: map[string]int64{
+									"generic_timeout_error": 1,
+								},
+								HistoTLSVerificationError: map[string]int64{
+									"ssl_invalid_hostname": 1,
+								},
+								LastUpdated: twoWeeksAgo,
+								Tactic: &HTTPSDialerTactic{
+									Endpoint:       "162.55.247.208:443",
+									InitialDelay:   0,
+									SNI:            "www.example.org",
+									VerifyHostname: "api.ooni.io",
+								},
+							},
+						},
+					},
+					"www.kernel.org": { // this whole entry should be skipped because it's too old
+						Tactics: map[string]*statsTactic{
+							"162.55.247.208:443 sni=www.example.com verify=www.kernel.org": {
+								CountStarted:              4,
+								CountTCPConnectError:      1,
+								CountTLSHandshakeError:    1,
+								CountTLSVerificationError: 1,
+								CountSuccess:              1,
+								HistoTCPConnectError: map[string]int64{
+									"connection_refused": 1,
+								},
+								HistoTLSHandshakeError: map[string]int64{
+									"generic_timeout_error": 1,
+								},
+								HistoTLSVerificationError: map[string]int64{
+									"ssl_invalid_hostname": 1,
+								},
+								LastUpdated: twoWeeksAgo,
+								Tactic: &HTTPSDialerTactic{
+									Endpoint:       "162.55.247.208:443",
+									InitialDelay:   0,
+									SNI:            "www.example.com",
+									VerifyHostname: "www.kernel.org",
 								},
 							},
 						},
@@ -375,7 +429,7 @@ func TestLoadStatsContainer(t *testing.T) {
 							HistoTLSVerificationError: map[string]int64{
 								"ssl_invalid_hostname": 1,
 							},
-							LastUpdated: time.Date(2023, 9, 25, 0, 0, 0, 0, time.UTC),
+							LastUpdated: fourtyFiveMinutesAgo,
 							Tactic: &HTTPSDialerTactic{
 								Endpoint:       "162.55.247.208:443",
 								InitialDelay:   0,
@@ -433,6 +487,8 @@ func TestStatsManagerCallbacks(t *testing.T) {
 		expectRoot  *statsContainer
 	}
 
+	fourtyFiveMinutesAgo := time.Now().Add(-45 * time.Minute)
+
 	cases := []testcase{
 
 		// When TCP connect fails and the reason is a canceled context
@@ -444,6 +500,8 @@ func TestStatsManagerCallbacks(t *testing.T) {
 						Tactics: map[string]*statsTactic{
 							"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
 								CountStarted: 1,
+								LastUpdated:  fourtyFiveMinutesAgo,
+								Tactic:       &HTTPSDialerTactic{}, // only required for cloning
 							},
 						},
 					},
@@ -472,6 +530,7 @@ func TestStatsManagerCallbacks(t *testing.T) {
 							"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
 								CountStarted:             1,
 								CountTCPConnectInterrupt: 1,
+								Tactic:                   &HTTPSDialerTactic{},
 							},
 						},
 					},
@@ -516,6 +575,8 @@ func TestStatsManagerCallbacks(t *testing.T) {
 						Tactics: map[string]*statsTactic{
 							"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
 								CountStarted: 1,
+								LastUpdated:  fourtyFiveMinutesAgo,
+								Tactic:       &HTTPSDialerTactic{}, // only for cloning
 							},
 						},
 					},
@@ -544,6 +605,7 @@ func TestStatsManagerCallbacks(t *testing.T) {
 							"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
 								CountStarted:               1,
 								CountTLSHandshakeInterrupt: 1,
+								Tactic:                     &HTTPSDialerTactic{},
 							},
 						},
 					},
