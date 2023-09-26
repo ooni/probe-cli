@@ -71,7 +71,7 @@ func (dt *httpsDialerTactic) String() string {
 // `sni=` before the SNI and `verify=` before the verify hostname.
 //
 // We should be careful not to change this format unless we also change the
-// format version used by static policies and by the state management.
+// format version used by user policies and by the state management.
 func (dt *httpsDialerTactic) tacticSummaryKey() string {
 	return fmt.Sprintf(
 		"%v sni=%v verify=%v",

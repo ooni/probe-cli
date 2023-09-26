@@ -58,7 +58,7 @@ func TestNetworkCollectsStats(t *testing.T) {
 			name: "with TCP connect failure",
 			URL:  "https://api.ooni.io/",
 			initialPolicy: func() []byte {
-				p0 := &staticPolicyRoot{
+				p0 := &userPolicyRoot{
 					DomainEndpoints: map[string][]*httpsDialerTactic{
 						// This policy has a different SNI and VerifyHostname, which gives
 						// us confidence that the stats are using the latter
@@ -70,7 +70,7 @@ func TestNetworkCollectsStats(t *testing.T) {
 							VerifyHostname: "api.ooni.io",
 						}},
 					},
-					Version: staticPolicyVersion,
+					Version: userPolicyVersion,
 				}
 				return runtimex.Try1(json.Marshal(p0))
 			},
@@ -110,7 +110,7 @@ func TestNetworkCollectsStats(t *testing.T) {
 			name: "with TLS handshake failure",
 			URL:  "https://api.ooni.io/",
 			initialPolicy: func() []byte {
-				p0 := &staticPolicyRoot{
+				p0 := &userPolicyRoot{
 					DomainEndpoints: map[string][]*httpsDialerTactic{
 						// This policy has a different SNI and VerifyHostname, which gives
 						// us confidence that the stats are using the latter
@@ -122,7 +122,7 @@ func TestNetworkCollectsStats(t *testing.T) {
 							VerifyHostname: "api.ooni.io",
 						}},
 					},
-					Version: staticPolicyVersion,
+					Version: userPolicyVersion,
 				}
 				return runtimex.Try1(json.Marshal(p0))
 			},
@@ -161,7 +161,7 @@ func TestNetworkCollectsStats(t *testing.T) {
 			name: "with TLS verification failure",
 			URL:  "https://api.ooni.io/",
 			initialPolicy: func() []byte {
-				p0 := &staticPolicyRoot{
+				p0 := &userPolicyRoot{
 					DomainEndpoints: map[string][]*httpsDialerTactic{
 						// This policy has a different SNI and VerifyHostname, which gives
 						// us confidence that the stats are using the latter
@@ -173,7 +173,7 @@ func TestNetworkCollectsStats(t *testing.T) {
 							VerifyHostname: "api.ooni.io",
 						}},
 					},
-					Version: staticPolicyVersion,
+					Version: userPolicyVersion,
 				}
 				return runtimex.Try1(json.Marshal(p0))
 			},
@@ -219,7 +219,7 @@ func TestNetworkCollectsStats(t *testing.T) {
 
 			initialPolicy := tc.initialPolicy()
 			t.Logf("initialPolicy: %s", string(initialPolicy))
-			if err := kvStore.Set(staticPolicyKey, initialPolicy); err != nil {
+			if err := kvStore.Set(userPolicyKey, initialPolicy); err != nil {
 				t.Fatal(err)
 			}
 
