@@ -51,29 +51,84 @@ type statsTactic struct {
 	Tactic *HTTPSDialerTactic
 }
 
+func statsCloneMapStringInt64(input map[string]int64) (output map[string]int64) {
+	output = make(map[string]int64)
+	for key, value := range input {
+		output[key] = value
+	}
+	return
+}
+
+// Clone clones a given [*statsTactic]
+func (st *statsTactic) Clone() *statsTactic {
+	return &statsTactic{
+		CountStarted:               st.CountStarted,
+		CountTCPConnectError:       st.CountTCPConnectError,
+		CountTCPConnectInterrupt:   st.CountTCPConnectInterrupt,
+		CountTLSHandshakeError:     st.CountTLSHandshakeError,
+		CountTLSHandshakeInterrupt: st.CountTLSHandshakeInterrupt,
+		CountTLSVerificationError:  st.CountTLSVerificationError,
+		CountSuccess:               st.CountSuccess,
+		HistoTCPConnectError:       statsCloneMapStringInt64(st.HistoTCPConnectError),
+		HistoTLSHandshakeError:     statsCloneMapStringInt64(st.HistoTLSHandshakeError),
+		HistoTLSVerificationError:  statsCloneMapStringInt64(st.HistoTLSVerificationError),
+		LastUpdated:                st.LastUpdated,
+		Tactic:                     st.Tactic.Clone(),
+	}
+}
+
 // statsDomain contains stats associated with a domain.
 type statsDomain struct {
 	Tactics map[string]*statsTactic
 }
 
+// statsDomainRemoveOldEntries returns a copy of a [*statsDomain] with old entries removed.
+func statsDomainRemoveOldEntries(input *statsDomain) (output *statsDomain) {
+	output = &statsDomain{
+		Tactics: map[string]*statsTactic{},
+	}
+	oneWeek := 7 * 24 * time.Hour
+	now := time.Now()
+	for summary, tactic := range input.Tactics {
+		if delta := now.Sub(tactic.LastUpdated); delta > oneWeek {
+			continue
+		}
+		output.Tactics[summary] = tactic.Clone()
+	}
+	return
+}
+
 // statsContainerVersion is the current version of [statsContainer].
 const statsContainerVersion = 2
 
-// statsContainer is the root container for stats.
+// statsContainer is the root container for the stats.
 //
 // The zero value is invalid; construct using [newStatsContainer].
 type statsContainer struct {
-	// Domains maps a domain name to its tactics
+	// Domains maps a domain name to its tactics.
 	Domains map[string]*statsDomain
 
 	// Version is the version of the container data format.
 	Version int
 }
 
-// Get returns the tactic record for the given [*statsTactic] instance.
+// statsDomainRemoveOldEntries returns a copy of a [*statsContainer] with old entries removed.
+func statsContainerRemoveOldEntries(input *statsContainer) (output *statsContainer) {
+	output = newStatsContainer()
+	for domain, inputStats := range input.Domains {
+		prunedStats := statsDomainRemoveOldEntries(inputStats)
+		if len(prunedStats.Tactics) <= 0 {
+			continue
+		}
+		output.Domains[domain] = prunedStats
+	}
+	return
+}
+
+// GetStatsTacticLocked returns the tactic record for the given [*statsTactic] instance.
 //
 // At the name implies, this function MUST be called while holding the [*statsManager] mutex.
-func (c *statsContainer) GetLocked(tactic *HTTPSDialerTactic) (*statsTactic, bool) {
+func (c *statsContainer) GetStatsTacticLocked(tactic *HTTPSDialerTactic) (*statsTactic, bool) {
 	domainRecord, found := c.Domains[tactic.VerifyHostname]
 	if !found {
 		return nil, false
@@ -82,10 +137,10 @@ func (c *statsContainer) GetLocked(tactic *HTTPSDialerTactic) (*statsTactic, boo
 	return tacticRecord, found
 }
 
-// Set sets the tactic record for the given the given [*statsTactic] instance.
+// SetStatsTacticLocked sets the tactic record for the given the given [*statsTactic] instance.
 //
 // At the name implies, this function MUST be called while holding the [*statsManager] mutex.
-func (c *statsContainer) SetLocked(tactic *HTTPSDialerTactic, record *statsTactic) {
+func (c *statsContainer) SetStatsTacticLocked(tactic *HTTPSDialerTactic, record *statsTactic) {
 	domainRecord, found := c.Domains[tactic.VerifyHostname]
 	if !found {
 		domainRecord = &statsDomain{
@@ -117,6 +172,9 @@ func newStatsContainer() *statsContainer {
 // The zero value of this structure is not ready to use; please, use the
 // [newStatsManager] factory to create a new instance.
 type statsManager struct {
+	// container is the container container for stats
+	container *statsContainer
+
 	// kvStore is the key-value store we're using
 	kvStore model.KeyValueStore
 
@@ -125,9 +183,6 @@ type statsManager struct {
 
 	// mu provides mutual exclusion when accessing the stats.
 	mu sync.Mutex
-
-	// root is the root container for stats
-	root *statsContainer
 }
 
 // statsKey is the key used in the key-value store to access the state.
@@ -136,7 +191,7 @@ const statsKey = "httpsdialerstats.state"
 // errStatsContainerWrongVersion means that the stats container document has the wrong version number.
 var errStatsContainerWrongVersion = errors.New("wrong stats container version")
 
-// loadStatsContainer loads a state container from the given key-value store.
+// loadStatsContainer loads a stats container from the given [model.KeyValueStore].
 func loadStatsContainer(kvStore model.KeyValueStore) (*statsContainer, error) {
 	// load data from the kvstore
 	data, err := kvStore.Get(statsKey)
@@ -162,7 +217,9 @@ func loadStatsContainer(kvStore model.KeyValueStore) (*statsContainer, error) {
 		return nil, err
 	}
 
-	return &container, nil
+	// make sure we remove old entries
+	pruned := statsContainerRemoveOldEntries(&container)
+	return pruned, nil
 }
 
 // newStatsManager constructs a new instance of [*statsManager].
@@ -173,10 +230,10 @@ func newStatsManager(kvStore model.KeyValueStore, logger model.Logger) *statsMan
 	}
 
 	return &statsManager{
-		root:    root,
-		kvStore: kvStore,
-		logger:  logger,
-		mu:      sync.Mutex{},
+		container: root,
+		kvStore:   kvStore,
+		logger:    logger,
+		mu:        sync.Mutex{},
 	}
 }
 
@@ -189,7 +246,7 @@ func (mt *statsManager) OnStarting(tactic *HTTPSDialerTactic) {
 	mt.mu.Lock()
 
 	// get the record
-	record, found := mt.root.GetLocked(tactic)
+	record, found := mt.container.GetStatsTacticLocked(tactic)
 	if !found {
 		record = &statsTactic{
 			CountStarted:               0,
@@ -205,7 +262,7 @@ func (mt *statsManager) OnStarting(tactic *HTTPSDialerTactic) {
 			LastUpdated:                time.Time{},
 			Tactic:                     tactic.Clone(), // avoid storing the original
 		}
-		mt.root.SetLocked(tactic, record)
+		mt.container.SetStatsTacticLocked(tactic, record)
 	}
 
 	// update stats
@@ -220,7 +277,7 @@ func (mt *statsManager) OnTCPConnectError(ctx context.Context, tactic *HTTPSDial
 	mt.mu.Lock()
 
 	// get the record
-	record, found := mt.root.GetLocked(tactic)
+	record, found := mt.container.GetStatsTacticLocked(tactic)
 	if !found {
 		mt.logger.Warnf("HTTPSDialerStatsManager.OnTCPConnectError: not found: %+v", tactic)
 		return
@@ -243,7 +300,7 @@ func (mt *statsManager) OnTLSHandshakeError(ctx context.Context, tactic *HTTPSDi
 	mt.mu.Lock()
 
 	// get the record
-	record, found := mt.root.GetLocked(tactic)
+	record, found := mt.container.GetStatsTacticLocked(tactic)
 	if !found {
 		mt.logger.Warnf("HTTPSDialerStatsManager.OnTLSHandshakeError: not found: %+v", tactic)
 		return
@@ -266,7 +323,7 @@ func (mt *statsManager) OnTLSVerifyError(tactic *HTTPSDialerTactic, err error) {
 	mt.mu.Lock()
 
 	// get the record
-	record, found := mt.root.GetLocked(tactic)
+	record, found := mt.container.GetStatsTacticLocked(tactic)
 	if !found {
 		mt.logger.Warnf("HTTPSDialerStatsManager.OnTLSVerificationError: not found: %+v", tactic)
 		return
@@ -285,7 +342,7 @@ func (mt *statsManager) OnSuccess(tactic *HTTPSDialerTactic) {
 	mt.mu.Lock()
 
 	// get the record
-	record, found := mt.root.GetLocked(tactic)
+	record, found := mt.container.GetStatsTacticLocked(tactic)
 	if !found {
 		mt.logger.Warnf("HTTPSDialerStatsManager.OnSuccess: not found: %+v", tactic)
 		return
@@ -305,5 +362,5 @@ func (mt *statsManager) Close() error {
 	mt.mu.Lock()
 
 	// write updated stats into the underlying key-value store
-	return mt.kvStore.Set(statsKey, runtimex.Try1(json.Marshal(mt.root)))
+	return mt.kvStore.Set(statsKey, runtimex.Try1(json.Marshal(mt.container)))
 }
