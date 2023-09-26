@@ -325,7 +325,7 @@ func TestLoadStatsContainer(t *testing.T) {
 		input: func() []byte {
 			return []byte(`{"Version":1}`)
 		},
-		expectErr:  "httpsdialerstats.state: wrong stats container version: expected=2 got=1",
+		expectErr:  "httpsdialerstats.state: wrong stats container version: expected=4 got=1",
 		expectRoot: nil,
 	}, {
 		name: "on success including correct entries pruning",

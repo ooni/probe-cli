@@ -435,7 +435,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 
 func TestHTTPSDialerTactic(t *testing.T) {
 	t.Run("String", func(t *testing.T) {
-		expected := `{"Endpoint":"162.55.247.208:443","InitialDelay":150000000,"SNI":"www.example.com","VerifyHostname":"api.ooni.io"}`
+		expected := `{"Address":"162.55.247.208","InitialDelay":150000000,"Port":"443","SNI":"www.example.com","VerifyHostname":"api.ooni.io"}`
 		ldt := &enginenetx.HTTPSDialerTactic{
 			Address:        "162.55.247.208",
 			InitialDelay:   150 * time.Millisecond,

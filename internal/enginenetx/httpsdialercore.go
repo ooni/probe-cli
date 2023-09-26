@@ -68,7 +68,7 @@ func (dt *HTTPSDialerTactic) String() string {
 //
 // The returned string contains the above fields separated by space.
 func (dt *HTTPSDialerTactic) Summary() string {
-	return fmt.Sprintf("%v port=%v sni=%v verify=%v", dt.Address, dt.Port, dt.SNI, dt.VerifyHostname)
+	return fmt.Sprintf("%v:%v sni=%v verify=%v", dt.Address, dt.Port, dt.SNI, dt.VerifyHostname)
 }
 
 // HTTPSDialerPolicy describes the policy used by the [*HTTPSDialer].

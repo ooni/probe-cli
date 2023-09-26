@@ -57,7 +57,7 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 			name:           "with empty JSON",
 			key:            HTTPSDialerStaticPolicyKey,
 			input:          []byte(`{}`),
-			expectErr:      "httpsdialerstatic.conf: wrong static policy version: expected=1 got=0",
+			expectErr:      "httpsdialerstatic.conf: wrong static policy version: expected=2 got=0",
 			expectedPolicy: nil,
 		}, {
 			name: "with real serialized policy",
