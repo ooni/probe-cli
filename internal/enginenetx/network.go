@@ -1,5 +1,10 @@
 package enginenetx
 
+//
+// Network - the top-level object of this package, used by the
+// OONI engine to communicate with several backends
+//
+
 import (
 	"net/http"
 	"net/http/cookiejar"
@@ -141,7 +146,7 @@ func newHTTPSDialerPolicy(kvStore model.KeyValueStore, logger model.Logger, reso
 	}
 
 	// make sure we honor a user-provided policy
-	policy, err := NewHTTPSDialerStaticPolicy(kvStore, fallback)
+	policy, err := newStaticPolicy(kvStore, fallback)
 	if err != nil {
 		return fallback
 	}

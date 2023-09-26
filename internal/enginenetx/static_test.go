@@ -30,7 +30,7 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 			expectErr string
 
 			// expectRoot contains the expected policy we loaded or nil
-			expectedPolicy *HTTPSDialerStaticPolicy
+			expectedPolicy *staticPolicy
 		}
 
 		fallback := &HTTPSDialerNullPolicy{}
@@ -43,27 +43,27 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 			expectedPolicy: nil,
 		}, {
 			name:           "with nil input",
-			key:            HTTPSDialerStaticPolicyKey,
+			key:            staticPolicyKey,
 			input:          nil,
 			expectErr:      "hujson: line 1, column 1: parsing value: unexpected EOF",
 			expectedPolicy: nil,
 		}, {
 			name:           "with invalid serialized JSON",
-			key:            HTTPSDialerStaticPolicyKey,
+			key:            staticPolicyKey,
 			input:          []byte(`{`),
 			expectErr:      "hujson: line 1, column 2: parsing value: unexpected EOF",
 			expectedPolicy: nil,
 		}, {
 			name:           "with empty JSON",
-			key:            HTTPSDialerStaticPolicyKey,
+			key:            staticPolicyKey,
 			input:          []byte(`{}`),
 			expectErr:      "httpsdialerstatic.conf: wrong static policy version: expected=3 got=0",
 			expectedPolicy: nil,
 		}, {
 			name: "with real serialized policy",
-			key:  HTTPSDialerStaticPolicyKey,
+			key:  staticPolicyKey,
 			input: (func() []byte {
-				return runtimex.Try1(json.Marshal(&HTTPSDialerStaticPolicyRoot{
+				return runtimex.Try1(json.Marshal(&staticPolicyRoot{
 					DomainEndpoints: map[string][]*HTTPSDialerTactic{
 						"api.ooni.io:443": {{
 							Address:        "162.55.247.208",
@@ -97,13 +97,13 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 							VerifyHostname: "api.ooni.io",
 						}},
 					},
-					Version: HTTPSDialerStaticPolicyVersion,
+					Version: staticPolicyVersion,
 				}))
 			})(),
 			expectErr: "",
-			expectedPolicy: &HTTPSDialerStaticPolicy{
+			expectedPolicy: &staticPolicy{
 				Fallback: fallback,
-				Root: &HTTPSDialerStaticPolicyRoot{
+				Root: &staticPolicyRoot{
 					DomainEndpoints: map[string][]*HTTPSDialerTactic{
 						"api.ooni.io:443": {{
 							Address:        "162.55.247.208",
@@ -137,7 +137,7 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 							VerifyHostname: "api.ooni.io",
 						}},
 					},
-					Version: HTTPSDialerStaticPolicyVersion,
+					Version: staticPolicyVersion,
 				},
 			},
 		}}
@@ -147,7 +147,7 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 				kvStore := &kvstore.Memory{}
 				runtimex.Try0(kvStore.Set(tc.key, tc.input))
 
-				policy, err := NewHTTPSDialerStaticPolicy(kvStore, fallback)
+				policy, err := newStaticPolicy(kvStore, fallback)
 
 				switch {
 				case err != nil && tc.expectErr == "":
@@ -180,22 +180,22 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 			SNI:            "www.example.com",
 			VerifyHostname: "api.ooni.io",
 		}
-		staticPolicyRoot := &HTTPSDialerStaticPolicyRoot{
+		staticPolicyRoot := &staticPolicyRoot{
 			DomainEndpoints: map[string][]*HTTPSDialerTactic{
 				"api.ooni.io:443": {expectedTactic},
 			},
-			Version: HTTPSDialerStaticPolicyVersion,
+			Version: staticPolicyVersion,
 		}
 		kvStore := &kvstore.Memory{}
 		rawStaticPolicyRoot := runtimex.Try1(json.Marshal(staticPolicyRoot))
-		if err := kvStore.Set(HTTPSDialerStaticPolicyKey, rawStaticPolicyRoot); err != nil {
+		if err := kvStore.Set(staticPolicyKey, rawStaticPolicyRoot); err != nil {
 			t.Fatal(err)
 		}
 
 		t.Run("with static policy", func(t *testing.T) {
 			ctx := context.Background()
 
-			policy, err := NewHTTPSDialerStaticPolicy(kvStore, nil /* explictly to crash if used */)
+			policy, err := newStaticPolicy(kvStore, nil /* explictly to crash if used */)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -226,7 +226,7 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 				},
 			}
 
-			policy, err := NewHTTPSDialerStaticPolicy(kvStore, fallback)
+			policy, err := newStaticPolicy(kvStore, fallback)
 			if err != nil {
 				t.Fatal(err)
 			}
