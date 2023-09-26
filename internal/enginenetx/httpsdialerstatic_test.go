@@ -65,7 +65,7 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 			input: (func() []byte {
 				return runtimex.Try1(json.Marshal(&HTTPSDialerStaticPolicyRoot{
 					DomainEndpoints: map[string][]*HTTPSDialerTactic{
-						"api.ooni.io": {{
+						"api.ooni.io:443": {{
 							Address:        "162.55.247.208",
 							InitialDelay:   0,
 							Port:           "443",
@@ -105,7 +105,7 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 				Fallback: fallback,
 				Root: &HTTPSDialerStaticPolicyRoot{
 					DomainEndpoints: map[string][]*HTTPSDialerTactic{
-						"api.ooni.io": {{
+						"api.ooni.io:443": {{
 							Address:        "162.55.247.208",
 							InitialDelay:   0,
 							Port:           "443",
