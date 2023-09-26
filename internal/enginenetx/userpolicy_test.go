@@ -13,8 +13,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-func TestStaticPolicy(t *testing.T) {
-	t.Run("newStaticPolicy", func(t *testing.T) {
+func TestUserPolicy(t *testing.T) {
+	t.Run("newUserPolicy", func(t *testing.T) {
 		// testcase is a test case implemented by this function
 		type testcase struct {
 			// name is the test case name
@@ -30,7 +30,7 @@ func TestStaticPolicy(t *testing.T) {
 			expectErr string
 
 			// expectRoot contains the expected policy we loaded or nil
-			expectedPolicy *staticPolicy
+			expectedPolicy *userPolicy
 		}
 
 		fallback := &dnsPolicy{}
@@ -43,27 +43,27 @@ func TestStaticPolicy(t *testing.T) {
 			expectedPolicy: nil,
 		}, {
 			name:           "with nil input",
-			key:            staticPolicyKey,
+			key:            userPolicyKey,
 			input:          nil,
 			expectErr:      "hujson: line 1, column 1: parsing value: unexpected EOF",
 			expectedPolicy: nil,
 		}, {
 			name:           "with invalid serialized JSON",
-			key:            staticPolicyKey,
+			key:            userPolicyKey,
 			input:          []byte(`{`),
 			expectErr:      "hujson: line 1, column 2: parsing value: unexpected EOF",
 			expectedPolicy: nil,
 		}, {
 			name:           "with empty JSON",
-			key:            staticPolicyKey,
+			key:            userPolicyKey,
 			input:          []byte(`{}`),
-			expectErr:      "httpsdialerstatic.conf: wrong static policy version: expected=3 got=0",
+			expectErr:      "httpsdialer.conf: wrong user policy version: expected=3 got=0",
 			expectedPolicy: nil,
 		}, {
 			name: "with real serialized policy",
-			key:  staticPolicyKey,
+			key:  userPolicyKey,
 			input: (func() []byte {
-				return runtimex.Try1(json.Marshal(&staticPolicyRoot{
+				return runtimex.Try1(json.Marshal(&userPolicyRoot{
 					DomainEndpoints: map[string][]*httpsDialerTactic{
 
 						// Please, note how the input includes explicitly nil entries
@@ -102,13 +102,13 @@ func TestStaticPolicy(t *testing.T) {
 						//
 
 					},
-					Version: staticPolicyVersion,
+					Version: userPolicyVersion,
 				}))
 			})(),
 			expectErr: "",
-			expectedPolicy: &staticPolicy{
+			expectedPolicy: &userPolicy{
 				Fallback: fallback,
-				Root: &staticPolicyRoot{
+				Root: &userPolicyRoot{
 					DomainEndpoints: map[string][]*httpsDialerTactic{
 						"api.ooni.io:443": {{
 							Address:        "162.55.247.208",
@@ -142,7 +142,7 @@ func TestStaticPolicy(t *testing.T) {
 							VerifyHostname: "api.ooni.io",
 						}, nil},
 					},
-					Version: staticPolicyVersion,
+					Version: userPolicyVersion,
 				},
 			},
 		}}
@@ -152,7 +152,7 @@ func TestStaticPolicy(t *testing.T) {
 				kvStore := &kvstore.Memory{}
 				runtimex.Try0(kvStore.Set(tc.key, tc.input))
 
-				policy, err := newStaticPolicy(kvStore, fallback)
+				policy, err := newUserPolicy(kvStore, fallback)
 
 				switch {
 				case err != nil && tc.expectErr == "":
@@ -185,7 +185,7 @@ func TestStaticPolicy(t *testing.T) {
 			SNI:            "www.example.com",
 			VerifyHostname: "api.ooni.io",
 		}
-		staticPolicyRoot := &staticPolicyRoot{
+		userPolicyRoot := &userPolicyRoot{
 			DomainEndpoints: map[string][]*httpsDialerTactic{
 				// Note that here we're adding explicitly nil entries
 				// to make sure that the code correctly handles 'em
@@ -202,18 +202,18 @@ func TestStaticPolicy(t *testing.T) {
 				"api.ooni.org:443": {},
 				"api.ooni.com:443": {nil, nil, nil},
 			},
-			Version: staticPolicyVersion,
+			Version: userPolicyVersion,
 		}
 		kvStore := &kvstore.Memory{}
-		rawStaticPolicyRoot := runtimex.Try1(json.Marshal(staticPolicyRoot))
-		if err := kvStore.Set(staticPolicyKey, rawStaticPolicyRoot); err != nil {
+		rawUserPolicyRoot := runtimex.Try1(json.Marshal(userPolicyRoot))
+		if err := kvStore.Set(userPolicyKey, rawUserPolicyRoot); err != nil {
 			t.Fatal(err)
 		}
 
-		t.Run("with static policy", func(t *testing.T) {
+		t.Run("with user policy", func(t *testing.T) {
 			ctx := context.Background()
 
-			policy, err := newStaticPolicy(kvStore, nil /* explictly to crash if used */)
+			policy, err := newUserPolicy(kvStore, nil /* explictly to crash if used */)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -232,7 +232,7 @@ func TestStaticPolicy(t *testing.T) {
 			}
 		})
 
-		t.Run("we fallback if there is no entry in the static policy", func(t *testing.T) {
+		t.Run("we fallback if there is no entry in the user policy", func(t *testing.T) {
 			ctx := context.Background()
 
 			fallback := &dnsPolicy{
@@ -244,7 +244,7 @@ func TestStaticPolicy(t *testing.T) {
 				},
 			}
 
-			policy, err := newStaticPolicy(kvStore, fallback)
+			policy, err := newUserPolicy(kvStore, fallback)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -269,7 +269,7 @@ func TestStaticPolicy(t *testing.T) {
 			}
 		})
 
-		t.Run("we fallback if the entry in the static policy is ~empty", func(t *testing.T) {
+		t.Run("we fallback if the entry in the user policy is ~empty", func(t *testing.T) {
 			ctx := context.Background()
 
 			fallback := &dnsPolicy{
@@ -281,12 +281,12 @@ func TestStaticPolicy(t *testing.T) {
 				},
 			}
 
-			policy, err := newStaticPolicy(kvStore, fallback)
+			policy, err := newUserPolicy(kvStore, fallback)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			// these cases are specially constructed to be empty/invalid static policies
+			// these cases are specially constructed to be empty/invalid user policies
 			for _, domain := range []string{"api.ooni.xyz", "api.ooni.org", "api.ooni.com"} {
 				t.Run(domain, func(t *testing.T) {
 					tactics := policy.LookupTactics(ctx, domain, "443")

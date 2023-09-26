@@ -1,8 +1,8 @@
 package enginenetx
 
 //
-// static policy - the possibility of loading a static policy from a JSON
-// document named `httpsdialerstatic.conf` in $OONI_HOME/engine that contains
+// user policy - the possibility of loading a user policy from a JSON
+// document named `httpsdialer.conf` in $OONI_HOME/engine that contains
 // a specific policy for TLS dialing for specific endpoints.
 //
 // This policy helps a lot with exploration and experimentation.
@@ -18,66 +18,66 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// staticPolicy is an [httpsDialerPolicy] incorporating verbatim
-// a static policy loaded from the engine's key-value store.
+// userPolicy is an [httpsDialerPolicy] incorporating verbatim
+// a user policy loaded from the engine's key-value store.
 //
 // This policy is very useful for exploration and experimentation.
-type staticPolicy struct {
-	// Fallback is the fallback policy in case the static one does not
+type userPolicy struct {
+	// Fallback is the fallback policy in case the user one does not
 	// contain a rule for a specific domain.
 	Fallback httpsDialerPolicy
 
-	// Root is the root of the statically loaded policy.
-	Root *staticPolicyRoot
+	// Root is the root of the user policy loaded from disk.
+	Root *userPolicyRoot
 }
 
-// staticPolicyKey is the kvstore key used to retrieve the static policy.
-const staticPolicyKey = "httpsdialerstatic.conf"
+// userPolicyKey is the kvstore key used to retrieve the user policy.
+const userPolicyKey = "httpsdialer.conf"
 
-// errStaticPolicyWrongVersion means that the static policy document has the wrong version number.
-var errStaticPolicyWrongVersion = errors.New("wrong static policy version")
+// errUserPolicyWrongVersion means that the user policy document has the wrong version number.
+var errUserPolicyWrongVersion = errors.New("wrong user policy version")
 
-// newStaticPolicy attempts to constructs a static policy using a given fallback
+// newUserPolicy attempts to constructs a user policy using a given fallback
 // policy and either returns a good policy or an error. The typical error case is the one
-// in which there's no httpsDialerStaticPolicyKey in the key-value store.
-func newStaticPolicy(
-	kvStore model.KeyValueStore, fallback httpsDialerPolicy) (*staticPolicy, error) {
-	// attempt to read the static policy bytes from the kvstore
-	data, err := kvStore.Get(staticPolicyKey)
+// in which there's no httpsDialerUserPolicyKey in the key-value store.
+func newUserPolicy(
+	kvStore model.KeyValueStore, fallback httpsDialerPolicy) (*userPolicy, error) {
+	// attempt to read the user policy bytes from the kvstore
+	data, err := kvStore.Get(userPolicyKey)
 	if err != nil {
 		return nil, err
 	}
 
-	// attempt to parse the static policy using human-readable JSON
-	var root staticPolicyRoot
+	// attempt to parse the user policy using human-readable JSON
+	var root userPolicyRoot
 	if err := hujsonx.Unmarshal(data, &root); err != nil {
 		return nil, err
 	}
 
 	// make sure the version is OK
-	if root.Version != staticPolicyVersion {
+	if root.Version != userPolicyVersion {
 		err := fmt.Errorf(
 			"%s: %w: expected=%d got=%d",
-			staticPolicyKey,
-			errStaticPolicyWrongVersion,
-			staticPolicyVersion,
+			userPolicyKey,
+			errUserPolicyWrongVersion,
+			userPolicyVersion,
 			root.Version,
 		)
 		return nil, err
 	}
 
-	out := &staticPolicy{
+	out := &userPolicy{
 		Fallback: fallback,
 		Root:     &root,
 	}
 	return out, nil
 }
 
-// staticPolicyVersion is the current version of the static policy file.
-const staticPolicyVersion = 3
+// userPolicyVersion is the current version of the user policy file.
+const userPolicyVersion = 3
 
-// staticPolicyRoot is the root of a statically loaded policy.
-type staticPolicyRoot struct {
+// userPolicyRoot is the root of the user policy.
+type userPolicyRoot struct {
 	// DomainEndpoints maps each domain endpoint to its policies.
 	DomainEndpoints map[string][]*httpsDialerTactic
 
@@ -85,13 +85,13 @@ type staticPolicyRoot struct {
 	Version int
 }
 
-var _ httpsDialerPolicy = &staticPolicy{}
+var _ httpsDialerPolicy = &userPolicy{}
 
 // LookupTactics implements httpsDialerPolicy.
-func (ldp *staticPolicy) LookupTactics(
+func (ldp *userPolicy) LookupTactics(
 	ctx context.Context, domain string, port string) <-chan *httpsDialerTactic {
 	// check whether an entry exists in the user-provided map, which MAY be nil
-	// if/when the user has chosen the static policy to be as such
+	// if/when the user has chosen their policy to be as such
 	tactics, found := ldp.Root.DomainEndpoints[net.JoinHostPort(domain, port)]
 	if !found {
 		return ldp.Fallback.LookupTactics(ctx, domain, port)
@@ -99,7 +99,7 @@ func (ldp *staticPolicy) LookupTactics(
 
 	// note that we also need to fallback when the tactics contains an empty list
 	// or a list that only contains nil entries
-	tactics = staticPolicyRemoveNilEntries(tactics)
+	tactics = userPolicyRemoveNilEntries(tactics)
 	if len(tactics) <= 0 {
 		return ldp.Fallback.LookupTactics(ctx, domain, port)
 	}
@@ -115,7 +115,7 @@ func (ldp *staticPolicy) LookupTactics(
 	return out
 }
 
-func staticPolicyRemoveNilEntries(input []*httpsDialerTactic) (output []*httpsDialerTactic) {
+func userPolicyRemoveNilEntries(input []*httpsDialerTactic) (output []*httpsDialerTactic) {
 	for _, entry := range input {
 		if entry != nil {
 			output = append(output, entry)
