@@ -33,7 +33,7 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 			expectedPolicy *staticPolicy
 		}
 
-		fallback := &HTTPSDialerNullPolicy{}
+		fallback := &dnsPolicy{}
 
 		cases := []testcase{{
 			name:           "when there is no key in the kvstore",
@@ -217,7 +217,7 @@ func TestHTTPSDialerStaticPolicy(t *testing.T) {
 		t.Run("we fallback if needed", func(t *testing.T) {
 			ctx := context.Background()
 
-			fallback := &HTTPSDialerNullPolicy{
+			fallback := &dnsPolicy{
 				Logger: log.Log,
 				Resolver: &mocks.Resolver{
 					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {

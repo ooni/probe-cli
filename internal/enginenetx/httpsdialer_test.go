@@ -1,8 +1,10 @@
-package enginenetx_test
+package enginenetx
 
 import (
 	"context"
+	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"net/url"
 	"testing"
 	"time"
@@ -10,8 +12,8 @@ import (
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/netem"
-	"github.com/ooni/probe-cli/v3/internal/enginenetx"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -24,42 +26,42 @@ const (
 	httpsDialerCancelingContextStatsTrackerOnSuccess
 )
 
-// httpsDialerCancelingContextStatsTracker is an [enginenetx.HTTPSDialerStatsTracker] with a cancel
+// httpsDialerCancelingContextStatsTracker is an [HTTPSDialerStatsTracker] with a cancel
 // function that causes the context to be canceled once we start dialing.
 //
-// This struct helps with testing [enginenetx.HTTPSDialer] is WAI when the context
+// This struct helps with testing [HTTPSDialer] is WAI when the context
 // has been canceled and we correctly shutdown all goroutines.
 type httpsDialerCancelingContextStatsTracker struct {
 	cancel context.CancelFunc
 	flags  int
 }
 
-var _ enginenetx.HTTPSDialerStatsTracker = &httpsDialerCancelingContextStatsTracker{}
+var _ HTTPSDialerStatsTracker = &httpsDialerCancelingContextStatsTracker{}
 
-// OnStarting implements enginenetx.HTTPSDialerStatsTracker.
-func (st *httpsDialerCancelingContextStatsTracker) OnStarting(tactic *enginenetx.HTTPSDialerTactic) {
+// OnStarting implements HTTPSDialerStatsTracker.
+func (st *httpsDialerCancelingContextStatsTracker) OnStarting(tactic *HTTPSDialerTactic) {
 	if (st.flags & httpsDialerCancelingContextStatsTrackerOnStarting) != 0 {
 		st.cancel()
 	}
 }
 
-// OnTCPConnectError implements enginenetx.HTTPSDialerStatsTracker.
-func (*httpsDialerCancelingContextStatsTracker) OnTCPConnectError(ctx context.Context, tactic *enginenetx.HTTPSDialerTactic, err error) {
+// OnTCPConnectError implements HTTPSDialerStatsTracker.
+func (*httpsDialerCancelingContextStatsTracker) OnTCPConnectError(ctx context.Context, tactic *HTTPSDialerTactic, err error) {
 	// nothing
 }
 
-// OnTLSHandshakeError implements enginenetx.HTTPSDialerStatsTracker.
-func (*httpsDialerCancelingContextStatsTracker) OnTLSHandshakeError(ctx context.Context, tactic *enginenetx.HTTPSDialerTactic, err error) {
+// OnTLSHandshakeError implements HTTPSDialerStatsTracker.
+func (*httpsDialerCancelingContextStatsTracker) OnTLSHandshakeError(ctx context.Context, tactic *HTTPSDialerTactic, err error) {
 	// nothing
 }
 
-// OnTLSVerifyError implements enginenetx.HTTPSDialerStatsTracker.
-func (*httpsDialerCancelingContextStatsTracker) OnTLSVerifyError(tactic *enginenetx.HTTPSDialerTactic, err error) {
+// OnTLSVerifyError implements HTTPSDialerStatsTracker.
+func (*httpsDialerCancelingContextStatsTracker) OnTLSVerifyError(tactic *HTTPSDialerTactic, err error) {
 	// nothing
 }
 
-// OnSuccess implements enginenetx.HTTPSDialerStatsTracker.
-func (st *httpsDialerCancelingContextStatsTracker) OnSuccess(tactic *enginenetx.HTTPSDialerTactic) {
+// OnSuccess implements HTTPSDialerStatsTracker.
+func (st *httpsDialerCancelingContextStatsTracker) OnSuccess(tactic *HTTPSDialerTactic) {
 	if (st.flags & httpsDialerCancelingContextStatsTrackerOnSuccess) != 0 {
 		st.cancel()
 	}
@@ -75,7 +77,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		short bool
 
 		// stats is the stats tracker to use.
-		stats enginenetx.HTTPSDialerStatsTracker
+		stats HTTPSDialerStatsTracker
 
 		// endpoint is the endpoint to connect to consisting of a domain
 		// name or IP address followed by a TCP port
@@ -98,7 +100,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "net.SplitHostPort failure",
 			short:    true,
-			stats:    &enginenetx.HTTPSDialerNullStatsTracker{},
+			stats:    &HTTPSDialerNullStatsTracker{},
 			endpoint: "www.example.com", // note: here the port is missing
 			scenario: netemx.InternetScenario,
 			configureDPI: func(dpi *netem.DPIEngine) {
@@ -114,7 +116,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "hd.policy.LookupTactics failure",
 			short:    true,
-			stats:    &enginenetx.HTTPSDialerNullStatsTracker{},
+			stats:    &HTTPSDialerNullStatsTracker{},
 			endpoint: "www.example.nonexistent:443", // note: the domain does not exist
 			scenario: netemx.InternetScenario,
 			configureDPI: func(dpi *netem.DPIEngine) {
@@ -128,7 +130,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "successful dial with multiple addresses",
 			short:    true,
-			stats:    &enginenetx.HTTPSDialerNullStatsTracker{},
+			stats:    &HTTPSDialerNullStatsTracker{},
 			endpoint: "www.example.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
 				Domains: []string{
@@ -154,7 +156,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "with TCP connect errors",
 			short:    true,
-			stats:    &enginenetx.HTTPSDialerNullStatsTracker{},
+			stats:    &HTTPSDialerNullStatsTracker{},
 			endpoint: "www.example.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
 				Domains: []string{
@@ -188,7 +190,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "with TLS handshake errors",
 			short:    true,
-			stats:    &enginenetx.HTTPSDialerNullStatsTracker{},
+			stats:    &HTTPSDialerNullStatsTracker{},
 			endpoint: "www.example.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
 				Domains: []string{
@@ -218,7 +220,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "with a TLS certificate valid for ANOTHER domain",
 			short:    true,
-			stats:    &enginenetx.HTTPSDialerNullStatsTracker{},
+			stats:    &HTTPSDialerNullStatsTracker{},
 			endpoint: "wrong.host.badssl.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
 				Domains: []string{
@@ -243,7 +245,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "with TLS certificate signed by an unknown authority",
 			short:    true,
-			stats:    &enginenetx.HTTPSDialerNullStatsTracker{},
+			stats:    &HTTPSDialerNullStatsTracker{},
 			endpoint: "untrusted-root.badssl.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
 				Domains: []string{
@@ -268,7 +270,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 		{
 			name:     "with expired TLS certificate",
 			short:    true,
-			stats:    &enginenetx.HTTPSDialerNullStatsTracker{},
+			stats:    &HTTPSDialerNullStatsTracker{},
 			endpoint: "expired.badssl.com:443",
 			scenario: []*netemx.ScenarioDomainAddresses{{
 				Domains: []string{
@@ -373,13 +375,13 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 				// create the getaddrinfo resolver
 				resolver := netx.NewStdlibResolver(log.Log)
 
-				policy := &enginenetx.HTTPSDialerNullPolicy{
+				policy := &dnsPolicy{
 					Logger:   log.Log,
 					Resolver: resolver,
 				}
 
 				// create the TLS dialer
-				dialer := enginenetx.NewHTTPSDialer(
+				dialer := NewHTTPSDialer(
 					log.Log,
 					netx,
 					policy,
@@ -436,7 +438,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 func TestHTTPSDialerTactic(t *testing.T) {
 	t.Run("String", func(t *testing.T) {
 		expected := `{"Address":"162.55.247.208","InitialDelay":150000000,"Port":"443","SNI":"www.example.com","VerifyHostname":"api.ooni.io"}`
-		ldt := &enginenetx.HTTPSDialerTactic{
+		ldt := &HTTPSDialerTactic{
 			Address:        "162.55.247.208",
 			InitialDelay:   150 * time.Millisecond,
 			Port:           "443",
@@ -451,7 +453,7 @@ func TestHTTPSDialerTactic(t *testing.T) {
 
 	t.Run("Clone", func(t *testing.T) {
 		ff := &testingx.FakeFiller{}
-		var expect enginenetx.HTTPSDialerTactic
+		var expect HTTPSDialerTactic
 		ff.Fill(&expect)
 		got := expect.Clone()
 		if diff := cmp.Diff(expect.String(), got.String()); diff != "" {
@@ -461,7 +463,7 @@ func TestHTTPSDialerTactic(t *testing.T) {
 
 	t.Run("Summary", func(t *testing.T) {
 		expected := `162.55.247.208:443 sni=www.example.com verify=api.ooni.io`
-		ldt := &enginenetx.HTTPSDialerTactic{
+		ldt := &HTTPSDialerTactic{
 			Address:        "162.55.247.208",
 			InitialDelay:   150 * time.Millisecond,
 			Port:           "443",
@@ -491,7 +493,7 @@ func TestHTTPSDialerHostNetworkQA(t *testing.T) {
 		// https://github.com/ooni/probe-cli/pull/1295#issuecomment-1731243994
 		resolver := netxlite.MaybeWrapWithBogonResolver(true, netxlite.NewStdlibResolver(log.Log))
 
-		httpsDialer := enginenetx.NewHTTPSDialer(
+		httpsDialer := NewHTTPSDialer(
 			log.Log,
 			&netxlite.Netx{Underlying: &mocks.UnderlyingNetwork{
 				MockDefaultCertPool: func() *x509.CertPool {
@@ -504,11 +506,11 @@ func TestHTTPSDialerHostNetworkQA(t *testing.T) {
 				MockGetaddrinfoLookupANY:       tproxy.GetaddrinfoLookupANY,
 				MockGetaddrinfoResolverNetwork: tproxy.GetaddrinfoResolverNetwork,
 			}},
-			&enginenetx.HTTPSDialerNullPolicy{
+			&dnsPolicy{
 				Logger:   log.Log,
 				Resolver: resolver,
 			},
-			&enginenetx.HTTPSDialerNullStatsTracker{},
+			&HTTPSDialerNullStatsTracker{},
 		)
 
 		URL := runtimex.Try1(url.Parse(server.URL))
@@ -519,5 +521,111 @@ func TestHTTPSDialerHostNetworkQA(t *testing.T) {
 			t.Fatal(err)
 		}
 		tlsConn.Close()
+	})
+}
+
+func TestHTTPSDialerVerifyCertificateChain(t *testing.T) {
+	t.Run("without any peer certificate", func(t *testing.T) {
+		tlsConn := &mocks.TLSConn{
+			MockConnectionState: func() tls.ConnectionState {
+				return tls.ConnectionState{} // empty!
+			},
+		}
+		certPool := netxlite.NewMozillaCertPool()
+		err := httpsDialerVerifyCertificateChain("www.example.com", tlsConn, certPool)
+		if !errors.Is(err, errNoPeerCertificate) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+
+	t.Run("with an empty hostname", func(t *testing.T) {
+		tlsConn := &mocks.TLSConn{
+			MockConnectionState: func() tls.ConnectionState {
+				return tls.ConnectionState{} // empty but should not be an issue
+			},
+		}
+		certPool := netxlite.NewMozillaCertPool()
+		err := httpsDialerVerifyCertificateChain("", tlsConn, certPool)
+		if !errors.Is(err, errEmptyVerifyHostname) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+}
+
+func TestHTTPSDialerReduceResult(t *testing.T) {
+	t.Run("we return the first conn in a list of conns and close the other conns", func(t *testing.T) {
+		var closed int
+		expect := &mocks.TLSConn{} // empty
+		connv := []model.TLSConn{
+			expect,
+			&mocks.TLSConn{
+				Conn: mocks.Conn{
+					MockClose: func() error {
+						closed++
+						return nil
+					},
+				},
+			},
+			&mocks.TLSConn{
+				Conn: mocks.Conn{
+					MockClose: func() error {
+						closed++
+						return nil
+					},
+				},
+			},
+		}
+
+		conn, err := httpsDialerReduceResult(connv, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if conn != expect {
+			t.Fatal("unexpected conn")
+		}
+
+		if closed != 2 {
+			t.Fatal("did not call close")
+		}
+	})
+
+	t.Run("we join together a list of errors", func(t *testing.T) {
+		expectErr := "connection_refused\ninterrupted"
+		errorv := []error{errors.New("connection_refused"), errors.New("interrupted")}
+
+		conn, err := httpsDialerReduceResult(nil, errorv)
+		if err == nil || err.Error() != expectErr {
+			t.Fatal("unexpected err", err)
+		}
+
+		if conn != nil {
+			t.Fatal("expected nil conn")
+		}
+	})
+
+	t.Run("with a single error we return such an error", func(t *testing.T) {
+		expected := errors.New("connection_refused")
+		errorv := []error{expected}
+
+		conn, err := httpsDialerReduceResult(nil, errorv)
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected err", err)
+		}
+
+		if conn != nil {
+			t.Fatal("expected nil conn")
+		}
+	})
+
+	t.Run("we return errDNSNoAnswer if we don't have any conns or errors to return", func(t *testing.T) {
+		conn, err := httpsDialerReduceResult(nil, nil)
+		if !errors.Is(err, errDNSNoAnswer) {
+			t.Fatal("unexpected error", err)
+		}
+
+		if conn != nil {
+			t.Fatal("expected nil conn")
+		}
 	})
 }

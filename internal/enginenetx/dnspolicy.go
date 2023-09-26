@@ -1,5 +1,10 @@
 package enginenetx
 
+//
+// HTTPS dialing policy where we generate tactics in the usual way
+// by using a DNS resolver and using SNI == VerifyHostname
+//
+
 import (
 	"context"
 
@@ -7,17 +12,13 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// HTTPSDialerNullPolicy is the default "null" policy where we use the
+// dnsPolicy is the default TLS dialing policy where we use the
 // given resolver and the domain as the SNI.
 //
 // The zero value is invalid; please, init all MANDATORY fields.
 //
-// We say that this is the "null" policy because this is what you would get
-// by default if you were not using any policy.
-//
-// This policy uses an Happy-Eyeballs-like algorithm. Dial attempts are
-// staggered by httpsDialerHappyEyeballsDelay.
-type HTTPSDialerNullPolicy struct {
+// This policy uses an Happy-Eyeballs-like algorithm.
+type dnsPolicy struct {
 	// Logger is the MANDATORY logger.
 	Logger model.Logger
 
@@ -25,10 +26,10 @@ type HTTPSDialerNullPolicy struct {
 	Resolver model.Resolver
 }
 
-var _ HTTPSDialerPolicy = &HTTPSDialerNullPolicy{}
+var _ HTTPSDialerPolicy = &dnsPolicy{}
 
 // LookupTactics implements HTTPSDialerPolicy.
-func (p *HTTPSDialerNullPolicy) LookupTactics(
+func (p *dnsPolicy) LookupTactics(
 	ctx context.Context, domain, port string) <-chan *HTTPSDialerTactic {
 	out := make(chan *HTTPSDialerTactic)
 
@@ -66,34 +67,4 @@ func (p *HTTPSDialerNullPolicy) LookupTactics(
 	}()
 
 	return out
-}
-
-// HTTPSDialerNullStatsTracker is the "null" [HTTPSDialerStatsTracker].
-type HTTPSDialerNullStatsTracker struct{}
-
-var _ HTTPSDialerStatsTracker = &HTTPSDialerNullStatsTracker{}
-
-// OnStarting implements HTTPSDialerStatsTracker.
-func (*HTTPSDialerNullStatsTracker) OnStarting(tactic *HTTPSDialerTactic) {
-	// nothing
-}
-
-// OnSuccess implements HTTPSDialerStatsTracker.
-func (*HTTPSDialerNullStatsTracker) OnSuccess(tactic *HTTPSDialerTactic) {
-	// nothing
-}
-
-// OnTCPConnectError implements HTTPSDialerStatsTracker.
-func (*HTTPSDialerNullStatsTracker) OnTCPConnectError(ctx context.Context, tactic *HTTPSDialerTactic, err error) {
-	// nothing
-}
-
-// OnTLSHandshakeError implements HTTPSDialerStatsTracker.
-func (*HTTPSDialerNullStatsTracker) OnTLSHandshakeError(ctx context.Context, tactic *HTTPSDialerTactic, err error) {
-	// nothing
-}
-
-// OnTLSVerifyError implements HTTPSDialerStatsTracker.
-func (*HTTPSDialerNullStatsTracker) OnTLSVerifyError(tactic *HTTPSDialerTactic, err error) {
-	// nothing
 }

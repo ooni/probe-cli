@@ -100,6 +100,36 @@ type HTTPSDialerStatsTracker interface {
 	OnSuccess(tactic *HTTPSDialerTactic)
 }
 
+// HTTPSDialerNullStatsTracker is the "null" [HTTPSDialerStatsTracker].
+type HTTPSDialerNullStatsTracker struct{}
+
+var _ HTTPSDialerStatsTracker = &HTTPSDialerNullStatsTracker{}
+
+// OnStarting implements HTTPSDialerStatsTracker.
+func (*HTTPSDialerNullStatsTracker) OnStarting(tactic *HTTPSDialerTactic) {
+	// nothing
+}
+
+// OnSuccess implements HTTPSDialerStatsTracker.
+func (*HTTPSDialerNullStatsTracker) OnSuccess(tactic *HTTPSDialerTactic) {
+	// nothing
+}
+
+// OnTCPConnectError implements HTTPSDialerStatsTracker.
+func (*HTTPSDialerNullStatsTracker) OnTCPConnectError(ctx context.Context, tactic *HTTPSDialerTactic, err error) {
+	// nothing
+}
+
+// OnTLSHandshakeError implements HTTPSDialerStatsTracker.
+func (*HTTPSDialerNullStatsTracker) OnTLSHandshakeError(ctx context.Context, tactic *HTTPSDialerTactic, err error) {
+	// nothing
+}
+
+// OnTLSVerifyError implements HTTPSDialerStatsTracker.
+func (*HTTPSDialerNullStatsTracker) OnTLSVerifyError(tactic *HTTPSDialerTactic, err error) {
+	// nothing
+}
+
 // HTTPSDialer is the [model.TLSDialer] used by the engine to dial HTTPS connections.
 //
 // The zero value of this struct is invalid; construct using [NewHTTPSDialer].

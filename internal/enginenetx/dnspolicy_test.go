@@ -12,7 +12,7 @@ func TestHTTPSDialerNullPolicy(t *testing.T) {
 	t.Run("LookupTactics with canceled context", func(t *testing.T) {
 		var called int
 
-		policy := &HTTPSDialerNullPolicy{
+		policy := &dnsPolicy{
 			Logger: &mocks.Logger{
 				MockDebugf: func(format string, v ...interface{}) {
 					called++
@@ -40,7 +40,7 @@ func TestHTTPSDialerNullPolicy(t *testing.T) {
 	})
 
 	t.Run("we short circuit IP addresses", func(t *testing.T) {
-		policy := &HTTPSDialerNullPolicy{
+		policy := &dnsPolicy{
 			Logger:   model.DiscardLogger,
 			Resolver: &mocks.Resolver{}, // empty so we crash if we hit the resolver
 		}
