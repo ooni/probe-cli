@@ -79,14 +79,14 @@ func (st *statsTactic) Clone() *statsTactic {
 	}
 }
 
-// statsDomain contains stats associated with a domain.
-type statsDomain struct {
+// statsDomainEndpoint contains stats associated with a domain endpoint.
+type statsDomainEndpoint struct {
 	Tactics map[string]*statsTactic
 }
 
-// statsDomainRemoveOldEntries returns a copy of a [*statsDomain] with old entries removed.
-func statsDomainRemoveOldEntries(input *statsDomain) (output *statsDomain) {
-	output = &statsDomain{
+// statsDomainEndpointRemoveOldEntries returns a copy of a [*statsDomainEndpoint] with old entries removed.
+func statsDomainEndpointRemoveOldEntries(input *statsDomainEndpoint) (output *statsDomainEndpoint) {
+	output = &statsDomainEndpoint{
 		Tactics: map[string]*statsTactic{},
 	}
 	oneWeek := 7 * 24 * time.Hour
@@ -101,14 +101,14 @@ func statsDomainRemoveOldEntries(input *statsDomain) (output *statsDomain) {
 }
 
 // statsContainerVersion is the current version of [statsContainer].
-const statsContainerVersion = 4
+const statsContainerVersion = 5
 
 // statsContainer is the root container for the stats.
 //
 // The zero value is invalid; construct using [newStatsContainer].
 type statsContainer struct {
-	// Domains maps a domain name to its tactics.
-	Domains map[string]*statsDomain
+	// DomainEndpoints maps a domain endpoint to its tactics.
+	DomainEndpoints map[string]*statsDomainEndpoint
 
 	// Version is the version of the container data format.
 	Version int
@@ -117,12 +117,12 @@ type statsContainer struct {
 // statsDomainRemoveOldEntries returns a copy of a [*statsContainer] with old entries removed.
 func statsContainerRemoveOldEntries(input *statsContainer) (output *statsContainer) {
 	output = newStatsContainer()
-	for domain, inputStats := range input.Domains {
-		prunedStats := statsDomainRemoveOldEntries(inputStats)
+	for domainEpnt, inputStats := range input.DomainEndpoints {
+		prunedStats := statsDomainEndpointRemoveOldEntries(inputStats)
 		if len(prunedStats.Tactics) <= 0 {
 			continue
 		}
-		output.Domains[domain] = prunedStats
+		output.DomainEndpoints[domainEpnt] = prunedStats
 	}
 	return
 }
@@ -131,11 +131,11 @@ func statsContainerRemoveOldEntries(input *statsContainer) (output *statsContain
 //
 // At the name implies, this function MUST be called while holding the [*statsManager] mutex.
 func (c *statsContainer) GetStatsTacticLocked(tactic *HTTPSDialerTactic) (*statsTactic, bool) {
-	domainRecord, found := c.Domains[tactic.VerifyHostname]
+	domainEpntRecord, found := c.DomainEndpoints[tactic.domainEndpointKey()]
 	if !found {
 		return nil, false
 	}
-	tacticRecord, found := domainRecord.Tactics[tactic.Summary()]
+	tacticRecord, found := domainEpntRecord.Tactics[tactic.Summary()]
 	return tacticRecord, found
 }
 
@@ -143,28 +143,28 @@ func (c *statsContainer) GetStatsTacticLocked(tactic *HTTPSDialerTactic) (*stats
 //
 // At the name implies, this function MUST be called while holding the [*statsManager] mutex.
 func (c *statsContainer) SetStatsTacticLocked(tactic *HTTPSDialerTactic, record *statsTactic) {
-	domainRecord, found := c.Domains[tactic.VerifyHostname]
+	domainEpntRecord, found := c.DomainEndpoints[tactic.domainEndpointKey()]
 	if !found {
-		domainRecord = &statsDomain{
+		domainEpntRecord = &statsDomainEndpoint{
 			Tactics: map[string]*statsTactic{},
 		}
 
 		// make sure the map is initialized
-		if len(c.Domains) <= 0 {
-			c.Domains = make(map[string]*statsDomain)
+		if len(c.DomainEndpoints) <= 0 {
+			c.DomainEndpoints = make(map[string]*statsDomainEndpoint)
 		}
 
-		c.Domains[tactic.VerifyHostname] = domainRecord
+		c.DomainEndpoints[tactic.domainEndpointKey()] = domainEpntRecord
 		// fallthrough
 	}
-	domainRecord.Tactics[tactic.Summary()] = record
+	domainEpntRecord.Tactics[tactic.Summary()] = record
 }
 
 // newStatsContainer creates a new empty [*statsContainer].
 func newStatsContainer() *statsContainer {
 	return &statsContainer{
-		Domains: map[string]*statsDomain{},
-		Version: statsContainerVersion,
+		DomainEndpoints: map[string]*statsDomainEndpoint{},
+		Version:         statsContainerVersion,
 	}
 }
 
