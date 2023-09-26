@@ -371,7 +371,7 @@ func TestLoadStatsContainer(t *testing.T) {
 								Tactic: &HTTPSDialerTactic{
 									Endpoint:       "162.55.247.208:443",
 									InitialDelay:   0,
-									SNI:            "www.example.com",
+									SNI:            "www.example.org",
 									VerifyHostname: "api.ooni.io",
 								},
 							},
@@ -399,7 +399,7 @@ func TestLoadStatsContainer(t *testing.T) {
 									Endpoint:       "162.55.247.208:443",
 									InitialDelay:   0,
 									SNI:            "www.example.com",
-									VerifyHostname: "api.ooni.io",
+									VerifyHostname: "www.kernel.org",
 								},
 							},
 						},
