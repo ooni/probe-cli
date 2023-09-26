@@ -133,16 +133,21 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 
 		// compute the list of results we expect to see from the stats data
 		var expect []*httpsDialerTactic
-		for idx, entry := range expectTacticsStats {
+		idx := 0
+		for _, entry := range expectTacticsStats {
+			if entry.CountSuccess <= 0 {
+				continue // we SHOULD NOT include entries that systematically failed
+			}
 			t := entry.Tactic.Clone()
 			t.InitialDelay = happyEyeballsDelay(idx)
 			expect = append(expect, t)
+			idx++
 		}
 
 		// extend the expected list to include DNS results
 		expect = append(expect, &httpsDialerTactic{
 			Address:        beaconAddress,
-			InitialDelay:   4 * time.Second,
+			InitialDelay:   2 * time.Second,
 			Port:           "443",
 			SNI:            "api.ooni.io",
 			VerifyHostname: "api.ooni.io",
@@ -192,16 +197,21 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 
 		// compute the list of results we expect to see from the stats data
 		var expect []*httpsDialerTactic
-		for idx, entry := range expectTacticsStats {
+		idx := 0
+		for _, entry := range expectTacticsStats {
+			if entry.CountSuccess <= 0 {
+				continue // we SHOULD NOT include entries that systematically failed
+			}
 			t := entry.Tactic.Clone()
 			t.InitialDelay = happyEyeballsDelay(idx)
 			expect = append(expect, t)
+			idx++
 		}
 
 		// extend the expected list to include DNS results
 		expect = append(expect, &httpsDialerTactic{
 			Address:        beaconAddress,
-			InitialDelay:   4 * time.Second,
+			InitialDelay:   2 * time.Second,
 			Port:           "443",
 			SNI:            "api.ooni.io",
 			VerifyHostname: "api.ooni.io",

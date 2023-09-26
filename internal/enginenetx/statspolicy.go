@@ -2,8 +2,8 @@ package enginenetx
 
 //
 // Schedling policy based on stats that fallbacks to
-// another policy after it has produced all the tactics
-// we can produce given the current stats.
+// another policy after it has produced all the working
+// tactics we can produce given the current stats.
 //
 
 import (
@@ -12,8 +12,8 @@ import (
 )
 
 // statsPolicy is a policy that schedules tactics already known
-// to work based on statistics and falls back to another policy when
-// its tactics do not work reliably.
+// to work based on statistics and defers to a fallback policy
+// once it has generated all the tactics known to work.
 //
 // The zero value of this struct is invalid; please, make sure you
 // fill all the fields marked as MANDATORY.
@@ -83,10 +83,13 @@ func (p *statsPolicy) statsLookupTactics(domain string, port string) (out []*htt
 		return successRate(tactics[i]) > successRate(tactics[j])
 	})
 
-	// TODO(bassosimone): I am wondering whether it makes sense to include the
-	// entries for which we have success rate equal to 0% here.
 	for _, t := range tactics {
-		out = append(out, t.Tactic)
+		// make sure we only include samples with 1+ successes; we don't want this policy
+		// to return what we already know it's not working and it will be the purpose of the
+		// fallback policy to generate new tactics to test
+		if t.CountSuccess > 0 {
+			out = append(out, t.Tactic)
+		}
 	}
 	return
 }
