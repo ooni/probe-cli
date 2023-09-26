@@ -7,22 +7,22 @@ import (
 	"time"
 )
 
-// BeaconsPolicy is a policy where we use beacons for communicating
+// beaconsPolicy is a policy where we use beacons for communicating
 // with the OONI backend, i.e., api.ooni.io.
 //
 // A beacon is an IP address that can route traffic from and to
 // the OONI backend and accepts any SNI.
 //
 // The zero value is invalid; please, init MANDATORY fields.
-type BeaconsPolicy struct {
+type beaconsPolicy struct {
 	// Fallback is the MANDATORY fallback policy.
 	Fallback HTTPSDialerPolicy
 }
 
-var _ HTTPSDialerPolicy = &BeaconsPolicy{}
+var _ HTTPSDialerPolicy = &beaconsPolicy{}
 
 // LookupTactics implements HTTPSDialerPolicy.
-func (p *BeaconsPolicy) LookupTactics(ctx context.Context, domain, port string) <-chan *HTTPSDialerTactic {
+func (p *beaconsPolicy) LookupTactics(ctx context.Context, domain, port string) <-chan *HTTPSDialerTactic {
 	out := make(chan *HTTPSDialerTactic)
 
 	go func() {
@@ -47,7 +47,7 @@ func (p *BeaconsPolicy) LookupTactics(ctx context.Context, domain, port string) 
 	return out
 }
 
-func (p *BeaconsPolicy) tacticsForDomain(domain, port string) <-chan *HTTPSDialerTactic {
+func (p *beaconsPolicy) tacticsForDomain(domain, port string) <-chan *HTTPSDialerTactic {
 	out := make(chan *HTTPSDialerTactic)
 
 	go func() {
@@ -81,14 +81,14 @@ func (p *BeaconsPolicy) tacticsForDomain(domain, port string) <-chan *HTTPSDiale
 	return out
 }
 
-func (p *BeaconsPolicy) beaconsAddrs() (out []string) {
+func (p *beaconsPolicy) beaconsAddrs() (out []string) {
 	return append(
 		out,
 		"162.55.247.208",
 	)
 }
 
-func (p *BeaconsPolicy) beaconsDomains() (out []string) {
+func (p *beaconsPolicy) beaconsDomains() (out []string) {
 	// See https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/-/issues/40273
 	return append(
 		out,
