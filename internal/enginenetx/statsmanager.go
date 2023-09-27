@@ -243,8 +243,8 @@ func statsDomainEndpointPruneEntries(input *statsDomainEndpoint) *statsDomainEnd
 	// a given threshold. Note that we need to be defensive here because we are dealing
 	// with data stored on disk that might have been modified to crash us.
 	//
-	// Note that statsDefensivelySortTacticsByDescendingSuccessRateWithPredicate operates
-	// and returns a DEEP COPY of the original list.
+	// Note that statsDefensivelySortTacticsByDescendingSuccessRateWithAcceptPredicate
+	// operates on and returns a DEEP COPY of the original list.
 	tactics = statsDefensivelySortTacticsByDescendingSuccessRateWithAcceptPredicate(tactics, func(st *statsTactic) bool {
 		// When .LastUpdated is the zero time.Time value, the check is going to fail
 		// exactly like the time was 1 or 5 or 10 years ago instead.
