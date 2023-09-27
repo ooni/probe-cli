@@ -43,10 +43,13 @@ func TestNetworkUnit(t *testing.T) {
 			},
 			stats: &statsManager{
 				cancel:    func() { /* nothing */ },
+				closeOnce: sync.Once{},
 				container: &statsContainer{},
 				kvStore:   &kvstore.Memory{},
 				logger:    model.DiscardLogger,
 				mu:        sync.Mutex{},
+				pruned:    make(chan any),
+				wg:        &sync.WaitGroup{},
 			},
 			txp: expected,
 		}
@@ -69,10 +72,13 @@ func TestNetworkUnit(t *testing.T) {
 			reso: expected,
 			stats: &statsManager{
 				cancel:    func() { /* nothing */ },
+				closeOnce: sync.Once{},
 				container: &statsContainer{},
 				kvStore:   &kvstore.Memory{},
 				logger:    model.DiscardLogger,
 				mu:        sync.Mutex{},
+				pruned:    make(chan any),
+				wg:        &sync.WaitGroup{},
 			},
 			txp: &mocks.HTTPTransport{
 				MockCloseIdleConnections: func() {
@@ -100,10 +106,13 @@ func TestNetworkUnit(t *testing.T) {
 				cancel: func() {
 					called = true
 				},
+				closeOnce: sync.Once{},
 				container: &statsContainer{},
 				kvStore:   &kvstore.Memory{},
 				logger:    model.DiscardLogger,
 				mu:        sync.Mutex{},
+				pruned:    make(chan any),
+				wg:        &sync.WaitGroup{},
 			},
 			txp: &mocks.HTTPTransport{
 				MockCloseIdleConnections: func() {

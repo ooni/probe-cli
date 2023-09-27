@@ -363,6 +363,9 @@ type statsManager struct {
 	// cancel allows canceling the background stats pruner.
 	cancel context.CancelFunc
 
+	// closeOnce gives .Close a "once" semantics
+	closeOnce sync.Once
+
 	// container is the container container for stats
 	container *statsContainer
 
@@ -374,6 +377,13 @@ type statsManager struct {
 
 	// mu provides mutual exclusion when accessing the stats.
 	mu sync.Mutex
+
+	// pruned is a channel pruned on a best effort basis
+	// by the background goroutine that prunes
+	pruned chan any
+
+	// wg tells us when the background goroutine joined
+	wg *sync.WaitGroup
 }
 
 // statsKey is the key used in the key-value store to access the state.
@@ -426,15 +436,22 @@ func newStatsManager(kvStore model.KeyValueStore, logger model.Logger, trimInter
 
 	mt := &statsManager{
 		cancel:    cancel,
+		closeOnce: sync.Once{},
 		container: root,
 		kvStore:   kvStore,
 		logger:    logger,
 		mu:        sync.Mutex{},
+		pruned:    make(chan any),
+		wg:        &sync.WaitGroup{},
 	}
 
 	// run a background goroutine that trims the stats by removing excessive
 	// entries until the programmer calls (*statsManager).Close
-	go mt.trim(ctx, trimInterval)
+	mt.wg.Add(1)
+	go func() {
+		defer mt.wg.Done()
+		mt.trim(ctx, trimInterval)
+	}()
 
 	return mt
 }
@@ -569,26 +586,34 @@ func (mt *statsManager) OnSuccess(tactic *httpsDialerTactic) {
 }
 
 // Close implements io.Closer
-func (mt *statsManager) Close() error {
-	// TODO(bassosimone): do we need to apply a "once" semantics to this method? Perhaps no
-	// given that there is no resource that we can close only once...
+func (mt *statsManager) Close() (err error) {
+	mt.closeOnce.Do(func() {
+		// interrupt the background goroutine
+		mt.cancel()
 
-	// interrupt the background goroutine
-	mt.cancel()
+		func() {
+			// get exclusive access
+			defer mt.mu.Unlock()
+			mt.mu.Lock()
 
-	// get exclusive access
-	defer mt.mu.Unlock()
-	mt.mu.Lock()
+			// make sure we remove the unneeded entries one last time before saving them
+			container := statsContainerPruneEntries(mt.container)
 
-	// make sure we remove the unneeded entries one last time before saving them
-	container := statsContainerPruneEntries(mt.container)
+			// write updated stats into the underlying key-value store
+			err = mt.kvStore.Set(statsKey, runtimex.Try1(json.Marshal(container)))
+		}()
 
-	// write updated stats into the underlying key-value store
-	return mt.kvStore.Set(statsKey, runtimex.Try1(json.Marshal(container)))
+		// wait for background goroutine to join
+		mt.wg.Wait()
+	})
+	return
 }
 
 // trim runs in the background and trims the mt.container struct
 func (mt *statsManager) trim(ctx context.Context, interval time.Duration) {
+
+	// Note: we already manage mt.wg when we start this goroutine so there's NO NEED to do it here!
+
 	t := time.NewTicker(interval)
 	defer t.Stop()
 	for {
@@ -602,6 +627,13 @@ func (mt *statsManager) trim(ctx context.Context, interval time.Duration) {
 			mt.mu.Lock()
 			mt.container = statsContainerPruneEntries(mt.container)
 			mt.mu.Unlock()
+
+			// notify whoever's concerned that we pruned
+			// on a best effort basis
+			select {
+			case mt.pruned <- true:
+			default:
+			}
 
 		}
 	}

@@ -1578,3 +1578,58 @@ func TestStatsContainerPruneEntries(t *testing.T) {
 		}
 	})
 }
+
+func TestStatsManagerTrimEntriesConcurrently(t *testing.T) {
+	// start stats manger that trims very frequently
+	store := &kvstore.Memory{}
+	sm := newStatsManager(store, model.DiscardLogger, 1*time.Second)
+
+	// obtain exclusive access
+	sm.mu.Lock()
+
+	// insert some data that needs pruning
+	sm.container = &statsContainer{
+		DomainEndpoints: map[string]*statsDomainEndpoint{
+			"shelob.polito.it:443": {
+				Tactics: map[string]*statsTactic{
+					"130.192.91.211:443 sni=garr.it verify=shelob.polito.it": {
+						CountStarted: 10,
+						CountSuccess: 10,
+						LastUpdated:  time.Time{}, // a long time ago!
+						Tactic: &httpsDialerTactic{
+							Address:        "130.192.91.211",
+							InitialDelay:   0,
+							Port:           "443",
+							SNI:            "garr.it",
+							VerifyHostname: "shelob.polito.it",
+						},
+					},
+				},
+			},
+		},
+		Version: statsContainerVersion,
+	}
+
+	// let the worker continue to run
+	sm.mu.Unlock()
+
+	// wait for pruning to happen
+	<-sm.pruned
+
+	// order the background goroutine to shutdown
+	// and wait for the shutdown to complete
+	if err := sm.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	// now check what actually ended up being written; note that we expect
+	// to see empty domain endpoitns because we added a too old entry
+	expecteData := []byte(`{"DomainEndpoints":{},"Version":5}`)
+	data, err := store.Get(statsKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(expecteData, data); diff != "" {
+		t.Fatal(diff)
+	}
+}
