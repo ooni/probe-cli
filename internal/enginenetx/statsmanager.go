@@ -149,10 +149,10 @@ func statsDefensivelySortTacticsByDescendingSuccessRateWithAcceptPredicate(
 		if statsNilSafeSuccessRate(work[i]) > statsNilSafeSuccessRate(work[j]) {
 			return true
 		}
-		if statsNilSafeLastUpdated(work[i]).Sub(statsNilSafeLastUpdated(work[j])) > 0 {
+		if statsNilSafeCountSuccess(work[i]) > statsNilSafeCountSuccess(work[j]) {
 			return true
 		}
-		if statsNilSafeCountSuccess(work[i]) > statsNilSafeCountSuccess(work[j]) {
+		if statsNilSafeLastUpdated(work[i]).Sub(statsNilSafeLastUpdated(work[j])) > 0 {
 			return true
 		}
 		return false

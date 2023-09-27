@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"sort"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -1070,4 +1071,190 @@ func TestStatsContainer(t *testing.T) {
 			}
 		})
 	})
+}
+
+func TestStatsNilSafeSuccessRate(t *testing.T) {
+	t.Run("with nil entry", func(t *testing.T) {
+		var st *statsTactic
+		if statsNilSafeSuccessRate(st) != 0 {
+			t.Fatal("unexpected result")
+		}
+	})
+
+	t.Run("with non-nil entry", func(t *testing.T) {
+		st := &statsTactic{
+			CountStarted: 10,
+			CountSuccess: 5,
+		}
+		if statsNilSafeSuccessRate(st) != 0.5 {
+			t.Fatal("unexpected result")
+		}
+	})
+}
+
+func TestStatsNilSafeLastUpdated(t *testing.T) {
+	t.Run("with nil entry", func(t *testing.T) {
+		var st *statsTactic
+		if !statsNilSafeLastUpdated(st).IsZero() {
+			t.Fatal("unexpected result")
+		}
+	})
+
+	t.Run("with non-nil entry", func(t *testing.T) {
+		expect := time.Now()
+		st := &statsTactic{
+			LastUpdated: expect,
+		}
+		if statsNilSafeLastUpdated(st) != expect {
+			t.Fatal("unexpected result")
+		}
+	})
+}
+
+func TestStatsNilSafeCounSuccess(t *testing.T) {
+	t.Run("with nil entry", func(t *testing.T) {
+		var st *statsTactic
+		if statsNilSafeCountSuccess(st) != 0 {
+			t.Fatal("unexpected result")
+		}
+	})
+
+	t.Run("with non-nil entry", func(t *testing.T) {
+		st := &statsTactic{
+			CountSuccess: 11,
+		}
+		if statsNilSafeCountSuccess(st) != 11 {
+			t.Fatal("unexpected result")
+		}
+	})
+}
+
+func TestStatsDefensivelySortTacticsByDescendingSuccessRateWithAcceptPredicate(t *testing.T) {
+	now := time.Now()
+
+	// expect shows what we expect to see in output
+	expect := []*statsTactic{
+
+		// this one should be first because it has 100% success rate
+		// and the highest number of successes
+		{
+			CountStarted: 5,
+			CountSuccess: 5,
+			LastUpdated:  now.Add(-5 * time.Second),
+			Tactic: &httpsDialerTactic{
+				Address:        "130.192.91.211",
+				InitialDelay:   0,
+				Port:           "443",
+				SNI:            "www.repubblica.it",
+				VerifyHostname: "shelob.polito.it",
+			},
+		},
+
+		// this one should be second because it has less successes
+		// than the first one albeit the same last updated
+		{
+			CountStarted: 4,
+			CountSuccess: 4,
+			LastUpdated:  now.Add(-5 * time.Second),
+			Tactic: &httpsDialerTactic{
+				Address:        "130.192.91.211",
+				InitialDelay:   0,
+				Port:           "443",
+				SNI:            "www.ilfattoquotidiano.it",
+				VerifyHostname: "shelob.polito.it",
+			},
+		},
+
+		// this one should be third because it is a bit older
+		// albeit it has the same number of successes
+		{
+			CountStarted: 4,
+			CountSuccess: 4,
+			LastUpdated:  now.Add(-7 * time.Second),
+			Tactic: &httpsDialerTactic{
+				Address:        "130.192.91.211",
+				InitialDelay:   0,
+				Port:           "443",
+				SNI:            "www.ilpost.it",
+				VerifyHostname: "shelob.polito.it",
+			},
+		},
+
+		// this one should come fourth because it has a lower success rate
+		{
+			CountStarted: 100,
+			CountSuccess: 95,
+			LastUpdated:  now.Add(-2 * time.Second),
+			Tactic: &httpsDialerTactic{
+				Address:        "130.192.91.211",
+				InitialDelay:   0,
+				Port:           "443",
+				SNI:            "www.polito.it",
+				VerifyHostname: "shelob.polito.it",
+			},
+		},
+	}
+
+	// input contains the input we provide, which should contain
+	// a mixture of the above entries together with a bunch of
+	// entries with very bad values
+	input := []*statsTactic{
+
+		// this is the one that should sort last in output
+		expect[3],
+
+		// a nil entry is obviously a good test case
+		nil,
+
+		// an entry with a nil Tactic is also quite annoying
+		{
+			CountStarted: 55,
+			CountSuccess: 55,
+			LastUpdated:  now.Add(-3 * time.Second),
+			Tactic:       nil,
+		},
+
+		expect[1],
+		expect[2],
+
+		// another nil entry because why not
+		nil,
+
+		// another entry with nil Tactic because why not
+		{
+			CountStarted: 101,
+			CountSuccess: 44,
+			LastUpdated:  now.Add(-33 * time.Second),
+			Tactic:       nil,
+		},
+
+		// a legitimate entry that is going to be filtered out
+		// by a custom filtering function
+		//
+		// otherwise, this one should be the first entry
+		{
+			CountStarted: 128,
+			CountSuccess: 128,
+			LastUpdated:  now.Add(-130 * time.Millisecond),
+			Tactic: &httpsDialerTactic{
+				Address:        "130.192.91.211",
+				InitialDelay:   0,
+				Port:           "443",
+				SNI:            "kernel.org",
+				VerifyHostname: "shelob.polito.it",
+			},
+		},
+
+		expect[0],
+	}
+
+	got := statsDefensivelySortTacticsByDescendingSuccessRateWithAcceptPredicate(
+		input, func(st *statsTactic) bool {
+			return st != nil && st.Tactic != nil && strings.HasSuffix(st.Tactic.SNI, ".it")
+		},
+	)
+
+	if diff := cmp.Diff(expect, got); diff != "" {
+		t.Fatal(diff)
+	}
 }
