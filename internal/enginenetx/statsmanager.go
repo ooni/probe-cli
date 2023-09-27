@@ -245,16 +245,17 @@ func statsDomainEndpointPruneEntries(input *statsDomainEndpoint) *statsDomainEnd
 	//
 	// Note that statsDefensivelySortTacticsByDescendingSuccessRateWithAcceptPredicate
 	// operates on and returns a DEEP COPY of the original list.
-	tactics = statsDefensivelySortTacticsByDescendingSuccessRateWithAcceptPredicate(tactics, func(st *statsTactic) bool {
-		// When .LastUpdated is the zero time.Time value, the check is going to fail
-		// exactly like the time was 1 or 5 or 10 years ago instead.
-		//
-		// See https://go.dev/play/p/HGQT17ueIkq where we show that the zero time
-		// is handled exactly like any time in the past (it was kinda obvious, but
-		// sometimes it also make sense to double check assumptions!)
-		delta := now.Sub(statsNilSafeLastUpdated(st))
-		return delta < oneWeek
-	})
+	tactics = statsDefensivelySortTacticsByDescendingSuccessRateWithAcceptPredicate(
+		tactics, func(st *statsTactic) bool {
+			// When .LastUpdated is the zero time.Time value, the check is going to fail
+			// exactly like the time was 1 or 5 or 10 years ago instead.
+			//
+			// See https://go.dev/play/p/HGQT17ueIkq where we show that the zero time
+			// is handled exactly like any time in the past (it was kinda obvious, but
+			// sometimes it also make sense to double check assumptions!)
+			delta := now.Sub(statsNilSafeLastUpdated(st))
+			return delta < oneWeek
+		})
 
 	// Cut excess entries, if needed
 	if len(tactics) > maxEntriesPerDomainEndpoint {
