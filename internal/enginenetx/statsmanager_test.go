@@ -609,6 +609,34 @@ func TestStatsManagerCallbacks(t *testing.T) {
 			},
 		},
 
+		// When TCP connect fails and we don't already have a policy record
+		{
+			name: "OnTCPConnectError when we are missing the stats record for the domain",
+			initialRoot: &statsContainer{
+				DomainEndpoints: map[string]*statsDomainEndpoint{},
+				Version:         statsContainerVersion,
+			},
+			do: func(stats *statsManager) {
+				ctx := context.Background()
+
+				tactic := &httpsDialerTactic{
+					Address:        "162.55.247.208",
+					InitialDelay:   0,
+					Port:           "443",
+					SNI:            "www.example.com",
+					VerifyHostname: "api.ooni.io",
+				}
+				err := errors.New("generic_timeout_error")
+
+				stats.OnTCPConnectError(ctx, tactic, err)
+			},
+			expectWarnf: 1,
+			expectRoot: &statsContainer{
+				DomainEndpoints: map[string]*statsDomainEndpoint{},
+				Version:         statsContainerVersion,
+			},
+		},
+
 		// When TLS handshake fails and the reason is a canceled context
 		{
 			name: "OnTLSHandshakeError with ctx.Error() != nil",
