@@ -1016,3 +1016,30 @@ func TestStatsSafeIncrementMapStringInt64(t *testing.T) {
 		}
 	})
 }
+
+func TestStatsContainer(t *testing.T) {
+	t.Run("GetStatsTacticLocked", func(t *testing.T) {
+		t.Run("is robust with respect to c.DomainEndpoints containing a nil entry", func(t *testing.T) {
+			sc := &statsContainer{
+				DomainEndpoints: map[string]*statsDomainEndpoint{
+					"api.ooni.io:443": nil,
+				},
+				Version: statsContainerVersion,
+			}
+			tactic := &httpsDialerTactic{
+				Address:        "162.55.247.208",
+				InitialDelay:   0,
+				Port:           "443",
+				SNI:            "www.example.com",
+				VerifyHostname: "api.ooni.io",
+			}
+			record, good := sc.GetStatsTacticLocked(tactic)
+			if good {
+				t.Fatal("expected not good")
+			}
+			if record != nil {
+				t.Fatal("expected nil")
+			}
+		})
+	})
+}

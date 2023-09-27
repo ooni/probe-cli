@@ -60,7 +60,7 @@ func (p *statsPolicy) LookupTactics(ctx context.Context, domain string, port str
 		}
 
 		// give priority to what we know from stats
-		for _, t := range p.statsLookupTactics(domain, port) {
+		for _, t := range statsPolicyPostProcessTactics(p.Stats.LookupTactics(domain, port)) {
 			maybeEmitTactic(t)
 		}
 
@@ -73,29 +73,30 @@ func (p *statsPolicy) LookupTactics(ctx context.Context, domain string, port str
 	return out
 }
 
-func (p *statsPolicy) statsLookupTactics(domain string, port string) (out []*httpsDialerTactic) {
-
-	// obtain information from the stats--here the result may be false if the
-	// stats do not contain any information about the domain and port
-	tactics, good := p.Stats.LookupTactics(domain, port)
+func statsPolicyPostProcessTactics(tactics []*statsTactic, good bool) (out []*httpsDialerTactic) {
+	// when good is false, it means p.Stats.LookupTactics failed
 	if !good {
 		return
 	}
 
-	// successRate is a convenience function for computing the success rate
-	successRate := func(t *statsTactic) (rate float64) {
-		if t.CountStarted > 0 {
+	// nilSafeSuccessRate is a convenience function for computing the success rate
+	// which returns zero as the success rate if CountStarted is zero
+	//
+	// for robustness, be paranoid about nils here because the stats are
+	// written on the disk and a user could potentially edit them
+	nilSafeSuccessRate := func(t *statsTactic) (rate float64) {
+		if t != nil && t.CountStarted > 0 {
 			rate = float64(t.CountSuccess) / float64(t.CountStarted)
 		}
 		return
 	}
 
-	// Implementation note: the function should implement the "less" semantics
-	// but we want descending sorting not ascending, so we're using a "more" semantics
+	// Implementation note: the function should implement the "less" semantics for
+	// ascending sorting, but we want descending sorting, so we use `>` instead
 	sort.SliceStable(tactics, func(i, j int) bool {
 		// TODO(bassosimone): should we also consider the number of samples
 		// we have and how recent a sample is?
-		return successRate(tactics[i]) > successRate(tactics[j])
+		return nilSafeSuccessRate(tactics[i]) > nilSafeSuccessRate(tactics[j])
 	})
 
 	for _, t := range tactics {
@@ -103,9 +104,9 @@ func (p *statsPolicy) statsLookupTactics(domain string, port string) (out []*htt
 		// to return what we already know it's not working and it will be the purpose of the
 		// fallback policy to generate new tactics to test
 		//
-		// additionally, as a precautionary and defensive measure, make sure t.Tactic
-		// is not nil before adding the real tactic to the return list
-		if t.CountSuccess > 0 && t.Tactic != nil {
+		// additionally, as a precautionary and defensive measure, make sure t and t.Tactic
+		// are not nil before adding a malformed tactic to the return list
+		if t != nil && t.CountSuccess > 0 && t.Tactic != nil {
 			out = append(out, t.Tactic)
 		}
 	}
