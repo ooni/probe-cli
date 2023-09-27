@@ -216,7 +216,7 @@ type statsDomainEndpoint struct {
 	Tactics map[string]*statsTactic
 }
 
-// statsDomainEndpointPruneEntries returns a copy of a [*statsDomainEndpoint] with old
+// statsDomainEndpointPruneEntries returns a DEEP COPY of a [*statsDomainEndpoint] with old
 // and excess entries removed, such that the overall size is not unbounded.
 func statsDomainEndpointPruneEntries(input *statsDomainEndpoint) *statsDomainEndpoint {
 	tactics := []*statsTactic{}
@@ -285,7 +285,7 @@ type statsContainer struct {
 	Version int
 }
 
-// statsDomainPruneEntries returns a copy of a [*statsContainer] with old entries removed.
+// statsDomainPruneEntries returns a DEEP COPY of a [*statsContainer] with old entries removed.
 func statsContainerPruneEntries(input *statsContainer) (output *statsContainer) {
 	output = newStatsContainer()
 
