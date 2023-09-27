@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"math/rand"
 	"sort"
 	"strings"
 	"sync"
@@ -1257,4 +1259,176 @@ func TestStatsDefensivelySortTacticsByDescendingSuccessRateWithAcceptPredicate(t
 	if diff := cmp.Diff(expect, got); diff != "" {
 		t.Fatal(diff)
 	}
+}
+
+func TestStatsDomainEndpointPruneEntries(t *testing.T) {
+	t.Run("rejects tactics with empty summary, nil tactics and with nil .Tactics", func(t *testing.T) {
+		input := &statsDomainEndpoint{
+			Tactics: map[string]*statsTactic{
+				// empty summary
+				"": {
+					Tactic: &httpsDialerTactic{},
+				},
+
+				// nil tactic
+				"antani": nil,
+
+				// nil .Tactic
+				"foo": {
+					Tactic: nil,
+				},
+			},
+		}
+
+		expect := &statsDomainEndpoint{
+			Tactics: map[string]*statsTactic{},
+		}
+
+		got := statsDomainEndpointPruneEntries(input)
+
+		if diff := cmp.Diff(expect, got); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
+	t.Run("prunes entries older than one week", func(t *testing.T) {
+		now := time.Now()
+
+		input := &statsDomainEndpoint{
+			Tactics: map[string]*statsTactic{
+				"130.192.91.211:443 sni=polito.it verify=shelob.polito.it": {
+					CountStarted: 10,
+					CountSuccess: 10,
+					LastUpdated:  now.Add(-24 * time.Hour * 8),
+					Tactic: &httpsDialerTactic{
+						Address:        "130.192.91.211",
+						InitialDelay:   0,
+						Port:           "443",
+						SNI:            "polito.it",
+						VerifyHostname: "shelob.polito.it",
+					},
+				},
+				"130.192.91.211:443 sni=garr.it verify=shelob.polito.it": {
+					CountStarted: 10,
+					CountSuccess: 7,
+					LastUpdated:  now.Add(-24 * time.Hour * 6),
+					Tactic: &httpsDialerTactic{
+						Address:        "130.192.91.211",
+						InitialDelay:   0,
+						Port:           "443",
+						SNI:            "garr.it",
+						VerifyHostname: "shelob.polito.it",
+					},
+				},
+			},
+		}
+
+		expect := &statsDomainEndpoint{
+			Tactics: map[string]*statsTactic{
+				"130.192.91.211:443 sni=garr.it verify=shelob.polito.it": {
+					CountStarted: 10,
+					CountSuccess: 7,
+					LastUpdated:  now.Add(-24 * time.Hour * 6),
+					Tactic: &httpsDialerTactic{
+						Address:        "130.192.91.211",
+						InitialDelay:   0,
+						Port:           "443",
+						SNI:            "garr.it",
+						VerifyHostname: "shelob.polito.it",
+					},
+				},
+			},
+		}
+
+		got := statsDomainEndpointPruneEntries(input)
+
+		if diff := cmp.Diff(expect, got); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
+	t.Run("reduces the number of entries", func(t *testing.T) {
+		var (
+			inputs []*statsTactic
+		)
+
+		expect := &statsDomainEndpoint{
+			Tactics: map[string]*statsTactic{},
+		}
+		now := time.Now()
+
+		// create successful entries
+		for idx := int64(0); idx < 7; idx++ {
+			tactic := &statsTactic{
+				CountStarted:         10,
+				CountTCPConnectError: idx,
+				CountSuccess:         10 - idx,
+				HistoTCPConnectError: map[string]int64{
+					"generic_timeout_error": idx,
+				},
+				LastUpdated: now.Add(-time.Duration(idx) * time.Second),
+				Tactic: &httpsDialerTactic{
+					Address:        "130.192.91.211",
+					InitialDelay:   0,
+					Port:           "443",
+					SNI:            fmt.Sprintf("host%d.garr.it", idx),
+					VerifyHostname: "shelob.polito.it",
+				},
+			}
+			inputs = append(inputs, tactic)
+
+			// note how we're making entries such that each entry is less
+			// good than the subsequent one in terms of the success rate
+			expect.Tactics[tactic.Tactic.tacticSummaryKey()] = tactic
+		}
+
+		// create failed entries
+		for idx := int64(7); idx < 255; idx++ {
+			tactic := &statsTactic{
+				CountStarted:         idx,
+				CountTCPConnectError: idx,
+				HistoTCPConnectError: map[string]int64{
+					"generic_timeout_error": idx,
+				},
+				LastUpdated: now.Add(-time.Duration(idx) * time.Second),
+				Tactic: &httpsDialerTactic{
+					Address:        "130.192.91.211",
+					InitialDelay:   0,
+					Port:           "443",
+					SNI:            fmt.Sprintf("host%d.garr.it", idx),
+					VerifyHostname: "shelob.polito.it",
+				},
+			}
+			inputs = append(inputs, tactic)
+
+			// we need three extra failures in the expected results
+			// and they must sort after successful entries
+			if idx < 10 {
+				expect.Tactics[tactic.Tactic.tacticSummaryKey()] = tactic
+			}
+		}
+
+		// shuffle the input order
+		r := rand.New(rand.NewSource(time.Now().UnixNano()))
+		r.Shuffle(len(inputs), func(i, j int) {
+			inputs[i], inputs[j] = inputs[j], inputs[i]
+		})
+
+		// fill the input struct
+		input := &statsDomainEndpoint{
+			Tactics: map[string]*statsTactic{},
+		}
+		for _, entry := range inputs {
+			input.Tactics[entry.Tactic.tacticSummaryKey()] = entry
+		}
+
+		got := statsDomainEndpointPruneEntries(input)
+
+		// log the results because it may be useful in case something is wrong
+		t.Log(string(runtimex.Try1(json.MarshalIndent(got, "", "  "))))
+
+		if diff := cmp.Diff(expect, got); diff != "" {
+			t.Fatal(diff)
+		}
+	})
 }
