@@ -122,6 +122,8 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 			tk.BlockingFlags, tk.Accessible, tk.Blocking,
 		)
 
+	// Assigning "http-failure" for both TLS and HTTP blocking is a legacy behavior
+	// because the spec does not consider the case of TLS based blocking
 	case (tk.BlockingFlags & (analysisFlagTLSBlocking | analysisFlagHTTPBlocking)) != 0:
 		tk.Blocking = "http-failure"
 		tk.Accessible = false

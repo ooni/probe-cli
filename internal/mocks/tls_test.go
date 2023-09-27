@@ -7,6 +7,8 @@ import (
 	"net"
 	"reflect"
 	"testing"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestTLSHandshaker(t *testing.T) {
@@ -16,17 +18,13 @@ func TestTLSHandshaker(t *testing.T) {
 		ctx := context.Background()
 		config := &tls.Config{}
 		th := &TLSHandshaker{
-			MockHandshake: func(ctx context.Context, conn net.Conn,
-				config *tls.Config) (net.Conn, tls.ConnectionState, error) {
-				return nil, tls.ConnectionState{}, expected
+			MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (model.TLSConn, error) {
+				return nil, expected
 			},
 		}
-		tlsConn, connState, err := th.Handshake(ctx, conn, config)
+		tlsConn, err := th.Handshake(ctx, conn, config)
 		if !errors.Is(err, expected) {
 			t.Fatal("not the error we expected", err)
-		}
-		if !reflect.ValueOf(connState).IsZero() {
-			t.Fatal("expected zero ConnectionState here")
 		}
 		if tlsConn != nil {
 			t.Fatal("expected nil conn here")

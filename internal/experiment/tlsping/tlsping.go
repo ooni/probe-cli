@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -171,7 +172,7 @@ func (m *Measurer) tlsConnectAndHandshake(ctx context.Context, index int64,
 	dialer := trace.NewDialerWithoutResolver(logger)
 	alpn := strings.Split(m.config.alpn(), " ")
 	sni := m.config.sni(address)
-	ol := measurexlite.NewOperationLogger(logger, "TLSPing #%d %s %s %v", index, address, sni, alpn)
+	ol := logx.NewOperationLogger(logger, "TLSPing #%d %s %s %v", index, address, sni, alpn)
 	conn, err := dialer.DialContext(ctx, "tcp", address)
 	sp.TCPConnect = trace.FirstTCPConnectOrNil() // record the first connect from the buffer
 	if err != nil {
@@ -188,7 +189,7 @@ func (m *Measurer) tlsConnectAndHandshake(ctx context.Context, index int64,
 		RootCAs:    nil,
 		ServerName: sni,
 	}
-	_, _, err = thx.Handshake(ctx, conn, config)
+	_, err = thx.Handshake(ctx, conn, config)
 	ol.Stop(err)
 	sp.TLSHandshake = trace.FirstTLSHandshakeOrNil() // record the first handshake from the buffer
 	sp.NetworkEvents = trace.NetworkEvents()

@@ -10,8 +10,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
 func TestOONIRunFetch(t *testing.T) {
@@ -27,7 +27,7 @@ func TestOONIRunFetch(t *testing.T) {
 		}
 
 		expect := map[string]any{
-			"archived": false,
+			"archived":                 false,
 			"descriptor_creation_time": "2023-07-18T15:38:21Z",
 			"descriptor": map[string]any{
 				"author":           "simone@openobservatory.org",
@@ -49,7 +49,7 @@ func TestOONIRunFetch(t *testing.T) {
 				"short_description":      "Integration testing descriptor for ooni/probe-cli/v3/pkg/oonimkall.",
 				"short_description_intl": map[string]any{},
 			},
-			"mine": false,
+			"mine":                      false,
 			"translation_creation_time": "2023-07-18T15:38:21Z",
 			"v":                         1.0,
 		}
@@ -106,7 +106,7 @@ func TestOONIRunFetch(t *testing.T) {
 		// Implementation note: because we need to backport this patch to the release/3.18
 		// branch, it would be quite verbose and burdensome use netem to implement this test,
 		// since release/3.18 is lagging behind from master in terms of netemx.
-		server := filtering.NewTLSServer(filtering.TLSActionReset)
+		server := testingx.MustNewTLSServer(testingx.TLSHandlerReset())
 		defer server.Close()
 
 		URL := &url.URL{

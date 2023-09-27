@@ -16,7 +16,6 @@ require (
 	github.com/fatih/color v1.15.0
 	github.com/google/go-cmp v0.5.9
 	github.com/google/gopacket v1.1.19
-	github.com/google/martian/v3 v3.3.2
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.5.0
@@ -27,14 +26,14 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.7.1
 	github.com/ooni/go-libtor v1.1.8
-	github.com/ooni/netem v0.0.0-20230824091252-b50edc007f81
+	github.com/ooni/netem v0.0.0-20230920215742-15f3ffec0107
 	github.com/ooni/oocrypto v0.5.3
 	github.com/ooni/oohttp v0.6.3
 	github.com/ooni/probe-assets v0.18.0
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/pion/stun v0.6.1
 	github.com/pkg/errors v0.9.1
-	github.com/quic-go/quic-go v0.33.0
+	github.com/quic-go/quic-go v0.37.3
 	github.com/rogpeppe/go-internal v1.11.0
 	github.com/rubenv/sql-migrate v1.5.1
 	github.com/schollz/progressbar/v3 v3.13.1
@@ -73,8 +72,7 @@ require (
 	github.com/pion/transport/v2 v2.2.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/quic-go/qpack v0.4.0 // indirect
-	github.com/quic-go/qtls-go1-19 v0.3.2 // indirect
-	github.com/quic-go/qtls-go1-20 v0.2.2 // indirect
+	github.com/quic-go/qtls-go1-20 v0.3.1 // indirect
 	github.com/refraction-networking/conjure v0.4.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/segmentio/fasthash v1.0.3 // indirect

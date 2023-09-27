@@ -64,17 +64,24 @@ func NewHTTP3Transport(
 
 // NewHTTP3TransportStdlib creates a new HTTPTransport using http3 that
 // uses standard functionality for everything but the logger.
-func NewHTTP3TransportStdlib(logger model.DebugLogger) model.HTTPTransport {
-	ql := NewQUICListener()
-	reso := NewStdlibResolver(logger)
-	qd := NewQUICDialerWithResolver(ql, logger, reso)
+func (netx *Netx) NewHTTP3TransportStdlib(logger model.DebugLogger) model.HTTPTransport {
+	ql := netx.NewUDPListener()
+	reso := netx.NewStdlibResolver(logger)
+	qd := netx.NewQUICDialerWithResolver(ql, logger, reso)
 	return NewHTTP3Transport(logger, qd, nil)
+}
+
+// NewHTTP3TransportStdlib is equivalent to creating an empty [*Netx]
+// and calling its NewHTTP3TransportStdlib method.
+func NewHTTP3TransportStdlib(logger model.DebugLogger) model.HTTPTransport {
+	netx := &Netx{Underlying: nil}
+	return netx.NewHTTP3TransportStdlib(logger)
 }
 
 // NewHTTPTransportWithResolver creates a new HTTPTransport using http3
 // that uses the given logger and the given resolver.
 func NewHTTP3TransportWithResolver(logger model.DebugLogger, reso model.Resolver) model.HTTPTransport {
-	qd := NewQUICDialerWithResolver(NewQUICListener(), logger, reso)
+	qd := NewQUICDialerWithResolver(NewUDPListener(), logger, reso)
 	return NewHTTP3Transport(logger, qd, nil)
 }
 

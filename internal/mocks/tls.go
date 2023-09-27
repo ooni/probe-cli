@@ -4,17 +4,17 @@ import (
 	"context"
 	"crypto/tls"
 	"net"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // TLSHandshaker is a mockable TLS handshaker.
 type TLSHandshaker struct {
-	MockHandshake func(ctx context.Context, conn net.Conn, config *tls.Config) (
-		net.Conn, tls.ConnectionState, error)
+	MockHandshake func(ctx context.Context, conn net.Conn, config *tls.Config) (model.TLSConn, error)
 }
 
 // Handshake calls MockHandshake.
-func (th *TLSHandshaker) Handshake(ctx context.Context, conn net.Conn, config *tls.Config) (
-	net.Conn, tls.ConnectionState, error) {
+func (th *TLSHandshaker) Handshake(ctx context.Context, conn net.Conn, config *tls.Config) (model.TLSConn, error) {
 	return th.MockHandshake(ctx, conn, config)
 }
 

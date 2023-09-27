@@ -91,7 +91,7 @@ in the next two chapters.)
 ```Go
 func dialQUIC(ctx context.Context, address string,
 	config *tls.Config) (quic.EarlyConnection, tls.ConnectionState, error) {
-	ql := netxlite.NewQUICListener()
+	ql := netxlite.NewUDPListener()
 	d := netxlite.NewQUICDialerWithoutResolver(ql, log.Log)
 	qconn, err := d.DialContext(ctx, address, config, &quic.Config{})
 	if err != nil {
@@ -104,7 +104,7 @@ QUIC code to be of the same type of the ConnectionState that
 we returned in the previous chapters.
 
 ```Go
-	return qconn, qconn.ConnectionState().TLS.ConnectionState, nil
+	return qconn, qconn.ConnectionState().TLS, nil
 }
 
 ```

@@ -17,13 +17,13 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
-func typecheckForSystemResolver(t *testing.T, resolver model.Resolver, logger model.DebugLogger) {
+func typeCheckForSystemResolver(t *testing.T, resolver model.Resolver, logger model.DebugLogger) {
 	idna := resolver.(*resolverIDNA)
 	loggerReso := idna.Resolver.(*resolverLogger)
 	if loggerReso.Logger != logger {
 		t.Fatal("invalid logger")
 	}
-	shortCircuit := loggerReso.Resolver.(*resolverShortCircuitIPAddr)
+	shortCircuit := loggerReso.Resolver.(*ResolverShortCircuitIPAddr)
 	errWrapper := shortCircuit.Resolver.(*resolverErrWrapper)
 	reso := errWrapper.Resolver.(*resolverSystem)
 	txpErrWrapper := reso.t.(*dnsTransportErrWrapper)
@@ -32,7 +32,7 @@ func typecheckForSystemResolver(t *testing.T, resolver model.Resolver, logger mo
 
 func TestNewResolverSystem(t *testing.T) {
 	resolver := NewStdlibResolver(model.DiscardLogger)
-	typecheckForSystemResolver(t, resolver, model.DiscardLogger)
+	typeCheckForSystemResolver(t, resolver, model.DiscardLogger)
 }
 
 func TestNewSerialUDPResolver(t *testing.T) {
@@ -43,7 +43,7 @@ func TestNewSerialUDPResolver(t *testing.T) {
 	if logger.Logger != log.Log {
 		t.Fatal("invalid logger")
 	}
-	shortCircuit := logger.Resolver.(*resolverShortCircuitIPAddr)
+	shortCircuit := logger.Resolver.(*ResolverShortCircuitIPAddr)
 	errWrapper := shortCircuit.Resolver.(*resolverErrWrapper)
 	serio := errWrapper.Resolver.(*SerialResolver)
 	txp := serio.Transport().(*dnsTransportErrWrapper)
@@ -61,7 +61,7 @@ func TestNewParallelUDPResolver(t *testing.T) {
 	if logger.Logger != log.Log {
 		t.Fatal("invalid logger")
 	}
-	shortCircuit := logger.Resolver.(*resolverShortCircuitIPAddr)
+	shortCircuit := logger.Resolver.(*ResolverShortCircuitIPAddr)
 	errWrapper := shortCircuit.Resolver.(*resolverErrWrapper)
 	para := errWrapper.Resolver.(*ParallelResolver)
 	txp := para.Transport().(*dnsTransportErrWrapper)
@@ -78,7 +78,7 @@ func TestNewParallelDNSOverHTTPSResolver(t *testing.T) {
 	if logger.Logger != log.Log {
 		t.Fatal("invalid logger")
 	}
-	shortCircuit := logger.Resolver.(*resolverShortCircuitIPAddr)
+	shortCircuit := logger.Resolver.(*ResolverShortCircuitIPAddr)
 	errWrapper := shortCircuit.Resolver.(*resolverErrWrapper)
 	para := errWrapper.Resolver.(*ParallelResolver)
 	txp := para.Transport().(*dnsTransportErrWrapper)
@@ -736,7 +736,7 @@ func TestResolverIDNA(t *testing.T) {
 func TestResolverShortCircuitIPAddr(t *testing.T) {
 	t.Run("LookupHost", func(t *testing.T) {
 		t.Run("with IP addr", func(t *testing.T) {
-			r := &resolverShortCircuitIPAddr{
+			r := &ResolverShortCircuitIPAddr{
 				Resolver: &mocks.Resolver{
 					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 						return nil, errors.New("mocked error")
@@ -754,7 +754,7 @@ func TestResolverShortCircuitIPAddr(t *testing.T) {
 		})
 
 		t.Run("with domain", func(t *testing.T) {
-			r := &resolverShortCircuitIPAddr{
+			r := &ResolverShortCircuitIPAddr{
 				Resolver: &mocks.Resolver{
 					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 						return nil, errors.New("mocked error")
@@ -774,7 +774,7 @@ func TestResolverShortCircuitIPAddr(t *testing.T) {
 
 	t.Run("LookupHTTPS", func(t *testing.T) {
 		t.Run("with IPv4 addr", func(t *testing.T) {
-			r := &resolverShortCircuitIPAddr{
+			r := &ResolverShortCircuitIPAddr{
 				Resolver: &mocks.Resolver{
 					MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 						return nil, errors.New("mocked error")
@@ -792,7 +792,7 @@ func TestResolverShortCircuitIPAddr(t *testing.T) {
 		})
 
 		t.Run("with IPv6 addr", func(t *testing.T) {
-			r := &resolverShortCircuitIPAddr{
+			r := &ResolverShortCircuitIPAddr{
 				Resolver: &mocks.Resolver{
 					MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 						return nil, errors.New("mocked error")
@@ -810,7 +810,7 @@ func TestResolverShortCircuitIPAddr(t *testing.T) {
 		})
 
 		t.Run("with domain", func(t *testing.T) {
-			r := &resolverShortCircuitIPAddr{
+			r := &ResolverShortCircuitIPAddr{
 				Resolver: &mocks.Resolver{
 					MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 						return nil, errors.New("mocked error")
@@ -830,7 +830,7 @@ func TestResolverShortCircuitIPAddr(t *testing.T) {
 
 	t.Run("LookupNS", func(t *testing.T) {
 		t.Run("with IPv4 addr", func(t *testing.T) {
-			r := &resolverShortCircuitIPAddr{
+			r := &ResolverShortCircuitIPAddr{
 				Resolver: &mocks.Resolver{
 					MockLookupNS: func(ctx context.Context, domain string) ([]*net.NS, error) {
 						return nil, errors.New("mocked error")
@@ -848,7 +848,7 @@ func TestResolverShortCircuitIPAddr(t *testing.T) {
 		})
 
 		t.Run("with IPv6 addr", func(t *testing.T) {
-			r := &resolverShortCircuitIPAddr{
+			r := &ResolverShortCircuitIPAddr{
 				Resolver: &mocks.Resolver{
 					MockLookupNS: func(ctx context.Context, domain string) ([]*net.NS, error) {
 						return nil, errors.New("mocked error")
@@ -866,7 +866,7 @@ func TestResolverShortCircuitIPAddr(t *testing.T) {
 		})
 
 		t.Run("with domain", func(t *testing.T) {
-			r := &resolverShortCircuitIPAddr{
+			r := &ResolverShortCircuitIPAddr{
 				Resolver: &mocks.Resolver{
 					MockLookupNS: func(ctx context.Context, domain string) ([]*net.NS, error) {
 						return nil, errors.New("mocked error")
@@ -890,7 +890,7 @@ func TestResolverShortCircuitIPAddr(t *testing.T) {
 				return "x"
 			},
 		}
-		reso := &resolverShortCircuitIPAddr{child}
+		reso := &ResolverShortCircuitIPAddr{child}
 		if reso.Network() != "x" {
 			t.Fatal("invalid result")
 		}
@@ -902,7 +902,7 @@ func TestResolverShortCircuitIPAddr(t *testing.T) {
 				return "x"
 			},
 		}
-		reso := &resolverShortCircuitIPAddr{child}
+		reso := &ResolverShortCircuitIPAddr{child}
 		if reso.Address() != "x" {
 			t.Fatal("invalid result")
 		}
@@ -915,7 +915,7 @@ func TestResolverShortCircuitIPAddr(t *testing.T) {
 				called = true
 			},
 		}
-		reso := &resolverShortCircuitIPAddr{child}
+		reso := &ResolverShortCircuitIPAddr{child}
 		reso.CloseIdleConnections()
 		if !called {
 			t.Fatal("not called")

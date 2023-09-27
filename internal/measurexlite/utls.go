@@ -13,7 +13,7 @@ import (
 // except that it returns a model.TLSHandshaker that uses this trace.
 func (tx *Trace) NewTLSHandshakerUTLS(dl model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker {
 	return &tlsHandshakerTrace{
-		thx: tx.newTLSHandshakerUTLS(dl, id),
+		thx: tx.Netx.NewTLSHandshakerUTLS(dl, id),
 		tx:  tx,
 	}
 }

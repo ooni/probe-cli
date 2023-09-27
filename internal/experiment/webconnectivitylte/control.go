@@ -9,7 +9,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/httpapi"
-	"github.com/ooni/probe-cli/v3/internal/measurexlite"
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/ooapi"
@@ -102,7 +102,7 @@ func (c *Control) Run(parentCtx context.Context) {
 	c.TestKeys.SetControlRequest(creq)
 
 	// create logger for this operation
-	ol := measurexlite.NewOperationLogger(
+	ol := logx.NewOperationLogger(
 		c.Logger,
 		"control for %s using %+v",
 		creq.HTTPRequest,

@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -88,7 +89,7 @@ func (f *quicHandshakeFunc) Apply(
 	serverName := f.serverName(input)
 
 	// start the operation logger
-	ol := measurexlite.NewOperationLogger(
+	ol := logx.NewOperationLogger(
 		input.Logger,
 		"[#%d] QUICHandshake with %s SNI=%s",
 		trace.Index,
@@ -97,10 +98,10 @@ func (f *quicHandshakeFunc) Apply(
 	)
 
 	// setup
-	quicListener := netxlite.NewQUICListener()
+	udpListener := netxlite.NewUDPListener()
 	quicDialer := f.dialer
 	if quicDialer == nil {
-		quicDialer = trace.NewQUICDialerWithoutResolver(quicListener, input.Logger)
+		quicDialer = trace.NewQUICDialerWithoutResolver(udpListener, input.Logger)
 	}
 	config := &tls.Config{
 		NextProtos:         []string{"h3"},
@@ -119,7 +120,7 @@ func (f *quicHandshakeFunc) Apply(
 	var tlsState tls.ConnectionState
 	if quicConn != nil {
 		closerConn = &quicCloserConn{quicConn}
-		tlsState = quicConn.ConnectionState().TLS.ConnectionState // only quicConn can be nil
+		tlsState = quicConn.ConnectionState().TLS // only quicConn can be nil
 	}
 
 	// possibly track established conn for late close

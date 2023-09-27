@@ -7,15 +7,14 @@ import (
 	"crypto/x509"
 	"errors"
 	"net"
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
@@ -24,8 +23,10 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 		underlying := &mocks.TLSHandshaker{}
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		trace.newTLSHandshakerStdlibFn = func(dl model.DebugLogger) model.TLSHandshaker {
-			return underlying
+		trace.Netx = &mocks.MeasuringNetwork{
+			MockNewTLSHandshakerStdlib: func(logger model.DebugLogger) model.TLSHandshaker {
+				return underlying
+			},
 		}
 		thx := trace.NewTLSHandshakerStdlib(model.DiscardLogger)
 		thxt := thx.(*tlsHandshakerTrace)
@@ -43,23 +44,22 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 		trace := NewTrace(0, zeroTime)
 		var hasCorrectTrace bool
 		underlying := &mocks.TLSHandshaker{
-			MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
+			MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (model.TLSConn, error) {
 				gotTrace := netxlite.ContextTraceOrDefault(ctx)
 				hasCorrectTrace = (gotTrace == trace)
-				return nil, tls.ConnectionState{}, expectedErr
+				return nil, expectedErr
 			},
 		}
-		trace.newTLSHandshakerStdlibFn = func(dl model.DebugLogger) model.TLSHandshaker {
-			return underlying
+		trace.Netx = &mocks.MeasuringNetwork{
+			MockNewTLSHandshakerStdlib: func(logger model.DebugLogger) model.TLSHandshaker {
+				return underlying
+			},
 		}
 		thx := trace.NewTLSHandshakerStdlib(model.DiscardLogger)
 		ctx := context.Background()
-		conn, state, err := thx.Handshake(ctx, &mocks.Conn{}, &tls.Config{})
+		conn, err := thx.Handshake(ctx, &mocks.Conn{}, &tls.Config{})
 		if !errors.Is(err, expectedErr) {
 			t.Fatal("unexpected err", err)
-		}
-		if !reflect.ValueOf(state).IsZero() {
-			t.Fatal("expected zero-value state")
 		}
 		if conn != nil {
 			t.Fatal("expected nil conn")
@@ -102,12 +102,9 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 			InsecureSkipVerify: true,
 			ServerName:         "dns.cloudflare.com",
 		}
-		conn, state, err := thx.Handshake(ctx, tcpConn, tlsConfig)
+		conn, err := thx.Handshake(ctx, tcpConn, tlsConfig)
 		if !errors.Is(err, mockedErr) {
 			t.Fatal("unexpected err", err)
-		}
-		if !reflect.ValueOf(state).IsZero() {
-			t.Fatal("expected zero-value state")
 		}
 		if conn != nil {
 			t.Fatal("expected nil conn")
@@ -212,12 +209,9 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 			InsecureSkipVerify: true,
 			ServerName:         "dns.cloudflare.com",
 		}
-		conn, state, err := thx.Handshake(ctx, tcpConn, tlsConfig)
+		conn, err := thx.Handshake(ctx, tcpConn, tlsConfig)
 		if !errors.Is(err, mockedErr) {
 			t.Fatal("unexpected err", err)
-		}
-		if !reflect.ValueOf(state).IsZero() {
-			t.Fatal("expected zero-value state")
 		}
 		if conn != nil {
 			t.Fatal("expected nil conn")
@@ -239,7 +233,9 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 	})
 
 	t.Run("we collect the desired data with a local TLS server", func(t *testing.T) {
-		server := filtering.NewTLSServer(filtering.TLSActionBlockText)
+		ca := netem.MustNewCA()
+		cert := ca.MustNewTLSCertificate("dns.google")
+		server := testingx.MustNewTLSServer(testingx.TLSHandlerHandshakeAndWriteText(cert, testingx.HTTPBlockpage451))
 		dialer := netxlite.NewDialerWithoutResolver(model.DiscardLogger)
 		ctx := context.Background()
 		conn, err := dialer.DialContext(ctx, "tcp", server.Endpoint())
@@ -253,10 +249,10 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 		trace.timeNowFn = dt.Now // deterministic timing
 		thx := trace.NewTLSHandshakerStdlib(model.DiscardLogger)
 		tlsConfig := &tls.Config{
-			RootCAs:    server.CertPool(),
+			RootCAs:    ca.DefaultCertPool(),
 			ServerName: "dns.google",
 		}
-		tlsConn, connState, err := thx.Handshake(ctx, conn, tlsConfig)
+		tlsConn, err := thx.Handshake(ctx, conn, tlsConfig)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -265,9 +261,11 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !bytes.Equal(data, filtering.HTTPBlockpage451) {
+		if !bytes.Equal(data, testingx.HTTPBlockpage451) {
 			t.Fatal("bytes should match")
 		}
+
+		connState := netxlite.MaybeTLSConnectionState(tlsConn)
 
 		t.Run("TLSHandshake events", func(t *testing.T) {
 			events := trace.TLSHandshakes()

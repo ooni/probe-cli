@@ -38,7 +38,7 @@ The `tracex` package contains code used to format internal
 measurements representations to the OONI data format.
 
 ```Go
-	"github.com/ooni/probe-cli/v3/internal/tracex"
+	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 
 ```
 
@@ -163,7 +163,7 @@ so we just close the tunnel and record the bootstrap time.
 We can now run the code as follows to obtain:
 
 ```
-$ go run ./experiment/torsf/chapter04 | jq
+$ go run ./experiment/torsf/chapter04 | tail -n 1 | jq
 [...]
 Jun 21 23:40:50.000 [notice] Bootstrapped 100% (done): Done
 2021/06/21 23:40:50  info [100.0%] torsf experiment is finished

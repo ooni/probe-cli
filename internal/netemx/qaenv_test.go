@@ -24,7 +24,7 @@ func TestQAEnv(t *testing.T) {
 	// we are using the userspace TCP/IP stack defined by [Environment].
 	t.Run("we can hijack getaddrinfo lookups", func(t *testing.T) {
 		// create QA env
-		env := netemx.NewQAEnv()
+		env := netemx.MustNewQAEnv()
 		defer env.Close()
 
 		// configure DNS
@@ -62,11 +62,11 @@ func TestQAEnv(t *testing.T) {
 
 	// Here we're testing that:
 	//
-	// 1. we can get the expected answer for quad8.com;
+	// 1. we can get the expected answer for www.example.com;
 	//
 	// 2. we connect to the expected address;
 	//
-	// 3. we can successfully TLS handshake for quad8.com;
+	// 3. we can successfully TLS handshake for www.example.com;
 	//
 	// 4. we obtain the expected webpage.
 	//
@@ -74,28 +74,37 @@ func TestQAEnv(t *testing.T) {
 	// stack exported by the [Environment] struct.
 	t.Run("we can hijack HTTPS requests", func(t *testing.T) {
 		// create QA env
-		env := netemx.NewQAEnv(
-			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.ExampleWebPageHandlerFactory()),
+		env := netemx.MustNewQAEnv(
+			netemx.QAEnvOptionNetStack(
+				netemx.AddressWwwExampleCom,
+				&netemx.HTTPSecureServerFactory{
+					Factory:          netemx.ExampleWebPageHandlerFactory(),
+					Ports:            []int{443},
+					ServerNameMain:   "www.example.com",
+					ServerNameExtras: []string{},
+				},
+			),
 		)
 		defer env.Close()
 
 		// configure DNS
 		env.AddRecordToAllResolvers(
-			"quad8.com",
+			"www.example.com",
 			"", // CNAME
-			"8.8.8.8",
+			netemx.AddressWwwExampleCom,
 		)
 
 		env.Do(func() {
 			// create client, which will use the underlying client stack's
 			// DialContext method to dial connections
+			// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS but they're not needed here
 			client := netxlite.NewHTTPClientStdlib(model.DiscardLogger)
 
 			// create request using a domain that has been configured in the
 			// [Environment] we're using as valid. Note that we're using https
 			// and this will work because the client stack also controls the
 			// default CA pool through the DefaultCertPool method.
-			req, err := http.NewRequest("GET", "https://quad8.com/", nil)
+			req, err := http.NewRequest("GET", "https://www.example.com/", nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -124,9 +133,9 @@ func TestQAEnv(t *testing.T) {
 
 	// Here we're testing that:
 	//
-	// 1. we can get the expected answer for quad8.com;
+	// 1. we can get the expected answer for www.example.com;
 	//
-	// 2. we can successfully QUIC handshake for quad8.com;
+	// 2. we can successfully QUIC handshake for www.example.com;
 	//
 	// 3. we obtain the expected webpage.
 	//
@@ -134,16 +143,24 @@ func TestQAEnv(t *testing.T) {
 	// stack exported by the [Environment] struct.
 	t.Run("we can hijack HTTP3 requests", func(t *testing.T) {
 		// create QA env
-		env := netemx.NewQAEnv(
-			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.ExampleWebPageHandlerFactory()),
+		env := netemx.MustNewQAEnv(
+			netemx.QAEnvOptionNetStack(
+				netemx.AddressWwwExampleCom,
+				&netemx.HTTP3ServerFactory{
+					Factory:          netemx.ExampleWebPageHandlerFactory(),
+					Ports:            []int{443},
+					ServerNameMain:   "www.example.com",
+					ServerNameExtras: []string{},
+				},
+			),
 		)
 		defer env.Close()
 
 		// configure DNS
 		env.AddRecordToAllResolvers(
-			"quad8.com",
+			"www.example.com",
 			"", // CNAME
-			"8.8.8.8",
+			netemx.AddressWwwExampleCom,
 		)
 
 		env.Do(func() {
@@ -152,7 +169,7 @@ func TestQAEnv(t *testing.T) {
 			client := &http.Client{Transport: txp}
 
 			// create the request; see above remarks for the HTTPS case
-			req, err := http.NewRequest("GET", "https://quad8.com/", nil)
+			req, err := http.NewRequest("GET", "https://www.example.com/", nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -183,8 +200,16 @@ func TestQAEnv(t *testing.T) {
 	// be sure that we can set DPI rules affecting the client stack.
 	t.Run("we can configure DPI rules", func(t *testing.T) {
 		// create QA env
-		env := netemx.NewQAEnv(
-			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.ExampleWebPageHandlerFactory()),
+		env := netemx.MustNewQAEnv(
+			netemx.QAEnvOptionNetStack(
+				"8.8.8.8",
+				&netemx.HTTPSecureServerFactory{
+					Factory:          netemx.ExampleWebPageHandlerFactory(),
+					Ports:            []int{443},
+					ServerNameMain:   "quad8.com",
+					ServerNameExtras: []string{},
+				},
+			),
 		)
 		defer env.Close()
 
@@ -205,6 +230,7 @@ func TestQAEnv(t *testing.T) {
 		env.Do(func() {
 			// create client, which will use the underlying client stack's
 			// DialContext method to dial connections
+			// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS but they're not needed here
 			client := netxlite.NewHTTPClientStdlib(model.DiscardLogger)
 
 			// create the request
@@ -235,8 +261,16 @@ func TestQAEnv(t *testing.T) {
 		dumper := netem.NewPCAPDumper(pcapFilename, log.Log)
 
 		// create QA env
-		env := netemx.NewQAEnv(
-			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.ExampleWebPageHandlerFactory()),
+		env := netemx.MustNewQAEnv(
+			netemx.QAEnvOptionNetStack(
+				"8.8.8.8",
+				&netemx.HTTPSecureServerFactory{
+					Factory:          netemx.ExampleWebPageHandlerFactory(),
+					Ports:            []int{443},
+					ServerNameMain:   "quad8.com",
+					ServerNameExtras: []string{},
+				},
+			),
 			netemx.QAEnvOptionClientNICWrapper(dumper),
 		)
 		defer env.Close()
@@ -251,6 +285,7 @@ func TestQAEnv(t *testing.T) {
 		env.Do(func() {
 			// create client, which will use the underlying client stack's
 			// DialContext method to dial connections
+			// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS but they're not needed here
 			client := netxlite.NewHTTPClientStdlib(model.DiscardLogger)
 
 			// create the request

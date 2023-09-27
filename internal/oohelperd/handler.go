@@ -22,9 +22,9 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
-// maxAcceptableBodySize is the maximum acceptable body size for incoming
+// MaxAcceptableBodySize is the maximum acceptable body size for incoming
 // API requests as well as when we're measuring webpages.
-const maxAcceptableBodySize = 1 << 24
+const MaxAcceptableBodySize = 1 << 24
 
 // Handler is an [http.Handler] implementing the Web
 // Connectivity test helper HTTP API.
@@ -68,10 +68,12 @@ func NewHandler() *Handler {
 	return &Handler{
 		BaseLogger:        log.Log,
 		Indexer:           &atomic.Int64{},
-		MaxAcceptableBody: maxAcceptableBodySize,
+		MaxAcceptableBody: MaxAcceptableBodySize,
 		Measure:           measure,
 
 		NewHTTPClient: func(logger model.Logger) model.HTTPClient {
+			// TODO(https://github.com/ooni/probe/issues/2534): the NewHTTPTransportWithResolver has QUIRKS and
+			// we should evaluate whether we can avoid using it here
 			return newHTTPClientWithTransportFactory(
 				logger,
 				netxlite.NewHTTPTransportWithResolver,
@@ -90,7 +92,7 @@ func NewHandler() *Handler {
 		},
 		NewQUICDialer: func(logger model.Logger) model.QUICDialer {
 			return netxlite.NewQUICDialerWithoutResolver(
-				netxlite.NewQUICListener(),
+				netxlite.NewUDPListener(),
 				logger,
 			)
 		},

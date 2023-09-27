@@ -2,16 +2,15 @@
 set -euo pipefail
 exitcode=0
 for file in $(find . -type f -name \*.go); do
-	if [ "$file" = "./internal/netxlite/iox.go" ]; then
-		# We're allowed to use ReadAll and Copy in this file to
-		# implement safer wrappers for these functions.
+	if [ "$file" = "./internal/netemx/ooapi_test.go" ]; then
+		# We're allowed to use ReadAll and Copy in this file because
+		# it's code that we only use for testing purposes.
 		continue
 	fi
 
-	if [ "$file" = "./internal/netxlite/filtering/http.go" ]; then
+	if [ "$file" = "./internal/netxlite/iox.go" ]; then
 		# We're allowed to use ReadAll and Copy in this file to
-		# avoid depending on netxlite, so we can use filtering
-		# inside of netxlite's own test suite.
+		# implement safer wrappers for these functions.
 		continue
 	fi
 
@@ -22,6 +21,12 @@ for file in $(find . -type f -name \*.go); do
 		continue
 	fi
 
+	if [ "$file" = "./internal/testingsocks5/request.go" ]; then
+		# We're allowed to use ReadAll and Copy in this file because
+		# it's code that we only use for testing purposes.
+		continue
+	fi
+
 	if [ "$file" = "./internal/testingx/dnsoverhttps.go" ]; then
 		# We're allowed to use ReadAll and Copy in this file because
 		# it's code that we only use for testing purposes.
@@ -29,6 +34,36 @@ for file in $(find . -type f -name \*.go); do
 	fi
 
 	if [ "$file" = "./internal/testingx/dnsoverhttps_test.go" ]; then
+		# We're allowed to use ReadAll and Copy in this file because
+		# it's code that we only use for testing purposes.
+		continue
+	fi
+
+	if [ "$file" = "./internal/testingx/httpproxy.go" ]; then
+		# We're allowed to use ReadAll and Copy in this file because
+		# it's code that we only use for testing purposes.
+		continue
+	fi
+
+	if [ "$file" = "./internal/testingx/httptestx.go" ]; then
+		# We're allowed to use ReadAll and Copy in this file because
+		# it's code that we only use for testing purposes.
+		continue
+	fi
+
+	if [ "$file" = "./internal/testingx/httptestx_test.go" ]; then
+		# We're allowed to use ReadAll and Copy in this file because
+		# it's code that we only use for testing purposes.
+		continue
+	fi
+
+	if [ "$file" = "./internal/testingx/tlssniproxy.go" ]; then
+		# We're allowed to use ReadAll and Copy in this file because
+		# it's code that we only use for testing purposes.
+		continue
+	fi
+
+	if [ "$file" = "./internal/testingx/tlsx_test.go" ]; then
 		# We're allowed to use ReadAll and Copy in this file because
 		# it's code that we only use for testing purposes.
 		continue

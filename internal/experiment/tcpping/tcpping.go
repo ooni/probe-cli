@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -134,7 +135,7 @@ func (m *Measurer) tcpConnect(ctx context.Context, index int64,
 	defer cancel()
 	trace := measurexlite.NewTrace(index, zeroTime)
 	dialer := trace.NewDialerWithoutResolver(logger)
-	ol := measurexlite.NewOperationLogger(logger, "TCPPing #%d %s", index, address)
+	ol := logx.NewOperationLogger(logger, "TCPPing #%d %s", index, address)
 	conn, err := dialer.DialContext(ctx, "tcp", address)
 	ol.Stop(err)
 	measurexlite.MaybeClose(conn)

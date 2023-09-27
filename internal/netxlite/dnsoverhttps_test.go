@@ -15,6 +15,7 @@ import (
 
 func TestNewDNSOverHTTPSTransport(t *testing.T) {
 	const URL = "https://1.1.1.1/dns-query"
+	// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS but they're not needed here
 	clnt := NewHTTPClientStdlib(model.DiscardLogger)
 	txp := NewDNSOverHTTPSTransport(clnt, URL)
 	ew := txp.(*dnsTransportErrWrapper)
@@ -29,6 +30,8 @@ func TestNewDNSOverHTTPSTransport(t *testing.T) {
 
 func TestNewDNSOverHTTPSTransportWithHTTPTransport(t *testing.T) {
 	const URL = "https://1.1.1.1/dns-query"
+	// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPTransportStdlib has QUIRKS but we
+	// don't actually care about those QUIRKS in this context
 	httpTxp := NewHTTPTransportStdlib(model.DiscardLogger)
 	txp := NewDNSOverHTTPSTransportWithHTTPTransport(httpTxp, URL)
 	ew := txp.(*dnsTransportErrWrapper)

@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -81,7 +82,7 @@ func tcpTLSDo(ctx context.Context, config *tcpTLSConfig) {
 	defer func() {
 		config.Out <- out
 	}()
-	ol := measurexlite.NewOperationLogger(
+	ol := logx.NewOperationLogger(
 		config.Logger,
 		"TCPConnect %s EnableTLS=%v SNI=%s",
 		config.Endpoint,
@@ -107,7 +108,7 @@ func tcpTLSDo(ctx context.Context, config *tcpTLSConfig) {
 		ServerName: config.URLHostname,
 	}
 	thx := config.NewTSLHandshaker(config.Logger)
-	tlsConn, _, err := thx.Handshake(ctx, conn, tlsConfig)
+	tlsConn, err := thx.Handshake(ctx, conn, tlsConfig)
 	ol.Stop(err)
 	out.TLS = &ctrlTLSResult{
 		ServerName: config.URLHostname,
