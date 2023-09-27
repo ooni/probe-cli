@@ -13,6 +13,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
 func TestStatsPolicyWorkingAsIntended(t *testing.T) {
@@ -313,4 +314,44 @@ var _ httpsDialerPolicy = &mocksPolicy{}
 // LookupTactics implements httpsDialerPolicy.
 func (p *mocksPolicy) LookupTactics(ctx context.Context, domain string, port string) <-chan *httpsDialerTactic {
 	return p.MockLookupTactics(ctx, domain, port)
+}
+
+func TestStatsPolicyPostProcessTactics(t *testing.T) {
+	t.Run("we do nothing when bool is false", func(t *testing.T) {
+		tactics := statsPolicyPostProcessTactics(nil, false)
+		if len(tactics) != 0 {
+			t.Fatal("expected zero-lenght return value")
+		}
+	})
+
+	t.Run("we filter out cases in which a .Tactic field is nil", func(t *testing.T) {
+		expected := &statsTactic{}
+		ff := &testingx.FakeFiller{}
+		ff.Fill(&expected)
+
+		input := []*statsTactic{nil, {
+			CountStarted:               0,
+			CountTCPConnectError:       0,
+			CountTCPConnectInterrupt:   0,
+			CountTLSHandshakeError:     0,
+			CountTLSHandshakeInterrupt: 0,
+			CountTLSVerificationError:  0,
+			CountSuccess:               0,
+			HistoTCPConnectError:       map[string]int64{},
+			HistoTLSHandshakeError:     map[string]int64{},
+			HistoTLSVerificationError:  map[string]int64{},
+			LastUpdated:                time.Time{},
+			Tactic:                     nil,
+		}, nil, expected}
+
+		got := statsPolicyPostProcessTactics(input, true)
+
+		if len(got) != 1 {
+			t.Fatal("expected just one element")
+		}
+
+		if diff := cmp.Diff(expected.Tactic, got[0]); diff != "" {
+			t.Fatal(diff)
+		}
+	})
 }

@@ -211,7 +211,7 @@ func statsContainerRemoveOldEntries(input *statsContainer) (output *statsContain
 // At the name implies, this function MUST be called while holding the [*statsManager] mutex.
 func (c *statsContainer) GetStatsTacticLocked(tactic *httpsDialerTactic) (*statsTactic, bool) {
 	domainEpntRecord, found := c.DomainEndpoints[tactic.domainEndpointKey()]
-	if !found {
+	if !found || domainEpntRecord == nil {
 		return nil, false
 	}
 	tacticRecord, found := domainEpntRecord.Tactics[tactic.tacticSummaryKey()]
