@@ -13,7 +13,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
-	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
 func TestStatsPolicyWorkingAsIntended(t *testing.T) {
@@ -328,25 +327,68 @@ func TestStatsPolicyPostProcessTactics(t *testing.T) {
 		}
 	})
 
-	t.Run("we filter out cases in which t or t.Tactic are nil", func(t *testing.T) {
-		expected := &statsTactic{}
-		ff := &testingx.FakeFiller{}
-		ff.Fill(&expected)
+	t.Run("we filter out cases in which t or t.Tactic are nil or entry has no successes", func(t *testing.T) {
+		expected := &statsTactic{
+			CountStarted:         7,
+			CountTCPConnectError: 3,
+			CountSuccess:         4,
+			HistoTCPConnectError: map[string]int64{
+				"generic_timeout_error": 3,
+			},
+			LastUpdated: time.Now().Add(-11 * time.Second),
+			Tactic: &httpsDialerTactic{
+				Address:        "130.192.91.211",
+				InitialDelay:   0,
+				Port:           "443",
+				SNI:            "garr.it",
+				VerifyHostname: "shelob.polito.it",
+			},
+		}
 
-		input := []*statsTactic{nil, {
-			CountStarted:               0,
-			CountTCPConnectError:       0,
-			CountTCPConnectInterrupt:   0,
-			CountTLSHandshakeError:     0,
-			CountTLSHandshakeInterrupt: 0,
-			CountTLSVerificationError:  0,
-			CountSuccess:               0,
-			HistoTCPConnectError:       map[string]int64{},
-			HistoTLSHandshakeError:     map[string]int64{},
-			HistoTLSVerificationError:  map[string]int64{},
-			LastUpdated:                time.Time{},
-			Tactic:                     nil,
-		}, nil, expected}
+		input := []*statsTactic{
+			// nil entry
+			nil,
+
+			// entry with nil tactic
+			{
+				CountStarted:               0,
+				CountTCPConnectError:       0,
+				CountTCPConnectInterrupt:   0,
+				CountTLSHandshakeError:     0,
+				CountTLSHandshakeInterrupt: 0,
+				CountTLSVerificationError:  0,
+				CountSuccess:               0,
+				HistoTCPConnectError:       map[string]int64{},
+				HistoTLSHandshakeError:     map[string]int64{},
+				HistoTLSVerificationError:  map[string]int64{},
+				LastUpdated:                time.Time{},
+				Tactic:                     nil,
+			},
+
+			// another nil entry
+			nil,
+
+			// an entry that should be OK
+			expected,
+
+			// entry that is OK except that it does not contain any
+			// success so we don't expect to see it
+			{
+				CountStarted:           10,
+				CountTLSHandshakeError: 10,
+				HistoTLSHandshakeError: map[string]int64{
+					"generic_timeout_error": 10,
+				},
+				LastUpdated: time.Now().Add(-4 * time.Second),
+				Tactic: &httpsDialerTactic{
+					Address:        "130.192.91.211",
+					InitialDelay:   0,
+					Port:           "443",
+					SNI:            "polito.it",
+					VerifyHostname: "shelob.polito.it",
+				},
+			},
+		}
 
 		got := statsPolicyPostProcessTactics(input, true)
 
