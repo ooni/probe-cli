@@ -1432,3 +1432,149 @@ func TestStatsDomainEndpointPruneEntries(t *testing.T) {
 		}
 	})
 }
+
+func TestStatsContainerPruneEntries(t *testing.T) {
+	t.Run("with a nil .DomainEndpoints field", func(t *testing.T) {
+		input := &statsContainer{
+			DomainEndpoints: nil, // explicitly
+			Version:         statsContainerVersion,
+		}
+
+		output := statsContainerPruneEntries(input)
+
+		expect := &statsContainer{
+			DomainEndpoints: map[string]*statsDomainEndpoint{},
+			Version:         statsContainerVersion,
+		}
+
+		if diff := cmp.Diff(expect, output); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
+	t.Run("we filter out empty summary, nil and nil/empty .Tactics", func(t *testing.T) {
+		input := &statsContainer{
+			DomainEndpoints: map[string]*statsDomainEndpoint{
+
+				// empty summary
+				"": {},
+
+				// nil entry
+				"antani": nil,
+
+				// nil .Tactics
+				"foo": {
+					Tactics: nil,
+				},
+
+				// empty .Tactics
+				"bar": {
+					Tactics: map[string]*statsTactic{},
+				},
+			},
+			Version: statsContainerVersion,
+		}
+
+		output := statsContainerPruneEntries(input)
+
+		expect := &statsContainer{
+			DomainEndpoints: map[string]*statsDomainEndpoint{},
+			Version:         statsContainerVersion,
+		}
+
+		if diff := cmp.Diff(expect, output); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
+	t.Run("we avoid including into the results empty .Tactics", func(t *testing.T) {
+		input := &statsContainer{
+			DomainEndpoints: map[string]*statsDomainEndpoint{
+				"shelob.polito.it:443": {
+					Tactics: map[string]*statsTactic{
+						"130.192.91.211:443 sni=garr.it verify=shelob.polito.it": {
+							CountStarted: 10,
+							CountSuccess: 10,
+							LastUpdated:  time.Time{}, // a long time ago!
+							Tactic: &httpsDialerTactic{
+								Address:        "130.192.91.211",
+								InitialDelay:   0,
+								Port:           "443",
+								SNI:            "garr.it",
+								VerifyHostname: "shelob.polito.it",
+							},
+						},
+					},
+				},
+			},
+			Version: statsContainerVersion,
+		}
+
+		output := statsContainerPruneEntries(input)
+
+		expect := &statsContainer{
+			DomainEndpoints: map[string]*statsDomainEndpoint{},
+			Version:         statsContainerVersion,
+		}
+
+		if diff := cmp.Diff(expect, output); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
+	t.Run("on a successful case", func(t *testing.T) {
+		expectTactic := &statsTactic{
+			CountStarted: 10,
+			CountSuccess: 10,
+			LastUpdated:  time.Now().Add(-60 * time.Second), // recently
+			Tactic: &httpsDialerTactic{
+				Address:        "130.192.91.211",
+				InitialDelay:   0,
+				Port:           "443",
+				SNI:            "polito.it",
+				VerifyHostname: "shelob.polito.it",
+			},
+		}
+		expectTacticSummary := expectTactic.Tactic.tacticSummaryKey()
+
+		input := &statsContainer{
+			DomainEndpoints: map[string]*statsDomainEndpoint{
+				"shelob.polito.it:443": {
+					Tactics: map[string]*statsTactic{
+						"130.192.91.211:443 sni=garr.it verify=shelob.polito.it": {
+							CountStarted: 10,
+							CountSuccess: 10,
+							LastUpdated:  time.Time{}, // a long time ago!
+							Tactic: &httpsDialerTactic{
+								Address:        "130.192.91.211",
+								InitialDelay:   0,
+								Port:           "443",
+								SNI:            "garr.it",
+								VerifyHostname: "shelob.polito.it",
+							},
+						},
+						expectTacticSummary: expectTactic,
+					},
+				},
+			},
+			Version: statsContainerVersion,
+		}
+
+		output := statsContainerPruneEntries(input)
+
+		expect := &statsContainer{
+			DomainEndpoints: map[string]*statsDomainEndpoint{
+				"shelob.polito.it:443": {
+					Tactics: map[string]*statsTactic{
+						expectTacticSummary: expectTactic,
+					},
+				},
+			},
+			Version: statsContainerVersion,
+		}
+
+		if diff := cmp.Diff(expect, output); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+}
