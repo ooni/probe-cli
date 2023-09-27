@@ -35,7 +35,7 @@ func (p *beaconsPolicy) LookupTactics(ctx context.Context, domain, port string) 
 
 		// emit beacons related tactics first which are empty if there are
 		// no beacons for the givend domain and port
-		for tx := range p.tacticsForDomain(domain, port) {
+		for tx := range p.beaconsTacticsForDomain(domain, port) {
 			tx.InitialDelay = happyEyeballsDelay(index)
 			index += 1
 			out <- tx
@@ -43,7 +43,10 @@ func (p *beaconsPolicy) LookupTactics(ctx context.Context, domain, port string) 
 
 		// now fallback to get more tactics (typically here the fallback
 		// uses the DNS and obtains some extra tactics)
-		for tx := range p.Fallback.LookupTactics(ctx, domain, port) {
+		//
+		// we wrap whatever the underlying policy returns us with some
+		// extra logic for better communicating with test helpers
+		for tx := range p.maybeRewriteTestHelpersTactics(p.Fallback.LookupTactics(ctx, domain, port)) {
 			tx.InitialDelay = happyEyeballsDelay(index)
 			index += 1
 			out <- tx
@@ -53,7 +56,55 @@ func (p *beaconsPolicy) LookupTactics(ctx context.Context, domain, port string) 
 	return out
 }
 
-func (p *beaconsPolicy) tacticsForDomain(domain, port string) <-chan *httpsDialerTactic {
+var beaconsPolicyTestHelpersDomains = []string{
+	"0.th.ooni.org",
+	"1.th.ooni.org",
+	"2.th.ooni.org",
+	"3.th.ooni.org",
+	"d33d1gs9kpq1c5.cloudfront.net",
+}
+
+// TODO(bassosimone): this would be slices.Contains when we'll use go1.21
+func beaconsPolicySlicesContains(slice []string, value string) bool {
+	for _, entry := range slice {
+		if value == entry {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *beaconsPolicy) maybeRewriteTestHelpersTactics(input <-chan *httpsDialerTactic) <-chan *httpsDialerTactic {
+	out := make(chan *httpsDialerTactic)
+
+	go func() {
+		defer close(out) // tell the parent when we're done
+
+		for tactic := range input {
+			// When we're not connecting to a TH, pass the policy down the chain unmodified
+			if !beaconsPolicySlicesContains(beaconsPolicyTestHelpersDomains, tactic.VerifyHostname) {
+				out <- tactic
+				continue
+			}
+
+			// This is the case where we're connecting to a test helper. Let's try
+			// to produce policies hiding the SNI to censoring middleboxes.
+			for _, sni := range p.beaconsDomainsInRandomOrder() {
+				out <- &httpsDialerTactic{
+					Address:        tactic.Address,
+					InitialDelay:   0,
+					Port:           tactic.Port,
+					SNI:            sni,
+					VerifyHostname: tactic.VerifyHostname,
+				}
+			}
+		}
+	}()
+
+	return out
+}
+
+func (p *beaconsPolicy) beaconsTacticsForDomain(domain, port string) <-chan *httpsDialerTactic {
 	out := make(chan *httpsDialerTactic)
 
 	go func() {
@@ -64,14 +115,8 @@ func (p *beaconsPolicy) tacticsForDomain(domain, port string) <-chan *httpsDiale
 			return
 		}
 
-		snis := p.beaconsDomains()
-		r := rand.New(rand.NewSource(time.Now().UnixNano()))
-		r.Shuffle(len(snis), func(i, j int) {
-			snis[i], snis[j] = snis[j], snis[i]
-		})
-
 		for _, ipAddr := range p.beaconsAddrs() {
-			for _, sni := range snis {
+			for _, sni := range p.beaconsDomainsInRandomOrder() {
 				out <- &httpsDialerTactic{
 					Address:        ipAddr,
 					InitialDelay:   0,
@@ -84,6 +129,15 @@ func (p *beaconsPolicy) tacticsForDomain(domain, port string) <-chan *httpsDiale
 	}()
 
 	return out
+}
+
+func (p *beaconsPolicy) beaconsDomainsInRandomOrder() (out []string) {
+	out = p.beaconsDomains()
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	r.Shuffle(len(out), func(i, j int) {
+		out[i], out[j] = out[j], out[i]
+	})
+	return
 }
 
 func (p *beaconsPolicy) beaconsAddrs() (out []string) {

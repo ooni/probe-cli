@@ -12,7 +12,7 @@ import (
 func TestBeaconsPolicy(t *testing.T) {
 	t.Run("for domains for which we don't have beacons and DNS failure", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		policy := &beaconsPolicy{
+		p := &beaconsPolicy{
 			Fallback: &dnsPolicy{
 				Logger: model.DiscardLogger,
 				Resolver: &mocks.Resolver{
@@ -24,7 +24,7 @@ func TestBeaconsPolicy(t *testing.T) {
 		}
 
 		ctx := context.Background()
-		tactics := policy.LookupTactics(ctx, "www.example.com", "443")
+		tactics := p.LookupTactics(ctx, "www.example.com", "443")
 
 		var count int
 		for range tactics {
@@ -37,7 +37,7 @@ func TestBeaconsPolicy(t *testing.T) {
 	})
 
 	t.Run("for domains for which we don't have beacons and DNS success", func(t *testing.T) {
-		policy := &beaconsPolicy{
+		p := &beaconsPolicy{
 			Fallback: &dnsPolicy{
 				Logger: model.DiscardLogger,
 				Resolver: &mocks.Resolver{
@@ -49,7 +49,7 @@ func TestBeaconsPolicy(t *testing.T) {
 		}
 
 		ctx := context.Background()
-		tactics := policy.LookupTactics(ctx, "www.example.com", "443")
+		tactics := p.LookupTactics(ctx, "www.example.com", "443")
 
 		var count int
 		for tactic := range tactics {
@@ -78,7 +78,7 @@ func TestBeaconsPolicy(t *testing.T) {
 
 	t.Run("for the api.ooni.io domain", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		policy := &beaconsPolicy{
+		p := &beaconsPolicy{
 			Fallback: &dnsPolicy{
 				Logger: model.DiscardLogger,
 				Resolver: &mocks.Resolver{
@@ -90,7 +90,7 @@ func TestBeaconsPolicy(t *testing.T) {
 		}
 
 		ctx := context.Background()
-		tactics := policy.LookupTactics(ctx, "api.ooni.io", "443")
+		tactics := p.LookupTactics(ctx, "api.ooni.io", "443")
 
 		var count int
 		for tactic := range tactics {
@@ -114,6 +114,51 @@ func TestBeaconsPolicy(t *testing.T) {
 
 		if count <= 0 {
 			t.Fatal("expected to see at least one tactic")
+		}
+	})
+
+	t.Run("for test helper domains", func(t *testing.T) {
+		for _, domain := range beaconsPolicyTestHelpersDomains {
+			t.Run(domain, func(t *testing.T) {
+				expectedAddrs := []string{"164.92.180.7"}
+
+				p := &beaconsPolicy{
+					Fallback: &dnsPolicy{
+						Logger: model.DiscardLogger,
+						Resolver: &mocks.Resolver{
+							MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+								return expectedAddrs, nil
+							},
+						},
+					},
+				}
+
+				ctx := context.Background()
+				index := 0
+				for tactics := range p.LookupTactics(ctx, domain, "443") {
+
+					if tactics.Address != "164.92.180.7" {
+						t.Fatal("unexpected .Address")
+					}
+
+					if tactics.InitialDelay != happyEyeballsDelay(index) {
+						t.Fatal("unexpected .InitialDelay")
+					}
+					index++
+
+					if tactics.Port != "443" {
+						t.Fatal("unexpected .Port")
+					}
+
+					if tactics.SNI == domain {
+						t.Fatal("unexpected .Domain")
+					}
+
+					if tactics.VerifyHostname != domain {
+						t.Fatal("unexpected .VerifyHostname")
+					}
+				}
+			})
 		}
 	})
 }
