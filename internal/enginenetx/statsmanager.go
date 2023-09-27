@@ -286,7 +286,7 @@ type statsContainer struct {
 	Version int
 }
 
-// statsDomainPruneEntries returns a DEEP COPY of a [*statsContainer] with old entries removed.
+// statsContainerPruneEntries returns a DEEP COPY of a [*statsContainer] with old entries removed.
 func statsContainerPruneEntries(input *statsContainer) (output *statsContainer) {
 	output = newStatsContainer()
 
