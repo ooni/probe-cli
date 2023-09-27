@@ -88,7 +88,7 @@ func TestNetworkUnit(t *testing.T) {
 		}
 	})
 
-	t.Run("Close calls the .cancel field of the statsManager", func(t *testing.T) {
+	t.Run("Close calls the .cancel field of the statsManager as a side effect", func(t *testing.T) {
 		var called bool
 		netx := &Network{
 			reso: &mocks.Resolver{
