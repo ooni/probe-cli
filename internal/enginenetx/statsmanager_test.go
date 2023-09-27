@@ -1113,7 +1113,7 @@ func TestStatsNilSafeLastUpdated(t *testing.T) {
 	})
 }
 
-func TestStatsNilSafeCounSuccess(t *testing.T) {
+func TestStatsNilSafeCountSuccess(t *testing.T) {
 	t.Run("with nil entry", func(t *testing.T) {
 		var st *statsTactic
 		if statsNilSafeCountSuccess(st) != 0 {
@@ -1487,7 +1487,7 @@ func TestStatsContainerPruneEntries(t *testing.T) {
 		}
 	})
 
-	t.Run("we avoid including into the results empty .Tactics", func(t *testing.T) {
+	t.Run("we avoid including into the results expired entries", func(t *testing.T) {
 		input := &statsContainer{
 			DomainEndpoints: map[string]*statsDomainEndpoint{
 				"shelob.polito.it:443": {
@@ -1580,7 +1580,7 @@ func TestStatsContainerPruneEntries(t *testing.T) {
 }
 
 func TestStatsManagerTrimEntriesConcurrently(t *testing.T) {
-	// start stats manger that trims very frequently
+	// start stats manager that trims very frequently
 	store := &kvstore.Memory{}
 	sm := newStatsManager(store, model.DiscardLogger, 1*time.Second)
 
@@ -1623,13 +1623,13 @@ func TestStatsManagerTrimEntriesConcurrently(t *testing.T) {
 	}
 
 	// now check what actually ended up being written; note that we expect
-	// to see empty domain endpoitns because we added a too old entry
-	expecteData := []byte(`{"DomainEndpoints":{},"Version":5}`)
+	// to see empty domain endpoints because we added a too old entry
+	expectedData := []byte(`{"DomainEndpoints":{},"Version":5}`)
 	data, err := store.Get(statsKey)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if diff := cmp.Diff(expecteData, data); diff != "" {
+	if diff := cmp.Diff(expectedData, data); diff != "" {
 		t.Fatal(diff)
 	}
 }

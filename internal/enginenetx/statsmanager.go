@@ -89,10 +89,10 @@ type statsTactic struct {
 }
 
 // statsNilSafeSuccessRate is a convenience function for computing the success rate
-// which returns zero as the success rate if CountStarted is zero
+// which returns zero as the success rate if CountStarted is zero.
 //
-// for robustness, be paranoid about nils here because the stats are
-// written on the disk and a user could potentially edit them
+// For robustness, be paranoid about nils here because the stats are
+// written on the disk and a user could potentially edit them.
 func statsNilSafeSuccessRate(t *statsTactic) (rate float64) {
 	if t != nil && t.CountStarted > 0 {
 		rate = float64(t.CountSuccess) / float64(t.CountStarted)
@@ -379,10 +379,10 @@ type statsManager struct {
 	mu sync.Mutex
 
 	// pruned is a channel pruned on a best effort basis
-	// by the background goroutine that prunes
+	// by the background goroutine that prunes.
 	pruned chan any
 
-	// wg tells us when the background goroutine joined
+	// wg tells us when the background goroutine joined.
 	wg *sync.WaitGroup
 }
 
@@ -629,7 +629,7 @@ func (mt *statsManager) trim(ctx context.Context, interval time.Duration) {
 			mt.mu.Unlock()
 
 			// notify whoever's concerned that we pruned
-			// on a best effort basis
+			// and do that best effort because it may be that nobody is concerned
 			select {
 			case mt.pruned <- true:
 			default:
