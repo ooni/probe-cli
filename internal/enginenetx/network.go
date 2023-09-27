@@ -55,7 +55,7 @@ func (n *Network) Close() error {
 	// same as above but for the resolver's connections
 	n.reso.CloseIdleConnections()
 
-	// make sure we sync stats to disk
+	// make sure we sync stats to disk and shutdown the background trimmer
 	return n.stats.Close()
 }
 
