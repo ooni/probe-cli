@@ -135,12 +135,14 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		return newStatsManager(kvStore, log.Log)
+		const trimInterval = 30 * time.Second
+		return newStatsManager(kvStore, log.Log, trimInterval)
 	}
 
 	t.Run("when we have unique statistics", func(t *testing.T) {
 		// create stats manager
 		stats := createStatsManager("api.ooni.io:443", expectTacticsStats...)
+		defer stats.Close()
 
 		// create the composed policy
 		policy := &statsPolicy{
@@ -204,6 +206,7 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 
 		// create stats manager
 		stats := createStatsManager("api.ooni.io:443", statsWithDupes...)
+		defer stats.Close()
 
 		// create the composed policy
 		policy := &statsPolicy{
@@ -261,6 +264,7 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 	t.Run("we avoid manipulating nil tactics", func(t *testing.T) {
 		// create stats manager
 		stats := createStatsManager("api.ooni.io:443", expectTacticsStats...)
+		defer stats.Close()
 
 		// create the composed policy
 		policy := &statsPolicy{

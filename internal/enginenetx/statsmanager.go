@@ -414,7 +414,9 @@ func loadStatsContainer(kvStore model.KeyValueStore) (*statsContainer, error) {
 }
 
 // newStatsManager constructs a new instance of [*statsManager].
-func newStatsManager(kvStore model.KeyValueStore, logger model.Logger) *statsManager {
+func newStatsManager(kvStore model.KeyValueStore, logger model.Logger, trimInterval time.Duration) *statsManager {
+	runtimex.Assert(trimInterval > 0, "passed non-positive trimInterval")
+
 	root, err := loadStatsContainer(kvStore)
 	if err != nil {
 		root = newStatsContainer()
@@ -432,7 +434,7 @@ func newStatsManager(kvStore model.KeyValueStore, logger model.Logger) *statsMan
 
 	// run a background goroutine that trims the stats by removing excessive
 	// entries until the programmer calls (*statsManager).Close
-	go mt.trim(ctx)
+	go mt.trim(ctx, trimInterval)
 
 	return mt
 }
@@ -586,8 +588,7 @@ func (mt *statsManager) Close() error {
 }
 
 // trim runs in the background and trims the mt.container struct
-func (mt *statsManager) trim(ctx context.Context) {
-	const interval = 30 * time.Second
+func (mt *statsManager) trim(ctx context.Context, interval time.Duration) {
 	t := time.NewTicker(interval)
 	defer t.Stop()
 	for {

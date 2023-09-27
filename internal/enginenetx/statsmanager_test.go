@@ -795,7 +795,9 @@ func TestStatsManagerCallbacks(t *testing.T) {
 			}
 
 			// create the stats manager
-			stats := newStatsManager(kvStore, logger)
+			const trimInterval = 30 * time.Second
+			stats := newStatsManager(kvStore, logger, trimInterval)
+			defer stats.Close()
 
 			// invoke the proper stats callback
 			tc.do(stats)
@@ -916,7 +918,9 @@ func TestStatsManagerLookupTactics(t *testing.T) {
 	}
 
 	// create the stats manager
-	stats := newStatsManager(kvStore, log.Log)
+	const trimInterval = 30 * time.Second
+	stats := newStatsManager(kvStore, log.Log, trimInterval)
+	defer stats.Close()
 
 	t.Run("when we're searching for a domain endpoint we know about", func(t *testing.T) {
 		// obtain tactics
