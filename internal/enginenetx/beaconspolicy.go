@@ -65,7 +65,7 @@ var beaconsPolicyTestHelpersDomains = []string{
 }
 
 // TODO(bassosimone): this would be slices.Contains when we'll use go1.21
-func beaconsPolicySliceContains(slice []string, value string) bool {
+func beaconsPolicySlicesContains(slice []string, value string) bool {
 	for _, entry := range slice {
 		if value == entry {
 			return true
@@ -82,7 +82,7 @@ func (p *beaconsPolicy) maybeRewriteTestHelpersTactics(input <-chan *httpsDialer
 
 		for tactic := range input {
 			// When we're not connecting to a TH, pass the policy down the chain unmodified
-			if !beaconsPolicySliceContains(beaconsPolicyTestHelpersDomains, tactic.VerifyHostname) {
+			if !beaconsPolicySlicesContains(beaconsPolicyTestHelpersDomains, tactic.VerifyHostname) {
 				out <- tactic
 				continue
 			}
