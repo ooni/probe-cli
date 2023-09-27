@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"sort"
 	"sync"
 	"time"
 
@@ -87,6 +88,86 @@ type statsTactic struct {
 	Tactic *httpsDialerTactic
 }
 
+// statsNilSafeSuccessRate is a convenience function for computing the success rate
+// which returns zero as the success rate if CountStarted is zero.
+//
+// For robustness, be paranoid about nils here because the stats are
+// written on the disk and a user could potentially edit them.
+func statsNilSafeSuccessRate(t *statsTactic) (rate float64) {
+	if t != nil && t.CountStarted > 0 {
+		rate = float64(t.CountSuccess) / float64(t.CountStarted)
+	}
+	return
+}
+
+// statsNilSafeLastUpdated is a convenience function for getting the .LastUpdated
+// field that takes into account the case where t is nil.
+func statsNilSafeLastUpdated(t *statsTactic) (output time.Time) {
+	if t != nil {
+		output = t.LastUpdated
+	}
+	return
+}
+
+// statsNilSafeCountSuccess is a convenience function for getting the .CountSuccess
+// counter that takes into account the case where t is nil.
+func statsNilSafeCountSuccess(t *statsTactic) (output int64) {
+	if t != nil {
+		output = t.CountSuccess
+	}
+	return
+}
+
+// statsDefensivelySortTacticsByDescendingSuccessRateWithAcceptPredicate sorts the input list
+// by success rate taking into account that several entries could be malformed, and then
+// filters the sorted list using the given boolean predicate to accept elements.
+//
+// The sorting criteria takes into account:
+//
+// 1. the success rate; or
+//
+// 2. the last updated time; or
+//
+// 3. the number of successes.
+//
+// The predicate allows to further restrict the returned list.
+//
+// This function operates on a deep copy of the input list, so it does not create data races.
+func statsDefensivelySortTacticsByDescendingSuccessRateWithAcceptPredicate(
+	input []*statsTactic, acceptfunc func(*statsTactic) bool) []*statsTactic {
+	// first let's create a working list such that we don't modify
+	// the input in place thus avoiding any data race
+	work := []*statsTactic{}
+	for _, t := range input {
+		if t != nil && t.Tactic != nil {
+			work = append(work, t.Clone()) // DEEP COPY!
+		}
+	}
+
+	// now let's sort work in place
+	sort.SliceStable(work, func(i, j int) bool {
+		if statsNilSafeSuccessRate(work[i]) > statsNilSafeSuccessRate(work[j]) {
+			return true
+		}
+		if statsNilSafeCountSuccess(work[i]) > statsNilSafeCountSuccess(work[j]) {
+			return true
+		}
+		if statsNilSafeLastUpdated(work[i]).Sub(statsNilSafeLastUpdated(work[j])) > 0 {
+			return true
+		}
+		return false
+	})
+
+	// finally let's apply the predicate to produce output
+	output := []*statsTactic{}
+	for _, t := range work {
+		if acceptfunc(t) {
+			output = append(output, t)
+		}
+	}
+	return output
+}
+
 func statsMaybeCloneMapStringInt64(input map[string]int64) (output map[string]int64) {
 	// distinguish and preserve nil versus empty
 	if input == nil {
@@ -135,35 +216,60 @@ type statsDomainEndpoint struct {
 	Tactics map[string]*statsTactic
 }
 
-// statsDomainEndpointRemoveOldEntries returns a copy of a [*statsDomainEndpoint] with old entries removed.
-func statsDomainEndpointRemoveOldEntries(input *statsDomainEndpoint) (output *statsDomainEndpoint) {
-	output = &statsDomainEndpoint{
-		Tactics: map[string]*statsTactic{},
-	}
-	oneWeek := 7 * 24 * time.Hour
+// statsDomainEndpointPruneEntries returns a DEEP COPY of a [*statsDomainEndpoint] with old
+// and excess entries removed, such that the overall size is not unbounded.
+func statsDomainEndpointPruneEntries(input *statsDomainEndpoint) *statsDomainEndpoint {
+	tactics := []*statsTactic{}
 	now := time.Now()
 
 	// if .Tactics is empty here we're just going to do nothing
 	for summary, tactic := range input.Tactics {
-
 		// we serialize stats to disk, so we cannot rule out the case where the user
 		// explicitly edits the stats to include a malformed entry
-		if tactic == nil || tactic.Tactic == nil {
+		if summary == "" || tactic == nil || tactic.Tactic == nil {
 			continue
 		}
-
-		// When .LastUpdated is the zero time.Time value, the check is going to fail
-		// exactly like the time was 1 or 5 or 10 years ago instead.
-		//
-		// See https://go.dev/play/p/HGQT17ueIkq where we show that the zero time
-		// is handled exactly like any time in the past (it was kinda obvious, but
-		// sometimes it also make sense to double check assumptions!)
-		if delta := now.Sub(tactic.LastUpdated); delta > oneWeek {
-			continue
-		}
-		output.Tactics[summary] = tactic.Clone()
+		tactics = append(tactics, tactic)
 	}
-	return
+
+	// oneWeek is a constant representing one week of data.
+	const oneWeek = 7 * 24 * time.Hour
+
+	// maxEntriesPerDomainEndpoint is the maximum number of entries per
+	// domain endpoint that we would like to keep overall.
+	const maxEntriesPerDomainEndpoint = 10
+
+	// Sort by descending success rate and cut all the entries that are older than
+	// a given threshold. Note that we need to be defensive here because we are dealing
+	// with data stored on disk that might have been modified to crash us.
+	//
+	// Note that statsDefensivelySortTacticsByDescendingSuccessRateWithAcceptPredicate
+	// operates on and returns a DEEP COPY of the original list.
+	tactics = statsDefensivelySortTacticsByDescendingSuccessRateWithAcceptPredicate(
+		tactics, func(st *statsTactic) bool {
+			// When .LastUpdated is the zero time.Time value, the check is going to fail
+			// exactly like the time was 1 or 5 or 10 years ago instead.
+			//
+			// See https://go.dev/play/p/HGQT17ueIkq where we show that the zero time
+			// is handled exactly like any time in the past (it was kinda obvious, but
+			// sometimes it also make sense to double check assumptions!)
+			delta := now.Sub(statsNilSafeLastUpdated(st))
+			return delta < oneWeek
+		})
+
+	// Cut excess entries, if needed
+	if len(tactics) > maxEntriesPerDomainEndpoint {
+		tactics = tactics[:maxEntriesPerDomainEndpoint]
+	}
+
+	// return a new statsDomainEndpoint to the caller
+	output := &statsDomainEndpoint{
+		Tactics: map[string]*statsTactic{},
+	}
+	for _, t := range tactics {
+		output.Tactics[t.Tactic.tacticSummaryKey()] = t
+	}
+	return output
 }
 
 // statsContainerVersion is the current version of [statsContainer].
@@ -180,8 +286,8 @@ type statsContainer struct {
 	Version int
 }
 
-// statsDomainRemoveOldEntries returns a copy of a [*statsContainer] with old entries removed.
-func statsContainerRemoveOldEntries(input *statsContainer) (output *statsContainer) {
+// statsContainerPruneEntries returns a DEEP COPY of a [*statsContainer] with old entries removed.
+func statsContainerPruneEntries(input *statsContainer) (output *statsContainer) {
 	output = newStatsContainer()
 
 	// if .DomainEndpoints is nil here we're just going to do nothing
@@ -189,11 +295,11 @@ func statsContainerRemoveOldEntries(input *statsContainer) (output *statsContain
 
 		// We serialize this data to disk, so we need to account for the case
 		// where a user has manually edited the JSON to add a nil value
-		if inputStats == nil {
+		if domainEpnt == "" || inputStats == nil || len(inputStats.Tactics) <= 0 {
 			continue
 		}
 
-		prunedStats := statsDomainEndpointRemoveOldEntries(inputStats)
+		prunedStats := statsDomainEndpointPruneEntries(inputStats)
 
 		// We don't want to include an entry when it's empty because all the
 		// stats inside it have just been pruned
@@ -208,7 +314,7 @@ func statsContainerRemoveOldEntries(input *statsContainer) (output *statsContain
 
 // GetStatsTacticLocked returns the tactic record for the given [*statsTactic] instance.
 //
-// At the name implies, this function MUST be called while holding the [*statsManager] mutex.
+// As the name implies, this function MUST be called while holding the [*statsManager] mutex.
 func (c *statsContainer) GetStatsTacticLocked(tactic *httpsDialerTactic) (*statsTactic, bool) {
 	domainEpntRecord, found := c.DomainEndpoints[tactic.domainEndpointKey()]
 	if !found || domainEpntRecord == nil {
@@ -220,7 +326,7 @@ func (c *statsContainer) GetStatsTacticLocked(tactic *httpsDialerTactic) (*stats
 
 // SetStatsTacticLocked sets the tactic record for the given the given [*statsTactic] instance.
 //
-// At the name implies, this function MUST be called while holding the [*statsManager] mutex.
+// As the name implies, this function MUST be called while holding the [*statsManager] mutex.
 func (c *statsContainer) SetStatsTacticLocked(tactic *httpsDialerTactic, record *statsTactic) {
 	domainEpntRecord, found := c.DomainEndpoints[tactic.domainEndpointKey()]
 	if !found {
@@ -254,6 +360,12 @@ func newStatsContainer() *statsContainer {
 // The zero value of this structure is not ready to use; please, use the
 // [newStatsManager] factory to create a new instance.
 type statsManager struct {
+	// cancel allows canceling the background stats pruner.
+	cancel context.CancelFunc
+
+	// closeOnce gives .Close a "once" semantics
+	closeOnce sync.Once
+
 	// container is the container container for stats
 	container *statsContainer
 
@@ -265,6 +377,13 @@ type statsManager struct {
 
 	// mu provides mutual exclusion when accessing the stats.
 	mu sync.Mutex
+
+	// pruned is a channel pruned on a best effort basis
+	// by the background goroutine that prunes.
+	pruned chan any
+
+	// wg tells us when the background goroutine joined.
+	wg *sync.WaitGroup
 }
 
 // statsKey is the key used in the key-value store to access the state.
@@ -299,24 +418,42 @@ func loadStatsContainer(kvStore model.KeyValueStore) (*statsContainer, error) {
 		return nil, err
 	}
 
-	// make sure we remove old entries
-	pruned := statsContainerRemoveOldEntries(&container)
+	// make sure we prune the data structure
+	pruned := statsContainerPruneEntries(&container)
 	return pruned, nil
 }
 
 // newStatsManager constructs a new instance of [*statsManager].
-func newStatsManager(kvStore model.KeyValueStore, logger model.Logger) *statsManager {
+func newStatsManager(kvStore model.KeyValueStore, logger model.Logger, trimInterval time.Duration) *statsManager {
+	runtimex.Assert(trimInterval > 0, "passed non-positive trimInterval")
+
 	root, err := loadStatsContainer(kvStore)
 	if err != nil {
 		root = newStatsContainer()
 	}
 
-	return &statsManager{
+	ctx, cancel := context.WithCancel(context.Background())
+
+	mt := &statsManager{
+		cancel:    cancel,
+		closeOnce: sync.Once{},
 		container: root,
 		kvStore:   kvStore,
 		logger:    logger,
 		mu:        sync.Mutex{},
+		pruned:    make(chan any),
+		wg:        &sync.WaitGroup{},
 	}
+
+	// run a background goroutine that trims the stats by removing excessive
+	// entries until the programmer calls (*statsManager).Close
+	mt.wg.Add(1)
+	go func() {
+		defer mt.wg.Done()
+		mt.trim(ctx, trimInterval)
+	}()
+
+	return mt
 }
 
 var _ httpsDialerEventsHandler = &statsManager{}
@@ -449,16 +586,57 @@ func (mt *statsManager) OnSuccess(tactic *httpsDialerTactic) {
 }
 
 // Close implements io.Closer
-func (mt *statsManager) Close() error {
-	// TODO(bassosimone): do we need to apply a "once" semantics to this method? Perhaps no
-	// given that there is no resource that we can close only once...
+func (mt *statsManager) Close() (err error) {
+	mt.closeOnce.Do(func() {
+		// interrupt the background goroutine
+		mt.cancel()
 
-	// get exclusive access
-	defer mt.mu.Unlock()
-	mt.mu.Lock()
+		func() {
+			// get exclusive access
+			defer mt.mu.Unlock()
+			mt.mu.Lock()
 
-	// write updated stats into the underlying key-value store
-	return mt.kvStore.Set(statsKey, runtimex.Try1(json.Marshal(mt.container)))
+			// make sure we remove the unneeded entries one last time before saving them
+			container := statsContainerPruneEntries(mt.container)
+
+			// write updated stats into the underlying key-value store
+			err = mt.kvStore.Set(statsKey, runtimex.Try1(json.Marshal(container)))
+		}()
+
+		// wait for background goroutine to join
+		mt.wg.Wait()
+	})
+	return
+}
+
+// trim runs in the background and trims the mt.container struct
+func (mt *statsManager) trim(ctx context.Context, interval time.Duration) {
+
+	// Note: we already manage mt.wg when we start this goroutine so there's NO NEED to do it here!
+
+	t := time.NewTicker(interval)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+
+		case <-t.C:
+
+			// get exclusive access and edit the container
+			mt.mu.Lock()
+			mt.container = statsContainerPruneEntries(mt.container)
+			mt.mu.Unlock()
+
+			// notify whoever's concerned that we pruned
+			// and do that best effort because it may be that nobody is concerned
+			select {
+			case mt.pruned <- true:
+			default:
+			}
+
+		}
+	}
 }
 
 // LookupTacticsStats returns stats about tactics for a given domain and port. The returned
