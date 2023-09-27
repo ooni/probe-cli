@@ -134,7 +134,7 @@ func statsNilSafeCountSuccess(t *statsTactic) (output int64) {
 //
 // This function operates on a deep copy of the input list, so it does not create data races.
 func statsDefensivelySortTacticsByDescendingSuccessRateWithAcceptPredicate(
-	input []*statsTactic, acceptp func(*statsTactic) bool) (output []*statsTactic) {
+	input []*statsTactic, acceptfunc func(*statsTactic) bool) []*statsTactic {
 	// first let's create a working list such that we don't modify
 	// the input in place thus avoiding any data race
 	work := []*statsTactic{}
@@ -159,12 +159,13 @@ func statsDefensivelySortTacticsByDescendingSuccessRateWithAcceptPredicate(
 	})
 
 	// finally let's apply the predicate to produce output
+	output := []*statsTactic{}
 	for _, t := range work {
-		if acceptp(t) {
+		if acceptfunc(t) {
 			output = append(output, t)
 		}
 	}
-	return
+	return output
 }
 
 func statsMaybeCloneMapStringInt64(input map[string]int64) (output map[string]int64) {
