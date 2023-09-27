@@ -15,6 +15,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/legacy/measurex"
 	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -320,7 +321,7 @@ func maybeScrubbingLogger(input model.Logger, kt keytarget) model.Logger {
 	if !kt.private() {
 		return input
 	}
-	return &scrubber.Logger{Logger: input}
+	return &logx.ScrubberLogger{Logger: input}
 }
 
 // defaultFlexibleConnect is the default implementation of the
