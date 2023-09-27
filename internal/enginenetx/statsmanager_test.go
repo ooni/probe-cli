@@ -4,7 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"math/rand"
 	"sort"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -558,7 +561,13 @@ func TestStatsManagerCallbacks(t *testing.T) {
 							"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
 								CountStarted: 1,
 								LastUpdated:  fourtyFiveMinutesAgo,
-								Tactic:       &httpsDialerTactic{}, // only required for cloning
+								Tactic: &httpsDialerTactic{
+									Address:        "162.55.247.208",
+									InitialDelay:   0,
+									Port:           "443",
+									SNI:            "www.example.com",
+									VerifyHostname: "api.ooni.io",
+								},
 							},
 						},
 					},
@@ -588,7 +597,13 @@ func TestStatsManagerCallbacks(t *testing.T) {
 							"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
 								CountStarted:             1,
 								CountTCPConnectInterrupt: 1,
-								Tactic:                   &httpsDialerTactic{},
+								Tactic: &httpsDialerTactic{
+									Address:        "162.55.247.208",
+									InitialDelay:   0,
+									Port:           "443",
+									SNI:            "www.example.com",
+									VerifyHostname: "api.ooni.io",
+								},
 							},
 						},
 					},
@@ -635,7 +650,13 @@ func TestStatsManagerCallbacks(t *testing.T) {
 							"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
 								CountStarted: 1,
 								LastUpdated:  fourtyFiveMinutesAgo,
-								Tactic:       &httpsDialerTactic{}, // only for cloning
+								Tactic: &httpsDialerTactic{
+									Address:        "162.55.247.208",
+									InitialDelay:   0,
+									Port:           "443",
+									SNI:            "www.example.com",
+									VerifyHostname: "api.ooni.io",
+								},
 							},
 						},
 					},
@@ -665,7 +686,13 @@ func TestStatsManagerCallbacks(t *testing.T) {
 							"162.55.247.208:443 sni=www.example.com verify=api.ooni.io": {
 								CountStarted:               1,
 								CountTLSHandshakeInterrupt: 1,
-								Tactic:                     &httpsDialerTactic{},
+								Tactic: &httpsDialerTactic{
+									Address:        "162.55.247.208",
+									InitialDelay:   0,
+									Port:           "443",
+									SNI:            "www.example.com",
+									VerifyHostname: "api.ooni.io",
+								},
 							},
 						},
 					},
@@ -771,7 +798,9 @@ func TestStatsManagerCallbacks(t *testing.T) {
 			}
 
 			// create the stats manager
-			stats := newStatsManager(kvStore, logger)
+			const trimInterval = 30 * time.Second
+			stats := newStatsManager(kvStore, logger, trimInterval)
+			defer stats.Close()
 
 			// invoke the proper stats callback
 			tc.do(stats)
@@ -892,7 +921,9 @@ func TestStatsManagerLookupTactics(t *testing.T) {
 	}
 
 	// create the stats manager
-	stats := newStatsManager(kvStore, log.Log)
+	const trimInterval = 30 * time.Second
+	stats := newStatsManager(kvStore, log.Log, trimInterval)
+	defer stats.Close()
 
 	t.Run("when we're searching for a domain endpoint we know about", func(t *testing.T) {
 		// obtain tactics
@@ -1042,4 +1073,563 @@ func TestStatsContainer(t *testing.T) {
 			}
 		})
 	})
+}
+
+func TestStatsNilSafeSuccessRate(t *testing.T) {
+	t.Run("with nil entry", func(t *testing.T) {
+		var st *statsTactic
+		if statsNilSafeSuccessRate(st) != 0 {
+			t.Fatal("unexpected result")
+		}
+	})
+
+	t.Run("with non-nil entry", func(t *testing.T) {
+		st := &statsTactic{
+			CountStarted: 10,
+			CountSuccess: 5,
+		}
+		if statsNilSafeSuccessRate(st) != 0.5 {
+			t.Fatal("unexpected result")
+		}
+	})
+}
+
+func TestStatsNilSafeLastUpdated(t *testing.T) {
+	t.Run("with nil entry", func(t *testing.T) {
+		var st *statsTactic
+		if !statsNilSafeLastUpdated(st).IsZero() {
+			t.Fatal("unexpected result")
+		}
+	})
+
+	t.Run("with non-nil entry", func(t *testing.T) {
+		expect := time.Now()
+		st := &statsTactic{
+			LastUpdated: expect,
+		}
+		if statsNilSafeLastUpdated(st) != expect {
+			t.Fatal("unexpected result")
+		}
+	})
+}
+
+func TestStatsNilSafeCountSuccess(t *testing.T) {
+	t.Run("with nil entry", func(t *testing.T) {
+		var st *statsTactic
+		if statsNilSafeCountSuccess(st) != 0 {
+			t.Fatal("unexpected result")
+		}
+	})
+
+	t.Run("with non-nil entry", func(t *testing.T) {
+		st := &statsTactic{
+			CountSuccess: 11,
+		}
+		if statsNilSafeCountSuccess(st) != 11 {
+			t.Fatal("unexpected result")
+		}
+	})
+}
+
+func TestStatsDefensivelySortTacticsByDescendingSuccessRateWithAcceptPredicate(t *testing.T) {
+	now := time.Now()
+
+	// expect shows what we expect to see in output
+	expect := []*statsTactic{
+
+		// this one should be first because it has 100% success rate
+		// and the highest number of successes
+		{
+			CountStarted: 5,
+			CountSuccess: 5,
+			LastUpdated:  now.Add(-5 * time.Second),
+			Tactic: &httpsDialerTactic{
+				Address:        "130.192.91.211",
+				InitialDelay:   0,
+				Port:           "443",
+				SNI:            "www.repubblica.it",
+				VerifyHostname: "shelob.polito.it",
+			},
+		},
+
+		// this one should be second because it has less successes
+		// than the first one albeit the same last updated
+		{
+			CountStarted: 4,
+			CountSuccess: 4,
+			LastUpdated:  now.Add(-5 * time.Second),
+			Tactic: &httpsDialerTactic{
+				Address:        "130.192.91.211",
+				InitialDelay:   0,
+				Port:           "443",
+				SNI:            "www.ilfattoquotidiano.it",
+				VerifyHostname: "shelob.polito.it",
+			},
+		},
+
+		// this one should be third because it is a bit older
+		// albeit it has the same number of successes
+		{
+			CountStarted: 4,
+			CountSuccess: 4,
+			LastUpdated:  now.Add(-7 * time.Second),
+			Tactic: &httpsDialerTactic{
+				Address:        "130.192.91.211",
+				InitialDelay:   0,
+				Port:           "443",
+				SNI:            "www.ilpost.it",
+				VerifyHostname: "shelob.polito.it",
+			},
+		},
+
+		// this one should come fourth because it has a lower success rate
+		{
+			CountStarted: 100,
+			CountSuccess: 95,
+			LastUpdated:  now.Add(-2 * time.Second),
+			Tactic: &httpsDialerTactic{
+				Address:        "130.192.91.211",
+				InitialDelay:   0,
+				Port:           "443",
+				SNI:            "www.polito.it",
+				VerifyHostname: "shelob.polito.it",
+			},
+		},
+	}
+
+	// input contains the input we provide, which should contain
+	// a mixture of the above entries together with a bunch of
+	// entries with very bad values
+	input := []*statsTactic{
+
+		// this is the one that should sort last in output
+		expect[3],
+
+		// a nil entry is obviously a good test case
+		nil,
+
+		// an entry with a nil Tactic is also quite annoying
+		{
+			CountStarted: 55,
+			CountSuccess: 55,
+			LastUpdated:  now.Add(-3 * time.Second),
+			Tactic:       nil,
+		},
+
+		expect[1],
+		expect[2],
+
+		// another nil entry because why not
+		nil,
+
+		// another entry with nil Tactic because why not
+		{
+			CountStarted: 101,
+			CountSuccess: 44,
+			LastUpdated:  now.Add(-33 * time.Second),
+			Tactic:       nil,
+		},
+
+		// a legitimate entry that is going to be filtered out
+		// by a custom filtering function
+		//
+		// otherwise, this one should be the first entry
+		{
+			CountStarted: 128,
+			CountSuccess: 128,
+			LastUpdated:  now.Add(-130 * time.Millisecond),
+			Tactic: &httpsDialerTactic{
+				Address:        "130.192.91.211",
+				InitialDelay:   0,
+				Port:           "443",
+				SNI:            "kernel.org",
+				VerifyHostname: "shelob.polito.it",
+			},
+		},
+
+		expect[0],
+	}
+
+	got := statsDefensivelySortTacticsByDescendingSuccessRateWithAcceptPredicate(
+		input, func(st *statsTactic) bool {
+			return st != nil && st.Tactic != nil && strings.HasSuffix(st.Tactic.SNI, ".it")
+		},
+	)
+
+	if diff := cmp.Diff(expect, got); diff != "" {
+		t.Fatal(diff)
+	}
+}
+
+func TestStatsDomainEndpointPruneEntries(t *testing.T) {
+	t.Run("rejects tactics with empty summary, nil tactics and with nil .Tactics", func(t *testing.T) {
+		input := &statsDomainEndpoint{
+			Tactics: map[string]*statsTactic{
+				// empty summary
+				"": {
+					Tactic: &httpsDialerTactic{},
+				},
+
+				// nil tactic
+				"antani": nil,
+
+				// nil .Tactic
+				"foo": {
+					Tactic: nil,
+				},
+			},
+		}
+
+		expect := &statsDomainEndpoint{
+			Tactics: map[string]*statsTactic{},
+		}
+
+		got := statsDomainEndpointPruneEntries(input)
+
+		if diff := cmp.Diff(expect, got); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
+	t.Run("prunes entries older than one week", func(t *testing.T) {
+		now := time.Now()
+
+		input := &statsDomainEndpoint{
+			Tactics: map[string]*statsTactic{
+				"130.192.91.211:443 sni=polito.it verify=shelob.polito.it": {
+					CountStarted: 10,
+					CountSuccess: 10,
+					LastUpdated:  now.Add(-24 * time.Hour * 8),
+					Tactic: &httpsDialerTactic{
+						Address:        "130.192.91.211",
+						InitialDelay:   0,
+						Port:           "443",
+						SNI:            "polito.it",
+						VerifyHostname: "shelob.polito.it",
+					},
+				},
+				"130.192.91.211:443 sni=garr.it verify=shelob.polito.it": {
+					CountStarted: 10,
+					CountSuccess: 7,
+					LastUpdated:  now.Add(-24 * time.Hour * 6),
+					Tactic: &httpsDialerTactic{
+						Address:        "130.192.91.211",
+						InitialDelay:   0,
+						Port:           "443",
+						SNI:            "garr.it",
+						VerifyHostname: "shelob.polito.it",
+					},
+				},
+			},
+		}
+
+		expect := &statsDomainEndpoint{
+			Tactics: map[string]*statsTactic{
+				"130.192.91.211:443 sni=garr.it verify=shelob.polito.it": {
+					CountStarted: 10,
+					CountSuccess: 7,
+					LastUpdated:  now.Add(-24 * time.Hour * 6),
+					Tactic: &httpsDialerTactic{
+						Address:        "130.192.91.211",
+						InitialDelay:   0,
+						Port:           "443",
+						SNI:            "garr.it",
+						VerifyHostname: "shelob.polito.it",
+					},
+				},
+			},
+		}
+
+		got := statsDomainEndpointPruneEntries(input)
+
+		if diff := cmp.Diff(expect, got); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
+	t.Run("reduces the number of entries", func(t *testing.T) {
+		var (
+			inputs []*statsTactic
+		)
+
+		expect := &statsDomainEndpoint{
+			Tactics: map[string]*statsTactic{},
+		}
+		now := time.Now()
+
+		// create successful entries
+		for idx := int64(0); idx < 7; idx++ {
+			tactic := &statsTactic{
+				CountStarted:         10,
+				CountTCPConnectError: idx,
+				CountSuccess:         10 - idx,
+				HistoTCPConnectError: map[string]int64{
+					"generic_timeout_error": idx,
+				},
+				LastUpdated: now.Add(-time.Duration(idx) * time.Second),
+				Tactic: &httpsDialerTactic{
+					Address:        "130.192.91.211",
+					InitialDelay:   0,
+					Port:           "443",
+					SNI:            fmt.Sprintf("host%d.garr.it", idx),
+					VerifyHostname: "shelob.polito.it",
+				},
+			}
+			inputs = append(inputs, tactic)
+
+			// note how we're making entries such that each entry is less
+			// good than the subsequent one in terms of the success rate
+			expect.Tactics[tactic.Tactic.tacticSummaryKey()] = tactic
+		}
+
+		// create failed entries
+		for idx := int64(7); idx < 255; idx++ {
+			tactic := &statsTactic{
+				CountStarted:         idx,
+				CountTCPConnectError: idx,
+				HistoTCPConnectError: map[string]int64{
+					"generic_timeout_error": idx,
+				},
+				LastUpdated: now.Add(-time.Duration(idx) * time.Second),
+				Tactic: &httpsDialerTactic{
+					Address:        "130.192.91.211",
+					InitialDelay:   0,
+					Port:           "443",
+					SNI:            fmt.Sprintf("host%d.garr.it", idx),
+					VerifyHostname: "shelob.polito.it",
+				},
+			}
+			inputs = append(inputs, tactic)
+
+			// we need three extra failures in the expected results
+			// and they must sort after successful entries
+			if idx < 10 {
+				expect.Tactics[tactic.Tactic.tacticSummaryKey()] = tactic
+			}
+		}
+
+		// shuffle the input order
+		r := rand.New(rand.NewSource(time.Now().UnixNano()))
+		r.Shuffle(len(inputs), func(i, j int) {
+			inputs[i], inputs[j] = inputs[j], inputs[i]
+		})
+
+		// fill the input struct
+		input := &statsDomainEndpoint{
+			Tactics: map[string]*statsTactic{},
+		}
+		for _, entry := range inputs {
+			input.Tactics[entry.Tactic.tacticSummaryKey()] = entry
+		}
+
+		got := statsDomainEndpointPruneEntries(input)
+
+		// log the results because it may be useful in case something is wrong
+		t.Log(string(runtimex.Try1(json.MarshalIndent(got, "", "  "))))
+
+		if diff := cmp.Diff(expect, got); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+}
+
+func TestStatsContainerPruneEntries(t *testing.T) {
+	t.Run("with a nil .DomainEndpoints field", func(t *testing.T) {
+		input := &statsContainer{
+			DomainEndpoints: nil, // explicitly
+			Version:         statsContainerVersion,
+		}
+
+		output := statsContainerPruneEntries(input)
+
+		expect := &statsContainer{
+			DomainEndpoints: map[string]*statsDomainEndpoint{},
+			Version:         statsContainerVersion,
+		}
+
+		if diff := cmp.Diff(expect, output); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
+	t.Run("we filter out empty summary, nil and nil/empty .Tactics", func(t *testing.T) {
+		input := &statsContainer{
+			DomainEndpoints: map[string]*statsDomainEndpoint{
+
+				// empty summary
+				"": {},
+
+				// nil entry
+				"antani": nil,
+
+				// nil .Tactics
+				"foo": {
+					Tactics: nil,
+				},
+
+				// empty .Tactics
+				"bar": {
+					Tactics: map[string]*statsTactic{},
+				},
+			},
+			Version: statsContainerVersion,
+		}
+
+		output := statsContainerPruneEntries(input)
+
+		expect := &statsContainer{
+			DomainEndpoints: map[string]*statsDomainEndpoint{},
+			Version:         statsContainerVersion,
+		}
+
+		if diff := cmp.Diff(expect, output); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
+	t.Run("we avoid including into the results expired entries", func(t *testing.T) {
+		input := &statsContainer{
+			DomainEndpoints: map[string]*statsDomainEndpoint{
+				"shelob.polito.it:443": {
+					Tactics: map[string]*statsTactic{
+						"130.192.91.211:443 sni=garr.it verify=shelob.polito.it": {
+							CountStarted: 10,
+							CountSuccess: 10,
+							LastUpdated:  time.Time{}, // a long time ago!
+							Tactic: &httpsDialerTactic{
+								Address:        "130.192.91.211",
+								InitialDelay:   0,
+								Port:           "443",
+								SNI:            "garr.it",
+								VerifyHostname: "shelob.polito.it",
+							},
+						},
+					},
+				},
+			},
+			Version: statsContainerVersion,
+		}
+
+		output := statsContainerPruneEntries(input)
+
+		expect := &statsContainer{
+			DomainEndpoints: map[string]*statsDomainEndpoint{},
+			Version:         statsContainerVersion,
+		}
+
+		if diff := cmp.Diff(expect, output); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
+	t.Run("on a successful case", func(t *testing.T) {
+		expectTactic := &statsTactic{
+			CountStarted: 10,
+			CountSuccess: 10,
+			LastUpdated:  time.Now().Add(-60 * time.Second), // recently
+			Tactic: &httpsDialerTactic{
+				Address:        "130.192.91.211",
+				InitialDelay:   0,
+				Port:           "443",
+				SNI:            "polito.it",
+				VerifyHostname: "shelob.polito.it",
+			},
+		}
+		expectTacticSummary := expectTactic.Tactic.tacticSummaryKey()
+
+		input := &statsContainer{
+			DomainEndpoints: map[string]*statsDomainEndpoint{
+				"shelob.polito.it:443": {
+					Tactics: map[string]*statsTactic{
+						"130.192.91.211:443 sni=garr.it verify=shelob.polito.it": {
+							CountStarted: 10,
+							CountSuccess: 10,
+							LastUpdated:  time.Time{}, // a long time ago!
+							Tactic: &httpsDialerTactic{
+								Address:        "130.192.91.211",
+								InitialDelay:   0,
+								Port:           "443",
+								SNI:            "garr.it",
+								VerifyHostname: "shelob.polito.it",
+							},
+						},
+						expectTacticSummary: expectTactic,
+					},
+				},
+			},
+			Version: statsContainerVersion,
+		}
+
+		output := statsContainerPruneEntries(input)
+
+		expect := &statsContainer{
+			DomainEndpoints: map[string]*statsDomainEndpoint{
+				"shelob.polito.it:443": {
+					Tactics: map[string]*statsTactic{
+						expectTacticSummary: expectTactic,
+					},
+				},
+			},
+			Version: statsContainerVersion,
+		}
+
+		if diff := cmp.Diff(expect, output); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+}
+
+func TestStatsManagerTrimEntriesConcurrently(t *testing.T) {
+	// start stats manager that trims very frequently
+	store := &kvstore.Memory{}
+	sm := newStatsManager(store, model.DiscardLogger, 1*time.Second)
+
+	// obtain exclusive access
+	sm.mu.Lock()
+
+	// insert some data that needs pruning
+	sm.container = &statsContainer{
+		DomainEndpoints: map[string]*statsDomainEndpoint{
+			"shelob.polito.it:443": {
+				Tactics: map[string]*statsTactic{
+					"130.192.91.211:443 sni=garr.it verify=shelob.polito.it": {
+						CountStarted: 10,
+						CountSuccess: 10,
+						LastUpdated:  time.Time{}, // a long time ago!
+						Tactic: &httpsDialerTactic{
+							Address:        "130.192.91.211",
+							InitialDelay:   0,
+							Port:           "443",
+							SNI:            "garr.it",
+							VerifyHostname: "shelob.polito.it",
+						},
+					},
+				},
+			},
+		},
+		Version: statsContainerVersion,
+	}
+
+	// let the worker continue to run
+	sm.mu.Unlock()
+
+	// wait for pruning to happen
+	<-sm.pruned
+
+	// order the background goroutine to shutdown
+	// and wait for the shutdown to complete
+	if err := sm.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	// now check what actually ended up being written; note that we expect
+	// to see empty domain endpoints because we added a too old entry
+	expectedData := []byte(`{"DomainEndpoints":{},"Version":5}`)
+	data, err := store.Get(statsKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(expectedData, data); diff != "" {
+		t.Fatal(diff)
+	}
 }

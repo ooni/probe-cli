@@ -8,7 +8,8 @@ package enginenetx
 
 import (
 	"context"
-	"sort"
+
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // statsPolicy is a policy that schedules tactics already known
@@ -79,36 +80,17 @@ func statsPolicyPostProcessTactics(tactics []*statsTactic, good bool) (out []*ht
 		return
 	}
 
-	// nilSafeSuccessRate is a convenience function for computing the success rate
-	// which returns zero as the success rate if CountStarted is zero
-	//
-	// for robustness, be paranoid about nils here because the stats are
-	// written on the disk and a user could potentially edit them
-	nilSafeSuccessRate := func(t *statsTactic) (rate float64) {
-		if t != nil && t.CountStarted > 0 {
-			rate = float64(t.CountSuccess) / float64(t.CountStarted)
-		}
-		return
-	}
+	// only keep well-formed successful entries
+	onlySuccesses := statsDefensivelySortTacticsByDescendingSuccessRateWithAcceptPredicate(
+		tactics, func(st *statsTactic) bool {
+			return st != nil && st.Tactic != nil && st.CountSuccess > 0
+		},
+	)
 
-	// Implementation note: the function should implement the "less" semantics for
-	// ascending sorting, but we want descending sorting, so we use `>` instead
-	sort.SliceStable(tactics, func(i, j int) bool {
-		// TODO(bassosimone): should we also consider the number of samples
-		// we have and how recent a sample is?
-		return nilSafeSuccessRate(tactics[i]) > nilSafeSuccessRate(tactics[j])
-	})
-
-	for _, t := range tactics {
-		// make sure we only include samples with 1+ successes; we don't want this policy
-		// to return what we already know it's not working and it will be the purpose of the
-		// fallback policy to generate new tactics to test
-		//
-		// additionally, as a precautionary and defensive measure, make sure t and t.Tactic
-		// are not nil before adding a malformed tactic to the return list
-		if t != nil && t.CountSuccess > 0 && t.Tactic != nil {
-			out = append(out, t.Tactic)
-		}
+	// convert the statsTactic list into a list of tactics
+	for _, t := range onlySuccesses {
+		runtimex.Assert(t != nil && t.Tactic != nil && t.CountSuccess > 0, "expected well-formed *statsTactic")
+		out = append(out, t.Tactic)
 	}
 	return
 }

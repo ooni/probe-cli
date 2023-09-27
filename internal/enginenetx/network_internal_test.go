@@ -42,10 +42,14 @@ func TestNetworkUnit(t *testing.T) {
 				},
 			},
 			stats: &statsManager{
+				cancel:    func() { /* nothing */ },
+				closeOnce: sync.Once{},
 				container: &statsContainer{},
 				kvStore:   &kvstore.Memory{},
 				logger:    model.DiscardLogger,
 				mu:        sync.Mutex{},
+				pruned:    make(chan any),
+				wg:        &sync.WaitGroup{},
 			},
 			txp: expected,
 		}
@@ -67,10 +71,14 @@ func TestNetworkUnit(t *testing.T) {
 		netx := &Network{
 			reso: expected,
 			stats: &statsManager{
+				cancel:    func() { /* nothing */ },
+				closeOnce: sync.Once{},
 				container: &statsContainer{},
 				kvStore:   &kvstore.Memory{},
 				logger:    model.DiscardLogger,
 				mu:        sync.Mutex{},
+				pruned:    make(chan any),
+				wg:        &sync.WaitGroup{},
 			},
 			txp: &mocks.HTTPTransport{
 				MockCloseIdleConnections: func() {
@@ -82,7 +90,41 @@ func TestNetworkUnit(t *testing.T) {
 			t.Fatal(err)
 		}
 		if !called {
-			t.Fatal("did not call the transport's CloseIdleConnections")
+			t.Fatal("did not call the resolver's CloseIdleConnections")
+		}
+	})
+
+	t.Run("Close calls the .cancel field of the statsManager as a side effect", func(t *testing.T) {
+		var called bool
+		netx := &Network{
+			reso: &mocks.Resolver{
+				MockCloseIdleConnections: func() {
+					// nothing
+				},
+			},
+			stats: &statsManager{
+				cancel: func() {
+					called = true
+				},
+				closeOnce: sync.Once{},
+				container: &statsContainer{},
+				kvStore:   &kvstore.Memory{},
+				logger:    model.DiscardLogger,
+				mu:        sync.Mutex{},
+				pruned:    make(chan any),
+				wg:        &sync.WaitGroup{},
+			},
+			txp: &mocks.HTTPTransport{
+				MockCloseIdleConnections: func() {
+					// nothing
+				},
+			},
+		}
+		if err := netx.Close(); err != nil {
+			t.Fatal(err)
+		}
+		if !called {
+			t.Fatal("did not call the .cancel field of the statsManager")
 		}
 	})
 
