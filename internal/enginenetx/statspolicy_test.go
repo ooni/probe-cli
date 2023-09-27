@@ -317,14 +317,14 @@ func (p *mocksPolicy) LookupTactics(ctx context.Context, domain string, port str
 }
 
 func TestStatsPolicyPostProcessTactics(t *testing.T) {
-	t.Run("we do nothing when bool is false", func(t *testing.T) {
+	t.Run("we do nothing when good is false", func(t *testing.T) {
 		tactics := statsPolicyPostProcessTactics(nil, false)
 		if len(tactics) != 0 {
 			t.Fatal("expected zero-lenght return value")
 		}
 	})
 
-	t.Run("we filter out cases in which a .Tactic field is nil", func(t *testing.T) {
+	t.Run("we filter out cases in which t or t.Tactic are nil", func(t *testing.T) {
 		expected := &statsTactic{}
 		ff := &testingx.FakeFiller{}
 		ff.Fill(&expected)
