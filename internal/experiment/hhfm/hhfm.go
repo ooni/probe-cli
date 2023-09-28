@@ -245,6 +245,11 @@ func (tk *TestKeys) FillTampering(
 	}
 }
 
+// newHeadersFromMap converts the definition of headers used when sending the
+// request to something that looks like http.Header. QUIRK: because we need to
+// preserve the original random casing of headers (which is what we are in
+// fact testing with this experiment), the implementation of this func should
+// stay clear of using ordinary http.Header and specifically its .Set func.
 func newHeadersFromMap(input map[string]string) map[string][]string {
 	out := map[string][]string{}
 	for key, value := range input {
