@@ -173,10 +173,10 @@ func TestNewRequestList(t *testing.T) {
 			Failure: NewFailure(io.EOF),
 			Request: HTTPRequest{
 				HeadersList: []model.ArchivalHTTPHeader{{
-					model.ArchivalMaybeBinaryString("User-Agent"),
-					model.ArchivalMaybeBinaryString("miniooni/0.1.0-dev"),
+					model.ArchivalScrubbedMaybeBinaryString("User-Agent"),
+					model.ArchivalScrubbedMaybeBinaryString("miniooni/0.1.0-dev"),
 				}},
-				Headers: map[string]model.ArchivalMaybeBinaryString{
+				Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
 					"User-Agent": "miniooni/0.1.0-dev",
 				},
 				Method: "GET",
@@ -184,30 +184,30 @@ func TestNewRequestList(t *testing.T) {
 			},
 			Response: HTTPResponse{
 				HeadersList: []model.ArchivalHTTPHeader{},
-				Headers:     make(map[string]model.ArchivalMaybeBinaryString),
+				Headers:     make(map[string]model.ArchivalScrubbedMaybeBinaryString),
 			},
 			T: 0.02,
 		}, {
 			Request: HTTPRequest{
-				Body: model.ArchivalMaybeBinaryString(""),
+				Body: model.ArchivalScrubbedMaybeBinaryString(""),
 				HeadersList: []model.ArchivalHTTPHeader{{
-					model.ArchivalMaybeBinaryString("User-Agent"),
-					model.ArchivalMaybeBinaryString("miniooni/0.1.0-dev"),
+					model.ArchivalScrubbedMaybeBinaryString("User-Agent"),
+					model.ArchivalScrubbedMaybeBinaryString("miniooni/0.1.0-dev"),
 				}},
-				Headers: map[string]model.ArchivalMaybeBinaryString{
+				Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
 					"User-Agent": "miniooni/0.1.0-dev",
 				},
 				Method: "POST",
 				URL:    "https://www.example.com/submit",
 			},
 			Response: HTTPResponse{
-				Body: model.ArchivalMaybeBinaryString("{}"),
+				Body: model.ArchivalScrubbedMaybeBinaryString("{}"),
 				Code: 200,
 				HeadersList: []model.ArchivalHTTPHeader{{
-					model.ArchivalMaybeBinaryString("Server"),
-					model.ArchivalMaybeBinaryString("miniooni/0.1.0-dev"),
+					model.ArchivalScrubbedMaybeBinaryString("Server"),
+					model.ArchivalScrubbedMaybeBinaryString("miniooni/0.1.0-dev"),
 				}},
-				Headers: map[string]model.ArchivalMaybeBinaryString{
+				Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
 					"Server": "miniooni/0.1.0-dev",
 				},
 				Locations: nil,
@@ -237,10 +237,10 @@ func TestNewRequestList(t *testing.T) {
 		want: []RequestEntry{{
 			Request: HTTPRequest{
 				HeadersList: []model.ArchivalHTTPHeader{{
-					model.ArchivalMaybeBinaryString("User-Agent"),
-					model.ArchivalMaybeBinaryString("miniooni/0.1.0-dev"),
+					model.ArchivalScrubbedMaybeBinaryString("User-Agent"),
+					model.ArchivalScrubbedMaybeBinaryString("miniooni/0.1.0-dev"),
 				}},
-				Headers: map[string]model.ArchivalMaybeBinaryString{
+				Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
 					"User-Agent": "miniooni/0.1.0-dev",
 				},
 				Method: "GET",
@@ -249,16 +249,16 @@ func TestNewRequestList(t *testing.T) {
 			Response: HTTPResponse{
 				Code: 302,
 				HeadersList: []model.ArchivalHTTPHeader{{
-					model.ArchivalMaybeBinaryString("Location"),
-					model.ArchivalMaybeBinaryString("https://x.example.com"),
+					model.ArchivalScrubbedMaybeBinaryString("Location"),
+					model.ArchivalScrubbedMaybeBinaryString("https://x.example.com"),
 				}, {
-					model.ArchivalMaybeBinaryString("Location"),
-					model.ArchivalMaybeBinaryString("https://y.example.com"),
+					model.ArchivalScrubbedMaybeBinaryString("Location"),
+					model.ArchivalScrubbedMaybeBinaryString("https://y.example.com"),
 				}, {
-					model.ArchivalMaybeBinaryString("Server"),
-					model.ArchivalMaybeBinaryString("miniooni/0.1.0-dev"),
+					model.ArchivalScrubbedMaybeBinaryString("Server"),
+					model.ArchivalScrubbedMaybeBinaryString("miniooni/0.1.0-dev"),
 				}},
-				Headers: map[string]model.ArchivalMaybeBinaryString{
+				Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
 					"Server":   "miniooni/0.1.0-dev",
 					"Location": "https://x.example.com",
 				},

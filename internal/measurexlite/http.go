@@ -51,7 +51,7 @@ func NewArchivalHTTPRequestResult(index int64, started time.Duration, network, a
 		ALPN:    alpn,
 		Failure: NewFailure(err),
 		Request: model.ArchivalHTTPRequest{
-			Body:            model.ArchivalMaybeBinaryString(""),
+			Body:            model.ArchivalScrubbedMaybeBinaryString(""),
 			BodyIsTruncated: false,
 			HeadersList:     newHTTPRequestHeaderList(req),
 			Headers:         newHTTPRequestHeaderMap(req),
@@ -61,7 +61,7 @@ func NewArchivalHTTPRequestResult(index int64, started time.Duration, network, a
 			URL:             httpRequestURL(req),
 		},
 		Response: model.ArchivalHTTPResponse{
-			Body:            model.ArchivalMaybeBinaryString(body),
+			Body:            model.ArchivalScrubbedMaybeBinaryString(body),
 			BodyIsTruncated: httpResponseBodyIsTruncated(body, maxRespBodySize),
 			Code:            httpResponseStatusCode(resp),
 			HeadersList:     newHTTPResponseHeaderList(resp),
@@ -95,7 +95,7 @@ func newHTTPRequestHeaderList(req *http.Request) []model.ArchivalHTTPHeader {
 
 // newHTTPRequestHeaderMap calls newHTTPHeaderMap with the request headers or
 // return an empty map in case the request is nil.
-func newHTTPRequestHeaderMap(req *http.Request) map[string]model.ArchivalMaybeBinaryString {
+func newHTTPRequestHeaderMap(req *http.Request) map[string]model.ArchivalScrubbedMaybeBinaryString {
 	m := http.Header{}
 	if req != nil {
 		m = req.Header
@@ -139,7 +139,7 @@ func newHTTPResponseHeaderList(resp *http.Response) (out []model.ArchivalHTTPHea
 
 // newHTTPResponseHeaderMap calls newHTTPHeaderMap with the request headers or
 // return an empty map in case the request is nil.
-func newHTTPResponseHeaderMap(resp *http.Response) (out map[string]model.ArchivalMaybeBinaryString) {
+func newHTTPResponseHeaderMap(resp *http.Response) (out map[string]model.ArchivalScrubbedMaybeBinaryString) {
 	m := http.Header{}
 	if resp != nil {
 		m = resp.Header

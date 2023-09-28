@@ -294,10 +294,10 @@ func TestArchivalBinaryData(t *testing.T) {
 	})
 }
 
-func TestArchivalMaybeBinaryString(t *testing.T) {
+func TestArchivalScrubbedMaybeBinaryString(t *testing.T) {
 	t.Run("Supports assignment from a nil byte array", func(t *testing.T) {
 		var data []byte = nil // explicit
-		casted := model.ArchivalMaybeBinaryString(data)
+		casted := model.ArchivalScrubbedMaybeBinaryString(data)
 		if casted != "" {
 			t.Fatal("unexpected value")
 		}
@@ -312,7 +312,7 @@ func TestArchivalMaybeBinaryString(t *testing.T) {
 			name string
 
 			// input is the possibly-binary input
-			input model.ArchivalMaybeBinaryString
+			input model.ArchivalScrubbedMaybeBinaryString
 
 			// expectErr is the error we expect to see or nil
 			expectErr error
@@ -333,9 +333,14 @@ func TestArchivalMaybeBinaryString(t *testing.T) {
 			expectData: []byte(`"Elliot"`),
 		}, {
 			name:       "with value being a long binary string",
-			input:      model.ArchivalMaybeBinaryString(archivalBinaryInput),
+			input:      model.ArchivalScrubbedMaybeBinaryString(archivalBinaryInput),
 			expectErr:  nil,
 			expectData: archivalEncodedBinaryInput,
+		}, {
+			name:       "with string containing IP addresses and endpoints",
+			input:      "a 130.192.91.211 b ::1 c [::1]:443 d 130.192.91.211:80",
+			expectErr:  nil,
+			expectData: []byte(`"a [scrubbed] b [scrubbed] c [scrubbed] d [scrubbed]"`),
 		}}
 
 		for _, tc := range cases {
@@ -386,85 +391,85 @@ func TestArchivalMaybeBinaryString(t *testing.T) {
 			expectErr error
 
 			// expectData is the data we expect
-			expectData model.ArchivalMaybeBinaryString
+			expectData model.ArchivalScrubbedMaybeBinaryString
 		}
 
 		cases := []testcase{{
 			name:       "with nil input array",
 			input:      nil,
 			expectErr:  errors.New("unexpected end of JSON input"),
-			expectData: model.ArchivalMaybeBinaryString(""),
+			expectData: model.ArchivalScrubbedMaybeBinaryString(""),
 		}, {
 			name:       "with zero-length input array",
 			input:      []byte{},
 			expectErr:  errors.New("unexpected end of JSON input"),
-			expectData: model.ArchivalMaybeBinaryString(""),
+			expectData: model.ArchivalScrubbedMaybeBinaryString(""),
 		}, {
 			name:       "with binary input that is not a complete JSON",
 			input:      []byte("{"),
 			expectErr:  errors.New("unexpected end of JSON input"),
-			expectData: model.ArchivalMaybeBinaryString(""),
+			expectData: model.ArchivalScrubbedMaybeBinaryString(""),
 		}, {
 			name:       "with ~random binary data as input",
 			input:      archivalBinaryInput,
 			expectErr:  errors.New("invalid character 'W' looking for beginning of value"),
-			expectData: model.ArchivalMaybeBinaryString(""),
+			expectData: model.ArchivalScrubbedMaybeBinaryString(""),
 		}, {
 			name:       "with valid JSON of the wrong type (array)",
 			input:      []byte("[]"),
 			expectErr:  errors.New("json: cannot unmarshal array into Go value of type model.archivalBinaryDataRepr"),
-			expectData: model.ArchivalMaybeBinaryString(""),
+			expectData: model.ArchivalScrubbedMaybeBinaryString(""),
 		}, {
 			name:       "with valid JSON of the wrong type (number)",
 			input:      []byte("1.17"),
 			expectErr:  errors.New("json: cannot unmarshal number into Go value of type model.archivalBinaryDataRepr"),
-			expectData: model.ArchivalMaybeBinaryString(""),
+			expectData: model.ArchivalScrubbedMaybeBinaryString(""),
 		}, {
 			name:       "with input being the liternal null",
 			input:      []byte(`null`),
 			expectErr:  nil,
-			expectData: model.ArchivalMaybeBinaryString(""),
+			expectData: model.ArchivalScrubbedMaybeBinaryString(""),
 		}, {
 			name:       "with empty JSON object",
 			input:      []byte("{}"),
 			expectErr:  errors.New("model: invalid binary data format: ''"),
-			expectData: model.ArchivalMaybeBinaryString(""),
+			expectData: model.ArchivalScrubbedMaybeBinaryString(""),
 		}, {
 			name:       "with correct data model but invalid format",
 			input:      []byte(`{"data":"","format":"antani"}`),
 			expectErr:  errors.New("model: invalid binary data format: 'antani'"),
-			expectData: model.ArchivalMaybeBinaryString(""),
+			expectData: model.ArchivalScrubbedMaybeBinaryString(""),
 		}, {
 			name:       "with correct data model and format but invalid base64 string",
 			input:      []byte(`{"data":"x","format":"base64"}`),
 			expectErr:  errors.New("illegal base64 data at input byte 0"),
-			expectData: model.ArchivalMaybeBinaryString(""),
+			expectData: model.ArchivalScrubbedMaybeBinaryString(""),
 		}, {
 			name:       "with correct data model and format but empty base64 string",
 			input:      []byte(`{"data":"","format":"base64"}`),
 			expectErr:  nil,
-			expectData: model.ArchivalMaybeBinaryString(""),
+			expectData: model.ArchivalScrubbedMaybeBinaryString(""),
 		}, {
 			name:       "with the a string",
 			input:      []byte(`"Elliot"`),
 			expectErr:  nil,
-			expectData: model.ArchivalMaybeBinaryString("Elliot"),
+			expectData: model.ArchivalScrubbedMaybeBinaryString("Elliot"),
 		}, {
 			name:       "with the encoding of a string",
 			input:      []byte(`{"data":"RWxsaW90","format":"base64"}`),
 			expectErr:  nil,
-			expectData: model.ArchivalMaybeBinaryString("Elliot"),
+			expectData: model.ArchivalScrubbedMaybeBinaryString("Elliot"),
 		}, {
 			name:       "with the encoding of a complex binary string",
 			input:      archivalEncodedBinaryInput,
 			expectErr:  nil,
-			expectData: model.ArchivalMaybeBinaryString(archivalBinaryInput),
+			expectData: model.ArchivalScrubbedMaybeBinaryString(archivalBinaryInput),
 		}}
 
 		for _, tc := range cases {
 			t.Run(tc.name, func(t *testing.T) {
 				// unmarshal the raw input into an ArchivalBinaryData type
-				var abd model.ArchivalMaybeBinaryString
+				var abd model.ArchivalScrubbedMaybeBinaryString
 				err := json.Unmarshal(tc.input, &abd)
 
 				t.Log("got this error", err)
@@ -503,7 +508,7 @@ func TestArchivalMaybeBinaryString(t *testing.T) {
 			name string
 
 			// input is the maybe-binary input
-			input model.ArchivalMaybeBinaryString
+			input model.ArchivalScrubbedMaybeBinaryString
 		}
 
 		cases := []testcase{{
@@ -514,7 +519,7 @@ func TestArchivalMaybeBinaryString(t *testing.T) {
 			input: "Elliot",
 		}, {
 			name:  "with value being a long binary string",
-			input: model.ArchivalMaybeBinaryString(archivalBinaryInput),
+			input: model.ArchivalScrubbedMaybeBinaryString(archivalBinaryInput),
 		}}
 
 		for _, tc := range cases {
@@ -531,7 +536,7 @@ func TestArchivalMaybeBinaryString(t *testing.T) {
 				}
 
 				// parse from JSON
-				var abc model.ArchivalMaybeBinaryString
+				var abc model.ArchivalScrubbedMaybeBinaryString
 				if err := json.Unmarshal(output, &abc); err != nil {
 					t.Fatal(err)
 				}
@@ -640,16 +645,16 @@ func TestArchivalHTTPHeader(t *testing.T) {
 		}{{
 			name: "with string value",
 			input: model.ArchivalHTTPHeader{
-				model.ArchivalMaybeBinaryString("Content-Type"),
-				model.ArchivalMaybeBinaryString("text/plain"),
+				model.ArchivalScrubbedMaybeBinaryString("Content-Type"),
+				model.ArchivalScrubbedMaybeBinaryString("text/plain"),
 			},
 			want:    []byte(`["Content-Type","text/plain"]`),
 			wantErr: false,
 		}, {
 			name: "with binary value",
 			input: model.ArchivalHTTPHeader{
-				model.ArchivalMaybeBinaryString("Content-Type"),
-				model.ArchivalMaybeBinaryString(archivalBinaryInput),
+				model.ArchivalScrubbedMaybeBinaryString("Content-Type"),
+				model.ArchivalScrubbedMaybeBinaryString(archivalBinaryInput),
 			},
 			want:    []byte(`["Content-Type",` + string(archivalEncodedBinaryInput) + `]`),
 			wantErr: false,
@@ -677,98 +682,98 @@ func TestArchivalHTTPHeader(t *testing.T) {
 			name:  "with invalid input",
 			input: []byte(`{}`),
 			want: model.ArchivalHTTPHeader{
-				model.ArchivalMaybeBinaryString(""),
-				model.ArchivalMaybeBinaryString(""),
+				model.ArchivalScrubbedMaybeBinaryString(""),
+				model.ArchivalScrubbedMaybeBinaryString(""),
 			},
-			wantErr: errors.New("json: cannot unmarshal object into Go value of type []model.ArchivalMaybeBinaryString"),
+			wantErr: errors.New("json: cannot unmarshal object into Go value of type []model.ArchivalScrubbedMaybeBinaryString"),
 		}, {
 			name:  "with zero items",
 			input: []byte(`[]`),
 			want: model.ArchivalHTTPHeader{
-				model.ArchivalMaybeBinaryString(""),
-				model.ArchivalMaybeBinaryString(""),
+				model.ArchivalScrubbedMaybeBinaryString(""),
+				model.ArchivalScrubbedMaybeBinaryString(""),
 			},
 			wantErr: errors.New("invalid ArchivalHTTPHeader: expected 2 elements, got 0"),
 		}, {
 			name:    "with just one item",
 			input:   []byte(`["x"]`),
-			want:    [2]model.ArchivalMaybeBinaryString{},
+			want:    [2]model.ArchivalScrubbedMaybeBinaryString{},
 			wantErr: errors.New("invalid ArchivalHTTPHeader: expected 2 elements, got 1"),
 		}, {
 			name:    "with three items",
 			input:   []byte(`["x","x","x"]`),
-			want:    [2]model.ArchivalMaybeBinaryString{},
+			want:    [2]model.ArchivalScrubbedMaybeBinaryString{},
 			wantErr: errors.New("invalid ArchivalHTTPHeader: expected 2 elements, got 3"),
 		}, {
 			name:  "with first item not being a string",
 			input: []byte(`[0,0]`),
 			want: model.ArchivalHTTPHeader{
-				model.ArchivalMaybeBinaryString(""),
-				model.ArchivalMaybeBinaryString(""),
+				model.ArchivalScrubbedMaybeBinaryString(""),
+				model.ArchivalScrubbedMaybeBinaryString(""),
 			},
 			wantErr: errors.New("json: cannot unmarshal number into Go value of type model.archivalBinaryDataRepr"),
 		}, {
 			name:  "with both items being a string",
 			input: []byte(`["x","y"]`),
 			want: model.ArchivalHTTPHeader{
-				model.ArchivalMaybeBinaryString("x"),
-				model.ArchivalMaybeBinaryString("y"),
+				model.ArchivalScrubbedMaybeBinaryString("x"),
+				model.ArchivalScrubbedMaybeBinaryString("y"),
 			},
 			wantErr: nil,
 		}, {
 			name:  "with second item not being a map[string]interface{}",
 			input: []byte(`["x",[]]`),
 			want: model.ArchivalHTTPHeader{
-				model.ArchivalMaybeBinaryString(""),
-				model.ArchivalMaybeBinaryString(""),
+				model.ArchivalScrubbedMaybeBinaryString(""),
+				model.ArchivalScrubbedMaybeBinaryString(""),
 			},
 			wantErr: errors.New("json: cannot unmarshal array into Go value of type model.archivalBinaryDataRepr"),
 		}, {
 			name:  "with missing format key in second item",
 			input: []byte(`["x",{}]`),
 			want: model.ArchivalHTTPHeader{
-				model.ArchivalMaybeBinaryString(""),
-				model.ArchivalMaybeBinaryString(""),
+				model.ArchivalScrubbedMaybeBinaryString(""),
+				model.ArchivalScrubbedMaybeBinaryString(""),
 			},
 			wantErr: errors.New("model: invalid binary data format: ''"),
 		}, {
 			name:  "with format value not being base64",
 			input: []byte(`["x",{"format":1}]`),
 			want: model.ArchivalHTTPHeader{
-				model.ArchivalMaybeBinaryString(""),
-				model.ArchivalMaybeBinaryString(""),
+				model.ArchivalScrubbedMaybeBinaryString(""),
+				model.ArchivalScrubbedMaybeBinaryString(""),
 			},
 			wantErr: errors.New("json: cannot unmarshal number into Go struct field archivalBinaryDataRepr.format of type string"),
 		}, {
 			name:  "with missing data field",
 			input: []byte(`["x",{"format":"base64"}]`),
 			want: model.ArchivalHTTPHeader{
-				model.ArchivalMaybeBinaryString("x"),
-				model.ArchivalMaybeBinaryString(""),
+				model.ArchivalScrubbedMaybeBinaryString("x"),
+				model.ArchivalScrubbedMaybeBinaryString(""),
 			},
 			wantErr: nil,
 		}, {
 			name:  "with data not being a string",
 			input: []byte(`["x",{"format":"base64","data":1}]`),
 			want: model.ArchivalHTTPHeader{
-				model.ArchivalMaybeBinaryString(""),
-				model.ArchivalMaybeBinaryString(""),
+				model.ArchivalScrubbedMaybeBinaryString(""),
+				model.ArchivalScrubbedMaybeBinaryString(""),
 			},
 			wantErr: errors.New("json: cannot unmarshal number into Go struct field archivalBinaryDataRepr.data of type []uint8"),
 		}, {
 			name:  "with data not being base64",
 			input: []byte(`["x",{"format":"base64","data":"xx"}]`),
 			want: model.ArchivalHTTPHeader{
-				model.ArchivalMaybeBinaryString(""),
-				model.ArchivalMaybeBinaryString(""),
+				model.ArchivalScrubbedMaybeBinaryString(""),
+				model.ArchivalScrubbedMaybeBinaryString(""),
 			},
 			wantErr: errors.New("illegal base64 data at input byte 0"),
 		}, {
 			name:  "with correctly encoded base64 data",
 			input: []byte(`["x",` + string(archivalEncodedBinaryInput) + `]`),
 			want: model.ArchivalHTTPHeader{
-				model.ArchivalMaybeBinaryString("x"),
-				model.ArchivalMaybeBinaryString(archivalBinaryInput),
+				model.ArchivalScrubbedMaybeBinaryString("x"),
+				model.ArchivalScrubbedMaybeBinaryString(archivalBinaryInput),
 			},
 			wantErr: nil,
 		}}
@@ -1453,16 +1458,16 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 					ALPN:    "h2",
 					Failure: nil,
 					Request: model.ArchivalHTTPRequest{
-						Body:            model.ArchivalMaybeBinaryString(""),
+						Body:            model.ArchivalScrubbedMaybeBinaryString(""),
 						BodyIsTruncated: false,
 						HeadersList: []model.ArchivalHTTPHeader{{
-							model.ArchivalMaybeBinaryString("Accept"),
-							model.ArchivalMaybeBinaryString("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
+							model.ArchivalScrubbedMaybeBinaryString("Accept"),
+							model.ArchivalScrubbedMaybeBinaryString("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
 						}, {
-							model.ArchivalMaybeBinaryString("User-Agent"),
-							model.ArchivalMaybeBinaryString("miniooni/0.1.0"),
+							model.ArchivalScrubbedMaybeBinaryString("User-Agent"),
+							model.ArchivalScrubbedMaybeBinaryString("miniooni/0.1.0"),
 						}},
-						Headers: map[string]model.ArchivalMaybeBinaryString{
+						Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
 							"Accept":     "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 							"User-Agent": "miniooni/0.1.0",
 						},
@@ -1476,19 +1481,19 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 						URL:       "https://www.example.com/",
 					},
 					Response: model.ArchivalHTTPResponse{
-						Body: model.ArchivalMaybeBinaryString(
+						Body: model.ArchivalScrubbedMaybeBinaryString(
 							"Bonsoir, Elliot!",
 						),
 						BodyIsTruncated: false,
 						Code:            200,
 						HeadersList: []model.ArchivalHTTPHeader{{
-							model.ArchivalMaybeBinaryString("Age"),
-							model.ArchivalMaybeBinaryString("131833"),
+							model.ArchivalScrubbedMaybeBinaryString("Age"),
+							model.ArchivalScrubbedMaybeBinaryString("131833"),
 						}, {
-							model.ArchivalMaybeBinaryString("Server"),
-							model.ArchivalMaybeBinaryString("Apache"),
+							model.ArchivalScrubbedMaybeBinaryString("Server"),
+							model.ArchivalScrubbedMaybeBinaryString("Apache"),
 						}},
-						Headers: map[string]model.ArchivalMaybeBinaryString{
+						Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
 							"Age":    "131833",
 							"Server": "Apache",
 						},
@@ -1515,16 +1520,16 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 						return &s
 					})(),
 					Request: model.ArchivalHTTPRequest{
-						Body:            model.ArchivalMaybeBinaryString(""),
+						Body:            model.ArchivalScrubbedMaybeBinaryString(""),
 						BodyIsTruncated: false,
 						HeadersList: []model.ArchivalHTTPHeader{{
-							model.ArchivalMaybeBinaryString("Accept"),
-							model.ArchivalMaybeBinaryString("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
+							model.ArchivalScrubbedMaybeBinaryString("Accept"),
+							model.ArchivalScrubbedMaybeBinaryString("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
 						}, {
-							model.ArchivalMaybeBinaryString("User-Agent"),
-							model.ArchivalMaybeBinaryString("miniooni/0.1.0"),
+							model.ArchivalScrubbedMaybeBinaryString("User-Agent"),
+							model.ArchivalScrubbedMaybeBinaryString("miniooni/0.1.0"),
 						}},
-						Headers: map[string]model.ArchivalMaybeBinaryString{
+						Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
 							"Accept":     "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 							"User-Agent": "miniooni/0.1.0",
 						},
@@ -1538,11 +1543,11 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 						URL:       "https://www.example.com/",
 					},
 					Response: model.ArchivalHTTPResponse{
-						Body:            model.ArchivalMaybeBinaryString(""),
+						Body:            model.ArchivalScrubbedMaybeBinaryString(""),
 						BodyIsTruncated: false,
 						Code:            0,
 						HeadersList:     []model.ArchivalHTTPHeader{},
-						Headers:         map[string]model.ArchivalMaybeBinaryString{},
+						Headers:         map[string]model.ArchivalScrubbedMaybeBinaryString{},
 						Locations:       nil,
 					},
 					T0:            0.4,
@@ -1567,25 +1572,25 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 					ALPN:    "h2",
 					Failure: nil,
 					Request: model.ArchivalHTTPRequest{
-						Body:            model.ArchivalMaybeBinaryString(""),
+						Body:            model.ArchivalScrubbedMaybeBinaryString(""),
 						BodyIsTruncated: false,
 						HeadersList: []model.ArchivalHTTPHeader{{
-							model.ArchivalMaybeBinaryString("Accept"),
-							model.ArchivalMaybeBinaryString("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
+							model.ArchivalScrubbedMaybeBinaryString("Accept"),
+							model.ArchivalScrubbedMaybeBinaryString("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
 						}, {
-							model.ArchivalMaybeBinaryString("User-Agent"),
-							model.ArchivalMaybeBinaryString("miniooni/0.1.0"),
+							model.ArchivalScrubbedMaybeBinaryString("User-Agent"),
+							model.ArchivalScrubbedMaybeBinaryString("miniooni/0.1.0"),
 						}, {
-							model.ArchivalMaybeBinaryString("Antani"),
-							model.ArchivalMaybeBinaryString(string(archivalBinaryInput[:7])),
+							model.ArchivalScrubbedMaybeBinaryString("Antani"),
+							model.ArchivalScrubbedMaybeBinaryString(string(archivalBinaryInput[:7])),
 						}, {
-							model.ArchivalMaybeBinaryString("Antani"),
-							model.ArchivalMaybeBinaryString(archivalBinaryInput[7:14]),
+							model.ArchivalScrubbedMaybeBinaryString("Antani"),
+							model.ArchivalScrubbedMaybeBinaryString(archivalBinaryInput[7:14]),
 						}},
-						Headers: map[string]model.ArchivalMaybeBinaryString{
+						Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
 							"Accept":     "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 							"User-Agent": "miniooni/0.1.0",
-							"Antani":     model.ArchivalMaybeBinaryString(archivalBinaryInput[:7]),
+							"Antani":     model.ArchivalScrubbedMaybeBinaryString(archivalBinaryInput[:7]),
 						},
 						Method: "GET",
 						Tor: model.ArchivalHTTPTor{
@@ -1597,28 +1602,28 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 						URL:       "https://www.example.com/",
 					},
 					Response: model.ArchivalHTTPResponse{
-						Body: model.ArchivalMaybeBinaryString(
+						Body: model.ArchivalScrubbedMaybeBinaryString(
 							archivalBinaryInput[:77],
 						),
 						BodyIsTruncated: false,
 						Code:            200,
 						HeadersList: []model.ArchivalHTTPHeader{{
-							model.ArchivalMaybeBinaryString("Age"),
-							model.ArchivalMaybeBinaryString("131833"),
+							model.ArchivalScrubbedMaybeBinaryString("Age"),
+							model.ArchivalScrubbedMaybeBinaryString("131833"),
 						}, {
-							model.ArchivalMaybeBinaryString("Server"),
-							model.ArchivalMaybeBinaryString("Apache"),
+							model.ArchivalScrubbedMaybeBinaryString("Server"),
+							model.ArchivalScrubbedMaybeBinaryString("Apache"),
 						}, {
-							model.ArchivalMaybeBinaryString("Mascetti"),
-							model.ArchivalMaybeBinaryString(archivalBinaryInput[14:21]),
+							model.ArchivalScrubbedMaybeBinaryString("Mascetti"),
+							model.ArchivalScrubbedMaybeBinaryString(archivalBinaryInput[14:21]),
 						}, {
-							model.ArchivalMaybeBinaryString("Mascetti"),
-							model.ArchivalMaybeBinaryString(archivalBinaryInput[21:28]),
+							model.ArchivalScrubbedMaybeBinaryString("Mascetti"),
+							model.ArchivalScrubbedMaybeBinaryString(archivalBinaryInput[21:28]),
 						}},
-						Headers: map[string]model.ArchivalMaybeBinaryString{
+						Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
 							"Age":      "131833",
 							"Server":   "Apache",
-							"Mascetti": model.ArchivalMaybeBinaryString(archivalEncodedBinaryInput[14:21]),
+							"Mascetti": model.ArchivalScrubbedMaybeBinaryString(archivalEncodedBinaryInput[14:21]),
 						},
 						Locations: nil,
 					},
@@ -1649,28 +1654,28 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 					ALPN:    "h2",
 					Failure: nil,
 					Request: model.ArchivalHTTPRequest{
-						Body:            model.ArchivalMaybeBinaryString(""),
+						Body:            model.ArchivalScrubbedMaybeBinaryString(""),
 						BodyIsTruncated: false,
 						HeadersList: []model.ArchivalHTTPHeader{{
-							model.ArchivalMaybeBinaryString("Accept"),
-							model.ArchivalMaybeBinaryString("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
+							model.ArchivalScrubbedMaybeBinaryString("Accept"),
+							model.ArchivalScrubbedMaybeBinaryString("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
 						}, {
-							model.ArchivalMaybeBinaryString("User-Agent"),
-							model.ArchivalMaybeBinaryString("miniooni/0.1.0"),
+							model.ArchivalScrubbedMaybeBinaryString("User-Agent"),
+							model.ArchivalScrubbedMaybeBinaryString("miniooni/0.1.0"),
 						}, {
-							model.ArchivalMaybeBinaryString("AntaniV4"),
-							model.ArchivalMaybeBinaryString("130.192.91.211"),
+							model.ArchivalScrubbedMaybeBinaryString("AntaniV4"),
+							model.ArchivalScrubbedMaybeBinaryString("130.192.91.211"),
 						}, {
-							model.ArchivalMaybeBinaryString("AntaniV6"),
-							model.ArchivalMaybeBinaryString("2606:2800:220:1:248:1893:25c8:1946"),
+							model.ArchivalScrubbedMaybeBinaryString("AntaniV6"),
+							model.ArchivalScrubbedMaybeBinaryString("2606:2800:220:1:248:1893:25c8:1946"),
 						}, {
-							model.ArchivalMaybeBinaryString("AntaniV4Epnt"),
-							model.ArchivalMaybeBinaryString("[130.192.91.211]:443"),
+							model.ArchivalScrubbedMaybeBinaryString("AntaniV4Epnt"),
+							model.ArchivalScrubbedMaybeBinaryString("130.192.91.211:443"),
 						}, {
-							model.ArchivalMaybeBinaryString("AntaniV6Epnt"),
-							model.ArchivalMaybeBinaryString("[2606:2800:220:1:248:1893:25c8:1946]:5222"),
+							model.ArchivalScrubbedMaybeBinaryString("AntaniV6Epnt"),
+							model.ArchivalScrubbedMaybeBinaryString("[2606:2800:220:1:248:1893:25c8:1946]:5222"),
 						}},
-						Headers: map[string]model.ArchivalMaybeBinaryString{
+						Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
 							"Accept":       "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 							"User-Agent":   "miniooni/0.1.0",
 							"AntaniV4":     "130.192.91.211",
@@ -1688,31 +1693,31 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 						URL:       "https://www.example.com/",
 					},
 					Response: model.ArchivalHTTPResponse{
-						Body: model.ArchivalMaybeBinaryString(
+						Body: model.ArchivalScrubbedMaybeBinaryString(
 							"<HTML><BODY>Your address is 130.192.91.211 and 2606:2800:220:1:248:1893:25c8:1946 and you have endpoints [2606:2800:220:1:248:1893:25c8:1946]:5222 and 130.192.91.211:443. You're welcome.</BODY></HTML>",
 						),
 						BodyIsTruncated: false,
 						Code:            200,
 						HeadersList: []model.ArchivalHTTPHeader{{
-							model.ArchivalMaybeBinaryString("Age"),
-							model.ArchivalMaybeBinaryString("131833"),
+							model.ArchivalScrubbedMaybeBinaryString("Age"),
+							model.ArchivalScrubbedMaybeBinaryString("131833"),
 						}, {
-							model.ArchivalMaybeBinaryString("Server"),
-							model.ArchivalMaybeBinaryString("Apache"),
+							model.ArchivalScrubbedMaybeBinaryString("Server"),
+							model.ArchivalScrubbedMaybeBinaryString("Apache"),
 						}, {
-							model.ArchivalMaybeBinaryString("MascettiV4"),
-							model.ArchivalMaybeBinaryString("130.192.91.211"),
+							model.ArchivalScrubbedMaybeBinaryString("MascettiV4"),
+							model.ArchivalScrubbedMaybeBinaryString("130.192.91.211"),
 						}, {
-							model.ArchivalMaybeBinaryString("MascettiV6"),
-							model.ArchivalMaybeBinaryString("2606:2800:220:1:248:1893:25c8:1946"),
+							model.ArchivalScrubbedMaybeBinaryString("MascettiV6"),
+							model.ArchivalScrubbedMaybeBinaryString("2606:2800:220:1:248:1893:25c8:1946"),
 						}, {
-							model.ArchivalMaybeBinaryString("MascettiV4Epnt"),
-							model.ArchivalMaybeBinaryString("[130.192.91.211]:443"),
+							model.ArchivalScrubbedMaybeBinaryString("MascettiV4Epnt"),
+							model.ArchivalScrubbedMaybeBinaryString("130.192.91.211:443"),
 						}, {
-							model.ArchivalMaybeBinaryString("MascettiV6Epnt"),
-							model.ArchivalMaybeBinaryString("[2606:2800:220:1:248:1893:25c8:1946]:5222"),
+							model.ArchivalScrubbedMaybeBinaryString("MascettiV6Epnt"),
+							model.ArchivalScrubbedMaybeBinaryString("[2606:2800:220:1:248:1893:25c8:1946]:5222"),
 						}},
-						Headers: map[string]model.ArchivalMaybeBinaryString{
+						Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
 							"Age":            "131833",
 							"Server":         "Apache",
 							"MascettiV4":     "130.192.91.211",
@@ -1728,7 +1733,7 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 					TransactionID: 5,
 				},
 				expectErr:  nil,
-				expectData: []byte(`{"network":"tcp","address":"[2606:2800:220:1:248:1893:25c8:1946]:443","alpn":"h2","failure":null,"request":{"body":"","body_is_truncated":false,"headers_list":[["Accept","text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"],["User-Agent","miniooni/0.1.0"],["AntaniV4","130.192.91.211"],["AntaniV6","2606:2800:220:1:248:1893:25c8:1946"],["AntaniV4Epnt","[130.192.91.211]:443"],["AntaniV6Epnt","[2606:2800:220:1:248:1893:25c8:1946]:5222"]],"headers":{"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","AntaniV4":"130.192.91.211","AntaniV4Epnt":"130.192.91.211:443","AntaniV6":"2606:2800:220:1:248:1893:25c8:1946","AntaniV6Epnt":"[2606:2800:220:1:248:1893:25c8:1946]:5222","User-Agent":"miniooni/0.1.0"},"method":"GET","tor":{"exit_ip":null,"exit_name":null,"is_tor":false},"x_transport":"tcp","url":"https://www.example.com/"},"response":{"body":"\u003cHTML\u003e\u003cBODY\u003eYour address is 130.192.91.211 and 2606:2800:220:1:248:1893:25c8:1946 and you have endpoints [2606:2800:220:1:248:1893:25c8:1946]:5222 and 130.192.91.211:443. You're welcome.\u003c/BODY\u003e\u003c/HTML\u003e","body_is_truncated":false,"code":200,"headers_list":[["Age","131833"],["Server","Apache"],["MascettiV4","130.192.91.211"],["MascettiV6","2606:2800:220:1:248:1893:25c8:1946"],["MascettiV4Epnt","[130.192.91.211]:443"],["MascettiV6Epnt","[2606:2800:220:1:248:1893:25c8:1946]:5222"]],"headers":{"Age":"131833","MascettiV4":"130.192.91.211","MascettiV4Epnt":"130.192.91.211:443","MascettiV6":"2606:2800:220:1:248:1893:25c8:1946","MascettiV6Epnt":"[2606:2800:220:1:248:1893:25c8:1946]:5222","Server":"Apache"}},"t0":0.7,"t":1.33,"tags":["http"],"transaction_id":5}`),
+				expectData: []byte(`{"network":"tcp","address":"[2606:2800:220:1:248:1893:25c8:1946]:443","alpn":"h2","failure":null,"request":{"body":"","body_is_truncated":false,"headers_list":[["Accept","text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"],["User-Agent","miniooni/0.1.0"],["AntaniV4","[scrubbed]"],["AntaniV6","[scrubbed]"],["AntaniV4Epnt","[scrubbed]"],["AntaniV6Epnt","[scrubbed]"]],"headers":{"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","AntaniV4":"[scrubbed]","AntaniV4Epnt":"[scrubbed]","AntaniV6":"[scrubbed]","AntaniV6Epnt":"[scrubbed]","User-Agent":"miniooni/0.1.0"},"method":"GET","tor":{"exit_ip":null,"exit_name":null,"is_tor":false},"x_transport":"tcp","url":"https://www.example.com/"},"response":{"body":"\u003cHTML\u003e\u003cBODY\u003eYour address is [scrubbed] and [scrubbed] and you have endpoints [scrubbed] and [scrubbed]. You're welcome.\u003c/BODY\u003e\u003c/HTML\u003e","body_is_truncated":false,"code":200,"headers_list":[["Age","131833"],["Server","Apache"],["MascettiV4","[scrubbed]"],["MascettiV6","[scrubbed]"],["MascettiV4Epnt","[scrubbed]"],["MascettiV6Epnt","[scrubbed]"]],"headers":{"Age":"131833","MascettiV4":"[scrubbed]","MascettiV4Epnt":"[scrubbed]","MascettiV6":"[scrubbed]","MascettiV6Epnt":"[scrubbed]","Server":"Apache"}},"t0":0.7,"t":1.33,"tags":["http"],"transaction_id":5}`),
 			},
 		}
 
@@ -1793,16 +1798,16 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 				ALPN:    "h2",
 				Failure: nil,
 				Request: model.ArchivalHTTPRequest{
-					Body:            model.ArchivalMaybeBinaryString(""),
+					Body:            model.ArchivalScrubbedMaybeBinaryString(""),
 					BodyIsTruncated: false,
 					HeadersList: []model.ArchivalHTTPHeader{{
-						model.ArchivalMaybeBinaryString("Accept"),
-						model.ArchivalMaybeBinaryString("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
+						model.ArchivalScrubbedMaybeBinaryString("Accept"),
+						model.ArchivalScrubbedMaybeBinaryString("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
 					}, {
-						model.ArchivalMaybeBinaryString("User-Agent"),
-						model.ArchivalMaybeBinaryString("miniooni/0.1.0"),
+						model.ArchivalScrubbedMaybeBinaryString("User-Agent"),
+						model.ArchivalScrubbedMaybeBinaryString("miniooni/0.1.0"),
 					}},
-					Headers: map[string]model.ArchivalMaybeBinaryString{
+					Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
 						"Accept":     "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 						"User-Agent": "miniooni/0.1.0",
 					},
@@ -1816,19 +1821,19 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 					URL:       "https://www.example.com/",
 				},
 				Response: model.ArchivalHTTPResponse{
-					Body: model.ArchivalMaybeBinaryString(
+					Body: model.ArchivalScrubbedMaybeBinaryString(
 						"Bonsoir, Elliot!",
 					),
 					BodyIsTruncated: false,
 					Code:            200,
 					HeadersList: []model.ArchivalHTTPHeader{{
-						model.ArchivalMaybeBinaryString("Age"),
-						model.ArchivalMaybeBinaryString("131833"),
+						model.ArchivalScrubbedMaybeBinaryString("Age"),
+						model.ArchivalScrubbedMaybeBinaryString("131833"),
 					}, {
-						model.ArchivalMaybeBinaryString("Server"),
-						model.ArchivalMaybeBinaryString("Apache"),
+						model.ArchivalScrubbedMaybeBinaryString("Server"),
+						model.ArchivalScrubbedMaybeBinaryString("Apache"),
 					}},
-					Headers: map[string]model.ArchivalMaybeBinaryString{
+					Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
 						"Age":    "131833",
 						"Server": "Apache",
 					},
@@ -1852,16 +1857,16 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 					return &s
 				})(),
 				Request: model.ArchivalHTTPRequest{
-					Body:            model.ArchivalMaybeBinaryString(""),
+					Body:            model.ArchivalScrubbedMaybeBinaryString(""),
 					BodyIsTruncated: false,
 					HeadersList: []model.ArchivalHTTPHeader{{
-						model.ArchivalMaybeBinaryString("Accept"),
-						model.ArchivalMaybeBinaryString("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
+						model.ArchivalScrubbedMaybeBinaryString("Accept"),
+						model.ArchivalScrubbedMaybeBinaryString("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
 					}, {
-						model.ArchivalMaybeBinaryString("User-Agent"),
-						model.ArchivalMaybeBinaryString("miniooni/0.1.0"),
+						model.ArchivalScrubbedMaybeBinaryString("User-Agent"),
+						model.ArchivalScrubbedMaybeBinaryString("miniooni/0.1.0"),
 					}},
-					Headers: map[string]model.ArchivalMaybeBinaryString{
+					Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
 						"Accept":     "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 						"User-Agent": "miniooni/0.1.0",
 					},
@@ -1875,11 +1880,11 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 					URL:       "https://www.example.com/",
 				},
 				Response: model.ArchivalHTTPResponse{
-					Body:            model.ArchivalMaybeBinaryString(""),
+					Body:            model.ArchivalScrubbedMaybeBinaryString(""),
 					BodyIsTruncated: false,
 					Code:            0,
 					HeadersList:     []model.ArchivalHTTPHeader{},
-					Headers:         map[string]model.ArchivalMaybeBinaryString{},
+					Headers:         map[string]model.ArchivalScrubbedMaybeBinaryString{},
 					Locations:       nil,
 				},
 				T0:            0.4,
@@ -2125,20 +2130,20 @@ func TestArchivalNewHTTPHeadersList(t *testing.T) {
 			"User-Agent":   {"miniooni/0.1.0"},
 		},
 		expect: []model.ArchivalHTTPHeader{{
-			model.ArchivalMaybeBinaryString("Content-Type"),
-			model.ArchivalMaybeBinaryString("text/html; charset=utf-8"),
+			model.ArchivalScrubbedMaybeBinaryString("Content-Type"),
+			model.ArchivalScrubbedMaybeBinaryString("text/html; charset=utf-8"),
 		}, {
-			model.ArchivalMaybeBinaryString("User-Agent"),
-			model.ArchivalMaybeBinaryString("miniooni/0.1.0"),
+			model.ArchivalScrubbedMaybeBinaryString("User-Agent"),
+			model.ArchivalScrubbedMaybeBinaryString("miniooni/0.1.0"),
 		}, {
-			model.ArchivalMaybeBinaryString("Via"),
-			model.ArchivalMaybeBinaryString("a"),
+			model.ArchivalScrubbedMaybeBinaryString("Via"),
+			model.ArchivalScrubbedMaybeBinaryString("a"),
 		}, {
-			model.ArchivalMaybeBinaryString("Via"),
-			model.ArchivalMaybeBinaryString("b"),
+			model.ArchivalScrubbedMaybeBinaryString("Via"),
+			model.ArchivalScrubbedMaybeBinaryString("b"),
 		}, {
-			model.ArchivalMaybeBinaryString("Via"),
-			model.ArchivalMaybeBinaryString("c"),
+			model.ArchivalScrubbedMaybeBinaryString("Via"),
+			model.ArchivalScrubbedMaybeBinaryString("c"),
 		}},
 	}}
 
@@ -2158,17 +2163,17 @@ func TestArchivalNewHTTPHeadersMap(t *testing.T) {
 	type testcase struct {
 		name   string
 		input  http.Header
-		expect map[string]model.ArchivalMaybeBinaryString
+		expect map[string]model.ArchivalScrubbedMaybeBinaryString
 	}
 
 	cases := []testcase{{
 		name:   "with nil input",
 		input:  nil,
-		expect: map[string]model.ArchivalMaybeBinaryString{},
+		expect: map[string]model.ArchivalScrubbedMaybeBinaryString{},
 	}, {
 		name:   "with empty input",
 		input:  map[string][]string{},
-		expect: map[string]model.ArchivalMaybeBinaryString{},
+		expect: map[string]model.ArchivalScrubbedMaybeBinaryString{},
 	}, {
 		name: "common case",
 		input: map[string][]string{
@@ -2176,7 +2181,7 @@ func TestArchivalNewHTTPHeadersMap(t *testing.T) {
 			"Via":          {"a", "b", "c"},
 			"User-Agent":   {"miniooni/0.1.0"},
 		},
-		expect: map[string]model.ArchivalMaybeBinaryString{
+		expect: map[string]model.ArchivalScrubbedMaybeBinaryString{
 			"Content-Type": "text/html; charset=utf-8",
 			"Via":          "a",
 			"User-Agent":   "miniooni/0.1.0",
