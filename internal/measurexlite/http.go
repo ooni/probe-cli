@@ -95,7 +95,7 @@ func newHTTPRequestHeaderList(req *http.Request) []model.ArchivalHTTPHeader {
 
 // newHTTPRequestHeaderMap calls newHTTPHeaderMap with the request headers or
 // return an empty map in case the request is nil.
-func newHTTPRequestHeaderMap(req *http.Request) map[string]model.ArchivalMaybeBinaryData {
+func newHTTPRequestHeaderMap(req *http.Request) map[string]model.ArchivalMaybeBinaryString {
 	m := http.Header{}
 	if req != nil {
 		m = req.Header
@@ -139,7 +139,7 @@ func newHTTPResponseHeaderList(resp *http.Response) (out []model.ArchivalHTTPHea
 
 // newHTTPResponseHeaderMap calls newHTTPHeaderMap with the request headers or
 // return an empty map in case the request is nil.
-func newHTTPResponseHeaderMap(resp *http.Response) (out map[string]model.ArchivalMaybeBinaryData) {
+func newHTTPResponseHeaderMap(resp *http.Response) (out map[string]model.ArchivalMaybeBinaryString) {
 	m := http.Header{}
 	if resp != nil {
 		m = resp.Header
