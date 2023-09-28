@@ -1462,9 +1462,9 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 								Value: "miniooni/0.1.0",
 							},
 						}},
-						Headers: map[string]model.ArchivalMaybeBinaryData{
-							"Accept":     {"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"},
-							"User-Agent": {"miniooni/0.1.0"},
+						Headers: map[string]model.ArchivalMaybeBinaryString{
+							"Accept":     "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+							"User-Agent": "miniooni/0.1.0",
 						},
 						Method: "GET",
 						Tor: model.ArchivalHTTPTor{
@@ -1488,9 +1488,9 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 							Key:   "Server",
 							Value: model.ArchivalMaybeBinaryData{"Apache"},
 						}},
-						Headers: map[string]model.ArchivalMaybeBinaryData{
-							"Age":    {"131833"},
-							"Server": {"Apache"},
+						Headers: map[string]model.ArchivalMaybeBinaryString{
+							"Age":    "131833",
+							"Server": "Apache",
 						},
 						Locations: nil,
 					},
@@ -1528,9 +1528,9 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 								Value: "miniooni/0.1.0",
 							},
 						}},
-						Headers: map[string]model.ArchivalMaybeBinaryData{
-							"Accept":     {"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"},
-							"User-Agent": {"miniooni/0.1.0"},
+						Headers: map[string]model.ArchivalMaybeBinaryString{
+							"Accept":     "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+							"User-Agent": "miniooni/0.1.0",
 						},
 						Method: "GET",
 						Tor: model.ArchivalHTTPTor{
@@ -1546,7 +1546,7 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 						BodyIsTruncated: false,
 						Code:            0,
 						HeadersList:     []model.ArchivalHTTPHeader{},
-						Headers:         map[string]model.ArchivalMaybeBinaryData{},
+						Headers:         map[string]model.ArchivalMaybeBinaryString{},
 						Locations:       nil,
 					},
 					T0:            0.4,
@@ -1594,10 +1594,10 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 								Value: string(archivalBinaryInput[7:14]),
 							},
 						}},
-						Headers: map[string]model.ArchivalMaybeBinaryData{
-							"Accept":     {"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"},
-							"User-Agent": {"miniooni/0.1.0"},
-							"Antani":     {string(archivalBinaryInput[:7])},
+						Headers: map[string]model.ArchivalMaybeBinaryString{
+							"Accept":     "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+							"User-Agent": "miniooni/0.1.0",
+							"Antani":     model.ArchivalMaybeBinaryString(archivalBinaryInput[:7]),
 						},
 						Method: "GET",
 						Tor: model.ArchivalHTTPTor{
@@ -1631,10 +1631,10 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 								Value: string(archivalBinaryInput[21:28]),
 							},
 						}},
-						Headers: map[string]model.ArchivalMaybeBinaryData{
-							"Age":      {"131833"},
-							"Server":   {"Apache"},
-							"Mascetti": {string(archivalEncodedBinaryInput[14:21])},
+						Headers: map[string]model.ArchivalMaybeBinaryString{
+							"Age":      "131833",
+							"Server":   "Apache",
+							"Mascetti": model.ArchivalMaybeBinaryString(archivalEncodedBinaryInput[14:21]),
 						},
 						Locations: nil,
 					},
@@ -1698,13 +1698,13 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 								Value: "[2606:2800:220:1:248:1893:25c8:1946]:5222",
 							},
 						}},
-						Headers: map[string]model.ArchivalMaybeBinaryData{
-							"Accept":       {"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"},
-							"User-Agent":   {"miniooni/0.1.0"},
-							"AntaniV4":     {"130.192.91.211"},
-							"AntaniV6":     {"2606:2800:220:1:248:1893:25c8:1946"},
-							"AntaniV4Epnt": {"130.192.91.211:443"},
-							"AntaniV6Epnt": {"[2606:2800:220:1:248:1893:25c8:1946]:5222"},
+						Headers: map[string]model.ArchivalMaybeBinaryString{
+							"Accept":       "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+							"User-Agent":   "miniooni/0.1.0",
+							"AntaniV4":     "130.192.91.211",
+							"AntaniV6":     "2606:2800:220:1:248:1893:25c8:1946",
+							"AntaniV4Epnt": "130.192.91.211:443",
+							"AntaniV6Epnt": "[2606:2800:220:1:248:1893:25c8:1946]:5222",
 						},
 						Method: "GET",
 						Tor: model.ArchivalHTTPTor{
@@ -1748,13 +1748,13 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 								Value: "[2606:2800:220:1:248:1893:25c8:1946]:5222",
 							},
 						}},
-						Headers: map[string]model.ArchivalMaybeBinaryData{
-							"Age":            {"131833"},
-							"Server":         {"Apache"},
-							"MascettiV4":     {"130.192.91.211"},
-							"MascettiV6":     {"2606:2800:220:1:248:1893:25c8:1946"},
-							"MascettiV4Epnt": {"130.192.91.211:443"},
-							"MascettiV6Epnt": {"[2606:2800:220:1:248:1893:25c8:1946]:5222"},
+						Headers: map[string]model.ArchivalMaybeBinaryString{
+							"Age":            "131833",
+							"Server":         "Apache",
+							"MascettiV4":     "130.192.91.211",
+							"MascettiV6":     "2606:2800:220:1:248:1893:25c8:1946",
+							"MascettiV4Epnt": "130.192.91.211:443",
+							"MascettiV6Epnt": "[2606:2800:220:1:248:1893:25c8:1946]:5222",
 						},
 						Locations: nil,
 					},
@@ -1842,9 +1842,9 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 							Value: "miniooni/0.1.0",
 						},
 					}},
-					Headers: map[string]model.ArchivalMaybeBinaryData{
-						"Accept":     {"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"},
-						"User-Agent": {"miniooni/0.1.0"},
+					Headers: map[string]model.ArchivalMaybeBinaryString{
+						"Accept":     "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+						"User-Agent": "miniooni/0.1.0",
 					},
 					Method: "GET",
 					Tor: model.ArchivalHTTPTor{
@@ -1868,9 +1868,9 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 						Key:   "Server",
 						Value: model.ArchivalMaybeBinaryData{"Apache"},
 					}},
-					Headers: map[string]model.ArchivalMaybeBinaryData{
-						"Age":    {"131833"},
-						"Server": {"Apache"},
+					Headers: map[string]model.ArchivalMaybeBinaryString{
+						"Age":    "131833",
+						"Server": "Apache",
 					},
 					Locations: nil,
 				},
@@ -1905,9 +1905,9 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 							Value: "miniooni/0.1.0",
 						},
 					}},
-					Headers: map[string]model.ArchivalMaybeBinaryData{
-						"Accept":     {"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"},
-						"User-Agent": {"miniooni/0.1.0"},
+					Headers: map[string]model.ArchivalMaybeBinaryString{
+						"Accept":     "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+						"User-Agent": "miniooni/0.1.0",
 					},
 					Method: "GET",
 					Tor: model.ArchivalHTTPTor{
@@ -1923,7 +1923,7 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 					BodyIsTruncated: false,
 					Code:            0,
 					HeadersList:     []model.ArchivalHTTPHeader{},
-					Headers:         map[string]model.ArchivalMaybeBinaryData{},
+					Headers:         map[string]model.ArchivalMaybeBinaryString{},
 					Locations:       nil,
 				},
 				T0:            0.4,
@@ -2212,17 +2212,17 @@ func TestArchivalNewHTTPHeadersMap(t *testing.T) {
 	type testcase struct {
 		name   string
 		input  http.Header
-		expect map[string]model.ArchivalMaybeBinaryData
+		expect map[string]model.ArchivalMaybeBinaryString
 	}
 
 	cases := []testcase{{
 		name:   "with nil input",
 		input:  nil,
-		expect: map[string]model.ArchivalMaybeBinaryData{},
+		expect: map[string]model.ArchivalMaybeBinaryString{},
 	}, {
 		name:   "with empty input",
 		input:  map[string][]string{},
-		expect: map[string]model.ArchivalMaybeBinaryData{},
+		expect: map[string]model.ArchivalMaybeBinaryString{},
 	}, {
 		name: "common case",
 		input: map[string][]string{
@@ -2230,10 +2230,10 @@ func TestArchivalNewHTTPHeadersMap(t *testing.T) {
 			"Via":          {"a", "b", "c"},
 			"User-Agent":   {"miniooni/0.1.0"},
 		},
-		expect: map[string]model.ArchivalMaybeBinaryData{
-			"Content-Type": {"text/html; charset=utf-8"},
-			"Via":          {"a"},
-			"User-Agent":   {"miniooni/0.1.0"},
+		expect: map[string]model.ArchivalMaybeBinaryString{
+			"Content-Type": "text/html; charset=utf-8",
+			"Via":          "a",
+			"User-Agent":   "miniooni/0.1.0",
 		},
 	}}
 

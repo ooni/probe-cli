@@ -325,14 +325,14 @@ type ArchivalHTTPRequestResult struct {
 // Headers are a map in Web Connectivity data format but
 // we have added support for a list since January 2020.
 type ArchivalHTTPRequest struct {
-	Body            ArchivalMaybeBinaryString          `json:"body"`
-	BodyIsTruncated bool                               `json:"body_is_truncated"`
-	HeadersList     []ArchivalHTTPHeader               `json:"headers_list"`
-	Headers         map[string]ArchivalMaybeBinaryData `json:"headers"`
-	Method          string                             `json:"method"`
-	Tor             ArchivalHTTPTor                    `json:"tor"`
-	Transport       string                             `json:"x_transport"`
-	URL             string                             `json:"url"`
+	Body            ArchivalMaybeBinaryString            `json:"body"`
+	BodyIsTruncated bool                                 `json:"body_is_truncated"`
+	HeadersList     []ArchivalHTTPHeader                 `json:"headers_list"`
+	Headers         map[string]ArchivalMaybeBinaryString `json:"headers"`
+	Method          string                               `json:"method"`
+	Tor             ArchivalHTTPTor                      `json:"tor"`
+	Transport       string                               `json:"x_transport"`
+	URL             string                               `json:"url"`
 }
 
 // ArchivalHTTPResponse contains an HTTP response.
@@ -340,11 +340,11 @@ type ArchivalHTTPRequest struct {
 // Headers are a map in Web Connectivity data format but
 // we have added support for a list since January 2020.
 type ArchivalHTTPResponse struct {
-	Body            ArchivalMaybeBinaryString          `json:"body"`
-	BodyIsTruncated bool                               `json:"body_is_truncated"`
-	Code            int64                              `json:"code"`
-	HeadersList     []ArchivalHTTPHeader               `json:"headers_list"`
-	Headers         map[string]ArchivalMaybeBinaryData `json:"headers"`
+	Body            ArchivalMaybeBinaryString            `json:"body"`
+	BodyIsTruncated bool                                 `json:"body_is_truncated"`
+	Code            int64                                `json:"code"`
+	HeadersList     []ArchivalHTTPHeader                 `json:"headers_list"`
+	Headers         map[string]ArchivalMaybeBinaryString `json:"headers"`
 
 	// The following fields are not serialised but are useful to simplify
 	// analysing the measurements in telegram, whatsapp, etc.
@@ -381,13 +381,11 @@ func ArchivalNewHTTPHeadersList(source http.Header) (out []ArchivalHTTPHeader) {
 }
 
 // ArchivalNewHTTPHeadersMap creates a map representation of HTTP headers
-func ArchivalNewHTTPHeadersMap(header http.Header) (out map[string]ArchivalMaybeBinaryData) {
-	out = make(map[string]ArchivalMaybeBinaryData)
+func ArchivalNewHTTPHeadersMap(header http.Header) (out map[string]ArchivalMaybeBinaryString) {
+	out = make(map[string]ArchivalMaybeBinaryString)
 	for key, values := range header {
 		for _, value := range values {
-			out[key] = ArchivalMaybeBinaryData{
-				Value: value,
-			}
+			out[key] = ArchivalMaybeBinaryString(value)
 			break // just the first header
 		}
 	}

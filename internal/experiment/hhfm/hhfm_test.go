@@ -750,9 +750,9 @@ func TestNewRequestEntryList(t *testing.T) {
 					Key:   "User-aGENT",
 					Value: tracex.MaybeBinaryValue{Value: "foo/1.0"},
 				}},
-				Headers: map[string]tracex.MaybeBinaryValue{
-					"ContENt-tYPE": {Value: "text/plain"},
-					"User-aGENT":   {Value: "foo/1.0"},
+				Headers: map[string]model.ArchivalMaybeBinaryString{
+					"ContENt-tYPE": "text/plain",
+					"User-aGENT":   "foo/1.0",
 				},
 				Method: "GeT",
 				URL:    "http://10.0.0.1/",
@@ -773,7 +773,7 @@ func TestNewRequestEntryList(t *testing.T) {
 		wantOut: []tracex.RequestEntry{{
 			Request: tracex.HTTPRequest{
 				Method:      "GeT",
-				Headers:     make(map[string]tracex.MaybeBinaryValue),
+				Headers:     make(map[string]model.ArchivalMaybeBinaryString),
 				HeadersList: []tracex.HTTPHeader{},
 				URL:         "http://10.0.0.1/",
 			},
@@ -820,9 +820,9 @@ func TestNewHTTPResponse(t *testing.T) {
 				Key:   "User-Agent",
 				Value: tracex.MaybeBinaryValue{Value: "foo/1.0"},
 			}},
-			Headers: map[string]tracex.MaybeBinaryValue{
-				"Content-Type": {Value: "text/plain"},
-				"User-Agent":   {Value: "foo/1.0"},
+			Headers: map[string]model.ArchivalMaybeBinaryString{
+				"Content-Type": "text/plain",
+				"User-Agent":   "foo/1.0",
 			},
 		},
 	}, {
@@ -834,7 +834,7 @@ func TestNewHTTPResponse(t *testing.T) {
 			Body:        model.ArchivalMaybeBinaryString(""),
 			Code:        200,
 			HeadersList: []tracex.HTTPHeader{},
-			Headers:     map[string]tracex.MaybeBinaryValue{},
+			Headers:     map[string]model.ArchivalMaybeBinaryString{},
 		},
 	}}
 	for _, tt := range tests {
