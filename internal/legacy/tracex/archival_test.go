@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/gorilla/websocket"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -547,11 +548,10 @@ func TestNewTLSHandshakesList(t *testing.T) {
 			Failure:            NewFailure(io.EOF),
 			NegotiatedProtocol: "h2",
 			NoTLSVerify:        false,
-			PeerCertificates: []MaybeBinaryValue{{
-				Value: "deadbeef",
-			}, {
-				Value: "abad1dea",
-			}},
+			PeerCertificates: []model.ArchivalBinaryData{
+				model.ArchivalBinaryData("deadbeef"),
+				model.ArchivalBinaryData("abad1dea"),
+			},
 			ServerName: "x.org",
 			T:          0.055,
 			TLSVersion: "TLSv1.3",
@@ -582,11 +582,10 @@ func TestNewTLSHandshakesList(t *testing.T) {
 			Failure:            NewFailure(io.EOF),
 			NegotiatedProtocol: "h3",
 			NoTLSVerify:        false,
-			PeerCertificates: []MaybeBinaryValue{{
-				Value: "deadbeef",
-			}, {
-				Value: "abad1dea",
-			}},
+			PeerCertificates: []model.ArchivalBinaryData{
+				model.ArchivalBinaryData("deadbeef"),
+				model.ArchivalBinaryData("abad1dea"),
+			},
 			ServerName: "x.org",
 			T:          0.055,
 			TLSVersion: "TLSv1.3",

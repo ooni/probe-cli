@@ -235,20 +235,20 @@ type ArchivalTCPConnectStatus struct {
 //
 // See https://github.com/ooni/spec/blob/master/data-formats/df-006-tlshandshake.md
 type ArchivalTLSOrQUICHandshakeResult struct {
-	Network            string                    `json:"network"`
-	Address            string                    `json:"address"`
-	CipherSuite        string                    `json:"cipher_suite"`
-	Failure            *string                   `json:"failure"`
-	SoError            *string                   `json:"so_error,omitempty"`
-	NegotiatedProtocol string                    `json:"negotiated_protocol"`
-	NoTLSVerify        bool                      `json:"no_tls_verify"`
-	PeerCertificates   []ArchivalMaybeBinaryData `json:"peer_certificates"`
-	ServerName         string                    `json:"server_name"`
-	T0                 float64                   `json:"t0,omitempty"`
-	T                  float64                   `json:"t"`
-	Tags               []string                  `json:"tags"`
-	TLSVersion         string                    `json:"tls_version"`
-	TransactionID      int64                     `json:"transaction_id,omitempty"`
+	Network            string               `json:"network"`
+	Address            string               `json:"address"`
+	CipherSuite        string               `json:"cipher_suite"`
+	Failure            *string              `json:"failure"`
+	SoError            *string              `json:"so_error,omitempty"`
+	NegotiatedProtocol string               `json:"negotiated_protocol"`
+	NoTLSVerify        bool                 `json:"no_tls_verify"`
+	PeerCertificates   []ArchivalBinaryData `json:"peer_certificates"`
+	ServerName         string               `json:"server_name"`
+	T0                 float64              `json:"t0,omitempty"`
+	T                  float64              `json:"t"`
+	Tags               []string             `json:"tags"`
+	TLSVersion         string               `json:"tls_version"`
+	TransactionID      int64                `json:"transaction_id,omitempty"`
 }
 
 //
