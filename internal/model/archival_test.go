@@ -597,9 +597,9 @@ func TestArchivalTLSOrQUICHandshakeResult(t *testing.T) {
 				SoError:            nil,
 				NegotiatedProtocol: "http/1.1",
 				NoTLSVerify:        false,
-				PeerCertificates: []model.ArchivalMaybeBinaryData{{
-					Value: string(archivalBinaryInput),
-				}},
+				PeerCertificates: []model.ArchivalBinaryData{
+					model.ArchivalBinaryData(archivalBinaryInput),
+				},
 				ServerName:    "dns.google",
 				T0:            1.0,
 				T:             2.0,
@@ -625,7 +625,7 @@ func TestArchivalTLSOrQUICHandshakeResult(t *testing.T) {
 				})(),
 				NegotiatedProtocol: "",
 				NoTLSVerify:        false,
-				PeerCertificates:   []model.ArchivalMaybeBinaryData{},
+				PeerCertificates:   []model.ArchivalBinaryData{},
 				ServerName:         "dns.google",
 				T0:                 1.0,
 				T:                  2.0,
@@ -700,9 +700,9 @@ func TestArchivalTLSOrQUICHandshakeResult(t *testing.T) {
 				SoError:            nil,
 				NegotiatedProtocol: "http/1.1",
 				NoTLSVerify:        false,
-				PeerCertificates: []model.ArchivalMaybeBinaryData{{
-					Value: string(archivalBinaryInput),
-				}},
+				PeerCertificates: []model.ArchivalBinaryData{
+					model.ArchivalBinaryData(archivalBinaryInput),
+				},
 				ServerName:    "dns.google",
 				T0:            1.0,
 				T:             2.0,
@@ -728,7 +728,7 @@ func TestArchivalTLSOrQUICHandshakeResult(t *testing.T) {
 				})(),
 				NegotiatedProtocol: "",
 				NoTLSVerify:        false,
-				PeerCertificates:   []model.ArchivalMaybeBinaryData{},
+				PeerCertificates:   []model.ArchivalBinaryData{},
 				ServerName:         "dns.google",
 				T0:                 1.0,
 				T:                  2.0,

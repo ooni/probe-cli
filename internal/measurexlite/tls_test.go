@@ -123,7 +123,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 				Failure:            &expectedFailure,
 				NegotiatedProtocol: "",
 				NoTLSVerify:        true,
-				PeerCertificates:   []model.ArchivalMaybeBinaryData{},
+				PeerCertificates:   []model.ArchivalBinaryData{},
 				ServerName:         "dns.cloudflare.com",
 				T:                  time.Second.Seconds(),
 				Tags:               []string{"antani"},
@@ -279,7 +279,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 				Failure:            nil,
 				NegotiatedProtocol: "",
 				NoTLSVerify:        false,
-				PeerCertificates:   []model.ArchivalMaybeBinaryData{},
+				PeerCertificates:   []model.ArchivalBinaryData{},
 				ServerName:         "dns.google",
 				T:                  time.Second.Seconds(),
 				Tags:               []string{},
@@ -293,7 +293,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 			if len(got.PeerCertificates) != 2 {
 				t.Fatal("expected to see two certificates")
 			}
-			got.PeerCertificates = []model.ArchivalMaybeBinaryData{} // see above
+			got.PeerCertificates = []model.ArchivalBinaryData{} // see above
 			if diff := cmp.Diff(expected, got); diff != "" {
 				t.Fatal(diff)
 			}
@@ -366,7 +366,7 @@ func TestFirstTLSHandshake(t *testing.T) {
 			Failure:            nil,
 			NegotiatedProtocol: "",
 			NoTLSVerify:        true,
-			PeerCertificates:   []model.ArchivalMaybeBinaryData{},
+			PeerCertificates:   []model.ArchivalBinaryData{},
 			ServerName:         "dns.cloudflare.com",
 			T:                  time.Second.Seconds(),
 			Tags:               []string{},
@@ -378,7 +378,7 @@ func TestFirstTLSHandshake(t *testing.T) {
 			Failure:            nil,
 			NegotiatedProtocol: "",
 			NoTLSVerify:        true,
-			PeerCertificates:   []model.ArchivalMaybeBinaryData{},
+			PeerCertificates:   []model.ArchivalBinaryData{},
 			ServerName:         "dns.google.com",
 			T:                  time.Second.Seconds(),
 			Tags:               []string{},
@@ -400,7 +400,7 @@ func TestTLSPeerCerts(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		wantOut []model.ArchivalMaybeBinaryData
+		wantOut []model.ArchivalBinaryData
 	}{{
 		name: "x509.HostnameError",
 		args: args{
@@ -411,9 +411,9 @@ func TestTLSPeerCerts(t *testing.T) {
 				},
 			},
 		},
-		wantOut: []model.ArchivalMaybeBinaryData{{
-			Value: "deadbeef",
-		}},
+		wantOut: []model.ArchivalBinaryData{
+			model.ArchivalBinaryData("deadbeef"),
+		},
 	}, {
 		name: "x509.UnknownAuthorityError",
 		args: args{
@@ -424,9 +424,9 @@ func TestTLSPeerCerts(t *testing.T) {
 				},
 			},
 		},
-		wantOut: []model.ArchivalMaybeBinaryData{{
-			Value: "deadbeef",
-		}},
+		wantOut: []model.ArchivalBinaryData{
+			model.ArchivalBinaryData("deadbeef"),
+		},
 	}, {
 		name: "x509.CertificateInvalidError",
 		args: args{
@@ -437,9 +437,9 @@ func TestTLSPeerCerts(t *testing.T) {
 				},
 			},
 		},
-		wantOut: []model.ArchivalMaybeBinaryData{{
-			Value: "deadbeef",
-		}},
+		wantOut: []model.ArchivalBinaryData{
+			model.ArchivalBinaryData("deadbeef"),
+		},
 	}, {
 		name: "successful case",
 		args: args{
@@ -452,11 +452,10 @@ func TestTLSPeerCerts(t *testing.T) {
 			},
 			err: nil,
 		},
-		wantOut: []model.ArchivalMaybeBinaryData{{
-			Value: "deadbeef",
-		}, {
-			Value: "abad1dea",
-		}},
+		wantOut: []model.ArchivalBinaryData{
+			model.ArchivalBinaryData("deadbeef"),
+			model.ArchivalBinaryData("abad1dea"),
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
