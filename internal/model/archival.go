@@ -65,9 +65,7 @@ var (
 // data using the specific ooni/spec data format for binary data.
 //
 // See https://github.com/ooni/spec/blob/master/data-formats/df-001-httpt.md#maybebinarydata.
-type ArchivalBinaryData struct {
-	Value []byte
-}
+type ArchivalBinaryData []byte
 
 // archivalBinaryDataRepr is the wire representation of binary data according to
 // https://github.com/ooni/spec/blob/master/data-formats/df-001-httpt.md#maybebinarydata.
@@ -84,12 +82,12 @@ var (
 // MarshalJSON implements json.Marshaler.
 func (value ArchivalBinaryData) MarshalJSON() ([]byte, error) {
 	// special case: we need to marshal the empty data as the null value
-	if len(value.Value) <= 0 {
+	if len(value) <= 0 {
 		return json.Marshal(nil)
 	}
 
 	// construct and serialize the OONI representation
-	repr := &archivalBinaryDataRepr{Format: "base64", Data: value.Value}
+	repr := &archivalBinaryDataRepr{Format: "base64", Data: value}
 	return json.Marshal(repr)
 }
 
@@ -101,7 +99,7 @@ var ErrInvalidBinaryDataFormat = errors.New("model: invalid binary data format")
 func (value *ArchivalBinaryData) UnmarshalJSON(raw []byte) error {
 	// handle the case where input is a literal null
 	if bytes.Equal(raw, []byte("null")) {
-		value.Value = nil
+		*value = nil
 		return nil
 	}
 
@@ -117,7 +115,7 @@ func (value *ArchivalBinaryData) UnmarshalJSON(raw []byte) error {
 	}
 
 	// we're good because Go uses base64 for []byte automatically
-	value.Value = repr.Data
+	*value = repr.Data
 	return nil
 }
 
