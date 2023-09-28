@@ -744,13 +744,13 @@ func TestNewRequestEntryList(t *testing.T) {
 		wantOut: []tracex.RequestEntry{{
 			Request: tracex.HTTPRequest{
 				HeadersList: []model.ArchivalHTTPHeader{{
-					model.ArchivalMaybeBinaryString("ContENt-tYPE"),
-					model.ArchivalMaybeBinaryString("text/plain"),
+					model.ArchivalScrubbedMaybeBinaryString("ContENt-tYPE"),
+					model.ArchivalScrubbedMaybeBinaryString("text/plain"),
 				}, {
-					model.ArchivalMaybeBinaryString("User-aGENT"),
-					model.ArchivalMaybeBinaryString("foo/1.0"),
+					model.ArchivalScrubbedMaybeBinaryString("User-aGENT"),
+					model.ArchivalScrubbedMaybeBinaryString("foo/1.0"),
 				}},
-				Headers: map[string]model.ArchivalMaybeBinaryString{
+				Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
 					"ContENt-tYPE": "text/plain",
 					"User-aGENT":   "foo/1.0",
 				},
@@ -773,7 +773,7 @@ func TestNewRequestEntryList(t *testing.T) {
 		wantOut: []tracex.RequestEntry{{
 			Request: tracex.HTTPRequest{
 				Method:      "GeT",
-				Headers:     make(map[string]model.ArchivalMaybeBinaryString),
+				Headers:     make(map[string]model.ArchivalScrubbedMaybeBinaryString),
 				HeadersList: []model.ArchivalHTTPHeader{},
 				URL:         "http://10.0.0.1/",
 			},
@@ -811,16 +811,16 @@ func TestNewHTTPResponse(t *testing.T) {
 			data: []byte("deadbeef"),
 		},
 		wantOut: tracex.HTTPResponse{
-			Body: model.ArchivalMaybeBinaryString("deadbeef"),
+			Body: model.ArchivalScrubbedMaybeBinaryString("deadbeef"),
 			Code: 200,
 			HeadersList: []model.ArchivalHTTPHeader{{
-				model.ArchivalMaybeBinaryString("Content-Type"),
-				model.ArchivalMaybeBinaryString("text/plain"),
+				model.ArchivalScrubbedMaybeBinaryString("Content-Type"),
+				model.ArchivalScrubbedMaybeBinaryString("text/plain"),
 			}, {
-				model.ArchivalMaybeBinaryString("User-Agent"),
-				model.ArchivalMaybeBinaryString("foo/1.0"),
+				model.ArchivalScrubbedMaybeBinaryString("User-Agent"),
+				model.ArchivalScrubbedMaybeBinaryString("foo/1.0"),
 			}},
-			Headers: map[string]model.ArchivalMaybeBinaryString{
+			Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
 				"Content-Type": "text/plain",
 				"User-Agent":   "foo/1.0",
 			},
@@ -831,10 +831,10 @@ func TestNewHTTPResponse(t *testing.T) {
 			resp: &http.Response{StatusCode: 200},
 		},
 		wantOut: tracex.HTTPResponse{
-			Body:        model.ArchivalMaybeBinaryString(""),
+			Body:        model.ArchivalScrubbedMaybeBinaryString(""),
 			Code:        200,
 			HeadersList: []model.ArchivalHTTPHeader{},
-			Headers:     map[string]model.ArchivalMaybeBinaryString{},
+			Headers:     map[string]model.ArchivalScrubbedMaybeBinaryString{},
 		},
 	}}
 	for _, tt := range tests {

@@ -118,7 +118,7 @@ func newRequestList(begin time.Time, events []Event) (out []RequestEntry) {
 			entry.Response.HeadersList = model.ArchivalNewHTTPHeadersList(ev.HTTPResponseHeaders)
 			entry.Response.Code = int64(ev.HTTPStatusCode)
 			entry.Response.Locations = ev.HTTPResponseHeaders.Values("Location")
-			entry.Response.Body = model.ArchivalMaybeBinaryString(ev.HTTPResponseBody)
+			entry.Response.Body = model.ArchivalScrubbedMaybeBinaryString(ev.HTTPResponseBody)
 			entry.Response.BodyIsTruncated = ev.HTTPResponseBodyIsTruncated
 			entry.Failure = ev.Err.ToFailure()
 			out = append(out, entry)
