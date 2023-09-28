@@ -1768,5 +1768,176 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 
 // This test ensures that ArchivalNetworkEvent is WAI
 func TestArchivalNetworkEvent(t *testing.T) {
-	t.Skip("not implemented")
+
+	// This test ensures that we correctly serialize to JSON.
+	t.Run("MarshalJSON", func(t *testing.T) {
+		// testcase is a test case defined by this function
+		type testcase struct {
+			// name is the name of the test case
+			name string
+
+			// input is the input struct
+			input model.ArchivalNetworkEvent
+
+			// expectErr is the error we expect to see or nil
+			expectErr error
+
+			// expectData is the data we expect to see
+			expectData []byte
+		}
+
+		cases := []testcase{{
+			name: "serialization of a successful network event",
+			input: model.ArchivalNetworkEvent{
+				Address:       "8.8.8.8:443",
+				Failure:       nil,
+				NumBytes:      32768,
+				Operation:     "read",
+				Proto:         "tcp",
+				T0:            1.1,
+				T:             1.55,
+				TransactionID: 77,
+				Tags:          []string{"net"},
+			},
+			expectErr:  nil,
+			expectData: []byte(`{"address":"8.8.8.8:443","failure":null,"num_bytes":32768,"operation":"read","proto":"tcp","t0":1.1,"t":1.55,"transaction_id":77,"tags":["net"]}`),
+		}, {
+			name: "serialization of a failed network event",
+			input: model.ArchivalNetworkEvent{
+				Address: "8.8.8.8:443",
+				Failure: (func() *string {
+					s := netxlite.FailureGenericTimeoutError
+					return &s
+				})(),
+				NumBytes:      0,
+				Operation:     "read",
+				Proto:         "tcp",
+				T0:            1.1,
+				T:             7,
+				TransactionID: 144,
+				Tags:          []string{"net"},
+			},
+			expectErr:  nil,
+			expectData: []byte(`{"address":"8.8.8.8:443","failure":"generic_timeout_error","operation":"read","proto":"tcp","t0":1.1,"t":7,"transaction_id":144,"tags":["net"]}`),
+		}}
+
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// serialize to JSON
+				data, err := json.Marshal(tc.input)
+
+				t.Log("got this error", err)
+				t.Log("got this raw data", data)
+				t.Logf("converted to string: %s", string(data))
+
+				// handle errors
+				switch {
+				case err == nil && tc.expectErr != nil:
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err != nil && tc.expectErr == nil:
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err != nil && tc.expectErr != nil:
+					if err.Error() != tc.expectErr.Error() {
+						t.Fatal("expected", tc.expectErr, "got", err)
+					}
+
+				case err == nil && tc.expectErr == nil:
+					// all good--fallthrough
+				}
+
+				// make sure the serialization is OK
+				if diff := cmp.Diff(tc.expectData, data); diff != "" {
+					t.Fatal(diff)
+				}
+			})
+		}
+	})
+
+	// This test ensures that we can unmarshal from the JSON representation
+	t.Run("UnmarshalJSON", func(t *testing.T) {
+		// testcase is a test case defined by this function
+		type testcase struct {
+			// name is the name of the test case
+			name string
+
+			// input is the binary input
+			input []byte
+
+			// expectErr is the error we expect to see or nil
+			expectErr error
+
+			// expectStruct is the struct we expect to see
+			expectStruct model.ArchivalNetworkEvent
+		}
+
+		cases := []testcase{{
+			name:      "deserialization of a successful network event",
+			expectErr: nil,
+			input:     []byte(`{"address":"8.8.8.8:443","failure":null,"num_bytes":32768,"operation":"read","proto":"tcp","t0":1.1,"t":1.55,"transaction_id":77,"tags":["net"]}`),
+			expectStruct: model.ArchivalNetworkEvent{
+				Address:       "8.8.8.8:443",
+				Failure:       nil,
+				NumBytes:      32768,
+				Operation:     "read",
+				Proto:         "tcp",
+				T0:            1.1,
+				T:             1.55,
+				TransactionID: 77,
+				Tags:          []string{"net"},
+			},
+		}, {
+			name:      "deserialization of a failed network event",
+			input:     []byte(`{"address":"8.8.8.8:443","failure":"generic_timeout_error","operation":"read","proto":"tcp","t0":1.1,"t":7,"transaction_id":144,"tags":["net"]}`),
+			expectErr: nil,
+			expectStruct: model.ArchivalNetworkEvent{
+				Address: "8.8.8.8:443",
+				Failure: (func() *string {
+					s := netxlite.FailureGenericTimeoutError
+					return &s
+				})(),
+				NumBytes:      0,
+				Operation:     "read",
+				Proto:         "tcp",
+				T0:            1.1,
+				T:             7,
+				TransactionID: 144,
+				Tags:          []string{"net"},
+			},
+		}}
+
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// parse the JSON
+				var data model.ArchivalNetworkEvent
+				err := json.Unmarshal(tc.input, &data)
+
+				t.Log("got this error", err)
+				t.Logf("got this struct %+v", data)
+
+				// handle errors
+				switch {
+				case err == nil && tc.expectErr != nil:
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err != nil && tc.expectErr == nil:
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err != nil && tc.expectErr != nil:
+					if err.Error() != tc.expectErr.Error() {
+						t.Fatal("expected", tc.expectErr, "got", err)
+					}
+
+				case err == nil && tc.expectErr == nil:
+					// all good--fallthrough
+				}
+
+				// make sure the deserialization is OK
+				if diff := cmp.Diff(tc.expectStruct, data); diff != "" {
+					t.Fatal(diff)
+				}
+			})
+		}
+	})
 }
