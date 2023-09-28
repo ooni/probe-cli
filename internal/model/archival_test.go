@@ -1,9 +1,12 @@
 package model_test
 
 import (
+	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
@@ -36,6 +39,259 @@ var archivalBinaryInput = []uint8{
 
 // we use this value below to test we can handle binary data
 var archivalEncodedBinaryInput = []byte(`{"data":"V+V5+6a7DbzOvaeguqR4eBJZ7mg5pAeYxT68Vcv+NDx+G1qzIp3BLW7KW/EQJUceROItYAjqsArMBUig9Xg48Ns/nZ8lb4kAlpOvQ6xNyawT2yK+en3ZJKJSadiJwdFXqgQrotixGfbVETm7gM+G+V+djKv1xXQkOqLUQE7XEB8=","format":"base64"}`)
+
+func TestArchivalBinaryData(t *testing.T) {
+	// This test verifies that we correctly serialize binary data to JSON by
+	// producing null | {"format":"base64","data":"<base64>"}
+	t.Run("MarshalJSON", func(t *testing.T) {
+		// testcase is a test case defined by this function
+		type testcase struct {
+			// name is the name of the test case
+			name string
+
+			// input is the binary input
+			input model.ArchivalBinaryData
+
+			// expectErr is the error we expect to see or nil
+			expectErr error
+
+			// expectData is the data we expect to see
+			expectData []byte
+		}
+
+		cases := []testcase{{
+			name:       "with nil .Value",
+			input:      model.ArchivalBinaryData{Value: nil},
+			expectErr:  nil,
+			expectData: []byte("null"),
+		}, {
+			name:       "with zero length .Value",
+			input:      model.ArchivalBinaryData{Value: []byte{}},
+			expectErr:  nil,
+			expectData: []byte("null"),
+		}, {
+			name:       "with .Value being a simple binary string",
+			input:      model.ArchivalBinaryData{Value: []byte("Elliot")},
+			expectErr:  nil,
+			expectData: []byte(`{"data":"RWxsaW90","format":"base64"}`),
+		}, {
+			name:       "with .Value being a long binary string",
+			input:      model.ArchivalBinaryData{Value: archivalBinaryInput},
+			expectErr:  nil,
+			expectData: archivalEncodedBinaryInput,
+		}}
+
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// serialize to JSON
+				output, err := json.Marshal(tc.input)
+
+				t.Log("got this error", err)
+				t.Log("got this binary data", output)
+				t.Logf("converted to string: %s", string(output))
+
+				// handle errors
+				switch {
+				case err == nil && tc.expectErr != nil:
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err != nil && tc.expectErr == nil:
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err != nil && tc.expectErr != nil:
+					if err.Error() != tc.expectErr.Error() {
+						t.Fatal("expected", tc.expectErr, "got", err)
+					}
+
+				case err == nil && tc.expectErr == nil:
+					// all good--fallthrough
+				}
+
+				if diff := cmp.Diff(tc.expectData, output); diff != "" {
+					t.Fatal(diff)
+				}
+			})
+		}
+	})
+
+	// This test verifies that we correctly parse binary data to JSON by
+	// reading from null | {"format":"base64","data":"<base64>"}
+	t.Run("UnmarshalJSON", func(t *testing.T) {
+		// testcase is a test case defined by this function
+		type testcase struct {
+			// name is the name of the test case
+			name string
+
+			// input is the binary input
+			input []byte
+
+			// expectErr is the error we expect to see or nil
+			expectErr error
+
+			// expectData is the data we expect to see
+			expectData model.ArchivalBinaryData
+		}
+
+		cases := []testcase{{
+			name:       "with nil input array",
+			input:      nil,
+			expectErr:  errors.New("unexpected end of JSON input"),
+			expectData: model.ArchivalBinaryData{Value: nil},
+		}, {
+			name:       "with zero-length input array",
+			input:      []byte{},
+			expectErr:  errors.New("unexpected end of JSON input"),
+			expectData: model.ArchivalBinaryData{Value: nil},
+		}, {
+			name:       "with binary input that is not a complete JSON",
+			input:      []byte("{"),
+			expectErr:  errors.New("unexpected end of JSON input"),
+			expectData: model.ArchivalBinaryData{Value: nil},
+		}, {
+			name:       "with ~random binary data as input",
+			input:      archivalBinaryInput,
+			expectErr:  errors.New("invalid character 'W' looking for beginning of value"),
+			expectData: model.ArchivalBinaryData{},
+		}, {
+			name:       "with valid JSON of the wrong type (array)",
+			input:      []byte("[]"),
+			expectErr:  errors.New("json: cannot unmarshal array into Go value of type model.archivalBinaryDataRepr"),
+			expectData: model.ArchivalBinaryData{},
+		}, {
+			name:       "with valid JSON of the wrong type (number)",
+			input:      []byte("1.17"),
+			expectErr:  errors.New("json: cannot unmarshal number into Go value of type model.archivalBinaryDataRepr"),
+			expectData: model.ArchivalBinaryData{},
+		}, {
+			name:       "with input being the liternal null",
+			input:      []byte(`null`),
+			expectErr:  nil,
+			expectData: model.ArchivalBinaryData{Value: nil},
+		}, {
+			name:       "with empty JSON object",
+			input:      []byte("{}"),
+			expectErr:  errors.New("model: invalid binary data format: ''"),
+			expectData: model.ArchivalBinaryData{},
+		}, {
+			name:       "with correct data model but invalid format",
+			input:      []byte(`{"data":"","format":"antani"}`),
+			expectErr:  errors.New("model: invalid binary data format: 'antani'"),
+			expectData: model.ArchivalBinaryData{},
+		}, {
+			name:       "with correct data model and format but invalid base64 string",
+			input:      []byte(`{"data":"x","format":"base64"}`),
+			expectErr:  errors.New("illegal base64 data at input byte 0"),
+			expectData: model.ArchivalBinaryData{},
+		}, {
+			name:       "with correct data model and format but empty base64 string",
+			input:      []byte(`{"data":"","format":"base64"}`),
+			expectErr:  nil,
+			expectData: model.ArchivalBinaryData{Value: []byte{}},
+		}, {
+			name:       "with the encoding of a simple binary string",
+			input:      []byte(`{"data":"RWxsaW90","format":"base64"}`),
+			expectErr:  nil,
+			expectData: model.ArchivalBinaryData{Value: []byte("Elliot")},
+		}, {
+			name:       "with the encoding of a complex binary string",
+			input:      archivalEncodedBinaryInput,
+			expectErr:  nil,
+			expectData: model.ArchivalBinaryData{Value: archivalBinaryInput},
+		}}
+
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// unmarshal the raw input into an ArchivalBinaryData type
+				var abd model.ArchivalBinaryData
+				err := json.Unmarshal(tc.input, &abd)
+
+				t.Log("got this error", err)
+				t.Log("got this .Value filed", abd.Value)
+				t.Logf("converted to string: %s", string(abd.Value))
+
+				// handle errors
+				switch {
+				case err == nil && tc.expectErr != nil:
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err != nil && tc.expectErr == nil:
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err != nil && tc.expectErr != nil:
+					if err.Error() != tc.expectErr.Error() {
+						t.Fatal("expected", tc.expectErr, "got", err)
+					}
+
+				case err == nil && tc.expectErr == nil:
+					// all good--fallthrough
+				}
+
+				if diff := cmp.Diff(tc.expectData, abd); diff != "" {
+					t.Fatal(diff)
+				}
+			})
+		}
+	})
+
+	// This test verifies that we correctly round trip through JSON
+	t.Run("MarshalJSON then UnmarshalJSON", func(t *testing.T) {
+		// testcase is a test case defined by this function
+		type testcase struct {
+			// name is the name of the test case
+			name string
+
+			// input is the binary input
+			input model.ArchivalBinaryData
+		}
+
+		cases := []testcase{{
+			name:  "with nil .Value",
+			input: model.ArchivalBinaryData{Value: nil},
+		}, {
+			name:  "with zero length .Value",
+			input: model.ArchivalBinaryData{Value: []byte{}},
+		}, {
+			name:  "with .Value being a simple binary string",
+			input: model.ArchivalBinaryData{Value: []byte("Elliot")},
+		}, {
+			name:  "with .Value being a long binary string",
+			input: model.ArchivalBinaryData{Value: archivalBinaryInput},
+		}}
+
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// serialize to JSON
+				output, err := json.Marshal(tc.input)
+
+				t.Log("got this error", err)
+				t.Log("got this binary data", output)
+				t.Logf("converted to string: %s", string(output))
+
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				// parse from JSON
+				var abc model.ArchivalBinaryData
+				if err := json.Unmarshal(output, &abc); err != nil {
+					t.Fatal(err)
+				}
+
+				// make sure we round tripped
+				//
+				// Note: the round trip is not perfect because the zero length value,
+				// which originally is []byte{}, unmarshals to a nil value.
+				//
+				// Because the two are ~equivalent in Go most intents and purposes
+				// and the wire representation does not change, this is OK(TM)
+				diffOptions := []cmp.Option{cmpopts.EquateEmpty()}
+				if diff := cmp.Diff(tc.input, abc, diffOptions...); diff != "" {
+					t.Fatal(diff)
+				}
+			})
+		}
+	})
+}
 
 func TestMaybeBinaryValue(t *testing.T) {
 	t.Run("MarshalJSON", func(t *testing.T) {

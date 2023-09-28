@@ -1,12 +1,5 @@
 package model
 
-import (
-	"encoding/base64"
-	"encoding/json"
-	"errors"
-	"unicode/utf8"
-)
-
 //
 // Archival format for individual measurement results
 // such as TCP connect, TLS handshake, DNS lookup.
@@ -16,6 +9,15 @@ import (
 //
 // See https://github.com/ooni/spec/tree/master/data-formats.
 //
+
+import (
+	"bytes"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"unicode/utf8"
+)
 
 //
 // Data format extension specification
@@ -59,6 +61,66 @@ var (
 // Base types
 //
 
+// ArchivalBinaryData is a wrapper for bytes that serializes the enclosed
+// data using the specific ooni/spec data format for binary data.
+//
+// See https://github.com/ooni/spec/blob/master/data-formats/df-001-httpt.md#maybebinarydata.
+type ArchivalBinaryData struct {
+	Value []byte
+}
+
+// archivalBinaryDataRepr is the wire representation of binary data according to
+// https://github.com/ooni/spec/blob/master/data-formats/df-001-httpt.md#maybebinarydata.
+type archivalBinaryDataRepr struct {
+	Data   []byte `json:"data"`
+	Format string `json:"format"`
+}
+
+var (
+	_ json.Marshaler   = ArchivalBinaryData{}
+	_ json.Unmarshaler = &ArchivalBinaryData{}
+)
+
+// MarshalJSON implements json.Marshaler.
+func (value ArchivalBinaryData) MarshalJSON() ([]byte, error) {
+	// special case: we need to marshal the empty data as the null value
+	if len(value.Value) <= 0 {
+		return json.Marshal(nil)
+	}
+
+	// construct and serialize the OONI representation
+	repr := &archivalBinaryDataRepr{Format: "base64", Data: value.Value}
+	return json.Marshal(repr)
+}
+
+// ErrInvalidBinaryDataFormat is the format returned when marshaling and
+// unmarshaling binary data and the value of "format" is unknown.
+var ErrInvalidBinaryDataFormat = errors.New("model: invalid binary data format")
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (value *ArchivalBinaryData) UnmarshalJSON(raw []byte) error {
+	// handle the case where input is a literal null
+	if bytes.Equal(raw, []byte("null")) {
+		value.Value = nil
+		return nil
+	}
+
+	// attempt to unmarshal into the archival representation
+	var repr archivalBinaryDataRepr
+	if err := json.Unmarshal(raw, &repr); err != nil {
+		return err
+	}
+
+	// make sure the data format is "base64"
+	if repr.Format != "base64" {
+		return fmt.Errorf("%w: '%s'", ErrInvalidBinaryDataFormat, repr.Format)
+	}
+
+	// we're good because Go uses base64 for []byte automatically
+	value.Value = repr.Data
+	return nil
+}
+
 // ArchivalMaybeBinaryData is a possibly binary string. We use this helper class
 // to define a custom JSON encoder that allows us to choose the proper
 // representation depending on whether the Value field is valid UTF-8 or not.
@@ -72,9 +134,12 @@ type ArchivalMaybeBinaryData struct {
 // says that UTF-8 content is represented as string and non-UTF-8 content is
 // instead represented using `{"format":"base64","data":"..."}`.
 func (hb ArchivalMaybeBinaryData) MarshalJSON() ([]byte, error) {
+	// if we can serialize as UTF-8 string, do that
 	if utf8.ValidString(hb.Value) {
 		return json.Marshal(hb.Value)
 	}
+
+	// otherwise fallback to the ooni/spec representation for binary data
 	er := make(map[string]string)
 	er["format"] = "base64"
 	er["data"] = base64.StdEncoding.EncodeToString([]byte(hb.Value))
@@ -242,6 +307,8 @@ type ArchivalHTTPResponse struct {
 // ArchivalHTTPBody is an HTTP body. As an implementation note, this type must
 // be an alias for the MaybeBinaryValue type, otherwise the specific serialisation
 // mechanism implemented by MaybeBinaryValue is not working.
+//
+// QUIRK: it's quite fragile we must use an alias here--more robust solution?
 type ArchivalHTTPBody = ArchivalMaybeBinaryData
 
 // ArchivalHTTPHeader is a single HTTP header.
