@@ -8,6 +8,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
@@ -206,7 +207,7 @@ func TestArchivalBinaryData(t *testing.T) {
 				err := json.Unmarshal(tc.input, &abd)
 
 				t.Log("got this error", err)
-				t.Log("got this .Value filed", abd.Value)
+				t.Log("got this .Value field", abd.Value)
 				t.Logf("converted to string: %s", string(abd.Value))
 
 				// handle errors
@@ -564,4 +565,210 @@ func TestHTTPBody(t *testing.T) {
 	if diff := cmp.Diff(body, data); diff != "" {
 		t.Fatal(diff)
 	}
+}
+
+// This test ensures that ArchivalTLSOrQUICHandshakeResult is WAI
+func TestArchivalTLSOrQUICHandshakeResult(t *testing.T) {
+
+	// This test ensures that we correctly serialize to JSON.
+	t.Run("MarshalJSON", func(t *testing.T) {
+		// testcase is a test case defined by this function
+		type testcase struct {
+			// name is the name of the test case
+			name string
+
+			// input is the input struct
+			input model.ArchivalTLSOrQUICHandshakeResult
+
+			// expectErr is the error we expect to see or nil
+			expectErr error
+
+			// expectData is the data we expect to see
+			expectData []byte
+		}
+
+		cases := []testcase{{
+			name: "serialization of a successful TLS handshake",
+			input: model.ArchivalTLSOrQUICHandshakeResult{
+				Network:            "tcp",
+				Address:            "8.8.8.8:443",
+				CipherSuite:        "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+				Failure:            nil,
+				SoError:            nil,
+				NegotiatedProtocol: "http/1.1",
+				NoTLSVerify:        false,
+				PeerCertificates: []model.ArchivalMaybeBinaryData{{
+					Value: string(archivalBinaryInput),
+				}},
+				ServerName:    "dns.google",
+				T0:            1.0,
+				T:             2.0,
+				Tags:          []string{"tls"},
+				TLSVersion:    "TLSv1.3",
+				TransactionID: 14,
+			},
+			expectErr:  nil,
+			expectData: []byte(`{"network":"tcp","address":"8.8.8.8:443","cipher_suite":"TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256","failure":null,"negotiated_protocol":"http/1.1","no_tls_verify":false,"peer_certificates":[{"data":"V+V5+6a7DbzOvaeguqR4eBJZ7mg5pAeYxT68Vcv+NDx+G1qzIp3BLW7KW/EQJUceROItYAjqsArMBUig9Xg48Ns/nZ8lb4kAlpOvQ6xNyawT2yK+en3ZJKJSadiJwdFXqgQrotixGfbVETm7gM+G+V+djKv1xXQkOqLUQE7XEB8=","format":"base64"}],"server_name":"dns.google","t0":1,"t":2,"tags":["tls"],"tls_version":"TLSv1.3","transaction_id":14}`),
+		}, {
+			name: "serialization of a failed TLS handshake",
+			input: model.ArchivalTLSOrQUICHandshakeResult{
+				Network:     "tcp",
+				Address:     "8.8.8.8:443",
+				CipherSuite: "",
+				Failure: (func() *string {
+					s := netxlite.FailureConnectionReset
+					return &s
+				})(),
+				SoError: (func() *string {
+					s := "connection reset by peer"
+					return &s
+				})(),
+				NegotiatedProtocol: "",
+				NoTLSVerify:        false,
+				PeerCertificates:   []model.ArchivalMaybeBinaryData{},
+				ServerName:         "dns.google",
+				T0:                 1.0,
+				T:                  2.0,
+				Tags:               []string{"tls"},
+				TLSVersion:         "",
+				TransactionID:      4,
+			},
+			expectErr:  nil,
+			expectData: []byte(`{"network":"tcp","address":"8.8.8.8:443","cipher_suite":"","failure":"connection_reset","so_error":"connection reset by peer","negotiated_protocol":"","no_tls_verify":false,"peer_certificates":[],"server_name":"dns.google","t0":1,"t":2,"tags":["tls"],"tls_version":"","transaction_id":4}`),
+		}}
+
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// serialize to JSON
+				data, err := json.Marshal(tc.input)
+
+				t.Log("got this error", err)
+				t.Log("got this raw data", data)
+				t.Logf("converted to string: %s", string(data))
+
+				// handle errors
+				switch {
+				case err == nil && tc.expectErr != nil:
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err != nil && tc.expectErr == nil:
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err != nil && tc.expectErr != nil:
+					if err.Error() != tc.expectErr.Error() {
+						t.Fatal("expected", tc.expectErr, "got", err)
+					}
+
+				case err == nil && tc.expectErr == nil:
+					// all good--fallthrough
+				}
+
+				// make sure the serialization is OK
+				if diff := cmp.Diff(tc.expectData, data); diff != "" {
+					t.Fatal(diff)
+				}
+			})
+		}
+	})
+
+	// This test ensures that we can unmarshal from the JSON representation
+	t.Run("UnmarshalJSON", func(t *testing.T) {
+		// testcase is a test case defined by this function
+		type testcase struct {
+			// name is the name of the test case
+			name string
+
+			// input is the binary input
+			input []byte
+
+			// expectErr is the error we expect to see or nil
+			expectErr error
+
+			// expectStruct is the struct we expect to see
+			expectStruct model.ArchivalTLSOrQUICHandshakeResult
+		}
+
+		cases := []testcase{{
+			name:      "deserialization of a successful TLS handshake",
+			expectErr: nil,
+			input:     []byte(`{"network":"tcp","address":"8.8.8.8:443","cipher_suite":"TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256","failure":null,"negotiated_protocol":"http/1.1","no_tls_verify":false,"peer_certificates":[{"data":"V+V5+6a7DbzOvaeguqR4eBJZ7mg5pAeYxT68Vcv+NDx+G1qzIp3BLW7KW/EQJUceROItYAjqsArMBUig9Xg48Ns/nZ8lb4kAlpOvQ6xNyawT2yK+en3ZJKJSadiJwdFXqgQrotixGfbVETm7gM+G+V+djKv1xXQkOqLUQE7XEB8=","format":"base64"}],"server_name":"dns.google","t0":1,"t":2,"tags":["tls"],"tls_version":"TLSv1.3","transaction_id":14}`),
+			expectStruct: model.ArchivalTLSOrQUICHandshakeResult{
+				Network:            "tcp",
+				Address:            "8.8.8.8:443",
+				CipherSuite:        "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+				Failure:            nil,
+				SoError:            nil,
+				NegotiatedProtocol: "http/1.1",
+				NoTLSVerify:        false,
+				PeerCertificates: []model.ArchivalMaybeBinaryData{{
+					Value: string(archivalBinaryInput),
+				}},
+				ServerName:    "dns.google",
+				T0:            1.0,
+				T:             2.0,
+				Tags:          []string{"tls"},
+				TLSVersion:    "TLSv1.3",
+				TransactionID: 14,
+			},
+		}, {
+			name:      "deserialization of a failed TLS handshake",
+			input:     []byte(`{"network":"tcp","address":"8.8.8.8:443","cipher_suite":"","failure":"connection_reset","so_error":"connection reset by peer","negotiated_protocol":"","no_tls_verify":false,"peer_certificates":[],"server_name":"dns.google","t0":1,"t":2,"tags":["tls"],"tls_version":"","transaction_id":4}`),
+			expectErr: nil,
+			expectStruct: model.ArchivalTLSOrQUICHandshakeResult{
+				Network:     "tcp",
+				Address:     "8.8.8.8:443",
+				CipherSuite: "",
+				Failure: (func() *string {
+					s := netxlite.FailureConnectionReset
+					return &s
+				})(),
+				SoError: (func() *string {
+					s := "connection reset by peer"
+					return &s
+				})(),
+				NegotiatedProtocol: "",
+				NoTLSVerify:        false,
+				PeerCertificates:   []model.ArchivalMaybeBinaryData{},
+				ServerName:         "dns.google",
+				T0:                 1.0,
+				T:                  2.0,
+				Tags:               []string{"tls"},
+				TLSVersion:         "",
+				TransactionID:      4,
+			},
+		}}
+
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// parse the JSON
+				var data model.ArchivalTLSOrQUICHandshakeResult
+				err := json.Unmarshal(tc.input, &data)
+
+				t.Log("got this error", err)
+				t.Logf("got this struct %+v", data)
+
+				// handle errors
+				switch {
+				case err == nil && tc.expectErr != nil:
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err != nil && tc.expectErr == nil:
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err != nil && tc.expectErr != nil:
+					if err.Error() != tc.expectErr.Error() {
+						t.Fatal("expected", tc.expectErr, "got", err)
+					}
+
+				case err == nil && tc.expectErr == nil:
+					// all good--fallthrough
+				}
+
+				// make sure the deserialization is OK
+				if diff := cmp.Diff(tc.expectStruct, data); diff != "" {
+					t.Fatal(diff)
+				}
+			})
+		}
+	})
 }
