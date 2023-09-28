@@ -303,7 +303,7 @@ func TestArchivalMaybeBinaryString(t *testing.T) {
 			// name is the name of the test case
 			name string
 
-			// input is the binary input
+			// input is the possibly-binary input
 			input model.ArchivalMaybeBinaryString
 
 			// expectErr is the error we expect to see or nil
@@ -460,7 +460,7 @@ func TestArchivalMaybeBinaryString(t *testing.T) {
 				err := json.Unmarshal(tc.input, &abd)
 
 				t.Log("got this error", err)
-				t.Log("got this []byte-like value", abd)
+				t.Log("got this maybe-binary-string value", abd)
 				t.Logf("converted to string: %s", string(abd))
 
 				// handle errors
@@ -494,7 +494,7 @@ func TestArchivalMaybeBinaryString(t *testing.T) {
 			// name is the name of the test case
 			name string
 
-			// input is the binary input
+			// input is the maybe-binary input
 			input model.ArchivalMaybeBinaryString
 		}
 
@@ -529,14 +529,7 @@ func TestArchivalMaybeBinaryString(t *testing.T) {
 				}
 
 				// make sure we round tripped
-				//
-				// Note: the round trip is not perfect because the zero length value,
-				// which originally is []byte{}, unmarshals to a nil value.
-				//
-				// Because the two are ~equivalent in Go most intents and purposes
-				// and the wire representation does not change, this is OK(TM)
-				diffOptions := []cmp.Option{cmpopts.EquateEmpty()}
-				if diff := cmp.Diff(tc.input, abc, diffOptions...); diff != "" {
+				if diff := cmp.Diff(tc.input, abc); diff != "" {
 					t.Fatal(diff)
 				}
 			})

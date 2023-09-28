@@ -119,7 +119,7 @@ func (value *ArchivalBinaryData) UnmarshalJSON(raw []byte) error {
 	return nil
 }
 
-// ArchivalMaybeBinaryString is a possibly binary string. When the string is valid UTF-8
+// ArchivalMaybeBinaryString is a possibly-binary string. When the string is valid UTF-8
 // we serialize it as itself. Otherwise, we use the binary data format defined by
 // https://github.com/ooni/spec/blob/master/data-formats/df-001-httpt.md#maybebinarydata
 type ArchivalMaybeBinaryString string
