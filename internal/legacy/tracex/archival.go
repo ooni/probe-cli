@@ -25,7 +25,6 @@ type (
 	DNSQueryEntry    = model.ArchivalDNSLookupResult
 	DNSAnswerEntry   = model.ArchivalDNSAnswer
 	TLSHandshake     = model.ArchivalTLSOrQUICHandshakeResult
-	HTTPHeader       = model.ArchivalHTTPHeader
 	RequestEntry     = model.ArchivalHTTPRequestResult
 	HTTPRequest      = model.ArchivalHTTPRequest
 	HTTPResponse     = model.ArchivalHTTPResponse

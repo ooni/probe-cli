@@ -172,11 +172,9 @@ func TestNewRequestList(t *testing.T) {
 		want: []RequestEntry{{
 			Failure: NewFailure(io.EOF),
 			Request: HTTPRequest{
-				HeadersList: []HTTPHeader{{
-					Key: "User-Agent",
-					Value: MaybeBinaryValue{
-						Value: "miniooni/0.1.0-dev",
-					},
+				HeadersList: []model.ArchivalHTTPHeader{{
+					model.ArchivalMaybeBinaryString("User-Agent"),
+					model.ArchivalMaybeBinaryString("miniooni/0.1.0-dev"),
 				}},
 				Headers: map[string]model.ArchivalMaybeBinaryString{
 					"User-Agent": "miniooni/0.1.0-dev",
@@ -185,18 +183,16 @@ func TestNewRequestList(t *testing.T) {
 				URL:    "https://www.example.com/result",
 			},
 			Response: HTTPResponse{
-				HeadersList: []HTTPHeader{},
+				HeadersList: []model.ArchivalHTTPHeader{},
 				Headers:     make(map[string]model.ArchivalMaybeBinaryString),
 			},
 			T: 0.02,
 		}, {
 			Request: HTTPRequest{
 				Body: model.ArchivalMaybeBinaryString(""),
-				HeadersList: []HTTPHeader{{
-					Key: "User-Agent",
-					Value: MaybeBinaryValue{
-						Value: "miniooni/0.1.0-dev",
-					},
+				HeadersList: []model.ArchivalHTTPHeader{{
+					model.ArchivalMaybeBinaryString("User-Agent"),
+					model.ArchivalMaybeBinaryString("miniooni/0.1.0-dev"),
 				}},
 				Headers: map[string]model.ArchivalMaybeBinaryString{
 					"User-Agent": "miniooni/0.1.0-dev",
@@ -207,11 +203,9 @@ func TestNewRequestList(t *testing.T) {
 			Response: HTTPResponse{
 				Body: model.ArchivalMaybeBinaryString("{}"),
 				Code: 200,
-				HeadersList: []HTTPHeader{{
-					Key: "Server",
-					Value: MaybeBinaryValue{
-						Value: "miniooni/0.1.0-dev",
-					},
+				HeadersList: []model.ArchivalHTTPHeader{{
+					model.ArchivalMaybeBinaryString("Server"),
+					model.ArchivalMaybeBinaryString("miniooni/0.1.0-dev"),
 				}},
 				Headers: map[string]model.ArchivalMaybeBinaryString{
 					"Server": "miniooni/0.1.0-dev",
@@ -242,11 +236,9 @@ func TestNewRequestList(t *testing.T) {
 		},
 		want: []RequestEntry{{
 			Request: HTTPRequest{
-				HeadersList: []HTTPHeader{{
-					Key: "User-Agent",
-					Value: MaybeBinaryValue{
-						Value: "miniooni/0.1.0-dev",
-					},
+				HeadersList: []model.ArchivalHTTPHeader{{
+					model.ArchivalMaybeBinaryString("User-Agent"),
+					model.ArchivalMaybeBinaryString("miniooni/0.1.0-dev"),
 				}},
 				Headers: map[string]model.ArchivalMaybeBinaryString{
 					"User-Agent": "miniooni/0.1.0-dev",
@@ -256,21 +248,15 @@ func TestNewRequestList(t *testing.T) {
 			},
 			Response: HTTPResponse{
 				Code: 302,
-				HeadersList: []HTTPHeader{{
-					Key: "Location",
-					Value: MaybeBinaryValue{
-						Value: "https://x.example.com",
-					},
+				HeadersList: []model.ArchivalHTTPHeader{{
+					model.ArchivalMaybeBinaryString("Location"),
+					model.ArchivalMaybeBinaryString("https://x.example.com"),
 				}, {
-					Key: "Location",
-					Value: MaybeBinaryValue{
-						Value: "https://y.example.com",
-					},
+					model.ArchivalMaybeBinaryString("Location"),
+					model.ArchivalMaybeBinaryString("https://y.example.com"),
 				}, {
-					Key: "Server",
-					Value: MaybeBinaryValue{
-						Value: "miniooni/0.1.0-dev",
-					},
+					model.ArchivalMaybeBinaryString("Server"),
+					model.ArchivalMaybeBinaryString("miniooni/0.1.0-dev"),
 				}},
 				Headers: map[string]model.ArchivalMaybeBinaryString{
 					"Server":   "miniooni/0.1.0-dev",
