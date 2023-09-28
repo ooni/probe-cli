@@ -54,7 +54,8 @@ var scrubberPatterns = []*regexp.Regexp{
 
 var addressRegexp = regexp.MustCompile(addressPattern)
 
-func scrub(b []byte) []byte {
+// ScrubBytes scrubs bytes to remove references to IP endpoints.
+func ScrubBytes(b []byte) []byte {
 	scrubbedBytes := b
 	for _, pattern := range scrubberPatterns {
 		// this is a workaround since go does not yet support look ahead or look
@@ -66,8 +67,7 @@ func scrub(b []byte) []byte {
 	return scrubbedBytes
 }
 
-// Scrub sanitizes a string containing an error such that
-// any occurrence of IP endpoints is scrubbed.
-func Scrub(s string) string {
-	return string(scrub([]byte(s)))
+// ScrubString scrubs a string to remove references to IP endpoints.
+func ScrubString(s string) string {
+	return string(ScrubBytes([]byte(s)))
 }

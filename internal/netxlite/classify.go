@@ -76,7 +76,7 @@ func ClassifyGenericError(err error) string {
 	}
 
 	formatted := fmt.Sprintf("%s: %s", FailureUnknown, err.Error())
-	return scrubber.Scrub(formatted) // scrub IP addresses in the error
+	return scrubber.ScrubString(formatted) // scrub IP addresses in the error
 }
 
 // classifyWithStringSuffix is a subset of ClassifyGenericError that
