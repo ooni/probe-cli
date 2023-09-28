@@ -70,7 +70,7 @@ func TestArchivalBinaryData(t *testing.T) {
 			expectErr:  nil,
 			expectData: []byte("null"),
 		}, {
-			name:       "with .Value being simple binary string",
+			name:       "with .Value being a simple binary string",
 			input:      model.ArchivalBinaryData{Value: []byte("Elliot")},
 			expectErr:  nil,
 			expectData: []byte(`{"data":"RWxsaW90","format":"base64"}`),
@@ -115,7 +115,7 @@ func TestArchivalBinaryData(t *testing.T) {
 	})
 
 	// This test verifies that we correctly parse binary data to JSON by
-	// readeding from null | {"format":"base64","data":"<base64>"}
+	// reading from null | {"format":"base64","data":"<base64>"}
 	t.Run("UnmarshalJSON", func(t *testing.T) {
 		// testcase is a test case defined by this function
 		type testcase struct {
@@ -251,7 +251,7 @@ func TestArchivalBinaryData(t *testing.T) {
 			name:  "with zero length .Value",
 			input: model.ArchivalBinaryData{Value: []byte{}},
 		}, {
-			name:  "with .Value being simple binary string",
+			name:  "with .Value being a simple binary string",
 			input: model.ArchivalBinaryData{Value: []byte("Elliot")},
 		}, {
 			name:  "with .Value being a long binary string",
