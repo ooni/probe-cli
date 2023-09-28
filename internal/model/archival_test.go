@@ -294,6 +294,14 @@ func TestArchivalBinaryData(t *testing.T) {
 }
 
 func TestArchivalMaybeBinaryString(t *testing.T) {
+	t.Run("Supports assignment from a nil byte array", func(t *testing.T) {
+		var data []byte = nil // explicit
+		casted := model.ArchivalMaybeBinaryString(data)
+		if casted != "" {
+			t.Fatal("unexpected value")
+		}
+	})
+
 	// This test verifies that we correctly serialize a string to JSON by
 	// producing "" | {"format":"base64","data":"<base64>"}
 	t.Run("MarshalJSON", func(t *testing.T) {

@@ -52,7 +52,7 @@ func NewArchivalHTTPRequestResult(index int64, started time.Duration, network, a
 		ALPN:    alpn,
 		Failure: NewFailure(err),
 		Request: model.ArchivalHTTPRequest{
-			Body:            model.ArchivalMaybeBinaryData{},
+			Body:            model.ArchivalMaybeBinaryString(""),
 			BodyIsTruncated: false,
 			HeadersList:     newHTTPRequestHeaderList(req),
 			Headers:         newHTTPRequestHeaderMap(req),
@@ -62,7 +62,7 @@ func NewArchivalHTTPRequestResult(index int64, started time.Duration, network, a
 			URL:             httpRequestURL(req),
 		},
 		Response: model.ArchivalHTTPResponse{
-			Body:            httpResponseBody(body),
+			Body:            model.ArchivalMaybeBinaryString(body),
 			BodyIsTruncated: httpResponseBodyIsTruncated(body, maxRespBodySize),
 			Code:            httpResponseStatusCode(resp),
 			HeadersList:     newHTTPResponseHeaderList(resp),
@@ -108,14 +108,6 @@ func newHTTPRequestHeaderMap(req *http.Request) map[string]model.ArchivalMaybeBi
 func httpRequestURL(req *http.Request) (out string) {
 	if req != nil && req.URL != nil {
 		out = req.URL.String()
-	}
-	return
-}
-
-// httpResponseBody returns the response body, if possible, or an empty body.
-func httpResponseBody(body []byte) (out model.ArchivalMaybeBinaryData) {
-	if body != nil {
-		out.Value = string(body)
 	}
 	return
 }

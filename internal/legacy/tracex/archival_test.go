@@ -191,9 +191,7 @@ func TestNewRequestList(t *testing.T) {
 			T: 0.02,
 		}, {
 			Request: HTTPRequest{
-				Body: MaybeBinaryValue{
-					Value: "",
-				},
+				Body: model.ArchivalMaybeBinaryString(""),
 				HeadersList: []HTTPHeader{{
 					Key: "User-Agent",
 					Value: MaybeBinaryValue{
@@ -207,9 +205,7 @@ func TestNewRequestList(t *testing.T) {
 				URL:    "https://www.example.com/submit",
 			},
 			Response: HTTPResponse{
-				Body: MaybeBinaryValue{
-					Value: "{}",
-				},
+				Body: model.ArchivalMaybeBinaryString("{}"),
 				Code: 200,
 				HeadersList: []HTTPHeader{{
 					Key: "Server",
