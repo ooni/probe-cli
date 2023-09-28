@@ -1670,7 +1670,7 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 							model.ArchivalScrubbedMaybeBinaryString("2606:2800:220:1:248:1893:25c8:1946"),
 						}, {
 							model.ArchivalScrubbedMaybeBinaryString("AntaniV4Epnt"),
-							model.ArchivalScrubbedMaybeBinaryString("[130.192.91.211]:443"),
+							model.ArchivalScrubbedMaybeBinaryString("130.192.91.211:443"),
 						}, {
 							model.ArchivalScrubbedMaybeBinaryString("AntaniV6Epnt"),
 							model.ArchivalScrubbedMaybeBinaryString("[2606:2800:220:1:248:1893:25c8:1946]:5222"),
@@ -1712,7 +1712,7 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 							model.ArchivalScrubbedMaybeBinaryString("2606:2800:220:1:248:1893:25c8:1946"),
 						}, {
 							model.ArchivalScrubbedMaybeBinaryString("MascettiV4Epnt"),
-							model.ArchivalScrubbedMaybeBinaryString("[130.192.91.211]:443"),
+							model.ArchivalScrubbedMaybeBinaryString("130.192.91.211:443"),
 						}, {
 							model.ArchivalScrubbedMaybeBinaryString("MascettiV6Epnt"),
 							model.ArchivalScrubbedMaybeBinaryString("[2606:2800:220:1:248:1893:25c8:1946]:5222"),
@@ -1733,7 +1733,7 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 					TransactionID: 5,
 				},
 				expectErr:  nil,
-				expectData: []byte(`{"network":"tcp","address":"[2606:2800:220:1:248:1893:25c8:1946]:443","alpn":"h2","failure":null,"request":{"body":"","body_is_truncated":false,"headers_list":[["Accept","text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"],["User-Agent","miniooni/0.1.0"],["AntaniV4","[scrubbed]"],["AntaniV6","[scrubbed]"],["AntaniV4Epnt","[[scrubbed]]:443"],["AntaniV6Epnt","[scrubbed]"]],"headers":{"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","AntaniV4":"[scrubbed]","AntaniV4Epnt":"[scrubbed]","AntaniV6":"[scrubbed]","AntaniV6Epnt":"[scrubbed]","User-Agent":"miniooni/0.1.0"},"method":"GET","tor":{"exit_ip":null,"exit_name":null,"is_tor":false},"x_transport":"tcp","url":"https://www.example.com/"},"response":{"body":"\u003cHTML\u003e\u003cBODY\u003eYour address is [scrubbed] and [scrubbed] and you have endpoints [scrubbed] and [scrubbed]. You're welcome.\u003c/BODY\u003e\u003c/HTML\u003e","body_is_truncated":false,"code":200,"headers_list":[["Age","131833"],["Server","Apache"],["MascettiV4","[scrubbed]"],["MascettiV6","[scrubbed]"],["MascettiV4Epnt","[[scrubbed]]:443"],["MascettiV6Epnt","[scrubbed]"]],"headers":{"Age":"131833","MascettiV4":"[scrubbed]","MascettiV4Epnt":"[scrubbed]","MascettiV6":"[scrubbed]","MascettiV6Epnt":"[scrubbed]","Server":"Apache"}},"t0":0.7,"t":1.33,"tags":["http"],"transaction_id":5}`),
+				expectData: []byte(`{"network":"tcp","address":"[2606:2800:220:1:248:1893:25c8:1946]:443","alpn":"h2","failure":null,"request":{"body":"","body_is_truncated":false,"headers_list":[["Accept","text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"],["User-Agent","miniooni/0.1.0"],["AntaniV4","[scrubbed]"],["AntaniV6","[scrubbed]"],["AntaniV4Epnt","[scrubbed]"],["AntaniV6Epnt","[scrubbed]"]],"headers":{"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","AntaniV4":"[scrubbed]","AntaniV4Epnt":"[scrubbed]","AntaniV6":"[scrubbed]","AntaniV6Epnt":"[scrubbed]","User-Agent":"miniooni/0.1.0"},"method":"GET","tor":{"exit_ip":null,"exit_name":null,"is_tor":false},"x_transport":"tcp","url":"https://www.example.com/"},"response":{"body":"\u003cHTML\u003e\u003cBODY\u003eYour address is [scrubbed] and [scrubbed] and you have endpoints [scrubbed] and [scrubbed]. You're welcome.\u003c/BODY\u003e\u003c/HTML\u003e","body_is_truncated":false,"code":200,"headers_list":[["Age","131833"],["Server","Apache"],["MascettiV4","[scrubbed]"],["MascettiV6","[scrubbed]"],["MascettiV4Epnt","[scrubbed]"],["MascettiV6Epnt","[scrubbed]"]],"headers":{"Age":"131833","MascettiV4":"[scrubbed]","MascettiV4Epnt":"[scrubbed]","MascettiV6":"[scrubbed]","MascettiV6Epnt":"[scrubbed]","Server":"Apache"}},"t0":0.7,"t":1.33,"tags":["http"],"transaction_id":5}`),
 			},
 		}
 
