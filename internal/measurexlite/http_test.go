@@ -58,7 +58,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 			ALPN:    "",
 			Failure: nil,
 			Request: model.ArchivalHTTPRequest{
-				Body:            model.ArchivalMaybeBinaryData{},
+				Body:            model.ArchivalMaybeBinaryString(""),
 				BodyIsTruncated: false,
 				HeadersList:     []model.ArchivalHTTPHeader{},
 				Headers:         map[string]model.ArchivalMaybeBinaryData{},
@@ -68,7 +68,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 				URL:             "",
 			},
 			Response: model.ArchivalHTTPResponse{
-				Body:            model.ArchivalMaybeBinaryData{},
+				Body:            model.ArchivalMaybeBinaryString(""),
 				BodyIsTruncated: false,
 				Code:            0,
 				HeadersList:     []model.ArchivalHTTPHeader{},
@@ -117,7 +117,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 				return &s
 			}(),
 			Request: model.ArchivalHTTPRequest{
-				Body:            model.ArchivalMaybeBinaryData{},
+				Body:            model.ArchivalMaybeBinaryString(""),
 				BodyIsTruncated: false,
 				HeadersList: []model.ArchivalHTTPHeader{{
 					Key: "Accept",
@@ -140,7 +140,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 				URL:       "http://dns.google/",
 			},
 			Response: model.ArchivalHTTPResponse{
-				Body:            model.ArchivalMaybeBinaryData{},
+				Body:            model.ArchivalMaybeBinaryString(""),
 				BodyIsTruncated: false,
 				Code:            0,
 				HeadersList:     []model.ArchivalHTTPHeader{},
@@ -192,7 +192,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 			ALPN:    "h3",
 			Failure: nil,
 			Request: model.ArchivalHTTPRequest{
-				Body:            model.ArchivalMaybeBinaryData{},
+				Body:            model.ArchivalMaybeBinaryString(""),
 				BodyIsTruncated: false,
 				HeadersList: []model.ArchivalHTTPHeader{{
 					Key: "Accept",
@@ -215,9 +215,9 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 				URL:       "https://dns.google/",
 			},
 			Response: model.ArchivalHTTPResponse{
-				Body: model.ArchivalMaybeBinaryData{
-					Value: string(testingx.HTTPBlockpage451),
-				},
+				Body: model.ArchivalMaybeBinaryString(
+					testingx.HTTPBlockpage451,
+				),
 				BodyIsTruncated: false,
 				Code:            200,
 				HeadersList: []model.ArchivalHTTPHeader{{
@@ -290,7 +290,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 			ALPN:    "h3",
 			Failure: nil,
 			Request: model.ArchivalHTTPRequest{
-				Body:            model.ArchivalMaybeBinaryData{},
+				Body:            model.ArchivalMaybeBinaryString(""),
 				BodyIsTruncated: false,
 				HeadersList: []model.ArchivalHTTPHeader{{
 					Key: "Accept",
@@ -313,9 +313,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 				URL:       "https://dns.google/",
 			},
 			Response: model.ArchivalHTTPResponse{
-				Body: model.ArchivalMaybeBinaryData{
-					Value: "",
-				},
+				Body:            model.ArchivalMaybeBinaryString(""),
 				BodyIsTruncated: false,
 				Code:            302,
 				HeadersList: []model.ArchivalHTTPHeader{{

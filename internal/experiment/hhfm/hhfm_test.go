@@ -68,7 +68,7 @@ func TestSuccess(t *testing.T) {
 	if request.Failure != nil {
 		t.Fatal("invalid Requests[0].Failure")
 	}
-	if request.Request.Body.Value != "" {
+	if request.Request.Body != "" {
 		t.Fatal("invalid Requests[0].Request.Body.Value")
 	}
 	if request.Request.BodyIsTruncated != false {
@@ -99,7 +99,7 @@ func TestSuccess(t *testing.T) {
 	if request.Request.URL != ths[0].Address {
 		t.Fatal("invalid Requests[0].Request.URL")
 	}
-	if len(request.Response.Body.Value) < 1 {
+	if len(request.Response.Body) < 1 {
 		t.Fatal("invalid Requests[0].Response.Body.Value length")
 	}
 	if request.Response.BodyIsTruncated != false {
@@ -181,7 +181,7 @@ func TestCancelledContext(t *testing.T) {
 	if *request.Failure != netxlite.FailureInterrupted {
 		t.Fatal("invalid Requests[0].Failure")
 	}
-	if request.Request.Body.Value != "" {
+	if request.Request.Body != "" {
 		t.Fatal("invalid Requests[0].Request.Body.Value")
 	}
 	if request.Request.BodyIsTruncated != false {
@@ -212,7 +212,7 @@ func TestCancelledContext(t *testing.T) {
 	if request.Request.URL != ths[0].Address {
 		t.Fatal("invalid Requests[0].Request.URL")
 	}
-	if len(request.Response.Body.Value) != 0 {
+	if len(request.Response.Body) != 0 {
 		t.Fatal("invalid Requests[0].Response.Body.Value length")
 	}
 	if request.Response.BodyIsTruncated != false {
@@ -811,7 +811,7 @@ func TestNewHTTPResponse(t *testing.T) {
 			data: []byte("deadbeef"),
 		},
 		wantOut: tracex.HTTPResponse{
-			Body: tracex.MaybeBinaryValue{Value: "deadbeef"},
+			Body: model.ArchivalMaybeBinaryString("deadbeef"),
 			Code: 200,
 			HeadersList: []tracex.HTTPHeader{{
 				Key:   "Content-Type",
@@ -831,7 +831,7 @@ func TestNewHTTPResponse(t *testing.T) {
 			resp: &http.Response{StatusCode: 200},
 		},
 		wantOut: tracex.HTTPResponse{
-			Body:        tracex.MaybeBinaryValue{Value: ""},
+			Body:        model.ArchivalMaybeBinaryString(""),
 			Code:        200,
 			HeadersList: []tracex.HTTPHeader{},
 			Headers:     map[string]tracex.MaybeBinaryValue{},

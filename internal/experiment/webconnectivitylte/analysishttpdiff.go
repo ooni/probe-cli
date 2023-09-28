@@ -91,7 +91,7 @@ func (tk *TestKeys) httpDiffBodyLengthChecks(
 	if response.BodyIsTruncated {
 		return // cannot trust body length in this case
 	}
-	measurement := int64(len(response.Body.Value))
+	measurement := int64(len(response.Body))
 	if measurement <= 0 {
 		return // no actual length
 	}
@@ -230,7 +230,7 @@ func (tk *TestKeys) httpDiffTitleMatch(
 		return
 	}
 	control := ctrl.Title
-	measurementBody := response.Body.Value
+	measurementBody := string(response.Body)
 	measurement := measurexlite.WebGetTitle(measurementBody)
 	if control == "" || measurement == "" {
 		return

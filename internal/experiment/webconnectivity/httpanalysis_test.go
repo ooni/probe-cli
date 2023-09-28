@@ -7,6 +7,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/randx"
 )
 
@@ -76,9 +77,9 @@ func TestHTTPBodyLengthChecks(t *testing.T) {
 			tk: urlgetter.TestKeys{
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
-						Body: tracex.MaybeBinaryValue{
-							Value: randx.Letters(768),
-						},
+						Body: model.ArchivalMaybeBinaryString(
+							randx.Letters(768),
+						),
 					},
 				}},
 			},
@@ -95,9 +96,9 @@ func TestHTTPBodyLengthChecks(t *testing.T) {
 			tk: urlgetter.TestKeys{
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
-						Body: tracex.MaybeBinaryValue{
-							Value: randx.Letters(768),
-						},
+						Body: model.ArchivalMaybeBinaryString(
+							randx.Letters(768),
+						),
 					},
 				}},
 			},
@@ -115,9 +116,9 @@ func TestHTTPBodyLengthChecks(t *testing.T) {
 			tk: urlgetter.TestKeys{
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
-						Body: tracex.MaybeBinaryValue{
-							Value: randx.Letters(1024),
-						},
+						Body: model.ArchivalMaybeBinaryString(
+							randx.Letters(1024),
+						),
 					},
 				}},
 			},
@@ -135,9 +136,9 @@ func TestHTTPBodyLengthChecks(t *testing.T) {
 			tk: urlgetter.TestKeys{
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
-						Body: tracex.MaybeBinaryValue{
-							Value: randx.Letters(8),
-						},
+						Body: model.ArchivalMaybeBinaryString(
+							randx.Letters(8),
+						),
 					},
 				}},
 			},
@@ -155,9 +156,9 @@ func TestHTTPBodyLengthChecks(t *testing.T) {
 			tk: urlgetter.TestKeys{
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
-						Body: tracex.MaybeBinaryValue{
-							Value: randx.Letters(16),
-						},
+						Body: model.ArchivalMaybeBinaryString(
+							randx.Letters(16),
+						),
 					},
 				}},
 			},
@@ -698,7 +699,7 @@ func TestTitleMatch(t *testing.T) {
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
 						Code: 200,
-						Body: tracex.MaybeBinaryValue{Value: "<HTML/>"},
+						Body: model.ArchivalMaybeBinaryString("<HTML/>"),
 					},
 				}},
 			},
@@ -711,7 +712,7 @@ func TestTitleMatch(t *testing.T) {
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
 						Code: 200,
-						Body: tracex.MaybeBinaryValue{Value: "<HTML/>"},
+						Body: model.ArchivalMaybeBinaryString("<HTML/>"),
 					},
 				}},
 			},
@@ -730,8 +731,8 @@ func TestTitleMatch(t *testing.T) {
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
 						Code: 200,
-						Body: tracex.MaybeBinaryValue{
-							Value: "<HTML><TITLE>La community di MSN</TITLE></HTML>"},
+						Body: model.ArchivalMaybeBinaryString(
+							"<HTML><TITLE>La community di MSN</TITLE></HTML>"),
 					},
 				}},
 			},
@@ -750,8 +751,8 @@ func TestTitleMatch(t *testing.T) {
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
 						Code: 200,
-						Body: tracex.MaybeBinaryValue{
-							Value: "<HTML><TITLE>La communità di MSN</TITLE></HTML>"},
+						Body: model.ArchivalMaybeBinaryString(
+							"<HTML><TITLE>La communità di MSN</TITLE></HTML>"),
 					},
 				}},
 			},
@@ -770,8 +771,8 @@ func TestTitleMatch(t *testing.T) {
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
 						Code: 200,
-						Body: tracex.MaybeBinaryValue{
-							Value: "<HTML><TITLE>" + randx.Letters(1024) + "</TITLE></HTML>"},
+						Body: model.ArchivalMaybeBinaryString(
+							"<HTML><TITLE>" + randx.Letters(1024) + "</TITLE></HTML>"),
 					},
 				}},
 			},
@@ -790,8 +791,8 @@ func TestTitleMatch(t *testing.T) {
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
 						Code: 200,
-						Body: tracex.MaybeBinaryValue{
-							Value: "<HTML><TiTLe>La commUNity di MSN</tITLE></HTML>"},
+						Body: model.ArchivalMaybeBinaryString(
+							"<HTML><TiTLe>La commUNity di MSN</tITLE></HTML>"),
 					},
 				}},
 			},
@@ -810,8 +811,8 @@ func TestTitleMatch(t *testing.T) {
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
 						Code: 200,
-						Body: tracex.MaybeBinaryValue{
-							Value: "<HTML><TiTLe>La commUNity di MSN</tITLE></HTML>"},
+						Body: model.ArchivalMaybeBinaryString(
+							"<HTML><TiTLe>La commUNity di MSN</tITLE></HTML>"),
 					},
 				}},
 			},

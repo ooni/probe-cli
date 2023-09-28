@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
 func TestArchivalExtSpec(t *testing.T) {
@@ -295,6 +294,14 @@ func TestArchivalBinaryData(t *testing.T) {
 }
 
 func TestArchivalMaybeBinaryString(t *testing.T) {
+	t.Run("Supports assignment from a nil byte array", func(t *testing.T) {
+		var data []byte = nil // explicit
+		casted := model.ArchivalMaybeBinaryString(data)
+		if casted != "" {
+			t.Fatal("unexpected value")
+		}
+	})
+
 	// This test verifies that we correctly serialize a string to JSON by
 	// producing "" | {"format":"base64","data":"<base64>"}
 	t.Run("MarshalJSON", func(t *testing.T) {
@@ -786,28 +793,6 @@ func TestHTTPHeader(t *testing.T) {
 			})
 		}
 	})
-}
-
-func TestHTTPBody(t *testing.T) {
-	// Implementation note: the content is always going to be the same
-	// even if we modify the implementation to become:
-	//
-	//     type ArchivalHTTPBody ArchivalMaybeBinaryData
-	//
-	// instead of the correct:
-	//
-	//     type ArchivalHTTPBody = ArchivalMaybeBinaryData
-	//
-	// However, cmp.Diff also takes into account the data type. Hence, if
-	// we make a mistake and apply the above change (which will in turn
-	// break correct JSON serialization), the this test will fail.
-	var body model.ArchivalHTTPBody
-	ff := &testingx.FakeFiller{}
-	ff.Fill(&body)
-	data := model.ArchivalMaybeBinaryData(body)
-	if diff := cmp.Diff(body, data); diff != "" {
-		t.Fatal(diff)
-	}
 }
 
 // This test ensures that ArchivalDNSLookupResult is WAI
@@ -1463,7 +1448,7 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 					ALPN:    "h2",
 					Failure: nil,
 					Request: model.ArchivalHTTPRequest{
-						Body:            model.ArchivalMaybeBinaryData{Value: ""},
+						Body:            model.ArchivalMaybeBinaryString(""),
 						BodyIsTruncated: false,
 						HeadersList: []model.ArchivalHTTPHeader{{
 							Key: "Accept",
@@ -1490,9 +1475,9 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 						URL:       "https://www.example.com/",
 					},
 					Response: model.ArchivalHTTPResponse{
-						Body: model.ArchivalMaybeBinaryData{
-							Value: "Bonsoir, Elliot!",
-						},
+						Body: model.ArchivalMaybeBinaryString(
+							"Bonsoir, Elliot!",
+						),
 						BodyIsTruncated: false,
 						Code:            200,
 						HeadersList: []model.ArchivalHTTPHeader{{
@@ -1529,7 +1514,7 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 						return &s
 					})(),
 					Request: model.ArchivalHTTPRequest{
-						Body:            model.ArchivalMaybeBinaryData{Value: ""},
+						Body:            model.ArchivalMaybeBinaryString(""),
 						BodyIsTruncated: false,
 						HeadersList: []model.ArchivalHTTPHeader{{
 							Key: "Accept",
@@ -1556,7 +1541,7 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 						URL:       "https://www.example.com/",
 					},
 					Response: model.ArchivalHTTPResponse{
-						Body:            model.ArchivalMaybeBinaryData{},
+						Body:            model.ArchivalMaybeBinaryString(""),
 						BodyIsTruncated: false,
 						Code:            0,
 						HeadersList:     []model.ArchivalHTTPHeader{},
@@ -1585,7 +1570,7 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 					ALPN:    "h2",
 					Failure: nil,
 					Request: model.ArchivalHTTPRequest{
-						Body:            model.ArchivalMaybeBinaryData{Value: ""},
+						Body:            model.ArchivalMaybeBinaryString(""),
 						BodyIsTruncated: false,
 						HeadersList: []model.ArchivalHTTPHeader{{
 							Key: "Accept",
@@ -1623,9 +1608,9 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 						URL:       "https://www.example.com/",
 					},
 					Response: model.ArchivalHTTPResponse{
-						Body: model.ArchivalMaybeBinaryData{
-							Value: string(archivalBinaryInput[:77]),
-						},
+						Body: model.ArchivalMaybeBinaryString(
+							archivalBinaryInput[:77],
+						),
 						BodyIsTruncated: false,
 						Code:            200,
 						HeadersList: []model.ArchivalHTTPHeader{{
@@ -1679,7 +1664,7 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 					ALPN:    "h2",
 					Failure: nil,
 					Request: model.ArchivalHTTPRequest{
-						Body:            model.ArchivalMaybeBinaryData{Value: ""},
+						Body:            model.ArchivalMaybeBinaryString(""),
 						BodyIsTruncated: false,
 						HeadersList: []model.ArchivalHTTPHeader{{
 							Key: "Accept",
@@ -1730,9 +1715,9 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 						URL:       "https://www.example.com/",
 					},
 					Response: model.ArchivalHTTPResponse{
-						Body: model.ArchivalMaybeBinaryData{
-							Value: "<HTML><BODY>Your address is 130.192.91.211 and 2606:2800:220:1:248:1893:25c8:1946 and you have endpoints [2606:2800:220:1:248:1893:25c8:1946]:5222 and 130.192.91.211:443. You're welcome.</BODY></HTML>",
-						},
+						Body: model.ArchivalMaybeBinaryString(
+							"<HTML><BODY>Your address is 130.192.91.211 and 2606:2800:220:1:248:1893:25c8:1946 and you have endpoints [2606:2800:220:1:248:1893:25c8:1946]:5222 and 130.192.91.211:443. You're welcome.</BODY></HTML>",
+						),
 						BodyIsTruncated: false,
 						Code:            200,
 						HeadersList: []model.ArchivalHTTPHeader{{
@@ -1843,7 +1828,7 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 				ALPN:    "h2",
 				Failure: nil,
 				Request: model.ArchivalHTTPRequest{
-					Body:            model.ArchivalMaybeBinaryData{Value: ""},
+					Body:            model.ArchivalMaybeBinaryString(""),
 					BodyIsTruncated: false,
 					HeadersList: []model.ArchivalHTTPHeader{{
 						Key: "Accept",
@@ -1870,9 +1855,9 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 					URL:       "https://www.example.com/",
 				},
 				Response: model.ArchivalHTTPResponse{
-					Body: model.ArchivalMaybeBinaryData{
-						Value: "Bonsoir, Elliot!",
-					},
+					Body: model.ArchivalMaybeBinaryString(
+						"Bonsoir, Elliot!",
+					),
 					BodyIsTruncated: false,
 					Code:            200,
 					HeadersList: []model.ArchivalHTTPHeader{{
@@ -1906,7 +1891,7 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 					return &s
 				})(),
 				Request: model.ArchivalHTTPRequest{
-					Body:            model.ArchivalMaybeBinaryData{Value: ""},
+					Body:            model.ArchivalMaybeBinaryString(""),
 					BodyIsTruncated: false,
 					HeadersList: []model.ArchivalHTTPHeader{{
 						Key: "Accept",
@@ -1933,7 +1918,7 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 					URL:       "https://www.example.com/",
 				},
 				Response: model.ArchivalHTTPResponse{
-					Body:            model.ArchivalMaybeBinaryData{},
+					Body:            model.ArchivalMaybeBinaryString(""),
 					BodyIsTruncated: false,
 					Code:            0,
 					HeadersList:     []model.ArchivalHTTPHeader{},
