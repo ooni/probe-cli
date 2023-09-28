@@ -61,7 +61,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 				Body:            model.ArchivalMaybeBinaryString(""),
 				BodyIsTruncated: false,
 				HeadersList:     []model.ArchivalHTTPHeader{},
-				Headers:         map[string]model.ArchivalMaybeBinaryData{},
+				Headers:         map[string]model.ArchivalMaybeBinaryString{},
 				Method:          "",
 				Tor:             model.ArchivalHTTPTor{},
 				Transport:       "",
@@ -72,7 +72,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 				BodyIsTruncated: false,
 				Code:            0,
 				HeadersList:     []model.ArchivalHTTPHeader{},
-				Headers:         map[string]model.ArchivalMaybeBinaryData{},
+				Headers:         map[string]model.ArchivalMaybeBinaryString{},
 				Locations:       []string{},
 			},
 			T0:            0,
@@ -130,9 +130,9 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 						Value: "miniooni/0.1.0-dev",
 					},
 				}},
-				Headers: map[string]model.ArchivalMaybeBinaryData{
-					"Accept":     {Value: "*/*"},
-					"User-Agent": {Value: "miniooni/0.1.0-dev"},
+				Headers: map[string]model.ArchivalMaybeBinaryString{
+					"Accept":     "*/*",
+					"User-Agent": "miniooni/0.1.0-dev",
 				},
 				Method:    "GET",
 				Tor:       model.ArchivalHTTPTor{},
@@ -144,7 +144,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 				BodyIsTruncated: false,
 				Code:            0,
 				HeadersList:     []model.ArchivalHTTPHeader{},
-				Headers:         map[string]model.ArchivalMaybeBinaryData{},
+				Headers:         map[string]model.ArchivalMaybeBinaryString{},
 				Locations:       []string{},
 			},
 			T0:            0.25,
@@ -205,9 +205,9 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 						Value: "miniooni/0.1.0-dev",
 					},
 				}},
-				Headers: map[string]model.ArchivalMaybeBinaryData{
-					"Accept":     {Value: "*/*"},
-					"User-Agent": {Value: "miniooni/0.1.0-dev"},
+				Headers: map[string]model.ArchivalMaybeBinaryString{
+					"Accept":     "*/*",
+					"User-Agent": "miniooni/0.1.0-dev",
 				},
 				Method:    "GET",
 				Tor:       model.ArchivalHTTPTor{},
@@ -231,9 +231,9 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 						Value: "Apache",
 					},
 				}},
-				Headers: map[string]model.ArchivalMaybeBinaryData{
-					"Content-Type": {Value: "text/html; charset=iso-8859-1"},
-					"Server":       {Value: "Apache"},
+				Headers: map[string]model.ArchivalMaybeBinaryString{
+					"Content-Type": "text/html; charset=iso-8859-1",
+					"Server":       "Apache",
 				},
 				Locations: []string{},
 			},
@@ -303,9 +303,9 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 						Value: "miniooni/0.1.0-dev",
 					},
 				}},
-				Headers: map[string]model.ArchivalMaybeBinaryData{
-					"Accept":     {Value: "*/*"},
-					"User-Agent": {Value: "miniooni/0.1.0-dev"},
+				Headers: map[string]model.ArchivalMaybeBinaryString{
+					"Accept":     "*/*",
+					"User-Agent": "miniooni/0.1.0-dev",
 				},
 				Method:    "GET",
 				Tor:       model.ArchivalHTTPTor{},
@@ -332,10 +332,10 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 						Value: "Apache",
 					},
 				}},
-				Headers: map[string]model.ArchivalMaybeBinaryData{
-					"Content-Type": {Value: "text/html; charset=iso-8859-1"},
-					"Location":     {Value: "/v2/index.html"},
-					"Server":       {Value: "Apache"},
+				Headers: map[string]model.ArchivalMaybeBinaryString{
+					"Content-Type": "text/html; charset=iso-8859-1",
+					"Location":     "/v2/index.html",
+					"Server":       "Apache",
 				},
 				Locations: []string{
 					"https://dns.google/v2/index.html",

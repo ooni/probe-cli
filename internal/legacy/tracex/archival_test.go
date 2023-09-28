@@ -178,15 +178,15 @@ func TestNewRequestList(t *testing.T) {
 						Value: "miniooni/0.1.0-dev",
 					},
 				}},
-				Headers: map[string]MaybeBinaryValue{
-					"User-Agent": {Value: "miniooni/0.1.0-dev"},
+				Headers: map[string]model.ArchivalMaybeBinaryString{
+					"User-Agent": "miniooni/0.1.0-dev",
 				},
 				Method: "GET",
 				URL:    "https://www.example.com/result",
 			},
 			Response: HTTPResponse{
 				HeadersList: []HTTPHeader{},
-				Headers:     make(map[string]MaybeBinaryValue),
+				Headers:     make(map[string]model.ArchivalMaybeBinaryString),
 			},
 			T: 0.02,
 		}, {
@@ -198,8 +198,8 @@ func TestNewRequestList(t *testing.T) {
 						Value: "miniooni/0.1.0-dev",
 					},
 				}},
-				Headers: map[string]MaybeBinaryValue{
-					"User-Agent": {Value: "miniooni/0.1.0-dev"},
+				Headers: map[string]model.ArchivalMaybeBinaryString{
+					"User-Agent": "miniooni/0.1.0-dev",
 				},
 				Method: "POST",
 				URL:    "https://www.example.com/submit",
@@ -213,8 +213,8 @@ func TestNewRequestList(t *testing.T) {
 						Value: "miniooni/0.1.0-dev",
 					},
 				}},
-				Headers: map[string]MaybeBinaryValue{
-					"Server": {Value: "miniooni/0.1.0-dev"},
+				Headers: map[string]model.ArchivalMaybeBinaryString{
+					"Server": "miniooni/0.1.0-dev",
 				},
 				Locations: nil,
 			},
@@ -248,8 +248,8 @@ func TestNewRequestList(t *testing.T) {
 						Value: "miniooni/0.1.0-dev",
 					},
 				}},
-				Headers: map[string]MaybeBinaryValue{
-					"User-Agent": {Value: "miniooni/0.1.0-dev"},
+				Headers: map[string]model.ArchivalMaybeBinaryString{
+					"User-Agent": "miniooni/0.1.0-dev",
 				},
 				Method: "GET",
 				URL:    "https://www.example.com/",
@@ -272,9 +272,9 @@ func TestNewRequestList(t *testing.T) {
 						Value: "miniooni/0.1.0-dev",
 					},
 				}},
-				Headers: map[string]MaybeBinaryValue{
-					"Server":   {Value: "miniooni/0.1.0-dev"},
-					"Location": {Value: "https://x.example.com"},
+				Headers: map[string]model.ArchivalMaybeBinaryString{
+					"Server":   "miniooni/0.1.0-dev",
+					"Location": "https://x.example.com",
 				},
 				Locations: []string{
 					"https://x.example.com", "https://y.example.com",
