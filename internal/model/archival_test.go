@@ -1434,7 +1434,336 @@ func TestArchivalTLSOrQUICHandshakeResult(t *testing.T) {
 
 // This test ensures that ArchivalHTTPRequestResult is WAI
 func TestArchivalHTTPRequestResult(t *testing.T) {
-	t.Skip("not implemented")
+
+	// This test ensures that we correctly serialize to JSON.
+	t.Run("MarshalJSON", func(t *testing.T) {
+		// testcase is a test case defined by this function
+		type testcase struct {
+			// name is the name of the test case
+			name string
+
+			// input is the input struct
+			input model.ArchivalHTTPRequestResult
+
+			// expectErr is the error we expect to see or nil
+			expectErr error
+
+			// expectData is the data we expect to see
+			expectData []byte
+		}
+
+		cases := []testcase{{
+			name: "serialization of a successful HTTP request",
+			input: model.ArchivalHTTPRequestResult{
+				Network: "tcp",
+				Address: "[2606:2800:220:1:248:1893:25c8:1946]:443",
+				ALPN:    "h2",
+				Failure: nil,
+				Request: model.ArchivalHTTPRequest{
+					Body:            model.ArchivalMaybeBinaryData{Value: ""},
+					BodyIsTruncated: false,
+					HeadersList: []model.ArchivalHTTPHeader{{
+						Key: "Accept",
+						Value: model.ArchivalMaybeBinaryData{
+							Value: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+						},
+					}, {
+						Key: "User-Agent",
+						Value: model.ArchivalMaybeBinaryData{
+							Value: "miniooni/0.1.0",
+						},
+					}},
+					Headers: map[string]model.ArchivalMaybeBinaryData{
+						"Accept":     {"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"},
+						"User-Agent": {"miniooni/0.1.0"},
+					},
+					Method: "GET",
+					Tor: model.ArchivalHTTPTor{
+						ExitIP:   nil,
+						ExitName: nil,
+						IsTor:    false,
+					},
+					Transport: "tcp",
+					URL:       "https://www.example.com/",
+				},
+				Response: model.ArchivalHTTPResponse{
+					Body: model.ArchivalMaybeBinaryData{
+						Value: "Bonsoir, Elliot!",
+					},
+					BodyIsTruncated: false,
+					Code:            200,
+					HeadersList: []model.ArchivalHTTPHeader{{
+						Key:   "Age",
+						Value: model.ArchivalMaybeBinaryData{"131833"},
+					}, {
+						Key:   "Server",
+						Value: model.ArchivalMaybeBinaryData{"Apache"},
+					}},
+					Headers: map[string]model.ArchivalMaybeBinaryData{
+						"Age":    {"131833"},
+						"Server": {"Apache"},
+					},
+					Locations: nil,
+				},
+				T0:            0.7,
+				T:             1.33,
+				Tags:          []string{"http"},
+				TransactionID: 5,
+			},
+			expectErr:  nil,
+			expectData: []byte(`{"network":"tcp","address":"[2606:2800:220:1:248:1893:25c8:1946]:443","alpn":"h2","failure":null,"request":{"body":"","body_is_truncated":false,"headers_list":[["Accept","text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"],["User-Agent","miniooni/0.1.0"]],"headers":{"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","User-Agent":"miniooni/0.1.0"},"method":"GET","tor":{"exit_ip":null,"exit_name":null,"is_tor":false},"x_transport":"tcp","url":"https://www.example.com/"},"response":{"body":"Bonsoir, Elliot!","body_is_truncated":false,"code":200,"headers_list":[["Age","131833"],["Server","Apache"]],"headers":{"Age":"131833","Server":"Apache"}},"t0":0.7,"t":1.33,"tags":["http"],"transaction_id":5}`),
+		}, {
+			name: "serialization of a failed HTTP request",
+			input: model.ArchivalHTTPRequestResult{
+				Network: "tcp",
+				Address: "[2606:2800:220:1:248:1893:25c8:1946]:443",
+				ALPN:    "h2",
+				Failure: (func() *string {
+					s := netxlite.FailureGenericTimeoutError
+					return &s
+				})(),
+				Request: model.ArchivalHTTPRequest{
+					Body:            model.ArchivalMaybeBinaryData{Value: ""},
+					BodyIsTruncated: false,
+					HeadersList: []model.ArchivalHTTPHeader{{
+						Key: "Accept",
+						Value: model.ArchivalMaybeBinaryData{
+							Value: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+						},
+					}, {
+						Key: "User-Agent",
+						Value: model.ArchivalMaybeBinaryData{
+							Value: "miniooni/0.1.0",
+						},
+					}},
+					Headers: map[string]model.ArchivalMaybeBinaryData{
+						"Accept":     {"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"},
+						"User-Agent": {"miniooni/0.1.0"},
+					},
+					Method: "GET",
+					Tor: model.ArchivalHTTPTor{
+						ExitIP:   nil,
+						ExitName: nil,
+						IsTor:    false,
+					},
+					Transport: "tcp",
+					URL:       "https://www.example.com/",
+				},
+				Response: model.ArchivalHTTPResponse{
+					Body:            model.ArchivalMaybeBinaryData{},
+					BodyIsTruncated: false,
+					Code:            0,
+					HeadersList:     []model.ArchivalHTTPHeader{},
+					Headers:         map[string]model.ArchivalMaybeBinaryData{},
+					Locations:       nil,
+				},
+				T0:            0.4,
+				T:             1.563,
+				Tags:          []string{"http"},
+				TransactionID: 6,
+			},
+			expectErr:  nil,
+			expectData: []byte(`{"network":"tcp","address":"[2606:2800:220:1:248:1893:25c8:1946]:443","alpn":"h2","failure":"generic_timeout_error","request":{"body":"","body_is_truncated":false,"headers_list":[["Accept","text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"],["User-Agent","miniooni/0.1.0"]],"headers":{"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","User-Agent":"miniooni/0.1.0"},"method":"GET","tor":{"exit_ip":null,"exit_name":null,"is_tor":false},"x_transport":"tcp","url":"https://www.example.com/"},"response":{"body":"","body_is_truncated":false,"code":0,"headers_list":[],"headers":{}},"t0":0.4,"t":1.563,"tags":["http"],"transaction_id":6}`),
+		}}
+
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// serialize to JSON
+				data, err := json.Marshal(tc.input)
+
+				t.Log("got this error", err)
+				t.Log("got this raw data", data)
+				t.Logf("converted to string: %s", string(data))
+
+				// handle errors
+				switch {
+				case err == nil && tc.expectErr != nil:
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err != nil && tc.expectErr == nil:
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err != nil && tc.expectErr != nil:
+					if err.Error() != tc.expectErr.Error() {
+						t.Fatal("expected", tc.expectErr, "got", err)
+					}
+
+				case err == nil && tc.expectErr == nil:
+					// all good--fallthrough
+				}
+
+				// make sure the serialization is OK
+				if diff := cmp.Diff(tc.expectData, data); diff != "" {
+					t.Fatal(diff)
+				}
+			})
+		}
+	})
+
+	// This test ensures that we can unmarshal from the JSON representation
+	t.Run("UnmarshalJSON", func(t *testing.T) {
+		// testcase is a test case defined by this function
+		type testcase struct {
+			// name is the name of the test case
+			name string
+
+			// input is the binary input
+			input []byte
+
+			// expectErr is the error we expect to see or nil
+			expectErr error
+
+			// expectStruct is the struct we expect to see
+			expectStruct model.ArchivalHTTPRequestResult
+		}
+
+		cases := []testcase{{
+			name:      "deserialization of a successful HTTP request",
+			expectErr: nil,
+			input:     []byte(`{"network":"tcp","address":"[2606:2800:220:1:248:1893:25c8:1946]:443","alpn":"h2","failure":null,"request":{"body":"","body_is_truncated":false,"headers_list":[["Accept","text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"],["User-Agent","miniooni/0.1.0"]],"headers":{"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","User-Agent":"miniooni/0.1.0"},"method":"GET","tor":{"exit_ip":null,"exit_name":null,"is_tor":false},"x_transport":"tcp","url":"https://www.example.com/"},"response":{"body":"Bonsoir, Elliot!","body_is_truncated":false,"code":200,"headers_list":[["Age","131833"],["Server","Apache"]],"headers":{"Age":"131833","Server":"Apache"}},"t0":0.7,"t":1.33,"tags":["http"],"transaction_id":5}`),
+			expectStruct: model.ArchivalHTTPRequestResult{
+				Network: "tcp",
+				Address: "[2606:2800:220:1:248:1893:25c8:1946]:443",
+				ALPN:    "h2",
+				Failure: nil,
+				Request: model.ArchivalHTTPRequest{
+					Body:            model.ArchivalMaybeBinaryData{Value: ""},
+					BodyIsTruncated: false,
+					HeadersList: []model.ArchivalHTTPHeader{{
+						Key: "Accept",
+						Value: model.ArchivalMaybeBinaryData{
+							Value: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+						},
+					}, {
+						Key: "User-Agent",
+						Value: model.ArchivalMaybeBinaryData{
+							Value: "miniooni/0.1.0",
+						},
+					}},
+					Headers: map[string]model.ArchivalMaybeBinaryData{
+						"Accept":     {"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"},
+						"User-Agent": {"miniooni/0.1.0"},
+					},
+					Method: "GET",
+					Tor: model.ArchivalHTTPTor{
+						ExitIP:   nil,
+						ExitName: nil,
+						IsTor:    false,
+					},
+					Transport: "tcp",
+					URL:       "https://www.example.com/",
+				},
+				Response: model.ArchivalHTTPResponse{
+					Body: model.ArchivalMaybeBinaryData{
+						Value: "Bonsoir, Elliot!",
+					},
+					BodyIsTruncated: false,
+					Code:            200,
+					HeadersList: []model.ArchivalHTTPHeader{{
+						Key:   "Age",
+						Value: model.ArchivalMaybeBinaryData{"131833"},
+					}, {
+						Key:   "Server",
+						Value: model.ArchivalMaybeBinaryData{"Apache"},
+					}},
+					Headers: map[string]model.ArchivalMaybeBinaryData{
+						"Age":    {"131833"},
+						"Server": {"Apache"},
+					},
+					Locations: nil,
+				},
+				T0:            0.7,
+				T:             1.33,
+				Tags:          []string{"http"},
+				TransactionID: 5,
+			},
+		}, {
+			name:      "deserialization of a failed HTTP request",
+			input:     []byte(`{"network":"tcp","address":"[2606:2800:220:1:248:1893:25c8:1946]:443","alpn":"h2","failure":"generic_timeout_error","request":{"body":"","body_is_truncated":false,"headers_list":[["Accept","text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"],["User-Agent","miniooni/0.1.0"]],"headers":{"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","User-Agent":"miniooni/0.1.0"},"method":"GET","tor":{"exit_ip":null,"exit_name":null,"is_tor":false},"x_transport":"tcp","url":"https://www.example.com/"},"response":{"body":"","body_is_truncated":false,"code":0,"headers_list":[],"headers":{}},"t0":0.4,"t":1.563,"tags":["http"],"transaction_id":6}`),
+			expectErr: nil,
+			expectStruct: model.ArchivalHTTPRequestResult{
+				Network: "tcp",
+				Address: "[2606:2800:220:1:248:1893:25c8:1946]:443",
+				ALPN:    "h2",
+				Failure: (func() *string {
+					s := netxlite.FailureGenericTimeoutError
+					return &s
+				})(),
+				Request: model.ArchivalHTTPRequest{
+					Body:            model.ArchivalMaybeBinaryData{Value: ""},
+					BodyIsTruncated: false,
+					HeadersList: []model.ArchivalHTTPHeader{{
+						Key: "Accept",
+						Value: model.ArchivalMaybeBinaryData{
+							Value: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+						},
+					}, {
+						Key: "User-Agent",
+						Value: model.ArchivalMaybeBinaryData{
+							Value: "miniooni/0.1.0",
+						},
+					}},
+					Headers: map[string]model.ArchivalMaybeBinaryData{
+						"Accept":     {"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"},
+						"User-Agent": {"miniooni/0.1.0"},
+					},
+					Method: "GET",
+					Tor: model.ArchivalHTTPTor{
+						ExitIP:   nil,
+						ExitName: nil,
+						IsTor:    false,
+					},
+					Transport: "tcp",
+					URL:       "https://www.example.com/",
+				},
+				Response: model.ArchivalHTTPResponse{
+					Body:            model.ArchivalMaybeBinaryData{},
+					BodyIsTruncated: false,
+					Code:            0,
+					HeadersList:     []model.ArchivalHTTPHeader{},
+					Headers:         map[string]model.ArchivalMaybeBinaryData{},
+					Locations:       nil,
+				},
+				T0:            0.4,
+				T:             1.563,
+				Tags:          []string{"http"},
+				TransactionID: 6,
+			},
+		}}
+
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// parse the JSON
+				var data model.ArchivalHTTPRequestResult
+				err := json.Unmarshal(tc.input, &data)
+
+				t.Log("got this error", err)
+				t.Logf("got this struct %+v", data)
+
+				// handle errors
+				switch {
+				case err == nil && tc.expectErr != nil:
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err != nil && tc.expectErr == nil:
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err != nil && tc.expectErr != nil:
+					if err.Error() != tc.expectErr.Error() {
+						t.Fatal("expected", tc.expectErr, "got", err)
+					}
+
+				case err == nil && tc.expectErr == nil:
+					// all good--fallthrough
+				}
+
+				// make sure the deserialization is OK
+				if diff := cmp.Diff(tc.expectStruct, data); diff != "" {
+					t.Fatal(diff)
+				}
+			})
+		}
+	})
 }
 
 // This test ensures that ArchivalNetworkEvent is WAI
