@@ -19,6 +19,8 @@ import (
 	"net/http"
 	"sort"
 	"unicode/utf8"
+
+	"github.com/ooni/probe-cli/v3/internal/scrubber"
 )
 
 //
@@ -121,23 +123,27 @@ func (value *ArchivalBinaryData) UnmarshalJSON(raw []byte) error {
 	return nil
 }
 
-// ArchivalMaybeBinaryString is a possibly-binary string. When the string is valid UTF-8
+// ArchivalScrubbedMaybeBinaryString is a possibly-binary string. When the string is valid UTF-8
 // we serialize it as itself. Otherwise, we use the binary data format defined by
 // https://github.com/ooni/spec/blob/master/data-formats/df-001-httpt.md#maybebinarydata
-type ArchivalMaybeBinaryString string
+//
+// As the name implies, the data contained by this type is scrubbed to remove IPv4 and IPv6
+// addresses and endpoints during JSON serialization, to make it less likely that OONI leaks
+// IP addresses in textual or binary fields such as HTTP headers and bodies.
+type ArchivalScrubbedMaybeBinaryString string
 
 var (
-	_ json.Marshaler   = ArchivalMaybeBinaryString("")
-	_ json.Unmarshaler = (func() *ArchivalMaybeBinaryString { return nil }())
+	_ json.Marshaler   = ArchivalScrubbedMaybeBinaryString("")
+	_ json.Unmarshaler = (func() *ArchivalScrubbedMaybeBinaryString { return nil }())
 )
 
 // MarshalJSON implements json.Marshaler.
-func (value ArchivalMaybeBinaryString) MarshalJSON() ([]byte, error) {
+func (value ArchivalScrubbedMaybeBinaryString) MarshalJSON() ([]byte, error) {
 	// convert value to a string
 	str := string(value)
 
-	// TODO(bassosimone): here is where we should scrub the string in the future
-	// once we have replaced AchivalMaybeBinaryData with ArchivalMaybeBinaryString
+	// make sure we get rid of IPv4 and IPv6 addresses and endpoints
+	str = scrubber.ScrubString(str)
 
 	// if we can serialize as UTF-8 string, do that
 	if utf8.ValidString(str) {
@@ -149,11 +155,11 @@ func (value ArchivalMaybeBinaryString) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (value *ArchivalMaybeBinaryString) UnmarshalJSON(rawData []byte) error {
+func (value *ArchivalScrubbedMaybeBinaryString) UnmarshalJSON(rawData []byte) error {
 	// first attempt to decode as a string
 	var s string
 	if err := json.Unmarshal(rawData, &s); err == nil {
-		*value = ArchivalMaybeBinaryString(s)
+		*value = ArchivalScrubbedMaybeBinaryString(s)
 		return nil
 	}
 
@@ -162,7 +168,7 @@ func (value *ArchivalMaybeBinaryString) UnmarshalJSON(rawData []byte) error {
 	if err := json.Unmarshal(rawData, &d); err != nil {
 		return err
 	}
-	*value = ArchivalMaybeBinaryString(d)
+	*value = ArchivalScrubbedMaybeBinaryString(d)
 	return nil
 }
 
@@ -173,6 +179,8 @@ func (value *ArchivalMaybeBinaryString) UnmarshalJSON(rawData []byte) error {
 // See https://github.com/ooni/spec/blob/master/data-formats/df-001-httpt.md#maybebinarydata
 //
 // Deprecated: do not use this type in new code.
+//
+// Removing this struct is TODO(https://github.com/ooni/probe/issues/2543).
 type ArchivalMaybeBinaryData struct {
 	Value string
 }
@@ -325,14 +333,14 @@ type ArchivalHTTPRequestResult struct {
 // Headers are a map in Web Connectivity data format but
 // we have added support for a list since January 2020.
 type ArchivalHTTPRequest struct {
-	Body            ArchivalMaybeBinaryString            `json:"body"`
-	BodyIsTruncated bool                                 `json:"body_is_truncated"`
-	HeadersList     []ArchivalHTTPHeader                 `json:"headers_list"`
-	Headers         map[string]ArchivalMaybeBinaryString `json:"headers"`
-	Method          string                               `json:"method"`
-	Tor             ArchivalHTTPTor                      `json:"tor"`
-	Transport       string                               `json:"x_transport"`
-	URL             string                               `json:"url"`
+	Body            ArchivalScrubbedMaybeBinaryString            `json:"body"`
+	BodyIsTruncated bool                                         `json:"body_is_truncated"`
+	HeadersList     []ArchivalHTTPHeader                         `json:"headers_list"`
+	Headers         map[string]ArchivalScrubbedMaybeBinaryString `json:"headers"`
+	Method          string                                       `json:"method"`
+	Tor             ArchivalHTTPTor                              `json:"tor"`
+	Transport       string                                       `json:"x_transport"`
+	URL             string                                       `json:"url"`
 }
 
 // ArchivalHTTPResponse contains an HTTP response.
@@ -340,11 +348,11 @@ type ArchivalHTTPRequest struct {
 // Headers are a map in Web Connectivity data format but
 // we have added support for a list since January 2020.
 type ArchivalHTTPResponse struct {
-	Body            ArchivalMaybeBinaryString            `json:"body"`
-	BodyIsTruncated bool                                 `json:"body_is_truncated"`
-	Code            int64                                `json:"code"`
-	HeadersList     []ArchivalHTTPHeader                 `json:"headers_list"`
-	Headers         map[string]ArchivalMaybeBinaryString `json:"headers"`
+	Body            ArchivalScrubbedMaybeBinaryString            `json:"body"`
+	BodyIsTruncated bool                                         `json:"body_is_truncated"`
+	Code            int64                                        `json:"code"`
+	HeadersList     []ArchivalHTTPHeader                         `json:"headers_list"`
+	Headers         map[string]ArchivalScrubbedMaybeBinaryString `json:"headers"`
 
 	// The following fields are not serialised but are useful to simplify
 	// analysing the measurements in telegram, whatsapp, etc.
@@ -370,8 +378,8 @@ func ArchivalNewHTTPHeadersList(source http.Header) (out []ArchivalHTTPHeader) {
 	for _, key := range keys {
 		for _, value := range source[key] {
 			out = append(out, ArchivalHTTPHeader{
-				ArchivalMaybeBinaryString(key),
-				ArchivalMaybeBinaryString(value),
+				ArchivalScrubbedMaybeBinaryString(key),
+				ArchivalScrubbedMaybeBinaryString(value),
 			})
 		}
 	}
@@ -379,11 +387,11 @@ func ArchivalNewHTTPHeadersList(source http.Header) (out []ArchivalHTTPHeader) {
 }
 
 // ArchivalNewHTTPHeadersMap creates a map representation of HTTP headers
-func ArchivalNewHTTPHeadersMap(header http.Header) (out map[string]ArchivalMaybeBinaryString) {
-	out = make(map[string]ArchivalMaybeBinaryString)
+func ArchivalNewHTTPHeadersMap(header http.Header) (out map[string]ArchivalScrubbedMaybeBinaryString) {
+	out = make(map[string]ArchivalScrubbedMaybeBinaryString)
 	for key, values := range header {
 		for _, value := range values {
-			out[key] = ArchivalMaybeBinaryString(value)
+			out[key] = ArchivalScrubbedMaybeBinaryString(value)
 			break // just the first header
 		}
 	}
@@ -391,14 +399,14 @@ func ArchivalNewHTTPHeadersMap(header http.Header) (out map[string]ArchivalMaybe
 }
 
 // ArchivalHTTPHeader is a single HTTP header.
-type ArchivalHTTPHeader [2]ArchivalMaybeBinaryString
+type ArchivalHTTPHeader [2]ArchivalScrubbedMaybeBinaryString
 
 // errCannotParseArchivalHTTPHeader indicates that we cannot parse an ArchivalHTTPHeader.
 var errCannotParseArchivalHTTPHeader = errors.New("invalid ArchivalHTTPHeader")
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (ahh *ArchivalHTTPHeader) UnmarshalJSON(data []byte) error {
-	var helper []ArchivalMaybeBinaryString
+	var helper []ArchivalScrubbedMaybeBinaryString
 	if err := json.Unmarshal(data, &helper); err != nil {
 		return err
 	}
