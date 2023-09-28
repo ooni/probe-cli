@@ -305,9 +305,9 @@ func NewTLSHandshakesList(begin time.Time, events []Event) (out []TLSHandshake) 
 	return
 }
 
-func tlsMakePeerCerts(in [][]byte) (out []MaybeBinaryValue) {
+func tlsMakePeerCerts(in [][]byte) (out []model.ArchivalBinaryData) {
 	for _, entry := range in {
-		out = append(out, MaybeBinaryValue{Value: string(entry)})
+		out = append(out, model.ArchivalBinaryData(entry))
 	}
 	return
 }
