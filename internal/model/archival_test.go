@@ -1452,119 +1452,335 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 			expectData []byte
 		}
 
-		cases := []testcase{{
-			name: "serialization of a successful HTTP request",
-			input: model.ArchivalHTTPRequestResult{
-				Network: "tcp",
-				Address: "[2606:2800:220:1:248:1893:25c8:1946]:443",
-				ALPN:    "h2",
-				Failure: nil,
-				Request: model.ArchivalHTTPRequest{
-					Body:            model.ArchivalMaybeBinaryData{Value: ""},
-					BodyIsTruncated: false,
-					HeadersList: []model.ArchivalHTTPHeader{{
-						Key: "Accept",
-						Value: model.ArchivalMaybeBinaryData{
-							Value: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+		cases := []testcase{
+
+			// This test ensures we can serialize a typical, successful HTTP measurement
+			{
+				name: "serialization of a successful HTTP request",
+				input: model.ArchivalHTTPRequestResult{
+					Network: "tcp",
+					Address: "[2606:2800:220:1:248:1893:25c8:1946]:443",
+					ALPN:    "h2",
+					Failure: nil,
+					Request: model.ArchivalHTTPRequest{
+						Body:            model.ArchivalMaybeBinaryData{Value: ""},
+						BodyIsTruncated: false,
+						HeadersList: []model.ArchivalHTTPHeader{{
+							Key: "Accept",
+							Value: model.ArchivalMaybeBinaryData{
+								Value: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+							},
+						}, {
+							Key: "User-Agent",
+							Value: model.ArchivalMaybeBinaryData{
+								Value: "miniooni/0.1.0",
+							},
+						}},
+						Headers: map[string]model.ArchivalMaybeBinaryData{
+							"Accept":     {"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"},
+							"User-Agent": {"miniooni/0.1.0"},
 						},
-					}, {
-						Key: "User-Agent",
-						Value: model.ArchivalMaybeBinaryData{
-							Value: "miniooni/0.1.0",
+						Method: "GET",
+						Tor: model.ArchivalHTTPTor{
+							ExitIP:   nil,
+							ExitName: nil,
+							IsTor:    false,
 						},
-					}},
-					Headers: map[string]model.ArchivalMaybeBinaryData{
-						"Accept":     {"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"},
-						"User-Agent": {"miniooni/0.1.0"},
+						Transport: "tcp",
+						URL:       "https://www.example.com/",
 					},
-					Method: "GET",
-					Tor: model.ArchivalHTTPTor{
-						ExitIP:   nil,
-						ExitName: nil,
-						IsTor:    false,
+					Response: model.ArchivalHTTPResponse{
+						Body: model.ArchivalMaybeBinaryData{
+							Value: "Bonsoir, Elliot!",
+						},
+						BodyIsTruncated: false,
+						Code:            200,
+						HeadersList: []model.ArchivalHTTPHeader{{
+							Key:   "Age",
+							Value: model.ArchivalMaybeBinaryData{"131833"},
+						}, {
+							Key:   "Server",
+							Value: model.ArchivalMaybeBinaryData{"Apache"},
+						}},
+						Headers: map[string]model.ArchivalMaybeBinaryData{
+							"Age":    {"131833"},
+							"Server": {"Apache"},
+						},
+						Locations: nil,
 					},
-					Transport: "tcp",
-					URL:       "https://www.example.com/",
+					T0:            0.7,
+					T:             1.33,
+					Tags:          []string{"http"},
+					TransactionID: 5,
 				},
-				Response: model.ArchivalHTTPResponse{
-					Body: model.ArchivalMaybeBinaryData{
-						Value: "Bonsoir, Elliot!",
-					},
-					BodyIsTruncated: false,
-					Code:            200,
-					HeadersList: []model.ArchivalHTTPHeader{{
-						Key:   "Age",
-						Value: model.ArchivalMaybeBinaryData{"131833"},
-					}, {
-						Key:   "Server",
-						Value: model.ArchivalMaybeBinaryData{"Apache"},
-					}},
-					Headers: map[string]model.ArchivalMaybeBinaryData{
-						"Age":    {"131833"},
-						"Server": {"Apache"},
-					},
-					Locations: nil,
-				},
-				T0:            0.7,
-				T:             1.33,
-				Tags:          []string{"http"},
-				TransactionID: 5,
+				expectErr:  nil,
+				expectData: []byte(`{"network":"tcp","address":"[2606:2800:220:1:248:1893:25c8:1946]:443","alpn":"h2","failure":null,"request":{"body":"","body_is_truncated":false,"headers_list":[["Accept","text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"],["User-Agent","miniooni/0.1.0"]],"headers":{"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","User-Agent":"miniooni/0.1.0"},"method":"GET","tor":{"exit_ip":null,"exit_name":null,"is_tor":false},"x_transport":"tcp","url":"https://www.example.com/"},"response":{"body":"Bonsoir, Elliot!","body_is_truncated":false,"code":200,"headers_list":[["Age","131833"],["Server","Apache"]],"headers":{"Age":"131833","Server":"Apache"}},"t0":0.7,"t":1.33,"tags":["http"],"transaction_id":5}`),
 			},
-			expectErr:  nil,
-			expectData: []byte(`{"network":"tcp","address":"[2606:2800:220:1:248:1893:25c8:1946]:443","alpn":"h2","failure":null,"request":{"body":"","body_is_truncated":false,"headers_list":[["Accept","text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"],["User-Agent","miniooni/0.1.0"]],"headers":{"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","User-Agent":"miniooni/0.1.0"},"method":"GET","tor":{"exit_ip":null,"exit_name":null,"is_tor":false},"x_transport":"tcp","url":"https://www.example.com/"},"response":{"body":"Bonsoir, Elliot!","body_is_truncated":false,"code":200,"headers_list":[["Age","131833"],["Server","Apache"]],"headers":{"Age":"131833","Server":"Apache"}},"t0":0.7,"t":1.33,"tags":["http"],"transaction_id":5}`),
-		}, {
-			name: "serialization of a failed HTTP request",
-			input: model.ArchivalHTTPRequestResult{
-				Network: "tcp",
-				Address: "[2606:2800:220:1:248:1893:25c8:1946]:443",
-				ALPN:    "h2",
-				Failure: (func() *string {
-					s := netxlite.FailureGenericTimeoutError
-					return &s
-				})(),
-				Request: model.ArchivalHTTPRequest{
-					Body:            model.ArchivalMaybeBinaryData{Value: ""},
-					BodyIsTruncated: false,
-					HeadersList: []model.ArchivalHTTPHeader{{
-						Key: "Accept",
-						Value: model.ArchivalMaybeBinaryData{
-							Value: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+
+			// This test ensures we can serialize a typical failed HTTP measurement
+			{
+				name: "serialization of a failed HTTP request",
+				input: model.ArchivalHTTPRequestResult{
+					Network: "tcp",
+					Address: "[2606:2800:220:1:248:1893:25c8:1946]:443",
+					ALPN:    "h2",
+					Failure: (func() *string {
+						s := netxlite.FailureGenericTimeoutError
+						return &s
+					})(),
+					Request: model.ArchivalHTTPRequest{
+						Body:            model.ArchivalMaybeBinaryData{Value: ""},
+						BodyIsTruncated: false,
+						HeadersList: []model.ArchivalHTTPHeader{{
+							Key: "Accept",
+							Value: model.ArchivalMaybeBinaryData{
+								Value: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+							},
+						}, {
+							Key: "User-Agent",
+							Value: model.ArchivalMaybeBinaryData{
+								Value: "miniooni/0.1.0",
+							},
+						}},
+						Headers: map[string]model.ArchivalMaybeBinaryData{
+							"Accept":     {"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"},
+							"User-Agent": {"miniooni/0.1.0"},
 						},
-					}, {
-						Key: "User-Agent",
-						Value: model.ArchivalMaybeBinaryData{
-							Value: "miniooni/0.1.0",
+						Method: "GET",
+						Tor: model.ArchivalHTTPTor{
+							ExitIP:   nil,
+							ExitName: nil,
+							IsTor:    false,
 						},
-					}},
-					Headers: map[string]model.ArchivalMaybeBinaryData{
-						"Accept":     {"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"},
-						"User-Agent": {"miniooni/0.1.0"},
+						Transport: "tcp",
+						URL:       "https://www.example.com/",
 					},
-					Method: "GET",
-					Tor: model.ArchivalHTTPTor{
-						ExitIP:   nil,
-						ExitName: nil,
-						IsTor:    false,
+					Response: model.ArchivalHTTPResponse{
+						Body:            model.ArchivalMaybeBinaryData{},
+						BodyIsTruncated: false,
+						Code:            0,
+						HeadersList:     []model.ArchivalHTTPHeader{},
+						Headers:         map[string]model.ArchivalMaybeBinaryData{},
+						Locations:       nil,
 					},
-					Transport: "tcp",
-					URL:       "https://www.example.com/",
+					T0:            0.4,
+					T:             1.563,
+					Tags:          []string{"http"},
+					TransactionID: 6,
 				},
-				Response: model.ArchivalHTTPResponse{
-					Body:            model.ArchivalMaybeBinaryData{},
-					BodyIsTruncated: false,
-					Code:            0,
-					HeadersList:     []model.ArchivalHTTPHeader{},
-					Headers:         map[string]model.ArchivalMaybeBinaryData{},
-					Locations:       nil,
-				},
-				T0:            0.4,
-				T:             1.563,
-				Tags:          []string{"http"},
-				TransactionID: 6,
+				expectErr:  nil,
+				expectData: []byte(`{"network":"tcp","address":"[2606:2800:220:1:248:1893:25c8:1946]:443","alpn":"h2","failure":"generic_timeout_error","request":{"body":"","body_is_truncated":false,"headers_list":[["Accept","text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"],["User-Agent","miniooni/0.1.0"]],"headers":{"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","User-Agent":"miniooni/0.1.0"},"method":"GET","tor":{"exit_ip":null,"exit_name":null,"is_tor":false},"x_transport":"tcp","url":"https://www.example.com/"},"response":{"body":"","body_is_truncated":false,"code":0,"headers_list":[],"headers":{}},"t0":0.4,"t":1.563,"tags":["http"],"transaction_id":6}`),
 			},
-			expectErr:  nil,
-			expectData: []byte(`{"network":"tcp","address":"[2606:2800:220:1:248:1893:25c8:1946]:443","alpn":"h2","failure":"generic_timeout_error","request":{"body":"","body_is_truncated":false,"headers_list":[["Accept","text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"],["User-Agent","miniooni/0.1.0"]],"headers":{"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","User-Agent":"miniooni/0.1.0"},"method":"GET","tor":{"exit_ip":null,"exit_name":null,"is_tor":false},"x_transport":"tcp","url":"https://www.example.com/"},"response":{"body":"","body_is_truncated":false,"code":0,"headers_list":[],"headers":{}},"t0":0.4,"t":1.563,"tags":["http"],"transaction_id":6}`),
-		}}
+
+			// This test ensures we can correctly serialize an HTTP measurement where the
+			// response body and some headers contain binary data
+			//
+			// We need this test to continue to have confidence that our serialization
+			// code is always correctly handling how we generate JSONs
+			{
+				name: "serialization of a successful HTTP request with binary data",
+				input: model.ArchivalHTTPRequestResult{
+					Network: "tcp",
+					Address: "[2606:2800:220:1:248:1893:25c8:1946]:443",
+					ALPN:    "h2",
+					Failure: nil,
+					Request: model.ArchivalHTTPRequest{
+						Body:            model.ArchivalMaybeBinaryData{Value: ""},
+						BodyIsTruncated: false,
+						HeadersList: []model.ArchivalHTTPHeader{{
+							Key: "Accept",
+							Value: model.ArchivalMaybeBinaryData{
+								Value: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+							},
+						}, {
+							Key: "User-Agent",
+							Value: model.ArchivalMaybeBinaryData{
+								Value: "miniooni/0.1.0",
+							},
+						}, {
+							Key: "Antani",
+							Value: model.ArchivalMaybeBinaryData{
+								Value: string(archivalBinaryInput[:7]),
+							},
+						}, {
+							Key: "Antani",
+							Value: model.ArchivalMaybeBinaryData{
+								Value: string(archivalBinaryInput[7:14]),
+							},
+						}},
+						Headers: map[string]model.ArchivalMaybeBinaryData{
+							"Accept":     {"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"},
+							"User-Agent": {"miniooni/0.1.0"},
+							"Antani":     {string(archivalBinaryInput[:7])},
+						},
+						Method: "GET",
+						Tor: model.ArchivalHTTPTor{
+							ExitIP:   nil,
+							ExitName: nil,
+							IsTor:    false,
+						},
+						Transport: "tcp",
+						URL:       "https://www.example.com/",
+					},
+					Response: model.ArchivalHTTPResponse{
+						Body: model.ArchivalMaybeBinaryData{
+							Value: string(archivalBinaryInput[:77]),
+						},
+						BodyIsTruncated: false,
+						Code:            200,
+						HeadersList: []model.ArchivalHTTPHeader{{
+							Key:   "Age",
+							Value: model.ArchivalMaybeBinaryData{"131833"},
+						}, {
+							Key:   "Server",
+							Value: model.ArchivalMaybeBinaryData{"Apache"},
+						}, {
+							Key: "Mascetti",
+							Value: model.ArchivalMaybeBinaryData{
+								Value: string(archivalBinaryInput[14:21]),
+							},
+						}, {
+							Key: "Mascetti",
+							Value: model.ArchivalMaybeBinaryData{
+								Value: string(archivalBinaryInput[21:28]),
+							},
+						}},
+						Headers: map[string]model.ArchivalMaybeBinaryData{
+							"Age":      {"131833"},
+							"Server":   {"Apache"},
+							"Mascetti": {string(archivalEncodedBinaryInput[14:21])},
+						},
+						Locations: nil,
+					},
+					T0:            0.7,
+					T:             1.33,
+					Tags:          []string{"http"},
+					TransactionID: 5,
+				},
+				expectErr:  nil,
+				expectData: []byte(`{"network":"tcp","address":"[2606:2800:220:1:248:1893:25c8:1946]:443","alpn":"h2","failure":null,"request":{"body":"","body_is_truncated":false,"headers_list":[["Accept","text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"],["User-Agent","miniooni/0.1.0"],["Antani",{"data":"V+V5+6a7DQ==","format":"base64"}],["Antani",{"data":"vM69p6C6pA==","format":"base64"}]],"headers":{"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","Antani":{"data":"V+V5+6a7DQ==","format":"base64"},"User-Agent":"miniooni/0.1.0"},"method":"GET","tor":{"exit_ip":null,"exit_name":null,"is_tor":false},"x_transport":"tcp","url":"https://www.example.com/"},"response":{"body":{"data":"V+V5+6a7DbzOvaeguqR4eBJZ7mg5pAeYxT68Vcv+NDx+G1qzIp3BLW7KW/EQJUceROItYAjqsArMBUig9Xg48Ns/nZ8lb4kAlpOvQ6w=","format":"base64"},"body_is_truncated":false,"code":200,"headers_list":[["Age","131833"],["Server","Apache"],["Mascetti",{"data":"eHgSWe5oOQ==","format":"base64"}],["Mascetti",{"data":"pAeYxT68VQ==","format":"base64"}]],"headers":{"Age":"131833","Mascetti":"6a7DbzO","Server":"Apache"}},"t0":0.7,"t":1.33,"tags":["http"],"transaction_id":5}`),
+			},
+
+			// This test ensures we can serialize an HTTP measurement containing
+			// IP addresses in the headers or the body.
+			//
+			// This test will fail until we implement more aggressive scrubbing, which
+			// is poised to happen as part of https://github.com/ooni/probe/issues/2531,
+			// where we implemented happy eyeballs, which may lead to surprises, so
+			// we want to be proactive and scrub more than before.
+			//
+			// We need this test to continue to have confidence that our serialization
+			// code is always correctly handling how we generate JSONs.
+			{
+				name: "serialization of a successful HTTP request with IP addresses and endpoints",
+				input: model.ArchivalHTTPRequestResult{
+					Network: "tcp",
+					Address: "[2606:2800:220:1:248:1893:25c8:1946]:443",
+					ALPN:    "h2",
+					Failure: nil,
+					Request: model.ArchivalHTTPRequest{
+						Body:            model.ArchivalMaybeBinaryData{Value: ""},
+						BodyIsTruncated: false,
+						HeadersList: []model.ArchivalHTTPHeader{{
+							Key: "Accept",
+							Value: model.ArchivalMaybeBinaryData{
+								Value: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+							},
+						}, {
+							Key: "User-Agent",
+							Value: model.ArchivalMaybeBinaryData{
+								Value: "miniooni/0.1.0",
+							},
+						}, {
+							Key: "AntaniV4",
+							Value: model.ArchivalMaybeBinaryData{
+								Value: "130.192.91.211",
+							},
+						}, {
+							Key: "AntaniV6",
+							Value: model.ArchivalMaybeBinaryData{
+								Value: "2606:2800:220:1:248:1893:25c8:1946",
+							},
+						}, {
+							Key: "AntaniV4Epnt",
+							Value: model.ArchivalMaybeBinaryData{
+								Value: "[130.192.91.211]:443",
+							},
+						}, {
+							Key: "AntaniV6Epnt",
+							Value: model.ArchivalMaybeBinaryData{
+								Value: "[2606:2800:220:1:248:1893:25c8:1946]:5222",
+							},
+						}},
+						Headers: map[string]model.ArchivalMaybeBinaryData{
+							"Accept":       {"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"},
+							"User-Agent":   {"miniooni/0.1.0"},
+							"AntaniV4":     {"130.192.91.211"},
+							"AntaniV6":     {"2606:2800:220:1:248:1893:25c8:1946"},
+							"AntaniV4Epnt": {"130.192.91.211:443"},
+							"AntaniV6Epnt": {"[2606:2800:220:1:248:1893:25c8:1946]:5222"},
+						},
+						Method: "GET",
+						Tor: model.ArchivalHTTPTor{
+							ExitIP:   nil,
+							ExitName: nil,
+							IsTor:    false,
+						},
+						Transport: "tcp",
+						URL:       "https://www.example.com/",
+					},
+					Response: model.ArchivalHTTPResponse{
+						Body: model.ArchivalMaybeBinaryData{
+							Value: "<HTML><BODY>Your address is 130.192.91.211 and 2606:2800:220:1:248:1893:25c8:1946 and you have endpoints [2606:2800:220:1:248:1893:25c8:1946]:5222 and 130.192.91.211:443. You're welcome.</BODY></HTML>",
+						},
+						BodyIsTruncated: false,
+						Code:            200,
+						HeadersList: []model.ArchivalHTTPHeader{{
+							Key:   "Age",
+							Value: model.ArchivalMaybeBinaryData{"131833"},
+						}, {
+							Key:   "Server",
+							Value: model.ArchivalMaybeBinaryData{"Apache"},
+						}, {
+							Key: "MascettiV4",
+							Value: model.ArchivalMaybeBinaryData{
+								Value: "130.192.91.211",
+							},
+						}, {
+							Key: "MascettiV6",
+							Value: model.ArchivalMaybeBinaryData{
+								Value: "2606:2800:220:1:248:1893:25c8:1946",
+							},
+						}, {
+							Key: "MascettiV4Epnt",
+							Value: model.ArchivalMaybeBinaryData{
+								Value: "[130.192.91.211]:443",
+							},
+						}, {
+							Key: "MascettiV6Epnt",
+							Value: model.ArchivalMaybeBinaryData{
+								Value: "[2606:2800:220:1:248:1893:25c8:1946]:5222",
+							},
+						}},
+						Headers: map[string]model.ArchivalMaybeBinaryData{
+							"Age":            {"131833"},
+							"Server":         {"Apache"},
+							"MascettiV4":     {"130.192.91.211"},
+							"MascettiV6":     {"2606:2800:220:1:248:1893:25c8:1946"},
+							"MascettiV4Epnt": {"130.192.91.211:443"},
+							"MascettiV6Epnt": {"[2606:2800:220:1:248:1893:25c8:1946]:5222"},
+						},
+						Locations: nil,
+					},
+					T0:            0.7,
+					T:             1.33,
+					Tags:          []string{"http"},
+					TransactionID: 5,
+				},
+				expectErr:  nil,
+				expectData: []byte(`{"network":"tcp","address":"[2606:2800:220:1:248:1893:25c8:1946]:443","alpn":"h2","failure":null,"request":{"body":"","body_is_truncated":false,"headers_list":[["Accept","text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"],["User-Agent","miniooni/0.1.0"],["AntaniV4","130.192.91.211"],["AntaniV6","2606:2800:220:1:248:1893:25c8:1946"],["AntaniV4Epnt","[130.192.91.211]:443"],["AntaniV6Epnt","[2606:2800:220:1:248:1893:25c8:1946]:5222"]],"headers":{"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","AntaniV4":"130.192.91.211","AntaniV4Epnt":"130.192.91.211:443","AntaniV6":"2606:2800:220:1:248:1893:25c8:1946","AntaniV6Epnt":"[2606:2800:220:1:248:1893:25c8:1946]:5222","User-Agent":"miniooni/0.1.0"},"method":"GET","tor":{"exit_ip":null,"exit_name":null,"is_tor":false},"x_transport":"tcp","url":"https://www.example.com/"},"response":{"body":"\u003cHTML\u003e\u003cBODY\u003eYour address is 130.192.91.211 and 2606:2800:220:1:248:1893:25c8:1946 and you have endpoints [2606:2800:220:1:248:1893:25c8:1946]:5222 and 130.192.91.211:443. You're welcome.\u003c/BODY\u003e\u003c/HTML\u003e","body_is_truncated":false,"code":200,"headers_list":[["Age","131833"],["Server","Apache"],["MascettiV4","130.192.91.211"],["MascettiV6","2606:2800:220:1:248:1893:25c8:1946"],["MascettiV4Epnt","[130.192.91.211]:443"],["MascettiV6Epnt","[2606:2800:220:1:248:1893:25c8:1946]:5222"]],"headers":{"Age":"131833","MascettiV4":"130.192.91.211","MascettiV4Epnt":"130.192.91.211:443","MascettiV6":"2606:2800:220:1:248:1893:25c8:1946","MascettiV6Epnt":"[2606:2800:220:1:248:1893:25c8:1946]:5222","Server":"Apache"}},"t0":0.7,"t":1.33,"tags":["http"],"transaction_id":5}`),
+			},
+		}
 
 		for _, tc := range cases {
 			t.Run(tc.name, func(t *testing.T) {
