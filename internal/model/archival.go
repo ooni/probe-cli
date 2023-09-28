@@ -16,6 +16,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"sort"
 	"unicode/utf8"
 )
 
@@ -347,6 +349,49 @@ type ArchivalHTTPResponse struct {
 	// The following fields are not serialised but are useful to simplify
 	// analysing the measurements in telegram, whatsapp, etc.
 	Locations []string `json:"-"`
+}
+
+// ArchivalNewHTTPHeadersList constructs a new ArchivalHTTPHeader list given HTTP headers.
+func ArchivalNewHTTPHeadersList(source http.Header) (out []ArchivalHTTPHeader) {
+	out = []ArchivalHTTPHeader{}
+
+	// obtain the header keys
+	keys := []string{}
+	for key := range source {
+		keys = append(keys, key)
+	}
+
+	// ensure the output is consistent, which helps with testing;
+	// for an example of why we need to sort headers, see
+	// https://github.com/ooni/probe-engine/pull/751/checks?check_run_id=853562310
+	sort.Strings(keys)
+
+	// insert into the output list
+	for _, key := range keys {
+		for _, value := range source[key] {
+			out = append(out, ArchivalHTTPHeader{
+				Key: key,
+				Value: ArchivalMaybeBinaryData{
+					Value: value,
+				},
+			})
+		}
+	}
+	return
+}
+
+// ArchivalNewHTTPHeadersMap creates a map representation of HTTP headers
+func ArchivalNewHTTPHeadersMap(header http.Header) (out map[string]ArchivalMaybeBinaryData) {
+	out = make(map[string]ArchivalMaybeBinaryData)
+	for key, values := range header {
+		for _, value := range values {
+			out[key] = ArchivalMaybeBinaryData{
+				Value: value,
+			}
+			break // just the first header
+		}
+	}
+	return
 }
 
 // ArchivalHTTPHeader is a single HTTP header.

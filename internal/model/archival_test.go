@@ -3,6 +3,7 @@ package model_test
 import (
 	"encoding/json"
 	"errors"
+	"net/http"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -2141,4 +2142,107 @@ func TestArchivalNetworkEvent(t *testing.T) {
 			})
 		}
 	})
+}
+
+func TestArchivalNewHTTPHeadersList(t *testing.T) {
+
+	// testcase is a test case run by this func
+	type testcase struct {
+		name   string
+		input  http.Header
+		expect []model.ArchivalHTTPHeader
+	}
+
+	cases := []testcase{{
+		name:   "with nil input",
+		input:  nil,
+		expect: []model.ArchivalHTTPHeader{},
+	}, {
+		name:   "with empty input",
+		input:  map[string][]string{},
+		expect: []model.ArchivalHTTPHeader{},
+	}, {
+		name: "common case",
+		input: map[string][]string{
+			"Content-Type": {"text/html; charset=utf-8"},
+			"Via":          {"a", "b", "c"},
+			"User-Agent":   {"miniooni/0.1.0"},
+		},
+		expect: []model.ArchivalHTTPHeader{{
+			Key: "Content-Type",
+			Value: model.ArchivalMaybeBinaryData{
+				Value: "text/html; charset=utf-8",
+			},
+		}, {
+			Key: "User-Agent",
+			Value: model.ArchivalMaybeBinaryData{
+				Value: "miniooni/0.1.0",
+			},
+		}, {
+			Key: "Via",
+			Value: model.ArchivalMaybeBinaryData{
+				Value: "a",
+			},
+		}, {
+			Key: "Via",
+			Value: model.ArchivalMaybeBinaryData{
+				Value: "b",
+			},
+		}, {
+			Key: "Via",
+			Value: model.ArchivalMaybeBinaryData{
+				Value: "c",
+			},
+		}},
+	}}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := model.ArchivalNewHTTPHeadersList(tc.input)
+			if diff := cmp.Diff(tc.expect, got); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+	}
+}
+
+func TestArchivalNewHTTPHeadersMap(t *testing.T) {
+
+	// testcase is a test case run by this func
+	type testcase struct {
+		name   string
+		input  http.Header
+		expect map[string]model.ArchivalMaybeBinaryData
+	}
+
+	cases := []testcase{{
+		name:   "with nil input",
+		input:  nil,
+		expect: map[string]model.ArchivalMaybeBinaryData{},
+	}, {
+		name:   "with empty input",
+		input:  map[string][]string{},
+		expect: map[string]model.ArchivalMaybeBinaryData{},
+	}, {
+		name: "common case",
+		input: map[string][]string{
+			"Content-Type": {"text/html; charset=utf-8"},
+			"Via":          {"a", "b", "c"},
+			"User-Agent":   {"miniooni/0.1.0"},
+		},
+		expect: map[string]model.ArchivalMaybeBinaryData{
+			"Content-Type": {"text/html; charset=utf-8"},
+			"Via":          {"a"},
+			"User-Agent":   {"miniooni/0.1.0"},
+		},
+	}}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := model.ArchivalNewHTTPHeadersMap(tc.input)
+			if diff := cmp.Diff(tc.expect, got); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+	}
 }
