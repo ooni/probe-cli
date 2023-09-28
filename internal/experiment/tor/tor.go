@@ -276,7 +276,7 @@ func maybeSanitize(input TargetResults, kt keytarget) TargetResults {
 	// Implementation note: here we are using a strict scrubbing policy where
 	// we remove all IP _endpoints_, mainly for convenience, because we already
 	// have a well tested implementation that does that.
-	data = []byte(scrubber.Scrub(string(data)))
+	data = []byte(scrubber.ScrubString(string(data)))
 	var out TargetResults
 	err = json.Unmarshal(data, &out)
 	runtimex.PanicOnError(err, "json.Unmarshal should not fail here")

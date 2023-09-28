@@ -18,7 +18,7 @@ type ScrubberLogger struct {
 
 // Debug scrubs and emits a debug message.
 func (sl *ScrubberLogger) Debug(message string) {
-	sl.Logger.Debug(scrubber.Scrub(message))
+	sl.Logger.Debug(scrubber.ScrubString(message))
 }
 
 // Debugf scrubs, formats, and emits a debug message.
@@ -28,7 +28,7 @@ func (sl *ScrubberLogger) Debugf(format string, v ...interface{}) {
 
 // Info scrubs and emits an informational message.
 func (sl *ScrubberLogger) Info(message string) {
-	sl.Logger.Info(scrubber.Scrub(message))
+	sl.Logger.Info(scrubber.ScrubString(message))
 }
 
 // Infof scrubs, formats, and emits an informational message.
@@ -38,7 +38,7 @@ func (sl *ScrubberLogger) Infof(format string, v ...interface{}) {
 
 // Warn scrubs and emits a warning message.
 func (sl *ScrubberLogger) Warn(message string) {
-	sl.Logger.Warn(scrubber.Scrub(message))
+	sl.Logger.Warn(scrubber.ScrubString(message))
 }
 
 // Warnf scrubs, formats, and emits a warning message.
