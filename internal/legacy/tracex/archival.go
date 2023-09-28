@@ -21,7 +21,6 @@ type (
 	ExtSpec          = model.ArchivalExtSpec
 	TCPConnectEntry  = model.ArchivalTCPConnectResult
 	TCPConnectStatus = model.ArchivalTCPConnectStatus
-	MaybeBinaryValue = model.ArchivalMaybeBinaryData
 	DNSQueryEntry    = model.ArchivalDNSLookupResult
 	DNSAnswerEntry   = model.ArchivalDNSAnswer
 	TLSHandshake     = model.ArchivalTLSOrQUICHandshakeResult
