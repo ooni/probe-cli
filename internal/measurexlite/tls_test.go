@@ -400,7 +400,7 @@ func TestTLSPeerCerts(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		wantOut []model.ArchivalMaybeBinaryData
+		wantOut []model.ArchivalBinaryData
 	}{{
 		name: "x509.HostnameError",
 		args: args{
@@ -411,9 +411,9 @@ func TestTLSPeerCerts(t *testing.T) {
 				},
 			},
 		},
-		wantOut: []model.ArchivalMaybeBinaryData{{
-			Value: "deadbeef",
-		}},
+		wantOut: []model.ArchivalBinaryData{
+			model.ArchivalBinaryData("deadbeef"),
+		},
 	}, {
 		name: "x509.UnknownAuthorityError",
 		args: args{
@@ -424,9 +424,9 @@ func TestTLSPeerCerts(t *testing.T) {
 				},
 			},
 		},
-		wantOut: []model.ArchivalMaybeBinaryData{{
-			Value: "deadbeef",
-		}},
+		wantOut: []model.ArchivalBinaryData{
+			model.ArchivalBinaryData("deadbeef"),
+		},
 	}, {
 		name: "x509.CertificateInvalidError",
 		args: args{
@@ -437,9 +437,9 @@ func TestTLSPeerCerts(t *testing.T) {
 				},
 			},
 		},
-		wantOut: []model.ArchivalMaybeBinaryData{{
-			Value: "deadbeef",
-		}},
+		wantOut: []model.ArchivalBinaryData{
+			model.ArchivalBinaryData("deadbeef"),
+		},
 	}, {
 		name: "successful case",
 		args: args{
@@ -452,11 +452,10 @@ func TestTLSPeerCerts(t *testing.T) {
 			},
 			err: nil,
 		},
-		wantOut: []model.ArchivalMaybeBinaryData{{
-			Value: "deadbeef",
-		}, {
-			Value: "abad1dea",
-		}},
+		wantOut: []model.ArchivalBinaryData{
+			model.ArchivalBinaryData("deadbeef"),
+			model.ArchivalBinaryData("abad1dea"),
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

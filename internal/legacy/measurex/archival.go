@@ -1,5 +1,11 @@
 package measurex
 
+//
+// Archival
+//
+// This file defines helpers to serialize to the OONI data format.
+//
+
 import (
 	"net"
 	"net/http"
@@ -7,12 +13,6 @@ import (
 	"strings"
 	"time"
 )
-
-//
-// Archival
-//
-// This file defines helpers to serialize to the OONI data format.
-//
 
 //
 // BinaryData
