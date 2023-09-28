@@ -25,7 +25,7 @@ func TestNewHeadersFromMap(t *testing.T) {
 		input:  map[string]string{},
 		expect: http.Header{},
 	}, {
-		name: "common case",
+		name: "common case: headers with mixed casing should be preserved",
 		input: map[string]string{
 			"ConTent-TyPe": "text/html; charset=utf-8",
 			"ViA":          "a",
