@@ -119,11 +119,58 @@ func (value *ArchivalBinaryData) UnmarshalJSON(raw []byte) error {
 	return nil
 }
 
+// ArchivalMaybeBinaryString is a possibly-binary string. When the string is valid UTF-8
+// we serialize it as itself. Otherwise, we use the binary data format defined by
+// https://github.com/ooni/spec/blob/master/data-formats/df-001-httpt.md#maybebinarydata
+type ArchivalMaybeBinaryString string
+
+var (
+	_ json.Marshaler   = ArchivalMaybeBinaryString("")
+	_ json.Unmarshaler = (func() *ArchivalMaybeBinaryString { return nil }())
+)
+
+// MarshalJSON implements json.Marshaler.
+func (value ArchivalMaybeBinaryString) MarshalJSON() ([]byte, error) {
+	// convert value to a string
+	str := string(value)
+
+	// TODO(bassosimone): here is where we should scrub the string in the future
+	// once we have replaced AchivalMaybeBinaryData with ArchivalMaybeBinaryString
+
+	// if we can serialize as UTF-8 string, do that
+	if utf8.ValidString(str) {
+		return json.Marshal(str)
+	}
+
+	// otherwise fallback to the serialization of ArchivalBinaryData
+	return json.Marshal(ArchivalBinaryData(str))
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (value *ArchivalMaybeBinaryString) UnmarshalJSON(rawData []byte) error {
+	// first attempt to decode as a string
+	var s string
+	if err := json.Unmarshal(rawData, &s); err == nil {
+		*value = ArchivalMaybeBinaryString(s)
+		return nil
+	}
+
+	// then attempt to decode as ArchivalBinaryData
+	var d ArchivalBinaryData
+	if err := json.Unmarshal(rawData, &d); err != nil {
+		return err
+	}
+	*value = ArchivalMaybeBinaryString(d)
+	return nil
+}
+
 // ArchivalMaybeBinaryData is a possibly binary string. We use this helper class
 // to define a custom JSON encoder that allows us to choose the proper
 // representation depending on whether the Value field is valid UTF-8 or not.
 //
 // See https://github.com/ooni/spec/blob/master/data-formats/df-001-httpt.md#maybebinarydata
+//
+// Deprecated: do not use this type in new code.
 type ArchivalMaybeBinaryData struct {
 	Value string
 }
