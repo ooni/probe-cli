@@ -6,7 +6,6 @@ package measurexlite
 
 import (
 	"net/http"
-	"sort"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -91,7 +90,7 @@ func newHTTPRequestHeaderList(req *http.Request) []model.ArchivalHTTPHeader {
 	if req != nil {
 		m = req.Header
 	}
-	return newHTTPHeaderList(m)
+	return model.ArchivalNewHTTPHeadersList(m)
 }
 
 // newHTTPRequestHeaderMap calls newHTTPHeaderMap with the request headers or
@@ -101,7 +100,7 @@ func newHTTPRequestHeaderMap(req *http.Request) map[string]model.ArchivalMaybeBi
 	if req != nil {
 		m = req.Header
 	}
-	return newHTTPHeaderMap(m)
+	return model.ArchivalNewHTTPHeadersMap(m)
 }
 
 // httpRequestURL returns the req.URL.String() or an empty string.
@@ -135,7 +134,7 @@ func newHTTPResponseHeaderList(resp *http.Response) (out []model.ArchivalHTTPHea
 	if resp != nil {
 		m = resp.Header
 	}
-	return newHTTPHeaderList(m)
+	return model.ArchivalNewHTTPHeadersList(m)
 }
 
 // newHTTPResponseHeaderMap calls newHTTPHeaderMap with the request headers or
@@ -145,7 +144,7 @@ func newHTTPResponseHeaderMap(resp *http.Response) (out map[string]model.Archiva
 	if resp != nil {
 		m = resp.Header
 	}
-	return newHTTPHeaderMap(m)
+	return model.ArchivalNewHTTPHeadersMap(m)
 }
 
 // httpResponseLocations returns the locations inside the response (if possible)
@@ -158,44 +157,4 @@ func httpResponseLocations(resp *http.Response) []string {
 		return []string{}
 	}
 	return []string{loc.String()}
-}
-
-// newHTTPHeaderList creates a list representation of HTTP headers
-func newHTTPHeaderList(header http.Header) (out []model.ArchivalHTTPHeader) {
-	out = []model.ArchivalHTTPHeader{}
-	keys := []string{}
-	for key := range header {
-		keys = append(keys, key)
-	}
-
-	// ensure the output is consistent, which helps with testing;
-	// for an example of why we need to sort headers, see
-	// https://github.com/ooni/probe-engine/pull/751/checks?check_run_id=853562310
-	sort.Strings(keys)
-
-	for _, key := range keys {
-		for _, value := range header[key] {
-			out = append(out, model.ArchivalHTTPHeader{
-				Key: key,
-				Value: model.ArchivalMaybeBinaryData{
-					Value: value,
-				},
-			})
-		}
-	}
-	return
-}
-
-// newHTTPHeaderMap creates a map representation of HTTP headers
-func newHTTPHeaderMap(header http.Header) (out map[string]model.ArchivalMaybeBinaryData) {
-	out = make(map[string]model.ArchivalMaybeBinaryData)
-	for key, values := range header {
-		for _, value := range values {
-			out[key] = model.ArchivalMaybeBinaryData{
-				Value: value,
-			}
-			break
-		}
-	}
-	return
 }

@@ -7,8 +7,6 @@ package tracex
 import (
 	"errors"
 	"net"
-	"net/http"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -95,31 +93,6 @@ func NewFailedOperation(err error) *string {
 	return &s
 }
 
-// httpAddHeaders adds the headers inside source into destList and destMap.
-func httpAddHeaders(source http.Header, destList *[]HTTPHeader,
-	destMap *map[string]MaybeBinaryValue) {
-	*destList = []HTTPHeader{}
-	*destMap = make(map[string]model.ArchivalMaybeBinaryData)
-	for key, values := range source {
-		for index, value := range values {
-			value := MaybeBinaryValue{Value: value}
-			// With the map representation we can only represent a single
-			// value for every key. Hence the list representation.
-			if index == 0 {
-				(*destMap)[key] = value
-			}
-			*destList = append(*destList, HTTPHeader{
-				Key:   key,
-				Value: value,
-			})
-		}
-	}
-	// Sorting helps with unit testing (map keys are unordered)
-	sort.Slice(*destList, func(i, j int) bool {
-		return (*destList)[i].Key < (*destList)[j].Key
-	})
-}
-
 // NewRequestList returns the list for "requests"
 func NewRequestList(begin time.Time, events []Event) (out []RequestEntry) {
 	// OONI wants the last request to appear first
@@ -137,13 +110,13 @@ func newRequestList(begin time.Time, events []Event) (out []RequestEntry) {
 		case *EventHTTPTransactionDone:
 			entry := RequestEntry{}
 			entry.T = ev.Time.Sub(begin).Seconds()
-			httpAddHeaders(
-				ev.HTTPRequestHeaders, &entry.Request.HeadersList, &entry.Request.Headers)
+			entry.Request.Headers = model.ArchivalNewHTTPHeadersMap(ev.HTTPRequestHeaders)
+			entry.Request.HeadersList = model.ArchivalNewHTTPHeadersList(ev.HTTPRequestHeaders)
 			entry.Request.Method = ev.HTTPMethod
 			entry.Request.URL = ev.HTTPURL
 			entry.Request.Transport = ev.Transport
-			httpAddHeaders(
-				ev.HTTPResponseHeaders, &entry.Response.HeadersList, &entry.Response.Headers)
+			entry.Response.Headers = model.ArchivalNewHTTPHeadersMap(ev.HTTPResponseHeaders)
+			entry.Response.HeadersList = model.ArchivalNewHTTPHeadersList(ev.HTTPResponseHeaders)
 			entry.Response.Code = int64(ev.HTTPStatusCode)
 			entry.Response.Locations = ev.HTTPResponseHeaders.Values("Location")
 			entry.Response.Body = model.ArchivalMaybeBinaryString(ev.HTTPResponseBody)
