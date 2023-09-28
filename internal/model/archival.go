@@ -370,10 +370,8 @@ func ArchivalNewHTTPHeadersList(source http.Header) (out []ArchivalHTTPHeader) {
 	for _, key := range keys {
 		for _, value := range source[key] {
 			out = append(out, ArchivalHTTPHeader{
-				Key: key,
-				Value: ArchivalMaybeBinaryData{
-					Value: value,
-				},
+				ArchivalMaybeBinaryString(key),
+				ArchivalMaybeBinaryString(value),
 			})
 		}
 	}
@@ -393,62 +391,22 @@ func ArchivalNewHTTPHeadersMap(header http.Header) (out map[string]ArchivalMaybe
 }
 
 // ArchivalHTTPHeader is a single HTTP header.
-type ArchivalHTTPHeader struct {
-	Key   string
-	Value ArchivalMaybeBinaryData
-}
+type ArchivalHTTPHeader [2]ArchivalMaybeBinaryString
 
-// MarshalJSON marshals a single HTTP header to a tuple where the first
-// element is a string and the second element is maybe-binary data.
-func (hh ArchivalHTTPHeader) MarshalJSON() ([]byte, error) {
-	if utf8.ValidString(hh.Value.Value) {
-		return json.Marshal([]string{hh.Key, hh.Value.Value})
-	}
-	value := make(map[string]string)
-	value["format"] = "base64"
-	value["data"] = base64.StdEncoding.EncodeToString([]byte(hh.Value.Value))
-	return json.Marshal([]interface{}{hh.Key, value})
-}
+// errCannotParseArchivalHTTPHeader indicates that we cannot parse an ArchivalHTTPHeader.
+var errCannotParseArchivalHTTPHeader = errors.New("invalid ArchivalHTTPHeader")
 
-// UnmarshalJSON is the opposite of MarshalJSON.
-func (hh *ArchivalHTTPHeader) UnmarshalJSON(d []byte) error {
-	var pair []interface{}
-	if err := json.Unmarshal(d, &pair); err != nil {
+// UnmarshalJSON implements json.Unmarshaler.
+func (ahh *ArchivalHTTPHeader) UnmarshalJSON(data []byte) error {
+	var helper []ArchivalMaybeBinaryString
+	if err := json.Unmarshal(data, &helper); err != nil {
 		return err
 	}
-	if len(pair) != 2 {
-		return errors.New("unexpected pair length")
+	if len(helper) != 2 {
+		return fmt.Errorf("%w: expected 2 elements, got %d", errCannotParseArchivalHTTPHeader, len(helper))
 	}
-	key, ok := pair[0].(string)
-	if !ok {
-		return errors.New("the key is not a string")
-	}
-	value, ok := pair[1].(string)
-	if !ok {
-		mapvalue, ok := pair[1].(map[string]interface{})
-		if !ok {
-			return errors.New("the value is neither a string nor a map[string]interface{}")
-		}
-		if _, ok := mapvalue["format"]; !ok {
-			return errors.New("missing format")
-		}
-		if v, ok := mapvalue["format"].(string); !ok || v != "base64" {
-			return errors.New("invalid format")
-		}
-		if _, ok := mapvalue["data"]; !ok {
-			return errors.New("missing data field")
-		}
-		v, ok := mapvalue["data"].(string)
-		if !ok {
-			return errors.New("the data field is not a string")
-		}
-		b64, err := base64.StdEncoding.DecodeString(v)
-		if err != nil {
-			return err
-		}
-		value = string(b64)
-	}
-	hh.Key, hh.Value = key, ArchivalMaybeBinaryData{Value: value}
+	(*ahh)[0] = helper[0]
+	(*ahh)[1] = helper[1]
 	return nil
 }
 

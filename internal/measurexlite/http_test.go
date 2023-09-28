@@ -120,15 +120,11 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 				Body:            model.ArchivalMaybeBinaryString(""),
 				BodyIsTruncated: false,
 				HeadersList: []model.ArchivalHTTPHeader{{
-					Key: "Accept",
-					Value: model.ArchivalMaybeBinaryData{
-						Value: "*/*",
-					},
+					model.ArchivalMaybeBinaryString("Accept"),
+					model.ArchivalMaybeBinaryString("*/*"),
 				}, {
-					Key: "User-Agent",
-					Value: model.ArchivalMaybeBinaryData{
-						Value: "miniooni/0.1.0-dev",
-					},
+					model.ArchivalMaybeBinaryString("User-Agent"),
+					model.ArchivalMaybeBinaryString("miniooni/0.1.0-dev"),
 				}},
 				Headers: map[string]model.ArchivalMaybeBinaryString{
 					"Accept":     "*/*",
@@ -195,15 +191,11 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 				Body:            model.ArchivalMaybeBinaryString(""),
 				BodyIsTruncated: false,
 				HeadersList: []model.ArchivalHTTPHeader{{
-					Key: "Accept",
-					Value: model.ArchivalMaybeBinaryData{
-						Value: "*/*",
-					},
+					model.ArchivalMaybeBinaryString("Accept"),
+					model.ArchivalMaybeBinaryString("*/*"),
 				}, {
-					Key: "User-Agent",
-					Value: model.ArchivalMaybeBinaryData{
-						Value: "miniooni/0.1.0-dev",
-					},
+					model.ArchivalMaybeBinaryString("User-Agent"),
+					model.ArchivalMaybeBinaryString("miniooni/0.1.0-dev"),
 				}},
 				Headers: map[string]model.ArchivalMaybeBinaryString{
 					"Accept":     "*/*",
@@ -221,15 +213,11 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 				BodyIsTruncated: false,
 				Code:            200,
 				HeadersList: []model.ArchivalHTTPHeader{{
-					Key: "Content-Type",
-					Value: model.ArchivalMaybeBinaryData{
-						Value: "text/html; charset=iso-8859-1",
-					},
+					model.ArchivalMaybeBinaryString("Content-Type"),
+					model.ArchivalMaybeBinaryString("text/html; charset=iso-8859-1"),
 				}, {
-					Key: "Server",
-					Value: model.ArchivalMaybeBinaryData{
-						Value: "Apache",
-					},
+					model.ArchivalMaybeBinaryString("Server"),
+					model.ArchivalMaybeBinaryString("Apache"),
 				}},
 				Headers: map[string]model.ArchivalMaybeBinaryString{
 					"Content-Type": "text/html; charset=iso-8859-1",
@@ -293,15 +281,11 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 				Body:            model.ArchivalMaybeBinaryString(""),
 				BodyIsTruncated: false,
 				HeadersList: []model.ArchivalHTTPHeader{{
-					Key: "Accept",
-					Value: model.ArchivalMaybeBinaryData{
-						Value: "*/*",
-					},
+					model.ArchivalMaybeBinaryString("Accept"),
+					model.ArchivalMaybeBinaryString("*/*"),
 				}, {
-					Key: "User-Agent",
-					Value: model.ArchivalMaybeBinaryData{
-						Value: "miniooni/0.1.0-dev",
-					},
+					model.ArchivalMaybeBinaryString("User-Agent"),
+					model.ArchivalMaybeBinaryString("miniooni/0.1.0-dev"),
 				}},
 				Headers: map[string]model.ArchivalMaybeBinaryString{
 					"Accept":     "*/*",
@@ -317,20 +301,14 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 				BodyIsTruncated: false,
 				Code:            302,
 				HeadersList: []model.ArchivalHTTPHeader{{
-					Key: "Content-Type",
-					Value: model.ArchivalMaybeBinaryData{
-						Value: "text/html; charset=iso-8859-1",
-					},
+					model.ArchivalMaybeBinaryString("Content-Type"),
+					model.ArchivalMaybeBinaryString("text/html; charset=iso-8859-1"),
 				}, {
-					Key: "Location",
-					Value: model.ArchivalMaybeBinaryData{
-						Value: "/v2/index.html",
-					},
+					model.ArchivalMaybeBinaryString("Location"),
+					model.ArchivalMaybeBinaryString("/v2/index.html"),
 				}, {
-					Key: "Server",
-					Value: model.ArchivalMaybeBinaryData{
-						Value: "Apache",
-					},
+					model.ArchivalMaybeBinaryString("Server"),
+					model.ArchivalMaybeBinaryString("Apache"),
 				}},
 				Headers: map[string]model.ArchivalMaybeBinaryString{
 					"Content-Type": "text/html; charset=iso-8859-1",

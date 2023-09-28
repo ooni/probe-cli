@@ -743,12 +743,12 @@ func TestNewRequestEntryList(t *testing.T) {
 		},
 		wantOut: []tracex.RequestEntry{{
 			Request: tracex.HTTPRequest{
-				HeadersList: []tracex.HTTPHeader{{
-					Key:   "ContENt-tYPE",
-					Value: tracex.MaybeBinaryValue{Value: "text/plain"},
+				HeadersList: []model.ArchivalHTTPHeader{{
+					model.ArchivalMaybeBinaryString("ContENt-tYPE"),
+					model.ArchivalMaybeBinaryString("text/plain"),
 				}, {
-					Key:   "User-aGENT",
-					Value: tracex.MaybeBinaryValue{Value: "foo/1.0"},
+					model.ArchivalMaybeBinaryString("User-aGENT"),
+					model.ArchivalMaybeBinaryString("foo/1.0"),
 				}},
 				Headers: map[string]model.ArchivalMaybeBinaryString{
 					"ContENt-tYPE": "text/plain",
@@ -774,7 +774,7 @@ func TestNewRequestEntryList(t *testing.T) {
 			Request: tracex.HTTPRequest{
 				Method:      "GeT",
 				Headers:     make(map[string]model.ArchivalMaybeBinaryString),
-				HeadersList: []tracex.HTTPHeader{},
+				HeadersList: []model.ArchivalHTTPHeader{},
 				URL:         "http://10.0.0.1/",
 			},
 		}},
@@ -813,12 +813,12 @@ func TestNewHTTPResponse(t *testing.T) {
 		wantOut: tracex.HTTPResponse{
 			Body: model.ArchivalMaybeBinaryString("deadbeef"),
 			Code: 200,
-			HeadersList: []tracex.HTTPHeader{{
-				Key:   "Content-Type",
-				Value: tracex.MaybeBinaryValue{Value: "text/plain"},
+			HeadersList: []model.ArchivalHTTPHeader{{
+				model.ArchivalMaybeBinaryString("Content-Type"),
+				model.ArchivalMaybeBinaryString("text/plain"),
 			}, {
-				Key:   "User-Agent",
-				Value: tracex.MaybeBinaryValue{Value: "foo/1.0"},
+				model.ArchivalMaybeBinaryString("User-Agent"),
+				model.ArchivalMaybeBinaryString("foo/1.0"),
 			}},
 			Headers: map[string]model.ArchivalMaybeBinaryString{
 				"Content-Type": "text/plain",
@@ -833,7 +833,7 @@ func TestNewHTTPResponse(t *testing.T) {
 		wantOut: tracex.HTTPResponse{
 			Body:        model.ArchivalMaybeBinaryString(""),
 			Code:        200,
-			HeadersList: []tracex.HTTPHeader{},
+			HeadersList: []model.ArchivalHTTPHeader{},
 			Headers:     map[string]model.ArchivalMaybeBinaryString{},
 		},
 	}}
