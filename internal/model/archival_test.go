@@ -1044,7 +1044,186 @@ func TestArchivalDNSLookupResult(t *testing.T) {
 
 // This test ensures that ArchivalTCPConnectResult is WAI
 func TestArchivalTCPConnectResult(t *testing.T) {
-	t.Skip("not implemented")
+
+	// This test ensures that we correctly serialize to JSON.
+	t.Run("MarshalJSON", func(t *testing.T) {
+		// testcase is a test case defined by this function
+		type testcase struct {
+			// name is the name of the test case
+			name string
+
+			// input is the input struct
+			input model.ArchivalTCPConnectResult
+
+			// expectErr is the error we expect to see or nil
+			expectErr error
+
+			// expectData is the data we expect to see
+			expectData []byte
+		}
+
+		cases := []testcase{{
+			name: "serialization of a successful TCP connect",
+			input: model.ArchivalTCPConnectResult{
+				IP:   "8.8.8.8",
+				Port: 443,
+				Status: model.ArchivalTCPConnectStatus{
+					Blocked: nil,
+					Failure: nil,
+					Success: true,
+				},
+				T0:            4,
+				T:             7,
+				Tags:          []string{"tcp"},
+				TransactionID: 99,
+			},
+			expectErr:  nil,
+			expectData: []byte(`{"ip":"8.8.8.8","port":443,"status":{"failure":null,"success":true},"t0":4,"t":7,"tags":["tcp"],"transaction_id":99}`),
+		}, {
+			name: "serialization of a failed TCP connect",
+			input: model.ArchivalTCPConnectResult{
+				IP:   "8.8.8.8",
+				Port: 443,
+				Status: model.ArchivalTCPConnectStatus{
+					Blocked: nil,
+					Failure: (func() *string {
+						s := netxlite.FailureGenericTimeoutError
+						return &s
+					}()),
+					Success: false,
+				},
+				T0:            4,
+				T:             7,
+				Tags:          []string{"tcp"},
+				TransactionID: 99,
+			},
+			expectErr:  nil,
+			expectData: []byte(`{"ip":"8.8.8.8","port":443,"status":{"failure":"generic_timeout_error","success":false},"t0":4,"t":7,"tags":["tcp"],"transaction_id":99}`),
+		}}
+
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// serialize to JSON
+				data, err := json.Marshal(tc.input)
+
+				t.Log("got this error", err)
+				t.Log("got this raw data", data)
+				t.Logf("converted to string: %s", string(data))
+
+				// handle errors
+				switch {
+				case err == nil && tc.expectErr != nil:
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err != nil && tc.expectErr == nil:
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err != nil && tc.expectErr != nil:
+					if err.Error() != tc.expectErr.Error() {
+						t.Fatal("expected", tc.expectErr, "got", err)
+					}
+
+				case err == nil && tc.expectErr == nil:
+					// all good--fallthrough
+				}
+
+				// make sure the serialization is OK
+				if diff := cmp.Diff(tc.expectData, data); diff != "" {
+					t.Fatal(diff)
+				}
+			})
+		}
+	})
+
+	// This test ensures that we can unmarshal from the JSON representation
+	t.Run("UnmarshalJSON", func(t *testing.T) {
+		// testcase is a test case defined by this function
+		type testcase struct {
+			// name is the name of the test case
+			name string
+
+			// input is the binary input
+			input []byte
+
+			// expectErr is the error we expect to see or nil
+			expectErr error
+
+			// expectStruct is the struct we expect to see
+			expectStruct model.ArchivalTCPConnectResult
+		}
+
+		cases := []testcase{{
+			name:      "deserialization of a successful TCP connect",
+			expectErr: nil,
+			input:     []byte(`{"ip":"8.8.8.8","port":443,"status":{"failure":null,"success":true},"t0":4,"t":7,"tags":["tcp"],"transaction_id":99}`),
+			expectStruct: model.ArchivalTCPConnectResult{
+				IP:   "8.8.8.8",
+				Port: 443,
+				Status: model.ArchivalTCPConnectStatus{
+					Blocked: nil,
+					Failure: nil,
+					Success: true,
+				},
+				T0:            4,
+				T:             7,
+				Tags:          []string{"tcp"},
+				TransactionID: 99,
+			},
+		}, {
+			name:      "deserialization of a failed TCP connect",
+			input:     []byte(`{"ip":"8.8.8.8","port":443,"status":{"failure":"generic_timeout_error","success":false},"t0":4,"t":7,"tags":["tcp"],"transaction_id":99}`),
+			expectErr: nil,
+			expectStruct: model.ArchivalTCPConnectResult{
+				IP:   "8.8.8.8",
+				Port: 443,
+				Status: model.ArchivalTCPConnectStatus{
+					Blocked: nil,
+					Failure: (func() *string {
+						s := netxlite.FailureGenericTimeoutError
+						return &s
+					}()),
+					Success: false,
+				},
+				T0:            4,
+				T:             7,
+				Tags:          []string{"tcp"},
+				TransactionID: 99,
+			},
+		}}
+
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// parse the JSON
+				var data model.ArchivalTCPConnectResult
+				err := json.Unmarshal(tc.input, &data)
+
+				t.Log("got this error", err)
+				t.Logf("got this struct %+v", data)
+
+				// handle errors
+				switch {
+				case err == nil && tc.expectErr != nil:
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err != nil && tc.expectErr == nil:
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err != nil && tc.expectErr != nil:
+					if err.Error() != tc.expectErr.Error() {
+						t.Fatal("expected", tc.expectErr, "got", err)
+					}
+
+				case err == nil && tc.expectErr == nil:
+					// all good--fallthrough
+				}
+
+				// make sure the deserialization is OK
+				if diff := cmp.Diff(tc.expectStruct, data); diff != "" {
+					t.Fatal(diff)
+				}
+			})
+		}
+	})
 }
 
 // This test ensures that ArchivalTLSOrQUICHandshakeResult is WAI
