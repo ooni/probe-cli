@@ -274,7 +274,7 @@ func NewRequestEntryList(req *http.Request, headers map[string]string) (out []tr
 // specific *http.Response instance and its body.
 func NewHTTPResponse(resp *http.Response, data []byte) (out tracex.HTTPResponse) {
 	out = tracex.HTTPResponse{
-		Body:        tracex.HTTPBody{Value: string(data)},
+		Body:        model.ArchivalMaybeBinaryString(data),
 		Code:        int64(resp.StatusCode),
 		Headers:     make(map[string]tracex.MaybeBinaryValue),
 		HeadersList: []tracex.HTTPHeader{},

@@ -323,7 +323,7 @@ type ArchivalHTTPRequestResult struct {
 // Headers are a map in Web Connectivity data format but
 // we have added support for a list since January 2020.
 type ArchivalHTTPRequest struct {
-	Body            ArchivalHTTPBody                   `json:"body"`
+	Body            ArchivalMaybeBinaryString          `json:"body"`
 	BodyIsTruncated bool                               `json:"body_is_truncated"`
 	HeadersList     []ArchivalHTTPHeader               `json:"headers_list"`
 	Headers         map[string]ArchivalMaybeBinaryData `json:"headers"`
@@ -338,7 +338,7 @@ type ArchivalHTTPRequest struct {
 // Headers are a map in Web Connectivity data format but
 // we have added support for a list since January 2020.
 type ArchivalHTTPResponse struct {
-	Body            ArchivalHTTPBody                   `json:"body"`
+	Body            ArchivalMaybeBinaryString          `json:"body"`
 	BodyIsTruncated bool                               `json:"body_is_truncated"`
 	Code            int64                              `json:"code"`
 	HeadersList     []ArchivalHTTPHeader               `json:"headers_list"`
@@ -348,13 +348,6 @@ type ArchivalHTTPResponse struct {
 	// analysing the measurements in telegram, whatsapp, etc.
 	Locations []string `json:"-"`
 }
-
-// ArchivalHTTPBody is an HTTP body. As an implementation note, this type must
-// be an alias for the MaybeBinaryValue type, otherwise the specific serialisation
-// mechanism implemented by MaybeBinaryValue is not working.
-//
-// QUIRK: it's quite fragile we must use an alias here--more robust solution?
-type ArchivalHTTPBody = ArchivalMaybeBinaryData
 
 // ArchivalHTTPHeader is a single HTTP header.
 type ArchivalHTTPHeader struct {

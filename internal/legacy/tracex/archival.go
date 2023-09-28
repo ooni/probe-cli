@@ -27,7 +27,6 @@ type (
 	DNSQueryEntry    = model.ArchivalDNSLookupResult
 	DNSAnswerEntry   = model.ArchivalDNSAnswer
 	TLSHandshake     = model.ArchivalTLSOrQUICHandshakeResult
-	HTTPBody         = model.ArchivalHTTPBody
 	HTTPHeader       = model.ArchivalHTTPHeader
 	RequestEntry     = model.ArchivalHTTPRequestResult
 	HTTPRequest      = model.ArchivalHTTPRequest
@@ -147,7 +146,7 @@ func newRequestList(begin time.Time, events []Event) (out []RequestEntry) {
 				ev.HTTPResponseHeaders, &entry.Response.HeadersList, &entry.Response.Headers)
 			entry.Response.Code = int64(ev.HTTPStatusCode)
 			entry.Response.Locations = ev.HTTPResponseHeaders.Values("Location")
-			entry.Response.Body.Value = string(ev.HTTPResponseBody)
+			entry.Response.Body = model.ArchivalMaybeBinaryString(ev.HTTPResponseBody)
 			entry.Response.BodyIsTruncated = ev.HTTPResponseBodyIsTruncated
 			entry.Failure = ev.Err.ToFailure()
 			out = append(out, entry)

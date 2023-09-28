@@ -773,13 +773,13 @@ func generateMockGetter(requestResponse map[string]string, responseStatus map[st
 				Failure: failure,
 				Request: tracex.HTTPRequest{
 					URL:             url,
-					Body:            tracex.MaybeBinaryValue{},
+					Body:            model.ArchivalMaybeBinaryString(""),
 					BodyIsTruncated: false,
 				},
 				Response: tracex.HTTPResponse{
-					Body: tracex.HTTPBody{
-						Value: responseBody,
-					},
+					Body: model.ArchivalMaybeBinaryString(
+						responseBody,
+					),
 					BodyIsTruncated: false,
 				}},
 			},
