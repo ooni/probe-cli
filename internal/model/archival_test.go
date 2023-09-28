@@ -810,6 +810,243 @@ func TestHTTPBody(t *testing.T) {
 	}
 }
 
+// This test ensures that ArchivalDNSLookupResult is WAI
+func TestArchivalDNSLookupResult(t *testing.T) {
+
+	// This test ensures that we correctly serialize to JSON.
+	t.Run("MarshalJSON", func(t *testing.T) {
+		// testcase is a test case defined by this function
+		type testcase struct {
+			// name is the name of the test case
+			name string
+
+			// input is the input struct
+			input model.ArchivalDNSLookupResult
+
+			// expectErr is the error we expect to see or nil
+			expectErr error
+
+			// expectData is the data we expect to see
+			expectData []byte
+		}
+
+		cases := []testcase{{
+			name: "serialization of a successful DNS lookup",
+			input: model.ArchivalDNSLookupResult{
+				Answers: []model.ArchivalDNSAnswer{{
+					ASN:        15169,
+					ASOrgName:  "Google LLC",
+					AnswerType: "A",
+					Hostname:   "",
+					IPv4:       "8.8.8.8",
+					IPv6:       "",
+					TTL:        nil,
+				}, {
+					ASN:        15169,
+					ASOrgName:  "Google LLC",
+					AnswerType: "AAAA",
+					Hostname:   "",
+					IPv4:       "",
+					IPv6:       "2001:4860:4860::8888",
+					TTL:        nil,
+				}},
+				Engine:           "getaddrinfo",
+				Failure:          nil,
+				GetaddrinfoError: 0,
+				Hostname:         "dns.google",
+				QueryType:        "ANY",
+				RawResponse:      nil,
+				Rcode:            0,
+				ResolverHostname: nil,
+				ResolverPort:     nil,
+				ResolverAddress:  "",
+				T0:               0.5,
+				T:                0.7,
+				Tags:             []string{"dns"},
+				TransactionID:    44,
+			},
+			expectErr:  nil,
+			expectData: []byte(`{"answers":[{"asn":15169,"as_org_name":"Google LLC","answer_type":"A","ipv4":"8.8.8.8","ttl":null},{"asn":15169,"as_org_name":"Google LLC","answer_type":"AAAA","ipv6":"2001:4860:4860::8888","ttl":null}],"engine":"getaddrinfo","failure":null,"hostname":"dns.google","query_type":"ANY","resolver_hostname":null,"resolver_port":null,"resolver_address":"","t0":0.5,"t":0.7,"tags":["dns"],"transaction_id":44}`),
+		}, {
+			name: "serialization of a failed DNS lookup",
+			input: model.ArchivalDNSLookupResult{
+				Answers: nil,
+				Engine:  "getaddrinfo",
+				Failure: (func() *string {
+					s := netxlite.FailureDNSNXDOMAINError
+					return &s
+				}()),
+				GetaddrinfoError: 5,
+				Hostname:         "dns.googlex",
+				QueryType:        "ANY",
+				RawResponse:      nil,
+				Rcode:            0,
+				ResolverHostname: nil,
+				ResolverPort:     nil,
+				ResolverAddress:  "",
+				T0:               0.5,
+				T:                0.77,
+				Tags:             []string{"dns"},
+				TransactionID:    43,
+			},
+			expectErr:  nil,
+			expectData: []byte(`{"answers":null,"engine":"getaddrinfo","failure":"dns_nxdomain_error","getaddrinfo_error":5,"hostname":"dns.googlex","query_type":"ANY","resolver_hostname":null,"resolver_port":null,"resolver_address":"","t0":0.5,"t":0.77,"tags":["dns"],"transaction_id":43}`),
+		}}
+
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// serialize to JSON
+				data, err := json.Marshal(tc.input)
+
+				t.Log("got this error", err)
+				t.Log("got this raw data", data)
+				t.Logf("converted to string: %s", string(data))
+
+				// handle errors
+				switch {
+				case err == nil && tc.expectErr != nil:
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err != nil && tc.expectErr == nil:
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err != nil && tc.expectErr != nil:
+					if err.Error() != tc.expectErr.Error() {
+						t.Fatal("expected", tc.expectErr, "got", err)
+					}
+
+				case err == nil && tc.expectErr == nil:
+					// all good--fallthrough
+				}
+
+				// make sure the serialization is OK
+				if diff := cmp.Diff(tc.expectData, data); diff != "" {
+					t.Fatal(diff)
+				}
+			})
+		}
+	})
+
+	// This test ensures that we can unmarshal from the JSON representation
+	t.Run("UnmarshalJSON", func(t *testing.T) {
+		// testcase is a test case defined by this function
+		type testcase struct {
+			// name is the name of the test case
+			name string
+
+			// input is the binary input
+			input []byte
+
+			// expectErr is the error we expect to see or nil
+			expectErr error
+
+			// expectStruct is the struct we expect to see
+			expectStruct model.ArchivalDNSLookupResult
+		}
+
+		cases := []testcase{{
+			name:      "deserialization of a successful DNS lookup",
+			expectErr: nil,
+			input:     []byte(`{"answers":[{"asn":15169,"as_org_name":"Google LLC","answer_type":"A","ipv4":"8.8.8.8","ttl":null},{"asn":15169,"as_org_name":"Google LLC","answer_type":"AAAA","ipv6":"2001:4860:4860::8888","ttl":null}],"engine":"getaddrinfo","failure":null,"hostname":"dns.google","query_type":"ANY","resolver_hostname":null,"resolver_port":null,"resolver_address":"","t0":0.5,"t":0.7,"tags":["dns"],"transaction_id":44}`),
+			expectStruct: model.ArchivalDNSLookupResult{
+				Answers: []model.ArchivalDNSAnswer{{
+					ASN:        15169,
+					ASOrgName:  "Google LLC",
+					AnswerType: "A",
+					Hostname:   "",
+					IPv4:       "8.8.8.8",
+					IPv6:       "",
+					TTL:        nil,
+				}, {
+					ASN:        15169,
+					ASOrgName:  "Google LLC",
+					AnswerType: "AAAA",
+					Hostname:   "",
+					IPv4:       "",
+					IPv6:       "2001:4860:4860::8888",
+					TTL:        nil,
+				}},
+				Engine:           "getaddrinfo",
+				Failure:          nil,
+				GetaddrinfoError: 0,
+				Hostname:         "dns.google",
+				QueryType:        "ANY",
+				RawResponse:      nil,
+				Rcode:            0,
+				ResolverHostname: nil,
+				ResolverPort:     nil,
+				ResolverAddress:  "",
+				T0:               0.5,
+				T:                0.7,
+				Tags:             []string{"dns"},
+				TransactionID:    44,
+			},
+		}, {
+			name:      "deserialization of a failed DNS lookup",
+			input:     []byte(`{"answers":null,"engine":"getaddrinfo","failure":"dns_nxdomain_error","getaddrinfo_error":5,"hostname":"dns.googlex","query_type":"ANY","resolver_hostname":null,"resolver_port":null,"resolver_address":"","t0":0.5,"t":0.77,"tags":["dns"],"transaction_id":43}`),
+			expectErr: nil,
+			expectStruct: model.ArchivalDNSLookupResult{
+				Answers: nil,
+				Engine:  "getaddrinfo",
+				Failure: (func() *string {
+					s := netxlite.FailureDNSNXDOMAINError
+					return &s
+				}()),
+				GetaddrinfoError: 5,
+				Hostname:         "dns.googlex",
+				QueryType:        "ANY",
+				RawResponse:      nil,
+				Rcode:            0,
+				ResolverHostname: nil,
+				ResolverPort:     nil,
+				ResolverAddress:  "",
+				T0:               0.5,
+				T:                0.77,
+				Tags:             []string{"dns"},
+				TransactionID:    43,
+			},
+		}}
+
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				// parse the JSON
+				var data model.ArchivalDNSLookupResult
+				err := json.Unmarshal(tc.input, &data)
+
+				t.Log("got this error", err)
+				t.Logf("got this struct %+v", data)
+
+				// handle errors
+				switch {
+				case err == nil && tc.expectErr != nil:
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err != nil && tc.expectErr == nil:
+					t.Fatal("expected", tc.expectErr, "got", err)
+
+				case err != nil && tc.expectErr != nil:
+					if err.Error() != tc.expectErr.Error() {
+						t.Fatal("expected", tc.expectErr, "got", err)
+					}
+
+				case err == nil && tc.expectErr == nil:
+					// all good--fallthrough
+				}
+
+				// make sure the deserialization is OK
+				if diff := cmp.Diff(tc.expectStruct, data); diff != "" {
+					t.Fatal(diff)
+				}
+			})
+		}
+	})
+}
+
+// This test ensures that ArchivalTCPConnectResult is WAI
+func TestArchivalTCPConnectResult(t *testing.T) {
+	t.Skip("not implemented")
+}
+
 // This test ensures that ArchivalTLSOrQUICHandshakeResult is WAI
 func TestArchivalTLSOrQUICHandshakeResult(t *testing.T) {
 
@@ -1014,4 +1251,14 @@ func TestArchivalTLSOrQUICHandshakeResult(t *testing.T) {
 			})
 		}
 	})
+}
+
+// This test ensures that ArchivalHTTPRequestResult is WAI
+func TestArchivalHTTPRequestResult(t *testing.T) {
+	t.Skip("not implemented")
+}
+
+// This test ensures that ArchivalNetworkEvent is WAI
+func TestArchivalNetworkEvent(t *testing.T) {
+	t.Skip("not implemented")
 }
