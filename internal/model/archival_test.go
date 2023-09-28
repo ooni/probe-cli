@@ -62,22 +62,22 @@ func TestArchivalBinaryData(t *testing.T) {
 
 		cases := []testcase{{
 			name:       "with nil .Value",
-			input:      model.ArchivalBinaryData{Value: nil},
+			input:      nil,
 			expectErr:  nil,
 			expectData: []byte("null"),
 		}, {
 			name:       "with zero length .Value",
-			input:      model.ArchivalBinaryData{Value: []byte{}},
+			input:      []byte{},
 			expectErr:  nil,
 			expectData: []byte("null"),
 		}, {
 			name:       "with .Value being a simple binary string",
-			input:      model.ArchivalBinaryData{Value: []byte("Elliot")},
+			input:      []byte("Elliot"),
 			expectErr:  nil,
 			expectData: []byte(`{"data":"RWxsaW90","format":"base64"}`),
 		}, {
 			name:       "with .Value being a long binary string",
-			input:      model.ArchivalBinaryData{Value: archivalBinaryInput},
+			input:      archivalBinaryInput,
 			expectErr:  nil,
 			expectData: archivalEncodedBinaryInput,
 		}}
@@ -137,67 +137,67 @@ func TestArchivalBinaryData(t *testing.T) {
 			name:       "with nil input array",
 			input:      nil,
 			expectErr:  errors.New("unexpected end of JSON input"),
-			expectData: model.ArchivalBinaryData{Value: nil},
+			expectData: nil,
 		}, {
 			name:       "with zero-length input array",
 			input:      []byte{},
 			expectErr:  errors.New("unexpected end of JSON input"),
-			expectData: model.ArchivalBinaryData{Value: nil},
+			expectData: nil,
 		}, {
 			name:       "with binary input that is not a complete JSON",
 			input:      []byte("{"),
 			expectErr:  errors.New("unexpected end of JSON input"),
-			expectData: model.ArchivalBinaryData{Value: nil},
+			expectData: nil,
 		}, {
 			name:       "with ~random binary data as input",
 			input:      archivalBinaryInput,
 			expectErr:  errors.New("invalid character 'W' looking for beginning of value"),
-			expectData: model.ArchivalBinaryData{},
+			expectData: nil,
 		}, {
 			name:       "with valid JSON of the wrong type (array)",
 			input:      []byte("[]"),
 			expectErr:  errors.New("json: cannot unmarshal array into Go value of type model.archivalBinaryDataRepr"),
-			expectData: model.ArchivalBinaryData{},
+			expectData: nil,
 		}, {
 			name:       "with valid JSON of the wrong type (number)",
 			input:      []byte("1.17"),
 			expectErr:  errors.New("json: cannot unmarshal number into Go value of type model.archivalBinaryDataRepr"),
-			expectData: model.ArchivalBinaryData{},
+			expectData: nil,
 		}, {
 			name:       "with input being the liternal null",
 			input:      []byte(`null`),
 			expectErr:  nil,
-			expectData: model.ArchivalBinaryData{Value: nil},
+			expectData: nil,
 		}, {
 			name:       "with empty JSON object",
 			input:      []byte("{}"),
 			expectErr:  errors.New("model: invalid binary data format: ''"),
-			expectData: model.ArchivalBinaryData{},
+			expectData: nil,
 		}, {
 			name:       "with correct data model but invalid format",
 			input:      []byte(`{"data":"","format":"antani"}`),
 			expectErr:  errors.New("model: invalid binary data format: 'antani'"),
-			expectData: model.ArchivalBinaryData{},
+			expectData: nil,
 		}, {
 			name:       "with correct data model and format but invalid base64 string",
 			input:      []byte(`{"data":"x","format":"base64"}`),
 			expectErr:  errors.New("illegal base64 data at input byte 0"),
-			expectData: model.ArchivalBinaryData{},
+			expectData: nil,
 		}, {
 			name:       "with correct data model and format but empty base64 string",
 			input:      []byte(`{"data":"","format":"base64"}`),
 			expectErr:  nil,
-			expectData: model.ArchivalBinaryData{Value: []byte{}},
+			expectData: []byte{},
 		}, {
 			name:       "with the encoding of a simple binary string",
 			input:      []byte(`{"data":"RWxsaW90","format":"base64"}`),
 			expectErr:  nil,
-			expectData: model.ArchivalBinaryData{Value: []byte("Elliot")},
+			expectData: []byte("Elliot"),
 		}, {
 			name:       "with the encoding of a complex binary string",
 			input:      archivalEncodedBinaryInput,
 			expectErr:  nil,
-			expectData: model.ArchivalBinaryData{Value: archivalBinaryInput},
+			expectData: archivalBinaryInput,
 		}}
 
 		for _, tc := range cases {
@@ -207,8 +207,8 @@ func TestArchivalBinaryData(t *testing.T) {
 				err := json.Unmarshal(tc.input, &abd)
 
 				t.Log("got this error", err)
-				t.Log("got this .Value field", abd.Value)
-				t.Logf("converted to string: %s", string(abd.Value))
+				t.Log("got this .Value field", abd)
+				t.Logf("converted to string: %s", string(abd))
 
 				// handle errors
 				switch {
@@ -247,16 +247,16 @@ func TestArchivalBinaryData(t *testing.T) {
 
 		cases := []testcase{{
 			name:  "with nil .Value",
-			input: model.ArchivalBinaryData{Value: nil},
+			input: nil,
 		}, {
 			name:  "with zero length .Value",
-			input: model.ArchivalBinaryData{Value: []byte{}},
+			input: []byte{},
 		}, {
 			name:  "with .Value being a simple binary string",
-			input: model.ArchivalBinaryData{Value: []byte("Elliot")},
+			input: []byte("Elliot"),
 		}, {
 			name:  "with .Value being a long binary string",
-			input: model.ArchivalBinaryData{Value: archivalBinaryInput},
+			input: archivalBinaryInput,
 		}}
 
 		for _, tc := range cases {
