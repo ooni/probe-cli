@@ -19,10 +19,12 @@ func measureWithTLS(ctx context.Context, rt pdsl.Runtime,
 	}
 
 	// resolve IP addresses using two resolvers and deduplicate the results
-	ipAddrs := pdsl.DNSLookupDeduplicate(pdsl.Merge(
-		pdsl.DNSLookupGetaddrinfo(ctx, rt)(domain),
-		pdsl.DNSLookupUDP(ctx, rt, udpResolverEndpoint)(domain),
-	))
+	ipAddrs := pdsl.DNSLookupDeduplicate()(
+		pdsl.Merge(
+			pdsl.DNSLookupGetaddrinfo(ctx, rt)(domain),
+			pdsl.DNSLookupUDP(ctx, rt, udpResolverEndpoint)(domain),
+		),
+	)
 
 	// convert the IP addresses to endpoints
 	endpoints := pdsl.MakeEndpointsForPort("443")(ipAddrs)

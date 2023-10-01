@@ -2,7 +2,13 @@ package pdsl
 
 import "github.com/ooni/probe-cli/v3/internal/model"
 
-// Trace traces execution and (typically) collects OONI observations.
+// Trace is the abstraction that potentially allows to trace network operations
+// and collect OONI observations. The [Runtime] is responsible for creating a
+// [Trace] and the [Trace] actual behavior depends on the [Runtime]. For example,
+// [NewMinimalRuntime] constructs a minimal [Runtime] creating [Trace] instances
+// that do not actually collect OONI observations.
+//
+// This interface is such that [*netxlite.Netx] and [*measurexlite.Trace] implement it.
 type Trace interface {
 	// NewDialerWithoutResolver returns a dialer that saves observations into this trace.
 	//

@@ -102,26 +102,28 @@ func DNSLookupUDP(ctx context.Context, rt Runtime, endpoint Endpoint, tags ...st
 	}
 }
 
-// DNSLookupDeduplicate is a [Filter] that deduplicates the resolved IP addresses.
-func DNSLookupDeduplicate(inputs <-chan Result[IPAddr]) <-chan Result[IPAddr] {
-	// create channel for producing results
-	outputs := make(chan Result[IPAddr])
+// DNSLookupDeduplicate returns a [Filter] that deduplicates the resolved IP addresses.
+func DNSLookupDeduplicate() Filter[Result[IPAddr], Result[IPAddr]] {
+	return func(inputs <-chan Result[IPAddr]) <-chan Result[IPAddr] {
+		// create channel for producing results
+		outputs := make(chan Result[IPAddr])
 
-	go func() {
-		// make sure we close the channel when done
-		defer close(outputs)
+		go func() {
+			// make sure we close the channel when done
+			defer close(outputs)
 
-		// deduplicate addresses read over inputs
-		already := make(map[IPAddr]bool)
-		for input := range inputs {
-			if err := input.Err; err != nil {
+			// deduplicate addresses read over inputs
+			already := make(map[IPAddr]bool)
+			for input := range inputs {
+				if err := input.Err; err != nil {
+					outputs <- input
+					continue
+				}
+				already[input.Value] = true
 				outputs <- input
-				continue
 			}
-			already[input.Value] = true
-			outputs <- input
-		}
-	}()
+		}()
 
-	return outputs
+		return outputs
+	}
 }

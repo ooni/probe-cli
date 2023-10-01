@@ -2,11 +2,10 @@ package pdsl
 
 import "net"
 
-// Endpoint is a string containing a TCP/UDP endpoint.
+// Endpoint is a string containing a TCP/UDP endpoint (e.g., 8.8.8.8:443, [::1]).
 type Endpoint string
 
-// MakeEndpointsForPort returns a [Filter] that either passes errors through
-// or converts an [IPAddr] to an [Endpoint] using the given port.
+// MakeEndpointsForPort returns a [Filter] that attemps to make [Endpoint] from [IPAddr].
 func MakeEndpointsForPort(port string) Filter[Result[IPAddr], Result[Endpoint]] {
 	return func(inputs <-chan Result[IPAddr]) <-chan Result[Endpoint] {
 		outputs := make(chan Result[Endpoint])

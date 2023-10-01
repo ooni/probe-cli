@@ -1,7 +1,8 @@
 package pdsl
 
-// Fork executes N copies of a [Filter] and returns the list of channels to [Merge]. As a
-// special case, when N is less than one, this function returns a single channel.
+// Fork executes N copies of a [Filter] and returns channels to [Merge].
+//
+// If N is <= 1, [Fork] returns a list containing a single channel.
 func Fork[A, B any](N int, f Filter[A, B], inputs <-chan A) (outputs []<-chan B) {
 	switch {
 	case N <= 1:

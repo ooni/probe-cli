@@ -14,8 +14,7 @@ type TCPConn struct {
 	net.Conn
 }
 
-// TCPConnect returns a [Filter] that either passes errors through or attempts to TCP-connect
-// to and [Endpoint] producing either an error or a [TCPConn].
+// TCPConnect returns a [Filter] that attempts to create [TCPConn] from [Endpoint].
 func TCPConnect(
 	ctx context.Context, rt Runtime, tags ...string) Filter[Result[Endpoint], Result[TCPConn]] {
 	return func(mendpoints <-chan Result[Endpoint]) <-chan Result[TCPConn] {

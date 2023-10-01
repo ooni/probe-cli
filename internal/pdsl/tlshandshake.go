@@ -15,8 +15,7 @@ type TLSConn struct {
 	model.TLSConn
 }
 
-// TCPConnect returns a [Filter] that either passes errors through or attempts to TLS-handshake
-// using a [TCPConn] producing either an error or a [TLSConn].
+// TCPConnect returns a [Filter] that attempts to create [TLSConn] from [TCPConn].
 func TLSHandshake(ctx context.Context, rt Runtime, tlsConfig *tls.Config) Filter[Result[TCPConn], Result[TLSConn]] {
 	return func(mTcpConns <-chan Result[TCPConn]) <-chan Result[TLSConn] {
 		outputs := make(chan Result[TLSConn])

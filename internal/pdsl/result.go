@@ -6,12 +6,12 @@ type Result[T any] struct {
 	Value T
 }
 
-// NewResultValue contains a result containing a value.
+// NewResultValue creates a [Result] wrapping a value.
 func NewResultValue[T any](value T) Result[T] {
 	return Result[T]{nil, value}
 }
 
-// NewResultError contains a result containing an error.
+// NewResultError creates a [Result] wrapping an error.
 func NewResultError[T any](err error) Result[T] {
 	return Result[T]{err, *new(T)}
 }
