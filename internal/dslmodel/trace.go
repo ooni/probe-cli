@@ -12,4 +12,7 @@ type Trace interface {
 
 	// NewStdlibResolver returns a resolver that saves observations into this trace.
 	NewStdlibResolver(logger model.DebugLogger) model.Resolver
+
+	// NewParallelUDPResolver creates a parallel DNS over UDP resolver.
+	NewParallelUDPResolver(logger model.DebugLogger, dialer model.Dialer, address string) model.Resolver
 }

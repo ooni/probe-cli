@@ -15,12 +15,16 @@ func main() {
 	rt := dslminimalruntime.New(log.Log)
 	defer rt.Close()
 
-	// TODO(bassosimone): we need to reduce duplicate addresses
-	// TODO(bassosimone): we need to mix multiple resolvers results
-
-	pipeline := dslmodel.JoinPipeline(
-		dslnet.GetaddrinfoPipeline(),
-		dslmodel.Parallel(4, dslnet.ConnectPipeline()),
+	pipeline := dslmodel.ComposePipelines3(
+		dslmodel.Distribute(
+			dslnet.GetaddrinfoPipeline(),
+			dslnet.DNSLookupUDPPipeline("8.8.8.8:53"),
+		),
+		dslmodel.DedupPipeline[dslnet.Endpoint](),
+		dslmodel.FanOut(
+			dslmodel.NumWorkers(4),
+			dslnet.ConnectPipeline(),
+		),
 	)
 
 	input := dslnet.DNSQuery{
@@ -28,9 +32,9 @@ func main() {
 		EndpointTemplate: dslnet.EndpointTemplate{
 			Network: "tcp",
 			Port:    "443",
-			Tags:    []string{"endpoint"},
+			Tags:    []string{},
 		},
-		Tags: []string{"dns"},
+		Tags: []string{},
 	}
 
 	outputs := pipeline.Run(ctx, rt, dslmodel.StreamResultValue(input))

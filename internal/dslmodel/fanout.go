@@ -5,10 +5,10 @@ import (
 	"sync"
 )
 
-// Parallel creates a pipeline that runs several copies of the given
+// FanOut creates a pipeline that runs several copies of the given
 // pipeline in parallel. When the N argument is less than one, this func
 // just returns the original pipeline to the caller.
-func Parallel[A, B any](N int, pipeline Pipeline[A, B]) Pipeline[A, B] {
+func FanOut[A, B any](N NumWorkers, pipeline Pipeline[A, B]) Pipeline[A, B] {
 	// handle the base case
 	if N <= 1 {
 		return pipeline
@@ -21,7 +21,7 @@ func Parallel[A, B any](N int, pipeline Pipeline[A, B]) Pipeline[A, B] {
 
 		// create N goroutines each running the pipeline
 		wgroup := &sync.WaitGroup{}
-		for idx := 0; idx < N; idx++ {
+		for idx := NumWorkers(0); idx < N; idx++ {
 			wgroup.Add(1)
 			go func() {
 				defer wgroup.Done()

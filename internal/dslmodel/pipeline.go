@@ -15,9 +15,14 @@ func (f PipelineFunc[A, B]) Run(ctx context.Context, rt Runtime, inputs <-chan R
 	return f(ctx, rt, inputs)
 }
 
-// JoinPipeline joins two pipelines together to compose a more complex pipeline.
-func JoinPipeline[A, B, C any](p1 Pipeline[A, B], p2 Pipeline[B, C]) Pipeline[A, C] {
+// ComposePipelines composes two pipelines together to create a more complex pipeline.
+func ComposePipelines[A, B, C any](p1 Pipeline[A, B], p2 Pipeline[B, C]) Pipeline[A, C] {
 	return PipelineFunc[A, C](func(ctx context.Context, rt Runtime, inputs <-chan Result[A]) <-chan Result[C] {
 		return p2.Run(ctx, rt, p1.Run(ctx, rt, inputs))
 	})
+}
+
+// ComposePipelines3 composes three pipelines together to create a more complex pipeline.
+func ComposePipelines3[A, B, C, D any](p1 Pipeline[A, B], p2 Pipeline[B, C], p3 Pipeline[C, D]) Pipeline[A, D] {
+	return ComposePipelines(p1, ComposePipelines(p2, p3))
 }

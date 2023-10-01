@@ -3,6 +3,7 @@ package dslnet
 import (
 	"context"
 	"net"
+	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/dslmodel"
 	"github.com/ooni/probe-cli/v3/internal/logx"
@@ -17,6 +18,11 @@ func Connect(ctx context.Context, rt dslmodel.Runtime, endpoint Endpoint) (NetCo
 
 	// create trace for collecting OONI observations
 	trace := rt.NewTrace(traceID, rt.ZeroTime(), endpoint.Tags...)
+
+	// enforce a timeout
+	const timeout = 15 * time.Second
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 
 	// establish the connection
 	dialer := trace.NewDialerWithoutResolver(rt.Logger())
