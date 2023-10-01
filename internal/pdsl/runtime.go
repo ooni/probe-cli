@@ -24,6 +24,7 @@ type Runtime interface {
 	// RegisterCloser remebers to close the given connection.
 	RegisterCloser(conn io.Closer)
 
-	// ZeroTime returns the reference measurement time.
+	// ZeroTime returns the "zero" time for computing
+	// the elapsed time in OONI observations.
 	ZeroTime() time.Time
 }
