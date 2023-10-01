@@ -1,6 +1,8 @@
 package pnet
 
-import "context"
+import (
+	"context"
+)
 
 // Stage is a pipeline stage that reads its input channel containing requests and
 // writes results on its output channel. An upstream [Stage] closes its input channel

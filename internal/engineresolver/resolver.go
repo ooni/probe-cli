@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
@@ -37,6 +38,10 @@ type Resolver struct {
 	// system resolver, whose bytes ARE NOT counted. If this
 	// field is not set, then we won't count the bytes.
 	ByteCounter *bytecounter.Counter
+
+	// IDGenerator is the MANDATORY ID generator to distinguish
+	// outstanding queries inside the logs.
+	IDGenerator *atomic.Int64
 
 	// KVStore is the MANDATORY key-value store where you
 	// want us to write statistics about which resolver is
@@ -140,7 +145,8 @@ func (r *Resolver) lookupHost(ctx context.Context, ri *resolverinfo, hostname st
 		return nil, err
 	}
 	op := logx.NewOperationLogger(
-		r.logger(), "sessionresolver: lookup %s using %s", hostname, ri.URL)
+		r.logger(), "sessionresolver: lookup#%d %s using %s",
+		r.IDGenerator.Add(1), hostname, ri.URL)
 	addrs, err := timeLimitedLookup(ctx, re, hostname)
 	op.Stop(err)
 	if err == nil {

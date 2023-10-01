@@ -209,6 +209,7 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 	sess.proxyURL = proxyURL
 	sess.resolver = &engineresolver.Resolver{
 		ByteCounter: sess.byteCounter,
+		IDGenerator: &atomic.Int64{},
 		KVStore:     config.KVStore,
 		Logger:      sess.logger,
 		ProxyURL:    proxyURL,

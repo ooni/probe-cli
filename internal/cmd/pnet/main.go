@@ -12,9 +12,9 @@ func main() {
 
 	// create the pipeline
 	pipeline := pnet.Compose3(
-		pnet.Getaddrinfo(),
-		pnet.Parallel(16, pnet.Connect()),
-		pnet.Close[pnet.NetConn](),
+		pnet.Generic(pnet.Getaddrinfo()),
+		pnet.Generic(pnet.Parallel(16, pnet.Connect())),
+		pnet.Generic(pnet.Close[pnet.NetConn]()),
 	)
 
 	// create the input
@@ -26,7 +26,7 @@ func main() {
 	}
 
 	// collect the results
-	outputs := pnet.Run(ctx, pipeline, input)
+	outputs := pnet.Run(ctx, pipeline, any(input))
 
 	// print the results
 	for _, entry := range outputs {

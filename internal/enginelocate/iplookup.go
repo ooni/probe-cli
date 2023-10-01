@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/multierror"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -106,8 +107,9 @@ func (c ipLookupClient) doWithCustomFunc(
 func (c ipLookupClient) LookupProbeIP(ctx context.Context) (string, error) {
 	union := multierror.New(ErrAllIPLookuppersFailed)
 	for _, method := range makeSlice() {
-		c.Logger.Infof("iplookup: using %s", method.name)
+		ol := logx.NewOperationLogger(c.Logger, "iplookup: using %s", method.name)
 		ip, err := c.doWithCustomFunc(ctx, method.fn)
+		ol.Stop(err)
 		if err == nil {
 			return ip, nil
 		}
