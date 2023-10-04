@@ -20,7 +20,6 @@ require (
 	github.com/google/uuid v1.3.1
 	github.com/gorilla/websocket v1.5.0
 	github.com/hexops/gotextdiff v1.0.3
-	github.com/iancoleman/strcase v0.3.0
 	github.com/mattn/go-colorable v0.1.13
 	github.com/miekg/dns v1.1.56
 	github.com/mitchellh/go-wordwrap v1.0.1
