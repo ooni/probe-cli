@@ -8,6 +8,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -17,7 +18,7 @@ func (m *Measurer) TCPConnect(ctx context.Context, index int64, zeroTime time.Ti
 	logger model.Logger, address string, tk *TestKeys) error {
 	trace := measurexlite.NewTrace(index, zeroTime)
 	dialer := trace.NewDialerWithoutResolver(logger)
-	ol := measurexlite.NewOperationLogger(logger, "TCPConnect #%d %s", index, address)
+	ol := logx.NewOperationLogger(logger, "TCPConnect #%d %s", index, address)
 	conn, err := dialer.DialContext(ctx, "tcp", address)
 	ol.Stop(err)
 	measurexlite.MaybeClose(conn)

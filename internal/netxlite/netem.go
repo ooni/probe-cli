@@ -8,7 +8,6 @@ import (
 
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // NetemUnderlyingNetworkAdapter adapts [netem.UnderlyingNetwork] to [model.UnderlyingNetwork].
@@ -20,7 +19,7 @@ var _ model.UnderlyingNetwork = &NetemUnderlyingNetworkAdapter{}
 
 // DefaultCertPool implements model.UnderlyingNetwork
 func (a *NetemUnderlyingNetworkAdapter) DefaultCertPool() *x509.CertPool {
-	return runtimex.Try1(a.UNet.DefaultCertPool())
+	return a.UNet.DefaultCertPool()
 }
 
 // DialTimeout implements model.UnderlyingNetwork
@@ -41,6 +40,11 @@ func (a *NetemUnderlyingNetworkAdapter) GetaddrinfoLookupANY(ctx context.Context
 // GetaddrinfoResolverNetwork implements model.UnderlyingNetwork
 func (a *NetemUnderlyingNetworkAdapter) GetaddrinfoResolverNetwork() string {
 	return a.UNet.GetaddrinfoResolverNetwork()
+}
+
+// ListenTCP implements model.UnderlyingNetwork
+func (a *NetemUnderlyingNetworkAdapter) ListenTCP(network string, addr *net.TCPAddr) (net.Listener, error) {
+	return a.UNet.ListenTCP(network, addr)
 }
 
 // ListenUDP implements model.UnderlyingNetwork

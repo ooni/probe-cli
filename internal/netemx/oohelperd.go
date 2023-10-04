@@ -35,7 +35,7 @@ func (f *OOHelperDFactory) NewHandler(env NetStackServerFactoryEnv, unet *netem.
 
 	handler.NewQUICDialer = func(logger model.Logger) model.QUICDialer {
 		return netx.NewQUICDialerWithResolver(
-			netx.NewQUICListener(),
+			netx.NewUDPListener(),
 			logger,
 			netx.NewStdlibResolver(logger),
 		)
@@ -49,6 +49,8 @@ func (f *OOHelperDFactory) NewHandler(env NetStackServerFactoryEnv, unet *netem.
 		cookieJar, _ := cookiejar.New(&cookiejar.Options{
 			PublicSuffixList: publicsuffix.List,
 		})
+		// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPTransportStdlib is QUIRKY but we probably
+		// don't care about using a QUIRKY function here
 		return &http.Client{
 			Transport:     netx.NewHTTPTransportStdlib(logger),
 			CheckRedirect: nil,

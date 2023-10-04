@@ -39,8 +39,9 @@ func TestTLSHandlerWithStdlib(t *testing.T) {
 		expectBody []byte
 	}
 
-	// create MITM config
-	mitm := testingx.MustNewTLSMITMProviderNetem()
+	// create server's CA and leaf certificate
+	serverCA := netem.MustNewCA()
+	serverCert := serverCA.MustNewTLSCertificate("www.example.com")
 
 	testcases := []testcase{{
 		name: "with TLSHandlerTimeout",
@@ -77,7 +78,7 @@ func TestTLSHandlerWithStdlib(t *testing.T) {
 	}, {
 		name: "with TLSHandlerHandshakeAndWriteText",
 		newHandler: func() testingx.TLSHandler {
-			return testingx.TLSHandlerHandshakeAndWriteText(mitm, testingx.HTTPBlockpage451)
+			return testingx.TLSHandlerHandshakeAndWriteText(serverCert, testingx.HTTPBlockpage451)
 		},
 		timeout:    10 * time.Second,
 		expectErr:  nil,
@@ -92,7 +93,7 @@ func TestTLSHandlerWithStdlib(t *testing.T) {
 
 			// create TLS config with a specific SNI
 			tlsConfig := &tls.Config{
-				RootCAs:    runtimex.Try1(mitm.DefaultCertPool()),
+				RootCAs:    serverCA.DefaultCertPool(),
 				ServerName: "www.example.com",
 			}
 
@@ -163,8 +164,9 @@ func TestTLSHandlerWithNetem(t *testing.T) {
 		expectBody []byte
 	}
 
-	// create MITM config
-	mitm := testingx.MustNewTLSMITMProviderNetem()
+	// create server's CA and leaf certificate
+	serverCA := netem.MustNewCA()
+	serverCert := serverCA.MustNewTLSCertificate("www.example.com")
 
 	testcases := []testcase{{
 		name: "with TLSHandlerTimeout",
@@ -202,7 +204,7 @@ func TestTLSHandlerWithNetem(t *testing.T) {
 	}, {
 		name: "with TLSHandlerHandshakeAndWriteText",
 		newHandler: func() testingx.TLSHandler {
-			return testingx.TLSHandlerHandshakeAndWriteText(mitm, testingx.HTTPBlockpage451)
+			return testingx.TLSHandlerHandshakeAndWriteText(serverCert, testingx.HTTPBlockpage451)
 		},
 		timeout:    10 * time.Second,
 		expectErr:  nil,
@@ -215,10 +217,8 @@ func TestTLSHandlerWithNetem(t *testing.T) {
 				t.Skip(tc.reasonToSkip)
 			}
 
-			//log.SetLevel(log.DebugLevel)
-
 			// create a star topology for this test case
-			topology := runtimex.Try1(netem.NewStarTopology(log.Log))
+			topology := netem.MustNewStarTopology(log.Log)
 			defer topology.Close()
 
 			// create the server
@@ -237,7 +237,7 @@ func TestTLSHandlerWithNetem(t *testing.T) {
 			netxlite.WithCustomTProxy(&netxlite.NetemUnderlyingNetworkAdapter{UNet: clientStack}, func() {
 				// create TLS config with a specific SNI
 				tlsConfig := &tls.Config{
-					RootCAs:    runtimex.Try1(mitm.DefaultCertPool()),
+					RootCAs:    serverCA.DefaultCertPool(),
 					ServerName: "www.example.com",
 				}
 

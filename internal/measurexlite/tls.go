@@ -20,7 +20,7 @@ import (
 // except that it returns a model.TLSHandshaker that uses this trace.
 func (tx *Trace) NewTLSHandshakerStdlib(dl model.DebugLogger) model.TLSHandshaker {
 	return &tlsHandshakerTrace{
-		thx: tx.newTLSHandshakerStdlib(dl),
+		thx: tx.Netx.NewTLSHandshakerStdlib(dl),
 		tx:  tx,
 	}
 }
@@ -35,7 +35,7 @@ var _ model.TLSHandshaker = &tlsHandshakerTrace{}
 
 // Handshake implements model.TLSHandshaker.Handshake.
 func (thx *tlsHandshakerTrace) Handshake(
-	ctx context.Context, conn net.Conn, tlsConfig *tls.Config) (net.Conn, tls.ConnectionState, error) {
+	ctx context.Context, conn net.Conn, tlsConfig *tls.Config) (model.TLSConn, error) {
 	return thx.thx.Handshake(netxlite.ContextWithTrace(ctx, thx.tx), conn, tlsConfig)
 }
 
@@ -99,27 +99,16 @@ func NewArchivalTLSOrQUICHandshakeResult(
 	}
 }
 
-// newArchivalBinaryData is a factory that adapts binary data to the
-// model.ArchivalMaybeBinaryData format.
-func newArchivalBinaryData(data []byte) model.ArchivalMaybeBinaryData {
-	// TODO(https://github.com/ooni/probe/issues/2165): we should actually extend the
-	// model's archival data format to have a pure-binary-data type for the cases in which
-	// we know in advance we're dealing with binary data.
-	return model.ArchivalMaybeBinaryData{
-		Value: string(data),
-	}
-}
-
 // TLSPeerCerts extracts the certificates either from the list of certificates
 // in the connection state or from the error that occurred.
 func TLSPeerCerts(
-	state tls.ConnectionState, err error) (out []model.ArchivalMaybeBinaryData) {
-	out = []model.ArchivalMaybeBinaryData{}
+	state tls.ConnectionState, err error) (out []model.ArchivalBinaryData) {
+	out = []model.ArchivalBinaryData{}
 
 	var x509HostnameError x509.HostnameError
 	if errors.As(err, &x509HostnameError) {
 		// Test case: https://wrong.host.badssl.com/
-		out = append(out, newArchivalBinaryData(x509HostnameError.Certificate.Raw))
+		out = append(out, model.ArchivalBinaryData(x509HostnameError.Certificate.Raw))
 		return
 	}
 
@@ -127,19 +116,19 @@ func TLSPeerCerts(
 	if errors.As(err, &x509UnknownAuthorityError) {
 		// Test case: https://self-signed.badssl.com/. This error has
 		// never been among the ones returned by MK.
-		out = append(out, newArchivalBinaryData(x509UnknownAuthorityError.Cert.Raw))
+		out = append(out, model.ArchivalBinaryData(x509UnknownAuthorityError.Cert.Raw))
 		return
 	}
 
 	var x509CertificateInvalidError x509.CertificateInvalidError
 	if errors.As(err, &x509CertificateInvalidError) {
 		// Test case: https://expired.badssl.com/
-		out = append(out, newArchivalBinaryData(x509CertificateInvalidError.Cert.Raw))
+		out = append(out, model.ArchivalBinaryData(x509CertificateInvalidError.Cert.Raw))
 		return
 	}
 
 	for _, cert := range state.PeerCertificates {
-		out = append(out, newArchivalBinaryData(cert.Raw))
+		out = append(out, model.ArchivalBinaryData(cert.Raw))
 	}
 	return
 }

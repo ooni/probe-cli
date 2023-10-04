@@ -22,10 +22,25 @@ func NewDialerWithStdlibResolver(dl model.DebugLogger) model.Dialer {
 	return NewDialerWithResolver(dl, reso)
 }
 
-// NewDialerWithResolver is equivalent to calling WrapDialer with
-// the dialer argument being equal to &DialerSystem{}.
+// NewDialerWithResolver creates a [Dialer] with error wrapping.
+//
+// This dialer will try to connect to each of the resolved IP address
+// sequentially. In case of failure, such a resolver will return the first
+// error that occurred. This implementation strategy is a QUIRK that is
+// documented at TODO(https://github.com/ooni/probe/issues/1779).
+//
+// The [model.DialerWrapper] arguments wrap the returned dialer in such a way
+// that we can implement the legacy [netx] package. New code MUST NOT
+// use this functionality, which we'd like to remove ASAP.
+func (netx *Netx) NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...model.DialerWrapper) model.Dialer {
+	return WrapDialer(dl, r, &dialerSystem{provider: netx.MaybeCustomUnderlyingNetwork()}, w...)
+}
+
+// NewDialerWithResolver is equivalent to creating an empty [*Netx]
+// and calling its NewDialerWithResolver method.
 func NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...model.DialerWrapper) model.Dialer {
-	return WrapDialer(dl, r, &DialerSystem{}, w...)
+	netx := &Netx{Underlying: nil}
+	return netx.NewDialerWithResolver(dl, r, w...)
 }
 
 // WrapDialer wraps an existing Dialer to add extra functionality
@@ -102,7 +117,7 @@ func NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...model.Di
 // When the resolver is &NullResolver{} any attempt to perform DNS resolutions
 // in the dialer at index N+2 will fail with ErrNoResolver.
 //
-// Otherwise, the dialer at index N+2 will try each resolver IP address
+// Otherwise, the dialer at index N+2 will try each resolved IP address
 // sequentially. In case of failure, such a resolver will return the first
 // error that occurred. This implementation strategy is a QUIRK that is
 // documented at TODO(https://github.com/ooni/probe/issues/1779).
@@ -136,30 +151,36 @@ func WrapDialer(logger model.DebugLogger, resolver model.Resolver,
 	}
 }
 
-// NewDialerWithoutResolver is equivalent to calling NewDialerWithResolver
-// with the resolver argument being &NullResolver{}.
-func NewDialerWithoutResolver(dl model.DebugLogger, w ...model.DialerWrapper) model.Dialer {
-	return NewDialerWithResolver(dl, &NullResolver{}, w...)
+// NewDialerWithoutResolver implements [model.MeasuringNetwork].
+func (netx *Netx) NewDialerWithoutResolver(dl model.DebugLogger, w ...model.DialerWrapper) model.Dialer {
+	return netx.NewDialerWithResolver(dl, &NullResolver{}, w...)
 }
 
-// DialerSystem is a model.Dialer that uses the stdlib's net.Dialer
+// NewDialerWithoutResolver is equivalent to creating an empty [*Netx]
+// and calling its NewDialerWithoutResolver method.
+func NewDialerWithoutResolver(dl model.DebugLogger, w ...model.DialerWrapper) model.Dialer {
+	netx := &Netx{Underlying: nil}
+	return netx.NewDialerWithoutResolver(dl, w...)
+}
+
+// dialerSystem is a model.Dialer that uses the stdlib's net.Dialer
 // to construct the new SimpleDialer used for dialing. This dialer has
 // a fixed timeout for each connect operation equal to 15 seconds.
-type DialerSystem struct {
+type dialerSystem struct {
 	// provider is the OPTIONAL nil-safe [model.UnderlyingNetwork] provider.
 	provider *MaybeCustomUnderlyingNetwork
 }
 
-var _ model.Dialer = &DialerSystem{}
+var _ model.Dialer = &dialerSystem{}
 
-func (d *DialerSystem) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+func (d *dialerSystem) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	p := d.provider.Get()
 	ctx, cancel := context.WithTimeout(ctx, p.DialTimeout())
 	defer cancel()
 	return p.DialContext(ctx, network, address)
 }
 
-func (d *DialerSystem) CloseIdleConnections() {
+func (d *dialerSystem) CloseIdleConnections() {
 	// nothing to do here
 }
 

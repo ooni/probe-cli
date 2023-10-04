@@ -18,9 +18,12 @@ import (
 
 // NewDialerWithoutResolver is equivalent to netxlite.NewDialerWithoutResolver
 // except that it returns a model.Dialer that uses this trace.
-func (tx *Trace) NewDialerWithoutResolver(dl model.DebugLogger) model.Dialer {
+//
+// Caveat: the dialer wrappers are there to implement the [model.MeasuringNetwork]
+// interface, but they're not used by this function.
+func (tx *Trace) NewDialerWithoutResolver(dl model.DebugLogger, wrappers ...model.DialerWrapper) model.Dialer {
 	return &dialerTrace{
-		d:  tx.newDialerWithoutResolver(dl),
+		d:  tx.Netx.NewDialerWithoutResolver(dl),
 		tx: tx,
 	}
 }

@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -170,7 +171,7 @@ func (m *Measurer) quicHandshake(ctx context.Context, index int64,
 	sni := m.config.sni(address)
 	alpn := strings.Split(m.config.alpn(), " ")
 	trace := measurexlite.NewTrace(index, zeroTime)
-	ol := measurexlite.NewOperationLogger(logger, "SimpleQUICPing #%d %s %s %v", index, address, sni, alpn)
+	ol := logx.NewOperationLogger(logger, "SimpleQUICPing #%d %s %s %v", index, address, sni, alpn)
 	listener := netxlite.NewUDPListener()
 	dialer := trace.NewQUICDialerWithoutResolver(listener, logger)
 	// See https://github.com/ooni/probe/issues/2413 to understand

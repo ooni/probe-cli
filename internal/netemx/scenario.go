@@ -41,14 +41,20 @@ const (
 
 // ScenarioDomainAddresses describes a domain and address used in a scenario.
 type ScenarioDomainAddresses struct {
-	// Domains contains a related set of domains domains (MANDATORY field).
-	Domains []string
-
 	// Addresses contains the MANDATORY list of addresses belonging to the domain.
 	Addresses []string
 
+	// Domains contains a related set of domains domains (MANDATORY field).
+	Domains []string
+
 	// Role is the MANDATORY role of this domain (e.g., ScenarioRoleOONIAPI).
 	Role uint64
+
+	// ServerNameMain is the MANDATORY server name to use as common name for X.509 certs.
+	ServerNameMain string
+
+	// ServerNameExtras contains OPTIONAL extra names to also configure into the cert.
+	ServerNameExtras []string
 
 	// WebServerFactory is the factory to use when Role is ScenarioRoleWebServer.
 	WebServerFactory HTTPHandlerFactory
@@ -60,13 +66,17 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 	Addresses: []string{
 		AddressApiOONIIo,
 	},
-	Role: ScenarioRoleOONIAPI,
+	Role:             ScenarioRoleOONIAPI,
+	ServerNameMain:   "api.ooni.io",
+	ServerNameExtras: []string{},
 }, {
 	Domains: []string{"geoip.ubuntu.com"},
 	Addresses: []string{
 		AddressGeoIPUbuntuCom,
 	},
-	Role: ScenarioRoleUbuntuGeoIP,
+	Role:             ScenarioRoleUbuntuGeoIP,
+	ServerNameMain:   "geoip.ubuntu.com",
+	ServerNameExtras: []string{},
 }, {
 	Domains: []string{"www.example.com", "example.com", "www.example.org", "example.org"},
 	Addresses: []string{
@@ -74,55 +84,73 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 	},
 	Role:             ScenarioRoleWebServer,
 	WebServerFactory: ExampleWebPageHandlerFactory(),
+	ServerNameMain:   "www.example.com",
+	ServerNameExtras: []string{"example.com", "www.example.org", "example.org"},
 }, {
 	Domains: []string{"0.th.ooni.org"},
 	Addresses: []string{
 		AddressZeroThOONIOrg,
 	},
-	Role: ScenarioRoleOONITestHelper,
+	Role:             ScenarioRoleOONITestHelper,
+	ServerNameMain:   "0.th.ooni.org",
+	ServerNameExtras: []string{},
 }, {
 	Domains: []string{"1.th.ooni.org"},
 	Addresses: []string{
 		AddressOneThOONIOrg,
 	},
-	Role: ScenarioRoleOONITestHelper,
+	Role:             ScenarioRoleOONITestHelper,
+	ServerNameMain:   "1.th.ooni.org",
+	ServerNameExtras: []string{},
 }, {
 	Domains: []string{"2.th.ooni.org"},
 	Addresses: []string{
 		AddressTwoThOONIOrg,
 	},
-	Role: ScenarioRoleOONITestHelper,
+	Role:             ScenarioRoleOONITestHelper,
+	ServerNameMain:   "2.th.ooni.org",
+	ServerNameExtras: []string{},
 }, {
 	Domains: []string{"3.th.ooni.org"},
 	Addresses: []string{
 		AddressThreeThOONIOrg,
 	},
-	Role: ScenarioRoleOONITestHelper,
+	Role:             ScenarioRoleOONITestHelper,
+	ServerNameMain:   "3.th.ooni.org",
+	ServerNameExtras: []string{},
 }, {
 	Domains: []string{"d33d1gs9kpq1c5.cloudfront.net"},
 	Addresses: []string{
 		AddressTHCloudfront,
 	},
-	Role: ScenarioRoleOONITestHelper,
+	Role:             ScenarioRoleOONITestHelper,
+	ServerNameMain:   "d33d1gs9kpq1c5.cloudfront.net",
+	ServerNameExtras: []string{},
 }, {
 	Domains: []string{"dns.quad9.net"},
 	Addresses: []string{
 		AddressDNSQuad9Net,
 	},
-	Role: ScenarioRolePublicDNS,
+	Role:             ScenarioRolePublicDNS,
+	ServerNameMain:   "dns.quad9.net",
+	ServerNameExtras: []string{},
 }, {
 	Domains: []string{"mozilla.cloudflare-dns.com"},
 	Addresses: []string{
 		AddressMozillaCloudflareDNSCom,
 	},
-	Role: ScenarioRolePublicDNS,
+	Role:             ScenarioRolePublicDNS,
+	ServerNameMain:   "mozilla.cloudflare-dns.com",
+	ServerNameExtras: []string{},
 }, {
 	Domains: []string{"dns.google", "dns.google.com"},
 	Addresses: []string{
 		AddressDNSGoogle8844,
 		AddressDNSGoogle8888,
 	},
-	Role: ScenarioRolePublicDNS,
+	Role:             ScenarioRolePublicDNS,
+	ServerNameMain:   "dns.google",
+	ServerNameExtras: []string{"dns.google.com"},
 }, {
 	Domains: []string{},
 	Addresses: []string{
@@ -130,19 +158,24 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 	},
 	Role:             ScenarioRoleBlockpageServer,
 	WebServerFactory: BlockpageHandlerFactory(),
+	ServerNameMain:   "blockpage.local",
+	ServerNameExtras: []string{},
 }, {
 	Domains: []string{},
 	Addresses: []string{
 		ISPProxyAddress,
 	},
 	Role:             ScenarioRoleProxy,
-	WebServerFactory: nil,
+	ServerNameMain:   "proxy.local",
+	ServerNameExtras: []string{},
 }, {
 	Domains: []string{"bit.ly", "bitly.com"},
 	Addresses: []string{
 		AddressBitly,
 	},
-	Role: ScenarioRoleURLShortener,
+	Role:             ScenarioRoleURLShortener,
+	ServerNameMain:   "bit.ly",
+	ServerNameExtras: []string{"bitly.com"},
 }, {
 	Domains: []string{
 		"wrong.host.badssl.com",
@@ -152,7 +185,9 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 	Addresses: []string{
 		AddressBadSSLCom,
 	},
-	Role: ScenarioRoleBadSSL,
+	Role:             ScenarioRoleBadSSL,
+	ServerNameMain:   "badssl.com",
+	ServerNameExtras: []string{},
 }}
 
 // MustNewScenario constructs a complete testing scenario using the domains and IP
@@ -169,33 +204,54 @@ func MustNewScenario(config []*ScenarioDomainAddresses) *QAEnv {
 					addr,
 					&DNSOverUDPServerFactory{},
 					&HTTPSecureServerFactory{
-						Factory:   &DNSOverHTTPSHandlerFactory{},
-						Ports:     []int{443},
-						TLSConfig: nil, // use netem's default
+						Factory:          &DNSOverHTTPSHandlerFactory{},
+						Ports:            []int{443},
+						ServerNameMain:   sad.ServerNameMain,
+						ServerNameExtras: sad.ServerNameExtras,
 					},
 				))
 			}
 
 		case ScenarioRoleWebServer:
 			for _, addr := range sad.Addresses {
-				opts = append(opts, QAEnvOptionHTTPServer(addr, sad.WebServerFactory))
+				opts = append(opts, qaEnvOptionNetStack(
+					addr,
+					&HTTPCleartextServerFactory{
+						Factory: sad.WebServerFactory,
+						Ports:   []int{80},
+					},
+					&HTTPSecureServerFactory{
+						Factory:          sad.WebServerFactory,
+						Ports:            []int{443},
+						ServerNameMain:   sad.ServerNameMain,
+						ServerNameExtras: sad.ServerNameExtras,
+					},
+					&HTTP3ServerFactory{
+						Factory:          sad.WebServerFactory,
+						Ports:            []int{443},
+						ServerNameMain:   sad.ServerNameMain,
+						ServerNameExtras: sad.ServerNameExtras,
+					},
+				))
 			}
 
 		case ScenarioRoleOONIAPI:
 			for _, addr := range sad.Addresses {
 				opts = append(opts, QAEnvOptionNetStack(addr, &HTTPSecureServerFactory{
-					Factory:   &OOAPIHandlerFactory{},
-					Ports:     []int{443},
-					TLSConfig: nil, // use netem's default
+					Factory:          &OOAPIHandlerFactory{},
+					Ports:            []int{443},
+					ServerNameMain:   sad.ServerNameMain,
+					ServerNameExtras: sad.ServerNameExtras,
 				}))
 			}
 
 		case ScenarioRoleOONITestHelper:
 			for _, addr := range sad.Addresses {
 				opts = append(opts, QAEnvOptionNetStack(addr, &HTTPSecureServerFactory{
-					Factory:   &OOHelperDFactory{},
-					Ports:     []int{443},
-					TLSConfig: nil, // use netem's default
+					Factory:          &OOHelperDFactory{},
+					Ports:            []int{443},
+					ServerNameMain:   sad.ServerNameMain,
+					ServerNameExtras: sad.ServerNameExtras,
 				}))
 			}
 
@@ -205,8 +261,9 @@ func MustNewScenario(config []*ScenarioDomainAddresses) *QAEnv {
 					Factory: &GeoIPHandlerFactoryUbuntu{
 						ProbeIP: DefaultClientAddress,
 					},
-					Ports:     []int{443},
-					TLSConfig: nil, // use netem's default
+					Ports:            []int{443},
+					ServerNameMain:   sad.ServerNameMain,
+					ServerNameExtras: sad.ServerNameExtras,
 				}))
 			}
 
@@ -223,7 +280,7 @@ func MustNewScenario(config []*ScenarioDomainAddresses) *QAEnv {
 				opts = append(opts, QAEnvOptionNetStack(addr,
 					&HTTPCleartextServerFactory{
 						Factory: HTTPHandlerFactoryFunc(func(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
-							return testingx.HTTPHandlerProxy(env.Logger(), &netxlite.Netx{
+							return testingx.NewHTTPProxyHandler(env.Logger(), &netxlite.Netx{
 								Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: stack}})
 						}),
 						Ports: []int{80},
@@ -234,7 +291,14 @@ func MustNewScenario(config []*ScenarioDomainAddresses) *QAEnv {
 
 		case ScenarioRoleURLShortener:
 			for _, addr := range sad.Addresses {
-				opts = append(opts, QAEnvOptionHTTPServer(addr, URLShortenerFactory(DefaultURLShortenerMapping)))
+				opts = append(opts, QAEnvOptionNetStack(addr,
+					&HTTPSecureServerFactory{
+						Factory:          URLShortenerFactory(DefaultURLShortenerMapping),
+						Ports:            []int{443},
+						ServerNameMain:   sad.ServerNameMain,
+						ServerNameExtras: sad.ServerNameExtras,
+					},
+				))
 			}
 
 		case ScenarioRoleBadSSL:
@@ -244,7 +308,7 @@ func MustNewScenario(config []*ScenarioDomainAddresses) *QAEnv {
 		}
 	}
 
-	// create the QAEnv
+	// create QAEnv
 	env := MustNewQAEnv(opts...)
 
 	// configure all the domain names

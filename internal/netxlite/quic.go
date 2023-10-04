@@ -16,53 +16,35 @@ import (
 	"github.com/quic-go/quic-go"
 )
 
-// NewUDPListener creates a new UDPListener using the standard
-// library to create listening UDP sockets.
-func NewUDPListener() model.UDPListener {
-	return &udpListenerErrWrapper{&udpListenerStdlib{}}
-}
-
-// udpListenerStdlib is a UDPListener using the standard library.
-type udpListenerStdlib struct {
-	// provider is the OPTIONAL nil-safe [model.UnderlyingNetwork] provider.
-	provider *MaybeCustomUnderlyingNetwork
-}
-
-var _ model.UDPListener = &udpListenerStdlib{}
-
-// Listen implements UDPListener.Listen.
-func (qls *udpListenerStdlib) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
-	return qls.provider.Get().ListenUDP("udp", addr)
-}
-
-// NewQUICDialerWithResolver is the WrapDialer equivalent for QUIC where
-// we return a composed QUICDialer modified by optional wrappers.
+// NewQUICDialerWithResolver creates a QUICDialer with error wrapping.
 //
-// The returned dialer guarantees:
-//
-// 1. logging;
-//
-// 2. error wrapping;
-//
-// 3. that we are going to use Mozilla CA if the [tls.Config]
-// RootCAs field is zero initialized.
-//
-// Please, note that this fuunction will just ignore any nil wrapper.
-//
-// Unlike the dialer returned by WrapDialer, this dialer MAY attempt
+// Unlike the dialer returned by NewDialerWithResolver, this dialer MAY attempt
 // happy eyeballs, perform parallel dial attempts, and return an error
 // that aggregates all the errors that occurred.
-func NewQUICDialerWithResolver(listener model.UDPListener, logger model.DebugLogger,
+//
+// The [model.QUICDialerWrapper] arguments wraps the returned dialer in such a way
+// that we can implement the legacy [netx] package. New code MUST NOT
+// use this functionality, which we'd like to remove ASAP.
+func (netx *Netx) NewQUICDialerWithResolver(listener model.UDPListener, logger model.DebugLogger,
 	resolver model.Resolver, wrappers ...model.QUICDialerWrapper) (outDialer model.QUICDialer) {
 	baseDialer := &quicDialerQUICGo{
 		UDPListener: listener,
+		provider:    netx.MaybeCustomUnderlyingNetwork(),
 	}
-	return WrapQUICDialer(logger, resolver, baseDialer, wrappers...)
+	return wrapQUICDialer(logger, resolver, baseDialer, wrappers...)
 }
 
-// WrapQUICDialer is similar to NewQUICDialerWithResolver except that it takes as
+// NewQUICDialerWithResolver is equivalent to creating an empty [*Netx]
+// and calling its NewQUICDialerWithResolver method.
+func NewQUICDialerWithResolver(listener model.UDPListener, logger model.DebugLogger,
+	resolver model.Resolver, wrappers ...model.QUICDialerWrapper) (outDialer model.QUICDialer) {
+	netx := &Netx{Underlying: nil}
+	return netx.NewQUICDialerWithResolver(listener, logger, resolver, wrappers...)
+}
+
+// wrapQUICDialer is similar to NewQUICDialerWithResolver except that it takes as
 // input an already constructed [model.QUICDialer] instead of creating one.
-func WrapQUICDialer(logger model.DebugLogger, resolver model.Resolver,
+func wrapQUICDialer(logger model.DebugLogger, resolver model.Resolver,
 	baseDialer model.QUICDialer, wrappers ...model.QUICDialerWrapper) (outDialer model.QUICDialer) {
 	outDialer = &quicDialerErrWrapper{
 		QUICDialer: &quicDialerHandshakeCompleter{
@@ -88,11 +70,18 @@ func WrapQUICDialer(logger model.DebugLogger, resolver model.Resolver,
 	}
 }
 
-// NewQUICDialerWithoutResolver is equivalent to calling NewQUICDialerWithResolver
-// with the resolver argument set to &NullResolver{}.
+// NewQUICDialerWithoutResolver implements [model.MeasuringNetwork].
+func (netx *Netx) NewQUICDialerWithoutResolver(listener model.UDPListener,
+	logger model.DebugLogger, wrappers ...model.QUICDialerWrapper) model.QUICDialer {
+	return netx.NewQUICDialerWithResolver(listener, logger, &NullResolver{}, wrappers...)
+}
+
+// NewQUICDialerWithoutResolver is equivalent to creating an empty [*Netx]
+// and calling its NewQUICDialerWithoutResolver method.
 func NewQUICDialerWithoutResolver(listener model.UDPListener,
 	logger model.DebugLogger, wrappers ...model.QUICDialerWrapper) model.QUICDialer {
-	return NewQUICDialerWithResolver(listener, logger, &NullResolver{}, wrappers...)
+	netx := &Netx{Underlying: nil}
+	return netx.NewQUICDialerWithoutResolver(listener, logger, wrappers...)
 }
 
 // quicDialerQUICGo dials using the quic-go/quic-go library.

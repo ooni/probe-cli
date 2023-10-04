@@ -59,36 +59,6 @@ func QAEnvOptionClientNICWrapper(wrapper netem.LinkNICWrapper) QAEnvOption {
 	}
 }
 
-// QAEnvOptionHTTPServer adds the given HTTP handler factory. If you do
-// not set this option we will not create any HTTP server. Note that this
-// option is just syntactic sugar for calling [QAEnvOptionNetStack]
-// with the following three factories as argument:
-//
-// - [HTTPCleartextServerFactory] with port 80/tcp;
-//
-// - [HTTPSecureServerFactory] with port 443/tcp and nil TLSConfig;
-//
-// - [HTTP3ServerFactory] with port 443/udp and nil TLSConfig.
-//
-// We wrote this syntactic sugar factory because it covers the common case
-// where you want support for HTTP, HTTPS, and HTTP3.
-func QAEnvOptionHTTPServer(ipAddr string, factory HTTPHandlerFactory) QAEnvOption {
-	runtimex.Assert(net.ParseIP(ipAddr) != nil, "not an IP addr")
-	runtimex.Assert(factory != nil, "passed a nil handler factory")
-	return qaEnvOptionNetStack(ipAddr, &HTTPCleartextServerFactory{
-		Factory: factory,
-		Ports:   []int{80},
-	}, &HTTPSecureServerFactory{
-		Factory:   factory,
-		Ports:     []int{443},
-		TLSConfig: nil, // use netem's default
-	}, &HTTP3ServerFactory{
-		Factory:   factory,
-		Ports:     []int{443},
-		TLSConfig: nil, // use netem's default
-	})
-}
-
 // QAEnvOptionLogger sets the logger to use. If you do not set this option we
 // will use [model.DiscardLogger] as the logger.
 func QAEnvOptionLogger(logger model.Logger) QAEnvOption {
@@ -140,8 +110,8 @@ type QAEnv struct {
 	// clientNICWrapper is the OPTIONAL wrapper for the client NIC.
 	clientNICWrapper netem.LinkNICWrapper
 
-	// clientStack is the client stack to use.
-	clientStack *netem.UNetStack
+	// ClientStack is the client stack to use.
+	ClientStack *netem.UNetStack
 
 	// closables contains all entities where we have to take care of closing.
 	closables []io.Closer
@@ -197,18 +167,18 @@ func MustNewQAEnv(options ...QAEnvOption) *QAEnv {
 	env := &QAEnv{
 		baseLogger:                config.logger,
 		clientNICWrapper:          config.clientNICWrapper,
-		clientStack:               nil,
+		ClientStack:               nil,
 		closables:                 []io.Closer{},
 		emulateAndroidGetaddrinfo: &atomic.Bool{},
 		ispResolverConfig:         netem.NewDNSConfig(),
 		dpi:                       netem.NewDPIEngine(prefixLogger),
 		once:                      sync.Once{},
 		otherResolversConfig:      netem.NewDNSConfig(),
-		topology:                  runtimex.Try1(netem.NewStarTopology(prefixLogger)),
+		topology:                  netem.MustNewStarTopology(prefixLogger),
 	}
 
 	// create all the required internals
-	env.clientStack = env.mustNewClientStack(config)
+	env.ClientStack = env.mustNewClientStack(config)
 	env.closables = append(env.closables, env.mustNewNetStacks(config)...)
 
 	return env
@@ -306,7 +276,7 @@ func (env *QAEnv) EmulateAndroidGetaddrinfo(value bool) {
 // Do executes the given function such that [netxlite] code uses the
 // underlying clientStack rather than ordinary networking code.
 func (env *QAEnv) Do(function func()) {
-	var stack netem.UnderlyingNetwork = env.clientStack
+	var stack netem.UnderlyingNetwork = env.ClientStack
 	if env.emulateAndroidGetaddrinfo.Load() {
 		stack = &androidStack{stack}
 	}

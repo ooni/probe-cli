@@ -18,8 +18,8 @@ func TestHTTP3ServerFactory(t *testing.T) {
 				Factory: HTTPHandlerFactoryFunc(func(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
 					return ExampleWebPageHandler()
 				}),
-				Ports:     []int{443},
-				TLSConfig: nil, // explicitly nil, let's use netem's config
+				Ports:          []int{443},
+				ServerNameMain: "www.example.com",
 			}),
 		)
 		defer env.Close()
@@ -43,37 +43,6 @@ func TestHTTP3ServerFactory(t *testing.T) {
 			}
 			if diff := cmp.Diff(ExampleWebPage, string(data)); diff != "" {
 				t.Fatal(diff)
-			}
-		})
-	})
-
-	t.Run("when using an incompatible TLS config", func(t *testing.T) {
-		// we're creating a distinct MITM TLS config and we're using it, so we expect
-		// that we're not able to verify certificates in client code
-		mitmConfig := runtimex.Try1(netem.NewTLSMITMConfig())
-
-		env := MustNewQAEnv(
-			QAEnvOptionNetStack(AddressWwwExampleCom, &HTTP3ServerFactory{
-				Factory: HTTPHandlerFactoryFunc(func(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
-					return ExampleWebPageHandler()
-				}),
-				Ports:     []int{443},
-				TLSConfig: mitmConfig.TLSConfig(), // custom!
-			}),
-		)
-		defer env.Close()
-
-		env.AddRecordToAllResolvers("www.example.com", "", AddressWwwExampleCom)
-
-		env.Do(func() {
-			client := netxlite.NewHTTP3ClientWithResolver(log.Log, netxlite.NewStdlibResolver(log.Log))
-			req := runtimex.Try1(http.NewRequest("GET", "https://www.example.com/", nil))
-			resp, err := client.Do(req)
-			if err == nil || err.Error() != netxlite.FailureSSLInvalidCertificate {
-				t.Fatal("unexpected error", err)
-			}
-			if resp != nil {
-				t.Fatal("expected nil resp")
 			}
 		})
 	})

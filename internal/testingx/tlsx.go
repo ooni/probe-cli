@@ -3,55 +3,14 @@ package testingx
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"errors"
 	"net"
 	"sync"
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
-
-// TLSMITMProvider provides TLS MITM capabilities. Two structs are known
-// to implement this interface:
-//
-// 1. a [*netem.UNetStack] instance.
-//
-// 2. the one returned by [MustNewTLSMITMProviderNetem].
-//
-// Both use [github.com/google/martian/v3/mitm] under the hood.
-//
-// Use the former when you're using netem; the latter when using the stdlib.
-type TLSMITMProvider interface {
-	// DefaultCertPool returns the default cert pool to use.
-	DefaultCertPool() (*x509.CertPool, error)
-
-	// ServerTLSConfig returns ready to use server TLS configuration.
-	ServerTLSConfig() *tls.Config
-}
-
-var _ TLSMITMProvider = &netem.UNetStack{}
-
-// MustNewTLSMITMProviderNetem uses [github.com/ooni/netem] to implement [TLSMITMProvider].
-func MustNewTLSMITMProviderNetem() TLSMITMProvider {
-	return &netemTLSMITMProvider{runtimex.Try1(netem.NewTLSMITMConfig())}
-}
-
-type netemTLSMITMProvider struct {
-	cfg *netem.TLSMITMConfig
-}
-
-// DefaultCertPool implements TLSMITMProvider.
-func (p *netemTLSMITMProvider) DefaultCertPool() (*x509.CertPool, error) {
-	return p.cfg.CertPool()
-}
-
-// ServerTLSConfig implements TLSMITMProvider.
-func (p *netemTLSMITMProvider) ServerTLSConfig() *tls.Config {
-	return p.cfg.TLSConfig()
-}
 
 // TLSHandler handles TLS connections. A handler should first handle the TLS handshake
 // in the GetCertificate method. If GetCertificate did not return an error, and the
@@ -277,24 +236,20 @@ func (*tlsHandlerReset) GetCertificate(ctx context.Context, tcpConn net.Conn, ch
 
 // TLSHandlerHandshakeAndWriteText returns a [TLSHandler] that attempts to
 // complete the handshake and returns the given text to the caller.
-func TLSHandlerHandshakeAndWriteText(mitm TLSMITMProvider, text []byte) TLSHandler {
-	return &tlsHandlerHandshakeAndWriteText{mitm, text}
+func TLSHandlerHandshakeAndWriteText(cert *tls.Certificate, text []byte) TLSHandler {
+	return &tlsHandlerHandshakeAndWriteText{cert, text}
 }
 
 var _ TLSConnHandler = &tlsHandlerHandshakeAndWriteText{}
 
 type tlsHandlerHandshakeAndWriteText struct {
-	mitm TLSMITMProvider
+	cert *tls.Certificate
 	text []byte
 }
 
 // GetCertificate implements TLSHandler.
 func (thx *tlsHandlerHandshakeAndWriteText) GetCertificate(ctx context.Context, tcpConn net.Conn, chi *tls.ClientHelloInfo) (*tls.Certificate, error) {
-	// Implementation note: under the assumption that we're using github.com/ooni/netem in one way or
-	// another here, the ServerTLSConfig method returns a suitable GetCertificate implementation. Since
-	// the primary use case is that of using netem, this code is going to be WAI most of the times.
-	config := thx.mitm.ServerTLSConfig()
-	return config.GetCertificate(chi)
+	return thx.cert, nil
 }
 
 // HandleTLSConn implements TLSHandler.

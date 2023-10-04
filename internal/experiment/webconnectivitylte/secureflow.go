@@ -17,6 +17,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -114,7 +115,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	}()
 
 	// start the operation logger
-	ol := measurexlite.NewOperationLogger(
+	ol := logx.NewOperationLogger(
 		t.Logger, "[#%d] GET https://%s using %s", index, t.HostHeader, t.Address,
 	)
 
@@ -153,7 +154,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	const tlsTimeout = 10 * time.Second
 	tlsCtx, tlsCancel := context.WithTimeout(parentCtx, tlsTimeout)
 	defer tlsCancel()
-	tlsConn, tlsConnState, err := tlsHandshaker.Handshake(tlsCtx, tcpConn, tlsConfig)
+	tlsConn, err := tlsHandshaker.Handshake(tlsCtx, tcpConn, tlsConfig)
 	t.TestKeys.AppendTLSHandshakes(trace.TLSHandshakes()...)
 	if err != nil {
 		ol.Stop(err)
@@ -161,6 +162,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	}
 	defer tlsConn.Close()
 
+	tlsConnState := netxlite.MaybeTLSConnectionState(tlsConn)
 	alpn := tlsConnState.NegotiatedProtocol
 
 	// Determine whether we're allowed to fetch the webpage
@@ -170,11 +172,13 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	}
 
 	// create HTTP transport
+	// TODO(https://github.com/ooni/probe/issues/2534): here we're using the QUIRKY netxlite.NewHTTPTransport
+	// function, but we can probably avoid using it, given that this code is
+	// not using tracing and does not care about those quirks.
 	httpTransport := netxlite.NewHTTPTransport(
 		t.Logger,
 		netxlite.NewNullDialer(),
-		// note: netxlite guarantees that here tlsConn is a netxlite.TLSConn
-		netxlite.NewSingleUseTLSDialer(tlsConn.(netxlite.TLSConn)),
+		netxlite.NewSingleUseTLSDialer(tlsConn),
 	)
 
 	// create HTTP request

@@ -22,6 +22,8 @@ type proxyDialer struct {
 
 // MaybeWrapWithProxyDialer returns the original dialer if the proxyURL is nil
 // and otherwise returns a wrapped dialer that implements proxying.
+//
+// Deprecated: do not use this function in new code.
 func MaybeWrapWithProxyDialer(dialer model.Dialer, proxyURL *url.URL) model.Dialer {
 	if proxyURL == nil {
 		return dialer

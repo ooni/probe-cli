@@ -75,9 +75,14 @@ func TestQAEnv(t *testing.T) {
 	t.Run("we can hijack HTTPS requests", func(t *testing.T) {
 		// create QA env
 		env := netemx.MustNewQAEnv(
-			netemx.QAEnvOptionHTTPServer(
+			netemx.QAEnvOptionNetStack(
 				netemx.AddressWwwExampleCom,
-				netemx.ExampleWebPageHandlerFactory(),
+				&netemx.HTTPSecureServerFactory{
+					Factory:          netemx.ExampleWebPageHandlerFactory(),
+					Ports:            []int{443},
+					ServerNameMain:   "www.example.com",
+					ServerNameExtras: []string{},
+				},
 			),
 		)
 		defer env.Close()
@@ -92,6 +97,7 @@ func TestQAEnv(t *testing.T) {
 		env.Do(func() {
 			// create client, which will use the underlying client stack's
 			// DialContext method to dial connections
+			// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS but they're not needed here
 			client := netxlite.NewHTTPClientStdlib(model.DiscardLogger)
 
 			// create request using a domain that has been configured in the
@@ -138,9 +144,14 @@ func TestQAEnv(t *testing.T) {
 	t.Run("we can hijack HTTP3 requests", func(t *testing.T) {
 		// create QA env
 		env := netemx.MustNewQAEnv(
-			netemx.QAEnvOptionHTTPServer(
+			netemx.QAEnvOptionNetStack(
 				netemx.AddressWwwExampleCom,
-				netemx.ExampleWebPageHandlerFactory(),
+				&netemx.HTTP3ServerFactory{
+					Factory:          netemx.ExampleWebPageHandlerFactory(),
+					Ports:            []int{443},
+					ServerNameMain:   "www.example.com",
+					ServerNameExtras: []string{},
+				},
 			),
 		)
 		defer env.Close()
@@ -190,7 +201,15 @@ func TestQAEnv(t *testing.T) {
 	t.Run("we can configure DPI rules", func(t *testing.T) {
 		// create QA env
 		env := netemx.MustNewQAEnv(
-			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.ExampleWebPageHandlerFactory()),
+			netemx.QAEnvOptionNetStack(
+				"8.8.8.8",
+				&netemx.HTTPSecureServerFactory{
+					Factory:          netemx.ExampleWebPageHandlerFactory(),
+					Ports:            []int{443},
+					ServerNameMain:   "quad8.com",
+					ServerNameExtras: []string{},
+				},
+			),
 		)
 		defer env.Close()
 
@@ -211,6 +230,7 @@ func TestQAEnv(t *testing.T) {
 		env.Do(func() {
 			// create client, which will use the underlying client stack's
 			// DialContext method to dial connections
+			// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS but they're not needed here
 			client := netxlite.NewHTTPClientStdlib(model.DiscardLogger)
 
 			// create the request
@@ -242,7 +262,15 @@ func TestQAEnv(t *testing.T) {
 
 		// create QA env
 		env := netemx.MustNewQAEnv(
-			netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.ExampleWebPageHandlerFactory()),
+			netemx.QAEnvOptionNetStack(
+				"8.8.8.8",
+				&netemx.HTTPSecureServerFactory{
+					Factory:          netemx.ExampleWebPageHandlerFactory(),
+					Ports:            []int{443},
+					ServerNameMain:   "quad8.com",
+					ServerNameExtras: []string{},
+				},
+			),
 			netemx.QAEnvOptionClientNICWrapper(dumper),
 		)
 		defer env.Close()
@@ -257,6 +285,7 @@ func TestQAEnv(t *testing.T) {
 		env.Do(func() {
 			// create client, which will use the underlying client stack's
 			// DialContext method to dial connections
+			// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS but they're not needed here
 			client := netxlite.NewHTTPClientStdlib(model.DiscardLogger)
 
 			// create the request

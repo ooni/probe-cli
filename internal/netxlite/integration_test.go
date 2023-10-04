@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"runtime"
 	"testing"
 	"time"
 
@@ -78,6 +79,9 @@ func TestMeasureWithSystemResolver(t *testing.T) {
 		// e.g. a domain containing a few random letters
 		addrs, err := r.LookupHost(ctx, randx.Letters(7)+".ooni.nonexistent")
 		if err == nil || err.Error() != netxlite.FailureGenericTimeoutError {
+			if runtime.GOOS == "windows" {
+				t.Skip("https://github.com/ooni/probe/issues/2535")
+			}
 			t.Fatal("not the error we expected", err)
 		}
 		if addrs != nil {
@@ -291,7 +295,7 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 			NextProtos: []string{"h2", "http/1.1"},
 			RootCAs:    nil,
 		}
-		tconn, _, err := th.Handshake(ctx, conn, config)
+		tconn, err := th.Handshake(ctx, conn, config)
 		if err != nil {
 			return fmt.Errorf("tls handshake failed: %w", err)
 		}
@@ -316,7 +320,7 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 			NextProtos: []string{"h2", "http/1.1"},
 			RootCAs:    nil,
 		}
-		tconn, _, err := th.Handshake(ctx, conn, config)
+		tconn, err := th.Handshake(ctx, conn, config)
 		if err == nil {
 			return fmt.Errorf("tls handshake succeded unexpectedly")
 		}
@@ -346,7 +350,7 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 			NextProtos: []string{"h2", "http/1.1"},
 			RootCAs:    nil,
 		}
-		tconn, _, err := th.Handshake(ctx, conn, config)
+		tconn, err := th.Handshake(ctx, conn, config)
 		if err == nil {
 			return fmt.Errorf("tls handshake succeded unexpectedly")
 		}
@@ -376,7 +380,7 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 			NextProtos: []string{"h2", "http/1.1"},
 			RootCAs:    nil,
 		}
-		tconn, _, err := th.Handshake(ctx, conn, config)
+		tconn, err := th.Handshake(ctx, conn, config)
 		if err == nil {
 			return fmt.Errorf("tls handshake succeded unexpectedly")
 		}
@@ -551,6 +555,8 @@ func TestHTTPTransport(t *testing.T) {
 			conn.Close()
 		}))
 		defer srvr.Close()
+		// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPTransportStdlib has QUIRKS but we
+		// don't actually care about those QUIRKS in this context
 		txp := netxlite.NewHTTPTransportStdlib(model.DiscardLogger)
 		req, err := http.NewRequest("GET", srvr.URL, nil)
 		if err != nil {

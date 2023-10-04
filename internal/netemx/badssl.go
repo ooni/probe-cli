@@ -88,38 +88,28 @@ func (thx *tlsHandlerForBadSSLServer) GetCertificate(
 	case "wrong.host.badssl.com":
 		// Use the correct root CA but return a certificate for a different
 		// host, which should cause the SNI verification to fail.
-		tlsConfig := thx.unet.ServerTLSConfig()
-		return tlsConfig.GetCertificate(&tls.ClientHelloInfo{
-			CipherSuites:      chi.CipherSuites,
-			ServerName:        "wrong-host.badssl.com", // different!
-			SupportedCurves:   chi.SupportedCurves,
-			SupportedPoints:   chi.SupportedPoints,
-			SignatureSchemes:  chi.SignatureSchemes,
-			SupportedProtos:   chi.SupportedProtos,
-			SupportedVersions: chi.SupportedVersions,
-			Conn:              tcpConn,
-		})
+		tlsCert := thx.unet.MustNewTLSCertificate("wrong-host.badssl.com") // different
+		return tlsCert, nil
 
 	case "untrusted-root.badssl.com":
 		fallthrough
 	default:
-		// Create a custom MITM config and use it to negotiate TLS. Because this would be
+		// Create a custom CA config and use it to negotiate TLS. Because this would be
 		// a different root CA, validating certs will fail the handshake.
 		//
 		// A more advanced version of this handler could choose different behaviors
 		// depending on the SNI provided as part of the *tls.ClientHelloInfo.
-		mitm := testingx.MustNewTLSMITMProviderNetem()
-		tlsConfig := mitm.ServerTLSConfig()
-		return tlsConfig.GetCertificate(chi)
+		ca := netem.MustNewCA()
+		return ca.MustNewTLSCertificate(chi.ServerName), nil
 
 	case "expired.badssl.com":
 		// Create on-the-fly a certificate with the right SNI but that is clearly expired.
-		mitm := thx.unet.TLSMITMConfig()
-		return mitm.Config.NewCertWithoutCacheWithTimeNow(
-			chi.ServerName,
+		cert := thx.unet.MustNewTLSCertificateWithTimeNow(
 			func() time.Time {
 				return time.Date(2017, time.July, 17, 0, 0, 0, 0, time.UTC)
 			},
+			chi.ServerName,
 		)
+		return cert, nil
 	}
 }

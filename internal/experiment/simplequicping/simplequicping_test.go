@@ -104,7 +104,15 @@ func TestMeasurerRun(t *testing.T) {
 
 	t.Run("with netem: without DPI: expect success", func(t *testing.T) {
 		// create a new test environment
-		env := netemx.MustNewQAEnv(netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.ExampleWebPageHandlerFactory()))
+		env := netemx.MustNewQAEnv(netemx.QAEnvOptionNetStack(
+			"8.8.8.8",
+			&netemx.HTTP3ServerFactory{
+				Factory:          netemx.ExampleWebPageHandlerFactory(),
+				Ports:            []int{443},
+				ServerNameMain:   SNI,
+				ServerNameExtras: []string{},
+			},
+		))
 		defer env.Close()
 
 		env.Do(func() {
@@ -140,7 +148,15 @@ func TestMeasurerRun(t *testing.T) {
 
 	t.Run("with netem: with DPI that drops UDP datagrams to 8.8.8.8:443: expect failure", func(t *testing.T) {
 		// create a new test environment
-		env := netemx.MustNewQAEnv(netemx.QAEnvOptionHTTPServer("8.8.8.8", netemx.ExampleWebPageHandlerFactory()))
+		env := netemx.MustNewQAEnv(netemx.QAEnvOptionNetStack(
+			"8.8.8.8",
+			&netemx.HTTP3ServerFactory{
+				Factory:          netemx.ExampleWebPageHandlerFactory(),
+				Ports:            []int{443},
+				ServerNameMain:   SNI,
+				ServerNameExtras: []string{},
+			},
+		))
 		defer env.Close()
 
 		// add DPI engine to emulate the censorship condition

@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	utls "gitlab.com/yawning/utls.git"
 )
@@ -49,10 +50,11 @@ func main() {
 		NextProtos: []string{"h2", "http/1.1"},
 		RootCAs:    nil,
 	}
-	conn, state, err := dialTLS(ctx, *address, tlsConfig)
+	conn, err := dialTLS(ctx, *address, tlsConfig)
 	if err != nil {
 		fatal(err)
 	}
+	state := conn.ConnectionState()
 	log.Infof("Conn type          : %T", conn)
 	log.Infof("Cipher suite       : %s", netxlite.TLSCipherSuiteString(state.CipherSuite))
 	log.Infof("Negotiated protocol: %s", state.NegotiatedProtocol)
@@ -65,8 +67,7 @@ func dialTCP(ctx context.Context, address string) (net.Conn, error) {
 	return d.DialContext(ctx, "tcp", address)
 }
 
-func handshakeTLS(ctx context.Context, tcpConn net.Conn,
-	config *tls.Config) (net.Conn, tls.ConnectionState, error) {
+func handshakeTLS(ctx context.Context, tcpConn net.Conn, config *tls.Config) (model.TLSConn, error) {
 ```
 
 The following line of code is where we diverge from the
@@ -91,18 +92,17 @@ previous chapter, so we won't add further comments.
 	return th.Handshake(ctx, tcpConn, config)
 }
 
-func dialTLS(ctx context.Context, address string,
-	config *tls.Config) (net.Conn, tls.ConnectionState, error) {
+func dialTLS(ctx context.Context, address string, config *tls.Config) (model.TLSConn, error) {
 	tcpConn, err := dialTCP(ctx, address)
 	if err != nil {
-		return nil, tls.ConnectionState{}, err
+		return nil, err
 	}
-	tlsConn, state, err := handshakeTLS(ctx, tcpConn, config)
+	tlsConn, err := handshakeTLS(ctx, tcpConn, config)
 	if err != nil {
 		tcpConn.Close()
-		return nil, tls.ConnectionState{}, err
+		return nil, err
 	}
-	return tlsConn, state, nil
+	return tlsConn, nil
 }
 
 func fatal(err error) {

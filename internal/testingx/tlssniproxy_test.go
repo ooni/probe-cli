@@ -32,9 +32,8 @@ func TestTLSSNIProxy(t *testing.T) {
 				Underlying: nil, // use the network
 			}
 			tcpAddr := &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1)}
-			tcpListener := &testingx.TCPListenerStdlib{}
 
-			proxy := testingx.MustNewTLSSNIProxyEx(log.Log, netxProxy, tcpAddr, tcpListener)
+			proxy := testingx.MustNewTLSSNIProxyEx(log.Log, netxProxy, tcpAddr)
 			closers = append(closers, proxy)
 
 			netxClient := &netxlite.Netx{
@@ -49,7 +48,7 @@ func TestTLSSNIProxy(t *testing.T) {
 		construct: func() (*testingx.TLSSNIProxy, *netxlite.Netx, []io.Closer) {
 			var closers []io.Closer
 
-			topology := runtimex.Try1(netem.NewStarTopology(log.Log))
+			topology := netem.MustNewStarTopology(log.Log)
 			closers = append(closers, topology)
 
 			wwwStack := runtimex.Try1(topology.AddHost("142.251.209.14", "142.251.209.14", &netem.LinkConfig{}))
@@ -68,6 +67,7 @@ func TestTLSSNIProxy(t *testing.T) {
 					w.Write([]byte("Bonsoir, Elliot!"))
 				}),
 				wwwStack,
+				"www.google.com",
 			)
 			closers = append(closers, wwwServer)
 
@@ -75,7 +75,6 @@ func TestTLSSNIProxy(t *testing.T) {
 				log.Log,
 				&netxlite.Netx{Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: proxyStack}},
 				&net.TCPAddr{IP: net.IPv4(10, 0, 0, 1), Port: 443},
-				proxyStack,
 			)
 			closers = append(closers, proxy)
 
@@ -98,8 +97,6 @@ func TestTLSSNIProxy(t *testing.T) {
 				}
 			}()
 
-			//log.SetLevel(log.DebugLevel)
-
 			tlsConfig := &tls.Config{
 				ServerName: "www.google.com",
 			}
@@ -113,7 +110,7 @@ func TestTLSSNIProxy(t *testing.T) {
 			}
 			defer conn.Close()
 
-			tconn := conn.(netxlite.TLSConn)
+			tconn := conn.(netxlite.TLSConn) // cast safe according to documentation
 			connstate := tconn.ConnectionState()
 			t.Logf("%+v", connstate)
 		})

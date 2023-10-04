@@ -11,7 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/geolocate"
+	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/enginelocate"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/pkg/oonimkall"
 )
@@ -19,6 +20,7 @@ import (
 func NewSessionForTestingWithAssetsDir(assetsDir string) (*oonimkall.Session, error) {
 	return oonimkall.NewSession(&oonimkall.SessionConfig{
 		AssetsDir:        assetsDir,
+		Logger:           log.Log,
 		ProbeServicesURL: "https://ams-pg-test.ooni.org/",
 		SoftwareName:     "oonimkall-test",
 		SoftwareVersion:  "0.1.0",
@@ -50,7 +52,7 @@ func ReduceErrorForGeolocate(err error) error {
 	if errors.Is(err, context.Canceled) {
 		return nil // when we have not downloaded the resources yet
 	}
-	if !errors.Is(err, geolocate.ErrAllIPLookuppersFailed) {
+	if !errors.Is(err, enginelocate.ErrAllIPLookuppersFailed) {
 		return nil // otherwise
 	}
 	return fmt.Errorf("not the error we expected: %w", err)
@@ -295,7 +297,7 @@ func TestCheckInLookupLocationFailure(t *testing.T) {
 	config.WebConnectivity.AddCategory("CULTR")
 	ctx.Cancel() // immediate failure
 	result, err := sess.CheckIn(ctx, &config)
-	if !errors.Is(err, geolocate.ErrAllIPLookuppersFailed) {
+	if !errors.Is(err, enginelocate.ErrAllIPLookuppersFailed) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
 	if result != nil {

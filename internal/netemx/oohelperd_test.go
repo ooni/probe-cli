@@ -31,8 +31,7 @@ func TestOOHelperDHandler(t *testing.T) {
 		}
 		thReqRaw := runtimex.Try1(json.Marshal(thReq))
 
-		//log.SetLevel(log.DebugLevel)
-
+		// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS but they're not needed here
 		httpClient := netxlite.NewHTTPClientStdlib(log.Log)
 
 		req, err := http.NewRequest(http.MethodPost, "https://0.th.ooni.org/", bytes.NewReader(thReqRaw))

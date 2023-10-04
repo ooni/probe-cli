@@ -21,8 +21,10 @@ func TestNewDialerWithoutResolver(t *testing.T) {
 		underlying := &mocks.Dialer{}
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		trace.newDialerWithoutResolverFn = func(dl model.DebugLogger) model.Dialer {
-			return underlying
+		trace.Netx = &mocks.MeasuringNetwork{
+			MockNewDialerWithoutResolver: func(dl model.DebugLogger, w ...model.DialerWrapper) model.Dialer {
+				return underlying
+			},
 		}
 		dialer := trace.NewDialerWithoutResolver(model.DiscardLogger)
 		dt := dialer.(*dialerTrace)
@@ -46,8 +48,10 @@ func TestNewDialerWithoutResolver(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
-		trace.newDialerWithoutResolverFn = func(dl model.DebugLogger) model.Dialer {
-			return underlying
+		trace.Netx = &mocks.MeasuringNetwork{
+			MockNewDialerWithoutResolver: func(dl model.DebugLogger, w ...model.DialerWrapper) model.Dialer {
+				return underlying
+			},
 		}
 		dialer := trace.NewDialerWithoutResolver(model.DiscardLogger)
 		ctx := context.Background()
@@ -72,8 +76,10 @@ func TestNewDialerWithoutResolver(t *testing.T) {
 				called = true
 			},
 		}
-		trace.newDialerWithoutResolverFn = func(dl model.DebugLogger) model.Dialer {
-			return underlying
+		trace.Netx = &mocks.MeasuringNetwork{
+			MockNewDialerWithoutResolver: func(dl model.DebugLogger, w ...model.DialerWrapper) model.Dialer {
+				return underlying
+			},
 		}
 		dialer := trace.NewDialerWithoutResolver(model.DiscardLogger)
 		dialer.CloseIdleConnections()

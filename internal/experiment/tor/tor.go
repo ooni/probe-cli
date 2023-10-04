@@ -13,12 +13,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/measurex"
+	"github.com/ooni/probe-cli/v3/internal/legacy/measurex"
+	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/scrubber"
-	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
 const (
@@ -275,7 +276,7 @@ func maybeSanitize(input TargetResults, kt keytarget) TargetResults {
 	// Implementation note: here we are using a strict scrubbing policy where
 	// we remove all IP _endpoints_, mainly for convenience, because we already
 	// have a well tested implementation that does that.
-	data = []byte(scrubber.Scrub(string(data)))
+	data = []byte(scrubber.ScrubString(string(data)))
 	var out TargetResults
 	err = json.Unmarshal(data, &out)
 	runtimex.PanicOnError(err, "json.Unmarshal should not fail here")
@@ -320,7 +321,7 @@ func maybeScrubbingLogger(input model.Logger, kt keytarget) model.Logger {
 	if !kt.private() {
 		return input
 	}
-	return &scrubber.Logger{Logger: input}
+	return &logx.ScrubberLogger{Logger: input}
 }
 
 // defaultFlexibleConnect is the default implementation of the

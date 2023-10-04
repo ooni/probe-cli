@@ -23,8 +23,25 @@ func exampleNewEnvironment() *netemx.QAEnv {
 		netemx.QAEnvOptionNetStack("8.8.4.4", &netemx.DNSOverUDPServerFactory{}),
 		netemx.QAEnvOptionNetStack("9.9.9.9", &netemx.DNSOverUDPServerFactory{}),
 		netemx.QAEnvOptionClientAddress(netemx.DefaultClientAddress),
-		netemx.QAEnvOptionHTTPServer(
-			netemx.AddressWwwExampleCom, netemx.ExampleWebPageHandlerFactory()),
+		netemx.QAEnvOptionNetStack(
+			netemx.AddressWwwExampleCom,
+			&netemx.HTTPCleartextServerFactory{
+				Factory: netemx.ExampleWebPageHandlerFactory(),
+				Ports:   []int{80},
+			},
+			&netemx.HTTPSecureServerFactory{
+				Factory:          netemx.ExampleWebPageHandlerFactory(),
+				Ports:            []int{443},
+				ServerNameMain:   "www.example.com",
+				ServerNameExtras: []string{},
+			},
+			&netemx.HTTP3ServerFactory{
+				Factory:          netemx.ExampleWebPageHandlerFactory(),
+				Ports:            []int{443},
+				ServerNameMain:   "www.example.com",
+				ServerNameExtras: []string{},
+			},
+		),
 		netemx.QAEnvOptionLogger(log.Log),
 	)
 }
@@ -66,6 +83,7 @@ func Example_dpiRule() {
 		reso := netxlite.NewStdlibResolver(model.DiscardLogger)
 
 		// create the HTTP client
+		// TODO(https://github.com/ooni/probe/issues/2534): the NewHTTPClientWithResolver func has QUIRKS but we don't care.
 		client := netxlite.NewHTTPClientWithResolver(model.DiscardLogger, reso)
 
 		// create the HTTP request
@@ -310,6 +328,7 @@ func Example_exampleWebServerWithInternetScenario() {
 	defer env.Close()
 
 	env.Do(func() {
+		// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS but they're not needed here
 		client := netxlite.NewHTTPClientStdlib(log.Log)
 
 		req, err := http.NewRequest("GET", "https://www.example.com/", nil)
@@ -389,6 +408,7 @@ func Example_ooniAPIWithInternetScenario() {
 	defer env.Close()
 
 	env.Do(func() {
+		// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS but they're not needed here
 		client := netxlite.NewHTTPClientStdlib(log.Log)
 
 		req, err := http.NewRequest("GET", "https://api.ooni.io/api/v1/test-helpers", nil)
@@ -419,6 +439,7 @@ func Example_oohelperdWithInternetScenario() {
 	defer env.Close()
 
 	env.Do(func() {
+		// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS but they're not needed here
 		client := netxlite.NewHTTPClientStdlib(log.Log)
 		thRequest := []byte(`{"http_request": "https://www.example.com/","http_request_headers":{},"tcp_connect":["93.184.216.34:443"]}`)
 
@@ -452,6 +473,7 @@ func Example_ubuntuGeoIPWithInternetScenario() {
 	defer env.Close()
 
 	env.Do(func() {
+		// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS but they're not needed here
 		client := netxlite.NewHTTPClientStdlib(log.Log)
 
 		req, err := http.NewRequest("GET", "https://geoip.ubuntu.com/lookup", nil)
@@ -482,6 +504,7 @@ func Example_examplePublicBlockpage() {
 	defer env.Close()
 
 	env.Do(func() {
+		// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS but they're not needed here
 		client := netxlite.NewHTTPClientStdlib(log.Log)
 
 		req, err := http.NewRequest("GET", "http://"+netemx.AddressPublicBlockpage+"/", nil)
@@ -523,6 +546,8 @@ func Example_exampleURLShortener() {
 	defer env.Close()
 
 	env.Do(func() {
+		// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPTransportStdlib has QUIRKS but we
+		// don't actually care about those QUIRKS in this context
 		client := netxlite.NewHTTPTransportStdlib(log.Log)
 
 		req, err := http.NewRequest("GET", "https://bit.ly/21645", nil)

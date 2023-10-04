@@ -13,7 +13,9 @@ import (
 	"syscall"
 	"time"
 
+	oohttp "github.com/ooni/oohttp"
 	"github.com/quic-go/quic-go"
+	utls "gitlab.com/yawning/utls.git"
 )
 
 // DNSResponse is a parsed DNS response ready for further processing.
@@ -105,12 +107,6 @@ type DNSEncoder interface {
 	Encode(domain string, qtype uint16, padding bool) DNSQuery
 }
 
-// DNSTransportWrapper is a type that takes in input a DNSTransport
-// and returns in output a wrapped DNSTransport.
-type DNSTransportWrapper interface {
-	WrapDNSTransport(txp DNSTransport) DNSTransport
-}
-
 // DNSTransport represents an abstract DNS transport.
 type DNSTransport interface {
 	// RoundTrip sends a DNS query and receives the reply.
@@ -137,8 +133,17 @@ type DialerWrapper interface {
 
 // SimpleDialer establishes network connections.
 type SimpleDialer interface {
-	// DialContext behaves like net.Dialer.DialContext.
-	DialContext(ctx context.Context, network, address string) (net.Conn, error)
+	// DialContext creates a new TCP/UDP connection like [net.DialContext] would do.
+	//
+	// The endpoint is an endpoint like the ones accepted by [net.DialContext]. For example,
+	// x.org:443, 130.192.91.211:443 and [::1]:443. Note that IPv6 addrs are quoted.
+	//
+	// This function MUST gracefully handle the case where the endpoint contains an IPv4
+	// or IPv6 address by skipping DNS resolution and directly using the endpoint.
+	//
+	// See https://github.com/ooni/probe-cli/pull/1295#issuecomment-1731243994 for more
+	// details on why DialContext MUST do that.
+	DialContext(ctx context.Context, network, endpoint string) (net.Conn, error)
 }
 
 // Dialer is a SimpleDialer with the possibility of closing open connections.
@@ -181,10 +186,55 @@ type HTTPSSvc struct {
 	IPv6 []string
 }
 
-// UDPListener listens for connections over UDP, e.g. QUIC.
-type UDPListener interface {
-	// Listen creates a new listening UDPLikeConn.
-	Listen(addr *net.UDPAddr) (UDPLikeConn, error)
+// MeasuringNetwork defines the constructors required for implementing OONI experiments. All
+// these constructors MUST guarantee proper error wrapping to map Go errors to OONI errors
+// as documented by the [netxlite] package. The [*netxlite.Netx] type is currently the default
+// implementation of this interface. This interface SHOULD always be implemented in terms of
+// an [UnderlyingNetwork] that allows to switch between the host network and [netemx].
+type MeasuringNetwork interface {
+	// NewDialerWithoutResolver creates a [Dialer] with error wrapping and without an attached
+	// resolver, meaning that you MUST pass TCP or UDP endpoint addresses to this dialer.
+	//
+	// The [DialerWrapper] arguments wraps the returned dialer in such a way that we can implement
+	// the legacy [netx] package. New code MUST NOT use this functionality, which we'd like to remove ASAP.
+	NewDialerWithoutResolver(dl DebugLogger, w ...DialerWrapper) Dialer
+
+	// NewParallelDNSOverHTTPSResolver creates a new DNS-over-HTTPS resolver with error wrapping.
+	NewParallelDNSOverHTTPSResolver(logger DebugLogger, URL string) Resolver
+
+	// NewParallelUDPResolver creates a new Resolver using DNS-over-UDP
+	// that performs parallel A/AAAA lookups during LookupHost.
+	//
+	// The address argument is the UDP endpoint address (e.g., 1.1.1.1:53, [::1]:53).
+	NewParallelUDPResolver(logger DebugLogger, dialer Dialer, address string) Resolver
+
+	// NewQUICDialerWithoutResolver creates a [QUICDialer] with error wrapping and without an attached
+	// resolver, meaning that you MUST pass UDP endpoint addresses to this dialer.
+	//
+	// The [QUICDialerWrapper] arguments wraps the returned dialer in such a way
+	// that we can implement the legacy [netx] package. New code MUST NOT
+	// use this functionality, which we'd like to remove ASAP.
+	NewQUICDialerWithoutResolver(
+		listener UDPListener, logger DebugLogger, w ...QUICDialerWrapper) QUICDialer
+
+	// NewStdlibResolver creates a new Resolver with error wrapping using
+	// getaddrinfo or &net.Resolver{} depending on `-tags netgo`.
+	NewStdlibResolver(logger DebugLogger) Resolver
+
+	// NewTLSHandshakerStdlib creates a new TLSHandshaker with error wrapping
+	// that is using the go standard library to manage TLS.
+	NewTLSHandshakerStdlib(logger DebugLogger) TLSHandshaker
+
+	// NewTLSHandshakerUTLS creates a new TLS handshaker using
+	// gitlab.com/yawning/utls for TLS that implements error wrapping.
+	//
+	// The id is the address of something like utls.HelloFirefox_55.
+	//
+	// Passing a nil `id` will make this function panic.
+	NewTLSHandshakerUTLS(logger DebugLogger, id *utls.ClientHelloID) TLSHandshaker
+
+	// NewUDPListener creates a new UDPListener with error wrapping.
+	NewUDPListener() UDPListener
 }
 
 // QUICDialerWrapper is a type that takes in input a QUICDialer
@@ -217,7 +267,9 @@ type QUICDialer interface {
 
 // Resolver performs domain name resolutions.
 type Resolver interface {
-	// LookupHost behaves like net.Resolver.LookupHost.
+	// LookupHost resolves the given hostname to IP addreses. This function SHOULD handle the
+	// case in which hostname is an IP address by returning a 1-element list containing the hostname,
+	// for consistency with [net.Resolver] behaviour.
 	LookupHost(ctx context.Context, hostname string) (addrs []string, err error)
 
 	// Network returns the resolver type. It should be one of:
@@ -257,6 +309,16 @@ type Resolver interface {
 	LookupNS(ctx context.Context, domain string) ([]*net.NS, error)
 }
 
+// TLSConn is the type of connection that oohttp expects from
+// any library that implements TLS functionality. By using this
+// kind of TLSConn we're able to use both the standard library
+// and gitlab.com/yawning/utls.git to perform TLS operations. Note
+// that the stdlib's tls.Conn implements this interface.
+type TLSConn = oohttp.TLSConn
+
+// Ensures that a [*tls.Conn] implements the [TLSConn] interface.
+var _ TLSConn = &tls.Conn{}
+
 // TLSDialer is a Dialer dialing TLS connections.
 type TLSDialer interface {
 	// CloseIdleConnections closes idle connections, if any.
@@ -264,6 +326,15 @@ type TLSDialer interface {
 
 	// DialTLSContext dials a TLS connection. This method will always return
 	// to you a oohttp.TLSConn, so you can always safely cast to it.
+	//
+	// The endpoint is an endpoint like the ones accepted by [net.DialContext]. For example,
+	// x.org:443, 130.192.91.211:443 and [::1]:443. Note that IPv6 addrs are quoted.
+	//
+	// This function MUST gracefully handle the case where the endpoint contains an IPv4
+	// or IPv6 address by skipping DNS resolution and directly using the endpoint.
+	//
+	// See https://github.com/ooni/probe-cli/pull/1295#issuecomment-1731243994 for more
+	// details on why DialTLSContext MUST do that.
 	DialTLSContext(ctx context.Context, network, address string) (net.Conn, error)
 }
 
@@ -281,12 +352,7 @@ type TLSHandshaker interface {
 	//
 	// - set NextProtos to []string{"h2", "http/1.1"} for HTTPS
 	// and []string{"dot"} for DNS-over-TLS.
-	//
-	// QUIRK: The returned connection will always implement the TLSConn interface
-	// exposed by ooni/oohttp. A future version of this interface may instead
-	// return directly a TLSConn to avoid unconditional castings.
-	Handshake(ctx context.Context, conn net.Conn, tlsConfig *tls.Config) (
-		net.Conn, tls.ConnectionState, error)
+	Handshake(ctx context.Context, conn net.Conn, tlsConfig *tls.Config) (TLSConn, error)
 }
 
 // Trace allows to collect measurement traces. A trace is injected into
@@ -482,8 +548,14 @@ type UDPLikeConn interface {
 	SyscallConn() (syscall.RawConn, error)
 }
 
+// UDPListener listens for connections over UDP, e.g. QUIC.
+type UDPListener interface {
+	// Listen creates a new listening UDPLikeConn.
+	Listen(addr *net.UDPAddr) (UDPLikeConn, error)
+}
+
 // UnderlyingNetwork implements the underlying network APIs on
-// top of which we implement network extensions.
+// top of which we implement network extensions such as [MeasuringNetwork].
 type UnderlyingNetwork interface {
 	// DefaultCertPool returns the underlying cert pool used by the
 	// network extensions library. You MUST NOT use this function to
@@ -504,6 +576,9 @@ type UnderlyingNetwork interface {
 
 	// GetaddrinfoResolverNetwork returns the resolver network.
 	GetaddrinfoResolverNetwork() string
+
+	// ListenTCP is equivalent to net.ListenTCP.
+	ListenTCP(network string, addr *net.TCPAddr) (net.Listener, error)
 
 	// ListenUDP is equivalent to net.ListenUDP.
 	ListenUDP(network string, addr *net.UDPAddr) (UDPLikeConn, error)

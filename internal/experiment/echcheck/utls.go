@@ -12,7 +12,6 @@ import (
 )
 
 type tlsHandshakerWithExtensions struct {
-	conn       *netxlite.UTLSConn
 	extensions []utls.TLSExtension
 	dl         model.DebugLogger
 	id         *utls.ClientHelloID
@@ -32,18 +31,19 @@ func newHandshakerWithExtensions(extensions []utls.TLSExtension) func(dl model.D
 	}
 }
 
-func (t *tlsHandshakerWithExtensions) Handshake(ctx context.Context, conn net.Conn, tlsConfig *tls.Config) (
-	net.Conn, tls.ConnectionState, error) {
-	var err error
-	t.conn, err = netxlite.NewUTLSConn(conn, tlsConfig, t.id)
+func (t *tlsHandshakerWithExtensions) Handshake(
+	ctx context.Context, tcpConn net.Conn, tlsConfig *tls.Config) (model.TLSConn, error) {
+	tlsConn, err := netxlite.NewUTLSConn(tcpConn, tlsConfig, t.id)
 	runtimex.Assert(err == nil, "unexpected error when creating UTLSConn")
 
 	if t.extensions != nil && len(t.extensions) != 0 {
-		t.conn.BuildHandshakeState()
-		t.conn.Extensions = append(t.conn.Extensions, t.extensions...)
+		tlsConn.BuildHandshakeState()
+		tlsConn.Extensions = append(tlsConn.Extensions, t.extensions...)
 	}
 
-	err = t.conn.Handshake()
+	if err := tlsConn.Handshake(); err != nil {
+		return nil, err
+	}
 
-	return t.conn.NetConn(), t.conn.ConnectionState(), err
+	return tlsConn, nil
 }

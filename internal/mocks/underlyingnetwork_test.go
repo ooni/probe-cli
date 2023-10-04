@@ -55,6 +55,22 @@ func TestUnderlyingNetwork(t *testing.T) {
 		}
 	})
 
+	t.Run("ListenTCP", func(t *testing.T) {
+		expect := errors.New("mocked error")
+		un := &UnderlyingNetwork{
+			MockListenTCP: func(network string, addr *net.TCPAddr) (net.Listener, error) {
+				return nil, expect
+			},
+		}
+		listener, err := un.ListenTCP("tcp", &net.TCPAddr{})
+		if !errors.Is(err, expect) {
+			t.Fatal("unexpected err", err)
+		}
+		if listener != nil {
+			t.Fatal("expected nil listener")
+		}
+	})
+
 	t.Run("ListenUDP", func(t *testing.T) {
 		expect := errors.New("mocked error")
 		un := &UnderlyingNetwork{

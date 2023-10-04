@@ -5,10 +5,10 @@ import (
 	"crypto/tls"
 	"testing"
 
+	"github.com/ooni/netem"
+	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
-	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
 func TestNewTLSDialer(t *testing.T) {
@@ -45,8 +45,9 @@ func TestNewTLSDialer(t *testing.T) {
 	})
 
 	t.Run("we can skip TLS verification", func(t *testing.T) {
-		mitm := testingx.MustNewTLSMITMProviderNetem()
-		server := testingx.MustNewTLSServer(testingx.TLSHandlerHandshakeAndWriteText(mitm, testingx.HTTPBlockpage451))
+		ca := netem.MustNewCA()
+		cert := ca.MustNewTLSCertificate("www.example.com")
+		server := testingx.MustNewTLSServer(testingx.TLSHandlerHandshakeAndWriteText(cert, testingx.HTTPBlockpage451))
 		defer server.Close()
 		tdx := NewTLSDialer(Config{TLSConfig: &tls.Config{
 			InsecureSkipVerify: true,
@@ -59,12 +60,13 @@ func TestNewTLSDialer(t *testing.T) {
 	})
 
 	t.Run("we can set the cert pool", func(t *testing.T) {
-		mitm := testingx.MustNewTLSMITMProviderNetem()
-		server := testingx.MustNewTLSServer(testingx.TLSHandlerHandshakeAndWriteText(mitm, testingx.HTTPBlockpage451))
+		ca := netem.MustNewCA()
+		cert := ca.MustNewTLSCertificate("dns.google")
+		server := testingx.MustNewTLSServer(testingx.TLSHandlerHandshakeAndWriteText(cert, testingx.HTTPBlockpage451))
 		defer server.Close()
 		tdx := NewTLSDialer(Config{
 			TLSConfig: &tls.Config{
-				RootCAs:    runtimex.Try1(mitm.DefaultCertPool()),
+				RootCAs:    ca.DefaultCertPool(),
 				ServerName: "dns.google",
 			},
 		})

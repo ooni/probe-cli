@@ -1,7 +1,6 @@
 package netemx
 
 import (
-	"crypto/tls"
 	"io"
 	"net"
 	"net/http"
@@ -21,8 +20,11 @@ type HTTPSecureServerFactory struct {
 	// Ports is the MANDATORY list of ports where to listen.
 	Ports []int
 
-	// TLSConfig is the OPTIONAL TLS config to use.
-	TLSConfig *tls.Config
+	// ServerNameMain is the MANDATORY server name we should configure.
+	ServerNameMain string
+
+	// ServerNameExtras contains OPTIONAL extra server names we should configure.
+	ServerNameExtras []string
 }
 
 var _ NetStackServerFactory = &HTTPSecureServerFactory{}
@@ -30,24 +32,26 @@ var _ NetStackServerFactory = &HTTPSecureServerFactory{}
 // MustNewServer implements NetStackServerFactory.
 func (f *HTTPSecureServerFactory) MustNewServer(env NetStackServerFactoryEnv, stack *netem.UNetStack) NetStackServer {
 	return &httpSecureServer{
-		closers:   []io.Closer{},
-		env:       env,
-		factory:   f.Factory,
-		mu:        sync.Mutex{},
-		ports:     f.Ports,
-		tlsConfig: f.TLSConfig,
-		unet:      stack,
+		closers:          []io.Closer{},
+		env:              env,
+		factory:          f.Factory,
+		mu:               sync.Mutex{},
+		ports:            f.Ports,
+		serverNameMain:   f.ServerNameMain,
+		serverNameExtras: f.ServerNameExtras,
+		unet:             stack,
 	}
 }
 
 type httpSecureServer struct {
-	closers   []io.Closer
-	env       NetStackServerFactoryEnv
-	factory   HTTPHandlerFactory
-	mu        sync.Mutex
-	ports     []int
-	tlsConfig *tls.Config
-	unet      *netem.UNetStack
+	closers          []io.Closer
+	env              NetStackServerFactoryEnv
+	factory          HTTPHandlerFactory
+	mu               sync.Mutex
+	ports            []int
+	serverNameMain   string
+	serverNameExtras []string
+	unet             *netem.UNetStack
 }
 
 // Close implements NetStackServer.
@@ -89,13 +93,8 @@ func (srv *httpSecureServer) mustListenPortLocked(handler http.Handler, ipAddr n
 	addr := &net.TCPAddr{IP: ipAddr, Port: port}
 	listener := runtimex.Try1(srv.unet.ListenTCP("tcp", addr))
 
-	// use the netstack TLS config or the custom one configured by the user
-	tlsConfig := srv.tlsConfig
-	if tlsConfig == nil {
-		tlsConfig = srv.unet.ServerTLSConfig()
-	} else {
-		tlsConfig = tlsConfig.Clone()
-	}
+	// create TLS config for the server name
+	tlsConfig := srv.unet.MustNewServerTLSConfig(srv.serverNameMain, srv.serverNameExtras...)
 
 	// serve requests in a background goroutine
 	srvr := &http.Server{

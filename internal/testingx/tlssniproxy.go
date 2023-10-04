@@ -16,8 +16,9 @@ import (
 
 // TLSSNIProxyNetx is how [TLSSNIProxy] views [*netxlite.Netx].
 type TLSSNIProxyNetx interface {
+	ListenTCP(network string, addr *net.TCPAddr) (net.Listener, error)
 	NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...model.DialerWrapper) model.Dialer
-	NewStdlibResolver(logger model.DebugLogger, wrappers ...model.DNSTransportWrapper) model.Resolver
+	NewStdlibResolver(logger model.DebugLogger) model.Resolver
 }
 
 // TLSSNIProxy is a proxy using the SNI to figure out where to connect to.
@@ -38,13 +39,10 @@ type TLSSNIProxy struct {
 	wg *sync.WaitGroup
 }
 
-// TODO(bassosimone): MustNewTLSSNIProxyEx prototype would be simpler if
-// netxlite.Netx was also able to create listening TCP connections
-
 // MustNewTLSSNIProxyEx creates a new [*TLSSNIProxy].
 func MustNewTLSSNIProxyEx(
-	logger model.Logger, netx TLSSNIProxyNetx, tcpAddr *net.TCPAddr, tcpListener TCPListener) *TLSSNIProxy {
-	listener := runtimex.Try1(tcpListener.ListenTCP("tcp", tcpAddr))
+	logger model.Logger, netx TLSSNIProxyNetx, tcpAddr *net.TCPAddr) *TLSSNIProxy {
+	listener := runtimex.Try1(netx.ListenTCP("tcp", tcpAddr))
 	proxy := &TLSSNIProxy{
 		closeOnce: sync.Once{},
 		listener:  listener,
