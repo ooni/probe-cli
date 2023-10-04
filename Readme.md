@@ -88,10 +88,10 @@ sudo apt install golang build-essential ca-certificates git
 sudo apt install mingw-w64
 
 # install the required go version binary
-go install -v golang.org/dl/go1.20.6@latest
+go install -v golang.org/dl/go1.20.8@latest
 
 # fetch the whole go distribution
-$HOME/go/bin/go1.20.6 download
+$HOME/go/bin/go1.20.8 download
 ```
 
 ### Fedora developer setup
@@ -107,10 +107,10 @@ sudo dnf install golang make gcc gcc-c++ git
 sudo dnf install mingw64-gcc mingw64-gcc-c++
 
 # install the required go version binary
-go install -v golang.org/dl/go1.20.6@latest
+go install -v golang.org/dl/go1.20.8@latest
 
 # fetch the whole go distribution
-$HOME/go/bin/go1.20.6 download
+$HOME/go/bin/go1.20.8 download
 ```
 
 ### macOS developer setup
@@ -127,10 +127,10 @@ Then, you need to follow these instructions:
 brew install go
 
 # install the required go version binary
-go install -v golang.org/dl/go1.20.6@latest
+go install -v golang.org/dl/go1.20.8@latest
 
 # fetch the whole go distribution
-$HOME/go/bin/go1.20.6 download
+$HOME/go/bin/go1.20.8 download
 ```
 
 ### Build instructions
@@ -139,7 +139,7 @@ Once you have installed the correct Go version and a C compiler,
 you can compile `ooniprobe` using:
 
 ```bash
-$HOME/go/bin/go1.20.6 build -v -ldflags '-s -w' ./cmd/ooniprobe
+$HOME/go/bin/go1.20.8 build -v -ldflags '-s -w' ./cmd/ooniprobe
 ```
 
 This command will generate a stripped binary called `ooniprobe`
@@ -148,7 +148,7 @@ in the toplevel directory.
 Likewise, you can compile `miniooni` using:
 
 ```bash
-$HOME/go/bin/go1.20.6 build -v -ldflags '-s -w' ./internal/cmd/miniooni
+$HOME/go/bin/go1.20.8 build -v -ldflags '-s -w' ./internal/cmd/miniooni
 ```
 
 This command will generate a stripped binary called `miniooni`
@@ -157,7 +157,7 @@ in the toplevel directory.
 And `oohelperd` using:
 
 ```bash
-$HOME/go/bin/go1.20.6 build -v -ldflags '-s -w' ./internal/cmd/oohelperd
+$HOME/go/bin/go1.20.8 build -v -ldflags '-s -w' ./internal/cmd/oohelperd
 ```
 
 This command will generate a stripped binary called `oohelperd`

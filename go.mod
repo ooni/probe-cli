@@ -27,8 +27,8 @@ require (
 	github.com/montanaflynn/stats v0.7.1
 	github.com/ooni/go-libtor v1.1.8
 	github.com/ooni/netem v0.0.0-20230920215742-15f3ffec0107
-	github.com/ooni/oocrypto v0.5.3
-	github.com/ooni/oohttp v0.6.3
+	github.com/ooni/oocrypto v0.5.4
+	github.com/ooni/oohttp v0.6.4
 	github.com/ooni/probe-assets v0.18.0
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/pion/stun v0.6.1
@@ -40,9 +40,9 @@ require (
 	github.com/upper/db/v4 v4.6.0
 	gitlab.com/yawning/obfs4.git v0.0.0-20230519154740-645026c2ada4
 	gitlab.com/yawning/utls.git v0.0.12-1
-	golang.org/x/crypto v0.11.0
-	golang.org/x/net v0.12.0
-	golang.org/x/sys v0.10.0
+	golang.org/x/crypto v0.13.0
+	golang.org/x/net v0.15.0
+	golang.org/x/sys v0.12.0
 )
 
 require (
@@ -150,8 +150,8 @@ require (
 	gitlab.com/yawning/bsaes.git v0.0.0-20190805113838-0a714cd429ec // indirect
 	gitlab.com/yawning/edwards25519-extra.git v0.0.0-20220726154925-def713fd18e4 // indirect
 	golang.org/x/mod v0.10.0 // indirect
-	golang.org/x/term v0.10.0 // indirect
-	golang.org/x/text v0.11.0 // indirect
+	golang.org/x/term v0.12.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/tools v0.9.3 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 )
