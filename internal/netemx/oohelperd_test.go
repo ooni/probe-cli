@@ -99,9 +99,10 @@ func TestOOHelperDHandler(t *testing.T) {
 				Failure:              nil,
 				Title:                "Default Web Page",
 				Headers: map[string]string{
-					"Alt-Svc":      `h3=":443"`,
-					"Content-Type": "text/html; charset=utf-8",
-					"Date":         "Thu, 24 Aug 2023 14:35:29 GMT",
+					"Alt-Svc":        `h3=":443"`,
+					"Content-Length": "1533",
+					"Content-Type":   "text/html; charset=utf-8",
+					"Date":           "Thu, 24 Aug 2023 14:35:29 GMT",
 				},
 				StatusCode: 200,
 			},
