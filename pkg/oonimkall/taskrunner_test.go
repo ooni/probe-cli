@@ -663,7 +663,7 @@ func TestTaskRunnerRun(t *testing.T) {
 		assertReducedEventsLike(t, expect, reduced)
 	})
 
-	t.Run("with succes and max runtime", func(t *testing.T) {
+	t.Run("with success and max runtime", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		runner.settings.Inputs = []string{"a", "b", "c", "d"}
 		runner.settings.Options.MaxRuntime = 2
