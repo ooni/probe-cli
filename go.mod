@@ -4,8 +4,6 @@ go 1.20
 
 require (
 	filippo.io/age v1.1.1
-	git.torproject.org/pluggable-transports/goptlib.git v1.3.0
-	git.torproject.org/pluggable-transports/snowflake.git/v2 v2.5.1
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/Psiphon-Labs/psiphon-tunnel-core v1.0.11-0.20230822172011-3f91b1b804b1
 	github.com/alecthomas/kingpin/v2 v2.3.2
@@ -37,10 +35,12 @@ require (
 	github.com/rubenv/sql-migrate v1.5.2
 	github.com/schollz/progressbar/v3 v3.13.1
 	github.com/upper/db/v4 v4.6.0
-	gitlab.com/yawning/obfs4.git v0.0.0-20230519154740-645026c2ada4
+	gitlab.com/yawning/obfs4.git v0.0.0-20231005123604-19f5a37fe427
 	gitlab.com/yawning/utls.git v0.0.12-1
-	golang.org/x/crypto v0.13.0
-	golang.org/x/net v0.15.0
+	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib v1.5.0
+	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2 v2.6.1
+	golang.org/x/crypto v0.14.0
+	golang.org/x/net v0.16.0
 	golang.org/x/sys v0.13.0
 )
 
@@ -74,9 +74,9 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
-	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib v1.5.0 // indirect
+	gitlab.com/yawning/edwards25519-extra v0.0.0-20231005122941-2149dcafc266 // indirect
 	go.uber.org/mock v0.3.0 // indirect
-	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
+	golang.org/x/exp v0.0.0-20231005195138-3e424a577f31 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20230522175609-2e198f4a06a1 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
@@ -145,9 +145,8 @@ require (
 	github.com/xtaci/kcp-go/v5 v5.6.2 // indirect
 	github.com/xtaci/smux v1.5.24 // indirect
 	gitlab.com/yawning/bsaes.git v0.0.0-20190805113838-0a714cd429ec // indirect
-	gitlab.com/yawning/edwards25519-extra.git v0.0.0-20230925102617-375edaeb7d45 // indirect
 	golang.org/x/mod v0.12.0 // indirect
-	golang.org/x/term v0.12.0 // indirect
+	golang.org/x/term v0.13.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/tools v0.13.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
