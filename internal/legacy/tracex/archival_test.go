@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/gorilla/websocket"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -171,53 +172,43 @@ func TestNewRequestList(t *testing.T) {
 		want: []RequestEntry{{
 			Failure: NewFailure(io.EOF),
 			Request: HTTPRequest{
-				HeadersList: []HTTPHeader{{
-					Key: "User-Agent",
-					Value: MaybeBinaryValue{
-						Value: "miniooni/0.1.0-dev",
-					},
+				HeadersList: []model.ArchivalHTTPHeader{{
+					model.ArchivalScrubbedMaybeBinaryString("User-Agent"),
+					model.ArchivalScrubbedMaybeBinaryString("miniooni/0.1.0-dev"),
 				}},
-				Headers: map[string]MaybeBinaryValue{
-					"User-Agent": {Value: "miniooni/0.1.0-dev"},
+				Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
+					"User-Agent": "miniooni/0.1.0-dev",
 				},
 				Method: "GET",
 				URL:    "https://www.example.com/result",
 			},
 			Response: HTTPResponse{
-				HeadersList: []HTTPHeader{},
-				Headers:     make(map[string]MaybeBinaryValue),
+				HeadersList: []model.ArchivalHTTPHeader{},
+				Headers:     make(map[string]model.ArchivalScrubbedMaybeBinaryString),
 			},
 			T: 0.02,
 		}, {
 			Request: HTTPRequest{
-				Body: MaybeBinaryValue{
-					Value: "",
-				},
-				HeadersList: []HTTPHeader{{
-					Key: "User-Agent",
-					Value: MaybeBinaryValue{
-						Value: "miniooni/0.1.0-dev",
-					},
+				Body: model.ArchivalScrubbedMaybeBinaryString(""),
+				HeadersList: []model.ArchivalHTTPHeader{{
+					model.ArchivalScrubbedMaybeBinaryString("User-Agent"),
+					model.ArchivalScrubbedMaybeBinaryString("miniooni/0.1.0-dev"),
 				}},
-				Headers: map[string]MaybeBinaryValue{
-					"User-Agent": {Value: "miniooni/0.1.0-dev"},
+				Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
+					"User-Agent": "miniooni/0.1.0-dev",
 				},
 				Method: "POST",
 				URL:    "https://www.example.com/submit",
 			},
 			Response: HTTPResponse{
-				Body: MaybeBinaryValue{
-					Value: "{}",
-				},
+				Body: model.ArchivalScrubbedMaybeBinaryString("{}"),
 				Code: 200,
-				HeadersList: []HTTPHeader{{
-					Key: "Server",
-					Value: MaybeBinaryValue{
-						Value: "miniooni/0.1.0-dev",
-					},
+				HeadersList: []model.ArchivalHTTPHeader{{
+					model.ArchivalScrubbedMaybeBinaryString("Server"),
+					model.ArchivalScrubbedMaybeBinaryString("miniooni/0.1.0-dev"),
 				}},
-				Headers: map[string]MaybeBinaryValue{
-					"Server": {Value: "miniooni/0.1.0-dev"},
+				Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
+					"Server": "miniooni/0.1.0-dev",
 				},
 				Locations: nil,
 			},
@@ -245,39 +236,31 @@ func TestNewRequestList(t *testing.T) {
 		},
 		want: []RequestEntry{{
 			Request: HTTPRequest{
-				HeadersList: []HTTPHeader{{
-					Key: "User-Agent",
-					Value: MaybeBinaryValue{
-						Value: "miniooni/0.1.0-dev",
-					},
+				HeadersList: []model.ArchivalHTTPHeader{{
+					model.ArchivalScrubbedMaybeBinaryString("User-Agent"),
+					model.ArchivalScrubbedMaybeBinaryString("miniooni/0.1.0-dev"),
 				}},
-				Headers: map[string]MaybeBinaryValue{
-					"User-Agent": {Value: "miniooni/0.1.0-dev"},
+				Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
+					"User-Agent": "miniooni/0.1.0-dev",
 				},
 				Method: "GET",
 				URL:    "https://www.example.com/",
 			},
 			Response: HTTPResponse{
 				Code: 302,
-				HeadersList: []HTTPHeader{{
-					Key: "Location",
-					Value: MaybeBinaryValue{
-						Value: "https://x.example.com",
-					},
+				HeadersList: []model.ArchivalHTTPHeader{{
+					model.ArchivalScrubbedMaybeBinaryString("Location"),
+					model.ArchivalScrubbedMaybeBinaryString("https://x.example.com"),
 				}, {
-					Key: "Location",
-					Value: MaybeBinaryValue{
-						Value: "https://y.example.com",
-					},
+					model.ArchivalScrubbedMaybeBinaryString("Location"),
+					model.ArchivalScrubbedMaybeBinaryString("https://y.example.com"),
 				}, {
-					Key: "Server",
-					Value: MaybeBinaryValue{
-						Value: "miniooni/0.1.0-dev",
-					},
+					model.ArchivalScrubbedMaybeBinaryString("Server"),
+					model.ArchivalScrubbedMaybeBinaryString("miniooni/0.1.0-dev"),
 				}},
-				Headers: map[string]MaybeBinaryValue{
-					"Server":   {Value: "miniooni/0.1.0-dev"},
-					"Location": {Value: "https://x.example.com"},
+				Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
+					"Server":   "miniooni/0.1.0-dev",
+					"Location": "https://x.example.com",
 				},
 				Locations: []string{
 					"https://x.example.com", "https://y.example.com",
@@ -547,11 +530,10 @@ func TestNewTLSHandshakesList(t *testing.T) {
 			Failure:            NewFailure(io.EOF),
 			NegotiatedProtocol: "h2",
 			NoTLSVerify:        false,
-			PeerCertificates: []MaybeBinaryValue{{
-				Value: "deadbeef",
-			}, {
-				Value: "abad1dea",
-			}},
+			PeerCertificates: []model.ArchivalBinaryData{
+				model.ArchivalBinaryData("deadbeef"),
+				model.ArchivalBinaryData("abad1dea"),
+			},
 			ServerName: "x.org",
 			T:          0.055,
 			TLSVersion: "TLSv1.3",
@@ -582,11 +564,10 @@ func TestNewTLSHandshakesList(t *testing.T) {
 			Failure:            NewFailure(io.EOF),
 			NegotiatedProtocol: "h3",
 			NoTLSVerify:        false,
-			PeerCertificates: []MaybeBinaryValue{{
-				Value: "deadbeef",
-			}, {
-				Value: "abad1dea",
-			}},
+			PeerCertificates: []model.ArchivalBinaryData{
+				model.ArchivalBinaryData("deadbeef"),
+				model.ArchivalBinaryData("abad1dea"),
+			},
 			ServerName: "x.org",
 			T:          0.055,
 			TLSVersion: "TLSv1.3",

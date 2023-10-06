@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"sort"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
@@ -246,27 +245,32 @@ func (tk *TestKeys) FillTampering(
 	}
 }
 
+// newHeadersFromMap converts the definition of headers used when sending the
+// request to something that looks like http.Header. QUIRK: because we need to
+// preserve the original random casing of headers (which is what we are in
+// fact testing with this experiment), the implementation of this func should
+// stay clear of using ordinary http.Header and specifically its .Set func.
+func newHeadersFromMap(input map[string]string) map[string][]string {
+	out := map[string][]string{}
+	for key, value := range input {
+		out[key] = []string{value}
+	}
+	return out
+}
+
 // NewRequestEntryList creates a new []tracex.RequestEntry given a
 // specific *http.Request and headers with random case.
 func NewRequestEntryList(req *http.Request, headers map[string]string) (out []tracex.RequestEntry) {
+	// Note: using the random capitalization headers here
+	realHeaders := newHeadersFromMap(headers)
 	out = []tracex.RequestEntry{{
 		Request: tracex.HTTPRequest{
-			Headers:     make(map[string]tracex.MaybeBinaryValue),
-			HeadersList: []tracex.HTTPHeader{},
+			Headers:     model.ArchivalNewHTTPHeadersMap(realHeaders),
+			HeadersList: model.ArchivalNewHTTPHeadersList(realHeaders),
 			Method:      req.Method,
 			URL:         req.URL.String(),
 		},
 	}}
-	for key, value := range headers {
-		// Using the random capitalization headers here
-		mbv := tracex.MaybeBinaryValue{Value: value}
-		out[0].Request.Headers[key] = mbv
-		out[0].Request.HeadersList = append(out[0].Request.HeadersList,
-			tracex.HTTPHeader{Key: key, Value: mbv})
-	}
-	sort.Slice(out[0].Request.HeadersList, func(i, j int) bool {
-		return out[0].Request.HeadersList[i].Key < out[0].Request.HeadersList[j].Key
-	})
 	return
 }
 
@@ -274,19 +278,11 @@ func NewRequestEntryList(req *http.Request, headers map[string]string) (out []tr
 // specific *http.Response instance and its body.
 func NewHTTPResponse(resp *http.Response, data []byte) (out tracex.HTTPResponse) {
 	out = tracex.HTTPResponse{
-		Body:        tracex.HTTPBody{Value: string(data)},
+		Body:        model.ArchivalScrubbedMaybeBinaryString(data),
 		Code:        int64(resp.StatusCode),
-		Headers:     make(map[string]tracex.MaybeBinaryValue),
-		HeadersList: []tracex.HTTPHeader{},
+		Headers:     model.ArchivalNewHTTPHeadersMap(resp.Header),
+		HeadersList: model.ArchivalNewHTTPHeadersList(resp.Header),
 	}
-	for key := range resp.Header {
-		mbv := tracex.MaybeBinaryValue{Value: resp.Header.Get(key)}
-		out.Headers[key] = mbv
-		out.HeadersList = append(out.HeadersList, tracex.HTTPHeader{Key: key, Value: mbv})
-	}
-	sort.Slice(out.HeadersList, func(i, j int) bool {
-		return out.HeadersList[i].Key < out.HeadersList[j].Key
-	})
 	return
 }
 

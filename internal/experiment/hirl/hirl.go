@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/legacy/legacymodel"
 	"github.com/ooni/probe-cli/v3/internal/legacy/netx"
 	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -29,11 +30,11 @@ type Config struct{}
 
 // TestKeys contains the experiment test keys.
 type TestKeys struct {
-	FailureList   []*string                 `json:"failure_list"`
-	Received      []tracex.MaybeBinaryValue `json:"received"`
-	Sent          []string                  `json:"sent"`
-	TamperingList []bool                    `json:"tampering_list"`
-	Tampering     bool                      `json:"tampering"`
+	FailureList   []*string                             `json:"failure_list"`
+	Received      []legacymodel.ArchivalMaybeBinaryData `json:"received"`
+	Sent          []string                              `json:"sent"`
+	TamperingList []bool                                `json:"tampering_list"`
+	Tampering     bool                                  `json:"tampering"`
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
@@ -151,7 +152,7 @@ type MethodConfig struct {
 type MethodResult struct {
 	Err       error
 	Name      string
-	Received  tracex.MaybeBinaryValue
+	Received  legacymodel.ArchivalMaybeBinaryData
 	Sent      string
 	Tampering bool
 }

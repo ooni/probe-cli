@@ -1,7 +1,7 @@
 package enginenetx
 
 //
-// beacons policy - a policy where we treat some IP addresses as special for
+// bridges policy - a policy where we treat some IP addresses as special for
 // some domains, bypassing DNS lookups and using custom SNIs
 //
 
@@ -11,31 +11,31 @@ import (
 	"time"
 )
 
-// beaconsPolicy is a policy where we use beacons for communicating
+// bridgesPolicy is a policy where we use bridges for communicating
 // with the OONI backend, i.e., api.ooni.io.
 //
-// A beacon is an IP address that can route traffic from and to
+// A bridge is an IP address that can route traffic from and to
 // the OONI backend and accepts any SNI.
 //
 // The zero value is invalid; please, init MANDATORY fields.
-type beaconsPolicy struct {
+type bridgesPolicy struct {
 	// Fallback is the MANDATORY fallback policy.
 	Fallback httpsDialerPolicy
 }
 
-var _ httpsDialerPolicy = &beaconsPolicy{}
+var _ httpsDialerPolicy = &bridgesPolicy{}
 
 // LookupTactics implements httpsDialerPolicy.
-func (p *beaconsPolicy) LookupTactics(ctx context.Context, domain, port string) <-chan *httpsDialerTactic {
+func (p *bridgesPolicy) LookupTactics(ctx context.Context, domain, port string) <-chan *httpsDialerTactic {
 	out := make(chan *httpsDialerTactic)
 
 	go func() {
 		defer close(out) // tell the parent when we're done
 		index := 0
 
-		// emit beacons related tactics first which are empty if there are
-		// no beacons for the givend domain and port
-		for tx := range p.tacticsForDomain(domain, port) {
+		// emit bridges related tactics first which are empty if there are
+		// no bridges for the givend domain and port
+		for tx := range p.bridgesTacticsForDomain(domain, port) {
 			tx.InitialDelay = happyEyeballsDelay(index)
 			index += 1
 			out <- tx
@@ -43,7 +43,10 @@ func (p *beaconsPolicy) LookupTactics(ctx context.Context, domain, port string) 
 
 		// now fallback to get more tactics (typically here the fallback
 		// uses the DNS and obtains some extra tactics)
-		for tx := range p.Fallback.LookupTactics(ctx, domain, port) {
+		//
+		// we wrap whatever the underlying policy returns us with some
+		// extra logic for better communicating with test helpers
+		for tx := range p.maybeRewriteTestHelpersTactics(p.Fallback.LookupTactics(ctx, domain, port)) {
 			tx.InitialDelay = happyEyeballsDelay(index)
 			index += 1
 			out <- tx
@@ -53,25 +56,67 @@ func (p *beaconsPolicy) LookupTactics(ctx context.Context, domain, port string) 
 	return out
 }
 
-func (p *beaconsPolicy) tacticsForDomain(domain, port string) <-chan *httpsDialerTactic {
+var bridgesPolicyTestHelpersDomains = []string{
+	"0.th.ooni.org",
+	"1.th.ooni.org",
+	"2.th.ooni.org",
+	"3.th.ooni.org",
+	"d33d1gs9kpq1c5.cloudfront.net",
+}
+
+// TODO(bassosimone): this would be slices.Contains when we'll use go1.21
+func bridgesPolicySlicesContains(slice []string, value string) bool {
+	for _, entry := range slice {
+		if value == entry {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *bridgesPolicy) maybeRewriteTestHelpersTactics(input <-chan *httpsDialerTactic) <-chan *httpsDialerTactic {
 	out := make(chan *httpsDialerTactic)
 
 	go func() {
 		defer close(out) // tell the parent when we're done
 
-		// we currently only have beacons for api.ooni.io
+		for tactic := range input {
+			// When we're not connecting to a TH, pass the policy down the chain unmodified
+			if !bridgesPolicySlicesContains(bridgesPolicyTestHelpersDomains, tactic.VerifyHostname) {
+				out <- tactic
+				continue
+			}
+
+			// This is the case where we're connecting to a test helper. Let's try
+			// to produce policies hiding the SNI to censoring middleboxes.
+			for _, sni := range p.bridgesDomainsInRandomOrder() {
+				out <- &httpsDialerTactic{
+					Address:        tactic.Address,
+					InitialDelay:   0,
+					Port:           tactic.Port,
+					SNI:            sni,
+					VerifyHostname: tactic.VerifyHostname,
+				}
+			}
+		}
+	}()
+
+	return out
+}
+
+func (p *bridgesPolicy) bridgesTacticsForDomain(domain, port string) <-chan *httpsDialerTactic {
+	out := make(chan *httpsDialerTactic)
+
+	go func() {
+		defer close(out) // tell the parent when we're done
+
+		// we currently only have bridges for api.ooni.io
 		if domain != "api.ooni.io" {
 			return
 		}
 
-		snis := p.beaconsDomains()
-		r := rand.New(rand.NewSource(time.Now().UnixNano()))
-		r.Shuffle(len(snis), func(i, j int) {
-			snis[i], snis[j] = snis[j], snis[i]
-		})
-
-		for _, ipAddr := range p.beaconsAddrs() {
-			for _, sni := range snis {
+		for _, ipAddr := range p.bridgesAddrs() {
+			for _, sni := range p.bridgesDomainsInRandomOrder() {
 				out <- &httpsDialerTactic{
 					Address:        ipAddr,
 					InitialDelay:   0,
@@ -86,14 +131,23 @@ func (p *beaconsPolicy) tacticsForDomain(domain, port string) <-chan *httpsDiale
 	return out
 }
 
-func (p *beaconsPolicy) beaconsAddrs() (out []string) {
+func (p *bridgesPolicy) bridgesDomainsInRandomOrder() (out []string) {
+	out = p.bridgesDomains()
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	r.Shuffle(len(out), func(i, j int) {
+		out[i], out[j] = out[j], out[i]
+	})
+	return
+}
+
+func (p *bridgesPolicy) bridgesAddrs() (out []string) {
 	return append(
 		out,
 		"162.55.247.208",
 	)
 }
 
-func (p *beaconsPolicy) beaconsDomains() (out []string) {
+func (p *bridgesPolicy) bridgesDomains() (out []string) {
 	// See https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/-/issues/40273
 	return append(
 		out,

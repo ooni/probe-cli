@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -54,7 +55,7 @@ func (n *Network) Close() error {
 	// same as above but for the resolver's connections
 	n.reso.CloseIdleConnections()
 
-	// make sure we sync stats to disk
+	// make sure we sync stats to disk and shutdown the background trimmer
 	return n.stats.Close()
 }
 
@@ -92,7 +93,8 @@ func NewNetwork(
 	dialer := netxlite.NewDialerWithResolver(logger, resolver)
 
 	// Create manager for keeping track of statistics
-	stats := newStatsManager(kvStore, logger)
+	const trimInterval = 30 * time.Second
+	stats := newStatsManager(kvStore, logger, trimInterval)
 
 	// Create a TLS dialer ONLY used for dialing TLS connections. This dialer will use
 	// happy-eyeballs and possibly custom policies for dialing TLS connections.
@@ -157,7 +159,7 @@ func newHTTPSDialerPolicy(
 
 	// create a composed fallback TLS dialer policy
 	fallback := &statsPolicy{
-		Fallback: &beaconsPolicy{Fallback: &dnsPolicy{logger, resolver}},
+		Fallback: &bridgesPolicy{Fallback: &dnsPolicy{logger, resolver}},
 		Stats:    stats,
 	}
 

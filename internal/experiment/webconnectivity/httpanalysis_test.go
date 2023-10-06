@@ -7,6 +7,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/randx"
 )
 
@@ -76,9 +77,9 @@ func TestHTTPBodyLengthChecks(t *testing.T) {
 			tk: urlgetter.TestKeys{
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
-						Body: tracex.MaybeBinaryValue{
-							Value: randx.Letters(768),
-						},
+						Body: model.ArchivalScrubbedMaybeBinaryString(
+							randx.Letters(768),
+						),
 					},
 				}},
 			},
@@ -95,9 +96,9 @@ func TestHTTPBodyLengthChecks(t *testing.T) {
 			tk: urlgetter.TestKeys{
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
-						Body: tracex.MaybeBinaryValue{
-							Value: randx.Letters(768),
-						},
+						Body: model.ArchivalScrubbedMaybeBinaryString(
+							randx.Letters(768),
+						),
 					},
 				}},
 			},
@@ -115,9 +116,9 @@ func TestHTTPBodyLengthChecks(t *testing.T) {
 			tk: urlgetter.TestKeys{
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
-						Body: tracex.MaybeBinaryValue{
-							Value: randx.Letters(1024),
-						},
+						Body: model.ArchivalScrubbedMaybeBinaryString(
+							randx.Letters(1024),
+						),
 					},
 				}},
 			},
@@ -135,9 +136,9 @@ func TestHTTPBodyLengthChecks(t *testing.T) {
 			tk: urlgetter.TestKeys{
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
-						Body: tracex.MaybeBinaryValue{
-							Value: randx.Letters(8),
-						},
+						Body: model.ArchivalScrubbedMaybeBinaryString(
+							randx.Letters(8),
+						),
 					},
 				}},
 			},
@@ -155,9 +156,9 @@ func TestHTTPBodyLengthChecks(t *testing.T) {
 			tk: urlgetter.TestKeys{
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
-						Body: tracex.MaybeBinaryValue{
-							Value: randx.Letters(16),
-						},
+						Body: model.ArchivalScrubbedMaybeBinaryString(
+							randx.Letters(16),
+						),
 					},
 				}},
 			},
@@ -365,8 +366,8 @@ func TestHeadersMatch(t *testing.T) {
 			tk: urlgetter.TestKeys{
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
-						Headers: map[string]tracex.MaybeBinaryValue{
-							"Date": {Value: "Mon Jul 13 21:10:08 CEST 2020"},
+						Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
+							"Date": "Mon Jul 13 21:10:08 CEST 2020",
 						},
 						Code: 200,
 					},
@@ -381,8 +382,8 @@ func TestHeadersMatch(t *testing.T) {
 			tk: urlgetter.TestKeys{
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
-						Headers: map[string]tracex.MaybeBinaryValue{
-							"Date": {Value: "Mon Jul 13 21:10:08 CEST 2020"},
+						Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
+							"Date": "Mon Jul 13 21:10:08 CEST 2020",
 						},
 						Code: 200,
 					},
@@ -401,8 +402,8 @@ func TestHeadersMatch(t *testing.T) {
 			tk: urlgetter.TestKeys{
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
-						Headers: map[string]tracex.MaybeBinaryValue{
-							"Date": {Value: "Mon Jul 13 21:10:08 CEST 2020"},
+						Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
+							"Date": "Mon Jul 13 21:10:08 CEST 2020",
 						},
 						Code: 200,
 					},
@@ -424,9 +425,9 @@ func TestHeadersMatch(t *testing.T) {
 			tk: urlgetter.TestKeys{
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
-						Headers: map[string]tracex.MaybeBinaryValue{
-							"Date":   {Value: "Mon Jul 13 21:10:08 CEST 2020"},
-							"Antani": {Value: "MASCETTI"},
+						Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
+							"Date":   "Mon Jul 13 21:10:08 CEST 2020",
+							"Antani": "MASCETTI",
 						},
 						Code: 200,
 					},
@@ -449,9 +450,9 @@ func TestHeadersMatch(t *testing.T) {
 			tk: urlgetter.TestKeys{
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
-						Headers: map[string]tracex.MaybeBinaryValue{
-							"Date":   {Value: "Mon Jul 13 21:10:08 CEST 2020"},
-							"Antani": {Value: "MASCETTI"},
+						Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
+							"Date":   "Mon Jul 13 21:10:08 CEST 2020",
+							"Antani": "MASCETTI",
 						},
 						Code: 200,
 					},
@@ -474,19 +475,19 @@ func TestHeadersMatch(t *testing.T) {
 			tk: urlgetter.TestKeys{
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
-						Headers: map[string]tracex.MaybeBinaryValue{
-							"Accept-Ranges":  {Value: "bytes"},
-							"Age":            {Value: "404727"},
-							"Cache-Control":  {Value: "max-age=604800"},
-							"Content-Length": {Value: "1256"},
-							"Content-Type":   {Value: "text/html; charset=UTF-8"},
-							"Date":           {Value: "Tue, 14 Jul 2020 22:26:09 GMT"},
-							"Etag":           {Value: "\"3147526947\""},
-							"Expires":        {Value: "Tue, 21 Jul 2020 22:26:09 GMT"},
-							"Last-Modified":  {Value: "Thu, 17 Oct 2019 07:18:26 GMT"},
-							"Server":         {Value: "ECS (dcb/7F3C)"},
-							"Vary":           {Value: "Accept-Encoding"},
-							"X-Cache":        {Value: "HIT"},
+						Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
+							"Accept-Ranges":  "bytes",
+							"Age":            "404727",
+							"Cache-Control":  "max-age=604800",
+							"Content-Length": "1256",
+							"Content-Type":   "text/html; charset=UTF-8",
+							"Date":           "Tue, 14 Jul 2020 22:26:09 GMT",
+							"Etag":           "\"3147526947\"",
+							"Expires":        "Tue, 21 Jul 2020 22:26:09 GMT",
+							"Last-Modified":  "Thu, 17 Oct 2019 07:18:26 GMT",
+							"Server":         "ECS (dcb/7F3C)",
+							"Vary":           "Accept-Encoding",
+							"X-Cache":        "HIT",
 						},
 						Code: 200,
 					},
@@ -521,18 +522,18 @@ func TestHeadersMatch(t *testing.T) {
 			tk: urlgetter.TestKeys{
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
-						Headers: map[string]tracex.MaybeBinaryValue{
-							"Accept-Ranges":  {Value: "bytes"},
-							"Age":            {Value: "404727"},
-							"Cache-Control":  {Value: "max-age=604800"},
-							"Content-Length": {Value: "1256"},
-							"Content-Type":   {Value: "text/html; charset=UTF-8"},
-							"Date":           {Value: "Tue, 14 Jul 2020 22:26:09 GMT"},
-							"Etag":           {Value: "\"3147526947\""},
-							"Expires":        {Value: "Tue, 21 Jul 2020 22:26:09 GMT"},
-							"Last-Modified":  {Value: "Thu, 17 Oct 2019 07:18:26 GMT"},
-							"Server":         {Value: "ECS (dcb/7F3C)"},
-							"Vary":           {Value: "Accept-Encoding"},
+						Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
+							"Accept-Ranges":  "bytes",
+							"Age":            "404727",
+							"Cache-Control":  "max-age=604800",
+							"Content-Length": "1256",
+							"Content-Type":   "text/html; charset=UTF-8",
+							"Date":           "Tue, 14 Jul 2020 22:26:09 GMT",
+							"Etag":           "\"3147526947\"",
+							"Expires":        "Tue, 21 Jul 2020 22:26:09 GMT",
+							"Last-Modified":  "Thu, 17 Oct 2019 07:18:26 GMT",
+							"Server":         "ECS (dcb/7F3C)",
+							"Vary":           "Accept-Encoding",
 						},
 						Code: 200,
 					},
@@ -566,17 +567,17 @@ func TestHeadersMatch(t *testing.T) {
 			tk: urlgetter.TestKeys{
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
-						Headers: map[string]tracex.MaybeBinaryValue{
-							"Accept-Ranges": {Value: "bytes"},
-							"Age":           {Value: "404727"},
-							"Cache-Control": {Value: "max-age=604800"},
-							"Content-Type":  {Value: "text/html; charset=UTF-8"},
-							"Date":          {Value: "Tue, 14 Jul 2020 22:26:09 GMT"},
-							"Etag":          {Value: "\"3147526947\""},
-							"Expires":       {Value: "Tue, 21 Jul 2020 22:26:09 GMT"},
-							"Last-Modified": {Value: "Thu, 17 Oct 2019 07:18:26 GMT"},
-							"Server":        {Value: "ECS (dcb/7F3C)"},
-							"Vary":          {Value: "Accept-Encoding"},
+						Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
+							"Accept-Ranges": "bytes",
+							"Age":           "404727",
+							"Cache-Control": "max-age=604800",
+							"Content-Type":  "text/html; charset=UTF-8",
+							"Date":          "Tue, 14 Jul 2020 22:26:09 GMT",
+							"Etag":          "\"3147526947\"",
+							"Expires":       "Tue, 21 Jul 2020 22:26:09 GMT",
+							"Last-Modified": "Thu, 17 Oct 2019 07:18:26 GMT",
+							"Server":        "ECS (dcb/7F3C)",
+							"Vary":          "Accept-Encoding",
 						},
 						Code: 200,
 					},
@@ -607,17 +608,17 @@ func TestHeadersMatch(t *testing.T) {
 			tk: urlgetter.TestKeys{
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
-						Headers: map[string]tracex.MaybeBinaryValue{
-							"accept-ranges": {Value: "bytes"},
-							"AGE":           {Value: "404727"},
-							"cache-Control": {Value: "max-age=604800"},
-							"Content-TyPe":  {Value: "text/html; charset=UTF-8"},
-							"DatE":          {Value: "Tue, 14 Jul 2020 22:26:09 GMT"},
-							"etag":          {Value: "\"3147526947\""},
-							"expires":       {Value: "Tue, 21 Jul 2020 22:26:09 GMT"},
-							"Last-Modified": {Value: "Thu, 17 Oct 2019 07:18:26 GMT"},
-							"SerVer":        {Value: "ECS (dcb/7F3C)"},
-							"Vary":          {Value: "Accept-Encoding"},
+						Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
+							"accept-ranges": "bytes",
+							"AGE":           "404727",
+							"cache-Control": "max-age=604800",
+							"Content-TyPe":  "text/html; charset=UTF-8",
+							"DatE":          "Tue, 14 Jul 2020 22:26:09 GMT",
+							"etag":          "\"3147526947\"",
+							"expires":       "Tue, 21 Jul 2020 22:26:09 GMT",
+							"Last-Modified": "Thu, 17 Oct 2019 07:18:26 GMT",
+							"SerVer":        "ECS (dcb/7F3C)",
+							"Vary":          "Accept-Encoding",
 						},
 						Code: 200,
 					},
@@ -698,7 +699,7 @@ func TestTitleMatch(t *testing.T) {
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
 						Code: 200,
-						Body: tracex.MaybeBinaryValue{Value: "<HTML/>"},
+						Body: model.ArchivalScrubbedMaybeBinaryString("<HTML/>"),
 					},
 				}},
 			},
@@ -711,7 +712,7 @@ func TestTitleMatch(t *testing.T) {
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
 						Code: 200,
-						Body: tracex.MaybeBinaryValue{Value: "<HTML/>"},
+						Body: model.ArchivalScrubbedMaybeBinaryString("<HTML/>"),
 					},
 				}},
 			},
@@ -730,8 +731,8 @@ func TestTitleMatch(t *testing.T) {
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
 						Code: 200,
-						Body: tracex.MaybeBinaryValue{
-							Value: "<HTML><TITLE>La community di MSN</TITLE></HTML>"},
+						Body: model.ArchivalScrubbedMaybeBinaryString(
+							"<HTML><TITLE>La community di MSN</TITLE></HTML>"),
 					},
 				}},
 			},
@@ -750,8 +751,8 @@ func TestTitleMatch(t *testing.T) {
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
 						Code: 200,
-						Body: tracex.MaybeBinaryValue{
-							Value: "<HTML><TITLE>La communità di MSN</TITLE></HTML>"},
+						Body: model.ArchivalScrubbedMaybeBinaryString(
+							"<HTML><TITLE>La communità di MSN</TITLE></HTML>"),
 					},
 				}},
 			},
@@ -770,8 +771,8 @@ func TestTitleMatch(t *testing.T) {
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
 						Code: 200,
-						Body: tracex.MaybeBinaryValue{
-							Value: "<HTML><TITLE>" + randx.Letters(1024) + "</TITLE></HTML>"},
+						Body: model.ArchivalScrubbedMaybeBinaryString(
+							"<HTML><TITLE>" + randx.Letters(1024) + "</TITLE></HTML>"),
 					},
 				}},
 			},
@@ -790,8 +791,8 @@ func TestTitleMatch(t *testing.T) {
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
 						Code: 200,
-						Body: tracex.MaybeBinaryValue{
-							Value: "<HTML><TiTLe>La commUNity di MSN</tITLE></HTML>"},
+						Body: model.ArchivalScrubbedMaybeBinaryString(
+							"<HTML><TiTLe>La commUNity di MSN</tITLE></HTML>"),
 					},
 				}},
 			},
@@ -810,8 +811,8 @@ func TestTitleMatch(t *testing.T) {
 				Requests: []tracex.RequestEntry{{
 					Response: tracex.HTTPResponse{
 						Code: 200,
-						Body: tracex.MaybeBinaryValue{
-							Value: "<HTML><TiTLe>La commUNity di MSN</tITLE></HTML>"},
+						Body: model.ArchivalScrubbedMaybeBinaryString(
+							"<HTML><TiTLe>La commUNity di MSN</tITLE></HTML>"),
 					},
 				}},
 			},
