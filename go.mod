@@ -35,9 +35,9 @@ require (
 	github.com/rubenv/sql-migrate v1.5.2
 	github.com/schollz/progressbar/v3 v3.13.1
 	github.com/upper/db/v4 v4.6.0
-	gitlab.com/yawning/obfs4.git v0.0.0-20231005123604-19f5a37fe427
 	gitlab.com/yawning/utls.git v0.0.12-1
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib v1.5.0
+	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird v0.0.0-20231005141435-20cf093f50ae
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2 v2.6.1
 	golang.org/x/crypto v0.14.0
 	golang.org/x/net v0.16.0
@@ -132,7 +132,7 @@ require (
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/refraction-networking/gotapdance v1.7.4 // indirect
-	github.com/refraction-networking/utls v1.3.3 // indirect
+	github.com/refraction-networking/utls v1.5.3 // indirect
 	github.com/sergeyfrolov/bsbuffer v0.0.0-20180903213811-94e85abb8507 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/cobra v1.7.0

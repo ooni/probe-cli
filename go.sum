@@ -415,8 +415,8 @@ github.com/refraction-networking/gotapdance v1.7.4 h1:HSdgJajosy9dwwrEiqZntTHf8a
 github.com/refraction-networking/gotapdance v1.7.4/go.mod h1:uUZDICZjk37aExgntA92OPL5Q7LrZgvpQncYNrO4sKg=
 github.com/refraction-networking/obfs4 v0.1.2 h1:J842O4fGSkd2W8ogYj0KN6gqVVY+Cpqodw9qFGL7wVU=
 github.com/refraction-networking/obfs4 v0.1.2/go.mod h1:wAl/+gWiLsrcykJA3nKJHx89f5/gXGM8UKvty7+mvbM=
-github.com/refraction-networking/utls v1.3.3 h1:f/TBLX7KBciRyFH3bwupp+CE4fzoYKCirhdRcC490sw=
-github.com/refraction-networking/utls v1.3.3/go.mod h1:DlecWW1LMlMJu+9qpzzQqdHDT/C2LAe03EdpLUz/RL8=
+github.com/refraction-networking/utls v1.5.3 h1:Ds5Ocg1+MC1ahNx5iBEcHe0jHeLaA/fLey61EENm7ro=
+github.com/refraction-networking/utls v1.5.3/go.mod h1:SPuDbBmgLGp8s+HLNc83FuavwZCFoMmExj+ltUHiHUw=
 github.com/remyoudompheng/bigfft v0.0.0-20190728182440-6a916e37a237/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=
 github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=
 github.com/rivo/uniseg v0.2.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=
@@ -526,12 +526,12 @@ gitlab.com/yawning/bsaes.git v0.0.0-20190805113838-0a714cd429ec h1:FpfFs4EhNehiV
 gitlab.com/yawning/bsaes.git v0.0.0-20190805113838-0a714cd429ec/go.mod h1:BZ1RAoRPbCxum9Grlv5aeksu2H8BiKehBYooU2LFiOQ=
 gitlab.com/yawning/edwards25519-extra v0.0.0-20231005122941-2149dcafc266 h1:IvjshROr8z24+UCiOe/90cUWt3QDr8Rt+VkUjZsn+i0=
 gitlab.com/yawning/edwards25519-extra v0.0.0-20231005122941-2149dcafc266/go.mod h1:K/3SQWdJL6udzwInHk1gaYaECYxMp9dDayniPq6gCSo=
-gitlab.com/yawning/obfs4.git v0.0.0-20231005123604-19f5a37fe427 h1:moySt+kfvAGnbqCi7ZWA6JjwSiutDAE90fxn9cHn4hE=
-gitlab.com/yawning/obfs4.git v0.0.0-20231005123604-19f5a37fe427/go.mod h1:IxDhHI4UQk/m78DYvsYsQaNhJS07b7HNzwQ8BEX2G04=
 gitlab.com/yawning/utls.git v0.0.12-1 h1:RL6O0MP2YI0KghuEU/uGN6+8b4183eqNWoYgx7CXD0U=
 gitlab.com/yawning/utls.git v0.0.12-1/go.mod h1:3ONKiSFR9Im/c3t5RKmMJTVdmZN496FNyk3mjrY1dyo=
 gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib v1.5.0 h1:rzdY78Ox2T+VlXcxGxELF+6VyUXlZBhmRqZu5etLm+c=
 gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib v1.5.0/go.mod h1:70bhd4JKW/+1HLfm+TMrgHJsUHG4coelMWwiVEJ2gAg=
+gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird v0.0.0-20231005141435-20cf093f50ae h1:DD6eFLxN85S657hcKvelXcrkeSH23foPVy+EMbpBQfo=
+gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird v0.0.0-20231005141435-20cf093f50ae/go.mod h1:+UZu7VMhXsvBp/hS3CezCVnex0ls7yslW06aNtQYnDI=
 gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2 v2.6.1 h1:PenLil49Ka399yxO9CfVpLFFsOLjwLCKMc/uMFTVGo4=
 gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2 v2.6.1/go.mod h1:Edotm7eSJgyaVDc0aQq3W7/cNNhWyWajm4DQgTKC5yI=
 go.uber.org/atomic v1.3.2/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
