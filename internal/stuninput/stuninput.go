@@ -10,7 +10,7 @@ import (
 // TODO(bassosimone): we need to keep this list in sync with
 // the list internally used by TPO's snowflake.
 //
-// We should sync with https://gitlab.torproject.org/tpo/applications/tor-browser-build/-/blob/main/projects/common/bridges_list.snowflake.txt
+// We should sync with https://gitlab.torproject.org/tpo/applications/tor-browser-build/-/blob/main/projects/tor-expert-bundle/pt_config.json
 var inputs = map[string]bool{
 	"stun.l.google.com:19302": true,
 	"stun.antisip.com:3478":   true,
