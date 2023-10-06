@@ -45,7 +45,7 @@ func (d *snowflakeRendezvousMethodDomainFronting) BrokerURL() string {
 }
 
 func (d *snowflakeRendezvousMethodDomainFronting) FrontDomain() string {
-	return "cdn.sstatic.net"
+	return "foursquare.com"
 }
 
 // NewSnowflakeRendezvousMethodAMP is a rendezvous method that

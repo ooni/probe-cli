@@ -20,7 +20,7 @@ func TestSnowflakeMethodDomainFronting(t *testing.T) {
 	if meth.BrokerURL() != brokerURL {
 		t.Fatal("invalid broker URL")
 	}
-	const frontDomain = "cdn.sstatic.net"
+	const frontDomain = "foursquare.com"
 	if meth.FrontDomain() != frontDomain {
 		t.Fatal("invalid front domain")
 	}
