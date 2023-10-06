@@ -159,7 +159,7 @@ func newHTTPSDialerPolicy(
 
 	// create a composed fallback TLS dialer policy
 	fallback := &statsPolicy{
-		Fallback: &beaconsPolicy{Fallback: &dnsPolicy{logger, resolver}},
+		Fallback: &bridgesPolicy{Fallback: &dnsPolicy{logger, resolver}},
 		Stats:    stats,
 	}
 
