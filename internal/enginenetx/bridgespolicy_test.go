@@ -10,9 +10,9 @@ import (
 )
 
 func TestBeaconsPolicy(t *testing.T) {
-	t.Run("for domains for which we don't have beacons and DNS failure", func(t *testing.T) {
+	t.Run("for domains for which we don't have bridges and DNS failure", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		p := &beaconsPolicy{
+		p := &bridgesPolicy{
 			Fallback: &dnsPolicy{
 				Logger: model.DiscardLogger,
 				Resolver: &mocks.Resolver{
@@ -36,8 +36,8 @@ func TestBeaconsPolicy(t *testing.T) {
 		}
 	})
 
-	t.Run("for domains for which we don't have beacons and DNS success", func(t *testing.T) {
-		p := &beaconsPolicy{
+	t.Run("for domains for which we don't have bridges and DNS success", func(t *testing.T) {
+		p := &bridgesPolicy{
 			Fallback: &dnsPolicy{
 				Logger: model.DiscardLogger,
 				Resolver: &mocks.Resolver{
@@ -78,7 +78,7 @@ func TestBeaconsPolicy(t *testing.T) {
 
 	t.Run("for the api.ooni.io domain", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		p := &beaconsPolicy{
+		p := &bridgesPolicy{
 			Fallback: &dnsPolicy{
 				Logger: model.DiscardLogger,
 				Resolver: &mocks.Resolver{
@@ -118,11 +118,11 @@ func TestBeaconsPolicy(t *testing.T) {
 	})
 
 	t.Run("for test helper domains", func(t *testing.T) {
-		for _, domain := range beaconsPolicyTestHelpersDomains {
+		for _, domain := range bridgesPolicyTestHelpersDomains {
 			t.Run(domain, func(t *testing.T) {
 				expectedAddrs := []string{"164.92.180.7"}
 
-				p := &beaconsPolicy{
+				p := &bridgesPolicy{
 					Fallback: &dnsPolicy{
 						Logger: model.DiscardLogger,
 						Resolver: &mocks.Resolver{
