@@ -1,4 +1,7 @@
-// Package testingquic contains code useful to test QUIC.
+// Package testingquic allows to retrieve the domain and endpoint to use
+// for all the integration tests that use QUIC.
+//
+// See https://github.com/ooni/probe/issues/1873 for context.
 package testingquic
 
 import (
