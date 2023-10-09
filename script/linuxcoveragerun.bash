@@ -13,4 +13,6 @@ set -euxo pipefail
 # tests using the loopback interface
 ip link set lo up
 
-$1 test -short -race -coverprofile=probe-cli.cov ./...
+# make sure we run all the "unit" tests (where "unit" means proper unit
+# tests or tests using localhost or tests using netemx).
+$1 test -short -race -count 1 -coverprofile=probe-cli.cov ./...
