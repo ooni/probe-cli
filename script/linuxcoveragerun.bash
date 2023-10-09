@@ -7,6 +7,8 @@
 # The first an unique argument is the path to the go binary to use.
 #
 
+set -euxo pipefail
+
 # make sure we have access to loopback since we have many ~unit
 # tests using the loopback interface
 ip link set lo up
