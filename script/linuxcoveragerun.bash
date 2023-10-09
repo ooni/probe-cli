@@ -2,7 +2,7 @@
 
 #
 # Script invoked by ./script/linuxcoverage.bash to run tests
-# with coverage using a separate namespace with loopback
+# with coverage using a separate network namespace with only loopback support.
 #
 # The first an unique argument is the path to the go binary to use.
 #
