@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/httpx"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -17,6 +18,11 @@ func cloudflareIPLookup(
 	userAgent string,
 	resolver model.Resolver,
 ) (string, error) {
+	// TODO(https://github.com/ooni/probe/issues/2551)
+	const timeout = 60 * time.Second
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	data, err := (&httpx.APIClientTemplate{
 		BaseURL:    "https://www.cloudflare.com",
 		HTTPClient: httpClient,

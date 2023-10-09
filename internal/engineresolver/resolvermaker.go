@@ -47,8 +47,12 @@ var allbyurl map[string]*resolvermaker
 
 // init fills allbyname and gives a nonzero initial score
 // to all resolvers except for the system resolver. We set
-// the system resolver score to zero, so that it's less
+// the system resolver score to be 0.5, so that it's less
 // likely than other resolvers in this list.
+//
+// We used to set this value to 0, but this proved to
+// create issues when it was the only available resolver,
+// see https://github.com/ooni/probe/issues/2544.
 func init() {
 	allbyurl = make(map[string]*resolvermaker)
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -56,6 +60,8 @@ func init() {
 		allbyurl[e.url] = e
 		if e.url != systemResolverURL {
 			e.score = rng.Float64()
+		} else {
+			e.score = 0.5
 		}
 	}
 }
