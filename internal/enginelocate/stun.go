@@ -29,6 +29,7 @@ func stunNewClient(conn net.Conn) (stunClient, error) {
 
 func stunIPLookup(ctx context.Context, config stunConfig) (string, error) {
 	config.Logger.Debugf("STUNIPLookup: start using %s", config.Endpoint)
+
 	ip, err := func() (string, error) {
 		dialer := config.Dialer
 		if dialer == nil {
@@ -74,6 +75,7 @@ func stunIPLookup(ctx context.Context, config stunConfig) (string, error) {
 			return model.DefaultProbeIP, ctx.Err()
 		}
 	}()
+
 	if err != nil {
 		config.Logger.Debugf("STUNIPLookup: failure using %s: %+v", config.Endpoint, err)
 		return model.DefaultProbeIP, err
