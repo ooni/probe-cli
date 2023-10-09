@@ -121,3 +121,19 @@ func TestGetResolverHTTP3(t *testing.T) {
 		t.Fatal("expected true")
 	}
 }
+
+func TestResolverMakeInitialState(t *testing.T) {
+	t.Run("the system resolver has a default score of 0.5", func(t *testing.T) {
+		state := resolverMakeInitialState()
+		var okay bool
+		for URL, entry := range state {
+			t.Logf("entry: %v %v", URL, *entry)
+			if URL == systemResolverURL && entry.score == 0.5 {
+				okay = true
+			}
+		}
+		if !okay {
+			t.Fatal("expected to see the system resolver with 0.5 as its score")
+		}
+	})
+}
