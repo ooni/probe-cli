@@ -89,6 +89,10 @@ func TestRunWithUnsupportedURLScheme(t *testing.T) {
 }
 
 func TestRunWithInput(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	measurer := NewExperimentMeasurer(Config{})
 	measurement := new(model.Measurement)
 	measurement.Input = model.MeasurementTarget(defaultInput)
@@ -158,6 +162,10 @@ func TestCancelledContext(t *testing.T) {
 }
 
 func TestNewClientFailure(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	config := &Config{}
 	expected := errors.New("mocked error")
 	config.newClient = func(conn stun.Connection, options ...stun.ClientOption) (*stun.Client, error) {

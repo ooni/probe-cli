@@ -1,6 +1,7 @@
 # Runs the whole test suite
 name: alltests
 on:
+  pull_request:
   push:
     branches:
       - "release/**"

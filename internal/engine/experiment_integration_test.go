@@ -130,7 +130,6 @@ func TestRunTelegram(t *testing.T) {
 }
 
 func TestRunTor(t *testing.T) {
-	t.Skip("https://github.com/ooni/probe/issues/2539")
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}

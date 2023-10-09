@@ -225,6 +225,10 @@ func TestNewProbeServicesClientForCheckIn(t *testing.T) {
 }
 
 func TestSessionNewSubmitterWithCancelledContext(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	sess := newSessionForTesting(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately

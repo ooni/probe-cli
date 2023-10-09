@@ -8,7 +8,10 @@ import (
 )
 
 func TestFetchPsiphonConfig(t *testing.T) {
-	t.Skip("TODO(https://github.com/ooni/probe/issues/2539)")
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	clnt := newclient()
 	if err := clnt.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
 		t.Fatal(err)

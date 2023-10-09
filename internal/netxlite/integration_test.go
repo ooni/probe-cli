@@ -16,9 +16,9 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/quictesting"
 	"github.com/ooni/probe-cli/v3/internal/randx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/testingquic"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 	"github.com/quic-go/quic-go"
 	utls "gitlab.com/yawning/utls.git"
@@ -487,11 +487,11 @@ func TestMeasureWithQUICDialer(t *testing.T) {
 		// why we're using nil to force netxlite to use the cached
 		// default Mozilla cert pool.
 		config := &tls.Config{
-			ServerName: quictesting.Domain,
+			ServerName: testingquic.MustDomain(),
 			NextProtos: []string{"h3"},
 			RootCAs:    nil,
 		}
-		sess, err := d.DialContext(ctx, quictesting.Endpoint("443"), config, &quic.Config{})
+		sess, err := d.DialContext(ctx, testingquic.MustEndpoint("443"), config, &quic.Config{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -510,12 +510,12 @@ func TestMeasureWithQUICDialer(t *testing.T) {
 		// why we're using nil to force netxlite to use the cached
 		// default Mozilla cert pool.
 		config := &tls.Config{
-			ServerName: quictesting.Domain,
+			ServerName: testingquic.MustDomain(),
 			NextProtos: []string{"h3"},
 			RootCAs:    nil,
 		}
 		// Here we assume <target-address>:1 is filtered
-		sess, err := d.DialContext(ctx, quictesting.Endpoint("1"), config, &quic.Config{})
+		sess, err := d.DialContext(ctx, testingquic.MustEndpoint("1"), config, &quic.Config{})
 		if err == nil || err.Error() != netxlite.FailureGenericTimeoutError {
 			t.Fatal("not the error we expected", err)
 		}
@@ -588,7 +588,7 @@ func TestHTTP3Transport(t *testing.T) {
 		)
 		txp := netxlite.NewHTTP3Transport(log.Log, d, &tls.Config{})
 		client := &http.Client{Transport: txp}
-		URL := (&url.URL{Scheme: "https", Host: quictesting.Domain, Path: "/"}).String()
+		URL := (&url.URL{Scheme: "https", Host: testingquic.MustDomain(), Path: "/"}).String()
 		resp, err := client.Get(URL)
 		if err != nil {
 			t.Fatal(err)
