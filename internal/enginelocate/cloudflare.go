@@ -19,7 +19,7 @@ func cloudflareIPLookup(
 	resolver model.Resolver,
 ) (string, error) {
 	// TODO(https://github.com/ooni/probe/issues/2551)
-	const timeout = 60 * time.Second
+	const timeout = 45 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
