@@ -16,6 +16,10 @@ import (
 
 func TestOONIRunFetch(t *testing.T) {
 	t.Run("we can fetch a OONI Run link descriptor", func(t *testing.T) {
+		if testing.Short() {
+			t.Skip("skip test in short mode")
+		}
+
 		sess, err := NewSessionForTesting()
 		if err != nil {
 			t.Fatal(err)

@@ -266,6 +266,10 @@ func TestLocationLookupSuccessWithResolverLookup(t *testing.T) {
 }
 
 func TestSmoke(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	config := Config{}
 	task := NewTask(config)
 	result, err := task.Run(context.Background())

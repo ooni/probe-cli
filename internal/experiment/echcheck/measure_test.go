@@ -67,6 +67,10 @@ func TestMeasurerMeasureWithInvalidInput2(t *testing.T) {
 }
 
 func TestMeasurementSuccess(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	sess := &mockable.Session{MockableLogger: log.Log}
 	callbacks := model.NewPrinterCallbacks(sess.Logger())
 	measurer := NewExperimentMeasurer(Config{})

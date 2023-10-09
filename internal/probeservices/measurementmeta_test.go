@@ -15,6 +15,10 @@ import (
 )
 
 func TestGetMeasurementMetaWorkingAsIntended(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	client := Client{
 		APIClientTemplate: httpx.APIClientTemplate{
 			BaseURL:    "https://api.ooni.io/",

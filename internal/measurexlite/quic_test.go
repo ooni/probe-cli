@@ -13,7 +13,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/quictesting"
+	"github.com/ooni/probe-cli/v3/internal/testingquic"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 	"github.com/quic-go/quic-go"
 )
@@ -276,6 +276,10 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 }
 
 func TestOnQUICHandshakeDoneExtractsTheConnectionState(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	// create a trace
 	trace := NewTrace(0, time.Now())
 
@@ -286,7 +290,7 @@ func TestOnQUICHandshakeDoneExtractsTheConnectionState(t *testing.T) {
 	// dial with the endpoint we use for testing
 	quicConn, err := quicDialer.DialContext(
 		context.Background(),
-		quictesting.Endpoint("443"),
+		testingquic.MustEndpoint("443"),
 		&tls.Config{
 			InsecureSkipVerify: true,
 		},

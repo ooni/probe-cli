@@ -23,6 +23,10 @@ func TestNewExperimentMeasurer(t *testing.T) {
 }
 
 func TestGood(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	measurer := signal.NewExperimentMeasurer(signal.Config{})
 	measurement := new(model.Measurement)
 	args := &model.ExperimentArgs{
