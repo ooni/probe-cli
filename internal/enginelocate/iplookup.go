@@ -78,7 +78,10 @@ func makeSlice() []method {
 }
 
 func contextForIPLookupWithTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
-	// TODO(https://github.com/ooni/probe/issues/2551)
+	// TODO(https://github.com/ooni/probe/issues/2551): we must enforce a timeout this
+	// large to ensure we give all resolvers a chance to run. We set this value as part of
+	// an hotfix. The above mentioned issue explains how to improve the situation and
+	// avoid the need of setting such large timeouts here.
 	const timeout = 45 * time.Second
 	return context.WithTimeout(ctx, timeout)
 }
