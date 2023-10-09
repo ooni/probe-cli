@@ -80,6 +80,11 @@ func makeSlice() []method {
 func (c ipLookupClient) doWithCustomFunc(
 	ctx context.Context, fn lookupFunc,
 ) (string, error) {
+	// TODO(https://github.com/ooni/probe/issues/2551)
+	const timeout = 45 * time.Second
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	// Implementation note: we MUST use an HTTP client that we're
 	// sure IS NOT using any proxy. To this end, we construct a
 	// client ourself that we know is not proxied.

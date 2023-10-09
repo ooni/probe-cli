@@ -4,7 +4,6 @@ import (
 	"context"
 	"net"
 	"net/http"
-	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -30,11 +29,6 @@ func stunNewClient(conn net.Conn) (stunClient, error) {
 
 func stunIPLookup(ctx context.Context, config stunConfig) (string, error) {
 	config.Logger.Debugf("STUNIPLookup: start using %s", config.Endpoint)
-
-	// TODO(https://github.com/ooni/probe/issues/2551)
-	const timeout = 45 * time.Second
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
 
 	ip, err := func() (string, error) {
 		dialer := config.Dialer

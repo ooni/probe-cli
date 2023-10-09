@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/xml"
 	"net/http"
-	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/httpx"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -22,11 +21,6 @@ func ubuntuIPLookup(
 	userAgent string,
 	resolver model.Resolver,
 ) (string, error) {
-	// TODO(https://github.com/ooni/probe/issues/2551)
-	const timeout = 45 * time.Second
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
 	data, err := (&httpx.APIClientTemplate{
 		BaseURL:    "https://geoip.ubuntu.com/",
 		HTTPClient: httpClient,
