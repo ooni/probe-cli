@@ -77,12 +77,16 @@ func makeSlice() []method {
 	return ret
 }
 
+func contextForIPLookupWithTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
+	// TODO(https://github.com/ooni/probe/issues/2551)
+	const timeout = 45 * time.Second
+	return context.WithTimeout(ctx, timeout)
+}
+
 func (c ipLookupClient) doWithCustomFunc(
 	ctx context.Context, fn lookupFunc,
 ) (string, error) {
-	// TODO(https://github.com/ooni/probe/issues/2551)
-	const timeout = 45 * time.Second
-	ctx, cancel := context.WithTimeout(ctx, timeout)
+	ctx, cancel := contextForIPLookupWithTimeout(ctx)
 	defer cancel()
 
 	// Implementation note: we MUST use an HTTP client that we're

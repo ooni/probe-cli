@@ -43,9 +43,10 @@ var allmakers = []*resolvermaker{{
 }}
 
 // allbyurl contains all the resolvermakers by URL
-var allbyurl map[string]*resolvermaker
+var allbyurl = resolverMakeInitialState()
 
-// init fills allbyname and gives a nonzero initial score
+// resolverMakeInitialState initializes the initial
+// state by giving a nonzero initial score
 // to all resolvers except for the system resolver. We set
 // the system resolver score to be 0.5, so that it's less
 // likely than other resolvers in this list.
@@ -53,17 +54,18 @@ var allbyurl map[string]*resolvermaker
 // We used to set this value to 0, but this proved to
 // create issues when it was the only available resolver,
 // see https://github.com/ooni/probe/issues/2544.
-func init() {
-	allbyurl = make(map[string]*resolvermaker)
+func resolverMakeInitialState() map[string]*resolvermaker {
+	output := make(map[string]*resolvermaker)
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for _, e := range allmakers {
-		allbyurl[e.url] = e
+		output[e.url] = e
 		if e.url != systemResolverURL {
 			e.score = rng.Float64()
 		} else {
 			e.score = 0.5
 		}
 	}
+	return output
 }
 
 // logger returns the configured logger or a default
