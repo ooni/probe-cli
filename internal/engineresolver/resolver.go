@@ -115,7 +115,7 @@ func (r *Resolver) LookupHost(ctx context.Context, hostname string) ([]string, e
 		//
 		// See https://github.com/ooni/probe/issues/2544
 		if err := ctx.Err(); err != nil {
-			me.Add(err)
+			me.Add(newErrWrapper(err, e.URL))
 			continue
 		}
 
