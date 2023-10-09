@@ -86,7 +86,7 @@ func newChildResolverHTTPS(
 		txp = netxlite.NewHTTPTransportWithOptions(
 			logger, dialer, tlsDialer,
 			netxlite.HTTPTransportOptionDisableCompression(false), // defaults to true but compression is fine here
-			netxlite.HTTPTransportOptionProxyURL(proxyURL), // nil here disables using the proxy
+			netxlite.HTTPTransportOptionProxyURL(proxyURL),        // nil here disables using the proxy
 		)
 	case true:
 		txp = netxlite.NewHTTP3TransportStdlib(logger)
