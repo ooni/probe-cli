@@ -41,7 +41,7 @@ New code should have full coverage using either localhost or the
 error paths as well as the important properties of the code you've written
 that you would like to be sure about.
 
-Additionaly integration tests using the host network are good,
+Additional integration tests using the host network are good,
 but they MUST use this pattern:
 
 ```Go
