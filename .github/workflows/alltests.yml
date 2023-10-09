@@ -1,16 +1,12 @@
 # Runs the whole test suite
 name: alltests
 on:
+  pull_request:
   push:
     branches:
       - "release/**"
       - "fullbuild"
       - "alltestsbuild"
-
-      # Since https://github.com/ooni/probe-cli/pull/1352, we only run unit tests (i.e.,
-      # proper unit tests or tests using either GVisor or localhost) for PRs. So, for extra
-      # robustness we want to run all tests every time we merge a PR into master.
-      - "master"
 
 jobs:
   test:
