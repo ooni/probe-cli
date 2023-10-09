@@ -1,7 +1,9 @@
 #!/bin/bash
 
+#
 # Computes coverage inside an environment where we unshared the network namespace
 # to ensure unit tests don't depend on the network.
+#
 
 set -euxo pipefail
 
@@ -12,5 +14,5 @@ go=$(which go)
 go mod vendor
 
 # run tests using a different network namespace
-sudo unshare --net $go test -short -race -coverprofile=probe-cli.cov ./...
+sudo unshare --net ./script/linuxcoveragerun.bash $go
 
