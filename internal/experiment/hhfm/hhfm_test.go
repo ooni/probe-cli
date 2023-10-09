@@ -32,6 +32,10 @@ func TestNewExperimentMeasurer(t *testing.T) {
 }
 
 func TestSuccess(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	measurer := hhfm.NewExperimentMeasurer(hhfm.Config{})
 	ctx := context.Background()
 	sess := &mockable.Session{

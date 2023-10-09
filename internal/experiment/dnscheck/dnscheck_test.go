@@ -143,6 +143,10 @@ func TestMakeResolverURL(t *testing.T) {
 }
 
 func TestDNSCheckValid(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	measurer := NewExperimentMeasurer(Config{
 		DefaultAddrs: "1.1.1.1 1.0.0.1",
 	})
@@ -189,6 +193,10 @@ func TestSummaryKeysGeneric(t *testing.T) {
 }
 
 func TestDNSCheckWait(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	endpoints := &Endpoints{
 		WaitTime: 1 * time.Second,
 	}

@@ -6,6 +6,10 @@ import (
 )
 
 func TestFakeDialerWorks(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	fd := &FakeDialer{Address: "8.8.8.8:53"}
 	conn, err := fd.DialContext(context.Background())
 	if err != nil {

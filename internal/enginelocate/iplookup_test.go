@@ -13,6 +13,10 @@ import (
 )
 
 func TestIPLookupGood(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	ip, err := (ipLookupClient{
 		Logger:    log.Log,
 		Resolver:  netxlite.NewStdlibResolver(model.DiscardLogger),

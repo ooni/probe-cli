@@ -24,7 +24,7 @@ jobs:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-coverage-${{ steps.goversion.outputs.version }}"
 
-      - run: go test -short -race -tags shaping -coverprofile=probe-cli.cov ./...
+      - run: ./script/linuxcoverage.bash
 
       - uses: shogo82148/actions-goveralls@v1
         with:
