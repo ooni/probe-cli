@@ -30,7 +30,6 @@ func TestMeasurementSubmissionFailure(t *testing.T) {
 }
 
 func TestTaskRunnerRun(t *testing.T) {
-	t.Skip("https://github.com/ooni/probe/issues/2541")
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
@@ -350,8 +349,7 @@ func TestTaskRunnerRun(t *testing.T) {
 		assertReducedEventsLike(t, expect, reduced)
 	})
 
-	t.Run(
-		"with InputOrStaticDefault policy and experiment with no static input",
+	t.Run("with InputOrStaticDefault policy and experiment with no static input",
 		func(t *testing.T) {
 			runner, emitter := newRunnerForTesting()
 			runner.settings.Name = "Antani" // no input for this experiment
