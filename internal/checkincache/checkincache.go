@@ -3,6 +3,7 @@ package checkincache
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -51,4 +52,12 @@ func GetFeatureFlag(kvStore model.KeyValueStore, name string) bool {
 		return false // as documented
 	}
 	return wrapper.Flags[name] // works even if map is nil
+}
+
+// ExperimentEnabled returns whether a given experiment has been enabled by a previous
+// execution of check-in. We use this feature to disable experimental experiments that may
+// start misbehaving thus requiring us to issue an emergency release.
+func ExperimentEnabled(kvStore model.KeyValueStore, name string) bool {
+	key := fmt.Sprintf("%s_enabled", name)
+	return GetFeatureFlag(kvStore, key)
 }

@@ -402,10 +402,19 @@ var ErrAlreadyUsingProxy = errors.New(
 	"session: cannot create a new tunnel of this kind: we are already using a proxy",
 )
 
+// ErrExperimentNotEnabled indicates that an experiment is not enabled by the check-in API, which
+// typically happens when we know that a given experiment is known to have issues.
+var ErrExperimentNotEnabled = errors.New("session: experiment not enabled by check-in API")
+
 // NewExperimentBuilder returns a new experiment builder
 // for the experiment with the given name, or an error if
 // there's no such experiment with the given name
 func (s *Session) NewExperimentBuilder(name string) (model.ExperimentBuilder, error) {
+
+	// Handle the experiment where we dynamically chose LTE for some users.
+	//
+	// TODO(https://github.com/ooni/probe/issues/2555): perform the actual comparison
+	// and improve the LTE implementation so that we can always use it.
 	name = registry.CanonicalizeExperimentName(name)
 	switch {
 	case name == "web_connectivity" && checkincache.GetFeatureFlag(s.kvStore, "webconnectivity_0.5"):
@@ -413,9 +422,31 @@ func (s *Session) NewExperimentBuilder(name string) (model.ExperimentBuilder, er
 		// feature flag has been set through the check-in API
 		s.Logger().Infof("using webconnectivity LTE")
 		name = "web_connectivity@v0.5"
+
 	default:
 		// nothing
 	}
+
+	// Some experiments are disabled by default and we re-enable them or
+	// disable them again using the check-in API.
+	//
+	// TODO(https://github.com/ooni/probe/issues/2554): we need to restructure
+	// of we run experiments to make sure check-in flags are always fresh.
+	switch name {
+	case "riseupvpn", "echcheck":
+		if os.Getenv("OONI_FORCE_ENABLE_EXPERIMENT") != "1" {
+			if !checkincache.ExperimentEnabled(s.kvStore, name) {
+				s.logger.Warnf("experiment '%s' not enabled through the check-in API", name)
+				s.logger.Warnf("use `export OONI_FORCE_ENABLE_EXPERIMENT=1 to bypass this restriction")
+				return nil, ErrExperimentNotEnabled
+			}
+		}
+		// fallthrough
+
+	default:
+		// nothing
+	}
+
 	eb, err := newExperimentBuilder(s, name)
 	if err != nil {
 		return nil, err
