@@ -148,10 +148,10 @@ func Summarize(tk *TestKeys) (out Summary) {
 	}
 
 	// Web Connectivity's analysis algorithm up until v0.4.2 gave priority to checking for http-diff
-	// over saying that there's "dns" blocking because the DNS is inconsistent.
+	// over saying that there's "dns" blocking when the DNS is inconsistent.
 	//
 	// In v0.4.3, we want to address https://github.com/ooni/probe/issues/2499 while still
-	// trying to preserve the original spirit of the analysis algorithm.
+	// trying to preserve the original spirit of the v0.4.2 analysis algorithm.
 	//
 	// To this end, we _only_ flag failure if the following happens:
 	//
@@ -160,7 +160,7 @@ func Summarize(tk *TestKeys) (out Summary) {
 	// 2. the probe's DNS lookup has failed with dns_nxdomain_error or android_dns_cache_no_data.
 	//
 	// By using this algorithm, we narrow the scope and impact of this change but we are, at
-	// the same time, able to catch cases such as the one mentioned above.
+	// the same time, able to catch cases such as the one mentioned by the issue above.
 	//
 	// A more aggressive approach would flag as "dns" blocking any inconsistent result but
 	// that would depart quite a lot from the behavior of v0.4.2.
