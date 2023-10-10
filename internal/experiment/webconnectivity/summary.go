@@ -147,11 +147,26 @@ func Summarize(tk *TestKeys) (out Summary) {
 		return
 	}
 
-	// Otherwise, if the DNS is inconsistent, flag a DNS failure. Note that this
-	// case also includes when the probe lookup fails and the TH one does not because
-	// in such case all the addresses found by the TH do not belong to the probe,
-	// which failed and did not resolve any IP address.
-	if tk.DNSConsistency != nil && *tk.DNSConsistency == DNSInconsistent {
+	// Web Connectivity's analysis algorithm up until v0.4.2 gave priority to checking for http-diff
+	// over saying that there's "dns" blocking because the DNS is inconsistent.
+	//
+	// In v0.4.3, we want to address https://github.com/ooni/probe/issues/2499 while still
+	// trying to preserve the original spirit of the analysis algorithm.
+	//
+	// To this end, we _only_ flag failure if the following happens:
+	//
+	// 1. the DNS is inconsistent; and
+	//
+	// 2. the probe's DNS lookup has failed with dns_nxdomain_error or android_dns_cache_no_data.
+	//
+	// By using this algorithm, we narrow the scope and impact of this change but we are, at
+	// the same time, able to catch cases such as the one mentioned above.
+	//
+	// A more aggressive approach would flag as "dns" blocking any inconsistent result but
+	// that would depart quite a lot from the behavior of v0.4.2.
+	if tk.DNSConsistency != nil && *tk.DNSConsistency == DNSInconsistent &&
+		tk.DNSExperimentFailure != nil && (*tk.DNSExperimentFailure == netxlite.FailureDNSNXDOMAINError ||
+		*tk.DNSExperimentFailure == netxlite.FailureAndroidDNSCacheNoData) {
 		out.Accessible = &inaccessible
 		out.BlockingReason = &dns
 		out.Status |= StatusAnomalyDNS | StatusExperimentDNS
