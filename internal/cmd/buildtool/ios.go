@@ -104,6 +104,10 @@ func iosNewCBuildEnv(ooniArch string) *cBuildEnv {
 	}
 	switch ooniArch {
 	case "arm":
+		out.CFLAGS = []string{
+			"-arch", "armv7",
+			"-isysroot", "/Library/Developer/CommandLineTools/"
+		}
 		/*
 			out.CC = filepath.Join(out.BINPATH, "armv7a-linux-androideabi21-clang")
 			out.CXX = filepath.Join(out.BINPATH, "armv7a-linux-androideabi21-clang++")
