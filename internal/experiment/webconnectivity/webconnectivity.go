@@ -15,7 +15,7 @@ import (
 
 const (
 	testName    = "web_connectivity"
-	testVersion = "0.4.2"
+	testVersion = "0.4.3"
 )
 
 // Config contains the experiment config.

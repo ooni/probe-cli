@@ -21,7 +21,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	if measurer.ExperimentName() != "web_connectivity" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.4.2" {
+	if measurer.ExperimentVersion() != "0.4.3" {
 		t.Fatal("unexpected version")
 	}
 }
