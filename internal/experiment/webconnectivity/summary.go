@@ -153,7 +153,7 @@ func Summarize(tk *TestKeys) (out Summary) {
 	// In v0.4.3, we want to address https://github.com/ooni/probe/issues/2499 while still
 	// trying to preserve the original spirit of the v0.4.2 analysis algorithm.
 	//
-	// To this end, we _only_ flag failure if the following happens:
+	// To this end, we _only_ flag anomaly if the following happens:
 	//
 	// 1. the DNS is inconsistent; and
 	//
