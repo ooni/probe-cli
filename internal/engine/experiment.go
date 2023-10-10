@@ -232,7 +232,7 @@ func (e *experiment) OpenReportContext(ctx context.Context) error {
 	// use custom client to have proper byte accounting
 	httpClient := &http.Client{
 		Transport: bytecounter.WrapHTTPTransport(
-			e.session.httpDefaultTransport, // proxy is OK
+			e.session.network.HTTPTransport(),
 			e.byteCounter,
 		),
 	}

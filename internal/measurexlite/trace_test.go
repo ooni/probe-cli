@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"net"
-	"reflect"
 	"syscall"
 	"testing"
 	"time"
@@ -50,45 +49,16 @@ func TestNewTrace(t *testing.T) {
 			}
 		})
 
-		t.Run("NewStdlibResolverFn is nil", func(t *testing.T) {
-			if trace.newStdlibResolverFn != nil {
-				t.Fatal("expected nil NewStdlibResolverFn")
+		t.Run("Netx is an instance of *netxlite.Netx with a nil .Underlying", func(t *testing.T) {
+			if trace.Netx == nil {
+				t.Fatal("expected non-nil .Netx")
 			}
-		})
-
-		t.Run("NewParallelUDPResolverFn is nil", func(t *testing.T) {
-			if trace.newParallelUDPResolverFn != nil {
-				t.Fatal("expected nil NewParallelUDPResolverFn")
+			netx, good := trace.Netx.(*netxlite.Netx)
+			if !good {
+				t.Fatal("not a *netxlite.Netx")
 			}
-		})
-
-		t.Run("NewParallelDNSOverHTTPSResolverFn is nil", func(t *testing.T) {
-			if trace.newParallelDNSOverHTTPSResolverFn != nil {
-				t.Fatal("expected nil NewParallelDNSOverHTTPSResolverFn")
-			}
-		})
-
-		t.Run("NewDialerWithoutResolverFn is nil", func(t *testing.T) {
-			if trace.newDialerWithoutResolverFn != nil {
-				t.Fatal("expected nil NewDialerWithoutResolverFn")
-			}
-		})
-
-		t.Run("NewTLSHandshakerStdlibFn is nil", func(t *testing.T) {
-			if trace.newTLSHandshakerStdlibFn != nil {
-				t.Fatal("expected nil NewTLSHandshakerStdlibFn")
-			}
-		})
-
-		t.Run("newTLShandshakerUTLSFn is nil", func(t *testing.T) {
-			if trace.newTLSHandshakerUTLSFn != nil {
-				t.Fatal("expected nil NewTLSHandshakerUTLSfn")
-			}
-		})
-
-		t.Run("NewQUICDialerWithoutResolverFn is nil", func(t *testing.T) {
-			if trace.newQUICDialerWithoutResolverFn != nil {
-				t.Fatal("expected nil NewQUICDialerQithoutResolverFn")
+			if netx.Underlying != nil {
+				t.Fatal(".Underlying is not nil")
 			}
 		})
 
@@ -202,34 +172,10 @@ func TestNewTrace(t *testing.T) {
 }
 
 func TestTrace(t *testing.T) {
-	t.Run("NewStdlibResolverFn works as intended", func(t *testing.T) {
-		t.Run("when not nil", func(t *testing.T) {
-			mockedErr := errors.New("mocked")
-			tx := &Trace{
-				newStdlibResolverFn: func(logger model.Logger) model.Resolver {
-					return &mocks.Resolver{
-						MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-							return []string{}, mockedErr
-						},
-					}
-				},
-			}
-			resolver := tx.newStdlibResolver(model.DiscardLogger)
-			ctx := context.Background()
-			addrs, err := resolver.LookupHost(ctx, "example.com")
-			if !errors.Is(err, mockedErr) {
-				t.Fatal("unexpected err", err)
-			}
-			if len(addrs) != 0 {
-				t.Fatal("expected array of size 0")
-			}
-		})
-
+	t.Run("NewStdlibResolver works as intended", func(t *testing.T) {
 		t.Run("when nil", func(t *testing.T) {
-			tx := &Trace{
-				newParallelUDPResolverFn: nil,
-			}
-			resolver := tx.newStdlibResolver(model.DiscardLogger)
+			tx := NewTrace(0, time.Now())
+			resolver := tx.NewStdlibResolver(model.DiscardLogger)
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel()
 			addrs, err := resolver.LookupHost(ctx, "example.com")
@@ -242,333 +188,169 @@ func TestTrace(t *testing.T) {
 		})
 	})
 
-	t.Run("NewParallelUDPResolverFn works as intended", func(t *testing.T) {
-		t.Run("when not nil", func(t *testing.T) {
-			mockedErr := errors.New("mocked")
-			tx := &Trace{
-				newParallelUDPResolverFn: func(logger model.Logger, dialer model.Dialer, address string) model.Resolver {
-					return &mocks.Resolver{
-						MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-							return []string{}, mockedErr
-						},
-					}
-				},
-			}
-			dialer := &mocks.Dialer{}
-			resolver := tx.newParallelUDPResolver(model.DiscardLogger, dialer, "1.1.1.1:53")
-			ctx := context.Background()
-			addrs, err := resolver.LookupHost(ctx, "example.com")
-			if !errors.Is(err, mockedErr) {
-				t.Fatal("unexpected err", err)
-			}
-			if len(addrs) != 0 {
-				t.Fatal("expected array of size 0")
-			}
-		})
-
-		t.Run("when nil", func(t *testing.T) {
-			tx := &Trace{
-				newParallelUDPResolverFn: nil,
-			}
-			dialer := netxlite.NewDialerWithoutResolver(model.DiscardLogger)
-			resolver := tx.newParallelUDPResolver(model.DiscardLogger, dialer, "1.1.1.1:53")
-			ctx, cancel := context.WithCancel(context.Background())
-			cancel()
-			addrs, err := resolver.LookupHost(ctx, "example.com")
-			if err == nil || err.Error() != netxlite.FailureInterrupted {
-				t.Fatal("unexpected err", err)
-			}
-			if len(addrs) != 0 {
-				t.Fatal("expected array of size 0")
-			}
-		})
+	t.Run("NewParallelUDPResolver works as intended", func(t *testing.T) {
+		tx := NewTrace(0, time.Now())
+		dialer := netxlite.NewDialerWithoutResolver(model.DiscardLogger)
+		resolver := tx.NewParallelUDPResolver(model.DiscardLogger, dialer, "1.1.1.1:53")
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		addrs, err := resolver.LookupHost(ctx, "example.com")
+		if err == nil || err.Error() != netxlite.FailureInterrupted {
+			t.Fatal("unexpected err", err)
+		}
+		if len(addrs) != 0 {
+			t.Fatal("expected array of size 0")
+		}
 	})
 
-	t.Run("NewParallelDNSOverHTTPSResolverFn works as intended", func(t *testing.T) {
-		t.Run("when not nil", func(t *testing.T) {
-			mockedErr := errors.New("mocked")
-			tx := &Trace{
-				newParallelDNSOverHTTPSResolverFn: func(logger model.Logger, URL string) model.Resolver {
-					return &mocks.Resolver{
-						MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-							return []string{}, mockedErr
-						},
-					}
-				},
-			}
-			resolver := tx.newParallelDNSOverHTTPSResolver(model.DiscardLogger, "https://dns.google.com")
-			ctx := context.Background()
-			addrs, err := resolver.LookupHost(ctx, "example.com")
-			if !errors.Is(err, mockedErr) {
-				t.Fatal("unexpected err", err)
-			}
-			if len(addrs) != 0 {
-				t.Fatal("expected array of size 0")
-			}
-		})
-
-		t.Run("when nil", func(t *testing.T) {
-			tx := &Trace{
-				newParallelDNSOverHTTPSResolverFn: nil,
-			}
-			resolver := tx.newParallelDNSOverHTTPSResolver(model.DiscardLogger, "https://dns.google.com")
-			ctx, cancel := context.WithCancel(context.Background())
-			cancel()
-			addrs, err := resolver.LookupHost(ctx, "example.com")
-			if err == nil || err.Error() != netxlite.FailureInterrupted {
-				t.Fatal("unexpected err", err)
-			}
-			if len(addrs) != 0 {
-				t.Fatal("expected array of size 0")
-			}
-		})
+	t.Run("NewParallelDNSOverHTTPSResolver works as intended", func(t *testing.T) {
+		tx := NewTrace(0, time.Now())
+		resolver := tx.NewParallelDNSOverHTTPSResolver(model.DiscardLogger, "https://dns.google.com")
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		addrs, err := resolver.LookupHost(ctx, "example.com")
+		if err == nil || err.Error() != netxlite.FailureInterrupted {
+			t.Fatal("unexpected err", err)
+		}
+		if len(addrs) != 0 {
+			t.Fatal("expected array of size 0")
+		}
 	})
 
-	t.Run("NewDialerWithoutResolverFn works as intended", func(t *testing.T) {
-		t.Run("when not nil", func(t *testing.T) {
-			mockedErr := errors.New("mocked")
-			tx := &Trace{
-				newDialerWithoutResolverFn: func(dl model.DebugLogger) model.Dialer {
-					return &mocks.Dialer{
-						MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
-							return nil, mockedErr
-						},
-					}
-				},
-			}
-			dialer := tx.NewDialerWithoutResolver(model.DiscardLogger)
-			ctx := context.Background()
-			conn, err := dialer.DialContext(ctx, "tcp", "1.1.1.1:443")
-			if !errors.Is(err, mockedErr) {
-				t.Fatal("unexpected err", err)
-			}
-			if conn != nil {
-				t.Fatal("expected nil conn")
-			}
-		})
-
-		t.Run("when nil", func(t *testing.T) {
-			tx := &Trace{
-				newDialerWithoutResolverFn: nil,
-			}
-			dialer := tx.NewDialerWithoutResolver(model.DiscardLogger)
-			ctx, cancel := context.WithCancel(context.Background())
-			cancel() // fail immediately
-			conn, err := dialer.DialContext(ctx, "tcp", "1.1.1.1:443")
-			if err == nil || err.Error() != netxlite.FailureInterrupted {
-				t.Fatal("unexpected err", err)
-			}
-			if conn != nil {
-				t.Fatal("expected nil conn")
-			}
-		})
+	t.Run("NewDialerWithoutResolver works as intended", func(t *testing.T) {
+		tx := NewTrace(0, time.Now())
+		dialer := tx.NewDialerWithoutResolver(model.DiscardLogger)
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel() // fail immediately
+		conn, err := dialer.DialContext(ctx, "tcp", "1.1.1.1:443")
+		if err == nil || err.Error() != netxlite.FailureInterrupted {
+			t.Fatal("unexpected err", err)
+		}
+		if conn != nil {
+			t.Fatal("expected nil conn")
+		}
 	})
 
-	t.Run("NewTLSHandshakerStdlibFn works as intended", func(t *testing.T) {
-		t.Run("when not nil", func(t *testing.T) {
-			mockedErr := errors.New("mocked")
-			tx := &Trace{
-				newTLSHandshakerStdlibFn: func(dl model.DebugLogger) model.TLSHandshaker {
-					return &mocks.TLSHandshaker{
-						MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
-							return nil, tls.ConnectionState{}, mockedErr
-						},
-					}
-				},
-			}
-			thx := tx.NewTLSHandshakerStdlib(model.DiscardLogger)
-			ctx := context.Background()
-			conn, state, err := thx.Handshake(ctx, &mocks.Conn{}, &tls.Config{})
-			if !errors.Is(err, mockedErr) {
-				t.Fatal("unexpected err", err)
-			}
-			if !reflect.ValueOf(state).IsZero() {
-				t.Fatal("state is not a zero value")
-			}
-			if conn != nil {
-				t.Fatal("expected nil conn")
-			}
-		})
-
-		t.Run("when nil", func(t *testing.T) {
-			mockedErr := errors.New("mocked")
-			tx := &Trace{
-				newTLSHandshakerStdlibFn: nil,
-			}
-			thx := tx.NewTLSHandshakerStdlib(model.DiscardLogger)
-			tcpConn := &mocks.Conn{
-				MockSetDeadline: func(t time.Time) error {
-					return nil
-				},
-				MockRemoteAddr: func() net.Addr {
-					return &mocks.Addr{
-						MockNetwork: func() string {
-							return "tcp"
-						},
-						MockString: func() string {
-							return "1.1.1.1:443"
-						},
-					}
-				},
-				MockWrite: func(b []byte) (int, error) {
-					return 0, mockedErr
-				},
-				MockClose: func() error {
-					return nil
-				},
-			}
-			tlsConfig := &tls.Config{
-				InsecureSkipVerify: true,
-			}
-			ctx := context.Background()
-			conn, state, err := thx.Handshake(ctx, tcpConn, tlsConfig)
-			if !errors.Is(err, mockedErr) {
-				t.Fatal("unexpected err", err)
-			}
-			if !reflect.ValueOf(state).IsZero() {
-				t.Fatal("state is not a zero value")
-			}
-			if conn != nil {
-				t.Fatal("expected nil conn")
-			}
-		})
+	t.Run("NewTLSHandshakerStdlib works as intended", func(t *testing.T) {
+		mockedErr := errors.New("mocked")
+		tx := NewTrace(0, time.Now())
+		thx := tx.NewTLSHandshakerStdlib(model.DiscardLogger)
+		tcpConn := &mocks.Conn{
+			MockSetDeadline: func(t time.Time) error {
+				return nil
+			},
+			MockRemoteAddr: func() net.Addr {
+				return &mocks.Addr{
+					MockNetwork: func() string {
+						return "tcp"
+					},
+					MockString: func() string {
+						return "1.1.1.1:443"
+					},
+				}
+			},
+			MockWrite: func(b []byte) (int, error) {
+				return 0, mockedErr
+			},
+			MockClose: func() error {
+				return nil
+			},
+		}
+		tlsConfig := &tls.Config{
+			InsecureSkipVerify: true,
+		}
+		ctx := context.Background()
+		conn, err := thx.Handshake(ctx, tcpConn, tlsConfig)
+		if !errors.Is(err, mockedErr) {
+			t.Fatal("unexpected err", err)
+		}
+		if conn != nil {
+			t.Fatal("expected nil conn")
+		}
 	})
 
-	t.Run("NewTLSHandshakerUTLSFn works as intended", func(t *testing.T) {
-		t.Run("when not nil", func(t *testing.T) {
-			mockedErr := errors.New("mocked")
-			tx := &Trace{
-				newTLSHandshakerUTLSFn: func(dl model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker {
-					return &mocks.TLSHandshaker{
-						MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
-							return nil, tls.ConnectionState{}, mockedErr
-						},
-					}
-				},
-			}
-			thx := tx.NewTLSHandshakerUTLS(model.DiscardLogger, &utls.HelloGolang)
-			ctx := context.Background()
-			conn, state, err := thx.Handshake(ctx, &mocks.Conn{}, &tls.Config{})
-			if !errors.Is(err, mockedErr) {
-				t.Fatal("unexpected err", err)
-			}
-			if !reflect.ValueOf(state).IsZero() {
-				t.Fatal("state is not a zero value")
-			}
-			if conn != nil {
-				t.Fatal("expected nil conn")
-			}
-		})
-
-		t.Run("when nil", func(t *testing.T) {
-			mockedErr := errors.New("mocked")
-			tx := &Trace{
-				newTLSHandshakerStdlibFn: nil,
-			}
-			thx := tx.newTLSHandshakerUTLS(model.DiscardLogger, &utls.HelloGolang)
-			tcpConn := &mocks.Conn{
-				MockSetDeadline: func(t time.Time) error {
-					return nil
-				},
-				MockRemoteAddr: func() net.Addr {
-					return &mocks.Addr{
-						MockNetwork: func() string {
-							return "tcp"
-						},
-						MockString: func() string {
-							return "1.1.1.1:443"
-						},
-					}
-				},
-				MockWrite: func(b []byte) (int, error) {
-					return 0, mockedErr
-				},
-				MockClose: func() error {
-					return nil
-				},
-			}
-			tlsConfig := &tls.Config{
-				InsecureSkipVerify: true,
-			}
-			ctx := context.Background()
-			conn, state, err := thx.Handshake(ctx, tcpConn, tlsConfig)
-			if !errors.Is(err, mockedErr) {
-				t.Fatal("unexpected err", err)
-			}
-			if !reflect.ValueOf(state).IsZero() {
-				t.Fatal("state is not a zero value")
-			}
-			if conn != nil {
-				t.Fatal("expected nil conn")
-			}
-		})
+	t.Run("NewTLSHandshakerUTLS works as intended", func(t *testing.T) {
+		mockedErr := errors.New("mocked")
+		tx := NewTrace(0, time.Now())
+		thx := tx.NewTLSHandshakerUTLS(model.DiscardLogger, &utls.HelloGolang)
+		tcpConn := &mocks.Conn{
+			MockSetDeadline: func(t time.Time) error {
+				return nil
+			},
+			MockRemoteAddr: func() net.Addr {
+				return &mocks.Addr{
+					MockNetwork: func() string {
+						return "tcp"
+					},
+					MockString: func() string {
+						return "1.1.1.1:443"
+					},
+				}
+			},
+			MockWrite: func(b []byte) (int, error) {
+				return 0, mockedErr
+			},
+			MockClose: func() error {
+				return nil
+			},
+		}
+		tlsConfig := &tls.Config{
+			InsecureSkipVerify: true,
+		}
+		ctx := context.Background()
+		conn, err := thx.Handshake(ctx, tcpConn, tlsConfig)
+		if !errors.Is(err, mockedErr) {
+			t.Fatal("unexpected err", err)
+		}
+		if conn != nil {
+			t.Fatal("expected nil conn")
+		}
 	})
 
-	t.Run("NewQUICDialerWithoutResolverFn works as intended", func(t *testing.T) {
-		t.Run("when not nil", func(t *testing.T) {
-			mockedErr := errors.New("mocked")
-			tx := &Trace{
-				newQUICDialerWithoutResolverFn: func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer {
-					return &mocks.QUICDialer{
-						MockDialContext: func(ctx context.Context, address string,
-							tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
-							return nil, mockedErr
-						},
-					}
-				},
-			}
-			qdx := tx.newQUICDialerWithoutResolver(&mocks.QUICListener{}, model.DiscardLogger)
-			ctx := context.Background()
-			qconn, err := qdx.DialContext(ctx, "1.1.1.1:443", &tls.Config{}, &quic.Config{})
-			if !errors.Is(err, mockedErr) {
-				t.Fatal("unexpected err", err)
-			}
-			if qconn != nil {
-				t.Fatal("expected nil conn")
-			}
-		})
-
-		t.Run("when nil", func(t *testing.T) {
-			mockedErr := errors.New("mocked")
-			tx := &Trace{
-				newQUICDialerWithoutResolverFn: nil, // explicit
-			}
-			pconn := &mocks.UDPLikeConn{
-				MockLocalAddr: func() net.Addr {
-					return &net.UDPAddr{
-						Port: 0,
-					}
-				},
-				MockRemoteAddr: func() net.Addr {
-					return &net.UDPAddr{
-						Port: 0,
-					}
-				},
-				MockSyscallConn: func() (syscall.RawConn, error) {
-					return nil, mockedErr
-				},
-				MockClose: func() error {
-					return nil
-				},
-			}
-			listener := &mocks.QUICListener{
-				MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
-					return pconn, nil
-				},
-			}
-			tlsConfig := &tls.Config{
-				InsecureSkipVerify: true,
-			}
-			dialer := tx.newQUICDialerWithoutResolver(listener, model.DiscardLogger)
-			ctx := context.Background()
-			qconn, err := dialer.DialContext(ctx, "1.1.1.1:443", tlsConfig, &quic.Config{})
-			if !errors.Is(err, mockedErr) {
-				t.Fatal("unexpected err", err)
-			}
-			if qconn != nil {
-				t.Fatal("expected nil conn")
-			}
-		})
+	t.Run("NewQUICDialerWithoutResolver works as intended", func(t *testing.T) {
+		mockedErr := errors.New("mocked")
+		tx := NewTrace(0, time.Now())
+		pconn := &mocks.UDPLikeConn{
+			MockLocalAddr: func() net.Addr {
+				return &net.UDPAddr{
+					// quic-go does not allow the use of the same net.PacketConn for multiple "Dial"
+					// calls (unless a quic.Transport is used), so we have to make sure to mock local
+					// addresses with different ports, as tests run in parallel.
+					Port: 0,
+				}
+			},
+			MockRemoteAddr: func() net.Addr {
+				return &net.UDPAddr{
+					Port: 0,
+				}
+			},
+			MockSyscallConn: func() (syscall.RawConn, error) {
+				return nil, mockedErr
+			},
+			MockClose: func() error {
+				return nil
+			},
+			MockSetReadBuffer: func(n int) error {
+				return nil
+			},
+		}
+		listener := &mocks.UDPListener{
+			MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
+				return pconn, nil
+			},
+		}
+		tlsConfig := &tls.Config{
+			InsecureSkipVerify: true,
+		}
+		dialer := tx.NewQUICDialerWithoutResolver(listener, model.DiscardLogger)
+		ctx := context.Background()
+		qconn, err := dialer.DialContext(ctx, "1.1.1.1:443", tlsConfig, &quic.Config{})
+		if !errors.Is(err, mockedErr) {
+			t.Fatal("unexpected err", err)
+		}
+		if qconn != nil {
+			t.Fatal("expected nil conn")
+		}
 	})
 
 	t.Run("TimeNowFn works as intended", func(t *testing.T) {

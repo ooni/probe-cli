@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"net/url"
 	"os"
 	"sync"
@@ -13,15 +12,15 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/checkincache"
-	"github.com/ooni/probe-cli/v3/internal/geolocate"
+	"github.com/ooni/probe-cli/v3/internal/enginelocate"
+	"github.com/ooni/probe-cli/v3/internal/enginenetx"
+	"github.com/ooni/probe-cli/v3/internal/engineresolver"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/platform"
 	"github.com/ooni/probe-cli/v3/internal/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/registry"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
-	"github.com/ooni/probe-cli/v3/internal/sessionresolver"
 	"github.com/ooni/probe-cli/v3/internal/tunnel"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
@@ -58,13 +57,13 @@ type Session struct {
 	availableProbeServices   []model.OOAPIService
 	availableTestHelpers     map[string][]model.OOAPIService
 	byteCounter              *bytecounter.Counter
-	httpDefaultTransport     model.HTTPTransport
+	network                  *enginenetx.Network
 	kvStore                  model.KeyValueStore
-	location                 *geolocate.Results
+	location                 *enginelocate.Results
 	logger                   model.Logger
 	proxyURL                 *url.URL
 	queryProbeServicesCount  *atomic.Int64
-	resolver                 *sessionresolver.Resolver
+	resolver                 *engineresolver.Resolver
 	selectedProbeServiceHook func(*model.OOAPIService)
 	selectedProbeService     *model.OOAPIService
 	softwareName             string
@@ -79,7 +78,7 @@ type Session struct {
 
 	// testLookupLocationContext is a an optional hook for testing
 	// allowing us to mock LookupLocationContext.
-	testLookupLocationContext func(ctx context.Context) (*geolocate.Results, error)
+	testLookupLocationContext func(ctx context.Context) (*enginelocate.Results, error)
 
 	// testMaybeLookupBackendsContext is an optional hook for testing
 	// allowing us to mock MaybeLookupBackendsContext.
@@ -132,8 +131,8 @@ type sessionProbeServicesClientForCheckIn interface {
 //
 // 5. Create a compound resolver for the session that will attempt
 // to use a bunch of DoT/DoH servers before falling back to the system
-// resolver if nothing else works (see the sessionresolver pkg). This
-// sessionresolver will be using the configured proxy, if any.
+// resolver if nothing else works (see the engineresolver pkg). This
+// engineresolver will be using the configured proxy, if any.
 //
 // 6. Create the default HTTP transport that we should be using when
 // we communicate with the OONI backends. This transport will be
@@ -208,17 +207,19 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 		}
 	}
 	sess.proxyURL = proxyURL
-	sess.resolver = &sessionresolver.Resolver{
+	sess.resolver = &engineresolver.Resolver{
 		ByteCounter: sess.byteCounter,
 		KVStore:     config.KVStore,
 		Logger:      sess.logger,
 		ProxyURL:    proxyURL,
 	}
-	txp := netxlite.NewHTTPTransportWithLoggerResolverAndOptionalProxyURL(
-		sess.logger, sess.resolver, sess.proxyURL,
+	sess.network = enginenetx.NewNetwork(
+		sess.byteCounter,
+		config.KVStore,
+		sess.logger,
+		proxyURL,
+		sess.resolver,
 	)
-	txp = bytecounter.WrapHTTPTransport(txp, sess.byteCounter)
-	sess.httpDefaultTransport = txp
 	return sess, nil
 }
 
@@ -341,7 +342,9 @@ func (s *Session) Close() error {
 
 // doClose implements Close. This function is called just once.
 func (s *Session) doClose() {
-	s.httpDefaultTransport.CloseIdleConnections()
+	// make sure we close open connections and persist stats to the key-value store
+	s.network.Close()
+
 	s.resolver.CloseIdleConnections()
 	if s.tunnel != nil {
 		s.tunnel.Stop()
@@ -360,7 +363,7 @@ func (s *Session) GetTestHelpersByName(name string) ([]model.OOAPIService, bool)
 
 // DefaultHTTPClient returns the session's default HTTP client.
 func (s *Session) DefaultHTTPClient() model.HTTPClient {
-	return &http.Client{Transport: s.httpDefaultTransport}
+	return s.network.NewHTTPClient()
 }
 
 // FetchTorTargets fetches tor targets from the API.
@@ -676,8 +679,8 @@ func (s *Session) MaybeLookupBackendsContext(ctx context.Context) error {
 
 // LookupLocationContext performs a location lookup. If you want memoisation
 // of the results, you should use MaybeLookupLocationContext.
-func (s *Session) LookupLocationContext(ctx context.Context) (*geolocate.Results, error) {
-	task := geolocate.NewTask(geolocate.Config{
+func (s *Session) LookupLocationContext(ctx context.Context) (*enginelocate.Results, error) {
+	task := enginelocate.NewTask(enginelocate.Config{
 		Logger:    s.Logger(),
 		Resolver:  s.resolver,
 		UserAgent: s.UserAgent(),
@@ -687,7 +690,7 @@ func (s *Session) LookupLocationContext(ctx context.Context) (*geolocate.Results
 
 // lookupLocationContext calls testLookupLocationContext if set and
 // otherwise calls LookupLocationContext.
-func (s *Session) lookupLocationContext(ctx context.Context) (*geolocate.Results, error) {
+func (s *Session) lookupLocationContext(ctx context.Context) (*enginelocate.Results, error) {
 	if s.testLookupLocationContext != nil {
 		return s.testLookupLocationContext(ctx)
 	}

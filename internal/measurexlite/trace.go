@@ -10,7 +10,6 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	utls "gitlab.com/yawning/utls.git"
 )
 
 // Trace implements [model.Trace]. We use a [context.Context] to register ourselves
@@ -31,6 +30,11 @@ type Trace struct {
 	// once you have constructed a trace MAY lead to data races.
 	Index int64
 
+	// Netx is the network to use for measuring. The constructor inits this
+	// field using a [*netxlite.Netx]. You MAY override this field for testing. Make
+	// sure you do that before you start measuring to avoid data races.
+	Netx model.MeasuringNetwork
+
 	// bytesReceivedMap maps a remote host with the bytes we received
 	// from such a remote host. Accessing this map requires one to
 	// additionally hold the bytesReceivedMu mutex.
@@ -40,42 +44,14 @@ type Trace struct {
 	// access from multiple goroutines.
 	bytesReceivedMu *sync.Mutex
 
-	// networkEvent is MANDATORY and buffers network events.
-	networkEvent chan *model.ArchivalNetworkEvent
-
-	// newStdlibResolverFn is OPTIONAL and can be used to overide
-	// calls to the netxlite.NewStdlibResolver factory.
-	newStdlibResolverFn func(logger model.Logger) model.Resolver
-
-	// newParallelUDPResolverFn is OPTIONAL and can be used to overide
-	// calls to the netxlite.NewParallelUDPResolver factory.
-	newParallelUDPResolverFn func(logger model.Logger, dialer model.Dialer, address string) model.Resolver
-
-	// newParallelDNSOverHTTPSResolverFn is OPTIONAL and can be used to overide
-	// calls to the netxlite.NewParallelDNSOverHTTPSUDPResolver factory.
-	newParallelDNSOverHTTPSResolverFn func(logger model.Logger, URL string) model.Resolver
-
-	// newDialerWithoutResolverFn is OPTIONAL and can be used to override
-	// calls to the netxlite.NewDialerWithoutResolver factory.
-	newDialerWithoutResolverFn func(dl model.DebugLogger) model.Dialer
-
-	// newTLSHandshakerStdlibFn is OPTIONAL and can be used to overide
-	// calls to the netxlite.NewTLSHandshakerStdlib factory.
-	newTLSHandshakerStdlibFn func(dl model.DebugLogger) model.TLSHandshaker
-
-	// newTLSHandshakerUTLSFn is OPTIONAL and can be used to overide
-	// calls to the netxlite.NewTLSHandshakerUTLS factory.
-	newTLSHandshakerUTLSFn func(dl model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker
-
-	// NewDialerWithoutResolverFn is OPTIONAL and can be used to override
-	// calls to the netxlite.NewQUICDialerWithoutResolver factory.
-	newQUICDialerWithoutResolverFn func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer
-
 	// dnsLookup is MANDATORY and buffers DNS Lookup observations.
 	dnsLookup chan *model.ArchivalDNSLookupResult
 
 	// delayedDNSResponse is MANDATORY and buffers delayed DNS responses.
 	delayedDNSResponse chan *model.ArchivalDNSLookupResult
+
+	// networkEvent is MANDATORY and buffers network events.
+	networkEvent chan *model.ArchivalNetworkEvent
 
 	// tcpConnect is MANDATORY and buffers TCP connect observations.
 	tcpConnect chan *model.ArchivalTCPConnectResult
@@ -98,6 +74,8 @@ type Trace struct {
 	// likely read to data races.
 	ZeroTime time.Time
 }
+
+var _ model.MeasuringNetwork = &Trace{}
 
 // NetworkEventBufferSize is the [*Trace] buffer size for network I/O events.
 const NetworkEventBufferSize = 64
@@ -134,19 +112,9 @@ const QUICHandshakeBufferSize = 8
 func NewTrace(index int64, zeroTime time.Time, tags ...string) *Trace {
 	return &Trace{
 		Index:            index,
+		Netx:             &netxlite.Netx{Underlying: nil}, // use the host network
 		bytesReceivedMap: make(map[string]int64),
 		bytesReceivedMu:  &sync.Mutex{},
-		networkEvent: make(
-			chan *model.ArchivalNetworkEvent,
-			NetworkEventBufferSize,
-		),
-		newStdlibResolverFn:               nil, // use default
-		newParallelUDPResolverFn:          nil, // use default
-		newParallelDNSOverHTTPSResolverFn: nil, // use default
-		newDialerWithoutResolverFn:        nil, // use default
-		newTLSHandshakerStdlibFn:          nil, // use default
-		newTLSHandshakerUTLSFn:            nil, // use default
-		newQUICDialerWithoutResolverFn:    nil, // use default
 		dnsLookup: make(
 			chan *model.ArchivalDNSLookupResult,
 			DNSLookupBufferSize,
@@ -154,6 +122,10 @@ func NewTrace(index int64, zeroTime time.Time, tags ...string) *Trace {
 		delayedDNSResponse: make(
 			chan *model.ArchivalDNSLookupResult,
 			DelayedDNSResponseBufferSize,
+		),
+		networkEvent: make(
+			chan *model.ArchivalNetworkEvent,
+			NetworkEventBufferSize,
 		),
 		tcpConnect: make(
 			chan *model.ArchivalTCPConnectResult,
@@ -171,69 +143,6 @@ func NewTrace(index int64, zeroTime time.Time, tags ...string) *Trace {
 		timeNowFn: nil, // use default
 		ZeroTime:  zeroTime,
 	}
-}
-
-// newStdlibResolver indirectly calls the passed netxlite.NewStdlibResolver
-// thus allowing us to mock this function for testing
-func (tx *Trace) newStdlibResolver(logger model.Logger) model.Resolver {
-	if tx.newStdlibResolverFn != nil {
-		return tx.newStdlibResolverFn(logger)
-	}
-	return netxlite.NewStdlibResolver(logger)
-}
-
-// newParallelUDPResolver indirectly calls the passed netxlite.NewParallerUDPResolver
-// thus allowing us to mock this function for testing
-func (tx *Trace) newParallelUDPResolver(logger model.Logger, dialer model.Dialer, address string) model.Resolver {
-	if tx.newParallelUDPResolverFn != nil {
-		return tx.newParallelUDPResolverFn(logger, dialer, address)
-	}
-	return netxlite.NewParallelUDPResolver(logger, dialer, address)
-}
-
-// newParallelDNSOverHTTPSResolver indirectly calls the passed netxlite.NewParallerDNSOverHTTPSResolver
-// thus allowing us to mock this function for testing
-func (tx *Trace) newParallelDNSOverHTTPSResolver(logger model.Logger, URL string) model.Resolver {
-	if tx.newParallelDNSOverHTTPSResolverFn != nil {
-		return tx.newParallelDNSOverHTTPSResolverFn(logger, URL)
-	}
-	return netxlite.NewParallelDNSOverHTTPSResolver(logger, URL)
-}
-
-// newDialerWithoutResolver indirectly calls netxlite.NewDialerWithoutResolver
-// thus allowing us to mock this func for testing.
-func (tx *Trace) newDialerWithoutResolver(dl model.DebugLogger) model.Dialer {
-	if tx.newDialerWithoutResolverFn != nil {
-		return tx.newDialerWithoutResolverFn(dl)
-	}
-	return netxlite.NewDialerWithoutResolver(dl)
-}
-
-// newTLSHandshakerStdlib indirectly calls netxlite.NewTLSHandshakerStdlib
-// thus allowing us to mock this func for testing.
-func (tx *Trace) newTLSHandshakerStdlib(dl model.DebugLogger) model.TLSHandshaker {
-	if tx.newTLSHandshakerStdlibFn != nil {
-		return tx.newTLSHandshakerStdlibFn(dl)
-	}
-	return netxlite.NewTLSHandshakerStdlib(dl)
-}
-
-// newTLSHandshakerUTLS indirectly calls netxlite.NewTLSHandshakerUTLS
-// thus allowing us to mock this func for testing.
-func (tx *Trace) newTLSHandshakerUTLS(dl model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker {
-	if tx.newTLSHandshakerUTLSFn != nil {
-		return tx.newTLSHandshakerUTLSFn(dl, id)
-	}
-	return netxlite.NewTLSHandshakerUTLS(dl, id)
-}
-
-// newQUICDialerWithoutResolver indirectly calls netxlite.NewQUICDialerWithoutResolver
-// thus allowing us to mock this func for testing.
-func (tx *Trace) newQUICDialerWithoutResolver(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer {
-	if tx.newQUICDialerWithoutResolverFn != nil {
-		return tx.newQUICDialerWithoutResolverFn(listener, dl)
-	}
-	return netxlite.NewQUICDialerWithoutResolver(listener, dl)
 }
 
 // TimeNow implements model.Trace.TimeNow.

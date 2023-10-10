@@ -14,6 +14,10 @@ import (
 )
 
 func TestDialDownloadWithCancelledContext(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // immediately halt
 	mgr := newDialManager("wss://hostname.fake", log.Log, "miniooni/0.1.0-dev")
@@ -27,6 +31,10 @@ func TestDialDownloadWithCancelledContext(t *testing.T) {
 }
 
 func TestDialUploadWithCancelledContext(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // immediately halt
 	mgr := newDialManager("wss://hostname.fake", log.Log, "miniooni/0.1.0-dev")

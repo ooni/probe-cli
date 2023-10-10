@@ -13,9 +13,9 @@ const (
 	HTTPHeaderAcceptLanguage = "en-US,en;q=0.9"
 
 	// HTTPHeaderUserAgent is the User-Agent header used for measuring. The current header
-	// is 22.0% of the browser population as of Jun 06, 2023 according to the
+	// is 20.2% of the browser population as of 2023-10-04 according to the
 	// https://techblog.willshouse.com/2012/01/03/most-common-user-agents/ webpage.
-	HTTPHeaderUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36"
+	HTTPHeaderUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"
 )
 
 // Additional strings used to report HTTP errors. They're currently only used by

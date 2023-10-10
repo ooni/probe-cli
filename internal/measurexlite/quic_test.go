@@ -13,7 +13,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/quictesting"
+	"github.com/ooni/probe-cli/v3/internal/testingquic"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 	"github.com/quic-go/quic-go"
 )
@@ -23,10 +23,12 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 		underlying := &mocks.QUICDialer{}
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		trace.newQUICDialerWithoutResolverFn = func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer {
-			return underlying
+		trace.Netx = &mocks.MeasuringNetwork{
+			MockNewQUICDialerWithoutResolver: func(listener model.UDPListener, logger model.DebugLogger, w ...model.QUICDialerWrapper) model.QUICDialer {
+				return underlying
+			},
 		}
-		listener := &mocks.QUICListener{}
+		listener := &mocks.UDPListener{}
 		dialer := trace.NewQUICDialerWithoutResolver(listener, model.DiscardLogger)
 		dt := dialer.(*quicDialerTrace)
 		if dt.qd != underlying {
@@ -50,10 +52,12 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
-		trace.newQUICDialerWithoutResolverFn = func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer {
-			return underlying
+		trace.Netx = &mocks.MeasuringNetwork{
+			MockNewQUICDialerWithoutResolver: func(listener model.UDPListener, logger model.DebugLogger, w ...model.QUICDialerWrapper) model.QUICDialer {
+				return underlying
+			},
 		}
-		listener := &mocks.QUICListener{}
+		listener := &mocks.UDPListener{}
 		dialer := trace.NewQUICDialerWithoutResolver(listener, model.DiscardLogger)
 		ctx := context.Background()
 		conn, err := dialer.DialContext(ctx, "1.1.1.1:443", &tls.Config{}, &quic.Config{})
@@ -77,10 +81,12 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 				called = true
 			},
 		}
-		trace.newQUICDialerWithoutResolverFn = func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer {
-			return underlying
+		trace.Netx = &mocks.MeasuringNetwork{
+			MockNewQUICDialerWithoutResolver: func(listener model.UDPListener, logger model.DebugLogger, w ...model.QUICDialerWrapper) model.QUICDialer {
+				return underlying
+			},
 		}
-		listener := &mocks.QUICListener{}
+		listener := &mocks.UDPListener{}
 		dialer := trace.NewQUICDialerWithoutResolver(listener, model.DiscardLogger)
 		dialer.CloseIdleConnections()
 		if !called {
@@ -97,6 +103,9 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 		pconn := &mocks.UDPLikeConn{
 			MockLocalAddr: func() net.Addr {
 				return &net.UDPAddr{
+					// quic-go does not allow the use of the same net.PacketConn for multiple "Dial"
+					// calls (unless a quic.Transport is used), so we have to make sure to mock local
+					// addresses with different ports, as tests run in parallel.
 					Port: 0,
 				}
 			},
@@ -111,8 +120,11 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 			MockClose: func() error {
 				return nil
 			},
+			MockSetReadBuffer: func(n int) error {
+				return nil
+			},
 		}
-		listener := &mocks.QUICListener{
+		listener := &mocks.UDPListener{
 			MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 				return pconn, nil
 			},
@@ -144,7 +156,7 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 				Failure:            &expectedFailure,
 				NegotiatedProtocol: "",
 				NoTLSVerify:        true,
-				PeerCertificates:   []model.ArchivalMaybeBinaryData{},
+				PeerCertificates:   []model.ArchivalBinaryData{},
 				ServerName:         "dns.cloudflare.com",
 				T:                  time.Second.Seconds(),
 				Tags:               []string{"antani"},
@@ -207,7 +219,10 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 		pconn := &mocks.UDPLikeConn{
 			MockLocalAddr: func() net.Addr {
 				return &net.UDPAddr{
-					Port: 0,
+					// quic-go does not allow the use of the same net.PacketConn for multiple "Dial"
+					// calls (unless a quic.Transport is used), so we have to make sure to mock local
+					// addresses with different ports, as tests run in parallel.
+					Port: 1,
 				}
 			},
 			MockRemoteAddr: func() net.Addr {
@@ -221,8 +236,11 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 			MockClose: func() error {
 				return nil
 			},
+			MockSetReadBuffer: func(n int) error {
+				return nil
+			},
 		}
-		listener := &mocks.QUICListener{
+		listener := &mocks.UDPListener{
 			MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 				return pconn, nil
 			},
@@ -258,17 +276,21 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 }
 
 func TestOnQUICHandshakeDoneExtractsTheConnectionState(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	// create a trace
 	trace := NewTrace(0, time.Now())
 
 	// create a QUIC dialer
-	quicListener := netxlite.NewQUICListener()
-	quicDialer := trace.NewQUICDialerWithoutResolver(quicListener, model.DiscardLogger)
+	udpListener := netxlite.NewUDPListener()
+	quicDialer := trace.NewQUICDialerWithoutResolver(udpListener, model.DiscardLogger)
 
 	// dial with the endpoint we use for testing
 	quicConn, err := quicDialer.DialContext(
 		context.Background(),
-		quictesting.Endpoint("443"),
+		testingquic.MustEndpoint("443"),
 		&tls.Config{
 			InsecureSkipVerify: true,
 		},
@@ -318,7 +340,7 @@ func TestFirstQUICHandshake(t *testing.T) {
 			Failure:            nil,
 			NegotiatedProtocol: "",
 			NoTLSVerify:        true,
-			PeerCertificates:   []model.ArchivalMaybeBinaryData{},
+			PeerCertificates:   []model.ArchivalBinaryData{},
 			ServerName:         "dns.cloudflare.com",
 			T:                  time.Second.Seconds(),
 			Tags:               []string{},
@@ -330,7 +352,7 @@ func TestFirstQUICHandshake(t *testing.T) {
 			Failure:            nil,
 			NegotiatedProtocol: "",
 			NoTLSVerify:        true,
-			PeerCertificates:   []model.ArchivalMaybeBinaryData{},
+			PeerCertificates:   []model.ArchivalBinaryData{},
 			ServerName:         "dns.google.com",
 			T:                  time.Second.Seconds(),
 			Tags:               []string{},

@@ -11,12 +11,12 @@ import (
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/experiment/fbmessenger"
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
+	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
-	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
 // servicesAddr is the IP address implementing al fbmessenger services in netem-based tests
@@ -74,7 +74,21 @@ func TestMeasurerRun(t *testing.T) {
 		}
 
 		// create a new test environment
-		env := netemx.MustNewQAEnv(netemx.QAEnvOptionHTTPServer(servicesAddr, netemx.ExampleWebPageHandlerFactory()))
+		env := netemx.MustNewQAEnv(netemx.QAEnvOptionNetStack(
+			servicesAddr,
+			&netemx.HTTPSecureServerFactory{
+				Factory:        netemx.ExampleWebPageHandlerFactory(),
+				Ports:          []int{443},
+				ServerNameMain: "b-api.facebook.com",
+				ServerNameExtras: []string{
+					"b-graph.facebook.com",
+					"edge-mqtt.facebook.com",
+					"external.xx.fbcdn.net",
+					"scontent.xx.fbcdn.net",
+					"star.c10r.facebook.com",
+				},
+			},
+		))
 		defer env.Close()
 
 		// configure the DNS for all resolvers
@@ -125,7 +139,21 @@ func TestMeasurerRun(t *testing.T) {
 		}
 
 		// create a new test environment
-		env := netemx.MustNewQAEnv(netemx.QAEnvOptionHTTPServer(servicesAddr, netemx.ExampleWebPageHandlerFactory()))
+		env := netemx.MustNewQAEnv(netemx.QAEnvOptionNetStack(
+			servicesAddr,
+			&netemx.HTTPSecureServerFactory{
+				Factory:        netemx.ExampleWebPageHandlerFactory(),
+				Ports:          []int{443},
+				ServerNameMain: "b-api.facebook.com",
+				ServerNameExtras: []string{
+					"b-graph.facebook.com",
+					"edge-mqtt.facebook.com",
+					"external.xx.fbcdn.net",
+					"scontent.xx.fbcdn.net",
+					"star.c10r.facebook.com",
+				},
+			},
+		))
 		defer env.Close()
 
 		// configure the DNS for all resolvers
@@ -185,7 +213,21 @@ func TestMeasurerRun(t *testing.T) {
 		}()
 
 		// create a new test environment
-		env := netemx.MustNewQAEnv(netemx.QAEnvOptionHTTPServer(servicesAddr, netemx.ExampleWebPageHandlerFactory()))
+		env := netemx.MustNewQAEnv(netemx.QAEnvOptionNetStack(
+			servicesAddr,
+			&netemx.HTTPSecureServerFactory{
+				Factory:        netemx.ExampleWebPageHandlerFactory(),
+				Ports:          []int{443},
+				ServerNameMain: "b-api.facebook.com",
+				ServerNameExtras: []string{
+					"b-graph.facebook.com",
+					"edge-mqtt.facebook.com",
+					"external.xx.fbcdn.net",
+					"scontent.xx.fbcdn.net",
+					"star.c10r.facebook.com",
+				},
+			},
+		))
 		defer env.Close()
 
 		// configure the DNS for all resolvers
@@ -245,7 +287,21 @@ func TestMeasurerRun(t *testing.T) {
 		}
 
 		// create a new test environment
-		env := netemx.MustNewQAEnv(netemx.QAEnvOptionHTTPServer(servicesAddr, netemx.ExampleWebPageHandlerFactory()))
+		env := netemx.MustNewQAEnv(netemx.QAEnvOptionNetStack(
+			servicesAddr,
+			&netemx.HTTPSecureServerFactory{
+				Factory:        netemx.ExampleWebPageHandlerFactory(),
+				Ports:          []int{443},
+				ServerNameMain: "b-api.facebook.com",
+				ServerNameExtras: []string{
+					"b-graph.facebook.com",
+					"edge-mqtt.facebook.com",
+					"external.xx.fbcdn.net",
+					"scontent.xx.fbcdn.net",
+					"star.c10r.facebook.com",
+				},
+			},
+		))
 		defer env.Close()
 
 		// configure all DNS servers but the ISP's one

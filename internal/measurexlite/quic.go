@@ -16,9 +16,13 @@ import (
 
 // NewQUICDialerWithoutResolver is equivalent to netxlite.NewQUICDialerWithoutResolver
 // except that it returns a model.QUICDialer that uses this trace.
-func (tx *Trace) NewQUICDialerWithoutResolver(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer {
+//
+// Caveat: the dialer wrappers are there to implement the [model.MeasuringNetwork]
+// interface, but they're not used by this function.
+func (tx *Trace) NewQUICDialerWithoutResolver(
+	listener model.UDPListener, dl model.DebugLogger, wrappers ...model.QUICDialerWrapper) model.QUICDialer {
 	return &quicDialerTrace{
-		qd: tx.newQUICDialerWithoutResolver(listener, dl),
+		qd: tx.Netx.NewQUICDialerWithoutResolver(listener, dl),
 		tx: tx,
 	}
 }
@@ -60,7 +64,7 @@ func (tx *Trace) OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn
 
 	state := tls.ConnectionState{}
 	if qconn != nil {
-		state = qconn.ConnectionState().TLS.ConnectionState
+		state = qconn.ConnectionState().TLS
 	}
 
 	select {

@@ -386,6 +386,10 @@ func TestGetterWithCancelledContextUnknownResolverURL(t *testing.T) {
 }
 
 func TestGetterIntegrationHTTPS(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	ctx := context.Background()
 	g := urlgetter.Getter{
 		Config: urlgetter.Config{
@@ -510,6 +514,10 @@ func TestGetterIntegrationRedirect(t *testing.T) {
 }
 
 func TestGetterIntegrationTLSHandshake(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	ctx := context.Background()
 	g := urlgetter.Getter{
 		Config: urlgetter.Config{
@@ -611,6 +619,10 @@ func TestGetterIntegrationTLSHandshake(t *testing.T) {
 }
 
 func TestGetterHTTPSWithTunnel(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	// quick enough (0.4s) to run with every run
 	ctx := context.Background()
 	g := urlgetter.Getter{

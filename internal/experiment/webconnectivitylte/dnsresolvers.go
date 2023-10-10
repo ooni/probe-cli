@@ -16,7 +16,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -168,9 +168,9 @@ func (t *DNSResolvers) Run(parentCtx context.Context) {
 		// insert the addresses we just looked us into the cache
 		t.DNSCache.Set(t.Domain, addresses)
 
-		log.Infof("using resolved addrs: %+v", addresses)
+		t.Logger.Infof("using resolved addrs: %+v", addresses)
 	} else {
-		log.Infof("using previously-cached addrs: %+v", addresses)
+		t.Logger.Infof("using previously-cached addrs: %+v", addresses)
 	}
 
 	// create priority selector
@@ -213,7 +213,7 @@ func (t *DNSResolvers) lookupHostSystem(parentCtx context.Context, out chan<- []
 	trace := measurexlite.NewTrace(index, t.ZeroTime)
 
 	// start the operation logger
-	ol := measurexlite.NewOperationLogger(
+	ol := logx.NewOperationLogger(
 		t.Logger, "[#%d] lookup %s using system", index, t.Domain,
 	)
 
@@ -240,7 +240,7 @@ func (t *DNSResolvers) lookupHostUDP(parentCtx context.Context, udpAddress strin
 	trace := measurexlite.NewTrace(index, t.ZeroTime)
 
 	// start the operation logger
-	ol := measurexlite.NewOperationLogger(
+	ol := logx.NewOperationLogger(
 		t.Logger, "[#%d] lookup %s using %s", index, t.Domain, udpAddress,
 	)
 
@@ -378,7 +378,7 @@ func (t *DNSResolvers) lookupHostDNSOverHTTPS(parentCtx context.Context, out cha
 	trace := measurexlite.NewTrace(index, t.ZeroTime)
 
 	// start the operation logger
-	ol := measurexlite.NewOperationLogger(
+	ol := logx.NewOperationLogger(
 		t.Logger, "[#%d] lookup %s using %s", index, t.Domain, URL,
 	)
 

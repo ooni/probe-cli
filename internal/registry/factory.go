@@ -10,8 +10,8 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/iancoleman/strcase"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/strcasex"
 )
 
 // Factory allows to construct an experiment measurer.
@@ -201,7 +201,7 @@ func (b *Factory) NewExperimentMeasurer() model.ExperimentMeasurer {
 // compatibility with MK, we need to add some exceptions here when
 // mapping (e.g., DNSCheck => dnscheck).
 func CanonicalizeExperimentName(name string) string {
-	switch name = strcase.ToSnake(name); name {
+	switch name = strcasex.ToSnake(name); name {
 	case "ndt_7":
 		name = "ndt" // since 2020-03-18, we use ndt7 to implement ndt by default
 	case "dns_check":

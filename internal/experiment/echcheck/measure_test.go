@@ -67,6 +67,10 @@ func TestMeasurerMeasureWithInvalidInput2(t *testing.T) {
 }
 
 func TestMeasurementSuccess(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	sess := &mockable.Session{MockableLogger: log.Log}
 	callbacks := model.NewPrinterCallbacks(sess.Logger())
 	measurer := NewExperimentMeasurer(Config{})
@@ -84,12 +88,10 @@ func TestMeasurementSuccess(t *testing.T) {
 	}
 
 	summary, err := measurer.GetSummaryKeys(&model.Measurement{})
-
+	if err != nil {
+		t.Fatal(err)
+	}
 	if summary.(SummaryKeys).IsAnomaly != false {
 		t.Fatal("expected false")
 	}
-}
-
-func newsession() model.ExperimentSession {
-	return &mockable.Session{MockableLogger: log.Log}
 }

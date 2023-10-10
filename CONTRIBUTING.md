@@ -36,11 +36,26 @@ functionality should pass existing tests. What's more, any new pull
 request that modifies existing functionality should not decrease the
 existing code coverage.
 
-Long-running tests should be skipped when running tests in short mode
-using `go test -short`. We prefer internal testing to external
-testing. We generally have a file called `foo_test.go` with tests
-for every `foo.go` file. Sometimes we separate long running
-integration tests in a `foo_integration_test.go` file.
+New code should have full coverage using either localhost or the
+[internal/netemx](./internal/netemx/) package. Try to cover all the
+error paths as well as the important properties of the code you've written
+that you would like to be sure about.
+
+Additional integration tests using the host network are good,
+but they MUST use this pattern:
+
+```Go
+func TestUsingHostNetwork(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+}
+```
+
+The overall objective here is for `go test -short` to only use localhost
+and [internal/netemx](./internal/netemx/) such that tests are always
+reproducible. Tests using the host network are there to give us extra
+confidence that everything is working as intended.
 
 If there is a top-level DESIGN.md document, make sure such document is
 kept in sync with code changes you have applied.
@@ -88,10 +103,9 @@ will understand you want to use the default pool)
 ## Code testing requirements
 
 Make sure all tests pass with `go test -race ./...` run from the
-top-level directory of this repository. (Integration tests may be
-flaky, so there may be some failures here and and there; we know
-in particular that `./internal/cmd/jafar` is one of the usual
-suspects and that it's not super pleasant to test it under Linux.)
+top-level directory of this repository. (Running [netem](
+https://github.com/ooni/netem) based tests may not work as intended
+with `-race` with macOS.)
 
 ## Writing a new OONI experiment
 

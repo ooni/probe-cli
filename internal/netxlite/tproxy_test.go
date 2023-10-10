@@ -6,18 +6,18 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"runtime"
-	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func TestTproxyNilSafeProvider(t *testing.T) {
 	type testingstruct struct {
-		provider *tproxyNilSafeProvider
+		provider *MaybeCustomUnderlyingNetwork
 	}
 
 	t.Run("when the pointer is nil", func(t *testing.T) {
@@ -29,7 +29,7 @@ func TestTproxyNilSafeProvider(t *testing.T) {
 
 	t.Run("when underlying is nil", func(t *testing.T) {
 		tsp := &testingstruct{
-			provider: &tproxyNilSafeProvider{
+			provider: &MaybeCustomUnderlyingNetwork{
 				underlying: nil,
 			},
 		}
@@ -41,35 +41,12 @@ func TestTproxyNilSafeProvider(t *testing.T) {
 	t.Run("when underlying is set", func(t *testing.T) {
 		expected := &mocks.UnderlyingNetwork{}
 		tsp := &testingstruct{
-			provider: &tproxyNilSafeProvider{
+			provider: &MaybeCustomUnderlyingNetwork{
 				underlying: expected,
 			},
 		}
 		if tsp.provider.Get() != expected {
 			t.Fatal("unexpected result")
-		}
-	})
-}
-
-func TestDefaultTProxy(t *testing.T) {
-	t.Run("DialContext honours the timeout", func(t *testing.T) {
-		if runtime.GOOS == "windows" {
-			// This test is here to give us confidence we're doing the right thing
-			// in terms of the underlying Go API. It's not here to make sure the
-			// github CI behaves exactly equally on Windows, Linux, macOS on edge
-			// cases. So, it seems fine to just skip this test on Windows.
-			//
-			// TODO(https://github.com/ooni/probe/issues/2368).
-			t.Skip("skip test on windows")
-		}
-		tp := &DefaultTProxy{}
-		ctx := context.Background()
-		conn, err := tp.DialContext(ctx, time.Nanosecond, "tcp", "1.1.1.1:443")
-		if err == nil || !strings.HasSuffix(err.Error(), "i/o timeout") {
-			t.Fatal("unexpected err", err)
-		}
-		if conn != nil {
-			t.Fatal("expected nil conn")
 		}
 	})
 }
@@ -90,8 +67,11 @@ func TestWithCustomTProxy(t *testing.T) {
 				pool.AddCert(srvr.Certificate())
 				return pool
 			},
-			MockDialContext: func(ctx context.Context, timeout time.Duration, network string, address string) (net.Conn, error) {
-				return (&DefaultTProxy{}).DialContext(ctx, timeout, network, address)
+			MockDialTimeout: func() time.Duration {
+				return defaultDialTimeout
+			},
+			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+				return (&DefaultTProxy{}).DialContext(ctx, network, address)
 			},
 			MockListenUDP: func(network string, addr *net.UDPAddr) (model.UDPLikeConn, error) {
 				return (&DefaultTProxy{}).ListenUDP(network, addr)
@@ -105,6 +85,7 @@ func TestWithCustomTProxy(t *testing.T) {
 		}
 
 		WithCustomTProxy(tproxy, func() {
+			// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS but they're not needed here
 			clnt := NewHTTPClientStdlib(model.DiscardLogger)
 			req, err := http.NewRequestWithContext(context.Background(), "GET", srvr.URL, nil)
 			if err != nil {
@@ -119,4 +100,34 @@ func TestWithCustomTProxy(t *testing.T) {
 			}
 		})
 	})
+}
+
+// We generally do not listen here as part of other tests, since the listening
+// functionality is mainly only use for testingx. So, here's a specific test for that.
+func TestTproxyListenTCP(t *testing.T) {
+	tproxy := &DefaultTProxy{}
+
+	listener := runtimex.Try1(tproxy.ListenTCP("tcp", &net.TCPAddr{}))
+	serverEndpoint := listener.Addr().String()
+
+	// listen in a background goroutine
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		conn := runtimex.Try1(listener.Accept())
+		conn.Close()
+		wg.Done()
+	}()
+
+	// dial in a background goroutine
+	wg.Add(1)
+	go func() {
+		ctx := context.Background()
+		conn := runtimex.Try1(tproxy.DialContext(ctx, "tcp", serverEndpoint))
+		conn.Close()
+		wg.Done()
+	}()
+
+	// wait for the goroutines to finish
+	wg.Wait()
 }

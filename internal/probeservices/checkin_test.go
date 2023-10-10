@@ -9,6 +9,10 @@ import (
 )
 
 func TestCheckInSuccess(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	client := newclient()
 	client.BaseURL = "https://ams-pg-test.ooni.org"
 	config := model.OOAPICheckInConfig{

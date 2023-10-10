@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"sync"
 	"testing"
 
 	"github.com/apex/log"
@@ -14,9 +15,10 @@ import (
 	"github.com/quic-go/quic-go/http3"
 )
 
-func TestNetx(t *testing.T) {
+// This test ensures that a Netx wrapping a netem.UNet is WAI
+func TestNetxWithNetem(t *testing.T) {
 	// create a star network topology
-	topology := runtimex.Try1(netem.NewStarTopology(log.Log))
+	topology := netem.MustNewStarTopology(log.Log)
 	defer topology.Close()
 
 	// constants for the IP address we're using
@@ -40,6 +42,9 @@ func TestNetx(t *testing.T) {
 		w.Write(bonsoirElliot)
 	})
 
+	// create common certificate for HTTPS and HTTP3
+	webServerTLSConfig := webServerStack.MustNewServerTLSConfig("www.example.com", "web01.example.com")
+
 	// listen for HTTPS requests using the above handler
 	webServerTCPAddress := &net.TCPAddr{
 		IP:   net.ParseIP(exampleComAddress),
@@ -49,7 +54,7 @@ func TestNetx(t *testing.T) {
 	webServerTCPListener := runtimex.Try1(webServerStack.ListenTCP("tcp", webServerTCPAddress))
 	webServerTCPServer := &http.Server{
 		Handler:   webServerHandler,
-		TLSConfig: webServerStack.ServerTLSConfig(),
+		TLSConfig: webServerTLSConfig,
 	}
 	go webServerTCPServer.ServeTLS(webServerTCPListener, "", "")
 	defer webServerTCPServer.Close()
@@ -62,7 +67,7 @@ func TestNetx(t *testing.T) {
 	}
 	webServerUDPListener := runtimex.Try1(webServerStack.ListenUDP("udp", webServerUDPAddress))
 	webServerUDPServer := &http3.Server{
-		TLSConfig:  webServerStack.ServerTLSConfig(),
+		TLSConfig:  webServerTLSConfig,
 		QuicConfig: &quic.Config{},
 		Handler:    webServerHandler,
 	}
@@ -75,6 +80,8 @@ func TestNetx(t *testing.T) {
 	netx := &Netx{underlyingNetwork}
 
 	t.Run("HTTPS fetch", func(t *testing.T) {
+		// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPTransportStdlib is QUIRKY but we probably
+		// don't care about using a QUIRKY function here?
 		txp := netx.NewHTTPTransportStdlib(log.Log)
 		client := &http.Client{Transport: txp}
 		resp, err := client.Get("https://www.example.com/")
@@ -113,4 +120,35 @@ func TestNetx(t *testing.T) {
 			t.Fatal(diff)
 		}
 	})
+}
+
+// We generally do not listen here as part of other tests, since the listening
+// functionality is mainly only use for testingx. So, here's a specific test for that.
+func TestNetxListenTCP(t *testing.T) {
+	netx := &Netx{Underlying: nil}
+
+	listener := runtimex.Try1(netx.ListenTCP("tcp", &net.TCPAddr{}))
+	serverEndpoint := listener.Addr().String()
+
+	// listen in a background goroutine
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		conn := runtimex.Try1(listener.Accept())
+		conn.Close()
+		wg.Done()
+	}()
+
+	// dial in a background goroutine
+	wg.Add(1)
+	go func() {
+		ctx := context.Background()
+		dialer := netx.NewDialerWithoutResolver(log.Log)
+		conn := runtimex.Try1(dialer.DialContext(ctx, "tcp", serverEndpoint))
+		conn.Close()
+		wg.Done()
+	}()
+
+	// wait for the goroutines to finish
+	wg.Wait()
 }

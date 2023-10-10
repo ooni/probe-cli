@@ -11,16 +11,6 @@ import (
 	"github.com/quic-go/quic-go"
 )
 
-// QUICListener is a mockable netxlite.QUICListener.
-type QUICListener struct {
-	MockListen func(addr *net.UDPAddr) (model.UDPLikeConn, error)
-}
-
-// Listen calls MockListen.
-func (ql *QUICListener) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
-	return ql.MockListen(addr)
-}
-
 // QUICDialer is a mockable netxlite.QUICDialer.
 type QUICDialer struct {
 	// MockDialContext allows mocking DialContext.
@@ -57,10 +47,10 @@ type QUICEarlyConnection struct {
 	MockCloseWithError    func(code quic.ApplicationErrorCode, reason string) error
 	MockContext           func() context.Context
 	MockConnectionState   func() quic.ConnectionState
-	MockHandshakeComplete func() context.Context
+	MockHandshakeComplete func() <-chan struct{}
 	MockNextConnection    func() quic.Connection
 	MockSendMessage       func(b []byte) error
-	MockReceiveMessage    func() ([]byte, error)
+	MockReceiveMessage    func(ctx context.Context) ([]byte, error)
 }
 
 var _ quic.EarlyConnection = &QUICEarlyConnection{}
@@ -122,7 +112,7 @@ func (s *QUICEarlyConnection) ConnectionState() quic.ConnectionState {
 }
 
 // HandshakeComplete calls MockHandshakeComplete.
-func (s *QUICEarlyConnection) HandshakeComplete() context.Context {
+func (s *QUICEarlyConnection) HandshakeComplete() <-chan struct{} {
 	return s.MockHandshakeComplete()
 }
 
@@ -137,8 +127,8 @@ func (s *QUICEarlyConnection) SendMessage(b []byte) error {
 }
 
 // ReceiveMessage calls MockReceiveMessage.
-func (s *QUICEarlyConnection) ReceiveMessage() ([]byte, error) {
-	return s.MockReceiveMessage()
+func (s *QUICEarlyConnection) ReceiveMessage(ctx context.Context) ([]byte, error) {
+	return s.MockReceiveMessage(ctx)
 }
 
 // UDPLikeConn is an UDP conn used by QUIC.

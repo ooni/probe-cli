@@ -12,9 +12,9 @@ type GeoIPHandlerFactoryUbuntu struct {
 	ProbeIP string
 }
 
-var _ QAEnvHTTPHandlerFactory = &GeoIPHandlerFactoryUbuntu{}
+var _ HTTPHandlerFactory = &GeoIPHandlerFactoryUbuntu{}
 
 // NewHandler implements QAEnvHTTPHandlerFactory.
-func (f *GeoIPHandlerFactoryUbuntu) NewHandler(unet netem.UnderlyingNetwork) http.Handler {
+func (f *GeoIPHandlerFactoryUbuntu) NewHandler(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
 	return &testingx.GeoIPHandlerUbuntu{ProbeIP: f.ProbeIP}
 }

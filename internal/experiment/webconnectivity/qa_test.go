@@ -10,7 +10,10 @@ func TestQA(t *testing.T) {
 	for _, tc := range webconnectivityqa.AllTestCases() {
 		t.Run(tc.Name, func(t *testing.T) {
 			if (tc.Flags & webconnectivityqa.TestCaseFlagNoV04) != 0 {
-				t.Skip("this nettest cannot run on Web Connectivity v0.4")
+				t.Skip("this test case cannot run on Web Connectivity v0.4")
+			}
+			if testing.Short() && tc.LongTest {
+				t.Skip("skip test in short mode")
 			}
 			measurer := NewExperimentMeasurer(Config{})
 			if err := webconnectivityqa.RunTestCase(measurer, tc); err != nil {

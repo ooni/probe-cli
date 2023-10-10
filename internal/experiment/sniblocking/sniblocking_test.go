@@ -214,7 +214,7 @@ func configureDNSWithDefaults(config *netem.DNSConfig) {
 func TestMeasurerWithInvalidInput(t *testing.T) {
 	t.Run("with no measurement input: expect input error", func(t *testing.T) {
 		// create a new test environment
-		env := netemx.MustNewQAEnv(netemx.QAEnvOptionHTTPServer(exampleOrgAddr, netemx.ExampleWebPageHandlerFactory()))
+		env := netemx.MustNewQAEnv()
 		defer env.Close()
 
 		// we use the same valid DNS config for client and servers here
@@ -237,7 +237,7 @@ func TestMeasurerWithInvalidInput(t *testing.T) {
 
 	t.Run("with invalid MeasurementInput: expect parsing error", func(t *testing.T) {
 		// create a new test environment
-		env := netemx.MustNewQAEnv(netemx.QAEnvOptionHTTPServer(exampleOrgAddr, netemx.ExampleWebPageHandlerFactory()))
+		env := netemx.MustNewQAEnv()
 		defer env.Close()
 
 		// we use the same valid DNS config for client and servers here
@@ -269,7 +269,15 @@ func TestMeasurerWithInvalidInput(t *testing.T) {
 func TestMeasurerRun(t *testing.T) {
 	t.Run("without DPI: expect success", func(t *testing.T) {
 		// create a new test environment
-		env := netemx.MustNewQAEnv(netemx.QAEnvOptionHTTPServer(exampleOrgAddr, netemx.ExampleWebPageHandlerFactory()))
+		env := netemx.MustNewQAEnv(netemx.QAEnvOptionNetStack(
+			exampleOrgAddr,
+			&netemx.HTTPSecureServerFactory{
+				Factory:          netemx.ExampleWebPageHandlerFactory(),
+				Ports:            []int{443},
+				ServerNameMain:   "example.org",
+				ServerNameExtras: []string{},
+			},
+		))
 		defer env.Close()
 
 		// we use the same valid DNS config for client and servers here
@@ -300,9 +308,13 @@ func TestMeasurerRun(t *testing.T) {
 				t.Fatalf("Unexpected Control Failure %s", *tk.Control.Failure)
 			}
 			target := tk.Target
-			if target.Failure != nil {
+
+			// note: the target IS EXPECTED TO FAIL here because we are connecting to the
+			// control host which does not have the target certificate configured
+			if target.Failure == nil || *target.Failure != "ssl_invalid_hostname" {
 				t.Fatalf("Unexpected Target Failure %s", *tk.Target.Failure)
 			}
+
 			if target.Agent != "redirect" {
 				t.Fatal("not the expected Agent")
 			}
@@ -312,11 +324,8 @@ func TestMeasurerRun(t *testing.T) {
 			if target.DNSCache != nil {
 				t.Fatal("not the expected DNSCache")
 			}
-			if target.FailedOperation != nil {
+			if target.FailedOperation == nil || *target.FailedOperation != "tls_handshake" {
 				t.Fatal("unexpected FailedOperation")
-			}
-			if target.Failure != nil {
-				t.Fatal("unexpected failure")
 			}
 			if len(target.NetworkEvents) < 1 {
 				t.Fatal("not the expected NetworkEvents")
@@ -424,7 +433,15 @@ func TestMeasurerRun(t *testing.T) {
 
 	t.Run("with cache: expect to see cached entry", func(t *testing.T) {
 		// create a new test environment
-		env := netemx.MustNewQAEnv(netemx.QAEnvOptionHTTPServer(exampleOrgAddr, netemx.ExampleWebPageHandlerFactory()))
+		env := netemx.MustNewQAEnv(netemx.QAEnvOptionNetStack(
+			exampleOrgAddr,
+			&netemx.HTTPSecureServerFactory{
+				Factory:          netemx.ExampleWebPageHandlerFactory(),
+				Ports:            []int{443},
+				ServerNameMain:   "example.org",
+				ServerNameExtras: []string{},
+			},
+		))
 		defer env.Close()
 
 		// we use the same valid DNS config for client and servers here
@@ -480,7 +497,15 @@ func TestMeasurerRun(t *testing.T) {
 
 	t.Run("with DPI that blocks target SNI", func(t *testing.T) {
 		// create a new test environment
-		env := netemx.MustNewQAEnv(netemx.QAEnvOptionHTTPServer(exampleOrgAddr, netemx.ExampleWebPageHandlerFactory()))
+		env := netemx.MustNewQAEnv(netemx.QAEnvOptionNetStack(
+			exampleOrgAddr,
+			&netemx.HTTPSecureServerFactory{
+				Factory:          netemx.ExampleWebPageHandlerFactory(),
+				Ports:            []int{443},
+				ServerNameMain:   "example.org",
+				ServerNameExtras: []string{},
+			},
+		))
 		defer env.Close()
 
 		// we use the same valid DNS config for client and servers here
@@ -529,7 +554,15 @@ func TestMeasurerRun(t *testing.T) {
 
 func TestMeasureonewithcacheWorks(t *testing.T) {
 	// create a new test environment
-	env := netemx.MustNewQAEnv(netemx.QAEnvOptionHTTPServer(exampleOrgAddr, netemx.ExampleWebPageHandlerFactory()))
+	env := netemx.MustNewQAEnv(netemx.QAEnvOptionNetStack(
+		exampleOrgAddr,
+		&netemx.HTTPSecureServerFactory{
+			Factory:          netemx.ExampleWebPageHandlerFactory(),
+			Ports:            []int{443},
+			ServerNameMain:   "example.org",
+			ServerNameExtras: []string{},
+		},
+	))
 	defer env.Close()
 
 	// we use the same valid DNS config for client and servers here
@@ -554,9 +587,13 @@ func TestMeasureonewithcacheWorks(t *testing.T) {
 			if result.Cached != expected {
 				t.Fatal("unexpected cached")
 			}
-			if result.Failure != nil {
-				t.Fatal("unexpected failure")
+
+			// note: the target IS EXPECTED TO FAIL here because we are connecting to the
+			// control host which does not have the target certificate configured
+			if result.Failure == nil || *result.Failure != "ssl_invalid_hostname" {
+				t.Fatal("unexpected failure", *result.Failure)
 			}
+
 			if result.SNI != "kernel.org" {
 				t.Fatal("unexpected SNI")
 			}

@@ -7,15 +7,14 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
+	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
 func TestHTTPTransportWorkingAsIntended(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	log.SetLevel(log.DebugLevel)
 	counter := bytecounter.New()
 	config := Config{
 		BogonIsError:        true,

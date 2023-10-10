@@ -14,7 +14,9 @@ import (
 )
 
 func TestQueryNDT7Success(t *testing.T) {
-	// this integration test is ~0.5 s, so we can always run it
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 
 	client := NewClient(http.DefaultClient, model.DiscardLogger, "miniooni/0.1.0-dev")
 	result, err := client.QueryNDT7(context.Background())
@@ -48,7 +50,9 @@ func TestQueryNDT7Success(t *testing.T) {
 }
 
 func TestQueryDashSuccess(t *testing.T) {
-	// this integration test is ~0.5 s, so we can always run it
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 
 	client := NewClient(http.DefaultClient, model.DiscardLogger, "miniooni/0.1.0-dev")
 	result, err := client.QueryDash(context.Background())
@@ -82,7 +86,9 @@ func TestQueryDashSuccess(t *testing.T) {
 }
 
 func TestQuery404Response(t *testing.T) {
-	// this integration test is ~0.5 s, so we can always run it
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 
 	client := NewClient(http.DefaultClient, model.DiscardLogger, "miniooni/0.1.0-dev")
 	result, err := client.query(context.Background(), "nonexistent")

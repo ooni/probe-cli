@@ -99,7 +99,7 @@ func TestMeasurer_run(t *testing.T) {
 
 	t.Run("with netem: without DPI: expect success", func(t *testing.T) {
 		// create a new test environment
-		env := netemx.MustNewQAEnv(netemx.QAEnvOptionDNSOverUDPResolvers("8.8.8.8"))
+		env := netemx.MustNewQAEnv(netemx.QAEnvOptionNetStack("8.8.8.8", &netemx.DNSOverUDPServerFactory{}))
 		defer env.Close()
 
 		// we use the same configuration for all resolvers
@@ -146,7 +146,7 @@ func TestMeasurer_run(t *testing.T) {
 
 	t.Run("with netem: with DNS spoofing: expect to see delayed responses", func(t *testing.T) {
 		// create a new test environment
-		env := netemx.MustNewQAEnv(netemx.QAEnvOptionDNSOverUDPResolvers("8.8.8.8"))
+		env := netemx.MustNewQAEnv(netemx.QAEnvOptionNetStack("8.8.8.8", &netemx.DNSOverUDPServerFactory{}))
 		defer env.Close()
 
 		// we use the same configuration for all resolvers

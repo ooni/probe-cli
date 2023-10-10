@@ -21,6 +21,10 @@ type (
 )
 
 func TestMainRunServerWorkingAsIntended(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	// let the kernel pick a random free port
 	*apiEndpoint = "127.0.0.1:0"
 

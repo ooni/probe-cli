@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"time"
 
-	pt "git.torproject.org/pluggable-transports/goptlib.git"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"gitlab.com/yawning/obfs4.git/transports/base"
 	"gitlab.com/yawning/obfs4.git/transports/obfs4"
+	pt "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib"
 )
 
 // DefaultTestingOBFS4Bridge is a factory that returns you

@@ -8,8 +8,8 @@ import (
 // resolver returns the android_dns_cache_no_data error.
 func dnsBlockingAndroidDNSCacheNoData() *TestCase {
 	return &TestCase{
-		Name:  "measuring https://www.example.com/ with getaddrinfo errors and android_dns_cache_no_data",
-		Flags: 0,
+		Name:  "dnsBlockingAndroidDNSCacheNoData",
+		Flags: TestCaseFlagNoV04, // see https://github.com/ooni/probe-cli/pull/1211
 		Input: "https://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 			// make sure the env knows we want to emulate our getaddrinfo wrapper behavior
@@ -21,9 +21,44 @@ func dnsBlockingAndroidDNSCacheNoData() *TestCase {
 		},
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
-			DNSConsistency: "inconsistent",
-			Accessible:     false,
-			Blocking:       "dns",
+			DNSExperimentFailure: "android_dns_cache_no_data",
+			DNSConsistency:       "inconsistent",
+			XDNSFlags:            2,  // AnalysisDNSUnexpectedFailure
+			XBlockingFlags:       33, // analysisFlagDNSBlocking | analysisFlagSuccess
+			Accessible:           false,
+			Blocking:             "dns",
+		},
+	}
+}
+
+// dnsBlockingNXDOMAIN is the case where there's DNS blocking using NXDOMAIN.
+func dnsBlockingNXDOMAIN() *TestCase {
+	/*
+		Historical note:
+
+		With this test case there was an MK bug where we didn't properly record the
+		actual error that occurred when performing the DNS experiment.
+
+		See <https://github.com/measurement-kit/measurement-kit/issues/1931>.
+	*/
+	return &TestCase{
+		Name:  "dnsBlockingNXDOMAIN",
+		Flags: 0,
+		Input: "https://www.example.com/",
+		Configure: func(env *netemx.QAEnv) {
+			// remove the record so that the DNS query returns NXDOMAIN, which is then
+			// converted into android_dns_cache_no_data by the emulation layer
+			env.ISPResolverConfig().RemoveRecord("www.example.com")
+		},
+		ExpectErr: false,
+		ExpectTestKeys: &testKeys{
+			DNSExperimentFailure: "dns_nxdomain_error",
+			DNSConsistency:       "inconsistent",
+			XStatus:              2080, // StatusExperimentDNS | StatusAnomalyDNS
+			XDNSFlags:            2,    // AnalysisDNSUnexpectedFailure
+			XBlockingFlags:       33,   // analysisFlagDNSBlocking | analysisFlagSuccess
+			Accessible:           false,
+			Blocking:             "dns",
 		},
 	}
 }

@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
 func TestNewResolverBogonResolutionNotBroken(t *testing.T) {

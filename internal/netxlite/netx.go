@@ -5,10 +5,11 @@ package netxlite
 // network operations using a custom model.UnderlyingNetwork.
 //
 
-import "github.com/ooni/probe-cli/v3/internal/model"
+import (
+	"net"
 
-// TODO(bassosimone,kelmenhorst): we should gradually refactor the top-level netxlite
-// functions to operate on a [Net] struct using a nil-initialized Underlying field.
+	"github.com/ooni/probe-cli/v3/internal/model"
+)
 
 // Netx allows constructing netxlite data types using a specific [model.UnderlyingNetwork].
 type Netx struct {
@@ -17,62 +18,14 @@ type Netx struct {
 	Underlying model.UnderlyingNetwork
 }
 
-// tproxyNilSafeProvider wraps the [model.UnderlyingNetwork] using a [tproxyNilSafeProvider].
-func (n *Netx) tproxyNilSafeProvider() *tproxyNilSafeProvider {
-	return &tproxyNilSafeProvider{n.Underlying}
+var _ model.MeasuringNetwork = &Netx{}
+
+// MaybeCustomUnderlyingNetwork wraps the [model.UnderlyingNetwork] using a [*MaybeCustomUnderlyingNetwork].
+func (netx *Netx) MaybeCustomUnderlyingNetwork() *MaybeCustomUnderlyingNetwork {
+	return &MaybeCustomUnderlyingNetwork{netx.Underlying}
 }
 
-// NewStdlibResolver is like [netxlite.NewStdlibResolver] but the constructed [model.Resolver]
-// uses the [UnderlyingNetwork] configured inside the [Net] structure.
-func (n *Netx) NewStdlibResolver(logger model.DebugLogger, wrappers ...model.DNSTransportWrapper) model.Resolver {
-	unwrapped := &resolverSystem{
-		t: WrapDNSTransport(&dnsOverGetaddrinfoTransport{provider: n.tproxyNilSafeProvider()}, wrappers...),
-	}
-	return WrapResolver(logger, unwrapped)
-}
-
-// NewDialerWithResolver is like [netxlite.NewDialerWithResolver] but the constructed [model.Dialer]
-// uses the [UnderlyingNetwork] configured inside the [Net] structure.
-func (n *Netx) NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...model.DialerWrapper) model.Dialer {
-	return WrapDialer(dl, r, &DialerSystem{provider: n.tproxyNilSafeProvider()}, w...)
-}
-
-// NewQUICListener is like [netxlite.NewQUICListener] but the constructed [model.QUICListener]
-// uses the [UnderlyingNetwork] configured inside the [Net] structure.
-func (n *Netx) NewQUICListener() model.QUICListener {
-	return &quicListenerErrWrapper{&quicListenerStdlib{provider: n.tproxyNilSafeProvider()}}
-}
-
-// NewQUICDialerWithResolver is like [netxlite.NewQUICDialerWithResolver] but the constructed
-// [model.QUICDialer] uses the [UnderlyingNetwork] configured inside the [Net] structure.
-func (n *Netx) NewQUICDialerWithResolver(listener model.QUICListener, logger model.DebugLogger,
-	resolver model.Resolver, wrappers ...model.QUICDialerWrapper) (outDialer model.QUICDialer) {
-	baseDialer := &quicDialerQUICGo{
-		QUICListener: listener,
-		provider:     n.tproxyNilSafeProvider(),
-	}
-	return WrapQUICDialer(logger, resolver, baseDialer, wrappers...)
-}
-
-// NewTLSHandshakerStdlib is like [netxlite.NewTLSHandshakerStdlib] but the constructed [model.TLSHandshaker]
-// uses the [UnderlyingNetwork] configured inside the [Net] structure.
-func (n *Netx) NewTLSHandshakerStdlib(logger model.DebugLogger) model.TLSHandshaker {
-	return newTLSHandshakerLogger(&tlsHandshakerConfigurable{provider: n.tproxyNilSafeProvider()}, logger)
-}
-
-// NewHTTPTransportStdlib is like [netxlite.NewHTTPTransportStdlib] but the constructed [model.HTTPTransport]
-// uses the [UnderlyingNetwork] configured inside the [Net] structure.
-func (n *Netx) NewHTTPTransportStdlib(logger model.DebugLogger) model.HTTPTransport {
-	dialer := n.NewDialerWithResolver(logger, n.NewStdlibResolver(logger))
-	tlsDialer := NewTLSDialer(dialer, n.NewTLSHandshakerStdlib(logger))
-	return NewHTTPTransport(logger, dialer, tlsDialer)
-}
-
-// NewHTTP3TransportStdlib is like [netxlite.NewHTTP3TransportStdlib] but the constructed [model.HTTPTransport]
-// uses the [UnderlyingNetwork] configured inside the [Net] structure.
-func (n *Netx) NewHTTP3TransportStdlib(logger model.DebugLogger) model.HTTPTransport {
-	ql := n.NewQUICListener()
-	reso := n.NewStdlibResolver(logger)
-	qd := n.NewQUICDialerWithResolver(ql, logger, reso)
-	return NewHTTP3Transport(logger, qd, nil)
+// ListenTCP creates a new listening TCP socket using the given address.
+func (netx *Netx) ListenTCP(network string, addr *net.TCPAddr) (net.Listener, error) {
+	return netx.MaybeCustomUnderlyingNetwork().Get().ListenTCP(network, addr)
 }

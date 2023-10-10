@@ -12,7 +12,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
 func TestStartIterativeTrace(t *testing.T) {
@@ -49,7 +49,7 @@ func TestStartIterativeTrace(t *testing.T) {
 		if testing.Short() {
 			t.Skip("skip test in short mode")
 		}
-		server := filtering.NewTLSServer(filtering.TLSActionTimeout)
+		server := testingx.MustNewTLSServer(testingx.TLSHandlerTimeout())
 		defer server.Close()
 		th := "tlshandshake://" + server.Endpoint()
 		URL, err := url.Parse(th)
@@ -108,7 +108,7 @@ func TestHandshakeWithTTL(t *testing.T) {
 	})
 
 	t.Run("on failure", func(t *testing.T) {
-		server := filtering.NewTLSServer(filtering.TLSActionReset)
+		server := testingx.MustNewTLSServer(testingx.TLSHandlerReset())
 		defer server.Close()
 		th := "tlshandshake://" + server.Endpoint()
 		URL, err := url.Parse(th)

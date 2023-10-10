@@ -25,6 +25,10 @@ func TestListenerLoggerWorks(t *testing.T) {
 }
 
 func TestListenerWorksWithFakeDialer(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	// start the fake PT
 	fd := &FakeDialer{Address: "google.com:80"}
 	lst := &Listener{PTDialer: fd}

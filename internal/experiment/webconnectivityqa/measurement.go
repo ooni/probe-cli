@@ -27,7 +27,7 @@ func newMeasurement(input string, measurer model.ExperimentMeasurer, t0 time.Tim
 		ProbeNetworkName:          "Consortium GARR",
 		ReportID:                  "",
 		ResolverASN:               "AS137",
-		ResolverIP:                netemx.QAEnvDefaultISPResolverAddress,
+		ResolverIP:                netemx.ISPResolverAddress,
 		ResolverNetworkName:       "Consortium GARR",
 		SoftwareName:              "ooniprobe",
 		SoftwareVersion:           version.Version,

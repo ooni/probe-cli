@@ -5,6 +5,9 @@ import "github.com/ooni/probe-cli/v3/internal/netemx"
 const (
 	// TestCaseFlagNoV04 means that this test case should not be run by v0.4
 	TestCaseFlagNoV04 = 1 << iota
+
+	// TestCaseFlagNoLTE means that this test case should not be run by LTE
+	TestCaseFlagNoLTE
 )
 
 // TestCase is a test case we could run with this package.
@@ -17,6 +20,9 @@ type TestCase struct {
 
 	// Input is the input URL
 	Input string
+
+	// LongTest indicates that this is a long test.
+	LongTest bool
 
 	// Configure is an OPTIONAL hook for further configuring the scenario.
 	Configure func(env *netemx.QAEnv)
@@ -31,11 +37,42 @@ type TestCase struct {
 // AllTestCases returns all the defined test cases.
 func AllTestCases() []*TestCase {
 	return []*TestCase{
-		dnsBlockingAndroidDNSCacheNoData(),
+		badSSLWithUnknownAuthorityWithConsistentDNS(),
+		badSSLWithExpiredCertificate(),
+		badSSLWithWrongServerName(),
+		badSSLWithUnknownAuthorityWithInconsistentDNS(),
 
-		tlsBlockingConnectionReset(),
+		controlFailureWithSuccessfulHTTPWebsite(),
+		controlFailureWithSuccessfulHTTPSWebsite(),
+
+		dnsBlockingAndroidDNSCacheNoData(),
+		dnsBlockingNXDOMAIN(),
+
+		dnsHijackingToProxyWithHTTPURL(),
+		dnsHijackingToProxyWithHTTPSURL(),
+
+		httpDiffWithConsistentDNS(),
+		httpDiffWithInconsistentDNS(),
+
+		redirectWithConsistentDNSAndThenConnectionRefusedForHTTP(),
+		redirectWithConsistentDNSAndThenConnectionRefusedForHTTPS(),
+		redirectWithConsistentDNSAndThenConnectionResetForHTTP(),
+		redirectWithConsistentDNSAndThenConnectionResetForHTTPS(),
+		redirectWithConsistentDNSAndThenNXDOMAIN(),
+		redirectWithConsistentDNSAndThenEOFForHTTP(),
+		redirectWithConsistentDNSAndThenEOFForHTTPS(),
+		redirectWithConsistentDNSAndThenTimeoutForHTTP(),
+		redirectWithConsistentDNSAndThenTimeoutForHTTPS(),
 
 		sucessWithHTTP(),
 		sucessWithHTTPS(),
+
+		tcpBlockingConnectTimeout(),
+		tcpBlockingConnectionRefusedWithInconsistentDNS(),
+
+		tlsBlockingConnectionResetWithConsistentDNS(),
+		tlsBlockingConnectionResetWithInconsistentDNS(),
+
+		websiteDownNXDOMAIN(),
 	}
 }

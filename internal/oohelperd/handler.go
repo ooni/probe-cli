@@ -72,6 +72,8 @@ func NewHandler() *Handler {
 		Measure:           measure,
 
 		NewHTTPClient: func(logger model.Logger) model.HTTPClient {
+			// TODO(https://github.com/ooni/probe/issues/2534): the NewHTTPTransportWithResolver has QUIRKS and
+			// we should evaluate whether we can avoid using it here
 			return newHTTPClientWithTransportFactory(
 				logger,
 				netxlite.NewHTTPTransportWithResolver,
@@ -90,7 +92,7 @@ func NewHandler() *Handler {
 		},
 		NewQUICDialer: func(logger model.Logger) model.QUICDialer {
 			return netxlite.NewQUICDialerWithoutResolver(
-				netxlite.NewQUICListener(),
+				netxlite.NewUDPListener(),
 				logger,
 			)
 		},

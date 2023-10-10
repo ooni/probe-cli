@@ -108,6 +108,10 @@ func TestUTLSConn(t *testing.T) {
 }
 
 func Test_newConnUTLSWithHelloID(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	tests := []struct {
 		name        string
 		config      *tls.Config

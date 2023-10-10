@@ -7,8 +7,8 @@ import (
 	"sync/atomic"
 	"testing"
 
-	sflib "git.torproject.org/pluggable-transports/snowflake.git/v2/client/lib"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
+	sflib "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2/client/lib"
 )
 
 func TestSnowflakeMethodDomainFronting(t *testing.T) {
@@ -20,7 +20,7 @@ func TestSnowflakeMethodDomainFronting(t *testing.T) {
 	if meth.BrokerURL() != brokerURL {
 		t.Fatal("invalid broker URL")
 	}
-	const frontDomain = "cdn.sstatic.net"
+	const frontDomain = "foursquare.com"
 	if meth.FrontDomain() != frontDomain {
 		t.Fatal("invalid front domain")
 	}
