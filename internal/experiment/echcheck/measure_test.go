@@ -53,6 +53,7 @@ func TestMeasurerMeasureWithCancelledContext(t *testing.T) {
 			Measurement: &model.Measurement{},
 			Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
 		}
+
 		// run measurement
 		err := measurer.Run(ctx, args)
 		if err == nil {

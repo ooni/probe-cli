@@ -9,6 +9,6 @@ func (n ECHCheck) Run(ctl *Controller) error {
 	if err != nil {
 		return err
 	}
-	// providing empty input prompts the experiment to use the default URL https://example.org
+	// providing empty input causes the experiment to use the default URL
 	return ctl.Run(builder, []string{})
 }
