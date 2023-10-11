@@ -16,25 +16,28 @@ import (
 
 const (
 	testName      = "riseupvpn"
-	testVersion   = "0.2.0"
+	testVersion   = "0.3.0"
 	eipServiceURL = "https://api.black.riseup.net:443/3/config/eip-service.json"
 	providerURL   = "https://riseup.net/provider.json"
 	geoServiceURL = "https://api.black.riseup.net:9001/json"
 	tcpConnect    = "tcpconnect://"
 )
 
-// EipService is the main JSON object of eip-service.json.
-type EipService struct {
+// EIPServiceV3 is the main JSON object returned by eip-service.json.
+type EIPServiceV3 struct {
 	Gateways []GatewayV3
+}
+
+// CapabilitiesV3 is a list of transports a gateway supports
+type CapabilitiesV3 struct {
+	Transport []TransportV3
 }
 
 // GatewayV3 describes a gateway.
 type GatewayV3 struct {
-	Capabilities struct {
-		Transport []TransportV3
-	}
-	Host      string
-	IPAddress string `json:"ip_address"`
+	Capabilities CapabilitiesV3
+	Host         string
+	IPAddress    string `json:"ip_address"`
 }
 
 // TransportV3 describes a transport.
@@ -203,7 +206,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 			FailOnHTTPError: true,
 		}},
 	}
-	for entry := range multi.CollectOverall(ctx, inputs, 0, 50, "riseupvpn", callbacks) {
+	for entry := range multi.CollectOverall(ctx, inputs, 0, 20, "riseupvpn", callbacks) {
 		tk := entry.TestKeys
 		testkeys.AddCACertFetchTestKeys(tk)
 		if tk.Failure != nil {
@@ -241,7 +244,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 			FailOnHTTPError: true,
 		}},
 	}
-	for entry := range multi.CollectOverall(ctx, inputs, 1, 50, "riseupvpn", callbacks) {
+	for entry := range multi.CollectOverall(ctx, inputs, 1, 20, "riseupvpn", callbacks) {
 		testkeys.UpdateProviderAPITestKeys(entry)
 	}
 
@@ -251,10 +254,11 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	openvpnEndpoints := generateMultiInputs(gateways, "openvpn")
 	obfs4Endpoints := generateMultiInputs(gateways, "obfs4")
 	overallCount := 1 + len(inputs) + len(openvpnEndpoints) + len(obfs4Endpoints)
+	startCount := 1 + len(inputs)
 
 	// measure openvpn in parallel
 	for entry := range multi.CollectOverall(
-		ctx, openvpnEndpoints, 1+len(inputs), overallCount, "riseupvpn", callbacks) {
+		ctx, openvpnEndpoints, startCount, overallCount, "riseupvpn", callbacks) {
 		testkeys.AddGatewayConnectTestKeys(entry, "openvpn")
 	}
 
@@ -262,8 +266,9 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	// TODO(bassosimone): when urlgetter is able to do obfs4 handshakes, here
 	// can possibly also test for the obfs4 handshake.
 	// See https://github.com/ooni/probe/issues/1463.
+	startCount += len(openvpnEndpoints)
 	for entry := range multi.CollectOverall(
-		ctx, obfs4Endpoints, 1+len(inputs)+len(openvpnEndpoints), overallCount, "riseupvpn", callbacks) {
+		ctx, obfs4Endpoints, startCount, overallCount, "riseupvpn", callbacks) {
 		testkeys.AddGatewayConnectTestKeys(entry, "obfs4")
 	}
 
@@ -303,7 +308,7 @@ func parseGateways(testKeys *TestKeys) []GatewayV3 {
 			// TODO(bassosimone,cyberta): is it reasonable that we discard
 			// the error when the JSON we fetched cannot be parsed?
 			// See https://github.com/ooni/probe/issues/1432
-			eipService, err := DecodeEIP3(string(requestEntry.Response.Body))
+			eipService, err := DecodeEIPServiceV3(string(requestEntry.Response.Body))
 			if err == nil {
 				return eipService.Gateways
 			}
@@ -312,9 +317,9 @@ func parseGateways(testKeys *TestKeys) []GatewayV3 {
 	return nil
 }
 
-// DecodeEIP3 decodes eip-service.json version 3
-func DecodeEIP3(body string) (*EipService, error) {
-	var eip EipService
+// DecodeEIPServiceV3 decodes eip-service.json version 3
+func DecodeEIPServiceV3(body string) (*EIPServiceV3, error) {
+	var eip EIPServiceV3
 	err := json.Unmarshal([]byte(body), &eip)
 	if err != nil {
 		return nil, err
