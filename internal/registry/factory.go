@@ -269,7 +269,7 @@ func NewFactory(name string, kvStore model.KeyValueStore, logger model.Logger) (
 	// Note: check-in flags expire after 24h.
 	//
 	// TODO(https://github.com/ooni/probe/issues/2554): we need to restructure
-	// of we run experiments to make sure check-in flags are always fresh.
+	// how we run experiments to make sure check-in flags are always fresh.
 	if factory.enabledByDefault {
 		return factory, nil // enabled by default
 	}

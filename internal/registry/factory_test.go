@@ -637,7 +637,7 @@ func TestNewFactory(t *testing.T) {
 			t.Log("experimentName:", tc.experimentName)
 
 			// get experiment expectations -- note that here we must canonicalize the
-			// experiment name otherwise we won't find it into the map
+			// experiment name otherwise we won't find it into the map when testing non-canonical names
 			expectations := expectationsMap[CanonicalizeExperimentName(tc.experimentName)]
 			if expectations == nil {
 				t.Fatal("no expectations for", tc.experimentName)
@@ -678,12 +678,12 @@ func TestNewFactory(t *testing.T) {
 				t.Fatal(tc.experimentName, ": expected", expectations.inputPolicy, "got", v)
 			}
 
-			// make sure the interrupted value is the expected one
+			// make sure the interruptible value is the expected one
 			if v := factory.Interruptible(); v != expectations.interruptible {
 				t.Fatal(tc.experimentName, ": expected", expectations.interruptible, "got", v)
 			}
 
-			// make sure we can creare the measurer
+			// make sure we can create the measurer
 			measurer := factory.NewExperimentMeasurer()
 			if measurer == nil {
 				t.Fatal("expected non-nil measurer, got nil")
@@ -724,7 +724,7 @@ func TestNewFactory(t *testing.T) {
 			t.Fatal("expected interruptible to be false")
 		}
 
-		// make sure we can creare the measurer
+		// make sure we can create the measurer
 		measurer := factory.NewExperimentMeasurer()
 		if measurer == nil {
 			t.Fatal("expected non-nil measurer, got nil")
