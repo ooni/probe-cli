@@ -227,10 +227,36 @@ var ErrNoSuchExperiment = errors.New("no such experiment")
 // not enabled by the most recent check-in API call.
 var ErrRequiresForceEnable = errors.New("experiment not enabled by check-in API")
 
-const experimentDisabledByCheckInWarning = `experiment '%s' is not enabled by default and the
-most recent check-in API call did not enable this experiment as well. You can bypass this restriction
-by setting the OONI_FORCE_ENABLE_EXPERIMENT environment variable to the string "1". On Unix like
-systems, you can use 'export OONI_FORCE_ENABLE_EXPERIMENT=1' to set this environment variable.`
+const experimentDisabledByCheckInWarning = `We disabled the '%s' nettest. This usually happens in these cases:
+
+1. we just added the nettest to ooniprobe and we have not enabled it yet;
+
+2. the nettest is flaky and we are working on a fix;
+
+3. you ran Web Connectivity more than 24h ago, hence your check-in cache is stale.
+
+The last case is a known limitation in ooniprobe 3.19 that we will fix in a subsequent
+release of ooniprobe by changing the nettests startup logic.
+
+If you really want to run this nettest, there is a way forward. You need to set the
+OONI_FORCE_ENABLE_EXPERIMENT=1 environment variable. On a Unix like system, use:
+
+    export OONI_FORCE_ENABLE_EXPERIMENT=1
+
+on Windows use:
+
+    set OONI_FORCE_ENABLE_EXPERIMENT=1
+
+Re-running ooniprobe once you have set the environment variable would cause the
+disabled nettest to run. Please, note that we usually have good reasons for disabling
+nettests, including the following reasons:
+
+* making sure that we gradually introduce new nettests to all users by first introducing
+them to a few users and monitoring whether they're working as intended;
+
+* avoid polluting our measurements database with measurements produced by experiments
+that currently produce false positives or other data quality issues.
+`
 
 // OONI_FORCE_ENABLE_EXPERIMENT is the name of the environment variable you should set to "1"
 // to bypass the algorithm preventing disabled by default experiments to be instantiated.

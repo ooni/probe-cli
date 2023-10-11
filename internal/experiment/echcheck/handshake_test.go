@@ -9,6 +9,8 @@ import (
 	"net/url"
 	"testing"
 	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestHandshake(t *testing.T) {
@@ -31,7 +33,7 @@ func TestHandshake(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result := handshakeWithEch(ctx, conn, time.Now(), parsed.Host, "crypto.cloudflare.com")
+	result := handshakeWithEch(ctx, conn, time.Now(), parsed.Host, "crypto.cloudflare.com", model.DiscardLogger)
 	if result == nil {
 		t.Fatal("expected result")
 	}
