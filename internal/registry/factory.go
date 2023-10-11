@@ -246,7 +246,6 @@ func NewFactory(name string, kvStore model.KeyValueStore, logger model.Logger) (
 	// TODO(https://github.com/ooni/probe/issues/2555): perform the actual comparison
 	// and improve the LTE implementation so that we can always use it. See the actual
 	// issue test for additional details on this planned A/B test.
-	name = CanonicalizeExperimentName(name)
 	switch {
 	case name == "web_connectivity" && checkincache.GetFeatureFlag(kvStore, "webconnectivity_0.5"):
 		// use LTE rather than the normal webconnectivity when the
