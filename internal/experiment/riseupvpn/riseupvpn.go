@@ -11,6 +11,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/progress"
 )
 
 const (
@@ -165,8 +166,8 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	// TODO(https://github.com/ooni/probe/issues/2559): solve this problem by serving the
 	// correct CA and the endpoints to probes using check-in v2 (aka richer input).
 
-	nullCallbacks := model.NewPrinterCallbacks(model.DiscardLogger)
-	for entry := range multi.CollectOverall(ctx, inputs, 0, 20, "riseupvpn", nullCallbacks) {
+	callbacksStage1 := progress.NewScaler(callbacks, 0, 0.25)
+	for entry := range multi.Collect(ctx, inputs, "riseupvpn", callbacksStage1) {
 		tk := entry.TestKeys
 		testkeys.AddCACertFetchTestKeys(tk)
 		if tk.Failure != nil {
@@ -203,7 +204,9 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 			FailOnHTTPError: true,
 		}},
 	}
-	for entry := range multi.CollectOverall(ctx, inputs, 1, 20, "riseupvpn", nullCallbacks) {
+
+	callbacksStage2 := progress.NewScaler(callbacks, 0.25, 0.5)
+	for entry := range multi.Collect(ctx, inputs, "riseupvpn", callbacksStage2) {
 		testkeys.UpdateProviderAPITestKeys(entry)
 		tk := entry.TestKeys
 		if tk.Failure != nil {
@@ -216,12 +219,10 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	gateways := parseGateways(testkeys)
 	openvpnEndpoints := generateMultiInputs(gateways, "openvpn")
 	obfs4Endpoints := generateMultiInputs(gateways, "obfs4")
-	overallCount := 1 + len(inputs) + len(openvpnEndpoints) + len(obfs4Endpoints)
-	startCount := 1 + len(inputs)
 
 	// measure openvpn in parallel
-	for entry := range multi.CollectOverall(
-		ctx, openvpnEndpoints, startCount, overallCount, "riseupvpn", callbacks) {
+	callbacksStage3 := progress.NewScaler(callbacks, 0.5, 0.75)
+	for entry := range multi.Collect(ctx, openvpnEndpoints, "riseupvpn", callbacksStage3) {
 		testkeys.AddGatewayConnectTestKeys(entry, "openvpn")
 	}
 
@@ -229,9 +230,8 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	// TODO(bassosimone): when urlgetter is able to do obfs4 handshakes, here
 	// can possibly also test for the obfs4 handshake.
 	// See https://github.com/ooni/probe/issues/1463.
-	startCount += len(openvpnEndpoints)
-	for entry := range multi.CollectOverall(
-		ctx, obfs4Endpoints, startCount, overallCount, "riseupvpn", callbacks) {
+	callbacksStage4 := progress.NewScaler(callbacks, 0.75, 1)
+	for entry := range multi.Collect(ctx, obfs4Endpoints, "riseupvpn", callbacksStage4) {
 		testkeys.AddGatewayConnectTestKeys(entry, "obfs4")
 	}
 
