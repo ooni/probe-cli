@@ -308,7 +308,7 @@ func parseGateways(testKeys *TestKeys) []GatewayV3 {
 			// TODO(bassosimone,cyberta): is it reasonable that we discard
 			// the error when the JSON we fetched cannot be parsed?
 			// See https://github.com/ooni/probe/issues/1432
-			eipService, err := DecodeEIPService3(string(requestEntry.Response.Body))
+			eipService, err := DecodeEIPServiceV3(string(requestEntry.Response.Body))
 			if err == nil {
 				return eipService.Gateways
 			}
@@ -317,8 +317,8 @@ func parseGateways(testKeys *TestKeys) []GatewayV3 {
 	return nil
 }
 
-// DecodeEIPService3 decodes eip-service.json version 3
-func DecodeEIPService3(body string) (*EIPServiceV3, error) {
+// DecodeEIPServiceV3 decodes eip-service.json version 3
+func DecodeEIPServiceV3(body string) (*EIPServiceV3, error) {
 	var eip EIPServiceV3
 	err := json.Unmarshal([]byte(body), &eip)
 	if err != nil {

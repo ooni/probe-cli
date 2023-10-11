@@ -549,7 +549,7 @@ func TestFailureTransport(t *testing.T) {
 }
 
 func TestMissingTransport(t *testing.T) {
-	eipService, err := riseupvpn.DecodeEIPService3(eipservice)
+	eipService, err := riseupvpn.DecodeEIPServiceV3(eipservice)
 	if err != nil {
 		t.Fatal("Preconditions for the test are not met.")
 	}
