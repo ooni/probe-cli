@@ -622,15 +622,6 @@ func TestMissingTransport(t *testing.T) {
 	}
 }
 
-func TestSummaryKeysInvalidType(t *testing.T) {
-	measurement := new(model.Measurement)
-	m := &riseupvpn.Measurer{}
-	_, err := m.GetSummaryKeys(measurement)
-	if err.Error() != "invalid test keys type" {
-		t.Fatal("not the error we expected")
-	}
-}
-
 func generateMockGetter(requestResponse map[string]string, responseStatus map[string]bool) urlgetter.MultiGetter {
 	return func(ctx context.Context, g urlgetter.Getter) (urlgetter.TestKeys, error) {
 		url := g.Target
