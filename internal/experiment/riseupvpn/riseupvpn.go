@@ -172,11 +172,13 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		if tk.Failure != nil {
 			testkeys.CACertStatus = false
 			testkeys.APIFailures = append(testkeys.APIFailures, *tk.Failure)
+			// Note well: returning nil here causes the measurement to be submitted.
 			return nil
 		}
 		if ok := certPool.AppendCertsFromPEM([]byte(tk.HTTPResponseBody)); !ok {
 			testkeys.CACertStatus = false
 			testkeys.APIFailures = append(testkeys.APIFailures, "invalid_ca")
+			// Note well: returning nil here causes the measurement to be submitted.
 			return nil
 		}
 	}
@@ -205,6 +207,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		testkeys.UpdateProviderAPITestKeys(entry)
 		tk := entry.TestKeys
 		if tk.Failure != nil {
+			// Note well: returning nil here causes the measurement to be submitted.
 			return nil
 		}
 	}
@@ -231,6 +234,8 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		ctx, obfs4Endpoints, startCount, overallCount, "riseupvpn", callbacks) {
 		testkeys.AddGatewayConnectTestKeys(entry, "obfs4")
 	}
+
+	// Note well: returning nil here causes the measurement to be submitted.
 	return nil
 }
 
