@@ -23,8 +23,8 @@ const (
 	tcpConnect    = "tcpconnect://"
 )
 
-// EipServiceV3 is the main JSON object of eip-service.json.
-type EipServiceV3 struct {
+// EIPServiceV3 is the main JSON object returned by eip-service.json.
+type EIPServiceV3 struct {
 	Gateways []GatewayV3
 }
 
@@ -38,7 +38,6 @@ type GatewayV3 struct {
 	Capabilities CapabilitiesV3
 	Host         string
 	IPAddress    string `json:"ip_address"`
-	Location     string `json:"location"`
 }
 
 // TransportV3 describes a transport.
@@ -204,7 +203,6 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 			NoTLSVerify:     !testkeys.CACertStatus,
 		}},
 	}
-
 	for entry := range multi.CollectOverall(ctx, inputs, 1, 20, "riseupvpn", callbacks) {
 		testkeys.UpdateProviderAPITestKeys(entry)
 	}
@@ -238,6 +236,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	// TODO(bassosimone): when urlgetter is able to do obfs4 handshakes, here
 	// can possibly also test for the obfs4 handshake.
 	// See https://github.com/ooni/probe/issues/1463.
+	startCount += len(openvpnEndpoints)
 	for entry := range multi.CollectOverall(
 		ctx, obfs4Endpoints, startCount, overallCount, "riseupvpn", callbacks) {
 		testkeys.AddGatewayConnectTestKeys(entry, "obfs4")
@@ -282,7 +281,7 @@ func parseGateways(testKeys *TestKeys) []GatewayV3 {
 			// TODO(bassosimone,cyberta): is it reasonable that we discard
 			// the error when the JSON we fetched cannot be parsed?
 			// See https://github.com/ooni/probe/issues/1432
-			eipService, err := DecodeEIP3(string(requestEntry.Response.Body))
+			eipService, err := DecodeEIPServiceV3(string(requestEntry.Response.Body))
 			if err == nil {
 				return eipService.Gateways
 			}
@@ -363,9 +362,9 @@ func (geoService *GeoService) isHealthyGateway(gateway GatewayV3) bool {
 	return false
 }
 
-// DecodeEIP3 decodes eip-service.json version 3
-func DecodeEIP3(body string) (*EipServiceV3, error) {
-	var eip EipServiceV3
+// DecodeEIPServiceV3 decodes eip-service.json version 3
+func DecodeEIPServiceV3(body string) (*EIPServiceV3, error) {
+	var eip EIPServiceV3
 	err := json.Unmarshal([]byte(body), &eip)
 	if err != nil {
 		return nil, err

@@ -497,8 +497,29 @@ func TestFailureGateway1TransportNOK(t *testing.T) {
 	}
 }
 
-func TestIgnoreOverloadedGateways(t *testing.T) {
-	eipService, err := riseupvpn.DecodeEIP3(eipservice)
+func TestFailureTransport(t *testing.T) {
+	measurement := runDefaultMockTest(t, generateDefaultMockGetter(map[string]bool{
+		cacerturl:     true,
+		eipserviceurl: true,
+		providerurl:   true,
+		geoserviceurl: true,
+		openvpnurl1:   false,
+		openvpnurl2:   false,
+		obfs4url1:     false,
+	}))
+	tk := measurement.TestKeys.(*riseupvpn.TestKeys)
+
+	if tk.TransportStatus == nil || tk.TransportStatus["openvpn"] != "blocked" {
+		t.Fatal("invalid TransportStatus: " + fmt.Sprint(tk.TransportStatus))
+	}
+
+	if tk.TransportStatus == nil || tk.TransportStatus["obfs4"] != "blocked" {
+		t.Fatal("invalid TransportStatus: " + fmt.Sprint(tk.TransportStatus))
+	}
+}
+
+func TestMissingTransport(t *testing.T) {
+	eipService, err := riseupvpn.DecodeEIPServiceV3(eipservice)
 	if err != nil {
 		t.Fatal("Preconditions for the test are not met.")
 	}
