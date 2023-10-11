@@ -16,7 +16,8 @@ func init() {
 				*config.(*tor.Config),
 			)
 		},
-		config:      &tor.Config{},
-		inputPolicy: model.InputNone,
+		config:           &tor.Config{},
+		enabledByDefault: true,
+		inputPolicy:      model.InputNone,
 	}
 }

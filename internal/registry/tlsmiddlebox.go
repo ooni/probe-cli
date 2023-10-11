@@ -16,7 +16,8 @@ func init() {
 				*config.(*tlsmiddlebox.Config),
 			)
 		},
-		config:      &tlsmiddlebox.Config{},
-		inputPolicy: model.InputStrictlyRequired,
+		config:           &tlsmiddlebox.Config{},
+		enabledByDefault: true,
+		inputPolicy:      model.InputStrictlyRequired,
 	}
 }

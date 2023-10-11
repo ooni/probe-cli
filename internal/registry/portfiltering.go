@@ -16,8 +16,9 @@ func init() {
 				config.(portfiltering.Config),
 			)
 		},
-		config:        portfiltering.Config{},
-		interruptible: false,
-		inputPolicy:   model.InputNone,
+		config:           portfiltering.Config{},
+		enabledByDefault: true,
+		interruptible:    false,
+		inputPolicy:      model.InputNone,
 	}
 }
