@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
-	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -231,7 +230,6 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		testkeys.AddGatewayConnectTestKeys(entry, "openvpn")
 	}
 
-	startCount += len(openvpnEndpoints)
 	// measure obfs4 in parallel
 	// TODO(bassosimone): when urlgetter is able to do obfs4 handshakes, here
 	// can possibly also test for the obfs4 handshake.
