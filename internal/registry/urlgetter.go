@@ -16,7 +16,8 @@ func init() {
 				*config.(*urlgetter.Config),
 			)
 		},
-		config:      &urlgetter.Config{},
-		inputPolicy: model.InputStrictlyRequired,
+		config:           &urlgetter.Config{},
+		enabledByDefault: true,
+		inputPolicy:      model.InputStrictlyRequired,
 	}
 }

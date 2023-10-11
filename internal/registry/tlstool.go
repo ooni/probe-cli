@@ -16,7 +16,8 @@ func init() {
 				*config.(*tlstool.Config),
 			)
 		},
-		config:      &tlstool.Config{},
-		inputPolicy: model.InputOrQueryBackend,
+		config:           &tlstool.Config{},
+		enabledByDefault: true,
+		inputPolicy:      model.InputOrQueryBackend,
 	}
 }

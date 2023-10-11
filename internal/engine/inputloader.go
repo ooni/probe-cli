@@ -219,6 +219,8 @@ func StaticBareInputForExperiment(name string) ([]string, error) {
 	// Implementation note: we may be called from pkg/oonimkall
 	// with a non-canonical experiment name, so we need to convert
 	// the experiment name to be canonical before proceeding.
+	//
+	// TODO(XXX)
 	switch registry.CanonicalizeExperimentName(name) {
 	case "dnscheck":
 		return dnsCheckDefaultInput, nil

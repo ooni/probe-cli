@@ -16,7 +16,8 @@ func init() {
 				*config.(*run.Config),
 			)
 		},
-		config:      &run.Config{},
-		inputPolicy: model.InputStrictlyRequired,
+		config:           &run.Config{},
+		enabledByDefault: true,
+		inputPolicy:      model.InputStrictlyRequired,
 	}
 }

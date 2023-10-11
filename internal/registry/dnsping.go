@@ -16,7 +16,8 @@ func init() {
 				*config.(*dnsping.Config),
 			)
 		},
-		config:      &dnsping.Config{},
-		inputPolicy: model.InputOrStaticDefault,
+		config:           &dnsping.Config{},
+		enabledByDefault: true,
+		inputPolicy:      model.InputOrStaticDefault,
 	}
 }
