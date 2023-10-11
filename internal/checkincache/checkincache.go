@@ -54,10 +54,15 @@ func GetFeatureFlag(kvStore model.KeyValueStore, name string) bool {
 	return wrapper.Flags[name] // works even if map is nil
 }
 
+// ExperimentEnabledKey returns the [model.KeyValueStore] key to use to
+// know whether a disabled experiment has been enabled via check-in.
+func ExperimentEnabledKey(name string) string {
+	return fmt.Sprintf("%s_enabled", name)
+}
+
 // ExperimentEnabled returns whether a given experiment has been enabled by a previous
 // execution of check-in. We use this feature to disable experimental experiments that may
 // start misbehaving thus requiring us to issue an emergency release.
 func ExperimentEnabled(kvStore model.KeyValueStore, name string) bool {
-	key := fmt.Sprintf("%s_enabled", name)
-	return GetFeatureFlag(kvStore, key)
+	return GetFeatureFlag(kvStore, ExperimentEnabledKey(name))
 }

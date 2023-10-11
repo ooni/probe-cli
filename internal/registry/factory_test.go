@@ -606,7 +606,7 @@ func TestNewFactory(t *testing.T) {
 		checkincache.Store(store, &model.OOAPICheckInResult{
 			Conf: model.OOAPICheckInResultConfig{
 				Features: map[string]bool{
-					fmt.Sprintf("%s_enabled", name): true,
+					checkincache.ExperimentEnabledKey(name): true,
 				},
 			},
 		})
@@ -674,13 +674,13 @@ func TestNewFactory(t *testing.T) {
 			}
 
 			// make sure the input policy is the expected one
-			if factory.inputPolicy != expectations.inputPolicy {
-				t.Fatal(tc.experimentName, ": expected", expectations.inputPolicy, "got", factory.inputPolicy)
+			if v := factory.InputPolicy(); v != expectations.inputPolicy {
+				t.Fatal(tc.experimentName, ": expected", expectations.inputPolicy, "got", v)
 			}
 
 			// make sure the interrupted value is the expected one
-			if factory.interruptible != expectations.interruptible {
-				t.Fatal(tc.experimentName, ": expected", expectations.interruptible, "got", factory.interruptible)
+			if v := factory.Interruptible(); v != expectations.interruptible {
+				t.Fatal(tc.experimentName, ": expected", expectations.interruptible, "got", v)
 			}
 
 			// make sure we can creare the measurer
@@ -715,12 +715,12 @@ func TestNewFactory(t *testing.T) {
 		}
 
 		// make sure the input policy is the expected one
-		if factory.inputPolicy != model.InputOrQueryBackend {
+		if factory.InputPolicy() != model.InputOrQueryBackend {
 			t.Fatal("expected inputPolicy to be InputOrQueryBackend")
 		}
 
 		// make sure the interrupted value is the expected one
-		if factory.interruptible {
+		if factory.Interruptible() {
 			t.Fatal("expected interruptible to be false")
 		}
 
@@ -733,6 +733,18 @@ func TestNewFactory(t *testing.T) {
 		// make sure the type we're creating is the correct one
 		if _, good := measurer.(*webconnectivitylte.Measurer); !good {
 			t.Fatalf("expected to see an instance of *webconnectivitylte.Measurer, got %T", measurer)
+		}
+	})
+
+	// add a test case for a nonexistent experiment
+	t.Run("we correctly return an error for a nonexistent experiment", func(t *testing.T) {
+		// the empty string is a nonexistent experiment
+		factory, err := NewFactory("", &kvstore.Memory{}, model.DiscardLogger)
+		if !errors.Is(err, ErrNoSuchExperiment) {
+			t.Fatal("unexpected err", err)
+		}
+		if factory != nil {
+			t.Fatal("expected nil factory here")
 		}
 	})
 }
