@@ -71,6 +71,10 @@ func TestNewReportTemplate(t *testing.T) {
 }
 
 func TestReportLifecycle(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	ctx := context.Background()
 	template := model.OOAPIReportTemplate{
 		DataFormatVersion: model.OOAPIReportDefaultDataFormatVersion,
@@ -101,6 +105,10 @@ func TestReportLifecycle(t *testing.T) {
 }
 
 func TestReportLifecycleWrongExperiment(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	ctx := context.Background()
 	template := model.OOAPIReportTemplate{
 		DataFormatVersion: model.OOAPIReportDefaultDataFormatVersion,
@@ -355,6 +363,10 @@ func TestOpenReportCancelledContext(t *testing.T) {
 }
 
 func TestSubmitMeasurementCancelledContext(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	template := model.OOAPIReportTemplate{

@@ -47,6 +47,10 @@ func TestMaybeRegister(t *testing.T) {
 }
 
 func TestMaybeRegisterIdempotent(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	clnt := newclient()
 	ctx := context.Background()
 	metadata := MetadataFixture()

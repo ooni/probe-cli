@@ -12,6 +12,10 @@ import (
 )
 
 func TestIPLookupWorksUsingcloudlflare(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	ip, err := cloudflareIPLookup(
 		context.Background(),
 		http.DefaultClient,

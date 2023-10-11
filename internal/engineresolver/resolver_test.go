@@ -34,7 +34,7 @@ func TestAddressWorks(t *testing.T) {
 	}
 }
 
-func TestTypicalUsageWithFailure(t *testing.T) {
+func TestResolverLookupHostUsingACanceledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately
 	reso := &Resolver{KVStore: &kvstore.Memory{}}
@@ -47,6 +47,7 @@ func TestTypicalUsageWithFailure(t *testing.T) {
 		t.Fatal("cannot convert error")
 	}
 	for _, child := range me.Children {
+
 		// net.DNSError does not include the underlying error
 		// but just a string representing the error. This
 		// means that we need to go down hunting what's the
@@ -54,7 +55,7 @@ func TestTypicalUsageWithFailure(t *testing.T) {
 		{
 			var ew *errWrapper
 			if !errors.As(child, &ew) {
-				t.Fatal("not an instance of errwrapper")
+				t.Fatalf("not an instance of errwrapper: '%v' [%T]", child, child)
 			}
 			var de *net.DNSError
 			if errors.As(ew, &de) {
@@ -64,6 +65,7 @@ func TestTypicalUsageWithFailure(t *testing.T) {
 				continue
 			}
 		}
+
 		// otherwise just unwrap and check whether it's
 		// a real context.Canceled error.
 		if !errors.Is(child, context.Canceled) {
@@ -73,9 +75,22 @@ func TestTypicalUsageWithFailure(t *testing.T) {
 	if addrs != nil {
 		t.Fatal("expected nil here")
 	}
-	if len(reso.res) < 1 {
-		t.Fatal("expected to see some resolvers here")
+
+	// Since https://github.com/ooni/probe-cli/pull/1351 we avoid
+	// constructing any resolver if we start running with a canceled context
+	// because of https://github.com/ooni/probe/issues/2544.
+	//
+	// In other words, as long as we see zero here we can be confident
+	// that we're not creating a resolver if the context has been canceled,
+	// which should imply we're not changing its score.
+	//
+	// Heavier refactoring of this package should probably more aggressively
+	// ensure that we're not changing the score, but for now this test
+	// is sufficient given that we are committing an hotfix.
+	if len(reso.res) != 0 {
+		t.Fatal("expected to see no resolvers here")
 	}
+
 	reso.CloseIdleConnections()
 	if len(reso.res) != 0 {
 		t.Fatal("expected to see no resolvers after CloseIdleConnections")

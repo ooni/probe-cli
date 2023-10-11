@@ -16,7 +16,8 @@ func init() {
 				*config.(*vanillator.Config),
 			)
 		},
-		config:      &vanillator.Config{},
-		inputPolicy: model.InputNone,
+		config:           &vanillator.Config{},
+		enabledByDefault: true,
+		inputPolicy:      model.InputNone,
 	}
 }

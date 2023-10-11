@@ -95,6 +95,7 @@ func TestMeasurementSuccessRealWorld(t *testing.T) {
 		// this test uses the real internet so we want to skip this in short mode
 		t.Skip("skip test in short mode")
 	}
+
 	// create measurer
 	measurer := NewExperimentMeasurer(Config{})
 	msrmnt := &model.Measurement{}
@@ -103,11 +104,14 @@ func TestMeasurementSuccessRealWorld(t *testing.T) {
 		Measurement: msrmnt,
 		Session:     &mocks.Session{MockLogger: func() model.Logger { return model.DiscardLogger }},
 	}
+
 	// run measurement
 	err := measurer.Run(context.Background(), args)
 	if err != nil {
 		t.Fatal("unexpected error: ", err)
 	}
+
+	// check results
 	summary, err := measurer.GetSummaryKeys(&model.Measurement{})
 	if err != nil {
 		t.Fatal("unexpected error: ", err)

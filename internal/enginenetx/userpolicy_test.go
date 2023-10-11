@@ -57,7 +57,7 @@ func TestUserPolicy(t *testing.T) {
 			name:           "with empty JSON",
 			key:            userPolicyKey,
 			input:          []byte(`{}`),
-			expectErr:      "httpsdialer.conf: wrong user policy version: expected=3 got=0",
+			expectErr:      "bridges.conf: wrong user policy version: expected=3 got=0",
 			expectedPolicy: nil,
 		}, {
 			name: "with real serialized policy",

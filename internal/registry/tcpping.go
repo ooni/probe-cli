@@ -16,7 +16,8 @@ func init() {
 				*config.(*tcpping.Config),
 			)
 		},
-		config:      &tcpping.Config{},
-		inputPolicy: model.InputStrictlyRequired,
+		config:           &tcpping.Config{},
+		enabledByDefault: true,
+		inputPolicy:      model.InputStrictlyRequired,
 	}
 }

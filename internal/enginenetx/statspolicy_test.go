@@ -19,7 +19,7 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 	// prepare the content of the stats
 	twentyMinutesAgo := time.Now().Add(-20 * time.Minute)
 
-	const beaconAddress = netemx.AddressApiOONIIo
+	const bridgeAddress = netemx.AddressApiOONIIo
 
 	expectTacticsStats := []*statsTactic{{
 		CountStarted:               5,
@@ -34,7 +34,7 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 		HistoTLSVerificationError:  map[string]int64{},
 		LastUpdated:                twentyMinutesAgo,
 		Tactic: &httpsDialerTactic{
-			Address:        beaconAddress,
+			Address:        bridgeAddress,
 			InitialDelay:   0,
 			Port:           "443",
 			SNI:            "www.repubblica.it",
@@ -53,7 +53,7 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 		HistoTLSVerificationError:  map[string]int64{},
 		LastUpdated:                twentyMinutesAgo,
 		Tactic: &httpsDialerTactic{
-			Address:        beaconAddress,
+			Address:        bridgeAddress,
 			InitialDelay:   0,
 			Port:           "443",
 			SNI:            "www.kernel.org",
@@ -72,7 +72,7 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 		HistoTLSVerificationError:  map[string]int64{},
 		LastUpdated:                twentyMinutesAgo,
 		Tactic: &httpsDialerTactic{
-			Address:        beaconAddress,
+			Address:        bridgeAddress,
 			InitialDelay:   0,
 			Port:           "443",
 			SNI:            "theconversation.com",
@@ -104,7 +104,7 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 		HistoTLSVerificationError:  map[string]int64{},
 		LastUpdated:                time.Time{}, // the zero time should exclude this one
 		Tactic: &httpsDialerTactic{
-			Address:        beaconAddress,
+			Address:        bridgeAddress,
 			InitialDelay:   0,
 			Port:           "443",
 			SNI:            "ilpost.it",
@@ -151,7 +151,7 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 						switch domain {
 						case "api.ooni.io":
-							return []string{beaconAddress}, nil
+							return []string{bridgeAddress}, nil
 						default:
 							return nil, netxlite.ErrOODNSNoSuchHost
 						}
@@ -182,7 +182,7 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 
 		// extend the expected list to include DNS results
 		expect = append(expect, &httpsDialerTactic{
-			Address:        beaconAddress,
+			Address:        bridgeAddress,
 			InitialDelay:   2 * time.Second,
 			Port:           "443",
 			SNI:            "api.ooni.io",
@@ -216,7 +216,7 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 						switch domain {
 						case "api.ooni.io":
 							// Twice so we try to cause duplicate entries also with the DNS policy
-							return []string{beaconAddress, beaconAddress}, nil
+							return []string{bridgeAddress, bridgeAddress}, nil
 						default:
 							return nil, netxlite.ErrOODNSNoSuchHost
 						}
@@ -247,7 +247,7 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 
 		// extend the expected list to include DNS results
 		expect = append(expect, &httpsDialerTactic{
-			Address:        beaconAddress,
+			Address:        bridgeAddress,
 			InitialDelay:   2 * time.Second,
 			Port:           "443",
 			SNI:            "api.ooni.io",

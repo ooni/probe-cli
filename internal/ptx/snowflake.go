@@ -5,8 +5,8 @@ import (
 	"errors"
 	"net"
 
-	sflib "git.torproject.org/pluggable-transports/snowflake.git/v2/client/lib"
 	"github.com/ooni/probe-cli/v3/internal/stuninput"
+	sflib "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2/client/lib"
 )
 
 // SnowflakeRendezvousMethod is the method which with we perform the rendezvous.
@@ -45,7 +45,7 @@ func (d *snowflakeRendezvousMethodDomainFronting) BrokerURL() string {
 }
 
 func (d *snowflakeRendezvousMethodDomainFronting) FrontDomain() string {
-	return "cdn.sstatic.net"
+	return "foursquare.com"
 }
 
 // NewSnowflakeRendezvousMethodAMP is a rendezvous method that

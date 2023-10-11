@@ -2,7 +2,7 @@ package enginenetx
 
 //
 // user policy - the possibility of loading a user policy from a JSON
-// document named `httpsdialer.conf` in $OONI_HOME/engine that contains
+// document named `bridges.conf` in $OONI_HOME/engine that contains
 // a specific policy for TLS dialing for specific endpoints.
 //
 // This policy helps a lot with exploration and experimentation.
@@ -32,7 +32,7 @@ type userPolicy struct {
 }
 
 // userPolicyKey is the kvstore key used to retrieve the user policy.
-const userPolicyKey = "httpsdialer.conf"
+const userPolicyKey = "bridges.conf"
 
 // errUserPolicyWrongVersion means that the user policy document has the wrong version number.
 var errUserPolicyWrongVersion = errors.New("wrong user policy version")

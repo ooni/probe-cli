@@ -20,7 +20,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	if measurer.ExperimentName() != "quicping" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.1.0" {
+	if measurer.ExperimentVersion() != "0.1.1" {
 		t.Fatal("unexpected version")
 	}
 }
@@ -123,6 +123,10 @@ func TestSuccess(t *testing.T) {
 }
 
 func TestWithCancelledContext(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	measurer := NewExperimentMeasurer(Config{})
 	measurement := new(model.Measurement)
 	measurement.Input = model.MeasurementTarget("google.com")
@@ -145,6 +149,10 @@ func TestWithCancelledContext(t *testing.T) {
 }
 
 func TestListenFails(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	expected := errors.New("expected")
 	measurer := NewExperimentMeasurer(Config{
 		netListenUDP: func(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {

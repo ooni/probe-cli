@@ -16,7 +16,8 @@ func init() {
 				*config.(*hhfm.Config),
 			)
 		},
-		config:      &hhfm.Config{},
-		inputPolicy: model.InputNone,
+		config:           &hhfm.Config{},
+		enabledByDefault: true,
+		inputPolicy:      model.InputNone,
 	}
 }

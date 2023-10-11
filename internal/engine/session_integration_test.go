@@ -492,6 +492,10 @@ func TestNewOrchestraClientProbeServicesNewClientFailure(t *testing.T) {
 }
 
 func TestSessionNewSubmitterReturnsNonNilSubmitter(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	sess := newSessionForTesting(t)
 	subm, err := sess.NewSubmitter(context.Background())
 	if err != nil {

@@ -9,6 +9,10 @@ import (
 )
 
 func TestLookupResolverIPSuccess(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	rlc := resolverLookupClient{
 		Logger: model.DiscardLogger,
 	}
