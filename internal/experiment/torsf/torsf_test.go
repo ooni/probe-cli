@@ -25,7 +25,7 @@ func TestExperimentNameAndVersion(t *testing.T) {
 	if m.ExperimentName() != "torsf" {
 		t.Fatal("invalid experiment name")
 	}
-	if m.ExperimentVersion() != "0.4.0" {
+	if m.ExperimentVersion() != "0.5.0" {
 		t.Fatal("invalid experiment version")
 	}
 }
