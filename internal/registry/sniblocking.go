@@ -16,7 +16,8 @@ func init() {
 				*config.(*sniblocking.Config),
 			)
 		},
-		config:      &sniblocking.Config{},
-		inputPolicy: model.InputOrQueryBackend,
+		config:           &sniblocking.Config{},
+		enabledByDefault: true,
+		inputPolicy:      model.InputOrQueryBackend,
 	}
 }

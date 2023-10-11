@@ -18,8 +18,9 @@ func init() {
 				config.(*webconnectivitylte.Config),
 			)
 		},
-		config:        &webconnectivitylte.Config{},
-		interruptible: false,
-		inputPolicy:   model.InputOrQueryBackend,
+		config:           &webconnectivitylte.Config{},
+		enabledByDefault: true,
+		interruptible:    false,
+		inputPolicy:      model.InputOrQueryBackend,
 	}
 }

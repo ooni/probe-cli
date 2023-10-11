@@ -22,7 +22,8 @@ func init() {
 			Message:   "Good day from the example experiment!",
 			SleepTime: int64(time.Second),
 		},
-		interruptible: true,
-		inputPolicy:   model.InputNone,
+		enabledByDefault: true,
+		interruptible:    true,
+		inputPolicy:      model.InputNone,
 	}
 }
