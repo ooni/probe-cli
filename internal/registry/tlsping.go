@@ -16,7 +16,8 @@ func init() {
 				*config.(*tlsping.Config),
 			)
 		},
-		config:      &tlsping.Config{},
-		inputPolicy: model.InputStrictlyRequired,
+		config:           &tlsping.Config{},
+		enabledByDefault: true,
+		inputPolicy:      model.InputStrictlyRequired,
 	}
 }

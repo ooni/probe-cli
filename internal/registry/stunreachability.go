@@ -16,7 +16,8 @@ func init() {
 				*config.(*stunreachability.Config),
 			)
 		},
-		config:      &stunreachability.Config{},
-		inputPolicy: model.InputOrStaticDefault,
+		config:           &stunreachability.Config{},
+		enabledByDefault: true,
+		inputPolicy:      model.InputOrStaticDefault,
 	}
 }

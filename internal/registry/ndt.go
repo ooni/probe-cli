@@ -16,8 +16,9 @@ func init() {
 				*config.(*ndt7.Config),
 			)
 		},
-		config:        &ndt7.Config{},
-		interruptible: true,
-		inputPolicy:   model.InputNone,
+		config:           &ndt7.Config{},
+		enabledByDefault: true,
+		interruptible:    true,
+		inputPolicy:      model.InputNone,
 	}
 }
