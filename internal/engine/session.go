@@ -411,10 +411,12 @@ var ErrExperimentNotEnabled = errors.New("session: experiment not enabled by che
 // there's no such experiment with the given name
 func (s *Session) NewExperimentBuilder(name string) (model.ExperimentBuilder, error) {
 
-	// Handle the experiment where we dynamically chose LTE for some users.
+	// Handle A/B testing where we dynamically choose LTE for some users. The current policy
+	// only relates to a few users to collect data.
 	//
 	// TODO(https://github.com/ooni/probe/issues/2555): perform the actual comparison
-	// and improve the LTE implementation so that we can always use it.
+	// and improve the LTE implementation so that we can always use it. See the actual
+	// issue test for additional details on this planned A/B test.
 	name = registry.CanonicalizeExperimentName(name)
 	switch {
 	case name == "web_connectivity" && checkincache.GetFeatureFlag(s.kvStore, "webconnectivity_0.5"):
@@ -451,6 +453,7 @@ func (s *Session) NewExperimentBuilder(name string) (model.ExperimentBuilder, er
 	if err != nil {
 		return nil, err
 	}
+
 	return eb, nil
 }
 
