@@ -12,7 +12,7 @@ require (
 	github.com/cloudflare/circl v1.3.3
 	github.com/cretz/bine v0.2.0
 	github.com/fatih/color v1.15.0
-	github.com/google/go-cmp v0.5.9
+	github.com/google/go-cmp v0.6.0
 	github.com/google/gopacket v1.1.19
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.3.1
@@ -24,8 +24,8 @@ require (
 	github.com/montanaflynn/stats v0.7.1
 	github.com/ooni/go-libtor v1.1.8
 	github.com/ooni/netem v0.0.0-20230920215742-15f3ffec0107
-	github.com/ooni/oocrypto v0.5.4
-	github.com/ooni/oohttp v0.6.4
+	github.com/ooni/oocrypto v0.5.5
+	github.com/ooni/oohttp v0.6.5
 	github.com/ooni/probe-assets v0.19.0
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/pion/stun v0.6.1
@@ -40,7 +40,7 @@ require (
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib v1.5.0
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2 v2.6.1
 	golang.org/x/crypto v0.14.0
-	golang.org/x/net v0.16.0
+	golang.org/x/net v0.17.0
 	golang.org/x/sys v0.13.0
 )
 
