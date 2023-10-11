@@ -6,7 +6,6 @@ package riseupvpn
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
@@ -333,28 +332,11 @@ func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
 // Note that this structure is part of the ABI contract with ooniprobe
 // therefore we should be careful when changing it.
 type SummaryKeys struct {
-	APIBlocked      bool              `json:"api_blocked"`
-	ValidCACert     bool              `json:"valid_ca_cert"`
-	FailingGateways int               `json:"failing_gateways"`
-	TransportStatus map[string]string `json:"transport_status"`
-	IsAnomaly       bool              `json:"-"`
+	IsAnomaly bool `json:"-"`
 }
 
 // GetSummaryKeys implements model.ExperimentMeasurer.GetSummaryKeys.
 func (m Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, error) {
 	sk := SummaryKeys{IsAnomaly: false}
-	tk, ok := measurement.TestKeys.(*TestKeys)
-	if !ok {
-		return sk, errors.New("invalid test keys type")
-	}
-	sk.APIBlocked = tk.APIStatus != "ok"
-	sk.ValidCACert = tk.CACertStatus
-	sk.FailingGateways = len(tk.FailingGateways)
-	sk.TransportStatus = tk.TransportStatus
-	// Note: the order in the following OR chains matter: TransportStatus
-	// is nil if APIBlocked or !CACertStatus
-	sk.IsAnomaly = (sk.APIBlocked || !tk.CACertStatus ||
-		tk.TransportStatus["openvpn"] == "blocked" ||
-		tk.TransportStatus["obfs4"] == "blocked")
 	return sk, nil
 }
