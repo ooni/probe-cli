@@ -10,6 +10,6 @@ func ExperimentNames() (names []string) {
 	for key := range AllExperiments {
 		names = append(names, key)
 	}
-	sort.Strings(names)
+	sort.Strings(names) // sort by name to always provide predictable output
 	return
 }

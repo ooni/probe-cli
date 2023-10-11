@@ -220,9 +220,11 @@ func StaticBareInputForExperiment(name string) ([]string, error) {
 	// with a non-canonical experiment name, so we need to convert
 	// the experiment name to be canonical before proceeding.
 	//
-	// TODO(https://github.com/ooni/probe/issues/1390)
+	// TODO(https://github.com/ooni/probe/issues/1390): serve DNSCheck
+	// inputs using richer input (aka check-in v2).
 	//
-	// TODO(https://github.com/ooni/probe/issues/2557)
+	// TODO(https://github.com/ooni/probe/issues/2557): server STUNReachability
+	// inputs using richer input (aka check-in v2).
 	switch registry.CanonicalizeExperimentName(name) {
 	case "dnscheck":
 		return dnsCheckDefaultInput, nil

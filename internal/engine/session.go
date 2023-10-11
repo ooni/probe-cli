@@ -400,10 +400,6 @@ var ErrAlreadyUsingProxy = errors.New(
 	"session: cannot create a new tunnel of this kind: we are already using a proxy",
 )
 
-// ErrExperimentNotEnabled indicates that an experiment is not enabled by the check-in API, which
-// typically happens when we know that a given experiment is known to have issues.
-var ErrExperimentNotEnabled = errors.New("session: experiment not enabled by check-in API")
-
 // NewExperimentBuilder returns a new experiment builder
 // for the experiment with the given name, or an error if
 // there's no such experiment with the given name

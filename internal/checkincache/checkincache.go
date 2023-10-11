@@ -26,6 +26,9 @@ type checkInFlagsWrapper struct {
 }
 
 // Store stores the result of the latest check-in in the given key-value store.
+//
+// We store check-in feature flags in a file called checkinflags.state. These flags
+// are valid for 24 hours, after which we consider them stale.
 func Store(kvStore model.KeyValueStore, resp *model.OOAPICheckInResult) error {
 	// store the check-in flags in the key-value store
 	wrapper := &checkInFlagsWrapper{
@@ -61,8 +64,8 @@ func ExperimentEnabledKey(name string) string {
 }
 
 // ExperimentEnabled returns whether a given experiment has been enabled by a previous
-// execution of check-in. We use this feature to disable experimental experiments that may
-// start misbehaving thus requiring us to issue an emergency release.
+// execution of check-in. Some experiments are disabled by default for different reasons
+// and we use the check-in API to control whether and when they should be enabled.
 func ExperimentEnabled(kvStore model.KeyValueStore, name string) bool {
 	return GetFeatureFlag(kvStore, ExperimentEnabledKey(name))
 }
