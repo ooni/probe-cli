@@ -232,7 +232,9 @@ most recent check-in API call did not enable this experiment as well. You can by
 by setting the OONI_FORCE_ENABLE_EXPERIMENT environment variable to the string "1". On Unix like
 systems, you can use 'export OONI_FORCE_ENABLE_EXPERIMENT=1' to set this environment variable.`
 
-const experimentForceEnableEnvVar = "OONI_FORCE_ENABLE_EXPERIMENT"
+// OONI_FORCE_ENABLE_EXPERIMENT is the name of the environment variable you should set to "1"
+// to bypass the algorithm preventing disabled by default experiments to be instantiated.
+const OONI_FORCE_ENABLE_EXPERIMENT = "OONI_FORCE_ENABLE_EXPERIMENT"
 
 // NewFactory creates a new Factory instance.
 func NewFactory(name string, kvStore model.KeyValueStore, logger model.Logger) (*Factory, error) {
@@ -273,7 +275,7 @@ func NewFactory(name string, kvStore model.KeyValueStore, logger model.Logger) (
 	if factory.enabledByDefault {
 		return factory, nil // enabled by default
 	}
-	if os.Getenv(experimentForceEnableEnvVar) == "1" {
+	if os.Getenv(OONI_FORCE_ENABLE_EXPERIMENT) == "1" {
 		return factory, nil // enabled by environment variable
 	}
 	if checkincache.ExperimentEnabled(kvStore, name) {

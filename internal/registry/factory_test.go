@@ -624,14 +624,14 @@ func TestNewFactory(t *testing.T) {
 	for _, tc := range allCases {
 		t.Run(tc.description, func(t *testing.T) {
 			// make sure the bypass environment variable is not set
-			if os.Getenv(experimentForceEnableEnvVar) != "" {
+			if os.Getenv(OONI_FORCE_ENABLE_EXPERIMENT) != "" {
 				t.Fatal("the OONI_FORCE_ENABLE_EXPERIMENT env variable shouldn't be set")
 			}
 
 			// if needed, set the environment variable for the scope of the func
 			if tc.setForceEnableExperiment {
-				os.Setenv(experimentForceEnableEnvVar, "1")
-				defer os.Unsetenv(experimentForceEnableEnvVar)
+				os.Setenv(OONI_FORCE_ENABLE_EXPERIMENT, "1")
+				defer os.Unsetenv(OONI_FORCE_ENABLE_EXPERIMENT)
 			}
 
 			t.Log("experimentName:", tc.experimentName)
