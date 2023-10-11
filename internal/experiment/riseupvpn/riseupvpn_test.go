@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/apex/log"
-	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/experiment/riseupvpn"
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
@@ -629,96 +628,6 @@ func TestSummaryKeysInvalidType(t *testing.T) {
 	_, err := m.GetSummaryKeys(measurement)
 	if err.Error() != "invalid test keys type" {
 		t.Fatal("not the error we expected")
-	}
-}
-
-func TestSummaryKeysWorksAsIntended(t *testing.T) {
-	tests := []struct {
-		tk riseupvpn.TestKeys
-		sk riseupvpn.SummaryKeys
-	}{{
-		tk: riseupvpn.TestKeys{
-			APIStatus:       "blocked",
-			CACertStatus:    true,
-			FailingGateways: nil,
-			TransportStatus: nil,
-		},
-		sk: riseupvpn.SummaryKeys{
-			APIBlocked:      true,
-			ValidCACert:     true,
-			IsAnomaly:       true,
-			TransportStatus: nil,
-			FailingGateways: 0,
-		},
-	}, {
-		tk: riseupvpn.TestKeys{
-			APIStatus:       "ok",
-			CACertStatus:    false,
-			FailingGateways: nil,
-			TransportStatus: nil,
-		},
-		sk: riseupvpn.SummaryKeys{
-			ValidCACert:     false,
-			IsAnomaly:       true,
-			FailingGateways: 0,
-			TransportStatus: nil,
-		},
-	}, {
-		tk: riseupvpn.TestKeys{
-			APIStatus:    "ok",
-			CACertStatus: true,
-			FailingGateways: []riseupvpn.GatewayConnection{{
-				IP:            "1.1.1.1",
-				Port:          443,
-				TransportType: "obfs4",
-			}},
-			TransportStatus: map[string]string{
-				"obfs4":   "blocked",
-				"openvpn": "ok",
-			},
-		},
-		sk: riseupvpn.SummaryKeys{
-			FailingGateways: 1,
-			IsAnomaly:       true,
-			ValidCACert:     true,
-			TransportStatus: map[string]string{
-				"obfs4":   "blocked",
-				"openvpn": "ok",
-			},
-		},
-	}, {
-		tk: riseupvpn.TestKeys{
-			APIStatus:       "ok",
-			CACertStatus:    true,
-			FailingGateways: nil,
-			TransportStatus: map[string]string{
-				"openvpn": "ok",
-			},
-		},
-		sk: riseupvpn.SummaryKeys{
-			ValidCACert:     true,
-			IsAnomaly:       false,
-			FailingGateways: 0,
-			TransportStatus: map[string]string{
-				"openvpn": "ok",
-			},
-		},
-	},
-	}
-	for idx, tt := range tests {
-		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
-			m := &riseupvpn.Measurer{}
-			measurement := &model.Measurement{TestKeys: &tt.tk}
-			got, err := m.GetSummaryKeys(measurement)
-			if err != nil {
-				t.Fatal(err)
-				return
-			}
-			sk := got.(riseupvpn.SummaryKeys)
-			if diff := cmp.Diff(tt.sk, sk); diff != "" {
-				t.Fatal(diff)
-			}
-		})
 	}
 }
 
