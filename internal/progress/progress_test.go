@@ -57,7 +57,7 @@ func TestScaler(t *testing.T) {
 		emit:   []float64{0, 0.2, 0.4, 0.6, 0.8, 1},
 		expect: []float64{0.5, 0.6, 0.7, 0.8, 0.9, 1},
 	}, {
-		name:   "with offset==0.2 and total=0.8",
+		name:   "with offset==0.2 and total=0.7",
 		offset: 0.2,
 		total:  0.7,
 		emit:   []float64{0, 0.2, 0.4, 0.6, 0.8, 1},
