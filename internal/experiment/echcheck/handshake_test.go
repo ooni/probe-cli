@@ -31,7 +31,7 @@ func TestHandshake(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result := handshakeWithEch(ctx, conn, time.Now(), parsed.Host, "example.org")
+	result := handshakeWithEch(ctx, conn, time.Now(), parsed.Host, "crypto.cloudflare.com")
 	if result == nil {
 		t.Fatal("expected result")
 	}
