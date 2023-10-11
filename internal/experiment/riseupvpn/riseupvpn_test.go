@@ -203,7 +203,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	if measurer.ExperimentName() != "riseupvpn" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.2.0" {
+	if measurer.ExperimentVersion() != "0.3.0" {
 		t.Fatal("unexpected version")
 	}
 }
@@ -549,7 +549,7 @@ func TestFailureTransport(t *testing.T) {
 }
 
 func TestMissingTransport(t *testing.T) {
-	eipService, err := riseupvpn.DecodeEIP3(eipservice)
+	eipService, err := riseupvpn.DecodeEIPServiceV3(eipservice)
 	if err != nil {
 		t.Fatal("Preconditions for the test are not met.")
 	}
