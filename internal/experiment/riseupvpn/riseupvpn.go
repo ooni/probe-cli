@@ -6,6 +6,8 @@ package riseupvpn
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
@@ -124,6 +126,9 @@ func (m Measurer) ExperimentVersion() string {
 	return testVersion
 }
 
+// ErrBootstrap indicates that the riseupvpn experiment failed to bootstrap correctly.
+var ErrBootstrap = errors.New("riseupvn: bootstrap failure")
+
 // Run implements ExperimentMeasurer.Run.
 func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	callbacks := args.Callbacks
@@ -155,23 +160,30 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		}},
 	}
 
+	// Q: why fail the experiment if we cannot fetch the CA or the config? Cannot we just
+	// disable certificate verification and fetch the config?
+	//
+	// A: I do not feel comfortable with fetching without verying the certificates since
+	// this means the experiment could be person-in-the-middled and forced to perform TCP
+	// connect to arbitrary hosts, which maybe is harmless but still a bummer.
+	//
+	// TODO(https://github.com/ooni/probe/issues/2559): solve this problem by serving
+	// the correct CA and the testing targets to probes using check-in v2 (aka richer input).
+
 	nullCallbacks := model.NewPrinterCallbacks(model.DiscardLogger)
-	noTLSVerify := true
 	for entry := range multi.CollectOverall(ctx, inputs, 0, 20, "riseupvpn", nullCallbacks) {
 		tk := entry.TestKeys
 		testkeys.AddCACertFetchTestKeys(tk)
 		if tk.Failure != nil {
 			testkeys.CACertStatus = false
 			testkeys.APIFailures = append(testkeys.APIFailures, *tk.Failure)
-			continue
+			return fmt.Errorf("%w: %s", ErrBootstrap, *tk.Failure)
 		}
 		if ok := certPool.AppendCertsFromPEM([]byte(tk.HTTPResponseBody)); !ok {
 			testkeys.CACertStatus = false
 			testkeys.APIFailures = append(testkeys.APIFailures, "invalid_ca")
-			continue
+			return fmt.Errorf("%w: invalid_ca", ErrBootstrap)
 		}
-		// We have a CA so we can verify certificates
-		noTLSVerify = false
 	}
 
 	// Now test the service endpoints using the above-fetched CA
@@ -182,23 +194,24 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 			CertPool:        certPool,
 			Method:          "GET",
 			FailOnHTTPError: true,
-			NoTLSVerify:     noTLSVerify,
 		}},
 		{Target: eipServiceURL, Config: urlgetter.Config{
 			CertPool:        certPool,
 			Method:          "GET",
 			FailOnHTTPError: true,
-			NoTLSVerify:     noTLSVerify,
 		}},
 		{Target: geoServiceURL, Config: urlgetter.Config{
 			CertPool:        certPool,
 			Method:          "GET",
 			FailOnHTTPError: true,
-			NoTLSVerify:     noTLSVerify,
 		}},
 	}
 	for entry := range multi.CollectOverall(ctx, inputs, 1, 20, "riseupvpn", nullCallbacks) {
 		testkeys.UpdateProviderAPITestKeys(entry)
+		tk := entry.TestKeys
+		if tk.Failure != nil {
+			return fmt.Errorf("%w: %s", ErrBootstrap, *tk.Failure)
+		}
 	}
 
 	// test gateways now
@@ -223,7 +236,6 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		ctx, obfs4Endpoints, startCount, overallCount, "riseupvpn", callbacks) {
 		testkeys.AddGatewayConnectTestKeys(entry, "obfs4")
 	}
-
 	return nil
 }
 

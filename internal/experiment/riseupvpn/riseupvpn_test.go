@@ -212,7 +212,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 
 func TestGood(t *testing.T) {
 	// the gateaway openvpnurl2 is filtered out, since it doesn't support additionally obfs4
-	measurement := runDefaultMockTest(t, generateDefaultMockGetter(map[string]bool{
+	measurement, err := runDefaultMockTest(t, generateDefaultMockGetter(map[string]bool{
 		cacerturl:     true,
 		eipserviceurl: true,
 		providerurl:   true,
@@ -222,6 +222,9 @@ func TestGood(t *testing.T) {
 		obfs4url1:     true,
 		obfs4url2:     false,
 	}))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	tk := measurement.TestKeys.(*riseupvpn.TestKeys)
 	if tk.Agent != "" {
@@ -340,17 +343,13 @@ func TestInvalidCaCert(t *testing.T) {
 		Session:     sess,
 	}
 	err := measurer.Run(ctx, args)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tk := measurement.TestKeys.(*riseupvpn.TestKeys)
-	if tk.CACertStatus == true {
-		t.Fatal("unexpected CaCertStatus")
+	if !errors.Is(err, riseupvpn.ErrBootstrap) {
+		t.Fatal("unexpected error", err)
 	}
 }
 
 func TestFailureCaCertFetch(t *testing.T) {
-	measurement := runDefaultMockTest(t, generateDefaultMockGetter(map[string]bool{
+	_, err := runDefaultMockTest(t, generateDefaultMockGetter(map[string]bool{
 		cacerturl:     false,
 		eipserviceurl: true,
 		providerurl:   true,
@@ -359,27 +358,13 @@ func TestFailureCaCertFetch(t *testing.T) {
 		openvpnurl2:   true,
 		obfs4url1:     true,
 	}))
-
-	tk := measurement.TestKeys.(*riseupvpn.TestKeys)
-	if tk.CACertStatus != false {
-		t.Fatal("invalid CACertStatus ")
-	}
-
-	if len(tk.APIFailures) != 1 || tk.APIFailures[0] != io.EOF.Error() {
-		t.Fatal("APIFailures should not be empty", tk.APIFailures)
-	}
-	if len(tk.Requests) == 1 {
-		t.Fatal("Too less requests, expected to run all API requests")
-	}
-	for _, tcpConnect := range tk.TCPConnect {
-		if tcpConnect.IP == openvpnurl1 || tcpConnect.IP == openvpnurl2 || tcpConnect.IP == obfs4url1 || tcpConnect.IP == obfs4url2 {
-			t.Fatal("No gateaway tests should be run if API fails")
-		}
+	if !errors.Is(err, riseupvpn.ErrBootstrap) {
+		t.Fatal("unexpected error", err)
 	}
 }
 
 func TestFailureEipServiceBlocked(t *testing.T) {
-	measurement := runDefaultMockTest(t, generateDefaultMockGetter(map[string]bool{
+	_, err := runDefaultMockTest(t, generateDefaultMockGetter(map[string]bool{
 		cacerturl:     true,
 		eipserviceurl: false,
 		providerurl:   true,
@@ -388,26 +373,13 @@ func TestFailureEipServiceBlocked(t *testing.T) {
 		openvpnurl2:   true,
 		obfs4url1:     true,
 	}))
-	tk := measurement.TestKeys.(*riseupvpn.TestKeys)
-	if tk.CACertStatus != true {
-		t.Fatal("invalid CACertStatus")
-	}
-
-	for _, entry := range tk.Requests {
-		if entry.Request.URL == "https://api.black.riseup.net:443/3/config/eip-service.json" {
-			if entry.Failure == nil {
-				t.Fatal("Failure for " + entry.Request.URL + " should not be null")
-			}
-		}
-	}
-
-	if len(tk.APIFailures) <= 0 {
-		t.Fatal("APIFailures should not be empty")
+	if !errors.Is(err, riseupvpn.ErrBootstrap) {
+		t.Fatal("unexpected error", err)
 	}
 }
 
 func TestFailureProviderUrlBlocked(t *testing.T) {
-	measurement := runDefaultMockTest(t, generateDefaultMockGetter(map[string]bool{
+	_, err := runDefaultMockTest(t, generateDefaultMockGetter(map[string]bool{
 		cacerturl:     true,
 		eipserviceurl: true,
 		providerurl:   false,
@@ -416,27 +388,13 @@ func TestFailureProviderUrlBlocked(t *testing.T) {
 		openvpnurl2:   true,
 		obfs4url1:     true,
 	}))
-	tk := measurement.TestKeys.(*riseupvpn.TestKeys)
-
-	for _, entry := range tk.Requests {
-		if entry.Request.URL == "https://riseup.net/provider.json" {
-			if entry.Failure == nil {
-				t.Fatal("Failure for " + entry.Request.URL + " should not be null")
-			}
-		}
-	}
-
-	if tk.CACertStatus != true {
-		t.Fatal("invalid CACertStatus ")
-	}
-
-	if len(tk.APIFailures) <= 0 {
-		t.Fatal("APIFailures should not be empty")
+	if !errors.Is(err, riseupvpn.ErrBootstrap) {
+		t.Fatal("unexpected error", err)
 	}
 }
 
 func TestFailureGeoIpServiceBlocked(t *testing.T) {
-	measurement := runDefaultMockTest(t, generateDefaultMockGetter(map[string]bool{
+	_, err := runDefaultMockTest(t, generateDefaultMockGetter(map[string]bool{
 		cacerturl:     true,
 		eipserviceurl: true,
 		providerurl:   true,
@@ -445,26 +403,13 @@ func TestFailureGeoIpServiceBlocked(t *testing.T) {
 		openvpnurl2:   true,
 		obfs4url1:     true,
 	}))
-	tk := measurement.TestKeys.(*riseupvpn.TestKeys)
-	if tk.CACertStatus != true {
-		t.Fatal("invalid CACertStatus ")
-	}
-
-	for _, entry := range tk.Requests {
-		if entry.Request.URL == "https://api.black.riseup.net:9001/json" {
-			if entry.Failure == nil {
-				t.Fatal("Failure for " + entry.Request.URL + " should not be null")
-			}
-		}
-	}
-
-	if len(tk.APIFailures) <= 0 {
-		t.Fatal("APIFailures should not be empty")
+	if !errors.Is(err, riseupvpn.ErrBootstrap) {
+		t.Fatal("unexpected error", err)
 	}
 }
 
 func TestFailureGateway1TransportNOK(t *testing.T) {
-	measurement := runDefaultMockTest(t, generateDefaultMockGetter(map[string]bool{
+	measurement, err := runDefaultMockTest(t, generateDefaultMockGetter(map[string]bool{
 		cacerturl:     true,
 		eipserviceurl: true,
 		providerurl:   true,
@@ -474,6 +419,10 @@ func TestFailureGateway1TransportNOK(t *testing.T) {
 		obfs4url1:     true,
 		obfs4url2:     false,
 	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	tk := measurement.TestKeys.(*riseupvpn.TestKeys)
 	if tk.CACertStatus != true {
 		t.Fatal("invalid CACertStatus ")
@@ -579,7 +528,7 @@ func generateDefaultMockGetter(responseStatuses map[string]bool) urlgetter.Multi
 	return generateMockGetter(RequestResponse, responseStatuses)
 }
 
-func runDefaultMockTest(t *testing.T, multiGetter urlgetter.MultiGetter) *model.Measurement {
+func runDefaultMockTest(t *testing.T, multiGetter urlgetter.MultiGetter) (*model.Measurement, error) {
 	measurer := riseupvpn.Measurer{
 		Config: riseupvpn.Config{},
 		Getter: multiGetter,
@@ -592,9 +541,5 @@ func runDefaultMockTest(t *testing.T, multiGetter urlgetter.MultiGetter) *model.
 		Session:     &mocks.Session{MockLogger: func() model.Logger { return log.Log }},
 	}
 	err := measurer.Run(context.Background(), args)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-	return measurement
+	return measurement, err
 }
