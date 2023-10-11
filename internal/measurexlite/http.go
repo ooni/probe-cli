@@ -6,7 +6,6 @@ package measurexlite
 
 import (
 	"net/http"
-	"sort"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -52,7 +51,7 @@ func NewArchivalHTTPRequestResult(index int64, started time.Duration, network, a
 		ALPN:    alpn,
 		Failure: NewFailure(err),
 		Request: model.ArchivalHTTPRequest{
-			Body:            model.ArchivalMaybeBinaryData{},
+			Body:            model.ArchivalScrubbedMaybeBinaryString(""),
 			BodyIsTruncated: false,
 			HeadersList:     newHTTPRequestHeaderList(req),
 			Headers:         newHTTPRequestHeaderMap(req),
@@ -62,7 +61,7 @@ func NewArchivalHTTPRequestResult(index int64, started time.Duration, network, a
 			URL:             httpRequestURL(req),
 		},
 		Response: model.ArchivalHTTPResponse{
-			Body:            httpResponseBody(body),
+			Body:            model.ArchivalScrubbedMaybeBinaryString(body),
 			BodyIsTruncated: httpResponseBodyIsTruncated(body, maxRespBodySize),
 			Code:            httpResponseStatusCode(resp),
 			HeadersList:     newHTTPResponseHeaderList(resp),
@@ -91,31 +90,23 @@ func newHTTPRequestHeaderList(req *http.Request) []model.ArchivalHTTPHeader {
 	if req != nil {
 		m = req.Header
 	}
-	return newHTTPHeaderList(m)
+	return model.ArchivalNewHTTPHeadersList(m)
 }
 
 // newHTTPRequestHeaderMap calls newHTTPHeaderMap with the request headers or
 // return an empty map in case the request is nil.
-func newHTTPRequestHeaderMap(req *http.Request) map[string]model.ArchivalMaybeBinaryData {
+func newHTTPRequestHeaderMap(req *http.Request) map[string]model.ArchivalScrubbedMaybeBinaryString {
 	m := http.Header{}
 	if req != nil {
 		m = req.Header
 	}
-	return newHTTPHeaderMap(m)
+	return model.ArchivalNewHTTPHeadersMap(m)
 }
 
 // httpRequestURL returns the req.URL.String() or an empty string.
 func httpRequestURL(req *http.Request) (out string) {
 	if req != nil && req.URL != nil {
 		out = req.URL.String()
-	}
-	return
-}
-
-// httpResponseBody returns the response body, if possible, or an empty body.
-func httpResponseBody(body []byte) (out model.ArchivalMaybeBinaryData) {
-	if body != nil {
-		out.Value = string(body)
 	}
 	return
 }
@@ -143,17 +134,17 @@ func newHTTPResponseHeaderList(resp *http.Response) (out []model.ArchivalHTTPHea
 	if resp != nil {
 		m = resp.Header
 	}
-	return newHTTPHeaderList(m)
+	return model.ArchivalNewHTTPHeadersList(m)
 }
 
 // newHTTPResponseHeaderMap calls newHTTPHeaderMap with the request headers or
 // return an empty map in case the request is nil.
-func newHTTPResponseHeaderMap(resp *http.Response) (out map[string]model.ArchivalMaybeBinaryData) {
+func newHTTPResponseHeaderMap(resp *http.Response) (out map[string]model.ArchivalScrubbedMaybeBinaryString) {
 	m := http.Header{}
 	if resp != nil {
 		m = resp.Header
 	}
-	return newHTTPHeaderMap(m)
+	return model.ArchivalNewHTTPHeadersMap(m)
 }
 
 // httpResponseLocations returns the locations inside the response (if possible)
@@ -166,44 +157,4 @@ func httpResponseLocations(resp *http.Response) []string {
 		return []string{}
 	}
 	return []string{loc.String()}
-}
-
-// newHTTPHeaderList creates a list representation of HTTP headers
-func newHTTPHeaderList(header http.Header) (out []model.ArchivalHTTPHeader) {
-	out = []model.ArchivalHTTPHeader{}
-	keys := []string{}
-	for key := range header {
-		keys = append(keys, key)
-	}
-
-	// ensure the output is consistent, which helps with testing;
-	// for an example of why we need to sort headers, see
-	// https://github.com/ooni/probe-engine/pull/751/checks?check_run_id=853562310
-	sort.Strings(keys)
-
-	for _, key := range keys {
-		for _, value := range header[key] {
-			out = append(out, model.ArchivalHTTPHeader{
-				Key: key,
-				Value: model.ArchivalMaybeBinaryData{
-					Value: value,
-				},
-			})
-		}
-	}
-	return
-}
-
-// newHTTPHeaderMap creates a map representation of HTTP headers
-func newHTTPHeaderMap(header http.Header) (out map[string]model.ArchivalMaybeBinaryData) {
-	out = make(map[string]model.ArchivalMaybeBinaryData)
-	for key, values := range header {
-		for _, value := range values {
-			out[key] = model.ArchivalMaybeBinaryData{
-				Value: value,
-			}
-			break
-		}
-	}
-	return
 }

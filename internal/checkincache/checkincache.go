@@ -3,6 +3,7 @@ package checkincache
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -25,6 +26,9 @@ type checkInFlagsWrapper struct {
 }
 
 // Store stores the result of the latest check-in in the given key-value store.
+//
+// We store check-in feature flags in a file called checkinflags.state. These flags
+// are valid for 24 hours, after which we consider them stale.
 func Store(kvStore model.KeyValueStore, resp *model.OOAPICheckInResult) error {
 	// store the check-in flags in the key-value store
 	wrapper := &checkInFlagsWrapper{
@@ -51,4 +55,17 @@ func GetFeatureFlag(kvStore model.KeyValueStore, name string) bool {
 		return false // as documented
 	}
 	return wrapper.Flags[name] // works even if map is nil
+}
+
+// ExperimentEnabledKey returns the [model.KeyValueStore] key to use to
+// know whether a disabled experiment has been enabled via check-in.
+func ExperimentEnabledKey(name string) string {
+	return fmt.Sprintf("%s_enabled", name)
+}
+
+// ExperimentEnabled returns whether a given experiment has been enabled by a previous
+// execution of check-in. Some experiments are disabled by default for different reasons
+// and we use the check-in API to control whether and when they should be enabled.
+func ExperimentEnabled(kvStore model.KeyValueStore, name string) bool {
+	return GetFeatureFlag(kvStore, ExperimentEnabledKey(name))
 }

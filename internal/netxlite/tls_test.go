@@ -3,6 +3,7 @@ package netxlite
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"io"
 	"net"
@@ -16,9 +17,10 @@ import (
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
@@ -157,7 +159,7 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 				},
 			}
 			ctx := context.Background()
-			conn, state, err := h.Handshake(ctx, tcpConn, &tls.Config{
+			conn, err := h.Handshake(ctx, tcpConn, &tls.Config{
 				ServerName: "x.org",
 			})
 			if !errors.Is(err, io.EOF) {
@@ -188,9 +190,6 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 			if !times[1].IsZero() {
 				t.Fatal("did not clear timeout on exit")
 			}
-			if !reflect.ValueOf(state).IsZero() {
-				t.Fatal("the returned connection state is not a zero value")
-			}
 		})
 
 		t.Run("with success", func(t *testing.T) {
@@ -216,11 +215,12 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 				MaxVersion:         tls.VersionTLS13,
 				ServerName:         URL.Hostname(),
 			}
-			tlsConn, connState, err := handshaker.Handshake(ctx, conn, config)
+			tlsConn, err := handshaker.Handshake(ctx, conn, config)
 			if err != nil {
 				t.Fatal(err)
 			}
 			defer tlsConn.Close()
+			connState := tlsConn.ConnectionState()
 			if connState.Version != tls.VersionTLS13 {
 				t.Fatal("unexpected TLS version")
 			}
@@ -256,12 +256,9 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 					}
 				},
 			}
-			tlsConn, connState, err := handshaker.Handshake(ctx, conn, config)
+			tlsConn, err := handshaker.Handshake(ctx, conn, config)
 			if !errors.Is(err, expected) {
 				t.Fatal("not the error we expected", err)
-			}
-			if !reflect.ValueOf(connState).IsZero() {
-				t.Fatal("expected zero connState here")
 			}
 			if tlsConn != nil {
 				t.Fatal("expected nil tlsConn here")
@@ -270,6 +267,67 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 				t.Fatal("config.RootCAs should still be nil")
 			}
 			if gotTLSConfig.RootCAs != tproxyDefaultCertPool {
+				t.Fatal("gotTLSConfig.RootCAs has not been correctly set")
+			}
+		})
+
+		t.Run("sets root CA of custom proxy", func(t *testing.T) {
+			srvr := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(444)
+			}))
+			defer srvr.Close()
+
+			expectedPool := x509.NewCertPool()
+			expectedPool.AddCert(srvr.Certificate())
+
+			// TODO(bassosimone): we need a more compact and ergonomic
+			// way of overriding the underlying network
+			proxy := &mocks.UnderlyingNetwork{
+				MockDefaultCertPool: func() *x509.CertPool {
+					return expectedPool
+				},
+			}
+			expected := errors.New("mocked error")
+			var gotTLSConfig *tls.Config
+			handshaker := &tlsHandshakerConfigurable{
+				NewConn: func(conn net.Conn, config *tls.Config) (TLSConn, error) {
+					gotTLSConfig = config
+					return &mocks.TLSConn{
+						MockHandshakeContext: func(ctx context.Context) error {
+							return expected
+						},
+					}, nil
+				},
+				provider: &MaybeCustomUnderlyingNetwork{proxy},
+			}
+			ctx := context.Background()
+			config := &tls.Config{ServerName: "dns.google"}
+			conn := &mocks.Conn{
+				MockSetDeadline: func(t time.Time) error {
+					return nil
+				},
+				MockRemoteAddr: func() net.Addr {
+					return &mocks.Addr{
+						MockString: func() string {
+							return "8.8.8.8:443"
+						},
+						MockNetwork: func() string {
+							return "tcp"
+						},
+					}
+				},
+			}
+			tlsConn, err := handshaker.Handshake(ctx, conn, config)
+			if !errors.Is(err, expected) {
+				t.Fatal("not the error we expected", err)
+			}
+			if tlsConn != nil {
+				t.Fatal("expected nil tlsConn here")
+			}
+			if config.RootCAs != nil {
+				t.Fatal("config.RootCAs should still be nil")
+			}
+			if gotTLSConfig.RootCAs != expectedPool {
 				t.Fatal("gotTLSConfig.RootCAs has not been correctly set")
 			}
 		})
@@ -288,12 +346,9 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 					return nil
 				},
 			}
-			tlsConn, connState, err := handshaker.Handshake(ctx, conn, config)
+			tlsConn, err := handshaker.Handshake(ctx, conn, config)
 			if !errors.Is(err, expected) {
 				t.Fatal("not the error we expected", err)
-			}
-			if !reflect.ValueOf(connState).IsZero() {
-				t.Fatal("expected zero connState here")
 			}
 			if tlsConn != nil {
 				t.Fatal("expected nil tlsConn here")
@@ -317,7 +372,9 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 				startCalled                 bool
 				doneCalled                  bool
 			)
-			server := filtering.NewTLSServer(filtering.TLSActionBlockText)
+			ca := netem.MustNewCA()
+			cert := ca.MustNewTLSCertificate(expectedSNI)
+			server := testingx.MustNewTLSServer(testingx.TLSHandlerHandshakeAndWriteText(cert, testingx.HTTPBlockpage451))
 			defer server.Close()
 			zeroTime := time.Now()
 			deterministicTime := testingx.NewTimeDeterministic(zeroTime)
@@ -351,14 +408,11 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 				InsecureSkipVerify: true,
 				ServerName:         expectedSNI,
 			}
-			tlsConn, connState, err := thx.Handshake(ctx, tcpConn, tlsConfig)
+			tlsConn, err := thx.Handshake(ctx, tcpConn, tlsConfig)
 			if err != nil {
 				t.Fatal(err)
 			}
 			tlsConn.Close()
-			if reflect.ValueOf(connState).IsZero() {
-				t.Fatal("expected nonzero connState")
-			}
 			if !startCalled {
 				t.Fatal("start not called")
 			}
@@ -465,15 +519,12 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 				InsecureSkipVerify: true,
 				ServerName:         expectedSNI,
 			}
-			tlsConn, connState, err := thx.Handshake(ctx, tcpConn, tlsConfig)
+			tlsConn, err := thx.Handshake(ctx, tcpConn, tlsConfig)
 			if !errors.Is(err, io.EOF) {
 				t.Fatal("unexpected err", err)
 			}
 			if tlsConn != nil {
 				t.Fatal("expected nil tlsConn")
-			}
-			if !reflect.ValueOf(connState).IsZero() {
-				t.Fatal("expected zero connState")
 			}
 			if !startCalled {
 				t.Fatal("start not called")
@@ -529,8 +580,8 @@ func TestTLSHandshakerLogger(t *testing.T) {
 			}
 			th := &tlsHandshakerLogger{
 				TLSHandshaker: &mocks.TLSHandshaker{
-					MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
-						return tls.Client(conn, config), tls.ConnectionState{}, nil
+					MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (model.TLSConn, error) {
+						return tls.Client(conn, config), nil
 					},
 				},
 				DebugLogger: lo,
@@ -542,15 +593,12 @@ func TestTLSHandshakerLogger(t *testing.T) {
 			}
 			config := &tls.Config{}
 			ctx := context.Background()
-			tlsConn, connState, err := th.Handshake(ctx, conn, config)
+			tlsConn, err := th.Handshake(ctx, conn, config)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if err := tlsConn.Close(); err != nil {
 				t.Fatal(err)
-			}
-			if !reflect.ValueOf(connState).IsZero() {
-				t.Fatal("expected zero ConnectionState here")
 			}
 			if count != 2 {
 				t.Fatal("invalid count")
@@ -567,8 +615,8 @@ func TestTLSHandshakerLogger(t *testing.T) {
 			expected := errors.New("mocked error")
 			th := &tlsHandshakerLogger{
 				TLSHandshaker: &mocks.TLSHandshaker{
-					MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
-						return nil, tls.ConnectionState{}, expected
+					MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (model.TLSConn, error) {
+						return nil, expected
 					},
 				},
 				DebugLogger: lo,
@@ -580,15 +628,12 @@ func TestTLSHandshakerLogger(t *testing.T) {
 			}
 			config := &tls.Config{}
 			ctx := context.Background()
-			tlsConn, connState, err := th.Handshake(ctx, conn, config)
+			tlsConn, err := th.Handshake(ctx, conn, config)
 			if !errors.Is(err, expected) {
 				t.Fatal("not the error we expected", err)
 			}
 			if tlsConn != nil {
 				t.Fatal("expected nil conn here")
-			}
-			if !reflect.ValueOf(connState).IsZero() {
-				t.Fatal("expected zero ConnectionState here")
 			}
 			if count != 2 {
 				t.Fatal("invalid count")
@@ -646,7 +691,7 @@ func TestTLSDialer(t *testing.T) {
 		t.Run("failure dialing", func(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel() // immediately fail
-			dialer := tlsDialer{Dialer: &DialerSystem{}}
+			dialer := tlsDialer{Dialer: &dialerSystem{}}
 			conn, err := dialer.DialTLSContext(ctx, "tcp", "www.google.com:443")
 			if err == nil || !strings.HasSuffix(err.Error(), "operation was canceled") {
 				t.Fatal("not the error we expected", err)
@@ -702,8 +747,8 @@ func TestTLSDialer(t *testing.T) {
 					}}, nil
 				}},
 				TLSHandshaker: &mocks.TLSHandshaker{
-					MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
-						return tls.Client(conn, config), tls.ConnectionState{}, nil
+					MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (model.TLSConn, error) {
+						return tls.Client(conn, config), nil
 					},
 				},
 			}
@@ -862,6 +907,42 @@ func TestMaybeConnectionState(t *testing.T) {
 		state := tlsMaybeConnectionState(conn, nil)
 		if reflect.ValueOf(state).IsZero() {
 			t.Fatal("expected to see a nonzero connection state")
+		}
+	})
+}
+
+func TestMaybeTLSConnectionState(t *testing.T) {
+	t.Run("when the TLSConn is nil", func(t *testing.T) {
+		expected := tls.ConnectionState{ /* empty */ }
+		got := MaybeTLSConnectionState(nil)
+		if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(tls.ConnectionState{})); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
+	t.Run("when the TLSConn is not nil", func(t *testing.T) {
+		expected := tls.ConnectionState{
+			Version:                     tls.VersionTLS13,
+			HandshakeComplete:           true,
+			DidResume:                   false,
+			CipherSuite:                 tls.TLS_AES_128_GCM_SHA256,
+			NegotiatedProtocol:          "h2",
+			NegotiatedProtocolIsMutual:  true,
+			ServerName:                  "dns.google",
+			PeerCertificates:            []*x509.Certificate{},
+			VerifiedChains:              [][]*x509.Certificate{},
+			SignedCertificateTimestamps: [][]byte{},
+			OCSPResponse:                []byte{},
+			TLSUnique:                   []byte{},
+		}
+		conn := &mocks.TLSConn{
+			MockConnectionState: func() tls.ConnectionState {
+				return expected
+			},
+		}
+		got := MaybeTLSConnectionState(conn)
+		if diff := cmp.Diff(expected, got, cmpopts.IgnoreUnexported(tls.ConnectionState{})); diff != "" {
+			t.Fatal(diff)
 		}
 	})
 }

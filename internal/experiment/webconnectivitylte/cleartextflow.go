@@ -16,6 +16,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -107,7 +108,7 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) error {
 	}()
 
 	// start the operation logger
-	ol := measurexlite.NewOperationLogger(
+	ol := logx.NewOperationLogger(
 		t.Logger, "[#%d] GET http://%s using %s", index, t.HostHeader, t.Address,
 	)
 
@@ -136,6 +137,9 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) error {
 	}
 
 	// create HTTP transport
+	// TODO(https://github.com/ooni/probe/issues/2534): here we're using the QUIRKY netxlite.NewHTTPTransport
+	// function, but we can probably avoid using it, given that this code is
+	// not using tracing and does not care about those quirks.
 	httpTransport := netxlite.NewHTTPTransport(
 		t.Logger,
 		netxlite.NewSingleUseDialer(tcpConn),

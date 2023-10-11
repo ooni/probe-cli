@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
+	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -277,41 +278,13 @@ func parseGateways(testKeys *TestKeys) []GatewayV3 {
 	var geoService *GeoService = nil
 	var scrubbedRequests = []model.ArchivalHTTPRequestResult{}
 	for _, requestEntry := range testKeys.Requests {
-		if requestEntry.Request.URL == eipServiceURL && requestEntry.Response.Code == 200 {
-			var err error = nil
-			eipService, err = DecodeEIP3(requestEntry.Response.Body.Value)
-			if err != nil {
-				testKeys.APIFailure = append(testKeys.APIFailure, "invalid_eipservice_response")
-				return nil
-			}
-		} else if requestEntry.Request.URL == geoServiceURL && requestEntry.Response.Code == 200 {
-			var err error = nil
-			geoService, err = DecodeGeoService(requestEntry.Response.Body.Value)
-			if err != nil {
-				testKeys.APIFailure = append(testKeys.APIFailure, "invalid_geoservice_response")
-			}
-		}
-		requestEntry.Response.Body = model.ArchivalHTTPBody{Value: "[scrubbed]"}
-		scrubbedRequests = append(scrubbedRequests, requestEntry)
-	}
-	testKeys.Requests = scrubbedRequests
-	return filterGateways(eipService, geoService)
-}
-
-// filterGateways selects a subset of available gateways supporting obfs4
-func filterGateways(eipService *EipServiceV3, geoService *GeoService) []GatewayV3 {
-	var result []GatewayV3 = nil
-	if eipService != nil {
-		locations := getLocationsUnderTest(eipService, geoService)
-		for _, gateway := range eipService.Gateways {
-			if !gateway.hasTransport("obfs4") ||
-				!gateway.isLocationUnderTest(locations) ||
-				geoService != nil && !geoService.isHealthyGateway(gateway) {
-				continue
-			}
-			result = append(result, gateway)
-			if len(result) == 3 {
-				return result
+		if requestEntry.Request.URL == eipServiceURL && requestEntry.Failure == nil {
+			// TODO(bassosimone,cyberta): is it reasonable that we discard
+			// the error when the JSON we fetched cannot be parsed?
+			// See https://github.com/ooni/probe/issues/1432
+			eipService, err := DecodeEIP3(string(requestEntry.Response.Body))
+			if err == nil {
+				return eipService.Gateways
 			}
 		}
 	}

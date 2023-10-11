@@ -13,11 +13,11 @@ import (
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/legacy/measurex"
 	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
-	"github.com/ooni/probe-cli/v3/internal/measurex"
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/scrubber"
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
@@ -717,7 +717,7 @@ func TestMaybeScrubbingLogger(t *testing.T) {
 		if out != input {
 			t.Fatal("not the output we expected")
 		}
-		if _, ok := out.(*scrubber.Logger); ok {
+		if _, ok := out.(*logx.ScrubberLogger); ok {
 			t.Fatal("not the output type we expected")
 		}
 	})
@@ -730,7 +730,7 @@ func TestMaybeScrubbingLogger(t *testing.T) {
 		if out == input {
 			t.Fatal("not the output value we expected")
 		}
-		if _, ok := out.(*scrubber.Logger); !ok {
+		if _, ok := out.(*logx.ScrubberLogger); !ok {
 			t.Fatal("not the output type we expected")
 		}
 	})
@@ -815,10 +815,10 @@ func TestTestKeysFillToplevelKeysCoverMissingFields(t *testing.T) {
 	failureString := "eof_error"
 	tk := &TestKeys{
 		Targets: map[string]TargetResults{
-			"foobar":  {Failure: &failureString, TargetProtocol: "dir_port"},
-			"baz":     {TargetProtocol: "dir_port"},
-			"jafar":   {Failure: &failureString, TargetProtocol: "or_port_dirauth"},
-			"jasmine": {TargetProtocol: "or_port_dirauth"},
+			"foobar":    {Failure: &failureString, TargetProtocol: "dir_port"},
+			"baz":       {TargetProtocol: "dir_port"},
+			"ariel":     {Failure: &failureString, TargetProtocol: "or_port_dirauth"},
+			"sebastian": {TargetProtocol: "or_port_dirauth"},
 		},
 	}
 	tk.fillToplevelKeys()

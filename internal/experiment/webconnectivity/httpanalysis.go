@@ -56,7 +56,7 @@ func HTTPBodyLengthChecks(
 	if response.BodyIsTruncated {
 		return
 	}
-	measurement := int64(len(response.Body.Value))
+	measurement := int64(len(response.Body))
 	if measurement <= 0 {
 		return
 	}
@@ -201,7 +201,7 @@ func HTTPTitleMatch(tk urlgetter.TestKeys, ctrl ControlResponse) (out *bool) {
 		return
 	}
 	control := ctrl.HTTPRequest.Title
-	measurementBody := response.Body.Value
+	measurementBody := string(response.Body)
 	measurement := measurexlite.WebGetTitle(measurementBody)
 	if measurement == "" {
 		return

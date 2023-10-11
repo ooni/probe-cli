@@ -59,6 +59,10 @@ func (clnt *FetchTorTargetsHTTPTransport) RoundTrip(req *http.Request) (*http.Re
 }
 
 func TestFetchTorTargetsSetsQueryString(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	clnt := newclient()
 	txp := new(FetchTorTargetsHTTPTransport)
 	clnt.HTTPClient = &http.Client{Transport: txp}

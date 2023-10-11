@@ -367,6 +367,10 @@ func TestPerformanceTestKeys(t *testing.T) {
 }
 
 func TestGetMeasurementJSON(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	tmpfile, err := ioutil.TempFile("", "dbtest")
 	if err != nil {
 		t.Fatal(err)

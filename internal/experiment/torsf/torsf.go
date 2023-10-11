@@ -11,11 +11,11 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
+	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/ptx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/torlogs"
-	"github.com/ooni/probe-cli/v3/internal/tracex"
 	"github.com/ooni/probe-cli/v3/internal/tunnel"
 )
 
@@ -25,7 +25,7 @@ import (
 // We may want to have a single implementation for both nettests in the future.
 
 // testVersion is the experiment version.
-const testVersion = "0.4.0"
+const testVersion = "0.5.0"
 
 // Config contains the experiment config.
 type Config struct {

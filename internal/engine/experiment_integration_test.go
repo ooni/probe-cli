@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/registry"
 )
 
 func TestCreateAll(t *testing.T) {
@@ -21,6 +22,12 @@ func TestCreateAll(t *testing.T) {
 	}
 	sess := newSessionForTesting(t)
 	defer sess.Close()
+
+	// Since https://github.com/ooni/probe-cli/pull/1355, some experiments are disabled
+	// by default and we need an environment variable to instantiate them
+	os.Setenv(registry.OONI_FORCE_ENABLE_EXPERIMENT, "1")
+	defer os.Unsetenv(registry.OONI_FORCE_ENABLE_EXPERIMENT)
+
 	for _, name := range AllExperiments() {
 		builder, err := sess.NewExperimentBuilder(name)
 		if err != nil {

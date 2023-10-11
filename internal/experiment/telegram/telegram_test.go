@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
-	"sync"
 	"testing"
 
 	"github.com/apex/log"
@@ -18,7 +16,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
@@ -279,77 +276,22 @@ func configureDNSWithDefaults(config *netem.DNSConfig) {
 	configureDNSWithAddr(config, telegramWebAddr)
 }
 
-// telegramHTTPServerNetStackHandler is a [netemx.QAEnvNetStackHandler] that serves HTTP requests
-// on the given addr and ports 443 and 80 as required by the telegram nettest
-type telegramHTTPServerNetStackHandler struct {
-	closers []io.Closer
-	mu      sync.Mutex
-}
-
-var _ netemx.QAEnvNetStackHandler = &telegramHTTPServerNetStackHandler{}
-
-// Close implements netemx.QAEnvNetStackHandler.
-func (nsh *telegramHTTPServerNetStackHandler) Close() error {
-	// make the method locked as requested by the documentation
-	defer nsh.mu.Unlock()
-	nsh.mu.Lock()
-
-	// close each of the closers
-	for _, closer := range nsh.closers {
-		_ = closer.Close()
-	}
-
-	// be idempotent
-	nsh.closers = []io.Closer{}
-	return nil
-}
-
-// Listen implements netemx.QAEnvNetStackHandler.
-func (nsh *telegramHTTPServerNetStackHandler) Listen(stack *netem.UNetStack) error {
-	// make the method locked as requested by the documentation
-	defer nsh.mu.Unlock()
-	nsh.mu.Lock()
-
-	// we create an empty mux, which should cause a 404 for each webpage, which seems what
-	// the servers used by telegram DC do as of 2023-07-11
-	mux := http.NewServeMux()
-
-	// listen on port 80
-	nsh.listenPort(stack, mux, 80)
-
-	// listen on port 443
-	nsh.listenPort(stack, mux, 443)
-	return nil
-}
-
-func (nsh *telegramHTTPServerNetStackHandler) listenPort(stack *netem.UNetStack, mux *http.ServeMux, port uint16) {
-	// create the listening address
-	ipAddr := net.ParseIP(stack.IPAddress())
-	runtimex.Assert(ipAddr != nil, "expected valid IP address")
-	addr := &net.TCPAddr{IP: ipAddr, Port: int(port)}
-	listener := runtimex.Try1(stack.ListenTCP("tcp", addr))
-	srvr := &http.Server{Handler: mux}
-
-	// serve requests in a background goroutine
-	go srvr.Serve(listener)
-
-	// make sure we track the server (the .Serve method will close the
-	// listener once we close the server itself)
-	nsh.closers = append(nsh.closers, srvr)
-}
-
 // newQAEnvironment creates a QA environment for testing using the given addresses.
 func newQAEnvironment(ipaddrs ...string) *netemx.QAEnv {
-	// create a single handler for handling all the requests
-	handler := &telegramHTTPServerNetStackHandler{
-		closers: []io.Closer{},
-		mu:      sync.Mutex{},
+	// create a single factory for handling all the requests
+	factory := &netemx.HTTPCleartextServerFactory{
+		Factory: netemx.HTTPHandlerFactoryFunc(func(env netemx.NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
+			// we create an empty mux, which should cause a 404 for each webpage, which seems what
+			// the servers used by telegram DC do as of 2023-07-11
+			return http.NewServeMux()
+		}),
+		Ports: []int{80, 443},
 	}
 
 	// create the options for constructing the env
 	var options []netemx.QAEnvOption
 	for _, ipaddr := range ipaddrs {
-		options = append(options, netemx.QAEnvOptionNetStack(ipaddr, handler))
+		options = append(options, netemx.QAEnvOptionNetStack(ipaddr, factory))
 	}
 
 	// add explicit logging which helps to inspect the tests results
@@ -357,10 +299,18 @@ func newQAEnvironment(ipaddrs ...string) *netemx.QAEnv {
 
 	// add handler for telegram web (we're using a different-from-reality HTTP handler
 	// but we're not testing for the returned webpage, so we should be fine)
-	options = append(options, netemx.QAEnvOptionHTTPServer(telegramWebAddr, netemx.QAEnvDefaultHTTPHandler()))
+	options = append(options, netemx.QAEnvOptionNetStack(
+		telegramWebAddr,
+		&netemx.HTTPSecureServerFactory{
+			Factory:          netemx.ExampleWebPageHandlerFactory(),
+			Ports:            []int{443},
+			ServerNameMain:   "web.telegram.org",
+			ServerNameExtras: []string{},
+		},
+	))
 
 	// create the environment proper with all the options
-	env := netemx.NewQAEnv(options...)
+	env := netemx.MustNewQAEnv(options...)
 
 	// register with all the possible resolvers the correct DNS records - registering again
 	// inside individual tests will override the values we're setting here

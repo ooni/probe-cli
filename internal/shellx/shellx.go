@@ -138,7 +138,7 @@ func cmd(config *Config, argv *Argv, envp *Envp) *execabs.Cmd {
 		cmd.Env = append(cmd.Env, entry)
 	}
 	if config.Logger != nil {
-		cmdline := quotedCommandLineUnsafe(argv.P, argv.V...)
+		cmdline := QuotedCommandLineUnsafe(argv.P, argv.V...)
 		config.Logger.Infof("+ %s", cmdline)
 	}
 	return cmd
@@ -271,9 +271,9 @@ func OutputCommandLine(logger model.Logger, cmdline string) ([]byte, error) {
 // ErrNoCommandToExecute means that the command line is empty.
 var ErrNoCommandToExecute = errors.New("shellx: no command to execute")
 
-// quotedCommandLineUnsafe returns a quoted command line. This function is unsafe
+// QuotedCommandLineUnsafe returns a quoted command line. This function is unsafe
 // and SHOULD only be used to produce a nice output.
-func quotedCommandLineUnsafe(command string, args ...string) string {
+func QuotedCommandLineUnsafe(command string, args ...string) string {
 	v := []string{}
 	v = append(v, maybeQuoteArgUnsafe(command))
 	for _, a := range args {

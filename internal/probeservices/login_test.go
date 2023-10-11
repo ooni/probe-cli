@@ -21,6 +21,7 @@ func TestMaybeLogin(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
+
 	t.Run("when we have already registered", func(t *testing.T) {
 		clnt := newclient()
 		state := State{
@@ -34,6 +35,7 @@ func TestMaybeLogin(t *testing.T) {
 			t.Fatal("expected an error here")
 		}
 	})
+
 	t.Run("when the API call fails", func(t *testing.T) {
 		clnt := newclient()
 		clnt.BaseURL = "\t\t\t" // causes the code to fail
@@ -52,6 +54,10 @@ func TestMaybeLogin(t *testing.T) {
 }
 
 func TestMaybeLoginIdempotent(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	clnt := newclient()
 	ctx := context.Background()
 	metadata := MetadataFixture()

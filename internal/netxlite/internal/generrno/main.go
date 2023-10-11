@@ -7,7 +7,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/iancoleman/strcase"
+	"github.com/ooni/probe-cli/v3/internal/strcasex"
 	"golang.org/x/sys/execabs"
 )
 
@@ -69,12 +69,12 @@ func (es *ErrorSpec) AsCanonicalErrnoName() string {
 
 // AsFailureVar returns the name of the failure var.
 func (es *ErrorSpec) AsFailureVar() string {
-	return "Failure" + strcase.ToCamel(es.failure)
+	return "Failure" + strcasex.ToCamel(es.failure)
 }
 
 // AsFailureString returns the OONI failure string.
 func (es *ErrorSpec) AsFailureString() string {
-	return strcase.ToSnake(es.failure)
+	return strcasex.ToSnake(es.failure)
 }
 
 // NewSystemError constructs a new ErrorSpec representing a system

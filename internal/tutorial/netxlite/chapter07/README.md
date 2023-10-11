@@ -33,6 +33,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	utls "gitlab.com/yawning/utls.git"
 )
@@ -50,7 +51,7 @@ func main() {
 		NextProtos: []string{"h2", "http/1.1"},
 		RootCAs:    nil,
 	}
-	conn, _, err := dialTLS(ctx, *address, config)
+	conn, err := dialTLS(ctx, *address, config)
 	if err != nil {
 		fatal(err)
 	}
@@ -81,10 +82,13 @@ a single request using the given TLS conn.
 uses a cleartext TCP connection. In the next chapter we'll
 see how to do the same using QUIC.)
 
+TODO(https://github.com/ooni/probe/issues/2534): here we're using the QUIRKY netxlite.NewHTTPTransport
+function, but we can probably avoid using it, given that this code is
+not using tracing and does not care about those quirks.
 ```Go
 	clnt := &http.Client{Transport: netxlite.NewHTTPTransport(
 		log.Log, netxlite.NewNullDialer(),
-		netxlite.NewSingleUseTLSDialer(conn.(netxlite.TLSConn)),
+		netxlite.NewSingleUseTLSDialer(conn),
 	)}
 ```
 
@@ -116,24 +120,22 @@ func dialTCP(ctx context.Context, address string) (net.Conn, error) {
 	return d.DialContext(ctx, "tcp", address)
 }
 
-func handshakeTLS(ctx context.Context, tcpConn net.Conn,
-	config *tls.Config) (net.Conn, tls.ConnectionState, error) {
+func handshakeTLS(ctx context.Context, tcpConn net.Conn, config *tls.Config) (model.TLSConn, error) {
 	th := netxlite.NewTLSHandshakerUTLS(log.Log, &utls.HelloFirefox_55)
 	return th.Handshake(ctx, tcpConn, config)
 }
 
-func dialTLS(ctx context.Context, address string,
-	config *tls.Config) (net.Conn, tls.ConnectionState, error) {
+func dialTLS(ctx context.Context, address string, config *tls.Config) (model.TLSConn, error) {
 	tcpConn, err := dialTCP(ctx, address)
 	if err != nil {
-		return nil, tls.ConnectionState{}, err
+		return nil, err
 	}
-	tlsConn, state, err := handshakeTLS(ctx, tcpConn, config)
+	tlsConn, err := handshakeTLS(ctx, tcpConn, config)
 	if err != nil {
 		tcpConn.Close()
-		return nil, tls.ConnectionState{}, err
+		return nil, err
 	}
-	return tlsConn, state, nil
+	return tlsConn, nil
 }
 
 func fatal(err error) {

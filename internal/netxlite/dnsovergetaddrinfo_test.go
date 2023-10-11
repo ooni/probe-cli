@@ -13,6 +13,14 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 )
 
+func TestNewDNSOverGetaddrinfoTransport(t *testing.T) {
+	txp := NewDNSOverGetaddrinfoTransport()
+	underlying := txp.(*dnsOverGetaddrinfoTransport)
+	if underlying.provider.underlying != nil {
+		t.Fatal("expected to see a nil underlying network")
+	}
+}
+
 func TestDNSOverGetaddrinfo(t *testing.T) {
 	t.Run("RequiresPadding", func(t *testing.T) {
 		txp := &dnsOverGetaddrinfoTransport{}
@@ -188,6 +196,34 @@ func TestDNSOverGetaddrinfo(t *testing.T) {
 			}
 		})
 	})
+}
+
+func TestGetaddrinfoWithCustomUnderlyingNetwork(t *testing.T) {
+	expected := errors.New("mocked underlying network")
+	proxy := &mocks.UnderlyingNetwork{
+		MockGetaddrinfoLookupANY: func(ctx context.Context, domain string) ([]string, string, error) {
+			return nil, "", expected
+		},
+		MockGetaddrinfoResolverNetwork: func() string {
+			return "mocked"
+		},
+	}
+	txp := &dnsOverGetaddrinfoTransport{
+		provider: &MaybeCustomUnderlyingNetwork{proxy},
+	}
+	encoder := &DNSEncoderMiekg{}
+	query := encoder.Encode("dns.google", dns.TypeANY, false)
+	ctx := context.Background()
+	resp, err := txp.RoundTrip(ctx, query)
+	if resp != nil {
+		t.Fatal("unexpected non-nil response")
+	}
+	if err != expected {
+		t.Fatal("unexpected error")
+	}
+	if txp.Network() != "mocked" {
+		t.Fatal("unexpected network string")
+	}
 }
 
 func TestDNSOverGetaddrinfoResponse(t *testing.T) {

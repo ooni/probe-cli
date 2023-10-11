@@ -10,7 +10,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
 func TestMeasurerExperimentNameVersion(t *testing.T) {
@@ -143,7 +143,7 @@ func TestMeasurer_input_failure(t *testing.T) {
 		if testing.Short() {
 			t.Skip("skip test in short mode")
 		}
-		server := filtering.NewTLSServer(filtering.TLSActionTimeout)
+		server := testingx.MustNewTLSServer(testingx.TLSHandlerTimeout())
 		defer server.Close()
 		th := "tlshandshake://" + server.Endpoint()
 		URL, err := url.Parse(th)
@@ -198,7 +198,7 @@ func TestMeasurer_input_failure(t *testing.T) {
 		if testing.Short() {
 			t.Skip("skip test in short mode")
 		}
-		server := filtering.NewTLSServer(filtering.TLSActionReset)
+		server := testingx.MustNewTLSServer(testingx.TLSHandlerReset())
 		defer server.Close()
 		th := "tlshandshake://" + server.Endpoint()
 		URL, err := url.Parse(th)

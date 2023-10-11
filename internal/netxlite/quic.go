@@ -16,46 +16,39 @@ import (
 	"github.com/quic-go/quic-go"
 )
 
-// NewQUICListener creates a new QUICListener using the standard
-// library to create listening UDP sockets.
-func NewQUICListener() model.QUICListener {
-	return &quicListenerErrWrapper{&quicListenerStdlib{}}
-}
-
-// quicListenerStdlib is a QUICListener using the standard library.
-type quicListenerStdlib struct{}
-
-var _ model.QUICListener = &quicListenerStdlib{}
-
-// Listen implements QUICListener.Listen.
-func (qls *quicListenerStdlib) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
-	return tproxySingleton().ListenUDP("udp", addr)
-}
-
-// NewQUICDialerWithResolver is the WrapDialer equivalent for QUIC where
-// we return a composed QUICDialer modified by optional wrappers.
+// NewQUICDialerWithResolver creates a QUICDialer with error wrapping.
 //
-// The returned dialer guarantees:
-//
-// 1. logging;
-//
-// 2. error wrapping;
-//
-// 3. that we are going to use Mozilla CA if the [tls.Config]
-// RootCAs field is zero initialized.
-//
-// Please, note that this fuunction will just ignore any nil wrapper.
-//
-// Unlike the dialer returned by WrapDialer, this dialer MAY attempt
+// Unlike the dialer returned by NewDialerWithResolver, this dialer MAY attempt
 // happy eyeballs, perform parallel dial attempts, and return an error
 // that aggregates all the errors that occurred.
-func NewQUICDialerWithResolver(listener model.QUICListener, logger model.DebugLogger,
+//
+// The [model.QUICDialerWrapper] arguments wraps the returned dialer in such a way
+// that we can implement the legacy [netx] package. New code MUST NOT
+// use this functionality, which we'd like to remove ASAP.
+func (netx *Netx) NewQUICDialerWithResolver(listener model.UDPListener, logger model.DebugLogger,
 	resolver model.Resolver, wrappers ...model.QUICDialerWrapper) (outDialer model.QUICDialer) {
+	baseDialer := &quicDialerQUICGo{
+		UDPListener: listener,
+		provider:    netx.MaybeCustomUnderlyingNetwork(),
+	}
+	return wrapQUICDialer(logger, resolver, baseDialer, wrappers...)
+}
+
+// NewQUICDialerWithResolver is equivalent to creating an empty [*Netx]
+// and calling its NewQUICDialerWithResolver method.
+func NewQUICDialerWithResolver(listener model.UDPListener, logger model.DebugLogger,
+	resolver model.Resolver, wrappers ...model.QUICDialerWrapper) (outDialer model.QUICDialer) {
+	netx := &Netx{Underlying: nil}
+	return netx.NewQUICDialerWithResolver(listener, logger, resolver, wrappers...)
+}
+
+// wrapQUICDialer is similar to NewQUICDialerWithResolver except that it takes as
+// input an already constructed [model.QUICDialer] instead of creating one.
+func wrapQUICDialer(logger model.DebugLogger, resolver model.Resolver,
+	baseDialer model.QUICDialer, wrappers ...model.QUICDialerWrapper) (outDialer model.QUICDialer) {
 	outDialer = &quicDialerErrWrapper{
 		QUICDialer: &quicDialerHandshakeCompleter{
-			Dialer: &quicDialerQUICGo{
-				QUICListener: listener,
-			},
+			Dialer: baseDialer,
 		},
 	}
 	for _, wrapper := range wrappers {
@@ -77,22 +70,32 @@ func NewQUICDialerWithResolver(listener model.QUICListener, logger model.DebugLo
 	}
 }
 
-// NewQUICDialerWithoutResolver is equivalent to calling NewQUICDialerWithResolver
-// with the resolver argument set to &NullResolver{}.
-func NewQUICDialerWithoutResolver(listener model.QUICListener,
+// NewQUICDialerWithoutResolver implements [model.MeasuringNetwork].
+func (netx *Netx) NewQUICDialerWithoutResolver(listener model.UDPListener,
 	logger model.DebugLogger, wrappers ...model.QUICDialerWrapper) model.QUICDialer {
-	return NewQUICDialerWithResolver(listener, logger, &NullResolver{}, wrappers...)
+	return netx.NewQUICDialerWithResolver(listener, logger, &NullResolver{}, wrappers...)
+}
+
+// NewQUICDialerWithoutResolver is equivalent to creating an empty [*Netx]
+// and calling its NewQUICDialerWithoutResolver method.
+func NewQUICDialerWithoutResolver(listener model.UDPListener,
+	logger model.DebugLogger, wrappers ...model.QUICDialerWrapper) model.QUICDialer {
+	netx := &Netx{Underlying: nil}
+	return netx.NewQUICDialerWithoutResolver(listener, logger, wrappers...)
 }
 
 // quicDialerQUICGo dials using the quic-go/quic-go library.
 type quicDialerQUICGo struct {
-	// QUICListener is the underlying QUICListener to use.
-	QUICListener model.QUICListener
+	// UDPListener is the underlying UDPListener to use.
+	UDPListener model.UDPListener
 
-	// mockDialEarlyContext allows to mock quic.DialEarlyContext.
-	mockDialEarlyContext func(ctx context.Context, pconn net.PacketConn,
-		remoteAddr net.Addr, host string, tlsConfig *tls.Config,
+	// mockDialEarly allows to mock quic.DialEarly.
+	mockDialEarly func(ctx context.Context, pconn net.PacketConn,
+		remoteAddr net.Addr, tlsConfig *tls.Config,
 		quicConfig *quic.Config) (quic.EarlyConnection, error)
+
+	// provider is the OPTIONAL nil-safe [model.UnderlyingNetwork] provider.
+	provider *MaybeCustomUnderlyingNetwork
 }
 
 var _ model.QUICDialer = &quicDialerQUICGo{}
@@ -138,7 +141,7 @@ func (d *quicDialerQUICGo) DialContext(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	pconn, err := d.QUICListener.Listen(&net.UDPAddr{IP: net.IPv4zero, Port: 0, Zone: ""})
+	pconn, err := d.UDPListener.Listen(&net.UDPAddr{IP: net.IPv4zero, Port: 0, Zone: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -147,8 +150,7 @@ func (d *quicDialerQUICGo) DialContext(ctx context.Context,
 	pconn = trace.MaybeWrapUDPLikeConn(pconn)
 	started := trace.TimeNow()
 	trace.OnQUICHandshakeStart(started, address, quicConfig)
-	qconn, err := d.dialEarlyContext(
-		ctx, pconn, udpAddr, address, tlsConfig, quicConfig)
+	qconn, err := d.dialEarly(ctx, pconn, udpAddr, tlsConfig, quicConfig)
 	finished := trace.TimeNow()
 	err = MaybeNewErrWrapper(ClassifyQUICHandshakeError, QUICHandshakeOperation, err)
 	trace.OnQUICHandshakeDone(started, address, qconn, tlsConfig, err, finished)
@@ -159,15 +161,15 @@ func (d *quicDialerQUICGo) DialContext(ctx context.Context,
 	return newQUICConnectionOwnsConn(qconn, pconn), nil
 }
 
-func (d *quicDialerQUICGo) dialEarlyContext(ctx context.Context,
-	pconn net.PacketConn, remoteAddr net.Addr, address string,
+func (d *quicDialerQUICGo) dialEarly(ctx context.Context,
+	pconn net.PacketConn, remoteAddr net.Addr,
 	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
-	if d.mockDialEarlyContext != nil {
-		return d.mockDialEarlyContext(
-			ctx, pconn, remoteAddr, address, tlsConfig, quicConfig)
+	if d.mockDialEarly != nil {
+		return d.mockDialEarly(
+			ctx, pconn, remoteAddr, tlsConfig, quicConfig)
 	}
-	return quic.DialEarlyContext(
-		ctx, pconn, remoteAddr, address, tlsConfig, quicConfig)
+	return quic.DialEarly(
+		ctx, pconn, remoteAddr, tlsConfig, quicConfig)
 }
 
 // maybeApplyTLSDefaults ensures that we're using our certificate pool, if
@@ -176,7 +178,7 @@ func (d *quicDialerQUICGo) maybeApplyTLSDefaults(config *tls.Config, port int) *
 	config = config.Clone()
 	if config.RootCAs == nil {
 		// See https://github.com/ooni/probe/issues/2413 for context
-		config.RootCAs = tproxySingleton().DefaultCertPool()
+		config.RootCAs = d.provider.Get().DefaultCertPool()
 	}
 	if len(config.NextProtos) <= 0 {
 		switch port {
@@ -211,7 +213,7 @@ func (d *quicDialerHandshakeCompleter) DialContext(
 		return nil, err
 	}
 	select {
-	case <-conn.HandshakeComplete().Done():
+	case <-conn.HandshakeComplete():
 		return conn, nil
 	case <-ctx.Done():
 		conn.CloseWithError(0, "") // we own the conn
@@ -385,17 +387,17 @@ func (s *quicDialerSingleUse) CloseIdleConnections() {
 	// nothing to do
 }
 
-// quicListenerErrWrapper is a QUICListener that wraps errors.
-type quicListenerErrWrapper struct {
-	// QUICListener is the underlying listener.
-	QUICListener model.QUICListener
+// udpListenerErrWrapper is a UDPListener that wraps errors.
+type udpListenerErrWrapper struct {
+	// UDPListener is the underlying listener.
+	UDPListener model.UDPListener
 }
 
-var _ model.QUICListener = &quicListenerErrWrapper{}
+var _ model.UDPListener = &udpListenerErrWrapper{}
 
-// Listen implements QUICListener.Listen.
-func (qls *quicListenerErrWrapper) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
-	pconn, err := qls.QUICListener.Listen(addr)
+// Listen implements UDPListener.Listen.
+func (qls *udpListenerErrWrapper) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
+	pconn, err := qls.UDPListener.Listen(addr)
 	if err != nil {
 		return nil, NewErrWrapper(ClassifyGenericError, QUICListenOperation, err)
 	}

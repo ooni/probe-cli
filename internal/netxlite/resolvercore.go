@@ -23,30 +23,44 @@ import (
 // but you are using the "stdlib" resolver instead.
 var ErrNoDNSTransport = errors.New("operation requires a DNS transport")
 
-// NewStdlibResolver creates a new Resolver by combining WrapResolver
-// with an internal "stdlib" resolver type. The list of optional wrappers
-// allow to wrap the underlying getaddrinfo transport. Any nil wrapper
-// will be silently ignored by the code that performs the wrapping.
-func NewStdlibResolver(logger model.DebugLogger, wrappers ...model.DNSTransportWrapper) model.Resolver {
-	return WrapResolver(logger, NewUnwrappedStdlibResolver(wrappers...))
+// NewStdlibResolver implements [model.MeasuringNetwork].
+func (netx *Netx) NewStdlibResolver(logger model.DebugLogger) model.Resolver {
+	return WrapResolver(logger, netx.newUnwrappedStdlibResolver())
 }
 
-// NewParallelDNSOverHTTPSResolver creates a new DNS over HTTPS resolver
-// that uses the standard library for all operations. This function constructs
-// all the building blocks and calls WrapResolver on the returned resolver.
-func NewParallelDNSOverHTTPSResolver(logger model.DebugLogger, URL string) model.Resolver {
-	client := &http.Client{Transport: NewHTTPTransportStdlib(logger)}
-	txp := WrapDNSTransport(NewUnwrappedDNSOverHTTPSTransport(client, URL))
+// NewStdlibResolver is equivalent to creating an empty [*Netx]
+// and calling its NewStdlibResolver method.
+func NewStdlibResolver(logger model.DebugLogger) model.Resolver {
+	netx := &Netx{Underlying: nil}
+	return netx.NewStdlibResolver(logger)
+}
+
+// NewParallelDNSOverHTTPSResolver implements [model.MeasuringNetwork].
+func (netx *Netx) NewParallelDNSOverHTTPSResolver(logger model.DebugLogger, URL string) model.Resolver {
+	client := &http.Client{Transport: netx.NewHTTPTransportStdlib(logger)}
+	txp := wrapDNSTransport(NewUnwrappedDNSOverHTTPSTransport(client, URL))
 	return WrapResolver(logger, NewUnwrappedParallelResolver(txp))
+}
+
+// NewParallelDNSOverHTTPSResolver is equivalent to creating an empty [*Netx]
+// and calling its NewParallelDNSOverHTTPSResolver method.
+func NewParallelDNSOverHTTPSResolver(logger model.DebugLogger, URL string) model.Resolver {
+	netx := &Netx{Underlying: nil}
+	return netx.NewParallelDNSOverHTTPSResolver(logger, URL)
+}
+
+func (netx *Netx) newUnwrappedStdlibResolver() model.Resolver {
+	return &resolverSystem{
+		t: wrapDNSTransport(netx.newDNSOverGetaddrinfoTransport()),
+	}
 }
 
 // NewUnwrappedStdlibResolver returns a new, unwrapped resolver using the standard
 // library (i.e., getaddrinfo if possible and &net.Resolver{} otherwise). As the name
 // implies, this function returns an unwrapped resolver.
-func NewUnwrappedStdlibResolver(wrappers ...model.DNSTransportWrapper) model.Resolver {
-	return &resolverSystem{
-		t: WrapDNSTransport(NewDNSOverGetaddrinfoTransport(), wrappers...),
-	}
+func NewUnwrappedStdlibResolver() model.Resolver {
+	netx := &Netx{Underlying: nil}
+	return netx.newUnwrappedStdlibResolver()
 }
 
 // NewSerialUDPResolver creates a new Resolver using DNS-over-UDP
@@ -61,34 +75,24 @@ func NewUnwrappedStdlibResolver(wrappers ...model.DNSTransportWrapper) model.Res
 // - dialer is the dialer to create and connect UDP conns
 //
 // - address is the server address (e.g., 1.1.1.1:53)
-//
-// - wrappers is the optional list of wrappers to wrap the underlying
-// transport.  Any nil wrapper will be silently ignored.
-func NewSerialUDPResolver(logger model.DebugLogger, dialer model.Dialer,
-	address string, wrappers ...model.DNSTransportWrapper) model.Resolver {
+func NewSerialUDPResolver(logger model.DebugLogger, dialer model.Dialer, address string) model.Resolver {
 	return WrapResolver(logger, NewUnwrappedSerialResolver(
-		WrapDNSTransport(NewUnwrappedDNSOverUDPTransport(dialer, address), wrappers...),
+		wrapDNSTransport(NewUnwrappedDNSOverUDPTransport(dialer, address)),
 	))
 }
 
-// NewParallelUDPResolver creates a new Resolver using DNS-over-UDP
-// that performs parallel A/AAAA lookups during LookupHost.
-//
-// Arguments:
-//
-// - logger is the logger to use
-//
-// - dialer is the dialer to create and connect UDP conns
-//
-// - address is the server address (e.g., 1.1.1.1:53)
-//
-// - wrappers is the optional list of wrappers to wrap the underlying
-// transport.  Any nil wrapper will be silently ignored.
-func NewParallelUDPResolver(logger model.DebugLogger, dialer model.Dialer,
-	address string, wrappers ...model.DNSTransportWrapper) model.Resolver {
+// NewParallelUDPResolver implements [model.MeasuringNetwork].
+func (netx *Netx) NewParallelUDPResolver(logger model.DebugLogger, dialer model.Dialer, address string) model.Resolver {
 	return WrapResolver(logger, NewUnwrappedParallelResolver(
-		WrapDNSTransport(NewUnwrappedDNSOverUDPTransport(dialer, address), wrappers...),
+		wrapDNSTransport(NewUnwrappedDNSOverUDPTransport(dialer, address)),
 	))
+}
+
+// NewParallelUDPResolver is equivalent to creating an empty [*Netx]
+// and calling its NewParallelUDPResolver method.
+func NewParallelUDPResolver(logger model.DebugLogger, dialer model.Dialer, address string) model.Resolver {
+	netx := &Netx{Underlying: nil}
+	return netx.NewParallelUDPResolver(logger, dialer, address)
 }
 
 // WrapResolver creates a new resolver that wraps an
@@ -110,7 +114,7 @@ func NewParallelUDPResolver(logger model.DebugLogger, dialer model.Dialer,
 func WrapResolver(logger model.DebugLogger, resolver model.Resolver) model.Resolver {
 	return &resolverIDNA{
 		Resolver: &resolverLogger{
-			Resolver: &resolverShortCircuitIPAddr{
+			Resolver: &ResolverShortCircuitIPAddr{
 				Resolver: &resolverErrWrapper{
 					Resolver: resolver,
 				},
@@ -279,22 +283,22 @@ func (r *resolverIDNA) LookupNS(
 	return r.Resolver.LookupNS(ctx, host)
 }
 
-// resolverShortCircuitIPAddr recognizes when the input hostname is an
+// ResolverShortCircuitIPAddr recognizes when the input hostname is an
 // IP address and returns it immediately to the caller.
-type resolverShortCircuitIPAddr struct {
+type ResolverShortCircuitIPAddr struct {
 	Resolver model.Resolver
 }
 
-var _ model.Resolver = &resolverShortCircuitIPAddr{}
+var _ model.Resolver = &ResolverShortCircuitIPAddr{}
 
-func (r *resolverShortCircuitIPAddr) LookupHost(ctx context.Context, hostname string) ([]string, error) {
+func (r *ResolverShortCircuitIPAddr) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	if net.ParseIP(hostname) != nil {
 		return []string{hostname}, nil
 	}
 	return r.Resolver.LookupHost(ctx, hostname)
 }
 
-func (r *resolverShortCircuitIPAddr) LookupHTTPS(ctx context.Context, hostname string) (*model.HTTPSSvc, error) {
+func (r *ResolverShortCircuitIPAddr) LookupHTTPS(ctx context.Context, hostname string) (*model.HTTPSSvc, error) {
 	if net.ParseIP(hostname) != nil {
 		https := &model.HTTPSSvc{}
 		if isIPv6(hostname) {
@@ -307,15 +311,15 @@ func (r *resolverShortCircuitIPAddr) LookupHTTPS(ctx context.Context, hostname s
 	return r.Resolver.LookupHTTPS(ctx, hostname)
 }
 
-func (r *resolverShortCircuitIPAddr) Network() string {
+func (r *ResolverShortCircuitIPAddr) Network() string {
 	return r.Resolver.Network()
 }
 
-func (r *resolverShortCircuitIPAddr) Address() string {
+func (r *ResolverShortCircuitIPAddr) Address() string {
 	return r.Resolver.Address()
 }
 
-func (r *resolverShortCircuitIPAddr) CloseIdleConnections() {
+func (r *ResolverShortCircuitIPAddr) CloseIdleConnections() {
 	r.Resolver.CloseIdleConnections()
 }
 
@@ -323,7 +327,7 @@ func (r *resolverShortCircuitIPAddr) CloseIdleConnections() {
 // function that only works with domain names.
 var ErrDNSIPAddress = errors.New("ooresolver: expected domain, found IP address")
 
-func (r *resolverShortCircuitIPAddr) LookupNS(
+func (r *ResolverShortCircuitIPAddr) LookupNS(
 	ctx context.Context, hostname string) ([]*net.NS, error) {
 	if net.ParseIP(hostname) != nil {
 		return nil, ErrDNSIPAddress

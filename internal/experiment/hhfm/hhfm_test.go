@@ -16,9 +16,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/experiment/hhfm"
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
+	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
@@ -32,6 +32,10 @@ func TestNewExperimentMeasurer(t *testing.T) {
 }
 
 func TestSuccess(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	measurer := hhfm.NewExperimentMeasurer(hhfm.Config{})
 	ctx := context.Background()
 	sess := &mockable.Session{
@@ -68,7 +72,7 @@ func TestSuccess(t *testing.T) {
 	if request.Failure != nil {
 		t.Fatal("invalid Requests[0].Failure")
 	}
-	if request.Request.Body.Value != "" {
+	if request.Request.Body != "" {
 		t.Fatal("invalid Requests[0].Request.Body.Value")
 	}
 	if request.Request.BodyIsTruncated != false {
@@ -99,7 +103,7 @@ func TestSuccess(t *testing.T) {
 	if request.Request.URL != ths[0].Address {
 		t.Fatal("invalid Requests[0].Request.URL")
 	}
-	if len(request.Response.Body.Value) < 1 {
+	if len(request.Response.Body) < 1 {
 		t.Fatal("invalid Requests[0].Response.Body.Value length")
 	}
 	if request.Response.BodyIsTruncated != false {
@@ -181,7 +185,7 @@ func TestCancelledContext(t *testing.T) {
 	if *request.Failure != netxlite.FailureInterrupted {
 		t.Fatal("invalid Requests[0].Failure")
 	}
-	if request.Request.Body.Value != "" {
+	if request.Request.Body != "" {
 		t.Fatal("invalid Requests[0].Request.Body.Value")
 	}
 	if request.Request.BodyIsTruncated != false {
@@ -212,7 +216,7 @@ func TestCancelledContext(t *testing.T) {
 	if request.Request.URL != ths[0].Address {
 		t.Fatal("invalid Requests[0].Request.URL")
 	}
-	if len(request.Response.Body.Value) != 0 {
+	if len(request.Response.Body) != 0 {
 		t.Fatal("invalid Requests[0].Response.Body.Value length")
 	}
 	if request.Response.BodyIsTruncated != false {
@@ -743,16 +747,16 @@ func TestNewRequestEntryList(t *testing.T) {
 		},
 		wantOut: []tracex.RequestEntry{{
 			Request: tracex.HTTPRequest{
-				HeadersList: []tracex.HTTPHeader{{
-					Key:   "ContENt-tYPE",
-					Value: tracex.MaybeBinaryValue{Value: "text/plain"},
+				HeadersList: []model.ArchivalHTTPHeader{{
+					model.ArchivalScrubbedMaybeBinaryString("ContENt-tYPE"),
+					model.ArchivalScrubbedMaybeBinaryString("text/plain"),
 				}, {
-					Key:   "User-aGENT",
-					Value: tracex.MaybeBinaryValue{Value: "foo/1.0"},
+					model.ArchivalScrubbedMaybeBinaryString("User-aGENT"),
+					model.ArchivalScrubbedMaybeBinaryString("foo/1.0"),
 				}},
-				Headers: map[string]tracex.MaybeBinaryValue{
-					"ContENt-tYPE": {Value: "text/plain"},
-					"User-aGENT":   {Value: "foo/1.0"},
+				Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
+					"ContENt-tYPE": "text/plain",
+					"User-aGENT":   "foo/1.0",
 				},
 				Method: "GeT",
 				URL:    "http://10.0.0.1/",
@@ -773,8 +777,8 @@ func TestNewRequestEntryList(t *testing.T) {
 		wantOut: []tracex.RequestEntry{{
 			Request: tracex.HTTPRequest{
 				Method:      "GeT",
-				Headers:     make(map[string]tracex.MaybeBinaryValue),
-				HeadersList: []tracex.HTTPHeader{},
+				Headers:     make(map[string]model.ArchivalScrubbedMaybeBinaryString),
+				HeadersList: []model.ArchivalHTTPHeader{},
 				URL:         "http://10.0.0.1/",
 			},
 		}},
@@ -811,18 +815,18 @@ func TestNewHTTPResponse(t *testing.T) {
 			data: []byte("deadbeef"),
 		},
 		wantOut: tracex.HTTPResponse{
-			Body: tracex.MaybeBinaryValue{Value: "deadbeef"},
+			Body: model.ArchivalScrubbedMaybeBinaryString("deadbeef"),
 			Code: 200,
-			HeadersList: []tracex.HTTPHeader{{
-				Key:   "Content-Type",
-				Value: tracex.MaybeBinaryValue{Value: "text/plain"},
+			HeadersList: []model.ArchivalHTTPHeader{{
+				model.ArchivalScrubbedMaybeBinaryString("Content-Type"),
+				model.ArchivalScrubbedMaybeBinaryString("text/plain"),
 			}, {
-				Key:   "User-Agent",
-				Value: tracex.MaybeBinaryValue{Value: "foo/1.0"},
+				model.ArchivalScrubbedMaybeBinaryString("User-Agent"),
+				model.ArchivalScrubbedMaybeBinaryString("foo/1.0"),
 			}},
-			Headers: map[string]tracex.MaybeBinaryValue{
-				"Content-Type": {Value: "text/plain"},
-				"User-Agent":   {Value: "foo/1.0"},
+			Headers: map[string]model.ArchivalScrubbedMaybeBinaryString{
+				"Content-Type": "text/plain",
+				"User-Agent":   "foo/1.0",
 			},
 		},
 	}, {
@@ -831,10 +835,10 @@ func TestNewHTTPResponse(t *testing.T) {
 			resp: &http.Response{StatusCode: 200},
 		},
 		wantOut: tracex.HTTPResponse{
-			Body:        tracex.MaybeBinaryValue{Value: ""},
+			Body:        model.ArchivalScrubbedMaybeBinaryString(""),
 			Code:        200,
-			HeadersList: []tracex.HTTPHeader{},
-			Headers:     map[string]tracex.MaybeBinaryValue{},
+			HeadersList: []model.ArchivalHTTPHeader{},
+			Headers:     map[string]model.ArchivalScrubbedMaybeBinaryString{},
 		},
 	}}
 	for _, tt := range tests {

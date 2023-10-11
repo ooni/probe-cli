@@ -13,10 +13,10 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/experiment/riseupvpn"
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
-	"github.com/ooni/probe-cli/v3/internal/mocks"
+	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
+	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
 const (
@@ -710,18 +710,6 @@ func TestHandleInvalidGeoAPIResponse(t *testing.T) {
 	}
 }
 
-func TestSummaryKeysAlwaysReturnIsAnomalyFalse(t *testing.T) {
-	measurement := new(model.Measurement)
-	m := &riseupvpn.Measurer{}
-	result, err := m.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal("GetSummaryKeys should never return an error")
-	}
-	if result.(riseupvpn.SummaryKeys).IsAnomaly {
-		t.Fatal("GetSummaryKeys should never return IsAnomaly true")
-	}
-}
-
 func generateMockGetter(requestResponse map[string]string, responseStatus map[string]bool) urlgetter.MultiGetter {
 	return func(ctx context.Context, g urlgetter.Getter) (urlgetter.TestKeys, error) {
 		url := g.Target
@@ -773,13 +761,13 @@ func generateMockGetter(requestResponse map[string]string, responseStatus map[st
 				Failure: failure,
 				Request: tracex.HTTPRequest{
 					URL:             url,
-					Body:            tracex.MaybeBinaryValue{},
+					Body:            model.ArchivalScrubbedMaybeBinaryString(""),
 					BodyIsTruncated: false,
 				},
 				Response: tracex.HTTPResponse{
-					Body: tracex.HTTPBody{
-						Value: responseBody,
-					},
+					Body: model.ArchivalScrubbedMaybeBinaryString(
+						responseBody,
+					),
 					BodyIsTruncated: false,
 					Code:            responseStatus,
 				}},

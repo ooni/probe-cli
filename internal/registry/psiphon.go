@@ -16,7 +16,8 @@ func init() {
 				*config.(*psiphon.Config),
 			)
 		},
-		config:      &psiphon.Config{},
-		inputPolicy: model.InputOptional,
+		config:           &psiphon.Config{},
+		enabledByDefault: true,
+		inputPolicy:      model.InputOptional,
 	}
 }

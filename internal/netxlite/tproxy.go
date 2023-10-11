@@ -10,6 +10,22 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
+// MaybeCustomUnderlyingNetwork is a nil-safe [model.UnderlyingNetwork] provider. When the pointer
+// to the [MaybeCustomUnderlyingNetwork] is nil or the underlying field is nil, the Get method of the
+// [MaybeCustomUnderlyingNetwork] falls back to calling [tproxySingleton].
+type MaybeCustomUnderlyingNetwork struct {
+	underlying model.UnderlyingNetwork
+}
+
+// Get returns the [model.UnderlyingNetwork] returned by [tproxySingleton] if p is nil or the
+// underlying field is nil and otherwise returns the value of the underlying field.
+func (p *MaybeCustomUnderlyingNetwork) Get() model.UnderlyingNetwork {
+	if p == nil || p.underlying == nil {
+		return tproxySingleton()
+	}
+	return p.underlying
+}
+
 // tproxySingletonInst refers to the UnderlyingNetwork implementation. By overriding this
 // variable you can force netxlite to use alternative network primitives.
 var tproxySingletonInst model.UnderlyingNetwork = &DefaultTProxy{}
@@ -57,12 +73,22 @@ func (tp *DefaultTProxy) DefaultCertPool() *x509.CertPool {
 	return tproxyDefaultCertPool
 }
 
+const defaultDialTimeout = 15 * time.Second
+
+// DialTimeout implements model.UnderlyingNetwork
+func (tp *DefaultTProxy) DialTimeout() time.Duration {
+	return defaultDialTimeout
+}
+
 // DialContext implements UnderlyingNetwork.
-func (tp *DefaultTProxy) DialContext(ctx context.Context, timeout time.Duration, network, address string) (net.Conn, error) {
-	d := &net.Dialer{
-		Timeout: timeout,
-	}
+func (tp *DefaultTProxy) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+	d := &net.Dialer{}
 	return d.DialContext(ctx, network, address)
+}
+
+// ListenTCP implements UnderlyingNetwork.
+func (tp *DefaultTProxy) ListenTCP(network string, addr *net.TCPAddr) (net.Listener, error) {
+	return net.ListenTCP(network, addr)
 }
 
 // ListenUDP implements UnderlyingNetwork.

@@ -16,7 +16,8 @@ func init() {
 				*config.(*httphostheader.Config),
 			)
 		},
-		config:      &httphostheader.Config{},
-		inputPolicy: model.InputOrQueryBackend,
+		config:           &httphostheader.Config{},
+		enabledByDefault: true,
+		inputPolicy:      model.InputOrQueryBackend,
 	}
 }

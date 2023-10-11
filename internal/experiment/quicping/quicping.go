@@ -17,8 +17,9 @@ import (
 
 	_ "crypto/sha256"
 
+	"github.com/ooni/probe-cli/v3/internal/legacy/legacymodel"
+	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
 // A connectionID in QUIC
@@ -32,7 +33,7 @@ const (
 
 const (
 	testName    = "quicping"
-	testVersion = "0.1.0"
+	testVersion = "0.1.1"
 )
 
 // Config contains the experiment configuration.
@@ -78,26 +79,26 @@ type TestKeys struct {
 
 // SinglePing is a result of a single ping operation.
 type SinglePing struct {
-	ConnIdDst string                         `json:"conn_id_dst"`
-	ConnIdSrc string                         `json:"conn_id_src"`
-	Failure   *string                        `json:"failure"`
-	Request   *model.ArchivalMaybeBinaryData `json:"request"`
-	T         float64                        `json:"t"`
-	Responses []*SinglePingResponse          `json:"responses"`
+	ConnIdDst string                               `json:"conn_id_dst"`
+	ConnIdSrc string                               `json:"conn_id_src"`
+	Failure   *string                              `json:"failure"`
+	Request   *legacymodel.ArchivalMaybeBinaryData `json:"request"`
+	T         float64                              `json:"t"`
+	Responses []*SinglePingResponse                `json:"responses"`
 }
 
 type SinglePingResponse struct {
-	Data              *model.ArchivalMaybeBinaryData `json:"response_data"`
-	Failure           *string                        `json:"failure"`
-	T                 float64                        `json:"t"`
-	SupportedVersions []uint32                       `json:"supported_versions"`
+	Data              *legacymodel.ArchivalMaybeBinaryData `json:"response_data"`
+	Failure           *string                              `json:"failure"`
+	T                 float64                              `json:"t"`
+	SupportedVersions []uint32                             `json:"supported_versions"`
 }
 
 // makeResponse is a utility function to create a SinglePingResponse
 func makeResponse(resp *responseInfo) *SinglePingResponse {
-	var data *model.ArchivalMaybeBinaryData
+	var data *legacymodel.ArchivalMaybeBinaryData
 	if resp.raw != nil {
-		data = &model.ArchivalMaybeBinaryData{Value: string(resp.raw)}
+		data = &legacymodel.ArchivalMaybeBinaryData{Value: string(resp.raw)}
 	}
 	return &SinglePingResponse{
 		Data:              data,
@@ -227,12 +228,18 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	sess := args.Session
 
 	host := string(measurement.Input)
+	var port = ""
 	// allow URL input
 	if u, err := url.ParseRequestURI(host); err == nil {
-		host = u.Host
+		host = u.Hostname()
+		port = u.Port()
 	}
-	service := net.JoinHostPort(host, m.config.port())
-	udpAddr, err := net.ResolveUDPAddr("udp4", service)
+	var service string
+	if port == "" {
+		port = m.config.port()
+	}
+	service = net.JoinHostPort(host, port)
+	udpAddr, err := net.ResolveUDPAddr("udp", service)
 	if err != nil {
 		return err
 	}
@@ -272,7 +279,7 @@ L:
 					ConnIdDst: req.dstID,
 					ConnIdSrc: req.srcID,
 					Failure:   tracex.NewFailure(req.err),
-					Request:   &model.ArchivalMaybeBinaryData{Value: string(req.raw)},
+					Request:   &legacymodel.ArchivalMaybeBinaryData{Value: string(req.raw)},
 					T:         req.t,
 				})
 				continue
@@ -312,7 +319,7 @@ L:
 				ConnIdDst: ping.request.dstID,
 				ConnIdSrc: ping.request.srcID,
 				Failure:   tracex.NewFailure(timeoutErr),
-				Request:   &model.ArchivalMaybeBinaryData{Value: string(ping.request.raw)},
+				Request:   &legacymodel.ArchivalMaybeBinaryData{Value: string(ping.request.raw)},
 				T:         ping.request.t,
 			})
 			continue
@@ -325,7 +332,7 @@ L:
 			ConnIdDst: ping.request.dstID,
 			ConnIdSrc: ping.request.srcID,
 			Failure:   nil,
-			Request:   &model.ArchivalMaybeBinaryData{Value: string(ping.request.raw)},
+			Request:   &legacymodel.ArchivalMaybeBinaryData{Value: string(ping.request.raw)},
 			T:         ping.request.t,
 			Responses: responses,
 		})
