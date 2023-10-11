@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
-	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -48,11 +47,22 @@ type TransportV3 struct {
 	Options   map[string]string
 }
 
-// GatewayConnection describes the connection to a riseupvpn gateway.
-type GatewayConnection struct {
-	IP            string `json:"ip"`
-	Port          int    `json:"port"`
-	TransportType string `json:"transport_type"`
+// GatewayLoad describes the load of a single Gateway.
+type GatewayLoad struct {
+	Host     string  `json:"host"`
+	Fullness float64 `json:"fullness"`
+	Overload bool    `json:"overload"`
+}
+
+// GeoService represents the geoService API (also known as menshen) json response
+type GeoService struct {
+	IPAddress      string        `json:"ip"`
+	Country        string        `json:"cc"`
+	City           string        `json:"city"`
+	Latitude       float64       `json:"lat"`
+	Longitude      float64       `json:"lon"`
+	Gateways       []string      `json:"gateways"`
+	SortedGateways []GatewayLoad `json:"sortedGateways"`
 }
 
 // Config contains the riseupvpn experiment config.
@@ -63,21 +73,15 @@ type Config struct {
 // TestKeys contains riseupvpn test keys.
 type TestKeys struct {
 	urlgetter.TestKeys
-	APIFailure      *string             `json:"api_failure"`
-	APIStatus       string              `json:"api_status"`
-	CACertStatus    bool                `json:"ca_cert_status"`
-	FailingGateways []GatewayConnection `json:"failing_gateways"`
-	TransportStatus map[string]string   `json:"transport_status"`
+	APIFailure   []string `json:"api_failure"`
+	CACertStatus bool     `json:"ca_cert_status"`
 }
 
 // NewTestKeys creates new riseupvpn TestKeys.
 func NewTestKeys() *TestKeys {
 	return &TestKeys{
-		APIFailure:      nil,
-		APIStatus:       "ok",
-		CACertStatus:    true,
-		FailingGateways: nil,
-		TransportStatus: nil,
+		APIFailure:   nil,
+		CACertStatus: true,
 	}
 }
 
@@ -88,12 +92,8 @@ func (tk *TestKeys) UpdateProviderAPITestKeys(v urlgetter.MultiOutput) {
 	tk.Requests = append(tk.Requests, v.TestKeys.Requests...)
 	tk.TCPConnect = append(tk.TCPConnect, v.TestKeys.TCPConnect...)
 	tk.TLSHandshakes = append(tk.TLSHandshakes, v.TestKeys.TLSHandshakes...)
-	if tk.APIStatus != "ok" {
-		return // we already flipped the state
-	}
 	if v.TestKeys.Failure != nil {
-		tk.APIStatus = "blocked"
-		tk.APIFailure = v.TestKeys.Failure
+		tk.APIFailure = append(tk.APIFailure, *v.TestKeys.Failure)
 		return
 	}
 }
@@ -104,42 +104,6 @@ func (tk *TestKeys) UpdateProviderAPITestKeys(v urlgetter.MultiOutput) {
 func (tk *TestKeys) AddGatewayConnectTestKeys(v urlgetter.MultiOutput, transportType string) {
 	tk.NetworkEvents = append(tk.NetworkEvents, v.TestKeys.NetworkEvents...)
 	tk.TCPConnect = append(tk.TCPConnect, v.TestKeys.TCPConnect...)
-	for _, tcpConnect := range v.TestKeys.TCPConnect {
-		if !tcpConnect.Status.Success {
-			gatewayConnection := newGatewayConnection(tcpConnect, transportType)
-			tk.FailingGateways = append(tk.FailingGateways, *gatewayConnection)
-		}
-	}
-}
-
-func (tk *TestKeys) updateTransportStatus(openvpnGatewayCount, obfs4GatewayCount int) {
-	failingOpenvpnGateways, failingObfs4Gateways := 0, 0
-	for _, gw := range tk.FailingGateways {
-		if gw.TransportType == "openvpn" {
-			failingOpenvpnGateways++
-		} else if gw.TransportType == "obfs4" {
-			failingObfs4Gateways++
-		}
-	}
-	if failingOpenvpnGateways < openvpnGatewayCount {
-		tk.TransportStatus["openvpn"] = "ok"
-	} else {
-		tk.TransportStatus["openvpn"] = "blocked"
-	}
-	if failingObfs4Gateways < obfs4GatewayCount {
-		tk.TransportStatus["obfs4"] = "ok"
-	} else {
-		tk.TransportStatus["obfs4"] = "blocked"
-	}
-}
-
-func newGatewayConnection(
-	tcpConnect tracex.TCPConnectEntry, transportType string) *GatewayConnection {
-	return &GatewayConnection{
-		IP:            tcpConnect.IP,
-		Port:          tcpConnect.Port,
-		TransportType: transportType,
-	}
 }
 
 // AddCACertFetchTestKeys adds generic urlgetter.Get() testKeys to riseupvpn specific test keys
@@ -149,11 +113,6 @@ func (tk *TestKeys) AddCACertFetchTestKeys(testKeys urlgetter.TestKeys) {
 	tk.Requests = append(tk.Requests, testKeys.Requests...)
 	tk.TCPConnect = append(tk.TCPConnect, testKeys.TCPConnect...)
 	tk.TLSHandshakes = append(tk.TLSHandshakes, testKeys.TLSHandshakes...)
-	if testKeys.Failure != nil {
-		tk.APIStatus = "blocked"
-		tk.APIFailure = tk.Failure
-		tk.CACertStatus = false
-	}
 }
 
 // Measurer performs the measurement.
@@ -210,17 +169,13 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		tk := entry.TestKeys
 		testkeys.AddCACertFetchTestKeys(tk)
 		if tk.Failure != nil {
-			// TODO(bassosimone,cyberta): should we update the testkeys
-			// in this case (e.g., APIFailure?)
-			// See https://github.com/ooni/probe/issues/1432.
-			return nil
-		}
-		if ok := certPool.AppendCertsFromPEM([]byte(tk.HTTPResponseBody)); !ok {
 			testkeys.CACertStatus = false
-			testkeys.APIStatus = "blocked"
-			errorValue := "invalid_ca"
-			testkeys.APIFailure = &errorValue
-			return nil
+			testkeys.APIFailure = append(testkeys.APIFailure, *tk.Failure)
+			certPool = nil
+		} else if ok := certPool.AppendCertsFromPEM([]byte(tk.HTTPResponseBody)); !ok {
+			testkeys.CACertStatus = false
+			testkeys.APIFailure = append(testkeys.APIFailure, "invalid_ca")
+			certPool = nil
 		}
 	}
 
@@ -232,24 +187,37 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 			CertPool:        certPool,
 			Method:          "GET",
 			FailOnHTTPError: true,
+			NoTLSVerify:     !testkeys.CACertStatus,
 		}},
 		{Target: eipServiceURL, Config: urlgetter.Config{
 			CertPool:        certPool,
 			Method:          "GET",
 			FailOnHTTPError: true,
+			NoTLSVerify:     !testkeys.CACertStatus,
 		}},
 		{Target: geoServiceURL, Config: urlgetter.Config{
 			CertPool:        certPool,
 			Method:          "GET",
 			FailOnHTTPError: true,
+			NoTLSVerify:     !testkeys.CACertStatus,
 		}},
 	}
 	for entry := range multi.CollectOverall(ctx, inputs, 1, 20, "riseupvpn", callbacks) {
 		testkeys.UpdateProviderAPITestKeys(entry)
 	}
 
+	if testkeys.APIFailure != nil {
+		// scrub reponse bodys before early returning
+		var scrubbedRequests = []model.ArchivalHTTPRequestResult{}
+		for _, requestEntry := range testkeys.Requests {
+			requestEntry.Response.Body = model.ArchivalHTTPBody{Value: "[scrubbed]"}
+			scrubbedRequests = append(scrubbedRequests, requestEntry)
+		}
+		testkeys.Requests = scrubbedRequests
+		return nil
+	}
+
 	// test gateways now
-	testkeys.TransportStatus = map[string]string{}
 	gateways := parseGateways(testkeys)
 	openvpnEndpoints := generateMultiInputs(gateways, "openvpn")
 	obfs4Endpoints := generateMultiInputs(gateways, "obfs4")
@@ -273,7 +241,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	}
 
 	// set transport status based on gateway test results
-	testkeys.updateTransportStatus(len(openvpnEndpoints), len(obfs4Endpoints))
+	//testkeys.updateTransportStatus(len(openvpnEndpoints), len(obfs4Endpoints))
 	return nil
 }
 
@@ -303,6 +271,9 @@ func generateMultiInputs(gateways []GatewayV3, transportType string) []urlgetter
 }
 
 func parseGateways(testKeys *TestKeys) []GatewayV3 {
+	var eipService *EipServiceV3 = nil
+	var geoService *GeoService = nil
+	var scrubbedRequests = []model.ArchivalHTTPRequestResult{}
 	for _, requestEntry := range testKeys.Requests {
 		if requestEntry.Request.URL == eipServiceURL && requestEntry.Failure == nil {
 			// TODO(bassosimone,cyberta): is it reasonable that we discard
@@ -314,7 +285,79 @@ func parseGateways(testKeys *TestKeys) []GatewayV3 {
 			}
 		}
 	}
-	return nil
+	return result
+}
+
+// getLocationsUnderTest parses all gateways supporting obfs4 and returns the two locations having most obfs4 bridges
+func getLocationsUnderTest(eipService *EipServiceV3, geoService *GeoService) []string {
+	var result []string = nil
+	if eipService != nil {
+		locationMap := map[string]int{}
+		locations := []string{}
+		for _, gateway := range eipService.Gateways {
+			if !gateway.hasTransport("obfs4") {
+				continue
+			}
+			if _, ok := locationMap[gateway.Location]; !ok {
+				locations = append(locations, gateway.Location)
+			}
+			locationMap[gateway.Location] += 1
+		}
+
+		location1 := ""
+		location2 := ""
+		for _, location := range locations {
+			if locationMap[location] > locationMap[location1] {
+				location2 = location1
+				location1 = location
+			} else if locationMap[location] > locationMap[location2] {
+				location2 = location
+			}
+		}
+		if location1 != "" {
+			result = append(result, location1)
+		}
+		if location2 != "" {
+			result = append(result, location2)
+		}
+	}
+
+	return result
+}
+
+func (gateway *GatewayV3) hasTransport(s string) bool {
+	for _, transport := range gateway.Capabilities.Transport {
+		if s == transport.Type {
+			return true
+		}
+	}
+	return false
+}
+
+func (gateway *GatewayV3) isLocationUnderTest(locations []string) bool {
+	for _, location := range locations {
+		if location == gateway.Location {
+			return true
+		}
+	}
+	return false
+}
+
+func (geoService *GeoService) isHealthyGateway(gateway GatewayV3) bool {
+	if geoService.SortedGateways == nil {
+		// Earlier versions of the geoservice don't include the sorted gateway list containing the load info,
+		// so we can't say anything about the load of a gateway in that case.
+		// We assume it's an healthy location. Riseup will switch to the updated API soon *fingers crossed*
+		return true
+	}
+	for _, gatewayLoad := range geoService.SortedGateways {
+		if gatewayLoad.Host == gateway.Host {
+			return !gatewayLoad.Overload
+		}
+	}
+
+	// gateways that are not included in the geoservice should be considered unusable
+	return false
 }
 
 // DecodeEIPServiceV3 decodes eip-service.json version 3
@@ -325,6 +368,16 @@ func DecodeEIPServiceV3(body string) (*EIPServiceV3, error) {
 		return nil, err
 	}
 	return &eip, nil
+}
+
+// DecodeGeoService decodes geoService  json
+func DecodeGeoService(body string) (*GeoService, error) {
+	var gs GeoService
+	err := json.Unmarshal([]byte(body), &gs)
+	if err != nil {
+		return nil, err
+	}
+	return &gs, nil
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
