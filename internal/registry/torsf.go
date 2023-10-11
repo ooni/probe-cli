@@ -17,7 +17,7 @@ func init() {
 			)
 		},
 		config:           &torsf.Config{},
-		enabledByDefault: true,
+		enabledByDefault: false,
 		inputPolicy:      model.InputNone,
 	}
 }

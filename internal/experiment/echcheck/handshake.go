@@ -37,7 +37,7 @@ func handshakeWithEch(ctx context.Context, conn net.Conn, zeroTime time.Time,
 	return handshakeWithExtension(ctx, conn, zeroTime, address, sni, []utls.TLSExtension{&utlsEchExtension}, logger)
 }
 
-func handshakeMaybePrintECH(doprint bool) string {
+func handshakeMaybePrintWithECH(doprint bool) string {
 	if doprint {
 		return "WithECH"
 	}
@@ -51,7 +51,7 @@ func handshakeWithExtension(ctx context.Context, conn net.Conn, zeroTime time.Ti
 	handshakerConstructor := newHandshakerWithExtensions(extensions)
 	tracedHandshaker := handshakerConstructor(log.Log, &utls.HelloFirefox_Auto)
 
-	ol := logx.NewOperationLogger(logger, "echcheck: TLSHandshake%s", handshakeMaybePrintECH(len(extensions) > 0))
+	ol := logx.NewOperationLogger(logger, "echcheck: TLSHandshake%s", handshakeMaybePrintWithECH(len(extensions) > 0))
 	start := time.Now()
 	maybeTLSConn, err := tracedHandshaker.Handshake(ctx, conn, tlsConfig)
 	finish := time.Now()
