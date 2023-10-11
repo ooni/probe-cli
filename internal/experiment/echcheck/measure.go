@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -65,9 +66,11 @@ func (m *Measurer) Run(
 	}
 
 	// 1. perform a DNSLookup
+	ol := logx.NewOperationLogger(args.Session.Logger(), "echcheck: DNSLookup[%s] %s", m.config.resolverURL(), parsed.Host)
 	trace := measurexlite.NewTrace(0, args.Measurement.MeasurementStartTimeSaved)
 	resolver := trace.NewParallelDNSOverHTTPSResolver(args.Session.Logger(), m.config.resolverURL())
 	addrs, err := resolver.LookupHost(ctx, parsed.Host)
+	ol.Stop(err)
 	if err != nil {
 		return err
 	}
@@ -75,13 +78,17 @@ func (m *Measurer) Run(
 	address := net.JoinHostPort(addrs[0], "443")
 
 	// 2. Set up TCP connections
+	ol = logx.NewOperationLogger(args.Session.Logger(), "echcheck: TCPConnect#1 %s", address)
 	var dialer net.Dialer
 	conn, err := dialer.DialContext(ctx, "tcp", address)
+	ol.Stop(err)
 	if err != nil {
 		return netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ConnectOperation, err)
 	}
 
+	ol = logx.NewOperationLogger(args.Session.Logger(), "echcheck: TCPConnect#2 %s", address)
 	conn2, err := dialer.DialContext(ctx, "tcp", address)
+	ol.Stop(err)
 	if err != nil {
 		return netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ConnectOperation, err)
 	}
@@ -93,11 +100,25 @@ func (m *Measurer) Run(
 	defer cancel()
 
 	go func() {
-		controlChannel <- *handshake(ctx, conn, args.Measurement.MeasurementStartTimeSaved, address, parsed.Host)
+		controlChannel <- *handshake(
+			ctx,
+			conn,
+			args.Measurement.MeasurementStartTimeSaved,
+			address,
+			parsed.Host,
+			args.Session.Logger(),
+		)
 	}()
 
 	go func() {
-		targetChannel <- *handshakeWithEch(ctx, conn2, args.Measurement.MeasurementStartTimeSaved, address, parsed.Host)
+		targetChannel <- *handshakeWithEch(
+			ctx,
+			conn2,
+			args.Measurement.MeasurementStartTimeSaved,
+			address,
+			parsed.Host,
+			args.Session.Logger(),
+		)
 	}()
 
 	control := <-controlChannel
