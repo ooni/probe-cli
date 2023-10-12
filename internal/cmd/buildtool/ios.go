@@ -37,6 +37,8 @@ func iosSubcommand() *cobra.Command {
 		Use:   "cdeps [zlib|openssl|libevent|tor...]",
 		Short: "Cross compiles C dependencies for iOS",
 		Run: func(cmd *cobra.Command, args []string) {
+			// Implementation note: perform the check here such that we can
+			// run unit test for the building code from any system
 			runtimex.Assert(runtime.GOOS == "darwin", "this command requires darwin")
 			for _, arg := range args {
 				iosCdepsBuildMain(arg, &buildDeps{})
