@@ -1701,6 +1701,7 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 				"--disable-tool-name-check",
 				"--disable-systemd",
 				"--prefix=/",
+				"--disable-unittests",
 			},
 		}, {
 			Env: []string{},
@@ -1777,6 +1778,7 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 				"--disable-tool-name-check",
 				"--disable-systemd",
 				"--prefix=/",
+				"--disable-unittests",
 			},
 		}, {
 			Env: []string{},
@@ -1853,6 +1855,7 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 				"--disable-tool-name-check",
 				"--disable-systemd",
 				"--prefix=/",
+				"--disable-unittests",
 			},
 		}, {
 			Env: []string{},
@@ -1929,6 +1932,7 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 				"--disable-tool-name-check",
 				"--disable-systemd",
 				"--prefix=/",
+				"--disable-unittests",
 			},
 		}, {
 			Env: []string{},

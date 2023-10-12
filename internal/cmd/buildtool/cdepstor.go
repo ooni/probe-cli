@@ -56,6 +56,7 @@ func cdepsTorBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencies) {
 		"--disable-tool-name-check",
 		"--disable-systemd",
 		"--prefix=/",
+		"--disable-unittests",
 	)
 	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, envp))
 

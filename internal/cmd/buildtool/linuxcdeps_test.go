@@ -346,6 +346,7 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 				"--disable-tool-name-check",
 				"--disable-systemd",
 				"--prefix=/",
+				"--disable-unittests",
 			},
 		}, {
 			Env: []string{},
