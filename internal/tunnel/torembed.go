@@ -1,14 +1,13 @@
-//go:build ooni_libtor && android
+//go:build ooni_libtor
 
 package tunnel
 
 //
 // This file implements the ooni_libtor strategy of embedding tor. We manually
-// compile tor and its dependencies and link against it. We currently only adopt
-// this technique for Android. We may possibly migrate also iOS in the future,
-// provided that this functionality proves to be stable in the 3.17 cycle.
+// compile tor and its dependencies and link against it.
 //
-// See https://github.com/ooni/probe/issues/2365.
+// See https://github.com/ooni/probe/issues/2365 and
+// https://github.com/ooni/probe/issues/2564.
 //
 
 import (

@@ -1,4 +1,4 @@
-//go:build !android && !ios && !ooni_libtor
+//go:build !ooni_libtor
 
 package tunnel
 
@@ -6,7 +6,7 @@ package tunnel
 // This file implements our strategy for running tor on desktop in most
 // configurations except for the ooni_libtor case, where we build tor and
 // its dependencies for Linux. The purpuse of this special case it that
-// of testing the otherwise untested code that would run on Android.
+// of testing the otherwise untested code that would run on mobile.
 //
 
 import (
