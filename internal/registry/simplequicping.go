@@ -16,7 +16,8 @@ func init() {
 				*config.(*simplequicping.Config),
 			)
 		},
-		config:      &simplequicping.Config{},
-		inputPolicy: model.InputStrictlyRequired,
+		config:           &simplequicping.Config{},
+		enabledByDefault: true,
+		inputPolicy:      model.InputStrictlyRequired,
 	}
 }

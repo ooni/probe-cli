@@ -16,7 +16,8 @@ func init() {
 				*config.(*torsf.Config),
 			)
 		},
-		config:      &torsf.Config{},
-		inputPolicy: model.InputNone,
+		config:           &torsf.Config{},
+		enabledByDefault: false,
+		inputPolicy:      model.InputNone,
 	}
 }

@@ -9,7 +9,7 @@ import (
 func dnsBlockingAndroidDNSCacheNoData() *TestCase {
 	return &TestCase{
 		Name:  "dnsBlockingAndroidDNSCacheNoData",
-		Flags: TestCaseFlagNoV04, // see https://github.com/ooni/probe-cli/pull/1211
+		Flags: 0,
 		Input: "https://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 			// make sure the env knows we want to emulate our getaddrinfo wrapper behavior
@@ -23,8 +23,9 @@ func dnsBlockingAndroidDNSCacheNoData() *TestCase {
 		ExpectTestKeys: &testKeys{
 			DNSExperimentFailure: "android_dns_cache_no_data",
 			DNSConsistency:       "inconsistent",
-			XDNSFlags:            2,  // AnalysisDNSUnexpectedFailure
-			XBlockingFlags:       33, // analysisFlagDNSBlocking | analysisFlagSuccess
+			XStatus:              2080, // StatusExperimentDNS | StatusAnomalyDNS
+			XDNSFlags:            2,    // AnalysisDNSUnexpectedFailure
+			XBlockingFlags:       33,   // analysisFlagDNSBlocking | analysisFlagSuccess
 			Accessible:           false,
 			Blocking:             "dns",
 		},

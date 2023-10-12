@@ -16,8 +16,9 @@ func init() {
 				config.(telegram.Config),
 			)
 		},
-		config:        telegram.Config{},
-		interruptible: false,
-		inputPolicy:   model.InputNone,
+		config:           telegram.Config{},
+		enabledByDefault: true,
+		interruptible:    false,
+		inputPolicy:      model.InputNone,
 	}
 }

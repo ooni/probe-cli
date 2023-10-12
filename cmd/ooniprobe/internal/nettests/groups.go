@@ -55,7 +55,9 @@ var All = map[string]Group{
 		Label: "Experimental Nettests",
 		Nettests: []Nettest{
 			DNSCheck{},
+			ECHCheck{},
 			STUNReachability{},
+			RiseupVPN{},
 			TorSf{},
 			VanillaTor{},
 		},

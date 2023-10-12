@@ -16,7 +16,8 @@ func init() {
 				*config.(*dnscheck.Config),
 			)
 		},
-		config:      &dnscheck.Config{},
-		inputPolicy: model.InputOrStaticDefault,
+		config:           &dnscheck.Config{},
+		enabledByDefault: true,
+		inputPolicy:      model.InputOrStaticDefault,
 	}
 }

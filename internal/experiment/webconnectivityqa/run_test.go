@@ -78,7 +78,7 @@ func TestRunTestCase(t *testing.T) {
 				return "web_connectivity"
 			},
 			MockExperimentVersion: func() string {
-				return "0.4.2"
+				return "0.4.3"
 			},
 			MockRun: func(ctx context.Context, args *model.ExperimentArgs) error {
 				args.Measurement.TestKeys = &testKeys{}
@@ -107,7 +107,7 @@ func TestRunTestCase(t *testing.T) {
 				return "web_connectivity"
 			},
 			MockExperimentVersion: func() string {
-				return "0.4.2"
+				return "0.4.3"
 			},
 			MockRun: func(ctx context.Context, args *model.ExperimentArgs) error {
 				args.Measurement.TestKeys = &testKeys{
@@ -139,7 +139,7 @@ func TestRunTestCase(t *testing.T) {
 				return "web_connectivity"
 			},
 			MockExperimentVersion: func() string {
-				return "0.4.2"
+				return "0.4.3"
 			},
 			MockRun: func(ctx context.Context, args *model.ExperimentArgs) error {
 				args.Measurement.TestKeys = &testKeys{
@@ -173,7 +173,7 @@ func TestRunTestCase(t *testing.T) {
 				return "web_connectivity"
 			},
 			MockExperimentVersion: func() string {
-				return "0.4.2"
+				return "0.4.3"
 			},
 			MockRun: func(ctx context.Context, args *model.ExperimentArgs) error {
 				args.Measurement.TestKeys = &testKeys{

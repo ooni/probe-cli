@@ -16,7 +16,8 @@ func init() {
 				*config.(*whatsapp.Config),
 			)
 		},
-		config:      &whatsapp.Config{},
-		inputPolicy: model.InputNone,
+		config:           &whatsapp.Config{},
+		enabledByDefault: true,
+		inputPolicy:      model.InputNone,
 	}
 }
