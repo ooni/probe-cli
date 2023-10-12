@@ -258,7 +258,7 @@ func (*DependenciesCallCounter) XCRun(args ...string) string {
 	case "-find":
 		runtimex.Assert(len(args) == 4, "expected four arguments")
 		runtimex.Assert(args[1] == "-sdk", "the second argument must be -sdk")
-		return string(filepath.Separator) + filepath.Join("", "Developer", "SDKs", args[2], "bin", args[3])
+		return string(filepath.Separator) + filepath.Join("Developer", "SDKs", args[2], "bin", args[3])
 
 	default:
 		panic(errors.New("the first argument must be -sdk or -find"))
