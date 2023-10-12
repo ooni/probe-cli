@@ -37,6 +37,7 @@ func iosSubcommand() *cobra.Command {
 		Use:   "cdeps [zlib|openssl|libevent|tor...]",
 		Short: "Cross compiles C dependencies for iOS",
 		Run: func(cmd *cobra.Command, args []string) {
+			runtimex.Assert(runtime.GOOS == "darwin", "this command requires darwin")
 			for _, arg := range args {
 				iosCdepsBuildMain(arg, &buildDeps{})
 			}
@@ -66,8 +67,6 @@ func iosBuildGomobile(deps buildtoolmodel.Dependencies) {
 
 // iosCdepsBuildMain builds C dependencies for ios.
 func iosCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
-	runtimex.Assert(runtime.GOOS == "darwin", "this command requires darwin")
-
 	// The ooni/probe-ios app explicitly only targets amd64 and arm64. It also targets
 	// as the minimum version iOS 12, while one cannot target a version of iOS > 10 when
 	// building for 32-bit targets. Hence, using only 64 bit archs here is fine.
