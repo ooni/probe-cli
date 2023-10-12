@@ -221,8 +221,36 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 			Env: []string{},
 			Argv: []string{
 				"rm",
-				"-rf",
-				faketopdir + "/" + sysDepDestDir + "/lib/pkgconfig",
+				"-f",
+				faketopdir + "/" + sysDepDestDir + "/lib/pkgconfig/libevent.pc",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-f",
+				faketopdir + "/" + sysDepDestDir + "/lib/pkgconfig/libevent_core.pc",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-f",
+				faketopdir + "/" + sysDepDestDir + "/lib/pkgconfig/libevent_extra.pc",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-f",
+				faketopdir + "/" + sysDepDestDir + "/lib/pkgconfig/libevent_openssl.pc",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-f",
+				faketopdir + "/" + sysDepDestDir + "/lib/pkgconfig/libevent_pthreads.pc",
 			},
 		}, {
 			Env: []string{},
