@@ -123,7 +123,7 @@ func iosCdepsBuildArch(deps buildtoolmodel.Dependencies, ooniArch string, name s
 // same value used by the ooni/probe-ios app as of 2023-10.12.
 const iosMinVersion = "12.0"
 
-// iosNewCBuildEnv creates a new [cBuildEnv] for the given ooniArch ("arm", "arm64", "386", "amd64").
+// iosNewCBuildEnv creates a new [cBuildEnv] for the given ooniArch ("arm64" or "amd64").
 func iosNewCBuildEnv(deps buildtoolmodel.Dependencies, ooniArch string) *cBuildEnv {
 	destdir := runtimex.Try1(filepath.Abs(filepath.Join( // must be absolute
 		"internal", "libtor", "ios", ooniArch,
