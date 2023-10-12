@@ -31,6 +31,12 @@ func androidSubcommand() *cobra.Command {
 		Use:   "gomobile",
 		Short: "Builds oonimkall for android using gomobile",
 		Run: func(cmd *cobra.Command, args []string) {
+			// Implementation note: perform the check here such that we can
+			// run unit test for the building code from any system
+			runtimex.Assert(
+				runtime.GOOS == "darwin" || runtime.GOOS == "linux",
+				"this command requires darwin or linux",
+			)
 			androidBuildGomobile(&buildDeps{})
 		},
 	})
@@ -39,6 +45,12 @@ func androidSubcommand() *cobra.Command {
 		Use:   "cli",
 		Short: "Builds ooniprobe and miniooni for usage within termux",
 		Run: func(cmd *cobra.Command, args []string) {
+			// Implementation note: perform the check here such that we can
+			// run unit test for the building code from any system
+			runtimex.Assert(
+				runtime.GOOS == "darwin" || runtime.GOOS == "linux",
+				"this command requires darwin or linux",
+			)
 			androidBuildCLIAll(&buildDeps{})
 		},
 	})
@@ -48,6 +60,12 @@ func androidSubcommand() *cobra.Command {
 		Short: "Cross compiles C dependencies for Android",
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, arg := range args {
+				// Implementation note: perform the check here such that we can
+				// run unit test for the building code from any system
+				runtimex.Assert(
+					runtime.GOOS == "darwin" || runtime.GOOS == "linux",
+					"this command requires darwin or linux",
+				)
 				androidCdepsBuildMain(arg, &buildDeps{})
 			}
 		},
@@ -59,11 +77,6 @@ func androidSubcommand() *cobra.Command {
 
 // androidBuildGomobile invokes the gomobile build.
 func androidBuildGomobile(deps buildtoolmodel.Dependencies) {
-	runtimex.Assert(
-		runtime.GOOS == "darwin" || runtime.GOOS == "linux",
-		"this command requires darwin or linux",
-	)
-
 	deps.PsiphonMaybeCopyConfigFiles()
 	deps.GolangCheck()
 
@@ -132,11 +145,6 @@ func androidNDKCheck(androidHome string) string {
 
 // androidBuildCLIAll builds all products in CLI mode for Android
 func androidBuildCLIAll(deps buildtoolmodel.Dependencies) {
-	runtimex.Assert(
-		runtime.GOOS == "darwin" || runtime.GOOS == "linux",
-		"this command requires darwin or linux",
-	)
-
 	deps.PsiphonMaybeCopyConfigFiles()
 	deps.GolangCheck()
 
@@ -379,10 +387,6 @@ func androidNDKBinPath(ndkDir string) string {
 
 // androidCdepsBuildMain builds C dependencies for android.
 func androidCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
-	runtimex.Assert(
-		runtime.GOOS == "darwin" || runtime.GOOS == "linux",
-		"this command requires darwin or linux",
-	)
 	androidHome := deps.AndroidSDKCheck()
 	ndkDir := deps.AndroidNDKCheck(androidHome)
 	archs := []string{"arm", "arm64", "386", "amd64"}
