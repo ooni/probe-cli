@@ -44,7 +44,7 @@ func androidSubcommand() *cobra.Command {
 	})
 
 	cmd.AddCommand(&cobra.Command{
-		Use:   "cdeps {zlib|openssl|libevent|tor} [zlib|openssl|libevent|tor...]",
+		Use:   "cdeps [zlib|openssl|libevent|tor...]",
 		Short: "Cross compiles C dependencies for Android",
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, arg := range args {
