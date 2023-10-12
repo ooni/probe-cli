@@ -35,7 +35,7 @@ jobs:
           PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
 
-      # we need coreutils for sha256 plus a bunch of GNU build tools
+      # ./internal/cmd/buildtool needs coreutils for sha256 plus GNU build tools
       - run: brew install autoconf automake coreutils libtool
 
       - run: make EXPECTED_XCODE_VERSION=14.2 MOBILE/ios

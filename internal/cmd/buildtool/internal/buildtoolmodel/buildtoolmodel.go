@@ -52,4 +52,8 @@ type Dependencies interface {
 	// WindowsMingwCheck makes sure we're using the
 	// expected version of mingw-w64.
 	WindowsMingwCheck()
+
+	// XCRun executes Xcode's xcrun tool with the given arguments and returns
+	// the output emitted by xcrun or panics on failure.
+	XCRun(args ...string) string
 }
