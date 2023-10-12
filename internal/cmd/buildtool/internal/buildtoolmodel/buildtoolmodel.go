@@ -18,6 +18,9 @@ type Dependencies interface {
 	// function returns the Android home path.
 	AndroidSDKCheck() string
 
+	// GOOS returns the current GOOS.
+	GOOS() string
+
 	// GOPATH returns the current GOPATH.
 	GOPATH() string
 
@@ -50,6 +53,7 @@ type Dependencies interface {
 	// expected version of mingw-w64.
 	WindowsMingwCheck()
 
-	// GOOS returns the current GOOS.
-	GOOS() string
+	// XCRun executes `xcrun [args]` and returns its output or
+	// invokes PANIC in case of failure.
+	XCRun(args ...string) string
 }

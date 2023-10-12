@@ -215,25 +215,27 @@ func androidNewCBuildEnv(androidHome, ndkDir, ooniArch string) *cBuildEnv {
 		"internal", "libtor", "android", ooniArch,
 	)))
 	out := &cBuildEnv{
-		ANDROID_HOME:       androidHome,
-		ANDROID_NDK_ROOT:   ndkDir,
-		AS:                 "", // later
-		AR:                 filepath.Join(binpath, "llvm-ar"),
-		BINPATH:            binpath,
-		CC:                 "", // later
-		CFLAGS:             androidCflags(ooniArch),
-		CONFIGURE_HOST:     "", // later
-		DESTDIR:            destdir,
-		CXX:                "", // later
-		CXXFLAGS:           androidCflags(ooniArch),
-		GOARCH:             ooniArch,
-		GOARM:              "", // maybe later
-		LD:                 filepath.Join(binpath, "ld"),
-		LDFLAGS:            []string{}, // empty
-		OPENSSL_API_DEFINE: "-D__ANDROID_API__=21",
-		OPENSSL_COMPILER:   "", // later
-		RANLIB:             filepath.Join(binpath, "llvm-ranlib"),
-		STRIP:              filepath.Join(binpath, "llvm-strip"),
+		ANDROID_HOME:     androidHome,
+		ANDROID_NDK_ROOT: ndkDir,
+		AS:               "", // later
+		AR:               filepath.Join(binpath, "llvm-ar"),
+		BINPATH:          binpath,
+		CC:               "", // later
+		CFLAGS:           androidCflags(ooniArch),
+		CONFIGURE_HOST:   "", // later
+		DESTDIR:          destdir,
+		CXX:              "", // later
+		CXXFLAGS:         androidCflags(ooniArch),
+		GOARCH:           ooniArch,
+		GOARM:            "", // maybe later
+		LD:               filepath.Join(binpath, "ld"),
+		LDFLAGS:          []string{}, // empty
+		OPENSSL_COMPILER: "",         // later
+		OPENSSL_POST_COMPILER_FLAGS: []string{
+			"-D__ANDROID_API__=21",
+		},
+		RANLIB: filepath.Join(binpath, "llvm-ranlib"),
+		STRIP:  filepath.Join(binpath, "llvm-strip"),
 	}
 	switch ooniArch {
 	case "arm":

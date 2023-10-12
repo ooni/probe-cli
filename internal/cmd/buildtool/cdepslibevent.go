@@ -49,6 +49,10 @@ func cdepsLibeventBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependenci
 	}
 	envp := cBuildExportAutotools(cBuildMerge(globalEnv, localEnv))
 
+	// On iOS, we need PKG_CONFIG_PATH to convince libevent to use the OpenSSL we built but]
+	// always letting libevent's configure be pkgconfig aware would probably be fine
+	envp.Append("PKG_CONFIG_PATH", filepath.Join(globalEnv.DESTDIR, "lib", "pkgconfig"))
+
 	argv := runtimex.Try1(shellx.NewArgv("./configure"))
 	if globalEnv.CONFIGURE_HOST != "" {
 		argv.Append("--host=" + globalEnv.CONFIGURE_HOST)

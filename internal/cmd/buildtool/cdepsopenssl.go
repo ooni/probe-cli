@@ -67,9 +67,7 @@ func cdepsOpenSSLBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencie
 		"no-rc2", "no-rc4", "no-rc5", "no-rmd160", "no-whirlpool", "no-dso",
 		"no-ui-console", "no-shared", "no-unit-test", globalEnv.OPENSSL_COMPILER,
 	))
-	if globalEnv.OPENSSL_API_DEFINE != "" {
-		argv.Append(globalEnv.OPENSSL_API_DEFINE)
-	}
+	argv.Append(globalEnv.OPENSSL_POST_COMPILER_FLAGS...)
 	argv.Append("--libdir=lib", "--prefix=/", "--openssldir=/")
 	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, envp))
 
@@ -84,5 +82,7 @@ func cdepsOpenSSLBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencie
 	))
 
 	must.Run(log.Log, "make", "DESTDIR="+globalEnv.DESTDIR, "install_dev")
-	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.DESTDIR, "lib", "pkgconfig"))
+
+	// FIXME: we need to explain this change
+	//must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.DESTDIR, "lib", "pkgconfig"))
 }
