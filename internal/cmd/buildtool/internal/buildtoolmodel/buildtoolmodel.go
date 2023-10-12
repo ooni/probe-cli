@@ -18,6 +18,9 @@ type Dependencies interface {
 	// function returns the Android home path.
 	AndroidSDKCheck() string
 
+	// GOOS returns the current GOOS.
+	GOOS() string
+
 	// GOPATH returns the current GOPATH.
 	GOPATH() string
 
@@ -49,7 +52,4 @@ type Dependencies interface {
 	// WindowsMingwCheck makes sure we're using the
 	// expected version of mingw-w64.
 	WindowsMingwCheck()
-
-	// GOOS returns the current GOOS.
-	GOOS() string
 }

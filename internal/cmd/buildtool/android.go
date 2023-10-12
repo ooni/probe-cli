@@ -26,6 +26,7 @@ func androidSubcommand() *cobra.Command {
 		Use:   "android",
 		Short: "Builds ooniprobe, miniooni, and oonimkall for android",
 	}
+
 	cmd.AddCommand(&cobra.Command{
 		Use:   "gomobile",
 		Short: "Builds oonimkall for android using gomobile",
@@ -33,6 +34,7 @@ func androidSubcommand() *cobra.Command {
 			androidBuildGomobile(&buildDeps{})
 		},
 	})
+
 	cmd.AddCommand(&cobra.Command{
 		Use:   "cli",
 		Short: "Builds ooniprobe and miniooni for usage within termux",
@@ -40,6 +42,7 @@ func androidSubcommand() *cobra.Command {
 			androidBuildCLIAll(&buildDeps{})
 		},
 	})
+
 	cmd.AddCommand(&cobra.Command{
 		Use:   "cdeps {zlib|openssl|libevent|tor} [zlib|openssl|libevent|tor...]",
 		Short: "Cross compiles C dependencies for Android",
@@ -50,6 +53,7 @@ func androidSubcommand() *cobra.Command {
 		},
 		Args: cobra.MinimumNArgs(1),
 	})
+
 	return cmd
 }
 
@@ -161,7 +165,7 @@ func androidBuildCLIProductArch(
 	androidHome string,
 	ndkDir string,
 ) {
-	cgo := newAndroidCBuildEnv(androidHome, ndkDir, ooniArch)
+	cgo := androidNewCBuildEnv(androidHome, ndkDir, ooniArch)
 
 	log.Infof("building %s for android/%s", product.Pkg, ooniArch)
 
@@ -203,33 +207,33 @@ func androidBuildCLIProductArch(
 	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, envp))
 }
 
-// newAndroidCBuildEnv creates a new [cBuildEnv] for the
+// androidNewCBuildEnv creates a new [cBuildEnv] for the
 // given ooniArch ("arm", "arm64", "386", "amd64").
-func newAndroidCBuildEnv(androidHome, ndkDir, ooniArch string) *cBuildEnv {
+func androidNewCBuildEnv(androidHome, ndkDir, ooniArch string) *cBuildEnv {
 	binpath := androidNDKBinPath(ndkDir)
 	destdir := runtimex.Try1(filepath.Abs(filepath.Join( // must be absolute
 		"internal", "libtor", "android", ooniArch,
 	)))
 	out := &cBuildEnv{
-		ANDROID_HOME:       androidHome,
-		ANDROID_NDK_ROOT:   ndkDir,
-		AS:                 "", // later
-		AR:                 filepath.Join(binpath, "llvm-ar"),
-		BINPATH:            binpath,
-		CC:                 "", // later
-		CFLAGS:             androidCflags(ooniArch),
-		CONFIGURE_HOST:     "", // later
-		DESTDIR:            destdir,
-		CXX:                "", // later
-		CXXFLAGS:           androidCflags(ooniArch),
-		GOARCH:             ooniArch,
-		GOARM:              "", // maybe later
-		LD:                 filepath.Join(binpath, "ld"),
-		LDFLAGS:            []string{}, // empty
-		OPENSSL_API_DEFINE: "-D__ANDROID_API__=21",
-		OPENSSL_COMPILER:   "", // later
-		RANLIB:             filepath.Join(binpath, "llvm-ranlib"),
-		STRIP:              filepath.Join(binpath, "llvm-strip"),
+		ANDROID_HOME:                androidHome,
+		ANDROID_NDK_ROOT:            ndkDir,
+		AS:                          "", // later
+		AR:                          filepath.Join(binpath, "llvm-ar"),
+		BINPATH:                     binpath,
+		CC:                          "", // later
+		CFLAGS:                      androidCflags(ooniArch),
+		CONFIGURE_HOST:              "", // later
+		DESTDIR:                     destdir,
+		CXX:                         "", // later
+		CXXFLAGS:                    androidCflags(ooniArch),
+		GOARCH:                      ooniArch,
+		GOARM:                       "", // maybe later
+		LD:                          filepath.Join(binpath, "ld"),
+		LDFLAGS:                     []string{}, // empty
+		OPENSSL_COMPILER:            "",         // later
+		OPENSSL_POST_COMPILER_FLAGS: []string{"-D__ANDROID_API__=21"},
+		RANLIB:                      filepath.Join(binpath, "llvm-ranlib"),
+		STRIP:                       filepath.Join(binpath, "llvm-strip"),
 	}
 	switch ooniArch {
 	case "arm":
@@ -395,7 +399,7 @@ func androidCdepsBuildArch(
 	ndkDir string,
 	name string,
 ) {
-	cdenv := newAndroidCBuildEnv(androidHome, ndkDir, arch)
+	cdenv := androidNewCBuildEnv(androidHome, ndkDir, arch)
 	switch name {
 	case "libevent":
 		cdepsLibeventBuildMain(cdenv, deps)
