@@ -61,11 +61,11 @@ type cBuildEnv struct {
 	// LDFLAGS contains the LDFLAGS to use when compiling.
 	LDFLAGS []string
 
-	// OPENSSL_API_DEFINE is an extra define we need to add on Android.
-	OPENSSL_API_DEFINE string
-
 	// OPENSSL_COMPILER is the compiler name for OpenSSL.
 	OPENSSL_COMPILER string
+
+	// OPENSSL_POST_COMPILER_FLAGS contains extra flags to pass after OPENSSL_COMPILER
+	OPENSSL_POST_COMPILER_FLAGS []string
 
 	// RANLIB is the path to the ranlib tool.
 	RANLIB string
@@ -86,29 +86,30 @@ type cBuildEnv struct {
 // environment variables to CFLAGS, CXXFLAGS, etc.
 func cBuildMerge(global, local *cBuildEnv) *cBuildEnv {
 	out := &cBuildEnv{
-		ANDROID_HOME:       global.ANDROID_HOME,
-		ANDROID_NDK_ROOT:   global.ANDROID_NDK_ROOT,
-		AR:                 global.AR,
-		AS:                 global.AS,
-		BINPATH:            global.BINPATH,
-		CC:                 global.CC,
-		CFLAGS:             append([]string{}, global.CFLAGS...),
-		CONFIGURE_HOST:     global.CONFIGURE_HOST,
-		DESTDIR:            global.DESTDIR,
-		CXX:                global.CXX,
-		CXXFLAGS:           append([]string{}, global.CXXFLAGS...),
-		GOARCH:             global.GOARCH,
-		GOARM:              global.GOARM,
-		LD:                 global.LD,
-		LDFLAGS:            append([]string{}, global.LDFLAGS...),
-		OPENSSL_API_DEFINE: global.OPENSSL_API_DEFINE,
-		OPENSSL_COMPILER:   global.OPENSSL_COMPILER,
-		RANLIB:             global.RANLIB,
-		STRIP:              global.STRIP,
+		ANDROID_HOME:                global.ANDROID_HOME,
+		ANDROID_NDK_ROOT:            global.ANDROID_NDK_ROOT,
+		AR:                          global.AR,
+		AS:                          global.AS,
+		BINPATH:                     global.BINPATH,
+		CC:                          global.CC,
+		CFLAGS:                      append([]string{}, global.CFLAGS...),
+		CONFIGURE_HOST:              global.CONFIGURE_HOST,
+		DESTDIR:                     global.DESTDIR,
+		CXX:                         global.CXX,
+		CXXFLAGS:                    append([]string{}, global.CXXFLAGS...),
+		GOARCH:                      global.GOARCH,
+		GOARM:                       global.GOARM,
+		LD:                          global.LD,
+		LDFLAGS:                     append([]string{}, global.LDFLAGS...),
+		OPENSSL_COMPILER:            global.OPENSSL_COMPILER,
+		OPENSSL_POST_COMPILER_FLAGS: append([]string{}, global.OPENSSL_POST_COMPILER_FLAGS...),
+		RANLIB:                      global.RANLIB,
+		STRIP:                       global.STRIP,
 	}
 	out.CFLAGS = append(out.CFLAGS, local.CFLAGS...)
 	out.CXXFLAGS = append(out.CXXFLAGS, local.CXXFLAGS...)
 	out.LDFLAGS = append(out.LDFLAGS, local.LDFLAGS...)
+	out.OPENSSL_POST_COMPILER_FLAGS = append(out.OPENSSL_POST_COMPILER_FLAGS, local.OPENSSL_POST_COMPILER_FLAGS...)
 	return out
 }
 
