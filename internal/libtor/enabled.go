@@ -18,11 +18,6 @@ package libtor
 // #cgo android,amd64 CFLAGS: -I${SRCDIR}/android/amd64/include
 // #cgo android,amd64 LDFLAGS: -L${SRCDIR}/android/amd64/lib -ltor -levent -lssl -lcrypto -lz -lm
 //
-// #cgo ios,arm64 CFLAGS: -I${SRCDIR}/ios/arm64/include
-// #cgo ios,arm64 LDFLAGS: -L${SRCDIR}/ios/arm64/lib -ltor -levent -lssl -lcrypto -lz -lm
-// #cgo ios,amd64 CFLAGS: -I${SRCDIR}/ios/amd64/include
-// #cgo ios,amd64 LDFLAGS: -L${SRCDIR}/ios/amd64/lib -ltor -levent -lssl -lcrypto -lz -lm
-//
 // #include <limits.h>
 // #include <stdbool.h>
 // #include <stdlib.h>

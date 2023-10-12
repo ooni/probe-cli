@@ -245,8 +245,3 @@ func (cc *DependenciesCallCounter) increment(name string) {
 	}
 	cc.Counter[name]++
 }
-
-// XCRun implements buildtoolmodel.Dependencies.
-func (*DependenciesCallCounter) XCRun(args ...string) string {
-	panic("unimplemented") // TODO(bassosimone): implement this function
-}

@@ -52,8 +52,4 @@ type Dependencies interface {
 	// WindowsMingwCheck makes sure we're using the
 	// expected version of mingw-w64.
 	WindowsMingwCheck()
-
-	// XCRun executes `xcrun [args]` and returns its output or
-	// invokes PANIC in case of failure.
-	XCRun(args ...string) string
 }

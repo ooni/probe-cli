@@ -82,7 +82,5 @@ func cdepsOpenSSLBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencie
 	))
 
 	must.Run(log.Log, "make", "DESTDIR="+globalEnv.DESTDIR, "install_dev")
-
-	// FIXME: we need to explain this change
-	//must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.DESTDIR, "lib", "pkgconfig"))
+	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.DESTDIR, "lib", "pkgconfig"))
 }
