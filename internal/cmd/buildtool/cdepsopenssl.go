@@ -82,5 +82,8 @@ func cdepsOpenSSLBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencie
 	))
 
 	must.Run(log.Log, "make", "DESTDIR="+globalEnv.DESTDIR, "install_dev")
-	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.DESTDIR, "lib", "pkgconfig"))
+
+	// We used to delete the pkgconfig but it turns out this is important for libevent iOS builds, which
+	// means now we need to keep it. See https://github.com/ooni/probe-cli/pull/1369 for details.
+	//must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.DESTDIR, "lib", "pkgconfig"))
 }
