@@ -136,12 +136,6 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 				"DESTDIR=" + faketopdir + "/" + sysDepDestDir,
 				"install_dev",
 			},
-		}, {
-			Env: []string{},
-			Argv: []string{
-				"rm", "-rf",
-				faketopdir + "/" + sysDepDestDir + "/lib/pkgconfig",
-			},
 		}},
 	}, {
 		name:   "we can build libevent",
@@ -195,6 +189,7 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 					faketopdir,
 					sysDepDestDir,
 				),
+				"PKG_CONFIG_PATH=" + faketopdir + "/" + sysDepDestDir + "/lib/pkgconfig",
 			},
 			Argv: []string{
 				"./configure",
