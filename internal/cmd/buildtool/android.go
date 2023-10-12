@@ -230,8 +230,8 @@ func androidNewCBuildEnv(androidHome, ndkDir, ooniArch string) *cBuildEnv {
 		GOARM:                       "", // maybe later
 		LD:                          filepath.Join(binpath, "ld"),
 		LDFLAGS:                     []string{}, // empty
+		OPENSSL_COMPILER:            "",         // later
 		OPENSSL_POST_COMPILER_FLAGS: []string{"-D__ANDROID_API__=21"},
-		OPENSSL_COMPILER:            "", // later
 		RANLIB:                      filepath.Join(binpath, "llvm-ranlib"),
 		STRIP:                       filepath.Join(binpath, "llvm-strip"),
 	}
