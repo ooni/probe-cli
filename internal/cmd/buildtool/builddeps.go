@@ -82,3 +82,8 @@ func (*buildDeps) GOOS() string {
 func (*buildDeps) VerifySHA256(expectedSHA256 string, tarball string) {
 	cdepsMustVerifySHA256(expectedSHA256, tarball)
 }
+
+// XCRun implements buildtoolmodel.Dependencies
+func (*buildDeps) XCRun(args ...string) string {
+	return iosXCRun(args...)
+}
