@@ -22,6 +22,7 @@ require (
 	github.com/miekg/dns v1.1.56
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.7.1
+	github.com/ooni/go-libtor v1.1.8
 	github.com/ooni/netem v0.0.0-20230920215742-15f3ffec0107
 	github.com/ooni/oocrypto v0.5.5
 	github.com/ooni/oohttp v0.6.5
@@ -144,9 +145,9 @@ require (
 	github.com/xtaci/kcp-go/v5 v5.6.2 // indirect
 	github.com/xtaci/smux v1.5.24 // indirect
 	gitlab.com/yawning/bsaes.git v0.0.0-20190805113838-0a714cd429ec // indirect
-	golang.org/x/mod v0.13.0 // indirect
+	golang.org/x/mod v0.12.0 // indirect
 	golang.org/x/term v0.13.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
-	golang.org/x/tools v0.14.0 // indirect
+	golang.org/x/tools v0.13.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 )
