@@ -150,9 +150,9 @@ func iosNewCBuildEnv(deps buildtoolmodel.Dependencies, ooniArch string) *cBuildE
 		CFLAGS: []string{
 			"-isysroot", isysroot,
 			minVersionFlag + iosMinVersion, // tricky: they must be concatenated
-			"-O2",
 			"-arch", appleArch,
 			"-fembed-bitcode",
+			"-O2",
 		},
 		CONFIGURE_HOST: "", // later
 		DESTDIR:        destdir,
