@@ -757,12 +757,6 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"rm", "-rf",
-				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm/lib/pkgconfig",
-			},
-		}, {
-			Env: []string{},
-			Argv: []string{
 				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.1.3.tar.gz",
 			},
 		}, {
@@ -814,12 +808,6 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 				"make",
 				"DESTDIR=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64",
 				"install_dev",
-			},
-		}, {
-			Env: []string{},
-			Argv: []string{
-				"rm", "-rf",
-				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64/lib/pkgconfig",
 			},
 		}, {
 			Env: []string{},
@@ -879,12 +867,6 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"rm", "-rf",
-				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386/lib/pkgconfig",
-			},
-		}, {
-			Env: []string{},
-			Argv: []string{
 				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.1.3.tar.gz",
 			},
 		}, {
@@ -936,12 +918,6 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 				"make",
 				"DESTDIR=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64",
 				"install_dev",
-			},
-		}, {
-			Env: []string{},
-			Argv: []string{
-				"rm", "-rf",
-				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64/lib/pkgconfig",
 			},
 		}},
 	}}
@@ -1045,6 +1021,7 @@ func TestAndroidBuildCdepsLibevent(t *testing.T) {
 					"CXXFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fpic -mthumb -Oz -DANDROID",
 					"-I"+faketopdir+"/internal/cmd/buildtool/internal/libtor/android/arm/include",
 				),
+				"PKG_CONFIG_PATH=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm/lib/pkgconfig",
 			},
 			Argv: []string{
 				"./configure",
@@ -1077,8 +1054,36 @@ func TestAndroidBuildCdepsLibevent(t *testing.T) {
 			Env: []string{},
 			Argv: []string{
 				"rm",
-				"-rf",
-				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm/lib/pkgconfig",
+				"-f",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm/lib/pkgconfig/libevent.pc",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-f",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm/lib/pkgconfig/libevent_core.pc",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-f",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm/lib/pkgconfig/libevent_extra.pc",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-f",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm/lib/pkgconfig/libevent_openssl.pc",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-f",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm/lib/pkgconfig/libevent_pthreads.pc",
 			},
 		}, {
 			Env: []string{},
@@ -1195,6 +1200,7 @@ func TestAndroidBuildCdepsLibevent(t *testing.T) {
 					"CXXFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fpic -O2 -DANDROID",
 					"-I"+faketopdir+"/internal/cmd/buildtool/internal/libtor/android/arm64/include",
 				),
+				"PKG_CONFIG_PATH=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64/lib/pkgconfig",
 			},
 			Argv: []string{
 				"./configure",
@@ -1227,8 +1233,36 @@ func TestAndroidBuildCdepsLibevent(t *testing.T) {
 			Env: []string{},
 			Argv: []string{
 				"rm",
-				"-rf",
-				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64/lib/pkgconfig",
+				"-f",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64/lib/pkgconfig/libevent.pc",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-f",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64/lib/pkgconfig/libevent_core.pc",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-f",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64/lib/pkgconfig/libevent_extra.pc",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-f",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64/lib/pkgconfig/libevent_openssl.pc",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-f",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/arm64/lib/pkgconfig/libevent_pthreads.pc",
 			},
 		}, {
 			Env: []string{},
@@ -1345,6 +1379,7 @@ func TestAndroidBuildCdepsLibevent(t *testing.T) {
 					"CXXFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fPIC -O2 -DANDROID -mstackrealign",
 					"-I"+faketopdir+"/internal/cmd/buildtool/internal/libtor/android/386/include",
 				),
+				"PKG_CONFIG_PATH=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386/lib/pkgconfig",
 			},
 			Argv: []string{
 				"./configure",
@@ -1377,8 +1412,36 @@ func TestAndroidBuildCdepsLibevent(t *testing.T) {
 			Env: []string{},
 			Argv: []string{
 				"rm",
-				"-rf",
-				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386/lib/pkgconfig",
+				"-f",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386/lib/pkgconfig/libevent.pc",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-f",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386/lib/pkgconfig/libevent_core.pc",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-f",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386/lib/pkgconfig/libevent_extra.pc",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-f",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386/lib/pkgconfig/libevent_openssl.pc",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-f",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/386/lib/pkgconfig/libevent_pthreads.pc",
 			},
 		}, {
 			Env: []string{},
@@ -1495,6 +1558,7 @@ func TestAndroidBuildCdepsLibevent(t *testing.T) {
 					"CXXFLAGS=-fdata-sections -ffunction-sections -fstack-protector-strong -funwind-tables -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -fPIC -O2 -DANDROID",
 					"-I"+faketopdir+"/internal/cmd/buildtool/internal/libtor/android/amd64/include",
 				),
+				"PKG_CONFIG_PATH=" + faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64/lib/pkgconfig",
 			},
 			Argv: []string{
 				"./configure",
@@ -1527,8 +1591,36 @@ func TestAndroidBuildCdepsLibevent(t *testing.T) {
 			Env: []string{},
 			Argv: []string{
 				"rm",
-				"-rf",
-				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64/lib/pkgconfig",
+				"-f",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64/lib/pkgconfig/libevent.pc",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-f",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64/lib/pkgconfig/libevent_core.pc",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-f",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64/lib/pkgconfig/libevent_extra.pc",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-f",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64/lib/pkgconfig/libevent_openssl.pc",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-f",
+				faketopdir + "/internal/cmd/buildtool/internal/libtor/android/amd64/lib/pkgconfig/libevent_pthreads.pc",
 			},
 		}, {
 			Env: []string{},
