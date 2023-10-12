@@ -34,7 +34,7 @@ func iosSubcommand() *cobra.Command {
 	})
 
 	cmd.AddCommand(&cobra.Command{
-		Use:   "cdeps {zlib|openssl|libevent|tor} [zlib|openssl|libevent|tor...]",
+		Use:   "cdeps [zlib|openssl|libevent|tor...]",
 		Short: "Cross compiles C dependencies for iOS",
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, arg := range args {
@@ -66,10 +66,7 @@ func iosBuildGomobile(deps buildtoolmodel.Dependencies) {
 
 // iosCdepsBuildMain builds C dependencies for ios.
 func iosCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
-	runtimex.Assert(
-		runtime.GOOS == "darwin",
-		"this command requires darwin or linux",
-	)
+	runtimex.Assert(runtime.GOOS == "darwin", "this command requires darwin")
 
 	// The ooni/probe-ios app explicitly only targets amd64 and arm64. It also targets
 	// as the minimum version iOS 12, while one cannot target a version of iOS > 10 when
@@ -168,7 +165,7 @@ func iosNewCBuildEnv(deps buildtoolmodel.Dependencies, ooniArch string) *cBuildE
 			"-O2",
 		},
 		GOARCH: ooniArch,
-		GOARM:  "", // maybe later
+		GOARM:  "", // not needed
 		LD:     deps.XCRun("-find", "-sdk", platform, "ld"),
 		LDFLAGS: []string{
 			"-isysroot", isysroot,
@@ -188,11 +185,9 @@ func iosNewCBuildEnv(deps buildtoolmodel.Dependencies, ooniArch string) *cBuildE
 	switch ooniArch {
 	case "arm64":
 		out.CONFIGURE_HOST = "arm-apple-darwin"
-		out.GOARM = ""
 		out.OPENSSL_COMPILER = "ios64-xcrun"
 	case "amd64":
 		out.CONFIGURE_HOST = "x86_64-apple-darwin"
-		out.GOARM = ""
 		out.OPENSSL_COMPILER = "iossimulator-xcrun"
 	default:
 		panic(errors.New("unsupported ooniArch"))

@@ -54,6 +54,6 @@ type Dependencies interface {
 	WindowsMingwCheck()
 
 	// XCRun executes Xcode's xcrun tool with the given arguments and returns
-	// the output emitted by xcrun or panics on failure.
+	// the first line of text emitted by xcrun or PANICS on failure.
 	XCRun(args ...string) string
 }
