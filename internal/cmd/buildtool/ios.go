@@ -40,11 +40,9 @@ func iosSubcommand() *cobra.Command {
 			// Implementation note: perform the check here such that we can
 			// run unit test for the building code from any system
 			runtimex.Assert(runtime.GOOS == "darwin", "this command requires darwin")
-			deps := &buildDeps{}
 			for _, arg := range args {
-				iosCdepsBuildMain(arg, deps)
+				iosCdepsBuildMain(arg, &buildDeps{})
 			}
-			//iosMakeTorXCFramework(deps)
 		},
 		Args: cobra.MinimumNArgs(1),
 	})

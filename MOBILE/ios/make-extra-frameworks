@@ -6,12 +6,12 @@ WORK=$(mktemp -d)
 
 # make_framework constructs a framework.
 #
-# This function does not bothers itself with installing headers because we have
+# This function does not bother itself with installing headers because we have
 # already used the relevant headers when invoking `gomobile bind`.
 #
 # Arguments:
 #
-# - $1 is the name of the framework to create;
+# - $1 is the name of the framework to create.
 function make_framework() {
 	local name=$1
 	shift
@@ -28,8 +28,6 @@ function make_framework() {
 		-o $WORK/iphoneos/${name}.framework/Versions/A/${name}
 
 	# Create iphonesimulator/{amd,arm}64 framework.
-	#
-	#
 	mkdir -p $WORK/iphonesimulator/${name}.framework/Versions/A/Headers
 	ln -s A $WORK/iphonesimulator/${name}.framework/Versions/Current
 	ln -s Versions/Current/Headers $WORK/iphonesimulator/${name}.framework/Headers

@@ -58,7 +58,6 @@ func gomobileBuild(config *gomobileConfig) {
 		argv.Append("-tags", "ooni_libtor")
 	}
 	argv.Append("-ldflags", "-s -w")
-	argv.Append("-x")
 	argv.Append("./pkg/oonimkall")
 
 	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, config.envp))
