@@ -1,0 +1,32 @@
+#!/bin/bash
+set -euo pipefail
+
+export CREATE_POD_SPECS_DEBUG=1
+
+function check() {
+	local expect=$1
+	local got=$2
+	echo -n "checking whether '$expect' equals '$got'... "
+	if [[ "$got" != "$expect" ]]; then
+		echo "NO" 1>&2
+		exit 1
+	fi
+	echo "yes"
+}
+
+expect="v3.10.9-beta.116-44-g1777474 -> rolling"
+got=$(./MOBILE/ios/createpodspecs v3.10.9-beta.116-44-g1777474)
+check "$expect" "$got"
+
+expect="v3.10.0 -> v3.10.0"
+got=$(./MOBILE/ios/createpodspecs v3.10.0)
+check "$expect" "$got"
+
+expect="v3.10.0-alpha -> v3.10.0-alpha"
+got=$(./MOBILE/ios/createpodspecs v3.10.0-alpha)
+check "$expect" "$got"
+
+expect="v3.10.0-alpha.1 -> v3.10.0-alpha.1"
+got=$(./MOBILE/ios/createpodspecs v3.10.0-alpha.1)
+check "$expect" "$got"
+
