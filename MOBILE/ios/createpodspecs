@@ -6,6 +6,7 @@ __release=$(git describe --tags || echo '0.0.0-dev')
 # determine whether we're publishing to a release or to rolling
 #
 # when publishing to rolling the __release variable is like: 'v3.19.0-alpha-27-g4678578b'
+# otherwise it's like `v3.19.0`, `v3.19.0-alpha`, or `v3.19.0-beta`.
 if ! [[ $__release =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-z]+)$ ]]; then
 	__release=rolling
 fi
