@@ -113,7 +113,7 @@ func iosNewCBuildEnv(deps buildtoolmodel.Dependencies, platform, ooniArch string
 	var (
 		appleArch = iosAppleArchForOONIArch[ooniArch]
 
-		// monVersionFlag sets the correct flag for the compiler depending on whether
+		// minVersionFlag sets the correct flag for the compiler depending on whether
 		// we're using the iphoneos or iphonesimulator platform.
 		//
 		// Note: the documentation of clang fetched on 2023-10-12 explicitly mentions that
