@@ -72,16 +72,8 @@ func iosCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
 	// The ooni/probe-ios app explicitly only targets amd64 and arm64. It also targets
 	// as the minimum version iOS 12, while one cannot target a version of iOS > 10 when
 	// building for 32-bit targets. Hence, using only 64 bit archs here is fine.
-	archs := []string{"arm64", "amd64"}
-	for _, arch := range archs {
-		iosCdepsBuildArch(deps, arch, name)
-	}
-}
-
-// iosPlatformForOONIArch maps the ooniArch to the iOS platform
-var iosPlatformForOONIArch = map[string]string{
-	"amd64": "iphonesimulator",
-	"arm64": "iphoneos",
+	iosCdepsBuildArch(deps, name, "iphoneos", "arm64")
+	iosCdepsBuildArch(deps, name, "iphonesimulator", "amd64")
 }
 
 // iosAppleArchForOONIArch maps the ooniArch to the corresponding apple arch
@@ -104,8 +96,8 @@ var iosMinVersionFlagForOONIArch = map[string]string{
 }
 
 // iosCdepsBuildArch builds the given dependency for the given arch
-func iosCdepsBuildArch(deps buildtoolmodel.Dependencies, ooniArch string, name string) {
-	cdenv := iosNewCBuildEnv(deps, ooniArch)
+func iosCdepsBuildArch(deps buildtoolmodel.Dependencies, name, platform, ooniArch string) {
+	cdenv := iosNewCBuildEnv(deps, platform, ooniArch)
 	switch name {
 	case "libevent":
 		cdepsLibeventBuildMain(cdenv, deps)
@@ -125,19 +117,17 @@ func iosCdepsBuildArch(deps buildtoolmodel.Dependencies, ooniArch string, name s
 const iosMinVersion = "12.0"
 
 // iosNewCBuildEnv creates a new [cBuildEnv] for the given ooniArch ("arm64" or "amd64").
-func iosNewCBuildEnv(deps buildtoolmodel.Dependencies, ooniArch string) *cBuildEnv {
+func iosNewCBuildEnv(deps buildtoolmodel.Dependencies, platform, ooniArch string) *cBuildEnv {
 	destdir := runtimex.Try1(filepath.Abs(filepath.Join( // must be absolute
-		"internal", "libtor", "ios", ooniArch,
+		"internal", "libtor", platform, ooniArch,
 	)))
 
 	var (
 		appleArch      = iosAppleArchForOONIArch[ooniArch]
 		minVersionFlag = iosMinVersionFlagForOONIArch[ooniArch]
-		platform       = iosPlatformForOONIArch[ooniArch]
 	)
 	runtimex.Assert(appleArch != "", "empty appleArch")
 	runtimex.Assert(minVersionFlag != "", "empty minVersionFlag")
-	runtimex.Assert(platform != "", "empty platform")
 
 	isysroot := deps.XCRun("-sdk", platform, "--show-sdk-path")
 
