@@ -15,6 +15,16 @@ func buildAndPublishMobileIOS(w io.Writer, job *Job) {
 
 	buildJob := "build_ios_mobile"
 	artifacts := []string{
+		"./MOBILE/ios/libcrypto.xcframework.zip",
+		"./MOBILE/ios/libcrypto.podspec",
+		"./MOBILE/ios/libevent.xcframework.zip",
+		"./MOBILE/ios/libevent.podspec",
+		"./MOBILE/ios/libssl.xcframework.zip",
+		"./MOBILE/ios/libssl.podspec",
+		"./MOBILE/ios/libtor.xcframework.zip",
+		"./MOBILE/ios/libtor.podspec",
+		"./MOBILE/ios/libz.xcframework.zip",
+		"./MOBILE/ios/libz.podspec",
 		"./MOBILE/ios/oonimkall.xcframework.zip",
 		"./MOBILE/ios/oonimkall.podspec",
 	}
