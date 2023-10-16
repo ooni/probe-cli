@@ -1,7 +1,0 @@
-#!/bin/bash
-set -euxo pipefail
-(
-	cd ./MOBILE/ios
-	rm -rf oonimkall.xcframework.zip
-	zip -yr oonimkall.xcframework.zip oonimkall.xcframework
-)
