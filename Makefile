@@ -95,9 +95,9 @@ android: search/for/java
 	./MOBILE/android/createpom
 
 #help:
-#help: The `make MOBILE/ios` command builds the oonimkall library for iOS.
-.PHONY: MOBILE/ios
-MOBILE/ios: search/for/zip search/for/xcode
+#help: The `make ios` command builds the oonimkall library for iOS.
+.PHONY: ios
+ios: search/for/zip search/for/xcode
 	go run ./internal/cmd/buildtool ios cdeps zlib openssl libevent tor
 	go run ./internal/cmd/buildtool ios gomobile
 	./MOBILE/ios/zipframework

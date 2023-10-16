@@ -38,7 +38,7 @@ jobs:
       # ./internal/cmd/buildtool needs coreutils for sha256 plus GNU build tools
       - run: brew install autoconf automake coreutils libtool
 
-      - run: make EXPECTED_XCODE_VERSION=14.2 MOBILE/ios
+      - run: make EXPECTED_XCODE_VERSION=14.2 ios
 
       - uses: actions/upload-artifact@v3
         with:
