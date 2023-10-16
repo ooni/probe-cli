@@ -4,7 +4,7 @@ Pod::Spec.new do |s|
   s.summary = "OONI Probe Library for iOS"
   s.author = "Simone Basso"
   s.homepage = "https://github.com/ooni/probe-cli"
-  s.license = { :type => "BSD" }
+  s.license = { :type => "GPL" }
   s.source = {
     :http => "https://github.com/ooni/probe-cli/releases/download/@RELEASE@/oonimkall.xcframework.zip"
   }

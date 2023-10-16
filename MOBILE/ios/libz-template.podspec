@@ -4,7 +4,7 @@ Pod::Spec.new do |s|
   s.summary = "zlib compiled for OONI Probe iOS"
   s.author = "Simone Basso"
   s.homepage = "https://github.com/ooni/probe-cli"
-  s.license = { :type => "BSD" }
+  s.license = { :type => "zlib" }
   s.source = {
     :http => "https://github.com/ooni/probe-cli/releases/download/@RELEASE@/libz.xcframework.zip"
   }
