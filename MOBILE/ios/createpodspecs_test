@@ -6,7 +6,7 @@ export CREATE_POD_SPECS_DEBUG=1
 function check() {
 	local expect=$1
 	local got=$2
-	echo -n "checking whether '$expect' equals '$got'... "
+	echo -n "checking whether '$expect' equals '$got'... " 1>&2
 	if [[ "$got" != "$expect" ]]; then
 		echo "NO" 1>&2
 		exit 1
