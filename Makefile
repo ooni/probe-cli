@@ -100,8 +100,9 @@ android: search/for/java
 ios: search/for/zip search/for/xcode
 	go run ./internal/cmd/buildtool ios cdeps zlib openssl libevent tor
 	go run ./internal/cmd/buildtool ios gomobile
-	./MOBILE/ios/zipframework
-	./MOBILE/ios/createpodspec
+	./MOBILE/ios/make-extra-frameworks
+	./MOBILE/ios/zipframeworks
+	./MOBILE/ios/createpodspecs
 
 .PHONY: search/for/java
 search/for/java:

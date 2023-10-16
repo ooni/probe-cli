@@ -40,9 +40,11 @@ func iosSubcommand() *cobra.Command {
 			// Implementation note: perform the check here such that we can
 			// run unit test for the building code from any system
 			runtimex.Assert(runtime.GOOS == "darwin", "this command requires darwin")
+			deps := &buildDeps{}
 			for _, arg := range args {
-				iosCdepsBuildMain(arg, &buildDeps{})
+				iosCdepsBuildMain(arg, deps)
 			}
+			//iosMakeTorXCFramework(deps)
 		},
 		Args: cobra.MinimumNArgs(1),
 	})
@@ -189,3 +191,51 @@ func iosNewCBuildEnv(deps buildtoolmodel.Dependencies, platform, ooniArch string
 func iosXCRun(args ...string) string {
 	return string(must.FirstLineBytes(must.RunOutput(log.Log, "xcrun", args...)))
 }
+
+/*
+// iosMakeTorXCFramework creates tor.xcframework
+func iosMakeTorXCFramework(deps buildtoolmodel.Dependencies) {
+	// TODO(bassosimone): this invokes a quick and dirty script to create the
+	// actual framework, but we should make this code unit testsable.
+	destdir := runtimex.Try1(filepath.Abs(filepath.Join( // must be absolute
+		"MOBILE", "ios",
+	)))
+
+		mkdir -p $WORK/ios/iphoneos/Oonimkall.framework/Versions/A/Headers
+		ln -s A $WORK/ios/iphoneos/Oonimkall.framework/Versions/Current
+		ln -s Versions/Current/Headers $WORK/ios/iphoneos/Oonimkall.framework/Headers
+		ln -s Versions/Current/Oonimkall $WORK/ios/iphoneos/Oonimkall.framework/Oonimkall
+		xcrun lipo $WORK/oonimkall-ios-arm64.a -create -o $WORK/ios/iphoneos/Oonimkall.framework/Versions/A/Oonimkall
+		cp $WORK/ios/src/gobind/Oonimkall.objc.h $WORK/ios/iphoneos/Oonimkall.framework/Versions/A/Headers/Oonimkall.objc.h
+		mkdir -p $WORK/ios/iphoneos/Oonimkall.framework/Versions/A/Headers
+		cp $WORK/ios/src/gobind/Universe.objc.h $WORK/ios/iphoneos/Oonimkall.framework/Versions/A/Headers/Universe.objc.h
+		mkdir -p $WORK/ios/iphoneos/Oonimkall.framework/Versions/A/Headers
+		cp $WORK/ios/src/gobind/ref.h $WORK/ios/iphoneos/Oonimkall.framework/Versions/A/Headers/ref.h
+		mkdir -p $WORK/ios/iphoneos/Oonimkall.framework/Versions/A/Headers
+		mkdir -p $WORK/ios/iphoneos/Oonimkall.framework/Versions/A/Headers
+		mkdir -p $WORK/ios/iphoneos/Oonimkall.framework/Versions/A/Resources
+		ln -s Versions/Current/Resources $WORK/ios/iphoneos/Oonimkall.framework/Resources
+		mkdir -p $WORK/ios/iphoneos/Oonimkall.framework/Resources
+		mkdir -p $WORK/ios/iphoneos/Oonimkall.framework/Versions/A/Modules
+		ln -s Versions/Current/Modules $WORK/ios/iphoneos/Oonimkall.framework/Modules
+		mkdir -p $WORK/iossimulator/iphonesimulator/Oonimkall.framework/Versions/A/Headers
+		ln -s A $WORK/iossimulator/iphonesimulator/Oonimkall.framework/Versions/Current
+		ln -s Versions/Current/Headers $WORK/iossimulator/iphonesimulator/Oonimkall.framework/Headers
+		ln -s Versions/Current/Oonimkall $WORK/iossimulator/iphonesimulator/Oonimkall.framework/Oonimkall
+		xcrun lipo $WORK/oonimkall-iossimulator-arm64.a -create -o $WORK/iossimulator/iphonesimulator/Oonimkall.framework/Versions/A/Oonimkall
+		cp $WORK/iossimulator/src/gobind/Oonimkall.objc.h $WORK/iossimulator/iphonesimulator/Oonimkall.framework/Versions/A/Headers/Oonimkall.objc.h
+		mkdir -p $WORK/iossimulator/iphonesimulator/Oonimkall.framework/Versions/A/Headers
+		cp $WORK/iossimulator/src/gobind/Universe.objc.h $WORK/iossimulator/iphonesimulator/Oonimkall.framework/Versions/A/Headers/Universe.objc.h
+		mkdir -p $WORK/iossimulator/iphonesimulator/Oonimkall.framework/Versions/A/Headers
+		cp $WORK/iossimulator/src/gobind/ref.h $WORK/iossimulator/iphonesimulator/Oonimkall.framework/Versions/A/Headers/ref.h
+		mkdir -p $WORK/iossimulator/iphonesimulator/Oonimkall.framework/Versions/A/Headers
+		mkdir -p $WORK/iossimulator/iphonesimulator/Oonimkall.framework/Versions/A/Headers
+		mkdir -p $WORK/iossimulator/iphonesimulator/Oonimkall.framework/Versions/A/Resources
+		ln -s Versions/Current/Resources $WORK/iossimulator/iphonesimulator/Oonimkall.framework/Resources
+		mkdir -p $WORK/iossimulator/iphonesimulator/Oonimkall.framework/Resources
+		mkdir -p $WORK/iossimulator/iphonesimulator/Oonimkall.framework/Versions/A/Modules
+		ln -s Versions/Current/Modules $WORK/iossimulator/iphonesimulator/Oonimkall.framework/Modules
+		xcrun lipo $WORK/oonimkall-iossimulator-amd64.a $WORK/iossimulator/iphonesimulator/Oonimkall.framework/Versions/A/Oonimkall -create -output $WORK/iossimulator/iphonesimulator/Oonimkall.framework/Versions/A/Oonimkall
+		xcodebuild -create-xcframework -framework /private$WORK/ios/iphoneos/Oonimkall.framework -framework /private$WORK/iossimulator/iphonesimulator/Oonimkall.framework -framework /private$WORK/iossimulator/iphonesimulator/Oonimkall.framework -output MOBILE/ios/oonimkall.xcframework
+}
+*/

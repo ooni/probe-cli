@@ -1,0 +1,50 @@
+#!/bin/bash
+set -euxo pipefail
+
+TOPDIR=$(dirname $(dirname $(dirname $(realpath $0))))
+WORK=$(mktemp -d)
+
+# make_framework constructs a framework.
+#
+# This function does not bothers itself with installing headers because we have
+# already used the relevant headers when invoking `gomobile bind`.
+#
+# Arguments:
+#
+# - $1 is the name of the framework to create;
+function make_framework() {
+	local name=$1
+	shift
+
+	# Start afresh.
+	rm -rf MOBILE/ios/${name}.xcframework
+
+	# Create iphoneos/arm64 framework.
+	mkdir -p $WORK/iphoneos/${name}.framework/Versions/A/Headers
+	ln -s A $WORK/iphoneos/${name}.framework/Versions/Current
+	ln -s Versions/Current/Headers $WORK/iphoneos/${name}.framework/Headers
+	ln -s Versions/Current/${name} $WORK/iphoneos/${name}.framework/${name}
+	xcrun lipo $TOPDIR/internal/libtor/iphoneos/arm64/lib/${name}.a -create \
+		-o $WORK/iphoneos/${name}.framework/Versions/A/${name}
+
+	# Create iphonesimulator/{amd,arm}64 framework.
+	#
+	#
+	mkdir -p $WORK/iphonesimulator/${name}.framework/Versions/A/Headers
+	ln -s A $WORK/iphonesimulator/${name}.framework/Versions/Current
+	ln -s Versions/Current/Headers $WORK/iphonesimulator/${name}.framework/Headers
+	ln -s Versions/Current/${name} $WORK/iphonesimulator/${name}.framework/${name}
+	xcrun lipo $TOPDIR/internal/libtor/iphonesimulator/amd64/lib/${name}.a \
+		$TOPDIR/internal/libtor/iphonesimulator/arm64/lib/${name}.a \
+		-create -output $WORK/iphonesimulator/${name}.framework/Versions/A/${name}
+
+	# Create a .xcframework.
+	xcodebuild -create-xcframework -framework /private$WORK/iphoneos/${name}.framework \
+		-framework /private$WORK/iphonesimulator/${name}.framework -output MOBILE/ios/${name}.xcframework
+}
+
+make_framework libz
+make_framework libcrypto
+make_framework libssl
+make_framework libevent
+make_framework libtor
