@@ -73,6 +73,7 @@ func iosCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
 	// as the minimum version iOS 12, while one cannot target a version of iOS > 10 when
 	// building for 32-bit targets. Hence, using only 64 bit archs here is fine.
 	iosCdepsBuildArch(deps, name, "iphoneos", "arm64")
+	iosCdepsBuildArch(deps, name, "iphonesimulator", "arm64")
 	iosCdepsBuildArch(deps, name, "iphonesimulator", "amd64")
 }
 
@@ -80,19 +81,6 @@ func iosCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
 var iosAppleArchForOONIArch = map[string]string{
 	"amd64": "x86_64",
 	"arm64": "arm64",
-}
-
-// iosMinVersionFlagForOONIArch maps the ooniArch to the corresponding compiler flag
-// to set the minimum version of either iphoneos or iphonesimulator.
-//
-// Note: the documentation of clang fetched on 2023-10-12 explicitly mentions that
-// ios-version-min is an alias for iphoneos-version-min. Likewise, ios-simulator-version-min
-// aliaes iphonesimulator-version-min.
-//
-// See https://clang.llvm.org/docs/ClangCommandLineReference.html#cmdoption-clang-mios-simulator-version-min
-var iosMinVersionFlagForOONIArch = map[string]string{
-	"amd64": "-miphonesimulator-version-min=",
-	"arm64": "-miphoneos-version-min=",
 }
 
 // iosCdepsBuildArch builds the given dependency for the given arch
@@ -123,8 +111,17 @@ func iosNewCBuildEnv(deps buildtoolmodel.Dependencies, platform, ooniArch string
 	)))
 
 	var (
-		appleArch      = iosAppleArchForOONIArch[ooniArch]
-		minVersionFlag = iosMinVersionFlagForOONIArch[ooniArch]
+		appleArch = iosAppleArchForOONIArch[ooniArch]
+
+		// monVersionFlag sets the correct flag for the compiler depending on whether
+		// we're using the iphoneos or iphonesimulator platform.
+		//
+		// Note: the documentation of clang fetched on 2023-10-12 explicitly mentions that
+		// ios-version-min is an alias for iphoneos-version-min. Likewise, ios-simulator-version-min
+		// aliaes iphonesimulator-version-min.
+		//
+		// See https://clang.llvm.org/docs/ClangCommandLineReference.html#cmdoption-clang-mios-simulator-version-min
+		minVersionFlag = fmt.Sprintf("-m%s-version-min=", platform)
 	)
 	runtimex.Assert(appleArch != "", "empty appleArch")
 	runtimex.Assert(minVersionFlag != "", "empty minVersionFlag")
