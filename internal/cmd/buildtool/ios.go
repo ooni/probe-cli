@@ -172,6 +172,8 @@ func iosNewCBuildEnv(deps buildtoolmodel.Dependencies, platform, ooniArch string
 
 	switch ooniArch {
 	case "arm64":
+		// TODO(bassosimone): using ios64-xcrun here is wrong and we should
+		// instead use the simulator, but does OpenSSL support that?
 		out.CONFIGURE_HOST = "arm-apple-darwin"
 		out.OPENSSL_COMPILER = "ios64-xcrun"
 	case "amd64":
