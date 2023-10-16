@@ -72,16 +72,9 @@ func iosCdepsBuildMain(name string, deps buildtoolmodel.Dependencies) {
 	// The ooni/probe-ios app explicitly only targets amd64 and arm64. It also targets
 	// as the minimum version iOS 12, while one cannot target a version of iOS > 10 when
 	// building for 32-bit targets. Hence, using only 64 bit archs here is fine.
-	archs := []string{"arm64", "amd64"}
-	for _, arch := range archs {
-		iosCdepsBuildArch(deps, arch, name)
-	}
-}
-
-// iosPlatformForOONIArch maps the ooniArch to the iOS platform
-var iosPlatformForOONIArch = map[string]string{
-	"amd64": "iphonesimulator",
-	"arm64": "iphoneos",
+	iosCdepsBuildArch(deps, name, "iphoneos", "arm64")
+	iosCdepsBuildArch(deps, name, "iphonesimulator", "arm64")
+	iosCdepsBuildArch(deps, name, "iphonesimulator", "amd64")
 }
 
 // iosAppleArchForOONIArch maps the ooniArch to the corresponding apple arch
@@ -90,22 +83,9 @@ var iosAppleArchForOONIArch = map[string]string{
 	"arm64": "arm64",
 }
 
-// iosMinVersionFlagForOONIArch maps the ooniArch to the corresponding compiler flag
-// to set the minimum version of either iphoneos or iphonesimulator.
-//
-// Note: the documentation of clang fetched on 2023-10-12 explicitly mentions that
-// ios-version-min is an alias for iphoneos-version-min. Likewise, ios-simulator-version-min
-// aliaes iphonesimulator-version-min.
-//
-// See https://clang.llvm.org/docs/ClangCommandLineReference.html#cmdoption-clang-mios-simulator-version-min
-var iosMinVersionFlagForOONIArch = map[string]string{
-	"amd64": "-miphonesimulator-version-min=",
-	"arm64": "-miphoneos-version-min=",
-}
-
 // iosCdepsBuildArch builds the given dependency for the given arch
-func iosCdepsBuildArch(deps buildtoolmodel.Dependencies, ooniArch string, name string) {
-	cdenv := iosNewCBuildEnv(deps, ooniArch)
+func iosCdepsBuildArch(deps buildtoolmodel.Dependencies, name, platform, ooniArch string) {
+	cdenv := iosNewCBuildEnv(deps, platform, ooniArch)
 	switch name {
 	case "libevent":
 		cdepsLibeventBuildMain(cdenv, deps)
@@ -125,19 +105,26 @@ func iosCdepsBuildArch(deps buildtoolmodel.Dependencies, ooniArch string, name s
 const iosMinVersion = "12.0"
 
 // iosNewCBuildEnv creates a new [cBuildEnv] for the given ooniArch ("arm64" or "amd64").
-func iosNewCBuildEnv(deps buildtoolmodel.Dependencies, ooniArch string) *cBuildEnv {
+func iosNewCBuildEnv(deps buildtoolmodel.Dependencies, platform, ooniArch string) *cBuildEnv {
 	destdir := runtimex.Try1(filepath.Abs(filepath.Join( // must be absolute
-		"internal", "libtor", "ios", ooniArch,
+		"internal", "libtor", platform, ooniArch,
 	)))
 
 	var (
-		appleArch      = iosAppleArchForOONIArch[ooniArch]
-		minVersionFlag = iosMinVersionFlagForOONIArch[ooniArch]
-		platform       = iosPlatformForOONIArch[ooniArch]
+		appleArch = iosAppleArchForOONIArch[ooniArch]
+
+		// minVersionFlag sets the correct flag for the compiler depending on whether
+		// we're using the iphoneos or iphonesimulator platform.
+		//
+		// Note: the documentation of clang fetched on 2023-10-12 explicitly mentions that
+		// ios-version-min is an alias for iphoneos-version-min. Likewise, ios-simulator-version-min
+		// aliaes iphonesimulator-version-min.
+		//
+		// See https://clang.llvm.org/docs/ClangCommandLineReference.html#cmdoption-clang-mios-simulator-version-min
+		minVersionFlag = fmt.Sprintf("-m%s-version-min=", platform)
 	)
 	runtimex.Assert(appleArch != "", "empty appleArch")
 	runtimex.Assert(minVersionFlag != "", "empty minVersionFlag")
-	runtimex.Assert(platform != "", "empty platform")
 
 	isysroot := deps.XCRun("-sdk", platform, "--show-sdk-path")
 
@@ -185,6 +172,8 @@ func iosNewCBuildEnv(deps buildtoolmodel.Dependencies, ooniArch string) *cBuildE
 
 	switch ooniArch {
 	case "arm64":
+		// TODO(https://github.com/ooni/probe/issues/2570): using ios64-xcrun here is wrong and
+		// we should instead use the simulator as discussed in the issue.
 		out.CONFIGURE_HOST = "arm-apple-darwin"
 		out.OPENSSL_COMPILER = "ios64-xcrun"
 	case "amd64":
