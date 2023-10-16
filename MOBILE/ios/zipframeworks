@@ -1,0 +1,9 @@
+#!/bin/bash
+set -euxo pipefail
+(
+	cd ./MOBILE/ios
+	for name in libcrypto libevent libssl libtor libz oonimkall; do
+		rm -rf ${name}.xcframework.zip
+		zip -yr ${name}.xcframework.zip ${name}.xcframework
+	done
+)
