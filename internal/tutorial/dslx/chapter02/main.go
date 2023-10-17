@@ -332,12 +332,12 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 
 	// ```
 	//
-	// Next, we create a connection pool. This data structure helps us to manage
-	// open connections and close them when `connpool.Close` is invoked.
+	// Next, we create a minimal runtime. This data structure helps us to manage
+	// open connections and close them when `rt.Close` is invoked.
 	//
 	// ```Go
-	connpool := &dslx.ConnPool{}
-	defer connpool.Close()
+	rt := dslx.NewMinimalRuntime()
+	defer rt.Close()
 
 	// ```
 	//
@@ -351,9 +351,9 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	//
 	// ```Go
 	pipelineTarget := dslx.Compose2(
-		dslx.TCPConnect(connpool),
+		dslx.TCPConnect(rt),
 		dslx.TLSHandshake(
-			connpool,
+			rt,
 			dslx.TLSHandshakeOptionServerName(targetSNI),
 		),
 	)
@@ -365,9 +365,9 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	//
 	// ```Go
 	pipelineControl := dslx.Compose2(
-		dslx.TCPConnect(connpool),
+		dslx.TCPConnect(rt),
 		dslx.TLSHandshake(
-			connpool,
+			rt,
 			dslx.TLSHandshakeOptionServerName(m.config.ControlSNI),
 		),
 	)

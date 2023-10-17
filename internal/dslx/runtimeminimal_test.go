@@ -16,7 +16,7 @@ Test cases:
 	- with connection
 	- with quic connection
 
-- Close ConnPool:
+- Close MinimalRuntime:
 	- all Close() calls succeed
 	- one Close() call fails
 */
@@ -39,36 +39,37 @@ func closeableQUICConnWithErr(err error) io.Closer {
 	}
 }
 
-func TestConnPool(t *testing.T) {
-	type connpoolTest struct {
+func TestMinimalRuntime(t *testing.T) {
+	// testcase is a test case implemented by this function
+	type testcase struct {
 		mockConn io.Closer
-		want     int // len of connpool.v
+		want     int // len of (*minimalRuntime).v
 	}
 
 	t.Run("Maybe track connections", func(t *testing.T) {
-		tests := map[string]connpoolTest{
+		tests := map[string]testcase{
 			"with nil":             {mockConn: nil, want: 0},
 			"with connection":      {mockConn: closeableConnWithErr(nil), want: 1},
 			"with quic connection": {mockConn: closeableQUICConnWithErr(nil), want: 1},
 		}
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {
-				connpool := &ConnPool{}
-				connpool.MaybeTrack(tt.mockConn)
-				if len(connpool.v) != tt.want {
-					t.Fatalf("expected %d tracked connections, got: %d", tt.want, len(connpool.v))
+				rt := NewMinimalRuntime()
+				rt.MaybeTrackConn(tt.mockConn)
+				if len(rt.v) != tt.want {
+					t.Fatalf("expected %d tracked connections, got: %d", tt.want, len(rt.v))
 				}
 			})
 		}
 	})
 
-	t.Run("Close ConnPool", func(t *testing.T) {
+	t.Run("Close MinimalRuntime", func(t *testing.T) {
 		mockErr := errors.New("mocked")
 		tests := map[string]struct {
-			pool *ConnPool
+			rt *MinimalRuntime
 		}{
 			"all Close() calls succeed": {
-				pool: &ConnPool{
+				rt: &MinimalRuntime{
 					v: []io.Closer{
 						closeableConnWithErr(nil),
 						closeableQUICConnWithErr(nil),
@@ -76,7 +77,7 @@ func TestConnPool(t *testing.T) {
 				},
 			},
 			"one Close() call fails": {
-				pool: &ConnPool{
+				rt: &MinimalRuntime{
 					v: []io.Closer{
 						closeableConnWithErr(nil),
 						closeableConnWithErr(mockErr),
@@ -87,11 +88,11 @@ func TestConnPool(t *testing.T) {
 
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {
-				err := tt.pool.Close()
+				err := tt.rt.Close()
 				if err != nil { // Close() should always return nil
 					t.Fatalf("unexpected error %s", err)
 				}
-				if tt.pool.v != nil {
+				if tt.rt.v != nil {
 					t.Fatalf("v should be reset but is not")
 				}
 			})

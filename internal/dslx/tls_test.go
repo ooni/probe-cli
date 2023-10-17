@@ -31,7 +31,7 @@ func TestTLSHandshake(t *testing.T) {
 		certpool.AddCert(&x509.Certificate{})
 
 		f := TLSHandshake(
-			&ConnPool{},
+			NewMinimalRuntime(),
 			TLSHandshakeOptionInsecureSkipVerify(true),
 			TLSHandshakeOptionNextProto([]string{"h2"}),
 			TLSHandshakeOptionServerName("sni"),
@@ -133,10 +133,10 @@ func TestTLSHandshake(t *testing.T) {
 
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {
-				pool := &ConnPool{}
+				rt := NewMinimalRuntime()
 				tlsHandshake := &tlsHandshakeFunc{
 					NextProto:  tt.config.nextProtos,
-					Pool:       pool,
+					Rt:         rt,
 					ServerName: tt.config.sni,
 					handshaker: tt.handshaker,
 				}
@@ -163,7 +163,7 @@ func TestTLSHandshake(t *testing.T) {
 				if res.State.Conn != tt.expectConn {
 					t.Fatalf("unexpected conn %v", res.State.Conn)
 				}
-				pool.Close()
+				rt.Close()
 				if wasClosed != tt.closed {
 					t.Fatalf("unexpected connection closed state %v", wasClosed)
 				}
@@ -188,7 +188,7 @@ func TestServerNameTLS(t *testing.T) {
 			Logger:  model.DiscardLogger,
 		}
 		f := &tlsHandshakeFunc{
-			Pool:       &ConnPool{},
+			Rt:         NewMinimalRuntime(),
 			ServerName: sni,
 		}
 		serverName := f.serverName(&tcpConn)
@@ -204,7 +204,7 @@ func TestServerNameTLS(t *testing.T) {
 			Logger:  model.DiscardLogger,
 		}
 		f := &tlsHandshakeFunc{
-			Pool: &ConnPool{},
+			Rt: NewMinimalRuntime(),
 		}
 		serverName := f.serverName(&tcpConn)
 		if serverName != domain {
@@ -218,7 +218,7 @@ func TestServerNameTLS(t *testing.T) {
 			Logger:  model.DiscardLogger,
 		}
 		f := &tlsHandshakeFunc{
-			Pool: &ConnPool{},
+			Rt: NewMinimalRuntime(),
 		}
 		serverName := f.serverName(&tcpConn)
 		if serverName != hostaddr {
@@ -232,7 +232,7 @@ func TestServerNameTLS(t *testing.T) {
 			Logger:  model.DiscardLogger,
 		}
 		f := &tlsHandshakeFunc{
-			Pool: &ConnPool{},
+			Rt: NewMinimalRuntime(),
 		}
 		serverName := f.serverName(&tcpConn)
 		if serverName != "" {
@@ -246,7 +246,7 @@ func TestHandshakerOrDefault(t *testing.T) {
 	f := &tlsHandshakeFunc{
 		InsecureSkipVerify: false,
 		NextProto:          []string{},
-		Pool:               &ConnPool{},
+		Rt:                 NewMinimalRuntime(),
 		RootCAs:            &x509.CertPool{},
 		ServerName:         "",
 		handshaker:         nil,

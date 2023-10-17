@@ -17,15 +17,15 @@ import (
 )
 
 // TCPConnect returns a function that establishes TCP connections.
-func TCPConnect(pool *ConnPool) Func[*Endpoint, *Maybe[*TCPConnection]] {
-	f := &tcpConnectFunc{pool, nil}
+func TCPConnect(rt Runtime) Func[*Endpoint, *Maybe[*TCPConnection]] {
+	f := &tcpConnectFunc{nil, rt}
 	return f
 }
 
 // tcpConnectFunc is a function that establishes TCP connections.
 type tcpConnectFunc struct {
-	p      *ConnPool
 	dialer model.Dialer // for testing
+	rt     Runtime
 }
 
 // Apply applies the function to its arguments.
@@ -55,7 +55,7 @@ func (f *tcpConnectFunc) Apply(
 	conn, err := dialer.DialContext(ctx, "tcp", input.Address)
 
 	// possibly register established conn for late close
-	f.p.MaybeTrack(conn)
+	f.rt.MaybeTrackConn(conn)
 
 	// stop the operation logger
 	ol.Stop(err)

@@ -331,12 +331,12 @@ the protocol, address, and port three-tuple.)
 
 ```
 
-Next, we create a connection pool. This data structure helps us to manage
-open connections and close them when `connpool.Close` is invoked.
+Next, we create a minimal runtime. This data structure helps us to manage
+open connections and close them when `rt.Close` is invoked.
 
 ```Go
-	connpool := &dslx.ConnPool{}
-	defer connpool.Close()
+	rt := dslx.NewMinimalRuntime()
+	defer rt.Close()
 
 ```
 
@@ -350,9 +350,9 @@ target SNI to be used within the TLS Client Hello.
 
 ```Go
 	pipelineTarget := dslx.Compose2(
-		dslx.TCPConnect(connpool),
+		dslx.TCPConnect(rt),
 		dslx.TLSHandshake(
-			connpool,
+			rt,
 			dslx.TLSHandshakeOptionServerName(targetSNI),
 		),
 	)
@@ -364,9 +364,9 @@ specify the *control* SNI to be used within the TLS Client Hello.
 
 ```Go
 	pipelineControl := dslx.Compose2(
-		dslx.TCPConnect(connpool),
+		dslx.TCPConnect(rt),
 		dslx.TLSHandshake(
-			connpool,
+			rt,
 			dslx.TLSHandshakeOptionServerName(m.config.ControlSNI),
 		),
 	)

@@ -50,7 +50,7 @@ func TLSHandshakeOptionServerName(value string) TLSHandshakeOption {
 }
 
 // TLSHandshake returns a function performing TSL handshakes.
-func TLSHandshake(pool *ConnPool, options ...TLSHandshakeOption) Func[
+func TLSHandshake(rt Runtime, options ...TLSHandshakeOption) Func[
 	*TCPConnection, *Maybe[*TLSConnection]] {
 	// See https://github.com/ooni/probe/issues/2413 to understand
 	// why we're using nil to force netxlite to use the cached
@@ -58,8 +58,8 @@ func TLSHandshake(pool *ConnPool, options ...TLSHandshakeOption) Func[
 	f := &tlsHandshakeFunc{
 		InsecureSkipVerify: false,
 		NextProto:          []string{},
-		Pool:               pool,
 		RootCAs:            nil,
+		Rt:                 rt,
 		ServerName:         "",
 	}
 	for _, option := range options {
@@ -76,11 +76,11 @@ type tlsHandshakeFunc struct {
 	// NextProto contains the ALPNs to negotiate.
 	NextProto []string
 
-	// Pool is the Pool that owns us.
-	Pool *ConnPool
-
 	// RootCAs contains the Root CAs to use.
 	RootCAs *x509.CertPool
+
+	// Pool is the Pool that owns us.
+	Rt Runtime
 
 	// ServerName is the ServerName to handshake for.
 	ServerName string
@@ -127,7 +127,7 @@ func (f *tlsHandshakeFunc) Apply(
 	conn, err := handshaker.Handshake(ctx, input.Conn, config)
 
 	// possibly register established conn for late close
-	f.Pool.MaybeTrack(conn)
+	f.Rt.MaybeTrackConn(conn)
 
 	// stop the operation logger
 	ol.Stop(err)

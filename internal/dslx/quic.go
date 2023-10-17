@@ -45,15 +45,15 @@ func QUICHandshakeOptionServerName(value string) QUICHandshakeOption {
 }
 
 // QUICHandshake returns a function performing QUIC handshakes.
-func QUICHandshake(pool *ConnPool, options ...QUICHandshakeOption) Func[
+func QUICHandshake(rt Runtime, options ...QUICHandshakeOption) Func[
 	*Endpoint, *Maybe[*QUICConnection]] {
 	// See https://github.com/ooni/probe/issues/2413 to understand
 	// why we're using nil to force netxlite to use the cached
 	// default Mozilla cert pool.
 	f := &quicHandshakeFunc{
 		InsecureSkipVerify: false,
-		Pool:               pool,
 		RootCAs:            nil,
+		Rt:                 rt,
 		ServerName:         "",
 	}
 	for _, option := range options {
@@ -67,11 +67,11 @@ type quicHandshakeFunc struct {
 	// InsecureSkipVerify allows to skip TLS verification.
 	InsecureSkipVerify bool
 
-	// Pool is the ConnPool that owns us.
-	Pool *ConnPool
-
 	// RootCAs contains the Root CAs to use.
 	RootCAs *x509.CertPool
+
+	// Rt is the Runtime that owns us.
+	Rt Runtime
 
 	// ServerName is the ServerName to handshake for.
 	ServerName string
@@ -124,7 +124,7 @@ func (f *quicHandshakeFunc) Apply(
 	}
 
 	// possibly track established conn for late close
-	f.Pool.MaybeTrack(closerConn)
+	f.Rt.MaybeTrackConn(closerConn)
 
 	// stop the operation logger
 	ol.Stop(err)

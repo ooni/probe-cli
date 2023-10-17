@@ -32,12 +32,12 @@ func TestMakeSureWeCollectSpeedSamples(t *testing.T) {
 	defer server.Close()
 
 	// instantiate a connection pool
-	pool := &ConnPool{}
-	defer pool.Close()
+	rt := NewMinimalRuntime()
+	defer rt.Close()
 
 	// create a measuring function
 	f0 := Compose3(
-		TCPConnect(pool),
+		TCPConnect(rt),
 		HTTPTransportTCP(),
 		HTTPRequest(),
 	)
