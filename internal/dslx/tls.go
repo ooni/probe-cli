@@ -77,7 +77,7 @@ type tlsHandshakeFunc struct {
 	// RootCAs contains the Root CAs to use.
 	RootCAs *x509.CertPool
 
-	// Rt is the Runtime that owns us.
+	// Pool is the Pool that owns us.
 	Rt Runtime
 
 	// ServerName is the ServerName to handshake for.
