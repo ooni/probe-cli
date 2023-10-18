@@ -20,7 +20,7 @@ import (
 func TestHTTPNewRequest(t *testing.T) {
 	t.Run("without any option and with domain", func(t *testing.T) {
 		ctx := context.Background()
-		conn := &HTTPTransport{
+		conn := &HTTPConnection{
 			Address:               "130.192.91.211:443",
 			Domain:                "example.com",
 			Network:               "tcp",
@@ -60,7 +60,7 @@ func TestHTTPNewRequest(t *testing.T) {
 
 	t.Run("without any option, without domain but with standard port", func(t *testing.T) {
 		ctx := context.Background()
-		conn := &HTTPTransport{
+		conn := &HTTPConnection{
 			Address:               "130.192.91.211:443",
 			Domain:                "",
 			Network:               "tcp",
@@ -100,7 +100,7 @@ func TestHTTPNewRequest(t *testing.T) {
 
 	t.Run("without any option, without domain but with nonstandard port", func(t *testing.T) {
 		ctx := context.Background()
-		conn := &HTTPTransport{
+		conn := &HTTPConnection{
 			Address:               "130.192.91.211:443",
 			Domain:                "",
 			Network:               "tcp",
@@ -140,7 +140,7 @@ func TestHTTPNewRequest(t *testing.T) {
 
 	t.Run("with all options", func(t *testing.T) {
 		ctx := context.Background()
-		conn := &HTTPTransport{
+		conn := &HTTPConnection{
 			Address:               "130.192.91.211:443",
 			Domain:                "example.com",
 			Network:               "tcp",
@@ -232,7 +232,7 @@ func TestHTTPRequest(t *testing.T) {
 		trace := measurexlite.NewTrace(idGen.Add(1), zeroTime, "antani")
 
 		t.Run("with EOF", func(t *testing.T) {
-			httpTransport := HTTPTransport{
+			httpTransport := HTTPConnection{
 				Address:   "1.2.3.4:567",
 				Network:   "tcp",
 				Scheme:    "https",
@@ -272,7 +272,7 @@ func TestHTTPRequest(t *testing.T) {
 		})
 
 		t.Run("with port-less address", func(t *testing.T) {
-			httpTransport := HTTPTransport{
+			httpTransport := HTTPConnection{
 				Address:   "1.2.3.4",
 				Network:   "tcp",
 				Scheme:    "https",
@@ -324,7 +324,7 @@ func TestHTTPRequest(t *testing.T) {
 		}
 
 		t.Run("with success (https)", func(t *testing.T) {
-			httpTransport := HTTPTransport{
+			httpTransport := HTTPConnection{
 				Address:   "1.2.3.4:443",
 				Network:   "tcp",
 				Scheme:    "https",
@@ -345,7 +345,7 @@ func TestHTTPRequest(t *testing.T) {
 		})
 
 		t.Run("with success (http)", func(t *testing.T) {
-			httpTransport := HTTPTransport{
+			httpTransport := HTTPConnection{
 				Address:   "1.2.3.4:80",
 				Network:   "tcp",
 				Scheme:    "http",
@@ -366,7 +366,7 @@ func TestHTTPRequest(t *testing.T) {
 		})
 
 		t.Run("with header options", func(t *testing.T) {
-			httpTransport := HTTPTransport{
+			httpTransport := HTTPConnection{
 				Address:   "1.2.3.4:567",
 				Domain:    "domain.com",
 				Network:   "tcp",
@@ -422,7 +422,7 @@ func TestHTTPTCP(t *testing.T) {
 	t.Run("Get composed function: TCP with HTTP", func(t *testing.T) {
 		rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
 		f := HTTPRequestOverTCP(rt)
-		if _, ok := f.(*compose2Func[*TCPConnection, *HTTPTransport, *HTTPResponse]); !ok {
+		if _, ok := f.(*compose2Func[*TCPConnection, *HTTPConnection, *HTTPResponse]); !ok {
 			t.Fatal("unexpected type")
 		}
 	})
@@ -476,7 +476,7 @@ func TestHTTPQUIC(t *testing.T) {
 	t.Run("Get composed function: QUIC with HTTP", func(t *testing.T) {
 		rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
 		f := HTTPRequestOverQUIC(rt)
-		if _, ok := f.(*compose2Func[*QUICConnection, *HTTPTransport, *HTTPResponse]); !ok {
+		if _, ok := f.(*compose2Func[*QUICConnection, *HTTPConnection, *HTTPResponse]); !ok {
 			t.Fatal("unexpected type")
 		}
 	})
@@ -530,7 +530,7 @@ func TestHTTPTLS(t *testing.T) {
 	t.Run("Get composed function: TLS with HTTP", func(t *testing.T) {
 		rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
 		f := HTTPRequestOverTLS(rt)
-		if _, ok := f.(*compose2Func[*TLSConnection, *HTTPTransport, *HTTPResponse]); !ok {
+		if _, ok := f.(*compose2Func[*TLSConnection, *HTTPConnection, *HTTPResponse]); !ok {
 			t.Fatal("unexpected type")
 		}
 	})

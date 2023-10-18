@@ -16,7 +16,7 @@ func HTTPRequestOverTCP(rt Runtime, options ...HTTPRequestOption) Func[*TCPConne
 }
 
 // HTTPTransportTCP converts a TCP connection into an HTTP transport.
-func HTTPTransportTCP(rt Runtime) Func[*TCPConnection, *Maybe[*HTTPTransport]] {
+func HTTPTransportTCP(rt Runtime) Func[*TCPConnection, *Maybe[*HTTPConnection]] {
 	return &httpTransportTCPFunc{rt}
 }
 
@@ -27,7 +27,7 @@ type httpTransportTCPFunc struct {
 
 // Apply implements Func
 func (f *httpTransportTCPFunc) Apply(
-	ctx context.Context, input *TCPConnection) *Maybe[*HTTPTransport] {
+	ctx context.Context, input *TCPConnection) *Maybe[*HTTPConnection] {
 	// TODO(https://github.com/ooni/probe/issues/2534): here we're using the QUIRKY netxlite.NewHTTPTransport
 	// function, but we can probably avoid using it, given that this code is
 	// not using tracing and does not care about those quirks.
@@ -36,7 +36,7 @@ func (f *httpTransportTCPFunc) Apply(
 		netxlite.NewSingleUseDialer(input.Conn),
 		netxlite.NewNullTLSDialer(),
 	)
-	state := &HTTPTransport{
+	state := &HTTPConnection{
 		Address:               input.Address,
 		Domain:                input.Domain,
 		Network:               input.Network,
@@ -45,7 +45,7 @@ func (f *httpTransportTCPFunc) Apply(
 		Trace:                 input.Trace,
 		Transport:             httpTransport,
 	}
-	return &Maybe[*HTTPTransport]{
+	return &Maybe[*HTTPConnection]{
 		Error:        nil,
 		Observations: nil,
 		Operation:    "", // we cannot fail, so no need to store operation name

@@ -16,7 +16,7 @@ func HTTPRequestOverQUIC(rt Runtime, options ...HTTPRequestOption) Func[*QUICCon
 }
 
 // HTTPTransportQUIC converts a QUIC connection into an HTTP transport.
-func HTTPTransportQUIC(rt Runtime) Func[*QUICConnection, *Maybe[*HTTPTransport]] {
+func HTTPTransportQUIC(rt Runtime) Func[*QUICConnection, *Maybe[*HTTPConnection]] {
 	return &httpTransportQUICFunc{rt}
 }
 
@@ -27,7 +27,7 @@ type httpTransportQUICFunc struct {
 
 // Apply implements Func.
 func (f *httpTransportQUICFunc) Apply(
-	ctx context.Context, input *QUICConnection) *Maybe[*HTTPTransport] {
+	ctx context.Context, input *QUICConnection) *Maybe[*HTTPConnection] {
 	// create transport
 	httpTransport := netxlite.NewHTTP3Transport(
 		f.rt.Logger(),
@@ -35,7 +35,7 @@ func (f *httpTransportQUICFunc) Apply(
 		input.TLSConfig,
 	)
 
-	state := &HTTPTransport{
+	state := &HTTPConnection{
 		Address:               input.Address,
 		Domain:                input.Domain,
 		Network:               input.Network,
@@ -44,7 +44,7 @@ func (f *httpTransportQUICFunc) Apply(
 		Trace:                 input.Trace,
 		Transport:             httpTransport,
 	}
-	return &Maybe[*HTTPTransport]{
+	return &Maybe[*HTTPConnection]{
 		Error:        nil,
 		Observations: nil,
 		Operation:    "", // we cannot fail, so no need to store operation name

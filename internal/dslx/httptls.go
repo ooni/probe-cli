@@ -16,7 +16,7 @@ func HTTPRequestOverTLS(rt Runtime, options ...HTTPRequestOption) Func[*TLSConne
 }
 
 // HTTPTransportTLS converts a TLS connection into an HTTP transport.
-func HTTPTransportTLS(rt Runtime) Func[*TLSConnection, *Maybe[*HTTPTransport]] {
+func HTTPTransportTLS(rt Runtime) Func[*TLSConnection, *Maybe[*HTTPConnection]] {
 	return &httpTransportTLSFunc{rt}
 }
 
@@ -27,7 +27,7 @@ type httpTransportTLSFunc struct {
 
 // Apply implements Func.
 func (f *httpTransportTLSFunc) Apply(
-	ctx context.Context, input *TLSConnection) *Maybe[*HTTPTransport] {
+	ctx context.Context, input *TLSConnection) *Maybe[*HTTPConnection] {
 	// TODO(https://github.com/ooni/probe/issues/2534): here we're using the QUIRKY netxlite.NewHTTPTransport
 	// function, but we can probably avoid using it, given that this code is
 	// not using tracing and does not care about those quirks.
@@ -36,7 +36,7 @@ func (f *httpTransportTLSFunc) Apply(
 		netxlite.NewNullDialer(),
 		netxlite.NewSingleUseTLSDialer(input.Conn),
 	)
-	state := &HTTPTransport{
+	state := &HTTPConnection{
 		Address:               input.Address,
 		Domain:                input.Domain,
 		Network:               input.Network,
@@ -45,7 +45,7 @@ func (f *httpTransportTLSFunc) Apply(
 		Trace:                 input.Trace,
 		Transport:             httpTransport,
 	}
-	return &Maybe[*HTTPTransport]{
+	return &Maybe[*HTTPConnection]{
 		Error:        nil,
 		Observations: nil,
 		Operation:    "", // we cannot fail, so no need to store operation name
