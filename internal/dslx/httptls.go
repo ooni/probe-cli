@@ -11,12 +11,12 @@ import (
 )
 
 // HTTPRequestOverTLS returns a Func that issues HTTP requests over TLS.
-func HTTPRequestOverTLS(rt Runtime, options ...HTTPRequestOption) Stage[*TLSConnection, *Maybe[*HTTPResponse]] {
+func HTTPRequestOverTLS(rt Runtime, options ...HTTPRequestOption) Stage[*TLSConnection, *HTTPResponse] {
 	return Compose2(HTTPConnectionTLS(rt), HTTPRequest(rt, options...))
 }
 
 // HTTPConnectionTLS converts a TLS connection into an HTTP connection.
-func HTTPConnectionTLS(rt Runtime) Stage[*TLSConnection, *Maybe[*HTTPConnection]] {
+func HTTPConnectionTLS(rt Runtime) Stage[*TLSConnection, *HTTPConnection] {
 	return StageAdapter[*TLSConnection, *HTTPConnection](func(ctx context.Context, input *TLSConnection) *Maybe[*HTTPConnection] {
 		// TODO(https://github.com/ooni/probe/issues/2534): here we're using the QUIRKY netxlite.NewHTTPTransport
 		// function, but we can probably avoid using it, given that this code is

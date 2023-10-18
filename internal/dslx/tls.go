@@ -48,7 +48,7 @@ func TLSHandshakeOptionServerName(value string) TLSHandshakeOption {
 }
 
 // TLSHandshake returns a function performing TSL handshakes.
-func TLSHandshake(rt Runtime, options ...TLSHandshakeOption) Stage[*TCPConnection, *Maybe[*TLSConnection]] {
+func TLSHandshake(rt Runtime, options ...TLSHandshakeOption) Stage[*TCPConnection, *TLSConnection] {
 	return StageAdapter[*TCPConnection, *TLSConnection](func(ctx context.Context, input *TCPConnection) *Maybe[*TLSConnection] {
 		// keep using the same trace
 		trace := input.Trace

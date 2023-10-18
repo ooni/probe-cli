@@ -9,7 +9,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-func getFn(err error, name string) Stage[int, *Maybe[int]] {
+func getFn(err error, name string) Stage[int, int] {
 	return &fn{err: err, name: name}
 }
 
