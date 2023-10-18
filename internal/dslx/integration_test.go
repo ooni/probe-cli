@@ -32,7 +32,7 @@ func TestMakeSureWeCollectSpeedSamples(t *testing.T) {
 	defer server.Close()
 
 	// instantiate a runtime
-	rt := NewRuntimeMeasurexLite()
+	rt := NewRuntimeMeasurexLite(model.DiscardLogger, time.Now())
 	defer rt.Close()
 
 	// create a measuring function

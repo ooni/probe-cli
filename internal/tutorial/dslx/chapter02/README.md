@@ -44,7 +44,9 @@ import (
 	"errors"
 	"net"
 	"sync/atomic"
+	"time"
 
+	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/dslx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -256,11 +258,20 @@ experiment's start time.
 
 ```
 
+Next, we create a minimal runtime. This data structure helps us to manage
+open connections and close them when `rt.Close` is invoked.
+
+```Go
+	rt := dslx.NewMinimalRuntime(log.Log, time.Now())
+	defer rt.Close()
+
+```
+
 We construct the resolver dslx function which can be - like in this case - the
 system resolver, or a custom UDP resolver.
 
 ```Go
-	lookupFn := dslx.DNSLookupGetaddrinfo()
+	lookupFn := dslx.DNSLookupGetaddrinfo(rt)
 
 ```
 
@@ -328,15 +339,6 @@ the protocol, address, and port three-tuple.)
 	)
 	runtimex.Assert(len(endpoints) >= 1, "expected at least one endpoint here")
 	endpoint := endpoints[0]
-
-```
-
-Next, we create a minimal runtime. This data structure helps us to manage
-open connections and close them when `rt.Close` is invoked.
-
-```Go
-	rt := dslx.NewMinimalRuntime()
-	defer rt.Close()
 
 ```
 

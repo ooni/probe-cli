@@ -17,7 +17,7 @@ import (
 func TestTCPConnect(t *testing.T) {
 	t.Run("Get tcpConnectFunc", func(t *testing.T) {
 		f := TCPConnect(
-			NewMinimalRuntime(),
+			NewMinimalRuntime(model.DiscardLogger, time.Now()),
 		)
 		if _, ok := f.(*tcpConnectFunc); !ok {
 			t.Fatal("unexpected type. Expected: tcpConnectFunc")
@@ -69,7 +69,7 @@ func TestTCPConnect(t *testing.T) {
 
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {
-				rt := NewRuntimeMeasurexLite()
+				rt := NewRuntimeMeasurexLite(model.DiscardLogger, time.Now())
 				tcpConnect := &tcpConnectFunc{tt.dialer, rt}
 				endpoint := &Endpoint{
 					Address:     "1.2.3.4:567",
@@ -107,7 +107,7 @@ func TestTCPConnect(t *testing.T) {
 // Make sure we get a valid dialer if no mocked dialer is configured
 func TestDialerOrDefault(t *testing.T) {
 	f := &tcpConnectFunc{
-		rt:     NewMinimalRuntime(),
+		rt:     NewMinimalRuntime(model.DiscardLogger, time.Now()),
 		dialer: nil,
 	}
 	dialer := f.dialerOrDefault(measurexlite.NewTrace(0, time.Now()), model.DiscardLogger)

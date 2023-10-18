@@ -4,12 +4,13 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // NewRuntimeMeasurexLite creates a [Runtime] using [measurexlite] to collect [*Observations].
-func NewRuntimeMeasurexLite() *RuntimeMeasurexLite {
+func NewRuntimeMeasurexLite(logger model.Logger, zeroTime time.Time) *RuntimeMeasurexLite {
 	return &RuntimeMeasurexLite{
-		MinimalRuntime: NewMinimalRuntime(),
+		MinimalRuntime: NewMinimalRuntime(logger, zeroTime),
 	}
 }
 

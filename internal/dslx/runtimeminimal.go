@@ -3,6 +3,7 @@ package dslx
 import (
 	"io"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -12,10 +13,13 @@ import (
 // NewMinimalRuntime creates a minimal [Runtime] implementation.
 //
 // This [Runtime] implementation does not collect any [*Observations].
-func NewMinimalRuntime() *MinimalRuntime {
+func NewMinimalRuntime(logger model.Logger, zeroTime time.Time) *MinimalRuntime {
 	return &MinimalRuntime{
-		mu: sync.Mutex{},
-		v:  []io.Closer{},
+		idg:    &atomic.Int64{},
+		logger: logger,
+		mu:     sync.Mutex{},
+		v:      []io.Closer{},
+		zeroT:  zeroTime,
 	}
 }
 
@@ -23,8 +27,26 @@ var _ Runtime = &MinimalRuntime{}
 
 // MinimalRuntime is a minimal [Runtime] implementation.
 type MinimalRuntime struct {
-	mu sync.Mutex
-	v  []io.Closer
+	idg    *atomic.Int64
+	logger model.Logger
+	mu     sync.Mutex
+	v      []io.Closer
+	zeroT  time.Time
+}
+
+// IDGenerator implements Runtime.
+func (p *MinimalRuntime) IDGenerator() *atomic.Int64 {
+	return p.idg
+}
+
+// Logger implements Runtime.
+func (p *MinimalRuntime) Logger() model.Logger {
+	return p.logger
+}
+
+// ZeroTime implements Runtime.
+func (p *MinimalRuntime) ZeroTime() time.Time {
+	return p.zeroT
 }
 
 // MaybeTrackConn implements Runtime.

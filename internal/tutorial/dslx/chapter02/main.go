@@ -45,7 +45,9 @@ import (
 	"errors"
 	"net"
 	"sync/atomic"
+	"time"
 
+	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/dslx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -261,7 +263,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	// open connections and close them when `rt.Close` is invoked.
 	//
 	// ```Go
-	rt := dslx.NewMinimalRuntime()
+	rt := dslx.NewMinimalRuntime(log.Log, time.Now())
 	defer rt.Close()
 
 	// ```

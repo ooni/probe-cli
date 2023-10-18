@@ -57,7 +57,7 @@ func TestMinimalRuntime(t *testing.T) {
 		}
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {
-				rt := NewMinimalRuntime()
+				rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
 				rt.MaybeTrackConn(tt.mockConn)
 				if len(rt.v) != tt.want {
 					t.Fatalf("expected %d tracked connections, got: %d", tt.want, len(rt.v))
@@ -102,9 +102,33 @@ func TestMinimalRuntime(t *testing.T) {
 		}
 	})
 
+	t.Run("IDGenerator", func(t *testing.T) {
+		rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
+		out := rt.IDGenerator()
+		if out == nil {
+			t.Fatal("expected non-nil pointer")
+		}
+	})
+
+	t.Run("Logger", func(t *testing.T) {
+		rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
+		out := rt.Logger()
+		if out == nil {
+			t.Fatal("expected non-nil pointer")
+		}
+	})
+
+	t.Run("ZeroTime", func(t *testing.T) {
+		rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
+		out := rt.ZeroTime()
+		if out.IsZero() {
+			t.Fatal("expected non-zero time")
+		}
+	})
+
 	t.Run("Trace", func(t *testing.T) {
 		tags := []string{"antani", "mascetti", "melandri"}
-		rt := NewMinimalRuntime()
+		rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
 		now := time.Now()
 		trace := rt.NewTrace(10, now, tags...)
 

@@ -31,7 +31,7 @@ func TestTLSHandshake(t *testing.T) {
 		certpool.AddCert(&x509.Certificate{})
 
 		f := TLSHandshake(
-			NewMinimalRuntime(),
+			NewMinimalRuntime(model.DiscardLogger, time.Now()),
 			TLSHandshakeOptionInsecureSkipVerify(true),
 			TLSHandshakeOptionNextProto([]string{"h2"}),
 			TLSHandshakeOptionServerName("sni"),
@@ -133,7 +133,7 @@ func TestTLSHandshake(t *testing.T) {
 
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {
-				rt := NewMinimalRuntime()
+				rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
 				tlsHandshake := &tlsHandshakeFunc{
 					NextProto:  tt.config.nextProtos,
 					Rt:         rt,
@@ -188,7 +188,7 @@ func TestServerNameTLS(t *testing.T) {
 			Logger:  model.DiscardLogger,
 		}
 		f := &tlsHandshakeFunc{
-			Rt:         NewMinimalRuntime(),
+			Rt:         NewMinimalRuntime(model.DiscardLogger, time.Now()),
 			ServerName: sni,
 		}
 		serverName := f.serverName(&tcpConn)
@@ -204,7 +204,7 @@ func TestServerNameTLS(t *testing.T) {
 			Logger:  model.DiscardLogger,
 		}
 		f := &tlsHandshakeFunc{
-			Rt: NewMinimalRuntime(),
+			Rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
 		}
 		serverName := f.serverName(&tcpConn)
 		if serverName != domain {
@@ -218,7 +218,7 @@ func TestServerNameTLS(t *testing.T) {
 			Logger:  model.DiscardLogger,
 		}
 		f := &tlsHandshakeFunc{
-			Rt: NewMinimalRuntime(),
+			Rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
 		}
 		serverName := f.serverName(&tcpConn)
 		if serverName != hostaddr {
@@ -232,7 +232,7 @@ func TestServerNameTLS(t *testing.T) {
 			Logger:  model.DiscardLogger,
 		}
 		f := &tlsHandshakeFunc{
-			Rt: NewMinimalRuntime(),
+			Rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
 		}
 		serverName := f.serverName(&tcpConn)
 		if serverName != "" {
@@ -246,7 +246,7 @@ func TestHandshakerOrDefault(t *testing.T) {
 	f := &tlsHandshakeFunc{
 		InsecureSkipVerify: false,
 		NextProto:          []string{},
-		Rt:                 NewMinimalRuntime(),
+		Rt:                 NewMinimalRuntime(model.DiscardLogger, time.Now()),
 		RootCAs:            &x509.CertPool{},
 		ServerName:         "",
 		handshaker:         nil,

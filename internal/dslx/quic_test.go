@@ -29,7 +29,7 @@ func TestQUICHandshake(t *testing.T) {
 		certpool.AddCert(&x509.Certificate{})
 
 		f := QUICHandshake(
-			NewMinimalRuntime(),
+			NewMinimalRuntime(model.DiscardLogger, time.Now()),
 			QUICHandshakeOptionInsecureSkipVerify(true),
 			QUICHandshakeOptionServerName("sni"),
 			QUICHandshakeOptionRootCAs(certpool),
@@ -99,7 +99,7 @@ func TestQUICHandshake(t *testing.T) {
 
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {
-				rt := NewRuntimeMeasurexLite()
+				rt := NewRuntimeMeasurexLite(model.DiscardLogger, time.Now())
 				quicHandshake := &quicHandshakeFunc{
 					Rt:         rt,
 					dialer:     tt.dialer,
@@ -137,7 +137,7 @@ func TestQUICHandshake(t *testing.T) {
 		}
 
 		t.Run("with nil dialer", func(t *testing.T) {
-			quicHandshake := &quicHandshakeFunc{Rt: NewMinimalRuntime(), dialer: nil}
+			quicHandshake := &quicHandshakeFunc{Rt: NewMinimalRuntime(model.DiscardLogger, time.Now()), dialer: nil}
 			endpoint := &Endpoint{
 				Address:     "1.2.3.4:567",
 				Network:     "udp",
@@ -173,7 +173,7 @@ func TestServerNameQUIC(t *testing.T) {
 			Address: "example.com:123",
 			Logger:  model.DiscardLogger,
 		}
-		f := &quicHandshakeFunc{Rt: NewMinimalRuntime(), ServerName: sni}
+		f := &quicHandshakeFunc{Rt: NewMinimalRuntime(model.DiscardLogger, time.Now()), ServerName: sni}
 		serverName := f.serverName(endpoint)
 		if serverName != sni {
 			t.Fatalf("unexpected server name: %s", serverName)
@@ -187,7 +187,7 @@ func TestServerNameQUIC(t *testing.T) {
 			Domain:  domain,
 			Logger:  model.DiscardLogger,
 		}
-		f := &quicHandshakeFunc{Rt: NewMinimalRuntime()}
+		f := &quicHandshakeFunc{Rt: NewMinimalRuntime(model.DiscardLogger, time.Now())}
 		serverName := f.serverName(endpoint)
 		if serverName != domain {
 			t.Fatalf("unexpected server name: %s", serverName)
@@ -200,7 +200,7 @@ func TestServerNameQUIC(t *testing.T) {
 			Address: hostaddr + ":123",
 			Logger:  model.DiscardLogger,
 		}
-		f := &quicHandshakeFunc{Rt: NewMinimalRuntime()}
+		f := &quicHandshakeFunc{Rt: NewMinimalRuntime(model.DiscardLogger, time.Now())}
 		serverName := f.serverName(endpoint)
 		if serverName != hostaddr {
 			t.Fatalf("unexpected server name: %s", serverName)
@@ -213,7 +213,7 @@ func TestServerNameQUIC(t *testing.T) {
 			Address: ip,
 			Logger:  model.DiscardLogger,
 		}
-		f := &quicHandshakeFunc{Rt: NewMinimalRuntime()}
+		f := &quicHandshakeFunc{Rt: NewMinimalRuntime(model.DiscardLogger, time.Now())}
 		serverName := f.serverName(endpoint)
 		if serverName != "" {
 			t.Fatalf("unexpected server name: %s", serverName)

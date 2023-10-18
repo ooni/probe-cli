@@ -67,7 +67,7 @@ Test cases:
 */
 func TestGetaddrinfo(t *testing.T) {
 	t.Run("Get dnsLookupGetaddrinfoFunc", func(t *testing.T) {
-		f := DNSLookupGetaddrinfo(NewMinimalRuntime())
+		f := DNSLookupGetaddrinfo(NewMinimalRuntime(model.DiscardLogger, time.Now()))
 		if _, ok := f.(*dnsLookupGetaddrinfoFunc); !ok {
 			t.Fatal("unexpected type, want dnsLookupGetaddrinfoFunc")
 		}
@@ -84,7 +84,7 @@ func TestGetaddrinfo(t *testing.T) {
 
 		t.Run("with nil resolver", func(t *testing.T) {
 			f := dnsLookupGetaddrinfoFunc{
-				rt: NewMinimalRuntime(),
+				rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel() // immediately cancel the lookup
@@ -103,7 +103,7 @@ func TestGetaddrinfo(t *testing.T) {
 				resolver: &mocks.Resolver{MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 					return nil, mockedErr
 				}},
-				rt: NewMinimalRuntime(),
+				rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
 			}
 			res := f.Apply(context.Background(), domain)
 			if res.Observations == nil || len(res.Observations) <= 0 {
@@ -125,7 +125,7 @@ func TestGetaddrinfo(t *testing.T) {
 				resolver: &mocks.Resolver{MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 					return []string{"93.184.216.34"}, nil
 				}},
-				rt: NewRuntimeMeasurexLite(),
+				rt: NewRuntimeMeasurexLite(model.DiscardLogger, time.Now()),
 			}
 			res := f.Apply(context.Background(), domain)
 			if res.Observations == nil || len(res.Observations) <= 0 {
@@ -157,7 +157,7 @@ Test cases:
 */
 func TestLookupUDP(t *testing.T) {
 	t.Run("Get dnsLookupUDPFunc", func(t *testing.T) {
-		rt := NewMinimalRuntime()
+		rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
 		f := DNSLookupUDP(rt, "1.1.1.1:53")
 		if _, ok := f.(*dnsLookupUDPFunc); !ok {
 			t.Fatal("unexpected type, want dnsLookupUDPFunc")
@@ -174,7 +174,7 @@ func TestLookupUDP(t *testing.T) {
 		}
 
 		t.Run("with nil resolver", func(t *testing.T) {
-			f := dnsLookupUDPFunc{Resolver: "1.1.1.1:53", rt: NewMinimalRuntime()}
+			f := dnsLookupUDPFunc{Resolver: "1.1.1.1:53", rt: NewMinimalRuntime(model.DiscardLogger, time.Now())}
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel()
 			res := f.Apply(ctx, domain)
@@ -193,7 +193,7 @@ func TestLookupUDP(t *testing.T) {
 				mockResolver: &mocks.Resolver{MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 					return nil, mockedErr
 				}},
-				rt: NewMinimalRuntime(),
+				rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
 			}
 			res := f.Apply(context.Background(), domain)
 			if res.Observations == nil || len(res.Observations) <= 0 {
@@ -216,7 +216,7 @@ func TestLookupUDP(t *testing.T) {
 				mockResolver: &mocks.Resolver{MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 					return []string{"93.184.216.34"}, nil
 				}},
-				rt: NewRuntimeMeasurexLite(),
+				rt: NewRuntimeMeasurexLite(model.DiscardLogger, time.Now()),
 			}
 			res := f.Apply(context.Background(), domain)
 			if res.Observations == nil || len(res.Observations) <= 0 {
