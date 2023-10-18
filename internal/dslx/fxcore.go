@@ -17,11 +17,11 @@ type Func[A, B any] interface {
 	Apply(ctx context.Context, a A) B
 }
 
-// FuncAdapter adapts a func to be a Func.
-type FuncAdapter[A, B any] func(ctx context.Context, a A) B
+// StageAdapter adapts a func to be a DSL stage.
+type StageAdapter[A, B any] func(ctx context.Context, a A) *Maybe[B]
 
 // Apply implements Func.
-func (fa FuncAdapter[A, B]) Apply(ctx context.Context, a A) B {
+func (fa StageAdapter[A, B]) Apply(ctx context.Context, a A) *Maybe[B] {
 	return fa(ctx, a)
 }
 

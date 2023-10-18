@@ -17,7 +17,7 @@ func HTTPRequestOverQUIC(rt Runtime, options ...HTTPRequestOption) Func[*QUICCon
 
 // HTTPConnectionQUIC converts a QUIC connection into an HTTP connection.
 func HTTPConnectionQUIC(rt Runtime) Func[*QUICConnection, *Maybe[*HTTPConnection]] {
-	return FuncAdapter[*QUICConnection, *Maybe[*HTTPConnection]](func(ctx context.Context, input *QUICConnection) *Maybe[*HTTPConnection] {
+	return StageAdapter[*QUICConnection, *HTTPConnection](func(ctx context.Context, input *QUICConnection) *Maybe[*HTTPConnection] {
 		// create transport
 		httpTransport := netxlite.NewHTTP3Transport(
 			rt.Logger(),

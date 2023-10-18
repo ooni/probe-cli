@@ -102,7 +102,7 @@ func HTTPRequestOptionUserAgent(value string) HTTPRequestOption {
 
 // HTTPRequest issues an HTTP request using a transport and returns a response.
 func HTTPRequest(rt Runtime, options ...HTTPRequestOption) Func[*HTTPConnection, *Maybe[*HTTPResponse]] {
-	return FuncAdapter[*HTTPConnection, *Maybe[*HTTPResponse]](func(ctx context.Context, input *HTTPConnection) *Maybe[*HTTPResponse] {
+	return StageAdapter[*HTTPConnection, *HTTPResponse](func(ctx context.Context, input *HTTPConnection) *Maybe[*HTTPResponse] {
 		// setup
 		const timeout = 10 * time.Second
 		ctx, cancel := context.WithTimeout(ctx, timeout)

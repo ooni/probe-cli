@@ -72,7 +72,7 @@ type ResolvedAddresses struct {
 // DNSLookupGetaddrinfo returns a function that resolves a domain name to
 // IP addresses using libc's getaddrinfo function.
 func DNSLookupGetaddrinfo(rt Runtime) Func[*DomainToResolve, *Maybe[*ResolvedAddresses]] {
-	return FuncAdapter[*DomainToResolve, *Maybe[*ResolvedAddresses]](func(ctx context.Context, input *DomainToResolve) *Maybe[*ResolvedAddresses] {
+	return StageAdapter[*DomainToResolve, *ResolvedAddresses](func(ctx context.Context, input *DomainToResolve) *Maybe[*ResolvedAddresses] {
 		// create trace
 		trace := rt.NewTrace(rt.IDGenerator().Add(1), rt.ZeroTime(), input.Tags...)
 
@@ -116,7 +116,7 @@ func DNSLookupGetaddrinfo(rt Runtime) Func[*DomainToResolve, *Maybe[*ResolvedAdd
 // DNSLookupUDP returns a function that resolves a domain name to
 // IP addresses using the given DNS-over-UDP resolver.
 func DNSLookupUDP(rt Runtime, endpoint string) Func[*DomainToResolve, *Maybe[*ResolvedAddresses]] {
-	return FuncAdapter[*DomainToResolve, *Maybe[*ResolvedAddresses]](func(ctx context.Context, input *DomainToResolve) *Maybe[*ResolvedAddresses] {
+	return StageAdapter[*DomainToResolve, *ResolvedAddresses](func(ctx context.Context, input *DomainToResolve) *Maybe[*ResolvedAddresses] {
 		// create trace
 		trace := rt.NewTrace(rt.IDGenerator().Add(1), rt.ZeroTime(), input.Tags...)
 
