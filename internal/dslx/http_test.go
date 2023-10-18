@@ -239,9 +239,9 @@ func TestHTTPRequest(t *testing.T) {
 				Trace:     trace,
 				Transport: eofTransport,
 			}
-			httpRequest := &httpRequestFunc{
-				Rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
-			}
+			httpRequest := HTTPRequest(
+				NewMinimalRuntime(model.DiscardLogger, time.Now()),
+			)
 			res := httpRequest.Apply(context.Background(), &httpTransport)
 			if res.Error != io.EOF {
 				t.Fatal("not the error we expected")
@@ -279,9 +279,9 @@ func TestHTTPRequest(t *testing.T) {
 				Trace:     trace,
 				Transport: goodTransport,
 			}
-			httpRequest := &httpRequestFunc{
-				Rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
-			}
+			httpRequest := HTTPRequest(
+				NewMinimalRuntime(model.DiscardLogger, time.Now()),
+			)
 			res := httpRequest.Apply(context.Background(), &httpTransport)
 			if res.Error != nil {
 				t.Fatal("expected error")
@@ -331,9 +331,9 @@ func TestHTTPRequest(t *testing.T) {
 				Trace:     trace,
 				Transport: goodTransport,
 			}
-			httpRequest := &httpRequestFunc{
-				Rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
-			}
+			httpRequest := HTTPRequest(
+				NewMinimalRuntime(model.DiscardLogger, time.Now()),
+			)
 			res := httpRequest.Apply(context.Background(), &httpTransport)
 			if res.Error != nil {
 				t.Fatal("unexpected error")
@@ -352,9 +352,9 @@ func TestHTTPRequest(t *testing.T) {
 				Trace:     trace,
 				Transport: goodTransport,
 			}
-			httpRequest := &httpRequestFunc{
-				Rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
-			}
+			httpRequest := HTTPRequest(
+				NewMinimalRuntime(model.DiscardLogger, time.Now()),
+			)
 			res := httpRequest.Apply(context.Background(), &httpTransport)
 			if res.Error != nil {
 				t.Fatal("unexpected error")
