@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
-	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/quic-go/quic-go"
 )
@@ -73,8 +72,6 @@ type quicHandshakeFunc struct {
 
 	// ServerName is the ServerName to handshake for.
 	ServerName string
-
-	dialer model.QUICDialer // for testing
 }
 
 // Apply implements Func.
@@ -97,10 +94,7 @@ func (f *quicHandshakeFunc) Apply(
 
 	// setup
 	udpListener := netxlite.NewUDPListener()
-	quicDialer := f.dialer
-	if quicDialer == nil {
-		quicDialer = trace.NewQUICDialerWithoutResolver(udpListener, f.Rt.Logger())
-	}
+	quicDialer := trace.NewQUICDialerWithoutResolver(udpListener, f.Rt.Logger())
 	config := &tls.Config{
 		NextProtos:         []string{"h3"},
 		InsecureSkipVerify: f.InsecureSkipVerify,

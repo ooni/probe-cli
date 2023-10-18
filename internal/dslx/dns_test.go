@@ -3,6 +3,7 @@ package dslx
 import (
 	"context"
 	"errors"
+	"net"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -84,10 +85,15 @@ func TestGetaddrinfo(t *testing.T) {
 		t.Run("with lookup error", func(t *testing.T) {
 			mockedErr := errors.New("mocked")
 			f := dnsLookupGetaddrinfoFunc{
-				resolver: &mocks.Resolver{MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-					return nil, mockedErr
-				}},
-				rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
+				rt: NewMinimalRuntime(model.DiscardLogger, time.Now(), MinimalRuntimeOptionMeasuringNetwork(&mocks.MeasuringNetwork{
+					MockNewStdlibResolver: func(logger model.DebugLogger) model.Resolver {
+						return &mocks.Resolver{
+							MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+								return nil, mockedErr
+							},
+						}
+					},
+				})),
 			}
 			res := f.Apply(context.Background(), domain)
 			if res.Observations == nil || len(res.Observations) <= 0 {
@@ -106,10 +112,15 @@ func TestGetaddrinfo(t *testing.T) {
 
 		t.Run("with success", func(t *testing.T) {
 			f := dnsLookupGetaddrinfoFunc{
-				resolver: &mocks.Resolver{MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-					return []string{"93.184.216.34"}, nil
-				}},
-				rt: NewRuntimeMeasurexLite(model.DiscardLogger, time.Now()),
+				rt: NewRuntimeMeasurexLite(model.DiscardLogger, time.Now(), RuntimeMeasurexLiteOptionMeasuringNetwork(&mocks.MeasuringNetwork{
+					MockNewStdlibResolver: func(logger model.DebugLogger) model.Resolver {
+						return &mocks.Resolver{
+							MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+								return []string{"93.184.216.34"}, nil
+							},
+						}
+					},
+				})),
 			}
 			res := f.Apply(context.Background(), domain)
 			if res.Observations == nil || len(res.Observations) <= 0 {
@@ -171,10 +182,22 @@ func TestLookupUDP(t *testing.T) {
 			mockedErr := errors.New("mocked")
 			f := dnsLookupUDPFunc{
 				Resolver: "1.1.1.1:53",
-				mockResolver: &mocks.Resolver{MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-					return nil, mockedErr
-				}},
-				rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
+				rt: NewMinimalRuntime(model.DiscardLogger, time.Now(), MinimalRuntimeOptionMeasuringNetwork(&mocks.MeasuringNetwork{
+					MockNewParallelUDPResolver: func(logger model.DebugLogger, dialer model.Dialer, endpoint string) model.Resolver {
+						return &mocks.Resolver{
+							MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+								return nil, mockedErr
+							},
+						}
+					},
+					MockNewDialerWithoutResolver: func(dl model.DebugLogger, w ...model.DialerWrapper) model.Dialer {
+						return &mocks.Dialer{
+							MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+								panic("should not be called")
+							},
+						}
+					},
+				})),
 			}
 			res := f.Apply(context.Background(), domain)
 			if res.Observations == nil || len(res.Observations) <= 0 {
@@ -194,10 +217,22 @@ func TestLookupUDP(t *testing.T) {
 		t.Run("with success", func(t *testing.T) {
 			f := dnsLookupUDPFunc{
 				Resolver: "1.1.1.1:53",
-				mockResolver: &mocks.Resolver{MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-					return []string{"93.184.216.34"}, nil
-				}},
-				rt: NewRuntimeMeasurexLite(model.DiscardLogger, time.Now()),
+				rt: NewRuntimeMeasurexLite(model.DiscardLogger, time.Now(), RuntimeMeasurexLiteOptionMeasuringNetwork(&mocks.MeasuringNetwork{
+					MockNewParallelUDPResolver: func(logger model.DebugLogger, dialer model.Dialer, address string) model.Resolver {
+						return &mocks.Resolver{
+							MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+								return []string{"93.184.216.34"}, nil
+							},
+						}
+					},
+					MockNewDialerWithoutResolver: func(dl model.DebugLogger, w ...model.DialerWrapper) model.Dialer {
+						return &mocks.Dialer{
+							MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+								panic("should not be called")
+							},
+						}
+					},
+				})),
 			}
 			res := f.Apply(context.Background(), domain)
 			if res.Observations == nil || len(res.Observations) <= 0 {

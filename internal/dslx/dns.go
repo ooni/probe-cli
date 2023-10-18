@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
-	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -73,13 +72,12 @@ type ResolvedAddresses struct {
 // DNSLookupGetaddrinfo returns a function that resolves a domain name to
 // IP addresses using libc's getaddrinfo function.
 func DNSLookupGetaddrinfo(rt Runtime) Func[*DomainToResolve, *Maybe[*ResolvedAddresses]] {
-	return &dnsLookupGetaddrinfoFunc{nil, rt}
+	return &dnsLookupGetaddrinfoFunc{rt}
 }
 
 // dnsLookupGetaddrinfoFunc is the function returned by DNSLookupGetaddrinfo.
 type dnsLookupGetaddrinfoFunc struct {
-	resolver model.Resolver // for testing
-	rt       Runtime
+	rt Runtime
 }
 
 // Apply implements Func.
@@ -102,10 +100,8 @@ func (f *dnsLookupGetaddrinfoFunc) Apply(
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	resolver := f.resolver
-	if resolver == nil {
-		resolver = trace.NewStdlibResolver(f.rt.Logger())
-	}
+	// create the resolver
+	resolver := trace.NewStdlibResolver(f.rt.Logger())
 
 	// lookup
 	addrs, err := resolver.LookupHost(ctx, input.Domain)
@@ -131,18 +127,16 @@ func (f *dnsLookupGetaddrinfoFunc) Apply(
 // IP addresses using the given DNS-over-UDP resolver.
 func DNSLookupUDP(rt Runtime, resolver string) Func[*DomainToResolve, *Maybe[*ResolvedAddresses]] {
 	return &dnsLookupUDPFunc{
-		Resolver:     resolver,
-		mockResolver: nil,
-		rt:           rt,
+		Resolver: resolver,
+		rt:       rt,
 	}
 }
 
 // dnsLookupUDPFunc is the function returned by DNSLookupUDP.
 type dnsLookupUDPFunc struct {
 	// Resolver is the MANDATORY endpointed of the resolver to use.
-	Resolver     string
-	mockResolver model.Resolver // for testing
-	rt           Runtime
+	Resolver string
+	rt       Runtime
 }
 
 // Apply implements Func.
@@ -166,14 +160,12 @@ func (f *dnsLookupUDPFunc) Apply(
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	resolver := f.mockResolver
-	if resolver == nil {
-		resolver = trace.NewParallelUDPResolver(
-			f.rt.Logger(),
-			trace.NewDialerWithoutResolver(f.rt.Logger()),
-			f.Resolver,
-		)
-	}
+	// create the resolver
+	resolver := trace.NewParallelUDPResolver(
+		f.rt.Logger(),
+		trace.NewDialerWithoutResolver(f.rt.Logger()),
+		f.Resolver,
+	)
 
 	// lookup
 	addrs, err := resolver.LookupHost(ctx, input.Domain)
