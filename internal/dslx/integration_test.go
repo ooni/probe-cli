@@ -50,7 +50,7 @@ func TestMakeSureWeCollectSpeedSamples(t *testing.T) {
 	}
 
 	// measure the endpoint
-	result := f0.Apply(context.Background(), epnt)
+	result := f0.Apply(context.Background(), Value(epnt))
 
 	// get observations
 	observations := ExtractObservations(result)

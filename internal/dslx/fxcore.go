@@ -14,15 +14,23 @@ import (
 
 // Stage is a DSL pipeline stage.
 type Stage[A, B any] interface {
-	Apply(ctx context.Context, a A) *Maybe[B]
+	Apply(ctx context.Context, a *Maybe[A]) *Maybe[B]
 }
 
 // StageAdapter adapts a func to be a DSL stage.
 type StageAdapter[A, B any] func(ctx context.Context, a A) *Maybe[B]
 
 // Apply implements Func.
-func (fa StageAdapter[A, B]) Apply(ctx context.Context, a A) *Maybe[B] {
-	return fa(ctx, a)
+func (fa StageAdapter[A, B]) Apply(ctx context.Context, a *Maybe[A]) *Maybe[B] {
+	if a.Error != nil {
+		return &Maybe[B]{
+			Error:        a.Error,
+			Observations: a.Observations,
+			Operation:    a.Operation,
+			State:        *new(B), // zero value
+		}
+	}
+	return fa(ctx, a.State)
 }
 
 // Maybe is the result of an operation implemented by this package
@@ -42,6 +50,16 @@ type Maybe[State any] struct {
 	State State
 }
 
+// Value constructs a Maybe containing the given value.
+func Value[State any](value State) *Maybe[State] {
+	return &Maybe[State]{
+		Error:        nil,
+		Observations: []*Observations{},
+		Operation:    "",
+		State:        value,
+	}
+}
+
 // Compose2 composes two operations such as [TCPConnect] and [TLSHandshake].
 func Compose2[A, B, C any](f Stage[A, B], g Stage[B, C]) Stage[A, C] {
 	return &compose2Func[A, B, C]{
@@ -57,9 +75,10 @@ type compose2Func[A, B, C any] struct {
 }
 
 // Apply implements Func
-func (h *compose2Func[A, B, C]) Apply(ctx context.Context, a A) *Maybe[C] {
+func (h *compose2Func[A, B, C]) Apply(ctx context.Context, a *Maybe[A]) *Maybe[C] {
 	mb := h.f.Apply(ctx, a)
 	runtimex.Assert(mb != nil, "h.f.Apply returned a nil pointer")
+
 	if mb.Error != nil {
 		return &Maybe[C]{
 			Error:        mb.Error,
@@ -68,8 +87,10 @@ func (h *compose2Func[A, B, C]) Apply(ctx context.Context, a A) *Maybe[C] {
 			State:        *new(C), // zero value
 		}
 	}
-	mc := h.g.Apply(ctx, mb.State)
+
+	mc := h.g.Apply(ctx, mb)
 	runtimex.Assert(mc != nil, "h.g.Apply returned a nil pointer")
+
 	op := mc.Operation
 	if op == "" { // propagate the previous operation name, if this operation has none
 		op = mb.Operation
@@ -100,23 +121,15 @@ func (c *Counter[T]) Value() int64 {
 
 // Func returns a Func[T, *Maybe[T]] that updates the counter.
 func (c *Counter[T]) Func() Stage[T, T] {
-	return &counterFunc[T]{c}
-}
-
-// counterFunc is the Func returned by CounterFunc.Func.
-type counterFunc[T any] struct {
-	c *Counter[T]
-}
-
-// Apply implements Func.
-func (c *counterFunc[T]) Apply(ctx context.Context, value T) *Maybe[T] {
-	c.c.n.Add(1)
-	return &Maybe[T]{
-		Error:        nil,
-		Observations: nil,
-		Operation:    "", // we cannot fail, so no need to store operation name
-		State:        value,
-	}
+	return StageAdapter[T, T](func(ctx context.Context, value T) *Maybe[T] {
+		c.n.Add(1)
+		return &Maybe[T]{
+			Error:        nil,
+			Observations: nil,
+			Operation:    "", // we cannot fail, so no need to store operation name
+			State:        value,
+		}
+	})
 }
 
 // FirstErrorExcludingBrokenIPv6Errors returns the first error and failed operation in a list of

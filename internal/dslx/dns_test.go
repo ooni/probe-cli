@@ -66,7 +66,7 @@ func TestGetaddrinfo(t *testing.T) {
 			)
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel() // immediately cancel the lookup
-			res := f.Apply(ctx, domain)
+			res := f.Apply(ctx, Value(domain))
 			if res.Observations == nil || len(res.Observations) <= 0 {
 				t.Fatal("unexpected empty observations")
 			}
@@ -88,7 +88,7 @@ func TestGetaddrinfo(t *testing.T) {
 					},
 				})),
 			)
-			res := f.Apply(context.Background(), domain)
+			res := f.Apply(context.Background(), Value(domain))
 			if res.Observations == nil || len(res.Observations) <= 0 {
 				t.Fatal("unexpected empty observations")
 			}
@@ -115,7 +115,7 @@ func TestGetaddrinfo(t *testing.T) {
 					},
 				})),
 			)
-			res := f.Apply(context.Background(), domain)
+			res := f.Apply(context.Background(), Value(domain))
 			if res.Observations == nil || len(res.Observations) <= 0 {
 				t.Fatal("unexpected empty observations")
 			}
@@ -154,7 +154,7 @@ func TestLookupUDP(t *testing.T) {
 			f := DNSLookupUDP(NewMinimalRuntime(model.DiscardLogger, time.Now()), "1.1.1.1:53")
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel()
-			res := f.Apply(ctx, domain)
+			res := f.Apply(ctx, Value(domain))
 			if res.Observations == nil || len(res.Observations) <= 0 {
 				t.Fatal("unexpected empty observations")
 			}
@@ -184,7 +184,7 @@ func TestLookupUDP(t *testing.T) {
 				})),
 				"1.1.1.1:53",
 			)
-			res := f.Apply(context.Background(), domain)
+			res := f.Apply(context.Background(), Value(domain))
 			if res.Observations == nil || len(res.Observations) <= 0 {
 				t.Fatal("unexpected empty observations")
 			}
@@ -219,7 +219,7 @@ func TestLookupUDP(t *testing.T) {
 				})),
 				"1.1.1.1:53",
 			)
-			res := f.Apply(context.Background(), domain)
+			res := f.Apply(context.Background(), Value(domain))
 			if res.Observations == nil || len(res.Observations) <= 0 {
 				t.Fatal("unexpected empty observations")
 			}

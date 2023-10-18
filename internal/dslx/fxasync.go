@@ -49,7 +49,7 @@ func Map[A, B any](
 		go func() {
 			defer wg.Done()
 			for a := range inputs {
-				r <- fx.Apply(ctx, a)
+				r <- fx.Apply(ctx, Value(a))
 			}
 		}()
 	}
@@ -109,7 +109,7 @@ func ParallelAsync[A, B any](
 		go func() {
 			defer wg.Done()
 			for fx := range funcs {
-				r <- fx.Apply(ctx, input)
+				r <- fx.Apply(ctx, Value(input))
 			}
 		}()
 	}

@@ -169,7 +169,7 @@ func TestTLSHandshake(t *testing.T) {
 					Network: "tcp",
 					Trace:   trace,
 				}
-				res := tlsHandshake.Apply(context.Background(), &tcpConn)
+				res := tlsHandshake.Apply(context.Background(), Value(&tcpConn))
 				if res.Error != tt.expectErr {
 					t.Fatalf("unexpected error: %s", res.Error)
 				}
