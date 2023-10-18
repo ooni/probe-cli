@@ -48,75 +48,57 @@ func TLSHandshakeOptionServerName(value string) TLSHandshakeOption {
 }
 
 // TLSHandshake returns a function performing TSL handshakes.
-func TLSHandshake(rt Runtime, options ...TLSHandshakeOption) Func[
-	*TCPConnection, *Maybe[*TLSConnection]] {
-	f := &tlsHandshakeFunc{
-		Options: options,
-		Rt:      rt,
-	}
-	return f
-}
+func TLSHandshake(rt Runtime, options ...TLSHandshakeOption) Func[*TCPConnection, *Maybe[*TLSConnection]] {
+	return FuncAdapter[*TCPConnection, *Maybe[*TLSConnection]](func(ctx context.Context, input *TCPConnection) *Maybe[*TLSConnection] {
+		// keep using the same trace
+		trace := input.Trace
 
-// tlsHandshakeFunc performs TLS handshakes.
-type tlsHandshakeFunc struct {
-	// Options contains the options.
-	Options []TLSHandshakeOption
+		// create a suitable TLS configuration
+		config := tlsNewConfig(input.Address, []string{"h2", "http/1.1"}, input.Domain, rt.Logger(), options...)
 
-	// Rt is the runtime that owns us.
-	Rt Runtime
-}
+		// start the operation logger
+		ol := logx.NewOperationLogger(
+			rt.Logger(),
+			"[#%d] TLSHandshake with %s SNI=%s ALPN=%v",
+			trace.Index(),
+			input.Address,
+			config.ServerName,
+			config.NextProtos,
+		)
 
-// Apply implements Func.
-func (f *tlsHandshakeFunc) Apply(
-	ctx context.Context, input *TCPConnection) *Maybe[*TLSConnection] {
-	// keep using the same trace
-	trace := input.Trace
+		// obtain the handshaker for use
+		handshaker := trace.NewTLSHandshakerStdlib(rt.Logger())
 
-	// create a suitable TLS configuration
-	config := tlsNewConfig(input.Address, []string{"h2", "http/1.1"}, input.Domain, f.Rt.Logger(), f.Options...)
+		// setup
+		const timeout = 10 * time.Second
+		ctx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
 
-	// start the operation logger
-	ol := logx.NewOperationLogger(
-		f.Rt.Logger(),
-		"[#%d] TLSHandshake with %s SNI=%s ALPN=%v",
-		trace.Index(),
-		input.Address,
-		config.ServerName,
-		config.NextProtos,
-	)
+		// handshake
+		conn, err := handshaker.Handshake(ctx, input.Conn, config)
 
-	// obtain the handshaker for use
-	handshaker := trace.NewTLSHandshakerStdlib(f.Rt.Logger())
+		// possibly register established conn for late close
+		rt.MaybeTrackConn(conn)
 
-	// setup
-	const timeout = 10 * time.Second
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
+		// stop the operation logger
+		ol.Stop(err)
 
-	// handshake
-	conn, err := handshaker.Handshake(ctx, input.Conn, config)
+		state := &TLSConnection{
+			Address:  input.Address,
+			Conn:     conn, // possibly nil
+			Domain:   input.Domain,
+			Network:  input.Network,
+			TLSState: netxlite.MaybeTLSConnectionState(conn),
+			Trace:    trace,
+		}
 
-	// possibly register established conn for late close
-	f.Rt.MaybeTrackConn(conn)
-
-	// stop the operation logger
-	ol.Stop(err)
-
-	state := &TLSConnection{
-		Address:  input.Address,
-		Conn:     conn, // possibly nil
-		Domain:   input.Domain,
-		Network:  input.Network,
-		TLSState: netxlite.MaybeTLSConnectionState(conn),
-		Trace:    trace,
-	}
-
-	return &Maybe[*TLSConnection]{
-		Error:        err,
-		Observations: maybeTraceToObservations(trace),
-		Operation:    netxlite.TLSHandshakeOperation,
-		State:        state,
-	}
+		return &Maybe[*TLSConnection]{
+			Error:        err,
+			Observations: maybeTraceToObservations(trace),
+			Operation:    netxlite.TLSHandshakeOperation,
+			State:        state,
+		}
+	})
 }
 
 // tlsNewConfig is an utility function to create a new TLS config.
