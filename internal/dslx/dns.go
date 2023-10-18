@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
-	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -121,7 +120,7 @@ type ResolvedAddresses struct {
 	// Trace is the trace we're currently using. This struct is
 	// created by the various Apply functions using values inside
 	// the DomainToResolve to initialize the Trace.
-	Trace *measurexlite.Trace
+	Trace Trace
 
 	// ZeroTime is the zero time of the measurement. We inherit this field
 	// from the value inside the DomainToResolve.
@@ -130,13 +129,14 @@ type ResolvedAddresses struct {
 
 // DNSLookupGetaddrinfo returns a function that resolves a domain name to
 // IP addresses using libc's getaddrinfo function.
-func DNSLookupGetaddrinfo() Func[*DomainToResolve, *Maybe[*ResolvedAddresses]] {
-	return &dnsLookupGetaddrinfoFunc{}
+func DNSLookupGetaddrinfo(rt Runtime) Func[*DomainToResolve, *Maybe[*ResolvedAddresses]] {
+	return &dnsLookupGetaddrinfoFunc{nil, rt}
 }
 
 // dnsLookupGetaddrinfoFunc is the function returned by DNSLookupGetaddrinfo.
 type dnsLookupGetaddrinfoFunc struct {
 	resolver model.Resolver // for testing
+	rt       Runtime
 }
 
 // Apply implements Func.
@@ -144,13 +144,13 @@ func (f *dnsLookupGetaddrinfoFunc) Apply(
 	ctx context.Context, input *DomainToResolve) *Maybe[*ResolvedAddresses] {
 
 	// create trace
-	trace := measurexlite.NewTrace(input.IDGenerator.Add(1), input.ZeroTime, input.Tags...)
+	trace := f.rt.NewTrace(input.IDGenerator.Add(1), input.ZeroTime, input.Tags...)
 
 	// start the operation logger
 	ol := logx.NewOperationLogger(
 		input.Logger,
 		"[#%d] DNSLookup[getaddrinfo] %s",
-		trace.Index,
+		trace.Index(),
 		input.Domain,
 	)
 
@@ -189,9 +189,11 @@ func (f *dnsLookupGetaddrinfoFunc) Apply(
 
 // DNSLookupUDP returns a function that resolves a domain name to
 // IP addresses using the given DNS-over-UDP resolver.
-func DNSLookupUDP(resolver string) Func[*DomainToResolve, *Maybe[*ResolvedAddresses]] {
+func DNSLookupUDP(rt Runtime, resolver string) Func[*DomainToResolve, *Maybe[*ResolvedAddresses]] {
 	return &dnsLookupUDPFunc{
-		Resolver: resolver,
+		Resolver:     resolver,
+		mockResolver: nil,
+		rt:           rt,
 	}
 }
 
@@ -200,6 +202,7 @@ type dnsLookupUDPFunc struct {
 	// Resolver is the MANDATORY endpointed of the resolver to use.
 	Resolver     string
 	mockResolver model.Resolver // for testing
+	rt           Runtime
 }
 
 // Apply implements Func.
@@ -207,13 +210,13 @@ func (f *dnsLookupUDPFunc) Apply(
 	ctx context.Context, input *DomainToResolve) *Maybe[*ResolvedAddresses] {
 
 	// create trace
-	trace := measurexlite.NewTrace(input.IDGenerator.Add(1), input.ZeroTime, input.Tags...)
+	trace := f.rt.NewTrace(input.IDGenerator.Add(1), input.ZeroTime, input.Tags...)
 
 	// start the operation logger
 	ol := logx.NewOperationLogger(
 		input.Logger,
 		"[#%d] DNSLookup[%s/udp] %s",
-		trace.Index,
+		trace.Index(),
 		f.Resolver,
 		input.Domain,
 	)
@@ -227,7 +230,7 @@ func (f *dnsLookupUDPFunc) Apply(
 	if resolver == nil {
 		resolver = trace.NewParallelUDPResolver(
 			input.Logger,
-			netxlite.NewDialerWithoutResolver(input.Logger),
+			trace.NewDialerWithoutResolver(input.Logger),
 			f.Resolver,
 		)
 	}

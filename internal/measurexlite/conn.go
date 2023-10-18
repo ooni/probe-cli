@@ -44,16 +44,16 @@ func (c *connTrace) Read(b []byte) (int, error) {
 	// collect preliminary stats when the connection is surely active
 	network := c.RemoteAddr().Network()
 	addr := c.RemoteAddr().String()
-	started := c.tx.TimeSince(c.tx.ZeroTime)
+	started := c.tx.TimeSince(c.tx.ZeroTime())
 
 	// perform the underlying network operation
 	count, err := c.Conn.Read(b)
 
 	// emit the network event
-	finished := c.tx.TimeSince(c.tx.ZeroTime)
+	finished := c.tx.TimeSince(c.tx.ZeroTime())
 	select {
 	case c.tx.networkEvent <- NewArchivalNetworkEvent(
-		c.tx.Index, started, netxlite.ReadOperation, network, addr, count,
+		c.tx.Index(), started, netxlite.ReadOperation, network, addr, count,
 		err, finished, c.tx.tags...):
 	default: // buffer is full
 	}
@@ -101,14 +101,14 @@ func (tx *Trace) CloneBytesReceivedMap() (out map[string]int64) {
 func (c *connTrace) Write(b []byte) (int, error) {
 	network := c.RemoteAddr().Network()
 	addr := c.RemoteAddr().String()
-	started := c.tx.TimeSince(c.tx.ZeroTime)
+	started := c.tx.TimeSince(c.tx.ZeroTime())
 
 	count, err := c.Conn.Write(b)
 
-	finished := c.tx.TimeSince(c.tx.ZeroTime)
+	finished := c.tx.TimeSince(c.tx.ZeroTime())
 	select {
 	case c.tx.networkEvent <- NewArchivalNetworkEvent(
-		c.tx.Index, started, netxlite.WriteOperation, network, addr, count,
+		c.tx.Index(), started, netxlite.WriteOperation, network, addr, count,
 		err, finished, c.tx.tags...):
 	default: // buffer is full
 	}
@@ -143,17 +143,17 @@ type udpLikeConnTrace struct {
 // Read implements model.UDPLikeConn.ReadFrom and saves network events.
 func (c *udpLikeConnTrace) ReadFrom(b []byte) (int, net.Addr, error) {
 	// record when we started measuring
-	started := c.tx.TimeSince(c.tx.ZeroTime)
+	started := c.tx.TimeSince(c.tx.ZeroTime())
 
 	// perform the network operation
 	count, addr, err := c.UDPLikeConn.ReadFrom(b)
 
 	// emit the network event
-	finished := c.tx.TimeSince(c.tx.ZeroTime)
+	finished := c.tx.TimeSince(c.tx.ZeroTime())
 	address := addrStringIfNotNil(addr)
 	select {
 	case c.tx.networkEvent <- NewArchivalNetworkEvent(
-		c.tx.Index, started, netxlite.ReadFromOperation, "udp", address, count,
+		c.tx.Index(), started, netxlite.ReadFromOperation, "udp", address, count,
 		err, finished, c.tx.tags...):
 	default: // buffer is full
 	}
@@ -176,15 +176,15 @@ func (tx *Trace) maybeUpdateBytesReceivedMapUDPLikeConn(addr net.Addr, count int
 
 // Write implements model.UDPLikeConn.WriteTo and saves network events.
 func (c *udpLikeConnTrace) WriteTo(b []byte, addr net.Addr) (int, error) {
-	started := c.tx.TimeSince(c.tx.ZeroTime)
+	started := c.tx.TimeSince(c.tx.ZeroTime())
 	address := addr.String()
 
 	count, err := c.UDPLikeConn.WriteTo(b, addr)
 
-	finished := c.tx.TimeSince(c.tx.ZeroTime)
+	finished := c.tx.TimeSince(c.tx.ZeroTime())
 	select {
 	case c.tx.networkEvent <- NewArchivalNetworkEvent(
-		c.tx.Index, started, netxlite.WriteToOperation, "udp", address, count,
+		c.tx.Index(), started, netxlite.WriteToOperation, "udp", address, count,
 		err, finished, c.tx.tags...):
 	default: // buffer is full
 	}

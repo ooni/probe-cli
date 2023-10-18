@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
-	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -33,13 +32,13 @@ func (f *tcpConnectFunc) Apply(
 	ctx context.Context, input *Endpoint) *Maybe[*TCPConnection] {
 
 	// create trace
-	trace := measurexlite.NewTrace(input.IDGenerator.Add(1), input.ZeroTime, input.Tags...)
+	trace := f.rt.NewTrace(input.IDGenerator.Add(1), input.ZeroTime, input.Tags...)
 
 	// start the operation logger
 	ol := logx.NewOperationLogger(
 		input.Logger,
 		"[#%d] TCPConnect %s",
-		trace.Index,
+		trace.Index(),
 		input.Address,
 	)
 
@@ -80,7 +79,7 @@ func (f *tcpConnectFunc) Apply(
 }
 
 // dialerOrDefault is the function used to obtain a dialer
-func (f *tcpConnectFunc) dialerOrDefault(trace *measurexlite.Trace, logger model.Logger) model.Dialer {
+func (f *tcpConnectFunc) dialerOrDefault(trace Trace, logger model.Logger) model.Dialer {
 	dialer := f.dialer
 	if dialer == nil {
 		dialer = trace.NewDialerWithoutResolver(logger)
@@ -110,7 +109,7 @@ type TCPConnection struct {
 	Network string
 
 	// Trace is the MANDATORY trace we're using.
-	Trace *measurexlite.Trace
+	Trace Trace
 
 	// ZeroTime is the MANDATORY zero time of the measurement.
 	ZeroTime time.Time

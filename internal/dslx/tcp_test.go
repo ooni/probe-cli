@@ -69,7 +69,7 @@ func TestTCPConnect(t *testing.T) {
 
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {
-				rt := NewMinimalRuntime()
+				rt := NewRuntimeMeasurexLite()
 				tcpConnect := &tcpConnectFunc{tt.dialer, rt}
 				endpoint := &Endpoint{
 					Address:     "1.2.3.4:567",

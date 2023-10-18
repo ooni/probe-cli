@@ -99,7 +99,7 @@ func TestQUICHandshake(t *testing.T) {
 
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {
-				rt := NewMinimalRuntime()
+				rt := NewRuntimeMeasurexLite()
 				quicHandshake := &quicHandshakeFunc{
 					Rt:         rt,
 					dialer:     tt.dialer,

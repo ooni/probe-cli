@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
-	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/quic-go/quic-go"
@@ -83,7 +82,7 @@ type quicHandshakeFunc struct {
 func (f *quicHandshakeFunc) Apply(
 	ctx context.Context, input *Endpoint) *Maybe[*QUICConnection] {
 	// create trace
-	trace := measurexlite.NewTrace(input.IDGenerator.Add(1), input.ZeroTime, input.Tags...)
+	trace := f.Rt.NewTrace(input.IDGenerator.Add(1), input.ZeroTime, input.Tags...)
 
 	// use defaults or user-configured overrides
 	serverName := f.serverName(input)
@@ -92,7 +91,7 @@ func (f *quicHandshakeFunc) Apply(
 	ol := logx.NewOperationLogger(
 		input.Logger,
 		"[#%d] QUICHandshake with %s SNI=%s",
-		trace.Index,
+		trace.Index(),
 		input.Address,
 		serverName,
 	)
@@ -197,7 +196,7 @@ type QUICConnection struct {
 	TLSState tls.ConnectionState
 
 	// Trace is the MANDATORY trace we're using.
-	Trace *measurexlite.Trace
+	Trace Trace
 
 	// ZeroTime is the MANDATORY zero time of the measurement.
 	ZeroTime time.Time

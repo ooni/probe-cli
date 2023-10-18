@@ -52,7 +52,7 @@ func (r *resolverTrace) CloseIdleConnections() {
 func (r *resolverTrace) emitResolveStart() {
 	select {
 	case r.tx.networkEvent <- NewAnnotationArchivalNetworkEvent(
-		r.tx.Index, r.tx.TimeSince(r.tx.ZeroTime), "resolve_start",
+		r.tx.Index(), r.tx.TimeSince(r.tx.ZeroTime()), "resolve_start",
 		r.tx.tags...,
 	):
 	default: // buffer is full
@@ -63,7 +63,7 @@ func (r *resolverTrace) emitResolveStart() {
 func (r *resolverTrace) emiteResolveDone() {
 	select {
 	case r.tx.networkEvent <- NewAnnotationArchivalNetworkEvent(
-		r.tx.Index, r.tx.TimeSince(r.tx.ZeroTime), "resolve_done",
+		r.tx.Index(), r.tx.TimeSince(r.tx.ZeroTime()), "resolve_done",
 		r.tx.tags...,
 	):
 	default: // buffer is full
@@ -109,12 +109,12 @@ func (tx *Trace) NewParallelDNSOverHTTPSResolver(logger model.DebugLogger, URL s
 // OnDNSRoundTripForLookupHost implements model.Trace.OnDNSRoundTripForLookupHost
 func (tx *Trace) OnDNSRoundTripForLookupHost(started time.Time, reso model.Resolver, query model.DNSQuery,
 	response model.DNSResponse, addrs []string, err error, finished time.Time) {
-	t := finished.Sub(tx.ZeroTime)
+	t := finished.Sub(tx.ZeroTime())
 
 	select {
 	case tx.dnsLookup <- NewArchivalDNSLookupResultFromRoundTrip(
-		tx.Index,
-		started.Sub(tx.ZeroTime),
+		tx.Index(),
+		started.Sub(tx.ZeroTime()),
 		reso,
 		query,
 		response,
@@ -274,12 +274,12 @@ var ErrDelayedDNSResponseBufferFull = errors.New(
 // OnDelayedDNSResponse implements model.Trace.OnDelayedDNSResponse
 func (tx *Trace) OnDelayedDNSResponse(started time.Time, txp model.DNSTransport, query model.DNSQuery,
 	response model.DNSResponse, addrs []string, err error, finished time.Time) error {
-	t := finished.Sub(tx.ZeroTime)
+	t := finished.Sub(tx.ZeroTime())
 
 	select {
 	case tx.delayedDNSResponse <- NewArchivalDNSLookupResultFromRoundTrip(
-		tx.Index,
-		started.Sub(tx.ZeroTime),
+		tx.Index(),
+		started.Sub(tx.ZeroTime()),
 		txp,
 		query,
 		response,

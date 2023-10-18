@@ -67,7 +67,7 @@ Test cases:
 */
 func TestGetaddrinfo(t *testing.T) {
 	t.Run("Get dnsLookupGetaddrinfoFunc", func(t *testing.T) {
-		f := DNSLookupGetaddrinfo()
+		f := DNSLookupGetaddrinfo(NewMinimalRuntime())
 		if _, ok := f.(*dnsLookupGetaddrinfoFunc); !ok {
 			t.Fatal("unexpected type, want dnsLookupGetaddrinfoFunc")
 		}
@@ -83,7 +83,9 @@ func TestGetaddrinfo(t *testing.T) {
 		}
 
 		t.Run("with nil resolver", func(t *testing.T) {
-			f := dnsLookupGetaddrinfoFunc{}
+			f := dnsLookupGetaddrinfoFunc{
+				rt: NewMinimalRuntime(),
+			}
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel() // immediately cancel the lookup
 			res := f.Apply(ctx, domain)
@@ -101,6 +103,7 @@ func TestGetaddrinfo(t *testing.T) {
 				resolver: &mocks.Resolver{MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 					return nil, mockedErr
 				}},
+				rt: NewMinimalRuntime(),
 			}
 			res := f.Apply(context.Background(), domain)
 			if res.Observations == nil || len(res.Observations) <= 0 {
@@ -122,6 +125,7 @@ func TestGetaddrinfo(t *testing.T) {
 				resolver: &mocks.Resolver{MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 					return []string{"93.184.216.34"}, nil
 				}},
+				rt: NewRuntimeMeasurexLite(),
 			}
 			res := f.Apply(context.Background(), domain)
 			if res.Observations == nil || len(res.Observations) <= 0 {
@@ -153,7 +157,8 @@ Test cases:
 */
 func TestLookupUDP(t *testing.T) {
 	t.Run("Get dnsLookupUDPFunc", func(t *testing.T) {
-		f := DNSLookupUDP("1.1.1.1:53")
+		rt := NewMinimalRuntime()
+		f := DNSLookupUDP(rt, "1.1.1.1:53")
 		if _, ok := f.(*dnsLookupUDPFunc); !ok {
 			t.Fatal("unexpected type, want dnsLookupUDPFunc")
 		}
@@ -169,7 +174,7 @@ func TestLookupUDP(t *testing.T) {
 		}
 
 		t.Run("with nil resolver", func(t *testing.T) {
-			f := dnsLookupUDPFunc{Resolver: "1.1.1.1:53"}
+			f := dnsLookupUDPFunc{Resolver: "1.1.1.1:53", rt: NewMinimalRuntime()}
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel()
 			res := f.Apply(ctx, domain)
@@ -188,6 +193,7 @@ func TestLookupUDP(t *testing.T) {
 				mockResolver: &mocks.Resolver{MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 					return nil, mockedErr
 				}},
+				rt: NewMinimalRuntime(),
 			}
 			res := f.Apply(context.Background(), domain)
 			if res.Observations == nil || len(res.Observations) <= 0 {
@@ -210,6 +216,7 @@ func TestLookupUDP(t *testing.T) {
 				mockResolver: &mocks.Resolver{MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 					return []string{"93.184.216.34"}, nil
 				}},
+				rt: NewRuntimeMeasurexLite(),
 			}
 			res := f.Apply(context.Background(), domain)
 			if res.Observations == nil || len(res.Observations) <= 0 {

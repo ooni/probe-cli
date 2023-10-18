@@ -257,11 +257,20 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 
 	// ```
 	//
+	// Next, we create a minimal runtime. This data structure helps us to manage
+	// open connections and close them when `rt.Close` is invoked.
+	//
+	// ```Go
+	rt := dslx.NewMinimalRuntime()
+	defer rt.Close()
+
+	// ```
+	//
 	// We construct the resolver dslx function which can be - like in this case - the
 	// system resolver, or a custom UDP resolver.
 	//
 	// ```Go
-	lookupFn := dslx.DNSLookupGetaddrinfo()
+	lookupFn := dslx.DNSLookupGetaddrinfo(rt)
 
 	// ```
 	//
@@ -329,15 +338,6 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	)
 	runtimex.Assert(len(endpoints) >= 1, "expected at least one endpoint here")
 	endpoint := endpoints[0]
-
-	// ```
-	//
-	// Next, we create a minimal runtime. This data structure helps us to manage
-	// open connections and close them when `rt.Close` is invoked.
-	//
-	// ```Go
-	rt := dslx.NewMinimalRuntime()
-	defer rt.Close()
 
 	// ```
 	//

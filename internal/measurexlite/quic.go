@@ -49,10 +49,10 @@ func (qdx *quicDialerTrace) CloseIdleConnections() {
 
 // OnQUICHandshakeStart implements model.Trace.OnQUICHandshakeStart
 func (tx *Trace) OnQUICHandshakeStart(now time.Time, remoteAddr string, config *quic.Config) {
-	t := now.Sub(tx.ZeroTime)
+	t := now.Sub(tx.ZeroTime())
 	select {
 	case tx.networkEvent <- NewAnnotationArchivalNetworkEvent(
-		tx.Index, t, "quic_handshake_start", tx.tags...):
+		tx.Index(), t, "quic_handshake_start", tx.tags...):
 	default:
 	}
 }
@@ -60,7 +60,7 @@ func (tx *Trace) OnQUICHandshakeStart(now time.Time, remoteAddr string, config *
 // OnQUICHandshakeDone implements model.Trace.OnQUICHandshakeDone
 func (tx *Trace) OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn quic.EarlyConnection,
 	config *tls.Config, err error, finished time.Time) {
-	t := finished.Sub(tx.ZeroTime)
+	t := finished.Sub(tx.ZeroTime())
 
 	state := tls.ConnectionState{}
 	if qconn != nil {
@@ -69,8 +69,8 @@ func (tx *Trace) OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn
 
 	select {
 	case tx.quicHandshake <- NewArchivalTLSOrQUICHandshakeResult(
-		tx.Index,
-		started.Sub(tx.ZeroTime),
+		tx.Index(),
+		started.Sub(tx.ZeroTime()),
 		"udp",
 		remoteAddr,
 		config,
@@ -84,7 +84,7 @@ func (tx *Trace) OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn
 
 	select {
 	case tx.networkEvent <- NewAnnotationArchivalNetworkEvent(
-		tx.Index, t, "quic_handshake_done", tx.tags...):
+		tx.Index(), t, "quic_handshake_done", tx.tags...):
 	default: // buffer is full
 	}
 }

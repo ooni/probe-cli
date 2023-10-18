@@ -31,8 +31,8 @@ func TestMakeSureWeCollectSpeedSamples(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// instantiate a connection pool
-	rt := NewMinimalRuntime()
+	// instantiate a runtime
+	rt := NewRuntimeMeasurexLite()
 	defer rt.Close()
 
 	// create a measuring function

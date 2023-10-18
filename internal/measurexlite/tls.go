@@ -41,10 +41,10 @@ func (thx *tlsHandshakerTrace) Handshake(
 
 // OnTLSHandshakeStart implements model.Trace.OnTLSHandshakeStart.
 func (tx *Trace) OnTLSHandshakeStart(now time.Time, remoteAddr string, config *tls.Config) {
-	t := now.Sub(tx.ZeroTime)
+	t := now.Sub(tx.ZeroTime())
 	select {
 	case tx.networkEvent <- NewAnnotationArchivalNetworkEvent(
-		tx.Index, t, "tls_handshake_start", tx.tags...):
+		tx.Index(), t, "tls_handshake_start", tx.tags...):
 	default: // buffer is full
 	}
 }
@@ -52,12 +52,12 @@ func (tx *Trace) OnTLSHandshakeStart(now time.Time, remoteAddr string, config *t
 // OnTLSHandshakeDone implements model.Trace.OnTLSHandshakeDone.
 func (tx *Trace) OnTLSHandshakeDone(started time.Time, remoteAddr string, config *tls.Config,
 	state tls.ConnectionState, err error, finished time.Time) {
-	t := finished.Sub(tx.ZeroTime)
+	t := finished.Sub(tx.ZeroTime())
 
 	select {
 	case tx.tlsHandshake <- NewArchivalTLSOrQUICHandshakeResult(
-		tx.Index,
-		started.Sub(tx.ZeroTime),
+		tx.Index(),
+		started.Sub(tx.ZeroTime()),
 		"tcp",
 		remoteAddr,
 		config,
@@ -71,7 +71,7 @@ func (tx *Trace) OnTLSHandshakeDone(started time.Time, remoteAddr string, config
 
 	select {
 	case tx.networkEvent <- NewAnnotationArchivalNetworkEvent(
-		tx.Index, t, "tls_handshake_done", tx.tags...):
+		tx.Index(), t, "tls_handshake_done", tx.tags...):
 	default: // buffer is full
 	}
 }

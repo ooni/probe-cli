@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
-	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -103,7 +102,7 @@ func (f *tlsHandshakeFunc) Apply(
 	ol := logx.NewOperationLogger(
 		input.Logger,
 		"[#%d] TLSHandshake with %s SNI=%s ALPN=%v",
-		trace.Index,
+		trace.Index(),
 		input.Address,
 		serverName,
 		nextProto,
@@ -153,7 +152,7 @@ func (f *tlsHandshakeFunc) Apply(
 }
 
 // handshakerOrDefault is the function used to obtain an handshaker
-func (f *tlsHandshakeFunc) handshakerOrDefault(trace *measurexlite.Trace, logger model.Logger) model.TLSHandshaker {
+func (f *tlsHandshakeFunc) handshakerOrDefault(trace Trace, logger model.Logger) model.TLSHandshaker {
 	handshaker := f.handshaker
 	if handshaker == nil {
 		handshaker = trace.NewTLSHandshakerStdlib(logger)
@@ -211,7 +210,7 @@ type TLSConnection struct {
 	TLSState tls.ConnectionState
 
 	// Trace is the MANDATORY trace we're using.
-	Trace *measurexlite.Trace
+	Trace Trace
 
 	// ZeroTime is the MANDATORY zero time of the measurement.
 	ZeroTime time.Time

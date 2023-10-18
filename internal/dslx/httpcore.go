@@ -48,7 +48,7 @@ type HTTPTransport struct {
 	TLSNegotiatedProtocol string
 
 	// Trace is the MANDATORY trace we're using.
-	Trace *measurexlite.Trace
+	Trace Trace
 
 	// Transport is the MANDATORY HTTP transport we're using.
 	Transport model.HTTPTransport
@@ -164,7 +164,7 @@ func (f *httpRequestFunc) Apply(
 		ol := logx.NewOperationLogger(
 			input.Logger,
 			"[#%d] HTTPRequest %s with %s/%s host=%s",
-			input.Trace.Index,
+			input.Trace.Index(),
 			req.URL.String(),
 			input.Address,
 			input.Network,
@@ -288,7 +288,7 @@ func (f *httpRequestFunc) do(
 	req *http.Request,
 ) (*http.Response, []byte, []*Observations, error) {
 	const maxbody = 1 << 19 // TODO(bassosimone): allow to configure this value?
-	started := input.Trace.TimeSince(input.Trace.ZeroTime)
+	started := input.Trace.TimeSince(input.Trace.ZeroTime())
 
 	// manually create a single 1-length observations structure because
 	// the trace cannot automatically capture HTTP events
@@ -298,7 +298,7 @@ func (f *httpRequestFunc) do(
 
 	observations[0].NetworkEvents = append(observations[0].NetworkEvents,
 		measurexlite.NewAnnotationArchivalNetworkEvent(
-			input.Trace.Index,
+			input.Trace.Index(),
 			started,
 			"http_transaction_start",
 			input.Trace.Tags()...,
@@ -321,11 +321,11 @@ func (f *httpRequestFunc) do(
 		samples := sampler.ExtractSamples()
 		observations[0].NetworkEvents = append(observations[0].NetworkEvents, samples...)
 	}
-	finished := input.Trace.TimeSince(input.Trace.ZeroTime)
+	finished := input.Trace.TimeSince(input.Trace.ZeroTime())
 
 	observations[0].NetworkEvents = append(observations[0].NetworkEvents,
 		measurexlite.NewAnnotationArchivalNetworkEvent(
-			input.Trace.Index,
+			input.Trace.Index(),
 			finished,
 			"http_transaction_done",
 			input.Trace.Tags()...,
@@ -333,7 +333,7 @@ func (f *httpRequestFunc) do(
 
 	observations[0].Requests = append(observations[0].Requests,
 		measurexlite.NewArchivalHTTPRequestResult(
-			input.Trace.Index,
+			input.Trace.Index(),
 			started,
 			input.Network,
 			input.Address,
@@ -380,7 +380,7 @@ type HTTPResponse struct {
 
 	// Trace is the MANDATORY trace we're using. The trace is drained
 	// when you call the Observations method.
-	Trace *measurexlite.Trace
+	Trace Trace
 
 	// ZeroTime is the MANDATORY zero time of the measurement.
 	ZeroTime time.Time

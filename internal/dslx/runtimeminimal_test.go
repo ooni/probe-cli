@@ -4,8 +4,11 @@ import (
 	"errors"
 	"io"
 	"testing"
+	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/quic-go/quic-go"
 )
 
@@ -97,5 +100,117 @@ func TestMinimalRuntime(t *testing.T) {
 				}
 			})
 		}
+	})
+
+	t.Run("Trace", func(t *testing.T) {
+		tags := []string{"antani", "mascetti", "melandri"}
+		rt := NewMinimalRuntime()
+		now := time.Now()
+		trace := rt.NewTrace(10, now, tags...)
+
+		t.Run("CloneBytesReceivedMap", func(t *testing.T) {
+			out := trace.CloneBytesReceivedMap()
+			if out == nil || len(out) != 0 {
+				t.Fatal("expected zero-length map")
+			}
+		})
+
+		t.Run("DNSLookupsFromRoundTrip", func(t *testing.T) {
+			out := trace.DNSLookupsFromRoundTrip()
+			if out == nil || len(out) != 0 {
+				t.Fatal("expected zero-length slice")
+			}
+		})
+
+		t.Run("Index", func(t *testing.T) {
+			out := trace.Index()
+			if out != 10 {
+				t.Fatal("expected 10, got", out)
+			}
+		})
+
+		t.Run("NetworkEvents", func(t *testing.T) {
+			out := trace.NetworkEvents()
+			if out == nil || len(out) != 0 {
+				t.Fatal("expected zero-length slice")
+			}
+		})
+
+		t.Run("NewDialerWithoutResolver", func(t *testing.T) {
+			out := trace.NewDialerWithoutResolver(model.DiscardLogger)
+			if out == nil {
+				t.Fatal("expected non-nil pointer")
+			}
+		})
+
+		t.Run("NewParallelUDPResolver", func(t *testing.T) {
+			out := trace.NewParallelUDPResolver(model.DiscardLogger, &mocks.Dialer{}, "8.8.8.8:53")
+			if out == nil {
+				t.Fatal("expected non-nil pointer")
+			}
+		})
+
+		t.Run("NewQUICDialerWithoutResolver", func(t *testing.T) {
+			out := trace.NewQUICDialerWithoutResolver(&mocks.UDPListener{}, model.DiscardLogger)
+			if out == nil {
+				t.Fatal("expected non-nil pointer")
+			}
+		})
+
+		t.Run("NewStdlibResolver", func(t *testing.T) {
+			out := trace.NewStdlibResolver(model.DiscardLogger)
+			if out == nil {
+				t.Fatal("expected non-nil pointer")
+			}
+		})
+
+		t.Run("NewTLSHandshakerStdlib", func(t *testing.T) {
+			out := trace.NewTLSHandshakerStdlib(model.DiscardLogger)
+			if out == nil {
+				t.Fatal("expected non-nil pointer")
+			}
+		})
+
+		t.Run("QUICHandshakes", func(t *testing.T) {
+			out := trace.QUICHandshakes()
+			if out == nil || len(out) != 0 {
+				t.Fatal("expected zero-length slice")
+			}
+		})
+
+		t.Run("TCPConnects", func(t *testing.T) {
+			out := trace.TCPConnects()
+			if out == nil || len(out) != 0 {
+				t.Fatal("expected zero-length slice")
+			}
+		})
+
+		t.Run("TLSHandshakes", func(t *testing.T) {
+			out := trace.TLSHandshakes()
+			if out == nil || len(out) != 0 {
+				t.Fatal("expected zero-length slice")
+			}
+		})
+
+		t.Run("Tags", func(t *testing.T) {
+			out := trace.Tags()
+			if diff := cmp.Diff(tags, out); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+
+		t.Run("TimeSince", func(t *testing.T) {
+			out := trace.TimeSince(now.Add(-10 * time.Second))
+			if out == 0 {
+				t.Fatal("expected non-zero time")
+			}
+		})
+
+		t.Run("ZeroTime", func(t *testing.T) {
+			out := trace.ZeroTime()
+			if out.IsZero() {
+				t.Fatal("expected non-zero time")
+			}
+		})
 	})
 }
