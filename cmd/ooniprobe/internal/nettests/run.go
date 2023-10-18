@@ -116,7 +116,7 @@ func RunGroup(config RunGroupConfig) error {
 		ctl.RunType = config.RunType
 		ctl.SetNettestIndex(i, len(group.Nettests))
 		if err = nt.Run(ctl); err != nil {
-			// Note that here we would like to emit a warning--the proper choice
+			// We used to emit an error here, now we emit a warning--the proper choice
 			// given that we continue running. See https://github.com/ooni/probe/issues/2576.
 			log.WithError(err).Warnf("Failed to run %s", group.Label)
 		}
