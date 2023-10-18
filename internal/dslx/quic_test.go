@@ -3,7 +3,6 @@ package dslx
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"io"
 	"testing"
 	"time"
@@ -16,28 +15,12 @@ import (
 
 /*
 Test cases:
-- Get quicHandshakeFunc with options
 - Apply quicHandshakeFunc:
   - with EOF
   - success
   - with sni
 */
 func TestQUICHandshake(t *testing.T) {
-	t.Run("Get quicHandshakeFunc with options", func(t *testing.T) {
-		certpool := x509.NewCertPool()
-		certpool.AddCert(&x509.Certificate{})
-
-		f := QUICHandshake(
-			NewMinimalRuntime(model.DiscardLogger, time.Now()),
-			QUICHandshakeOptionInsecureSkipVerify(true),
-			QUICHandshakeOptionServerName("sni"),
-			QUICHandshakeOptionRootCAs(certpool),
-		)
-		if _, ok := f.(*quicHandshakeFunc); !ok {
-			t.Fatal("unexpected type. Expected: quicHandshakeFunc")
-		}
-	})
-
 	t.Run("Apply quicHandshakeFunc", func(t *testing.T) {
 		wasClosed := false
 		plainConn := &mocks.QUICEarlyConnection{
@@ -103,10 +86,7 @@ func TestQUICHandshake(t *testing.T) {
 						return tt.dialer
 					},
 				}))
-				quicHandshake := &quicHandshakeFunc{
-					Rt:         rt,
-					ServerName: tt.sni,
-				}
+				quicHandshake := QUICHandshake(rt, TLSHandshakeOptionServerName(tt.sni))
 				endpoint := &Endpoint{
 					Address: "1.2.3.4:567",
 					Network: "udp",
@@ -133,64 +113,6 @@ func TestQUICHandshake(t *testing.T) {
 				}
 			})
 			wasClosed = false
-		}
-	})
-}
-
-/*
-Test cases:
-- With input SNI
-- With input domain
-- With input host address
-- With input IP address
-*/
-func TestServerNameQUIC(t *testing.T) {
-	t.Run("With input SNI", func(t *testing.T) {
-		sni := "sni"
-		endpoint := &Endpoint{
-			Address: "example.com:123",
-		}
-		f := &quicHandshakeFunc{Rt: NewMinimalRuntime(model.DiscardLogger, time.Now()), ServerName: sni}
-		serverName := f.serverName(endpoint)
-		if serverName != sni {
-			t.Fatalf("unexpected server name: %s", serverName)
-		}
-	})
-
-	t.Run("With input domain", func(t *testing.T) {
-		domain := "domain"
-		endpoint := &Endpoint{
-			Address: "example.com:123",
-			Domain:  domain,
-		}
-		f := &quicHandshakeFunc{Rt: NewMinimalRuntime(model.DiscardLogger, time.Now())}
-		serverName := f.serverName(endpoint)
-		if serverName != domain {
-			t.Fatalf("unexpected server name: %s", serverName)
-		}
-	})
-
-	t.Run("With input host address", func(t *testing.T) {
-		hostaddr := "example.com"
-		endpoint := &Endpoint{
-			Address: hostaddr + ":123",
-		}
-		f := &quicHandshakeFunc{Rt: NewMinimalRuntime(model.DiscardLogger, time.Now())}
-		serverName := f.serverName(endpoint)
-		if serverName != hostaddr {
-			t.Fatalf("unexpected server name: %s", serverName)
-		}
-	})
-
-	t.Run("With input IP address", func(t *testing.T) {
-		ip := "1.1.1.1"
-		endpoint := &Endpoint{
-			Address: ip,
-		}
-		f := &quicHandshakeFunc{Rt: NewMinimalRuntime(model.DiscardLogger, time.Now())}
-		serverName := f.serverName(endpoint)
-		if serverName != "" {
-			t.Fatalf("unexpected server name: %s", serverName)
 		}
 	})
 }
