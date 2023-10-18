@@ -10,17 +10,32 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
+// MinimalRuntimeOption is an option for configuring the [*MinimalRuntime].
+type MinimalRuntimeOption func(rt *MinimalRuntime)
+
+// MinimalRuntimeOptionMeasuringNetwork configures the [model.MeasuringNetwork] to use.
+func MinimalRuntimeOptionMeasuringNetwork(netx model.MeasuringNetwork) MinimalRuntimeOption {
+	return func(rt *MinimalRuntime) {
+		rt.netx = netx
+	}
+}
+
 // NewMinimalRuntime creates a minimal [Runtime] implementation.
 //
 // This [Runtime] implementation does not collect any [*Observations].
-func NewMinimalRuntime(logger model.Logger, zeroTime time.Time) *MinimalRuntime {
-	return &MinimalRuntime{
+func NewMinimalRuntime(logger model.Logger, zeroTime time.Time, options ...MinimalRuntimeOption) *MinimalRuntime {
+	rt := &MinimalRuntime{
 		idg:    &atomic.Int64{},
 		logger: logger,
 		mu:     sync.Mutex{},
+		netx:   &netxlite.Netx{Underlying: nil}, // implies using the host's network
 		v:      []io.Closer{},
 		zeroT:  zeroTime,
 	}
+	for _, option := range options {
+		option(rt)
+	}
+	return rt
 }
 
 var _ Runtime = &MinimalRuntime{}
@@ -30,6 +45,7 @@ type MinimalRuntime struct {
 	idg    *atomic.Int64
 	logger model.Logger
 	mu     sync.Mutex
+	netx   model.MeasuringNetwork
 	v      []io.Closer
 	zeroT  time.Time
 }
@@ -74,11 +90,12 @@ func (p *MinimalRuntime) Close() error {
 
 // NewTrace implements Runtime.
 func (p *MinimalRuntime) NewTrace(index int64, zeroTime time.Time, tags ...string) Trace {
-	return &minimalTrace{idx: index, tags: tags, zt: zeroTime}
+	return &minimalTrace{idx: index, netx: p.netx, tags: tags, zt: zeroTime}
 }
 
 type minimalTrace struct {
 	idx  int64
+	netx model.MeasuringNetwork
 	tags []string
 	zt   time.Time
 }
@@ -105,27 +122,27 @@ func (tx *minimalTrace) NetworkEvents() (out []*model.ArchivalNetworkEvent) {
 
 // NewDialerWithoutResolver implements Trace.
 func (tx *minimalTrace) NewDialerWithoutResolver(dl model.DebugLogger, wrappers ...model.DialerWrapper) model.Dialer {
-	return netxlite.NewDialerWithoutResolver(dl, wrappers...)
+	return tx.netx.NewDialerWithoutResolver(dl, wrappers...)
 }
 
 // NewParallelUDPResolver implements Trace.
 func (tx *minimalTrace) NewParallelUDPResolver(logger model.DebugLogger, dialer model.Dialer, address string) model.Resolver {
-	return netxlite.NewParallelUDPResolver(logger, dialer, address)
+	return tx.netx.NewParallelUDPResolver(logger, dialer, address)
 }
 
 // NewQUICDialerWithoutResolver implements Trace.
 func (tx *minimalTrace) NewQUICDialerWithoutResolver(listener model.UDPListener, dl model.DebugLogger, wrappers ...model.QUICDialerWrapper) model.QUICDialer {
-	return netxlite.NewQUICDialerWithoutResolver(listener, dl, wrappers...)
+	return tx.netx.NewQUICDialerWithoutResolver(listener, dl, wrappers...)
 }
 
 // NewStdlibResolver implements Trace.
 func (tx *minimalTrace) NewStdlibResolver(logger model.DebugLogger) model.Resolver {
-	return netxlite.NewStdlibResolver(logger)
+	return tx.netx.NewStdlibResolver(logger)
 }
 
 // NewTLSHandshakerStdlib implements Trace.
 func (tx *minimalTrace) NewTLSHandshakerStdlib(dl model.DebugLogger) model.TLSHandshaker {
-	return netxlite.NewTLSHandshakerStdlib(dl)
+	return tx.netx.NewTLSHandshakerStdlib(dl)
 }
 
 // QUICHandshakes implements Trace.
