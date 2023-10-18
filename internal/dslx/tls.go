@@ -12,75 +12,58 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // TLSHandshakeOption is an option you can pass to TLSHandshake.
-type TLSHandshakeOption func(*tlsHandshakeFunc)
+type TLSHandshakeOption func(config *tls.Config)
 
 // TLSHandshakeOptionInsecureSkipVerify controls whether TLS verification is enabled.
 func TLSHandshakeOptionInsecureSkipVerify(value bool) TLSHandshakeOption {
-	return func(thf *tlsHandshakeFunc) {
-		thf.InsecureSkipVerify = value
+	return func(config *tls.Config) {
+		config.InsecureSkipVerify = value
 	}
 }
 
 // TLSHandshakeOptionNextProto allows to configure the ALPN protocols.
 func TLSHandshakeOptionNextProto(value []string) TLSHandshakeOption {
-	return func(thf *tlsHandshakeFunc) {
-		thf.NextProto = value
+	return func(config *tls.Config) {
+		config.NextProtos = value
 	}
 }
 
 // TLSHandshakeOptionRootCAs allows to configure custom root CAs.
 func TLSHandshakeOptionRootCAs(value *x509.CertPool) TLSHandshakeOption {
-	return func(thf *tlsHandshakeFunc) {
-		thf.RootCAs = value
+	return func(config *tls.Config) {
+		config.RootCAs = value
 	}
 }
 
 // TLSHandshakeOptionServerName allows to configure the SNI to use.
 func TLSHandshakeOptionServerName(value string) TLSHandshakeOption {
-	return func(thf *tlsHandshakeFunc) {
-		thf.ServerName = value
+	return func(config *tls.Config) {
+		config.ServerName = value
 	}
 }
 
 // TLSHandshake returns a function performing TSL handshakes.
 func TLSHandshake(rt Runtime, options ...TLSHandshakeOption) Func[
 	*TCPConnection, *Maybe[*TLSConnection]] {
-	// See https://github.com/ooni/probe/issues/2413 to understand
-	// why we're using nil to force netxlite to use the cached
-	// default Mozilla cert pool.
 	f := &tlsHandshakeFunc{
-		InsecureSkipVerify: false,
-		NextProto:          []string{},
-		RootCAs:            nil,
-		Rt:                 rt,
-		ServerName:         "",
-	}
-	for _, option := range options {
-		option(f)
+		Options: options,
+		Rt:      rt,
 	}
 	return f
 }
 
 // tlsHandshakeFunc performs TLS handshakes.
 type tlsHandshakeFunc struct {
-	// InsecureSkipVerify allows to skip TLS verification.
-	InsecureSkipVerify bool
+	// Options contains the options.
+	Options []TLSHandshakeOption
 
-	// NextProto contains the ALPNs to negotiate.
-	NextProto []string
-
-	// RootCAs contains the Root CAs to use.
-	RootCAs *x509.CertPool
-
-	// Pool is the Pool that owns us.
+	// Rt is the runtime that owns us.
 	Rt Runtime
-
-	// ServerName is the ServerName to handshake for.
-	ServerName string
 }
 
 // Apply implements Func.
@@ -89,9 +72,8 @@ func (f *tlsHandshakeFunc) Apply(
 	// keep using the same trace
 	trace := input.Trace
 
-	// use defaults or user-configured overrides
-	serverName := f.serverName(input)
-	nextProto := f.nextProto()
+	// create a suitable TLS configuration
+	config := tlsNewConfig(input.Address, []string{"h2", "http/1.1"}, input.Domain, f.Rt.Logger(), f.Options...)
 
 	// start the operation logger
 	ol := logx.NewOperationLogger(
@@ -99,20 +81,14 @@ func (f *tlsHandshakeFunc) Apply(
 		"[#%d] TLSHandshake with %s SNI=%s ALPN=%v",
 		trace.Index(),
 		input.Address,
-		serverName,
-		nextProto,
+		config.ServerName,
+		config.NextProtos,
 	)
 
 	// obtain the handshaker for use
 	handshaker := trace.NewTLSHandshakerStdlib(f.Rt.Logger())
 
 	// setup
-	config := &tls.Config{
-		NextProtos:         nextProto,
-		InsecureSkipVerify: f.InsecureSkipVerify,
-		RootCAs:            f.RootCAs,
-		ServerName:         serverName,
-	}
 	const timeout = 10 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -143,29 +119,49 @@ func (f *tlsHandshakeFunc) Apply(
 	}
 }
 
-func (f *tlsHandshakeFunc) serverName(input *TCPConnection) string {
-	if f.ServerName != "" {
-		return f.ServerName
+// tlsNewConfig is an utility function to create a new TLS config.
+//
+// Arguments:
+//
+// - address is the endpoint address (e.g., 1.1.1.1:443);
+//
+// - defaultALPN contains the default to be used for configuring ALPN;
+//
+// - domain is the possibly empty domain to use;
+//
+// - logger is the logger to use;
+//
+// - options contains options to modify the TLS handshake defaults.
+func tlsNewConfig(address string, defaultALPN []string, domain string, logger model.Logger, options ...TLSHandshakeOption) *tls.Config {
+	// See https://github.com/ooni/probe/issues/2413 to understand
+	// why we're using nil to force netxlite to use the cached
+	// default Mozilla cert pool.
+	config := &tls.Config{
+		NextProtos:         append([]string{}, defaultALPN...),
+		InsecureSkipVerify: false,
+		RootCAs:            nil,
+		ServerName:         tlsServerName(address, domain, logger),
 	}
-	if input.Domain != "" {
-		return input.Domain
+	for _, option := range options {
+		option(config)
 	}
-	addr, _, err := net.SplitHostPort(input.Address)
+	return config
+}
+
+// tlsServerName is an utility function to obtina the server name from a TCPConnection.
+func tlsServerName(address, domain string, logger model.Logger) string {
+	if domain != "" {
+		return domain
+	}
+	addr, _, err := net.SplitHostPort(address)
 	if err == nil {
 		return addr
 	}
 	// Note: golang requires a ServerName and fails if it's empty. If the provided
 	// ServerName is an IP address, however, golang WILL NOT emit any SNI extension
 	// in the ClientHello, consistently with RFC 6066 Section 3 requirements.
-	f.Rt.Logger().Warn("TLSHandshake: cannot determine which SNI to use")
+	logger.Warn("TLSHandshake: cannot determine which SNI to use")
 	return ""
-}
-
-func (f *tlsHandshakeFunc) nextProto() []string {
-	if len(f.NextProto) > 0 {
-		return f.NextProto
-	}
-	return []string{"h2", "http/1.1"}
 }
 
 // TLSConnection is an established TLS connection. If you initialize
