@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -133,16 +132,19 @@ func TestTLSHandshake(t *testing.T) {
 
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {
-				rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
+				rt := NewMinimalRuntime(model.DiscardLogger, time.Now(), MinimalRuntimeOptionMeasuringNetwork(&mocks.MeasuringNetwork{
+					MockNewTLSHandshakerStdlib: func(logger model.DebugLogger) model.TLSHandshaker {
+						return tt.handshaker
+					},
+				}))
 				tlsHandshake := &tlsHandshakeFunc{
 					NextProto:  tt.config.nextProtos,
 					Rt:         rt,
 					ServerName: tt.config.sni,
-					handshaker: tt.handshaker,
 				}
 				idGen := &atomic.Int64{}
 				zeroTime := time.Time{}
-				trace := measurexlite.NewTrace(idGen.Add(1), zeroTime)
+				trace := rt.NewTrace(idGen.Add(1), zeroTime)
 				address := tt.config.address
 				if address == "" {
 					address = "1.2.3.4:567"
@@ -232,20 +234,4 @@ func TestServerNameTLS(t *testing.T) {
 			t.Fatalf("unexpected server name: %s", serverName)
 		}
 	})
-}
-
-// Make sure we get a valid handshaker if no mocked handshaker is configured
-func TestHandshakerOrDefault(t *testing.T) {
-	f := &tlsHandshakeFunc{
-		InsecureSkipVerify: false,
-		NextProto:          []string{},
-		Rt:                 NewMinimalRuntime(model.DiscardLogger, time.Now()),
-		RootCAs:            &x509.CertPool{},
-		ServerName:         "",
-		handshaker:         nil,
-	}
-	handshaker := f.handshakerOrDefault(measurexlite.NewTrace(0, time.Now()), model.DiscardLogger)
-	if handshaker == nil {
-		t.Fatal("expected non-nil handshaker here")
-	}
 }

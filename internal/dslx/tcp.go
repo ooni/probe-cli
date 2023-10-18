@@ -10,20 +10,18 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
-	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // TCPConnect returns a function that establishes TCP connections.
 func TCPConnect(rt Runtime) Func[*Endpoint, *Maybe[*TCPConnection]] {
-	f := &tcpConnectFunc{nil, rt}
+	f := &tcpConnectFunc{rt}
 	return f
 }
 
 // tcpConnectFunc is a function that establishes TCP connections.
 type tcpConnectFunc struct {
-	dialer model.Dialer // for testing
-	rt     Runtime
+	rt Runtime
 }
 
 // Apply applies the function to its arguments.
@@ -47,7 +45,7 @@ func (f *tcpConnectFunc) Apply(
 	defer cancel()
 
 	// obtain the dialer to use
-	dialer := f.dialerOrDefault(trace, f.rt.Logger())
+	dialer := trace.NewDialerWithoutResolver(f.rt.Logger())
 
 	// connect
 	conn, err := dialer.DialContext(ctx, "tcp", input.Address)
@@ -72,15 +70,6 @@ func (f *tcpConnectFunc) Apply(
 		Operation:    netxlite.ConnectOperation,
 		State:        state,
 	}
-}
-
-// dialerOrDefault is the function used to obtain a dialer
-func (f *tcpConnectFunc) dialerOrDefault(trace Trace, logger model.Logger) model.Dialer {
-	dialer := f.dialer
-	if dialer == nil {
-		dialer = trace.NewDialerWithoutResolver(logger)
-	}
-	return dialer
 }
 
 // TCPConnection is an established TCP connection. If you initialize
