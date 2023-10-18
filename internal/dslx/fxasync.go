@@ -33,7 +33,7 @@ type Parallelism int
 func Map[A, B any](
 	ctx context.Context,
 	parallelism Parallelism,
-	fx Func[A, *Maybe[B]],
+	fx Stage[A, *Maybe[B]],
 	inputs <-chan A,
 ) <-chan *Maybe[B] {
 	// create channel for returning results
@@ -81,7 +81,7 @@ func Parallel[A, B any](
 	ctx context.Context,
 	parallelism Parallelism,
 	input A,
-	fn ...Func[A, *Maybe[B]],
+	fn ...Stage[A, *Maybe[B]],
 ) []*Maybe[B] {
 	c := ParallelAsync(ctx, parallelism, input, StreamList(fn...))
 	return Collect(c)
@@ -94,7 +94,7 @@ func ParallelAsync[A, B any](
 	ctx context.Context,
 	parallelism Parallelism,
 	input A,
-	funcs <-chan Func[A, *Maybe[B]],
+	funcs <-chan Stage[A, *Maybe[B]],
 ) <-chan *Maybe[B] {
 	// create channel for returning results
 	r := make(chan *Maybe[B])
@@ -126,7 +126,7 @@ func ParallelAsync[A, B any](
 // ApplyAsync is equivalent to calling Apply but returns a channel.
 func ApplyAsync[A, B any](
 	ctx context.Context,
-	fx Func[A, *Maybe[B]],
+	fx Stage[A, *Maybe[B]],
 	input A,
 ) <-chan *Maybe[B] {
 	return Map(ctx, Parallelism(1), fx, StreamList(input))

@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func getFnWait(wg *sync.WaitGroup) Func[int, *Maybe[int]] {
+func getFnWait(wg *sync.WaitGroup) Stage[int, *Maybe[int]] {
 	return &fnWait{wg}
 }
 
@@ -86,7 +86,7 @@ func TestParallel(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				wg := sync.WaitGroup{}
 				wg.Add(tt.funcs)
-				funcs := []Func[int, *Maybe[int]]{}
+				funcs := []Stage[int, *Maybe[int]]{}
 				for i := 0; i < tt.funcs; i++ {
 					funcs = append(funcs, getFnWait(&wg))
 				}

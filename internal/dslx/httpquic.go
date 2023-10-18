@@ -11,12 +11,12 @@ import (
 )
 
 // HTTPRequestOverQUIC returns a Func that issues HTTP requests over QUIC.
-func HTTPRequestOverQUIC(rt Runtime, options ...HTTPRequestOption) Func[*QUICConnection, *Maybe[*HTTPResponse]] {
+func HTTPRequestOverQUIC(rt Runtime, options ...HTTPRequestOption) Stage[*QUICConnection, *Maybe[*HTTPResponse]] {
 	return Compose2(HTTPConnectionQUIC(rt), HTTPRequest(rt, options...))
 }
 
 // HTTPConnectionQUIC converts a QUIC connection into an HTTP connection.
-func HTTPConnectionQUIC(rt Runtime) Func[*QUICConnection, *Maybe[*HTTPConnection]] {
+func HTTPConnectionQUIC(rt Runtime) Stage[*QUICConnection, *Maybe[*HTTPConnection]] {
 	return StageAdapter[*QUICConnection, *HTTPConnection](func(ctx context.Context, input *QUICConnection) *Maybe[*HTTPConnection] {
 		// create transport
 		httpTransport := netxlite.NewHTTP3Transport(

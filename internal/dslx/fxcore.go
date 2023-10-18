@@ -12,8 +12,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// Func is a function f: (context.Context, A) -> B.
-type Func[A, B any] interface {
+// Stage is a DSL pipeline stage.
+type Stage[A, B any] interface {
 	Apply(ctx context.Context, a A) B
 }
 
@@ -43,7 +43,7 @@ type Maybe[State any] struct {
 }
 
 // Compose2 composes two operations such as [TCPConnect] and [TLSHandshake].
-func Compose2[A, B, C any](f Func[A, *Maybe[B]], g Func[B, *Maybe[C]]) Func[A, *Maybe[C]] {
+func Compose2[A, B, C any](f Stage[A, *Maybe[B]], g Stage[B, *Maybe[C]]) Stage[A, *Maybe[C]] {
 	return &compose2Func[A, B, C]{
 		f: f,
 		g: g,
@@ -52,8 +52,8 @@ func Compose2[A, B, C any](f Func[A, *Maybe[B]], g Func[B, *Maybe[C]]) Func[A, *
 
 // compose2Func is the type returned by [Compose2].
 type compose2Func[A, B, C any] struct {
-	f Func[A, *Maybe[B]]
-	g Func[B, *Maybe[C]]
+	f Stage[A, *Maybe[B]]
+	g Stage[B, *Maybe[C]]
 }
 
 // Apply implements Func
@@ -99,7 +99,7 @@ func (c *Counter[T]) Value() int64 {
 }
 
 // Func returns a Func[T, *Maybe[T]] that updates the counter.
-func (c *Counter[T]) Func() Func[T, *Maybe[T]] {
+func (c *Counter[T]) Func() Stage[T, *Maybe[T]] {
 	return &counterFunc[T]{c}
 }
 
