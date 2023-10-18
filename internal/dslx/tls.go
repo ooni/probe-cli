@@ -9,7 +9,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"net"
-	"sync/atomic"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
@@ -100,7 +99,7 @@ func (f *tlsHandshakeFunc) Apply(
 
 	// start the operation logger
 	ol := logx.NewOperationLogger(
-		input.Logger,
+		f.Rt.Logger(),
 		"[#%d] TLSHandshake with %s SNI=%s ALPN=%v",
 		trace.Index(),
 		input.Address,
@@ -109,7 +108,7 @@ func (f *tlsHandshakeFunc) Apply(
 	)
 
 	// obtain the handshaker for use
-	handshaker := f.handshakerOrDefault(trace, input.Logger)
+	handshaker := f.handshakerOrDefault(trace, f.Rt.Logger())
 
 	// setup
 	config := &tls.Config{
@@ -132,15 +131,12 @@ func (f *tlsHandshakeFunc) Apply(
 	ol.Stop(err)
 
 	state := &TLSConnection{
-		Address:     input.Address,
-		Conn:        conn, // possibly nil
-		Domain:      input.Domain,
-		IDGenerator: input.IDGenerator,
-		Logger:      input.Logger,
-		Network:     input.Network,
-		TLSState:    netxlite.MaybeTLSConnectionState(conn),
-		Trace:       trace,
-		ZeroTime:    input.ZeroTime,
+		Address:  input.Address,
+		Conn:     conn, // possibly nil
+		Domain:   input.Domain,
+		Network:  input.Network,
+		TLSState: netxlite.MaybeTLSConnectionState(conn),
+		Trace:    trace,
 	}
 
 	return &Maybe[*TLSConnection]{
@@ -174,7 +170,7 @@ func (f *tlsHandshakeFunc) serverName(input *TCPConnection) string {
 	// Note: golang requires a ServerName and fails if it's empty. If the provided
 	// ServerName is an IP address, however, golang WILL NOT emit any SNI extension
 	// in the ClientHello, consistently with RFC 6066 Section 3 requirements.
-	input.Logger.Warn("TLSHandshake: cannot determine which SNI to use")
+	f.Rt.Logger().Warn("TLSHandshake: cannot determine which SNI to use")
 	return ""
 }
 
@@ -197,12 +193,6 @@ type TLSConnection struct {
 	// Domain is the OPTIONAL domain we resolved.
 	Domain string
 
-	// IDGenerator is the MANDATORY ID generator to use.
-	IDGenerator *atomic.Int64
-
-	// Logger is the MANDATORY logger to use.
-	Logger model.Logger
-
 	// Network is the MANDATORY network we tried to use when connecting.
 	Network string
 
@@ -211,7 +201,4 @@ type TLSConnection struct {
 
 	// Trace is the MANDATORY trace we're using.
 	Trace Trace
-
-	// ZeroTime is the MANDATORY zero time of the measurement.
-	ZeroTime time.Time
 }

@@ -7,7 +7,6 @@ package dslx
 import (
 	"context"
 	"net"
-	"sync/atomic"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
@@ -32,11 +31,11 @@ func (f *tcpConnectFunc) Apply(
 	ctx context.Context, input *Endpoint) *Maybe[*TCPConnection] {
 
 	// create trace
-	trace := f.rt.NewTrace(input.IDGenerator.Add(1), input.ZeroTime, input.Tags...)
+	trace := f.rt.NewTrace(f.rt.IDGenerator().Add(1), f.rt.ZeroTime(), input.Tags...)
 
 	// start the operation logger
 	ol := logx.NewOperationLogger(
-		input.Logger,
+		f.rt.Logger(),
 		"[#%d] TCPConnect %s",
 		trace.Index(),
 		input.Address,
@@ -48,7 +47,7 @@ func (f *tcpConnectFunc) Apply(
 	defer cancel()
 
 	// obtain the dialer to use
-	dialer := f.dialerOrDefault(trace, input.Logger)
+	dialer := f.dialerOrDefault(trace, f.rt.Logger())
 
 	// connect
 	conn, err := dialer.DialContext(ctx, "tcp", input.Address)
@@ -60,14 +59,11 @@ func (f *tcpConnectFunc) Apply(
 	ol.Stop(err)
 
 	state := &TCPConnection{
-		Address:     input.Address,
-		Conn:        conn, // possibly nil
-		Domain:      input.Domain,
-		IDGenerator: input.IDGenerator,
-		Logger:      input.Logger,
-		Network:     input.Network,
-		Trace:       trace,
-		ZeroTime:    input.ZeroTime,
+		Address: input.Address,
+		Conn:    conn, // possibly nil
+		Domain:  input.Domain,
+		Network: input.Network,
+		Trace:   trace,
 	}
 
 	return &Maybe[*TCPConnection]{
@@ -99,18 +95,9 @@ type TCPConnection struct {
 	// Domain is the OPTIONAL domain from which we resolved the Address.
 	Domain string
 
-	// IDGenerator is the MANDATORY ID generator.
-	IDGenerator *atomic.Int64
-
-	// Logger is the MANDATORY logger to use.
-	Logger model.Logger
-
 	// Network is the MANDATORY network we tried to use when connecting.
 	Network string
 
 	// Trace is the MANDATORY trace we're using.
 	Trace Trace
-
-	// ZeroTime is the MANDATORY zero time of the measurement.
-	ZeroTime time.Time
 }

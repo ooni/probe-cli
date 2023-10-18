@@ -10,7 +10,6 @@ import (
 	"crypto/x509"
 	"io"
 	"net"
-	"sync/atomic"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
@@ -82,14 +81,14 @@ type quicHandshakeFunc struct {
 func (f *quicHandshakeFunc) Apply(
 	ctx context.Context, input *Endpoint) *Maybe[*QUICConnection] {
 	// create trace
-	trace := f.Rt.NewTrace(input.IDGenerator.Add(1), input.ZeroTime, input.Tags...)
+	trace := f.Rt.NewTrace(f.Rt.IDGenerator().Add(1), f.Rt.ZeroTime(), input.Tags...)
 
 	// use defaults or user-configured overrides
 	serverName := f.serverName(input)
 
 	// start the operation logger
 	ol := logx.NewOperationLogger(
-		input.Logger,
+		f.Rt.Logger(),
 		"[#%d] QUICHandshake with %s SNI=%s",
 		trace.Index(),
 		input.Address,
@@ -100,7 +99,7 @@ func (f *quicHandshakeFunc) Apply(
 	udpListener := netxlite.NewUDPListener()
 	quicDialer := f.dialer
 	if quicDialer == nil {
-		quicDialer = trace.NewQUICDialerWithoutResolver(udpListener, input.Logger)
+		quicDialer = trace.NewQUICDialerWithoutResolver(udpListener, f.Rt.Logger())
 	}
 	config := &tls.Config{
 		NextProtos:         []string{"h3"},
@@ -129,16 +128,13 @@ func (f *quicHandshakeFunc) Apply(
 	ol.Stop(err)
 
 	state := &QUICConnection{
-		Address:     input.Address,
-		QUICConn:    quicConn, // possibly nil
-		Domain:      input.Domain,
-		IDGenerator: input.IDGenerator,
-		Logger:      input.Logger,
-		Network:     input.Network,
-		TLSConfig:   config,
-		TLSState:    tlsState,
-		Trace:       trace,
-		ZeroTime:    input.ZeroTime,
+		Address:   input.Address,
+		QUICConn:  quicConn, // possibly nil
+		Domain:    input.Domain,
+		Network:   input.Network,
+		TLSConfig: config,
+		TLSState:  tlsState,
+		Trace:     trace,
 	}
 
 	return &Maybe[*QUICConnection]{
@@ -163,7 +159,7 @@ func (f *quicHandshakeFunc) serverName(input *Endpoint) string {
 	// Note: golang requires a ServerName and fails if it's empty. If the provided
 	// ServerName is an IP address, however, golang WILL NOT emit any SNI extension
 	// in the ClientHello, consistently with RFC 6066 Section 3 requirements.
-	input.Logger.Warn("TLSHandshake: cannot determine which SNI to use")
+	f.Rt.Logger().Warn("TLSHandshake: cannot determine which SNI to use")
 	return ""
 }
 
@@ -179,12 +175,6 @@ type QUICConnection struct {
 	// Domain is the OPTIONAL domain we resolved.
 	Domain string
 
-	// IDGenerator is the MANDATORY ID generator to use.
-	IDGenerator *atomic.Int64
-
-	// Logger is the MANDATORY logger to use.
-	Logger model.Logger
-
 	// Network is the MANDATORY network we tried to use when connecting.
 	Network string
 
@@ -197,9 +187,6 @@ type QUICConnection struct {
 
 	// Trace is the MANDATORY trace we're using.
 	Trace Trace
-
-	// ZeroTime is the MANDATORY zero time of the measurement.
-	ZeroTime time.Time
 }
 
 type quicCloserConn struct {

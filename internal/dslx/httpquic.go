@@ -11,24 +11,26 @@ import (
 )
 
 // HTTPRequestOverQUIC returns a Func that issues HTTP requests over QUIC.
-func HTTPRequestOverQUIC(options ...HTTPRequestOption) Func[*QUICConnection, *Maybe[*HTTPResponse]] {
-	return Compose2(HTTPTransportQUIC(), HTTPRequest(options...))
+func HTTPRequestOverQUIC(rt Runtime, options ...HTTPRequestOption) Func[*QUICConnection, *Maybe[*HTTPResponse]] {
+	return Compose2(HTTPTransportQUIC(rt), HTTPRequest(rt, options...))
 }
 
 // HTTPTransportQUIC converts a QUIC connection into an HTTP transport.
-func HTTPTransportQUIC() Func[*QUICConnection, *Maybe[*HTTPTransport]] {
-	return &httpTransportQUICFunc{}
+func HTTPTransportQUIC(rt Runtime) Func[*QUICConnection, *Maybe[*HTTPTransport]] {
+	return &httpTransportQUICFunc{rt}
 }
 
 // httpTransportQUICFunc is the function returned by HTTPTransportQUIC.
-type httpTransportQUICFunc struct{}
+type httpTransportQUICFunc struct {
+	rt Runtime
+}
 
 // Apply implements Func.
 func (f *httpTransportQUICFunc) Apply(
 	ctx context.Context, input *QUICConnection) *Maybe[*HTTPTransport] {
 	// create transport
 	httpTransport := netxlite.NewHTTP3Transport(
-		input.Logger,
+		f.rt.Logger(),
 		netxlite.NewSingleUseQUICDialer(input.QUICConn),
 		input.TLSConfig,
 	)
@@ -36,14 +38,11 @@ func (f *httpTransportQUICFunc) Apply(
 	state := &HTTPTransport{
 		Address:               input.Address,
 		Domain:                input.Domain,
-		IDGenerator:           input.IDGenerator,
-		Logger:                input.Logger,
 		Network:               input.Network,
 		Scheme:                "https",
 		TLSNegotiatedProtocol: input.TLSState.NegotiatedProtocol,
 		Trace:                 input.Trace,
 		Transport:             httpTransport,
-		ZeroTime:              input.ZeroTime,
 	}
 	return &Maybe[*HTTPTransport]{
 		Error:        nil,

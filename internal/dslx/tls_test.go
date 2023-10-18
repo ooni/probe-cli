@@ -148,13 +148,10 @@ func TestTLSHandshake(t *testing.T) {
 					address = "1.2.3.4:567"
 				}
 				tcpConn := TCPConnection{
-					Address:     address,
-					Conn:        &tcpConn,
-					IDGenerator: idGen,
-					Logger:      model.DiscardLogger,
-					Network:     "tcp",
-					Trace:       trace,
-					ZeroTime:    zeroTime,
+					Address: address,
+					Conn:    &tcpConn,
+					Network: "tcp",
+					Trace:   trace,
 				}
 				res := tlsHandshake.Apply(context.Background(), &tcpConn)
 				if res.Error != tt.expectErr {
@@ -185,7 +182,6 @@ func TestServerNameTLS(t *testing.T) {
 		sni := "sni"
 		tcpConn := TCPConnection{
 			Address: "example.com:123",
-			Logger:  model.DiscardLogger,
 		}
 		f := &tlsHandshakeFunc{
 			Rt:         NewMinimalRuntime(model.DiscardLogger, time.Now()),
@@ -201,7 +197,6 @@ func TestServerNameTLS(t *testing.T) {
 		tcpConn := TCPConnection{
 			Address: "example.com:123",
 			Domain:  domain,
-			Logger:  model.DiscardLogger,
 		}
 		f := &tlsHandshakeFunc{
 			Rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
@@ -215,7 +210,6 @@ func TestServerNameTLS(t *testing.T) {
 		hostaddr := "example.com"
 		tcpConn := TCPConnection{
 			Address: hostaddr + ":123",
-			Logger:  model.DiscardLogger,
 		}
 		f := &tlsHandshakeFunc{
 			Rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
@@ -229,7 +223,6 @@ func TestServerNameTLS(t *testing.T) {
 		ip := "1.1.1.1"
 		tcpConn := TCPConnection{
 			Address: ip,
-			Logger:  model.DiscardLogger,
 		}
 		f := &tlsHandshakeFunc{
 			Rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),

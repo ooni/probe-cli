@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"net"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -72,12 +71,9 @@ func TestTCPConnect(t *testing.T) {
 				rt := NewRuntimeMeasurexLite(model.DiscardLogger, time.Now())
 				tcpConnect := &tcpConnectFunc{tt.dialer, rt}
 				endpoint := &Endpoint{
-					Address:     "1.2.3.4:567",
-					Network:     "tcp",
-					IDGenerator: &atomic.Int64{},
-					Logger:      model.DiscardLogger,
-					Tags:        tt.tags,
-					ZeroTime:    time.Time{},
+					Address: "1.2.3.4:567",
+					Network: "tcp",
+					Tags:    tt.tags,
 				}
 				res := tcpConnect.Apply(context.Background(), endpoint)
 				if res.Error != tt.expectErr {

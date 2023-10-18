@@ -30,25 +30,12 @@ func TestNewDomainToResolve(t *testing.T) {
 		t.Run("with options", func(t *testing.T) {
 			idGen := &atomic.Int64{}
 			idGen.Add(42)
-			zt := time.Now()
 			domainToResolve := NewDomainToResolve(
 				DomainName("www.example.com"),
-				DNSLookupOptionIDGenerator(idGen),
-				DNSLookupOptionLogger(model.DiscardLogger),
-				DNSLookupOptionZeroTime(zt),
 				DNSLookupOptionTags("antani"),
 			)
 			if domainToResolve.Domain != "www.example.com" {
 				t.Fatalf("unexpected domain")
-			}
-			if domainToResolve.IDGenerator != idGen {
-				t.Fatalf("unexpected id generator")
-			}
-			if domainToResolve.Logger != model.DiscardLogger {
-				t.Fatalf("unexpected logger")
-			}
-			if domainToResolve.ZeroTime != zt {
-				t.Fatalf("unexpected zerotime")
 			}
 			if diff := cmp.Diff([]string{"antani"}, domainToResolve.Tags); diff != "" {
 				t.Fatal(diff)
@@ -75,11 +62,8 @@ func TestGetaddrinfo(t *testing.T) {
 
 	t.Run("Apply dnsLookupGetaddrinfoFunc", func(t *testing.T) {
 		domain := &DomainToResolve{
-			Domain:      "example.com",
-			Logger:      model.DiscardLogger,
-			IDGenerator: &atomic.Int64{},
-			Tags:        []string{"antani"},
-			ZeroTime:    time.Time{},
+			Domain: "example.com",
+			Tags:   []string{"antani"},
 		}
 
 		t.Run("with nil resolver", func(t *testing.T) {
@@ -166,11 +150,8 @@ func TestLookupUDP(t *testing.T) {
 
 	t.Run("Apply dnsLookupGetaddrinfoFunc", func(t *testing.T) {
 		domain := &DomainToResolve{
-			Domain:      "example.com",
-			Logger:      model.DiscardLogger,
-			IDGenerator: &atomic.Int64{},
-			Tags:        []string{"antani"},
-			ZeroTime:    time.Time{},
+			Domain: "example.com",
+			Tags:   []string{"antani"},
 		}
 
 		t.Run("with nil resolver", func(t *testing.T) {

@@ -6,7 +6,6 @@ package dslx
 
 import (
 	"context"
-	"sync/atomic"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
@@ -20,34 +19,10 @@ type DomainName string
 // DNSLookupOption is an option you can pass to NewDomainToResolve.
 type DNSLookupOption func(*DomainToResolve)
 
-// DNSLookupOptionIDGenerator configures a specific ID generator.
-// See DomainToResolve docs for more information.
-func DNSLookupOptionIDGenerator(value *atomic.Int64) DNSLookupOption {
-	return func(dis *DomainToResolve) {
-		dis.IDGenerator = value
-	}
-}
-
-// DNSLookupOptionLogger configures a specific logger.
-// See DomainToResolve docs for more information.
-func DNSLookupOptionLogger(value model.Logger) DNSLookupOption {
-	return func(dis *DomainToResolve) {
-		dis.Logger = value
-	}
-}
-
 // DNSLookupOptionTags allows to set tags to tag observations.
 func DNSLookupOptionTags(value ...string) DNSLookupOption {
 	return func(dis *DomainToResolve) {
 		dis.Tags = append(dis.Tags, value...)
-	}
-}
-
-// DNSLookupOptionZeroTime configures the measurement's zero time.
-// See DomainToResolve docs for more information.
-func DNSLookupOptionZeroTime(value time.Time) DNSLookupOption {
-	return func(dis *DomainToResolve) {
-		dis.ZeroTime = value
 	}
 }
 
@@ -56,11 +31,8 @@ func DNSLookupOptionZeroTime(value time.Time) DNSLookupOption {
 // values by passing options to this function.
 func NewDomainToResolve(domain DomainName, options ...DNSLookupOption) *DomainToResolve {
 	state := &DomainToResolve{
-		Domain:      string(domain),
-		IDGenerator: &atomic.Int64{},
-		Logger:      model.DiscardLogger,
-		Tags:        []string{},
-		ZeroTime:    time.Now(),
+		Domain: string(domain),
+		Tags:   []string{},
 	}
 	for _, option := range options {
 		option(state)
@@ -78,25 +50,8 @@ type DomainToResolve struct {
 	// Domain is the MANDATORY domain name to lookup.
 	Domain string
 
-	// IDGenerator is the MANDATORY ID generator. We will use this field
-	// to assign unique IDs to distinct sub-measurements. The default
-	// construction implemented by NewDomainToResolve creates a new generator
-	// that starts counting from zero, leading to the first trace having
-	// one as its index.
-	IDGenerator *atomic.Int64
-
-	// Logger is the MANDATORY logger to use. The default construction
-	// implemented by NewDomainToResolve uses model.DiscardLogger.
-	Logger model.Logger
-
 	// Tags contains OPTIONAL tags to tag observations.
 	Tags []string
-
-	// ZeroTime is the MANDATORY zero time of the measurement. We will
-	// use this field as the zero value to compute relative elapsed times
-	// when generating measurements. The default construction by
-	// NewDomainToResolve initializes this field with the current time.
-	ZeroTime time.Time
 }
 
 // ResolvedAddresses contains the results of DNS lookups. To initialize
@@ -109,22 +64,10 @@ type ResolvedAddresses struct {
 	// from the value inside the DomainToResolve.
 	Domain string
 
-	// IDGenerator is the ID generator. We inherit this field
-	// from the value inside the DomainToResolve.
-	IDGenerator *atomic.Int64
-
-	// Logger is the logger to use. We inherit this field
-	// from the value inside the DomainToResolve.
-	Logger model.Logger
-
 	// Trace is the trace we're currently using. This struct is
 	// created by the various Apply functions using values inside
 	// the DomainToResolve to initialize the Trace.
 	Trace Trace
-
-	// ZeroTime is the zero time of the measurement. We inherit this field
-	// from the value inside the DomainToResolve.
-	ZeroTime time.Time
 }
 
 // DNSLookupGetaddrinfo returns a function that resolves a domain name to
@@ -144,11 +87,11 @@ func (f *dnsLookupGetaddrinfoFunc) Apply(
 	ctx context.Context, input *DomainToResolve) *Maybe[*ResolvedAddresses] {
 
 	// create trace
-	trace := f.rt.NewTrace(input.IDGenerator.Add(1), input.ZeroTime, input.Tags...)
+	trace := f.rt.NewTrace(f.rt.IDGenerator().Add(1), f.rt.ZeroTime(), input.Tags...)
 
 	// start the operation logger
 	ol := logx.NewOperationLogger(
-		input.Logger,
+		f.rt.Logger(),
 		"[#%d] DNSLookup[getaddrinfo] %s",
 		trace.Index(),
 		input.Domain,
@@ -161,7 +104,7 @@ func (f *dnsLookupGetaddrinfoFunc) Apply(
 
 	resolver := f.resolver
 	if resolver == nil {
-		resolver = trace.NewStdlibResolver(input.Logger)
+		resolver = trace.NewStdlibResolver(f.rt.Logger())
 	}
 
 	// lookup
@@ -171,12 +114,9 @@ func (f *dnsLookupGetaddrinfoFunc) Apply(
 	ol.Stop(err)
 
 	state := &ResolvedAddresses{
-		Addresses:   addrs, // maybe empty
-		Domain:      input.Domain,
-		IDGenerator: input.IDGenerator,
-		Logger:      input.Logger,
-		Trace:       trace,
-		ZeroTime:    input.ZeroTime,
+		Addresses: addrs, // maybe empty
+		Domain:    input.Domain,
+		Trace:     trace,
 	}
 
 	return &Maybe[*ResolvedAddresses]{
@@ -210,11 +150,11 @@ func (f *dnsLookupUDPFunc) Apply(
 	ctx context.Context, input *DomainToResolve) *Maybe[*ResolvedAddresses] {
 
 	// create trace
-	trace := f.rt.NewTrace(input.IDGenerator.Add(1), input.ZeroTime, input.Tags...)
+	trace := f.rt.NewTrace(f.rt.IDGenerator().Add(1), f.rt.ZeroTime(), input.Tags...)
 
 	// start the operation logger
 	ol := logx.NewOperationLogger(
-		input.Logger,
+		f.rt.Logger(),
 		"[#%d] DNSLookup[%s/udp] %s",
 		trace.Index(),
 		f.Resolver,
@@ -229,8 +169,8 @@ func (f *dnsLookupUDPFunc) Apply(
 	resolver := f.mockResolver
 	if resolver == nil {
 		resolver = trace.NewParallelUDPResolver(
-			input.Logger,
-			trace.NewDialerWithoutResolver(input.Logger),
+			f.rt.Logger(),
+			trace.NewDialerWithoutResolver(f.rt.Logger()),
 			f.Resolver,
 		)
 	}
@@ -242,12 +182,9 @@ func (f *dnsLookupUDPFunc) Apply(
 	ol.Stop(err)
 
 	state := &ResolvedAddresses{
-		Addresses:   addrs, // maybe empty
-		Domain:      input.Domain,
-		IDGenerator: input.IDGenerator,
-		Logger:      input.Logger,
-		Trace:       trace,
-		ZeroTime:    input.ZeroTime,
+		Addresses: addrs, // maybe empty
+		Domain:    input.Domain,
+		Trace:     trace,
 	}
 
 	return &Maybe[*ResolvedAddresses]{

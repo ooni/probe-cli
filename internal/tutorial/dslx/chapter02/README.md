@@ -43,10 +43,7 @@ import (
 	"context"
 	"errors"
 	"net"
-	"sync/atomic"
-	"time"
 
-	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/dslx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -135,7 +132,6 @@ of dslx pipelines a unique identifier).
 ```Go
 type Measurer struct {
 	config Config
-	idGen  atomic.Int64
 }
 
 var _ model.ExperimentMeasurer = &Measurer{}
@@ -178,15 +174,6 @@ So, this is where we will use `dslx` to implement the SNI blocking experiment.
 
 ```Go
 func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
-```
-
-### Define measurement parameters
-
-`sess` is the session of this measurement run.
-
-```Go
-	sess := args.Session
-
 ```
 
 `measurement` contains metadata, the (required) input in form of
@@ -251,9 +238,6 @@ experiment's start time.
 ```Go
 	dnsInput := dslx.NewDomainToResolve(
 		dslx.DomainName(thaddrHost),
-		dslx.DNSLookupOptionIDGenerator(&m.idGen),
-		dslx.DNSLookupOptionLogger(sess.Logger()),
-		dslx.DNSLookupOptionZeroTime(measurement.MeasurementStartTimeSaved),
 	)
 
 ```
@@ -262,7 +246,7 @@ Next, we create a minimal runtime. This data structure helps us to manage
 open connections and close them when `rt.Close` is invoked.
 
 ```Go
-	rt := dslx.NewMinimalRuntime(log.Log, time.Now())
+	rt := dslx.NewMinimalRuntime(args.Session.Logger(), args.Measurement.MeasurementStartTimeSaved)
 	defer rt.Close()
 
 ```
@@ -333,9 +317,6 @@ the protocol, address, and port three-tuple.)
 		dslx.EndpointNetwork("tcp"),
 		dslx.EndpointPort(443),
 		dslx.EndpointOptionDomain(m.config.TestHelperAddress),
-		dslx.EndpointOptionIDGenerator(&m.idGen),
-		dslx.EndpointOptionLogger(sess.Logger()),
-		dslx.EndpointOptionZeroTime(measurement.MeasurementStartTimeSaved),
 	)
 	runtimex.Assert(len(endpoints) >= 1, "expected at least one endpoint here")
 	endpoint := endpoints[0]
