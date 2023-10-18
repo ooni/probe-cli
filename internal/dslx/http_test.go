@@ -406,19 +406,10 @@ func TestHTTPRequest(t *testing.T) {
 
 /*
 Test cases:
-- Get httpTransportTCPFunc
 - Get composed function: TCP with HTTP
 - Apply httpTransportTCPFunc
 */
 func TestHTTPTCP(t *testing.T) {
-	t.Run("Get httpTransportTCPFunc", func(t *testing.T) {
-		rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
-		f := HTTPTransportTCP(rt)
-		if _, ok := f.(*httpTransportTCPFunc); !ok {
-			t.Fatal("unexpected type")
-		}
-	})
-
 	t.Run("Get composed function: TCP with HTTP", func(t *testing.T) {
 		rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
 		f := HTTPRequestOverTCP(rt)
@@ -439,9 +430,9 @@ func TestHTTPTCP(t *testing.T) {
 			Network: "tcp",
 			Trace:   trace,
 		}
-		f := httpTransportTCPFunc{
-			rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
-		}
+		f := HTTPConnectionTCP(
+			NewMinimalRuntime(model.DiscardLogger, time.Now()),
+		)
 		res := f.Apply(context.Background(), tcpConn)
 		if res.Error != nil {
 			t.Fatalf("unexpected error: %s", res.Error)
@@ -460,19 +451,10 @@ func TestHTTPTCP(t *testing.T) {
 
 /*
 Test cases:
-- Get httpTransportQUICFunc
 - Get composed function: QUIC with HTTP
 - Apply httpTransportQUICFunc
 */
 func TestHTTPQUIC(t *testing.T) {
-	t.Run("Get httpTransportQUICFunc", func(t *testing.T) {
-		rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
-		f := HTTPTransportQUIC(rt)
-		if _, ok := f.(*httpTransportQUICFunc); !ok {
-			t.Fatal("unexpected type")
-		}
-	})
-
 	t.Run("Get composed function: QUIC with HTTP", func(t *testing.T) {
 		rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
 		f := HTTPRequestOverQUIC(rt)
@@ -493,9 +475,9 @@ func TestHTTPQUIC(t *testing.T) {
 			Network:  "udp",
 			Trace:    trace,
 		}
-		f := httpTransportQUICFunc{
-			rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
-		}
+		f := HTTPConnectionQUIC(
+			NewMinimalRuntime(model.DiscardLogger, time.Now()),
+		)
 		res := f.Apply(context.Background(), quicConn)
 		if res.Error != nil {
 			t.Fatalf("unexpected error: %s", res.Error)
@@ -514,19 +496,10 @@ func TestHTTPQUIC(t *testing.T) {
 
 /*
 Test cases:
-- Get httpTransportTLSFunc
 - Get composed function: TLS with HTTP
 - Apply httpTransportTLSFunc
 */
 func TestHTTPTLS(t *testing.T) {
-	t.Run("Get httpTransportTLSFunc", func(t *testing.T) {
-		rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
-		f := HTTPTransportTLS(rt)
-		if _, ok := f.(*httpTransportTLSFunc); !ok {
-			t.Fatal("unexpected type")
-		}
-	})
-
 	t.Run("Get composed function: TLS with HTTP", func(t *testing.T) {
 		rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
 		f := HTTPRequestOverTLS(rt)
@@ -547,9 +520,9 @@ func TestHTTPTLS(t *testing.T) {
 			Network: "tcp",
 			Trace:   trace,
 		}
-		f := httpTransportTLSFunc{
-			rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
-		}
+		f := HTTPConnectionTLS(
+			NewMinimalRuntime(model.DiscardLogger, time.Now()),
+		)
 		res := f.Apply(context.Background(), tlsConn)
 		if res.Error != nil {
 			t.Fatalf("unexpected error: %s", res.Error)
