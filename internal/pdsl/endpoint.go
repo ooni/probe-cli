@@ -7,20 +7,7 @@ type Endpoint string
 
 // MakeEndpointsForPort returns a [Filter] that attemps to make [Endpoint] from [IPAddr].
 func MakeEndpointsForPort(port string) Filter[IPAddr, Endpoint] {
-	return func(inputs <-chan Result[IPAddr]) <-chan Result[Endpoint] {
-		outputs := make(chan Result[Endpoint])
-
-		go func() {
-			defer close(outputs)
-			for input := range inputs {
-				if err := input.Err; err != nil {
-					outputs <- NewResultError[Endpoint](err)
-					continue
-				}
-				outputs <- NewResultValue(Endpoint(net.JoinHostPort(string(input.Value), port)))
-			}
-		}()
-
-		return outputs
-	}
+	return startFilterService(func(ipAddr IPAddr) (Endpoint, error) {
+		return Endpoint(net.JoinHostPort(string(ipAddr), port)), nil
+	})
 }

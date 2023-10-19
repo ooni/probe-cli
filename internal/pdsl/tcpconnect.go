@@ -16,56 +16,35 @@ type TCPConn struct {
 
 // TCPConnect returns a [Filter] that attempts to create [TCPConn] from [Endpoint].
 func TCPConnect(ctx context.Context, rt Runtime, tags ...string) Filter[Endpoint, TCPConn] {
-	return func(mendpoints <-chan Result[Endpoint]) <-chan Result[TCPConn] {
-		outputs := make(chan Result[TCPConn])
+	return startFilterService(func(endpoint Endpoint) (TCPConn, error) {
+		// start the operation logger
+		traceID := rt.NewTraceID()
+		ol := logx.NewOperationLogger(rt.Logger(), "[#%d] TCPConnect %s", traceID, endpoint)
 
-		go func() {
-			// make sure we close the outputs channel
-			defer close(outputs)
+		// create trace for collecting OONI observations
+		trace := rt.NewTrace(traceID, rt.ZeroTime(), tags...)
 
-			for mendpoint := range mendpoints {
-				// handle the case of previous stage failure
-				if err := mendpoint.Err; err != nil {
-					outputs <- NewResultError[TCPConn](err)
-					continue
-				}
-				endpoint := mendpoint.Value
+		// enforce a timeout
+		const timeout = 15 * time.Second
+		ctx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
 
-				// start the operation logger
-				traceID := rt.NewTraceID()
-				ol := logx.NewOperationLogger(rt.Logger(), "[#%d] TCPConnect %s", traceID, endpoint)
+		// establish the connection
+		dialer := trace.NewDialerWithoutResolver(rt.Logger())
+		conn, err := dialer.DialContext(ctx, "tcp", string(endpoint))
 
-				// create trace for collecting OONI observations
-				trace := rt.NewTrace(traceID, rt.ZeroTime(), tags...)
+		// stop the operation logger
+		ol.Stop(err)
 
-				// enforce a timeout
-				const timeout = 15 * time.Second
-				ctx, cancel := context.WithTimeout(ctx, timeout)
+		// handle failure
+		if err != nil {
+			return TCPConn{}, err
+		}
 
-				// establish the connection
-				dialer := trace.NewDialerWithoutResolver(rt.Logger())
-				conn, err := dialer.DialContext(ctx, "tcp", string(endpoint))
+		// make sure the Runtime eventually closes the connection
+		rt.RegisterCloser(conn)
 
-				// cancel the context
-				cancel()
-
-				// stop the operation logger
-				ol.Stop(err)
-
-				// handle failure
-				if err != nil {
-					outputs <- NewResultError[TCPConn](err)
-					continue
-				}
-
-				// make sure the Runtime eventually closes the connection
-				rt.RegisterCloser(conn)
-
-				// handle success
-				outputs <- NewResultValue(TCPConn{trace, conn})
-			}
-		}()
-
-		return outputs
-	}
+		// handle success
+		return TCPConn{trace, conn}, nil
+	})
 }

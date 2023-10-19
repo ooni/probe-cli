@@ -17,64 +17,44 @@ type TLSConn struct {
 
 // TCPConnect returns a [Filter] that attempts to create [TLSConn] from [TCPConn].
 func TLSHandshake(ctx context.Context, rt Runtime, tlsConfig *tls.Config) Filter[TCPConn, TLSConn] {
-	return func(mTcpConns <-chan Result[TCPConn]) <-chan Result[TLSConn] {
-		outputs := make(chan Result[TLSConn])
+	return startFilterService(func(tcpConn TCPConn) (TLSConn, error) {
+		sni := tlsConfig.ServerName
+		alpn := tlsConfig.NextProtos
+		endpoint := tcpConn.RemoteAddr().String()
+		trace := tcpConn.Trace
 
-		go func() {
-			// make sure we close the outputs channel
-			defer close(outputs)
+		// start the operation logger
+		traceID := rt.NewTraceID()
+		ol := logx.NewOperationLogger(
+			rt.Logger(),
+			"[#%d] TLSHandshake %s SNI=%s ALPN=%s",
+			traceID,
+			endpoint,
+			sni,
+			alpn,
+		)
 
-			for mTcpConn := range mTcpConns {
-				// handle the case of previous stage failure
-				if err := mTcpConn.Err; err != nil {
-					outputs <- NewResultError[TLSConn](err)
-					continue
-				}
-				tcpConn := mTcpConn.Value
-				sni := tlsConfig.ServerName
-				alpn := tlsConfig.NextProtos
-				endpoint := tcpConn.RemoteAddr().String()
-				trace := tcpConn.Trace
+		// enforce a timeout
+		const timeout = 10 * time.Second
+		ctx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
 
-				// start the operation logger
-				traceID := rt.NewTraceID()
-				ol := logx.NewOperationLogger(
-					rt.Logger(),
-					"[#%d] TLSHandshake %s SNI=%s ALPN=%s",
-					traceID,
-					endpoint,
-					sni,
-					alpn,
-				)
+		// TLS handshake
+		thx := trace.NewTLSHandshakerStdlib(rt.Logger())
+		tlsConn, err := thx.Handshake(ctx, tcpConn.Conn, tlsConfig)
 
-				// enforce a timeout
-				const timeout = 10 * time.Second
-				ctx, cancel := context.WithTimeout(ctx, timeout)
+		// stop the operation logger
+		ol.Stop(err)
 
-				// TLS handshake
-				thx := trace.NewTLSHandshakerStdlib(rt.Logger())
-				tlsConn, err := thx.Handshake(ctx, tcpConn.Conn, tlsConfig)
+		// handle failure
+		if err != nil {
+			return TLSConn{}, err
+		}
 
-				// cancel the context
-				cancel()
+		// make sure the Runtime eventually closes the connection
+		rt.RegisterCloser(tlsConn)
 
-				// stop the operation logger
-				ol.Stop(err)
-
-				// handle failure
-				if err != nil {
-					outputs <- NewResultError[TLSConn](err)
-					continue
-				}
-
-				// make sure the Runtime eventually closes the connection
-				rt.RegisterCloser(tlsConn)
-
-				// handle success
-				outputs <- NewResultValue(TLSConn{trace, tlsConn})
-			}
-		}()
-
-		return outputs
-	}
+		// handle success
+		return TLSConn{trace, tlsConn}, nil
+	})
 }
