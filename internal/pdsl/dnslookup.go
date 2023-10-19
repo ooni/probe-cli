@@ -8,102 +8,79 @@ import (
 )
 
 // DNSLookupGetaddrinfo creates a [Generator] that resolves domain names using getaddrinfo(3).
-func DNSLookupGetaddrinfo(ctx context.Context, rt Runtime, tags ...string) Generator[DomainName, Result[IPAddr]] {
-	return func(domain DomainName) <-chan Result[IPAddr] {
-		// create the outputs channel
-		outputs := make(chan Result[IPAddr])
+func DNSLookupGetaddrinfo(ctx context.Context, rt Runtime, tags ...string) Generator[DomainName, IPAddr] {
+	return startGeneratorService(func(domainName DomainName) ([]IPAddr, error) {
+		// start the operation logger
+		traceID := rt.NewTraceID()
+		ol := logx.NewOperationLogger(rt.Logger(), "[#%d] Getaddrinfo %s", traceID, domainName)
 
-		go func() {
-			// make sure we close channel when done
-			defer close(outputs)
+		// create trace for collecting OONI observations
+		trace := rt.NewTrace(traceID, rt.ZeroTime(), tags...)
 
-			// start the operation logger
-			traceID := rt.NewTraceID()
-			ol := logx.NewOperationLogger(rt.Logger(), "[#%d] Getaddrinfo %s", traceID, domain)
+		// enforce a timeout
+		const timeout = 4 * time.Second
+		ctx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
 
-			// create trace for collecting OONI observations
-			trace := rt.NewTrace(traceID, rt.ZeroTime(), tags...)
+		// perform the getaddrinfo(3) lookup
+		resolver := trace.NewStdlibResolver(rt.Logger())
+		addrs, err := resolver.LookupHost(ctx, string(domainName))
 
-			// enforce a timeout
-			const timeout = 4 * time.Second
-			ctx, cancel := context.WithTimeout(ctx, timeout)
+		// stop the operation logger
+		ol.Stop(err)
 
-			// perform the getaddrinfo(3) lookup
-			resolver := trace.NewStdlibResolver(rt.Logger())
-			addrs, err := resolver.LookupHost(ctx, string(domain))
+		// handle failure
+		if err != nil {
+			return nil, err
+		}
 
-			// cancel the context
-			cancel()
-
-			// stop the operation logger
-			ol.Stop(err)
-
-			// handle failure
-			if err != nil {
-				outputs <- NewResultError[IPAddr](err)
-				return
-			}
-
-			// handle success
-			for _, addr := range addrs {
-				outputs <- NewResultValue(IPAddr(addr))
-			}
-		}()
-
-		return outputs
-	}
+		// handle success
+		return dnsNewIPAddrList(addrs), nil
+	})
 }
 
 // DNSLookupUDP returns a [Generator] that resolves domain names to IP addresses using DNS-over-UDP.
-func DNSLookupUDP(ctx context.Context, rt Runtime, endpoint Endpoint, tags ...string) Generator[DomainName, Result[IPAddr]] {
-	return func(domain DomainName) <-chan Result[IPAddr] {
-		// create the outputs channel
-		outputs := make(chan Result[IPAddr])
+func DNSLookupUDP(ctx context.Context, rt Runtime, endpoint Endpoint, tags ...string) Generator[DomainName, IPAddr] {
+	return startGeneratorService(func(domainName DomainName) ([]IPAddr, error) {
+		// start the operation logger
+		traceID := rt.NewTraceID()
+		ol := logx.NewOperationLogger(rt.Logger(), "[#%d] DNSLookupUDP[%s] %s", traceID, endpoint, domainName)
 
-		go func() {
-			// make sure we close channel when done
-			defer close(outputs)
+		// create trace for collecting OONI observations
+		trace := rt.NewTrace(traceID, rt.ZeroTime(), tags...)
 
-			// start the operation logger
-			traceID := rt.NewTraceID()
-			ol := logx.NewOperationLogger(rt.Logger(), "[#%d] DNSLookupUDP[%s] %s", traceID, endpoint, domain)
+		// enforce a timeout
+		const timeout = 4 * time.Second
+		ctx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
 
-			// create trace for collecting OONI observations
-			trace := rt.NewTrace(traceID, rt.ZeroTime(), tags...)
+		// perform a DNS-over-UDP lookup
+		resolver := trace.NewParallelUDPResolver(rt.Logger(),
+			trace.NewDialerWithoutResolver(rt.Logger()), string(endpoint))
+		addrs, err := resolver.LookupHost(ctx, string(domainName))
 
-			// enforce a timeout
-			const timeout = 4 * time.Second
-			ctx, cancel := context.WithTimeout(ctx, timeout)
+		// stop the operation logger
+		ol.Stop(err)
 
-			// perform a DNS-over-UDP lookup
-			resolver := trace.NewParallelUDPResolver(rt.Logger(),
-				trace.NewDialerWithoutResolver(rt.Logger()), string(endpoint))
-			addrs, err := resolver.LookupHost(ctx, string(domain))
+		// handle failure
+		if err != nil {
+			return nil, err
+		}
 
-			// cancel the context
-			cancel()
-
-			// stop the operation logger
-			ol.Stop(err)
-
-			// handle failure
-			if err != nil {
-				outputs <- NewResultError[IPAddr](err)
-				return
-			}
-
-			// handle success
-			for _, addr := range addrs {
-				outputs <- NewResultValue(IPAddr(addr))
-			}
-		}()
-
-		return outputs
-	}
+		// handle success
+		return dnsNewIPAddrList(addrs), nil
+	})
 }
 
-// DNSLookupDeduplicate returns a [Filter] that deduplicates the resolved IP addresses.
-func DNSLookupDeduplicate() Filter[IPAddr, IPAddr] {
+func dnsNewIPAddrList(inputs []string) (outputs []IPAddr) {
+	for _, input := range inputs {
+		outputs = append(outputs, IPAddr(input))
+	}
+	return
+}
+
+// DNSLookupDedup returns a [Filter] that deduplicates the resolved IP addresses.
+func DNSLookupDedup() Filter[IPAddr, IPAddr] {
 	return func(inputs <-chan Result[IPAddr]) <-chan Result[IPAddr] {
 		// create channel for producing results
 		outputs := make(chan Result[IPAddr])

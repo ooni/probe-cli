@@ -28,7 +28,7 @@ func Example() {
 	}
 
 	// resolve IP addresses using two resolvers and deduplicate the results
-	ipAddrs := pdsl.DNSLookupDeduplicate()(
+	ipAddrs := pdsl.DNSLookupDedup()(
 		pdsl.Merge(
 			pdsl.DNSLookupGetaddrinfo(ctx, rt)("www.example.com"),
 			pdsl.DNSLookupUDP(ctx, rt, "8.8.8.8:53")("www.example.com"),
