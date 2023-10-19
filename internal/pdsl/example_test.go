@@ -45,5 +45,5 @@ func Example() {
 	tlsConns := pdsl.Merge(pdsl.Fork(2, pdsl.TLSHandshake(ctx, rt, tlsConfig), conns)...)
 
 	// make sure we run until completion
-	pdsl.Drain(tlsConns)
+	_ = pdsl.Collect(tlsConns)
 }

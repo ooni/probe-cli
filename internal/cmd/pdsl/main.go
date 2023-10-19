@@ -45,7 +45,7 @@ func main() {
 	// make sure we close all open connections
 	defer rt.Close()
 
-	pdsl.Drain(
+	_ = pdsl.Collect(
 		measureWithTLS(ctx, rt, "www.example.com", "8.8.8.8:53"),
 		measureWithTLS(ctx, rt, "www.youtube.com", "8.8.8.8:53"),
 	)
