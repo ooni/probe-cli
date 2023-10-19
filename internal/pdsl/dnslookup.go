@@ -119,6 +119,9 @@ func DNSLookupDeduplicate() Filter[IPAddr, IPAddr] {
 					outputs <- input
 					continue
 				}
+				if already[input.Value] {
+					continue
+				}
 				already[input.Value] = true
 				outputs <- input
 			}
