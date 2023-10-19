@@ -18,11 +18,36 @@ package libtor
 // #cgo android,amd64 CFLAGS: -I${SRCDIR}/android/amd64/include
 // #cgo android,amd64 LDFLAGS: -L${SRCDIR}/android/amd64/lib -ltor -levent -lssl -lcrypto -lz -lm
 //
+// #cgo ios CFLAGS: -I${SRCDIR}
+//
 // #include <limits.h>
 // #include <stdbool.h>
 // #include <stdlib.h>
 //
-// #include <tor_api.h>
+// /* Select the correct header depending on the Apple's platform and architecture, otherwise, for
+//    other operating systems just use the header in the include path defined above.
+//
+//    See https://stackoverflow.com/a/18729350 for details. */
+// #if defined(__APPLE__) && defined(__MACH__)
+//   #include <TargetConditionals.h>
+//   #if TARGET_OS_IPHONE && TARGET_OS_SIMULATOR
+//     #if TARGET_CPU_X86_64
+//       #include <iphonesimulator/amd64/include/tor_api.h>
+//     #elif TARGET_CPU_ARM64
+//       #include <iphonesimulator/arm64/include/tor_api.h>
+//     #else
+//       #error "internal/libtor/enabled.go: unhandled Apple architecture"
+//     #endif
+//   #elif TARGET_OS_IPHONE && TARGET_OS_MACCATALYST
+//     #error "internal/libtor/enabled.go: unhandled Apple platform"
+//   #elif TARGET_OS_IPHONE
+//     #include <iphoneos/arm64/include/tor_api.h>
+//   #else
+//     #error "internal/libtor/enabled.go: unhandled Apple platform"
+//   #endif
+// #else
+//   #include <tor_api.h>
+// #endif
 //
 // /* Note: we need to define inline helpers because we cannot index C arrays in Go. */
 //

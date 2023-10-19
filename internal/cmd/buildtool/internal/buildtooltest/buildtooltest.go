@@ -85,7 +85,7 @@ func CheckSingleCommand(cmd *execabs.Cmd, tee ExecExpectations) error {
 		return err
 	}
 	if err := CompareEnv(tee.Env, shellxtesting.CmdEnvironMinusOsEnviron(cmd)); err != nil {
-		return err
+		return fmt.Errorf("in %v: %w", tee.Argv, err)
 	}
 	return nil
 }
@@ -244,4 +244,23 @@ func (cc *DependenciesCallCounter) increment(name string) {
 		cc.Counter = make(map[string]int)
 	}
 	cc.Counter[name]++
+}
+
+// XCRun implements buildtoolmodel.Dependencies.
+func (*DependenciesCallCounter) XCRun(args ...string) string {
+	runtimex.Assert(len(args) >= 1, "expected at least one argument")
+	switch args[0] {
+	case "-sdk":
+		runtimex.Assert(len(args) == 3, "expected three arguments")
+		runtimex.Assert(args[2] == "--show-sdk-path", "the third argument must be --show-sdk-path")
+		return string(filepath.Separator) + filepath.Join("Developer", "SDKs", args[1])
+
+	case "-find":
+		runtimex.Assert(len(args) == 4, "expected four arguments")
+		runtimex.Assert(args[1] == "-sdk", "the second argument must be -sdk")
+		return string(filepath.Separator) + filepath.Join("Developer", "SDKs", args[2], "bin", args[3])
+
+	default:
+		panic(errors.New("the first argument must be -sdk or -find"))
+	}
 }

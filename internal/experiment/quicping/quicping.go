@@ -33,7 +33,7 @@ const (
 
 const (
 	testName    = "quicping"
-	testVersion = "0.1.0"
+	testVersion = "0.1.1"
 )
 
 // Config contains the experiment configuration.
@@ -228,12 +228,18 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	sess := args.Session
 
 	host := string(measurement.Input)
+	var port = ""
 	// allow URL input
 	if u, err := url.ParseRequestURI(host); err == nil {
-		host = u.Host
+		host = u.Hostname()
+		port = u.Port()
 	}
-	service := net.JoinHostPort(host, m.config.port())
-	udpAddr, err := net.ResolveUDPAddr("udp4", service)
+	var service string
+	if port == "" {
+		port = m.config.port()
+	}
+	service = net.JoinHostPort(host, port)
+	udpAddr, err := net.ResolveUDPAddr("udp", service)
 	if err != nil {
 		return err
 	}

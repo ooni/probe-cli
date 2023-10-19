@@ -26,14 +26,14 @@ func cdepsOpenSSLBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencie
 	restore := cdepsMustChdir(work)
 	defer restore()
 
-	// See https://github.com/Homebrew/homebrew-core/blob/master/Formula/openssl@3.rb
-	cdepsMustFetch("https://www.openssl.org/source/openssl-3.1.2.tar.gz")
+	// See https://github.com/Homebrew/homebrew-core/blob/master/Formula/o/openssl@3.rb
+	cdepsMustFetch("https://www.openssl.org/source/openssl-3.1.3.tar.gz")
 	deps.VerifySHA256( // must be mockable
-		"a0ce69b8b97ea6a35b96875235aa453b966ba3cba8af2de23657d8b6767d6539",
-		"openssl-3.1.2.tar.gz",
+		"f0316a2ebd89e7f2352976445458689f80302093788c466692fb2a188b2eacf6",
+		"openssl-3.1.3.tar.gz",
 	)
-	must.Run(log.Log, "tar", "-xf", "openssl-3.1.2.tar.gz")
-	_ = deps.MustChdir("openssl-3.1.2") // must be mockable
+	must.Run(log.Log, "tar", "-xf", "openssl-3.1.3.tar.gz")
+	_ = deps.MustChdir("openssl-3.1.3") // must be mockable
 
 	mydir := filepath.Join(topdir, "CDEPS", "openssl")
 	for _, patch := range cdepsMustListPatches(mydir) {
@@ -67,9 +67,7 @@ func cdepsOpenSSLBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencie
 		"no-rc2", "no-rc4", "no-rc5", "no-rmd160", "no-whirlpool", "no-dso",
 		"no-ui-console", "no-shared", "no-unit-test", globalEnv.OPENSSL_COMPILER,
 	))
-	if globalEnv.OPENSSL_API_DEFINE != "" {
-		argv.Append(globalEnv.OPENSSL_API_DEFINE)
-	}
+	argv.Append(globalEnv.OPENSSL_POST_COMPILER_FLAGS...)
 	argv.Append("--libdir=lib", "--prefix=/", "--openssldir=/")
 	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, envp))
 
@@ -84,5 +82,8 @@ func cdepsOpenSSLBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencie
 	))
 
 	must.Run(log.Log, "make", "DESTDIR="+globalEnv.DESTDIR, "install_dev")
-	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.DESTDIR, "lib", "pkgconfig"))
+
+	// We used to delete the pkgconfig but it turns out this is important for libevent iOS builds, which
+	// means now we need to keep it. See https://github.com/ooni/probe-cli/pull/1369 for details.
+	//must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.DESTDIR, "lib", "pkgconfig"))
 }

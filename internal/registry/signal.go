@@ -16,7 +16,8 @@ func init() {
 				*config.(*signal.Config),
 			)
 		},
-		config:      &signal.Config{},
-		inputPolicy: model.InputNone,
+		config:           &signal.Config{},
+		enabledByDefault: true,
+		inputPolicy:      model.InputNone,
 	}
 }

@@ -26,10 +26,13 @@ func TestNewOperationLogger(t *testing.T) {
 		}
 		ol := NewOperationLogger(logger, "antani%d", 0)
 		ol.Stop(nil)
-		if len(lines) != 1 {
+		if len(lines) != 2 {
 			t.Fatal("unexpected number of lines")
 		}
-		if lines[0] != "antani0... ok" {
+		if lines[0] != "antani0... started" {
+			t.Fatal("unexpected first line", lines[0])
+		}
+		if lines[1] != "antani0... ok" {
 			t.Fatal("unexpected first line", lines[0])
 		}
 	})
@@ -49,10 +52,13 @@ func TestNewOperationLogger(t *testing.T) {
 		}
 		ol := NewOperationLogger(logger, "antani%d", 0)
 		ol.Stop(io.EOF)
-		if len(lines) != 1 {
+		if len(lines) != 2 {
 			t.Fatal("unexpected number of lines")
 		}
-		if lines[0] != "antani0... EOF" {
+		if lines[0] != "antani0... started" {
+			t.Fatal("unexpected first line", lines[0])
+		}
+		if lines[1] != "antani0... EOF" {
 			t.Fatal("unexpected first line", lines[0])
 		}
 	})
@@ -74,13 +80,16 @@ func TestNewOperationLogger(t *testing.T) {
 		ol := newOperationLogger(maxwait, logger, "antani%d", 0)
 		ol.wg.Wait() // wait for the message to be emitted
 		ol.Stop(nil)
-		if len(lines) != 2 {
+		if len(lines) != 3 {
 			t.Fatal("unexpected number of lines")
 		}
-		if lines[0] != "antani0... in progress" {
+		if lines[0] != "antani0... started" {
 			t.Fatal("unexpected first line", lines[0])
 		}
-		if lines[1] != "antani0... ok" {
+		if lines[1] != "antani0... in progress" {
+			t.Fatal("unexpected first line", lines[0])
+		}
+		if lines[2] != "antani0... ok" {
 			t.Fatal("unexpected first line", lines[0])
 		}
 	})
@@ -102,13 +111,16 @@ func TestNewOperationLogger(t *testing.T) {
 		ol := newOperationLogger(maxwait, logger, "antani%d", 0)
 		ol.wg.Wait() // wait for the message to be emitted
 		ol.Stop(io.EOF)
-		if len(lines) != 2 {
+		if len(lines) != 3 {
 			t.Fatal("unexpected number of lines")
 		}
-		if lines[0] != "antani0... in progress" {
+		if lines[0] != "antani0... started" {
 			t.Fatal("unexpected first line", lines[0])
 		}
-		if lines[1] != "antani0... EOF" {
+		if lines[1] != "antani0... in progress" {
+			t.Fatal("unexpected first line", lines[0])
+		}
+		if lines[2] != "antani0... EOF" {
 			t.Fatal("unexpected first line", lines[0])
 		}
 	})

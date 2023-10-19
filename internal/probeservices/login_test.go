@@ -54,7 +54,10 @@ func TestMaybeLogin(t *testing.T) {
 }
 
 func TestMaybeLoginIdempotent(t *testing.T) {
-	t.Skip("TODO(https://github.com/ooni/probe/issues/2539)")
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	clnt := newclient()
 	ctx := context.Background()
 	metadata := MetadataFixture()

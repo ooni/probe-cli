@@ -35,7 +35,60 @@ jobs:
           PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
 
-      - run: make EXPECTED_XCODE_VERSION=14.2 MOBILE/ios
+      # ./internal/cmd/buildtool needs coreutils for sha256 plus GNU build tools
+      - run: brew install autoconf automake coreutils libtool
+
+      - run: make EXPECTED_XCODE_VERSION=14.2 ios
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: libcrypto.xcframework.zip
+          path: ./MOBILE/ios/libcrypto.xcframework.zip
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: libcrypto.podspec
+          path: ./MOBILE/ios/libcrypto.podspec
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: libevent.xcframework.zip
+          path: ./MOBILE/ios/libevent.xcframework.zip
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: libevent.podspec
+          path: ./MOBILE/ios/libevent.podspec
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: libssl.xcframework.zip
+          path: ./MOBILE/ios/libssl.xcframework.zip
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: libssl.podspec
+          path: ./MOBILE/ios/libssl.podspec
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: libtor.xcframework.zip
+          path: ./MOBILE/ios/libtor.xcframework.zip
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: libtor.podspec
+          path: ./MOBILE/ios/libtor.podspec
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: libz.xcframework.zip
+          path: ./MOBILE/ios/libz.xcframework.zip
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: libz.podspec
+          path: ./MOBILE/ios/libz.podspec
 
       - uses: actions/upload-artifact@v3
         with:
@@ -59,13 +112,53 @@ jobs:
 
       - uses: actions/download-artifact@v3
         with:
+          name: libcrypto.xcframework.zip
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: libcrypto.podspec
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: libevent.xcframework.zip
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: libevent.podspec
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: libssl.xcframework.zip
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: libssl.podspec
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: libtor.xcframework.zip
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: libtor.podspec
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: libz.xcframework.zip
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: libz.podspec
+
+      - uses: actions/download-artifact@v3
+        with:
           name: oonimkall.xcframework.zip
 
       - uses: actions/download-artifact@v3
         with:
           name: oonimkall.podspec
 
-      - run: ./script/ghpublish.bash oonimkall.xcframework.zip oonimkall.podspec
+      - run: ./script/ghpublish.bash libcrypto.xcframework.zip libcrypto.podspec libevent.xcframework.zip libevent.podspec libssl.xcframework.zip libssl.podspec libtor.xcframework.zip libtor.podspec libz.xcframework.zip libz.podspec oonimkall.xcframework.zip oonimkall.podspec
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

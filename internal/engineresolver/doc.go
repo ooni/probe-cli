@@ -13,8 +13,8 @@
 // have any preferential ordering. The initial resolutions may be slower
 // if there are many issues with resolvers.
 //
-// The system resolver is given the lowest priority at the beginning
-// but it will of course be the most popular resolver if anything else
+// The system resolver is given intermediate priority at the beginning (i.e.,
+// 0.5) but it will of course be the most popular resolver if anything else
 // is failing us. (We will still occasionally probe for other working
 // resolvers and increase their score on success.)
 //

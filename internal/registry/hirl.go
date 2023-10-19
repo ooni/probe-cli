@@ -16,7 +16,8 @@ func init() {
 				*config.(*hirl.Config),
 			)
 		},
-		config:      &hirl.Config{},
-		inputPolicy: model.InputNone,
+		config:           &hirl.Config{},
+		enabledByDefault: true,
+		inputPolicy:      model.InputNone,
 	}
 }

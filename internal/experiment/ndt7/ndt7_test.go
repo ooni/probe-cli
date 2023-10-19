@@ -131,6 +131,10 @@ func TestGood(t *testing.T) {
 }
 
 func TestFailDownload(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	measurer := NewExperimentMeasurer(Config{}).(*Measurer)
@@ -162,6 +166,10 @@ func TestFailDownload(t *testing.T) {
 }
 
 func TestFailUpload(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	measurer := NewExperimentMeasurer(Config{noDownload: true}).(*Measurer)

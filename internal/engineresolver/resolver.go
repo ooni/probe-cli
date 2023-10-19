@@ -114,6 +114,16 @@ func (r *Resolver) LookupHost(ctx context.Context, hostname string) ([]string, e
 			r.logger().Infof("sessionresolver: skipping with proxy: %+v", e)
 			continue // we cannot proxy this URL so ignore it
 		}
+
+		// Hotfix: if the context has been canceled from the outside avoid
+		// doing a dnslookup, which would mark the resolver as not WAI.
+		//
+		// See https://github.com/ooni/probe/issues/2544
+		if err := ctx.Err(); err != nil {
+			me.Add(newErrWrapper(err, e.URL))
+			continue
+		}
+
 		addrs, err := r.lookupHost(ctx, e, hostname)
 		if err == nil {
 			return addrs, nil

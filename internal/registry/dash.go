@@ -16,8 +16,9 @@ func init() {
 				*config.(*dash.Config),
 			)
 		},
-		config:        &dash.Config{},
-		interruptible: true,
-		inputPolicy:   model.InputNone,
+		config:           &dash.Config{},
+		enabledByDefault: true,
+		interruptible:    true,
+		inputPolicy:      model.InputNone,
 	}
 }

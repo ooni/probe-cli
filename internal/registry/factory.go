@@ -7,11 +7,13 @@ package registry
 import (
 	"errors"
 	"fmt"
+	"os"
 	"reflect"
 	"strconv"
 
-	"github.com/iancoleman/strcase"
+	"github.com/ooni/probe-cli/v3/internal/checkincache"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/strcasex"
 )
 
 // Factory allows to construct an experiment measurer.
@@ -21,6 +23,9 @@ type Factory struct {
 
 	// config contains the experiment's config.
 	config any
+
+	// enabledByDefault indicates whether this experiment is enabled by default.
+	enabledByDefault bool
 
 	// inputPolicy contains the experiment's InputPolicy.
 	inputPolicy model.InputPolicy
@@ -201,7 +206,7 @@ func (b *Factory) NewExperimentMeasurer() model.ExperimentMeasurer {
 // compatibility with MK, we need to add some exceptions here when
 // mapping (e.g., DNSCheck => dnscheck).
 func CanonicalizeExperimentName(name string) string {
-	switch name = strcase.ToSnake(name); name {
+	switch name = strcasex.ToSnake(name); name {
 	case "ndt_7":
 		name = "ndt" // since 2020-03-18, we use ndt7 to implement ndt by default
 	case "dns_check":
@@ -218,12 +223,91 @@ func CanonicalizeExperimentName(name string) string {
 // ErrNoSuchExperiment indicates a given experiment does not exist.
 var ErrNoSuchExperiment = errors.New("no such experiment")
 
+// ErrRequiresForceEnable is returned for experiments that are not enabled by default and are also
+// not enabled by the most recent check-in API call.
+var ErrRequiresForceEnable = errors.New("experiment not enabled by check-in API")
+
+const experimentDisabledByCheckInWarning = `We disabled the '%s' nettest. This usually happens in these cases:
+
+1. we just added the nettest to ooniprobe and we have not enabled it yet;
+
+2. the nettest is flaky and we are working on a fix;
+
+3. you ran Web Connectivity more than 24h ago, hence your check-in cache is stale.
+
+The last case is a known limitation in ooniprobe 3.19 that we will fix in a subsequent
+release of ooniprobe by changing the nettests startup logic.
+
+If you really want to run this nettest, there is a way forward. You need to set the
+OONI_FORCE_ENABLE_EXPERIMENT=1 environment variable. On a Unix like system, use:
+
+    export OONI_FORCE_ENABLE_EXPERIMENT=1
+
+on Windows use:
+
+    set OONI_FORCE_ENABLE_EXPERIMENT=1
+
+Re-running ooniprobe once you have set the environment variable would cause the
+disabled nettest to run. Please, note that we usually have good reasons for disabling
+nettests, including the following reasons:
+
+* making sure that we gradually introduce new nettests to all users by first introducing
+them to a few users and monitoring whether they're working as intended;
+
+* avoid polluting our measurements database with measurements produced by experiments
+that currently produce false positives or other data quality issues.
+`
+
+// OONI_FORCE_ENABLE_EXPERIMENT is the name of the environment variable you should set to "1"
+// to bypass the algorithm preventing disabled by default experiments to be instantiated.
+const OONI_FORCE_ENABLE_EXPERIMENT = "OONI_FORCE_ENABLE_EXPERIMENT"
+
 // NewFactory creates a new Factory instance.
-func NewFactory(name string) (*Factory, error) {
+func NewFactory(name string, kvStore model.KeyValueStore, logger model.Logger) (*Factory, error) {
+	// Make sure we are deadling with the canonical experiment name. Historically MK used
+	// names such as WebConnectivity and we want to continue supporting this use case.
 	name = CanonicalizeExperimentName(name)
+
+	// Handle A/B testing where we dynamically choose LTE for some users. The current policy
+	// only relates to a few users to collect data.
+	//
+	// TODO(https://github.com/ooni/probe/issues/2555): perform the actual comparison
+	// and improve the LTE implementation so that we can always use it. See the actual
+	// issue test for additional details on this planned A/B test.
+	switch {
+	case name == "web_connectivity" && checkincache.GetFeatureFlag(kvStore, "webconnectivity_0.5"):
+		// use LTE rather than the normal webconnectivity when the
+		// feature flag has been set through the check-in API
+		logger.Infof("using webconnectivity LTE")
+		name = "web_connectivity@v0.5"
+
+	default:
+		// nothing
+	}
+
+	// Obtain the factory for the canonical name.
 	factory := AllExperiments[name]
 	if factory == nil {
 		return nil, fmt.Errorf("%w: %s", ErrNoSuchExperiment, name)
 	}
-	return factory, nil
+
+	// Some experiments are not enabled by default. To enable them we use
+	// the cached check-in response or an environment variable.
+	//
+	// Note: check-in flags expire after 24h.
+	//
+	// TODO(https://github.com/ooni/probe/issues/2554): we need to restructure
+	// how we run experiments to make sure check-in flags are always fresh.
+	if factory.enabledByDefault {
+		return factory, nil // enabled by default
+	}
+	if os.Getenv(OONI_FORCE_ENABLE_EXPERIMENT) == "1" {
+		return factory, nil // enabled by environment variable
+	}
+	if checkincache.ExperimentEnabled(kvStore, name) {
+		return factory, nil // enabled by check-in
+	}
+
+	logger.Warnf(experimentDisabledByCheckInWarning, name)
+	return nil, fmt.Errorf("%s: %w", name, ErrRequiresForceEnable)
 }

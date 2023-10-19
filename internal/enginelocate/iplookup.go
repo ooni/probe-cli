@@ -78,13 +78,21 @@ func makeSlice() []method {
 	return ret
 }
 
+func contextForIPLookupWithTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
+	// TODO(https://github.com/ooni/probe/issues/2551): we must enforce a timeout this
+	// large to ensure we give all resolvers a chance to run. We set this value as part of
+	// an hotfix. The above mentioned issue explains how to improve the situation and
+	// avoid the need of setting such large timeouts here.
+	const timeout = 45 * time.Second
+	return context.WithTimeout(ctx, timeout)
+}
+
 func (c ipLookupClient) doWithCustomFunc(
 	ctx context.Context, fn lookupFunc,
 ) (string, error) {
-	// Reliability fix: let these mechanisms timeout earlier.
-	const timeout = 7 * time.Second
-	ctx, cancel := context.WithTimeout(ctx, timeout)
+	ctx, cancel := contextForIPLookupWithTimeout(ctx)
 	defer cancel()
+
 	// Implementation note: we MUST use an HTTP client that we're
 	// sure IS NOT using any proxy. To this end, we construct a
 	// client ourself that we know is not proxied.

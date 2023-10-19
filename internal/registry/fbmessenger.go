@@ -16,7 +16,8 @@ func init() {
 				*config.(*fbmessenger.Config),
 			)
 		},
-		config:      &fbmessenger.Config{},
-		inputPolicy: model.InputNone,
+		config:           &fbmessenger.Config{},
+		enabledByDefault: true,
+		inputPolicy:      model.InputNone,
 	}
 }

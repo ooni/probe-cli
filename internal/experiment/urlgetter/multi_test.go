@@ -17,6 +17,10 @@ import (
 )
 
 func TestMultiIntegration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	multi := urlgetter.Multi{Session: &mockable.Session{}}
 	inputs := []urlgetter.MultiInput{{
 		Config: urlgetter.Config{Method: "HEAD", NoFollowRedirects: true},

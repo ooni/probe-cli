@@ -92,12 +92,12 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.1.2.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.1.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-3.1.2.tar.gz",
+				"tar", "-xf", "openssl-3.1.3.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -135,12 +135,6 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 				"make",
 				"DESTDIR=" + faketopdir + "/" + sysDepDestDir,
 				"install_dev",
-			},
-		}, {
-			Env: []string{},
-			Argv: []string{
-				"rm", "-rf",
-				faketopdir + "/" + sysDepDestDir + "/lib/pkgconfig",
 			},
 		}},
 	}, {
@@ -195,6 +189,7 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 					faketopdir,
 					sysDepDestDir,
 				),
+				"PKG_CONFIG_PATH=" + faketopdir + "/" + sysDepDestDir + "/lib/pkgconfig",
 			},
 			Argv: []string{
 				"./configure",
@@ -226,8 +221,36 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 			Env: []string{},
 			Argv: []string{
 				"rm",
-				"-rf",
-				faketopdir + "/" + sysDepDestDir + "/lib/pkgconfig",
+				"-f",
+				faketopdir + "/" + sysDepDestDir + "/lib/pkgconfig/libevent.pc",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-f",
+				faketopdir + "/" + sysDepDestDir + "/lib/pkgconfig/libevent_core.pc",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-f",
+				faketopdir + "/" + sysDepDestDir + "/lib/pkgconfig/libevent_extra.pc",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-f",
+				faketopdir + "/" + sysDepDestDir + "/lib/pkgconfig/libevent_openssl.pc",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"rm",
+				"-f",
+				faketopdir + "/" + sysDepDestDir + "/lib/pkgconfig/libevent_pthreads.pc",
 			},
 		}, {
 			Env: []string{},
@@ -299,12 +322,12 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.7.14.tar.gz",
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.7.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "tor-0.4.7.14.tar.gz",
+				"tar", "-xf", "tor-0.4.8.7.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -346,6 +369,7 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 				"--disable-tool-name-check",
 				"--disable-systemd",
 				"--prefix=/",
+				"--disable-unittests",
 			},
 		}, {
 			Env: []string{},

@@ -27,6 +27,7 @@ func newOperationLogger(maxwait time.Duration, logger model.Logger, format strin
 		wg:      &sync.WaitGroup{},
 	}
 	ol.wg.Add(1)
+	ol.logger.Infof("%s... started", ol.message)
 	go ol.maybeEmitProgress()
 	return ol
 }

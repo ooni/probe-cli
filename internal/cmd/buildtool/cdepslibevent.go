@@ -49,6 +49,10 @@ func cdepsLibeventBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependenci
 	}
 	envp := cBuildExportAutotools(cBuildMerge(globalEnv, localEnv))
 
+	// On iOS, we need PKG_CONFIG_PATH to convince libevent to use the OpenSSL we built and
+	// always letting libevent's configure use pkgconfig is actually fine.
+	envp.Append("PKG_CONFIG_PATH", filepath.Join(globalEnv.DESTDIR, "lib", "pkgconfig"))
+
 	argv := runtimex.Try1(shellx.NewArgv("./configure"))
 	if globalEnv.CONFIGURE_HOST != "" {
 		argv.Append("--host=" + globalEnv.CONFIGURE_HOST)
@@ -59,7 +63,17 @@ func cdepsLibeventBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependenci
 	must.Run(log.Log, "make", "V=1", "-j", strconv.Itoa(runtime.NumCPU()))
 	must.Run(log.Log, "make", "DESTDIR="+globalEnv.DESTDIR, "install")
 	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.DESTDIR, "bin"))
-	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.DESTDIR, "lib", "pkgconfig"))
+
+	// We used to delete the whole pkgconfig directory but libevent's build needs OpenSSL's
+	// pkgconfig, so removing the whole directory means rebuilding libevent requires building
+	// OpenSSL because its pkgconfig is also removed. We discovered this need when working
+	// on the https://github.com/ooni/probe-cli/pull/1366 MVP. To keep the build idempotent,
+	// let's be more gentle and just remove libevent's pkgconfig files instead.
+	must.Run(log.Log, "rm", "-f", filepath.Join(globalEnv.DESTDIR, "lib", "pkgconfig", "libevent.pc"))
+	must.Run(log.Log, "rm", "-f", filepath.Join(globalEnv.DESTDIR, "lib", "pkgconfig", "libevent_core.pc"))
+	must.Run(log.Log, "rm", "-f", filepath.Join(globalEnv.DESTDIR, "lib", "pkgconfig", "libevent_extra.pc"))
+	must.Run(log.Log, "rm", "-f", filepath.Join(globalEnv.DESTDIR, "lib", "pkgconfig", "libevent_openssl.pc"))
+	must.Run(log.Log, "rm", "-f", filepath.Join(globalEnv.DESTDIR, "lib", "pkgconfig", "libevent_pthreads.pc"))
 
 	// we just need libevent.a
 	must.Run(log.Log, "rm", "-rf", filepath.Join(globalEnv.DESTDIR, "lib", "libevent.la"))

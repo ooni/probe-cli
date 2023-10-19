@@ -34,12 +34,14 @@ func DNSAnalysis(URL *url.URL, measurement DNSLookupResult,
 	control ControlResponse) (out DNSAnalysisResult) {
 	// 0. start assuming it's not consistent
 	out.DNSConsistency = &DNSInconsistent
+
 	// 1. flip to consistent if we're targeting an IP address because the
 	// control will actually return dns_name_error in this case.
 	if net.ParseIP(URL.Hostname()) != nil {
 		out.DNSConsistency = &DNSConsistent
 		return
 	}
+
 	// 2. flip to consistent if the failures are compatible
 	if measurement.Failure != nil && control.DNS.Failure != nil {
 		switch *control.DNS.Failure {
@@ -57,6 +59,7 @@ func DNSAnalysis(URL *url.URL, measurement DNSLookupResult,
 		}
 		return
 	}
+
 	// 3. flip to consistent if measurement and control returned IP addresses
 	// that belong to the same Autonomous System(s).
 	//
@@ -85,6 +88,7 @@ func DNSAnalysis(URL *url.URL, measurement DNSLookupResult,
 			return
 		}
 	}
+
 	// 4. when ASN lookup failed (unlikely), check whether
 	// there is overlap in the returned IP addresses
 	ipmap := make(map[string]int)
@@ -101,6 +105,7 @@ func DNSAnalysis(URL *url.URL, measurement DNSLookupResult,
 			return
 		}
 	}
+
 	// 5. conclude that measurement and control are inconsistent
 	return
 }

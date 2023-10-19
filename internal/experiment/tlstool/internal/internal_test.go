@@ -25,17 +25,33 @@ func dial(t *testing.T, d model.Dialer) {
 }
 
 func TestNewSNISplitterDialer(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	dial(t, internal.NewSNISplitterDialer(config))
 }
 
 func TestNewThriceSplitterDialer(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	dial(t, internal.NewThriceSplitterDialer(config))
 }
 
 func TestNewRandomSplitterDialer(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	dial(t, internal.NewRandomSplitterDialer(config))
 }
 
 func TestNewVanillaDialer(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	dial(t, internal.NewVanillaDialer(config))
 }

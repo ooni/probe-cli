@@ -80,16 +80,14 @@ func newChildResolverHTTPS(
 	var txp model.HTTPTransport
 	switch http3Enabled {
 	case false:
-		dialer := netxlite.MaybeWrapWithProxyDialer(
-			netxlite.NewDialerWithStdlibResolver(logger),
-			proxyURL, // handles correctly the case where proxyURL is nil
-		)
+		dialer := netxlite.NewDialerWithStdlibResolver(logger)
 		thx := netxlite.NewTLSHandshakerStdlib(logger)
 		tlsDialer := netxlite.NewTLSDialer(dialer, thx)
-		// TODO(https://github.com/ooni/probe/issues/2534): here we're using the QUIRKY netxlite.NewHTTPTransport
-		// function, but we can probably avoid using it, given that this code is
-		// not using tracing and does not care about those quirks.
-		txp = netxlite.NewHTTPTransport(logger, dialer, tlsDialer)
+		txp = netxlite.NewHTTPTransportWithOptions(
+			logger, dialer, tlsDialer,
+			netxlite.HTTPTransportOptionDisableCompression(false), // defaults to true but compression is fine here
+			netxlite.HTTPTransportOptionProxyURL(proxyURL),        // nil here disables using the proxy
+		)
 	case true:
 		txp = netxlite.NewHTTP3TransportStdlib(logger)
 	}

@@ -62,7 +62,7 @@ func (b *experimentBuilder) NewExperiment() model.Experiment {
 
 // newExperimentBuilder creates a new experimentBuilder instance.
 func newExperimentBuilder(session *Session, name string) (*experimentBuilder, error) {
-	factory, err := registry.NewFactory(name)
+	factory, err := registry.NewFactory(name, session.kvStore, session.logger)
 	if err != nil {
 		return nil, err
 	}
