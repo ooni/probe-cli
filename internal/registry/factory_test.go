@@ -492,8 +492,10 @@ func TestNewFactory(t *testing.T) {
 			inputPolicy:      model.InputStrictlyRequired,
 		},
 		"vanilla_tor": {
-			enabledByDefault: true,
-			inputPolicy:      model.InputNone,
+			// The experiment crashes on Android and possibly also iOS. We want to
+			// control whether and when to run it using check-in.
+			//enabledByDefault: false,
+			inputPolicy: model.InputNone,
 		},
 		"web_connectivity": {
 			enabledByDefault: true,
