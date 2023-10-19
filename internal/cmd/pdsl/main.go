@@ -10,7 +10,7 @@ import (
 )
 
 func measureWithTLS(ctx context.Context, rt pdsl.Runtime,
-	domain pdsl.DomainName, udpResolverEndpoint pdsl.Endpoint) <-chan pdsl.Result[pdsl.TLSConn] {
+	domain pdsl.DomainName, udpResolverEndpoint pdsl.Endpoint) <-chan pdsl.Result[pdsl.Void] {
 	// create a suitable TLS configuration
 	tlsConfig := &tls.Config{
 		NextProtos: []string{"h2", "http/1.1"},
@@ -31,7 +31,10 @@ func measureWithTLS(ctx context.Context, rt pdsl.Runtime,
 	conns := pdsl.Merge(pdsl.Fork(4, pdsl.TCPConnect(ctx, rt), endpoints)...)
 
 	// create TLS connections also using a goroutine pool
-	return pdsl.Merge(pdsl.Fork(2, pdsl.TLSHandshake(ctx, rt, tlsConfig), conns)...)
+	tlsConns := pdsl.Merge(pdsl.Fork(2, pdsl.TLSHandshake(ctx, rt, tlsConfig), conns)...)
+
+	// return a list of void
+	return pdsl.Discard[pdsl.TLSConn]()(tlsConns)
 }
 
 func main() {
