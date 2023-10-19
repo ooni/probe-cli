@@ -16,7 +16,7 @@ type TLSConn struct {
 }
 
 // TCPConnect returns a [Filter] that attempts to create [TLSConn] from [TCPConn].
-func TLSHandshake(ctx context.Context, rt Runtime, tlsConfig *tls.Config) Filter[Result[TCPConn], Result[TLSConn]] {
+func TLSHandshake(ctx context.Context, rt Runtime, tlsConfig *tls.Config) Filter[TCPConn, TLSConn] {
 	return func(mTcpConns <-chan Result[TCPConn]) <-chan Result[TLSConn] {
 		outputs := make(chan Result[TLSConn])
 

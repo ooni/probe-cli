@@ -6,7 +6,7 @@ import "net"
 type Endpoint string
 
 // MakeEndpointsForPort returns a [Filter] that attemps to make [Endpoint] from [IPAddr].
-func MakeEndpointsForPort(port string) Filter[Result[IPAddr], Result[Endpoint]] {
+func MakeEndpointsForPort(port string) Filter[IPAddr, Endpoint] {
 	return func(inputs <-chan Result[IPAddr]) <-chan Result[Endpoint] {
 		outputs := make(chan Result[Endpoint])
 

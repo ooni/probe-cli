@@ -15,8 +15,7 @@ type TCPConn struct {
 }
 
 // TCPConnect returns a [Filter] that attempts to create [TCPConn] from [Endpoint].
-func TCPConnect(
-	ctx context.Context, rt Runtime, tags ...string) Filter[Result[Endpoint], Result[TCPConn]] {
+func TCPConnect(ctx context.Context, rt Runtime, tags ...string) Filter[Endpoint, TCPConn] {
 	return func(mendpoints <-chan Result[Endpoint]) <-chan Result[TCPConn] {
 		outputs := make(chan Result[TCPConn])
 
