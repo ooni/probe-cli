@@ -19,13 +19,13 @@ func measureWithTLS(ctx context.Context, rt pdsl.Runtime,
 	}
 
 	// resolve IP addresses using two resolvers and deduplicate the results
-	ipAddrs := pdsl.DNSLookupDedup()(pdsl.Merge(
+	ipAddrs := pdsl.Collect(pdsl.DNSLookupDedup()(pdsl.Merge(
 		pdsl.DNSLookupGetaddrinfo(ctx, rt)(domain),
 		pdsl.DNSLookupUDP(ctx, rt, udpResolverEndpoint)(domain),
-	))
+	)))
 
 	// convert the IP addresses to endpoints
-	endpoints := pdsl.MakeEndpointsForPort("443")(ipAddrs)
+	endpoints := pdsl.MakeEndpointsForPort("443")(pdsl.Stream(ipAddrs...))
 
 	// create TCP connections from endpoints using a goroutine pool
 	conns := pdsl.Merge(pdsl.Fork(4, pdsl.TCPConnect(ctx, rt), endpoints)...)
