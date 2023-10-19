@@ -16,6 +16,15 @@ type Trace interface {
 	// interface, but they're not used by this function.
 	NewDialerWithoutResolver(dl model.DebugLogger, wrappers ...model.DialerWrapper) model.Dialer
 
+	// NewQUICDialerWithoutResolver is equivalent to
+	// netxlite.NewQUICDialerWithoutResolver except that it returns a
+	// model.QUICDialer that uses this trace.
+	//
+	// Caveat: the dialer wrappers are there to implement the
+	// model.MeasuringNetwork interface, but they're not used by this function.
+	NewQUICDialerWithoutResolver(listener model.UDPListener,
+		dl model.DebugLogger, wrappers ...model.QUICDialerWrapper) model.QUICDialer
+
 	// NewStdlibResolver returns a resolver that saves observations into this trace.
 	NewStdlibResolver(logger model.DebugLogger) model.Resolver
 

@@ -48,6 +48,22 @@ func httpsExperiment(ctx context.Context, rt pdsl.Runtime, domain pdsl.DomainNam
 	return pdsl.Merge(pdsl.Fork(2, pdsl.TLSHandshake(ctx, rt, tlsConfig), conns)...)
 }
 
+func http3Experiment(ctx context.Context, rt pdsl.Runtime, domain pdsl.DomainName,
+	ipAddrs ...pdsl.Result[pdsl.IPAddr]) <-chan pdsl.Result[pdsl.QUICConn] {
+	// create a suitable TLS configuration
+	tlsConfig := &tls.Config{
+		NextProtos: []string{"h3"},
+		ServerName: string(domain),
+		RootCAs:    nil, // use netxlite default CA
+	}
+
+	// convert the IP addresses to endpoints
+	endpoints := pdsl.MakeEndpointsForPort("443")(pdsl.Stream(ipAddrs...))
+
+	// create QUIC connections also using a goroutine pool
+	return pdsl.Merge(pdsl.Fork(2, pdsl.QUICHandshake(ctx, rt, tlsConfig), endpoints)...)
+}
+
 func mainExperiment(ctx context.Context, rt pdsl.Runtime, domain pdsl.DomainName) {
 	// run the DNS experiment until completion
 	ipAddrs := dnsExperiment(ctx, rt, domain)
@@ -60,10 +76,14 @@ func mainExperiment(ctx context.Context, rt pdsl.Runtime, domain pdsl.DomainName
 	// start the HTTP experiment
 	tcpConns := httpExperiment(ctx, rt, domain, ipAddrs...)
 
+	// start the HTTP/3 experiment
+	quicConns := http3Experiment(ctx, rt, domain, ipAddrs...)
+
 	// wait for both experiments to terminate
 	_ = pdsl.Collect(
 		pdsl.Discard[pdsl.TLSConn]()(tlsConns),
 		pdsl.Discard[pdsl.TCPConn]()(tcpConns),
+		pdsl.Discard[pdsl.QUICConn]()(quicConns),
 	)
 }
 

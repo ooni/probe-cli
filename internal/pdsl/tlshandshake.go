@@ -23,12 +23,11 @@ func TLSHandshake(ctx context.Context, rt Runtime, tlsConfig *tls.Config) Filter
 		endpoint := tcpConn.RemoteAddr().String()
 		trace := tcpConn.Trace
 
-		// start the operation logger
-		traceID := rt.NewTraceID()
+		// start operation logger
 		ol := logx.NewOperationLogger(
 			rt.Logger(),
 			"[#%d] TLSHandshake %s SNI=%s ALPN=%s",
-			traceID,
+			0, // TODO
 			endpoint,
 			sni,
 			alpn,
