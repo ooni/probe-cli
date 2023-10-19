@@ -44,7 +44,6 @@ type OperationLogger struct {
 }
 
 func (ol *OperationLogger) maybeEmitProgress() {
-	ol.logger.Infof("%s... started", ol.message)
 	defer ol.wg.Done()
 	timer := time.NewTimer(ol.maxwait)
 	defer timer.Stop()
