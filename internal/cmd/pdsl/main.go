@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/apex/log"
@@ -11,6 +13,19 @@ import (
 )
 
 const udpResolverEndpoint = pdsl.Endpoint("8.8.8.8:53")
+
+func newRequest(scheme string, domain pdsl.DomainName, urlPath string) *http.Request {
+	return &http.Request{
+		Method: "GET",
+		URL: &url.URL{
+			Scheme: scheme,
+			Host:   string(domain),
+			Path:   urlPath,
+		},
+		Header: map[string][]string{},
+		Host:   string(domain),
+	}
+}
 
 func dnsExperiment(ctx context.Context, rt pdsl.Runtime, domain pdsl.DomainName) []pdsl.Result[pdsl.IPAddr] {
 	// resolve IP addresses with two parallel DNS resolvers
@@ -21,16 +36,22 @@ func dnsExperiment(ctx context.Context, rt pdsl.Runtime, domain pdsl.DomainName)
 }
 
 func httpExperiment(ctx context.Context, rt pdsl.Runtime, domain pdsl.DomainName,
-	ipAddrs ...pdsl.Result[pdsl.IPAddr]) <-chan pdsl.Result[pdsl.TCPConn] {
+	ipAddrs ...pdsl.Result[pdsl.IPAddr]) <-chan pdsl.Result[pdsl.HTTPResponse] {
 	// convert the IP addresses to endpoints
 	endpoints := pdsl.MakeEndpointsForPort("80")(pdsl.Stream(ipAddrs...))
 
 	// create TCP connections from endpoints using a goroutine pool
-	return pdsl.Merge(pdsl.Fork(4, pdsl.TCPConnect(ctx, rt), endpoints)...)
+	tcpConns := pdsl.Merge(pdsl.Fork(4, pdsl.TCPConnect(ctx, rt), endpoints)...)
+
+	// create the request
+	req := newRequest("http", domain, "/")
+
+	// perform round trip with each connection
+	return pdsl.HTTPRoundTripTCP(ctx, rt, req)(tcpConns)
 }
 
 func httpsExperiment(ctx context.Context, rt pdsl.Runtime, domain pdsl.DomainName,
-	ipAddrs ...pdsl.Result[pdsl.IPAddr]) <-chan pdsl.Result[pdsl.TLSConn] {
+	ipAddrs ...pdsl.Result[pdsl.IPAddr]) <-chan pdsl.Result[pdsl.HTTPResponse] {
 	// create a suitable TLS configuration
 	tlsConfig := &tls.Config{
 		NextProtos: []string{"h2", "http/1.1"},
@@ -45,11 +66,17 @@ func httpsExperiment(ctx context.Context, rt pdsl.Runtime, domain pdsl.DomainNam
 	conns := pdsl.Merge(pdsl.Fork(4, pdsl.TCPConnect(ctx, rt), endpoints)...)
 
 	// create TLS connections also using a goroutine pool
-	return pdsl.Merge(pdsl.Fork(2, pdsl.TLSHandshake(ctx, rt, tlsConfig), conns)...)
+	tlsConns := pdsl.Merge(pdsl.Fork(2, pdsl.TLSHandshake(ctx, rt, tlsConfig), conns)...)
+
+	// create the request
+	req := newRequest("https", domain, "/")
+
+	// perform round trip with each connection
+	return pdsl.HTTPRoundTripTLS(ctx, rt, req)(tlsConns)
 }
 
 func http3Experiment(ctx context.Context, rt pdsl.Runtime, domain pdsl.DomainName,
-	ipAddrs ...pdsl.Result[pdsl.IPAddr]) <-chan pdsl.Result[pdsl.QUICConn] {
+	ipAddrs ...pdsl.Result[pdsl.IPAddr]) <-chan pdsl.Result[pdsl.HTTPResponse] {
 	// create a suitable TLS configuration
 	tlsConfig := &tls.Config{
 		NextProtos: []string{"h3"},
@@ -61,7 +88,13 @@ func http3Experiment(ctx context.Context, rt pdsl.Runtime, domain pdsl.DomainNam
 	endpoints := pdsl.MakeEndpointsForPort("443")(pdsl.Stream(ipAddrs...))
 
 	// create QUIC connections also using a goroutine pool
-	return pdsl.Merge(pdsl.Fork(2, pdsl.QUICHandshake(ctx, rt, tlsConfig), endpoints)...)
+	quicConns := pdsl.Merge(pdsl.Fork(2, pdsl.QUICHandshake(ctx, rt, tlsConfig), endpoints)...)
+
+	// create the request
+	req := newRequest("https", domain, "/")
+
+	// perform round trip with each connection
+	return pdsl.HTTPRoundTripQUIC(ctx, rt, req, tlsConfig)(quicConns)
 }
 
 func mainExperiment(ctx context.Context, rt pdsl.Runtime, domain pdsl.DomainName) {
@@ -70,20 +103,11 @@ func mainExperiment(ctx context.Context, rt pdsl.Runtime, domain pdsl.DomainName
 
 	// TODO: invoke the TH
 
-	// start the HTTPS experiment
-	tlsConns := httpsExperiment(ctx, rt, domain, ipAddrs...)
-
-	// start the HTTP experiment
-	tcpConns := httpExperiment(ctx, rt, domain, ipAddrs...)
-
-	// start the HTTP/3 experiment
-	quicConns := http3Experiment(ctx, rt, domain, ipAddrs...)
-
-	// wait for both experiments to terminate
+	// wait for all the experiments to terminate
 	_ = pdsl.Collect(
-		pdsl.Discard[pdsl.TLSConn]()(tlsConns),
-		pdsl.Discard[pdsl.TCPConn]()(tcpConns),
-		pdsl.Discard[pdsl.QUICConn]()(quicConns),
+		httpsExperiment(ctx, rt, domain, ipAddrs...),
+		httpExperiment(ctx, rt, domain, ipAddrs...),
+		http3Experiment(ctx, rt, domain, ipAddrs...),
 	)
 }
 
