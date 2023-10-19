@@ -1,0 +1,6 @@
+{
+  "inputs": [
+	"https://www.example.com/"
+  ],
+  "test_name": "web_connectivity"
+}
