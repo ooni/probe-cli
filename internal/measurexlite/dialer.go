@@ -55,11 +55,11 @@ func (tx *Trace) OnConnectDone(
 		// insert into the tcpConnect buffer
 		select {
 		case tx.tcpConnect <- NewArchivalTCPConnectResult(
-			tx.Index,
-			started.Sub(tx.ZeroTime),
+			tx.Index(),
+			started.Sub(tx.ZeroTime()),
 			remoteAddr,
 			err,
-			finished.Sub(tx.ZeroTime),
+			finished.Sub(tx.ZeroTime()),
 			tx.tags...,
 		):
 		default: // buffer is full
@@ -69,14 +69,14 @@ func (tx *Trace) OnConnectDone(
 		// see https://github.com/ooni/probe/issues/2254
 		select {
 		case tx.networkEvent <- NewArchivalNetworkEvent(
-			tx.Index,
-			started.Sub(tx.ZeroTime),
+			tx.Index(),
+			started.Sub(tx.ZeroTime()),
 			netxlite.ConnectOperation,
 			"tcp",
 			remoteAddr,
 			0,
 			err,
-			finished.Sub(tx.ZeroTime),
+			finished.Sub(tx.ZeroTime()),
 			tx.tags...,
 		):
 		default: // buffer is full

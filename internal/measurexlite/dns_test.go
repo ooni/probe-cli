@@ -519,8 +519,8 @@ func TestDelayedDNSResponseWithTimeout(t *testing.T) {
 			}
 			for i := 0; i < events; i++ {
 				// fill the trace
-				trace.delayedDNSResponse <- NewArchivalDNSLookupResultFromRoundTrip(trace.Index, started.Sub(trace.ZeroTime),
-					txp, query, dnsResponse, addrs, nil, finished.Sub(trace.ZeroTime))
+				trace.delayedDNSResponse <- NewArchivalDNSLookupResultFromRoundTrip(trace.Index(), started.Sub(trace.ZeroTime()),
+					txp, query, dnsResponse, addrs, nil, finished.Sub(trace.ZeroTime()))
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel() // we ensure that the context cancels before draining all the events
@@ -566,8 +566,8 @@ func TestDelayedDNSResponseWithTimeout(t *testing.T) {
 					return []byte{}
 				},
 			}
-			trace.delayedDNSResponse <- NewArchivalDNSLookupResultFromRoundTrip(trace.Index, started.Sub(trace.ZeroTime),
-				txp, query, dnsResponse, addrs, nil, finished.Sub(trace.ZeroTime))
+			trace.delayedDNSResponse <- NewArchivalDNSLookupResultFromRoundTrip(trace.Index(), started.Sub(trace.ZeroTime()),
+				txp, query, dnsResponse, addrs, nil, finished.Sub(trace.ZeroTime()))
 			got := trace.DelayedDNSResponseWithTimeout(context.Background(), time.Second)
 			if len(got) != 1 {
 				t.Fatal("unexpected output from trace")

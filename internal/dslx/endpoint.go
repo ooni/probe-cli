@@ -4,13 +4,6 @@ package dslx
 // Manipulate endpoints
 //
 
-import (
-	"sync/atomic"
-	"time"
-
-	"github.com/ooni/probe-cli/v3/internal/model"
-)
-
 type (
 	// EndpointNetwork is the network of the endpoint
 	EndpointNetwork string
@@ -29,20 +22,11 @@ type Endpoint struct {
 	// Domain is the OPTIONAL domain used to resolve the endpoints' IP address.
 	Domain string
 
-	// IDGenerator is MANDATORY the ID generator to use.
-	IDGenerator *atomic.Int64
-
-	// Logger is the MANDATORY logger to use.
-	Logger model.Logger
-
 	// Network is the MANDATORY endpoint network.
 	Network string
 
 	// Tags contains OPTIONAL tags for tagging observations.
 	Tags []string
-
-	// ZeroTime is the MANDATORY zero time of the measurement.
-	ZeroTime time.Time
 }
 
 // EndpointOption is an option you can use to construct EndpointState.
@@ -55,31 +39,10 @@ func EndpointOptionDomain(value string) EndpointOption {
 	}
 }
 
-// EndpointOptionIDGenerator allows to set the ID generator.
-func EndpointOptionIDGenerator(value *atomic.Int64) EndpointOption {
-	return func(es *Endpoint) {
-		es.IDGenerator = value
-	}
-}
-
-// EndpointOptionLogger allows to set the logger.
-func EndpointOptionLogger(value model.Logger) EndpointOption {
-	return func(es *Endpoint) {
-		es.Logger = value
-	}
-}
-
 // EndpointOptionTags allows to set tags to tag observations.
 func EndpointOptionTags(value ...string) EndpointOption {
 	return func(es *Endpoint) {
 		es.Tags = append(es.Tags, value...)
-	}
-}
-
-// EndpointOptionZeroTime allows to set the zero time.
-func EndpointOptionZeroTime(value time.Time) EndpointOption {
-	return func(es *Endpoint) {
-		es.ZeroTime = value
 	}
 }
 
@@ -97,13 +60,10 @@ func EndpointOptionZeroTime(value time.Time) EndpointOption {
 func NewEndpoint(
 	network EndpointNetwork, address EndpointAddress, options ...EndpointOption) *Endpoint {
 	epnt := &Endpoint{
-		Address:     string(address),
-		Domain:      "",
-		IDGenerator: &atomic.Int64{},
-		Logger:      model.DiscardLogger,
-		Network:     string(network),
-		Tags:        []string{},
-		ZeroTime:    time.Now(),
+		Address: string(address),
+		Domain:  "",
+		Network: string(network),
+		Tags:    []string{},
 	}
 	for _, option := range options {
 		option(epnt)

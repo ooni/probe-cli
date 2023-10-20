@@ -11,17 +11,19 @@ import (
 )
 
 // HTTPRequestOverTCP returns a Func that issues HTTP requests over TCP.
-func HTTPRequestOverTCP(options ...HTTPRequestOption) Func[*TCPConnection, *Maybe[*HTTPResponse]] {
-	return Compose2(HTTPTransportTCP(), HTTPRequest(options...))
+func HTTPRequestOverTCP(rt Runtime, options ...HTTPRequestOption) Func[*TCPConnection, *Maybe[*HTTPResponse]] {
+	return Compose2(HTTPTransportTCP(rt), HTTPRequest(rt, options...))
 }
 
 // HTTPTransportTCP converts a TCP connection into an HTTP transport.
-func HTTPTransportTCP() Func[*TCPConnection, *Maybe[*HTTPTransport]] {
-	return &httpTransportTCPFunc{}
+func HTTPTransportTCP(rt Runtime) Func[*TCPConnection, *Maybe[*HTTPTransport]] {
+	return &httpTransportTCPFunc{rt}
 }
 
 // httpTransportTCPFunc is the function returned by HTTPTransportTCP
-type httpTransportTCPFunc struct{}
+type httpTransportTCPFunc struct {
+	rt Runtime
+}
 
 // Apply implements Func
 func (f *httpTransportTCPFunc) Apply(
@@ -30,21 +32,18 @@ func (f *httpTransportTCPFunc) Apply(
 	// function, but we can probably avoid using it, given that this code is
 	// not using tracing and does not care about those quirks.
 	httpTransport := netxlite.NewHTTPTransport(
-		input.Logger,
+		f.rt.Logger(),
 		netxlite.NewSingleUseDialer(input.Conn),
 		netxlite.NewNullTLSDialer(),
 	)
 	state := &HTTPTransport{
 		Address:               input.Address,
 		Domain:                input.Domain,
-		IDGenerator:           input.IDGenerator,
-		Logger:                input.Logger,
 		Network:               input.Network,
 		Scheme:                "http",
 		TLSNegotiatedProtocol: "",
 		Trace:                 input.Trace,
 		Transport:             httpTransport,
-		ZeroTime:              input.ZeroTime,
 	}
 	return &Maybe[*HTTPTransport]{
 		Error:        nil,

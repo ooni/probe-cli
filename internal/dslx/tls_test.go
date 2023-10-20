@@ -31,7 +31,7 @@ func TestTLSHandshake(t *testing.T) {
 		certpool.AddCert(&x509.Certificate{})
 
 		f := TLSHandshake(
-			&ConnPool{},
+			NewMinimalRuntime(model.DiscardLogger, time.Now()),
 			TLSHandshakeOptionInsecureSkipVerify(true),
 			TLSHandshakeOptionNextProto([]string{"h2"}),
 			TLSHandshakeOptionServerName("sni"),
@@ -133,10 +133,10 @@ func TestTLSHandshake(t *testing.T) {
 
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {
-				pool := &ConnPool{}
+				rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
 				tlsHandshake := &tlsHandshakeFunc{
 					NextProto:  tt.config.nextProtos,
-					Pool:       pool,
+					Rt:         rt,
 					ServerName: tt.config.sni,
 					handshaker: tt.handshaker,
 				}
@@ -148,13 +148,10 @@ func TestTLSHandshake(t *testing.T) {
 					address = "1.2.3.4:567"
 				}
 				tcpConn := TCPConnection{
-					Address:     address,
-					Conn:        &tcpConn,
-					IDGenerator: idGen,
-					Logger:      model.DiscardLogger,
-					Network:     "tcp",
-					Trace:       trace,
-					ZeroTime:    zeroTime,
+					Address: address,
+					Conn:    &tcpConn,
+					Network: "tcp",
+					Trace:   trace,
 				}
 				res := tlsHandshake.Apply(context.Background(), &tcpConn)
 				if res.Error != tt.expectErr {
@@ -163,7 +160,7 @@ func TestTLSHandshake(t *testing.T) {
 				if res.State.Conn != tt.expectConn {
 					t.Fatalf("unexpected conn %v", res.State.Conn)
 				}
-				pool.Close()
+				rt.Close()
 				if wasClosed != tt.closed {
 					t.Fatalf("unexpected connection closed state %v", wasClosed)
 				}
@@ -185,10 +182,9 @@ func TestServerNameTLS(t *testing.T) {
 		sni := "sni"
 		tcpConn := TCPConnection{
 			Address: "example.com:123",
-			Logger:  model.DiscardLogger,
 		}
 		f := &tlsHandshakeFunc{
-			Pool:       &ConnPool{},
+			Rt:         NewMinimalRuntime(model.DiscardLogger, time.Now()),
 			ServerName: sni,
 		}
 		serverName := f.serverName(&tcpConn)
@@ -201,10 +197,9 @@ func TestServerNameTLS(t *testing.T) {
 		tcpConn := TCPConnection{
 			Address: "example.com:123",
 			Domain:  domain,
-			Logger:  model.DiscardLogger,
 		}
 		f := &tlsHandshakeFunc{
-			Pool: &ConnPool{},
+			Rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
 		}
 		serverName := f.serverName(&tcpConn)
 		if serverName != domain {
@@ -215,10 +210,9 @@ func TestServerNameTLS(t *testing.T) {
 		hostaddr := "example.com"
 		tcpConn := TCPConnection{
 			Address: hostaddr + ":123",
-			Logger:  model.DiscardLogger,
 		}
 		f := &tlsHandshakeFunc{
-			Pool: &ConnPool{},
+			Rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
 		}
 		serverName := f.serverName(&tcpConn)
 		if serverName != hostaddr {
@@ -229,10 +223,9 @@ func TestServerNameTLS(t *testing.T) {
 		ip := "1.1.1.1"
 		tcpConn := TCPConnection{
 			Address: ip,
-			Logger:  model.DiscardLogger,
 		}
 		f := &tlsHandshakeFunc{
-			Pool: &ConnPool{},
+			Rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
 		}
 		serverName := f.serverName(&tcpConn)
 		if serverName != "" {
@@ -246,7 +239,7 @@ func TestHandshakerOrDefault(t *testing.T) {
 	f := &tlsHandshakeFunc{
 		InsecureSkipVerify: false,
 		NextProto:          []string{},
-		Pool:               &ConnPool{},
+		Rt:                 NewMinimalRuntime(model.DiscardLogger, time.Now()),
 		RootCAs:            &x509.CertPool{},
 		ServerName:         "",
 		handshaker:         nil,

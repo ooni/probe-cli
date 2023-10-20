@@ -43,7 +43,6 @@ import (
 	"context"
 	"errors"
 	"net"
-	"sync/atomic"
 
 	"github.com/ooni/probe-cli/v3/internal/dslx"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -133,7 +132,6 @@ of dslx pipelines a unique identifier).
 ```Go
 type Measurer struct {
 	config Config
-	idGen  atomic.Int64
 }
 
 var _ model.ExperimentMeasurer = &Measurer{}
@@ -176,15 +174,6 @@ So, this is where we will use `dslx` to implement the SNI blocking experiment.
 
 ```Go
 func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
-```
-
-### Define measurement parameters
-
-`sess` is the session of this measurement run.
-
-```Go
-	sess := args.Session
-
 ```
 
 `measurement` contains metadata, the (required) input in form of
@@ -249,10 +238,16 @@ experiment's start time.
 ```Go
 	dnsInput := dslx.NewDomainToResolve(
 		dslx.DomainName(thaddrHost),
-		dslx.DNSLookupOptionIDGenerator(&m.idGen),
-		dslx.DNSLookupOptionLogger(sess.Logger()),
-		dslx.DNSLookupOptionZeroTime(measurement.MeasurementStartTimeSaved),
 	)
+
+```
+
+Next, we create a minimal runtime. This data structure helps us to manage
+open connections and close them when `rt.Close` is invoked.
+
+```Go
+	rt := dslx.NewMinimalRuntime(args.Session.Logger(), args.Measurement.MeasurementStartTimeSaved)
+	defer rt.Close()
 
 ```
 
@@ -260,7 +255,7 @@ We construct the resolver dslx function which can be - like in this case - the
 system resolver, or a custom UDP resolver.
 
 ```Go
-	lookupFn := dslx.DNSLookupGetaddrinfo()
+	lookupFn := dslx.DNSLookupGetaddrinfo(rt)
 
 ```
 
@@ -322,21 +317,9 @@ the protocol, address, and port three-tuple.)
 		dslx.EndpointNetwork("tcp"),
 		dslx.EndpointPort(443),
 		dslx.EndpointOptionDomain(m.config.TestHelperAddress),
-		dslx.EndpointOptionIDGenerator(&m.idGen),
-		dslx.EndpointOptionLogger(sess.Logger()),
-		dslx.EndpointOptionZeroTime(measurement.MeasurementStartTimeSaved),
 	)
 	runtimex.Assert(len(endpoints) >= 1, "expected at least one endpoint here")
 	endpoint := endpoints[0]
-
-```
-
-Next, we create a connection pool. This data structure helps us to manage
-open connections and close them when `connpool.Close` is invoked.
-
-```Go
-	connpool := &dslx.ConnPool{}
-	defer connpool.Close()
 
 ```
 
@@ -350,9 +333,9 @@ target SNI to be used within the TLS Client Hello.
 
 ```Go
 	pipelineTarget := dslx.Compose2(
-		dslx.TCPConnect(connpool),
+		dslx.TCPConnect(rt),
 		dslx.TLSHandshake(
-			connpool,
+			rt,
 			dslx.TLSHandshakeOptionServerName(targetSNI),
 		),
 	)
@@ -364,9 +347,9 @@ specify the *control* SNI to be used within the TLS Client Hello.
 
 ```Go
 	pipelineControl := dslx.Compose2(
-		dslx.TCPConnect(connpool),
+		dslx.TCPConnect(rt),
 		dslx.TLSHandshake(
-			connpool,
+			rt,
 			dslx.TLSHandshakeOptionServerName(m.config.ControlSNI),
 		),
 	)

@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"net"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -17,7 +16,7 @@ import (
 func TestTCPConnect(t *testing.T) {
 	t.Run("Get tcpConnectFunc", func(t *testing.T) {
 		f := TCPConnect(
-			&ConnPool{},
+			NewMinimalRuntime(model.DiscardLogger, time.Now()),
 		)
 		if _, ok := f.(*tcpConnectFunc); !ok {
 			t.Fatal("unexpected type. Expected: tcpConnectFunc")
@@ -69,15 +68,12 @@ func TestTCPConnect(t *testing.T) {
 
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {
-				pool := &ConnPool{}
-				tcpConnect := &tcpConnectFunc{pool, tt.dialer}
+				rt := NewRuntimeMeasurexLite(model.DiscardLogger, time.Now())
+				tcpConnect := &tcpConnectFunc{tt.dialer, rt}
 				endpoint := &Endpoint{
-					Address:     "1.2.3.4:567",
-					Network:     "tcp",
-					IDGenerator: &atomic.Int64{},
-					Logger:      model.DiscardLogger,
-					Tags:        tt.tags,
-					ZeroTime:    time.Time{},
+					Address: "1.2.3.4:567",
+					Network: "tcp",
+					Tags:    tt.tags,
 				}
 				res := tcpConnect.Apply(context.Background(), endpoint)
 				if res.Error != tt.expectErr {
@@ -86,7 +82,7 @@ func TestTCPConnect(t *testing.T) {
 				if res.State == nil || res.State.Conn != tt.expectConn {
 					t.Fatal("unexpected conn")
 				}
-				pool.Close()
+				rt.Close()
 				if wasClosed != tt.closed {
 					t.Fatalf("unexpected connection closed state: %v", wasClosed)
 				}
@@ -107,7 +103,7 @@ func TestTCPConnect(t *testing.T) {
 // Make sure we get a valid dialer if no mocked dialer is configured
 func TestDialerOrDefault(t *testing.T) {
 	f := &tcpConnectFunc{
-		p:      &ConnPool{},
+		rt:     NewMinimalRuntime(model.DiscardLogger, time.Now()),
 		dialer: nil,
 	}
 	dialer := f.dialerOrDefault(measurexlite.NewTrace(0, time.Now()), model.DiscardLogger)

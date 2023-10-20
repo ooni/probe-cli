@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"io"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -29,7 +28,7 @@ func TestQUICHandshake(t *testing.T) {
 		certpool.AddCert(&x509.Certificate{})
 
 		f := QUICHandshake(
-			&ConnPool{},
+			NewMinimalRuntime(model.DiscardLogger, time.Now()),
 			QUICHandshakeOptionInsecureSkipVerify(true),
 			QUICHandshakeOptionServerName("sni"),
 			QUICHandshakeOptionRootCAs(certpool),
@@ -99,19 +98,16 @@ func TestQUICHandshake(t *testing.T) {
 
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {
-				pool := &ConnPool{}
+				rt := NewRuntimeMeasurexLite(model.DiscardLogger, time.Now())
 				quicHandshake := &quicHandshakeFunc{
-					Pool:       pool,
+					Rt:         rt,
 					dialer:     tt.dialer,
 					ServerName: tt.sni,
 				}
 				endpoint := &Endpoint{
-					Address:     "1.2.3.4:567",
-					Network:     "udp",
-					IDGenerator: &atomic.Int64{},
-					Logger:      model.DiscardLogger,
-					Tags:        tt.tags,
-					ZeroTime:    time.Time{},
+					Address: "1.2.3.4:567",
+					Network: "udp",
+					Tags:    tt.tags,
 				}
 				res := quicHandshake.Apply(context.Background(), endpoint)
 				if res.Error != tt.expectErr {
@@ -120,7 +116,7 @@ func TestQUICHandshake(t *testing.T) {
 				if res.State == nil || res.State.QUICConn != tt.expectConn {
 					t.Fatal("unexpected conn")
 				}
-				pool.Close()
+				rt.Close()
 				if wasClosed != tt.closed {
 					t.Fatalf("unexpected connection closed state: %v", wasClosed)
 				}
@@ -137,13 +133,10 @@ func TestQUICHandshake(t *testing.T) {
 		}
 
 		t.Run("with nil dialer", func(t *testing.T) {
-			quicHandshake := &quicHandshakeFunc{Pool: &ConnPool{}, dialer: nil}
+			quicHandshake := &quicHandshakeFunc{Rt: NewMinimalRuntime(model.DiscardLogger, time.Now()), dialer: nil}
 			endpoint := &Endpoint{
-				Address:     "1.2.3.4:567",
-				Network:     "udp",
-				IDGenerator: &atomic.Int64{},
-				Logger:      model.DiscardLogger,
-				ZeroTime:    time.Time{},
+				Address: "1.2.3.4:567",
+				Network: "udp",
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel()
@@ -171,9 +164,8 @@ func TestServerNameQUIC(t *testing.T) {
 		sni := "sni"
 		endpoint := &Endpoint{
 			Address: "example.com:123",
-			Logger:  model.DiscardLogger,
 		}
-		f := &quicHandshakeFunc{Pool: &ConnPool{}, ServerName: sni}
+		f := &quicHandshakeFunc{Rt: NewMinimalRuntime(model.DiscardLogger, time.Now()), ServerName: sni}
 		serverName := f.serverName(endpoint)
 		if serverName != sni {
 			t.Fatalf("unexpected server name: %s", serverName)
@@ -185,9 +177,8 @@ func TestServerNameQUIC(t *testing.T) {
 		endpoint := &Endpoint{
 			Address: "example.com:123",
 			Domain:  domain,
-			Logger:  model.DiscardLogger,
 		}
-		f := &quicHandshakeFunc{Pool: &ConnPool{}}
+		f := &quicHandshakeFunc{Rt: NewMinimalRuntime(model.DiscardLogger, time.Now())}
 		serverName := f.serverName(endpoint)
 		if serverName != domain {
 			t.Fatalf("unexpected server name: %s", serverName)
@@ -198,9 +189,8 @@ func TestServerNameQUIC(t *testing.T) {
 		hostaddr := "example.com"
 		endpoint := &Endpoint{
 			Address: hostaddr + ":123",
-			Logger:  model.DiscardLogger,
 		}
-		f := &quicHandshakeFunc{Pool: &ConnPool{}}
+		f := &quicHandshakeFunc{Rt: NewMinimalRuntime(model.DiscardLogger, time.Now())}
 		serverName := f.serverName(endpoint)
 		if serverName != hostaddr {
 			t.Fatalf("unexpected server name: %s", serverName)
@@ -211,9 +201,8 @@ func TestServerNameQUIC(t *testing.T) {
 		ip := "1.1.1.1"
 		endpoint := &Endpoint{
 			Address: ip,
-			Logger:  model.DiscardLogger,
 		}
-		f := &quicHandshakeFunc{Pool: &ConnPool{}}
+		f := &quicHandshakeFunc{Rt: NewMinimalRuntime(model.DiscardLogger, time.Now())}
 		serverName := f.serverName(endpoint)
 		if serverName != "" {
 			t.Fatalf("unexpected server name: %s", serverName)
