@@ -7,13 +7,32 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/memoryless"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// Sampler periodically samples the bytes sent and received by a [*measurexlite.Trace]. The zero
+// Trace is the [*measurexlite.Trace] abstraction used by this package.
+type Trace interface {
+	// CloneBytesReceivedMap returns a clone of the internal bytes received map. The key of the
+	// map is a string following the "EPNT_ADDRESS PROTO" pattern where the "EPNT_ADDRESS" contains
+	// the endpoint address and "PROTO" is "tcp" or "udp".
+	CloneBytesReceivedMap() (out map[string]int64)
+
+	// Index returns the unique index used by this trace.
+	Index() int64
+
+	// Tags returns the trace tags.
+	Tags() []string
+
+	// TimeSince is equivalent to Trace.TimeNow().Sub(t0).
+	TimeSince(t0 time.Time) time.Duration
+
+	// ZeroTime returns the "zero" time of this trace.
+	ZeroTime() time.Time
+}
+
+// Sampler periodically samples the bytes sent and received by a [Trace]. The zero
 // value of this structure is invalid; please, construct using [NewSampler].
 type Sampler struct {
 	// cancel tells the background goroutine to stop
@@ -29,16 +48,16 @@ type Sampler struct {
 	q []*model.ArchivalNetworkEvent
 
 	// tx is the trace we are sampling from
-	tx *measurexlite.Trace
+	tx Trace
 
 	// wg is the waitgroup to wait for the sampler to join
 	wg *sync.WaitGroup
 }
 
-// NewSampler attaches a [*Sampler] to a [*measurexlite.Trace], starts sampling in the
+// NewSampler attaches a [*Sampler] to a [Trace], starts sampling in the
 // background and returns the [*Sampler]. Remember to call [*Sampler.Close] to stop
 // the background goroutine that performs the sampling.
-func NewSampler(tx *measurexlite.Trace) *Sampler {
+func NewSampler(tx Trace) *Sampler {
 	ctx, cancel := context.WithCancel(context.Background())
 	smpl := &Sampler{
 		cancel: cancel,
@@ -95,7 +114,7 @@ const BytesReceivedCumulativeOperation = "bytes_received_cumulative"
 
 func (smpl *Sampler) collectSnapshot(stats map[string]int64) {
 	// compute just once the events sampling time
-	now := smpl.tx.TimeSince(smpl.tx.ZeroTime).Seconds()
+	now := smpl.tx.TimeSince(smpl.tx.ZeroTime()).Seconds()
 
 	// process each entry
 	for key, count := range stats {
@@ -116,7 +135,7 @@ func (smpl *Sampler) collectSnapshot(stats map[string]int64) {
 			Proto:         network,
 			T0:            now,
 			T:             now,
-			TransactionID: smpl.tx.Index,
+			TransactionID: smpl.tx.Index(),
 			Tags:          smpl.tx.Tags(),
 		}
 

@@ -44,7 +44,6 @@ import (
 	"context"
 	"errors"
 	"net"
-	"sync/atomic"
 
 	"github.com/ooni/probe-cli/v3/internal/dslx"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -134,7 +133,6 @@ func (tk *Subresult) mergeObservations(obs []*dslx.Observations) {
 // ```Go
 type Measurer struct {
 	config Config
-	idGen  atomic.Int64
 }
 
 var _ model.ExperimentMeasurer = &Measurer{}
@@ -177,15 +175,6 @@ func (m *Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, 
 //
 // ```Go
 func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
-	// ```
-	//
-	// ### Define measurement parameters
-	//
-	// `sess` is the session of this measurement run.
-	//
-	// ```Go
-	sess := args.Session
-
 	// ```
 	//
 	// `measurement` contains metadata, the (required) input in form of
@@ -250,10 +239,16 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	// ```Go
 	dnsInput := dslx.NewDomainToResolve(
 		dslx.DomainName(thaddrHost),
-		dslx.DNSLookupOptionIDGenerator(&m.idGen),
-		dslx.DNSLookupOptionLogger(sess.Logger()),
-		dslx.DNSLookupOptionZeroTime(measurement.MeasurementStartTimeSaved),
 	)
+
+	// ```
+	//
+	// Next, we create a minimal runtime. This data structure helps us to manage
+	// open connections and close them when `rt.Close` is invoked.
+	//
+	// ```Go
+	rt := dslx.NewMinimalRuntime(args.Session.Logger(), args.Measurement.MeasurementStartTimeSaved)
+	defer rt.Close()
 
 	// ```
 	//
@@ -261,7 +256,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	// system resolver, or a custom UDP resolver.
 	//
 	// ```Go
-	lookupFn := dslx.DNSLookupGetaddrinfo()
+	lookupFn := dslx.DNSLookupGetaddrinfo(rt)
 
 	// ```
 	//
@@ -323,21 +318,9 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		dslx.EndpointNetwork("tcp"),
 		dslx.EndpointPort(443),
 		dslx.EndpointOptionDomain(m.config.TestHelperAddress),
-		dslx.EndpointOptionIDGenerator(&m.idGen),
-		dslx.EndpointOptionLogger(sess.Logger()),
-		dslx.EndpointOptionZeroTime(measurement.MeasurementStartTimeSaved),
 	)
 	runtimex.Assert(len(endpoints) >= 1, "expected at least one endpoint here")
 	endpoint := endpoints[0]
-
-	// ```
-	//
-	// Next, we create a connection pool. This data structure helps us to manage
-	// open connections and close them when `connpool.Close` is invoked.
-	//
-	// ```Go
-	connpool := &dslx.ConnPool{}
-	defer connpool.Close()
 
 	// ```
 	//
@@ -351,9 +334,9 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	//
 	// ```Go
 	pipelineTarget := dslx.Compose2(
-		dslx.TCPConnect(connpool),
+		dslx.TCPConnect(rt),
 		dslx.TLSHandshake(
-			connpool,
+			rt,
 			dslx.TLSHandshakeOptionServerName(targetSNI),
 		),
 	)
@@ -365,9 +348,9 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	//
 	// ```Go
 	pipelineControl := dslx.Compose2(
-		dslx.TCPConnect(connpool),
+		dslx.TCPConnect(rt),
 		dslx.TLSHandshake(
-			connpool,
+			rt,
 			dslx.TLSHandshakeOptionServerName(m.config.ControlSNI),
 		),
 	)

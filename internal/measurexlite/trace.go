@@ -25,10 +25,8 @@ import (
 //
 // [step-by-step measurements]: https://github.com/ooni/probe-cli/blob/master/docs/design/dd-003-step-by-step.md
 type Trace struct {
-	// Index is the unique index of this trace within the
-	// current measurement. Note that this field MUST be read-only. Writing it
-	// once you have constructed a trace MAY lead to data races.
-	Index int64
+	// index is the unique index of this trace within the current measurement.
+	index int64
 
 	// Netx is the network to use for measuring. The constructor inits this
 	// field using a [*netxlite.Netx]. You MAY override this field for testing. Make
@@ -69,10 +67,8 @@ type Trace struct {
 	// to produce deterministic timing when testing.
 	timeNowFn func() time.Time
 
-	// ZeroTime is the time when we started the current measurement. This field
-	// MUST be read-only. Writing it once you have constructed the trace will
-	// likely read to data races.
-	ZeroTime time.Time
+	// zeroTime is the time when we started the current measurement.
+	zeroTime time.Time
 }
 
 var _ model.MeasuringNetwork = &Trace{}
@@ -111,7 +107,7 @@ const QUICHandshakeBufferSize = 8
 // to identify that some traces belong to some submeasurements).
 func NewTrace(index int64, zeroTime time.Time, tags ...string) *Trace {
 	return &Trace{
-		Index:            index,
+		index:            index,
 		Netx:             &netxlite.Netx{Underlying: nil}, // use the host network
 		bytesReceivedMap: make(map[string]int64),
 		bytesReceivedMu:  &sync.Mutex{},
@@ -141,8 +137,18 @@ func NewTrace(index int64, zeroTime time.Time, tags ...string) *Trace {
 		),
 		tags:      tags,
 		timeNowFn: nil, // use default
-		ZeroTime:  zeroTime,
+		zeroTime:  zeroTime,
 	}
+}
+
+// Index returns the trace index.
+func (tx *Trace) Index() int64 {
+	return tx.index
+}
+
+// ZeroTime returns trace's zero time.
+func (tx *Trace) ZeroTime() time.Time {
+	return tx.zeroTime
 }
 
 // TimeNow implements model.Trace.TimeNow.

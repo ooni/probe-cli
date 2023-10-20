@@ -10,7 +10,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"sync/atomic"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
@@ -32,12 +31,6 @@ type HTTPTransport struct {
 	// Domain is the OPTIONAL domain from which the address was resolved.
 	Domain string
 
-	// IDGenerator is the MANDATORY ID generator.
-	IDGenerator *atomic.Int64
-
-	// Logger is the MANDATORY logger to use.
-	Logger model.Logger
-
 	// Network is the MANDATORY network used by the underlying conn.
 	Network string
 
@@ -48,13 +41,10 @@ type HTTPTransport struct {
 	TLSNegotiatedProtocol string
 
 	// Trace is the MANDATORY trace we're using.
-	Trace *measurexlite.Trace
+	Trace Trace
 
 	// Transport is the MANDATORY HTTP transport we're using.
 	Transport model.HTTPTransport
-
-	// ZeroTime is the MANDATORY zero time of the measurement.
-	ZeroTime time.Time
 }
 
 // HTTPRequestOption is an option you can pass to HTTPRequest.
@@ -110,8 +100,8 @@ func HTTPRequestOptionUserAgent(value string) HTTPRequestOption {
 }
 
 // HTTPRequest issues an HTTP request using a transport and returns a response.
-func HTTPRequest(options ...HTTPRequestOption) Func[*HTTPTransport, *Maybe[*HTTPResponse]] {
-	f := &httpRequestFunc{}
+func HTTPRequest(rt Runtime, options ...HTTPRequestOption) Func[*HTTPTransport, *Maybe[*HTTPResponse]] {
+	f := &httpRequestFunc{Rt: rt}
 	for _, option := range options {
 		option(f)
 	}
@@ -134,6 +124,9 @@ type httpRequestFunc struct {
 
 	// Referer is the OPTIONAL referer header.
 	Referer string
+
+	// Rt is the MANDATORY runtime.
+	Rt Runtime
 
 	// URLPath is the OPTIONAL URL path.
 	URLPath string
@@ -162,9 +155,9 @@ func (f *httpRequestFunc) Apply(
 
 		// start the operation logger
 		ol := logx.NewOperationLogger(
-			input.Logger,
+			f.Rt.Logger(),
 			"[#%d] HTTPRequest %s with %s/%s host=%s",
-			input.Trace.Index,
+			input.Trace.Index(),
 			req.URL.String(),
 			input.Address,
 			input.Network,
@@ -186,11 +179,8 @@ func (f *httpRequestFunc) Apply(
 		HTTPRequest:              req,  // possibly nil
 		HTTPResponse:             resp, // possibly nil
 		HTTPResponseBodySnapshot: body, // possibly nil
-		IDGenerator:              input.IDGenerator,
-		Logger:                   input.Logger,
 		Network:                  input.Network,
 		Trace:                    input.Trace,
-		ZeroTime:                 input.ZeroTime,
 	}
 
 	return &Maybe[*HTTPResponse]{
@@ -262,7 +252,7 @@ func (f *httpRequestFunc) urlHost(input *HTTPTransport) string {
 	}
 	addr, port, err := net.SplitHostPort(input.Address)
 	if err != nil {
-		input.Logger.Warnf("httpRequestFunc: cannot SplitHostPort for input.Address")
+		f.Rt.Logger().Warnf("httpRequestFunc: cannot SplitHostPort for input.Address")
 		return input.Address
 	}
 	switch {
@@ -288,7 +278,7 @@ func (f *httpRequestFunc) do(
 	req *http.Request,
 ) (*http.Response, []byte, []*Observations, error) {
 	const maxbody = 1 << 19 // TODO(bassosimone): allow to configure this value?
-	started := input.Trace.TimeSince(input.Trace.ZeroTime)
+	started := input.Trace.TimeSince(input.Trace.ZeroTime())
 
 	// manually create a single 1-length observations structure because
 	// the trace cannot automatically capture HTTP events
@@ -298,7 +288,7 @@ func (f *httpRequestFunc) do(
 
 	observations[0].NetworkEvents = append(observations[0].NetworkEvents,
 		measurexlite.NewAnnotationArchivalNetworkEvent(
-			input.Trace.Index,
+			input.Trace.Index(),
 			started,
 			"http_transaction_start",
 			input.Trace.Tags()...,
@@ -321,11 +311,11 @@ func (f *httpRequestFunc) do(
 		samples := sampler.ExtractSamples()
 		observations[0].NetworkEvents = append(observations[0].NetworkEvents, samples...)
 	}
-	finished := input.Trace.TimeSince(input.Trace.ZeroTime)
+	finished := input.Trace.TimeSince(input.Trace.ZeroTime())
 
 	observations[0].NetworkEvents = append(observations[0].NetworkEvents,
 		measurexlite.NewAnnotationArchivalNetworkEvent(
-			input.Trace.Index,
+			input.Trace.Index(),
 			finished,
 			"http_transaction_done",
 			input.Trace.Tags()...,
@@ -333,7 +323,7 @@ func (f *httpRequestFunc) do(
 
 	observations[0].Requests = append(observations[0].Requests,
 		measurexlite.NewArchivalHTTPRequestResult(
-			input.Trace.Index,
+			input.Trace.Index(),
 			started,
 			input.Network,
 			input.Address,
@@ -369,19 +359,10 @@ type HTTPResponse struct {
 	// HTTPResponseBodySnapshot is the response body or nil if Err != nil.
 	HTTPResponseBodySnapshot []byte
 
-	// IDGenerator is the MANDATORY ID generator.
-	IDGenerator *atomic.Int64
-
-	// Logger is the MANDATORY logger to use.
-	Logger model.Logger
-
 	// Network is the MANDATORY network we're connected to.
 	Network string
 
 	// Trace is the MANDATORY trace we're using. The trace is drained
 	// when you call the Observations method.
-	Trace *measurexlite.Trace
-
-	// ZeroTime is the MANDATORY zero time of the measurement.
-	ZeroTime time.Time
+	Trace Trace
 }

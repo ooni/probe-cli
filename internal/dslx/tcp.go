@@ -7,25 +7,23 @@ package dslx
 import (
 	"context"
 	"net"
-	"sync/atomic"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
-	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // TCPConnect returns a function that establishes TCP connections.
-func TCPConnect(pool *ConnPool) Func[*Endpoint, *Maybe[*TCPConnection]] {
-	f := &tcpConnectFunc{pool, nil}
+func TCPConnect(rt Runtime) Func[*Endpoint, *Maybe[*TCPConnection]] {
+	f := &tcpConnectFunc{nil, rt}
 	return f
 }
 
 // tcpConnectFunc is a function that establishes TCP connections.
 type tcpConnectFunc struct {
-	p      *ConnPool
 	dialer model.Dialer // for testing
+	rt     Runtime
 }
 
 // Apply applies the function to its arguments.
@@ -33,13 +31,13 @@ func (f *tcpConnectFunc) Apply(
 	ctx context.Context, input *Endpoint) *Maybe[*TCPConnection] {
 
 	// create trace
-	trace := measurexlite.NewTrace(input.IDGenerator.Add(1), input.ZeroTime, input.Tags...)
+	trace := f.rt.NewTrace(f.rt.IDGenerator().Add(1), f.rt.ZeroTime(), input.Tags...)
 
 	// start the operation logger
 	ol := logx.NewOperationLogger(
-		input.Logger,
+		f.rt.Logger(),
 		"[#%d] TCPConnect %s",
-		trace.Index,
+		trace.Index(),
 		input.Address,
 	)
 
@@ -49,26 +47,23 @@ func (f *tcpConnectFunc) Apply(
 	defer cancel()
 
 	// obtain the dialer to use
-	dialer := f.dialerOrDefault(trace, input.Logger)
+	dialer := f.dialerOrDefault(trace, f.rt.Logger())
 
 	// connect
 	conn, err := dialer.DialContext(ctx, "tcp", input.Address)
 
 	// possibly register established conn for late close
-	f.p.MaybeTrack(conn)
+	f.rt.MaybeTrackConn(conn)
 
 	// stop the operation logger
 	ol.Stop(err)
 
 	state := &TCPConnection{
-		Address:     input.Address,
-		Conn:        conn, // possibly nil
-		Domain:      input.Domain,
-		IDGenerator: input.IDGenerator,
-		Logger:      input.Logger,
-		Network:     input.Network,
-		Trace:       trace,
-		ZeroTime:    input.ZeroTime,
+		Address: input.Address,
+		Conn:    conn, // possibly nil
+		Domain:  input.Domain,
+		Network: input.Network,
+		Trace:   trace,
 	}
 
 	return &Maybe[*TCPConnection]{
@@ -80,7 +75,7 @@ func (f *tcpConnectFunc) Apply(
 }
 
 // dialerOrDefault is the function used to obtain a dialer
-func (f *tcpConnectFunc) dialerOrDefault(trace *measurexlite.Trace, logger model.Logger) model.Dialer {
+func (f *tcpConnectFunc) dialerOrDefault(trace Trace, logger model.Logger) model.Dialer {
 	dialer := f.dialer
 	if dialer == nil {
 		dialer = trace.NewDialerWithoutResolver(logger)
@@ -100,18 +95,9 @@ type TCPConnection struct {
 	// Domain is the OPTIONAL domain from which we resolved the Address.
 	Domain string
 
-	// IDGenerator is the MANDATORY ID generator.
-	IDGenerator *atomic.Int64
-
-	// Logger is the MANDATORY logger to use.
-	Logger model.Logger
-
 	// Network is the MANDATORY network we tried to use when connecting.
 	Network string
 
 	// Trace is the MANDATORY trace we're using.
-	Trace *measurexlite.Trace
-
-	// ZeroTime is the MANDATORY zero time of the measurement.
-	ZeroTime time.Time
+	Trace Trace
 }

@@ -242,9 +242,9 @@ func (t *CleartextFlow) newHTTPRequest(ctx context.Context) (*http.Request, erro
 func (t *CleartextFlow) httpTransaction(ctx context.Context, network, address, alpn string,
 	txp model.HTTPTransport, req *http.Request, trace *measurexlite.Trace) (*http.Response, []byte, error) {
 	const maxbody = 1 << 19
-	started := trace.TimeSince(trace.ZeroTime)
+	started := trace.TimeSince(trace.ZeroTime())
 	t.TestKeys.AppendNetworkEvents(measurexlite.NewAnnotationArchivalNetworkEvent(
-		trace.Index, started, "http_transaction_start",
+		trace.Index(), started, "http_transaction_start",
 	))
 	resp, err := txp.RoundTrip(req)
 	var body []byte
@@ -256,12 +256,12 @@ func (t *CleartextFlow) httpTransaction(ctx context.Context, network, address, a
 		reader := io.LimitReader(resp.Body, maxbody)
 		body, err = StreamAllContext(ctx, reader)
 	}
-	finished := trace.TimeSince(trace.ZeroTime)
+	finished := trace.TimeSince(trace.ZeroTime())
 	t.TestKeys.AppendNetworkEvents(measurexlite.NewAnnotationArchivalNetworkEvent(
-		trace.Index, finished, "http_transaction_done",
+		trace.Index(), finished, "http_transaction_done",
 	))
 	ev := measurexlite.NewArchivalHTTPRequestResult(
-		trace.Index,
+		trace.Index(),
 		started,
 		network,
 		address,

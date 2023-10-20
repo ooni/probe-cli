@@ -30,25 +30,12 @@ func TestNewDomainToResolve(t *testing.T) {
 		t.Run("with options", func(t *testing.T) {
 			idGen := &atomic.Int64{}
 			idGen.Add(42)
-			zt := time.Now()
 			domainToResolve := NewDomainToResolve(
 				DomainName("www.example.com"),
-				DNSLookupOptionIDGenerator(idGen),
-				DNSLookupOptionLogger(model.DiscardLogger),
-				DNSLookupOptionZeroTime(zt),
 				DNSLookupOptionTags("antani"),
 			)
 			if domainToResolve.Domain != "www.example.com" {
 				t.Fatalf("unexpected domain")
-			}
-			if domainToResolve.IDGenerator != idGen {
-				t.Fatalf("unexpected id generator")
-			}
-			if domainToResolve.Logger != model.DiscardLogger {
-				t.Fatalf("unexpected logger")
-			}
-			if domainToResolve.ZeroTime != zt {
-				t.Fatalf("unexpected zerotime")
 			}
 			if diff := cmp.Diff([]string{"antani"}, domainToResolve.Tags); diff != "" {
 				t.Fatal(diff)
@@ -67,7 +54,7 @@ Test cases:
 */
 func TestGetaddrinfo(t *testing.T) {
 	t.Run("Get dnsLookupGetaddrinfoFunc", func(t *testing.T) {
-		f := DNSLookupGetaddrinfo()
+		f := DNSLookupGetaddrinfo(NewMinimalRuntime(model.DiscardLogger, time.Now()))
 		if _, ok := f.(*dnsLookupGetaddrinfoFunc); !ok {
 			t.Fatal("unexpected type, want dnsLookupGetaddrinfoFunc")
 		}
@@ -75,15 +62,14 @@ func TestGetaddrinfo(t *testing.T) {
 
 	t.Run("Apply dnsLookupGetaddrinfoFunc", func(t *testing.T) {
 		domain := &DomainToResolve{
-			Domain:      "example.com",
-			Logger:      model.DiscardLogger,
-			IDGenerator: &atomic.Int64{},
-			Tags:        []string{"antani"},
-			ZeroTime:    time.Time{},
+			Domain: "example.com",
+			Tags:   []string{"antani"},
 		}
 
 		t.Run("with nil resolver", func(t *testing.T) {
-			f := dnsLookupGetaddrinfoFunc{}
+			f := dnsLookupGetaddrinfoFunc{
+				rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
+			}
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel() // immediately cancel the lookup
 			res := f.Apply(ctx, domain)
@@ -101,6 +87,7 @@ func TestGetaddrinfo(t *testing.T) {
 				resolver: &mocks.Resolver{MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 					return nil, mockedErr
 				}},
+				rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
 			}
 			res := f.Apply(context.Background(), domain)
 			if res.Observations == nil || len(res.Observations) <= 0 {
@@ -122,6 +109,7 @@ func TestGetaddrinfo(t *testing.T) {
 				resolver: &mocks.Resolver{MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 					return []string{"93.184.216.34"}, nil
 				}},
+				rt: NewRuntimeMeasurexLite(model.DiscardLogger, time.Now()),
 			}
 			res := f.Apply(context.Background(), domain)
 			if res.Observations == nil || len(res.Observations) <= 0 {
@@ -153,7 +141,8 @@ Test cases:
 */
 func TestLookupUDP(t *testing.T) {
 	t.Run("Get dnsLookupUDPFunc", func(t *testing.T) {
-		f := DNSLookupUDP("1.1.1.1:53")
+		rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
+		f := DNSLookupUDP(rt, "1.1.1.1:53")
 		if _, ok := f.(*dnsLookupUDPFunc); !ok {
 			t.Fatal("unexpected type, want dnsLookupUDPFunc")
 		}
@@ -161,15 +150,12 @@ func TestLookupUDP(t *testing.T) {
 
 	t.Run("Apply dnsLookupGetaddrinfoFunc", func(t *testing.T) {
 		domain := &DomainToResolve{
-			Domain:      "example.com",
-			Logger:      model.DiscardLogger,
-			IDGenerator: &atomic.Int64{},
-			Tags:        []string{"antani"},
-			ZeroTime:    time.Time{},
+			Domain: "example.com",
+			Tags:   []string{"antani"},
 		}
 
 		t.Run("with nil resolver", func(t *testing.T) {
-			f := dnsLookupUDPFunc{Resolver: "1.1.1.1:53"}
+			f := dnsLookupUDPFunc{Resolver: "1.1.1.1:53", rt: NewMinimalRuntime(model.DiscardLogger, time.Now())}
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel()
 			res := f.Apply(ctx, domain)
@@ -188,6 +174,7 @@ func TestLookupUDP(t *testing.T) {
 				mockResolver: &mocks.Resolver{MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 					return nil, mockedErr
 				}},
+				rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
 			}
 			res := f.Apply(context.Background(), domain)
 			if res.Observations == nil || len(res.Observations) <= 0 {
@@ -210,6 +197,7 @@ func TestLookupUDP(t *testing.T) {
 				mockResolver: &mocks.Resolver{MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 					return []string{"93.184.216.34"}, nil
 				}},
+				rt: NewRuntimeMeasurexLite(model.DiscardLogger, time.Now()),
 			}
 			res := f.Apply(context.Background(), domain)
 			if res.Observations == nil || len(res.Observations) <= 0 {

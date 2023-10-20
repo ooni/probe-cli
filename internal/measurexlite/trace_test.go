@@ -25,7 +25,7 @@ func TestNewTrace(t *testing.T) {
 		trace := NewTrace(index, zeroTime)
 
 		t.Run("Index", func(t *testing.T) {
-			if trace.Index != index {
+			if trace.Index() != index {
 				t.Fatal("invalid index")
 			}
 		})
@@ -164,7 +164,7 @@ func TestNewTrace(t *testing.T) {
 		})
 
 		t.Run("ZeroTime", func(t *testing.T) {
-			if !trace.ZeroTime.Equal(zeroTime) {
+			if !trace.ZeroTime().Equal(zeroTime) {
 				t.Fatal("invalid zero time")
 			}
 		})

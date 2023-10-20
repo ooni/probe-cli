@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -31,26 +30,23 @@ func TestMakeSureWeCollectSpeedSamples(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// instantiate a connection pool
-	pool := &ConnPool{}
-	defer pool.Close()
+	// instantiate a runtime
+	rt := NewRuntimeMeasurexLite(model.DiscardLogger, time.Now())
+	defer rt.Close()
 
 	// create a measuring function
 	f0 := Compose3(
-		TCPConnect(pool),
-		HTTPTransportTCP(),
-		HTTPRequest(),
+		TCPConnect(rt),
+		HTTPTransportTCP(rt),
+		HTTPRequest(rt),
 	)
 
 	// create the endpoint to measure
 	epnt := &Endpoint{
-		Address:     server.Listener.Addr().String(),
-		Domain:      "",
-		IDGenerator: &atomic.Int64{},
-		Logger:      model.DiscardLogger,
-		Network:     "tcp",
-		Tags:        []string{},
-		ZeroTime:    time.Now(),
+		Address: server.Listener.Addr().String(),
+		Domain:  "",
+		Network: "tcp",
+		Tags:    []string{},
 	}
 
 	// measure the endpoint
