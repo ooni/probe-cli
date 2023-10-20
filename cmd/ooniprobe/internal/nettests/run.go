@@ -78,7 +78,7 @@ func RunGroup(config RunGroupConfig) error {
 		return err
 	}
 	if err := sess.MaybeLookupBackends(); err != nil {
-		log.WithError(err).Warn("Failed to discover OONI backends")
+		log.WithError(err).Errorf("Failed to discover OONI backends")
 		return err
 	}
 
@@ -116,7 +116,9 @@ func RunGroup(config RunGroupConfig) error {
 		ctl.RunType = config.RunType
 		ctl.SetNettestIndex(i, len(group.Nettests))
 		if err = nt.Run(ctl); err != nil {
-			log.WithError(err).Errorf("Failed to run %s", group.Label)
+			// We used to emit an error here, now we emit a warning--the proper choice
+			// given that we continue running. See https://github.com/ooni/probe/issues/2576.
+			log.WithError(err).Warnf("Failed to run %s", group.Label)
 		}
 	}
 

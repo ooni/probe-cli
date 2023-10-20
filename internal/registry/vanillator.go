@@ -16,8 +16,11 @@ func init() {
 				*config.(*vanillator.Config),
 			)
 		},
-		config:           &vanillator.Config{},
-		enabledByDefault: true,
+		config: &vanillator.Config{},
+		// We discussed this topic with @aanorbel. On Android this experiment crashes
+		// frequently because of https://github.com/ooni/probe/issues/2406. So, it seems
+		// more cautious to disable it by default and let the check-in API decide.
+		enabledByDefault: false,
 		inputPolicy:      model.InputNone,
 	}
 }
