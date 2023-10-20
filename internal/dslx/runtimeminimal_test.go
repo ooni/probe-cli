@@ -237,4 +237,16 @@ func TestMinimalRuntime(t *testing.T) {
 			}
 		})
 	})
+
+	t.Run("we can use a custom model.MeasuringNetwork", func(t *testing.T) {
+		netx := &mocks.MeasuringNetwork{}
+		rt := NewMinimalRuntime(model.DiscardLogger, time.Now(), MinimalRuntimeOptionMeasuringNetwork(netx))
+		if rt.netx != netx {
+			t.Fatal("did not set the measuring network")
+		}
+		trace := rt.NewTrace(rt.IDGenerator().Add(1), rt.ZeroTime()).(*minimalTrace)
+		if trace.netx != netx {
+			t.Fatal("did not set the measuring network")
+		}
+	})
 }

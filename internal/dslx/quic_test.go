@@ -98,10 +98,13 @@ func TestQUICHandshake(t *testing.T) {
 
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {
-				rt := NewRuntimeMeasurexLite(model.DiscardLogger, time.Now())
+				rt := NewRuntimeMeasurexLite(model.DiscardLogger, time.Now(), RuntimeMeasurexLiteOptionMeasuringNetwork(&mocks.MeasuringNetwork{
+					MockNewQUICDialerWithoutResolver: func(listener model.UDPListener, logger model.DebugLogger, w ...model.QUICDialerWrapper) model.QUICDialer {
+						return tt.dialer
+					},
+				}))
 				quicHandshake := &quicHandshakeFunc{
 					Rt:         rt,
-					dialer:     tt.dialer,
 					ServerName: tt.sni,
 				}
 				endpoint := &Endpoint{
@@ -131,24 +134,6 @@ func TestQUICHandshake(t *testing.T) {
 			})
 			wasClosed = false
 		}
-
-		t.Run("with nil dialer", func(t *testing.T) {
-			quicHandshake := &quicHandshakeFunc{Rt: NewMinimalRuntime(model.DiscardLogger, time.Now()), dialer: nil}
-			endpoint := &Endpoint{
-				Address: "1.2.3.4:567",
-				Network: "udp",
-			}
-			ctx, cancel := context.WithCancel(context.Background())
-			cancel()
-			res := quicHandshake.Apply(ctx, endpoint)
-
-			if res.Error == nil {
-				t.Fatalf("expected an error here")
-			}
-			if res.State.QUICConn != nil {
-				t.Fatalf("unexpected conn: %s", res.State.QUICConn)
-			}
-		})
 	})
 }
 

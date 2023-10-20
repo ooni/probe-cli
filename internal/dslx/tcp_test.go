@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -68,8 +67,12 @@ func TestTCPConnect(t *testing.T) {
 
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {
-				rt := NewRuntimeMeasurexLite(model.DiscardLogger, time.Now())
-				tcpConnect := &tcpConnectFunc{tt.dialer, rt}
+				rt := NewRuntimeMeasurexLite(model.DiscardLogger, time.Now(), RuntimeMeasurexLiteOptionMeasuringNetwork(&mocks.MeasuringNetwork{
+					MockNewDialerWithoutResolver: func(dl model.DebugLogger, w ...model.DialerWrapper) model.Dialer {
+						return tt.dialer
+					},
+				}))
+				tcpConnect := &tcpConnectFunc{rt}
 				endpoint := &Endpoint{
 					Address: "1.2.3.4:567",
 					Network: "tcp",
@@ -98,16 +101,4 @@ func TestTCPConnect(t *testing.T) {
 			wasClosed = false
 		}
 	})
-}
-
-// Make sure we get a valid dialer if no mocked dialer is configured
-func TestDialerOrDefault(t *testing.T) {
-	f := &tcpConnectFunc{
-		rt:     NewMinimalRuntime(model.DiscardLogger, time.Now()),
-		dialer: nil,
-	}
-	dialer := f.dialerOrDefault(measurexlite.NewTrace(0, time.Now()), model.DiscardLogger)
-	if dialer == nil {
-		t.Fatal("expected non-nil dialer here")
-	}
 }

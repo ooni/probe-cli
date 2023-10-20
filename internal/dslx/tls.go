@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
-	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -82,9 +81,6 @@ type tlsHandshakeFunc struct {
 
 	// ServerName is the ServerName to handshake for.
 	ServerName string
-
-	// for testing
-	handshaker model.TLSHandshaker
 }
 
 // Apply implements Func.
@@ -108,7 +104,7 @@ func (f *tlsHandshakeFunc) Apply(
 	)
 
 	// obtain the handshaker for use
-	handshaker := f.handshakerOrDefault(trace, f.Rt.Logger())
+	handshaker := trace.NewTLSHandshakerStdlib(f.Rt.Logger())
 
 	// setup
 	config := &tls.Config{
@@ -145,15 +141,6 @@ func (f *tlsHandshakeFunc) Apply(
 		Operation:    netxlite.TLSHandshakeOperation,
 		State:        state,
 	}
-}
-
-// handshakerOrDefault is the function used to obtain an handshaker
-func (f *tlsHandshakeFunc) handshakerOrDefault(trace Trace, logger model.Logger) model.TLSHandshaker {
-	handshaker := f.handshaker
-	if handshaker == nil {
-		handshaker = trace.NewTLSHandshakerStdlib(logger)
-	}
-	return handshaker
 }
 
 func (f *tlsHandshakeFunc) serverName(input *TCPConnection) string {
