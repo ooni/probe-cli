@@ -29,6 +29,7 @@ func NewMinimalRuntime(logger model.Logger, zeroTime time.Time, options ...Minim
 		logger: logger,
 		mu:     sync.Mutex{},
 		netx:   &netxlite.Netx{Underlying: nil}, // implies using the host's network
+		ob:     NewObservations(),
 		v:      []io.Closer{},
 		zeroT:  zeroTime,
 	}
@@ -46,8 +47,32 @@ type MinimalRuntime struct {
 	logger model.Logger
 	mu     sync.Mutex
 	netx   model.MeasuringNetwork
+	ob     *Observations
 	v      []io.Closer
 	zeroT  time.Time
+}
+
+// Observations implements Runtime.
+func (p *MinimalRuntime) Observations() *Observations {
+	defer p.mu.Unlock()
+	p.mu.Lock()
+	o := p.ob
+	p.ob = NewObservations()
+	return o
+}
+
+// SaveObservations implements Runtime.
+func (p *MinimalRuntime) SaveObservations(obs ...*Observations) {
+	defer p.mu.Unlock()
+	p.mu.Lock()
+	for _, o := range obs {
+		p.ob.NetworkEvents = append(p.ob.NetworkEvents, o.NetworkEvents...)
+		p.ob.QUICHandshakes = append(p.ob.QUICHandshakes, o.QUICHandshakes...)
+		p.ob.Queries = append(p.ob.Queries, o.Queries...)
+		p.ob.Requests = append(p.ob.Requests, o.Requests...)
+		p.ob.TCPConnect = append(p.ob.TCPConnect, o.TCPConnect...)
+		p.ob.TLSHandshakes = append(p.ob.TLSHandshakes, o.TLSHandshakes...)
+	}
 }
 
 // IDGenerator implements Runtime.

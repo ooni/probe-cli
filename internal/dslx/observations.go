@@ -43,14 +43,6 @@ func NewObservations() *Observations {
 	}
 }
 
-// ExtractObservations extracts observations from a list of [Maybe].
-func ExtractObservations[T any](rs ...*Maybe[T]) (out []*Observations) {
-	for _, r := range rs {
-		out = append(out, r.Observations...)
-	}
-	return
-}
-
 // maybeTraceToObservations returns the observations inside the
 // trace taking into account the case where trace is nil.
 func maybeTraceToObservations(trace Trace) (out []*Observations) {
