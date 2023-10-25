@@ -38,7 +38,6 @@ func HTTPConnectionTLS(rt Runtime) Func[*TLSConnection, *HTTPConnection] {
 		return &Maybe[*HTTPConnection]{
 			Error:        nil,
 			Observations: nil,
-			Operation:    "", // we cannot fail, so no need to store operation name
 			State:        state,
 		}
 	})

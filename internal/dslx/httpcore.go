@@ -151,7 +151,6 @@ func HTTPRequest(rt Runtime, options ...HTTPRequestOption) Func[*HTTPConnection,
 		return &Maybe[*HTTPResponse]{
 			Error:        err,
 			Observations: observations,
-			Operation:    netxlite.HTTPRoundTripOperation,
 			State:        state,
 		}
 	})
