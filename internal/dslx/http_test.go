@@ -17,9 +17,184 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
+func TestHTTPNewRequest(t *testing.T) {
+	t.Run("without any option and with domain", func(t *testing.T) {
+		ctx := context.Background()
+		conn := &HTTPTransport{
+			Address:               "130.192.91.211:443",
+			Domain:                "example.com",
+			Network:               "tcp",
+			Scheme:                "https",
+			TLSNegotiatedProtocol: "h2",
+			Trace:                 nil,
+			Transport:             nil,
+		}
+
+		req, err := httpNewRequest(ctx, conn, model.DiscardLogger)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if req.URL.Scheme != "https" {
+			t.Fatal("unexpected req.URL.Scheme", req.URL.Scheme)
+		}
+		if req.URL.Host != "example.com" {
+			t.Fatal("unexpected req.URL.Host", req.URL.Host)
+		}
+		if req.URL.Path != "/" {
+			t.Fatal("unexpected req.URL.Path", req.URL.Path)
+		}
+		if req.Method != "GET" {
+			t.Fatal("unexpected req.Method", req.Method)
+		}
+		if req.Host != "example.com" {
+			t.Fatal("unexpected req.Host", req.Host)
+		}
+		headers := http.Header{
+			"Host": {"example.com"},
+		}
+		if diff := cmp.Diff(headers, req.Header); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
+	t.Run("without any option, without domain but with standard port", func(t *testing.T) {
+		ctx := context.Background()
+		conn := &HTTPTransport{
+			Address:               "130.192.91.211:443",
+			Domain:                "",
+			Network:               "tcp",
+			Scheme:                "https",
+			TLSNegotiatedProtocol: "h2",
+			Trace:                 nil,
+			Transport:             nil,
+		}
+
+		req, err := httpNewRequest(ctx, conn, model.DiscardLogger)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if req.URL.Scheme != "https" {
+			t.Fatal("unexpected req.URL.Scheme", req.URL.Scheme)
+		}
+		if req.URL.Host != "130.192.91.211" {
+			t.Fatal("unexpected req.URL.Host", req.URL.Host)
+		}
+		if req.URL.Path != "/" {
+			t.Fatal("unexpected req.URL.Path", req.URL.Path)
+		}
+		if req.Method != "GET" {
+			t.Fatal("unexpected req.Method", req.Method)
+		}
+		if req.Host != "130.192.91.211" {
+			t.Fatal("unexpected req.Host", req.Host)
+		}
+		headers := http.Header{
+			"Host": {"130.192.91.211"},
+		}
+		if diff := cmp.Diff(headers, req.Header); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
+	t.Run("without any option, without domain but with nonstandard port", func(t *testing.T) {
+		ctx := context.Background()
+		conn := &HTTPTransport{
+			Address:               "130.192.91.211:443",
+			Domain:                "",
+			Network:               "tcp",
+			Scheme:                "http",
+			TLSNegotiatedProtocol: "h2",
+			Trace:                 nil,
+			Transport:             nil,
+		}
+
+		req, err := httpNewRequest(ctx, conn, model.DiscardLogger)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if req.URL.Scheme != "http" {
+			t.Fatal("unexpected req.URL.Scheme", req.URL.Scheme)
+		}
+		if req.URL.Host != "130.192.91.211:443" {
+			t.Fatal("unexpected req.URL.Host", req.URL.Host)
+		}
+		if req.URL.Path != "/" {
+			t.Fatal("unexpected req.URL.Path", req.URL.Path)
+		}
+		if req.Method != "GET" {
+			t.Fatal("unexpected req.Method", req.Method)
+		}
+		if req.Host != "130.192.91.211:443" {
+			t.Fatal("unexpected req.Host", req.Host)
+		}
+		headers := http.Header{
+			"Host": {"130.192.91.211:443"},
+		}
+		if diff := cmp.Diff(headers, req.Header); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
+	t.Run("with all options", func(t *testing.T) {
+		ctx := context.Background()
+		conn := &HTTPTransport{
+			Address:               "130.192.91.211:443",
+			Domain:                "example.com",
+			Network:               "tcp",
+			Scheme:                "https",
+			TLSNegotiatedProtocol: "h2",
+			Trace:                 nil,
+			Transport:             nil,
+		}
+
+		options := []HTTPRequestOption{
+			HTTPRequestOptionAccept("text/html"),
+			HTTPRequestOptionAcceptLanguage("de"),
+			HTTPRequestOptionHost("www.x.org"),
+			HTTPRequestOptionMethod("PUT"),
+			HTTPRequestOptionReferer("https://example.com/"),
+			HTTPRequestOptionURLPath("/path/to/example"),
+			HTTPRequestOptionUserAgent("Mozilla/5.0 Gecko/geckotrail Firefox/firefoxversion"),
+		}
+
+		req, err := httpNewRequest(ctx, conn, model.DiscardLogger, options...)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if req.URL.Scheme != "https" {
+			t.Fatal("unexpected req.URL.Scheme", req.URL.Scheme)
+		}
+		if req.URL.Host != "www.x.org" {
+			t.Fatal("unexpected req.URL.Host", req.URL.Host)
+		}
+		if req.URL.Path != "/path/to/example" {
+			t.Fatal("unexpected req.URL.Path", req.URL.Path)
+		}
+		if req.Method != "PUT" {
+			t.Fatal("unexpected req.Method", req.Method)
+		}
+		if req.Host != "www.x.org" {
+			t.Fatal("unexpected req.Host", req.Host)
+		}
+		headers := http.Header{
+			"Accept":          {"text/html"},
+			"Accept-Language": {"de"},
+			"Host":            {"www.x.org"},
+			"Referer":         {"https://example.com/"},
+			"User-Agent":      {"Mozilla/5.0 Gecko/geckotrail Firefox/firefoxversion"},
+		}
+		if diff := cmp.Diff(headers, req.Header); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+}
+
 /*
 Test cases:
-- Get httpRequestFunc with options
 - Apply httpRequestFunc:
   - with EOF
   - with invalid method
@@ -29,45 +204,6 @@ Test cases:
   - with header options
 */
 func TestHTTPRequest(t *testing.T) {
-	t.Run("Get httpRequestFunc with options", func(t *testing.T) {
-		rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
-		f := HTTPRequest(rt,
-			HTTPRequestOptionAccept("text/html"),
-			HTTPRequestOptionAcceptLanguage("de"),
-			HTTPRequestOptionHost("host"),
-			HTTPRequestOptionMethod("PUT"),
-			HTTPRequestOptionReferer("https://example.com/"),
-			HTTPRequestOptionURLPath("/path/to/example"),
-			HTTPRequestOptionUserAgent("Mozilla/5.0 Gecko/geckotrail Firefox/firefoxversion"),
-		)
-		var requestFunc *httpRequestFunc
-		var ok bool
-		if requestFunc, ok = f.(*httpRequestFunc); !ok {
-			t.Fatal("unexpected type. Expected: tlsHandshakeFunc")
-		}
-		if requestFunc.Accept != "text/html" {
-			t.Fatalf("unexpected %s, expected %s, got %s", "Accept", "text/html", requestFunc.Accept)
-		}
-		if requestFunc.AcceptLanguage != "de" {
-			t.Fatalf("unexpected %s, expected %s, got %s", "AcceptLanguage", "de", requestFunc.AcceptLanguage)
-		}
-		if requestFunc.Host != "host" {
-			t.Fatalf("unexpected %s, expected %s, got %s", "Host", "host", requestFunc.Host)
-		}
-		if requestFunc.Method != "PUT" {
-			t.Fatalf("unexpected %s, expected %s, got %s", "Method", "PUT", requestFunc.Method)
-		}
-		if requestFunc.Referer != "https://example.com/" {
-			t.Fatalf("unexpected %s, expected %s, got %s", "Referer", "https://example.com/", requestFunc.Referer)
-		}
-		if requestFunc.URLPath != "/path/to/example" {
-			t.Fatalf("unexpected %s, expected %s, got %s", "URLPath", "example/to/path", requestFunc.URLPath)
-		}
-		if requestFunc.UserAgent != "Mozilla/5.0 Gecko/geckotrail Firefox/firefoxversion" {
-			t.Fatalf("unexpected %s, expected %s, got %s", "UserAgent", "Mozilla/5.0 Gecko/geckotrail Firefox/firefoxversion", requestFunc.UserAgent)
-		}
-	})
-
 	t.Run("Apply httpRequestFunc", func(t *testing.T) {
 		mockResponse := &http.Response{
 			Status: "expected",
@@ -115,20 +251,20 @@ func TestHTTPRequest(t *testing.T) {
 			}
 		})
 
-		t.Run("with invalid method", func(t *testing.T) {
+		t.Run("with invalid domain", func(t *testing.T) {
 			httpTransport := HTTPTransport{
 				Address:   "1.2.3.4:567",
+				Domain:    "\t", // invalid domain
 				Network:   "tcp",
 				Scheme:    "https",
 				Trace:     trace,
 				Transport: goodTransport,
 			}
-			httpRequest := &httpRequestFunc{
-				Method: "€",
-			}
+			rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
+			httpRequest := HTTPRequest(rt)
 			res := httpRequest.Apply(context.Background(), &httpTransport)
-			if res.Error == nil || !strings.HasPrefix(res.Error.Error(), "net/http: invalid method") {
-				t.Fatal("not the error we expected")
+			if res.Error == nil || !strings.HasPrefix(res.Error.Error(), `parse "https://%09/": invalid URL escape "%09"`) {
+				t.Fatal("not the error we expected", res.Error)
 			}
 			if res.State.HTTPResponse != nil {
 				t.Fatal("expected nil request here")
@@ -238,15 +374,15 @@ func TestHTTPRequest(t *testing.T) {
 				Trace:     trace,
 				Transport: goodTransport,
 			}
-			httpRequest := &httpRequestFunc{
-				Accept:         "text/html",
-				AcceptLanguage: "de",
-				Host:           "host",
-				Referer:        "https://example.org",
-				Rt:             NewMinimalRuntime(model.DiscardLogger, time.Now()),
-				URLPath:        "/path/to/example",
-				UserAgent:      "Mozilla/5.0 Gecko/geckotrail Firefox/firefoxversion",
-			}
+			rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
+			httpRequest := HTTPRequest(rt,
+				HTTPRequestOptionAccept("text/html"),
+				HTTPRequestOptionAcceptLanguage("de"),
+				HTTPRequestOptionHost("host"),
+				HTTPRequestOptionReferer("https://example.org"),
+				HTTPRequestOptionURLPath("/path/to/example"),
+				HTTPRequestOptionUserAgent("Mozilla/5.0 Gecko/geckotrail Firefox/firefoxversion"),
+			)
 			res := httpRequest.Apply(context.Background(), &httpTransport)
 			if res.Error != nil {
 				t.Fatal("unexpected error")
