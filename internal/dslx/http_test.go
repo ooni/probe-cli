@@ -251,7 +251,7 @@ func TestHTTPRequest(t *testing.T) {
 			}
 		})
 
-		t.Run("with invalid URL path", func(t *testing.T) {
+		t.Run("with invalid domain", func(t *testing.T) {
 			httpTransport := HTTPTransport{
 				Address:   "1.2.3.4:567",
 				Domain:    "\t", // invalid domain
