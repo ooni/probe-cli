@@ -22,9 +22,8 @@ type Operation[A, B any] func(ctx context.Context, a A) *Maybe[B]
 func (op Operation[A, B]) Apply(ctx context.Context, a *Maybe[A]) *Maybe[B] {
 	if a.Error != nil {
 		return &Maybe[B]{
-			Error:        a.Error,
-			Observations: a.Observations,
-			State:        *new(B), // zero value
+			Error: a.Error,
+			State: *new(B), // zero value
 		}
 	}
 	return op(ctx, a.State)
@@ -36,9 +35,6 @@ type Maybe[State any] struct {
 	// Error is either the error that occurred or nil.
 	Error error
 
-	// Observations contains the collected observations.
-	Observations []*Observations
-
 	// State contains state passed between function calls. You should
 	// only access State when Error is nil and Skipped is false.
 	State State
@@ -47,9 +43,8 @@ type Maybe[State any] struct {
 // NewMaybeWithValue constructs a Maybe containing the given value.
 func NewMaybeWithValue[State any](value State) *Maybe[State] {
 	return &Maybe[State]{
-		Error:        nil,
-		Observations: []*Observations{},
-		State:        value,
+		Error: nil,
+		State: value,
 	}
 }
 
@@ -74,9 +69,8 @@ func (h *compose2Func[A, B, C]) Apply(ctx context.Context, a *Maybe[A]) *Maybe[C
 
 	if mb.Error != nil {
 		return &Maybe[C]{
-			Error:        mb.Error,
-			Observations: mb.Observations,
-			State:        *new(C), // zero value
+			Error: mb.Error,
+			State: *new(C), // zero value
 		}
 	}
 
@@ -84,8 +78,7 @@ func (h *compose2Func[A, B, C]) Apply(ctx context.Context, a *Maybe[A]) *Maybe[C
 	runtimex.Assert(mc != nil, "h.g.Apply returned a nil pointer")
 
 	return &Maybe[C]{
-		Error:        mc.Error,
-		Observations: append(mb.Observations, mc.Observations...), // merge observations
-		State:        mc.State,
+		Error: mc.Error,
+		State: mc.State,
 	}
 }

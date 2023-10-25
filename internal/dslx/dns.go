@@ -107,9 +107,8 @@ func DNSLookupGetaddrinfo(rt Runtime) Func[*DomainToResolve, *ResolvedAddresses]
 		}
 
 		return &Maybe[*ResolvedAddresses]{
-			Error:        err,
-			Observations: maybeTraceToObservations(trace),
-			State:        state,
+			Error: err,
+			State: state,
 		}
 	})
 }
@@ -158,9 +157,8 @@ func DNSLookupUDP(rt Runtime, endpoint string) Func[*DomainToResolve, *ResolvedA
 		}
 
 		return &Maybe[*ResolvedAddresses]{
-			Error:        err,
-			Observations: maybeTraceToObservations(trace),
-			State:        state,
+			Error: err,
+			State: state,
 		}
 	})
 }

@@ -71,9 +71,8 @@ func QUICHandshake(rt Runtime, options ...TLSHandshakeOption) Func[*Endpoint, *Q
 		}
 
 		return &Maybe[*QUICConnection]{
-			Error:        err,
-			Observations: maybeTraceToObservations(trace),
-			State:        state,
+			Error: err,
+			State: state,
 		}
 	})
 }

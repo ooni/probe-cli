@@ -96,9 +96,8 @@ func TLSHandshake(rt Runtime, options ...TLSHandshakeOption) Func[*TCPConnection
 		}
 
 		return &Maybe[*TLSConnection]{
-			Error:        err,
-			Observations: maybeTraceToObservations(trace),
-			State:        state,
+			Error: err,
+			State: state,
 		}
 	})
 }
