@@ -37,7 +37,7 @@ func TestMakeSureWeCollectSpeedSamples(t *testing.T) {
 	// create a measuring function
 	f0 := Compose3(
 		TCPConnect(rt),
-		HTTPTransportTCP(rt),
+		HTTPConnectionTCP(rt),
 		HTTPRequest(rt),
 	)
 

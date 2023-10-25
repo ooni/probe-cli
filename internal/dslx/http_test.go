@@ -20,7 +20,7 @@ import (
 func TestHTTPNewRequest(t *testing.T) {
 	t.Run("without any option and with domain", func(t *testing.T) {
 		ctx := context.Background()
-		conn := &HTTPTransport{
+		conn := &HTTPConnection{
 			Address:               "130.192.91.211:443",
 			Domain:                "example.com",
 			Network:               "tcp",
@@ -60,7 +60,7 @@ func TestHTTPNewRequest(t *testing.T) {
 
 	t.Run("without any option, without domain but with standard port", func(t *testing.T) {
 		ctx := context.Background()
-		conn := &HTTPTransport{
+		conn := &HTTPConnection{
 			Address:               "130.192.91.211:443",
 			Domain:                "",
 			Network:               "tcp",
@@ -100,7 +100,7 @@ func TestHTTPNewRequest(t *testing.T) {
 
 	t.Run("without any option, without domain but with nonstandard port", func(t *testing.T) {
 		ctx := context.Background()
-		conn := &HTTPTransport{
+		conn := &HTTPConnection{
 			Address:               "130.192.91.211:443",
 			Domain:                "",
 			Network:               "tcp",
@@ -140,7 +140,7 @@ func TestHTTPNewRequest(t *testing.T) {
 
 	t.Run("with all options", func(t *testing.T) {
 		ctx := context.Background()
-		conn := &HTTPTransport{
+		conn := &HTTPConnection{
 			Address:               "130.192.91.211:443",
 			Domain:                "example.com",
 			Network:               "tcp",
@@ -232,16 +232,16 @@ func TestHTTPRequest(t *testing.T) {
 		trace := measurexlite.NewTrace(idGen.Add(1), zeroTime, "antani")
 
 		t.Run("with EOF", func(t *testing.T) {
-			httpTransport := HTTPTransport{
+			httpTransport := HTTPConnection{
 				Address:   "1.2.3.4:567",
 				Network:   "tcp",
 				Scheme:    "https",
 				Trace:     trace,
 				Transport: eofTransport,
 			}
-			httpRequest := &httpRequestFunc{
-				Rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
-			}
+			httpRequest := HTTPRequest(
+				NewMinimalRuntime(model.DiscardLogger, time.Now()),
+			)
 			res := httpRequest.Apply(context.Background(), &httpTransport)
 			if res.Error != io.EOF {
 				t.Fatal("not the error we expected")
@@ -252,7 +252,7 @@ func TestHTTPRequest(t *testing.T) {
 		})
 
 		t.Run("with invalid domain", func(t *testing.T) {
-			httpTransport := HTTPTransport{
+			httpTransport := HTTPConnection{
 				Address:   "1.2.3.4:567",
 				Domain:    "\t", // invalid domain
 				Network:   "tcp",
@@ -272,16 +272,16 @@ func TestHTTPRequest(t *testing.T) {
 		})
 
 		t.Run("with port-less address", func(t *testing.T) {
-			httpTransport := HTTPTransport{
+			httpTransport := HTTPConnection{
 				Address:   "1.2.3.4",
 				Network:   "tcp",
 				Scheme:    "https",
 				Trace:     trace,
 				Transport: goodTransport,
 			}
-			httpRequest := &httpRequestFunc{
-				Rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
-			}
+			httpRequest := HTTPRequest(
+				NewMinimalRuntime(model.DiscardLogger, time.Now()),
+			)
 			res := httpRequest.Apply(context.Background(), &httpTransport)
 			if res.Error != nil {
 				t.Fatal("expected error")
@@ -324,16 +324,16 @@ func TestHTTPRequest(t *testing.T) {
 		}
 
 		t.Run("with success (https)", func(t *testing.T) {
-			httpTransport := HTTPTransport{
+			httpTransport := HTTPConnection{
 				Address:   "1.2.3.4:443",
 				Network:   "tcp",
 				Scheme:    "https",
 				Trace:     trace,
 				Transport: goodTransport,
 			}
-			httpRequest := &httpRequestFunc{
-				Rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
-			}
+			httpRequest := HTTPRequest(
+				NewMinimalRuntime(model.DiscardLogger, time.Now()),
+			)
 			res := httpRequest.Apply(context.Background(), &httpTransport)
 			if res.Error != nil {
 				t.Fatal("unexpected error")
@@ -345,16 +345,16 @@ func TestHTTPRequest(t *testing.T) {
 		})
 
 		t.Run("with success (http)", func(t *testing.T) {
-			httpTransport := HTTPTransport{
+			httpTransport := HTTPConnection{
 				Address:   "1.2.3.4:80",
 				Network:   "tcp",
 				Scheme:    "http",
 				Trace:     trace,
 				Transport: goodTransport,
 			}
-			httpRequest := &httpRequestFunc{
-				Rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
-			}
+			httpRequest := HTTPRequest(
+				NewMinimalRuntime(model.DiscardLogger, time.Now()),
+			)
 			res := httpRequest.Apply(context.Background(), &httpTransport)
 			if res.Error != nil {
 				t.Fatal("unexpected error")
@@ -366,7 +366,7 @@ func TestHTTPRequest(t *testing.T) {
 		})
 
 		t.Run("with header options", func(t *testing.T) {
-			httpTransport := HTTPTransport{
+			httpTransport := HTTPConnection{
 				Address:   "1.2.3.4:567",
 				Domain:    "domain.com",
 				Network:   "tcp",
@@ -406,23 +406,14 @@ func TestHTTPRequest(t *testing.T) {
 
 /*
 Test cases:
-- Get httpTransportTCPFunc
 - Get composed function: TCP with HTTP
 - Apply httpTransportTCPFunc
 */
 func TestHTTPTCP(t *testing.T) {
-	t.Run("Get httpTransportTCPFunc", func(t *testing.T) {
-		rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
-		f := HTTPTransportTCP(rt)
-		if _, ok := f.(*httpTransportTCPFunc); !ok {
-			t.Fatal("unexpected type")
-		}
-	})
-
 	t.Run("Get composed function: TCP with HTTP", func(t *testing.T) {
 		rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
 		f := HTTPRequestOverTCP(rt)
-		if _, ok := f.(*compose2Func[*TCPConnection, *HTTPTransport, *HTTPResponse]); !ok {
+		if _, ok := f.(*compose2Func[*TCPConnection, *HTTPConnection, *HTTPResponse]); !ok {
 			t.Fatal("unexpected type")
 		}
 	})
@@ -439,9 +430,9 @@ func TestHTTPTCP(t *testing.T) {
 			Network: "tcp",
 			Trace:   trace,
 		}
-		f := httpTransportTCPFunc{
-			rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
-		}
+		f := HTTPConnectionTCP(
+			NewMinimalRuntime(model.DiscardLogger, time.Now()),
+		)
 		res := f.Apply(context.Background(), tcpConn)
 		if res.Error != nil {
 			t.Fatalf("unexpected error: %s", res.Error)
@@ -460,23 +451,14 @@ func TestHTTPTCP(t *testing.T) {
 
 /*
 Test cases:
-- Get httpTransportQUICFunc
 - Get composed function: QUIC with HTTP
 - Apply httpTransportQUICFunc
 */
 func TestHTTPQUIC(t *testing.T) {
-	t.Run("Get httpTransportQUICFunc", func(t *testing.T) {
-		rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
-		f := HTTPTransportQUIC(rt)
-		if _, ok := f.(*httpTransportQUICFunc); !ok {
-			t.Fatal("unexpected type")
-		}
-	})
-
 	t.Run("Get composed function: QUIC with HTTP", func(t *testing.T) {
 		rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
 		f := HTTPRequestOverQUIC(rt)
-		if _, ok := f.(*compose2Func[*QUICConnection, *HTTPTransport, *HTTPResponse]); !ok {
+		if _, ok := f.(*compose2Func[*QUICConnection, *HTTPConnection, *HTTPResponse]); !ok {
 			t.Fatal("unexpected type")
 		}
 	})
@@ -493,9 +475,9 @@ func TestHTTPQUIC(t *testing.T) {
 			Network:  "udp",
 			Trace:    trace,
 		}
-		f := httpTransportQUICFunc{
-			rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
-		}
+		f := HTTPConnectionQUIC(
+			NewMinimalRuntime(model.DiscardLogger, time.Now()),
+		)
 		res := f.Apply(context.Background(), quicConn)
 		if res.Error != nil {
 			t.Fatalf("unexpected error: %s", res.Error)
@@ -514,23 +496,14 @@ func TestHTTPQUIC(t *testing.T) {
 
 /*
 Test cases:
-- Get httpTransportTLSFunc
 - Get composed function: TLS with HTTP
 - Apply httpTransportTLSFunc
 */
 func TestHTTPTLS(t *testing.T) {
-	t.Run("Get httpTransportTLSFunc", func(t *testing.T) {
-		rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
-		f := HTTPTransportTLS(rt)
-		if _, ok := f.(*httpTransportTLSFunc); !ok {
-			t.Fatal("unexpected type")
-		}
-	})
-
 	t.Run("Get composed function: TLS with HTTP", func(t *testing.T) {
 		rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
 		f := HTTPRequestOverTLS(rt)
-		if _, ok := f.(*compose2Func[*TLSConnection, *HTTPTransport, *HTTPResponse]); !ok {
+		if _, ok := f.(*compose2Func[*TLSConnection, *HTTPConnection, *HTTPResponse]); !ok {
 			t.Fatal("unexpected type")
 		}
 	})
@@ -547,9 +520,9 @@ func TestHTTPTLS(t *testing.T) {
 			Network: "tcp",
 			Trace:   trace,
 		}
-		f := httpTransportTLSFunc{
-			rt: NewMinimalRuntime(model.DiscardLogger, time.Now()),
-		}
+		f := HTTPConnectionTLS(
+			NewMinimalRuntime(model.DiscardLogger, time.Now()),
+		)
 		res := f.Apply(context.Background(), tlsConn)
 		if res.Error != nil {
 			t.Fatalf("unexpected error: %s", res.Error)

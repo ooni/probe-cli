@@ -19,12 +19,12 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/throttling"
 )
 
-// HTTPTransport is an HTTP transport bound to a TCP, TLS or QUIC connection
+// HTTPConnection is an HTTP connection bound to a TCP, TLS or QUIC connection
 // that would use such a connection only and for any input URL. You generally
 // use [HTTPTransportTCP], [HTTPTransportTLS] or [HTTPTransportQUIC] to
 // create a new instance; if you want to initialize manually, make sure you
 // init the fields marked as MANDATORY.
-type HTTPTransport struct {
+type HTTPConnection struct {
 	// Address is the MANDATORY address we're connected to.
 	Address string
 
@@ -101,79 +101,65 @@ func HTTPRequestOptionUserAgent(value string) HTTPRequestOption {
 }
 
 // HTTPRequest issues an HTTP request using a transport and returns a response.
-func HTTPRequest(rt Runtime, options ...HTTPRequestOption) Func[*HTTPTransport, *Maybe[*HTTPResponse]] {
-	f := &httpRequestFunc{Options: options, Rt: rt}
-	return f
-}
+func HTTPRequest(rt Runtime, options ...HTTPRequestOption) Func[*HTTPConnection, *Maybe[*HTTPResponse]] {
+	return FuncAdapter[*HTTPConnection, *Maybe[*HTTPResponse]](func(ctx context.Context, input *HTTPConnection) *Maybe[*HTTPResponse] {
+		// setup
+		const timeout = 10 * time.Second
+		ctx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
 
-// httpRequestFunc is the Func returned by HTTPRequest.
-type httpRequestFunc struct {
-	// Options contains the options.
-	Options []HTTPRequestOption
-
-	// Rt is the MANDATORY runtime.
-	Rt Runtime
-}
-
-// Apply implements Func.
-func (f *httpRequestFunc) Apply(
-	ctx context.Context, input *HTTPTransport) *Maybe[*HTTPResponse] {
-	// setup
-	const timeout = 10 * time.Second
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
-	var (
-		body         []byte
-		observations []*Observations
-		resp         *http.Response
-	)
-
-	// create HTTP request
-	req, err := httpNewRequest(ctx, input, f.Rt.Logger(), f.Options...)
-	if err == nil {
-
-		// start the operation logger
-		ol := logx.NewOperationLogger(
-			f.Rt.Logger(),
-			"[#%d] HTTPRequest %s with %s/%s host=%s",
-			input.Trace.Index(),
-			req.URL.String(),
-			input.Address,
-			input.Network,
-			req.Host,
+		var (
+			body         []byte
+			observations []*Observations
+			resp         *http.Response
 		)
 
-		// perform HTTP transaction and collect the related observations
-		resp, body, observations, err = httpRoundTrip(ctx, input, req)
+		// create HTTP request
+		req, err := httpNewRequest(ctx, input, rt.Logger(), options...)
+		if err == nil {
 
-		// stop the operation logger
-		ol.Stop(err)
-	}
+			// start the operation logger
+			ol := logx.NewOperationLogger(
+				rt.Logger(),
+				"[#%d] HTTPRequest %s with %s/%s host=%s",
+				input.Trace.Index(),
+				req.URL.String(),
+				input.Address,
+				input.Network,
+				req.Host,
+			)
 
-	observations = append(observations, maybeTraceToObservations(input.Trace)...)
+			// perform HTTP transaction and collect the related observations
+			resp, body, observations, err = httpRoundTrip(ctx, input, req)
 
-	state := &HTTPResponse{
-		Address:                  input.Address,
-		Domain:                   input.Domain,
-		HTTPRequest:              req,  // possibly nil
-		HTTPResponse:             resp, // possibly nil
-		HTTPResponseBodySnapshot: body, // possibly nil
-		Network:                  input.Network,
-		Trace:                    input.Trace,
-	}
+			// stop the operation logger
+			ol.Stop(err)
+		}
 
-	return &Maybe[*HTTPResponse]{
-		Error:        err,
-		Observations: observations,
-		Operation:    netxlite.HTTPRoundTripOperation,
-		State:        state,
-	}
+		observations = append(observations, maybeTraceToObservations(input.Trace)...)
+
+		state := &HTTPResponse{
+			Address:                  input.Address,
+			Domain:                   input.Domain,
+			HTTPRequest:              req,  // possibly nil
+			HTTPResponse:             resp, // possibly nil
+			HTTPResponseBodySnapshot: body, // possibly nil
+			Network:                  input.Network,
+			Trace:                    input.Trace,
+		}
+
+		return &Maybe[*HTTPResponse]{
+			Error:        err,
+			Observations: observations,
+			Operation:    netxlite.HTTPRoundTripOperation,
+			State:        state,
+		}
+	})
 }
 
 // httpNewRequest is a convenience function for creating a new request.
 func httpNewRequest(
-	ctx context.Context, input *HTTPTransport, logger model.Logger, options ...HTTPRequestOption) (*http.Request, error) {
+	ctx context.Context, input *HTTPConnection, logger model.Logger, options ...HTTPRequestOption) (*http.Request, error) {
 	// create the default HTTP request
 	URL := &url.URL{
 		Scheme:      input.Scheme,
@@ -208,7 +194,7 @@ func httpNewRequest(
 }
 
 // httpNewURLHost computes the URL host to use.
-func httpNewURLHost(input *HTTPTransport, logger model.Logger) string {
+func httpNewURLHost(input *HTTPConnection, logger model.Logger) string {
 	if input.Domain != "" {
 		return input.Domain
 	}
@@ -230,7 +216,7 @@ func httpNewURLHost(input *HTTPTransport, logger model.Logger) string {
 // httpRoundTrip performs the actual HTTP round trip
 func httpRoundTrip(
 	ctx context.Context,
-	input *HTTPTransport,
+	input *HTTPConnection,
 	req *http.Request,
 ) (*http.Response, []byte, []*Observations, error) {
 	const maxbody = 1 << 19 // TODO(bassosimone): allow to configure this value?
