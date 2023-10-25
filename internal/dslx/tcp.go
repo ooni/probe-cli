@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // TCPConnect returns a function that establishes TCP connections.
@@ -55,7 +54,6 @@ func TCPConnect(rt Runtime) Func[*Endpoint, *TCPConnection] {
 		return &Maybe[*TCPConnection]{
 			Error:        err,
 			Observations: maybeTraceToObservations(trace),
-			Operation:    netxlite.ConnectOperation,
 			State:        state,
 		}
 	})
