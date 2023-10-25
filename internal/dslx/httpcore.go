@@ -136,7 +136,9 @@ func HTTPRequest(rt Runtime, options ...HTTPRequestOption) Func[*HTTPConnection,
 			ol.Stop(err)
 		}
 
+		// merge and save observations
 		observations = append(observations, maybeTraceToObservations(input.Trace)...)
+		rt.SaveObservations(observations...)
 
 		state := &HTTPResponse{
 			Address:                  input.Address,

@@ -3,7 +3,6 @@ package dslx
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -296,27 +295,20 @@ func TestHTTPRequest(t *testing.T) {
 
 		// makeSureObservationsContainTags ensures the observations you can extract from
 		// the given HTTPResponse contain the tags we configured when testing
-		makeSureObservationsContainTags := func(res *Maybe[*HTTPResponse]) error {
-			// exclude the case where there was an error
-			if res.Error != nil {
-				return fmt.Errorf("unexpected error: %w", res.Error)
+		makeSureObservationsContainTags := func(rt Runtime) error {
+			obs := rt.Observations()
+
+			// check the network events
+			for _, ev := range obs.NetworkEvents {
+				if diff := cmp.Diff([]string{"antani"}, ev.Tags); diff != "" {
+					return errors.New(diff)
+				}
 			}
 
-			// obtain the observations
-			for _, obs := range ExtractObservations(res) {
-
-				// check the network events
-				for _, ev := range obs.NetworkEvents {
-					if diff := cmp.Diff([]string{"antani"}, ev.Tags); diff != "" {
-						return errors.New(diff)
-					}
-				}
-
-				// check the HTTP events
-				for _, ev := range obs.Requests {
-					if diff := cmp.Diff([]string{"antani"}, ev.Tags); diff != "" {
-						return errors.New(diff)
-					}
+			// check the HTTP events
+			for _, ev := range obs.Requests {
+				if diff := cmp.Diff([]string{"antani"}, ev.Tags); diff != "" {
+					return errors.New(diff)
 				}
 			}
 
@@ -331,9 +323,8 @@ func TestHTTPRequest(t *testing.T) {
 				Trace:     trace,
 				Transport: goodTransport,
 			}
-			httpRequest := HTTPRequest(
-				NewMinimalRuntime(model.DiscardLogger, time.Now()),
-			)
+			rt := NewRuntimeMeasurexLite(model.DiscardLogger, time.Now())
+			httpRequest := HTTPRequest(rt)
 			res := httpRequest.Apply(context.Background(), NewMaybeWithValue(&httpTransport))
 			if res.Error != nil {
 				t.Fatal("unexpected error")
@@ -341,7 +332,7 @@ func TestHTTPRequest(t *testing.T) {
 			if res.State.HTTPResponse == nil || res.State.HTTPResponse.Status != "expected" {
 				t.Fatal("unexpected request")
 			}
-			makeSureObservationsContainTags(res)
+			makeSureObservationsContainTags(rt)
 		})
 
 		t.Run("with success (http)", func(t *testing.T) {
@@ -352,9 +343,8 @@ func TestHTTPRequest(t *testing.T) {
 				Trace:     trace,
 				Transport: goodTransport,
 			}
-			httpRequest := HTTPRequest(
-				NewMinimalRuntime(model.DiscardLogger, time.Now()),
-			)
+			rt := NewRuntimeMeasurexLite(model.DiscardLogger, time.Now())
+			httpRequest := HTTPRequest(rt)
 			res := httpRequest.Apply(context.Background(), NewMaybeWithValue(&httpTransport))
 			if res.Error != nil {
 				t.Fatal("unexpected error")
@@ -362,7 +352,7 @@ func TestHTTPRequest(t *testing.T) {
 			if res.State.HTTPResponse == nil || res.State.HTTPResponse.Status != "expected" {
 				t.Fatal("unexpected request")
 			}
-			makeSureObservationsContainTags(res)
+			makeSureObservationsContainTags(rt)
 		})
 
 		t.Run("with header options", func(t *testing.T) {

@@ -9,7 +9,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func getFn(err error, name string) Func[int, int] {
@@ -22,7 +21,9 @@ type fn struct {
 }
 
 func (f *fn) Apply(ctx context.Context, i *Maybe[int]) *Maybe[int] {
-	runtimex.Assert(i.Error == nil, "did not expect to see an error here")
+	if i.Error != nil {
+		return i
+	}
 	return &Maybe[int]{
 		Error: f.err,
 		State: i.State + 1,
@@ -109,23 +110,6 @@ func TestGen(t *testing.T) {
 		}
 		if r.State != 14 {
 			t.Fatalf("unexpected result state")
-		}
-	})
-}
-
-func TestObservations(t *testing.T) {
-	t.Run("Extract observations", func(t *testing.T) {
-		fn1 := getFn(nil, "succeed")
-		fn2 := getFn(nil, "succeed")
-		composit := Compose2(fn1, fn2)
-		r1 := composit.Apply(context.Background(), NewMaybeWithValue(3))
-		r2 := composit.Apply(context.Background(), NewMaybeWithValue(42))
-		if len(r1.Observations) != 2 || len(r2.Observations) != 2 {
-			t.Fatalf("unexpected number of observations")
-		}
-		mergedObservations := ExtractObservations(r1, r2)
-		if len(mergedObservations) != 4 {
-			t.Fatalf("unexpected number of merged observations")
 		}
 	})
 }

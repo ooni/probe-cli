@@ -97,6 +97,9 @@ func DNSLookupGetaddrinfo(rt Runtime) Func[*DomainToResolve, *ResolvedAddresses]
 		// stop the operation logger
 		ol.Stop(err)
 
+		// save the observations
+		rt.SaveObservations(maybeTraceToObservations(trace)...)
+
 		state := &ResolvedAddresses{
 			Addresses: addrs, // maybe empty
 			Domain:    input.Domain,
@@ -144,6 +147,9 @@ func DNSLookupUDP(rt Runtime, endpoint string) Func[*DomainToResolve, *ResolvedA
 
 		// stop the operation logger
 		ol.Stop(err)
+
+		// save the observations
+		rt.SaveObservations(maybeTraceToObservations(trace)...)
 
 		state := &ResolvedAddresses{
 			Addresses: addrs, // maybe empty

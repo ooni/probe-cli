@@ -43,6 +43,9 @@ func TCPConnect(rt Runtime) Func[*Endpoint, *TCPConnection] {
 		// stop the operation logger
 		ol.Stop(err)
 
+		// save the observations
+		rt.SaveObservations(maybeTraceToObservations(trace)...)
+
 		state := &TCPConnection{
 			Address: input.Address,
 			Conn:    conn, // possibly nil
