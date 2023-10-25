@@ -30,7 +30,7 @@ type quicHandshakeFunc struct {
 	// Options contains the options.
 	Options []TLSHandshakeOption
 
-	// Rt is the runtime that owns us.
+	// Rt is the Runtime that owns us.
 	Rt Runtime
 }
 
