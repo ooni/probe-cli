@@ -10,6 +10,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/quic-go/quic-go"
 )
 
@@ -84,6 +85,9 @@ func TestQUICHandshake(t *testing.T) {
 				rt := NewRuntimeMeasurexLite(model.DiscardLogger, time.Now(), RuntimeMeasurexLiteOptionMeasuringNetwork(&mocks.MeasuringNetwork{
 					MockNewQUICDialerWithoutResolver: func(listener model.UDPListener, logger model.DebugLogger, w ...model.QUICDialerWrapper) model.QUICDialer {
 						return tt.dialer
+					},
+					MockNewUDPListener: func() model.UDPListener {
+						return netxlite.NewUDPListener()
 					},
 				}))
 				quicHandshake := QUICHandshake(rt, TLSHandshakeOptionServerName(tt.sni))
