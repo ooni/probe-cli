@@ -173,8 +173,8 @@ func TestTLSHandshake(t *testing.T) {
 				if res.Error != tt.expectErr {
 					t.Fatalf("unexpected error: %s", res.Error)
 				}
-				if res.State.Conn != tt.expectConn {
-					t.Fatalf("unexpected conn %v", res.State.Conn)
+				if res.State != nil && res.State.Conn != tt.expectConn {
+					t.Fatalf("unexpected conn %v", res.State)
 				}
 				rt.Close()
 				if wasClosed != tt.closed {

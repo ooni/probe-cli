@@ -17,7 +17,7 @@ import (
 
 // QUICHandshake returns a function performing QUIC handshakes.
 func QUICHandshake(rt Runtime, options ...TLSHandshakeOption) Func[*Endpoint, *QUICConnection] {
-	return Operation[*Endpoint, *QUICConnection](func(ctx context.Context, input *Endpoint) *Maybe[*QUICConnection] {
+	return Operation[*Endpoint, *QUICConnection](func(ctx context.Context, input *Endpoint) (*QUICConnection, error) {
 		// create trace
 		trace := rt.NewTrace(rt.IDGenerator().Add(1), rt.ZeroTime(), input.Tags...)
 
@@ -60,20 +60,22 @@ func QUICHandshake(rt Runtime, options ...TLSHandshakeOption) Func[*Endpoint, *Q
 		// save the observations
 		rt.SaveObservations(maybeTraceToObservations(trace)...)
 
+		// handle error case
+		if err != nil {
+			return nil, err
+		}
+
+		// handle success
 		state := &QUICConnection{
 			Address:   input.Address,
-			QUICConn:  quicConn, // possibly nil
+			QUICConn:  quicConn,
 			Domain:    input.Domain,
 			Network:   input.Network,
 			TLSConfig: config,
 			TLSState:  tlsState,
 			Trace:     trace,
 		}
-
-		return &Maybe[*QUICConnection]{
-			Error: err,
-			State: state,
-		}
+		return state, nil
 	})
 }
 

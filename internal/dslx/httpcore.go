@@ -102,7 +102,7 @@ func HTTPRequestOptionUserAgent(value string) HTTPRequestOption {
 
 // HTTPRequest issues an HTTP request using a transport and returns a response.
 func HTTPRequest(rt Runtime, options ...HTTPRequestOption) Func[*HTTPConnection, *HTTPResponse] {
-	return Operation[*HTTPConnection, *HTTPResponse](func(ctx context.Context, input *HTTPConnection) *Maybe[*HTTPResponse] {
+	return Operation[*HTTPConnection, *HTTPResponse](func(ctx context.Context, input *HTTPConnection) (*HTTPResponse, error) {
 		// setup
 		const timeout = 10 * time.Second
 		ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -140,20 +140,22 @@ func HTTPRequest(rt Runtime, options ...HTTPRequestOption) Func[*HTTPConnection,
 		observations = append(observations, maybeTraceToObservations(input.Trace)...)
 		rt.SaveObservations(observations...)
 
+		// handle error case
+		if err != nil {
+			return nil, err
+		}
+
+		// handle success
 		state := &HTTPResponse{
 			Address:                  input.Address,
 			Domain:                   input.Domain,
-			HTTPRequest:              req,  // possibly nil
-			HTTPResponse:             resp, // possibly nil
-			HTTPResponseBodySnapshot: body, // possibly nil
+			HTTPRequest:              req,
+			HTTPResponse:             resp,
+			HTTPResponseBodySnapshot: body,
 			Network:                  input.Network,
 			Trace:                    input.Trace,
 		}
-
-		return &Maybe[*HTTPResponse]{
-			Error: err,
-			State: state,
-		}
+		return state, nil
 	})
 }
 

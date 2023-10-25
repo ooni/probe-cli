@@ -245,9 +245,6 @@ func TestHTTPRequest(t *testing.T) {
 			if res.Error != io.EOF {
 				t.Fatal("not the error we expected")
 			}
-			if res.State.HTTPResponse != nil {
-				t.Fatal("expected nil request here")
-			}
 		})
 
 		t.Run("with invalid domain", func(t *testing.T) {
@@ -264,9 +261,6 @@ func TestHTTPRequest(t *testing.T) {
 			res := httpRequest.Apply(context.Background(), NewMaybeWithValue(&httpTransport))
 			if res.Error == nil || !strings.HasPrefix(res.Error.Error(), `parse "https://%09/": invalid URL escape "%09"`) {
 				t.Fatal("not the error we expected", res.Error)
-			}
-			if res.State.HTTPResponse != nil {
-				t.Fatal("expected nil request here")
 			}
 		})
 
