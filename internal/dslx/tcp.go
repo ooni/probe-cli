@@ -14,7 +14,7 @@ import (
 
 // TCPConnect returns a function that establishes TCP connections.
 func TCPConnect(rt Runtime) Func[*Endpoint, *TCPConnection] {
-	return Operation[*Endpoint, *TCPConnection](func(ctx context.Context, input *Endpoint) *Maybe[*TCPConnection] {
+	return Operation[*Endpoint, *TCPConnection](func(ctx context.Context, input *Endpoint) (*TCPConnection, error) {
 		// create trace
 		trace := rt.NewTrace(rt.IDGenerator().Add(1), rt.ZeroTime(), input.Tags...)
 
@@ -46,18 +46,20 @@ func TCPConnect(rt Runtime) Func[*Endpoint, *TCPConnection] {
 		// save the observations
 		rt.SaveObservations(maybeTraceToObservations(trace)...)
 
+		// handle error case
+		if err != nil {
+			return nil, err
+		}
+
+		// handle success
 		state := &TCPConnection{
 			Address: input.Address,
-			Conn:    conn, // possibly nil
+			Conn:    conn,
 			Domain:  input.Domain,
 			Network: input.Network,
 			Trace:   trace,
 		}
-
-		return &Maybe[*TCPConnection]{
-			Error: err,
-			State: state,
-		}
+		return state, nil
 	})
 }
 

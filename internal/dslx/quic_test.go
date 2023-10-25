@@ -96,8 +96,8 @@ func TestQUICHandshake(t *testing.T) {
 				if res.Error != tt.expectErr {
 					t.Fatalf("unexpected error: %s", res.Error)
 				}
-				if res.State == nil || res.State.QUICConn != tt.expectConn {
-					t.Fatal("unexpected conn")
+				if res.Error == nil && res.State.QUICConn != tt.expectConn {
+					t.Fatalf("unexpected conn %v", res.State)
 				}
 				rt.Close()
 				if wasClosed != tt.closed {

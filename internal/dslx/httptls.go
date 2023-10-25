@@ -17,7 +17,7 @@ func HTTPRequestOverTLS(rt Runtime, options ...HTTPRequestOption) Func[*TLSConne
 
 // HTTPConnectionTLS converts a TLS connection into an HTTP connection.
 func HTTPConnectionTLS(rt Runtime) Func[*TLSConnection, *HTTPConnection] {
-	return Operation[*TLSConnection, *HTTPConnection](func(ctx context.Context, input *TLSConnection) *Maybe[*HTTPConnection] {
+	return Operation[*TLSConnection, *HTTPConnection](func(ctx context.Context, input *TLSConnection) (*HTTPConnection, error) {
 		// TODO(https://github.com/ooni/probe/issues/2534): here we're using the QUIRKY netxlite.NewHTTPTransport
 		// function, but we can probably avoid using it, given that this code is
 		// not using tracing and does not care about those quirks.
@@ -26,6 +26,7 @@ func HTTPConnectionTLS(rt Runtime) Func[*TLSConnection, *HTTPConnection] {
 			netxlite.NewNullDialer(),
 			netxlite.NewSingleUseTLSDialer(input.Conn),
 		)
+
 		state := &HTTPConnection{
 			Address:               input.Address,
 			Domain:                input.Domain,
@@ -35,9 +36,7 @@ func HTTPConnectionTLS(rt Runtime) Func[*TLSConnection, *HTTPConnection] {
 			Trace:                 input.Trace,
 			Transport:             httpTransport,
 		}
-		return &Maybe[*HTTPConnection]{
-			Error: nil,
-			State: state,
-		}
+
+		return state, nil
 	})
 }

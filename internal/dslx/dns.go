@@ -71,7 +71,7 @@ type ResolvedAddresses struct {
 // DNSLookupGetaddrinfo returns a function that resolves a domain name to
 // IP addresses using libc's getaddrinfo function.
 func DNSLookupGetaddrinfo(rt Runtime) Func[*DomainToResolve, *ResolvedAddresses] {
-	return Operation[*DomainToResolve, *ResolvedAddresses](func(ctx context.Context, input *DomainToResolve) *Maybe[*ResolvedAddresses] {
+	return Operation[*DomainToResolve, *ResolvedAddresses](func(ctx context.Context, input *DomainToResolve) (*ResolvedAddresses, error) {
 		// create trace
 		trace := rt.NewTrace(rt.IDGenerator().Add(1), rt.ZeroTime(), input.Tags...)
 
@@ -100,23 +100,25 @@ func DNSLookupGetaddrinfo(rt Runtime) Func[*DomainToResolve, *ResolvedAddresses]
 		// save the observations
 		rt.SaveObservations(maybeTraceToObservations(trace)...)
 
+		// handle error case
+		if err != nil {
+			return nil, err
+		}
+
+		// handle success
 		state := &ResolvedAddresses{
-			Addresses: addrs, // maybe empty
+			Addresses: addrs,
 			Domain:    input.Domain,
 			Trace:     trace,
 		}
-
-		return &Maybe[*ResolvedAddresses]{
-			Error: err,
-			State: state,
-		}
+		return state, nil
 	})
 }
 
 // DNSLookupUDP returns a function that resolves a domain name to
 // IP addresses using the given DNS-over-UDP resolver.
 func DNSLookupUDP(rt Runtime, endpoint string) Func[*DomainToResolve, *ResolvedAddresses] {
-	return Operation[*DomainToResolve, *ResolvedAddresses](func(ctx context.Context, input *DomainToResolve) *Maybe[*ResolvedAddresses] {
+	return Operation[*DomainToResolve, *ResolvedAddresses](func(ctx context.Context, input *DomainToResolve) (*ResolvedAddresses, error) {
 		// create trace
 		trace := rt.NewTrace(rt.IDGenerator().Add(1), rt.ZeroTime(), input.Tags...)
 
@@ -150,15 +152,17 @@ func DNSLookupUDP(rt Runtime, endpoint string) Func[*DomainToResolve, *ResolvedA
 		// save the observations
 		rt.SaveObservations(maybeTraceToObservations(trace)...)
 
+		// handle error case
+		if err != nil {
+			return nil, err
+		}
+
+		// handle success
 		state := &ResolvedAddresses{
-			Addresses: addrs, // maybe empty
+			Addresses: addrs,
 			Domain:    input.Domain,
 			Trace:     trace,
 		}
-
-		return &Maybe[*ResolvedAddresses]{
-			Error: err,
-			State: state,
-		}
+		return state, nil
 	})
 }

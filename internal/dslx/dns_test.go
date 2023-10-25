@@ -90,11 +90,8 @@ func TestGetaddrinfo(t *testing.T) {
 			if res.Error != mockedErr {
 				t.Fatalf("unexpected error type: %s", res.Error)
 			}
-			if res.State == nil {
-				t.Fatal("unexpected nil state")
-			}
-			if res.State.Addresses != nil {
-				t.Fatal("expected empty addresses here")
+			if res.State != nil {
+				t.Fatal("expected nil state")
 			}
 		})
 
@@ -178,11 +175,8 @@ func TestLookupUDP(t *testing.T) {
 			if res.Error != mockedErr {
 				t.Fatalf("unexpected error type: %s", res.Error)
 			}
-			if res.State == nil {
-				t.Fatal("unexpected nil state")
-			}
-			if res.State.Addresses != nil {
-				t.Fatal("expected empty addresses here")
+			if res.State != nil {
+				t.Fatal("expected nil state")
 			}
 		})
 
