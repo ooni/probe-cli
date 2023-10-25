@@ -92,7 +92,7 @@ func TestQUICHandshake(t *testing.T) {
 					Network: "udp",
 					Tags:    tt.tags,
 				}
-				res := quicHandshake.Apply(context.Background(), endpoint)
+				res := quicHandshake.Apply(context.Background(), NewMaybeWithValue(endpoint))
 				if res.Error != tt.expectErr {
 					t.Fatalf("unexpected error: %s", res.Error)
 				}

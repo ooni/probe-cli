@@ -4,12 +4,15 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-func getFn(err error, name string) Func[int, *Maybe[int]] {
+func getFn(err error, name string) Func[int, int] {
 	return &fn{err: err, name: name}
 }
 
@@ -18,10 +21,11 @@ type fn struct {
 	name string
 }
 
-func (f *fn) Apply(ctx context.Context, i int) *Maybe[int] {
+func (f *fn) Apply(ctx context.Context, i *Maybe[int]) *Maybe[int] {
+	runtimex.Assert(i.Error == nil, "did not expect to see an error here")
 	return &Maybe[int]{
 		Error: f.err,
-		State: i + 1,
+		State: i.State + 1,
 		Observations: []*Observations{
 			{
 				NetworkEvents: []*model.ArchivalNetworkEvent{{Tags: []string{"apply"}}},
@@ -29,6 +33,37 @@ func (f *fn) Apply(ctx context.Context, i int) *Maybe[int] {
 		},
 		Operation: f.name,
 	}
+}
+
+func TestStageAdapter(t *testing.T) {
+	t.Run("make sure that we handle a previous stage failure", func(t *testing.T) {
+		unet := &mocks.UnderlyingNetwork{
+			// explicitly empty so we crash if we try using underlying network functionality
+		}
+		netx := &netxlite.Netx{Underlying: unet}
+
+		// create runtime
+		rt := NewMinimalRuntime(model.DiscardLogger, time.Now(), MinimalRuntimeOptionMeasuringNetwork(netx))
+
+		// create measurement pipeline where we run DNS lookups
+		pipeline := DNSLookupGetaddrinfo(rt)
+
+		// create input that contains an error
+		input := &Maybe[*DomainToResolve]{
+			Error:        errors.New("mocked error"),
+			Observations: []*Observations{},
+			Operation:    "",
+			State:        nil,
+		}
+
+		// run the pipeline
+		output := pipeline.Apply(context.Background(), input)
+
+		// make sure the output contains the same error as the input
+		if !errors.Is(output.Error, input.Error) {
+			t.Fatal("unexpected error")
+		}
+	})
 }
 
 /*
@@ -53,7 +88,7 @@ func TestCompose2(t *testing.T) {
 				f1 := getFn(tt.err, "maybe fail")
 				f2 := getFn(nil, "succeed")
 				composit := Compose2(f1, f2)
-				r := composit.Apply(context.Background(), tt.input)
+				r := composit.Apply(context.Background(), NewMaybeWithValue(tt.input))
 				if r.Error != tt.err {
 					t.Fatalf("unexpected error")
 				}
@@ -73,7 +108,7 @@ func TestGen(t *testing.T) {
 		incFunc := getFn(nil, "succeed")
 		composit := Compose14(incFunc, incFunc, incFunc, incFunc, incFunc, incFunc, incFunc, incFunc,
 			incFunc, incFunc, incFunc, incFunc, incFunc, incFunc)
-		r := composit.Apply(context.Background(), 0)
+		r := composit.Apply(context.Background(), NewMaybeWithValue(0))
 		if r.Error != nil {
 			t.Fatalf("unexpected error: %s", r.Error)
 		}
@@ -91,8 +126,8 @@ func TestObservations(t *testing.T) {
 		fn1 := getFn(nil, "succeed")
 		fn2 := getFn(nil, "succeed")
 		composit := Compose2(fn1, fn2)
-		r1 := composit.Apply(context.Background(), 3)
-		r2 := composit.Apply(context.Background(), 42)
+		r1 := composit.Apply(context.Background(), NewMaybeWithValue(3))
+		r2 := composit.Apply(context.Background(), NewMaybeWithValue(42))
 		if len(r1.Observations) != 2 || len(r2.Observations) != 2 {
 			t.Fatalf("unexpected number of observations")
 		}
@@ -123,7 +158,7 @@ func TestCounter(t *testing.T) {
 				fn := getFn(tt.err, "maybe fail")
 				cnt := NewCounter[int]()
 				composit := Compose2(fn, cnt.Func())
-				r := composit.Apply(context.Background(), 42)
+				r := composit.Apply(context.Background(), NewMaybeWithValue(42))
 				cntVal := cnt.Value()
 				if cntVal != tt.expect {
 					t.Fatalf("unexpected counter value")
