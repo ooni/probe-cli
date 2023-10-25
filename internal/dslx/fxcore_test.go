@@ -12,7 +12,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-func getFn(err error, name string) Stage[int, int] {
+func getFn(err error, name string) Func[int, int] {
 	return &fn{err: err, name: name}
 }
 
@@ -88,7 +88,7 @@ func TestCompose2(t *testing.T) {
 				f1 := getFn(tt.err, "maybe fail")
 				f2 := getFn(nil, "succeed")
 				composit := Compose2(f1, f2)
-				r := composit.Apply(context.Background(), Value(tt.input))
+				r := composit.Apply(context.Background(), NewMaybeWithValue(tt.input))
 				if r.Error != tt.err {
 					t.Fatalf("unexpected error")
 				}
@@ -108,7 +108,7 @@ func TestGen(t *testing.T) {
 		incFunc := getFn(nil, "succeed")
 		composit := Compose14(incFunc, incFunc, incFunc, incFunc, incFunc, incFunc, incFunc, incFunc,
 			incFunc, incFunc, incFunc, incFunc, incFunc, incFunc)
-		r := composit.Apply(context.Background(), Value(0))
+		r := composit.Apply(context.Background(), NewMaybeWithValue(0))
 		if r.Error != nil {
 			t.Fatalf("unexpected error: %s", r.Error)
 		}
@@ -126,8 +126,8 @@ func TestObservations(t *testing.T) {
 		fn1 := getFn(nil, "succeed")
 		fn2 := getFn(nil, "succeed")
 		composit := Compose2(fn1, fn2)
-		r1 := composit.Apply(context.Background(), Value(3))
-		r2 := composit.Apply(context.Background(), Value(42))
+		r1 := composit.Apply(context.Background(), NewMaybeWithValue(3))
+		r2 := composit.Apply(context.Background(), NewMaybeWithValue(42))
 		if len(r1.Observations) != 2 || len(r2.Observations) != 2 {
 			t.Fatalf("unexpected number of observations")
 		}
@@ -158,7 +158,7 @@ func TestCounter(t *testing.T) {
 				fn := getFn(tt.err, "maybe fail")
 				cnt := NewCounter[int]()
 				composit := Compose2(fn, cnt.Func())
-				r := composit.Apply(context.Background(), Value(42))
+				r := composit.Apply(context.Background(), NewMaybeWithValue(42))
 				cntVal := cnt.Value()
 				if cntVal != tt.expect {
 					t.Fatalf("unexpected counter value")

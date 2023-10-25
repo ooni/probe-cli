@@ -12,16 +12,16 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// Stage is a DSL pipeline stage.
-type Stage[A, B any] interface {
+// Func is a function f: (context.Context, A) -> B.
+type Func[A, B any] interface {
 	Apply(ctx context.Context, a *Maybe[A]) *Maybe[B]
 }
 
-// StageAdapter adapts a func to be a DSL stage.
-type StageAdapter[A, B any] func(ctx context.Context, a A) *Maybe[B]
+// Operation adapts a golang function to behave like a Func.
+type Operation[A, B any] func(ctx context.Context, a A) *Maybe[B]
 
 // Apply implements Func.
-func (fa StageAdapter[A, B]) Apply(ctx context.Context, a *Maybe[A]) *Maybe[B] {
+func (op Operation[A, B]) Apply(ctx context.Context, a *Maybe[A]) *Maybe[B] {
 	if a.Error != nil {
 		return &Maybe[B]{
 			Error:        a.Error,
@@ -30,7 +30,7 @@ func (fa StageAdapter[A, B]) Apply(ctx context.Context, a *Maybe[A]) *Maybe[B] {
 			State:        *new(B), // zero value
 		}
 	}
-	return fa(ctx, a.State)
+	return op(ctx, a.State)
 }
 
 // Maybe is the result of an operation implemented by this package
@@ -50,8 +50,8 @@ type Maybe[State any] struct {
 	State State
 }
 
-// Value constructs a Maybe containing the given value.
-func Value[State any](value State) *Maybe[State] {
+// NewMaybeWithValue constructs a Maybe containing the given value.
+func NewMaybeWithValue[State any](value State) *Maybe[State] {
 	return &Maybe[State]{
 		Error:        nil,
 		Observations: []*Observations{},
@@ -61,7 +61,7 @@ func Value[State any](value State) *Maybe[State] {
 }
 
 // Compose2 composes two operations such as [TCPConnect] and [TLSHandshake].
-func Compose2[A, B, C any](f Stage[A, B], g Stage[B, C]) Stage[A, C] {
+func Compose2[A, B, C any](f Func[A, B], g Func[B, C]) Func[A, C] {
 	return &compose2Func[A, B, C]{
 		f: f,
 		g: g,
@@ -70,8 +70,8 @@ func Compose2[A, B, C any](f Stage[A, B], g Stage[B, C]) Stage[A, C] {
 
 // compose2Func is the type returned by [Compose2].
 type compose2Func[A, B, C any] struct {
-	f Stage[A, B]
-	g Stage[B, C]
+	f Func[A, B]
+	g Func[B, C]
 }
 
 // Apply implements Func
@@ -120,8 +120,8 @@ func (c *Counter[T]) Value() int64 {
 }
 
 // Func returns a Func[T, *Maybe[T]] that updates the counter.
-func (c *Counter[T]) Func() Stage[T, T] {
-	return StageAdapter[T, T](func(ctx context.Context, value T) *Maybe[T] {
+func (c *Counter[T]) Func() Func[T, T] {
+	return Operation[T, T](func(ctx context.Context, value T) *Maybe[T] {
 		c.n.Add(1)
 		return &Maybe[T]{
 			Error:        nil,

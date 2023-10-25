@@ -14,8 +14,8 @@ import (
 )
 
 // TCPConnect returns a function that establishes TCP connections.
-func TCPConnect(rt Runtime) Stage[*Endpoint, *TCPConnection] {
-	return StageAdapter[*Endpoint, *TCPConnection](func(ctx context.Context, input *Endpoint) *Maybe[*TCPConnection] {
+func TCPConnect(rt Runtime) Func[*Endpoint, *TCPConnection] {
+	return Operation[*Endpoint, *TCPConnection](func(ctx context.Context, input *Endpoint) *Maybe[*TCPConnection] {
 		// create trace
 		trace := rt.NewTrace(rt.IDGenerator().Add(1), rt.ZeroTime(), input.Tags...)
 

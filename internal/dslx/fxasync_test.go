@@ -8,7 +8,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-func getFnWait(wg *sync.WaitGroup) Stage[int, int] {
+func getFnWait(wg *sync.WaitGroup) Func[int, int] {
 	return &fnWait{wg}
 }
 
@@ -89,7 +89,7 @@ func TestParallel(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				wg := sync.WaitGroup{}
 				wg.Add(tt.funcs)
-				funcs := []Stage[int, int]{}
+				funcs := []Func[int, int]{}
 				for i := 0; i < tt.funcs; i++ {
 					funcs = append(funcs, getFnWait(&wg))
 				}

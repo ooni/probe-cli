@@ -262,7 +262,7 @@ system resolver, or a custom UDP resolver.
 Then we apply the `dnsInput` argument to `lookupFn` to get a `dnsResult`.
 
 ```Go
-	dnsResult := lookupFn.Apply(ctx, dslx.Value(dnsInput))
+	dnsResult := lookupFn.Apply(ctx, dslx.NewMaybeWithValue(dnsInput))
 
 ```
 
@@ -362,8 +362,8 @@ data structure called `Maybe`, which contains either the endpoint measurement re
 (on success) or an error (in case of failure).
 
 ```Go
-	var targetResult *dslx.Maybe[*dslx.TLSConnection] = pipelineTarget.Apply(ctx, dslx.Value(endpoint))
-	var controlResult *dslx.Maybe[*dslx.TLSConnection] = pipelineControl.Apply(ctx, dslx.Value(endpoint))
+	var targetResult *dslx.Maybe[*dslx.TLSConnection] = pipelineTarget.Apply(ctx, dslx.NewMaybeWithValue(endpoint))
+	var controlResult *dslx.Maybe[*dslx.TLSConnection] = pipelineControl.Apply(ctx, dslx.NewMaybeWithValue(endpoint))
 
 ```
 

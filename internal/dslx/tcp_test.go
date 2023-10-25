@@ -69,7 +69,7 @@ func TestTCPConnect(t *testing.T) {
 					Network: "tcp",
 					Tags:    tt.tags,
 				}
-				res := tcpConnect.Apply(context.Background(), Value(endpoint))
+				res := tcpConnect.Apply(context.Background(), NewMaybeWithValue(endpoint))
 				if res.Error != tt.expectErr {
 					t.Fatalf("unexpected error: %s", res.Error)
 				}
