@@ -72,92 +72,117 @@ type ResolvedAddresses struct {
 // DNSLookupGetaddrinfo returns a function that resolves a domain name to
 // IP addresses using libc's getaddrinfo function.
 func DNSLookupGetaddrinfo(rt Runtime) Func[*DomainToResolve, *Maybe[*ResolvedAddresses]] {
-	return FuncAdapter[*DomainToResolve, *Maybe[*ResolvedAddresses]](func(ctx context.Context, input *DomainToResolve) *Maybe[*ResolvedAddresses] {
-		// create trace
-		trace := rt.NewTrace(rt.IDGenerator().Add(1), rt.ZeroTime(), input.Tags...)
+	return &dnsLookupGetaddrinfoFunc{rt}
+}
 
-		// start the operation logger
-		ol := logx.NewOperationLogger(
-			rt.Logger(),
-			"[#%d] DNSLookup[getaddrinfo] %s",
-			trace.Index(),
-			input.Domain,
-		)
+// dnsLookupGetaddrinfoFunc is the function returned by DNSLookupGetaddrinfo.
+type dnsLookupGetaddrinfoFunc struct {
+	rt Runtime
+}
 
-		// setup
-		const timeout = 4 * time.Second
-		ctx, cancel := context.WithTimeout(ctx, timeout)
-		defer cancel()
+// Apply implements Func.
+func (f *dnsLookupGetaddrinfoFunc) Apply(
+	ctx context.Context, input *DomainToResolve) *Maybe[*ResolvedAddresses] {
 
-		// create the resolver
-		resolver := trace.NewStdlibResolver(rt.Logger())
+	// create trace
+	trace := f.rt.NewTrace(f.rt.IDGenerator().Add(1), f.rt.ZeroTime(), input.Tags...)
 
-		// lookup
-		addrs, err := resolver.LookupHost(ctx, input.Domain)
+	// start the operation logger
+	ol := logx.NewOperationLogger(
+		f.rt.Logger(),
+		"[#%d] DNSLookup[getaddrinfo] %s",
+		trace.Index(),
+		input.Domain,
+	)
 
-		// stop the operation logger
-		ol.Stop(err)
+	// setup
+	const timeout = 4 * time.Second
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 
-		state := &ResolvedAddresses{
-			Addresses: addrs, // maybe empty
-			Domain:    input.Domain,
-			Trace:     trace,
-		}
+	// create the resolver
+	resolver := trace.NewStdlibResolver(f.rt.Logger())
 
-		return &Maybe[*ResolvedAddresses]{
-			Error:        err,
-			Observations: maybeTraceToObservations(trace),
-			Operation:    netxlite.ResolveOperation,
-			State:        state,
-		}
-	})
+	// lookup
+	addrs, err := resolver.LookupHost(ctx, input.Domain)
+
+	// stop the operation logger
+	ol.Stop(err)
+
+	state := &ResolvedAddresses{
+		Addresses: addrs, // maybe empty
+		Domain:    input.Domain,
+		Trace:     trace,
+	}
+
+	return &Maybe[*ResolvedAddresses]{
+		Error:        err,
+		Observations: maybeTraceToObservations(trace),
+		Operation:    netxlite.ResolveOperation,
+		State:        state,
+	}
 }
 
 // DNSLookupUDP returns a function that resolves a domain name to
 // IP addresses using the given DNS-over-UDP resolver.
-func DNSLookupUDP(rt Runtime, endpoint string) Func[*DomainToResolve, *Maybe[*ResolvedAddresses]] {
-	return FuncAdapter[*DomainToResolve, *Maybe[*ResolvedAddresses]](func(ctx context.Context, input *DomainToResolve) *Maybe[*ResolvedAddresses] {
-		// create trace
-		trace := rt.NewTrace(rt.IDGenerator().Add(1), rt.ZeroTime(), input.Tags...)
+func DNSLookupUDP(rt Runtime, resolver string) Func[*DomainToResolve, *Maybe[*ResolvedAddresses]] {
+	return &dnsLookupUDPFunc{
+		Resolver: resolver,
+		rt:       rt,
+	}
+}
 
-		// start the operation logger
-		ol := logx.NewOperationLogger(
-			rt.Logger(),
-			"[#%d] DNSLookup[%s/udp] %s",
-			trace.Index(),
-			endpoint,
-			input.Domain,
-		)
+// dnsLookupUDPFunc is the function returned by DNSLookupUDP.
+type dnsLookupUDPFunc struct {
+	// Resolver is the MANDATORY endpointed of the resolver to use.
+	Resolver string
+	rt       Runtime
+}
 
-		// setup
-		const timeout = 4 * time.Second
-		ctx, cancel := context.WithTimeout(ctx, timeout)
-		defer cancel()
+// Apply implements Func.
+func (f *dnsLookupUDPFunc) Apply(
+	ctx context.Context, input *DomainToResolve) *Maybe[*ResolvedAddresses] {
 
-		// create the resolver
-		resolver := trace.NewParallelUDPResolver(
-			rt.Logger(),
-			trace.NewDialerWithoutResolver(rt.Logger()),
-			endpoint,
-		)
+	// create trace
+	trace := f.rt.NewTrace(f.rt.IDGenerator().Add(1), f.rt.ZeroTime(), input.Tags...)
 
-		// lookup
-		addrs, err := resolver.LookupHost(ctx, input.Domain)
+	// start the operation logger
+	ol := logx.NewOperationLogger(
+		f.rt.Logger(),
+		"[#%d] DNSLookup[%s/udp] %s",
+		trace.Index(),
+		f.Resolver,
+		input.Domain,
+	)
 
-		// stop the operation logger
-		ol.Stop(err)
+	// setup
+	const timeout = 4 * time.Second
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 
-		state := &ResolvedAddresses{
-			Addresses: addrs, // maybe empty
-			Domain:    input.Domain,
-			Trace:     trace,
-		}
+	// create the resolver
+	resolver := trace.NewParallelUDPResolver(
+		f.rt.Logger(),
+		trace.NewDialerWithoutResolver(f.rt.Logger()),
+		f.Resolver,
+	)
 
-		return &Maybe[*ResolvedAddresses]{
-			Error:        err,
-			Observations: maybeTraceToObservations(trace),
-			Operation:    netxlite.ResolveOperation,
-			State:        state,
-		}
-	})
+	// lookup
+	addrs, err := resolver.LookupHost(ctx, input.Domain)
+
+	// stop the operation logger
+	ol.Stop(err)
+
+	state := &ResolvedAddresses{
+		Addresses: addrs, // maybe empty
+		Domain:    input.Domain,
+		Trace:     trace,
+	}
+
+	return &Maybe[*ResolvedAddresses]{
+		Error:        err,
+		Observations: maybeTraceToObservations(trace),
+		Operation:    netxlite.ResolveOperation,
+		State:        state,
+	}
 }

@@ -15,50 +15,61 @@ import (
 
 // TCPConnect returns a function that establishes TCP connections.
 func TCPConnect(rt Runtime) Func[*Endpoint, *Maybe[*TCPConnection]] {
-	return FuncAdapter[*Endpoint, *Maybe[*TCPConnection]](func(ctx context.Context, input *Endpoint) *Maybe[*TCPConnection] {
-		// create trace
-		trace := rt.NewTrace(rt.IDGenerator().Add(1), rt.ZeroTime(), input.Tags...)
+	f := &tcpConnectFunc{rt}
+	return f
+}
 
-		// start the operation logger
-		ol := logx.NewOperationLogger(
-			rt.Logger(),
-			"[#%d] TCPConnect %s",
-			trace.Index(),
-			input.Address,
-		)
+// tcpConnectFunc is a function that establishes TCP connections.
+type tcpConnectFunc struct {
+	rt Runtime
+}
 
-		// setup
-		const timeout = 15 * time.Second
-		ctx, cancel := context.WithTimeout(ctx, timeout)
-		defer cancel()
+// Apply applies the function to its arguments.
+func (f *tcpConnectFunc) Apply(
+	ctx context.Context, input *Endpoint) *Maybe[*TCPConnection] {
 
-		// obtain the dialer to use
-		dialer := trace.NewDialerWithoutResolver(rt.Logger())
+	// create trace
+	trace := f.rt.NewTrace(f.rt.IDGenerator().Add(1), f.rt.ZeroTime(), input.Tags...)
 
-		// connect
-		conn, err := dialer.DialContext(ctx, "tcp", input.Address)
+	// start the operation logger
+	ol := logx.NewOperationLogger(
+		f.rt.Logger(),
+		"[#%d] TCPConnect %s",
+		trace.Index(),
+		input.Address,
+	)
 
-		// possibly register established conn for late close
-		rt.MaybeTrackConn(conn)
+	// setup
+	const timeout = 15 * time.Second
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 
-		// stop the operation logger
-		ol.Stop(err)
+	// obtain the dialer to use
+	dialer := trace.NewDialerWithoutResolver(f.rt.Logger())
 
-		state := &TCPConnection{
-			Address: input.Address,
-			Conn:    conn, // possibly nil
-			Domain:  input.Domain,
-			Network: input.Network,
-			Trace:   trace,
-		}
+	// connect
+	conn, err := dialer.DialContext(ctx, "tcp", input.Address)
 
-		return &Maybe[*TCPConnection]{
-			Error:        err,
-			Observations: maybeTraceToObservations(trace),
-			Operation:    netxlite.ConnectOperation,
-			State:        state,
-		}
-	})
+	// possibly register established conn for late close
+	f.rt.MaybeTrackConn(conn)
+
+	// stop the operation logger
+	ol.Stop(err)
+
+	state := &TCPConnection{
+		Address: input.Address,
+		Conn:    conn, // possibly nil
+		Domain:  input.Domain,
+		Network: input.Network,
+		Trace:   trace,
+	}
+
+	return &Maybe[*TCPConnection]{
+		Error:        err,
+		Observations: maybeTraceToObservations(trace),
+		Operation:    netxlite.ConnectOperation,
+		State:        state,
+	}
 }
 
 // TCPConnection is an established TCP connection. If you initialize
