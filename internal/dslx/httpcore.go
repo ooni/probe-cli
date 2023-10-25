@@ -221,7 +221,7 @@ func httpRoundTrip(
 	input *HTTPConnection,
 	req *http.Request,
 ) (*http.Response, []byte, []*Observations, error) {
-	const maxbody = 1 << 19 // TODO(bassosimone): allow to configure this value?
+	const maxbody = 1 << 19 // TODO(https://github.com/ooni/probe/issues/2621): allow to configure this value
 	started := input.Trace.TimeSince(input.Trace.ZeroTime())
 
 	// manually create a single 1-length observations structure because
@@ -249,7 +249,7 @@ func httpRoundTrip(
 
 		// read a snapshot of the response body
 		reader := io.LimitReader(resp.Body, maxbody)
-		body, err = netxlite.ReadAllContext(ctx, reader) // TODO: enable streaming and measure speed
+		body, err = netxlite.ReadAllContext(ctx, reader) // TODO(https://github.com/ooni/probe/issues/2622)
 
 		// collect and save download speed samples
 		samples := sampler.ExtractSamples()

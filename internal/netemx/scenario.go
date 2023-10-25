@@ -209,6 +209,12 @@ func MustNewScenario(config []*ScenarioDomainAddresses) *QAEnv {
 						ServerNameMain:   sad.ServerNameMain,
 						ServerNameExtras: sad.ServerNameExtras,
 					},
+					&HTTP3ServerFactory{
+						Factory:          &DNSOverHTTPSHandlerFactory{},
+						Ports:            []int{443},
+						ServerNameMain:   sad.ServerNameMain,
+						ServerNameExtras: sad.ServerNameExtras,
+					},
 				))
 			}
 

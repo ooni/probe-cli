@@ -170,6 +170,11 @@ func (tx *minimalTrace) NewTLSHandshakerStdlib(dl model.DebugLogger) model.TLSHa
 	return tx.netx.NewTLSHandshakerStdlib(dl)
 }
 
+// NewUDPListener implements Trace
+func (tx *minimalTrace) NewUDPListener() model.UDPListener {
+	return tx.netx.NewUDPListener()
+}
+
 // QUICHandshakes implements Trace.
 func (tx *minimalTrace) QUICHandshakes() (out []*model.ArchivalTLSOrQUICHandshakeResult) {
 	return []*model.ArchivalTLSOrQUICHandshakeResult{}
