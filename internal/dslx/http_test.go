@@ -242,7 +242,7 @@ func TestHTTPRequest(t *testing.T) {
 			httpRequest := HTTPRequest(
 				NewMinimalRuntime(model.DiscardLogger, time.Now()),
 			)
-			res := httpRequest.Apply(context.Background(), &httpTransport)
+			res := httpRequest.Apply(context.Background(), NewMaybeWithValue(&httpTransport))
 			if res.Error != io.EOF {
 				t.Fatal("not the error we expected")
 			}
@@ -262,7 +262,7 @@ func TestHTTPRequest(t *testing.T) {
 			}
 			rt := NewMinimalRuntime(model.DiscardLogger, time.Now())
 			httpRequest := HTTPRequest(rt)
-			res := httpRequest.Apply(context.Background(), &httpTransport)
+			res := httpRequest.Apply(context.Background(), NewMaybeWithValue(&httpTransport))
 			if res.Error == nil || !strings.HasPrefix(res.Error.Error(), `parse "https://%09/": invalid URL escape "%09"`) {
 				t.Fatal("not the error we expected", res.Error)
 			}
@@ -282,7 +282,7 @@ func TestHTTPRequest(t *testing.T) {
 			httpRequest := HTTPRequest(
 				NewMinimalRuntime(model.DiscardLogger, time.Now()),
 			)
-			res := httpRequest.Apply(context.Background(), &httpTransport)
+			res := httpRequest.Apply(context.Background(), NewMaybeWithValue(&httpTransport))
 			if res.Error != nil {
 				t.Fatal("expected error")
 			}
@@ -334,7 +334,7 @@ func TestHTTPRequest(t *testing.T) {
 			httpRequest := HTTPRequest(
 				NewMinimalRuntime(model.DiscardLogger, time.Now()),
 			)
-			res := httpRequest.Apply(context.Background(), &httpTransport)
+			res := httpRequest.Apply(context.Background(), NewMaybeWithValue(&httpTransport))
 			if res.Error != nil {
 				t.Fatal("unexpected error")
 			}
@@ -355,7 +355,7 @@ func TestHTTPRequest(t *testing.T) {
 			httpRequest := HTTPRequest(
 				NewMinimalRuntime(model.DiscardLogger, time.Now()),
 			)
-			res := httpRequest.Apply(context.Background(), &httpTransport)
+			res := httpRequest.Apply(context.Background(), NewMaybeWithValue(&httpTransport))
 			if res.Error != nil {
 				t.Fatal("unexpected error")
 			}
@@ -383,7 +383,7 @@ func TestHTTPRequest(t *testing.T) {
 				HTTPRequestOptionURLPath("/path/to/example"),
 				HTTPRequestOptionUserAgent("Mozilla/5.0 Gecko/geckotrail Firefox/firefoxversion"),
 			)
-			res := httpRequest.Apply(context.Background(), &httpTransport)
+			res := httpRequest.Apply(context.Background(), NewMaybeWithValue(&httpTransport))
 			if res.Error != nil {
 				t.Fatal("unexpected error")
 			}
@@ -433,7 +433,7 @@ func TestHTTPTCP(t *testing.T) {
 		f := HTTPConnectionTCP(
 			NewMinimalRuntime(model.DiscardLogger, time.Now()),
 		)
-		res := f.Apply(context.Background(), tcpConn)
+		res := f.Apply(context.Background(), NewMaybeWithValue(tcpConn))
 		if res.Error != nil {
 			t.Fatalf("unexpected error: %s", res.Error)
 		}
@@ -478,7 +478,7 @@ func TestHTTPQUIC(t *testing.T) {
 		f := HTTPConnectionQUIC(
 			NewMinimalRuntime(model.DiscardLogger, time.Now()),
 		)
-		res := f.Apply(context.Background(), quicConn)
+		res := f.Apply(context.Background(), NewMaybeWithValue(quicConn))
 		if res.Error != nil {
 			t.Fatalf("unexpected error: %s", res.Error)
 		}
@@ -523,7 +523,7 @@ func TestHTTPTLS(t *testing.T) {
 		f := HTTPConnectionTLS(
 			NewMinimalRuntime(model.DiscardLogger, time.Now()),
 		)
-		res := f.Apply(context.Background(), tlsConn)
+		res := f.Apply(context.Background(), NewMaybeWithValue(tlsConn))
 		if res.Error != nil {
 			t.Fatalf("unexpected error: %s", res.Error)
 		}

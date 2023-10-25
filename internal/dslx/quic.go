@@ -16,8 +16,8 @@ import (
 )
 
 // QUICHandshake returns a function performing QUIC handshakes.
-func QUICHandshake(rt Runtime, options ...TLSHandshakeOption) Func[*Endpoint, *Maybe[*QUICConnection]] {
-	return FuncAdapter[*Endpoint, *Maybe[*QUICConnection]](func(ctx context.Context, input *Endpoint) *Maybe[*QUICConnection] {
+func QUICHandshake(rt Runtime, options ...TLSHandshakeOption) Func[*Endpoint, *QUICConnection] {
+	return Operation[*Endpoint, *QUICConnection](func(ctx context.Context, input *Endpoint) *Maybe[*QUICConnection] {
 		// create trace
 		trace := rt.NewTrace(rt.IDGenerator().Add(1), rt.ZeroTime(), input.Tags...)
 

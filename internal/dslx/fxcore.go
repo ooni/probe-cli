@@ -14,15 +14,23 @@ import (
 
 // Func is a function f: (context.Context, A) -> B.
 type Func[A, B any] interface {
-	Apply(ctx context.Context, a A) B
+	Apply(ctx context.Context, a *Maybe[A]) *Maybe[B]
 }
 
-// FuncAdapter adapts a func to be a Func.
-type FuncAdapter[A, B any] func(ctx context.Context, a A) B
+// Operation adapts a golang function to behave like a Func.
+type Operation[A, B any] func(ctx context.Context, a A) *Maybe[B]
 
 // Apply implements Func.
-func (fa FuncAdapter[A, B]) Apply(ctx context.Context, a A) B {
-	return fa(ctx, a)
+func (op Operation[A, B]) Apply(ctx context.Context, a *Maybe[A]) *Maybe[B] {
+	if a.Error != nil {
+		return &Maybe[B]{
+			Error:        a.Error,
+			Observations: a.Observations,
+			Operation:    a.Operation,
+			State:        *new(B), // zero value
+		}
+	}
+	return op(ctx, a.State)
 }
 
 // Maybe is the result of an operation implemented by this package
@@ -42,8 +50,18 @@ type Maybe[State any] struct {
 	State State
 }
 
+// NewMaybeWithValue constructs a Maybe containing the given value.
+func NewMaybeWithValue[State any](value State) *Maybe[State] {
+	return &Maybe[State]{
+		Error:        nil,
+		Observations: []*Observations{},
+		Operation:    "",
+		State:        value,
+	}
+}
+
 // Compose2 composes two operations such as [TCPConnect] and [TLSHandshake].
-func Compose2[A, B, C any](f Func[A, *Maybe[B]], g Func[B, *Maybe[C]]) Func[A, *Maybe[C]] {
+func Compose2[A, B, C any](f Func[A, B], g Func[B, C]) Func[A, C] {
 	return &compose2Func[A, B, C]{
 		f: f,
 		g: g,
@@ -52,14 +70,15 @@ func Compose2[A, B, C any](f Func[A, *Maybe[B]], g Func[B, *Maybe[C]]) Func[A, *
 
 // compose2Func is the type returned by [Compose2].
 type compose2Func[A, B, C any] struct {
-	f Func[A, *Maybe[B]]
-	g Func[B, *Maybe[C]]
+	f Func[A, B]
+	g Func[B, C]
 }
 
 // Apply implements Func
-func (h *compose2Func[A, B, C]) Apply(ctx context.Context, a A) *Maybe[C] {
+func (h *compose2Func[A, B, C]) Apply(ctx context.Context, a *Maybe[A]) *Maybe[C] {
 	mb := h.f.Apply(ctx, a)
 	runtimex.Assert(mb != nil, "h.f.Apply returned a nil pointer")
+
 	if mb.Error != nil {
 		return &Maybe[C]{
 			Error:        mb.Error,
@@ -68,8 +87,10 @@ func (h *compose2Func[A, B, C]) Apply(ctx context.Context, a A) *Maybe[C] {
 			State:        *new(C), // zero value
 		}
 	}
-	mc := h.g.Apply(ctx, mb.State)
+
+	mc := h.g.Apply(ctx, mb)
 	runtimex.Assert(mc != nil, "h.g.Apply returned a nil pointer")
+
 	op := mc.Operation
 	if op == "" { // propagate the previous operation name, if this operation has none
 		op = mb.Operation
@@ -99,24 +120,16 @@ func (c *Counter[T]) Value() int64 {
 }
 
 // Func returns a Func[T, *Maybe[T]] that updates the counter.
-func (c *Counter[T]) Func() Func[T, *Maybe[T]] {
-	return &counterFunc[T]{c}
-}
-
-// counterFunc is the Func returned by CounterFunc.Func.
-type counterFunc[T any] struct {
-	c *Counter[T]
-}
-
-// Apply implements Func.
-func (c *counterFunc[T]) Apply(ctx context.Context, value T) *Maybe[T] {
-	c.c.n.Add(1)
-	return &Maybe[T]{
-		Error:        nil,
-		Observations: nil,
-		Operation:    "", // we cannot fail, so no need to store operation name
-		State:        value,
-	}
+func (c *Counter[T]) Func() Func[T, T] {
+	return Operation[T, T](func(ctx context.Context, value T) *Maybe[T] {
+		c.n.Add(1)
+		return &Maybe[T]{
+			Error:        nil,
+			Observations: nil,
+			Operation:    "", // we cannot fail, so no need to store operation name
+			State:        value,
+		}
+	})
 }
 
 // FirstErrorExcludingBrokenIPv6Errors returns the first error and failed operation in a list of
