@@ -83,6 +83,9 @@ func TLSHandshake(rt Runtime, options ...TLSHandshakeOption) Func[*TCPConnection
 		// stop the operation logger
 		ol.Stop(err)
 
+		// save the observations
+		rt.SaveObservations(maybeTraceToObservations(trace)...)
+
 		state := &TLSConnection{
 			Address:  input.Address,
 			Conn:     conn, // possibly nil
@@ -93,10 +96,8 @@ func TLSHandshake(rt Runtime, options ...TLSHandshakeOption) Func[*TCPConnection
 		}
 
 		return &Maybe[*TLSConnection]{
-			Error:        err,
-			Observations: maybeTraceToObservations(trace),
-			Operation:    netxlite.TLSHandshakeOperation,
-			State:        state,
+			Error: err,
+			State: state,
 		}
 	})
 }

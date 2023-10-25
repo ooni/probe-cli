@@ -57,6 +57,9 @@ func QUICHandshake(rt Runtime, options ...TLSHandshakeOption) Func[*Endpoint, *Q
 		// stop the operation logger
 		ol.Stop(err)
 
+		// save the observations
+		rt.SaveObservations(maybeTraceToObservations(trace)...)
+
 		state := &QUICConnection{
 			Address:   input.Address,
 			QUICConn:  quicConn, // possibly nil
@@ -68,10 +71,8 @@ func QUICHandshake(rt Runtime, options ...TLSHandshakeOption) Func[*Endpoint, *Q
 		}
 
 		return &Maybe[*QUICConnection]{
-			Error:        err,
-			Observations: maybeTraceToObservations(trace),
-			Operation:    netxlite.QUICHandshakeOperation,
-			State:        state,
+			Error: err,
+			State: state,
 		}
 	})
 }

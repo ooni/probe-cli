@@ -50,19 +50,17 @@ func TestMakeSureWeCollectSpeedSamples(t *testing.T) {
 	}
 
 	// measure the endpoint
-	result := f0.Apply(context.Background(), NewMaybeWithValue(epnt))
+	_ = f0.Apply(context.Background(), NewMaybeWithValue(epnt))
 
 	// get observations
-	observations := ExtractObservations(result)
+	observations := rt.Observations()
 
 	// process the network events and check for summary
 	var foundSummary bool
-	for _, entry := range observations {
-		for _, ev := range entry.NetworkEvents {
-			if ev.Operation == throttling.BytesReceivedCumulativeOperation {
-				t.Log(ev)
-				foundSummary = true
-			}
+	for _, ev := range observations.NetworkEvents {
+		if ev.Operation == throttling.BytesReceivedCumulativeOperation {
+			t.Log(ev)
+			foundSummary = true
 		}
 	}
 	if !foundSummary {

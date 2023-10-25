@@ -9,7 +9,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func getFn(err error, name string) Func[int, int] {
@@ -22,16 +21,12 @@ type fn struct {
 }
 
 func (f *fn) Apply(ctx context.Context, i *Maybe[int]) *Maybe[int] {
-	runtimex.Assert(i.Error == nil, "did not expect to see an error here")
+	if i.Error != nil {
+		return i
+	}
 	return &Maybe[int]{
 		Error: f.err,
 		State: i.State + 1,
-		Observations: []*Observations{
-			{
-				NetworkEvents: []*model.ArchivalNetworkEvent{{Tags: []string{"apply"}}},
-			},
-		},
-		Operation: f.name,
 	}
 }
 
@@ -50,10 +45,8 @@ func TestStageAdapter(t *testing.T) {
 
 		// create input that contains an error
 		input := &Maybe[*DomainToResolve]{
-			Error:        errors.New("mocked error"),
-			Observations: []*Observations{},
-			Operation:    "",
-			State:        nil,
+			Error: errors.New("mocked error"),
+			State: nil,
 		}
 
 		// run the pipeline
@@ -92,12 +85,6 @@ func TestCompose2(t *testing.T) {
 				if r.Error != tt.err {
 					t.Fatalf("unexpected error")
 				}
-				if tt.err != nil && r.Operation != "maybe fail" {
-					t.Fatalf("unexpected operation string")
-				}
-				if len(r.Observations) != tt.numObs {
-					t.Fatalf("unexpected number of (merged) observations")
-				}
 			})
 		}
 	})
@@ -115,126 +102,5 @@ func TestGen(t *testing.T) {
 		if r.State != 14 {
 			t.Fatalf("unexpected result state")
 		}
-		if r.Operation != "succeed" {
-			t.Fatal("unexpected operation string")
-		}
-	})
-}
-
-func TestObservations(t *testing.T) {
-	t.Run("Extract observations", func(t *testing.T) {
-		fn1 := getFn(nil, "succeed")
-		fn2 := getFn(nil, "succeed")
-		composit := Compose2(fn1, fn2)
-		r1 := composit.Apply(context.Background(), NewMaybeWithValue(3))
-		r2 := composit.Apply(context.Background(), NewMaybeWithValue(42))
-		if len(r1.Observations) != 2 || len(r2.Observations) != 2 {
-			t.Fatalf("unexpected number of observations")
-		}
-		mergedObservations := ExtractObservations(r1, r2)
-		if len(mergedObservations) != 4 {
-			t.Fatalf("unexpected number of merged observations")
-		}
-	})
-}
-
-/*
-Test cases:
-- Success counter:
-  - pipeline succeeds
-  - pipeline fails
-*/
-func TestCounter(t *testing.T) {
-	t.Run("Success counter", func(t *testing.T) {
-		tests := map[string]struct {
-			err    error
-			expect int64
-		}{
-			"pipeline succeeds": {err: nil, expect: 1},
-			"pipeline fails":    {err: errors.New("mocked"), expect: 0},
-		}
-		for name, tt := range tests {
-			t.Run(name, func(t *testing.T) {
-				fn := getFn(tt.err, "maybe fail")
-				cnt := NewCounter[int]()
-				composit := Compose2(fn, cnt.Func())
-				r := composit.Apply(context.Background(), NewMaybeWithValue(42))
-				cntVal := cnt.Value()
-				if cntVal != tt.expect {
-					t.Fatalf("unexpected counter value")
-				}
-				if r.Operation != "maybe fail" {
-					t.Fatal("unexpected operation string")
-				}
-			})
-		}
-	})
-}
-
-/*
-Test cases:
-- Extract first error from list of *Maybe:
-  - without errors
-  - with errors
-
-- Extract first error excluding broken IPv6 errors:
-  - without errors
-  - with errors
-*/
-func TestFirstError(t *testing.T) {
-	networkUnreachable := errors.New(netxlite.FailureNetworkUnreachable)
-	mockErr := errors.New("mocked")
-	errRes := []*Maybe[string]{
-		{Error: nil, Operation: "succeeds"},
-		{Error: networkUnreachable, Operation: "broken IPv6"},
-		{Error: mockErr, Operation: "mock error"},
-	}
-	noErrRes := []*Maybe[int64]{
-		{Error: nil, Operation: "succeeds"},
-		{Error: nil, Operation: "succeeds"},
-	}
-
-	t.Run("Extract first error from list of *Maybe", func(t *testing.T) {
-		t.Run("without errors", func(t *testing.T) {
-			failedOp, firstErr := FirstError(noErrRes...)
-			if firstErr != nil {
-				t.Fatalf("unexpected error: %s", firstErr)
-			}
-			if failedOp != "" {
-				t.Fatalf("unexpected failed operation")
-			}
-		})
-
-		t.Run("with errors", func(t *testing.T) {
-			failedOp, firstErr := FirstError(errRes...)
-			if firstErr != networkUnreachable {
-				t.Fatalf("unexpected error: %s", firstErr)
-			}
-			if failedOp != "broken IPv6" {
-				t.Fatalf("unexpected failed operation")
-			}
-		})
-	})
-
-	t.Run("Extract first error excluding broken IPv6 errors", func(t *testing.T) {
-		t.Run("without errors", func(t *testing.T) {
-			failedOp, firstErrExclIPv6 := FirstErrorExcludingBrokenIPv6Errors(noErrRes...)
-			if firstErrExclIPv6 != nil {
-				t.Fatalf("unexpected error: %s", firstErrExclIPv6)
-			}
-			if failedOp != "" {
-				t.Fatalf("unexpected failed operation")
-			}
-		})
-
-		t.Run("with errors", func(t *testing.T) {
-			failedOp, firstErrExclIPv6 := FirstErrorExcludingBrokenIPv6Errors(errRes...)
-			if firstErrExclIPv6 != mockErr {
-				t.Fatalf("unexpected error: %s", firstErrExclIPv6)
-			}
-			if failedOp != "mock error" {
-				t.Fatalf("unexpected failed operation")
-			}
-		})
 	})
 }

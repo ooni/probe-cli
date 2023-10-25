@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // DomainName is a domain name to resolve.
@@ -98,6 +97,9 @@ func DNSLookupGetaddrinfo(rt Runtime) Func[*DomainToResolve, *ResolvedAddresses]
 		// stop the operation logger
 		ol.Stop(err)
 
+		// save the observations
+		rt.SaveObservations(maybeTraceToObservations(trace)...)
+
 		state := &ResolvedAddresses{
 			Addresses: addrs, // maybe empty
 			Domain:    input.Domain,
@@ -105,10 +107,8 @@ func DNSLookupGetaddrinfo(rt Runtime) Func[*DomainToResolve, *ResolvedAddresses]
 		}
 
 		return &Maybe[*ResolvedAddresses]{
-			Error:        err,
-			Observations: maybeTraceToObservations(trace),
-			Operation:    netxlite.ResolveOperation,
-			State:        state,
+			Error: err,
+			State: state,
 		}
 	})
 }
@@ -147,6 +147,9 @@ func DNSLookupUDP(rt Runtime, endpoint string) Func[*DomainToResolve, *ResolvedA
 		// stop the operation logger
 		ol.Stop(err)
 
+		// save the observations
+		rt.SaveObservations(maybeTraceToObservations(trace)...)
+
 		state := &ResolvedAddresses{
 			Addresses: addrs, // maybe empty
 			Domain:    input.Domain,
@@ -154,10 +157,8 @@ func DNSLookupUDP(rt Runtime, endpoint string) Func[*DomainToResolve, *ResolvedA
 		}
 
 		return &Maybe[*ResolvedAddresses]{
-			Error:        err,
-			Observations: maybeTraceToObservations(trace),
-			Operation:    netxlite.ResolveOperation,
-			State:        state,
+			Error: err,
+			State: state,
 		}
 	})
 }
