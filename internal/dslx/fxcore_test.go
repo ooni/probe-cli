@@ -27,11 +27,6 @@ func (f *fn) Apply(ctx context.Context, i *Maybe[int]) *Maybe[int] {
 	return &Maybe[int]{
 		Error: f.err,
 		State: i.State + 1,
-		Observations: []*Observations{
-			{
-				NetworkEvents: []*model.ArchivalNetworkEvent{{Tags: []string{"apply"}}},
-			},
-		},
 	}
 }
 
@@ -50,9 +45,8 @@ func TestStageAdapter(t *testing.T) {
 
 		// create input that contains an error
 		input := &Maybe[*DomainToResolve]{
-			Error:        errors.New("mocked error"),
-			Observations: []*Observations{},
-			State:        nil,
+			Error: errors.New("mocked error"),
+			State: nil,
 		}
 
 		// run the pipeline
@@ -90,9 +84,6 @@ func TestCompose2(t *testing.T) {
 				r := composit.Apply(context.Background(), NewMaybeWithValue(tt.input))
 				if r.Error != tt.err {
 					t.Fatalf("unexpected error")
-				}
-				if len(r.Observations) != tt.numObs {
-					t.Fatalf("unexpected number of (merged) observations")
 				}
 			})
 		}

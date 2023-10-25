@@ -35,9 +35,8 @@ func HTTPConnectionQUIC(rt Runtime) Func[*QUICConnection, *HTTPConnection] {
 			Transport:             httpTransport,
 		}
 		return &Maybe[*HTTPConnection]{
-			Error:        nil,
-			Observations: nil,
-			State:        state,
+			Error: nil,
+			State: state,
 		}
 	})
 }
