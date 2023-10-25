@@ -71,6 +71,8 @@ type EndpointPort uint16
 // ToEndpoints transforms this set of IP addresses to a list of endpoints. We will
 // combine each IP address with the network and the port to construct an endpoint and
 // we will also apply any additional option to each endpoint.
+//
+// Deprecated: use MakeEndpoint instead.
 func (as *AddressSet) ToEndpoints(
 	network EndpointNetwork, port EndpointPort, options ...EndpointOption) (v []*Endpoint) {
 	for addr := range as.M {

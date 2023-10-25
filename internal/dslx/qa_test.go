@@ -28,7 +28,7 @@ func TestDNSLookupQA(t *testing.T) {
 		// name is the test case name
 		name string
 
-		// newRuntime is the function that creates a new runtime
+		// newRuntime is the function creating a new runtime
 		newRuntime func(netx model.MeasuringNetwork) dslx.Runtime
 
 		// configureDPI configures DPI
@@ -45,7 +45,7 @@ func TestDNSLookupQA(t *testing.T) {
 	}
 
 	cases := []testcase{{
-		name: "successful case with minimal runtime",
+		name: "success with minimal runtime",
 		newRuntime: func(netx model.MeasuringNetwork) dslx.Runtime {
 			return dslx.NewMinimalRuntime(log.Log, time.Now(), dslx.MinimalRuntimeOptionMeasuringNetwork(netx))
 		},
@@ -127,6 +127,162 @@ func TestDNSLookupQA(t *testing.T) {
 
 			// make sure we resolved the expected IP addresses
 			if diff := cmp.Diff(tc.expectAddrs, resolvedAddrs.Addresses, cmpopts.SortSlices(qaStringLessFunc)); diff != "" {
+				t.Fatal(diff)
+			}
+
+			// TODO(bassosimone): make sure the observations are OK
+		})
+	}
+}
+
+func TestMeasureResolvedAddressesQA(t *testing.T) {
+	// testcase is a test case implemented by this function
+	type testcase struct {
+		// name is the test case name
+		name string
+
+		// newRuntime is the function creating a new runtime
+		newRuntime func(netx model.MeasuringNetwork) dslx.Runtime
+
+		// configureDPI configures DPI
+		configureDPI func(dpi *netem.DPIEngine)
+
+		// expectTCP contains the expected TCP connect stats
+		expectTCP map[string]int64
+
+		// expectTLS contains the expected TLS handshake stats
+		expectTLS map[string]int64
+
+		// expectQUIC contains the expected QUIC handshake stats
+		expectQUIC map[string]int64
+	}
+
+	cases := []testcase{{
+		name: "success with minimal runtime",
+		newRuntime: func(netx model.MeasuringNetwork) dslx.Runtime {
+			return dslx.NewMinimalRuntime(log.Log, time.Now(), dslx.MinimalRuntimeOptionMeasuringNetwork(netx))
+		},
+		configureDPI: func(dpi *netem.DPIEngine) {
+			// nothing
+		},
+		expectTCP:  map[string]int64{"": 2},
+		expectTLS:  map[string]int64{"": 2},
+		expectQUIC: map[string]int64{"": 2},
+	}, {
+		name: "TCP connection refused with minimal runtime",
+		newRuntime: func(netx model.MeasuringNetwork) dslx.Runtime {
+			return dslx.NewMinimalRuntime(log.Log, time.Now(), dslx.MinimalRuntimeOptionMeasuringNetwork(netx))
+		},
+		configureDPI: func(dpi *netem.DPIEngine) {
+			dpi.AddRule(&netem.DPICloseConnectionForServerEndpoint{
+				Logger:          log.Log,
+				ServerIPAddress: "8.8.8.8",
+				ServerPort:      443,
+			})
+		},
+		expectTCP: map[string]int64{
+			"":                   1,
+			"connection_refused": 1,
+		},
+		expectTLS: map[string]int64{
+			"": 1,
+			"dslx: error already processed by a previous stage": 1,
+		},
+		expectQUIC: map[string]int64{"": 2},
+	}, {
+		name: "TLS handshake reset with minimal runtime",
+		newRuntime: func(netx model.MeasuringNetwork) dslx.Runtime {
+			return dslx.NewMinimalRuntime(log.Log, time.Now(), dslx.MinimalRuntimeOptionMeasuringNetwork(netx))
+		},
+		configureDPI: func(dpi *netem.DPIEngine) {
+			dpi.AddRule(&netem.DPIResetTrafficForTLSSNI{
+				Logger: log.Log,
+				SNI:    "dns.google",
+			})
+		},
+		expectTCP: map[string]int64{"": 2},
+		expectTLS: map[string]int64{
+			"connection_reset": 2,
+		},
+		expectQUIC: map[string]int64{"": 2},
+	}}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// define the scenario characteristics with multiple IP addresses per host
+
+			// create an internet testing scenario
+			env := netemx.MustNewScenario(netemx.InternetScenario)
+			defer env.Close()
+
+			// create a dslx.Runtime using the client stack
+			rt := tc.newRuntime(&netxlite.Netx{
+				Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: env.ClientStack},
+			})
+			defer rt.Close()
+
+			// configure the DPI engine
+			tc.configureDPI(env.DPIEngine())
+
+			// create stats
+			var (
+				tcpConnectStats    = dslx.NewStats[*dslx.TCPConnection]()
+				tlsHandshakeStats  = dslx.NewStats[*dslx.TLSConnection]()
+				quicHandshakeStats = dslx.NewStats[*dslx.QUICConnection]()
+			)
+
+			// create endpoint measurement function
+			function := dslx.MeasureResolvedAddresses(
+				// measure 443/tcp
+				dslx.Compose7(
+					dslx.MakeEndpoint("tcp", 443),
+					dslx.TCPConnect(rt),
+					tcpConnectStats.Observer(),
+					dslx.TLSHandshake(rt),
+					tlsHandshakeStats.Observer(),
+					dslx.HTTPRequestOverTLS(rt),
+					dslx.Discard[*dslx.HTTPResponse](),
+				),
+
+				// measure 443/udp
+				dslx.Compose5(
+					dslx.MakeEndpoint("udp", 443),
+					dslx.QUICHandshake(
+						rt,
+						// TODO(???): understand why certificate verification always
+						// fails when we're using netem along with HTTP/3
+						dslx.TLSHandshakeOptionInsecureSkipVerify(true),
+					),
+					quicHandshakeStats.Observer(),
+					dslx.HTTPRequestOverQUIC(rt),
+					dslx.Discard[*dslx.HTTPResponse](),
+				),
+			)
+
+			// create context
+			ctx := context.Background()
+
+			// fake out the resolved addresses
+			resolvedAddrs := &dslx.ResolvedAddresses{
+				Addresses: []string{"8.8.8.8", "8.8.4.4"},
+				Domain:    "dns.google",
+			}
+
+			// measure the endpoints
+			_ = function.Apply(ctx, dslx.NewMaybeWithValue(resolvedAddrs))
+
+			// make sure the TCP connect results are consistent
+			if diff := cmp.Diff(tc.expectTCP, tcpConnectStats.Export()); diff != "" {
+				t.Fatal(diff)
+			}
+
+			// make sure the TLS handshake results are consistent
+			if diff := cmp.Diff(tc.expectTLS, tlsHandshakeStats.Export()); diff != "" {
+				t.Fatal(diff)
+			}
+
+			// make sure the QUIC handshake results are consistent
+			if diff := cmp.Diff(tc.expectQUIC, quicHandshakeStats.Export()); diff != "" {
 				t.Fatal(diff)
 			}
 

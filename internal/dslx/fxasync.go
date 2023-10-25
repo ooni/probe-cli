@@ -30,6 +30,8 @@ type Parallelism int
 // The return value is the channel generating fx(a)
 // for every a in inputs. This channel will also be closed
 // to signal EOF to the consumer.
+//
+// Deprecated: use Matrix instead.
 func Map[A, B any](
 	ctx context.Context,
 	parallelism Parallelism,
@@ -77,6 +79,8 @@ func Map[A, B any](
 // - fn is the list of functions.
 //
 // The return value is the list [fx(a)] for every fx in fn.
+//
+// Deprecated: use Matrix instead.
 func Parallel[A, B any](
 	ctx context.Context,
 	parallelism Parallelism,
@@ -90,6 +94,8 @@ func Parallel[A, B any](
 // ParallelAsync is like Parallel but deals with channels. We assume the
 // input channel will be closed to signal EOF. We will close the output
 // channel to signal EOF to the consumer.
+//
+// Deprecated: use Matrix instead.
 func ParallelAsync[A, B any](
 	ctx context.Context,
 	parallelism Parallelism,
@@ -124,10 +130,57 @@ func ParallelAsync[A, B any](
 }
 
 // ApplyAsync is equivalent to calling Apply but returns a channel.
+//
+// Deprecated: use Matrix instead.
 func ApplyAsync[A, B any](
 	ctx context.Context,
 	fx Func[A, B],
 	input A,
 ) <-chan *Maybe[B] {
 	return Map(ctx, Parallelism(1), fx, StreamList(input))
+}
+
+type matrixPoint[A, B any] struct {
+	f  Func[A, B]
+	in A
+}
+
+// Matrix invokes each function on each input using N goroutines streaming the results in output.
+func Matrix[A, B any](ctx context.Context, N Parallelism, inputs []A, functions []Func[A, B]) <-chan *Maybe[B] {
+	// make output
+	output := make(chan *Maybe[B])
+
+	// stream all the possible points
+	points := make(chan *matrixPoint[A, B])
+	go func() {
+		defer close(points)
+		for _, input := range inputs {
+			for _, fx := range functions {
+				points <- &matrixPoint[A, B]{f: fx, in: input}
+			}
+		}
+	}()
+
+	// execute N goroutines
+	wg := &sync.WaitGroup{}
+	if N < 1 {
+		N = 1
+	}
+	for i := Parallelism(0); i < N; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for p := range points {
+				output <- p.f.Apply(ctx, NewMaybeWithValue(p.in))
+			}
+		}()
+	}
+
+	// close output channel when done
+	go func() {
+		defer close(output)
+		wg.Wait()
+	}()
+
+	return output
 }

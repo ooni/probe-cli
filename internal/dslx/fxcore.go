@@ -6,11 +6,21 @@ package dslx
 
 import (
 	"context"
+	"errors"
+	"sync"
 )
 
 // Func is a function f: (context.Context, A) -> B.
 type Func[A, B any] interface {
 	Apply(ctx context.Context, a *Maybe[A]) *Maybe[B]
+}
+
+// FuncAdapter adapts a func to be a [Func].
+type FuncAdapter[A, B any] func(ctx context.Context, a *Maybe[A]) *Maybe[B]
+
+// Apply implements Func.
+func (fa FuncAdapter[A, B]) Apply(ctx context.Context, a *Maybe[A]) *Maybe[B] {
+	return fa(ctx, a)
 }
 
 // Operation adapts a golang function to behave like a Func.
@@ -72,4 +82,63 @@ type compose2Func[A, B, C any] struct {
 // Apply implements Func
 func (h *compose2Func[A, B, C]) Apply(ctx context.Context, a *Maybe[A]) *Maybe[C] {
 	return h.g.Apply(ctx, h.f.Apply(ctx, a))
+}
+
+// Void is the empty data structure.
+type Void struct{}
+
+// Discard transforms any type to [Void].
+func Discard[T any]() Func[T, Void] {
+	return Operation[T, Void](func(ctx context.Context, input T) (Void, error) {
+		return Void{}, nil
+	})
+}
+
+// ErrSkip is an error that indicates that we already processed an error emitted
+// by a previous stage, so we are using this error to avoid counting the original
+// error more than once when computing statistics, e.g., in [*Stats].
+var ErrSkip = errors.New("dslx: error already processed by a previous stage")
+
+// Stats measures the number of successes and failures.
+//
+// The zero value is invalid; use [NewStats].
+type Stats[T any] struct {
+	m  map[string]int64
+	mu sync.Mutex
+}
+
+// NewStats creates a [*Stats] instance.
+func NewStats[T any]() *Stats[T] {
+	return &Stats[T]{
+		m:  map[string]int64{},
+		mu: sync.Mutex{},
+	}
+}
+
+// Observer returns a Func that observes the results of the previous pipeline stage.
+func (s *Stats[T]) Observer() Func[T, T] {
+	return FuncAdapter[T, T](func(ctx context.Context, minput *Maybe[T]) *Maybe[T] {
+		defer s.mu.Unlock()
+		s.mu.Lock()
+		var r string
+		if err := minput.Error; err != nil {
+			r = err.Error()
+		}
+		s.m[r]++
+		if r != "" {
+			return NewMaybeWithError[T](ErrSkip)
+		}
+		return minput
+	})
+}
+
+// Export exports the current stats without clearing the internally used map.
+func (s *Stats[T]) Export() (out map[string]int64) {
+	out = make(map[string]int64)
+	defer s.mu.Unlock()
+	s.mu.Lock()
+	for r, cnt := range s.m {
+		out[r] = cnt
+	}
+	return
 }
