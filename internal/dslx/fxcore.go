@@ -6,8 +6,6 @@ package dslx
 
 import (
 	"context"
-
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // Func is a function f: (context.Context, A) -> B.
@@ -64,9 +62,5 @@ type compose2Func[A, B, C any] struct {
 
 // Apply implements Func
 func (h *compose2Func[A, B, C]) Apply(ctx context.Context, a *Maybe[A]) *Maybe[C] {
-	b := h.f.Apply(ctx, a)
-	runtimex.Assert(b != nil, "h.f.Apply returned a nil pointer")
-	c := h.g.Apply(ctx, b)
-	runtimex.Assert(c != nil, "h.g.Apply returned a nil pointer")
-	return c
+	return h.g.Apply(ctx, h.f.Apply(ctx, a))
 }
