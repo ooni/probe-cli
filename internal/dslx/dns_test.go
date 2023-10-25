@@ -13,8 +13,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// TODO(bassosimone): this test suite should be written in terms of netemx.
-
 /*
 Test cases:
 - New domain to resolve:
