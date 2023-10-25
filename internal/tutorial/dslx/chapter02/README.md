@@ -107,21 +107,6 @@ type Subresult struct {
 
 ```
 
-Subresult.mergeObservations merges the observations collected during
-a measurement with the Subresult output data format.
-
-```Go
-
-func (tk *Subresult) mergeObservations(obs []*dslx.Observations) {
-	for _, o := range obs {
-		tk.NetworkEvents = append(tk.NetworkEvents, o.NetworkEvents...)
-		tk.TCPConnect = append(tk.TCPConnect, o.TCPConnect...)
-		tk.TLSHandshakes = append(tk.TLSHandshakes, o.TLSHandshakes...)
-	}
-}
-
-```
-
 ## The Measurer
 
 The `Measurer` performs the measurement and implements `ExperimentMeasurer`; i.e., the
@@ -426,20 +411,6 @@ Store the control failure if any.
 		failure := controlResult.Error.Error()
 		tk.Control.Failure = &failure
 	}
-
-```
-
-The measurement result not only contains the potential error, but also
-observations that have been collected during each step of the measurement pipeline.
-Observations are for example network events like read and write operations,
-TLS handshakes, or DNS queries. We as experiment programmers are responsible for
-extracting these observations from the dslx measurement result and storing
-them in the `TestKeys`, which is precisely what `Subresult.mergeObservations`
-(implemented above) does.
-
-```Go
-	tk.Target.mergeObservations(targetResult.Observations)
-	tk.Control.mergeObservations(controlResult.Observations)
 
 ```
 

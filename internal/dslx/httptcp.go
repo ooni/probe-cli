@@ -36,9 +36,8 @@ func HTTPConnectionTCP(rt Runtime) Func[*TCPConnection, *HTTPConnection] {
 			Transport:             httpTransport,
 		}
 		return &Maybe[*HTTPConnection]{
-			Error:        nil,
-			Observations: nil,
-			State:        state,
+			Error: nil,
+			State: state,
 		}
 	})
 }

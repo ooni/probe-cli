@@ -55,9 +55,8 @@ func TCPConnect(rt Runtime) Func[*Endpoint, *TCPConnection] {
 		}
 
 		return &Maybe[*TCPConnection]{
-			Error:        err,
-			Observations: maybeTraceToObservations(trace),
-			State:        state,
+			Error: err,
+			State: state,
 		}
 	})
 }
