@@ -188,7 +188,7 @@ var ErrDNSLookupParallel = errors.New("dslx: DNSLookupParallel failed")
 // processing observations or by creating a per-DNS-resolver pipeline.
 func DNSLookupParallel(fxs ...Func[*DomainToResolve, *ResolvedAddresses]) Func[*DomainToResolve, *ResolvedAddresses] {
 	return Operation[*DomainToResolve, *ResolvedAddresses](func(ctx context.Context, domain *DomainToResolve) (*ResolvedAddresses, error) {
-		// TODO(bassosimone): we may want to configure this
+		// TODO(https://github.com/ooni/probe/issues/2619): we may want to configure this
 		const parallelism = Parallelism(3)
 
 		// run all the DNS resolvers in parallel

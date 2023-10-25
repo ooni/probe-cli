@@ -154,7 +154,7 @@ func matrixMin(a, b Parallelism) Parallelism {
 	return b
 }
 
-// Matrix invokes each function on each input using N goroutines streaming the results in output.
+// Matrix invokes each function on each input using N goroutines and streams the results to a channel.
 func Matrix[A, B any](ctx context.Context, N Parallelism, inputs []A, functions []Func[A, B]) <-chan *Maybe[B] {
 	// make output
 	output := make(chan *Maybe[B])
@@ -170,7 +170,7 @@ func Matrix[A, B any](ctx context.Context, N Parallelism, inputs []A, functions 
 		}
 	}()
 
-	// execute N goroutines
+	// spawn goroutines
 	wg := &sync.WaitGroup{}
 	N = matrixMin(1, N)
 	for i := Parallelism(0); i < N; i++ {

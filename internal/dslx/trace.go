@@ -51,7 +51,7 @@ type Trace interface {
 	// NewStdlibResolver returns a possibly-trace-ware system resolver.
 	NewStdlibResolver(logger model.DebugLogger) model.Resolver
 
-	// NewUDPListener implements model.Measuring Network.
+	// NewUDPListener implements model.MeasuringNetwork.
 	NewUDPListener() model.UDPListener
 
 	// QUICHandshakes collects all the QUIC handshake results collected so far.

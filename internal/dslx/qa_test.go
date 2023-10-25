@@ -305,7 +305,7 @@ func TestMeasureResolvedAddressesQA(t *testing.T) {
 				t.Fatal(diff)
 			}
 
-			// TODO(bassosimone): make sure the observations are OK
+			// TODO(https://github.com/ooni/probe/issues/2620): make sure the observations are OK
 		})
 	}
 }
