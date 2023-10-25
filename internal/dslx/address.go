@@ -57,6 +57,14 @@ func (as *AddressSet) RemoveBogons() *AddressSet {
 	return as
 }
 
+// Uniq returns the unique addresses.
+func (as *AddressSet) Uniq() (uniq []string) {
+	for addr := range as.M {
+		uniq = append(uniq, addr)
+	}
+	return
+}
+
 // EndpointPort is the port for an endpoint.
 type EndpointPort uint16
 
