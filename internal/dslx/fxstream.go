@@ -18,13 +18,11 @@ func Collect[T any](c <-chan T) (v []T) {
 // StreamList creates a channel out of static values. This function will
 // close the channel when it has streamed all the available elements.
 func StreamList[T any](ts ...T) <-chan T {
-	c := make(chan T)
-	go func() {
-		defer close(c) // as documented
-		for _, t := range ts {
-			c <- t
-		}
-	}()
+	c := make(chan T, len(ts)) // buffer so writing does not block
+	defer close(c)             // as documented
+	for _, t := range ts {
+		c <- t
+	}
 	return c
 }
 

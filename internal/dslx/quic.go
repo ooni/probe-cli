@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/quic-go/quic-go"
 )
 
@@ -35,7 +34,7 @@ func QUICHandshake(rt Runtime, options ...TLSHandshakeOption) Func[*Endpoint, *Q
 		)
 
 		// setup
-		udpListener := netxlite.NewUDPListener()
+		udpListener := trace.NewUDPListener()
 		quicDialer := trace.NewQUICDialerWithoutResolver(udpListener, rt.Logger())
 		const timeout = 10 * time.Second
 		ctx, cancel := context.WithTimeout(ctx, timeout)

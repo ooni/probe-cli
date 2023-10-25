@@ -64,6 +64,26 @@ type ResolvedAddresses struct {
 	Domain string
 }
 
+// Flatten transforms a [ResolvedAddresses] into a slice of zero or more [ResolvedAddress].
+func (ra *ResolvedAddresses) Flatten() (out []*ResolvedAddress) {
+	for _, ipAddr := range ra.Addresses {
+		out = append(out, &ResolvedAddress{
+			Address: ipAddr,
+			Domain:  ra.Domain,
+		})
+	}
+	return
+}
+
+// ResolvedAddress is a single address resolved using a DNS lookup function.
+type ResolvedAddress struct {
+	// Address is the address that was resolved.
+	Address string
+
+	// Domain is the domain from which we resolved the address.
+	Domain string
+}
+
 // DNSLookupGetaddrinfo returns a function that resolves a domain name to
 // IP addresses using libc's getaddrinfo function.
 func DNSLookupGetaddrinfo(rt Runtime) Func[*DomainToResolve, *ResolvedAddresses] {
@@ -90,18 +110,17 @@ func DNSLookupGetaddrinfo(rt Runtime) Func[*DomainToResolve, *ResolvedAddresses]
 		// lookup
 		addrs, err := resolver.LookupHost(ctx, input.Domain)
 
-		// stop the operation logger
-		ol.Stop(err)
-
 		// save the observations
 		rt.SaveObservations(maybeTraceToObservations(trace)...)
 
 		// handle error case
 		if err != nil {
+			ol.Stop(err)
 			return nil, err
 		}
 
 		// handle success
+		ol.Stop(addrs)
 		state := &ResolvedAddresses{
 			Addresses: addrs,
 			Domain:    input.Domain,
@@ -141,18 +160,17 @@ func DNSLookupUDP(rt Runtime, endpoint string) Func[*DomainToResolve, *ResolvedA
 		// lookup
 		addrs, err := resolver.LookupHost(ctx, input.Domain)
 
-		// stop the operation logger
-		ol.Stop(err)
-
 		// save the observations
 		rt.SaveObservations(maybeTraceToObservations(trace)...)
 
 		// handle error case
 		if err != nil {
+			ol.Stop(err)
 			return nil, err
 		}
 
 		// handle success
+		ol.Stop(addrs)
 		state := &ResolvedAddresses{
 			Addresses: addrs,
 			Domain:    input.Domain,
@@ -170,8 +188,11 @@ var ErrDNSLookupParallel = errors.New("dslx: DNSLookupParallel failed")
 // processing observations or by creating a per-DNS-resolver pipeline.
 func DNSLookupParallel(fxs ...Func[*DomainToResolve, *ResolvedAddresses]) Func[*DomainToResolve, *ResolvedAddresses] {
 	return Operation[*DomainToResolve, *ResolvedAddresses](func(ctx context.Context, domain *DomainToResolve) (*ResolvedAddresses, error) {
+		// TODO(https://github.com/ooni/probe/issues/2619): we may want to configure this
+		const parallelism = Parallelism(3)
+
 		// run all the DNS resolvers in parallel
-		results := Parallel(ctx, Parallelism(2), domain, fxs...)
+		results := Parallel(ctx, parallelism, domain, fxs...)
 
 		// reduce addresses
 		addressSet := NewAddressSet()
