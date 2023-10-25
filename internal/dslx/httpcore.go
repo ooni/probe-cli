@@ -151,8 +151,9 @@ func HTTPRequest(rt Runtime, options ...HTTPRequestOption) Func[*HTTPConnection,
 		}
 
 		return &Maybe[*HTTPResponse]{
-			Error: err,
-			State: state,
+			Error:        err,
+			Observations: observations,
+			State:        state,
 		}
 	})
 }

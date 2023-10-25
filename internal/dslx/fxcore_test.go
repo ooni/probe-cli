@@ -27,6 +27,11 @@ func (f *fn) Apply(ctx context.Context, i *Maybe[int]) *Maybe[int] {
 	return &Maybe[int]{
 		Error: f.err,
 		State: i.State + 1,
+		Observations: []*Observations{
+			{
+				NetworkEvents: []*model.ArchivalNetworkEvent{{Tags: []string{"apply"}}},
+			},
+		},
 	}
 }
 
@@ -45,8 +50,9 @@ func TestStageAdapter(t *testing.T) {
 
 		// create input that contains an error
 		input := &Maybe[*DomainToResolve]{
-			Error: errors.New("mocked error"),
-			State: nil,
+			Error:        errors.New("mocked error"),
+			Observations: []*Observations{},
+			State:        nil,
 		}
 
 		// run the pipeline
@@ -85,6 +91,9 @@ func TestCompose2(t *testing.T) {
 				if r.Error != tt.err {
 					t.Fatalf("unexpected error")
 				}
+				if len(r.Observations) != tt.numObs {
+					t.Fatalf("unexpected number of (merged) observations")
+				}
 			})
 		}
 	})
@@ -101,6 +110,23 @@ func TestGen(t *testing.T) {
 		}
 		if r.State != 14 {
 			t.Fatalf("unexpected result state")
+		}
+	})
+}
+
+func TestObservations(t *testing.T) {
+	t.Run("Extract observations", func(t *testing.T) {
+		fn1 := getFn(nil, "succeed")
+		fn2 := getFn(nil, "succeed")
+		composit := Compose2(fn1, fn2)
+		r1 := composit.Apply(context.Background(), NewMaybeWithValue(3))
+		r2 := composit.Apply(context.Background(), NewMaybeWithValue(42))
+		if len(r1.Observations) != 2 || len(r2.Observations) != 2 {
+			t.Fatalf("unexpected number of observations")
+		}
+		mergedObservations := ExtractObservations(r1, r2)
+		if len(mergedObservations) != 4 {
+			t.Fatalf("unexpected number of merged observations")
 		}
 	})
 }

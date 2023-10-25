@@ -6,6 +6,8 @@ package dslx
 
 import (
 	"context"
+
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // Func is a function f: (context.Context, A) -> B.
@@ -19,7 +21,11 @@ type Operation[A, B any] func(ctx context.Context, a A) *Maybe[B]
 // Apply implements Func.
 func (op Operation[A, B]) Apply(ctx context.Context, a *Maybe[A]) *Maybe[B] {
 	if a.Error != nil {
-		return NewMaybeWithError[B](a.Error)
+		return &Maybe[B]{
+			Error:        a.Error,
+			Observations: a.Observations,
+			State:        *new(B), // zero value
+		}
 	}
 	return op(ctx, a.State)
 }
@@ -30,6 +36,9 @@ type Maybe[State any] struct {
 	// Error is either the error that occurred or nil.
 	Error error
 
+	// Observations contains the collected observations.
+	Observations []*Observations
+
 	// State contains state passed between function calls. You should
 	// only access State when Error is nil and Skipped is false.
 	State State
@@ -38,16 +47,9 @@ type Maybe[State any] struct {
 // NewMaybeWithValue constructs a Maybe containing the given value.
 func NewMaybeWithValue[State any](value State) *Maybe[State] {
 	return &Maybe[State]{
-		Error: nil,
-		State: value,
-	}
-}
-
-// NewMaybeWithError constructs a Maybe containing the given error.
-func NewMaybeWithError[State any](err error) *Maybe[State] {
-	return &Maybe[State]{
-		Error: err,
-		State: *new(State), // zero value
+		Error:        nil,
+		Observations: []*Observations{},
+		State:        value,
 	}
 }
 
@@ -67,5 +69,23 @@ type compose2Func[A, B, C any] struct {
 
 // Apply implements Func
 func (h *compose2Func[A, B, C]) Apply(ctx context.Context, a *Maybe[A]) *Maybe[C] {
-	return h.g.Apply(ctx, h.f.Apply(ctx, a))
+	mb := h.f.Apply(ctx, a)
+	runtimex.Assert(mb != nil, "h.f.Apply returned a nil pointer")
+
+	if mb.Error != nil {
+		return &Maybe[C]{
+			Error:        mb.Error,
+			Observations: mb.Observations,
+			State:        *new(C), // zero value
+		}
+	}
+
+	mc := h.g.Apply(ctx, mb)
+	runtimex.Assert(mc != nil, "h.g.Apply returned a nil pointer")
+
+	return &Maybe[C]{
+		Error:        mc.Error,
+		Observations: append(mb.Observations, mc.Observations...), // merge observations
+		State:        mc.State,
+	}
 }

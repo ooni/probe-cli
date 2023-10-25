@@ -36,8 +36,9 @@ func HTTPConnectionTLS(rt Runtime) Func[*TLSConnection, *HTTPConnection] {
 			Transport:             httpTransport,
 		}
 		return &Maybe[*HTTPConnection]{
-			Error: nil,
-			State: state,
+			Error:        nil,
+			Observations: nil,
+			State:        state,
 		}
 	})
 }
