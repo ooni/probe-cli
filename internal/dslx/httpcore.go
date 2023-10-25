@@ -48,91 +48,71 @@ type HTTPTransport struct {
 }
 
 // HTTPRequestOption is an option you can pass to HTTPRequest.
-type HTTPRequestOption func(*httpRequestFunc)
+type HTTPRequestOption func(req *http.Request)
 
 // HTTPRequestOptionAccept sets the Accept header.
 func HTTPRequestOptionAccept(value string) HTTPRequestOption {
-	return func(hrf *httpRequestFunc) {
-		hrf.Accept = value
+	return func(req *http.Request) {
+		req.Header.Set("Accept", value)
 	}
 }
 
 // HTTPRequestOptionAcceptLanguage sets the Accept header.
 func HTTPRequestOptionAcceptLanguage(value string) HTTPRequestOption {
-	return func(hrf *httpRequestFunc) {
-		hrf.AcceptLanguage = value
+	return func(req *http.Request) {
+		req.Header.Set("Accept-Language", value)
 	}
 }
 
 // HTTPRequestOptionHost sets the Host header.
 func HTTPRequestOptionHost(value string) HTTPRequestOption {
-	return func(hrf *httpRequestFunc) {
-		hrf.Host = value
+	return func(req *http.Request) {
+		req.URL.Host = value
+		req.Host = value
 	}
 }
 
 // HTTPRequestOptionHost sets the request method.
 func HTTPRequestOptionMethod(value string) HTTPRequestOption {
-	return func(hrf *httpRequestFunc) {
-		hrf.Method = value
+	return func(req *http.Request) {
+		req.Method = value
 	}
 }
 
 // HTTPRequestOptionReferer sets the Referer header.
 func HTTPRequestOptionReferer(value string) HTTPRequestOption {
-	return func(hrf *httpRequestFunc) {
-		hrf.Referer = value
+	return func(req *http.Request) {
+		req.Header.Set("Referer", value)
 	}
 }
 
 // HTTPRequestOptionURLPath sets the URL path.
 func HTTPRequestOptionURLPath(value string) HTTPRequestOption {
-	return func(hrf *httpRequestFunc) {
-		hrf.URLPath = value
+	return func(req *http.Request) {
+		req.URL.Path = value
 	}
 }
 
 // HTTPRequestOptionUserAgent sets the UserAgent header.
 func HTTPRequestOptionUserAgent(value string) HTTPRequestOption {
-	return func(hrf *httpRequestFunc) {
-		hrf.UserAgent = value
+	return func(req *http.Request) {
+		req.Header.Set("User-Agent", value)
 	}
 }
 
 // HTTPRequest issues an HTTP request using a transport and returns a response.
 func HTTPRequest(rt Runtime, options ...HTTPRequestOption) Func[*HTTPTransport, *Maybe[*HTTPResponse]] {
-	f := &httpRequestFunc{Rt: rt}
-	for _, option := range options {
-		option(f)
-	}
+	f := &httpRequestFunc{Options: options, Rt: rt}
 	return f
 }
 
 // httpRequestFunc is the Func returned by HTTPRequest.
 type httpRequestFunc struct {
-	// Accept is the OPTIONAL accept header.
-	Accept string
-
-	// AcceptLanguage is the OPTIONAL accept-language header.
-	AcceptLanguage string
-
-	// Host is the OPTIONAL host header.
-	Host string
-
-	// Method is the OPTIONAL method.
-	Method string
-
-	// Referer is the OPTIONAL referer header.
-	Referer string
+	// Options contains the options.
+	Options []HTTPRequestOption
 
 	// Rt is the MANDATORY runtime.
 	Rt Runtime
-
-	// URLPath is the OPTIONAL URL path.
-	URLPath string
-
-	// UserAgent is the OPTIONAL user-agent header.
-	UserAgent string
 }
 
 // Apply implements Func.
@@ -150,7 +130,7 @@ func (f *httpRequestFunc) Apply(
 	)
 
 	// create HTTP request
-	req, err := f.newHTTPRequest(ctx, input)
+	req, err := httpNewRequest(ctx, input, f.Rt.Logger(), f.Options...)
 	if err == nil {
 
 		// start the operation logger
@@ -165,7 +145,7 @@ func (f *httpRequestFunc) Apply(
 		)
 
 		// perform HTTP transaction and collect the related observations
-		resp, body, observations, err = f.do(ctx, input, req)
+		resp, body, observations, err = httpRoundTrip(ctx, input, req)
 
 		// stop the operation logger
 		ol.Stop(err)
@@ -191,68 +171,50 @@ func (f *httpRequestFunc) Apply(
 	}
 }
 
-func (f *httpRequestFunc) newHTTPRequest(
-	ctx context.Context, input *HTTPTransport) (*http.Request, error) {
+// httpNewRequest is a convenience function for creating a new request.
+func httpNewRequest(
+	ctx context.Context, input *HTTPTransport, logger model.Logger, options ...HTTPRequestOption) (*http.Request, error) {
+	// create the default HTTP request
 	URL := &url.URL{
 		Scheme:      input.Scheme,
 		Opaque:      "",
 		User:        nil,
-		Host:        f.urlHost(input),
-		Path:        f.urlPath(),
+		Host:        httpNewURLHost(input, logger),
+		Path:        "/",
 		RawPath:     "",
 		ForceQuery:  false,
 		RawQuery:    "",
 		Fragment:    "",
 		RawFragment: "",
 	}
-
-	method := "GET"
-	if f.Method != "" {
-		method = f.Method
-	}
-
-	req, err := http.NewRequestWithContext(ctx, method, URL.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", URL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	if v := f.Host; v != "" {
-		req.Host = v
-	} else {
-		// Go would use URL.Host as "Host" header anyways in case we leave req.Host empty.
-		// We already set it here so that we can use req.Host for logging.
-		req.Host = URL.Host
+	// Go would use URL.Host as "Host" header anyways in case we leave req.Host empty.
+	// We already set it here so that we can use req.Host for logging.
+	req.Host = URL.Host
+
+	// apply the user-specified options
+	for _, option := range options {
+		option(req)
 	}
+
 	// req.Header["Host"] is ignored by Go but we want to have it in the measurement
 	// to reflect what we think has been sent as HTTP headers.
 	req.Header.Set("Host", req.Host)
-
-	if v := f.Accept; v != "" {
-		req.Header.Set("Accept", v)
-	}
-
-	if v := f.AcceptLanguage; v != "" {
-		req.Header.Set("Accept-Language", v)
-	}
-
-	if v := f.Referer; v != "" {
-		req.Header.Set("Referer", v)
-	}
-
-	if v := f.UserAgent; v != "" { // not setting means using Go's default
-		req.Header.Set("User-Agent", v)
-	}
-
 	return req, nil
 }
 
-func (f *httpRequestFunc) urlHost(input *HTTPTransport) string {
+// httpNewURLHost computes the URL host to use.
+func httpNewURLHost(input *HTTPTransport, logger model.Logger) string {
 	if input.Domain != "" {
 		return input.Domain
 	}
 	addr, port, err := net.SplitHostPort(input.Address)
 	if err != nil {
-		f.Rt.Logger().Warnf("httpRequestFunc: cannot SplitHostPort for input.Address")
+		logger.Warnf("httpRequestFunc: cannot SplitHostPort for input.Address")
 		return input.Address
 	}
 	switch {
@@ -265,14 +227,8 @@ func (f *httpRequestFunc) urlHost(input *HTTPTransport) string {
 	}
 }
 
-func (f *httpRequestFunc) urlPath() string {
-	if f.URLPath != "" {
-		return f.URLPath
-	}
-	return "/"
-}
-
-func (f *httpRequestFunc) do(
+// httpRoundTrip performs the actual HTTP round trip
+func httpRoundTrip(
 	ctx context.Context,
 	input *HTTPTransport,
 	req *http.Request,
