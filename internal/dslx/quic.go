@@ -16,82 +16,64 @@ import (
 )
 
 // QUICHandshake returns a function performing QUIC handshakes.
-func QUICHandshake(rt Runtime, options ...TLSHandshakeOption) Func[
-	*Endpoint, *Maybe[*QUICConnection]] {
-	f := &quicHandshakeFunc{
-		Options: options,
-		Rt:      rt,
-	}
-	return f
-}
+func QUICHandshake(rt Runtime, options ...TLSHandshakeOption) Func[*Endpoint, *Maybe[*QUICConnection]] {
+	return FuncAdapter[*Endpoint, *Maybe[*QUICConnection]](func(ctx context.Context, input *Endpoint) *Maybe[*QUICConnection] {
+		// create trace
+		trace := rt.NewTrace(rt.IDGenerator().Add(1), rt.ZeroTime(), input.Tags...)
 
-// quicHandshakeFunc performs QUIC handshakes.
-type quicHandshakeFunc struct {
-	// Options contains the options.
-	Options []TLSHandshakeOption
+		// create a suitable TLS configuration
+		config := tlsNewConfig(input.Address, []string{"h3"}, input.Domain, rt.Logger(), options...)
 
-	// Rt is the Runtime that owns us.
-	Rt Runtime
-}
+		// start the operation logger
+		ol := logx.NewOperationLogger(
+			rt.Logger(),
+			"[#%d] QUICHandshake with %s SNI=%s ALPN=%v",
+			trace.Index(),
+			input.Address,
+			config.ServerName,
+			config.NextProtos,
+		)
 
-// Apply implements Func.
-func (f *quicHandshakeFunc) Apply(
-	ctx context.Context, input *Endpoint) *Maybe[*QUICConnection] {
-	// create trace
-	trace := f.Rt.NewTrace(f.Rt.IDGenerator().Add(1), f.Rt.ZeroTime(), input.Tags...)
+		// setup
+		udpListener := netxlite.NewUDPListener()
+		quicDialer := trace.NewQUICDialerWithoutResolver(udpListener, rt.Logger())
+		const timeout = 10 * time.Second
+		ctx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
 
-	// create a suitable TLS configuration
-	config := tlsNewConfig(input.Address, []string{"h3"}, input.Domain, f.Rt.Logger(), f.Options...)
+		// handshake
+		quicConn, err := quicDialer.DialContext(ctx, input.Address, config, &quic.Config{})
 
-	// start the operation logger
-	ol := logx.NewOperationLogger(
-		f.Rt.Logger(),
-		"[#%d] QUICHandshake with %s SNI=%s ALPN=%v",
-		trace.Index(),
-		input.Address,
-		config.ServerName,
-		config.NextProtos,
-	)
+		var closerConn io.Closer
+		var tlsState tls.ConnectionState
+		if quicConn != nil {
+			closerConn = &quicCloserConn{quicConn}
+			tlsState = quicConn.ConnectionState().TLS // only quicConn can be nil
+		}
 
-	// setup
-	udpListener := netxlite.NewUDPListener()
-	quicDialer := trace.NewQUICDialerWithoutResolver(udpListener, f.Rt.Logger())
-	const timeout = 10 * time.Second
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
+		// possibly track established conn for late close
+		rt.MaybeTrackConn(closerConn)
 
-	// handshake
-	quicConn, err := quicDialer.DialContext(ctx, input.Address, config, &quic.Config{})
+		// stop the operation logger
+		ol.Stop(err)
 
-	var closerConn io.Closer
-	var tlsState tls.ConnectionState
-	if quicConn != nil {
-		closerConn = &quicCloserConn{quicConn}
-		tlsState = quicConn.ConnectionState().TLS // only quicConn can be nil
-	}
+		state := &QUICConnection{
+			Address:   input.Address,
+			QUICConn:  quicConn, // possibly nil
+			Domain:    input.Domain,
+			Network:   input.Network,
+			TLSConfig: config,
+			TLSState:  tlsState,
+			Trace:     trace,
+		}
 
-	// possibly track established conn for late close
-	f.Rt.MaybeTrackConn(closerConn)
-
-	// stop the operation logger
-	ol.Stop(err)
-
-	state := &QUICConnection{
-		Address:   input.Address,
-		QUICConn:  quicConn, // possibly nil
-		Domain:    input.Domain,
-		Network:   input.Network,
-		TLSConfig: config,
-		TLSState:  tlsState,
-		Trace:     trace,
-	}
-
-	return &Maybe[*QUICConnection]{
-		Error:        err,
-		Observations: maybeTraceToObservations(trace),
-		Operation:    netxlite.QUICHandshakeOperation,
-		State:        state,
-	}
+		return &Maybe[*QUICConnection]{
+			Error:        err,
+			Observations: maybeTraceToObservations(trace),
+			Operation:    netxlite.QUICHandshakeOperation,
+			State:        state,
+		}
+	})
 }
 
 // QUICConnection is an established QUIC connection. If you initialize

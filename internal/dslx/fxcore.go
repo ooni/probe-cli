@@ -17,6 +17,14 @@ type Func[A, B any] interface {
 	Apply(ctx context.Context, a A) B
 }
 
+// FuncAdapter adapts a func to be a Func.
+type FuncAdapter[A, B any] func(ctx context.Context, a A) B
+
+// Apply implements Func.
+func (fa FuncAdapter[A, B]) Apply(ctx context.Context, a A) B {
+	return fa(ctx, a)
+}
+
 // Maybe is the result of an operation implemented by this package
 // that may fail such as [TCPConnect] or [TLSHandshake].
 type Maybe[State any] struct {

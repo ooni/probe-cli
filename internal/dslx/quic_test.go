@@ -3,7 +3,6 @@ package dslx
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"io"
 	"testing"
 	"time"
@@ -16,25 +15,12 @@ import (
 
 /*
 Test cases:
-- Get quicHandshakeFunc with options
 - Apply quicHandshakeFunc:
   - with EOF
   - success
   - with sni
 */
 func TestQUICHandshake(t *testing.T) {
-	t.Run("Get quicHandshakeFunc with options", func(t *testing.T) {
-		certpool := x509.NewCertPool()
-		certpool.AddCert(&x509.Certificate{})
-
-		f := QUICHandshake(
-			NewMinimalRuntime(model.DiscardLogger, time.Now()),
-		)
-		if _, ok := f.(*quicHandshakeFunc); !ok {
-			t.Fatal("unexpected type. Expected: quicHandshakeFunc")
-		}
-	})
-
 	t.Run("Apply quicHandshakeFunc", func(t *testing.T) {
 		wasClosed := false
 		plainConn := &mocks.QUICEarlyConnection{

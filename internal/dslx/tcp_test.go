@@ -13,15 +13,6 @@ import (
 )
 
 func TestTCPConnect(t *testing.T) {
-	t.Run("Get tcpConnectFunc", func(t *testing.T) {
-		f := TCPConnect(
-			NewMinimalRuntime(model.DiscardLogger, time.Now()),
-		)
-		if _, ok := f.(*tcpConnectFunc); !ok {
-			t.Fatal("unexpected type. Expected: tcpConnectFunc")
-		}
-	})
-
 	t.Run("Apply tcpConnectFunc", func(t *testing.T) {
 		wasClosed := false
 		plainConn := &mocks.Conn{
@@ -72,7 +63,7 @@ func TestTCPConnect(t *testing.T) {
 						return tt.dialer
 					},
 				}))
-				tcpConnect := &tcpConnectFunc{rt}
+				tcpConnect := TCPConnect(rt)
 				endpoint := &Endpoint{
 					Address: "1.2.3.4:567",
 					Network: "tcp",
