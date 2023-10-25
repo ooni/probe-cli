@@ -6,6 +6,7 @@ package dslx
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
@@ -61,11 +62,6 @@ type ResolvedAddresses struct {
 	// Domain is the domain we resolved. We inherit this field
 	// from the value inside the DomainToResolve.
 	Domain string
-
-	// Trace is the trace we're currently using. This struct is
-	// created by the various Apply functions using values inside
-	// the DomainToResolve to initialize the Trace.
-	Trace Trace
 }
 
 // DNSLookupGetaddrinfo returns a function that resolves a domain name to
@@ -109,7 +105,6 @@ func DNSLookupGetaddrinfo(rt Runtime) Func[*DomainToResolve, *ResolvedAddresses]
 		state := &ResolvedAddresses{
 			Addresses: addrs,
 			Domain:    input.Domain,
-			Trace:     trace,
 		}
 		return state, nil
 	})
@@ -161,7 +156,42 @@ func DNSLookupUDP(rt Runtime, endpoint string) Func[*DomainToResolve, *ResolvedA
 		state := &ResolvedAddresses{
 			Addresses: addrs,
 			Domain:    input.Domain,
-			Trace:     trace,
+		}
+		return state, nil
+	})
+}
+
+// ErrDNSLookupParallel indicates that DNSLookupParallel failed.
+var ErrDNSLookupParallel = errors.New("dslx: DNSLookupParallel failed")
+
+// DNSLookupParallel runs DNS lookups in parallel. On success, this function returns
+// a unique list of IP addresses aggregated from all resolvers. On failure, this function
+// returns [ErrDNSLookupParallel]. You can always obtain the individual errors by
+// processing observations or by creating a per-DNS-resolver pipeline.
+func DNSLookupParallel(fxs ...Func[*DomainToResolve, *ResolvedAddresses]) Func[*DomainToResolve, *ResolvedAddresses] {
+	return Operation[*DomainToResolve, *ResolvedAddresses](func(ctx context.Context, domain *DomainToResolve) (*ResolvedAddresses, error) {
+		// run all the DNS resolvers in parallel
+		results := Parallel(ctx, Parallelism(2), domain, fxs...)
+
+		// reduce addresses
+		addressSet := NewAddressSet()
+		for _, result := range results {
+			if err := result.Error; err != nil {
+				continue
+			}
+			addressSet.Add(result.State.Addresses...)
+		}
+		uniq := addressSet.Uniq()
+
+		// handle the case where all the DNS resolvers failed
+		if len(uniq) < 1 {
+			return nil, ErrDNSLookupParallel
+		}
+
+		// handle success
+		state := &ResolvedAddresses{
+			Addresses: uniq,
+			Domain:    domain.Domain,
 		}
 		return state, nil
 	})

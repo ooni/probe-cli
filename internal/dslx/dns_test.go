@@ -116,9 +116,6 @@ func TestGetaddrinfo(t *testing.T) {
 			if len(res.State.Addresses) != 1 || res.State.Addresses[0] != "93.184.216.34" {
 				t.Fatal("unexpected addresses")
 			}
-			if diff := cmp.Diff([]string{"antani"}, res.State.Trace.Tags()); diff != "" {
-				t.Fatal(diff)
-			}
 		})
 	})
 }
@@ -207,9 +204,6 @@ func TestLookupUDP(t *testing.T) {
 			}
 			if len(res.State.Addresses) != 1 || res.State.Addresses[0] != "93.184.216.34" {
 				t.Fatal("unexpected addresses")
-			}
-			if diff := cmp.Diff([]string{"antani"}, res.State.Trace.Tags()); diff != "" {
-				t.Fatal(diff)
 			}
 		})
 	})
