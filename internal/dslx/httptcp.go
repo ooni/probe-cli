@@ -17,7 +17,7 @@ func HTTPRequestOverTCP(rt Runtime, options ...HTTPRequestOption) Func[*TCPConne
 
 // HTTPConnectionTCP converts a TCP connection into an HTTP connection.
 func HTTPConnectionTCP(rt Runtime) Func[*TCPConnection, *HTTPConnection] {
-	return Operation[*TCPConnection, *HTTPConnection](func(ctx context.Context, input *TCPConnection) *Maybe[*HTTPConnection] {
+	return Operation[*TCPConnection, *HTTPConnection](func(ctx context.Context, input *TCPConnection) (*HTTPConnection, error) {
 		// TODO(https://github.com/ooni/probe/issues/2534): here we're using the QUIRKY netxlite.NewHTTPTransport
 		// function, but we can probably avoid using it, given that this code is
 		// not using tracing and does not care about those quirks.
@@ -26,6 +26,7 @@ func HTTPConnectionTCP(rt Runtime) Func[*TCPConnection, *HTTPConnection] {
 			netxlite.NewSingleUseDialer(input.Conn),
 			netxlite.NewNullTLSDialer(),
 		)
+
 		state := &HTTPConnection{
 			Address:               input.Address,
 			Domain:                input.Domain,
@@ -35,9 +36,7 @@ func HTTPConnectionTCP(rt Runtime) Func[*TCPConnection, *HTTPConnection] {
 			Trace:                 input.Trace,
 			Transport:             httpTransport,
 		}
-		return &Maybe[*HTTPConnection]{
-			Error: nil,
-			State: state,
-		}
+
+		return state, nil
 	})
 }
