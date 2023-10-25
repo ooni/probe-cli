@@ -140,6 +140,7 @@ func ApplyAsync[A, B any](
 	return Map(ctx, Parallelism(1), fx, StreamList(input))
 }
 
+// matrixPoint is a point within the matrix used by [Matrix].
 type matrixPoint[A, B any] struct {
 	f  Func[A, B]
 	in A

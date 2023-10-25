@@ -115,7 +115,8 @@ func NewStats[T any]() *Stats[T] {
 	}
 }
 
-// Observer returns a Func that observes the results of the previous pipeline stage.
+// Observer returns a Func that observes the results of the previous pipeline stage. This function
+// converts any error that it sees to [ErrSkip]. This function does not account for [ErrSkip].
 func (s *Stats[T]) Observer() Func[T, T] {
 	return FuncAdapter[T, T](func(ctx context.Context, minput *Maybe[T]) *Maybe[T] {
 		defer s.mu.Unlock()

@@ -83,8 +83,8 @@ func MakeEndpoint(network EndpointNetwork, port EndpointPort, options ...Endpoin
 		// create the destination endpoint address
 		addrport := EndpointAddress(net.JoinHostPort(addr.Address, strconv.Itoa(int(port))))
 
-		// make sure we include the proper domain first but allow the caller
-		// to potentially override the endpoint
+		// make sure we include the proper domain name first but allow the caller
+		// to potentially override the domain name using options
 		allOptions := []EndpointOption{
 			EndpointOptionDomain(addr.Domain),
 		}
