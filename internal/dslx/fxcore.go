@@ -19,10 +19,7 @@ type Operation[A, B any] func(ctx context.Context, a A) *Maybe[B]
 // Apply implements Func.
 func (op Operation[A, B]) Apply(ctx context.Context, a *Maybe[A]) *Maybe[B] {
 	if a.Error != nil {
-		return &Maybe[B]{
-			Error: a.Error,
-			State: *new(B), // zero value
-		}
+		return NewMaybeWithError[B](a.Error)
 	}
 	return op(ctx, a.State)
 }
@@ -43,6 +40,14 @@ func NewMaybeWithValue[State any](value State) *Maybe[State] {
 	return &Maybe[State]{
 		Error: nil,
 		State: value,
+	}
+}
+
+// NewMaybeWithError constructs a Maybe containing the given error.
+func NewMaybeWithError[State any](err error) *Maybe[State] {
+	return &Maybe[State]{
+		Error: err,
+		State: *new(State), // zero value
 	}
 }
 
