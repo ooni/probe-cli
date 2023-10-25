@@ -9,6 +9,7 @@ import (
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/gopacket/layers"
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/dslx"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -179,15 +180,16 @@ func TestMeasureResolvedAddressesQA(t *testing.T) {
 				ServerIPAddress: "8.8.8.8",
 				ServerPort:      443,
 			})
+			dpi.AddRule(&netem.DPICloseConnectionForServerEndpoint{
+				Logger:          log.Log,
+				ServerIPAddress: "8.8.4.4",
+				ServerPort:      443,
+			})
 		},
 		expectTCP: map[string]int64{
-			"":                   1,
-			"connection_refused": 1,
+			"connection_refused": 2,
 		},
-		expectTLS: map[string]int64{
-			"": 1,
-			"dslx: error already processed by a previous stage": 1,
-		},
+		expectTLS:  map[string]int64{},
 		expectQUIC: map[string]int64{"": 2},
 	}, {
 		name: "TLS handshake reset with minimal runtime",
@@ -205,12 +207,34 @@ func TestMeasureResolvedAddressesQA(t *testing.T) {
 			"connection_reset": 2,
 		},
 		expectQUIC: map[string]int64{"": 2},
+	}, {
+		name: "QUIC handshake timeout with minimal runtime",
+		newRuntime: func(netx model.MeasuringNetwork) dslx.Runtime {
+			return dslx.NewMinimalRuntime(log.Log, time.Now(), dslx.MinimalRuntimeOptionMeasuringNetwork(netx))
+		},
+		configureDPI: func(dpi *netem.DPIEngine) {
+			dpi.AddRule(&netem.DPIDropTrafficForServerEndpoint{
+				Logger:          log.Log,
+				ServerIPAddress: "8.8.8.8",
+				ServerPort:      443,
+				ServerProtocol:  layers.IPProtocolUDP,
+			})
+			dpi.AddRule(&netem.DPIDropTrafficForServerEndpoint{
+				Logger:          log.Log,
+				ServerIPAddress: "8.8.4.4",
+				ServerPort:      443,
+				ServerProtocol:  layers.IPProtocolUDP,
+			})
+		},
+		expectTCP: map[string]int64{"": 2},
+		expectTLS: map[string]int64{"": 2},
+		expectQUIC: map[string]int64{
+			"generic_timeout_error": 2,
+		},
 	}}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			// define the scenario characteristics with multiple IP addresses per host
-
 			// create an internet testing scenario
 			env := netemx.MustNewScenario(netemx.InternetScenario)
 			defer env.Close()
@@ -247,12 +271,7 @@ func TestMeasureResolvedAddressesQA(t *testing.T) {
 				// measure 443/udp
 				dslx.Compose5(
 					dslx.MakeEndpoint("udp", 443),
-					dslx.QUICHandshake(
-						rt,
-						// TODO(???): understand why certificate verification always
-						// fails when we're using netem along with HTTP/3
-						dslx.TLSHandshakeOptionInsecureSkipVerify(true),
-					),
+					dslx.QUICHandshake(rt),
 					quicHandshakeStats.Observer(),
 					dslx.HTTPRequestOverQUIC(rt),
 					dslx.Discard[*dslx.HTTPResponse](),

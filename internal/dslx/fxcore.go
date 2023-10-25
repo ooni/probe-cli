@@ -116,24 +116,29 @@ func NewStats[T any]() *Stats[T] {
 }
 
 // Observer returns a Func that observes the results of the previous pipeline stage. This function
-// converts any error that it sees to [ErrSkip]. This function does not account for [ErrSkip].
+// converts any error that it sees to [ErrSkip]. This function does not account for [ErrSkip], meaning
+// that you will never see [ErrSkip] in the stats returned by [Stats.Export].
 func (s *Stats[T]) Observer() Func[T, T] {
 	return FuncAdapter[T, T](func(ctx context.Context, minput *Maybe[T]) *Maybe[T] {
 		defer s.mu.Unlock()
 		s.mu.Lock()
 		var r string
 		if err := minput.Error; err != nil {
+			if errors.Is(err, ErrSkip) {
+				return NewMaybeWithError[T](ErrSkip) // as documented
+			}
 			r = err.Error()
 		}
 		s.m[r]++
 		if r != "" {
-			return NewMaybeWithError[T](ErrSkip)
+			return NewMaybeWithError[T](ErrSkip) // as documented
 		}
 		return minput
 	})
 }
 
-// Export exports the current stats without clearing the internally used map.
+// Export exports the current stats without clearing the internally used map such that
+// statistics accumulate over time and never reset for the [*Stats] lifecycle.
 func (s *Stats[T]) Export() (out map[string]int64) {
 	out = make(map[string]int64)
 	defer s.mu.Unlock()
