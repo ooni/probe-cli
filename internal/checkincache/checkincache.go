@@ -13,16 +13,26 @@ import (
 // checkInFlagsState is the state created by check-in flags.
 const checkInFlagsState = "checkinflags.state"
 
-// checkInFlagsWrapper is the struct wrapping the check-in flags.
+// FeatureFlagsWrapper is the struct wrapping the check-in flags.
 //
 // See https://github.com/ooni/probe/issues/2396 for the reference issue
 // describing adding feature flags to ooniprobe.
-type checkInFlagsWrapper struct {
+type FeatureFlagsWrapper struct {
 	// Expire contains the expiration date.
 	Expire time.Time
 
 	// Flags contains the actual flags.
 	Flags map[string]bool
+}
+
+// DidExpire returns whether the cached flags are expired.
+func (ffw *FeatureFlagsWrapper) DidExpire() bool {
+	return time.Now().After(ffw.Expire)
+}
+
+// Get returns a given feature flag.
+func (ffw *FeatureFlagsWrapper) Get(name string) bool {
+	return ffw.Flags[name] // works even if .Flags is nil
 }
 
 // Store stores the result of the latest check-in in the given key-value store.
@@ -31,7 +41,7 @@ type checkInFlagsWrapper struct {
 // are valid for 24 hours, after which we consider them stale.
 func Store(kvStore model.KeyValueStore, resp *model.OOAPICheckInResult) error {
 	// store the check-in flags in the key-value store
-	wrapper := &checkInFlagsWrapper{
+	wrapper := &FeatureFlagsWrapper{
 		Expire: time.Now().Add(24 * time.Hour),
 		Flags:  resp.Conf.Features,
 	}
@@ -40,21 +50,30 @@ func Store(kvStore model.KeyValueStore, resp *model.OOAPICheckInResult) error {
 	return kvStore.Set(checkInFlagsState, data)
 }
 
+// GetFeatureFlagsWrapper returns the feature flags wrapper.
+func GetFeatureFlagsWrapper(kvStore model.KeyValueStore) (*FeatureFlagsWrapper, error) {
+	data, err := kvStore.Get(checkInFlagsState)
+	if err != nil {
+		return nil, err
+	}
+	var flags FeatureFlagsWrapper
+	if err := json.Unmarshal(data, &flags); err != nil {
+		return nil, err
+	}
+	return &flags, nil
+}
+
 // GetFeatureFlag returns the value of a check-in feature flag. In case of any
 // error this function will always return a false value.
 func GetFeatureFlag(kvStore model.KeyValueStore, name string) bool {
-	data, err := kvStore.Get(checkInFlagsState)
+	wrapper, err := GetFeatureFlagsWrapper(kvStore)
 	if err != nil {
 		return false // as documented
 	}
-	var wrapper checkInFlagsWrapper
-	if err := json.Unmarshal(data, &wrapper); err != nil {
+	if wrapper.DidExpire() {
 		return false // as documented
 	}
-	if time.Now().After(wrapper.Expire) {
-		return false // as documented
-	}
-	return wrapper.Flags[name] // works even if map is nil
+	return wrapper.Get(name)
 }
 
 // ExperimentEnabledKey returns the [model.KeyValueStore] key to use to

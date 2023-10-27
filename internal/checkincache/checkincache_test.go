@@ -27,7 +27,7 @@ func TestStore(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		var wrapper checkInFlagsWrapper
+		var wrapper FeatureFlagsWrapper
 		data, err := memstore.Get(checkInFlagsState)
 		if err != nil {
 			t.Fatal(err)
@@ -94,7 +94,7 @@ func TestGetFeatureFlag(t *testing.T) {
 	})
 
 	t.Run("in case of success", func(t *testing.T) {
-		response := &checkInFlagsWrapper{
+		response := &FeatureFlagsWrapper{
 			Expire: time.Now().Add(time.Hour),
 			Flags: map[string]bool{
 				"antani": true,
@@ -115,7 +115,7 @@ func TestGetFeatureFlag(t *testing.T) {
 	})
 
 	t.Run("in case of success with a nil map", func(t *testing.T) {
-		response := &checkInFlagsWrapper{
+		response := &FeatureFlagsWrapper{
 			Expire: time.Now().Add(time.Hour),
 			Flags:  nil, // here the map is explicitly nil
 		}
