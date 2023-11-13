@@ -15,7 +15,7 @@ import (
 
 const (
 	testName    = "signal"
-	testVersion = "0.2.3"
+	testVersion = "0.2.4"
 
 	signalCA = `-----BEGIN CERTIFICATE-----
 MIID7zCCAtegAwIBAgIJAIm6LatK5PNiMA0GCSqGSIb3DQEBBQUAMIGNMQswCQYD
