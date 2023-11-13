@@ -192,11 +192,14 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 			FailOnHTTPError: false,
 			CertPool:        certPool,
 		}},
-		{Target: "https://contentproxy.signal.org/", Config: urlgetter.Config{
-			Method:          "GET",
-			FailOnHTTPError: false,
-			CertPool:        certPool,
-		}},
+		/*
+			TODO: understand why this endpoint does not speak TLS
+			{Target: "https://contentproxy.signal.org/", Config: urlgetter.Config{
+				Method:          "GET",
+				FailOnHTTPError: false,
+				CertPool:        certPool,
+			}},
+		*/
 		{Target: "https://sfu.voip.signal.org/", Config: urlgetter.Config{
 			Method:          "GET",
 			FailOnHTTPError: false,
