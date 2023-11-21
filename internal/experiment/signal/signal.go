@@ -117,7 +117,6 @@ func (tk *TestKeys) Update(v urlgetter.MultiOutput) {
 		tk.SignalBackendFailure = v.TestKeys.Failure
 		return
 	}
-	return
 }
 
 // Measurer performs the measurement
