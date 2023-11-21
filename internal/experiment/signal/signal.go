@@ -15,7 +15,7 @@ import (
 
 const (
 	testName    = "signal"
-	testVersion = "0.2.3"
+	testVersion = "0.2.4"
 
 	signalCA = `-----BEGIN CERTIFICATE-----
 MIID7zCCAtegAwIBAgIJAIm6LatK5PNiMA0GCSqGSIb3DQEBBQUAMIGNMQswCQYD
@@ -117,7 +117,6 @@ func (tk *TestKeys) Update(v urlgetter.MultiOutput) {
 		tk.SignalBackendFailure = v.TestKeys.Failure
 		return
 	}
-	return
 }
 
 // Measurer performs the measurement
@@ -164,14 +163,10 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	}
 
 	inputs := []urlgetter.MultiInput{
+
 		// Here we need to provide the method explicitly. See
 		// https://github.com/ooni/probe-engine/issues/827.
-		{Target: "https://textsecure-service.whispersystems.org/", Config: urlgetter.Config{
-			Method:          "GET",
-			FailOnHTTPError: false,
-			CertPool:        certPool,
-		}},
-		{Target: "https://storage.signal.org/", Config: urlgetter.Config{
+		{Target: "https://api.backup.signal.org/", Config: urlgetter.Config{
 			Method:          "GET",
 			FailOnHTTPError: false,
 			CertPool:        certPool,
@@ -186,7 +181,50 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 			FailOnHTTPError: false,
 			CertPool:        certPool,
 		}},
+		{Target: "https://cdsi.signal.org/", Config: urlgetter.Config{
+			Method:          "GET",
+			FailOnHTTPError: false,
+			CertPool:        certPool,
+		}},
+		{Target: "https://chat.signal.org/", Config: urlgetter.Config{
+			Method:          "GET",
+			FailOnHTTPError: false,
+			CertPool:        certPool,
+		}},
+		/*
+			TODO: understand why this endpoint does not speak TLS
+			{Target: "https://contentproxy.signal.org/", Config: urlgetter.Config{
+				Method:          "GET",
+				FailOnHTTPError: false,
+				CertPool:        certPool,
+			}},
+		*/
 		{Target: "https://sfu.voip.signal.org/", Config: urlgetter.Config{
+			Method:          "GET",
+			FailOnHTTPError: false,
+			CertPool:        certPool,
+		}},
+		{Target: "https://storage.signal.org/", Config: urlgetter.Config{
+			Method:          "GET",
+			FailOnHTTPError: false,
+			CertPool:        certPool,
+		}},
+		{Target: "https://svr2.signal.org/", Config: urlgetter.Config{
+			Method:          "GET",
+			FailOnHTTPError: false,
+			CertPool:        certPool,
+		}},
+		{Target: "https://ud-chat.signal.org/", Config: urlgetter.Config{
+			Method:          "GET",
+			FailOnHTTPError: false,
+			CertPool:        certPool,
+		}},
+		{Target: "https://updates.signal.org/", Config: urlgetter.Config{
+			Method:          "GET",
+			FailOnHTTPError: false,
+			CertPool:        certPool,
+		}},
+		{Target: "https://updates2.signal.org/", Config: urlgetter.Config{
 			Method:          "GET",
 			FailOnHTTPError: false,
 			CertPool:        certPool,
