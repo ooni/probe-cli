@@ -107,6 +107,10 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	// create trace
 	trace := measurexlite.NewTrace(index, t.ZeroTime)
 
+	// TODO(bassosimone): the DSL starts measuring for throttling when we start
+	// fetching the body while here we start immediately. We should come up with
+	// a consistent policy otherwise data won't be comparable.
+
 	// start measuring throttling
 	sampler := throttling.NewSampler(trace)
 	defer func() {
@@ -329,7 +333,7 @@ func (t *SecureFlow) httpTransaction(ctx context.Context, network, address, alpn
 		err,
 		finished,
 	)
-	t.TestKeys.AppendRequests(ev)
+	t.TestKeys.PrependRequests(ev)
 	return resp, body, err
 }
 
@@ -344,6 +348,8 @@ func (t *SecureFlow) maybeFollowRedirects(ctx context.Context, resp *http.Respon
 		if err != nil {
 			return // broken response from server
 		}
+		// TODO(https://github.com/ooni/probe/issues/2628): we need to handle
+		// the care where the redirect URL is incomplete
 		t.Logger.Infof("redirect to: %s", location.String())
 		resolvers := &DNSResolvers{
 			CookieJar:    t.CookieJar,
