@@ -124,6 +124,13 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	// previously agreed conventions in some way.
 	//
 	// For this reason, any fix for this should be carefully thought out.
+	//
+	// I cannot know which is the request that will win the race and
+	// attempt measuring HTTP/HTTPS. Also, I cannot create records for
+	// all requests because that would break the fastpath, which assumes
+	// that requests[0] is the latest request in a linear chain. So, I
+	// need somehow to introduce a request into the test keys in a different
+	// way. Yet, how do I know which connection I am going to use?
 
 	// create trace
 	trace := measurexlite.NewTrace(index, t.ZeroTime)
