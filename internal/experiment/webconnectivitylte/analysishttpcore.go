@@ -5,6 +5,8 @@ package webconnectivitylte
 //
 
 import (
+	"log"
+
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -32,6 +34,12 @@ func (tk *TestKeys) analysisHTTPToplevel(logger model.Logger) {
 	}
 	finalRequest := tk.Requests[0]
 	tk.HTTPExperimentFailure = finalRequest.Failure
+
+	{
+		for idx, req := range tk.Requests {
+			log.Printf("REQUEST STACK: #%d %s", idx, req.Request.URL)
+		}
+	}
 
 	// don't perform any futher analysis without TH data
 	if tk.Control == nil || tk.ControlRequest == nil {

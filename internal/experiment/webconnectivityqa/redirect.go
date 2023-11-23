@@ -11,7 +11,7 @@ import (
 func redirectWithConsistentDNSAndThenConnectionRefusedForHTTP() *TestCase {
 	return &TestCase{
 		Name:  "redirectWithConsistentDNSAndThenConnectionRefusedForHTTP",
-		Flags: TestCaseFlagNoLTE, // BUG: LTE thinks this website is accessible (WTF?!)
+		Flags: 0, // BUG: LTE thinks this website is accessible (WTF?!)
 		Input: "https://bit.ly/32447",
 		Configure: func(env *netemx.QAEnv) {
 

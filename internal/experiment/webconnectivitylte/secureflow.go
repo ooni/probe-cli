@@ -104,6 +104,27 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 		return err
 	}
 
+	// TODO(bassosimone): we're missing high-level information about the
+	// transaction, which implies we are missing failed HTTP requests
+	// to compare to, which causes netemx integration tests such as this
+	//
+	//	TestQA/redirectWithConsistentDNSAndThenConnectionRefusedForHTTP
+	//
+	// to fail because they cannot find the corresponding request to
+	// compare to. Therefore, in such a test case, we incorrectly say
+	// that bit.ly is accessible where instead we should conclude
+	// there's blocking at the TCP/IP level.
+	//
+	// An initial fix for this issue probably relies on making sure
+	// that we don't conclude there is a success when the actual
+	// endpoint fails. However, I think there are broader ooni/data
+	// implications at stake here. The fact that we do not have a
+	// request violates the assumptions of the analysis code we have
+	// written, which means, whatever we do, we need to respect the
+	// previously agreed conventions in some way.
+	//
+	// For this reason, any fix for this should be carefully thought out.
+
 	// create trace
 	trace := measurexlite.NewTrace(index, t.ZeroTime)
 
@@ -349,7 +370,7 @@ func (t *SecureFlow) maybeFollowRedirects(ctx context.Context, resp *http.Respon
 			return // broken response from server
 		}
 		// TODO(https://github.com/ooni/probe/issues/2628): we need to handle
-		// the care where the redirect URL is incomplete
+		// the case where the redirect URL is incomplete
 		t.Logger.Infof("redirect to: %s", location.String())
 		resolvers := &DNSResolvers{
 			CookieJar:    t.CookieJar,
