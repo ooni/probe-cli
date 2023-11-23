@@ -9,6 +9,7 @@ package webconnectivitylte
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -107,6 +108,21 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 		return err
 	}
 
+	// Create the request early such that we can immediately bail in case
+	// it's broken and such that we can insert it into the heap in case there
+	// is a failure when connecting or TLS handshaking.
+	httpReq, err := t.newHTTPRequest()
+	if err != nil {
+		if t.Referer == "" {
+			// when the referer is empty, the failing URL comes from our backend
+			// or from the user, so it's a fundamental failure. After that, we
+			// are dealing with websites provided URLs, so we should not flag a
+			// fundamental failure, because we want to see the measurement submitted.
+			t.TestKeys.SetFundamentalFailure(err)
+		}
+		return err
+	}
+
 	// TODO(bassosimone): we're missing high-level information about the
 	// transaction, which implies we are missing failed HTTP requests
 	// to compare to, which causes netemx integration tests such as this
@@ -162,7 +178,17 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	tcpConn, err := tcpDialer.DialContext(tcpCtx, "tcp", t.Address)
 	t.TestKeys.AppendTCPConnectResults(trace.TCPConnects()...)
 	if err != nil {
-		// TODO(bassosimone): add failed HTTP request to the heap
+		// TODO(bassosimone): document why we're adding a request to the heap here
+		if t.PrioSelector != nil {
+			t.TestKeys.PrependRequests(newArchivalHTTPRequestResultWithError(
+				trace,
+				"tcp",
+				t.Address,
+				"",
+				httpReq,
+				err,
+			))
+		}
 		ol.Stop(err)
 		return err
 	}
@@ -193,7 +219,17 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	tlsConn, err := tlsHandshaker.Handshake(tlsCtx, tcpConn, tlsConfig)
 	t.TestKeys.AppendTLSHandshakes(trace.TLSHandshakes()...)
 	if err != nil {
-		// TODO(bassosimone): add failed HTTP request to the heap
+		// TODO(bassosimone): document why we're adding a request to the heap here
+		if t.PrioSelector != nil {
+			t.TestKeys.PrependRequests(newArchivalHTTPRequestResultWithError(
+				trace,
+				"tcp",
+				t.Address,
+				"",
+				httpReq,
+				err,
+			))
+		}
 		ol.Stop(err)
 		return err
 	}
@@ -204,7 +240,17 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 
 	// Determine whether we're allowed to fetch the webpage
 	if t.PrioSelector == nil || !t.PrioSelector.permissionToFetch(t.Address) {
-		// TODO(bassosimone): add failed HTTP request to the heap
+		// TODO(bassosimone): document why we're adding a request to the heap here
+		if t.PrioSelector != nil {
+			t.TestKeys.PrependRequests(newArchivalHTTPRequestResultWithError(
+				trace,
+				"tcp",
+				t.Address,
+				"",
+				httpReq,
+				errors.New("http_request_canceled"), // TODO(bassosimone): define this error
+			))
+		}
 		ol.Stop("stop after TLS handshake")
 		return errNotPermittedToFetch
 	}
@@ -233,22 +279,13 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	// structure according to the archival data format and instead we have to
 	// generate it on the fly, which comes with its own drawbacks.
 
-	// create HTTP request
+	// create HTTP context
 	const httpTimeout = 10 * time.Second
 	httpCtx, httpCancel := context.WithTimeout(parentCtx, httpTimeout)
 	defer httpCancel()
-	httpReq, err := t.newHTTPRequest(httpCtx)
-	if err != nil {
-		if t.Referer == "" {
-			// when the referer is empty, the failing URL comes from our backend
-			// or from the user, so it's a fundamental failure. After that, we
-			// are dealing with websites provided URLs, so we should not flag a
-			// fundamental failure, because we want to see the measurement submitted.
-			t.TestKeys.SetFundamentalFailure(err)
-		}
-		ol.Stop(err)
-		return err
-	}
+
+	// make sure the context owns the request
+	httpReq = httpReq.WithContext(httpCtx)
 
 	// perform HTTP transaction
 	httpResp, httpRespBody, err := t.httpTransaction(
@@ -315,7 +352,7 @@ func (t *SecureFlow) urlHost(scheme string) (string, error) {
 }
 
 // newHTTPRequest creates a new HTTP request.
-func (t *SecureFlow) newHTTPRequest(ctx context.Context) (*http.Request, error) {
+func (t *SecureFlow) newHTTPRequest() (*http.Request, error) {
 	const urlScheme = "https"
 	urlHost, err := t.urlHost(urlScheme)
 	if err != nil {
@@ -327,7 +364,7 @@ func (t *SecureFlow) newHTTPRequest(ctx context.Context) (*http.Request, error) 
 		Path:     t.URLPath,
 		RawQuery: t.URLRawQuery,
 	}
-	httpReq, err := http.NewRequestWithContext(ctx, "GET", httpURL.String(), nil)
+	httpReq, err := http.NewRequest("GET", httpURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -354,7 +391,8 @@ func (t *SecureFlow) httpTransaction(ctx context.Context, network, address, alpn
 	// start at the beginning of the flow rather than here. If we start it at the
 	// beginning this is nicer, but, at the same time, starting it at the beginning
 	// of the flow means we're not collecting information about DNS. So, I am a
-	// bit torn about what is the best approach to follow here.
+	// bit torn about what is the best approach to follow here. Maybe it does not
+	// even matter to emit transaction_start/end events given that we have transaction ID.
 	t.TestKeys.AppendNetworkEvents(measurexlite.NewAnnotationArchivalNetworkEvent(
 		trace.Index(), started, "http_transaction_start",
 	))

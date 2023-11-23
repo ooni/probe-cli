@@ -11,7 +11,7 @@ import (
 func redirectWithConsistentDNSAndThenConnectionRefusedForHTTP() *TestCase {
 	return &TestCase{
 		Name:  "redirectWithConsistentDNSAndThenConnectionRefusedForHTTP",
-		Flags: 0, // BUG: LTE thinks this website is accessible (WTF?!)
+		Flags: 0,
 		Input: "https://bit.ly/32447",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -37,7 +37,7 @@ func redirectWithConsistentDNSAndThenConnectionRefusedForHTTP() *TestCase {
 			HTTPExperimentFailure: "connection_refused",
 			XStatus:               8320, // StatusExperimentHTTP | StatusAnomalyConnect
 			XDNSFlags:             0,
-			XBlockingFlags:        32, // analysisFlagSuccess
+			XBlockingFlags:        8, // analysisFlagHTTPBlocking
 			Accessible:            false,
 			Blocking:              "http-failure",
 		},
