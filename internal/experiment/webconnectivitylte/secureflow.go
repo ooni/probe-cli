@@ -323,6 +323,11 @@ func (t *SecureFlow) httpTransaction(ctx context.Context, network, address, alpn
 	txp model.HTTPTransport, req *http.Request, trace *measurexlite.Trace) (*http.Response, []byte, error) {
 	const maxbody = 1 << 19
 	started := trace.TimeSince(trace.ZeroTime())
+	// TODO(bassosimone): I am wondering whether we should have the HTTP transaction
+	// start at the beginning of the flow rather than here. If we start it at the
+	// beginning this is nicer, but, at the same time, starting it at the beginning
+	// of the flow means we're not collecting information about DNS. So, I am a
+	// bit torn about what is the best approach to follow here.
 	t.TestKeys.AppendNetworkEvents(measurexlite.NewAnnotationArchivalNetworkEvent(
 		trace.Index(), started, "http_transaction_start",
 	))
