@@ -120,6 +120,7 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) error {
 	tcpConn, err := tcpDialer.DialContext(tcpCtx, "tcp", t.Address)
 	t.TestKeys.AppendTCPConnectResults(trace.TCPConnects()...)
 	if err != nil {
+		// TODO(bassosimone): add failed HTTP request to the heap
 		ol.Stop(err)
 		return err
 	}

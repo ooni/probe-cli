@@ -97,6 +97,9 @@ func (t *SecureFlow) Start(ctx context.Context) {
 	}()
 }
 
+// TODO(bassosimone): document the heap-like organization of the
+// requests that we plan on adding to webconnectivity.
+
 // Run runs this task in the current goroutine.
 func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	if err := allowedToConnect(t.Address); err != nil {
@@ -159,6 +162,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	tcpConn, err := tcpDialer.DialContext(tcpCtx, "tcp", t.Address)
 	t.TestKeys.AppendTCPConnectResults(trace.TCPConnects()...)
 	if err != nil {
+		// TODO(bassosimone): add failed HTTP request to the heap
 		ol.Stop(err)
 		return err
 	}
@@ -189,6 +193,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	tlsConn, err := tlsHandshaker.Handshake(tlsCtx, tcpConn, tlsConfig)
 	t.TestKeys.AppendTLSHandshakes(trace.TLSHandshakes()...)
 	if err != nil {
+		// TODO(bassosimone): add failed HTTP request to the heap
 		ol.Stop(err)
 		return err
 	}
@@ -199,6 +204,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 
 	// Determine whether we're allowed to fetch the webpage
 	if t.PrioSelector == nil || !t.PrioSelector.permissionToFetch(t.Address) {
+		// TODO(bassosimone): add failed HTTP request to the heap
 		ol.Stop("stop after TLS handshake")
 		return errNotPermittedToFetch
 	}
