@@ -206,6 +206,17 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 		netxlite.NewSingleUseTLSDialer(tlsConn),
 	)
 
+	// TODO(bassosimone): the request we're creating here is bound to the httpCtx
+	// context. So, if we choose to create the request earlier, then we should make
+	// sure that here we are assigning the correct context to the request.
+	//
+	// Additionally, and maybe tangentially, I am wondering whether we should
+	// separate a request and a response inside the dataset. This would make it
+	// possible to create the request early and provide the response when it
+	// becomes available. Though, this means we don't have anymore an HTTP
+	// structure according to the archival data format and instead we have to
+	// generate it on the fly, which comes with its own drawbacks.
+
 	// create HTTP request
 	const httpTimeout = 10 * time.Second
 	httpCtx, httpCancel := context.WithTimeout(parentCtx, httpTimeout)
