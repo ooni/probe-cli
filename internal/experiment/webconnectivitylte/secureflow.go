@@ -206,6 +206,9 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 		netxlite.NewSingleUseTLSDialer(tlsConn),
 	)
 
+	// TODO(bassosimone): whatever changes we apply here, we also need to
+	// apply the same changes inside the cleartextflow.go file.
+
 	// TODO(bassosimone): the request we're creating here is bound to the httpCtx
 	// context. So, if we choose to create the request earlier, then we should make
 	// sure that here we are assigning the correct context to the request.
