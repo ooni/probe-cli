@@ -132,6 +132,7 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) error {
 	tcpDialer := trace.NewDialerWithoutResolver(t.Logger)
 	tcpConn, err := tcpDialer.DialContext(tcpCtx, "tcp", t.Address)
 	t.TestKeys.AppendTCPConnectResults(trace.TCPConnects()...)
+	t.TestKeys.AppendNetworkEvents(trace.NetworkEvents()...)
 	if err != nil {
 		// TODO(bassosimone): document why we're adding a request to the heap here
 		t.TestKeys.PrependRequests(newArchivalHTTPRequestResultWithError(

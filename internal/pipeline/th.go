@@ -38,13 +38,13 @@ type EndpointObservationTH struct {
 	IPAddressIsBogon bool
 
 	// TCPConnectFailure is the error that occurred.
-	TCPConnectFailure optional.Value[*string]
+	TCPConnectFailure optional.Value[Failure]
 
 	// QUICHandshakeFailure is the error that occurred.
-	QUICHandshakeFailure optional.Value[*string]
+	QUICHandshakeFailure optional.Value[Failure]
 
 	// TLSHandshakeFailure is the error that occurred.
-	TLSHandshakeFailure optional.Value[*string]
+	TLSHandshakeFailure optional.Value[Failure]
 
 	// TLSServerName is the SNI value.
 	TLSServerName optional.Value[string]
@@ -59,7 +59,7 @@ type EndpointObservationTH struct {
 // and adapts the WebControlObservation type to probe-engine.
 type WebObservationTH struct {
 	// HTTPFailure is the error that occurred.
-	HTTPFailure optional.Value[*string]
+	HTTPFailure optional.Value[Failure]
 
 	// HTTPResponseStatusCode is the response status code.
 	HTTPResponseStatusCode optional.Value[int64]
@@ -75,9 +75,9 @@ type WebObservationTH struct {
 }
 
 func (db *DB) thAddDNS(resp *model.THResponse) error {
-	db.thDNSFailure = resp.DNS.Failure
+	db.THDNSFailure = NewFailure(resp.DNS.Failure)
 	for _, addr := range resp.DNS.Addrs {
-		db.thDNSAddrs[addr] = true
+		db.THDNSAddrs[addr] = true
 	}
 	return nil
 }
@@ -99,14 +99,14 @@ func (db *DB) thAddTCPConnect(resp *model.THResponse) error {
 
 		// Implementation note: because we're reading a map, we can't have duplicates
 		// so we can blindly insert into the destination map here
-		db.thEpntByEpnt[endpoint] = &EndpointObservationTH{
+		db.THEpntByEpnt[endpoint] = &EndpointObservationTH{
 			Proto:             "tcp",
 			IPAddress:         addr,
 			Port:              port,
 			Endpoint:          endpoint,
 			IPAddressASN:      asn,
 			IPAddressIsBogon:  netxlite.IsBogon(addr),
-			TCPConnectFailure: optional.Some(status.Failure),
+			TCPConnectFailure: optional.Some(NewFailure(status.Failure)),
 		}
 	}
 	return nil
@@ -116,13 +116,13 @@ func (db *DB) thAddTLSHandshake(resp *model.THResponse) error {
 	for addrport, status := range resp.TLSHandshake {
 		endpoint := fmt.Sprintf("%s/tcp", addrport)
 
-		entry, found := db.thEpntByEpnt[endpoint]
+		entry, found := db.THEpntByEpnt[endpoint]
 		if !found {
 			return errInconsistentTHResponse
 		}
 
 		entry.TLSServerName = optional.Some(status.ServerName)
-		entry.TLSHandshakeFailure = optional.Some(status.Failure)
+		entry.TLSHandshakeFailure = optional.Some(NewFailure(status.Failure))
 	}
 	return nil
 }
@@ -130,12 +130,12 @@ func (db *DB) thAddTLSHandshake(resp *model.THResponse) error {
 var errAlreadyExistingTHWeb = errors.New("analysis: thWeb already exists")
 
 func (db *DB) thAddHTTPResponse(resp *model.THResponse) error {
-	if !db.thWeb.IsNone() {
+	if !db.THWeb.IsNone() {
 		return errAlreadyExistingTHWeb
 	}
 
-	db.thWeb = optional.Some(&WebObservationTH{
-		HTTPFailure:            optional.Some(resp.HTTPRequest.Failure),
+	db.THWeb = optional.Some(&WebObservationTH{
+		HTTPFailure:            optional.Some(NewFailure(resp.HTTPRequest.Failure)),
 		HTTPResponseStatusCode: optional.Some(resp.HTTPRequest.StatusCode),
 		HTTPResponseBodyLength: optional.Some(resp.HTTPRequest.BodyLength),
 		HTTPResponseHeadersKeys: func() (out map[string]Origin) {

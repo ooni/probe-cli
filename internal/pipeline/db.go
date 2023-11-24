@@ -12,27 +12,27 @@ import (
 // This struct is not goroutine safe. The zero value is invalid. Use the
 // [NewDB] to construct a valid instance.
 type DB struct {
-	dnsByTxID       map[int64]*DNSObservation
-	thDNSAddrs      map[string]bool
-	thDNSFailure    *string
-	thEpntByEpnt    map[string]*EndpointObservationTH
-	thWeb           optional.Value[*WebObservationTH]
-	urlHostname     string
-	webByTxID       map[int64]*WebEndpointObservation
-	webFinalRequest optional.Value[*WebEndpointObservation]
+	DNSByTxID       map[int64]*DNSObservation
+	THDNSAddrs      map[string]bool
+	THDNSFailure    Failure
+	THEpntByEpnt    map[string]*EndpointObservationTH
+	THWeb           optional.Value[*WebObservationTH]
+	URLHostname     string
+	WebByTxID       map[int64]*WebEndpointObservation
+	WebFinalRequest optional.Value[*WebEndpointObservation]
 }
 
 // NewObservationsDB constructs a new [*DB] instance.
 func NewDB() *DB {
 	return &DB{
-		dnsByTxID:       map[int64]*DNSObservation{},
-		thDNSAddrs:      map[string]bool{},
-		thDNSFailure:    nil,
-		thEpntByEpnt:    map[string]*EndpointObservationTH{},
-		thWeb:           optional.None[*WebObservationTH](),
-		urlHostname:     "",
-		webByTxID:       map[int64]*WebEndpointObservation{},
-		webFinalRequest: optional.None[*WebEndpointObservation](),
+		DNSByTxID:       map[int64]*DNSObservation{},
+		THDNSAddrs:      map[string]bool{},
+		THDNSFailure:    Failure(""),
+		THEpntByEpnt:    map[string]*EndpointObservationTH{},
+		THWeb:           optional.None[*WebObservationTH](),
+		URLHostname:     "",
+		WebByTxID:       map[int64]*WebEndpointObservation{},
+		WebFinalRequest: optional.None[*WebEndpointObservation](),
 	}
 }
 
@@ -43,7 +43,7 @@ func (db *DB) Ingest(m *CanonicalMeasurement) error {
 	if err != nil {
 		return err
 	}
-	db.urlHostname = URL.Hostname()
+	db.URLHostname = URL.Hostname()
 
 	// Obtain the test keys or stop early
 	tk := m.TestKeys.UnwrapOr(nil)
@@ -112,7 +112,7 @@ func (db *DB) buildXrefsDNS() {
 	addrToGetaddrinfo := make(map[string][]*DNSObservation)
 	addrToUDP := make(map[string][]*DNSObservation)
 	addrToHTTPS := make(map[string][]*DNSObservation)
-	for _, dobs := range db.dnsByTxID {
+	for _, dobs := range db.DNSByTxID {
 		switch dnsNormalizeEngineName(dobs.Engine) {
 		case "getaddrinfo":
 			for _, addr := range dobs.IPAddrs {
@@ -132,7 +132,7 @@ func (db *DB) buildXrefsDNS() {
 	}
 
 	// create cross references inside the endpoints
-	for _, wobs := range db.webByTxID {
+	for _, wobs := range db.WebByTxID {
 		wobs.DNSLookupGetaddrinfoXref = addrToGetaddrinfo[wobs.IPAddress]
 		wobs.DNSLookupUDPXref = addrToUDP[wobs.IPAddress]
 		wobs.DNSLookupHTTPSXref = addrToHTTPS[wobs.IPAddress]
@@ -140,13 +140,13 @@ func (db *DB) buildXrefsDNS() {
 }
 
 func (db *DB) buildXrefTH() {
-	for _, wobs := range db.webByTxID {
+	for _, wobs := range db.WebByTxID {
 		// create cross references with TH DNS lookups
-		_, ok := db.thDNSAddrs[wobs.IPAddress]
+		_, ok := db.THDNSAddrs[wobs.IPAddress]
 		wobs.DNSLookupTHXref = ok
 
 		// create cross references with TH endpoints
-		if xref, ok := db.thEpntByEpnt[wobs.Endpoint]; ok {
+		if xref, ok := db.THEpntByEpnt[wobs.Endpoint]; ok {
 			wobs.THEndpointXref = optional.Some(xref)
 		}
 	}
@@ -157,7 +157,7 @@ var errMultipleFinalRequests = errors.New("analysis: multiple final requests")
 func (db *DB) maybeFindFinalRequest() error {
 	// find all the possible final request candidates
 	var finals []*WebEndpointObservation
-	for _, wobs := range db.webByTxID {
+	for _, wobs := range db.WebByTxID {
 		switch code := wobs.HTTPResponseStatusCode.UnwrapOr(0); code {
 		case 0, 301, 302, 307, 308:
 			// this is a redirect or a nonexisting response in the case of zero
@@ -176,7 +176,7 @@ func (db *DB) maybeFindFinalRequest() error {
 		return errMultipleFinalRequests
 
 	case len(finals) == 1:
-		db.webFinalRequest = optional.Some(finals[0])
+		db.WebFinalRequest = optional.Some(finals[0])
 		return nil
 
 	default:

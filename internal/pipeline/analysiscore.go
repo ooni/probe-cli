@@ -36,11 +36,24 @@ type Analysis struct {
 
 	// DNSExperimentFailure is a backward-compatibility value that contains the
 	// failure obtained when using getaddrinfo for the URL's domain
-	DNSExperimentFailure optional.Value[*string]
+	DNSExperimentFailure optional.Value[Failure]
+
+	// HTTPDiffBodyProportionFactor is the ratio of the two final bodies.
+	HTTPDiffBodyProportionFactor optional.Value[float64]
+
+	// HTTPDiffTitleMatch indicates whether the titles have common words in them.
+	HTTPDiffTitleMatch optional.Value[bool]
+
+	// HTTPDiffStatusCodeMatch indicates whether the status code matches taking into
+	// account some false positives that may arise.
+	HTTPDiffStatusCodeMatch optional.Value[bool]
+
+	// HTTPDiffUncommonHeadersMatch indicates whether uncommon headers match.
+	HTTPDiffUncommonHeadersMatch optional.Value[bool]
 
 	// HTTPExperimentFailure is a backward-compatibility value that contains the
 	// failure obtained for the final HTTP request made by the probe
-	HTTPExperimentFailure optional.Value[*string]
+	HTTPExperimentFailure optional.Value[Failure]
 
 	// HTTPUnexpectedFailure contains all the endpoint transaction IDs where
 	// the TH succeded while the probe failed to fetch a response
@@ -54,8 +67,8 @@ type Analysis struct {
 	TLSUnexpectedFailure []int64
 }
 
-// ComputeAll computes all the analysis flags using the DB.
-func (ax *Analysis) ComputeAll(db *DB) {
+// ComputeAllValues computes all the analysis values using the DB.
+func (ax *Analysis) ComputeAllValues(db *DB) {
 	// DNS
 	ax.ComputeDNSExperimentFailure(db)
 	ax.ComputeDNSBogon(db)
@@ -75,5 +88,8 @@ func (ax *Analysis) ComputeAll(db *DB) {
 	ax.ComputeHTTPExperimentFailure(db)
 
 	// HTTP (diff)
-
+	ax.ComputeHTTPDiffBodyProportionFactor(db)
+	ax.ComputeHTTPDiffStatusCodeMatch(db)
+	ax.ComputeHTTPDiffUncommonHeadersMatch(db)
+	ax.ComputeHTTPDiffTitleMatch(db)
 }

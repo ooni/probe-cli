@@ -2,7 +2,7 @@ package pipeline
 
 // ComputeTLSUnexpectedFailure computes TLSUnexpectedFailure.
 func (ax *Analysis) ComputeTLSUnexpectedFailure(db *DB) {
-	for _, entry := range db.webByTxID {
+	for _, entry := range db.WebByTxID {
 		// skip all the entries where we did not set a TLS failure
 		if entry.TLSHandshakeFailure.IsNone() {
 			continue
@@ -10,12 +10,12 @@ func (ax *Analysis) ComputeTLSUnexpectedFailure(db *DB) {
 
 		// skip all the entries where connect succeded
 		// TODO(bassosimone): say that the probe succeeds and the TH fails, then what?
-		if entry.TLSHandshakeFailure.Unwrap() == nil {
+		if entry.TLSHandshakeFailure.Unwrap() == "" {
 			continue
 		}
 
 		// get the corresponding TH measurement
-		th, good := db.thEpntByEpnt[entry.Endpoint]
+		th, good := db.THEpntByEpnt[entry.Endpoint]
 
 		// skip if there's no TH data
 		if !good {
@@ -28,7 +28,7 @@ func (ax *Analysis) ComputeTLSUnexpectedFailure(db *DB) {
 		}
 
 		// skip if also the TH failed to handshake
-		if th.TLSHandshakeFailure.Unwrap() != nil {
+		if th.TLSHandshakeFailure.Unwrap() != "" {
 			continue
 		}
 

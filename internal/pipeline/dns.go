@@ -22,7 +22,7 @@ type DNSObservation struct {
 	QueryHostname string
 
 	// Failure is the failure that occurred.
-	Failure *string
+	Failure Failure
 
 	// Engine is the engined used by the probe to lookup.
 	Engine string
@@ -48,7 +48,7 @@ func (db *DB) addDNSLookups(evs ...*model.ArchivalDNSLookupResult) error {
 		}
 		dobs.QueryType = ev.QueryType
 		dobs.QueryHostname = ev.Hostname
-		dobs.Failure = ev.Failure
+		dobs.Failure = NewFailure(ev.Failure)
 		dobs.Engine = ev.Engine
 		dobs.ResolverAddress = ev.ResolverAddress
 		dobs.T0 = ev.T0
@@ -71,13 +71,13 @@ func (db *DB) addDNSLookups(evs ...*model.ArchivalDNSLookupResult) error {
 }
 
 func (db *DB) newDNSObservation(txid int64) (*DNSObservation, error) {
-	if _, good := db.webByTxID[txid]; good {
+	if _, good := db.WebByTxID[txid]; good {
 		return nil, errTransactionAlreadyExists
 	}
 	dobs := &DNSObservation{
 		TransactionID: txid,
 	}
-	db.dnsByTxID[txid] = dobs
+	db.DNSByTxID[txid] = dobs
 	return dobs, nil
 }
 

@@ -48,10 +48,7 @@ type WebEndpointObservation struct {
 	TCPConnectT optional.Value[float64]
 
 	// TCPConnectFailure is the error that occurred.
-	TCPConnectFailure optional.Value[*string]
-
-	// DNSDomainName is the domain name that produced this IP address.
-	DNSDomainName optional.Value[string]
+	TCPConnectFailure optional.Value[Failure]
 
 	// DNSLookupGetaddrinfoXref contains references to the getaddrinfo
 	// based DNS lookups that produced this IP address.
@@ -75,7 +72,7 @@ type WebEndpointObservation struct {
 	QUICHandshakeT optional.Value[float64]
 
 	// QUICHandshakeFailure is the error that occurred.
-	QUICHandshakeFailure optional.Value[*string]
+	QUICHandshakeFailure optional.Value[Failure]
 
 	// TLSHandshakeT0 is when we started handshaking.
 	TLSHandshakeT0 optional.Value[float64]
@@ -84,7 +81,7 @@ type WebEndpointObservation struct {
 	TLSHandshakeT optional.Value[float64]
 
 	// TLSHandshakeFailure is the error that occurred.
-	TLSHandshakeFailure optional.Value[*string]
+	TLSHandshakeFailure optional.Value[Failure]
 
 	// TLSServerName is the SNI value.
 	TLSServerName optional.Value[string]
@@ -105,7 +102,7 @@ type WebEndpointObservation struct {
 	HTTPRequestURL optional.Value[string]
 
 	// HTTPFailure is the error that occurred.
-	HTTPFailure optional.Value[*string]
+	HTTPFailure optional.Value[Failure]
 
 	// HTTPResponseStatusCode is the response status code.
 	HTTPResponseStatusCode optional.Value[int64]
@@ -145,7 +142,7 @@ func (db *DB) addNetworkEventsTCPConnect(evs ...*model.ArchivalNetworkEvent) err
 			wobs.IPAddressIsBogon = netxlite.IsBogon(addr)
 			wobs.TCPConnectT0 = optional.Some(ev.T0)
 			wobs.TCPConnectT = optional.Some(ev.T)
-			wobs.TCPConnectFailure = optional.Some(ev.Failure)
+			wobs.TCPConnectFailure = optional.Some(NewFailure(ev.Failure))
 
 		default:
 			// nothing
@@ -162,7 +159,7 @@ func (db *DB) addTLSHandshakeEvents(evs ...*model.ArchivalTLSOrQUICHandshakeResu
 		}
 		wobs.TLSHandshakeT0 = optional.Some(ev.T0)
 		wobs.TLSHandshakeT = optional.Some(ev.T)
-		wobs.TLSHandshakeFailure = optional.Some(ev.Failure)
+		wobs.TLSHandshakeFailure = optional.Some(NewFailure(ev.Failure))
 		wobs.TLSServerName = optional.Some(ev.ServerName)
 		wobs.TLSVersion = optional.Some(ev.TLSVersion)
 		wobs.TLSCipherSuite = optional.Some(ev.CipherSuite)
@@ -191,7 +188,7 @@ func (db *DB) addQUICHandshakeEvents(evs ...*model.ArchivalTLSOrQUICHandshakeRes
 		wobs.IPAddressIsBogon = netxlite.IsBogon(addr)
 		wobs.QUICHandshakeT0 = optional.Some(ev.T0)
 		wobs.QUICHandshakeT = optional.Some(ev.T)
-		wobs.QUICHandshakeFailure = optional.Some(ev.Failure)
+		wobs.QUICHandshakeFailure = optional.Some(NewFailure(ev.Failure))
 		wobs.TLSServerName = optional.Some(ev.ServerName)
 		wobs.TLSVersion = optional.Some(ev.TLSVersion)
 		wobs.TLSCipherSuite = optional.Some(ev.CipherSuite)
@@ -207,7 +204,7 @@ func (db *DB) addHTTPRoundTrips(evs ...*model.ArchivalHTTPRequestResult) error {
 			return err
 		}
 		wobs.HTTPRequestURL = optional.Some(ev.Request.URL)
-		wobs.HTTPFailure = optional.Some(ev.Failure)
+		wobs.HTTPFailure = optional.Some(NewFailure(ev.Failure))
 		wobs.HTTPResponseStatusCode = optional.Some(ev.Response.Code)
 		wobs.HTTPResponseBodyLength = optional.Some(int64(len(ev.Response.Body)))
 		wobs.HTTPResponseBodyIsTruncated = optional.Some(ev.Response.BodyIsTruncated)
@@ -225,9 +222,9 @@ func (db *DB) addHTTPRoundTrips(evs ...*model.ArchivalHTTPRequestResult) error {
 var errNoSuchTransaction = errors.New("analysis: no such transaction")
 
 func (db *DB) getWebEndpointObservation(txid int64) (*WebEndpointObservation, error) {
-	wobs, good := db.webByTxID[txid]
+	wobs, good := db.WebByTxID[txid]
 	if !good {
-		return nil, errNoSuchTransaction
+		return nil, fmt.Errorf("%w: %d", errNoSuchTransaction, txid)
 	}
 	return wobs, nil
 }
@@ -235,12 +232,12 @@ func (db *DB) getWebEndpointObservation(txid int64) (*WebEndpointObservation, er
 var errTransactionAlreadyExists = errors.New("analysis: transaction already exists")
 
 func (db *DB) newWebEndpointObservation(txid int64) (*WebEndpointObservation, error) {
-	if _, good := db.webByTxID[txid]; good {
+	if _, good := db.WebByTxID[txid]; good {
 		return nil, errTransactionAlreadyExists
 	}
 	wobs := &WebEndpointObservation{
 		TransactionID: txid,
 	}
-	db.webByTxID[txid] = wobs
+	db.WebByTxID[txid] = wobs
 	return wobs, nil
 }

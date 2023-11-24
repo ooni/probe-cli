@@ -8,9 +8,9 @@ import (
 
 // ComputeDNSExperimentFailure computes DNSExperimentFailure.
 func (ax *Analysis) ComputeDNSExperimentFailure(db *DB) {
-	for _, entry := range db.dnsByTxID {
+	for _, entry := range db.DNSByTxID {
 		// skip queries not for the original hostname
-		if db.urlHostname != entry.QueryHostname {
+		if db.URLHostname != entry.QueryHostname {
 			continue
 		}
 
@@ -20,7 +20,7 @@ func (ax *Analysis) ComputeDNSExperimentFailure(db *DB) {
 		}
 
 		// skip successful cases
-		if entry.Failure == nil {
+		if entry.Failure == "" {
 			continue
 		}
 
@@ -32,7 +32,7 @@ func (ax *Analysis) ComputeDNSExperimentFailure(db *DB) {
 
 // ComputeDNSUnexpectedBogon computes DNSUnexpectedBogon.
 func (ax *Analysis) ComputeDNSBogon(db *DB) {
-	for _, entry := range db.webByTxID {
+	for _, entry := range db.WebByTxID {
 		// skip all the entries without a bogon
 		if !entry.IPAddressIsBogon {
 			continue
@@ -52,24 +52,24 @@ func (ax *Analysis) ComputeDNSBogon(db *DB) {
 // ComputeDNSUnexpectedFailure computes DNSUnexpectedFailure.
 func (ax *Analysis) ComputeDNSUnexpectedFailure(db *DB) {
 	// we cannot run this algorithm if the control failed or returned no IP addresses.
-	if db.thDNSFailure != nil {
+	if db.THDNSFailure != "" {
 		return
 	}
 
 	// we cannot run this algorithm if the control returned no IP addresses.
-	if len(db.thDNSAddrs) <= 0 {
+	if len(db.THDNSAddrs) <= 0 {
 		return
 	}
 
 	// inspect DNS lookup results
-	for _, entry := range db.dnsByTxID {
+	for _, entry := range db.DNSByTxID {
 		// skip cases without failures
-		if entry.Failure == nil {
+		if entry.Failure == "" {
 			continue
 		}
 
 		// skip cases that query the wrong domain name
-		if entry.QueryHostname != db.urlHostname {
+		if entry.QueryHostname != db.URLHostname {
 			continue
 		}
 
@@ -82,7 +82,7 @@ func (ax *Analysis) ComputeDNSUnexpectedFailure(db *DB) {
 		}
 
 		// skip cases where there's no IPv6 addresses for a domain
-		if entry.QueryType == "AAAA" && *entry.Failure == netxlite.FailureDNSNoAnswer {
+		if entry.QueryType == "AAAA" && entry.Failure == netxlite.FailureDNSNoAnswer {
 			continue
 		}
 
@@ -93,24 +93,24 @@ func (ax *Analysis) ComputeDNSUnexpectedFailure(db *DB) {
 
 func (ax *Analysis) dnsDiffHelper(db *DB, fx func(db *DB, entry *DNSObservation)) {
 	// we cannot run this algorithm if the control failed or returned no IP addresses.
-	if db.thDNSFailure != nil {
+	if db.THDNSFailure != "" {
 		return
 	}
 
 	// we cannot run this algorithm if the control returned no IP addresses.
-	if len(db.thDNSAddrs) <= 0 {
+	if len(db.THDNSAddrs) <= 0 {
 		return
 	}
 
 	// inspect DNS lookup results
-	for _, entry := range db.dnsByTxID {
+	for _, entry := range db.DNSByTxID {
 		// skip cases witht failures
-		if entry.Failure != nil {
+		if entry.Failure != "" {
 			continue
 		}
 
 		// skip cases that query the wrong domain name
-		if entry.QueryHostname != db.urlHostname {
+		if entry.QueryHostname != db.URLHostname {
 			continue
 		}
 
@@ -131,7 +131,7 @@ func (ax *Analysis) ComputeDNSUnexpectedAddr(db *DB) {
 			state[addr] |= OriginProbe
 		}
 
-		for addr := range db.thDNSAddrs {
+		for addr := range db.THDNSAddrs {
 			state[addr] |= OriginTH
 		}
 
@@ -155,7 +155,7 @@ func (ax *Analysis) ComputeDNSUnexpectedAddrASN(db *DB) {
 			}
 		}
 
-		for addr := range db.thDNSAddrs {
+		for addr := range db.THDNSAddrs {
 			if asn, _, err := geoipx.LookupASN(addr); err == nil {
 				state[int64(asn)] |= OriginTH
 			}
@@ -177,7 +177,7 @@ func (ax *Analysis) ComputeDNSWithTLSHandshakeFailureAddr(db *DB) {
 		for _, addr := range dns.IPAddrs {
 
 			// find the corresponding endpoint measurement
-			for _, epnt := range db.webByTxID {
+			for _, epnt := range db.WebByTxID {
 
 				// skip entries related to a different address
 				if epnt.IPAddress != addr {
@@ -190,12 +190,12 @@ func (ax *Analysis) ComputeDNSWithTLSHandshakeFailureAddr(db *DB) {
 				}
 
 				// skip entries where the handshake succeded
-				if epnt.TLSHandshakeFailure.Unwrap() == nil {
+				if epnt.TLSHandshakeFailure.Unwrap() == "" {
 					continue
 				}
 
 				// find the related TH measurement
-				thEpnt, good := db.thEpntByEpnt[epnt.Endpoint]
+				thEpnt, good := db.THEpntByEpnt[epnt.Endpoint]
 
 				// skip cases where there's no TH entry
 				if !good {
@@ -208,7 +208,7 @@ func (ax *Analysis) ComputeDNSWithTLSHandshakeFailureAddr(db *DB) {
 				}
 
 				// skip cases where the TH's handshake also failed
-				if thEpnt.TLSHandshakeFailure.Unwrap() != nil {
+				if thEpnt.TLSHandshakeFailure.Unwrap() != "" {
 					continue
 				}
 

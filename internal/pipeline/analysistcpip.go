@@ -1,10 +1,12 @@
 package pipeline
 
-import "github.com/ooni/probe-cli/v3/internal/netxlite"
+import (
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
+)
 
 // ComputeTCPUnexpectedFailure computes TCPUnexpectedFailure.
 func (ax *Analysis) ComputeTCPUnexpectedFailure(db *DB) {
-	for _, entry := range db.webByTxID {
+	for _, entry := range db.WebByTxID {
 		// skip all the entries where we did not set a TCP failure
 		if entry.TCPConnectFailure.IsNone() {
 			continue
@@ -12,12 +14,12 @@ func (ax *Analysis) ComputeTCPUnexpectedFailure(db *DB) {
 
 		// skip all the entries where connect succeded
 		// TODO(bassosimone): say that the probe succeeds and the TH fails, then what?
-		if entry.TCPConnectFailure.Unwrap() == nil {
+		if entry.TCPConnectFailure.Unwrap() == "" {
 			continue
 		}
 
 		// get the corresponding TH measurement
-		th, good := db.thEpntByEpnt[entry.Endpoint]
+		th, good := db.THEpntByEpnt[entry.Endpoint]
 
 		// skip if there's no TH data
 		if !good {
@@ -30,15 +32,15 @@ func (ax *Analysis) ComputeTCPUnexpectedFailure(db *DB) {
 		}
 
 		// skip if also the TH failed to connect
-		if th.TCPConnectFailure.Unwrap() != nil {
+		if th.TCPConnectFailure.Unwrap() != "" {
 			continue
 		}
 
 		// ignore failures that are most likely caused by a broken IPv6 network stack
 		if ipv6, err := netxlite.IsIPv6(entry.IPAddress); err == nil && ipv6 {
-			failure := th.TCPConnectFailure.Unwrap()
-			likelyFalsePositive := (*failure == netxlite.FailureNetworkUnreachable ||
-				*failure == netxlite.FailureHostUnreachable)
+			failure := entry.TCPConnectFailure.Unwrap()
+			likelyFalsePositive := (failure == netxlite.FailureNetworkUnreachable ||
+				failure == netxlite.FailureHostUnreachable)
 			if likelyFalsePositive {
 				continue
 			}
