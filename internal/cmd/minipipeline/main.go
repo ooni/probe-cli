@@ -21,12 +21,20 @@ func main() {
 	container.NoteHTTPRoundTripResults(meas.TestKeys.Unwrap().Requests...)
 	container.NoteControlResults(meas.TestKeys.Unwrap().XControlRequest.Unwrap(), meas.TestKeys.Unwrap().Control.Unwrap())
 
-	must.WriteFile("db.json", must.MarshalJSON(container), 0600)
+	must.WriteFile("observation.json", must.MarshalJSON(container), 0600)
 
-	/*
-		ax := &pipeline.Analysis{}
-		ax.ComputeAllValues(db)
+	analysis := &minipipeline.WebAnalysis{}
+	analysis.ComputeDNSExperimentFailure(container)
+	analysis.ComputeDNSTransactionsWithBogons(container)
+	analysis.ComputeDNSTransactionsWithUnexpectedFailures(container)
+	analysis.ComputeDNSPossiblyInvalidAddrs(container)
+	analysis.ComputeTCPTransactionsWithUnexpectedTCPConnectFailures(container)
+	analysis.ComputeTCPTransactionsWithUnexpectedTLSHandshakeFailures(container)
+	analysis.ComputeTCPTransactionsWithUnexpectedHTTPFailures(container)
+	analysis.ComputeHTTPDiffBodyProportionFactor(container)
+	analysis.ComputeHTTPDiffStatusCodeMatch(container)
+	analysis.ComputeHTTPDiffUncommonHeadersIntersection(container)
+	analysis.ComputeHTTPDiffTitleDifferentLongWords(container)
 
-		must.WriteFile("ax.json", must.MarshalJSON(ax), 0600)
-	*/
+	must.WriteFile("analysis.json", must.MarshalJSON(analysis), 0600)
 }
