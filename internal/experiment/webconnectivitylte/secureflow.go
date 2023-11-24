@@ -9,7 +9,6 @@ package webconnectivitylte
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -177,19 +176,21 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	tcpDialer := trace.NewDialerWithoutResolver(t.Logger)
 	tcpConn, err := tcpDialer.DialContext(tcpCtx, "tcp", t.Address)
 	t.TestKeys.AppendTCPConnectResults(trace.TCPConnects()...)
-	t.TestKeys.AppendNetworkEvents(trace.NetworkEvents()...)
+	t.TestKeys.AppendNetworkEvents(trace.NetworkEvents()...) // BUGFIX: EXPLAIN
 	if err != nil {
-		// TODO(bassosimone): document why we're adding a request to the heap here
-		if t.PrioSelector != nil {
-			t.TestKeys.PrependRequests(newArchivalHTTPRequestResultWithError(
-				trace,
-				"tcp",
-				t.Address,
-				"",
-				httpReq,
-				err,
-			))
-		}
+		/*
+			// TODO(bassosimone): document why we're adding a request to the heap here
+			if t.PrioSelector != nil {
+				t.TestKeys.PrependRequests(newArchivalHTTPRequestResultWithError(
+					trace,
+					"tcp",
+					t.Address,
+					"",
+					httpReq,
+					err,
+				))
+			}
+		*/
 		ol.Stop(err)
 		return err
 	}
@@ -220,17 +221,19 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	tlsConn, err := tlsHandshaker.Handshake(tlsCtx, tcpConn, tlsConfig)
 	t.TestKeys.AppendTLSHandshakes(trace.TLSHandshakes()...)
 	if err != nil {
-		// TODO(bassosimone): document why we're adding a request to the heap here
-		if t.PrioSelector != nil {
-			t.TestKeys.PrependRequests(newArchivalHTTPRequestResultWithError(
-				trace,
-				"tcp",
-				t.Address,
-				"",
-				httpReq,
-				err,
-			))
-		}
+		/*
+			// TODO(bassosimone): document why we're adding a request to the heap here
+			if t.PrioSelector != nil {
+				t.TestKeys.PrependRequests(newArchivalHTTPRequestResultWithError(
+					trace,
+					"tcp",
+					t.Address,
+					"",
+					httpReq,
+					err,
+				))
+			}
+		*/
 		ol.Stop(err)
 		return err
 	}
@@ -241,17 +244,19 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 
 	// Determine whether we're allowed to fetch the webpage
 	if t.PrioSelector == nil || !t.PrioSelector.permissionToFetch(t.Address) {
-		// TODO(bassosimone): document why we're adding a request to the heap here
-		if t.PrioSelector != nil {
-			t.TestKeys.PrependRequests(newArchivalHTTPRequestResultWithError(
-				trace,
-				"tcp",
-				t.Address,
-				"",
-				httpReq,
-				errors.New("http_request_canceled"), // TODO(bassosimone): define this error
-			))
-		}
+		/*
+			// TODO(bassosimone): document why we're adding a request to the heap here
+			if t.PrioSelector != nil {
+				t.TestKeys.PrependRequests(newArchivalHTTPRequestResultWithError(
+					trace,
+					"tcp",
+					t.Address,
+					"",
+					httpReq,
+					errors.New("http_request_canceled"), // TODO(bassosimone): define this error
+				))
+			}
+		*/
 		ol.Stop("stop after TLS handshake")
 		return errNotPermittedToFetch
 	}
@@ -434,33 +439,29 @@ func (t *SecureFlow) maybeFollowRedirects(ctx context.Context, resp *http.Respon
 	if !t.FollowRedirects || !t.NumRedirects.CanFollowOneMoreRedirect() {
 		return // not configured or too many redirects
 	}
-	switch resp.StatusCode {
-	case 301, 302, 307, 308:
-		location, err := resp.Location()
-		if err != nil {
-			return // broken response from server
-		}
-		// TODO(https://github.com/ooni/probe/issues/2628): we need to handle
-		// the case where the redirect URL is incomplete
-		t.Logger.Infof("redirect to: %s", location.String())
-		resolvers := &DNSResolvers{
-			CookieJar:    t.CookieJar,
-			DNSCache:     t.DNSCache,
-			Domain:       location.Hostname(),
-			IDGenerator:  t.IDGenerator,
-			Logger:       t.Logger,
-			NumRedirects: t.NumRedirects,
-			TestKeys:     t.TestKeys,
-			URL:          location,
-			ZeroTime:     t.ZeroTime,
-			WaitGroup:    t.WaitGroup,
-			Referer:      resp.Request.URL.String(),
-			Session:      nil, // no need to issue another control request
-			TestHelpers:  nil, // ditto
-			UDPAddress:   t.UDPAddress,
-		}
-		resolvers.Start(ctx)
-	default:
-		// no redirect to follow
+
+	locationx, err := httpRedirectLocation(resp)
+	if err != nil || locationx.IsNone() {
+		return
 	}
+	location := locationx.Unwrap()
+
+	t.Logger.Infof("redirect to: %s", location.String())
+	resolvers := &DNSResolvers{
+		CookieJar:    t.CookieJar,
+		DNSCache:     t.DNSCache,
+		Domain:       location.Hostname(),
+		IDGenerator:  t.IDGenerator,
+		Logger:       t.Logger,
+		NumRedirects: t.NumRedirects,
+		TestKeys:     t.TestKeys,
+		URL:          location,
+		ZeroTime:     t.ZeroTime,
+		WaitGroup:    t.WaitGroup,
+		Referer:      resp.Request.URL.String(),
+		Session:      nil, // no need to issue another control request
+		TestHelpers:  nil, // ditto
+		UDPAddress:   t.UDPAddress,
+	}
+	resolvers.Start(ctx)
 }
