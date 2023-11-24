@@ -231,7 +231,7 @@ func (tk *TestKeys) httpDiffTitleMatch(
 	}
 	control := ctrl.Title
 	measurementBody := string(response.Body)
-	measurement := measurexlite.WebGetTitle(measurementBody)
+	measurement := measurexlite.WebGetTitleString(measurementBody)
 	if control == "" || measurement == "" {
 		return
 	}

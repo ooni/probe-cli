@@ -212,7 +212,7 @@ func (db *DB) addHTTPRoundTrips(evs ...*model.ArchivalHTTPRequestResult) error {
 		for key := range ev.Response.Headers {
 			wobs.HTTPResponseHeadersKeys[key] = OriginProbe
 		}
-		if title := measurexlite.WebGetTitle(string(ev.Response.Body)); title != "" {
+		if title := measurexlite.WebGetTitleString(string(ev.Response.Body)); title != "" {
 			wobs.HTTPResponseTitle = optional.Some(title)
 		}
 	}

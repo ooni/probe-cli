@@ -39,4 +39,7 @@ type CanonicalTestKeys struct {
 
 	// QUICHandshakes contains the QUIC handshakes results.
 	QUICHandshakes []*model.ArchivalTLSOrQUICHandshakeResult `json:"quic_handshakes"`
+
+	// XControlRequest contains the OPTIONAL TH request.
+	XControlRequest optional.Value[*model.THRequest] `json:"x_control_request"`
 }
