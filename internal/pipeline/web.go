@@ -117,7 +117,7 @@ type WebEndpointObservation struct {
 	HTTPResponseBodyIsTruncated optional.Value[bool]
 
 	// HTTPResponseHeadersKeys contains the response headers keys.
-	HTTPResponseHeadersKeys map[string]HeaderOrigin
+	HTTPResponseHeadersKeys map[string]Origin
 
 	// HTTPResponseTitle contains the response title.
 	HTTPResponseTitle optional.Value[string]
@@ -211,9 +211,9 @@ func (db *DB) addHTTPRoundTrips(evs ...*model.ArchivalHTTPRequestResult) error {
 		wobs.HTTPResponseStatusCode = optional.Some(ev.Response.Code)
 		wobs.HTTPResponseBodyLength = optional.Some(int64(len(ev.Response.Body)))
 		wobs.HTTPResponseBodyIsTruncated = optional.Some(ev.Response.BodyIsTruncated)
-		wobs.HTTPResponseHeadersKeys = make(map[string]HeaderOrigin)
+		wobs.HTTPResponseHeadersKeys = make(map[string]Origin)
 		for key := range ev.Response.Headers {
-			wobs.HTTPResponseHeadersKeys[key] = HeaderOriginProbe
+			wobs.HTTPResponseHeadersKeys[key] = OriginProbe
 		}
 		if title := measurexlite.WebGetTitle(string(ev.Response.Body)); title != "" {
 			wobs.HTTPResponseTitle = optional.Some(title)

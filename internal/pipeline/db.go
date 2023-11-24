@@ -113,8 +113,8 @@ func (db *DB) buildXrefsDNS() {
 	addrToUDP := make(map[string][]*DNSObservation)
 	addrToHTTPS := make(map[string][]*DNSObservation)
 	for _, dobs := range db.dnsByTxID {
-		switch dobs.Engine {
-		case "system", "getaddrinfo", "golang_net_resolver", "go":
+		switch dnsNormalizeEngineName(dobs.Engine) {
+		case "getaddrinfo":
 			for _, addr := range dobs.IPAddrs {
 				addrToGetaddrinfo[addr] = append(addrToGetaddrinfo[addr], dobs)
 			}

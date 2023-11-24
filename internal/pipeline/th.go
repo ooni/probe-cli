@@ -68,7 +68,7 @@ type WebObservationTH struct {
 	HTTPResponseBodyLength optional.Value[int64]
 
 	// HTTPResponseHeadersKeys contains the response headers keys.
-	HTTPResponseHeadersKeys map[string]HeaderOrigin
+	HTTPResponseHeadersKeys map[string]Origin
 
 	// HTTPResponseTitle contains the response title.
 	HTTPResponseTitle optional.Value[string]
@@ -138,10 +138,10 @@ func (db *DB) thAddHTTPResponse(resp *model.THResponse) error {
 		HTTPFailure:            optional.Some(resp.HTTPRequest.Failure),
 		HTTPResponseStatusCode: optional.Some(resp.HTTPRequest.StatusCode),
 		HTTPResponseBodyLength: optional.Some(resp.HTTPRequest.BodyLength),
-		HTTPResponseHeadersKeys: func() (out map[string]HeaderOrigin) {
-			out = make(map[string]HeaderOrigin)
+		HTTPResponseHeadersKeys: func() (out map[string]Origin) {
+			out = make(map[string]Origin)
 			for key := range resp.HTTPRequest.Headers {
-				out[key] = HeaderOriginTH
+				out[key] = OriginTH
 			}
 			return
 		}(),

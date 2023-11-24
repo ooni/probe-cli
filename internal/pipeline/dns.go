@@ -18,6 +18,9 @@ type DNSObservation struct {
 	// QueryType is the DNS query type (e.g., "A").
 	QueryType string
 
+	// QueryHostname is the hostname inside the query.
+	QueryHostname string
+
 	// Failure is the failure that occurred.
 	Failure *string
 
@@ -44,6 +47,7 @@ func (db *DB) addDNSLookups(evs ...*model.ArchivalDNSLookupResult) error {
 			return err
 		}
 		dobs.QueryType = ev.QueryType
+		dobs.QueryHostname = ev.Hostname
 		dobs.Failure = ev.Failure
 		dobs.Engine = ev.Engine
 		dobs.ResolverAddress = ev.ResolverAddress
@@ -75,4 +79,13 @@ func (db *DB) newDNSObservation(txid int64) (*DNSObservation, error) {
 	}
 	db.dnsByTxID[txid] = dobs
 	return dobs, nil
+}
+
+func dnsNormalizeEngineName(engine string) string {
+	switch engine {
+	case "system", "getaddrinfo", "golang_net_resolver", "go":
+		return "getaddrinfo"
+	default:
+		return engine
+	}
 }
