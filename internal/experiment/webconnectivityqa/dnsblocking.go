@@ -21,6 +21,10 @@ func dnsBlockingAndroidDNSCacheNoData() *TestCase {
 		},
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
+			BodyLengthMatch:      true,
+			StatusCodeMatch:      true,
+			HeadersMatch:         true,
+			TitleMatch:           true,
 			DNSExperimentFailure: "android_dns_cache_no_data",
 			DNSConsistency:       "inconsistent",
 			XStatus:              2080, // StatusExperimentDNS | StatusAnomalyDNS

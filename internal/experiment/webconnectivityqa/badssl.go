@@ -89,6 +89,10 @@ func badSSLWithUnknownAuthorityWithInconsistentDNS() *TestCase {
 		},
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
+			BodyLengthMatch:       true,
+			StatusCodeMatch:       true,
+			HeadersMatch:          true,
+			TitleMatch:            true,
 			DNSConsistency:        "inconsistent",
 			HTTPExperimentFailure: "ssl_unknown_authority",
 			XStatus:               9248, // StatusExperimentHTTP | StatusAnomalyTLSHandshake | StatusAnomalyDNS
