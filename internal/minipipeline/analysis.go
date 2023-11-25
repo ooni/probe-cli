@@ -54,6 +54,15 @@ type WebAnalysis struct {
 	// The generation algorithm assumes there's a single "final" response.
 	HTTPDiffUncommonHeadersIntersection optional.Value[map[string]bool]
 
+	// HTTPFinalResponses contains the transaction IDs of "final" responses (i.e., responses
+	// that are like 2xx, 4xx, or 5xx). Typically, we expect to have a single response that
+	// if final when we're analyzing Web Connectivity LTE.
+	HTTPFinalResponses optional.Value[map[int64]bool]
+
+	// HTTPFinalResponsesWithTLS is like HTTPFinalResponses but only includes the
+	// cases where we're using TLS to fetch the final response.
+	HTTPFinalResponsesWithTLS optional.Value[map[int64]bool]
+
 	// TCPTransactionsWithUnexpectedTCPConnectFailures contains the TCP transaction IDs that
 	// contain TCP connect failures while the control measurement succeeded.
 	TCPTransactionsWithUnexpectedTCPConnectFailures optional.Value[map[int64]bool]
@@ -65,6 +74,11 @@ type WebAnalysis struct {
 	// TCPSTransactionsWithUnexpectedHTTPFailures contains the TCP transaction IDs that
 	// contain HTTP failures while the control measurement succeeded.
 	TCPTransactionsWithUnexpectedHTTPFailures optional.Value[map[int64]bool]
+
+	// TCPTransactionsWithUnexplainedUnexpectedFailures contains the TCP transaction IDs for
+	// which we cannot explain failures with the control information, but for which we expect
+	// to see a success because the control succeeded.
+	TCPTransactionsWithUnexplainedUnexpectedFailures optional.Value[map[int64]bool]
 }
 
 func analysisDNSLookupFailureIsDNSNoAnswerForAAAA(obs *WebObservation) bool {
@@ -161,7 +175,7 @@ func (wa *WebAnalysis) ComputeDNSTransactionsWithUnexpectedFailures(c *WebObserv
 		})
 	}
 
-	wa.DNSTransactionsWithBogons = optional.Some(state)
+	wa.DNSTransactionsWithUnexpectedFailures = optional.Some(state)
 }
 
 // ComputeDNSPossiblyInvalidAddrs computes the DNSPossiblyInvalidAddrs field.
@@ -178,11 +192,6 @@ func (wa *WebAnalysis) ComputeDNSPossiblyInvalidAddrs(c *WebObservationsContaine
 	for _, obs := range c.KnownTCPEndpoints {
 		addr := obs.IPAddress.Unwrap()
 
-		// if the address was also resolved by the control, we're good
-		if obs.MatchWithControlIPAddress.UnwrapOr(false) {
-			continue
-		}
-
 		// if we have a succesful TLS handshake for this addr, we're good
 		if obs.TLSHandshakeFailure.UnwrapOr("unknown_failure") == "" {
 			// just in case another transaction succeded, clear the address from the state
@@ -190,8 +199,13 @@ func (wa *WebAnalysis) ComputeDNSPossiblyInvalidAddrs(c *WebObservationsContaine
 			continue
 		}
 
+		// if the address was also resolved by the control, we're good
+		if obs.MatchWithControlIPAddress.UnwrapOr(true) {
+			continue
+		}
+
 		// if there's an ASN match with the control, we're good
-		if obs.MatchWithControlIPAddressASN.UnwrapOr(false) {
+		if obs.MatchWithControlIPAddressASN.UnwrapOr(true) {
 			continue
 		}
 
@@ -271,6 +285,11 @@ func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexpectedHTTPFailures(c *WebOb
 // ComputeHTTPDiffBodyProportionFactor computes the HTTPDiffBodyProportionFactor field.
 func (wa *WebAnalysis) ComputeHTTPDiffBodyProportionFactor(c *WebObservationsContainer) {
 	for _, obs := range c.KnownTCPEndpoints {
+		// we should only perform the comparison for a final response
+		if !obs.HTTPResponseIsFinal.UnwrapOr(false) {
+			continue
+		}
+
 		// we need a valid body length and the body must not be truncated
 		measurement := obs.HTTPResponseBodyLength.UnwrapOr(0)
 		if measurement <= 0 || obs.HTTPResponseBodyIsTruncated.UnwrapOr(true) {
@@ -304,6 +323,11 @@ func (wa *WebAnalysis) ComputeHTTPDiffBodyProportionFactor(c *WebObservationsCon
 // ComputeHTTPDiffStatusCodeMatch computes the HTTPDiffStatusCodeMatch field.
 func (wa *WebAnalysis) ComputeHTTPDiffStatusCodeMatch(c *WebObservationsContainer) {
 	for _, obs := range c.KnownTCPEndpoints {
+		// we should only perform the comparison for a final response
+		if !obs.HTTPResponseIsFinal.UnwrapOr(false) {
+			continue
+		}
+
 		// we need a positive status code for both
 		measurement := obs.HTTPResponseStatusCode.UnwrapOr(0)
 		if measurement <= 0 {
@@ -380,7 +404,11 @@ func (wa *WebAnalysis) ComputeHTTPDiffUncommonHeadersIntersection(c *WebObservat
 	state := make(map[string]bool)
 
 	for _, obs := range c.KnownTCPEndpoints {
-		// we should only have control headers for the "final" response
+		// we should only perform the comparison for a final response
+		if !obs.HTTPResponseIsFinal.UnwrapOr(false) {
+			continue
+		}
+
 		measurement := obs.HTTPResponseHeadersKeys.UnwrapOr(nil)
 		if len(measurement) <= 0 {
 			continue
@@ -420,10 +448,9 @@ func (wa *WebAnalysis) ComputeHTTPDiffUncommonHeadersIntersection(c *WebObservat
 		// Implementation note: we only process the first observation that matches.
 		//
 		// This is fine(TM) as long as we have a single "final" request.
+		wa.HTTPDiffUncommonHeadersIntersection = optional.Some(state)
 		break
 	}
-
-	wa.HTTPDiffUncommonHeadersIntersection = optional.Some(state)
 }
 
 // ComputeHTTPDiffTitleDifferentLongWords computes the HTTPDiffTitleDifferentLongWords field.
@@ -431,7 +458,11 @@ func (wa *WebAnalysis) ComputeHTTPDiffTitleDifferentLongWords(c *WebObservations
 	state := make(map[string]bool)
 
 	for _, obs := range c.KnownTCPEndpoints {
-		// we should only have control headers for the "final" response
+		// we should only perform the comparison for a final response
+		if !obs.HTTPResponseIsFinal.UnwrapOr(false) {
+			continue
+		}
+
 		measurement := obs.HTTPResponseTitle.UnwrapOr("")
 		if measurement == "" {
 			continue
@@ -478,8 +509,98 @@ func (wa *WebAnalysis) ComputeHTTPDiffTitleDifferentLongWords(c *WebObservations
 		// Implementation note: we only process the first observation that matches.
 		//
 		// This is fine(TM) as long as we have a single "final" request.
+		wa.HTTPDiffTitleDifferentLongWords = optional.Some(state)
 		break
 	}
+}
 
-	wa.HTTPDiffTitleDifferentLongWords = optional.Some(state)
+// ComputeHTTPFinalResponses computes the HTTPFinalResponses field.
+func (wa *WebAnalysis) ComputeHTTPFinalResponses(c *WebObservationsContainer) {
+	state := make(map[int64]bool)
+
+	for _, obs := range c.KnownTCPEndpoints {
+		txid := obs.EndpointTransactionID.UnwrapOr(0)
+		if txid <= 0 {
+			continue
+		}
+		if obs.HTTPResponseIsFinal.UnwrapOr(false) {
+			state[txid] = true
+			continue
+		}
+	}
+
+	wa.HTTPFinalResponses = optional.Some(state)
+}
+
+// ComputeTCPTransactionsWithUnexplainedUnexpectedFailures computes the TCPTransactionsWithUnexplainedUnexpectedFailures field.
+func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexplainedUnexpectedFailures(c *WebObservationsContainer) {
+	state := make(map[int64]bool)
+
+	for _, obs := range c.KnownTCPEndpoints {
+		// exclude the cases where we have an expectation for TCP connect
+		// because in those cases we can provide an explanation
+		if !obs.ControlTCPConnectFailure.IsNone() {
+			continue
+		}
+
+		// exclude the cases where we have an expectation for TLS handshake
+		// because in those cases we can provide an explanation
+		if !obs.ControlTLSHandshakeFailure.IsNone() {
+			continue
+		}
+
+		// exclude the cases where the control failed because we are
+		// only interested into unexpected failures
+		if obs.ControlHTTPFailure.UnwrapOr("unknown_error") != "" {
+			continue
+		}
+
+		// obtain the transaction ID
+		txid := obs.EndpointTransactionID.UnwrapOr(0)
+		if txid <= 0 {
+			continue
+		}
+
+		// TODO(bassosimone): we need to remember about broken IPv6 here
+
+		// include the cases where there was a TCP connect failure
+		if obs.TCPConnectFailure.UnwrapOr("") != "" {
+			state[txid] = true
+			continue
+		}
+
+		// include the cases where there was a TLS handshake failure
+		if obs.TLSHandshakeFailure.UnwrapOr("") != "" {
+			state[txid] = true
+			continue
+		}
+
+		// include the cases where there was an HTTP failure
+		if obs.HTTPFailure.UnwrapOr("") != "" {
+			state[txid] = true
+			continue
+		}
+	}
+
+	wa.TCPTransactionsWithUnexplainedUnexpectedFailures = optional.Some(state)
+}
+
+// ComputeHTTPFinalResponsesWithTLS computes the HTTPFinalResponsesWithTLS field.
+func (wa *WebAnalysis) ComputeHTTPFinalResponsesWithTLS(c *WebObservationsContainer) {
+	state := make(map[int64]bool)
+
+	for _, obs := range c.KnownTCPEndpoints {
+		txid := obs.EndpointTransactionID.UnwrapOr(0)
+		if txid <= 0 {
+			continue
+		}
+		isFinal := obs.HTTPResponseIsFinal.UnwrapOr(false)
+		tlsSuccess := obs.TLSHandshakeFailure.UnwrapOr("unknown_failure") == ""
+		if isFinal && tlsSuccess {
+			state[txid] = true
+			continue
+		}
+	}
+
+	wa.HTTPFinalResponsesWithTLS = optional.Some(state)
 }

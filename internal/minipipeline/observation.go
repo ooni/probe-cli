@@ -106,6 +106,9 @@ type WebObservation struct {
 	// HTTPResponseTitle contains the response title.
 	HTTPResponseTitle optional.Value[string]
 
+	// HTTPResponseIsFinal is true if the status code is 2xx, 4xx, or 5xx.
+	HTTPResponseIsFinal optional.Value[bool]
+
 	// ControlDNSLookupFailure is the corresponding control DNS lookup failure.
 	ControlDNSLookupFailure optional.Value[string]
 
@@ -312,6 +315,15 @@ func (c *WebObservationsContainer) NoteHTTPRoundTripResults(evs ...*model.Archiv
 				obs.HTTPResponseLocation = optional.Some(string(value))
 			}
 		}
+
+		obs.HTTPResponseIsFinal = optional.Some((func() bool {
+			switch ev.Response.Code / 100 {
+			case 2, 4, 5:
+				return true
+			default:
+				return false
+			}
+		}()))
 	}
 }
 
@@ -328,7 +340,7 @@ func (c *WebObservationsContainer) NoteControlResults(req *model.THRequest, resp
 	c.controlMatchDNSLookupResults(inputDomain, resp)
 	c.controlXrefTCPIPFailures(resp)
 	c.controlXrefTLSFailures(resp)
-	c.controlXrefFinalHTTPResponse(resp)
+	c.controlSetHTTPFinalResponseExpectation(resp)
 
 	return nil
 }
@@ -429,56 +441,28 @@ func (c *WebObservationsContainer) controlXrefTLSFailures(resp *model.THResponse
 	}
 }
 
-func (c *WebObservationsContainer) controlXrefFinalHTTPResponse(resp *model.THResponse) {
-	obsx := c.findFinalHTTPResponse()
-	if obsx.IsNone() {
-		return
-	}
-	obs := obsx.Unwrap()
-
+func (c *WebObservationsContainer) controlSetHTTPFinalResponseExpectation(resp *model.THResponse) {
 	// Implementation note: the TH response does not have a clear semantics for "missing" values
 	// therefore we are accepting as valid only values within the correct range
+	for _, obs := range c.KnownTCPEndpoints {
+		obs.ControlHTTPFailure = optional.Some(utilsStringPointerToString(resp.HTTPRequest.Failure))
+		if value := resp.HTTPRequest.StatusCode; value > 0 {
+			obs.ControlHTTPResponseStatusCode = optional.Some(value)
+		}
+		if value := resp.HTTPRequest.BodyLength; value >= 0 {
+			obs.ControlHTTPResponseBodyLength = optional.Some(value)
+		}
 
-	obs.ControlHTTPFailure = optional.Some(utilsStringPointerToString(resp.HTTPRequest.Failure))
-	if value := resp.HTTPRequest.StatusCode; value > 0 {
-		obs.ControlHTTPResponseStatusCode = optional.Some(value)
-	}
-	if value := resp.HTTPRequest.BodyLength; value >= 0 {
-		obs.ControlHTTPResponseBodyLength = optional.Some(value)
-	}
+		controlHTTPResponseHeadersKeys := make(map[string]bool)
+		for key := range resp.HTTPRequest.Headers {
+			controlHTTPResponseHeadersKeys[key] = true
+		}
+		if len(controlHTTPResponseHeadersKeys) > 0 {
+			obs.ControlHTTPResponseHeadersKeys = optional.Some(controlHTTPResponseHeadersKeys)
+		}
 
-	controlHTTPResponseHeadersKeys := make(map[string]bool)
-	for key := range resp.HTTPRequest.Headers {
-		controlHTTPResponseHeadersKeys[key] = true
-	}
-	if len(controlHTTPResponseHeadersKeys) > 0 {
-		obs.ControlHTTPResponseHeadersKeys = optional.Some(controlHTTPResponseHeadersKeys)
-	}
-
-	if v := resp.HTTPRequest.Title; v != "" {
-		obs.ControlHTTPResponseTitle = optional.Some(v)
-	}
-}
-
-func (c *WebObservationsContainer) findFinalHTTPResponse() optional.Value[*WebObservation] {
-	// find all the possible final request candidates
-	var candidates []*WebObservation
-	for _, wobs := range c.KnownTCPEndpoints {
-		switch code := wobs.HTTPResponseStatusCode.UnwrapOr(0); code {
-		case 0, 301, 302, 307, 308:
-			// this is a redirect or a nonexisting response in the case of zero
-
-		default:
-			// found candidate
-			candidates = append(candidates, wobs)
+		if v := resp.HTTPRequest.Title; v != "" {
+			obs.ControlHTTPResponseTitle = optional.Some(v)
 		}
 	}
-
-	// Implementation note: the final request is a request that is not a redirect and
-	// we expect to see just one of them. This code is written assuming we will have
-	// more than a final request in the future and to fail in such a case.
-	if len(candidates) != 1 {
-		return optional.None[*WebObservation]()
-	}
-	return optional.Some(candidates[0])
 }

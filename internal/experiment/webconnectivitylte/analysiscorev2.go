@@ -45,6 +45,9 @@ func (tk *TestKeys) analysisToplevelV2(logger model.Logger) {
 	analysis.ComputeHTTPDiffStatusCodeMatch(container)
 	analysis.ComputeHTTPDiffUncommonHeadersIntersection(container)
 	analysis.ComputeHTTPDiffTitleDifferentLongWords(container)
+	analysis.ComputeHTTPFinalResponses(container)
+	analysis.ComputeTCPTransactionsWithUnexplainedUnexpectedFailures(container)
+	analysis.ComputeHTTPFinalResponsesWithTLS(container)
 
 	// dump the analysis results for debugging purposes
 	fmt.Printf("%s\n", must.MarshalJSON(analysis))
@@ -140,6 +143,39 @@ func (tk *TestKeys) analysisHTTPToplevelV2(analysis *minipipeline.WebAnalysis, l
 		tk.BlockingFlags |= analysisFlagHTTPBlocking
 	}
 
+	// Detect cases where an error occurred during a redirect. For this to happen, we
+	// need to observe (1) no "final" responses and (2) unexpected, unexplained failures
+	numFinals := len(analysis.HTTPFinalResponses.UnwrapOr(nil))
+	numUnexpectedUnexplained := len(analysis.TCPTransactionsWithUnexplainedUnexpectedFailures.UnwrapOr(nil))
+	if numFinals <= 0 && numUnexpectedUnexplained > 0 {
+		tk.BlockingFlags |= analysisFlagHTTPBlocking
+	}
+
+	// Special case for HTTPS
+	if len(analysis.HTTPFinalResponsesWithTLS.UnwrapOr(nil)) > 0 {
+		tk.BlockingFlags |= analysisFlagSuccess
+	}
+
+	// attempt to fill the comparisons about the body
+	//
+	// XXX this code should probably always run
+	if !analysis.HTTPDiffStatusCodeMatch.IsNone() {
+		value := analysis.HTTPDiffStatusCodeMatch.Unwrap()
+		tk.StatusCodeMatch = &value
+	}
+	if !analysis.HTTPDiffBodyProportionFactor.IsNone() {
+		value := analysis.HTTPDiffBodyProportionFactor.UnwrapOr(0) > 0.7
+		tk.BodyLengthMatch = &value
+	}
+	if !analysis.HTTPDiffUncommonHeadersIntersection.IsNone() {
+		value := len(analysis.HTTPDiffUncommonHeadersIntersection.Unwrap()) > 0
+		tk.HeadersMatch = &value
+	}
+	if !analysis.HTTPDiffTitleDifferentLongWords.IsNone() {
+		value := len(analysis.HTTPDiffTitleDifferentLongWords.Unwrap()) <= 0
+		tk.TitleMatch = &value
+	}
+
 	// same code structure as before
 	if !analysis.HTTPDiffStatusCodeMatch.IsNone() {
 		if analysis.HTTPDiffStatusCodeMatch.Unwrap() {
@@ -160,6 +196,6 @@ func (tk *TestKeys) analysisHTTPToplevelV2(analysis *minipipeline.WebAnalysis, l
 				return
 			}
 		}
+		tk.BlockingFlags |= analysisFlagHTTPDiff
 	}
-	tk.BlockingFlags |= analysisFlagHTTPDiff
 }
