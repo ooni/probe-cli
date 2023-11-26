@@ -56,7 +56,7 @@ func controlFailureWithSuccessfulHTTPWebsite() *TestCase {
 func controlFailureWithSuccessfulHTTPSWebsite() *TestCase {
 	return &TestCase{
 		Name:  "controlFailureWithSuccessfulHTTPSWebsite",
-		Flags: TestCaseFlagNoLTE, // because it (correctly!) sets the DNS as consistent thanks to TLS
+		Flags: 0,
 		Input: "https://www.example.org/",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -89,8 +89,9 @@ func controlFailureWithSuccessfulHTTPSWebsite() *TestCase {
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
 			ControlFailure: "unknown_failure: httpapi: all endpoints failed: [ connection_reset; connection_reset; connection_reset; connection_reset;]",
-			XStatus:        1, // StatusSuccessSecure
-			XNullNullFlags: 8, // analysisFlagNullNullSuccessfulHTTPS
+			DNSConsistency: "consistent",
+			XStatus:        1,  // StatusSuccessSecure
+			XBlockingFlags: 32, // analysisFlagSuccess
 			Accessible:     true,
 			Blocking:       false,
 		},
