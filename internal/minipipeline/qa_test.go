@@ -75,4 +75,5 @@ func testMustRunAllWebTestCases(t *testing.T, topdir string) {
 
 func TestQAWeb(t *testing.T) {
 	testMustRunAllWebTestCases(t, filepath.Join("testdata", "webconnectivity", "generated"))
+	testMustRunAllWebTestCases(t, filepath.Join("testdata", "webconnectivity", "manual"))
 }
