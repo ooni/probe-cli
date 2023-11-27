@@ -52,6 +52,8 @@ func AllTestCases() []*TestCase {
 		dnsHijackingToProxyWithHTTPURL(),
 		dnsHijackingToProxyWithHTTPSURL(),
 
+		httpBlockingConnectionReset(),
+
 		httpDiffWithConsistentDNS(),
 		httpDiffWithInconsistentDNS(),
 
