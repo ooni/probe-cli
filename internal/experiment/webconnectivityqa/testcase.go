@@ -46,6 +46,7 @@ func AllTestCases() []*TestCase {
 		controlFailureWithSuccessfulHTTPSWebsite(),
 
 		dnsBlockingAndroidDNSCacheNoData(),
+		dnsBlockingBOGON(),
 		dnsBlockingNXDOMAIN(),
 
 		dnsHijackingToProxyWithHTTPURL(),

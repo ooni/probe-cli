@@ -74,3 +74,39 @@ func dnsBlockingNXDOMAIN() *TestCase {
 		},
 	}
 }
+
+// dnsBlockingBOGON is the case where there's DNS blocking by returning a bogon.
+func dnsBlockingBOGON() *TestCase {
+	/*
+		Historical note:
+
+		With this test case there was an MK bug where we didn't properly record the
+		actual error that occurred when performing the DNS experiment.
+
+		See <https://github.com/measurement-kit/measurement-kit/issues/1931>.
+	*/
+	return &TestCase{
+		Name: "dnsBlockingBOGON",
+		// This test has been written from scratch for LTE
+		Flags: TestCaseFlagNoV04,
+		Input: "https://www.example.com/",
+		Configure: func(env *netemx.QAEnv) {
+			env.ISPResolverConfig().RemoveRecord("www.example.com")
+			env.ISPResolverConfig().AddRecord("www.example.com", "", "10.10.34.35")
+		},
+		ExpectErr: false,
+		ExpectTestKeys: &testKeys{
+			BodyLengthMatch:      true,
+			StatusCodeMatch:      true,
+			HeadersMatch:         true,
+			TitleMatch:           true,
+			DNSExperimentFailure: nil,
+			DNSConsistency:       "inconsistent",
+			XStatus:              2080, // StatusExperimentDNS | StatusAnomalyDNS
+			XDNSFlags:            1,    // AnalysisDNSBogon
+			XBlockingFlags:       33,   // analysisFlagDNSBlocking | analysisFlagSuccess
+			Accessible:           false,
+			Blocking:             "dns",
+		},
+	}
+}
