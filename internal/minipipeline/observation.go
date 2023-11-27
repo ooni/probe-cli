@@ -222,7 +222,8 @@ type WebObservationsContainer struct {
 	// Note that DNSLookupFailures and KnownTCPEndpoints share the same transaction
 	// ID space, i.e., you can't see the same transaction ID in both. Transaction IDs
 	// are strictly positive unique numbers within the same OONI measurement. Note
-	// that the A and AAAA events for the same DNS lookups uses the same transaction ID.
+	// that the A and AAAA events for the same DNS lookups uses the same transaction ID
+	// until we fix the https://github.com/ooni/probe/issues/2624 issue.
 	DNSLookupFailures map[int64]*WebObservation
 
 	// DNSLookupSuccesses contains all the successful transactions.
@@ -249,11 +250,11 @@ func NewWebObservationsContainer() *WebObservationsContainer {
 // IngestDNSLookupEvents ingests DNS lookup events from a OONI measurement. You MUST
 // ingest DNS lookup events before ingesting any other kind of events.
 func (c *WebObservationsContainer) IngestDNSLookupEvents(evs ...*model.ArchivalDNSLookupResult) {
-	c.createDNSLookupFailures(evs...)
-	c.createKnownIPAddresses(evs...)
+	c.ingestDNSLookupFailures(evs...)
+	c.ingestDNSLookupSuccesses(evs...)
 }
 
-func (c *WebObservationsContainer) createDNSLookupFailures(evs ...*model.ArchivalDNSLookupResult) {
+func (c *WebObservationsContainer) ingestDNSLookupFailures(evs ...*model.ArchivalDNSLookupResult) {
 	for _, ev := range evs {
 		// skip all the succesful queries
 		if ev.Failure == nil {
@@ -274,7 +275,7 @@ func (c *WebObservationsContainer) createDNSLookupFailures(evs ...*model.Archiva
 	}
 }
 
-func (c *WebObservationsContainer) createKnownIPAddresses(evs ...*model.ArchivalDNSLookupResult) {
+func (c *WebObservationsContainer) ingestDNSLookupSuccesses(evs ...*model.ArchivalDNSLookupResult) {
 	for _, ev := range evs {
 		// skip all the failed queries
 		if ev.Failure != nil {

@@ -30,6 +30,9 @@ func AnalyzeWebObservations(container *WebObservationsContainer) *WebAnalysis {
 // WebAnalysis summarizes the content of [*WebObservationsContainer].
 //
 // The zero value of this struct is ready to use.
+//
+// Methods that mutate this struct are not idempotent. You should invoke each
+// of these methods just once, after you have filled a container.
 type WebAnalysis struct {
 	// DNSExperimentFailure is the first failure experienced by a getaddrinfo-like resolver.
 	DNSExperimentFailure optional.Value[string]
@@ -39,17 +42,19 @@ type WebAnalysis struct {
 
 	// DNSTransactionsWithUnexpectedFailures contains the DNS transaction IDs that
 	// contain failures while the control measurement succeeded. Note that we don't
-	// include DNS-over-HTTPS failures inside this value.
+	// include DNS-over-HTTPS failures inside the list, because a DoH failure is
+	// not related to the domain we're querying for.
 	DNSTransactionsWithUnexpectedFailures optional.Value[map[int64]bool]
 
 	// DNSPossiblyInvalidAddrs contains the addresses that are not valid for the
 	// domain. An addres is valid for the domain if:
 	//
-	// 1. we can TLS handshake with the expected SNI using this address;
+	// 1. we can TLS handshake with the expected SNI using this address; or
 	//
-	// 2. the address was resolved by the TH;
+	// 2. the address was resolved by the TH; or
 	//
-	// 3. the address ASN was also observed by TH.
+	// 3. the address ASN belongs to the set of ASNs obtained by mapping
+	// addresses resolved by the TH to their corresponding ASN.
 	DNSPossiblyInvalidAddrs optional.Value[map[string]bool]
 
 	// HTTPDiffBodyProportionFactor is the body proportion factor.
@@ -57,14 +62,13 @@ type WebAnalysis struct {
 	// The generation algorithm assumes there's a single "final" response.
 	HTTPDiffBodyProportionFactor optional.Value[float64]
 
-	// HTTPDiffStatusCodeMatch returns whether the status code match modulo some
-	// false positive cases that causes this value to remain null.
+	// HTTPDiffStatusCodeMatch returns whether the status code matches.
 	//
 	// The generation algorithm assumes there's a single "final" response.
 	HTTPDiffStatusCodeMatch optional.Value[bool]
 
-	// HTTPDiffTitleDifferentLongWords contains the words longer than 4 characters
-	// that appear in the probe's "final" response title but don't appear in the TH title.
+	// HTTPDiffTitleDifferentLongWords contains the words long 5+ characters that appear
+	// in the probe's "final" response title or in the TH title but not in both.
 	//
 	// The generation algorithm assumes there's a single "final" response.
 	HTTPDiffTitleDifferentLongWords optional.Value[map[string]bool]
@@ -96,21 +100,20 @@ type WebAnalysis struct {
 	TCPTransactionsWithUnexpectedHTTPFailures optional.Value[map[int64]bool]
 
 	// TCPTransactionsWithUnexplainedUnexpectedFailures contains the TCP transaction IDs for
-	// which we cannot explain failures with the control information, but for which we expect
-	// to see a success because the control succeeded.
+	// which we cannot explain TCP or TLS failures with control information, but for which we
+	// expect to see a success because the control's HTTP succeeded.
 	TCPTransactionsWithUnexplainedUnexpectedFailures optional.Value[map[int64]bool]
 }
 
 func analysisDNSLookupFailureIsDNSNoAnswerForAAAA(obs *WebObservation) bool {
-	return obs.DNSQueryType.UnwrapOr("") == "AAAA" && obs.DNSLookupFailure.UnwrapOr("") == netxlite.FailureDNSNoAnswer
+	return obs.DNSQueryType.UnwrapOr("") == "AAAA" &&
+		obs.DNSLookupFailure.UnwrapOr("") == netxlite.FailureDNSNoAnswer
 }
 
 // ComputeDNSExperimentFailure computes the DNSExperimentFailure field.
 func (wa *WebAnalysis) ComputeDNSExperimentFailure(c *WebObservationsContainer) {
 
 	for _, obs := range c.DNSLookupFailures {
-		// we should only consider the first DNS lookup to be consistent with
-		// what was previously returned by Web Connectivity v0.4
 		probeDomain := obs.DNSDomain.UnwrapOr("")
 		if probeDomain == "" {
 			continue
@@ -126,13 +129,18 @@ func (wa *WebAnalysis) ComputeDNSExperimentFailure(c *WebObservationsContainer) 
 		// make sure we only include the system resolver
 		switch obs.DNSEngine.UnwrapOr("") {
 		case "getaddrinfo", "golang_net_resolver":
-
 			// skip cases where there's no DNS record for AAAA, which is a false positive
+			//
+			// in principle, this should not happen with getaddrinfo, but we add this
+			// check nonetheless for robustness against this corner case
 			if analysisDNSLookupFailureIsDNSNoAnswerForAAAA(obs) {
 				continue
 			}
 
 			// only record the first failure
+			//
+			// we should only consider the first DNS lookup to be consistent with
+			// what was previously returned by Web Connectivity v0.4
 			wa.DNSExperimentFailure = obs.DNSLookupFailure
 			return
 
@@ -145,7 +153,7 @@ func (wa *WebAnalysis) ComputeDNSExperimentFailure(c *WebObservationsContainer) 
 // ComputeDNSTransactionsWithBogons computes the DNSTransactionsWithBogons field.
 func (wa *WebAnalysis) ComputeDNSTransactionsWithBogons(c *WebObservationsContainer) {
 	// Implementation note: any bogon IP address resolved by a DoH service
-	// is STILL suspicious since it should not happen. TODO(bassosimone): an
+	// is STILL suspicious since it SHOULD NOT happen. TODO(bassosimone): an
 	// even better algorithm could possibly check whether also the TH has
 	// observed bogon IP addrs and avoid flagging in such a case.
 	//
@@ -197,6 +205,9 @@ func (wa *WebAnalysis) ComputeDNSTransactionsWithUnexpectedFailures(c *WebObserv
 			continue
 		}
 
+		// TODO(bassosimone): if we set an IPv6 address as the resolver address, we
+		// end up with false positive errors when there's no IPv6 support
+
 		// update state
 		if id := obs.DNSTransactionID.UnwrapOr(0); id > 0 {
 			state[id] = true
@@ -222,17 +233,22 @@ func (wa *WebAnalysis) ComputeDNSPossiblyInvalidAddrs(c *WebObservationsContaine
 		addr := obs.IPAddress.Unwrap()
 
 		// if we have a succesful TLS handshake for this addr, we're good
-		if obs.TLSHandshakeFailure.UnwrapOr("unknown_failure") == "" {
+		if !obs.TLSHandshakeFailure.IsNone() && obs.TLSHandshakeFailure.Unwrap() == "" {
 			continue
 		}
 
 		// if the address was also resolved by the control, we're good
-		if obs.MatchWithControlIPAddress.UnwrapOr(true) {
+		if !obs.MatchWithControlIPAddress.IsNone() && obs.MatchWithControlIPAddress.Unwrap() {
 			continue
 		}
 
 		// if there's an ASN match with the control, we're good
-		if obs.MatchWithControlIPAddressASN.UnwrapOr(true) {
+		if !obs.MatchWithControlIPAddressASN.IsNone() && obs.MatchWithControlIPAddressASN.Unwrap() {
+			continue
+		}
+
+		// if we don't have control information, avoid flagging the address
+		if obs.MatchWithControlIPAddress.IsNone() || obs.MatchWithControlIPAddressASN.IsNone() {
 			continue
 		}
 
@@ -249,9 +265,17 @@ func (wa *WebAnalysis) ComputeDNSPossiblyInvalidAddrs(c *WebObservationsContaine
 	// able to remove TLS-validate addresses from the "bad" set.
 	for _, obs := range c.KnownTCPEndpoints {
 		addr := obs.IPAddress.Unwrap()
-		if obs.TLSHandshakeFailure.UnwrapOr("") != "" {
+
+		// we cannot do much if we don't have TLS handshake information
+		if obs.TLSHandshakeFailure.IsNone() {
 			continue
 		}
+
+		// we should not modify the state if the TLS handshake failed
+		if obs.TLSHandshakeFailure.Unwrap() != "" {
+			continue
+		}
+
 		delete(state, addr)
 	}
 
@@ -283,7 +307,7 @@ func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexpectedTCPConnectFailures(c 
 			continue
 		}
 
-		// skip cases where the root cause seems misconfigured IPv6
+		// skip cases where the root cause could be a misconfigured IPv6 stack
 		if analysisTCPConnectFailureSeemsMisconfiguredIPv6(obs) {
 			continue
 		}
@@ -474,7 +498,7 @@ func (wa *WebAnalysis) ComputeHTTPDiffUncommonHeadersIntersection(c *WebObservat
 
 		// Implementation note: here we need to continue running when either
 		// headers are empty in order to produce an empty intersection. If we'd stop
-		// after noticing that either dictionary is empty, we'd product a nil
+		// after noticing that either dictionary is empty, we'd produce a nil
 		// analysis result, which causes QA differences with v0.4.
 		measurement := obs.HTTPResponseHeadersKeys.UnwrapOr(nil)
 		control := obs.ControlHTTPResponseHeadersKeys.UnwrapOr(nil)
@@ -559,7 +583,7 @@ func (wa *WebAnalysis) ComputeHTTPDiffTitleDifferentLongWords(c *WebObservations
 			}
 		}
 
-		// check whether there's a long word that does not match
+		// compute the list of long words that do not appear in both titles
 		for word, score := range words {
 			if (score & (byProbe | byTH)) != (byProbe | byTH) {
 				state[word] = true
@@ -600,6 +624,12 @@ func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexplainedUnexpectedFailures(c
 		// obtain the transaction ID
 		txid := obs.EndpointTransactionID.UnwrapOr(0)
 		if txid <= 0 {
+			continue
+		}
+
+		// to execute the algorithm we must have the reasonable expectation of
+		// success, which we have if the control succeeded.
+		if obs.ControlHTTPFailure.IsNone() || obs.ControlHTTPFailure.Unwrap() != "" {
 			continue
 		}
 
