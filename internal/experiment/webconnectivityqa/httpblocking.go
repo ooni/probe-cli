@@ -24,7 +24,9 @@ func httpBlockingConnectionReset() *TestCase {
 		},
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
-			DNSConsistency:        "consistent",
+			DNSConsistency: "consistent",
+			// TODO(bassosimone): it seems LTE QA does not check for the value of
+			// the HTTPExperimentFailure field, why?
 			HTTPExperimentFailure: "connection_reset",
 			XStatus:               8448, // StatusExperimentHTTP | StatusAnomalyReadWrite
 			XBlockingFlags:        8,    // analysisFlagHTTPBlocking
