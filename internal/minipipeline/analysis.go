@@ -142,12 +142,6 @@ func (wa *WebAnalysis) ComputeDNSExperimentFailure(c *WebObservationsContainer) 
 	}
 }
 
-func analysisForEachDNSTransactionID(obs *WebObservation, f func(id int64)) {
-	for _, id := range obs.DNSTransactionIDs.UnwrapOr(nil) {
-		f(id)
-	}
-}
-
 // ComputeDNSTransactionsWithBogons computes the DNSTransactionsWithBogons field.
 func (wa *WebAnalysis) ComputeDNSTransactionsWithBogons(c *WebObservationsContainer) {
 	// Implementation note: any bogon IP address resolved by a DoH service
@@ -159,16 +153,16 @@ func (wa *WebAnalysis) ComputeDNSTransactionsWithBogons(c *WebObservationsContai
 
 	state := make(map[int64]bool)
 
-	for _, obs := range c.KnownTCPEndpoints {
+	for _, obs := range c.DNSLookupSuccesses {
 		// we're only interested in cases when there's a bogon
 		if !obs.IPAddressBogon.UnwrapOr(false) {
 			continue
 		}
 
 		// update state
-		analysisForEachDNSTransactionID(obs, func(id int64) {
+		if id := obs.DNSTransactionID.UnwrapOr(0); id > 0 {
 			state[id] = true
-		})
+		}
 	}
 
 	wa.DNSTransactionsWithBogons = optional.Some(state)
@@ -204,9 +198,9 @@ func (wa *WebAnalysis) ComputeDNSTransactionsWithUnexpectedFailures(c *WebObserv
 		}
 
 		// update state
-		analysisForEachDNSTransactionID(obs, func(id int64) {
+		if id := obs.DNSTransactionID.UnwrapOr(0); id > 0 {
 			state[id] = true
-		})
+		}
 	}
 
 	wa.DNSTransactionsWithUnexpectedFailures = optional.Some(state)

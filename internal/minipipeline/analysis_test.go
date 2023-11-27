@@ -11,11 +11,11 @@ func TestWebAnalysisComputeDNSExperimentFailure(t *testing.T) {
 		container := &WebObservationsContainer{
 			DNSLookupFailures: map[int64]*WebObservation{
 				1: {
-					DNSTransactionIDs: optional.Some([]int64{1}),
-					DNSDomain:         optional.None[string](), // explicitly set
-					DNSLookupFailure:  optional.Some("dns_no_answer"),
-					DNSQueryType:      optional.Some("A"),
-					DNSEngine:         optional.Some("getaddrinfo"),
+					DNSTransactionID: optional.Some(int64(1)),
+					DNSDomain:        optional.None[string](), // explicitly set
+					DNSLookupFailure: optional.Some("dns_no_answer"),
+					DNSQueryType:     optional.Some("A"),
+					DNSEngine:        optional.Some("getaddrinfo"),
 				},
 			},
 		}
@@ -32,12 +32,12 @@ func TestWebAnalysisComputeDNSExperimentFailure(t *testing.T) {
 		container := &WebObservationsContainer{
 			DNSLookupFailures: map[int64]*WebObservation{
 				1: {
-					DNSTransactionIDs: optional.Some([]int64{1}),
-					DNSDomain:         optional.Some("dns.google.com"),
-					DNSLookupFailure:  optional.Some("dns_no_answer"),
-					DNSQueryType:      optional.Some("A"),
-					DNSEngine:         optional.Some("getaddrinfo"),
-					ControlDNSDomain:  optional.Some("dns.google"),
+					DNSTransactionID: optional.Some(int64(1)),
+					DNSDomain:        optional.Some("dns.google.com"),
+					DNSLookupFailure: optional.Some("dns_no_answer"),
+					DNSQueryType:     optional.Some("A"),
+					DNSEngine:        optional.Some("getaddrinfo"),
+					ControlDNSDomain: optional.Some("dns.google"),
 				},
 			},
 		}
@@ -54,12 +54,12 @@ func TestWebAnalysisComputeDNSExperimentFailure(t *testing.T) {
 		container := &WebObservationsContainer{
 			DNSLookupFailures: map[int64]*WebObservation{
 				1: {
-					DNSTransactionIDs: optional.Some([]int64{1}),
-					DNSDomain:         optional.Some("dns.google.com"),
-					DNSLookupFailure:  optional.Some("dns_no_answer"),
-					DNSQueryType:      optional.Some("AAAA"),
-					DNSEngine:         optional.Some("getaddrinfo"),
-					ControlDNSDomain:  optional.Some("dns.google.com"),
+					DNSTransactionID: optional.Some(int64(1)),
+					DNSDomain:        optional.Some("dns.google.com"),
+					DNSLookupFailure: optional.Some("dns_no_answer"),
+					DNSQueryType:     optional.Some("AAAA"),
+					DNSEngine:        optional.Some("getaddrinfo"),
+					ControlDNSDomain: optional.Some("dns.google.com"),
 				},
 			},
 		}
