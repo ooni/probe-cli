@@ -554,7 +554,6 @@ func (wa *WebAnalysis) ComputeHTTPDiffTitleDifferentLongWords(c *WebObservations
 		for word, score := range words {
 			if (score & (byProbe | byTH)) != (byProbe | byTH) {
 				state[word] = true
-				break
 			}
 		}
 

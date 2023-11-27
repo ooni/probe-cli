@@ -6,7 +6,9 @@
   "HTTPDiffBodyProportionFactor": 0.12263535551206783,
   "HTTPDiffStatusCodeMatch": true,
   "HTTPDiffTitleDifferentLongWords": {
-    "access": true
+    "access": true,
+	"default": true,
+	"denied": true
   },
   "HTTPDiffUncommonHeadersIntersection": {},
   "HTTPFinalResponses": {
