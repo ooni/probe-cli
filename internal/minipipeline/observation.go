@@ -1,6 +1,7 @@
 package minipipeline
 
 import (
+	"errors"
 	"net"
 	"net/url"
 	"strconv"
@@ -12,6 +13,35 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/optional"
 )
+
+// ErrNoTestKeys indicates that a [*Measurement] does not contain [*MeasurementTestKeys].
+var ErrNoTestKeys = errors.New("minipipeline: no test keys")
+
+// LoadWebMeasurement loads a [*Measurement] into a [*WebObservationsContainter].
+func LoadWebMeasurement(meas *Measurement) (*WebObservationsContainer, error) {
+	tk := meas.TestKeys.UnwrapOr(nil)
+	if tk == nil {
+		return nil, ErrNoTestKeys
+	}
+
+	container := NewWebObservationsContainer()
+	container.CreateDNSLookupFailures(tk.Queries...)
+	container.CreateKnownIPAddresses(tk.Queries...)
+	container.CreateKnownTCPEndpoints(tk.TCPConnect...)
+	container.NoteTLSHandshakeResults(tk.TLSHandshakes...)
+	container.NoteHTTPRoundTripResults(tk.Requests...)
+
+	// be defensive in case the control request or control are not defined
+	if !tk.XControlRequest.IsNone() && !tk.Control.IsNone() {
+		// Implementation note: the only error that can happen here is when the input
+		// doesn't parse as a URL, which should have triggered previous errors
+		if err := container.NoteControlResults(tk.XControlRequest.Unwrap(), tk.Control.Unwrap()); err != nil {
+			return nil, err
+		}
+	}
+
+	return container, nil
+}
 
 // WebObservation is an observation of the flow that starts with a DNS lookup that
 // discovers zero or more IP addresses and proceeds with endpoint operations such as

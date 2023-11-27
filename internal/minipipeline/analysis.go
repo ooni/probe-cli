@@ -7,6 +7,26 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/optional"
 )
 
+// AnalyzeWebMeasurement generates a [*WebAnalysis] from a [*WebObservationsContainer].
+func AnalyzeWebMeasurement(container *WebObservationsContainer) *WebAnalysis {
+	analysis := &WebAnalysis{}
+	analysis.ComputeDNSExperimentFailure(container)
+	analysis.ComputeDNSTransactionsWithBogons(container)
+	analysis.ComputeDNSTransactionsWithUnexpectedFailures(container)
+	analysis.ComputeDNSPossiblyInvalidAddrs(container)
+	analysis.ComputeTCPTransactionsWithUnexpectedTCPConnectFailures(container)
+	analysis.ComputeTCPTransactionsWithUnexpectedTLSHandshakeFailures(container)
+	analysis.ComputeTCPTransactionsWithUnexpectedHTTPFailures(container)
+	analysis.ComputeHTTPDiffBodyProportionFactor(container)
+	analysis.ComputeHTTPDiffStatusCodeMatch(container)
+	analysis.ComputeHTTPDiffUncommonHeadersIntersection(container)
+	analysis.ComputeHTTPDiffTitleDifferentLongWords(container)
+	analysis.ComputeHTTPFinalResponses(container)
+	analysis.ComputeTCPTransactionsWithUnexplainedUnexpectedFailures(container)
+	analysis.ComputeHTTPFinalResponsesWithTLS(container)
+	return analysis
+}
+
 // WebAnalysis summarizes the content of [*WebObservationsContainer].
 //
 // The zero value of this struct is ready to use.
