@@ -1,0 +1,27 @@
+{
+	"DNSExperimentFailure": null,
+	"DNSTransactionsWithBogons": {},
+	"DNSTransactionsWithUnexpectedFailures": {},
+	"DNSPossiblyInvalidAddrs": {},
+	"HTTPDiffBodyProportionFactor": 0.6166324592304209,
+	"HTTPDiffStatusCodeMatch": true,
+	"HTTPDiffTitleDifferentLongWords": {},
+	"HTTPDiffUncommonHeadersIntersection": {
+		"accept-ch": true,
+		"alt-svc": true,
+		"cross-origin-opener-policy": true,
+		"origin-trial": true,
+		"permissions-policy": true,
+		"report-to": true
+	},
+	"HTTPFinalResponses": {
+		"8": true
+	},
+	"HTTPFinalResponsesWithTLS": {
+		"8": true
+	},
+	"TCPTransactionsWithUnexpectedTCPConnectFailures": {},
+	"TCPTransactionsWithUnexpectedTLSHandshakeFailures": {},
+	"TCPTransactionsWithUnexpectedHTTPFailures": {},
+	"TCPTransactionsWithUnexplainedUnexpectedFailures": {}
+}

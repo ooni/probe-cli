@@ -264,6 +264,16 @@ func (wa *WebAnalysis) ComputeDNSPossiblyInvalidAddrs(c *WebObservationsContaine
 	wa.DNSPossiblyInvalidAddrs = optional.Some(state)
 }
 
+func analysisTCPConnectFailureSeemsMisconfiguredIPv6(obs *WebObservation) bool {
+	switch obs.TCPConnectFailure.UnwrapOr("") {
+	case netxlite.FailureNetworkUnreachable, netxlite.FailureHostUnreachable:
+		isv6, err := netxlite.IsIPv6(obs.IPAddress.UnwrapOr(""))
+		return err == nil && isv6
+	default:
+		return false
+	}
+}
+
 // ComputeTCPTransactionsWithUnexpectedTCPConnectFailures computes the TCPTransactionsWithUnexpectedTCPConnectFailures field.
 func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexpectedTCPConnectFailures(c *WebObservationsContainer) {
 	state := make(map[int64]bool)
@@ -276,6 +286,11 @@ func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexpectedTCPConnectFailures(c 
 
 		// skip cases where also the control failed
 		if obs.ControlTCPConnectFailure.UnwrapOr("unknown_failure") != "" {
+			continue
+		}
+
+		// skip cases where the root cause seems misconfigured IPv6
+		if analysisTCPConnectFailureSeemsMisconfiguredIPv6(obs) {
 			continue
 		}
 
@@ -596,7 +611,10 @@ func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexplainedUnexpectedFailures(c
 
 		// if we have a TCP connect measurement, the measurement failed, and we don't have
 		// a corresponding control measurement, we cannot explain this failure using the control
+		//
+		// while doing this, deal with misconfigured-IPv6 false positives
 		if !obs.TCPConnectFailure.IsNone() && obs.TCPConnectFailure.Unwrap() != "" &&
+			!analysisTCPConnectFailureSeemsMisconfiguredIPv6(obs) &&
 			obs.ControlTCPConnectFailure.IsNone() {
 			state[txid] = true
 			continue
