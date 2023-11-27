@@ -109,6 +109,11 @@ type WebObservation struct {
 	// HTTPResponseIsFinal is true if the status code is 2xx, 4xx, or 5xx.
 	HTTPResponseIsFinal optional.Value[bool]
 
+	// ControlDNSDomain is the domain used by the control for its DNS lookup. This
+	// field is set only when the domain used by the control matches the domain
+	// used by the probe. So, we won't see this record for redirects using a different domain.
+	ControlDNSDomain optional.Value[string]
+
 	// ControlDNSLookupFailure is the corresponding control DNS lookup failure.
 	ControlDNSLookupFailure optional.Value[string]
 
@@ -336,7 +341,7 @@ func (c *WebObservationsContainer) NoteControlResults(req *model.THRequest, resp
 	}
 	inputDomain := URL.Hostname()
 
-	c.controlXrefDNSFailures(inputDomain, resp)
+	c.controlXrefDNSQueries(inputDomain, resp)
 	c.controlMatchDNSLookupResults(inputDomain, resp)
 	c.controlXrefTCPIPFailures(resp)
 	c.controlXrefTLSFailures(resp)
@@ -386,12 +391,15 @@ func (c *WebObservationsContainer) controlMatchDNSLookupResults(inputDomain stri
 	}
 }
 
-func (c *WebObservationsContainer) controlXrefDNSFailures(inputDomain string, resp *model.THResponse) {
+func (c *WebObservationsContainer) controlXrefDNSQueries(inputDomain string, resp *model.THResponse) {
 	for _, obs := range c.DNSLookupFailures {
 		// skip cases where the input domain is different
 		if obs.DNSDomain.Unwrap() != inputDomain {
 			continue
 		}
+
+		// register the corresponding DNS domain used by the control
+		obs.ControlDNSDomain = optional.Some(inputDomain)
 
 		// register the corresponding DNS lookup failure
 		obs.ControlDNSLookupFailure = optional.Some(utilsStringPointerToString(resp.DNS.Failure))

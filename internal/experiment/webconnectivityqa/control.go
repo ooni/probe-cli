@@ -11,7 +11,7 @@ import (
 func controlFailureWithSuccessfulHTTPWebsite() *TestCase {
 	return &TestCase{
 		Name:  "controlFailureWithSuccessfulHTTPWebsite",
-		Flags: TestCaseFlagNoLTE, // BUG: has "consistent" DNS but still blocking=null and accessible=null
+		Flags: 0,
 		Input: "http://www.example.org/",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -44,6 +44,7 @@ func controlFailureWithSuccessfulHTTPWebsite() *TestCase {
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
 			ControlFailure: "unknown_failure: httpapi: all endpoints failed: [ connection_reset; connection_reset; connection_reset; connection_reset;]",
+			DNSConsistency: "consistent",
 			XStatus:        8, // StatusAnomalyControlUnreachable
 			Accessible:     nil,
 			Blocking:       nil,

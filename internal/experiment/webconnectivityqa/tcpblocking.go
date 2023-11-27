@@ -44,7 +44,7 @@ func tcpBlockingConnectTimeout() *TestCase {
 func tcpBlockingConnectionRefusedWithInconsistentDNS() *TestCase {
 	return &TestCase{
 		Name:  "tcpBlockingConnectionRefusedWithInconsistentDNS",
-		Flags: TestCaseFlagNoLTE, // with LTE we can bypass the blocking
+		Flags: 0,
 		Input: "http://www.example.org/",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -67,6 +67,10 @@ func tcpBlockingConnectionRefusedWithInconsistentDNS() *TestCase {
 		},
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
+			BodyLengthMatch:       true,
+			StatusCodeMatch:       true,
+			HeadersMatch:          true,
+			TitleMatch:            true,
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "inconsistent",
 			HTTPExperimentFailure: "connection_refused",

@@ -12,7 +12,7 @@ func dnsHijackingToProxyWithHTTPURL() *TestCase {
 	// transparent TLS proxy really makes our analysis a bit more complex
 	return &TestCase{
 		Name:  "dnsHijackingToProxyWithHTTPURL",
-		Flags: TestCaseFlagNoLTE, // BUG: LTE thinks the DNS is consistent
+		Flags: 0,
 		Input: "http://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -33,11 +33,11 @@ func dnsHijackingToProxyWithHTTPURL() *TestCase {
 			StatusCodeMatch: true,
 			HeadersMatch:    true,
 			TitleMatch:      true,
-			XStatus:         2, // StatusSuccessCleartext
-			XDNSFlags:       0,
-			XBlockingFlags:  32, // analysisFlagSuccess
-			Accessible:      true,
-			Blocking:        false,
+			XStatus:         2,     // StatusSuccessCleartext
+			XDNSFlags:       4,     // AnalysisDNSUnexpectedAddrs
+			XBlockingFlags:  33,    // AnalysisFlagDNSBlocking | analysisFlagSuccess
+			Accessible:      false, // FIXME: this is probably incorrect!
+			Blocking:        "dns",
 		},
 	}
 }
@@ -49,7 +49,7 @@ func dnsHijackingToProxyWithHTTPSURL() *TestCase {
 	// transparent TLS proxy really makes our analysis a bit more complex
 	return &TestCase{
 		Name:  "dnsHijackingToProxyWithHTTPSURL",
-		Flags: TestCaseFlagNoLTE, // BUG: LTE thinks the DNS is consistent
+		Flags: 0,
 		Input: "https://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -64,7 +64,7 @@ func dnsHijackingToProxyWithHTTPSURL() *TestCase {
 		},
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
-			DNSConsistency:  "inconsistent",
+			DNSConsistency:  "consistent",
 			BodyLengthMatch: true,
 			BodyProportion:  1,
 			StatusCodeMatch: true,

@@ -11,7 +11,7 @@ import (
 func httpDiffWithConsistentDNS() *TestCase {
 	return &TestCase{
 		Name:  "httpDiffWithConsistentDNS",
-		Flags: TestCaseFlagNoLTE, // BUG: LTE does not set whether the headers match
+		Flags: 0,
 		Input: "http://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -49,7 +49,7 @@ func httpDiffWithConsistentDNS() *TestCase {
 func httpDiffWithInconsistentDNS() *TestCase {
 	return &TestCase{
 		Name:  "httpDiffWithInconsistentDNS",
-		Flags: TestCaseFlagNoLTE, // BUG: LTE does not detect any HTTP diff here
+		Flags: 0,
 		Input: "http://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -92,7 +92,7 @@ func httpDiffWithInconsistentDNS() *TestCase {
 			TitleMatch:            false,
 			XStatus:               96, // StatusAnomalyHTTPDiff | StatusAnomalyDNS
 			XDNSFlags:             4,  // AnalysisDNSUnexpectedAddrs
-			XBlockingFlags:        35, // analysisFlagSuccess | analysisFlagDNSBlocking | analysisFlagTCPIPBlocking
+			XBlockingFlags:        17, // analysisFlagDNSBlocking | analysisFlagHTTPDiff
 			Accessible:            false,
 			Blocking:              "dns",
 		},

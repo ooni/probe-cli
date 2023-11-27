@@ -162,12 +162,8 @@ func redirectWithConsistentDNSAndThenConnectionResetForHTTPS() *TestCase {
 // works but then there's NXDOMAIN for the URL's domain
 func redirectWithConsistentDNSAndThenNXDOMAIN() *TestCase {
 	return &TestCase{
-		Name: "redirectWithConsistentDNSAndThenNXDOMAIN",
-		// TODO(bassosimone): this test case cannot be fixed by providing a suitable HTTP
-		// response because we do not create any HTTP response during the DNS step. We would
-		// need to create one in order for this test case to become green. In turn, I think
-		// to overcome this case, we need to restructure LTE's implementation a bit.
-		Flags: TestCaseFlagNoLTE,
+		Name:  "redirectWithConsistentDNSAndThenNXDOMAIN",
+		Flags: 0,
 		Input: "https://bit.ly/21645",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -182,11 +178,11 @@ func redirectWithConsistentDNSAndThenNXDOMAIN() *TestCase {
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
 			DNSExperimentFailure:  nil,
-			DNSConsistency:        "consistent",
+			DNSConsistency:        "inconsistent",
 			HTTPExperimentFailure: "dns_nxdomain_error",
 			XStatus:               8224, // StatusExperimentHTTP | StatusAnomalyDNS
-			XDNSFlags:             0,
-			XBlockingFlags:        8, // analysisFlagHTTPBlocking
+			XDNSFlags:             2,    // AnalysisDNSUnexpectedFailure
+			XBlockingFlags:        1,    // analysisFlagDNSBlocking
 			Accessible:            false,
 			Blocking:              "dns",
 		},

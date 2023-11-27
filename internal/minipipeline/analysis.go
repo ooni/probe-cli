@@ -89,6 +89,20 @@ func analysisDNSLookupFailureIsDNSNoAnswerForAAAA(obs *WebObservation) bool {
 func (wa *WebAnalysis) ComputeDNSExperimentFailure(c *WebObservationsContainer) {
 
 	for _, obs := range c.DNSLookupFailures {
+		// we should only consider the first DNS lookup to be consistent with
+		// what was previously returned by Web Connectivity v0.4
+		probeDomain := obs.DNSDomain.UnwrapOr("")
+		if probeDomain == "" {
+			continue
+		}
+		thDomain := obs.ControlDNSDomain.UnwrapOr("")
+		if thDomain == "" {
+			continue
+		}
+		if probeDomain != thDomain {
+			continue
+		}
+
 		// make sure we only include the system resolver
 		switch obs.DNSEngine.UnwrapOr("") {
 		case "getaddrinfo", "golang_net_resolver":
@@ -409,14 +423,18 @@ func (wa *WebAnalysis) ComputeHTTPDiffUncommonHeadersIntersection(c *WebObservat
 			continue
 		}
 
+		// We should only perform the comparison if we have valid control data. Because
+		// the headers could legitimately be empty, let's use the status code here.
+		if obs.ControlHTTPResponseStatusCode.UnwrapOr(0) <= 0 {
+			continue
+		}
+
+		// Implementation note: here we need to continue running when either
+		// headers are empty in order to produce an empty intersection. If we'd stop
+		// after noticing that either dictionary is empty, we'd product a nil
+		// analysis result, which causes QA differences with v0.4.
 		measurement := obs.HTTPResponseHeadersKeys.UnwrapOr(nil)
-		if len(measurement) <= 0 {
-			continue
-		}
 		control := obs.ControlHTTPResponseHeadersKeys.UnwrapOr(nil)
-		if len(control) <= 0 {
-			continue
-		}
 
 		const (
 			byProbe = 1 << iota

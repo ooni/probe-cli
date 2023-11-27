@@ -64,8 +64,8 @@ func AllTestCases() []*TestCase {
 		redirectWithConsistentDNSAndThenTimeoutForHTTP(),
 		redirectWithConsistentDNSAndThenTimeoutForHTTPS(),
 
-		sucessWithHTTP(),
-		sucessWithHTTPS(),
+		successWithHTTP(),
+		successWithHTTPS(),
 
 		tcpBlockingConnectTimeout(),
 		tcpBlockingConnectionRefusedWithInconsistentDNS(),
