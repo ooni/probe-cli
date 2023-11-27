@@ -1,9 +1,7 @@
 {
   "DNSLookupFailures": {
     "1": {
-      "DNSTransactionIDs": [
-        1
-      ],
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
@@ -41,12 +39,87 @@
       "ControlHTTPResponseTitle": null
     }
   },
+  "DNSLookupSuccesses": {
+    "1": {
+      "DNSTransactionID": 1,
+      "DNSDomain": "www.example.com",
+      "DNSLookupFailure": "",
+      "DNSQueryType": "A",
+      "DNSEngine": "udp",
+      "IPAddress": "130.192.182.17",
+      "IPAddressASN": 137,
+      "IPAddressOrg": "Consortium GARR",
+      "IPAddressBogon": false,
+      "EndpointTransactionID": null,
+      "EndpointProto": null,
+      "EndpointPort": null,
+      "EndpointAddress": null,
+      "TCPConnectFailure": null,
+      "TLSHandshakeFailure": null,
+      "TLSServerName": null,
+      "HTTPRequestURL": null,
+      "HTTPFailure": null,
+      "HTTPResponseStatusCode": null,
+      "HTTPResponseBodyLength": null,
+      "HTTPResponseBodyIsTruncated": null,
+      "HTTPResponseHeadersKeys": null,
+      "HTTPResponseLocation": null,
+      "HTTPResponseTitle": null,
+      "HTTPResponseIsFinal": null,
+      "ControlDNSDomain": null,
+      "ControlDNSLookupFailure": null,
+      "ControlTCPConnectFailure": null,
+      "MatchWithControlIPAddress": null,
+      "MatchWithControlIPAddressASN": null,
+      "ControlTLSHandshakeFailure": null,
+      "ControlHTTPFailure": null,
+      "ControlHTTPResponseStatusCode": null,
+      "ControlHTTPResponseBodyLength": null,
+      "ControlHTTPResponseHeadersKeys": null,
+      "ControlHTTPResponseTitle": null
+    },
+    "2": {
+      "DNSTransactionID": 2,
+      "DNSDomain": "www.example.com",
+      "DNSLookupFailure": "",
+      "DNSQueryType": "ANY",
+      "DNSEngine": "getaddrinfo",
+      "IPAddress": "130.192.182.17",
+      "IPAddressASN": 137,
+      "IPAddressOrg": "Consortium GARR",
+      "IPAddressBogon": false,
+      "EndpointTransactionID": null,
+      "EndpointProto": null,
+      "EndpointPort": null,
+      "EndpointAddress": null,
+      "TCPConnectFailure": null,
+      "TLSHandshakeFailure": null,
+      "TLSServerName": null,
+      "HTTPRequestURL": null,
+      "HTTPFailure": null,
+      "HTTPResponseStatusCode": null,
+      "HTTPResponseBodyLength": null,
+      "HTTPResponseBodyIsTruncated": null,
+      "HTTPResponseHeadersKeys": null,
+      "HTTPResponseLocation": null,
+      "HTTPResponseTitle": null,
+      "HTTPResponseIsFinal": null,
+      "ControlDNSDomain": null,
+      "ControlDNSLookupFailure": null,
+      "ControlTCPConnectFailure": null,
+      "MatchWithControlIPAddress": null,
+      "MatchWithControlIPAddressASN": null,
+      "ControlTLSHandshakeFailure": null,
+      "ControlHTTPFailure": null,
+      "ControlHTTPResponseStatusCode": null,
+      "ControlHTTPResponseBodyLength": null,
+      "ControlHTTPResponseHeadersKeys": null,
+      "ControlHTTPResponseTitle": null
+    }
+  },
   "KnownTCPEndpoints": {
     "3": {
-      "DNSTransactionIDs": [
-        1,
-        2
-      ],
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -89,10 +162,7 @@
       "ControlHTTPResponseTitle": "Default Web Page"
     },
     "4": {
-      "DNSTransactionIDs": [
-        1,
-        2
-      ],
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -135,7 +205,7 @@
       "ControlHTTPResponseTitle": "Default Web Page"
     },
     "5": {
-      "DNSTransactionIDs": [],
+      "DNSTransactionID": null,
       "DNSDomain": null,
       "DNSLookupFailure": null,
       "DNSQueryType": null,
@@ -178,7 +248,7 @@
       "ControlHTTPResponseTitle": "Default Web Page"
     },
     "6": {
-      "DNSTransactionIDs": [],
+      "DNSTransactionID": null,
       "DNSDomain": null,
       "DNSLookupFailure": null,
       "DNSQueryType": null,

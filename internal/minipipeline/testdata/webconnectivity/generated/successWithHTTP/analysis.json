@@ -11,7 +11,7 @@
     "content-length": true
   },
   "HTTPFinalResponses": {
-    "3": true
+    "4": true
   },
   "HTTPFinalResponsesWithTLS": {},
   "TCPTransactionsWithUnexpectedTCPConnectFailures": {},

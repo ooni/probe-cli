@@ -7,8 +7,8 @@
   "HTTPDiffStatusCodeMatch": true,
   "HTTPDiffTitleDifferentLongWords": {
     "access": true,
-	"default": true,
-	"denied": true
+    "default": true,
+    "denied": true
   },
   "HTTPDiffUncommonHeadersIntersection": {},
   "HTTPFinalResponses": {

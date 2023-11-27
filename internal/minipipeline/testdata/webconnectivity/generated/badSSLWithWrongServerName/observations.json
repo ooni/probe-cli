@@ -1,9 +1,7 @@
 {
   "DNSLookupFailures": {
-    "1": {
-      "DNSTransactionIDs": [
-        1
-      ],
+    "2": {
+      "DNSTransactionID": 2,
       "DNSDomain": "wrong.host.badssl.com",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
@@ -41,12 +39,87 @@
       "ControlHTTPResponseTitle": null
     }
   },
+  "DNSLookupSuccesses": {
+    "1": {
+      "DNSTransactionID": 1,
+      "DNSDomain": "wrong.host.badssl.com",
+      "DNSLookupFailure": "",
+      "DNSQueryType": "ANY",
+      "DNSEngine": "getaddrinfo",
+      "IPAddress": "104.154.89.105",
+      "IPAddressASN": 396982,
+      "IPAddressOrg": "Google LLC",
+      "IPAddressBogon": false,
+      "EndpointTransactionID": null,
+      "EndpointProto": null,
+      "EndpointPort": null,
+      "EndpointAddress": null,
+      "TCPConnectFailure": null,
+      "TLSHandshakeFailure": null,
+      "TLSServerName": null,
+      "HTTPRequestURL": null,
+      "HTTPFailure": null,
+      "HTTPResponseStatusCode": null,
+      "HTTPResponseBodyLength": null,
+      "HTTPResponseBodyIsTruncated": null,
+      "HTTPResponseHeadersKeys": null,
+      "HTTPResponseLocation": null,
+      "HTTPResponseTitle": null,
+      "HTTPResponseIsFinal": null,
+      "ControlDNSDomain": null,
+      "ControlDNSLookupFailure": null,
+      "ControlTCPConnectFailure": null,
+      "MatchWithControlIPAddress": null,
+      "MatchWithControlIPAddressASN": null,
+      "ControlTLSHandshakeFailure": null,
+      "ControlHTTPFailure": null,
+      "ControlHTTPResponseStatusCode": null,
+      "ControlHTTPResponseBodyLength": null,
+      "ControlHTTPResponseHeadersKeys": null,
+      "ControlHTTPResponseTitle": null
+    },
+    "2": {
+      "DNSTransactionID": 2,
+      "DNSDomain": "wrong.host.badssl.com",
+      "DNSLookupFailure": "",
+      "DNSQueryType": "A",
+      "DNSEngine": "udp",
+      "IPAddress": "104.154.89.105",
+      "IPAddressASN": 396982,
+      "IPAddressOrg": "Google LLC",
+      "IPAddressBogon": false,
+      "EndpointTransactionID": null,
+      "EndpointProto": null,
+      "EndpointPort": null,
+      "EndpointAddress": null,
+      "TCPConnectFailure": null,
+      "TLSHandshakeFailure": null,
+      "TLSServerName": null,
+      "HTTPRequestURL": null,
+      "HTTPFailure": null,
+      "HTTPResponseStatusCode": null,
+      "HTTPResponseBodyLength": null,
+      "HTTPResponseBodyIsTruncated": null,
+      "HTTPResponseHeadersKeys": null,
+      "HTTPResponseLocation": null,
+      "HTTPResponseTitle": null,
+      "HTTPResponseIsFinal": null,
+      "ControlDNSDomain": null,
+      "ControlDNSLookupFailure": null,
+      "ControlTCPConnectFailure": null,
+      "MatchWithControlIPAddress": null,
+      "MatchWithControlIPAddressASN": null,
+      "ControlTLSHandshakeFailure": null,
+      "ControlHTTPFailure": null,
+      "ControlHTTPResponseStatusCode": null,
+      "ControlHTTPResponseBodyLength": null,
+      "ControlHTTPResponseHeadersKeys": null,
+      "ControlHTTPResponseTitle": null
+    }
+  },
   "KnownTCPEndpoints": {
     "3": {
-      "DNSTransactionIDs": [
-        2,
-        1
-      ],
+      "DNSTransactionID": 1,
       "DNSDomain": "wrong.host.badssl.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
