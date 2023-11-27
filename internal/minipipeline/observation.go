@@ -368,14 +368,24 @@ func (c *WebObservationsContainer) controlMatchDNSLookupResults(inputDomain stri
 
 	// walk through the list of known observations
 	for _, obs := range c.KnownTCPEndpoints {
-		// skip entries using a different domain than the one used by the TH
+		// obtain the domain from which we obtained the endpoint's address
 		domain := obs.DNSDomain.UnwrapOr("")
-		if domain == "" || domain != inputDomain {
-			continue
-		}
 
 		// obtain the IP address
 		addr := obs.IPAddress.Unwrap()
+
+		// handle the case from which the IP address has been provided by the control, which
+		// is a case where the domain is empty and the IP address is in thAddrMap
+		if domain == "" && thAddrMap[addr] {
+			obs.MatchWithControlIPAddress = optional.Some(true)
+			obs.MatchWithControlIPAddressASN = optional.Some(true)
+			continue
+		}
+
+		// skip entries using a different domain than the one used by the TH
+		if domain == "" || domain != inputDomain {
+			continue
+		}
 
 		// compute whether also the TH observed this addr
 		obs.MatchWithControlIPAddress = optional.Some(thAddrMap[addr])

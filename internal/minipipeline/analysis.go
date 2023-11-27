@@ -203,13 +203,12 @@ func (wa *WebAnalysis) ComputeDNSPossiblyInvalidAddrs(c *WebObservationsContaine
 
 	state := make(map[string]bool)
 
+	// pass 1: insert candidates into the state map
 	for _, obs := range c.KnownTCPEndpoints {
 		addr := obs.IPAddress.Unwrap()
 
 		// if we have a succesful TLS handshake for this addr, we're good
 		if obs.TLSHandshakeFailure.UnwrapOr("unknown_failure") == "" {
-			// just in case another transaction succeded, clear the address from the state
-			delete(state, addr)
 			continue
 		}
 
@@ -225,6 +224,21 @@ func (wa *WebAnalysis) ComputeDNSPossiblyInvalidAddrs(c *WebObservationsContaine
 
 		// update state
 		state[addr] = true
+	}
+
+	// pass 2: remove IP addresses we could validate using TLS handshakes
+	//
+	// we need to perform this second step because the order with which we walk
+	// through c.KnownTCPEndpoints is not fixed _and_ in any case, there is no
+	// guarantee that we'll observe 80/tcp entries _before_ 443/tcp ones. So, by
+	// applying this algorithm as a second step, we ensure that we're always
+	// able to remove TLS-validate addresses from the "bad" set.
+	for _, obs := range c.KnownTCPEndpoints {
+		addr := obs.IPAddress.Unwrap()
+		if obs.TLSHandshakeFailure.UnwrapOr("") != "" {
+			continue
+		}
+		delete(state, addr)
 	}
 
 	wa.DNSPossiblyInvalidAddrs = optional.Some(state)

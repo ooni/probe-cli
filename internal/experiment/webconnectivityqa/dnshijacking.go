@@ -27,17 +27,17 @@ func dnsHijackingToProxyWithHTTPURL() *TestCase {
 		},
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
-			DNSConsistency:  "inconsistent",
+			DNSConsistency:  "consistent",
 			BodyLengthMatch: true,
 			BodyProportion:  1,
 			StatusCodeMatch: true,
 			HeadersMatch:    true,
 			TitleMatch:      true,
-			XStatus:         2,     // StatusSuccessCleartext
-			XDNSFlags:       4,     // AnalysisDNSUnexpectedAddrs
-			XBlockingFlags:  33,    // AnalysisFlagDNSBlocking | analysisFlagSuccess
-			Accessible:      false, // FIXME: this is probably incorrect!
-			Blocking:        "dns",
+			XStatus:         2, // StatusSuccessCleartext
+			XDNSFlags:       0,
+			XBlockingFlags:  32, // analysisFlagSuccess
+			Accessible:      true,
+			Blocking:        false,
 		},
 	}
 }
