@@ -16,11 +16,11 @@ var (
 
 func main() {
 	for idx, name := range inputs {
-		var meas minipipeline.Measurement
+		var meas minipipeline.WebMeasurement
 		must.UnmarshalJSON(must.ReadFile(name), &meas)
-		container := runtimex.Try1(minipipeline.LoadWebObservations(&meas))
+		container := runtimex.Try1(minipipeline.IngestWebMeasurement(&meas))
 		mustWriteFileFn(fmt.Sprintf("observations-%010d.json", idx), must.MarshalJSON(container), 0600)
-		analysis := minipipeline.AnalyzeWebMeasurement(container)
+		analysis := minipipeline.AnalyzeWebObservations(container)
 		mustWriteFileFn(fmt.Sprintf("analysis-%010d.json", idx), must.MarshalJSON(analysis), 0600)
 	}
 }

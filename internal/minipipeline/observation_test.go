@@ -11,8 +11,8 @@ import (
 
 func TestLoadWebObservations(t *testing.T) {
 	t.Run("we handle the case where the test keys are nil", func(t *testing.T) {
-		meas := &Measurement{ /* empty */ }
-		container, err := LoadWebObservations(meas)
+		meas := &WebMeasurement{ /* empty */ }
+		container, err := IngestWebMeasurement(meas)
 		if !errors.Is(err, ErrNoTestKeys) {
 			t.Fatal("expected", ErrNoTestKeys, "got", err)
 		}
@@ -22,9 +22,9 @@ func TestLoadWebObservations(t *testing.T) {
 	})
 
 	t.Run("we handle the case where the input is not a valid URL", func(t *testing.T) {
-		meas := &Measurement{
+		meas := &WebMeasurement{
 			Input: "https://www.example.com", // invalid URL
-			TestKeys: optional.Some(&MeasurementTestKeys{
+			TestKeys: optional.Some(&WebMeasurementTestKeys{
 				Control:        optional.Some(&model.THResponse{}),
 				NetworkEvents:  []*model.ArchivalNetworkEvent{},
 				Queries:        []*model.ArchivalDNSLookupResult{},
@@ -40,7 +40,7 @@ func TestLoadWebObservations(t *testing.T) {
 				}),
 			}),
 		}
-		container, err := LoadWebObservations(meas)
+		container, err := IngestWebMeasurement(meas)
 		if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
 			t.Fatal("unexpected err", err)
 		}
@@ -75,7 +75,7 @@ func TestWebObservationsContainerNoteTLSHandshakeResults(t *testing.T) {
 			TransactionID:      0, // any transaction ID would do since the map is empty
 		}
 
-		container.NoteTLSHandshakeResults(handshake)
+		container.IngestTLSHandshakeEvents(handshake)
 
 		// we should not crash and we should not have added new endpoints
 		if len(container.KnownTCPEndpoints) != 0 {
@@ -105,7 +105,7 @@ func TestWebObservationsContainerNoteHTTPRoundTripResults(t *testing.T) {
 			TransactionID: 0, // any transaction ID would do since the map is empty
 		}
 
-		container.NoteHTTPRoundTripResults(roundTrip)
+		container.IngestHTTPRoundTripEvents(roundTrip)
 
 		// we should not crash and we should not have added new endpoints
 		if len(container.KnownTCPEndpoints) != 0 {
@@ -142,7 +142,7 @@ func TestWebObservationsContainerNoteControlResults(t *testing.T) {
 			},
 		}
 
-		if err := container.NoteControlResults(thRequest, thResponse); err != nil {
+		if err := container.IngestControlMessages(thRequest, thResponse); err != nil {
 			t.Fatal(err)
 		}
 
@@ -191,7 +191,7 @@ func TestWebObservationsContainerNoteControlResults(t *testing.T) {
 			},
 		}
 
-		if err := container.NoteControlResults(thRequest, thResponse); err != nil {
+		if err := container.IngestControlMessages(thRequest, thResponse); err != nil {
 			t.Fatal(err)
 		}
 

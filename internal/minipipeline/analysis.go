@@ -7,8 +7,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/optional"
 )
 
-// AnalyzeWebMeasurement generates a [*WebAnalysis] from a [*WebObservationsContainer].
-func AnalyzeWebMeasurement(container *WebObservationsContainer) *WebAnalysis {
+// AnalyzeWebObservations generates a [*WebAnalysis] from a [*WebObservationsContainer].
+func AnalyzeWebObservations(container *WebObservationsContainer) *WebAnalysis {
 	analysis := &WebAnalysis{}
 	analysis.ComputeDNSExperimentFailure(container)
 	analysis.ComputeDNSTransactionsWithBogons(container)

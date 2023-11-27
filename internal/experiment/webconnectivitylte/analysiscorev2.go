@@ -16,17 +16,16 @@ func (tk *TestKeys) analysisToplevelV2(logger model.Logger) {
 	// not going to use any form of locking here.
 
 	container := minipipeline.NewWebObservationsContainer()
-	container.CreateDNSLookupFailures(tk.Queries...)
-	container.CreateKnownIPAddresses(tk.Queries...)
-	container.CreateKnownTCPEndpoints(tk.TCPConnect...)
-	container.NoteTLSHandshakeResults(tk.TLSHandshakes...)
-	container.NoteHTTPRoundTripResults(tk.Requests...)
+	container.IngestDNSLookupEvents(tk.Queries...)
+	container.IngestTCPConnectEvents(tk.TCPConnect...)
+	container.IngestTLSHandshakeEvents(tk.TLSHandshakes...)
+	container.IngestHTTPRoundTripEvents(tk.Requests...)
 
 	// be defensive in case the control request or control are not defined
 	if tk.ControlRequest != nil && tk.Control != nil {
 		// Implementation note: the only error that can happen here is when the input
 		// doesn't parse as a URL, which should have triggered previous errors
-		runtimex.Try0(container.NoteControlResults(tk.ControlRequest, tk.Control))
+		runtimex.Try0(container.IngestControlMessages(tk.ControlRequest, tk.Control))
 	}
 
 	// dump the pipeline results for debugging purposes

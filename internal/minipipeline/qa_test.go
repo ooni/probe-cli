@@ -33,7 +33,7 @@ func testMustRunAllWebTestCases(t *testing.T, topdir string) {
 				// read the raw measurement from the test case
 				measurementFile := filepath.Join(fullpath, "measurement.json")
 				measurementRaw := must.ReadFile(measurementFile)
-				var measurementData minipipeline.Measurement
+				var measurementData minipipeline.WebMeasurement
 				must.UnmarshalJSON(measurementRaw, &measurementData)
 
 				// load the expected container from the test case
@@ -49,13 +49,13 @@ func testMustRunAllWebTestCases(t *testing.T, topdir string) {
 				must.UnmarshalJSON(expectedAnalysisRaw, &expectedAnalysisData)
 
 				// load the measurement into the pipeline
-				gotContainerData, err := minipipeline.LoadWebObservations(&measurementData)
+				gotContainerData, err := minipipeline.IngestWebMeasurement(&measurementData)
 				if err != nil {
 					t.Fatal(err)
 				}
 
 				// analyze the measurement
-				gotAnalysisData := minipipeline.AnalyzeWebMeasurement(gotContainerData)
+				gotAnalysisData := minipipeline.AnalyzeWebObservations(gotContainerData)
 
 				t.Run("observations", func(t *testing.T) {
 					if diff := testCmpDiffUsingGenericMaps(&expectedContainerData, gotContainerData); diff != "" {
