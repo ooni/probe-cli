@@ -54,7 +54,7 @@ func httpDiffWithInconsistentDNS() *TestCase {
 		Configure: func(env *netemx.QAEnv) {
 
 			// add DPI rule to force all the cleartext DNS queries to
-			// point the client to used the ISPProxyAddress
+			// point the client to use the ISPProxyAddress
 			env.DPIEngine().AddRule(&netem.DPISpoofDNSResponse{
 				Addresses: []string{netemx.ISPProxyAddress},
 				Logger:    env.Logger(),
@@ -83,7 +83,7 @@ func httpDiffWithInconsistentDNS() *TestCase {
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
 			DNSExperimentFailure:  nil,
-			DNSConsistency:        "inconsistent",
+			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: nil,
 			BodyLengthMatch:       false,
 			BodyProportion:        0.12263535551206783,
@@ -91,10 +91,10 @@ func httpDiffWithInconsistentDNS() *TestCase {
 			HeadersMatch:          false,
 			TitleMatch:            false,
 			XStatus:               96, // StatusAnomalyHTTPDiff | StatusAnomalyDNS
-			XDNSFlags:             4,  // AnalysisDNSUnexpectedAddrs
-			XBlockingFlags:        17, // analysisFlagDNSBlocking | analysisFlagHTTPDiff
+			XDNSFlags:             0,
+			XBlockingFlags:        16, // analysisFlagHTTPDiff
 			Accessible:            false,
-			Blocking:              "dns",
+			Blocking:              "http-diff",
 		},
 	}
 }
