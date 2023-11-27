@@ -197,8 +197,8 @@ func runTestCase(tc *webconnectivityqa.TestCase) {
 	runtimex.PanicOnError(err, "measurer.Run failed")
 
 	destdir := filepath.Join(
-		"internal", "minipipeline", "testdata", "generated", "webconnectivity",
-		tc.Name,
+		"internal", "minipipeline", "testdata", "webconnectivity",
+		"generated", tc.Name,
 	)
 	runtimex.Try0(os.MkdirAll(destdir, 0700))
 
