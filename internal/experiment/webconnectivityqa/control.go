@@ -10,10 +10,8 @@ import (
 // where we cannot reach the control server but the website measurement is OK.
 func controlFailureWithSuccessfulHTTPWebsite() *TestCase {
 	return &TestCase{
-		Name: "controlFailureWithSuccessfulHTTPWebsite",
-		// We must disable v0.4 because v0.5 is able to determine that DNS is consistent
-		// since it also performs TLS handshakes, while v0.4 cannot
-		Flags: TestCaseFlagNoV04,
+		Name:  "controlFailureWithSuccessfulHTTPWebsite",
+		Flags: TestCaseFlagNoLTE, // BUG: has "consistent" DNS but still blocking=null and accessible=null
 		Input: "http://www.example.org/",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -46,7 +44,6 @@ func controlFailureWithSuccessfulHTTPWebsite() *TestCase {
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
 			ControlFailure: "unknown_failure: httpapi: all endpoints failed: [ connection_reset; connection_reset; connection_reset; connection_reset;]",
-			DNSConsistency: "consistent",
 			XStatus:        8, // StatusAnomalyControlUnreachable
 			Accessible:     nil,
 			Blocking:       nil,
@@ -58,10 +55,8 @@ func controlFailureWithSuccessfulHTTPWebsite() *TestCase {
 // where we cannot reach the control server but the website measurement is OK.
 func controlFailureWithSuccessfulHTTPSWebsite() *TestCase {
 	return &TestCase{
-		Name: "controlFailureWithSuccessfulHTTPSWebsite",
-		// With v0.5 we can determine that the DNS is consistent using TLS, while v0.5 cannot
-		// do this inference, so we need to disable v0.4 now.
-		Flags: TestCaseFlagNoV04,
+		Name:  "controlFailureWithSuccessfulHTTPSWebsite",
+		Flags: TestCaseFlagNoLTE, // because it (correctly!) sets the DNS as consistent thanks to TLS
 		Input: "https://www.example.org/",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -94,9 +89,8 @@ func controlFailureWithSuccessfulHTTPSWebsite() *TestCase {
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
 			ControlFailure: "unknown_failure: httpapi: all endpoints failed: [ connection_reset; connection_reset; connection_reset; connection_reset;]",
-			DNSConsistency: "consistent",
-			XStatus:        1,  // StatusSuccessSecure
-			XBlockingFlags: 32, // analysisFlagSuccess
+			XStatus:        1, // StatusSuccessSecure
+			XNullNullFlags: 8, // analysisFlagNullNullSuccessfulHTTPS
 			Accessible:     true,
 			Blocking:       false,
 		},

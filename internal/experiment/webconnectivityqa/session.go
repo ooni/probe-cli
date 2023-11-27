@@ -6,7 +6,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 )
 
-// newSession creates a new [model.ExperimentSession].
+// nwSession creates a new [model.ExperimentSession].
 func newSession(client model.HTTPClient, logger model.Logger) model.ExperimentSession {
 	return &mocks.Session{
 		MockGetTestHelpersByName: func(name string) ([]model.OOAPIService, bool) {

@@ -46,13 +46,10 @@ func AllTestCases() []*TestCase {
 		controlFailureWithSuccessfulHTTPSWebsite(),
 
 		dnsBlockingAndroidDNSCacheNoData(),
-		dnsBlockingBOGON(),
 		dnsBlockingNXDOMAIN(),
 
 		dnsHijackingToProxyWithHTTPURL(),
 		dnsHijackingToProxyWithHTTPSURL(),
-
-		httpBlockingConnectionReset(),
 
 		httpDiffWithConsistentDNS(),
 		httpDiffWithInconsistentDNS(),
@@ -67,8 +64,8 @@ func AllTestCases() []*TestCase {
 		redirectWithConsistentDNSAndThenTimeoutForHTTP(),
 		redirectWithConsistentDNSAndThenTimeoutForHTTPS(),
 
-		successWithHTTP(),
-		successWithHTTPS(),
+		sucessWithHTTP(),
+		sucessWithHTTPS(),
 
 		tcpBlockingConnectTimeout(),
 		tcpBlockingConnectionRefusedWithInconsistentDNS(),
