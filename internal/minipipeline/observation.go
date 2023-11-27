@@ -225,7 +225,7 @@ type WebObservationsContainer struct {
 	DNSLookupFailures map[int64]*WebObservation
 
 	// DNSLookupSuccesses maps transaction IDs to resolved IP addresses.
-	DNSLookupSuccesses map[int64]*WebObservation
+	DNSLookupSuccesses []*WebObservation
 
 	// KnownTCPEndpoints maps transaction IDs to TCP observations.
 	KnownTCPEndpoints map[int64]*WebObservation
@@ -239,7 +239,7 @@ type WebObservationsContainer struct {
 func NewWebObservationsContainer() *WebObservationsContainer {
 	return &WebObservationsContainer{
 		DNSLookupFailures:  map[int64]*WebObservation{},
-		DNSLookupSuccesses: map[int64]*WebObservation{},
+		DNSLookupSuccesses: []*WebObservation{},
 		KnownTCPEndpoints:  map[int64]*WebObservation{},
 		knownIPAddresses:   map[string]*WebObservation{},
 	}
@@ -309,7 +309,7 @@ func (c *WebObservationsContainer) createKnownIPAddresses(evs ...*model.Archival
 			}
 
 			// add record
-			c.DNSLookupSuccesses[ev.TransactionID] = obs
+			c.DNSLookupSuccesses = append(c.DNSLookupSuccesses, obs)
 
 			// store the first lookup that resolved this address
 			if _, found := c.knownIPAddresses[addr]; !found {
