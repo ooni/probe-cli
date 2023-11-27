@@ -49,7 +49,7 @@ func testMustRunAllWebTestCases(t *testing.T, topdir string) {
 				must.UnmarshalJSON(expectedAnalysisRaw, &expectedAnalysisData)
 
 				// load the measurement into the pipeline
-				gotContainerData, err := minipipeline.LoadWebMeasurement(&measurementData)
+				gotContainerData, err := minipipeline.LoadWebObservations(&measurementData)
 				if err != nil {
 					t.Fatal(err)
 				}

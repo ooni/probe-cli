@@ -17,8 +17,8 @@ import (
 // ErrNoTestKeys indicates that a [*Measurement] does not contain [*MeasurementTestKeys].
 var ErrNoTestKeys = errors.New("minipipeline: no test keys")
 
-// LoadWebMeasurement loads a [*Measurement] into a [*WebObservationsContainter].
-func LoadWebMeasurement(meas *Measurement) (*WebObservationsContainer, error) {
+// LoadWebObservations loads a [*Measurement] into a [*WebObservationsContainter].
+func LoadWebObservations(meas *Measurement) (*WebObservationsContainer, error) {
 	tk := meas.TestKeys.UnwrapOr(nil)
 	if tk == nil {
 		return nil, ErrNoTestKeys

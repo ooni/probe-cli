@@ -139,7 +139,7 @@ func newSession(client model.HTTPClient, logger model.Logger) model.ExperimentSe
 func mustSaveAnalysis(destdir string, rawMeasurement []byte) {
 	var meas minipipeline.Measurement
 	must.UnmarshalJSON(rawMeasurement, &meas)
-	container := runtimex.Try1(minipipeline.LoadWebMeasurement(&meas))
+	container := runtimex.Try1(minipipeline.LoadWebObservations(&meas))
 	must.WriteFile(
 		filepath.Join(destdir, "observations.json"),
 		must.MarshalAndIndentJSON(container, "", "  "),
