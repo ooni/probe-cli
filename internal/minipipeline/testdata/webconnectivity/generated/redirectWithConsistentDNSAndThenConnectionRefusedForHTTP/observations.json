@@ -1,7 +1,7 @@
 {
   "DNSLookupFailures": {
-    "2": {
-      "DNSTransactionID": 2,
+    "1": {
+      "DNSTransactionID": 1,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
@@ -79,7 +79,7 @@
   },
   "DNSLookupSuccesses": [
     {
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -117,7 +117,7 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
@@ -233,7 +233,7 @@
   ],
   "KnownTCPEndpoints": {
     "3": {
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
       "DNSQueryType": null,

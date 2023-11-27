@@ -13,15 +13,15 @@
     "content-length": true
   },
   "HTTPFinalResponses": {
-    "3": true
+    "4": true
   },
   "HTTPFinalResponsesWithTLS": {
-    "3": true
+    "4": true
   },
   "TCPTransactionsWithUnexpectedTCPConnectFailures": {},
   "TCPTransactionsWithUnexpectedTLSHandshakeFailures": {},
   "TCPTransactionsWithUnexpectedHTTPFailures": {},
   "TCPTransactionsWithUnexplainedUnexpectedFailures": {
-    "4": true
+    "3": true
   }
 }

@@ -2,7 +2,7 @@
   "DNSExperimentFailure": "dns_nxdomain_error",
   "DNSTransactionsWithBogons": {},
   "DNSTransactionsWithUnexpectedFailures": {
-    "2": true
+    "1": true
   },
   "DNSPossiblyInvalidAddrs": {},
   "HTTPDiffBodyProportionFactor": 1,

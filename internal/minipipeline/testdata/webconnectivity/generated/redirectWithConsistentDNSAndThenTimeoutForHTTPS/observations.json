@@ -1,11 +1,11 @@
 {
   "DNSLookupFailures": {
-    "2": {
-      "DNSTransactionID": 2,
+    "1": {
+      "DNSTransactionID": 1,
       "DNSDomain": "bit.ly",
-      "DNSLookupFailure": "dns_no_answer",
-      "DNSQueryType": "AAAA",
-      "DNSEngine": "udp",
+      "DNSLookupFailure": "dns_nxdomain_error",
+      "DNSQueryType": "A",
+      "DNSEngine": "doh",
       "IPAddress": null,
       "IPAddressASN": null,
       "IPAddressOrg": null,
@@ -41,9 +41,9 @@
     "3": {
       "DNSTransactionID": 3,
       "DNSDomain": "bit.ly",
-      "DNSLookupFailure": "dns_nxdomain_error",
-      "DNSQueryType": "A",
-      "DNSEngine": "doh",
+      "DNSLookupFailure": "dns_no_answer",
+      "DNSQueryType": "AAAA",
+      "DNSEngine": "udp",
       "IPAddress": null,
       "IPAddressASN": null,
       "IPAddressOrg": null,
@@ -117,7 +117,7 @@
   },
   "DNSLookupSuccesses": [
     {
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -155,7 +155,7 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 3,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
@@ -271,7 +271,7 @@
   ],
   "KnownTCPEndpoints": {
     "4": {
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
