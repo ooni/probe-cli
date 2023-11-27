@@ -312,7 +312,7 @@ func (c *WebObservationsContainer) NoteHTTPRoundTripResults(evs ...*model.Archiv
 		}
 		obs.HTTPResponseHeadersKeys = optional.Some(httpResponseHeadersKeys)
 
-		if value := measurexlite.WebGetTitleString(string(ev.Response.Body)); value != "" {
+		if value := measurexlite.WebGetTitle(string(ev.Response.Body)); value != "" {
 			obs.HTTPResponseTitle = optional.Some(value)
 		}
 		for key, value := range ev.Response.Headers {

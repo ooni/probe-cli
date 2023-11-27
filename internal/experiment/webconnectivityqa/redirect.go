@@ -162,8 +162,10 @@ func redirectWithConsistentDNSAndThenConnectionResetForHTTPS() *TestCase {
 // works but then there's NXDOMAIN for the URL's domain
 func redirectWithConsistentDNSAndThenNXDOMAIN() *TestCase {
 	return &TestCase{
-		Name:  "redirectWithConsistentDNSAndThenNXDOMAIN",
-		Flags: 0,
+		Name: "redirectWithConsistentDNSAndThenNXDOMAIN",
+		// LTE correctly sees that there is DNS error during the redirect, while v0.4
+		// does not have visibility into this event, so let's disable v0.4.
+		Flags: TestCaseFlagNoV04,
 		Input: "https://bit.ly/21645",
 		Configure: func(env *netemx.QAEnv) {
 

@@ -10,7 +10,7 @@ import (
 func badSSLWithExpiredCertificate() *TestCase {
 	return &TestCase{
 		Name:  "badSSLWithExpiredCertificate",
-		Flags: 0,
+		Flags: TestCaseFlagNoV04, // v0.4 does not set accessible and blocking in this case
 		Input: "https://expired.badssl.com/",
 		Configure: func(env *netemx.QAEnv) {
 			// nothing
@@ -32,7 +32,7 @@ func badSSLWithExpiredCertificate() *TestCase {
 func badSSLWithWrongServerName() *TestCase {
 	return &TestCase{
 		Name:  "badSSLWithWrongServerName",
-		Flags: 0,
+		Flags: TestCaseFlagNoV04, // v0.4 does not set accessible and blocking in this case
 		Input: "https://wrong.host.badssl.com/",
 		Configure: func(env *netemx.QAEnv) {
 			// nothing
@@ -53,7 +53,7 @@ func badSSLWithWrongServerName() *TestCase {
 func badSSLWithUnknownAuthorityWithConsistentDNS() *TestCase {
 	return &TestCase{
 		Name:  "badSSLWithUnknownAuthorityWithConsistentDNS",
-		Flags: 0,
+		Flags: TestCaseFlagNoV04, // v0.4 does not set accessible and blocking in this case
 		Input: "https://untrusted-root.badssl.com/",
 		Configure: func(env *netemx.QAEnv) {
 			// nothing
@@ -73,8 +73,10 @@ func badSSLWithUnknownAuthorityWithConsistentDNS() *TestCase {
 // This test case models when we're redirected to a blockpage website using a custom CA.
 func badSSLWithUnknownAuthorityWithInconsistentDNS() *TestCase {
 	return &TestCase{
-		Name:  "badSSLWithUnknownAuthorityWithInconsistentDNS",
-		Flags: 0,
+		Name: "badSSLWithUnknownAuthorityWithInconsistentDNS",
+		// v0.4 cannot set BodyLengthMatch, StatusCodeMatch, HeadersMatch, and TitleMatch while v0.5
+		// can do that because it also uses IP addrs from DoH and the TH
+		Flags: TestCaseFlagNoV04,
 		Input: "https://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 

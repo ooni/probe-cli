@@ -202,7 +202,7 @@ func HTTPTitleMatch(tk urlgetter.TestKeys, ctrl ControlResponse) (out *bool) {
 	}
 	control := ctrl.HTTPRequest.Title
 	measurementBody := string(response.Body)
-	measurement := measurexlite.WebGetTitleString(measurementBody)
+	measurement := measurexlite.WebGetTitle(measurementBody)
 	if measurement == "" {
 		return
 	}

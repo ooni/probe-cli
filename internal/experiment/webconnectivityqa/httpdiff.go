@@ -48,8 +48,14 @@ func httpDiffWithConsistentDNS() *TestCase {
 // but the addresses returned by the DNS resolver are inconsistent.
 func httpDiffWithInconsistentDNS() *TestCase {
 	return &TestCase{
-		Name:  "httpDiffWithInconsistentDNS",
-		Flags: 0,
+		Name: "httpDiffWithInconsistentDNS",
+		// With v0.5 we conclude that the DNS is consistent because we can still
+		// perform TLS connections with the given addresses. Disable v0.4 because
+		// it does not reach to the same conclusion.
+		//
+		// TODO(bassosimone): maybe we should create another test case where
+		// we end up with having a truly inconsistent DNS.
+		Flags: TestCaseFlagNoV04,
 		Input: "http://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 

@@ -54,7 +54,7 @@ func TestWebGetTitle(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotOut := WebGetTitleString(tt.args.body)
+			gotOut := WebGetTitle(tt.args.body)
 			if diff := cmp.Diff(tt.wantOut, gotOut); diff != "" {
 				t.Fatal(diff)
 			}

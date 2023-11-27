@@ -120,7 +120,7 @@ func httpDo(ctx context.Context, config *httpConfig) {
 		Failure:              httpMapFailure(err),
 		StatusCode:           int64(resp.StatusCode),
 		Headers:              headers,
-		Title:                measurexlite.WebGetTitleString(string(data)),
+		Title:                measurexlite.WebGetTitle(string(data)),
 	}
 }
 
