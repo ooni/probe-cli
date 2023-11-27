@@ -248,7 +248,8 @@ func (wa *WebAnalysis) ComputeDNSPossiblyInvalidAddrs(c *WebObservationsContaine
 		}
 
 		// if we don't have control information, avoid flagging the address
-		if obs.MatchWithControlIPAddress.IsNone() || obs.MatchWithControlIPAddressASN.IsNone() {
+		if obs.TLSHandshakeFailure.IsNone() || obs.MatchWithControlIPAddress.IsNone() ||
+			obs.MatchWithControlIPAddressASN.IsNone() {
 			continue
 		}
 
