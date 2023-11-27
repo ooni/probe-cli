@@ -11,11 +11,7 @@ import (
 // where the connection is timed out.
 func tcpBlockingConnectTimeout() *TestCase {
 	return &TestCase{
-		Name: "tcpBlockingConnectTimeout",
-		// TODO(bassosimone): this test case transitions from 2 (TCP/IP blocking) to
-		// 10 (both TCP/IP blocking and HTTP blocking). The reason why this happens is
-		// that we're now adding an HTTP request to the mix. This is unfortunate. We
-		// should not flag HTTP failures here inside of the bitmask.
+		Name:  "tcpBlockingConnectTimeout",
 		Flags: 0,
 		Input: "https://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
