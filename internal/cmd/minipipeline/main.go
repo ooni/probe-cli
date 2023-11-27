@@ -1,40 +1,26 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/ooni/probe-cli/v3/internal/minipipeline"
 	"github.com/ooni/probe-cli/v3/internal/must"
-	"github.com/ooni/probe-cli/v3/internal/pipeline"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
+)
+
+var (
+	mustWriteFileFn = must.WriteFile
+	inputs          = os.Args[1:]
 )
 
 func main() {
-	rawMeasurement := must.ReadFile(os.Args[1])
-	var meas pipeline.CanonicalMeasurement
-	must.UnmarshalJSON(rawMeasurement, &meas)
-
-	container := minipipeline.NewWebObservationsContainer()
-	container.CreateDNSLookupFailures(meas.TestKeys.Unwrap().Queries...)
-	container.CreateKnownIPAddresses(meas.TestKeys.Unwrap().Queries...)
-	container.CreateKnownTCPEndpoints(meas.TestKeys.Unwrap().TCPConnect...)
-	container.NoteTLSHandshakeResults(meas.TestKeys.Unwrap().TLSHandshakes...)
-	container.NoteHTTPRoundTripResults(meas.TestKeys.Unwrap().Requests...)
-	container.NoteControlResults(meas.TestKeys.Unwrap().XControlRequest.Unwrap(), meas.TestKeys.Unwrap().Control.Unwrap())
-
-	must.WriteFile("observation.json", must.MarshalJSON(container), 0600)
-
-	analysis := &minipipeline.WebAnalysis{}
-	analysis.ComputeDNSExperimentFailure(container)
-	analysis.ComputeDNSTransactionsWithBogons(container)
-	analysis.ComputeDNSTransactionsWithUnexpectedFailures(container)
-	analysis.ComputeDNSPossiblyInvalidAddrs(container)
-	analysis.ComputeTCPTransactionsWithUnexpectedTCPConnectFailures(container)
-	analysis.ComputeTCPTransactionsWithUnexpectedTLSHandshakeFailures(container)
-	analysis.ComputeTCPTransactionsWithUnexpectedHTTPFailures(container)
-	analysis.ComputeHTTPDiffBodyProportionFactor(container)
-	analysis.ComputeHTTPDiffStatusCodeMatch(container)
-	analysis.ComputeHTTPDiffUncommonHeadersIntersection(container)
-	analysis.ComputeHTTPDiffTitleDifferentLongWords(container)
-
-	must.WriteFile("analysis.json", must.MarshalJSON(analysis), 0600)
+	for idx, name := range inputs {
+		var meas minipipeline.Measurement
+		must.UnmarshalJSON(must.ReadFile(name), &meas)
+		container := runtimex.Try1(minipipeline.LoadWebMeasurement(&meas))
+		mustWriteFileFn(fmt.Sprintf("observations-%010d.json", idx), must.MarshalJSON(container), 0600)
+		analysis := minipipeline.AnalyzeWebMeasurement(container)
+		mustWriteFileFn(fmt.Sprintf("analysis-%010d.json", idx), must.MarshalJSON(analysis), 0600)
+	}
 }
