@@ -9,7 +9,7 @@
     "tunnel": 0
   },
   "input": "http://www.example.xyz/",
-  "measurement_start_time": "2023-11-27 22:43:20",
+  "measurement_start_time": "2023-11-27 22:52:03",
   "probe_asn": "AS137",
   "probe_cc": "IT",
   "probe_ip": "127.0.0.1",
@@ -50,9 +50,9 @@
         {
           "failure": null,
           "operation": "resolve_start",
-          "t0": 0.000079,
-          "t": 0.000079,
-          "transaction_id": 1
+          "t0": 0.000169,
+          "t": 0.000169,
+          "transaction_id": 2
         },
         {
           "address": "8.8.4.4:53",
@@ -60,9 +60,9 @@
           "num_bytes": 33,
           "operation": "write",
           "proto": "udp",
-          "t0": 0.00012,
-          "t": 0.000126,
-          "transaction_id": 1
+          "t0": 0.000202,
+          "t": 0.000227,
+          "transaction_id": 2
         },
         {
           "address": "8.8.4.4:53",
@@ -70,9 +70,9 @@
           "num_bytes": 33,
           "operation": "write",
           "proto": "udp",
-          "t0": 0.000157,
-          "t": 0.000183,
-          "transaction_id": 1
+          "t0": 0.000208,
+          "t": 0.000241,
+          "transaction_id": 2
         },
         {
           "address": "8.8.4.4:53",
@@ -80,9 +80,9 @@
           "num_bytes": 33,
           "operation": "read",
           "proto": "udp",
-          "t0": 0.000207,
-          "t": 0.005615,
-          "transaction_id": 1
+          "t0": 0.000248,
+          "t": 0.005864,
+          "transaction_id": 2
         },
         {
           "address": "8.8.4.4:53",
@@ -90,16 +90,16 @@
           "num_bytes": 33,
           "operation": "read",
           "proto": "udp",
-          "t0": 0.000166,
-          "t": 0.005728,
-          "transaction_id": 1
+          "t0": 0.000232,
+          "t": 0.005991,
+          "transaction_id": 2
         },
         {
           "failure": null,
           "operation": "resolve_done",
-          "t0": 0.00574,
-          "t": 0.00574,
-          "transaction_id": 1
+          "t0": 0.006012,
+          "t": 0.006012,
+          "transaction_id": 2
         }
       ],
       "queries": []
@@ -115,24 +115,8 @@
         "resolver_hostname": null,
         "resolver_port": null,
         "resolver_address": "",
-        "t0": 0.000093,
-        "t": 0.005274,
-        "tags": [],
-        "transaction_id": 2
-      },
-      {
-        "answers": null,
-        "engine": "udp",
-        "failure": "dns_nxdomain_error",
-        "hostname": "www.example.xyz",
-        "query_type": "AAAA",
-        "raw_response": "2ciBAwABAAAAAAAAA3d3dwdleGFtcGxlA3h5egAAHAAB",
-        "rcode": 3,
-        "resolver_hostname": null,
-        "resolver_port": null,
-        "resolver_address": "8.8.4.4:53",
-        "t0": 0.000098,
-        "t": 0.005624,
+        "t0": 0.000085,
+        "t": 0.00517,
         "tags": [],
         "transaction_id": 1
       },
@@ -142,15 +126,31 @@
         "failure": "dns_nxdomain_error",
         "hostname": "www.example.xyz",
         "query_type": "A",
-        "raw_response": "KJiBAwABAAAAAAAAA3d3dwdleGFtcGxlA3h5egAAAQAB",
+        "raw_response": "ysKBAwABAAAAAAAAA3d3dwdleGFtcGxlA3h5egAAAQAB",
         "rcode": 3,
         "resolver_hostname": null,
         "resolver_port": null,
         "resolver_address": "8.8.4.4:53",
-        "t0": 0.00009,
-        "t": 0.005733,
+        "t0": 0.000185,
+        "t": 0.00587,
         "tags": [],
-        "transaction_id": 1
+        "transaction_id": 2
+      },
+      {
+        "answers": null,
+        "engine": "udp",
+        "failure": "dns_nxdomain_error",
+        "hostname": "www.example.xyz",
+        "query_type": "AAAA",
+        "raw_response": "JMOBAwABAAAAAAAAA3d3dwdleGFtcGxlA3h5egAAHAAB",
+        "rcode": 3,
+        "resolver_hostname": null,
+        "resolver_port": null,
+        "resolver_address": "8.8.4.4:53",
+        "t0": 0.000177,
+        "t": 0.005994,
+        "tags": [],
+        "transaction_id": 2
       }
     ],
     "requests": [],
@@ -192,7 +192,7 @@
     "x_conn_priority_log": [
       {
         "msg": "create with []",
-        "t": 0.011637
+        "t": 0.011894
       }
     ],
     "control_failure": null,
@@ -210,7 +210,7 @@
     "accessible": false
   },
   "test_name": "web_connectivity",
-  "test_runtime": 0.506007,
-  "test_start_time": "2023-11-27 22:43:20",
+  "test_runtime": 0.506217,
+  "test_start_time": "2023-11-27 22:52:03",
   "test_version": "0.5.26"
 }
