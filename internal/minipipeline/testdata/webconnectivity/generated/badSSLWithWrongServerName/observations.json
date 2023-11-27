@@ -1,7 +1,7 @@
 {
   "DNSLookupFailures": {
-    "1": {
-      "DNSTransactionID": 1,
+    "2": {
+      "DNSTransactionID": 2,
       "DNSDomain": "wrong.host.badssl.com",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
@@ -44,8 +44,8 @@
       "DNSTransactionID": 2,
       "DNSDomain": "wrong.host.badssl.com",
       "DNSLookupFailure": "",
-      "DNSQueryType": "ANY",
-      "DNSEngine": "getaddrinfo",
+      "DNSQueryType": "A",
+      "DNSEngine": "udp",
       "IPAddress": "104.154.89.105",
       "IPAddressASN": 396982,
       "IPAddressOrg": "Google LLC",
@@ -82,8 +82,8 @@
       "DNSTransactionID": 1,
       "DNSDomain": "wrong.host.badssl.com",
       "DNSLookupFailure": "",
-      "DNSQueryType": "A",
-      "DNSEngine": "udp",
+      "DNSQueryType": "ANY",
+      "DNSEngine": "getaddrinfo",
       "IPAddress": "104.154.89.105",
       "IPAddressASN": 396982,
       "IPAddressOrg": "Google LLC",

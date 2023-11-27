@@ -42,7 +42,7 @@
       "DNSTransactionID": 4,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_nxdomain_error",
-      "DNSQueryType": "AAAA",
+      "DNSQueryType": "A",
       "DNSEngine": "udp",
       "IPAddress": null,
       "IPAddressASN": null,
