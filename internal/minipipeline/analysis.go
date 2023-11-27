@@ -588,46 +588,24 @@ func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexplainedUnexpectedFailures(c
 	state := make(map[int64]bool)
 
 	for _, obs := range c.KnownTCPEndpoints {
-		// exclude the cases where we have an expectation for TCP connect
-		// because in those cases we can provide an explanation
-		if !obs.ControlTCPConnectFailure.IsNone() {
-			continue
-		}
-
-		// exclude the cases where we have an expectation for TLS handshake
-		// because in those cases we can provide an explanation
-		if !obs.ControlTLSHandshakeFailure.IsNone() {
-			continue
-		}
-
-		// exclude the cases where the control failed because we are
-		// only interested into unexpected failures
-		if obs.ControlHTTPFailure.UnwrapOr("unknown_error") != "" {
-			continue
-		}
-
 		// obtain the transaction ID
 		txid := obs.EndpointTransactionID.UnwrapOr(0)
 		if txid <= 0 {
 			continue
 		}
 
-		// TODO(bassosimone): we need to remember about broken IPv6 here
-
-		// include the cases where there was a TCP connect failure
-		if obs.TCPConnectFailure.UnwrapOr("") != "" {
+		// if we have a TCP connect measurement, the measurement failed, and we don't have
+		// a corresponding control measurement, we cannot explain this failure using the control
+		if !obs.TCPConnectFailure.IsNone() && obs.TCPConnectFailure.Unwrap() != "" &&
+			obs.ControlTCPConnectFailure.IsNone() {
 			state[txid] = true
 			continue
 		}
 
-		// include the cases where there was a TLS handshake failure
-		if obs.TLSHandshakeFailure.UnwrapOr("") != "" {
-			state[txid] = true
-			continue
-		}
-
-		// include the cases where there was an HTTP failure
-		if obs.HTTPFailure.UnwrapOr("") != "" {
+		// if we have a TLS handshake measurement, the measurement failed, and we don't have
+		// a corresponding control measurement, we cannot explain this failure using the control
+		if !obs.TLSHandshakeFailure.IsNone() && obs.TLSHandshakeFailure.Unwrap() != "" &&
+			obs.ControlTLSHandshakeFailure.IsNone() {
 			state[txid] = true
 			continue
 		}

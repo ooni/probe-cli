@@ -15,7 +15,6 @@
     "6": true
   },
   "TCPTransactionsWithUnexplainedUnexpectedFailures": {
-    "6": true,
     "7": true
   }
 }
