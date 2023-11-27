@@ -221,10 +221,11 @@ type WebObservationsContainer struct {
 	//
 	// Note that DNSLookupFailures and KnownTCPEndpoints share the same transaction
 	// ID space, i.e., you can't see the same transaction ID in both. Transaction IDs
-	// are strictly positive unique numbers within the same OONI measurement.
+	// are strictly positive unique numbers within the same OONI measurement. Note
+	// that the A and AAAA events for the same DNS lookups uses the same transaction ID.
 	DNSLookupFailures map[int64]*WebObservation
 
-	// DNSLookupSuccesses maps transaction IDs to resolved IP addresses.
+	// DNSLookupSuccesses contains all the successful transactions.
 	DNSLookupSuccesses []*WebObservation
 
 	// KnownTCPEndpoints maps transaction IDs to TCP observations.

@@ -3,9 +3,9 @@
     "1": {
       "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
-      "DNSLookupFailure": "android_dns_cache_no_data",
-      "DNSQueryType": "ANY",
-      "DNSEngine": "getaddrinfo",
+      "DNSLookupFailure": "dns_no_answer",
+      "DNSQueryType": "AAAA",
+      "DNSEngine": "udp",
       "IPAddress": null,
       "IPAddressASN": null,
       "IPAddressOrg": null,
@@ -41,9 +41,9 @@
     "2": {
       "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
-      "DNSLookupFailure": "dns_no_answer",
-      "DNSQueryType": "AAAA",
-      "DNSEngine": "udp",
+      "DNSLookupFailure": "android_dns_cache_no_data",
+      "DNSQueryType": "ANY",
+      "DNSEngine": "getaddrinfo",
       "IPAddress": null,
       "IPAddressASN": null,
       "IPAddressOrg": null,
@@ -77,9 +77,9 @@
       "ControlHTTPResponseTitle": null
     }
   },
-  "DNSLookupSuccesses": {
-    "2": {
-      "DNSTransactionID": 2,
+  "DNSLookupSuccesses": [
+    {
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
@@ -116,10 +116,10 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     }
-  },
+  ],
   "KnownTCPEndpoints": {
     "3": {
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,

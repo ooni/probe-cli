@@ -4,7 +4,7 @@
       "DNSTransactionID": 1,
       "DNSDomain": "www.example.xyz",
       "DNSLookupFailure": "dns_nxdomain_error",
-      "DNSQueryType": "AAAA",
+      "DNSQueryType": "A",
       "DNSEngine": "udp",
       "IPAddress": null,
       "IPAddressASN": null,
@@ -77,6 +77,6 @@
       "ControlHTTPResponseTitle": null
     }
   },
-  "DNSLookupSuccesses": {},
+  "DNSLookupSuccesses": [],
   "KnownTCPEndpoints": {}
 }

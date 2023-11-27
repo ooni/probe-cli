@@ -1,7 +1,7 @@
 {
   "DNSLookupFailures": {
-    "1": {
-      "DNSTransactionID": 1,
+    "2": {
+      "DNSTransactionID": 2,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
@@ -38,8 +38,46 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     },
-    "5": {
-      "DNSTransactionID": 5,
+    "3": {
+      "DNSTransactionID": 3,
+      "DNSDomain": "bit.ly",
+      "DNSLookupFailure": "dns_nxdomain_error",
+      "DNSQueryType": "A",
+      "DNSEngine": "doh",
+      "IPAddress": null,
+      "IPAddressASN": null,
+      "IPAddressOrg": null,
+      "IPAddressBogon": null,
+      "EndpointTransactionID": null,
+      "EndpointProto": null,
+      "EndpointPort": null,
+      "EndpointAddress": null,
+      "TCPConnectFailure": null,
+      "TLSHandshakeFailure": null,
+      "TLSServerName": null,
+      "HTTPRequestURL": null,
+      "HTTPFailure": null,
+      "HTTPResponseStatusCode": null,
+      "HTTPResponseBodyLength": null,
+      "HTTPResponseBodyIsTruncated": null,
+      "HTTPResponseHeadersKeys": null,
+      "HTTPResponseLocation": null,
+      "HTTPResponseTitle": null,
+      "HTTPResponseIsFinal": null,
+      "ControlDNSDomain": "bit.ly",
+      "ControlDNSLookupFailure": "",
+      "ControlTCPConnectFailure": null,
+      "MatchWithControlIPAddress": null,
+      "MatchWithControlIPAddressASN": null,
+      "ControlTLSHandshakeFailure": null,
+      "ControlHTTPFailure": null,
+      "ControlHTTPResponseStatusCode": null,
+      "ControlHTTPResponseBodyLength": null,
+      "ControlHTTPResponseHeadersKeys": null,
+      "ControlHTTPResponseTitle": null
+    },
+    "6": {
+      "DNSTransactionID": 6,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
@@ -77,9 +115,47 @@
       "ControlHTTPResponseTitle": null
     }
   },
-  "DNSLookupSuccesses": {
-    "1": {
+  "DNSLookupSuccesses": [
+    {
       "DNSTransactionID": 1,
+      "DNSDomain": "bit.ly",
+      "DNSLookupFailure": "",
+      "DNSQueryType": "ANY",
+      "DNSEngine": "getaddrinfo",
+      "IPAddress": "67.199.248.11",
+      "IPAddressASN": 396982,
+      "IPAddressOrg": "Google LLC",
+      "IPAddressBogon": false,
+      "EndpointTransactionID": null,
+      "EndpointProto": null,
+      "EndpointPort": null,
+      "EndpointAddress": null,
+      "TCPConnectFailure": null,
+      "TLSHandshakeFailure": null,
+      "TLSServerName": null,
+      "HTTPRequestURL": null,
+      "HTTPFailure": null,
+      "HTTPResponseStatusCode": null,
+      "HTTPResponseBodyLength": null,
+      "HTTPResponseBodyIsTruncated": null,
+      "HTTPResponseHeadersKeys": null,
+      "HTTPResponseLocation": null,
+      "HTTPResponseTitle": null,
+      "HTTPResponseIsFinal": null,
+      "ControlDNSDomain": null,
+      "ControlDNSLookupFailure": null,
+      "ControlTCPConnectFailure": null,
+      "MatchWithControlIPAddress": null,
+      "MatchWithControlIPAddressASN": null,
+      "ControlTLSHandshakeFailure": null,
+      "ControlHTTPFailure": null,
+      "ControlHTTPResponseStatusCode": null,
+      "ControlHTTPResponseBodyLength": null,
+      "ControlHTTPResponseHeadersKeys": null,
+      "ControlHTTPResponseTitle": null
+    },
+    {
+      "DNSTransactionID": 2,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
@@ -116,46 +192,8 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     },
-    "2": {
-      "DNSTransactionID": 2,
-      "DNSDomain": "bit.ly",
-      "DNSLookupFailure": "",
-      "DNSQueryType": "ANY",
-      "DNSEngine": "getaddrinfo",
-      "IPAddress": "67.199.248.11",
-      "IPAddressASN": 396982,
-      "IPAddressOrg": "Google LLC",
-      "IPAddressBogon": false,
-      "EndpointTransactionID": null,
-      "EndpointProto": null,
-      "EndpointPort": null,
-      "EndpointAddress": null,
-      "TCPConnectFailure": null,
-      "TLSHandshakeFailure": null,
-      "TLSServerName": null,
-      "HTTPRequestURL": null,
-      "HTTPFailure": null,
-      "HTTPResponseStatusCode": null,
-      "HTTPResponseBodyLength": null,
-      "HTTPResponseBodyIsTruncated": null,
-      "HTTPResponseHeadersKeys": null,
-      "HTTPResponseLocation": null,
-      "HTTPResponseTitle": null,
-      "HTTPResponseIsFinal": null,
-      "ControlDNSDomain": null,
-      "ControlDNSLookupFailure": null,
-      "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
-      "ControlTLSHandshakeFailure": null,
-      "ControlHTTPFailure": null,
-      "ControlHTTPResponseStatusCode": null,
-      "ControlHTTPResponseBodyLength": null,
-      "ControlHTTPResponseHeadersKeys": null,
-      "ControlHTTPResponseTitle": null
-    },
-    "4": {
-      "DNSTransactionID": 4,
+    {
+      "DNSTransactionID": 5,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -192,8 +230,8 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     },
-    "5": {
-      "DNSTransactionID": 5,
+    {
+      "DNSTransactionID": 6,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
@@ -230,10 +268,10 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     }
-  },
+  ],
   "KnownTCPEndpoints": {
-    "3": {
-      "DNSTransactionID": 2,
+    "4": {
+      "DNSTransactionID": 1,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -242,7 +280,7 @@
       "IPAddressASN": 396982,
       "IPAddressOrg": "Google LLC",
       "IPAddressBogon": false,
-      "EndpointTransactionID": 3,
+      "EndpointTransactionID": 4,
       "EndpointProto": "tcp",
       "EndpointPort": "443",
       "EndpointAddress": "67.199.248.11:443",
@@ -279,8 +317,8 @@
       },
       "ControlHTTPResponseTitle": "Default Web Page"
     },
-    "6": {
-      "DNSTransactionID": 4,
+    "7": {
+      "DNSTransactionID": 5,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -289,7 +327,7 @@
       "IPAddressASN": 15133,
       "IPAddressOrg": "Edgecast Inc.",
       "IPAddressBogon": false,
-      "EndpointTransactionID": 6,
+      "EndpointTransactionID": 7,
       "EndpointProto": "tcp",
       "EndpointPort": "443",
       "EndpointAddress": "93.184.216.34:443",

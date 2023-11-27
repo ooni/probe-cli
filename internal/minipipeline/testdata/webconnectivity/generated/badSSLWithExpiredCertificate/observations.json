@@ -39,8 +39,8 @@
       "ControlHTTPResponseTitle": null
     }
   },
-  "DNSLookupSuccesses": {
-    "1": {
+  "DNSLookupSuccesses": [
+    {
       "DNSTransactionID": 1,
       "DNSDomain": "expired.badssl.com",
       "DNSLookupFailure": "",
@@ -78,7 +78,7 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     },
-    "2": {
+    {
       "DNSTransactionID": 2,
       "DNSDomain": "expired.badssl.com",
       "DNSLookupFailure": "",
@@ -116,7 +116,7 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     }
-  },
+  ],
   "KnownTCPEndpoints": {
     "3": {
       "DNSTransactionID": 1,

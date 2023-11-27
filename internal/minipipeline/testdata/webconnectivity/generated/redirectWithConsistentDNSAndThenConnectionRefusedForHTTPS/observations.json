@@ -1,7 +1,7 @@
 {
   "DNSLookupFailures": {
-    "1": {
-      "DNSTransactionID": 1,
+    "2": {
+      "DNSTransactionID": 2,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
@@ -38,8 +38,8 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     },
-    "5": {
-      "DNSTransactionID": 5,
+    "4": {
+      "DNSTransactionID": 4,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
@@ -77,9 +77,47 @@
       "ControlHTTPResponseTitle": null
     }
   },
-  "DNSLookupSuccesses": {
-    "1": {
+  "DNSLookupSuccesses": [
+    {
       "DNSTransactionID": 1,
+      "DNSDomain": "bit.ly",
+      "DNSLookupFailure": "",
+      "DNSQueryType": "ANY",
+      "DNSEngine": "getaddrinfo",
+      "IPAddress": "67.199.248.11",
+      "IPAddressASN": 396982,
+      "IPAddressOrg": "Google LLC",
+      "IPAddressBogon": false,
+      "EndpointTransactionID": null,
+      "EndpointProto": null,
+      "EndpointPort": null,
+      "EndpointAddress": null,
+      "TCPConnectFailure": null,
+      "TLSHandshakeFailure": null,
+      "TLSServerName": null,
+      "HTTPRequestURL": null,
+      "HTTPFailure": null,
+      "HTTPResponseStatusCode": null,
+      "HTTPResponseBodyLength": null,
+      "HTTPResponseBodyIsTruncated": null,
+      "HTTPResponseHeadersKeys": null,
+      "HTTPResponseLocation": null,
+      "HTTPResponseTitle": null,
+      "HTTPResponseIsFinal": null,
+      "ControlDNSDomain": null,
+      "ControlDNSLookupFailure": null,
+      "ControlTCPConnectFailure": null,
+      "MatchWithControlIPAddress": null,
+      "MatchWithControlIPAddressASN": null,
+      "ControlTLSHandshakeFailure": null,
+      "ControlHTTPFailure": null,
+      "ControlHTTPResponseStatusCode": null,
+      "ControlHTTPResponseBodyLength": null,
+      "ControlHTTPResponseHeadersKeys": null,
+      "ControlHTTPResponseTitle": null
+    },
+    {
+      "DNSTransactionID": 2,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
@@ -116,46 +154,8 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     },
-    "2": {
-      "DNSTransactionID": 2,
-      "DNSDomain": "bit.ly",
-      "DNSLookupFailure": "",
-      "DNSQueryType": "ANY",
-      "DNSEngine": "getaddrinfo",
-      "IPAddress": "67.199.248.11",
-      "IPAddressASN": 396982,
-      "IPAddressOrg": "Google LLC",
-      "IPAddressBogon": false,
-      "EndpointTransactionID": null,
-      "EndpointProto": null,
-      "EndpointPort": null,
-      "EndpointAddress": null,
-      "TCPConnectFailure": null,
-      "TLSHandshakeFailure": null,
-      "TLSServerName": null,
-      "HTTPRequestURL": null,
-      "HTTPFailure": null,
-      "HTTPResponseStatusCode": null,
-      "HTTPResponseBodyLength": null,
-      "HTTPResponseBodyIsTruncated": null,
-      "HTTPResponseHeadersKeys": null,
-      "HTTPResponseLocation": null,
-      "HTTPResponseTitle": null,
-      "HTTPResponseIsFinal": null,
-      "ControlDNSDomain": null,
-      "ControlDNSLookupFailure": null,
-      "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
-      "ControlTLSHandshakeFailure": null,
-      "ControlHTTPFailure": null,
-      "ControlHTTPResponseStatusCode": null,
-      "ControlHTTPResponseBodyLength": null,
-      "ControlHTTPResponseHeadersKeys": null,
-      "ControlHTTPResponseTitle": null
-    },
-    "4": {
-      "DNSTransactionID": 4,
+    {
+      "DNSTransactionID": 5,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -192,8 +192,8 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     },
-    "5": {
-      "DNSTransactionID": 5,
+    {
+      "DNSTransactionID": 4,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
@@ -230,7 +230,7 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     }
-  },
+  ],
   "KnownTCPEndpoints": {
     "3": {
       "DNSTransactionID": 1,
@@ -280,7 +280,7 @@
       "ControlHTTPResponseTitle": "Default Web Page"
     },
     "6": {
-      "DNSTransactionID": 4,
+      "DNSTransactionID": 5,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,

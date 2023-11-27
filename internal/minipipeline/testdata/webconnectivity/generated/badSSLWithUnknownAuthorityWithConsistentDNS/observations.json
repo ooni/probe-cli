@@ -38,8 +38,8 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     },
-    "2": {
-      "DNSTransactionID": 2,
+    "3": {
+      "DNSTransactionID": 3,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
@@ -77,13 +77,13 @@
       "ControlHTTPResponseTitle": null
     }
   },
-  "DNSLookupSuccesses": {
-    "1": {
-      "DNSTransactionID": 1,
+  "DNSLookupSuccesses": [
+    {
+      "DNSTransactionID": 2,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "",
-      "DNSQueryType": "A",
-      "DNSEngine": "doh",
+      "DNSQueryType": "ANY",
+      "DNSEngine": "getaddrinfo",
       "IPAddress": "104.154.89.105",
       "IPAddressASN": 396982,
       "IPAddressOrg": "Google LLC",
@@ -116,8 +116,8 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     },
-    "2": {
-      "DNSTransactionID": 2,
+    {
+      "DNSTransactionID": 3,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
@@ -154,12 +154,12 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     },
-    "3": {
-      "DNSTransactionID": 3,
+    {
+      "DNSTransactionID": 1,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "",
-      "DNSQueryType": "ANY",
-      "DNSEngine": "getaddrinfo",
+      "DNSQueryType": "A",
+      "DNSEngine": "doh",
       "IPAddress": "104.154.89.105",
       "IPAddressASN": 396982,
       "IPAddressOrg": "Google LLC",
@@ -192,10 +192,10 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     }
-  },
+  ],
   "KnownTCPEndpoints": {
     "4": {
-      "DNSTransactionID": 3,
+      "DNSTransactionID": 2,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,

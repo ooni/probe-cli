@@ -1,7 +1,7 @@
 {
   "DNSLookupFailures": {
-    "2": {
-      "DNSTransactionID": 2,
+    "1": {
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
@@ -39,9 +39,9 @@
       "ControlHTTPResponseTitle": null
     }
   },
-  "DNSLookupSuccesses": {
-    "1": {
-      "DNSTransactionID": 1,
+  "DNSLookupSuccesses": [
+    {
+      "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -78,8 +78,8 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     },
-    "2": {
-      "DNSTransactionID": 2,
+    {
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
@@ -116,7 +116,7 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     }
-  },
+  ],
   "KnownTCPEndpoints": {
     "3": {
       "DNSTransactionID": 2,
