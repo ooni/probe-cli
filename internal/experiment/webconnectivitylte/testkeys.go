@@ -217,7 +217,7 @@ func (tk *TestKeys) AppendQueries(v ...*model.ArchivalDNSLookupResult) {
 	tk.mu.Unlock()
 }
 
-// PrependRequests appends to Requests.
+// PrependRequests prepends to Requests.
 func (tk *TestKeys) PrependRequests(v ...*model.ArchivalHTTPRequestResult) {
 	tk.mu.Lock()
 	// Implementation note: append at the front since the most recent
