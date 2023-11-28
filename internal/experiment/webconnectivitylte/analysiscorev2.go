@@ -2,16 +2,211 @@ package webconnectivitylte
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/ooni/probe-cli/v3/internal/minipipeline"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/must"
+	"github.com/ooni/probe-cli/v3/internal/optional"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
+func (tk *TestKeys) analysisToplevelV2(logger model.Logger) {
+	// Since we run after all tasks have completed (or so we assume) we're
+	// not going to use any form of locking here.
+
+	// 1. produce observations using the minipipeline
+	container := minipipeline.NewWebObservationsContainer()
+	container.IngestDNSLookupEvents(tk.Queries...)
+	container.IngestTCPConnectEvents(tk.TCPConnect...)
+	container.IngestTLSHandshakeEvents(tk.TLSHandshakes...)
+	container.IngestHTTPRoundTripEvents(tk.Requests...)
+
+	// be defensive in case the control request or control are not defined
+	if tk.ControlRequest != nil && tk.Control != nil {
+		// Implementation note: the only error that can happen here is when the input
+		// doesn't parse as a URL, which should have triggered previous errors
+		runtimex.Try0(container.IngestControlMessages(tk.ControlRequest, tk.Control))
+	}
+
+	// 2. filter observations to only include results collected by the
+	// system resolver, which approximates v0.4's results
+	classic := minipipeline.ClassicFilter(container)
+
+	// 3. run the classic analysis algorithm
+	tk.analysisClassic(logger, classic)
+}
+
+func analysisValueToPointer[T any](input T) *T {
+	return &input
+}
+
+func analysisOptionalToPointer[T any](input optional.Value[T]) *T {
+	if input.IsNone() {
+		return nil
+	}
+	return analysisValueToPointer(input.Unwrap())
+}
+
+func (tk *TestKeys) analysisClassic(logger model.Logger, container *minipipeline.WebObservationsContainer) {
+	// dump the observations
+	fmt.Printf("%s\n", must.MarshalJSON(container))
+
+	// produce the analysis based on the observations
+	analysis := minipipeline.AnalyzeWebObservations(container)
+
+	// dump the analysis
+	fmt.Printf("%s\n", must.MarshalJSON(analysis))
+
+	// set DNSExperimentFailure
+	tk.DNSExperimentFailure = analysisOptionalToPointer(analysis.DNSExperimentFailure)
+
+	// set DNSConsistency
+	var (
+		dnsTransactionsWithUnexpectedFailures *bool
+		dnsPossiblyInvalidAddrs               *bool
+	)
+	if v := analysis.DNSTransactionsWithUnexpectedFailures.UnwrapOr(nil); v != nil {
+		g := len(v) > 0
+		dnsTransactionsWithUnexpectedFailures = &g
+	}
+	if v := analysis.DNSPossiblyInvalidAddrsClassic.UnwrapOr(nil); v != nil {
+		g := len(v) > 0
+		dnsPossiblyInvalidAddrs = &g
+	}
+	log.Printf("ELLIOT: %v %v", dnsPossiblyInvalidAddrs, dnsTransactionsWithUnexpectedFailures)
+	tk.DNSConsistency = func() *string {
+		if dnsPossiblyInvalidAddrs != nil && *dnsPossiblyInvalidAddrs {
+			v := "inconsistent"
+			return &v
+		}
+		if dnsTransactionsWithUnexpectedFailures != nil && *dnsTransactionsWithUnexpectedFailures {
+			v := "inconsistent"
+			return &v
+		}
+		if dnsPossiblyInvalidAddrs == nil && dnsTransactionsWithUnexpectedFailures == nil {
+			return nil
+		}
+		v := "consistent"
+		return &v
+	}()
+
+	// FIXME: HTTPExperimentFailure
+
+	// set BodyLengthMatch
+	if v := analysis.HTTPDiffBodyProportionFactor.UnwrapOr(0); v > 0 {
+		tk.BodyLengthMatch = analysisValueToPointer(v > 0.7)
+	}
+
+	// set HeadersMatch
+	if v := analysis.HTTPDiffUncommonHeadersIntersection.UnwrapOr(nil); v != nil {
+		tk.HeadersMatch = analysisValueToPointer(len(v) > 0)
+	}
+
+	// set StatusCodeMatch
+	tk.StatusCodeMatch = analysisOptionalToPointer(analysis.HTTPDiffStatusCodeMatch)
+
+	// set TitleMatch
+	if v := analysis.HTTPDiffTitleDifferentLongWords.UnwrapOr(nil); v != nil {
+		tk.TitleMatch = analysisValueToPointer(len(v) <= 0)
+	}
+
+	//
+	// set Blocking & Accessible
+	//
+
+	// if we have a final response using TLS, we declare there's no blocking
+	if v := analysis.HTTPFinalResponsesWithTLS.UnwrapOr(nil); len(v) > 0 {
+		tk.Blocking = false
+		tk.Accessible = true
+		return
+	}
+
+	// otherwise, if we have a final response, let's execute the dns-diff algorithm
+	if v := analysis.HTTPFinalResponsesWithControl.UnwrapOr(nil); len(v) > 0 {
+		if tk.StatusCodeMatch != nil && *tk.StatusCodeMatch {
+			if tk.BodyLengthMatch != nil && *tk.BodyLengthMatch {
+				tk.Blocking = false
+				tk.Accessible = true
+				return
+			}
+			if tk.HeadersMatch != nil && *tk.HeadersMatch {
+				tk.Blocking = false
+				tk.Accessible = true
+				return
+			}
+			if tk.TitleMatch != nil && *tk.TitleMatch {
+				tk.Blocking = false
+				tk.Accessible = true
+				return
+			}
+		}
+		// It seems we didn't get the expected web page. What now? Well, if
+		// the DNS does not seem trustworthy, let us blame it.
+		if dnsPossiblyInvalidAddrs != nil && *dnsPossiblyInvalidAddrs {
+			tk.Blocking = "dns"
+			tk.Accessible = false
+			return
+		}
+		// The only remaining conclusion seems that the web page we have got
+		// doesn't match what we were expecting.
+		tk.Blocking = "http-diff"
+		tk.Accessible = false
+		return
+	}
+
+	// otherwise we need to determine whether it's http-failure or tcp_ip
+	// with dns always being a possibility to consider
+	//
+	// we start by checking for unexpected TLS failures, which we map as
+	// http-failure since there's no TLS failure for v0.4
+	//
+	// note that this kind of failures happen in the first request, so
+	// we can be confident and apply a DNS correction here
+	if v := analysis.TCPTransactionsWithUnexpectedTLSHandshakeFailures.UnwrapOr(nil); len(v) > 0 {
+		if dnsPossiblyInvalidAddrs != nil && *dnsPossiblyInvalidAddrs {
+			tk.Blocking = "dns"
+			tk.Accessible = false
+			return
+		}
+		tk.Blocking = "http-failure"
+		tk.Accessible = false
+		return
+	}
+
+	if v := analysis.TCPTransactionsWithUnexpectedTCPConnectFailures.UnwrapOr(nil); len(v) > 0 {
+		if dnsPossiblyInvalidAddrs != nil && *dnsPossiblyInvalidAddrs {
+			tk.Blocking = "dns"
+			tk.Accessible = false
+			return
+		}
+		tk.Blocking = "tcp_ip"
+		tk.Accessible = false
+		return
+	}
+
+	// then we check for unexpected HTTP failures in the first request
+	if v := analysis.TCPTransactionsWithUnexpectedHTTPFailures.UnwrapOr(nil); len(v) > 0 {
+		if dnsPossiblyInvalidAddrs != nil && *dnsPossiblyInvalidAddrs {
+			tk.Blocking = "dns"
+			tk.Accessible = false
+			return
+		}
+		tk.Blocking = "http-failure"
+		tk.Accessible = false
+		return
+	}
+
+	if (dnsPossiblyInvalidAddrs != nil && *dnsPossiblyInvalidAddrs) ||
+		(dnsTransactionsWithUnexpectedFailures != nil && *dnsTransactionsWithUnexpectedFailures) {
+		tk.Blocking = "dns"
+		tk.Accessible = false
+	}
+}
+
 // analysisToplevelV2 is an alternative version of the analysis code that
 // uses the [minipipeline] package for processing.
-func (tk *TestKeys) analysisToplevelV2(logger model.Logger) {
+func (tk *TestKeys) analysisToplevelV2Old(logger model.Logger) {
 	// Since we run after all tasks have completed (or so we assume) we're
 	// not going to use any form of locking here.
 
@@ -44,7 +239,7 @@ func (tk *TestKeys) analysisToplevelV2(logger model.Logger) {
 	analysis.ComputeHTTPDiffStatusCodeMatch(container)
 	analysis.ComputeHTTPDiffUncommonHeadersIntersection(container)
 	analysis.ComputeHTTPDiffTitleDifferentLongWords(container)
-	analysis.ComputeHTTPFinalResponses(container)
+	analysis.ComputeHTTPFinalResponsesWithControl(container)
 	analysis.ComputeTCPTransactionsWithUnexplainedUnexpectedFailures(container)
 	analysis.ComputeHTTPFinalResponsesWithTLS(container)
 
@@ -106,11 +301,13 @@ func (tk *TestKeys) analysisDNSToplevelV2(analysis *minipipeline.WebAnalysis, lo
 	// compute DNS consistency
 	if tk.DNSFlags != 0 {
 		logger.Warn("DNSConsistency: inconsistent")
-		tk.DNSConsistency = "inconsistent"
+		v := "inconsistent"
+		tk.DNSConsistency = &v
 		tk.BlockingFlags |= analysisFlagDNSBlocking
 	} else {
 		logger.Info("DNSConsistency: consistent")
-		tk.DNSConsistency = "consistent"
+		v := "consistent"
+		tk.DNSConsistency = &v
 	}
 }
 
@@ -144,7 +341,7 @@ func (tk *TestKeys) analysisHTTPToplevelV2(analysis *minipipeline.WebAnalysis, l
 
 	// Detect cases where an error occurred during a redirect. For this to happen, we
 	// need to observe (1) no "final" responses and (2) unexpected, unexplained failures
-	numFinals := len(analysis.HTTPFinalResponses.UnwrapOr(nil))
+	numFinals := len(analysis.HTTPFinalResponsesWithControl.UnwrapOr(nil))
 	numUnexpectedUnexplained := len(analysis.TCPTransactionsWithUnexplainedUnexpectedFailures.UnwrapOr(nil))
 	if numFinals <= 0 && numUnexpectedUnexplained > 0 {
 		tk.BlockingFlags |= analysisFlagHTTPBlocking

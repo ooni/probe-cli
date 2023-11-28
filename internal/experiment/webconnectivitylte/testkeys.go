@@ -81,7 +81,7 @@ type TestKeys struct {
 
 	// DNSConsistency indicates whether there is consistency between
 	// the TH's DNS results and the probe's DNS results.
-	DNSConsistency string `json:"dns_consistency"`
+	DNSConsistency *string `json:"dns_consistency"`
 
 	// HTTPExperimentFailure indicates whether there was a failure in
 	// the final HTTP request that we recorded.
@@ -354,7 +354,7 @@ func NewTestKeys() *TestKeys {
 		ControlFailure:        nil,
 		DNSFlags:              0,
 		DNSExperimentFailure:  nil,
-		DNSConsistency:        "",
+		DNSConsistency:        nil,
 		HTTPExperimentFailure: nil,
 		BlockingFlags:         0,
 		NullNullFlags:         0,

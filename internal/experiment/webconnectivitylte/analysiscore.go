@@ -37,7 +37,7 @@ const (
 )
 
 // AnalysisUseV2 indicates whether to use V2 of the analysis algorithm.
-var AnalysisUseV2 = false
+var AnalysisUseV2 = true
 
 // analysisToplevel is the toplevel function that analyses the results
 // of the experiment once all network tasks have completed.
@@ -104,12 +104,13 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 	// these functions compute the value of XBlockingFlags
 	if AnalysisUseV2 {
 		tk.analysisToplevelV2(logger)
-	} else {
-		tk.analysisDNSToplevel(logger, model.GeoIPASNLookupperFunc(geoipx.LookupASN))
-		tk.analysisTCPIPToplevel(logger)
-		tk.analysisTLSToplevel(logger)
-		tk.analysisHTTPToplevel(logger)
+		return
 	}
+
+	tk.analysisDNSToplevel(logger, model.GeoIPASNLookupperFunc(geoipx.LookupASN))
+	tk.analysisTCPIPToplevel(logger)
+	tk.analysisTLSToplevel(logger)
+	tk.analysisHTTPToplevel(logger)
 
 	// now, let's determine .Accessible and .Blocking
 	switch {

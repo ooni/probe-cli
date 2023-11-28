@@ -73,7 +73,7 @@ func badSSLWithUnknownAuthorityWithInconsistentDNS() *TestCase {
 		Configure: func(env *netemx.QAEnv) {
 
 			// add DPI rule to force all the cleartext DNS queries to
-			// point the client to used the ISPProxyAddress
+			// point the client to use the ISPProxyAddress
 			env.DPIEngine().AddRule(&netem.DPISpoofDNSResponse{
 				Addresses: []string{netemx.AddressBadSSLCom},
 				Logger:    env.Logger(),
