@@ -178,7 +178,7 @@ func redirectWithConsistentDNSAndThenNXDOMAIN() *TestCase {
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
 			DNSExperimentFailure:  nil,
-			DNSConsistency:        "inconsistent",
+			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: "dns_nxdomain_error",
 			XStatus:               8224, // StatusExperimentHTTP | StatusAnomalyDNS
 			XDNSFlags:             2,    // AnalysisDNSUnexpectedFailure

@@ -25,7 +25,7 @@ func dnsHijackingToProxyWithHTTPURL() *TestCase {
 		},
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
-			DNSConsistency:  "consistent",
+			DNSConsistency:  "inconsistent",
 			BodyLengthMatch: true,
 			BodyProportion:  1,
 			StatusCodeMatch: true,
@@ -62,7 +62,7 @@ func dnsHijackingToProxyWithHTTPSURL() *TestCase {
 		},
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
-			DNSConsistency:  "consistent",
+			DNSConsistency:  "inconsistent",
 			BodyLengthMatch: true,
 			BodyProportion:  1,
 			StatusCodeMatch: true,
