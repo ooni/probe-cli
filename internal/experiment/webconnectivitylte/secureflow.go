@@ -176,7 +176,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	tcpDialer := trace.NewDialerWithoutResolver(t.Logger)
 	tcpConn, err := tcpDialer.DialContext(tcpCtx, "tcp", t.Address)
 	t.TestKeys.AppendTCPConnectResults(trace.TCPConnects()...)
-	t.TestKeys.AppendNetworkEvents(trace.NetworkEvents()...) // BUGFIX: EXPLAIN
+	defer t.TestKeys.AppendNetworkEvents(trace.NetworkEvents()...) // here to include "connect" events
 	if err != nil {
 		/*
 			// TODO(bassosimone): document why we're adding a request to the heap here
@@ -194,10 +194,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 		ol.Stop(err)
 		return err
 	}
-	defer func() {
-		t.TestKeys.AppendNetworkEvents(trace.NetworkEvents()...)
-		tcpConn.Close()
-	}()
+	defer tcpConn.Close()
 
 	// perform TLS handshake
 	tlsSNI, err := t.sni()
