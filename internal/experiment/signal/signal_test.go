@@ -26,6 +26,7 @@ func TestGood(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
+	t.Skip("https://github.com/ooni/probe/issues/2636")
 
 	measurer := signal.NewExperimentMeasurer(signal.Config{})
 	measurement := new(model.Measurement)
