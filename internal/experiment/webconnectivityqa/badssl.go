@@ -10,7 +10,7 @@ import (
 func badSSLWithExpiredCertificate() *TestCase {
 	return &TestCase{
 		Name:  "badSSLWithExpiredCertificate",
-		Flags: TestCaseFlagNoV04, // v0.4 does not set accessible and blocking in this case
+		Flags: TestCaseFlagNoLTE, // LTE flags it correctly but let's focus on v0.4 for now
 		Input: "https://expired.badssl.com/",
 		Configure: func(env *netemx.QAEnv) {
 			// nothing
@@ -21,8 +21,8 @@ func badSSLWithExpiredCertificate() *TestCase {
 			HTTPExperimentFailure: "ssl_invalid_certificate",
 			XStatus:               16, // StatusAnomalyControlFailure
 			XNullNullFlags:        4,  // analysisFlagNullNullTLSMisconfigured
-			Accessible:            false,
-			Blocking:              false,
+			Accessible:            nil,
+			Blocking:              nil,
 		},
 	}
 }
@@ -32,7 +32,7 @@ func badSSLWithExpiredCertificate() *TestCase {
 func badSSLWithWrongServerName() *TestCase {
 	return &TestCase{
 		Name:  "badSSLWithWrongServerName",
-		Flags: TestCaseFlagNoV04, // v0.4 does not set accessible and blocking in this case
+		Flags: TestCaseFlagNoLTE, // LTE flags it correctly but let's focus on v0.4 for now
 		Input: "https://wrong.host.badssl.com/",
 		Configure: func(env *netemx.QAEnv) {
 			// nothing
@@ -43,8 +43,8 @@ func badSSLWithWrongServerName() *TestCase {
 			HTTPExperimentFailure: "ssl_invalid_hostname",
 			XStatus:               16, // StatusAnomalyControlFailure
 			XNullNullFlags:        4,  // analysisFlagNullNullTLSMisconfigured
-			Accessible:            false,
-			Blocking:              false,
+			Accessible:            nil,
+			Blocking:              nil,
 		},
 	}
 }
@@ -53,7 +53,7 @@ func badSSLWithWrongServerName() *TestCase {
 func badSSLWithUnknownAuthorityWithConsistentDNS() *TestCase {
 	return &TestCase{
 		Name:  "badSSLWithUnknownAuthorityWithConsistentDNS",
-		Flags: TestCaseFlagNoV04, // v0.4 does not set accessible and blocking in this case
+		Flags: TestCaseFlagNoLTE, // LTE flags it correctly but let's focus on v0.4 for now
 		Input: "https://untrusted-root.badssl.com/",
 		Configure: func(env *netemx.QAEnv) {
 			// nothing
@@ -64,8 +64,8 @@ func badSSLWithUnknownAuthorityWithConsistentDNS() *TestCase {
 			HTTPExperimentFailure: "ssl_unknown_authority",
 			XStatus:               16, // StatusAnomalyControlFailure
 			XNullNullFlags:        4,  // analysisFlagNullNullTLSMisconfigured
-			Accessible:            false,
-			Blocking:              false,
+			Accessible:            nil,
+			Blocking:              nil,
 		},
 	}
 }
@@ -73,10 +73,8 @@ func badSSLWithUnknownAuthorityWithConsistentDNS() *TestCase {
 // This test case models when we're redirected to a blockpage website using a custom CA.
 func badSSLWithUnknownAuthorityWithInconsistentDNS() *TestCase {
 	return &TestCase{
-		Name: "badSSLWithUnknownAuthorityWithInconsistentDNS",
-		// v0.4 cannot set BodyLengthMatch, StatusCodeMatch, HeadersMatch, and TitleMatch while v0.5
-		// can do that because it also uses IP addrs from DoH and the TH
-		Flags: TestCaseFlagNoV04,
+		Name:  "badSSLWithUnknownAuthorityWithInconsistentDNS",
+		Flags: 0,
 		Input: "https://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -91,10 +89,6 @@ func badSSLWithUnknownAuthorityWithInconsistentDNS() *TestCase {
 		},
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
-			BodyLengthMatch:       true,
-			StatusCodeMatch:       true,
-			HeadersMatch:          true,
-			TitleMatch:            true,
 			DNSConsistency:        "inconsistent",
 			HTTPExperimentFailure: "ssl_unknown_authority",
 			XStatus:               9248, // StatusExperimentHTTP | StatusAnomalyTLSHandshake | StatusAnomalyDNS

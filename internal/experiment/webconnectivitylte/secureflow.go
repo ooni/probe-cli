@@ -97,9 +97,6 @@ func (t *SecureFlow) Start(ctx context.Context) {
 	}()
 }
 
-// TODO(bassosimone): document the heap-like organization of the
-// requests that we plan on adding to webconnectivity.
-
 // Run runs this task in the current goroutine.
 func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	if err := allowedToConnect(t.Address); err != nil {
@@ -107,55 +104,8 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 		return err
 	}
 
-	// Create the request early such that we can immediately bail in case
-	// it's broken and such that we can insert it into the heap in case there
-	// is a failure when connecting or TLS handshaking.
-	httpReq, err := t.newHTTPRequest()
-	if err != nil {
-		if t.Referer == "" {
-			// when the referer is empty, the failing URL comes from our backend
-			// or from the user, so it's a fundamental failure. After that, we
-			// are dealing with websites provided URLs, so we should not flag a
-			// fundamental failure, because we want to see the measurement submitted.
-			t.TestKeys.SetFundamentalFailure(err)
-		}
-		return err
-	}
-
-	// TODO(bassosimone): we're missing high-level information about the
-	// transaction, which implies we are missing failed HTTP requests
-	// to compare to, which causes netemx integration tests such as this
-	//
-	//	TestQA/redirectWithConsistentDNSAndThenConnectionRefusedForHTTP
-	//
-	// to fail because they cannot find the corresponding request to
-	// compare to. Therefore, in such a test case, we incorrectly say
-	// that bit.ly is accessible where instead we should conclude
-	// there's blocking at the TCP/IP level.
-	//
-	// An initial fix for this issue probably relies on making sure
-	// that we don't conclude there is a success when the actual
-	// endpoint fails. However, I think there are broader ooni/data
-	// implications at stake here. The fact that we do not have a
-	// request violates the assumptions of the analysis code we have
-	// written, which means, whatever we do, we need to respect the
-	// previously agreed conventions in some way.
-	//
-	// For this reason, any fix for this should be carefully thought out.
-	//
-	// I cannot know which is the request that will win the race and
-	// attempt measuring HTTP/HTTPS. Also, I cannot create records for
-	// all requests because that would break the fastpath, which assumes
-	// that requests[0] is the latest request in a linear chain. So, I
-	// need somehow to introduce a request into the test keys in a different
-	// way. Yet, how do I know which connection I am going to use?
-
 	// create trace
 	trace := measurexlite.NewTrace(index, t.ZeroTime)
-
-	// TODO(bassosimone): the DSL starts measuring for throttling when we start
-	// fetching the body while here we start immediately. We should come up with
-	// a consistent policy otherwise data won't be comparable.
 
 	// start measuring throttling
 	sampler := throttling.NewSampler(trace)
@@ -176,21 +126,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	tcpDialer := trace.NewDialerWithoutResolver(t.Logger)
 	tcpConn, err := tcpDialer.DialContext(tcpCtx, "tcp", t.Address)
 	t.TestKeys.AppendTCPConnectResults(trace.TCPConnects()...)
-	t.TestKeys.AppendNetworkEvents(trace.NetworkEvents()...) // BUGFIX: EXPLAIN
 	if err != nil {
-		/*
-			// TODO(bassosimone): document why we're adding a request to the heap here
-			if t.PrioSelector != nil {
-				t.TestKeys.PrependRequests(newArchivalHTTPRequestResultWithError(
-					trace,
-					"tcp",
-					t.Address,
-					"",
-					httpReq,
-					err,
-				))
-			}
-		*/
 		ol.Stop(err)
 		return err
 	}
@@ -221,19 +157,6 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	tlsConn, err := tlsHandshaker.Handshake(tlsCtx, tcpConn, tlsConfig)
 	t.TestKeys.AppendTLSHandshakes(trace.TLSHandshakes()...)
 	if err != nil {
-		/*
-			// TODO(bassosimone): document why we're adding a request to the heap here
-			if t.PrioSelector != nil {
-				t.TestKeys.PrependRequests(newArchivalHTTPRequestResultWithError(
-					trace,
-					"tcp",
-					t.Address,
-					"",
-					httpReq,
-					err,
-				))
-			}
-		*/
 		ol.Stop(err)
 		return err
 	}
@@ -244,19 +167,6 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 
 	// Determine whether we're allowed to fetch the webpage
 	if t.PrioSelector == nil || !t.PrioSelector.permissionToFetch(t.Address) {
-		/*
-			// TODO(bassosimone): document why we're adding a request to the heap here
-			if t.PrioSelector != nil {
-				t.TestKeys.PrependRequests(newArchivalHTTPRequestResultWithError(
-					trace,
-					"tcp",
-					t.Address,
-					"",
-					httpReq,
-					errors.New("http_request_canceled"), // TODO(bassosimone): define this error
-				))
-			}
-		*/
 		ol.Stop("stop after TLS handshake")
 		return errNotPermittedToFetch
 	}
@@ -271,27 +181,22 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 		netxlite.NewSingleUseTLSDialer(tlsConn),
 	)
 
-	// TODO(bassosimone): whatever changes we apply here, we also need to
-	// apply the same changes inside the cleartextflow.go file.
-
-	// TODO(bassosimone): the request we're creating here is bound to the httpCtx
-	// context. So, if we choose to create the request earlier, then we should make
-	// sure that here we are assigning the correct context to the request.
-	//
-	// Additionally, and maybe tangentially, I am wondering whether we should
-	// separate a request and a response inside the dataset. This would make it
-	// possible to create the request early and provide the response when it
-	// becomes available. Though, this means we don't have anymore an HTTP
-	// structure according to the archival data format and instead we have to
-	// generate it on the fly, which comes with its own drawbacks.
-
-	// create HTTP context
+	// create HTTP request
 	const httpTimeout = 10 * time.Second
 	httpCtx, httpCancel := context.WithTimeout(parentCtx, httpTimeout)
 	defer httpCancel()
-
-	// make sure the context owns the request
-	httpReq = httpReq.WithContext(httpCtx)
+	httpReq, err := t.newHTTPRequest(httpCtx)
+	if err != nil {
+		if t.Referer == "" {
+			// when the referer is empty, the failing URL comes from our backend
+			// or from the user, so it's a fundamental failure. After that, we
+			// are dealing with websites provided URLs, so we should not flag a
+			// fundamental failure, because we want to see the measurement submitted.
+			t.TestKeys.SetFundamentalFailure(err)
+		}
+		ol.Stop(err)
+		return err
+	}
 
 	// perform HTTP transaction
 	httpResp, httpRespBody, err := t.httpTransaction(
@@ -358,7 +263,7 @@ func (t *SecureFlow) urlHost(scheme string) (string, error) {
 }
 
 // newHTTPRequest creates a new HTTP request.
-func (t *SecureFlow) newHTTPRequest() (*http.Request, error) {
+func (t *SecureFlow) newHTTPRequest(ctx context.Context) (*http.Request, error) {
 	const urlScheme = "https"
 	urlHost, err := t.urlHost(urlScheme)
 	if err != nil {
@@ -370,7 +275,7 @@ func (t *SecureFlow) newHTTPRequest() (*http.Request, error) {
 		Path:     t.URLPath,
 		RawQuery: t.URLRawQuery,
 	}
-	httpReq, err := http.NewRequest("GET", httpURL.String(), nil)
+	httpReq, err := http.NewRequestWithContext(ctx, "GET", httpURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -393,12 +298,6 @@ func (t *SecureFlow) httpTransaction(ctx context.Context, network, address, alpn
 	txp model.HTTPTransport, req *http.Request, trace *measurexlite.Trace) (*http.Response, []byte, error) {
 	const maxbody = 1 << 19
 	started := trace.TimeSince(trace.ZeroTime())
-	// TODO(bassosimone): I am wondering whether we should have the HTTP transaction
-	// start at the beginning of the flow rather than here. If we start it at the
-	// beginning this is nicer, but, at the same time, starting it at the beginning
-	// of the flow means we're not collecting information about DNS. So, I am a
-	// bit torn about what is the best approach to follow here. Maybe it does not
-	// even matter to emit transaction_start/end events given that we have transaction ID.
 	t.TestKeys.AppendNetworkEvents(measurexlite.NewAnnotationArchivalNetworkEvent(
 		trace.Index(), started, "http_transaction_start",
 	))
@@ -430,7 +329,7 @@ func (t *SecureFlow) httpTransaction(ctx context.Context, network, address, alpn
 		err,
 		finished,
 	)
-	t.TestKeys.PrependRequests(ev)
+	t.TestKeys.AppendRequests(ev)
 	return resp, body, err
 }
 
@@ -439,29 +338,31 @@ func (t *SecureFlow) maybeFollowRedirects(ctx context.Context, resp *http.Respon
 	if !t.FollowRedirects || !t.NumRedirects.CanFollowOneMoreRedirect() {
 		return // not configured or too many redirects
 	}
-
-	locationx, err := httpRedirectLocation(resp)
-	if err != nil || locationx.IsNone() {
-		return
+	switch resp.StatusCode {
+	case 301, 302, 307, 308:
+		location, err := resp.Location()
+		if err != nil {
+			return // broken response from server
+		}
+		t.Logger.Infof("redirect to: %s", location.String())
+		resolvers := &DNSResolvers{
+			CookieJar:    t.CookieJar,
+			DNSCache:     t.DNSCache,
+			Domain:       location.Hostname(),
+			IDGenerator:  t.IDGenerator,
+			Logger:       t.Logger,
+			NumRedirects: t.NumRedirects,
+			TestKeys:     t.TestKeys,
+			URL:          location,
+			ZeroTime:     t.ZeroTime,
+			WaitGroup:    t.WaitGroup,
+			Referer:      resp.Request.URL.String(),
+			Session:      nil, // no need to issue another control request
+			TestHelpers:  nil, // ditto
+			UDPAddress:   t.UDPAddress,
+		}
+		resolvers.Start(ctx)
+	default:
+		// no redirect to follow
 	}
-	location := locationx.Unwrap()
-
-	t.Logger.Infof("redirect to: %s", location.String())
-	resolvers := &DNSResolvers{
-		CookieJar:    t.CookieJar,
-		DNSCache:     t.DNSCache,
-		Domain:       location.Hostname(),
-		IDGenerator:  t.IDGenerator,
-		Logger:       t.Logger,
-		NumRedirects: t.NumRedirects,
-		TestKeys:     t.TestKeys,
-		URL:          location,
-		ZeroTime:     t.ZeroTime,
-		WaitGroup:    t.WaitGroup,
-		Referer:      resp.Request.URL.String(),
-		Session:      nil, // no need to issue another control request
-		TestHelpers:  nil, // ditto
-		UDPAddress:   t.UDPAddress,
-	}
-	resolvers.Start(ctx)
 }

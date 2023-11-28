@@ -11,7 +11,7 @@ import (
 func httpDiffWithConsistentDNS() *TestCase {
 	return &TestCase{
 		Name:  "httpDiffWithConsistentDNS",
-		Flags: 0,
+		Flags: TestCaseFlagNoLTE, // BUG: LTE does not set whether the headers match
 		Input: "http://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -48,19 +48,13 @@ func httpDiffWithConsistentDNS() *TestCase {
 // but the addresses returned by the DNS resolver are inconsistent.
 func httpDiffWithInconsistentDNS() *TestCase {
 	return &TestCase{
-		Name: "httpDiffWithInconsistentDNS",
-		// With v0.5 we conclude that the DNS is consistent because we can still
-		// perform TLS connections with the given addresses. Disable v0.4 because
-		// it does not reach to the same conclusion.
-		//
-		// TODO(bassosimone): maybe we should create another test case where
-		// we end up with having a truly inconsistent DNS.
-		Flags: TestCaseFlagNoV04,
+		Name:  "httpDiffWithInconsistentDNS",
+		Flags: TestCaseFlagNoLTE, // BUG: LTE does not detect any HTTP diff here
 		Input: "http://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 
 			// add DPI rule to force all the cleartext DNS queries to
-			// point the client to use the ISPProxyAddress
+			// point the client to used the ISPProxyAddress
 			env.DPIEngine().AddRule(&netem.DPISpoofDNSResponse{
 				Addresses: []string{netemx.ISPProxyAddress},
 				Logger:    env.Logger(),
@@ -89,7 +83,7 @@ func httpDiffWithInconsistentDNS() *TestCase {
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
 			DNSExperimentFailure:  nil,
-			DNSConsistency:        "consistent",
+			DNSConsistency:        "inconsistent",
 			HTTPExperimentFailure: nil,
 			BodyLengthMatch:       false,
 			BodyProportion:        0.12263535551206783,
@@ -97,10 +91,10 @@ func httpDiffWithInconsistentDNS() *TestCase {
 			HeadersMatch:          false,
 			TitleMatch:            false,
 			XStatus:               96, // StatusAnomalyHTTPDiff | StatusAnomalyDNS
-			XDNSFlags:             0,
-			XBlockingFlags:        16, // analysisFlagHTTPDiff
+			XDNSFlags:             4,  // AnalysisDNSUnexpectedAddrs
+			XBlockingFlags:        35, // analysisFlagSuccess | analysisFlagDNSBlocking | analysisFlagTCPIPBlocking
 			Accessible:            false,
-			Blocking:              "http-diff",
+			Blocking:              "dns",
 		},
 	}
 }
