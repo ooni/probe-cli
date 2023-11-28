@@ -9,7 +9,7 @@
     "tunnel": 0
   },
   "input": "https://expired.badssl.com/",
-  "measurement_start_time": "2023-11-27 23:46:08",
+  "measurement_start_time": "2023-11-28 11:44:09",
   "probe_asn": "AS137",
   "probe_cc": "IT",
   "probe_ip": "127.0.0.1",
@@ -37,15 +37,15 @@
         "failure": null,
         "operation": "connect",
         "proto": "tcp",
-        "t0": 0.010757,
-        "t": 0.016832,
+        "t0": 0.011871,
+        "t": 0.017565,
         "transaction_id": 3
       },
       {
         "failure": null,
         "operation": "tls_handshake_start",
-        "t0": 0.016846,
-        "t": 0.016846,
+        "t0": 0.017582,
+        "t": 0.017582,
         "transaction_id": 3
       },
       {
@@ -54,8 +54,8 @@
         "num_bytes": 284,
         "operation": "write",
         "proto": "tcp",
-        "t0": 0.016938,
-        "t": 0.016947,
+        "t0": 0.017673,
+        "t": 0.017682,
         "transaction_id": 3
       },
       {
@@ -64,28 +64,18 @@
         "num_bytes": 576,
         "operation": "read",
         "proto": "tcp",
-        "t0": 0.016949,
-        "t": 0.02689,
+        "t0": 0.017684,
+        "t": 0.027519,
         "transaction_id": 3
       },
       {
         "address": "104.154.89.105:443",
         "failure": null,
-        "num_bytes": 872,
+        "num_bytes": 1688,
         "operation": "read",
         "proto": "tcp",
-        "t0": 0.026991,
-        "t": 0.026992,
-        "transaction_id": 3
-      },
-      {
-        "address": "104.154.89.105:443",
-        "failure": null,
-        "num_bytes": 815,
-        "operation": "read",
-        "proto": "tcp",
-        "t0": 0.026993,
-        "t": 0.027004,
+        "t0": 0.027617,
+        "t": 0.027618,
         "transaction_id": 3
       },
       {
@@ -94,25 +84,25 @@
         "num_bytes": 30,
         "operation": "write",
         "proto": "tcp",
-        "t0": 0.027041,
-        "t": 0.027047,
+        "t0": 0.027654,
+        "t": 0.027664,
         "transaction_id": 3
       },
       {
         "failure": null,
         "operation": "tls_handshake_done",
-        "t0": 0.027053,
-        "t": 0.027053,
+        "t0": 0.02767,
+        "t": 0.02767,
         "transaction_id": 3
       },
       {
         "address": "104.154.89.105:443",
         "failure": null,
-        "num_bytes": 2263,
+        "num_bytes": 2264,
         "operation": "bytes_received_cumulative",
         "proto": "tcp",
-        "t0": 0.027077,
-        "t": 0.027077,
+        "t0": 0.027694,
+        "t": 0.027694,
         "transaction_id": 3
       }
     ],
@@ -134,9 +124,9 @@
         {
           "failure": null,
           "operation": "resolve_start",
-          "t0": 0.000059,
-          "t": 0.000059,
-          "transaction_id": 1
+          "t0": 0.000104,
+          "t": 0.000104,
+          "transaction_id": 2
         },
         {
           "address": "8.8.4.4:53",
@@ -144,9 +134,9 @@
           "num_bytes": 36,
           "operation": "write",
           "proto": "udp",
-          "t0": 0.000095,
-          "t": 0.000116,
-          "transaction_id": 1
+          "t0": 0.00015,
+          "t": 0.000175,
+          "transaction_id": 2
         },
         {
           "address": "8.8.4.4:53",
@@ -154,19 +144,9 @@
           "num_bytes": 36,
           "operation": "write",
           "proto": "udp",
-          "t0": 0.000097,
-          "t": 0.000122,
-          "transaction_id": 1
-        },
-        {
-          "address": "8.8.4.4:53",
-          "failure": null,
-          "num_bytes": 36,
-          "operation": "read",
-          "proto": "udp",
-          "t0": 0.000121,
-          "t": 0.005293,
-          "transaction_id": 1
+          "t0": 0.000175,
+          "t": 0.000182,
+          "transaction_id": 2
         },
         {
           "address": "8.8.4.4:53",
@@ -174,60 +154,32 @@
           "num_bytes": 70,
           "operation": "read",
           "proto": "udp",
-          "t0": 0.000126,
-          "t": 0.005647,
-          "transaction_id": 1
+          "t0": 0.000181,
+          "t": 0.006497,
+          "transaction_id": 2
+        },
+        {
+          "address": "8.8.4.4:53",
+          "failure": null,
+          "num_bytes": 36,
+          "operation": "read",
+          "proto": "udp",
+          "t0": 0.000187,
+          "t": 0.006986,
+          "transaction_id": 2
         },
         {
           "failure": null,
           "operation": "resolve_done",
-          "t0": 0.005689,
-          "t": 0.005689,
-          "transaction_id": 1
+          "t0": 0.007011,
+          "t": 0.007011,
+          "transaction_id": 2
         }
       ],
       "queries": []
     },
     "x_dns_duplicate_responses": [],
     "queries": [
-      {
-        "answers": null,
-        "engine": "udp",
-        "failure": "dns_no_answer",
-        "hostname": "expired.badssl.com",
-        "query_type": "AAAA",
-        "raw_response": "vdKBAAABAAAAAAAAB2V4cGlyZWQGYmFkc3NsA2NvbQAAHAAB",
-        "resolver_hostname": null,
-        "resolver_port": null,
-        "resolver_address": "8.8.4.4:53",
-        "t0": 0.000069,
-        "t": 0.005299,
-        "tags": [],
-        "transaction_id": 1
-      },
-      {
-        "answers": [
-          {
-            "asn": 396982,
-            "as_org_name": "Google LLC",
-            "answer_type": "A",
-            "ipv4": "104.154.89.105",
-            "ttl": null
-          }
-        ],
-        "engine": "udp",
-        "failure": null,
-        "hostname": "expired.badssl.com",
-        "query_type": "A",
-        "raw_response": "itOBAAABAAEAAAAAB2V4cGlyZWQGYmFkc3NsA2NvbQAAAQABB2V4cGlyZWQGYmFkc3NsA2NvbQAAAQABAAAOEAAEaJpZaQ==",
-        "resolver_hostname": null,
-        "resolver_port": null,
-        "resolver_address": "8.8.4.4:53",
-        "t0": 0.000078,
-        "t": 0.005657,
-        "tags": [],
-        "transaction_id": 1
-      },
       {
         "answers": [
           {
@@ -245,8 +197,46 @@
         "resolver_hostname": null,
         "resolver_port": null,
         "resolver_address": "",
-        "t0": 0.000069,
-        "t": 0.006382,
+        "t0": 0.000093,
+        "t": 0.005552,
+        "tags": [],
+        "transaction_id": 1
+      },
+      {
+        "answers": [
+          {
+            "asn": 396982,
+            "as_org_name": "Google LLC",
+            "answer_type": "A",
+            "ipv4": "104.154.89.105",
+            "ttl": null
+          }
+        ],
+        "engine": "udp",
+        "failure": null,
+        "hostname": "expired.badssl.com",
+        "query_type": "A",
+        "raw_response": "mxKBAAABAAEAAAAAB2V4cGlyZWQGYmFkc3NsA2NvbQAAAQABB2V4cGlyZWQGYmFkc3NsA2NvbQAAAQABAAAOEAAEaJpZaQ==",
+        "resolver_hostname": null,
+        "resolver_port": null,
+        "resolver_address": "8.8.4.4:53",
+        "t0": 0.000128,
+        "t": 0.006503,
+        "tags": [],
+        "transaction_id": 2
+      },
+      {
+        "answers": null,
+        "engine": "udp",
+        "failure": "dns_no_answer",
+        "hostname": "expired.badssl.com",
+        "query_type": "AAAA",
+        "raw_response": "VKiBAAABAAAAAAAAB2V4cGlyZWQGYmFkc3NsA2NvbQAAHAAB",
+        "resolver_hostname": null,
+        "resolver_port": null,
+        "resolver_address": "8.8.4.4:53",
+        "t0": 0.000111,
+        "t": 0.006992,
         "tags": [],
         "transaction_id": 2
       }
@@ -257,11 +247,12 @@
         "ip": "104.154.89.105",
         "port": 443,
         "status": {
+          "blocked": false,
           "failure": null,
           "success": true
         },
-        "t0": 0.010757,
-        "t": 0.016832,
+        "t0": 0.011871,
+        "t": 0.017565,
         "tags": [],
         "transaction_id": 3
       }
@@ -276,13 +267,13 @@
         "no_tls_verify": false,
         "peer_certificates": [
           {
-            "data": "MIIDeDCCAmCgAwIBAgIUX6aQn8Ksv8lK/QcWw/L2DE9eTHgwDQYJKoZIhvcNAQELBQAwHzENMAsGA1UEChMET09OSTEOMAwGA1UEAxMFamFmYXIwHhcNMTcwNzE2MjMwMDAwWhcNMTcwNzE3MDEwMDAwWjA1MRYwFAYDVQQKEw1PT05JIE5ldGVtIENBMRswGQYDVQQDExJleHBpcmVkLmJhZHNzbC5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDHFq5kcIfdN/mX9XseVB00UUUunT2VCPx/qESv9JsO7MscFw8OAIuAswu/Eq7PtTgr5ZH32KoAJuVZSMrus+KuAD8C3Zg2CiL50QE8eNKM4KfRo3+efm13AI00trIH+s5SuXp9uNpCS29lf57ZbGcG/Nv3lxqLeKzdzZCE+REsZ3OG3gj3IJlCzEDpj4XO3vbLUyjsElm3MYjXb3Qjx+oqGFwfYtjoTLjUHBOxq/S9/mu629tg9ANTTO1Pk1yKid6h7e7bznBLS9aI6DsGhfkGkQHk7YUCKj8n38pHlcv+GZ3jIvIW00W9HeJmIU19ZPOj/7iTRk+OYOcIzxneidN/AgMBAAGjgZUwgZIwDgYDVR0PAQH/BAQDAgWgMBMGA1UdJQQMMAoGCCsGAQUFBwMBMAwGA1UdEwEB/wQCMAAwHQYDVR0OBBYEFDjUycf4bSlVrN1kpOLiccpe5LpCMB8GA1UdIwQYMBaAFPQUHexwQt4+yjX9IOEw+J3TamKoMB0GA1UdEQQWMBSCEmV4cGlyZWQuYmFkc3NsLmNvbTANBgkqhkiG9w0BAQsFAAOCAQEAMfvkYmbJ3QWDAaMMuy/uKiI4zK5cFtFyfujCNDCDUpzKziDIpNnOh3G/sQTpWHCRBhWFcWW3Bou3UeRpNnA3VinPY+uxQJIaCyuBgjw9/wAN3+6f3brSx4DlVD3ahoACAVM36ufSHDDr6+Po+hZ5lQwv+rQCUdeOjgh5wz35kXasQgGWgzLSulKdst026b+77kqkZMYpwcnKJIPtZdkI2u739I5IXaiqdotLYwpA/Bj6z4StIzWOtL61K3YHZg7Rp/r0gUMWbOVmI6MH7zffqgAmaiw7xZvY3T/zUiYd+2xLSxwOZGVGRYGamH+HBQT2plUUnW1dS4lvQDRNdXc/KA==",
+            "data": "MIIDeTCCAmGgAwIBAgIVALI7vHYOoRtw4zwspyTx5Kx1DKnrMA0GCSqGSIb3DQEBCwUAMB8xDTALBgNVBAoTBE9PTkkxDjAMBgNVBAMTBWphZmFyMB4XDTE3MDcxNjIzMDAwMFoXDTE3MDcxNzAxMDAwMFowNTEWMBQGA1UEChMNT09OSSBOZXRlbSBDQTEbMBkGA1UEAxMSZXhwaXJlZC5iYWRzc2wuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA50byH2qQV9tHbzKJqRUlV9UYwqZ7PwbBOC8BRzZe1jIgoWU29WLruzRJL0qXIrLESp4VIIsocUGm1r5GsVKdxImK7LmFoT6RapTRqpZAAlRv/wAESf1zycQkjtLMfyUhey8Z5CKBwKmXv2Q0kn7WJvUKVQ4cV0E8wdHj5mhRfr/ro4AfMc6nX8sPMBuDhsXPmcNNHmWLrlreYUC6T0DGpzVAWbY4DvybZChFvMSJN8OCVCxFggVk7PgNdCTSKpI7BRdslxM5aCJDYnYYIjoxBBL16J1oO5K6zHjYS2wHC2TOXDGkFGrBdJttUKItu/Q4aK+q6WyuM5mL5JxvLTvR3wIDAQABo4GVMIGSMA4GA1UdDwEB/wQEAwIFoDATBgNVHSUEDDAKBggrBgEFBQcDATAMBgNVHRMBAf8EAjAAMB0GA1UdDgQWBBRcM583Sywrq+SKGynQ357IgMAq2zAfBgNVHSMEGDAWgBTkx4N5npbthG1FeA/xSK/05xW0XTAdBgNVHREEFjAUghJleHBpcmVkLmJhZHNzbC5jb20wDQYJKoZIhvcNAQELBQADggEBAJBJIc/3FaSzwzP5knNAn3SBWi5h+Bh9w9aFpleCZffs6pDeiGs4RkX5v1fGaFJ8uOG3uKys1PnFdU6he5KVoiMQ7miZyIfmtVbEyqXULJdhD7ft+o87RnRPgxdNQKUMi2ZmqfJyiuMnJ0C4OJ6DCS5PP4j5glbZXSKDlts9Jjp0Hhi+xLUsdalOEy+Rz0ChnlzPiRLBxFlZ1RBLy+6uQnX+iROIgx5Ak/bWvSSOjf5ZGarqKpiKqY1SYKoGgmsisLXbWeO4g17PPhmPdwme12hIhcd2WbQUZLYWo3nqDhuXT42+6kLNeboZpUMLCWD7Ew4lxiJRmS1aLZ5y7oyf/mo=",
             "format": "base64"
           }
         ],
         "server_name": "expired.badssl.com",
-        "t0": 0.016846,
-        "t": 0.027053,
+        "t0": 0.017582,
+        "t": 0.02767,
         "tags": [],
         "tls_version": "",
         "transaction_id": 3
@@ -347,7 +338,7 @@
     "x_conn_priority_log": [
       {
         "msg": "create with [{Addr:104.154.89.105 Flags:3}]",
-        "t": 0.010716
+        "t": 0.011822
       }
     ],
     "control_failure": null,
@@ -365,7 +356,7 @@
     "accessible": false
   },
   "test_name": "web_connectivity",
-  "test_runtime": 0.506688,
-  "test_start_time": "2023-11-27 23:46:08",
+  "test_runtime": 0.507134,
+  "test_start_time": "2023-11-28 11:44:09",
   "test_version": "0.5.26"
 }

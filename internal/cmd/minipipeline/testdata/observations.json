@@ -1,44 +1,6 @@
 {
-  "DNSLookupFailures": {
-    "2": {
-      "DNSTransactionID": 2,
-      "DNSDomain": "nexa.polito.it",
-      "DNSLookupFailure": "dns_no_answer",
-      "DNSQueryType": "AAAA",
-      "DNSEngine": "doh",
-      "IPAddress": null,
-      "IPAddressASN": null,
-      "IPAddressOrg": null,
-      "IPAddressBogon": null,
-      "EndpointTransactionID": null,
-      "EndpointProto": null,
-      "EndpointPort": null,
-      "EndpointAddress": null,
-      "TCPConnectFailure": null,
-      "TLSHandshakeFailure": null,
-      "TLSServerName": null,
-      "HTTPRequestURL": null,
-      "HTTPFailure": null,
-      "HTTPResponseStatusCode": null,
-      "HTTPResponseBodyLength": null,
-      "HTTPResponseBodyIsTruncated": null,
-      "HTTPResponseHeadersKeys": null,
-      "HTTPResponseLocation": null,
-      "HTTPResponseTitle": null,
-      "HTTPResponseIsFinal": null,
-      "ControlDNSDomain": "nexa.polito.it",
-      "ControlDNSLookupFailure": "",
-      "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
-      "ControlTLSHandshakeFailure": null,
-      "ControlHTTPFailure": null,
-      "ControlHTTPResponseStatusCode": null,
-      "ControlHTTPResponseBodyLength": null,
-      "ControlHTTPResponseHeadersKeys": null,
-      "ControlHTTPResponseTitle": null
-    },
-    "3": {
+  "DNSLookupFailures": [
+    {
       "DNSTransactionID": 3,
       "DNSDomain": "nexa.polito.it",
       "DNSLookupFailure": "dns_no_answer",
@@ -75,8 +37,46 @@
       "ControlHTTPResponseBodyLength": null,
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
+    },
+    {
+      "DNSTransactionID": 2,
+      "DNSDomain": "nexa.polito.it",
+      "DNSLookupFailure": "dns_no_answer",
+      "DNSQueryType": "AAAA",
+      "DNSEngine": "doh",
+      "IPAddress": null,
+      "IPAddressASN": null,
+      "IPAddressOrg": null,
+      "IPAddressBogon": null,
+      "EndpointTransactionID": null,
+      "EndpointProto": null,
+      "EndpointPort": null,
+      "EndpointAddress": null,
+      "TCPConnectFailure": null,
+      "TLSHandshakeFailure": null,
+      "TLSServerName": null,
+      "HTTPRequestURL": null,
+      "HTTPFailure": null,
+      "HTTPResponseStatusCode": null,
+      "HTTPResponseBodyLength": null,
+      "HTTPResponseBodyIsTruncated": null,
+      "HTTPResponseHeadersKeys": null,
+      "HTTPResponseLocation": null,
+      "HTTPResponseTitle": null,
+      "HTTPResponseIsFinal": null,
+      "ControlDNSDomain": "nexa.polito.it",
+      "ControlDNSLookupFailure": "",
+      "ControlTCPConnectFailure": null,
+      "MatchWithControlIPAddress": null,
+      "MatchWithControlIPAddressASN": null,
+      "ControlTLSHandshakeFailure": null,
+      "ControlHTTPFailure": null,
+      "ControlHTTPResponseStatusCode": null,
+      "ControlHTTPResponseBodyLength": null,
+      "ControlHTTPResponseHeadersKeys": null,
+      "ControlHTTPResponseTitle": null
     }
-  },
+  ],
   "DNSLookupSuccesses": [
     {
       "DNSTransactionID": 3,
@@ -233,7 +233,7 @@
         "X-Generator": true
       },
       "HTTPResponseLocation": null,
-      "HTTPResponseTitle": "Nexa Center for Internet & Society | Il centro Nexa è un centro di ricerca del Dipartimento di Automatica e Informatica del Politecnico di Torino",
+      "HTTPResponseTitle": "Nexa Center for Internet \u0026 Society | Il centro Nexa è un centro di ricerca del Dipartimento di Automatica e Informatica del Politecnico di Torino",
       "HTTPResponseIsFinal": true,
       "ControlDNSDomain": null,
       "ControlDNSLookupFailure": null,
@@ -260,7 +260,7 @@
         "X-Frame-Options": true,
         "X-Generator": true
       },
-      "ControlHTTPResponseTitle": "Nexa Center for Internet & Society | Il centro Nexa è un centro di ricerca del Dipartimento di Automatica e Informatica del Politecnico di Torino"
+      "ControlHTTPResponseTitle": "Nexa Center for Internet \u0026 Society | Il centro Nexa è un centro di ricerca del Dipartimento di Automatica e Informatica del Politecnico di Torino"
     }
   }
 }
