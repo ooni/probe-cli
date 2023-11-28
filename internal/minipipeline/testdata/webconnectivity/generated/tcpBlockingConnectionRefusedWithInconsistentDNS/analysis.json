@@ -3,7 +3,7 @@
   "DNSTransactionsWithBogons": {},
   "DNSTransactionsWithUnexpectedFailures": {},
   "DNSPossiblyInvalidAddrs": {
-	"83.224.65.41": true
+    "83.224.65.41": true
   },
   "HTTPDiffBodyProportionFactor": 1,
   "HTTPDiffStatusCodeMatch": true,

@@ -12,8 +12,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// RunTestCase runs a [testCase].
-func RunTestCase(measurer model.ExperimentMeasurer, tc *TestCase) error {
+// MeasureTestCase returns the JSON measurement produced by a [TestCase].
+func MeasureTestCase(measurer model.ExperimentMeasurer, tc *TestCase) (*model.Measurement, error) {
 	// configure the netemx scenario
 	env := netemx.MustNewScenario(netemx.InternetScenario)
 	defer env.Close()
@@ -34,7 +34,8 @@ func RunTestCase(measurer model.ExperimentMeasurer, tc *TestCase) error {
 	var err error
 	env.Do(func() {
 		// create an HTTP client inside the env.Do function so we're using netem
-		// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS but they're not needed here
+		// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPClientStdlib has QUIRKS
+		// but they're not needed here
 		httpClient := netxlite.NewHTTPClientStdlib(prefixLogger)
 		arguments := &model.ExperimentArgs{
 			Callbacks:   model.NewPrinterCallbacks(prefixLogger),
@@ -54,9 +55,19 @@ func RunTestCase(measurer model.ExperimentMeasurer, tc *TestCase) error {
 	// handle the case of unexpected result
 	switch {
 	case err != nil && !tc.ExpectErr:
-		return fmt.Errorf("expected to see no error but got %s", err.Error())
+		return nil, fmt.Errorf("expected to see no error but got %s", err.Error())
 	case err == nil && tc.ExpectErr:
-		return fmt.Errorf("expected to see an error but got <nil>")
+		return nil, fmt.Errorf("expected to see an error but got <nil>")
+	}
+
+	return measurement, nil
+}
+
+// RunTestCase runs a [testCase].
+func RunTestCase(measurer model.ExperimentMeasurer, tc *TestCase) error {
+	measurement, err := MeasureTestCase(measurer, tc)
+	if err != nil {
+		return err
 	}
 
 	// reduce the test keys to a common format
