@@ -2,7 +2,9 @@
   "DNSExperimentFailure": null,
   "DNSTransactionsWithBogons": {},
   "DNSTransactionsWithUnexpectedFailures": {},
-  "DNSPossiblyInvalidAddrs": {},
+  "DNSPossiblyInvalidAddrs": {
+	"83.224.65.41": true
+  },
   "HTTPDiffBodyProportionFactor": 1,
   "HTTPDiffStatusCodeMatch": true,
   "HTTPDiffTitleDifferentLongWords": {},

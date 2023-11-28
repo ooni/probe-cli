@@ -247,29 +247,13 @@ func (wa *WebAnalysis) ComputeDNSPossiblyInvalidAddrs(c *WebObservationsContaine
 	for _, obs := range c.KnownTCPEndpoints {
 		addr := obs.IPAddress.Unwrap()
 
-		// if we don't have control information, avoid flagging the address
-		if obs.TLSHandshakeFailure.IsNone() && obs.MatchWithControlIPAddress.IsNone() &&
-			obs.MatchWithControlIPAddressASN.IsNone() {
+		// an address is suspicious if we have information regarding its potential
+		// matching with TH info and we know it does not match
+		if !obs.MatchWithControlIPAddress.IsNone() && !obs.MatchWithControlIPAddressASN.IsNone() &&
+			!obs.MatchWithControlIPAddress.Unwrap() && !obs.MatchWithControlIPAddressASN.Unwrap() {
+			state[addr] = true
 			continue
 		}
-
-		// if we have a succesful TLS handshake for this addr, we're good
-		if !obs.TLSHandshakeFailure.IsNone() && obs.TLSHandshakeFailure.Unwrap() == "" {
-			continue
-		}
-
-		// if the address was also resolved by the control, we're good
-		if !obs.MatchWithControlIPAddress.IsNone() && obs.MatchWithControlIPAddress.Unwrap() {
-			continue
-		}
-
-		// if there's an ASN match with the control, we're good
-		if !obs.MatchWithControlIPAddressASN.IsNone() && obs.MatchWithControlIPAddressASN.Unwrap() {
-			continue
-		}
-
-		// update state
-		state[addr] = true
 	}
 
 	// pass 2: remove IP addresses we could validate using TLS handshakes
