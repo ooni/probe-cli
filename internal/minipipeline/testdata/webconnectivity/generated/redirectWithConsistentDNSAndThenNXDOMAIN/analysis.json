@@ -1,10 +1,7 @@
 {
   "DNSExperimentFailure": null,
   "DNSTransactionsWithBogons": {},
-  "DNSTransactionsWithUnexpectedFailures": {
-    "4": true,
-    "5": true
-  },
+  "DNSTransactionsWithUnexpectedFailures": {},
   "DNSPossiblyInvalidAddrs": {},
   "HTTPDiffBodyProportionFactor": null,
   "HTTPDiffStatusCodeMatch": null,

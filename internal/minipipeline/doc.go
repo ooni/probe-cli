@@ -3,7 +3,7 @@
 //
 // This package mimics ooni/data design.
 //
-// A user provides as input to the minipipeline a Measurement and obtains
+// A user provides as input to the minipipeline an OONI measurement and obtains
 // as an intermediate result one or more observations. In turn, the user
 // can process the observations to obtain a measurement analysis. Observations
 // are an intermediate, flat data format useful to simplify writing analysis
