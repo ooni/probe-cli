@@ -5,7 +5,6 @@ import (
 	"net"
 	"net/url"
 	"strconv"
-	"strings"
 
 	"github.com/ooni/probe-cli/v3/internal/geoipx"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
@@ -106,11 +105,6 @@ type WebObservation struct {
 	// the probe while performing the measurement. When this field is optional.None, it
 	// means that the probe failed to discover the IP address ASN.
 	IPAddressASN optional.Value[int64]
-
-	// IPAddressOrg is the optional organization name associated to this IP adddress
-	// as discovered by the probe while performing the measurement. When this field is
-	// optional.None, it means that the probe failed to discover the IP address org.
-	IPAddressOrg optional.Value[string]
 
 	// IPAddressBogon is true if IPAddress is a bogon.
 	IPAddressBogon optional.Value[bool]
@@ -284,18 +278,7 @@ func (c *WebObservationsContainer) ingestDNSLookupSuccesses(evs ...*model.Archiv
 		}
 
 		// walk through the answers
-		for _, answer := range ev.Answers {
-			// extract the IP address we resolved
-			var addr string
-			switch answer.AnswerType {
-			case "A":
-				addr = answer.IPv4
-			case "AAAA":
-				addr = answer.IPv6
-			default:
-				continue
-			}
-
+		utilsForEachIPAddress(ev.Answers, func(ipAddr string) {
 			// create the record
 			obs := &WebObservation{
 				DNSTransactionID: optional.Some(ev.TransactionID),
@@ -303,22 +286,19 @@ func (c *WebObservationsContainer) ingestDNSLookupSuccesses(evs ...*model.Archiv
 				DNSLookupFailure: optional.Some(""),
 				DNSQueryType:     optional.Some(ev.QueryType),
 				DNSEngine:        optional.Some(ev.Engine),
-				IPAddress:        optional.Some(addr),
-				IPAddressBogon:   optional.Some(netxlite.IsBogon(addr)),
-			}
-			if asn, asOrg, err := geoipx.LookupASN(addr); err == nil {
-				obs.IPAddressASN = optional.Some(int64(asn))
-				obs.IPAddressOrg = optional.Some(asOrg)
+				IPAddress:        optional.Some(ipAddr),
+				IPAddressASN:     utilsGeoipxLookupASN(ipAddr),
+				IPAddressBogon:   optional.Some(netxlite.IsBogon(ipAddr)),
 			}
 
 			// add record
 			c.DNSLookupSuccesses = append(c.DNSLookupSuccesses, obs)
 
 			// store the first lookup that resolved this address
-			if _, found := c.knownIPAddresses[addr]; !found {
-				c.knownIPAddresses[addr] = obs
+			if _, found := c.knownIPAddresses[ipAddr]; !found {
+				c.knownIPAddresses[ipAddr] = obs
 			}
-		}
+		})
 	}
 }
 
@@ -331,11 +311,8 @@ func (c *WebObservationsContainer) IngestTCPConnectEvents(evs ...*model.Archival
 		if !found {
 			obs = &WebObservation{
 				IPAddress:      optional.Some(ev.IP),
+				IPAddressASN:   utilsGeoipxLookupASN(ev.IP),
 				IPAddressBogon: optional.Some(netxlite.IsBogon(ev.IP)),
-			}
-			if asn, asOrg, err := geoipx.LookupASN(ev.IP); err == nil {
-				obs.IPAddressASN = optional.Some(int64(asn))
-				obs.IPAddressOrg = optional.Some(asOrg)
 			}
 		}
 
@@ -350,7 +327,6 @@ func (c *WebObservationsContainer) IngestTCPConnectEvents(evs ...*model.Archival
 			DNSLookupFailure:      obs.DNSLookupFailure,
 			IPAddress:             obs.IPAddress,
 			IPAddressASN:          obs.IPAddressASN,
-			IPAddressOrg:          obs.IPAddressOrg,
 			IPAddressBogon:        obs.IPAddressBogon,
 			EndpointTransactionID: optional.Some(ev.TransactionID),
 			EndpointProto:         optional.Some("tcp"),
@@ -390,37 +366,20 @@ func (c *WebObservationsContainer) IngestHTTPRoundTripEvents(evs ...*model.Archi
 			continue
 		}
 
-		// update the record
+		// start updating the record
 		obs.HTTPRequestURL = optional.Some(ev.Request.URL)
 		obs.HTTPFailure = optional.Some(utilsStringPointerToString(ev.Failure))
-		obs.HTTPResponseStatusCode = optional.Some(ev.Response.Code)
-		obs.HTTPResponseBodyLength = optional.Some(int64(len(ev.Response.Body)))
-		obs.HTTPResponseBodyIsTruncated = optional.Some(ev.Request.BodyIsTruncated)
 
-		httpResponseHeadersKeys := make(map[string]bool)
-		for key := range ev.Response.Headers {
-			httpResponseHeadersKeys[key] = true
+		// consider the response authoritative only in case of success
+		if ev.Failure != nil {
+			obs.HTTPResponseStatusCode = optional.Some(ev.Response.Code)
+			obs.HTTPResponseBodyLength = optional.Some(int64(len(ev.Response.Body)))
+			obs.HTTPResponseBodyIsTruncated = optional.Some(ev.Request.BodyIsTruncated)
+			obs.HTTPResponseHeadersKeys = utilsExtractHTTPHeaderKeys(ev.Response.Headers)
+			obs.HTTPResponseTitle = optional.Some(measurexlite.WebGetTitle(string(ev.Response.Body)))
+			obs.HTTPResponseLocation = utilsExtractHTTPLocation(ev.Response.Headers)
+			obs.HTTPResponseIsFinal = utilsDetermineWhetherHTTPResponseIsFinal(ev.Response.Code)
 		}
-		obs.HTTPResponseHeadersKeys = optional.Some(httpResponseHeadersKeys)
-
-		if value := measurexlite.WebGetTitle(string(ev.Response.Body)); value != "" {
-			obs.HTTPResponseTitle = optional.Some(value)
-		}
-		for key, value := range ev.Response.Headers {
-			if strings.ToLower(key) == "location" {
-				obs.HTTPResponseLocation = optional.Some(string(value))
-				break // only first entry (typically there's just a single entry)
-			}
-		}
-
-		obs.HTTPResponseIsFinal = optional.Some((func() bool {
-			switch ev.Response.Code / 100 {
-			case 2, 4, 5:
-				return true
-			default:
-				return false
-			}
-		}()))
 	}
 }
 
