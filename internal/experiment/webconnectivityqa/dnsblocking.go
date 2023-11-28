@@ -63,3 +63,27 @@ func dnsBlockingNXDOMAIN() *TestCase {
 		},
 	}
 }
+
+// dnsBlockingBOGON is the case where there's DNS blocking by returning a bogon.
+func dnsBlockingBOGON() *TestCase {
+	return &TestCase{
+		Name:  "dnsBlockingBOGON",
+		Flags: TestCaseFlagNoLTE, // We're not ready yet
+		Input: "https://www.example.com/",
+		Configure: func(env *netemx.QAEnv) {
+			env.ISPResolverConfig().RemoveRecord("www.example.com")
+			env.ISPResolverConfig().AddRecord("www.example.com", "", "10.10.34.35")
+		},
+		ExpectErr: false,
+		ExpectTestKeys: &testKeys{
+			HTTPExperimentFailure: "generic_timeout_error",
+			DNSExperimentFailure:  nil,
+			DNSConsistency:        "inconsistent",
+			XStatus:               4256, // StatusExperimentConnect | StatusAnomalyConnect | StatusAnomalyDNS
+			XDNSFlags:             1,    // AnalysisDNSBogon
+			XBlockingFlags:        33,   // analysisFlagDNSBlocking | analysisFlagSuccess
+			Accessible:            false,
+			Blocking:              "dns",
+		},
+	}
+}
