@@ -107,6 +107,10 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	// create trace
 	trace := measurexlite.NewTrace(index, t.ZeroTime)
 
+	// TODO(bassosimone): the DSL starts measuring for throttling when we start
+	// fetching the body while here we start immediately. We should come up with
+	// a consistent policy otherwise data won't be comparable.
+
 	// start measuring throttling
 	sampler := throttling.NewSampler(trace)
 	defer func() {
@@ -296,6 +300,12 @@ func (t *SecureFlow) httpTransaction(ctx context.Context, network, address, alpn
 	txp model.HTTPTransport, req *http.Request, trace *measurexlite.Trace) (*http.Response, []byte, error) {
 	const maxbody = 1 << 19
 	started := trace.TimeSince(trace.ZeroTime())
+	// TODO(bassosimone): I am wondering whether we should have the HTTP transaction
+	// start at the beginning of the flow rather than here. If we start it at the
+	// beginning this is nicer, but, at the same time, starting it at the beginning
+	// of the flow means we're not collecting information about DNS. So, I am a
+	// bit torn about what is the best approach to follow here. Maybe it does not
+	// even matter to emit transaction_start/end events given that we have transaction ID.
 	t.TestKeys.AppendNetworkEvents(measurexlite.NewAnnotationArchivalNetworkEvent(
 		trace.Index(), started, "http_transaction_start",
 	))
@@ -342,6 +352,8 @@ func (t *SecureFlow) maybeFollowRedirects(ctx context.Context, resp *http.Respon
 		if err != nil {
 			return // broken response from server
 		}
+		// TODO(https://github.com/ooni/probe/issues/2628): we need to handle
+		// the case where the redirect URL is incomplete
 		t.Logger.Infof("redirect to: %s", location.String())
 		resolvers := &DNSResolvers{
 			CookieJar:    t.CookieJar,
