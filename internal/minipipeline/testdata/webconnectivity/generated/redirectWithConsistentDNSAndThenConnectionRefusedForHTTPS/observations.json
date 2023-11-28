@@ -1,6 +1,6 @@
 {
-  "DNSLookupFailures": {
-    "2": {
+  "DNSLookupFailures": [
+    {
       "DNSTransactionID": 2,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "dns_no_answer",
@@ -38,7 +38,7 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     },
-    "5": {
+    {
       "DNSTransactionID": 5,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_no_answer",
@@ -76,7 +76,7 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     }
-  },
+  ],
   "DNSLookupSuccesses": [
     {
       "DNSTransactionID": 1,

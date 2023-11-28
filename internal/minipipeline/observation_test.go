@@ -53,7 +53,7 @@ func TestLoadWebObservations(t *testing.T) {
 func TestWebObservationsContainerIngestTLSHandshakeEvents(t *testing.T) {
 	t.Run("when we don't have any known TCP endpoint", func(t *testing.T) {
 		container := &WebObservationsContainer{
-			DNSLookupFailures: map[int64]*WebObservation{},
+			DNSLookupFailures: []*WebObservation{},
 			KnownTCPEndpoints: map[int64]*WebObservation{}, // this map must be empty in this test
 			knownIPAddresses:  map[string]*WebObservation{},
 		}
@@ -87,7 +87,7 @@ func TestWebObservationsContainerIngestTLSHandshakeEvents(t *testing.T) {
 func TestWebObservationsContainerIngestHTTPRoundTripEvents(t *testing.T) {
 	t.Run("when we don't have any known TCP endpoint", func(t *testing.T) {
 		container := &WebObservationsContainer{
-			DNSLookupFailures: map[int64]*WebObservation{},
+			DNSLookupFailures: []*WebObservation{},
 			KnownTCPEndpoints: map[int64]*WebObservation{}, // this map must be empty in this test
 			knownIPAddresses:  map[string]*WebObservation{},
 		}
@@ -117,7 +117,7 @@ func TestWebObservationsContainerIngestHTTPRoundTripEvents(t *testing.T) {
 func TestWebObservationsContainerIngestControlMessages(t *testing.T) {
 	t.Run("we don't set MatchWithControlIPAddressASN when we don't have probe ASN info", func(t *testing.T) {
 		container := &WebObservationsContainer{
-			DNSLookupFailures: map[int64]*WebObservation{},
+			DNSLookupFailures: []*WebObservation{},
 			KnownTCPEndpoints: map[int64]*WebObservation{
 				1: {
 					DNSDomain:             optional.Some("dns.google"),
@@ -164,7 +164,7 @@ func TestWebObservationsContainerIngestControlMessages(t *testing.T) {
 
 	t.Run("we don't save TLS handshake failures when the SNI is different", func(t *testing.T) {
 		container := &WebObservationsContainer{
-			DNSLookupFailures: map[int64]*WebObservation{},
+			DNSLookupFailures: []*WebObservation{},
 			KnownTCPEndpoints: map[int64]*WebObservation{
 				1: {
 					IPAddress:             optional.Some("8.8.8.8"),

@@ -1,6 +1,6 @@
 {
-  "DNSLookupFailures": {
-    "1": {
+  "DNSLookupFailures": [
+    {
       "DNSTransactionID": 1,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "dns_no_answer",
@@ -38,7 +38,7 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     },
-    "3": {
+    {
       "DNSTransactionID": 3,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "dns_no_answer",
@@ -76,7 +76,7 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     }
-  },
+  ],
   "DNSLookupSuccesses": [
     {
       "DNSTransactionID": 2,

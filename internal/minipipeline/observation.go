@@ -223,8 +223,9 @@ type WebObservationsContainer struct {
 	// ID space, i.e., you can't see the same transaction ID in both. Transaction IDs
 	// are strictly positive unique numbers within the same OONI measurement. Note
 	// that the A and AAAA events for the same DNS lookup uses the same transaction ID
-	// until we fix the https://github.com/ooni/probe/issues/2624 issue.
-	DNSLookupFailures map[int64]*WebObservation
+	// until we fix the https://github.com/ooni/probe/issues/2624 issue. For this
+	// reason DNSLookupFailure and DNSLookupSuccesses MUST be slices.
+	DNSLookupFailures []*WebObservation
 
 	// DNSLookupSuccesses contains all the successful transactions.
 	DNSLookupSuccesses []*WebObservation
@@ -240,7 +241,7 @@ type WebObservationsContainer struct {
 // NewWebObservationsContainer constructs a [*WebObservationsContainer].
 func NewWebObservationsContainer() *WebObservationsContainer {
 	return &WebObservationsContainer{
-		DNSLookupFailures:  map[int64]*WebObservation{},
+		DNSLookupFailures:  []*WebObservation{},
 		DNSLookupSuccesses: []*WebObservation{},
 		KnownTCPEndpoints:  map[int64]*WebObservation{},
 		knownIPAddresses:   map[string]*WebObservation{},
@@ -271,7 +272,7 @@ func (c *WebObservationsContainer) ingestDNSLookupFailures(evs ...*model.Archiva
 		}
 
 		// add record
-		c.DNSLookupFailures[ev.TransactionID] = obs
+		c.DNSLookupFailures = append(c.DNSLookupFailures, obs)
 	}
 }
 

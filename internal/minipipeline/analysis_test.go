@@ -9,7 +9,7 @@ import (
 func TestWebAnalysisComputeDNSExperimentFailure(t *testing.T) {
 	t.Run("when there's no DNSDomain", func(t *testing.T) {
 		container := &WebObservationsContainer{
-			DNSLookupFailures: map[int64]*WebObservation{
+			DNSLookupFailures: []*WebObservation{
 				1: {
 					DNSTransactionID: optional.Some(int64(1)),
 					DNSDomain:        optional.None[string](), // explicitly set
@@ -30,7 +30,7 @@ func TestWebAnalysisComputeDNSExperimentFailure(t *testing.T) {
 
 	t.Run("when DNSDomain does not match ControlDNSDomain", func(t *testing.T) {
 		container := &WebObservationsContainer{
-			DNSLookupFailures: map[int64]*WebObservation{
+			DNSLookupFailures: []*WebObservation{
 				1: {
 					DNSTransactionID: optional.Some(int64(1)),
 					DNSDomain:        optional.Some("dns.google.com"),
@@ -52,7 +52,7 @@ func TestWebAnalysisComputeDNSExperimentFailure(t *testing.T) {
 
 	t.Run("when the failure is dns_no_answer for AAAA", func(t *testing.T) {
 		container := &WebObservationsContainer{
-			DNSLookupFailures: map[int64]*WebObservation{
+			DNSLookupFailures: []*WebObservation{
 				1: {
 					DNSTransactionID: optional.Some(int64(1)),
 					DNSDomain:        optional.Some("dns.google.com"),

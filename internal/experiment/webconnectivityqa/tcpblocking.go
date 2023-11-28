@@ -70,13 +70,13 @@ func tcpBlockingConnectionRefusedWithInconsistentDNS() *TestCase {
 			HeadersMatch:          true,
 			TitleMatch:            true,
 			DNSExperimentFailure:  nil,
-			DNSConsistency:        "consistent",
+			DNSConsistency:        "inconsistent",
 			HTTPExperimentFailure: "connection_refused",
 			XStatus:               4256, // StatusExperimentConnect | StatusAnomalyConnect | StatusAnomalyDNS
-			XDNSFlags:             0,
-			XBlockingFlags:        34, // analysisFlagSuccess | analysisFlagTCPIPBlocking
+			XDNSFlags:             4,    // AnalysisDNSUnexpectedAddrs
+			XBlockingFlags:        35,   // analysisFlagDNSBlocking | analysisFlagSuccess | analysisFlagTCPIPBlocking
 			Accessible:            false,
-			Blocking:              "tcp_ip",
+			Blocking:              "dns",
 		},
 	}
 }
