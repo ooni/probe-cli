@@ -31,9 +31,6 @@ func AnalyzeWebObservations(container *WebObservationsContainer) *WebAnalysis {
 // WebAnalysis summarizes the content of [*WebObservationsContainer].
 //
 // The zero value of this struct is ready to use.
-//
-// Methods that mutate this struct are not idempotent. You should invoke each
-// of these methods just once, after you have filled a container.
 type WebAnalysis struct {
 	// DNSExperimentFailure is the first failure experienced by a getaddrinfo-like resolver.
 	DNSExperimentFailure optional.Value[string]
