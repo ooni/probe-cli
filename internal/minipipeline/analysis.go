@@ -132,26 +132,24 @@ func (wa *WebAnalysis) ComputeDNSExperimentFailure(c *WebObservationsContainer) 
 		}
 
 		// make sure we only include the system resolver
-		switch obs.DNSEngine.UnwrapOr("") {
-		case "getaddrinfo", "golang_net_resolver":
-			// skip cases where there's no DNS record for AAAA, which is a false positive
-			//
-			// in principle, this should not happen with getaddrinfo, but we add this
-			// check nonetheless for robustness against this corner case
-			if analysisDNSLookupFailureIsDNSNoAnswerForAAAA(obs) {
-				continue
-			}
-
-			// only record the first failure
-			//
-			// we should only consider the first DNS lookup to be consistent with
-			// what was previously returned by Web Connectivity v0.4
-			wa.DNSExperimentFailure = obs.DNSLookupFailure
-			return
-
-		default:
-			// nothing
+		if !utilsEngineIsGetaddrinfo(obs.DNSEngine) {
+			continue
 		}
+
+		// skip cases where there's no DNS record for AAAA, which is a false positive
+		//
+		// in principle, this should not happen with getaddrinfo, but we add this
+		// check nonetheless for robustness against this corner case
+		if analysisDNSLookupFailureIsDNSNoAnswerForAAAA(obs) {
+			continue
+		}
+
+		// only record the first failure
+		//
+		// we should only consider the first DNS lookup to be consistent with
+		// what was previously returned by Web Connectivity v0.4
+		wa.DNSExperimentFailure = obs.DNSLookupFailure
+		return
 	}
 }
 
