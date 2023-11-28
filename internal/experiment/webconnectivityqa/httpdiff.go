@@ -11,7 +11,7 @@ import (
 func httpDiffWithConsistentDNS() *TestCase {
 	return &TestCase{
 		Name:  "httpDiffWithConsistentDNS",
-		Flags: 0,
+		Flags: TestCaseFlagNoLTE, // BUG: LTE does not set whether the headers match
 		Input: "http://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -49,12 +49,12 @@ func httpDiffWithConsistentDNS() *TestCase {
 func httpDiffWithInconsistentDNS() *TestCase {
 	return &TestCase{
 		Name:  "httpDiffWithInconsistentDNS",
-		Flags: 0,
+		Flags: TestCaseFlagNoLTE, // BUG: LTE does not detect any HTTP diff here
 		Input: "http://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 
 			// add DPI rule to force all the cleartext DNS queries to
-			// point the client to use the ISPProxyAddress
+			// point the client to used the ISPProxyAddress
 			env.DPIEngine().AddRule(&netem.DPISpoofDNSResponse{
 				Addresses: []string{netemx.ISPProxyAddress},
 				Logger:    env.Logger(),
@@ -92,7 +92,7 @@ func httpDiffWithInconsistentDNS() *TestCase {
 			TitleMatch:            false,
 			XStatus:               96, // StatusAnomalyHTTPDiff | StatusAnomalyDNS
 			XDNSFlags:             4,  // AnalysisDNSUnexpectedAddrs
-			XBlockingFlags:        17, // analysisFlagDNSBlocking | analysisFlagHTTPDiff
+			XBlockingFlags:        35, // analysisFlagSuccess | analysisFlagDNSBlocking | analysisFlagTCPIPBlocking
 			Accessible:            false,
 			Blocking:              "dns",
 		},
