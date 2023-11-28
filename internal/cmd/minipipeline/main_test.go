@@ -25,23 +25,15 @@ func mustloaddata(contentmap map[string][]byte, key string) (object map[string]a
 }
 
 func TestMainSuccess(t *testing.T) {
-	// make sure we set the destination directory
-	*destdir = "xo"
-
-	// make sure we're reading from the expected input
-	*measurement = filepath.Join("testdata", "measurement.json")
-
-	// make sure we store the expected output
+	// reconfigure the global options for main
+	*destdirFlag = "xo"
+	*measurementFlag = filepath.Join("testdata", "measurement.json")
 	contentmap := make(map[string][]byte)
 	mustWriteFileFn = func(filename string, content []byte, mode fs.FileMode) {
 		contentmap[filename] = content
 	}
-
-	// make sure osExit is correct
-	osExit = os.Exit
-
-	// also check whether we can add a prefix
-	*prefix = "y-"
+	osExitFn = os.Exit
+	*prefixFlag = "y-"
 
 	// run the main function
 	main()
@@ -62,25 +54,18 @@ func TestMainSuccess(t *testing.T) {
 }
 
 func TestMainUsage(t *testing.T) {
-	// make sure we clear the destination directory
-	*destdir = ""
-
-	// make sure the expected input file is empty
-	*measurement = ""
-
-	// make sure we panic if we try to write on disk
+	// reconfigure the global options for main
+	*destdirFlag = ""
+	*measurementFlag = ""
 	mustWriteFileFn = func(filename string, content []byte, mode fs.FileMode) {
 		panic(errors.New("mustWriteFileFn"))
 	}
-
-	// make sure osExit is correct
-	osExit = func(code int) {
+	osExitFn = func(code int) {
 		panic(fmt.Errorf("osExit: %d", code))
 	}
+	*prefixFlag = ""
 
-	// make sure the prefix is also clean
-	*prefix = ""
-
+	// run the main function
 	var err error
 	func() {
 		// intercept panic caused by osExit or other panics
