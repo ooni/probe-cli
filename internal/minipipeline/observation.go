@@ -513,30 +513,18 @@ func (c *WebObservationsContainer) controlXrefTLSFailures(resp *model.THResponse
 }
 
 func (c *WebObservationsContainer) controlSetHTTPFinalResponseExpectation(resp *model.THResponse) {
-	// Implementation note: the TH response does not have a clear semantics for "missing" values
-	// therefore we are accepting as valid values within the correct range
-	//
-	// also note that we add control information to all endpoints and then we check for "final"
-	// responses and only compare against "final" responses during the analysis
 	for _, obs := range c.KnownTCPEndpoints {
 		obs.ControlHTTPFailure = optional.Some(utilsStringPointerToString(resp.HTTPRequest.Failure))
-		if value := resp.HTTPRequest.StatusCode; value > 0 {
-			obs.ControlHTTPResponseStatusCode = optional.Some(value)
-		}
-		if value := resp.HTTPRequest.BodyLength; value >= 0 {
-			obs.ControlHTTPResponseBodyLength = optional.Some(value)
+
+		// leave everything else nil if there was a failure, like we
+		// already do when processing the probe events
+		if resp.HTTPRequest.Failure != nil {
+			continue
 		}
 
-		controlHTTPResponseHeadersKeys := make(map[string]bool)
-		for key := range resp.HTTPRequest.Headers {
-			controlHTTPResponseHeadersKeys[key] = true
-		}
-		if len(controlHTTPResponseHeadersKeys) > 0 {
-			obs.ControlHTTPResponseHeadersKeys = optional.Some(controlHTTPResponseHeadersKeys)
-		}
-
-		if v := resp.HTTPRequest.Title; v != "" {
-			obs.ControlHTTPResponseTitle = optional.Some(v)
-		}
+		obs.ControlHTTPResponseStatusCode = optional.Some(resp.HTTPRequest.StatusCode)
+		obs.ControlHTTPResponseBodyLength = optional.Some(resp.HTTPRequest.BodyLength)
+		obs.ControlHTTPResponseHeadersKeys = utilsExtractHTTPHeaderKeys(resp.HTTPRequest.Headers)
+		obs.ControlHTTPResponseTitle = optional.Some(resp.HTTPRequest.Title)
 	}
 }

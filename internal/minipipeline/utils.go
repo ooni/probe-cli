@@ -22,7 +22,7 @@ func utilsGeoipxLookupASN(ipAddress string) optional.Value[int64] {
 	return optional.None[int64]()
 }
 
-func utilsExtractHTTPHeaderKeys(input map[string]model.ArchivalScrubbedMaybeBinaryString) optional.Value[map[string]bool] {
+func utilsExtractHTTPHeaderKeys[T ~string](input map[string]T) optional.Value[map[string]bool] {
 	output := make(map[string]bool)
 	for key := range input {
 		output[key] = true
