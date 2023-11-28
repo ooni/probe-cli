@@ -5,8 +5,6 @@ package webconnectivitylte
 //
 
 import (
-	"log"
-
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -35,12 +33,6 @@ func (tk *TestKeys) analysisHTTPToplevel(logger model.Logger) {
 	finalRequest := tk.Requests[0]
 	tk.HTTPExperimentFailure = finalRequest.Failure
 
-	{
-		for idx, req := range tk.Requests {
-			log.Printf("REQUEST STACK: #%d %s", idx, req.Request.URL)
-		}
-	}
-
 	// don't perform any futher analysis without TH data
 	if tk.Control == nil || tk.ControlRequest == nil {
 		return
@@ -58,7 +50,6 @@ func (tk *TestKeys) analysisHTTPToplevel(logger model.Logger) {
 		switch *failure {
 		case netxlite.FailureConnectionReset,
 			netxlite.FailureGenericTimeoutError,
-			netxlite.FailureConnectionRefused,
 			netxlite.FailureEOFError:
 			tk.BlockingFlags |= analysisFlagHTTPBlocking
 			logger.Warnf(
@@ -70,18 +61,6 @@ func (tk *TestKeys) analysisHTTPToplevel(logger model.Logger) {
 		default:
 			// leave this case for ooni/pipeline
 		}
-		return
-	}
-
-	// Make sure that the request is "final". This means that the request
-	// is not a redirect. If it's a redirect we can't compare to the
-	// final request by the TH. If you find this choice tricky, here's
-	// why we're doing this. We only save request entries when we actually
-	// attempt doing HTTP. So, if there is a redirect with a TCP or TLS
-	// error, there's no request to compare to. Yet, this means that a
-	// previous request MAY be considered as final and compared against
-	// the TH response, which would obviously be wrong.
-	if httpRedirectIsRedirect(finalRequest.Response.Code) {
 		return
 	}
 
