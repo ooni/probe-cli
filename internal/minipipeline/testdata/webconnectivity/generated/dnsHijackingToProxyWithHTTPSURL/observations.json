@@ -1,7 +1,7 @@
 {
-  "DNSLookupFailures": {
-    "2": {
-      "DNSTransactionID": 2,
+  "DNSLookupFailures": [
+    {
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
@@ -38,14 +38,14 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     }
-  },
+  ],
   "DNSLookupSuccesses": [
     {
       "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
-      "DNSQueryType": "A",
-      "DNSEngine": "udp",
+      "DNSQueryType": "ANY",
+      "DNSEngine": "getaddrinfo",
       "IPAddress": "130.192.182.17",
       "IPAddressASN": 137,
       "IPAddressOrg": "Consortium GARR",
@@ -82,8 +82,8 @@
       "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
-      "DNSQueryType": "ANY",
-      "DNSEngine": "getaddrinfo",
+      "DNSQueryType": "A",
+      "DNSEngine": "udp",
       "IPAddress": "130.192.182.17",
       "IPAddressASN": 137,
       "IPAddressOrg": "Consortium GARR",
