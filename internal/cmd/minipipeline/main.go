@@ -12,16 +12,16 @@ import (
 )
 
 var (
-	// destdirFlag is the -destdirFlag flag
+	// destdirFlag is the -destdir flag
 	destdirFlag = flag.String("destdir", ".", "destination directory to use")
 
-	// measurementFlag is the -measurementFlag flag
+	// measurementFlag is the -measurement flag
 	measurementFlag = flag.String("measurement", "", "measurement file to analyze")
 
 	// mustWriteFileLn allows overwriting must.WriteFile in tests
 	mustWriteFileFn = must.WriteFile
 
-	// prefixFlag is the -prefixFlag flag
+	// prefixFlag is the -prefix flag
 	prefixFlag = flag.String("prefix", "", "prefix to add to generated files")
 
 	// osExitFn allows overwriting os.Exit in tests
