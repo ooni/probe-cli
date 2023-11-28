@@ -329,7 +329,7 @@ func (t *SecureFlow) httpTransaction(ctx context.Context, network, address, alpn
 		err,
 		finished,
 	)
-	t.TestKeys.AppendRequests(ev)
+	t.TestKeys.PrependRequests(ev)
 	return resp, body, err
 }
 

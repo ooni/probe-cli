@@ -274,7 +274,7 @@ func (t *CleartextFlow) httpTransaction(ctx context.Context, network, address, a
 		err,
 		finished,
 	)
-	t.TestKeys.AppendRequests(ev)
+	t.TestKeys.PrependRequests(ev)
 	return resp, body, err
 }
 
