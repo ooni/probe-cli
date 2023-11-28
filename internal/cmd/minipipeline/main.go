@@ -15,6 +15,9 @@ var (
 	// destdirFlag is the -destdir flag
 	destdirFlag = flag.String("destdir", ".", "destination directory to use")
 
+	// helpFlag is the -help flag
+	helpFlag = flag.Bool("help", false, "Show the help message")
+
 	// measurementFlag is the -measurement flag
 	measurementFlag = flag.String("measurement", "", "measurement file to analyze")
 
@@ -30,15 +33,15 @@ var (
 
 func main() {
 	flag.Parse()
-	if *measurementFlag == "" {
+	if *helpFlag || *measurementFlag == "" {
 		fmt.Fprintf(os.Stderr, "\n")
-		fmt.Fprintf(os.Stderr, "usage: %s -measurement <file> [-prefix <prefix>]\n", filepath.Base(os.Args[0]))
+		fmt.Fprintf(os.Stderr, "usage: %s -measurement <file> [-destdir <dir>] [-prefix <prefix>]\n", filepath.Base(os.Args[0]))
 		fmt.Fprintf(os.Stderr, "\n")
 		fmt.Fprintf(os.Stderr, "Mini measurement processing pipeline to reprocess recent probe measurements\n")
 		fmt.Fprintf(os.Stderr, "and align results calculation with ooni/data.\n")
 		fmt.Fprintf(os.Stderr, "\n")
 		fmt.Fprintf(os.Stderr, "Analyzes the <file> provided using -measurement <file> and writes the\n")
-		fmt.Fprintf(os.Stderr, "observations.json and analysis.json files in the -destdir <destdir> directory,\n")
+		fmt.Fprintf(os.Stderr, "observations.json and analysis.json files in the -destdir <dir> directory,\n")
 		fmt.Fprintf(os.Stderr, "which must already exist.\n")
 		fmt.Fprintf(os.Stderr, "\n")
 		fmt.Fprintf(os.Stderr, "Use -prefix <prefix> to add <prefix> in front of the generated files names.\n")
