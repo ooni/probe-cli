@@ -5,26 +5,32 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/optional"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // AnalyzeWebObservations generates a [*WebAnalysis] from a [*WebObservationsContainer].
 func AnalyzeWebObservations(container *WebObservationsContainer) *WebAnalysis {
 	analysis := &WebAnalysis{}
+
 	analysis.ComputeDNSExperimentFailure(container)
 	analysis.ComputeDNSTransactionsWithBogons(container)
 	analysis.ComputeDNSTransactionsWithUnexpectedFailures(container)
 	analysis.ComputeDNSPossiblyInvalidAddrs(container)
 	analysis.ComputeDNSPossiblyInvalidAddrsClassic(container)
+	analysis.ComputeDNSPossiblyNonexistingDomains(container)
+
 	analysis.ComputeTCPTransactionsWithUnexpectedTCPConnectFailures(container)
 	analysis.ComputeTCPTransactionsWithUnexpectedTLSHandshakeFailures(container)
 	analysis.ComputeTCPTransactionsWithUnexpectedHTTPFailures(container)
+	analysis.ComputeTCPTransactionsWithUnexplainedUnexpectedFailures(container)
+
 	analysis.ComputeHTTPDiffBodyProportionFactor(container)
 	analysis.ComputeHTTPDiffStatusCodeMatch(container)
 	analysis.ComputeHTTPDiffUncommonHeadersIntersection(container)
 	analysis.ComputeHTTPDiffTitleDifferentLongWords(container)
 	analysis.ComputeHTTPFinalResponsesWithControl(container)
-	analysis.ComputeTCPTransactionsWithUnexplainedUnexpectedFailures(container)
 	analysis.ComputeHTTPFinalResponsesWithTLS(container)
+
 	return analysis
 }
 
@@ -58,6 +64,10 @@ type WebAnalysis struct {
 	// DNSPossiblyInvalidAddrsClassic is like DNSPossiblyInvalidAddrs but does
 	// not use TLS to validate the IP addresses.
 	DNSPossiblyInvalidAddrsClassic optional.Value[map[string]bool]
+
+	// DNSPossiblyNonexistingDomains lists all the domains for which both
+	// the probe and the TH failed to perform DNS lookups.
+	DNSPossiblyNonexistingDomains optional.Value[map[string]bool]
 
 	// HTTPDiffBodyProportionFactor is the body proportion factor.
 	//
@@ -336,6 +346,65 @@ func (wa *WebAnalysis) ComputeDNSPossiblyInvalidAddrsClassic(c *WebObservationsC
 	}
 
 	wa.DNSPossiblyInvalidAddrsClassic = optional.Some(state)
+}
+
+// ComputeDNSPossiblyNonexistingDomains computes the DNSPossiblyNonexistingDomains field.
+func (wa *WebAnalysis) ComputeDNSPossiblyNonexistingDomains(c *WebObservationsContainer) {
+	var state map[string]bool
+
+	// first inspect the failures
+	for _, obs := range c.DNSLookupFailures {
+		// skip the comparison if we don't have enough information
+		if obs.DNSLookupFailure.IsNone() || obs.ControlDNSLookupFailure.IsNone() {
+			continue
+		}
+
+		// flip the state of needed
+		if state == nil {
+			state = make(map[string]bool)
+		}
+
+		// assume the domain is set in both cases
+		domain := obs.DNSDomain.Unwrap()
+		runtimex.Assert(domain == obs.ControlDNSDomain.Unwrap(), "mismatch between domain names")
+
+		// a domain is nonexisting if both the probe and the TH say so
+		if obs.DNSLookupFailure.Unwrap() != netxlite.FailureDNSNXDOMAINError {
+			continue
+		}
+		if obs.ControlDNSLookupFailure.Unwrap() != "dns_name_error" {
+			continue
+		}
+
+		// set the state
+		state[domain] = true
+	}
+
+	// then inspect the successes
+	for _, obs := range c.DNSLookupSuccesses {
+		// skip the comparison if we don't have enough information
+		if obs.DNSLookupFailure.IsNone() && obs.ControlDNSLookupFailure.IsNone() {
+			continue
+		}
+
+		// assume the domain is always set
+		domain := obs.DNSDomain.Unwrap()
+
+		// clear the state if the probe succeeded
+		if !obs.DNSLookupFailure.IsNone() && obs.DNSLookupFailure.Unwrap() == "" {
+			delete(state, domain)
+			continue
+		}
+
+		// clear the state if the TH succeded
+		if !obs.ControlDNSLookupFailure.IsNone() && obs.ControlDNSLookupFailure.Unwrap() == "" {
+			runtimex.Assert(domain == obs.ControlDNSDomain.Unwrap(), "mismatch between domain names")
+			delete(state, domain)
+			continue
+		}
+	}
+
+	wa.DNSPossiblyNonexistingDomains = optional.Some(state)
 }
 
 func analysisTCPConnectFailureSeemsMisconfiguredIPv6(obs *WebObservation) bool {

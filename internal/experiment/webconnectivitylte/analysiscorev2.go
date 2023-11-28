@@ -197,10 +197,22 @@ func (tk *TestKeys) analysisClassic(logger model.Logger, container *minipipeline
 		return
 	}
 
+	// fallback to DNS if we don't know exactly what to do
 	if (dnsPossiblyInvalidAddrs != nil && *dnsPossiblyInvalidAddrs) ||
 		(dnsTransactionsWithUnexpectedFailures != nil && *dnsTransactionsWithUnexpectedFailures) {
 		tk.Blocking = "dns"
 		tk.Accessible = false
+	}
+
+	// what remains here are all the cases when the website is down
+	//
+	// the first case we consider is NXDOMAIN
+	if v := analysis.DNSPossiblyNonexistingDomains.UnwrapOr(nil); len(v) > 0 {
+		// TODO(bassosimone): this is a condition where v0.4 is actually wrong but
+		// we should keep its wrong behavior for now. The correct result here would
+		// actually be to set Accessible to false.
+		tk.Blocking = false
+		tk.Accessible = true
 	}
 }
 
