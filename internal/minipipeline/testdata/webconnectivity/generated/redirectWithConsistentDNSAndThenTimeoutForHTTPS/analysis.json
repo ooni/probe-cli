@@ -13,6 +13,6 @@
   "TCPTransactionsWithUnexpectedTLSHandshakeFailures": {},
   "TCPTransactionsWithUnexpectedHTTPFailures": {},
   "TCPTransactionsWithUnexplainedUnexpectedFailures": {
-    "7": true
+    "6": true
   }
 }

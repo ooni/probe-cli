@@ -1,7 +1,7 @@
 {
   "DNSLookupFailures": [
     {
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "www.example.org",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
@@ -44,8 +44,8 @@
       "DNSTransactionID": 1,
       "DNSDomain": "www.example.org",
       "DNSLookupFailure": "",
-      "DNSQueryType": "A",
-      "DNSEngine": "udp",
+      "DNSQueryType": "ANY",
+      "DNSEngine": "getaddrinfo",
       "IPAddress": "93.184.216.34",
       "IPAddressASN": 15133,
       "IPAddressOrg": "Edgecast Inc.",
@@ -82,8 +82,8 @@
       "DNSTransactionID": 2,
       "DNSDomain": "www.example.org",
       "DNSLookupFailure": "",
-      "DNSQueryType": "ANY",
-      "DNSEngine": "getaddrinfo",
+      "DNSQueryType": "A",
+      "DNSEngine": "udp",
       "IPAddress": "93.184.216.34",
       "IPAddressASN": 15133,
       "IPAddressOrg": "Edgecast Inc.",

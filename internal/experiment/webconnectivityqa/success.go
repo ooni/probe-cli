@@ -1,7 +1,7 @@
 package webconnectivityqa
 
 // successWithHTTP ensures we can successfully measure an HTTP URL.
-func successWithHTTP() *TestCase {
+func sucessWithHTTP() *TestCase {
 	return &TestCase{
 		Name:      "successWithHTTP",
 		Flags:     0,
@@ -24,10 +24,10 @@ func successWithHTTP() *TestCase {
 }
 
 // successWithHTTPS ensures we can successfully measure an HTTPS URL.
-func successWithHTTPS() *TestCase {
+func sucessWithHTTPS() *TestCase {
 	return &TestCase{
 		Name:      "successWithHTTPS",
-		Flags:     0,
+		Flags:     TestCaseFlagNoLTE, // it does not set any HTTP comparison value with HTTPS
 		Input:     "https://www.example.com/",
 		Configure: nil,
 		ExpectErr: false,

@@ -155,11 +155,11 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "DNSTransactionID": 5,
+      "DNSTransactionID": 4,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
-      "DNSQueryType": "ANY",
-      "DNSEngine": "getaddrinfo",
+      "DNSQueryType": "A",
+      "DNSEngine": "udp",
       "IPAddress": "93.184.216.34",
       "IPAddressASN": 15133,
       "IPAddressOrg": "Edgecast Inc.",
@@ -193,11 +193,11 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "DNSTransactionID": 4,
+      "DNSTransactionID": 5,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
-      "DNSQueryType": "A",
-      "DNSEngine": "udp",
+      "DNSQueryType": "ANY",
+      "DNSEngine": "getaddrinfo",
       "IPAddress": "93.184.216.34",
       "IPAddressASN": 15133,
       "IPAddressOrg": "Edgecast Inc.",
@@ -280,7 +280,7 @@
       "ControlHTTPResponseTitle": "Default Web Page"
     },
     "6": {
-      "DNSTransactionID": 5,
+      "DNSTransactionID": 4,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -323,7 +323,7 @@
       "ControlHTTPResponseTitle": "Default Web Page"
     },
     "7": {
-      "DNSTransactionID": 5,
+      "DNSTransactionID": 4,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,

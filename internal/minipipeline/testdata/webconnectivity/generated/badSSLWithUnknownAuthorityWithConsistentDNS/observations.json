@@ -1,7 +1,7 @@
 {
   "DNSLookupFailures": [
     {
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 3,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
@@ -39,7 +39,7 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "DNSTransactionID": 3,
+      "DNSTransactionID": 2,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
@@ -79,7 +79,7 @@
   ],
   "DNSLookupSuccesses": [
     {
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -117,7 +117,7 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 3,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
@@ -155,7 +155,7 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "DNSTransactionID": 3,
+      "DNSTransactionID": 2,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
@@ -195,7 +195,7 @@
   ],
   "KnownTCPEndpoints": {
     "4": {
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
