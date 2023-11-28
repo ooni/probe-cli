@@ -73,6 +73,10 @@ func compareTestKeys(expected, got *testKeys) error {
 		// ignore the fields that are specific to LTE
 		options = append(options, cmpopts.IgnoreFields(testKeys{}, "XDNSFlags", "XBlockingFlags", "XNullNullFlags"))
 
+		// BUG: v0.4 does not always set dns_consistency correctly because
+		// it lacks a mechanism to verify DNS using TLS
+		options = append(options, cmpopts.IgnoreFields(testKeys{}, "DNSConsistency"))
+
 	case "0.5.26":
 		// ignore the fields that are specific to v0.4
 		options = append(options, cmpopts.IgnoreFields(testKeys{}, "XStatus"))

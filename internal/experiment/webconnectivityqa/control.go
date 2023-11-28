@@ -10,10 +10,8 @@ import (
 // where we cannot reach the control server but the website measurement is OK.
 func controlFailureWithSuccessfulHTTPWebsite() *TestCase {
 	return &TestCase{
-		Name: "controlFailureWithSuccessfulHTTPWebsite",
-		// We must disable v0.4 because v0.5 is able to determine that DNS is consistent
-		// since it also performs TLS handshakes, while v0.4 cannot
-		Flags: TestCaseFlagNoV04,
+		Name:  "controlFailureWithSuccessfulHTTPWebsite",
+		Flags: 0,
 		Input: "http://www.example.org/",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -58,10 +56,8 @@ func controlFailureWithSuccessfulHTTPWebsite() *TestCase {
 // where we cannot reach the control server but the website measurement is OK.
 func controlFailureWithSuccessfulHTTPSWebsite() *TestCase {
 	return &TestCase{
-		Name: "controlFailureWithSuccessfulHTTPSWebsite",
-		// With v0.5 we can determine that the DNS is consistent using TLS, while v0.5 cannot
-		// do this inference, so we need to disable v0.4 now.
-		Flags: TestCaseFlagNoV04,
+		Name:  "controlFailureWithSuccessfulHTTPSWebsite",
+		Flags: 0,
 		Input: "https://www.example.org/",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -95,8 +91,8 @@ func controlFailureWithSuccessfulHTTPSWebsite() *TestCase {
 		ExpectTestKeys: &testKeys{
 			ControlFailure: "unknown_failure: httpapi: all endpoints failed: [ connection_reset; connection_reset; connection_reset; connection_reset;]",
 			DNSConsistency: "consistent",
-			XStatus:        1,  // StatusSuccessSecure
-			XBlockingFlags: 32, // analysisFlagSuccess
+			XStatus:        1, // StatusSuccessSecure
+			XNullNullFlags: 8, // analysisFlagNullNullSuccessfulHTTPS
 			Accessible:     true,
 			Blocking:       false,
 		},

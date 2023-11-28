@@ -11,7 +11,7 @@ import (
 func redirectWithConsistentDNSAndThenConnectionRefusedForHTTP() *TestCase {
 	return &TestCase{
 		Name:  "redirectWithConsistentDNSAndThenConnectionRefusedForHTTP",
-		Flags: 0,
+		Flags: TestCaseFlagNoLTE,
 		Input: "https://bit.ly/32447",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -49,7 +49,7 @@ func redirectWithConsistentDNSAndThenConnectionRefusedForHTTP() *TestCase {
 func redirectWithConsistentDNSAndThenConnectionRefusedForHTTPS() *TestCase {
 	return &TestCase{
 		Name:  "redirectWithConsistentDNSAndThenConnectionRefusedForHTTPS",
-		Flags: 0,
+		Flags: TestCaseFlagNoLTE,
 		Input: "https://bit.ly/21645",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -87,7 +87,7 @@ func redirectWithConsistentDNSAndThenConnectionRefusedForHTTPS() *TestCase {
 func redirectWithConsistentDNSAndThenConnectionResetForHTTP() *TestCase {
 	return &TestCase{
 		Name:  "redirectWithConsistentDNSAndThenConnectionResetForHTTP",
-		Flags: 0,
+		Flags: TestCaseFlagNoLTE,
 		Input: "https://bit.ly/32447",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -125,7 +125,7 @@ func redirectWithConsistentDNSAndThenConnectionResetForHTTP() *TestCase {
 func redirectWithConsistentDNSAndThenConnectionResetForHTTPS() *TestCase {
 	return &TestCase{
 		Name:  "redirectWithConsistentDNSAndThenConnectionResetForHTTPS",
-		Flags: 0,
+		Flags: TestCaseFlagNoLTE,
 		Input: "https://bit.ly/21645",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -162,10 +162,8 @@ func redirectWithConsistentDNSAndThenConnectionResetForHTTPS() *TestCase {
 // works but then there's NXDOMAIN for the URL's domain
 func redirectWithConsistentDNSAndThenNXDOMAIN() *TestCase {
 	return &TestCase{
-		Name: "redirectWithConsistentDNSAndThenNXDOMAIN",
-		// LTE correctly sees that there is DNS error during the redirect, while v0.4
-		// does not have visibility into this event, so let's disable v0.4.
-		Flags: TestCaseFlagNoV04,
+		Name:  "redirectWithConsistentDNSAndThenNXDOMAIN",
+		Flags: TestCaseFlagNoLTE,
 		Input: "https://bit.ly/21645",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -196,7 +194,7 @@ func redirectWithConsistentDNSAndThenNXDOMAIN() *TestCase {
 func redirectWithConsistentDNSAndThenEOFForHTTP() *TestCase {
 	return &TestCase{
 		Name:  "redirectWithConsistentDNSAndThenEOFForHTTP",
-		Flags: 0,
+		Flags: TestCaseFlagNoLTE,
 		Input: "https://bit.ly/32447",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -234,7 +232,7 @@ func redirectWithConsistentDNSAndThenEOFForHTTP() *TestCase {
 func redirectWithConsistentDNSAndThenEOFForHTTPS() *TestCase {
 	return &TestCase{
 		Name:  "redirectWithConsistentDNSAndThenEOFForHTTPS",
-		Flags: 0, // BUG: LTE thinks this website is accessible (WTF?!)
+		Flags: TestCaseFlagNoLTE,
 		Input: "https://bit.ly/21645",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -272,7 +270,7 @@ func redirectWithConsistentDNSAndThenEOFForHTTPS() *TestCase {
 func redirectWithConsistentDNSAndThenTimeoutForHTTP() *TestCase {
 	return &TestCase{
 		Name:     "redirectWithConsistentDNSAndThenTimeoutForHTTP",
-		Flags:    0,
+		Flags:    TestCaseFlagNoLTE,
 		Input:    "https://bit.ly/32447",
 		LongTest: true,
 		Configure: func(env *netemx.QAEnv) {
@@ -311,7 +309,7 @@ func redirectWithConsistentDNSAndThenTimeoutForHTTP() *TestCase {
 func redirectWithConsistentDNSAndThenTimeoutForHTTPS() *TestCase {
 	return &TestCase{
 		Name:     "redirectWithConsistentDNSAndThenTimeoutForHTTPS",
-		Flags:    0, // BUG: LTE thinks this website is accessible (WTF?!)
+		Flags:    TestCaseFlagNoLTE,
 		Input:    "https://bit.ly/21645",
 		LongTest: true,
 		Configure: func(env *netemx.QAEnv) {

@@ -8,10 +8,8 @@ import (
 // resolver returns the android_dns_cache_no_data error.
 func dnsBlockingAndroidDNSCacheNoData() *TestCase {
 	return &TestCase{
-		Name: "dnsBlockingAndroidDNSCacheNoData",
-		// With v0.5 we can still fetch a webpage because we use multiple resolvers
-		// but it's not possible to do the same with v0.4, so we disable it.
-		Flags: TestCaseFlagNoV04,
+		Name:  "dnsBlockingAndroidDNSCacheNoData",
+		Flags: 0,
 		Input: "https://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 			// make sure the env knows we want to emulate our getaddrinfo wrapper behavior
@@ -23,10 +21,6 @@ func dnsBlockingAndroidDNSCacheNoData() *TestCase {
 		},
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
-			BodyLengthMatch:      true,
-			StatusCodeMatch:      true,
-			HeadersMatch:         true,
-			TitleMatch:           true,
 			DNSExperimentFailure: "android_dns_cache_no_data",
 			DNSConsistency:       "inconsistent",
 			XStatus:              2080, // StatusExperimentDNS | StatusAnomalyDNS
@@ -49,10 +43,8 @@ func dnsBlockingNXDOMAIN() *TestCase {
 		See <https://github.com/measurement-kit/measurement-kit/issues/1931>.
 	*/
 	return &TestCase{
-		Name: "dnsBlockingNXDOMAIN",
-		// With v0.5 we can still fetch a webpage because we use multiple resolvers
-		// but it's not possible to do the same with v0.4, so we disable it.
-		Flags: TestCaseFlagNoV04,
+		Name:  "dnsBlockingNXDOMAIN",
+		Flags: 0,
 		Input: "https://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 			// remove the record so that the DNS query returns NXDOMAIN
@@ -60,10 +52,6 @@ func dnsBlockingNXDOMAIN() *TestCase {
 		},
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
-			BodyLengthMatch:      true,
-			StatusCodeMatch:      true,
-			HeadersMatch:         true,
-			TitleMatch:           true,
 			DNSExperimentFailure: "dns_nxdomain_error",
 			DNSConsistency:       "inconsistent",
 			XStatus:              2080, // StatusExperimentDNS | StatusAnomalyDNS

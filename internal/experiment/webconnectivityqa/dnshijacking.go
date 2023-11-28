@@ -9,10 +9,8 @@ import (
 // use an explicity passthrough proxy for a given domain.
 func dnsHijackingToProxyWithHTTPURL() *TestCase {
 	return &TestCase{
-		Name: "dnsHijackingToProxyWithHTTPURL",
-		// Disable v0.4 because it cannot detect that the DNS is consistent
-		// by using the results of the TLS handshake.
-		Flags: TestCaseFlagNoV04,
+		Name:  "dnsHijackingToProxyWithHTTPURL",
+		Flags: 0,
 		Input: "http://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -48,10 +46,8 @@ func dnsHijackingToProxyWithHTTPSURL() *TestCase {
 	// TODO(bassosimone): it's debateable whether this case is actually WAI but the
 	// transparent TLS proxy really makes our analysis a bit more complex
 	return &TestCase{
-		Name: "dnsHijackingToProxyWithHTTPSURL",
-		// Disable v0.4 because it cannot detect that the DNS is consistent
-		// by using the results of the TLS handshake.
-		Flags: TestCaseFlagNoV04,
+		Name:  "dnsHijackingToProxyWithHTTPSURL",
+		Flags: 0,
 		Input: "https://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 

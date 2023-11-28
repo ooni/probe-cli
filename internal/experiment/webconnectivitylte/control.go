@@ -133,14 +133,16 @@ func (c *Control) Run(parentCtx context.Context) {
 	// record the specific TH that worked
 	runtimex.Assert(idx >= 0 && idx < len(c.TestHelpers), "idx out of bounds")
 	c.TestKeys.setTestHelper(&c.TestHelpers[idx])
-
-	// if the TH returned us addresses we did not previously were
-	// aware of, make sure we also measure them
-	c.maybeStartExtraMeasurements(parentCtx, cresp.DNS.Addrs)
 }
 
 // This function determines whether we should start new
 // background measurements for previously unknown IP addrs.
+//
+// TODO(bassosimone): this code is currently disabled while we perform an A/B comparison
+// of Web Connectivity v0.4 and v0.5. The availability of TH addrs complicates the matter. The
+// general idea is to enabled this functionality once we're OK with the results.
+//
+// See TODO(XXX).
 func (c *Control) maybeStartExtraMeasurements(ctx context.Context, thAddrs []string) {
 	// classify addeesses by who discovered them
 	const (

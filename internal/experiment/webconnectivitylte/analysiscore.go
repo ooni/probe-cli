@@ -37,7 +37,7 @@ const (
 )
 
 // AnalysisUseV2 indicates whether to use V2 of the analysis algorithm.
-var AnalysisUseV2 = true
+var AnalysisUseV2 = false
 
 // analysisToplevel is the toplevel function that analyses the results
 // of the experiment once all network tasks have completed.
