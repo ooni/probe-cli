@@ -47,7 +47,8 @@ func dnsBlockingNXDOMAIN() *TestCase {
 		Flags: 0,
 		Input: "https://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
-			// remove the record so that the DNS query returns NXDOMAIN
+			// remove the record so that the DNS query returns NXDOMAIN, which is then
+			// converted into android_dns_cache_no_data by the emulation layer
 			env.ISPResolverConfig().RemoveRecord("www.example.com")
 		},
 		ExpectErr: false,
