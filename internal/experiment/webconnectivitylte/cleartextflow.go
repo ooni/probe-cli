@@ -97,20 +97,12 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) error {
 		return err
 	}
 
-	httpReq, err := t.newHTTPRequest()
-	if err != nil {
-		if t.Referer == "" {
-			// when the referer is empty, the failing URL comes from our backend
-			// or from the user, so it's a fundamental failure. After that, we
-			// are dealing with websites provided URLs, so we should not flag a
-			// fundamental failure, because we want to see the measurement submitted.
-			t.TestKeys.SetFundamentalFailure(err)
-		}
-		return err
-	}
-
 	// create trace
 	trace := measurexlite.NewTrace(index, t.ZeroTime)
+
+	// TODO(bassosimone): the DSL starts measuring for throttling when we start
+	// fetching the body while here we start immediately. We should come up with
+	// a consistent policy otherwise data won't be comparable.
 
 	// start measuring throttling
 	sampler := throttling.NewSampler(trace)
@@ -133,17 +125,6 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) error {
 	t.TestKeys.AppendTCPConnectResults(trace.TCPConnects()...)
 	defer t.TestKeys.AppendNetworkEvents(trace.NetworkEvents()...) // here to include connect events
 	if err != nil {
-		/*
-			// TODO(bassosimone): document why we're adding a request to the heap here
-			t.TestKeys.PrependRequests(newArchivalHTTPRequestResultWithError(
-				trace,
-				"tcp",
-				t.Address,
-				"",
-				httpReq,
-				err,
-			))
-		*/
 		ol.Stop(err)
 		return err
 	}
@@ -153,17 +134,6 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) error {
 
 	// Determine whether we're allowed to fetch the webpage
 	if t.PrioSelector == nil || !t.PrioSelector.permissionToFetch(t.Address) {
-		/*
-			// TODO(bassosimone): document why we're adding a request to the heap here
-			t.TestKeys.PrependRequests(newArchivalHTTPRequestResultWithError(
-				trace,
-				"tcp",
-				t.Address,
-				"",
-				httpReq,
-				errors.New("http_request_canceled"), // TODO(bassosimone): define this error
-			))
-		*/
 		ol.Stop("stop after TCP connect")
 		return errNotPermittedToFetch
 	}
@@ -178,13 +148,22 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) error {
 		netxlite.NewNullTLSDialer(),
 	)
 
-	// create HTTP context
+	// create HTTP request
 	const httpTimeout = 10 * time.Second
 	httpCtx, httpCancel := context.WithTimeout(parentCtx, httpTimeout)
 	defer httpCancel()
-
-	// make sure the request uses the context
-	httpReq = httpReq.WithContext(httpCtx)
+	httpReq, err := t.newHTTPRequest(httpCtx)
+	if err != nil {
+		if t.Referer == "" {
+			// when the referer is empty, the failing URL comes from our backend
+			// or from the user, so it's a fundamental failure. After that, we
+			// are dealing with websites provided URLs, so we should not flag a
+			// fundamental failure, because we want to see the measurement submitted.
+			t.TestKeys.SetFundamentalFailure(err)
+		}
+		ol.Stop(err)
+		return err
+	}
 
 	// perform HTTP transaction
 	httpResp, httpRespBody, err := t.httpTransaction(
@@ -231,7 +210,7 @@ func (t *CleartextFlow) urlHost(scheme string) (string, error) {
 }
 
 // newHTTPRequest creates a new HTTP request.
-func (t *CleartextFlow) newHTTPRequest() (*http.Request, error) {
+func (t *CleartextFlow) newHTTPRequest(ctx context.Context) (*http.Request, error) {
 	const urlScheme = "http"
 	urlHost, err := t.urlHost(urlScheme)
 	if err != nil {
@@ -243,7 +222,7 @@ func (t *CleartextFlow) newHTTPRequest() (*http.Request, error) {
 		Path:     t.URLPath,
 		RawQuery: t.URLRawQuery,
 	}
-	httpReq, err := http.NewRequest("GET", httpURL.String(), nil)
+	httpReq, err := http.NewRequestWithContext(ctx, "GET", httpURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -266,6 +245,12 @@ func (t *CleartextFlow) httpTransaction(ctx context.Context, network, address, a
 	txp model.HTTPTransport, req *http.Request, trace *measurexlite.Trace) (*http.Response, []byte, error) {
 	const maxbody = 1 << 19
 	started := trace.TimeSince(trace.ZeroTime())
+	// TODO(bassosimone): I am wondering whether we should have the HTTP transaction
+	// start at the beginning of the flow rather than here. If we start it at the
+	// beginning this is nicer, but, at the same time, starting it at the beginning
+	// of the flow means we're not collecting information about DNS. So, I am a
+	// bit torn about what is the best approach to follow here. Maybe it does not
+	// even matter to emit transaction_start/end events given that we have transaction ID.
 	t.TestKeys.AppendNetworkEvents(measurexlite.NewAnnotationArchivalNetworkEvent(
 		trace.Index(), started, "http_transaction_start",
 	))
@@ -306,29 +291,33 @@ func (t *CleartextFlow) maybeFollowRedirects(ctx context.Context, resp *http.Res
 	if !t.FollowRedirects || !t.NumRedirects.CanFollowOneMoreRedirect() {
 		return // not configured or too many redirects
 	}
-
-	locationx, err := httpRedirectLocation(resp)
-	if err != nil || locationx.IsNone() {
-		return
+	switch resp.StatusCode {
+	case 301, 302, 307, 308:
+		location, err := resp.Location()
+		if err != nil {
+			return // broken response from server
+		}
+		// TODO(https://github.com/ooni/probe/issues/2628): we need to handle
+		// the case where the redirect URL is incomplete
+		t.Logger.Infof("redirect to: %s", location.String())
+		resolvers := &DNSResolvers{
+			CookieJar:    t.CookieJar,
+			DNSCache:     t.DNSCache,
+			Domain:       location.Hostname(),
+			IDGenerator:  t.IDGenerator,
+			Logger:       t.Logger,
+			NumRedirects: t.NumRedirects,
+			TestKeys:     t.TestKeys,
+			URL:          location,
+			ZeroTime:     t.ZeroTime,
+			WaitGroup:    t.WaitGroup,
+			Referer:      resp.Request.URL.String(),
+			Session:      nil, // no need to issue another control request
+			TestHelpers:  nil, // ditto
+			UDPAddress:   t.UDPAddress,
+		}
+		resolvers.Start(ctx)
+	default:
+		// no redirect to follow
 	}
-	location := locationx.Unwrap()
-
-	t.Logger.Infof("redirect to: %s", location.String())
-	resolvers := &DNSResolvers{
-		CookieJar:    t.CookieJar,
-		DNSCache:     t.DNSCache,
-		Domain:       location.Hostname(),
-		IDGenerator:  t.IDGenerator,
-		Logger:       t.Logger,
-		NumRedirects: t.NumRedirects,
-		TestKeys:     t.TestKeys,
-		URL:          location,
-		ZeroTime:     t.ZeroTime,
-		WaitGroup:    t.WaitGroup,
-		Referer:      resp.Request.URL.String(),
-		Session:      nil, // no need to issue another control request
-		TestHelpers:  nil, // ditto
-		UDPAddress:   t.UDPAddress,
-	}
-	resolvers.Start(ctx)
 }
