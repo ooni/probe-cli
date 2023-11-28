@@ -4,6 +4,7 @@
 /*.csv
 /*.deb
 /*.exe
+/*.json
 /*.jsonl
 /*.pprof
 /*.sqlite3
