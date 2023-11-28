@@ -97,18 +97,6 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) error {
 		return err
 	}
 
-	httpReq, err := t.newHTTPRequest()
-	if err != nil {
-		if t.Referer == "" {
-			// when the referer is empty, the failing URL comes from our backend
-			// or from the user, so it's a fundamental failure. After that, we
-			// are dealing with websites provided URLs, so we should not flag a
-			// fundamental failure, because we want to see the measurement submitted.
-			t.TestKeys.SetFundamentalFailure(err)
-		}
-		return err
-	}
-
 	// create trace
 	trace := measurexlite.NewTrace(index, t.ZeroTime)
 
@@ -131,19 +119,7 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) error {
 	tcpDialer := trace.NewDialerWithoutResolver(t.Logger)
 	tcpConn, err := tcpDialer.DialContext(tcpCtx, "tcp", t.Address)
 	t.TestKeys.AppendTCPConnectResults(trace.TCPConnects()...)
-	t.TestKeys.AppendNetworkEvents(trace.NetworkEvents()...) // BUGFIX: EXPLAIN
 	if err != nil {
-		/*
-			// TODO(bassosimone): document why we're adding a request to the heap here
-			t.TestKeys.PrependRequests(newArchivalHTTPRequestResultWithError(
-				trace,
-				"tcp",
-				t.Address,
-				"",
-				httpReq,
-				err,
-			))
-		*/
 		ol.Stop(err)
 		return err
 	}
@@ -156,17 +132,6 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) error {
 
 	// Determine whether we're allowed to fetch the webpage
 	if t.PrioSelector == nil || !t.PrioSelector.permissionToFetch(t.Address) {
-		/*
-			// TODO(bassosimone): document why we're adding a request to the heap here
-			t.TestKeys.PrependRequests(newArchivalHTTPRequestResultWithError(
-				trace,
-				"tcp",
-				t.Address,
-				"",
-				httpReq,
-				errors.New("http_request_canceled"), // TODO(bassosimone): define this error
-			))
-		*/
 		ol.Stop("stop after TCP connect")
 		return errNotPermittedToFetch
 	}
@@ -181,13 +146,22 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) error {
 		netxlite.NewNullTLSDialer(),
 	)
 
-	// create HTTP context
+	// create HTTP request
 	const httpTimeout = 10 * time.Second
 	httpCtx, httpCancel := context.WithTimeout(parentCtx, httpTimeout)
 	defer httpCancel()
-
-	// make sure the request uses the context
-	httpReq = httpReq.WithContext(httpCtx)
+	httpReq, err := t.newHTTPRequest(httpCtx)
+	if err != nil {
+		if t.Referer == "" {
+			// when the referer is empty, the failing URL comes from our backend
+			// or from the user, so it's a fundamental failure. After that, we
+			// are dealing with websites provided URLs, so we should not flag a
+			// fundamental failure, because we want to see the measurement submitted.
+			t.TestKeys.SetFundamentalFailure(err)
+		}
+		ol.Stop(err)
+		return err
+	}
 
 	// perform HTTP transaction
 	httpResp, httpRespBody, err := t.httpTransaction(
@@ -234,7 +208,7 @@ func (t *CleartextFlow) urlHost(scheme string) (string, error) {
 }
 
 // newHTTPRequest creates a new HTTP request.
-func (t *CleartextFlow) newHTTPRequest() (*http.Request, error) {
+func (t *CleartextFlow) newHTTPRequest(ctx context.Context) (*http.Request, error) {
 	const urlScheme = "http"
 	urlHost, err := t.urlHost(urlScheme)
 	if err != nil {
@@ -246,7 +220,7 @@ func (t *CleartextFlow) newHTTPRequest() (*http.Request, error) {
 		Path:     t.URLPath,
 		RawQuery: t.URLRawQuery,
 	}
-	httpReq, err := http.NewRequest("GET", httpURL.String(), nil)
+	httpReq, err := http.NewRequestWithContext(ctx, "GET", httpURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -309,29 +283,31 @@ func (t *CleartextFlow) maybeFollowRedirects(ctx context.Context, resp *http.Res
 	if !t.FollowRedirects || !t.NumRedirects.CanFollowOneMoreRedirect() {
 		return // not configured or too many redirects
 	}
-
-	locationx, err := httpRedirectLocation(resp)
-	if err != nil || locationx.IsNone() {
-		return
+	switch resp.StatusCode {
+	case 301, 302, 307, 308:
+		location, err := resp.Location()
+		if err != nil {
+			return // broken response from server
+		}
+		t.Logger.Infof("redirect to: %s", location.String())
+		resolvers := &DNSResolvers{
+			CookieJar:    t.CookieJar,
+			DNSCache:     t.DNSCache,
+			Domain:       location.Hostname(),
+			IDGenerator:  t.IDGenerator,
+			Logger:       t.Logger,
+			NumRedirects: t.NumRedirects,
+			TestKeys:     t.TestKeys,
+			URL:          location,
+			ZeroTime:     t.ZeroTime,
+			WaitGroup:    t.WaitGroup,
+			Referer:      resp.Request.URL.String(),
+			Session:      nil, // no need to issue another control request
+			TestHelpers:  nil, // ditto
+			UDPAddress:   t.UDPAddress,
+		}
+		resolvers.Start(ctx)
+	default:
+		// no redirect to follow
 	}
-	location := locationx.Unwrap()
-
-	t.Logger.Infof("redirect to: %s", location.String())
-	resolvers := &DNSResolvers{
-		CookieJar:    t.CookieJar,
-		DNSCache:     t.DNSCache,
-		Domain:       location.Hostname(),
-		IDGenerator:  t.IDGenerator,
-		Logger:       t.Logger,
-		NumRedirects: t.NumRedirects,
-		TestKeys:     t.TestKeys,
-		URL:          location,
-		ZeroTime:     t.ZeroTime,
-		WaitGroup:    t.WaitGroup,
-		Referer:      resp.Request.URL.String(),
-		Session:      nil, // no need to issue another control request
-		TestHelpers:  nil, // ditto
-		UDPAddress:   t.UDPAddress,
-	}
-	resolvers.Start(ctx)
 }
