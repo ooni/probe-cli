@@ -114,14 +114,19 @@ func analysisDNSLookupFailureIsDNSNoAnswerForAAAA(obs *WebObservation) bool {
 func (wa *WebAnalysis) ComputeDNSExperimentFailure(c *WebObservationsContainer) {
 
 	for _, obs := range c.DNSLookupFailures {
+		// make sure we have probe domain
 		probeDomain := obs.DNSDomain.UnwrapOr("")
 		if probeDomain == "" {
 			continue
 		}
+
+		// make sure we have TH domain
 		thDomain := obs.ControlDNSDomain.UnwrapOr("")
 		if thDomain == "" {
 			continue
 		}
+
+		// we only care about when we're resolving the same domain
 		if probeDomain != thDomain {
 			continue
 		}
@@ -162,8 +167,13 @@ func (wa *WebAnalysis) ComputeDNSTransactionsWithBogons(c *WebObservationsContai
 	state := make(map[int64]bool)
 
 	for _, obs := range c.DNSLookupSuccesses {
-		// we're only interested in cases when there's a bogon
-		if !obs.IPAddressBogon.UnwrapOr(false) {
+		// do nothing if we don't know whether there's a bogon
+		if obs.IPAddressBogon.IsNone() {
+			continue
+		}
+
+		// do nothing if there is no bogon
+		if !obs.IPAddressBogon.Unwrap() {
 			continue
 		}
 
@@ -190,8 +200,13 @@ func (wa *WebAnalysis) ComputeDNSTransactionsWithUnexpectedFailures(c *WebObserv
 	state := make(map[int64]bool)
 
 	for _, obs := range c.DNSLookupFailures {
+		// skip cases with no control
+		if obs.ControlDNSLookupFailure.IsNone() {
+			continue
+		}
+
 		// skip cases where the control failed as well
-		if obs.ControlDNSLookupFailure.UnwrapOr("") != "" {
+		if obs.ControlDNSLookupFailure.Unwrap() != "" {
 			continue
 		}
 
@@ -232,6 +247,12 @@ func (wa *WebAnalysis) ComputeDNSPossiblyInvalidAddrs(c *WebObservationsContaine
 	for _, obs := range c.KnownTCPEndpoints {
 		addr := obs.IPAddress.Unwrap()
 
+		// if we don't have control information, avoid flagging the address
+		if obs.TLSHandshakeFailure.IsNone() && obs.MatchWithControlIPAddress.IsNone() &&
+			obs.MatchWithControlIPAddressASN.IsNone() {
+			continue
+		}
+
 		// if we have a succesful TLS handshake for this addr, we're good
 		if !obs.TLSHandshakeFailure.IsNone() && obs.TLSHandshakeFailure.Unwrap() == "" {
 			continue
@@ -244,12 +265,6 @@ func (wa *WebAnalysis) ComputeDNSPossiblyInvalidAddrs(c *WebObservationsContaine
 
 		// if there's an ASN match with the control, we're good
 		if !obs.MatchWithControlIPAddressASN.IsNone() && obs.MatchWithControlIPAddressASN.Unwrap() {
-			continue
-		}
-
-		// if we don't have control information, avoid flagging the address
-		if obs.TLSHandshakeFailure.IsNone() || obs.MatchWithControlIPAddress.IsNone() ||
-			obs.MatchWithControlIPAddressASN.IsNone() {
 			continue
 		}
 
@@ -288,7 +303,8 @@ func analysisTCPConnectFailureSeemsMisconfiguredIPv6(obs *WebObservation) bool {
 	case netxlite.FailureNetworkUnreachable, netxlite.FailureHostUnreachable:
 		isv6, err := netxlite.IsIPv6(obs.IPAddress.UnwrapOr(""))
 		return err == nil && isv6
-	default:
+
+	default: // includes the case of missing TCPConnectFailure
 		return false
 	}
 }
@@ -298,13 +314,18 @@ func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexpectedTCPConnectFailures(c 
 	state := make(map[int64]bool)
 
 	for _, obs := range c.KnownTCPEndpoints {
+		// we cannot do anything unless we have both records
+		if obs.TCPConnectFailure.IsNone() || obs.ControlTCPConnectFailure.IsNone() {
+			continue
+		}
+
 		// skip cases with no failures
-		if obs.TCPConnectFailure.UnwrapOr("") == "" {
+		if obs.TCPConnectFailure.Unwrap() == "" {
 			continue
 		}
 
 		// skip cases where also the control failed
-		if obs.ControlTCPConnectFailure.UnwrapOr("unknown_failure") != "" {
+		if obs.ControlTCPConnectFailure.Unwrap() != "" {
 			continue
 		}
 
@@ -325,13 +346,18 @@ func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexpectedTLSHandshakeFailures(
 	state := make(map[int64]bool)
 
 	for _, obs := range c.KnownTCPEndpoints {
+		// we cannot do anything unless we have both records
+		if obs.TLSHandshakeFailure.IsNone() || obs.ControlTLSHandshakeFailure.IsNone() {
+			continue
+		}
+
 		// skip cases with no failures
-		if obs.TLSHandshakeFailure.UnwrapOr("") == "" {
+		if obs.TLSHandshakeFailure.Unwrap() == "" {
 			continue
 		}
 
 		// skip cases where also the control failed
-		if obs.ControlTLSHandshakeFailure.UnwrapOr("unknown_failure") != "" {
+		if obs.ControlTLSHandshakeFailure.Unwrap() != "" {
 			continue
 		}
 
@@ -347,13 +373,18 @@ func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexpectedHTTPFailures(c *WebOb
 	state := make(map[int64]bool)
 
 	for _, obs := range c.KnownTCPEndpoints {
+		// we cannot do anything unless we have both records
+		if obs.HTTPFailure.IsNone() || obs.ControlHTTPFailure.IsNone() {
+			continue
+		}
+
 		// skip cases with no failures
-		if obs.HTTPFailure.UnwrapOr("") == "" {
+		if obs.HTTPFailure.Unwrap() == "" {
 			continue
 		}
 
 		// skip cases where also the control failed
-		if obs.ControlHTTPFailure.UnwrapOr("unknown_failure") != "" {
+		if obs.ControlHTTPFailure.Unwrap() != "" {
 			continue
 		}
 
@@ -549,14 +580,14 @@ func (wa *WebAnalysis) ComputeHTTPDiffTitleDifferentLongWords(c *WebObservations
 			continue
 		}
 
+		// We should only perform the comparison if we have valid control data. Because
+		// the title could legitimately be empty, let's use the status code here.
+		if obs.ControlHTTPResponseStatusCode.UnwrapOr(0) <= 0 {
+			continue
+		}
+
 		measurement := obs.HTTPResponseTitle.UnwrapOr("")
-		if measurement == "" {
-			continue
-		}
 		control := obs.ControlHTTPResponseTitle.UnwrapOr("")
-		if control == "" {
-			continue
-		}
 
 		const (
 			byProbe = 1 << iota
@@ -629,7 +660,7 @@ func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexplainedUnexpectedFailures(c
 		}
 
 		// to execute the algorithm we must have the reasonable expectation of
-		// success, which we have if the control succeeded.
+		// success, which we have iff the control succeeded.
 		if obs.ControlHTTPFailure.IsNone() || obs.ControlHTTPFailure.Unwrap() != "" {
 			continue
 		}

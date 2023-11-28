@@ -50,7 +50,7 @@ func TestLoadWebObservations(t *testing.T) {
 	})
 }
 
-func TestWebObservationsContainerNoteTLSHandshakeResults(t *testing.T) {
+func TestWebObservationsContainerIngestTLSHandshakeEvents(t *testing.T) {
 	t.Run("when we don't have any known TCP endpoint", func(t *testing.T) {
 		container := &WebObservationsContainer{
 			DNSLookupFailures: map[int64]*WebObservation{},
@@ -84,7 +84,7 @@ func TestWebObservationsContainerNoteTLSHandshakeResults(t *testing.T) {
 	})
 }
 
-func TestWebObservationsContainerNoteHTTPRoundTripResults(t *testing.T) {
+func TestWebObservationsContainerIngestHTTPRoundTripEvents(t *testing.T) {
 	t.Run("when we don't have any known TCP endpoint", func(t *testing.T) {
 		container := &WebObservationsContainer{
 			DNSLookupFailures: map[int64]*WebObservation{},
@@ -114,7 +114,7 @@ func TestWebObservationsContainerNoteHTTPRoundTripResults(t *testing.T) {
 	})
 }
 
-func TestWebObservationsContainerNoteControlResults(t *testing.T) {
+func TestWebObservationsContainerIngestControlMessages(t *testing.T) {
 	t.Run("we don't set MatchWithControlIPAddressASN when we don't have probe ASN info", func(t *testing.T) {
 		container := &WebObservationsContainer{
 			DNSLookupFailures: map[int64]*WebObservation{},
