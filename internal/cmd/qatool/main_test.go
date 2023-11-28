@@ -65,15 +65,12 @@ func TestMainSuccess(t *testing.T) {
 
 	// make sure we attempted to write the desired files
 	expect := map[string]bool{
-		"xo/dnsBlockingBOGON/measurement.json":                  true,
-		"xo/dnsBlockingBOGON/observations.json":                 true,
-		"xo/dnsBlockingBOGON/analysis.json":                     true,
-		"xo/dnsBlockingNXDOMAIN/measurement.json":               true,
-		"xo/dnsBlockingNXDOMAIN/observations.json":              true,
-		"xo/dnsBlockingNXDOMAIN/analysis.json":                  true,
 		"xo/dnsBlockingAndroidDNSCacheNoData/measurement.json":  true,
 		"xo/dnsBlockingAndroidDNSCacheNoData/observations.json": true,
 		"xo/dnsBlockingAndroidDNSCacheNoData/analysis.json":     true,
+		"xo/dnsBlockingNXDOMAIN/measurement.json":               true,
+		"xo/dnsBlockingNXDOMAIN/observations.json":              true,
+		"xo/dnsBlockingNXDOMAIN/analysis.json":                  true,
 	}
 	got := make(map[string]bool)
 	for key := range contentmap {
