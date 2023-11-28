@@ -9,8 +9,8 @@ import (
 func TestWebAnalysisComputeDNSExperimentFailure(t *testing.T) {
 	t.Run("when there's no DNSDomain", func(t *testing.T) {
 		container := &WebObservationsContainer{
-			DNSLookupFailures: map[int64]*WebObservation{
-				1: {
+			DNSLookupFailures: []*WebObservation{
+				{
 					DNSTransactionID: optional.Some(int64(1)),
 					DNSDomain:        optional.None[string](), // explicitly set
 					DNSLookupFailure: optional.Some("dns_no_answer"),
@@ -30,8 +30,8 @@ func TestWebAnalysisComputeDNSExperimentFailure(t *testing.T) {
 
 	t.Run("when DNSDomain does not match ControlDNSDomain", func(t *testing.T) {
 		container := &WebObservationsContainer{
-			DNSLookupFailures: map[int64]*WebObservation{
-				1: {
+			DNSLookupFailures: []*WebObservation{
+				{
 					DNSTransactionID: optional.Some(int64(1)),
 					DNSDomain:        optional.Some("dns.google.com"),
 					DNSLookupFailure: optional.Some("dns_no_answer"),
@@ -52,8 +52,8 @@ func TestWebAnalysisComputeDNSExperimentFailure(t *testing.T) {
 
 	t.Run("when the failure is dns_no_answer for AAAA", func(t *testing.T) {
 		container := &WebObservationsContainer{
-			DNSLookupFailures: map[int64]*WebObservation{
-				1: {
+			DNSLookupFailures: []*WebObservation{
+				{
 					DNSTransactionID: optional.Some(int64(1)),
 					DNSDomain:        optional.Some("dns.google.com"),
 					DNSLookupFailure: optional.Some("dns_no_answer"),

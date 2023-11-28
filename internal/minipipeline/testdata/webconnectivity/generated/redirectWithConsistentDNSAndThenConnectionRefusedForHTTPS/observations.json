@@ -1,6 +1,6 @@
 {
-  "DNSLookupFailures": {
-    "2": {
+  "DNSLookupFailures": [
+    {
       "DNSTransactionID": 2,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "dns_no_answer",
@@ -38,7 +38,7 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     },
-    "5": {
+    {
       "DNSTransactionID": 5,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_no_answer",
@@ -76,14 +76,14 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     }
-  },
+  ],
   "DNSLookupSuccesses": [
     {
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
-      "DNSQueryType": "ANY",
-      "DNSEngine": "getaddrinfo",
+      "DNSQueryType": "A",
+      "DNSEngine": "udp",
       "IPAddress": "67.199.248.11",
       "IPAddressASN": 396982,
       "IPAddressOrg": "Google LLC",
@@ -117,11 +117,11 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
-      "DNSQueryType": "A",
-      "DNSEngine": "udp",
+      "DNSQueryType": "ANY",
+      "DNSEngine": "getaddrinfo",
       "IPAddress": "67.199.248.11",
       "IPAddressASN": 396982,
       "IPAddressOrg": "Google LLC",
@@ -233,7 +233,7 @@
   ],
   "KnownTCPEndpoints": {
     "3": {
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
       "DNSQueryType": null,

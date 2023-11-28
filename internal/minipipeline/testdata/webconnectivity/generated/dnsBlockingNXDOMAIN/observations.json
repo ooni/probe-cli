@@ -1,6 +1,6 @@
 {
-  "DNSLookupFailures": {
-    "1": {
+  "DNSLookupFailures": [
+    {
       "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_no_answer",
@@ -38,7 +38,7 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     },
-    "2": {
+    {
       "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_nxdomain_error",
@@ -76,7 +76,7 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     }
-  },
+  ],
   "DNSLookupSuccesses": [
     {
       "DNSTransactionID": 1,

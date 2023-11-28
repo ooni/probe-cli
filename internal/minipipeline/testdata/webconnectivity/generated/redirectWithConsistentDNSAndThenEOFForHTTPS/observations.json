@@ -1,6 +1,6 @@
 {
-  "DNSLookupFailures": {
-    "1": {
+  "DNSLookupFailures": [
+    {
       "DNSTransactionID": 1,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "dns_no_answer",
@@ -38,8 +38,8 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     },
-    "5": {
-      "DNSTransactionID": 5,
+    {
+      "DNSTransactionID": 4,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
@@ -76,7 +76,7 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     }
-  },
+  ],
   "DNSLookupSuccesses": [
     {
       "DNSTransactionID": 2,
@@ -155,7 +155,7 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "DNSTransactionID": 4,
+      "DNSTransactionID": 5,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -193,7 +193,7 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "DNSTransactionID": 5,
+      "DNSTransactionID": 4,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
@@ -280,7 +280,7 @@
       "ControlHTTPResponseTitle": "Default Web Page"
     },
     "6": {
-      "DNSTransactionID": 4,
+      "DNSTransactionID": 5,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
