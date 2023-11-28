@@ -41,8 +41,8 @@ func ClassicFilter(input *WebObservationsContainer) (output *WebObservationsCont
 
 	// KnownTCPEndpoints
 	for _, entry := range input.KnownTCPEndpoints {
-		ipAddr := entry.IPAddress.Unwrap() // it MUST be there
-		txid := entry.EndpointTransactionID.Unwrap()
+		ipAddr := entry.IPAddress.Unwrap()           // it MUST be there
+		txid := entry.EndpointTransactionID.Unwrap() // ditto
 		if output.knownIPAddresses[ipAddr] == nil {
 			continue
 		}
