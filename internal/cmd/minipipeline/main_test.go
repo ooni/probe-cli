@@ -40,19 +40,22 @@ func TestMainSuccess(t *testing.T) {
 	// make sure osExit is correct
 	osExit = os.Exit
 
+	// also check whether we can add a prefix
+	*prefix = "y-"
+
 	// run the main function
 	main()
 
 	// make sure the generated observations are good
 	expectedObservations := mustloadfile(filepath.Join("testdata", "observations.json"))
-	gotObservations := mustloaddata(contentmap, filepath.Join("xo", "observations.json"))
+	gotObservations := mustloaddata(contentmap, filepath.Join("xo", "y-observations.json"))
 	if diff := cmp.Diff(expectedObservations, gotObservations); diff != "" {
 		t.Fatal(diff)
 	}
 
 	// make sure the generated analysis is good
 	expectedAnalysis := mustloadfile(filepath.Join("testdata", "analysis.json"))
-	gotAnalysis := mustloaddata(contentmap, filepath.Join("xo", "analysis.json"))
+	gotAnalysis := mustloaddata(contentmap, filepath.Join("xo", "y-analysis.json"))
 	if diff := cmp.Diff(expectedAnalysis, gotAnalysis); diff != "" {
 		t.Fatal(diff)
 	}
@@ -74,6 +77,9 @@ func TestMainUsage(t *testing.T) {
 	osExit = func(code int) {
 		panic(fmt.Errorf("osExit: %d", code))
 	}
+
+	// make sure the prefix is also clean
+	*prefix = ""
 
 	var err error
 	func() {
