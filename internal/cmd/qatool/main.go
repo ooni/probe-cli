@@ -79,7 +79,7 @@ func runWebConnectivityLTE(tc *webconnectivityqa.TestCase) {
 		// serialize the observations
 		mustSerializeMkdirAllAndWriteFile(actualDestdir, "observations.json", observationsContainer)
 
-		// convert to classic analysis
+		// convert to classic observations
 		observationsContainerClassic := minipipeline.ClassicFilter(observationsContainer)
 
 		// serialize the classic observations
