@@ -281,7 +281,7 @@ func (wa *WebAnalysis) ComputeDNSPossiblyInvalidAddrs(c *WebObservationsContaine
 	for _, obs := range c.KnownTCPEndpoints {
 		addr := obs.IPAddress.Unwrap()
 
-		// skip the comparison if we don't info about matching
+		// skip the comparison if we don't have info about matching
 		if obs.MatchWithControlIPAddress.IsNone() || obs.MatchWithControlIPAddressASN.IsNone() {
 			continue
 		}
@@ -341,7 +341,7 @@ func (wa *WebAnalysis) ComputeDNSPossiblyInvalidAddrsClassic(c *WebObservationsC
 	for _, obs := range c.KnownTCPEndpoints {
 		addr := obs.IPAddress.Unwrap()
 
-		// skip the comparison if we don't info about matching
+		// skip the comparison if we don't have info about matching
 		if obs.MatchWithControlIPAddress.IsNone() || obs.MatchWithControlIPAddressASN.IsNone() {
 			continue
 		}
