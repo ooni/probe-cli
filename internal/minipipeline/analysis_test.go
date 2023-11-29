@@ -127,7 +127,7 @@ func TestWebAnalysisComputeHTTPDiffBodyProportionFactor(t *testing.T) {
 		wa := &WebAnalysis{}
 		wa.ComputeHTTPDiffBodyProportionFactor(container)
 
-		if !wa.HTTPFinalResponseDiffBodyProportionFactor.IsNone() {
+		if !wa.HTTPDiffBodyProportionFactor.IsNone() {
 			t.Fatal("should still be none")
 		}
 	})
@@ -145,7 +145,7 @@ func TestWebAnalysisComputeHTTPDiffBodyProportionFactor(t *testing.T) {
 		wa := &WebAnalysis{}
 		wa.ComputeHTTPDiffBodyProportionFactor(container)
 
-		if !wa.HTTPFinalResponseDiffBodyProportionFactor.IsNone() {
+		if !wa.HTTPDiffBodyProportionFactor.IsNone() {
 			t.Fatal("should still be none")
 		}
 	})
@@ -163,7 +163,7 @@ func TestWebAnalysisComputeHTTPDiffBodyProportionFactor(t *testing.T) {
 		wa := &WebAnalysis{}
 		wa.ComputeHTTPDiffBodyProportionFactor(container)
 
-		if !wa.HTTPFinalResponseDiffBodyProportionFactor.IsNone() {
+		if !wa.HTTPDiffBodyProportionFactor.IsNone() {
 			t.Fatal("should still be none")
 		}
 	})
@@ -182,7 +182,7 @@ func TestWebAnalysisComputeHTTPDiffBodyProportionFactor(t *testing.T) {
 		wa := &WebAnalysis{}
 		wa.ComputeHTTPDiffBodyProportionFactor(container)
 
-		if !wa.HTTPFinalResponseDiffBodyProportionFactor.IsNone() {
+		if !wa.HTTPDiffBodyProportionFactor.IsNone() {
 			t.Fatal("should still be none")
 		}
 	})
@@ -202,7 +202,7 @@ func TestWebAnalysisComputeHTTPDiffStatusCodeMatch(t *testing.T) {
 		wa := &WebAnalysis{}
 		wa.ComputeHTTPDiffStatusCodeMatch(container)
 
-		if !wa.HTTPFinalResponseDiffStatusCodeMatch.IsNone() {
+		if !wa.HTTPDiffStatusCodeMatch.IsNone() {
 			t.Fatal("should still be none")
 		}
 	})
@@ -220,7 +220,7 @@ func TestWebAnalysisComputeHTTPDiffStatusCodeMatch(t *testing.T) {
 		wa := &WebAnalysis{}
 		wa.ComputeHTTPDiffStatusCodeMatch(container)
 
-		if !wa.HTTPFinalResponseDiffStatusCodeMatch.IsNone() {
+		if !wa.HTTPDiffStatusCodeMatch.IsNone() {
 			t.Fatal("should still be none")
 		}
 	})
@@ -238,7 +238,7 @@ func TestWebAnalysisComputeHTTPDiffStatusCodeMatch(t *testing.T) {
 		wa := &WebAnalysis{}
 		wa.ComputeHTTPDiffStatusCodeMatch(container)
 
-		if !wa.HTTPFinalResponseDiffStatusCodeMatch.IsNone() {
+		if !wa.HTTPDiffStatusCodeMatch.IsNone() {
 			t.Fatal("should still be none")
 		}
 	})
@@ -257,7 +257,7 @@ func TestWebAnalysisComputeHTTPDiffStatusCodeMatch(t *testing.T) {
 		wa := &WebAnalysis{}
 		wa.ComputeHTTPDiffStatusCodeMatch(container)
 
-		if !wa.HTTPFinalResponseDiffStatusCodeMatch.IsNone() {
+		if !wa.HTTPDiffStatusCodeMatch.IsNone() {
 			t.Fatal("should still be none")
 		}
 	})
@@ -277,7 +277,7 @@ func TestWebAnalysisComputeHTTPDiffTitleDifferentLongWords(t *testing.T) {
 		wa := &WebAnalysis{}
 		wa.ComputeHTTPDiffTitleDifferentLongWords(container)
 
-		if !wa.HTTPFinalResponseDiffTitleDifferentLongWords.IsNone() {
+		if !wa.HTTPDiffTitleDifferentLongWords.IsNone() {
 			t.Fatal("should still be none")
 		}
 	})
@@ -295,7 +295,7 @@ func TestWebAnalysisComputeHTTPDiffTitleDifferentLongWords(t *testing.T) {
 		wa := &WebAnalysis{}
 		wa.ComputeHTTPDiffTitleDifferentLongWords(container)
 
-		if !wa.HTTPFinalResponseDiffTitleDifferentLongWords.IsNone() {
+		if !wa.HTTPDiffTitleDifferentLongWords.IsNone() {
 			t.Fatal("should still be none")
 		}
 	})
