@@ -51,225 +51,153 @@ func (tk *TestKeys) analysisClassic(logger model.Logger, container *minipipeline
 	// dump the observations
 	fmt.Printf("%s\n", must.MarshalJSON(container))
 
-	// produce the analysis based on the observations
-	analysis := minipipeline.AnalyzeWebObservations(container)
+	// produce the woa based on the observations
+	woa := minipipeline.AnalyzeWebObservations(container)
 
 	// dump the analysis
-	fmt.Printf("%s\n", must.MarshalJSON(analysis))
+	fmt.Printf("%s\n", must.MarshalJSON(woa))
 
-	// set DNSExperimentFailure
-	tk.DNSExperimentFailure = analysisOptionalToPointer(analysis.DNSExperimentFailure)
+	// determine the DNS consistency
+	switch {
+	case (woa.EndpointIPAddressesControlInvalid.Len() <= 0 &&
+		woa.EndpointIPAddressesInvalidBogon.Len() <= 0 &&
+		(woa.EndpointIPAddressesControlValidByASN.Len() > 0 ||
+			woa.EndpointIPAddressesValidTLS.Len() > 0 ||
+			woa.EndpointIPAddressesControlValidByEquality.Len() > 0)):
+		// we have consistency if:
+		//
+		// 1. the control did not detect any invalid IP address; and
+		//
+		// 2. we did not see any bogon; and
+		//
+		// 3. we have at least one address valid by ASN, TLS, or with-control equality.
+		tk.DNSConsistency = optional.Some("consistent")
 
-	// set DNSConsistency
-	var (
-		dnsTransactionsWithUnexpectedFailures *bool
-		dnsPossiblyInvalidAddrs               *bool
-		dnsBogonsFailure                      *bool
-	)
-	if v := analysis.DNSTransactionsWithUnexpectedFailures.UnwrapOr(nil); v != nil {
-		g := len(v) > 0
-		dnsTransactionsWithUnexpectedFailures = &g
+	case (woa.EndpointIPAddressesControlInvalid.Len() > 0 ||
+		woa.EndpointIPAddressesInvalidBogon.Len() > 0 ||
+		woa.DNSLookupWithControlUnexpectedFailure.Len() > 0):
+		// we have inconsistency if:
+		//
+		// 1. there is at least one address marked as invalid by the control; or
+		//
+		// 2. we did see at least a bogon; or
+		//
+		// 3. we have seen unexpected DNS failures.
+		tk.DNSConsistency = optional.Some("inconsistent")
+
+	default:
+		tk.DNSConsistency = optional.None[string]()
 	}
-	if v := analysis.DNSPossiblyInvalidAddrsClassic.UnwrapOr(nil); v != nil {
-		g := len(v) > 0
-		dnsPossiblyInvalidAddrs = &g
-	}
-	if v := analysis.DNSTransactionsWithBogons.UnwrapOr(nil); v != nil {
-		g := len(v) > 0
-		dnsBogonsFailure = &g
-	}
-	tk.DNSConsistency = func() *string {
-		if dnsBogonsFailure != nil && *dnsBogonsFailure {
-			v := "inconsistent"
-			return &v
+
+	// we must set blocking to "dns" when there's a DNS inconsistency
+	setBlocking := func(value string) string {
+		switch {
+		case !tk.DNSConsistency.IsNone() && tk.DNSConsistency.Unwrap() == "inconsistent":
+			return "dns"
+		default:
+			return value
 		}
-		if dnsPossiblyInvalidAddrs == nil && dnsTransactionsWithUnexpectedFailures == nil {
-			// this models the case where the control fails, which is when v0.4 does not set
-			// anything for dnsconsistency, and we should do the same
-			//
-			// the check for bogons is actually useful because the way in which we test
-			// for asn compatibility here is different and does not consider the case
-			// where the bogon returns the zero ASN
-			//
-			// in such a case though only dnsTransactionsWithUnexpectedFailures would be nil
-			// and we would go ahead and also check for bogon
-			//
-			// BUT NO!!!! AND SO WE NEED THE BOGON IN FRONT OF THIS SHIT
-			return nil
-		}
-		if dnsPossiblyInvalidAddrs != nil && *dnsPossiblyInvalidAddrs {
-			v := "inconsistent"
-			return &v
-		}
-		if dnsTransactionsWithUnexpectedFailures != nil && *dnsTransactionsWithUnexpectedFailures {
-			v := "inconsistent"
-			return &v
-		}
-		v := "consistent"
-		return &v
-	}()
 
-	// FIXME: HTTPExperimentFailure
-
-	// set BodyLengthMatch
-	if v := analysis.HTTPDiffBodyProportionFactor.UnwrapOr(0); v > 0 {
-		tk.BodyLengthMatch = analysisValueToPointer(v > 0.7)
 	}
 
-	// set HeadersMatch
-	if v := analysis.HTTPDiffUncommonHeadersIntersection.UnwrapOr(nil); v != nil {
-		tk.HeadersMatch = analysisValueToPointer(len(v) > 0)
+	// set HTTPDiff values
+	if !woa.HTTPFinalResponseDiffBodyProportionFactor.IsNone() {
+		tk.BodyLengthMatch = optional.Some(woa.HTTPFinalResponseDiffBodyProportionFactor.Unwrap() > 0.7)
+	}
+	if !woa.HTTPFinalResponseDiffUncommonHeadersIntersection.IsNone() {
+		tk.HeadersMatch = optional.Some(woa.HTTPFinalResponseDiffUncommonHeadersIntersection.Unwrap().Len() > 0)
+	}
+	tk.StatusCodeMatch = woa.HTTPFinalResponseDiffStatusCodeMatch
+	if !woa.HTTPFinalResponseDiffTitleDifferentLongWords.IsNone() {
+		tk.TitleMatch = optional.Some(woa.HTTPFinalResponseDiffTitleDifferentLongWords.Unwrap().Len() <= 0)
 	}
 
-	// set StatusCodeMatch
-	tk.StatusCodeMatch = analysisOptionalToPointer(analysis.HTTPDiffStatusCodeMatch)
-
-	// set TitleMatch
-	if v := analysis.HTTPDiffTitleDifferentLongWords.UnwrapOr(nil); v != nil {
-		tk.TitleMatch = analysisValueToPointer(len(v) <= 0)
-	}
-
-	//
-	// set Blocking & Accessible
-	//
-
-	// if we have a final response using TLS, we declare there's no blocking
-	if v := analysis.HTTPFinalResponsesWithTLS.UnwrapOr(nil); len(v) > 0 {
+	// if we have a final HTTPS response, we're good
+	if woa.HTTPFinalResponseWithoutControlTLS.Len() > 0 || woa.HTTPFinalResponseWithControlTLS.Len() > 0 {
 		tk.Blocking = false
 		tk.Accessible = true
 		return
 	}
 
-	// otherwise, if we have a final response, let's execute the dns-diff algorithm
-	if v := analysis.HTTPFinalResponsesWithControl.UnwrapOr(nil); len(v) > 0 {
-		if tk.StatusCodeMatch != nil && *tk.StatusCodeMatch {
-			if tk.BodyLengthMatch != nil && *tk.BodyLengthMatch {
+	// if we have a final HTTP response with control, let's run HTTPDiff
+	if woa.HTTPFinalResponseWithControlTCP.Len() > 0 {
+		if !tk.StatusCodeMatch.IsNone() && tk.StatusCodeMatch.Unwrap() {
+			if !tk.BodyLengthMatch.IsNone() && tk.BodyLengthMatch.Unwrap() {
 				tk.Blocking = false
 				tk.Accessible = true
 				return
 			}
-			if tk.HeadersMatch != nil && *tk.HeadersMatch {
+			if !tk.HeadersMatch.IsNone() && tk.HeadersMatch.Unwrap() {
 				tk.Blocking = false
 				tk.Accessible = true
 				return
 			}
-			if tk.TitleMatch != nil && *tk.TitleMatch {
+			if !tk.TitleMatch.IsNone() && tk.TitleMatch.Unwrap() {
 				tk.Blocking = false
 				tk.Accessible = true
 				return
 			}
+			// fallthrough
 		}
-		// It seems we didn't get the expected web page. What now? Well, if
-		// the DNS does not seem trustworthy, let us blame it.
-		if dnsPossiblyInvalidAddrs != nil && *dnsPossiblyInvalidAddrs {
-			tk.Blocking = "dns"
-			tk.Accessible = false
-			return
-		}
-		if dnsBogonsFailure != nil && *dnsBogonsFailure {
-			tk.Blocking = "dns"
-			tk.Accessible = false
-			return
-		}
-		// The only remaining conclusion seems that the web page we have got
-		// doesn't match what we were expecting.
-		tk.Blocking = "http-diff"
+		tk.Blocking = setBlocking("http-diff")
 		tk.Accessible = false
 		return
 	}
 
-	// otherwise we need to determine whether it's http-failure or tcp_ip
-	// with dns always being a possibility to consider
+	// if we have a final HTTP response without control, we don't know
+	if woa.HTTPFinalResponseWithoutControlTCP.Len() > 0 {
+		return
+	}
+
+	// if we have unexpected HTTP round trip failures, it's "http-failure"
+	if woa.HTTPNonFinalResponseFailureWithControlUnexpected.Len() > 0 {
+		tk.Blocking = setBlocking("http-failure")
+		tk.Accessible = false
+		return
+	}
+
+	// if we have unexpected TCP connect failures, it's "tcp_ip"
 	//
-	// we start by checking for unexpected TLS failures, which we map as
-	// http-failure since there's no TLS failure for v0.4
-	//
-	// note that this kind of failures happen in the first request, so
-	// we can be confident and apply a DNS correction here
-	if v := analysis.TCPTransactionsWithUnexpectedTLSHandshakeFailures.UnwrapOr(nil); len(v) > 0 {
-		if dnsPossiblyInvalidAddrs != nil && *dnsPossiblyInvalidAddrs {
-			tk.Blocking = "dns"
-			tk.Accessible = false
-			return
-		}
-		if dnsBogonsFailure != nil && *dnsBogonsFailure {
-			tk.Blocking = "dns"
-			tk.Accessible = false
-			return
-		}
-		tk.Blocking = "http-failure"
+	// we give precendence to this over TLS handshake because the latter
+	// always produces "http-failure", which we handle below
+	if woa.TCPConnectWithControlUnexpectedFailureAnomaly.Len() > 0 {
+		tk.Blocking = setBlocking("tcp_ip")
 		tk.Accessible = false
 		return
 	}
 
-	if v := analysis.TCPTransactionsWithUnexpectedTCPConnectFailures.UnwrapOr(nil); len(v) > 0 {
-		if dnsPossiblyInvalidAddrs != nil && *dnsPossiblyInvalidAddrs {
-			tk.Blocking = "dns"
-			tk.Accessible = false
-			return
-		}
-		if dnsBogonsFailure != nil && *dnsBogonsFailure {
-			tk.Blocking = "dns"
-			tk.Accessible = false
-			return
-		}
-		tk.Blocking = "tcp_ip"
+	// if we have unexpected TLS failures, it's "http-failure"
+	if woa.TLSHandshakeWithControlUnexpectedFailure.Len() > 0 {
+		tk.Blocking = setBlocking("http-failure")
 		tk.Accessible = false
 		return
 	}
 
-	// then we check for unexpected HTTP failures in the first request
-	if v := analysis.TCPTransactionsWithUnexpectedHTTPFailures.UnwrapOr(nil); len(v) > 0 {
-		if dnsPossiblyInvalidAddrs != nil && *dnsPossiblyInvalidAddrs {
-			tk.Blocking = "dns"
-			tk.Accessible = false
-			return
-		}
-		if dnsBogonsFailure != nil && *dnsBogonsFailure {
-			tk.Blocking = "dns"
-			tk.Accessible = false
-			return
-		}
-		tk.Blocking = "http-failure"
+	// if we have unexplained TCP failures, blame "http-failure"
+	if woa.TCPConnectWithoutControlFailure.Len() > 0 {
+		tk.Blocking = setBlocking("http-failure")
 		tk.Accessible = false
 		return
 	}
 
-	// then we check for unexpected HTTP failures in the first request
-	if v := analysis.TCPTransactionsWithUnexplainedUnexpectedFailures.UnwrapOr(nil); len(v) > 0 {
-		if dnsPossiblyInvalidAddrs != nil && *dnsPossiblyInvalidAddrs {
-			tk.Blocking = "dns"
-			tk.Accessible = false
-			return
-		}
-		if dnsBogonsFailure != nil && *dnsBogonsFailure {
-			tk.Blocking = "dns"
-			tk.Accessible = false
-			return
-		}
-		tk.Blocking = "http-failure"
+	// likewise but for unexplained TLS handshake failures
+	if woa.TLSHandshakeWithoutControlFailure.Len() > 0 {
+		tk.Blocking = setBlocking("http-failure")
 		tk.Accessible = false
 		return
 	}
 
-	// fallback to DNS if we don't know exactly what to do
-	if (dnsPossiblyInvalidAddrs != nil && *dnsPossiblyInvalidAddrs) ||
-		(dnsTransactionsWithUnexpectedFailures != nil && *dnsTransactionsWithUnexpectedFailures) {
+	// if we arrive here and the DNS is still inconsistent, say "dns"
+	if !tk.DNSConsistency.IsNone() && tk.DNSConsistency.Unwrap() == "inconsistent" {
 		tk.Blocking = "dns"
 		tk.Accessible = false
+		return
 	}
 
-	// what remains here are all the cases when the website is down
-	//
-	// the first case we consider is NXDOMAIN
-	if v := analysis.DNSPossiblyNonexistingDomains.UnwrapOr(nil); len(v) > 0 {
-		// TODO(bassosimone): this is a condition where v0.4 is actually wrong but
-		// we should keep its wrong behavior for now. The correct result here would
-		// actually be to set Accessible to false.
-		tk.Blocking = false
-		tk.Accessible = true
-	}
+	// otherwise, we don't know what to say
 }
+
+/*
 
 // analysisToplevelV2 is an alternative version of the analysis code that
 // uses the [minipipeline] package for processing.
@@ -307,7 +235,7 @@ func (tk *TestKeys) analysisToplevelV2Old(logger model.Logger) {
 	analysis.ComputeHTTPDiffUncommonHeadersIntersection(container)
 	analysis.ComputeHTTPDiffTitleDifferentLongWords(container)
 	analysis.ComputeHTTPFinalResponsesWithControl(container)
-	analysis.ComputeTCPTransactionsWithUnexplainedUnexpectedFailures(container)
+	analysis.ComputeTCPTransactionsWithUnexplainedUnexplainedFailures(container)
 	analysis.ComputeHTTPFinalResponsesWithTLS(container)
 
 	// dump the analysis results for debugging purposes
@@ -462,3 +390,4 @@ func (tk *TestKeys) analysisHTTPToplevelV2(analysis *minipipeline.WebAnalysis, l
 		tk.BlockingFlags |= analysisFlagHTTPDiff
 	}
 }
+*/

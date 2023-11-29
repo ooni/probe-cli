@@ -455,6 +455,12 @@ func (c *WebObservationsContainer) controlMatchDNSLookupResults(inputDomain stri
 			continue
 		}
 
+		// register whether the control failed and skip in such a case
+		obs.ControlDNSLookupFailure = optional.Some(utilsStringPointerToString(resp.DNS.Failure))
+		if resp.DNS.Failure != nil {
+			continue
+		}
+
 		// compute whether also the TH observed this addr
 		obs.MatchWithControlIPAddress = optional.Some(thAddrMap[addr])
 

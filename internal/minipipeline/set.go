@@ -32,8 +32,10 @@ func (sx Set[T]) Len() int {
 }
 
 // Remove removes the given key from the set.
-func (sx Set[T]) Remove(key T) {
-	delete(sx.state, key)
+func (sx Set[T]) Remove(keys ...T) {
+	for _, key := range keys {
+		delete(sx.state, key)
+	}
 }
 
 // Keys returns the keys.

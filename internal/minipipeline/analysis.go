@@ -18,142 +18,72 @@ func AnalyzeWebObservations(container *WebObservationsContainer) *WebAnalysis {
 //
 // The zero value of this struct is ready to use.
 type WebAnalysis struct {
-	// HTTPFinalResponseSuccessTLS contains the IDs of the final HTTP
-	// responses for which we observed a successful TLS handshake.
-	HTTPFinalResponseSuccessTLS Set[int64]
+	// These fields classify the "final" HTTP responses. A final response did not
+	// fail at the HTTP layer and has a 2xx, 4xx, or 5xx status code.
+	//
+	// We classify all the responses depending on whether:
+	//
+	// 1. control information is available;
+	//
+	// 2. they used TLS or TCP.
+	//
+	// When control information is available, we compare the final response
+	// status code, HTTP headers, body, and title with the control.
+	HTTPFinalResponseWithoutControlTLS Set[int64]
+	HTTPFinalResponseWithoutControlTCP Set[int64]
+	HTTPFinalResponseWithControlTLS    Set[int64]
+	HTTPFinalResponseWithControlTCP    Set[int64]
 
-	// HTTPFinalResponseMissingControl contains the IDs of the final HTTP
-	// responses for which we're missing control information.
-	HTTPFinalResponseMissingControl Set[int64]
+	// These fields show the comparison between the first final response
+	// with control and the corresponding control response.
+	HTTPFinalResponseDiffBodyProportionFactor        optional.Value[float64]
+	HTTPFinalResponseDiffStatusCodeMatch             optional.Value[bool]
+	HTTPFinalResponseDiffUncommonHeadersIntersection optional.Value[Set[string]]
+	HTTPFinalResponseDiffTitleDifferentLongWords     optional.Value[Set[string]]
 
-	// HTTPFinalResponseExpectedFailure contains the IDs of the final HTTP
-	// responses for which both the probe and the control failed.
-	HTTPFinalResponseExpectedFailure Set[int64]
+	// These fields classify the "non-final" HTTP responses. Since they're not
+	// final, they either fail or succeed with a 3xx status code.
+	HTTPNonFinalResponseSuccessTLS                   Set[int64]
+	HTTPNonFinalResponseSuccessTCP                   Set[int64]
+	HTTPNonFinalResponseFailureWithoutControl        Set[int64]
+	HTTPNonFinalResponseFailureWithControlExpected   Set[int64]
+	HTTPNonFinalResponseFailureWithControlUnexpected Set[int64]
 
-	// HTTPFinalResponseUnexpectedSuccess contains the IDs of the final HTTP
-	// responses for which the probe succeeded and the control failed.
-	HTTPFinalResponseUnexpectedSuccess Set[int64]
+	// These fields classify TLS handshakes.
+	TLSHandshakeWithoutControlFailure        Set[int64]
+	TLSHandshakeWithoutControlSuccess        Set[int64]
+	TLSHandshakeWithControlExpectedFailure   Set[int64]
+	TLSHandshakeWithControlUnexpectedSuccess Set[int64]
+	TLSHandshakeWithControlUnexpectedFailure Set[int64]
+	TLSHandshakeWithControlExpectedSuccess   Set[int64]
 
-	// HTTPFinalResponseUnexpectedFailure contains the IDs of the final HTTP
-	// responses for which the probe failed and the control succeeded.
-	HTTPFinalResponseUnexpectedFailure Set[int64]
+	// These fields classify TCP connects.
+	TCPConnectWithoutControlFailure                 Set[int64]
+	TCPConnectWithoutControlSuccess                 Set[int64]
+	TCPConnectWithControlExpectedFailure            Set[int64]
+	TCPConnectWithControlUnexpectedSuccess          Set[int64]
+	TCPConnectWithControlUnexpectedFailure          Set[int64]
+	TCPConnectWithControlUnexpectedFailureMaybeIPv6 Set[int64]
+	TCPConnectWithControlUnexpectedFailureAnomaly   Set[int64]
+	TCPConnectWithControlExpectedSuccess            Set[int64]
 
-	// HTTPDiffBodyProportionFactor contains the body proportion factor for the first
-	// "final" HTTP request inside the dataset compared to the control.
-	HTTPDiffBodyProportionFactor optional.Value[float64]
+	// These fields classify IP addresses used by endpoints.
+	EndpointIPAddressesValidTLS               Set[string]
+	EndpointIPAddressesInvalidBogon           Set[string]
+	EndpointIPAddressesUnknown                Set[string]
+	EndpointIPAddressesControlValidByEquality Set[string]
+	EndpointIPAddressesControlValidByASN      Set[string]
+	EndpointIPAddressesControlInvalid         Set[string]
 
-	// HTTPDiffStatusCodeMatch returns whether the status code matches for the first
-	// "final" HTTP request inside the dataset compared to the control.
-	HTTPDiffStatusCodeMatch optional.Value[bool]
-
-	// HTTPDiffUncommonHeadersIntersections contains the uncommon headers intersection for the first
-	// "final" HTTP request inside the dataset compared to the control.
-	HTTPDiffUncommonHeadersIntersection optional.Value[Set[string]]
-
-	// HTTPDiffTitleDifferentLongWords contains the words long 5+ characters that appear
-	// "final" HTTP request inside the dataset compared to the control.
-	HTTPDiffTitleDifferentLongWords optional.Value[Set[string]]
-
-	// TLSHandshakeSuccessWithoutControl contains the IDs of the endpoint transactions
-	// where the TLS handshake succeded without control information.
-	TLSHandshakeSuccessWithoutControl Set[int64]
-
-	// TLSHandshakeFailureWithoutControl contains the IDs of the endpoint transactions
-	// where the TLS handshake failed without control information.
-	TLSHandshakeFailureWithoutControl Set[int64]
-
-	// TLSHandshakeExpectedFailure contains the IDs of the endpoint transactions
-	// where the TLS handshake failed for the probe and the control.
-	TLSHandshakeExpectedFailure Set[int64]
-
-	// TLSHandshakeUnexpectedSuccess contains the IDs of the endpoint transactions
-	// where the probe succeeded and the control failed.
-	TLSHandshakeUnexpectedSuccess Set[int64]
-
-	// TLSHandshakeUnexpectedFailure contains the IDs of the endpoint transactions
-	// where the probe failed and the control succeeded.
-	TLSHandshakeUnexpectedFailure Set[int64]
-
-	// TLSHandshakeExpectedSuccess contains the IDs of the endpoint transactions
-	// where the probe succeeded and the control succeeded.
-	TLSHandshakeExpectedSuccess Set[int64]
-
-	// TCPConnectFailureWithoutControl contains the IDs of the endpoint transactions
-	// where the probe failed without control info.
-	TCPConnectFailureWithoutControl Set[int64]
-
-	// TCPConnectSuccessWithoutControl contains the IDs of the endpoint transactions
-	// where the probe succeeded without control info.
-	TCPConnectSuccessWithoutControl Set[int64]
-
-	// TCPConnectExpectedFailure contains the IDs of the endpoint transactions
-	// where the probe failed and also the control failed.
-	TCPConnectExpectedFailure Set[int64]
-
-	// TCPConnectUnexpectedSuccess contains the IDs of the endpoint transactions
-	// where the probe succeeded and the control failed.
-	TCPConnectUnexpectedSuccess Set[int64]
-
-	// TCPConnectUnexpectedFailure contains the IDs of the endpoint transactions
-	// where the probe failed and the control succeeded.
-	TCPConnectUnexpectedFailure Set[int64]
-
-	// TCPConnectExpectedSuccess contains the IDs of the endpoint transactions
-	// where the probe succeeded and the control succeeded.
-	TCPConnectExpectedSuccess Set[int64]
-
-	// IPAddressesValidatedUsingTLS contains the IP addresses that we validated
-	// by performing a successful TLS handshake.
-	IPAddressesValidatedUsingTLS Set[string]
-
-	// IPAddressesValidatedByEquality contains all the IP addresses that
-	// were resolved both by the probe and the control.
-	IPAddressesValidatedByEquality Set[string]
-
-	// IPAddressesValidatedByASN contains all the IP addresses whose ASNs
-	// were resolved both by the probe and the control.
-	IPAddressesValidatedByASN Set[string]
-
-	// IPAddressesBogons contains all the IP addresses that were bogons.
-	IPAddressesBogons Set[string]
-
-	// IPAddressesAll contains all the observed IP addresses.
-	IPAddressesAll Set[string]
-
-	// DNSLookupFailureWithoutControl contains the IDs of the DNS transactions
-	// where the probe failed and there's no control.
-	DNSLookupFailureWithoutControl Set[int64]
-
-	// DNSLookupSuccessWithoutControl contains the IDs of the DNS transactions
-	// where the probe succeeded and there's no control.
-	DNSLookupSuccessWithoutControl Set[int64]
-
-	// DNSLookupExpectedFailure contains the IDs of the DNS transactions
-	// where the probe and the control failed.
-	DNSLookupExpectedFailure Set[int64]
-
-	// DNSLookupUnexpectedSuccess contains the IDs of the DNS transactions
-	// where the probe succeeded and the control failed.
-	DNSLookupUnexpectedSuccess Set[int64]
-
-	// DNSLookupUnexpectedFailure contains the IDs of the DNS transactions
-	// where the probe failed and the control succeeded.
-	DNSLookupUnexpectedFailure Set[int64]
-
-	// DNSLookupExpectedSuccess contains the IDs of the DNS transactions
-	// where the probe succeeded and the control succeeded.
-	DNSLookupExpectedSuccess Set[int64]
-
-	// DNSExperimentFailure is the first DNS failure in the dataset.
-	DNSExperimentFailure optional.Value[string]
-
-	// HTTPExperimentFailure is the first HTTP failure in the dataset.
-	HTTPExperimentFailure optional.Value[string]
-}
-
-func analysisDNSLookupFailureIsDNSNoAnswerForAAAA(obs *WebObservation) bool {
-	return obs.DNSQueryType.UnwrapOr("") == "AAAA" &&
-		obs.DNSLookupFailure.UnwrapOr("") == netxlite.FailureDNSNoAnswer
+	// These fields classify DNS lookups.
+	DNSLookupHTTPS                        Set[int64]
+	DNSLookupAAAANoAnswer                 Set[int64]
+	DNSLookupWithoutControlFailure        Set[int64]
+	DNSLookupWithoutControlSuccess        Set[int64]
+	DNSLookupWithControlExpectedFailure   Set[int64]
+	DNSLookupWithControlUnexpectedSuccess Set[int64]
+	DNSLookupWithControlUnexpectedFailure Set[int64]
+	DNSLookupWithControlExpectedSuccess   Set[int64]
 }
 
 func (w *WebAnalysis) analyzeWebObservationsContainer(c *WebObservationsContainer) {
@@ -165,147 +95,125 @@ func (w *WebAnalysis) analyzeWebObservationsContainer(c *WebObservationsContaine
 	}
 }
 
-func (w *WebAnalysis) analyzeTCPEndpoint(obs *WebObservation) {
-	// HTTPFinalResponse
-	w.analyzeHTTPFinalResponse(obs)
-
-	// TLSHandshake
-	w.analyzeTLSHandshake(obs)
-
-	// TCPConnect
-	w.analyzeTCPConnect(obs)
-
-	// IPAddress
-	w.analyzeIPAddress(obs)
-}
-
-func (w *WebAnalysis) analyzeHTTPFinalResponse(obs *WebObservation) {
-	// we need a final HTTP response
-	if obs.HTTPResponseIsFinal.IsNone() || !obs.HTTPResponseIsFinal.Unwrap() {
-		return
-	}
-
-	// set the HTTPExperimentFailure
-	if w.HTTPExperimentFailure.IsNone() && obs.HTTPFailure.Unwrap() != "" {
-		w.HTTPExperimentFailure = obs.HTTPFailure
-	}
-
-	// handle the case where we TLS succeed
-	if !obs.TLSHandshakeFailure.IsNone() && obs.TLSHandshakeFailure.Unwrap() == "" {
-		w.HTTPFinalResponseSuccessTLS.Add(obs.EndpointTransactionID.Unwrap())
-		return
-	}
-
-	// handle the case where there's no control
-	if obs.ControlHTTPFailure.IsNone() {
-		w.HTTPFinalResponseMissingControl.Add(obs.EndpointTransactionID.Unwrap())
-		return
-	}
-
-	// handle the case where probe and control both fail
-	if obs.HTTPFailure.Unwrap() != "" && obs.ControlHTTPFailure.Unwrap() != "" {
-		w.HTTPFinalResponseExpectedFailure.Add(obs.EndpointTransactionID.Unwrap())
-		return
-	}
-
-	// handle the case where only the control fails
-	if obs.ControlHTTPFailure.Unwrap() != "" {
-		w.HTTPFinalResponseUnexpectedSuccess.Add(obs.EndpointTransactionID.Unwrap())
-		return
-	}
-
-	// handle the case where only the probe fails
-	if obs.HTTPFailure.Unwrap() != "" {
-		w.HTTPFinalResponseUnexpectedFailure.Add(obs.EndpointTransactionID.Unwrap())
-		return
-	}
-
-	// check for HTTP diff
-	w.analyzeHTTPDiffBodyProportionFactor(obs)
-	w.analyzeHTTPDiffStatusCodeMatch(obs)
-	w.analyzeHTTPDiffUncommonHeadersIntersection(obs)
-	w.analyzeHTTPDiffTitleDifferentLongWords(obs)
-}
-
-func analysisDNSEngineIsDNSOverHTTPS(obs *WebObservation) bool {
-	return obs.DNSEngine.UnwrapOr("") == "doh"
-}
-
 func (w *WebAnalysis) analyzeDNSLookup(obs *WebObservation) {
+	// we must have a DNS lookup failure
+	if obs.DNSLookupFailure.IsNone() {
+		return
+	}
+
 	// Implementation note: a DoH failure is not information about the URL we're
 	// measuring but about the DoH service being blocked.
 	//
 	// See https://github.com/ooni/probe/issues/2274
 	if analysisDNSEngineIsDNSOverHTTPS(obs) {
+		w.DNSLookupHTTPS.Add(obs.DNSTransactionID.Unwrap())
 		return
 	}
 
 	// skip cases where there's no DNS record for AAAA, which is a false positive
 	if analysisDNSLookupFailureIsDNSNoAnswerForAAAA(obs) {
+		w.DNSLookupAAAANoAnswer.Add(obs.DNSTransactionID.Unwrap())
 		return
 	}
 
 	// TODO(bassosimone): if we set an IPv6 address as the resolver address, we
 	// end up with false positive errors when there's no IPv6 support
 
-	// set the DNSExperimentFailure
-	if w.DNSExperimentFailure.IsNone() && obs.DNSLookupFailure.Unwrap() != "" {
-		w.DNSExperimentFailure = obs.DNSLookupFailure
-	}
-
 	// handle the case where there's no control
 	if obs.ControlDNSLookupFailure.IsNone() {
 		if obs.DNSLookupFailure.Unwrap() != "" {
-			w.DNSLookupFailureWithoutControl.Add(obs.DNSTransactionID.Unwrap())
+			w.DNSLookupWithoutControlFailure.Add(obs.DNSTransactionID.Unwrap())
 			return
 		}
-		w.DNSLookupSuccessWithoutControl.Add(obs.DNSTransactionID.Unwrap())
+		w.DNSLookupWithoutControlSuccess.Add(obs.DNSTransactionID.Unwrap())
 		return
 	}
 
 	// handle the case where both failed
 	if obs.DNSLookupFailure.Unwrap() != "" && obs.ControlDNSLookupFailure.Unwrap() != "" {
-		w.DNSLookupExpectedFailure.Add(obs.DNSTransactionID.Unwrap())
+		w.DNSLookupWithControlExpectedFailure.Add(obs.DNSTransactionID.Unwrap())
 		return
 	}
 
 	// handle the case where only the control failed
 	if obs.ControlDNSLookupFailure.Unwrap() != "" {
-		w.DNSLookupUnexpectedSuccess.Add(obs.DNSTransactionID.Unwrap())
+		w.DNSLookupWithControlUnexpectedSuccess.Add(obs.DNSTransactionID.Unwrap())
 		return
 	}
 
 	// handle the case where only the probe failed
 	if obs.DNSLookupFailure.Unwrap() != "" {
-		w.DNSLookupUnexpectedFailure.Add(obs.DNSTransactionID.Unwrap())
+		w.DNSLookupWithControlUnexpectedFailure.Add(obs.DNSTransactionID.Unwrap())
 		return
 	}
 
 	// handle the case where both succeeded
-	w.DNSLookupExpectedSuccess.Add(obs.DNSTransactionID.Unwrap())
+	w.DNSLookupWithControlExpectedSuccess.Add(obs.DNSTransactionID.Unwrap())
 }
 
-func analysisTCPConnectFailureSeemsMisconfiguredIPv6(obs *WebObservation) bool {
-	switch obs.TCPConnectFailure.UnwrapOr("") {
-	case netxlite.FailureNetworkUnreachable, netxlite.FailureHostUnreachable:
-		isv6, err := netxlite.IsIPv6(obs.IPAddress.UnwrapOr(""))
-		return err == nil && isv6
-
-	default: // includes the case of missing TCPConnectFailure
-		return false
-	}
+func (w *WebAnalysis) analyzeTCPEndpoint(obs *WebObservation) {
+	w.analyzeHTTPRoundTrip(obs)
+	w.analyzeTLSHandshake(obs)
+	w.analyzeTCPConnect(obs)
+	w.analyzeEndpointIPAddress(obs)
 }
 
-func (w *WebAnalysis) analyzeIPAddress(obs *WebObservation) {
-	if !obs.MatchWithControlIPAddress.IsNone() && obs.MatchWithControlIPAddress.Unwrap() {
-		w.IPAddressesValidatedByEquality.Add(obs.IPAddress.Unwrap())
+func (w *WebAnalysis) analyzeHTTPRoundTrip(obs *WebObservation) {
+	// we need a final HTTP response
+	if obs.HTTPResponseIsFinal.IsNone() || !obs.HTTPResponseIsFinal.Unwrap() {
+		// there needs to be a defined failure
+		if obs.HTTPFailure.IsNone() {
+			return
+		}
+
+		// handle and classify the case of failure
+		//
+		// when there is a control, we know the expectation for the final
+		// response, so we can determine whether there's blocking
+		if obs.HTTPFailure.Unwrap() != "" {
+			if obs.ControlHTTPFailure.IsNone() {
+				w.HTTPNonFinalResponseFailureWithoutControl.Add(obs.EndpointTransactionID.Unwrap())
+				return
+			}
+			if obs.ControlHTTPFailure.Unwrap() != "" {
+				w.HTTPNonFinalResponseFailureWithControlExpected.Add(obs.EndpointTransactionID.Unwrap())
+				return
+			}
+			w.HTTPNonFinalResponseFailureWithControlUnexpected.Add(obs.EndpointTransactionID.Unwrap())
+			return
+		}
+
+		// handle and classify the case of success
+		if !obs.TLSHandshakeFailure.IsNone() && obs.TLSHandshakeFailure.Unwrap() == "" {
+			w.HTTPNonFinalResponseSuccessTLS.Add(obs.EndpointTransactionID.Unwrap())
+			return
+		}
+		w.HTTPNonFinalResponseSuccessTCP.Add(obs.EndpointTransactionID.Unwrap())
+		return
 	}
 
-	if !obs.MatchWithControlIPAddressASN.IsNone() && obs.MatchWithControlIPAddressASN.Unwrap() {
-		w.IPAddressesValidatedByASN.Add(obs.IPAddress.Unwrap())
+	// handle the case where there's no control
+	if obs.ControlHTTPFailure.IsNone() {
+		if !obs.TLSHandshakeFailure.IsNone() && obs.TLSHandshakeFailure.Unwrap() == "" {
+			w.HTTPFinalResponseWithoutControlTLS.Add(obs.EndpointTransactionID.Unwrap())
+			return
+		}
+		w.HTTPFinalResponseWithoutControlTCP.Add(obs.EndpointTransactionID.Unwrap())
+		return
 	}
 
-	w.IPAddressesAll.Add(obs.IPAddress.Unwrap())
+	// count and classify the number of final responses with control
+	if !obs.TLSHandshakeFailure.IsNone() && obs.TLSHandshakeFailure.Unwrap() == "" {
+		w.HTTPFinalResponseWithControlTLS.Add(obs.EndpointTransactionID.Unwrap())
+	} else {
+		w.HTTPFinalResponseWithControlTCP.Add(obs.EndpointTransactionID.Unwrap())
+	}
+
+	// compute the HTTPDiff metrics
+	w.analyzeHTTPDiffBodyProportionFactor(obs)
+	w.analyzeHTTPDiffStatusCodeMatch(obs)
+	w.analyzeHTTPDiffUncommonHeadersIntersection(obs)
+	w.analyzeHTTPDiffTitleDifferentLongWords(obs)
 }
 
 func (w *WebAnalysis) analyzeTLSHandshake(obs *WebObservation) {
@@ -317,39 +225,37 @@ func (w *WebAnalysis) analyzeTLSHandshake(obs *WebObservation) {
 	// handle the case where there is no control information
 	if obs.ControlTLSHandshakeFailure.IsNone() {
 		if obs.TLSHandshakeFailure.Unwrap() != "" {
-			w.TLSHandshakeFailureWithoutControl.Add(obs.EndpointTransactionID.Unwrap())
+			w.TLSHandshakeWithoutControlFailure.Add(obs.EndpointTransactionID.Unwrap())
 			return
 		}
-		w.TLSHandshakeSuccessWithoutControl.Add(obs.EndpointTransactionID.Unwrap())
-		w.IPAddressesValidatedUsingTLS.Add(obs.IPAddress.Unwrap())
+		w.TLSHandshakeWithoutControlSuccess.Add(obs.EndpointTransactionID.Unwrap())
 		return
 	}
 
 	// handle the case where both the probe and the control fail
 	if obs.TLSHandshakeFailure.Unwrap() != "" && obs.ControlTLSHandshakeFailure.Unwrap() != "" {
-		w.TLSHandshakeExpectedFailure.Add(obs.EndpointTransactionID.Unwrap())
+		w.TLSHandshakeWithControlExpectedFailure.Add(obs.EndpointTransactionID.Unwrap())
 		return
 	}
 
 	// handle the case where only the control fails
 	if obs.ControlTLSHandshakeFailure.Unwrap() != "" {
-		w.TLSHandshakeUnexpectedSuccess.Add(obs.EndpointTransactionID.Unwrap())
-		w.IPAddressesValidatedUsingTLS.Add(obs.IPAddress.Unwrap())
+		w.TLSHandshakeWithControlUnexpectedSuccess.Add(obs.EndpointTransactionID.Unwrap())
 		return
 	}
 
 	// handle the case where only the probe fails
 	if obs.TLSHandshakeFailure.Unwrap() != "" {
-		w.TLSHandshakeUnexpectedFailure.Add(obs.EndpointTransactionID.Unwrap())
+		w.TLSHandshakeWithControlUnexpectedFailure.Add(obs.EndpointTransactionID.Unwrap())
 		return
 	}
 
 	// handle the case where both succeed
-	w.TLSHandshakeExpectedSuccess.Add(obs.EndpointTransactionID.Unwrap())
-	w.IPAddressesValidatedUsingTLS.Add(obs.IPAddress.Unwrap())
+	w.TLSHandshakeWithControlExpectedSuccess.Add(obs.EndpointTransactionID.Unwrap())
 }
 
 func (w *WebAnalysis) analyzeTCPConnect(obs *WebObservation) {
+	// we need a valid TCP connect attempt
 	if obs.TCPConnectFailure.IsNone() {
 		return
 	}
@@ -357,41 +263,79 @@ func (w *WebAnalysis) analyzeTCPConnect(obs *WebObservation) {
 	// handle the case where there is no control information
 	if obs.ControlTCPConnectFailure.IsNone() {
 		if obs.TCPConnectFailure.Unwrap() != "" {
-			w.TCPConnectFailureWithoutControl.Add(obs.EndpointTransactionID.Unwrap())
+			w.TCPConnectWithoutControlFailure.Add(obs.EndpointTransactionID.Unwrap())
 			return
 		}
-		w.TCPConnectSuccessWithoutControl.Add(obs.EndpointTransactionID.Unwrap())
+		w.TCPConnectWithoutControlSuccess.Add(obs.EndpointTransactionID.Unwrap())
 		return
 	}
 
 	// handle the case where both the probe and the control fail
 	if obs.TCPConnectFailure.Unwrap() != "" && obs.ControlTCPConnectFailure.Unwrap() != "" {
-		w.TCPConnectExpectedFailure.Add(obs.EndpointTransactionID.Unwrap())
+		w.TCPConnectWithControlExpectedFailure.Add(obs.EndpointTransactionID.Unwrap())
 		return
 	}
 
 	// handle the case where only the control fails
 	if obs.ControlTCPConnectFailure.Unwrap() != "" {
-		w.TCPConnectUnexpectedSuccess.Add(obs.EndpointTransactionID.Unwrap())
+		w.TCPConnectWithControlUnexpectedSuccess.Add(obs.EndpointTransactionID.Unwrap())
 		return
 	}
 
 	// handle the case where only the probe fails
 	if obs.TCPConnectFailure.Unwrap() != "" {
+		w.TCPConnectWithControlUnexpectedFailure.Add(obs.EndpointTransactionID.Unwrap())
 		if analysisTCPConnectFailureSeemsMisconfiguredIPv6(obs) {
+			w.TCPConnectWithControlUnexpectedFailureMaybeIPv6.Add(obs.EndpointTransactionID.Unwrap())
 			return
 		}
-		w.TCPConnectUnexpectedFailure.Add(obs.EndpointTransactionID.Unwrap())
+		w.TCPConnectWithControlUnexpectedFailureAnomaly.Add(obs.EndpointTransactionID.Unwrap())
 		return
 	}
 
 	// handle the case where both succeed
-	w.TCPConnectExpectedSuccess.Add(obs.EndpointTransactionID.Unwrap())
+	w.TCPConnectWithControlExpectedSuccess.Add(obs.EndpointTransactionID.Unwrap())
+}
+
+func (w *WebAnalysis) analyzeEndpointIPAddress(obs *WebObservation) {
+	// check whether it's invalid because it's a bogon
+	if !obs.IPAddressBogon.IsNone() && obs.IPAddressBogon.Unwrap() {
+		w.EndpointIPAddressesInvalidBogon.Add(obs.IPAddress.Unwrap())
+		return
+	}
+
+	// check whether it's valid because of TLS
+	if !obs.TLSHandshakeFailure.IsNone() && obs.TLSHandshakeFailure.Unwrap() == "" {
+		w.EndpointIPAddressesValidTLS.Add(obs.IPAddress.Unwrap())
+		return
+	}
+
+	// if we don't know the control failure, this endpoint was not matched
+	// with a control, so say that we really don't know
+	if obs.ControlDNSLookupFailure.IsNone() {
+		w.EndpointIPAddressesUnknown.Add(obs.IPAddress.Unwrap())
+		return
+	}
+
+	// check whether it's valid by equality with the control
+	if !obs.MatchWithControlIPAddress.IsNone() && obs.MatchWithControlIPAddress.Unwrap() {
+		w.EndpointIPAddressesControlValidByEquality.Add(obs.IPAddress.Unwrap())
+		return
+	}
+
+	// check whether it's valid because the control resolved the same set of ASNs
+	if !obs.MatchWithControlIPAddressASN.IsNone() && obs.MatchWithControlIPAddressASN.Unwrap() {
+		w.EndpointIPAddressesControlValidByASN.Add(obs.IPAddress.Unwrap())
+		return
+	}
+
+	// otherwise the control says this IP address is not valid
+	w.EndpointIPAddressesControlInvalid.Add(obs.IPAddress.Unwrap())
 }
 
 func (w *WebAnalysis) analyzeHTTPDiffBodyProportionFactor(obs *WebObservation) {
 	// skip if we have already run
-	if !w.HTTPDiffBodyProportionFactor.IsNone() {
+	if !w.HTTPFinalResponseDiffBodyProportionFactor.IsNone() {
 		return
 	}
 
@@ -416,12 +360,12 @@ func (w *WebAnalysis) analyzeHTTPDiffBodyProportionFactor(obs *WebObservation) {
 	}
 
 	// update state
-	w.HTTPDiffBodyProportionFactor = optional.Some(proportion)
+	w.HTTPFinalResponseDiffBodyProportionFactor = optional.Some(proportion)
 }
 
 func (w *WebAnalysis) analyzeHTTPDiffStatusCodeMatch(obs *WebObservation) {
 	// skip if we have already run
-	if !w.HTTPDiffStatusCodeMatch.IsNone() {
+	if !w.HTTPFinalResponseDiffStatusCodeMatch.IsNone() {
 		return
 	}
 
@@ -459,7 +403,7 @@ func (w *WebAnalysis) analyzeHTTPDiffStatusCodeMatch(obs *WebObservation) {
 	}
 
 	// update state
-	w.HTTPDiffStatusCodeMatch = optional.Some(good)
+	w.HTTPFinalResponseDiffStatusCodeMatch = optional.Some(good)
 }
 
 var analysisCommonHeaders = map[string]bool{
@@ -492,7 +436,7 @@ var analysisCommonHeaders = map[string]bool{
 
 func (w *WebAnalysis) analyzeHTTPDiffUncommonHeadersIntersection(obs *WebObservation) {
 	// skip if we have already run
-	if !w.HTTPDiffUncommonHeadersIntersection.IsNone() {
+	if !w.HTTPFinalResponseDiffUncommonHeadersIntersection.IsNone() {
 		return
 	}
 
@@ -536,12 +480,12 @@ func (w *WebAnalysis) analyzeHTTPDiffUncommonHeadersIntersection(obs *WebObserva
 			state.Add(key)
 		}
 	}
-	w.HTTPDiffUncommonHeadersIntersection = optional.Some(state)
+	w.HTTPFinalResponseDiffUncommonHeadersIntersection = optional.Some(state)
 }
 
 func (w *WebAnalysis) analyzeHTTPDiffTitleDifferentLongWords(obs *WebObservation) {
 	// skip if we have already run
-	if !w.HTTPDiffTitleDifferentLongWords.IsNone() {
+	if !w.HTTPFinalResponseDiffTitleDifferentLongWords.IsNone() {
 		return
 	}
 
@@ -588,5 +532,25 @@ func (w *WebAnalysis) analyzeHTTPDiffTitleDifferentLongWords(obs *WebObservation
 		}
 	}
 
-	w.HTTPDiffTitleDifferentLongWords = optional.Some(state)
+	w.HTTPFinalResponseDiffTitleDifferentLongWords = optional.Some(state)
+}
+
+func analysisDNSEngineIsDNSOverHTTPS(obs *WebObservation) bool {
+	return obs.DNSEngine.UnwrapOr("") == "doh"
+}
+
+func analysisTCPConnectFailureSeemsMisconfiguredIPv6(obs *WebObservation) bool {
+	switch obs.TCPConnectFailure.UnwrapOr("") {
+	case netxlite.FailureNetworkUnreachable, netxlite.FailureHostUnreachable:
+		isv6, err := netxlite.IsIPv6(obs.IPAddress.UnwrapOr(""))
+		return err == nil && isv6
+
+	default: // includes the case of missing TCPConnectFailure
+		return false
+	}
+}
+
+func analysisDNSLookupFailureIsDNSNoAnswerForAAAA(obs *WebObservation) bool {
+	return obs.DNSQueryType.UnwrapOr("") == "AAAA" &&
+		obs.DNSLookupFailure.UnwrapOr("") == netxlite.FailureDNSNoAnswer
 }

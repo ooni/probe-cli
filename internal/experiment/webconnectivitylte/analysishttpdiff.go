@@ -4,16 +4,7 @@ package webconnectivitylte
 // HTTP diff analysis
 //
 
-import (
-	"net/url"
-	"reflect"
-	"strings"
-
-	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivity"
-	"github.com/ooni/probe-cli/v3/internal/measurexlite"
-	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
-)
+/*
 
 // analysisHTTPDiff computes the HTTP diff between the final request-response
 // observed by the probe and the TH's result. The caller is responsible of passing
@@ -271,3 +262,5 @@ func (tk *TestKeys) httpDiffTitleMatch(
 	}
 	tk.TitleMatch = &good
 }
+
+*/

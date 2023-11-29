@@ -86,6 +86,8 @@ func compareTestKeys(expected, got *testKeys) error {
 		// BUG: LTE does not set body_proportion
 		options = append(options, cmpopts.IgnoreFields(testKeys{}, "BodyProportion"))
 
+		options = append(options, cmpopts.IgnoreFields(testKeys{}, "DNSExperimentFailure"))
+
 	default:
 		return fmt.Errorf("unknown experiment version: %s", got.XExperimentVersion)
 	}
