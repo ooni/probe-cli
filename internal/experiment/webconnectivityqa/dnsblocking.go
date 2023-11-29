@@ -67,7 +67,7 @@ func dnsBlockingNXDOMAIN() *TestCase {
 func dnsBlockingBOGON() *TestCase {
 	return &TestCase{
 		Name:  "dnsBlockingBOGON",
-		Flags: TestCaseFlagNoLTE, // We're not ready yet
+		Flags: 0,
 		Input: "https://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 			env.ISPResolverConfig().RemoveRecord("www.example.com")
