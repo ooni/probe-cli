@@ -42,11 +42,23 @@ func testMustRunAllWebTestCases(t *testing.T, topdir string) {
 				var expectedContainerData minipipeline.WebObservationsContainer
 				must.UnmarshalJSON(expectedContainerRaw, &expectedContainerData)
 
+				// load the expected classic container from the test case
+				expectedClassicContainerFile := filepath.Join(fullpath, "observations_classic.json")
+				expectedClassicContainerRaw := must.ReadFile(expectedClassicContainerFile)
+				var expectedClassicContainerData minipipeline.WebObservationsContainer
+				must.UnmarshalJSON(expectedClassicContainerRaw, &expectedClassicContainerData)
+
 				// load the expected analysis from the test case
 				expectedAnalysisFile := filepath.Join(fullpath, "analysis.json")
 				expectedAnalysisRaw := must.ReadFile(expectedAnalysisFile)
 				var expectedAnalysisData minipipeline.WebAnalysis
 				must.UnmarshalJSON(expectedAnalysisRaw, &expectedAnalysisData)
+
+				// load the expected classic analysis from the test case
+				expectedClassicAnalysisFile := filepath.Join(fullpath, "analysis_classic.json")
+				expectedClassicAnalysisRaw := must.ReadFile(expectedClassicAnalysisFile)
+				var expectedClassicAnalysisData minipipeline.WebAnalysis
+				must.UnmarshalJSON(expectedClassicAnalysisRaw, &expectedClassicAnalysisData)
 
 				// load the measurement into the pipeline
 				gotContainerData, err := minipipeline.IngestWebMeasurement(&measurementData)
@@ -54,8 +66,14 @@ func testMustRunAllWebTestCases(t *testing.T, topdir string) {
 					t.Fatal(err)
 				}
 
+				// convert the container into a classic container
+				gotClassicContainerData := minipipeline.ClassicFilter(gotContainerData)
+
 				// analyze the measurement
 				gotAnalysisData := minipipeline.AnalyzeWebObservations(gotContainerData)
+
+				// perform the classic web-connectivity-v0.4-like analysis
+				gotClassicAnalysisData := minipipeline.AnalyzeWebObservations(gotClassicContainerData)
 
 				t.Run("observations", func(t *testing.T) {
 					if diff := testCmpDiffUsingGenericMaps(&expectedContainerData, gotContainerData); diff != "" {
@@ -63,8 +81,20 @@ func testMustRunAllWebTestCases(t *testing.T, topdir string) {
 					}
 				})
 
+				t.Run("observations_classic", func(t *testing.T) {
+					if diff := testCmpDiffUsingGenericMaps(&expectedClassicContainerData, gotClassicContainerData); diff != "" {
+						t.Fatal(diff)
+					}
+				})
+
 				t.Run("analysis", func(t *testing.T) {
 					if diff := testCmpDiffUsingGenericMaps(&expectedAnalysisData, gotAnalysisData); diff != "" {
+						t.Fatal(diff)
+					}
+				})
+
+				t.Run("analysis_classic", func(t *testing.T) {
+					if diff := testCmpDiffUsingGenericMaps(&expectedClassicAnalysisData, gotClassicAnalysisData); diff != "" {
 						t.Fatal(diff)
 					}
 				})

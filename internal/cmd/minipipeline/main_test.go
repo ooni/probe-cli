@@ -45,10 +45,24 @@ func TestMainSuccess(t *testing.T) {
 		t.Fatal(diff)
 	}
 
+	// make sure the generated classic observations are good
+	expectedObservationsClassic := mustloadfile(filepath.Join("testdata", "observations_classic.json"))
+	gotObservationsClassic := mustloaddata(contentmap, filepath.Join("xo", "y-observations_classic.json"))
+	if diff := cmp.Diff(expectedObservationsClassic, gotObservationsClassic); diff != "" {
+		t.Fatal(diff)
+	}
+
 	// make sure the generated analysis is good
 	expectedAnalysis := mustloadfile(filepath.Join("testdata", "analysis.json"))
 	gotAnalysis := mustloaddata(contentmap, filepath.Join("xo", "y-analysis.json"))
 	if diff := cmp.Diff(expectedAnalysis, gotAnalysis); diff != "" {
+		t.Fatal(diff)
+	}
+
+	// make sure the generated classic analysis is good
+	expectedAnalysisClassic := mustloadfile(filepath.Join("testdata", "analysis_classic.json"))
+	gotAnalysisClassic := mustloaddata(contentmap, filepath.Join("xo", "y-analysis_classic.json"))
+	if diff := cmp.Diff(expectedAnalysisClassic, gotAnalysisClassic); diff != "" {
 		t.Fatal(diff)
 	}
 }
