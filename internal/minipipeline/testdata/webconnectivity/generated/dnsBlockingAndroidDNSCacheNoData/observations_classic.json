@@ -1,7 +1,7 @@
 {
   "DNSLookupFailures": [
     {
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "android_dns_cache_no_data",
       "DNSQueryType": "ANY",
@@ -25,7 +25,7 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": null,
+      "TagDepth": 0,
       "TagFetchBody": null,
       "ControlDNSDomain": "www.example.com",
       "ControlDNSLookupFailure": "",

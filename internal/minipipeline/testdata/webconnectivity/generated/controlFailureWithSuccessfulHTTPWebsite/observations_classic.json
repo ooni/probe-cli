@@ -26,7 +26,7 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": null,
+      "TagDepth": 0,
       "TagFetchBody": null,
       "ControlDNSDomain": null,
       "ControlDNSLookupFailure": null,
@@ -43,7 +43,7 @@
   ],
   "KnownTCPEndpoints": {
     "3": {
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.org",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -72,8 +72,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": "Default Web Page",
       "HTTPResponseIsFinal": true,
-      "TagDepth": null,
-      "TagFetchBody": null,
+      "TagDepth": 0,
+      "TagFetchBody": true,
       "ControlDNSDomain": null,
       "ControlDNSLookupFailure": null,
       "ControlTCPConnectFailure": null,
@@ -87,7 +87,7 @@
       "ControlHTTPResponseTitle": null
     },
     "4": {
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.org",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -111,8 +111,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": null,
-      "TagFetchBody": null,
+      "TagDepth": 0,
+      "TagFetchBody": false,
       "ControlDNSDomain": null,
       "ControlDNSLookupFailure": null,
       "ControlTCPConnectFailure": null,
