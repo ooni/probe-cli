@@ -61,3 +61,12 @@ func utilsForEachIPAddress(answers []model.ArchivalDNSAnswer, fx func(ipAddr str
 		}
 	}
 }
+
+func utilsEngineIsGetaddrinfo(engine optional.Value[string]) bool {
+	switch engine.UnwrapOr("") {
+	case "getaddrinfo", "golang_net_resolver":
+		return true
+	default:
+		return false
+	}
+}

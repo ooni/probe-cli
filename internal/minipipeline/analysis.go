@@ -5,25 +5,32 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/optional"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // AnalyzeWebObservations generates a [*WebAnalysis] from a [*WebObservationsContainer].
 func AnalyzeWebObservations(container *WebObservationsContainer) *WebAnalysis {
 	analysis := &WebAnalysis{}
+
 	analysis.ComputeDNSExperimentFailure(container)
 	analysis.ComputeDNSTransactionsWithBogons(container)
 	analysis.ComputeDNSTransactionsWithUnexpectedFailures(container)
 	analysis.ComputeDNSPossiblyInvalidAddrs(container)
+	analysis.ComputeDNSPossiblyInvalidAddrsClassic(container)
+	analysis.ComputeDNSPossiblyNonexistingDomains(container)
+
 	analysis.ComputeTCPTransactionsWithUnexpectedTCPConnectFailures(container)
 	analysis.ComputeTCPTransactionsWithUnexpectedTLSHandshakeFailures(container)
 	analysis.ComputeTCPTransactionsWithUnexpectedHTTPFailures(container)
+	analysis.ComputeTCPTransactionsWithUnexplainedUnexpectedFailures(container)
+
 	analysis.ComputeHTTPDiffBodyProportionFactor(container)
 	analysis.ComputeHTTPDiffStatusCodeMatch(container)
 	analysis.ComputeHTTPDiffUncommonHeadersIntersection(container)
 	analysis.ComputeHTTPDiffTitleDifferentLongWords(container)
-	analysis.ComputeHTTPFinalResponses(container)
-	analysis.ComputeTCPTransactionsWithUnexplainedUnexpectedFailures(container)
+	analysis.ComputeHTTPFinalResponsesWithControl(container)
 	analysis.ComputeHTTPFinalResponsesWithTLS(container)
+
 	return analysis
 }
 
@@ -31,8 +38,14 @@ func AnalyzeWebObservations(container *WebObservationsContainer) *WebAnalysis {
 //
 // The zero value of this struct is ready to use.
 //
-// Methods that mutate this struct are not idempotent. You should invoke each
-// of these methods just once, after you have filled a container.
+// For optional fields, they are None (i.e., `null` in JSON, `nil` in Go) when the corresponding
+// algorithm either didn't run or didn't encounter enough data to determine a non-None result. When
+// they are not None, they can still be empty (e.g., `{}` in JSON and in Go). In the latter case,
+// them being empty means we encountered good enough data to determine whether we needed to add
+// something to such a field and decided not to. For example, DNSTransactionWithBogons being None
+// means that there are no suitable transactions to inspect. It being empty, instead, means we
+// have transactions to inspect but none of them contains bogons. In other words, most fields are
+// three state and one should take this into account when performing data analysis.
 type WebAnalysis struct {
 	// DNSExperimentFailure is the first failure experienced by a getaddrinfo-like resolver.
 	DNSExperimentFailure optional.Value[string]
@@ -57,6 +70,14 @@ type WebAnalysis struct {
 	// addresses resolved by the TH to their corresponding ASN.
 	DNSPossiblyInvalidAddrs optional.Value[map[string]bool]
 
+	// DNSPossiblyInvalidAddrsClassic is like DNSPossiblyInvalidAddrs but does
+	// not use TLS to validate the IP addresses.
+	DNSPossiblyInvalidAddrsClassic optional.Value[map[string]bool]
+
+	// DNSPossiblyNonexistingDomains lists all the domains for which both
+	// the probe and the TH failed to perform DNS lookups.
+	DNSPossiblyNonexistingDomains optional.Value[map[string]bool]
+
 	// HTTPDiffBodyProportionFactor is the body proportion factor.
 	//
 	// The generation algorithm assumes there's a single "final" response.
@@ -78,13 +99,15 @@ type WebAnalysis struct {
 	// The generation algorithm assumes there's a single "final" response.
 	HTTPDiffUncommonHeadersIntersection optional.Value[map[string]bool]
 
-	// HTTPFinalResponses contains the transaction IDs of "final" responses (i.e., responses
-	// that are like 2xx, 4xx, or 5xx). Typically, we expect to have a single response that
-	// if final when we're analyzing Web Connectivity LTE.
-	HTTPFinalResponses optional.Value[map[int64]bool]
+	// HTTPFinalResponsesWithControl contains the transaction IDs of "final" responses (i.e.,
+	// responses that are like 2xx, 4xx, or 5xx) for which we also have a valid HTTP control
+	// measurement. Typically, we expect to have a single response that is final when
+	// analyzing Web Connectivity LTE results.
+	HTTPFinalResponsesWithControl optional.Value[map[int64]bool]
 
 	// HTTPFinalResponsesWithTLS is like HTTPFinalResponses but only includes the
-	// cases where we're using TLS to fetch the final response.
+	// cases where we're using TLS to fetch the final response, and does not concern
+	// itself with whether there's control data, because TLS suffices.
 	HTTPFinalResponsesWithTLS optional.Value[map[int64]bool]
 
 	// TCPTransactionsWithUnexpectedTCPConnectFailures contains the TCP transaction IDs that
@@ -126,32 +149,30 @@ func (wa *WebAnalysis) ComputeDNSExperimentFailure(c *WebObservationsContainer) 
 			continue
 		}
 
-		// we only care about when we're resolving the same domain
+		// we only care about cases where we're resolving the same domain
 		if probeDomain != thDomain {
 			continue
 		}
 
-		// make sure we only include the system resolver
-		switch obs.DNSEngine.UnwrapOr("") {
-		case "getaddrinfo", "golang_net_resolver":
-			// skip cases where there's no DNS record for AAAA, which is a false positive
-			//
-			// in principle, this should not happen with getaddrinfo, but we add this
-			// check nonetheless for robustness against this corner case
-			if analysisDNSLookupFailureIsDNSNoAnswerForAAAA(obs) {
-				continue
-			}
-
-			// only record the first failure
-			//
-			// we should only consider the first DNS lookup to be consistent with
-			// what was previously returned by Web Connectivity v0.4
-			wa.DNSExperimentFailure = obs.DNSLookupFailure
-			return
-
-		default:
-			// nothing
+		// as documented, only include the system resolver
+		if !utilsEngineIsGetaddrinfo(obs.DNSEngine) {
+			continue
 		}
+
+		// skip cases where there's no DNS record for AAAA, which is a false positive
+		//
+		// in principle, this should not happen with getaddrinfo, but we add this
+		// check nonetheless for robustness against this corner case
+		if analysisDNSLookupFailureIsDNSNoAnswerForAAAA(obs) {
+			continue
+		}
+
+		// only record the first failure
+		//
+		// we should only consider the first DNS lookup to be consistent with
+		// what was previously returned by Web Connectivity v0.4
+		wa.DNSExperimentFailure = obs.DNSLookupFailure
+		return
 	}
 }
 
@@ -164,6 +185,11 @@ func (wa *WebAnalysis) ComputeDNSTransactionsWithBogons(c *WebObservationsContai
 	//
 	// See https://github.com/ooni/probe/issues/2274 for more information.
 
+	// we cannot flip the state from None to empty until we inspect at least
+	// a single successful DNS lookup transaction
+	if len(c.DNSLookupSuccesses) <= 0 {
+		return
+	}
 	state := make(map[int64]bool)
 
 	for _, obs := range c.DNSLookupSuccesses {
@@ -183,6 +209,7 @@ func (wa *WebAnalysis) ComputeDNSTransactionsWithBogons(c *WebObservationsContai
 		}
 	}
 
+	// note that optional.Some constructs None if state is nil
 	wa.DNSTransactionsWithBogons = optional.Some(state)
 }
 
@@ -197,19 +224,9 @@ func (wa *WebAnalysis) ComputeDNSTransactionsWithUnexpectedFailures(c *WebObserv
 	//
 	// See https://github.com/ooni/probe/issues/2274
 
-	state := make(map[int64]bool)
+	var state map[int64]bool
 
 	for _, obs := range c.DNSLookupFailures {
-		// skip cases with no control
-		if obs.ControlDNSLookupFailure.IsNone() {
-			continue
-		}
-
-		// skip cases where the control failed as well
-		if obs.ControlDNSLookupFailure.Unwrap() != "" {
-			continue
-		}
-
 		// skip cases where the engine is doh (see above comment)
 		if analysisDNSEngineIsDNSOverHTTPS(obs) {
 			continue
@@ -223,12 +240,29 @@ func (wa *WebAnalysis) ComputeDNSTransactionsWithUnexpectedFailures(c *WebObserv
 		// TODO(bassosimone): if we set an IPv6 address as the resolver address, we
 		// end up with false positive errors when there's no IPv6 support
 
+		// skip cases with no control
+		if obs.ControlDNSLookupFailure.IsNone() {
+			continue
+		}
+
+		// flip from None to empty if we have seen at least one entry for
+		// which we can compare to the control
+		if state == nil {
+			state = make(map[int64]bool)
+		}
+
+		// skip cases where the control failed as well
+		if obs.ControlDNSLookupFailure.Unwrap() != "" {
+			continue
+		}
+
 		// update state
 		if id := obs.DNSTransactionID.UnwrapOr(0); id > 0 {
 			state[id] = true
 		}
 	}
 
+	// note that optional.Some constructs None if state is nil
 	wa.DNSTransactionsWithUnexpectedFailures = optional.Some(state)
 }
 
@@ -241,16 +275,26 @@ func (wa *WebAnalysis) ComputeDNSPossiblyInvalidAddrs(c *WebObservationsContaine
 	//
 	// See https://github.com/ooni/probe/issues/2274
 
-	state := make(map[string]bool)
+	var state map[string]bool
 
 	// pass 1: insert candidates into the state map
 	for _, obs := range c.KnownTCPEndpoints {
 		addr := obs.IPAddress.Unwrap()
 
+		// skip the comparison if we don't have info about matching
+		if obs.MatchWithControlIPAddress.IsNone() || obs.MatchWithControlIPAddressASN.IsNone() {
+			continue
+		}
+
+		// flip state from None to empty when we see the first couple of
+		// (probe, th) failures allowing us to perform a comparison
+		if state == nil {
+			state = make(map[string]bool)
+		}
+
 		// an address is suspicious if we have information regarding its potential
 		// matching with TH info and we know it does not match
-		if !obs.MatchWithControlIPAddress.IsNone() && !obs.MatchWithControlIPAddressASN.IsNone() &&
-			!obs.MatchWithControlIPAddress.Unwrap() && !obs.MatchWithControlIPAddressASN.Unwrap() {
+		if !obs.MatchWithControlIPAddress.Unwrap() && !obs.MatchWithControlIPAddressASN.Unwrap() {
 			state[addr] = true
 			continue
 		}
@@ -279,7 +323,106 @@ func (wa *WebAnalysis) ComputeDNSPossiblyInvalidAddrs(c *WebObservationsContaine
 		delete(state, addr)
 	}
 
+	// note that optional.Some constructs None if state is nil
 	wa.DNSPossiblyInvalidAddrs = optional.Some(state)
+}
+
+// ComputeDNSPossiblyInvalidAddrsClassic computes the DNSPossiblyInvalidAddrsClassic field.
+func (wa *WebAnalysis) ComputeDNSPossiblyInvalidAddrsClassic(c *WebObservationsContainer) {
+	// Implementation note: in the case in which DoH returned answers, here
+	// it still feels okay to consider them. We should avoid flagging DoH
+	// failures as measurement failures but if DoH returns us some unexpected
+	// even-non-bogon addr, it seems worth flagging for now.
+	//
+	// See https://github.com/ooni/probe/issues/2274
+
+	var state map[string]bool
+
+	for _, obs := range c.KnownTCPEndpoints {
+		addr := obs.IPAddress.Unwrap()
+
+		// skip the comparison if we don't have info about matching
+		if obs.MatchWithControlIPAddress.IsNone() || obs.MatchWithControlIPAddressASN.IsNone() {
+			continue
+		}
+
+		// flip state from None to empty when we see the first couple of
+		// (probe, th) failures allowing us to perform a comparison
+		if state == nil {
+			state = make(map[string]bool)
+		}
+
+		// an address is suspicious if we have information regarding its potential
+		// matching with TH info and we know it does not match
+		if !obs.MatchWithControlIPAddress.Unwrap() && !obs.MatchWithControlIPAddressASN.Unwrap() {
+			state[addr] = true
+			continue
+		}
+	}
+
+	// note that optional.Some constructs None if state is nil
+	wa.DNSPossiblyInvalidAddrsClassic = optional.Some(state)
+}
+
+// ComputeDNSPossiblyNonexistingDomains computes the DNSPossiblyNonexistingDomains field.
+func (wa *WebAnalysis) ComputeDNSPossiblyNonexistingDomains(c *WebObservationsContainer) {
+	var state map[string]bool
+
+	// first inspect the failures
+	for _, obs := range c.DNSLookupFailures {
+		// skip the comparison if we don't have enough information
+		if obs.DNSLookupFailure.IsNone() || obs.ControlDNSLookupFailure.IsNone() {
+			continue
+		}
+
+		// flip state from None to empty when we see the first couple of
+		// (probe, th) failures allowing us to perform a comparison
+		if state == nil {
+			state = make(map[string]bool)
+		}
+
+		// assume the domain is set in both cases
+		domain := obs.DNSDomain.Unwrap()
+		runtimex.Assert(domain == obs.ControlDNSDomain.Unwrap(), "mismatch between domain names")
+
+		// a domain is nonexisting if both the probe and the TH say so
+		if obs.DNSLookupFailure.Unwrap() != netxlite.FailureDNSNXDOMAINError {
+			continue
+		}
+		if obs.ControlDNSLookupFailure.Unwrap() != "dns_name_error" {
+			continue
+		}
+
+		// set the state
+		state[domain] = true
+	}
+
+	// then inspect the successes
+	for _, obs := range c.DNSLookupSuccesses {
+		// skip the comparison if we don't have enough information
+		if obs.DNSLookupFailure.IsNone() && obs.ControlDNSLookupFailure.IsNone() {
+			continue
+		}
+
+		// assume the domain is always set
+		domain := obs.DNSDomain.Unwrap()
+
+		// clear the state if the probe succeeded
+		if !obs.DNSLookupFailure.IsNone() && obs.DNSLookupFailure.Unwrap() == "" {
+			delete(state, domain)
+			continue
+		}
+
+		// clear the state if the TH succeded
+		if !obs.ControlDNSLookupFailure.IsNone() && obs.ControlDNSLookupFailure.Unwrap() == "" {
+			runtimex.Assert(domain == obs.ControlDNSDomain.Unwrap(), "mismatch between domain names")
+			delete(state, domain)
+			continue
+		}
+	}
+
+	// note that optional.Some constructs None if state is nil
+	wa.DNSPossiblyNonexistingDomains = optional.Some(state)
 }
 
 func analysisTCPConnectFailureSeemsMisconfiguredIPv6(obs *WebObservation) bool {
@@ -295,12 +438,18 @@ func analysisTCPConnectFailureSeemsMisconfiguredIPv6(obs *WebObservation) bool {
 
 // ComputeTCPTransactionsWithUnexpectedTCPConnectFailures computes the TCPTransactionsWithUnexpectedTCPConnectFailures field.
 func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexpectedTCPConnectFailures(c *WebObservationsContainer) {
-	state := make(map[int64]bool)
+	var state map[int64]bool
 
 	for _, obs := range c.KnownTCPEndpoints {
 		// we cannot do anything unless we have both records
 		if obs.TCPConnectFailure.IsNone() || obs.ControlTCPConnectFailure.IsNone() {
 			continue
+		}
+
+		// flip state from None to empty once we have seen the first
+		// suitable set of measurement/control pairs
+		if state == nil {
+			state = make(map[int64]bool)
 		}
 
 		// skip cases with no failures
@@ -322,17 +471,24 @@ func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexpectedTCPConnectFailures(c 
 		state[obs.EndpointTransactionID.Unwrap()] = true
 	}
 
+	// note that optional.Some constructs None if state is nil
 	wa.TCPTransactionsWithUnexpectedTCPConnectFailures = optional.Some(state)
 }
 
 // ComputeTCPTransactionsWithUnexpectedTLSHandshakeFailures computes the TCPTransactionsWithUnexpectedTLSHandshakeFailures field.
 func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexpectedTLSHandshakeFailures(c *WebObservationsContainer) {
-	state := make(map[int64]bool)
+	var state map[int64]bool
 
 	for _, obs := range c.KnownTCPEndpoints {
 		// we cannot do anything unless we have both records
 		if obs.TLSHandshakeFailure.IsNone() || obs.ControlTLSHandshakeFailure.IsNone() {
 			continue
+		}
+
+		// flip state from None to empty once we have seen the first
+		// suitable set of measurement/control pairs
+		if state == nil {
+			state = make(map[int64]bool)
 		}
 
 		// skip cases with no failures
@@ -349,17 +505,24 @@ func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexpectedTLSHandshakeFailures(
 		state[obs.EndpointTransactionID.Unwrap()] = true
 	}
 
+	// note that optional.Some constructs None if state is nil
 	wa.TCPTransactionsWithUnexpectedTLSHandshakeFailures = optional.Some(state)
 }
 
 // ComputeTCPTransactionsWithUnexpectedHTTPFailures computes the TCPTransactionsWithUnexpectedHTTPFailures field.
 func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexpectedHTTPFailures(c *WebObservationsContainer) {
-	state := make(map[int64]bool)
+	var state map[int64]bool
 
 	for _, obs := range c.KnownTCPEndpoints {
 		// we cannot do anything unless we have both records
 		if obs.HTTPFailure.IsNone() || obs.ControlHTTPFailure.IsNone() {
 			continue
+		}
+
+		// flip state from None to empty once we have seen the first
+		// suitable set of measurement/control pairs
+		if state == nil {
+			state = make(map[int64]bool)
 		}
 
 		// skip cases with no failures
@@ -376,6 +539,7 @@ func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexpectedHTTPFailures(c *WebOb
 		state[obs.EndpointTransactionID.Unwrap()] = true
 	}
 
+	// note that optional.Some constructs None if state is nil
 	wa.TCPTransactionsWithUnexpectedHTTPFailures = optional.Some(state)
 }
 
@@ -614,27 +778,49 @@ func (wa *WebAnalysis) ComputeHTTPDiffTitleDifferentLongWords(c *WebObservations
 	}
 }
 
-// ComputeHTTPFinalResponses computes the HTTPFinalResponses field.
-func (wa *WebAnalysis) ComputeHTTPFinalResponses(c *WebObservationsContainer) {
-	state := make(map[int64]bool)
+// ComputeHTTPFinalResponsesWithControl computes the HTTPFinalResponses field.
+func (wa *WebAnalysis) ComputeHTTPFinalResponsesWithControl(c *WebObservationsContainer) {
+	var state map[int64]bool
 
 	for _, obs := range c.KnownTCPEndpoints {
+		// skip this entry if we don't know the transaction ID
 		txid := obs.EndpointTransactionID.UnwrapOr(0)
 		if txid <= 0 {
 			continue
 		}
-		if obs.HTTPResponseIsFinal.UnwrapOr(false) {
-			state[txid] = true
+
+		// skip this entry if it's not final
+		isFinal := obs.HTTPResponseIsFinal.UnwrapOr(false)
+		if !isFinal {
 			continue
 		}
+
+		// skip this entry if don't have control information
+		if obs.ControlHTTPFailure.IsNone() {
+			continue
+		}
+
+		// flip state from None to empty when we have seen the first final
+		// response for which we have valid control info
+		if state == nil {
+			state = make(map[int64]bool)
+		}
+
+		// skip in case the HTTP control failed
+		if obs.ControlHTTPFailure.Unwrap() != "" {
+			continue
+		}
+
+		state[txid] = true
 	}
 
-	wa.HTTPFinalResponses = optional.Some(state)
+	// note that optional.Some constructs None if state is nil
+	wa.HTTPFinalResponsesWithControl = optional.Some(state)
 }
 
 // ComputeTCPTransactionsWithUnexplainedUnexpectedFailures computes the TCPTransactionsWithUnexplainedUnexpectedFailures field.
 func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexplainedUnexpectedFailures(c *WebObservationsContainer) {
-	state := make(map[int64]bool)
+	var state map[int64]bool
 
 	for _, obs := range c.KnownTCPEndpoints {
 		// obtain the transaction ID
@@ -647,6 +833,12 @@ func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexplainedUnexpectedFailures(c
 		// success, which we have iff the control succeeded.
 		if obs.ControlHTTPFailure.IsNone() || obs.ControlHTTPFailure.Unwrap() != "" {
 			continue
+		}
+
+		// flip state from None to empty when we have a reasonable
+		// expectation of success as explained above
+		if state == nil {
+			state = make(map[int64]bool)
 		}
 
 		// if we have a TCP connect measurement, the measurement failed, and we don't have
@@ -669,25 +861,46 @@ func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexplainedUnexpectedFailures(c
 		}
 	}
 
+	// note that optional.Some constructs None if state is nil
 	wa.TCPTransactionsWithUnexplainedUnexpectedFailures = optional.Some(state)
 }
 
 // ComputeHTTPFinalResponsesWithTLS computes the HTTPFinalResponsesWithTLS field.
 func (wa *WebAnalysis) ComputeHTTPFinalResponsesWithTLS(c *WebObservationsContainer) {
-	state := make(map[int64]bool)
+	var state map[int64]bool
 
 	for _, obs := range c.KnownTCPEndpoints {
+		// skip this entry if we don't know the transaction ID
 		txid := obs.EndpointTransactionID.UnwrapOr(0)
 		if txid <= 0 {
 			continue
 		}
+
+		// skip this entry if it's not final
 		isFinal := obs.HTTPResponseIsFinal.UnwrapOr(false)
-		tlsSuccess := obs.TLSHandshakeFailure.UnwrapOr("unknown_failure") == ""
-		if isFinal && tlsSuccess {
-			state[txid] = true
+		if !isFinal {
 			continue
 		}
+
+		// skip this entry if we didn't try a TLS handshake
+		if obs.TLSHandshakeFailure.IsNone() {
+			continue
+		}
+
+		// flip the state from None to empty when we have an endpoint
+		// for which we attempted a TLS handshake
+		if state == nil {
+			state = make(map[int64]bool)
+		}
+
+		// skip in case the TLS handshake failed
+		if obs.TLSHandshakeFailure.Unwrap() != "" {
+			continue
+		}
+
+		state[txid] = true
 	}
 
+	// note that optional.Some constructs None if state is nil
 	wa.HTTPFinalResponsesWithTLS = optional.Some(state)
 }
