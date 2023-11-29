@@ -9,6 +9,7 @@ package webconnectivitylte
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -34,6 +35,9 @@ type SecureFlow struct {
 
 	// DNSCache is the MANDATORY DNS cache.
 	DNSCache *DNSCache
+
+	// Depth is the OPTIONAL current redirect depth.
+	Depth int64
 
 	// IDGenerator is the MANDATORY atomic int64 to generate task IDs.
 	IDGenerator *atomic.Int64
@@ -105,7 +109,8 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	}
 
 	// create trace
-	trace := measurexlite.NewTrace(index, t.ZeroTime)
+	trace := measurexlite.NewTrace(index, t.ZeroTime, fmt.Sprintf("depth=%d", t.Depth),
+		fmt.Sprintf("fetch_body=%v", t.PrioSelector != nil))
 
 	// TODO(bassosimone): the DSL starts measuring for throttling when we start
 	// fetching the body while here we start immediately. We should come up with
@@ -307,7 +312,7 @@ func (t *SecureFlow) httpTransaction(ctx context.Context, network, address, alpn
 	// bit torn about what is the best approach to follow here. Maybe it does not
 	// even matter to emit transaction_start/end events given that we have transaction ID.
 	t.TestKeys.AppendNetworkEvents(measurexlite.NewAnnotationArchivalNetworkEvent(
-		trace.Index(), started, "http_transaction_start",
+		trace.Index(), started, "http_transaction_start", trace.Tags()...,
 	))
 	resp, err := txp.RoundTrip(req)
 	var body []byte
@@ -321,7 +326,7 @@ func (t *SecureFlow) httpTransaction(ctx context.Context, network, address, alpn
 	}
 	finished := trace.TimeSince(trace.ZeroTime())
 	t.TestKeys.AppendNetworkEvents(measurexlite.NewAnnotationArchivalNetworkEvent(
-		trace.Index(), finished, "http_transaction_done",
+		trace.Index(), finished, "http_transaction_done", trace.Tags()...,
 	))
 	ev := measurexlite.NewArchivalHTTPRequestResult(
 		trace.Index(),
@@ -336,6 +341,7 @@ func (t *SecureFlow) httpTransaction(ctx context.Context, network, address, alpn
 		body,
 		err,
 		finished,
+		trace.Tags()...,
 	)
 	t.TestKeys.PrependRequests(ev)
 	return resp, body, err
@@ -357,6 +363,7 @@ func (t *SecureFlow) maybeFollowRedirects(ctx context.Context, resp *http.Respon
 		t.Logger.Infof("redirect to: %s", location.String())
 		resolvers := &DNSResolvers{
 			CookieJar:    t.CookieJar,
+			Depth:        t.Depth + 1,
 			DNSCache:     t.DNSCache,
 			Domain:       location.Hostname(),
 			IDGenerator:  t.IDGenerator,
