@@ -297,7 +297,8 @@ func (c *WebObservationsContainer) ingestDNSLookupSuccesses(evs ...*model.Archiv
 		}
 
 		// walk through the answers
-		utilsForEachIPAddress(ev.Answers, func(ipAddr string) {
+		addrs := NewSet(utilsResolvedAddresses(ev.Answers)...)
+		for _, ipAddr := range addrs.Keys() {
 			// create the record
 			obs := &WebObservation{
 				DNSTransactionID: optional.Some(ev.TransactionID),
@@ -318,7 +319,7 @@ func (c *WebObservationsContainer) ingestDNSLookupSuccesses(evs ...*model.Archiv
 			if _, found := c.knownIPAddresses[ipAddr]; !found {
 				c.knownIPAddresses[ipAddr] = obs
 			}
-		})
+		}
 	}
 }
 
