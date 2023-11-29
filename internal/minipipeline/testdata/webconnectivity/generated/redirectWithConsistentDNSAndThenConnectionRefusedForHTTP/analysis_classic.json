@@ -1,0 +1,21 @@
+{
+  "DNSExperimentFailure": null,
+  "DNSTransactionsWithBogons": {},
+  "DNSTransactionsWithUnexpectedFailures": null,
+  "DNSPossiblyInvalidAddrs": {},
+  "DNSPossiblyInvalidAddrsClassic": {},
+  "DNSPossiblyNonexistingDomains": null,
+  "HTTPDiffBodyProportionFactor": null,
+  "HTTPDiffStatusCodeMatch": null,
+  "HTTPDiffTitleDifferentLongWords": null,
+  "HTTPDiffUncommonHeadersIntersection": null,
+  "HTTPFinalResponsesWithControl": null,
+  "HTTPFinalResponsesWithTLS": null,
+  "TCPTransactionsWithUnexpectedTCPConnectFailures": {},
+  "TCPTransactionsWithUnexpectedTLSHandshakeFailures": {},
+  "TCPTransactionsWithUnexpectedHTTPFailures": {},
+  "TCPTransactionsWithUnexplainedUnexpectedFailures": {
+    "6": true,
+    "7": true
+  }
+}
