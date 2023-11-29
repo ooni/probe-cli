@@ -29,7 +29,7 @@ func IngestWebMeasurement(meas *WebMeasurement) (*WebObservationsContainer, erro
 		return nil, ErrNoTestKeys
 	}
 
-	container := NewWebObservationsContainer()
+	container := NewWebObservationsContainer(optional.Some(meas.Input))
 	container.IngestDNSLookupEvents(tk.Queries...)
 	container.IngestTCPConnectEvents(tk.TCPConnect...)
 	container.IngestTLSHandshakeEvents(tk.TLSHandshakes...)
@@ -64,6 +64,9 @@ func IngestWebMeasurement(meas *WebMeasurement) (*WebObservationsContainer, erro
 //
 // We borrow this struct from https://github.com/ooni/data.
 type WebObservation struct {
+	// Input is the measurement input.
+	Input optional.Value[string]
+
 	// The following fields are optional.Some when you process the DNS
 	// lookup events contained inside an OONI measurement:
 
@@ -227,17 +230,21 @@ type WebObservationsContainer struct {
 	// KnownTCPEndpoints maps transaction IDs to TCP observations.
 	KnownTCPEndpoints map[int64]*WebObservation
 
+	// input is the OPTIONAL input of the measurement.
+	input optional.Value[string]
+
 	// knownIPAddresses is an internal field that maps an IP address to the
 	// corresponding DNS observation that discovered it.
 	knownIPAddresses map[string]*WebObservation
 }
 
 // NewWebObservationsContainer constructs a [*WebObservationsContainer].
-func NewWebObservationsContainer() *WebObservationsContainer {
+func NewWebObservationsContainer(input optional.Value[string]) *WebObservationsContainer {
 	return &WebObservationsContainer{
 		DNSLookupFailures:  []*WebObservation{},
 		DNSLookupSuccesses: []*WebObservation{},
 		KnownTCPEndpoints:  map[int64]*WebObservation{},
+		input:              input,
 		knownIPAddresses:   map[string]*WebObservation{},
 	}
 }
@@ -258,6 +265,7 @@ func (c *WebObservationsContainer) ingestDNSLookupFailures(evs ...*model.Archiva
 
 		// create record
 		obs := &WebObservation{
+			Input:            c.input,
 			DNSTransactionID: optional.Some(ev.TransactionID),
 			DNSDomain:        optional.Some(ev.Hostname),
 			DNSLookupFailure: optional.Some(utilsStringPointerToString(ev.Failure)),
@@ -281,6 +289,7 @@ func (c *WebObservationsContainer) ingestDNSLookupSuccesses(evs ...*model.Archiv
 		utilsForEachIPAddress(ev.Answers, func(ipAddr string) {
 			// create the record
 			obs := &WebObservation{
+				Input:            c.input,
 				DNSTransactionID: optional.Some(ev.TransactionID),
 				DNSDomain:        optional.Some(ev.Hostname),
 				DNSLookupFailure: optional.Some(""),
@@ -310,6 +319,7 @@ func (c *WebObservationsContainer) IngestTCPConnectEvents(evs ...*model.Archival
 		obs, found := c.knownIPAddresses[ev.IP]
 		if !found {
 			obs = &WebObservation{
+				Input:          c.input,
 				IPAddress:      optional.Some(ev.IP),
 				IPAddressASN:   utilsGeoipxLookupASN(ev.IP),
 				IPAddressBogon: optional.Some(netxlite.IsBogon(ev.IP)),
@@ -322,6 +332,7 @@ func (c *WebObservationsContainer) IngestTCPConnectEvents(evs ...*model.Archival
 		// while there also fill endpoint specific info
 		portString := strconv.Itoa(ev.Port)
 		obs = &WebObservation{
+			Input:                 c.input,
 			DNSTransactionID:      obs.DNSTransactionID,
 			DNSDomain:             obs.DNSDomain,
 			DNSLookupFailure:      obs.DNSLookupFailure,
