@@ -199,6 +199,9 @@ type WebObservation struct {
 	// ControlDNSLookupFailure is the corresponding control DNS lookup failure.
 	ControlDNSLookupFailure optional.Value[string]
 
+	// ControlDNSResolvedAddrs contains the list of addrs DNS-resolved by the control.
+	ControlDNSResolvedAddrs optional.Value[Set[string]]
+
 	// ControlTCPConnectFailure is the control's TCP connect failure.
 	ControlTCPConnectFailure optional.Value[string]
 
@@ -432,7 +435,10 @@ func (c *WebObservationsContainer) IngestControlMessages(req *model.THRequest, r
 }
 
 func (c *WebObservationsContainer) controlXrefDNSQueries(inputDomain string, resp *model.THResponse) {
-	for _, obs := range c.DNSLookupFailures {
+	var observations []*WebObservation
+	observations = append(observations, c.DNSLookupFailures...)
+	observations = append(observations, c.DNSLookupSuccesses...)
+	for _, obs := range observations {
 		// skip cases where the domain is different
 		if obs.DNSDomain.Unwrap() != inputDomain {
 			continue
@@ -441,8 +447,14 @@ func (c *WebObservationsContainer) controlXrefDNSQueries(inputDomain string, res
 		// register the corresponding DNS domain used by the control
 		obs.ControlDNSDomain = optional.Some(inputDomain)
 
-		// register the corresponding DNS lookup failure
+		// register the corresponding DNS lookup failure and skip in such a case
 		obs.ControlDNSLookupFailure = optional.Some(utilsStringPointerToString(resp.DNS.Failure))
+		if resp.DNS.Failure != nil {
+			continue
+		}
+
+		// register the resolved IP addresses
+		obs.ControlDNSResolvedAddrs = optional.Some(NewSet(resp.DNS.Addrs...))
 	}
 }
 
