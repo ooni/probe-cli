@@ -8,6 +8,7 @@ package webconnectivitylte
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"net"
 	"net/http"
@@ -32,6 +33,9 @@ type DNSResolvers struct {
 
 	// Domain is the MANDATORY domain to resolve.
 	Domain string
+
+	// Depth is the OPTIONAL current redirect depth.
+	Depth int64
 
 	// IDGenerator is the MANDATORY atomic int64 to generate task IDs.
 	IDGenerator *atomic.Int64
@@ -210,7 +214,7 @@ func (t *DNSResolvers) lookupHostSystem(parentCtx context.Context, out chan<- []
 	index := t.IDGenerator.Add(1)
 
 	// create trace
-	trace := measurexlite.NewTrace(index, t.ZeroTime)
+	trace := measurexlite.NewTrace(index, t.ZeroTime, fmt.Sprintf("depth=%d", t.Depth))
 
 	// start the operation logger
 	ol := logx.NewOperationLogger(
@@ -237,7 +241,7 @@ func (t *DNSResolvers) lookupHostUDP(parentCtx context.Context, udpAddress strin
 	index := t.IDGenerator.Add(1)
 
 	// create trace
-	trace := measurexlite.NewTrace(index, t.ZeroTime)
+	trace := measurexlite.NewTrace(index, t.ZeroTime, fmt.Sprintf("depth=%d", t.Depth))
 
 	// start the operation logger
 	ol := logx.NewOperationLogger(
@@ -375,7 +379,7 @@ func (t *DNSResolvers) lookupHostDNSOverHTTPS(parentCtx context.Context, out cha
 	index := t.IDGenerator.Add(1)
 
 	// create trace
-	trace := measurexlite.NewTrace(index, t.ZeroTime)
+	trace := measurexlite.NewTrace(index, t.ZeroTime, fmt.Sprintf("depth=%d", t.Depth))
 
 	// start the operation logger
 	ol := logx.NewOperationLogger(
@@ -433,6 +437,7 @@ func (t *DNSResolvers) startCleartextFlows(
 	for _, addr := range addresses {
 		task := &CleartextFlow{
 			Address:         net.JoinHostPort(addr.Addr, port),
+			Depth:           t.Depth,
 			DNSCache:        t.DNSCache,
 			IDGenerator:     t.IDGenerator,
 			Logger:          t.Logger,
@@ -475,6 +480,7 @@ func (t *DNSResolvers) startSecureFlows(
 	for _, addr := range addresses {
 		task := &SecureFlow{
 			Address:         net.JoinHostPort(addr.Addr, port),
+			Depth:           t.Depth,
 			DNSCache:        t.DNSCache,
 			IDGenerator:     t.IDGenerator,
 			Logger:          t.Logger,

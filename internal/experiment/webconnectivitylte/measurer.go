@@ -102,6 +102,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	// start background tasks
 	resos := &DNSResolvers{
 		DNSCache:     NewDNSCache(),
+		Depth:        0,
 		Domain:       URL.Hostname(),
 		IDGenerator:  idGenerator,
 		Logger:       sess.Logger(),
