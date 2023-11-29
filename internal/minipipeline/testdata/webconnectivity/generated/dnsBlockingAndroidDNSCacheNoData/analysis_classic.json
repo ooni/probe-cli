@@ -1,0 +1,20 @@
+{
+  "DNSExperimentFailure": "android_dns_cache_no_data",
+  "DNSTransactionsWithBogons": null,
+  "DNSTransactionsWithUnexpectedFailures": {
+    "2": true
+  },
+  "DNSPossiblyInvalidAddrs": null,
+  "DNSPossiblyInvalidAddrsClassic": null,
+  "DNSPossiblyNonexistingDomains": {},
+  "HTTPDiffBodyProportionFactor": null,
+  "HTTPDiffStatusCodeMatch": null,
+  "HTTPDiffTitleDifferentLongWords": null,
+  "HTTPDiffUncommonHeadersIntersection": null,
+  "HTTPFinalResponsesWithControl": null,
+  "HTTPFinalResponsesWithTLS": null,
+  "TCPTransactionsWithUnexpectedTCPConnectFailures": null,
+  "TCPTransactionsWithUnexpectedTLSHandshakeFailures": null,
+  "TCPTransactionsWithUnexpectedHTTPFailures": null,
+  "TCPTransactionsWithUnexplainedUnexpectedFailures": null
+}
