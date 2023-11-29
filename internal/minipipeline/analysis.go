@@ -7,6 +7,326 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/optional"
 )
 
+// WebConnectivityAnalysis generates a [*WebObservationsContainer] analysis
+// that is suitable for producing Web Connectivity LTE results.
+//
+// The zero value of this struct is ready to use.
+type WebConnectivityAnalysis struct {
+	// These sets classify DNS lookup results using the DNSTransactionID as the set key.
+	//
+	// The transactions are logically divided in three categories:
+	//
+	// 1. Unexplained results are those for which there is no control.
+	//
+	// 2. Expected results are those for which the control and the measurement match.
+	//
+	// 3. Unexpected results are those where they do not match.
+	//
+	// Each transaction may only appear into one of the following sets.
+	//
+	// We produce these sets using the DNSLookupAnalysis method.
+
+	DNSLookupUnexplainedFailure Set[int64]
+	DNSLookupUnexplainedSuccess Set[int64]
+	DNSLookupExpectedFailure    Set[int64]
+	DNSLookupUnexpectedSuccess  Set[int64]
+	DNSLookupUnexpectedFailure  Set[int64]
+	DNSLookupExpectedSuccess    Set[int64]
+
+	// This field contains the failure of the DNS-over-getaddrinfo lookup for the
+	// first lookup, i.e., before following any redirect.
+	//
+	// We produce this field using the DNSExperimentFailureAnalysis method.
+
+	DNSExperimentFailure optional.Value[string]
+
+	// These sets classify IP addresses using their string representation as the set key.
+	//
+	// The addresses are logically divided in three categories:
+	//
+	// 1. Valid means that we think the addresses in there are valid.
+	//
+	// 2. Invalid means that we think the addresses in there are invalid.
+	//
+	// 3. Unvalidated means that we don't know.
+	//
+	// We produce these sets using the IPAddressAnalysis method.
+
+	IPAddressValidTLS      Set[string]
+	IPAddressValidEquality Set[string]
+	IPAddressValidASN      Set[string]
+	IPAddressInvalidASN    Set[string]
+	IPAddressInvalidBogon  Set[string]
+	IPAddressUnvalidated   Set[string]
+
+	LegacyIPAddressValidEquality Set[string]
+	LegacyIPAddressValidASN      Set[string]
+	LegacyIPAddressInvalidASN    Set[string]
+	LegacyIPAddressUnvalidated   Set[string]
+
+	// These sets classify TCP connect results using the EndpointTransactionID as the set key.
+	//
+	// The transactions are logically divided in three categories:
+	//
+	// 1. Unexplained results are those for which there is no control.
+	//
+	// 2. Expected results are those for which the control and the measurement match.
+	//
+	// 3. Unexpected results are those where they do not match.
+	//
+	// Each transaction may only appear into one of the following sets.
+	//
+	// We produce these sets using the TCPConnectAnalysis method.
+
+	TCPConnectUnexplainedFailure Set[int64]
+	TCPConnectUnexplainedSuccess Set[int64]
+	TCPConnectExpectedFailure    Set[int64]
+	TCPConnectUnexpectedSuccess  Set[int64]
+	TCPConnectUnexpectedFailure  Set[int64]
+	TCPConnectExpectedSuccess    Set[int64]
+
+	// These sets classify TLS handshake results using the EndpointTransactionID as the set key.
+	//
+	// The transactions are logically divided in three categories:
+	//
+	// 1. Unexplained results are those for which there is no control.
+	//
+	// 2. Expected results are those for which the control and the measurement match.
+	//
+	// 3. Unexpected results are those where they do not match.
+	//
+	// Each transaction may only appear into one of the following sets.
+	//
+	// We produce these sets using the TLSHandshakeAnalysis method.
+
+	TLSHandshakeUnexplainedFailure Set[int64]
+	TLSHandshakeUnexplainedSuccess Set[int64]
+	TLSHandshakeExpectedFailure    Set[int64]
+	TLSHandshakeUnexpectedSuccess  Set[int64]
+	TLSHandshakeUnexpectedFailure  Set[int64]
+	TLSHandshakeExpectedSuccess    Set[int64]
+
+	// These sets classify HTTP-over-TCP results using the EndpointTransactionID as the set key.
+	//
+	// The transactions are logically divided in three categories:
+	//
+	// 1. Unexplained results are those for which there is no control.
+	//
+	// 2. Expected results are those for which the control and the measurement match.
+	//
+	// 3. Unexpected results are those where they do not match.
+	//
+	// Each transaction may only appear into one of the following sets.
+	//
+	// We produce these sets using the HTTPRoundTripOverTCPAnalysis method.
+
+	HTTPRoundTripOverTCPUnexplainedFailure Set[int64]
+	HTTPRoundTripOverTCPUnexplainedSuccess Set[int64]
+	HTTPRoundTripOverTCPExpectedFailure    Set[int64]
+	HTTPRoundTripOverTCPUnexpectedSuccess  Set[int64]
+	HTTPRoundTripOverTCPUnexpectedFailure  Set[int64]
+	HTTPRoundTripOverTCPExpectedSuccess    Set[int64]
+
+	// These sets classify HTTP-over-TLS results using the EndpointTransactionID as the set key.
+	//
+	// The transactions are logically divided in three categories:
+	//
+	// 1. Unexplained results are those for which there is no control.
+	//
+	// 2. Expected results are those for which the control and the measurement match.
+	//
+	// 3. Unexpected results are those where they do not match.
+	//
+	// Each transaction may only appear into one of the following sets.
+	//
+	// We produce these sets using the HTTPRoundTripOverTLSAnalysis method.
+
+	HTTPRoundTripOverTLSUnexplainedFailure Set[int64]
+	HTTPRoundTripOverTLSUnexplainedSuccess Set[int64]
+	HTTPRoundTripOverTLSExpectedFailure    Set[int64]
+	HTTPRoundTripOverTLSUnexpectedSuccess  Set[int64]
+	HTTPRoundTripOverTLSUnexpectedFailure  Set[int64]
+	HTTPRoundTripOverTLSExpectedSuccess    Set[int64]
+
+	// These fields characterize the final HTTP response. We define "final response" a
+	// response whose round trip is successful and status code is 2xx, 4xx, or 5xx.
+	//
+	// The analysis will only consider the first response with these characteristics
+	// and ignore all the subsequent alike responses. (This should not be an issue
+	// when processing Web Connectivity LTE data, since it produces at most one response
+	// bearing the above mentioned "final" characteristics.)
+	//
+	// We produce these sets using the HTTPFinalResponseAnalysis method.
+
+	HTTPFinalResponseID                          optional.Value[int64]
+	HTTPFinalResponseOverTLS                     optional.Value[bool]
+	HTTPFinalResponseBodyProportionFactor        optional.Value[float64]
+	HTTPFinalResponseStatusCodeMatch             optional.Value[bool]
+	HTTPFinalResponseUncommonHeadersIntersection optional.Value[Set[string]]
+	HTTPFinalResponseTitleDifferentLongWords     optional.Value[Set[string]]
+
+	// This field contains the failure of the first transaction we find within the
+	// deepest (in terms of redirect) transactions in the dataset.
+	//
+	// We produce this field using the HTTPExperimentFailureAnalysis method.
+
+	HTTPExperimentFailure optional.Value[string]
+}
+
+// Ingest ingests the given [*WebObservationsContainer] and produces the analysis
+// by invoking all the XXXAnalysis method defined by this struct.
+func (a *WebConnectivityAnalysis) Ingest(c *WebObservationsContainer) {
+	a.DNSLookupAnalysis(c)
+	a.DNSExperimentFailureAnalysis(c)
+	a.IPAddressAnalysis(c)
+	a.TCPConnectAnalysis(c)
+	a.TLSHandshakeAnalysis(c)
+	a.HTTPRoundTripOverTCPAnalysis(c)
+	a.HTTPRoundTripOverTLSAnalysis(c)
+	a.HTTPFinalResponseAnalysis(c)
+	a.HTTPExperimentFailureAnalysis(c)
+}
+
+// DNSLookupAnalysis implements the DNS lookup analysis.
+func (a *WebConnectivityAnalysis) DNSLookupAnalysis(c *WebObservationsContainer) {
+	for _, obs := range c.DNSLookupFailures {
+		a.dnsLookupAnalysis(obs)
+	}
+	for _, obs := range c.DNSLookupSuccesses {
+		a.dnsLookupAnalysis(obs)
+	}
+}
+
+func (a *WebConnectivityAnalysis) dnsLookupAnalysis(obs *WebObservation) {
+	// if this field is none, there's no useful info in here for us
+	if obs.DNSLookupFailure.IsNone() {
+		return
+	}
+
+	// Implementation note: a DoH failure is not information about the URL we're
+	// measuring but about the DoH service being blocked.
+	//
+	// See https://github.com/ooni/probe/issues/2274
+	if utilsDNSEngineIsDNSOverHTTPS(obs) {
+		return
+	}
+
+	// skip cases where there's no DNS record for AAAA, which is a false positive
+	if utilsDNSLookupFailureIsDNSNoAnswerForAAAA(obs) {
+		return
+	}
+
+	// TODO(bassosimone): if we set an IPv6 address as the resolver address, we
+	// end up with false positive errors when there's no IPv6 support
+
+	// handle the case where there's no control
+	if obs.ControlDNSLookupFailure.IsNone() {
+		if obs.DNSLookupFailure.Unwrap() != "" {
+			a.DNSLookupUnexplainedFailure.Add(obs.DNSTransactionID.Unwrap())
+			return
+		}
+		a.DNSLookupUnexplainedSuccess.Add(obs.DNSTransactionID.Unwrap())
+		return
+	}
+
+	// handle the case where both failed
+	if obs.DNSLookupFailure.Unwrap() != "" && obs.ControlDNSLookupFailure.Unwrap() != "" {
+		a.DNSLookupExpectedFailure.Add(obs.DNSTransactionID.Unwrap())
+		return
+	}
+
+	// handle the case where only the control failed
+	if obs.ControlDNSLookupFailure.Unwrap() != "" {
+		a.DNSLookupUnexpectedSuccess.Add(obs.DNSTransactionID.Unwrap())
+		return
+	}
+
+	// handle the case where only the probe failed
+	if obs.DNSLookupFailure.Unwrap() != "" {
+		a.DNSLookupUnexpectedFailure.Add(obs.DNSTransactionID.Unwrap())
+		return
+	}
+
+	// handle the case where both succeeded
+	a.DNSLookupExpectedSuccess.Add(obs.DNSTransactionID.Unwrap())
+}
+
+// DNSExperimentFailureAnalysis implements the DNS experiment failure analysis.
+func (a *WebConnectivityAnalysis) DNSExperimentFailureAnalysis(c *WebObservationsContainer) {
+	// TODO(bassosimone): implement
+}
+
+// IPAddressAnalysis implements the IP address analysis.
+func (a *WebConnectivityAnalysis) IPAddressAnalysis(c *WebObservationsContainer) {
+	for _, obs := range c.KnownTCPEndpoints {
+		a.ipAddressAnalysis(obs)
+	}
+}
+
+func (a *WebConnectivityAnalysis) ipAddressAnalysis(obs *WebObservation) {
+
+	// let's compare with the control if there's control information
+	if !obs.ControlDNSLookupFailure.IsNone() {
+
+		// check whether it's valid by equality with the control
+		if !obs.MatchWithControlIPAddress.IsNone() && obs.MatchWithControlIPAddress.Unwrap() {
+			a.IPAddressValidEquality.Add(obs.IPAddress.Unwrap())
+			a.LegacyIPAddressValidEquality.Add(obs.IPAddress.Unwrap())
+			return
+		}
+
+		// check whether it's valid because the control resolved the same set of ASNs
+		if !obs.MatchWithControlIPAddressASN.IsNone() && obs.MatchWithControlIPAddressASN.Unwrap() {
+			a.IPAddressValidASN.Add(obs.IPAddress.Unwrap())
+			a.LegacyIPAddressValidASN.Add(obs.IPAddress.Unwrap())
+			return
+		}
+
+		// the legacy algorithm considers bogons as "InvalidASN" because
+		// a bogon isn't associated with any AS number
+		if !obs.IPAddressBogon.IsNone() && obs.IPAddressBogon.Unwrap() {
+			a.LegacyIPAddressInvalidASN.Add(obs.IPAddress.Unwrap())
+		}
+
+		// distinguish between the address being "InvalidASN" because it's a bogon
+		// (which has no ASN) and the case where it has a different ASN
+		if !obs.IPAddressBogon.IsNone() && obs.IPAddressBogon.Unwrap() {
+			a.IPAddressInvalidASNBogon.Add(obs.IPAddress.Unwrap())
+			return
+		}
+		a.IPAddressInvalidASNDiff.Add(obs.IPAddress.Unwrap())
+		return
+
+	}
+
+	// check whether it's invalid because it's a bogon
+	if !obs.IPAddressBogon.IsNone() && obs.IPAddressBogon.Unwrap() {
+		a.IPAddressInvalidBogon.Add(obs.IPAddress.Unwrap())
+		return
+	}
+
+	// otherwise we don't know
+	a.IPAddressUnvalidated.Add(obs.IPAddress.Unwrap())
+}
+
+// TCPConnectAnalysis implements the TCP connect analysis.
+func (a *WebConnectivityAnalysis) TCPConnectAnalysis(c *WebObservationsContainer) {}
+
+// TLSHandshakeAnalysis implements the TLS handshake analysis.
+func (a *WebConnectivityAnalysis) TLSHandshakeAnalysis(c *WebObservationsContainer) {}
+
+// HTTPRoundTripOverTCPAnalysis implements the HTTP-round-trip-over-TCP analysis.
+func (a *WebConnectivityAnalysis) HTTPRoundTripOverTCPAnalysis(c *WebObservationsContainer) {}
+
+// HTTPRoundTripOverTLSAnalysis implements the HTTP-round-trip-over-TLS analysis.
+func (a *WebConnectivityAnalysis) HTTPRoundTripOverTLSAnalysis(c *WebObservationsContainer) {}
+
+// HTTPFinalResponseAnalysis implements the HTTP final response analysis.
+func (a *WebConnectivityAnalysis) HTTPFinalResponseAnalysis(c *WebObservationsContainer) {}
+
+// HTTPExperimentFailureAnalysis implements the HTTP experiment failure analysis.
+func (a *WebConnectivityAnalysis) HTTPExperimentFailureAnalysis(c *WebObservationsContainer) {}
+
 // AnalyzeWebObservations generates a [*WebAnalysis] from a [*WebObservationsContainer].
 func AnalyzeWebObservations(container *WebObservationsContainer) *WebAnalysis {
 	analysis := &WebAnalysis{}
@@ -105,13 +425,13 @@ func (w *WebAnalysis) analyzeDNSLookup(obs *WebObservation) {
 	// measuring but about the DoH service being blocked.
 	//
 	// See https://github.com/ooni/probe/issues/2274
-	if analysisDNSEngineIsDNSOverHTTPS(obs) {
+	if utilsDNSEngineIsDNSOverHTTPS(obs) {
 		w.DNSLookupHTTPS.Add(obs.DNSTransactionID.Unwrap())
 		return
 	}
 
 	// skip cases where there's no DNS record for AAAA, which is a false positive
-	if analysisDNSLookupFailureIsDNSNoAnswerForAAAA(obs) {
+	if utilsDNSLookupFailureIsDNSNoAnswerForAAAA(obs) {
 		w.DNSLookupAAAANoAnswer.Add(obs.DNSTransactionID.Unwrap())
 		return
 	}
@@ -535,10 +855,6 @@ func (w *WebAnalysis) analyzeHTTPDiffTitleDifferentLongWords(obs *WebObservation
 	w.HTTPFinalResponseDiffTitleDifferentLongWords = optional.Some(state)
 }
 
-func analysisDNSEngineIsDNSOverHTTPS(obs *WebObservation) bool {
-	return obs.DNSEngine.UnwrapOr("") == "doh"
-}
-
 func analysisTCPConnectFailureSeemsMisconfiguredIPv6(obs *WebObservation) bool {
 	switch obs.TCPConnectFailure.UnwrapOr("") {
 	case netxlite.FailureNetworkUnreachable, netxlite.FailureHostUnreachable:
@@ -548,9 +864,4 @@ func analysisTCPConnectFailureSeemsMisconfiguredIPv6(obs *WebObservation) bool {
 	default: // includes the case of missing TCPConnectFailure
 		return false
 	}
-}
-
-func analysisDNSLookupFailureIsDNSNoAnswerForAAAA(obs *WebObservation) bool {
-	return obs.DNSQueryType.UnwrapOr("") == "AAAA" &&
-		obs.DNSLookupFailure.UnwrapOr("") == netxlite.FailureDNSNoAnswer
 }

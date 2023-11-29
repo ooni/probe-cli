@@ -6,6 +6,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/geoipx"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/optional"
 )
 
@@ -96,4 +97,13 @@ func utilsExtractTagFetchBody(tags []string) optional.Value[bool] {
 		return optional.Some(tag == "true")
 	}
 	return optional.None[bool]()
+}
+
+func utilsDNSEngineIsDNSOverHTTPS(obs *WebObservation) bool {
+	return obs.DNSEngine.UnwrapOr("") == "doh"
+}
+
+func utilsDNSLookupFailureIsDNSNoAnswerForAAAA(obs *WebObservation) bool {
+	return obs.DNSQueryType.UnwrapOr("") == "AAAA" &&
+		obs.DNSLookupFailure.UnwrapOr("") == netxlite.FailureDNSNoAnswer
 }

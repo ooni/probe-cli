@@ -13,9 +13,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/optional"
 )
 
-// ErrNoTestKeys indicates that a [*WebMeasurement] does not contain [*MeasurementTestKeys].
-var ErrNoTestKeys = errors.New("minipipeline: no test keys")
-
 // IngestWebMeasurement loads a [*WebMeasurement] into a [*WebObservationsContainter]. To this
 // end, we create a [*WebObservationsContainer] and fill it with the contents of the input
 // [*WebMeasurement]. An empty [*WebMeasurement] will cause this function to produce an empty
@@ -23,28 +20,13 @@ var ErrNoTestKeys = errors.New("minipipeline: no test keys")
 // XControlRequestFields: in such a case, this function will just avoid using the test helper
 // (aka control) information for generating flat [*WebObservation]. This function returns an
 // error if the [*WebMeasurement] TestKeys are empty or Input is not a valid URL.
+//
+// Deprecated: use [NewWebObservationsContainer] and its IngestWebMeasurement method instead.
 func IngestWebMeasurement(meas *WebMeasurement) (*WebObservationsContainer, error) {
-	tk := meas.TestKeys.UnwrapOr(nil)
-	if tk == nil {
-		return nil, ErrNoTestKeys
-	}
-
 	container := NewWebObservationsContainer()
-	container.IngestDNSLookupEvents(tk.Queries...)
-	container.IngestTCPConnectEvents(tk.TCPConnect...)
-	container.IngestTLSHandshakeEvents(tk.TLSHandshakes...)
-	container.IngestHTTPRoundTripEvents(tk.Requests...)
-
-	// be defensive in case the control request or control are not defined
-	if !tk.XControlRequest.IsNone() && !tk.Control.IsNone() {
-		// Implementation note: the only error that can happen here is when the input
-		// doesn't parse as a URL, which should have triggered previous errors if we're
-		// running this code as part of Web Connectivity LTE.
-		if err := container.IngestControlMessages(tk.XControlRequest.Unwrap(), tk.Control.Unwrap()); err != nil {
-			return nil, err
-		}
+	if err := container.IngestWebMeasurement(meas); err != nil {
+		return nil, err
 	}
-
 	return container, nil
 }
 
@@ -258,6 +240,38 @@ func NewWebObservationsContainer() *WebObservationsContainer {
 		KnownTCPEndpoints:  map[int64]*WebObservation{},
 		knownIPAddresses:   map[string]*WebObservation{},
 	}
+}
+
+// ErrNoTestKeys indicates that a [*WebMeasurement] does not contain [*MeasurementTestKeys].
+var ErrNoTestKeys = errors.New("minipipeline: no test keys")
+
+// IngestWebMeasurement loads a [*WebMeasurement] into a [*WebObservationsContainter]. It is safe
+// to pass to this function a [*WebMeasurement] with empty Control and XControlRequestFields: in such
+// a case, this function will just avoid using the test helper (aka control) information for
+// generating flat [*WebObservation]. This function returns an error if the [*WebMeasurement]
+// TestKeys are empty or Input is not a valid URL.
+func (c *WebObservationsContainer) IngestWebMeasurement(meas *WebMeasurement) error {
+	tk := meas.TestKeys.UnwrapOr(nil)
+	if tk == nil {
+		return ErrNoTestKeys
+	}
+
+	c.IngestDNSLookupEvents(tk.Queries...)
+	c.IngestTCPConnectEvents(tk.TCPConnect...)
+	c.IngestTLSHandshakeEvents(tk.TLSHandshakes...)
+	c.IngestHTTPRoundTripEvents(tk.Requests...)
+
+	// be defensive in case the control request or control are not defined
+	if !tk.XControlRequest.IsNone() && !tk.Control.IsNone() {
+		// Implementation note: the only error that can happen here is when the input
+		// doesn't parse as a URL, which should have triggered previous errors if we're
+		// running this code as part of Web Connectivity LTE.
+		if err := c.IngestControlMessages(tk.XControlRequest.Unwrap(), tk.Control.Unwrap()); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // IngestDNSLookupEvents ingests DNS lookup events from a OONI measurement. You MUST
