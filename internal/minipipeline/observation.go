@@ -87,6 +87,9 @@ type WebObservation struct {
 	// DNSEngine is the DNS engine that we're using (e.g., "getaddrinfo").
 	DNSEngine optional.Value[string]
 
+	// DNSResolvedAddrs contains the list of DNS-resolved addrs.
+	DNSResolvedAddrs optional.Value[Set[string]]
+
 	// The following fields are optional.Some in these cases:
 	//
 	// 1. when you process successful DNS lookup events from OONI measurements;
@@ -306,6 +309,7 @@ func (c *WebObservationsContainer) ingestDNSLookupSuccesses(evs ...*model.Archiv
 				DNSLookupFailure: optional.Some(""),
 				DNSQueryType:     optional.Some(ev.QueryType),
 				DNSEngine:        optional.Some(ev.Engine),
+				DNSResolvedAddrs: optional.Some(addrs),
 				IPAddress:        optional.Some(ipAddr),
 				IPAddressASN:     utilsGeoipxLookupASN(ipAddr),
 				IPAddressBogon:   optional.Some(netxlite.IsBogon(ipAddr)),
@@ -346,6 +350,7 @@ func (c *WebObservationsContainer) IngestTCPConnectEvents(evs ...*model.Archival
 			DNSTransactionID:      obs.DNSTransactionID,
 			DNSDomain:             obs.DNSDomain,
 			DNSLookupFailure:      obs.DNSLookupFailure,
+			DNSResolvedAddrs:      obs.DNSResolvedAddrs,
 			IPAddress:             obs.IPAddress,
 			IPAddressASN:          obs.IPAddressASN,
 			IPAddressBogon:        obs.IPAddressBogon,
