@@ -5,6 +5,8 @@
     "2": true
   },
   "DNSPossiblyInvalidAddrs": {},
+  "DNSPossiblyInvalidAddrsClassic": {},
+  "DNSPossiblyNonexistingDomains": {},
   "HTTPDiffBodyProportionFactor": 1,
   "HTTPDiffStatusCodeMatch": true,
   "HTTPDiffTitleDifferentLongWords": {},
@@ -12,7 +14,7 @@
     "alt-svc": true,
     "content-length": true
   },
-  "HTTPFinalResponses": {
+  "HTTPFinalResponsesWithControl": {
     "3": true
   },
   "HTTPFinalResponsesWithTLS": {

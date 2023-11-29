@@ -1,10 +1,14 @@
 {
   "DNSExperimentFailure": null,
   "DNSTransactionsWithBogons": {},
-  "DNSTransactionsWithUnexpectedFailures": {},
+  "DNSTransactionsWithUnexpectedFailures": null,
   "DNSPossiblyInvalidAddrs": {
     "104.154.89.105": true
   },
+  "DNSPossiblyInvalidAddrsClassic": {
+    "104.154.89.105": true
+  },
+  "DNSPossiblyNonexistingDomains": {},
   "HTTPDiffBodyProportionFactor": 1,
   "HTTPDiffStatusCodeMatch": true,
   "HTTPDiffTitleDifferentLongWords": {},
@@ -12,7 +16,7 @@
     "alt-svc": true,
     "content-length": true
   },
-  "HTTPFinalResponses": {
+  "HTTPFinalResponsesWithControl": {
     "4": true
   },
   "HTTPFinalResponsesWithTLS": {

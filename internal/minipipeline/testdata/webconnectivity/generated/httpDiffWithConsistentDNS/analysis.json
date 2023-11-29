@@ -1,8 +1,10 @@
 {
   "DNSExperimentFailure": null,
   "DNSTransactionsWithBogons": {},
-  "DNSTransactionsWithUnexpectedFailures": {},
+  "DNSTransactionsWithUnexpectedFailures": null,
   "DNSPossiblyInvalidAddrs": {},
+  "DNSPossiblyInvalidAddrsClassic": {},
+  "DNSPossiblyNonexistingDomains": {},
   "HTTPDiffBodyProportionFactor": 0.12263535551206783,
   "HTTPDiffStatusCodeMatch": true,
   "HTTPDiffTitleDifferentLongWords": {
@@ -11,10 +13,10 @@
     "denied": true
   },
   "HTTPDiffUncommonHeadersIntersection": {},
-  "HTTPFinalResponses": {
+  "HTTPFinalResponsesWithControl": {
     "3": true
   },
-  "HTTPFinalResponsesWithTLS": {},
+  "HTTPFinalResponsesWithTLS": null,
   "TCPTransactionsWithUnexpectedTCPConnectFailures": {},
   "TCPTransactionsWithUnexpectedTLSHandshakeFailures": {},
   "TCPTransactionsWithUnexpectedHTTPFailures": {},
