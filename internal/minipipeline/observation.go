@@ -371,15 +371,16 @@ func (c *WebObservationsContainer) IngestHTTPRoundTripEvents(evs ...*model.Archi
 		obs.HTTPFailure = optional.Some(utilsStringPointerToString(ev.Failure))
 
 		// consider the response authoritative only in case of success
-		if ev.Failure == nil {
-			obs.HTTPResponseStatusCode = optional.Some(ev.Response.Code)
-			obs.HTTPResponseBodyLength = optional.Some(int64(len(ev.Response.Body)))
-			obs.HTTPResponseBodyIsTruncated = optional.Some(ev.Request.BodyIsTruncated)
-			obs.HTTPResponseHeadersKeys = utilsExtractHTTPHeaderKeys(ev.Response.Headers)
-			obs.HTTPResponseTitle = optional.Some(measurexlite.WebGetTitle(string(ev.Response.Body)))
-			obs.HTTPResponseLocation = utilsExtractHTTPLocation(ev.Response.Headers)
-			obs.HTTPResponseIsFinal = utilsDetermineWhetherHTTPResponseIsFinal(ev.Response.Code)
+		if ev.Failure != nil {
+			continue
 		}
+		obs.HTTPResponseStatusCode = optional.Some(ev.Response.Code)
+		obs.HTTPResponseBodyLength = optional.Some(int64(len(ev.Response.Body)))
+		obs.HTTPResponseBodyIsTruncated = optional.Some(ev.Request.BodyIsTruncated)
+		obs.HTTPResponseHeadersKeys = utilsExtractHTTPHeaderKeys(ev.Response.Headers)
+		obs.HTTPResponseTitle = optional.Some(measurexlite.WebGetTitle(string(ev.Response.Body)))
+		obs.HTTPResponseLocation = utilsExtractHTTPLocation(ev.Response.Headers)
+		obs.HTTPResponseIsFinal = utilsDetermineWhetherHTTPResponseIsFinal(ev.Response.Code)
 	}
 }
 
