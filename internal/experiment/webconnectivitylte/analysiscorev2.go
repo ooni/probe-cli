@@ -2,7 +2,6 @@ package webconnectivitylte
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/ooni/probe-cli/v3/internal/minipipeline"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -65,6 +64,7 @@ func (tk *TestKeys) analysisClassic(logger model.Logger, container *minipipeline
 	var (
 		dnsTransactionsWithUnexpectedFailures *bool
 		dnsPossiblyInvalidAddrs               *bool
+		dnsBogonsFailure                      *bool
 	)
 	if v := analysis.DNSTransactionsWithUnexpectedFailures.UnwrapOr(nil); v != nil {
 		g := len(v) > 0
@@ -74,8 +74,29 @@ func (tk *TestKeys) analysisClassic(logger model.Logger, container *minipipeline
 		g := len(v) > 0
 		dnsPossiblyInvalidAddrs = &g
 	}
-	log.Printf("ELLIOT: %v %v", dnsPossiblyInvalidAddrs, dnsTransactionsWithUnexpectedFailures)
+	if v := analysis.DNSTransactionsWithBogons.UnwrapOr(nil); v != nil {
+		g := len(v) > 0
+		dnsBogonsFailure = &g
+	}
 	tk.DNSConsistency = func() *string {
+		if dnsBogonsFailure != nil && *dnsBogonsFailure {
+			v := "inconsistent"
+			return &v
+		}
+		if dnsPossiblyInvalidAddrs == nil && dnsTransactionsWithUnexpectedFailures == nil {
+			// this models the case where the control fails, which is when v0.4 does not set
+			// anything for dnsconsistency, and we should do the same
+			//
+			// the check for bogons is actually useful because the way in which we test
+			// for asn compatibility here is different and does not consider the case
+			// where the bogon returns the zero ASN
+			//
+			// in such a case though only dnsTransactionsWithUnexpectedFailures would be nil
+			// and we would go ahead and also check for bogon
+			//
+			// BUT NO!!!! AND SO WE NEED THE BOGON IN FRONT OF THIS SHIT
+			return nil
+		}
 		if dnsPossiblyInvalidAddrs != nil && *dnsPossiblyInvalidAddrs {
 			v := "inconsistent"
 			return &v
@@ -83,9 +104,6 @@ func (tk *TestKeys) analysisClassic(logger model.Logger, container *minipipeline
 		if dnsTransactionsWithUnexpectedFailures != nil && *dnsTransactionsWithUnexpectedFailures {
 			v := "inconsistent"
 			return &v
-		}
-		if dnsPossiblyInvalidAddrs == nil && dnsTransactionsWithUnexpectedFailures == nil {
-			return nil
 		}
 		v := "consistent"
 		return &v
@@ -148,6 +166,11 @@ func (tk *TestKeys) analysisClassic(logger model.Logger, container *minipipeline
 			tk.Accessible = false
 			return
 		}
+		if dnsBogonsFailure != nil && *dnsBogonsFailure {
+			tk.Blocking = "dns"
+			tk.Accessible = false
+			return
+		}
 		// The only remaining conclusion seems that the web page we have got
 		// doesn't match what we were expecting.
 		tk.Blocking = "http-diff"
@@ -169,6 +192,11 @@ func (tk *TestKeys) analysisClassic(logger model.Logger, container *minipipeline
 			tk.Accessible = false
 			return
 		}
+		if dnsBogonsFailure != nil && *dnsBogonsFailure {
+			tk.Blocking = "dns"
+			tk.Accessible = false
+			return
+		}
 		tk.Blocking = "http-failure"
 		tk.Accessible = false
 		return
@@ -176,6 +204,11 @@ func (tk *TestKeys) analysisClassic(logger model.Logger, container *minipipeline
 
 	if v := analysis.TCPTransactionsWithUnexpectedTCPConnectFailures.UnwrapOr(nil); len(v) > 0 {
 		if dnsPossiblyInvalidAddrs != nil && *dnsPossiblyInvalidAddrs {
+			tk.Blocking = "dns"
+			tk.Accessible = false
+			return
+		}
+		if dnsBogonsFailure != nil && *dnsBogonsFailure {
 			tk.Blocking = "dns"
 			tk.Accessible = false
 			return
@@ -192,6 +225,11 @@ func (tk *TestKeys) analysisClassic(logger model.Logger, container *minipipeline
 			tk.Accessible = false
 			return
 		}
+		if dnsBogonsFailure != nil && *dnsBogonsFailure {
+			tk.Blocking = "dns"
+			tk.Accessible = false
+			return
+		}
 		tk.Blocking = "http-failure"
 		tk.Accessible = false
 		return
@@ -200,6 +238,11 @@ func (tk *TestKeys) analysisClassic(logger model.Logger, container *minipipeline
 	// then we check for unexpected HTTP failures in the first request
 	if v := analysis.TCPTransactionsWithUnexplainedUnexpectedFailures.UnwrapOr(nil); len(v) > 0 {
 		if dnsPossiblyInvalidAddrs != nil && *dnsPossiblyInvalidAddrs {
+			tk.Blocking = "dns"
+			tk.Accessible = false
+			return
+		}
+		if dnsBogonsFailure != nil && *dnsBogonsFailure {
 			tk.Blocking = "dns"
 			tk.Accessible = false
 			return
