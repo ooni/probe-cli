@@ -2,7 +2,7 @@
   "DNSLookupFailures": [],
   "DNSLookupSuccesses": [
     {
-      "DNSTransactionID": 3,
+      "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -26,7 +26,7 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": null,
+      "TagDepth": 0,
       "TagFetchBody": null,
       "ControlDNSDomain": null,
       "ControlDNSLookupFailure": null,
@@ -42,7 +42,7 @@
     }
   ],
   "KnownTCPEndpoints": {
-    "4": {
+    "3": {
       "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
@@ -51,7 +51,7 @@
       "IPAddress": "93.184.216.34",
       "IPAddressASN": 15133,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 4,
+      "EndpointTransactionID": 3,
       "EndpointProto": "tcp",
       "EndpointPort": "80",
       "EndpointAddress": "93.184.216.34:80",
@@ -72,8 +72,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": "Default Web Page",
       "HTTPResponseIsFinal": true,
-      "TagDepth": null,
-      "TagFetchBody": null,
+      "TagDepth": 0,
+      "TagFetchBody": true,
       "ControlDNSDomain": "www.example.com",
       "ControlDNSLookupFailure": "",
       "ControlTCPConnectFailure": "",
@@ -91,7 +91,7 @@
       },
       "ControlHTTPResponseTitle": "Default Web Page"
     },
-    "5": {
+    "4": {
       "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
@@ -100,7 +100,7 @@
       "IPAddress": "93.184.216.34",
       "IPAddressASN": 15133,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 5,
+      "EndpointTransactionID": 4,
       "EndpointProto": "tcp",
       "EndpointPort": "443",
       "EndpointAddress": "93.184.216.34:443",
@@ -116,8 +116,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": null,
-      "TagFetchBody": null,
+      "TagDepth": 0,
+      "TagFetchBody": false,
       "ControlDNSDomain": "www.example.com",
       "ControlDNSLookupFailure": "",
       "ControlTCPConnectFailure": "",

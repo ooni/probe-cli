@@ -2,7 +2,7 @@
   "DNSExperimentFailure": "android_dns_cache_no_data",
   "DNSTransactionsWithBogons": null,
   "DNSTransactionsWithUnexpectedFailures": {
-    "2": true
+    "1": true
   },
   "DNSPossiblyInvalidAddrs": null,
   "DNSPossiblyInvalidAddrsClassic": null,

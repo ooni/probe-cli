@@ -13,7 +13,7 @@
     "content-length": true
   },
   "HTTPFinalResponsesWithControl": {
-    "4": true
+    "3": true
   },
   "HTTPFinalResponsesWithTLS": null,
   "TCPTransactionsWithUnexpectedTCPConnectFailures": {},

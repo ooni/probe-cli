@@ -25,7 +25,7 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": null,
+      "TagDepth": 0,
       "TagFetchBody": null,
       "ControlDNSDomain": "www.example.xyz",
       "ControlDNSLookupFailure": "dns_name_error",
