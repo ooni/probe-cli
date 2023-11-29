@@ -67,6 +67,7 @@ func TestCleartextFlow_Run(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tr := &CleartextFlow{
 				Address:         tt.fields.Address,
+				Depth:           0,
 				DNSCache:        tt.fields.DNSCache,
 				IDGenerator:     tt.fields.IDGenerator,
 				Logger:          tt.fields.Logger,

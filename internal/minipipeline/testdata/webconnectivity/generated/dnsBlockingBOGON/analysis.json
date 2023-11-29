@@ -1,7 +1,7 @@
 {
   "DNSExperimentFailure": null,
   "DNSTransactionsWithBogons": {
-    "2": true
+    "1": true
   },
   "DNSTransactionsWithUnexpectedFailures": null,
   "DNSPossiblyInvalidAddrs": {},
@@ -15,15 +15,15 @@
     "content-length": true
   },
   "HTTPFinalResponsesWithControl": {
-    "4": true
+    "3": true
   },
   "HTTPFinalResponsesWithTLS": {
-    "4": true
+    "3": true
   },
   "TCPTransactionsWithUnexpectedTCPConnectFailures": {},
   "TCPTransactionsWithUnexpectedTLSHandshakeFailures": {},
   "TCPTransactionsWithUnexpectedHTTPFailures": {},
   "TCPTransactionsWithUnexplainedUnexpectedFailures": {
-    "3": true
+    "4": true
   }
 }

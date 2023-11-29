@@ -1,6 +1,7 @@
 package minipipeline
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/ooni/probe-cli/v3/internal/geoipx"
@@ -69,4 +70,30 @@ func utilsEngineIsGetaddrinfo(engine optional.Value[string]) bool {
 	default:
 		return false
 	}
+}
+
+func utilsExtractTagDepth(tags []string) optional.Value[int64] {
+	for _, tag := range tags {
+		if !strings.HasPrefix(tag, "depth=") {
+			continue
+		}
+		tag = strings.TrimPrefix(tag, "depth=")
+		value, err := strconv.ParseInt(tag, 10, 64)
+		if err != nil {
+			continue
+		}
+		return optional.Some(value)
+	}
+	return optional.None[int64]()
+}
+
+func utilsExtractTagFetchBody(tags []string) optional.Value[bool] {
+	for _, tag := range tags {
+		if !strings.HasPrefix(tag, "fetch_body=") {
+			continue
+		}
+		tag = strings.TrimPrefix(tag, "fetch_body=")
+		return optional.Some(tag == "true")
+	}
+	return optional.None[bool]()
 }

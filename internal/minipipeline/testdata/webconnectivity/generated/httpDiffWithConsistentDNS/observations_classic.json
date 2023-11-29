@@ -2,7 +2,7 @@
   "DNSLookupFailures": [],
   "DNSLookupSuccesses": [
     {
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -26,6 +26,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": 0,
+      "TagFetchBody": null,
       "ControlDNSDomain": null,
       "ControlDNSLookupFailure": null,
       "ControlTCPConnectFailure": null,
@@ -41,7 +43,7 @@
   ],
   "KnownTCPEndpoints": {
     "3": {
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -65,8 +67,10 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": "Access Denied",
       "HTTPResponseIsFinal": true,
-      "ControlDNSDomain": null,
-      "ControlDNSLookupFailure": null,
+      "TagDepth": 0,
+      "TagFetchBody": true,
+      "ControlDNSDomain": "www.example.com",
+      "ControlDNSLookupFailure": "",
       "ControlTCPConnectFailure": "",
       "MatchWithControlIPAddress": true,
       "MatchWithControlIPAddressASN": true,
@@ -83,7 +87,7 @@
       "ControlHTTPResponseTitle": "Default Web Page"
     },
     "4": {
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -107,8 +111,10 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "ControlDNSDomain": null,
-      "ControlDNSLookupFailure": null,
+      "TagDepth": 0,
+      "TagFetchBody": false,
+      "ControlDNSDomain": "www.example.com",
+      "ControlDNSLookupFailure": "",
       "ControlTCPConnectFailure": "",
       "MatchWithControlIPAddress": true,
       "MatchWithControlIPAddressASN": true,

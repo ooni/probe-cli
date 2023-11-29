@@ -1,7 +1,7 @@
 {
   "DNSLookupFailures": [
     {
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
@@ -25,6 +25,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": 0,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.example.com",
       "ControlDNSLookupFailure": "",
       "ControlTCPConnectFailure": null,
@@ -40,7 +42,7 @@
   ],
   "DNSLookupSuccesses": [
     {
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -64,6 +66,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": 0,
+      "TagFetchBody": null,
       "ControlDNSDomain": null,
       "ControlDNSLookupFailure": null,
       "ControlTCPConnectFailure": null,
@@ -77,7 +81,7 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
@@ -101,6 +105,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": 0,
+      "TagFetchBody": null,
       "ControlDNSDomain": null,
       "ControlDNSLookupFailure": null,
       "ControlTCPConnectFailure": null,
@@ -116,7 +122,7 @@
   ],
   "KnownTCPEndpoints": {
     "3": {
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -140,8 +146,10 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "ControlDNSDomain": null,
-      "ControlDNSLookupFailure": null,
+      "TagDepth": 0,
+      "TagFetchBody": true,
+      "ControlDNSDomain": "www.example.com",
+      "ControlDNSLookupFailure": "",
       "ControlTCPConnectFailure": "",
       "MatchWithControlIPAddress": true,
       "MatchWithControlIPAddressASN": true,
