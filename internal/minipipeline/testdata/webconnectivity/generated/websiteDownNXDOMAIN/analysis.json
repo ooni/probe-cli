@@ -1,16 +1,20 @@
 {
   "DNSExperimentFailure": "dns_nxdomain_error",
-  "DNSTransactionsWithBogons": {},
+  "DNSTransactionsWithBogons": null,
   "DNSTransactionsWithUnexpectedFailures": {},
-  "DNSPossiblyInvalidAddrs": {},
+  "DNSPossiblyInvalidAddrs": null,
+  "DNSPossiblyInvalidAddrsClassic": null,
+  "DNSPossiblyNonexistingDomains": {
+    "www.example.xyz": true
+  },
   "HTTPDiffBodyProportionFactor": null,
   "HTTPDiffStatusCodeMatch": null,
   "HTTPDiffTitleDifferentLongWords": null,
   "HTTPDiffUncommonHeadersIntersection": null,
-  "HTTPFinalResponses": {},
-  "HTTPFinalResponsesWithTLS": {},
-  "TCPTransactionsWithUnexpectedTCPConnectFailures": {},
-  "TCPTransactionsWithUnexpectedTLSHandshakeFailures": {},
-  "TCPTransactionsWithUnexpectedHTTPFailures": {},
-  "TCPTransactionsWithUnexplainedUnexpectedFailures": {}
+  "HTTPFinalResponsesWithControl": null,
+  "HTTPFinalResponsesWithTLS": null,
+  "TCPTransactionsWithUnexpectedTCPConnectFailures": null,
+  "TCPTransactionsWithUnexpectedTLSHandshakeFailures": null,
+  "TCPTransactionsWithUnexpectedHTTPFailures": null,
+  "TCPTransactionsWithUnexplainedUnexpectedFailures": null
 }

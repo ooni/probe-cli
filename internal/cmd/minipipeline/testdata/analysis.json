@@ -1,8 +1,10 @@
 {
   "DNSExperimentFailure": null,
   "DNSTransactionsWithBogons": {},
-  "DNSTransactionsWithUnexpectedFailures": {},
+  "DNSTransactionsWithUnexpectedFailures": null,
   "DNSPossiblyInvalidAddrs": {},
+  "DNSPossiblyInvalidAddrsClassic": {},
+  "DNSPossiblyNonexistingDomains": {},
   "HTTPDiffBodyProportionFactor": 1,
   "HTTPDiffStatusCodeMatch": true,
   "HTTPDiffTitleDifferentLongWords": {},
@@ -10,7 +12,7 @@
     "x-drupal-cache": true,
     "x-generator": true
   },
-  "HTTPFinalResponses": {
+  "HTTPFinalResponsesWithControl": {
     "4": true
   },
   "HTTPFinalResponsesWithTLS": {
