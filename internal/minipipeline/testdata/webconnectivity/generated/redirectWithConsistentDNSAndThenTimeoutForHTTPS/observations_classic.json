@@ -2,7 +2,7 @@
   "DNSLookupFailures": [],
   "DNSLookupSuccesses": [
     {
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -26,7 +26,7 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": null,
+      "TagDepth": 0,
       "TagFetchBody": null,
       "ControlDNSDomain": null,
       "ControlDNSLookupFailure": null,
@@ -41,7 +41,7 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "DNSTransactionID": 5,
+      "DNSTransactionID": 6,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -65,7 +65,7 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": null,
+      "TagDepth": 1,
       "TagFetchBody": null,
       "ControlDNSDomain": null,
       "ControlDNSLookupFailure": null,
@@ -81,8 +81,8 @@
     }
   ],
   "KnownTCPEndpoints": {
-    "3": {
-      "DNSTransactionID": 2,
+    "4": {
+      "DNSTransactionID": 1,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -90,7 +90,7 @@
       "IPAddress": "67.199.248.11",
       "IPAddressASN": 396982,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 3,
+      "EndpointTransactionID": 4,
       "EndpointProto": "tcp",
       "EndpointPort": "443",
       "EndpointAddress": "67.199.248.11:443",
@@ -110,8 +110,8 @@
       "HTTPResponseLocation": "https://www.example.com/",
       "HTTPResponseTitle": "",
       "HTTPResponseIsFinal": false,
-      "TagDepth": null,
-      "TagFetchBody": null,
+      "TagDepth": 0,
+      "TagFetchBody": true,
       "ControlDNSDomain": "bit.ly",
       "ControlDNSLookupFailure": "",
       "ControlTCPConnectFailure": "",
@@ -129,8 +129,8 @@
       },
       "ControlHTTPResponseTitle": "Default Web Page"
     },
-    "6": {
-      "DNSTransactionID": 5,
+    "7": {
+      "DNSTransactionID": 6,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -138,7 +138,7 @@
       "IPAddress": "93.184.216.34",
       "IPAddressASN": 15133,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 6,
+      "EndpointTransactionID": 7,
       "EndpointProto": "tcp",
       "EndpointPort": "443",
       "EndpointAddress": "93.184.216.34:443",
@@ -154,8 +154,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": null,
-      "TagFetchBody": null,
+      "TagDepth": 1,
+      "TagFetchBody": true,
       "ControlDNSDomain": null,
       "ControlDNSLookupFailure": null,
       "ControlTCPConnectFailure": null,

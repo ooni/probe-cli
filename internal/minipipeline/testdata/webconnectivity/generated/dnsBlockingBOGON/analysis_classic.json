@@ -1,7 +1,7 @@
 {
   "DNSExperimentFailure": null,
   "DNSTransactionsWithBogons": {
-    "2": true
+    "1": true
   },
   "DNSTransactionsWithUnexpectedFailures": null,
   "DNSPossiblyInvalidAddrs": null,
@@ -17,6 +17,6 @@
   "TCPTransactionsWithUnexpectedTLSHandshakeFailures": null,
   "TCPTransactionsWithUnexpectedHTTPFailures": null,
   "TCPTransactionsWithUnexplainedUnexpectedFailures": {
-    "3": true
+    "4": true
   }
 }
