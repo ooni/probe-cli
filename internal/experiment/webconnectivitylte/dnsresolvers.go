@@ -214,7 +214,7 @@ func (t *DNSResolvers) lookupHostSystem(parentCtx context.Context, out chan<- []
 	index := t.IDGenerator.Add(1)
 
 	// create trace
-	trace := measurexlite.NewTrace(index, t.ZeroTime, fmt.Sprintf("depth_%d", t.Depth))
+	trace := measurexlite.NewTrace(index, t.ZeroTime, fmt.Sprintf("depth=%d", t.Depth))
 
 	// start the operation logger
 	ol := logx.NewOperationLogger(
@@ -241,7 +241,7 @@ func (t *DNSResolvers) lookupHostUDP(parentCtx context.Context, udpAddress strin
 	index := t.IDGenerator.Add(1)
 
 	// create trace
-	trace := measurexlite.NewTrace(index, t.ZeroTime, fmt.Sprintf("depth_%d", t.Depth))
+	trace := measurexlite.NewTrace(index, t.ZeroTime, fmt.Sprintf("depth=%d", t.Depth))
 
 	// start the operation logger
 	ol := logx.NewOperationLogger(
@@ -379,7 +379,7 @@ func (t *DNSResolvers) lookupHostDNSOverHTTPS(parentCtx context.Context, out cha
 	index := t.IDGenerator.Add(1)
 
 	// create trace
-	trace := measurexlite.NewTrace(index, t.ZeroTime, fmt.Sprintf("depth_%d", t.Depth))
+	trace := measurexlite.NewTrace(index, t.ZeroTime, fmt.Sprintf("depth=%d", t.Depth))
 
 	// start the operation logger
 	ol := logx.NewOperationLogger(

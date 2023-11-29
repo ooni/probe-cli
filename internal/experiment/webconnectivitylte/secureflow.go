@@ -109,7 +109,8 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	}
 
 	// create trace
-	trace := measurexlite.NewTrace(index, t.ZeroTime, fmt.Sprintf("depth_%d", t.Depth))
+	trace := measurexlite.NewTrace(index, t.ZeroTime, fmt.Sprintf("depth=%d", t.Depth),
+		fmt.Sprintf("fetch_body=%v", t.PrioSelector != nil))
 
 	// TODO(bassosimone): the DSL starts measuring for throttling when we start
 	// fetching the body while here we start immediately. We should come up with
