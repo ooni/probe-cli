@@ -455,6 +455,9 @@ func (c *WebObservationsContainer) controlMatchDNSLookupResults(inputDomain stri
 			continue
 		}
 
+		// register the control DNS domain
+		obs.ControlDNSDomain = optional.Some(domain)
+
 		// register whether the control failed and skip in such a case
 		obs.ControlDNSLookupFailure = optional.Some(utilsStringPointerToString(resp.DNS.Failure))
 		if resp.DNS.Failure != nil {
