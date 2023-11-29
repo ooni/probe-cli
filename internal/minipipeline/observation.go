@@ -485,6 +485,9 @@ func (c *WebObservationsContainer) controlMatchDNSLookupResults(inputDomain stri
 		// handle the case in which the IP address has been provided by the control, which
 		// is a case where the domain is empty and the IP address is in thAddrMap
 		if domain == "" && thAddrMap[addr] {
+			obs.ControlDNSDomain = optional.Some(inputDomain)
+			obs.ControlDNSLookupFailure = optional.Some(utilsStringPointerToString(resp.DNS.Failure))
+			obs.ControlDNSResolvedAddrs = optional.Some(NewSet(resp.DNS.Addrs...))
 			obs.MatchWithControlIPAddress = optional.Some(true)
 			obs.MatchWithControlIPAddressASN = optional.Some(true)
 			continue
@@ -496,13 +499,16 @@ func (c *WebObservationsContainer) controlMatchDNSLookupResults(inputDomain stri
 		}
 
 		// register the control DNS domain
-		obs.ControlDNSDomain = optional.Some(domain)
+		obs.ControlDNSDomain = optional.Some(inputDomain)
 
 		// register whether the control failed and skip in such a case
 		obs.ControlDNSLookupFailure = optional.Some(utilsStringPointerToString(resp.DNS.Failure))
 		if resp.DNS.Failure != nil {
 			continue
 		}
+
+		// register the resolved IP addresses
+		obs.ControlDNSResolvedAddrs = optional.Some(NewSet(resp.DNS.Addrs...))
 
 		// compute whether also the TH observed this addr
 		obs.MatchWithControlIPAddress = optional.Some(thAddrMap[addr])
