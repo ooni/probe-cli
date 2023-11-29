@@ -11,7 +11,7 @@ import (
 func redirectWithConsistentDNSAndThenConnectionRefusedForHTTP() *TestCase {
 	return &TestCase{
 		Name:  "redirectWithConsistentDNSAndThenConnectionRefusedForHTTP",
-		Flags: TestCaseFlagNoLTE,
+		Flags: TestCaseFlagNoLTE, // BUG: LTE thinks this website is accessible (WTF?!)
 		Input: "https://bit.ly/32447",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -37,7 +37,7 @@ func redirectWithConsistentDNSAndThenConnectionRefusedForHTTP() *TestCase {
 			HTTPExperimentFailure: "connection_refused",
 			XStatus:               8320, // StatusExperimentHTTP | StatusAnomalyConnect
 			XDNSFlags:             0,
-			XBlockingFlags:        8, // analysisFlagHTTPBlocking
+			XBlockingFlags:        32, // analysisFlagSuccess
 			Accessible:            false,
 			Blocking:              "http-failure",
 		},
@@ -49,7 +49,7 @@ func redirectWithConsistentDNSAndThenConnectionRefusedForHTTP() *TestCase {
 func redirectWithConsistentDNSAndThenConnectionRefusedForHTTPS() *TestCase {
 	return &TestCase{
 		Name:  "redirectWithConsistentDNSAndThenConnectionRefusedForHTTPS",
-		Flags: TestCaseFlagNoLTE,
+		Flags: TestCaseFlagNoLTE, // BUG: LTE thinks this website is accessible (WTF?!)
 		Input: "https://bit.ly/21645",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -75,7 +75,7 @@ func redirectWithConsistentDNSAndThenConnectionRefusedForHTTPS() *TestCase {
 			HTTPExperimentFailure: "connection_refused",
 			XStatus:               8320, // StatusExperimentHTTP | StatusAnomalyConnect
 			XDNSFlags:             0,
-			XBlockingFlags:        8, // analysisFlagHTTPBlocking
+			XBlockingFlags:        32, // analysisFlagSuccess
 			Accessible:            false,
 			Blocking:              "http-failure",
 		},
@@ -87,7 +87,7 @@ func redirectWithConsistentDNSAndThenConnectionRefusedForHTTPS() *TestCase {
 func redirectWithConsistentDNSAndThenConnectionResetForHTTP() *TestCase {
 	return &TestCase{
 		Name:  "redirectWithConsistentDNSAndThenConnectionResetForHTTP",
-		Flags: TestCaseFlagNoLTE,
+		Flags: 0,
 		Input: "https://bit.ly/32447",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -125,7 +125,7 @@ func redirectWithConsistentDNSAndThenConnectionResetForHTTP() *TestCase {
 func redirectWithConsistentDNSAndThenConnectionResetForHTTPS() *TestCase {
 	return &TestCase{
 		Name:  "redirectWithConsistentDNSAndThenConnectionResetForHTTPS",
-		Flags: TestCaseFlagNoLTE,
+		Flags: TestCaseFlagNoLTE, // BUG: LTE thinks this website is accessible (WTF?!)
 		Input: "https://bit.ly/21645",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -163,7 +163,7 @@ func redirectWithConsistentDNSAndThenConnectionResetForHTTPS() *TestCase {
 func redirectWithConsistentDNSAndThenNXDOMAIN() *TestCase {
 	return &TestCase{
 		Name:  "redirectWithConsistentDNSAndThenNXDOMAIN",
-		Flags: TestCaseFlagNoLTE,
+		Flags: TestCaseFlagNoLTE, // BUG: LTE thinks this website is accessible (WTF?!)
 		Input: "https://bit.ly/21645",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -181,8 +181,8 @@ func redirectWithConsistentDNSAndThenNXDOMAIN() *TestCase {
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: "dns_nxdomain_error",
 			XStatus:               8224, // StatusExperimentHTTP | StatusAnomalyDNS
-			XDNSFlags:             2,    // AnalysisDNSUnexpectedFailure
-			XBlockingFlags:        1,    // analysisFlagDNSBlocking
+			XDNSFlags:             0,
+			XBlockingFlags:        8, // analysisFlagHTTPBlocking
 			Accessible:            false,
 			Blocking:              "dns",
 		},
@@ -194,7 +194,7 @@ func redirectWithConsistentDNSAndThenNXDOMAIN() *TestCase {
 func redirectWithConsistentDNSAndThenEOFForHTTP() *TestCase {
 	return &TestCase{
 		Name:  "redirectWithConsistentDNSAndThenEOFForHTTP",
-		Flags: TestCaseFlagNoLTE,
+		Flags: 0,
 		Input: "https://bit.ly/32447",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -232,7 +232,7 @@ func redirectWithConsistentDNSAndThenEOFForHTTP() *TestCase {
 func redirectWithConsistentDNSAndThenEOFForHTTPS() *TestCase {
 	return &TestCase{
 		Name:  "redirectWithConsistentDNSAndThenEOFForHTTPS",
-		Flags: TestCaseFlagNoLTE,
+		Flags: TestCaseFlagNoLTE, // BUG: LTE thinks this website is accessible (WTF?!)
 		Input: "https://bit.ly/21645",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -258,7 +258,7 @@ func redirectWithConsistentDNSAndThenEOFForHTTPS() *TestCase {
 			HTTPExperimentFailure: "eof_error",
 			XStatus:               8448, // StatusExperimentHTTP | StatusAnomalyReadWrite
 			XDNSFlags:             0,
-			XBlockingFlags:        8, // analysisFlagHTTPBlocking
+			XBlockingFlags:        32, // analysisFlagSuccess
 			Accessible:            false,
 			Blocking:              "http-failure",
 		},
@@ -270,7 +270,7 @@ func redirectWithConsistentDNSAndThenEOFForHTTPS() *TestCase {
 func redirectWithConsistentDNSAndThenTimeoutForHTTP() *TestCase {
 	return &TestCase{
 		Name:     "redirectWithConsistentDNSAndThenTimeoutForHTTP",
-		Flags:    TestCaseFlagNoLTE,
+		Flags:    0,
 		Input:    "https://bit.ly/32447",
 		LongTest: true,
 		Configure: func(env *netemx.QAEnv) {
@@ -309,7 +309,7 @@ func redirectWithConsistentDNSAndThenTimeoutForHTTP() *TestCase {
 func redirectWithConsistentDNSAndThenTimeoutForHTTPS() *TestCase {
 	return &TestCase{
 		Name:     "redirectWithConsistentDNSAndThenTimeoutForHTTPS",
-		Flags:    TestCaseFlagNoLTE,
+		Flags:    TestCaseFlagNoLTE, // BUG: LTE thinks this website is accessible (WTF?!)
 		Input:    "https://bit.ly/21645",
 		LongTest: true,
 		Configure: func(env *netemx.QAEnv) {
@@ -336,7 +336,7 @@ func redirectWithConsistentDNSAndThenTimeoutForHTTPS() *TestCase {
 			HTTPExperimentFailure: "generic_timeout_error",
 			XStatus:               8704, // StatusExperimentHTTP | StatusAnomalyUnknown
 			XDNSFlags:             0,
-			XBlockingFlags:        8, // analysisFlagHTTPBlocking
+			XBlockingFlags:        32, // analysisFlagSuccess
 			Accessible:            false,
 			Blocking:              "http-failure",
 		},
