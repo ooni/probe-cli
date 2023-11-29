@@ -197,6 +197,18 @@ func (tk *TestKeys) analysisClassic(logger model.Logger, container *minipipeline
 		return
 	}
 
+	// then we check for unexpected HTTP failures in the first request
+	if v := analysis.TCPTransactionsWithUnexplainedUnexpectedFailures.UnwrapOr(nil); len(v) > 0 {
+		if dnsPossiblyInvalidAddrs != nil && *dnsPossiblyInvalidAddrs {
+			tk.Blocking = "dns"
+			tk.Accessible = false
+			return
+		}
+		tk.Blocking = "http-failure"
+		tk.Accessible = false
+		return
+	}
+
 	// fallback to DNS if we don't know exactly what to do
 	if (dnsPossiblyInvalidAddrs != nil && *dnsPossiblyInvalidAddrs) ||
 		(dnsTransactionsWithUnexpectedFailures != nil && *dnsTransactionsWithUnexpectedFailures) {
