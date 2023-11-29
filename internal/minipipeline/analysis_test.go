@@ -312,9 +312,9 @@ func TestWebAnalysisComputeHTTPFinalResponses(t *testing.T) {
 		}
 
 		wa := &WebAnalysis{}
-		wa.ComputeHTTPFinalResponses(container)
+		wa.ComputeHTTPFinalResponsesWithControl(container)
 
-		if v := wa.HTTPFinalResponses.UnwrapOr(nil); len(v) > 0 {
+		if v := wa.HTTPFinalResponsesWithControl.UnwrapOr(nil); len(v) > 0 {
 			t.Fatal("should be empty")
 		}
 	})
@@ -329,9 +329,9 @@ func TestWebAnalysisComputeHTTPFinalResponses(t *testing.T) {
 		}
 
 		wa := &WebAnalysis{}
-		wa.ComputeHTTPFinalResponses(container)
+		wa.ComputeHTTPFinalResponsesWithControl(container)
 
-		if v := wa.HTTPFinalResponses.UnwrapOr(nil); len(v) > 0 {
+		if v := wa.HTTPFinalResponsesWithControl.UnwrapOr(nil); len(v) > 0 {
 			t.Fatal("should be empty")
 		}
 	})
@@ -346,9 +346,9 @@ func TestWebAnalysisComputeHTTPFinalResponses(t *testing.T) {
 		}
 
 		wa := &WebAnalysis{}
-		wa.ComputeHTTPFinalResponses(container)
+		wa.ComputeHTTPFinalResponsesWithControl(container)
 
-		if v := wa.HTTPFinalResponses.UnwrapOr(nil); len(v) > 0 {
+		if v := wa.HTTPFinalResponsesWithControl.UnwrapOr(nil); len(v) > 0 {
 			t.Fatal("should be empty")
 		}
 	})
