@@ -14,6 +14,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/optional"
 )
 
 // TestKeys contains the results produced by web_connectivity.
@@ -81,11 +82,11 @@ type TestKeys struct {
 
 	// DNSConsistency indicates whether there is consistency between
 	// the TH's DNS results and the probe's DNS results.
-	DNSConsistency string `json:"dns_consistency"`
+	DNSConsistency optional.Value[string] `json:"dns_consistency"`
 
 	// HTTPExperimentFailure indicates whether there was a failure in
 	// the final HTTP request that we recorded.
-	HTTPExperimentFailure *string `json:"http_experiment_failure"`
+	HTTPExperimentFailure optional.Value[string] `json:"http_experiment_failure"`
 
 	// BlockingFlags explains why we think that the website is blocked.
 	BlockingFlags int64 `json:"x_blocking_flags"`
@@ -95,16 +96,16 @@ type TestKeys struct {
 	NullNullFlags int64 `json:"x_null_null_flags"`
 
 	// BodyLength match tells us whether the body length matches.
-	BodyLengthMatch *bool `json:"body_length_match"`
+	BodyLengthMatch optional.Value[bool] `json:"body_length_match"`
 
 	// HeadersMatch tells us whether the headers match.
-	HeadersMatch *bool `json:"headers_match"`
+	HeadersMatch optional.Value[bool] `json:"headers_match"`
 
 	// StatusCodeMatch tells us whether the status code matches.
-	StatusCodeMatch *bool `json:"status_code_match"`
+	StatusCodeMatch optional.Value[bool] `json:"status_code_match"`
 
 	// TitleMatch tells us whether the title matches.
-	TitleMatch *bool `json:"title_match"`
+	TitleMatch optional.Value[bool] `json:"title_match"`
 
 	// Blocking indicates the reason for blocking. This is notoriously a bad
 	// type because it can be one of the following values:
@@ -354,14 +355,14 @@ func NewTestKeys() *TestKeys {
 		ControlFailure:        nil,
 		DNSFlags:              0,
 		DNSExperimentFailure:  nil,
-		DNSConsistency:        "",
-		HTTPExperimentFailure: nil,
+		DNSConsistency:        optional.None[string](),
+		HTTPExperimentFailure: optional.None[string](),
 		BlockingFlags:         0,
 		NullNullFlags:         0,
-		BodyLengthMatch:       nil,
-		HeadersMatch:          nil,
-		StatusCodeMatch:       nil,
-		TitleMatch:            nil,
+		BodyLengthMatch:       optional.None[bool](),
+		HeadersMatch:          optional.None[bool](),
+		StatusCodeMatch:       optional.None[bool](),
+		TitleMatch:            optional.None[bool](),
 		Blocking:              nil,
 		Accessible:            nil,
 		ControlRequest:        nil,

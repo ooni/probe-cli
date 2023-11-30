@@ -8,11 +8,9 @@ import (
 // dnsHijackingToProxyWithHTTPURL is the case where an ISP rule forces clients to always
 // use an explicity passthrough proxy for a given domain.
 func dnsHijackingToProxyWithHTTPURL() *TestCase {
-	// TODO(bassosimone): it's debateable whether this case is actually WAI but the
-	// transparent TLS proxy really makes our analysis a bit more complex
 	return &TestCase{
 		Name:  "dnsHijackingToProxyWithHTTPURL",
-		Flags: TestCaseFlagNoLTE, // BUG: LTE thinks the DNS is consistent
+		Flags: 0,
 		Input: "http://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -49,7 +47,7 @@ func dnsHijackingToProxyWithHTTPSURL() *TestCase {
 	// transparent TLS proxy really makes our analysis a bit more complex
 	return &TestCase{
 		Name:  "dnsHijackingToProxyWithHTTPSURL",
-		Flags: TestCaseFlagNoLTE, // BUG: LTE thinks the DNS is consistent
+		Flags: 0,
 		Input: "https://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 
