@@ -303,7 +303,7 @@ func (wa *WebAnalysis) ComputeTCPConnectUnexpectedFailure(c *WebObservationsCont
 // ComputeTLSHandshakeUnexpectedFailure computes the TLSHandshakeUnexpectedFailure field.
 func (wa *WebAnalysis) ComputeTLSHandshakeUnexpectedFailure(c *WebObservationsContainer) {
 	for _, obs := range c.KnownTCPEndpoints {
-		// dials once we started following redirects should not be considered
+		// handshakes once we started following redirects should not be considered
 		if obs.TagDepth.IsNone() || obs.TagDepth.Unwrap() != 0 {
 			continue
 		}
