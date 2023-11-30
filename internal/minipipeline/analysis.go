@@ -7,9 +7,10 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// NewLinearWebAnalysis constructs a slice containing all the observations.
+// NewLinearWebAnalysis constructs a slice containing all the observations
+// contained inside the given [*WebObservationsContainer].
 //
-// We sort the observations as follows:
+// We sort the returned list as follows:
 //
 // 1. by descending TagDepth;
 //
