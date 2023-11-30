@@ -13,7 +13,6 @@ func AnalyzeWebObservations(container *WebObservationsContainer) *WebAnalysis {
 	analysis.ComputeDNSExperimentFailure(container)
 	analysis.ComputeDNSTransactionsWithBogons(container)
 	analysis.ComputeDNSTransactionsWithUnexpectedFailures(container)
-	analysis.ComputeDNSPossiblyInvalidAddrs(container)
 	analysis.ComputeDNSPossiblyInvalidAddrsClassic(container)
 	analysis.ComputeDNSPossiblyNonexistingDomains(container)
 
@@ -57,19 +56,13 @@ type WebAnalysis struct {
 	// not related to the domain we're querying for.
 	DNSTransactionsWithUnexpectedFailures optional.Value[map[int64]bool]
 
-	// DNSPossiblyInvalidAddrs contains the addresses that are not valid for the
+	// DNSPossiblyInvalidAddrsClassic contains the addresses that are not valid for the
 	// domain. An addres is valid for the domain if:
 	//
-	// 1. we can TLS handshake with the expected SNI using this address; or
+	// 1. the address was resolved by the TH; or
 	//
-	// 2. the address was resolved by the TH; or
-	//
-	// 3. the address ASN belongs to the set of ASNs obtained by mapping
+	// 2. the address ASN belongs to the set of ASNs obtained by mapping
 	// addresses resolved by the TH to their corresponding ASN.
-	DNSPossiblyInvalidAddrs optional.Value[map[string]bool]
-
-	// DNSPossiblyInvalidAddrsClassic is like DNSPossiblyInvalidAddrs but does
-	// not use TLS to validate the IP addresses.
 	DNSPossiblyInvalidAddrsClassic optional.Value[map[string]bool]
 
 	// DNSPossiblyNonexistingDomains lists all the domains for which both
@@ -255,67 +248,6 @@ func (wa *WebAnalysis) ComputeDNSTransactionsWithUnexpectedFailures(c *WebObserv
 	wa.DNSTransactionsWithUnexpectedFailures = optional.Some(state)
 }
 
-// ComputeDNSPossiblyInvalidAddrs computes the DNSPossiblyInvalidAddrs field.
-func (wa *WebAnalysis) ComputeDNSPossiblyInvalidAddrs(c *WebObservationsContainer) {
-	// Implementation note: in the case in which DoH returned answers, here
-	// it still feels okay to consider them. We should avoid flagging DoH
-	// failures as measurement failures but if DoH returns us some unexpected
-	// even-non-bogon addr, it seems worth flagging for now.
-	//
-	// See https://github.com/ooni/probe/issues/2274
-
-	var state map[string]bool
-
-	// pass 1: insert candidates into the state map
-	for _, obs := range c.KnownTCPEndpoints {
-		addr := obs.IPAddress.Unwrap()
-
-		// skip the comparison if we don't have info about matching
-		if obs.MatchWithControlIPAddress.IsNone() || obs.MatchWithControlIPAddressASN.IsNone() {
-			continue
-		}
-
-		// flip state from None to empty when we see the first couple of
-		// (probe, th) failures allowing us to perform a comparison
-		if state == nil {
-			state = make(map[string]bool)
-		}
-
-		// an address is suspicious if we have information regarding its potential
-		// matching with TH info and we know it does not match
-		if !obs.MatchWithControlIPAddress.Unwrap() && !obs.MatchWithControlIPAddressASN.Unwrap() {
-			state[addr] = true
-			continue
-		}
-	}
-
-	// pass 2: remove IP addresses we could validate using TLS handshakes
-	//
-	// we need to perform this second step because the order with which we walk
-	// through c.KnownTCPEndpoints is not fixed _and_ in any case, there is no
-	// guarantee that we'll observe 80/tcp entries _before_ 443/tcp ones. So, by
-	// applying this algorithm as a second step, we ensure that we're always
-	// able to remove TLS-validate addresses from the "bad" set.
-	for _, obs := range c.KnownTCPEndpoints {
-		addr := obs.IPAddress.Unwrap()
-
-		// we cannot do much if we don't have TLS handshake information
-		if obs.TLSHandshakeFailure.IsNone() {
-			continue
-		}
-
-		// we should not modify the state if the TLS handshake failed
-		if obs.TLSHandshakeFailure.Unwrap() != "" {
-			continue
-		}
-
-		delete(state, addr)
-	}
-
-	// note that optional.Some constructs None if state is nil
-	wa.DNSPossiblyInvalidAddrs = optional.Some(state)
-}
-
 // ComputeDNSPossiblyInvalidAddrsClassic computes the DNSPossiblyInvalidAddrsClassic field.
 func (wa *WebAnalysis) ComputeDNSPossiblyInvalidAddrsClassic(c *WebObservationsContainer) {
 	// Implementation note: in the case in which DoH returned answers, here
@@ -331,7 +263,7 @@ func (wa *WebAnalysis) ComputeDNSPossiblyInvalidAddrsClassic(c *WebObservationsC
 		addr := obs.IPAddress.Unwrap()
 
 		// skip the comparison if we don't have info about matching
-		if obs.MatchWithControlIPAddress.IsNone() || obs.MatchWithControlIPAddressASN.IsNone() {
+		if obs.DNSResolvedAddrs.IsNone() || obs.ControlDNSResolvedAddrs.IsNone() {
 			continue
 		}
 
@@ -341,9 +273,15 @@ func (wa *WebAnalysis) ComputeDNSPossiblyInvalidAddrsClassic(c *WebObservationsC
 			state = make(map[string]bool)
 		}
 
+		measurement := obs.DNSResolvedAddrs.Unwrap()
+		control := obs.ControlDNSResolvedAddrs.Unwrap()
+
+		ipAddrIntersection := DNSDiffFindCommonIPAddressIntersection(measurement, control)
+		asnIntersection := DNSDiffFindCommonASNsIntersection(measurement, control)
+
 		// an address is suspicious if we have information regarding its potential
 		// matching with TH info and we know it does not match
-		if !obs.MatchWithControlIPAddress.Unwrap() && !obs.MatchWithControlIPAddressASN.Unwrap() {
+		if ipAddrIntersection.Len() <= 0 && asnIntersection.Len() <= 0 {
 			state[addr] = true
 			continue
 		}

@@ -115,53 +115,6 @@ func TestWebObservationsContainerIngestHTTPRoundTripEvents(t *testing.T) {
 }
 
 func TestWebObservationsContainerIngestControlMessages(t *testing.T) {
-	t.Run("we don't set MatchWithControlIPAddressASN when we don't have probe ASN info", func(t *testing.T) {
-		container := &WebObservationsContainer{
-			DNSLookupFailures: []*WebObservation{},
-			KnownTCPEndpoints: map[int64]*WebObservation{
-				1: {
-					DNSDomain:             optional.Some("dns.google"),
-					IPAddress:             optional.Some("8.8.8.8"),
-					IPAddressASN:          optional.None[int64](), // no ASN info!
-					EndpointTransactionID: optional.Some(int64(1)),
-					EndpointPort:          optional.Some("443"),
-					EndpointAddress:       optional.Some("8.8.8.8:443"),
-				},
-			},
-			knownIPAddresses: map[string]*WebObservation{},
-		}
-
-		thRequest := &model.THRequest{
-			HTTPRequest: "https://dns.google/",
-		}
-
-		thResponse := &model.THResponse{
-			DNS: model.THDNSResult{
-				Failure: nil,
-				Addrs:   []string{"8.8.8.8"},
-			},
-		}
-
-		if err := container.IngestControlMessages(thRequest, thResponse); err != nil {
-			t.Fatal(err)
-		}
-
-		entry := container.KnownTCPEndpoints[1]
-
-		// we should have set MatchWithControlIPAddress
-		if entry.MatchWithControlIPAddress.IsNone() {
-			t.Fatal("MatchWithControlIPAddress is not set")
-		}
-		if entry.MatchWithControlIPAddress.Unwrap() == false {
-			t.Fatal("MatchWithControlIPAddress is not true")
-		}
-
-		// we should not have set MatchWithControlIPAddressASN
-		if !entry.MatchWithControlIPAddressASN.IsNone() {
-			t.Fatal("MatchWithControlIPAddressASN should not be set")
-		}
-	})
-
 	t.Run("we don't save TLS handshake failures when the SNI is different", func(t *testing.T) {
 		container := &WebObservationsContainer{
 			DNSLookupFailures: []*WebObservation{},

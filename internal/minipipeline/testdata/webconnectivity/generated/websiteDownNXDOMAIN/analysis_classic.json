@@ -2,7 +2,6 @@
   "DNSExperimentFailure": "dns_nxdomain_error",
   "DNSTransactionsWithBogons": null,
   "DNSTransactionsWithUnexpectedFailures": {},
-  "DNSPossiblyInvalidAddrs": null,
   "DNSPossiblyInvalidAddrsClassic": null,
   "DNSPossiblyNonexistingDomains": {
     "www.example.xyz": true

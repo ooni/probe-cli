@@ -4,8 +4,9 @@
     "1": true
   },
   "DNSTransactionsWithUnexpectedFailures": null,
-  "DNSPossiblyInvalidAddrs": null,
-  "DNSPossiblyInvalidAddrsClassic": null,
+  "DNSPossiblyInvalidAddrsClassic": {
+    "10.10.34.35": true
+  },
   "DNSPossiblyNonexistingDomains": null,
   "HTTPDiffBodyProportionFactor": null,
   "HTTPDiffStatusCodeMatch": null,

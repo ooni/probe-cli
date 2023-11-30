@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/ooni/probe-cli/v3/internal/geoipx"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -204,13 +203,6 @@ type WebObservation struct {
 
 	// ControlTCPConnectFailure is the control's TCP connect failure.
 	ControlTCPConnectFailure optional.Value[string]
-
-	// MatchWithControlIPAddress is true if also the control resolved this IP address.
-	MatchWithControlIPAddress optional.Value[bool]
-
-	// MatchWithControlIPAddressASN is true if the ASN associated to IPAddress
-	// is one of the ASNs obtained by mapping the TH-resolved IP addresses to ASNs.
-	MatchWithControlIPAddressASN optional.Value[bool]
 
 	// ControlTLSHandshakeFailure is the control's TLS handshake failure.
 	ControlTLSHandshakeFailure optional.Value[string]
@@ -465,15 +457,6 @@ func (c *WebObservationsContainer) controlMatchDNSLookupResults(inputDomain stri
 		thAddrMap[addr] = true
 	}
 
-	// (re)map out all the ASNs discovered by the TH using the same ASN
-	// database used to build the probe's ASN mapping
-	thASNMap := make(map[int64]bool)
-	for _, addr := range resp.DNS.Addrs {
-		if asn, _, err := geoipx.LookupASN(addr); err == nil && asn != 0 {
-			thASNMap[int64(asn)] = true
-		}
-	}
-
 	// walk through the list of known TCP observations
 	for _, obs := range c.KnownTCPEndpoints {
 		// obtain the domain from which we obtained the endpoint's address
@@ -488,8 +471,6 @@ func (c *WebObservationsContainer) controlMatchDNSLookupResults(inputDomain stri
 			obs.ControlDNSDomain = optional.Some(inputDomain)
 			obs.ControlDNSLookupFailure = optional.Some(utilsStringPointerToString(resp.DNS.Failure))
 			obs.ControlDNSResolvedAddrs = optional.Some(NewSet(resp.DNS.Addrs...))
-			obs.MatchWithControlIPAddress = optional.Some(true)
-			obs.MatchWithControlIPAddressASN = optional.Some(true)
 			continue
 		}
 
@@ -509,18 +490,6 @@ func (c *WebObservationsContainer) controlMatchDNSLookupResults(inputDomain stri
 
 		// register the resolved IP addresses
 		obs.ControlDNSResolvedAddrs = optional.Some(NewSet(resp.DNS.Addrs...))
-
-		// compute whether also the TH observed this addr
-		obs.MatchWithControlIPAddress = optional.Some(thAddrMap[addr])
-
-		// cannot continue unless we know the probe's ASN
-		ourASN := obs.IPAddressASN.UnwrapOr(0)
-		if ourASN <= 0 {
-			continue
-		}
-
-		// register whether there is matching in terms of the ASNs
-		obs.MatchWithControlIPAddressASN = optional.Some(thASNMap[ourASN])
 	}
 }
 
