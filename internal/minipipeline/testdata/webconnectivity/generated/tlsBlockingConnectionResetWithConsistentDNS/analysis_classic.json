@@ -3,9 +3,15 @@
   "DNSLookupSuccessWithInvalidAddressesClassic": [],
   "DNSLookupUnexpectedFailure": [],
   "TCPConnectUnexpectedFailure": [],
+  "TCPConnectUnexpectedFailureDuringWebFetch": [],
+  "TCPConnectUnexpectedFailureDuringConnectivityCheck": [],
   "TLSHandshakeUnexpectedFailure": [
     3
   ],
+  "TLSHandshakeUnexpectedFailureDuringWebFetch": [
+    3
+  ],
+  "TLSHandshakeUnexpectedFailureDuringConnectivityCheck": [],
   "DNSExperimentFailure": null,
   "DNSPossiblyNonexistingDomains": null,
   "HTTPDiffBodyProportionFactor": null,

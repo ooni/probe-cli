@@ -5,7 +5,11 @@
     1
   ],
   "TCPConnectUnexpectedFailure": [],
+  "TCPConnectUnexpectedFailureDuringWebFetch": [],
+  "TCPConnectUnexpectedFailureDuringConnectivityCheck": [],
   "TLSHandshakeUnexpectedFailure": [],
+  "TLSHandshakeUnexpectedFailureDuringWebFetch": [],
+  "TLSHandshakeUnexpectedFailureDuringConnectivityCheck": [],
   "DNSExperimentFailure": "android_dns_cache_no_data",
   "DNSPossiblyNonexistingDomains": {},
   "HTTPDiffBodyProportionFactor": null,

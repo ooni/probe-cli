@@ -11,7 +11,13 @@
   "TCPConnectUnexpectedFailure": [
     3
   ],
+  "TCPConnectUnexpectedFailureDuringWebFetch": [
+    3
+  ],
+  "TCPConnectUnexpectedFailureDuringConnectivityCheck": [],
   "TLSHandshakeUnexpectedFailure": [],
+  "TLSHandshakeUnexpectedFailureDuringWebFetch": [],
+  "TLSHandshakeUnexpectedFailureDuringConnectivityCheck": [],
   "DNSExperimentFailure": null,
   "DNSPossiblyNonexistingDomains": {},
   "HTTPDiffBodyProportionFactor": 1,

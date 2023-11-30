@@ -3,7 +3,11 @@
   "DNSLookupSuccessWithInvalidAddressesClassic": [],
   "DNSLookupUnexpectedFailure": [],
   "TCPConnectUnexpectedFailure": [],
+  "TCPConnectUnexpectedFailureDuringWebFetch": [],
+  "TCPConnectUnexpectedFailureDuringConnectivityCheck": [],
   "TLSHandshakeUnexpectedFailure": [],
+  "TLSHandshakeUnexpectedFailureDuringWebFetch": [],
+  "TLSHandshakeUnexpectedFailureDuringConnectivityCheck": [],
   "DNSExperimentFailure": "dns_nxdomain_error",
   "DNSPossiblyNonexistingDomains": {
     "www.example.xyz": true
