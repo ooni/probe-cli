@@ -1,6 +1,11 @@
 {
   "DNSLookupFailures": [
     {
+      "TagDepth": 0,
+      "Type": 0,
+      "Failure": "dns_no_answer",
+      "TransactionID": 1,
+      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "nexa.polito.it",
       "DNSLookupFailure": "dns_no_answer",
@@ -26,8 +31,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 0,
-      "TagFetchBody": null,
       "ControlDNSDomain": "nexa.polito.it",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -57,6 +60,11 @@
       "ControlHTTPResponseTitle": "Nexa Center for Internet \u0026 Society | Il centro Nexa è un centro di ricerca del Dipartimento di Automatica e Informatica del Politecnico di Torino"
     },
     {
+      "TagDepth": 0,
+      "Type": 0,
+      "Failure": "dns_no_answer",
+      "TransactionID": 3,
+      "TagFetchBody": null,
       "DNSTransactionID": 3,
       "DNSDomain": "nexa.polito.it",
       "DNSLookupFailure": "dns_no_answer",
@@ -82,8 +90,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 0,
-      "TagFetchBody": null,
       "ControlDNSDomain": "nexa.polito.it",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -115,6 +121,11 @@
   ],
   "DNSLookupSuccesses": [
     {
+      "TagDepth": 0,
+      "Type": 0,
+      "Failure": null,
+      "TransactionID": 1,
+      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "nexa.polito.it",
       "DNSLookupFailure": "",
@@ -142,8 +153,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 0,
-      "TagFetchBody": null,
       "ControlDNSDomain": "nexa.polito.it",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -173,6 +182,11 @@
       "ControlHTTPResponseTitle": "Nexa Center for Internet \u0026 Society | Il centro Nexa è un centro di ricerca del Dipartimento di Automatica e Informatica del Politecnico di Torino"
     },
     {
+      "TagDepth": 0,
+      "Type": 0,
+      "Failure": null,
+      "TransactionID": 2,
+      "TagFetchBody": null,
       "DNSTransactionID": 2,
       "DNSDomain": "nexa.polito.it",
       "DNSLookupFailure": "",
@@ -200,8 +214,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 0,
-      "TagFetchBody": null,
       "ControlDNSDomain": "nexa.polito.it",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -231,6 +243,11 @@
       "ControlHTTPResponseTitle": "Nexa Center for Internet \u0026 Society | Il centro Nexa è un centro di ricerca del Dipartimento di Automatica e Informatica del Politecnico di Torino"
     },
     {
+      "TagDepth": 0,
+      "Type": 0,
+      "Failure": null,
+      "TransactionID": 3,
+      "TagFetchBody": null,
       "DNSTransactionID": 3,
       "DNSDomain": "nexa.polito.it",
       "DNSLookupFailure": "",
@@ -258,8 +275,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 0,
-      "TagFetchBody": null,
       "ControlDNSDomain": "nexa.polito.it",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -291,6 +306,11 @@
   ],
   "KnownTCPEndpoints": {
     "4": {
+      "TagDepth": 0,
+      "Type": 3,
+      "Failure": "",
+      "TransactionID": 4,
+      "TagFetchBody": true,
       "DNSTransactionID": 1,
       "DNSDomain": "nexa.polito.it",
       "DNSLookupFailure": "",
@@ -333,8 +353,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": "Nexa Center for Internet \u0026 Society | Il centro Nexa è un centro di ricerca del Dipartimento di Automatica e Informatica del Politecnico di Torino",
       "HTTPResponseIsFinal": true,
-      "TagDepth": 0,
-      "TagFetchBody": true,
       "ControlDNSDomain": "nexa.polito.it",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [

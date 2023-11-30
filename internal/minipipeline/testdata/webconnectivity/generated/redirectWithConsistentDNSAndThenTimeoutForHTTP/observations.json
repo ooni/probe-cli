@@ -1,6 +1,11 @@
 {
   "DNSLookupFailures": [
     {
+      "TagDepth": 0,
+      "Type": 0,
+      "Failure": "dns_no_answer",
+      "TransactionID": 2,
+      "TagFetchBody": null,
       "DNSTransactionID": 2,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "dns_no_answer",
@@ -26,8 +31,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 0,
-      "TagFetchBody": null,
       "ControlDNSDomain": "bit.ly",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -47,6 +50,11 @@
       "ControlHTTPResponseTitle": "Default Web Page"
     },
     {
+      "TagDepth": 1,
+      "Type": 0,
+      "Failure": "dns_no_answer",
+      "TransactionID": 4,
+      "TagFetchBody": null,
       "DNSTransactionID": 4,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_no_answer",
@@ -72,8 +80,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 1,
-      "TagFetchBody": null,
       "ControlDNSDomain": null,
       "ControlDNSLookupFailure": null,
       "ControlDNSResolvedAddrs": null,
@@ -93,6 +99,11 @@
   ],
   "DNSLookupSuccesses": [
     {
+      "TagDepth": 0,
+      "Type": 0,
+      "Failure": null,
+      "TransactionID": 1,
+      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
@@ -120,8 +131,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 0,
-      "TagFetchBody": null,
       "ControlDNSDomain": "bit.ly",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -141,6 +150,11 @@
       "ControlHTTPResponseTitle": "Default Web Page"
     },
     {
+      "TagDepth": 0,
+      "Type": 0,
+      "Failure": null,
+      "TransactionID": 2,
+      "TagFetchBody": null,
       "DNSTransactionID": 2,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
@@ -168,8 +182,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 0,
-      "TagFetchBody": null,
       "ControlDNSDomain": "bit.ly",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -189,6 +201,11 @@
       "ControlHTTPResponseTitle": "Default Web Page"
     },
     {
+      "TagDepth": 1,
+      "Type": 0,
+      "Failure": null,
+      "TransactionID": 5,
+      "TagFetchBody": null,
       "DNSTransactionID": 5,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
@@ -216,8 +233,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 1,
-      "TagFetchBody": null,
       "ControlDNSDomain": null,
       "ControlDNSLookupFailure": null,
       "ControlDNSResolvedAddrs": null,
@@ -235,6 +250,11 @@
       "ControlHTTPResponseTitle": "Default Web Page"
     },
     {
+      "TagDepth": 1,
+      "Type": 0,
+      "Failure": null,
+      "TransactionID": 4,
+      "TagFetchBody": null,
       "DNSTransactionID": 4,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
@@ -262,8 +282,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 1,
-      "TagFetchBody": null,
       "ControlDNSDomain": null,
       "ControlDNSLookupFailure": null,
       "ControlDNSResolvedAddrs": null,
@@ -283,6 +301,11 @@
   ],
   "KnownTCPEndpoints": {
     "3": {
+      "TagDepth": 0,
+      "Type": 3,
+      "Failure": "",
+      "TransactionID": 3,
+      "TagFetchBody": true,
       "DNSTransactionID": 1,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
@@ -314,8 +337,6 @@
       "HTTPResponseLocation": "http://www.example.com/",
       "HTTPResponseTitle": "",
       "HTTPResponseIsFinal": false,
-      "TagDepth": 0,
-      "TagFetchBody": true,
       "ControlDNSDomain": "bit.ly",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -335,6 +356,11 @@
       "ControlHTTPResponseTitle": "Default Web Page"
     },
     "6": {
+      "TagDepth": 1,
+      "Type": 3,
+      "Failure": "generic_timeout_error",
+      "TransactionID": 6,
+      "TagFetchBody": true,
       "DNSTransactionID": 5,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
@@ -362,8 +388,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 1,
-      "TagFetchBody": true,
       "ControlDNSDomain": null,
       "ControlDNSLookupFailure": null,
       "ControlDNSResolvedAddrs": null,
@@ -381,6 +405,11 @@
       "ControlHTTPResponseTitle": "Default Web Page"
     },
     "7": {
+      "TagDepth": 1,
+      "Type": 2,
+      "Failure": "generic_timeout_error",
+      "TransactionID": 7,
+      "TagFetchBody": false,
       "DNSTransactionID": 5,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
@@ -408,8 +437,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 1,
-      "TagFetchBody": false,
       "ControlDNSDomain": null,
       "ControlDNSLookupFailure": null,
       "ControlDNSResolvedAddrs": null,
