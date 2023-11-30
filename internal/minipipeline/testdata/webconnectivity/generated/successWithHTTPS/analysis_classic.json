@@ -35,6 +35,5 @@
   "HTTPFinalResponseDiffUncommonHeadersIntersection": {
     "alt-svc": true,
     "content-length": true
-  },
-  "DNSPossiblyNonexistingDomains": null
+  }
 }
