@@ -31,7 +31,7 @@ func (tk *TestKeys) analysisHTTPToplevel(logger model.Logger) {
 		return
 	}
 	finalRequest := tk.Requests[0]
-	//tk.HTTPExperimentFailure = finalRequest.Failure
+	tk.HTTPExperimentFailure = finalRequest.Failure
 
 	// don't perform any futher analysis without TH data
 	if tk.Control == nil || tk.ControlRequest == nil {
@@ -65,5 +65,5 @@ func (tk *TestKeys) analysisHTTPToplevel(logger model.Logger) {
 	}
 
 	// fallback to the HTTP diff algo.
-	//tk.analysisHTTPDiff(logger, finalRequest, &ctrl)
+	tk.analysisHTTPDiff(logger, finalRequest, &ctrl)
 }
