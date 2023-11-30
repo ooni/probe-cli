@@ -4,6 +4,8 @@
   "DNSLookupUnexpectedFailure": [
     2
   ],
+  "TCPConnectUnexpectedFailure": [],
+  "TLSHandshakeUnexpectedFailure": [],
   "DNSExperimentFailure": "dns_nxdomain_error",
   "DNSPossiblyNonexistingDomains": {},
   "HTTPDiffBodyProportionFactor": 1,
@@ -19,8 +21,6 @@
   "HTTPFinalResponsesWithTLS": {
     "3": true
   },
-  "TCPTransactionsWithUnexpectedTCPConnectFailures": {},
-  "TCPTransactionsWithUnexpectedTLSHandshakeFailures": {},
   "TCPTransactionsWithUnexpectedHTTPFailures": {},
   "TCPTransactionsWithUnexplainedUnexpectedFailures": {}
 }

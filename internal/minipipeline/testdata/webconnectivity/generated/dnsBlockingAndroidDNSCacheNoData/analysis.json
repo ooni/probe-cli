@@ -4,6 +4,8 @@
   "DNSLookupUnexpectedFailure": [
     1
   ],
+  "TCPConnectUnexpectedFailure": [],
+  "TLSHandshakeUnexpectedFailure": [],
   "DNSExperimentFailure": "android_dns_cache_no_data",
   "DNSPossiblyNonexistingDomains": {},
   "HTTPDiffBodyProportionFactor": 1,
@@ -19,8 +21,6 @@
   "HTTPFinalResponsesWithTLS": {
     "3": true
   },
-  "TCPTransactionsWithUnexpectedTCPConnectFailures": {},
-  "TCPTransactionsWithUnexpectedTLSHandshakeFailures": {},
   "TCPTransactionsWithUnexpectedHTTPFailures": {},
   "TCPTransactionsWithUnexplainedUnexpectedFailures": {}
 }
