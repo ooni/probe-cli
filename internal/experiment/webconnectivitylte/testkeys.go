@@ -14,6 +14,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/optional"
 )
 
 // TestKeys contains the results produced by web_connectivity.
@@ -81,7 +82,7 @@ type TestKeys struct {
 
 	// DNSConsistency indicates whether there is consistency between
 	// the TH's DNS results and the probe's DNS results.
-	DNSConsistency string `json:"dns_consistency"`
+	DNSConsistency optional.Value[string] `json:"dns_consistency"`
 
 	// HTTPExperimentFailure indicates whether there was a failure in
 	// the final HTTP request that we recorded.
@@ -354,7 +355,7 @@ func NewTestKeys() *TestKeys {
 		ControlFailure:        nil,
 		DNSFlags:              0,
 		DNSExperimentFailure:  nil,
-		DNSConsistency:        "",
+		DNSConsistency:        optional.None[string](),
 		HTTPExperimentFailure: nil,
 		BlockingFlags:         0,
 		NullNullFlags:         0,

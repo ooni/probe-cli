@@ -36,7 +36,7 @@ import (
 // operation that failed for the current TagDepth.
 //
 // Within each group, successes sort before failures because the empty
-// string has priority over nøn-empty strings.
+// string has priority over non-empty strings.
 //
 // So, when walking the list from index 0 to index N, you encounter the
 // latest redirects first, you observe the more complex operations first,
