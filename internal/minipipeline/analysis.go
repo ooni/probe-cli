@@ -1,80 +1,9 @@
 package minipipeline
 
 import (
-	"sort"
-
 	"github.com/ooni/probe-cli/v3/internal/optional"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
-
-// NewLinearWebAnalysis constructs a slice containing all the observations
-// contained inside the given [*WebObservationsContainer].
-//
-// We sort the returned list as follows:
-//
-// 1. by descending TagDepth;
-//
-// 2. with TagDepth being equal, by descending [WebObservationType];
-//
-// 3. with [WebObservationType] being equal, by ascending failure string;
-//
-// This means that you divide the list in groups like this:
-//
-//	+------------+------------+------------+------------+
-//	| TagDepth=3 | TagDepth=2 | TagDepth=1 | TagDepth=0 |
-//	+------------+------------+------------+------------+
-//
-// Where TagDepth=3 is the last redirect and TagDepth=0 is the initial request.
-//
-// Each group is further divided as follows:
-//
-//	+------+-----+-----+-----+
-//	| HTTP | TLS | TCP | DNS |
-//	+------+-----+-----+-----+
-//
-// Where each group may be empty. The first non-empty group is about the
-// operation that failed for the current TagDepth.
-//
-// Within each group, successes sort before failures because the empty
-// string has priority over nøn-empty strings.
-//
-// So, when walking the list from index 0 to index N, you encounter the
-// latest redirects first, you observe the more complex operations first,
-// and you see errors before failures.
-func NewLinearWebAnalysis(input *WebObservationsContainer) (output []*WebObservation) {
-	// fill in all the observations
-	output = append(output, input.DNSLookupFailures...)
-	output = append(output, input.DNSLookupSuccesses...)
-	for _, entry := range input.KnownTCPEndpoints {
-		output = append(output, entry)
-	}
-
-	// sort in descending order
-	sort.SliceStable(output, func(i, j int) bool {
-		left, right := output[i], output[j]
-
-		// We use -1 as the default value such that observations with undefined
-		// TagDepth sort at the end of the generated list.
-		if left.TagDepth.UnwrapOr(-1) > right.TagDepth.UnwrapOr(-1) {
-			return true
-		} else if left.TagDepth.UnwrapOr(-1) < right.TagDepth.UnwrapOr(-1) {
-			return false
-		}
-
-		if left.Type > right.Type {
-			return true
-		} else if left.Type < right.Type {
-			return false
-		}
-
-		// We use an nonempty failure value so that observations with undefined
-		// failures sort at the end of the group within the list.
-		const defaultFailureValue = "unknown_failure"
-		return left.Failure.UnwrapOr(defaultFailureValue) > right.Failure.UnwrapOr(defaultFailureValue)
-	})
-
-	return
-}
 
 // AnalyzeWebObservations generates a [*WebAnalysis] from a [*WebObservationsContainer].
 func AnalyzeWebObservations(container *WebObservationsContainer) *WebAnalysis {
@@ -88,8 +17,6 @@ func AnalyzeWebObservations(container *WebObservationsContainer) *WebAnalysis {
 	analysis.tlsComputeMetrics(container)
 	analysis.httpComputeFailureMetrics(container)
 	analysis.httpComputeFinalResponseMetrics(container)
-
-	analysis.Linear = NewLinearWebAnalysis(container)
 
 	return analysis
 }
@@ -200,9 +127,6 @@ type WebAnalysis struct {
 
 	// HTTPFinalResponseDiffUncommonHeadersIntersection contains the uncommon headers intersection.
 	HTTPFinalResponseDiffUncommonHeadersIntersection optional.Value[map[string]bool]
-
-	// Linear contains the linear analysis.
-	Linear []*WebObservation
 }
 
 func (wa *WebAnalysis) dnsComputeSuccessMetrics(c *WebObservationsContainer) {

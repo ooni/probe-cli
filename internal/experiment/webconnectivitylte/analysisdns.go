@@ -62,13 +62,11 @@ func (tk *TestKeys) analysisDNSToplevel(logger model.Logger, lookupper model.Geo
 	tk.analysisDNSUnexpectedAddrs(logger, lookupper)
 	if tk.DNSFlags != 0 {
 		logger.Warn("DNSConsistency: inconsistent")
-		//v := "inconsistent"
-		//tk.DNSConsistency = &v
+		tk.DNSConsistency = "inconsistent"
 		tk.BlockingFlags |= analysisFlagDNSBlocking
 	} else {
 		logger.Info("DNSConsistency: consistent")
-		//v := "consistent"
-		//tk.DNSConsistency = &v
+		tk.DNSConsistency = "consistent"
 	}
 }
 
