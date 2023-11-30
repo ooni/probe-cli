@@ -12,8 +12,9 @@ func AnalyzeWebObservations(container *WebObservationsContainer) *WebAnalysis {
 
 	analysis.ComputeDNSLookupSuccessWithInvalidAddresses(container)
 	analysis.ComputeDNSLookupSuccessWithInvalidAddressesClassic(container)
+	analysis.ComputeDNSLookupUnexpectedFailure(container)
+
 	analysis.ComputeDNSExperimentFailure(container)
-	analysis.ComputeDNSTransactionsWithUnexpectedFailures(container)
 	analysis.ComputeDNSPossiblyNonexistingDomains(container)
 
 	analysis.ComputeTCPTransactionsWithUnexpectedTCPConnectFailures(container)
@@ -43,14 +44,11 @@ type WebAnalysis struct {
 	// to be compatible with Web Connectivity v0.4's behavior.
 	DNSLookupSuccessWithInvalidAddressesClassic Set[int64]
 
+	// DNSLookupUnexpectedFailure contains DNS transactions with unexpected failures.
+	DNSLookupUnexpectedFailure Set[int64]
+
 	// DNSExperimentFailure is the first failure experienced by a getaddrinfo-like resolver.
 	DNSExperimentFailure optional.Value[string]
-
-	// DNSTransactionsWithUnexpectedFailures contains the DNS transaction IDs that
-	// contain failures while the control measurement succeeded. Note that we don't
-	// include DNS-over-HTTPS failures inside the list, because a DoH failure is
-	// not related to the domain we're querying for.
-	DNSTransactionsWithUnexpectedFailures optional.Value[map[int64]bool]
 
 	// DNSPossiblyNonexistingDomains lists all the domains for which both
 	// the probe and the TH failed to perform DNS lookups.
@@ -106,7 +104,7 @@ type WebAnalysis struct {
 	TCPTransactionsWithUnexplainedUnexpectedFailures optional.Value[map[int64]bool]
 }
 
-// ComputeDNSLookupSuccessWithInvalidAddresses computes the DNSLookupInvalid field.
+// ComputeDNSLookupSuccessWithInvalidAddresses computes the ComputeDNSLookupSuccessWithInvalidAddresses field.
 func (wa *WebAnalysis) ComputeDNSLookupSuccessWithInvalidAddresses(c *WebObservationsContainer) {
 	// fill the invalid set
 	var already Set[int64]
@@ -169,7 +167,7 @@ func (wa *WebAnalysis) ComputeDNSLookupSuccessWithInvalidAddresses(c *WebObserva
 	}
 }
 
-// ComputeDNSLookupSuccessWithInvalidAddressesClassic computes the DNSLookupInvalidClassic field.
+// ComputeDNSLookupSuccessWithInvalidAddressesClassic computes the DNSLookupSuccessWithInvalidAddressesClassic field.
 func (wa *WebAnalysis) ComputeDNSLookupSuccessWithInvalidAddressesClassic(c *WebObservationsContainer) {
 	var already Set[int64]
 
@@ -206,6 +204,61 @@ func (wa *WebAnalysis) ComputeDNSLookupSuccessWithInvalidAddressesClassic(c *Web
 
 		// mark as invalid
 		wa.DNSLookupSuccessWithInvalidAddressesClassic.Add(obs.DNSTransactionID.Unwrap())
+	}
+}
+
+// ComputeDNSLookupUnexpectedFailure computes the DNSLookupUnexpectedFailure field.
+func (wa *WebAnalysis) ComputeDNSLookupUnexpectedFailure(c *WebObservationsContainer) {
+	var already Set[int64]
+
+	for _, obs := range c.DNSLookupFailures {
+		// avoid considering a lookup we already considered
+		if already.Contains(obs.DNSTransactionID.Unwrap()) {
+			continue
+		}
+		already.Add(obs.DNSTransactionID.Unwrap())
+
+		// lookups once we started following redirects should not be considered
+		if obs.TagDepth.IsNone() || obs.TagDepth.Unwrap() != 0 {
+			continue
+		}
+
+		// Implementation note: a DoH failure is not information about the URL we're
+		// measuring but about the DoH service being blocked.
+		//
+		// See https://github.com/ooni/probe/issues/2274
+		if utilsDNSEngineIsDNSOverHTTPS(obs) {
+			continue
+		}
+
+		// skip cases where there's no DNS record for AAAA, which is a false positive
+		if utilsDNSLookupFailureIsDNSNoAnswerForAAAA(obs) {
+			continue
+		}
+
+		// TODO(bassosimone): if we set an IPv6 address as the resolver address, we
+		// end up with false positive errors when there's no IPv6 support
+
+		// handle the case where there's no control
+		if obs.ControlDNSLookupFailure.IsNone() {
+			continue
+		}
+
+		// handle the case where both failed
+		if obs.DNSLookupFailure.Unwrap() != "" && obs.ControlDNSLookupFailure.Unwrap() != "" {
+			continue
+		}
+
+		// handle the case where only the control failed
+		if obs.ControlDNSLookupFailure.Unwrap() != "" {
+			continue
+		}
+
+		// handle the case where only the probe failed
+		if obs.DNSLookupFailure.Unwrap() != "" {
+			wa.DNSLookupUnexpectedFailure.Add(obs.DNSTransactionID.Unwrap())
+			continue
+		}
 	}
 }
 
@@ -250,55 +303,6 @@ func (wa *WebAnalysis) ComputeDNSExperimentFailure(c *WebObservationsContainer) 
 		wa.DNSExperimentFailure = obs.DNSLookupFailure
 		return
 	}
-}
-
-// ComputeDNSTransactionsWithUnexpectedFailures computes the DNSTransactionsWithUnexpectedFailures field.
-func (wa *WebAnalysis) ComputeDNSTransactionsWithUnexpectedFailures(c *WebObservationsContainer) {
-	// Implementation note: a DoH failure is not information about the URL we're
-	// measuring but about the DoH service being blocked.
-	//
-	// See https://github.com/ooni/probe/issues/2274
-
-	var state map[int64]bool
-
-	for _, obs := range c.DNSLookupFailures {
-		// skip cases where the engine is doh (see above comment)
-		if utilsDNSEngineIsDNSOverHTTPS(obs) {
-			continue
-		}
-
-		// skip cases where there's no DNS record for AAAA, which is a false positive
-		if utilsDNSLookupFailureIsDNSNoAnswerForAAAA(obs) {
-			continue
-		}
-
-		// TODO(bassosimone): if we set an IPv6 address as the resolver address, we
-		// end up with false positive errors when there's no IPv6 support
-
-		// skip cases with no control
-		if obs.ControlDNSLookupFailure.IsNone() {
-			continue
-		}
-
-		// flip from None to empty if we have seen at least one entry for
-		// which we can compare to the control
-		if state == nil {
-			state = make(map[int64]bool)
-		}
-
-		// skip cases where the control failed as well
-		if obs.ControlDNSLookupFailure.Unwrap() != "" {
-			continue
-		}
-
-		// update state
-		if id := obs.DNSTransactionID.UnwrapOr(0); id > 0 {
-			state[id] = true
-		}
-	}
-
-	// note that optional.Some constructs None if state is nil
-	wa.DNSTransactionsWithUnexpectedFailures = optional.Some(state)
 }
 
 // ComputeDNSPossiblyNonexistingDomains computes the DNSPossiblyNonexistingDomains field.

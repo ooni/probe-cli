@@ -1,10 +1,10 @@
 {
   "DNSLookupSuccessWithInvalidAddresses": [],
   "DNSLookupSuccessWithInvalidAddressesClassic": [],
+  "DNSLookupUnexpectedFailure": [
+    2
+  ],
   "DNSExperimentFailure": "dns_nxdomain_error",
-  "DNSTransactionsWithUnexpectedFailures": {
-    "2": true
-  },
   "DNSPossiblyNonexistingDomains": {},
   "HTTPDiffBodyProportionFactor": 1,
   "HTTPDiffStatusCodeMatch": true,
