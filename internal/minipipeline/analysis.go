@@ -19,9 +19,7 @@ func AnalyzeWebObservations(container *WebObservationsContainer) *WebAnalysis {
 	analysis.httpComputeFailureMetrics(container)
 	analysis.httpComputeFinalResponseMetrics(container)
 
-	analysis.ComputeDNSExperimentFailure(container)
 	analysis.ComputeDNSPossiblyNonexistingDomains(container)
-
 	return analysis
 }
 
@@ -33,12 +31,28 @@ type WebAnalysis struct {
 	// taking into account control info, bogons, and TLS handshakes.
 	DNSLookupSuccessWithInvalidAddresses Set[int64]
 
+	// DNSLookupSuccessWithValidAddress contains DNS transactions with valid IP addresses.
+	DNSLookupSuccessWithValidAddress Set[int64]
+
 	// DNSLookupSuccessWithInvalidAddressesClassic is like DNSLookupInvalid but the algorithm is more relaxed
 	// to be compatible with Web Connectivity v0.4's behavior.
 	DNSLookupSuccessWithInvalidAddressesClassic Set[int64]
 
+	// DNSLookupSuccessWithValidAddressClassic contains DNS transactions with valid IP addresses.
+	DNSLookupSuccessWithValidAddressClassic Set[int64]
+
 	// DNSLookupUnexpectedFailure contains DNS transactions with unexpected failures.
 	DNSLookupUnexpectedFailure Set[int64]
+
+	// DNSExperimentFailure is the first failure experienced by any resolver
+	// before hitting redirects (i.e., when TagDepth==0).
+	DNSExperimentFailure optional.Value[string]
+
+	// DNSLookupExpectedFailure contains DNS transactions with expected failures.
+	DNSLookupExpectedFailure Set[int64]
+
+	// DNSLookupExpectedSuccess contains DNS transactions with expected successes.
+	DNSLookupExpectedSuccess Set[int64]
 
 	// TCPConnectUnexpectedFailure contains TCP endpoint transactions with unexpected failures.
 	TCPConnectUnexpectedFailure Set[int64]
@@ -95,27 +109,28 @@ type WebAnalysis struct {
 	// transaction when the final response succeeded with control and with TLS.
 	HTTPFinalResponseSuccessTLSWithControl optional.Value[int64]
 
+	// HTTPFinalResponseSuccessTCPWithoutControl contains the ID of the final response
+	// transaction when the final response succeeded without control and with TCP.
+	HTTPFinalResponseSuccessTCPWithoutControl optional.Value[int64]
+
 	// HTTPFinalResponseSuccessTCPWithControl contains the ID of the final response
 	// transaction when the final response succeeded with control and with TCP.
 	HTTPFinalResponseSuccessTCPWithControl optional.Value[int64]
 
-	// HTTPDiffBodyProportionFactor is the body proportion factor.
-	HTTPDiffBodyProportionFactor optional.Value[float64]
+	// HTTPFinalResponseDiffBodyProportionFactor is the body proportion factor.
+	HTTPFinalResponseDiffBodyProportionFactor optional.Value[float64]
 
-	// HTTPDiffStatusCodeMatch returns whether the status code matches.
-	HTTPDiffStatusCodeMatch optional.Value[bool]
+	// HTTPFinalResponseDiffStatusCodeMatch returns whether the status code matches.
+	HTTPFinalResponseDiffStatusCodeMatch optional.Value[bool]
 
-	// HTTPDiffTitleDifferentLongWords contains the words long 5+ characters that appear
+	// HTTPFinalResponseDiffTitleDifferentLongWords contains the words long 5+ characters that appear
 	// in the probe's "final" response title or in the TH title but not in both.
-	HTTPDiffTitleDifferentLongWords optional.Value[map[string]bool]
+	HTTPFinalResponseDiffTitleDifferentLongWords optional.Value[map[string]bool]
 
-	// HTTPDiffUncommonHeadersIntersection contains the uncommon headers intersection.
-	HTTPDiffUncommonHeadersIntersection optional.Value[map[string]bool]
+	// HTTPFinalResponseDiffUncommonHeadersIntersection contains the uncommon headers intersection.
+	HTTPFinalResponseDiffUncommonHeadersIntersection optional.Value[map[string]bool]
 
 	// TODO(bassosimone): there are probably redundant metrics from this point on
-
-	// DNSExperimentFailure is the first failure experienced by a getaddrinfo-like resolver.
-	DNSExperimentFailure optional.Value[string]
 
 	// DNSPossiblyNonexistingDomains lists all the domains for which both
 	// the probe and the TH failed to perform DNS lookups.
@@ -154,11 +169,13 @@ func (wa *WebAnalysis) dnsComputeSuccessMetrics(c *WebObservationsContainer) {
 
 		// this lookup is good if there is IP addresses intersection
 		if DNSDiffFindCommonIPAddressIntersection(measurement, control).Len() > 0 {
+			wa.DNSLookupSuccessWithValidAddress.Add(obs.DNSTransactionID.Unwrap())
 			continue
 		}
 
 		// this lookup is good if there is ASN intersection
 		if DNSDiffFindCommonASNsIntersection(measurement, control).Len() > 0 {
+			wa.DNSLookupSuccessWithValidAddress.Add(obs.DNSTransactionID.Unwrap())
 			continue
 		}
 
@@ -181,6 +198,7 @@ func (wa *WebAnalysis) dnsComputeSuccessMetrics(c *WebObservationsContainer) {
 
 		// this is actually valid
 		wa.DNSLookupSuccessWithInvalidAddresses.Remove(txid)
+		wa.DNSLookupSuccessWithValidAddress.Add(txid)
 	}
 }
 
@@ -210,11 +228,13 @@ func (wa *WebAnalysis) dnsComputeSuccessMetricsClassic(c *WebObservationsContain
 
 		// this lookup is good if there is IP addresses intersection
 		if DNSDiffFindCommonIPAddressIntersection(measurement, control).Len() > 0 {
+			wa.DNSLookupSuccessWithValidAddressClassic.Add(obs.DNSTransactionID.Unwrap())
 			continue
 		}
 
 		// this lookup is good if there is ASN intersection
 		if DNSDiffFindCommonASNsIntersection(measurement, control).Len() > 0 {
+			wa.DNSLookupSuccessWithValidAddressClassic.Add(obs.DNSTransactionID.Unwrap())
 			continue
 		}
 
@@ -254,6 +274,13 @@ func (wa *WebAnalysis) dnsComputeFailureMetrics(c *WebObservationsContainer) {
 		// TODO(bassosimone): if we set an IPv6 address as the resolver address, we
 		// end up with false positive errors when there's no IPv6 support
 
+		// honor the DNSExperimentFailure by assigning the first
+		// probe error that we see with depth==0
+		if obs.DNSLookupFailure.Unwrap() != "" && wa.DNSExperimentFailure.IsNone() {
+			wa.DNSExperimentFailure = obs.DNSLookupFailure
+			// fallthrough
+		}
+
 		// handle the case where there's no control
 		if obs.ControlDNSLookupFailure.IsNone() {
 			continue
@@ -261,6 +288,7 @@ func (wa *WebAnalysis) dnsComputeFailureMetrics(c *WebObservationsContainer) {
 
 		// handle the case where both failed
 		if obs.DNSLookupFailure.Unwrap() != "" && obs.ControlDNSLookupFailure.Unwrap() != "" {
+			wa.DNSLookupExpectedFailure.Add(obs.DNSTransactionID.Unwrap())
 			continue
 		}
 
@@ -274,6 +302,9 @@ func (wa *WebAnalysis) dnsComputeFailureMetrics(c *WebObservationsContainer) {
 			wa.DNSLookupUnexpectedFailure.Add(obs.DNSTransactionID.Unwrap())
 			continue
 		}
+
+		// handle the case where both succeed
+		wa.DNSLookupExpectedSuccess.Add(obs.DNSTransactionID.Unwrap())
 	}
 }
 
@@ -441,6 +472,7 @@ func (wa *WebAnalysis) httpHandleFinalResponse(obs *WebObservation) {
 			wa.HTTPFinalResponseSuccessTLSWithoutControl = obs.EndpointTransactionID
 			return
 		}
+		wa.HTTPFinalResponseSuccessTCPWithoutControl = obs.EndpointTransactionID
 		return
 	}
 
@@ -479,7 +511,7 @@ func (wa *WebAnalysis) httpDiffBodyProportionFactor(obs *WebObservation) {
 
 	// compute the body proportion factor and update the state
 	proportion := ComputeHTTPDiffBodyProportionFactor(measurement, control)
-	wa.HTTPDiffBodyProportionFactor = optional.Some(proportion)
+	wa.HTTPFinalResponseDiffBodyProportionFactor = optional.Some(proportion)
 }
 
 func (wa *WebAnalysis) httpDiffStatusCodeMatch(obs *WebObservation) {
@@ -499,7 +531,7 @@ func (wa *WebAnalysis) httpDiffStatusCodeMatch(obs *WebObservation) {
 	}
 
 	// update state
-	wa.HTTPDiffStatusCodeMatch = ComputeHTTPDiffStatusCodeMatch(measurement, control)
+	wa.HTTPFinalResponseDiffStatusCodeMatch = ComputeHTTPDiffStatusCodeMatch(measurement, control)
 }
 
 func (wa *WebAnalysis) httpDiffUncommonHeadersIntersection(obs *WebObservation) {
@@ -522,7 +554,7 @@ func (wa *WebAnalysis) httpDiffUncommonHeadersIntersection(obs *WebObservation) 
 	control := obs.ControlHTTPResponseHeadersKeys.UnwrapOr(nil)
 
 	state := ComputeHTTPDiffUncommonHeadersIntersection(measurement, control)
-	wa.HTTPDiffUncommonHeadersIntersection = optional.Some(state)
+	wa.HTTPFinalResponseDiffUncommonHeadersIntersection = optional.Some(state)
 }
 
 func (wa *WebAnalysis) httpDiffTitleDifferentLongWords(obs *WebObservation) {
@@ -542,50 +574,7 @@ func (wa *WebAnalysis) httpDiffTitleDifferentLongWords(obs *WebObservation) {
 
 	state := ComputeHTTPDiffTitleDifferentLongWords(measurement, control)
 
-	wa.HTTPDiffTitleDifferentLongWords = optional.Some(state)
-}
-
-// ComputeDNSExperimentFailure computes the DNSExperimentFailure field.
-func (wa *WebAnalysis) ComputeDNSExperimentFailure(c *WebObservationsContainer) {
-
-	for _, obs := range c.DNSLookupFailures {
-		// make sure we have probe domain
-		probeDomain := obs.DNSDomain.UnwrapOr("")
-		if probeDomain == "" {
-			continue
-		}
-
-		// make sure we have TH domain
-		thDomain := obs.ControlDNSDomain.UnwrapOr("")
-		if thDomain == "" {
-			continue
-		}
-
-		// we only care about cases where we're resolving the same domain
-		if probeDomain != thDomain {
-			continue
-		}
-
-		// as documented, only include the system resolver
-		if !utilsEngineIsGetaddrinfo(obs.DNSEngine) {
-			continue
-		}
-
-		// skip cases where there's no DNS record for AAAA, which is a false positive
-		//
-		// in principle, this should not happen with getaddrinfo, but we add this
-		// check nonetheless for robustness against this corner case
-		if utilsDNSLookupFailureIsDNSNoAnswerForAAAA(obs) {
-			continue
-		}
-
-		// only record the first failure
-		//
-		// we should only consider the first DNS lookup to be consistent with
-		// what was previously returned by Web Connectivity v0.4
-		wa.DNSExperimentFailure = obs.DNSLookupFailure
-		return
-	}
+	wa.HTTPFinalResponseDiffTitleDifferentLongWords = optional.Some(state)
 }
 
 // ComputeDNSPossiblyNonexistingDomains computes the DNSPossiblyNonexistingDomains field.

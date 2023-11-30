@@ -1,7 +1,14 @@
 {
   "DNSLookupSuccessWithInvalidAddresses": [],
+  "DNSLookupSuccessWithValidAddress": [
+    1
+  ],
   "DNSLookupSuccessWithInvalidAddressesClassic": [],
+  "DNSLookupSuccessWithValidAddressClassic": [],
   "DNSLookupUnexpectedFailure": [],
+  "DNSExperimentFailure": null,
+  "DNSLookupExpectedFailure": [],
+  "DNSLookupExpectedSuccess": [],
   "TCPConnectUnexpectedFailure": [],
   "TCPConnectUnexpectedFailureDuringWebFetch": [],
   "TCPConnectUnexpectedFailureDuringConnectivityCheck": [],
@@ -17,11 +24,12 @@
   "HTTPRoundTripUnexpectedFailure": [],
   "HTTPFinalResponseSuccessTLSWithoutControl": null,
   "HTTPFinalResponseSuccessTLSWithControl": 8,
+  "HTTPFinalResponseSuccessTCPWithoutControl": null,
   "HTTPFinalResponseSuccessTCPWithControl": null,
-  "HTTPDiffBodyProportionFactor": 0.6166324592304209,
-  "HTTPDiffStatusCodeMatch": true,
-  "HTTPDiffTitleDifferentLongWords": {},
-  "HTTPDiffUncommonHeadersIntersection": {
+  "HTTPFinalResponseDiffBodyProportionFactor": 0.6166324592304209,
+  "HTTPFinalResponseDiffStatusCodeMatch": true,
+  "HTTPFinalResponseDiffTitleDifferentLongWords": {},
+  "HTTPFinalResponseDiffUncommonHeadersIntersection": {
     "accept-ch": true,
     "alt-svc": true,
     "cross-origin-opener-policy": true,
@@ -29,6 +37,5 @@
     "permissions-policy": true,
     "report-to": true
   },
-  "DNSExperimentFailure": null,
   "DNSPossiblyNonexistingDomains": null
 }
