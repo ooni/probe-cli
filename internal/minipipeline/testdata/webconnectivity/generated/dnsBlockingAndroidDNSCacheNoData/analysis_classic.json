@@ -17,12 +17,13 @@
   "TLSHandshakeUnexplainedFailureDuringWebFetch": [],
   "TLSHandshakeUnexplainedFailureDuringConnectivityCheck": [],
   "HTTPRoundTripUnexpectedFailure": [],
-  "DNSExperimentFailure": "android_dns_cache_no_data",
-  "DNSPossiblyNonexistingDomains": {},
+  "HTTPFinalResponseSuccessTLSWithoutControl": null,
+  "HTTPFinalResponseSuccessTLSWithControl": null,
+  "HTTPFinalResponseSuccessTCPWithControl": null,
   "HTTPDiffBodyProportionFactor": null,
   "HTTPDiffStatusCodeMatch": null,
   "HTTPDiffTitleDifferentLongWords": null,
   "HTTPDiffUncommonHeadersIntersection": null,
-  "HTTPFinalResponsesWithControl": null,
-  "HTTPFinalResponsesWithTLS": null
+  "DNSExperimentFailure": "android_dns_cache_no_data",
+  "DNSPossiblyNonexistingDomains": {}
 }
