@@ -119,6 +119,7 @@ func (tk *TestKeys) analysisOrig(logger model.Logger) {
 	// Since we run after all tasks have completed (or so we assume) we're
 	// not going to use any form of locking here.
 
+	// these functions compute the value of XBlockingFlags
 	tk.analysisDNSToplevel(logger, model.GeoIPASNLookupperFunc(geoipx.LookupASN))
 	tk.analysisTCPIPToplevel(logger)
 	tk.analysisTLSToplevel(logger)
