@@ -430,6 +430,7 @@ func (wa *WebAnalysis) httpComputeFinalResponseMetrics(c *WebObservationsContain
 		// stop after processing the first final response (there's at most
 		// one when we're analyzing LTE results)
 		wa.httpHandleFinalResponse(obs)
+		return
 	}
 }
 
