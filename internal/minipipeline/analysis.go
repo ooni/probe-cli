@@ -10,12 +10,12 @@ import (
 func AnalyzeWebObservations(container *WebObservationsContainer) *WebAnalysis {
 	analysis := &WebAnalysis{}
 
-	analysis.ComputeDNSLookupSuccessWithInvalidAddresses(container)
-	analysis.ComputeDNSLookupSuccessWithInvalidAddressesClassic(container)
-	analysis.ComputeDNSLookupUnexpectedFailure(container)
+	analysis.dnsComputeSuccessMetrics(container)
+	analysis.dnsComputeSuccessMetricsClassic(container)
+	analysis.dnsComputeFailureMetrics(container)
 
-	analysis.ComputeTCPConnectUnexpectedFailure(container)
-	analysis.ComputeTLSHandshakeUnexpectedFailure(container)
+	analysis.tcpComputeMetrics(container)
+	analysis.tlsComputeMetrics(container)
 
 	analysis.ComputeDNSExperimentFailure(container)
 	analysis.ComputeDNSPossiblyNonexistingDomains(container)
@@ -51,8 +51,24 @@ type WebAnalysis struct {
 	// TCPConnectUnexpectedFailure contains TCP endpoint transactions with unexpected failures.
 	TCPConnectUnexpectedFailure Set[int64]
 
+	// TCPConnectUnexpectedFailureDuringWebFetch contains TCP endpoint transactions with unexpected failures
+	// while performing a web fetch, as opposed to checking for connectivity.
+	TCPConnectUnexpectedFailureDuringWebFetch Set[int64]
+
+	// TCPConnectUnexpectedFailureDuringConnectivityCheck contains TCP endpoint transactions with unexpected failures
+	// while checking for connectivity, as opposed to fetching a webpage.
+	TCPConnectUnexpectedFailureDuringConnectivityCheck Set[int64]
+
 	// TLSHandshakeUnexpectedFailure contains TLS endpoint transactions with unexpected failures.
 	TLSHandshakeUnexpectedFailure Set[int64]
+
+	// TLSHandshakeUnexpectedFailureDuringWebFetch contains TLS endpoint transactions with unexpected failures.
+	// while performing a web fetch, as opposed to checking for connectivity.
+	TLSHandshakeUnexpectedFailureDuringWebFetch Set[int64]
+
+	// TLSHandshakeUnexpectedFailureDuringConnectivityCheck contains TLS endpoint transactions with unexpected failures.
+	// while checking for connectivity, as opposed to fetching a webpage.
+	TLSHandshakeUnexpectedFailureDuringConnectivityCheck Set[int64]
 
 	// DNSExperimentFailure is the first failure experienced by a getaddrinfo-like resolver.
 	DNSExperimentFailure optional.Value[string]
@@ -103,8 +119,7 @@ type WebAnalysis struct {
 	TCPTransactionsWithUnexplainedUnexpectedFailures optional.Value[map[int64]bool]
 }
 
-// ComputeDNSLookupSuccessWithInvalidAddresses computes the ComputeDNSLookupSuccessWithInvalidAddresses field.
-func (wa *WebAnalysis) ComputeDNSLookupSuccessWithInvalidAddresses(c *WebObservationsContainer) {
+func (wa *WebAnalysis) dnsComputeSuccessMetrics(c *WebObservationsContainer) {
 	// fill the invalid set
 	var already Set[int64]
 	for _, obs := range c.DNSLookupSuccesses {
@@ -166,8 +181,7 @@ func (wa *WebAnalysis) ComputeDNSLookupSuccessWithInvalidAddresses(c *WebObserva
 	}
 }
 
-// ComputeDNSLookupSuccessWithInvalidAddressesClassic computes the DNSLookupSuccessWithInvalidAddressesClassic field.
-func (wa *WebAnalysis) ComputeDNSLookupSuccessWithInvalidAddressesClassic(c *WebObservationsContainer) {
+func (wa *WebAnalysis) dnsComputeSuccessMetricsClassic(c *WebObservationsContainer) {
 	var already Set[int64]
 
 	for _, obs := range c.DNSLookupSuccesses {
@@ -206,8 +220,7 @@ func (wa *WebAnalysis) ComputeDNSLookupSuccessWithInvalidAddressesClassic(c *Web
 	}
 }
 
-// ComputeDNSLookupUnexpectedFailure computes the DNSLookupUnexpectedFailure field.
-func (wa *WebAnalysis) ComputeDNSLookupUnexpectedFailure(c *WebObservationsContainer) {
+func (wa *WebAnalysis) dnsComputeFailureMetrics(c *WebObservationsContainer) {
 	var already Set[int64]
 
 	for _, obs := range c.DNSLookupFailures {
@@ -261,8 +274,7 @@ func (wa *WebAnalysis) ComputeDNSLookupUnexpectedFailure(c *WebObservationsConta
 	}
 }
 
-// ComputeTCPConnectUnexpectedFailure computes the TCPConnectUnexpectedFailure field.
-func (wa *WebAnalysis) ComputeTCPConnectUnexpectedFailure(c *WebObservationsContainer) {
+func (wa *WebAnalysis) tcpComputeMetrics(c *WebObservationsContainer) {
 	for _, obs := range c.KnownTCPEndpoints {
 		// dials once we started following redirects should not be considered
 		if obs.TagDepth.IsNone() || obs.TagDepth.Unwrap() != 0 {
@@ -294,14 +306,19 @@ func (wa *WebAnalysis) ComputeTCPConnectUnexpectedFailure(c *WebObservationsCont
 			if utilsTCPConnectFailureSeemsMisconfiguredIPv6(obs) {
 				continue
 			}
+			switch {
+			case !obs.TagFetchBody.IsNone() && obs.TagFetchBody.Unwrap():
+				wa.TCPConnectUnexpectedFailureDuringWebFetch.Add(obs.EndpointTransactionID.Unwrap())
+			case !obs.TagFetchBody.IsNone() && !obs.TagFetchBody.Unwrap():
+				wa.TCPConnectUnexpectedFailureDuringConnectivityCheck.Add(obs.EndpointTransactionID.Unwrap())
+			}
 			wa.TCPConnectUnexpectedFailure.Add(obs.EndpointTransactionID.Unwrap())
 			continue
 		}
 	}
 }
 
-// ComputeTLSHandshakeUnexpectedFailure computes the TLSHandshakeUnexpectedFailure field.
-func (wa *WebAnalysis) ComputeTLSHandshakeUnexpectedFailure(c *WebObservationsContainer) {
+func (wa *WebAnalysis) tlsComputeMetrics(c *WebObservationsContainer) {
 	for _, obs := range c.KnownTCPEndpoints {
 		// handshakes once we started following redirects should not be considered
 		if obs.TagDepth.IsNone() || obs.TagDepth.Unwrap() != 0 {
@@ -330,6 +347,12 @@ func (wa *WebAnalysis) ComputeTLSHandshakeUnexpectedFailure(c *WebObservationsCo
 
 		// handle the case where only the probe fails
 		if obs.TLSHandshakeFailure.Unwrap() != "" {
+			switch {
+			case !obs.TagFetchBody.IsNone() && obs.TagFetchBody.Unwrap():
+				wa.TLSHandshakeUnexpectedFailureDuringWebFetch.Add(obs.EndpointTransactionID.Unwrap())
+			case !obs.TagFetchBody.IsNone() && !obs.TagFetchBody.Unwrap():
+				wa.TLSHandshakeUnexpectedFailureDuringConnectivityCheck.Add(obs.EndpointTransactionID.Unwrap())
+			}
 			wa.TLSHandshakeUnexpectedFailure.Add(obs.EndpointTransactionID.Unwrap())
 			continue
 		}
