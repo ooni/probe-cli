@@ -10,6 +10,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/optional"
 )
 
 const (
@@ -62,13 +63,11 @@ func (tk *TestKeys) analysisDNSToplevel(logger model.Logger, lookupper model.Geo
 	tk.analysisDNSUnexpectedAddrs(logger, lookupper)
 	if tk.DNSFlags != 0 {
 		logger.Warn("DNSConsistency: inconsistent")
-		//v := "inconsistent"
-		//tk.DNSConsistency = &v
+		tk.DNSConsistency = optional.Some("inconsistent")
 		tk.BlockingFlags |= analysisFlagDNSBlocking
 	} else {
 		logger.Info("DNSConsistency: consistent")
-		//v := "consistent"
-		//tk.DNSConsistency = &v
+		tk.DNSConsistency = optional.Some("consistent")
 	}
 }
 

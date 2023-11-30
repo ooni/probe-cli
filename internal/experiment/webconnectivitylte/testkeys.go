@@ -356,7 +356,7 @@ func NewTestKeys() *TestKeys {
 		DNSFlags:              0,
 		DNSExperimentFailure:  nil,
 		DNSConsistency:        optional.None[string](),
-		HTTPExperimentFailure: optional.None[string](),
+		HTTPExperimentFailure: nil,
 		BlockingFlags:         0,
 		NullNullFlags:         0,
 		BodyLengthMatch:       optional.None[bool](),

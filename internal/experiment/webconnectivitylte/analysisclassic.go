@@ -68,16 +68,23 @@ func analysisClassicDNSConsistency(woa *minipipeline.WebAnalysis) optional.Value
 func (tk *TestKeys) setHTTPDiffValues(woa *minipipeline.WebAnalysis) {
 	const bodyProportionFactor = 0.7
 	if !woa.HTTPFinalResponseDiffBodyProportionFactor.IsNone() {
-		tk.BodyLengthMatch = optional.Some(woa.HTTPFinalResponseDiffBodyProportionFactor.Unwrap() > bodyProportionFactor)
+		value := woa.HTTPFinalResponseDiffBodyProportionFactor.Unwrap() > bodyProportionFactor
+		tk.BodyLengthMatch = &value
 	}
 
 	if !woa.HTTPFinalResponseDiffUncommonHeadersIntersection.IsNone() {
-		tk.HeadersMatch = optional.Some(len(woa.HTTPFinalResponseDiffUncommonHeadersIntersection.Unwrap()) > 0)
+		value := len(woa.HTTPFinalResponseDiffUncommonHeadersIntersection.Unwrap()) > 0
+		tk.HeadersMatch = &value
 	}
 
-	tk.StatusCodeMatch = woa.HTTPFinalResponseDiffStatusCodeMatch
+	if !woa.HTTPFinalResponseDiffStatusCodeMatch.IsNone() {
+		value := woa.HTTPFinalResponseDiffStatusCodeMatch.Unwrap()
+		tk.StatusCodeMatch = &value
+	}
+
 	if !woa.HTTPFinalResponseDiffTitleDifferentLongWords.IsNone() {
-		tk.TitleMatch = optional.Some(len(woa.HTTPFinalResponseDiffTitleDifferentLongWords.Unwrap()) <= 0)
+		value := len(woa.HTTPFinalResponseDiffTitleDifferentLongWords.Unwrap()) <= 0
+		tk.TitleMatch = &value
 	}
 }
 
@@ -99,14 +106,14 @@ var _ analysisClassicTestKeysProxy = &TestKeys{}
 
 // httpDiff implements analysisClassicTestKeysProxy.
 func (tk *TestKeys) httpDiff() bool {
-	if !tk.StatusCodeMatch.IsNone() && tk.StatusCodeMatch.Unwrap() {
-		if !tk.BodyLengthMatch.IsNone() && tk.BodyLengthMatch.Unwrap() {
+	if tk.StatusCodeMatch != nil && *tk.StatusCodeMatch {
+		if tk.BodyLengthMatch != nil && *tk.BodyLengthMatch {
 			return false
 		}
-		if !tk.HeadersMatch.IsNone() && tk.HeadersMatch.Unwrap() {
+		if tk.HeadersMatch != nil && *tk.HeadersMatch {
 			return false
 		}
-		if !tk.TitleMatch.IsNone() && tk.TitleMatch.Unwrap() {
+		if tk.TitleMatch != nil && *tk.TitleMatch {
 			return false
 		}
 		// fallthrough
