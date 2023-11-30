@@ -3,8 +3,8 @@
   "DNSLookupSuccessWithInvalidAddressesClassic": [
     2
   ],
+  "DNSLookupUnexpectedFailure": [],
   "DNSExperimentFailure": null,
-  "DNSTransactionsWithUnexpectedFailures": null,
   "DNSPossiblyNonexistingDomains": null,
   "HTTPDiffBodyProportionFactor": 1,
   "HTTPDiffStatusCodeMatch": true,
