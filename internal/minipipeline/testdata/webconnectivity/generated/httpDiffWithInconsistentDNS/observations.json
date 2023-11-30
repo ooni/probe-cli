@@ -1,6 +1,11 @@
 {
   "DNSLookupFailures": [
     {
+      "TagDepth": 0,
+      "Type": 0,
+      "Failure": "dns_no_answer",
+      "TransactionID": 1,
+      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_no_answer",
@@ -26,8 +31,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 0,
-      "TagFetchBody": null,
       "ControlDNSDomain": "www.example.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -49,6 +52,11 @@
   ],
   "DNSLookupSuccesses": [
     {
+      "TagDepth": 0,
+      "Type": 0,
+      "Failure": "",
+      "TransactionID": 2,
+      "TagFetchBody": null,
       "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
@@ -76,8 +84,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 0,
-      "TagFetchBody": null,
       "ControlDNSDomain": "www.example.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -97,6 +103,11 @@
       "ControlHTTPResponseTitle": "Default Web Page"
     },
     {
+      "TagDepth": 0,
+      "Type": 0,
+      "Failure": "",
+      "TransactionID": 1,
+      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
@@ -124,8 +135,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 0,
-      "TagFetchBody": null,
       "ControlDNSDomain": "www.example.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -147,6 +156,11 @@
   ],
   "KnownTCPEndpoints": {
     "3": {
+      "TagDepth": 0,
+      "Type": 3,
+      "Failure": "",
+      "TransactionID": 3,
+      "TagFetchBody": true,
       "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
@@ -174,8 +188,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": "Access Denied",
       "HTTPResponseIsFinal": true,
-      "TagDepth": 0,
-      "TagFetchBody": true,
       "ControlDNSDomain": "www.example.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -195,6 +207,11 @@
       "ControlHTTPResponseTitle": "Default Web Page"
     },
     "4": {
+      "TagDepth": 0,
+      "Type": 2,
+      "Failure": "",
+      "TransactionID": 4,
+      "TagFetchBody": false,
       "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
@@ -222,8 +239,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 0,
-      "TagFetchBody": false,
       "ControlDNSDomain": "www.example.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -243,6 +258,11 @@
       "ControlHTTPResponseTitle": "Default Web Page"
     },
     "5": {
+      "TagDepth": 0,
+      "Type": 1,
+      "Failure": "",
+      "TransactionID": 5,
+      "TagFetchBody": true,
       "DNSTransactionID": null,
       "DNSDomain": null,
       "DNSLookupFailure": null,
@@ -268,8 +288,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 0,
-      "TagFetchBody": true,
       "ControlDNSDomain": "www.example.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -289,6 +307,11 @@
       "ControlHTTPResponseTitle": "Default Web Page"
     },
     "6": {
+      "TagDepth": 0,
+      "Type": 2,
+      "Failure": "",
+      "TransactionID": 6,
+      "TagFetchBody": false,
       "DNSTransactionID": null,
       "DNSDomain": null,
       "DNSLookupFailure": null,
@@ -314,8 +337,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 0,
-      "TagFetchBody": false,
       "ControlDNSDomain": "www.example.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [

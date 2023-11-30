@@ -2,6 +2,11 @@
   "DNSLookupFailures": [],
   "DNSLookupSuccesses": [
     {
+      "TagDepth": 0,
+      "Type": 0,
+      "Failure": "",
+      "TransactionID": 1,
+      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "dns.google",
       "DNSLookupFailure": "",
@@ -32,8 +37,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 0,
-      "TagFetchBody": null,
       "ControlDNSDomain": "dns.google",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -51,6 +54,11 @@
       "ControlHTTPResponseTitle": null
     },
     {
+      "TagDepth": 0,
+      "Type": 0,
+      "Failure": "",
+      "TransactionID": 1,
+      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "dns.google",
       "DNSLookupFailure": "",
@@ -81,8 +89,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 0,
-      "TagFetchBody": null,
       "ControlDNSDomain": "dns.google",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -100,6 +106,11 @@
       "ControlHTTPResponseTitle": null
     },
     {
+      "TagDepth": 0,
+      "Type": 0,
+      "Failure": "",
+      "TransactionID": 1,
+      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "dns.google",
       "DNSLookupFailure": "",
@@ -130,8 +141,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 0,
-      "TagFetchBody": null,
       "ControlDNSDomain": "dns.google",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -149,6 +158,11 @@
       "ControlHTTPResponseTitle": null
     },
     {
+      "TagDepth": 0,
+      "Type": 0,
+      "Failure": "",
+      "TransactionID": 1,
+      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "dns.google",
       "DNSLookupFailure": "",
@@ -179,8 +193,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 0,
-      "TagFetchBody": null,
       "ControlDNSDomain": "dns.google",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -200,6 +212,11 @@
   ],
   "KnownTCPEndpoints": {
     "4": {
+      "TagDepth": 0,
+      "Type": 1,
+      "Failure": "generic_timeout_error",
+      "TransactionID": 4,
+      "TagFetchBody": true,
       "DNSTransactionID": 1,
       "DNSDomain": "dns.google",
       "DNSLookupFailure": "",
@@ -230,8 +247,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 0,
-      "TagFetchBody": true,
       "ControlDNSDomain": "dns.google",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -249,6 +264,11 @@
       "ControlHTTPResponseTitle": null
     },
     "5": {
+      "TagDepth": 0,
+      "Type": 1,
+      "Failure": "generic_timeout_error",
+      "TransactionID": 5,
+      "TagFetchBody": true,
       "DNSTransactionID": 1,
       "DNSDomain": "dns.google",
       "DNSLookupFailure": "",
@@ -279,8 +299,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 0,
-      "TagFetchBody": true,
       "ControlDNSDomain": "dns.google",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -298,6 +316,11 @@
       "ControlHTTPResponseTitle": null
     },
     "6": {
+      "TagDepth": 0,
+      "Type": 1,
+      "Failure": "generic_timeout_error",
+      "TransactionID": 6,
+      "TagFetchBody": true,
       "DNSTransactionID": 1,
       "DNSDomain": "dns.google",
       "DNSLookupFailure": "",
@@ -328,8 +351,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 0,
-      "TagFetchBody": true,
       "ControlDNSDomain": "dns.google",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -347,6 +368,11 @@
       "ControlHTTPResponseTitle": null
     },
     "7": {
+      "TagDepth": 0,
+      "Type": 1,
+      "Failure": "generic_timeout_error",
+      "TransactionID": 7,
+      "TagFetchBody": true,
       "DNSTransactionID": 1,
       "DNSDomain": "dns.google",
       "DNSLookupFailure": "",
@@ -377,8 +403,6 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": 0,
-      "TagFetchBody": true,
       "ControlDNSDomain": "dns.google",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [

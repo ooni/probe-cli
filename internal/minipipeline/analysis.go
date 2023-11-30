@@ -70,7 +70,23 @@ func NewLinearWebAnalysis(input *WebObservationsContainer) (output []*WebObserva
 		// We use an nonempty failure value so that observations with undefined
 		// failures sort at the end of the group within the list.
 		const defaultFailureValue = "unknown_failure"
-		return left.Failure.UnwrapOr(defaultFailureValue) > right.Failure.UnwrapOr(defaultFailureValue)
+		if left.Failure.UnwrapOr(defaultFailureValue) < right.Failure.UnwrapOr(defaultFailureValue) {
+			return true
+		} else if left.Failure.UnwrapOr(defaultFailureValue) > right.Failure.UnwrapOr(defaultFailureValue) {
+			return false
+		}
+
+		// This is undocumented but important. KnownTCPEndpoints is a map and iterating
+		// it causes the order to change from test run to test run. To ensure there's
+		// stable and comparable sorting of the results, we need to introduce an extra
+		// rule allowing us to choose between two distinct endpoint observations.
+		//
+		// (While DNS observations using UDP or HTTPS may use the same transaction ID
+		// for some time until we manage to split transactions[1], we know for sure
+		// that endpoints are going to use always distinct transactions.)
+		//
+		// .. [1] https://github.com/ooni/probe/issues/2624
+		return left.TransactionID > right.TransactionID
 	})
 
 	return
