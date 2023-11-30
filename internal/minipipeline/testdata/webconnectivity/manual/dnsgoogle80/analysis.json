@@ -1,10 +1,16 @@
 {
   "DNSLookupSuccessWithInvalidAddresses": [],
   "DNSLookupSuccessWithValidAddress": [
-    2
+    1,
+    2,
+    3
   ],
   "DNSLookupSuccessWithInvalidAddressesClassic": [],
-  "DNSLookupSuccessWithValidAddressClassic": [],
+  "DNSLookupSuccessWithValidAddressClassic": [
+    1,
+    2,
+    3
+  ],
   "DNSLookupUnexpectedFailure": [],
   "DNSExperimentFailure": null,
   "DNSLookupExpectedFailure": [],
@@ -12,12 +18,7 @@
   "TCPConnectUnexpectedFailure": [],
   "TCPConnectUnexpectedFailureDuringWebFetch": [],
   "TCPConnectUnexpectedFailureDuringConnectivityCheck": [],
-  "TCPConnectUnexplainedFailure": [
-    4,
-    5,
-    6,
-    7
-  ],
+  "TCPConnectUnexplainedFailure": [],
   "TCPConnectUnexplainedFailureDuringWebFetch": [],
   "TCPConnectUnexplainedFailureDuringConnectivityCheck": [],
   "TLSHandshakeUnexpectedFailure": [],

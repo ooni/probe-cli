@@ -2,10 +2,15 @@
   "DNSLookupSuccessWithInvalidAddresses": [],
   "DNSLookupSuccessWithValidAddress": [
     1,
-    2
+    2,
+    3
   ],
   "DNSLookupSuccessWithInvalidAddressesClassic": [],
-  "DNSLookupSuccessWithValidAddressClassic": [],
+  "DNSLookupSuccessWithValidAddressClassic": [
+    1,
+    2,
+    3
+  ],
   "DNSLookupUnexpectedFailure": [],
   "DNSExperimentFailure": null,
   "DNSLookupExpectedFailure": [],
@@ -24,10 +29,10 @@
   "TLSHandshakeUnexplainedFailureDuringConnectivityCheck": [],
   "HTTPRoundTripUnexpectedFailure": [],
   "HTTPFinalResponseSuccessTLSWithoutControl": null,
-  "HTTPFinalResponseSuccessTLSWithControl": 8,
+  "HTTPFinalResponseSuccessTLSWithControl": 16,
   "HTTPFinalResponseSuccessTCPWithoutControl": null,
   "HTTPFinalResponseSuccessTCPWithControl": null,
-  "HTTPFinalResponseDiffBodyProportionFactor": 0.6327409384828159,
+  "HTTPFinalResponseDiffBodyProportionFactor": 0.5632578337691695,
   "HTTPFinalResponseDiffStatusCodeMatch": true,
   "HTTPFinalResponseDiffTitleDifferentLongWords": {},
   "HTTPFinalResponseDiffUncommonHeadersIntersection": {

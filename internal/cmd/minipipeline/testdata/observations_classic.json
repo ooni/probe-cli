@@ -2,7 +2,7 @@
   "DNSLookupFailures": [],
   "DNSLookupSuccesses": [
     {
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "nexa.polito.it",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -29,7 +29,7 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
-      "TagDepth": null,
+      "TagDepth": 0,
       "TagFetchBody": null,
       "ControlDNSDomain": "nexa.polito.it",
       "ControlDNSLookupFailure": "",
@@ -47,7 +47,7 @@
   ],
   "KnownTCPEndpoints": {
     "4": {
-      "DNSTransactionID": 3,
+      "DNSTransactionID": 1,
       "DNSDomain": "nexa.polito.it",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -68,7 +68,7 @@
       "HTTPRequestURL": "https://nexa.polito.it/",
       "HTTPFailure": "",
       "HTTPResponseStatusCode": 200,
-      "HTTPResponseBodyLength": 36564,
+      "HTTPResponseBodyLength": 36546,
       "HTTPResponseBodyIsTruncated": false,
       "HTTPResponseHeadersKeys": {
         "Cache-Control": true,
@@ -89,8 +89,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": "Nexa Center for Internet \u0026 Society | Il centro Nexa è un centro di ricerca del Dipartimento di Automatica e Informatica del Politecnico di Torino",
       "HTTPResponseIsFinal": true,
-      "TagDepth": null,
-      "TagFetchBody": null,
+      "TagDepth": 0,
+      "TagFetchBody": true,
       "ControlDNSDomain": "nexa.polito.it",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -100,7 +100,7 @@
       "ControlTLSHandshakeFailure": "",
       "ControlHTTPFailure": "",
       "ControlHTTPResponseStatusCode": 200,
-      "ControlHTTPResponseBodyLength": 36564,
+      "ControlHTTPResponseBodyLength": 36546,
       "ControlHTTPResponseHeadersKeys": {
         "Cache-Control": true,
         "Content-Language": true,
