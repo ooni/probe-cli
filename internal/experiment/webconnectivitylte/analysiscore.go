@@ -36,6 +36,10 @@ const (
 	analysisFlagSuccess
 )
 
+// AnalysisEngineFn is the function that runs the analysis engine for
+// processing and scoring measurements collected by LTE.
+var AnalysisEngineFn func(tk *TestKeys, logger model.Logger) = AnalysisEngineOrig
+
 // analysisToplevel is the toplevel function that analyses the results
 // of the experiment once all network tasks have completed.
 //
@@ -95,6 +99,17 @@ const (
 // As an improvement over Web Connectivity v0.4, we also attempt to identify
 // special subcases of a null, null result to provide the user with more information.
 func (tk *TestKeys) analysisToplevel(logger model.Logger) {
+	AnalysisEngineFn(tk, logger)
+}
+
+// AnalysisEngineOrig is the original analysis engine we wrote for LTE. This engine
+// aims to detect and report about all the possible ways in which the measured website
+// is blocked. As of 2023-11-30, we still consider this engine experimental.
+func AnalysisEngineOrig(tk *TestKeys, logger model.Logger) {
+	tk.analysisOrig(logger)
+}
+
+func (tk *TestKeys) analysisOrig(logger model.Logger) {
 	// Since we run after all tasks have completed (or so we assume) we're
 	// not going to use any form of locking here.
 
