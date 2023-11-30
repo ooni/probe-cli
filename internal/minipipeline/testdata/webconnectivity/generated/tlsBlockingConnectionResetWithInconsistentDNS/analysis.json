@@ -9,10 +9,17 @@
   ],
   "DNSLookupUnexpectedFailure": [],
   "TCPConnectUnexpectedFailure": [],
+  "TCPConnectUnexpectedFailureDuringWebFetch": [],
+  "TCPConnectUnexpectedFailureDuringConnectivityCheck": [],
   "TLSHandshakeUnexpectedFailure": [
     3,
     4
   ],
+  "TLSHandshakeUnexpectedFailureDuringWebFetch": [
+    3,
+    4
+  ],
+  "TLSHandshakeUnexpectedFailureDuringConnectivityCheck": [],
   "DNSExperimentFailure": null,
   "DNSPossiblyNonexistingDomains": {},
   "HTTPDiffBodyProportionFactor": null,
