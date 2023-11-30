@@ -179,8 +179,9 @@ func (tk *TestKeys) analysisClassic(logger model.Logger, container *minipipeline
 	}
 
 	// if we don't have any operation but DNS lookup, check for NXDOMAIN
-	if !woa.DNSPossiblyNonexistingDomains.IsNone() && len(woa.DNSPossiblyNonexistingDomains.Unwrap()) > 0 {
+	if woa.DNSLookupExpectedFailure.Len() > 0 {
 		// TODO(bassosimone): this is wrong but we'll change after the A/B comparison
+		// to correctly say that the website is down due to DNS
 		tk.Blocking = false
 		tk.Accessible = true
 		return
