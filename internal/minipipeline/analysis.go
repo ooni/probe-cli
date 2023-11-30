@@ -1,9 +1,43 @@
 package minipipeline
 
 import (
+	"sort"
+
 	"github.com/ooni/probe-cli/v3/internal/optional"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
+
+// NewLinearWebAnalysis constructs a slice containing all the observations.
+//
+// We sort the observations in descending order by:
+//
+// 1. the [WebObservationType];
+//
+// 2. the Failure (with successful results sorting before failing results);
+//
+// 3. the TransactionID.
+func NewLinearWebAnalysis(input *WebObservationsContainer) (output []*WebObservation) {
+	// fill in all the observations
+	output = append(output, input.DNSLookupFailures...)
+	output = append(output, input.DNSLookupSuccesses...)
+	for _, entry := range input.KnownTCPEndpoints {
+		output = append(output, entry)
+	}
+
+	// sort in descending order
+	sort.SliceStable(output, func(i, j int) bool {
+		left, right := output[i], output[j]
+		if left.Type > right.Type {
+			return true
+		}
+		if !left.Failure.IsNone() && !right.Failure.IsNone() && left.Failure.Unwrap() == "" && right.Failure.Unwrap() != "" {
+			return true
+		}
+		return left.TransactionID > right.TransactionID
+	})
+
+	return
+}
 
 // AnalyzeWebObservations generates a [*WebAnalysis] from a [*WebObservationsContainer].
 func AnalyzeWebObservations(container *WebObservationsContainer) *WebAnalysis {
@@ -17,6 +51,8 @@ func AnalyzeWebObservations(container *WebObservationsContainer) *WebAnalysis {
 	analysis.tlsComputeMetrics(container)
 	analysis.httpComputeFailureMetrics(container)
 	analysis.httpComputeFinalResponseMetrics(container)
+
+	analysis.Linear = NewLinearWebAnalysis(container)
 
 	return analysis
 }
@@ -127,6 +163,9 @@ type WebAnalysis struct {
 
 	// HTTPFinalResponseDiffUncommonHeadersIntersection contains the uncommon headers intersection.
 	HTTPFinalResponseDiffUncommonHeadersIntersection optional.Value[map[string]bool]
+
+	// Linear contains the linear analysis.
+	Linear []*WebObservation
 }
 
 func (wa *WebAnalysis) dnsComputeSuccessMetrics(c *WebObservationsContainer) {

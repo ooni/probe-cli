@@ -47,6 +47,24 @@ func IngestWebMeasurement(meas *WebMeasurement) (*WebObservationsContainer, erro
 	return container, nil
 }
 
+// WebObservationType is the type of a [*WebObservation].
+type WebObservationType int64
+
+// These are all the valid [WebObservationType].
+const (
+	// The last operation is a DNS lookup.
+	WebObservationTypeDNSLookup = WebObservationType(iota)
+
+	// The last operation is a TCP connect.
+	WebObservationTypeTCPConnect
+
+	// The last operation is a TLS handshake.
+	WebObservationTypeTLSHandshake
+
+	// The last operation is an HTTP round trip.
+	WebObservationTypeHTTPRoundTrip
+)
+
 // WebObservation is an observation of the flow that starts with a DNS lookup that
 // either fails or discovers an IP address and proceeds by documenting binding such an
 // address to a part to obtain and use a TCP or UDP endpoint.
@@ -63,6 +81,20 @@ func IngestWebMeasurement(meas *WebMeasurement) (*WebObservationsContainer, erro
 //
 // We borrow this struct from https://github.com/ooni/data.
 type WebObservation struct {
+	// The following fields are updated as our understanding of this observation
+	// expands when we ingest more data types. We use these three fields for
+	// linearizing and sorting all the observations in NewLinearAnalysis.
+
+	// Type is the observation type.
+	Type WebObservationType
+
+	// Failure contains the overall failure. For example, if the observation
+	// is a WebObservationTypeTLSHandshake, this would be the TLSHandshakeFailure.
+	Failure optional.Value[string]
+
+	// TransactionID is the DNS or endpoint TransactionID.
+	TransactionID int64
+
 	// The following fields are optional.Some when you process the DNS
 	// lookup events contained inside an OONI measurement:
 
@@ -273,10 +305,14 @@ func (c *WebObservationsContainer) ingestDNSLookupFailures(evs ...*model.Archiva
 		}
 
 		// create record
+		failure := optional.Some(utilsStringPointerToString(ev.Failure))
 		obs := &WebObservation{
+			Type:             WebObservationTypeDNSLookup,
+			Failure:          failure,
+			TransactionID:    ev.TransactionID,
 			DNSTransactionID: optional.Some(ev.TransactionID),
 			DNSDomain:        optional.Some(ev.Hostname),
-			DNSLookupFailure: optional.Some(utilsStringPointerToString(ev.Failure)),
+			DNSLookupFailure: failure,
 			DNSQueryType:     optional.Some(ev.QueryType),
 			DNSEngine:        optional.Some(ev.Engine),
 			TagDepth:         utilsExtractTagDepth(ev.Tags),
@@ -299,6 +335,9 @@ func (c *WebObservationsContainer) ingestDNSLookupSuccesses(evs ...*model.Archiv
 		for _, ipAddr := range addrs.Keys() {
 			// create the record
 			obs := &WebObservation{
+				Failure:          optional.None[string](),
+				Type:             WebObservationTypeDNSLookup,
+				TransactionID:    ev.TransactionID,
 				DNSTransactionID: optional.Some(ev.TransactionID),
 				DNSDomain:        optional.Some(ev.Hostname),
 				DNSLookupFailure: optional.Some(""),
@@ -341,7 +380,11 @@ func (c *WebObservationsContainer) IngestTCPConnectEvents(evs ...*model.Archival
 		//
 		// while there also fill endpoint specific info
 		portString := strconv.Itoa(ev.Port)
+		failure := optional.Some(utilsStringPointerToString(ev.Status.Failure))
 		obs = &WebObservation{
+			Type:                  WebObservationTypeTCPConnect,
+			Failure:               failure,
+			TransactionID:         ev.TransactionID,
 			DNSTransactionID:      obs.DNSTransactionID,
 			DNSDomain:             obs.DNSDomain,
 			DNSLookupFailure:      obs.DNSLookupFailure,
@@ -353,7 +396,7 @@ func (c *WebObservationsContainer) IngestTCPConnectEvents(evs ...*model.Archival
 			EndpointProto:         optional.Some("tcp"),
 			EndpointPort:          optional.Some(portString),
 			EndpointAddress:       optional.Some(net.JoinHostPort(ev.IP, portString)),
-			TCPConnectFailure:     optional.Some(utilsStringPointerToString(ev.Status.Failure)),
+			TCPConnectFailure:     failure,
 			TagDepth:              utilsExtractTagDepth(ev.Tags),
 			TagFetchBody:          utilsExtractTagFetchBody(ev.Tags),
 		}
@@ -374,7 +417,10 @@ func (c *WebObservationsContainer) IngestTLSHandshakeEvents(evs ...*model.Archiv
 		}
 
 		// update the record
-		obs.TLSHandshakeFailure = optional.Some(utilsStringPointerToString(ev.Failure))
+		failure := optional.Some(utilsStringPointerToString(ev.Failure))
+		obs.Type = WebObservationTypeTLSHandshake
+		obs.Failure = failure
+		obs.TLSHandshakeFailure = failure
 		obs.TLSServerName = optional.Some(ev.ServerName)
 	}
 }
@@ -390,8 +436,11 @@ func (c *WebObservationsContainer) IngestHTTPRoundTripEvents(evs ...*model.Archi
 		}
 
 		// start updating the record
+		failure := optional.Some(utilsStringPointerToString(ev.Failure))
+		obs.Type = WebObservationTypeHTTPRoundTrip
+		obs.Failure = failure
 		obs.HTTPRequestURL = optional.Some(ev.Request.URL)
-		obs.HTTPFailure = optional.Some(utilsStringPointerToString(ev.Failure))
+		obs.HTTPFailure = failure
 
 		// consider the response authoritative only in case of success
 		if ev.Failure == nil {
