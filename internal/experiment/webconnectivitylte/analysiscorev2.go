@@ -59,30 +59,11 @@ func (tk *TestKeys) analysisClassic(logger model.Logger, container *minipipeline
 
 	// determine the DNS consistency
 	switch {
-	case (woa.EndpointIPAddressesControlInvalid.Len() <= 0 &&
-		woa.EndpointIPAddressesInvalidBogon.Len() <= 0 &&
-		(woa.EndpointIPAddressesControlValidByASN.Len() > 0 ||
-			woa.EndpointIPAddressesValidTLS.Len() > 0 ||
-			woa.EndpointIPAddressesControlValidByEquality.Len() > 0)):
-		// we have consistency if:
-		//
-		// 1. the control did not detect any invalid IP address; and
-		//
-		// 2. we did not see any bogon; and
-		//
-		// 3. we have at least one address valid by ASN, TLS, or with-control equality.
+	case woa.DNSLookupSuccessWithInvalidAddressesClassic.Len() <= 0 &&
+		woa.DNSLookupUnexpectedFailure.Len() <= 0 && woa.DNSLookupSuccessWithValidAddressClassic.Len() > 0:
 		tk.DNSConsistency = optional.Some("consistent")
 
-	case (woa.EndpointIPAddressesControlInvalid.Len() > 0 ||
-		woa.EndpointIPAddressesInvalidBogon.Len() > 0 ||
-		woa.DNSLookupWithControlUnexpectedFailure.Len() > 0):
-		// we have inconsistency if:
-		//
-		// 1. there is at least one address marked as invalid by the control; or
-		//
-		// 2. we did see at least a bogon; or
-		//
-		// 3. we have seen unexpected DNS failures.
+	case woa.DNSLookupSuccessWithInvalidAddressesClassic.Len() > 0 || woa.DNSLookupUnexpectedFailure.Len() > 0:
 		tk.DNSConsistency = optional.Some("inconsistent")
 
 	default:
@@ -105,22 +86,22 @@ func (tk *TestKeys) analysisClassic(logger model.Logger, container *minipipeline
 		tk.BodyLengthMatch = optional.Some(woa.HTTPFinalResponseDiffBodyProportionFactor.Unwrap() > 0.7)
 	}
 	if !woa.HTTPFinalResponseDiffUncommonHeadersIntersection.IsNone() {
-		tk.HeadersMatch = optional.Some(woa.HTTPFinalResponseDiffUncommonHeadersIntersection.Unwrap().Len() > 0)
+		tk.HeadersMatch = optional.Some(len(woa.HTTPFinalResponseDiffUncommonHeadersIntersection.Unwrap()) > 0)
 	}
 	tk.StatusCodeMatch = woa.HTTPFinalResponseDiffStatusCodeMatch
 	if !woa.HTTPFinalResponseDiffTitleDifferentLongWords.IsNone() {
-		tk.TitleMatch = optional.Some(woa.HTTPFinalResponseDiffTitleDifferentLongWords.Unwrap().Len() <= 0)
+		tk.TitleMatch = optional.Some(len(woa.HTTPFinalResponseDiffTitleDifferentLongWords.Unwrap()) <= 0)
 	}
 
 	// if we have a final HTTPS response, we're good
-	if woa.HTTPFinalResponseWithoutControlTLS.Len() > 0 || woa.HTTPFinalResponseWithControlTLS.Len() > 0 {
+	if !woa.HTTPFinalResponseSuccessTLSWithoutControl.IsNone() || !woa.HTTPFinalResponseSuccessTLSWithControl.IsNone() {
 		tk.Blocking = false
 		tk.Accessible = true
 		return
 	}
 
 	// if we have a final HTTP response with control, let's run HTTPDiff
-	if woa.HTTPFinalResponseWithControlTCP.Len() > 0 {
+	if !woa.HTTPFinalResponseSuccessTCPWithControl.IsNone() {
 		if !tk.StatusCodeMatch.IsNone() && tk.StatusCodeMatch.Unwrap() {
 			if !tk.BodyLengthMatch.IsNone() && tk.BodyLengthMatch.Unwrap() {
 				tk.Blocking = false
@@ -144,13 +125,13 @@ func (tk *TestKeys) analysisClassic(logger model.Logger, container *minipipeline
 		return
 	}
 
-	// if we have a final HTTP response without control, we don't know
-	if woa.HTTPFinalResponseWithoutControlTCP.Len() > 0 {
+	// if we have a final HTTP response without control, we don't know what to say
+	if !woa.HTTPFinalResponseSuccessTCPWithoutControl.IsNone() {
 		return
 	}
 
 	// if we have unexpected HTTP round trip failures, it's "http-failure"
-	if woa.HTTPNonFinalResponseFailureWithControlUnexpected.Len() > 0 {
+	if woa.HTTPRoundTripUnexpectedFailure.Len() > 0 {
 		tk.Blocking = setBlocking("http-failure")
 		tk.Accessible = false
 		return
@@ -160,28 +141,28 @@ func (tk *TestKeys) analysisClassic(logger model.Logger, container *minipipeline
 	//
 	// we give precendence to this over TLS handshake because the latter
 	// always produces "http-failure", which we handle below
-	if woa.TCPConnectWithControlUnexpectedFailureAnomaly.Len() > 0 {
+	if woa.TCPConnectUnexpectedFailureDuringWebFetch.Len() > 0 {
 		tk.Blocking = setBlocking("tcp_ip")
 		tk.Accessible = false
 		return
 	}
 
 	// if we have unexpected TLS failures, it's "http-failure"
-	if woa.TLSHandshakeWithControlUnexpectedFailure.Len() > 0 {
+	if woa.TLSHandshakeUnexpectedFailureDuringWebFetch.Len() > 0 {
 		tk.Blocking = setBlocking("http-failure")
 		tk.Accessible = false
 		return
 	}
 
 	// if we have unexplained TCP failures, blame "http-failure"
-	if woa.TCPConnectWithoutControlFailure.Len() > 0 {
+	if woa.TCPConnectUnexplainedFailureDuringWebFetch.Len() > 0 {
 		tk.Blocking = setBlocking("http-failure")
 		tk.Accessible = false
 		return
 	}
 
 	// likewise but for unexplained TLS handshake failures
-	if woa.TLSHandshakeWithoutControlFailure.Len() > 0 {
+	if woa.TLSHandshakeUnexplainedFailureDuringWebFetch.Len() > 0 {
 		tk.Blocking = setBlocking("http-failure")
 		tk.Accessible = false
 		return

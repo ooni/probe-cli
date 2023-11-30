@@ -33,9 +33,15 @@ type WebAnalysis struct {
 	// taking into account control info, bogons, and TLS handshakes.
 	DNSLookupSuccessWithInvalidAddresses Set[int64]
 
+	// DNSLookupSuccessWithValidAddress contains DNS transactions with valid IP addresses.
+	DNSLookupSuccessWithValidAddress Set[int64]
+
 	// DNSLookupSuccessWithInvalidAddressesClassic is like DNSLookupInvalid but the algorithm is more relaxed
 	// to be compatible with Web Connectivity v0.4's behavior.
 	DNSLookupSuccessWithInvalidAddressesClassic Set[int64]
+
+	// DNSLookupSuccessWithValidAddressClassic contains DNS transactions with valid IP addresses.
+	DNSLookupSuccessWithValidAddressClassic Set[int64]
 
 	// DNSLookupUnexpectedFailure contains DNS transactions with unexpected failures.
 	DNSLookupUnexpectedFailure Set[int64]
@@ -95,22 +101,26 @@ type WebAnalysis struct {
 	// transaction when the final response succeeded with control and with TLS.
 	HTTPFinalResponseSuccessTLSWithControl optional.Value[int64]
 
+	// HTTPFinalResponseSuccessTCPWithoutControl contains the ID of the final response
+	// transaction when the final response succeeded without control and with TCP.
+	HTTPFinalResponseSuccessTCPWithoutControl optional.Value[int64]
+
 	// HTTPFinalResponseSuccessTCPWithControl contains the ID of the final response
 	// transaction when the final response succeeded with control and with TCP.
 	HTTPFinalResponseSuccessTCPWithControl optional.Value[int64]
 
-	// HTTPDiffBodyProportionFactor is the body proportion factor.
-	HTTPDiffBodyProportionFactor optional.Value[float64]
+	// HTTPFinalResponseDiffBodyProportionFactor is the body proportion factor.
+	HTTPFinalResponseDiffBodyProportionFactor optional.Value[float64]
 
-	// HTTPDiffStatusCodeMatch returns whether the status code matches.
-	HTTPDiffStatusCodeMatch optional.Value[bool]
+	// HTTPFinalResponseDiffStatusCodeMatch returns whether the status code matches.
+	HTTPFinalResponseDiffStatusCodeMatch optional.Value[bool]
 
-	// HTTPDiffTitleDifferentLongWords contains the words long 5+ characters that appear
+	// HTTPFinalResponseDiffTitleDifferentLongWords contains the words long 5+ characters that appear
 	// in the probe's "final" response title or in the TH title but not in both.
-	HTTPDiffTitleDifferentLongWords optional.Value[map[string]bool]
+	HTTPFinalResponseDiffTitleDifferentLongWords optional.Value[map[string]bool]
 
-	// HTTPDiffUncommonHeadersIntersection contains the uncommon headers intersection.
-	HTTPDiffUncommonHeadersIntersection optional.Value[map[string]bool]
+	// HTTPFinalResponseDiffUncommonHeadersIntersection contains the uncommon headers intersection.
+	HTTPFinalResponseDiffUncommonHeadersIntersection optional.Value[map[string]bool]
 
 	// TODO(bassosimone): there are probably redundant metrics from this point on
 
@@ -154,11 +164,13 @@ func (wa *WebAnalysis) dnsComputeSuccessMetrics(c *WebObservationsContainer) {
 
 		// this lookup is good if there is IP addresses intersection
 		if DNSDiffFindCommonIPAddressIntersection(measurement, control).Len() > 0 {
+			wa.DNSLookupSuccessWithValidAddress.Add(obs.DNSTransactionID.Unwrap())
 			continue
 		}
 
 		// this lookup is good if there is ASN intersection
 		if DNSDiffFindCommonASNsIntersection(measurement, control).Len() > 0 {
+			wa.DNSLookupSuccessWithValidAddress.Add(obs.DNSTransactionID.Unwrap())
 			continue
 		}
 
@@ -181,6 +193,7 @@ func (wa *WebAnalysis) dnsComputeSuccessMetrics(c *WebObservationsContainer) {
 
 		// this is actually valid
 		wa.DNSLookupSuccessWithInvalidAddresses.Remove(txid)
+		wa.DNSLookupSuccessWithValidAddress.Add(txid)
 	}
 }
 
@@ -210,11 +223,13 @@ func (wa *WebAnalysis) dnsComputeSuccessMetricsClassic(c *WebObservationsContain
 
 		// this lookup is good if there is IP addresses intersection
 		if DNSDiffFindCommonIPAddressIntersection(measurement, control).Len() > 0 {
+			wa.DNSLookupSuccessWithValidAddressClassic.Add(obs.DNSTransactionID.Unwrap())
 			continue
 		}
 
 		// this lookup is good if there is ASN intersection
 		if DNSDiffFindCommonASNsIntersection(measurement, control).Len() > 0 {
+			wa.DNSLookupSuccessWithValidAddressClassic.Add(obs.DNSTransactionID.Unwrap())
 			continue
 		}
 
@@ -441,6 +456,7 @@ func (wa *WebAnalysis) httpHandleFinalResponse(obs *WebObservation) {
 			wa.HTTPFinalResponseSuccessTLSWithoutControl = obs.EndpointTransactionID
 			return
 		}
+		wa.HTTPFinalResponseSuccessTCPWithoutControl = obs.EndpointTransactionID
 		return
 	}
 
@@ -479,7 +495,7 @@ func (wa *WebAnalysis) httpDiffBodyProportionFactor(obs *WebObservation) {
 
 	// compute the body proportion factor and update the state
 	proportion := ComputeHTTPDiffBodyProportionFactor(measurement, control)
-	wa.HTTPDiffBodyProportionFactor = optional.Some(proportion)
+	wa.HTTPFinalResponseDiffBodyProportionFactor = optional.Some(proportion)
 }
 
 func (wa *WebAnalysis) httpDiffStatusCodeMatch(obs *WebObservation) {
@@ -499,7 +515,7 @@ func (wa *WebAnalysis) httpDiffStatusCodeMatch(obs *WebObservation) {
 	}
 
 	// update state
-	wa.HTTPDiffStatusCodeMatch = ComputeHTTPDiffStatusCodeMatch(measurement, control)
+	wa.HTTPFinalResponseDiffStatusCodeMatch = ComputeHTTPDiffStatusCodeMatch(measurement, control)
 }
 
 func (wa *WebAnalysis) httpDiffUncommonHeadersIntersection(obs *WebObservation) {
@@ -522,7 +538,7 @@ func (wa *WebAnalysis) httpDiffUncommonHeadersIntersection(obs *WebObservation) 
 	control := obs.ControlHTTPResponseHeadersKeys.UnwrapOr(nil)
 
 	state := ComputeHTTPDiffUncommonHeadersIntersection(measurement, control)
-	wa.HTTPDiffUncommonHeadersIntersection = optional.Some(state)
+	wa.HTTPFinalResponseDiffUncommonHeadersIntersection = optional.Some(state)
 }
 
 func (wa *WebAnalysis) httpDiffTitleDifferentLongWords(obs *WebObservation) {
@@ -542,7 +558,7 @@ func (wa *WebAnalysis) httpDiffTitleDifferentLongWords(obs *WebObservation) {
 
 	state := ComputeHTTPDiffTitleDifferentLongWords(measurement, control)
 
-	wa.HTTPDiffTitleDifferentLongWords = optional.Some(state)
+	wa.HTTPFinalResponseDiffTitleDifferentLongWords = optional.Some(state)
 }
 
 // ComputeDNSExperimentFailure computes the DNSExperimentFailure field.
