@@ -6,6 +6,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/geoipx"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/optional"
 )
 
@@ -97,4 +98,24 @@ func utilsExtractTagFetchBody(tags []string) optional.Value[bool] {
 		return optional.Some(tag == "true")
 	}
 	return optional.None[bool]()
+}
+
+func utilsDNSLookupFailureIsDNSNoAnswerForAAAA(obs *WebObservation) bool {
+	return obs.DNSQueryType.UnwrapOr("") == "AAAA" &&
+		obs.DNSLookupFailure.UnwrapOr("") == netxlite.FailureDNSNoAnswer
+}
+
+func utilsDNSEngineIsDNSOverHTTPS(obs *WebObservation) bool {
+	return obs.DNSEngine.UnwrapOr("") == "doh"
+}
+
+func utilsTCPConnectFailureSeemsMisconfiguredIPv6(obs *WebObservation) bool {
+	switch obs.TCPConnectFailure.UnwrapOr("") {
+	case netxlite.FailureNetworkUnreachable, netxlite.FailureHostUnreachable:
+		isv6, err := netxlite.IsIPv6(obs.IPAddress.UnwrapOr(""))
+		return err == nil && isv6
+
+	default: // includes the case of missing TCPConnectFailure
+		return false
+	}
 }

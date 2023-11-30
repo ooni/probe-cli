@@ -1,8 +1,6 @@
 package minipipeline
 
 import (
-	"strings"
-
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/optional"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -128,11 +126,6 @@ type WebAnalysis struct {
 	TCPTransactionsWithUnexplainedUnexpectedFailures optional.Value[map[int64]bool]
 }
 
-func analysisDNSLookupFailureIsDNSNoAnswerForAAAA(obs *WebObservation) bool {
-	return obs.DNSQueryType.UnwrapOr("") == "AAAA" &&
-		obs.DNSLookupFailure.UnwrapOr("") == netxlite.FailureDNSNoAnswer
-}
-
 // ComputeDNSExperimentFailure computes the DNSExperimentFailure field.
 func (wa *WebAnalysis) ComputeDNSExperimentFailure(c *WebObservationsContainer) {
 
@@ -163,7 +156,7 @@ func (wa *WebAnalysis) ComputeDNSExperimentFailure(c *WebObservationsContainer) 
 		//
 		// in principle, this should not happen with getaddrinfo, but we add this
 		// check nonetheless for robustness against this corner case
-		if analysisDNSLookupFailureIsDNSNoAnswerForAAAA(obs) {
+		if utilsDNSLookupFailureIsDNSNoAnswerForAAAA(obs) {
 			continue
 		}
 
@@ -213,10 +206,6 @@ func (wa *WebAnalysis) ComputeDNSTransactionsWithBogons(c *WebObservationsContai
 	wa.DNSTransactionsWithBogons = optional.Some(state)
 }
 
-func analysisDNSEngineIsDNSOverHTTPS(obs *WebObservation) bool {
-	return obs.DNSEngine.UnwrapOr("") == "doh"
-}
-
 // ComputeDNSTransactionsWithUnexpectedFailures computes the DNSTransactionsWithUnexpectedFailures field.
 func (wa *WebAnalysis) ComputeDNSTransactionsWithUnexpectedFailures(c *WebObservationsContainer) {
 	// Implementation note: a DoH failure is not information about the URL we're
@@ -228,12 +217,12 @@ func (wa *WebAnalysis) ComputeDNSTransactionsWithUnexpectedFailures(c *WebObserv
 
 	for _, obs := range c.DNSLookupFailures {
 		// skip cases where the engine is doh (see above comment)
-		if analysisDNSEngineIsDNSOverHTTPS(obs) {
+		if utilsDNSEngineIsDNSOverHTTPS(obs) {
 			continue
 		}
 
 		// skip cases where there's no DNS record for AAAA, which is a false positive
-		if analysisDNSLookupFailureIsDNSNoAnswerForAAAA(obs) {
+		if utilsDNSLookupFailureIsDNSNoAnswerForAAAA(obs) {
 			continue
 		}
 
@@ -425,17 +414,6 @@ func (wa *WebAnalysis) ComputeDNSPossiblyNonexistingDomains(c *WebObservationsCo
 	wa.DNSPossiblyNonexistingDomains = optional.Some(state)
 }
 
-func analysisTCPConnectFailureSeemsMisconfiguredIPv6(obs *WebObservation) bool {
-	switch obs.TCPConnectFailure.UnwrapOr("") {
-	case netxlite.FailureNetworkUnreachable, netxlite.FailureHostUnreachable:
-		isv6, err := netxlite.IsIPv6(obs.IPAddress.UnwrapOr(""))
-		return err == nil && isv6
-
-	default: // includes the case of missing TCPConnectFailure
-		return false
-	}
-}
-
 // ComputeTCPTransactionsWithUnexpectedTCPConnectFailures computes the TCPTransactionsWithUnexpectedTCPConnectFailures field.
 func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexpectedTCPConnectFailures(c *WebObservationsContainer) {
 	var state map[int64]bool
@@ -463,7 +441,7 @@ func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexpectedTCPConnectFailures(c 
 		}
 
 		// skip cases where the root cause could be a misconfigured IPv6 stack
-		if analysisTCPConnectFailureSeemsMisconfiguredIPv6(obs) {
+		if utilsTCPConnectFailureSeemsMisconfiguredIPv6(obs) {
 			continue
 		}
 
@@ -563,15 +541,8 @@ func (wa *WebAnalysis) ComputeHTTPDiffBodyProportionFactor(c *WebObservationsCon
 			continue
 		}
 
-		// compute the body proportion factor
-		var proportion float64
-		if measurement >= control {
-			proportion = float64(control) / float64(measurement)
-		} else {
-			proportion = float64(measurement) / float64(control)
-		}
-
-		// update state
+		// compute the body proportion factor and update the state
+		proportion := ComputeHTTPDiffBodyProportionFactor(measurement, control)
 		wa.HTTPDiffBodyProportionFactor = optional.Some(proportion)
 
 		// Implementation note: we only process the first observation that matches.
@@ -599,31 +570,8 @@ func (wa *WebAnalysis) ComputeHTTPDiffStatusCodeMatch(c *WebObservationsContaine
 			continue
 		}
 
-		// compute whether there's a match including caveats
-		good := control == measurement
-		if !good && control/100 != 2 {
-			// Avoid comparison if it seems the TH failed _and_ the two
-			// status codes are not equal. Originally, this algorithm was
-			// https://github.com/measurement-kit/measurement-kit/blob/b55fbecb205be62c736249b689df0c45ae342804/src/libmeasurement_kit/ooni/web_connectivity.cpp#L60
-			// and excluded the case where the TH failed with 5xx.
-			//
-			// Then, we discovered when implementing websteps a bunch
-			// of control failure modes that suggested to be more
-			// cautious. See https://github.com/bassosimone/websteps-illustrated/blob/632f27443ab9d94fb05efcf5e0b0c1ce190221e2/internal/engine/experiment/websteps/analysisweb.go#L137.
-			//
-			// However, it seems a bit retarded to avoid comparison
-			// when both the TH and the probe failed equally. See
-			// https://github.com/ooni/probe/issues/2287, which refers
-			// to a measurement where both the probe and the TH fail
-			// with 404, but we fail to say "status_code_match = true".
-			//
-			// See https://explorer.ooni.org/measurement/20220911T203447Z_webconnectivity_IT_30722_n1_YDZQZOHAziEJk6o9?input=http%3A%2F%2Fwww.webbox.com%2Findex.php
-			// for a measurement where this was fixed.
-			return
-		}
-
 		// update state
-		wa.HTTPDiffStatusCodeMatch = optional.Some(good)
+		wa.HTTPDiffStatusCodeMatch = ComputeHTTPDiffStatusCodeMatch(measurement, control)
 
 		// Implementation note: we only process the first observation that matches.
 		//
@@ -632,38 +580,8 @@ func (wa *WebAnalysis) ComputeHTTPDiffStatusCodeMatch(c *WebObservationsContaine
 	}
 }
 
-var analysisCommonHeaders = map[string]bool{
-	"date":                      true,
-	"content-type":              true,
-	"server":                    true,
-	"cache-control":             true,
-	"vary":                      true,
-	"set-cookie":                true,
-	"location":                  true,
-	"expires":                   true,
-	"x-powered-by":              true,
-	"content-encoding":          true,
-	"last-modified":             true,
-	"accept-ranges":             true,
-	"pragma":                    true,
-	"x-frame-options":           true,
-	"etag":                      true,
-	"x-content-type-options":    true,
-	"age":                       true,
-	"via":                       true,
-	"p3p":                       true,
-	"x-xss-protection":          true,
-	"content-language":          true,
-	"cf-ray":                    true,
-	"strict-transport-security": true,
-	"link":                      true,
-	"x-varnish":                 true,
-}
-
 // ComputeHTTPDiffUncommonHeadersIntersection computes the HTTPDiffUncommonHeadersIntersection field.
 func (wa *WebAnalysis) ComputeHTTPDiffUncommonHeadersIntersection(c *WebObservationsContainer) {
-	state := make(map[string]bool)
-
 	for _, obs := range c.KnownTCPEndpoints {
 		// we should only perform the comparison for a final response
 		if !obs.HTTPResponseIsFinal.UnwrapOr(false) {
@@ -683,32 +601,7 @@ func (wa *WebAnalysis) ComputeHTTPDiffUncommonHeadersIntersection(c *WebObservat
 		measurement := obs.HTTPResponseHeadersKeys.UnwrapOr(nil)
 		control := obs.ControlHTTPResponseHeadersKeys.UnwrapOr(nil)
 
-		const (
-			byProbe = 1 << iota
-			byTH
-		)
-
-		matching := make(map[string]int64)
-		for key := range measurement {
-			key = strings.ToLower(key)
-			if _, ok := analysisCommonHeaders[key]; !ok {
-				matching[key] |= byProbe
-			}
-		}
-
-		for key := range control {
-			key = strings.ToLower(key)
-			if _, ok := analysisCommonHeaders[key]; !ok {
-				matching[key] |= byTH
-			}
-		}
-
-		// compute the intersection of uncommon headers
-		for key, value := range matching {
-			if (value & (byProbe | byTH)) == (byProbe | byTH) {
-				state[key] = true
-			}
-		}
+		state := ComputeHTTPDiffUncommonHeadersIntersection(measurement, control)
 
 		// Implementation note: we only process the first observation that matches.
 		//
@@ -720,8 +613,6 @@ func (wa *WebAnalysis) ComputeHTTPDiffUncommonHeadersIntersection(c *WebObservat
 
 // ComputeHTTPDiffTitleDifferentLongWords computes the HTTPDiffTitleDifferentLongWords field.
 func (wa *WebAnalysis) ComputeHTTPDiffTitleDifferentLongWords(c *WebObservationsContainer) {
-	state := make(map[string]bool)
-
 	for _, obs := range c.KnownTCPEndpoints {
 		// we should only perform the comparison for a final response
 		if !obs.HTTPResponseIsFinal.UnwrapOr(false) {
@@ -737,38 +628,7 @@ func (wa *WebAnalysis) ComputeHTTPDiffTitleDifferentLongWords(c *WebObservations
 		measurement := obs.HTTPResponseTitle.UnwrapOr("")
 		control := obs.ControlHTTPResponseTitle.UnwrapOr("")
 
-		const (
-			byProbe = 1 << iota
-			byTH
-		)
-
-		// Implementation note
-		//
-		// We don't consider to match words that are shorter than 5
-		// characters (5 is the average word length for english)
-		//
-		// The original implementation considered the word order but
-		// considering different languages it seems we could have less
-		// false positives by ignoring the word order.
-		words := make(map[string]int64)
-		const minWordLength = 5
-		for _, word := range strings.Split(measurement, " ") {
-			if len(word) >= minWordLength {
-				words[strings.ToLower(word)] |= byProbe
-			}
-		}
-		for _, word := range strings.Split(control, " ") {
-			if len(word) >= minWordLength {
-				words[strings.ToLower(word)] |= byTH
-			}
-		}
-
-		// compute the list of long words that do not appear in both titles
-		for word, score := range words {
-			if (score & (byProbe | byTH)) != (byProbe | byTH) {
-				state[word] = true
-			}
-		}
+		state := ComputeHTTPDiffTitleDifferentLongWords(measurement, control)
 
 		// Implementation note: we only process the first observation that matches.
 		//
@@ -846,7 +706,7 @@ func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexplainedUnexpectedFailures(c
 		//
 		// while doing this, deal with misconfigured-IPv6 false positives
 		if !obs.TCPConnectFailure.IsNone() && obs.TCPConnectFailure.Unwrap() != "" &&
-			!analysisTCPConnectFailureSeemsMisconfiguredIPv6(obs) &&
+			!utilsTCPConnectFailureSeemsMisconfiguredIPv6(obs) &&
 			obs.ControlTCPConnectFailure.IsNone() {
 			state[txid] = true
 			continue
