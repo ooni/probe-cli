@@ -1,30 +1,33 @@
 package webconnectivitylte
 
 import (
-	"fmt"
-
 	"github.com/ooni/probe-cli/v3/internal/minipipeline"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/optional"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
+
+// AnalysisEngineClassic is an alternative analysis engine that aims to produce
+// results that are backward compatible with Web Connectivity v0.4.
+func AnalysisEngineClassic(tk *TestKeys, logger model.Logger) {
+	tk.analysisClassic(logger)
+}
 
 func (tk *TestKeys) analysisClassic(logger model.Logger) {
 	// Since we run after all tasks have completed (or so we assume) we're
 	// not going to use any form of locking here.
 
-	// 1. produce observations using the minipipeline
+	// 1. produce web observations
 	container := minipipeline.NewWebObservationsContainer()
 	container.IngestDNSLookupEvents(tk.Queries...)
 	container.IngestTCPConnectEvents(tk.TCPConnect...)
 	container.IngestTLSHandshakeEvents(tk.TLSHandshakes...)
 	container.IngestHTTPRoundTripEvents(tk.Requests...)
 
-	// be defensive in case the control request or control are not defined
+	// be defensive in case the control request or response are not defined
 	if tk.ControlRequest != nil && tk.Control != nil {
 		// Implementation note: the only error that can happen here is when the input
-		// doesn't parse as a URL, which should have triggered previous errors
+		// doesn't parse as a URL, which should have caused measurer.go to fail
 		runtimex.Try0(container.IngestControlMessages(tk.ControlRequest, tk.Control))
 	}
 
@@ -32,249 +35,297 @@ func (tk *TestKeys) analysisClassic(logger model.Logger) {
 	// system resolver, which approximates v0.4's results
 	classic := minipipeline.ClassicFilter(container)
 
-	// dump the observations
-	fmt.Printf("%s\n", must.MarshalJSON(classic))
-
-	// 3. produce the woa based on the observations
+	// 3. produce a web observations analysis based on the web observations
 	woa := minipipeline.AnalyzeWebObservations(classic)
 
-	// dump the analysis
-	fmt.Printf("%s\n", must.MarshalJSON(woa))
-
 	// 4. determine the DNS consistency
+	tk.DNSConsistency = analysisClassicDNSConsistency(woa)
+
+	// 5. compute the HTTPDiff values
+	tk.setHTTPDiffValues(woa)
+
+	// 6. compute blocking & accessible
+	analysisClassicComputeBlockingAccessible(woa, tk)
+}
+
+func analysisClassicDNSConsistency(woa *minipipeline.WebAnalysis) optional.Value[string] {
 	switch {
 	case woa.DNSLookupUnexpectedFailure.Len() <= 0 && // no unexpected failures; and
 		woa.DNSLookupSuccessWithInvalidAddressesClassic.Len() <= 0 && // no invalid addresses; and
 		(woa.DNSLookupSuccessWithValidAddressClassic.Len() > 0 || // good addrs; or
 			woa.DNSLookupExpectedFailure.Len() > 0): // expected failures
-		tk.DNSConsistency = optional.Some("consistent")
+		return optional.Some("consistent")
 
 	case woa.DNSLookupSuccessWithInvalidAddressesClassic.Len() > 0 || // unexpected addrs; or
 		woa.DNSLookupUnexpectedFailure.Len() > 0: // unexpected failures
-		tk.DNSConsistency = optional.Some("inconsistent")
+		return optional.Some("inconsistent")
 
 	default:
-		tk.DNSConsistency = optional.None[string]()
+		return optional.None[string]() // none of the above
 	}
+}
 
-	// we must set blocking to "dns" when there's a DNS inconsistency
-	setBlocking := func(value string) string {
-		switch {
-		case !tk.DNSConsistency.IsNone() && tk.DNSConsistency.Unwrap() == "inconsistent":
-			return "dns"
-		default:
-			return value
-		}
-	}
-
-	setBlockingNil := func() {
-		switch {
-		case !tk.DNSConsistency.IsNone() && tk.DNSConsistency.Unwrap() == "inconsistent":
-			tk.Blocking = "dns"
-			tk.Accessible = false
-		default:
-			tk.Blocking = nil
-			tk.Accessible = nil
-		}
-	}
-
-	// 5. set HTTPDiff values
+func (tk *TestKeys) setHTTPDiffValues(woa *minipipeline.WebAnalysis) {
+	const bodyProportionFactor = 0.7
 	if !woa.HTTPFinalResponseDiffBodyProportionFactor.IsNone() {
-		tk.BodyLengthMatch = optional.Some(woa.HTTPFinalResponseDiffBodyProportionFactor.Unwrap() > 0.7)
+		tk.BodyLengthMatch = optional.Some(woa.HTTPFinalResponseDiffBodyProportionFactor.Unwrap() > bodyProportionFactor)
 	}
+
 	if !woa.HTTPFinalResponseDiffUncommonHeadersIntersection.IsNone() {
 		tk.HeadersMatch = optional.Some(len(woa.HTTPFinalResponseDiffUncommonHeadersIntersection.Unwrap()) > 0)
 	}
+
 	tk.StatusCodeMatch = woa.HTTPFinalResponseDiffStatusCodeMatch
 	if !woa.HTTPFinalResponseDiffTitleDifferentLongWords.IsNone() {
 		tk.TitleMatch = optional.Some(len(woa.HTTPFinalResponseDiffTitleDifferentLongWords.Unwrap()) <= 0)
 	}
+}
 
-	// 6. determine blocking & accessible
+type analysisClassicTestKeysProxy interface {
+	// setBlockingString sets blocking to a string.
+	setBlockingString(value string)
 
+	// setBlockingNil sets blocking to nil.
+	setBlockingNil()
+
+	// setBlockingFalse sets Blocking to false.
+	setBlockingFalse()
+
+	// httpDiff returns true if there's an http-diff.
+	httpDiff() bool
+}
+
+var _ analysisClassicTestKeysProxy = &TestKeys{}
+
+// httpDiff implements analysisClassicTestKeysProxy.
+func (tk *TestKeys) httpDiff() bool {
+	if !tk.StatusCodeMatch.IsNone() && tk.StatusCodeMatch.Unwrap() {
+		if !tk.BodyLengthMatch.IsNone() && tk.BodyLengthMatch.Unwrap() {
+			return false
+		}
+		if !tk.HeadersMatch.IsNone() && tk.HeadersMatch.Unwrap() {
+			return false
+		}
+		if !tk.TitleMatch.IsNone() && tk.TitleMatch.Unwrap() {
+			return false
+		}
+		// fallthrough
+	}
+	return true
+}
+
+// setBlockingFalse implements analysisClassicTestKeysProxy.
+func (tk *TestKeys) setBlockingFalse() {
+	tk.Blocking = false
+	tk.Accessible = true
+}
+
+// setBlockingNil implements analysisClassicTestKeysProxy.
+func (tk *TestKeys) setBlockingNil() {
+	if !tk.DNSConsistency.IsNone() && tk.DNSConsistency.Unwrap() == "inconsistent" {
+		tk.Blocking = "dns"
+		tk.Accessible = false
+	} else {
+		tk.Blocking = nil
+		tk.Accessible = nil
+	}
+}
+
+// setBlockingString implements analysisClassicTestKeysProxy.
+func (tk *TestKeys) setBlockingString(value string) {
+	if !tk.DNSConsistency.IsNone() && tk.DNSConsistency.Unwrap() == "inconsistent" {
+		tk.Blocking = "dns"
+	} else {
+		tk.Blocking = value
+	}
+	tk.Accessible = false
+}
+
+func analysisClassicComputeBlockingAccessible(woa *minipipeline.WebAnalysis, tk analysisClassicTestKeysProxy) {
+	// minipipeline.NewLinearWebAnalysis produces a woa.Linear sorted
+	//
+	// 1. by descending TagDepth;
+	//
+	// 2. with TagDepth being equal, by descending [WebObservationType];
+	//
+	// 3. with [WebObservationType] being equal, by ascending failure string;
+	//
+	// This means that you divide the list in groups like this:
+	//
+	//	+------------+------------+------------+------------+
+	//	| TagDepth=3 | TagDepth=2 | TagDepth=1 | TagDepth=0 |
+	//	+------------+------------+------------+------------+
+	//
+	// Where TagDepth=3 is the last redirect and TagDepth=0 is the initial request.
+	//
+	// Each group is further divided as follows:
+	//
+	//	+------+-----+-----+-----+
+	//	| HTTP | TLS | TCP | DNS |
+	//	+------+-----+-----+-----+
+	//
+	// Where each group may be empty. The first non-empty group is about the
+	// operation that failed for the current TagDepth.
+	//
+	// Within each group, successes sort before failures because the empty
+	// string has priority over non-empty strings.
+	//
+	// So, when walking the list from index 0 to index N, you encounter the
+	// latest redirects first, you observe the more complex operations first,
+	// and you see errors before failures.
 	for _, entry := range woa.Linear {
 
-		// handle the case where there's a final response
-		//
-		// as a reminder, a final response is a successful response with 2xx, 4xx or 5xx status
+		// 1. As a special case, handle a "final" response first. We define "final" a
+		// successful response whose status code is like 2xx, 4xx, or 5xx.
 		if !entry.HTTPResponseIsFinal.IsNone() && entry.HTTPResponseIsFinal.Unwrap() {
 
-			// if we were using TLS, we're good
+			// 1.1. Handle the case of succesful response over TLS.
 			if !entry.TLSHandshakeFailure.IsNone() && entry.TLSHandshakeFailure.Unwrap() == "" {
-				tk.Blocking = false
-				tk.Accessible = true
+				tk.setBlockingFalse()
 				return
 			}
 
-			// handle the case where there's no control
+			// 1.2. Handle the case of missing HTTP control.
 			if entry.ControlHTTPFailure.IsNone() {
-				tk.Blocking = nil
-				tk.Accessible = nil
+				tk.setBlockingNil()
 				return
 			}
 
-			// try to determine whether the page is good
-			if !tk.StatusCodeMatch.IsNone() && tk.StatusCodeMatch.Unwrap() {
-				if !tk.BodyLengthMatch.IsNone() && tk.BodyLengthMatch.Unwrap() {
-					tk.Blocking = false
-					tk.Accessible = true
-					return
-				}
-				if !tk.HeadersMatch.IsNone() && tk.HeadersMatch.Unwrap() {
-					tk.Blocking = false
-					tk.Accessible = true
-					return
-				}
-				if !tk.TitleMatch.IsNone() && tk.TitleMatch.Unwrap() {
-					tk.Blocking = false
-					tk.Accessible = true
-					return
-				}
-				// fallthrough
+			// 1.3. Figure out whether the measurement and the control are close enough.
+			if !tk.httpDiff() {
+				tk.setBlockingFalse()
+				return
 			}
 
-			// otherwise, declare that there's an http-diff
-			tk.Blocking = setBlocking("http-diff")
-			tk.Accessible = false
+			// 1.4. There's something different in the two responses.
+			tk.setBlockingString("http-diff")
 			return
 		}
 
-		// handle the case of HTTP failure
+		// 2. Let's now focus on failed HTTP round trips.
 		if entry.Type == minipipeline.WebObservationTypeHTTPRoundTrip &&
 			!entry.Failure.IsNone() && entry.Failure.Unwrap() != "" {
 
-			// handle the case where there's no control
+			// 2.1. Handle the case of a missing HTTP control. Maybe
+			// the control server is unreachable or blocked.
 			if entry.ControlHTTPFailure.IsNone() {
-				tk.Blocking = nil
-				tk.Accessible = nil
+				tk.setBlockingNil()
 				return
 			}
 
-			// handle the case of expected failure
+			// 2.2. Handle the case where both the probe and the control failed.
 			if entry.ControlHTTPFailure.Unwrap() != "" {
-				// TODO(bassosimone): this is wrong but Web Connectivity v0.4 does not
-				// correctly distinguish down websites, so we need to do the same for
-				// comparability purposes. The correct result is with .Accessible == false.
-				tk.Blocking = false
-				tk.Accessible = true
+				// TODO(bassosimone): returning this result is wrong and we
+				// should also set Accessible to false. However, v0.4
+				// does this and we should play along for the A/B testing.
+				tk.setBlockingFalse()
 				return
 			}
 
-			// handle an unexpected failure
-			tk.Blocking = setBlocking("http-failure")
-			tk.Accessible = false
+			// 2.3. Handle the case where just the probe failed.
+			tk.setBlockingString("http-failure")
 			return
 		}
 
-		// handle the case of TLS failure
+		// 3. Handle the case of TLS failure.
 		if entry.Type == minipipeline.WebObservationTypeTLSHandshake &&
 			!entry.Failure.IsNone() && entry.Failure.Unwrap() != "" {
 
-			// handle the case where there is no TLS control
+			// 3.1. Handle the case of missing TLS control information. The control
+			// only provides information for the first request. Once we start following
+			// redirects we do not have TLS/TCP/DNS control.
 			if entry.ControlTLSHandshakeFailure.IsNone() {
 
-				// handle the case where we have no final expectation from the control
+				// 3.1.1 Handle the case of missing an expectation about what
+				// accessing the website should lead to, which is set forth by
+				// the control accessing the website and telling us.
 				if entry.ControlHTTPFailure.IsNone() {
-					tk.Blocking = nil
-					tk.Accessible = nil
+					tk.setBlockingNil()
 					return
 				}
 
-				// otherwise, we're probably in a redirect w/o control
-				tk.Blocking = setBlocking("http-failure")
-				tk.Accessible = false
+				// 3.1.2. Otherwise, if the control worked, that's blocking.
+				tk.setBlockingString("http-failure")
 				return
 			}
 
-			// handle the case of expected failure
+			// 3.2. Handle the case where both probe and control failed.
 			if entry.ControlTLSHandshakeFailure.Unwrap() != "" {
-				// TODO(bassosimone): this is wrong but Web Connectivity v0.4 does not
-				// correctly distinguish down websites, so we need to do the same for
-				// comparability purposes. The correct result here is false, false.
-				//
-				// XXX also this algorithm here is disgusting
-				setBlockingNil()
+				// TODO(bassosimone): returning this result is wrong and we
+				// should set Accessible and Blocking to false. However, v0.4
+				// does this and we should play along for the A/B testing.
+				tk.setBlockingNil()
 				return
 			}
 
-			// handle an unexpected failure
-			tk.Blocking = setBlocking("http-failure")
-			tk.Accessible = false
+			// 3.3. Handle the case where just the probe failed.
+			tk.setBlockingString("http-failure")
 			return
 		}
 
-		// handle the case of TCP failure
+		// 4. Handle the case of TCP failure.
 		if entry.Type == minipipeline.WebObservationTypeTCPConnect &&
 			!entry.Failure.IsNone() && entry.Failure.Unwrap() != "" {
 
-			// handle the case where there's no TCP control
+			// 4.1. Handle the case of missing TCP control info.
 			if entry.ControlTCPConnectFailure.IsNone() {
 
-				// handle the case where we have no final expectation from the control
+				// 4.1.1 Handle the case of missing an expectation about what
+				// accessing the website should lead to.
 				if entry.ControlHTTPFailure.IsNone() {
-					tk.Blocking = nil
-					tk.Accessible = nil
+					tk.setBlockingNil()
 					return
 				}
 
-				// otherwise, we're probably in a redirect w/o control
-				tk.Blocking = setBlocking("http-failure")
-				tk.Accessible = false
+				// 4.1.2. Otherwise, if the control worked, that's blocking.
+				tk.setBlockingString("http-failure")
 				return
 			}
 
-			// handle the case of expected failure
+			// 4.2. Handle the case where both probe and control failed.
 			if entry.ControlTCPConnectFailure.Unwrap() != "" {
-				// TODO(bassosimone): this is wrong but Web Connectivity v0.4 does not
-				// correctly distinguish down websites, so we need to do the same for
-				// comparability purposes. The correct result is with .Accessible == false.
-				tk.Blocking = false
-				tk.Accessible = true
+				// TODO(bassosimone): returning this result is wrong and we
+				// should set Accessible and Blocking to false. However, v0.4
+				// does this and we should play along for the A/B testing.
+				tk.setBlockingFalse()
 				return
 			}
 
-			// handle an unexpected failure
-			tk.Blocking = setBlocking("tcp_ip")
-			tk.Accessible = false
+			// 4.3. Handle the case where just the probe failed.
+			tk.setBlockingString("tcp_ip")
 			return
 		}
 
-		// handle the case of DNS failure
+		// 5. Handle the case of DNS failure
 		if entry.Type == minipipeline.WebObservationTypeDNSLookup &&
 			!entry.Failure.IsNone() && entry.Failure.Unwrap() != "" {
 
-			// handle the case where there's no DNS control
+			// 5.1. Handle the case of missing DNS control info.
 			if entry.ControlDNSLookupFailure.IsNone() {
 
-				// BUG: we need to copy control information also for DNS
-				// lookups otherwise we're not able to xcompare.
-
-				// handle the case where we have no final expectation from the control
+				// 5.1.1 Handle the case of missing an expectation about what
+				// accessing the website should lead to.
 				if entry.ControlHTTPFailure.IsNone() {
-					tk.Blocking = nil
-					tk.Accessible = nil
+					tk.setBlockingFalse()
 					return
 				}
 
-				// otherwise, we're probably in a redirect w/o control
-				tk.Blocking = setBlocking("dns")
-				tk.Accessible = false
+				// 5.1.2. Otherwise, if the control worked, that's blocking.
+				tk.setBlockingString("dns")
 				return
 			}
 
-			// handle the case of expected failure
+			// 5.2. Handle the case where both probe and control failed.
 			if entry.ControlDNSLookupFailure.Unwrap() != "" {
-				// TODO(bassosimone): this is wrong but Web Connectivity v0.4 does not
-				// correctly distinguish down websites, so we need to do the same for
-				// comparability purposes. The correct result is with .Accessible == false.
-				tk.Blocking = false
-				tk.Accessible = true
+				// TODO(bassosimone): returning this result is wrong and we
+				// should set Accessible and Blocking to false. However, v0.4
+				// does this and we should play along for the A/B testing.
+				tk.setBlockingFalse()
 				return
 			}
 
-			// handle an unexpected failure
-			tk.Blocking = setBlocking("dns")
-			tk.Accessible = false
+			// 5.3. Handle the case where just the probe failed.
+			tk.setBlockingString("dns")
 			return
 		}
 	}

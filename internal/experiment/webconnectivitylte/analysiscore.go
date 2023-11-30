@@ -38,7 +38,7 @@ const (
 
 // AnalysisEngineFn is the function that runs the analysis engine for
 // processing and scoring measurements collected by LTE.
-var AnalysisEngineFn func(tk *TestKeys, logger model.Logger) = AnalysisEngineOrig
+var AnalysisEngineFn func(tk *TestKeys, logger model.Logger) = AnalysisEngineClassic
 
 // analysisToplevel is the toplevel function that analyses the results
 // of the experiment once all network tasks have completed.
@@ -107,12 +107,6 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 // is blocked. As of 2023-11-30, we still consider this engine experimental.
 func AnalysisEngineOrig(tk *TestKeys, logger model.Logger) {
 	tk.analysisOrig(logger)
-}
-
-// AnalysisEngineClassic is an alternative analysis engine that aims to produce
-// results that are backward compatible with Web Connectivity v0.4.
-func AnalysisEngineClassic(tk *TestKeys, logger model.Logger) {
-	tk.analysisClassic(logger)
 }
 
 func (tk *TestKeys) analysisOrig(logger model.Logger) {
