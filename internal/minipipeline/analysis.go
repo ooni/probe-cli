@@ -16,11 +16,11 @@ func AnalyzeWebObservations(container *WebObservationsContainer) *WebAnalysis {
 
 	analysis.tcpComputeMetrics(container)
 	analysis.tlsComputeMetrics(container)
+	analysis.httpComputeFailureMetrics(container)
 
 	analysis.ComputeDNSExperimentFailure(container)
 	analysis.ComputeDNSPossiblyNonexistingDomains(container)
 
-	analysis.ComputeTCPTransactionsWithUnexpectedHTTPFailures(container)
 	analysis.ComputeTCPTransactionsWithUnexplainedUnexpectedFailures(container)
 
 	analysis.ComputeHTTPDiffBodyProportionFactor(container)
@@ -70,6 +70,11 @@ type WebAnalysis struct {
 	// while checking for connectivity, as opposed to fetching a webpage.
 	TLSHandshakeUnexpectedFailureDuringConnectivityCheck Set[int64]
 
+	// HTTPRoundTripUnexpectedFailure contains HTTP endpoint transactions with unexpected failures.
+	HTTPRoundTripUnexpectedFailure Set[int64]
+
+	// TODO(bassosimone): there are probably redundant metrics from this point on
+
 	// DNSExperimentFailure is the first failure experienced by a getaddrinfo-like resolver.
 	DNSExperimentFailure optional.Value[string]
 
@@ -108,10 +113,6 @@ type WebAnalysis struct {
 	// cases where we're using TLS to fetch the final response, and does not concern
 	// itself with whether there's control data, because TLS suffices.
 	HTTPFinalResponsesWithTLS optional.Value[map[int64]bool]
-
-	// TCPSTransactionsWithUnexpectedHTTPFailures contains the TCP transaction IDs that
-	// contain HTTP failures while the control measurement succeeded.
-	TCPTransactionsWithUnexpectedHTTPFailures optional.Value[map[int64]bool]
 
 	// TCPTransactionsWithUnexplainedUnexpectedFailures contains the TCP transaction IDs for
 	// which we cannot explain TCP or TLS failures with control information, but for which we
@@ -359,6 +360,39 @@ func (wa *WebAnalysis) tlsComputeMetrics(c *WebObservationsContainer) {
 	}
 }
 
+func (wa *WebAnalysis) httpComputeFailureMetrics(c *WebObservationsContainer) {
+	for _, obs := range c.KnownTCPEndpoints {
+		// Implementation note: here we don't limit the search to depth==0 because the
+		// control we have for HTTP is relative to the final response.
+
+		// handle the case where there is no measurement
+		if obs.HTTPFailure.IsNone() {
+			continue
+		}
+
+		// handle the case where there is no control information
+		if obs.ControlHTTPFailure.IsNone() {
+			continue
+		}
+
+		// handle the case where both the probe and the control fail
+		if obs.HTTPFailure.Unwrap() != "" && obs.ControlHTTPFailure.Unwrap() != "" {
+			continue
+		}
+
+		// handle the case where only the control fails
+		if obs.ControlHTTPFailure.Unwrap() != "" {
+			continue
+		}
+
+		// handle the case where only the probe fails
+		if obs.HTTPFailure.Unwrap() != "" {
+			wa.HTTPRoundTripUnexpectedFailure.Add(obs.EndpointTransactionID.Unwrap())
+			continue
+		}
+	}
+}
+
 // ComputeDNSExperimentFailure computes the DNSExperimentFailure field.
 func (wa *WebAnalysis) ComputeDNSExperimentFailure(c *WebObservationsContainer) {
 
@@ -461,40 +495,6 @@ func (wa *WebAnalysis) ComputeDNSPossiblyNonexistingDomains(c *WebObservationsCo
 
 	// note that optional.Some constructs None if state is nil
 	wa.DNSPossiblyNonexistingDomains = optional.Some(state)
-}
-
-// ComputeTCPTransactionsWithUnexpectedHTTPFailures computes the TCPTransactionsWithUnexpectedHTTPFailures field.
-func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexpectedHTTPFailures(c *WebObservationsContainer) {
-	var state map[int64]bool
-
-	for _, obs := range c.KnownTCPEndpoints {
-		// we cannot do anything unless we have both records
-		if obs.HTTPFailure.IsNone() || obs.ControlHTTPFailure.IsNone() {
-			continue
-		}
-
-		// flip state from None to empty once we have seen the first
-		// suitable set of measurement/control pairs
-		if state == nil {
-			state = make(map[int64]bool)
-		}
-
-		// skip cases with no failures
-		if obs.HTTPFailure.Unwrap() == "" {
-			continue
-		}
-
-		// skip cases where also the control failed
-		if obs.ControlHTTPFailure.Unwrap() != "" {
-			continue
-		}
-
-		// update state
-		state[obs.EndpointTransactionID.Unwrap()] = true
-	}
-
-	// note that optional.Some constructs None if state is nil
-	wa.TCPTransactionsWithUnexpectedHTTPFailures = optional.Some(state)
 }
 
 // ComputeHTTPDiffBodyProportionFactor computes the HTTPDiffBodyProportionFactor field.

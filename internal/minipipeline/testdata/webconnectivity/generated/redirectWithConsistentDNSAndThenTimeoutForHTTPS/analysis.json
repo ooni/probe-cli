@@ -8,6 +8,7 @@
   "TLSHandshakeUnexpectedFailure": [],
   "TLSHandshakeUnexpectedFailureDuringWebFetch": [],
   "TLSHandshakeUnexpectedFailureDuringConnectivityCheck": [],
+  "HTTPRoundTripUnexpectedFailure": [],
   "DNSExperimentFailure": null,
   "DNSPossiblyNonexistingDomains": {},
   "HTTPDiffBodyProportionFactor": null,
@@ -16,7 +17,6 @@
   "HTTPDiffUncommonHeadersIntersection": null,
   "HTTPFinalResponsesWithControl": null,
   "HTTPFinalResponsesWithTLS": null,
-  "TCPTransactionsWithUnexpectedHTTPFailures": {},
   "TCPTransactionsWithUnexplainedUnexpectedFailures": {
     "7": true
   }
