@@ -86,7 +86,7 @@ type TestKeys struct {
 
 	// HTTPExperimentFailure indicates whether there was a failure in
 	// the final HTTP request that we recorded.
-	HTTPExperimentFailure optional.Value[string] `json:"http_experiment_failure"`
+	HTTPExperimentFailure *string `json:"http_experiment_failure"`
 
 	// BlockingFlags explains why we think that the website is blocked.
 	BlockingFlags int64 `json:"x_blocking_flags"`
@@ -96,16 +96,16 @@ type TestKeys struct {
 	NullNullFlags int64 `json:"x_null_null_flags"`
 
 	// BodyLength match tells us whether the body length matches.
-	BodyLengthMatch optional.Value[bool] `json:"body_length_match"`
+	BodyLengthMatch *bool `json:"body_length_match"`
 
 	// HeadersMatch tells us whether the headers match.
-	HeadersMatch optional.Value[bool] `json:"headers_match"`
+	HeadersMatch *bool `json:"headers_match"`
 
 	// StatusCodeMatch tells us whether the status code matches.
-	StatusCodeMatch optional.Value[bool] `json:"status_code_match"`
+	StatusCodeMatch *bool `json:"status_code_match"`
 
 	// TitleMatch tells us whether the title matches.
-	TitleMatch optional.Value[bool] `json:"title_match"`
+	TitleMatch *bool `json:"title_match"`
 
 	// Blocking indicates the reason for blocking. This is notoriously a bad
 	// type because it can be one of the following values:
@@ -359,10 +359,10 @@ func NewTestKeys() *TestKeys {
 		HTTPExperimentFailure: nil,
 		BlockingFlags:         0,
 		NullNullFlags:         0,
-		BodyLengthMatch:       optional.None[bool](),
-		HeadersMatch:          optional.None[bool](),
-		StatusCodeMatch:       optional.None[bool](),
-		TitleMatch:            optional.None[bool](),
+		BodyLengthMatch:       nil,
+		HeadersMatch:          nil,
+		StatusCodeMatch:       nil,
+		TitleMatch:            nil,
 		Blocking:              nil,
 		Accessible:            nil,
 		ControlRequest:        nil,
