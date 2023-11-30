@@ -38,7 +38,7 @@
       ],
       "ControlTCPConnectFailure": null,
       "ControlTLSHandshakeFailure": null,
-      "ControlHTTPFailure": null,
+      "ControlHTTPFailure": "unknown_error",
       "ControlHTTPResponseStatusCode": null,
       "ControlHTTPResponseBodyLength": null,
       "ControlHTTPResponseHeadersKeys": null,
