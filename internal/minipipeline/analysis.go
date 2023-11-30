@@ -9,13 +9,15 @@ import (
 
 // NewLinearWebAnalysis constructs a slice containing all the observations.
 //
-// We sort the observations in descending order by:
+// We sort the observations as follows:
 //
-// 1. the [WebObservationType];
+// 1. by descending TagDepth;
 //
-// 2. the Failure (with successful results sorting before failing results);
+// 2. with TagDepth being equal, by descending [WebObservationType];
 //
-// 3. the TransactionID.
+// 3. with [WebObservationType], by ascending failure string;
+//
+// 4. with failure string being equal, by descending TransactionID.
 func NewLinearWebAnalysis(input *WebObservationsContainer) (output []*WebObservation) {
 	// fill in all the observations
 	output = append(output, input.DNSLookupFailures...)
@@ -27,12 +29,36 @@ func NewLinearWebAnalysis(input *WebObservationsContainer) (output []*WebObserva
 	// sort in descending order
 	sort.SliceStable(output, func(i, j int) bool {
 		left, right := output[i], output[j]
+
+		// Sort by descending depth.
+		//
+		// We use -1 as the default value such that observations with undefined
+		// TagDepth sort at the end of the generated list.
+		if left.TagDepth.UnwrapOr(-1) > right.TagDepth.UnwrapOr(-1) {
+			return true
+		} else if left.TagDepth.UnwrapOr(-1) < right.TagDepth.UnwrapOr(-1) {
+			return false
+		}
+
+		// Sort by descending type if depth is equal.
 		if left.Type > right.Type {
 			return true
+		} else if left.Type < right.Type {
+			return false
 		}
-		if !left.Failure.IsNone() && !right.Failure.IsNone() && left.Failure.Unwrap() == "" && right.Failure.Unwrap() != "" {
+
+		// With equal type, sort by failure ascending so the empty string is first.
+		//
+		// We use an nonempty failure value so that observations with undefined
+		// failures sort at the end of the group within the list.
+		const defaultFailureValue = "unknown_failure"
+		if left.Failure.UnwrapOr(defaultFailureValue) > right.Failure.UnwrapOr(defaultFailureValue) {
 			return true
+		} else if left.Failure.UnwrapOr(defaultFailureValue) < right.Failure.UnwrapOr(defaultFailureValue) {
+			return false
 		}
+
+		// If failure is equal, sort by descending transaction ID.
 		return left.TransactionID > right.TransactionID
 	})
 

@@ -85,6 +85,16 @@ type WebObservation struct {
 	// expands when we ingest more data types. We use these three fields for
 	// linearizing and sorting all the observations in NewLinearAnalysis.
 
+	// TagDepth is the value of the depth=<int64> tag. We use this tag
+	// in Web Connectivity LTE to know the current redirect depth. We start
+	// from zero for the first set of requests and increement this value
+	// every time we follow a redirect. (Because just one transaction
+	// is allowed to fetch the body and follow redirects, everything should
+	// work as intended and it's possible to use this tag to group related
+	// DNS lookups and endpoints operations, which can then be further break
+	// down using the transaction ID to isolate transactions.)
+	TagDepth optional.Value[int64]
+
 	// Type is the observation type.
 	Type WebObservationType
 
@@ -94,6 +104,12 @@ type WebObservation struct {
 
 	// TransactionID is the DNS or endpoint TransactionID.
 	TransactionID int64
+
+	// TagFetchBody is the value of the fetch_body=<bool> tag. We use this tag
+	// in Web Connectivity LTE to indicate that the current transaction will
+	// attempt to fetch the webpage body. (Potentially, more than one transaction
+	// tries fetching the body and only one will actually do it.)
+	TagFetchBody optional.Value[bool]
 
 	// The following fields are optional.Some when you process the DNS
 	// lookup events contained inside an OONI measurement:
@@ -200,24 +216,6 @@ type WebObservation struct {
 
 	// HTTPResponseIsFinal is true if the status code is 2xx, 4xx, or 5xx.
 	HTTPResponseIsFinal optional.Value[bool]
-
-	// The following fields are extracted from tags (if available):
-
-	// TagDepth is the value of the depth=<int64> tag. We use this tag
-	// in Web Connectivity LTE to know the current redirect depth. We start
-	// from zero for the first set of requests and increement this value
-	// every time we follow a redirect. (Because just one transaction
-	// is allowed to fetch the body and follow redirects, everything should
-	// work as intended and it's possible to use this tag to group related
-	// DNS lookups and endpoints operations, which can then be further break
-	// down using the transaction ID to isolate transactions.)
-	TagDepth optional.Value[int64]
-
-	// TagFetchBody is the value of the fetch_body=<bool> tag. We use this tag
-	// in Web Connectivity LTE to indicate that the current transaction will
-	// attempt to fetch the webpage body. (Potentially, more than one transaction
-	// tries fetching the body and only one will actually do it.)
-	TagFetchBody optional.Value[bool]
 
 	// The following fields are optional.Some when you process the control information
 	// contained inside a measurement and there's information available:
