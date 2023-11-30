@@ -19,9 +19,7 @@ func AnalyzeWebObservations(container *WebObservationsContainer) *WebAnalysis {
 	analysis.httpComputeFailureMetrics(container)
 	analysis.httpComputeFinalResponseMetrics(container)
 
-	analysis.ComputeDNSExperimentFailure(container)
 	analysis.ComputeDNSPossiblyNonexistingDomains(container)
-
 	return analysis
 }
 
@@ -45,6 +43,10 @@ type WebAnalysis struct {
 
 	// DNSLookupUnexpectedFailure contains DNS transactions with unexpected failures.
 	DNSLookupUnexpectedFailure Set[int64]
+
+	// DNSExperimentFailure is the first failure experienced by any resolver
+	// before hitting redirects (i.e., when TagDepth==0).
+	DNSExperimentFailure optional.Value[string]
 
 	// DNSLookupExpectedFailure contains DNS transactions with expected failures.
 	DNSLookupExpectedFailure Set[int64]
@@ -129,9 +131,6 @@ type WebAnalysis struct {
 	HTTPFinalResponseDiffUncommonHeadersIntersection optional.Value[map[string]bool]
 
 	// TODO(bassosimone): there are probably redundant metrics from this point on
-
-	// DNSExperimentFailure is the first failure experienced by a getaddrinfo-like resolver.
-	DNSExperimentFailure optional.Value[string]
 
 	// DNSPossiblyNonexistingDomains lists all the domains for which both
 	// the probe and the TH failed to perform DNS lookups.
@@ -274,6 +273,13 @@ func (wa *WebAnalysis) dnsComputeFailureMetrics(c *WebObservationsContainer) {
 
 		// TODO(bassosimone): if we set an IPv6 address as the resolver address, we
 		// end up with false positive errors when there's no IPv6 support
+
+		// honor the DNSExperimentFailure by assigning the first
+		// probe error that we see with depth==0
+		if obs.DNSLookupFailure.Unwrap() != "" && wa.DNSExperimentFailure.IsNone() {
+			wa.DNSExperimentFailure = obs.DNSLookupFailure
+			// fallthrough
+		}
 
 		// handle the case where there's no control
 		if obs.ControlDNSLookupFailure.IsNone() {
@@ -569,49 +575,6 @@ func (wa *WebAnalysis) httpDiffTitleDifferentLongWords(obs *WebObservation) {
 	state := ComputeHTTPDiffTitleDifferentLongWords(measurement, control)
 
 	wa.HTTPFinalResponseDiffTitleDifferentLongWords = optional.Some(state)
-}
-
-// ComputeDNSExperimentFailure computes the DNSExperimentFailure field.
-func (wa *WebAnalysis) ComputeDNSExperimentFailure(c *WebObservationsContainer) {
-
-	for _, obs := range c.DNSLookupFailures {
-		// make sure we have probe domain
-		probeDomain := obs.DNSDomain.UnwrapOr("")
-		if probeDomain == "" {
-			continue
-		}
-
-		// make sure we have TH domain
-		thDomain := obs.ControlDNSDomain.UnwrapOr("")
-		if thDomain == "" {
-			continue
-		}
-
-		// we only care about cases where we're resolving the same domain
-		if probeDomain != thDomain {
-			continue
-		}
-
-		// as documented, only include the system resolver
-		if !utilsEngineIsGetaddrinfo(obs.DNSEngine) {
-			continue
-		}
-
-		// skip cases where there's no DNS record for AAAA, which is a false positive
-		//
-		// in principle, this should not happen with getaddrinfo, but we add this
-		// check nonetheless for robustness against this corner case
-		if utilsDNSLookupFailureIsDNSNoAnswerForAAAA(obs) {
-			continue
-		}
-
-		// only record the first failure
-		//
-		// we should only consider the first DNS lookup to be consistent with
-		// what was previously returned by Web Connectivity v0.4
-		wa.DNSExperimentFailure = obs.DNSLookupFailure
-		return
-	}
 }
 
 // ComputeDNSPossiblyNonexistingDomains computes the DNSPossiblyNonexistingDomains field.
