@@ -7,9 +7,15 @@
   "TCPConnectUnexpectedFailure": [],
   "TCPConnectUnexpectedFailureDuringWebFetch": [],
   "TCPConnectUnexpectedFailureDuringConnectivityCheck": [],
+  "TCPConnectUnexplainedFailure": [],
+  "TCPConnectUnexplainedFailureDuringWebFetch": [],
+  "TCPConnectUnexplainedFailureDuringConnectivityCheck": [],
   "TLSHandshakeUnexpectedFailure": [],
   "TLSHandshakeUnexpectedFailureDuringWebFetch": [],
   "TLSHandshakeUnexpectedFailureDuringConnectivityCheck": [],
+  "TLSHandshakeUnexplainedFailure": [],
+  "TLSHandshakeUnexplainedFailureDuringWebFetch": [],
+  "TLSHandshakeUnexplainedFailureDuringConnectivityCheck": [],
   "HTTPRoundTripUnexpectedFailure": [],
   "DNSExperimentFailure": "dns_nxdomain_error",
   "DNSPossiblyNonexistingDomains": {},
@@ -18,6 +24,5 @@
   "HTTPDiffTitleDifferentLongWords": null,
   "HTTPDiffUncommonHeadersIntersection": null,
   "HTTPFinalResponsesWithControl": null,
-  "HTTPFinalResponsesWithTLS": null,
-  "TCPTransactionsWithUnexplainedUnexpectedFailures": null
+  "HTTPFinalResponsesWithTLS": null
 }

@@ -5,9 +5,19 @@
   "TCPConnectUnexpectedFailure": [],
   "TCPConnectUnexpectedFailureDuringWebFetch": [],
   "TCPConnectUnexpectedFailureDuringConnectivityCheck": [],
+  "TCPConnectUnexplainedFailure": [],
+  "TCPConnectUnexplainedFailureDuringWebFetch": [],
+  "TCPConnectUnexplainedFailureDuringConnectivityCheck": [],
   "TLSHandshakeUnexpectedFailure": [],
   "TLSHandshakeUnexpectedFailureDuringWebFetch": [],
   "TLSHandshakeUnexpectedFailureDuringConnectivityCheck": [],
+  "TLSHandshakeUnexplainedFailure": [
+    7
+  ],
+  "TLSHandshakeUnexplainedFailureDuringWebFetch": [],
+  "TLSHandshakeUnexplainedFailureDuringConnectivityCheck": [
+    7
+  ],
   "HTTPRoundTripUnexpectedFailure": [
     6
   ],
@@ -18,8 +28,5 @@
   "HTTPDiffTitleDifferentLongWords": null,
   "HTTPDiffUncommonHeadersIntersection": null,
   "HTTPFinalResponsesWithControl": null,
-  "HTTPFinalResponsesWithTLS": null,
-  "TCPTransactionsWithUnexplainedUnexpectedFailures": {
-    "7": true
-  }
+  "HTTPFinalResponsesWithTLS": null
 }
