@@ -314,25 +314,6 @@ func TestWebAnalysisComputeHTTPFinalResponses(t *testing.T) {
 	})
 }
 
-func TestWebAnalysisComputeTCPTransactionsWithUnexplainedUnexpectedFailures(t *testing.T) {
-	t.Run("when we don't have a transaction ID", func(t *testing.T) {
-		container := &WebObservationsContainer{
-			KnownTCPEndpoints: map[int64]*WebObservation{
-				1: {
-					EndpointTransactionID: optional.None[int64](),
-				},
-			},
-		}
-
-		wa := &WebAnalysis{}
-		wa.ComputeTCPTransactionsWithUnexplainedUnexpectedFailures(container)
-
-		if v := wa.TCPTransactionsWithUnexplainedUnexpectedFailures.UnwrapOr(nil); len(v) > 0 {
-			t.Fatal("should be empty")
-		}
-	})
-}
-
 func TestWebAnalysisComputeHTTPFinalResponsesWithTLS(t *testing.T) {
 	t.Run("when there is no endpoint transaction ID", func(t *testing.T) {
 		container := &WebObservationsContainer{

@@ -21,8 +21,6 @@ func AnalyzeWebObservations(container *WebObservationsContainer) *WebAnalysis {
 	analysis.ComputeDNSExperimentFailure(container)
 	analysis.ComputeDNSPossiblyNonexistingDomains(container)
 
-	analysis.ComputeTCPTransactionsWithUnexplainedUnexpectedFailures(container)
-
 	analysis.ComputeHTTPDiffBodyProportionFactor(container)
 	analysis.ComputeHTTPDiffStatusCodeMatch(container)
 	analysis.ComputeHTTPDiffUncommonHeadersIntersection(container)
@@ -59,6 +57,17 @@ type WebAnalysis struct {
 	// while checking for connectivity, as opposed to fetching a webpage.
 	TCPConnectUnexpectedFailureDuringConnectivityCheck Set[int64]
 
+	// TCPConnectUnexplainedFailure contains failures occurring during redirects.
+	TCPConnectUnexplainedFailure Set[int64]
+
+	// TCPConnectUnexplainedFailureDuringWebFetch contains failures occurring during redirects
+	// while performing a web fetch, as opposed to checking for connectivity.
+	TCPConnectUnexplainedFailureDuringWebFetch Set[int64]
+
+	// TCPConnectUnexplainedFailureDuringConnectivityCheck contains failures occurring during redirects
+	// while checking for connectivity, as opposed to fetching a webpage.
+	TCPConnectUnexplainedFailureDuringConnectivityCheck Set[int64]
+
 	// TLSHandshakeUnexpectedFailure contains TLS endpoint transactions with unexpected failures.
 	TLSHandshakeUnexpectedFailure Set[int64]
 
@@ -69,6 +78,17 @@ type WebAnalysis struct {
 	// TLSHandshakeUnexpectedFailureDuringConnectivityCheck contains TLS endpoint transactions with unexpected failures.
 	// while checking for connectivity, as opposed to fetching a webpage.
 	TLSHandshakeUnexpectedFailureDuringConnectivityCheck Set[int64]
+
+	// TLSHandshakeUnexplainedFailure contains failures occurring during redirects.
+	TLSHandshakeUnexplainedFailure Set[int64]
+
+	// TLSHandshakeUnexplainedFailureDuringWebFetch  contains failures occurring during redirects
+	// while performing a web fetch, as opposed to checking for connectivity.
+	TLSHandshakeUnexplainedFailureDuringWebFetch Set[int64]
+
+	// TLSHandshakeUnexplainedFailureDuringConnectivityCheck contains failures occurring during redirects
+	// while checking for connectivity, as opposed to fetching a webpage.
+	TLSHandshakeUnexplainedFailureDuringConnectivityCheck Set[int64]
 
 	// HTTPRoundTripUnexpectedFailure contains HTTP endpoint transactions with unexpected failures.
 	HTTPRoundTripUnexpectedFailure Set[int64]
@@ -113,11 +133,6 @@ type WebAnalysis struct {
 	// cases where we're using TLS to fetch the final response, and does not concern
 	// itself with whether there's control data, because TLS suffices.
 	HTTPFinalResponsesWithTLS optional.Value[map[int64]bool]
-
-	// TCPTransactionsWithUnexplainedUnexpectedFailures contains the TCP transaction IDs for
-	// which we cannot explain TCP or TLS failures with control information, but for which we
-	// expect to see a success because the control's HTTP succeeded.
-	TCPTransactionsWithUnexplainedUnexpectedFailures optional.Value[map[int64]bool]
 }
 
 func (wa *WebAnalysis) dnsComputeSuccessMetrics(c *WebObservationsContainer) {
@@ -277,13 +292,27 @@ func (wa *WebAnalysis) dnsComputeFailureMetrics(c *WebObservationsContainer) {
 
 func (wa *WebAnalysis) tcpComputeMetrics(c *WebObservationsContainer) {
 	for _, obs := range c.KnownTCPEndpoints {
-		// dials once we started following redirects should not be considered
-		if obs.TagDepth.IsNone() || obs.TagDepth.Unwrap() != 0 {
+		// handle the case where there is no measurement
+		if obs.TCPConnectFailure.IsNone() {
 			continue
 		}
 
-		// handle the case where there is no measurement
-		if obs.TCPConnectFailure.IsNone() {
+		// dials once we started following redirects should be treated differently
+		// since we know there's no control information beyond depth==0
+		if obs.TagDepth.IsNone() || obs.TagDepth.Unwrap() != 0 {
+			if utilsTCPConnectFailureSeemsMisconfiguredIPv6(obs) {
+				continue
+			}
+			if obs.TCPConnectFailure.Unwrap() != "" {
+				switch {
+				case !obs.TagFetchBody.IsNone() && obs.TagFetchBody.Unwrap():
+					wa.TCPConnectUnexplainedFailureDuringWebFetch.Add(obs.EndpointTransactionID.Unwrap())
+				case !obs.TagFetchBody.IsNone() && !obs.TagFetchBody.Unwrap():
+					wa.TCPConnectUnexplainedFailureDuringConnectivityCheck.Add(obs.EndpointTransactionID.Unwrap())
+				}
+				wa.TCPConnectUnexplainedFailure.Add(obs.EndpointTransactionID.Unwrap())
+				continue
+			}
 			continue
 		}
 
@@ -321,13 +350,24 @@ func (wa *WebAnalysis) tcpComputeMetrics(c *WebObservationsContainer) {
 
 func (wa *WebAnalysis) tlsComputeMetrics(c *WebObservationsContainer) {
 	for _, obs := range c.KnownTCPEndpoints {
-		// handshakes once we started following redirects should not be considered
-		if obs.TagDepth.IsNone() || obs.TagDepth.Unwrap() != 0 {
+		// handle the case where there is no measurement
+		if obs.TLSHandshakeFailure.IsNone() {
 			continue
 		}
 
-		// handle the case where there is no measurement
-		if obs.TLSHandshakeFailure.IsNone() {
+		// handshakes once we started following redirects should be treated differently
+		// since we know there's no control information beyond depth==0
+		if obs.TagDepth.IsNone() || obs.TagDepth.Unwrap() != 0 {
+			if obs.TLSHandshakeFailure.Unwrap() != "" {
+				switch {
+				case !obs.TagFetchBody.IsNone() && obs.TagFetchBody.Unwrap():
+					wa.TLSHandshakeUnexplainedFailureDuringWebFetch.Add(obs.EndpointTransactionID.Unwrap())
+				case !obs.TagFetchBody.IsNone() && !obs.TagFetchBody.Unwrap():
+					wa.TLSHandshakeUnexplainedFailureDuringConnectivityCheck.Add(obs.EndpointTransactionID.Unwrap())
+				}
+				wa.TLSHandshakeUnexplainedFailure.Add(obs.EndpointTransactionID.Unwrap())
+				continue
+			}
 			continue
 		}
 
@@ -652,53 +692,6 @@ func (wa *WebAnalysis) ComputeHTTPFinalResponsesWithControl(c *WebObservationsCo
 
 	// note that optional.Some constructs None if state is nil
 	wa.HTTPFinalResponsesWithControl = optional.Some(state)
-}
-
-// ComputeTCPTransactionsWithUnexplainedUnexpectedFailures computes the TCPTransactionsWithUnexplainedUnexpectedFailures field.
-func (wa *WebAnalysis) ComputeTCPTransactionsWithUnexplainedUnexpectedFailures(c *WebObservationsContainer) {
-	var state map[int64]bool
-
-	for _, obs := range c.KnownTCPEndpoints {
-		// obtain the transaction ID
-		txid := obs.EndpointTransactionID.UnwrapOr(0)
-		if txid <= 0 {
-			continue
-		}
-
-		// to execute the algorithm we must have the reasonable expectation of
-		// success, which we have iff the control succeeded.
-		if obs.ControlHTTPFailure.IsNone() || obs.ControlHTTPFailure.Unwrap() != "" {
-			continue
-		}
-
-		// flip state from None to empty when we have a reasonable
-		// expectation of success as explained above
-		if state == nil {
-			state = make(map[int64]bool)
-		}
-
-		// if we have a TCP connect measurement, the measurement failed, and we don't have
-		// a corresponding control measurement, we cannot explain this failure using the control
-		//
-		// while doing this, deal with misconfigured-IPv6 false positives
-		if !obs.TCPConnectFailure.IsNone() && obs.TCPConnectFailure.Unwrap() != "" &&
-			!utilsTCPConnectFailureSeemsMisconfiguredIPv6(obs) &&
-			obs.ControlTCPConnectFailure.IsNone() {
-			state[txid] = true
-			continue
-		}
-
-		// if we have a TLS handshake measurement, the measurement failed, and we don't have
-		// a corresponding control measurement, we cannot explain this failure using the control
-		if !obs.TLSHandshakeFailure.IsNone() && obs.TLSHandshakeFailure.Unwrap() != "" &&
-			obs.ControlTLSHandshakeFailure.IsNone() {
-			state[txid] = true
-			continue
-		}
-	}
-
-	// note that optional.Some constructs None if state is nil
-	wa.TCPTransactionsWithUnexplainedUnexpectedFailures = optional.Some(state)
 }
 
 // ComputeHTTPFinalResponsesWithTLS computes the HTTPFinalResponsesWithTLS field.
