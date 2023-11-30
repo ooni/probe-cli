@@ -1,8 +1,8 @@
 {
+  "DNSLookupSuccessWithInvalidAddresses": [],
+  "DNSLookupSuccessWithInvalidAddressesClassic": [],
   "DNSExperimentFailure": null,
-  "DNSTransactionsWithBogons": {},
   "DNSTransactionsWithUnexpectedFailures": null,
-  "DNSPossiblyInvalidAddrsClassic": null,
   "DNSPossiblyNonexistingDomains": null,
   "HTTPDiffBodyProportionFactor": null,
   "HTTPDiffStatusCodeMatch": null,

@@ -1,10 +1,10 @@
 {
+  "DNSLookupSuccessWithInvalidAddresses": [],
+  "DNSLookupSuccessWithInvalidAddressesClassic": [],
   "DNSExperimentFailure": "android_dns_cache_no_data",
-  "DNSTransactionsWithBogons": null,
   "DNSTransactionsWithUnexpectedFailures": {
     "1": true
   },
-  "DNSPossiblyInvalidAddrsClassic": null,
   "DNSPossiblyNonexistingDomains": {},
   "HTTPDiffBodyProportionFactor": null,
   "HTTPDiffStatusCodeMatch": null,

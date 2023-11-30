@@ -73,25 +73,6 @@ func TestWebAnalysisComputeDNSExperimentFailure(t *testing.T) {
 	})
 }
 
-func TestWebAnalysisComputeDNSTransactionsWithBogons(t *testing.T) {
-	t.Run("when there's no IPAddressBogon", func(t *testing.T) {
-		container := &WebObservationsContainer{
-			DNSLookupSuccesses: []*WebObservation{
-				{
-					/* empty */
-				},
-			},
-		}
-
-		wa := &WebAnalysis{}
-		wa.ComputeDNSTransactionsWithBogons(container)
-
-		if v := wa.DNSTransactionsWithBogons.UnwrapOr(nil); len(v) != 0 {
-			t.Fatal("DNSTransactionsWithBogons is not none")
-		}
-	})
-}
-
 func TestWebAnalysisComputeTCPTransactionsWithUnexpectedHTTPFailures(t *testing.T) {
 	t.Run("when both measurement and control fail", func(t *testing.T) {
 		container := &WebObservationsContainer{
