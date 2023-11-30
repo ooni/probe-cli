@@ -46,6 +46,12 @@ type WebAnalysis struct {
 	// DNSLookupUnexpectedFailure contains DNS transactions with unexpected failures.
 	DNSLookupUnexpectedFailure Set[int64]
 
+	// DNSLookupExpectedFailure contains DNS transactions with expected failures.
+	DNSLookupExpectedFailure Set[int64]
+
+	// DNSLookupExpectedSuccess contains DNS transactions with expected successes.
+	DNSLookupExpectedSuccess Set[int64]
+
 	// TCPConnectUnexpectedFailure contains TCP endpoint transactions with unexpected failures.
 	TCPConnectUnexpectedFailure Set[int64]
 
@@ -276,6 +282,7 @@ func (wa *WebAnalysis) dnsComputeFailureMetrics(c *WebObservationsContainer) {
 
 		// handle the case where both failed
 		if obs.DNSLookupFailure.Unwrap() != "" && obs.ControlDNSLookupFailure.Unwrap() != "" {
+			wa.DNSLookupExpectedFailure.Add(obs.DNSTransactionID.Unwrap())
 			continue
 		}
 
@@ -289,6 +296,9 @@ func (wa *WebAnalysis) dnsComputeFailureMetrics(c *WebObservationsContainer) {
 			wa.DNSLookupUnexpectedFailure.Add(obs.DNSTransactionID.Unwrap())
 			continue
 		}
+
+		// handle the case where both succeed
+		wa.DNSLookupExpectedSuccess.Add(obs.DNSTransactionID.Unwrap())
 	}
 }
 

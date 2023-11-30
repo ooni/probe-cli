@@ -59,11 +59,14 @@ func (tk *TestKeys) analysisClassic(logger model.Logger, container *minipipeline
 
 	// determine the DNS consistency
 	switch {
-	case woa.DNSLookupSuccessWithInvalidAddressesClassic.Len() <= 0 &&
-		woa.DNSLookupUnexpectedFailure.Len() <= 0 && woa.DNSLookupSuccessWithValidAddressClassic.Len() > 0:
+	case woa.DNSLookupUnexpectedFailure.Len() <= 0 && // no unexpected failures; and
+		woa.DNSLookupSuccessWithInvalidAddressesClassic.Len() <= 0 && // no invalid addresses; and
+		(woa.DNSLookupSuccessWithValidAddressClassic.Len() > 0 || // good addrs; or
+			woa.DNSLookupExpectedFailure.Len() > 0): // expected failures
 		tk.DNSConsistency = optional.Some("consistent")
 
-	case woa.DNSLookupSuccessWithInvalidAddressesClassic.Len() > 0 || woa.DNSLookupUnexpectedFailure.Len() > 0:
+	case woa.DNSLookupSuccessWithInvalidAddressesClassic.Len() > 0 || // unexpected addrs; or
+		woa.DNSLookupUnexpectedFailure.Len() > 0: // unexpected failures
 		tk.DNSConsistency = optional.Some("inconsistent")
 
 	default:
@@ -172,6 +175,14 @@ func (tk *TestKeys) analysisClassic(logger model.Logger, container *minipipeline
 	if !tk.DNSConsistency.IsNone() && tk.DNSConsistency.Unwrap() == "inconsistent" {
 		tk.Blocking = "dns"
 		tk.Accessible = false
+		return
+	}
+
+	// if we don't have any operation but DNS lookup, check for NXDOMAIN
+	if !woa.DNSPossiblyNonexistingDomains.IsNone() && len(woa.DNSPossiblyNonexistingDomains.Unwrap()) > 0 {
+		// TODO(bassosimone): this is wrong but we'll change after the A/B comparison
+		tk.Blocking = false
+		tk.Accessible = true
 		return
 	}
 
