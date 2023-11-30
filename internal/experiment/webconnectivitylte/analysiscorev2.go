@@ -33,7 +33,7 @@ func (tk *TestKeys) analysisToplevelV2(logger model.Logger) {
 	classic := minipipeline.ClassicFilter(container)
 
 	// 3. run the classic analysis algorithm
-	tk.analysisClassic(logger, classic)
+	tk.analysisClassicOld(logger, classic)
 }
 
 func analysisValueToPointer[T any](input T) *T {
@@ -47,7 +47,7 @@ func analysisOptionalToPointer[T any](input optional.Value[T]) *T {
 	return analysisValueToPointer(input.Unwrap())
 }
 
-func (tk *TestKeys) analysisClassic(logger model.Logger, container *minipipeline.WebObservationsContainer) {
+func (tk *TestKeys) analysisClassicOld(logger model.Logger, container *minipipeline.WebObservationsContainer) {
 	// dump the observations
 	fmt.Printf("%s\n", must.MarshalJSON(container))
 
