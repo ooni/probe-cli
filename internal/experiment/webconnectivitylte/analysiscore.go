@@ -38,7 +38,7 @@ const (
 
 // AnalysisEngineFn is the function that runs the analysis engine for
 // processing and scoring measurements collected by LTE.
-var AnalysisEngineFn func(tk *TestKeys, logger model.Logger) = AnalysisEngineOrig
+var AnalysisEngineFn func(tk *TestKeys, logger model.Logger) = AnalysisEngineClassic
 
 // analysisToplevel is the toplevel function that analyses the results
 // of the experiment once all network tasks have completed.
