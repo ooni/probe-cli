@@ -46,6 +46,9 @@ func ClassicFilter(input *WebObservationsContainer) (output *WebObservationsCont
 		if output.knownIPAddresses[ipAddr] == nil {
 			continue
 		}
+		if !entry.TagFetchBody.UnwrapOr(false) {
+			continue
+		}
 		output.KnownTCPEndpoints[txid] = entry
 	}
 

@@ -1,0 +1,1 @@
+./miniooni -i http://dns.google web_connectivity@v0.5
