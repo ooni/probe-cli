@@ -1,7 +1,6 @@
 package minipipeline
 
 import (
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/optional"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -19,7 +18,6 @@ func AnalyzeWebObservations(container *WebObservationsContainer) *WebAnalysis {
 	analysis.httpComputeFailureMetrics(container)
 	analysis.httpComputeFinalResponseMetrics(container)
 
-	analysis.ComputeDNSPossiblyNonexistingDomains(container)
 	return analysis
 }
 
@@ -129,12 +127,6 @@ type WebAnalysis struct {
 
 	// HTTPFinalResponseDiffUncommonHeadersIntersection contains the uncommon headers intersection.
 	HTTPFinalResponseDiffUncommonHeadersIntersection optional.Value[map[string]bool]
-
-	// TODO(bassosimone): there are probably redundant metrics from this point on
-
-	// DNSPossiblyNonexistingDomains lists all the domains for which both
-	// the probe and the TH failed to perform DNS lookups.
-	DNSPossiblyNonexistingDomains optional.Value[map[string]bool]
 }
 
 func (wa *WebAnalysis) dnsComputeSuccessMetrics(c *WebObservationsContainer) {
@@ -575,65 +567,4 @@ func (wa *WebAnalysis) httpDiffTitleDifferentLongWords(obs *WebObservation) {
 	state := ComputeHTTPDiffTitleDifferentLongWords(measurement, control)
 
 	wa.HTTPFinalResponseDiffTitleDifferentLongWords = optional.Some(state)
-}
-
-// ComputeDNSPossiblyNonexistingDomains computes the DNSPossiblyNonexistingDomains field.
-func (wa *WebAnalysis) ComputeDNSPossiblyNonexistingDomains(c *WebObservationsContainer) {
-	var state map[string]bool
-
-	// first inspect the failures
-	for _, obs := range c.DNSLookupFailures {
-		// skip the comparison if we don't have enough information
-		if obs.DNSLookupFailure.IsNone() || obs.ControlDNSLookupFailure.IsNone() {
-			continue
-		}
-
-		// flip state from None to empty when we see the first couple of
-		// (probe, th) failures allowing us to perform a comparison
-		if state == nil {
-			state = make(map[string]bool)
-		}
-
-		// assume the domain is set in both cases
-		domain := obs.DNSDomain.Unwrap()
-		runtimex.Assert(domain == obs.ControlDNSDomain.Unwrap(), "mismatch between domain names")
-
-		// a domain is nonexisting if both the probe and the TH say so
-		if obs.DNSLookupFailure.Unwrap() != netxlite.FailureDNSNXDOMAINError {
-			continue
-		}
-		if obs.ControlDNSLookupFailure.Unwrap() != "dns_name_error" {
-			continue
-		}
-
-		// set the state
-		state[domain] = true
-	}
-
-	// then inspect the successes
-	for _, obs := range c.DNSLookupSuccesses {
-		// skip the comparison if we don't have enough information
-		if obs.DNSLookupFailure.IsNone() && obs.ControlDNSLookupFailure.IsNone() {
-			continue
-		}
-
-		// assume the domain is always set
-		domain := obs.DNSDomain.Unwrap()
-
-		// clear the state if the probe succeeded
-		if !obs.DNSLookupFailure.IsNone() && obs.DNSLookupFailure.Unwrap() == "" {
-			delete(state, domain)
-			continue
-		}
-
-		// clear the state if the TH succeded
-		if !obs.ControlDNSLookupFailure.IsNone() && obs.ControlDNSLookupFailure.Unwrap() == "" {
-			runtimex.Assert(domain == obs.ControlDNSDomain.Unwrap(), "mismatch between domain names")
-			delete(state, domain)
-			continue
-		}
-	}
-
-	// note that optional.Some constructs None if state is nil
-	wa.DNSPossiblyNonexistingDomains = optional.Some(state)
 }

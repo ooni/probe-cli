@@ -29,8 +29,5 @@
   "HTTPFinalResponseDiffBodyProportionFactor": null,
   "HTTPFinalResponseDiffStatusCodeMatch": null,
   "HTTPFinalResponseDiffTitleDifferentLongWords": null,
-  "HTTPFinalResponseDiffUncommonHeadersIntersection": null,
-  "DNSPossiblyNonexistingDomains": {
-    "www.example.xyz": true
-  }
+  "HTTPFinalResponseDiffUncommonHeadersIntersection": null
 }

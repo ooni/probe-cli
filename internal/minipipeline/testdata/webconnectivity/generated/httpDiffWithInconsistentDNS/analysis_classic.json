@@ -35,6 +35,5 @@
     "default": true,
     "denied": true
   },
-  "HTTPFinalResponseDiffUncommonHeadersIntersection": {},
-  "DNSPossiblyNonexistingDomains": null
+  "HTTPFinalResponseDiffUncommonHeadersIntersection": {}
 }
