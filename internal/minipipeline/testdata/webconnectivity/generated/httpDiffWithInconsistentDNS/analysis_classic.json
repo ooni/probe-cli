@@ -1,9 +1,16 @@
 {
   "DNSLookupSuccessWithInvalidAddresses": [],
+  "DNSLookupSuccessWithValidAddress": [
+    2
+  ],
   "DNSLookupSuccessWithInvalidAddressesClassic": [
     2
   ],
+  "DNSLookupSuccessWithValidAddressClassic": [],
   "DNSLookupUnexpectedFailure": [],
+  "DNSExperimentFailure": null,
+  "DNSLookupExpectedFailure": [],
+  "DNSLookupExpectedSuccess": [],
   "TCPConnectUnexpectedFailure": [],
   "TCPConnectUnexpectedFailureDuringWebFetch": [],
   "TCPConnectUnexpectedFailureDuringConnectivityCheck": [],
@@ -19,15 +26,15 @@
   "HTTPRoundTripUnexpectedFailure": [],
   "HTTPFinalResponseSuccessTLSWithoutControl": null,
   "HTTPFinalResponseSuccessTLSWithControl": null,
+  "HTTPFinalResponseSuccessTCPWithoutControl": null,
   "HTTPFinalResponseSuccessTCPWithControl": 3,
-  "HTTPDiffBodyProportionFactor": 0.12263535551206783,
-  "HTTPDiffStatusCodeMatch": true,
-  "HTTPDiffTitleDifferentLongWords": {
+  "HTTPFinalResponseDiffBodyProportionFactor": 0.12263535551206783,
+  "HTTPFinalResponseDiffStatusCodeMatch": true,
+  "HTTPFinalResponseDiffTitleDifferentLongWords": {
     "access": true,
     "default": true,
     "denied": true
   },
-  "HTTPDiffUncommonHeadersIntersection": {},
-  "DNSExperimentFailure": null,
+  "HTTPFinalResponseDiffUncommonHeadersIntersection": {},
   "DNSPossiblyNonexistingDomains": null
 }
