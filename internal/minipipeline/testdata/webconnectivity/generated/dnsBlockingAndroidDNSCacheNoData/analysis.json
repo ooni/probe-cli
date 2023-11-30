@@ -17,8 +17,9 @@
   "TLSHandshakeUnexplainedFailureDuringWebFetch": [],
   "TLSHandshakeUnexplainedFailureDuringConnectivityCheck": [],
   "HTTPRoundTripUnexpectedFailure": [],
-  "DNSExperimentFailure": "android_dns_cache_no_data",
-  "DNSPossiblyNonexistingDomains": {},
+  "HTTPFinalResponseSuccessTLSWithoutControl": null,
+  "HTTPFinalResponseSuccessTLSWithControl": 3,
+  "HTTPFinalResponseSuccessTCPWithControl": null,
   "HTTPDiffBodyProportionFactor": 1,
   "HTTPDiffStatusCodeMatch": true,
   "HTTPDiffTitleDifferentLongWords": {},
@@ -26,10 +27,6 @@
     "alt-svc": true,
     "content-length": true
   },
-  "HTTPFinalResponsesWithControl": {
-    "3": true
-  },
-  "HTTPFinalResponsesWithTLS": {
-    "3": true
-  }
+  "DNSExperimentFailure": "android_dns_cache_no_data",
+  "DNSPossiblyNonexistingDomains": {}
 }

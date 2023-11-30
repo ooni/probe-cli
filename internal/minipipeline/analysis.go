@@ -17,16 +17,10 @@ func AnalyzeWebObservations(container *WebObservationsContainer) *WebAnalysis {
 	analysis.tcpComputeMetrics(container)
 	analysis.tlsComputeMetrics(container)
 	analysis.httpComputeFailureMetrics(container)
+	analysis.httpComputeFinalResponseMetrics(container)
 
 	analysis.ComputeDNSExperimentFailure(container)
 	analysis.ComputeDNSPossiblyNonexistingDomains(container)
-
-	analysis.ComputeHTTPDiffBodyProportionFactor(container)
-	analysis.ComputeHTTPDiffStatusCodeMatch(container)
-	analysis.ComputeHTTPDiffUncommonHeadersIntersection(container)
-	analysis.ComputeHTTPDiffTitleDifferentLongWords(container)
-	analysis.ComputeHTTPFinalResponsesWithControl(container)
-	analysis.ComputeHTTPFinalResponsesWithTLS(container)
 
 	return analysis
 }
@@ -93,6 +87,31 @@ type WebAnalysis struct {
 	// HTTPRoundTripUnexpectedFailure contains HTTP endpoint transactions with unexpected failures.
 	HTTPRoundTripUnexpectedFailure Set[int64]
 
+	// HTTPFinalResponseSuccessTLSWithoutControl contains the ID of the final response
+	// transaction when the final response succeeded without control and with TLS.
+	HTTPFinalResponseSuccessTLSWithoutControl optional.Value[int64]
+
+	// HTTPFinalResponseSuccessTLSWithControl contains the ID of the final response
+	// transaction when the final response succeeded with control and with TLS.
+	HTTPFinalResponseSuccessTLSWithControl optional.Value[int64]
+
+	// HTTPFinalResponseSuccessTCPWithControl contains the ID of the final response
+	// transaction when the final response succeeded with control and with TCP.
+	HTTPFinalResponseSuccessTCPWithControl optional.Value[int64]
+
+	// HTTPDiffBodyProportionFactor is the body proportion factor.
+	HTTPDiffBodyProportionFactor optional.Value[float64]
+
+	// HTTPDiffStatusCodeMatch returns whether the status code matches.
+	HTTPDiffStatusCodeMatch optional.Value[bool]
+
+	// HTTPDiffTitleDifferentLongWords contains the words long 5+ characters that appear
+	// in the probe's "final" response title or in the TH title but not in both.
+	HTTPDiffTitleDifferentLongWords optional.Value[map[string]bool]
+
+	// HTTPDiffUncommonHeadersIntersection contains the uncommon headers intersection.
+	HTTPDiffUncommonHeadersIntersection optional.Value[map[string]bool]
+
 	// TODO(bassosimone): there are probably redundant metrics from this point on
 
 	// DNSExperimentFailure is the first failure experienced by a getaddrinfo-like resolver.
@@ -101,38 +120,6 @@ type WebAnalysis struct {
 	// DNSPossiblyNonexistingDomains lists all the domains for which both
 	// the probe and the TH failed to perform DNS lookups.
 	DNSPossiblyNonexistingDomains optional.Value[map[string]bool]
-
-	// HTTPDiffBodyProportionFactor is the body proportion factor.
-	//
-	// The generation algorithm assumes there's a single "final" response.
-	HTTPDiffBodyProportionFactor optional.Value[float64]
-
-	// HTTPDiffStatusCodeMatch returns whether the status code matches.
-	//
-	// The generation algorithm assumes there's a single "final" response.
-	HTTPDiffStatusCodeMatch optional.Value[bool]
-
-	// HTTPDiffTitleDifferentLongWords contains the words long 5+ characters that appear
-	// in the probe's "final" response title or in the TH title but not in both.
-	//
-	// The generation algorithm assumes there's a single "final" response.
-	HTTPDiffTitleDifferentLongWords optional.Value[map[string]bool]
-
-	// HTTPDiffUncommonHeadersIntersection contains the uncommon headers intersection.
-	//
-	// The generation algorithm assumes there's a single "final" response.
-	HTTPDiffUncommonHeadersIntersection optional.Value[map[string]bool]
-
-	// HTTPFinalResponsesWithControl contains the transaction IDs of "final" responses (i.e.,
-	// responses that are like 2xx, 4xx, or 5xx) for which we also have a valid HTTP control
-	// measurement. Typically, we expect to have a single response that is final when
-	// analyzing Web Connectivity LTE results.
-	HTTPFinalResponsesWithControl optional.Value[map[int64]bool]
-
-	// HTTPFinalResponsesWithTLS is like HTTPFinalResponses but only includes the
-	// cases where we're using TLS to fetch the final response, and does not concern
-	// itself with whether there's control data, because TLS suffices.
-	HTTPFinalResponsesWithTLS optional.Value[map[int64]bool]
 }
 
 func (wa *WebAnalysis) dnsComputeSuccessMetrics(c *WebObservationsContainer) {
@@ -433,6 +420,130 @@ func (wa *WebAnalysis) httpComputeFailureMetrics(c *WebObservationsContainer) {
 	}
 }
 
+func (wa *WebAnalysis) httpComputeFinalResponseMetrics(c *WebObservationsContainer) {
+	for _, obs := range c.KnownTCPEndpoints {
+		// we need a final HTTP response
+		if obs.HTTPResponseIsFinal.IsNone() || !obs.HTTPResponseIsFinal.Unwrap() {
+			continue
+		}
+
+		// stop after processing the first final response (there's at most
+		// one when we're analyzing LTE results)
+		wa.httpHandleFinalResponse(obs)
+	}
+}
+
+func (wa *WebAnalysis) httpHandleFinalResponse(obs *WebObservation) {
+	// handle the case where there's no control
+	if obs.ControlHTTPFailure.IsNone() {
+		if !obs.TLSHandshakeFailure.IsNone() && obs.TLSHandshakeFailure.Unwrap() == "" {
+			wa.HTTPFinalResponseSuccessTLSWithoutControl = obs.EndpointTransactionID
+			return
+		}
+		return
+	}
+
+	// count and classify the number of final responses with control
+	if !obs.TLSHandshakeFailure.IsNone() {
+		runtimex.Assert(obs.TLSHandshakeFailure.Unwrap() == "", "expected to see TLS handshake success here")
+		wa.HTTPFinalResponseSuccessTLSWithControl = obs.EndpointTransactionID
+	} else {
+		wa.HTTPFinalResponseSuccessTCPWithControl = obs.EndpointTransactionID
+	}
+
+	// compute the HTTPDiff metrics
+	wa.httpDiffBodyProportionFactor(obs)
+	wa.httpDiffStatusCodeMatch(obs)
+	wa.httpDiffUncommonHeadersIntersection(obs)
+	wa.httpDiffTitleDifferentLongWords(obs)
+}
+
+func (wa *WebAnalysis) httpDiffBodyProportionFactor(obs *WebObservation) {
+	// we should only perform the comparison for a final response
+	if !obs.HTTPResponseIsFinal.UnwrapOr(false) {
+		return
+	}
+
+	// we need a valid body length and the body must not be truncated
+	measurement := obs.HTTPResponseBodyLength.UnwrapOr(0)
+	if measurement <= 0 || obs.HTTPResponseBodyIsTruncated.UnwrapOr(true) {
+		return
+	}
+
+	// we also need a valid control body length
+	control := obs.ControlHTTPResponseBodyLength.UnwrapOr(0)
+	if control <= 0 {
+		return
+	}
+
+	// compute the body proportion factor and update the state
+	proportion := ComputeHTTPDiffBodyProportionFactor(measurement, control)
+	wa.HTTPDiffBodyProportionFactor = optional.Some(proportion)
+}
+
+func (wa *WebAnalysis) httpDiffStatusCodeMatch(obs *WebObservation) {
+	// we should only perform the comparison for a final response
+	if !obs.HTTPResponseIsFinal.UnwrapOr(false) {
+		return
+	}
+
+	// we need a positive status code for both
+	measurement := obs.HTTPResponseStatusCode.UnwrapOr(0)
+	if measurement <= 0 {
+		return
+	}
+	control := obs.ControlHTTPResponseStatusCode.UnwrapOr(0)
+	if control <= 0 {
+		return
+	}
+
+	// update state
+	wa.HTTPDiffStatusCodeMatch = ComputeHTTPDiffStatusCodeMatch(measurement, control)
+}
+
+func (wa *WebAnalysis) httpDiffUncommonHeadersIntersection(obs *WebObservation) {
+	// we should only perform the comparison for a final response
+	if !obs.HTTPResponseIsFinal.UnwrapOr(false) {
+		return
+	}
+
+	// We should only perform the comparison if we have valid control data. Because
+	// the headers could legitimately be empty, let's use the status code here.
+	if obs.ControlHTTPResponseStatusCode.UnwrapOr(0) <= 0 {
+		return
+	}
+
+	// Implementation note: here we need to continue running when either
+	// headers are empty in order to produce an empty intersection. If we'd stop
+	// after noticing that either dictionary is empty, we'd produce a nil
+	// analysis result, which causes QA differences with v0.4.
+	measurement := obs.HTTPResponseHeadersKeys.UnwrapOr(nil)
+	control := obs.ControlHTTPResponseHeadersKeys.UnwrapOr(nil)
+
+	state := ComputeHTTPDiffUncommonHeadersIntersection(measurement, control)
+	wa.HTTPDiffUncommonHeadersIntersection = optional.Some(state)
+}
+
+func (wa *WebAnalysis) httpDiffTitleDifferentLongWords(obs *WebObservation) {
+	// we should only perform the comparison for a final response
+	if !obs.HTTPResponseIsFinal.UnwrapOr(false) {
+		return
+	}
+
+	// We should only perform the comparison if we have valid control data. Because
+	// the title could legitimately be empty, let's use the status code here.
+	if obs.ControlHTTPResponseStatusCode.UnwrapOr(0) <= 0 {
+		return
+	}
+
+	measurement := obs.HTTPResponseTitle.UnwrapOr("")
+	control := obs.ControlHTTPResponseTitle.UnwrapOr("")
+
+	state := ComputeHTTPDiffTitleDifferentLongWords(measurement, control)
+
+	wa.HTTPDiffTitleDifferentLongWords = optional.Some(state)
+}
+
 // ComputeDNSExperimentFailure computes the DNSExperimentFailure field.
 func (wa *WebAnalysis) ComputeDNSExperimentFailure(c *WebObservationsContainer) {
 
@@ -535,201 +646,4 @@ func (wa *WebAnalysis) ComputeDNSPossiblyNonexistingDomains(c *WebObservationsCo
 
 	// note that optional.Some constructs None if state is nil
 	wa.DNSPossiblyNonexistingDomains = optional.Some(state)
-}
-
-// ComputeHTTPDiffBodyProportionFactor computes the HTTPDiffBodyProportionFactor field.
-func (wa *WebAnalysis) ComputeHTTPDiffBodyProportionFactor(c *WebObservationsContainer) {
-	for _, obs := range c.KnownTCPEndpoints {
-		// we should only perform the comparison for a final response
-		if !obs.HTTPResponseIsFinal.UnwrapOr(false) {
-			continue
-		}
-
-		// we need a valid body length and the body must not be truncated
-		measurement := obs.HTTPResponseBodyLength.UnwrapOr(0)
-		if measurement <= 0 || obs.HTTPResponseBodyIsTruncated.UnwrapOr(true) {
-			continue
-		}
-
-		// we also need a valid control body length
-		control := obs.ControlHTTPResponseBodyLength.UnwrapOr(0)
-		if control <= 0 {
-			continue
-		}
-
-		// compute the body proportion factor and update the state
-		proportion := ComputeHTTPDiffBodyProportionFactor(measurement, control)
-		wa.HTTPDiffBodyProportionFactor = optional.Some(proportion)
-
-		// Implementation note: we only process the first observation that matches.
-		//
-		// This is fine(TM) as long as we have a single "final" response.
-		break
-	}
-}
-
-// ComputeHTTPDiffStatusCodeMatch computes the HTTPDiffStatusCodeMatch field.
-func (wa *WebAnalysis) ComputeHTTPDiffStatusCodeMatch(c *WebObservationsContainer) {
-	for _, obs := range c.KnownTCPEndpoints {
-		// we should only perform the comparison for a final response
-		if !obs.HTTPResponseIsFinal.UnwrapOr(false) {
-			continue
-		}
-
-		// we need a positive status code for both
-		measurement := obs.HTTPResponseStatusCode.UnwrapOr(0)
-		if measurement <= 0 {
-			continue
-		}
-		control := obs.ControlHTTPResponseStatusCode.UnwrapOr(0)
-		if control <= 0 {
-			continue
-		}
-
-		// update state
-		wa.HTTPDiffStatusCodeMatch = ComputeHTTPDiffStatusCodeMatch(measurement, control)
-
-		// Implementation note: we only process the first observation that matches.
-		//
-		// This is fine(TM) as long as we have a single "final" request.
-		break
-	}
-}
-
-// ComputeHTTPDiffUncommonHeadersIntersection computes the HTTPDiffUncommonHeadersIntersection field.
-func (wa *WebAnalysis) ComputeHTTPDiffUncommonHeadersIntersection(c *WebObservationsContainer) {
-	for _, obs := range c.KnownTCPEndpoints {
-		// we should only perform the comparison for a final response
-		if !obs.HTTPResponseIsFinal.UnwrapOr(false) {
-			continue
-		}
-
-		// We should only perform the comparison if we have valid control data. Because
-		// the headers could legitimately be empty, let's use the status code here.
-		if obs.ControlHTTPResponseStatusCode.UnwrapOr(0) <= 0 {
-			continue
-		}
-
-		// Implementation note: here we need to continue running when either
-		// headers are empty in order to produce an empty intersection. If we'd stop
-		// after noticing that either dictionary is empty, we'd produce a nil
-		// analysis result, which causes QA differences with v0.4.
-		measurement := obs.HTTPResponseHeadersKeys.UnwrapOr(nil)
-		control := obs.ControlHTTPResponseHeadersKeys.UnwrapOr(nil)
-
-		state := ComputeHTTPDiffUncommonHeadersIntersection(measurement, control)
-
-		// Implementation note: we only process the first observation that matches.
-		//
-		// This is fine(TM) as long as we have a single "final" request.
-		wa.HTTPDiffUncommonHeadersIntersection = optional.Some(state)
-		break
-	}
-}
-
-// ComputeHTTPDiffTitleDifferentLongWords computes the HTTPDiffTitleDifferentLongWords field.
-func (wa *WebAnalysis) ComputeHTTPDiffTitleDifferentLongWords(c *WebObservationsContainer) {
-	for _, obs := range c.KnownTCPEndpoints {
-		// we should only perform the comparison for a final response
-		if !obs.HTTPResponseIsFinal.UnwrapOr(false) {
-			continue
-		}
-
-		// We should only perform the comparison if we have valid control data. Because
-		// the title could legitimately be empty, let's use the status code here.
-		if obs.ControlHTTPResponseStatusCode.UnwrapOr(0) <= 0 {
-			continue
-		}
-
-		measurement := obs.HTTPResponseTitle.UnwrapOr("")
-		control := obs.ControlHTTPResponseTitle.UnwrapOr("")
-
-		state := ComputeHTTPDiffTitleDifferentLongWords(measurement, control)
-
-		// Implementation note: we only process the first observation that matches.
-		//
-		// This is fine(TM) as long as we have a single "final" request.
-		wa.HTTPDiffTitleDifferentLongWords = optional.Some(state)
-		break
-	}
-}
-
-// ComputeHTTPFinalResponsesWithControl computes the HTTPFinalResponses field.
-func (wa *WebAnalysis) ComputeHTTPFinalResponsesWithControl(c *WebObservationsContainer) {
-	var state map[int64]bool
-
-	for _, obs := range c.KnownTCPEndpoints {
-		// skip this entry if we don't know the transaction ID
-		txid := obs.EndpointTransactionID.UnwrapOr(0)
-		if txid <= 0 {
-			continue
-		}
-
-		// skip this entry if it's not final
-		isFinal := obs.HTTPResponseIsFinal.UnwrapOr(false)
-		if !isFinal {
-			continue
-		}
-
-		// skip this entry if don't have control information
-		if obs.ControlHTTPFailure.IsNone() {
-			continue
-		}
-
-		// flip state from None to empty when we have seen the first final
-		// response for which we have valid control info
-		if state == nil {
-			state = make(map[int64]bool)
-		}
-
-		// skip in case the HTTP control failed
-		if obs.ControlHTTPFailure.Unwrap() != "" {
-			continue
-		}
-
-		state[txid] = true
-	}
-
-	// note that optional.Some constructs None if state is nil
-	wa.HTTPFinalResponsesWithControl = optional.Some(state)
-}
-
-// ComputeHTTPFinalResponsesWithTLS computes the HTTPFinalResponsesWithTLS field.
-func (wa *WebAnalysis) ComputeHTTPFinalResponsesWithTLS(c *WebObservationsContainer) {
-	var state map[int64]bool
-
-	for _, obs := range c.KnownTCPEndpoints {
-		// skip this entry if we don't know the transaction ID
-		txid := obs.EndpointTransactionID.UnwrapOr(0)
-		if txid <= 0 {
-			continue
-		}
-
-		// skip this entry if it's not final
-		isFinal := obs.HTTPResponseIsFinal.UnwrapOr(false)
-		if !isFinal {
-			continue
-		}
-
-		// skip this entry if we didn't try a TLS handshake
-		if obs.TLSHandshakeFailure.IsNone() {
-			continue
-		}
-
-		// flip the state from None to empty when we have an endpoint
-		// for which we attempted a TLS handshake
-		if state == nil {
-			state = make(map[int64]bool)
-		}
-
-		// skip in case the TLS handshake failed
-		if obs.TLSHandshakeFailure.Unwrap() != "" {
-			continue
-		}
-
-		state[txid] = true
-	}
-
-	// note that optional.Some constructs None if state is nil
-	wa.HTTPFinalResponsesWithTLS = optional.Some(state)
 }

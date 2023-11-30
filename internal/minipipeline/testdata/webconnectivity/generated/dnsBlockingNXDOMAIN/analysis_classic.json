@@ -17,12 +17,13 @@
   "TLSHandshakeUnexplainedFailureDuringWebFetch": [],
   "TLSHandshakeUnexplainedFailureDuringConnectivityCheck": [],
   "HTTPRoundTripUnexpectedFailure": [],
-  "DNSExperimentFailure": "dns_nxdomain_error",
-  "DNSPossiblyNonexistingDomains": {},
+  "HTTPFinalResponseSuccessTLSWithoutControl": null,
+  "HTTPFinalResponseSuccessTLSWithControl": null,
+  "HTTPFinalResponseSuccessTCPWithControl": null,
   "HTTPDiffBodyProportionFactor": null,
   "HTTPDiffStatusCodeMatch": null,
   "HTTPDiffTitleDifferentLongWords": null,
   "HTTPDiffUncommonHeadersIntersection": null,
-  "HTTPFinalResponsesWithControl": null,
-  "HTTPFinalResponsesWithTLS": null
+  "DNSExperimentFailure": "dns_nxdomain_error",
+  "DNSPossiblyNonexistingDomains": {}
 }

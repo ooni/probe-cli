@@ -15,8 +15,9 @@
   "TLSHandshakeUnexplainedFailureDuringWebFetch": [],
   "TLSHandshakeUnexplainedFailureDuringConnectivityCheck": [],
   "HTTPRoundTripUnexpectedFailure": [],
-  "DNSExperimentFailure": null,
-  "DNSPossiblyNonexistingDomains": {},
+  "HTTPFinalResponseSuccessTLSWithoutControl": null,
+  "HTTPFinalResponseSuccessTLSWithControl": null,
+  "HTTPFinalResponseSuccessTCPWithControl": 3,
   "HTTPDiffBodyProportionFactor": 0.12263535551206783,
   "HTTPDiffStatusCodeMatch": true,
   "HTTPDiffTitleDifferentLongWords": {
@@ -25,8 +26,6 @@
     "denied": true
   },
   "HTTPDiffUncommonHeadersIntersection": {},
-  "HTTPFinalResponsesWithControl": {
-    "3": true
-  },
-  "HTTPFinalResponsesWithTLS": null
+  "DNSExperimentFailure": null,
+  "DNSPossiblyNonexistingDomains": {}
 }

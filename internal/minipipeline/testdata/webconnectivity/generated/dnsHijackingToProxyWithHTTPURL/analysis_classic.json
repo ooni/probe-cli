@@ -17,16 +17,15 @@
   "TLSHandshakeUnexplainedFailureDuringWebFetch": [],
   "TLSHandshakeUnexplainedFailureDuringConnectivityCheck": [],
   "HTTPRoundTripUnexpectedFailure": [],
-  "DNSExperimentFailure": null,
-  "DNSPossiblyNonexistingDomains": null,
+  "HTTPFinalResponseSuccessTLSWithoutControl": null,
+  "HTTPFinalResponseSuccessTLSWithControl": null,
+  "HTTPFinalResponseSuccessTCPWithControl": 3,
   "HTTPDiffBodyProportionFactor": 1,
   "HTTPDiffStatusCodeMatch": true,
   "HTTPDiffTitleDifferentLongWords": {},
   "HTTPDiffUncommonHeadersIntersection": {
     "content-length": true
   },
-  "HTTPFinalResponsesWithControl": {
-    "3": true
-  },
-  "HTTPFinalResponsesWithTLS": null
+  "DNSExperimentFailure": null,
+  "DNSPossiblyNonexistingDomains": null
 }
