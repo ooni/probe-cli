@@ -1,8 +1,8 @@
 {
+  "DNSLookupSuccessWithInvalidAddresses": [],
+  "DNSLookupSuccessWithInvalidAddressesClassic": [],
   "DNSExperimentFailure": "dns_nxdomain_error",
-  "DNSTransactionsWithBogons": null,
   "DNSTransactionsWithUnexpectedFailures": {},
-  "DNSPossiblyInvalidAddrsClassic": null,
   "DNSPossiblyNonexistingDomains": {
     "www.example.xyz": true
   },
