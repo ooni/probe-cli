@@ -29,6 +29,5 @@
   "HTTPFinalResponsesWithControl": {
     "3": true
   },
-  "HTTPFinalResponsesWithTLS": null,
-  "TCPTransactionsWithUnexplainedUnexpectedFailures": null
+  "HTTPFinalResponsesWithTLS": null
 }

@@ -29,6 +29,5 @@
   },
   "HTTPFinalResponsesWithTLS": {
     "8": true
-  },
-  "TCPTransactionsWithUnexplainedUnexpectedFailures": null
+  }
 }

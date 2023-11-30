@@ -22,6 +22,5 @@
   "HTTPDiffTitleDifferentLongWords": null,
   "HTTPDiffUncommonHeadersIntersection": null,
   "HTTPFinalResponsesWithControl": null,
-  "HTTPFinalResponsesWithTLS": null,
-  "TCPTransactionsWithUnexplainedUnexpectedFailures": null
+  "HTTPFinalResponsesWithTLS": null
 }
