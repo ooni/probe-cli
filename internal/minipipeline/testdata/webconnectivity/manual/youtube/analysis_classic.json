@@ -36,6 +36,5 @@
     "origin-trial": true,
     "permissions-policy": true,
     "report-to": true
-  },
-  "DNSPossiblyNonexistingDomains": null
+  }
 }
