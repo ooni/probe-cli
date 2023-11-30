@@ -41,10 +41,16 @@ func (tk *TestKeys) analysisClassic(logger model.Logger) {
 	// 4. determine the DNS consistency
 	tk.DNSConsistency = analysisClassicDNSConsistency(woa)
 
-	// 5. compute the HTTPDiff values
+	// 5. set DNSExperimentFailure
+	if !woa.DNSExperimentFailure.IsNone() && woa.DNSExperimentFailure.Unwrap() != "" {
+		value := woa.DNSExperimentFailure.Unwrap()
+		tk.DNSExperimentFailure = &value
+	}
+
+	// 6. compute the HTTPDiff values
 	tk.setHTTPDiffValues(woa)
 
-	// 6. compute blocking & accessible
+	// 7. compute blocking & accessible
 	analysisClassicComputeBlockingAccessible(woa, tk)
 }
 
