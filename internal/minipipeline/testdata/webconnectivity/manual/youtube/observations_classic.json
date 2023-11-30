@@ -54,8 +54,6 @@
         "2607:f8b0:400b:80f::200e"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -116,8 +114,6 @@
         "2607:f8b0:400b:80f::200e"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -178,8 +174,6 @@
         "2607:f8b0:400b:80f::200e"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -240,8 +234,6 @@
         "2607:f8b0:400b:80f::200e"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -302,8 +294,6 @@
         "2607:f8b0:400b:80f::200e"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -364,8 +354,6 @@
         "2607:f8b0:400b:80f::200e"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -426,8 +414,6 @@
         "2607:f8b0:400b:80f::200e"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -488,8 +474,6 @@
         "2607:f8b0:400b:80f::200e"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -550,8 +534,6 @@
         "2607:f8b0:400b:80f::200e"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -612,8 +594,6 @@
         "2607:f8b0:400b:80f::200e"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -670,8 +650,6 @@
         "2607:f8b0:400b:80f::200e"
       ],
       "ControlTCPConnectFailure": "",
-      "MatchWithControlIPAddress": false,
-      "MatchWithControlIPAddressASN": true,
       "ControlTLSHandshakeFailure": "",
       "ControlHTTPFailure": "",
       "ControlHTTPResponseStatusCode": 200,
@@ -748,8 +726,6 @@
         "2607:f8b0:400b:80f::200e"
       ],
       "ControlTCPConnectFailure": "",
-      "MatchWithControlIPAddress": false,
-      "MatchWithControlIPAddressASN": true,
       "ControlTLSHandshakeFailure": "",
       "ControlHTTPFailure": "",
       "ControlHTTPResponseStatusCode": 200,
@@ -826,8 +802,6 @@
         "2607:f8b0:400b:80f::200e"
       ],
       "ControlTCPConnectFailure": "",
-      "MatchWithControlIPAddress": false,
-      "MatchWithControlIPAddressASN": true,
       "ControlTLSHandshakeFailure": "",
       "ControlHTTPFailure": "",
       "ControlHTTPResponseStatusCode": 200,
@@ -906,8 +880,6 @@
         "2607:f8b0:400b:80f::200e"
       ],
       "ControlTCPConnectFailure": "",
-      "MatchWithControlIPAddress": false,
-      "MatchWithControlIPAddressASN": true,
       "ControlTLSHandshakeFailure": "",
       "ControlHTTPFailure": "",
       "ControlHTTPResponseStatusCode": 200,
@@ -986,8 +958,6 @@
         "2607:f8b0:400b:80f::200e"
       ],
       "ControlTCPConnectFailure": "",
-      "MatchWithControlIPAddress": false,
-      "MatchWithControlIPAddressASN": true,
       "ControlTLSHandshakeFailure": "",
       "ControlHTTPFailure": "",
       "ControlHTTPResponseStatusCode": 200,
@@ -1064,8 +1034,6 @@
         "2607:f8b0:400b:80f::200e"
       ],
       "ControlTCPConnectFailure": "",
-      "MatchWithControlIPAddress": false,
-      "MatchWithControlIPAddressASN": true,
       "ControlTLSHandshakeFailure": "",
       "ControlHTTPFailure": "",
       "ControlHTTPResponseStatusCode": 200,
@@ -1144,8 +1112,6 @@
         "2607:f8b0:400b:80f::200e"
       ],
       "ControlTCPConnectFailure": "",
-      "MatchWithControlIPAddress": false,
-      "MatchWithControlIPAddressASN": true,
       "ControlTLSHandshakeFailure": "",
       "ControlHTTPFailure": "",
       "ControlHTTPResponseStatusCode": 200,
@@ -1224,8 +1190,6 @@
         "2607:f8b0:400b:80f::200e"
       ],
       "ControlTCPConnectFailure": "",
-      "MatchWithControlIPAddress": false,
-      "MatchWithControlIPAddressASN": true,
       "ControlTLSHandshakeFailure": "",
       "ControlHTTPFailure": "",
       "ControlHTTPResponseStatusCode": 200,
@@ -1304,8 +1268,6 @@
         "2607:f8b0:400b:80f::200e"
       ],
       "ControlTCPConnectFailure": "",
-      "MatchWithControlIPAddress": false,
-      "MatchWithControlIPAddressASN": true,
       "ControlTLSHandshakeFailure": "",
       "ControlHTTPFailure": "",
       "ControlHTTPResponseStatusCode": 200,
@@ -1405,8 +1367,6 @@
         "2607:f8b0:400b:80f::200e"
       ],
       "ControlTCPConnectFailure": "",
-      "MatchWithControlIPAddress": false,
-      "MatchWithControlIPAddressASN": true,
       "ControlTLSHandshakeFailure": "",
       "ControlHTTPFailure": "",
       "ControlHTTPResponseStatusCode": 200,

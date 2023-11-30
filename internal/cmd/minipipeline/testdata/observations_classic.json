@@ -37,8 +37,6 @@
         "130.192.16.171"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -99,8 +97,6 @@
         "130.192.16.171"
       ],
       "ControlTCPConnectFailure": "",
-      "MatchWithControlIPAddress": true,
-      "MatchWithControlIPAddressASN": true,
       "ControlTLSHandshakeFailure": "",
       "ControlHTTPFailure": "",
       "ControlHTTPResponseStatusCode": 200,

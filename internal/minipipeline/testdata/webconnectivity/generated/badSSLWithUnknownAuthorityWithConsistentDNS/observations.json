@@ -34,8 +34,6 @@
         "104.154.89.105"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -77,8 +75,6 @@
         "104.154.89.105"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -124,8 +120,6 @@
         "104.154.89.105"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -169,8 +163,6 @@
         "104.154.89.105"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -214,8 +206,6 @@
         "104.154.89.105"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -261,8 +251,6 @@
         "104.154.89.105"
       ],
       "ControlTCPConnectFailure": "",
-      "MatchWithControlIPAddress": true,
-      "MatchWithControlIPAddressASN": true,
       "ControlTLSHandshakeFailure": "ssl_unknown_authority",
       "ControlHTTPFailure": "unknown_error",
       "ControlHTTPResponseStatusCode": null,

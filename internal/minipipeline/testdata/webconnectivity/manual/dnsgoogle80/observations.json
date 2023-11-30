@@ -43,8 +43,6 @@
         "8.8.8.8"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -94,8 +92,6 @@
         "8.8.8.8"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -145,8 +141,6 @@
         "8.8.8.8"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -196,8 +190,6 @@
         "8.8.8.8"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -245,8 +237,6 @@
         "8.8.8.8"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -294,8 +284,6 @@
         "8.8.8.8"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -343,8 +331,6 @@
         "8.8.8.8"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -392,8 +378,6 @@
         "8.8.8.8"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -441,8 +425,6 @@
         "8.8.8.8"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -490,8 +472,6 @@
         "8.8.8.8"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -539,8 +519,6 @@
         "8.8.8.8"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -588,8 +566,6 @@
         "8.8.8.8"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -641,8 +617,6 @@
         "8.8.8.8"
       ],
       "ControlTCPConnectFailure": "",
-      "MatchWithControlIPAddress": true,
-      "MatchWithControlIPAddressASN": true,
       "ControlTLSHandshakeFailure": "",
       "ControlHTTPFailure": "generic_timeout_error",
       "ControlHTTPResponseStatusCode": null,
@@ -692,8 +666,6 @@
         "8.8.8.8"
       ],
       "ControlTCPConnectFailure": "",
-      "MatchWithControlIPAddress": true,
-      "MatchWithControlIPAddressASN": true,
       "ControlTLSHandshakeFailure": "",
       "ControlHTTPFailure": "generic_timeout_error",
       "ControlHTTPResponseStatusCode": null,
@@ -743,8 +715,6 @@
         "8.8.8.8"
       ],
       "ControlTCPConnectFailure": "generic_timeout_error",
-      "MatchWithControlIPAddress": true,
-      "MatchWithControlIPAddressASN": true,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": "generic_timeout_error",
       "ControlHTTPResponseStatusCode": null,
@@ -794,8 +764,6 @@
         "8.8.8.8"
       ],
       "ControlTCPConnectFailure": "generic_timeout_error",
-      "MatchWithControlIPAddress": true,
-      "MatchWithControlIPAddressASN": true,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": "generic_timeout_error",
       "ControlHTTPResponseStatusCode": null,
@@ -845,8 +813,6 @@
         "8.8.8.8"
       ],
       "ControlTCPConnectFailure": "generic_timeout_error",
-      "MatchWithControlIPAddress": true,
-      "MatchWithControlIPAddressASN": true,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": "generic_timeout_error",
       "ControlHTTPResponseStatusCode": null,
@@ -896,8 +862,6 @@
         "8.8.8.8"
       ],
       "ControlTCPConnectFailure": "generic_timeout_error",
-      "MatchWithControlIPAddress": true,
-      "MatchWithControlIPAddressASN": true,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": "generic_timeout_error",
       "ControlHTTPResponseStatusCode": null,
@@ -947,8 +911,6 @@
         "8.8.8.8"
       ],
       "ControlTCPConnectFailure": "",
-      "MatchWithControlIPAddress": true,
-      "MatchWithControlIPAddressASN": true,
       "ControlTLSHandshakeFailure": "",
       "ControlHTTPFailure": "generic_timeout_error",
       "ControlHTTPResponseStatusCode": null,
@@ -998,8 +960,6 @@
         "8.8.8.8"
       ],
       "ControlTCPConnectFailure": "",
-      "MatchWithControlIPAddress": true,
-      "MatchWithControlIPAddressASN": true,
       "ControlTLSHandshakeFailure": "",
       "ControlHTTPFailure": "generic_timeout_error",
       "ControlHTTPResponseStatusCode": null,
