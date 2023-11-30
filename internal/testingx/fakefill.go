@@ -68,13 +68,6 @@ func (ff *FakeFiller) getRandomInt64() int64 {
 	return rnd.Int63()
 }
 
-func (ff *FakeFiller) getRandomInt8() int64 {
-	defer ff.mu.Unlock()
-	ff.mu.Lock()
-	rnd := ff.getRandLocked()
-	return rnd.Int63n(255)
-}
-
 func (ff *FakeFiller) getRandomBool() bool {
 	defer ff.mu.Unlock()
 	ff.mu.Lock()
@@ -103,8 +96,6 @@ func (ff *FakeFiller) doFill(v reflect.Value) {
 		v.SetString(ff.getRandomString())
 	case reflect.Int64:
 		v.SetInt(ff.getRandomInt64())
-	case reflect.Int8:
-		v.SetInt(ff.getRandomInt8())
 	case reflect.Bool:
 		v.SetBool(ff.getRandomBool())
 	case reflect.Struct:

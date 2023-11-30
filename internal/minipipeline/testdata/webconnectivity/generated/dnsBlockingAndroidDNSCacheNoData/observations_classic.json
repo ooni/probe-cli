@@ -1,11 +1,6 @@
 {
   "DNSLookupFailures": [
     {
-      "TagDepth": 0,
-      "Type": 0,
-      "Failure": "android_dns_cache_no_data",
-      "TransactionID": 1,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "android_dns_cache_no_data",
@@ -31,6 +26,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": 0,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.example.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [

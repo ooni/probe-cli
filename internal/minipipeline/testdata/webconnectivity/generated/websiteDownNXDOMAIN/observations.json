@@ -1,11 +1,6 @@
 {
   "DNSLookupFailures": [
     {
-      "TagDepth": 0,
-      "Type": 0,
-      "Failure": "dns_nxdomain_error",
-      "TransactionID": 2,
-      "TagFetchBody": null,
       "DNSTransactionID": 2,
       "DNSDomain": "www.example.xyz",
       "DNSLookupFailure": "dns_nxdomain_error",
@@ -31,6 +26,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": 0,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.example.xyz",
       "ControlDNSLookupFailure": "dns_name_error",
       "ControlDNSResolvedAddrs": null,
@@ -43,11 +40,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": 0,
-      "Type": 0,
-      "Failure": "dns_nxdomain_error",
-      "TransactionID": 1,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "www.example.xyz",
       "DNSLookupFailure": "dns_nxdomain_error",
@@ -73,6 +65,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": 0,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.example.xyz",
       "ControlDNSLookupFailure": "dns_name_error",
       "ControlDNSResolvedAddrs": null,
@@ -85,11 +79,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": 0,
-      "Type": 0,
-      "Failure": "dns_nxdomain_error",
-      "TransactionID": 1,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "www.example.xyz",
       "DNSLookupFailure": "dns_nxdomain_error",
@@ -115,6 +104,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": 0,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.example.xyz",
       "ControlDNSLookupFailure": "dns_name_error",
       "ControlDNSResolvedAddrs": null,

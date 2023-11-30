@@ -1,11 +1,6 @@
 {
   "DNSLookupFailures": [
     {
-      "TagDepth": 0,
-      "Type": 0,
-      "Failure": "dns_no_answer",
-      "TransactionID": 2,
-      "TagFetchBody": null,
       "DNSTransactionID": 2,
       "DNSDomain": "wrong.host.badssl.com",
       "DNSLookupFailure": "dns_no_answer",
@@ -31,6 +26,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": 0,
+      "TagFetchBody": null,
       "ControlDNSDomain": "wrong.host.badssl.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -47,11 +44,6 @@
   ],
   "DNSLookupSuccesses": [
     {
-      "TagDepth": 0,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 1,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "wrong.host.badssl.com",
       "DNSLookupFailure": "",
@@ -79,6 +71,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": 0,
+      "TagFetchBody": null,
       "ControlDNSDomain": "wrong.host.badssl.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -93,11 +87,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": 0,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 2,
-      "TagFetchBody": null,
       "DNSTransactionID": 2,
       "DNSDomain": "wrong.host.badssl.com",
       "DNSLookupFailure": "",
@@ -125,6 +114,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": 0,
+      "TagFetchBody": null,
       "ControlDNSDomain": "wrong.host.badssl.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -141,11 +132,6 @@
   ],
   "KnownTCPEndpoints": {
     "3": {
-      "TagDepth": 0,
-      "Type": 2,
-      "Failure": "ssl_invalid_hostname",
-      "TransactionID": 3,
-      "TagFetchBody": true,
       "DNSTransactionID": 1,
       "DNSDomain": "wrong.host.badssl.com",
       "DNSLookupFailure": "",
@@ -173,6 +159,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": 0,
+      "TagFetchBody": true,
       "ControlDNSDomain": "wrong.host.badssl.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [

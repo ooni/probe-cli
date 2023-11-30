@@ -1,11 +1,6 @@
 {
   "DNSLookupFailures": [
     {
-      "TagDepth": 0,
-      "Type": 0,
-      "Failure": "dns_nxdomain_error",
-      "TransactionID": 2,
-      "TagFetchBody": null,
       "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_nxdomain_error",
@@ -31,6 +26,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": 0,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.example.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [

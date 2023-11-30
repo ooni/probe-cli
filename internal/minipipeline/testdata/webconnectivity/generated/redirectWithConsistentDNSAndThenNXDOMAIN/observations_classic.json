@@ -1,11 +1,6 @@
 {
   "DNSLookupFailures": [
     {
-      "TagDepth": 1,
-      "Type": 0,
-      "Failure": "dns_nxdomain_error",
-      "TransactionID": 5,
-      "TagFetchBody": null,
       "DNSTransactionID": 5,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_nxdomain_error",
@@ -31,6 +26,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": 1,
+      "TagFetchBody": null,
       "ControlDNSDomain": null,
       "ControlDNSLookupFailure": null,
       "ControlDNSResolvedAddrs": null,
@@ -45,11 +42,6 @@
   ],
   "DNSLookupSuccesses": [
     {
-      "TagDepth": 0,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 1,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
@@ -77,6 +69,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": 0,
+      "TagFetchBody": null,
       "ControlDNSDomain": "bit.ly",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -93,11 +87,6 @@
   ],
   "KnownTCPEndpoints": {
     "3": {
-      "TagDepth": 0,
-      "Type": 3,
-      "Failure": "",
-      "TransactionID": 3,
-      "TagFetchBody": true,
       "DNSTransactionID": 2,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
@@ -129,6 +118,8 @@
       "HTTPResponseLocation": "https://www.example.com/",
       "HTTPResponseTitle": "",
       "HTTPResponseIsFinal": false,
+      "TagDepth": 0,
+      "TagFetchBody": true,
       "ControlDNSDomain": "bit.ly",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [

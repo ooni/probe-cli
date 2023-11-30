@@ -2,11 +2,6 @@
   "DNSLookupFailures": [],
   "DNSLookupSuccesses": [
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 1,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -37,6 +32,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -59,11 +56,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 1,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -94,6 +86,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -116,11 +110,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 1,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -151,6 +140,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -173,11 +164,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 1,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -208,6 +194,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -230,11 +218,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 1,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -267,6 +250,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -289,11 +274,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 1,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -326,6 +306,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -348,11 +330,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 1,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -385,6 +362,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -407,11 +386,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 1,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -444,6 +418,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -466,11 +442,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 1,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -503,6 +474,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -525,11 +498,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 1,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -562,6 +530,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -584,11 +554,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 3,
-      "TagFetchBody": null,
       "DNSTransactionID": 3,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -625,6 +590,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -647,11 +614,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 3,
-      "TagFetchBody": null,
       "DNSTransactionID": 3,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -688,6 +650,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -710,11 +674,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 3,
-      "TagFetchBody": null,
       "DNSTransactionID": 3,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -751,6 +710,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -773,11 +734,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 3,
-      "TagFetchBody": null,
       "DNSTransactionID": 3,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -814,6 +770,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -836,11 +794,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 3,
-      "TagFetchBody": null,
       "DNSTransactionID": 3,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -877,6 +830,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -899,11 +854,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 3,
-      "TagFetchBody": null,
       "DNSTransactionID": 3,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -940,6 +890,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -962,11 +914,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 3,
-      "TagFetchBody": null,
       "DNSTransactionID": 3,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -1003,6 +950,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -1025,11 +974,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 3,
-      "TagFetchBody": null,
       "DNSTransactionID": 3,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -1066,6 +1010,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -1088,11 +1034,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 3,
-      "TagFetchBody": null,
       "DNSTransactionID": 3,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -1129,6 +1070,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -1151,11 +1094,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 3,
-      "TagFetchBody": null,
       "DNSTransactionID": 3,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -1192,6 +1130,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -1214,11 +1154,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 2,
-      "TagFetchBody": null,
       "DNSTransactionID": 2,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -1249,6 +1184,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -1271,11 +1208,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 2,
-      "TagFetchBody": null,
       "DNSTransactionID": 2,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -1306,6 +1238,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -1328,11 +1262,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 2,
-      "TagFetchBody": null,
       "DNSTransactionID": 2,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -1363,6 +1292,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -1385,11 +1316,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 2,
-      "TagFetchBody": null,
       "DNSTransactionID": 2,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -1420,6 +1346,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -1442,11 +1370,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 2,
-      "TagFetchBody": null,
       "DNSTransactionID": 2,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -1480,6 +1403,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -1502,11 +1427,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 2,
-      "TagFetchBody": null,
       "DNSTransactionID": 2,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -1540,6 +1460,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -1562,11 +1484,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 2,
-      "TagFetchBody": null,
       "DNSTransactionID": 2,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -1600,6 +1517,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -1622,11 +1541,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 2,
-      "TagFetchBody": null,
       "DNSTransactionID": 2,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -1660,6 +1574,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -1682,11 +1598,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 2,
-      "TagFetchBody": null,
       "DNSTransactionID": 2,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -1720,6 +1631,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -1742,11 +1655,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 2,
-      "TagFetchBody": null,
       "DNSTransactionID": 2,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -1780,6 +1688,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -1802,11 +1712,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": null,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 2,
-      "TagFetchBody": null,
       "DNSTransactionID": 2,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -1840,6 +1745,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -1864,11 +1771,6 @@
   ],
   "KnownTCPEndpoints": {
     "10": {
-      "TagDepth": null,
-      "Type": 2,
-      "Failure": "",
-      "TransactionID": 10,
-      "TagFetchBody": null,
       "DNSTransactionID": 2,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -1899,6 +1801,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -1943,11 +1847,6 @@
       "ControlHTTPResponseTitle": "YouTube"
     },
     "11": {
-      "TagDepth": null,
-      "Type": 2,
-      "Failure": "",
-      "TransactionID": 11,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -1978,6 +1877,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -2022,11 +1923,6 @@
       "ControlHTTPResponseTitle": "YouTube"
     },
     "12": {
-      "TagDepth": null,
-      "Type": 2,
-      "Failure": "",
-      "TransactionID": 12,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -2057,6 +1953,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -2101,11 +1999,6 @@
       "ControlHTTPResponseTitle": "YouTube"
     },
     "13": {
-      "TagDepth": null,
-      "Type": 2,
-      "Failure": "",
-      "TransactionID": 13,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -2136,6 +2029,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -2180,11 +2075,6 @@
       "ControlHTTPResponseTitle": "YouTube"
     },
     "14": {
-      "TagDepth": null,
-      "Type": 2,
-      "Failure": "",
-      "TransactionID": 14,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -2217,6 +2107,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -2261,11 +2153,6 @@
       "ControlHTTPResponseTitle": "YouTube"
     },
     "15": {
-      "TagDepth": null,
-      "Type": 2,
-      "Failure": "",
-      "TransactionID": 15,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -2298,6 +2185,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -2342,11 +2231,6 @@
       "ControlHTTPResponseTitle": "YouTube"
     },
     "16": {
-      "TagDepth": null,
-      "Type": 2,
-      "Failure": "",
-      "TransactionID": 16,
-      "TagFetchBody": null,
       "DNSTransactionID": null,
       "DNSDomain": null,
       "DNSLookupFailure": null,
@@ -2372,6 +2256,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -2416,11 +2302,6 @@
       "ControlHTTPResponseTitle": "YouTube"
     },
     "17": {
-      "TagDepth": null,
-      "Type": 2,
-      "Failure": "",
-      "TransactionID": 17,
-      "TagFetchBody": null,
       "DNSTransactionID": null,
       "DNSDomain": null,
       "DNSLookupFailure": null,
@@ -2446,6 +2327,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -2490,11 +2373,6 @@
       "ControlHTTPResponseTitle": "YouTube"
     },
     "18": {
-      "TagDepth": null,
-      "Type": 2,
-      "Failure": "",
-      "TransactionID": 18,
-      "TagFetchBody": null,
       "DNSTransactionID": null,
       "DNSDomain": null,
       "DNSLookupFailure": null,
@@ -2520,6 +2398,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -2564,11 +2444,6 @@
       "ControlHTTPResponseTitle": "YouTube"
     },
     "19": {
-      "TagDepth": null,
-      "Type": 2,
-      "Failure": "",
-      "TransactionID": 19,
-      "TagFetchBody": null,
       "DNSTransactionID": null,
       "DNSDomain": null,
       "DNSLookupFailure": null,
@@ -2594,6 +2469,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -2638,11 +2515,6 @@
       "ControlHTTPResponseTitle": "YouTube"
     },
     "20": {
-      "TagDepth": null,
-      "Type": 2,
-      "Failure": "",
-      "TransactionID": 20,
-      "TagFetchBody": null,
       "DNSTransactionID": null,
       "DNSDomain": null,
       "DNSLookupFailure": null,
@@ -2668,6 +2540,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -2712,11 +2586,6 @@
       "ControlHTTPResponseTitle": "YouTube"
     },
     "21": {
-      "TagDepth": null,
-      "Type": 2,
-      "Failure": "",
-      "TransactionID": 21,
-      "TagFetchBody": null,
       "DNSTransactionID": null,
       "DNSDomain": null,
       "DNSLookupFailure": null,
@@ -2742,6 +2611,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -2786,11 +2657,6 @@
       "ControlHTTPResponseTitle": "YouTube"
     },
     "22": {
-      "TagDepth": null,
-      "Type": 2,
-      "Failure": "",
-      "TransactionID": 22,
-      "TagFetchBody": null,
       "DNSTransactionID": null,
       "DNSDomain": null,
       "DNSLookupFailure": null,
@@ -2816,6 +2682,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -2860,11 +2728,6 @@
       "ControlHTTPResponseTitle": "YouTube"
     },
     "23": {
-      "TagDepth": null,
-      "Type": 2,
-      "Failure": "",
-      "TransactionID": 23,
-      "TagFetchBody": null,
       "DNSTransactionID": null,
       "DNSDomain": null,
       "DNSLookupFailure": null,
@@ -2890,6 +2753,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -2934,11 +2799,6 @@
       "ControlHTTPResponseTitle": "YouTube"
     },
     "24": {
-      "TagDepth": null,
-      "Type": 2,
-      "Failure": "",
-      "TransactionID": 24,
-      "TagFetchBody": null,
       "DNSTransactionID": null,
       "DNSDomain": null,
       "DNSLookupFailure": null,
@@ -2964,6 +2824,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -3008,11 +2870,6 @@
       "ControlHTTPResponseTitle": "YouTube"
     },
     "4": {
-      "TagDepth": null,
-      "Type": 2,
-      "Failure": "",
-      "TransactionID": 4,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -3043,6 +2900,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -3087,11 +2946,6 @@
       "ControlHTTPResponseTitle": "YouTube"
     },
     "5": {
-      "TagDepth": null,
-      "Type": 2,
-      "Failure": "",
-      "TransactionID": 5,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -3124,6 +2978,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -3168,11 +3024,6 @@
       "ControlHTTPResponseTitle": "YouTube"
     },
     "6": {
-      "TagDepth": null,
-      "Type": 2,
-      "Failure": "",
-      "TransactionID": 6,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -3205,6 +3056,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -3249,11 +3102,6 @@
       "ControlHTTPResponseTitle": "YouTube"
     },
     "7": {
-      "TagDepth": null,
-      "Type": 2,
-      "Failure": "",
-      "TransactionID": 7,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -3286,6 +3134,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -3330,11 +3180,6 @@
       "ControlHTTPResponseTitle": "YouTube"
     },
     "8": {
-      "TagDepth": null,
-      "Type": 3,
-      "Failure": "",
-      "TransactionID": 8,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -3388,6 +3233,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": "YouTube",
       "HTTPResponseIsFinal": true,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -3432,11 +3279,6 @@
       "ControlHTTPResponseTitle": "YouTube"
     },
     "9": {
-      "TagDepth": null,
-      "Type": 2,
-      "Failure": "",
-      "TransactionID": 9,
-      "TagFetchBody": null,
       "DNSTransactionID": 2,
       "DNSDomain": "www.youtube.com",
       "DNSLookupFailure": "",
@@ -3470,6 +3312,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": null,
+      "TagFetchBody": null,
       "ControlDNSDomain": "www.youtube.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [

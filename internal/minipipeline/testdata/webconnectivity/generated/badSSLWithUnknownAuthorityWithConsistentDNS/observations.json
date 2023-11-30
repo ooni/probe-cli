@@ -1,11 +1,6 @@
 {
   "DNSLookupFailures": [
     {
-      "TagDepth": 0,
-      "Type": 0,
-      "Failure": "dns_no_answer",
-      "TransactionID": 3,
-      "TagFetchBody": null,
       "DNSTransactionID": 3,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "dns_no_answer",
@@ -31,6 +26,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": 0,
+      "TagFetchBody": null,
       "ControlDNSDomain": "untrusted-root.badssl.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -45,11 +42,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": 0,
-      "Type": 0,
-      "Failure": "dns_no_answer",
-      "TransactionID": 2,
-      "TagFetchBody": null,
       "DNSTransactionID": 2,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "dns_no_answer",
@@ -75,6 +67,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": 0,
+      "TagFetchBody": null,
       "ControlDNSDomain": "untrusted-root.badssl.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -91,11 +85,6 @@
   ],
   "DNSLookupSuccesses": [
     {
-      "TagDepth": 0,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 1,
-      "TagFetchBody": null,
       "DNSTransactionID": 1,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "",
@@ -123,6 +112,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": 0,
+      "TagFetchBody": null,
       "ControlDNSDomain": "untrusted-root.badssl.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -137,11 +128,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": 0,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 3,
-      "TagFetchBody": null,
       "DNSTransactionID": 3,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "",
@@ -169,6 +155,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": 0,
+      "TagFetchBody": null,
       "ControlDNSDomain": "untrusted-root.badssl.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -183,11 +171,6 @@
       "ControlHTTPResponseTitle": null
     },
     {
-      "TagDepth": 0,
-      "Type": 0,
-      "Failure": null,
-      "TransactionID": 2,
-      "TagFetchBody": null,
       "DNSTransactionID": 2,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "",
@@ -215,6 +198,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": 0,
+      "TagFetchBody": null,
       "ControlDNSDomain": "untrusted-root.badssl.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
@@ -231,11 +216,6 @@
   ],
   "KnownTCPEndpoints": {
     "4": {
-      "TagDepth": 0,
-      "Type": 2,
-      "Failure": "ssl_unknown_authority",
-      "TransactionID": 4,
-      "TagFetchBody": true,
       "DNSTransactionID": 1,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "",
@@ -263,6 +243,8 @@
       "HTTPResponseLocation": null,
       "HTTPResponseTitle": null,
       "HTTPResponseIsFinal": null,
+      "TagDepth": 0,
+      "TagFetchBody": true,
       "ControlDNSDomain": "untrusted-root.badssl.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
