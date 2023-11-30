@@ -33,11 +33,16 @@
       "ControlDNSResolvedAddrs": null,
       "ControlTCPConnectFailure": null,
       "ControlTLSHandshakeFailure": null,
-      "ControlHTTPFailure": null,
-      "ControlHTTPResponseStatusCode": null,
-      "ControlHTTPResponseBodyLength": null,
-      "ControlHTTPResponseHeadersKeys": null,
-      "ControlHTTPResponseTitle": null
+      "ControlHTTPFailure": "",
+      "ControlHTTPResponseStatusCode": 200,
+      "ControlHTTPResponseBodyLength": 1533,
+      "ControlHTTPResponseHeadersKeys": {
+        "Alt-Svc": true,
+        "Content-Length": true,
+        "Content-Type": true,
+        "Date": true
+      },
+      "ControlHTTPResponseTitle": "Default Web Page"
     }
   ],
   "DNSLookupSuccesses": [
@@ -78,11 +83,16 @@
       ],
       "ControlTCPConnectFailure": null,
       "ControlTLSHandshakeFailure": null,
-      "ControlHTTPFailure": null,
-      "ControlHTTPResponseStatusCode": null,
-      "ControlHTTPResponseBodyLength": null,
-      "ControlHTTPResponseHeadersKeys": null,
-      "ControlHTTPResponseTitle": null
+      "ControlHTTPFailure": "",
+      "ControlHTTPResponseStatusCode": 200,
+      "ControlHTTPResponseBodyLength": 1533,
+      "ControlHTTPResponseHeadersKeys": {
+        "Alt-Svc": true,
+        "Content-Length": true,
+        "Content-Type": true,
+        "Date": true
+      },
+      "ControlHTTPResponseTitle": "Default Web Page"
     }
   ],
   "KnownTCPEndpoints": {
