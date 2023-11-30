@@ -1,8 +1,6 @@
 {
   "DNSLookupSuccessWithInvalidAddresses": [],
-  "DNSLookupSuccessWithValidAddress": [
-    1
-  ],
+  "DNSLookupSuccessWithValidAddress": [],
   "DNSLookupSuccessWithInvalidAddressesClassic": [],
   "DNSLookupSuccessWithValidAddressClassic": [],
   "DNSLookupUnexpectedFailure": [],

@@ -6,8 +6,8 @@
     "go_version": "go1.20.11",
     "platform": "macos",
     "vcs_modified": "true",
-    "vcs_revision": "1eaaac071af3411a63e55edcf4269d41c5c77d63",
-    "vcs_time": "2023-11-27T16:55:20Z",
+    "vcs_revision": "d744eaa416d6d7226f58481ebd2dfc0ef8d07c2b",
+    "vcs_time": "2023-11-30T17:31:24Z",
     "vcs_tool": "git"
   },
   "data_format_version": "0.2.0",
@@ -20,12 +20,12 @@
     "tunnel": 0
   },
   "input": "https://nexa.polito.it/",
-  "measurement_start_time": "2023-11-27 17:05:00",
+  "measurement_start_time": "2023-11-30 17:33:28",
   "probe_asn": "AS30722",
   "probe_cc": "IT",
   "probe_ip": "127.0.0.1",
   "probe_network_name": "Vodafone Italia S.p.A.",
-  "report_id": "20231127T170500Z_webconnectivity_IT_30722_n1_keQcbSW2K4LoWC9c",
+  "report_id": "20231130T173328Z_webconnectivity_IT_30722_n1_RrhDWX53xCEpRH8Q",
   "resolver_asn": "AS30722",
   "resolver_ip": "91.80.36.88",
   "resolver_network_name": "Vodafone Italia S.p.A.",
@@ -48,186 +48,49 @@
         "failure": null,
         "operation": "connect",
         "proto": "tcp",
-        "t0": 0.093297,
-        "t": 0.154834,
-        "transaction_id": 4
-      },
-      {
-        "failure": null,
-        "operation": "tls_handshake_start",
-        "t0": 0.15486,
-        "t": 0.15486,
-        "transaction_id": 4
-      },
-      {
-        "address": "130.192.16.171:443",
-        "failure": null,
-        "num_bytes": 280,
-        "operation": "write",
-        "proto": "tcp",
-        "t0": 0.155095,
-        "t": 0.15513,
-        "transaction_id": 4
-      },
-      {
-        "address": "130.192.16.171:443",
-        "failure": null,
-        "num_bytes": 576,
-        "operation": "read",
-        "proto": "tcp",
-        "t0": 0.155134,
-        "t": 0.18851,
-        "transaction_id": 4
-      },
-      {
-        "address": "130.192.16.171:443",
-        "failure": null,
-        "num_bytes": 3957,
-        "operation": "read",
-        "proto": "tcp",
-        "t0": 0.188732,
-        "t": 0.188772,
-        "transaction_id": 4
-      },
-      {
-        "address": "130.192.16.171:443",
-        "failure": null,
-        "num_bytes": 80,
-        "operation": "write",
-        "proto": "tcp",
-        "t0": 0.193892,
-        "t": 0.193915,
-        "transaction_id": 4
-      },
-      {
-        "failure": null,
-        "operation": "tls_handshake_done",
-        "t0": 0.193924,
-        "t": 0.193924,
-        "transaction_id": 4
+        "t0": 0.14192,
+        "t": 0.197753,
+        "transaction_id": 4,
+        "tags": [
+          "depth=0",
+          "fetch_body=true"
+        ]
       },
       {
         "failure": null,
         "operation": "http_transaction_start",
-        "t0": 0.193968,
-        "t": 0.193968,
-        "transaction_id": 4
-      },
-      {
-        "address": "130.192.16.171:443",
-        "failure": null,
-        "num_bytes": 304,
-        "operation": "write",
-        "proto": "tcp",
-        "t0": 0.194091,
-        "t": 0.194109,
-        "transaction_id": 4
-      },
-      {
-        "address": "130.192.16.171:443",
-        "failure": null,
-        "num_bytes": 158,
-        "operation": "read",
-        "proto": "tcp",
-        "t0": 0.194948,
-        "t": 0.226114,
-        "transaction_id": 4
-      },
-      {
-        "address": "130.192.16.171:443",
-        "failure": null,
-        "num_bytes": 4864,
-        "operation": "read",
-        "proto": "tcp",
-        "t0": 0.226159,
-        "t": 0.236533,
-        "transaction_id": 4
-      },
-      {
-        "address": "130.192.16.171:443",
-        "failure": null,
-        "num_bytes": 3776,
-        "operation": "read",
-        "proto": "tcp",
-        "t0": 0.236932,
-        "t": 0.236965,
-        "transaction_id": 4
-      },
-      {
-        "address": "130.192.16.171:443",
-        "failure": null,
-        "num_bytes": 2880,
-        "operation": "read",
-        "proto": "tcp",
-        "t0": 0.236969,
-        "t": 0.237599,
-        "transaction_id": 4
-      },
-      {
-        "address": "130.192.16.171:443",
-        "failure": null,
-        "num_bytes": 5760,
-        "operation": "read",
-        "proto": "tcp",
-        "t0": 0.237604,
-        "t": 0.257691,
-        "transaction_id": 4
-      },
-      {
-        "address": "130.192.16.171:443",
-        "failure": null,
-        "num_bytes": 4320,
-        "operation": "read",
-        "proto": "tcp",
-        "t0": 0.257839,
-        "t": 0.268806,
-        "transaction_id": 4
-      },
-      {
-        "address": "130.192.16.171:443",
-        "failure": null,
-        "num_bytes": 15698,
-        "operation": "read",
-        "proto": "tcp",
-        "t0": 0.268812,
-        "t": 0.270366,
-        "transaction_id": 4
+        "t0": 0.234297,
+        "t": 0.234297,
+        "transaction_id": 4,
+        "tags": [
+          "depth=0",
+          "fetch_body=true"
+        ]
       },
       {
         "failure": null,
         "operation": "http_transaction_done",
-        "t0": 0.270579,
-        "t": 0.270579,
-        "transaction_id": 4
+        "t0": 0.298679,
+        "t": 0.298679,
+        "transaction_id": 4,
+        "tags": [
+          "depth=0",
+          "fetch_body=true"
+        ]
       },
       {
         "address": "130.192.16.171:443",
         "failure": null,
-        "num_bytes": 24,
-        "operation": "write",
-        "proto": "tcp",
-        "t0": 0.270868,
-        "t": 0.270917,
-        "transaction_id": 4
-      },
-      {
-        "address": "130.192.16.171:443",
-        "failure": "connection_already_closed",
-        "operation": "read",
-        "proto": "tcp",
-        "t0": 0.270564,
-        "t": 0.271008,
-        "transaction_id": 4
-      },
-      {
-        "address": "130.192.16.171:443",
-        "failure": null,
-        "num_bytes": 41989,
+        "num_bytes": 41971,
         "operation": "bytes_received_cumulative",
         "proto": "tcp",
-        "t0": 0.271046,
-        "t": 0.271046,
-        "transaction_id": 4
+        "t0": 0.298971,
+        "t": 0.298971,
+        "transaction_id": 4,
+        "tags": [
+          "depth=0",
+          "fetch_body=true"
+        ]
       }
     ],
     "x_dns_whoami": {
@@ -249,293 +112,345 @@
         {
           "failure": null,
           "operation": "resolve_start",
-          "t0": 0.000834,
-          "t": 0.000834,
-          "transaction_id": 2
+          "t0": 0.000745,
+          "t": 0.000745,
+          "transaction_id": 3,
+          "tags": [
+            "depth=0"
+          ]
         },
         {
-          "address": "8.8.4.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
           "operation": "connect",
           "proto": "tcp",
-          "t0": 0.004079,
-          "t": 0.020861,
-          "transaction_id": 2
+          "t0": 0.026039,
+          "t": 0.051229,
+          "transaction_id": 3,
+          "tags": [
+            "depth=0"
+          ]
         },
         {
           "failure": null,
           "operation": "tls_handshake_start",
-          "t0": 0.020896,
-          "t": 0.020896,
-          "transaction_id": 2
+          "t0": 0.051323,
+          "t": 0.051323,
+          "transaction_id": 3,
+          "tags": [
+            "depth=0"
+          ]
         },
         {
-          "address": "8.8.4.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
-          "num_bytes": 276,
+          "num_bytes": 279,
           "operation": "write",
           "proto": "tcp",
-          "t0": 0.02106,
-          "t": 0.021101,
-          "transaction_id": 2
+          "t0": 0.051628,
+          "t": 0.051695,
+          "transaction_id": 3,
+          "tags": [
+            "depth=0"
+          ]
         },
         {
-          "address": "8.8.4.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
           "num_bytes": 576,
           "operation": "read",
           "proto": "tcp",
-          "t0": 0.021114,
-          "t": 0.054429,
-          "transaction_id": 2
+          "t0": 0.051717,
+          "t": 0.078815,
+          "transaction_id": 3,
+          "tags": [
+            "depth=0"
+          ]
         },
         {
-          "address": "8.8.4.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
-          "num_bytes": 3856,
+          "num_bytes": 2925,
           "operation": "read",
           "proto": "tcp",
-          "t0": 0.054733,
-          "t": 0.054765,
-          "transaction_id": 2
+          "t0": 0.079207,
+          "t": 0.079215,
+          "transaction_id": 3,
+          "tags": [
+            "depth=0"
+          ]
         },
         {
-          "address": "8.8.4.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
-          "num_bytes": 64,
+          "num_bytes": 80,
           "operation": "write",
           "proto": "tcp",
-          "t0": 0.060409,
-          "t": 0.060486,
-          "transaction_id": 2
+          "t0": 0.082294,
+          "t": 0.082338,
+          "transaction_id": 3,
+          "tags": [
+            "depth=0"
+          ]
         },
         {
           "failure": null,
           "operation": "tls_handshake_done",
-          "t0": 0.060502,
-          "t": 0.060502,
-          "transaction_id": 2
+          "t0": 0.082356,
+          "t": 0.082356,
+          "transaction_id": 3,
+          "tags": [
+            "depth=0"
+          ]
         },
         {
-          "address": "8.8.4.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
           "num_bytes": 86,
           "operation": "write",
           "proto": "tcp",
-          "t0": 0.060567,
-          "t": 0.060596,
-          "transaction_id": 2
+          "t0": 0.082401,
+          "t": 0.082426,
+          "transaction_id": 3,
+          "tags": [
+            "depth=0"
+          ]
         },
         {
-          "address": "8.8.4.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
-          "num_bytes": 161,
+          "num_bytes": 164,
           "operation": "write",
           "proto": "tcp",
-          "t0": 0.060688,
-          "t": 0.060714,
-          "transaction_id": 2
+          "t0": 0.082489,
+          "t": 0.08251,
+          "transaction_id": 3,
+          "tags": [
+            "depth=0"
+          ]
         },
         {
-          "address": "8.8.4.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
           "num_bytes": 159,
           "operation": "write",
           "proto": "tcp",
-          "t0": 0.060728,
-          "t": 0.060745,
-          "transaction_id": 2
+          "t0": 0.082522,
+          "t": 0.082538,
+          "transaction_id": 3,
+          "tags": [
+            "depth=0"
+          ]
         },
         {
-          "address": "8.8.4.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
           "num_bytes": 38,
           "operation": "write",
           "proto": "tcp",
-          "t0": 0.060776,
-          "t": 0.060812,
-          "transaction_id": 2
+          "t0": 0.08257,
+          "t": 0.082613,
+          "transaction_id": 3,
+          "tags": [
+            "depth=0"
+          ]
         },
         {
-          "address": "8.8.4.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
           "num_bytes": 159,
           "operation": "write",
           "proto": "tcp",
-          "t0": 0.060933,
-          "t": 0.060954,
-          "transaction_id": 2
+          "t0": 0.082714,
+          "t": 0.082737,
+          "transaction_id": 3,
+          "tags": [
+            "depth=0"
+          ]
         },
         {
-          "address": "8.8.4.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
-          "num_bytes": 93,
+          "num_bytes": 629,
           "operation": "read",
           "proto": "tcp",
-          "t0": 0.060649,
-          "t": 0.077923,
-          "transaction_id": 2
+          "t0": 0.082474,
+          "t": 0.106922,
+          "transaction_id": 3,
+          "tags": [
+            "depth=0"
+          ]
         },
         {
-          "address": "8.8.4.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
           "num_bytes": 31,
           "operation": "write",
           "proto": "tcp",
-          "t0": 0.077966,
-          "t": 0.078012,
-          "transaction_id": 2
+          "t0": 0.106992,
+          "t": 0.107037,
+          "transaction_id": 3,
+          "tags": [
+            "depth=0"
+          ]
         },
         {
-          "address": "8.8.4.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
-          "num_bytes": 283,
+          "num_bytes": 203,
           "operation": "read",
           "proto": "tcp",
-          "t0": 0.078024,
-          "t": 0.089493,
-          "transaction_id": 2
+          "t0": 0.107051,
+          "t": 0.123711,
+          "transaction_id": 3,
+          "tags": [
+            "depth=0"
+          ]
         },
         {
-          "address": "8.8.4.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
-          "num_bytes": 1182,
+          "num_bytes": 144,
           "operation": "read",
           "proto": "tcp",
-          "t0": 0.089627,
-          "t": 0.090785,
-          "transaction_id": 2
-        },
-        {
-          "address": "8.8.4.4:443",
-          "failure": null,
-          "num_bytes": 39,
-          "operation": "write",
-          "proto": "tcp",
-          "t0": 0.090846,
-          "t": 0.090883,
-          "transaction_id": 2
+          "t0": 0.123812,
+          "t": 0.140794,
+          "transaction_id": 3,
+          "tags": [
+            "depth=0"
+          ]
         },
         {
           "failure": null,
           "operation": "resolve_done",
-          "t0": 0.09104,
-          "t": 0.09104,
-          "transaction_id": 2
+          "t0": 0.141144,
+          "t": 0.141144,
+          "transaction_id": 3,
+          "tags": [
+            "depth=0"
+          ]
         },
         {
-          "address": "8.8.4.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
           "num_bytes": 24,
           "operation": "write",
           "proto": "tcp",
-          "t0": 0.091081,
-          "t": 0.091123,
-          "transaction_id": 2
+          "t0": 0.141193,
+          "t": 0.141241,
+          "transaction_id": 3,
+          "tags": [
+            "depth=0"
+          ]
         },
         {
-          "address": "8.8.4.4:443",
+          "address": "9.9.9.9:443",
           "failure": "connection_already_closed",
           "operation": "read",
           "proto": "tcp",
-          "t0": 0.09094,
-          "t": 0.091199,
-          "transaction_id": 2
+          "t0": 0.140922,
+          "t": 0.141346,
+          "transaction_id": 3,
+          "tags": [
+            "depth=0"
+          ]
         }
       ],
       "queries": [
         {
           "answers": [
             {
-              "asn": 15169,
-              "as_org_name": "Google LLC",
+              "asn": 19281,
+              "as_org_name": "Quad9",
               "answer_type": "AAAA",
-              "ipv6": "2001:4860:4860::8888",
+              "ipv6": "2620:fe::9",
               "ttl": null
             },
             {
-              "asn": 15169,
-              "as_org_name": "Google LLC",
+              "asn": 19281,
+              "as_org_name": "Quad9",
               "answer_type": "AAAA",
-              "ipv6": "2001:4860:4860::8844",
+              "ipv6": "2620:fe::fe",
               "ttl": null
             },
             {
-              "asn": 15169,
-              "as_org_name": "Google LLC",
+              "asn": 19281,
+              "as_org_name": "Quad9",
               "answer_type": "A",
-              "ipv4": "8.8.4.4",
+              "ipv4": "9.9.9.9",
               "ttl": null
             },
             {
-              "asn": 15169,
-              "as_org_name": "Google LLC",
+              "asn": 19281,
+              "as_org_name": "Quad9",
               "answer_type": "A",
-              "ipv4": "8.8.8.8",
+              "ipv4": "149.112.112.112",
               "ttl": null
             },
             {
               "answer_type": "CNAME",
-              "hostname": "dns.google.",
+              "hostname": "dns.quad9.net.",
               "ttl": null
             }
           ],
           "engine": "getaddrinfo",
           "failure": null,
-          "hostname": "dns.google",
+          "hostname": "dns.quad9.net",
           "query_type": "ANY",
           "resolver_hostname": null,
           "resolver_port": null,
           "resolver_address": "",
-          "t0": 0.001062,
-          "t": 0.002296,
-          "tags": [],
-          "transaction_id": 2
+          "t0": 0.00104,
+          "t": 0.02479,
+          "tags": [
+            "depth=0"
+          ],
+          "transaction_id": 3
         }
       ],
       "requests": [],
       "tcp_connect": [
         {
-          "ip": "8.8.4.4",
+          "ip": "9.9.9.9",
           "port": 443,
           "status": {
             "failure": null,
             "success": true
           },
-          "t0": 0.004079,
-          "t": 0.020861,
-          "tags": [],
-          "transaction_id": 2
+          "t0": 0.026039,
+          "t": 0.051229,
+          "tags": [
+            "depth=0"
+          ],
+          "transaction_id": 3
         }
       ],
       "tls_handshakes": [
         {
           "network": "tcp",
-          "address": "8.8.4.4:443",
-          "cipher_suite": "TLS_AES_128_GCM_SHA256",
+          "address": "9.9.9.9:443",
+          "cipher_suite": "TLS_AES_256_GCM_SHA384",
           "failure": null,
           "negotiated_protocol": "h2",
           "no_tls_verify": false,
           "peer_certificates": [
             {
-              "data": "MIIFGDCCBACgAwIBAgIQV9EpXtZaAjIK1doVgAiHbDANBgkqhkiG9w0BAQsFADBGMQswCQYDVQQGEwJVUzEiMCAGA1UEChMZR29vZ2xlIFRydXN0IFNlcnZpY2VzIExMQzETMBEGA1UEAxMKR1RTIENBIDFDMzAeFw0yMzEwMjMxMTI1MDlaFw0yNDAxMTUxMTI1MDhaMBUxEzARBgNVBAMTCmRucy5nb29nbGUwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAS/h4r6JssCIvWEJSayKcnU8yd62kOQ4nX+ra3QCso7RsHWaa0cdXRD4Dlhp5zsPurOwO5eSiB8rh43WszpRlHio4IC/DCCAvgwDgYDVR0PAQH/BAQDAgeAMBMGA1UdJQQMMAoGCCsGAQUFBwMBMAwGA1UdEwEB/wQCMAAwHQYDVR0OBBYEFAxKBjtasHcGqzIQq1F88UFwyR+AMB8GA1UdIwQYMBaAFIp0f6+Fze6VzT2c0OJGFPNxNR0nMGoGCCsGAQUFBwEBBF4wXDAnBggrBgEFBQcwAYYbaHR0cDovL29jc3AucGtpLmdvb2cvZ3RzMWMzMDEGCCsGAQUFBzAChiVodHRwOi8vcGtpLmdvb2cvcmVwby9jZXJ0cy9ndHMxYzMuZGVyMIGsBgNVHREEgaQwgaGCCmRucy5nb29nbGWCDmRucy5nb29nbGUuY29tghAqLmRucy5nb29nbGUuY29tggs4ODg4Lmdvb2dsZYIQZG5zNjQuZG5zLmdvb2dsZYcECAgICIcECAgEBIcQIAFIYEhgAAAAAAAAAACIiIcQIAFIYEhgAAAAAAAAAACIRIcQIAFIYEhgAAAAAAAAAABkZIcQIAFIYEhgAAAAAAAAAAAAZDAhBgNVHSAEGjAYMAgGBmeBDAECATAMBgorBgEEAdZ5AgUDMDwGA1UdHwQ1MDMwMaAvoC2GK2h0dHA6Ly9jcmxzLnBraS5nb29nL2d0czFjMy9mVkp4YlYtS3Rtay5jcmwwggEFBgorBgEEAdZ5AgQCBIH2BIHzAPEAdgB2/4g/Crb7lVHCYcz1h7o0tKTNuyncaEIKn+ZnTFo6dAAAAYtcfwTwAAAEAwBHMEUCIEa9qmHU71YRD8ZX1TSa2jBiONx20tbOJlk8dj3j1FV8AiEAxglkfgFJCkauQvmgI8g0roFLWm4MBVLlOHt828bwJtQAdwDatr9rP7W2Ip+bwrtca+hwkXFsu1GEhTS9pD0wSNf7qwAAAYtcfwT6AAAEAwBIMEYCIQDNd9M5OMbThgFYWdEAdVYUI0MreFE0mHYFf2WhYRLRuQIhAO5KcKJoPcn7i+9SrNgHLof5JHywjWdTBr/Fct5NtqpyMA0GCSqGSIb3DQEBCwUAA4IBAQBpMDRC5q9XalL82MimRvztLMrsU4AZ38z2Kohm2wvvjF25MBwIUzI5xxYE7TFCVocdImxYY9izdvs0F3jVzYmWVyu6lvXYqMeAZf0j7YqvoXNm3rRgwgZkuviikmKJfR0E7Dy6Fyu3c+IVx62aOwDooOrjdjdkLoDQdcOCBU26IniROrScN4O8zHoZ7qVYwAFRS/a8A27loqz3oNzXm5UC5490tU0mtiqIHJR8Gzsa0s8C1vHhLkYb6lcxw4UnP7wfIjyyD9Ene6a0iwOa6y2MvH+7GGAD5pfUg2mE3eYvatYaE9hP/TiAkGP27+OhSFhpSRZgZIik3yXwAndd60Wl",
+              "data": "MIIGyDCCBk6gAwIBAgIQDQsh8YVJ+5rl2I/Z0i4MlzAKBggqhkjOPQQDAzBWMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMTAwLgYDVQQDEydEaWdpQ2VydCBUTFMgSHlicmlkIEVDQyBTSEEzODQgMjAyMCBDQTEwHhcNMjMwNzMxMDAwMDAwWhcNMjQwODA2MjM1OTU5WjBbMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTERMA8GA1UEBxMIQmVya2VsZXkxDjAMBgNVBAoTBVF1YWQ5MRQwEgYDVQQDDAsqLnF1YWQ5Lm5ldDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABH2L1x0DhQ0YJbM0HCmhJ9SsASVIiqDx6gK52FEsCGqsclbs+j2moJ9JCVWOrP65cxdcAvt4zCSRlG9DI4kOHWajggT3MIIE8zAfBgNVHSMEGDAWgBQKvAgpF4ylOW16Ds4zxy6z7fvDejAdBgNVHQ4EFgQUf6kSpdfGi0gCxz0qRW5AHkBg9JcwggGNBgNVHREEggGEMIIBgIILKi5xdWFkOS5uZXSCCXF1YWQ5Lm5ldIcECQkJCYcECQkJCocECQkJC4cECQkJDIcECQkJDYcECQkJDocECQkJD4cElXBwCYcElXBwCocElXBwC4cElXBwDIcElXBwDYcElXBwDocElXBwD4cElXBwcIcQJiAA/gAAAAAAAAAAAAAACYcQJiAA/gAAAAAAAAAAAAAAEIcQJiAA/gAAAAAAAAAAAAAAEYcQJiAA/gAAAAAAAAAAAAAAEocQJiAA/gAAAAAAAAAAAAAAE4cQJiAA/gAAAAAAAAAAAAAAFIcQJiAA/gAAAAAAAAAAAAAAFYcQJiAA/gAAAAAAAAAAAAAA/ocQJiAA/gAAAAAAAAAAAP4ACYcQJiAA/gAAAAAAAAAAAP4AEIcQJiAA/gAAAAAAAAAAAP4AEYcQJiAA/gAAAAAAAAAAAP4AEocQJiAA/gAAAAAAAAAAAP4AE4cQJiAA/gAAAAAAAAAAAP4AFIcQJiAA/gAAAAAAAAAAAP4AFTAOBgNVHQ8BAf8EBAMCB4AwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMIGbBgNVHR8EgZMwgZAwRqBEoEKGQGh0dHA6Ly9jcmwzLmRpZ2ljZXJ0LmNvbS9EaWdpQ2VydFRMU0h5YnJpZEVDQ1NIQTM4NDIwMjBDQTEtMS5jcmwwRqBEoEKGQGh0dHA6Ly9jcmw0LmRpZ2ljZXJ0LmNvbS9EaWdpQ2VydFRMU0h5YnJpZEVDQ1NIQTM4NDIwMjBDQTEtMS5jcmwwPgYDVR0gBDcwNTAzBgZngQwBAgIwKTAnBggrBgEFBQcCARYbaHR0cDovL3d3dy5kaWdpY2VydC5jb20vQ1BTMIGFBggrBgEFBQcBAQR5MHcwJAYIKwYBBQUHMAGGGGh0dHA6Ly9vY3NwLmRpZ2ljZXJ0LmNvbTBPBggrBgEFBQcwAoZDaHR0cDovL2NhY2VydHMuZGlnaWNlcnQuY29tL0RpZ2lDZXJ0VExTSHlicmlkRUNDU0hBMzg0MjAyMENBMS0xLmNydDAJBgNVHRMEAjAAMIIBfgYKKwYBBAHWeQIEAgSCAW4EggFqAWgAdgDuzdBk1dsazsVct520zROiModGfLzs3sNRSFlGcR+1mwAAAYmtrLxjAAAEAwBHMEUCIQCAWtmgTRnZsqjxZ7jdiDq0EEfxBB4kMj7oaZPv+URihQIgUJxBXliHw3ic/24+0NilFj/WfEcV1kNRARUhXS6xn08AdwBIsONr2qZHNA/lagL6nTDrHFIBy1bdLIHZu7+rOdiEcwAAAYmtrLxLAAAEAwBIMEYCIQClQbGksPNEGkRsO930WOdpYDBhFWVD44nw9ks9uyawJAIhAPypE9SPFDDkOgrOw+K++guz486lzdjaAfVzdyO6sw80AHUA2ra/az+1tiKfm8K7XGvocJFxbLtRhIU0vaQ9MEjX+6sAAAGJray8FwAABAMARjBEAiBMmvofeflmsV3JoyFVid5GiJaPHkH9fDWkS93eP9fgEQIgfkTwCbSFNKnF47riYP4MJow7haBO+pFwRW5WAEC1AQQwCgYIKoZIzj0EAwMDaAAwZQIwOOsRrmNqg61CQTVH/6I6W1ZKb+5efJZpgZLVhCirpay7lyiuNyC1QkF6jfTAh+nGAjEAoRSNqC4pY/1GUJ3ygEjSOkUKlFnpXSxYIxJz9yJ43z05faF/uL+mrpAV9GXi2cpt",
               "format": "base64"
             },
             {
-              "data": "MIIFljCCA36gAwIBAgINAgO8U1lrNMcY9QFQZjANBgkqhkiG9w0BAQsFADBHMQswCQYDVQQGEwJVUzEiMCAGA1UEChMZR29vZ2xlIFRydXN0IFNlcnZpY2VzIExMQzEUMBIGA1UEAxMLR1RTIFJvb3QgUjEwHhcNMjAwODEzMDAwMDQyWhcNMjcwOTMwMDAwMDQyWjBGMQswCQYDVQQGEwJVUzEiMCAGA1UEChMZR29vZ2xlIFRydXN0IFNlcnZpY2VzIExMQzETMBEGA1UEAxMKR1RTIENBIDFDMzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAPWI3+dijB43+DdCkH9sh9D7ZYIl/ejLa6T/belaI+KZ9hzpkgOZE3wJCor6QtZeViSqejOEH9Hpabu5dOxXTGZok3c3VVP+ORBNtzS7XyV3NzsXlOo85Z3VvMO0Q+sup0fvsEQRY9i0QYXdQTBIkxu/t/bgRQIh4JZCF8/ZK2VWNAcmBA2o/X3KLu/qSHw3TT8An4Pf73WELnlXXPxXbhqW//yMmqaZviXZf5YsBvcRKgKAgOtjGDxQSYflispfGStZloEAoPtR28p3CwvJlk/vcEnHXG0g/Zm0tOLKLnf9LdwLtmsTDIwZKxeWmLnwi/agJ7u2441Rj72ux5uxiZ0CAwEAAaOCAYAwggF8MA4GA1UdDwEB/wQEAwIBhjAdBgNVHSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwEgYDVR0TAQH/BAgwBgEB/wIBADAdBgNVHQ4EFgQUinR/r4XN7pXNPZzQ4kYU83E1HScwHwYDVR0jBBgwFoAU5K8rJnEaK0gnhS9SZizv8IkTcT4waAYIKwYBBQUHAQEEXDBaMCYGCCsGAQUFBzABhhpodHRwOi8vb2NzcC5wa2kuZ29vZy9ndHNyMTAwBggrBgEFBQcwAoYkaHR0cDovL3BraS5nb29nL3JlcG8vY2VydHMvZ3RzcjEuZGVyMDQGA1UdHwQtMCswKaAnoCWGI2h0dHA6Ly9jcmwucGtpLmdvb2cvZ3RzcjEvZ3RzcjEuY3JsMFcGA1UdIARQME4wOAYKKwYBBAHWeQIFAzAqMCgGCCsGAQUFBwIBFhxodHRwczovL3BraS5nb29nL3JlcG9zaXRvcnkvMAgGBmeBDAECATAIBgZngQwBAgIwDQYJKoZIhvcNAQELBQADggIBAIl9rCBcDDy+mqhXlRu0rvqrpXJxtDaV/d9AEQNMwkYUuxQkq/BQcSLbrcRuf8/xam/IgxvYzolfh2yHuKkMo5uhYpSTld9brmYZCwKWnvy15xBpPnrLRklfRuFBsdeYTWU0AIAaP0+fbH9JAIFTQaSSIYKCGvGjRFsqUBITTcFTNvNCCK9U+o53UxtkOCcXCb1YyRt8OS1b887U7ZfbFAO/CVMkH8IMBHmYJvJh8VNS/UKMG2YrPxWhu//2m+OBmgEGcYk1KCTd4b3rGS3hSMs9WYNRtHTGnXzGsYZbr8w0xNPM1IERlQCh9BIiAfq0g3GvjLeMcySsN1PCAJA/Ef5c7TaUEDu9Ka7ixzpiO2xj2YC/WXGsYye5TBeg2vZzFb8q3o/zpWwygTMD0IZRcZk0upONXbVRWPeyk+gB9lm+cZv9TSjOz23HFtz30dZGm6fKa+l3D/2gthsjgx0QGtkJAITgRNOidSOzNIb2ILCkXhAd4FJGAJ2xDx8hcFH1mt0G/FX0Kw4zd8NLQsLxdxP8c4CU6x+7Nz/OAipmsHMdMqUybDKwjuDEI/9bfU1lcKwrmz3O2+BtjjKAvpafkmO8l7tdufThcV4q5O8DIrGKZTqPwJNl1IXNDw9bg1kWRxYtnCQ6yICmJhSFm/Y3m6xv+cXDBlHz4n/FsRC6UfTd",
-              "format": "base64"
-            },
-            {
-              "data": "MIIFYjCCBEqgAwIBAgIQd70NbNs2+RrqIQ/E8FjTDTANBgkqhkiG9w0BAQsFADBXMQswCQYDVQQGEwJCRTEZMBcGA1UEChMQR2xvYmFsU2lnbiBudi1zYTEQMA4GA1UECxMHUm9vdCBDQTEbMBkGA1UEAxMSR2xvYmFsU2lnbiBSb290IENBMB4XDTIwMDYxOTAwMDA0MloXDTI4MDEyODAwMDA0MlowRzELMAkGA1UEBhMCVVMxIjAgBgNVBAoTGUdvb2dsZSBUcnVzdCBTZXJ2aWNlcyBMTEMxFDASBgNVBAMTC0dUUyBSb290IFIxMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAthECix7joXebO9y/lD63ladAPKH9gvl9MgaCcfb2jH/76Nu8ai6Xl6OMS/kr9rH5zoQdsfnFl97vufKj6bwSiV6nqlKr+CMny6SxnGPb15l+8Ape62im9MZaRw1NEDPjTrETo8gYbEvs/AmQ351kKSUjB6G00j0uYODP0gmHu81I8E3CwnqIiru6z1kZ1q+PsAewnjHxgsHA3y6mbWwZDrXYfiYaRQM9sHmklCitD38m5agI/pboPGiUU+6DOogrFZYJsuB6jC511pzrp1Zkj5ZPaK49l8KEj8C8QMALXL32h7M1bKwYUH+E4EzNktMg6TO8UpmvMrUpsyUqtEj5cuHKZPfmghCN6J3Cioj6OGaK/GP5Afl4/Xtcd/p2h/rs37EOeZVXtL0m79YB0esWCruOC7XFxYpVq9Os6pFLKcwZpDIlTirxZUTQAs6qzkm06p98g7BAe+dDq6dso499iYH6TKX/1Y7DzkvgtdizjkXPdsDtQCv9Uw+wp9U7DbGKogPeMa3Md+pvez7W35EiEua++tgy/BBjFFFy3l3WFpO9KWgz7zpm7AeKJt8T11dleCfeXkkUAKIAf5qoIbapsZWwpbkNFhHax2xIPEDgfg1azVY80ZcFuctL7TlLnMQ/0lUTbiSw1nH69MG6zO0b9f6BQdgAmD06yK56mDcYBZUCAwEAAaOCATgwggE0MA4GA1UdDwEB/wQEAwIBhjAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBTkrysmcRorSCeFL1JmLO/wiRNxPjAfBgNVHSMEGDAWgBRge2YaRQ2XyolQL30EzTSo//z9SzBgBggrBgEFBQcBAQRUMFIwJQYIKwYBBQUHMAGGGWh0dHA6Ly9vY3NwLnBraS5nb29nL2dzcjEwKQYIKwYBBQUHMAKGHWh0dHA6Ly9wa2kuZ29vZy9nc3IxL2dzcjEuY3J0MDIGA1UdHwQrMCkwJ6AloCOGIWh0dHA6Ly9jcmwucGtpLmdvb2cvZ3NyMS9nc3IxLmNybDA7BgNVHSAENDAyMAgGBmeBDAECATAIBgZngQwBAgIwDQYLKwYBBAHWeQIFAwIwDQYLKwYBBAHWeQIFAwMwDQYJKoZIhvcNAQELBQADggEBADSkHrEoo9C0dhemMXoh6dFSPsjbdBZBiLg9NR3t5P+T4Vxfq7vqfM/b5A3Ri1fyJm9bvhdGaJQ3b2t6yMAYN/olUazsaL+yyEn9WprKASOshIArAoyZl+tJaox118fessmXn1hIVw41oeQa1v1vg4Fv74zPl6/AhSrw9U5pCZEt4Wi4wStz6dTZ/CLANx8LZh1J7QJVj2fhMtfTJr9w4z30Z209fOU0iOMy+qduBmpvvYuR7hZL6Dupszfnw0Skfths18dG9ZKb59UhvmaSGZRVbNQpsg3BZlvid0lIKO2d1xozclOzgjXPYovJJIultzkMu34qQb9Sz/yilrbCgj8=",
+              "data": "MIIEFzCCAv+gAwIBAgIQB/LzXIeod6967+lHmTUlvTANBgkqhkiG9w0BAQwFADBhMQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBDQTAeFw0yMTA0MTQwMDAwMDBaFw0zMTA0MTMyMzU5NTlaMFYxCzAJBgNVBAYTAlVTMRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxMDAuBgNVBAMTJ0RpZ2lDZXJ0IFRMUyBIeWJyaWQgRUNDIFNIQTM4NCAyMDIwIENBMTB2MBAGByqGSM49AgEGBSuBBAAiA2IABMEbxppbmNmkKaDp1AS12+umsmxVwP/tmMZJLwYnUcu/cMEFesOxnYeJuq20ExfJqLSDyLiQ0cx0NTY8g3KwtdD3ImnI8YDEe0CPz2iHJlw5ifFNkU3aiYvkA8ND5b8vc6OCAYIwggF+MBIGA1UdEwEB/wQIMAYBAf8CAQAwHQYDVR0OBBYEFAq8CCkXjKU5bXoOzjPHLrPt+8N6MB8GA1UdIwQYMBaAFAPeUDVW0Uy7ZvCj4hsbw5eyPdFVMA4GA1UdDwEB/wQEAwIBhjAdBgNVHSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwdgYIKwYBBQUHAQEEajBoMCQGCCsGAQUFBzABhhhodHRwOi8vb2NzcC5kaWdpY2VydC5jb20wQAYIKwYBBQUHMAKGNGh0dHA6Ly9jYWNlcnRzLmRpZ2ljZXJ0LmNvbS9EaWdpQ2VydEdsb2JhbFJvb3RDQS5jcnQwQgYDVR0fBDswOTA3oDWgM4YxaHR0cDovL2NybDMuZGlnaWNlcnQuY29tL0RpZ2lDZXJ0R2xvYmFsUm9vdENBLmNybDA9BgNVHSAENjA0MAsGCWCGSAGG/WwCATAHBgVngQwBATAIBgZngQwBAgEwCAYGZ4EMAQICMAgGBmeBDAECAzANBgkqhkiG9w0BAQwFAAOCAQEAR1mBf9QbH7Bx9phdGLqYR5iwfnYr6v8ai6wms0KNMeZK6BnQ79oU59cUkqGS8qcuLa/7Hfb7U7CKP/zYFgrpsC62pQsYkDUmotr2qLcy/JUjS8ZFucTP5Hzu5sn4kL1y45nDHQsFfGqXbbKrAjbYwrwsAZI/BKOLdRHHuSm8EdCGupK8JvllyDfNJvaGEwwEqonleLHBTnm8dqMLUeTF0J5q/hosVq4GNiejcxwIfZMy0MJEGdqN9A57HSgDKwmKdsp33Id6rHtSJlWncg+d0ohP/rEhxRqhqjn1VtvChMQ1H3Dau0bwhr9kAMQ+959GG50jBbl9s08PqUU643QwmA==",
               "format": "base64"
             }
           ],
-          "server_name": "dns.google",
-          "t0": 0.020896,
-          "t": 0.060502,
-          "tags": [],
+          "server_name": "dns.quad9.net",
+          "t0": 0.051323,
+          "t": 0.082356,
+          "tags": [
+            "depth=0"
+          ],
           "tls_version": "TLSv1.3",
-          "transaction_id": 2
+          "transaction_id": 3
         }
       ]
     },
@@ -544,9 +459,12 @@
         {
           "failure": null,
           "operation": "resolve_start",
-          "t0": 0.0008,
-          "t": 0.0008,
-          "transaction_id": 3
+          "t0": 0.000453,
+          "t": 0.000453,
+          "transaction_id": 1,
+          "tags": [
+            "depth=0"
+          ]
         },
         {
           "address": "8.8.4.4:53",
@@ -554,9 +472,12 @@
           "num_bytes": 32,
           "operation": "write",
           "proto": "udp",
-          "t0": 0.001301,
-          "t": 0.001329,
-          "transaction_id": 3
+          "t0": 0.001129,
+          "t": 0.001376,
+          "transaction_id": 1,
+          "tags": [
+            "depth=0"
+          ]
         },
         {
           "address": "8.8.4.4:53",
@@ -564,9 +485,12 @@
           "num_bytes": 32,
           "operation": "write",
           "proto": "udp",
-          "t0": 0.001311,
-          "t": 0.001371,
-          "transaction_id": 3
+          "t0": 0.001349,
+          "t": 0.00138,
+          "transaction_id": 1,
+          "tags": [
+            "depth=0"
+          ]
         },
         {
           "address": "8.8.4.4:53",
@@ -574,9 +498,12 @@
           "num_bytes": 48,
           "operation": "read",
           "proto": "udp",
-          "t0": 0.001361,
-          "t": 0.030029,
-          "transaction_id": 3
+          "t0": 0.001415,
+          "t": 0.030722,
+          "transaction_id": 1,
+          "tags": [
+            "depth=0"
+          ]
         },
         {
           "address": "8.8.4.4:53",
@@ -584,16 +511,22 @@
           "num_bytes": 82,
           "operation": "read",
           "proto": "udp",
-          "t0": 0.001417,
-          "t": 0.031817,
-          "transaction_id": 3
+          "t0": 0.00139,
+          "t": 0.032124,
+          "transaction_id": 1,
+          "tags": [
+            "depth=0"
+          ]
         },
         {
           "failure": null,
           "operation": "resolve_done",
-          "t0": 0.03185,
-          "t": 0.03185,
-          "transaction_id": 3
+          "t0": 0.032186,
+          "t": 0.032186,
+          "transaction_id": 1,
+          "tags": [
+            "depth=0"
+          ]
         }
       ],
       "queries": []
@@ -614,14 +547,16 @@
         "failure": null,
         "hostname": "nexa.polito.it",
         "query_type": "A",
-        "raw_response": "9ESBgAABAAEAAAAABG5leGEGcG9saXRvAml0AAABAAHADAABAAEAAVGAAASCwBCr",
+        "raw_response": "BnCBgAABAAEAAAAABG5leGEGcG9saXRvAml0AAABAAHADAABAAEAAVGAAASCwBCr",
         "resolver_hostname": null,
         "resolver_port": null,
         "resolver_address": "8.8.4.4:53",
-        "t0": 0.001128,
-        "t": 0.030047,
-        "tags": [],
-        "transaction_id": 3
+        "t0": 0.000947,
+        "t": 0.030791,
+        "tags": [
+          "depth=0"
+        ],
+        "transaction_id": 1
       },
       {
         "answers": null,
@@ -629,14 +564,16 @@
         "failure": "dns_no_answer",
         "hostname": "nexa.polito.it",
         "query_type": "AAAA",
-        "raw_response": "4dCBgAABAAAAAQAABG5leGEGcG9saXRvAml0AAAcAAHAEQAGAAEAACowACYIbGVvbmFyZG/AEQRyb290wCx4lj/+AAAqMAAABwgAEnUAAAFRgA==",
+        "raw_response": "Nd6BgAABAAAAAQAABG5leGEGcG9saXRvAml0AAAcAAHAEQAGAAEAACowACYIbGVvbmFyZG/AEQRyb290wCx4lkEpAAAqMAAABwgAEnUAAAFRgA==",
         "resolver_hostname": null,
         "resolver_port": null,
         "resolver_address": "8.8.4.4:53",
-        "t0": 0.000817,
-        "t": 0.031832,
-        "tags": [],
-        "transaction_id": 3
+        "t0": 0.000489,
+        "t": 0.032151,
+        "tags": [
+          "depth=0"
+        ],
+        "transaction_id": 1
       },
       {
         "answers": [
@@ -660,10 +597,29 @@
         "resolver_hostname": null,
         "resolver_port": null,
         "resolver_address": "",
-        "t0": 0.000639,
-        "t": 0.032278,
-        "tags": [],
-        "transaction_id": 1
+        "t0": 0.000503,
+        "t": 0.033038,
+        "tags": [
+          "depth=0"
+        ],
+        "transaction_id": 2
+      },
+      {
+        "answers": null,
+        "engine": "doh",
+        "failure": "dns_no_answer",
+        "hostname": "nexa.polito.it",
+        "query_type": "AAAA",
+        "raw_response": "HmKBgAABAAAAAQABBG5leGEGcG9saXRvAml0AAAcAAHAEQAGAAEAAA4QACYIbGVvbmFyZG/AEQRyb290wCx4lkEpAAAqMAAABwgAEnUAAAFRgAAAKQIAAACAAAAA",
+        "resolver_hostname": null,
+        "resolver_port": null,
+        "resolver_address": "https://dns.quad9.net/dns-query",
+        "t0": 0.00078,
+        "t": 0.123953,
+        "tags": [
+          "depth=0"
+        ],
+        "transaction_id": 3
       },
       {
         "answers": [
@@ -679,29 +635,16 @@
         "failure": null,
         "hostname": "nexa.polito.it",
         "query_type": "A",
-        "raw_response": "IHGBgAABAAEAAAABBG5leGEGcG9saXRvAml0AAABAAHADAABAAEAAFRgAASCwBCrAAApAgAAAIAAAZkADAGVAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "raw_response": "T2qBgAABAAEAAAABBG5leGEGcG9saXRvAml0AAABAAHADAABAAEAAKjAAASCwBCrAAApBNAAAIAAAAA=",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "https://dns.google/dns-query",
-        "t0": 0.001105,
-        "t": 0.090905,
-        "tags": [],
-        "transaction_id": 2
-      },
-      {
-        "answers": null,
-        "engine": "doh",
-        "failure": "dns_no_answer",
-        "hostname": "nexa.polito.it",
-        "query_type": "AAAA",
-        "raw_response": "zmOBgAABAAAAAQABBG5leGEGcG9saXRvAml0AAAcAAHAEQAGAAEAAAcIACYIbGVvbmFyZG/AEQRyb290wCx4lj/+AAAqMAAABwgAEnUAAAFRgAAAKQIAAACAAAF3AAwBcwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-        "resolver_hostname": null,
-        "resolver_port": null,
-        "resolver_address": "https://dns.google/dns-query",
-        "t0": 0.000872,
-        "t": 0.091008,
-        "tags": [],
-        "transaction_id": 2
+        "resolver_address": "https://dns.quad9.net/dns-query",
+        "t0": 0.001245,
+        "t": 0.141024,
+        "tags": [
+          "depth=0"
+        ],
+        "transaction_id": 3
       }
     ],
     "requests": [
@@ -752,7 +695,7 @@
           "url": "https://nexa.polito.it/"
         },
         "response": {
-          "body": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML+RDFa 1.0//EN\"\n  \"http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd\">\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" version=\"XHTML+RDFa 1.0\" dir=\"ltr\"\n  xmlns:fb=\"https://ogp.me/ns/fb#\"\n  xmlns:og=\"https://ogp.me/ns#\">\n\n<head profile=\"http://www.w3.org/1999/xhtml/vocab\">\n  <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n<link rel=\"shortcut icon\" href=\"https://nexa.polito.it/nexafiles/contented7_favicon.ico\" type=\"image/vnd.microsoft.icon\" />\n<meta name=\"generator\" content=\"Drupal 7 (http://drupal.org)\" />\n<link rel=\"canonical\" href=\"https://nexa.polito.it/\" />\n<link rel=\"shortlink\" href=\"https://nexa.polito.it/\" />\n<meta property=\"og:type\" content=\"website\" />\n<meta property=\"og:url\" content=\"https://nexa.polito.it/\" />\n<meta property=\"og:title\" content=\"Nexa Center for Internet &amp; Society\" />\n<meta property=\"og:description\" content=\"Il centro Nexa è un centro di ricerca del Dipartimento di Automatica e Informatica del Politecnico di Torino\" />\n<meta name=\"twitter:card\" content=\"summary\" />\n<meta name=\"twitter:site\" content=\"@nexacenter\" />\n<meta name=\"twitter:site:id\" content=\"49607008\" />\n<meta name=\"twitter:url\" content=\"https://nexa.polito.it/\" />\n<meta name=\"twitter:title\" content=\"Nexa Center for Internet &amp; Society\" />\n<meta name=\"twitter:description\" content=\"Il centro Nexa è un centro di ricerca del Dipartimento di Automatica e Informatica del Politecnico di Torino\" />\n  <title>Nexa Center for Internet & Society | Il centro Nexa è un centro di ricerca del Dipartimento di Automatica e Informatica del Politecnico di Torino</title>\n  <link type=\"text/css\" rel=\"stylesheet\" href=\"https://nexa.polito.it/nexacenterfiles/css/css_xE-rWrJf-fncB6ztZfd2huxqgxu4WO-qwma6Xer30m4.css\" media=\"all\" />\n<link type=\"text/css\" rel=\"stylesheet\" href=\"https://nexa.polito.it/nexacenterfiles/css/css_02kNM7E_d_TVOJ_Q4TPhaP-wbrvOWbuPMtkSrtZvmPY.css\" media=\"all\" />\n<link type=\"text/css\" rel=\"stylesheet\" href=\"https://nexa.polito.it/nexacenterfiles/css/css_eukJACdIvUI5veT0PNo-PXBs0I50kokcOb26hO1mxFI.css\" media=\"all\" />\n<link type=\"text/css\" rel=\"stylesheet\" href=\"https://nexa.polito.it/nexacenterfiles/css/css_6qqbOWA0So6vmSTtkqcBCrZ3iKRASVZ5qG1Yqwq8HC0.css\" media=\"screen\" />\n  <script type=\"text/javascript\" src=\"//code.jquery.com/jquery-1.12.4.min.js\"></script>\n<script type=\"text/javascript\">\n<!--//--><![CDATA[//><!--\nwindow.jQuery || document.write(\"<script src='/sites/all/modules/jquery_update/replace/jquery/1.12/jquery.min.js'>\\x3C/script>\")\n//--><!]]>\n</script>\n<script type=\"text/javascript\" src=\"https://nexa.polito.it/nexacenterfiles/js/js_GOikDsJOX04Aww72M-XK1hkq4qiL_1XgGsRdkL0XlDo.js\"></script>\n<script type=\"text/javascript\" src=\"https://nexa.polito.it/nexacenterfiles/js/js_TVTqjz8JHRb2KK9hlzuk0YsjzD013dKyYX_OTz-2VXU.js\"></script>\n<script type=\"text/javascript\" src=\"https://nexa.polito.it/nexacenterfiles/js/js_vPOVD62vJ5lGBWdrLaM_m7mkR4eP_IG7R7jSWx1CnOk.js\"></script>\n<script type=\"text/javascript\">\n<!--//--><![CDATA[//><!--\nvar _paq = _paq || [];(function(){var u=((\"https:\" == document.location.protocol) ? \"https://analytics.nexacenter.org/\" : \"http://analytics.nexacenter.org/\");_paq.push([\"setSiteId\", \"3\"]);_paq.push([\"setTrackerUrl\", u+\"matomo.php\"]);_paq.push([\"setDoNotTrack\", 1]);_paq.push([\"trackPageView\"]);_paq.push([\"setIgnoreClasses\", [\"no-tracking\",\"colorbox\"]]);_paq.push([\"enableLinkTracking\"]);var d=document,g=d.createElement(\"script\"),s=d.getElementsByTagName(\"script\")[0];g.type=\"text/javascript\";g.defer=true;g.async=true;g.src=u+\"matomo.js\";s.parentNode.insertBefore(g,s);})();\n//--><!]]>\n</script>\n<script type=\"text/javascript\" src=\"https://nexa.polito.it/nexacenterfiles/js/js_tzAVab462cyAtlJ1OeA_JccnC5qSOjMMH5CRQ43Ea-8.js\"></script>\n<script type=\"text/javascript\">\n<!--//--><![CDATA[//><!--\njQuery.extend(Drupal.settings, {\"basePath\":\"\\/\",\"pathPrefix\":\"\",\"setHasJsCookie\":0,\"ajaxPageState\":{\"theme\":\"nexad7\",\"theme_token\":\"_tn0h3QoFoExAlqz7v2yOBfkxI9mEG6zRp34l8hPG5g\",\"js\":{\"0\":1,\"1\":1,\"sites\\/all\\/modules\\/eu_cookie_compliance\\/js\\/eu_cookie_compliance.min.js\":1,\"\\/\\/code.jquery.com\\/jquery-1.12.4.min.js\":1,\"2\":1,\"misc\\/jquery-extend-3.4.0.js\":1,\"misc\\/jquery-html-prefilter-3.5.0-backport.js\":1,\"misc\\/jquery.once.js\":1,\"misc\\/drupal.js\":1,\"sites\\/all\\/modules\\/jquery_update\\/js\\/jquery_browser.js\":1,\"sites\\/all\\/modules\\/eu_cookie_compliance\\/js\\/jquery.cookie-1.4.1.min.js\":1,\"sites\\/all\\/modules\\/lightbox2\\/js\\/lightbox.js\":1,\"sites\\/all\\/modules\\/matomo\\/matomo.js\":1,\"3\":1,\"sites\\/nexa.polito.it\\/themes\\/nexad7\\/js\\/scripts.js\":1},\"css\":{\"modules\\/system\\/system.base.css\":1,\"modules\\/system\\/system.menus.css\":1,\"modules\\/system\\/system.messages.css\":1,\"modules\\/system\\/system.theme.css\":1,\"modules\\/aggregator\\/aggregator.css\":1,\"modules\\/book\\/book.css\":1,\"modules\\/comment\\/comment.css\":1,\"sites\\/all\\/modules\\/date\\/date_repeat_field\\/date_repeat_field.css\":1,\"modules\\/field\\/theme\\/field.css\":1,\"modules\\/node\\/node.css\":1,\"modules\\/search\\/search.css\":1,\"modules\\/user\\/user.css\":1,\"sites\\/all\\/modules\\/calendar\\/css\\/calendar_multiday.css\":1,\"sites\\/all\\/modules\\/views\\/css\\/views.css\":1,\"sites\\/all\\/modules\\/ctools\\/css\\/ctools.css\":1,\"sites\\/all\\/modules\\/lightbox2\\/css\\/lightbox.css\":1,\"sites\\/all\\/modules\\/oembed\\/oembed.base.css\":1,\"sites\\/all\\/modules\\/oembed\\/oembed.theme.css\":1,\"sites\\/all\\/modules\\/eu_cookie_compliance\\/css\\/eu_cookie_compliance.css\":1,\"public:\\/\\/ctools\\/css\\/0043c8a0cdcd6cba153c028452466f3f.css\":1,\"sites\\/nexa.polito.it\\/themes\\/nexad7\\/style.css\":1}},\"lightbox2\":{\"rtl\":0,\"file_path\":\"\\/(\\\\w\\\\w\\/)public:\\/\",\"default_image\":\"\\/sites\\/all\\/modules\\/lightbox2\\/images\\/brokenimage.jpg\",\"border_size\":10,\"font_color\":\"000\",\"box_color\":\"fff\",\"top_position\":\"\",\"overlay_opacity\":\"0.8\",\"overlay_color\":\"000\",\"disable_close_click\":1,\"resize_sequence\":0,\"resize_speed\":400,\"fade_in_speed\":400,\"slide_down_speed\":600,\"use_alt_layout\":0,\"disable_resize\":0,\"disable_zoom\":0,\"force_show_nav\":0,\"show_caption\":0,\"loop_items\":1,\"node_link_text\":\"View Image Details\",\"node_link_target\":0,\"image_count\":\"Image !current of !total\",\"video_count\":\"Video !current of !total\",\"page_count\":\"Page !current of !total\",\"lite_press_x_close\":\"press \\u003Ca href=\\u0022#\\u0022 onclick=\\u0022hideLightbox(); return FALSE;\\u0022\\u003E\\u003Ckbd\\u003Ex\\u003C\\/kbd\\u003E\\u003C\\/a\\u003E to close\",\"download_link_text\":\"\",\"enable_login\":false,\"enable_contact\":false,\"keys_close\":\"c x 27\",\"keys_previous\":\"p 37\",\"keys_next\":\"n 39\",\"keys_zoom\":\"z\",\"keys_play_pause\":\"32\",\"display_image_size\":\"original\",\"image_node_sizes\":\"()\",\"trigger_lightbox_classes\":\"\",\"trigger_lightbox_group_classes\":\"\",\"trigger_slideshow_classes\":\"\",\"trigger_lightframe_classes\":\"\",\"trigger_lightframe_group_classes\":\"\",\"custom_class_handler\":0,\"custom_trigger_classes\":\"\",\"disable_for_gallery_lists\":1,\"disable_for_acidfree_gallery_lists\":true,\"enable_acidfree_videos\":true,\"slideshow_interval\":5000,\"slideshow_automatic_start\":true,\"slideshow_automatic_exit\":true,\"show_play_pause\":true,\"pause_on_next_click\":false,\"pause_on_previous_click\":true,\"loop_slides\":false,\"iframe_width\":600,\"iframe_height\":400,\"iframe_border\":1,\"enable_video\":0,\"useragent\":\"EyeMonIT Uptime Bot Mozilla\\/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\\/537.36 (KHTML, like Gecko) Chrome\\/74.0.3729.169 Safari\\/537.36\"},\"themepath\":\"\\/sites\\/nexa.polito.it\\/themes\\/nexad7\",\"populatemenu\":\"https:\\/\\/nexa.polito.it\\/modules\\/populatemenu\",\"eu_cookie_compliance\":{\"cookie_policy_version\":\"1.0.0\",\"popup_enabled\":1,\"popup_agreed_enabled\":0,\"popup_hide_agreed\":0,\"popup_clicking_confirmation\":false,\"popup_scrolling_confirmation\":false,\"popup_html_info\":\"\\u003Cdiv class=\\u0022eu-cookie-compliance-banner eu-cookie-compliance-banner-info eu-cookie-compliance-banner--opt-in\\u0022\\u003E\\n  \\u003Cdiv class=\\u0022popup-content info\\u0022\\u003E\\n        \\u003Cdiv id=\\u0022popup-text\\u0022\\u003E\\n      \\u003Ch2\\u003EQuesto sito utilizza i cookies, ma nessun dato di navigazione viene raccolto senza il tuo consenso.\\u003C\\/h2\\u003E\\n\\u003Cp\\u003ENon utilizziamo servizi di terze parti per l\\u0027analisi dei dati ed anonimizziamo i dati raccolti.\\u003C\\/p\\u003E\\n              \\u003Cbutton type=\\u0022button\\u0022 class=\\u0022find-more-button eu-cookie-compliance-more-button\\u0022\\u003EPrivacy Policy\\u003C\\/button\\u003E\\n          \\u003C\\/div\\u003E\\n    \\n    \\u003Cdiv id=\\u0022popup-buttons\\u0022 class=\\u0022\\u0022\\u003E\\n            \\u003Cbutton type=\\u0022button\\u0022 class=\\u0022agree-button eu-cookie-compliance-secondary-button\\u0022\\u003EOK, Accetto\\u003C\\/button\\u003E\\n              \\u003Cbutton type=\\u0022button\\u0022 class=\\u0022decline-button eu-cookie-compliance-default-button\\u0022 \\u003ENo, grazie\\u003C\\/button\\u003E\\n          \\u003C\\/div\\u003E\\n  \\u003C\\/div\\u003E\\n\\u003C\\/div\\u003E\",\"use_mobile_message\":false,\"mobile_popup_html_info\":\"\\u003Cdiv class=\\u0022eu-cookie-compliance-banner eu-cookie-compliance-banner-info eu-cookie-compliance-banner--opt-in\\u0022\\u003E\\n  \\u003Cdiv class=\\u0022popup-content info\\u0022\\u003E\\n        \\u003Cdiv id=\\u0022popup-text\\u0022\\u003E\\n                    \\u003Cbutton type=\\u0022button\\u0022 class=\\u0022find-more-button eu-cookie-compliance-more-button\\u0022\\u003EPrivacy Policy\\u003C\\/button\\u003E\\n          \\u003C\\/div\\u003E\\n    \\n    \\u003Cdiv id=\\u0022popup-buttons\\u0022 class=\\u0022\\u0022\\u003E\\n            \\u003Cbutton type=\\u0022button\\u0022 class=\\u0022agree-button eu-cookie-compliance-secondary-button\\u0022\\u003EOK, Accetto\\u003C\\/button\\u003E\\n              \\u003Cbutton type=\\u0022button\\u0022 class=\\u0022decline-button eu-cookie-compliance-default-button\\u0022 \\u003ENo, grazie\\u003C\\/button\\u003E\\n          \\u003C\\/div\\u003E\\n  \\u003C\\/div\\u003E\\n\\u003C\\/div\\u003E\\n\",\"mobile_breakpoint\":\"768\",\"popup_html_agreed\":\"\\u003Cdiv\\u003E\\n  \\u003Cdiv class=\\u0022popup-content agreed\\u0022\\u003E\\n    \\u003Cdiv id=\\u0022popup-text\\u0022\\u003E\\n      \\u003Ch2\\u003EThank you for accepting cookies\\u003C\\/h2\\u003E\\n\\u003Cp\\u003EYou can now hide this message or find out more about cookies.\\u003C\\/p\\u003E\\n    \\u003C\\/div\\u003E\\n    \\u003Cdiv id=\\u0022popup-buttons\\u0022\\u003E\\n      \\u003Cbutton type=\\u0022button\\u0022 class=\\u0022hide-popup-button eu-cookie-compliance-hide-button\\u0022\\u003EHide\\u003C\\/button\\u003E\\n              \\u003Cbutton type=\\u0022button\\u0022 class=\\u0022find-more-button eu-cookie-compliance-more-button-thank-you\\u0022 \\u003EMore info\\u003C\\/button\\u003E\\n          \\u003C\\/div\\u003E\\n  \\u003C\\/div\\u003E\\n\\u003C\\/div\\u003E\",\"popup_use_bare_css\":false,\"popup_height\":\"auto\",\"popup_width\":\"100%\",\"popup_delay\":1000,\"popup_link\":\"\\/privacy\",\"popup_link_new_window\":0,\"popup_position\":null,\"fixed_top_position\":false,\"popup_language\":\"en\",\"store_consent\":false,\"better_support_for_screen_readers\":0,\"reload_page\":1,\"domain\":\"\",\"domain_all_sites\":0,\"popup_eu_only_js\":0,\"cookie_lifetime\":\"100\",\"cookie_session\":false,\"disagree_do_not_show_popup\":0,\"method\":\"opt_in\",\"allowed_cookies\":\"has_js\\r\\ncookie-agreed\",\"withdraw_markup\":\"\\u003Cbutton type=\\u0022button\\u0022 class=\\u0022eu-cookie-withdraw-tab\\u0022\\u003EPrivacy settings\\u003C\\/button\\u003E\\n\\u003Cdiv class=\\u0022eu-cookie-withdraw-banner\\u0022\\u003E\\n  \\u003Cdiv class=\\u0022popup-content info\\u0022\\u003E\\n    \\u003Cdiv id=\\u0022popup-text\\u0022\\u003E\\n      \\u003Ch2\\u003EWe use cookies on this site to enhance your user experience\\u003C\\/h2\\u003E\\n\\u003Cp\\u003EYou have given your consent for us to set cookies.\\u003C\\/p\\u003E\\n    \\u003C\\/div\\u003E\\n    \\u003Cdiv id=\\u0022popup-buttons\\u0022\\u003E\\n      \\u003Cbutton type=\\u0022button\\u0022 class=\\u0022eu-cookie-withdraw-button\\u0022\\u003EWithdraw consent\\u003C\\/button\\u003E\\n    \\u003C\\/div\\u003E\\n  \\u003C\\/div\\u003E\\n\\u003C\\/div\\u003E\\n\",\"withdraw_enabled\":false,\"withdraw_button_on_info_popup\":0,\"cookie_categories\":[],\"cookie_categories_details\":[],\"enable_save_preferences_button\":1,\"cookie_name\":\"\",\"cookie_value_disagreed\":\"0\",\"cookie_value_agreed_show_thank_you\":\"1\",\"cookie_value_agreed\":\"2\",\"containing_element\":\"body\",\"automatic_cookies_removal\":1,\"close_button_action\":\"close_banner\"},\"matomo\":{\"trackMailto\":1},\"urlIsAjaxTrusted\":{\"\\/\":true}});\n//--><!]]>\n</script>\n</head>\n<body class=\"html front not-logged-in no-sidebars page-frontpage2\" >\n  <div id=\"skip-link\">\n    <a href=\"#main-content\" class=\"element-invisible element-focusable\">Skip to main content</a>\n  </div>\n    \n\n\n\n\n  <div id=\"wrapper\">\n  <div id=\"container\" class=\"clear-block\"><!-- begin container -->\n \n\n    <div id=\"header\">\n\t\n\t\n\t\t\t\t\t\t<div id=\"logo\">\n\t\t\t\t<a href=\"/\" title=\"Nexa Center for Internet &amp; Society\"><img src=\"https://nexa.polito.it/nexacenterfiles/logo.png\" alt=\"Nexa Center for Internet &amp; Society\" /></a>\n\t\t\t</div>\t\t\t\n\t\t\t\n\t\t\t<div id=\"slogan-floater\"><!-- begin slogan-floater -->\n\t\t\t\t\t  <div class=\"region region-social-share\">\n    <div id=\"block-block-4\" class=\"block block-block\">\n\n    \n  <div class=\"content  headerMainMenuPage\">\n  \n    <div class=\"feeds-header feed\"><a href=\"/feed\" title=\"RSS Feed\"><img src=\"/nexafiles/feed.png\" alt=\"RSS Logo\" border=\"0\" /></a></div>\n<div class=\"feeds-header mail\"><a href=\"/mailing-lists\" title=\"Nexa Mailing Lists\"><img src=\"/nexafiles/mail.png\" alt=\"Mail\" border=\"0\" /></a></div>\n<div class=\"feeds-header fb\"><a href=\"http://facebook.com/nexa.center\" title=\"Nexa Facebook\" target=\"_TOP\"><img src=\"/nexafiles/fb.png\" border=\"0\" alt=\"Communia Facebook page\" /></a></div>\n<div class=\"feeds-header tweet\"><a href=\"http://twitter.com/nexacenter\" title=\"Nexa Twitter\" target=\"_TOP\"><img src=\"/nexafiles/tw.png\" border=\"0\" alt=\"Nexa twitter\" /></a></div>\n<div class=\"feeds-header youtube\"><a href=\"http://www.youtube.com/user/NexaCenter\" title=\"Nexa YouTube\" target=\"_TOP\"><img src=\"/nexafiles/you_tube.png\" border=\"0\" alt=\"Nexa youtube\" /></a></div>\n<div class=\"feeds-header flickr\"><a href=\"https://www.instagram.com/nexa_center/\" title=\"Nexa Instagram\" target=\"_TOP\"><img src=\"/nexafiles/flickr2.png\" border=\"0\" alt=\"Nexa Instagram\" /></a></div>\n<div class=\"feeds-header github\"><a href=\"https://github.com/nexacenter/\" title=\"Github Feed\"><img src=\"/nexafiles/github.png\" alt=\"github Logo\" border=\"0\" /></a></div>\n  </div>\n\n\n  \n</div>\n  </div>\n\t\t\t\t\t\n\t\t\t<!--\t<h1 class='site-name'><a href=\"/\" title=\"Nexa Center for Internet &amp; Society\">Nexa Center for Internet &amp; Society</a></h1>\t\t\t\t\t\t\t\t\t\t\t\n\t\t\t--> \n\t\t\t</div><!-- end slogan-floater -->\n\n\t\t\t<div id=\"header-region\" class=\"clear-block\"> \n\t\t\t\t  <div class=\"region region-header\">\n    <div id=\"block-system-main-menu\" class=\"block block-system block-menu\">\n\n    \n  <div class=\"content  headerMainMenu headerMainMenuHome\">\n  \n    <ul class=\"menu\"><li class=\"first collapsed\"><a href=\"/get-involved\" title=\"\">Get Involved</a></li>\n<li class=\"leaf\"><a href=\"/donate\" title=\"\">Donate</a></li>\n<li class=\"leaf\"><a href=\"/contatti\" title=\"\">Contacts</a></li>\n<li class=\"collapsed\"><a href=\"/newsroom\" title=\"\">Newsroom</a></li>\n<li class=\"collapsed\"><a href=\"/events\" title=\"\">Events</a></li>\n<li class=\"leaf\"><a href=\"/teaching\">Teaching</a></li>\n<li class=\"collapsed\"><a href=\"/publications\" title=\"\">Publications</a></li>\n<li class=\"collapsed\"><a href=\"/research\">Research</a></li>\n<li class=\"collapsed\"><a href=\"/people\" title=\"People\">People</a></li>\n<li class=\"last collapsed\"><a href=\"/about\">About</a></li>\n</ul>  </div>\n\n\n\t<div class=\"ghostHeaderMenuItem\"></div>\n  \n</div>\n  </div>\n\t\t\t</div>\n\t\t\t\n\t\t\t \t\t\t\n\t\t\t<div id=\"sub-heading-home-statement\">\n\t\t\t\t<h2 id=\"nexa-statement-heading\"><!-- STATEMENT --></h2>  \n\t\t\t\t<div id=\"goAway\"></div>\n\t\t\t</div>\n\t\t\t\t\n\n    </div> <!-- /#header -->\n\n  \n\t  \n\t\t\t\t\t<div id=\"main-content-block\">\n\t\t \n \n\t\t\t\t\n\t\n\t<div id=\"center\"><!-- begin center --> \n\t\t<div id=\"squeeze\"><!-- begin squeeze -->\n\n\t\t\t\n\t\t\t\t\t\n\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\n\n\n\t\t\t\n\t\t\t<div class=\"tabs\"></div>\t\t\t\n\t\t\t \n\t\t\t\t\t\t\t<div class=\"clear-block\">\n\n\t\t\t\t \n\t\t\t \n\t\t\t\t  <div class=\"region region-content\">\n    <div id=\"block-system-main\" class=\"block block-system\">\n\n    \n  <div class=\"content  headerMainMenuPage\">\n  \n    <div class=\"view view-frontpage2 view-id-frontpage2 view-display-id-page_1 view-dom-id-48583e4ca6717b66bdcbd0a30f658ab9\">\n        \n  \n  \n      <div class=\"view-content\">\n      \n<div class=\"item-list\">\n<div class=\"view-content-frontpage2\">\n\n\n\n  <ul>\n    \t      <li class=\"v\">\t<div class=\"frontpage2\" id=\"frontpage2_1807\">\n\t\t\n\t\t\t\n\t\t\n\n\t\t\t\t\n\t\t\n\t\t\n\t\t\t\t\n\n\t\t\n\t\t\t\t\t<h2 class=\"nexa-news\">\n\t\t\tnews \t\t\t</h2>\n\t\t\t\t\t\t\n\t\t\n\t\t\n\n\t\t\n\t\t\t\t\n\t\t\t\t\t\t\t<div class=\"views-field-image-attach-images\">\n\t\t\t\t\t<div class=\"field-content\"><img src=\"https://nexa.polito.it/nexacenterfiles/styles/thumbnail/public/contro-lo-smartphone-web-ok.jpg?itok=9x-BvgLK\" width=\"88\" height=\"128\" alt=\"\" /></div>\t\t\t\t</div>\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t<div class=\"views-field-title views-field-title-small\">\n\t\t\t\t\t<span class=\"field-content\"><h2 class=\"title\">\n<a href=\"/contro-lo-smartphone\">Contro lo smartphone. Per una tecnologia più democratica</a></h2>\n</span>\t\t\t\t</div>\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\t\t<div class=\"views-field-body views-field-body-small\">\n\t\t\t\t\t<div class=\"field-content\">Il nuovo saggio del co-direttore del Centro Nexa Juan Carlo De Martin<br /><br />\nData di uscita: 22 settembre 2023<br />\n \n</div>\t\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t<span class=\"view-post\"><a href=\"/contro-lo-smartphone\">more ></a></span>\t\t\t\t</div> \n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\n\t\t\n\t\t\n\t\t\t</div>\n</li>\n          <li class=\"i\">\t<div class=\"frontpage2\" id=\"frontpage2_1829\">\n\t\t\n\t\t\t\n\t\t\n\n\t\t\t\t\n\t\t\n\t\t\n\t\t\t\t\t<h2 class=\"nexa-event\">\n\t\t\tevents \t\t\t</h2>\n\t\t\t\t\n\n\t\t\n\t\t\t\t\t\t\n\t\t\n\t\t\n\n\t\t\n\t\t\t\t\n\t\t\t\t\t\t\t<div class=\"views-field-image-attach-images\">\n\t\t\t\t\t<div class=\"field-content\"><img src=\"https://nexa.polito.it/nexacenterfiles/styles/thumbnail/public/social-1.png?itok=vlrGaAJf\" width=\"128\" height=\"128\" alt=\"\" /></div>\t\t\t\t</div>\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t<div class=\"views-field-title views-field-title-small\">\n\t\t\t\t\t<span class=\"field-content\"><h2 class=\"title\">\n<a href=\"/conf2023\">Conferenza Nexa su Internet &amp; Società 2023</a></h2>\n</span>\t\t\t\t</div>\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\t\t<div class=\"views-field-body views-field-body-small\">\n\t\t\t\t\t<div class=\"field-content\">15 dicembre 2023<br /><br />\nTwitter hashtag della conferenza: <a href=\"https://twitter.com/hashtag/nexa2023?src=hashtag_click\">#nexa2023</a><br />\n \n</div>\t\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t<span class=\"view-post\"><a href=\"/conf2023\">more ></a></span>\t\t\t\t</div> \n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\n\t\t\n\t\t\n\t\t\t</div>\n</li>\n          <li class=\"e\">\t<div class=\"frontpage2\" id=\"frontpage2_1830\">\n\t\t\n\t\t\t\n\t\t\n\n\t\t\t\t\n\t\t\n\t\t\n\t\t\t\t\n\n\t\t\n\t\t\t\t\t<h2 class=\"nexa-news\">\n\t\t\tnews \t\t\t</h2>\n\t\t\t\t\t\t\n\t\t\n\t\t\n\n\t\t\n\t\t\t\t\n\t\t\t\t\t\t\t<div class=\"views-field-image-attach-images\">\n\t\t\t\t\t<div class=\"field-content\"><img src=\"https://nexa.polito.it/nexacenterfiles/styles/thumbnail/public/mborghi23_1.jpg?itok=uKC3DqJo\" width=\"108\" height=\"128\" alt=\"\" /></div>\t\t\t\t</div>\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t<div class=\"views-field-title views-field-title-small\">\n\t\t\t\t\t<span class=\"field-content\"><h2 class=\"title\">\n<a href=\"/intervista-Borghi-Dealogando\">Digital Services Act, Borghi: “Bavaglio al web? La censura c’era già ma i rimedi sono inefficaci”</a></h2>\n</span>\t\t\t\t</div>\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\t\t<div class=\"views-field-body views-field-body-small\">\n\t\t\t\t\t<div class=\"field-content\">L'intervista di Dealogando al co-direttore del Centro Nexa Maurizio Borghi<br />\n \n</div>\t\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t<span class=\"view-post\"><a href=\"/intervista-Borghi-Dealogando\">more ></a></span>\t\t\t\t</div> \n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\n\t\t\n\t\t\n\t\t\t</div>\n</li>\n          <li class=\"w\">\t<div class=\"frontpage2\" id=\"frontpage2_1809\">\n\t\t\n\t\t\t\n\t\t\t\t\t<h2 class=\"lunch-seminar\">\n\t\t\tlunch seminar \t\t\t</h2>\n\t\t\n\n\t\t\t\t\n\t\t\n\t\t\n\t\t\t\t\n\n\t\t\n\t\t\t\t\t\t\n\t\t\n\t\t\n\n\t\t\n\t\t\t\t\n\t\t\t\t\t\t\t<div class=\"views-field-image-attach-images\">\n\t\t\t\t\t<div class=\"field-content\"><img src=\"https://nexa.polito.it/nexacenterfiles/styles/thumbnail/public/social-lunch109.png?itok=bzGwi-Du\" width=\"128\" height=\"128\" alt=\"\" /></div>\t\t\t\t</div>\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t<div class=\"views-field-title views-field-title-small\">\n\t\t\t\t\t<span class=\"field-content\"><h2 class=\"title\">\n<a href=\"/lunch-109\">109° Nexa Lunch Seminar - Piattaforme digitali e autodeterminazione. Relazioni sociali, lavoro e diritti al tempo della &quot;governamentalità algoritmica&quot;</a></h2>\n</span>\t\t\t\t</div>\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\t\t<div class=\"views-field-body views-field-body-small\">\n\t\t\t\t\t<div class=\"field-content\">22 novembre 2023<br /><br />\nGIACOMO PISANI (Euricse)<br />\n \n</div>\t\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t<span class=\"view-post\"><a href=\"/lunch-109\">more ></a></span>\t\t\t\t</div> \n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\n\t\t\n\t\t\n\t\t\t</div>\n</li>\n          <li class=\"s\">\t<div class=\"frontpage2\" id=\"frontpage2_1771\">\n\t\t\n\t\t\t\n\t\t\n\n\t\t\t\t\t<h2 class=\"nexa-wednesday\">\n\t\t\tmercoled&igrave; di nexa \t\t\t</h2>\n\t\t\t\t\n\t\t\n\t\t\n\t\t\t\t\n\n\t\t\n\t\t\t\t\t\t\n\t\t\n\t\t\n\n\t\t\n\t\t\t\t\n\t\t\t\t\t\t\t<div class=\"views-field-image-attach-images\">\n\t\t\t\t\t<div class=\"field-content\"><img src=\"https://nexa.polito.it/nexacenterfiles/styles/thumbnail/public/social-tamburrini1.png?itok=RnnaEtE2\" width=\"128\" height=\"128\" alt=\"\" /></div>\t\t\t\t</div>\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t<div class=\"views-field-title views-field-title-small\">\n\t\t\t\t\t<span class=\"field-content\"><h2 class=\"title\">\n<a href=\"/mercoledi-166\">166° Mercoledì di Nexa - Etica del digitale ed euristiche mentali</a></h2>\n</span>\t\t\t\t</div>\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\t\t<div class=\"views-field-body views-field-body-small\">\n\t\t\t\t\t<div class=\"field-content\">8 novembre 2023<br /><br />\nGUGLIELMO TAMBURRINI (Università di Napoli Federico II)<br />\n \n</div>\t\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t<span class=\"view-post\"><a href=\"/mercoledi-166\">more ></a></span>\t\t\t\t</div> \n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\n\t\t\n\t\t\n\t\t\t</div>\n</li>\n          <li class=\"-\">\t<div class=\"frontpage2\" id=\"frontpage2_1808\">\n\t\t\n\t\t\t\n\t\t\t\t\t<h2 class=\"lunch-seminar\">\n\t\t\tlunch seminar \t\t\t</h2>\n\t\t\n\n\t\t\t\t\n\t\t\n\t\t\n\t\t\t\t\n\n\t\t\n\t\t\t\t\t\t\n\t\t\n\t\t\n\n\t\t\n\t\t\t\t\n\t\t\t\t\t\t\t<div class=\"views-field-image-attach-images\">\n\t\t\t\t\t<div class=\"field-content\"><img src=\"https://nexa.polito.it/nexacenterfiles/styles/thumbnail/public/social108.png?itok=F8A01vnp\" width=\"128\" height=\"128\" alt=\"\" /></div>\t\t\t\t</div>\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t<div class=\"views-field-title views-field-title-small\">\n\t\t\t\t\t<span class=\"field-content\"><h2 class=\"title\">\n<a href=\"/lunch-108\">108° Nexa Lunch Seminar - Analisi e report di trasferimenti di dati personali verso domini extra-EEA</a></h2>\n</span>\t\t\t\t</div>\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\t\t<div class=\"views-field-body views-field-body-small\">\n\t\t\t\t\t<div class=\"field-content\">25 ottobre 2023<br /><br />\nLORENZO LAUDADIO (Politecnico di Torino)<br />\n \n</div>\t\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t<span class=\"view-post\"><a href=\"/lunch-108\">more ></a></span>\t\t\t\t</div> \n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\n\t\t\n\t\t\n\t\t\t</div>\n</li>\n          <li class=\"r\">\t<div class=\"frontpage2\" id=\"frontpage2_1773\">\n\t\t\n\t\t\t\n\t\t\n\n\t\t\t\t\t<h2 class=\"nexa-wednesday\">\n\t\t\tmercoled&igrave; di nexa \t\t\t</h2>\n\t\t\t\t\n\t\t\n\t\t\n\t\t\t\t\n\n\t\t\n\t\t\t\t\t\t\n\t\t\n\t\t\n\n\t\t\n\t\t\t\t\n\t\t\t\t\t\t\t<div class=\"views-field-image-attach-images\">\n\t\t\t\t\t<div class=\"field-content\"><img src=\"https://nexa.polito.it/nexacenterfiles/styles/thumbnail/public/ig_1_0.png?itok=fjPQ1peJ\" width=\"128\" height=\"128\" alt=\"\" /></div>\t\t\t\t</div>\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t<div class=\"views-field-title views-field-title-small\">\n\t\t\t\t\t<span class=\"field-content\"><h2 class=\"title\">\n<a href=\"/mercoledi-165\">165° Mercoledì di Nexa - Oggetti Buoni: Progettare tecnologie per i valori umani</a></h2>\n</span>\t\t\t\t</div>\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\t\t<div class=\"views-field-body views-field-body-small\">\n\t\t\t\t\t<div class=\"field-content\">11 ottobre 2023<br /><br />\nSTEVEN UMBRELLO (Institute for Ethics and Emerging Technologies)<br />\n \n</div>\t\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t<span class=\"view-post\"><a href=\"/mercoledi-165\">more ></a></span>\t\t\t\t</div> \n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\n\t\t\n\t\t\n\t\t\t</div>\n</li>\n      </ul>\n\n\n\n</div>\n</div>\n\n\n\n\n    </div>\n  \n      <h2 class=\"element-invisible\">Pages</h2><div class=\"item-list\"><ul class=\"pager\"><li class=\"pager-current first\">1</li>\n<li class=\"pager-item\"><a title=\"Go to page 2\" href=\"/frontpage2?page=1\">2</a></li>\n<li class=\"pager-item\"><a title=\"Go to page 3\" href=\"/frontpage2?page=2\">3</a></li>\n<li class=\"pager-item\"><a title=\"Go to page 4\" href=\"/frontpage2?page=3\">4</a></li>\n<li class=\"pager-item\"><a title=\"Go to page 5\" href=\"/frontpage2?page=4\">5</a></li>\n<li class=\"pager-item\"><a title=\"Go to page 6\" href=\"/frontpage2?page=5\">6</a></li>\n<li class=\"pager-item\"><a title=\"Go to page 7\" href=\"/frontpage2?page=6\">7</a></li>\n<li class=\"pager-item\"><a title=\"Go to page 8\" href=\"/frontpage2?page=7\">8</a></li>\n<li class=\"pager-item\"><a title=\"Go to page 9\" href=\"/frontpage2?page=8\">9</a></li>\n<li class=\"pager-ellipsis\">…</li>\n<li class=\"pager-next\"><a title=\"Go to next page\" href=\"/frontpage2?page=1\">next ›</a></li>\n<li class=\"pager-last last\"><a title=\"Go to last page\" href=\"/frontpage2?page=70\">last »</a></li>\n</ul></div>  \n  \n  \n  \n  \n</div>  </div>\n\n\n  \n</div>\n  </div>\n  \n\t\t\t \n\t\t\t\t<div id=\"about-footer\" class=\"clear-block\">\n\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\n\t\t\t\t</div>\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\n\t\t\t\n\t\t\t    \n\t\t</div><!-- end squeeze -->\n  \n\t\t<!-- begin small_sidebar -->\n\t\t\t<div id=\"sidebar-right\" class=\"sidebar\">\n\t\t\t\t\t\t\t\t  <div class=\"region region-small-sidebar\">\n    <div id=\"block-multiblock-3\" class=\"block block-multiblock block-views block-views-upcoming_events-block_1-instance\">\n\n    <h2>Upcoming events</h2>\n  \n  <div class=\"content  headerMainMenuPage\">\n  \n    <div class=\"view view-upcoming-events view-id-upcoming_events view-display-id-block_1 upcoming-events view-dom-id-81207349843da7d7442927ef8dd4346a\">\n        \n  \n  \n      <div class=\"view-content\">\n        <div class=\"views-row views-row-1 views-row-odd views-row-first views-row-last\">\n    <div class=\"dateBox\"><div class=\"dateBoxInside\"><p>December</p><p>13</p><p>2023</p></div></div>\n\n\t<div class=\"views-field-field-luogo\">\n\n\n\t\t\t\t \n\t\t\n\t\t\t<div class=\"views-field-field-luogo-value\"></div>\t\t\n\t</div>\n\t \n\n\n\t<div class=\"views-field-title event-box-title\">\n\n\n\t\t\t\t \n\t\t\n\t\t\t<span class=\"field-content\"><a href=\"/mercoledi-167\">167° Mercoledì di Nexa - Internet fatta a pezzi. Sovranità digitale, nazionalismi e big tech</a></span>\t\t\n\t</div>\n\t \n\n\n\t<div class=\"views-field-body\">\n\n\n\t\t\t\t \n\t\t\n\t\t\t<span class=\"field-content\">\nPer il ciclo di incontri “i Mercoledì di Nexa” (ogni 2° mercoledì del mese) \n167° Mercoledì di Nexa\nInternet fatta a pezzi\nSovranità digitale,...</span>\t\t\n\t</div>\n\t \n  </div>\n    </div>\n  \n  \n  \n  \n  \n  \n</div>  </div>\n\n\n  \n</div>\n<div id=\"block-views-publications-block-1\" class=\"block block-views\">\n\n    <h2>Recent Publications</h2>\n  \n  <div class=\"content  headerMainMenuPage\">\n  \n    <div class=\"view view-Publications view-id-Publications view-display-id-block_1 view-dom-id-429e93d49c8d9ddecb2167bec58fb954\">\n        \n  \n  \n      <div class=\"view-content\">\n      <div class=\"item-list\">    <ul>          <li class=\"views-row views-row-1 views-row-odd views-row-first\">  \n  <div class=\"views-field-field-authors pubblications-block\">\n            <div class=\"field-content\"><div class=\"field-content\">Juan Carlos De Martin</div></div>\n  </div>\n  \n  <div class=\"views-field-title pubblications-block\">\n            <span class=\"field-content\"><span class=\"field-content\"><a href=\"/Juan-Carlos-De-Martin-contro-lo-smartphone\">Contro lo smartphone. Per una tecnologia più democratica</a></span></span>\n  </div>\n</li>\n          <li class=\"views-row views-row-2 views-row-even\">  \n  <div class=\"views-field-field-authors pubblications-block\">\n            <div class=\"field-content\"><div class=\"field-content\">This report was mainly curated by Giovanni Garifo, Giacomo Conti and Anita Botta, with the contributions of the Nexa Staff, Directors and Community</div></div>\n  </div>\n  \n  <div class=\"views-field-title pubblications-block\">\n            <span class=\"field-content\"><span class=\"field-content\"><a href=\"/2023-annual-report\">Nexa Center Annual Report 2023</a></span></span>\n  </div>\n</li>\n          <li class=\"views-row views-row-3 views-row-odd views-row-last\">  \n  <div class=\"views-field-field-authors pubblications-block\">\n            <div class=\"field-content\"><div class=\"field-content\">Juan Carlos De Martin, Marco Ricolfi</div></div>\n  </div>\n  \n  <div class=\"views-field-title pubblications-block\">\n            <span class=\"field-content\"><span class=\"field-content\"><a href=\"/experience-Nexa-Center\">The first 15 years of the Nexa Center for Internet and Society</a></span></span>\n  </div>\n</li>\n      </ul></div>    </div>\n  \n  \n  \n  \n  \n  \n</div>  </div>\n\n\n  \n</div>\n  </div>\n\t\t\t</div>\n\t\t<!-- end small_sidebar --> \n\n\t</div><!-- end center -->\n \n\t\t\t</div> <!-- /.main-content-block -->\n\t\n\n\t\n\t<div id=\"sidebar-left\" class=\"sidebar\"><!-- begin sidebar-left -->\n\t\t   <div class=\"region region-main-sidebar\">\n    <div id=\"block-search-form\" class=\"block block-search\">\n\n    <h2>search</h2>\n  \n  <div class=\"content  headerMainMenuPage\">\n  \n    <form action=\"/\" method=\"post\" id=\"search-block-form\" accept-charset=\"UTF-8\"><div><div class=\"container-inline\">\n    <div class=\"form-item form-type-textfield form-item-search-block-form\">\n  <label class=\"element-invisible\" for=\"edit-search-block-form--2\">Search </label>\n <input title=\"Enter the terms you wish to search for.\" type=\"text\" id=\"edit-search-block-form--2\" name=\"search_block_form\" value=\"\" size=\"15\" maxlength=\"128\" class=\"form-text\" />\n</div>\n<div class=\"form-actions form-wrapper\" id=\"edit-actions\"><input type=\"submit\" id=\"edit-submit\" name=\"op\" value=\"Search\" class=\"form-submit\" /></div><input type=\"hidden\" name=\"form_build_id\" value=\"form-8usEFuohf151plVY0qwo-8HdTmg6NOL9Skv_6F5ZzgU\" />\n<input type=\"hidden\" name=\"form_id\" value=\"search_block_form\" />\n</div>\n</div></form>  </div>\n\n\n  \n</div>\n<div id=\"block-block-6\" class=\"block block-block\">\n\n    <h2>join our community</h2>\n  \n  <div class=\"content  headerMainMenuPage\">\n  \n    <p>Iscriviti alle nostre <a href=\"/mailing-lists\">mailing lists</a>, <a href=\"/contact\">contattaci</a>, esplora i nostri <a href=\"/teaching\">corsi</a>, controlla le nostre <a href=\"/job-openings\">offerte di lavoro</a>, compila il nostro <a href=\"/know-about-you\">form</a> per essere aggiornato su future opportunità (come bandi per assegni o borse di ricerca).</p>\n  </div>\n\n\n  \n</div>\n<div id=\"block-block-12\" class=\"block block-block\">\n\n    <h2>recommended links</h2>\n  \n  <div class=\"content  headerMainMenuPage\">\n  \n    <p>readings &amp; links -- <a href=\"/recommended-readings\">letture selezionate per comprendere Internet</a></p>\n  </div>\n\n\n  \n</div>\n<div id=\"block-block-8\" class=\"block block-block\">\n\n    <h2>project keywords</h2>\n  \n  <div class=\"content  headerMainMenuPage\">\n  \n    <dl>\n<dd><a href=\"/psi\">public sector innovation</a></dd>\n<dd><a href=\"/open-culture\">public domain, the commons and open access</a></dd>\n<dd><a href=\"/internet-monitoring\">internet monitoring and analysis</a></dd>\n<dd><a href=\"/internet-and-democracy\">fundamental rights online &amp; digital citizenship</a></dd>\n</dl>\n<!--<dl><dd><a href=\"anonimity-open-wifi\">anonimity online</a></dd>\n<dd><a href=\"/biennaledemocrazia\">internet e democrazia</a></dd>\n<dd><a href=\"http://communia-project.eu\">communia EU thematic network</a></dd>\n<dd><a href=\"http://creativecommons.it/\">creative commons italia</a></dd>\n<dd><a href=\"/webgeography\">web geography</a></dd>\n<dd><a href=\"/neubot\">network neutrality bot (NeuBot)</a></dd>\n<dd><a href=\"http://selili.polito.it/\">servizio licenze libere</a></dd>\n<dd><a href=\"universita-aperta\">university and democracy</a></dd>\n<dd><a href=\"/cloud-computing\">cloud computing</a></dd>\n</dl>\n<p>-->\n  </div>\n\n\n  \n</div>\n  </div>\n\t</div><!-- end sidebar-left -->\t\t\t\t\n\n\t\n\n    <div id=\"footer\">\n        <div class=\"region region-footer\">\n    <div id=\"block-block-15\" class=\"block block-block\">\n\n    \n  <div class=\"content  headerMainMenuPage\">\n  \n    <div class=\"footer-box\" id=\"footer-first\">\nNexa Center for Internet &amp; Society<br />\n<a href=\"/contacts\">Via Boggio, 65/a</a> 10138 Torino, Italy<br />\nPh. +39 011 090 7217 | Fax +39 011 090<br />\n7216 | email: info [at] nexa [dot] polito<br />\n[dot] it\n</div>\n<div class=\"footer-box\" id=\"footer-second\">\nIl Centro Nexa è un centro di ricerca<br />\ndel <a href=\"http://www.dauin.polito.it\">Dipartimento di Automatica e<br />\nInformatica</a> del <a href=\"http://www.polito.it\">Politecnico di Torino</a>.\n</div>\n<div class=\"footer-box\" id=\"footer-third\">\n<em>Tranne dove <a href=\"/credits\">altrimenti indicato</a>, il<br />\ncontenuto di questo sito è rilasciato<br />\nsecondo i termini della <a rel=\"licenza\" href=\"http://creativecommons.org/licenses/by/3.0/deed.it\">licenza Creative<br />\nCommons Attribuzione 3.0 Unported</a>. / Unless otherwise noted this</em>\n</div>\n<div class=\"footer-box\" id=\"footer-fourth\">\n<em>site and its contents are licensed<br />\nunder the </em><a rel=\"license\" href=\"http://creativecommons.org/licenses/by/3.0/\">Creative Commons Attribution 3.0 Unported License</a>.\n<p><a href=\"/credits\">Credits</a> <a class=\"creative-commons\" rel=\"license\" href=\"http://creativecommons.org/licenses/by/3.0/\"><img alt=\"Creative Commons License\" style=\"border-width:0\" src=\"https://i.creativecommons.org/l/by/3.0/88x31.png\" /></a></p>\n<p><a href=\"/privacy\">Policy sull'utilizzo dei cookie</a></p>\n</div>\n  </div>\n\n\n  \n</div>\n  </div>\n    </div> <!-- /#footer -->\n\n  </div></div> <!--  /#wrapper, /#container -->\n  <script type=\"text/javascript\">\n<!--//--><![CDATA[//><!--\nwindow.euCookieComplianceLoadScripts = function(category) {}\n//--><!]]>\n</script>\n<script type=\"text/javascript\">\n<!--//--><![CDATA[//><!--\nwindow.eu_cookie_compliance_cookie_name = \"\";\n//--><!]]>\n</script>\n<script type=\"text/javascript\" src=\"https://nexa.polito.it/nexacenterfiles/js/js_b5uBqrfPrs_UEmgBeVFSOcXgjdijNE3mS-ZnwQ0jdnU.js\"></script>\n</body>\n</html>\n",
+          "body": "\u003c!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML+RDFa 1.0//EN\"\n  \"http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd\"\u003e\n\u003chtml xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" version=\"XHTML+RDFa 1.0\" dir=\"ltr\"\n  xmlns:fb=\"https://ogp.me/ns/fb#\"\n  xmlns:og=\"https://ogp.me/ns#\"\u003e\n\n\u003chead profile=\"http://www.w3.org/1999/xhtml/vocab\"\u003e\n  \u003cmeta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" /\u003e\n\u003clink rel=\"shortcut icon\" href=\"https://nexa.polito.it/nexafiles/contented7_favicon.ico\" type=\"image/vnd.microsoft.icon\" /\u003e\n\u003cmeta name=\"generator\" content=\"Drupal 7 (http://drupal.org)\" /\u003e\n\u003clink rel=\"canonical\" href=\"https://nexa.polito.it/\" /\u003e\n\u003clink rel=\"shortlink\" href=\"https://nexa.polito.it/\" /\u003e\n\u003cmeta property=\"og:type\" content=\"website\" /\u003e\n\u003cmeta property=\"og:url\" content=\"https://nexa.polito.it/\" /\u003e\n\u003cmeta property=\"og:title\" content=\"Nexa Center for Internet \u0026amp; Society\" /\u003e\n\u003cmeta property=\"og:description\" content=\"Il centro Nexa è un centro di ricerca del Dipartimento di Automatica e Informatica del Politecnico di Torino\" /\u003e\n\u003cmeta name=\"twitter:card\" content=\"summary\" /\u003e\n\u003cmeta name=\"twitter:site\" content=\"@nexacenter\" /\u003e\n\u003cmeta name=\"twitter:site:id\" content=\"49607008\" /\u003e\n\u003cmeta name=\"twitter:url\" content=\"https://nexa.polito.it/\" /\u003e\n\u003cmeta name=\"twitter:title\" content=\"Nexa Center for Internet \u0026amp; Society\" /\u003e\n\u003cmeta name=\"twitter:description\" content=\"Il centro Nexa è un centro di ricerca del Dipartimento di Automatica e Informatica del Politecnico di Torino\" /\u003e\n  \u003ctitle\u003eNexa Center for Internet \u0026 Society | Il centro Nexa è un centro di ricerca del Dipartimento di Automatica e Informatica del Politecnico di Torino\u003c/title\u003e\n  \u003clink type=\"text/css\" rel=\"stylesheet\" href=\"https://nexa.polito.it/nexacenterfiles/css/css_xE-rWrJf-fncB6ztZfd2huxqgxu4WO-qwma6Xer30m4.css\" media=\"all\" /\u003e\n\u003clink type=\"text/css\" rel=\"stylesheet\" href=\"https://nexa.polito.it/nexacenterfiles/css/css_02kNM7E_d_TVOJ_Q4TPhaP-wbrvOWbuPMtkSrtZvmPY.css\" media=\"all\" /\u003e\n\u003clink type=\"text/css\" rel=\"stylesheet\" href=\"https://nexa.polito.it/nexacenterfiles/css/css_eukJACdIvUI5veT0PNo-PXBs0I50kokcOb26hO1mxFI.css\" media=\"all\" /\u003e\n\u003clink type=\"text/css\" rel=\"stylesheet\" href=\"https://nexa.polito.it/nexacenterfiles/css/css_6qqbOWA0So6vmSTtkqcBCrZ3iKRASVZ5qG1Yqwq8HC0.css\" media=\"screen\" /\u003e\n  \u003cscript type=\"text/javascript\" src=\"//code.jquery.com/jquery-1.12.4.min.js\"\u003e\u003c/script\u003e\n\u003cscript type=\"text/javascript\"\u003e\n\u003c!--//--\u003e\u003c![CDATA[//\u003e\u003c!--\nwindow.jQuery || document.write(\"\u003cscript src='/sites/all/modules/jquery_update/replace/jquery/1.12/jquery.min.js'\u003e\\x3C/script\u003e\")\n//--\u003e\u003c!]]\u003e\n\u003c/script\u003e\n\u003cscript type=\"text/javascript\" src=\"https://nexa.polito.it/nexacenterfiles/js/js_GOikDsJOX04Aww72M-XK1hkq4qiL_1XgGsRdkL0XlDo.js\"\u003e\u003c/script\u003e\n\u003cscript type=\"text/javascript\" src=\"https://nexa.polito.it/nexacenterfiles/js/js_TVTqjz8JHRb2KK9hlzuk0YsjzD013dKyYX_OTz-2VXU.js\"\u003e\u003c/script\u003e\n\u003cscript type=\"text/javascript\" src=\"https://nexa.polito.it/nexacenterfiles/js/js_vPOVD62vJ5lGBWdrLaM_m7mkR4eP_IG7R7jSWx1CnOk.js\"\u003e\u003c/script\u003e\n\u003cscript type=\"text/javascript\"\u003e\n\u003c!--//--\u003e\u003c![CDATA[//\u003e\u003c!--\nvar _paq = _paq || [];(function(){var u=((\"https:\" == document.location.protocol) ? \"https://analytics.nexacenter.org/\" : \"http://analytics.nexacenter.org/\");_paq.push([\"setSiteId\", \"3\"]);_paq.push([\"setTrackerUrl\", u+\"matomo.php\"]);_paq.push([\"setDoNotTrack\", 1]);_paq.push([\"trackPageView\"]);_paq.push([\"setIgnoreClasses\", [\"no-tracking\",\"colorbox\"]]);_paq.push([\"enableLinkTracking\"]);var d=document,g=d.createElement(\"script\"),s=d.getElementsByTagName(\"script\")[0];g.type=\"text/javascript\";g.defer=true;g.async=true;g.src=u+\"matomo.js\";s.parentNode.insertBefore(g,s);})();\n//--\u003e\u003c!]]\u003e\n\u003c/script\u003e\n\u003cscript type=\"text/javascript\" src=\"https://nexa.polito.it/nexacenterfiles/js/js_tzAVab462cyAtlJ1OeA_JccnC5qSOjMMH5CRQ43Ea-8.js\"\u003e\u003c/script\u003e\n\u003cscript type=\"text/javascript\"\u003e\n\u003c!--//--\u003e\u003c![CDATA[//\u003e\u003c!--\njQuery.extend(Drupal.settings, {\"basePath\":\"\\/\",\"pathPrefix\":\"\",\"setHasJsCookie\":0,\"ajaxPageState\":{\"theme\":\"nexad7\",\"theme_token\":\"STTjOEYLR2KbtcJo6_k3g4TvYHx2TLbB2lmGb3gCJ7M\",\"js\":{\"0\":1,\"1\":1,\"sites\\/all\\/modules\\/eu_cookie_compliance\\/js\\/eu_cookie_compliance.min.js\":1,\"\\/\\/code.jquery.com\\/jquery-1.12.4.min.js\":1,\"2\":1,\"misc\\/jquery-extend-3.4.0.js\":1,\"misc\\/jquery-html-prefilter-3.5.0-backport.js\":1,\"misc\\/jquery.once.js\":1,\"misc\\/drupal.js\":1,\"sites\\/all\\/modules\\/jquery_update\\/js\\/jquery_browser.js\":1,\"sites\\/all\\/modules\\/eu_cookie_compliance\\/js\\/jquery.cookie-1.4.1.min.js\":1,\"sites\\/all\\/modules\\/lightbox2\\/js\\/lightbox.js\":1,\"sites\\/all\\/modules\\/matomo\\/matomo.js\":1,\"3\":1,\"sites\\/nexa.polito.it\\/themes\\/nexad7\\/js\\/scripts.js\":1},\"css\":{\"modules\\/system\\/system.base.css\":1,\"modules\\/system\\/system.menus.css\":1,\"modules\\/system\\/system.messages.css\":1,\"modules\\/system\\/system.theme.css\":1,\"modules\\/aggregator\\/aggregator.css\":1,\"modules\\/book\\/book.css\":1,\"modules\\/comment\\/comment.css\":1,\"sites\\/all\\/modules\\/date\\/date_repeat_field\\/date_repeat_field.css\":1,\"modules\\/field\\/theme\\/field.css\":1,\"modules\\/node\\/node.css\":1,\"modules\\/search\\/search.css\":1,\"modules\\/user\\/user.css\":1,\"sites\\/all\\/modules\\/calendar\\/css\\/calendar_multiday.css\":1,\"sites\\/all\\/modules\\/views\\/css\\/views.css\":1,\"sites\\/all\\/modules\\/ctools\\/css\\/ctools.css\":1,\"sites\\/all\\/modules\\/lightbox2\\/css\\/lightbox.css\":1,\"sites\\/all\\/modules\\/oembed\\/oembed.base.css\":1,\"sites\\/all\\/modules\\/oembed\\/oembed.theme.css\":1,\"sites\\/all\\/modules\\/eu_cookie_compliance\\/css\\/eu_cookie_compliance.css\":1,\"public:\\/\\/ctools\\/css\\/0043c8a0cdcd6cba153c028452466f3f.css\":1,\"sites\\/nexa.polito.it\\/themes\\/nexad7\\/style.css\":1}},\"lightbox2\":{\"rtl\":0,\"file_path\":\"\\/(\\\\w\\\\w\\/)public:\\/\",\"default_image\":\"\\/sites\\/all\\/modules\\/lightbox2\\/images\\/brokenimage.jpg\",\"border_size\":10,\"font_color\":\"000\",\"box_color\":\"fff\",\"top_position\":\"\",\"overlay_opacity\":\"0.8\",\"overlay_color\":\"000\",\"disable_close_click\":1,\"resize_sequence\":0,\"resize_speed\":400,\"fade_in_speed\":400,\"slide_down_speed\":600,\"use_alt_layout\":0,\"disable_resize\":0,\"disable_zoom\":0,\"force_show_nav\":0,\"show_caption\":0,\"loop_items\":1,\"node_link_text\":\"View Image Details\",\"node_link_target\":0,\"image_count\":\"Image !current of !total\",\"video_count\":\"Video !current of !total\",\"page_count\":\"Page !current of !total\",\"lite_press_x_close\":\"press \\u003Ca href=\\u0022#\\u0022 onclick=\\u0022hideLightbox(); return FALSE;\\u0022\\u003E\\u003Ckbd\\u003Ex\\u003C\\/kbd\\u003E\\u003C\\/a\\u003E to close\",\"download_link_text\":\"\",\"enable_login\":false,\"enable_contact\":false,\"keys_close\":\"c x 27\",\"keys_previous\":\"p 37\",\"keys_next\":\"n 39\",\"keys_zoom\":\"z\",\"keys_play_pause\":\"32\",\"display_image_size\":\"original\",\"image_node_sizes\":\"()\",\"trigger_lightbox_classes\":\"\",\"trigger_lightbox_group_classes\":\"\",\"trigger_slideshow_classes\":\"\",\"trigger_lightframe_classes\":\"\",\"trigger_lightframe_group_classes\":\"\",\"custom_class_handler\":0,\"custom_trigger_classes\":\"\",\"disable_for_gallery_lists\":1,\"disable_for_acidfree_gallery_lists\":true,\"enable_acidfree_videos\":true,\"slideshow_interval\":5000,\"slideshow_automatic_start\":true,\"slideshow_automatic_exit\":true,\"show_play_pause\":true,\"pause_on_next_click\":false,\"pause_on_previous_click\":true,\"loop_slides\":false,\"iframe_width\":600,\"iframe_height\":400,\"iframe_border\":1,\"enable_video\":0,\"useragent\":\"Mozilla\\/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit\\/605.1.15 (KHTML, like Gecko) Version\\/17.1 Safari\\/605.1.15\"},\"themepath\":\"\\/sites\\/nexa.polito.it\\/themes\\/nexad7\",\"populatemenu\":\"https:\\/\\/nexa.polito.it\\/modules\\/populatemenu\",\"eu_cookie_compliance\":{\"cookie_policy_version\":\"1.0.0\",\"popup_enabled\":1,\"popup_agreed_enabled\":0,\"popup_hide_agreed\":0,\"popup_clicking_confirmation\":false,\"popup_scrolling_confirmation\":false,\"popup_html_info\":\"\\u003Cdiv class=\\u0022eu-cookie-compliance-banner eu-cookie-compliance-banner-info eu-cookie-compliance-banner--opt-in\\u0022\\u003E\\n  \\u003Cdiv class=\\u0022popup-content info\\u0022\\u003E\\n        \\u003Cdiv id=\\u0022popup-text\\u0022\\u003E\\n      \\u003Ch2\\u003EQuesto sito utilizza i cookies, ma nessun dato di navigazione viene raccolto senza il tuo consenso.\\u003C\\/h2\\u003E\\n\\u003Cp\\u003ENon utilizziamo servizi di terze parti per l\\u0027analisi dei dati ed anonimizziamo i dati raccolti.\\u003C\\/p\\u003E\\n              \\u003Cbutton type=\\u0022button\\u0022 class=\\u0022find-more-button eu-cookie-compliance-more-button\\u0022\\u003EPrivacy Policy\\u003C\\/button\\u003E\\n          \\u003C\\/div\\u003E\\n    \\n    \\u003Cdiv id=\\u0022popup-buttons\\u0022 class=\\u0022\\u0022\\u003E\\n            \\u003Cbutton type=\\u0022button\\u0022 class=\\u0022agree-button eu-cookie-compliance-secondary-button\\u0022\\u003EOK, Accetto\\u003C\\/button\\u003E\\n              \\u003Cbutton type=\\u0022button\\u0022 class=\\u0022decline-button eu-cookie-compliance-default-button\\u0022 \\u003ENo, grazie\\u003C\\/button\\u003E\\n          \\u003C\\/div\\u003E\\n  \\u003C\\/div\\u003E\\n\\u003C\\/div\\u003E\",\"use_mobile_message\":false,\"mobile_popup_html_info\":\"\\u003Cdiv class=\\u0022eu-cookie-compliance-banner eu-cookie-compliance-banner-info eu-cookie-compliance-banner--opt-in\\u0022\\u003E\\n  \\u003Cdiv class=\\u0022popup-content info\\u0022\\u003E\\n        \\u003Cdiv id=\\u0022popup-text\\u0022\\u003E\\n                    \\u003Cbutton type=\\u0022button\\u0022 class=\\u0022find-more-button eu-cookie-compliance-more-button\\u0022\\u003EPrivacy Policy\\u003C\\/button\\u003E\\n          \\u003C\\/div\\u003E\\n    \\n    \\u003Cdiv id=\\u0022popup-buttons\\u0022 class=\\u0022\\u0022\\u003E\\n            \\u003Cbutton type=\\u0022button\\u0022 class=\\u0022agree-button eu-cookie-compliance-secondary-button\\u0022\\u003EOK, Accetto\\u003C\\/button\\u003E\\n              \\u003Cbutton type=\\u0022button\\u0022 class=\\u0022decline-button eu-cookie-compliance-default-button\\u0022 \\u003ENo, grazie\\u003C\\/button\\u003E\\n          \\u003C\\/div\\u003E\\n  \\u003C\\/div\\u003E\\n\\u003C\\/div\\u003E\\n\",\"mobile_breakpoint\":\"768\",\"popup_html_agreed\":\"\\u003Cdiv\\u003E\\n  \\u003Cdiv class=\\u0022popup-content agreed\\u0022\\u003E\\n    \\u003Cdiv id=\\u0022popup-text\\u0022\\u003E\\n      \\u003Ch2\\u003EThank you for accepting cookies\\u003C\\/h2\\u003E\\n\\u003Cp\\u003EYou can now hide this message or find out more about cookies.\\u003C\\/p\\u003E\\n    \\u003C\\/div\\u003E\\n    \\u003Cdiv id=\\u0022popup-buttons\\u0022\\u003E\\n      \\u003Cbutton type=\\u0022button\\u0022 class=\\u0022hide-popup-button eu-cookie-compliance-hide-button\\u0022\\u003EHide\\u003C\\/button\\u003E\\n              \\u003Cbutton type=\\u0022button\\u0022 class=\\u0022find-more-button eu-cookie-compliance-more-button-thank-you\\u0022 \\u003EMore info\\u003C\\/button\\u003E\\n          \\u003C\\/div\\u003E\\n  \\u003C\\/div\\u003E\\n\\u003C\\/div\\u003E\",\"popup_use_bare_css\":false,\"popup_height\":\"auto\",\"popup_width\":\"100%\",\"popup_delay\":1000,\"popup_link\":\"\\/privacy\",\"popup_link_new_window\":0,\"popup_position\":null,\"fixed_top_position\":false,\"popup_language\":\"en\",\"store_consent\":false,\"better_support_for_screen_readers\":0,\"reload_page\":1,\"domain\":\"\",\"domain_all_sites\":0,\"popup_eu_only_js\":0,\"cookie_lifetime\":\"100\",\"cookie_session\":false,\"disagree_do_not_show_popup\":0,\"method\":\"opt_in\",\"allowed_cookies\":\"has_js\\r\\ncookie-agreed\",\"withdraw_markup\":\"\\u003Cbutton type=\\u0022button\\u0022 class=\\u0022eu-cookie-withdraw-tab\\u0022\\u003EPrivacy settings\\u003C\\/button\\u003E\\n\\u003Cdiv class=\\u0022eu-cookie-withdraw-banner\\u0022\\u003E\\n  \\u003Cdiv class=\\u0022popup-content info\\u0022\\u003E\\n    \\u003Cdiv id=\\u0022popup-text\\u0022\\u003E\\n      \\u003Ch2\\u003EWe use cookies on this site to enhance your user experience\\u003C\\/h2\\u003E\\n\\u003Cp\\u003EYou have given your consent for us to set cookies.\\u003C\\/p\\u003E\\n    \\u003C\\/div\\u003E\\n    \\u003Cdiv id=\\u0022popup-buttons\\u0022\\u003E\\n      \\u003Cbutton type=\\u0022button\\u0022 class=\\u0022eu-cookie-withdraw-button\\u0022\\u003EWithdraw consent\\u003C\\/button\\u003E\\n    \\u003C\\/div\\u003E\\n  \\u003C\\/div\\u003E\\n\\u003C\\/div\\u003E\\n\",\"withdraw_enabled\":false,\"withdraw_button_on_info_popup\":0,\"cookie_categories\":[],\"cookie_categories_details\":[],\"enable_save_preferences_button\":1,\"cookie_name\":\"\",\"cookie_value_disagreed\":\"0\",\"cookie_value_agreed_show_thank_you\":\"1\",\"cookie_value_agreed\":\"2\",\"containing_element\":\"body\",\"automatic_cookies_removal\":1,\"close_button_action\":\"close_banner\"},\"matomo\":{\"trackMailto\":1},\"urlIsAjaxTrusted\":{\"\\/\":true}});\n//--\u003e\u003c!]]\u003e\n\u003c/script\u003e\n\u003c/head\u003e\n\u003cbody class=\"html front not-logged-in no-sidebars page-frontpage2\" \u003e\n  \u003cdiv id=\"skip-link\"\u003e\n    \u003ca href=\"#main-content\" class=\"element-invisible element-focusable\"\u003eSkip to main content\u003c/a\u003e\n  \u003c/div\u003e\n    \n\n\n\n\n  \u003cdiv id=\"wrapper\"\u003e\n  \u003cdiv id=\"container\" class=\"clear-block\"\u003e\u003c!-- begin container --\u003e\n \n\n    \u003cdiv id=\"header\"\u003e\n\t\n\t\n\t\t\t\t\t\t\u003cdiv id=\"logo\"\u003e\n\t\t\t\t\u003ca href=\"/\" title=\"Nexa Center for Internet \u0026amp; Society\"\u003e\u003cimg src=\"https://nexa.polito.it/nexacenterfiles/logo.png\" alt=\"Nexa Center for Internet \u0026amp; Society\" /\u003e\u003c/a\u003e\n\t\t\t\u003c/div\u003e\t\t\t\n\t\t\t\n\t\t\t\u003cdiv id=\"slogan-floater\"\u003e\u003c!-- begin slogan-floater --\u003e\n\t\t\t\t\t  \u003cdiv class=\"region region-social-share\"\u003e\n    \u003cdiv id=\"block-block-4\" class=\"block block-block\"\u003e\n\n    \n  \u003cdiv class=\"content  headerMainMenuPage\"\u003e\n  \n    \u003cdiv class=\"feeds-header feed\"\u003e\u003ca href=\"/feed\" title=\"RSS Feed\"\u003e\u003cimg src=\"/nexafiles/feed.png\" alt=\"RSS Logo\" border=\"0\" /\u003e\u003c/a\u003e\u003c/div\u003e\n\u003cdiv class=\"feeds-header mail\"\u003e\u003ca href=\"/mailing-lists\" title=\"Nexa Mailing Lists\"\u003e\u003cimg src=\"/nexafiles/mail.png\" alt=\"Mail\" border=\"0\" /\u003e\u003c/a\u003e\u003c/div\u003e\n\u003cdiv class=\"feeds-header fb\"\u003e\u003ca href=\"http://facebook.com/nexa.center\" title=\"Nexa Facebook\" target=\"_TOP\"\u003e\u003cimg src=\"/nexafiles/fb.png\" border=\"0\" alt=\"Communia Facebook page\" /\u003e\u003c/a\u003e\u003c/div\u003e\n\u003cdiv class=\"feeds-header tweet\"\u003e\u003ca href=\"http://twitter.com/nexacenter\" title=\"Nexa Twitter\" target=\"_TOP\"\u003e\u003cimg src=\"/nexafiles/tw.png\" border=\"0\" alt=\"Nexa twitter\" /\u003e\u003c/a\u003e\u003c/div\u003e\n\u003cdiv class=\"feeds-header youtube\"\u003e\u003ca href=\"http://www.youtube.com/user/NexaCenter\" title=\"Nexa YouTube\" target=\"_TOP\"\u003e\u003cimg src=\"/nexafiles/you_tube.png\" border=\"0\" alt=\"Nexa youtube\" /\u003e\u003c/a\u003e\u003c/div\u003e\n\u003cdiv class=\"feeds-header flickr\"\u003e\u003ca href=\"https://www.instagram.com/nexa_center/\" title=\"Nexa Instagram\" target=\"_TOP\"\u003e\u003cimg src=\"/nexafiles/flickr2.png\" border=\"0\" alt=\"Nexa Instagram\" /\u003e\u003c/a\u003e\u003c/div\u003e\n\u003cdiv class=\"feeds-header github\"\u003e\u003ca href=\"https://github.com/nexacenter/\" title=\"Github Feed\"\u003e\u003cimg src=\"/nexafiles/github.png\" alt=\"github Logo\" border=\"0\" /\u003e\u003c/a\u003e\u003c/div\u003e\n  \u003c/div\u003e\n\n\n  \n\u003c/div\u003e\n  \u003c/div\u003e\n\t\t\t\t\t\n\t\t\t\u003c!--\t\u003ch1 class='site-name'\u003e\u003ca href=\"/\" title=\"Nexa Center for Internet \u0026amp; Society\"\u003eNexa Center for Internet \u0026amp; Society\u003c/a\u003e\u003c/h1\u003e\t\t\t\t\t\t\t\t\t\t\t\n\t\t\t--\u003e \n\t\t\t\u003c/div\u003e\u003c!-- end slogan-floater --\u003e\n\n\t\t\t\u003cdiv id=\"header-region\" class=\"clear-block\"\u003e \n\t\t\t\t  \u003cdiv class=\"region region-header\"\u003e\n    \u003cdiv id=\"block-system-main-menu\" class=\"block block-system block-menu\"\u003e\n\n    \n  \u003cdiv class=\"content  headerMainMenu headerMainMenuHome\"\u003e\n  \n    \u003cul class=\"menu\"\u003e\u003cli class=\"first collapsed\"\u003e\u003ca href=\"/get-involved\" title=\"\"\u003eGet Involved\u003c/a\u003e\u003c/li\u003e\n\u003cli class=\"leaf\"\u003e\u003ca href=\"/donate\" title=\"\"\u003eDonate\u003c/a\u003e\u003c/li\u003e\n\u003cli class=\"leaf\"\u003e\u003ca href=\"/contatti\" title=\"\"\u003eContacts\u003c/a\u003e\u003c/li\u003e\n\u003cli class=\"collapsed\"\u003e\u003ca href=\"/newsroom\" title=\"\"\u003eNewsroom\u003c/a\u003e\u003c/li\u003e\n\u003cli class=\"collapsed\"\u003e\u003ca href=\"/events\" title=\"\"\u003eEvents\u003c/a\u003e\u003c/li\u003e\n\u003cli class=\"leaf\"\u003e\u003ca href=\"/teaching\"\u003eTeaching\u003c/a\u003e\u003c/li\u003e\n\u003cli class=\"collapsed\"\u003e\u003ca href=\"/publications\" title=\"\"\u003ePublications\u003c/a\u003e\u003c/li\u003e\n\u003cli class=\"collapsed\"\u003e\u003ca href=\"/research\"\u003eResearch\u003c/a\u003e\u003c/li\u003e\n\u003cli class=\"collapsed\"\u003e\u003ca href=\"/people\" title=\"People\"\u003ePeople\u003c/a\u003e\u003c/li\u003e\n\u003cli class=\"last collapsed\"\u003e\u003ca href=\"/about\"\u003eAbout\u003c/a\u003e\u003c/li\u003e\n\u003c/ul\u003e  \u003c/div\u003e\n\n\n\t\u003cdiv class=\"ghostHeaderMenuItem\"\u003e\u003c/div\u003e\n  \n\u003c/div\u003e\n  \u003c/div\u003e\n\t\t\t\u003c/div\u003e\n\t\t\t\n\t\t\t \t\t\t\n\t\t\t\u003cdiv id=\"sub-heading-home-statement\"\u003e\n\t\t\t\t\u003ch2 id=\"nexa-statement-heading\"\u003e\u003c!-- STATEMENT --\u003e\u003c/h2\u003e  \n\t\t\t\t\u003cdiv id=\"goAway\"\u003e\u003c/div\u003e\n\t\t\t\u003c/div\u003e\n\t\t\t\t\n\n    \u003c/div\u003e \u003c!-- /#header --\u003e\n\n  \n\t  \n\t\t\t\t\t\u003cdiv id=\"main-content-block\"\u003e\n\t\t \n \n\t\t\t\t\n\t\n\t\u003cdiv id=\"center\"\u003e\u003c!-- begin center --\u003e \n\t\t\u003cdiv id=\"squeeze\"\u003e\u003c!-- begin squeeze --\u003e\n\n\t\t\t\n\t\t\t\t\t\n\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\n\n\n\t\t\t\n\t\t\t\u003cdiv class=\"tabs\"\u003e\u003c/div\u003e\t\t\t\n\t\t\t \n\t\t\t\t\t\t\t\u003cdiv class=\"clear-block\"\u003e\n\n\t\t\t\t \n\t\t\t \n\t\t\t\t  \u003cdiv class=\"region region-content\"\u003e\n    \u003cdiv id=\"block-system-main\" class=\"block block-system\"\u003e\n\n    \n  \u003cdiv class=\"content  headerMainMenuPage\"\u003e\n  \n    \u003cdiv class=\"view view-frontpage2 view-id-frontpage2 view-display-id-page_1 view-dom-id-ec9e7bf8c3c5e3fd87806308df3c31ad\"\u003e\n        \n  \n  \n      \u003cdiv class=\"view-content\"\u003e\n      \n\u003cdiv class=\"item-list\"\u003e\n\u003cdiv class=\"view-content-frontpage2\"\u003e\n\n\n\n  \u003cul\u003e\n    \t      \u003cli class=\"v\"\u003e\t\u003cdiv class=\"frontpage2\" id=\"frontpage2_1807\"\u003e\n\t\t\n\t\t\t\n\t\t\n\n\t\t\t\t\n\t\t\n\t\t\n\t\t\t\t\n\n\t\t\n\t\t\t\t\t\u003ch2 class=\"nexa-news\"\u003e\n\t\t\tnews \t\t\t\u003c/h2\u003e\n\t\t\t\t\t\t\n\t\t\n\t\t\n\n\t\t\n\t\t\t\t\n\t\t\t\t\t\t\t\u003cdiv class=\"views-field-image-attach-images\"\u003e\n\t\t\t\t\t\u003cdiv class=\"field-content\"\u003e\u003cimg src=\"https://nexa.polito.it/nexacenterfiles/styles/thumbnail/public/contro-lo-smartphone-web-ok.jpg?itok=9x-BvgLK\" width=\"88\" height=\"128\" alt=\"\" /\u003e\u003c/div\u003e\t\t\t\t\u003c/div\u003e\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\u003cdiv class=\"views-field-title views-field-title-small\"\u003e\n\t\t\t\t\t\u003cspan class=\"field-content\"\u003e\u003ch2 class=\"title\"\u003e\n\u003ca href=\"/contro-lo-smartphone\"\u003eContro lo smartphone. Per una tecnologia più democratica\u003c/a\u003e\u003c/h2\u003e\n\u003c/span\u003e\t\t\t\t\u003c/div\u003e\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\t\t\u003cdiv class=\"views-field-body views-field-body-small\"\u003e\n\t\t\t\t\t\u003cdiv class=\"field-content\"\u003eIl nuovo saggio del co-direttore del Centro Nexa Juan Carlo De Martin\u003cbr /\u003e\u003cbr /\u003e\nData di uscita: 22 settembre 2023\u003cbr /\u003e\n \n\u003c/div\u003e\t\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\u003cspan class=\"view-post\"\u003e\u003ca href=\"/contro-lo-smartphone\"\u003emore \u003e\u003c/a\u003e\u003c/span\u003e\t\t\t\t\u003c/div\u003e \n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\n\t\t\n\t\t\n\t\t\t\u003c/div\u003e\n\u003c/li\u003e\n          \u003cli class=\"i\"\u003e\t\u003cdiv class=\"frontpage2\" id=\"frontpage2_1829\"\u003e\n\t\t\n\t\t\t\n\t\t\n\n\t\t\t\t\n\t\t\n\t\t\n\t\t\t\t\t\u003ch2 class=\"nexa-event\"\u003e\n\t\t\tevents \t\t\t\u003c/h2\u003e\n\t\t\t\t\n\n\t\t\n\t\t\t\t\t\t\n\t\t\n\t\t\n\n\t\t\n\t\t\t\t\n\t\t\t\t\t\t\t\u003cdiv class=\"views-field-image-attach-images\"\u003e\n\t\t\t\t\t\u003cdiv class=\"field-content\"\u003e\u003cimg src=\"https://nexa.polito.it/nexacenterfiles/styles/thumbnail/public/social-1.png?itok=vlrGaAJf\" width=\"128\" height=\"128\" alt=\"\" /\u003e\u003c/div\u003e\t\t\t\t\u003c/div\u003e\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\u003cdiv class=\"views-field-title views-field-title-small\"\u003e\n\t\t\t\t\t\u003cspan class=\"field-content\"\u003e\u003ch2 class=\"title\"\u003e\n\u003ca href=\"/conf2023\"\u003eConferenza Nexa su Internet \u0026amp; Società 2023\u003c/a\u003e\u003c/h2\u003e\n\u003c/span\u003e\t\t\t\t\u003c/div\u003e\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\t\t\u003cdiv class=\"views-field-body views-field-body-small\"\u003e\n\t\t\t\t\t\u003cdiv class=\"field-content\"\u003e15 dicembre 2023\u003cbr /\u003e\u003cbr /\u003e\nTwitter hashtag della conferenza: \u003ca href=\"https://twitter.com/hashtag/nexa2023?src=hashtag_click\"\u003e#nexa2023\u003c/a\u003e\u003cbr /\u003e\n \n\u003c/div\u003e\t\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\u003cspan class=\"view-post\"\u003e\u003ca href=\"/conf2023\"\u003emore \u003e\u003c/a\u003e\u003c/span\u003e\t\t\t\t\u003c/div\u003e \n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\n\t\t\n\t\t\n\t\t\t\u003c/div\u003e\n\u003c/li\u003e\n          \u003cli class=\"e\"\u003e\t\u003cdiv class=\"frontpage2\" id=\"frontpage2_1830\"\u003e\n\t\t\n\t\t\t\n\t\t\n\n\t\t\t\t\n\t\t\n\t\t\n\t\t\t\t\n\n\t\t\n\t\t\t\t\t\u003ch2 class=\"nexa-news\"\u003e\n\t\t\tnews \t\t\t\u003c/h2\u003e\n\t\t\t\t\t\t\n\t\t\n\t\t\n\n\t\t\n\t\t\t\t\n\t\t\t\t\t\t\t\u003cdiv class=\"views-field-image-attach-images\"\u003e\n\t\t\t\t\t\u003cdiv class=\"field-content\"\u003e\u003cimg src=\"https://nexa.polito.it/nexacenterfiles/styles/thumbnail/public/mborghi23_1.jpg?itok=uKC3DqJo\" width=\"108\" height=\"128\" alt=\"\" /\u003e\u003c/div\u003e\t\t\t\t\u003c/div\u003e\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\u003cdiv class=\"views-field-title views-field-title-small\"\u003e\n\t\t\t\t\t\u003cspan class=\"field-content\"\u003e\u003ch2 class=\"title\"\u003e\n\u003ca href=\"/intervista-Borghi-Dealogando\"\u003eDigital Services Act, Borghi: “Bavaglio al web? La censura c’era già ma i rimedi sono inefficaci”\u003c/a\u003e\u003c/h2\u003e\n\u003c/span\u003e\t\t\t\t\u003c/div\u003e\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\t\t\u003cdiv class=\"views-field-body views-field-body-small\"\u003e\n\t\t\t\t\t\u003cdiv class=\"field-content\"\u003eL'intervista di Dealogando al co-direttore del Centro Nexa Maurizio Borghi\u003cbr /\u003e\n \n\u003c/div\u003e\t\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\u003cspan class=\"view-post\"\u003e\u003ca href=\"/intervista-Borghi-Dealogando\"\u003emore \u003e\u003c/a\u003e\u003c/span\u003e\t\t\t\t\u003c/div\u003e \n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\n\t\t\n\t\t\n\t\t\t\u003c/div\u003e\n\u003c/li\u003e\n          \u003cli class=\"w\"\u003e\t\u003cdiv class=\"frontpage2\" id=\"frontpage2_1809\"\u003e\n\t\t\n\t\t\t\n\t\t\t\t\t\u003ch2 class=\"lunch-seminar\"\u003e\n\t\t\tlunch seminar \t\t\t\u003c/h2\u003e\n\t\t\n\n\t\t\t\t\n\t\t\n\t\t\n\t\t\t\t\n\n\t\t\n\t\t\t\t\t\t\n\t\t\n\t\t\n\n\t\t\n\t\t\t\t\n\t\t\t\t\t\t\t\u003cdiv class=\"views-field-image-attach-images\"\u003e\n\t\t\t\t\t\u003cdiv class=\"field-content\"\u003e\u003cimg src=\"https://nexa.polito.it/nexacenterfiles/styles/thumbnail/public/social-lunch109.png?itok=bzGwi-Du\" width=\"128\" height=\"128\" alt=\"\" /\u003e\u003c/div\u003e\t\t\t\t\u003c/div\u003e\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\u003cdiv class=\"views-field-title views-field-title-small\"\u003e\n\t\t\t\t\t\u003cspan class=\"field-content\"\u003e\u003ch2 class=\"title\"\u003e\n\u003ca href=\"/lunch-109\"\u003e109° Nexa Lunch Seminar - Piattaforme digitali e autodeterminazione. Relazioni sociali, lavoro e diritti al tempo della \u0026quot;governamentalità algoritmica\u0026quot;\u003c/a\u003e\u003c/h2\u003e\n\u003c/span\u003e\t\t\t\t\u003c/div\u003e\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\t\t\u003cdiv class=\"views-field-body views-field-body-small\"\u003e\n\t\t\t\t\t\u003cdiv class=\"field-content\"\u003e22 novembre 2023\u003cbr /\u003e\u003cbr /\u003e\nGIACOMO PISANI (Euricse)\u003cbr /\u003e\n \n\u003c/div\u003e\t\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\u003cspan class=\"view-post\"\u003e\u003ca href=\"/lunch-109\"\u003emore \u003e\u003c/a\u003e\u003c/span\u003e\t\t\t\t\u003c/div\u003e \n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\n\t\t\n\t\t\n\t\t\t\u003c/div\u003e\n\u003c/li\u003e\n          \u003cli class=\"s\"\u003e\t\u003cdiv class=\"frontpage2\" id=\"frontpage2_1771\"\u003e\n\t\t\n\t\t\t\n\t\t\n\n\t\t\t\t\t\u003ch2 class=\"nexa-wednesday\"\u003e\n\t\t\tmercoled\u0026igrave; di nexa \t\t\t\u003c/h2\u003e\n\t\t\t\t\n\t\t\n\t\t\n\t\t\t\t\n\n\t\t\n\t\t\t\t\t\t\n\t\t\n\t\t\n\n\t\t\n\t\t\t\t\n\t\t\t\t\t\t\t\u003cdiv class=\"views-field-image-attach-images\"\u003e\n\t\t\t\t\t\u003cdiv class=\"field-content\"\u003e\u003cimg src=\"https://nexa.polito.it/nexacenterfiles/styles/thumbnail/public/social-tamburrini1.png?itok=RnnaEtE2\" width=\"128\" height=\"128\" alt=\"\" /\u003e\u003c/div\u003e\t\t\t\t\u003c/div\u003e\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\u003cdiv class=\"views-field-title views-field-title-small\"\u003e\n\t\t\t\t\t\u003cspan class=\"field-content\"\u003e\u003ch2 class=\"title\"\u003e\n\u003ca href=\"/mercoledi-166\"\u003e166° Mercoledì di Nexa - Etica del digitale ed euristiche mentali\u003c/a\u003e\u003c/h2\u003e\n\u003c/span\u003e\t\t\t\t\u003c/div\u003e\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\t\t\u003cdiv class=\"views-field-body views-field-body-small\"\u003e\n\t\t\t\t\t\u003cdiv class=\"field-content\"\u003e8 novembre 2023\u003cbr /\u003e\u003cbr /\u003e\nGUGLIELMO TAMBURRINI (Università di Napoli Federico II)\u003cbr /\u003e\n \n\u003c/div\u003e\t\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\u003cspan class=\"view-post\"\u003e\u003ca href=\"/mercoledi-166\"\u003emore \u003e\u003c/a\u003e\u003c/span\u003e\t\t\t\t\u003c/div\u003e \n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\n\t\t\n\t\t\n\t\t\t\u003c/div\u003e\n\u003c/li\u003e\n          \u003cli class=\"-\"\u003e\t\u003cdiv class=\"frontpage2\" id=\"frontpage2_1808\"\u003e\n\t\t\n\t\t\t\n\t\t\t\t\t\u003ch2 class=\"lunch-seminar\"\u003e\n\t\t\tlunch seminar \t\t\t\u003c/h2\u003e\n\t\t\n\n\t\t\t\t\n\t\t\n\t\t\n\t\t\t\t\n\n\t\t\n\t\t\t\t\t\t\n\t\t\n\t\t\n\n\t\t\n\t\t\t\t\n\t\t\t\t\t\t\t\u003cdiv class=\"views-field-image-attach-images\"\u003e\n\t\t\t\t\t\u003cdiv class=\"field-content\"\u003e\u003cimg src=\"https://nexa.polito.it/nexacenterfiles/styles/thumbnail/public/social108.png?itok=F8A01vnp\" width=\"128\" height=\"128\" alt=\"\" /\u003e\u003c/div\u003e\t\t\t\t\u003c/div\u003e\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\u003cdiv class=\"views-field-title views-field-title-small\"\u003e\n\t\t\t\t\t\u003cspan class=\"field-content\"\u003e\u003ch2 class=\"title\"\u003e\n\u003ca href=\"/lunch-108\"\u003e108° Nexa Lunch Seminar - Analisi e report di trasferimenti di dati personali verso domini extra-EEA\u003c/a\u003e\u003c/h2\u003e\n\u003c/span\u003e\t\t\t\t\u003c/div\u003e\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\t\t\u003cdiv class=\"views-field-body views-field-body-small\"\u003e\n\t\t\t\t\t\u003cdiv class=\"field-content\"\u003e25 ottobre 2023\u003cbr /\u003e\u003cbr /\u003e\nLORENZO LAUDADIO (Politecnico di Torino)\u003cbr /\u003e\n \n\u003c/div\u003e\t\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\u003cspan class=\"view-post\"\u003e\u003ca href=\"/lunch-108\"\u003emore \u003e\u003c/a\u003e\u003c/span\u003e\t\t\t\t\u003c/div\u003e \n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\n\t\t\n\t\t\n\t\t\t\u003c/div\u003e\n\u003c/li\u003e\n          \u003cli class=\"r\"\u003e\t\u003cdiv class=\"frontpage2\" id=\"frontpage2_1773\"\u003e\n\t\t\n\t\t\t\n\t\t\n\n\t\t\t\t\t\u003ch2 class=\"nexa-wednesday\"\u003e\n\t\t\tmercoled\u0026igrave; di nexa \t\t\t\u003c/h2\u003e\n\t\t\t\t\n\t\t\n\t\t\n\t\t\t\t\n\n\t\t\n\t\t\t\t\t\t\n\t\t\n\t\t\n\n\t\t\n\t\t\t\t\n\t\t\t\t\t\t\t\u003cdiv class=\"views-field-image-attach-images\"\u003e\n\t\t\t\t\t\u003cdiv class=\"field-content\"\u003e\u003cimg src=\"https://nexa.polito.it/nexacenterfiles/styles/thumbnail/public/ig_1_0.png?itok=fjPQ1peJ\" width=\"128\" height=\"128\" alt=\"\" /\u003e\u003c/div\u003e\t\t\t\t\u003c/div\u003e\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\u003cdiv class=\"views-field-title views-field-title-small\"\u003e\n\t\t\t\t\t\u003cspan class=\"field-content\"\u003e\u003ch2 class=\"title\"\u003e\n\u003ca href=\"/mercoledi-165\"\u003e165° Mercoledì di Nexa - Oggetti Buoni: Progettare tecnologie per i valori umani\u003c/a\u003e\u003c/h2\u003e\n\u003c/span\u003e\t\t\t\t\u003c/div\u003e\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\t\t\u003cdiv class=\"views-field-body views-field-body-small\"\u003e\n\t\t\t\t\t\u003cdiv class=\"field-content\"\u003e11 ottobre 2023\u003cbr /\u003e\u003cbr /\u003e\nSTEVEN UMBRELLO (Institute for Ethics and Emerging Technologies)\u003cbr /\u003e\n \n\u003c/div\u003e\t\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\u003cspan class=\"view-post\"\u003e\u003ca href=\"/mercoledi-165\"\u003emore \u003e\u003c/a\u003e\u003c/span\u003e\t\t\t\t\u003c/div\u003e \n\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\n\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\n\n\t\t\n\t\t\n\t\t\t\u003c/div\u003e\n\u003c/li\u003e\n      \u003c/ul\u003e\n\n\n\n\u003c/div\u003e\n\u003c/div\u003e\n\n\n\n\n    \u003c/div\u003e\n  \n      \u003ch2 class=\"element-invisible\"\u003ePages\u003c/h2\u003e\u003cdiv class=\"item-list\"\u003e\u003cul class=\"pager\"\u003e\u003cli class=\"pager-current first\"\u003e1\u003c/li\u003e\n\u003cli class=\"pager-item\"\u003e\u003ca title=\"Go to page 2\" href=\"/frontpage2?page=1\"\u003e2\u003c/a\u003e\u003c/li\u003e\n\u003cli class=\"pager-item\"\u003e\u003ca title=\"Go to page 3\" href=\"/frontpage2?page=2\"\u003e3\u003c/a\u003e\u003c/li\u003e\n\u003cli class=\"pager-item\"\u003e\u003ca title=\"Go to page 4\" href=\"/frontpage2?page=3\"\u003e4\u003c/a\u003e\u003c/li\u003e\n\u003cli class=\"pager-item\"\u003e\u003ca title=\"Go to page 5\" href=\"/frontpage2?page=4\"\u003e5\u003c/a\u003e\u003c/li\u003e\n\u003cli class=\"pager-item\"\u003e\u003ca title=\"Go to page 6\" href=\"/frontpage2?page=5\"\u003e6\u003c/a\u003e\u003c/li\u003e\n\u003cli class=\"pager-item\"\u003e\u003ca title=\"Go to page 7\" href=\"/frontpage2?page=6\"\u003e7\u003c/a\u003e\u003c/li\u003e\n\u003cli class=\"pager-item\"\u003e\u003ca title=\"Go to page 8\" href=\"/frontpage2?page=7\"\u003e8\u003c/a\u003e\u003c/li\u003e\n\u003cli class=\"pager-item\"\u003e\u003ca title=\"Go to page 9\" href=\"/frontpage2?page=8\"\u003e9\u003c/a\u003e\u003c/li\u003e\n\u003cli class=\"pager-ellipsis\"\u003e…\u003c/li\u003e\n\u003cli class=\"pager-next\"\u003e\u003ca title=\"Go to next page\" href=\"/frontpage2?page=1\"\u003enext ›\u003c/a\u003e\u003c/li\u003e\n\u003cli class=\"pager-last last\"\u003e\u003ca title=\"Go to last page\" href=\"/frontpage2?page=70\"\u003elast »\u003c/a\u003e\u003c/li\u003e\n\u003c/ul\u003e\u003c/div\u003e  \n  \n  \n  \n  \n\u003c/div\u003e  \u003c/div\u003e\n\n\n  \n\u003c/div\u003e\n  \u003c/div\u003e\n  \n\t\t\t \n\t\t\t\t\u003cdiv id=\"about-footer\" class=\"clear-block\"\u003e\n\t\t\t\t\t\t\t\t\t\u003c/div\u003e\n\t\t\t\t\n\t\t\t\t\u003c/div\u003e\n\t\t\t\t\t\t\n\t\t\t\t\t\t\n\n\t\t\t\n\t\t\t    \n\t\t\u003c/div\u003e\u003c!-- end squeeze --\u003e\n  \n\t\t\u003c!-- begin small_sidebar --\u003e\n\t\t\t\u003cdiv id=\"sidebar-right\" class=\"sidebar\"\u003e\n\t\t\t\t\t\t\t\t  \u003cdiv class=\"region region-small-sidebar\"\u003e\n    \u003cdiv id=\"block-multiblock-3\" class=\"block block-multiblock block-views block-views-upcoming_events-block_1-instance\"\u003e\n\n    \u003ch2\u003eUpcoming events\u003c/h2\u003e\n  \n  \u003cdiv class=\"content  headerMainMenuPage\"\u003e\n  \n    \u003cdiv class=\"view view-upcoming-events view-id-upcoming_events view-display-id-block_1 upcoming-events view-dom-id-2ef6f6f33c4b23469b4d241c8073aca3\"\u003e\n        \n  \n  \n      \u003cdiv class=\"view-content\"\u003e\n        \u003cdiv class=\"views-row views-row-1 views-row-odd views-row-first views-row-last\"\u003e\n    \u003cdiv class=\"dateBox\"\u003e\u003cdiv class=\"dateBoxInside\"\u003e\u003cp\u003eDecember\u003c/p\u003e\u003cp\u003e13\u003c/p\u003e\u003cp\u003e2023\u003c/p\u003e\u003c/div\u003e\u003c/div\u003e\n\n\t\u003cdiv class=\"views-field-field-luogo\"\u003e\n\n\n\t\t\t\t \n\t\t\n\t\t\t\u003cdiv class=\"views-field-field-luogo-value\"\u003e\u003c/div\u003e\t\t\n\t\u003c/div\u003e\n\t \n\n\n\t\u003cdiv class=\"views-field-title event-box-title\"\u003e\n\n\n\t\t\t\t \n\t\t\n\t\t\t\u003cspan class=\"field-content\"\u003e\u003ca href=\"/mercoledi-167\"\u003e167° Mercoledì di Nexa - Internet fatta a pezzi. Sovranità digitale, nazionalismi e big tech\u003c/a\u003e\u003c/span\u003e\t\t\n\t\u003c/div\u003e\n\t \n\n\n\t\u003cdiv class=\"views-field-body\"\u003e\n\n\n\t\t\t\t \n\t\t\n\t\t\t\u003cspan class=\"field-content\"\u003e\nPer il ciclo di incontri “i Mercoledì di Nexa” (ogni 2° mercoledì del mese) \n167° Mercoledì di Nexa\nInternet fatta a pezzi\nSovranità digitale,...\u003c/span\u003e\t\t\n\t\u003c/div\u003e\n\t \n  \u003c/div\u003e\n    \u003c/div\u003e\n  \n  \n  \n  \n  \n  \n\u003c/div\u003e  \u003c/div\u003e\n\n\n  \n\u003c/div\u003e\n\u003cdiv id=\"block-views-publications-block-1\" class=\"block block-views\"\u003e\n\n    \u003ch2\u003eRecent Publications\u003c/h2\u003e\n  \n  \u003cdiv class=\"content  headerMainMenuPage\"\u003e\n  \n    \u003cdiv class=\"view view-Publications view-id-Publications view-display-id-block_1 view-dom-id-9f979b6f099c339246fc07ffc7e2717f\"\u003e\n        \n  \n  \n      \u003cdiv class=\"view-content\"\u003e\n      \u003cdiv class=\"item-list\"\u003e    \u003cul\u003e          \u003cli class=\"views-row views-row-1 views-row-odd views-row-first\"\u003e  \n  \u003cdiv class=\"views-field-field-authors pubblications-block\"\u003e\n            \u003cdiv class=\"field-content\"\u003e\u003cdiv class=\"field-content\"\u003eJuan Carlos De Martin\u003c/div\u003e\u003c/div\u003e\n  \u003c/div\u003e\n  \n  \u003cdiv class=\"views-field-title pubblications-block\"\u003e\n            \u003cspan class=\"field-content\"\u003e\u003cspan class=\"field-content\"\u003e\u003ca href=\"/Juan-Carlos-De-Martin-contro-lo-smartphone\"\u003eContro lo smartphone. Per una tecnologia più democratica\u003c/a\u003e\u003c/span\u003e\u003c/span\u003e\n  \u003c/div\u003e\n\u003c/li\u003e\n          \u003cli class=\"views-row views-row-2 views-row-even\"\u003e  \n  \u003cdiv class=\"views-field-field-authors pubblications-block\"\u003e\n            \u003cdiv class=\"field-content\"\u003e\u003cdiv class=\"field-content\"\u003eThis report was mainly curated by Giovanni Garifo, Giacomo Conti and Anita Botta, with the contributions of the Nexa Staff, Directors and Community\u003c/div\u003e\u003c/div\u003e\n  \u003c/div\u003e\n  \n  \u003cdiv class=\"views-field-title pubblications-block\"\u003e\n            \u003cspan class=\"field-content\"\u003e\u003cspan class=\"field-content\"\u003e\u003ca href=\"/2023-annual-report\"\u003eNexa Center Annual Report 2023\u003c/a\u003e\u003c/span\u003e\u003c/span\u003e\n  \u003c/div\u003e\n\u003c/li\u003e\n          \u003cli class=\"views-row views-row-3 views-row-odd views-row-last\"\u003e  \n  \u003cdiv class=\"views-field-field-authors pubblications-block\"\u003e\n            \u003cdiv class=\"field-content\"\u003e\u003cdiv class=\"field-content\"\u003eJuan Carlos De Martin, Marco Ricolfi\u003c/div\u003e\u003c/div\u003e\n  \u003c/div\u003e\n  \n  \u003cdiv class=\"views-field-title pubblications-block\"\u003e\n            \u003cspan class=\"field-content\"\u003e\u003cspan class=\"field-content\"\u003e\u003ca href=\"/experience-Nexa-Center\"\u003eThe first 15 years of the Nexa Center for Internet and Society\u003c/a\u003e\u003c/span\u003e\u003c/span\u003e\n  \u003c/div\u003e\n\u003c/li\u003e\n      \u003c/ul\u003e\u003c/div\u003e    \u003c/div\u003e\n  \n  \n  \n  \n  \n  \n\u003c/div\u003e  \u003c/div\u003e\n\n\n  \n\u003c/div\u003e\n  \u003c/div\u003e\n\t\t\t\u003c/div\u003e\n\t\t\u003c!-- end small_sidebar --\u003e \n\n\t\u003c/div\u003e\u003c!-- end center --\u003e\n \n\t\t\t\u003c/div\u003e \u003c!-- /.main-content-block --\u003e\n\t\n\n\t\n\t\u003cdiv id=\"sidebar-left\" class=\"sidebar\"\u003e\u003c!-- begin sidebar-left --\u003e\n\t\t   \u003cdiv class=\"region region-main-sidebar\"\u003e\n    \u003cdiv id=\"block-search-form\" class=\"block block-search\"\u003e\n\n    \u003ch2\u003esearch\u003c/h2\u003e\n  \n  \u003cdiv class=\"content  headerMainMenuPage\"\u003e\n  \n    \u003cform action=\"/\" method=\"post\" id=\"search-block-form\" accept-charset=\"UTF-8\"\u003e\u003cdiv\u003e\u003cdiv class=\"container-inline\"\u003e\n    \u003cdiv class=\"form-item form-type-textfield form-item-search-block-form\"\u003e\n  \u003clabel class=\"element-invisible\" for=\"edit-search-block-form--2\"\u003eSearch \u003c/label\u003e\n \u003cinput title=\"Enter the terms you wish to search for.\" type=\"text\" id=\"edit-search-block-form--2\" name=\"search_block_form\" value=\"\" size=\"15\" maxlength=\"128\" class=\"form-text\" /\u003e\n\u003c/div\u003e\n\u003cdiv class=\"form-actions form-wrapper\" id=\"edit-actions\"\u003e\u003cinput type=\"submit\" id=\"edit-submit\" name=\"op\" value=\"Search\" class=\"form-submit\" /\u003e\u003c/div\u003e\u003cinput type=\"hidden\" name=\"form_build_id\" value=\"form-6RXlTsl8B_ja4On-Xn9eE2EqjHc8d_-dNmX8PSRNMcM\" /\u003e\n\u003cinput type=\"hidden\" name=\"form_id\" value=\"search_block_form\" /\u003e\n\u003c/div\u003e\n\u003c/div\u003e\u003c/form\u003e  \u003c/div\u003e\n\n\n  \n\u003c/div\u003e\n\u003cdiv id=\"block-block-6\" class=\"block block-block\"\u003e\n\n    \u003ch2\u003ejoin our community\u003c/h2\u003e\n  \n  \u003cdiv class=\"content  headerMainMenuPage\"\u003e\n  \n    \u003cp\u003eIscriviti alle nostre \u003ca href=\"/mailing-lists\"\u003emailing lists\u003c/a\u003e, \u003ca href=\"/contact\"\u003econtattaci\u003c/a\u003e, esplora i nostri \u003ca href=\"/teaching\"\u003ecorsi\u003c/a\u003e, controlla le nostre \u003ca href=\"/job-openings\"\u003eofferte di lavoro\u003c/a\u003e, compila il nostro \u003ca href=\"/know-about-you\"\u003eform\u003c/a\u003e per essere aggiornato su future opportunità (come bandi per assegni o borse di ricerca).\u003c/p\u003e\n  \u003c/div\u003e\n\n\n  \n\u003c/div\u003e\n\u003cdiv id=\"block-block-12\" class=\"block block-block\"\u003e\n\n    \u003ch2\u003erecommended links\u003c/h2\u003e\n  \n  \u003cdiv class=\"content  headerMainMenuPage\"\u003e\n  \n    \u003cp\u003ereadings \u0026amp; links -- \u003ca href=\"/recommended-readings\"\u003eletture selezionate per comprendere Internet\u003c/a\u003e\u003c/p\u003e\n  \u003c/div\u003e\n\n\n  \n\u003c/div\u003e\n\u003cdiv id=\"block-block-8\" class=\"block block-block\"\u003e\n\n    \u003ch2\u003eproject keywords\u003c/h2\u003e\n  \n  \u003cdiv class=\"content  headerMainMenuPage\"\u003e\n  \n    \u003cdl\u003e\n\u003cdd\u003e\u003ca href=\"/psi\"\u003epublic sector innovation\u003c/a\u003e\u003c/dd\u003e\n\u003cdd\u003e\u003ca href=\"/open-culture\"\u003epublic domain, the commons and open access\u003c/a\u003e\u003c/dd\u003e\n\u003cdd\u003e\u003ca href=\"/internet-monitoring\"\u003einternet monitoring and analysis\u003c/a\u003e\u003c/dd\u003e\n\u003cdd\u003e\u003ca href=\"/internet-and-democracy\"\u003efundamental rights online \u0026amp; digital citizenship\u003c/a\u003e\u003c/dd\u003e\n\u003c/dl\u003e\n\u003c!--\u003cdl\u003e\u003cdd\u003e\u003ca href=\"anonimity-open-wifi\"\u003eanonimity online\u003c/a\u003e\u003c/dd\u003e\n\u003cdd\u003e\u003ca href=\"/biennaledemocrazia\"\u003einternet e democrazia\u003c/a\u003e\u003c/dd\u003e\n\u003cdd\u003e\u003ca href=\"http://communia-project.eu\"\u003ecommunia EU thematic network\u003c/a\u003e\u003c/dd\u003e\n\u003cdd\u003e\u003ca href=\"http://creativecommons.it/\"\u003ecreative commons italia\u003c/a\u003e\u003c/dd\u003e\n\u003cdd\u003e\u003ca href=\"/webgeography\"\u003eweb geography\u003c/a\u003e\u003c/dd\u003e\n\u003cdd\u003e\u003ca href=\"/neubot\"\u003enetwork neutrality bot (NeuBot)\u003c/a\u003e\u003c/dd\u003e\n\u003cdd\u003e\u003ca href=\"http://selili.polito.it/\"\u003eservizio licenze libere\u003c/a\u003e\u003c/dd\u003e\n\u003cdd\u003e\u003ca href=\"universita-aperta\"\u003euniversity and democracy\u003c/a\u003e\u003c/dd\u003e\n\u003cdd\u003e\u003ca href=\"/cloud-computing\"\u003ecloud computing\u003c/a\u003e\u003c/dd\u003e\n\u003c/dl\u003e\n\u003cp\u003e--\u003e\n  \u003c/div\u003e\n\n\n  \n\u003c/div\u003e\n  \u003c/div\u003e\n\t\u003c/div\u003e\u003c!-- end sidebar-left --\u003e\t\t\t\t\n\n\t\n\n    \u003cdiv id=\"footer\"\u003e\n        \u003cdiv class=\"region region-footer\"\u003e\n    \u003cdiv id=\"block-block-15\" class=\"block block-block\"\u003e\n\n    \n  \u003cdiv class=\"content  headerMainMenuPage\"\u003e\n  \n    \u003cdiv class=\"footer-box\" id=\"footer-first\"\u003e\nNexa Center for Internet \u0026amp; Society\u003cbr /\u003e\n\u003ca href=\"/contacts\"\u003eVia Boggio, 65/a\u003c/a\u003e 10138 Torino, Italy\u003cbr /\u003e\nPh. +39 011 090 7217 | Fax +39 011 090\u003cbr /\u003e\n7216 | email: info [at] nexa [dot] polito\u003cbr /\u003e\n[dot] it\n\u003c/div\u003e\n\u003cdiv class=\"footer-box\" id=\"footer-second\"\u003e\nIl Centro Nexa è un centro di ricerca\u003cbr /\u003e\ndel \u003ca href=\"http://www.dauin.polito.it\"\u003eDipartimento di Automatica e\u003cbr /\u003e\nInformatica\u003c/a\u003e del \u003ca href=\"http://www.polito.it\"\u003ePolitecnico di Torino\u003c/a\u003e.\n\u003c/div\u003e\n\u003cdiv class=\"footer-box\" id=\"footer-third\"\u003e\n\u003cem\u003eTranne dove \u003ca href=\"/credits\"\u003ealtrimenti indicato\u003c/a\u003e, il\u003cbr /\u003e\ncontenuto di questo sito è rilasciato\u003cbr /\u003e\nsecondo i termini della \u003ca rel=\"licenza\" href=\"http://creativecommons.org/licenses/by/3.0/deed.it\"\u003elicenza Creative\u003cbr /\u003e\nCommons Attribuzione 3.0 Unported\u003c/a\u003e. / Unless otherwise noted this\u003c/em\u003e\n\u003c/div\u003e\n\u003cdiv class=\"footer-box\" id=\"footer-fourth\"\u003e\n\u003cem\u003esite and its contents are licensed\u003cbr /\u003e\nunder the \u003c/em\u003e\u003ca rel=\"license\" href=\"http://creativecommons.org/licenses/by/3.0/\"\u003eCreative Commons Attribution 3.0 Unported License\u003c/a\u003e.\n\u003cp\u003e\u003ca href=\"/credits\"\u003eCredits\u003c/a\u003e \u003ca class=\"creative-commons\" rel=\"license\" href=\"http://creativecommons.org/licenses/by/3.0/\"\u003e\u003cimg alt=\"Creative Commons License\" style=\"border-width:0\" src=\"https://i.creativecommons.org/l/by/3.0/88x31.png\" /\u003e\u003c/a\u003e\u003c/p\u003e\n\u003cp\u003e\u003ca href=\"/privacy\"\u003ePolicy sull'utilizzo dei cookie\u003c/a\u003e\u003c/p\u003e\n\u003c/div\u003e\n  \u003c/div\u003e\n\n\n  \n\u003c/div\u003e\n  \u003c/div\u003e\n    \u003c/div\u003e \u003c!-- /#footer --\u003e\n\n  \u003c/div\u003e\u003c/div\u003e \u003c!--  /#wrapper, /#container --\u003e\n  \u003cscript type=\"text/javascript\"\u003e\n\u003c!--//--\u003e\u003c![CDATA[//\u003e\u003c!--\nwindow.euCookieComplianceLoadScripts = function(category) {}\n//--\u003e\u003c!]]\u003e\n\u003c/script\u003e\n\u003cscript type=\"text/javascript\"\u003e\n\u003c!--//--\u003e\u003c![CDATA[//\u003e\u003c!--\nwindow.eu_cookie_compliance_cookie_name = \"\";\n//--\u003e\u003c!]]\u003e\n\u003c/script\u003e\n\u003cscript type=\"text/javascript\" src=\"https://nexa.polito.it/nexacenterfiles/js/js_b5uBqrfPrs_UEmgBeVFSOcXgjdijNE3mS-ZnwQ0jdnU.js\"\u003e\u003c/script\u003e\n\u003c/body\u003e\n\u003c/html\u003e\n",
           "body_is_truncated": false,
           "code": 200,
           "headers_list": [
@@ -770,11 +713,11 @@
             ],
             [
               "Date",
-              "Mon, 27 Nov 2023 17:04:59 GMT"
+              "Thu, 30 Nov 2023 17:33:27 GMT"
             ],
             [
               "Etag",
-              "\"1701103514-0\""
+              "\"1701362711-0\""
             ],
             [
               "Expires",
@@ -782,11 +725,11 @@
             ],
             [
               "Last-Modified",
-              "Mon, 27 Nov 2023 16:45:14 GMT"
+              "Thu, 30 Nov 2023 16:45:11 GMT"
             ],
             [
               "Link",
-              "<https://nexa.polito.it/>; rel=\"canonical\",<https://nexa.polito.it/>; rel=\"shortlink\""
+              "\u003chttps://nexa.polito.it/\u003e; rel=\"canonical\",\u003chttps://nexa.polito.it/\u003e; rel=\"shortlink\""
             ],
             [
               "Server",
@@ -821,11 +764,11 @@
             "Cache-Control": "public, max-age=3600",
             "Content-Language": "en",
             "Content-Type": "text/html; charset=utf-8",
-            "Date": "Mon, 27 Nov 2023 17:04:59 GMT",
-            "Etag": "\"1701103514-0\"",
+            "Date": "Thu, 30 Nov 2023 17:33:27 GMT",
+            "Etag": "\"1701362711-0\"",
             "Expires": "Sun, 19 Nov 1978 05:00:00 GMT",
-            "Last-Modified": "Mon, 27 Nov 2023 16:45:14 GMT",
-            "Link": "<https://nexa.polito.it/>; rel=\"canonical\",<https://nexa.polito.it/>; rel=\"shortlink\"",
+            "Last-Modified": "Thu, 30 Nov 2023 16:45:11 GMT",
+            "Link": "\u003chttps://nexa.polito.it/\u003e; rel=\"canonical\",\u003chttps://nexa.polito.it/\u003e; rel=\"shortlink\"",
             "Server": "Apache",
             "Vary": "Cookie,Accept-Encoding",
             "X-Content-Type-Options": "nosniff",
@@ -834,9 +777,12 @@
             "X-Generator": "Drupal 7 (http://drupal.org)"
           }
         },
-        "t0": 0.193968,
-        "t": 0.270579,
-        "tags": [],
+        "t0": 0.234297,
+        "t": 0.298679,
+        "tags": [
+          "depth=0",
+          "fetch_body=true"
+        ],
         "transaction_id": 4
       }
     ],
@@ -845,12 +791,16 @@
         "ip": "130.192.16.171",
         "port": 443,
         "status": {
+          "blocked": false,
           "failure": null,
           "success": true
         },
-        "t0": 0.093297,
-        "t": 0.154834,
-        "tags": [],
+        "t0": 0.14192,
+        "t": 0.197753,
+        "tags": [
+          "depth=0",
+          "fetch_body=true"
+        ],
         "transaction_id": 4
       }
     ],
@@ -877,9 +827,12 @@
           }
         ],
         "server_name": "nexa.polito.it",
-        "t0": 0.15486,
-        "t": 0.193924,
-        "tags": [],
+        "t0": 0.197829,
+        "t": 0.234189,
+        "tags": [
+          "depth=0",
+          "fetch_body=true"
+        ],
         "tls_version": "TLSv1.3",
         "transaction_id": 4
       }
@@ -919,19 +872,19 @@
       },
       "quic_handshake": {},
       "http_request": {
-        "body_length": 36564,
+        "body_length": 36546,
         "discovered_h3_endpoint": "",
         "failure": null,
-        "title": "Nexa Center for Internet & Society | Il centro Nexa è un centro di ricerca del Dipartimento di Automatica e Informatica del Politecnico di Torino",
+        "title": "Nexa Center for Internet \u0026 Society | Il centro Nexa è un centro di ricerca del Dipartimento di Automatica e Informatica del Politecnico di Torino",
         "headers": {
           "Cache-Control": "public, max-age=3600",
           "Content-Language": "en",
           "Content-Type": "text/html; charset=utf-8",
-          "Date": "Mon, 27 Nov 2023 17:05:00 GMT",
-          "Etag": "\"1701103514-0\"",
+          "Date": "Thu, 30 Nov 2023 17:33:27 GMT",
+          "Etag": "\"1701362711-0\"",
           "Expires": "Sun, 19 Nov 1978 05:00:00 GMT",
-          "Last-Modified": "Mon, 27 Nov 2023 16:45:14 GMT",
-          "Link": "<https://nexa.polito.it/>; rel=\"canonical\",<https://nexa.polito.it/>; rel=\"shortlink\"",
+          "Last-Modified": "Thu, 30 Nov 2023 16:45:11 GMT",
+          "Link": "\u003chttps://nexa.polito.it/\u003e; rel=\"canonical\",\u003chttps://nexa.polito.it/\u003e; rel=\"shortlink\"",
           "Server": "Apache",
           "Vary": "Cookie,Accept-Encoding",
           "X-Content-Type-Options": "nosniff",
@@ -958,11 +911,11 @@
     "x_conn_priority_log": [
       {
         "msg": "create with [{Addr:130.192.16.171 Flags:7}]",
-        "t": 0.091374
+        "t": 0.141588
       },
       {
         "msg": "conn 130.192.16.171:443: granted permission: true",
-        "t": 0.193943
+        "t": 0.234213
       }
     ],
     "control_failure": null,
@@ -972,15 +925,15 @@
     "http_experiment_failure": null,
     "x_blocking_flags": 32,
     "x_null_null_flags": 0,
-    "body_length_match": true,
-    "headers_match": true,
-    "status_code_match": true,
-    "title_match": true,
+    "body_length_match": null,
+    "headers_match": null,
+    "status_code_match": null,
+    "title_match": null,
     "blocking": false,
     "accessible": true
   },
   "test_name": "web_connectivity",
-  "test_runtime": 1.417294625,
-  "test_start_time": "2023-11-27 17:04:58",
+  "test_runtime": 1.41717425,
+  "test_start_time": "2023-11-30 17:33:26",
   "test_version": "0.5.26"
 }

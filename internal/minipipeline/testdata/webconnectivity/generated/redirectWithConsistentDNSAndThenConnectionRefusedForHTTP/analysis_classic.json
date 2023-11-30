@@ -15,15 +15,12 @@
   "TCPConnectUnexpectedFailureDuringWebFetch": [],
   "TCPConnectUnexpectedFailureDuringConnectivityCheck": [],
   "TCPConnectUnexplainedFailure": [
-    6,
-    7
+    6
   ],
   "TCPConnectUnexplainedFailureDuringWebFetch": [
     6
   ],
-  "TCPConnectUnexplainedFailureDuringConnectivityCheck": [
-    7
-  ],
+  "TCPConnectUnexplainedFailureDuringConnectivityCheck": [],
   "TLSHandshakeUnexpectedFailure": [],
   "TLSHandshakeUnexpectedFailureDuringWebFetch": [],
   "TLSHandshakeUnexpectedFailureDuringConnectivityCheck": [],

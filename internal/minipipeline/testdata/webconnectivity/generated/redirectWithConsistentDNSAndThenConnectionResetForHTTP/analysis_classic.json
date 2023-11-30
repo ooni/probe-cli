@@ -21,13 +21,9 @@
   "TLSHandshakeUnexpectedFailure": [],
   "TLSHandshakeUnexpectedFailureDuringWebFetch": [],
   "TLSHandshakeUnexpectedFailureDuringConnectivityCheck": [],
-  "TLSHandshakeUnexplainedFailure": [
-    7
-  ],
+  "TLSHandshakeUnexplainedFailure": [],
   "TLSHandshakeUnexplainedFailureDuringWebFetch": [],
-  "TLSHandshakeUnexplainedFailureDuringConnectivityCheck": [
-    7
-  ],
+  "TLSHandshakeUnexplainedFailureDuringConnectivityCheck": [],
   "HTTPRoundTripUnexpectedFailure": [
     6
   ],
