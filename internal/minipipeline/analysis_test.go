@@ -73,27 +73,6 @@ func TestWebAnalysisComputeDNSExperimentFailure(t *testing.T) {
 	})
 }
 
-func TestWebAnalysisComputeTCPTransactionsWithUnexpectedHTTPFailures(t *testing.T) {
-	t.Run("when both measurement and control fail", func(t *testing.T) {
-		container := &WebObservationsContainer{
-			KnownTCPEndpoints: map[int64]*WebObservation{
-				1: {
-					HTTPFailure:        optional.Some("connection_reset"),
-					ControlHTTPFailure: optional.Some("connection_reset"),
-				},
-			},
-		}
-
-		wa := &WebAnalysis{}
-		wa.ComputeTCPTransactionsWithUnexpectedHTTPFailures(container)
-
-		result := wa.TCPTransactionsWithUnexpectedHTTPFailures.Unwrap()
-		if len(result) != 0 {
-			t.Fatal("should not have added any entry")
-		}
-	})
-}
-
 func TestWebAnalysisComputeHTTPDiffBodyProportionFactor(t *testing.T) {
 	t.Run("when there is no probe response body length", func(t *testing.T) {
 		container := &WebObservationsContainer{
