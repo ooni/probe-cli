@@ -27,7 +27,7 @@ func successWithHTTP() *TestCase {
 func successWithHTTPS() *TestCase {
 	return &TestCase{
 		Name:      "successWithHTTPS",
-		Flags:     0,
+		Flags:     TestCaseFlagNoLTE, // it does not set any HTTP comparison value with HTTPS
 		Input:     "https://www.example.com/",
 		Configure: nil,
 		ExpectErr: false,
