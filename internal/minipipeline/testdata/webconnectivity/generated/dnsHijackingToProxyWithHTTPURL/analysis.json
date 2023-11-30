@@ -36,6 +36,5 @@
   "HTTPFinalResponseDiffTitleDifferentLongWords": {},
   "HTTPFinalResponseDiffUncommonHeadersIntersection": {
     "content-length": true
-  },
-  "DNSPossiblyNonexistingDomains": {}
+  }
 }

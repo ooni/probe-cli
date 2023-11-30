@@ -38,6 +38,5 @@
   "HTTPFinalResponseDiffBodyProportionFactor": null,
   "HTTPFinalResponseDiffStatusCodeMatch": null,
   "HTTPFinalResponseDiffTitleDifferentLongWords": null,
-  "HTTPFinalResponseDiffUncommonHeadersIntersection": null,
-  "DNSPossiblyNonexistingDomains": null
+  "HTTPFinalResponseDiffUncommonHeadersIntersection": null
 }
