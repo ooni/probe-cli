@@ -139,7 +139,7 @@
     {
       "TagDepth": 0,
       "Type": 0,
-      "Failure": null,
+      "Failure": "",
       "TransactionID": 1,
       "TagFetchBody": null,
       "DNSTransactionID": 1,

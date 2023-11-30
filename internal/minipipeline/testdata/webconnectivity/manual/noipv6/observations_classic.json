@@ -4,7 +4,7 @@
     {
       "TagDepth": 0,
       "Type": 0,
-      "Failure": null,
+      "Failure": "",
       "TransactionID": 3,
       "TagFetchBody": null,
       "DNSTransactionID": 3,
@@ -89,7 +89,7 @@
     {
       "TagDepth": 0,
       "Type": 0,
-      "Failure": null,
+      "Failure": "",
       "TransactionID": 3,
       "TagFetchBody": null,
       "DNSTransactionID": 3,
@@ -174,7 +174,7 @@
     {
       "TagDepth": 0,
       "Type": 0,
-      "Failure": null,
+      "Failure": "",
       "TransactionID": 3,
       "TagFetchBody": null,
       "DNSTransactionID": 3,
@@ -259,7 +259,7 @@
     {
       "TagDepth": 0,
       "Type": 0,
-      "Failure": null,
+      "Failure": "",
       "TransactionID": 3,
       "TagFetchBody": null,
       "DNSTransactionID": 3,
@@ -344,7 +344,7 @@
     {
       "TagDepth": 0,
       "Type": 0,
-      "Failure": null,
+      "Failure": "",
       "TransactionID": 3,
       "TagFetchBody": null,
       "DNSTransactionID": 3,
@@ -429,7 +429,7 @@
     {
       "TagDepth": 0,
       "Type": 0,
-      "Failure": null,
+      "Failure": "",
       "TransactionID": 3,
       "TagFetchBody": null,
       "DNSTransactionID": 3,
@@ -514,7 +514,7 @@
     {
       "TagDepth": 0,
       "Type": 0,
-      "Failure": null,
+      "Failure": "",
       "TransactionID": 3,
       "TagFetchBody": null,
       "DNSTransactionID": 3,
@@ -599,7 +599,7 @@
     {
       "TagDepth": 0,
       "Type": 0,
-      "Failure": null,
+      "Failure": "",
       "TransactionID": 3,
       "TagFetchBody": null,
       "DNSTransactionID": 3,
@@ -684,7 +684,7 @@
     {
       "TagDepth": 0,
       "Type": 0,
-      "Failure": null,
+      "Failure": "",
       "TransactionID": 3,
       "TagFetchBody": null,
       "DNSTransactionID": 3,
@@ -769,7 +769,7 @@
     {
       "TagDepth": 0,
       "Type": 0,
-      "Failure": null,
+      "Failure": "",
       "TransactionID": 3,
       "TagFetchBody": null,
       "DNSTransactionID": 3,
@@ -854,7 +854,7 @@
     {
       "TagDepth": 0,
       "Type": 0,
-      "Failure": null,
+      "Failure": "",
       "TransactionID": 3,
       "TagFetchBody": null,
       "DNSTransactionID": 3,

@@ -90,7 +90,7 @@
     {
       "TagDepth": 1,
       "Type": 0,
-      "Failure": null,
+      "Failure": "",
       "TransactionID": 5,
       "TagFetchBody": null,
       "DNSTransactionID": 5,
@@ -194,7 +194,7 @@
     {
       "TagDepth": 0,
       "Type": 0,
-      "Failure": null,
+      "Failure": "",
       "TransactionID": 2,
       "TagFetchBody": null,
       "DNSTransactionID": 2,

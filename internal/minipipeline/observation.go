@@ -333,7 +333,7 @@ func (c *WebObservationsContainer) ingestDNSLookupSuccesses(evs ...*model.Archiv
 		for _, ipAddr := range addrs.Keys() {
 			// create the record
 			obs := &WebObservation{
-				Failure:          optional.None[string](),
+				Failure:          optional.Some[string](""),
 				Type:             WebObservationTypeDNSLookup,
 				TransactionID:    ev.TransactionID,
 				DNSTransactionID: optional.Some(ev.TransactionID),

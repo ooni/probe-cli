@@ -144,14 +144,14 @@
     {
       "TagDepth": 0,
       "Type": 0,
-      "Failure": null,
-      "TransactionID": 1,
+      "Failure": "",
+      "TransactionID": 2,
       "TagFetchBody": null,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
-      "DNSQueryType": "A",
-      "DNSEngine": "udp",
+      "DNSQueryType": "ANY",
+      "DNSEngine": "getaddrinfo",
       "DNSResolvedAddrs": [
         "130.192.182.17"
       ],
@@ -195,14 +195,14 @@
     {
       "TagDepth": 0,
       "Type": 0,
-      "Failure": null,
-      "TransactionID": 2,
+      "Failure": "",
+      "TransactionID": 1,
       "TagFetchBody": null,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
-      "DNSQueryType": "ANY",
-      "DNSEngine": "getaddrinfo",
+      "DNSQueryType": "A",
+      "DNSEngine": "udp",
       "DNSResolvedAddrs": [
         "130.192.182.17"
       ],
