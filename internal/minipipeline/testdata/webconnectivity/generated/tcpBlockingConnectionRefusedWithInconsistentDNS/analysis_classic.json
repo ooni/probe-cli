@@ -35,5 +35,109 @@
   "HTTPFinalResponseDiffBodyProportionFactor": null,
   "HTTPFinalResponseDiffStatusCodeMatch": null,
   "HTTPFinalResponseDiffTitleDifferentLongWords": null,
-  "HTTPFinalResponseDiffUncommonHeadersIntersection": null
+  "HTTPFinalResponseDiffUncommonHeadersIntersection": null,
+  "Linear": [
+    {
+      "TagDepth": 0,
+      "Type": 1,
+      "Failure": "connection_refused",
+      "TransactionID": 3,
+      "TagFetchBody": true,
+      "DNSTransactionID": 1,
+      "DNSDomain": "www.example.org",
+      "DNSLookupFailure": "",
+      "DNSQueryType": null,
+      "DNSEngine": null,
+      "DNSResolvedAddrs": [
+        "83.224.65.41"
+      ],
+      "IPAddress": "83.224.65.41",
+      "IPAddressASN": 30722,
+      "IPAddressBogon": false,
+      "EndpointTransactionID": 3,
+      "EndpointProto": "tcp",
+      "EndpointPort": "80",
+      "EndpointAddress": "83.224.65.41:80",
+      "TCPConnectFailure": "connection_refused",
+      "TLSHandshakeFailure": null,
+      "TLSServerName": null,
+      "HTTPRequestURL": null,
+      "HTTPFailure": null,
+      "HTTPResponseStatusCode": null,
+      "HTTPResponseBodyLength": null,
+      "HTTPResponseBodyIsTruncated": null,
+      "HTTPResponseHeadersKeys": null,
+      "HTTPResponseLocation": null,
+      "HTTPResponseTitle": null,
+      "HTTPResponseIsFinal": null,
+      "ControlDNSDomain": "www.example.org",
+      "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "93.184.216.34"
+      ],
+      "ControlTCPConnectFailure": "",
+      "ControlTLSHandshakeFailure": null,
+      "ControlHTTPFailure": "",
+      "ControlHTTPResponseStatusCode": 200,
+      "ControlHTTPResponseBodyLength": 1533,
+      "ControlHTTPResponseHeadersKeys": {
+        "Alt-Svc": true,
+        "Content-Length": true,
+        "Content-Type": true,
+        "Date": true
+      },
+      "ControlHTTPResponseTitle": "Default Web Page"
+    },
+    {
+      "TagDepth": 0,
+      "Type": 0,
+      "Failure": "",
+      "TransactionID": 1,
+      "TagFetchBody": null,
+      "DNSTransactionID": 1,
+      "DNSDomain": "www.example.org",
+      "DNSLookupFailure": "",
+      "DNSQueryType": "ANY",
+      "DNSEngine": "getaddrinfo",
+      "DNSResolvedAddrs": [
+        "83.224.65.41"
+      ],
+      "IPAddress": "83.224.65.41",
+      "IPAddressASN": 30722,
+      "IPAddressBogon": false,
+      "EndpointTransactionID": null,
+      "EndpointProto": null,
+      "EndpointPort": null,
+      "EndpointAddress": null,
+      "TCPConnectFailure": null,
+      "TLSHandshakeFailure": null,
+      "TLSServerName": null,
+      "HTTPRequestURL": null,
+      "HTTPFailure": null,
+      "HTTPResponseStatusCode": null,
+      "HTTPResponseBodyLength": null,
+      "HTTPResponseBodyIsTruncated": null,
+      "HTTPResponseHeadersKeys": null,
+      "HTTPResponseLocation": null,
+      "HTTPResponseTitle": null,
+      "HTTPResponseIsFinal": null,
+      "ControlDNSDomain": "www.example.org",
+      "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "93.184.216.34"
+      ],
+      "ControlTCPConnectFailure": null,
+      "ControlTLSHandshakeFailure": null,
+      "ControlHTTPFailure": "",
+      "ControlHTTPResponseStatusCode": 200,
+      "ControlHTTPResponseBodyLength": 1533,
+      "ControlHTTPResponseHeadersKeys": {
+        "Alt-Svc": true,
+        "Content-Length": true,
+        "Content-Type": true,
+        "Date": true
+      },
+      "ControlHTTPResponseTitle": "Default Web Page"
+    }
+  ]
 }
