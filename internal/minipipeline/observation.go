@@ -537,7 +537,18 @@ func (c *WebObservationsContainer) controlXrefTLSFailures(resp *model.THResponse
 }
 
 func (c *WebObservationsContainer) controlSetHTTPFinalResponseExpectation(resp *model.THResponse) {
+
+	// We need to set expectations for each type of observation. For example, to detect
+	// NXDOMAIN blocking with redirects when there's the expectation of success, we need
+	// to have the expectation inside the DNS-lookup-failure observation.
+	var observations []*WebObservation
+	observations = append(observations, c.DNSLookupFailures...)
+	observations = append(observations, c.DNSLookupSuccesses...)
 	for _, obs := range c.KnownTCPEndpoints {
+		observations = append(observations, obs)
+	}
+
+	for _, obs := range observations {
 		obs.ControlHTTPFailure = optional.Some(utilsStringPointerToString(resp.HTTPRequest.Failure))
 
 		// leave everything else nil if there was a failure, like we

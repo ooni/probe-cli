@@ -35,11 +35,26 @@
       ],
       "ControlTCPConnectFailure": null,
       "ControlTLSHandshakeFailure": null,
-      "ControlHTTPFailure": null,
-      "ControlHTTPResponseStatusCode": null,
-      "ControlHTTPResponseBodyLength": null,
-      "ControlHTTPResponseHeadersKeys": null,
-      "ControlHTTPResponseTitle": null
+      "ControlHTTPFailure": "",
+      "ControlHTTPResponseStatusCode": 200,
+      "ControlHTTPResponseBodyLength": 36546,
+      "ControlHTTPResponseHeadersKeys": {
+        "Cache-Control": true,
+        "Content-Language": true,
+        "Content-Type": true,
+        "Date": true,
+        "Etag": true,
+        "Expires": true,
+        "Last-Modified": true,
+        "Link": true,
+        "Server": true,
+        "Vary": true,
+        "X-Content-Type-Options": true,
+        "X-Drupal-Cache": true,
+        "X-Frame-Options": true,
+        "X-Generator": true
+      },
+      "ControlHTTPResponseTitle": "Nexa Center for Internet \u0026 Society | Il centro Nexa è un centro di ricerca del Dipartimento di Automatica e Informatica del Politecnico di Torino"
     },
     {
       "DNSTransactionID": 3,
@@ -76,11 +91,26 @@
       ],
       "ControlTCPConnectFailure": null,
       "ControlTLSHandshakeFailure": null,
-      "ControlHTTPFailure": null,
-      "ControlHTTPResponseStatusCode": null,
-      "ControlHTTPResponseBodyLength": null,
-      "ControlHTTPResponseHeadersKeys": null,
-      "ControlHTTPResponseTitle": null
+      "ControlHTTPFailure": "",
+      "ControlHTTPResponseStatusCode": 200,
+      "ControlHTTPResponseBodyLength": 36546,
+      "ControlHTTPResponseHeadersKeys": {
+        "Cache-Control": true,
+        "Content-Language": true,
+        "Content-Type": true,
+        "Date": true,
+        "Etag": true,
+        "Expires": true,
+        "Last-Modified": true,
+        "Link": true,
+        "Server": true,
+        "Vary": true,
+        "X-Content-Type-Options": true,
+        "X-Drupal-Cache": true,
+        "X-Frame-Options": true,
+        "X-Generator": true
+      },
+      "ControlHTTPResponseTitle": "Nexa Center for Internet \u0026 Society | Il centro Nexa è un centro di ricerca del Dipartimento di Automatica e Informatica del Politecnico di Torino"
     }
   ],
   "DNSLookupSuccesses": [
@@ -121,11 +151,26 @@
       ],
       "ControlTCPConnectFailure": null,
       "ControlTLSHandshakeFailure": null,
-      "ControlHTTPFailure": null,
-      "ControlHTTPResponseStatusCode": null,
-      "ControlHTTPResponseBodyLength": null,
-      "ControlHTTPResponseHeadersKeys": null,
-      "ControlHTTPResponseTitle": null
+      "ControlHTTPFailure": "",
+      "ControlHTTPResponseStatusCode": 200,
+      "ControlHTTPResponseBodyLength": 36546,
+      "ControlHTTPResponseHeadersKeys": {
+        "Cache-Control": true,
+        "Content-Language": true,
+        "Content-Type": true,
+        "Date": true,
+        "Etag": true,
+        "Expires": true,
+        "Last-Modified": true,
+        "Link": true,
+        "Server": true,
+        "Vary": true,
+        "X-Content-Type-Options": true,
+        "X-Drupal-Cache": true,
+        "X-Frame-Options": true,
+        "X-Generator": true
+      },
+      "ControlHTTPResponseTitle": "Nexa Center for Internet \u0026 Society | Il centro Nexa è un centro di ricerca del Dipartimento di Automatica e Informatica del Politecnico di Torino"
     },
     {
       "DNSTransactionID": 2,
@@ -164,11 +209,26 @@
       ],
       "ControlTCPConnectFailure": null,
       "ControlTLSHandshakeFailure": null,
-      "ControlHTTPFailure": null,
-      "ControlHTTPResponseStatusCode": null,
-      "ControlHTTPResponseBodyLength": null,
-      "ControlHTTPResponseHeadersKeys": null,
-      "ControlHTTPResponseTitle": null
+      "ControlHTTPFailure": "",
+      "ControlHTTPResponseStatusCode": 200,
+      "ControlHTTPResponseBodyLength": 36546,
+      "ControlHTTPResponseHeadersKeys": {
+        "Cache-Control": true,
+        "Content-Language": true,
+        "Content-Type": true,
+        "Date": true,
+        "Etag": true,
+        "Expires": true,
+        "Last-Modified": true,
+        "Link": true,
+        "Server": true,
+        "Vary": true,
+        "X-Content-Type-Options": true,
+        "X-Drupal-Cache": true,
+        "X-Frame-Options": true,
+        "X-Generator": true
+      },
+      "ControlHTTPResponseTitle": "Nexa Center for Internet \u0026 Society | Il centro Nexa è un centro di ricerca del Dipartimento di Automatica e Informatica del Politecnico di Torino"
     },
     {
       "DNSTransactionID": 3,
@@ -207,11 +267,26 @@
       ],
       "ControlTCPConnectFailure": null,
       "ControlTLSHandshakeFailure": null,
-      "ControlHTTPFailure": null,
-      "ControlHTTPResponseStatusCode": null,
-      "ControlHTTPResponseBodyLength": null,
-      "ControlHTTPResponseHeadersKeys": null,
-      "ControlHTTPResponseTitle": null
+      "ControlHTTPFailure": "",
+      "ControlHTTPResponseStatusCode": 200,
+      "ControlHTTPResponseBodyLength": 36546,
+      "ControlHTTPResponseHeadersKeys": {
+        "Cache-Control": true,
+        "Content-Language": true,
+        "Content-Type": true,
+        "Date": true,
+        "Etag": true,
+        "Expires": true,
+        "Last-Modified": true,
+        "Link": true,
+        "Server": true,
+        "Vary": true,
+        "X-Content-Type-Options": true,
+        "X-Drupal-Cache": true,
+        "X-Frame-Options": true,
+        "X-Generator": true
+      },
+      "ControlHTTPResponseTitle": "Nexa Center for Internet \u0026 Society | Il centro Nexa è un centro di ricerca del Dipartimento di Automatica e Informatica del Politecnico di Torino"
     }
   ],
   "KnownTCPEndpoints": {
