@@ -36,10 +36,9 @@ const (
 	analysisFlagSuccess
 )
 
-// AnalysisUseV2 indicates whether to use V2 of the analysis algorithm.
-var AnalysisUseV2 = true
-
-var AnalysisUseClassic = true
+// AnalysisEngineFn is the function that runs the analysis engine for
+// processing and scoring measurements collected by LTE.
+var AnalysisEngineFn func(tk *TestKeys, logger model.Logger) = AnalysisEngineOrig
 
 // analysisToplevel is the toplevel function that analyses the results
 // of the experiment once all network tasks have completed.
@@ -100,19 +99,25 @@ var AnalysisUseClassic = true
 // As an improvement over Web Connectivity v0.4, we also attempt to identify
 // special subcases of a null, null result to provide the user with more information.
 func (tk *TestKeys) analysisToplevel(logger model.Logger) {
+	AnalysisEngineFn(tk, logger)
+}
+
+// AnalysisEngineOrig is the original analysis engine we wrote for LTE. This engine
+// aims to detect and report about all the possible ways in which the measured website
+// is blocked. As of 2023-11-30, we still consider this engine experimental.
+func AnalysisEngineOrig(tk *TestKeys, logger model.Logger) {
+	tk.analysisOrig(logger)
+}
+
+// AnalysisEngineClassic is an alternative analysis engine that aims to produce
+// results that are backward compatible with Web Connectivity v0.4.
+func AnalysisEngineClassic(tk *TestKeys, logger model.Logger) {
+	tk.analysisClassic(logger)
+}
+
+func (tk *TestKeys) analysisOrig(logger model.Logger) {
 	// Since we run after all tasks have completed (or so we assume) we're
 	// not going to use any form of locking here.
-
-	if AnalysisUseClassic {
-		tk.analysisClassic(logger)
-		return
-	}
-
-	// these functions compute the value of XBlockingFlags
-	if AnalysisUseV2 {
-		tk.analysisToplevelV2(logger)
-		return
-	}
 
 	tk.analysisDNSToplevel(logger, model.GeoIPASNLookupperFunc(geoipx.LookupASN))
 	tk.analysisTCPIPToplevel(logger)

@@ -278,13 +278,4 @@ func (tk *TestKeys) analysisClassic(logger model.Logger) {
 			return
 		}
 	}
-
-	// if we arrive here, it means we could not make sense of what
-	// happened, hence let us ask for help to our users
-
-	logger.Warnf("BUG! We were not able to classify this measurement!")
-	logger.Warnf("The following is the list of observations we were processing:")
-	logger.Warnf("\n%s", must.MarshalAndIndentJSON(woa, "", " "))
-	logger.Warnf("Please, report this bug at https://github.com/ooni/probe/issues/new")
-	logger.Warnf("including the above JSON and possibly additional context")
 }
