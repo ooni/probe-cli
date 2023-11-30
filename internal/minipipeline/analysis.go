@@ -60,6 +60,14 @@ type WebAnalysis struct {
 	// TCPConnectUnexplainedFailure contains failures occurring during redirects.
 	TCPConnectUnexplainedFailure Set[int64]
 
+	// TCPConnectUnexplainedFailureDuringWebFetch contains failures occurring during redirects
+	// while performing a web fetch, as opposed to checking for connectivity.
+	TCPConnectUnexplainedFailureDuringWebFetch Set[int64]
+
+	// TCPConnectUnexplainedFailureDuringConnectivityCheck contains failures occurring during redirects
+	// while checking for connectivity, as opposed to fetching a webpage.
+	TCPConnectUnexplainedFailureDuringConnectivityCheck Set[int64]
+
 	// TLSHandshakeUnexpectedFailure contains TLS endpoint transactions with unexpected failures.
 	TLSHandshakeUnexpectedFailure Set[int64]
 
@@ -73,6 +81,14 @@ type WebAnalysis struct {
 
 	// TLSHandshakeUnexplainedFailure contains failures occurring during redirects.
 	TLSHandshakeUnexplainedFailure Set[int64]
+
+	// TLSHandshakeUnexplainedFailureDuringWebFetch  contains failures occurring during redirects
+	// while performing a web fetch, as opposed to checking for connectivity.
+	TLSHandshakeUnexplainedFailureDuringWebFetch Set[int64]
+
+	// TLSHandshakeUnexplainedFailureDuringConnectivityCheck contains failures occurring during redirects
+	// while checking for connectivity, as opposed to fetching a webpage.
+	TLSHandshakeUnexplainedFailureDuringConnectivityCheck Set[int64]
 
 	// HTTPRoundTripUnexpectedFailure contains HTTP endpoint transactions with unexpected failures.
 	HTTPRoundTripUnexpectedFailure Set[int64]
@@ -288,6 +304,12 @@ func (wa *WebAnalysis) tcpComputeMetrics(c *WebObservationsContainer) {
 				continue
 			}
 			if obs.TCPConnectFailure.Unwrap() != "" {
+				switch {
+				case !obs.TagFetchBody.IsNone() && obs.TagFetchBody.Unwrap():
+					wa.TCPConnectUnexplainedFailureDuringWebFetch.Add(obs.EndpointTransactionID.Unwrap())
+				case !obs.TagFetchBody.IsNone() && !obs.TagFetchBody.Unwrap():
+					wa.TCPConnectUnexplainedFailureDuringConnectivityCheck.Add(obs.EndpointTransactionID.Unwrap())
+				}
 				wa.TCPConnectUnexplainedFailure.Add(obs.EndpointTransactionID.Unwrap())
 				continue
 			}
@@ -337,6 +359,12 @@ func (wa *WebAnalysis) tlsComputeMetrics(c *WebObservationsContainer) {
 		// since we know there's no control information beyond depth==0
 		if obs.TagDepth.IsNone() || obs.TagDepth.Unwrap() != 0 {
 			if obs.TLSHandshakeFailure.Unwrap() != "" {
+				switch {
+				case !obs.TagFetchBody.IsNone() && obs.TagFetchBody.Unwrap():
+					wa.TLSHandshakeUnexplainedFailureDuringWebFetch.Add(obs.EndpointTransactionID.Unwrap())
+				case !obs.TagFetchBody.IsNone() && !obs.TagFetchBody.Unwrap():
+					wa.TLSHandshakeUnexplainedFailureDuringConnectivityCheck.Add(obs.EndpointTransactionID.Unwrap())
+				}
 				wa.TLSHandshakeUnexplainedFailure.Add(obs.EndpointTransactionID.Unwrap())
 				continue
 			}
