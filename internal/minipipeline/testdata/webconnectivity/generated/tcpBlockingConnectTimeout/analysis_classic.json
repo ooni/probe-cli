@@ -2,6 +2,10 @@
   "DNSLookupSuccessWithInvalidAddresses": [],
   "DNSLookupSuccessWithInvalidAddressesClassic": [],
   "DNSLookupUnexpectedFailure": [],
+  "TCPConnectUnexpectedFailure": [
+    3
+  ],
+  "TLSHandshakeUnexpectedFailure": [],
   "DNSExperimentFailure": null,
   "DNSPossiblyNonexistingDomains": null,
   "HTTPDiffBodyProportionFactor": null,
@@ -10,10 +14,6 @@
   "HTTPDiffUncommonHeadersIntersection": null,
   "HTTPFinalResponsesWithControl": null,
   "HTTPFinalResponsesWithTLS": null,
-  "TCPTransactionsWithUnexpectedTCPConnectFailures": {
-    "3": true
-  },
-  "TCPTransactionsWithUnexpectedTLSHandshakeFailures": null,
   "TCPTransactionsWithUnexpectedHTTPFailures": null,
   "TCPTransactionsWithUnexplainedUnexpectedFailures": {}
 }
