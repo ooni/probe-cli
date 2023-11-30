@@ -5,8 +5,8 @@
   "DNSLookupSuccessWithInvalidAddressesClassic": [
     2
   ],
+  "DNSLookupUnexpectedFailure": [],
   "DNSExperimentFailure": null,
-  "DNSTransactionsWithUnexpectedFailures": null,
   "DNSPossiblyNonexistingDomains": null,
   "HTTPDiffBodyProportionFactor": null,
   "HTTPDiffStatusCodeMatch": null,
