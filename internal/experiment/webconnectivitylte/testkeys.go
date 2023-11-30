@@ -95,6 +95,9 @@ type TestKeys struct {
 	// blocking = null, accessible = null measurements did
 	NullNullFlags int64 `json:"x_null_null_flags"`
 
+	// BodyProportion is the value used to compute BodyLength.
+	BodyProportion float64 `json:"body_proportion"`
+
 	// BodyLength match tells us whether the body length matches.
 	BodyLengthMatch *bool `json:"body_length_match"`
 

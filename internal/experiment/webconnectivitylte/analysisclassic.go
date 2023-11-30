@@ -74,7 +74,8 @@ func analysisClassicDNSConsistency(woa *minipipeline.WebAnalysis) optional.Value
 func (tk *TestKeys) setHTTPDiffValues(woa *minipipeline.WebAnalysis) {
 	const bodyProportionFactor = 0.7
 	if !woa.HTTPFinalResponseDiffBodyProportionFactor.IsNone() {
-		value := woa.HTTPFinalResponseDiffBodyProportionFactor.Unwrap() > bodyProportionFactor
+		tk.BodyProportion = woa.HTTPFinalResponseDiffBodyProportionFactor.Unwrap()
+		value := tk.BodyProportion > bodyProportionFactor
 		tk.BodyLengthMatch = &value
 	}
 
