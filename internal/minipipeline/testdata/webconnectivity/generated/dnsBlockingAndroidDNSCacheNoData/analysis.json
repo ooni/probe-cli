@@ -1,9 +1,18 @@
 {
   "DNSLookupSuccessWithInvalidAddresses": [],
+  "DNSLookupSuccessWithValidAddress": [
+    2
+  ],
   "DNSLookupSuccessWithInvalidAddressesClassic": [],
+  "DNSLookupSuccessWithValidAddressClassic": [
+    2
+  ],
   "DNSLookupUnexpectedFailure": [
     1
   ],
+  "DNSExperimentFailure": "android_dns_cache_no_data",
+  "DNSLookupExpectedFailure": [],
+  "DNSLookupExpectedSuccess": [],
   "TCPConnectUnexpectedFailure": [],
   "TCPConnectUnexpectedFailureDuringWebFetch": [],
   "TCPConnectUnexpectedFailureDuringConnectivityCheck": [],
@@ -19,14 +28,14 @@
   "HTTPRoundTripUnexpectedFailure": [],
   "HTTPFinalResponseSuccessTLSWithoutControl": null,
   "HTTPFinalResponseSuccessTLSWithControl": 3,
+  "HTTPFinalResponseSuccessTCPWithoutControl": null,
   "HTTPFinalResponseSuccessTCPWithControl": null,
-  "HTTPDiffBodyProportionFactor": 1,
-  "HTTPDiffStatusCodeMatch": true,
-  "HTTPDiffTitleDifferentLongWords": {},
-  "HTTPDiffUncommonHeadersIntersection": {
+  "HTTPFinalResponseDiffBodyProportionFactor": 1,
+  "HTTPFinalResponseDiffStatusCodeMatch": true,
+  "HTTPFinalResponseDiffTitleDifferentLongWords": {},
+  "HTTPFinalResponseDiffUncommonHeadersIntersection": {
     "alt-svc": true,
     "content-length": true
   },
-  "DNSExperimentFailure": "android_dns_cache_no_data",
   "DNSPossiblyNonexistingDomains": {}
 }
