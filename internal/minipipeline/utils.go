@@ -49,18 +49,19 @@ func utilsDetermineWhetherHTTPResponseIsFinal(status int64) optional.Value[bool]
 	}
 }
 
-func utilsForEachIPAddress(answers []model.ArchivalDNSAnswer, fx func(ipAddr string)) {
+func utilsResolvedAddresses(answers []model.ArchivalDNSAnswer) (addrs []string) {
 	for _, ans := range answers {
 		// extract the IP address we resolved
 		switch ans.AnswerType {
 		case "A":
-			fx(ans.IPv4)
+			addrs = append(addrs, ans.IPv4)
 		case "AAAA":
-			fx(ans.IPv6)
+			addrs = append(addrs, ans.IPv6)
 		default:
 			// nothing
 		}
 	}
+	return
 }
 
 func utilsEngineIsGetaddrinfo(engine optional.Value[string]) bool {

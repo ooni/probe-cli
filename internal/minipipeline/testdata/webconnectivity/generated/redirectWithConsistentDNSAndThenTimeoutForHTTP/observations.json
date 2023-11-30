@@ -6,6 +6,7 @@
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
       "DNSEngine": "udp",
+      "DNSResolvedAddrs": null,
       "IPAddress": null,
       "IPAddressASN": null,
       "IPAddressBogon": null,
@@ -29,6 +30,9 @@
       "TagFetchBody": null,
       "ControlDNSDomain": "bit.ly",
       "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "67.199.248.11"
+      ],
       "ControlTCPConnectFailure": null,
       "MatchWithControlIPAddress": null,
       "MatchWithControlIPAddressASN": null,
@@ -45,6 +49,7 @@
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
       "DNSEngine": "udp",
+      "DNSResolvedAddrs": null,
       "IPAddress": null,
       "IPAddressASN": null,
       "IPAddressBogon": null,
@@ -68,6 +73,7 @@
       "TagFetchBody": null,
       "ControlDNSDomain": null,
       "ControlDNSLookupFailure": null,
+      "ControlDNSResolvedAddrs": null,
       "ControlTCPConnectFailure": null,
       "MatchWithControlIPAddress": null,
       "MatchWithControlIPAddressASN": null,
@@ -86,6 +92,9 @@
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
       "DNSEngine": "getaddrinfo",
+      "DNSResolvedAddrs": [
+        "67.199.248.11"
+      ],
       "IPAddress": "67.199.248.11",
       "IPAddressASN": 396982,
       "IPAddressBogon": false,
@@ -107,8 +116,11 @@
       "HTTPResponseIsFinal": null,
       "TagDepth": 0,
       "TagFetchBody": null,
-      "ControlDNSDomain": null,
-      "ControlDNSLookupFailure": null,
+      "ControlDNSDomain": "bit.ly",
+      "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "67.199.248.11"
+      ],
       "ControlTCPConnectFailure": null,
       "MatchWithControlIPAddress": null,
       "MatchWithControlIPAddressASN": null,
@@ -125,6 +137,9 @@
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
       "DNSEngine": "udp",
+      "DNSResolvedAddrs": [
+        "67.199.248.11"
+      ],
       "IPAddress": "67.199.248.11",
       "IPAddressASN": 396982,
       "IPAddressBogon": false,
@@ -146,8 +161,11 @@
       "HTTPResponseIsFinal": null,
       "TagDepth": 0,
       "TagFetchBody": null,
-      "ControlDNSDomain": null,
-      "ControlDNSLookupFailure": null,
+      "ControlDNSDomain": "bit.ly",
+      "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "67.199.248.11"
+      ],
       "ControlTCPConnectFailure": null,
       "MatchWithControlIPAddress": null,
       "MatchWithControlIPAddressASN": null,
@@ -164,6 +182,9 @@
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
       "DNSEngine": "getaddrinfo",
+      "DNSResolvedAddrs": [
+        "93.184.216.34"
+      ],
       "IPAddress": "93.184.216.34",
       "IPAddressASN": 15133,
       "IPAddressBogon": false,
@@ -187,6 +208,7 @@
       "TagFetchBody": null,
       "ControlDNSDomain": null,
       "ControlDNSLookupFailure": null,
+      "ControlDNSResolvedAddrs": null,
       "ControlTCPConnectFailure": null,
       "MatchWithControlIPAddress": null,
       "MatchWithControlIPAddressASN": null,
@@ -203,6 +225,9 @@
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
       "DNSEngine": "udp",
+      "DNSResolvedAddrs": [
+        "93.184.216.34"
+      ],
       "IPAddress": "93.184.216.34",
       "IPAddressASN": 15133,
       "IPAddressBogon": false,
@@ -226,6 +251,7 @@
       "TagFetchBody": null,
       "ControlDNSDomain": null,
       "ControlDNSLookupFailure": null,
+      "ControlDNSResolvedAddrs": null,
       "ControlTCPConnectFailure": null,
       "MatchWithControlIPAddress": null,
       "MatchWithControlIPAddressASN": null,
@@ -244,6 +270,9 @@
       "DNSLookupFailure": "",
       "DNSQueryType": null,
       "DNSEngine": null,
+      "DNSResolvedAddrs": [
+        "67.199.248.11"
+      ],
       "IPAddress": "67.199.248.11",
       "IPAddressASN": 396982,
       "IPAddressBogon": false,
@@ -271,6 +300,9 @@
       "TagFetchBody": true,
       "ControlDNSDomain": "bit.ly",
       "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "67.199.248.11"
+      ],
       "ControlTCPConnectFailure": "",
       "MatchWithControlIPAddress": true,
       "MatchWithControlIPAddressASN": true,
@@ -292,6 +324,9 @@
       "DNSLookupFailure": "",
       "DNSQueryType": null,
       "DNSEngine": null,
+      "DNSResolvedAddrs": [
+        "93.184.216.34"
+      ],
       "IPAddress": "93.184.216.34",
       "IPAddressASN": 15133,
       "IPAddressBogon": false,
@@ -315,6 +350,7 @@
       "TagFetchBody": true,
       "ControlDNSDomain": null,
       "ControlDNSLookupFailure": null,
+      "ControlDNSResolvedAddrs": null,
       "ControlTCPConnectFailure": null,
       "MatchWithControlIPAddress": null,
       "MatchWithControlIPAddressASN": null,
@@ -336,6 +372,9 @@
       "DNSLookupFailure": "",
       "DNSQueryType": null,
       "DNSEngine": null,
+      "DNSResolvedAddrs": [
+        "93.184.216.34"
+      ],
       "IPAddress": "93.184.216.34",
       "IPAddressASN": 15133,
       "IPAddressBogon": false,
@@ -359,6 +398,7 @@
       "TagFetchBody": false,
       "ControlDNSDomain": null,
       "ControlDNSLookupFailure": null,
+      "ControlDNSResolvedAddrs": null,
       "ControlTCPConnectFailure": null,
       "MatchWithControlIPAddress": null,
       "MatchWithControlIPAddressASN": null,

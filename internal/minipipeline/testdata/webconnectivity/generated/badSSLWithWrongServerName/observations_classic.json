@@ -7,6 +7,9 @@
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
       "DNSEngine": "getaddrinfo",
+      "DNSResolvedAddrs": [
+        "104.154.89.105"
+      ],
       "IPAddress": "104.154.89.105",
       "IPAddressASN": 396982,
       "IPAddressBogon": false,
@@ -28,8 +31,11 @@
       "HTTPResponseIsFinal": null,
       "TagDepth": 0,
       "TagFetchBody": null,
-      "ControlDNSDomain": null,
-      "ControlDNSLookupFailure": null,
+      "ControlDNSDomain": "wrong.host.badssl.com",
+      "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "104.154.89.105"
+      ],
       "ControlTCPConnectFailure": null,
       "MatchWithControlIPAddress": null,
       "MatchWithControlIPAddressASN": null,
@@ -48,6 +54,9 @@
       "DNSLookupFailure": "",
       "DNSQueryType": null,
       "DNSEngine": null,
+      "DNSResolvedAddrs": [
+        "104.154.89.105"
+      ],
       "IPAddress": "104.154.89.105",
       "IPAddressASN": 396982,
       "IPAddressBogon": false,
@@ -71,6 +80,9 @@
       "TagFetchBody": true,
       "ControlDNSDomain": "wrong.host.badssl.com",
       "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "104.154.89.105"
+      ],
       "ControlTCPConnectFailure": "",
       "MatchWithControlIPAddress": true,
       "MatchWithControlIPAddressASN": true,

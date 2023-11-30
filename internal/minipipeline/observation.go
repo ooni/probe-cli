@@ -87,6 +87,9 @@ type WebObservation struct {
 	// DNSEngine is the DNS engine that we're using (e.g., "getaddrinfo").
 	DNSEngine optional.Value[string]
 
+	// DNSResolvedAddrs contains the list of DNS-resolved addrs.
+	DNSResolvedAddrs optional.Value[Set[string]]
+
 	// The following fields are optional.Some in these cases:
 	//
 	// 1. when you process successful DNS lookup events from OONI measurements;
@@ -196,6 +199,9 @@ type WebObservation struct {
 	// ControlDNSLookupFailure is the corresponding control DNS lookup failure.
 	ControlDNSLookupFailure optional.Value[string]
 
+	// ControlDNSResolvedAddrs contains the list of addrs DNS-resolved by the control.
+	ControlDNSResolvedAddrs optional.Value[Set[string]]
+
 	// ControlTCPConnectFailure is the control's TCP connect failure.
 	ControlTCPConnectFailure optional.Value[string]
 
@@ -297,7 +303,8 @@ func (c *WebObservationsContainer) ingestDNSLookupSuccesses(evs ...*model.Archiv
 		}
 
 		// walk through the answers
-		utilsForEachIPAddress(ev.Answers, func(ipAddr string) {
+		addrs := NewSet(utilsResolvedAddresses(ev.Answers)...)
+		for _, ipAddr := range addrs.Keys() {
 			// create the record
 			obs := &WebObservation{
 				DNSTransactionID: optional.Some(ev.TransactionID),
@@ -305,6 +312,7 @@ func (c *WebObservationsContainer) ingestDNSLookupSuccesses(evs ...*model.Archiv
 				DNSLookupFailure: optional.Some(""),
 				DNSQueryType:     optional.Some(ev.QueryType),
 				DNSEngine:        optional.Some(ev.Engine),
+				DNSResolvedAddrs: optional.Some(addrs),
 				IPAddress:        optional.Some(ipAddr),
 				IPAddressASN:     utilsGeoipxLookupASN(ipAddr),
 				IPAddressBogon:   optional.Some(netxlite.IsBogon(ipAddr)),
@@ -318,7 +326,7 @@ func (c *WebObservationsContainer) ingestDNSLookupSuccesses(evs ...*model.Archiv
 			if _, found := c.knownIPAddresses[ipAddr]; !found {
 				c.knownIPAddresses[ipAddr] = obs
 			}
-		})
+		}
 	}
 }
 
@@ -345,6 +353,7 @@ func (c *WebObservationsContainer) IngestTCPConnectEvents(evs ...*model.Archival
 			DNSTransactionID:      obs.DNSTransactionID,
 			DNSDomain:             obs.DNSDomain,
 			DNSLookupFailure:      obs.DNSLookupFailure,
+			DNSResolvedAddrs:      obs.DNSResolvedAddrs,
 			IPAddress:             obs.IPAddress,
 			IPAddressASN:          obs.IPAddressASN,
 			IPAddressBogon:        obs.IPAddressBogon,
@@ -426,7 +435,10 @@ func (c *WebObservationsContainer) IngestControlMessages(req *model.THRequest, r
 }
 
 func (c *WebObservationsContainer) controlXrefDNSQueries(inputDomain string, resp *model.THResponse) {
-	for _, obs := range c.DNSLookupFailures {
+	var observations []*WebObservation
+	observations = append(observations, c.DNSLookupFailures...)
+	observations = append(observations, c.DNSLookupSuccesses...)
+	for _, obs := range observations {
 		// skip cases where the domain is different
 		if obs.DNSDomain.Unwrap() != inputDomain {
 			continue
@@ -435,8 +447,14 @@ func (c *WebObservationsContainer) controlXrefDNSQueries(inputDomain string, res
 		// register the corresponding DNS domain used by the control
 		obs.ControlDNSDomain = optional.Some(inputDomain)
 
-		// register the corresponding DNS lookup failure
+		// register the corresponding DNS lookup failure and skip in such a case
 		obs.ControlDNSLookupFailure = optional.Some(utilsStringPointerToString(resp.DNS.Failure))
+		if resp.DNS.Failure != nil {
+			continue
+		}
+
+		// register the resolved IP addresses
+		obs.ControlDNSResolvedAddrs = optional.Some(NewSet(resp.DNS.Addrs...))
 	}
 }
 
@@ -467,6 +485,9 @@ func (c *WebObservationsContainer) controlMatchDNSLookupResults(inputDomain stri
 		// handle the case in which the IP address has been provided by the control, which
 		// is a case where the domain is empty and the IP address is in thAddrMap
 		if domain == "" && thAddrMap[addr] {
+			obs.ControlDNSDomain = optional.Some(inputDomain)
+			obs.ControlDNSLookupFailure = optional.Some(utilsStringPointerToString(resp.DNS.Failure))
+			obs.ControlDNSResolvedAddrs = optional.Some(NewSet(resp.DNS.Addrs...))
 			obs.MatchWithControlIPAddress = optional.Some(true)
 			obs.MatchWithControlIPAddressASN = optional.Some(true)
 			continue
@@ -478,13 +499,16 @@ func (c *WebObservationsContainer) controlMatchDNSLookupResults(inputDomain stri
 		}
 
 		// register the control DNS domain
-		obs.ControlDNSDomain = optional.Some(domain)
+		obs.ControlDNSDomain = optional.Some(inputDomain)
 
 		// register whether the control failed and skip in such a case
 		obs.ControlDNSLookupFailure = optional.Some(utilsStringPointerToString(resp.DNS.Failure))
 		if resp.DNS.Failure != nil {
 			continue
 		}
+
+		// register the resolved IP addresses
+		obs.ControlDNSResolvedAddrs = optional.Some(NewSet(resp.DNS.Addrs...))
 
 		// compute whether also the TH observed this addr
 		obs.MatchWithControlIPAddress = optional.Some(thAddrMap[addr])
