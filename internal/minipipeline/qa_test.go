@@ -8,6 +8,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/minipipeline"
 	"github.com/ooni/probe-cli/v3/internal/must"
+	"github.com/ooni/probe-cli/v3/internal/optional"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -30,6 +31,7 @@ func testMustRunAllWebTestCases(t *testing.T, topdir string) {
 			}
 			t.Run(entry.Name(), func(t *testing.T) {
 				fullpath := filepath.Join(topdir, entry.Name())
+
 				// read the raw measurement from the test case
 				measurementFile := filepath.Join(fullpath, "measurement.json")
 				measurementRaw := must.ReadFile(measurementFile)
@@ -75,6 +77,17 @@ func testMustRunAllWebTestCases(t *testing.T, topdir string) {
 				// perform the classic web-connectivity-v0.4-like analysis
 				gotClassicAnalysisData := minipipeline.AnalyzeWebObservations(gotClassicContainerData)
 
+				//
+				// Note: if tests fail, you likely need to regenerate the static test
+				// cases using ./script/updateminipipeline.bash and you should also eyeball
+				// the diff for these fails to see if it makes sense.
+				//
+
+				t.Run("linear consistency checks", func(t *testing.T) {
+					testConsistencyChecksForLinear(t, gotAnalysisData.Linear)
+					testConsistencyChecksForLinear(t, gotClassicAnalysisData.Linear)
+				})
+
 				t.Run("observations", func(t *testing.T) {
 					if diff := testCmpDiffUsingGenericMaps(&expectedContainerData, gotContainerData); diff != "" {
 						t.Fatal(diff)
@@ -101,6 +114,74 @@ func testMustRunAllWebTestCases(t *testing.T, topdir string) {
 			})
 		}
 	})
+}
+
+func testConsistencyChecksForLinear(t *testing.T, linear []*minipipeline.WebObservation) {
+	// Here are the checks:
+	//
+	// 1. the TagDepth MUST decrease monotonically
+	//
+	// 2. the Type MUST decrease monotonically within the TagDepth
+	//
+	// 3. errors MUST appear after successes within the TagDepth
+
+	var (
+		currentTagDepth      optional.Value[int64]
+		currentType          optional.Value[int64]
+		currentlyInsideError bool
+	)
+
+	for _, entry := range linear {
+		t.Log("currently processing", string(must.MarshalJSON(entry)))
+
+		// make sure the messages are reasonably well formed
+		if entry.TagDepth.IsNone() {
+			t.Fatal("expected to have TagDepth for all entries in the test suite, found", string(must.MarshalJSON(entry)))
+		}
+		if entry.Failure.IsNone() {
+			t.Fatal("expected to have Failure for all entries in the test suite, found", string(must.MarshalJSON(entry)))
+		}
+
+		// initialize if needed
+		runtimex.Assert(
+			(currentTagDepth.IsNone() && currentType.IsNone()) ||
+				(!currentTagDepth.IsNone() && !currentType.IsNone()),
+			"expected currentTagDepth and currentType to be in sync here",
+		)
+		if currentTagDepth.IsNone() {
+			currentTagDepth = entry.TagDepth
+			currentType = optional.Some(int64(entry.Type))
+			currentlyInsideError = false
+		}
+
+		// make sure there's monotonic decrease of the current tag depth
+		// and adjust the state in case there is an actual decrease
+		if entry.TagDepth.Unwrap() > currentTagDepth.Unwrap() {
+			t.Fatal("there should not be an increase in the TagDepth", string(must.MarshalJSON(entry)))
+		}
+		if entry.TagDepth.Unwrap() < currentTagDepth.Unwrap() {
+			currentTagDepth = entry.TagDepth
+			currentType = optional.Some(int64(entry.Type))
+			currentlyInsideError = false
+		}
+
+		// make sure there's monotonic decrease of the current type
+		if int64(entry.Type) > currentType.Unwrap() {
+			t.Fatal("there should not be an increase of a Type within a TagDepth", string(must.MarshalJSON(entry)))
+		}
+		if int64(entry.Type) < currentType.Unwrap() {
+			currentType = optional.Some(int64(entry.Type))
+			currentlyInsideError = false
+		}
+
+		// make sure we cannot go back to success if we're inside error
+		if currentlyInsideError && entry.Failure.Unwrap() == "" {
+			t.Fatal("we cannot go from error to not error within a given Type", string(must.MarshalJSON(entry)))
+		}
+		if !currentlyInsideError && entry.Failure.Unwrap() != "" {
+			currentlyInsideError = true
+		}
+	}
 }
 
 func TestQAWeb(t *testing.T) {
