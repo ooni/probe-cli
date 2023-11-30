@@ -7,6 +7,9 @@
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
       "DNSEngine": "getaddrinfo",
+      "DNSResolvedAddrs": [
+        "10.10.34.35"
+      ],
       "IPAddress": "10.10.34.35",
       "IPAddressASN": null,
       "IPAddressBogon": true,
@@ -28,8 +31,11 @@
       "HTTPResponseIsFinal": null,
       "TagDepth": 0,
       "TagFetchBody": null,
-      "ControlDNSDomain": null,
-      "ControlDNSLookupFailure": null,
+      "ControlDNSDomain": "www.example.com",
+      "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "93.184.216.34"
+      ],
       "ControlTCPConnectFailure": null,
       "MatchWithControlIPAddress": null,
       "MatchWithControlIPAddressASN": null,
@@ -48,6 +54,9 @@
       "DNSLookupFailure": "",
       "DNSQueryType": null,
       "DNSEngine": null,
+      "DNSResolvedAddrs": [
+        "10.10.34.35"
+      ],
       "IPAddress": "10.10.34.35",
       "IPAddressASN": null,
       "IPAddressBogon": true,
@@ -71,6 +80,9 @@
       "TagFetchBody": true,
       "ControlDNSDomain": "www.example.com",
       "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "93.184.216.34"
+      ],
       "ControlTCPConnectFailure": null,
       "MatchWithControlIPAddress": false,
       "MatchWithControlIPAddressASN": null,
