@@ -10,10 +10,10 @@ import (
 func AnalyzeWebObservations(container *WebObservationsContainer) *WebAnalysis {
 	analysis := &WebAnalysis{}
 
+	analysis.ComputeDNSLookupSuccessWithInvalidAddresses(container)
+	analysis.ComputeDNSLookupSuccessWithInvalidAddressesClassic(container)
 	analysis.ComputeDNSExperimentFailure(container)
-	analysis.ComputeDNSTransactionsWithBogons(container)
 	analysis.ComputeDNSTransactionsWithUnexpectedFailures(container)
-	analysis.ComputeDNSPossiblyInvalidAddrsClassic(container)
 	analysis.ComputeDNSPossiblyNonexistingDomains(container)
 
 	analysis.ComputeTCPTransactionsWithUnexpectedTCPConnectFailures(container)
@@ -34,36 +34,23 @@ func AnalyzeWebObservations(container *WebObservationsContainer) *WebAnalysis {
 // WebAnalysis summarizes the content of [*WebObservationsContainer].
 //
 // The zero value of this struct is ready to use.
-//
-// For optional fields, they are None (i.e., `null` in JSON, `nil` in Go) when the corresponding
-// algorithm either didn't run or didn't encounter enough data to determine a non-None result. When
-// they are not None, they can still be empty (e.g., `{}` in JSON and in Go). In the latter case,
-// them being empty means we encountered good enough data to determine whether we needed to add
-// something to such a field and decided not to. For example, DNSTransactionWithBogons being None
-// means that there are no suitable transactions to inspect. It being empty, instead, means we
-// have transactions to inspect but none of them contains bogons. In other words, most fields are
-// three state and one should take this into account when performing data analysis.
 type WebAnalysis struct {
+	// DNSLookupSuccessWithInvalidAddresses contains DNS transactions with invalid IP addresses by
+	// taking into account control info, bogons, and TLS handshakes.
+	DNSLookupSuccessWithInvalidAddresses Set[int64]
+
+	// DNSLookupSuccessWithInvalidAddressesClassic is like DNSLookupInvalid but the algorithm is more relaxed
+	// to be compatible with Web Connectivity v0.4's behavior.
+	DNSLookupSuccessWithInvalidAddressesClassic Set[int64]
+
 	// DNSExperimentFailure is the first failure experienced by a getaddrinfo-like resolver.
 	DNSExperimentFailure optional.Value[string]
-
-	// DNSTransactionsWithBogons contains the list of DNS transactions containing bogons.
-	DNSTransactionsWithBogons optional.Value[map[int64]bool]
 
 	// DNSTransactionsWithUnexpectedFailures contains the DNS transaction IDs that
 	// contain failures while the control measurement succeeded. Note that we don't
 	// include DNS-over-HTTPS failures inside the list, because a DoH failure is
 	// not related to the domain we're querying for.
 	DNSTransactionsWithUnexpectedFailures optional.Value[map[int64]bool]
-
-	// DNSPossiblyInvalidAddrsClassic contains the addresses that are not valid for the
-	// domain. An addres is valid for the domain if:
-	//
-	// 1. the address was resolved by the TH; or
-	//
-	// 2. the address ASN belongs to the set of ASNs obtained by mapping
-	// addresses resolved by the TH to their corresponding ASN.
-	DNSPossiblyInvalidAddrsClassic optional.Value[map[string]bool]
 
 	// DNSPossiblyNonexistingDomains lists all the domains for which both
 	// the probe and the TH failed to perform DNS lookups.
@@ -119,6 +106,109 @@ type WebAnalysis struct {
 	TCPTransactionsWithUnexplainedUnexpectedFailures optional.Value[map[int64]bool]
 }
 
+// ComputeDNSLookupSuccessWithInvalidAddresses computes the DNSLookupInvalid field.
+func (wa *WebAnalysis) ComputeDNSLookupSuccessWithInvalidAddresses(c *WebObservationsContainer) {
+	// fill the invalid set
+	var already Set[int64]
+	for _, obs := range c.DNSLookupSuccesses {
+		// avoid considering a lookup we already considered
+		if already.Contains(obs.DNSTransactionID.Unwrap()) {
+			continue
+		}
+		already.Add(obs.DNSTransactionID.Unwrap())
+
+		// lookups once we started following redirects should not be considered
+		if obs.TagDepth.IsNone() || obs.TagDepth.Unwrap() != 0 {
+			continue
+		}
+
+		// if there's a bogon, mark as invalid
+		if !obs.IPAddressBogon.IsNone() && obs.IPAddressBogon.Unwrap() {
+			wa.DNSLookupSuccessWithInvalidAddresses.Add(obs.DNSTransactionID.Unwrap())
+			continue
+		}
+
+		// when there is no control info, we cannot say much
+		if obs.ControlDNSResolvedAddrs.IsNone() {
+			continue
+		}
+
+		// obtain measurement and control
+		measurement := obs.DNSResolvedAddrs.Unwrap()
+		control := obs.ControlDNSResolvedAddrs.Unwrap()
+
+		// this lookup is good if there is IP addresses intersection
+		if DNSDiffFindCommonIPAddressIntersection(measurement, control).Len() > 0 {
+			continue
+		}
+
+		// this lookup is good if there is ASN intersection
+		if DNSDiffFindCommonASNsIntersection(measurement, control).Len() > 0 {
+			continue
+		}
+
+		// mark as invalid
+		wa.DNSLookupSuccessWithInvalidAddresses.Add(obs.DNSTransactionID.Unwrap())
+	}
+
+	// undo using TLS handshake info
+	for _, obs := range c.KnownTCPEndpoints {
+		// we must have a successuful TLS handshake
+		if obs.TLSHandshakeFailure.IsNone() || obs.TLSHandshakeFailure.Unwrap() != "" {
+			continue
+		}
+
+		// we must have a DNSTransactionID
+		txid := obs.DNSTransactionID.UnwrapOr(0)
+		if txid <= 0 {
+			continue
+		}
+
+		// this is actually valid
+		wa.DNSLookupSuccessWithInvalidAddresses.Remove(txid)
+	}
+}
+
+// ComputeDNSLookupSuccessWithInvalidAddressesClassic computes the DNSLookupInvalidClassic field.
+func (wa *WebAnalysis) ComputeDNSLookupSuccessWithInvalidAddressesClassic(c *WebObservationsContainer) {
+	var already Set[int64]
+
+	for _, obs := range c.DNSLookupSuccesses {
+		// avoid considering a lookup we already considered
+		if already.Contains(obs.DNSTransactionID.Unwrap()) {
+			continue
+		}
+		already.Add(obs.DNSTransactionID.Unwrap())
+
+		// lookups once we started following redirects should not be considered
+		if obs.TagDepth.IsNone() || obs.TagDepth.Unwrap() != 0 {
+			continue
+		}
+
+		// when there is no control info, we cannot say much
+		if obs.ControlDNSResolvedAddrs.IsNone() {
+			continue
+		}
+
+		// obtain measurement and control
+		measurement := obs.DNSResolvedAddrs.Unwrap()
+		control := obs.ControlDNSResolvedAddrs.Unwrap()
+
+		// this lookup is good if there is IP addresses intersection
+		if DNSDiffFindCommonIPAddressIntersection(measurement, control).Len() > 0 {
+			continue
+		}
+
+		// this lookup is good if there is ASN intersection
+		if DNSDiffFindCommonASNsIntersection(measurement, control).Len() > 0 {
+			continue
+		}
+
+		// mark as invalid
+		wa.DNSLookupSuccessWithInvalidAddressesClassic.Add(obs.DNSTransactionID.Unwrap())
+	}
+}
+
 // ComputeDNSExperimentFailure computes the DNSExperimentFailure field.
 func (wa *WebAnalysis) ComputeDNSExperimentFailure(c *WebObservationsContainer) {
 
@@ -160,43 +250,6 @@ func (wa *WebAnalysis) ComputeDNSExperimentFailure(c *WebObservationsContainer) 
 		wa.DNSExperimentFailure = obs.DNSLookupFailure
 		return
 	}
-}
-
-// ComputeDNSTransactionsWithBogons computes the DNSTransactionsWithBogons field.
-func (wa *WebAnalysis) ComputeDNSTransactionsWithBogons(c *WebObservationsContainer) {
-	// Implementation note: any bogon IP address resolved by a DoH service
-	// is STILL suspicious since it SHOULD NOT happen. TODO(bassosimone): an
-	// even better algorithm could possibly check whether also the TH has
-	// observed bogon IP addrs and avoid flagging in such a case.
-	//
-	// See https://github.com/ooni/probe/issues/2274 for more information.
-
-	// we cannot flip the state from None to empty until we inspect at least
-	// a single successful DNS lookup transaction
-	if len(c.DNSLookupSuccesses) <= 0 {
-		return
-	}
-	state := make(map[int64]bool)
-
-	for _, obs := range c.DNSLookupSuccesses {
-		// do nothing if we don't know whether there's a bogon
-		if obs.IPAddressBogon.IsNone() {
-			continue
-		}
-
-		// do nothing if there is no bogon
-		if !obs.IPAddressBogon.Unwrap() {
-			continue
-		}
-
-		// update state
-		if id := obs.DNSTransactionID.UnwrapOr(0); id > 0 {
-			state[id] = true
-		}
-	}
-
-	// note that optional.Some constructs None if state is nil
-	wa.DNSTransactionsWithBogons = optional.Some(state)
 }
 
 // ComputeDNSTransactionsWithUnexpectedFailures computes the DNSTransactionsWithUnexpectedFailures field.
@@ -246,49 +299,6 @@ func (wa *WebAnalysis) ComputeDNSTransactionsWithUnexpectedFailures(c *WebObserv
 
 	// note that optional.Some constructs None if state is nil
 	wa.DNSTransactionsWithUnexpectedFailures = optional.Some(state)
-}
-
-// ComputeDNSPossiblyInvalidAddrsClassic computes the DNSPossiblyInvalidAddrsClassic field.
-func (wa *WebAnalysis) ComputeDNSPossiblyInvalidAddrsClassic(c *WebObservationsContainer) {
-	// Implementation note: in the case in which DoH returned answers, here
-	// it still feels okay to consider them. We should avoid flagging DoH
-	// failures as measurement failures but if DoH returns us some unexpected
-	// even-non-bogon addr, it seems worth flagging for now.
-	//
-	// See https://github.com/ooni/probe/issues/2274
-
-	var state map[string]bool
-
-	for _, obs := range c.KnownTCPEndpoints {
-		addr := obs.IPAddress.Unwrap()
-
-		// skip the comparison if we don't have info about matching
-		if obs.DNSResolvedAddrs.IsNone() || obs.ControlDNSResolvedAddrs.IsNone() {
-			continue
-		}
-
-		// flip state from None to empty when we see the first couple of
-		// (probe, th) failures allowing us to perform a comparison
-		if state == nil {
-			state = make(map[string]bool)
-		}
-
-		measurement := obs.DNSResolvedAddrs.Unwrap()
-		control := obs.ControlDNSResolvedAddrs.Unwrap()
-
-		ipAddrIntersection := DNSDiffFindCommonIPAddressIntersection(measurement, control)
-		asnIntersection := DNSDiffFindCommonASNsIntersection(measurement, control)
-
-		// an address is suspicious if we have information regarding its potential
-		// matching with TH info and we know it does not match
-		if ipAddrIntersection.Len() <= 0 && asnIntersection.Len() <= 0 {
-			state[addr] = true
-			continue
-		}
-	}
-
-	// note that optional.Some constructs None if state is nil
-	wa.DNSPossiblyInvalidAddrsClassic = optional.Some(state)
 }
 
 // ComputeDNSPossiblyNonexistingDomains computes the DNSPossiblyNonexistingDomains field.

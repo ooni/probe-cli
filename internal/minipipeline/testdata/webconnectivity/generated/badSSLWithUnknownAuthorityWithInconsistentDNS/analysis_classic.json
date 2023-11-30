@@ -1,10 +1,12 @@
 {
+  "DNSLookupSuccessWithInvalidAddresses": [
+    2
+  ],
+  "DNSLookupSuccessWithInvalidAddressesClassic": [
+    2
+  ],
   "DNSExperimentFailure": null,
-  "DNSTransactionsWithBogons": {},
   "DNSTransactionsWithUnexpectedFailures": null,
-  "DNSPossiblyInvalidAddrsClassic": {
-    "104.154.89.105": true
-  },
   "DNSPossiblyNonexistingDomains": null,
   "HTTPDiffBodyProportionFactor": null,
   "HTTPDiffStatusCodeMatch": null,
