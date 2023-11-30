@@ -4,7 +4,6 @@
   "DNSTransactionsWithUnexpectedFailures": {
     "1": true
   },
-  "DNSPossiblyInvalidAddrs": {},
   "DNSPossiblyInvalidAddrsClassic": {},
   "DNSPossiblyNonexistingDomains": {},
   "HTTPDiffBodyProportionFactor": 1,

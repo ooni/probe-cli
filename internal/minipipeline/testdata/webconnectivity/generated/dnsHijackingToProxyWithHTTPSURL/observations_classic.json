@@ -37,8 +37,6 @@
         "93.184.216.34"
       ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -89,8 +87,6 @@
         "93.184.216.34"
       ],
       "ControlTCPConnectFailure": "",
-      "MatchWithControlIPAddress": false,
-      "MatchWithControlIPAddressASN": false,
       "ControlTLSHandshakeFailure": "",
       "ControlHTTPFailure": "",
       "ControlHTTPResponseStatusCode": 200,

@@ -2,7 +2,6 @@
   "DNSExperimentFailure": null,
   "DNSTransactionsWithBogons": {},
   "DNSTransactionsWithUnexpectedFailures": null,
-  "DNSPossiblyInvalidAddrs": {},
   "DNSPossiblyInvalidAddrsClassic": {},
   "DNSPossiblyNonexistingDomains": {},
   "HTTPDiffBodyProportionFactor": 1,
