@@ -15,9 +15,31 @@ import (
 //
 // 2. with TagDepth being equal, by descending [WebObservationType];
 //
-// 3. with [WebObservationType], by ascending failure string;
+// 3. with [WebObservationType] being equal, by ascending failure string;
 //
-// 4. with failure string being equal, by descending TransactionID.
+// This means that you divide the list in groups like this:
+//
+//	+------------+------------+------------+------------+
+//	| TagDepth=3 | TagDepth=2 | TagDepth=1 | TagDepth=0 |
+//	+------------+------------+------------+------------+
+//
+// Where TagDepth=3 is the last redirect and TagDepth=0 is the initial request.
+//
+// Each group is further divided as follows:
+//
+//	+------+-----+-----+-----+
+//	| HTTP | TLS | TCP | DNS |
+//	+------+-----+-----+-----+
+//
+// Where each group may be empty. The first non-empty group is about the
+// operation that failed for the current TagDepth.
+//
+// Within each group, successes sort before failures because the empty
+// string has priority over nøn-empty strings.
+//
+// So, when walking the list from index 0 to index N, you encounter the
+// latest redirects first, you observe the more complex operations first,
+// and you see errors before failures.
 func NewLinearWebAnalysis(input *WebObservationsContainer) (output []*WebObservation) {
 	// fill in all the observations
 	output = append(output, input.DNSLookupFailures...)
@@ -30,8 +52,6 @@ func NewLinearWebAnalysis(input *WebObservationsContainer) (output []*WebObserva
 	sort.SliceStable(output, func(i, j int) bool {
 		left, right := output[i], output[j]
 
-		// Sort by descending depth.
-		//
 		// We use -1 as the default value such that observations with undefined
 		// TagDepth sort at the end of the generated list.
 		if left.TagDepth.UnwrapOr(-1) > right.TagDepth.UnwrapOr(-1) {
@@ -40,26 +60,16 @@ func NewLinearWebAnalysis(input *WebObservationsContainer) (output []*WebObserva
 			return false
 		}
 
-		// Sort by descending type if depth is equal.
 		if left.Type > right.Type {
 			return true
 		} else if left.Type < right.Type {
 			return false
 		}
 
-		// With equal type, sort by failure ascending so the empty string is first.
-		//
 		// We use an nonempty failure value so that observations with undefined
 		// failures sort at the end of the group within the list.
 		const defaultFailureValue = "unknown_failure"
-		if left.Failure.UnwrapOr(defaultFailureValue) > right.Failure.UnwrapOr(defaultFailureValue) {
-			return true
-		} else if left.Failure.UnwrapOr(defaultFailureValue) < right.Failure.UnwrapOr(defaultFailureValue) {
-			return false
-		}
-
-		// If failure is equal, sort by descending transaction ID.
-		return left.TransactionID > right.TransactionID
+		return left.Failure.UnwrapOr(defaultFailureValue) > right.Failure.UnwrapOr(defaultFailureValue)
 	})
 
 	return
