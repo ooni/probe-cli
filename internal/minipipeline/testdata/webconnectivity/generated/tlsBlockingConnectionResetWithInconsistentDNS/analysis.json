@@ -8,6 +8,11 @@
     2
   ],
   "DNSLookupUnexpectedFailure": [],
+  "TCPConnectUnexpectedFailure": [],
+  "TLSHandshakeUnexpectedFailure": [
+    3,
+    4
+  ],
   "DNSExperimentFailure": null,
   "DNSPossiblyNonexistingDomains": {},
   "HTTPDiffBodyProportionFactor": null,
@@ -16,11 +21,6 @@
   "HTTPDiffUncommonHeadersIntersection": null,
   "HTTPFinalResponsesWithControl": null,
   "HTTPFinalResponsesWithTLS": null,
-  "TCPTransactionsWithUnexpectedTCPConnectFailures": {},
-  "TCPTransactionsWithUnexpectedTLSHandshakeFailures": {
-    "3": true,
-    "4": true
-  },
   "TCPTransactionsWithUnexpectedHTTPFailures": null,
   "TCPTransactionsWithUnexplainedUnexpectedFailures": {}
 }
