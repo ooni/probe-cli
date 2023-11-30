@@ -1,24 +1,35 @@
 {
-  "DNSExperimentFailure": null,
-  "DNSTransactionsWithBogons": {},
-  "DNSTransactionsWithUnexpectedFailures": null,
-  "DNSPossiblyInvalidAddrs": {
-    "83.224.65.41": true
-  },
-  "DNSPossiblyInvalidAddrsClassic": {
-    "83.224.65.41": true
-  },
-  "DNSPossiblyNonexistingDomains": null,
+  "DNSLookupSuccessWithInvalidAddresses": [
+    1
+  ],
+  "DNSLookupSuccessWithInvalidAddressesClassic": [
+    1
+  ],
+  "DNSLookupUnexpectedFailure": [],
+  "TCPConnectUnexpectedFailure": [
+    3
+  ],
+  "TCPConnectUnexpectedFailureDuringWebFetch": [
+    3
+  ],
+  "TCPConnectUnexpectedFailureDuringConnectivityCheck": [],
+  "TCPConnectUnexplainedFailure": [],
+  "TCPConnectUnexplainedFailureDuringWebFetch": [],
+  "TCPConnectUnexplainedFailureDuringConnectivityCheck": [],
+  "TLSHandshakeUnexpectedFailure": [],
+  "TLSHandshakeUnexpectedFailureDuringWebFetch": [],
+  "TLSHandshakeUnexpectedFailureDuringConnectivityCheck": [],
+  "TLSHandshakeUnexplainedFailure": [],
+  "TLSHandshakeUnexplainedFailureDuringWebFetch": [],
+  "TLSHandshakeUnexplainedFailureDuringConnectivityCheck": [],
+  "HTTPRoundTripUnexpectedFailure": [],
+  "HTTPFinalResponseSuccessTLSWithoutControl": null,
+  "HTTPFinalResponseSuccessTLSWithControl": null,
+  "HTTPFinalResponseSuccessTCPWithControl": null,
   "HTTPDiffBodyProportionFactor": null,
   "HTTPDiffStatusCodeMatch": null,
   "HTTPDiffTitleDifferentLongWords": null,
   "HTTPDiffUncommonHeadersIntersection": null,
-  "HTTPFinalResponsesWithControl": null,
-  "HTTPFinalResponsesWithTLS": null,
-  "TCPTransactionsWithUnexpectedTCPConnectFailures": {
-    "3": true
-  },
-  "TCPTransactionsWithUnexpectedTLSHandshakeFailures": null,
-  "TCPTransactionsWithUnexpectedHTTPFailures": null,
-  "TCPTransactionsWithUnexplainedUnexpectedFailures": {}
+  "DNSExperimentFailure": null,
+  "DNSPossiblyNonexistingDomains": null
 }

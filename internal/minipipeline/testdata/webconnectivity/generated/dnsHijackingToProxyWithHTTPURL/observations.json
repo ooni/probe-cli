@@ -6,6 +6,7 @@
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
       "DNSEngine": "udp",
+      "DNSResolvedAddrs": null,
       "IPAddress": null,
       "IPAddressASN": null,
       "IPAddressBogon": null,
@@ -29,9 +30,10 @@
       "TagFetchBody": null,
       "ControlDNSDomain": "www.example.com",
       "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "93.184.216.34"
+      ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -47,6 +49,9 @@
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
       "DNSEngine": "getaddrinfo",
+      "DNSResolvedAddrs": [
+        "130.192.182.17"
+      ],
       "IPAddress": "130.192.182.17",
       "IPAddressASN": 137,
       "IPAddressBogon": false,
@@ -68,11 +73,12 @@
       "HTTPResponseIsFinal": null,
       "TagDepth": 0,
       "TagFetchBody": null,
-      "ControlDNSDomain": null,
-      "ControlDNSLookupFailure": null,
+      "ControlDNSDomain": "www.example.com",
+      "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "93.184.216.34"
+      ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -86,6 +92,9 @@
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
       "DNSEngine": "udp",
+      "DNSResolvedAddrs": [
+        "130.192.182.17"
+      ],
       "IPAddress": "130.192.182.17",
       "IPAddressASN": 137,
       "IPAddressBogon": false,
@@ -107,11 +116,12 @@
       "HTTPResponseIsFinal": null,
       "TagDepth": 0,
       "TagFetchBody": null,
-      "ControlDNSDomain": null,
-      "ControlDNSLookupFailure": null,
+      "ControlDNSDomain": "www.example.com",
+      "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "93.184.216.34"
+      ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -127,6 +137,9 @@
       "DNSLookupFailure": "",
       "DNSQueryType": null,
       "DNSEngine": null,
+      "DNSResolvedAddrs": [
+        "130.192.182.17"
+      ],
       "IPAddress": "130.192.182.17",
       "IPAddressASN": 137,
       "IPAddressBogon": false,
@@ -154,9 +167,10 @@
       "TagFetchBody": true,
       "ControlDNSDomain": "www.example.com",
       "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "93.184.216.34"
+      ],
       "ControlTCPConnectFailure": "",
-      "MatchWithControlIPAddress": false,
-      "MatchWithControlIPAddressASN": false,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": "",
       "ControlHTTPResponseStatusCode": 200,
@@ -175,6 +189,9 @@
       "DNSLookupFailure": "",
       "DNSQueryType": null,
       "DNSEngine": null,
+      "DNSResolvedAddrs": [
+        "130.192.182.17"
+      ],
       "IPAddress": "130.192.182.17",
       "IPAddressASN": 137,
       "IPAddressBogon": false,
@@ -198,9 +215,10 @@
       "TagFetchBody": false,
       "ControlDNSDomain": "www.example.com",
       "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "93.184.216.34"
+      ],
       "ControlTCPConnectFailure": "",
-      "MatchWithControlIPAddress": false,
-      "MatchWithControlIPAddressASN": false,
       "ControlTLSHandshakeFailure": "",
       "ControlHTTPFailure": "",
       "ControlHTTPResponseStatusCode": 200,
@@ -219,6 +237,7 @@
       "DNSLookupFailure": null,
       "DNSQueryType": null,
       "DNSEngine": null,
+      "DNSResolvedAddrs": null,
       "IPAddress": "93.184.216.34",
       "IPAddressASN": 15133,
       "IPAddressBogon": false,
@@ -240,11 +259,12 @@
       "HTTPResponseIsFinal": null,
       "TagDepth": 0,
       "TagFetchBody": true,
-      "ControlDNSDomain": null,
-      "ControlDNSLookupFailure": null,
+      "ControlDNSDomain": "www.example.com",
+      "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "93.184.216.34"
+      ],
       "ControlTCPConnectFailure": "",
-      "MatchWithControlIPAddress": true,
-      "MatchWithControlIPAddressASN": true,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": "",
       "ControlHTTPResponseStatusCode": 200,
@@ -263,6 +283,7 @@
       "DNSLookupFailure": null,
       "DNSQueryType": null,
       "DNSEngine": null,
+      "DNSResolvedAddrs": null,
       "IPAddress": "93.184.216.34",
       "IPAddressASN": 15133,
       "IPAddressBogon": false,
@@ -284,11 +305,12 @@
       "HTTPResponseIsFinal": null,
       "TagDepth": 0,
       "TagFetchBody": false,
-      "ControlDNSDomain": null,
-      "ControlDNSLookupFailure": null,
+      "ControlDNSDomain": "www.example.com",
+      "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "93.184.216.34"
+      ],
       "ControlTCPConnectFailure": "",
-      "MatchWithControlIPAddress": true,
-      "MatchWithControlIPAddressASN": true,
       "ControlTLSHandshakeFailure": "",
       "ControlHTTPFailure": "",
       "ControlHTTPResponseStatusCode": 200,

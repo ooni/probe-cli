@@ -1,20 +1,29 @@
 {
-  "DNSExperimentFailure": "android_dns_cache_no_data",
-  "DNSTransactionsWithBogons": null,
-  "DNSTransactionsWithUnexpectedFailures": {
-    "1": true
-  },
-  "DNSPossiblyInvalidAddrs": null,
-  "DNSPossiblyInvalidAddrsClassic": null,
-  "DNSPossiblyNonexistingDomains": {},
+  "DNSLookupSuccessWithInvalidAddresses": [],
+  "DNSLookupSuccessWithInvalidAddressesClassic": [],
+  "DNSLookupUnexpectedFailure": [
+    1
+  ],
+  "TCPConnectUnexpectedFailure": [],
+  "TCPConnectUnexpectedFailureDuringWebFetch": [],
+  "TCPConnectUnexpectedFailureDuringConnectivityCheck": [],
+  "TCPConnectUnexplainedFailure": [],
+  "TCPConnectUnexplainedFailureDuringWebFetch": [],
+  "TCPConnectUnexplainedFailureDuringConnectivityCheck": [],
+  "TLSHandshakeUnexpectedFailure": [],
+  "TLSHandshakeUnexpectedFailureDuringWebFetch": [],
+  "TLSHandshakeUnexpectedFailureDuringConnectivityCheck": [],
+  "TLSHandshakeUnexplainedFailure": [],
+  "TLSHandshakeUnexplainedFailureDuringWebFetch": [],
+  "TLSHandshakeUnexplainedFailureDuringConnectivityCheck": [],
+  "HTTPRoundTripUnexpectedFailure": [],
+  "HTTPFinalResponseSuccessTLSWithoutControl": null,
+  "HTTPFinalResponseSuccessTLSWithControl": null,
+  "HTTPFinalResponseSuccessTCPWithControl": null,
   "HTTPDiffBodyProportionFactor": null,
   "HTTPDiffStatusCodeMatch": null,
   "HTTPDiffTitleDifferentLongWords": null,
   "HTTPDiffUncommonHeadersIntersection": null,
-  "HTTPFinalResponsesWithControl": null,
-  "HTTPFinalResponsesWithTLS": null,
-  "TCPTransactionsWithUnexpectedTCPConnectFailures": null,
-  "TCPTransactionsWithUnexpectedTLSHandshakeFailures": null,
-  "TCPTransactionsWithUnexpectedHTTPFailures": null,
-  "TCPTransactionsWithUnexplainedUnexpectedFailures": null
+  "DNSExperimentFailure": "android_dns_cache_no_data",
+  "DNSPossiblyNonexistingDomains": {}
 }

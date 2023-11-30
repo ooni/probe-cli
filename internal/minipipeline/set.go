@@ -16,6 +16,13 @@ var (
 	_ json.Unmarshaler = &Set[int64]{}
 )
 
+// NewSet creates a new set containing the given keys.
+func NewSet[T ~string | ~int64](keys ...T) Set[T] {
+	var sx Set[T]
+	sx.Add(keys...)
+	return sx
+}
+
 // Add adds the given key to the set.
 func (sx *Set[T]) Add(keys ...T) {
 	if sx.state == nil {
@@ -63,4 +70,10 @@ func (sx *Set[T]) UnmarshalJSON(data []byte) error {
 	}
 	sx.Add(keys...)
 	return nil
+}
+
+// Contains returns whether the set contains a key.
+func (sx *Set[T]) Contains(key T) bool {
+	_, found := sx.state[key]
+	return found
 }

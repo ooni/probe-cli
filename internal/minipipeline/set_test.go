@@ -9,6 +9,14 @@ import (
 )
 
 func TestSet(t *testing.T) {
+	t.Run("NewSet", func(t *testing.T) {
+		set := NewSet[int64](11, 17, 114, 117)
+		expect := map[int64]bool{11: true, 17: true, 114: true, 117: true}
+		if diff := cmp.Diff(expect, set.state); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
 	t.Run("Add", func(t *testing.T) {
 		var set Set[int64]
 		set.Add(11, 17, 114, 117)
@@ -95,5 +103,16 @@ func TestSet(t *testing.T) {
 				t.Fatal("unexpected error", err)
 			}
 		})
+	})
+
+	t.Run("Contains", func(t *testing.T) {
+		var set Set[int64]
+		set.Add(10, 11, 12, 13)
+		if !set.Contains(10) {
+			t.Fatal("expected true")
+		}
+		if set.Contains(117) {
+			t.Fatal("expected false")
+		}
 	})
 }

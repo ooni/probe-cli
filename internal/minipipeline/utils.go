@@ -50,18 +50,19 @@ func utilsDetermineWhetherHTTPResponseIsFinal(status int64) optional.Value[bool]
 	}
 }
 
-func utilsForEachIPAddress(answers []model.ArchivalDNSAnswer, fx func(ipAddr string)) {
+func utilsResolvedAddresses(answers []model.ArchivalDNSAnswer) (addrs []string) {
 	for _, ans := range answers {
 		// extract the IP address we resolved
 		switch ans.AnswerType {
 		case "A":
-			fx(ans.IPv4)
+			addrs = append(addrs, ans.IPv4)
 		case "AAAA":
-			fx(ans.IPv6)
+			addrs = append(addrs, ans.IPv6)
 		default:
 			// nothing
 		}
 	}
+	return
 }
 
 func utilsEngineIsGetaddrinfo(engine optional.Value[string]) bool {
@@ -99,11 +100,22 @@ func utilsExtractTagFetchBody(tags []string) optional.Value[bool] {
 	return optional.None[bool]()
 }
 
+func utilsDNSLookupFailureIsDNSNoAnswerForAAAA(obs *WebObservation) bool {
+	return obs.DNSQueryType.UnwrapOr("") == "AAAA" &&
+		obs.DNSLookupFailure.UnwrapOr("") == netxlite.FailureDNSNoAnswer
+}
+
 func utilsDNSEngineIsDNSOverHTTPS(obs *WebObservation) bool {
 	return obs.DNSEngine.UnwrapOr("") == "doh"
 }
 
-func utilsDNSLookupFailureIsDNSNoAnswerForAAAA(obs *WebObservation) bool {
-	return obs.DNSQueryType.UnwrapOr("") == "AAAA" &&
-		obs.DNSLookupFailure.UnwrapOr("") == netxlite.FailureDNSNoAnswer
+func utilsTCPConnectFailureSeemsMisconfiguredIPv6(obs *WebObservation) bool {
+	switch obs.TCPConnectFailure.UnwrapOr("") {
+	case netxlite.FailureNetworkUnreachable, netxlite.FailureHostUnreachable:
+		isv6, err := netxlite.IsIPv6(obs.IPAddress.UnwrapOr(""))
+		return err == nil && isv6
+
+	default: // includes the case of missing TCPConnectFailure
+		return false
+	}
 }

@@ -6,6 +6,7 @@
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
       "DNSEngine": "udp",
+      "DNSResolvedAddrs": null,
       "IPAddress": null,
       "IPAddressASN": null,
       "IPAddressBogon": null,
@@ -29,9 +30,10 @@
       "TagFetchBody": null,
       "ControlDNSDomain": "nexa.polito.it",
       "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "130.192.16.171"
+      ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -45,6 +47,7 @@
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
       "DNSEngine": "doh",
+      "DNSResolvedAddrs": null,
       "IPAddress": null,
       "IPAddressASN": null,
       "IPAddressBogon": null,
@@ -68,9 +71,10 @@
       "TagFetchBody": null,
       "ControlDNSDomain": "nexa.polito.it",
       "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "130.192.16.171"
+      ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -86,6 +90,9 @@
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
       "DNSEngine": "udp",
+      "DNSResolvedAddrs": [
+        "130.192.16.171"
+      ],
       "IPAddress": "130.192.16.171",
       "IPAddressASN": 137,
       "IPAddressBogon": false,
@@ -107,11 +114,12 @@
       "HTTPResponseIsFinal": null,
       "TagDepth": null,
       "TagFetchBody": null,
-      "ControlDNSDomain": null,
-      "ControlDNSLookupFailure": null,
+      "ControlDNSDomain": "nexa.polito.it",
+      "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "130.192.16.171"
+      ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -125,6 +133,9 @@
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
       "DNSEngine": "getaddrinfo",
+      "DNSResolvedAddrs": [
+        "130.192.16.171"
+      ],
       "IPAddress": "130.192.16.171",
       "IPAddressASN": 137,
       "IPAddressBogon": false,
@@ -146,11 +157,12 @@
       "HTTPResponseIsFinal": null,
       "TagDepth": null,
       "TagFetchBody": null,
-      "ControlDNSDomain": null,
-      "ControlDNSLookupFailure": null,
+      "ControlDNSDomain": "nexa.polito.it",
+      "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "130.192.16.171"
+      ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -164,6 +176,9 @@
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
       "DNSEngine": "doh",
+      "DNSResolvedAddrs": [
+        "130.192.16.171"
+      ],
       "IPAddress": "130.192.16.171",
       "IPAddressASN": 137,
       "IPAddressBogon": false,
@@ -185,11 +200,12 @@
       "HTTPResponseIsFinal": null,
       "TagDepth": null,
       "TagFetchBody": null,
-      "ControlDNSDomain": null,
-      "ControlDNSLookupFailure": null,
+      "ControlDNSDomain": "nexa.polito.it",
+      "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "130.192.16.171"
+      ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -205,6 +221,9 @@
       "DNSLookupFailure": "",
       "DNSQueryType": null,
       "DNSEngine": null,
+      "DNSResolvedAddrs": [
+        "130.192.16.171"
+      ],
       "IPAddress": "130.192.16.171",
       "IPAddressASN": 137,
       "IPAddressBogon": false,
@@ -243,9 +262,10 @@
       "TagFetchBody": null,
       "ControlDNSDomain": "nexa.polito.it",
       "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "130.192.16.171"
+      ],
       "ControlTCPConnectFailure": "",
-      "MatchWithControlIPAddress": true,
-      "MatchWithControlIPAddressASN": true,
       "ControlTLSHandshakeFailure": "",
       "ControlHTTPFailure": "",
       "ControlHTTPResponseStatusCode": 200,

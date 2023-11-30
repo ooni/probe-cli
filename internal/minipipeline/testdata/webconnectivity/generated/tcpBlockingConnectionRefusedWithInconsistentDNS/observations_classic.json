@@ -7,6 +7,9 @@
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
       "DNSEngine": "getaddrinfo",
+      "DNSResolvedAddrs": [
+        "83.224.65.41"
+      ],
       "IPAddress": "83.224.65.41",
       "IPAddressASN": 30722,
       "IPAddressBogon": false,
@@ -28,11 +31,12 @@
       "HTTPResponseIsFinal": null,
       "TagDepth": 0,
       "TagFetchBody": null,
-      "ControlDNSDomain": null,
-      "ControlDNSLookupFailure": null,
+      "ControlDNSDomain": "www.example.org",
+      "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "93.184.216.34"
+      ],
       "ControlTCPConnectFailure": null,
-      "MatchWithControlIPAddress": null,
-      "MatchWithControlIPAddressASN": null,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": null,
       "ControlHTTPResponseStatusCode": null,
@@ -48,6 +52,9 @@
       "DNSLookupFailure": "",
       "DNSQueryType": null,
       "DNSEngine": null,
+      "DNSResolvedAddrs": [
+        "83.224.65.41"
+      ],
       "IPAddress": "83.224.65.41",
       "IPAddressASN": 30722,
       "IPAddressBogon": false,
@@ -71,9 +78,10 @@
       "TagFetchBody": true,
       "ControlDNSDomain": "www.example.org",
       "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "93.184.216.34"
+      ],
       "ControlTCPConnectFailure": "",
-      "MatchWithControlIPAddress": false,
-      "MatchWithControlIPAddressASN": false,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": "",
       "ControlHTTPResponseStatusCode": 200,
@@ -92,6 +100,9 @@
       "DNSLookupFailure": "",
       "DNSQueryType": null,
       "DNSEngine": null,
+      "DNSResolvedAddrs": [
+        "83.224.65.41"
+      ],
       "IPAddress": "83.224.65.41",
       "IPAddressASN": 30722,
       "IPAddressBogon": false,
@@ -115,9 +126,10 @@
       "TagFetchBody": false,
       "ControlDNSDomain": "www.example.org",
       "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "93.184.216.34"
+      ],
       "ControlTCPConnectFailure": "connection_refused_error",
-      "MatchWithControlIPAddress": false,
-      "MatchWithControlIPAddressASN": false,
       "ControlTLSHandshakeFailure": null,
       "ControlHTTPFailure": "",
       "ControlHTTPResponseStatusCode": 200,
