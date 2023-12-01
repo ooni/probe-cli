@@ -86,7 +86,7 @@ type TestKeys struct {
 
 	// HTTPExperimentFailure indicates whether there was a failure in
 	// the final HTTP request that we recorded.
-	HTTPExperimentFailure *string `json:"http_experiment_failure"`
+	HTTPExperimentFailure optional.Value[string] `json:"http_experiment_failure"`
 
 	// BlockingFlags explains why we think that the website is blocked.
 	BlockingFlags int64 `json:"x_blocking_flags"`
@@ -359,9 +359,10 @@ func NewTestKeys() *TestKeys {
 		DNSFlags:              0,
 		DNSExperimentFailure:  nil,
 		DNSConsistency:        optional.None[string](),
-		HTTPExperimentFailure: nil,
+		HTTPExperimentFailure: optional.None[string](),
 		BlockingFlags:         0,
 		NullNullFlags:         0,
+		BodyProportion:        0,
 		BodyLengthMatch:       nil,
 		HeadersMatch:          nil,
 		StatusCodeMatch:       nil,

@@ -80,12 +80,6 @@ func compareTestKeys(expected, got *testKeys) error {
 		// TODO(bassosimone): these flags are specific of the "orig" analysis engine
 		options = append(options, cmpopts.IgnoreFields(testKeys{}, "XDNSFlags", "XBlockingFlags", "XNullNullFlags"))
 
-		// BUG: LTE does not set http_experiment_failure
-		options = append(options, cmpopts.IgnoreFields(testKeys{}, "HTTPExperimentFailure"))
-
-		// BUG: LTE does not set body_proportion
-		//options = append(options, cmpopts.IgnoreFields(testKeys{}, "BodyProportion"))
-
 	default:
 		return fmt.Errorf("unknown experiment version: %s", got.XExperimentVersion)
 	}
