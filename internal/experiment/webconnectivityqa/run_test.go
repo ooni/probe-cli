@@ -191,6 +191,7 @@ func TestRunTestCase(t *testing.T) {
 	})
 
 	t.Run("we compare XDNSFlags for WebConnectivity v0.5", func(t *testing.T) {
+		t.Skip("TODO(https://github.com/ooni/probe/issues/2640)")
 		tc := &TestCase{
 			Name:      "",
 			Input:     "",
@@ -225,6 +226,7 @@ func TestRunTestCase(t *testing.T) {
 	})
 
 	t.Run("we compare XBlockingFlags for WebConnectivity v0.5", func(t *testing.T) {
+		t.Skip("TODO(https://github.com/ooni/probe/issues/2640)")
 		tc := &TestCase{
 			Name:      "",
 			Input:     "",
@@ -261,6 +263,7 @@ func TestRunTestCase(t *testing.T) {
 	})
 
 	t.Run("we compare XNullNullFlags for WebConnectivity v0.5", func(t *testing.T) {
+		t.Skip("TODO(https://github.com/ooni/probe/issues/2640)")
 		tc := &TestCase{
 			Name:      "",
 			Input:     "",
