@@ -37,7 +37,7 @@ func redirectWithConsistentDNSAndThenConnectionRefusedForHTTP() *TestCase {
 			HTTPExperimentFailure: "connection_refused",
 			XStatus:               8320, // StatusExperimentHTTP | StatusAnomalyConnect
 			XDNSFlags:             0,
-			XBlockingFlags:        8, // analysisFlagHTTPBlocking
+			XBlockingFlags:        32, // analysisFlagSuccess
 			Accessible:            false,
 			Blocking:              "http-failure",
 		},
@@ -75,7 +75,7 @@ func redirectWithConsistentDNSAndThenConnectionRefusedForHTTPS() *TestCase {
 			HTTPExperimentFailure: "connection_refused",
 			XStatus:               8320, // StatusExperimentHTTP | StatusAnomalyConnect
 			XDNSFlags:             0,
-			XBlockingFlags:        8, // analysisFlagHTTPBlocking
+			XBlockingFlags:        32, // analysisFlagSuccess
 			Accessible:            false,
 			Blocking:              "http-failure",
 		},
@@ -181,8 +181,8 @@ func redirectWithConsistentDNSAndThenNXDOMAIN() *TestCase {
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: "dns_nxdomain_error",
 			XStatus:               8224, // StatusExperimentHTTP | StatusAnomalyDNS
-			XDNSFlags:             2,    // AnalysisDNSUnexpectedFailure
-			XBlockingFlags:        1,    // analysisFlagDNSBlocking
+			XDNSFlags:             0,
+			XBlockingFlags:        8, // analysisFlagHTTPBlocking
 			Accessible:            false,
 			Blocking:              "dns",
 		},
@@ -258,7 +258,7 @@ func redirectWithConsistentDNSAndThenEOFForHTTPS() *TestCase {
 			HTTPExperimentFailure: "eof_error",
 			XStatus:               8448, // StatusExperimentHTTP | StatusAnomalyReadWrite
 			XDNSFlags:             0,
-			XBlockingFlags:        8, // analysisFlagHTTPBlocking
+			XBlockingFlags:        32, // analysisFlagSuccess
 			Accessible:            false,
 			Blocking:              "http-failure",
 		},
@@ -336,7 +336,7 @@ func redirectWithConsistentDNSAndThenTimeoutForHTTPS() *TestCase {
 			HTTPExperimentFailure: "generic_timeout_error",
 			XStatus:               8704, // StatusExperimentHTTP | StatusAnomalyUnknown
 			XDNSFlags:             0,
-			XBlockingFlags:        8, // analysisFlagHTTPBlocking
+			XBlockingFlags:        32, // analysisFlagSuccess
 			Accessible:            false,
 			Blocking:              "http-failure",
 		},

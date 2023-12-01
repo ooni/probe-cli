@@ -21,6 +21,8 @@ func badSSLWithExpiredCertificate() *TestCase {
 			HTTPExperimentFailure: "ssl_invalid_certificate",
 			XStatus:               16, // StatusAnomalyControlFailure
 			XNullNullFlags:        4,  // analysisFlagNullNullTLSMisconfigured
+			Accessible:            nil,
+			Blocking:              nil,
 		},
 	}
 }
@@ -41,6 +43,8 @@ func badSSLWithWrongServerName() *TestCase {
 			HTTPExperimentFailure: "ssl_invalid_hostname",
 			XStatus:               16, // StatusAnomalyControlFailure
 			XNullNullFlags:        4,  // analysisFlagNullNullTLSMisconfigured
+			Accessible:            nil,
+			Blocking:              nil,
 		},
 	}
 }
@@ -60,6 +64,8 @@ func badSSLWithUnknownAuthorityWithConsistentDNS() *TestCase {
 			HTTPExperimentFailure: "ssl_unknown_authority",
 			XStatus:               16, // StatusAnomalyControlFailure
 			XNullNullFlags:        4,  // analysisFlagNullNullTLSMisconfigured
+			Accessible:            nil,
+			Blocking:              nil,
 		},
 	}
 }
@@ -87,7 +93,7 @@ func badSSLWithUnknownAuthorityWithInconsistentDNS() *TestCase {
 			HTTPExperimentFailure: "ssl_unknown_authority",
 			XStatus:               9248, // StatusExperimentHTTP | StatusAnomalyTLSHandshake | StatusAnomalyDNS
 			XDNSFlags:             4,    // AnalysisDNSUnexpectedAddrs
-			XBlockingFlags:        1,    // analysisFlagDNSBlocking
+			XBlockingFlags:        33,   // analysisFlagSuccess | analysisFlagDNSBlocking
 			Accessible:            false,
 			Blocking:              "dns",
 		},

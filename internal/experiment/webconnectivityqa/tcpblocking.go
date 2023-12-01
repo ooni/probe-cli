@@ -68,7 +68,7 @@ func tcpBlockingConnectionRefusedWithInconsistentDNS() *TestCase {
 			HTTPExperimentFailure: "connection_refused",
 			XStatus:               4256, // StatusExperimentConnect | StatusAnomalyConnect | StatusAnomalyDNS
 			XDNSFlags:             4,    // AnalysisDNSUnexpectedAddrs
-			XBlockingFlags:        3,    // analysisFlagDNSBlocking | analysisFlagTCPIPBlocking
+			XBlockingFlags:        35,   // analysisFlagSuccess | analysisFlagDNSBlocking | analysisFlagTCPIPBlocking
 			Accessible:            false,
 			Blocking:              "dns",
 		},

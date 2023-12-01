@@ -8,6 +8,8 @@ import (
 // dnsHijackingToProxyWithHTTPURL is the case where an ISP rule forces clients to always
 // use an explicity passthrough proxy for a given domain.
 func dnsHijackingToProxyWithHTTPURL() *TestCase {
+	// TODO(bassosimone): it's debateable whether this case is actually WAI but the
+	// transparent TLS proxy really makes our analysis a bit more complex
 	return &TestCase{
 		Name:  "dnsHijackingToProxyWithHTTPURL",
 		Flags: 0,
