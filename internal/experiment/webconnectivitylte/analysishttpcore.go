@@ -7,6 +7,7 @@ package webconnectivitylte
 import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/optional"
 )
 
 // analysisHTTPToplevel is the toplevel analysis function for HTTP results.
@@ -31,7 +32,9 @@ func (tk *TestKeys) analysisHTTPToplevel(logger model.Logger) {
 		return
 	}
 	finalRequest := tk.Requests[0]
-	tk.HTTPExperimentFailure = finalRequest.Failure
+	if finalRequest.Failure != nil {
+		tk.HTTPExperimentFailure = optional.Some(*finalRequest.Failure)
+	}
 
 	// don't perform any futher analysis without TH data
 	if tk.Control == nil || tk.ControlRequest == nil {

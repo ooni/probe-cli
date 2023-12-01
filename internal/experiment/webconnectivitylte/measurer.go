@@ -37,7 +37,7 @@ func (m *Measurer) ExperimentName() string {
 
 // ExperimentVersion implements model.ExperimentMeasurer.
 func (m *Measurer) ExperimentVersion() string {
-	return "0.5.26"
+	return "0.5.27"
 }
 
 // Run implements model.ExperimentMeasurer.

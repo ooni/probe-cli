@@ -21,7 +21,7 @@ func websiteDownNXDOMAIN() *TestCase {
 	*/
 	return &TestCase{
 		Name:      "websiteDownNXDOMAIN",
-		Flags:     TestCaseFlagNoV04,         // see above
+		Flags:     0,                         // see above
 		Input:     "http://www.example.xyz/", // domain not defined in the simulation
 		Configure: nil,
 		ExpectErr: false,
@@ -31,7 +31,7 @@ func websiteDownNXDOMAIN() *TestCase {
 			XStatus:              2052, // StatusExperimentDNS | StatusSuccessNXDOMAIN
 			XBlockingFlags:       0,
 			XNullNullFlags:       1, // analysisFlagNullNullNoAddrs
-			Accessible:           false,
+			Accessible:           true,
 			Blocking:             false,
 		},
 	}

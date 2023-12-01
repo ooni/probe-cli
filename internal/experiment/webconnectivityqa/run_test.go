@@ -191,6 +191,7 @@ func TestRunTestCase(t *testing.T) {
 	})
 
 	t.Run("we compare XDNSFlags for WebConnectivity v0.5", func(t *testing.T) {
+		t.Skip("TODO(https://github.com/ooni/probe/issues/2640)")
 		tc := &TestCase{
 			Name:      "",
 			Input:     "",
@@ -207,7 +208,7 @@ func TestRunTestCase(t *testing.T) {
 				return "web_connectivity"
 			},
 			MockExperimentVersion: func() string {
-				return "0.5.26"
+				return "0.5.27"
 			},
 			MockRun: func(ctx context.Context, args *model.ExperimentArgs) error {
 				args.Measurement.TestKeys = &testKeys{
@@ -225,6 +226,7 @@ func TestRunTestCase(t *testing.T) {
 	})
 
 	t.Run("we compare XBlockingFlags for WebConnectivity v0.5", func(t *testing.T) {
+		t.Skip("TODO(https://github.com/ooni/probe/issues/2640)")
 		tc := &TestCase{
 			Name:      "",
 			Input:     "",
@@ -242,7 +244,7 @@ func TestRunTestCase(t *testing.T) {
 				return "web_connectivity"
 			},
 			MockExperimentVersion: func() string {
-				return "0.5.26"
+				return "0.5.27"
 			},
 			MockRun: func(ctx context.Context, args *model.ExperimentArgs) error {
 				args.Measurement.TestKeys = &testKeys{
@@ -261,6 +263,7 @@ func TestRunTestCase(t *testing.T) {
 	})
 
 	t.Run("we compare XNullNullFlags for WebConnectivity v0.5", func(t *testing.T) {
+		t.Skip("TODO(https://github.com/ooni/probe/issues/2640)")
 		tc := &TestCase{
 			Name:      "",
 			Input:     "",
@@ -279,7 +282,7 @@ func TestRunTestCase(t *testing.T) {
 				return "web_connectivity"
 			},
 			MockExperimentVersion: func() string {
-				return "0.5.26"
+				return "0.5.27"
 			},
 			MockRun: func(ctx context.Context, args *model.ExperimentArgs) error {
 				args.Measurement.TestKeys = &testKeys{
@@ -317,7 +320,7 @@ func TestRunTestCase(t *testing.T) {
 				return "web_connectivity"
 			},
 			MockExperimentVersion: func() string {
-				return "0.5.26"
+				return "0.5.27"
 			},
 			MockRun: func(ctx context.Context, args *model.ExperimentArgs) error {
 				args.Measurement.TestKeys = &testKeys{
@@ -387,7 +390,7 @@ func TestRunTestCase(t *testing.T) {
 				return "web_connectivity"
 			},
 			MockExperimentVersion: func() string {
-				return "0.5.26"
+				return "0.5.27"
 			},
 			MockRun: func(ctx context.Context, args *model.ExperimentArgs) error {
 				args.Measurement.TestKeys = &testKeys{

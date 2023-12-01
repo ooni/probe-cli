@@ -10,7 +10,7 @@ import (
 func badSSLWithExpiredCertificate() *TestCase {
 	return &TestCase{
 		Name:  "badSSLWithExpiredCertificate",
-		Flags: TestCaseFlagNoLTE, // LTE flags it correctly but let's focus on v0.4 for now
+		Flags: 0,
 		Input: "https://expired.badssl.com/",
 		Configure: func(env *netemx.QAEnv) {
 			// nothing
@@ -32,7 +32,7 @@ func badSSLWithExpiredCertificate() *TestCase {
 func badSSLWithWrongServerName() *TestCase {
 	return &TestCase{
 		Name:  "badSSLWithWrongServerName",
-		Flags: TestCaseFlagNoLTE, // LTE flags it correctly but let's focus on v0.4 for now
+		Flags: 0,
 		Input: "https://wrong.host.badssl.com/",
 		Configure: func(env *netemx.QAEnv) {
 			// nothing
@@ -53,7 +53,7 @@ func badSSLWithWrongServerName() *TestCase {
 func badSSLWithUnknownAuthorityWithConsistentDNS() *TestCase {
 	return &TestCase{
 		Name:  "badSSLWithUnknownAuthorityWithConsistentDNS",
-		Flags: TestCaseFlagNoLTE, // LTE flags it correctly but let's focus on v0.4 for now
+		Flags: 0,
 		Input: "https://untrusted-root.badssl.com/",
 		Configure: func(env *netemx.QAEnv) {
 			// nothing
@@ -79,7 +79,7 @@ func badSSLWithUnknownAuthorityWithInconsistentDNS() *TestCase {
 		Configure: func(env *netemx.QAEnv) {
 
 			// add DPI rule to force all the cleartext DNS queries to
-			// point the client to used the ISPProxyAddress
+			// point the client to use the ISPProxyAddress
 			env.DPIEngine().AddRule(&netem.DPISpoofDNSResponse{
 				Addresses: []string{netemx.AddressBadSSLCom},
 				Logger:    env.Logger(),

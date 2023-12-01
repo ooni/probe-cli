@@ -86,7 +86,7 @@ type TestKeys struct {
 
 	// HTTPExperimentFailure indicates whether there was a failure in
 	// the final HTTP request that we recorded.
-	HTTPExperimentFailure *string `json:"http_experiment_failure"`
+	HTTPExperimentFailure optional.Value[string] `json:"http_experiment_failure"`
 
 	// BlockingFlags explains why we think that the website is blocked.
 	BlockingFlags int64 `json:"x_blocking_flags"`
@@ -94,6 +94,9 @@ type TestKeys struct {
 	// NullNullFlags describes what the algorithm to avoid emitting
 	// blocking = null, accessible = null measurements did
 	NullNullFlags int64 `json:"x_null_null_flags"`
+
+	// BodyProportion is the value used to compute BodyLength.
+	BodyProportion float64 `json:"body_proportion"`
 
 	// BodyLength match tells us whether the body length matches.
 	BodyLengthMatch *bool `json:"body_length_match"`
@@ -356,9 +359,10 @@ func NewTestKeys() *TestKeys {
 		DNSFlags:              0,
 		DNSExperimentFailure:  nil,
 		DNSConsistency:        optional.None[string](),
-		HTTPExperimentFailure: nil,
+		HTTPExperimentFailure: optional.None[string](),
 		BlockingFlags:         0,
 		NullNullFlags:         0,
+		BodyProportion:        0,
 		BodyLengthMatch:       nil,
 		HeadersMatch:          nil,
 		StatusCodeMatch:       nil,

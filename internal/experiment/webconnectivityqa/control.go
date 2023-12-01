@@ -11,7 +11,7 @@ import (
 func controlFailureWithSuccessfulHTTPWebsite() *TestCase {
 	return &TestCase{
 		Name:  "controlFailureWithSuccessfulHTTPWebsite",
-		Flags: TestCaseFlagNoLTE, // BUG: has "consistent" DNS but still blocking=null and accessible=null
+		Flags: 0,
 		Input: "http://www.example.org/",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -56,7 +56,7 @@ func controlFailureWithSuccessfulHTTPWebsite() *TestCase {
 func controlFailureWithSuccessfulHTTPSWebsite() *TestCase {
 	return &TestCase{
 		Name:  "controlFailureWithSuccessfulHTTPSWebsite",
-		Flags: TestCaseFlagNoLTE, // because it (correctly!) sets the DNS as consistent thanks to TLS
+		Flags: 0,
 		Input: "https://www.example.org/",
 		Configure: func(env *netemx.QAEnv) {
 

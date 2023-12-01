@@ -41,10 +41,16 @@ func (tk *TestKeys) analysisClassic(logger model.Logger) {
 	// 4. determine the DNS consistency
 	tk.DNSConsistency = analysisClassicDNSConsistency(woa)
 
-	// 5. compute the HTTPDiff values
+	// 5. set DNSExperimentFailure
+	if !woa.DNSExperimentFailure.IsNone() && woa.DNSExperimentFailure.Unwrap() != "" {
+		value := woa.DNSExperimentFailure.Unwrap()
+		tk.DNSExperimentFailure = &value
+	}
+
+	// 6. compute the HTTPDiff values
 	tk.setHTTPDiffValues(woa)
 
-	// 6. compute blocking & accessible
+	// 7. compute blocking & accessible
 	analysisClassicComputeBlockingAccessible(woa, tk)
 }
 
@@ -68,7 +74,8 @@ func analysisClassicDNSConsistency(woa *minipipeline.WebAnalysis) optional.Value
 func (tk *TestKeys) setHTTPDiffValues(woa *minipipeline.WebAnalysis) {
 	const bodyProportionFactor = 0.7
 	if !woa.HTTPFinalResponseDiffBodyProportionFactor.IsNone() {
-		value := woa.HTTPFinalResponseDiffBodyProportionFactor.Unwrap() > bodyProportionFactor
+		tk.BodyProportion = woa.HTTPFinalResponseDiffBodyProportionFactor.Unwrap()
+		value := tk.BodyProportion > bodyProportionFactor
 		tk.BodyLengthMatch = &value
 	}
 
@@ -89,6 +96,9 @@ func (tk *TestKeys) setHTTPDiffValues(woa *minipipeline.WebAnalysis) {
 }
 
 type analysisClassicTestKeysProxy interface {
+	// httpDiff returns true if there's an http-diff.
+	httpDiff() bool
+
 	// setBlockingString sets blocking to a string.
 	setBlockingString(value string)
 
@@ -98,8 +108,8 @@ type analysisClassicTestKeysProxy interface {
 	// setBlockingFalse sets Blocking to false.
 	setBlockingFalse()
 
-	// httpDiff returns true if there's an http-diff.
-	httpDiff() bool
+	// setHTTPExperimentFailure sets the HTTPExperimentFailure field.
+	setHTTPExperimentFailure(value optional.Value[string])
 }
 
 var _ analysisClassicTestKeysProxy = &TestKeys{}
@@ -146,6 +156,11 @@ func (tk *TestKeys) setBlockingString(value string) {
 		tk.Blocking = value
 	}
 	tk.Accessible = false
+}
+
+// setHTTPExperimentFailure implements analysisClassicTestKeysProxy.
+func (tk *TestKeys) setHTTPExperimentFailure(value optional.Value[string]) {
+	tk.HTTPExperimentFailure = value
 }
 
 func analysisClassicComputeBlockingAccessible(woa *minipipeline.WebAnalysis, tk analysisClassicTestKeysProxy) {
@@ -217,6 +232,7 @@ func analysisClassicComputeBlockingAccessible(woa *minipipeline.WebAnalysis, tk 
 			// the control server is unreachable or blocked.
 			if entry.ControlHTTPFailure.IsNone() {
 				tk.setBlockingNil()
+				tk.setHTTPExperimentFailure(entry.Failure)
 				return
 			}
 
@@ -226,11 +242,13 @@ func analysisClassicComputeBlockingAccessible(woa *minipipeline.WebAnalysis, tk 
 				// should also set Accessible to false. However, v0.4
 				// does this and we should play along for the A/B testing.
 				tk.setBlockingFalse()
+				tk.setHTTPExperimentFailure(entry.Failure)
 				return
 			}
 
 			// 2.3. Handle the case where just the probe failed.
 			tk.setBlockingString("http-failure")
+			tk.setHTTPExperimentFailure(entry.Failure)
 			return
 		}
 
@@ -248,11 +266,13 @@ func analysisClassicComputeBlockingAccessible(woa *minipipeline.WebAnalysis, tk 
 				// the control accessing the website and telling us.
 				if entry.ControlHTTPFailure.IsNone() {
 					tk.setBlockingNil()
+					tk.setHTTPExperimentFailure(entry.Failure)
 					return
 				}
 
 				// 3.1.2. Otherwise, if the control worked, that's blocking.
 				tk.setBlockingString("http-failure")
+				tk.setHTTPExperimentFailure(entry.Failure)
 				return
 			}
 
@@ -262,11 +282,13 @@ func analysisClassicComputeBlockingAccessible(woa *minipipeline.WebAnalysis, tk 
 				// should set Accessible and Blocking to false. However, v0.4
 				// does this and we should play along for the A/B testing.
 				tk.setBlockingNil()
+				tk.setHTTPExperimentFailure(entry.Failure)
 				return
 			}
 
 			// 3.3. Handle the case where just the probe failed.
 			tk.setBlockingString("http-failure")
+			tk.setHTTPExperimentFailure(entry.Failure)
 			return
 		}
 
@@ -281,11 +303,13 @@ func analysisClassicComputeBlockingAccessible(woa *minipipeline.WebAnalysis, tk 
 				// accessing the website should lead to.
 				if entry.ControlHTTPFailure.IsNone() {
 					tk.setBlockingNil()
+					tk.setHTTPExperimentFailure(entry.Failure)
 					return
 				}
 
 				// 4.1.2. Otherwise, if the control worked, that's blocking.
 				tk.setBlockingString("http-failure")
+				tk.setHTTPExperimentFailure(entry.Failure)
 				return
 			}
 
@@ -295,11 +319,13 @@ func analysisClassicComputeBlockingAccessible(woa *minipipeline.WebAnalysis, tk 
 				// should set Accessible and Blocking to false. However, v0.4
 				// does this and we should play along for the A/B testing.
 				tk.setBlockingFalse()
+				tk.setHTTPExperimentFailure(entry.Failure)
 				return
 			}
 
 			// 4.3. Handle the case where just the probe failed.
 			tk.setBlockingString("tcp_ip")
+			tk.setHTTPExperimentFailure(entry.Failure)
 			return
 		}
 
@@ -314,11 +340,13 @@ func analysisClassicComputeBlockingAccessible(woa *minipipeline.WebAnalysis, tk 
 				// accessing the website should lead to.
 				if entry.ControlHTTPFailure.IsNone() {
 					tk.setBlockingFalse()
+					analysisClassicSetHTTPExperimentFailureDNS(tk, entry)
 					return
 				}
 
 				// 5.1.2. Otherwise, if the control worked, that's blocking.
 				tk.setBlockingString("dns")
+				analysisClassicSetHTTPExperimentFailureDNS(tk, entry)
 				return
 			}
 
@@ -328,12 +356,24 @@ func analysisClassicComputeBlockingAccessible(woa *minipipeline.WebAnalysis, tk 
 				// should set Accessible and Blocking to false. However, v0.4
 				// does this and we should play along for the A/B testing.
 				tk.setBlockingFalse()
+				analysisClassicSetHTTPExperimentFailureDNS(tk, entry)
 				return
 			}
 
 			// 5.3. Handle the case where just the probe failed.
 			tk.setBlockingString("dns")
+			analysisClassicSetHTTPExperimentFailureDNS(tk, entry)
 			return
 		}
 	}
+}
+
+// analysisClassicSetHTTPExperimentFailureDNS sets the HTTPExperimentFailure if and
+// only if the entry's TagDepth is >= 1. We have a v0.4 bug where we do not properly
+// set this value for the first HTTP request <facepalm>.
+func analysisClassicSetHTTPExperimentFailureDNS(tk analysisClassicTestKeysProxy, entry *minipipeline.WebObservation) {
+	if entry.TagDepth.UnwrapOr(0) <= 0 {
+		return
+	}
+	tk.setHTTPExperimentFailure(entry.Failure)
 }
