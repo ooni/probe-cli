@@ -31,6 +31,10 @@ func (tk *TestKeys) analysisHTTPToplevel(logger model.Logger) {
 	if len(tk.Requests) <= 0 {
 		return
 	}
+	// TODO(https://github.com/ooni/probe/issues/2641): this code is wrong
+	// with redirects because LTE only creates an HTTP request when it reaches
+	// the HTTP stage, so a previous redirect that is successful would cause
+	// this code to say we're good on the HTTP front, while we're not.
 	finalRequest := tk.Requests[0]
 	if finalRequest.Failure != nil {
 		tk.HTTPExperimentFailure = optional.Some(*finalRequest.Failure)
