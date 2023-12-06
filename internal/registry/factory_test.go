@@ -3,6 +3,7 @@ package registry
 import (
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"testing"
 
@@ -249,6 +250,48 @@ func TestExperimentBuilderSetOptionAny(t *testing.T) {
 		InitialConfig: &fakeExperimentConfig{},
 		FieldName:     "Value",
 		FieldValue:    make(chan any),
+		ExpectErr:     ErrCannotSetIntegerOption,
+		ExpectConfig:  &fakeExperimentConfig{},
+	}, {
+		TestCaseName:  "[int] for NaN",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "Value",
+		FieldValue:    math.NaN(),
+		ExpectErr:     ErrCannotSetIntegerOption,
+		ExpectConfig:  &fakeExperimentConfig{},
+	}, {
+		TestCaseName:  "[int] for +Inf",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "Value",
+		FieldValue:    math.Inf(1),
+		ExpectErr:     ErrCannotSetIntegerOption,
+		ExpectConfig:  &fakeExperimentConfig{},
+	}, {
+		TestCaseName:  "[int] for -Inf",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "Value",
+		FieldValue:    math.Inf(-1),
+		ExpectErr:     ErrCannotSetIntegerOption,
+		ExpectConfig:  &fakeExperimentConfig{},
+	}, {
+		TestCaseName:  "[int] for too large value",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "Value",
+		FieldValue:    float64(jsonMaxInteger + 1),
+		ExpectErr:     ErrCannotSetIntegerOption,
+		ExpectConfig:  &fakeExperimentConfig{},
+	}, {
+		TestCaseName:  "[int] for too small value",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "Value",
+		FieldValue:    float64(jsonMinInteger - 1),
+		ExpectErr:     ErrCannotSetIntegerOption,
+		ExpectConfig:  &fakeExperimentConfig{},
+	}, {
+		TestCaseName:  "[int] for float64 with nonzero fractional value",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "Value",
+		FieldValue:    1.11,
 		ExpectErr:     ErrCannotSetIntegerOption,
 		ExpectConfig:  &fakeExperimentConfig{},
 	}, {
