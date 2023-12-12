@@ -1,13 +1,10 @@
 package netxlite
 
 import (
-	"crypto/tls"
 	"net/url"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
-	oohttp "github.com/ooni/oohttp"
+	"github.com/ooni/probe-cli/v3/internal/feature/oohttpfeat"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -42,54 +39,33 @@ func TestNewHTTPTransportWithOptions(t *testing.T) {
 
 		// make sure there's the stdlib adapter
 		stdlibAdapter := txpCloser.HTTPTransport.(*httpTransportStdlib)
-		oohttpStdlibAdapter := stdlibAdapter.StdlibTransport
-		underlying := oohttpStdlibAdapter.Transport
-
-		// now let's check that everything is configured as intended
-		expectedTxp := oohttp.DefaultTransport.(*oohttp.Transport).Clone()
-		diff := cmp.Diff(
-			expectedTxp,
-			underlying,
-			cmpopts.IgnoreUnexported(oohttp.Transport{}),
-			cmpopts.IgnoreUnexported(tls.Config{}),
-			cmpopts.IgnoreFields(
-				oohttp.Transport{},
-				"DialContext",
-				"DialTLSContext",
-				"DisableCompression",
-				"Proxy",
-				"ForceAttemptHTTP2",
-			),
-		)
-		if diff != "" {
-			t.Fatal(diff)
-		}
+		underlying := stdlibAdapter.StdlibTransport
 
 		// finish checking by explicitly inspecting the fields we modify
-		if underlying.DialContext == nil {
+		if underlying.GetDialContext() == nil {
 			t.Fatal("expected non-nil .DialContext")
 		}
-		if underlying.DialTLSContext == nil {
+		if underlying.GetDialTLSContext() == nil {
 			t.Fatal("expected non-nil .DialTLSContext")
 		}
-		if underlying.Proxy != nil {
+		if underlying.GetProxy() != nil {
 			t.Fatal("expected nil .Proxy")
 		}
-		if !underlying.ForceAttemptHTTP2 {
+		if underlying.GetForceAttemptHTTP2() != oohttpfeat.ExpectedForceAttemptHTTP2 {
 			t.Fatal("expected true .ForceAttemptHTTP2")
 		}
-		if !underlying.DisableCompression {
+		if !underlying.GetDisableCompression() {
 			t.Fatal("expected true .DisableCompression")
 		}
 	})
 
-	unwrap := func(txp model.HTTPTransport) *oohttp.Transport {
+	unwrap := func(txp model.HTTPTransport) *oohttpfeat.HTTPTransport {
 		txpLogger := txp.(*httpTransportLogger)
 		txpErrWrapper := txpLogger.HTTPTransport.(*httpTransportErrWrapper)
 		txpCloser := txpErrWrapper.HTTPTransport.(*httpTransportConnectionsCloser)
 		stdlibAdapter := txpCloser.HTTPTransport.(*httpTransportStdlib)
 		oohttpStdlibAdapter := stdlibAdapter.StdlibTransport
-		return oohttpStdlibAdapter.Transport
+		return oohttpStdlibAdapter
 	}
 
 	t.Run("make sure HTTPTransportOptionProxyURL is WAI", func(t *testing.T) {
@@ -104,10 +80,11 @@ func TestNewHTTPTransportWithOptions(t *testing.T) {
 				HTTPTransportOptionProxyURL(expectedURL),
 			)
 			underlying := unwrap(txp)
-			if underlying.Proxy == nil {
+			proxy := underlying.GetProxy()
+			if proxy == nil {
 				t.Fatal("expected non-nil .Proxy")
 			}
-			got, err := underlying.Proxy(&oohttp.Request{})
+			got, err := proxy(&oohttpfeat.HTTPRequest{})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -133,7 +110,7 @@ func TestNewHTTPTransportWithOptions(t *testing.T) {
 				HTTPTransportOptionMaxConnsPerHost(expectedValue),
 			)
 			underlying := unwrap(txp)
-			got := underlying.MaxConnsPerHost
+			got := underlying.GetMaxConnsPerHost()
 			if got != expectedValue {
 				t.Fatal("not the expected value")
 			}
@@ -156,7 +133,7 @@ func TestNewHTTPTransportWithOptions(t *testing.T) {
 				HTTPTransportOptionDisableCompression(expectedValue),
 			)
 			underlying := unwrap(txp)
-			got := underlying.DisableCompression
+			got := underlying.GetDisableCompression()
 			if got != expectedValue {
 				t.Fatal("not the expected value")
 			}

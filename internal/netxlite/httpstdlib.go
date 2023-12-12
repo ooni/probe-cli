@@ -7,13 +7,13 @@ package netxlite
 import (
 	"net/http"
 
-	oohttp "github.com/ooni/oohttp"
+	"github.com/ooni/probe-cli/v3/internal/feature/oohttpfeat"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // stdlibTransport wraps oohttp.StdlibTransport to add .Network()
 type httpTransportStdlib struct {
-	StdlibTransport *oohttp.StdlibTransport
+	StdlibTransport *oohttpfeat.HTTPTransport
 }
 
 var _ model.HTTPTransport = &httpTransportStdlib{}

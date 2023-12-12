@@ -11,7 +11,7 @@ package netxlite
 import (
 	"net/http"
 
-	oohttp "github.com/ooni/oohttp"
+	"github.com/ooni/probe-cli/v3/internal/feature/oohttpfeat"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -60,37 +60,42 @@ func NewHTTPTransport(logger model.DebugLogger, dialer model.Dialer, tlsDialer m
 //
 // This function behavior is QUIRKY as documented in [NewHTTPTransport].
 func newOOHTTPBaseTransport(dialer model.Dialer, tlsDialer model.TLSDialer) model.HTTPTransport {
-	// Using oohttp to support any TLS library.
-	txp := oohttp.DefaultTransport.(*oohttp.Transport).Clone()
+	// Using oohttp to support any TLS library iff it's possible to do so, otherwise we
+	// are going to use the standard library w/o using HTTP/2 support.
+	txp := oohttpfeat.NewHTTPTransport()
 
 	// This wrapping ensures that we always have a timeout when we
 	// are using HTTP; see https://github.com/ooni/probe/issues/1609.
 	dialer = &httpDialerWithReadTimeout{dialer}
-	txp.DialContext = dialer.DialContext
+	txp.SetDialContext(dialer.DialContext)
 	tlsDialer = &httpTLSDialerWithReadTimeout{tlsDialer}
-	txp.DialTLSContext = tlsDialer.DialTLSContext
+	txp.SetDialTLSContext(tlsDialer.DialTLSContext)
 
 	// We are using a different strategy to implement proxy: we
 	// use a specific dialer that knows about proxying.
-	txp.Proxy = nil
+	txp.SetProxy(nil)
 
 	// Better for Cloudflare DNS and also better because we have less
 	// noisy events and we can better understand what happened.
-	txp.MaxConnsPerHost = 1
+	txp.SetMaxConnsPerHost(1)
 
 	// The following (1) reduces the number of headers that Go will
 	// automatically send for us and (2) ensures that we always receive
 	// back the true headers, such as Content-Length. This change is
 	// functional to OONI's goal of observing the network.
-	txp.DisableCompression = true
+	txp.SetDisableCompression(true)
 
-	// Required to enable using HTTP/2 (which will be anyway forced
-	// upon us when we are using TLS parroting).
-	txp.ForceAttemptHTTP2 = true
+	// We now rely on feature/oohttpfeat to decide whether it's
+	// possible for us to actually enable HTTP/2.
+	//
+	//	txp.ForceAttemptHTTP2 = true
+	//
+	// Please, keep this comment until at least 3.21 because it provides
+	// an historical documentation of how we changed the codebase.
 
 	// Ensure we correctly forward CloseIdleConnections.
 	return &httpTransportConnectionsCloser{
-		HTTPTransport: &httpTransportStdlib{&oohttp.StdlibTransport{Transport: txp}},
+		HTTPTransport: &httpTransportStdlib{txp},
 		Dialer:        dialer,
 		TLSDialer:     tlsDialer,
 	}
