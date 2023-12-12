@@ -40,7 +40,7 @@ func TestNewDescriptorCheckIn(t *testing.T) {
 				t.Fatalf("unexpected desc.%s", name)
 			}
 		case "LogBody":
-			if !field.IsZero() {
+			if field.IsZero() {
 				t.Fatalf("unexpected desc.%s", name)
 			}
 		case "MaxBodySize":
