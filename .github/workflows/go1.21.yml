@@ -1,0 +1,22 @@
+# Runs the whole test suite using go1.21
+name: alltests
+on:
+  pull_request:
+  push:
+    branches:
+      - "release/**"
+      - "fullbuild"
+      - "alltestsbuild"
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: magnetikonline/action-golang-cache@v4
+        with:
+          go-version: ~1.21
+          cache-key-suffix: "-alltests-go1.21"
+
+      - run: go test -race -tags shaping ./...
