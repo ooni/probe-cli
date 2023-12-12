@@ -102,7 +102,7 @@ func (s *Server) handleConnect(ctx context.Context, cconn net.Conn, req *request
 	sconn, err := dialer.DialContext(ctx, "tcp", endpoint)
 	if err != nil {
 		// Note: the original go-socks5 selects the proper error but it does not
-		// matter for our purposes, so we always return hostUnreachable. 
+		// matter for our purposes, so we always return hostUnreachable.
 		return sendReply(cconn, hostUnreachable, &net.TCPAddr{})
 	}
 	defer sconn.Close()
