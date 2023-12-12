@@ -25,7 +25,7 @@ func NewDescriptorCheckIn(
 		AcceptEncodingGzip: true, // we want a small response
 		Authorization:      "",
 		ContentType:        httpapi.ApplicationJSON,
-		LogBody:            false, // we don't want to log psiphon config
+		LogBody:            true,
 		MaxBodySize:        0,
 		Method:             http.MethodPost,
 		Request: &httpapi.RequestDescriptor[*model.OOAPICheckInConfig]{
