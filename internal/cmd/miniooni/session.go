@@ -9,6 +9,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/legacy/kvstore2dir"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
@@ -27,9 +28,12 @@ func newSessionOrPanic(ctx context.Context, currentOptions *Options,
 		proxyURL = mustParseURL(currentOptions.Proxy)
 	}
 
-	kvstore2dir := filepath.Join(miniooniDir, "kvstore2")
-	kvstore, err := kvstore.NewFS(kvstore2dir)
-	runtimex.PanicOnError(err, "cannot create kvstore2 directory")
+	// We renamed kvstore2 to engine in the 3.20 development cycle
+	_ = kvstore2dir.Move(miniooniDir)
+
+	enginedir := filepath.Join(miniooniDir, "engine")
+	kvstore, err := kvstore.NewFS(enginedir)
+	runtimex.PanicOnError(err, "cannot create engine directory")
 
 	tunnelDir := filepath.Join(miniooniDir, "tunnel")
 	err = os.MkdirAll(tunnelDir, 0700)
