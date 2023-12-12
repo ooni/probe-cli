@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Psiphon-Labs/psiphon-tunnel-core/ClientLibrary/clientlib"
+	"github.com/ooni/probe-cli/v3/internal/feature/psiphonfeat"
 )
 
 func TestPsiphonWithCancelledContext(t *testing.T) {
@@ -87,7 +87,7 @@ func TestPsiphonStartFailure(t *testing.T) {
 		mockableStartPsiphon = oldStartPsiphon
 	}()
 	mockableStartPsiphon = func(ctx context.Context, config []byte,
-		workdir string) (*clientlib.PsiphonTunnel, error) {
+		workdir string) (psiphonfeat.Tunnel, error) {
 		return nil, expected
 	}
 	tunnel, _, err := psiphonStart(context.Background(), &Config{
