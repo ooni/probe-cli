@@ -467,6 +467,7 @@ func (sess *Session) CheckIn(ctx *Context, config *CheckInConfig) (*CheckInInfo,
 		ProbeASN:        info.ASNString(),
 		ProbeCC:         info.CountryCode,
 		RunType:         model.RunType(config.RunType),
+		SoftwareName:    config.SoftwareName,
 		SoftwareVersion: config.SoftwareVersion,
 		WebConnectivity: config.WebConnectivity.toModel(),
 	}
