@@ -1,5 +1,5 @@
 # Runs the whole test suite using go1.21
-name: alltests
+name: alltests-go1.21
 on:
   pull_request:
   push:
