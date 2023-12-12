@@ -13,7 +13,7 @@ import (
 	"net"
 	"time"
 
-	ootls "github.com/ooni/oocrypto/tls"
+	"github.com/ooni/probe-cli/v3/internal/feature/ootlsfeat"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -248,7 +248,7 @@ func (h *tlsHandshakerConfigurable) newConn(conn net.Conn, config *tls.Config) (
 	if h.NewConn != nil {
 		return h.NewConn(conn, config)
 	}
-	return ootls.NewClientConnStdlib(conn, config)
+	return ootlsfeat.NewClientConnStdlib(conn, config)
 }
 
 // tlsHandshakerLogger is a TLSHandshaker with logging.
