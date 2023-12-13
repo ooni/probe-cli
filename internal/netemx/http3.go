@@ -104,10 +104,14 @@ func (srv *http3Server) mustListenPortLocked(handler http.Handler, ipAddr net.IP
 	}
 	go srvr.Serve(listener)
 
-	// make sure we track and close the listener: assuming the server was closing the
-	// listener seems to be the root cause of https://github.com/ooni/probe/issues/2527
-	// and closing the listener completely fixes the issue.
-	srv.closers = append(srv.closers, listener)
+	// For quic-go < 0.40.0, we needed the following fix as documented by the
+	// https://github.com/ooni/probe/issues/2527 issue.
+	//
+	//	srv.closers = append(srv.closers, listener)
+	//
+	// After upgrading to quic-go/quic-go@v0.40.1 (https://github.com/ooni/probe-cli/pull/1428)
+	// the above fix actually makes the code hang forever. We want to keep this message
+	// around for a couple of cycles (say until ooni/probe-cli < 3.22).
 
 	// make sure we track the server
 	srv.closers = append(srv.closers, srvr)
