@@ -19,4 +19,6 @@ jobs:
           go-version: ~1.21
           cache-key-suffix: "-alltests-go1.21"
 
-      - run: go test -race -tags shaping ./...
+      # We cannot run buildtool tests using an unexpected version of Go because the
+      # tests check whether we're using the expected version of Go 😂😂😂😂.
+      - run: go test -race -tags shaping $(go list ./...|grep -v 'internal/cmd/buildtool')
