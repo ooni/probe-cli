@@ -7,6 +7,7 @@ package registry
 import (
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"reflect"
 	"strconv"
@@ -107,6 +108,12 @@ func (b *Factory) setOptionBool(field reflect.Value, value any) error {
 	}
 }
 
+// With JSON we're limited by the 52 bits in the mantissa
+const (
+	jsonMaxInteger = 1<<53 - 1
+	jsonMinInteger = -1<<53 + 1
+)
+
 // setOptionInt sets an int option
 func (b *Factory) setOptionInt(field reflect.Value, value any) error {
 	switch v := value.(type) {
@@ -131,6 +138,18 @@ func (b *Factory) setOptionInt(field reflect.Value, value any) error {
 			return fmt.Errorf("%w: %s", ErrCannotSetIntegerOption, err.Error())
 		}
 		field.SetInt(number)
+		return nil
+	case float64:
+		if math.IsNaN(v) || math.IsInf(v, 0) {
+			return fmt.Errorf("%w from: %v", ErrCannotSetIntegerOption, value)
+		}
+		if math.Trunc(v) != v {
+			return fmt.Errorf("%w from: %v", ErrCannotSetIntegerOption, value)
+		}
+		if v > jsonMaxInteger || v < jsonMinInteger {
+			return fmt.Errorf("%w from: %v", ErrCannotSetIntegerOption, value)
+		}
+		field.SetInt(int64(v))
 		return nil
 	default:
 		return fmt.Errorf("%w from a value of type %T", ErrCannotSetIntegerOption, value)
