@@ -1,8 +1,12 @@
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 filippo.io/age v1.1.1 h1:pIpO7l151hCnQ4BdyBujnGP2YlUo0uj6sAVNHGBvXHg=
 filippo.io/age v1.1.1/go.mod h1:l03SrzDUrBkdBx8+IILdnn2KZysqQdbEBUQ4p3sqEQE=
+filippo.io/bigmod v0.0.1 h1:OaEqDr3gEbofpnHbGqZweSL/bLMhy1pb54puiCDeuOA=
+filippo.io/bigmod v0.0.1/go.mod h1:KyzqAbH7bRH6MOuOF1TPfUjvLoi0mRF2bIyD2ouRNQI=
 filippo.io/edwards25519 v1.0.0 h1:0wAIcmJUqRdI8IJ/3eGi5/HwXZWPujYXXlkrQogz0Ek=
 filippo.io/edwards25519 v1.0.0/go.mod h1:N1IkdkCkiLB6tki+MYJoSx2JTY9NUlxZE7eHn5EwJns=
+filippo.io/keygen v0.0.0-20230306160926-5201437acf8e h1:+xwUCyMiCWKWsI0RowhzB4sngpUdMHgU6lLuWJCX5Dg=
+filippo.io/keygen v0.0.0-20230306160926-5201437acf8e/go.mod h1:ZGSiF/b2hd6MRghF/cid0vXw8pXykRTmIu+JSPw/NCQ=
 github.com/AlecAivazis/survey/v2 v2.3.7 h1:6I/u8FvytdGsgonrYsVn2t8t4QiRnh6QSTqkkhIiSjQ=
 github.com/AlecAivazis/survey/v2 v2.3.7/go.mod h1:xUTIdE4KCOIjsBAE1JYsUPoCqYdZ1reCfTwbto0Fduo=
 github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 h1:cTp8I5+VIoKjsnZuH8vjyaysT/ses3EvZeaV/1UkF2M=
@@ -21,8 +25,8 @@ github.com/Psiphon-Labs/bolt v0.0.0-20200624191537-23cedaef7ad7 h1:Hx/NCZTnvoKZu
 github.com/Psiphon-Labs/bolt v0.0.0-20200624191537-23cedaef7ad7/go.mod h1:alTtZBo3j4AWFvUrAH6F5ZaHcTj4G5Y01nHz8dkU6vU=
 github.com/Psiphon-Labs/goptlib v0.0.0-20200406165125-c0e32a7a3464 h1:VmnMMMheFXwLV0noxYhbJbLmkV4iaVW3xNnj6xcCNHo=
 github.com/Psiphon-Labs/goptlib v0.0.0-20200406165125-c0e32a7a3464/go.mod h1:Pe5BqN2DdIdChorAXl6bDaQd/wghpCleJfid2NoSli0=
-github.com/Psiphon-Labs/psiphon-tunnel-core v1.0.11-0.20230822172011-3f91b1b804b1 h1:yHV1QsdiZw355X+vq+qbLcx5APdiZUdvLtLcn1d/Gko=
-github.com/Psiphon-Labs/psiphon-tunnel-core v1.0.11-0.20230822172011-3f91b1b804b1/go.mod h1:675zphn0MOOnCjdC9NTJt+F4ItH+Nq4f9c4OvVj0O3M=
+github.com/Psiphon-Labs/psiphon-tunnel-core v1.0.11-0.20231206204740-a8e5fc0cf6c7 h1:5wP0VHWH8dEQdDpDZ9qM9K7a1MozWPNtm07oSs11gaA=
+github.com/Psiphon-Labs/psiphon-tunnel-core v1.0.11-0.20231206204740-a8e5fc0cf6c7/go.mod h1:PnA8vx/7sDJ31xBXD1rnT6xx8GuvWEk9un0d8vVtAyU=
 github.com/Psiphon-Labs/qtls-go1-19 v0.0.0-20230608213623-d58aa73e519a h1:O8D+GcEoZwutcERaABP2AM3RDvswBVtNmBWvlBn5wiw=
 github.com/Psiphon-Labs/qtls-go1-19 v0.0.0-20230608213623-d58aa73e519a/go.mod h1:81bbD3bvEvi3BSamZb30PgvPvqwSLfEPqwwmq5sx7fc=
 github.com/Psiphon-Labs/qtls-go1-20 v0.0.0-20230608214729-dd57d6787acf h1:bGS+WxWdHHuf42hn3M1GFSJbzCgtKNVTuiRqwCo3zyc=
@@ -111,6 +115,8 @@ github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5Kwzbycv
 github.com/fatih/color v1.16.0 h1:zmkK9Ngbjj+K0yRhTVONQh1p/HknKYSlNT+vZCzyokM=
 github.com/fatih/color v1.16.0/go.mod h1:fL2Sau1YI5c0pdGEVCbKQbLXB6edEj1ZgiY4NijnWvE=
 github.com/florianl/go-nfqueue v1.1.1-0.20200829120558-a2f196e98ab0 h1:7ZJyJV4KiWBijCCzUPvVaqxsDxO36+KD0XKBdEN3I+8=
+github.com/flynn/noise v1.0.0 h1:DlTHqmzmvcEiKj+4RYo/imoswx/4r6iBlCMfVtrMXpQ=
+github.com/flynn/noise v1.0.0/go.mod h1:xbMo+0i6+IGbYdJhF31t2eR1BIU0CYc12+BNAKwUTag=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
 github.com/gaukas/godicttls v0.0.4 h1:NlRaXb3J6hAnTmWdsEKb9bcSBD6BvcIjdGdeb0zfXbk=
@@ -261,6 +267,7 @@ github.com/konsorten/go-windows-terminal-sequences v1.0.2/go.mod h1:T0+1ngSBFLxv
 github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515/go.mod h1:+0opPa2QZZtGFBFZlji/RkVcI2GknAs/DXo4wKdlNEc=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pretty v0.2.0/go.mod h1:ipq/a2n7PKx3OHsz4KJII5eveXtPO4qwEXGdVfWzfnI=
+github.com/kr/pretty v0.2.1/go.mod h1:ipq/a2n7PKx3OHsz4KJII5eveXtPO4qwEXGdVfWzfnI=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
 github.com/kr/pty v1.1.8/go.mod h1:O1sed60cT9XZ5uDucP5qwvh+TE3NnUj51EiZO/lmSfw=
@@ -312,6 +319,7 @@ github.com/modocache/gover v0.0.0-20171022184752-b58185e213c5/go.mod h1:caMODM3P
 github.com/montanaflynn/stats v0.7.1 h1:etflOAAHORrCC44V+aR6Ftzort912ZU+YLiSTuV8eaE=
 github.com/montanaflynn/stats v0.7.1/go.mod h1:etXPPgVO6n31NxCd9KQUMvCM+ve0ruNzt6R8Bnaayow=
 github.com/mroth/weightedrand v1.0.0 h1:V8JeHChvl2MP1sAoXq4brElOcza+jxLkRuwvtQu8L3E=
+github.com/mroth/weightedrand v1.0.0/go.mod h1:3p2SIcC8al1YMzGhAIoXD+r9olo/g/cdJgAD905gyNE=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
 github.com/nxadm/tail v1.4.8/go.mod h1:+ncqLTQzXmGhMZNUePPaPqPvBxHAIsmXswZKocGu+AU=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
@@ -342,6 +350,7 @@ github.com/pborman/getopt/v2 v2.1.0/go.mod h1:4NtW75ny4eBw9fO1bhtNdYTlZKYX5/tBLt
 github.com/pebbe/zmq4 v1.2.10 h1:wQkqRZ3CZeABIeidr3e8uQZMMH5YAykA/WN0L5zkd1c=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
 github.com/pelletier/go-toml v1.9.5 h1:4yBQzkHv+7BHq2PQUZF3Mx0IYxG7LsP222s7Agd3ve8=
+github.com/pelletier/go-toml v1.9.5/go.mod h1:u1nR/EPcESfeI/szUZKdtJ0xRNbUoANCkoOuaOx1Y+c=
 github.com/pion/datachannel v1.5.5 h1:10ef4kwdjije+M9d7Xm9im2Y3O6A6ccQb0zcqZcJew8=
 github.com/pion/datachannel v1.5.5/go.mod h1:iMz+lECmfdCMqFRhXhcA/219B0SQlbpoR2V118yimL0=
 github.com/pion/dtls/v2 v2.2.7 h1:cSUBsETxepsCSFSxC3mc/aDo14qQLMSL+O6IjG28yV8=
@@ -409,12 +418,12 @@ github.com/quic-go/qtls-go1-20 v0.3.4 h1:MfFAPULvst4yoMgY9QmtpYmfij/em7O8UUi+bNV
 github.com/quic-go/qtls-go1-20 v0.3.4/go.mod h1:X9Nh97ZL80Z+bX/gUXMbipO6OxdiDi58b/fMC9mAL+k=
 github.com/quic-go/quic-go v0.39.0 h1:AgP40iThFMY0bj8jGxROhw3S0FMGa8ryqsmi9tBH3So=
 github.com/quic-go/quic-go v0.39.0/go.mod h1:T09QsDQWjLiQ74ZmacDfqZmhY/NLnw5BC40MANNNZ1Q=
-github.com/refraction-networking/conjure v0.7.4 h1:D6e0DFd1B7VuiTcKDLQ5oAz1w0OtL9VNegabogZUZzU=
-github.com/refraction-networking/conjure v0.7.4/go.mod h1:ptOjgA+P0wJ41CCobva75vpZurUiXz1ZXbKrr2kYRZA=
+github.com/refraction-networking/conjure v0.7.10-0.20231110193225-e4749a9dedc9 h1:46+z0lVJL5ynP09dtThex4GiowaANoBk7DsNF0+a+7Q=
+github.com/refraction-networking/conjure v0.7.10-0.20231110193225-e4749a9dedc9/go.mod h1:O5u/Mpg5b3whLF8L701pTMQW23SviS+rDKdWbY/BM0Q=
 github.com/refraction-networking/ed25519 v0.1.2 h1:08kJZUkAlY7a7cZGosl1teGytV+QEoNxPO7NnRvAB+g=
 github.com/refraction-networking/ed25519 v0.1.2/go.mod h1:nxYLUAYt/hmNpAh64PNSQ/tQ9gTIB89wCaGKJlRtZ9I=
-github.com/refraction-networking/gotapdance v1.7.4 h1:HSdgJajosy9dwwrEiqZntTHf8apBMpB5gi6hY9OxfIk=
-github.com/refraction-networking/gotapdance v1.7.4/go.mod h1:uUZDICZjk37aExgntA92OPL5Q7LrZgvpQncYNrO4sKg=
+github.com/refraction-networking/gotapdance v1.7.7 h1:RSdDCA0v4n/iIxCnxLF6uCoJdlo000R+IKGvELfpc/A=
+github.com/refraction-networking/gotapdance v1.7.7/go.mod h1:KORLtX2tKFXb2YDhynsQmGcLmmAHW20CVvdhP5kuAFA=
 github.com/refraction-networking/obfs4 v0.1.2 h1:J842O4fGSkd2W8ogYj0KN6gqVVY+Cpqodw9qFGL7wVU=
 github.com/refraction-networking/obfs4 v0.1.2/go.mod h1:wAl/+gWiLsrcykJA3nKJHx89f5/gXGM8UKvty7+mvbM=
 github.com/refraction-networking/utls v1.3.3 h1:f/TBLX7KBciRyFH3bwupp+CE4fzoYKCirhdRcC490sw=
@@ -560,6 +569,7 @@ golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9/go.mod h1:LzIPMQfyMNhhGPh
 golang.org/x/crypto v0.0.0-20201012173705-84dcc777aaee/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
 golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
 golang.org/x/crypto v0.0.0-20201203163018-be400aefbc4c/go.mod h1:jdWPYTVW3xRLrWPugEBEK3UY2ZEsg3UU495nc5E+M+I=
+golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2/go.mod h1:T9bdIzuCu7OtxOm1hfPfRQxPLYneinmdGuTeoZ9dtd4=
 golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a/go.mod h1:P+XmwS30IXTQdn5tA2iutPOUgjI07+tq3H3K9MVA1s8=
 golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e/go.mod h1:GvvjBRRGRdwPK5ydBHafDWAxML/pGHZbMvKqRZ5+Abc=
 golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97/go.mod h1:GvvjBRRGRdwPK5ydBHafDWAxML/pGHZbMvKqRZ5+Abc=
@@ -752,6 +762,7 @@ gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c h1:Hei/4ADfdWqJk1ZMxUNpqntNwaWcugrBjAiHlqqRiVk=
+gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c/go.mod h1:JHkPIbrfpd72SG/EVd6muEfDQjcINNoR0C8j2r3qZ4Q=
 gopkg.in/errgo.v2 v2.1.0/go.mod h1:hNsd1EY+bozCKY1Ytp96fpM3vjJbqLJn88ws8XvfDNI=
 gopkg.in/fsnotify.v1 v1.4.7/go.mod h1:Tz8NjZHkW78fSQdbUxIjBTcgA1z1m8ZHf0WmKUhAMys=
 gopkg.in/inconshreveable/log15.v2 v2.0.0-20180818164646-67afb5ed74ec/go.mod h1:aPpfJ7XW+gOuirDoZ8gHhLh3kZ1B08FtV2bbmy7Jv3s=

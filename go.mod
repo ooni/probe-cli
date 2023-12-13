@@ -5,7 +5,7 @@ go 1.20
 require (
 	filippo.io/age v1.1.1
 	github.com/AlecAivazis/survey/v2 v2.3.7
-	github.com/Psiphon-Labs/psiphon-tunnel-core v1.0.11-0.20230822172011-3f91b1b804b1
+	github.com/Psiphon-Labs/psiphon-tunnel-core v1.0.11-0.20231206204740-a8e5fc0cf6c7
 	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/apex/log v1.9.0
 	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5
@@ -44,6 +44,8 @@ require (
 )
 
 require (
+	filippo.io/bigmod v0.0.1 // indirect
+	filippo.io/keygen v0.0.0-20230306160926-5201437acf8e // indirect
 	github.com/Psiphon-Labs/bolt v0.0.0-20200624191537-23cedaef7ad7 // indirect
 	github.com/Psiphon-Labs/goptlib v0.0.0-20200406165125-c0e32a7a3464 // indirect
 	github.com/Psiphon-Labs/qtls-go1-19 v0.0.0-20230608213623-d58aa73e519a // indirect
@@ -52,6 +54,7 @@ require (
 	github.com/Psiphon-Labs/tls-tris v0.0.0-20230824155421-58bf6d336a9a // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/flynn/noise v1.0.0 // indirect
 	github.com/gaukas/godicttls v0.0.4 // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/pprof v0.0.0-20230926050212-f7f687d19a98 // indirect
@@ -59,12 +62,14 @@ require (
 	github.com/klauspost/compress v1.17.0 // indirect
 	github.com/libp2p/go-reuseport v0.4.0 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
+	github.com/mroth/weightedrand v1.0.0 // indirect
 	github.com/onsi/ginkgo/v2 v2.12.1 // indirect
+	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pion/transport/v2 v2.2.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/quic-go/qpack v0.4.0 // indirect
 	github.com/quic-go/qtls-go1-20 v0.3.4 // indirect
-	github.com/refraction-networking/conjure v0.7.4 // indirect
+	github.com/refraction-networking/conjure v0.7.10-0.20231110193225-e4749a9dedc9 // indirect
 	github.com/refraction-networking/ed25519 v0.1.2 // indirect
 	github.com/refraction-networking/obfs4 v0.1.2 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
@@ -129,7 +134,7 @@ require (
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
-	github.com/refraction-networking/gotapdance v1.7.4 // indirect
+	github.com/refraction-networking/gotapdance v1.7.7 // indirect
 	github.com/refraction-networking/utls v1.3.3 // indirect
 	github.com/sergeyfrolov/bsbuffer v0.0.0-20180903213811-94e85abb8507 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
