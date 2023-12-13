@@ -702,12 +702,12 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.1.3.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.2.0.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-3.1.3.tar.gz",
+				"tar", "-xf", "openssl-3.2.0.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -757,12 +757,12 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.1.3.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.2.0.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-3.1.3.tar.gz",
+				"tar", "-xf", "openssl-3.2.0.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -812,12 +812,12 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.1.3.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.2.0.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-3.1.3.tar.gz",
+				"tar", "-xf", "openssl-3.2.0.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -867,12 +867,12 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.1.3.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.2.0.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-3.1.3.tar.gz",
+				"tar", "-xf", "openssl-3.2.0.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -1738,12 +1738,12 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.7.tar.gz",
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.10.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "tor-0.4.8.7.tar.gz",
+				"tar", "-xf", "tor-0.4.8.10.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -1815,12 +1815,12 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.7.tar.gz",
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.10.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "tor-0.4.8.7.tar.gz",
+				"tar", "-xf", "tor-0.4.8.10.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -1892,12 +1892,12 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.7.tar.gz",
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.10.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "tor-0.4.8.7.tar.gz",
+				"tar", "-xf", "tor-0.4.8.10.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -1969,12 +1969,12 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.7.tar.gz",
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.10.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "tor-0.4.8.7.tar.gz",
+				"tar", "-xf", "tor-0.4.8.10.tar.gz",
 			},
 		}, {
 			Env: []string{},

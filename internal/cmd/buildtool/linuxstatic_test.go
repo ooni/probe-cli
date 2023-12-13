@@ -49,6 +49,7 @@ func TestLinuxStaticBuildAll(t *testing.T) {
 				"CGO_ENABLED=1",
 				"GOARCH=arm64",
 				"GOOS=linux",
+				"CGO_CFLAGS=-D_LARGEFILE64_SOURCE",
 			},
 			Argv: []string{
 				"go", "build", "-tags", "ooni_psiphon_config",
@@ -62,6 +63,7 @@ func TestLinuxStaticBuildAll(t *testing.T) {
 				"CGO_ENABLED=1",
 				"GOARCH=arm64",
 				"GOOS=linux",
+				"CGO_CFLAGS=-D_LARGEFILE64_SOURCE",
 			},
 			Argv: []string{
 				"go", "build", "-tags", "ooni_psiphon_config",
@@ -84,6 +86,7 @@ func TestLinuxStaticBuildAll(t *testing.T) {
 				"CGO_ENABLED=1",
 				"GOARCH=amd64",
 				"GOOS=linux",
+				"CGO_CFLAGS=-D_LARGEFILE64_SOURCE",
 			},
 			Argv: []string{
 				"go", "build", "-ldflags", "-s -w -extldflags -static",
@@ -96,6 +99,7 @@ func TestLinuxStaticBuildAll(t *testing.T) {
 				"CGO_ENABLED=1",
 				"GOARCH=amd64",
 				"GOOS=linux",
+				"CGO_CFLAGS=-D_LARGEFILE64_SOURCE",
 			},
 			Argv: []string{
 				"go", "build", "-ldflags", "-s -w -extldflags -static",
@@ -118,6 +122,7 @@ func TestLinuxStaticBuildAll(t *testing.T) {
 				"GOARCH=arm",
 				"GOARM=7",
 				"GOOS=linux",
+				"CGO_CFLAGS=-D_LARGEFILE64_SOURCE",
 			},
 			Argv: []string{
 				"go", "build", "-tags", "ooni_psiphon_config",
@@ -132,6 +137,7 @@ func TestLinuxStaticBuildAll(t *testing.T) {
 				"GOARCH=arm",
 				"GOARM=7",
 				"GOOS=linux",
+				"CGO_CFLAGS=-D_LARGEFILE64_SOURCE",
 			},
 			Argv: []string{
 				"go", "build", "-tags", "ooni_psiphon_config",
@@ -155,6 +161,7 @@ func TestLinuxStaticBuildAll(t *testing.T) {
 				"GOARCH=arm",
 				"GOARM=6",
 				"GOOS=linux",
+				"CGO_CFLAGS=-D_LARGEFILE64_SOURCE",
 			},
 			Argv: []string{
 				"go", "build", "-ldflags", "-s -w -extldflags -static",
@@ -168,6 +175,7 @@ func TestLinuxStaticBuildAll(t *testing.T) {
 				"GOARCH=arm",
 				"GOARM=6",
 				"GOOS=linux",
+				"CGO_CFLAGS=-D_LARGEFILE64_SOURCE",
 			},
 			Argv: []string{
 				"go", "build", "-ldflags", "-s -w -extldflags -static",
