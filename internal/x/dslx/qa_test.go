@@ -11,10 +11,10 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/gopacket/layers"
 	"github.com/ooni/netem"
-	"github.com/ooni/probe-cli/v3/internal/dslx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/x/dslx"
 )
 
 // qaStringLessFunc is an utility function to force cmp.Diff to sort string
