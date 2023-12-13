@@ -8,14 +8,13 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/Psiphon-Labs/psiphon-tunnel-core/ClientLibrary/clientlib"
+	"github.com/ooni/probe-cli/v3/internal/feature/psiphonfeat"
 )
 
 // mockableStartPsiphon allows us to test for psiphon startup failures.
 var mockableStartPsiphon = func(
-	ctx context.Context, config []byte, workdir string) (*clientlib.PsiphonTunnel, error) {
-	return clientlib.StartTunnel(ctx, config, "", clientlib.Parameters{
-		DataRootDirectory: &workdir}, nil, nil)
+	ctx context.Context, config []byte, workdir string) (psiphonfeat.Tunnel, error) {
+	return psiphonfeat.Start(ctx, config, workdir)
 }
 
 // psiphonTunnel is a psiphon tunnel
@@ -24,7 +23,7 @@ type psiphonTunnel struct {
 	bootstrapTime time.Duration
 
 	// tunnel is the underlying psiphon tunnel
-	tunnel *clientlib.PsiphonTunnel
+	tunnel psiphonfeat.Tunnel
 }
 
 // psiphonMakeWorkingDir creates the working directory
@@ -81,7 +80,7 @@ func (t *psiphonTunnel) SOCKS5ProxyURL() *url.URL {
 	return &url.URL{
 		Scheme: "socks5",
 		Host: net.JoinHostPort(
-			"127.0.0.1", fmt.Sprintf("%d", t.tunnel.SOCKSProxyPort)),
+			"127.0.0.1", fmt.Sprintf("%d", t.tunnel.GetSOCKSProxyPort())),
 	}
 }
 
