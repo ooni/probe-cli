@@ -22,7 +22,7 @@ require (
 	github.com/miekg/dns v1.1.57
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.7.1
-	github.com/ooni/netem v0.0.0-20230920215742-15f3ffec0107
+	github.com/ooni/netem v0.0.0-20231213064826-3cc1ea5e942c
 	github.com/ooni/oocrypto v0.5.7
 	github.com/ooni/oohttp v0.6.7
 	github.com/ooni/probe-assets v0.21.0
@@ -81,9 +81,9 @@ require (
 	go.uber.org/mock v0.3.0 // indirect
 	golang.org/x/exp v0.0.0-20231005195138-3e424a577f31 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20230522175609-2e198f4a06a1 // indirect
-	golang.org/x/time v0.3.0 // indirect
+	golang.org/x/time v0.5.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	gvisor.dev/gvisor v0.0.0-20230603040744-5c9219dedd33 // indirect
+	gvisor.dev/gvisor v0.0.0-20230922204349-b3f36d574a7f // indirect
 )
 
 require (
@@ -148,9 +148,9 @@ require (
 	github.com/xtaci/kcp-go/v5 v5.6.2 // indirect
 	github.com/xtaci/smux v1.5.24 // indirect
 	gitlab.com/yawning/bsaes.git v0.0.0-20190805113838-0a714cd429ec // indirect
-	golang.org/x/mod v0.13.0 // indirect
+	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/term v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	golang.org/x/tools v0.14.0 // indirect
+	golang.org/x/tools v0.16.1 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 )
