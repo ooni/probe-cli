@@ -48,7 +48,7 @@ func (lx *loader) onQUICHandshake(raw json.RawMessage) error {
 		}
 	}
 
-	// instantiate the ASM stage
+	// instantiate the stage
 	sx := &dslvm.QUICHandshakeStage{
 		Input:              input,
 		InsecureSkipVerify: value.InsecureSkipVerify,
