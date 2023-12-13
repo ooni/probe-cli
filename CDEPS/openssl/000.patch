@@ -2,7 +2,7 @@ diff --git a/crypto/comp/c_zlib.c b/crypto/comp/c_zlib.c
 index b819337..e479bd6 100644
 --- a/crypto/comp/c_zlib.c
 +++ b/crypto/comp/c_zlib.c
-@@ -34,6 +34,10 @@ static COMP_METHOD zlib_method_nozlib = {
+@@ -34,6 +34,10 @@ COMP_METHOD *COMP_zlib(void);
 
  # include <zlib.h>
 
