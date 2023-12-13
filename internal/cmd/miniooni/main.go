@@ -174,6 +174,7 @@ func main() {
 
 	registerAllExperiments(rootCmd, &globalOptions)
 	registerOONIRun(rootCmd, &globalOptions)
+	registerJavaScript(rootCmd, &globalOptions)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
