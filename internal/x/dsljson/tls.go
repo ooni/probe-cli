@@ -47,7 +47,7 @@ func (lx *loader) onTLSHandshake(raw json.RawMessage) error {
 		}
 	}
 
-	// instantiate the ASM stage
+	// instantiate the stage
 	sx := &dslvm.TLSHandshakeStage{
 		Input:              input,
 		InsecureSkipVerify: value.InsecureSkipVerify,

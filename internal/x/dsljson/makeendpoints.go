@@ -31,7 +31,7 @@ func (lx *loader) onMakeEndpoints(raw json.RawMessage) error {
 		return err
 	}
 
-	// instantiate the ASM stage
+	// instantiate the stage
 	sx := &dslvm.MakeEndpointsStage{
 		Input:  input,
 		Output: output,

@@ -31,7 +31,7 @@ func (lx *loader) onTCPConnect(raw json.RawMessage) error {
 		return err
 	}
 
-	// instantiate the ASM stage
+	// instantiate the stage
 	sx := &dslvm.TCPConnectStage{
 		Input:  input,
 		Output: output,

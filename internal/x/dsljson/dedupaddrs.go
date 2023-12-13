@@ -24,7 +24,7 @@ func (lx *loader) onDedupAddrs(raw json.RawMessage) error {
 		return err
 	}
 
-	// instantiate the ASM stage
+	// instantiate the stage
 	sx := &dslvm.DedupAddrsStage{
 		Inputs: []<-chan string{},
 		Output: output,

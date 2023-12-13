@@ -26,7 +26,7 @@ func (lx *loader) onDNSLookupUDP(raw json.RawMessage) error {
 		return err
 	}
 
-	// instantiate the ASM stage
+	// instantiate the stage
 	sx := &dslvm.DNSLookupUDPStage{
 		Domain:   value.Domain,
 		Output:   output,

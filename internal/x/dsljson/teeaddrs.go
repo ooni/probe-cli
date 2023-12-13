@@ -24,7 +24,7 @@ func (lx *loader) onTeeAddrs(raw json.RawMessage) error {
 		return err
 	}
 
-	// instantiate the ASM stage
+	// instantiate the stage
 	sx := &dslvm.TeeAddrsStage{
 		Input:   input,
 		Outputs: []chan<- string{},

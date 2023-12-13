@@ -25,7 +25,7 @@ func (lx *loader) onGetaddrinfo(raw json.RawMessage) error {
 		return err
 	}
 
-	// instantiate the ASM stage
+	// instantiate the stage
 	sx := &dslvm.GetaddrinfoStage{
 		Domain: value.Domain,
 		Output: output,
