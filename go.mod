@@ -19,7 +19,7 @@ require (
 	github.com/gorilla/websocket v1.5.1
 	github.com/hexops/gotextdiff v1.0.3
 	github.com/mattn/go-colorable v0.1.13
-	github.com/miekg/dns v1.1.57
+	github.com/miekg/dns v1.1.56
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.7.1
 	github.com/ooni/netem v0.0.0-20230920215742-15f3ffec0107
