@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/feature/oohttpfeat"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -86,20 +85,19 @@ func TestNewHTTPTransport(t *testing.T) {
 			t.Fatal("invalid tls dialer")
 		}
 		stdlib := connectionsCloser.HTTPTransport.(*httpTransportStdlib)
-		underlying := stdlib.StdlibTransport
-		if underlying.GetForceAttemptHTTP2() != oohttpfeat.ExpectedForceAttemptHTTP2 {
+		if !stdlib.StdlibTransport.ForceAttemptHTTP2 {
 			t.Fatal("invalid ForceAttemptHTTP2")
 		}
-		if !underlying.GetDisableCompression() {
+		if !stdlib.StdlibTransport.DisableCompression {
 			t.Fatal("invalid DisableCompression")
 		}
-		if underlying.GetMaxConnsPerHost() != 1 {
+		if stdlib.StdlibTransport.MaxConnsPerHost != 1 {
 			t.Fatal("invalid MaxConnPerHost")
 		}
-		if underlying.GetDialTLSContext() == nil {
+		if stdlib.StdlibTransport.DialTLSContext == nil {
 			t.Fatal("invalid DialTLSContext")
 		}
-		if underlying.GetDialContext() == nil {
+		if stdlib.StdlibTransport.DialContext == nil {
 			t.Fatal("invalid DialContext")
 		}
 	})

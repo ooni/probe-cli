@@ -4,12 +4,12 @@ import (
 	"crypto/tls"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/feature/oohttpfeat"
+	oohttp "github.com/ooni/oohttp"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // HTTPTransportOption is an initialization option for [NewHTTPTransport].
-type HTTPTransportOption func(txp *oohttpfeat.HTTPTransport)
+type HTTPTransportOption func(txp *oohttp.Transport)
 
 // NewHTTPTransport is the high-level factory to create a [model.HTTPTransport] using
 // github.com/ooni/oohttp as the HTTP library with HTTP/1.1 and HTTP2 support.
@@ -41,28 +41,20 @@ type HTTPTransportOption func(txp *oohttpfeat.HTTPTransport)
 // This factory is the RECOMMENDED way of creating a [model.HTTPTransport].
 func NewHTTPTransportWithOptions(logger model.Logger,
 	dialer model.Dialer, tlsDialer model.TLSDialer, options ...HTTPTransportOption) model.HTTPTransport {
-	// Using oohttp to support any TLS library iff it's possible to do so, otherwise we
-	// are going to use the standard library w/o using HTTP/2 support.
-	txp := oohttpfeat.NewHTTPTransport()
+	// Using oohttp to support any TLS library.
+	txp := oohttp.DefaultTransport.(*oohttp.Transport).Clone()
 
 	// This wrapping ensures that we always have a timeout when we
 	// are using HTTP; see https://github.com/ooni/probe/issues/1609.
 	dialer = &httpDialerWithReadTimeout{dialer}
-	txp.SetDialContext(dialer.DialContext)
+	txp.DialContext = dialer.DialContext
 	tlsDialer = &httpTLSDialerWithReadTimeout{tlsDialer}
-	txp.SetDialTLSContext(tlsDialer.DialTLSContext)
+	txp.DialTLSContext = tlsDialer.DialTLSContext
 
 	// As documented, disable proxies and force HTTP/2
-	txp.SetDisableCompression(true)
-	txp.SetProxy(nil)
-
-	// We now rely on feature/oohttpfeat to decide whether it's
-	// possible for us to actually enable HTTP/2.
-	//
-	//	txp.ForceAttemptHTTP2 = true
-	//
-	// Please, keep this comment until at least 3.21 because it provides
-	// an historical documentation of how we changed the codebase.
+	txp.DisableCompression = true
+	txp.Proxy = nil
+	txp.ForceAttemptHTTP2 = true
 
 	// Apply all the required options
 	for _, option := range options {
@@ -71,7 +63,7 @@ func NewHTTPTransportWithOptions(logger model.Logger,
 
 	// Return a fully wrapped HTTP transport
 	return WrapHTTPTransport(logger, &httpTransportConnectionsCloser{
-		HTTPTransport: &httpTransportStdlib{txp},
+		HTTPTransport: &httpTransportStdlib{&oohttp.StdlibTransport{Transport: txp}},
 		Dialer:        dialer,
 		TLSDialer:     tlsDialer,
 	})
@@ -80,27 +72,27 @@ func NewHTTPTransportWithOptions(logger model.Logger,
 // HTTPTransportOptionProxyURL configures the transport to use the given proxyURL
 // or disables proxying (already the default) if the proxyURL is nil.
 func HTTPTransportOptionProxyURL(proxyURL *url.URL) HTTPTransportOption {
-	return func(txp *oohttpfeat.HTTPTransport) {
-		txp.SetProxy(func(r *oohttpfeat.HTTPRequest) (*url.URL, error) {
+	return func(txp *oohttp.Transport) {
+		txp.Proxy = func(r *oohttp.Request) (*url.URL, error) {
 			// "If Proxy is nil or returns a nil *URL, no proxy is used."
 			return proxyURL, nil
-		})
+		}
 	}
 }
 
 // HTTPTransportOptionMaxConnsPerHost configures the .MaxConnPerHosts field, which
 // otherwise uses the default set in github.com/ooni/oohttp.
 func HTTPTransportOptionMaxConnsPerHost(value int) HTTPTransportOption {
-	return func(txp *oohttpfeat.HTTPTransport) {
-		txp.SetMaxConnsPerHost(value)
+	return func(txp *oohttp.Transport) {
+		txp.MaxConnsPerHost = value
 	}
 }
 
 // HTTPTransportOptionDisableCompression configures the .DisableCompression field, which
 // otherwise is set to true, so that this code is ready for measuring out of the box.
 func HTTPTransportOptionDisableCompression(value bool) HTTPTransportOption {
-	return func(txp *oohttpfeat.HTTPTransport) {
-		txp.SetDisableCompression(value)
+	return func(txp *oohttp.Transport) {
+		txp.DisableCompression = value
 	}
 }
 
@@ -112,7 +104,7 @@ func HTTPTransportOptionDisableCompression(value bool) HTTPTransportOption {
 // this limitation. Future releases MIGHT use a different technique and, as such,
 // we MAY remove this option when we don't need it anymore.
 func HTTPTransportOptionTLSClientConfig(config *tls.Config) HTTPTransportOption {
-	return func(txp *oohttpfeat.HTTPTransport) {
-		txp.SetTLSClientConfig(config)
+	return func(txp *oohttp.Transport) {
+		txp.TLSClientConfig = config
 	}
 }
