@@ -53,6 +53,8 @@ func ooniRunMain(ctx context.Context,
 			logger.Warnf("oonirun: parsing OONI Run v2 descriptor failed: %s", err.Error())
 			continue
 		}
+		logger.Infof("oonirun: running '%s'", descr.Name)
+		logger.Infof("oonirun: link authored by '%s'", descr.Author)
 		if err := oonirun.V2MeasureDescriptor(ctx, cfg, &descr); err != nil {
 			logger.Warnf("oonirun: running link failed: %s", err.Error())
 			continue
