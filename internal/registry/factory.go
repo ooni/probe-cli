@@ -141,13 +141,13 @@ func (b *Factory) setOptionInt(field reflect.Value, value any) error {
 		return nil
 	case float64:
 		if math.IsNaN(v) || math.IsInf(v, 0) {
-			return fmt.Errorf("%w from NaN, +-Inf: %v", ErrCannotSetIntegerOption, value)
+			return fmt.Errorf("%w from: %v", ErrCannotSetIntegerOption, value)
 		}
 		if math.Trunc(v) != v {
-			return fmt.Errorf("%w from a value of type %T", ErrCannotSetIntegerOption, value)
+			return fmt.Errorf("%w from: %v", ErrCannotSetIntegerOption, value)
 		}
 		if v > jsonMaxInteger || v < jsonMinInteger {
-			return fmt.Errorf("%w from a too large or too small float64: %v", ErrCannotSetIntegerOption, value)
+			return fmt.Errorf("%w from: %v", ErrCannotSetIntegerOption, value)
 		}
 		field.SetInt(int64(v))
 		return nil
