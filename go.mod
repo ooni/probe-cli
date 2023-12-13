@@ -29,7 +29,7 @@ require (
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/pion/stun v0.6.1
 	github.com/pkg/errors v0.9.1
-	github.com/quic-go/quic-go v0.39.0
+	github.com/quic-go/quic-go v0.40.0
 	github.com/rogpeppe/go-internal v1.11.0
 	github.com/rubenv/sql-migrate v1.5.2
 	github.com/schollz/progressbar/v3 v3.14.1
@@ -68,7 +68,7 @@ require (
 	github.com/pion/transport/v2 v2.2.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/quic-go/qpack v0.4.0 // indirect
-	github.com/quic-go/qtls-go1-20 v0.3.4 // indirect
+	github.com/quic-go/qtls-go1-20 v0.4.1 // indirect
 	github.com/refraction-networking/conjure v0.7.10-0.20231110193225-e4749a9dedc9 // indirect
 	github.com/refraction-networking/ed25519 v0.1.2 // indirect
 	github.com/refraction-networking/obfs4 v0.1.2 // indirect
