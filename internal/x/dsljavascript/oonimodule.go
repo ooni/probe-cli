@@ -11,7 +11,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/x/dsljson"
 )
 
-// newModuleOONI creates the console module in JavaScript
+// newModuleOONI creates the _ooni module in JavaScript
 func (vm *VM) newModuleOONI(gojaVM *goja.Runtime, mod *goja.Object) {
 	runtimex.Assert(vm.vm == gojaVM, "dsljavascript: unexpected gojaVM pointer value")
 	exports := mod.Get("exports").(*goja.Object)
