@@ -13,7 +13,7 @@ import (
 func registerJavaScript(rootCmd *cobra.Command, globalOptions *Options) {
 	subCmd := &cobra.Command{
 		Use:   "javascript",
-		Short: "Runs a given OONI Run v2 link",
+		Short: "Very experimental command to run JavaScript snippets",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			runtimex.Assert(len(args) == 1, "expected exactly one argument")
