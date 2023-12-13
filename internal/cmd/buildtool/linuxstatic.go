@@ -85,6 +85,7 @@ func linuxStaticBuildPackage(
 	envp.Append("CGO_ENABLED", "1")
 	envp.Append("GOOS", "linux")
 	envp.Append("GOARCH", goarch)
+	envp.Append("CGO_CFLAGS", "-D_LARGEFILE64_SOURCE")
 	if goarm > 0 {
 		envp.Append("GOARM", strconv.FormatInt(goarm, 10))
 	}
