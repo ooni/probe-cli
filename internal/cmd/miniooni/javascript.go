@@ -1,6 +1,8 @@
 package main
 
 import (
+	"path/filepath"
+
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/x/dsljavascript"
@@ -22,14 +24,17 @@ func registerJavaScript(rootCmd *cobra.Command, globalOptions *Options) {
 }
 
 func javaScriptMain(scriptPath string) {
-	// TODO(bassosimone): a future implementation will most likely need
-	// to run scripts located in a more convenient location.
+	// TODO(bassosimone): for an initial prototype, using a local directory is
+	// good, but, if we make this more production ready, we probably need to define
+	// a specific location under the $OONI_HOME.
 	config := &dsljavascript.VMConfig{
 		Logger:        log.Log,
-		ScriptBaseDir: "./javascript",
+		ScriptBaseDir: filepath.Join(".", "./javascript"),
 	}
+
 	log.Warnf("The javascript subcommand is highly experimental and may be removed")
 	log.Warnf("or heavily modified without prior notice. For more information, for now")
 	log.Warnf("see https://github.com/bassosimone/2023-12-09-ooni-javascript.")
+
 	runtimex.Try0(dsljavascript.RunScript(config, scriptPath))
 }
