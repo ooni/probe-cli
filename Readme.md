@@ -60,9 +60,10 @@ Debian/Ubuntu. Once `ooniprobe` is installed, refer to the
 
 ## Developer instructions
 
-This repository requires _exactly_ the Go version mentioned by the
-[GOVERSION](GOVERSION) file (i.e., go1.20.12). Using a different version of
-Go _may_ work as intended but is not recommended: we depend
+This repository _should really_ use the Go version mentioned by the
+[GOVERSION](GOVERSION) file (i.e., go1.20.12). Using a later version of
+Go _should_ work as intended. Using an older version of Go is
+_definitely not recommended_ and _may not even compile_. Here's why: we rely
 on packages forked from the standard library; so, it is
 more robust to use the same version of Go from which
 we forked those packages from.
