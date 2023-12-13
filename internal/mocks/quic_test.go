@@ -239,29 +239,29 @@ func TestQUICEarlyConnection(t *testing.T) {
 		}
 	})
 
-	t.Run("SendDatagram", func(t *testing.T) {
+	t.Run("SendMessage", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		qconn := &QUICEarlyConnection{
-			MockSendDatagram: func(b []byte) error {
+			MockSendMessage: func(b []byte) error {
 				return expected
 			},
 		}
 		b := make([]byte, 17)
-		err := qconn.SendDatagram(b)
+		err := qconn.SendMessage(b)
 		if !errors.Is(err, expected) {
 			t.Fatal("not the error we expected", err)
 		}
 	})
 
-	t.Run("ReceiveDatagram", func(t *testing.T) {
+	t.Run("ReceiveMessage", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		ctx := context.Background()
 		qconn := &QUICEarlyConnection{
-			MockReceiveDatagram: func(ctx context.Context) ([]byte, error) {
+			MockReceiveMessage: func(ctx context.Context) ([]byte, error) {
 				return nil, expected
 			},
 		}
-		b, err := qconn.ReceiveDatagram(ctx)
+		b, err := qconn.ReceiveMessage(ctx)
 		if !errors.Is(err, expected) {
 			t.Fatal("not the error we expected", err)
 		}
