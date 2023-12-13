@@ -11,8 +11,6 @@ require (
 	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5
 	github.com/cloudflare/circl v1.3.6
 	github.com/cretz/bine v0.2.0
-	github.com/dop251/goja v0.0.0-20231027120936-b396bb4c349d
-	github.com/dop251/goja_nodejs v0.0.0-20231122114759-e84d9a924c5c
 	github.com/fatih/color v1.16.0
 	github.com/google/go-cmp v0.6.0
 	github.com/google/gopacket v1.1.19
@@ -56,10 +54,8 @@ require (
 	github.com/Psiphon-Labs/tls-tris v0.0.0-20230824155421-58bf6d336a9a // indirect
 	github.com/andybalholm/brotli v1.0.6 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/dlclark/regexp2 v1.10.0 // indirect
 	github.com/flynn/noise v1.0.1 // indirect
 	github.com/gaukas/godicttls v0.0.4 // indirect
-	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/pprof v0.0.0-20231212022811-ec68065c825e // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
