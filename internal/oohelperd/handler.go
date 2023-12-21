@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/cookiejar"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -31,6 +32,10 @@ const MaxAcceptableBodySize = 1 << 24
 type Handler struct {
 	// BaseLogger is the MANDATORY logger to use.
 	BaseLogger model.Logger
+
+	// CountRequests is the MANDATORY count of the number of
+	// requests that are currently in flight.
+	CountRequests *atomic.Int64
 
 	// Indexer is the MANDATORY atomic integer used to assign an index to requests.
 	Indexer *atomic.Int64
@@ -67,6 +72,7 @@ var _ http.Handler = &Handler{}
 func NewHandler() *Handler {
 	return &Handler{
 		BaseLogger:        log.Log,
+		CountRequests:     &atomic.Int64{},
 		Indexer:           &atomic.Int64{},
 		MaxAcceptableBody: MaxAcceptableBodySize,
 		Measure:           measure,
@@ -103,6 +109,27 @@ func NewHandler() *Handler {
 	}
 }
 
+// handlerGetPerUserAgentInflightLimit returns the maximum number of requests
+// in flight that we're willing to tolerate. The returned value depends on the
+// user agent to prioritize official clients during high-load periods.
+func handlerGetPerUserAgentInflightLimit(userAgent string) int64 {
+	const (
+		officialClientsThreshold = 100
+		otherClientsThreshold    = 50
+	)
+
+	if strings.HasPrefix(userAgent, "ooniprobe-android-unattended/") ||
+		strings.HasPrefix(userAgent, "ooniprobe-cli-unattended/") ||
+		strings.HasPrefix(userAgent, "ooniprobe-android/") ||
+		strings.HasPrefix(userAgent, "ooniprobe-cli/") ||
+		strings.HasPrefix(userAgent, "ooniprobe-ios/") ||
+		strings.HasPrefix(userAgent, "ooniprobe-ios-unattended/") {
+		return officialClientsThreshold
+	}
+
+	return otherClientsThreshold
+}
+
 // ServeHTTP implements http.Handler.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// track the number of in-flight requests
@@ -122,6 +149,15 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(400)
 		return
 	}
+
+	// protect against too many requests in flight
+	if h.CountRequests.Load() > handlerGetPerUserAgentInflightLimit(req.Header.Get("user-agent")) {
+		metricRequestsCount.WithLabelValues("503", "service_unavailable").Inc()
+		w.WriteHeader(503)
+		return
+	}
+	h.CountRequests.Add(1)
+	defer h.CountRequests.Add(-1)
 
 	// read and parse request body
 	reader := io.LimitReader(req.Body, h.MaxAcceptableBody)
