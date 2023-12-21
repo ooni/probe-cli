@@ -118,12 +118,7 @@ func handlerGetPerUserAgentInflightLimit(userAgent string) int64 {
 		otherClientsThreshold    = 50
 	)
 
-	if strings.HasPrefix(userAgent, "ooniprobe-android-unattended/") ||
-		strings.HasPrefix(userAgent, "ooniprobe-cli-unattended/") ||
-		strings.HasPrefix(userAgent, "ooniprobe-android/") ||
-		strings.HasPrefix(userAgent, "ooniprobe-cli/") ||
-		strings.HasPrefix(userAgent, "ooniprobe-ios/") ||
-		strings.HasPrefix(userAgent, "ooniprobe-ios-unattended/") {
+	if strings.HasPrefix(userAgent, "ooniprobe-") {
 		return officialClientsThreshold
 	}
 
