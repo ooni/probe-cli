@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
 // simpleRequestForHandler is a simple request for the [handler].
@@ -67,10 +69,18 @@ func TestHandlerWorkingAsIntended(t *testing.T) {
 		// reqContentType is the content-type for the HTTP request
 		reqContentType string
 
+		// reqUserAgent is the optional user-agent to use
+		// when preparing the HTTP request
+		reqUserAgent string
+
 		// measureFn optionally allows overriding the default
 		// value of the handler.Measure function
 		measureFn func(
 			ctx context.Context, config *Handler, creq *model.THRequest) (*model.THResponse, error)
+
+		// initialCountRequests is the initial value to
+		// use for the CountRequests field.
+		initialCountRequests int64
 
 		// reqBody is the request body to use
 		reqBody io.Reader
@@ -146,6 +156,31 @@ func TestHandlerWorkingAsIntended(t *testing.T) {
 		respStatusCode:  200,
 		respContentType: "application/json",
 		parseBody:       true,
+	}, {
+		name:                 "we throttle miniooni with 25+ requests inflight",
+		reqMethod:            "POST",
+		reqContentType:       "application/json",
+		reqUserAgent:         fmt.Sprintf("miniooni/%s ooniprobe-engine/%s", version.Version, version.Version),
+		measureFn:            measure,
+		initialCountRequests: 25,
+		reqBody:              strings.NewReader(simpleRequestForHandler),
+		respStatusCode:       503,
+		respContentType:      "",
+		parseBody:            false,
+	}, {
+		name:           "we do not throttle ooniprobe-cli with <= 49 requests inflight",
+		reqMethod:      "POST",
+		reqContentType: "application/json",
+		reqUserAgent:   fmt.Sprintf("ooniprobe-cli/%s ooniprobe-engine/%s", version.Version, version.Version),
+		measureFn: func(ctx context.Context, config *Handler, creq *model.THRequest) (*model.THResponse, error) {
+			cresp := &model.THResponse{}
+			return cresp, nil
+		},
+		initialCountRequests: 49,
+		reqBody:              strings.NewReader(simpleRequestForHandler),
+		respStatusCode:       200,
+		respContentType:      "application/json",
+		parseBody:            true,
 	}}
 
 	for _, expect := range expectations {
@@ -154,6 +189,11 @@ func TestHandlerWorkingAsIntended(t *testing.T) {
 			handler := NewHandler()
 			if expect.measureFn != nil {
 				handler.Measure = expect.measureFn
+			}
+
+			// configure the CountRequests field if needed
+			if expect.initialCountRequests > 0 {
+				handler.CountRequests.Add(expect.initialCountRequests) // 0 + value = value :-)
 			}
 
 			// create request
@@ -168,6 +208,9 @@ func TestHandlerWorkingAsIntended(t *testing.T) {
 			}
 			if expect.reqContentType != "" {
 				req.Header.Add("content-type", expect.reqContentType)
+			}
+			if expect.reqUserAgent != "" {
+				req.Header.Add("user-agent", expect.reqUserAgent)
 			}
 
 			// create response writer
