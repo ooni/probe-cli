@@ -111,6 +111,8 @@ func NewHandler() *Handler {
 
 // handlerShouldThrottleClient returns true if the handler should throttle
 // the current client depending on the instantaneous load.
+//
+// See https://github.com/ooni/probe/issues/2649 for context.
 func handlerShouldThrottleClient(inflight int64, userAgent string) bool {
 	switch {
 	// With less than 25 inflight requests we allow all clients
