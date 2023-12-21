@@ -144,7 +144,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	elapsed := time.Since(started)
 
 	// track the time required to produce a response
-	metricWCTaskDurationSeconds.Observe(float64(elapsed.Seconds()))
+	metricWCTaskDurationSeconds.Observe(elapsed.Seconds())
 
 	// handle the case of fundamental failure
 	if err != nil {

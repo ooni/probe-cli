@@ -75,6 +75,7 @@ func httpDo(ctx context.Context, config *httpConfig) {
 		ol.Stop(err)
 		return
 	}
+
 	// The original test helper failed with extra headers while here
 	// we're implementing (for now?) a more liberal approach.
 	for k, vs := range config.Headers {
@@ -85,9 +86,19 @@ func httpDo(ctx context.Context, config *httpConfig) {
 			}
 		}
 	}
+
 	clnt := config.NewClient(config.Logger)
 	defer clnt.CloseIdleConnections()
+
+	// take the time before starting the HTTP task
+	t0 := time.Now()
+
 	resp, err := clnt.Do(req)
+
+	// publish the elapsed time required for measuring HTTP
+	elapsed := time.Since(t0)
+	metricHTTPTaskDurationSeconds.Observe(elapsed.Seconds())
+
 	if err != nil {
 		// fix: emit -1 like the old test helper does
 		config.Out <- ctrlHTTPResponse{

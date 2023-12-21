@@ -54,10 +54,17 @@ func dnsDo(ctx context.Context, config *dnsConfig) {
 	reso := config.NewResolver(config.Logger)
 	defer reso.CloseIdleConnections()
 
+	// take the time before running this micro-measurement
+	started := time.Now()
+
 	// perform and log the actual DNS lookup
 	ol := logx.NewOperationLogger(config.Logger, "DNSLookup %s", config.Domain)
 	addrs, err := reso.LookupHost(ctx, config.Domain)
 	ol.Stop(err)
+
+	// publish the time required for running this micro-measurement
+	elapsed := time.Since(started)
+	metricDNSTaskDurationSeconds.Observe(elapsed.Seconds())
 
 	// make sure we return an empty slice on failure because this
 	// is what the legacy TH would have done.
