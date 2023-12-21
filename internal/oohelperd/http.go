@@ -57,11 +57,18 @@ type httpConfig struct {
 
 // httpDo performs the HTTP check.
 func httpDo(ctx context.Context, config *httpConfig) {
+	// make sure we log about the operation
 	ol := logx.NewOperationLogger(config.Logger, "GET %s", config.URL)
+
+	// we want to limit the maximum amount of time we spend here
 	const timeout = 15 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
+
+	// we want the caller to know when we're done running
 	defer config.Wg.Done()
+
+	// now let's create an HTTP request
 	req, err := http.NewRequestWithContext(ctx, "GET", config.URL, nil)
 	if err != nil {
 		// fix: emit -1 like the old test helper does
@@ -75,8 +82,9 @@ func httpDo(ctx context.Context, config *httpConfig) {
 		ol.Stop(err)
 		return
 	}
+
 	// The original test helper failed with extra headers while here
-	// we're implementing (for now?) a more liberal approach.
+	// we're implementing a more liberal approach.
 	for k, vs := range config.Headers {
 		switch strings.ToLower(k) {
 		case "user-agent", "accept", "accept-language":
@@ -85,9 +93,22 @@ func httpDo(ctx context.Context, config *httpConfig) {
 			}
 		}
 	}
+
+	// we need a client because we want to follow redirects
 	clnt := config.NewClient(config.Logger)
 	defer clnt.CloseIdleConnections()
+
+	// take the time before starting the HTTP task
+	t0 := time.Now()
+
+	// fetch the webpage following redirects
 	resp, err := clnt.Do(req)
+
+	// publish the elapsed time required for measuring HTTP
+	elapsed := time.Since(t0)
+	metricHTTPTaskDurationSeconds.Observe(elapsed.Seconds())
+
+	// handle the case of failure
 	if err != nil {
 		// fix: emit -1 like the old test helper does
 		config.Out <- ctrlHTTPResponse{
@@ -100,20 +121,29 @@ func httpDo(ctx context.Context, config *httpConfig) {
 		ol.Stop(err)
 		return
 	}
+
+	// make sure we eventually close the body
 	defer resp.Body.Close()
+
+	// copy headers
 	headers := make(map[string]string)
 	for k := range resp.Header {
 		headers[k] = resp.Header.Get(k)
 	}
+
+	// read the body up within a given maximum limit
+	// TODO(bassosimone): do we need to compute whether the body was truncated?
 	reader := &io.LimitedReader{R: resp.Body, N: config.MaxAcceptableBody}
 	data, err := netxlite.ReadAllContext(ctx, reader)
 	ol.Stop(err)
 
+	// optionally check whether there's an HTTP3 endpoint
 	h3Endpoint := ""
 	if config.searchForH3 {
 		h3Endpoint = discoverH3Endpoint(resp, req)
 	}
 
+	// we're good and we can emit a final response now
 	config.Out <- ctrlHTTPResponse{
 		BodyLength:           int64(len(data)),
 		DiscoveredH3Endpoint: h3Endpoint,

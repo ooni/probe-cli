@@ -69,10 +69,16 @@ type tcpTLSConfig struct {
 
 // tcpTLSDo performs the TCP and (possibly) TLS checks.
 func tcpTLSDo(ctx context.Context, config *tcpTLSConfig) {
+
+	// add an overall timeout for this task
 	const timeout = 15 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
+
+	// tell the parent when we're done
 	defer config.Wg.Done()
+
+	// assemble result and arrange for it to be written back
 	out := &tcpResultPair{
 		Address:  config.Address,
 		Endpoint: config.Endpoint,
@@ -82,6 +88,9 @@ func tcpTLSDo(ctx context.Context, config *tcpTLSConfig) {
 	defer func() {
 		config.Out <- out
 	}()
+
+	// 1: TCP dial
+
 	ol := logx.NewOperationLogger(
 		config.Logger,
 		"TCPConnect %s EnableTLS=%v SNI=%s",
@@ -89,16 +98,32 @@ func tcpTLSDo(ctx context.Context, config *tcpTLSConfig) {
 		config.EnableTLS,
 		config.URLHostname,
 	)
+
 	dialer := config.NewDialer(config.Logger)
 	defer dialer.CloseIdleConnections()
+
+	// save the time before we start connecting
+	tcpT0 := time.Now()
+
+	// establish a TCP connection
 	conn, err := dialer.DialContext(ctx, "tcp", config.Endpoint)
+
+	// publish the time required to connect
+	tcpElapsed := time.Since(tcpT0)
+	metricTCPTaskDurationSeconds.Observe(tcpElapsed.Seconds())
+
+	// make sure we fill the TCP stanza
 	out.TCP.Failure = tcpMapFailure(newfailure(err))
 	out.TCP.Status = err == nil
 	defer measurexlite.MaybeClose(conn)
+
 	if err != nil || !config.EnableTLS {
 		ol.Stop(err)
 		return
 	}
+
+	// 2: TLS handshake (if needed)
+
 	// See https://github.com/ooni/probe/issues/2413 to understand
 	// why we're using nil to force netxlite to use the cached
 	// default Mozilla cert pool.
@@ -107,15 +132,28 @@ func tcpTLSDo(ctx context.Context, config *tcpTLSConfig) {
 		RootCAs:    nil,
 		ServerName: config.URLHostname,
 	}
+
 	thx := config.NewTSLHandshaker(config.Logger)
+
+	// save time before handshake
+	tlsT0 := time.Now()
+
+	// perform the handshake
 	tlsConn, err := thx.Handshake(ctx, conn, tlsConfig)
+	measurexlite.MaybeClose(tlsConn)
+
+	// publish time required to handshake
+	tlsElapsed := time.Since(tlsT0)
+	metricTLSTaskDurationSeconds.Observe(tlsElapsed.Seconds())
+
 	ol.Stop(err)
+
+	// we're good and we can fill the result
 	out.TLS = &ctrlTLSResult{
 		ServerName: config.URLHostname,
 		Status:     err == nil,
 		Failure:    newfailure(err),
 	}
-	measurexlite.MaybeClose(tlsConn)
 }
 
 // tcpMapFailure attempts to map netxlite failures to the strings
