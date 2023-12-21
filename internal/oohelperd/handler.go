@@ -109,20 +109,22 @@ func NewHandler() *Handler {
 	}
 }
 
-// handlerGetPerUserAgentInflightLimit returns the maximum number of requests
-// in flight that we're willing to tolerate. The returned value depends on the
-// user agent to prioritize official clients during high-load periods.
-func handlerGetPerUserAgentInflightLimit(userAgent string) int64 {
-	const (
-		officialClientsThreshold = 100
-		otherClientsThreshold    = 50
-	)
+// handlerShouldThrottleClient returns true if the handler should throttle
+// the current client depending on the instantaneous load.
+func handlerShouldThrottleClient(inflight int64, userAgent string) bool {
+	switch {
+	// With less than 25 inflight requests we allow all clients
+	case inflight < 25:
+		return false
 
-	if strings.HasPrefix(userAgent, "ooniprobe-") {
-		return officialClientsThreshold
+	// With less than 50 inflight requests we give priority to official clients
+	case inflight < 50 && strings.HasPrefix(userAgent, "ooniprobe-"):
+		return false
+
+	// Otherwise, we're very sorry
+	default:
+		return true
 	}
-
-	return otherClientsThreshold
 }
 
 // ServeHTTP implements http.Handler.
@@ -146,7 +148,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// protect against too many requests in flight
-	if h.CountRequests.Load() > handlerGetPerUserAgentInflightLimit(req.Header.Get("user-agent")) {
+	if handlerShouldThrottleClient(h.CountRequests.Load(), req.Header.Get("user-agent")) {
 		metricRequestsCount.WithLabelValues("503", "service_unavailable").Inc()
 		w.WriteHeader(503)
 		return
