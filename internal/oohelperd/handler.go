@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/cookiejar"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -31,6 +32,10 @@ const MaxAcceptableBodySize = 1 << 24
 type Handler struct {
 	// BaseLogger is the MANDATORY logger to use.
 	BaseLogger model.Logger
+
+	// CountRequests is the MANDATORY count of the number of
+	// requests that are currently in flight.
+	CountRequests *atomic.Int64
 
 	// Indexer is the MANDATORY atomic integer used to assign an index to requests.
 	Indexer *atomic.Int64
@@ -67,6 +72,7 @@ var _ http.Handler = &Handler{}
 func NewHandler() *Handler {
 	return &Handler{
 		BaseLogger:        log.Log,
+		CountRequests:     &atomic.Int64{},
 		Indexer:           &atomic.Int64{},
 		MaxAcceptableBody: MaxAcceptableBodySize,
 		Measure:           measure,
@@ -103,6 +109,26 @@ func NewHandler() *Handler {
 	}
 }
 
+// handlerShouldThrottleClient returns true if the handler should throttle
+// the current client depending on the instantaneous load.
+//
+// See https://github.com/ooni/probe/issues/2649 for context.
+func handlerShouldThrottleClient(inflight int64, userAgent string) bool {
+	switch {
+	// With less than 25 inflight requests we allow all clients
+	case inflight < 25:
+		return false
+
+	// With less than 50 inflight requests we give priority to official clients
+	case inflight < 50 && strings.HasPrefix(userAgent, "ooniprobe-"):
+		return false
+
+	// Otherwise, we're very sorry
+	default:
+		return true
+	}
+}
+
 // ServeHTTP implements http.Handler.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// track the number of in-flight requests
@@ -122,6 +148,15 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(400)
 		return
 	}
+
+	// protect against too many requests in flight
+	if handlerShouldThrottleClient(h.CountRequests.Load(), req.Header.Get("user-agent")) {
+		metricRequestsCount.WithLabelValues("503", "service_unavailable").Inc()
+		w.WriteHeader(503)
+		return
+	}
+	h.CountRequests.Add(1)
+	defer h.CountRequests.Add(-1)
 
 	// read and parse request body
 	reader := io.LimitReader(req.Body, h.MaxAcceptableBody)
@@ -144,7 +179,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	elapsed := time.Since(started)
 
 	// track the time required to produce a response
-	metricWCTaskDurationSeconds.Observe(float64(elapsed.Seconds()))
+	metricWCTaskDurationSeconds.Observe(elapsed.Seconds())
 
 	// handle the case of fundamental failure
 	if err != nil {
