@@ -3,6 +3,7 @@ name: libtorlinux
 on:
   push:
     branches:
+      - "issue/2623"
       - "master"
       - "release/**"
       - "fullbuild"
