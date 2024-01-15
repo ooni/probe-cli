@@ -160,7 +160,7 @@ func TestContextCanceledWhileTorIsRunning(t *testing.T) {
 		t.Fatal("expected to see true here")
 	}
 
-	process, err := creator.New(ctx)
+	process, err := creator.New(ctx, "SocksPort", "auto")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -212,7 +212,7 @@ func TestControlConnectionExplicitlyClosed(t *testing.T) {
 		t.Fatal("expected to see true here")
 	}
 
-	process, err := creator.New(ctx)
+	process, err := creator.New(ctx, "SocksPort", "auto")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -251,5 +251,80 @@ func TestControlConnectionExplicitlyClosed(t *testing.T) {
 
 	if err := process.Wait(); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// This test ensures that we cannot make concurrent calls to the library.
+func TestConcurrentCalls(t *testing.T) {
+	// we need to simulate non zero exit code here such that we're not
+	// actually hitting into the real tor library
+
+	run := func(startch chan<- error) {
+		ctx := context.Background()
+
+		creator, good := MaybeCreator()
+		if !good {
+			t.Fatal("expected to see true here")
+		}
+
+		process, err := creator.New(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		process.(*torProcess).simulateNonzeroExitCode = true // don't actually run tor
+
+		cconn, err := process.EmbeddedControlConn()
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer cconn.Close()
+
+		// we expect a process to either start successfully or fail because
+		// there are concurrent calls ongoing
+		err = process.Start()
+		if err != nil && !errors.Is(err, ErrConcurrentCalls) {
+			t.Fatal("unexpected err", err)
+		}
+		t.Log("seen this error coming from process.Start", err)
+		startch <- err
+		if err != nil {
+			return
+		}
+
+		// the process that does not fail should complain about a nonzero
+		// exit code because it's configured in this way
+		if err := process.Wait(); !errors.Is(err, ErrNonzeroExitCode) {
+			t.Fatal("unexpected err", err)
+		}
+	}
+
+	// attempt to create N=5 parallel instances
+	//
+	// what we would expect to see is that just one instance
+	// is able to start and fails and the others fail instead
+	// during their startup phase because of concurrency
+	const concurrentRuns = 5
+	start := make(chan error, concurrentRuns)
+	for idx := 0; idx < concurrentRuns; idx++ {
+		go run(start)
+	}
+	var (
+		countGood       int
+		countConcurrent int
+	)
+	for idx := 0; idx < concurrentRuns; idx++ {
+		err := <-start
+		if err == nil {
+			countGood++
+			continue
+		}
+		if errors.Is(err, ErrConcurrentCalls) {
+			countConcurrent++
+			continue
+		}
+		t.Fatal("unexpected error", err)
+	}
+	if countGood != 1 || countConcurrent != 4 {
+		t.Fatal("expected countGood = 1 and countConcurrent = 4, got", countGood, countConcurrent)
 	}
 }

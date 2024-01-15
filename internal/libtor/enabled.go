@@ -85,6 +85,7 @@ import (
 	"runtime"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/cretz/bine/process"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -299,7 +300,10 @@ func (p *torProcess) runtor(ctx context.Context, cc net.Conn, args ...string) {
 	if !p.simulateNonzeroExitCode {
 		code = C.tor_run_main(config)
 	} else {
+		// when simulating nonzero exit code we also want to sleep for a bit
+		// of time, to make sure we're able to see overalapped runs.
 		code = 1
+		time.Sleep(time.Second)
 	}
 	if code != 0 {
 		p.waitErr <- fmt.Errorf("%w: %d", ErrNonzeroExitCode, code) // nonblocking channel
