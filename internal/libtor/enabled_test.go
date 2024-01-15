@@ -304,7 +304,7 @@ func TestConcurrentCalls(t *testing.T) {
 	// attempt to create N=5 parallel instances
 	//
 	// what we would expect to see is that just one instance
-	// is able to start and fails and the others fail instead
+	// is able to start while the other four instances fail instead
 	// during their startup phase because of concurrency
 	const concurrentRuns = 5
 	start := make(chan error, concurrentRuns)
