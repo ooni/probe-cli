@@ -312,8 +312,8 @@ func TestConcurrentCalls(t *testing.T) {
 		go run(start)
 	}
 	var (
-		countGood       int
-		countConcurrent int
+		countGood          int
+		countConcurrentErr int
 	)
 	for idx := 0; idx < concurrentRuns; idx++ {
 		err := <-start
@@ -322,12 +322,12 @@ func TestConcurrentCalls(t *testing.T) {
 			continue
 		}
 		if errors.Is(err, ErrConcurrentCalls) {
-			countConcurrent++
+			countConcurrentErr++
 			continue
 		}
 		t.Fatal("unexpected error", err)
 	}
-	if countGood != 1 || countConcurrent != 4 {
-		t.Fatal("expected countGood = 1 and countConcurrent = 4, got", countGood, countConcurrent)
+	if countGood != 1 || countConcurrentErr != 4 {
+		t.Fatal("expected countGood = 1 and countConcurrentErr = 4, got", countGood, countConcurrentErr)
 	}
 }
