@@ -331,6 +331,6 @@ func TestConcurrentCalls(t *testing.T) {
 		t.Fatal("expected countGood == 1, got", countGood)
 	}
 	if countConcurrentErr != 4 {
-		t.Fatal("expected countConcurrentErr = 4, got", countConcurrentErr)
+		t.Fatal("expected countConcurrentErr == 4, got", countConcurrentErr)
 	}
 }
