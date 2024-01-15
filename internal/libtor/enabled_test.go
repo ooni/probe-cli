@@ -294,7 +294,7 @@ func TestConcurrentCalls(t *testing.T) {
 			return
 		}
 
-		// the process that does not fail should complain about a nonzero
+		// the process that starts should complain about a nonzero
 		// exit code because it's configured in this way
 		if err := process.Wait(); !errors.Is(err, ErrNonzeroExitCode) {
 			t.Fatal("unexpected err", err)
