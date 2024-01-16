@@ -444,6 +444,7 @@ func TestHTTPDiffTitleDifferentLongWords(t *testing.T) {
 		HTTPResponseTitle:             optional.Some("Forbidden Mascetti"),
 		ExpectReturnValue:             3,
 		ExpectDifferentLongWords: optional.Some(map[string]bool{
+			// note: names normalized to lowercase
 			"antani":    true,
 			"forbidden": true,
 			"melandri":  true,
