@@ -587,59 +587,73 @@ func (wa *WebAnalysis) httpHandleFinalResponse(obs *WebObservation) {
 	wa.httpDiffTitleDifferentLongWords(obs)
 }
 
-func (wa *WebAnalysis) httpDiffBodyProportionFactor(obs *WebObservation) {
+// httpDiffBodyProportionFactor computes the body proportion factor.
+//
+// The return value--used for testing--is zero on success and negative in case of failure.
+func (wa *WebAnalysis) httpDiffBodyProportionFactor(obs *WebObservation) int64 {
 	// we should only perform the comparison for a final response
 	if !obs.HTTPResponseIsFinal.UnwrapOr(false) {
-		return
+		return -1
 	}
 
 	// we need a valid body length and the body must not be truncated
 	measurement := obs.HTTPResponseBodyLength.UnwrapOr(0)
-	if measurement <= 0 || obs.HTTPResponseBodyIsTruncated.UnwrapOr(true) {
-		return
+	if measurement <= 0 {
+		return -2
+	}
+	if obs.HTTPResponseBodyIsTruncated.UnwrapOr(true) {
+		return -3
 	}
 
 	// we also need a valid control body length
 	control := obs.ControlHTTPResponseBodyLength.UnwrapOr(0)
 	if control <= 0 {
-		return
+		return -4
 	}
 
 	// compute the body proportion factor and update the state
 	proportion := ComputeHTTPDiffBodyProportionFactor(measurement, control)
 	wa.HTTPFinalResponseDiffBodyProportionFactor = optional.Some(proportion)
+	return 0
 }
 
-func (wa *WebAnalysis) httpDiffStatusCodeMatch(obs *WebObservation) {
+// httpDiffStatusCodeMatch computes whether the status code matches.
+//
+// The return value--used for testing--is zero on success and negative in case of failure.
+func (wa *WebAnalysis) httpDiffStatusCodeMatch(obs *WebObservation) int64 {
 	// we should only perform the comparison for a final response
 	if !obs.HTTPResponseIsFinal.UnwrapOr(false) {
-		return
+		return -1
 	}
 
 	// we need a positive status code for both
 	measurement := obs.HTTPResponseStatusCode.UnwrapOr(0)
 	if measurement <= 0 {
-		return
+		return -2
 	}
 	control := obs.ControlHTTPResponseStatusCode.UnwrapOr(0)
 	if control <= 0 {
-		return
+		return -3
 	}
 
 	// update state
 	wa.HTTPFinalResponseDiffStatusCodeMatch = ComputeHTTPDiffStatusCodeMatch(measurement, control)
+	return 0
 }
 
-func (wa *WebAnalysis) httpDiffUncommonHeadersIntersection(obs *WebObservation) {
+// httpDiffUncommonHeadersIntersection computes the uncommon headers intersection.
+//
+// The return value--used for testing--is negative in case of failure and zero or positive otherwise.
+func (wa *WebAnalysis) httpDiffUncommonHeadersIntersection(obs *WebObservation) int64 {
 	// we should only perform the comparison for a final response
 	if !obs.HTTPResponseIsFinal.UnwrapOr(false) {
-		return
+		return -1
 	}
 
 	// We should only perform the comparison if we have valid control data. Because
 	// the headers could legitimately be empty, let's use the status code here.
 	if obs.ControlHTTPResponseStatusCode.UnwrapOr(0) <= 0 {
-		return
+		return -2
 	}
 
 	// Implementation note: here we need to continue running when either
@@ -651,18 +665,22 @@ func (wa *WebAnalysis) httpDiffUncommonHeadersIntersection(obs *WebObservation) 
 
 	state := ComputeHTTPDiffUncommonHeadersIntersection(measurement, control)
 	wa.HTTPFinalResponseDiffUncommonHeadersIntersection = optional.Some(state)
+	return int64(len(state))
 }
 
-func (wa *WebAnalysis) httpDiffTitleDifferentLongWords(obs *WebObservation) {
+// httpDiffTitleDifferentLongWords computes the different long words.
+//
+// The return value--used for testing--is negative in case of failure and zero or positive otherwise.
+func (wa *WebAnalysis) httpDiffTitleDifferentLongWords(obs *WebObservation) int64 {
 	// we should only perform the comparison for a final response
 	if !obs.HTTPResponseIsFinal.UnwrapOr(false) {
-		return
+		return -1
 	}
 
 	// We should only perform the comparison if we have valid control data. Because
 	// the title could legitimately be empty, let's use the status code here.
 	if obs.ControlHTTPResponseStatusCode.UnwrapOr(0) <= 0 {
-		return
+		return -2
 	}
 
 	measurement := obs.HTTPResponseTitle.UnwrapOr("")
@@ -671,4 +689,5 @@ func (wa *WebAnalysis) httpDiffTitleDifferentLongWords(obs *WebObservation) {
 	state := ComputeHTTPDiffTitleDifferentLongWords(measurement, control)
 
 	wa.HTTPFinalResponseDiffTitleDifferentLongWords = optional.Some(state)
+	return int64(len(state))
 }
