@@ -227,9 +227,8 @@ type WebAnalysis struct {
 	// HTTPFinalResponseDiffUncommonHeadersIntersection contains the uncommon headers intersection.
 	HTTPFinalResponseDiffUncommonHeadersIntersection optional.Value[map[string]bool]
 
-	// FIXME: should remove automatically computing this field here
-
-	// Linear contains the linear analysis.
+	// Linear contains the linear analysis. We only fill this field when using
+	// the [AnalyzeWebObservationsWithLinearAnalysis] constructor.
 	Linear []*WebObservation
 }
 

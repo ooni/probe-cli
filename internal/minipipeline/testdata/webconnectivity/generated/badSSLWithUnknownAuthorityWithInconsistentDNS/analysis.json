@@ -4,6 +4,7 @@
     2
   ],
   "DNSLookupSuccessWithValidAddress": [],
+  "DNSLookupSuccessWithBogonAddresses": [],
   "DNSLookupSuccessWithInvalidAddressesClassic": [
     1,
     2
