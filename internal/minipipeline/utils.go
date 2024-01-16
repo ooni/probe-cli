@@ -74,7 +74,8 @@ func utilsEngineIsGetaddrinfo(engine optional.Value[string]) bool {
 	}
 }
 
-func utilsExtractTagDepth(tags []string) optional.Value[int64] {
+func utilsExtractTagDepth(tags []string) (result optional.Value[int64]) {
+	result = optional.None[int64]()
 	for _, tag := range tags {
 		if !strings.HasPrefix(tag, "depth=") {
 			continue
@@ -84,20 +85,21 @@ func utilsExtractTagDepth(tags []string) optional.Value[int64] {
 		if err != nil {
 			continue
 		}
-		return optional.Some(value)
+		result = optional.Some(value)
 	}
-	return optional.None[int64]()
+	return
 }
 
-func utilsExtractTagFetchBody(tags []string) optional.Value[bool] {
+func utilsExtractTagFetchBody(tags []string) (result optional.Value[bool]) {
+	result = optional.None[bool]()
 	for _, tag := range tags {
 		if !strings.HasPrefix(tag, "fetch_body=") {
 			continue
 		}
 		tag = strings.TrimPrefix(tag, "fetch_body=")
-		return optional.Some(tag == "true")
+		result = optional.Some(tag == "true")
 	}
-	return optional.None[bool]()
+	return
 }
 
 func utilsDNSLookupFailureIsDNSNoAnswerForAAAA(obs *WebObservation) bool {
