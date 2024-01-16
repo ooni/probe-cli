@@ -29,7 +29,7 @@ func httpBlockingConnectionReset() *TestCase {
 			// the HTTPExperimentFailure field, why?
 			HTTPExperimentFailure: "connection_reset",
 			XStatus:               8448, // StatusExperimentHTTP | StatusAnomalyReadWrite
-			XBlockingFlags:        8,    // analysisFlagHTTPBlocking
+			XBlockingFlags:        8,    // AnalysisBlockingFlagHTTPBlocking
 			Accessible:            false,
 			Blocking:              "http-failure",
 		},

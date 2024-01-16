@@ -35,7 +35,7 @@ func dnsHijackingToProxyWithHTTPURL() *TestCase {
 			TitleMatch:      true,
 			XStatus:         2, // StatusSuccessCleartext
 			XDNSFlags:       0,
-			XBlockingFlags:  32, // analysisFlagSuccess
+			XBlockingFlags:  32, // AnalysisBlockingFlagSuccess
 			Accessible:      true,
 			Blocking:        false,
 		},
@@ -72,7 +72,7 @@ func dnsHijackingToProxyWithHTTPSURL() *TestCase {
 			TitleMatch:      true,
 			XStatus:         1, // StatusSuccessSecure
 			XDNSFlags:       0,
-			XBlockingFlags:  32, // analysisFlagSuccess
+			XBlockingFlags:  32, // AnalysisBlockingFlagSuccess
 			Accessible:      true,
 			Blocking:        false,
 		},
