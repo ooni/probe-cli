@@ -115,4 +115,13 @@ func TestSet(t *testing.T) {
 			t.Fatal("expected false")
 		}
 	})
+
+	t.Run("String", func(t *testing.T) {
+		var set Set[int64]
+		set.Add(10, 11, 12, 13)
+		expect := "[10 11 12 13]"
+		if diff := cmp.Diff(expect, set.String()); diff != "" {
+			t.Fatal(diff)
+		}
+	})
 }
