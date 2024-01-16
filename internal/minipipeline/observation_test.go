@@ -156,7 +156,7 @@ func TestWebObservationsContainerIngestControlMessages(t *testing.T) {
 		}
 	})
 
-	t.Run("we correctly handle an inconsisten control DNS lookup result", func(t *testing.T) {
+	t.Run("we correctly handle an inconsistent control DNS lookup result", func(t *testing.T) {
 		container := &WebObservationsContainer{
 			DNSLookupFailures: []*WebObservation{},
 			KnownTCPEndpoints: map[int64]*WebObservation{
