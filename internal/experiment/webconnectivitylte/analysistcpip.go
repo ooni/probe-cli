@@ -21,7 +21,7 @@ import (
 // for the same set of IP addresses (it's ugly to modify a data struct
 // in place, but this algorithm is defined by the spec);
 //
-// 2. assign the analysisFlagTCPIPBlocking flag to XBlockingFlags if
+// 2. assign the AnalysisBlockingFlagTCPIPBlocking flag to XBlockingFlags if
 // we see any TCP endpoint for which Status.Blocked is true.
 func (tk *TestKeys) analysisTCPIPToplevel(logger model.Logger) {
 	// if we don't have a control result, do nothing.
