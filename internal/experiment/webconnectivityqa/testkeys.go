@@ -73,12 +73,12 @@ func compareTestKeys(expected, got *testKeys) error {
 		// ignore the fields that are specific to LTE
 		options = append(options, cmpopts.IgnoreFields(testKeys{}, "XDNSFlags", "XBlockingFlags", "XNullNullFlags"))
 
-	case "0.5.27":
+	case "0.5.28":
 		// ignore the fields that are specific to v0.4
 		options = append(options, cmpopts.IgnoreFields(testKeys{}, "XStatus"))
 
-		// TODO(bassosimone): these flags are specific of the "orig" analysis engine
-		options = append(options, cmpopts.IgnoreFields(testKeys{}, "XDNSFlags", "XBlockingFlags", "XNullNullFlags"))
+		// TODO(bassosimone): ignore fields used by the v0.5 "orig" local analysis engine
+		options = append(options, cmpopts.IgnoreFields(testKeys{}, "XNullNullFlags"))
 
 	default:
 		return fmt.Errorf("unknown experiment version: %s", got.XExperimentVersion)

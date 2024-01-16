@@ -18,8 +18,10 @@ import (
 // This function MUTATES the [*TestKeys].
 func analysisExtCompute(tk *TestKeys, container *minipipeline.WebObservationsContainer) {
 	// compute the web analysis
-	analysis := minipipeline.AnalyzeWebObservations(container)
+	analysis := minipipeline.AnalyzeWebObservationsWithoutLinearAnalysis(container)
 
+	// TODO(bassosimone): we should probably not print this header
+	// unless we really need to print this header
 	fmt.Printf("\n")
 	fmt.Printf("Extended Analysis\n")
 	fmt.Printf("-----------------\n")
@@ -29,7 +31,7 @@ func analysisExtCompute(tk *TestKeys, container *minipipeline.WebObservationsCon
 		tk.BlockingFlags |= AnalysisBlockingFlagDNSBlocking
 		tk.DNSFlags |= AnalysisFlagDNSBogon
 		fmt.Printf(
-			"- transactions with bogon IP addresses: %s",
+			"- transactions with bogon IP addresses: %s\n",
 			analysis.DNSLookupSuccessWithBogonAddresses.String(),
 		)
 	}
@@ -37,7 +39,7 @@ func analysisExtCompute(tk *TestKeys, container *minipipeline.WebObservationsCon
 		tk.BlockingFlags |= AnalysisBlockingFlagDNSBlocking
 		tk.DNSFlags |= AnalysisDNSFlagUnexpectedFailure
 		fmt.Printf(
-			"- transactions with unexpected DNS lookup failures: %s",
+			"- transactions with unexpected DNS lookup failures: %s\n",
 			analysis.DNSLookupUnexpectedFailure.String(),
 		)
 	}
@@ -45,7 +47,7 @@ func analysisExtCompute(tk *TestKeys, container *minipipeline.WebObservationsCon
 		tk.BlockingFlags |= AnalysisBlockingFlagDNSBlocking
 		tk.DNSFlags |= AnalysisDNSFlagUnexpectedAddrs
 		fmt.Printf(
-			"- transactions with invalid IP addrs: %s",
+			"- transactions with invalid IP addrs: %s\n",
 			analysis.DNSLookupSuccessWithInvalidAddresses.String(),
 		)
 	}
@@ -54,7 +56,7 @@ func analysisExtCompute(tk *TestKeys, container *minipipeline.WebObservationsCon
 	if analysis.TCPConnectUnexpectedFailure.Len() > 0 {
 		tk.BlockingFlags |= AnalysisBlockingFlagTCPIPBlocking
 		fmt.Printf(
-			"- transactions with unexpected TCP connect failures: %s",
+			"- transactions with unexpected TCP connect failures: %s\n",
 			analysis.TCPConnectUnexpectedFailure.String(),
 		)
 	}
@@ -63,7 +65,7 @@ func analysisExtCompute(tk *TestKeys, container *minipipeline.WebObservationsCon
 	if analysis.TLSHandshakeUnexpectedFailure.Len() > 0 {
 		tk.BlockingFlags |= AnalysisBlockingFlagTLSBlocking
 		fmt.Printf(
-			"- transactions with unexpected TLS handshake failures: %s",
+			"- transactions with unexpected TLS handshake failures: %s\n",
 			analysis.TLSHandshakeUnexpectedFailure.String(),
 		)
 	}
@@ -72,24 +74,27 @@ func analysisExtCompute(tk *TestKeys, container *minipipeline.WebObservationsCon
 	if analysis.HTTPRoundTripUnexpectedFailure.Len() > 0 {
 		tk.BlockingFlags |= AnalysisBlockingFlagHTTPBlocking
 		fmt.Printf(
-			"- transactions with unexpected HTTP round trip failures: %s",
+			"- transactions with unexpected HTTP round trip failures: %s\n",
 			analysis.HTTPRoundTripUnexpectedFailure.String(),
 		)
 	}
 	if !analysis.HTTPFinalResponseSuccessTLSWithControl.IsNone() {
 		tk.BlockingFlags |= AnalysisBlockingFlagSuccess
 		fmt.Printf(
-			"- transaction with successful HTTPS response with control: %v",
+			"- transaction with successful HTTPS response with control: %v\n",
 			analysis.HTTPFinalResponseSuccessTLSWithControl.Unwrap(),
 		)
 	}
 	if !analysis.HTTPFinalResponseSuccessTLSWithoutControl.IsNone() {
 		tk.BlockingFlags |= AnalysisBlockingFlagSuccess
 		fmt.Printf(
-			"- transaction with successful HTTPS response without control: %v",
+			"- transaction with successful HTTPS response without control: %v\n",
 			analysis.HTTPFinalResponseSuccessTLSWithoutControl.Unwrap(),
 		)
 	}
+
+	// TODO(bassosimone): we need to also compute the HTTPDiff flags here
+	// TODO(bassosimone): we need to also compute the null-null flags here
 
 	fmt.Printf("\n\n")
 }
