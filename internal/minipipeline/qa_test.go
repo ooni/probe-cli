@@ -72,10 +72,10 @@ func testMustRunAllWebTestCases(t *testing.T, topdir string) {
 				gotClassicContainerData := minipipeline.ClassicFilter(gotContainerData)
 
 				// analyze the measurement
-				gotAnalysisData := minipipeline.AnalyzeWebObservations(gotContainerData)
+				gotAnalysisData := minipipeline.AnalyzeWebObservationsWithLinearAnalysis(gotContainerData)
 
 				// perform the classic web-connectivity-v0.4-like analysis
-				gotClassicAnalysisData := minipipeline.AnalyzeWebObservations(gotClassicContainerData)
+				gotClassicAnalysisData := minipipeline.AnalyzeWebObservationsWithLinearAnalysis(gotClassicContainerData)
 
 				//
 				// Note: if tests fail, you likely need to regenerate the static test
