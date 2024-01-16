@@ -64,7 +64,7 @@ func TestUtilsTagFetchBody(t *testing.T) {
 		}
 	})
 
-	t.Run("with fetch_body=true tag", func(t *testing.T) {
+	t.Run("with fetch_body=false tag", func(t *testing.T) {
 		result := utilsExtractTagFetchBody([]string{"fetch_body=false"})
 		if result.IsNone() {
 			t.Fatal("expected not none")
@@ -74,7 +74,7 @@ func TestUtilsTagFetchBody(t *testing.T) {
 		}
 	})
 
-	t.Run("with fetch_body=false tag", func(t *testing.T) {
+	t.Run("with fetch_body=true tag", func(t *testing.T) {
 		result := utilsExtractTagFetchBody([]string{"fetch_body=true"})
 		if result.IsNone() {
 			t.Fatal("expected not none")
