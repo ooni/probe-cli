@@ -64,7 +64,7 @@ func TestTestKeys_analysisDNSToplevel(t *testing.T) {
 			"17.248.248.105":       {ASNumber: 714, Organization: "Apple Inc."},
 			"17.248.248.100":       {ASNumber: 714, Organization: "Apple Inc."},
 		},
-		expecteBlockingFlags: analysisFlagDNSBlocking,
+		expecteBlockingFlags: AnalysisBlockingFlagDNSBlocking,
 	}}
 
 	for _, tc := range testcases {

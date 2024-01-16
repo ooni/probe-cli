@@ -17,23 +17,23 @@ import (
 // These flags determine the context of TestKeys.Blocking. However, while .Blocking
 // is an enumeration, these flags allow to describe multiple blocking methods.
 const (
-	// analysisFlagDNSBlocking indicates there's blocking at the DNS level.
-	analysisFlagDNSBlocking = 1 << iota
+	// AnalysisBlockingFlagDNSBlocking indicates there's blocking at the DNS level.
+	AnalysisBlockingFlagDNSBlocking = 1 << iota
 
-	// analysisFlagTCPIPBlocking indicates there's blocking at the TCP/IP level.
-	analysisFlagTCPIPBlocking
+	// AnalysisBlockingFlagTCPIPBlocking indicates there's blocking at the TCP/IP level.
+	AnalysisBlockingFlagTCPIPBlocking
 
-	// analysisFlagTLSBlocking indicates there were TLS issues.
-	analysisFlagTLSBlocking
+	// AnalysisBlockingFlagTLSBlocking indicates there were TLS issues.
+	AnalysisBlockingFlagTLSBlocking
 
-	// analysisFlagHTTPBlocking indicates there was an HTTP failure.
-	analysisFlagHTTPBlocking
+	// AnalysisBlockingFlagHTTPBlocking indicates there was an HTTP failure.
+	AnalysisBlockingFlagHTTPBlocking
 
-	// analysisFlagHTTPDiff indicates there's an HTTP diff.
-	analysisFlagHTTPDiff
+	// AnalysisBlockingFlagHTTPDiff indicates there's an HTTP diff.
+	AnalysisBlockingFlagHTTPDiff
 
-	// analysisFlagSuccess indicates we did not detect any blocking.
-	analysisFlagSuccess
+	// AnalysisBlockingFlagSuccess indicates we did not detect any blocking.
+	AnalysisBlockingFlagSuccess
 )
 
 // AnalysisEngineFn is the function that runs the analysis engine for
@@ -98,6 +98,8 @@ var AnalysisEngineFn func(tk *TestKeys, logger model.Logger) = AnalysisEngineCla
 //
 // As an improvement over Web Connectivity v0.4, we also attempt to identify
 // special subcases of a null, null result to provide the user with more information.
+//
+// This function MUTATES the test keys.
 func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 	AnalysisEngineFn(tk, logger)
 }
@@ -121,7 +123,7 @@ func (tk *TestKeys) analysisOrig(logger model.Logger) {
 
 	// now, let's determine .Accessible and .Blocking
 	switch {
-	case (tk.BlockingFlags & analysisFlagDNSBlocking) != 0:
+	case (tk.BlockingFlags & AnalysisBlockingFlagDNSBlocking) != 0:
 		tk.Blocking = "dns"
 		tk.Accessible = false
 		logger.Warnf(
@@ -129,7 +131,7 @@ func (tk *TestKeys) analysisOrig(logger model.Logger) {
 			tk.BlockingFlags, tk.Accessible, tk.Blocking,
 		)
 
-	case (tk.BlockingFlags & analysisFlagTCPIPBlocking) != 0:
+	case (tk.BlockingFlags & AnalysisBlockingFlagTCPIPBlocking) != 0:
 		tk.Blocking = "tcp_ip"
 		tk.Accessible = false
 		logger.Warnf(
@@ -139,14 +141,14 @@ func (tk *TestKeys) analysisOrig(logger model.Logger) {
 
 	// Assigning "http-failure" for both TLS and HTTP blocking is a legacy behavior
 	// because the spec does not consider the case of TLS based blocking
-	case (tk.BlockingFlags & (analysisFlagTLSBlocking | analysisFlagHTTPBlocking)) != 0:
+	case (tk.BlockingFlags & (AnalysisBlockingFlagTLSBlocking | AnalysisBlockingFlagHTTPBlocking)) != 0:
 		tk.Blocking = "http-failure"
 		tk.Accessible = false
 		logger.Warnf("ANOMALY: flags=%d, accessible=%+v, blocking=%+v",
 			tk.BlockingFlags, tk.Accessible, tk.Blocking,
 		)
 
-	case (tk.BlockingFlags & analysisFlagHTTPDiff) != 0:
+	case (tk.BlockingFlags & AnalysisBlockingFlagHTTPDiff) != 0:
 		tk.Blocking = "http-diff"
 		tk.Accessible = false
 		logger.Warnf(
@@ -154,7 +156,7 @@ func (tk *TestKeys) analysisOrig(logger model.Logger) {
 			tk.BlockingFlags, tk.Accessible, tk.Blocking,
 		)
 
-	case tk.BlockingFlags == analysisFlagSuccess:
+	case tk.BlockingFlags == AnalysisBlockingFlagSuccess:
 		tk.Blocking = false
 		tk.Accessible = true
 		logger.Infof(

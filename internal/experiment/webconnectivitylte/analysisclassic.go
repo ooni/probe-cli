@@ -1,5 +1,11 @@
 package webconnectivitylte
 
+//
+// The "classic" analysis engine.
+//
+// We try to emulate results produced by v0.4 of Web Connectivity.
+//
+
 import (
 	"github.com/ooni/probe-cli/v3/internal/minipipeline"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -31,26 +37,29 @@ func (tk *TestKeys) analysisClassic(logger model.Logger) {
 		runtimex.Try0(container.IngestControlMessages(tk.ControlRequest, tk.Control))
 	}
 
-	// 2. filter observations to only include results collected by the
+	// 2. compute extended analysis flags
+	analysisExtCompute(tk, container)
+
+	// 3. filter observations to only include results collected by the
 	// system resolver, which approximates v0.4's results
 	classic := minipipeline.ClassicFilter(container)
 
-	// 3. produce a web observations analysis based on the web observations
+	// 4. produce a web observations analysis based on the web observations
 	woa := minipipeline.AnalyzeWebObservations(classic)
 
-	// 4. determine the DNS consistency
+	// 5. determine the DNS consistency
 	tk.DNSConsistency = analysisClassicDNSConsistency(woa)
 
-	// 5. set DNSExperimentFailure
+	// 6. set DNSExperimentFailure
 	if !woa.DNSExperimentFailure.IsNone() && woa.DNSExperimentFailure.Unwrap() != "" {
 		value := woa.DNSExperimentFailure.Unwrap()
 		tk.DNSExperimentFailure = &value
 	}
 
-	// 6. compute the HTTPDiff values
+	// 7. compute the HTTPDiff values
 	tk.setHTTPDiffValues(woa)
 
-	// 7. compute blocking & accessible
+	// 8. compute blocking & accessible
 	analysisClassicComputeBlockingAccessible(woa, tk)
 }
 

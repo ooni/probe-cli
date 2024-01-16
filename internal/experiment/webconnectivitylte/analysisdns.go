@@ -14,16 +14,16 @@ import (
 )
 
 const (
-	// AnalysisDNSBogon indicates we got any bogon reply
-	AnalysisDNSBogon = 1 << iota
+	// AnalysisFlagDNSBogon indicates we got any bogon reply
+	AnalysisFlagDNSBogon = 1 << iota
 
-	// AnalysisDNSUnexpectedFailure indicates the TH could
+	// AnalysisDNSFlagUnexpectedFailure indicates the TH could
 	// resolve a domain while the probe couldn't
-	AnalysisDNSUnexpectedFailure
+	AnalysisDNSFlagUnexpectedFailure
 
-	// AnalysisDNSUnexpectedAddrs indicates the TH resolved
+	// AnalysisDNSFlagUnexpectedAddrs indicates the TH resolved
 	// different addresses from the probe
-	AnalysisDNSUnexpectedAddrs
+	AnalysisDNSFlagUnexpectedAddrs
 )
 
 // analysisDNSToplevel is the toplevel analysis function for DNS results.
@@ -64,7 +64,7 @@ func (tk *TestKeys) analysisDNSToplevel(logger model.Logger, lookupper model.Geo
 	if tk.DNSFlags != 0 {
 		logger.Warn("DNSConsistency: inconsistent")
 		tk.DNSConsistency = optional.Some("inconsistent")
-		tk.BlockingFlags |= analysisFlagDNSBlocking
+		tk.BlockingFlags |= AnalysisBlockingFlagDNSBlocking
 	} else {
 		logger.Info("DNSConsistency: consistent")
 		tk.DNSConsistency = optional.Some("consistent")
@@ -122,7 +122,7 @@ func (tk *TestKeys) analysisDNSBogon(logger model.Logger) {
 						query.Hostname,
 						query.TransactionID,
 					)
-					tk.DNSFlags |= AnalysisDNSBogon
+					tk.DNSFlags |= AnalysisFlagDNSBogon
 					// continue processing so we print all the bogons we have
 				}
 			case "AAAA":
@@ -133,7 +133,7 @@ func (tk *TestKeys) analysisDNSBogon(logger model.Logger) {
 						query.Hostname,
 						query.TransactionID,
 					)
-					tk.DNSFlags |= AnalysisDNSBogon
+					tk.DNSFlags |= AnalysisFlagDNSBogon
 					// continue processing so we print all the bogons we have
 				}
 			default:
@@ -212,7 +212,7 @@ func (tk *TestKeys) analysisDNSUnexpectedFailure(logger model.Logger) {
 			continue
 		}
 		logger.Warnf("DNS: unexpected failure %s in #%d", *query.Failure, query.TransactionID)
-		tk.DNSFlags |= AnalysisDNSUnexpectedFailure
+		tk.DNSFlags |= AnalysisDNSFlagUnexpectedFailure
 		// continue processing so we print all the unexpected failures
 
 		// TODO(https://github.com/ooni/probe/issues/2029#issuecomment-1411716295): we need
@@ -282,7 +282,7 @@ func (tk *TestKeys) analysisDNSUnexpectedAddrs(
 	// definitely suspicious and counts as a difference
 	if len(probeAddrs) <= 0 {
 		logger.Warnf("DNS: the probe did not resolve any IP address")
-		tk.DNSFlags |= AnalysisDNSUnexpectedAddrs
+		tk.DNSFlags |= AnalysisDNSFlagUnexpectedAddrs
 		return
 	}
 
@@ -320,7 +320,7 @@ func (tk *TestKeys) analysisDNSUnexpectedAddrs(
 			addr, asn,
 		)
 	}
-	tk.DNSFlags |= AnalysisDNSUnexpectedAddrs
+	tk.DNSFlags |= AnalysisDNSFlagUnexpectedAddrs
 }
 
 // analysisDNSDiffAddrs returns all the IP addresses that are

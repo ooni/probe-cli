@@ -77,6 +77,6 @@ func (tk *TestKeys) analysisTCPIPToplevel(logger model.Logger) {
 			entry.TransactionID,
 		)
 		entry.Status.Blocked = &istrue
-		tk.BlockingFlags |= analysisFlagTCPIPBlocking
+		tk.BlockingFlags |= AnalysisBlockingFlagTCPIPBlocking
 	}
 }

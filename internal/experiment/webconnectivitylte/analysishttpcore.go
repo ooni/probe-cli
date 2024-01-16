@@ -58,7 +58,7 @@ func (tk *TestKeys) analysisHTTPToplevel(logger model.Logger) {
 		case netxlite.FailureConnectionReset,
 			netxlite.FailureGenericTimeoutError,
 			netxlite.FailureEOFError:
-			tk.BlockingFlags |= analysisFlagHTTPBlocking
+			tk.BlockingFlags |= AnalysisBlockingFlagHTTPBlocking
 			logger.Warnf(
 				"HTTP: unexpected failure %s for %s (see #%d)",
 				*failure,
