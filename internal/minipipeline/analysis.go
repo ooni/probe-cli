@@ -121,9 +121,6 @@ type WebAnalysis struct {
 	// DNSLookupSuccessWithValidAddress contains DNS transactions with valid IP addresses.
 	DNSLookupSuccessWithValidAddress Set[int64]
 
-	// DNSLookupSuccessWithBogonAddresses contains DNS transactions with bogon IP addresses.
-	DNSLookupSuccessWithBogonAddresses Set[int64]
-
 	// DNSLookupSuccessWithInvalidAddressesClassic is like DNSLookupInvalid but the algorithm is more relaxed
 	// to be compatible with Web Connectivity v0.4's behavior.
 	DNSLookupSuccessWithInvalidAddressesClassic Set[int64]
@@ -220,8 +217,6 @@ type WebAnalysis struct {
 	// HTTPFinalResponseDiffUncommonHeadersIntersection contains the uncommon headers intersection.
 	HTTPFinalResponseDiffUncommonHeadersIntersection optional.Value[map[string]bool]
 
-	// FIXME: should remove automatically computing this field here
-
 	// Linear contains the linear analysis.
 	Linear []*WebObservation
 }
@@ -244,7 +239,6 @@ func (wa *WebAnalysis) dnsComputeSuccessMetrics(c *WebObservationsContainer) {
 		// if there's a bogon, mark as invalid
 		if !obs.IPAddressBogon.IsNone() && obs.IPAddressBogon.Unwrap() {
 			wa.DNSLookupSuccessWithInvalidAddresses.Add(obs.DNSTransactionID.Unwrap())
-			wa.DNSLookupSuccessWithBogonAddresses.Add(obs.DNSTransactionID.Unwrap())
 			continue
 		}
 
