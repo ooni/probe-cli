@@ -92,8 +92,9 @@ func NewLinearWebAnalysis(input *WebObservationsContainer) (output []*WebObserva
 	return
 }
 
-// AnalyzeWebObservations generates a [*WebAnalysis] from a [*WebObservationsContainer].
-func AnalyzeWebObservations(container *WebObservationsContainer) *WebAnalysis {
+// AnalyzeWebObservationsWithoutLinearAnalysis generates a [*WebAnalysis] from a [*WebObservationsContainer]
+// but avoids calling [NewLinearyAnalysis] to generate a linear analysis.
+func AnalyzeWebObservationsWithoutLinearAnalysis(container *WebObservationsContainer) *WebAnalysis {
 	analysis := &WebAnalysis{}
 
 	analysis.dnsComputeSuccessMetrics(container)
@@ -105,8 +106,14 @@ func AnalyzeWebObservations(container *WebObservationsContainer) *WebAnalysis {
 	analysis.httpComputeFailureMetrics(container)
 	analysis.httpComputeFinalResponseMetrics(container)
 
-	analysis.Linear = NewLinearWebAnalysis(container)
+	return analysis
+}
 
+// AnalyzeWebObservationsWithLinearAnalysis generates a [*WebAnalysis] from a [*WebObservationsContainer]
+// and ensures we also use [NewLinearyAnalysis] to generate a linear analysis.
+func AnalyzeWebObservationsWithLinearAnalysis(container *WebObservationsContainer) *WebAnalysis {
+	analysis := AnalyzeWebObservationsWithoutLinearAnalysis(container)
+	analysis.Linear = NewLinearWebAnalysis(container)
 	return analysis
 }
 
