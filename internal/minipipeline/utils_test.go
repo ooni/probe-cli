@@ -31,13 +31,13 @@ func TestUtilsExtractTagDepth(t *testing.T) {
 		}
 	})
 
-	t.Run("we only return the first entry", func(t *testing.T) {
+	t.Run("we return the last entry", func(t *testing.T) {
 		result := utilsExtractTagDepth([]string{"depth=10", "depth=12"})
 		if result.IsNone() {
 			t.Fatal("expected not none")
 		}
-		if value := result.Unwrap(); value != 10 {
-			t.Fatal("expected 10, got", value)
+		if value := result.Unwrap(); value != 12 {
+			t.Fatal("expected 12, got", value)
 		}
 	})
 }
@@ -84,12 +84,12 @@ func TestUtilsTagFetchBody(t *testing.T) {
 		}
 	})
 
-	t.Run("we only return the first entry", func(t *testing.T) {
+	t.Run("we return the last entry", func(t *testing.T) {
 		result := utilsExtractTagFetchBody([]string{"fetch_body=false", "fetch_body=true"})
 		if result.IsNone() {
 			t.Fatal("expected not none")
 		}
-		if value := result.Unwrap(); value != false {
+		if value := result.Unwrap(); value != true {
 			t.Fatal("expected false, got", value)
 		}
 	})
