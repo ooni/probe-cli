@@ -19,9 +19,9 @@ import (
 //
 // This results in possibly setting these XBlockingFlags:
 //
-// - analysisFlagHTTPBlocking
+// - AnalysisBlockingFlagHTTPBlocking
 //
-// - analysisFlagHTTPDiff
+// - AnalysisBlockingFlagHTTPDiff
 //
 // In websteps fashion, we don't stop at the first failure, rather we
 // process all the available data and evaluate all possible errors.
@@ -58,7 +58,7 @@ func (tk *TestKeys) analysisHTTPToplevel(logger model.Logger) {
 		case netxlite.FailureConnectionReset,
 			netxlite.FailureGenericTimeoutError,
 			netxlite.FailureEOFError:
-			tk.BlockingFlags |= analysisFlagHTTPBlocking
+			tk.BlockingFlags |= AnalysisBlockingFlagHTTPBlocking
 			logger.Warnf(
 				"HTTP: unexpected failure %s for %s (see #%d)",
 				*failure,

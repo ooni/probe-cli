@@ -34,7 +34,7 @@ func (tk *TestKeys) analysisHTTPDiff(logger model.Logger,
 	}
 	if URL.Scheme == "https" {
 		logger.Infof("HTTP: HTTPS && no error => #%d is successful", probe.TransactionID)
-		tk.BlockingFlags |= analysisFlagSuccess
+		tk.BlockingFlags |= AnalysisBlockingFlagSuccess
 		return
 	}
 
@@ -50,7 +50,7 @@ func (tk *TestKeys) analysisHTTPDiff(logger model.Logger,
 				"HTTP: statusCodeMatch && bodyLengthMatch => #%d is successful",
 				probe.TransactionID,
 			)
-			tk.BlockingFlags |= analysisFlagSuccess
+			tk.BlockingFlags |= AnalysisBlockingFlagSuccess
 			return
 		}
 		logger.Infof("HTTP: body length: MISMATCH (see #%d)", probe.TransactionID)
@@ -59,7 +59,7 @@ func (tk *TestKeys) analysisHTTPDiff(logger model.Logger,
 				"HTTP: statusCodeMatch && headersMatch => #%d is successful",
 				probe.TransactionID,
 			)
-			tk.BlockingFlags |= analysisFlagSuccess
+			tk.BlockingFlags |= AnalysisBlockingFlagSuccess
 			return
 		}
 		logger.Infof("HTTP: uncommon headers: MISMATCH (see #%d)", probe.TransactionID)
@@ -68,7 +68,7 @@ func (tk *TestKeys) analysisHTTPDiff(logger model.Logger,
 				"HTTP: statusCodeMatch && titleMatch => #%d is successful",
 				probe.TransactionID,
 			)
-			tk.BlockingFlags |= analysisFlagSuccess
+			tk.BlockingFlags |= AnalysisBlockingFlagSuccess
 			return
 		}
 		logger.Infof("HTTP: title: MISMATCH (see #%d)", probe.TransactionID)
@@ -76,7 +76,7 @@ func (tk *TestKeys) analysisHTTPDiff(logger model.Logger,
 		logger.Infof("HTTP: status code: MISMATCH (see #%d)", probe.TransactionID)
 	}
 
-	tk.BlockingFlags |= analysisFlagHTTPDiff
+	tk.BlockingFlags |= AnalysisBlockingFlagHTTPDiff
 	logger.Warnf("HTTP: it seems #%d is a case of httpDiff", probe.TransactionID)
 }
 

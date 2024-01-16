@@ -24,8 +24,8 @@ func dnsBlockingAndroidDNSCacheNoData() *TestCase {
 			DNSExperimentFailure: "android_dns_cache_no_data",
 			DNSConsistency:       "inconsistent",
 			XStatus:              2080, // StatusExperimentDNS | StatusAnomalyDNS
-			XDNSFlags:            2,    // AnalysisDNSUnexpectedFailure
-			XBlockingFlags:       33,   // analysisFlagDNSBlocking | analysisFlagSuccess
+			XDNSFlags:            2,    // AnalysisDNSFlagUnexpectedFailure
+			XBlockingFlags:       33,   // AnalysisBlockingFlagDNSBlocking | AnalysisBlockingFlagSuccess
 			Accessible:           false,
 			Blocking:             "dns",
 		},
@@ -55,8 +55,8 @@ func dnsBlockingNXDOMAIN() *TestCase {
 			DNSExperimentFailure: "dns_nxdomain_error",
 			DNSConsistency:       "inconsistent",
 			XStatus:              2080, // StatusExperimentDNS | StatusAnomalyDNS
-			XDNSFlags:            2,    // AnalysisDNSUnexpectedFailure
-			XBlockingFlags:       33,   // analysisFlagDNSBlocking | analysisFlagSuccess
+			XDNSFlags:            2,    // AnalysisDNSFlagUnexpectedFailure
+			XBlockingFlags:       33,   // AnalysisBlockingFlagDNSBlocking | AnalysisBlockingFlagSuccess
 			Accessible:           false,
 			Blocking:             "dns",
 		},
@@ -79,8 +79,8 @@ func dnsBlockingBOGON() *TestCase {
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "inconsistent",
 			XStatus:               4256, // StatusExperimentConnect | StatusAnomalyConnect | StatusAnomalyDNS
-			XDNSFlags:             1,    // AnalysisDNSBogon
-			XBlockingFlags:        33,   // analysisFlagDNSBlocking | analysisFlagSuccess
+			XDNSFlags:             1,    // AnalysisFlagDNSBogon
+			XBlockingFlags:        33,   // AnalysisBlockingFlagDNSBlocking | AnalysisBlockingFlagSuccess
 			Accessible:            false,
 			Blocking:              "dns",
 		},

@@ -37,7 +37,7 @@ func redirectWithConsistentDNSAndThenConnectionRefusedForHTTP() *TestCase {
 			HTTPExperimentFailure: "connection_refused",
 			XStatus:               8320, // StatusExperimentHTTP | StatusAnomalyConnect
 			XDNSFlags:             0,
-			XBlockingFlags:        32, // analysisFlagSuccess
+			XBlockingFlags:        32, // AnalysisBlockingFlagSuccess
 			Accessible:            false,
 			Blocking:              "http-failure",
 		},
@@ -75,7 +75,7 @@ func redirectWithConsistentDNSAndThenConnectionRefusedForHTTPS() *TestCase {
 			HTTPExperimentFailure: "connection_refused",
 			XStatus:               8320, // StatusExperimentHTTP | StatusAnomalyConnect
 			XDNSFlags:             0,
-			XBlockingFlags:        32, // analysisFlagSuccess
+			XBlockingFlags:        32, // AnalysisBlockingFlagSuccess
 			Accessible:            false,
 			Blocking:              "http-failure",
 		},
@@ -113,7 +113,7 @@ func redirectWithConsistentDNSAndThenConnectionResetForHTTP() *TestCase {
 			HTTPExperimentFailure: "connection_reset",
 			XStatus:               8448, // StatusExperimentHTTP | StatusAnomalyReadWrite
 			XDNSFlags:             0,
-			XBlockingFlags:        8, // analysisFlagHTTPBlocking
+			XBlockingFlags:        8, // AnalysisBlockingFlagHTTPBlocking
 			Accessible:            false,
 			Blocking:              "http-failure",
 		},
@@ -151,7 +151,7 @@ func redirectWithConsistentDNSAndThenConnectionResetForHTTPS() *TestCase {
 			HTTPExperimentFailure: "connection_reset",
 			XStatus:               8448, // StatusExperimentHTTP | StatusAnomalyReadWrite
 			XDNSFlags:             0,
-			XBlockingFlags:        8, // analysisFlagHTTPBlocking
+			XBlockingFlags:        8, // AnalysisBlockingFlagHTTPBlocking
 			Accessible:            false,
 			Blocking:              "http-failure",
 		},
@@ -182,7 +182,7 @@ func redirectWithConsistentDNSAndThenNXDOMAIN() *TestCase {
 			HTTPExperimentFailure: "dns_nxdomain_error",
 			XStatus:               8224, // StatusExperimentHTTP | StatusAnomalyDNS
 			XDNSFlags:             0,
-			XBlockingFlags:        8, // analysisFlagHTTPBlocking
+			XBlockingFlags:        8, // AnalysisBlockingFlagHTTPBlocking
 			Accessible:            false,
 			Blocking:              "dns",
 		},
@@ -220,7 +220,7 @@ func redirectWithConsistentDNSAndThenEOFForHTTP() *TestCase {
 			HTTPExperimentFailure: "eof_error",
 			XStatus:               8448, // StatusExperimentHTTP | StatusAnomalyReadWrite
 			XDNSFlags:             0,
-			XBlockingFlags:        8, // analysisFlagHTTPBlocking
+			XBlockingFlags:        8, // AnalysisBlockingFlagHTTPBlocking
 			Accessible:            false,
 			Blocking:              "http-failure",
 		},
@@ -258,7 +258,7 @@ func redirectWithConsistentDNSAndThenEOFForHTTPS() *TestCase {
 			HTTPExperimentFailure: "eof_error",
 			XStatus:               8448, // StatusExperimentHTTP | StatusAnomalyReadWrite
 			XDNSFlags:             0,
-			XBlockingFlags:        32, // analysisFlagSuccess
+			XBlockingFlags:        32, // AnalysisBlockingFlagSuccess
 			Accessible:            false,
 			Blocking:              "http-failure",
 		},
@@ -297,7 +297,7 @@ func redirectWithConsistentDNSAndThenTimeoutForHTTP() *TestCase {
 			HTTPExperimentFailure: "generic_timeout_error",
 			XStatus:               8704, // StatusExperimentHTTP | StatusAnomalyUnknown
 			XDNSFlags:             0,
-			XBlockingFlags:        8, // analysisFlagHTTPBlocking
+			XBlockingFlags:        8, // AnalysisBlockingFlagHTTPBlocking
 			Accessible:            false,
 			Blocking:              "http-failure",
 		},
@@ -336,7 +336,7 @@ func redirectWithConsistentDNSAndThenTimeoutForHTTPS() *TestCase {
 			HTTPExperimentFailure: "generic_timeout_error",
 			XStatus:               8704, // StatusExperimentHTTP | StatusAnomalyUnknown
 			XDNSFlags:             0,
-			XBlockingFlags:        32, // analysisFlagSuccess
+			XBlockingFlags:        32, // AnalysisBlockingFlagSuccess
 			Accessible:            false,
 			Blocking:              "http-failure",
 		},
