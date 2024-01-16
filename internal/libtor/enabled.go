@@ -84,6 +84,8 @@ import (
 	"os"
 	"runtime"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/cretz/bine/process"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -163,6 +165,10 @@ func (p *torProcess) Wait() (err error) {
 	return
 }
 
+// ErrConcurrentCalls indicates there have been concurrent libtor calls, which
+// would lead to memory corruption inside of libtor.a.
+var ErrConcurrentCalls = errors.New("libtor: another thread is already running tor")
+
 // ErrTooManyArguments indicates that p.args contains too many arguments
 var ErrTooManyArguments = errors.New("libtor: too many arguments")
 
@@ -171,6 +177,9 @@ var ErrCannotCreateControlSocket = errors.New("libtor: cannot create a control s
 
 // ErrNonzeroExitCode indicates that tor returned a nonzero exit code
 var ErrNonzeroExitCode = errors.New("libtor: command completed with nonzero exit code")
+
+// concurrentCalls prevents concurrent libtor.a calls.
+var concurrentCalls = &atomic.Int64{}
 
 // runtor runs tor until completion and ensures that tor exits when
 // the given ctx is cancelled or its deadline expires.
@@ -190,6 +199,13 @@ func (p *torProcess) runtor(ctx context.Context, cc net.Conn, args ...string) {
 		close(p.closedWhenNotStarted)
 		return
 	}
+
+	// make sure we're not going to have actual concurrent calls.
+	if !concurrentCalls.CompareAndSwap(0, 1) {
+		p.startErr <- ErrConcurrentCalls // nonblocking channel
+		return
+	}
+	defer concurrentCalls.Store(0)
 
 	// Note: when writing this code I was wondering whether I needed to
 	// use unsafe.Pointer to track pointers that matter to C code. Reading
@@ -284,7 +300,10 @@ func (p *torProcess) runtor(ctx context.Context, cc net.Conn, args ...string) {
 	if !p.simulateNonzeroExitCode {
 		code = C.tor_run_main(config)
 	} else {
+		// when simulating nonzero exit code we also want to sleep for a bit
+		// of time, to make sure we're able to see overlapped runs.
 		code = 1
+		time.Sleep(time.Second)
 	}
 	if code != 0 {
 		p.waitErr <- fmt.Errorf("%w: %d", ErrNonzeroExitCode, code) // nonblocking channel
