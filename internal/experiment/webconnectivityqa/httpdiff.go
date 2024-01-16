@@ -37,7 +37,7 @@ func httpDiffWithConsistentDNS() *TestCase {
 			HTTPExperimentFailure: nil,
 			XStatus:               64, // StatusAnomalyHTTPDiff
 			XDNSFlags:             0,
-			XBlockingFlags:        16, // analysisFlagHTTPDiff
+			XBlockingFlags:        16, // AnalysisBlockingFlagHTTPDiff
 			Accessible:            false,
 			Blocking:              "http-diff",
 		},
@@ -91,8 +91,8 @@ func httpDiffWithInconsistentDNS() *TestCase {
 			HeadersMatch:          false,
 			TitleMatch:            false,
 			XStatus:               96, // StatusAnomalyHTTPDiff | StatusAnomalyDNS
-			XDNSFlags:             4,  // AnalysisDNSUnexpectedAddrs
-			XBlockingFlags:        35, // analysisFlagSuccess | analysisFlagDNSBlocking | analysisFlagTCPIPBlocking
+			XDNSFlags:             4,  // AnalysisDNSFlagUnexpectedAddrs
+			XBlockingFlags:        35, // AnalysisBlockingFlagSuccess | AnalysisBlockingFlagDNSBlocking | AnalysisBlockingFlagTCPIPBlocking
 			Accessible:            false,
 			Blocking:              "dns",
 		},

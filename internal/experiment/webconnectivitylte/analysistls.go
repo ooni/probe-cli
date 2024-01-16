@@ -45,6 +45,6 @@ func (tk *TestKeys) analysisTLSToplevel(logger model.Logger) {
 			epnt,
 			entry.TransactionID,
 		)
-		tk.BlockingFlags |= analysisFlagTLSBlocking
+		tk.BlockingFlags |= AnalysisBlockingFlagTLSBlocking
 	}
 }

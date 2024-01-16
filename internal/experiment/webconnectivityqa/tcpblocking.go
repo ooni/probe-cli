@@ -28,7 +28,7 @@ func tcpBlockingConnectTimeout() *TestCase {
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: "generic_timeout_error",
 			XStatus:               4224, // StatusAnomalyConnect | StatusExperimentConnect
-			XBlockingFlags:        2,    // analysisFlagTCPIPBlocking
+			XBlockingFlags:        2,    // AnalysisBlockingFlagTCPIPBlocking
 			Accessible:            false,
 			Blocking:              "tcp_ip",
 		},
@@ -67,8 +67,8 @@ func tcpBlockingConnectionRefusedWithInconsistentDNS() *TestCase {
 			DNSConsistency:        "inconsistent",
 			HTTPExperimentFailure: "connection_refused",
 			XStatus:               4256, // StatusExperimentConnect | StatusAnomalyConnect | StatusAnomalyDNS
-			XDNSFlags:             4,    // AnalysisDNSUnexpectedAddrs
-			XBlockingFlags:        35,   // analysisFlagSuccess | analysisFlagDNSBlocking | analysisFlagTCPIPBlocking
+			XDNSFlags:             4,    // AnalysisDNSFlagUnexpectedAddrs
+			XBlockingFlags:        35,   // AnalysisBlockingFlagSuccess | AnalysisBlockingFlagDNSBlocking | AnalysisBlockingFlagTCPIPBlocking
 			Accessible:            false,
 			Blocking:              "dns",
 		},
