@@ -80,7 +80,7 @@ func testMustRunAllWebTestCases(t *testing.T, topdir string) {
 				//
 				// Note: if tests fail, you likely need to regenerate the static test
 				// cases using ./script/updateminipipeline.bash and you should also eyeball
-				// the diff for these fails to see if it makes sense.
+				// the diff for these changes to see if it makes sense.
 				//
 
 				t.Run("linear consistency checks", func(t *testing.T) {
