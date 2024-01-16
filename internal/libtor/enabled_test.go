@@ -257,7 +257,7 @@ func TestControlConnectionExplicitlyClosed(t *testing.T) {
 // This test ensures that we cannot make concurrent calls to the library.
 func TestConcurrentCalls(t *testing.T) {
 	// we need to simulate non zero exit code here such that we're not
-	// actually hitting into the real tor library; by doing this we would
+	// actually hitting into the real tor library; by doing this we
 	// make the test faster and reduce the risk of triggering the
 	// https://github.com/ooni/probe/issues/2406 bug caused by the
 	// fact we're invoking tor multiple times.

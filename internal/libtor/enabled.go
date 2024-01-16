@@ -301,7 +301,7 @@ func (p *torProcess) runtor(ctx context.Context, cc net.Conn, args ...string) {
 		code = C.tor_run_main(config)
 	} else {
 		// when simulating nonzero exit code we also want to sleep for a bit
-		// of time, to make sure we're able to see overalapped runs.
+		// of time, to make sure we're able to see overlapped runs.
 		code = 1
 		time.Sleep(time.Second)
 	}
