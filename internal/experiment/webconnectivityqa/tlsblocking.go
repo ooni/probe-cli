@@ -67,7 +67,7 @@ func tlsBlockingConnectionResetWithInconsistentDNS() *TestCase {
 			DNSConsistency:        "inconsistent",
 			HTTPExperimentFailure: "connection_reset",
 			XStatus:               8480, // StatusExperimentHTTP | StatusAnomalyReadWrite | StatusAnomalyDNS
-			XDNSFlags:             4,    // AnalysisDNSUnexpectedAddrs
+			XDNSFlags:             4,    // AnalysisDNSFlagUnexpectedAddrs
 			XBlockingFlags:        5,    // AnalysisBlockingFlagTLSBlocking | AnalysisBlockingFlagDNSBlocking
 			Accessible:            false,
 			Blocking:              "dns",

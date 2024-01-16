@@ -92,7 +92,7 @@ func badSSLWithUnknownAuthorityWithInconsistentDNS() *TestCase {
 			DNSConsistency:        "inconsistent",
 			HTTPExperimentFailure: "ssl_unknown_authority",
 			XStatus:               9248, // StatusExperimentHTTP | StatusAnomalyTLSHandshake | StatusAnomalyDNS
-			XDNSFlags:             4,    // AnalysisDNSUnexpectedAddrs
+			XDNSFlags:             4,    // AnalysisDNSFlagUnexpectedAddrs
 			XBlockingFlags:        33,   // AnalysisBlockingFlagSuccess | AnalysisBlockingFlagDNSBlocking
 			Accessible:            false,
 			Blocking:              "dns",

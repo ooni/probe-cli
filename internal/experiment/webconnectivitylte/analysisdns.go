@@ -102,7 +102,7 @@ func (tk *TestKeys) analysisDNSExperimentFailure() {
 	}
 }
 
-// analysisDNSBogon computes the AnalysisDNSBogon flag. We set this flag if
+// analysisDNSBogon computes the AnalysisFlagDNSBogon flag. We set this flag if
 // we dectect any bogon in the .Queries field of the TestKeys.
 func (tk *TestKeys) analysisDNSBogon(logger model.Logger) {
 	for _, query := range tk.Queries {
@@ -143,7 +143,7 @@ func (tk *TestKeys) analysisDNSBogon(logger model.Logger) {
 	}
 }
 
-// analysisDNSUnexpectedFailure computes the AnalysisDNSUnexpectedFailure flags. We say
+// analysisDNSUnexpectedFailure computes the AnalysisDNSFlagUnexpectedFailure flags. We say
 // a failure is unexpected when the TH could resolve a domain and the probe couldn't.
 func (tk *TestKeys) analysisDNSUnexpectedFailure(logger model.Logger) {
 	// make sure we have control before proceeding futher
@@ -220,7 +220,7 @@ func (tk *TestKeys) analysisDNSUnexpectedFailure(logger model.Logger) {
 	}
 }
 
-// analysisDNSUnexpectedAddrs computes the AnalysisDNSUnexpectedAddrs flags. This
+// analysisDNSUnexpectedAddrs computes the AnalysisDNSFlagUnexpectedAddrs flags. This
 // algorithm builds upon the original DNSDiff algorithm by introducing an additional
 // TLS based heuristic for determining whether an IP address was legit.
 func (tk *TestKeys) analysisDNSUnexpectedAddrs(
