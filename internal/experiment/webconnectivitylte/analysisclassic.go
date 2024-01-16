@@ -36,7 +36,7 @@ func (tk *TestKeys) analysisClassic(logger model.Logger) {
 	classic := minipipeline.ClassicFilter(container)
 
 	// 3. produce a web observations analysis based on the web observations
-	woa := minipipeline.AnalyzeWebObservations(classic)
+	woa := minipipeline.AnalyzeWebObservationsWithLinearAnalysis(classic)
 
 	// 4. determine the DNS consistency
 	tk.DNSConsistency = analysisClassicDNSConsistency(woa)
