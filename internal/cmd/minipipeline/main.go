@@ -67,11 +67,11 @@ func main() {
 
 	// generate and write observations analysis
 	analysisPath := filepath.Join(*destdirFlag, *prefixFlag+"analysis.json")
-	analysis := minipipeline.AnalyzeWebObservations(container)
+	analysis := minipipeline.AnalyzeWebObservationsWithLinearAnalysis(container)
 	mustWriteFileFn(analysisPath, must.MarshalAndIndentJSON(analysis, "", "  "), 0600)
 
 	// generate and write the classic analysis
 	classicAnalysisPath := filepath.Join(*destdirFlag, *prefixFlag+"analysis_classic.json")
-	analysisClassic := minipipeline.AnalyzeWebObservations(containerClassic)
+	analysisClassic := minipipeline.AnalyzeWebObservationsWithLinearAnalysis(containerClassic)
 	mustWriteFileFn(classicAnalysisPath, must.MarshalAndIndentJSON(analysisClassic, "", "  "), 0600)
 }

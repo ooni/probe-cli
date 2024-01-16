@@ -86,13 +86,13 @@ func runWebConnectivityLTE(tc *webconnectivityqa.TestCase) {
 		mustSerializeMkdirAllAndWriteFile(actualDestdir, "observations_classic.json", observationsContainerClassic)
 
 		// analyze the observations
-		analysis := minipipeline.AnalyzeWebObservations(observationsContainer)
+		analysis := minipipeline.AnalyzeWebObservationsWithLinearAnalysis(observationsContainer)
 
 		// serialize the observations analysis
 		mustSerializeMkdirAllAndWriteFile(actualDestdir, "analysis.json", analysis)
 
 		// perform the classic analysis
-		analysisClassic := minipipeline.AnalyzeWebObservations(observationsContainerClassic)
+		analysisClassic := minipipeline.AnalyzeWebObservationsWithLinearAnalysis(observationsContainerClassic)
 
 		// serialize the classic analysis results
 		mustSerializeMkdirAllAndWriteFile(actualDestdir, "analysis_classic.json", analysisClassic)
