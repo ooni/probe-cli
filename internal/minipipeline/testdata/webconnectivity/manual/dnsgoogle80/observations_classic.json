@@ -419,5 +419,8 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     }
+  },
+  "ControlFinalResponseExpectations": {
+    "Failure": "generic_timeout_error"
   }
 }

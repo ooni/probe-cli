@@ -128,5 +128,8 @@
     }
   ],
   "DNSLookupSuccesses": [],
-  "KnownTCPEndpoints": {}
+  "KnownTCPEndpoints": {},
+  "ControlFinalResponseExpectations": {
+    "Failure": "dns_lookup_error"
+  }
 }

@@ -1916,5 +1916,8 @@
       },
       "ControlHTTPResponseTitle": "YouTube"
     }
+  },
+  "ControlFinalResponseExpectations": {
+    "Failure": ""
   }
 }
