@@ -9,6 +9,7 @@ package webconnectivitylte
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/ooni/probe-cli/v3/internal/minipipeline"
 )
@@ -20,34 +21,31 @@ func analysisExtCompute(tk *TestKeys, container *minipipeline.WebObservationsCon
 	// compute the web analysis
 	analysis := minipipeline.AnalyzeWebObservationsWithoutLinearAnalysis(container)
 
-	// TODO(bassosimone): we should probably not print this header
-	// unless we really need to print this header
-	fmt.Printf("\n")
-	fmt.Printf("Extended Analysis\n")
-	fmt.Printf("-----------------\n")
+	// prepare for emitting informational messages
+	var info strings.Builder
 
 	// DNS & address analysis
 	if analysis.DNSLookupSuccessWithBogonAddresses.Len() > 0 {
 		tk.BlockingFlags |= AnalysisBlockingFlagDNSBlocking
 		tk.DNSFlags |= AnalysisFlagDNSBogon
-		fmt.Printf(
-			"- transactions with bogon IP addresses: %s\n",
+		fmt.Fprintf(
+			&info, "- transactions with bogon IP addresses: %s\n",
 			analysis.DNSLookupSuccessWithBogonAddresses.String(),
 		)
 	}
 	if analysis.DNSLookupUnexpectedFailure.Len() > 0 {
 		tk.BlockingFlags |= AnalysisBlockingFlagDNSBlocking
 		tk.DNSFlags |= AnalysisDNSFlagUnexpectedFailure
-		fmt.Printf(
-			"- transactions with unexpected DNS lookup failures: %s\n",
+		fmt.Fprintf(
+			&info, "- transactions with unexpected DNS lookup failures: %s\n",
 			analysis.DNSLookupUnexpectedFailure.String(),
 		)
 	}
 	if analysis.DNSLookupSuccessWithInvalidAddresses.Len() > 0 {
 		tk.BlockingFlags |= AnalysisBlockingFlagDNSBlocking
 		tk.DNSFlags |= AnalysisDNSFlagUnexpectedAddrs
-		fmt.Printf(
-			"- transactions with invalid IP addrs: %s\n",
+		fmt.Fprintf(
+			&info, "- transactions with invalid IP addrs: %s\n",
 			analysis.DNSLookupSuccessWithInvalidAddresses.String(),
 		)
 	}
@@ -55,8 +53,8 @@ func analysisExtCompute(tk *TestKeys, container *minipipeline.WebObservationsCon
 	// TCP analysis
 	if analysis.TCPConnectUnexpectedFailure.Len() > 0 {
 		tk.BlockingFlags |= AnalysisBlockingFlagTCPIPBlocking
-		fmt.Printf(
-			"- transactions with unexpected TCP connect failures: %s\n",
+		fmt.Fprintf(
+			&info, "- transactions with unexpected TCP connect failures: %s\n",
 			analysis.TCPConnectUnexpectedFailure.String(),
 		)
 	}
@@ -64,31 +62,33 @@ func analysisExtCompute(tk *TestKeys, container *minipipeline.WebObservationsCon
 	// TLS analysis
 	if analysis.TLSHandshakeUnexpectedFailure.Len() > 0 {
 		tk.BlockingFlags |= AnalysisBlockingFlagTLSBlocking
-		fmt.Printf(
-			"- transactions with unexpected TLS handshake failures: %s\n",
+		fmt.Fprintf(
+			&info, "- transactions with unexpected TLS handshake failures: %s\n",
 			analysis.TLSHandshakeUnexpectedFailure.String(),
 		)
 	}
 
-	// HTTP analysis
+	// HTTP failure analysis
 	if analysis.HTTPRoundTripUnexpectedFailure.Len() > 0 {
 		tk.BlockingFlags |= AnalysisBlockingFlagHTTPBlocking
-		fmt.Printf(
-			"- transactions with unexpected HTTP round trip failures: %s\n",
+		fmt.Fprintf(
+			&info, "- transactions with unexpected HTTP round trip failures: %s\n",
 			analysis.HTTPRoundTripUnexpectedFailure.String(),
 		)
 	}
+
+	// HTTPS success analysis
 	if !analysis.HTTPFinalResponseSuccessTLSWithControl.IsNone() {
 		tk.BlockingFlags |= AnalysisBlockingFlagSuccess
-		fmt.Printf(
-			"- transaction with successful HTTPS response with control: %v\n",
+		fmt.Fprintf(
+			&info, "- transaction with successful HTTPS response with control: %v\n",
 			analysis.HTTPFinalResponseSuccessTLSWithControl.Unwrap(),
 		)
 	}
 	if !analysis.HTTPFinalResponseSuccessTLSWithoutControl.IsNone() {
 		tk.BlockingFlags |= AnalysisBlockingFlagSuccess
-		fmt.Printf(
-			"- transaction with successful HTTPS response without control: %v\n",
+		fmt.Fprintf(
+			&info, "- transaction with successful HTTPS response without control: %v\n",
 			analysis.HTTPFinalResponseSuccessTLSWithoutControl.Unwrap(),
 		)
 	}
@@ -96,5 +96,12 @@ func analysisExtCompute(tk *TestKeys, container *minipipeline.WebObservationsCon
 	// TODO(bassosimone): we need to also compute the HTTPDiff flags here
 	// TODO(bassosimone): we need to also compute the null-null flags here
 
-	fmt.Printf("\n\n")
+	// print the content of the analysis only if there's some content to print
+	if content := info.String(); content != "" {
+		fmt.Printf("\n")
+		fmt.Printf("Extended Analysis\n")
+		fmt.Printf("-----------------\n")
+		fmt.Printf("%s", content)
+		fmt.Printf("\n\n")
+	}
 }
