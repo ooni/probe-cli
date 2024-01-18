@@ -38,7 +38,7 @@ func (tk *TestKeys) analysisClassic(logger model.Logger) {
 	}
 
 	// 2. compute extended analysis flags
-	analysisExtCompute(tk, container)
+	analysisExtMain(tk, container)
 
 	// 3. filter observations to only include results collected by the
 	// system resolver, which approximates v0.4's results
@@ -81,6 +81,7 @@ func analysisClassicDNSConsistency(woa *minipipeline.WebAnalysis) optional.Value
 }
 
 func (tk *TestKeys) setHTTPDiffValues(woa *minipipeline.WebAnalysis) {
+	// TODO(bassosimone): this code should use [newAnalysisHTTPDiffStatus].
 	const bodyProportionFactor = 0.7
 	if !woa.HTTPFinalResponseDiffBodyProportionFactor.IsNone() {
 		tk.BodyProportion = woa.HTTPFinalResponseDiffBodyProportionFactor.Unwrap()
@@ -125,6 +126,7 @@ var _ analysisClassicTestKeysProxy = &TestKeys{}
 
 // httpDiff implements analysisClassicTestKeysProxy.
 func (tk *TestKeys) httpDiff() bool {
+	// TODO(bassosimone): this code should use [newAnalysisHTTPDiffStatus].
 	if tk.StatusCodeMatch != nil && *tk.StatusCodeMatch {
 		if tk.BodyLengthMatch != nil && *tk.BodyLengthMatch {
 			return false
