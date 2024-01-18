@@ -33,9 +33,9 @@ func dnsHijackingToProxyWithHTTPURL() *TestCase {
 			StatusCodeMatch: true,
 			HeadersMatch:    true,
 			TitleMatch:      true,
-			XStatus:         2, // StatusSuccessCleartext
-			XDNSFlags:       4, // AnalysisDNSFlagUnexpectedAddrs
-			XBlockingFlags:  1, // AnalysisBlockingFlagDNSBlocking
+			XStatus:         2,  // StatusSuccessCleartext
+			XDNSFlags:       4,  // AnalysisDNSFlagUnexpectedAddrs
+			XBlockingFlags:  33, // AnalysisBlockingFlagDNSBlocking | AnalysisBlockingFlagSuccess
 			Accessible:      true,
 			Blocking:        false,
 		},
