@@ -95,5 +95,8 @@
       "ControlHTTPResponseHeadersKeys": null,
       "ControlHTTPResponseTitle": null
     }
+  },
+  "ControlFinalResponseExpectations": {
+    "Failure": "unknown_error"
   }
 }

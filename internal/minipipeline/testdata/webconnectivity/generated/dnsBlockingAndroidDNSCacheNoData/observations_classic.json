@@ -51,5 +51,8 @@
     }
   ],
   "DNSLookupSuccesses": [],
-  "KnownTCPEndpoints": {}
+  "KnownTCPEndpoints": {},
+  "ControlFinalResponseExpectations": {
+    "Failure": ""
+  }
 }
