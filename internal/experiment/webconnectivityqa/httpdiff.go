@@ -92,7 +92,7 @@ func httpDiffWithInconsistentDNS() *TestCase {
 			TitleMatch:            false,
 			XStatus:               96, // StatusAnomalyHTTPDiff | StatusAnomalyDNS
 			XDNSFlags:             4,  // AnalysisDNSFlagUnexpectedAddrs
-			XBlockingFlags:        35, // AnalysisBlockingFlagSuccess | AnalysisBlockingFlagDNSBlocking | AnalysisBlockingFlagTCPIPBlocking
+			XBlockingFlags:        17, // AnalysisBlockingFlagDNSBlocking | AnalysisBlockingFlagHTTPDiff
 			Accessible:            false,
 			Blocking:              "dns",
 		},
