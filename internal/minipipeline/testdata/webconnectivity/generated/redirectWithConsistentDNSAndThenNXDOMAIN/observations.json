@@ -351,5 +351,8 @@
       },
       "ControlHTTPResponseTitle": "Default Web Page"
     }
+  },
+  "ControlFinalResponseExpectations": {
+    "Failure": ""
   }
 }

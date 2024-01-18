@@ -52,5 +52,8 @@ func ClassicFilter(input *WebObservationsContainer) (output *WebObservationsCont
 		output.KnownTCPEndpoints[txid] = entry
 	}
 
+	// ControlFinalResponseExpectations
+	output.ControlFinalResponseExpectations = input.ControlFinalResponseExpectations
+
 	return
 }

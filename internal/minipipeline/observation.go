@@ -253,6 +253,14 @@ type WebObservation struct {
 	ControlHTTPResponseTitle optional.Value[string]
 }
 
+// WebObservationsControlFinalResponseExpectation summarizes the expectations
+// on the final response based on what the control has observed.
+type WebObservationsControlFinalResponseExpectation struct {
+	// Failure is the failure observed by the control when attempting
+	// to fetch the final webpage associated with a URL.
+	Failure optional.Value[string]
+}
+
 // WebObservationsContainer contains [*WebObservations].
 //
 // The zero value of this struct is not ready to use, please use [NewWebObservationsContainer].
@@ -272,6 +280,10 @@ type WebObservationsContainer struct {
 
 	// KnownTCPEndpoints maps transaction IDs to TCP observations.
 	KnownTCPEndpoints map[int64]*WebObservation
+
+	// ControlFinalResponseExpectations summarizes the expectations we have
+	// for the control based on the final response.
+	ControlFinalResponseExpectations optional.Value[*WebObservationsControlFinalResponseExpectation]
 
 	// knownIPAddresses is an internal field that maps an IP address to the
 	// corresponding DNS observation that discovered it.
@@ -584,7 +596,6 @@ func (c *WebObservationsContainer) controlXrefTLSFailures(resp *model.THResponse
 }
 
 func (c *WebObservationsContainer) controlSetHTTPFinalResponseExpectation(resp *model.THResponse) {
-
 	// We need to set expectations for each type of observation. For example, to detect
 	// NXDOMAIN blocking with redirects when there's the expectation of success, we need
 	// to have the expectation inside the DNS-lookup-failure observation.
@@ -594,6 +605,13 @@ func (c *WebObservationsContainer) controlSetHTTPFinalResponseExpectation(resp *
 	for _, obs := range c.KnownTCPEndpoints {
 		observations = append(observations, obs)
 	}
+
+	// make sure we have a final expectation based on what the control observed, which
+	// is in turn necessary to figure out whether unexplained probe failures during redirects
+	// are expected or unexpected.
+	c.ControlFinalResponseExpectations = optional.Some(&WebObservationsControlFinalResponseExpectation{
+		Failure: optional.Some(utilsStringPointerToString(resp.HTTPRequest.Failure)),
+	})
 
 	for _, obs := range observations {
 		obs.ControlHTTPFailure = optional.Some(utilsStringPointerToString(resp.HTTPRequest.Failure))
