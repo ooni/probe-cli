@@ -1,4 +1,7 @@
 {
+  "ControlFinalResponseExpectations": {
+    "Failure": ""
+  },
   "DNSLookupSuccessWithInvalidAddresses": [],
   "DNSLookupSuccessWithValidAddress": [
     1,
