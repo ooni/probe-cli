@@ -1,4 +1,7 @@
 {
+  "ControlFinalResponseExpectations": {
+    "Failure": "dns_lookup_error"
+  },
   "DNSLookupSuccessWithInvalidAddresses": [],
   "DNSLookupSuccessWithValidAddress": [],
   "DNSLookupSuccessWithBogonAddresses": [],

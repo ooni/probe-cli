@@ -95,7 +95,9 @@ func NewLinearWebAnalysis(input *WebObservationsContainer) (output []*WebObserva
 // AnalyzeWebObservationsWithoutLinearAnalysis generates a [*WebAnalysis] from a [*WebObservationsContainer]
 // but avoids calling [NewLinearyAnalysis] to generate a linear analysis.
 func AnalyzeWebObservationsWithoutLinearAnalysis(container *WebObservationsContainer) *WebAnalysis {
-	analysis := &WebAnalysis{}
+	analysis := &WebAnalysis{
+		ControlFinalResponseExpectations: container.ControlFinalResponseExpectations,
+	}
 
 	analysis.dnsComputeSuccessMetrics(container)
 	analysis.dnsComputeSuccessMetricsClassic(container)
@@ -121,6 +123,11 @@ func AnalyzeWebObservationsWithLinearAnalysis(container *WebObservationsContaine
 //
 // The zero value of this struct is ready to use.
 type WebAnalysis struct {
+	// ControlFinalResponseExpectations summarizes the expectations we have
+	// for the control based on the final response. You should use this field
+	// to determine whether unexplained failures are expected or unexpected.
+	ControlFinalResponseExpectations optional.Value[*WebObservationsControlFinalResponseExpectation]
+
 	// DNSLookupSuccessWithInvalidAddresses contains DNS transactions with invalid IP addresses by
 	// taking into account control info, bogons, and TLS handshakes.
 	DNSLookupSuccessWithInvalidAddresses Set[int64]
