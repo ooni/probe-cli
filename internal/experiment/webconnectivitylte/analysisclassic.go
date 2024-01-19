@@ -1,5 +1,12 @@
 package webconnectivitylte
 
+//
+// The "classic" analysis engine.
+//
+// We try to emulate results produced by v0.4 of Web Connectivity and
+// also attempt to provide a more fine-grained view of the results.
+//
+
 import (
 	"github.com/ooni/probe-cli/v3/internal/minipipeline"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -8,7 +15,8 @@ import (
 )
 
 // AnalysisEngineClassic is an alternative analysis engine that aims to produce
-// results that are backward compatible with Web Connectivity v0.4.
+// results that are backward compatible with Web Connectivity v0.4 while also
+// procuding more fine-grained blocking flags.
 func AnalysisEngineClassic(tk *TestKeys, logger model.Logger) {
 	tk.analysisClassic(logger)
 }
@@ -31,26 +39,29 @@ func (tk *TestKeys) analysisClassic(logger model.Logger) {
 		runtimex.Try0(container.IngestControlMessages(tk.ControlRequest, tk.Control))
 	}
 
-	// 2. filter observations to only include results collected by the
+	// 2. compute extended analysis flags
+	analysisExtMain(tk, container)
+
+	// 3. filter observations to only include results collected by the
 	// system resolver, which approximates v0.4's results
 	classic := minipipeline.ClassicFilter(container)
 
 	// 3. produce a web observations analysis based on the web observations
 	woa := minipipeline.AnalyzeWebObservationsWithLinearAnalysis(classic)
 
-	// 4. determine the DNS consistency
+	// 5. determine the DNS consistency
 	tk.DNSConsistency = analysisClassicDNSConsistency(woa)
 
-	// 5. set DNSExperimentFailure
+	// 6. set DNSExperimentFailure
 	if !woa.DNSExperimentFailure.IsNone() && woa.DNSExperimentFailure.Unwrap() != "" {
 		value := woa.DNSExperimentFailure.Unwrap()
 		tk.DNSExperimentFailure = &value
 	}
 
-	// 6. compute the HTTPDiff values
+	// 7. compute the HTTPDiff values
 	tk.setHTTPDiffValues(woa)
 
-	// 7. compute blocking & accessible
+	// 8. compute blocking & accessible
 	analysisClassicComputeBlockingAccessible(woa, tk)
 }
 
@@ -72,6 +83,7 @@ func analysisClassicDNSConsistency(woa *minipipeline.WebAnalysis) optional.Value
 }
 
 func (tk *TestKeys) setHTTPDiffValues(woa *minipipeline.WebAnalysis) {
+	// TODO(bassosimone): this code should use [newAnalysisHTTPDiffStatus].
 	const bodyProportionFactor = 0.7
 	if !woa.HTTPFinalResponseDiffBodyProportionFactor.IsNone() {
 		tk.BodyProportion = woa.HTTPFinalResponseDiffBodyProportionFactor.Unwrap()
@@ -116,6 +128,7 @@ var _ analysisClassicTestKeysProxy = &TestKeys{}
 
 // httpDiff implements analysisClassicTestKeysProxy.
 func (tk *TestKeys) httpDiff() bool {
+	// TODO(bassosimone): this code should use [newAnalysisHTTPDiffStatus].
 	if tk.StatusCodeMatch != nil && *tk.StatusCodeMatch {
 		if tk.BodyLengthMatch != nil && *tk.BodyLengthMatch {
 			return false

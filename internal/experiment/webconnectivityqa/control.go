@@ -89,8 +89,9 @@ func controlFailureWithSuccessfulHTTPSWebsite() *TestCase {
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
 			ControlFailure: "unknown_failure: httpapi: all endpoints failed: [ connection_reset; connection_reset; connection_reset; connection_reset;]",
-			XStatus:        1, // StatusSuccessSecure
-			XNullNullFlags: 8, // analysisFlagNullNullSuccessfulHTTPS
+			XStatus:        1,  // StatusSuccessSecure
+			XBlockingFlags: 32, // AnalysisBlockingFlagSuccess
+			XNullNullFlags: 8,  // analysisFlagNullNullSuccessfulHTTPS
 			Accessible:     true,
 			Blocking:       false,
 		},

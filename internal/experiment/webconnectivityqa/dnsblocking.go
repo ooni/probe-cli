@@ -79,7 +79,7 @@ func dnsBlockingBOGON() *TestCase {
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "inconsistent",
 			XStatus:               4256, // StatusExperimentConnect | StatusAnomalyConnect | StatusAnomalyDNS
-			XDNSFlags:             1,    // AnalysisFlagDNSBogon
+			XDNSFlags:             5,    // AnalysisFlagDNSBogon | AnalysisDNSFlagUnexpectedAddrs
 			XBlockingFlags:        33,   // AnalysisBlockingFlagDNSBlocking | AnalysisBlockingFlagSuccess
 			Accessible:            false,
 			Blocking:              "dns",
