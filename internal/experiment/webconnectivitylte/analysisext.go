@@ -1,7 +1,7 @@
 package webconnectivitylte
 
 //
-// The extended ("ext") analysis engine.
+// The extended ("ext") analysis sub-engine (used by "classic").
 //
 // We analyze all the produced observations without limiting ourselves to
 // analyzing observations rooted into getaddrinfo lookups.
@@ -56,31 +56,22 @@ func analysisExtDNS(tk *TestKeys, analysis *minipipeline.WebAnalysis, info io.Wr
 	// note: here we want to match all the possible conditions because
 	// we're processing N >= 1 DNS lookups.
 
-	if analysis.DNSLookupSuccessWithBogonAddresses.Len() > 0 {
+	if failures := analysis.DNSLookupSuccessWithBogonAddresses; failures.Len() > 0 {
 		tk.BlockingFlags |= AnalysisBlockingFlagDNSBlocking
 		tk.DNSFlags |= AnalysisFlagDNSBogon
-		fmt.Fprintf(
-			info, "- transactions with bogon IP addresses: %s\n",
-			analysis.DNSLookupSuccessWithBogonAddresses.String(),
-		)
+		fmt.Fprintf(info, "- transactions with bogon IP addrs: %s\n", failures.String())
 	}
 
-	if analysis.DNSLookupUnexpectedFailure.Len() > 0 {
+	if failures := analysis.DNSLookupUnexpectedFailure; failures.Len() > 0 {
 		tk.BlockingFlags |= AnalysisBlockingFlagDNSBlocking
 		tk.DNSFlags |= AnalysisDNSFlagUnexpectedFailure
-		fmt.Fprintf(
-			info, "- transactions with unexpected DNS lookup failures: %s\n",
-			analysis.DNSLookupUnexpectedFailure.String(),
-		)
+		fmt.Fprintf(info, "- transactions with unexpected DNS lookup failures: %s\n", failures.String())
 	}
 
-	if analysis.DNSLookupSuccessWithInvalidAddresses.Len() > 0 {
+	if failures := analysis.DNSLookupSuccessWithInvalidAddresses; failures.Len() > 0 {
 		tk.BlockingFlags |= AnalysisBlockingFlagDNSBlocking
 		tk.DNSFlags |= AnalysisDNSFlagUnexpectedAddrs
-		fmt.Fprintf(
-			info, "- transactions with invalid IP addrs: %s\n",
-			analysis.DNSLookupSuccessWithInvalidAddresses.String(),
-		)
+		fmt.Fprintf(info, "- transactions with invalid IP addrs: %s\n", failures.String())
 	}
 }
 
@@ -93,70 +84,60 @@ func analysisExtEndpointFailure(tk *TestKeys, analysis *minipipeline.WebAnalysis
 	// use the TH to establish some expectations.
 
 	// TCP analysis
-	if analysis.TCPConnectUnexpectedFailure.Len() > 0 {
+	if failures := analysis.TCPConnectUnexpectedFailure; failures.Len() > 0 {
 		tk.BlockingFlags |= AnalysisBlockingFlagTCPIPBlocking
-		fmt.Fprintf(
-			info, "- transactions with unexpected TCP connect failures: %s\n",
-			analysis.TCPConnectUnexpectedFailure.String(),
-		)
+		fmt.Fprintf(info, "- transactions with unexpected TCP connect failures: %s\n", failures.String())
 	}
 
 	// TLS analysis
-	if analysis.TLSHandshakeUnexpectedFailure.Len() > 0 {
+	if failures := analysis.TLSHandshakeUnexpectedFailure; failures.Len() > 0 {
 		tk.BlockingFlags |= AnalysisBlockingFlagTLSBlocking
-		fmt.Fprintf(
-			info, "- transactions with unexpected TLS handshake failures: %s\n",
-			analysis.TLSHandshakeUnexpectedFailure.String(),
-		)
+		fmt.Fprintf(info, "- transactions with unexpected TLS handshake failures: %s\n", failures.String())
 	}
 
 	// HTTP failure analysis
-	if analysis.HTTPRoundTripUnexpectedFailure.Len() > 0 {
+	if failures := analysis.HTTPRoundTripUnexpectedFailure; failures.Len() > 0 {
 		tk.BlockingFlags |= AnalysisBlockingFlagHTTPBlocking
-		fmt.Fprintf(
-			info, "- transactions with unexpected HTTP round trip failures: %s\n",
-			analysis.HTTPRoundTripUnexpectedFailure.String(),
-		)
+		fmt.Fprintf(info, "- transactions with unexpected HTTP round trip failures: %s\n", failures.String())
 	}
 }
 
 func analysisExtHTTPFinalResponse(tk *TestKeys, analysis *minipipeline.WebAnalysis, info io.Writer) {
-	switch {
 	// case #1: HTTP final response without control
 	//
 	// we don't know what to do in this case.
-	case !analysis.HTTPFinalResponseSuccessTCPWithoutControl.IsNone():
-		txID := analysis.HTTPFinalResponseSuccessTCPWithoutControl.Unwrap()
+	if success := analysis.HTTPFinalResponseSuccessTCPWithoutControl; !success.IsNone() {
 		fmt.Fprintf(
 			info,
 			"- there is no control information to compare to the final response (transaction: %d)\n",
-			txID,
+			success.Unwrap(),
 		)
 		return
+	}
 
 	// case #2: HTTPS final response without control
 	//
 	// this is automatic success.
-	case !analysis.HTTPFinalResponseSuccessTLSWithoutControl.IsNone():
-		txID := analysis.HTTPFinalResponseSuccessTLSWithoutControl.Unwrap()
-		fmt.Fprintf(info, "- the final response (transaction: %d) uses TLS: automatic success\n", txID)
+	if success := analysis.HTTPFinalResponseSuccessTLSWithoutControl; !success.IsNone() {
+		fmt.Fprintf(info, "- the final response (transaction: %d) uses TLS: automatic success\n", success.Unwrap())
 		tk.BlockingFlags |= AnalysisBlockingFlagSuccess
 		return
+	}
 
 	// case #3: HTTPS final response with control
 	//
 	// this is also automatic success.
-	case !analysis.HTTPFinalResponseSuccessTLSWithControl.IsNone():
-		txID := analysis.HTTPFinalResponseSuccessTLSWithControl.Unwrap()
-		fmt.Fprintf(info, "- the final response (transaction: %d) uses TLS: automatic success\n", txID)
+	if success := analysis.HTTPFinalResponseSuccessTLSWithControl; !success.IsNone() {
+		fmt.Fprintf(info, "- the final response (transaction: %d) uses TLS: automatic success\n", success.Unwrap())
 		tk.BlockingFlags |= AnalysisBlockingFlagSuccess
 		return
+	}
 
 	// case #4: HTTP final response with control
 	//
 	// we need to run HTTPDiff
-	case !analysis.HTTPFinalResponseSuccessTCPWithControl.IsNone():
-		txID := analysis.HTTPFinalResponseSuccessTCPWithControl.Unwrap()
+	if success := analysis.HTTPFinalResponseSuccessTCPWithControl; !success.IsNone() {
+		txID := success.Unwrap()
 		hds := newAnalysisHTTPDiffStatus(analysis)
 		if hds.httpDiff() {
 			tk.BlockingFlags |= AnalysisBlockingFlagHTTPDiff
@@ -165,10 +146,6 @@ func analysisExtHTTPFinalResponse(tk *TestKeys, analysis *minipipeline.WebAnalys
 		}
 		fmt.Fprintf(info, "- the final response (transaction: %d) matches the control response\n", txID)
 		tk.BlockingFlags |= AnalysisBlockingFlagSuccess
-		return
-
-	// case #5: we don't know
-	default:
 		return
 	}
 }
