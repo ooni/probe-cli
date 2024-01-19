@@ -266,7 +266,7 @@ func analysisExtExpectedFailures(tk *TestKeys, analysis *minipipeline.WebAnalysi
 
 	// if the control did not resolve any address but the probe could, this is
 	// quite likely censorship injecting addrs for otherwise "down" or nonexisting
-	// domains, which lives on as a ghost hunting people
+	// domains, which lives on as a ghost haunting people
 	if !analysis.ControlExpectations.IsNone() {
 		expect := analysis.ControlExpectations.Unwrap()
 		if expect.DNSAddresses.Len() <= 0 && analysis.DNSLookupSuccess.Len() > 0 {
