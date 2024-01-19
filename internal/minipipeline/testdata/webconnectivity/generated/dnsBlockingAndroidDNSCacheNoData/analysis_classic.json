@@ -10,6 +10,7 @@
   "DNSLookupUnexpectedFailure": [
     1
   ],
+  "DNSLookupUnexplainedFailure": [],
   "DNSExperimentFailure": "android_dns_cache_no_data",
   "DNSLookupExpectedFailure": [],
   "DNSLookupExpectedSuccess": [],
@@ -26,6 +27,7 @@
   "TLSHandshakeUnexplainedFailureDuringWebFetch": [],
   "TLSHandshakeUnexplainedFailureDuringConnectivityCheck": [],
   "HTTPRoundTripUnexpectedFailure": [],
+  "HTTPRoundTripUnexplainedFailure": [],
   "HTTPFinalResponseSuccessTLSWithoutControl": null,
   "HTTPFinalResponseSuccessTLSWithControl": null,
   "HTTPFinalResponseSuccessTCPWithoutControl": null,
