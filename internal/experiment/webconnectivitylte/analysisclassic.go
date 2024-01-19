@@ -14,10 +14,10 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// AnalysisEngineClassic is an alternative analysis engine that aims to produce
+// analysisEngineClassic is an alternative analysis engine that aims to produce
 // results that are backward compatible with Web Connectivity v0.4 while also
 // procuding more fine-grained blocking flags.
-func AnalysisEngineClassic(tk *TestKeys, logger model.Logger) {
+func analysisEngineClassic(tk *TestKeys, logger model.Logger) {
 	tk.analysisClassic(logger)
 }
 
