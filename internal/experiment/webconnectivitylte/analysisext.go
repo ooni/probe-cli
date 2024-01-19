@@ -25,13 +25,19 @@ func analysisExtMain(tk *TestKeys, container *minipipeline.WebObservationsContai
 	// prepare for emitting informational messages
 	var info strings.Builder
 
-	// DNS & address analysis
+	// DNS & address analysis matching with control info (i.e., analysis
+	// of what happened during the 0th redirect)
 	analysisExtDNS(tk, analysis, &info)
 
-	// endpoint (TCP, TLS, HTTP) failure analysis
+	// endpoint (TCP, TLS, HTTP) failure analysis matching with control info (i.e., analysis
+	// of what happened during the 0th redirect)
 	analysisExtEndpointFailure(tk, analysis, &info)
 
-	// HTTP success analysis
+	// error occurring during redirects (which we can possibly explain if the control
+	// succeeded in getting a webpage from the target server)
+	analysisExtRedirectErrors(tk, analysis, &info)
+
+	// HTTP success analysis (i.e., only if we manage to get an HTTP response)
 	analysisExtHTTPFinalResponse(tk, analysis, &info)
 
 	// TODO(bassosimone): we need to also compute the null-null flags here
@@ -164,5 +170,77 @@ func analysisExtHTTPFinalResponse(tk *TestKeys, analysis *minipipeline.WebAnalys
 	// case #5: we don't know
 	default:
 		return
+	}
+}
+
+func analysisExtRedirectErrors(tk *TestKeys, analysis *minipipeline.WebAnalysis, info io.Writer) {
+	// Implementation note: we care about cases in which we don't have a final response
+	// to compare to and we have unexplained failures. We define "unexplained failure" a
+	// failure for which there's no corresponding control information. If we have test
+	// helper information telling us that the control server could fetch the final webpage
+	// then we can turn these unexplained errors into explained errors.
+
+	switch {
+	// case #1: there is a successful final response with or without control
+	case !analysis.HTTPFinalResponseSuccessTCPWithoutControl.IsNone():
+		return
+	case !analysis.HTTPFinalResponseSuccessTLSWithoutControl.IsNone():
+		return
+	case !analysis.HTTPFinalResponseSuccessTLSWithControl.IsNone():
+		return
+	case !analysis.HTTPFinalResponseSuccessTCPWithControl.IsNone():
+		return
+
+	// case #2: no final response, which is what we care about
+	default:
+		// fallthrough
+	}
+
+	// we care about cases in which the TH succeeded
+	if analysis.ControlFinalResponseExpectations.IsNone() {
+		return
+	}
+	expect := analysis.ControlFinalResponseExpectations.Unwrap()
+	if expect.Failure.IsNone() {
+		return
+	}
+	if expect.Failure.Unwrap() != "" {
+		return
+	}
+
+	// okay, now we're in business and we can explain what happened
+	//
+	// these cases are NOT MUTUALLY EXCLUSIVE because we may have different
+	// DNS lookups or endpoints failing in different ways here
+	if failures := analysis.DNSLookupUnexplainedFailure; failures.Len() > 0 {
+		tk.BlockingFlags |= AnalysisBlockingFlagDNSBlocking
+		fmt.Fprintf(
+			info, "- transactions with unexplained DNS lookup failures and successful control: %s\n",
+			failures.String(),
+		)
+	}
+
+	if failures := analysis.TCPConnectUnexplainedFailure; failures.Len() > 0 {
+		tk.BlockingFlags |= AnalysisBlockingFlagTCPIPBlocking
+		fmt.Fprintf(
+			info, "- transactions with unexplained TCP connect failures and successful control: %s\n",
+			failures.String(),
+		)
+	}
+
+	if failures := analysis.TLSHandshakeUnexplainedFailure; failures.Len() > 0 {
+		tk.BlockingFlags |= AnalysisBlockingFlagTLSBlocking
+		fmt.Fprintf(
+			info, "- transactions with unexplained TLS handshake failures and successful control: %s\n",
+			failures.String(),
+		)
+	}
+
+	if failures := analysis.HTTPRoundTripUnexplainedFailure; failures.Len() > 0 {
+		tk.BlockingFlags |= AnalysisBlockingFlagHTTPBlocking
+		fmt.Fprintf(
+			info, "- transactions with unexplained HTTP round trip failures and successful control: %s\n",
+			failures.String(),
+		)
 	}
 }
