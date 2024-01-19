@@ -99,16 +99,16 @@ type TestKeys struct {
 	BodyProportion float64 `json:"body_proportion"`
 
 	// BodyLength match tells us whether the body length matches.
-	BodyLengthMatch *bool `json:"body_length_match"`
+	BodyLengthMatch optional.Value[bool] `json:"body_length_match"`
 
 	// HeadersMatch tells us whether the headers match.
-	HeadersMatch *bool `json:"headers_match"`
+	HeadersMatch optional.Value[bool] `json:"headers_match"`
 
 	// StatusCodeMatch tells us whether the status code matches.
-	StatusCodeMatch *bool `json:"status_code_match"`
+	StatusCodeMatch optional.Value[bool] `json:"status_code_match"`
 
 	// TitleMatch tells us whether the title matches.
-	TitleMatch *bool `json:"title_match"`
+	TitleMatch optional.Value[bool] `json:"title_match"`
 
 	// Blocking indicates the reason for blocking. This is notoriously a bad
 	// type because it can be one of the following values:
@@ -363,10 +363,10 @@ func NewTestKeys() *TestKeys {
 		BlockingFlags:         0,
 		NullNullFlags:         0,
 		BodyProportion:        0,
-		BodyLengthMatch:       nil,
-		HeadersMatch:          nil,
-		StatusCodeMatch:       nil,
-		TitleMatch:            nil,
+		BodyLengthMatch:       optional.None[bool](),
+		HeadersMatch:          optional.None[bool](),
+		StatusCodeMatch:       optional.None[bool](),
+		TitleMatch:            optional.None[bool](),
 		Blocking:              nil,
 		Accessible:            nil,
 		ControlRequest:        nil,

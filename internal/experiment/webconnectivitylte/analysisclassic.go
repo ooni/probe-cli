@@ -83,28 +83,12 @@ func analysisClassicDNSConsistency(woa *minipipeline.WebAnalysis) optional.Value
 }
 
 func (tk *TestKeys) setHTTPDiffValues(woa *minipipeline.WebAnalysis) {
-	// TODO(bassosimone): this code should use [newAnalysisHTTPDiffStatus].
-	const bodyProportionFactor = 0.7
-	if !woa.HTTPFinalResponseDiffBodyProportionFactor.IsNone() {
-		tk.BodyProportion = woa.HTTPFinalResponseDiffBodyProportionFactor.Unwrap()
-		value := tk.BodyProportion > bodyProportionFactor
-		tk.BodyLengthMatch = &value
-	}
-
-	if !woa.HTTPFinalResponseDiffUncommonHeadersIntersection.IsNone() {
-		value := len(woa.HTTPFinalResponseDiffUncommonHeadersIntersection.Unwrap()) > 0
-		tk.HeadersMatch = &value
-	}
-
-	if !woa.HTTPFinalResponseDiffStatusCodeMatch.IsNone() {
-		value := woa.HTTPFinalResponseDiffStatusCodeMatch.Unwrap()
-		tk.StatusCodeMatch = &value
-	}
-
-	if !woa.HTTPFinalResponseDiffTitleDifferentLongWords.IsNone() {
-		value := len(woa.HTTPFinalResponseDiffTitleDifferentLongWords.Unwrap()) <= 0
-		tk.TitleMatch = &value
-	}
+	hds := newAnalysisHTTPDiffStatus(woa)
+	tk.BodyProportion = hds.BodyProportion.UnwrapOr(0)
+	tk.BodyLengthMatch = hds.BodyLengthMatch
+	tk.HeadersMatch = hds.HeadersMatch
+	tk.StatusCodeMatch = hds.StatusCodeMatch
+	tk.TitleMatch = hds.TitleMatch
 }
 
 type analysisClassicTestKeysProxy interface {
@@ -128,20 +112,27 @@ var _ analysisClassicTestKeysProxy = &TestKeys{}
 
 // httpDiff implements analysisClassicTestKeysProxy.
 func (tk *TestKeys) httpDiff() bool {
-	// TODO(bassosimone): this code should use [newAnalysisHTTPDiffStatus].
-	if tk.StatusCodeMatch != nil && *tk.StatusCodeMatch {
-		if tk.BodyLengthMatch != nil && *tk.BodyLengthMatch {
-			return false
-		}
-		if tk.HeadersMatch != nil && *tk.HeadersMatch {
-			return false
-		}
-		if tk.TitleMatch != nil && *tk.TitleMatch {
-			return false
-		}
-		// fallthrough
-	}
-	return true
+	return analysisHTTPDiffAlgorithm(tk)
+}
+
+// bodyLengthMatch implements analysisHTTPDiffValuesProvider.
+func (tk *TestKeys) bodyLengthMatch() optional.Value[bool] {
+	return tk.BodyLengthMatch
+}
+
+// headersMatch implements analysisHTTPDiffValuesProvider.
+func (tk *TestKeys) headersMatch() optional.Value[bool] {
+	return tk.HeadersMatch
+}
+
+// statusCodeMatch implements analysisHTTPDiffValuesProvider.
+func (tk *TestKeys) statusCodeMatch() optional.Value[bool] {
+	return tk.StatusCodeMatch
+}
+
+// titleMatch implements analysisHTTPDiffValuesProvider.
+func (tk *TestKeys) titleMatch() optional.Value[bool] {
+	return tk.TitleMatch
 }
 
 // setBlockingFalse implements analysisClassicTestKeysProxy.
