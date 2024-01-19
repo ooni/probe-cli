@@ -1,4 +1,7 @@
 {
+  "ControlFinalResponseExpectations": {
+    "Failure": "generic_timeout_error"
+  },
   "DNSLookupSuccessWithInvalidAddresses": [],
   "DNSLookupSuccessWithValidAddress": [
     1
