@@ -45,7 +45,8 @@
   ],
   "DNSLookupSuccesses": [],
   "KnownTCPEndpoints": {},
-  "ControlFinalResponseExpectations": {
-    "Failure": "dns_lookup_error"
+  "ControlExpectations": {
+    "DNSAddresses": [],
+    "FinalResponseFailure": "dns_lookup_error"
   }
 }

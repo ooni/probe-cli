@@ -382,7 +382,10 @@
       "ControlHTTPResponseTitle": "Nexa Center for Internet \u0026 Society | Il centro Nexa è un centro di ricerca del Dipartimento di Automatica e Informatica del Politecnico di Torino"
     }
   },
-  "ControlFinalResponseExpectations": {
-    "Failure": ""
+  "ControlExpectations": {
+    "DNSAddresses": [
+      "130.192.16.171"
+    ],
+    "FinalResponseFailure": ""
   }
 }

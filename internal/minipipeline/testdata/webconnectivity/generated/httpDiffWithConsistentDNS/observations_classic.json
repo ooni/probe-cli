@@ -106,7 +106,10 @@
       "ControlHTTPResponseTitle": "Default Web Page"
     }
   },
-  "ControlFinalResponseExpectations": {
-    "Failure": ""
+  "ControlExpectations": {
+    "DNSAddresses": [
+      "93.184.216.34"
+    ],
+    "FinalResponseFailure": ""
   }
 }

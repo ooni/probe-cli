@@ -187,7 +187,10 @@
       "ControlHTTPResponseTitle": null
     }
   },
-  "ControlFinalResponseExpectations": {
-    "Failure": "unknown_error"
+  "ControlExpectations": {
+    "DNSAddresses": [
+      "104.154.89.105"
+    ],
+    "FinalResponseFailure": "unknown_error"
   }
 }

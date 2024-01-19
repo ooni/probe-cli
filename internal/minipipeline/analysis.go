@@ -96,7 +96,7 @@ func NewLinearWebAnalysis(input *WebObservationsContainer) (output []*WebObserva
 // but avoids calling [NewLinearyAnalysis] to generate a linear analysis.
 func AnalyzeWebObservationsWithoutLinearAnalysis(container *WebObservationsContainer) *WebAnalysis {
 	analysis := &WebAnalysis{
-		ControlFinalResponseExpectations: container.ControlFinalResponseExpectations,
+		ControlExpectations: container.ControlExpectations,
 	}
 
 	analysis.dnsComputeSuccessMetrics(container)
@@ -123,10 +123,14 @@ func AnalyzeWebObservationsWithLinearAnalysis(container *WebObservationsContaine
 //
 // The zero value of this struct is ready to use.
 type WebAnalysis struct {
-	// ControlFinalResponseExpectations summarizes the expectations we have
-	// for the control based on the final response. You should use this field
-	// to determine whether unexplained failures are expected or unexpected.
-	ControlFinalResponseExpectations optional.Value[*WebObservationsControlFinalResponseExpectation]
+	// ControlExpectations summarizes the expectations we have for the control. You should
+	// use this field to determine (a) whether unexplained failures are expected or unexpected
+	// and (b) whether we expect to see any resolved IP address and (c) possibly more flags.
+	ControlExpectations optional.Value[*WebObservationsControlExpectations]
+
+	// DNSLookupSuccess contains all DNS lookups that were successful and for which
+	// we potentially have control information (i.e., in the 0-th redirect).
+	DNSLookupSuccess Set[int64]
 
 	// DNSLookupSuccessWithInvalidAddresses contains DNS transactions with invalid IP addresses by
 	// taking into account control info, bogons, and TLS handshakes.
@@ -156,11 +160,16 @@ type WebAnalysis struct {
 	// before hitting redirects (i.e., when TagDepth==0).
 	DNSExperimentFailure optional.Value[string]
 
-	// DNSLookupExpectedFailure contains DNS transactions with expected failures.
+	// DNSLookupExpectedFailure contains DNS transactions with expected failures, i.e.,
+	// failures that are consistent for the probe and the TH.
 	DNSLookupExpectedFailure Set[int64]
 
 	// DNSLookupExpectedSuccess contains DNS transactions with expected successes.
 	DNSLookupExpectedSuccess Set[int64]
+
+	// TCPConnectExpectedFailure contains TCP connect transactions that failed
+	// consistently for the probe and the test helper.
+	TCPConnectExpectedFailure Set[int64]
 
 	// TCPConnectUnexpectedFailure contains TCP endpoint transactions with unexpected failures.
 	TCPConnectUnexpectedFailure Set[int64]
@@ -184,6 +193,10 @@ type WebAnalysis struct {
 	// TCPConnectUnexplainedFailureDuringConnectivityCheck contains failures occurring during redirects
 	// while checking for connectivity, as opposed to fetching a webpage.
 	TCPConnectUnexplainedFailureDuringConnectivityCheck Set[int64]
+
+	// TLSHandshakeExpectedFailure contains TLS endpoint transactions that failed
+	// consistently for the probe and the test helper.
+	TLSHandshakeExpectedFailure Set[int64]
 
 	// TLSHandshakeUnexpectedFailure contains TLS endpoint transactions with unexpected failures.
 	TLSHandshakeUnexpectedFailure Set[int64]
@@ -263,6 +276,10 @@ func (wa *WebAnalysis) dnsComputeSuccessMetrics(c *WebObservationsContainer) {
 		if obs.TagDepth.IsNone() || obs.TagDepth.Unwrap() != 0 {
 			continue
 		}
+
+		// track all the 0-th redirect lookups that succeded which helps to
+		// determine whether the probe UNEXPECTEDLY resolved any address.
+		wa.DNSLookupSuccess.Add(obs.DNSTransactionID.Unwrap())
 
 		// if there's a bogon, mark as invalid
 		if !obs.IPAddressBogon.IsNone() && obs.IPAddressBogon.Unwrap() {
@@ -462,8 +479,12 @@ func (wa *WebAnalysis) tcpComputeMetrics(c *WebObservationsContainer) {
 			continue
 		}
 
-		// handle the case where only the control fails
+		// handle the case where the control fails
 		if obs.ControlTCPConnectFailure.Unwrap() != "" {
+			// if also the probe failed mark this failure as expected
+			if obs.TCPConnectFailure.Unwrap() != "" {
+				wa.TCPConnectExpectedFailure.Add(obs.EndpointTransactionID.Unwrap())
+			}
 			continue
 		}
 
@@ -517,8 +538,12 @@ func (wa *WebAnalysis) tlsComputeMetrics(c *WebObservationsContainer) {
 			continue
 		}
 
-		// handle the case where only the control fails
+		// handle the case where the control fails
 		if obs.ControlTLSHandshakeFailure.Unwrap() != "" {
+			// if also the probe failed mark this failure as expected
+			if obs.TLSHandshakeFailure.Unwrap() != "" {
+				wa.TLSHandshakeExpectedFailure.Add(obs.EndpointTransactionID.Unwrap())
+			}
 			continue
 		}
 

@@ -53,7 +53,7 @@ func ClassicFilter(input *WebObservationsContainer) (output *WebObservationsCont
 	}
 
 	// ControlFinalResponseExpectations
-	output.ControlFinalResponseExpectations = input.ControlFinalResponseExpectations
+	output.ControlExpectations = input.ControlExpectations
 
 	return
 }
