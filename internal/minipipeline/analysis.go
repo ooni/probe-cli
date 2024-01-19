@@ -148,6 +148,10 @@ type WebAnalysis struct {
 	// DNSLookupUnexpectedFailure contains DNS transactions with unexpected failures.
 	DNSLookupUnexpectedFailure Set[int64]
 
+	// DNSLookupUnexplainedFailure contains DNS transactions with unexplained failures (i.e.,
+	// failures for which there's no corresponding control information).
+	DNSLookupUnexplainedFailure Set[int64]
+
 	// DNSExperimentFailure is the first failure experienced by any resolver
 	// before hitting redirects (i.e., when TagDepth==0).
 	DNSExperimentFailure optional.Value[string]
@@ -169,7 +173,8 @@ type WebAnalysis struct {
 	// while checking for connectivity, as opposed to fetching a webpage.
 	TCPConnectUnexpectedFailureDuringConnectivityCheck Set[int64]
 
-	// TCPConnectUnexplainedFailure contains failures occurring during redirects.
+	// TCPConnectUnexplainedFailure contains failures occurring during redirects, i.e.,
+	// failures for which there's no corresponding control info.
 	TCPConnectUnexplainedFailure Set[int64]
 
 	// TCPConnectUnexplainedFailureDuringWebFetch contains failures occurring during redirects
@@ -191,7 +196,8 @@ type WebAnalysis struct {
 	// while checking for connectivity, as opposed to fetching a webpage.
 	TLSHandshakeUnexpectedFailureDuringConnectivityCheck Set[int64]
 
-	// TLSHandshakeUnexplainedFailure contains failures occurring during redirects.
+	// TLSHandshakeUnexplainedFailure contains failures occurring during redirects, i.e.,
+	// failures for which there's no corresponding control info.
 	TLSHandshakeUnexplainedFailure Set[int64]
 
 	// TLSHandshakeUnexplainedFailureDuringWebFetch  contains failures occurring during redirects
@@ -204,6 +210,10 @@ type WebAnalysis struct {
 
 	// HTTPRoundTripUnexpectedFailure contains HTTP endpoint transactions with unexpected failures.
 	HTTPRoundTripUnexpectedFailure Set[int64]
+
+	// HTTPRoundTripUnexplainedFailure contains failures occurring during redirects, i.e.,
+	// failures for which there's no corresponding control info.
+	HTTPRoundTripUnexplainedFailure Set[int64]
 
 	// HTTPFinalResponseSuccessTLSWithoutControl contains the ID of the final response
 	// transaction when the final response succeeded without control and with TLS.
@@ -356,11 +366,6 @@ func (wa *WebAnalysis) dnsComputeFailureMetrics(c *WebObservationsContainer) {
 		}
 		already.Add(obs.DNSTransactionID.Unwrap())
 
-		// lookups once we started following redirects should not be considered
-		if obs.TagDepth.IsNone() || obs.TagDepth.Unwrap() != 0 {
-			continue
-		}
-
 		// Implementation note: a DoH failure is not information about the URL we're
 		// measuring but about the DoH service being blocked.
 		//
@@ -376,6 +381,16 @@ func (wa *WebAnalysis) dnsComputeFailureMetrics(c *WebObservationsContainer) {
 
 		// TODO(bassosimone): if we set an IPv6 address as the resolver address, we
 		// end up with false positive errors when there's no IPv6 support
+
+		// lookups once we started following redirects does not have corresponding
+		// control information, so failures end up being unexplained
+		if obs.TagDepth.IsNone() || obs.TagDepth.Unwrap() != 0 {
+			if obs.DNSLookupFailure.Unwrap() != "" {
+				wa.DNSLookupUnexplainedFailure.Add(obs.DNSTransactionID.Unwrap())
+				continue
+			}
+			continue
+		}
 
 		// honor the DNSExperimentFailure by assigning the first
 		// probe error that we see with depth==0
@@ -533,6 +548,10 @@ func (wa *WebAnalysis) httpComputeFailureMetrics(c *WebObservationsContainer) {
 
 		// handle the case where there is no control information
 		if obs.ControlHTTPFailure.IsNone() {
+			if obs.HTTPFailure.Unwrap() != "" {
+				wa.HTTPRoundTripUnexplainedFailure.Add(obs.EndpointTransactionID.Unwrap())
+				continue
+			}
 			continue
 		}
 
