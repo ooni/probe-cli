@@ -112,14 +112,27 @@ var _ analysisClassicTestKeysProxy = &TestKeys{}
 
 // httpDiff implements analysisClassicTestKeysProxy.
 func (tk *TestKeys) httpDiff() bool {
-	hds := &analysisHTTPDiffStatus{
-		BodyProportion:  optional.Some(tk.BodyProportion),
-		BodyLengthMatch: tk.BodyLengthMatch,
-		HeadersMatch:    tk.HeadersMatch,
-		StatusCodeMatch: tk.StatusCodeMatch,
-		TitleMatch:      tk.TitleMatch,
-	}
-	return hds.httpDiff()
+	return analysisHTTPDiffAlgorithm(tk)
+}
+
+// bodyLengthMatch implements analysisHTTPDiffValuesProvider.
+func (tk *TestKeys) bodyLengthMatch() optional.Value[bool] {
+	return tk.BodyLengthMatch
+}
+
+// headersMatch implements analysisHTTPDiffValuesProvider.
+func (tk *TestKeys) headersMatch() optional.Value[bool] {
+	return tk.HeadersMatch
+}
+
+// statusCodeMatch implements analysisHTTPDiffValuesProvider.
+func (tk *TestKeys) statusCodeMatch() optional.Value[bool] {
+	return tk.StatusCodeMatch
+}
+
+// titleMatch implements analysisHTTPDiffValuesProvider.
+func (tk *TestKeys) titleMatch() optional.Value[bool] {
+	return tk.TitleMatch
 }
 
 // setBlockingFalse implements analysisClassicTestKeysProxy.
