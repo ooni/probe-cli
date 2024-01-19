@@ -51,16 +51,45 @@ func newAnalysisHTTPDiffStatus(analysis *minipipeline.WebAnalysis) *analysisHTTP
 	return hds
 }
 
-// httpDiff computes whether there is HTTP diff.
-func (hds *analysisHTTPDiffStatus) httpDiff() bool {
-	if !hds.StatusCodeMatch.IsNone() && hds.StatusCodeMatch.Unwrap() {
-		if !hds.BodyLengthMatch.IsNone() && hds.BodyLengthMatch.Unwrap() {
+type analysisHTTPDiffValuesProvider interface {
+	bodyLengthMatch() optional.Value[bool]
+	headersMatch() optional.Value[bool]
+	statusCodeMatch() optional.Value[bool]
+	titleMatch() optional.Value[bool]
+}
+
+var _ analysisHTTPDiffValuesProvider = &analysisHTTPDiffStatus{}
+
+// bodyLengthMatch implements analysisHTTPDiffValuesProvider.
+func (hds *analysisHTTPDiffStatus) bodyLengthMatch() optional.Value[bool] {
+	return hds.BodyLengthMatch
+}
+
+// headersMatch implements analysisHTTPDiffValuesProvider.
+func (hds *analysisHTTPDiffStatus) headersMatch() optional.Value[bool] {
+	return hds.HeadersMatch
+}
+
+// statusCodeMatch implements analysisHTTPDiffValuesProvider.
+func (hds *analysisHTTPDiffStatus) statusCodeMatch() optional.Value[bool] {
+	return hds.StatusCodeMatch
+}
+
+// titleMatch implements analysisHTTPDiffValuesProvider.
+func (hds *analysisHTTPDiffStatus) titleMatch() optional.Value[bool] {
+	return hds.TitleMatch
+}
+
+// analysisHTTPDiffAlgorithm returns whether there's an HTTP diff
+func analysisHTTPDiffAlgorithm(p analysisHTTPDiffValuesProvider) bool {
+	if !p.statusCodeMatch().IsNone() && p.statusCodeMatch().Unwrap() {
+		if !p.bodyLengthMatch().IsNone() && p.bodyLengthMatch().Unwrap() {
 			return false
 		}
-		if !hds.HeadersMatch.IsNone() && hds.HeadersMatch.Unwrap() {
+		if !p.headersMatch().IsNone() && p.headersMatch().Unwrap() {
 			return false
 		}
-		if !hds.TitleMatch.IsNone() && hds.TitleMatch.Unwrap() {
+		if !p.titleMatch().IsNone() && p.titleMatch().Unwrap() {
 			return false
 		}
 		// fallthrough

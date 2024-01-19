@@ -142,7 +142,7 @@ func analysisExtHTTPFinalResponse(tk *TestKeys, analysis *minipipeline.WebAnalys
 	if success := analysis.HTTPFinalResponseSuccessTCPWithControl; !success.IsNone() {
 		txID := success.Unwrap()
 		hds := newAnalysisHTTPDiffStatus(analysis)
-		if hds.httpDiff() {
+		if analysisHTTPDiffAlgorithm(hds) {
 			tk.BlockingFlags |= AnalysisBlockingFlagHTTPDiff
 			fmt.Fprintf(info, "- the final response (transaction: %d) differs from the control response\n", txID)
 			return
