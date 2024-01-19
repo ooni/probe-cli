@@ -1,7 +1,9 @@
 {
-  "ControlFinalResponseExpectations": {
-    "Failure": "dns_lookup_error"
+  "ControlExpectations": {
+    "DNSAddresses": [],
+    "FinalResponseFailure": "dns_lookup_error"
   },
+  "DNSLookupSuccess": [],
   "DNSLookupSuccessWithInvalidAddresses": [],
   "DNSLookupSuccessWithValidAddress": [],
   "DNSLookupSuccessWithBogonAddresses": [],
@@ -14,12 +16,14 @@
     2
   ],
   "DNSLookupExpectedSuccess": [],
+  "TCPConnectExpectedFailure": [],
   "TCPConnectUnexpectedFailure": [],
   "TCPConnectUnexpectedFailureDuringWebFetch": [],
   "TCPConnectUnexpectedFailureDuringConnectivityCheck": [],
   "TCPConnectUnexplainedFailure": [],
   "TCPConnectUnexplainedFailureDuringWebFetch": [],
   "TCPConnectUnexplainedFailureDuringConnectivityCheck": [],
+  "TLSHandshakeExpectedFailure": [],
   "TLSHandshakeUnexpectedFailure": [],
   "TLSHandshakeUnexpectedFailureDuringWebFetch": [],
   "TLSHandshakeUnexpectedFailureDuringConnectivityCheck": [],

@@ -40,7 +40,9 @@ func analysisExtMain(tk *TestKeys, container *minipipeline.WebObservationsContai
 	// HTTP success analysis (i.e., only if we manage to get an HTTP response)
 	analysisExtHTTPFinalResponse(tk, analysis, &info)
 
-	// TODO(bassosimone): we need to also compute the null-null flags here
+	// handle the cases where the probe and the TH both failed, which we can confidently
+	// only evaluate for DNS, TCP, and TLS during the 0-th redirect.
+	analysisExtExpectedFailures(tk, analysis, &info)
 
 	// print the content of the analysis only if there's some content to print
 	if content := info.String(); content != "" {
@@ -120,6 +122,7 @@ func analysisExtHTTPFinalResponse(tk *TestKeys, analysis *minipipeline.WebAnalys
 	// this is automatic success.
 	if success := analysis.HTTPFinalResponseSuccessTLSWithoutControl; !success.IsNone() {
 		fmt.Fprintf(info, "- the final response (transaction: %d) uses TLS: automatic success\n", success.Unwrap())
+		tk.NullNullFlags |= AnalysisFlagNullNullSuccessfulHTTPS
 		tk.BlockingFlags |= AnalysisBlockingFlagSuccess
 		return
 	}
@@ -174,14 +177,14 @@ func analysisExtRedirectErrors(tk *TestKeys, analysis *minipipeline.WebAnalysis,
 	}
 
 	// we care about cases in which the TH succeeded
-	if analysis.ControlFinalResponseExpectations.IsNone() {
+	if analysis.ControlExpectations.IsNone() {
 		return
 	}
-	expect := analysis.ControlFinalResponseExpectations.Unwrap()
-	if expect.Failure.IsNone() {
+	expect := analysis.ControlExpectations.Unwrap()
+	if expect.FinalResponseFailure.IsNone() {
 		return
 	}
-	if expect.Failure.Unwrap() != "" {
+	if expect.FinalResponseFailure.Unwrap() != "" {
 		return
 	}
 
@@ -219,5 +222,59 @@ func analysisExtRedirectErrors(tk *TestKeys, analysis *minipipeline.WebAnalysis,
 			info, "- transactions with unexplained HTTP round trip failures and successful control: %s\n",
 			failures.String(),
 		)
+	}
+}
+
+func analysisExtExpectedFailures(tk *TestKeys, analysis *minipipeline.WebAnalysis, info io.Writer) {
+	// Implementation note: in the "orig" engine this was called the "null-null" analysis
+	// because it aimed to address the cases in which failure and accessible were both set
+	// to null. We're keeping the original name so we can also keep the same flag we were
+	// using before. The flag is a "x_" kind of flag anyway.
+	//
+	// Also note that these cases ARE NOT MUTUALLY EXCLUSIVE meaning that these conditions
+	// could actually happen simultaneously in a bunch of cases.
+
+	if expected := analysis.DNSLookupExpectedFailure; expected.Len() > 0 {
+		tk.NullNullFlags |= AnalysisFlagNullNullExpectedDNSLookupFailure
+		fmt.Fprintf(
+			info, "- transactions with expected DNS lookup failures: %s\n",
+			expected.String(),
+		)
+	}
+
+	if expected := analysis.TCPConnectExpectedFailure; expected.Len() > 0 {
+		tk.NullNullFlags |= AnalysisFlagNullNullExpectedTCPConnectFailure
+		fmt.Fprintf(
+			info, "- transactions with expected TCP connect failures: %s\n",
+			expected.String(),
+		)
+	}
+
+	if expected := analysis.TLSHandshakeExpectedFailure; expected.Len() > 0 {
+		tk.NullNullFlags |= AnalysisFlagNullNullExpectedTLSHandshakeFailure
+		fmt.Fprintf(
+			info, "- transactions with expected TLS handshake failures: %s\n",
+			expected.String(),
+		)
+	}
+
+	// Note: the following flag
+	//
+	//	tk.NullNullFlags |= AnalysisFlagNullNullSuccessfulHTTPS
+	//
+	// is set by analysisExtHTTPFinalResponse
+
+	// if the control did not resolve any address but the probe could, this is
+	// quite likely censorship injecting addrs for otherwise "down" or nonexisting
+	// domains, which lives on as a ghost hunting people
+	if !analysis.ControlExpectations.IsNone() {
+		expect := analysis.ControlExpectations.Unwrap()
+		if expect.DNSAddresses.Len() <= 0 && analysis.DNSLookupSuccess.Len() > 0 {
+			tk.NullNullFlags |= AnalysisFlagNullNullUnexpectedDNSLookupSuccess
+			fmt.Fprintf(
+				info, "- transactions that unexpectedly resolved IP addresses: %s\n",
+				analysis.DNSLookupSuccess.String(),
+			)
+		}
 	}
 }

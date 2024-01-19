@@ -52,7 +52,10 @@
   ],
   "DNSLookupSuccesses": [],
   "KnownTCPEndpoints": {},
-  "ControlFinalResponseExpectations": {
-    "Failure": ""
+  "ControlExpectations": {
+    "DNSAddresses": [
+      "93.184.216.34"
+    ],
+    "FinalResponseFailure": ""
   }
 }
