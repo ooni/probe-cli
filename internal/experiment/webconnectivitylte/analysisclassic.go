@@ -3,7 +3,8 @@ package webconnectivitylte
 //
 // The "classic" analysis engine.
 //
-// We try to emulate results produced by v0.4 of Web Connectivity.
+// We try to emulate results produced by v0.4 of Web Connectivity and
+// also attempt to provide a more fine-grained view of the results.
 //
 
 import (
@@ -14,7 +15,8 @@ import (
 )
 
 // AnalysisEngineClassic is an alternative analysis engine that aims to produce
-// results that are backward compatible with Web Connectivity v0.4.
+// results that are backward compatible with Web Connectivity v0.4 while also
+// procuding more fine-grained blocking flags.
 func AnalysisEngineClassic(tk *TestKeys, logger model.Logger) {
 	tk.analysisClassic(logger)
 }
