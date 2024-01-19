@@ -14,6 +14,7 @@
     2
   ],
   "DNSLookupUnexpectedFailure": [],
+  "DNSLookupUnexplainedFailure": [],
   "DNSExperimentFailure": null,
   "DNSLookupExpectedFailure": [],
   "DNSLookupExpectedSuccess": [],
@@ -32,6 +33,7 @@
   "HTTPRoundTripUnexpectedFailure": [
     3
   ],
+  "HTTPRoundTripUnexplainedFailure": [],
   "HTTPFinalResponseSuccessTLSWithoutControl": null,
   "HTTPFinalResponseSuccessTLSWithControl": null,
   "HTTPFinalResponseSuccessTCPWithoutControl": null,
