@@ -234,28 +234,25 @@ func (tk *TestKeys) analysisOrig(logger model.Logger) {
 }
 
 const (
-	// analysisFlagNullNullNoAddrs indicates neither the probe nor the TH were
-	// able to get any IP addresses from any resolver.
-	analysisFlagNullNullNoAddrs = 1 << iota
-
-	// analysisFlagNullNullAllConnectsFailed indicates that all the connect
+	// AnalysisFlagNullNullExpectedDNSLookupFailure indicates some of the DNS lookup
 	// attempts failed both in the probe and in the test helper.
-	analysisFlagNullNullAllConnectsFailed
+	AnalysisFlagNullNullExpectedDNSLookupFailure = 1 << iota
 
-	// analysisFlagNullNullTLSMisconfigured indicates that all the TLS handshake
+	// AnalysisFlagNullNullExpectedTCPConnectFailure indicates that some of the connect
 	// attempts failed both in the probe and in the test helper.
-	analysisFlagNullNullTLSMisconfigured
+	AnalysisFlagNullNullExpectedTCPConnectFailure
 
-	// analysisFlagNullNullSuccessfulHTTPS indicates that we had no TH data
+	// AnalysisFlagNullNullExpectedTLSHandshakeFailure indicates that we have seen some TLS
+	// handshakes failing consistently for both the probe and the TH.
+	AnalysisFlagNullNullExpectedTLSHandshakeFailure
+
+	// AnalysisFlagNullNullSuccessfulHTTPS indicates that we had no TH data
 	// but all the HTTP requests used always HTTPS and never failed.
-	analysisFlagNullNullSuccessfulHTTPS
+	AnalysisFlagNullNullSuccessfulHTTPS
 
-	// analysisFlagNullNullNXDOMAINWithCensorship indicates that we have
-	// seen no error with local DNS resolutions but, at the same time, the
-	// control failed with NXDOMAIN. When this happens, we probably have
-	// DNS interception locally, so all cleartext queries return the same
-	// bogus answers based on a rule applied on a now-expired domain.
-	analysisFlagNullNullNXDOMAINWithCensorship
+	// AnalysisFlagNullNullUnexpectedDNSLookupSuccess indicates the case
+	// where the TH resolved no addresses while the probe did.
+	AnalysisFlagNullNullUnexpectedDNSLookupSuccess
 )
 
 // analysisNullNullDetectTHDNSNXDOMAIN runs when .Blocking = nil and
@@ -303,7 +300,7 @@ func (tk *TestKeys) analysisNullNullDetectTHDNSNXDOMAIN(logger model.Logger) boo
 	failure := tk.Control.DNS.Failure
 	if failure != nil && *failure == model.THDNSNameError {
 		logger.Info("DNS censorship: local DNS success with remote NXDOMAIN")
-		tk.NullNullFlags |= analysisFlagNullNullNXDOMAINWithCensorship
+		tk.NullNullFlags |= AnalysisFlagNullNullUnexpectedDNSLookupSuccess
 		return true
 	}
 
@@ -358,7 +355,7 @@ func (tk *TestKeys) analysisNullNullDetectSuccessfulHTTPS(logger model.Logger) b
 	// only if we have at least one request
 	if len(tk.Requests) > 0 {
 		logger.Info("website likely accessible: seen successful chain of HTTPS transactions")
-		tk.NullNullFlags |= analysisFlagNullNullSuccessfulHTTPS
+		tk.NullNullFlags |= AnalysisFlagNullNullSuccessfulHTTPS
 		return true
 	}
 
@@ -406,7 +403,7 @@ func (tk *TestKeys) analysisNullNullDetectTLSMisconfigured(logger model.Logger) 
 	// only if we have had some TLS handshakes for both probe and TH
 	if len(tk.TLSHandshakes) > 0 && len(tk.Control.TLSHandshake) > 0 {
 		logger.Info("website likely down: all TLS handshake attempts failed for both probe and TH")
-		tk.NullNullFlags |= analysisFlagNullNullTLSMisconfigured
+		tk.NullNullFlags |= AnalysisFlagNullNullExpectedTLSHandshakeFailure
 		return true
 	}
 
@@ -448,7 +445,7 @@ func (tk *TestKeys) analysisNullNullDetectAllConnectsFailed(logger model.Logger)
 	// only if we have had some addresses to connect
 	if len(tk.TCPConnect) > 0 && len(tk.Control.TCPConnect) > 0 {
 		logger.Info("website likely down: all TCP connect attempts failed for both probe and TH")
-		tk.NullNullFlags |= analysisFlagNullNullAllConnectsFailed
+		tk.NullNullFlags |= AnalysisFlagNullNullExpectedTCPConnectFailure
 		return true
 	}
 
@@ -498,6 +495,6 @@ func (tk *TestKeys) analysisNullNullDetectNoAddrs(logger model.Logger) bool {
 		return false
 	}
 	logger.Infof("website likely down: all DNS lookups failed for both probe and TH")
-	tk.NullNullFlags |= analysisFlagNullNullNoAddrs
+	tk.NullNullFlags |= AnalysisFlagNullNullExpectedDNSLookupFailure
 	return true
 }

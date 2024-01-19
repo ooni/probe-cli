@@ -4768,7 +4768,19 @@
       "ControlHTTPResponseTitle": "YouTube"
     }
   },
-  "ControlFinalResponseExpectations": {
-    "Failure": ""
+  "ControlExpectations": {
+    "DNSAddresses": [
+      "142.251.32.78",
+      "142.251.33.174",
+      "142.251.41.46",
+      "142.251.41.78",
+      "172.217.1.14",
+      "172.217.165.14",
+      "2607:f8b0:400b:802::200e",
+      "2607:f8b0:400b:803::200e",
+      "2607:f8b0:400b:807::200e",
+      "2607:f8b0:400b:80c::200e"
+    ],
+    "FinalResponseFailure": ""
   }
 }

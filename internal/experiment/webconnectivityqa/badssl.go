@@ -94,6 +94,7 @@ func badSSLWithUnknownAuthorityWithInconsistentDNS() *TestCase {
 			XStatus:               9248, // StatusExperimentHTTP | StatusAnomalyTLSHandshake | StatusAnomalyDNS
 			XDNSFlags:             4,    // AnalysisDNSFlagUnexpectedAddrs
 			XBlockingFlags:        33,   // AnalysisBlockingFlagSuccess | AnalysisBlockingFlagDNSBlocking
+			XNullNullFlags:        4,    // AnalysisFlagNullNullExpectedTLSHandshakeFailure
 			Accessible:            false,
 			Blocking:              "dns",
 		},

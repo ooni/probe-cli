@@ -253,12 +253,14 @@ type WebObservation struct {
 	ControlHTTPResponseTitle optional.Value[string]
 }
 
-// WebObservationsControlFinalResponseExpectation summarizes the expectations
-// on the final response based on what the control has observed.
-type WebObservationsControlFinalResponseExpectation struct {
-	// Failure is the failure observed by the control when attempting
+// WebObservationsControlExpectations summarizes the expectations based on the control.
+type WebObservationsControlExpectations struct {
+	// DNSAddresses contains the addresses resolved by the control.
+	DNSAddresses Set[string]
+
+	// FinalResponseFailure is the failure observed by the control when attempting
 	// to fetch the final webpage associated with a URL.
-	Failure optional.Value[string]
+	FinalResponseFailure optional.Value[string]
 }
 
 // WebObservationsContainer contains [*WebObservations].
@@ -281,9 +283,8 @@ type WebObservationsContainer struct {
 	// KnownTCPEndpoints maps transaction IDs to TCP observations.
 	KnownTCPEndpoints map[int64]*WebObservation
 
-	// ControlFinalResponseExpectations summarizes the expectations we have
-	// for the control based on the final response.
-	ControlFinalResponseExpectations optional.Value[*WebObservationsControlFinalResponseExpectation]
+	// ControlExpectations summarizes the expectations we have based on the control results.
+	ControlExpectations optional.Value[*WebObservationsControlExpectations]
 
 	// knownIPAddresses is an internal field that maps an IP address to the
 	// corresponding DNS observation that discovered it.
@@ -609,8 +610,9 @@ func (c *WebObservationsContainer) controlSetHTTPFinalResponseExpectation(resp *
 	// make sure we have a final expectation based on what the control observed, which
 	// is in turn necessary to figure out whether unexplained probe failures during redirects
 	// are expected or unexpected.
-	c.ControlFinalResponseExpectations = optional.Some(&WebObservationsControlFinalResponseExpectation{
-		Failure: optional.Some(utilsStringPointerToString(resp.HTTPRequest.Failure)),
+	c.ControlExpectations = optional.Some(&WebObservationsControlExpectations{
+		DNSAddresses:         NewSet(resp.DNS.Addrs...),
+		FinalResponseFailure: optional.Some(utilsStringPointerToString(resp.HTTPRequest.Failure)),
 	})
 
 	for _, obs := range observations {
