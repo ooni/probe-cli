@@ -3,6 +3,7 @@ package minipipeline
 import (
 	"sort"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/optional"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -94,13 +95,14 @@ func NewLinearWebAnalysis(input *WebObservationsContainer) (output []*WebObserva
 
 // AnalyzeWebObservationsWithoutLinearAnalysis generates a [*WebAnalysis] from a [*WebObservationsContainer]
 // but avoids calling [NewLinearyAnalysis] to generate a linear analysis.
-func AnalyzeWebObservationsWithoutLinearAnalysis(container *WebObservationsContainer) *WebAnalysis {
+func AnalyzeWebObservationsWithoutLinearAnalysis(
+	lookupper model.GeoIPASNLookupper, container *WebObservationsContainer) *WebAnalysis {
 	analysis := &WebAnalysis{
 		ControlExpectations: container.ControlExpectations,
 	}
 
-	analysis.dnsComputeSuccessMetrics(container)
-	analysis.dnsComputeSuccessMetricsClassic(container)
+	analysis.dnsComputeSuccessMetrics(lookupper, container)
+	analysis.dnsComputeSuccessMetricsClassic(lookupper, container)
 	analysis.dnsComputeFailureMetrics(container)
 
 	analysis.tcpComputeMetrics(container)
@@ -113,8 +115,9 @@ func AnalyzeWebObservationsWithoutLinearAnalysis(container *WebObservationsConta
 
 // AnalyzeWebObservationsWithLinearAnalysis generates a [*WebAnalysis] from a [*WebObservationsContainer]
 // and ensures we also use [NewLinearyAnalysis] to generate a linear analysis.
-func AnalyzeWebObservationsWithLinearAnalysis(container *WebObservationsContainer) *WebAnalysis {
-	analysis := AnalyzeWebObservationsWithoutLinearAnalysis(container)
+func AnalyzeWebObservationsWithLinearAnalysis(
+	lookupper model.GeoIPASNLookupper, container *WebObservationsContainer) *WebAnalysis {
+	analysis := AnalyzeWebObservationsWithoutLinearAnalysis(lookupper, container)
 	analysis.Linear = NewLinearWebAnalysis(container)
 	return analysis
 }
@@ -262,7 +265,8 @@ type WebAnalysis struct {
 	Linear []*WebObservation
 }
 
-func (wa *WebAnalysis) dnsComputeSuccessMetrics(c *WebObservationsContainer) {
+func (wa *WebAnalysis) dnsComputeSuccessMetrics(
+	lookupper model.GeoIPASNLookupper, c *WebObservationsContainer) {
 	// fill the invalid set
 	var already Set[int64]
 	for _, obs := range c.DNSLookupSuccesses {
@@ -304,7 +308,7 @@ func (wa *WebAnalysis) dnsComputeSuccessMetrics(c *WebObservationsContainer) {
 		}
 
 		// this lookup is good if there is ASN intersection
-		if DNSDiffFindCommonASNsIntersection(measurement, control).Len() > 0 {
+		if DNSDiffFindCommonASNsIntersection(measurement, control, lookupper).Len() > 0 {
 			wa.DNSLookupSuccessWithValidAddress.Add(obs.DNSTransactionID.Unwrap())
 			continue
 		}
@@ -332,7 +336,8 @@ func (wa *WebAnalysis) dnsComputeSuccessMetrics(c *WebObservationsContainer) {
 	}
 }
 
-func (wa *WebAnalysis) dnsComputeSuccessMetricsClassic(c *WebObservationsContainer) {
+func (wa *WebAnalysis) dnsComputeSuccessMetricsClassic(
+	lookupper model.GeoIPASNLookupper, c *WebObservationsContainer) {
 	var already Set[int64]
 
 	for _, obs := range c.DNSLookupSuccesses {
@@ -363,7 +368,7 @@ func (wa *WebAnalysis) dnsComputeSuccessMetricsClassic(c *WebObservationsContain
 		}
 
 		// this lookup is good if there is ASN intersection
-		if DNSDiffFindCommonASNsIntersection(measurement, control).Len() > 0 {
+		if DNSDiffFindCommonASNsIntersection(measurement, control, lookupper).Len() > 0 {
 			wa.DNSLookupSuccessWithValidAddressClassic.Add(obs.DNSTransactionID.Unwrap())
 			continue
 		}

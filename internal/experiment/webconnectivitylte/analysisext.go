@@ -13,14 +13,19 @@ import (
 	"strings"
 
 	"github.com/ooni/probe-cli/v3/internal/minipipeline"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // analysisExtMain computes the extended analysis.
 //
 // This function MUTATES the [*TestKeys].
-func analysisExtMain(tk *TestKeys, container *minipipeline.WebObservationsContainer) {
+func analysisExtMain(
+	tk *TestKeys,
+	container *minipipeline.WebObservationsContainer,
+	lookupper model.GeoIPASNLookupper,
+) {
 	// compute the web analysis
-	analysis := minipipeline.AnalyzeWebObservationsWithoutLinearAnalysis(container)
+	analysis := minipipeline.AnalyzeWebObservationsWithoutLinearAnalysis(lookupper, container)
 
 	// prepare for emitting informational messages
 	var info strings.Builder
@@ -234,6 +239,16 @@ func analysisExtExpectedFailures(tk *TestKeys, analysis *minipipeline.WebAnalysi
 	// Also note that these cases ARE NOT MUTUALLY EXCLUSIVE meaning that these conditions
 	// could actually happen simultaneously in a bunch of cases.
 
+	// See https://github.com/ooni/probe/issues/2290 for further
+	// documentation about the issue we're solving here.
+	//
+	// It would be tempting to check specifically for NXDOMAIN here, but we
+	// know it is problematic do that. In fact, on Android the getaddrinfo
+	// resolver always returns EAI_NODATA on error, regardless of the actual
+	// error that may have occurred in the Android DNS backend.
+	//
+	// See https://github.com/ooni/probe/issues/2029 for more information
+	// on Android's getaddrinfo behavior.
 	if expected := analysis.DNSLookupExpectedFailure; expected.Len() > 0 {
 		tk.NullNullFlags |= AnalysisFlagNullNullExpectedDNSLookupFailure
 		fmt.Fprintf(
@@ -242,6 +257,10 @@ func analysisExtExpectedFailures(tk *TestKeys, analysis *minipipeline.WebAnalysi
 		)
 	}
 
+	// See https://explorer.ooni.org/measurement/20220911T105037Z_webconnectivity_IT_30722_n1_ruzuQ219SmIO9SrT?input=https://doh.centraleu.pi-dns.com/dns-query?dns=q80BAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQAB
+	// for an example measurement with this behavior.
+	//
+	// See also https://github.com/ooni/probe/issues/2299.
 	if expected := analysis.TCPConnectExpectedFailure; expected.Len() > 0 {
 		tk.NullNullFlags |= AnalysisFlagNullNullExpectedTCPConnectFailure
 		fmt.Fprintf(
@@ -250,6 +269,7 @@ func analysisExtExpectedFailures(tk *TestKeys, analysis *minipipeline.WebAnalysi
 		)
 	}
 
+	// See https://github.com/ooni/probe/issues/2300.
 	if expected := analysis.TLSHandshakeExpectedFailure; expected.Len() > 0 {
 		tk.NullNullFlags |= AnalysisFlagNullNullExpectedTLSHandshakeFailure
 		fmt.Fprintf(

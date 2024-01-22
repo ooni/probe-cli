@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ooni/probe-cli/v3/internal/geoipx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/optional"
@@ -13,7 +14,10 @@ import (
 func TestLoadWebObservations(t *testing.T) {
 	t.Run("we handle the case where the test keys are nil", func(t *testing.T) {
 		meas := &WebMeasurement{ /* empty */ }
-		container, err := IngestWebMeasurement(meas)
+		container, err := IngestWebMeasurement(
+			model.GeoIPASNLookupperFunc(geoipx.LookupASN),
+			meas,
+		)
 		if !errors.Is(err, ErrNoTestKeys) {
 			t.Fatal("expected", ErrNoTestKeys, "got", err)
 		}
@@ -41,7 +45,10 @@ func TestLoadWebObservations(t *testing.T) {
 				}),
 			}),
 		}
-		container, err := IngestWebMeasurement(meas)
+		container, err := IngestWebMeasurement(
+			model.GeoIPASNLookupperFunc(geoipx.LookupASN),
+			meas,
+		)
 		if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
 			t.Fatal("unexpected err", err)
 		}
