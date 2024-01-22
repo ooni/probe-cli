@@ -80,5 +80,6 @@ func AllTestCases() []*TestCase {
 		tlsBlockingConnectionResetWithInconsistentDNS(),
 
 		websiteDownNXDOMAIN(),
+		websiteDownTCPConnect(),
 	}
 }

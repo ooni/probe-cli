@@ -53,9 +53,9 @@
       "TagDepth": 1,
       "Type": 0,
       "Failure": "dns_no_answer",
-      "TransactionID": 5,
+      "TransactionID": 4,
       "TagFetchBody": null,
-      "DNSTransactionID": 5,
+      "DNSTransactionID": 4,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
@@ -98,57 +98,6 @@
     }
   ],
   "DNSLookupSuccesses": [
-    {
-      "TagDepth": 0,
-      "Type": 0,
-      "Failure": "",
-      "TransactionID": 2,
-      "TagFetchBody": null,
-      "DNSTransactionID": 2,
-      "DNSDomain": "bit.ly",
-      "DNSLookupFailure": "",
-      "DNSQueryType": "ANY",
-      "DNSEngine": "getaddrinfo",
-      "DNSResolvedAddrs": [
-        "67.199.248.11"
-      ],
-      "IPAddress": "67.199.248.11",
-      "IPAddressASN": 396982,
-      "IPAddressBogon": false,
-      "EndpointTransactionID": null,
-      "EndpointProto": null,
-      "EndpointPort": null,
-      "EndpointAddress": null,
-      "TCPConnectFailure": null,
-      "TLSHandshakeFailure": null,
-      "TLSServerName": null,
-      "HTTPRequestURL": null,
-      "HTTPFailure": null,
-      "HTTPResponseStatusCode": null,
-      "HTTPResponseBodyLength": null,
-      "HTTPResponseBodyIsTruncated": null,
-      "HTTPResponseHeadersKeys": null,
-      "HTTPResponseLocation": null,
-      "HTTPResponseTitle": null,
-      "HTTPResponseIsFinal": null,
-      "ControlDNSDomain": "bit.ly",
-      "ControlDNSLookupFailure": "",
-      "ControlDNSResolvedAddrs": [
-        "67.199.248.11"
-      ],
-      "ControlTCPConnectFailure": null,
-      "ControlTLSHandshakeFailure": null,
-      "ControlHTTPFailure": "",
-      "ControlHTTPResponseStatusCode": 200,
-      "ControlHTTPResponseBodyLength": 1533,
-      "ControlHTTPResponseHeadersKeys": {
-        "Alt-Svc": true,
-        "Content-Length": true,
-        "Content-Type": true,
-        "Date": true
-      },
-      "ControlHTTPResponseTitle": "Default Web Page"
-    },
     {
       "TagDepth": 0,
       "Type": 0,
@@ -201,6 +150,57 @@
       "ControlHTTPResponseTitle": "Default Web Page"
     },
     {
+      "TagDepth": 0,
+      "Type": 0,
+      "Failure": "",
+      "TransactionID": 2,
+      "TagFetchBody": null,
+      "DNSTransactionID": 2,
+      "DNSDomain": "bit.ly",
+      "DNSLookupFailure": "",
+      "DNSQueryType": "ANY",
+      "DNSEngine": "getaddrinfo",
+      "DNSResolvedAddrs": [
+        "67.199.248.11"
+      ],
+      "IPAddress": "67.199.248.11",
+      "IPAddressASN": 396982,
+      "IPAddressBogon": false,
+      "EndpointTransactionID": null,
+      "EndpointProto": null,
+      "EndpointPort": null,
+      "EndpointAddress": null,
+      "TCPConnectFailure": null,
+      "TLSHandshakeFailure": null,
+      "TLSServerName": null,
+      "HTTPRequestURL": null,
+      "HTTPFailure": null,
+      "HTTPResponseStatusCode": null,
+      "HTTPResponseBodyLength": null,
+      "HTTPResponseBodyIsTruncated": null,
+      "HTTPResponseHeadersKeys": null,
+      "HTTPResponseLocation": null,
+      "HTTPResponseTitle": null,
+      "HTTPResponseIsFinal": null,
+      "ControlDNSDomain": "bit.ly",
+      "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "67.199.248.11"
+      ],
+      "ControlTCPConnectFailure": null,
+      "ControlTLSHandshakeFailure": null,
+      "ControlHTTPFailure": "",
+      "ControlHTTPResponseStatusCode": 200,
+      "ControlHTTPResponseBodyLength": 1533,
+      "ControlHTTPResponseHeadersKeys": {
+        "Alt-Svc": true,
+        "Content-Length": true,
+        "Content-Type": true,
+        "Date": true
+      },
+      "ControlHTTPResponseTitle": "Default Web Page"
+    },
+    {
       "TagDepth": 1,
       "Type": 0,
       "Failure": "",
@@ -209,8 +209,8 @@
       "DNSTransactionID": 5,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
-      "DNSQueryType": "A",
-      "DNSEngine": "udp",
+      "DNSQueryType": "ANY",
+      "DNSEngine": "getaddrinfo",
       "DNSResolvedAddrs": [
         "93.184.216.34"
       ],
@@ -258,8 +258,8 @@
       "DNSTransactionID": 4,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
-      "DNSQueryType": "ANY",
-      "DNSEngine": "getaddrinfo",
+      "DNSQueryType": "A",
+      "DNSEngine": "udp",
       "DNSResolvedAddrs": [
         "93.184.216.34"
       ],
@@ -306,7 +306,7 @@
       "Failure": "",
       "TransactionID": 3,
       "TagFetchBody": true,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
       "DNSQueryType": null,

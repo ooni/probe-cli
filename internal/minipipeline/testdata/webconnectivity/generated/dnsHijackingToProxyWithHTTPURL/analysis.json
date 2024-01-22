@@ -10,10 +10,10 @@
     2
   ],
   "DNSLookupSuccessWithInvalidAddresses": [
-    1
+    2
   ],
   "DNSLookupSuccessWithValidAddress": [
-    2
+    1
   ],
   "DNSLookupSuccessWithBogonAddresses": [],
   "DNSLookupSuccessWithInvalidAddressesClassic": [
@@ -59,7 +59,7 @@
       "Failure": "",
       "TransactionID": 3,
       "TagFetchBody": true,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -163,7 +163,7 @@
       "Failure": "",
       "TransactionID": 4,
       "TagFetchBody": false,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,

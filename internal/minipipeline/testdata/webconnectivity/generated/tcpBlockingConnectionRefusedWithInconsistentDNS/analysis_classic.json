@@ -6,15 +6,15 @@
     "FinalResponseFailure": ""
   },
   "DNSLookupSuccess": [
-    1
+    2
   ],
   "DNSLookupSuccessWithInvalidAddresses": [
-    1
+    2
   ],
   "DNSLookupSuccessWithValidAddress": [],
   "DNSLookupSuccessWithBogonAddresses": [],
   "DNSLookupSuccessWithInvalidAddressesClassic": [
-    1
+    2
   ],
   "DNSLookupSuccessWithValidAddressClassic": [],
   "DNSLookupUnexpectedFailure": [],
@@ -57,7 +57,7 @@
       "Failure": "connection_refused",
       "TransactionID": 3,
       "TagFetchBody": true,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "www.example.org",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -106,9 +106,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 1,
+      "TransactionID": 2,
       "TagFetchBody": null,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "www.example.org",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
