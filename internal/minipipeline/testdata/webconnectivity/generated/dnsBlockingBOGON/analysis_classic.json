@@ -6,17 +6,17 @@
     "FinalResponseFailure": ""
   },
   "DNSLookupSuccess": [
-    1
+    2
   ],
   "DNSLookupSuccessWithInvalidAddresses": [
-    1
+    2
   ],
   "DNSLookupSuccessWithValidAddress": [],
   "DNSLookupSuccessWithBogonAddresses": [
-    1
+    2
   ],
   "DNSLookupSuccessWithInvalidAddressesClassic": [
-    1
+    2
   ],
   "DNSLookupSuccessWithValidAddressClassic": [],
   "DNSLookupUnexpectedFailure": [],
@@ -53,9 +53,9 @@
       "TagDepth": 0,
       "Type": 1,
       "Failure": "generic_timeout_error",
-      "TransactionID": 4,
+      "TransactionID": 3,
       "TagFetchBody": true,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -66,7 +66,7 @@
       "IPAddress": "10.10.34.35",
       "IPAddressASN": null,
       "IPAddressBogon": true,
-      "EndpointTransactionID": 4,
+      "EndpointTransactionID": 3,
       "EndpointProto": "tcp",
       "EndpointPort": "443",
       "EndpointAddress": "10.10.34.35:443",
@@ -104,9 +104,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 1,
+      "TransactionID": 2,
       "TagFetchBody": null,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",

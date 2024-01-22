@@ -60,7 +60,7 @@
       "Failure": "connection_reset",
       "TransactionID": 3,
       "TagFetchBody": true,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,

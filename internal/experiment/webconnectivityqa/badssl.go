@@ -20,7 +20,7 @@ func badSSLWithExpiredCertificate() *TestCase {
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: "ssl_invalid_certificate",
 			XStatus:               16, // StatusAnomalyControlFailure
-			XNullNullFlags:        4,  // analysisFlagNullNullTLSMisconfigured
+			XNullNullFlags:        4,  // AnalysisFlagNullNullExpectedTLSHandshakeFailure
 			Accessible:            false,
 			Blocking:              false,
 		},
@@ -42,7 +42,7 @@ func badSSLWithWrongServerName() *TestCase {
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: "ssl_invalid_hostname",
 			XStatus:               16, // StatusAnomalyControlFailure
-			XNullNullFlags:        4,  // analysisFlagNullNullTLSMisconfigured
+			XNullNullFlags:        4,  // AnalysisFlagNullNullExpectedTLSHandshakeFailure
 			Accessible:            false,
 			Blocking:              false,
 		},
@@ -63,7 +63,7 @@ func badSSLWithUnknownAuthorityWithConsistentDNS() *TestCase {
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: "ssl_unknown_authority",
 			XStatus:               16, // StatusAnomalyControlFailure
-			XNullNullFlags:        4,  // analysisFlagNullNullTLSMisconfigured
+			XNullNullFlags:        4,  // AnalysisFlagNullNullExpectedTLSHandshakeFailure
 			Accessible:            false,
 			Blocking:              false,
 		},

@@ -35,7 +35,7 @@ func ghostDNSBlockingWithHTTP() *TestCase {
 			DNSExperimentFailure: nil,
 			DNSConsistency:       "inconsistent",
 			XBlockingFlags:       16, // AnalysisBlockingFlagHTTPDiff
-			XNullNullFlags:       16, // AnalysisFlagNullNullUnexpectedDNSLookupSuccess
+			XNullNullFlags:       18, // AnalysisFlagNullNullExpectedTCPConnectFailure | AnalysisFlagNullNullUnexpectedDNSLookupSuccess
 			XStatus:              16, // StatusAnomalyControlFailure
 			Accessible:           false,
 			Blocking:             "dns",
@@ -72,7 +72,7 @@ func ghostDNSBlockingWithHTTPS() *TestCase {
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "inconsistent",
 			HTTPExperimentFailure: "connection_refused",
-			XNullNullFlags:        16,   // AnalysisFlagNullNullUnexpectedDNSLookupSuccess
+			XNullNullFlags:        18,   // AnalysisFlagNullNullExpectedTCPConnectFailure | AnalysisFlagNullNullUnexpectedDNSLookupSuccess
 			XStatus:               4256, // StatusExperimentConnect | StatusAnomalyDNS | StatusAnomalyConnect
 			Accessible:            false,
 			Blocking:              "dns",

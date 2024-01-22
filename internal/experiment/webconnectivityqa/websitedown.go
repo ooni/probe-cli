@@ -31,7 +31,30 @@ func websiteDownNXDOMAIN() *TestCase {
 			DNSConsistency:        "consistent",
 			XStatus:               2052, // StatusExperimentDNS | StatusSuccessNXDOMAIN
 			XBlockingFlags:        0,
-			XNullNullFlags:        1, // analysisFlagNullNullNoAddrs
+			XNullNullFlags:        1, // AnalysisFlagNullNullExpectedDNSLookupFailure
+			Accessible:            false,
+			Blocking:              false,
+		},
+	}
+}
+
+// websiteDownTCPConnect describes the test case where attempting to
+// connect to the website doesn't work for both probe and TH.
+//
+// See https://github.com/ooni/probe/issues/2299.
+func websiteDownTCPConnect() *TestCase {
+	return &TestCase{
+		Name:      "websiteDownTCPConnect",
+		Flags:     TestCaseFlagNoV04,
+		Input:     "http://www.example.com:444/", // port where we're not listening.
+		Configure: nil,
+		ExpectErr: false,
+		ExpectTestKeys: &testKeys{
+			HTTPExperimentFailure: "connection_refused",
+			DNSConsistency:        "consistent",
+			XStatus:               2052, // StatusExperimentDNS | StatusSuccessNXDOMAIN
+			XBlockingFlags:        0,
+			XNullNullFlags:        2, // AnalysisFlagNullNullExpectedTCPConnectFailure
 			Accessible:            false,
 			Blocking:              false,
 		},

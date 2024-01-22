@@ -25,7 +25,9 @@
   "DNSExperimentFailure": null,
   "DNSLookupExpectedFailure": [],
   "DNSLookupExpectedSuccess": [],
-  "TCPConnectExpectedFailure": [],
+  "TCPConnectExpectedFailure": [
+    4
+  ],
   "TCPConnectUnexpectedFailure": [
     3
   ],
@@ -166,7 +168,7 @@
       "Failure": "connection_refused",
       "TransactionID": 4,
       "TagFetchBody": false,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "www.example.org",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -217,7 +219,7 @@
       "Failure": "connection_refused",
       "TransactionID": 3,
       "TagFetchBody": true,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "www.example.org",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -271,8 +273,8 @@
       "DNSTransactionID": 2,
       "DNSDomain": "www.example.org",
       "DNSLookupFailure": "",
-      "DNSQueryType": "A",
-      "DNSEngine": "udp",
+      "DNSQueryType": "ANY",
+      "DNSEngine": "getaddrinfo",
       "DNSResolvedAddrs": [
         "83.224.65.41"
       ],
@@ -322,8 +324,8 @@
       "DNSTransactionID": 1,
       "DNSDomain": "www.example.org",
       "DNSLookupFailure": "",
-      "DNSQueryType": "ANY",
-      "DNSEngine": "getaddrinfo",
+      "DNSQueryType": "A",
+      "DNSEngine": "udp",
       "DNSResolvedAddrs": [
         "83.224.65.41"
       ],
@@ -368,9 +370,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "dns_no_answer",
-      "TransactionID": 2,
+      "TransactionID": 1,
       "TagFetchBody": null,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.org",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",

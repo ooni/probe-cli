@@ -9,7 +9,7 @@
     "tunnel": 0
   },
   "input": "https://www.example.com/",
-  "measurement_start_time": "2023-11-29 21:22:15",
+  "measurement_start_time": "2024-01-22 20:27:28",
   "probe_asn": "AS137",
   "probe_cc": "IT",
   "probe_ip": "127.0.0.1",
@@ -19,7 +19,7 @@
   "resolver_ip": "130.192.3.21",
   "resolver_network_name": "Consortium GARR",
   "software_name": "ooniprobe",
-  "software_version": "3.20.0-alpha",
+  "software_version": "3.21.0-alpha",
   "test_helpers": {
     "backend": {
       "address": "https://0.th.ooni.org/",
@@ -37,8 +37,8 @@
         "failure": "generic_timeout_error",
         "operation": "connect",
         "proto": "tcp",
-        "t0": 0.010651,
-        "t": 1.010712,
+        "t0": 0.011199,
+        "t": 1.01121,
         "transaction_id": 3,
         "tags": [
           "depth=0",
@@ -64,9 +64,9 @@
         {
           "failure": null,
           "operation": "resolve_start",
-          "t0": 0.000068,
-          "t": 0.000068,
-          "transaction_id": 1,
+          "t0": 0.00008,
+          "t": 0.00008,
+          "transaction_id": 2,
           "tags": [
             "depth=0"
           ]
@@ -77,9 +77,9 @@
           "num_bytes": 33,
           "operation": "write",
           "proto": "udp",
-          "t0": 0.000107,
-          "t": 0.000113,
-          "transaction_id": 1,
+          "t0": 0.000119,
+          "t": 0.000138,
+          "transaction_id": 2,
           "tags": [
             "depth=0"
           ]
@@ -90,9 +90,9 @@
           "num_bytes": 33,
           "operation": "write",
           "proto": "udp",
-          "t0": 0.000136,
-          "t": 0.000155,
-          "transaction_id": 1,
+          "t0": 0.000143,
+          "t": 0.000146,
+          "transaction_id": 2,
           "tags": [
             "depth=0"
           ]
@@ -103,9 +103,9 @@
           "num_bytes": 33,
           "operation": "read",
           "proto": "udp",
-          "t0": 0.000129,
-          "t": 0.005705,
-          "transaction_id": 1,
+          "t0": 0.000159,
+          "t": 0.005845,
+          "transaction_id": 2,
           "tags": [
             "depth=0"
           ]
@@ -116,9 +116,9 @@
           "num_bytes": 64,
           "operation": "read",
           "proto": "udp",
-          "t0": 0.000159,
-          "t": 0.006066,
-          "transaction_id": 1,
+          "t0": 0.000162,
+          "t": 0.006081,
+          "transaction_id": 2,
           "tags": [
             "depth=0"
           ]
@@ -126,9 +126,9 @@
         {
           "failure": null,
           "operation": "resolve_done",
-          "t0": 0.006092,
-          "t": 0.006092,
-          "transaction_id": 1,
+          "t0": 0.00611,
+          "t": 0.00611,
+          "transaction_id": 2,
           "tags": [
             "depth=0"
           ]
@@ -155,12 +155,12 @@
         "resolver_hostname": null,
         "resolver_port": null,
         "resolver_address": "",
-        "t0": 0.00008,
-        "t": 0.005234,
+        "t0": 0.000078,
+        "t": 0.005495,
         "tags": [
           "depth=0"
         ],
-        "transaction_id": 2
+        "transaction_id": 1
       },
       {
         "answers": null,
@@ -168,16 +168,16 @@
         "failure": "dns_no_answer",
         "hostname": "www.example.com",
         "query_type": "AAAA",
-        "raw_response": "BpSBAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAHAAB",
+        "raw_response": "OHKBAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAHAAB",
         "resolver_hostname": null,
         "resolver_port": null,
         "resolver_address": "8.8.4.4:53",
-        "t0": 0.000078,
-        "t": 0.005711,
+        "t0": 0.000089,
+        "t": 0.005848,
         "tags": [
           "depth=0"
         ],
-        "transaction_id": 1
+        "transaction_id": 2
       },
       {
         "answers": [
@@ -193,16 +193,16 @@
         "failure": null,
         "hostname": "www.example.com",
         "query_type": "A",
-        "raw_response": "ZqKBAAABAAEAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQABA3d3dwdleGFtcGxlA2NvbQAAAQABAAAOEAAEXbjYIg==",
+        "raw_response": "dHuBAAABAAEAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQABA3d3dwdleGFtcGxlA2NvbQAAAQABAAAOEAAEXbjYIg==",
         "resolver_hostname": null,
         "resolver_port": null,
         "resolver_address": "8.8.4.4:53",
-        "t0": 0.000085,
-        "t": 0.00607,
+        "t0": 0.000109,
+        "t": 0.006085,
         "tags": [
           "depth=0"
         ],
-        "transaction_id": 1
+        "transaction_id": 2
       }
     ],
     "requests": [],
@@ -211,12 +211,11 @@
         "ip": "93.184.216.34",
         "port": 443,
         "status": {
-          "blocked": true,
           "failure": "generic_timeout_error",
           "success": false
         },
-        "t0": 0.010651,
-        "t": 1.010712,
+        "t0": 0.011199,
+        "t": 1.01121,
         "tags": [
           "depth=0",
           "fetch_body=true"
@@ -235,7 +234,7 @@
           "en-US,en;q=0.9"
         ],
         "User-Agent": [
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.3"
         ]
       },
       "tcp_connect": [
@@ -289,16 +288,17 @@
     "x_conn_priority_log": [
       {
         "msg": "create with [{Addr:93.184.216.34 Flags:3}]",
-        "t": 0.010545
+        "t": 0.011161
       }
     ],
     "control_failure": null,
     "x_dns_flags": 0,
     "dns_experiment_failure": null,
     "dns_consistency": "consistent",
-    "http_experiment_failure": null,
+    "http_experiment_failure": "generic_timeout_error",
     "x_blocking_flags": 2,
     "x_null_null_flags": 0,
+    "body_proportion": 0,
     "body_length_match": null,
     "headers_match": null,
     "status_code_match": null,
@@ -307,7 +307,7 @@
     "accessible": false
   },
   "test_name": "web_connectivity",
-  "test_runtime": 1.010801,
-  "test_start_time": "2023-11-29 21:22:15",
-  "test_version": "0.5.26"
+  "test_runtime": 1.011337,
+  "test_start_time": "2024-01-22 20:27:28",
+  "test_version": "0.5.28"
 }

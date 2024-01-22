@@ -10,6 +10,7 @@
   ],
   "DNSLookupSuccessWithInvalidAddresses": [],
   "DNSLookupSuccessWithValidAddress": [
+    1,
     2
   ],
   "DNSLookupSuccessWithBogonAddresses": [],
@@ -104,9 +105,9 @@
       "TagDepth": 1,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 4,
+      "TransactionID": 5,
       "TagFetchBody": null,
-      "DNSTransactionID": 4,
+      "DNSTransactionID": 5,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -155,7 +156,7 @@
       "Failure": "",
       "TransactionID": 3,
       "TagFetchBody": true,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
