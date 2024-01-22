@@ -491,21 +491,18 @@ func (wa *WebAnalysis) tcpComputeMetrics(c *WebObservationsContainer) {
 		}
 
 		// handle the case where both the probe and the control fail
+		//
+		// See https://explorer.ooni.org/measurement/20220911T105037Z_webconnectivity_IT_30722_n1_ruzuQ219SmIO9SrT?input=https://doh.centraleu.pi-dns.com/dns-query?dns=q80BAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQAB
+		// for an example measurement with this behavior.
+		//
+		// See also https://github.com/ooni/probe/issues/2299.
 		if obs.TCPConnectFailure.Unwrap() != "" && obs.ControlTCPConnectFailure.Unwrap() != "" {
+			wa.TCPConnectExpectedFailure.Add(obs.EndpointTransactionID.Unwrap())
 			continue
 		}
 
 		// handle the case where the control fails
 		if obs.ControlTCPConnectFailure.Unwrap() != "" {
-			// If also the probe failed mark this failure as expected.
-			//
-			// See https://explorer.ooni.org/measurement/20220911T105037Z_webconnectivity_IT_30722_n1_ruzuQ219SmIO9SrT?input=https://doh.centraleu.pi-dns.com/dns-query?dns=q80BAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQAB
-			// for an example measurement with this behavior.
-			//
-			// See also https://github.com/ooni/probe/issues/2299.
-			if obs.TCPConnectFailure.Unwrap() != "" {
-				wa.TCPConnectExpectedFailure.Add(obs.EndpointTransactionID.Unwrap())
-			}
 			continue
 		}
 
@@ -555,18 +552,15 @@ func (wa *WebAnalysis) tlsComputeMetrics(c *WebObservationsContainer) {
 		}
 
 		// handle the case where both the probe and the control fail
-		if obs.TLSHandshakeFailure.Unwrap() != "" && obs.ControlTCPConnectFailure.Unwrap() != "" {
+		//
+		// See https://github.com/ooni/probe/issues/2300.
+		if obs.TLSHandshakeFailure.Unwrap() != "" && obs.ControlTLSHandshakeFailure.Unwrap() != "" {
+			wa.TLSHandshakeExpectedFailure.Add(obs.EndpointTransactionID.Unwrap())
 			continue
 		}
 
 		// handle the case where the control fails
 		if obs.ControlTLSHandshakeFailure.Unwrap() != "" {
-			// If also the probe failed mark this failure as expected.
-			//
-			// See https://github.com/ooni/probe/issues/2300.
-			if obs.TLSHandshakeFailure.Unwrap() != "" {
-				wa.TLSHandshakeExpectedFailure.Add(obs.EndpointTransactionID.Unwrap())
-			}
 			continue
 		}
 
