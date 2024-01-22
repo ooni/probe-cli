@@ -21,18 +21,19 @@ func websiteDownNXDOMAIN() *TestCase {
 	*/
 	return &TestCase{
 		Name:      "websiteDownNXDOMAIN",
-		Flags:     0,                         // see above
+		Flags:     TestCaseFlagNoV04,
 		Input:     "http://www.example.xyz/", // domain not defined in the simulation
 		Configure: nil,
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
-			DNSExperimentFailure: "dns_nxdomain_error",
-			DNSConsistency:       "consistent",
-			XStatus:              2052, // StatusExperimentDNS | StatusSuccessNXDOMAIN
-			XBlockingFlags:       0,
-			XNullNullFlags:       1, // analysisFlagNullNullNoAddrs
-			Accessible:           true,
-			Blocking:             false,
+			DNSExperimentFailure:  "dns_nxdomain_error",
+			HTTPExperimentFailure: "dns_nxdomain_error",
+			DNSConsistency:        "consistent",
+			XStatus:               2052, // StatusExperimentDNS | StatusSuccessNXDOMAIN
+			XBlockingFlags:        0,
+			XNullNullFlags:        1, // analysisFlagNullNullNoAddrs
+			Accessible:            false,
+			Blocking:              false,
 		},
 	}
 }

@@ -262,11 +262,14 @@ func analysisExtExpectedFailures(tk *TestKeys, analysis *minipipeline.WebAnalysi
 	//
 	//	tk.NullNullFlags |= AnalysisFlagNullNullSuccessfulHTTPS
 	//
-	// is set by analysisExtHTTPFinalResponse
+	// is set by analysisExtHTTPFinalResponse when we detect that we do not
+	// have a control response but nonetheless observe successful HTTPS.
 
-	// if the control did not resolve any address but the probe could, this is
+	// If the control did not resolve any address but the probe could, this is
 	// quite likely censorship injecting addrs for otherwise "down" or nonexisting
-	// domains, which lives on as a ghost haunting people
+	// domains, which lives on as a ghost haunting people.
+	//
+	// See https://github.com/ooni/probe/issues/2308.
 	if !analysis.ControlExpectations.IsNone() {
 		expect := analysis.ControlExpectations.Unwrap()
 		if expect.DNSAddresses.Len() <= 0 && analysis.DNSLookupSuccess.Len() > 0 {
