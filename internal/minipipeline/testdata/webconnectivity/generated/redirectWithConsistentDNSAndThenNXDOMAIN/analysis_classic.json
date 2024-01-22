@@ -6,21 +6,20 @@
     "FinalResponseFailure": ""
   },
   "DNSLookupSuccess": [
-    1
+    2
   ],
   "DNSLookupSuccessWithInvalidAddresses": [],
   "DNSLookupSuccessWithValidAddress": [
-    1,
     2
   ],
   "DNSLookupSuccessWithBogonAddresses": [],
   "DNSLookupSuccessWithInvalidAddressesClassic": [],
   "DNSLookupSuccessWithValidAddressClassic": [
-    1
+    2
   ],
   "DNSLookupUnexpectedFailure": [],
   "DNSLookupUnexplainedFailure": [
-    5
+    4
   ],
   "DNSExperimentFailure": null,
   "DNSLookupExpectedFailure": [],
@@ -54,9 +53,9 @@
       "TagDepth": 1,
       "Type": 0,
       "Failure": "dns_nxdomain_error",
-      "TransactionID": 5,
+      "TransactionID": 4,
       "TagFetchBody": null,
-      "DNSTransactionID": 5,
+      "DNSTransactionID": 4,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_nxdomain_error",
       "DNSQueryType": "ANY",
@@ -156,9 +155,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 1,
+      "TransactionID": 2,
       "TagFetchBody": null,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",

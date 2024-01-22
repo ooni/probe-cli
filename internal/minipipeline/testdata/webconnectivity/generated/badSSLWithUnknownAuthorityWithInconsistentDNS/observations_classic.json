@@ -60,7 +60,7 @@
       "Failure": "ssl_unknown_authority",
       "TransactionID": 3,
       "TagFetchBody": true,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
