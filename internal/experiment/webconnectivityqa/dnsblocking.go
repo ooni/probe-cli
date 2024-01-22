@@ -9,7 +9,7 @@ import (
 func dnsBlockingAndroidDNSCacheNoData() *TestCase {
 	return &TestCase{
 		Name:  "dnsBlockingAndroidDNSCacheNoData",
-		Flags: 0,
+		Flags: TestCaseFlagNoV04,
 		Input: "https://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 			// make sure the env knows we want to emulate our getaddrinfo wrapper behavior
@@ -21,13 +21,14 @@ func dnsBlockingAndroidDNSCacheNoData() *TestCase {
 		},
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
-			DNSExperimentFailure: "android_dns_cache_no_data",
-			DNSConsistency:       "inconsistent",
-			XStatus:              2080, // StatusExperimentDNS | StatusAnomalyDNS
-			XDNSFlags:            2,    // AnalysisDNSFlagUnexpectedFailure
-			XBlockingFlags:       33,   // AnalysisBlockingFlagDNSBlocking | AnalysisBlockingFlagSuccess
-			Accessible:           false,
-			Blocking:             "dns",
+			DNSExperimentFailure:  "android_dns_cache_no_data",
+			HTTPExperimentFailure: "android_dns_cache_no_data",
+			DNSConsistency:        "inconsistent",
+			XStatus:               2080, // StatusExperimentDNS | StatusAnomalyDNS
+			XDNSFlags:             2,    // AnalysisDNSFlagUnexpectedFailure
+			XBlockingFlags:        33,   // AnalysisBlockingFlagDNSBlocking | AnalysisBlockingFlagSuccess
+			Accessible:            false,
+			Blocking:              "dns",
 		},
 	}
 }
@@ -44,7 +45,7 @@ func dnsBlockingNXDOMAIN() *TestCase {
 	*/
 	return &TestCase{
 		Name:  "dnsBlockingNXDOMAIN",
-		Flags: 0,
+		Flags: TestCaseFlagNoV04,
 		Input: "https://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 			// remove the record so that the DNS query returns NXDOMAIN
@@ -52,13 +53,14 @@ func dnsBlockingNXDOMAIN() *TestCase {
 		},
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
-			DNSExperimentFailure: "dns_nxdomain_error",
-			DNSConsistency:       "inconsistent",
-			XStatus:              2080, // StatusExperimentDNS | StatusAnomalyDNS
-			XDNSFlags:            2,    // AnalysisDNSFlagUnexpectedFailure
-			XBlockingFlags:       33,   // AnalysisBlockingFlagDNSBlocking | AnalysisBlockingFlagSuccess
-			Accessible:           false,
-			Blocking:             "dns",
+			DNSExperimentFailure:  "dns_nxdomain_error",
+			HTTPExperimentFailure: "dns_nxdomain_error",
+			DNSConsistency:        "inconsistent",
+			XStatus:               2080, // StatusExperimentDNS | StatusAnomalyDNS
+			XDNSFlags:             2,    // AnalysisDNSFlagUnexpectedFailure
+			XBlockingFlags:        33,   // AnalysisBlockingFlagDNSBlocking | AnalysisBlockingFlagSuccess
+			Accessible:            false,
+			Blocking:              "dns",
 		},
 	}
 }
