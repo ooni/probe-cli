@@ -22,15 +22,15 @@ var ErrNoTestKeys = errors.New("minipipeline: no test keys")
 // XControlRequestFields: in such a case, this function will just avoid using the test helper
 // (aka control) information for generating flat [*WebObservation]. This function returns an
 // error if the [*WebMeasurement] TestKeys are empty or Input is not a valid URL.
-func IngestWebMeasurement(meas *WebMeasurement) (*WebObservationsContainer, error) {
+func IngestWebMeasurement(lookupper model.GeoIPASNLookupper, meas *WebMeasurement) (*WebObservationsContainer, error) {
 	tk := meas.TestKeys.UnwrapOr(nil)
 	if tk == nil {
 		return nil, ErrNoTestKeys
 	}
 
 	container := NewWebObservationsContainer()
-	container.IngestDNSLookupEvents(tk.Queries...)
-	container.IngestTCPConnectEvents(tk.TCPConnect...)
+	container.IngestDNSLookupEvents(lookupper, tk.Queries...)
+	container.IngestTCPConnectEvents(lookupper, tk.TCPConnect...)
 	container.IngestTLSHandshakeEvents(tk.TLSHandshakes...)
 	container.IngestHTTPRoundTripEvents(tk.Requests...)
 
@@ -303,9 +303,10 @@ func NewWebObservationsContainer() *WebObservationsContainer {
 
 // IngestDNSLookupEvents ingests DNS lookup events from a OONI measurement. You MUST
 // ingest DNS lookup events before ingesting any other kind of event.
-func (c *WebObservationsContainer) IngestDNSLookupEvents(evs ...*model.ArchivalDNSLookupResult) {
+func (c *WebObservationsContainer) IngestDNSLookupEvents(
+	lookupper model.GeoIPASNLookupper, evs ...*model.ArchivalDNSLookupResult) {
 	c.ingestDNSLookupFailures(evs...)
-	c.ingestDNSLookupSuccesses(evs...)
+	c.ingestDNSLookupSuccesses(lookupper, evs...)
 }
 
 func (c *WebObservationsContainer) ingestDNSLookupFailures(evs ...*model.ArchivalDNSLookupResult) {
@@ -334,7 +335,8 @@ func (c *WebObservationsContainer) ingestDNSLookupFailures(evs ...*model.Archiva
 	}
 }
 
-func (c *WebObservationsContainer) ingestDNSLookupSuccesses(evs ...*model.ArchivalDNSLookupResult) {
+func (c *WebObservationsContainer) ingestDNSLookupSuccesses(
+	lookupper model.GeoIPASNLookupper, evs ...*model.ArchivalDNSLookupResult) {
 	for _, ev := range evs {
 		// skip all the failed queries
 		if ev.Failure != nil {
@@ -356,7 +358,7 @@ func (c *WebObservationsContainer) ingestDNSLookupSuccesses(evs ...*model.Archiv
 				DNSEngine:        optional.Some(ev.Engine),
 				DNSResolvedAddrs: optional.Some(addrs),
 				IPAddress:        optional.Some(ipAddr),
-				IPAddressASN:     utilsGeoipxLookupASN(ipAddr),
+				IPAddressASN:     utilsGeoipxLookupASN(lookupper, ipAddr),
 				IPAddressBogon:   optional.Some(netxlite.IsBogon(ipAddr)),
 				TagDepth:         utilsExtractTagDepth(ev.Tags),
 			}
@@ -374,14 +376,15 @@ func (c *WebObservationsContainer) ingestDNSLookupSuccesses(evs ...*model.Archiv
 
 // IngestTCPConnectEvents ingests TCP connect events from a OONI measurement. You MUST ingest
 // these events after DNS events and before any other kind of events.
-func (c *WebObservationsContainer) IngestTCPConnectEvents(evs ...*model.ArchivalTCPConnectResult) {
+func (c *WebObservationsContainer) IngestTCPConnectEvents(
+	lookupper model.GeoIPASNLookupper, evs ...*model.ArchivalTCPConnectResult) {
 	for _, ev := range evs {
 		// create or fetch a record
 		obs, found := c.knownIPAddresses[ev.IP]
 		if !found {
 			obs = &WebObservation{
 				IPAddress:      optional.Some(ev.IP),
-				IPAddressASN:   utilsGeoipxLookupASN(ev.IP),
+				IPAddressASN:   utilsGeoipxLookupASN(lookupper, ev.IP),
 				IPAddressBogon: optional.Some(netxlite.IsBogon(ev.IP)),
 			}
 		}

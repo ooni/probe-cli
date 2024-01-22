@@ -8,6 +8,7 @@ package webconnectivitylte
 //
 
 import (
+	"github.com/ooni/probe-cli/v3/internal/geoipx"
 	"github.com/ooni/probe-cli/v3/internal/minipipeline"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/optional"
@@ -18,17 +19,17 @@ import (
 // results that are backward compatible with Web Connectivity v0.4 while also
 // procuding more fine-grained blocking flags.
 func analysisEngineClassic(tk *TestKeys, logger model.Logger) {
-	tk.analysisClassic(logger)
+	tk.analysisClassic(model.GeoIPASNLookupperFunc(geoipx.LookupASN), logger)
 }
 
-func (tk *TestKeys) analysisClassic(logger model.Logger) {
+func (tk *TestKeys) analysisClassic(lookupper model.GeoIPASNLookupper, logger model.Logger) {
 	// Since we run after all tasks have completed (or so we assume) we're
 	// not going to use any form of locking here.
 
 	// 1. produce web observations
 	container := minipipeline.NewWebObservationsContainer()
-	container.IngestDNSLookupEvents(tk.Queries...)
-	container.IngestTCPConnectEvents(tk.TCPConnect...)
+	container.IngestDNSLookupEvents(lookupper, tk.Queries...)
+	container.IngestTCPConnectEvents(lookupper, tk.TCPConnect...)
 	container.IngestTLSHandshakeEvents(tk.TLSHandshakes...)
 	container.IngestHTTPRoundTripEvents(tk.Requests...)
 
@@ -40,14 +41,14 @@ func (tk *TestKeys) analysisClassic(logger model.Logger) {
 	}
 
 	// 2. compute extended analysis flags
-	analysisExtMain(tk, container)
+	analysisExtMain(lookupper, tk, container)
 
 	// 3. filter observations to only include results collected by the
 	// system resolver, which approximates v0.4's results
 	classic := minipipeline.ClassicFilter(container)
 
 	// 3. produce a web observations analysis based on the web observations
-	woa := minipipeline.AnalyzeWebObservationsWithLinearAnalysis(classic)
+	woa := minipipeline.AnalyzeWebObservationsWithLinearAnalysis(lookupper, classic)
 
 	// 5. determine the DNS consistency
 	tk.DNSConsistency = analysisClassicDNSConsistency(woa)
