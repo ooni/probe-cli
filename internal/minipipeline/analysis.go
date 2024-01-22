@@ -426,7 +426,18 @@ func (wa *WebAnalysis) dnsComputeFailureMetrics(c *WebObservationsContainer) {
 			continue
 		}
 
-		// handle the case where both failed
+		// Handle the case where both failed.
+		//
+		// See https://github.com/ooni/probe/issues/2290 for further
+		// documentation about the issue we're solving here.
+		//
+		// It would be tempting to check specifically for NXDOMAIN here, but we
+		// know it is problematic do that. In fact, on Android the getaddrinfo
+		// resolver always returns EAI_NODATA on error, regardless of the actual
+		// error that may have occurred in the Android DNS backend.
+		//
+		// See https://github.com/ooni/probe/issues/2029 for more information
+		// on Android's getaddrinfo behavior.
 		if obs.DNSLookupFailure.Unwrap() != "" && obs.ControlDNSLookupFailure.Unwrap() != "" {
 			wa.DNSLookupExpectedFailure.Add(obs.DNSTransactionID.Unwrap())
 			continue
@@ -486,7 +497,12 @@ func (wa *WebAnalysis) tcpComputeMetrics(c *WebObservationsContainer) {
 
 		// handle the case where the control fails
 		if obs.ControlTCPConnectFailure.Unwrap() != "" {
-			// if also the probe failed mark this failure as expected
+			// If also the probe failed mark this failure as expected.
+			//
+			// See https://explorer.ooni.org/measurement/20220911T105037Z_webconnectivity_IT_30722_n1_ruzuQ219SmIO9SrT?input=https://doh.centraleu.pi-dns.com/dns-query?dns=q80BAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQAB
+			// for an example measurement with this behavior.
+			//
+			// See also https://github.com/ooni/probe/issues/2299.
 			if obs.TCPConnectFailure.Unwrap() != "" {
 				wa.TCPConnectExpectedFailure.Add(obs.EndpointTransactionID.Unwrap())
 			}
@@ -545,7 +561,9 @@ func (wa *WebAnalysis) tlsComputeMetrics(c *WebObservationsContainer) {
 
 		// handle the case where the control fails
 		if obs.ControlTLSHandshakeFailure.Unwrap() != "" {
-			// if also the probe failed mark this failure as expected
+			// If also the probe failed mark this failure as expected.
+			//
+			// See https://github.com/ooni/probe/issues/2300.
 			if obs.TLSHandshakeFailure.Unwrap() != "" {
 				wa.TLSHandshakeExpectedFailure.Add(obs.EndpointTransactionID.Unwrap())
 			}

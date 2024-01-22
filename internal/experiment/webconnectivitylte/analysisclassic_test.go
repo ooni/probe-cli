@@ -13,6 +13,10 @@ import (
 	"github.com/tailscale/hujson"
 )
 
+// This test is related to https://github.com/ooni/probe/issues/2517.
+//
+// It shows how blocking flags could vary depending on the ASN distribution based on
+// a real case where we observed false positives caused by that.
 func TestTestKeys_analysisDNSToplevel(t *testing.T) {
 
 	// testcase is a test case in this test
