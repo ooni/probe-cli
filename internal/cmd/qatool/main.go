@@ -9,7 +9,9 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivitylte"
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivityqa"
+	"github.com/ooni/probe-cli/v3/internal/geoipx"
 	"github.com/ooni/probe-cli/v3/internal/minipipeline"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -73,8 +75,11 @@ func runWebConnectivityLTE(tc *webconnectivityqa.TestCase) {
 		var webMeasurement minipipeline.WebMeasurement
 		must.UnmarshalJSON(rawData, &webMeasurement)
 
+		// create the GeoIP ASN lookupper we're going to use
+		lookupper := model.GeoIPASNLookupperFunc(geoipx.LookupASN)
+
 		// ingest web measurement
-		observationsContainer := runtimex.Try1(minipipeline.IngestWebMeasurement(&webMeasurement))
+		observationsContainer := runtimex.Try1(minipipeline.IngestWebMeasurement(lookupper, &webMeasurement))
 
 		// serialize the observations
 		mustSerializeMkdirAllAndWriteFile(actualDestdir, "observations.json", observationsContainer)
@@ -86,13 +91,13 @@ func runWebConnectivityLTE(tc *webconnectivityqa.TestCase) {
 		mustSerializeMkdirAllAndWriteFile(actualDestdir, "observations_classic.json", observationsContainerClassic)
 
 		// analyze the observations
-		analysis := minipipeline.AnalyzeWebObservationsWithLinearAnalysis(observationsContainer)
+		analysis := minipipeline.AnalyzeWebObservationsWithLinearAnalysis(lookupper, observationsContainer)
 
 		// serialize the observations analysis
 		mustSerializeMkdirAllAndWriteFile(actualDestdir, "analysis.json", analysis)
 
 		// perform the classic analysis
-		analysisClassic := minipipeline.AnalyzeWebObservationsWithLinearAnalysis(observationsContainerClassic)
+		analysisClassic := minipipeline.AnalyzeWebObservationsWithLinearAnalysis(lookupper, observationsContainerClassic)
 
 		// serialize the classic analysis results
 		mustSerializeMkdirAllAndWriteFile(actualDestdir, "analysis_classic.json", analysisClassic)

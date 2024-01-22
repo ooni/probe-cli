@@ -1,6 +1,6 @@
 package minipipeline
 
-import "github.com/ooni/probe-cli/v3/internal/geoipx"
+import "github.com/ooni/probe-cli/v3/internal/model"
 
 // DNSDiffFindCommonIPAddressIntersection returns the set of IP addresses that
 // belong to both the measurement and the control sets.
@@ -32,7 +32,8 @@ func DNSDiffFindCommonIPAddressIntersection(measurement, control Set[string]) Se
 
 // DNSDiffFindCommonIPAddressIntersection returns the set of ASNs that belong to both the set of ASNs
 // obtained from the measurement and the one obtained from the control.
-func DNSDiffFindCommonASNsIntersection(measurement, control Set[string]) Set[int64] {
+func DNSDiffFindCommonASNsIntersection(
+	lookupper model.GeoIPASNLookupper, measurement, control Set[string]) Set[int64] {
 	const (
 		inMeasurement = 1 << 0
 		inControl     = 1 << 1
@@ -41,12 +42,12 @@ func DNSDiffFindCommonASNsIntersection(measurement, control Set[string]) Set[int
 
 	asnmap := make(map[int64]int)
 	for _, ipAddr := range measurement.Keys() {
-		if asn, _, err := geoipx.LookupASN(ipAddr); err == nil && asn > 0 {
+		if asn, _, err := lookupper.LookupASN(ipAddr); err == nil && asn > 0 {
 			asnmap[int64(asn)] |= inMeasurement
 		}
 	}
 	for _, ipAddr := range control.Keys() {
-		if asn, _, err := geoipx.LookupASN(ipAddr); err == nil && asn > 0 {
+		if asn, _, err := lookupper.LookupASN(ipAddr); err == nil && asn > 0 {
 			asnmap[int64(asn)] |= inControl
 		}
 	}

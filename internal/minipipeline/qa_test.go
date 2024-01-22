@@ -6,7 +6,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/geoipx"
 	"github.com/ooni/probe-cli/v3/internal/minipipeline"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/optional"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -63,7 +65,10 @@ func testMustRunAllWebTestCases(t *testing.T, topdir string) {
 				must.UnmarshalJSON(expectedClassicAnalysisRaw, &expectedClassicAnalysisData)
 
 				// load the measurement into the pipeline
-				gotContainerData, err := minipipeline.IngestWebMeasurement(&measurementData)
+				gotContainerData, err := minipipeline.IngestWebMeasurement(
+					model.GeoIPASNLookupperFunc(geoipx.LookupASN),
+					&measurementData,
+				)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -72,10 +77,16 @@ func testMustRunAllWebTestCases(t *testing.T, topdir string) {
 				gotClassicContainerData := minipipeline.ClassicFilter(gotContainerData)
 
 				// analyze the measurement
-				gotAnalysisData := minipipeline.AnalyzeWebObservationsWithLinearAnalysis(gotContainerData)
+				gotAnalysisData := minipipeline.AnalyzeWebObservationsWithLinearAnalysis(
+					model.GeoIPASNLookupperFunc(geoipx.LookupASN),
+					gotContainerData,
+				)
 
 				// perform the classic web-connectivity-v0.4-like analysis
-				gotClassicAnalysisData := minipipeline.AnalyzeWebObservationsWithLinearAnalysis(gotClassicContainerData)
+				gotClassicAnalysisData := minipipeline.AnalyzeWebObservationsWithLinearAnalysis(
+					model.GeoIPASNLookupperFunc(geoipx.LookupASN),
+					gotClassicContainerData,
+				)
 
 				//
 				// Note: if tests fail, you likely need to regenerate the static test

@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ooni/probe-cli/v3/internal/geoipx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/optional"
@@ -17,8 +16,8 @@ func utilsStringPointerToString(failure *string) (out string) {
 	return
 }
 
-func utilsGeoipxLookupASN(ipAddress string) optional.Value[int64] {
-	if asn, _, err := geoipx.LookupASN(ipAddress); err == nil && asn > 0 {
+func utilsGeoipxLookupASN(lookupper model.GeoIPASNLookupper, ipAddress string) optional.Value[int64] {
+	if asn, _, err := lookupper.LookupASN(ipAddress); err == nil && asn > 0 {
 		return optional.Some(int64(asn))
 	}
 	return optional.None[int64]()
@@ -111,6 +110,10 @@ func utilsDNSEngineIsDNSOverHTTPS(obs *WebObservation) bool {
 	return obs.DNSEngine.UnwrapOr("") == "doh"
 }
 
+// utilsTCPConnectFailureSeemsMisconfiguredIPv6 returns whether IPv6 seems to be
+// misconfigured for this specific TCP connect attempt.
+//
+// See https://github.com/ooni/probe/issues/2284 for more info.
 func utilsTCPConnectFailureSeemsMisconfiguredIPv6(obs *WebObservation) bool {
 	switch obs.TCPConnectFailure.UnwrapOr("") {
 	case netxlite.FailureNetworkUnreachable, netxlite.FailureHostUnreachable:

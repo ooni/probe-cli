@@ -6,7 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/ooni/probe-cli/v3/internal/geoipx"
 	"github.com/ooni/probe-cli/v3/internal/minipipeline"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -56,8 +58,9 @@ func main() {
 	must.UnmarshalJSON(must.ReadFile(*measurementFlag), &parsed)
 
 	// generate and write observations
+	lookupper := model.GeoIPASNLookupperFunc(geoipx.LookupASN)
 	observationsPath := filepath.Join(*destdirFlag, *prefixFlag+"observations.json")
-	container := runtimex.Try1(minipipeline.IngestWebMeasurement(&parsed))
+	container := runtimex.Try1(minipipeline.IngestWebMeasurement(lookupper, &parsed))
 	mustWriteFileFn(observationsPath, must.MarshalAndIndentJSON(container, "", "  "), 0600)
 
 	// generate and write classic observations
@@ -67,11 +70,11 @@ func main() {
 
 	// generate and write observations analysis
 	analysisPath := filepath.Join(*destdirFlag, *prefixFlag+"analysis.json")
-	analysis := minipipeline.AnalyzeWebObservationsWithLinearAnalysis(container)
+	analysis := minipipeline.AnalyzeWebObservationsWithLinearAnalysis(lookupper, container)
 	mustWriteFileFn(analysisPath, must.MarshalAndIndentJSON(analysis, "", "  "), 0600)
 
 	// generate and write the classic analysis
 	classicAnalysisPath := filepath.Join(*destdirFlag, *prefixFlag+"analysis_classic.json")
-	analysisClassic := minipipeline.AnalyzeWebObservationsWithLinearAnalysis(containerClassic)
+	analysisClassic := minipipeline.AnalyzeWebObservationsWithLinearAnalysis(lookupper, containerClassic)
 	mustWriteFileFn(classicAnalysisPath, must.MarshalAndIndentJSON(analysisClassic, "", "  "), 0600)
 }
