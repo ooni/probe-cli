@@ -20,9 +20,9 @@ import (
 //
 // This function MUTATES the [*TestKeys].
 func analysisExtMain(
+	lookupper model.GeoIPASNLookupper,
 	tk *TestKeys,
 	container *minipipeline.WebObservationsContainer,
-	lookupper model.GeoIPASNLookupper,
 ) {
 	// compute the web analysis
 	analysis := minipipeline.AnalyzeWebObservationsWithoutLinearAnalysis(lookupper, container)

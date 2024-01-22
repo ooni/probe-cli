@@ -74,7 +74,7 @@ func TestTestKeys_analysisDNSToplevel(t *testing.T) {
 			var tk TestKeys
 			runtimex.Try0(json.Unmarshal(data, &tk))
 			log.SetLevel(log.DebugLevel)
-			tk.analysisClassic(log.Log, mocks.NewGeoIPASNLookupper(tc.geoInfo))
+			tk.analysisClassic(mocks.NewGeoIPASNLookupper(tc.geoInfo), log.Log)
 			if tc.expecteBlockingFlags != tk.BlockingFlags {
 				t.Fatal("expected", tc.expecteBlockingFlags, "got", tk.BlockingFlags)
 			}
