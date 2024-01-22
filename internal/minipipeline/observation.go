@@ -358,7 +358,7 @@ func (c *WebObservationsContainer) ingestDNSLookupSuccesses(
 				DNSEngine:        optional.Some(ev.Engine),
 				DNSResolvedAddrs: optional.Some(addrs),
 				IPAddress:        optional.Some(ipAddr),
-				IPAddressASN:     utilsGeoipxLookupASN(ipAddr, lookupper),
+				IPAddressASN:     utilsGeoipxLookupASN(lookupper, ipAddr),
 				IPAddressBogon:   optional.Some(netxlite.IsBogon(ipAddr)),
 				TagDepth:         utilsExtractTagDepth(ev.Tags),
 			}
@@ -384,7 +384,7 @@ func (c *WebObservationsContainer) IngestTCPConnectEvents(
 		if !found {
 			obs = &WebObservation{
 				IPAddress:      optional.Some(ev.IP),
-				IPAddressASN:   utilsGeoipxLookupASN(ev.IP, lookupper),
+				IPAddressASN:   utilsGeoipxLookupASN(lookupper, ev.IP),
 				IPAddressBogon: optional.Some(netxlite.IsBogon(ev.IP)),
 			}
 		}

@@ -16,7 +16,7 @@ func utilsStringPointerToString(failure *string) (out string) {
 	return
 }
 
-func utilsGeoipxLookupASN(ipAddress string, lookupper model.GeoIPASNLookupper) optional.Value[int64] {
+func utilsGeoipxLookupASN(lookupper model.GeoIPASNLookupper, ipAddress string) optional.Value[int64] {
 	if asn, _, err := lookupper.LookupASN(ipAddress); err == nil && asn > 0 {
 		return optional.Some(int64(asn))
 	}
@@ -111,7 +111,7 @@ func utilsDNSEngineIsDNSOverHTTPS(obs *WebObservation) bool {
 }
 
 // utilsTCPConnectFailureSeemsMisconfiguredIPv6 returns whether IPv6 seems to be
-// misconfigured for this specific TCP connect attemptt.
+// misconfigured for this specific TCP connect attempt.
 //
 // See https://github.com/ooni/probe/issues/2284 for more info.
 func utilsTCPConnectFailureSeemsMisconfiguredIPv6(obs *WebObservation) bool {

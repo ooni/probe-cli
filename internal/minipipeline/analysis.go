@@ -308,7 +308,7 @@ func (wa *WebAnalysis) dnsComputeSuccessMetrics(
 		}
 
 		// this lookup is good if there is ASN intersection
-		if DNSDiffFindCommonASNsIntersection(measurement, control, lookupper).Len() > 0 {
+		if DNSDiffFindCommonASNsIntersection(lookupper, measurement, control).Len() > 0 {
 			wa.DNSLookupSuccessWithValidAddress.Add(obs.DNSTransactionID.Unwrap())
 			continue
 		}
@@ -368,7 +368,7 @@ func (wa *WebAnalysis) dnsComputeSuccessMetricsClassic(
 		}
 
 		// this lookup is good if there is ASN intersection
-		if DNSDiffFindCommonASNsIntersection(measurement, control, lookupper).Len() > 0 {
+		if DNSDiffFindCommonASNsIntersection(lookupper, measurement, control).Len() > 0 {
 			wa.DNSLookupSuccessWithValidAddressClassic.Add(obs.DNSTransactionID.Unwrap())
 			continue
 		}

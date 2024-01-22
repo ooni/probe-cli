@@ -1,8 +1,6 @@
 package minipipeline
 
-import (
-	"github.com/ooni/probe-cli/v3/internal/model"
-)
+import "github.com/ooni/probe-cli/v3/internal/model"
 
 // DNSDiffFindCommonIPAddressIntersection returns the set of IP addresses that
 // belong to both the measurement and the control sets.
@@ -35,7 +33,7 @@ func DNSDiffFindCommonIPAddressIntersection(measurement, control Set[string]) Se
 // DNSDiffFindCommonIPAddressIntersection returns the set of ASNs that belong to both the set of ASNs
 // obtained from the measurement and the one obtained from the control.
 func DNSDiffFindCommonASNsIntersection(
-	measurement, control Set[string], lookupper model.GeoIPASNLookupper) Set[int64] {
+	lookupper model.GeoIPASNLookupper, measurement, control Set[string]) Set[int64] {
 	const (
 		inMeasurement = 1 << 0
 		inControl     = 1 << 1
