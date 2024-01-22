@@ -44,7 +44,7 @@ func ghostDNSBlockingWithHTTP() *TestCase {
 }
 
 // ghostDNSBlockingWithHTTPS is the case where the domain does not exist anymore but
-// there's still ghost censorship because of the system resolver configuration, which
+// there's still ghost censorship because of the censor DNS censoring configuration, which
 // says that we should censor the domain by returning a specific IP address.
 //
 // See https://github.com/ooni/probe/issues/2308.
