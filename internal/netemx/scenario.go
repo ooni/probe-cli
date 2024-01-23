@@ -188,6 +188,25 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 	Role:             ScenarioRoleBadSSL,
 	ServerNameMain:   "badssl.com",
 	ServerNameExtras: []string{},
+}, {
+	Addresses: []string{
+		AddressYandexCom1,
+		AddressYandexCom2,
+		AddressYandexCom3,
+		AddressYandexCom4,
+	},
+	Domains: []string{
+		"yandex.com",
+		"ya.ru",
+		"xn--d1acpjx3f.xn--p1ai",
+	},
+	Role:           ScenarioRoleWebServer,
+	ServerNameMain: "ya.ru",
+	ServerNameExtras: []string{
+		"yandex.com",
+		"xn--d1acpjx3f.xn--p1ai",
+	},
+	WebServerFactory: YandexHandlerFactory(),
 }}
 
 // MustNewScenario constructs a complete testing scenario using the domains and IP
