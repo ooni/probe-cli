@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"reflect"
 	"sync"
 
@@ -13,10 +14,10 @@ import (
 var (
 	// ErrUnsupportedDataFormatVersion indicates that the user provided
 	// in input a data format version that we do not support.
-	ErrUnsupportedDataFormatVersion = errors.New("Unsupported data format version")
+	ErrUnsupportedDataFormatVersion = errors.New("unsupported data format version")
 
 	// ErrUnsupportedFormat indicates that the format is not supported.
-	ErrUnsupportedFormat = errors.New("Unsupported format")
+	ErrUnsupportedFormat = errors.New("unsupported format")
 
 	// ErrJSONFormatNotSupported indicates that the collector we're using
 	// does not support the JSON report format.
@@ -94,6 +95,9 @@ func (r reportChan) SubmitMeasurement(ctx context.Context, m *model.Measurement)
 		m.ReportID = ""
 		return err
 	}
+	// TODO(bassosimone): we should use the session logger here but for now this stopgap
+	// solution will allow observing the measurement URL for CLI users.
+	log.Printf("Measurement URL: https://explorer.ooni.org/m/%s", updateResponse.MeasurementUID)
 	return nil
 }
 

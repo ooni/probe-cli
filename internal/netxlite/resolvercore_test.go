@@ -18,8 +18,8 @@ import (
 )
 
 func typeCheckForSystemResolver(t *testing.T, resolver model.Resolver, logger model.DebugLogger) {
-	idna := resolver.(*resolverIDNA)
-	loggerReso := idna.Resolver.(*resolverLogger)
+	idnaReso := resolver.(*resolverIDNA)
+	loggerReso := idnaReso.Resolver.(*resolverLogger)
 	if loggerReso.Logger != logger {
 		t.Fatal("invalid logger")
 	}
@@ -38,8 +38,8 @@ func TestNewResolverSystem(t *testing.T) {
 func TestNewSerialUDPResolver(t *testing.T) {
 	d := NewDialerWithoutResolver(log.Log)
 	resolver := NewSerialUDPResolver(log.Log, d, "1.1.1.1:53")
-	idna := resolver.(*resolverIDNA)
-	logger := idna.Resolver.(*resolverLogger)
+	idnaReso := resolver.(*resolverIDNA)
+	logger := idnaReso.Resolver.(*resolverLogger)
 	if logger.Logger != log.Log {
 		t.Fatal("invalid logger")
 	}
@@ -56,8 +56,8 @@ func TestNewSerialUDPResolver(t *testing.T) {
 func TestNewParallelUDPResolver(t *testing.T) {
 	d := NewDialerWithoutResolver(log.Log)
 	resolver := NewParallelUDPResolver(log.Log, d, "1.1.1.1:53")
-	idna := resolver.(*resolverIDNA)
-	logger := idna.Resolver.(*resolverLogger)
+	idnaReso := resolver.(*resolverIDNA)
+	logger := idnaReso.Resolver.(*resolverLogger)
 	if logger.Logger != log.Log {
 		t.Fatal("invalid logger")
 	}
@@ -73,8 +73,8 @@ func TestNewParallelUDPResolver(t *testing.T) {
 
 func TestNewParallelDNSOverHTTPSResolver(t *testing.T) {
 	resolver := NewParallelDNSOverHTTPSResolver(log.Log, "https://1.1.1.1/dns-query")
-	idna := resolver.(*resolverIDNA)
-	logger := idna.Resolver.(*resolverLogger)
+	idnaReso := resolver.(*resolverIDNA)
+	logger := idnaReso.Resolver.(*resolverLogger)
 	if logger.Logger != log.Log {
 		t.Fatal("invalid logger")
 	}
