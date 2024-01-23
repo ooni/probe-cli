@@ -4,6 +4,7 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -84,6 +85,32 @@ func Test_newIPInfo(t *testing.T) {
 			addrs: []string{},
 		},
 		want: map[string]*model.THIPInfo{},
+	}, {
+		name: "with localhost",
+		args: args{
+			creq: &model.THRequest{
+				HTTPRequest:        "",
+				HTTPRequestHeaders: map[string][]string{},
+				TCPConnect: []string{
+					"127.0.0.1:443",
+					"[::1]:443",
+				},
+			},
+			addrs: []string{
+				"127.0.0.1",
+				"::1",
+			},
+		},
+		want: map[string]*model.THIPInfo{
+			"127.0.0.1": {
+				ASN:   0,
+				Flags: model.THIPInfoFlagIsBogon | model.THIPInfoFlagResolvedByProbe | model.THIPInfoFlagResolvedByTH,
+			},
+			"::1": {
+				ASN:   0,
+				Flags: model.THIPInfoFlagIsBogon | model.THIPInfoFlagResolvedByProbe | model.THIPInfoFlagResolvedByTH,
+			},
+		},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -136,6 +163,10 @@ func Test_ipInfoToEndpoints(t *testing.T) {
 				"8.8.4.4": {
 					ASN:   15169,
 					Flags: model.THIPInfoFlagResolvedByTH,
+				},
+				"127.0.0,1": {
+					ASN:   0,
+					Flags: model.THIPInfoFlagIsBogon | model.THIPInfoFlagResolvedByProbe,
 				},
 			},
 		},
@@ -239,7 +270,7 @@ func Test_ipInfoToEndpoints(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := ipInfoToEndpoints(tt.args.URL, tt.args.ipinfo)
+			got := ipInfoToEndpoints(log.Log, tt.args.URL, tt.args.ipinfo)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Fatal(diff)
 			}

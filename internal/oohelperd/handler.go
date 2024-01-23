@@ -80,14 +80,14 @@ func NewHandler() *Handler {
 		NewHTTPClient: func(logger model.Logger) model.HTTPClient {
 			// TODO(https://github.com/ooni/probe/issues/2534): the NewHTTPTransportWithResolver has QUIRKS and
 			// we should evaluate whether we can avoid using it here
-			return newHTTPClientWithTransportFactory(
+			return NewHTTPClientWithTransportFactory(
 				logger,
 				netxlite.NewHTTPTransportWithResolver,
 			)
 		},
 
 		NewHTTP3Client: func(logger model.Logger) model.HTTPClient {
-			return newHTTPClientWithTransportFactory(
+			return NewHTTPClientWithTransportFactory(
 				logger,
 				netxlite.NewHTTP3TransportWithResolver,
 			)
@@ -218,8 +218,8 @@ func newCookieJar() *cookiejar.Jar {
 	}))
 }
 
-// newHTTPClientWithTransportFactory creates a new HTTP client.
-func newHTTPClientWithTransportFactory(
+// NewHTTPClientWithTransportFactory creates a new HTTP client.
+func NewHTTPClientWithTransportFactory(
 	logger model.Logger,
 	txpFactory func(model.DebugLogger, model.Resolver) model.HTTPTransport,
 ) model.HTTPClient {
