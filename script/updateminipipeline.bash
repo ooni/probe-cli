@@ -18,5 +18,9 @@ go run ./internal/cmd/minipipeline \
 	-measurement ./internal/minipipeline/testdata/webconnectivity/manual/youtube/measurement.json
 
 go run ./internal/cmd/minipipeline \
+	-destdir ./internal/minipipeline/testdata/webconnectivity/manual/issue-2456 \
+	-measurement ./internal/minipipeline/testdata/webconnectivity/manual/issue-2456/measurement.json
+
+go run ./internal/cmd/minipipeline \
 	-measurement ./internal/cmd/minipipeline/testdata/measurement.json \
 	-destdir ./internal/cmd/minipipeline/testdata
