@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
+	"github.com/ooni/probe-cli/v3/internal/idnax"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"golang.org/x/net/idna"
 )
 
 // ErrNoDNSTransport is the error returned when you attempt to perform
@@ -246,7 +246,7 @@ type resolverIDNA struct {
 var _ model.Resolver = &resolverIDNA{}
 
 func (r *resolverIDNA) LookupHost(ctx context.Context, hostname string) ([]string, error) {
-	host, err := idna.ToASCII(hostname)
+	host, err := idnax.ToASCII(hostname)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +255,7 @@ func (r *resolverIDNA) LookupHost(ctx context.Context, hostname string) ([]strin
 
 func (r *resolverIDNA) LookupHTTPS(
 	ctx context.Context, domain string) (*model.HTTPSSvc, error) {
-	host, err := idna.ToASCII(domain)
+	host, err := idnax.ToASCII(domain)
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +276,7 @@ func (r *resolverIDNA) CloseIdleConnections() {
 
 func (r *resolverIDNA) LookupNS(
 	ctx context.Context, domain string) ([]*net.NS, error) {
-	host, err := idna.ToASCII(domain)
+	host, err := idnax.ToASCII(domain)
 	if err != nil {
 		return nil, err
 	}

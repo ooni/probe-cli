@@ -212,8 +212,8 @@ type OOAPICollectorUpdateRequest struct {
 
 // OOAPICollectorUpdateResponse is the response from the collector update API.
 type OOAPICollectorUpdateResponse struct {
-	// MeasurementID is the measurement ID.
-	MeasurementID string `json:"measurement_id"`
+	// MeasurementUID is the measurement UID.
+	MeasurementUID string `json:"measurement_uid"`
 }
 
 // OOAPILoginCredentials contains the login credentials

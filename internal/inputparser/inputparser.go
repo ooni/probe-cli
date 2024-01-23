@@ -8,9 +8,9 @@ import (
 	"net/url"
 	"reflect"
 
+	"github.com/ooni/probe-cli/v3/internal/idnax"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
-	"golang.org/x/net/idna"
 )
 
 // Config contains config for parsing experiments input. You MUST set
@@ -127,7 +127,7 @@ func maybeConvertHostnameToASCII(URL *url.URL) (*url.URL, error) {
 	hostname := URL.Hostname()
 
 	// Obtain an ASCII representation of the URL.Hostname().
-	asciiHostname, err := idna.ToASCII(hostname)
+	asciiHostname, err := idnax.ToASCII(hostname)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", ErrIDNAToASCII, err.Error())
 	}

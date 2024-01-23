@@ -60,6 +60,9 @@ func AllTestCases() []*TestCase {
 		httpDiffWithConsistentDNS(),
 		httpDiffWithInconsistentDNS(),
 
+		idnaWithoutCensorshipLowercase(),
+		idnaWithoutCensorshipWithFirstLetterUppercase(),
+
 		redirectWithConsistentDNSAndThenConnectionRefusedForHTTP(),
 		redirectWithConsistentDNSAndThenConnectionRefusedForHTTPS(),
 		redirectWithConsistentDNSAndThenConnectionResetForHTTP(),
