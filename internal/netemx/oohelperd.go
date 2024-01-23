@@ -3,14 +3,12 @@ package netemx
 import (
 	"fmt"
 	"net/http"
-	"net/http/cookiejar"
 
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/oohelperd"
-	"golang.org/x/net/publicsuffix"
 )
 
 // OOHelperDFactory is the factory to create an [http.Handler] implementing the OONI Web Connectivity
@@ -21,7 +19,7 @@ var _ HTTPHandlerFactory = &OOHelperDFactory{}
 
 // NewHandler implements QAEnvHTTPHandlerFactory.NewHandler.
 func (f *OOHelperDFactory) NewHandler(env NetStackServerFactoryEnv, unet *netem.UNetStack) http.Handler {
-	netx := netxlite.Netx{Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: unet}}
+	netx := &netxlite.Netx{Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: unet}}
 	handler := oohelperd.NewHandler()
 
 	handler.BaseLogger = &logx.PrefixLogger{
@@ -46,29 +44,26 @@ func (f *OOHelperDFactory) NewHandler(env NetStackServerFactoryEnv, unet *netem.
 	}
 
 	handler.NewHTTPClient = func(logger model.Logger) model.HTTPClient {
-		cookieJar, _ := cookiejar.New(&cookiejar.Options{
-			PublicSuffixList: publicsuffix.List,
-		})
-		// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPTransportStdlib is QUIRKY but we probably
-		// don't care about using a QUIRKY function here
-		return &http.Client{
-			Transport:     netx.NewHTTPTransportStdlib(logger),
-			CheckRedirect: nil,
-			Jar:           cookieJar,
-			Timeout:       0,
-		}
+		return oohelperd.NewHTTPClientWithTransportFactory(
+			logger,
+			func(dl model.DebugLogger, r model.Resolver) model.HTTPTransport {
+				dialer := netx.NewDialerWithResolver(dl, r)
+				tlsDialer := netxlite.NewTLSDialer(dialer, netxlite.NewTLSHandshakerStdlib(dl))
+				// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPTransport is QUIRKY but
+				// we probably don't care about using a QUIRKY function here
+				return netxlite.NewHTTPTransport(dl, dialer, tlsDialer)
+			},
+		)
 	}
 
 	handler.NewHTTP3Client = func(logger model.Logger) model.HTTPClient {
-		cookieJar, _ := cookiejar.New(&cookiejar.Options{
-			PublicSuffixList: publicsuffix.List,
-		})
-		return &http.Client{
-			Transport:     netx.NewHTTP3TransportStdlib(logger),
-			CheckRedirect: nil,
-			Jar:           cookieJar,
-			Timeout:       0,
-		}
+		return oohelperd.NewHTTPClientWithTransportFactory(
+			logger,
+			func(dl model.DebugLogger, r model.Resolver) model.HTTPTransport {
+				qd := netx.NewQUICDialerWithResolver(netx.NewUDPListener(), dl, r)
+				return netxlite.NewHTTP3Transport(dl, qd, nil)
+			},
+		)
 	}
 
 	return handler

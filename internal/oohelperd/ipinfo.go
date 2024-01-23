@@ -74,7 +74,7 @@ type endpointInfo struct {
 // whether an IP address is valid for a domain;
 //
 // 4. otherwise, we don't generate any endpoint to measure.
-func ipInfoToEndpoints(URL *url.URL, ipinfo map[string]*model.THIPInfo) []endpointInfo {
+func ipInfoToEndpoints(logger model.Logger, URL *url.URL, ipinfo map[string]*model.THIPInfo) []endpointInfo {
 	var ports []string
 
 	if port := URL.Port(); port != "" {
@@ -88,6 +88,7 @@ func ipInfoToEndpoints(URL *url.URL, ipinfo map[string]*model.THIPInfo) []endpoi
 	out := []endpointInfo{}
 	for addr, info := range ipinfo {
 		if (info.Flags & model.THIPInfoFlagIsBogon) != 0 {
+			logger.Infof("IPInfo: skip bogon IP address: %s", addr)
 			continue // as documented
 		}
 		for _, port := range ports {

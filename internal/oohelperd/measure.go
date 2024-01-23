@@ -80,7 +80,7 @@ func measure(ctx context.Context, config *Handler, creq *ctrlRequest) (*ctrlResp
 
 	// obtain IP info and figure out the endpoints measurement plan
 	cresp.IPInfo = newIPInfo(creq, cresp.DNS.Addrs)
-	endpoints := ipInfoToEndpoints(URL, cresp.IPInfo)
+	endpoints := ipInfoToEndpoints(logger, URL, cresp.IPInfo)
 
 	// tcpconnect: start over all the endpoints
 	tcpconnch := make(chan *tcpResultPair, len(endpoints))
