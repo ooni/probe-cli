@@ -57,8 +57,9 @@ func newChildResolver(
 	case "http", "https": // http is here for testing
 		reso = newChildResolverHTTPS(logger, URL, http3Enabled, counter, proxyURL)
 	case "system":
+		netx := &netxlite.Netx{}
 		reso = bytecounter.MaybeWrapSystemResolver(
-			netxlite.NewStdlibResolver(logger),
+			netx.NewStdlibResolver(logger),
 			counter, // handles correctly the case where counter is nil
 		)
 	default:
@@ -78,10 +79,11 @@ func newChildResolverHTTPS(
 	proxyURL *url.URL,
 ) model.Resolver {
 	var txp model.HTTPTransport
+	netx := &netxlite.Netx{}
 	switch http3Enabled {
 	case false:
 		dialer := netxlite.NewDialerWithStdlibResolver(logger)
-		thx := netxlite.NewTLSHandshakerStdlib(logger)
+		thx := netx.NewTLSHandshakerStdlib(logger)
 		tlsDialer := netxlite.NewTLSDialer(dialer, thx)
 		txp = netxlite.NewHTTPTransportWithOptions(
 			logger, dialer, tlsDialer,
@@ -89,7 +91,7 @@ func newChildResolverHTTPS(
 			netxlite.HTTPTransportOptionProxyURL(proxyURL),        // nil here disables using the proxy
 		)
 	case true:
-		txp = netxlite.NewHTTP3TransportStdlib(logger)
+		txp = netx.NewHTTP3TransportStdlib(logger)
 	}
 	txp = bytecounter.MaybeWrapHTTPTransport(txp, counter)
 	dnstxp := netxlite.NewDNSOverHTTPSTransportWithHTTPTransport(txp, URL)

@@ -16,7 +16,7 @@
 //
 // The [*Trace] features methods that mirror existing [netxlite] methods but implement support for
 // collecting network events using the [*Trace]. For example, [*Trace.NewStdlibResolver] is like
-// [netxlite.NewStdlibResolver] but the DNS lookups performed with the resolved returned by
+// [netxlite.Netx.NewStdlibResolver] but the DNS lookups performed with the resolved returned by
 // [*Trace.NewStdlibResolver] generate events that you can collect using the [*Trace].
 //
 // As mentioned above, internally, the [*Trace] uses buffered channels on which the underlying

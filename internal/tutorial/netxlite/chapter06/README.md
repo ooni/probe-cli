@@ -45,7 +45,8 @@ Here's where we start to diverge. We create a dialer without a resolver,
 which is going to be used by the UDP resolver.
 
 ```Go
-	dialer := netxlite.NewDialerWithoutResolver(log.Log)
+	netx := &netxlite.Netx{}
+	dialer := netx.NewDialerWithoutResolver(log.Log)
 ```
 
 Then, we create an UDP resolver. The arguments are the same as for
@@ -53,7 +54,7 @@ creating a system resolver, except that we also need to specify the
 UDP endpoint address at which the server is listening.
 
 ```Go
-	reso := netxlite.NewParallelUDPResolver(log.Log, dialer, *serverAddr)
+	reso := netx.NewParallelUDPResolver(log.Log, dialer, *serverAddr)
 ```
 
 The API we invoke is the same as in the previous chapter, though,

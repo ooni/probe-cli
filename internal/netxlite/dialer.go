@@ -15,11 +15,12 @@ import (
 )
 
 // NewDialerWithStdlibResolver is equivalent to creating a system resolver
-// using NewStdlibResolver and then a dialer using NewDialerWithResolver where
-// the resolver argument is the previously created resolver.
+// using NewStdlibResolver and then a dialer using [Netx.NewDialerWithResolver]
+// with the default [Netx] where the resolver argument is the previously created resolver.
 func NewDialerWithStdlibResolver(dl model.DebugLogger) model.Dialer {
-	reso := NewStdlibResolver(dl)
-	return NewDialerWithResolver(dl, reso)
+	netx := &Netx{}
+	reso := netx.NewStdlibResolver(dl)
+	return netx.NewDialerWithResolver(dl, reso)
 }
 
 // NewDialerWithResolver creates a [Dialer] with error wrapping.
@@ -36,17 +37,10 @@ func (netx *Netx) NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, 
 	return WrapDialer(dl, r, &dialerSystem{provider: netx.MaybeCustomUnderlyingNetwork()}, w...)
 }
 
-// NewDialerWithResolver is equivalent to creating an empty [*Netx]
-// and calling its NewDialerWithResolver method.
-func NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...model.DialerWrapper) model.Dialer {
-	netx := &Netx{Underlying: nil}
-	return netx.NewDialerWithResolver(dl, r, w...)
-}
-
 // WrapDialer wraps an existing Dialer to add extra functionality
 // such as separting DNS lookup and connecting, error wrapping, logging, etc.
 //
-// When possible use NewDialerWithResolver or NewDialerWithoutResolver
+// When possible use [Netx.NewDialerWithResolver] or NewDialerWithoutResolver
 // instead of using this rather low-level function.
 //
 // # Arguments
@@ -154,13 +148,6 @@ func WrapDialer(logger model.DebugLogger, resolver model.Resolver,
 // NewDialerWithoutResolver implements [model.MeasuringNetwork].
 func (netx *Netx) NewDialerWithoutResolver(dl model.DebugLogger, w ...model.DialerWrapper) model.Dialer {
 	return netx.NewDialerWithResolver(dl, &NullResolver{}, w...)
-}
-
-// NewDialerWithoutResolver is equivalent to creating an empty [*Netx]
-// and calling its NewDialerWithoutResolver method.
-func NewDialerWithoutResolver(dl model.DebugLogger, w ...model.DialerWrapper) model.Dialer {
-	netx := &Netx{Underlying: nil}
-	return netx.NewDialerWithoutResolver(dl, w...)
 }
 
 // dialerSystem is a model.Dialer that uses the stdlib's net.Dialer

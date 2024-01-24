@@ -28,9 +28,10 @@ func init() {
 	// Use a nonstandard resolver, which is enough to work around the
 	// puzzling https://github.com/ooni/probe/issues/1409 issue.
 	const resolverURL = "https://8.8.8.8/dns-query"
-	resolver = netxlite.NewParallelDNSOverHTTPSResolver(log.Log, resolverURL)
+	netx := &netxlite.Netx{}
+	resolver = netx.NewParallelDNSOverHTTPSResolver(log.Log, resolverURL)
 	// TODO(https://github.com/ooni/probe/issues/2534): the NewHTTPClientWithResolver func has QUIRKS but we don't care.
-	httpClient = netxlite.NewHTTPClientWithResolver(log.Log, resolver)
+	httpClient = netxlite.NewHTTPClientWithResolver(netx, log.Log, resolver)
 }
 
 func main() {

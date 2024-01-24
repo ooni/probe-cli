@@ -10,8 +10,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
@@ -186,14 +188,14 @@ func TestHandlerWorkingAsIntended(t *testing.T) {
 	for _, expect := range expectations {
 		t.Run(expect.name, func(t *testing.T) {
 			// create handler and possibly override .Measure
-			handler := NewHandler()
+			handler := NewHandler(log.Log, &netxlite.Netx{})
 			if expect.measureFn != nil {
-				handler.Measure = expect.measureFn
+				handler.measure = expect.measureFn
 			}
 
 			// configure the CountRequests field if needed
 			if expect.initialCountRequests > 0 {
-				handler.CountRequests.Add(expect.initialCountRequests) // 0 + value = value :-)
+				handler.countRequests.Add(expect.initialCountRequests) // 0 + value = value :-)
 			}
 
 			// create request

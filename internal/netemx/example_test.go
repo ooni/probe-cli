@@ -80,11 +80,12 @@ func Example_dpiRule() {
 	// run netxlite code inside the netemx environment
 	env.Do(func() {
 		// create a system resolver instance
-		reso := netxlite.NewStdlibResolver(model.DiscardLogger)
+		netx := &netxlite.Netx{}
+		reso := netx.NewStdlibResolver(model.DiscardLogger)
 
 		// create the HTTP client
 		// TODO(https://github.com/ooni/probe/issues/2534): the NewHTTPClientWithResolver func has QUIRKS but we don't care.
-		client := netxlite.NewHTTPClientWithResolver(model.DiscardLogger, reso)
+		client := netxlite.NewHTTPClientWithResolver(netx, model.DiscardLogger, reso)
 
 		// create the HTTP request
 		req := runtimex.Try1(http.NewRequest("GET", "https://example.com", nil))
@@ -131,23 +132,25 @@ func Example_resolverConfig() {
 
 	// run netxlite code inside the netemx environment
 	env.Do(func() {
+		netx := &netxlite.Netx{}
+
 		// use a system resolver instance
 		{
-			reso := netxlite.NewStdlibResolver(log.Log)
+			reso := netx.NewStdlibResolver(log.Log)
 			ispResults = runtimex.Try1(reso.LookupHost(context.Background(), "example.com"))
 		}
 
 		// use 8.8.4.4
 		{
-			dialer := netxlite.NewDialerWithoutResolver(log.Log)
-			reso := netxlite.NewParallelUDPResolver(log.Log, dialer, "8.8.4.4:53")
+			dialer := netx.NewDialerWithoutResolver(log.Log)
+			reso := netx.NewParallelUDPResolver(log.Log, dialer, "8.8.4.4:53")
 			googleResults = runtimex.Try1(reso.LookupHost(context.Background(), "example.com"))
 		}
 
 		// use 9.9.9.9
 		{
-			dialer := netxlite.NewDialerWithoutResolver(log.Log)
-			reso := netxlite.NewParallelUDPResolver(log.Log, dialer, "9.9.9.9:53")
+			dialer := netx.NewDialerWithoutResolver(log.Log)
+			reso := netx.NewParallelUDPResolver(log.Log, dialer, "9.9.9.9:53")
 			quad9Results = runtimex.Try1(reso.LookupHost(context.Background(), "example.com"))
 		}
 	})
@@ -178,11 +181,14 @@ func Example_customNetStackHandler() {
 
 	// run netxlite code inside the netemx environment
 	env.Do(func() {
+		// use the default netxlite.Netx.
+		netx := &netxlite.Netx{}
+
 		// create a system resolver instance
-		reso := netxlite.NewStdlibResolver(log.Log)
+		reso := netx.NewStdlibResolver(log.Log)
 
 		// create a dialer
-		dialer := netxlite.NewDialerWithResolver(log.Log, reso)
+		dialer := netx.NewDialerWithResolver(log.Log, reso)
 
 		// attempt to establish a TCP connection
 		conn, err := dialer.DialContext(context.Background(), "tcp", "e1.whatsapp.net:5222")
@@ -224,10 +230,12 @@ func Example_dohWithInternetScenario() {
 
 	env.Do(func() {
 		for _, domain := range []string{"mozilla.cloudflare-dns.com", "dns.google", "dns.quad9.net"} {
+			netx := &netxlite.Netx{}
+
 			// DNS-over-UDP
 			{
-				dialer := netxlite.NewDialerWithResolver(log.Log, netxlite.NewStdlibResolver(log.Log))
-				reso := netxlite.NewParallelUDPResolver(log.Log, dialer, net.JoinHostPort(domain, "53"))
+				dialer := netx.NewDialerWithResolver(log.Log, netx.NewStdlibResolver(log.Log))
+				reso := netx.NewParallelUDPResolver(log.Log, dialer, net.JoinHostPort(domain, "53"))
 				defer reso.CloseIdleConnections()
 
 				addrs, err := reso.LookupHost(context.Background(), "www.example.com")
@@ -240,8 +248,9 @@ func Example_dohWithInternetScenario() {
 
 			// DNS-over-HTTPS
 			{
+				netx := &netxlite.Netx{}
 				URL := &url.URL{Scheme: "https", Host: domain, Path: "/dns-query"}
-				reso := netxlite.NewParallelDNSOverHTTPSResolver(log.Log, URL.String())
+				reso := netx.NewParallelDNSOverHTTPSResolver(log.Log, URL.String())
 				defer reso.CloseIdleConnections()
 
 				addrs, err := reso.LookupHost(context.Background(), "www.example.com")
@@ -279,8 +288,9 @@ func Example_dnsOverUDPWithInternetScenario() {
 		}
 
 		for _, endpoint := range resolvers {
-			dialer := netxlite.NewDialerWithoutResolver(log.Log)
-			reso := netxlite.NewParallelUDPResolver(log.Log, dialer, endpoint)
+			netx := &netxlite.Netx{}
+			dialer := netx.NewDialerWithoutResolver(log.Log)
+			reso := netx.NewParallelUDPResolver(log.Log, dialer, endpoint)
 			defer reso.CloseIdleConnections()
 
 			addrs, err := reso.LookupHost(context.Background(), "www.example.com")
@@ -307,7 +317,8 @@ func Example_getaddrinfoWithInternetScenario() {
 	defer env.Close()
 
 	env.Do(func() {
-		reso := netxlite.NewStdlibResolver(log.Log)
+		netx := &netxlite.Netx{}
+		reso := netx.NewStdlibResolver(log.Log)
 		defer reso.CloseIdleConnections()
 
 		addrs, err := reso.LookupHost(context.Background(), "www.example.com")
@@ -548,7 +559,8 @@ func Example_exampleURLShortener() {
 	env.Do(func() {
 		// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPTransportStdlib has QUIRKS but we
 		// don't actually care about those QUIRKS in this context
-		client := netxlite.NewHTTPTransportStdlib(log.Log)
+		netx := &netxlite.Netx{}
+		client := netx.NewHTTPTransportStdlib(log.Log)
 
 		req, err := http.NewRequest("GET", "https://bit.ly/21645", nil)
 		if err != nil {

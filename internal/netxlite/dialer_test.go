@@ -61,7 +61,8 @@ func TestNewDialer(t *testing.T) {
 			nil, // explicitly test for this documented case
 			&dialerWrapperSecond{},
 		}
-		d := NewDialerWithoutResolver(log.Log, modifiers...)
+		netx := &Netx{}
+		d := netx.NewDialerWithoutResolver(log.Log, modifiers...)
 		logger := d.(*dialerLogger)
 		if logger.DebugLogger != log.Log {
 			t.Fatal("invalid logger")

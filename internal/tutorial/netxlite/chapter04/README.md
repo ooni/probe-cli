@@ -91,8 +91,9 @@ in the next two chapters.)
 ```Go
 func dialQUIC(ctx context.Context, address string,
 	config *tls.Config) (quic.EarlyConnection, tls.ConnectionState, error) {
-	ql := netxlite.NewUDPListener()
-	d := netxlite.NewQUICDialerWithoutResolver(ql, log.Log)
+	netx := &netxlite.Netx{}
+	ql := netx.NewUDPListener()
+	d := netx.NewQUICDialerWithoutResolver(ql, log.Log)
 	qconn, err := d.DialContext(ctx, address, config, &quic.Config{})
 	if err != nil {
 		return nil, tls.ConnectionState{}, err

@@ -236,7 +236,8 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 		ca := netem.MustNewCA()
 		cert := ca.MustNewTLSCertificate("dns.google")
 		server := testingx.MustNewTLSServer(testingx.TLSHandlerHandshakeAndWriteText(cert, testingx.HTTPBlockpage451))
-		dialer := netxlite.NewDialerWithoutResolver(model.DiscardLogger)
+		netx := &netxlite.Netx{}
+		dialer := netx.NewDialerWithoutResolver(model.DiscardLogger)
 		ctx := context.Background()
 		conn, err := dialer.DialContext(ctx, "tcp", server.Endpoint())
 		if err != nil {

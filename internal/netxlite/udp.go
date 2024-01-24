@@ -12,13 +12,6 @@ func (netx *Netx) NewUDPListener() model.UDPListener {
 	return &udpListenerErrWrapper{&udpListenerStdlib{provider: netx.MaybeCustomUnderlyingNetwork()}}
 }
 
-// NewUDPListener is equivalent to creating an empty [*Netx]
-// and calling its NewUDPListener method.
-func NewUDPListener() model.UDPListener {
-	netx := &Netx{Underlying: nil}
-	return netx.NewUDPListener()
-}
-
 // udpListenerStdlib is a UDPListener using the standard library.
 type udpListenerStdlib struct {
 	// provider is the OPTIONAL nil-safe [model.UnderlyingNetwork] provider.

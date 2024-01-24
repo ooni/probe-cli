@@ -19,7 +19,8 @@ func TestMainWorkingAsIntended(t *testing.T) {
 		portsMap[port] = false
 	}
 	go main()
-	dialer := netxlite.NewDialerWithoutResolver(model.DiscardLogger)
+	netx := &netxlite.Netx{}
+	dialer := netx.NewDialerWithoutResolver(model.DiscardLogger)
 	for i := 0; i < len(TestPorts); i++ {
 		port := <-srvTestChan
 		addr := net.JoinHostPort("127.0.0.1", port)

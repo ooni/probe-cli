@@ -109,12 +109,13 @@ func (qh *quicDialerDB) DialContext(ctx context.Context, address string,
 	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
 	started := time.Since(qh.begin).Seconds()
 	var state tls.ConnectionState
+	netx := &netxlite.Netx{}
 	listener := &udpListenerDB{
-		UDPListener: netxlite.NewUDPListener(),
+		UDPListener: netx.NewUDPListener(),
 		begin:       qh.begin,
 		db:          qh.db,
 	}
-	dialer := netxlite.NewQUICDialerWithoutResolver(listener, qh.logger)
+	dialer := netx.NewQUICDialerWithoutResolver(listener, qh.logger)
 	defer dialer.CloseIdleConnections()
 	sess, err := dialer.DialContext(ctx, address, tlsConfig, quicConfig)
 	if err == nil {

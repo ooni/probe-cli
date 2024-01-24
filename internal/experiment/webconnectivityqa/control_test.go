@@ -18,8 +18,9 @@ func TestControlFailureWithSuccessfulHTTPWebsite(t *testing.T) {
 	tc.Configure(env)
 
 	env.Do(func() {
+		netx := &netxlite.Netx{}
 		tcpDialer := netxlite.NewDialerWithStdlibResolver(log.Log)
-		tlsHandshaker := netxlite.NewTLSHandshakerStdlib(log.Log)
+		tlsHandshaker := netx.NewTLSHandshakerStdlib(log.Log)
 		tlsDialer := netxlite.NewTLSDialer(tcpDialer, tlsHandshaker)
 		for _, sni := range []string{"0.th.ooni.org", "1.th.ooni.org", "2.th.ooni.org", "3.th.ooni.org", "d33d1gs9kpq1c5.cloudfront.net"} {
 			conn, err := tlsDialer.DialTLSContext(context.Background(), "tcp", net.JoinHostPort(sni, "443"))
@@ -41,8 +42,9 @@ func TestControlFailureWithSuccessfulHTTPSWebsite(t *testing.T) {
 	tc.Configure(env)
 
 	env.Do(func() {
+		netx := &netxlite.Netx{}
 		tcpDialer := netxlite.NewDialerWithStdlibResolver(log.Log)
-		tlsHandshaker := netxlite.NewTLSHandshakerStdlib(log.Log)
+		tlsHandshaker := netx.NewTLSHandshakerStdlib(log.Log)
 		tlsDialer := netxlite.NewTLSDialer(tcpDialer, tlsHandshaker)
 		for _, sni := range []string{"0.th.ooni.org", "1.th.ooni.org", "2.th.ooni.org", "3.th.ooni.org", "d33d1gs9kpq1c5.cloudfront.net"} {
 			conn, err := tlsDialer.DialTLSContext(context.Background(), "tcp", net.JoinHostPort(sni, "443"))

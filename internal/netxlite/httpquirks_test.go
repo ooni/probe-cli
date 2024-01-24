@@ -20,7 +20,8 @@ func TestNewHTTPTransportWithResolver(t *testing.T) {
 			return nil, expected
 		},
 	}
-	txp := NewHTTPTransportWithResolver(model.DiscardLogger, reso)
+	netx := &Netx{}
+	txp := NewHTTPTransportWithResolver(netx, model.DiscardLogger, reso)
 	req, err := http.NewRequest("GET", "http://x.org", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -38,6 +39,7 @@ func TestNewHTTPTransport(t *testing.T) {
 	t.Run("works as intended with failing dialer", func(t *testing.T) {
 		called := &atomic.Int64{}
 		expected := errors.New("mocked error")
+		netx := &Netx{}
 		d := &dialerResolverWithTracing{
 			Dialer: &mocks.Dialer{
 				MockDialContext: func(ctx context.Context,
@@ -48,9 +50,9 @@ func TestNewHTTPTransport(t *testing.T) {
 					called.Add(1)
 				},
 			},
-			Resolver: NewStdlibResolver(log.Log),
+			Resolver: netx.NewStdlibResolver(log.Log),
 		}
-		td := NewTLSDialer(d, NewTLSHandshakerStdlib(log.Log))
+		td := NewTLSDialer(d, netx.NewTLSHandshakerStdlib(log.Log))
 		txp := NewHTTPTransport(log.Log, d, td)
 		client := &http.Client{Transport: txp}
 		resp, err := client.Get("https://8.8.4.4/robots.txt")
@@ -104,7 +106,8 @@ func TestNewHTTPTransport(t *testing.T) {
 }
 
 func TestNewHTTPTransportStdlib(t *testing.T) {
-	txp := NewHTTPTransportStdlib(log.Log)
+	netx := &Netx{}
+	txp := netx.NewHTTPTransportStdlib(log.Log)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // immediately!
 	req, err := http.NewRequestWithContext(ctx, "GET", "http://x.org", nil)
@@ -138,7 +141,8 @@ func TestNewHTTPClientStdlib(t *testing.T) {
 
 func TestNewHTTPClientWithResolver(t *testing.T) {
 	reso := &mocks.Resolver{}
-	clnt := NewHTTPClientWithResolver(model.DiscardLogger, reso)
+	netx := &Netx{}
+	clnt := NewHTTPClientWithResolver(netx, model.DiscardLogger, reso)
 	ewc, ok := clnt.(*httpClientErrWrapper)
 	if !ok {
 		t.Fatal("expected *httpClientErrWrapper")

@@ -54,7 +54,8 @@ The returned resolver implements an interface that is very
 close to the API of the `net.Resolver` struct.
 
 ```Go
-	reso := netxlite.NewStdlibResolver(log.Log)
+	netx := &netxlite.Netx{}
+	reso := netx.NewStdlibResolver(log.Log)
 ```
 
 We call `LookupHost` to map the hostname to IP addrs. The returned

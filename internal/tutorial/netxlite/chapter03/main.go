@@ -64,7 +64,8 @@ func main() {
 }
 
 func dialTCP(ctx context.Context, address string) (net.Conn, error) {
-	d := netxlite.NewDialerWithoutResolver(log.Log)
+	netx := &netxlite.Netx{}
+	d := netx.NewDialerWithoutResolver(log.Log)
 	return d.DialContext(ctx, "tcp", address)
 }
 
@@ -83,7 +84,8 @@ func handshakeTLS(ctx context.Context, tcpConn net.Conn, config *tls.Config) (mo
 	// if they conflict with what the parroted browser would do.
 	//
 	// ```Go
-	th := netxlite.NewTLSHandshakerUTLS(log.Log, &utls.HelloFirefox_55)
+	netx := &netxlite.Netx{}
+	th := netx.NewTLSHandshakerUTLS(log.Log, &utls.HelloFirefox_55)
 	// ```
 	//
 	// The rest of the program is exactly like the one in the

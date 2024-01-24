@@ -82,8 +82,9 @@ func NewTask(config Config) *Task {
 	if config.UserAgent == "" {
 		config.UserAgent = fmt.Sprintf("ooniprobe-engine/%s", version.Version)
 	}
+	netx := &netxlite.Netx{}
 	if config.Resolver == nil {
-		config.Resolver = netxlite.NewStdlibResolver(config.Logger)
+		config.Resolver = netx.NewStdlibResolver(config.Logger)
 	}
 	return &Task{
 		countryLookupper:     mmdbLookupper{},

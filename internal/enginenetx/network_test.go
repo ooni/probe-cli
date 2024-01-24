@@ -25,12 +25,13 @@ func TestNetworkQA(t *testing.T) {
 		defer env.Close()
 
 		env.Do(func() {
+			netx := &netxlite.Netx{}
 			txp := enginenetx.NewNetwork(
 				bytecounter.New(),
 				&kvstore.Memory{},
 				log.Log,
 				nil,
-				netxlite.NewStdlibResolver(log.Log),
+				netx.NewStdlibResolver(log.Log),
 			)
 			client := txp.NewHTTPClient()
 			resp, err := client.Get("https://www.example.com/")
@@ -62,6 +63,7 @@ func TestNetworkQA(t *testing.T) {
 		defer proxy.Close()
 
 		env.Do(func() {
+			netx := &netxlite.Netx{}
 			txp := enginenetx.NewNetwork(
 				bytecounter.New(),
 				&kvstore.Memory{},
@@ -71,7 +73,7 @@ func TestNetworkQA(t *testing.T) {
 					Host:   net.JoinHostPort(env.ClientStack.IPAddress(), "9050"),
 					Path:   "/",
 				},
-				netxlite.NewStdlibResolver(log.Log),
+				netx.NewStdlibResolver(log.Log),
 			)
 			client := txp.NewHTTPClient()
 
@@ -131,6 +133,7 @@ func TestNetworkQA(t *testing.T) {
 		defer proxy.Close()
 
 		env.Do(func() {
+			netx := &netxlite.Netx{}
 			txp := enginenetx.NewNetwork(
 				bytecounter.New(),
 				&kvstore.Memory{},
@@ -140,7 +143,7 @@ func TestNetworkQA(t *testing.T) {
 					Host:   net.JoinHostPort(env.ClientStack.IPAddress(), "8080"),
 					Path:   "/",
 				},
-				netxlite.NewStdlibResolver(log.Log),
+				netx.NewStdlibResolver(log.Log),
 			)
 			client := txp.NewHTTPClient()
 
@@ -202,6 +205,7 @@ func TestNetworkQA(t *testing.T) {
 		defer proxy.Close()
 
 		env.Do(func() {
+			netx := &netxlite.Netx{}
 			txp := enginenetx.NewNetwork(
 				bytecounter.New(),
 				&kvstore.Memory{},
@@ -211,7 +215,7 @@ func TestNetworkQA(t *testing.T) {
 					Host:   net.JoinHostPort(env.ClientStack.IPAddress(), "4443"),
 					Path:   "/",
 				},
-				netxlite.NewStdlibResolver(log.Log),
+				netx.NewStdlibResolver(log.Log),
 			)
 			client := txp.NewHTTPClient()
 
@@ -257,12 +261,13 @@ func TestNetworkQA(t *testing.T) {
 	})
 
 	t.Run("NewHTTPClient returns a client with a cookie jar", func(t *testing.T) {
+		netx := &netxlite.Netx{}
 		txp := enginenetx.NewNetwork(
 			bytecounter.New(),
 			&kvstore.Memory{},
 			log.Log,
 			nil,
-			netxlite.NewStdlibResolver(log.Log),
+			netx.NewStdlibResolver(log.Log),
 		)
 		client := txp.NewHTTPClient()
 		if client.Jar == nil {
