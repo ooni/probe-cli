@@ -81,8 +81,9 @@ func TestHTTPTransportSaver(t *testing.T) {
 
 		measureHTTP := func(t *testing.T, URL *url.URL) (*http.Response, *Saver, error) {
 			saver := &Saver{}
+			netx := &netxlite.Netx{}
 			txp := &HTTPTransportSaver{
-				HTTPTransport: netxlite.NewHTTPTransportStdlib(model.DiscardLogger),
+				HTTPTransport: netx.NewHTTPTransportStdlib(model.DiscardLogger),
 				Saver:         saver,
 			}
 			req, err := http.NewRequest("GET", URL.String(), nil)

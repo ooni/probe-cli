@@ -109,21 +109,13 @@ func (netx *Netx) NewHTTPTransportStdlib(logger model.DebugLogger) model.HTTPTra
 	return NewHTTPTransport(logger, dialer, tlsDialer)
 }
 
-// NewHTTPTransportStdlib is equivalent to creating an empty [*Netx]
-// and calling its NewHTTPTransportStdlib method.
-//
-// This function behavior is QUIRKY as documented in [NewHTTPTransport].
-func NewHTTPTransportStdlib(logger model.DebugLogger) model.HTTPTransport {
-	netx := &Netx{Underlying: nil}
-	return netx.NewHTTPTransportStdlib(logger)
-}
-
 // NewHTTPClientStdlib creates a new HTTPClient that uses the
 // standard library for TLS and DNS resolutions.
 //
 // This function behavior is QUIRKY as documented in [NewHTTPTransport].
 func NewHTTPClientStdlib(logger model.DebugLogger) model.HTTPClient {
-	txp := NewHTTPTransportStdlib(logger)
+	netx := &Netx{}
+	txp := netx.NewHTTPTransportStdlib(logger)
 	return NewHTTPClient(txp)
 }
 

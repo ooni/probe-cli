@@ -104,7 +104,8 @@ func TestNewHTTPTransport(t *testing.T) {
 }
 
 func TestNewHTTPTransportStdlib(t *testing.T) {
-	txp := NewHTTPTransportStdlib(log.Log)
+	netx := &Netx{}
+	txp := netx.NewHTTPTransportStdlib(log.Log)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // immediately!
 	req, err := http.NewRequestWithContext(ctx, "GET", "http://x.org", nil)

@@ -556,7 +556,8 @@ func Example_exampleURLShortener() {
 	env.Do(func() {
 		// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPTransportStdlib has QUIRKS but we
 		// don't actually care about those QUIRKS in this context
-		client := netxlite.NewHTTPTransportStdlib(log.Log)
+		netx := &netxlite.Netx{}
+		client := netx.NewHTTPTransportStdlib(log.Log)
 
 		req, err := http.NewRequest("GET", "https://bit.ly/21645", nil)
 		if err != nil {
