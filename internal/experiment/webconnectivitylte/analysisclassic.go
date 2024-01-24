@@ -379,7 +379,22 @@ func analysisClassicComputeBlockingAccessible(woa *minipipeline.WebAnalysis, tk 
 			return
 		}
 
-		// 6. handle the case of DNS success with loopback addrs, which is the case
+		// 6. handle the case of DNS success with the probe only seeing loopback
+		// addrs while the TH sees real addresses, which is a case where in the
+		// classic analysis (which is what we're doing) the probe does not attempt
+		// to connect to loopback addresses because it doesn't make sense.
+		if entry.Type == minipipeline.WebObservationTypeDNSLookup &&
+			!entry.Failure.IsNone() && entry.Failure.Unwrap() == "" &&
+			!entry.ControlDNSLookupFailure.IsNone() &&
+			entry.ControlDNSLookupFailure.Unwrap() == "" &&
+			!entry.DNSResolvedAddrs.IsNone() && !entry.ControlDNSResolvedAddrs.IsNone() &&
+			analysisContainsOnlyLoopbackAddrs(entry.DNSResolvedAddrs.Unwrap()) &&
+			!analysisContainsOnlyLoopbackAddrs(entry.ControlDNSResolvedAddrs.Unwrap()) {
+			tk.setBlockingString("dns")
+			return
+		}
+
+		// 7. handle the case of DNS success with loopback addrs, which is the case
 		// where neither the probe nor the TH attempt to measure endpoints.
 		if entry.Type == minipipeline.WebObservationTypeDNSLookup &&
 			!entry.Failure.IsNone() && entry.Failure.Unwrap() == "" &&
