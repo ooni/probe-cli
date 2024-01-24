@@ -9,7 +9,7 @@
     "tunnel": 0
   },
   "input": "https://www.example.com/",
-  "measurement_start_time": "2024-01-23 16:07:47",
+  "measurement_start_time": "2024-01-24 12:33:08",
   "probe_asn": "AS137",
   "probe_cc": "IT",
   "probe_ip": "127.0.0.1",
@@ -50,9 +50,9 @@
         {
           "failure": null,
           "operation": "resolve_start",
-          "t0": 0.000084,
-          "t": 0.000084,
-          "transaction_id": 1,
+          "t0": 0.000107,
+          "t": 0.000107,
+          "transaction_id": 2,
           "tags": [
             "depth=0"
           ]
@@ -63,9 +63,9 @@
           "num_bytes": 33,
           "operation": "write",
           "proto": "udp",
-          "t0": 0.000111,
-          "t": 0.000117,
-          "transaction_id": 1,
+          "t0": 0.000708,
+          "t": 0.000766,
+          "transaction_id": 2,
           "tags": [
             "depth=0"
           ]
@@ -76,9 +76,9 @@
           "num_bytes": 33,
           "operation": "write",
           "proto": "udp",
-          "t0": 0.000142,
-          "t": 0.000146,
-          "transaction_id": 1,
+          "t0": 0.000735,
+          "t": 0.000865,
+          "transaction_id": 2,
           "tags": [
             "depth=0"
           ]
@@ -89,9 +89,9 @@
           "num_bytes": 33,
           "operation": "read",
           "proto": "udp",
-          "t0": 0.000122,
-          "t": 0.004964,
-          "transaction_id": 1,
+          "t0": 0.000777,
+          "t": 0.006738,
+          "transaction_id": 2,
           "tags": [
             "depth=0"
           ]
@@ -102,9 +102,9 @@
           "num_bytes": 64,
           "operation": "read",
           "proto": "udp",
-          "t0": 0.00015,
-          "t": 0.005578,
-          "transaction_id": 1,
+          "t0": 0.00105,
+          "t": 0.00687,
+          "transaction_id": 2,
           "tags": [
             "depth=0"
           ]
@@ -112,9 +112,9 @@
         {
           "failure": null,
           "operation": "resolve_done",
-          "t0": 0.005605,
-          "t": 0.005605,
-          "transaction_id": 1,
+          "t0": 0.006903,
+          "t": 0.006903,
+          "transaction_id": 2,
           "tags": [
             "depth=0"
           ]
@@ -139,12 +139,12 @@
         "resolver_hostname": null,
         "resolver_port": null,
         "resolver_address": "",
-        "t0": 0.000072,
-        "t": 0.004755,
+        "t0": 0.000081,
+        "t": 0.005927,
         "tags": [
           "depth=0"
         ],
-        "transaction_id": 2
+        "transaction_id": 1
       },
       {
         "answers": null,
@@ -152,16 +152,16 @@
         "failure": "dns_no_answer",
         "hostname": "www.example.com",
         "query_type": "AAAA",
-        "raw_response": "PcmBAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAHAAB",
+        "raw_response": "A5+BAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAHAAB",
         "resolver_hostname": null,
         "resolver_port": null,
         "resolver_address": "8.8.4.4:53",
-        "t0": 0.00009,
-        "t": 0.004968,
+        "t0": 0.000117,
+        "t": 0.006744,
         "tags": [
           "depth=0"
         ],
-        "transaction_id": 1
+        "transaction_id": 2
       },
       {
         "answers": [
@@ -175,16 +175,16 @@
         "failure": null,
         "hostname": "www.example.com",
         "query_type": "A",
-        "raw_response": "z1aBAAABAAEAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQABA3d3dwdleGFtcGxlA2NvbQAAAQABAAAOEAAEfwAAAQ==",
+        "raw_response": "imKBAAABAAEAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQABA3d3dwdleGFtcGxlA2NvbQAAAQABAAAOEAAEfwAAAQ==",
         "resolver_hostname": null,
         "resolver_port": null,
         "resolver_address": "8.8.4.4:53",
-        "t0": 0.000126,
-        "t": 0.005582,
+        "t0": 0.000118,
+        "t": 0.006876,
         "tags": [
           "depth=0"
         ],
-        "transaction_id": 1
+        "transaction_id": 2
       }
     ],
     "requests": [],
@@ -237,26 +237,26 @@
     "x_conn_priority_log": [
       {
         "msg": "create with [{Addr:127.0.0.1 Flags:3}]",
-        "t": 0.011834
+        "t": 0.011572
       }
     ],
     "control_failure": null,
-    "x_dns_flags": 5,
+    "x_dns_flags": 1,
     "dns_experiment_failure": null,
     "dns_consistency": "consistent",
     "http_experiment_failure": null,
-    "x_blocking_flags": 1,
+    "x_blocking_flags": 0,
     "x_null_null_flags": 0,
     "body_proportion": 0,
     "body_length_match": null,
     "headers_match": null,
     "status_code_match": null,
     "title_match": null,
-    "blocking": null,
-    "accessible": null
+    "blocking": false,
+    "accessible": false
   },
   "test_name": "web_connectivity",
-  "test_runtime": 0.505738,
-  "test_start_time": "2024-01-23 16:07:47",
+  "test_runtime": 0.507,
+  "test_start_time": "2024-01-24 12:33:08",
   "test_version": "0.5.28"
 }
