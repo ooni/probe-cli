@@ -375,7 +375,7 @@ func analysisClassicComputeBlockingAccessible(woa *minipipeline.WebAnalysis, tk 
 
 			// 5.3. When the probe says dns_no_answer the control would otherwise say that
 			// we have resolved zero IP addresses for historical reasons. In such a case,
-			// let's pretend also the control returned dns_no_answer.
+			// let's pretend that also the control returned dns_no_answer.
 			if entry.Failure.Unwrap() == netxlite.FailureDNSNoAnswer &&
 				!entry.ControlDNSResolvedAddrs.IsNone() &&
 				entry.ControlDNSResolvedAddrs.Unwrap().Len() <= 0 {

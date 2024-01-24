@@ -453,7 +453,7 @@ func (wa *WebAnalysis) dnsComputeFailureMetrics(c *WebObservationsContainer) {
 		if failure := obs.DNSLookupFailure.Unwrap(); failure != "" {
 			// When the probe says dns_no_answer the control would otherwise say that
 			// we have resolved zero IP addresses for historical reasons. In such a case,
-			// let's pretend also the control returned dns_no_answer.
+			// let's pretend that also the control returned dns_no_answer.
 			if failure == netxlite.FailureDNSNoAnswer {
 				if !obs.ControlDNSResolvedAddrs.IsNone() && obs.ControlDNSResolvedAddrs.Unwrap().Len() <= 0 {
 					wa.DNSLookupExpectedFailure.Add(obs.DNSTransactionID.Unwrap())
