@@ -133,15 +133,17 @@ func TestNewHTTP3TransportStdlib(t *testing.T) {
 
 func TestNewHTTP3TransportWithResolver(t *testing.T) {
 	t.Run("creates the correct type chain", func(t *testing.T) {
+		netx := &Netx{}
 		reso := &mocks.Resolver{}
-		txp := NewHTTP3TransportWithResolver(model.DiscardLogger, reso)
+		txp := NewHTTP3TransportWithResolver(netx, model.DiscardLogger, reso)
 		verifyTypeChainForHTTP3(t, txp, model.DiscardLogger, nil, nil, reso)
 	})
 }
 
 func TestNewHTTP3ClientWithResolver(t *testing.T) {
+	netx := &Netx{}
 	reso := &mocks.Resolver{}
-	clnt := NewHTTP3ClientWithResolver(model.DiscardLogger, reso)
+	clnt := NewHTTP3ClientWithResolver(netx, model.DiscardLogger, reso)
 	ewc, ok := clnt.(*httpClientErrWrapper)
 	if !ok {
 		t.Fatal("expected *httpClientErrWrapper")

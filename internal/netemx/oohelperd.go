@@ -45,8 +45,8 @@ func (f *OOHelperDFactory) NewHandler(env NetStackServerFactoryEnv, unet *netem.
 
 	handler.NewHTTPClient = func(logger model.Logger) model.HTTPClient {
 		return oohelperd.NewHTTPClientWithTransportFactory(
-			logger,
-			func(dl model.DebugLogger, r model.Resolver) model.HTTPTransport {
+			netx, logger,
+			func(netx *netxlite.Netx, dl model.DebugLogger, r model.Resolver) model.HTTPTransport {
 				dialer := netx.NewDialerWithResolver(dl, r)
 				tlsDialer := netxlite.NewTLSDialer(dialer, netx.NewTLSHandshakerStdlib(dl))
 				// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPTransport is QUIRKY but
@@ -58,8 +58,8 @@ func (f *OOHelperDFactory) NewHandler(env NetStackServerFactoryEnv, unet *netem.
 
 	handler.NewHTTP3Client = func(logger model.Logger) model.HTTPClient {
 		return oohelperd.NewHTTPClientWithTransportFactory(
-			logger,
-			func(dl model.DebugLogger, r model.Resolver) model.HTTPTransport {
+			netx, logger,
+			func(netx *netxlite.Netx, dl model.DebugLogger, r model.Resolver) model.HTTPTransport {
 				qd := netx.NewQUICDialerWithResolver(netx.NewUDPListener(), dl, r)
 				return netxlite.NewHTTP3Transport(dl, qd, nil)
 			},
