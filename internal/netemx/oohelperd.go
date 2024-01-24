@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/apex/log"
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -20,12 +21,11 @@ var _ HTTPHandlerFactory = &OOHelperDFactory{}
 // NewHandler implements QAEnvHTTPHandlerFactory.NewHandler.
 func (f *OOHelperDFactory) NewHandler(env NetStackServerFactoryEnv, unet *netem.UNetStack) http.Handler {
 	netx := &netxlite.Netx{Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: unet}}
-	handler := oohelperd.NewHandler()
-
-	handler.BaseLogger = &logx.PrefixLogger{
+	logger := &logx.PrefixLogger{
 		Prefix: fmt.Sprintf("%-16s", "TH_HANDLER"),
-		Logger: handler.BaseLogger,
+		Logger: log.Log,
 	}
+	handler := oohelperd.NewHandler(logger, netx)
 
 	handler.NewDialer = func(logger model.Logger) model.Dialer {
 		return netx.NewDialerWithResolver(logger, netx.NewStdlibResolver(logger))
@@ -46,23 +46,14 @@ func (f *OOHelperDFactory) NewHandler(env NetStackServerFactoryEnv, unet *netem.
 	handler.NewHTTPClient = func(logger model.Logger) model.HTTPClient {
 		return oohelperd.NewHTTPClientWithTransportFactory(
 			netx, logger,
-			func(netx *netxlite.Netx, dl model.DebugLogger, r model.Resolver) model.HTTPTransport {
-				dialer := netx.NewDialerWithResolver(dl, r)
-				tlsDialer := netxlite.NewTLSDialer(dialer, netx.NewTLSHandshakerStdlib(dl))
-				// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPTransport is QUIRKY but
-				// we probably don't care about using a QUIRKY function here
-				return netxlite.NewHTTPTransport(dl, dialer, tlsDialer)
-			},
+			netxlite.NewHTTPTransportWithResolver,
 		)
 	}
 
 	handler.NewHTTP3Client = func(logger model.Logger) model.HTTPClient {
 		return oohelperd.NewHTTPClientWithTransportFactory(
 			netx, logger,
-			func(netx *netxlite.Netx, dl model.DebugLogger, r model.Resolver) model.HTTPTransport {
-				qd := netx.NewQUICDialerWithResolver(netx.NewUDPListener(), dl, r)
-				return netxlite.NewHTTP3Transport(dl, qd, nil)
-			},
+			netxlite.NewHTTP3TransportWithResolver,
 		)
 	}
 

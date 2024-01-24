@@ -15,7 +15,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -69,10 +68,9 @@ type Handler struct {
 var _ http.Handler = &Handler{}
 
 // NewHandler constructs the [handler].
-func NewHandler() *Handler {
-	netx := &netxlite.Netx{}
+func NewHandler(logger model.Logger, netx *netxlite.Netx) *Handler {
 	return &Handler{
-		BaseLogger:        log.Log,
+		BaseLogger:        logger,
 		CountRequests:     &atomic.Int64{},
 		Indexer:           &atomic.Int64{},
 		MaxAcceptableBody: MaxAcceptableBodySize,
@@ -103,7 +101,9 @@ func NewHandler() *Handler {
 				logger,
 			)
 		},
-		NewResolver: newResolver,
+		NewResolver: func(logger model.Logger) model.Resolver {
+			return newResolver(logger, netx)
+		},
 		NewTLSHandshaker: func(logger model.Logger) model.TLSHandshaker {
 			return netx.NewTLSHandshakerStdlib(logger)
 		},
@@ -202,11 +202,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 // newResolver creates a new [model.Resolver] suitable for serving
 // requests coming from ooniprobe clients.
-func newResolver(logger model.Logger) model.Resolver {
+func newResolver(logger model.Logger, netx *netxlite.Netx) model.Resolver {
 	// Implementation note: pin to a specific resolver so we don't depend upon the
 	// default resolver configured by the box. Also, use an encrypted transport thus
 	// we're less vulnerable to any policy implemented by the box's provider.
-	netx := &netxlite.Netx{}
 	resolver := netx.NewParallelDNSOverHTTPSResolver(logger, "https://dns.google/dns-query")
 	return resolver
 }
@@ -242,7 +241,7 @@ func NewHTTPClientWithTransportFactory(
 	// So, it's better to consider this as a possible corner case.
 	reso := netxlite.MaybeWrapWithBogonResolver(
 		true, // enabled
-		newResolver(logger),
+		newResolver(logger, netx),
 	)
 
 	// fix: We MUST set a cookie jar for measuring HTTP. See
