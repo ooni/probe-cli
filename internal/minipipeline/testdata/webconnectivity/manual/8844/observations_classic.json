@@ -1,0 +1,9 @@
+{
+  "DNSLookupFailures": [],
+  "DNSLookupSuccesses": [],
+  "KnownTCPEndpoints": {},
+  "ControlExpectations": {
+    "DNSAddresses": [],
+    "FinalResponseFailure": ""
+  }
+}
