@@ -68,14 +68,6 @@ func (netx *Netx) NewQUICDialerWithoutResolver(listener model.UDPListener,
 	return netx.NewQUICDialerWithResolver(listener, logger, &NullResolver{}, wrappers...)
 }
 
-// NewQUICDialerWithoutResolver is equivalent to creating an empty [*Netx]
-// and calling its NewQUICDialerWithoutResolver method.
-func NewQUICDialerWithoutResolver(listener model.UDPListener,
-	logger model.DebugLogger, wrappers ...model.QUICDialerWrapper) model.QUICDialer {
-	netx := &Netx{Underlying: nil}
-	return netx.NewQUICDialerWithoutResolver(listener, logger, wrappers...)
-}
-
 // quicDialerQUICGo dials using the quic-go/quic-go library.
 type quicDialerQUICGo struct {
 	// UDPListener is the underlying UDPListener to use.

@@ -487,8 +487,9 @@ func TestMeasureWithQUICDialer(t *testing.T) {
 	//
 
 	t.Run("on success", func(t *testing.T) {
+		netx := &netxlite.Netx{}
 		ql := netxlite.NewUDPListener()
-		d := netxlite.NewQUICDialerWithoutResolver(ql, log.Log)
+		d := netx.NewQUICDialerWithoutResolver(ql, log.Log)
 		defer d.CloseIdleConnections()
 		ctx := context.Background()
 		// See https://github.com/ooni/probe/issues/2413 to understand
@@ -510,8 +511,9 @@ func TestMeasureWithQUICDialer(t *testing.T) {
 	})
 
 	t.Run("on timeout", func(t *testing.T) {
+		netx := &netxlite.Netx{}
 		ql := netxlite.NewUDPListener()
-		d := netxlite.NewQUICDialerWithoutResolver(ql, log.Log)
+		d := netx.NewQUICDialerWithoutResolver(ql, log.Log)
 		defer d.CloseIdleConnections()
 		ctx := context.Background()
 		// See https://github.com/ooni/probe/issues/2413 to understand

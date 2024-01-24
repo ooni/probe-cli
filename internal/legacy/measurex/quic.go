@@ -114,7 +114,8 @@ func (qh *quicDialerDB) DialContext(ctx context.Context, address string,
 		begin:       qh.begin,
 		db:          qh.db,
 	}
-	dialer := netxlite.NewQUICDialerWithoutResolver(listener, qh.logger)
+	netx := &netxlite.Netx{}
+	dialer := netx.NewQUICDialerWithoutResolver(listener, qh.logger)
 	defer dialer.CloseIdleConnections()
 	sess, err := dialer.DialContext(ctx, address, tlsConfig, quicConfig)
 	if err == nil {

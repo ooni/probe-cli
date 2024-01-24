@@ -48,7 +48,8 @@ func TestNewQUICDialer(t *testing.T) {
 		nil, // explicitly test for this documented case
 		&quicDialerWrapperSecond{},
 	}
-	dlr := NewQUICDialerWithoutResolver(ql, log.Log, extensions...)
+	netx := &Netx{}
+	dlr := netx.NewQUICDialerWithoutResolver(ql, log.Log, extensions...)
 	logger := dlr.(*quicDialerLogger)
 	if logger.Logger != log.Log {
 		t.Fatal("invalid logger")

@@ -33,7 +33,7 @@ type Trace interface {
 	NewParallelUDPResolver(logger model.DebugLogger, dialer model.Dialer, address string) model.Resolver
 
 	// NewQUICDialerWithoutResolver is equivalent to
-	// netxlite.NewQUICDialerWithoutResolver except that it returns a
+	// netxlite.Netx.NewQUICDialerWithoutResolver except that it returns a
 	// model.QUICDialer that uses this trace.
 	//
 	// Caveat: the dialer wrappers are there to implement the
