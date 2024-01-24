@@ -67,6 +67,7 @@
       "DNSQueryType": null,
       "DNSEngine": null,
       "DNSResolvedAddrs": null,
+      "IPAddressOrigin": "th",
       "IPAddress": "93.184.216.34",
       "IPAddressASN": 15133,
       "IPAddressBogon": false,
@@ -123,6 +124,7 @@
       "DNSResolvedAddrs": [
         "104.154.89.105"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "104.154.89.105",
       "IPAddressASN": 396982,
       "IPAddressBogon": false,
@@ -174,6 +176,7 @@
       "DNSResolvedAddrs": [
         "104.154.89.105"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "104.154.89.105",
       "IPAddressASN": 396982,
       "IPAddressBogon": false,
@@ -225,6 +228,7 @@
       "DNSResolvedAddrs": [
         "104.154.89.105"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "104.154.89.105",
       "IPAddressASN": 396982,
       "IPAddressBogon": false,
@@ -274,6 +278,7 @@
       "DNSQueryType": "AAAA",
       "DNSEngine": "udp",
       "DNSResolvedAddrs": null,
+      "IPAddressOrigin": null,
       "IPAddress": null,
       "IPAddressASN": null,
       "IPAddressBogon": null,

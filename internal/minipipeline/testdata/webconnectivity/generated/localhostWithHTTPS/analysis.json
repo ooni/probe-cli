@@ -67,6 +67,7 @@
       "DNSResolvedAddrs": [
         "127.0.0.1"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "127.0.0.1",
       "IPAddressASN": null,
       "IPAddressBogon": true,
@@ -113,6 +114,7 @@
       "DNSResolvedAddrs": [
         "127.0.0.1"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "127.0.0.1",
       "IPAddressASN": null,
       "IPAddressBogon": true,
@@ -157,6 +159,7 @@
       "DNSQueryType": "AAAA",
       "DNSEngine": "udp",
       "DNSResolvedAddrs": null,
+      "IPAddressOrigin": null,
       "IPAddress": null,
       "IPAddressASN": null,
       "IPAddressBogon": null,

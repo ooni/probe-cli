@@ -58,6 +58,7 @@
       "DNSResolvedAddrs": [
         "83.224.65.41"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "83.224.65.41",
       "IPAddressASN": 30722,
       "IPAddressBogon": false,
@@ -106,6 +107,7 @@
       "DNSResolvedAddrs": [
         "83.224.65.41"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "83.224.65.41",
       "IPAddressASN": 30722,
       "IPAddressBogon": false,
@@ -150,6 +152,7 @@
       "DNSResolvedAddrs": [
         "83.224.65.41"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "83.224.65.41",
       "IPAddressASN": 30722,
       "IPAddressBogon": false,
@@ -194,6 +197,7 @@
       "DNSResolvedAddrs": [
         "83.224.65.41"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "83.224.65.41",
       "IPAddressASN": 30722,
       "IPAddressBogon": false,
@@ -236,6 +240,7 @@
       "DNSQueryType": "AAAA",
       "DNSEngine": "udp",
       "DNSResolvedAddrs": null,
+      "IPAddressOrigin": null,
       "IPAddress": null,
       "IPAddressASN": null,
       "IPAddressBogon": null,

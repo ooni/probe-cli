@@ -70,6 +70,7 @@
         "77.88.55.77",
         "77.88.55.80"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "77.88.55.80",
       "IPAddressASN": 208398,
       "IPAddressBogon": false,
@@ -132,6 +133,7 @@
         "77.88.55.77",
         "77.88.55.80"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "77.88.55.77",
       "IPAddressASN": 208398,
       "IPAddressBogon": false,
@@ -189,6 +191,7 @@
         "77.88.55.77",
         "77.88.55.80"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "5.255.255.88",
       "IPAddressASN": 208398,
       "IPAddressBogon": false,
@@ -246,6 +249,7 @@
         "77.88.55.77",
         "77.88.55.80"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "5.255.255.80",
       "IPAddressASN": 208398,
       "IPAddressBogon": false,
@@ -303,6 +307,7 @@
         "77.88.55.77",
         "77.88.55.80"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "5.255.255.80",
       "IPAddressASN": 208398,
       "IPAddressBogon": false,
@@ -355,6 +360,7 @@
         "77.88.55.77",
         "77.88.55.80"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "5.255.255.88",
       "IPAddressASN": 208398,
       "IPAddressBogon": false,
@@ -407,6 +413,7 @@
         "77.88.55.77",
         "77.88.55.80"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "77.88.55.77",
       "IPAddressASN": 208398,
       "IPAddressBogon": false,
@@ -459,6 +466,7 @@
         "77.88.55.77",
         "77.88.55.80"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "77.88.55.80",
       "IPAddressASN": 208398,
       "IPAddressBogon": false,
@@ -511,6 +519,7 @@
         "77.88.55.77",
         "77.88.55.80"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "5.255.255.80",
       "IPAddressASN": 208398,
       "IPAddressBogon": false,
@@ -573,6 +582,7 @@
         "77.88.55.77",
         "77.88.55.80"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "77.88.55.80",
       "IPAddressASN": 208398,
       "IPAddressBogon": false,
@@ -630,6 +640,7 @@
         "77.88.55.77",
         "77.88.55.80"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "77.88.55.77",
       "IPAddressASN": 208398,
       "IPAddressBogon": false,
@@ -687,6 +698,7 @@
         "77.88.55.77",
         "77.88.55.80"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "5.255.255.88",
       "IPAddressASN": 208398,
       "IPAddressBogon": false,
@@ -744,6 +756,7 @@
         "77.88.55.77",
         "77.88.55.80"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "5.255.255.80",
       "IPAddressASN": 208398,
       "IPAddressBogon": false,
@@ -796,6 +809,7 @@
         "77.88.55.77",
         "77.88.55.80"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "5.255.255.88",
       "IPAddressASN": 208398,
       "IPAddressBogon": false,
@@ -848,6 +862,7 @@
         "77.88.55.77",
         "77.88.55.80"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "77.88.55.77",
       "IPAddressASN": 208398,
       "IPAddressBogon": false,
@@ -900,6 +915,7 @@
         "77.88.55.77",
         "77.88.55.80"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "77.88.55.80",
       "IPAddressASN": 208398,
       "IPAddressBogon": false,
@@ -952,6 +968,7 @@
         "77.88.55.77",
         "77.88.55.80"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "5.255.255.88",
       "IPAddressASN": 208398,
       "IPAddressBogon": false,
@@ -1014,6 +1031,7 @@
         "77.88.55.77",
         "77.88.55.80"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "77.88.55.77",
       "IPAddressASN": 208398,
       "IPAddressBogon": false,
@@ -1071,6 +1089,7 @@
         "77.88.55.77",
         "77.88.55.80"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "5.255.255.80",
       "IPAddressASN": 208398,
       "IPAddressBogon": false,
@@ -1128,6 +1147,7 @@
         "77.88.55.77",
         "77.88.55.80"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "77.88.55.80",
       "IPAddressASN": 208398,
       "IPAddressBogon": false,
@@ -1185,6 +1205,7 @@
         "77.88.55.77",
         "77.88.55.80"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "5.255.255.80",
       "IPAddressASN": 208398,
       "IPAddressBogon": false,
@@ -1242,6 +1263,7 @@
         "77.88.55.77",
         "77.88.55.80"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "5.255.255.88",
       "IPAddressASN": 208398,
       "IPAddressBogon": false,
@@ -1299,6 +1321,7 @@
         "77.88.55.77",
         "77.88.55.80"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "77.88.55.77",
       "IPAddressASN": 208398,
       "IPAddressBogon": false,
@@ -1356,6 +1379,7 @@
         "77.88.55.77",
         "77.88.55.80"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "77.88.55.80",
       "IPAddressASN": 208398,
       "IPAddressBogon": false,
