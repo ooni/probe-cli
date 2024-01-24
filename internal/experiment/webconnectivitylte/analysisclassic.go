@@ -373,11 +373,9 @@ func analysisClassicComputeBlockingAccessible(woa *minipipeline.WebAnalysis, tk 
 				return
 			}
 
-			// 5.3. Special case for when the probe failed with dns_no_answer and the test helper
-			// returned no addresses, which is its way to tell us the same error occurred but we
-			// need to interpret this result like the TH failed with dns_no_answer.
-			//
-			// Obviously, the TH cannot change because that would break backward compatibility.
+			// 5.3. When the probe says dns_no_answer the control would otherwise say that
+			// we have resolved zero IP addresses for historical reasons. In such a case,
+			// let's pretend also the control returned dns_no_answer.
 			if entry.Failure.Unwrap() == netxlite.FailureDNSNoAnswer &&
 				!entry.ControlDNSResolvedAddrs.IsNone() &&
 				entry.ControlDNSResolvedAddrs.Unwrap().Len() <= 0 {
