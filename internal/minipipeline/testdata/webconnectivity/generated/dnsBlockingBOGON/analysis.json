@@ -10,19 +10,19 @@
     2
   ],
   "DNSLookupSuccessWithInvalidAddresses": [
-    1
+    2
   ],
   "DNSLookupSuccessWithValidAddress": [
-    2
+    1
   ],
   "DNSLookupSuccessWithBogonAddresses": [
-    1
+    2
   ],
   "DNSLookupSuccessWithInvalidAddressesClassic": [
-    1
+    2
   ],
   "DNSLookupSuccessWithValidAddressClassic": [
-    2
+    1
   ],
   "DNSLookupUnexpectedFailure": [],
   "DNSLookupUnexplainedFailure": [],
@@ -63,7 +63,7 @@
       "Failure": "",
       "TransactionID": 4,
       "TagFetchBody": true,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -119,7 +119,7 @@
       "Failure": "generic_timeout_error",
       "TransactionID": 3,
       "TagFetchBody": true,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -173,57 +173,6 @@
       "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
-      "DNSQueryType": "A",
-      "DNSEngine": "udp",
-      "DNSResolvedAddrs": [
-        "93.184.216.34"
-      ],
-      "IPAddress": "93.184.216.34",
-      "IPAddressASN": 15133,
-      "IPAddressBogon": false,
-      "EndpointTransactionID": null,
-      "EndpointProto": null,
-      "EndpointPort": null,
-      "EndpointAddress": null,
-      "TCPConnectFailure": null,
-      "TLSHandshakeFailure": null,
-      "TLSServerName": null,
-      "HTTPRequestURL": null,
-      "HTTPFailure": null,
-      "HTTPResponseStatusCode": null,
-      "HTTPResponseBodyLength": null,
-      "HTTPResponseBodyIsTruncated": null,
-      "HTTPResponseHeadersKeys": null,
-      "HTTPResponseLocation": null,
-      "HTTPResponseTitle": null,
-      "HTTPResponseIsFinal": null,
-      "ControlDNSDomain": "www.example.com",
-      "ControlDNSLookupFailure": "",
-      "ControlDNSResolvedAddrs": [
-        "93.184.216.34"
-      ],
-      "ControlTCPConnectFailure": null,
-      "ControlTLSHandshakeFailure": null,
-      "ControlHTTPFailure": "",
-      "ControlHTTPResponseStatusCode": 200,
-      "ControlHTTPResponseBodyLength": 1533,
-      "ControlHTTPResponseHeadersKeys": {
-        "Alt-Svc": true,
-        "Content-Length": true,
-        "Content-Type": true,
-        "Date": true
-      },
-      "ControlHTTPResponseTitle": "Default Web Page"
-    },
-    {
-      "TagDepth": 0,
-      "Type": 0,
-      "Failure": "",
-      "TransactionID": 1,
-      "TagFetchBody": null,
-      "DNSTransactionID": 1,
-      "DNSDomain": "www.example.com",
-      "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
       "DNSEngine": "getaddrinfo",
       "DNSResolvedAddrs": [
@@ -269,10 +218,61 @@
     {
       "TagDepth": 0,
       "Type": 0,
-      "Failure": "dns_no_answer",
-      "TransactionID": 2,
+      "Failure": "",
+      "TransactionID": 1,
       "TagFetchBody": null,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
+      "DNSDomain": "www.example.com",
+      "DNSLookupFailure": "",
+      "DNSQueryType": "A",
+      "DNSEngine": "udp",
+      "DNSResolvedAddrs": [
+        "93.184.216.34"
+      ],
+      "IPAddress": "93.184.216.34",
+      "IPAddressASN": 15133,
+      "IPAddressBogon": false,
+      "EndpointTransactionID": null,
+      "EndpointProto": null,
+      "EndpointPort": null,
+      "EndpointAddress": null,
+      "TCPConnectFailure": null,
+      "TLSHandshakeFailure": null,
+      "TLSServerName": null,
+      "HTTPRequestURL": null,
+      "HTTPFailure": null,
+      "HTTPResponseStatusCode": null,
+      "HTTPResponseBodyLength": null,
+      "HTTPResponseBodyIsTruncated": null,
+      "HTTPResponseHeadersKeys": null,
+      "HTTPResponseLocation": null,
+      "HTTPResponseTitle": null,
+      "HTTPResponseIsFinal": null,
+      "ControlDNSDomain": "www.example.com",
+      "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "93.184.216.34"
+      ],
+      "ControlTCPConnectFailure": null,
+      "ControlTLSHandshakeFailure": null,
+      "ControlHTTPFailure": "",
+      "ControlHTTPResponseStatusCode": 200,
+      "ControlHTTPResponseBodyLength": 1533,
+      "ControlHTTPResponseHeadersKeys": {
+        "Alt-Svc": true,
+        "Content-Length": true,
+        "Content-Type": true,
+        "Date": true
+      },
+      "ControlHTTPResponseTitle": "Default Web Page"
+    },
+    {
+      "TagDepth": 0,
+      "Type": 0,
+      "Failure": "dns_no_answer",
+      "TransactionID": 1,
+      "TagFetchBody": null,
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",

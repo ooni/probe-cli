@@ -10,7 +10,8 @@
   ],
   "DNSLookupSuccessWithInvalidAddresses": [],
   "DNSLookupSuccessWithValidAddress": [
-    1
+    1,
+    3
   ],
   "DNSLookupSuccessWithBogonAddresses": [],
   "DNSLookupSuccessWithInvalidAddressesClassic": [],
@@ -155,7 +156,7 @@
       "Failure": "",
       "TransactionID": 4,
       "TagFetchBody": true,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 3,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
       "DNSQueryType": null,

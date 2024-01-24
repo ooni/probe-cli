@@ -55,7 +55,7 @@
       "Failure": "ssl_unknown_authority",
       "TransactionID": 4,
       "TagFetchBody": true,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
