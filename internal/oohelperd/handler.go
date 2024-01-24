@@ -82,14 +82,14 @@ func NewHandler() *Handler {
 			// TODO(https://github.com/ooni/probe/issues/2534): the NewHTTPTransportWithResolver has QUIRKS and
 			// we should evaluate whether we can avoid using it here
 			return NewHTTPClientWithTransportFactory(
-				logger,
+				netx, logger,
 				netxlite.NewHTTPTransportWithResolver,
 			)
 		},
 
 		NewHTTP3Client: func(logger model.Logger) model.HTTPClient {
 			return NewHTTPClientWithTransportFactory(
-				logger,
+				netx, logger,
 				netxlite.NewHTTP3TransportWithResolver,
 			)
 		},
@@ -223,8 +223,8 @@ func newCookieJar() *cookiejar.Jar {
 // NewHTTPClientWithTransportFactory creates a new HTTP client
 // using the given [model.HTTPTransport] factory.
 func NewHTTPClientWithTransportFactory(
-	logger model.Logger,
-	txpFactory func(model.DebugLogger, model.Resolver) model.HTTPTransport,
+	netx *netxlite.Netx, logger model.Logger,
+	txpFactory func(*netxlite.Netx, model.DebugLogger, model.Resolver) model.HTTPTransport,
 ) model.HTTPClient {
 	// If the DoH resolver we're using insists that a given domain maps to
 	// bogons, make sure we're going to fail the HTTP measurement.
@@ -249,7 +249,7 @@ func NewHTTPClientWithTransportFactory(
 	// https://github.com/ooni/probe/issues/2488 for additional
 	// context and pointers to the relevant measurements.
 	client := &http.Client{
-		Transport:     txpFactory(logger, reso),
+		Transport:     txpFactory(netx, logger, reso),
 		CheckRedirect: nil,
 		Jar:           newCookieJar(),
 		Timeout:       0,

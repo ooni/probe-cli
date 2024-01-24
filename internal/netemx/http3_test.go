@@ -28,7 +28,7 @@ func TestHTTP3ServerFactory(t *testing.T) {
 
 		env.Do(func() {
 			netx := &netxlite.Netx{}
-			client := netxlite.NewHTTP3ClientWithResolver(log.Log, netx.NewStdlibResolver(log.Log))
+			client := netxlite.NewHTTP3ClientWithResolver(netx, log.Log, netx.NewStdlibResolver(log.Log))
 			req := runtimex.Try1(http.NewRequest("GET", "https://www.example.com/", nil))
 			resp, err := client.Do(req)
 			if err != nil {
