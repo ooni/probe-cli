@@ -43,12 +43,33 @@ func ClassicFilter(input *WebObservationsContainer) (output *WebObservationsCont
 	for _, entry := range input.KnownTCPEndpoints {
 		ipAddr := entry.IPAddress.Unwrap() // it MUST be there
 		txid := entry.EndpointTransactionID.Unwrap()
-		if output.knownIPAddresses[ipAddr] == nil {
+
+		// Determine whether to keep entry depending on the IP addr origin
+		switch entry.IPAddressOrigin.UnwrapOr("") {
+
+		// If the address origin is the TH, then it does not belong to classic analysis
+		case IPAddressOriginTH:
 			continue
+
+		// If the address origin is the DNS, then it depends on whether it was
+		// resolved via getaddrinfo or via another resolver
+		case IPAddressOriginDNS:
+			if output.knownIPAddresses[ipAddr] == nil {
+				continue
+			}
+
+		// If the address origin is unknown, then we assume the probe
+		// already knows it, e.g., via the URL or via a subsequent redirect
+		// and thus we keep this specific entry
+		default:
+			// nothing
 		}
+
+		// Discard all the entries where we're not fetching body
 		if !entry.TagFetchBody.UnwrapOr(false) {
 			continue
 		}
+
 		output.KnownTCPEndpoints[txid] = entry
 	}
 

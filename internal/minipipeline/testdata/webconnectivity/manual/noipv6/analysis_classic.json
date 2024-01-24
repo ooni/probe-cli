@@ -84,6 +84,7 @@
         "216.58.205.46",
         "216.58.209.46"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "142.250.180.174",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -187,6 +188,7 @@
         "216.58.205.46",
         "216.58.209.46"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "142.251.209.14",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -269,6 +271,7 @@
         "216.58.205.46",
         "216.58.209.46"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "216.58.205.46",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -351,6 +354,7 @@
         "216.58.205.46",
         "216.58.209.46"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "216.58.204.142",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -433,6 +437,7 @@
         "216.58.205.46",
         "216.58.209.46"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "142.250.180.142",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -515,6 +520,7 @@
         "216.58.205.46",
         "216.58.209.46"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "142.251.209.46",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -597,6 +603,7 @@
         "216.58.205.46",
         "216.58.209.46"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "216.58.204.238",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -675,6 +682,7 @@
         "2a00:1450:4002:415::200e",
         "2a00:1450:4002:416::200e"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "2a00:1450:4002:415::200e",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -753,6 +761,7 @@
         "2a00:1450:4002:415::200e",
         "2a00:1450:4002:416::200e"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "2a00:1450:4002:414::200e",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -831,6 +840,7 @@
         "2a00:1450:4002:415::200e",
         "2a00:1450:4002:416::200e"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "2a00:1450:4002:402::200e",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -909,6 +919,7 @@
         "2a00:1450:4002:415::200e",
         "2a00:1450:4002:416::200e"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "2a00:1450:4002:416::200e",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -994,6 +1005,7 @@
         "2a00:1450:4002:415::200e",
         "2a00:1450:4002:416::200e"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "142.250.180.142",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -1079,6 +1091,7 @@
         "2a00:1450:4002:415::200e",
         "2a00:1450:4002:416::200e"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "142.250.180.174",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -1164,6 +1177,7 @@
         "2a00:1450:4002:415::200e",
         "2a00:1450:4002:416::200e"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "142.251.209.14",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -1249,6 +1263,7 @@
         "2a00:1450:4002:415::200e",
         "2a00:1450:4002:416::200e"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "142.251.209.46",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -1334,6 +1349,7 @@
         "2a00:1450:4002:415::200e",
         "2a00:1450:4002:416::200e"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "216.58.204.142",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -1419,6 +1435,7 @@
         "2a00:1450:4002:415::200e",
         "2a00:1450:4002:416::200e"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "216.58.204.238",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -1504,6 +1521,7 @@
         "2a00:1450:4002:415::200e",
         "2a00:1450:4002:416::200e"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "216.58.205.46",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -1589,6 +1607,7 @@
         "2a00:1450:4002:415::200e",
         "2a00:1450:4002:416::200e"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "2a00:1450:4002:402::200e",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -1674,6 +1693,7 @@
         "2a00:1450:4002:415::200e",
         "2a00:1450:4002:416::200e"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "2a00:1450:4002:414::200e",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -1759,6 +1779,7 @@
         "2a00:1450:4002:415::200e",
         "2a00:1450:4002:416::200e"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "2a00:1450:4002:415::200e",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -1844,6 +1865,7 @@
         "2a00:1450:4002:415::200e",
         "2a00:1450:4002:416::200e"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "2a00:1450:4002:416::200e",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,

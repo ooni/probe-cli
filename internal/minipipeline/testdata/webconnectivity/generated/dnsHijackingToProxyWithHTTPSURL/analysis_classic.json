@@ -64,6 +64,7 @@
       "DNSResolvedAddrs": [
         "130.192.182.17"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "130.192.182.17",
       "IPAddressASN": 137,
       "IPAddressBogon": false,
@@ -120,6 +121,7 @@
       "DNSResolvedAddrs": [
         "130.192.182.17"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "130.192.182.17",
       "IPAddressASN": 137,
       "IPAddressBogon": false,

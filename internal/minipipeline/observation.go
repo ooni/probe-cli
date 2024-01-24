@@ -65,6 +65,12 @@ const (
 	WebObservationTypeHTTPRoundTrip
 )
 
+// These are the possible origins for IP addresses.
+const (
+	IPAddressOriginDNS = "dns"
+	IPAddressOriginTH  = "th"
+)
+
 // WebObservation is an observation of the flow that starts with a DNS lookup that
 // either fails or discovers an IP address and proceeds by documenting binding such an
 // address to a part to obtain and use a TCP or UDP endpoint.
@@ -144,6 +150,9 @@ type WebObservation struct {
 	// 2. when the experiment discovers IP addresses through the TH response;
 	//
 	// 3. when the input URL contains an IP address.
+
+	// IPAddressOrigin is the optional origin of the IP address.
+	IPAddressOrigin optional.Value[string]
 
 	// IPAddress is the optional IP address that this observation is about. We typically derive
 	// this value from a DNS lookup, but sometimes we know it from other means (e.g., from
@@ -357,6 +366,7 @@ func (c *WebObservationsContainer) ingestDNSLookupSuccesses(
 				DNSQueryType:     optional.Some(ev.QueryType),
 				DNSEngine:        optional.Some(ev.Engine),
 				DNSResolvedAddrs: optional.Some(addrs),
+				IPAddressOrigin:  optional.Some(IPAddressOriginDNS),
 				IPAddress:        optional.Some(ipAddr),
 				IPAddressASN:     utilsGeoipxLookupASN(lookupper, ipAddr),
 				IPAddressBogon:   optional.Some(netxlite.IsBogon(ipAddr)),
@@ -383,9 +393,10 @@ func (c *WebObservationsContainer) IngestTCPConnectEvents(
 		obs, found := c.knownIPAddresses[ev.IP]
 		if !found {
 			obs = &WebObservation{
-				IPAddress:      optional.Some(ev.IP),
-				IPAddressASN:   utilsGeoipxLookupASN(lookupper, ev.IP),
-				IPAddressBogon: optional.Some(netxlite.IsBogon(ev.IP)),
+				IPAddressOrigin: optional.None[string](), // we don't know!
+				IPAddress:       optional.Some(ev.IP),
+				IPAddressASN:    utilsGeoipxLookupASN(lookupper, ev.IP),
+				IPAddressBogon:  optional.Some(netxlite.IsBogon(ev.IP)),
 			}
 		}
 
@@ -403,6 +414,7 @@ func (c *WebObservationsContainer) IngestTCPConnectEvents(
 			DNSDomain:             obs.DNSDomain,
 			DNSLookupFailure:      obs.DNSLookupFailure,
 			DNSResolvedAddrs:      obs.DNSResolvedAddrs,
+			IPAddressOrigin:       obs.IPAddressOrigin,
 			IPAddress:             obs.IPAddress,
 			IPAddressASN:          obs.IPAddressASN,
 			IPAddressBogon:        obs.IPAddressBogon,
@@ -531,6 +543,7 @@ func (c *WebObservationsContainer) controlMatchDNSLookupResults(inputDomain stri
 		// handle the case in which the IP address has been provided by the control, which
 		// is a case where the domain is empty and the IP address is in thAddrMap
 		if domain == "" && thAddrMap[addr] {
+			obs.IPAddressOrigin = optional.Some(IPAddressOriginTH)
 			obs.ControlDNSDomain = optional.Some(inputDomain)
 			obs.ControlDNSLookupFailure = optional.Some(utilsStringPointerToString(resp.DNS.Failure))
 			obs.ControlDNSResolvedAddrs = optional.Some(NewSet(resp.DNS.Addrs...))

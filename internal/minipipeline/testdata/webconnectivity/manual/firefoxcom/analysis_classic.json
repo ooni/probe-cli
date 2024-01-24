@@ -73,6 +73,7 @@
       "DNSResolvedAddrs": [
         "18.154.161.164"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "18.154.161.164",
       "IPAddressASN": 16509,
       "IPAddressBogon": false,
@@ -161,6 +162,7 @@
       "DNSResolvedAddrs": [
         "18.154.161.164"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "18.154.161.164",
       "IPAddressASN": 16509,
       "IPAddressBogon": false,
@@ -248,6 +250,7 @@
       "DNSResolvedAddrs": [
         "18.154.161.164"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "18.154.161.164",
       "IPAddressASN": 16509,
       "IPAddressBogon": false,
@@ -316,6 +319,7 @@
         "44.236.48.31",
         "44.236.72.93"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "44.236.48.31",
       "IPAddressASN": 16509,
       "IPAddressBogon": false,
@@ -396,6 +400,7 @@
         "44.236.48.31",
         "44.236.72.93"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "44.236.72.93",
       "IPAddressASN": 16509,
       "IPAddressBogon": false,
@@ -468,6 +473,7 @@
         "44.236.48.31",
         "44.236.72.93"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "44.235.246.155",
       "IPAddressASN": 16509,
       "IPAddressBogon": false,
@@ -540,6 +546,7 @@
         "44.236.48.31",
         "44.236.72.93"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "44.235.246.155",
       "IPAddressASN": 16509,
       "IPAddressBogon": false,
@@ -620,6 +627,7 @@
         "44.236.48.31",
         "44.236.72.93"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "44.236.72.93",
       "IPAddressASN": 16509,
       "IPAddressBogon": false,
@@ -692,6 +700,7 @@
         "44.236.48.31",
         "44.236.72.93"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "44.236.48.31",
       "IPAddressASN": 16509,
       "IPAddressBogon": false,
@@ -764,6 +773,7 @@
         "44.236.48.31",
         "44.236.72.93"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "44.235.246.155",
       "IPAddressASN": 16509,
       "IPAddressBogon": false,
@@ -836,6 +846,7 @@
         "44.236.48.31",
         "44.236.72.93"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "44.236.48.31",
       "IPAddressASN": 16509,
       "IPAddressBogon": false,
@@ -908,6 +919,7 @@
         "44.236.48.31",
         "44.236.72.93"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "44.236.72.93",
       "IPAddressASN": 16509,
       "IPAddressBogon": false,

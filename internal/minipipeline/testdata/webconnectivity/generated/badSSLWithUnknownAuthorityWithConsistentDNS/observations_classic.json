@@ -15,6 +15,7 @@
       "DNSResolvedAddrs": [
         "104.154.89.105"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "104.154.89.105",
       "IPAddressASN": 396982,
       "IPAddressBogon": false,
@@ -63,6 +64,7 @@
       "DNSResolvedAddrs": [
         "104.154.89.105"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "104.154.89.105",
       "IPAddressASN": 396982,
       "IPAddressBogon": false,
