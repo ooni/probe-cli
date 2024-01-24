@@ -373,6 +373,15 @@ func analysisClassicComputeBlockingAccessible(woa *minipipeline.WebAnalysis, tk 
 				return
 			}
 
+			// 5.3. special case for when the probe failed with dns_no_data and the
+			// test helper returned no addresses, which is its way to tell us the same
+			// error occurred but we need to interpret it as dns_no_data.
+			if !entry.ControlDNSResolvedAddrs.IsNone() &&
+				entry.ControlDNSResolvedAddrs.Unwrap().Len() <= 0 {
+				tk.setWebsiteDown()
+				return
+			}
+
 			// 5.3. Handle the case where just the probe failed.
 			tk.setBlockingString("dns")
 			tk.setHTTPExperimentFailure(entry.Failure)
@@ -406,9 +415,6 @@ func analysisClassicComputeBlockingAccessible(woa *minipipeline.WebAnalysis, tk 
 			tk.setWebsiteDown()
 			return
 		}
-
-		// TODO(bassosimone): we should handle the case where a domain
-		// exists but there aren't IP addresses for it.
 	}
 }
 

@@ -449,7 +449,14 @@ func (wa *WebAnalysis) dnsComputeFailureMetrics(c *WebObservationsContainer) {
 		}
 
 		// handle the case where only the probe failed
-		if obs.DNSLookupFailure.Unwrap() != "" {
+		if failure := obs.DNSLookupFailure.Unwrap(); failure != "" {
+			// When the probe says dns_no_answer the control would otherwise say that
+			// we have resolved zero IP addresses for historical reasons. In such a case,
+			// let's pretend also the control returned dns_no_answer.
+			if !obs.ControlDNSResolvedAddrs.IsNone() && obs.ControlDNSResolvedAddrs.Unwrap().Len() <= 0 {
+				wa.DNSLookupExpectedFailure.Add(obs.DNSTransactionID.Unwrap())
+				continue
+			}
 			wa.DNSLookupUnexpectedFailure.Add(obs.DNSTransactionID.Unwrap())
 			continue
 		}
