@@ -22,7 +22,7 @@ import (
 func NewHTTPTransportWithResolver(logger model.DebugLogger, reso model.Resolver) model.HTTPTransport {
 	netx := &Netx{}
 	dialer := netx.NewDialerWithResolver(logger, reso)
-	thx := NewTLSHandshakerStdlib(logger)
+	thx := netx.NewTLSHandshakerStdlib(logger)
 	tlsDialer := NewTLSDialer(dialer, thx)
 	return NewHTTPTransport(logger, dialer, tlsDialer)
 }

@@ -406,7 +406,8 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 
 	t.Run("for stdlib handshaker", func(t *testing.T) {
 		t.Run("on success", func(t *testing.T) {
-			th := netxlite.NewTLSHandshakerStdlib(log.Log)
+			netx := &netxlite.Netx{}
+			th := netx.NewTLSHandshakerStdlib(log.Log)
 			err := successFlow(th)
 			if err != nil {
 				t.Fatal(err)
@@ -414,7 +415,8 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 		})
 
 		t.Run("on connection reset", func(t *testing.T) {
-			th := netxlite.NewTLSHandshakerStdlib(log.Log)
+			netx := &netxlite.Netx{}
+			th := netx.NewTLSHandshakerStdlib(log.Log)
 			err := connectionResetFlow(th)
 			if err != nil {
 				t.Fatal(err)
@@ -422,7 +424,8 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 		})
 
 		t.Run("on timeout", func(t *testing.T) {
-			th := netxlite.NewTLSHandshakerStdlib(log.Log)
+			netx := &netxlite.Netx{}
+			th := netx.NewTLSHandshakerStdlib(log.Log)
 			err := timeoutFlow(th)
 			if err != nil {
 				t.Fatal(err)
@@ -430,7 +433,8 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 		})
 
 		t.Run("on TLS unrecognized name alert", func(t *testing.T) {
-			th := netxlite.NewTLSHandshakerStdlib(log.Log)
+			netx := &netxlite.Netx{}
+			th := netx.NewTLSHandshakerStdlib(log.Log)
 			err := tlsUnrecognizedNameFlow(th)
 			if err != nil {
 				t.Fatal(err)
@@ -546,7 +550,7 @@ func TestHTTPTransport(t *testing.T) {
 	t.Run("works as intended", func(t *testing.T) {
 		netx := &netxlite.Netx{}
 		d := netx.NewDialerWithResolver(log.Log, netx.NewStdlibResolver(log.Log))
-		td := netxlite.NewTLSDialer(d, netxlite.NewTLSHandshakerStdlib(log.Log))
+		td := netxlite.NewTLSDialer(d, netx.NewTLSHandshakerStdlib(log.Log))
 		txp := netxlite.NewHTTPTransport(log.Log, d, td)
 		client := &http.Client{Transport: txp}
 		resp, err := client.Get("https://www.google.com/robots.txt")

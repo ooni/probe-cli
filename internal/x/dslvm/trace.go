@@ -41,7 +41,7 @@ type Trace interface {
 	NewQUICDialerWithoutResolver(listener model.UDPListener,
 		dl model.DebugLogger, wrappers ...model.QUICDialerWrapper) model.QUICDialer
 
-	// NewTLSHandshakerStdlib is equivalent to netxlite.NewTLSHandshakerStdlib
+	// NewTLSHandshakerStdlib is equivalent to netxlite.Netx.NewTLSHandshakerStdlib
 	// except that it returns a model.TLSHandshaker that uses this trace.
 	NewTLSHandshakerStdlib(dl model.DebugLogger) model.TLSHandshaker
 

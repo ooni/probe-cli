@@ -105,7 +105,7 @@ func NewHandler() *Handler {
 		},
 		NewResolver: newResolver,
 		NewTLSHandshaker: func(logger model.Logger) model.TLSHandshaker {
-			return netxlite.NewTLSHandshakerStdlib(logger)
+			return netx.NewTLSHandshakerStdlib(logger)
 		},
 	}
 }

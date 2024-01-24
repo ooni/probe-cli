@@ -128,7 +128,8 @@ chapter why this guarantee helps when writing more complex code.)
 ```Go
 
 func handshakeTLS(ctx context.Context, tcpConn net.Conn, config *tls.Config) (model.TLSConn, error) {
-	th := netxlite.NewTLSHandshakerStdlib(log.Log)
+	netx := &netxlite.Netx{}
+	th := netx.NewTLSHandshakerStdlib(log.Log)
 	return th.Handshake(ctx, tcpConn, config)
 }
 

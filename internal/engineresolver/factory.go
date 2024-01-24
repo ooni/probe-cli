@@ -83,7 +83,7 @@ func newChildResolverHTTPS(
 	switch http3Enabled {
 	case false:
 		dialer := netxlite.NewDialerWithStdlibResolver(logger)
-		thx := netxlite.NewTLSHandshakerStdlib(logger)
+		thx := netx.NewTLSHandshakerStdlib(logger)
 		tlsDialer := netxlite.NewTLSDialer(dialer, thx)
 		txp = netxlite.NewHTTPTransportWithOptions(
 			logger, dialer, tlsDialer,

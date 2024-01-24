@@ -162,13 +162,6 @@ func (netx *Netx) NewTLSHandshakerStdlib(logger model.DebugLogger) model.TLSHand
 	)
 }
 
-// NewTLSHandshakerStdlib is equivalent to creating an empty [*Netx]
-// and calling its NewTLSHandshakerStdlib method.
-func NewTLSHandshakerStdlib(logger model.DebugLogger) model.TLSHandshaker {
-	netx := &Netx{Underlying: nil}
-	return netx.NewTLSHandshakerStdlib(logger)
-}
-
 // newTLSHandshakerLogger creates a new tlsHandshakerLogger instance.
 func newTLSHandshakerLogger(th model.TLSHandshaker, logger model.DebugLogger) model.TLSHandshaker {
 	return &tlsHandshakerLogger{

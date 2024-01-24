@@ -163,7 +163,7 @@ func TestHTTPTestxWithStdlib(t *testing.T) {
 			// we MUST correctly set the TLS dialer configuration)
 			netx := &netxlite.Netx{}
 			tcpDialer := netx.NewDialerWithResolver(log.Log, netx.NewStdlibResolver(log.Log))
-			tlsHandshaker := netxlite.NewTLSHandshakerStdlib(log.Log)
+			tlsHandshaker := netx.NewTLSHandshakerStdlib(log.Log)
 			tlsDialer := netxlite.NewTLSDialerWithConfig(
 				tcpDialer, tlsHandshaker, &tls.Config{RootCAs: srvr.X509CertPool})
 			// TODO(https://github.com/ooni/probe/issues/2534): here we're using the QUIRKY netxlite.NewHTTPTransport
@@ -443,7 +443,7 @@ func TestHTTPTestxWithNetem(t *testing.T) {
 				// we MUST correctly set the TLS dialer configuration)
 				netx := &netxlite.Netx{}
 				tcpDialer := netx.NewDialerWithResolver(log.Log, netx.NewStdlibResolver(log.Log))
-				tlsHandshaker := netxlite.NewTLSHandshakerStdlib(log.Log)
+				tlsHandshaker := netx.NewTLSHandshakerStdlib(log.Log)
 				tlsDialer := netxlite.NewTLSDialerWithConfig(
 					tcpDialer, tlsHandshaker, &tls.Config{RootCAs: srvr.X509CertPool})
 				// TODO(https://github.com/ooni/probe/issues/2534): here we're using the QUIRKY netxlite.NewHTTPTransport

@@ -100,7 +100,7 @@ func TestTLSHandlerWithStdlib(t *testing.T) {
 			// create a TLS dialer
 			netx := &netxlite.Netx{}
 			tcpDialer := netx.NewDialerWithoutResolver(log.Log)
-			tlsHandshaker := netxlite.NewTLSHandshakerStdlib(log.Log)
+			tlsHandshaker := netx.NewTLSHandshakerStdlib(log.Log)
 			tlsDialer := netxlite.NewTLSDialerWithConfig(tcpDialer, tlsHandshaker, tlsConfig)
 
 			// create a context with a timeout
@@ -245,7 +245,7 @@ func TestTLSHandlerWithNetem(t *testing.T) {
 				// create a TLS dialer
 				netx := &netxlite.Netx{}
 				tcpDialer := netx.NewDialerWithoutResolver(log.Log)
-				tlsHandshaker := netxlite.NewTLSHandshakerStdlib(log.Log)
+				tlsHandshaker := netx.NewTLSHandshakerStdlib(log.Log)
 				tlsDialer := netxlite.NewTLSDialerWithConfig(tcpDialer, tlsHandshaker, tlsConfig)
 
 				// create a context with a timeout

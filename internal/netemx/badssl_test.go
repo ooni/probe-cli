@@ -46,7 +46,7 @@ func TestBadSSL(t *testing.T) {
 				netx := &netxlite.Netx{}
 				tlsDialer := netxlite.NewTLSDialerWithConfig(
 					netx.NewDialerWithoutResolver(log.Log),
-					netxlite.NewTLSHandshakerStdlib(log.Log),
+					netx.NewTLSHandshakerStdlib(log.Log),
 					tlsConfig,
 				)
 

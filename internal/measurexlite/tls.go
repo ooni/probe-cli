@@ -16,7 +16,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// NewTLSHandshakerStdlib is equivalent to netxlite.NewTLSHandshakerStdlib
+// NewTLSHandshakerStdlib is equivalent to netxlite.Netx.NewTLSHandshakerStdlib
 // except that it returns a model.TLSHandshaker that uses this trace.
 func (tx *Trace) NewTLSHandshakerStdlib(dl model.DebugLogger) model.TLSHandshaker {
 	return &tlsHandshakerTrace{
