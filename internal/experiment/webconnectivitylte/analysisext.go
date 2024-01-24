@@ -64,7 +64,16 @@ func analysisExtDNS(tk *TestKeys, analysis *minipipeline.WebAnalysis, info io.Wr
 	// we're processing N >= 1 DNS lookups.
 
 	if failures := analysis.DNSLookupSuccessWithBogonAddresses; failures.Len() > 0 {
-		tk.BlockingFlags |= AnalysisBlockingFlagDNSBlocking
+		// Implementation note: uncommenting the following line IS WRONG.
+		//
+		//	tk.BlockingFlags |= AnalysisBlockingFlagDNSBlocking
+		//
+		// The reason why it is wrong is that DNS blocking depends on observing inconsistencies
+		// between the probe and the TH and it's possible to have a website misconfigured to return
+		// 127.0.0.1 to the probe, the TH, and possibly anyone else.
+		//
+		// See, for example, polito.it, which has addrs 192.168.59.6 and 192.168.40.1, as of
+		// 2024-01-24. Clearly a misconfiguration and bogons, but it can happen.
 		tk.DNSFlags |= AnalysisFlagDNSBogon
 		fmt.Fprintf(info, "- transactions with bogon IP addrs: %s\n", failures.String())
 	}

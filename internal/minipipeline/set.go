@@ -74,12 +74,12 @@ func (sx *Set[T]) UnmarshalJSON(data []byte) error {
 }
 
 // Contains returns whether the set contains a key.
-func (sx *Set[T]) Contains(key T) bool {
+func (sx Set[T]) Contains(key T) bool {
 	_, found := sx.state[key]
 	return found
 }
 
 // String implements fmt.Stringer
-func (sx *Set[T]) String() string {
+func (sx Set[T]) String() string {
 	return fmt.Sprintf("%v", sx.Keys())
 }

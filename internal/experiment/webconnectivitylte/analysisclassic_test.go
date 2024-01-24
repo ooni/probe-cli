@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/minipipeline"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -81,6 +82,49 @@ func TestTestKeys_analysisDNSToplevel(t *testing.T) {
 			tk.analysisClassic(mocks.NewGeoIPASNLookupper(tc.geoInfo), log.Log)
 			if tc.expecteBlockingFlags != tk.BlockingFlags {
 				t.Fatal("expected", tc.expecteBlockingFlags, "got", tk.BlockingFlags)
+			}
+		})
+	}
+}
+
+func TestAnalysisClassicContainsOnlyLoopbackAddrs(t *testing.T) {
+	type testcase struct {
+		name   string
+		input  minipipeline.Set[string]
+		expect bool
+	}
+
+	cases := []testcase{{
+		name:   "with empty set",
+		input:  minipipeline.NewSet[string](),
+		expect: false,
+	}, {
+		name:   "with only loopback addrs",
+		input:  minipipeline.NewSet("127.0.0.1", "::1"),
+		expect: true,
+	}, {
+		name:   "with mixed addrs",
+		input:  minipipeline.NewSet("127.0.0.1", "130.192.91.211", "::1"),
+		expect: false,
+	}, {
+		name:   "make sure we skip non-addresses",
+		input:  minipipeline.NewSet("antani"),
+		expect: false,
+	}, {
+		name:   "make sure we say not loopback with non-addresses",
+		input:  minipipeline.NewSet("::1", "130.192.91.211", "antani", "127.0.0.1"),
+		expect: false,
+	}, {
+		name:   "make sure we say loopback with non-addresses",
+		input:  minipipeline.NewSet("::1", "antani", "127.0.0.1"),
+		expect: true,
+	}}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := analysisContainsOnlyLoopbackAddrs(tc.input)
+			if got != tc.expect {
+				t.Fatal("expected", tc.expect, "got", got)
 			}
 		})
 	}
