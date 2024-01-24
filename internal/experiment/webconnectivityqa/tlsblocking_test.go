@@ -72,7 +72,8 @@ func TestBlockingTLSConnectionResetWithInconsistentDNS(t *testing.T) {
 			expect := []string{netemx.ISPProxyAddress}
 
 			t.Run("with stdlib resolver", func(t *testing.T) {
-				reso := netxlite.NewStdlibResolver(log.Log)
+				netx := &netxlite.Netx{}
+				reso := netx.NewStdlibResolver(log.Log)
 				addrs, err := reso.LookupHost(context.Background(), "www.example.com")
 				if err != nil {
 					t.Fatal(err)

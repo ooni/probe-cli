@@ -98,7 +98,8 @@ func TestRedirectWithConsistentDNSAndThenNXDOMAIN(t *testing.T) {
 
 			env.Do(func() {
 				t.Run("with stdlib resolver", func(t *testing.T) {
-					reso := netxlite.NewStdlibResolver(log.Log)
+					netx := &netxlite.Netx{}
+					reso := netx.NewStdlibResolver(log.Log)
 					addrs, err := reso.LookupHost(context.Background(), "www.example.com")
 					if err == nil || err.Error() != netxlite.FailureDNSNXDOMAINError {
 						t.Fatal("unexpected error", err)

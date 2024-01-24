@@ -19,7 +19,7 @@ import (
 // with the default [Netx] where the resolver argument is the previously created resolver.
 func NewDialerWithStdlibResolver(dl model.DebugLogger) model.Dialer {
 	netx := &Netx{}
-	reso := NewStdlibResolver(dl)
+	reso := netx.NewStdlibResolver(dl)
 	return netx.NewDialerWithResolver(dl, reso)
 }
 

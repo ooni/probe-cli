@@ -19,7 +19,8 @@ func TestDNSBlockingAndroidDNSCacheNoData(t *testing.T) {
 	tc.Configure(env)
 
 	env.Do(func() {
-		reso := netxlite.NewStdlibResolver(log.Log)
+		netx := &netxlite.Netx{}
+		reso := netx.NewStdlibResolver(log.Log)
 		addrs, err := reso.LookupHost(context.Background(), "www.example.com")
 		if !errors.Is(err, netxlite.ErrAndroidDNSCacheNoData) {
 			t.Fatal("unexpected error", err)
@@ -38,7 +39,8 @@ func TestDNSBlockingNXDOMAIN(t *testing.T) {
 	tc.Configure(env)
 
 	env.Do(func() {
-		reso := netxlite.NewStdlibResolver(log.Log)
+		netx := &netxlite.Netx{}
+		reso := netx.NewStdlibResolver(log.Log)
 		addrs, err := reso.LookupHost(context.Background(), "www.example.com")
 		if err == nil || err.Error() != netxlite.FailureDNSNXDOMAINError {
 			t.Fatal("unexpected error", err)
@@ -57,7 +59,8 @@ func TestDNSBlockingBOGON(t *testing.T) {
 	tc.Configure(env)
 
 	env.Do(func() {
-		reso := netxlite.NewStdlibResolver(log.Log)
+		netx := &netxlite.Netx{}
+		reso := netx.NewStdlibResolver(log.Log)
 		addrs, err := reso.LookupHost(context.Background(), "www.example.com")
 		if err != nil {
 			t.Fatal(err)

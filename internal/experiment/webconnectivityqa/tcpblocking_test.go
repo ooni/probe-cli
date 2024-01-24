@@ -40,7 +40,7 @@ func TestTCPBlockingConnectionRefusedWithInconsistentDNS(t *testing.T) {
 
 	env.Do(func() {
 		netx := &netxlite.Netx{}
-		dialer := netx.NewDialerWithResolver(log.Log, netxlite.NewStdlibResolver(log.Log))
+		dialer := netx.NewDialerWithResolver(log.Log, netx.NewStdlibResolver(log.Log))
 		conn, err := dialer.DialContext(context.Background(), "tcp", "www.example.org:443")
 		if err == nil || err.Error() != netxlite.FailureConnectionRefused {
 			t.Fatal("unexpected error", err)

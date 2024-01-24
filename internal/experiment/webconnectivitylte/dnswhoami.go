@@ -33,7 +33,8 @@ func (svc *DNSWhoamiService) SystemV4(ctx context.Context) ([]DNSWhoamiInfoEntry
 	if len(svc.systemv4) <= 0 {
 		ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 		defer cancel()
-		reso := netxlite.NewStdlibResolver(model.DiscardLogger)
+		netx := &netxlite.Netx{}
+		reso := netx.NewStdlibResolver(model.DiscardLogger)
 		addrs, err := reso.LookupHost(ctx, "whoami.v4.powerdns.org")
 		if err != nil || len(addrs) < 1 {
 			return nil, false

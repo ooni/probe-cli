@@ -39,7 +39,8 @@ func TestQAEnv(t *testing.T) {
 		env.Do(func() {
 			// create stdlib resolver, which will use the underlying client stack
 			// GetaddrinfoLookupANY method for the DNS lookup
-			reso := netxlite.NewStdlibResolver(model.DiscardLogger)
+			netx := &netxlite.Netx{}
+			reso := netx.NewStdlibResolver(model.DiscardLogger)
 
 			// lookup the hostname
 			ctx := context.Background()

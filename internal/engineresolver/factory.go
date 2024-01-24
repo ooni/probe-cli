@@ -57,8 +57,9 @@ func newChildResolver(
 	case "http", "https": // http is here for testing
 		reso = newChildResolverHTTPS(logger, URL, http3Enabled, counter, proxyURL)
 	case "system":
+		netx := &netxlite.Netx{}
 		reso = bytecounter.MaybeWrapSystemResolver(
-			netxlite.NewStdlibResolver(logger),
+			netx.NewStdlibResolver(logger),
 			counter, // handles correctly the case where counter is nil
 		)
 	default:

@@ -31,7 +31,8 @@ func typeCheckForSystemResolver(t *testing.T, resolver model.Resolver, logger mo
 }
 
 func TestNewResolverSystem(t *testing.T) {
-	resolver := NewStdlibResolver(model.DiscardLogger)
+	netx := &Netx{}
+	resolver := netx.NewStdlibResolver(model.DiscardLogger)
 	typeCheckForSystemResolver(t, resolver, model.DiscardLogger)
 }
 

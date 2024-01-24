@@ -80,7 +80,8 @@ func Example_dpiRule() {
 	// run netxlite code inside the netemx environment
 	env.Do(func() {
 		// create a system resolver instance
-		reso := netxlite.NewStdlibResolver(model.DiscardLogger)
+		netx := &netxlite.Netx{}
+		reso := netx.NewStdlibResolver(model.DiscardLogger)
 
 		// create the HTTP client
 		// TODO(https://github.com/ooni/probe/issues/2534): the NewHTTPClientWithResolver func has QUIRKS but we don't care.
@@ -135,7 +136,7 @@ func Example_resolverConfig() {
 
 		// use a system resolver instance
 		{
-			reso := netxlite.NewStdlibResolver(log.Log)
+			reso := netx.NewStdlibResolver(log.Log)
 			ispResults = runtimex.Try1(reso.LookupHost(context.Background(), "example.com"))
 		}
 
@@ -184,7 +185,7 @@ func Example_customNetStackHandler() {
 		netx := &netxlite.Netx{}
 
 		// create a system resolver instance
-		reso := netxlite.NewStdlibResolver(log.Log)
+		reso := netx.NewStdlibResolver(log.Log)
 
 		// create a dialer
 		dialer := netx.NewDialerWithResolver(log.Log, reso)
@@ -233,7 +234,7 @@ func Example_dohWithInternetScenario() {
 
 			// DNS-over-UDP
 			{
-				dialer := netx.NewDialerWithResolver(log.Log, netxlite.NewStdlibResolver(log.Log))
+				dialer := netx.NewDialerWithResolver(log.Log, netx.NewStdlibResolver(log.Log))
 				reso := netxlite.NewParallelUDPResolver(log.Log, dialer, net.JoinHostPort(domain, "53"))
 				defer reso.CloseIdleConnections()
 
@@ -315,7 +316,8 @@ func Example_getaddrinfoWithInternetScenario() {
 	defer env.Close()
 
 	env.Do(func() {
-		reso := netxlite.NewStdlibResolver(log.Log)
+		netx := &netxlite.Netx{}
+		reso := netx.NewStdlibResolver(log.Log)
 		defer reso.CloseIdleConnections()
 
 		addrs, err := reso.LookupHost(context.Background(), "www.example.com")

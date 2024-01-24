@@ -38,6 +38,7 @@ func TestNewHTTPTransport(t *testing.T) {
 	t.Run("works as intended with failing dialer", func(t *testing.T) {
 		called := &atomic.Int64{}
 		expected := errors.New("mocked error")
+		netx := &Netx{}
 		d := &dialerResolverWithTracing{
 			Dialer: &mocks.Dialer{
 				MockDialContext: func(ctx context.Context,
@@ -48,7 +49,7 @@ func TestNewHTTPTransport(t *testing.T) {
 					called.Add(1)
 				},
 			},
-			Resolver: NewStdlibResolver(log.Log),
+			Resolver: netx.NewStdlibResolver(log.Log),
 		}
 		td := NewTLSDialer(d, NewTLSHandshakerStdlib(log.Log))
 		txp := NewHTTPTransport(log.Log, d, td)

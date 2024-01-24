@@ -28,13 +28,6 @@ func (netx *Netx) NewStdlibResolver(logger model.DebugLogger) model.Resolver {
 	return WrapResolver(logger, netx.newUnwrappedStdlibResolver())
 }
 
-// NewStdlibResolver is equivalent to creating an empty [*Netx]
-// and calling its NewStdlibResolver method.
-func NewStdlibResolver(logger model.DebugLogger) model.Resolver {
-	netx := &Netx{Underlying: nil}
-	return netx.NewStdlibResolver(logger)
-}
-
 // NewParallelDNSOverHTTPSResolver implements [model.MeasuringNetwork].
 func (netx *Netx) NewParallelDNSOverHTTPSResolver(logger model.DebugLogger, URL string) model.Resolver {
 	client := &http.Client{Transport: netx.NewHTTPTransportStdlib(logger)}

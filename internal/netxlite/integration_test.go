@@ -43,7 +43,8 @@ func TestMeasureWithSystemResolver(t *testing.T) {
 	//
 
 	t.Run("on success", func(t *testing.T) {
-		r := netxlite.NewStdlibResolver(log.Log)
+		netx := &netxlite.Netx{}
+		r := netx.NewStdlibResolver(log.Log)
 		defer r.CloseIdleConnections()
 		ctx := context.Background()
 		addrs, err := r.LookupHost(ctx, "dns.google.com")
@@ -56,7 +57,8 @@ func TestMeasureWithSystemResolver(t *testing.T) {
 	})
 
 	t.Run("for nxdomain", func(t *testing.T) {
-		r := netxlite.NewStdlibResolver(log.Log)
+		netx := &netxlite.Netx{}
+		r := netx.NewStdlibResolver(log.Log)
 		defer r.CloseIdleConnections()
 		ctx := context.Background()
 		addrs, err := r.LookupHost(ctx, "www.ooni.nonexistent")
@@ -69,7 +71,8 @@ func TestMeasureWithSystemResolver(t *testing.T) {
 	})
 
 	t.Run("for timeout", func(t *testing.T) {
-		r := netxlite.NewStdlibResolver(log.Log)
+		netx := &netxlite.Netx{}
+		r := netx.NewStdlibResolver(log.Log)
 		defer r.CloseIdleConnections()
 		const timeout = time.Nanosecond
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -542,7 +545,7 @@ func TestHTTPTransport(t *testing.T) {
 
 	t.Run("works as intended", func(t *testing.T) {
 		netx := &netxlite.Netx{}
-		d := netx.NewDialerWithResolver(log.Log, netxlite.NewStdlibResolver(log.Log))
+		d := netx.NewDialerWithResolver(log.Log, netx.NewStdlibResolver(log.Log))
 		td := netxlite.NewTLSDialer(d, netxlite.NewTLSHandshakerStdlib(log.Log))
 		txp := netxlite.NewHTTPTransport(log.Log, d, td)
 		client := &http.Client{Transport: txp}
@@ -597,7 +600,7 @@ func TestHTTP3Transport(t *testing.T) {
 		d := netx.NewQUICDialerWithResolver(
 			netxlite.NewUDPListener(),
 			log.Log,
-			netxlite.NewStdlibResolver(log.Log),
+			netx.NewStdlibResolver(log.Log),
 		)
 		txp := netxlite.NewHTTP3Transport(log.Log, d, &tls.Config{})
 		client := &http.Client{Transport: txp}
