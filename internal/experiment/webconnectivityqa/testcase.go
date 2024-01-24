@@ -49,6 +49,8 @@ func AllTestCases() []*TestCase {
 		dnsBlockingBOGON(),
 		dnsBlockingNXDOMAIN(),
 
+		dnsHijackingToLocalhostWithHTTP(),
+		dnsHijackingToLocalhostWithHTTPS(),
 		dnsHijackingToProxyWithHTTPURL(),
 		dnsHijackingToProxyWithHTTPSURL(),
 
@@ -62,6 +64,9 @@ func AllTestCases() []*TestCase {
 
 		idnaWithoutCensorshipLowercase(),
 		idnaWithoutCensorshipWithFirstLetterUppercase(),
+
+		localhostWithHTTP(),
+		localhostWithHTTPS(),
 
 		redirectWithConsistentDNSAndThenConnectionRefusedForHTTP(),
 		redirectWithConsistentDNSAndThenConnectionRefusedForHTTPS(),
