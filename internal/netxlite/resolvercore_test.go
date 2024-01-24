@@ -58,7 +58,7 @@ func TestNewSerialUDPResolver(t *testing.T) {
 func TestNewParallelUDPResolver(t *testing.T) {
 	netx := &Netx{}
 	d := netx.NewDialerWithoutResolver(log.Log)
-	resolver := NewParallelUDPResolver(log.Log, d, "1.1.1.1:53")
+	resolver := netx.NewParallelUDPResolver(log.Log, d, "1.1.1.1:53")
 	idnaReso := resolver.(*resolverIDNA)
 	logger := idnaReso.Resolver.(*resolverLogger)
 	if logger.Logger != log.Log {

@@ -20,7 +20,7 @@ func TestDNSOverUDPServerFactory(t *testing.T) {
 
 	env.Do(func() {
 		netx := &netxlite.Netx{}
-		reso := netxlite.NewParallelUDPResolver(
+		reso := netx.NewParallelUDPResolver(
 			log.Log, netx.NewDialerWithoutResolver(log.Log),
 			net.JoinHostPort(AddressDNSGoogle8844, "53"))
 		addrs, err := reso.LookupHost(context.Background(), "www.example.com")

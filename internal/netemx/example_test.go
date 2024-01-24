@@ -143,14 +143,14 @@ func Example_resolverConfig() {
 		// use 8.8.4.4
 		{
 			dialer := netx.NewDialerWithoutResolver(log.Log)
-			reso := netxlite.NewParallelUDPResolver(log.Log, dialer, "8.8.4.4:53")
+			reso := netx.NewParallelUDPResolver(log.Log, dialer, "8.8.4.4:53")
 			googleResults = runtimex.Try1(reso.LookupHost(context.Background(), "example.com"))
 		}
 
 		// use 9.9.9.9
 		{
 			dialer := netx.NewDialerWithoutResolver(log.Log)
-			reso := netxlite.NewParallelUDPResolver(log.Log, dialer, "9.9.9.9:53")
+			reso := netx.NewParallelUDPResolver(log.Log, dialer, "9.9.9.9:53")
 			quad9Results = runtimex.Try1(reso.LookupHost(context.Background(), "example.com"))
 		}
 	})
@@ -235,7 +235,7 @@ func Example_dohWithInternetScenario() {
 			// DNS-over-UDP
 			{
 				dialer := netx.NewDialerWithResolver(log.Log, netx.NewStdlibResolver(log.Log))
-				reso := netxlite.NewParallelUDPResolver(log.Log, dialer, net.JoinHostPort(domain, "53"))
+				reso := netx.NewParallelUDPResolver(log.Log, dialer, net.JoinHostPort(domain, "53"))
 				defer reso.CloseIdleConnections()
 
 				addrs, err := reso.LookupHost(context.Background(), "www.example.com")
@@ -290,7 +290,7 @@ func Example_dnsOverUDPWithInternetScenario() {
 		for _, endpoint := range resolvers {
 			netx := &netxlite.Netx{}
 			dialer := netx.NewDialerWithoutResolver(log.Log)
-			reso := netxlite.NewParallelUDPResolver(log.Log, dialer, endpoint)
+			reso := netx.NewParallelUDPResolver(log.Log, dialer, endpoint)
 			defer reso.CloseIdleConnections()
 
 			addrs, err := reso.LookupHost(context.Background(), "www.example.com")

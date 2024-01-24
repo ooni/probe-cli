@@ -86,7 +86,7 @@ func TestBlockingTLSConnectionResetWithInconsistentDNS(t *testing.T) {
 			t.Run("with UDP resolver", func(t *testing.T) {
 				netx := &netxlite.Netx{}
 				d := netx.NewDialerWithoutResolver(log.Log)
-				reso := netxlite.NewParallelUDPResolver(log.Log, d, "8.8.8.8:53")
+				reso := netx.NewParallelUDPResolver(log.Log, d, "8.8.8.8:53")
 				addrs, err := reso.LookupHost(context.Background(), "www.example.com")
 				if err != nil {
 					t.Fatal(err)

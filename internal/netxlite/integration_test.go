@@ -113,7 +113,7 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 	t.Run("on success", func(t *testing.T) {
 		netx := &netxlite.Netx{}
 		dlr := netx.NewDialerWithoutResolver(log.Log)
-		r := netxlite.NewParallelUDPResolver(log.Log, dlr, "8.8.4.4:53")
+		r := netx.NewParallelUDPResolver(log.Log, dlr, "8.8.4.4:53")
 		defer r.CloseIdleConnections()
 		ctx := context.Background()
 		addrs, err := r.LookupHost(ctx, "dns.google.com")
@@ -135,7 +135,7 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 		defer listener.Close()
 		netx := &netxlite.Netx{}
 		dlr := netx.NewDialerWithoutResolver(log.Log)
-		r := netxlite.NewParallelUDPResolver(log.Log, dlr, listener.LocalAddr().String())
+		r := netx.NewParallelUDPResolver(log.Log, dlr, listener.LocalAddr().String())
 		defer r.CloseIdleConnections()
 		ctx := context.Background()
 		addrs, err := r.LookupHost(ctx, "ooni.org")
@@ -157,7 +157,7 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 		defer listener.Close()
 		netx := &netxlite.Netx{}
 		dlr := netx.NewDialerWithoutResolver(log.Log)
-		r := netxlite.NewParallelUDPResolver(log.Log, dlr, listener.LocalAddr().String())
+		r := netx.NewParallelUDPResolver(log.Log, dlr, listener.LocalAddr().String())
 		defer r.CloseIdleConnections()
 		ctx := context.Background()
 		addrs, err := r.LookupHost(ctx, "ooni.org")
@@ -179,7 +179,7 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 		defer listener.Close()
 		netx := &netxlite.Netx{}
 		dlr := netx.NewDialerWithoutResolver(log.Log)
-		r := netxlite.NewParallelUDPResolver(log.Log, dlr, listener.LocalAddr().String())
+		r := netx.NewParallelUDPResolver(log.Log, dlr, listener.LocalAddr().String())
 		defer r.CloseIdleConnections()
 		ctx := context.Background()
 		addrs, err := r.LookupHost(ctx, "ooni.org")

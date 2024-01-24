@@ -53,8 +53,9 @@ func (svc *DNSWhoamiService) UDPv4(ctx context.Context, address string) ([]DNSWh
 	if len(svc.udpv4[address]) <= 0 {
 		ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 		defer cancel()
+		netx := &netxlite.Netx{}
 		dialer := netxlite.NewDialerWithStdlibResolver(model.DiscardLogger)
-		reso := netxlite.NewParallelUDPResolver(model.DiscardLogger, dialer, address)
+		reso := netx.NewParallelUDPResolver(model.DiscardLogger, dialer, address)
 		// TODO(bassosimone): this should actually only send an A query. Sending an AAAA
 		// query is _way_ unnecessary since we know that only A is going to work.
 		addrs, err := reso.LookupHost(ctx, "whoami.v4.powerdns.org")

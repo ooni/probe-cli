@@ -54,7 +54,7 @@ func NewUnwrappedStdlibResolver() model.Resolver {
 // NewSerialUDPResolver creates a new Resolver using DNS-over-UDP
 // that performs serial A/AAAA lookups during LookupHost.
 //
-// Deprecated: use NewParallelResolverUDP.
+// Deprecated: use NewParallelUDPResolver.
 //
 // Arguments:
 //
@@ -74,13 +74,6 @@ func (netx *Netx) NewParallelUDPResolver(logger model.DebugLogger, dialer model.
 	return WrapResolver(logger, NewUnwrappedParallelResolver(
 		wrapDNSTransport(NewUnwrappedDNSOverUDPTransport(dialer, address)),
 	))
-}
-
-// NewParallelUDPResolver is equivalent to creating an empty [*Netx]
-// and calling its NewParallelUDPResolver method.
-func NewParallelUDPResolver(logger model.DebugLogger, dialer model.Dialer, address string) model.Resolver {
-	netx := &Netx{Underlying: nil}
-	return netx.NewParallelUDPResolver(logger, dialer, address)
 }
 
 // WrapResolver creates a new resolver that wraps an
