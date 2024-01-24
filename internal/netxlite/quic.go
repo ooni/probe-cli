@@ -34,14 +34,6 @@ func (netx *Netx) NewQUICDialerWithResolver(listener model.UDPListener, logger m
 	return wrapQUICDialer(logger, resolver, baseDialer, wrappers...)
 }
 
-// NewQUICDialerWithResolver is equivalent to creating an empty [*Netx]
-// and calling its NewQUICDialerWithResolver method.
-func NewQUICDialerWithResolver(listener model.UDPListener, logger model.DebugLogger,
-	resolver model.Resolver, wrappers ...model.QUICDialerWrapper) (outDialer model.QUICDialer) {
-	netx := &Netx{Underlying: nil}
-	return netx.NewQUICDialerWithResolver(listener, logger, resolver, wrappers...)
-}
-
 // wrapQUICDialer is similar to NewQUICDialerWithResolver except that it takes as
 // input an already constructed [model.QUICDialer] instead of creating one.
 func wrapQUICDialer(logger model.DebugLogger, resolver model.Resolver,

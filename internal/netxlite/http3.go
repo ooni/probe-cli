@@ -74,7 +74,8 @@ func (netx *Netx) NewHTTP3TransportStdlib(logger model.DebugLogger) model.HTTPTr
 // NewHTTPTransportWithResolver creates a new HTTPTransport using http3
 // that uses the given logger and the given resolver.
 func NewHTTP3TransportWithResolver(logger model.DebugLogger, reso model.Resolver) model.HTTPTransport {
-	qd := NewQUICDialerWithResolver(NewUDPListener(), logger, reso)
+	netx := &Netx{}
+	qd := netx.NewQUICDialerWithResolver(NewUDPListener(), logger, reso)
 	return NewHTTP3Transport(logger, qd, nil)
 }
 

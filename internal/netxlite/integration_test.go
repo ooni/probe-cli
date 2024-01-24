@@ -591,7 +591,8 @@ func TestHTTP3Transport(t *testing.T) {
 	}
 
 	t.Run("works as intended", func(t *testing.T) {
-		d := netxlite.NewQUICDialerWithResolver(
+		netx := &netxlite.Netx{}
+		d := netx.NewQUICDialerWithResolver(
 			netxlite.NewUDPListener(),
 			log.Log,
 			netxlite.NewStdlibResolver(log.Log),
