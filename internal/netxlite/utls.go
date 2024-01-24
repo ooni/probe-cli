@@ -24,13 +24,6 @@ func (netx *Netx) NewTLSHandshakerUTLS(logger model.DebugLogger, id *utls.Client
 	}, logger)
 }
 
-// NewTLSHandshakerUTLS is equivalent to creating an empty [*Netx]
-// and calling its NewTLSHandshakerUTLS method.
-func NewTLSHandshakerUTLS(logger model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker {
-	netx := &Netx{Underlying: nil}
-	return netx.NewTLSHandshakerUTLS(logger, id)
-}
-
 // UTLSConn implements TLSConn and uses a utls UConn as its underlying connection
 type UTLSConn struct {
 	// We include the real UConn

@@ -444,7 +444,8 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 
 	t.Run("for utls handshaker", func(t *testing.T) {
 		t.Run("on success", func(t *testing.T) {
-			th := netxlite.NewTLSHandshakerUTLS(log.Log, &utls.HelloFirefox_55)
+			netx := &netxlite.Netx{}
+			th := netx.NewTLSHandshakerUTLS(log.Log, &utls.HelloFirefox_55)
 			err := successFlow(th)
 			if err != nil {
 				t.Fatal(err)
@@ -452,7 +453,8 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 		})
 
 		t.Run("on connection reset", func(t *testing.T) {
-			th := netxlite.NewTLSHandshakerUTLS(log.Log, &utls.HelloFirefox_55)
+			netx := &netxlite.Netx{}
+			th := netx.NewTLSHandshakerUTLS(log.Log, &utls.HelloFirefox_55)
 			err := connectionResetFlow(th)
 			if err != nil {
 				t.Fatal(err)
@@ -460,7 +462,8 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 		})
 
 		t.Run("on timeout", func(t *testing.T) {
-			th := netxlite.NewTLSHandshakerUTLS(log.Log, &utls.HelloFirefox_55)
+			netx := &netxlite.Netx{}
+			th := netx.NewTLSHandshakerUTLS(log.Log, &utls.HelloFirefox_55)
 			err := timeoutFlow(th)
 			if err != nil {
 				t.Fatal(err)
@@ -468,7 +471,8 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 		})
 
 		t.Run("on TLS unrecognized name alert", func(t *testing.T) {
-			th := netxlite.NewTLSHandshakerUTLS(log.Log, &utls.HelloFirefox_55)
+			netx := &netxlite.Netx{}
+			th := netx.NewTLSHandshakerUTLS(log.Log, &utls.HelloFirefox_55)
 			err := tlsUnrecognizedNameFlow(th)
 			if err != nil {
 				t.Fatal(err)

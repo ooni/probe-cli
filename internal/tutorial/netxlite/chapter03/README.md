@@ -83,7 +83,8 @@ the `tls.Config` (such as the ALPN) may be ignored
 if they conflict with what the parroted browser would do.
 
 ```Go
-	th := netxlite.NewTLSHandshakerUTLS(log.Log, &utls.HelloFirefox_55)
+	netx := &netxlite.Netx{}
+	th := netx.NewTLSHandshakerUTLS(log.Log, &utls.HelloFirefox_55)
 ```
 
 The rest of the program is exactly like the one in the

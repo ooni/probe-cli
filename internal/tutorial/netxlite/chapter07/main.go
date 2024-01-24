@@ -123,7 +123,8 @@ func dialTCP(ctx context.Context, address string) (net.Conn, error) {
 }
 
 func handshakeTLS(ctx context.Context, tcpConn net.Conn, config *tls.Config) (model.TLSConn, error) {
-	th := netxlite.NewTLSHandshakerUTLS(log.Log, &utls.HelloFirefox_55)
+	netx := &netxlite.Netx{}
+	th := netx.NewTLSHandshakerUTLS(log.Log, &utls.HelloFirefox_55)
 	return th.Handshake(ctx, tcpConn, config)
 }
 
