@@ -99,7 +99,7 @@ func NewHandler() *Handler {
 		},
 		NewQUICDialer: func(logger model.Logger) model.QUICDialer {
 			return netx.NewQUICDialerWithoutResolver(
-				netxlite.NewUDPListener(),
+				netx.NewUDPListener(),
 				logger,
 			)
 		},

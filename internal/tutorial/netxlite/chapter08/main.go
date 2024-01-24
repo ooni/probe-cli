@@ -106,7 +106,7 @@ func main() {
 func dialQUIC(ctx context.Context, address string,
 	config *tls.Config) (quic.EarlyConnection, tls.ConnectionState, error) {
 	netx := &netxlite.Netx{}
-	ql := netxlite.NewUDPListener()
+	ql := netx.NewUDPListener()
 	d := netx.NewQUICDialerWithoutResolver(ql, log.Log)
 	qconn, err := d.DialContext(ctx, address, config, &quic.Config{})
 	if err != nil {

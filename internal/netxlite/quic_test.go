@@ -42,13 +42,13 @@ func (*quicDialerWrapperSecond) WrapQUICDialer(qd model.QUICDialer) model.QUICDi
 }
 
 func TestNewQUICDialer(t *testing.T) {
-	ql := NewUDPListener()
+	netx := &Netx{}
+	ql := netx.NewUDPListener()
 	extensions := []model.QUICDialerWrapper{
 		&quicDialerWrapperFirst{},
 		nil, // explicitly test for this documented case
 		&quicDialerWrapperSecond{},
 	}
-	netx := &Netx{}
 	dlr := netx.NewQUICDialerWithoutResolver(ql, log.Log, extensions...)
 	logger := dlr.(*quicDialerLogger)
 	if logger.Logger != log.Log {
