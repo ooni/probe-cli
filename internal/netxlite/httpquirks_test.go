@@ -20,7 +20,8 @@ func TestNewHTTPTransportWithResolver(t *testing.T) {
 			return nil, expected
 		},
 	}
-	txp := NewHTTPTransportWithResolver(model.DiscardLogger, reso)
+	netx := &Netx{}
+	txp := NewHTTPTransportWithResolver(netx, model.DiscardLogger, reso)
 	req, err := http.NewRequest("GET", "http://x.org", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -140,7 +141,8 @@ func TestNewHTTPClientStdlib(t *testing.T) {
 
 func TestNewHTTPClientWithResolver(t *testing.T) {
 	reso := &mocks.Resolver{}
-	clnt := NewHTTPClientWithResolver(model.DiscardLogger, reso)
+	netx := &Netx{}
+	clnt := NewHTTPClientWithResolver(netx, model.DiscardLogger, reso)
 	ewc, ok := clnt.(*httpClientErrWrapper)
 	if !ok {
 		t.Fatal("expected *httpClientErrWrapper")

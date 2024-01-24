@@ -85,7 +85,7 @@ func Example_dpiRule() {
 
 		// create the HTTP client
 		// TODO(https://github.com/ooni/probe/issues/2534): the NewHTTPClientWithResolver func has QUIRKS but we don't care.
-		client := netxlite.NewHTTPClientWithResolver(model.DiscardLogger, reso)
+		client := netxlite.NewHTTPClientWithResolver(netx, model.DiscardLogger, reso)
 
 		// create the HTTP request
 		req := runtimex.Try1(http.NewRequest("GET", "https://example.com", nil))

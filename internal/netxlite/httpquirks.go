@@ -19,8 +19,7 @@ import (
 // the stdlib for everything but the given resolver.
 //
 // This function behavior is QUIRKY as documented in [NewHTTPTransport].
-func NewHTTPTransportWithResolver(logger model.DebugLogger, reso model.Resolver) model.HTTPTransport {
-	netx := &Netx{}
+func NewHTTPTransportWithResolver(netx *Netx, logger model.DebugLogger, reso model.Resolver) model.HTTPTransport {
 	dialer := netx.NewDialerWithResolver(logger, reso)
 	thx := netx.NewTLSHandshakerStdlib(logger)
 	tlsDialer := NewTLSDialer(dialer, thx)
@@ -123,8 +122,8 @@ func NewHTTPClientStdlib(logger model.DebugLogger) model.HTTPClient {
 // given resolver and then from that builds an HTTPClient.
 //
 // This function behavior is QUIRKY as documented in [NewHTTPTransport].
-func NewHTTPClientWithResolver(logger model.Logger, reso model.Resolver) model.HTTPClient {
-	return NewHTTPClient(NewHTTPTransportWithResolver(logger, reso))
+func NewHTTPClientWithResolver(netx *Netx, logger model.Logger, reso model.Resolver) model.HTTPClient {
+	return NewHTTPClient(NewHTTPTransportWithResolver(netx, logger, reso))
 }
 
 // NewHTTPClient creates a new, wrapped HTTPClient using the given transport.
