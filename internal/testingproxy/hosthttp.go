@@ -56,7 +56,7 @@ func (tc *hostNetworkTestCaseWithHTTP) Run(t *testing.T) {
 		ExpectAddress: "127.0.0.1",
 		Dialer:        netx.NewDialerWithResolver(log.Log, netx.NewStdlibResolver(log.Log)),
 	}
-	tlsDialer := netxlite.NewTLSDialer(dialer, netxlite.NewTLSHandshakerStdlib(log.Log))
+	tlsDialer := netxlite.NewTLSDialer(dialer, netx.NewTLSHandshakerStdlib(log.Log))
 	txp := netxlite.NewHTTPTransportWithOptions(log.Log, dialer, tlsDialer,
 		netxlite.HTTPTransportOptionProxyURL(runtimex.Try1(url.Parse(proxyServer.URL))))
 	client := &http.Client{Transport: txp}

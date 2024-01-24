@@ -22,7 +22,7 @@ type Trace interface {
 	// Index returns the unique index used by this trace.
 	Index() int64
 
-	// NewDialerWithoutResolver is equivalent to netxlite.NewDialerWithoutResolver
+	// NewDialerWithoutResolver is equivalent to netxlite.Netx.NewDialerWithoutResolver
 	// except that it returns a model.Dialer that uses this trace.
 	//
 	// Caveat: the dialer wrappers are there to implement the
@@ -33,7 +33,7 @@ type Trace interface {
 	NewParallelUDPResolver(logger model.DebugLogger, dialer model.Dialer, address string) model.Resolver
 
 	// NewQUICDialerWithoutResolver is equivalent to
-	// netxlite.NewQUICDialerWithoutResolver except that it returns a
+	// netxlite.Netx.NewQUICDialerWithoutResolver except that it returns a
 	// model.QUICDialer that uses this trace.
 	//
 	// Caveat: the dialer wrappers are there to implement the
@@ -41,7 +41,7 @@ type Trace interface {
 	NewQUICDialerWithoutResolver(listener model.UDPListener,
 		dl model.DebugLogger, wrappers ...model.QUICDialerWrapper) model.QUICDialer
 
-	// NewTLSHandshakerStdlib is equivalent to netxlite.NewTLSHandshakerStdlib
+	// NewTLSHandshakerStdlib is equivalent to netxlite.Netx.NewTLSHandshakerStdlib
 	// except that it returns a model.TLSHandshaker that uses this trace.
 	NewTLSHandshakerStdlib(dl model.DebugLogger) model.TLSHandshaker
 

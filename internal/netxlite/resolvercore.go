@@ -28,25 +28,11 @@ func (netx *Netx) NewStdlibResolver(logger model.DebugLogger) model.Resolver {
 	return WrapResolver(logger, netx.newUnwrappedStdlibResolver())
 }
 
-// NewStdlibResolver is equivalent to creating an empty [*Netx]
-// and calling its NewStdlibResolver method.
-func NewStdlibResolver(logger model.DebugLogger) model.Resolver {
-	netx := &Netx{Underlying: nil}
-	return netx.NewStdlibResolver(logger)
-}
-
 // NewParallelDNSOverHTTPSResolver implements [model.MeasuringNetwork].
 func (netx *Netx) NewParallelDNSOverHTTPSResolver(logger model.DebugLogger, URL string) model.Resolver {
 	client := &http.Client{Transport: netx.NewHTTPTransportStdlib(logger)}
 	txp := wrapDNSTransport(NewUnwrappedDNSOverHTTPSTransport(client, URL))
 	return WrapResolver(logger, NewUnwrappedParallelResolver(txp))
-}
-
-// NewParallelDNSOverHTTPSResolver is equivalent to creating an empty [*Netx]
-// and calling its NewParallelDNSOverHTTPSResolver method.
-func NewParallelDNSOverHTTPSResolver(logger model.DebugLogger, URL string) model.Resolver {
-	netx := &Netx{Underlying: nil}
-	return netx.NewParallelDNSOverHTTPSResolver(logger, URL)
 }
 
 func (netx *Netx) newUnwrappedStdlibResolver() model.Resolver {
@@ -58,6 +44,8 @@ func (netx *Netx) newUnwrappedStdlibResolver() model.Resolver {
 // NewUnwrappedStdlibResolver returns a new, unwrapped resolver using the standard
 // library (i.e., getaddrinfo if possible and &net.Resolver{} otherwise). As the name
 // implies, this function returns an unwrapped resolver.
+//
+// Deprecated: do not use this function inside new networking code.
 func NewUnwrappedStdlibResolver() model.Resolver {
 	netx := &Netx{Underlying: nil}
 	return netx.newUnwrappedStdlibResolver()
@@ -66,7 +54,7 @@ func NewUnwrappedStdlibResolver() model.Resolver {
 // NewSerialUDPResolver creates a new Resolver using DNS-over-UDP
 // that performs serial A/AAAA lookups during LookupHost.
 //
-// Deprecated: use NewParallelResolverUDP.
+// Deprecated: use NewParallelUDPResolver.
 //
 // Arguments:
 //
@@ -86,13 +74,6 @@ func (netx *Netx) NewParallelUDPResolver(logger model.DebugLogger, dialer model.
 	return WrapResolver(logger, NewUnwrappedParallelResolver(
 		wrapDNSTransport(NewUnwrappedDNSOverUDPTransport(dialer, address)),
 	))
-}
-
-// NewParallelUDPResolver is equivalent to creating an empty [*Netx]
-// and calling its NewParallelUDPResolver method.
-func NewParallelUDPResolver(logger model.DebugLogger, dialer model.Dialer, address string) model.Resolver {
-	netx := &Netx{Underlying: nil}
-	return netx.NewParallelUDPResolver(logger, dialer, address)
 }
 
 // WrapResolver creates a new resolver that wraps an

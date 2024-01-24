@@ -16,7 +16,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// NewDialerWithoutResolver is equivalent to netxlite.NewDialerWithoutResolver
+// NewDialerWithoutResolver is equivalent to [netxlite.Netx.NewDialerWithoutResolver]
 // except that it returns a model.Dialer that uses this trace.
 //
 // Caveat: the dialer wrappers are there to implement the [model.MeasuringNetwork]

@@ -42,13 +42,14 @@ func (*quicDialerWrapperSecond) WrapQUICDialer(qd model.QUICDialer) model.QUICDi
 }
 
 func TestNewQUICDialer(t *testing.T) {
-	ql := NewUDPListener()
+	netx := &Netx{}
+	ql := netx.NewUDPListener()
 	extensions := []model.QUICDialerWrapper{
 		&quicDialerWrapperFirst{},
 		nil, // explicitly test for this documented case
 		&quicDialerWrapperSecond{},
 	}
-	dlr := NewQUICDialerWithoutResolver(ql, log.Log, extensions...)
+	dlr := netx.NewQUICDialerWithoutResolver(ql, log.Log, extensions...)
 	logger := dlr.(*quicDialerLogger)
 	if logger.Logger != log.Log {
 		t.Fatal("invalid logger")
@@ -549,8 +550,9 @@ func TestQUICDialerResolver(t *testing.T) {
 	t.Run("DialContext", func(t *testing.T) {
 		t.Run("with missing port", func(t *testing.T) {
 			tlsConfig := &tls.Config{}
+			netx := &Netx{}
 			dialer := &quicDialerResolver{
-				Resolver: NewStdlibResolver(log.Log),
+				Resolver: netx.NewStdlibResolver(log.Log),
 				Dialer:   &quicDialerQUICGo{}}
 			qconn, err := dialer.DialContext(
 				context.Background(), "www.google.com",
@@ -585,9 +587,10 @@ func TestQUICDialerResolver(t *testing.T) {
 		t.Run("with invalid, non-numeric port)", func(t *testing.T) {
 			// This test allows us to check for the case where every attempt
 			// to establish a connection leads to a failure
+			netx := &Netx{}
 			tlsConf := &tls.Config{}
 			dialer := &quicDialerResolver{
-				Resolver: NewStdlibResolver(log.Log),
+				Resolver: netx.NewStdlibResolver(log.Log),
 				Dialer: &quicDialerQUICGo{
 					UDPListener: &udpListenerStdlib{},
 				}}
@@ -609,8 +612,9 @@ func TestQUICDialerResolver(t *testing.T) {
 			expected := errors.New("mocked error")
 			var gotTLSConfig *tls.Config
 			tlsConfig := &tls.Config{}
+			netx := &Netx{}
 			dialer := &quicDialerResolver{
-				Resolver: NewStdlibResolver(log.Log),
+				Resolver: netx.NewStdlibResolver(log.Log),
 				Dialer: &mocks.QUICDialer{
 					MockDialContext: func(ctx context.Context, address string,
 						tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
@@ -637,8 +641,9 @@ func TestQUICDialerResolver(t *testing.T) {
 
 		t.Run("on success", func(t *testing.T) {
 			expectedQConn := &mocks.QUICEarlyConnection{}
+			netx := &Netx{}
 			dialer := &quicDialerResolver{
-				Resolver: NewStdlibResolver(log.Log),
+				Resolver: netx.NewStdlibResolver(log.Log),
 				Dialer: &mocks.QUICDialer{
 					MockDialContext: func(ctx context.Context, address string,
 						tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {

@@ -26,7 +26,8 @@ func (mx *Measurer) WrapTLSHandshaker(db WritableDB, thx model.TLSHandshaker) mo
 // NewTLSHandshakerStdlib creates a new TLS handshaker that
 // saves results into the DB and uses the stdlib for TLS.
 func (mx *Measurer) NewTLSHandshakerStdlib(db WritableDB, logger model.Logger) model.TLSHandshaker {
-	return mx.WrapTLSHandshaker(db, netxlite.NewTLSHandshakerStdlib(logger))
+	netx := &netxlite.Netx{}
+	return mx.WrapTLSHandshaker(db, netx.NewTLSHandshakerStdlib(logger))
 }
 
 type tlsHandshakerDB struct {

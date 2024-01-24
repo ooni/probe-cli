@@ -12,7 +12,8 @@ func TestResolverModifiesStdlibResolverName(t *testing.T) {
 	// See https://github.com/ooni/spec/pull/257 for more information.
 
 	t.Run("for LookupHost", func(t *testing.T) {
-		child := netxlite.NewStdlibResolver(model.DiscardLogger)
+		netx := &netxlite.Netx{}
+		child := netx.NewStdlibResolver(model.DiscardLogger)
 		mx := NewMeasurerWithDefaultSettings()
 		dbout := &MeasurementDB{}
 		txp := mx.WrapResolver(dbout, child)
@@ -34,7 +35,8 @@ func TestResolverModifiesStdlibResolverName(t *testing.T) {
 	})
 
 	t.Run("for LookupHTTPS", func(t *testing.T) {
-		child := netxlite.NewStdlibResolver(model.DiscardLogger)
+		netx := &netxlite.Netx{}
+		child := netx.NewStdlibResolver(model.DiscardLogger)
 		mx := NewMeasurerWithDefaultSettings()
 		dbout := &MeasurementDB{}
 		txp := mx.WrapResolver(dbout, child)

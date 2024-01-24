@@ -14,8 +14,9 @@ func NewTLSDialer(config Config) model.TLSDialer {
 	if config.Dialer == nil {
 		config.Dialer = NewDialer(config)
 	}
+	netx := &netxlite.Netx{}
 	logger := model.ValidLoggerOrDefault(config.Logger)
-	thx := netxlite.NewTLSHandshakerStdlib(logger)
+	thx := netx.NewTLSHandshakerStdlib(logger)
 	thx = config.Saver.WrapTLSHandshaker(thx) // WAI even when config.Saver is nil
 	tlsConfig := netxlite.ClonedTLSConfigOrNewEmptyConfig(config.TLSConfig)
 	return netxlite.NewTLSDialerWithConfig(config.Dialer, thx, tlsConfig)

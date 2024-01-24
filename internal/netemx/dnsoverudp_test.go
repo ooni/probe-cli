@@ -19,8 +19,9 @@ func TestDNSOverUDPServerFactory(t *testing.T) {
 	env.AddRecordToAllResolvers("www.example.com", "", AddressWwwExampleCom)
 
 	env.Do(func() {
-		reso := netxlite.NewParallelUDPResolver(
-			log.Log, netxlite.NewDialerWithoutResolver(log.Log),
+		netx := &netxlite.Netx{}
+		reso := netx.NewParallelUDPResolver(
+			log.Log, netx.NewDialerWithoutResolver(log.Log),
 			net.JoinHostPort(AddressDNSGoogle8844, "53"))
 		addrs, err := reso.LookupHost(context.Background(), "www.example.com")
 		if err != nil {

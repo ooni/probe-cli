@@ -97,6 +97,7 @@ type Measurer struct {
 // NewMeasurerWithDefaultSettings creates a new Measurer
 // instance using the most default settings.
 func NewMeasurerWithDefaultSettings() *Measurer {
+	netx := &netxlite.Netx{}
 	return &Measurer{
 		Begin:                   time.Now(),
 		DNSLookupTimeout:        0,
@@ -115,7 +116,7 @@ func NewMeasurerWithDefaultSettings() *Measurer {
 		}},
 		TCPconnectTimeout:   0,
 		TLSHandshakeTimeout: 0,
-		TLSHandshaker:       netxlite.NewTLSHandshakerStdlib(log.Log),
+		TLSHandshaker:       netx.NewTLSHandshakerStdlib(log.Log),
 	}
 }
 

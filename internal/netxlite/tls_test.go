@@ -123,7 +123,8 @@ func TestConfigureTLSVersion(t *testing.T) {
 }
 
 func TestNewTLSHandshakerStdlib(t *testing.T) {
-	th := NewTLSHandshakerStdlib(log.Log)
+	netx := &Netx{}
+	th := netx.NewTLSHandshakerStdlib(log.Log)
 	logger := th.(*tlsHandshakerLogger)
 	if logger.DebugLogger != log.Log {
 		t.Fatal("invalid logger")
@@ -403,7 +404,8 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			thx := NewTLSHandshakerStdlib(model.DiscardLogger)
+			netx := &Netx{}
+			thx := netx.NewTLSHandshakerStdlib(model.DiscardLogger)
 			tlsConfig := &tls.Config{
 				InsecureSkipVerify: true,
 				ServerName:         expectedSNI,
@@ -514,7 +516,8 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 					}
 				},
 			}
-			thx := NewTLSHandshakerStdlib(model.DiscardLogger)
+			netx := &Netx{}
+			thx := netx.NewTLSHandshakerStdlib(model.DiscardLogger)
 			tlsConfig := &tls.Config{
 				InsecureSkipVerify: true,
 				ServerName:         expectedSNI,

@@ -28,7 +28,8 @@ import (
 func newclient() probeservices.Client {
 	// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPTransportStdlib has QUIRKS but we
 	// don't actually care about those QUIRKS in this context
-	txp := netxlite.NewHTTPTransportStdlib(log.Log)
+	netx := &netxlite.Netx{}
+	txp := netx.NewHTTPTransportStdlib(log.Log)
 	ua := fmt.Sprintf("apitool/%s ooniprobe-engine/%s", version.Version, version.Version)
 	return probeservices.Client{
 		APIClientTemplate: httpx.APIClientTemplate{

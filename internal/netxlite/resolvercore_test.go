@@ -31,12 +31,14 @@ func typeCheckForSystemResolver(t *testing.T, resolver model.Resolver, logger mo
 }
 
 func TestNewResolverSystem(t *testing.T) {
-	resolver := NewStdlibResolver(model.DiscardLogger)
+	netx := &Netx{}
+	resolver := netx.NewStdlibResolver(model.DiscardLogger)
 	typeCheckForSystemResolver(t, resolver, model.DiscardLogger)
 }
 
 func TestNewSerialUDPResolver(t *testing.T) {
-	d := NewDialerWithoutResolver(log.Log)
+	netx := &Netx{}
+	d := netx.NewDialerWithoutResolver(log.Log)
 	resolver := NewSerialUDPResolver(log.Log, d, "1.1.1.1:53")
 	idnaReso := resolver.(*resolverIDNA)
 	logger := idnaReso.Resolver.(*resolverLogger)
@@ -54,8 +56,9 @@ func TestNewSerialUDPResolver(t *testing.T) {
 }
 
 func TestNewParallelUDPResolver(t *testing.T) {
-	d := NewDialerWithoutResolver(log.Log)
-	resolver := NewParallelUDPResolver(log.Log, d, "1.1.1.1:53")
+	netx := &Netx{}
+	d := netx.NewDialerWithoutResolver(log.Log)
+	resolver := netx.NewParallelUDPResolver(log.Log, d, "1.1.1.1:53")
 	idnaReso := resolver.(*resolverIDNA)
 	logger := idnaReso.Resolver.(*resolverLogger)
 	if logger.Logger != log.Log {
@@ -72,7 +75,8 @@ func TestNewParallelUDPResolver(t *testing.T) {
 }
 
 func TestNewParallelDNSOverHTTPSResolver(t *testing.T) {
-	resolver := NewParallelDNSOverHTTPSResolver(log.Log, "https://1.1.1.1/dns-query")
+	netx := &Netx{}
+	resolver := netx.NewParallelDNSOverHTTPSResolver(log.Log, "https://1.1.1.1/dns-query")
 	idnaReso := resolver.(*resolverIDNA)
 	logger := idnaReso.Resolver.(*resolverLogger)
 	if logger.Logger != log.Log {
