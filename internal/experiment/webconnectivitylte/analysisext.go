@@ -64,7 +64,7 @@ func analysisExtDNS(tk *TestKeys, analysis *minipipeline.WebAnalysis, info io.Wr
 	// we're processing N >= 1 DNS lookups.
 
 	if failures := analysis.DNSLookupSuccessWithBogonAddresses; failures.Len() > 0 {
-		tk.BlockingFlags |= AnalysisBlockingFlagDNSBlocking
+		//tk.BlockingFlags |= AnalysisBlockingFlagDNSBlocking // <- Wrong! Blocking depends on unexpected!
 		tk.DNSFlags |= AnalysisFlagDNSBogon
 		fmt.Fprintf(info, "- transactions with bogon IP addrs: %s\n", failures.String())
 	}

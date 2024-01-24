@@ -8,10 +8,10 @@
   "DNSLookupSuccess": [
     2
   ],
-  "DNSLookupSuccessWithInvalidAddresses": [
+  "DNSLookupSuccessWithInvalidAddresses": [],
+  "DNSLookupSuccessWithValidAddress": [
     2
   ],
-  "DNSLookupSuccessWithValidAddress": [],
   "DNSLookupSuccessWithBogonAddresses": [
     2
   ],

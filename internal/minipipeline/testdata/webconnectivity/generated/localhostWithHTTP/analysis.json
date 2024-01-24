@@ -9,11 +9,11 @@
     1,
     2
   ],
-  "DNSLookupSuccessWithInvalidAddresses": [
+  "DNSLookupSuccessWithInvalidAddresses": [],
+  "DNSLookupSuccessWithValidAddress": [
     1,
     2
   ],
-  "DNSLookupSuccessWithValidAddress": [],
   "DNSLookupSuccessWithBogonAddresses": [
     1,
     2

@@ -99,7 +99,7 @@ func dnsHijackingToLocalhostWithHTTP() *TestCase {
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
 			DNSConsistency: "inconsistent",
-			XDNSFlags:      5,  // AnalysisFlagDNSBogon |AnalysisDNSFlagUnexpectedAddrs
+			XDNSFlags:      5,  // AnalysisFlagDNSBogon | AnalysisDNSFlagUnexpectedAddrs
 			XBlockingFlags: 33, // AnalysisBlockingFlagDNSBlocking | AnalysisBlockingFlagSuccess
 			Accessible:     nil,
 			Blocking:       nil,
@@ -127,7 +127,7 @@ func dnsHijackingToLocalhostWithHTTPS() *TestCase {
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
 			DNSConsistency: "inconsistent",
-			XDNSFlags:      5,  // AnalysisFlagDNSBogon |AnalysisDNSFlagUnexpectedAddrs
+			XDNSFlags:      5,  // AnalysisFlagDNSBogon | AnalysisDNSFlagUnexpectedAddrs
 			XBlockingFlags: 33, // AnalysisBlockingFlagDNSBlocking | AnalysisBlockingFlagSuccess
 			Accessible:     nil,
 			Blocking:       nil,

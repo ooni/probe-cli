@@ -20,8 +20,7 @@ func localhostWithHTTP() *TestCase {
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
 			DNSConsistency: "consistent",
-			XDNSFlags:      5, // AnalysisFlagDNSBogon | AnalysisDNSFlagUnexpectedAddrs
-			XBlockingFlags: 1, // AnalysisBlockingFlagDNSBlocking
+			XDNSFlags:      1, // AnalysisFlagDNSBogon
 		},
 	}
 }
@@ -42,8 +41,7 @@ func localhostWithHTTPS() *TestCase {
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
 			DNSConsistency: "consistent",
-			XDNSFlags:      5, // AnalysisFlagDNSBogon | AnalysisDNSFlagUnexpectedAddrs
-			XBlockingFlags: 1, // AnalysisBlockingFlagDNSBlocking
+			XDNSFlags:      1, // AnalysisFlagDNSBogon
 		},
 	}
 }
