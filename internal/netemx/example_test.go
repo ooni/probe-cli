@@ -131,6 +131,8 @@ func Example_resolverConfig() {
 
 	// run netxlite code inside the netemx environment
 	env.Do(func() {
+		netx := &netxlite.Netx{}
+
 		// use a system resolver instance
 		{
 			reso := netxlite.NewStdlibResolver(log.Log)
@@ -139,14 +141,14 @@ func Example_resolverConfig() {
 
 		// use 8.8.4.4
 		{
-			dialer := netxlite.NewDialerWithoutResolver(log.Log)
+			dialer := netx.NewDialerWithoutResolver(log.Log)
 			reso := netxlite.NewParallelUDPResolver(log.Log, dialer, "8.8.4.4:53")
 			googleResults = runtimex.Try1(reso.LookupHost(context.Background(), "example.com"))
 		}
 
 		// use 9.9.9.9
 		{
-			dialer := netxlite.NewDialerWithoutResolver(log.Log)
+			dialer := netx.NewDialerWithoutResolver(log.Log)
 			reso := netxlite.NewParallelUDPResolver(log.Log, dialer, "9.9.9.9:53")
 			quad9Results = runtimex.Try1(reso.LookupHost(context.Background(), "example.com"))
 		}
@@ -284,7 +286,8 @@ func Example_dnsOverUDPWithInternetScenario() {
 		}
 
 		for _, endpoint := range resolvers {
-			dialer := netxlite.NewDialerWithoutResolver(log.Log)
+			netx := &netxlite.Netx{}
+			dialer := netx.NewDialerWithoutResolver(log.Log)
 			reso := netxlite.NewParallelUDPResolver(log.Log, dialer, endpoint)
 			defer reso.CloseIdleConnections()
 

@@ -22,7 +22,7 @@ type Trace interface {
 	// Index returns the unique index used by this trace.
 	Index() int64
 
-	// NewDialerWithoutResolver is equivalent to netxlite.NewDialerWithoutResolver
+	// NewDialerWithoutResolver is equivalent to netxlite.Netx.NewDialerWithoutResolver
 	// except that it returns a model.Dialer that uses this trace.
 	//
 	// Caveat: the dialer wrappers are there to implement the

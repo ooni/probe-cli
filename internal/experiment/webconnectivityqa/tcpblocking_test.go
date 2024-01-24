@@ -18,7 +18,8 @@ func TestTCPBlockingConnectTimeout(t *testing.T) {
 	tc.Configure(env)
 
 	env.Do(func() {
-		dialer := netxlite.NewDialerWithoutResolver(log.Log)
+		netx := &netxlite.Netx{}
+		dialer := netx.NewDialerWithoutResolver(log.Log)
 		endpoint := net.JoinHostPort(netemx.AddressWwwExampleCom, "443")
 		conn, err := dialer.DialContext(context.Background(), "tcp", endpoint)
 		if err == nil || err.Error() != netxlite.FailureGenericTimeoutError {

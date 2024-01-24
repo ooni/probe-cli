@@ -98,7 +98,8 @@ func TestTLSHandlerWithStdlib(t *testing.T) {
 			}
 
 			// create a TLS dialer
-			tcpDialer := netxlite.NewDialerWithoutResolver(log.Log)
+			netx := &netxlite.Netx{}
+			tcpDialer := netx.NewDialerWithoutResolver(log.Log)
 			tlsHandshaker := netxlite.NewTLSHandshakerStdlib(log.Log)
 			tlsDialer := netxlite.NewTLSDialerWithConfig(tcpDialer, tlsHandshaker, tlsConfig)
 
@@ -242,7 +243,8 @@ func TestTLSHandlerWithNetem(t *testing.T) {
 				}
 
 				// create a TLS dialer
-				tcpDialer := netxlite.NewDialerWithoutResolver(log.Log)
+				netx := &netxlite.Netx{}
+				tcpDialer := netx.NewDialerWithoutResolver(log.Log)
 				tlsHandshaker := netxlite.NewTLSHandshakerStdlib(log.Log)
 				tlsDialer := netxlite.NewTLSDialerWithConfig(tcpDialer, tlsHandshaker, tlsConfig)
 

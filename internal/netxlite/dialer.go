@@ -150,13 +150,6 @@ func (netx *Netx) NewDialerWithoutResolver(dl model.DebugLogger, w ...model.Dial
 	return netx.NewDialerWithResolver(dl, &NullResolver{}, w...)
 }
 
-// NewDialerWithoutResolver is equivalent to creating an empty [*Netx]
-// and calling its NewDialerWithoutResolver method.
-func NewDialerWithoutResolver(dl model.DebugLogger, w ...model.DialerWrapper) model.Dialer {
-	netx := &Netx{Underlying: nil}
-	return netx.NewDialerWithoutResolver(dl, w...)
-}
-
 // dialerSystem is a model.Dialer that uses the stdlib's net.Dialer
 // to construct the new SimpleDialer used for dialing. This dialer has
 // a fixed timeout for each connect operation equal to 15 seconds.

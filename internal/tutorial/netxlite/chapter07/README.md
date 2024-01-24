@@ -116,7 +116,8 @@ exactly like what we've seen in chapter03.
 ```Go
 
 func dialTCP(ctx context.Context, address string) (net.Conn, error) {
-	d := netxlite.NewDialerWithoutResolver(log.Log)
+	netx := &netxlite.Netx{}
+	d := netx.NewDialerWithoutResolver(log.Log)
 	return d.DialContext(ctx, "tcp", address)
 }
 

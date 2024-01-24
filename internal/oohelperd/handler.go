@@ -70,6 +70,7 @@ var _ http.Handler = &Handler{}
 
 // NewHandler constructs the [handler].
 func NewHandler() *Handler {
+	netx := &netxlite.Netx{}
 	return &Handler{
 		BaseLogger:        log.Log,
 		CountRequests:     &atomic.Int64{},
@@ -94,7 +95,7 @@ func NewHandler() *Handler {
 		},
 
 		NewDialer: func(logger model.Logger) model.Dialer {
-			return netxlite.NewDialerWithoutResolver(logger)
+			return netx.NewDialerWithoutResolver(logger)
 		},
 		NewQUICDialer: func(logger model.Logger) model.QUICDialer {
 			return netxlite.NewQUICDialerWithoutResolver(

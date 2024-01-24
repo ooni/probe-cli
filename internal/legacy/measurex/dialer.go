@@ -41,7 +41,8 @@ func (mx *Measurer) NewDialerWithSystemResolver(db WritableDB, logger model.Logg
 // a dialer that saves measurements into the DB and that is not attached
 // to any resolver (hence only works when passed IP addresses).
 func (mx *Measurer) NewDialerWithoutResolver(db WritableDB, logger model.Logger) model.Dialer {
-	return mx.WrapDialer(db, netxlite.NewDialerWithoutResolver(logger))
+	netx := &netxlite.Netx{}
+	return mx.WrapDialer(db, netx.NewDialerWithoutResolver(logger))
 }
 
 type dialerDB struct {

@@ -36,7 +36,8 @@ func TestNewResolverSystem(t *testing.T) {
 }
 
 func TestNewSerialUDPResolver(t *testing.T) {
-	d := NewDialerWithoutResolver(log.Log)
+	netx := &Netx{}
+	d := netx.NewDialerWithoutResolver(log.Log)
 	resolver := NewSerialUDPResolver(log.Log, d, "1.1.1.1:53")
 	idnaReso := resolver.(*resolverIDNA)
 	logger := idnaReso.Resolver.(*resolverLogger)
@@ -54,7 +55,8 @@ func TestNewSerialUDPResolver(t *testing.T) {
 }
 
 func TestNewParallelUDPResolver(t *testing.T) {
-	d := NewDialerWithoutResolver(log.Log)
+	netx := &Netx{}
+	d := netx.NewDialerWithoutResolver(log.Log)
 	resolver := NewParallelUDPResolver(log.Log, d, "1.1.1.1:53")
 	idnaReso := resolver.(*resolverIDNA)
 	logger := idnaReso.Resolver.(*resolverLogger)

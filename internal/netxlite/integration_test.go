@@ -108,7 +108,8 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 	//
 
 	t.Run("on success", func(t *testing.T) {
-		dlr := netxlite.NewDialerWithoutResolver(log.Log)
+		netx := &netxlite.Netx{}
+		dlr := netx.NewDialerWithoutResolver(log.Log)
 		r := netxlite.NewParallelUDPResolver(log.Log, dlr, "8.8.4.4:53")
 		defer r.CloseIdleConnections()
 		ctx := context.Background()
@@ -129,7 +130,8 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 		dnsRtx := testingx.NewDNSRoundTripperNXDOMAIN()
 		listener := testingx.MustNewDNSOverUDPListener(udpAddr, &testingx.DNSOverUDPListenerStdlib{}, dnsRtx)
 		defer listener.Close()
-		dlr := netxlite.NewDialerWithoutResolver(log.Log)
+		netx := &netxlite.Netx{}
+		dlr := netx.NewDialerWithoutResolver(log.Log)
 		r := netxlite.NewParallelUDPResolver(log.Log, dlr, listener.LocalAddr().String())
 		defer r.CloseIdleConnections()
 		ctx := context.Background()
@@ -150,7 +152,8 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 		dnsRtx := testingx.NewDNSRoundTripperRefused()
 		listener := testingx.MustNewDNSOverUDPListener(udpAddr, &testingx.DNSOverUDPListenerStdlib{}, dnsRtx)
 		defer listener.Close()
-		dlr := netxlite.NewDialerWithoutResolver(log.Log)
+		netx := &netxlite.Netx{}
+		dlr := netx.NewDialerWithoutResolver(log.Log)
 		r := netxlite.NewParallelUDPResolver(log.Log, dlr, listener.LocalAddr().String())
 		defer r.CloseIdleConnections()
 		ctx := context.Background()
@@ -171,7 +174,8 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 		dnsRtx := testingx.NewDNSRoundTripperSimulateTimeout(time.Millisecond, errors.New("mocked error"))
 		listener := testingx.MustNewDNSOverUDPListener(udpAddr, &testingx.DNSOverUDPListenerStdlib{}, dnsRtx)
 		defer listener.Close()
-		dlr := netxlite.NewDialerWithoutResolver(log.Log)
+		netx := &netxlite.Netx{}
+		dlr := netx.NewDialerWithoutResolver(log.Log)
 		r := netxlite.NewParallelUDPResolver(log.Log, dlr, listener.LocalAddr().String())
 		defer r.CloseIdleConnections()
 		ctx := context.Background()
@@ -201,7 +205,8 @@ func TestMeasureWithDialer(t *testing.T) {
 	//
 
 	t.Run("on success", func(t *testing.T) {
-		d := netxlite.NewDialerWithoutResolver(log.Log)
+		netx := &netxlite.Netx{}
+		d := netx.NewDialerWithoutResolver(log.Log)
 		defer d.CloseIdleConnections()
 		ctx := context.Background()
 		conn, err := d.DialContext(ctx, "tcp", "8.8.4.4:443")
@@ -215,7 +220,8 @@ func TestMeasureWithDialer(t *testing.T) {
 	})
 
 	t.Run("on connection refused", func(t *testing.T) {
-		d := netxlite.NewDialerWithoutResolver(log.Log)
+		netx := &netxlite.Netx{}
+		d := netx.NewDialerWithoutResolver(log.Log)
 		defer d.CloseIdleConnections()
 		ctx := context.Background()
 		// Here we assume that no-one is listening on 127.0.0.1:1
@@ -242,7 +248,8 @@ func TestMeasureWithDialer(t *testing.T) {
 		// the kernel races with the timeout we've configured. For this
 		// reason, I have set a smaller context timeout (see below).
 		//
-		d := netxlite.NewDialerWithoutResolver(log.Log)
+		netx := &netxlite.Netx{}
+		d := netx.NewDialerWithoutResolver(log.Log)
 		defer d.CloseIdleConnections()
 		const timeout = 5 * time.Second
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -276,7 +283,8 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 	//
 
 	dial := func(ctx context.Context, address string) (net.Conn, error) {
-		d := netxlite.NewDialerWithoutResolver(log.Log)
+		netx := &netxlite.Netx{}
+		d := netx.NewDialerWithoutResolver(log.Log)
 		return d.DialContext(ctx, "tcp", address)
 	}
 
