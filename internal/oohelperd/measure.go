@@ -28,8 +28,8 @@ type (
 func measure(ctx context.Context, config *Handler, creq *ctrlRequest) (*ctrlResponse, error) {
 	// create indexed logger
 	logger := &logx.PrefixLogger{
-		Prefix: fmt.Sprintf("<#%d> ", config.Indexer.Add(1)),
-		Logger: config.BaseLogger,
+		Prefix: fmt.Sprintf("<#%d> ", config.indexer.Add(1)),
+		Logger: config.baseLogger,
 	}
 
 	// parse input for correctness
@@ -47,7 +47,7 @@ func measure(ctx context.Context, config *Handler, creq *ctrlRequest) (*ctrlResp
 		go dnsDo(ctx, &dnsConfig{
 			Domain:      URL.Hostname(),
 			Logger:      logger,
-			NewResolver: config.NewResolver,
+			NewResolver: config.newResolver,
 			Out:         dnsch,
 			Wg:          wg,
 		})
@@ -91,8 +91,8 @@ func measure(ctx context.Context, config *Handler, creq *ctrlRequest) (*ctrlResp
 			EnableTLS:        endpoint.TLS,
 			Endpoint:         endpoint.Epnt,
 			Logger:           logger,
-			NewDialer:        config.NewDialer,
-			NewTSLHandshaker: config.NewTLSHandshaker,
+			NewDialer:        config.newDialer,
+			NewTSLHandshaker: config.newTLSHandshaker,
 			URLHostname:      URL.Hostname(),
 			Out:              tcpconnch,
 			Wg:               wg,
@@ -105,8 +105,8 @@ func measure(ctx context.Context, config *Handler, creq *ctrlRequest) (*ctrlResp
 	go httpDo(ctx, &httpConfig{
 		Headers:           creq.HTTPRequestHeaders,
 		Logger:            logger,
-		MaxAcceptableBody: config.MaxAcceptableBody,
-		NewClient:         config.NewHTTPClient,
+		MaxAcceptableBody: config.maxAcceptableBody,
+		NewClient:         config.newHTTPClient,
 		Out:               httpch,
 		URL:               creq.HTTPRequest,
 		Wg:                wg,
@@ -133,7 +133,7 @@ func measure(ctx context.Context, config *Handler, creq *ctrlRequest) (*ctrlResp
 				Address:       endpoint.Addr,
 				Endpoint:      endpoint.Epnt,
 				Logger:        logger,
-				NewQUICDialer: config.NewQUICDialer,
+				NewQUICDialer: config.newQUICDialer,
 				URLHostname:   URL.Hostname(),
 				Out:           quicconnch,
 				Wg:            wg,
@@ -147,8 +147,8 @@ func measure(ctx context.Context, config *Handler, creq *ctrlRequest) (*ctrlResp
 		go httpDo(ctx, &httpConfig{
 			Headers:           creq.HTTPRequestHeaders,
 			Logger:            logger,
-			MaxAcceptableBody: config.MaxAcceptableBody,
-			NewClient:         config.NewHTTP3Client,
+			MaxAcceptableBody: config.maxAcceptableBody,
+			NewClient:         config.newHTTP3Client,
 			Out:               http3ch,
 			URL:               "https://" + cresp.HTTPRequest.DiscoveredH3Endpoint,
 			Wg:                wg,
