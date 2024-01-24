@@ -69,7 +69,7 @@ func websiteDownNoAddrs() *TestCase {
 	return &TestCase{
 		Name:  "websiteDownNoAddrs",
 		Flags: TestCaseFlagNoV04,
-		Input: "http://www.example.com/", // domain not defined in the simulation
+		Input: "http://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 
 			// reconfigure with only CNAME but no addresses and do this
