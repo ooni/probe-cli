@@ -206,7 +206,8 @@ func newResolver(logger model.Logger) model.Resolver {
 	// Implementation note: pin to a specific resolver so we don't depend upon the
 	// default resolver configured by the box. Also, use an encrypted transport thus
 	// we're less vulnerable to any policy implemented by the box's provider.
-	resolver := netxlite.NewParallelDNSOverHTTPSResolver(logger, "https://dns.google/dns-query")
+	netx := &netxlite.Netx{}
+	resolver := netx.NewParallelDNSOverHTTPSResolver(logger, "https://dns.google/dns-query")
 	return resolver
 }
 

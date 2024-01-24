@@ -75,7 +75,8 @@ func TestNewParallelUDPResolver(t *testing.T) {
 }
 
 func TestNewParallelDNSOverHTTPSResolver(t *testing.T) {
-	resolver := NewParallelDNSOverHTTPSResolver(log.Log, "https://1.1.1.1/dns-query")
+	netx := &Netx{}
+	resolver := netx.NewParallelDNSOverHTTPSResolver(log.Log, "https://1.1.1.1/dns-query")
 	idnaReso := resolver.(*resolverIDNA)
 	logger := idnaReso.Resolver.(*resolverLogger)
 	if logger.Logger != log.Log {

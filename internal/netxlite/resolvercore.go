@@ -35,13 +35,6 @@ func (netx *Netx) NewParallelDNSOverHTTPSResolver(logger model.DebugLogger, URL 
 	return WrapResolver(logger, NewUnwrappedParallelResolver(txp))
 }
 
-// NewParallelDNSOverHTTPSResolver is equivalent to creating an empty [*Netx]
-// and calling its NewParallelDNSOverHTTPSResolver method.
-func NewParallelDNSOverHTTPSResolver(logger model.DebugLogger, URL string) model.Resolver {
-	netx := &Netx{Underlying: nil}
-	return netx.NewParallelDNSOverHTTPSResolver(logger, URL)
-}
-
 func (netx *Netx) newUnwrappedStdlibResolver() model.Resolver {
 	return &resolverSystem{
 		t: wrapDNSTransport(netx.newDNSOverGetaddrinfoTransport()),

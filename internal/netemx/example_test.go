@@ -248,8 +248,9 @@ func Example_dohWithInternetScenario() {
 
 			// DNS-over-HTTPS
 			{
+				netx := &netxlite.Netx{}
 				URL := &url.URL{Scheme: "https", Host: domain, Path: "/dns-query"}
-				reso := netxlite.NewParallelDNSOverHTTPSResolver(log.Log, URL.String())
+				reso := netx.NewParallelDNSOverHTTPSResolver(log.Log, URL.String())
 				defer reso.CloseIdleConnections()
 
 				addrs, err := reso.LookupHost(context.Background(), "www.example.com")
