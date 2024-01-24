@@ -78,6 +78,7 @@ func newChildResolverHTTPS(
 	proxyURL *url.URL,
 ) model.Resolver {
 	var txp model.HTTPTransport
+	netx := &netxlite.Netx{}
 	switch http3Enabled {
 	case false:
 		dialer := netxlite.NewDialerWithStdlibResolver(logger)
@@ -89,7 +90,7 @@ func newChildResolverHTTPS(
 			netxlite.HTTPTransportOptionProxyURL(proxyURL),        // nil here disables using the proxy
 		)
 	case true:
-		txp = netxlite.NewHTTP3TransportStdlib(logger)
+		txp = netx.NewHTTP3TransportStdlib(logger)
 	}
 	txp = bytecounter.MaybeWrapHTTPTransport(txp, counter)
 	dnstxp := netxlite.NewDNSOverHTTPSTransportWithHTTPTransport(txp, URL)

@@ -165,7 +165,8 @@ func TestQAEnv(t *testing.T) {
 
 		env.Do(func() {
 			// create an HTTP3 client
-			txp := netxlite.NewHTTP3TransportStdlib(model.DiscardLogger)
+			netx := &netxlite.Netx{}
+			txp := netx.NewHTTP3TransportStdlib(model.DiscardLogger)
 			client := &http.Client{Transport: txp}
 
 			// create the request; see above remarks for the HTTPS case

@@ -125,7 +125,8 @@ func TestNewHTTP3Transport(t *testing.T) {
 
 func TestNewHTTP3TransportStdlib(t *testing.T) {
 	t.Run("creates the correct type chain", func(t *testing.T) {
-		txp := NewHTTP3TransportStdlib(model.DiscardLogger)
+		netx := &Netx{}
+		txp := netx.NewHTTP3TransportStdlib(model.DiscardLogger)
 		verifyTypeChainForHTTP3(t, txp, model.DiscardLogger, nil, nil, nil)
 	})
 }
