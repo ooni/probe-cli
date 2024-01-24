@@ -6,6 +6,10 @@ go run ./internal/cmd/qatool \
 	-disable-measure
 
 go run ./internal/cmd/minipipeline \
+	-destdir ./internal/minipipeline/testdata/webconnectivity/manual/8844 \
+	-measurement ./internal/minipipeline/testdata/webconnectivity/manual/8844/measurement.json
+
+go run ./internal/cmd/minipipeline \
 	-destdir ./internal/minipipeline/testdata/webconnectivity/manual/dnsgoogle80 \
 	-measurement ./internal/minipipeline/testdata/webconnectivity/manual/dnsgoogle80/measurement.json
 

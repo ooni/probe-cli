@@ -1,0 +1,433 @@
+{
+	"annotations": {
+		"architecture": "arm64",
+		"engine_name": "ooniprobe-engine",
+		"engine_version": "3.21.0-alpha",
+		"go_version": "go1.20.12",
+		"platform": "macos",
+		"vcs_modified": "false",
+		"vcs_revision": "9a75677537ec56e67377ab6f4138e9fd5c789353",
+		"vcs_time": "2024-01-24T13:17:48Z",
+		"vcs_tool": "git"
+	},
+	"data_format_version": "0.2.0",
+	"extensions": {
+		"dnst": 0,
+		"httpt": 0,
+		"netevents": 0,
+		"tcpconnect": 0,
+		"tlshandshake": 0,
+		"tunnel": 0
+	},
+	"input": "https://8.8.4.4/dns-query?dns=q80BAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQAB",
+	"measurement_start_time": "2024-01-24 14:12:13",
+	"probe_asn": "AS30722",
+	"probe_cc": "IT",
+	"probe_ip": "127.0.0.1",
+	"probe_network_name": "Vodafone Italia S.p.A.",
+	"report_id": "20240124T141213Z_webconnectivity_IT_30722_n1_hgaz7lvokwXybYSG",
+	"resolver_asn": "AS30722",
+	"resolver_ip": "91.80.36.88",
+	"resolver_network_name": "Vodafone Italia S.p.A.",
+	"software_name": "miniooni",
+	"software_version": "3.21.0-alpha",
+	"test_helpers": {
+		"backend": {
+			"address": "https://1.th.ooni.org",
+			"type": "https"
+		}
+	},
+	"test_keys": {
+		"agent": "redirect",
+		"client_resolver": "",
+		"retries": null,
+		"socksproxy": null,
+		"network_events": [
+			{
+				"address": "8.8.4.4:443",
+				"failure": null,
+				"operation": "connect",
+				"proto": "tcp",
+				"t0": 0.041455,
+				"t": 0.05689,
+				"transaction_id": 4,
+				"tags": [
+					"depth=0",
+					"fetch_body=true"
+				]
+			},
+			{
+				"failure": null,
+				"operation": "http_transaction_start",
+				"t0": 0.097375,
+				"t": 0.097375,
+				"transaction_id": 4,
+				"tags": [
+					"depth=0",
+					"fetch_body=true"
+				]
+			},
+			{
+				"failure": null,
+				"operation": "http_transaction_done",
+				"t0": 0.112579,
+				"t": 0.112579,
+				"transaction_id": 4,
+				"tags": [
+					"depth=0",
+					"fetch_body=true"
+				]
+			},
+			{
+				"address": "8.8.4.4:443",
+				"failure": null,
+				"num_bytes": 5312,
+				"operation": "bytes_received_cumulative",
+				"proto": "tcp",
+				"t0": 0.112817,
+				"t": 0.112817,
+				"transaction_id": 4,
+				"tags": [
+					"depth=0",
+					"fetch_body=true"
+				]
+			}
+		],
+		"x_dns_whoami": {
+			"system_v4": [
+				{
+					"address": "91.80.36.88"
+				}
+			],
+			"udp_v4": {
+				"8.8.4.4:53": [
+					{
+						"address": "91.80.36.88"
+					}
+				]
+			}
+		},
+		"x_doh": {
+			"network_events": [
+				{
+					"failure": null,
+					"operation": "resolve_start",
+					"t0": 0.000154,
+					"t": 0.000154,
+					"transaction_id": 2,
+					"tags": [
+						"depth=0"
+					]
+				},
+				{
+					"failure": null,
+					"operation": "resolve_done",
+					"t0": 0.000165,
+					"t": 0.000165,
+					"transaction_id": 2,
+					"tags": [
+						"depth=0"
+					]
+				}
+			],
+			"queries": [],
+			"requests": [],
+			"tcp_connect": [],
+			"tls_handshakes": []
+		},
+		"x_do53": {
+			"network_events": [
+				{
+					"failure": null,
+					"operation": "resolve_start",
+					"t0": 0.000136,
+					"t": 0.000136,
+					"transaction_id": 1,
+					"tags": [
+						"depth=0"
+					]
+				},
+				{
+					"failure": null,
+					"operation": "resolve_done",
+					"t0": 0.000148,
+					"t": 0.000148,
+					"transaction_id": 1,
+					"tags": [
+						"depth=0"
+					]
+				}
+			],
+			"queries": []
+		},
+		"x_dns_duplicate_responses": [],
+		"queries": [],
+		"requests": [
+			{
+				"network": "tcp",
+				"address": "8.8.4.4:443",
+				"alpn": "h2",
+				"failure": null,
+				"request": {
+					"body": "",
+					"body_is_truncated": false,
+					"headers_list": [
+						[
+							"Accept",
+							"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+						],
+						[
+							"Accept-Language",
+							"en-US,en;q=0.9"
+						],
+						[
+							"Host",
+							"[scrubbed]"
+						],
+						[
+							"Referer",
+							""
+						],
+						[
+							"User-Agent",
+							"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+						]
+					],
+					"headers": {
+						"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+						"Accept-Language": "en-US,en;q=0.9",
+						"Host": "[scrubbed]",
+						"Referer": "",
+						"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+					},
+					"method": "GET",
+					"tor": {
+						"exit_ip": null,
+						"exit_name": null,
+						"is_tor": false
+					},
+					"x_transport": "tcp",
+					"url": "https://8.8.4.4/dns-query?dns=q80BAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQAB"
+				},
+				"response": {
+					"body": {
+						"data": "q82BgAABAAEAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQABwAwAAQABAAAgbAAEXbjYIg==",
+						"format": "base64"
+					},
+					"body_is_truncated": false,
+					"code": 200,
+					"headers_list": [
+						[
+							"Access-Control-Allow-Origin",
+							"*"
+						],
+						[
+							"Alt-Svc",
+							"h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+						],
+						[
+							"Cache-Control",
+							"private, max-age=8300"
+						],
+						[
+							"Content-Length",
+							"49"
+						],
+						[
+							"Content-Type",
+							"application/dns-message"
+						],
+						[
+							"Date",
+							"Wed, 24 Jan 2024 14:12:13 GMT"
+						],
+						[
+							"Expires",
+							"Wed, 24 Jan 2024 14:12:13 GMT"
+						],
+						[
+							"Server",
+							"HTTP server (unknown)"
+						],
+						[
+							"X-Content-Type-Options",
+							"nosniff"
+						],
+						[
+							"X-Frame-Options",
+							"SAMEORIGIN"
+						],
+						[
+							"X-Xss-Protection",
+							"0"
+						]
+					],
+					"headers": {
+						"Access-Control-Allow-Origin": "*",
+						"Alt-Svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+						"Cache-Control": "private, max-age=8300",
+						"Content-Length": "49",
+						"Content-Type": "application/dns-message",
+						"Date": "Wed, 24 Jan 2024 14:12:13 GMT",
+						"Expires": "Wed, 24 Jan 2024 14:12:13 GMT",
+						"Server": "HTTP server (unknown)",
+						"X-Content-Type-Options": "nosniff",
+						"X-Frame-Options": "SAMEORIGIN",
+						"X-Xss-Protection": "0"
+					}
+				},
+				"t0": 0.097375,
+				"t": 0.112579,
+				"tags": [
+					"depth=0",
+					"fetch_body=true"
+				],
+				"transaction_id": 4
+			}
+		],
+		"tcp_connect": [
+			{
+				"ip": "8.8.4.4",
+				"port": 443,
+				"status": {
+					"failure": null,
+					"success": true
+				},
+				"t0": 0.041455,
+				"t": 0.05689,
+				"tags": [
+					"depth=0",
+					"fetch_body=true"
+				],
+				"transaction_id": 4
+			}
+		],
+		"tls_handshakes": [
+			{
+				"network": "tcp",
+				"address": "8.8.4.4:443",
+				"cipher_suite": "TLS_AES_128_GCM_SHA256",
+				"failure": null,
+				"negotiated_protocol": "h2",
+				"no_tls_verify": false,
+				"peer_certificates": [
+					{
+						"data": "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",
+						"format": "base64"
+					},
+					{
+						"data": "MIIFljCCA36gAwIBAgINAgO8U1lrNMcY9QFQZjANBgkqhkiG9w0BAQsFADBHMQswCQYDVQQGEwJVUzEiMCAGA1UEChMZR29vZ2xlIFRydXN0IFNlcnZpY2VzIExMQzEUMBIGA1UEAxMLR1RTIFJvb3QgUjEwHhcNMjAwODEzMDAwMDQyWhcNMjcwOTMwMDAwMDQyWjBGMQswCQYDVQQGEwJVUzEiMCAGA1UEChMZR29vZ2xlIFRydXN0IFNlcnZpY2VzIExMQzETMBEGA1UEAxMKR1RTIENBIDFDMzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAPWI3+dijB43+DdCkH9sh9D7ZYIl/ejLa6T/belaI+KZ9hzpkgOZE3wJCor6QtZeViSqejOEH9Hpabu5dOxXTGZok3c3VVP+ORBNtzS7XyV3NzsXlOo85Z3VvMO0Q+sup0fvsEQRY9i0QYXdQTBIkxu/t/bgRQIh4JZCF8/ZK2VWNAcmBA2o/X3KLu/qSHw3TT8An4Pf73WELnlXXPxXbhqW//yMmqaZviXZf5YsBvcRKgKAgOtjGDxQSYflispfGStZloEAoPtR28p3CwvJlk/vcEnHXG0g/Zm0tOLKLnf9LdwLtmsTDIwZKxeWmLnwi/agJ7u2441Rj72ux5uxiZ0CAwEAAaOCAYAwggF8MA4GA1UdDwEB/wQEAwIBhjAdBgNVHSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwEgYDVR0TAQH/BAgwBgEB/wIBADAdBgNVHQ4EFgQUinR/r4XN7pXNPZzQ4kYU83E1HScwHwYDVR0jBBgwFoAU5K8rJnEaK0gnhS9SZizv8IkTcT4waAYIKwYBBQUHAQEEXDBaMCYGCCsGAQUFBzABhhpodHRwOi8vb2NzcC5wa2kuZ29vZy9ndHNyMTAwBggrBgEFBQcwAoYkaHR0cDovL3BraS5nb29nL3JlcG8vY2VydHMvZ3RzcjEuZGVyMDQGA1UdHwQtMCswKaAnoCWGI2h0dHA6Ly9jcmwucGtpLmdvb2cvZ3RzcjEvZ3RzcjEuY3JsMFcGA1UdIARQME4wOAYKKwYBBAHWeQIFAzAqMCgGCCsGAQUFBwIBFhxodHRwczovL3BraS5nb29nL3JlcG9zaXRvcnkvMAgGBmeBDAECATAIBgZngQwBAgIwDQYJKoZIhvcNAQELBQADggIBAIl9rCBcDDy+mqhXlRu0rvqrpXJxtDaV/d9AEQNMwkYUuxQkq/BQcSLbrcRuf8/xam/IgxvYzolfh2yHuKkMo5uhYpSTld9brmYZCwKWnvy15xBpPnrLRklfRuFBsdeYTWU0AIAaP0+fbH9JAIFTQaSSIYKCGvGjRFsqUBITTcFTNvNCCK9U+o53UxtkOCcXCb1YyRt8OS1b887U7ZfbFAO/CVMkH8IMBHmYJvJh8VNS/UKMG2YrPxWhu//2m+OBmgEGcYk1KCTd4b3rGS3hSMs9WYNRtHTGnXzGsYZbr8w0xNPM1IERlQCh9BIiAfq0g3GvjLeMcySsN1PCAJA/Ef5c7TaUEDu9Ka7ixzpiO2xj2YC/WXGsYye5TBeg2vZzFb8q3o/zpWwygTMD0IZRcZk0upONXbVRWPeyk+gB9lm+cZv9TSjOz23HFtz30dZGm6fKa+l3D/2gthsjgx0QGtkJAITgRNOidSOzNIb2ILCkXhAd4FJGAJ2xDx8hcFH1mt0G/FX0Kw4zd8NLQsLxdxP8c4CU6x+7Nz/OAipmsHMdMqUybDKwjuDEI/9bfU1lcKwrmz3O2+BtjjKAvpafkmO8l7tdufThcV4q5O8DIrGKZTqPwJNl1IXNDw9bg1kWRxYtnCQ6yICmJhSFm/Y3m6xv+cXDBlHz4n/FsRC6UfTd",
+						"format": "base64"
+					},
+					{
+						"data": "MIIFYjCCBEqgAwIBAgIQd70NbNs2+RrqIQ/E8FjTDTANBgkqhkiG9w0BAQsFADBXMQswCQYDVQQGEwJCRTEZMBcGA1UEChMQR2xvYmFsU2lnbiBudi1zYTEQMA4GA1UECxMHUm9vdCBDQTEbMBkGA1UEAxMSR2xvYmFsU2lnbiBSb290IENBMB4XDTIwMDYxOTAwMDA0MloXDTI4MDEyODAwMDA0MlowRzELMAkGA1UEBhMCVVMxIjAgBgNVBAoTGUdvb2dsZSBUcnVzdCBTZXJ2aWNlcyBMTEMxFDASBgNVBAMTC0dUUyBSb290IFIxMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAthECix7joXebO9y/lD63ladAPKH9gvl9MgaCcfb2jH/76Nu8ai6Xl6OMS/kr9rH5zoQdsfnFl97vufKj6bwSiV6nqlKr+CMny6SxnGPb15l+8Ape62im9MZaRw1NEDPjTrETo8gYbEvs/AmQ351kKSUjB6G00j0uYODP0gmHu81I8E3CwnqIiru6z1kZ1q+PsAewnjHxgsHA3y6mbWwZDrXYfiYaRQM9sHmklCitD38m5agI/pboPGiUU+6DOogrFZYJsuB6jC511pzrp1Zkj5ZPaK49l8KEj8C8QMALXL32h7M1bKwYUH+E4EzNktMg6TO8UpmvMrUpsyUqtEj5cuHKZPfmghCN6J3Cioj6OGaK/GP5Afl4/Xtcd/p2h/rs37EOeZVXtL0m79YB0esWCruOC7XFxYpVq9Os6pFLKcwZpDIlTirxZUTQAs6qzkm06p98g7BAe+dDq6dso499iYH6TKX/1Y7DzkvgtdizjkXPdsDtQCv9Uw+wp9U7DbGKogPeMa3Md+pvez7W35EiEua++tgy/BBjFFFy3l3WFpO9KWgz7zpm7AeKJt8T11dleCfeXkkUAKIAf5qoIbapsZWwpbkNFhHax2xIPEDgfg1azVY80ZcFuctL7TlLnMQ/0lUTbiSw1nH69MG6zO0b9f6BQdgAmD06yK56mDcYBZUCAwEAAaOCATgwggE0MA4GA1UdDwEB/wQEAwIBhjAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBTkrysmcRorSCeFL1JmLO/wiRNxPjAfBgNVHSMEGDAWgBRge2YaRQ2XyolQL30EzTSo//z9SzBgBggrBgEFBQcBAQRUMFIwJQYIKwYBBQUHMAGGGWh0dHA6Ly9vY3NwLnBraS5nb29nL2dzcjEwKQYIKwYBBQUHMAKGHWh0dHA6Ly9wa2kuZ29vZy9nc3IxL2dzcjEuY3J0MDIGA1UdHwQrMCkwJ6AloCOGIWh0dHA6Ly9jcmwucGtpLmdvb2cvZ3NyMS9nc3IxLmNybDA7BgNVHSAENDAyMAgGBmeBDAECATAIBgZngQwBAgIwDQYLKwYBBAHWeQIFAwIwDQYLKwYBBAHWeQIFAwMwDQYJKoZIhvcNAQELBQADggEBADSkHrEoo9C0dhemMXoh6dFSPsjbdBZBiLg9NR3t5P+T4Vxfq7vqfM/b5A3Ri1fyJm9bvhdGaJQ3b2t6yMAYN/olUazsaL+yyEn9WprKASOshIArAoyZl+tJaox118fessmXn1hIVw41oeQa1v1vg4Fv74zPl6/AhSrw9U5pCZEt4Wi4wStz6dTZ/CLANx8LZh1J7QJVj2fhMtfTJr9w4z30Z209fOU0iOMy+qduBmpvvYuR7hZL6Dupszfnw0Skfths18dG9ZKb59UhvmaSGZRVbNQpsg3BZlvid0lIKO2d1xozclOzgjXPYovJJIultzkMu34qQb9Sz/yilrbCgj8=",
+						"format": "base64"
+					}
+				],
+				"server_name": "8.8.4.4",
+				"t0": 0.056949,
+				"t": 0.097331,
+				"tags": [
+					"depth=0",
+					"fetch_body=true"
+				],
+				"tls_version": "TLSv1.3",
+				"transaction_id": 4
+			}
+		],
+		"x_control_request": {
+			"http_request": "https://8.8.4.4/dns-query?dns=q80BAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQAB",
+			"http_request_headers": {
+				"Accept": [
+					"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+				],
+				"Accept-Language": [
+					"en-US,en;q=0.9"
+				],
+				"User-Agent": [
+					"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.3"
+				]
+			},
+			"tcp_connect": [
+				"8.8.4.4:443",
+				"8.8.4.4:80"
+			],
+			"x_quic_enabled": false
+		},
+		"control": {
+			"tcp_connect": {
+				"8.8.4.4:443": {
+					"status": true,
+					"failure": null
+				}
+			},
+			"tls_handshake": {
+				"8.8.4.4:443": {
+					"server_name": "8.8.4.4",
+					"status": true,
+					"failure": null
+				}
+			},
+			"quic_handshake": {},
+			"http_request": {
+				"body_length": 49,
+				"discovered_h3_endpoint": "8.8.4.4:443",
+				"failure": null,
+				"title": "",
+				"headers": {
+					"Access-Control-Allow-Origin": "*",
+					"Alt-Svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+					"Cache-Control": "private, max-age=15037",
+					"Content-Length": "49",
+					"Content-Type": "application/dns-message",
+					"Date": "Wed, 24 Jan 2024 14:12:13 GMT",
+					"Expires": "Wed, 24 Jan 2024 14:12:13 GMT",
+					"Server": "HTTP server (unknown)",
+					"X-Content-Type-Options": "nosniff",
+					"X-Frame-Options": "SAMEORIGIN",
+					"X-Xss-Protection": "0"
+				},
+				"status_code": 200
+			},
+			"http3_request": null,
+			"dns": {
+				"failure": null,
+				"addrs": []
+			},
+			"ip_info": {
+				"8.8.4.4": {
+					"asn": 15169,
+					"flags": 9
+				}
+			}
+		},
+		"x_conn_priority_log": [
+			{
+				"msg": "create with [{Addr:8.8.4.4 Flags:7}]",
+				"t": 0.039308
+			},
+			{
+				"msg": "conn 8.8.4.4:443: granted permission: true",
+				"t": 0.097349
+			}
+		],
+		"control_failure": null,
+		"x_dns_flags": 0,
+		"dns_experiment_failure": null,
+		"dns_consistency": null,
+		"http_experiment_failure": null,
+		"x_blocking_flags": 32,
+		"x_null_null_flags": 0,
+		"body_proportion": 0,
+		"body_length_match": null,
+		"headers_match": null,
+		"status_code_match": null,
+		"title_match": null,
+		"blocking": null,
+		"accessible": null
+	},
+	"test_name": "web_connectivity",
+	"test_runtime": 0.708668166,
+	"test_start_time": "2024-01-24 14:12:13",
+	"test_version": "0.5.28"
+}
