@@ -14,7 +14,6 @@
       "DNSQueryType": null,
       "DNSEngine": null,
       "DNSResolvedAddrs": null,
-      "IPAddressOrigin": null,
       "IPAddress": "8.8.4.4",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
