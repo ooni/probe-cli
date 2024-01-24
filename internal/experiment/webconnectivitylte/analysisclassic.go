@@ -382,7 +382,7 @@ func analysisClassicComputeBlockingAccessible(woa *minipipeline.WebAnalysis, tk 
 				return
 			}
 
-			// 5.3. Handle the case where just the probe failed.
+			// 5.4. Handle the case where just the probe failed.
 			tk.setBlockingString("dns")
 			tk.setHTTPExperimentFailure(entry.Failure)
 			return
