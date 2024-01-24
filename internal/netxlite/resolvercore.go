@@ -44,6 +44,8 @@ func (netx *Netx) newUnwrappedStdlibResolver() model.Resolver {
 // NewUnwrappedStdlibResolver returns a new, unwrapped resolver using the standard
 // library (i.e., getaddrinfo if possible and &net.Resolver{} otherwise). As the name
 // implies, this function returns an unwrapped resolver.
+//
+// Deprecated: do not use this function inside new networking code.
 func NewUnwrappedStdlibResolver() model.Resolver {
 	netx := &Netx{Underlying: nil}
 	return netx.newUnwrappedStdlibResolver()
