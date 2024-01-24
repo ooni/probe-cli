@@ -373,7 +373,17 @@ func analysisClassicComputeBlockingAccessible(woa *minipipeline.WebAnalysis, tk 
 				return
 			}
 
-			// 5.3. Handle the case where just the probe failed.
+			// 5.3. When the probe says dns_no_answer the control would otherwise say that
+			// we have resolved zero IP addresses for historical reasons. In such a case,
+			// let's pretend that also the control returned dns_no_answer.
+			if entry.Failure.Unwrap() == netxlite.FailureDNSNoAnswer &&
+				!entry.ControlDNSResolvedAddrs.IsNone() &&
+				entry.ControlDNSResolvedAddrs.Unwrap().Len() <= 0 {
+				tk.setWebsiteDown()
+				return
+			}
+
+			// 5.4. Handle the case where just the probe failed.
 			tk.setBlockingString("dns")
 			tk.setHTTPExperimentFailure(entry.Failure)
 			return
@@ -406,9 +416,6 @@ func analysisClassicComputeBlockingAccessible(woa *minipipeline.WebAnalysis, tk 
 			tk.setWebsiteDown()
 			return
 		}
-
-		// TODO(bassosimone): we should handle the case where a domain
-		// exists but there aren't IP addresses for it.
 	}
 }
 
