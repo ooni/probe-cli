@@ -288,7 +288,8 @@ func (wa *WebAnalysis) dnsComputeSuccessMetrics(
 		// if there's a bogon, register it and continue processing.
 		if !obs.IPAddressBogon.IsNone() && obs.IPAddressBogon.Unwrap() {
 			wa.DNSLookupSuccessWithBogonAddresses.Add(obs.DNSTransactionID.Unwrap())
-			// fallthrough
+			// fallthrough: bogons are legitimate if the website DNS is actually misconfigured
+			// so we determine bogons status and invalid addresses separately
 		}
 
 		// when there is no control info, we cannot say much

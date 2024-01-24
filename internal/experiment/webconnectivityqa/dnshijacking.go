@@ -88,7 +88,7 @@ func dnsHijackingToLocalhostWithHTTP() *TestCase {
 		Configure: func(env *netemx.QAEnv) {
 
 			// add DPI rule to force all the cleartext DNS queries to
-			// point the client to use the ISPProxyAddress
+			// point the client to use the loopback address.
 			env.DPIEngine().AddRule(&netem.DPISpoofDNSResponse{
 				Addresses: []string{"127.0.0.1"},
 				Logger:    env.Logger(),
@@ -116,7 +116,7 @@ func dnsHijackingToLocalhostWithHTTPS() *TestCase {
 		Configure: func(env *netemx.QAEnv) {
 
 			// add DPI rule to force all the cleartext DNS queries to
-			// point the client to use the ISPProxyAddress
+			// point the client to use the loopback address.
 			env.DPIEngine().AddRule(&netem.DPISpoofDNSResponse{
 				Addresses: []string{"127.0.0.1"},
 				Logger:    env.Logger(),

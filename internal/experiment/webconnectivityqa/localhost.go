@@ -1,10 +1,8 @@
 package webconnectivityqa
 
-import (
-	"github.com/ooni/probe-cli/v3/internal/netemx"
-)
+import "github.com/ooni/probe-cli/v3/internal/netemx"
 
-// localhostWithHTTP is the case where an ISP rule redirects us to localhost.
+// localhostWithHTTP is the case where the website DNS is misconfigured and returns a loopback address.
 func localhostWithHTTP() *TestCase {
 	return &TestCase{
 		Name:  "localhostWithHTTP",
@@ -27,7 +25,7 @@ func localhostWithHTTP() *TestCase {
 	}
 }
 
-// localhostWithHTTPS is the case where an ISP rule redirects us to localhost.
+// localhostWithHTTPS is the case where the website DNS is misconfigured and returns a loopback address.
 func localhostWithHTTPS() *TestCase {
 	return &TestCase{
 		Name:  "localhostWithHTTPS",
