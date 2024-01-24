@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/oohelperd"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
@@ -92,7 +93,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	// add the main oohelperd handler to the mux
-	mux.Handle("/", oohelperd.NewHandler())
+	mux.Handle("/", oohelperd.NewHandler(log.Log, &netxlite.Netx{}))
 
 	// create a listening server for serving ooniprobe requests
 	srv := &http.Server{Addr: *apiEndpoint, Handler: mux}
