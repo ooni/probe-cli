@@ -373,7 +373,7 @@ func analysisClassicComputeBlockingAccessible(woa *minipipeline.WebAnalysis, tk 
 				return
 			}
 
-			// 5.3. special case for when the probe failed with dns_no_data and the
+			// 5.3. Special case for when the probe failed with dns_no_data and the
 			// test helper returned no addresses, which is its way to tell us the same
 			// error occurred but we need to interpret it as dns_no_data.
 			if !entry.ControlDNSResolvedAddrs.IsNone() &&
