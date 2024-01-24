@@ -249,7 +249,8 @@ func (t *DNSResolvers) lookupHostUDP(parentCtx context.Context, udpAddress strin
 	)
 
 	// runs the lookup
-	dialer := netxlite.NewDialerWithoutResolver(t.Logger)
+	netx := &netxlite.Netx{}
+	dialer := netx.NewDialerWithoutResolver(t.Logger)
 	reso := trace.NewParallelUDPResolver(t.Logger, dialer, udpAddress)
 	addrs, err := reso.LookupHost(lookupCtx, t.Domain)
 

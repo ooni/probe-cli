@@ -18,7 +18,8 @@ func TestEmulateAndroidGetaddrinfo(t *testing.T) {
 	defer env.EmulateAndroidGetaddrinfo(false)
 
 	env.Do(func() {
-		reso := netxlite.NewStdlibResolver(log.Log)
+		netx := &netxlite.Netx{}
+		reso := netx.NewStdlibResolver(log.Log)
 		addrs, err := reso.LookupHost(context.Background(), "www.nonexistent.xyz")
 		if !errors.Is(err, netxlite.ErrAndroidDNSCacheNoData) {
 			t.Fatal("unexpected error")

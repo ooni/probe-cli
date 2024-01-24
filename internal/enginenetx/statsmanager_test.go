@@ -228,7 +228,7 @@ func TestNetworkCollectsStats(t *testing.T) {
 
 			qa.Do(func() {
 				byteCounter := bytecounter.New()
-				resolver := netxlite.NewStdlibResolver(log.Log)
+				resolver := (&netxlite.Netx{}).NewStdlibResolver(log.Log)
 
 				netx := NewNetwork(byteCounter, kvStore, log.Log, nil, resolver)
 				defer netx.Close()

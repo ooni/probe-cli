@@ -187,7 +187,7 @@ func TestNetworkUnit(t *testing.T) {
 						tc.kvStore(),
 						log.Log,
 						nil, // proxy URL
-						netxlite.NewStdlibResolver(log.Log),
+						(&netxlite.Netx{}).NewStdlibResolver(log.Log),
 					)
 					defer netx.Close()
 

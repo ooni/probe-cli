@@ -27,7 +27,8 @@ func TestDNSHijackingTestCases(t *testing.T) {
 				expect := []string{netemx.ISPProxyAddress}
 
 				t.Run("with stdlib resolver", func(t *testing.T) {
-					reso := netxlite.NewStdlibResolver(log.Log)
+					netx := &netxlite.Netx{}
+					reso := netx.NewStdlibResolver(log.Log)
 					addrs, err := reso.LookupHost(context.Background(), "www.example.com")
 					if err != nil {
 						t.Fatal(err)
@@ -38,8 +39,9 @@ func TestDNSHijackingTestCases(t *testing.T) {
 				})
 
 				t.Run("with UDP resolver", func(t *testing.T) {
-					d := netxlite.NewDialerWithoutResolver(log.Log)
-					reso := netxlite.NewParallelUDPResolver(log.Log, d, "8.8.8.8:53")
+					netx := &netxlite.Netx{}
+					d := netx.NewDialerWithoutResolver(log.Log)
+					reso := netx.NewParallelUDPResolver(log.Log, d, "8.8.8.8:53")
 					addrs, err := reso.LookupHost(context.Background(), "www.example.com")
 					if err != nil {
 						t.Fatal(err)

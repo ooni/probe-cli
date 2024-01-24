@@ -18,8 +18,9 @@ func TestHTTPBlockingConnectionReset(t *testing.T) {
 	tc.Configure(env)
 
 	env.Do(func() {
+		netx := &netxlite.Netx{}
 		dialer := netxlite.NewDialerWithStdlibResolver(log.Log)
-		tlsDialer := netxlite.NewTLSDialer(dialer, netxlite.NewTLSHandshakerStdlib(log.Log))
+		tlsDialer := netxlite.NewTLSDialer(dialer, netx.NewTLSHandshakerStdlib(log.Log))
 		txp := netxlite.NewHTTPTransportWithOptions(log.Log, dialer, tlsDialer)
 		client := &http.Client{Transport: txp}
 		resp, err := client.Get("http://www.example.com/")

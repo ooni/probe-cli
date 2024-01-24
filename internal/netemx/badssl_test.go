@@ -43,9 +43,10 @@ func TestBadSSL(t *testing.T) {
 			t.Run(fmt.Sprintf("for %s expect %s", tc.serverName, tc.expectErr), func(t *testing.T) {
 				tlsConfig := &tls.Config{ServerName: tc.serverName}
 
+				netx := &netxlite.Netx{}
 				tlsDialer := netxlite.NewTLSDialerWithConfig(
-					netxlite.NewDialerWithoutResolver(log.Log),
-					netxlite.NewTLSHandshakerStdlib(log.Log),
+					netx.NewDialerWithoutResolver(log.Log),
+					netx.NewTLSHandshakerStdlib(log.Log),
 					tlsConfig,
 				)
 

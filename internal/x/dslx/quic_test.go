@@ -82,12 +82,13 @@ func TestQUICHandshake(t *testing.T) {
 
 		for name, tt := range tests {
 			t.Run(name, func(t *testing.T) {
+				netx := &netxlite.Netx{}
 				rt := NewRuntimeMeasurexLite(model.DiscardLogger, time.Now(), RuntimeMeasurexLiteOptionMeasuringNetwork(&mocks.MeasuringNetwork{
 					MockNewQUICDialerWithoutResolver: func(listener model.UDPListener, logger model.DebugLogger, w ...model.QUICDialerWrapper) model.QUICDialer {
 						return tt.dialer
 					},
 					MockNewUDPListener: func() model.UDPListener {
-						return netxlite.NewUDPListener()
+						return netx.NewUDPListener()
 					},
 				}))
 				quicHandshake := QUICHandshake(rt, TLSHandshakeOptionServerName(tt.sni))

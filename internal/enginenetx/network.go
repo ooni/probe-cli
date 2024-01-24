@@ -90,7 +90,8 @@ func NewNetwork(
 	// Create a dialer ONLY used for dialing unencrypted TCP connections. The common use
 	// case of this Network is to dial encrypted connections. For this reason, here it is
 	// reasonably fine to use the legacy sequential dialer implemented in netxlite.
-	dialer := netxlite.NewDialerWithResolver(logger, resolver)
+	netx := &netxlite.Netx{}
+	dialer := netx.NewDialerWithResolver(logger, resolver)
 
 	// Create manager for keeping track of statistics
 	const trimInterval = 30 * time.Second
@@ -135,12 +136,12 @@ func NewNetwork(
 	// Make sure we count the bytes sent and received as part of the session
 	txp = bytecounter.WrapHTTPTransport(txp, counter)
 
-	netx := &Network{
+	network := &Network{
 		reso:  resolver,
 		stats: stats,
 		txp:   txp,
 	}
-	return netx
+	return network
 }
 
 // newHTTPSDialerPolicy contains the logic to select the [HTTPSDialerPolicy] to use.

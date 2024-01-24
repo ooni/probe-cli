@@ -71,7 +71,7 @@ func (tc *hostNetworkTestCaseWithHTTPWithTLS) Run(t *testing.T) {
 		Dialer:        netx.NewDialerWithResolver(log.Log, netx.NewStdlibResolver(log.Log)),
 	}
 	tlsDialer := netxlite.NewTLSDialerWithConfig(
-		dialer, netxlite.NewTLSHandshakerStdlib(log.Log),
+		dialer, netx.NewTLSHandshakerStdlib(log.Log),
 		tlsConfig,
 	)
 	txp := netxlite.NewHTTPTransportWithOptions(log.Log, dialer, tlsDialer,

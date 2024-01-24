@@ -43,7 +43,8 @@ func TestMeasureWithSystemResolver(t *testing.T) {
 	//
 
 	t.Run("on success", func(t *testing.T) {
-		r := netxlite.NewStdlibResolver(log.Log)
+		netx := &netxlite.Netx{}
+		r := netx.NewStdlibResolver(log.Log)
 		defer r.CloseIdleConnections()
 		ctx := context.Background()
 		addrs, err := r.LookupHost(ctx, "dns.google.com")
@@ -56,7 +57,8 @@ func TestMeasureWithSystemResolver(t *testing.T) {
 	})
 
 	t.Run("for nxdomain", func(t *testing.T) {
-		r := netxlite.NewStdlibResolver(log.Log)
+		netx := &netxlite.Netx{}
+		r := netx.NewStdlibResolver(log.Log)
 		defer r.CloseIdleConnections()
 		ctx := context.Background()
 		addrs, err := r.LookupHost(ctx, "www.ooni.nonexistent")
@@ -69,7 +71,8 @@ func TestMeasureWithSystemResolver(t *testing.T) {
 	})
 
 	t.Run("for timeout", func(t *testing.T) {
-		r := netxlite.NewStdlibResolver(log.Log)
+		netx := &netxlite.Netx{}
+		r := netx.NewStdlibResolver(log.Log)
 		defer r.CloseIdleConnections()
 		const timeout = time.Nanosecond
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -108,8 +111,9 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 	//
 
 	t.Run("on success", func(t *testing.T) {
-		dlr := netxlite.NewDialerWithoutResolver(log.Log)
-		r := netxlite.NewParallelUDPResolver(log.Log, dlr, "8.8.4.4:53")
+		netx := &netxlite.Netx{}
+		dlr := netx.NewDialerWithoutResolver(log.Log)
+		r := netx.NewParallelUDPResolver(log.Log, dlr, "8.8.4.4:53")
 		defer r.CloseIdleConnections()
 		ctx := context.Background()
 		addrs, err := r.LookupHost(ctx, "dns.google.com")
@@ -129,8 +133,9 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 		dnsRtx := testingx.NewDNSRoundTripperNXDOMAIN()
 		listener := testingx.MustNewDNSOverUDPListener(udpAddr, &testingx.DNSOverUDPListenerStdlib{}, dnsRtx)
 		defer listener.Close()
-		dlr := netxlite.NewDialerWithoutResolver(log.Log)
-		r := netxlite.NewParallelUDPResolver(log.Log, dlr, listener.LocalAddr().String())
+		netx := &netxlite.Netx{}
+		dlr := netx.NewDialerWithoutResolver(log.Log)
+		r := netx.NewParallelUDPResolver(log.Log, dlr, listener.LocalAddr().String())
 		defer r.CloseIdleConnections()
 		ctx := context.Background()
 		addrs, err := r.LookupHost(ctx, "ooni.org")
@@ -150,8 +155,9 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 		dnsRtx := testingx.NewDNSRoundTripperRefused()
 		listener := testingx.MustNewDNSOverUDPListener(udpAddr, &testingx.DNSOverUDPListenerStdlib{}, dnsRtx)
 		defer listener.Close()
-		dlr := netxlite.NewDialerWithoutResolver(log.Log)
-		r := netxlite.NewParallelUDPResolver(log.Log, dlr, listener.LocalAddr().String())
+		netx := &netxlite.Netx{}
+		dlr := netx.NewDialerWithoutResolver(log.Log)
+		r := netx.NewParallelUDPResolver(log.Log, dlr, listener.LocalAddr().String())
 		defer r.CloseIdleConnections()
 		ctx := context.Background()
 		addrs, err := r.LookupHost(ctx, "ooni.org")
@@ -171,8 +177,9 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 		dnsRtx := testingx.NewDNSRoundTripperSimulateTimeout(time.Millisecond, errors.New("mocked error"))
 		listener := testingx.MustNewDNSOverUDPListener(udpAddr, &testingx.DNSOverUDPListenerStdlib{}, dnsRtx)
 		defer listener.Close()
-		dlr := netxlite.NewDialerWithoutResolver(log.Log)
-		r := netxlite.NewParallelUDPResolver(log.Log, dlr, listener.LocalAddr().String())
+		netx := &netxlite.Netx{}
+		dlr := netx.NewDialerWithoutResolver(log.Log)
+		r := netx.NewParallelUDPResolver(log.Log, dlr, listener.LocalAddr().String())
 		defer r.CloseIdleConnections()
 		ctx := context.Background()
 		addrs, err := r.LookupHost(ctx, "ooni.org")
@@ -201,7 +208,8 @@ func TestMeasureWithDialer(t *testing.T) {
 	//
 
 	t.Run("on success", func(t *testing.T) {
-		d := netxlite.NewDialerWithoutResolver(log.Log)
+		netx := &netxlite.Netx{}
+		d := netx.NewDialerWithoutResolver(log.Log)
 		defer d.CloseIdleConnections()
 		ctx := context.Background()
 		conn, err := d.DialContext(ctx, "tcp", "8.8.4.4:443")
@@ -215,7 +223,8 @@ func TestMeasureWithDialer(t *testing.T) {
 	})
 
 	t.Run("on connection refused", func(t *testing.T) {
-		d := netxlite.NewDialerWithoutResolver(log.Log)
+		netx := &netxlite.Netx{}
+		d := netx.NewDialerWithoutResolver(log.Log)
 		defer d.CloseIdleConnections()
 		ctx := context.Background()
 		// Here we assume that no-one is listening on 127.0.0.1:1
@@ -242,7 +251,8 @@ func TestMeasureWithDialer(t *testing.T) {
 		// the kernel races with the timeout we've configured. For this
 		// reason, I have set a smaller context timeout (see below).
 		//
-		d := netxlite.NewDialerWithoutResolver(log.Log)
+		netx := &netxlite.Netx{}
+		d := netx.NewDialerWithoutResolver(log.Log)
 		defer d.CloseIdleConnections()
 		const timeout = 5 * time.Second
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -276,7 +286,8 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 	//
 
 	dial := func(ctx context.Context, address string) (net.Conn, error) {
-		d := netxlite.NewDialerWithoutResolver(log.Log)
+		netx := &netxlite.Netx{}
+		d := netx.NewDialerWithoutResolver(log.Log)
 		return d.DialContext(ctx, "tcp", address)
 	}
 
@@ -395,7 +406,8 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 
 	t.Run("for stdlib handshaker", func(t *testing.T) {
 		t.Run("on success", func(t *testing.T) {
-			th := netxlite.NewTLSHandshakerStdlib(log.Log)
+			netx := &netxlite.Netx{}
+			th := netx.NewTLSHandshakerStdlib(log.Log)
 			err := successFlow(th)
 			if err != nil {
 				t.Fatal(err)
@@ -403,7 +415,8 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 		})
 
 		t.Run("on connection reset", func(t *testing.T) {
-			th := netxlite.NewTLSHandshakerStdlib(log.Log)
+			netx := &netxlite.Netx{}
+			th := netx.NewTLSHandshakerStdlib(log.Log)
 			err := connectionResetFlow(th)
 			if err != nil {
 				t.Fatal(err)
@@ -411,7 +424,8 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 		})
 
 		t.Run("on timeout", func(t *testing.T) {
-			th := netxlite.NewTLSHandshakerStdlib(log.Log)
+			netx := &netxlite.Netx{}
+			th := netx.NewTLSHandshakerStdlib(log.Log)
 			err := timeoutFlow(th)
 			if err != nil {
 				t.Fatal(err)
@@ -419,7 +433,8 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 		})
 
 		t.Run("on TLS unrecognized name alert", func(t *testing.T) {
-			th := netxlite.NewTLSHandshakerStdlib(log.Log)
+			netx := &netxlite.Netx{}
+			th := netx.NewTLSHandshakerStdlib(log.Log)
 			err := tlsUnrecognizedNameFlow(th)
 			if err != nil {
 				t.Fatal(err)
@@ -429,7 +444,8 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 
 	t.Run("for utls handshaker", func(t *testing.T) {
 		t.Run("on success", func(t *testing.T) {
-			th := netxlite.NewTLSHandshakerUTLS(log.Log, &utls.HelloFirefox_55)
+			netx := &netxlite.Netx{}
+			th := netx.NewTLSHandshakerUTLS(log.Log, &utls.HelloFirefox_55)
 			err := successFlow(th)
 			if err != nil {
 				t.Fatal(err)
@@ -437,7 +453,8 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 		})
 
 		t.Run("on connection reset", func(t *testing.T) {
-			th := netxlite.NewTLSHandshakerUTLS(log.Log, &utls.HelloFirefox_55)
+			netx := &netxlite.Netx{}
+			th := netx.NewTLSHandshakerUTLS(log.Log, &utls.HelloFirefox_55)
 			err := connectionResetFlow(th)
 			if err != nil {
 				t.Fatal(err)
@@ -445,7 +462,8 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 		})
 
 		t.Run("on timeout", func(t *testing.T) {
-			th := netxlite.NewTLSHandshakerUTLS(log.Log, &utls.HelloFirefox_55)
+			netx := &netxlite.Netx{}
+			th := netx.NewTLSHandshakerUTLS(log.Log, &utls.HelloFirefox_55)
 			err := timeoutFlow(th)
 			if err != nil {
 				t.Fatal(err)
@@ -453,7 +471,8 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 		})
 
 		t.Run("on TLS unrecognized name alert", func(t *testing.T) {
-			th := netxlite.NewTLSHandshakerUTLS(log.Log, &utls.HelloFirefox_55)
+			netx := &netxlite.Netx{}
+			th := netx.NewTLSHandshakerUTLS(log.Log, &utls.HelloFirefox_55)
 			err := tlsUnrecognizedNameFlow(th)
 			if err != nil {
 				t.Fatal(err)
@@ -479,8 +498,9 @@ func TestMeasureWithQUICDialer(t *testing.T) {
 	//
 
 	t.Run("on success", func(t *testing.T) {
-		ql := netxlite.NewUDPListener()
-		d := netxlite.NewQUICDialerWithoutResolver(ql, log.Log)
+		netx := &netxlite.Netx{}
+		ql := netx.NewUDPListener()
+		d := netx.NewQUICDialerWithoutResolver(ql, log.Log)
 		defer d.CloseIdleConnections()
 		ctx := context.Background()
 		// See https://github.com/ooni/probe/issues/2413 to understand
@@ -502,8 +522,9 @@ func TestMeasureWithQUICDialer(t *testing.T) {
 	})
 
 	t.Run("on timeout", func(t *testing.T) {
-		ql := netxlite.NewUDPListener()
-		d := netxlite.NewQUICDialerWithoutResolver(ql, log.Log)
+		netx := &netxlite.Netx{}
+		ql := netx.NewUDPListener()
+		d := netx.NewQUICDialerWithoutResolver(ql, log.Log)
 		defer d.CloseIdleConnections()
 		ctx := context.Background()
 		// See https://github.com/ooni/probe/issues/2413 to understand
@@ -531,8 +552,9 @@ func TestHTTPTransport(t *testing.T) {
 	}
 
 	t.Run("works as intended", func(t *testing.T) {
-		d := netxlite.NewDialerWithResolver(log.Log, netxlite.NewStdlibResolver(log.Log))
-		td := netxlite.NewTLSDialer(d, netxlite.NewTLSHandshakerStdlib(log.Log))
+		netx := &netxlite.Netx{}
+		d := netx.NewDialerWithResolver(log.Log, netx.NewStdlibResolver(log.Log))
+		td := netxlite.NewTLSDialer(d, netx.NewTLSHandshakerStdlib(log.Log))
 		txp := netxlite.NewHTTPTransport(log.Log, d, td)
 		client := &http.Client{Transport: txp}
 		resp, err := client.Get("https://www.google.com/robots.txt")
@@ -557,7 +579,8 @@ func TestHTTPTransport(t *testing.T) {
 		defer srvr.Close()
 		// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPTransportStdlib has QUIRKS but we
 		// don't actually care about those QUIRKS in this context
-		txp := netxlite.NewHTTPTransportStdlib(model.DiscardLogger)
+		netx := &netxlite.Netx{}
+		txp := netx.NewHTTPTransportStdlib(model.DiscardLogger)
 		req, err := http.NewRequest("GET", srvr.URL, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -581,10 +604,11 @@ func TestHTTP3Transport(t *testing.T) {
 	}
 
 	t.Run("works as intended", func(t *testing.T) {
-		d := netxlite.NewQUICDialerWithResolver(
-			netxlite.NewUDPListener(),
+		netx := &netxlite.Netx{}
+		d := netx.NewQUICDialerWithResolver(
+			netx.NewUDPListener(),
 			log.Log,
-			netxlite.NewStdlibResolver(log.Log),
+			netx.NewStdlibResolver(log.Log),
 		)
 		txp := netxlite.NewHTTP3Transport(log.Log, d, &tls.Config{})
 		client := &http.Client{Transport: txp}

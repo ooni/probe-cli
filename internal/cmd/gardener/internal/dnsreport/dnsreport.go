@@ -253,7 +253,8 @@ func (s *Subcommand) dnsLookupHost(domain string) ([]string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	dnsResolver := netxlite.NewParallelDNSOverHTTPSResolver(log.Log, s.DNSOverHTTPSServerURL)
+	netx := &netxlite.Netx{}
+	dnsResolver := netx.NewParallelDNSOverHTTPSResolver(log.Log, s.DNSOverHTTPSServerURL)
 	defer dnsResolver.CloseIdleConnections()
 
 	// lookup for both A and AAAA entries

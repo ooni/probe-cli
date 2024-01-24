@@ -15,7 +15,8 @@ import (
 )
 
 func TestNewTLSHandshakerUTLS(t *testing.T) {
-	th := NewTLSHandshakerUTLS(log.Log, &utls.HelloChrome_83)
+	netx := &Netx{}
+	th := netx.NewTLSHandshakerUTLS(log.Log, &utls.HelloChrome_83)
 	logger := th.(*tlsHandshakerLogger)
 	if logger.DebugLogger != log.Log {
 		t.Fatal("invalid logger")

@@ -18,10 +18,11 @@ import (
 func TestSTUNIPLookupCanceledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // stop immediately
+	netx := &netxlite.Netx{}
 	ip, err := stunIPLookup(ctx, stunConfig{
 		Endpoint: "stun.ekiga.net:3478",
 		Logger:   log.Log,
-		Resolver: netxlite.NewStdlibResolver(model.DiscardLogger),
+		Resolver: netx.NewStdlibResolver(model.DiscardLogger),
 	})
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("not the error we expected: %+v", err)
@@ -151,12 +152,13 @@ func TestIPLookupWorksUsingSTUNEkiga(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 
+	netx := &netxlite.Netx{}
 	ip, err := stunEkigaIPLookup(
 		context.Background(),
 		http.DefaultClient,
 		log.Log,
 		model.HTTPHeaderUserAgent,
-		netxlite.NewStdlibResolver(model.DiscardLogger),
+		netx.NewStdlibResolver(model.DiscardLogger),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -171,12 +173,13 @@ func TestIPLookupWorksUsingSTUNGoogle(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 
+	netx := &netxlite.Netx{}
 	ip, err := stunGoogleIPLookup(
 		context.Background(),
 		http.DefaultClient,
 		log.Log,
 		model.HTTPHeaderUserAgent,
-		netxlite.NewStdlibResolver(model.DiscardLogger),
+		netx.NewStdlibResolver(model.DiscardLogger),
 	)
 	if err != nil {
 		t.Fatal(err)

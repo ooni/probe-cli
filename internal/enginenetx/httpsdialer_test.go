@@ -493,7 +493,8 @@ func TestHTTPSDialerHostNetworkQA(t *testing.T) {
 
 		// The resolver we're creating here reproduces the test case described by
 		// https://github.com/ooni/probe-cli/pull/1295#issuecomment-1731243994
-		resolver := netxlite.MaybeWrapWithBogonResolver(true, netxlite.NewStdlibResolver(log.Log))
+		netx := &netxlite.Netx{}
+		resolver := netxlite.MaybeWrapWithBogonResolver(true, netx.NewStdlibResolver(log.Log))
 
 		httpsDialer := newHTTPSDialer(
 			log.Log,

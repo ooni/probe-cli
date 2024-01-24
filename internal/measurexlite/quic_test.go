@@ -284,7 +284,8 @@ func TestOnQUICHandshakeDoneExtractsTheConnectionState(t *testing.T) {
 	trace := NewTrace(0, time.Now())
 
 	// create a QUIC dialer
-	udpListener := netxlite.NewUDPListener()
+	netx := &netxlite.Netx{}
+	udpListener := netx.NewUDPListener()
 	quicDialer := trace.NewQUICDialerWithoutResolver(udpListener, model.DiscardLogger)
 
 	// dial with the endpoint we use for testing

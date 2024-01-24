@@ -14,6 +14,7 @@ import (
 )
 
 func TestUbuntuParseError(t *testing.T) {
+	netx := &netxlite.Netx{}
 	ip, err := ubuntuIPLookup(
 		context.Background(),
 		&http.Client{Transport: FakeTransport{
@@ -24,7 +25,7 @@ func TestUbuntuParseError(t *testing.T) {
 		}},
 		log.Log,
 		model.HTTPHeaderUserAgent,
-		netxlite.NewStdlibResolver(model.DiscardLogger),
+		netx.NewStdlibResolver(model.DiscardLogger),
 	)
 	if err == nil || !strings.HasPrefix(err.Error(), "XML syntax error") {
 		t.Fatalf("not the error we expected: %+v", err)
@@ -39,12 +40,13 @@ func TestIPLookupWorksUsingUbuntu(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 
+	netx := &netxlite.Netx{}
 	ip, err := ubuntuIPLookup(
 		context.Background(),
 		http.DefaultClient,
 		log.Log,
 		model.HTTPHeaderUserAgent,
-		netxlite.NewStdlibResolver(model.DiscardLogger),
+		netx.NewStdlibResolver(model.DiscardLogger),
 	)
 	if err != nil {
 		t.Fatal(err)

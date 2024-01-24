@@ -261,7 +261,8 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			dnsRtx := testingx.NewDNSRoundTripperWithDNSConfig(dnsConfig)
 			listener := testingx.MustNewDNSOverUDPListener(udpAddr, &testingx.DNSOverUDPListenerStdlib{}, dnsRtx)
 			defer listener.Close()
-			dialer := NewDialerWithoutResolver(model.DiscardLogger)
+			netx := &Netx{}
+			dialer := netx.NewDialerWithoutResolver(model.DiscardLogger)
 			txp := NewUnwrappedDNSOverUDPTransport(dialer, listener.LocalAddr().String())
 			encoder := &DNSEncoderMiekg{}
 			query := encoder.Encode("dns.google.", dns.TypeA, false)
@@ -294,7 +295,8 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			listener := testingx.MustNewDNSSimulateGWFListener(
 				udpAddr, &testingx.DNSOverUDPListenerStdlib{}, dnsConfigBogus,
 				dnsConfigGood, testingx.DNSNumBogusResponses(1))
-			dialer := NewDialerWithoutResolver(model.DiscardLogger)
+			netx := &Netx{}
+			dialer := netx.NewDialerWithoutResolver(model.DiscardLogger)
 			expectedAddress := listener.LocalAddr().String()
 			txp := NewUnwrappedDNSOverUDPTransport(dialer, expectedAddress)
 			txp.lateResponses = make(chan any, 1) // with buffer to avoid deadlocks
@@ -329,7 +331,8 @@ func TestDNSOverUDPTransport(t *testing.T) {
 				udpAddr, &testingx.DNSOverUDPListenerStdlib{}, dnsConfigBogus,
 				dnsConfigGood, testingx.DNSNumBogusResponses(1))
 			defer listener.Close()
-			dialer := NewDialerWithoutResolver(model.DiscardLogger)
+			netx := &Netx{}
+			dialer := netx.NewDialerWithoutResolver(model.DiscardLogger)
 			expectedAddress := listener.LocalAddr().String()
 			txp := NewUnwrappedDNSOverUDPTransport(dialer, expectedAddress)
 			encoder := &DNSEncoderMiekg{}
@@ -420,7 +423,8 @@ func TestDNSOverUDPTransport(t *testing.T) {
 				udpAddr, &testingx.DNSOverUDPListenerStdlib{}, dnsConfigBogus,
 				netem.NewDNSConfig(), testingx.DNSNumBogusResponses(1))
 			defer listener.Close()
-			dialer := NewDialerWithoutResolver(model.DiscardLogger)
+			netx := &Netx{}
+			dialer := netx.NewDialerWithoutResolver(model.DiscardLogger)
 			expectedAddress := listener.LocalAddr().String()
 			txp := NewUnwrappedDNSOverUDPTransport(dialer, expectedAddress)
 			encoder := &DNSEncoderMiekg{}
@@ -506,7 +510,8 @@ func TestDNSOverUDPTransport(t *testing.T) {
 
 	t.Run("other functions okay", func(t *testing.T) {
 		const address = "9.9.9.9:53"
-		txp := NewUnwrappedDNSOverUDPTransport(NewDialerWithoutResolver(log.Log), address)
+		netx := &Netx{}
+		txp := NewUnwrappedDNSOverUDPTransport(netx.NewDialerWithoutResolver(log.Log), address)
 		if txp.RequiresPadding() != false {
 			t.Fatal("invalid RequiresPadding")
 		}

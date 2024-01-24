@@ -116,7 +116,8 @@ func TestResolverSaver(t *testing.T) {
 
 		t.Run("with stdlib resolver there's correct .Network remapping", func(t *testing.T) {
 			saver := &Saver{}
-			reso := saver.WrapResolver(netxlite.NewStdlibResolver(model.DiscardLogger))
+			netx := &netxlite.Netx{}
+			reso := saver.WrapResolver(netx.NewStdlibResolver(model.DiscardLogger))
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel() // immediately fail the operation
 			_, _ = reso.LookupHost(ctx, "www.google.com")
@@ -149,7 +150,8 @@ func TestResolverSaver(t *testing.T) {
 		})
 
 		t.Run("when using the stdlib resolver", func(t *testing.T) {
-			child := netxlite.NewStdlibResolver(model.DiscardLogger)
+			netx := &netxlite.Netx{}
+			child := netx.NewStdlibResolver(model.DiscardLogger)
 			switch network := child.Network(); network {
 			case netxlite.StdlibResolverGetaddrinfo,
 				netxlite.StdlibResolverGolangNetResolver:

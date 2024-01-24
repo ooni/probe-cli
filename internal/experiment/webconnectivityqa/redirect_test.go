@@ -32,7 +32,8 @@ func TestRedirectWithConsistentDNSAndThenConnectionRefused(t *testing.T) {
 
 				for _, port := range ports {
 					t.Run(fmt.Sprintf("for port %s", port), func(t *testing.T) {
-						dialer := netxlite.NewDialerWithoutResolver(log.Log)
+						netx := &netxlite.Netx{}
+						dialer := netx.NewDialerWithoutResolver(log.Log)
 						endpoint := net.JoinHostPort(netemx.AddressWwwExampleCom, port)
 						conn, err := dialer.DialContext(context.Background(), "tcp", endpoint)
 						if err == nil || err.Error() != netxlite.FailureConnectionRefused {
@@ -97,7 +98,8 @@ func TestRedirectWithConsistentDNSAndThenNXDOMAIN(t *testing.T) {
 
 			env.Do(func() {
 				t.Run("with stdlib resolver", func(t *testing.T) {
-					reso := netxlite.NewStdlibResolver(log.Log)
+					netx := &netxlite.Netx{}
+					reso := netx.NewStdlibResolver(log.Log)
 					addrs, err := reso.LookupHost(context.Background(), "www.example.com")
 					if err == nil || err.Error() != netxlite.FailureDNSNXDOMAINError {
 						t.Fatal("unexpected error", err)
@@ -108,8 +110,9 @@ func TestRedirectWithConsistentDNSAndThenNXDOMAIN(t *testing.T) {
 				})
 
 				t.Run("with UDP resolver", func(t *testing.T) {
-					d := netxlite.NewDialerWithoutResolver(log.Log)
-					reso := netxlite.NewParallelUDPResolver(log.Log, d, "8.8.8.8:53")
+					netx := &netxlite.Netx{}
+					d := netx.NewDialerWithoutResolver(log.Log)
+					reso := netx.NewParallelUDPResolver(log.Log, d, "8.8.8.8:53")
 					addrs, err := reso.LookupHost(context.Background(), "www.example.com")
 					if err == nil || err.Error() != netxlite.FailureDNSNXDOMAINError {
 						t.Fatal("unexpected error", err)

@@ -190,7 +190,8 @@ func TestTrace(t *testing.T) {
 
 	t.Run("NewParallelUDPResolver works as intended", func(t *testing.T) {
 		tx := NewTrace(0, time.Now())
-		dialer := netxlite.NewDialerWithoutResolver(model.DiscardLogger)
+		netx := &netxlite.Netx{}
+		dialer := netx.NewDialerWithoutResolver(model.DiscardLogger)
 		resolver := tx.NewParallelUDPResolver(model.DiscardLogger, dialer, "1.1.1.1:53")
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()

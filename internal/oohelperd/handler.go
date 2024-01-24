@@ -70,6 +70,7 @@ var _ http.Handler = &Handler{}
 
 // NewHandler constructs the [handler].
 func NewHandler() *Handler {
+	netx := &netxlite.Netx{}
 	return &Handler{
 		BaseLogger:        log.Log,
 		CountRequests:     &atomic.Int64{},
@@ -94,17 +95,17 @@ func NewHandler() *Handler {
 		},
 
 		NewDialer: func(logger model.Logger) model.Dialer {
-			return netxlite.NewDialerWithoutResolver(logger)
+			return netx.NewDialerWithoutResolver(logger)
 		},
 		NewQUICDialer: func(logger model.Logger) model.QUICDialer {
-			return netxlite.NewQUICDialerWithoutResolver(
-				netxlite.NewUDPListener(),
+			return netx.NewQUICDialerWithoutResolver(
+				netx.NewUDPListener(),
 				logger,
 			)
 		},
 		NewResolver: newResolver,
 		NewTLSHandshaker: func(logger model.Logger) model.TLSHandshaker {
-			return netxlite.NewTLSHandshakerStdlib(logger)
+			return netx.NewTLSHandshakerStdlib(logger)
 		},
 	}
 }
@@ -205,7 +206,8 @@ func newResolver(logger model.Logger) model.Resolver {
 	// Implementation note: pin to a specific resolver so we don't depend upon the
 	// default resolver configured by the box. Also, use an encrypted transport thus
 	// we're less vulnerable to any policy implemented by the box's provider.
-	resolver := netxlite.NewParallelDNSOverHTTPSResolver(logger, "https://dns.google/dns-query")
+	netx := &netxlite.Netx{}
+	resolver := netx.NewParallelDNSOverHTTPSResolver(logger, "https://dns.google/dns-query")
 	return resolver
 }
 

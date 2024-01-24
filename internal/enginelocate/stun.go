@@ -33,7 +33,8 @@ func stunIPLookup(ctx context.Context, config stunConfig) (string, error) {
 	ip, err := func() (string, error) {
 		dialer := config.Dialer
 		if dialer == nil {
-			dialer = netxlite.NewDialerWithResolver(config.Logger, config.Resolver)
+			netx := &netxlite.Netx{}
+			dialer = netx.NewDialerWithResolver(config.Logger, config.Resolver)
 		}
 		conn, err := dialer.DialContext(ctx, "udp", config.Endpoint)
 		if err != nil {
