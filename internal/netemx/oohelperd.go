@@ -48,7 +48,7 @@ func (f *OOHelperDFactory) NewHandler(env NetStackServerFactoryEnv, unet *netem.
 			logger,
 			func(dl model.DebugLogger, r model.Resolver) model.HTTPTransport {
 				dialer := netx.NewDialerWithResolver(dl, r)
-				tlsDialer := netxlite.NewTLSDialer(dialer, netxlite.NewTLSHandshakerStdlib(dl))
+				tlsDialer := netxlite.NewTLSDialer(dialer, netx.NewTLSHandshakerStdlib(dl))
 				// TODO(https://github.com/ooni/probe/issues/2534): NewHTTPTransport is QUIRKY but
 				// we probably don't care about using a QUIRKY function here
 				return netxlite.NewHTTPTransport(dl, dialer, tlsDialer)
