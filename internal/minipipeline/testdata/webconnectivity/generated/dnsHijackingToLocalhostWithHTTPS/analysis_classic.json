@@ -63,6 +63,7 @@
       "DNSResolvedAddrs": [
         "127.0.0.1"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "127.0.0.1",
       "IPAddressASN": null,
       "IPAddressBogon": true,

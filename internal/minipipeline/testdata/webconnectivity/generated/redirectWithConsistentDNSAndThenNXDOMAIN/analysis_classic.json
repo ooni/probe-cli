@@ -61,6 +61,7 @@
       "DNSQueryType": "ANY",
       "DNSEngine": "getaddrinfo",
       "DNSResolvedAddrs": null,
+      "IPAddressOrigin": null,
       "IPAddress": null,
       "IPAddressASN": null,
       "IPAddressBogon": null,
@@ -110,6 +111,7 @@
       "DNSResolvedAddrs": [
         "67.199.248.11"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "67.199.248.11",
       "IPAddressASN": 396982,
       "IPAddressBogon": false,
@@ -165,6 +167,7 @@
       "DNSResolvedAddrs": [
         "67.199.248.11"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "67.199.248.11",
       "IPAddressASN": 396982,
       "IPAddressBogon": false,

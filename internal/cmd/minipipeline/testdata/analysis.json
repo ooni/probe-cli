@@ -70,6 +70,7 @@
       "DNSResolvedAddrs": [
         "130.192.16.171"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "130.192.16.171",
       "IPAddressASN": 137,
       "IPAddressBogon": false,
@@ -146,6 +147,7 @@
       "DNSResolvedAddrs": [
         "130.192.16.171"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "130.192.16.171",
       "IPAddressASN": 137,
       "IPAddressBogon": false,
@@ -207,6 +209,7 @@
       "DNSResolvedAddrs": [
         "130.192.16.171"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "130.192.16.171",
       "IPAddressASN": 137,
       "IPAddressBogon": false,
@@ -268,6 +271,7 @@
       "DNSResolvedAddrs": [
         "130.192.16.171"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "130.192.16.171",
       "IPAddressASN": 137,
       "IPAddressBogon": false,
@@ -327,6 +331,7 @@
       "DNSQueryType": "AAAA",
       "DNSEngine": "doh",
       "DNSResolvedAddrs": null,
+      "IPAddressOrigin": null,
       "IPAddress": null,
       "IPAddressASN": null,
       "IPAddressBogon": null,
@@ -386,6 +391,7 @@
       "DNSQueryType": "AAAA",
       "DNSEngine": "udp",
       "DNSResolvedAddrs": null,
+      "IPAddressOrigin": null,
       "IPAddress": null,
       "IPAddressASN": null,
       "IPAddressBogon": null,

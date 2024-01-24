@@ -69,6 +69,7 @@
       "DNSResolvedAddrs": [
         "130.192.182.17"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "130.192.182.17",
       "IPAddressASN": 137,
       "IPAddressBogon": false,
@@ -118,6 +119,7 @@
       "DNSQueryType": null,
       "DNSEngine": null,
       "DNSResolvedAddrs": null,
+      "IPAddressOrigin": "th",
       "IPAddress": "93.184.216.34",
       "IPAddressASN": 15133,
       "IPAddressBogon": false,
@@ -169,6 +171,7 @@
       "DNSResolvedAddrs": [
         "130.192.182.17"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "130.192.182.17",
       "IPAddressASN": 137,
       "IPAddressBogon": false,
@@ -218,6 +221,7 @@
       "DNSQueryType": null,
       "DNSEngine": null,
       "DNSResolvedAddrs": null,
+      "IPAddressOrigin": "th",
       "IPAddress": "93.184.216.34",
       "IPAddressASN": 15133,
       "IPAddressBogon": false,
@@ -269,6 +273,7 @@
       "DNSResolvedAddrs": [
         "130.192.182.17"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "130.192.182.17",
       "IPAddressASN": 137,
       "IPAddressBogon": false,
@@ -320,6 +325,7 @@
       "DNSResolvedAddrs": [
         "130.192.182.17"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "130.192.182.17",
       "IPAddressASN": 137,
       "IPAddressBogon": false,
@@ -369,6 +375,7 @@
       "DNSQueryType": "AAAA",
       "DNSEngine": "udp",
       "DNSResolvedAddrs": null,
+      "IPAddressOrigin": null,
       "IPAddress": null,
       "IPAddressASN": null,
       "IPAddressBogon": null,

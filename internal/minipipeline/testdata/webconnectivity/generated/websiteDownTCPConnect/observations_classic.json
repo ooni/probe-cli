@@ -15,6 +15,7 @@
       "DNSResolvedAddrs": [
         "93.184.216.34"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "93.184.216.34",
       "IPAddressASN": 15133,
       "IPAddressBogon": false,
@@ -63,6 +64,7 @@
       "DNSResolvedAddrs": [
         "93.184.216.34"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "93.184.216.34",
       "IPAddressASN": 15133,
       "IPAddressBogon": false,

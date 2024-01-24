@@ -63,6 +63,7 @@
       "DNSResolvedAddrs": [
         "10.10.34.35"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "10.10.34.35",
       "IPAddressASN": null,
       "IPAddressBogon": true,
@@ -114,6 +115,7 @@
       "DNSResolvedAddrs": [
         "10.10.34.35"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "10.10.34.35",
       "IPAddressASN": null,
       "IPAddressBogon": true,

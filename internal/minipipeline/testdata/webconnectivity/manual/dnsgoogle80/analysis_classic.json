@@ -72,6 +72,7 @@
         "8.8.4.4",
         "8.8.8.8"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "2001:4860:4860::8888",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -124,6 +125,7 @@
         "8.8.4.4",
         "8.8.8.8"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "2001:4860:4860::8844",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -176,6 +178,7 @@
         "8.8.4.4",
         "8.8.8.8"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "8.8.8.8",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -228,6 +231,7 @@
         "8.8.4.4",
         "8.8.8.8"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "8.8.4.4",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -280,6 +284,7 @@
         "8.8.4.4",
         "8.8.8.8"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "2001:4860:4860::8844",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -332,6 +337,7 @@
         "8.8.4.4",
         "8.8.8.8"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "2001:4860:4860::8888",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -384,6 +390,7 @@
         "8.8.4.4",
         "8.8.8.8"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "8.8.4.4",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
@@ -436,6 +443,7 @@
         "8.8.4.4",
         "8.8.8.8"
       ],
+      "IPAddressOrigin": "dns",
       "IPAddress": "8.8.8.8",
       "IPAddressASN": 15169,
       "IPAddressBogon": false,
