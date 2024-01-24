@@ -1,5 +1,7 @@
 package webconnectivityqa
 
+import "github.com/ooni/probe-cli/v3/internal/netemx"
+
 // websiteDownNXDOMAIN describes the test case where the website domain
 // is NXDOMAIN according to the TH and the probe.
 func websiteDownNXDOMAIN() *TestCase {
@@ -57,6 +59,32 @@ func websiteDownTCPConnect() *TestCase {
 			XNullNullFlags:        2, // AnalysisFlagNullNullExpectedTCPConnectFailure
 			Accessible:            false,
 			Blocking:              false,
+		},
+	}
+}
+
+// websiteDownNoAddrs describes the test case where the website domain
+// does not return any address according to the TH and the probe.
+func websiteDownNoAddrs() *TestCase {
+	return &TestCase{
+		Name:  "websiteDownNoAddrs",
+		Flags: TestCaseFlagNoV04,
+		Input: "http://www.example.com/",
+		Configure: func(env *netemx.QAEnv) {
+
+			// reconfigure with only CNAME but no addresses and do this
+			// for all the resolvers of the kingdom
+			env.AddRecordToAllResolvers("www.example.com", "web01.example.com" /* No addrs */)
+
+		},
+		ExpectErr: false,
+		ExpectTestKeys: &testKeys{
+			DNSExperimentFailure: "dns_no_answer",
+			DNSConsistency:       "consistent",
+			XBlockingFlags:       0,
+			XNullNullFlags:       1, // AnalysisFlagNullNullExpectedDNSLookupFailure
+			Accessible:           false,
+			Blocking:             false,
 		},
 	}
 }
