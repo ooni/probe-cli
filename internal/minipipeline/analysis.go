@@ -459,6 +459,7 @@ func (wa *WebAnalysis) dnsComputeFailureMetrics(c *WebObservationsContainer) {
 					wa.DNSLookupExpectedFailure.Add(obs.DNSTransactionID.Unwrap())
 					continue
 				}
+				// fallthrough
 			}
 			wa.DNSLookupUnexpectedFailure.Add(obs.DNSTransactionID.Unwrap())
 			continue
