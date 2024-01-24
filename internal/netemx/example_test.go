@@ -178,11 +178,14 @@ func Example_customNetStackHandler() {
 
 	// run netxlite code inside the netemx environment
 	env.Do(func() {
+		// use the default netxlite.Netx.
+		netx := &netxlite.Netx{}
+
 		// create a system resolver instance
 		reso := netxlite.NewStdlibResolver(log.Log)
 
 		// create a dialer
-		dialer := netxlite.NewDialerWithResolver(log.Log, reso)
+		dialer := netx.NewDialerWithResolver(log.Log, reso)
 
 		// attempt to establish a TCP connection
 		conn, err := dialer.DialContext(context.Background(), "tcp", "e1.whatsapp.net:5222")
@@ -224,9 +227,11 @@ func Example_dohWithInternetScenario() {
 
 	env.Do(func() {
 		for _, domain := range []string{"mozilla.cloudflare-dns.com", "dns.google", "dns.quad9.net"} {
+			netx := &netxlite.Netx{}
+
 			// DNS-over-UDP
 			{
-				dialer := netxlite.NewDialerWithResolver(log.Log, netxlite.NewStdlibResolver(log.Log))
+				dialer := netx.NewDialerWithResolver(log.Log, netxlite.NewStdlibResolver(log.Log))
 				reso := netxlite.NewParallelUDPResolver(log.Log, dialer, net.JoinHostPort(domain, "53"))
 				defer reso.CloseIdleConnections()
 

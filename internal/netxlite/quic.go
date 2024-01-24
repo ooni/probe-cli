@@ -18,7 +18,7 @@ import (
 
 // NewQUICDialerWithResolver creates a QUICDialer with error wrapping.
 //
-// Unlike the dialer returned by NewDialerWithResolver, this dialer MAY attempt
+// Unlike the dialer returned by [Netx.NewDialerWithResolver], this dialer MAY attempt
 // happy eyeballs, perform parallel dial attempts, and return an error
 // that aggregates all the errors that occurred.
 //

@@ -20,7 +20,8 @@ import (
 //
 // This function behavior is QUIRKY as documented in [NewHTTPTransport].
 func NewHTTPTransportWithResolver(logger model.DebugLogger, reso model.Resolver) model.HTTPTransport {
-	dialer := NewDialerWithResolver(logger, reso)
+	netx := &Netx{}
+	dialer := netx.NewDialerWithResolver(logger, reso)
 	thx := NewTLSHandshakerStdlib(logger)
 	tlsDialer := NewTLSDialer(dialer, thx)
 	return NewHTTPTransport(logger, dialer, tlsDialer)

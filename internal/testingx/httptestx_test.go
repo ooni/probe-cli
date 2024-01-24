@@ -161,7 +161,8 @@ func TestHTTPTestxWithStdlib(t *testing.T) {
 
 			// create the HTTP client (we need to do more work than normally because
 			// we MUST correctly set the TLS dialer configuration)
-			tcpDialer := netxlite.NewDialerWithResolver(log.Log, netxlite.NewStdlibResolver(log.Log))
+			netx := &netxlite.Netx{}
+			tcpDialer := netx.NewDialerWithResolver(log.Log, netxlite.NewStdlibResolver(log.Log))
 			tlsHandshaker := netxlite.NewTLSHandshakerStdlib(log.Log)
 			tlsDialer := netxlite.NewTLSDialerWithConfig(
 				tcpDialer, tlsHandshaker, &tls.Config{RootCAs: srvr.X509CertPool})
@@ -440,7 +441,8 @@ func TestHTTPTestxWithNetem(t *testing.T) {
 
 				// create the HTTP client (we need to do more work than normally because
 				// we MUST correctly set the TLS dialer configuration)
-				tcpDialer := netxlite.NewDialerWithResolver(log.Log, netxlite.NewStdlibResolver(log.Log))
+				netx := &netxlite.Netx{}
+				tcpDialer := netx.NewDialerWithResolver(log.Log, netxlite.NewStdlibResolver(log.Log))
 				tlsHandshaker := netxlite.NewTLSHandshakerStdlib(log.Log)
 				tlsDialer := netxlite.NewTLSDialerWithConfig(
 					tcpDialer, tlsHandshaker, &tls.Config{RootCAs: srvr.X509CertPool})

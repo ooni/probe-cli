@@ -531,7 +531,8 @@ func TestHTTPTransport(t *testing.T) {
 	}
 
 	t.Run("works as intended", func(t *testing.T) {
-		d := netxlite.NewDialerWithResolver(log.Log, netxlite.NewStdlibResolver(log.Log))
+		netx := &netxlite.Netx{}
+		d := netx.NewDialerWithResolver(log.Log, netxlite.NewStdlibResolver(log.Log))
 		td := netxlite.NewTLSDialer(d, netxlite.NewTLSHandshakerStdlib(log.Log))
 		txp := netxlite.NewHTTPTransport(log.Log, d, td)
 		client := &http.Client{Transport: txp}

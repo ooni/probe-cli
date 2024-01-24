@@ -17,7 +17,8 @@ func NewDialer(config Config) model.Dialer {
 		config.FullResolver = NewResolver(config)
 	}
 	logger := model.ValidLoggerOrDefault(config.Logger)
-	d := netxlite.NewDialerWithResolver(
+	netx := &netxlite.Netx{}
+	d := netx.NewDialerWithResolver(
 		logger, config.FullResolver, config.Saver.NewConnectObserver(),
 		config.ReadWriteSaver.NewReadWriteObserver(),
 	)

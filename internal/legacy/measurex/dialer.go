@@ -33,7 +33,8 @@ func WrapDialer(begin time.Time, db WritableDB, dialer model.Dialer) model.Diale
 // NewDialerWithSystemResolver creates a
 func (mx *Measurer) NewDialerWithSystemResolver(db WritableDB, logger model.Logger) model.Dialer {
 	r := mx.NewResolverSystem(db, logger)
-	return mx.WrapDialer(db, netxlite.NewDialerWithResolver(logger, r))
+	netx := &netxlite.Netx{}
+	return mx.WrapDialer(db, netx.NewDialerWithResolver(logger, r))
 }
 
 // NewDialerWithoutResolver is a convenience factory for creating
