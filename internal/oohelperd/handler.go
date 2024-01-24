@@ -218,7 +218,8 @@ func newCookieJar() *cookiejar.Jar {
 	}))
 }
 
-// NewHTTPClientWithTransportFactory creates a new HTTP client.
+// NewHTTPClientWithTransportFactory creates a new HTTP client
+// using the given [model.HTTPTransport] factory.
 func NewHTTPClientWithTransportFactory(
 	logger model.Logger,
 	txpFactory func(model.DebugLogger, model.Resolver) model.HTTPTransport,
