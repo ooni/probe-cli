@@ -11,7 +11,7 @@ import (
 func redirectWithConsistentDNSAndThenConnectionRefusedForHTTP() *TestCase {
 	return &TestCase{
 		Name:  "redirectWithConsistentDNSAndThenConnectionRefusedForHTTP",
-		Flags: 0,
+		Flags: TestCaseFlagNoV04,
 		Input: "https://bit.ly/32447",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -39,7 +39,7 @@ func redirectWithConsistentDNSAndThenConnectionRefusedForHTTP() *TestCase {
 			XDNSFlags:             0,
 			XBlockingFlags:        2, // AnalysisBlockingFlagTCPIPBlocking
 			Accessible:            false,
-			Blocking:              "http-failure",
+			Blocking:              "tcp_ip",
 		},
 	}
 }
@@ -49,7 +49,7 @@ func redirectWithConsistentDNSAndThenConnectionRefusedForHTTP() *TestCase {
 func redirectWithConsistentDNSAndThenConnectionRefusedForHTTPS() *TestCase {
 	return &TestCase{
 		Name:  "redirectWithConsistentDNSAndThenConnectionRefusedForHTTPS",
-		Flags: 0,
+		Flags: TestCaseFlagNoV04,
 		Input: "https://bit.ly/21645",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -77,7 +77,7 @@ func redirectWithConsistentDNSAndThenConnectionRefusedForHTTPS() *TestCase {
 			XDNSFlags:             0,
 			XBlockingFlags:        2, // AnalysisBlockingFlagTCPIPBlocking
 			Accessible:            false,
-			Blocking:              "http-failure",
+			Blocking:              "tcp_ip",
 		},
 	}
 }
@@ -125,7 +125,7 @@ func redirectWithConsistentDNSAndThenConnectionResetForHTTP() *TestCase {
 func redirectWithConsistentDNSAndThenConnectionResetForHTTPS() *TestCase {
 	return &TestCase{
 		Name:  "redirectWithConsistentDNSAndThenConnectionResetForHTTPS",
-		Flags: 0,
+		Flags: TestCaseFlagNoV04,
 		Input: "https://bit.ly/21645",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -153,7 +153,7 @@ func redirectWithConsistentDNSAndThenConnectionResetForHTTPS() *TestCase {
 			XDNSFlags:             0,
 			XBlockingFlags:        4, // AnalysisBlockingFlagTLSBlocking
 			Accessible:            false,
-			Blocking:              "http-failure",
+			Blocking:              "tls",
 		},
 	}
 }
@@ -232,7 +232,7 @@ func redirectWithConsistentDNSAndThenEOFForHTTP() *TestCase {
 func redirectWithConsistentDNSAndThenEOFForHTTPS() *TestCase {
 	return &TestCase{
 		Name:  "redirectWithConsistentDNSAndThenEOFForHTTPS",
-		Flags: 0,
+		Flags: TestCaseFlagNoV04,
 		Input: "https://bit.ly/21645",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -260,7 +260,7 @@ func redirectWithConsistentDNSAndThenEOFForHTTPS() *TestCase {
 			XDNSFlags:             0,
 			XBlockingFlags:        4, // AnalysisBlockingFlagTLSBlocking
 			Accessible:            false,
-			Blocking:              "http-failure",
+			Blocking:              "tls",
 		},
 	}
 }
@@ -309,7 +309,7 @@ func redirectWithConsistentDNSAndThenTimeoutForHTTP() *TestCase {
 func redirectWithConsistentDNSAndThenTimeoutForHTTPS() *TestCase {
 	return &TestCase{
 		Name:     "redirectWithConsistentDNSAndThenTimeoutForHTTPS",
-		Flags:    0,
+		Flags:    TestCaseFlagNoV04,
 		Input:    "https://bit.ly/21645",
 		LongTest: true,
 		Configure: func(env *netemx.QAEnv) {
@@ -338,7 +338,7 @@ func redirectWithConsistentDNSAndThenTimeoutForHTTPS() *TestCase {
 			XDNSFlags:             0,
 			XBlockingFlags:        4, // AnalysisBlockingFlagTLSBlocking
 			Accessible:            false,
-			Blocking:              "http-failure",
+			Blocking:              "tls",
 		},
 	}
 }
