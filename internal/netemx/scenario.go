@@ -207,6 +207,21 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 		"xn--d1acpjx3f.xn--p1ai",
 	},
 	WebServerFactory: YandexHandlerFactory(),
+}, {
+	Addresses: []string{
+		AddressLargeFileCom1,
+		AddressLargeFileCom2,
+	},
+	Domains: []string{
+		"largefile.com",
+		"www.largefile.com",
+	},
+	Role:           ScenarioRoleWebServer,
+	ServerNameMain: "largefile.com",
+	ServerNameExtras: []string{
+		"www.largefile.com",
+	},
+	WebServerFactory: LargeFileHandlerFactory(),
 }}
 
 // MustNewScenario constructs a complete testing scenario using the domains and IP

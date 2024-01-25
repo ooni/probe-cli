@@ -1,0 +1,230 @@
+{
+  "DNSLookupFailures": [],
+  "DNSLookupSuccesses": [
+    {
+      "TagDepth": 0,
+      "Type": 0,
+      "Failure": "",
+      "TransactionID": 1,
+      "TagFetchBody": null,
+      "DNSTransactionID": 1,
+      "DNSDomain": "largefile.com",
+      "DNSLookupFailure": "",
+      "DNSQueryType": "ANY",
+      "DNSEngine": "getaddrinfo",
+      "DNSResolvedAddrs": [
+        "35.161.85.189",
+        "52.35.36.75"
+      ],
+      "IPAddressOrigin": "dns",
+      "IPAddress": "35.161.85.189",
+      "IPAddressASN": 16509,
+      "IPAddressBogon": false,
+      "EndpointTransactionID": null,
+      "EndpointProto": null,
+      "EndpointPort": null,
+      "EndpointAddress": null,
+      "TCPConnectFailure": null,
+      "TLSHandshakeFailure": null,
+      "TLSServerName": null,
+      "HTTPRequestURL": null,
+      "HTTPFailure": null,
+      "HTTPResponseStatusCode": null,
+      "HTTPResponseBodyLength": null,
+      "HTTPResponseBodyIsTruncated": null,
+      "HTTPResponseHeadersKeys": null,
+      "HTTPResponseLocation": null,
+      "HTTPResponseTitle": null,
+      "HTTPResponseIsFinal": null,
+      "ControlDNSDomain": "largefile.com",
+      "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "35.161.85.189",
+        "52.35.36.75"
+      ],
+      "ControlTCPConnectFailure": null,
+      "ControlTLSHandshakeFailure": null,
+      "ControlHTTPFailure": "",
+      "ControlHTTPResponseStatusCode": 200,
+      "ControlHTTPResponseBodyLength": 16777216,
+      "ControlHTTPResponseHeadersKeys": {
+        "Alt-Svc": true,
+        "Content-Type": true,
+        "Date": true
+      },
+      "ControlHTTPResponseTitle": ""
+    },
+    {
+      "TagDepth": 0,
+      "Type": 0,
+      "Failure": "",
+      "TransactionID": 1,
+      "TagFetchBody": null,
+      "DNSTransactionID": 1,
+      "DNSDomain": "largefile.com",
+      "DNSLookupFailure": "",
+      "DNSQueryType": "ANY",
+      "DNSEngine": "getaddrinfo",
+      "DNSResolvedAddrs": [
+        "35.161.85.189",
+        "52.35.36.75"
+      ],
+      "IPAddressOrigin": "dns",
+      "IPAddress": "52.35.36.75",
+      "IPAddressASN": 16509,
+      "IPAddressBogon": false,
+      "EndpointTransactionID": null,
+      "EndpointProto": null,
+      "EndpointPort": null,
+      "EndpointAddress": null,
+      "TCPConnectFailure": null,
+      "TLSHandshakeFailure": null,
+      "TLSServerName": null,
+      "HTTPRequestURL": null,
+      "HTTPFailure": null,
+      "HTTPResponseStatusCode": null,
+      "HTTPResponseBodyLength": null,
+      "HTTPResponseBodyIsTruncated": null,
+      "HTTPResponseHeadersKeys": null,
+      "HTTPResponseLocation": null,
+      "HTTPResponseTitle": null,
+      "HTTPResponseIsFinal": null,
+      "ControlDNSDomain": "largefile.com",
+      "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "35.161.85.189",
+        "52.35.36.75"
+      ],
+      "ControlTCPConnectFailure": null,
+      "ControlTLSHandshakeFailure": null,
+      "ControlHTTPFailure": "",
+      "ControlHTTPResponseStatusCode": 200,
+      "ControlHTTPResponseBodyLength": 16777216,
+      "ControlHTTPResponseHeadersKeys": {
+        "Alt-Svc": true,
+        "Content-Type": true,
+        "Date": true
+      },
+      "ControlHTTPResponseTitle": ""
+    }
+  ],
+  "KnownTCPEndpoints": {
+    "4": {
+      "TagDepth": 0,
+      "Type": 3,
+      "Failure": "",
+      "TransactionID": 4,
+      "TagFetchBody": true,
+      "DNSTransactionID": 1,
+      "DNSDomain": "largefile.com",
+      "DNSLookupFailure": "",
+      "DNSQueryType": null,
+      "DNSEngine": null,
+      "DNSResolvedAddrs": [
+        "35.161.85.189",
+        "52.35.36.75"
+      ],
+      "IPAddressOrigin": "dns",
+      "IPAddress": "52.35.36.75",
+      "IPAddressASN": 16509,
+      "IPAddressBogon": false,
+      "EndpointTransactionID": 4,
+      "EndpointProto": "tcp",
+      "EndpointPort": "80",
+      "EndpointAddress": "52.35.36.75:80",
+      "TCPConnectFailure": "",
+      "TLSHandshakeFailure": null,
+      "TLSServerName": null,
+      "HTTPRequestURL": "http://largefile.com/",
+      "HTTPFailure": "",
+      "HTTPResponseStatusCode": 200,
+      "HTTPResponseBodyLength": 524334,
+      "HTTPResponseBodyIsTruncated": false,
+      "HTTPResponseHeadersKeys": {
+        "Alt-Svc": true,
+        "Content-Type": true,
+        "Date": true
+      },
+      "HTTPResponseLocation": null,
+      "HTTPResponseTitle": "",
+      "HTTPResponseIsFinal": true,
+      "ControlDNSDomain": "largefile.com",
+      "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "35.161.85.189",
+        "52.35.36.75"
+      ],
+      "ControlTCPConnectFailure": "",
+      "ControlTLSHandshakeFailure": null,
+      "ControlHTTPFailure": "",
+      "ControlHTTPResponseStatusCode": 200,
+      "ControlHTTPResponseBodyLength": 16777216,
+      "ControlHTTPResponseHeadersKeys": {
+        "Alt-Svc": true,
+        "Content-Type": true,
+        "Date": true
+      },
+      "ControlHTTPResponseTitle": ""
+    },
+    "5": {
+      "TagDepth": 0,
+      "Type": 1,
+      "Failure": "",
+      "TransactionID": 5,
+      "TagFetchBody": true,
+      "DNSTransactionID": 1,
+      "DNSDomain": "largefile.com",
+      "DNSLookupFailure": "",
+      "DNSQueryType": null,
+      "DNSEngine": null,
+      "DNSResolvedAddrs": [
+        "35.161.85.189",
+        "52.35.36.75"
+      ],
+      "IPAddressOrigin": "dns",
+      "IPAddress": "35.161.85.189",
+      "IPAddressASN": 16509,
+      "IPAddressBogon": false,
+      "EndpointTransactionID": 5,
+      "EndpointProto": "tcp",
+      "EndpointPort": "80",
+      "EndpointAddress": "35.161.85.189:80",
+      "TCPConnectFailure": "",
+      "TLSHandshakeFailure": null,
+      "TLSServerName": null,
+      "HTTPRequestURL": null,
+      "HTTPFailure": null,
+      "HTTPResponseStatusCode": null,
+      "HTTPResponseBodyLength": null,
+      "HTTPResponseBodyIsTruncated": null,
+      "HTTPResponseHeadersKeys": null,
+      "HTTPResponseLocation": null,
+      "HTTPResponseTitle": null,
+      "HTTPResponseIsFinal": null,
+      "ControlDNSDomain": "largefile.com",
+      "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "35.161.85.189",
+        "52.35.36.75"
+      ],
+      "ControlTCPConnectFailure": "",
+      "ControlTLSHandshakeFailure": null,
+      "ControlHTTPFailure": "",
+      "ControlHTTPResponseStatusCode": 200,
+      "ControlHTTPResponseBodyLength": 16777216,
+      "ControlHTTPResponseHeadersKeys": {
+        "Alt-Svc": true,
+        "Content-Type": true,
+        "Date": true
+      },
+      "ControlHTTPResponseTitle": ""
+    }
+  },
+  "ControlExpectations": {
+    "DNSAddresses": [
+      "35.161.85.189",
+      "52.35.36.75"
+    ],
+    "FinalResponseFailure": ""
+  }
+}
