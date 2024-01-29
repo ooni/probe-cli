@@ -40,12 +40,12 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://zlib.net/zlib-1.3.tar.gz",
+				"curl", "-fsSLO", "https://zlib.net/zlib-1.3.1.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "zlib-1.3.tar.gz",
+				"tar", "-xf", "zlib-1.3.1.tar.gz",
 			},
 		}, {
 			Env: []string{},
