@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestYandexHandlerFactory(t *testing.T) {
+func TestYandexHandler(t *testing.T) {
 	t.Run("we're redirected if the host is xn--d1acpjx3f.xn--p1ai", func(t *testing.T) {
 		req := &http.Request{
 			URL:   &url.URL{Path: "/"},

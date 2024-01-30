@@ -1,0 +1,191 @@
+{
+  "ControlExpectations": {
+    "DNSAddresses": [
+      "104.16.132.229"
+    ],
+    "FinalResponseFailure": ""
+  },
+  "DNSLookupSuccess": [
+    1
+  ],
+  "DNSLookupSuccessWithInvalidAddresses": [],
+  "DNSLookupSuccessWithValidAddress": [
+    1
+  ],
+  "DNSLookupSuccessWithBogonAddresses": [],
+  "DNSLookupSuccessWithInvalidAddressesClassic": [],
+  "DNSLookupSuccessWithValidAddressClassic": [
+    1
+  ],
+  "DNSLookupUnexpectedFailure": [],
+  "DNSLookupUnexplainedFailure": [],
+  "DNSExperimentFailure": null,
+  "DNSLookupExpectedFailure": [],
+  "DNSLookupExpectedSuccess": [],
+  "TCPConnectExpectedFailure": [],
+  "TCPConnectUnexpectedFailure": [],
+  "TCPConnectUnexpectedFailureDuringWebFetch": [],
+  "TCPConnectUnexpectedFailureDuringConnectivityCheck": [],
+  "TCPConnectUnexplainedFailure": [],
+  "TCPConnectUnexplainedFailureDuringWebFetch": [],
+  "TCPConnectUnexplainedFailureDuringConnectivityCheck": [],
+  "TLSHandshakeExpectedFailure": [],
+  "TLSHandshakeUnexpectedFailure": [],
+  "TLSHandshakeUnexpectedFailureDuringWebFetch": [],
+  "TLSHandshakeUnexpectedFailureDuringConnectivityCheck": [],
+  "TLSHandshakeUnexplainedFailure": [],
+  "TLSHandshakeUnexplainedFailureDuringWebFetch": [],
+  "TLSHandshakeUnexplainedFailureDuringConnectivityCheck": [],
+  "HTTPRoundTripUnexpectedFailure": [],
+  "HTTPRoundTripUnexplainedFailure": [],
+  "HTTPFinalResponseSuccessTLSWithoutControl": null,
+  "HTTPFinalResponseSuccessTLSWithControl": 3,
+  "HTTPFinalResponseSuccessTCPWithoutControl": null,
+  "HTTPFinalResponseSuccessTCPWithControl": null,
+  "HTTPFinalResponseDiffBodyProportionFactor": 0.18180740037950663,
+  "HTTPFinalResponseDiffStatusCodeMatch": false,
+  "HTTPFinalResponseDiffTitleDifferentLongWords": {
+    "default": true,
+    "moment...": true
+  },
+  "HTTPFinalResponseDiffUncommonHeadersIntersection": {
+    "alt-svc": true,
+    "nel": true,
+    "permissions-policy": true,
+    "report-to": true
+  },
+  "Linear": [
+    {
+      "TagDepth": 0,
+      "Type": 3,
+      "Failure": "",
+      "TransactionID": 3,
+      "TagFetchBody": true,
+      "DNSTransactionID": 1,
+      "DNSDomain": "www.cloudflare-cache.com",
+      "DNSLookupFailure": "",
+      "DNSQueryType": null,
+      "DNSEngine": null,
+      "DNSResolvedAddrs": [
+        "104.16.132.229"
+      ],
+      "IPAddressOrigin": "dns",
+      "IPAddress": "104.16.132.229",
+      "IPAddressASN": 13335,
+      "IPAddressBogon": false,
+      "EndpointTransactionID": 3,
+      "EndpointProto": "tcp",
+      "EndpointPort": "443",
+      "EndpointAddress": "104.16.132.229:443",
+      "TCPConnectFailure": "",
+      "TLSHandshakeFailure": "",
+      "TLSServerName": "www.cloudflare-cache.com",
+      "HTTPRequestURL": "https://www.cloudflare-cache.com/",
+      "HTTPFailure": "",
+      "HTTPResponseStatusCode": 503,
+      "HTTPResponseBodyLength": 8432,
+      "HTTPResponseBodyIsTruncated": false,
+      "HTTPResponseHeadersKeys": {
+        "Alt-Svc": true,
+        "Cache-Control": true,
+        "Cf-Ray": true,
+        "Content-Type": true,
+        "Date": true,
+        "Expires": true,
+        "Nel": true,
+        "Permissions-Policy": true,
+        "Report-To": true,
+        "Server": true,
+        "X-Frame-Options": true
+      },
+      "HTTPResponseLocation": null,
+      "HTTPResponseTitle": "Just a moment...",
+      "HTTPResponseIsFinal": true,
+      "ControlDNSDomain": "www.cloudflare-cache.com",
+      "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "104.16.132.229"
+      ],
+      "ControlTCPConnectFailure": "",
+      "ControlTLSHandshakeFailure": "",
+      "ControlHTTPFailure": "",
+      "ControlHTTPResponseStatusCode": 200,
+      "ControlHTTPResponseBodyLength": 1533,
+      "ControlHTTPResponseHeadersKeys": {
+        "Alt-Svc": true,
+        "Cache-Control": true,
+        "Cf-Ray": true,
+        "Content-Length": true,
+        "Content-Type": true,
+        "Date": true,
+        "Expires": true,
+        "Nel": true,
+        "Permissions-Policy": true,
+        "Report-To": true,
+        "Server": true,
+        "X-Frame-Options": true
+      },
+      "ControlHTTPResponseTitle": "Default Web Page"
+    },
+    {
+      "TagDepth": 0,
+      "Type": 0,
+      "Failure": "",
+      "TransactionID": 1,
+      "TagFetchBody": null,
+      "DNSTransactionID": 1,
+      "DNSDomain": "www.cloudflare-cache.com",
+      "DNSLookupFailure": "",
+      "DNSQueryType": "ANY",
+      "DNSEngine": "getaddrinfo",
+      "DNSResolvedAddrs": [
+        "104.16.132.229"
+      ],
+      "IPAddressOrigin": "dns",
+      "IPAddress": "104.16.132.229",
+      "IPAddressASN": 13335,
+      "IPAddressBogon": false,
+      "EndpointTransactionID": null,
+      "EndpointProto": null,
+      "EndpointPort": null,
+      "EndpointAddress": null,
+      "TCPConnectFailure": null,
+      "TLSHandshakeFailure": null,
+      "TLSServerName": null,
+      "HTTPRequestURL": null,
+      "HTTPFailure": null,
+      "HTTPResponseStatusCode": null,
+      "HTTPResponseBodyLength": null,
+      "HTTPResponseBodyIsTruncated": null,
+      "HTTPResponseHeadersKeys": null,
+      "HTTPResponseLocation": null,
+      "HTTPResponseTitle": null,
+      "HTTPResponseIsFinal": null,
+      "ControlDNSDomain": "www.cloudflare-cache.com",
+      "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "104.16.132.229"
+      ],
+      "ControlTCPConnectFailure": null,
+      "ControlTLSHandshakeFailure": null,
+      "ControlHTTPFailure": "",
+      "ControlHTTPResponseStatusCode": 200,
+      "ControlHTTPResponseBodyLength": 1533,
+      "ControlHTTPResponseHeadersKeys": {
+        "Alt-Svc": true,
+        "Cache-Control": true,
+        "Cf-Ray": true,
+        "Content-Length": true,
+        "Content-Type": true,
+        "Date": true,
+        "Expires": true,
+        "Nel": true,
+        "Permissions-Policy": true,
+        "Report-To": true,
+        "Server": true,
+        "X-Frame-Options": true
+      },
+      "ControlHTTPResponseTitle": "Default Web Page"
+    }
+  ]
+}
