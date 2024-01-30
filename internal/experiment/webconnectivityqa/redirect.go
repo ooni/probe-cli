@@ -342,3 +342,57 @@ func redirectWithConsistentDNSAndThenTimeoutForHTTPS() *TestCase {
 		},
 	}
 }
+
+// redirectWithBrokenLocationForHTTP is a scenario where the redirect
+// returns a broken URL only containing `http://`.
+//
+// See https://github.com/ooni/probe/issues/2628 for more info.
+func redirectWithBrokenLocationForHTTP() *TestCase {
+	return &TestCase{
+		Name:     "redirectWithBrokenLocationForHTTP",
+		Flags:    0,
+		Input:    "http://httpbin.com/broken-redirect-http",
+		LongTest: true,
+		Configure: func(env *netemx.QAEnv) {
+			// nothing
+		},
+		ExpectErr: false,
+		ExpectTestKeys: &testKeys{
+			DNSExperimentFailure:  nil,
+			DNSConsistency:        "consistent",
+			HTTPExperimentFailure: "generic_timeout_error",
+			XStatus:               8704, // StatusExperimentHTTP | StatusAnomalyUnknown
+			XDNSFlags:             0,
+			XBlockingFlags:        4, // AnalysisBlockingFlagTLSBlocking
+			Accessible:            false,
+			Blocking:              "http-failure",
+		},
+	}
+}
+
+// redirectWithBrokenLocationForHTTPS is a scenario where the redirect
+// returns a broken URL only containing `https://`.
+//
+// See https://github.com/ooni/probe/issues/2628 for more info.
+func redirectWithBrokenLocationForHTTPS() *TestCase {
+	return &TestCase{
+		Name:     "redirectWithBrokenLocationForHTTPS",
+		Flags:    0,
+		Input:    "https://httpbin.com/broken-redirect-https",
+		LongTest: true,
+		Configure: func(env *netemx.QAEnv) {
+			// nothing
+		},
+		ExpectErr: false,
+		ExpectTestKeys: &testKeys{
+			DNSExperimentFailure:  nil,
+			DNSConsistency:        "consistent",
+			HTTPExperimentFailure: "generic_timeout_error",
+			XStatus:               8704, // StatusExperimentHTTP | StatusAnomalyUnknown
+			XDNSFlags:             0,
+			XBlockingFlags:        4, // AnalysisBlockingFlagTLSBlocking
+			Accessible:            false,
+			Blocking:              "http-failure",
+		},
+	}
+}
