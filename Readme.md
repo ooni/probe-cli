@@ -41,13 +41,15 @@ efforts in documenting Internet censorship around the world.
 
 This repository contains the following Go packages:
 
-1. the command line client ([cmd/ooniprobe](cmd/ooniprobe));
+1. the ooniprobe command line client ([cmd/ooniprobe](cmd/ooniprobe));
 
 2. the test helper server ([internal/cmd/oohelperd](internal/cmd/oohelperd));
 
 3. the mobile library ([pkg/oonimkall](pkg/oonimkall));
 
-4. the measurement-engine library ([internal](internal)).
+4. the measurement-engine library ([internal](internal));
+
+5. the miniooni experimental command line client ([internal/cmd/miniooni](internal/cmd/miniooni)).
 
 Every top-level directory in this repository contains an explanatory README file.
 
