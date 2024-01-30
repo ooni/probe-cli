@@ -4,6 +4,8 @@ import "github.com/ooni/probe-cli/v3/internal/netemx"
 
 // cloudflareCAPTCHAWithHTTP obtains the cloudflare CAPTCHA using HTTP.
 func cloudflareCAPTCHAWithHTTP() *TestCase {
+	// See https://github.com/ooni/probe/issues/2661 for an explanation of why
+	// here for now we're forced to declare "http-diff".
 	return &TestCase{
 		Name:  "cloudflareCAPTCHAWithHTTP",
 		Flags: TestCaseFlagNoV04,
