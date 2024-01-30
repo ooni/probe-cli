@@ -42,6 +42,9 @@ func AllTestCases() []*TestCase {
 		badSSLWithWrongServerName(),
 		badSSLWithUnknownAuthorityWithInconsistentDNS(),
 
+		cloudflareCAPTCHAWithHTTP(),
+		cloudflareCAPTCHAWithHTTPS(),
+
 		controlFailureWithSuccessfulHTTPWebsite(),
 		controlFailureWithSuccessfulHTTPSWebsite(),
 

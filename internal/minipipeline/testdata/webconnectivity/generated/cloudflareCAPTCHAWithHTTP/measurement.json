@@ -1,0 +1,639 @@
+{
+  "data_format_version": "0.2.0",
+  "extensions": {
+    "dnst": 0,
+    "httpt": 0,
+    "netevents": 0,
+    "tcpconnect": 0,
+    "tlshandshake": 0,
+    "tunnel": 0
+  },
+  "input": "http://www.cloudflare-cache.com/",
+  "measurement_start_time": "2024-01-30 11:03:49",
+  "probe_asn": "AS137",
+  "probe_cc": "IT",
+  "probe_ip": "127.0.0.1",
+  "probe_network_name": "Consortium GARR",
+  "report_id": "",
+  "resolver_asn": "AS137",
+  "resolver_ip": "130.192.3.21",
+  "resolver_network_name": "Consortium GARR",
+  "software_name": "ooniprobe",
+  "software_version": "3.21.0-alpha",
+  "test_helpers": {
+    "backend": {
+      "address": "https://0.th.ooni.org/",
+      "type": "https"
+    }
+  },
+  "test_keys": {
+    "agent": "redirect",
+    "client_resolver": "",
+    "retries": null,
+    "socksproxy": null,
+    "network_events": [
+      {
+        "address": "104.16.132.229:80",
+        "failure": null,
+        "operation": "connect",
+        "proto": "tcp",
+        "t0": 0.013329,
+        "t": 0.019363,
+        "transaction_id": 4,
+        "tags": [
+          "depth=0",
+          "fetch_body=true"
+        ]
+      },
+      {
+        "failure": null,
+        "operation": "http_transaction_start",
+        "t0": 0.019447,
+        "t": 0.019447,
+        "transaction_id": 4,
+        "tags": [
+          "depth=0",
+          "fetch_body=true"
+        ]
+      },
+      {
+        "address": "104.16.132.229:443",
+        "failure": null,
+        "operation": "connect",
+        "proto": "tcp",
+        "t0": 0.013363,
+        "t": 0.019464,
+        "transaction_id": 5,
+        "tags": [
+          "depth=0",
+          "fetch_body=false"
+        ]
+      },
+      {
+        "failure": null,
+        "operation": "http_transaction_done",
+        "t0": 0.0268,
+        "t": 0.0268,
+        "transaction_id": 4,
+        "tags": [
+          "depth=0",
+          "fetch_body=true"
+        ]
+      },
+      {
+        "address": "104.16.132.229:80",
+        "failure": null,
+        "num_bytes": 9435,
+        "operation": "bytes_received_cumulative",
+        "proto": "tcp",
+        "t0": 0.026835,
+        "t": 0.026835,
+        "transaction_id": 4,
+        "tags": [
+          "depth=0",
+          "fetch_body=true"
+        ]
+      },
+      {
+        "address": "104.16.132.229:443",
+        "failure": null,
+        "num_bytes": 2290,
+        "operation": "bytes_received_cumulative",
+        "proto": "tcp",
+        "t0": 0.028811,
+        "t": 0.028811,
+        "transaction_id": 5,
+        "tags": [
+          "depth=0",
+          "fetch_body=false"
+        ]
+      }
+    ],
+    "x_dns_whoami": {
+      "system_v4": null,
+      "udp_v4": {
+        "8.8.4.4:53": null
+      }
+    },
+    "x_doh": {
+      "network_events": [
+        {
+          "failure": null,
+          "operation": "resolve_start",
+          "t0": 0.000436,
+          "t": 0.000436,
+          "transaction_id": 3,
+          "tags": [
+            "depth=0"
+          ]
+        },
+        {
+          "failure": null,
+          "operation": "resolve_done",
+          "t0": 0.013231,
+          "t": 0.013231,
+          "transaction_id": 3,
+          "tags": [
+            "depth=0"
+          ]
+        }
+      ],
+      "queries": [
+        {
+          "answers": null,
+          "engine": "getaddrinfo",
+          "failure": "dns_nxdomain_error",
+          "hostname": "dns.nextdns.io",
+          "query_type": "ANY",
+          "resolver_hostname": null,
+          "resolver_port": null,
+          "resolver_address": "",
+          "t0": 0.001794,
+          "t": 0.007931,
+          "tags": [
+            "depth=0"
+          ],
+          "transaction_id": 3
+        },
+        {
+          "answers": null,
+          "engine": "getaddrinfo",
+          "failure": "dns_nxdomain_error",
+          "hostname": "dns.nextdns.io",
+          "query_type": "ANY",
+          "resolver_hostname": null,
+          "resolver_port": null,
+          "resolver_address": "",
+          "t0": 0.007964,
+          "t": 0.013216,
+          "tags": [
+            "depth=0"
+          ],
+          "transaction_id": 3
+        }
+      ],
+      "requests": [],
+      "tcp_connect": [],
+      "tls_handshakes": []
+    },
+    "x_do53": {
+      "network_events": [
+        {
+          "failure": null,
+          "operation": "resolve_start",
+          "t0": 0.000438,
+          "t": 0.000438,
+          "transaction_id": 2,
+          "tags": [
+            "depth=0"
+          ]
+        },
+        {
+          "address": "8.8.4.4:53",
+          "failure": null,
+          "num_bytes": 42,
+          "operation": "write",
+          "proto": "udp",
+          "t0": 0.000887,
+          "t": 0.001301,
+          "transaction_id": 2,
+          "tags": [
+            "depth=0"
+          ]
+        },
+        {
+          "address": "8.8.4.4:53",
+          "failure": null,
+          "num_bytes": 42,
+          "operation": "write",
+          "proto": "udp",
+          "t0": 0.000835,
+          "t": 0.001498,
+          "transaction_id": 2,
+          "tags": [
+            "depth=0"
+          ]
+        },
+        {
+          "address": "8.8.4.4:53",
+          "failure": null,
+          "num_bytes": 42,
+          "operation": "read",
+          "proto": "udp",
+          "t0": 0.001493,
+          "t": 0.006759,
+          "transaction_id": 2,
+          "tags": [
+            "depth=0"
+          ]
+        },
+        {
+          "address": "8.8.4.4:53",
+          "failure": null,
+          "num_bytes": 82,
+          "operation": "read",
+          "proto": "udp",
+          "t0": 0.002487,
+          "t": 0.007821,
+          "transaction_id": 2,
+          "tags": [
+            "depth=0"
+          ]
+        },
+        {
+          "failure": null,
+          "operation": "resolve_done",
+          "t0": 0.00817,
+          "t": 0.00817,
+          "transaction_id": 2,
+          "tags": [
+            "depth=0"
+          ]
+        }
+      ],
+      "queries": []
+    },
+    "x_dns_duplicate_responses": [],
+    "queries": [
+      {
+        "answers": [
+          {
+            "asn": 13335,
+            "as_org_name": "Cloudflare Inc",
+            "answer_type": "A",
+            "ipv4": "104.16.132.229",
+            "ttl": null
+          }
+        ],
+        "engine": "getaddrinfo",
+        "failure": null,
+        "hostname": "www.cloudflare-cache.com",
+        "query_type": "ANY",
+        "resolver_hostname": null,
+        "resolver_port": null,
+        "resolver_address": "",
+        "t0": 0.00045,
+        "t": 0.00806,
+        "tags": [
+          "depth=0"
+        ],
+        "transaction_id": 1
+      },
+      {
+        "answers": null,
+        "engine": "udp",
+        "failure": "dns_no_answer",
+        "hostname": "www.cloudflare-cache.com",
+        "query_type": "AAAA",
+        "raw_response": "dGCBAAABAAAAAAAAA3d3dxBjbG91ZGZsYXJlLWNhY2hlA2NvbQAAHAAB",
+        "resolver_hostname": null,
+        "resolver_port": null,
+        "resolver_address": "8.8.4.4:53",
+        "t0": 0.000552,
+        "t": 0.006769,
+        "tags": [
+          "depth=0"
+        ],
+        "transaction_id": 2
+      },
+      {
+        "answers": [
+          {
+            "asn": 13335,
+            "as_org_name": "Cloudflare Inc",
+            "answer_type": "A",
+            "ipv4": "104.16.132.229",
+            "ttl": null
+          }
+        ],
+        "engine": "udp",
+        "failure": null,
+        "hostname": "www.cloudflare-cache.com",
+        "query_type": "A",
+        "raw_response": "5QeBAAABAAEAAAAAA3d3dxBjbG91ZGZsYXJlLWNhY2hlA2NvbQAAAQABA3d3dxBjbG91ZGZsYXJlLWNhY2hlA2NvbQAAAQABAAAOEAAEaBCE5Q==",
+        "resolver_hostname": null,
+        "resolver_port": null,
+        "resolver_address": "8.8.4.4:53",
+        "t0": 0.000535,
+        "t": 0.007872,
+        "tags": [
+          "depth=0"
+        ],
+        "transaction_id": 2
+      },
+      {
+        "answers": null,
+        "engine": "doh",
+        "failure": "dns_nxdomain_error",
+        "hostname": "www.cloudflare-cache.com",
+        "query_type": "AAAA",
+        "resolver_hostname": null,
+        "resolver_port": null,
+        "resolver_address": "https://dns.nextdns.io/dns-query",
+        "t0": 0.000532,
+        "t": 0.007993,
+        "tags": [
+          "depth=0"
+        ],
+        "transaction_id": 3
+      },
+      {
+        "answers": null,
+        "engine": "doh",
+        "failure": "dns_nxdomain_error",
+        "hostname": "www.cloudflare-cache.com",
+        "query_type": "A",
+        "resolver_hostname": null,
+        "resolver_port": null,
+        "resolver_address": "https://dns.nextdns.io/dns-query",
+        "t0": 0.000536,
+        "t": 0.013227,
+        "tags": [
+          "depth=0"
+        ],
+        "transaction_id": 3
+      }
+    ],
+    "requests": [
+      {
+        "network": "tcp",
+        "address": "104.16.132.229:80",
+        "failure": null,
+        "request": {
+          "body": "",
+          "body_is_truncated": false,
+          "headers_list": [
+            [
+              "Accept",
+              "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+            ],
+            [
+              "Accept-Language",
+              "en-US,en;q=0.9"
+            ],
+            [
+              "Host",
+              "www.cloudflare-cache.com"
+            ],
+            [
+              "Referer",
+              ""
+            ],
+            [
+              "User-Agent",
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+            ]
+          ],
+          "headers": {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Host": "www.cloudflare-cache.com",
+            "Referer": "",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+          },
+          "method": "GET",
+          "tor": {
+            "exit_ip": null,
+            "exit_name": null,
+            "is_tor": false
+          },
+          "x_transport": "tcp",
+          "url": "http://www.cloudflare-cache.com/"
+        },
+        "response": {
+          "body": "\n\u003c!DOCTYPE HTML\u003e\n\u003chtml lang=\"en-US\"\u003e\n\u003chead\u003e\n  \u003cmeta charset=\"UTF-8\" /\u003e\n  \u003cmeta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" /\u003e\n  \u003cmeta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge,chrome=1\" /\u003e\n  \u003cmeta name=\"robots\" content=\"noindex, nofollow\" /\u003e\n  \u003cmeta name=\"viewport\" content=\"width=device-width,initial-scale=1\" /\u003e\n  \u003ctitle\u003eJust a moment...\u003c/title\u003e\n  \u003cstyle type=\"text/css\"\u003e\n    html, body {width: 100%; height: 100%; margin: 0; padding: 0;}\n    body {background-color: #ffffff; color: #000000; font-family:-apple-system, system-ui, BlinkMacSystemFont, \"Segoe UI\", Roboto, Oxygen, Ubuntu, \"Helvetica Neue\",Arial, sans-serif; font-size: 16px; line-height: 1.7em;-webkit-font-smoothing: antialiased;}\n    h1 { text-align: center; font-weight:700; margin: 16px 0; font-size: 32px; color:#000000; line-height: 1.25;}\n    p {font-size: 20px; font-weight: 400; margin: 8px 0;}\n    p, .attribution, {text-align: center;}\n    #spinner {margin: 0 auto 30px auto; display: block;}\n    .attribution {margin-top: 32px;}\n    @keyframes fader     { 0% {opacity: 0.2;} 50% {opacity: 1.0;} 100% {opacity: 0.2;} }\n    @-webkit-keyframes fader { 0% {opacity: 0.2;} 50% {opacity: 1.0;} 100% {opacity: 0.2;} }\n    #cf-bubbles \u003e .bubbles { animation: fader 1.6s infinite;}\n    #cf-bubbles \u003e .bubbles:nth-child(2) { animation-delay: .2s;}\n    #cf-bubbles \u003e .bubbles:nth-child(3) { animation-delay: .4s;}\n    .bubbles { background-color: #f58220; width:20px; height: 20px; margin:2px; border-radius:100%; display:inline-block; }\n    a { color: #2c7cb0; text-decoration: none; -moz-transition: color 0.15s ease; -o-transition: color 0.15s ease; -webkit-transition: color 0.15s ease; transition: color 0.15s ease; }\n    a:hover{color: #f4a15d}\n    .attribution{font-size: 16px; line-height: 1.5;}\n    .ray_id{display: block; margin-top: 8px;}\n    #cf-wrapper #challenge-form { padding-top:25px; padding-bottom:25px; }\n    #cf-hcaptcha-container { text-align:center;}\n    #cf-hcaptcha-container iframe { display: inline-block;}\n  \u003c/style\u003e\n\n      \u003cmeta http-equiv=\"refresh\" content=\"3\"\u003e\n  \u003cscript type=\"text/javascript\"\u003e\n    //\u003c![CDATA[\n    (function(){\n\n      window._cf_chl_opt={\n        cvId: \"2\",\n        cType: \"non-interactive\",\n        cNounce: \"97691\",\n        cRay: \"68013f3b0c7d498b\",\n        cHash: \"c629373f5bf3ad9\",\n        cFPWv: \"g\",\n        cTTimeMs: \"1000\",\n        cRq: {\n          ru: \"aHR0cDovL2xnYnQuZm91bmRhdGlvbi8=\",\n          ra: \"TW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzkwLjAuNDQzMC45MyBTYWZhcmkvNTM3LjM2\",\n          rm: \"R0VU\",\n          d: \"pQ3nb5AcDwNb7z9ijyLMXcEOanHjT9r1ePf6pKvwmBOwOZaUr9bWr1Kgh9OBvMNycB+8tQDFF0f9/X7spkTKj26ep0JXAHgO8oG/W0INjw0cX9w7WEBNtt/PsjtOiaRZZsC+2P0w/bF1zy3VNKqyMGQFWJt3Lky+6pVbtVTTIhvsEAwstJ9MINQfdVg9wOJx0r95PXHJGg8y4jhIeF2gAqMza9Ug5iG0DHy7BBPG63MgJtyxydzETS5d59QcU1vVyzsRJBV/qWFl7J8CMJnUC2ox0ObDCeYZFrD+GSzcUGTqV/lV0mEM/SaARusI3OO4o/H74cgrN4H509yr9R9br1EuVbD/6NRQsc8zX5GsDYxKRJVscjTqS9c1pTxjs3/lPLJu6jTIX6itJlHjIGTYem1jB6PWsl4t0eln4VQPuOYzcUf/wMQ71vNLIl8M0XS496ya+ZMWOu3NUMs78j75JshdOkYfZ5WQx5i6hafo+0Kq2eACqLQ5SLMvt/Wn9YxG2QpVmJcnxZ6qV+2kN4MSOCzDEihEgMDsvbT2xObsG33QG4CRWqlM1z4uF4ZC583gaRrHVznUAeSwExSb2rIMPSAE64vYguOiim1d/n9LcEpXoccZkVNGo3jycEx53PVLWtZSMnbRKfDcYkZ/Fs91nf8F0o9Bb8u0E/Dd24NrBtxv5I7COi9WanIYGL7udFvepGhNfYjvfFAeXkg+1SRa74FGtsPU5KkfsHomvWLnl6kZh84u1RV9bsl5TB1ikWeBMFW65U3auWcsZ67vx4d06cZZOdrj/lQzp3G+P2wDuOY=\",\n          t: \"MTYyOTE4NTk0OS45MzQwMDA=\",\n          m: \"u/uh23t85V0m+MUzBn5qsZusVWzbP8zUDIdN8CSbST0=\",\n          i1: \"aPsCmoX67SE1bs3V7UxfEw==\",\n          i2: \"Dj31pDsLDJkIqJuXiVMXFw==\",\n          zh: \"MOAGc57RydtNLJSEH/prEsUTDPR9h3Jow/mE27NBkek=\",\n          uh: \"RhRfQ3Y9htiPyeXJ4MFfcXRnFwYa8lIqcK50BCUW5Uc=\",\n          hh: \"GESBVfXNbuLcsV0d0Da/Xo4pc7AtEpsiRnBGcvFMGtc=\",\n        }\n      }\n      window._cf_chl_enter = function(){window._cf_chl_opt.p=1};\n\n    })();\n    //]]\u003e\n  \u003c/script\u003e\n\n\n\u003c/head\u003e\n\u003cbody\u003e\n  \u003ctable width=\"100%\" height=\"100%\" cellpadding=\"20\"\u003e\n    \u003ctr\u003e\n      \u003ctd align=\"center\" valign=\"middle\"\u003e\n          \u003cdiv class=\"cf-browser-verification cf-im-under-attack\"\u003e\n  \u003cnoscript\u003e\n    \u003ch1 data-translate=\"turn_on_js\" style=\"color:#bd2426;\"\u003ePlease turn JavaScript on and reload the page.\u003c/h1\u003e\n  \u003c/noscript\u003e\n  \u003cdiv id=\"cf-content\" style=\"display:none\"\u003e\n\n    \u003cdiv id=\"cf-bubbles\"\u003e\n      \u003cdiv class=\"bubbles\"\u003e\u003c/div\u003e\n      \u003cdiv class=\"bubbles\"\u003e\u003c/div\u003e\n      \u003cdiv class=\"bubbles\"\u003e\u003c/div\u003e\n    \u003c/div\u003e\n    \u003ch1\u003e\u003cspan data-translate=\"checking_browser\"\u003eChecking your browser before accessing\u003c/span\u003e lgbt.foundation.\u003c/h1\u003e\n    \u003c!-- \u003ca href=\"http://lagungroen.com/telephonequinquenni.php?source=415\"\u003etable\u003c/a\u003e --\u003e\n    \u003cdiv id=\"no-cookie-warning\" class=\"cookie-warning\" data-translate=\"turn_on_cookies\" style=\"display:none\"\u003e\n      \u003cp data-translate=\"turn_on_cookies\" style=\"color:#bd2426;\"\u003ePlease enable Cookies and reload the page.\u003c/p\u003e\n    \u003c/div\u003e\n    \u003cp data-translate=\"process_is_automatic\"\u003eThis process is automatic. Your browser will redirect to your requested content shortly.\u003c/p\u003e\n    \u003cp data-translate=\"allow_5_secs\" id=\"cf-spinner-allow-5-secs\" \u003ePlease allow up to 5 seconds\u0026hellip;\u003c/p\u003e\n    \u003cp data-translate=\"redirecting\" id=\"cf-spinner-redirecting\" style=\"display:none\"\u003eRedirecting\u0026hellip;\u003c/p\u003e\n  \u003c/div\u003e\n\n  \u003cform class=\"challenge-form\" id=\"challenge-form\" action=\"/?__cf_chl_jschl_tk__=pmd_ebe1a9dbe4472c291e4c0b91fa2baf24a8e8ef05-1629185949-0-gqNtZGzNAc2jcnBszQLi\" method=\"POST\" enctype=\"application/x-www-form-urlencoded\"\u003e\n    \u003cinput type=\"hidden\" name=\"md\" value=\"b119c08bd231a98dcce3bae40d5228171a3689b4-1629185949-0-Ac9eUX6TZjGVopJgxPXVUTUAe0F-gV3bf1HzoF8kvKWVPajao7kLQnzH3ovGAEIMtS4bFWvYJNePC8xo1DkjCNmWTvUYf8ZcRD5RNytBkpT-8QE4YCQcHlwe7ePAgMvwbzCCQmHKk0-LSez1O8KAN6waDO5FQ6lgNoyvfXUbHqaqO-K7bd4toaFfPg7KKCl1TdWRP1FvvLM6bR6YvRtDIV7vIS9cXUPkqY-ETf2M89hCxxz3pLeHPkbY1wUBBNqVZkbUXgKXsBXwVBnON9cpN0wZE_XG_xVnKGJIlwpw3BVcigabXr2HuRlOLWhoOEWOol1Ex4iOFCuYn5Si69ANEWHDeIBDKi4VaL1yI83s6mT0V_mNVnXIPJumq3Rf1cw8Nhrh5yC02x-5oAzH3Q0VY2k\" /\u003e\n    \u003cinput type=\"hidden\" name=\"r\" value=\"8c5d3a196c30c0e49d1c11064661bb15d94cf3d6-1629185949-0-Adi/o7JWFCfIjUMhJICUSNCO3cAf/JIKgyf7eAPHZ4fF+06SJrzHqPHFwyCMU7BZVC7YyWKz9fUhqrCGg4PzhQBa4j5x0EKKsppeYQASYIGRNOv6JUaFey7WF0tF9u60XfO8Oxf/wrfZ8SF+Q+zjQcAZ1XXFW+wBMCipw6lXtsb86VvawP/ZD1OfVsCKGXcDiW65W7JUqIeNuToVleOtWBdkwpPlZeTUk/wsjgMnovNw2icXi1rXigjv8SP6BA+6HUM5a/tpuSpD1vcG0TfyNsP10+0PfyVynd3S2spXqJ9lddzbIh0dz5IsZVaaZsNu7FTFWC5y99USlacy38t2zwiGtUKhlDM/DIYH8QcDuKnA7/Crn+atOOiYojNjB2qFJnMBsX1sWJf65XeTBWTy7VYHj2CYqaxKgCllf//NuNY9s6W71ZRLoGGjHndGfJV06u3ILgR2gJIzY59wdktHCQDRqvw3vSe4eO/GWHRjtBBF9pRJHzOtDDHJSitoR2CxssYp+eBEMy+C/0q9ntdgzZ/0UeANQXlgku/az5hSYWM8krlDg+dWERBFLoUqg6B83gfslCvLsYwt08bpZvOnrdWWHxRX8YZCEZXxmiytmIZBXH3ucsC/b+pLH/R56U4PHCQomW+so1HaBpdPsnt90BHo+xUIWbBBwbRjawAkTRz8\"/\u003e\n    \u003cinput type=\"hidden\" value=\"c6ad5d3b5ede5b9831aa8584aadd6b50\" id=\"jschl-vc\" name=\"jschl_vc\"/\u003e\n    \u003c!-- \u003cinput type=\"hidden\" value=\"\" id=\"jschl-vc\" name=\"jschl_vc\"/\u003e --\u003e\n    \u003cinput type=\"hidden\" name=\"pass\" value=\"1629185950.934-L7Wyj487wQ\"/\u003e\n    \u003cinput type=\"hidden\" id=\"jschl-answer\" name=\"jschl_answer\"/\u003e\n  \u003c/form\u003e\n\n    \u003cscript type=\"text/javascript\"\u003e\n      //\u003c![CDATA[\n      (function(){\n          var a = document.getElementById('cf-content');\n          a.style.display = 'block';\n          var isIE = /(MSIE|Trident\\/|Edge\\/)/i.test(window.navigator.userAgent);\n          var trkjs = isIE ? new Image() : document.createElement('img');\n          trkjs.setAttribute(\"src\", \"/cdn-cgi/images/trace/jschal/js/transparent.gif?ray=68013f3b0c7d498b\");\n          trkjs.id = \"trk_jschal_js\";\n          trkjs.setAttribute(\"alt\", \"\");\n          document.body.appendChild(trkjs);\n          var cpo=document.createElement('script');\n          cpo.type='text/javascript';\n          cpo.src=\"/cdn-cgi/challenge-platform/h/g/orchestrate/jsch/v1?ray=68013f3b0c7d498b\";\n          document.getElementsByTagName('head')[0].appendChild(cpo);\n        }());\n      //]]\u003e\n    \u003c/script\u003e\n\n  \u003cdiv id=\"trk_jschal_nojs\" style=\"background-image:url('/cdn-cgi/images/trace/jschal/nojs/transparent.gif?ray=68013f3b0c7d498b')\"\u003e \u003c/div\u003e\n\u003c/div\u003e\n\n\n          \u003cdiv class=\"attribution\"\u003e\n            DDoS protection by \u003ca rel=\"noopener noreferrer\" href=\"https://www.cloudflare.com/5xx-error-landing/\" target=\"_blank\"\u003eCloudflare\u003c/a\u003e\n            \u003cbr /\u003e\n            \u003cspan class=\"ray_id\"\u003eRay ID: \u003ccode\u003e68013f3b0c7d498b\u003c/code\u003e\u003c/span\u003e\n          \u003c/div\u003e\n      \u003c/td\u003e\n\n    \u003c/tr\u003e\n  \u003c/table\u003e\n\u003c/body\u003e\n\u003c/html\u003e\n",
+          "body_is_truncated": false,
+          "code": 503,
+          "headers_list": [
+            [
+              "Alt-Svc",
+              "h3=\":443\""
+            ],
+            [
+              "Cache-Control",
+              "private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0"
+            ],
+            [
+              "Cf-Ray",
+              "68013f3b0c7d498b-SIN"
+            ],
+            [
+              "Content-Type",
+              "text/html; charset=UTF-8"
+            ],
+            [
+              "Date",
+              "Thu, 24 Aug 2023 14:35:29 GMT"
+            ],
+            [
+              "Expires",
+              "Thu, 01 Jan 1970 00:00:01 GMT"
+            ],
+            [
+              "Nel",
+              "{\"success_fraction\":0,\"report_to\":\"cf-nel\",\"max_age\":604800}"
+            ],
+            [
+              "Permissions-Policy",
+              "accelerometer=(),autoplay=(),camera=(),clipboard-read=(),clipboard-write=(),fullscreen=(),geolocation=(),gyroscope=(),hid=(),interest-cohort=(),magnetometer=(),microphone=(),payment=(),publickey-credentials-get=(),screen-wake-lock=(),serial=(),sync-xhr=(),usb=()"
+            ],
+            [
+              "Report-To",
+              "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v3?s=9SevtxfJtcGPMEGxphEr1sQHmEGpEnsQ5W4Qhy6ns8aRqSPQm%2BeiRdEd05hO4THbNXuGnE9Wb0TFofv60U%2FFDA9P5eCqihYMH%2Bd36I0f%2BJXuVRVnZaH5ANSv4LZou%2FbxGQs%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}"
+            ],
+            [
+              "Server",
+              "cloudflare"
+            ],
+            [
+              "X-Frame-Options",
+              "SAMEORIG"
+            ]
+          ],
+          "headers": {
+            "Alt-Svc": "h3=\":443\"",
+            "Cache-Control": "private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0",
+            "Cf-Ray": "68013f3b0c7d498b-SIN",
+            "Content-Type": "text/html; charset=UTF-8",
+            "Date": "Thu, 24 Aug 2023 14:35:29 GMT",
+            "Expires": "Thu, 01 Jan 1970 00:00:01 GMT",
+            "Nel": "{\"success_fraction\":0,\"report_to\":\"cf-nel\",\"max_age\":604800}",
+            "Permissions-Policy": "accelerometer=(),autoplay=(),camera=(),clipboard-read=(),clipboard-write=(),fullscreen=(),geolocation=(),gyroscope=(),hid=(),interest-cohort=(),magnetometer=(),microphone=(),payment=(),publickey-credentials-get=(),screen-wake-lock=(),serial=(),sync-xhr=(),usb=()",
+            "Report-To": "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v3?s=9SevtxfJtcGPMEGxphEr1sQHmEGpEnsQ5W4Qhy6ns8aRqSPQm%2BeiRdEd05hO4THbNXuGnE9Wb0TFofv60U%2FFDA9P5eCqihYMH%2Bd36I0f%2BJXuVRVnZaH5ANSv4LZou%2FbxGQs%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}",
+            "Server": "cloudflare",
+            "X-Frame-Options": "SAMEORIG"
+          }
+        },
+        "t0": 0.019447,
+        "t": 0.0268,
+        "tags": [
+          "depth=0",
+          "fetch_body=true"
+        ],
+        "transaction_id": 4
+      }
+    ],
+    "tcp_connect": [
+      {
+        "ip": "104.16.132.229",
+        "port": 80,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t0": 0.013329,
+        "t": 0.019363,
+        "tags": [
+          "depth=0",
+          "fetch_body=true"
+        ],
+        "transaction_id": 4
+      },
+      {
+        "ip": "104.16.132.229",
+        "port": 443,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t0": 0.013363,
+        "t": 0.019464,
+        "tags": [
+          "depth=0",
+          "fetch_body=false"
+        ],
+        "transaction_id": 5
+      }
+    ],
+    "tls_handshakes": [
+      {
+        "network": "tcp",
+        "address": "104.16.132.229:443",
+        "cipher_suite": "TLS_AES_128_GCM_SHA256",
+        "failure": null,
+        "negotiated_protocol": "http/1.1",
+        "no_tls_verify": false,
+        "peer_certificates": [
+          {
+            "data": "MIIDhDCCAmygAwIBAgIUOokUjlz+Ya9PKcO7NahRsnx+jBUwDQYJKoZIhvcNAQELBQAwHzENMAsGA1UEChMET09OSTEOMAwGA1UEAxMFamFmYXIwHhcNMjQwMTMwMTAwMzQ5WhcNMjQwMTMwMTIwMzQ5WjA7MRYwFAYDVQQKEw1PT05JIE5ldGVtIENBMSEwHwYDVQQDExh3d3cuY2xvdWRmbGFyZS1jYWNoZS5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDghkbyF2y21eeYGfhXcUVpNkhVjESOzFvsGdWJ6SMTAjg1qKz01agZQwusuUgdMHGyhMxJ4AaUQWrvetwaUydX/fDQho+R9G32w9VnZgFDgFhea2J/FwlJ07IOSY0xHxz5nXUMu1so5a7QNlZiUpUwHHTRYzDsVZ3NXmZGVmYFn3JeZG496DG9nCsEggn9wTP7UnV9qzli6sPRbrfPfsq0jiQ6GXSi3mr1Mf+OBuPU0fA8pciWplnHWBos65lqAZrRRreiRd5Phy5So3J6um19zCgHL8dEAH06EjKNyBDQB4VEyOqmBjaqBcCfKfn1jqQn1Idh+hOrzI11viDmQFa7AgMBAAGjgZswgZgwDgYDVR0PAQH/BAQDAgWgMBMGA1UdJQQMMAoGCCsGAQUFBwMBMAwGA1UdEwEB/wQCMAAwHQYDVR0OBBYEFA4uFBZlVcuX99daQ2EGndirNi3gMB8GA1UdIwQYMBaAFIyuRixjxUsA7/1KdHne45+cTHGYMCMGA1UdEQQcMBqCGHd3dy5jbG91ZGZsYXJlLWNhY2hlLmNvbTANBgkqhkiG9w0BAQsFAAOCAQEANxGs8EzRJUVXO+WMKIeDuVSMd7B0G/zoClkHm5FBMaeGQHLIBggFKcKnznhSpYI4MyJ171XrtjHVS0ZL2YSoS3G/VJzIPJSEaYEiPte0LgyYtfUD+7A3UEJ2BiphzKZZBuPujc1OLbeGTjkN5qSSgvZGmM2QQ5pF9QHlRU7wPPHwrDmeG4geComRMkohKxFkhpiL2h3DjHRGHEpF+IiT7Tg12dlXyDZMkvheplxSMSGmHhoWTU0BcwpyOH7FgaK/mcNcXFHSIozdnVWwqR3FM3r/G3JKpRzsdsHvZGmqhGMhLCAUaSP6uhpN8nEbhGPPjNA0z7mKCOck3XSCvF6Opw==",
+            "format": "base64"
+          },
+          {
+            "data": "MIIDNjCCAh6gAwIBAgIVAIAoeArF1Mg13xHQ46O06U0LZ+vsMA0GCSqGSIb3DQEBCwUAMB8xDTALBgNVBAoTBE9PTkkxDjAMBgNVBAMTBWphZmFyMB4XDTI0MDEyOTExMDM0OVoXDTI0MDEzMTExMDM0OVowHzENMAsGA1UEChMET09OSTEOMAwGA1UEAxMFamFmYXIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDe75+rho4RMZ4QDkVDKte02ABa6rzs3SkEgYtVep4QqQKZe9wiU2u48PXQFdk2UDeH/MUvyq/rz33YMtmA12/FixFz2SvA2pvL5Pv+GLBBeK5yBKLVTsXN7Zaitf4siGmI5qtmyvlFo9dYSA8aOgV138/7T14VxDDG6l9ro0rQR786l5wOB5QRUNlrt11k2vrblDiwzFOVKVgsLuT0Dhz+vl0QnVmEG6koNEwpILE5TzHm+KoDLc3OoaPVzxXQ8aRZO+SUhn8RP941I0qHM9A+0TMQGtWAFp59dBQg18znFwdsqal4IJK9mFVP+C7XdDDUmEmQxf2XwnGPwHwOjYyRAgMBAAGjaTBnMA4GA1UdDwEB/wQEAwICpDATBgNVHSUEDDAKBggrBgEFBQcDATAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBSMrkYsY8VLAO/9SnR53uOfnExxmDAQBgNVHREECTAHggVqYWZhcjANBgkqhkiG9w0BAQsFAAOCAQEAjQTBCv0LCqADyHw732iGN8HxvcEKx7XIIL7ar4+yh9OBEQOg479oXxAF/h4+rYykOlV0LNj2DsozZ20xgRs8f+pgpRG1nf6nQCeFf/+DNGRGBNrxNQ4Xb020y8VQ9AiO5X8CFBbML3xOh1AoBDGNUx0aTjakR0ow5u2Fg7rmmqcsWAHRHr62TQ9G49vrvWYfijzfr5mtz0637NHH1CNRKdtf7z9/bX9Ynk5mUDtmfmhCAcI33kV2qhSt5hbr9DXE47FyFt6YVueEdD01KZG/vo2ZNWlxOOsF3sjJZd7YEbH3u6hMKghRuCs3x7h8xZh+rhhORagdqqeT9rahFALc1Q==",
+            "format": "base64"
+          }
+        ],
+        "server_name": "www.cloudflare-cache.com",
+        "t0": 0.019482,
+        "t": 0.028785,
+        "tags": [
+          "depth=0",
+          "fetch_body=false"
+        ],
+        "tls_version": "TLSv1.3",
+        "transaction_id": 5
+      }
+    ],
+    "x_control_request": {
+      "http_request": "http://www.cloudflare-cache.com/",
+      "http_request_headers": {
+        "Accept": [
+          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        ],
+        "Accept-Language": [
+          "en-US,en;q=0.9"
+        ],
+        "User-Agent": [
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.3"
+        ]
+      },
+      "tcp_connect": [
+        "104.16.132.229:443",
+        "104.16.132.229:80"
+      ],
+      "x_quic_enabled": false
+    },
+    "control": {
+      "tcp_connect": {
+        "104.16.132.229:443": {
+          "status": true,
+          "failure": null
+        },
+        "104.16.132.229:80": {
+          "status": true,
+          "failure": null
+        }
+      },
+      "tls_handshake": {
+        "104.16.132.229:443": {
+          "server_name": "www.cloudflare-cache.com",
+          "status": true,
+          "failure": null
+        }
+      },
+      "quic_handshake": {},
+      "http_request": {
+        "body_length": 1533,
+        "discovered_h3_endpoint": "www.cloudflare-cache.com:443",
+        "failure": null,
+        "title": "Default Web Page",
+        "headers": {
+          "Alt-Svc": "h3=\":443\"",
+          "Cache-Control": "private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0",
+          "Cf-Ray": "68013f3b0c7d498b-SIN",
+          "Content-Length": "1533",
+          "Content-Type": "text/html; charset=UTF-8",
+          "Date": "Thu, 24 Aug 2023 14:35:29 GMT",
+          "Expires": "Thu, 01 Jan 1970 00:00:01 GMT",
+          "Nel": "{\"success_fraction\":0,\"report_to\":\"cf-nel\",\"max_age\":604800}",
+          "Permissions-Policy": "accelerometer=(),autoplay=(),camera=(),clipboard-read=(),clipboard-write=(),fullscreen=(),geolocation=(),gyroscope=(),hid=(),interest-cohort=(),magnetometer=(),microphone=(),payment=(),publickey-credentials-get=(),screen-wake-lock=(),serial=(),sync-xhr=(),usb=()",
+          "Report-To": "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v3?s=9SevtxfJtcGPMEGxphEr1sQHmEGpEnsQ5W4Qhy6ns8aRqSPQm%2BeiRdEd05hO4THbNXuGnE9Wb0TFofv60U%2FFDA9P5eCqihYMH%2Bd36I0f%2BJXuVRVnZaH5ANSv4LZou%2FbxGQs%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}",
+          "Server": "cloudflare",
+          "X-Frame-Options": "SAMEORIG"
+        },
+        "status_code": 200
+      },
+      "http3_request": null,
+      "dns": {
+        "failure": null,
+        "addrs": [
+          "104.16.132.229"
+        ]
+      },
+      "ip_info": {
+        "104.16.132.229": {
+          "asn": 13335,
+          "flags": 11
+        }
+      }
+    },
+    "x_conn_priority_log": [
+      {
+        "msg": "create with [{Addr:104.16.132.229 Flags:3}]",
+        "t": 0.013267
+      },
+      {
+        "msg": "conn 104.16.132.229:80: granted permission: true",
+        "t": 0.01937
+      }
+    ],
+    "control_failure": null,
+    "x_dns_flags": 0,
+    "dns_experiment_failure": null,
+    "dns_consistency": "consistent",
+    "http_experiment_failure": null,
+    "x_blocking_flags": 16,
+    "x_null_null_flags": 0,
+    "body_proportion": 0.18180740037950663,
+    "body_length_match": false,
+    "headers_match": true,
+    "status_code_match": false,
+    "title_match": false,
+    "blocking": "http-diff",
+    "accessible": false
+  },
+  "test_name": "web_connectivity",
+  "test_runtime": 0.508404,
+  "test_start_time": "2024-01-30 11:03:49",
+  "test_version": "0.5.28"
+}
