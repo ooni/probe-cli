@@ -26,7 +26,7 @@ func cloudflareCAPTCHAWithHTTP() *TestCase {
 	}
 }
 
-// cloudflareCAPTCHAWithHTTPS obtains the cloudflare CAPTCHA using HTTP.
+// cloudflareCAPTCHAWithHTTPS obtains the cloudflare CAPTCHA using HTTPS.
 func cloudflareCAPTCHAWithHTTPS() *TestCase {
 	return &TestCase{
 		Name:  "cloudflareCAPTCHAWithHTTPS",
