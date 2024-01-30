@@ -1,14 +1,12 @@
 package webconnectivityqa
 
-import (
-	"github.com/ooni/probe-cli/v3/internal/netemx"
-)
+import "github.com/ooni/probe-cli/v3/internal/netemx"
 
 // cloudflareCAPTCHAWithHTTP obtains the cloudflare CAPTCHA using HTTP.
 func cloudflareCAPTCHAWithHTTP() *TestCase {
 	return &TestCase{
 		Name:  "cloudflareCAPTCHAWithHTTP",
-		Flags: 0,
+		Flags: TestCaseFlagNoV04,
 		Input: "http://www.cloudflare-cache.com/",
 		Configure: func(env *netemx.QAEnv) {
 			// nothing
@@ -32,7 +30,7 @@ func cloudflareCAPTCHAWithHTTP() *TestCase {
 func cloudflareCAPTCHAWithHTTPS() *TestCase {
 	return &TestCase{
 		Name:  "cloudflareCAPTCHAWithHTTPS",
-		Flags: 0,
+		Flags: TestCaseFlagNoV04,
 		Input: "https://www.cloudflare-cache.com/",
 		Configure: func(env *netemx.QAEnv) {
 			// nothing
