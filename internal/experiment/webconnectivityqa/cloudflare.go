@@ -1,36 +1,53 @@
 package webconnectivityqa
 
 import (
-	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 )
 
 // cloudflareCAPTCHAWithHTTP obtains the cloudflare CAPTCHA using HTTP.
 func cloudflareCAPTCHAWithHTTP() *TestCase {
 	return &TestCase{
-		Name:  "httpBlockingConnectionReset",
+		Name:  "cloudflareCAPTCHAWithHTTP",
 		Flags: 0,
-		Input: "http://www.example.com/",
+		Input: "http://www.cloudflare-cache.com/",
 		Configure: func(env *netemx.QAEnv) {
-
-			env.DPIEngine().AddRule(&netem.DPIResetTrafficForString{
-				Logger:          env.Logger(),
-				ServerIPAddress: netemx.AddressWwwExampleCom,
-				ServerPort:      80,
-				String:          "www.example.com",
-			})
-
+			// nothing
 		},
 		ExpectErr: false,
 		ExpectTestKeys: &testKeys{
-			DNSConsistency: "consistent",
-			// TODO(bassosimone): it seems LTE QA does not check for the value of
-			// the HTTPExperimentFailure field, why?
-			HTTPExperimentFailure: "connection_reset",
-			XStatus:               8448, // StatusExperimentHTTP | StatusAnomalyReadWrite
-			XBlockingFlags:        8,    // AnalysisBlockingFlagHTTPBlocking
-			Accessible:            false,
-			Blocking:              "http-failure",
+			DNSConsistency:  "consistent",
+			StatusCodeMatch: false,
+			BodyLengthMatch: false,
+			BodyProportion:  0.18180740037950663,
+			HeadersMatch:    true,
+			TitleMatch:      false,
+			XBlockingFlags:  16, // AnalysisBlockingFlagHTTPDiff
+			Accessible:      false,
+			Blocking:        "http-diff",
+		},
+	}
+}
+
+// cloudflareCAPTCHAWithHTTPS obtains the cloudflare CAPTCHA using HTTP.
+func cloudflareCAPTCHAWithHTTPS() *TestCase {
+	return &TestCase{
+		Name:  "cloudflareCAPTCHAWithHTTPS",
+		Flags: 0,
+		Input: "https://www.cloudflare-cache.com/",
+		Configure: func(env *netemx.QAEnv) {
+			// nothing
+		},
+		ExpectErr: false,
+		ExpectTestKeys: &testKeys{
+			DNSConsistency:  "consistent",
+			StatusCodeMatch: false,
+			BodyLengthMatch: false,
+			BodyProportion:  0.18180740037950663,
+			HeadersMatch:    true,
+			TitleMatch:      false,
+			XBlockingFlags:  32, // AnalysisBlockingFlagSuccess
+			Accessible:      true,
+			Blocking:        false,
 		},
 	}
 }

@@ -1,12 +1,14 @@
 package netemx
 
 import (
+	"log"
+	"net"
 	"net/http"
 
 	"github.com/ooni/netem"
 )
 
-// CloudflareCAPTCHAHandlerFactory implements cloudflare CAPTCHAc.
+// CloudflareCAPTCHAHandlerFactory implements cloudflare CAPTCHAs.
 func CloudflareCAPTCHAHandlerFactory() HTTPHandlerFactory {
 	return HTTPHandlerFactoryFunc(func(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
 		return CloudflareCAPTCHAHandler()
@@ -151,7 +153,10 @@ var cloudflareCAPTCHAWebPage = []byte(`
 </html>
 `)
 
-// CloudflareCAPTCHAHandler returns the [http.Handler] for cloudflare CAPTCHAs.
+// CloudflareCAPTCHAHandler returns the [http.Handler] for cloudflare CAPTCHAs. This handler
+// returns the cloudflare CAPTCHA if the client address equals [DefaultClientAddress] and returns
+// the [ExampleWebPage] otherwise. Therefore, we're modeling a cloudflare cache considering the
+// client as untrusted and the test helper as trusted.
 func CloudflareCAPTCHAHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Alt-Svc", `h3=":443"`)
@@ -174,7 +179,27 @@ func CloudflareCAPTCHAHandler() http.Handler {
 		)
 		w.Header().Add("Server", "cloudflare")
 		w.Header().Add("X-Frame-Options", "SAMEORIG")
-		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write(cloudflareCAPTCHAWebPage)
+
+		// missing address => 500
+		address, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			log.Printf("CLOUDFLARE_CACHE: missing address in request => 500")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// client => 503
+		if address == DefaultClientAddress {
+			log.Printf("CLOUDFLARE_CACHE: request from %s => 503", address)
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write(cloudflareCAPTCHAWebPage)
+			return
+
+		}
+
+		// otherwise => 200
+		log.Printf("CLOUDFLARE_CACHE: request from %s => 200", address)
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(ExampleWebPage))
 	})
 }
