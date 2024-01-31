@@ -222,6 +222,8 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 		"www.largefile.com",
 	},
 	WebServerFactory: LargeFileHandlerFactory(),
+}, {
+	Addresses: []string{
 		AddressCloudflareCache1,
 	},
 	Domains: []string{
