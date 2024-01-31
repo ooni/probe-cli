@@ -14,7 +14,7 @@ func YandexHandlerFactory() HTTPHandlerFactory {
 	})
 }
 
-// YandexHandler returns the [http.Handler] for yandex.
+// YandexHandler returns the [http.Handler] for yandex.com.
 func YandexHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Alt-Svc", `h3=":443"`)
