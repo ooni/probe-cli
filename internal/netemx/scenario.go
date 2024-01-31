@@ -222,6 +222,26 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 		"www.largefile.com",
 	},
 	WebServerFactory: LargeFileHandlerFactory(),
+		AddressCloudflareCache1,
+	},
+	Domains: []string{
+		"www.cloudflare-cache.com",
+	},
+	Role:             ScenarioRoleWebServer,
+	ServerNameMain:   "www.cloudflare-cache.com",
+	ServerNameExtras: []string{},
+	WebServerFactory: CloudflareCAPTCHAHandlerFactory(),
+}, {
+	Addresses: []string{
+		AddressHTTPBinCom1,
+	},
+	Domains: []string{
+		"httpbin.com",
+	},
+	Role:             ScenarioRoleWebServer,
+	ServerNameMain:   "httpbin.com",
+	ServerNameExtras: []string{},
+	WebServerFactory: HTTPBinHandlerFactory(),
 }}
 
 // MustNewScenario constructs a complete testing scenario using the domains and IP

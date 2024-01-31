@@ -42,6 +42,9 @@ func AllTestCases() []*TestCase {
 		badSSLWithWrongServerName(),
 		badSSLWithUnknownAuthorityWithInconsistentDNS(),
 
+		cloudflareCAPTCHAWithHTTP(),
+		cloudflareCAPTCHAWithHTTPS(),
+
 		controlFailureWithSuccessfulHTTPWebsite(),
 		controlFailureWithSuccessfulHTTPSWebsite(),
 
@@ -71,6 +74,8 @@ func AllTestCases() []*TestCase {
 		localhostWithHTTP(),
 		localhostWithHTTPS(),
 
+		redirectWithBrokenLocationForHTTP(),
+		redirectWithBrokenLocationForHTTPS(),
 		redirectWithConsistentDNSAndThenConnectionRefusedForHTTP(),
 		redirectWithConsistentDNSAndThenConnectionRefusedForHTTPS(),
 		redirectWithConsistentDNSAndThenConnectionResetForHTTP(),

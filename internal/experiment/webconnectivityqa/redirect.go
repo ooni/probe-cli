@@ -4,6 +4,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // redirectWithConsistentDNSAndThenConnectionRefusedForHTTP is a scenario where the redirect
@@ -337,6 +338,60 @@ func redirectWithConsistentDNSAndThenTimeoutForHTTPS() *TestCase {
 			XStatus:               8704, // StatusExperimentHTTP | StatusAnomalyUnknown
 			XDNSFlags:             0,
 			XBlockingFlags:        4, // AnalysisBlockingFlagTLSBlocking
+			Accessible:            false,
+			Blocking:              "http-failure",
+		},
+	}
+}
+
+// redirectWithBrokenLocationForHTTP is a scenario where the redirect
+// returns a broken URL only containing `http://`.
+//
+// See https://github.com/ooni/probe/issues/2628 for more info.
+func redirectWithBrokenLocationForHTTP() *TestCase {
+	return &TestCase{
+		Name:     "redirectWithBrokenLocationForHTTP",
+		Flags:    TestCaseFlagNoV04,
+		Input:    "http://httpbin.com/broken-redirect-http",
+		LongTest: true,
+		Configure: func(env *netemx.QAEnv) {
+			// nothing
+		},
+		ExpectErr: false,
+		ExpectTestKeys: &testKeys{
+			DNSExperimentFailure:  nil,
+			DNSConsistency:        "consistent",
+			HTTPExperimentFailure: netxlite.FailureHTTPInvalidRedirectLocationHost,
+			XStatus:               8192, // StatusExperimentHTTP
+			XDNSFlags:             0,
+			XBlockingFlags:        8, // AnalysisBlockingFlagHTTPBlocking
+			Accessible:            false,
+			Blocking:              "http-failure",
+		},
+	}
+}
+
+// redirectWithBrokenLocationForHTTPS is a scenario where the redirect
+// returns a broken URL only containing `https://`.
+//
+// See https://github.com/ooni/probe/issues/2628 for more info.
+func redirectWithBrokenLocationForHTTPS() *TestCase {
+	return &TestCase{
+		Name:     "redirectWithBrokenLocationForHTTPS",
+		Flags:    TestCaseFlagNoV04,
+		Input:    "https://httpbin.com/broken-redirect-https",
+		LongTest: true,
+		Configure: func(env *netemx.QAEnv) {
+			// nothing
+		},
+		ExpectErr: false,
+		ExpectTestKeys: &testKeys{
+			DNSExperimentFailure:  nil,
+			DNSConsistency:        "consistent",
+			HTTPExperimentFailure: netxlite.FailureHTTPInvalidRedirectLocationHost,
+			XStatus:               8192, // StatusExperimentHTTP
+			XDNSFlags:             0,
+			XBlockingFlags:        8, // AnalysisBlockingFlagHTTPBlocking
 			Accessible:            false,
 			Blocking:              "http-failure",
 		},

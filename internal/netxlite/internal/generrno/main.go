@@ -170,6 +170,7 @@ var Specs = []*ErrorSpec{
 	NewLibraryError("SSL_invalid_certificate"),
 	NewLibraryError("JSON_parse_error"),
 	NewLibraryError("connection_already_closed"),
+	NewLibraryError("HTTP_invalid_redirect_location_host"),
 
 	// QUIRKS: the following errors exist to clearly flag strange
 	// underlying behavior implemented by platforms.
