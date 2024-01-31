@@ -68,6 +68,9 @@ func AllTestCases() []*TestCase {
 		idnaWithoutCensorshipLowercase(),
 		idnaWithoutCensorshipWithFirstLetterUppercase(),
 
+		largeFileWithHTTP(),
+		largeFileWithHTTPS(),
+
 		localhostWithHTTP(),
 		localhostWithHTTPS(),
 
