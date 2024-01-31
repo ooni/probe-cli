@@ -1,56 +1,70 @@
 package netemx
 
 import (
-	"log"
 	"net"
 	"net/http"
 
 	"github.com/ooni/netem"
 )
 
-// HTTPBinHandlerFactory implements httpbin.com.
+// HTTPBinHandlerFactory constructs an [HTTPBinHandler].
 func HTTPBinHandlerFactory() HTTPHandlerFactory {
 	return HTTPHandlerFactoryFunc(func(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
 		return HTTPBinHandler()
 	})
 }
 
-// HTTPBinHandler returns the [http.Handler] for httpbin.
+// HTTPBinHandler returns the [http.Handler] implementing an httpbin.com-like service.
+//
+// We currently implement the following API endpoints:
+//
+//	/broken-redirect-http
+//		When accessed by the OONI Probe client redirects with 302 to http:// and
+//		otherwise redirects to the https://www.example.com/ URL.
+//
+//	/broken-redirect-https
+//		When accessed by the OONI Probe client redirects with 302 to https:// and
+//		otherwise redirects to the https://www.example.com/ URL.
+//
+// Any other request URL causes a 404 respose.
 func HTTPBinHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 		// missing address => 500
 		address, _, err := net.SplitHostPort(r.RemoteAddr)
 		if err != nil {
-			log.Printf("CLOUDFLARE_CACHE: missing address in request => 500")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		if r.URL.Path == "/broken-redirect-http" {
-			log.Printf("ELLIOT: %+v", r.URL)
-			// See https://github.com/ooni/probe/issues/2628
-			if address == DefaultClientAddress {
-				w.Header().Set("Location", "http://")
-			} else {
-				w.Header().Set("Location", "http://www.example.com/")
-			}
-			w.WriteHeader(http.StatusFound)
-			return
-		}
+		// compute variables used by the switch below
+		cleartextRedirect := r.URL.Path == "/broken-redirect-http"
+		client := address == DefaultClientAddress
+		secureRedirect := r.URL.Path == "/broken-redirect-https"
 
-		if r.URL.Path == "/broken-redirect-https" {
-			log.Printf("ELLIOT: %+v", r.URL)
-			// See https://github.com/ooni/probe/issues/2628
-			if address == DefaultClientAddress {
-				w.Header().Set("Location", "https://")
-			} else {
-				w.Header().Set("Location", "https://www.example.com/")
-			}
+		switch {
+		// broken HTTP redirect for clients
+		case cleartextRedirect && client:
+			w.Header().Set("Location", "http://")
 			w.WriteHeader(http.StatusFound)
-			return
-		}
 
-		w.WriteHeader(http.StatusNotFound)
+		// working HTTP redirect for anyone else
+		case cleartextRedirect && !client:
+			w.Header().Set("Location", "http://www.example.com/")
+			w.WriteHeader(http.StatusFound)
+
+		// broken HTTPS redirect for clients
+		case secureRedirect && client:
+			w.Header().Set("Location", "https://")
+			w.WriteHeader(http.StatusFound)
+
+		// working HTTPS redirect for anyone else
+		case secureRedirect && !client:
+			w.Header().Set("Location", "https://www.example.com/")
+			w.WriteHeader(http.StatusFound)
+
+		// otherwise
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
 	})
 }
