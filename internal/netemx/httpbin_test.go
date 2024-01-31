@@ -104,6 +104,7 @@ func TestHTTPBinHandler(t *testing.T) {
 			t.Fatal("unexpected location", loc)
 		}
 	})
+
 	t.Run("/nonexistent URL", func(t *testing.T) {
 		req := &http.Request{
 			URL:        &url.URL{Scheme: "https://", Path: "/nonexistent"},
