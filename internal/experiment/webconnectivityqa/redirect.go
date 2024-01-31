@@ -4,6 +4,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // redirectWithConsistentDNSAndThenConnectionRefusedForHTTP is a scenario where the redirect
@@ -350,7 +351,7 @@ func redirectWithConsistentDNSAndThenTimeoutForHTTPS() *TestCase {
 func redirectWithBrokenLocationForHTTP() *TestCase {
 	return &TestCase{
 		Name:     "redirectWithBrokenLocationForHTTP",
-		Flags:    TestCaseFlagNoLTE,
+		Flags:    TestCaseFlagNoV04,
 		Input:    "http://httpbin.com/broken-redirect-http",
 		LongTest: true,
 		Configure: func(env *netemx.QAEnv) {
@@ -360,12 +361,12 @@ func redirectWithBrokenLocationForHTTP() *TestCase {
 		ExpectTestKeys: &testKeys{
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "consistent",
-			HTTPExperimentFailure: "unknown_failure: http: no Host in request URL",
+			HTTPExperimentFailure: netxlite.FailureHTTPInvalidRedirectLocationHost,
 			XStatus:               8192, // StatusExperimentHTTP
 			XDNSFlags:             0,
-			XBlockingFlags:        1, // AnalysisBlockingFlagDNSBlocking
-			Accessible:            nil,
-			Blocking:              nil,
+			XBlockingFlags:        8, // AnalysisBlockingFlagHTTPBlocking
+			Accessible:            false,
+			Blocking:              "http-failure",
 		},
 	}
 }
@@ -377,7 +378,7 @@ func redirectWithBrokenLocationForHTTP() *TestCase {
 func redirectWithBrokenLocationForHTTPS() *TestCase {
 	return &TestCase{
 		Name:     "redirectWithBrokenLocationForHTTPS",
-		Flags:    TestCaseFlagNoLTE,
+		Flags:    TestCaseFlagNoV04,
 		Input:    "https://httpbin.com/broken-redirect-https",
 		LongTest: true,
 		Configure: func(env *netemx.QAEnv) {
@@ -387,12 +388,12 @@ func redirectWithBrokenLocationForHTTPS() *TestCase {
 		ExpectTestKeys: &testKeys{
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "consistent",
-			HTTPExperimentFailure: "unknown_failure: http: no Host in request URL",
+			HTTPExperimentFailure: netxlite.FailureHTTPInvalidRedirectLocationHost,
 			XStatus:               8192, // StatusExperimentHTTP
 			XDNSFlags:             0,
-			XBlockingFlags:        1, // AnalysisBlockingFlagDNSBlocking
-			Accessible:            nil,
-			Blocking:              nil,
+			XBlockingFlags:        8, // AnalysisBlockingFlagHTTPBlocking
+			Accessible:            false,
+			Blocking:              "http-failure",
 		},
 	}
 }
