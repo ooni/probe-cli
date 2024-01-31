@@ -209,6 +209,21 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 	WebServerFactory: YandexHandlerFactory(),
 }, {
 	Addresses: []string{
+		AddressLargeFileCom1,
+		AddressLargeFileCom2,
+	},
+	Domains: []string{
+		"largefile.com",
+		"www.largefile.com",
+	},
+	Role:           ScenarioRoleWebServer,
+	ServerNameMain: "largefile.com",
+	ServerNameExtras: []string{
+		"www.largefile.com",
+	},
+	WebServerFactory: LargeFileHandlerFactory(),
+}, {
+	Addresses: []string{
 		AddressCloudflareCache1,
 	},
 	Domains: []string{
