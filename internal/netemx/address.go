@@ -74,5 +74,6 @@ const AddressYandexCom4 = "77.88.55.80"
 // AddressCloudflareCache1 is the first address associated with cloudflare caches.
 const AddressCloudflareCache1 = "104.16.132.229"
 
-// AddressHTTPBinCom1 is the first address associated with httpbin.com.
+// AddressHTTPBinCom1 is the first address associated an httpbin.com-like
+// service which our QA environment exports as httpbin.com.
 const AddressHTTPBinCom1 = "172.67.144.64"
