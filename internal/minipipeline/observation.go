@@ -472,7 +472,7 @@ func (c *WebObservationsContainer) IngestHTTPRoundTripEvents(evs ...*model.Archi
 		if ev.Failure == nil {
 			obs.HTTPResponseStatusCode = optional.Some(ev.Response.Code)
 			obs.HTTPResponseBodyLength = optional.Some(int64(len(ev.Response.Body)))
-			obs.HTTPResponseBodyIsTruncated = optional.Some(ev.Request.BodyIsTruncated)
+			obs.HTTPResponseBodyIsTruncated = optional.Some(ev.Response.BodyIsTruncated)
 			obs.HTTPResponseHeadersKeys = utilsExtractHTTPHeaderKeys(ev.Response.Headers)
 			obs.HTTPResponseTitle = optional.Some(measurexlite.WebGetTitle(string(ev.Response.Body)))
 			obs.HTTPResponseLocation = utilsExtractHTTPLocation(ev.Response.Headers)
