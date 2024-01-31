@@ -269,6 +269,9 @@ func (t *CleartextFlow) httpTransaction(ctx context.Context, network, address, a
 		reader := io.LimitReader(resp.Body, maxbody)
 		body, err = StreamAllContext(ctx, reader)
 	}
+	if err == nil && httpRedirectIsRedirect(resp) {
+		err = httpValidateRedirect(resp)
+	}
 	finished := trace.TimeSince(trace.ZeroTime())
 	t.TestKeys.AppendNetworkEvents(measurexlite.NewAnnotationArchivalNetworkEvent(
 		trace.Index(), finished, "http_transaction_done", trace.Tags()...,
@@ -297,14 +300,11 @@ func (t *CleartextFlow) maybeFollowRedirects(ctx context.Context, resp *http.Res
 	if !t.FollowRedirects || !t.NumRedirects.CanFollowOneMoreRedirect() {
 		return // not configured or too many redirects
 	}
-	switch resp.StatusCode {
-	case 301, 302, 307, 308:
+	if httpRedirectIsRedirect(resp) {
 		location, err := resp.Location()
 		if err != nil {
 			return // broken response from server
 		}
-		// TODO(https://github.com/ooni/probe/issues/2628): we need to handle
-		// the case where the redirect URL is incomplete
 		t.Logger.Infof("redirect to: %s", location.String())
 		resolvers := &DNSResolvers{
 			CookieJar:    t.CookieJar,
@@ -324,7 +324,5 @@ func (t *CleartextFlow) maybeFollowRedirects(ctx context.Context, resp *http.Res
 			UDPAddress:   t.UDPAddress,
 		}
 		resolvers.Start(ctx)
-	default:
-		// no redirect to follow
 	}
 }
