@@ -16,14 +16,10 @@ func largeFileWithHTTP() *TestCase {
 			DNSConsistency:  "consistent",
 			StatusCodeMatch: true,
 			HeadersMatch:    true,
-			// TODO(bassosimone): we should skip the body check because the body is
-			// truncated but somehow we don't detect that it happens
-			//
-			// TODO(bassosimone): I'm not 100% sure we should say that the title
-			// matches when the title is not present
-			XBlockingFlags: 32, // AnalysisBlockingFlagSuccess
-			Accessible:     true,
-			Blocking:       false,
+			TitleMatch:      true,
+			XBlockingFlags:  32, // AnalysisBlockingFlagSuccess
+			Accessible:      true,
+			Blocking:        false,
 		},
 	}
 }
@@ -42,14 +38,10 @@ func largeFileWithHTTPS() *TestCase {
 			DNSConsistency:  "consistent",
 			StatusCodeMatch: true,
 			HeadersMatch:    true,
-			// TODO(bassosimone): we should skip the body check because the body is
-			// truncated but somehow we don't detect that it happens
-			//
-			// TODO(bassosimone): I'm not 100% sure we should say that the title
-			// matches when the title is not present
-			XBlockingFlags: 32, // AnalysisBlockingFlagSuccess
-			Accessible:     true,
-			Blocking:       false,
+			TitleMatch:      true,
+			XBlockingFlags:  32, // AnalysisBlockingFlagSuccess
+			Accessible:      true,
+			Blocking:        false,
 		},
 	}
 }
