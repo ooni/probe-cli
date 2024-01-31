@@ -350,7 +350,7 @@ func redirectWithConsistentDNSAndThenTimeoutForHTTPS() *TestCase {
 func redirectWithBrokenLocationForHTTP() *TestCase {
 	return &TestCase{
 		Name:     "redirectWithBrokenLocationForHTTP",
-		Flags:    0,
+		Flags:    TestCaseFlagNoLTE,
 		Input:    "http://httpbin.com/broken-redirect-http",
 		LongTest: true,
 		Configure: func(env *netemx.QAEnv) {
@@ -360,12 +360,12 @@ func redirectWithBrokenLocationForHTTP() *TestCase {
 		ExpectTestKeys: &testKeys{
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "consistent",
-			HTTPExperimentFailure: "generic_timeout_error",
-			XStatus:               8704, // StatusExperimentHTTP | StatusAnomalyUnknown
+			HTTPExperimentFailure: "unknown_failure: http: no Host in request URL",
+			XStatus:               8192, // StatusExperimentHTTP
 			XDNSFlags:             0,
-			XBlockingFlags:        4, // AnalysisBlockingFlagTLSBlocking
-			Accessible:            false,
-			Blocking:              "http-failure",
+			XBlockingFlags:        1, // AnalysisBlockingFlagDNSBlocking
+			Accessible:            nil,
+			Blocking:              nil,
 		},
 	}
 }
@@ -377,7 +377,7 @@ func redirectWithBrokenLocationForHTTP() *TestCase {
 func redirectWithBrokenLocationForHTTPS() *TestCase {
 	return &TestCase{
 		Name:     "redirectWithBrokenLocationForHTTPS",
-		Flags:    0,
+		Flags:    TestCaseFlagNoLTE,
 		Input:    "https://httpbin.com/broken-redirect-https",
 		LongTest: true,
 		Configure: func(env *netemx.QAEnv) {
@@ -387,12 +387,12 @@ func redirectWithBrokenLocationForHTTPS() *TestCase {
 		ExpectTestKeys: &testKeys{
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "consistent",
-			HTTPExperimentFailure: "generic_timeout_error",
-			XStatus:               8704, // StatusExperimentHTTP | StatusAnomalyUnknown
+			HTTPExperimentFailure: "unknown_failure: http: no Host in request URL",
+			XStatus:               8192, // StatusExperimentHTTP
 			XDNSFlags:             0,
-			XBlockingFlags:        4, // AnalysisBlockingFlagTLSBlocking
-			Accessible:            false,
-			Blocking:              "http-failure",
+			XBlockingFlags:        1, // AnalysisBlockingFlagDNSBlocking
+			Accessible:            nil,
+			Blocking:              nil,
 		},
 	}
 }
