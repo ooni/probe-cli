@@ -209,7 +209,7 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 	WebServerFactory: YandexHandlerFactory(),
 }, {
 	Addresses: []string{
-		CloudflareCacheAddress1,
+		AddressCloudflareCache1,
 	},
 	Domains: []string{
 		"www.cloudflare-cache.com",
@@ -218,6 +218,17 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 	ServerNameMain:   "www.cloudflare-cache.com",
 	ServerNameExtras: []string{},
 	WebServerFactory: CloudflareCAPTCHAHandlerFactory(),
+}, {
+	Addresses: []string{
+		AddressHTTPBinCom1,
+	},
+	Domains: []string{
+		"httpbin.com",
+	},
+	Role:             ScenarioRoleWebServer,
+	ServerNameMain:   "httpbin.com",
+	ServerNameExtras: []string{},
+	WebServerFactory: HTTPBinHandlerFactory(),
 }}
 
 // MustNewScenario constructs a complete testing scenario using the domains and IP

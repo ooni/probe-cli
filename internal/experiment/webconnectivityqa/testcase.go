@@ -71,6 +71,8 @@ func AllTestCases() []*TestCase {
 		localhostWithHTTP(),
 		localhostWithHTTPS(),
 
+		redirectWithBrokenLocationForHTTP(),
+		redirectWithBrokenLocationForHTTPS(),
 		redirectWithConsistentDNSAndThenConnectionRefusedForHTTP(),
 		redirectWithConsistentDNSAndThenConnectionRefusedForHTTPS(),
 		redirectWithConsistentDNSAndThenConnectionResetForHTTP(),
