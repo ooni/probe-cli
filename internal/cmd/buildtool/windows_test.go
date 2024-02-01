@@ -138,7 +138,7 @@ func TestWindowsBuildAll(t *testing.T) {
 			})
 
 			expectCalls := map[string]int{
-				buildtooltest.TagGolangCheck:                 1,
+				buildtooltest.TagGolangBinary:                1,
 				buildtooltest.TagPsiphonMaybeCopyConfigFiles: 1,
 				buildtooltest.TagPsiphonFilesExist:           4,
 				buildtooltest.TagWindowsMingwCheck:           1,

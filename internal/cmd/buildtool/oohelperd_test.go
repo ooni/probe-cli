@@ -79,7 +79,7 @@ func TestOohelperdBuildAndMaybeDeploy(t *testing.T) {
 			})
 
 			expectCalls := map[string]int{
-				buildtooltest.TagGolangCheck: 1,
+				buildtooltest.TagGolangBinary: 1,
 			}
 
 			if diff := cmp.Diff(expectCalls, deps.Counter); diff != "" {

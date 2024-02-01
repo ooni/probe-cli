@@ -38,9 +38,9 @@ func (*buildDeps) GOPATH() string {
 	return golangGOPATH()
 }
 
-// GolangCheck implements buildtoolmodel.Dependencies
-func (*buildDeps) GolangCheck() {
-	golangCheck("GOVERSION")
+// GolangBinary implements buildtoolmodel.Dependencies
+func (*buildDeps) GolangBinary() string {
+	return golangBinary()
 }
 
 // LinuxReadGOVERSION implements buildtoolmodel.Dependencies

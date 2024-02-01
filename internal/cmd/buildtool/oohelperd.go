@@ -42,8 +42,6 @@ func oohelperdSubcommand() *cobra.Command {
 // oohelperdBuildAndMaybeDeploy builds oohelperd for linux/amd64 and
 // possibly deploys the build to the 0.th.ooni.org server.
 func oohelperdBuildAndMaybeDeploy(deps buildtoolmodel.Dependencies, deploy bool) {
-	deps.GolangCheck()
-
 	log.Info("building oohelperd for linux/amd64")
 	oohelperdBinary := filepath.Join("CLI", "oohelperd-linux-amd64")
 
@@ -52,7 +50,7 @@ func oohelperdBuildAndMaybeDeploy(deps buildtoolmodel.Dependencies, deploy bool)
 	envp.Append("GOOS", "linux")
 	envp.Append("GOARCH", "amd64")
 
-	argv := runtimex.Try1(shellx.NewArgv("go", "build"))
+	argv := runtimex.Try1(shellx.NewArgv(deps.GolangBinary(), "build"))
 	argv.Append("-o", oohelperdBinary)
 	argv.Append("-tags", "netgo")
 	argv.Append("-ldflags", "-s -w -extldflags -static")

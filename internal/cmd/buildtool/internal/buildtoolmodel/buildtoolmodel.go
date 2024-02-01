@@ -24,9 +24,8 @@ type Dependencies interface {
 	// GOPATH returns the current GOPATH.
 	GOPATH() string
 
-	// GolangCheck ensures we have the correct
-	// version of golang as the "go" binary.
-	GolangCheck()
+	// GolangBinary returns the golang binary to use.
+	GolangBinary() string
 
 	// LinuxWriteDockerfile writes the dockerfile for linux.
 	LinuxWriteDockerfile(filename string, content []byte, mode fs.FileMode)

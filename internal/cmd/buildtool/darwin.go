@@ -27,7 +27,6 @@ func darwinSubcommand() *cobra.Command {
 // darwinBuildAll builds all the packages for darwin.
 func darwinBuildAll(deps buildtoolmodel.Dependencies) {
 	deps.PsiphonMaybeCopyConfigFiles()
-	deps.GolangCheck()
 	archs := []string{"amd64", "arm64"}
 	products := []*product{productMiniooni, productOoniprobe}
 	for _, arch := range archs {
@@ -41,7 +40,7 @@ func darwinBuildAll(deps buildtoolmodel.Dependencies) {
 func darwinBuildPackage(deps buildtoolmodel.Dependencies, goarch string, product *product) {
 	log.Infof("building %s for darwin/%s", product.Pkg, goarch)
 
-	argv := runtimex.Try1(shellx.NewArgv("go", "build"))
+	argv := runtimex.Try1(shellx.NewArgv(deps.GolangBinary(), "build"))
 	if deps.PsiphonFilesExist() {
 		argv.Append("-tags", "ooni_psiphon_config")
 	}

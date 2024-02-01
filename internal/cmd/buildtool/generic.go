@@ -48,14 +48,15 @@ func genericSubcommand() *cobra.Command {
 	return cmd
 }
 
+// TODO(bassosimone): golangBinary() MUST be a method of the buildtoolmodel.Dependencies
+
 // genericBuildPackage is the generic function for building a package.
 func genericBuildPackage(deps buildtoolmodel.Dependencies, product *product) {
 	deps.PsiphonMaybeCopyConfigFiles()
-	deps.GolangCheck()
 
 	log.Infof("building %s for %s/%s", product.Pkg, runtime.GOOS, runtime.GOARCH)
 
-	argv := runtimex.Try1(shellx.NewArgv("go", "build"))
+	argv := runtimex.Try1(shellx.NewArgv(golangBinary(), "build"))
 	if deps.PsiphonFilesExist() {
 		argv.Append("-tags", "ooni_psiphon_config")
 	}
@@ -67,7 +68,6 @@ func genericBuildPackage(deps buildtoolmodel.Dependencies, product *product) {
 
 // genericBuildLibrary is the generic function for building a library.
 func genericBuildLibrary(deps buildtoolmodel.Dependencies, product *product) {
-	deps.GolangCheck()
 	os := deps.GOOS()
 
 	log.Infof("building %s for %s/%s", product.Pkg, os, runtime.GOARCH)
@@ -76,7 +76,7 @@ func genericBuildLibrary(deps buildtoolmodel.Dependencies, product *product) {
 	// packages paths are separated by forward slashes!
 	library := runtimex.Try1(generateLibrary(path.Base(product.Pkg), os))
 
-	argv := runtimex.Try1(shellx.NewArgv("go", "build"))
+	argv := runtimex.Try1(shellx.NewArgv(golangBinary(), "build"))
 	argv.Append("-buildmode", "c-shared")
 	argv.Append("-o", library)
 	argv.Append(product.Pkg)

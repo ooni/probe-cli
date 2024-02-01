@@ -53,7 +53,6 @@ func iosSubcommand() *cobra.Command {
 // iosBuildGomobile invokes the gomobile build.
 func iosBuildGomobile(deps buildtoolmodel.Dependencies) {
 	deps.PsiphonMaybeCopyConfigFiles()
-	deps.GolangCheck()
 
 	config := &gomobileConfig{
 		deps:       deps,
