@@ -78,6 +78,7 @@ func androidSubcommand() *cobra.Command {
 // androidBuildGomobile invokes the gomobile build.
 func androidBuildGomobile(deps buildtoolmodel.Dependencies) {
 	deps.PsiphonMaybeCopyConfigFiles()
+	deps.GolangCheck()
 
 	androidHome := deps.AndroidSDKCheck()
 	ndkDir := deps.AndroidNDKCheck(androidHome)
@@ -145,6 +146,7 @@ func androidNDKCheck(androidHome string) string {
 // androidBuildCLIAll builds all products in CLI mode for Android
 func androidBuildCLIAll(deps buildtoolmodel.Dependencies) {
 	deps.PsiphonMaybeCopyConfigFiles()
+	deps.GolangCheck()
 
 	androidHome := deps.AndroidSDKCheck()
 	ndkDir := deps.AndroidNDKCheck(androidHome)
@@ -175,7 +177,7 @@ func androidBuildCLIProductArch(
 
 	log.Infof("building %s for android/%s", product.Pkg, ooniArch)
 
-	argv := runtimex.Try1(shellx.NewArgv(deps.GolangBinary(), "build"))
+	argv := runtimex.Try1(shellx.NewArgv("go", "build"))
 	if deps.PsiphonFilesExist() {
 		argv.Append("-tags", "ooni_psiphon_config,ooni_libtor")
 	} else {

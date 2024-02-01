@@ -203,12 +203,9 @@ func TestDependenciesCallCounter(t *testing.T) {
 
 	t.Run("GolangCheck", func(t *testing.T) {
 		cc := &DependenciesCallCounter{}
-		value := cc.GolangBinary()
-		if cc.Counter[TagGolangBinary] != 1 {
+		cc.GolangCheck()
+		if cc.Counter[TagGolangCheck] != 1 {
 			t.Fatal("did not increment")
-		}
-		if value != "go" {
-			t.Fatal("expected 'go', got", value)
 		}
 	})
 

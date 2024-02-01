@@ -83,7 +83,7 @@ func TestGenericBuildPackage(t *testing.T) {
 			})
 
 			expectCalls := map[string]int{
-				buildtooltest.TagGolangBinary:                1,
+				buildtooltest.TagGolangCheck:                 1,
 				buildtooltest.TagPsiphonMaybeCopyConfigFiles: 1,
 				buildtooltest.TagPsiphonFilesExist:           1,
 			}
@@ -164,8 +164,8 @@ func TestCheckGenericBuildLibrary(t *testing.T) {
 			})
 
 			expectCalls := map[string]int{
-				buildtooltest.TagGolangBinary: 1,
-				buildtooltest.TagGOOS:         1,
+				buildtooltest.TagGolangCheck: 1,
+				buildtooltest.TagGOOS:        1,
 			}
 
 			if diff := cmp.Diff(expectCalls, deps.Counter); diff != "" {

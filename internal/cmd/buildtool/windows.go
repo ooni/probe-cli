@@ -32,6 +32,7 @@ func windowsSubcommand() *cobra.Command {
 // windowsBuildAll is the main function of the windows subcommand.
 func windowsBuildAll(deps buildtoolmodel.Dependencies) {
 	deps.PsiphonMaybeCopyConfigFiles()
+	deps.GolangCheck()
 	deps.WindowsMingwCheck()
 	archs := []string{"386", "amd64"}
 	products := []*product{productMiniooni, productOoniprobe}
@@ -47,7 +48,7 @@ func windowsBuildAll(deps buildtoolmodel.Dependencies) {
 func windowsBuildPackage(deps buildtoolmodel.Dependencies, goarch string, product *product) {
 	log.Infof("building %s for windows/%s", product.Pkg, goarch)
 
-	argv := runtimex.Try1(shellx.NewArgv(deps.GolangBinary(), "build"))
+	argv := runtimex.Try1(shellx.NewArgv("go", "build"))
 	if deps.PsiphonFilesExist() {
 		argv.Append("-tags", "ooni_psiphon_config")
 	}

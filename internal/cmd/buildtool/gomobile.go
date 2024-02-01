@@ -35,16 +35,16 @@ type gomobileConfig struct {
 // gomobileBuild runs a build based on gomobile.
 func gomobileBuild(config *gomobileConfig) {
 	// Undoes the effects of go-getting golang.org/x/mobile/cmd/gomobile
-	defer must.Run(log.Log, config.deps.GolangBinary(), "mod", "tidy")
+	defer must.Run(log.Log, "go", "mod", "tidy")
 
-	must.Run(log.Log, config.deps.GolangBinary(), "install", "golang.org/x/mobile/cmd/gomobile@latest")
+	must.Run(log.Log, "go", "install", "golang.org/x/mobile/cmd/gomobile@latest")
 
 	gopath := config.deps.GOPATH()
 	gomobile := filepath.Join(gopath, "bin", "gomobile")
 	must.Run(log.Log, gomobile, "init")
 
 	// Adding gomobile to go.mod as documented by golang.org/wiki/Mobile
-	must.Run(log.Log, config.deps.GolangBinary(), "get", "-d", "golang.org/x/mobile/cmd/gomobile")
+	must.Run(log.Log, "go", "get", "-d", "golang.org/x/mobile/cmd/gomobile")
 
 	argv := runtimex.Try1(shellx.NewArgv(gomobile, "bind"))
 	argv.Append("-target", config.target)

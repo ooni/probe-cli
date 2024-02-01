@@ -1,11 +1,8 @@
 package main
 
 import (
-	"os"
+	"path/filepath"
 	"testing"
-
-	"github.com/ooni/probe-cli/v3/internal/must"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func TestGolangCheck(t *testing.T) {

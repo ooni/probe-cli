@@ -5,10 +5,7 @@ package main
 //
 
 import (
-	"fmt"
-	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/must"
@@ -18,8 +15,6 @@ import (
 // golangCorrectVersionCheckP returns whether we're using the correct golang version.
 func golangCorrectVersionCheckP(filename string) bool {
 	expected := string(must.FirstLineBytes(must.ReadFile(filename)))
-
-	// read the version of go that we're using
 	firstline := string(must.FirstLineBytes(must.RunOutput(log.Log, "go", "version")))
 	vec := strings.Split(firstline, " ")
 	runtimex.Assert(len(vec) == 4, "expected four tokens")

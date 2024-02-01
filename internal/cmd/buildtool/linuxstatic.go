@@ -47,6 +47,7 @@ func (b *linuxStaticBuilder) main(*cobra.Command, []string) {
 // linuxStaticBuildAll builds all the packages on a linux-static environment.
 func linuxStaticBuilAll(deps buildtoolmodel.Dependencies, goarch string, goarm int64) {
 	deps.PsiphonMaybeCopyConfigFiles()
+	deps.GolangCheck()
 
 	// TODO(bassosimone): I am running the container with the right userID but
 	// apparently this is not enough to make git happy--why?
@@ -72,7 +73,7 @@ func linuxStaticBuildPackage(
 
 	ooniArch := linuxStaticBuildOONIArch(goarch, goarm)
 
-	argv := runtimex.Try1(shellx.NewArgv(deps.GolangBinary(), "build"))
+	argv := runtimex.Try1(shellx.NewArgv("go", "build"))
 	if deps.PsiphonFilesExist() {
 		argv.Append("-tags", "ooni_psiphon_config")
 	}

@@ -139,7 +139,7 @@ const (
 	TagAndroidNDKCheck             = "androidNDK"
 	TagAndroidSDKCheck             = "androidSDK"
 	TagGOPATH                      = "GOPATH"
-	TagGolangBinary                = "golangBinary"
+	TagGolangCheck                 = "golangCheck"
 	TagLinuxReadGOVERSION          = "linuxReadGOVERSION"
 	TagLinuxWriteDockerfile        = "linuxWriteDockerfile"
 	TagMustChdir                   = "mustChdir"
@@ -188,9 +188,8 @@ func (cc *DependenciesCallCounter) GOPATH() string {
 }
 
 // golangCheck implements buildtoolmodel.Dependencies
-func (cc *DependenciesCallCounter) GolangBinary() string {
-	cc.increment(TagGolangBinary)
-	return "go"
+func (cc *DependenciesCallCounter) GolangCheck() {
+	cc.increment(TagGolangCheck)
 }
 
 // linuxReadGOVERSION implements buildtoolmodel.Dependencies

@@ -198,7 +198,7 @@ func TestLinuxStaticBuildAll(t *testing.T) {
 			})
 
 			expectCalls := map[string]int{
-				buildtooltest.TagGolangBinary:                2,
+				buildtooltest.TagGolangCheck:                 1,
 				buildtooltest.TagPsiphonMaybeCopyConfigFiles: 1,
 				buildtooltest.TagPsiphonFilesExist:           2,
 			}

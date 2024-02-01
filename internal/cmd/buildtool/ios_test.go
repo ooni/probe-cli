@@ -107,7 +107,7 @@ func TestIOSBuildGomobile(t *testing.T) {
 
 			expectCalls := map[string]int{
 				buildtooltest.TagGOPATH:                      1,
-				buildtooltest.TagGolangBinary:                3,
+				buildtooltest.TagGolangCheck:                 1,
 				buildtooltest.TagPsiphonMaybeCopyConfigFiles: 1,
 				buildtooltest.TagPsiphonFilesExist:           1,
 			}
