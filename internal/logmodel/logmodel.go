@@ -6,10 +6,6 @@
 // See https://github.com/ooni/probe/issues/2664 for context.
 package logmodel
 
-//
-// Logger
-//
-
 // DebugLogger is a logger emitting only debug messages.
 type DebugLogger interface {
 	// Debug emits a debug message.
