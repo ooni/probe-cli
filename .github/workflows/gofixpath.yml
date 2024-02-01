@@ -29,4 +29,4 @@ jobs:
         with:
           go-version: "${{ matrix.goversion }}"
 
-      - run: go run ./internal/cmd/buildtool gofixpath -- go run ./internal/cmd/buildtool generic miniooni
+      - run: ./script/go.bash run ./internal/cmd/buildtool generic miniooni
