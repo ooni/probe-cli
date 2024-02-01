@@ -1,13 +1,13 @@
-# Ensures that ./internal/cmd/buildtool goproxy {command} [arguments] downloads the correct
-# version of go and executes {command} with [arguments].
+# Ensures that ./internal/cmd/buildtool gofixpath {command} [arguments] downloads the correct
+# version of go and executes {command} with [arguments] with "go" being the right version.
 
-name: goproxy
+name: gofixpath
 on:
   push:
     branches:
       - "release/**"
       - "fullbuild"
-      - "goproxybuild"
+      - "gofixpathbuild"
       - "master"
     tags:
       - "v*"
@@ -29,4 +29,4 @@ jobs:
         with:
           go-version: "${{ matrix.goversion }}"
 
-      - run: go run ./internal/cmd/buildtool goproxy go run ./internal/cmd/buildtool generic miniooni
+      - run: go run ./internal/cmd/buildtool gofixpath -- go run ./internal/cmd/buildtool generic miniooni

@@ -12,22 +12,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// goproxySubcommand returns the goproxy [cobra.Command].
-func goproxySubcommand() *cobra.Command {
+// gofixpathSubcommand returns the gofixpath [cobra.Command].
+func gofixpathSubcommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "goproxy",
-		Short: "Executes a command ensuring the correct version of Go is in path",
+		Use:   "gofixpath",
+		Short: "Executes a command ensuring the expected version of Go comes first in PATH lookup",
 		Run: func(cmd *cobra.Command, args []string) {
-			goproxyMain(&buildDeps{}, args...)
+			gofixpathMain(&buildDeps{}, args...)
 		},
 		Args: cobra.MinimumNArgs(1),
 	}
 }
 
-// goproxyMain ensures the correct version of Go is in path, otherwise
-// installs this version, configure the PATH correctly, and then executes
-// whatever argument passed to the command with the correct path.
-func goproxyMain(deps buildtoolmodel.Dependencies, args ...string) {
+// gofixpathMain ensures the correct version of Go is in path, otherwise
+// installs such a version, configure the PATH correctly, and then executes
+// whatever argument passed to the command with the correct PATH.
+func gofixpathMain(deps buildtoolmodel.Dependencies, args ...string) {
 	// create empty environment
 	envp := &shellx.Envp{}
 
