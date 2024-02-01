@@ -1,14 +1,14 @@
 package logx
 
-import "github.com/ooni/probe-cli/v3/internal/model"
+import "github.com/ooni/probe-cli/v3/internal/logmodel"
 
 // PrefixLogger is a logger with a prefix.
 type PrefixLogger struct {
 	Prefix string
-	Logger model.Logger
+	Logger logmodel.Logger
 }
 
-var _ model.Logger = &PrefixLogger{}
+var _ logmodel.Logger = &PrefixLogger{}
 
 // Debug implements DebugLogger.Debug
 func (p *PrefixLogger) Debug(msg string) {
