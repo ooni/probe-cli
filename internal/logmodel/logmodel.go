@@ -1,3 +1,9 @@
+// Package logmodel contains the core log model.
+//
+// This package has been separated from the ./internal/model package
+// so that ./internal/cmd/buildtool can support go1.18+.
+//
+// See https://github.com/ooni/probe/issues/2664 for context.
 package logmodel
 
 //
