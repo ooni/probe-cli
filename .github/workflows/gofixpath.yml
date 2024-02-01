@@ -19,7 +19,7 @@ jobs:
   build_with_specific_go_version:
     strategy:
       matrix:
-        goversion: ["1.19", "1.20", "1.21"]
+        goversion: ["1.19", "1.20", "1.21"]  # when releasing check whether we need to update this array
         system: [ubuntu-latest, macos-latest]
     runs-on: "${{ matrix.system }}"
     steps:
