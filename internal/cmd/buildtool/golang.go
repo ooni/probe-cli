@@ -34,11 +34,11 @@ func golangInstall(filename string) string {
 	// read the version of Go we would like to use
 	expected := string(must.FirstLineBytes(must.ReadFile(filename)))
 
-	// install the downloaded script
+	// install the wrapper command
 	packageName := fmt.Sprintf("golang.org/dl/go%s@latest", expected)
 	must.Run(log.Log, "go", "install", "-v", packageName)
 
-	// run the downloader script
+	// run the wrapper to download the distribution
 	gobinary := filepath.Join(
 		string(must.FirstLineBytes(must.RunOutput(log.Log, "go", "env", "GOPATH"))),
 		"bin",
@@ -47,6 +47,7 @@ func golangInstall(filename string) string {
 	must.Run(log.Log, gobinary, "download")
 
 	// if all is good, then we have the right gobinary
+	// along with the distribution
 	return gobinary
 }
 

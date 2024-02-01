@@ -54,7 +54,7 @@ func genericBuildPackage(deps buildtoolmodel.Dependencies, product *product) {
 
 	log.Infof("building %s for %s/%s", product.Pkg, runtime.GOOS, runtime.GOARCH)
 
-	argv := runtimex.Try1(shellx.NewArgv(golangBinary(), "build"))
+	argv := runtimex.Try1(shellx.NewArgv(deps.GolangBinary(), "build"))
 	if deps.PsiphonFilesExist() {
 		argv.Append("-tags", "ooni_psiphon_config")
 	}
@@ -74,7 +74,7 @@ func genericBuildLibrary(deps buildtoolmodel.Dependencies, product *product) {
 	// packages paths are separated by forward slashes!
 	library := runtimex.Try1(generateLibrary(path.Base(product.Pkg), os))
 
-	argv := runtimex.Try1(shellx.NewArgv(golangBinary(), "build"))
+	argv := runtimex.Try1(shellx.NewArgv(deps.GolangBinary(), "build"))
 	argv.Append("-buildmode", "c-shared")
 	argv.Append("-o", library)
 	argv.Append(product.Pkg)

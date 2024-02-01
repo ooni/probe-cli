@@ -130,7 +130,7 @@ func TestDarwinBuildAll(t *testing.T) {
 			})
 
 			expectCalls := map[string]int{
-				buildtooltest.TagGolangBinary:                1,
+				buildtooltest.TagGolangBinary:                4,
 				buildtooltest.TagPsiphonMaybeCopyConfigFiles: 1,
 				buildtooltest.TagPsiphonFilesExist:           4,
 			}

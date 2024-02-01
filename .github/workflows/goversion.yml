@@ -6,8 +6,10 @@ on:
     branches:
       - "release/**"
       - "fullbuild"
+      - "master"
     tags:
       - "v*"
+  pull_request:
   schedule:
     - cron: "17 7 * * *"
 
@@ -15,8 +17,8 @@ jobs:
   build_with_unexpected_go_version:
     strategy:
       matrix:
-        goversion: ["1.19", "1.21"]
-        system: [ubuntu-latest, windows-latest, macos-latest]
+        goversion: ["1.18", "1.19", "1.20", "1.21"]
+        system: [ubuntu-latest, macos-latest]
     runs-on: "${{ matrix.system }}"
     steps:
       - uses: actions/checkout@v3

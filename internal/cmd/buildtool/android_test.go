@@ -121,7 +121,7 @@ func TestAndroidBuildGomobile(t *testing.T) {
 				buildtooltest.TagGOPATH:                      2,
 				buildtooltest.TagAndroidNDKCheck:             1,
 				buildtooltest.TagAndroidSDKCheck:             1,
-				buildtooltest.TagGolangBinary:                1,
+				buildtooltest.TagGolangBinary:                3,
 				buildtooltest.TagPsiphonMaybeCopyConfigFiles: 1,
 				buildtooltest.TagPsiphonFilesExist:           1,
 			}
@@ -406,7 +406,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			expectCalls := map[string]int{
 				buildtooltest.TagAndroidNDKCheck:             1,
 				buildtooltest.TagAndroidSDKCheck:             1,
-				buildtooltest.TagGolangBinary:                1,
+				buildtooltest.TagGolangBinary:                8,
 				buildtooltest.TagPsiphonMaybeCopyConfigFiles: 1,
 				buildtooltest.TagPsiphonFilesExist:           8,
 			}
