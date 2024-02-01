@@ -1,5 +1,7 @@
 # Ensures that ./internal/cmd/buildtool gofixpath {command} [arguments] downloads the correct
 # version of go and executes {command} with [arguments] with "go" being the right version.
+#
+# See https://github.com/ooni/probe/issues/2664.
 
 name: gofixpath
 on:
@@ -29,4 +31,4 @@ jobs:
         with:
           go-version: "${{ matrix.goversion }}"
 
-      - run: go run ./internal/cmd/buildtool gofixpath -- go run ./internal/cmd/buildtool generic miniooni
+      - run: ./script/go.bash run ./internal/cmd/buildtool generic miniooni

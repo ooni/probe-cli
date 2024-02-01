@@ -27,6 +27,8 @@ func gofixpathSubcommand() *cobra.Command {
 // gofixpathMain ensures the correct version of Go is in path, otherwise
 // installs such a version, configure the PATH correctly, and then executes
 // whatever argument passed to the command with the correct PATH.
+//
+// See https://github.com/ooni/probe/issues/2664.
 func gofixpathMain(deps buildtoolmodel.Dependencies, args ...string) {
 	// create empty environment
 	envp := &shellx.Envp{}
