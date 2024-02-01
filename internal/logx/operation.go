@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/logmodel"
 )
 
 // NewOperationLogger creates a new logger that logs
@@ -13,11 +13,11 @@ import (
 // time to emit the result of the operation, the code
 // will emit an interim log message mentioning that the
 // operation is currently in progress.
-func NewOperationLogger(logger model.Logger, format string, v ...any) *OperationLogger {
+func NewOperationLogger(logger logmodel.Logger, format string, v ...any) *OperationLogger {
 	return newOperationLogger(500*time.Millisecond, logger, format, v...)
 }
 
-func newOperationLogger(maxwait time.Duration, logger model.Logger, format string, v ...any) *OperationLogger {
+func newOperationLogger(maxwait time.Duration, logger logmodel.Logger, format string, v ...any) *OperationLogger {
 	ol := &OperationLogger{
 		logger:  logger,
 		maxwait: maxwait,
@@ -35,7 +35,7 @@ func newOperationLogger(maxwait time.Duration, logger model.Logger, format strin
 // OperationLogger keeps state required to log about an in-progress
 // operation as documented by [NewOperationLogger].
 type OperationLogger struct {
-	logger  model.Logger
+	logger  logmodel.Logger
 	maxwait time.Duration
 	message string
 	once    *sync.Once

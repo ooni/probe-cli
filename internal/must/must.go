@@ -12,7 +12,7 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/logmodel"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/shellx"
 )
@@ -108,7 +108,7 @@ func SplitHostPort(hostport string) (host string, port string) {
 }
 
 // Run is like [shellx.Run] but calls [runtimex.PanicOnError] on failure.
-func Run(logger model.Logger, command string, args ...string) {
+func Run(logger logmodel.Logger, command string, args ...string) {
 	err := shellx.Run(logger, command, args...)
 	runtimex.PanicOnError(err, "shellx.Run failed")
 }
@@ -121,7 +121,7 @@ func RunQuiet(command string, args ...string) {
 
 // RunCommandLine is like [shellx.RunCommandLine] but calls
 // [runtimex.PanicOnError] on failure.
-func RunCommandLine(logger model.Logger, cmdline string) {
+func RunCommandLine(logger logmodel.Logger, cmdline string) {
 	err := shellx.RunCommandLine(logger, cmdline)
 	runtimex.PanicOnError(err, "shellx.RunCommandLine failed")
 }
@@ -159,7 +159,7 @@ func FirstLineBytes(data []byte) []byte {
 
 // RunOutput is like [shellx.Output] but calls
 // [runtimex.PanicOnError] on failure.
-func RunOutput(logger model.Logger, command string, args ...string) []byte {
+func RunOutput(logger logmodel.Logger, command string, args ...string) []byte {
 	out, err := shellx.Output(logger, command, args...)
 	runtimex.PanicOnError(err, "shellx.Output failed")
 	return out
