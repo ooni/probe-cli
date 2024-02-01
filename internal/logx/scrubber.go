@@ -3,17 +3,17 @@ package logx
 import (
 	"fmt"
 
-	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/logmodel"
 	"github.com/ooni/probe-cli/v3/internal/scrubber"
 )
 
-// ScrubberLogger is a [model.Logger] with scrubbing. All messages are scrubbed including the ones
+// ScrubberLogger is a [logmodel.Logger] with scrubbing. All messages are scrubbed including the ones
 // that won't be emitted. As such, this logger is less efficient than a logger without scrubbing.
 //
 // The zero value is invalid; please init all MANDATORY fields.
 type ScrubberLogger struct {
 	// Logger is the MANDATORY underlying logger to use.
-	Logger model.Logger
+	Logger logmodel.Logger
 }
 
 // Debug scrubs and emits a debug message.
