@@ -15,7 +15,7 @@ jobs:
   build_with_unexpected_go_version:
     strategy:
       matrix:
-        goversion: ["1.17", "1.18", "1.19", "1.21"]
+        goversion: ["1.19", "1.21"]
         system: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: "${{ matrix.system }}"
     steps:
