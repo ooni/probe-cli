@@ -14,9 +14,7 @@ func TestGolangCheck(t *testing.T) {
 		var panicked bool
 		func() {
 			defer func() {
-				if recover() != nil {
-					panicked = true
-				}
+				panicked = recover() != nil
 			}()
 			golangCheck(filepath.Join("testdata", "GOVERSION"))
 		}()
