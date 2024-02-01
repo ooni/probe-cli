@@ -29,5 +29,4 @@ jobs:
         with:
           go-version: "${{ matrix.goversion }}"
 
-      # Verify that we can build when using the goproxy subcommand
       - run: go run ./internal/cmd/buildtool goproxy go run ./internal/cmd/buildtool generic miniooni
