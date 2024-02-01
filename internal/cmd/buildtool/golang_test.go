@@ -6,12 +6,11 @@ import (
 )
 
 func TestGolangCheck(t *testing.T) {
-	t.Run("successful case", func(t *testing.T) {
-		// make sure the code does not panic when it runs
+	t.Run("successful case using the correct go version", func(t *testing.T) {
 		golangCheck(filepath.Join("..", "..", "..", "GOVERSION"))
 	})
 
-	t.Run("invalid Go version", func(t *testing.T) {
+	t.Run("invalid Go version where we expect a panic", func(t *testing.T) {
 		var panicked bool
 		func() {
 			defer func() {
