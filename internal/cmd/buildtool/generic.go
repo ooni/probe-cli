@@ -48,8 +48,6 @@ func genericSubcommand() *cobra.Command {
 	return cmd
 }
 
-// TODO(bassosimone): golangBinary() MUST be a method of the buildtoolmodel.Dependencies
-
 // genericBuildPackage is the generic function for building a package.
 func genericBuildPackage(deps buildtoolmodel.Dependencies, product *product) {
 	deps.PsiphonMaybeCopyConfigFiles()
