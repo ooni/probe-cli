@@ -13,8 +13,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// TODO(bassosimone): unclear how I could test this code!!!
-
 // golangCorrectVersionCheckP returns whether we're using the correct golang version.
 func golangCorrectVersionCheckP(filename string) bool {
 	expected := string(must.FirstLineBytes(must.ReadFile(filename)))
