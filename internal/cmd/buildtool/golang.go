@@ -5,7 +5,6 @@ package main
 //
 
 import (
-	"os"
 	"strings"
 
 	"github.com/apex/log"
@@ -27,15 +26,9 @@ func golangCorrectVersionCheckP(filename string) bool {
 	return true
 }
 
-// golangOsExit allows to test that [golangCheck] invokes [os.Exit] with exit code 1
-// whenever the version of golang is not the intended one.
-var golangOsExit = os.Exit
-
 // golangCheck checks whether the "go" binary is the correct version
 func golangCheck(filename string) {
-	if !golangCorrectVersionCheckP(filename) {
-		golangOsExit(1)
-	}
+	runtimex.Assert(golangCorrectVersionCheckP(filename), "invalid Go version")
 }
 
 // golangGOPATH returns the GOPATH value.
