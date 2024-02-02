@@ -81,7 +81,8 @@ mingw-w64 cross-compiler.
 
 The following commands show how to setup a development
 environment using Debian 12 ("bookworm"). The same instructions
-should also work for Debian-based distribution (e.g., Ubuntu).
+should also work for Debian-based distribution (e.g., Ubuntu)
+as long as you're using Go >= 1.19.
 
 ```bash
 # install the compilers, git, and the root CA
@@ -97,10 +98,13 @@ go install -v golang.org/dl/go1.20.12@latest
 $HOME/go/bin/go1.20.12 download
 ```
 
+You can automate the last two steps by using `./script/go.bash` as your
+Go compiler, as explained below.
+
 ### Fedora developer setup
 
 The following commands show how to setup a development
-environment using Fedora.
+environment using Fedora, as long as your Fedora uses Go >= 1.19.
 
 ```bash
 # install the compilers and git
@@ -115,6 +119,9 @@ go install -v golang.org/dl/go1.20.12@latest
 # fetch the whole go distribution
 $HOME/go/bin/go1.20.12 download
 ```
+
+You can automate the last two steps by using `./script/go.bash` as your
+Go compiler, as explained below.
 
 ### macOS developer setup
 
@@ -136,7 +143,15 @@ go install -v golang.org/dl/go1.20.12@latest
 $HOME/go/bin/go1.20.12 download
 ```
 
-### Build instructions
+You can automate the last two steps by using `./script/go.bash` as your
+Go compiler, as explained below.
+
+### Build instructions without using `./script/go.bash`
+
+This section describe how to manually use the correct version of Go you have
+installed. You can alternatively use the `./script/go.bash` wrapper to automatically
+use the correct Go version (provided you have Go >= 1.19 installed), as described
+in a subsequent section of this file.
 
 Once you have installed the correct Go version and a C compiler,
 you can compile `ooniprobe` using:
@@ -165,6 +180,23 @@ $HOME/go/bin/go1.20.12 build -v -ldflags '-s -w' ./internal/cmd/oohelperd
 
 This command will generate a stripped binary called `oohelperd`
 in the toplevel directory.
+
+### Alternative: using the `./script/go.bash` script
+
+The `./script/go.bash` script requires Go >= 1.19 and automates installing and
+using the correct version of Go. Running this script as follows:
+
+```bash
+./script/go.bash build -v -ldflags '-s -w' ./internal/cmd/miniooni
+```
+
+Is equivalent to running these commands:
+
+```bash
+go install -v golang.org/dl/go1.20.12@latest
+$HOME/go/bin/go1.20.12 download
+$HOME/sdk/go1.20.12/bin/go build -v -ldflags '-s -w' ./internal/cmd/miniooni
+```
 
 ## Contributing
 
