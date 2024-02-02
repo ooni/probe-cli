@@ -21,11 +21,11 @@ jobs:
     strategy:
       matrix:
         goversion:
-          # When releasing ask yourself the question of whether to change this list
+          - "1.15" # debian 11 "bullseye"
           - "1.16"
           - "1.17"
-          - "1.18"
-          - "1.19"
+          - "1.18" # ubuntu 22.04 LTS
+          - "1.19" # debian 12 "bookworm"
           - "1.20"
           - "1.21"
         system: [ubuntu-latest, macos-latest]

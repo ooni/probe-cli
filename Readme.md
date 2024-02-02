@@ -62,13 +62,22 @@ Debian/Ubuntu. Once `ooniprobe` is installed, refer to the
 
 ## Developer instructions
 
-This repository _should really_ use the Go version mentioned by the
-[GOVERSION](GOVERSION) file (i.e., go1.20.12). Using a later version of
-Go _should_ work as intended. Using an older version of Go is
-_definitely not recommended_ and _may not even compile_. Here's why: we rely
-on packages forked from the standard library; so, it is
-more robust to use the same version of Go from which
-we forked those packages from.
+To setup development for this repository you need Go >= 1.15. The
+`./script/go.bash` script will automatically download the expected
+version of Go mentioned in the [GOVERSION](GOVERSION) file (i.e.,
+go1.20.12) and use it for building.
+
+You can also bypass `./script/go.bash` and build ooniprobe manually using
+`go build ...` but, in such a case, note that:
+
+1. using an older version that the one mentioned in [GOVERSION](GOVERSION)
+is _definitely not recommended_ and _may not even compile_;
+
+2. using later versions _should_ work as intended for core functionality
+but extra functionality may be disabled or not working as intended.
+
+Here's why: we rely on packages forked from the standard library; so, it is
+more robust to use the same version of Go from which we forked those packages from.
 
 You will also need a C compiler. On Linux and other Unix systems
 both GCC and Clang will work. If you're using Windows, we
@@ -81,8 +90,7 @@ mingw-w64 cross-compiler.
 
 The following commands show how to setup a development
 environment using Debian 12 ("bookworm"). The same instructions
-should also work for Debian-based distribution (e.g., Ubuntu)
-as long as you're using Go >= 1.19.
+should also work for Ubuntu 22.04 LTS.
 
 ```bash
 # install the compilers, git, and the root CA
@@ -90,21 +98,12 @@ sudo apt install golang build-essential ca-certificates git
 
 # [optional] install mingw-w64 if you're targeting windows
 sudo apt install mingw-w64
-
-# install the required go version binary
-go install -v golang.org/dl/go1.20.12@latest
-
-# fetch the whole go distribution
-$HOME/go/bin/go1.20.12 download
 ```
-
-You can automate the last two steps by using `./script/go.bash` as your
-Go compiler, as explained below.
 
 ### Fedora developer setup
 
 The following commands show how to setup a development
-environment using Fedora, as long as your Fedora uses Go >= 1.19.
+environment using Fedora, as long as your Fedora uses Go >= 1.15.
 
 ```bash
 # install the compilers and git
@@ -112,16 +111,7 @@ sudo dnf install golang make gcc gcc-c++ git
 
 # [optional] install mingw-w64 if you're targeting windows
 sudo dnf install mingw64-gcc mingw64-gcc-c++
-
-# install the required go version binary
-go install -v golang.org/dl/go1.20.12@latest
-
-# fetch the whole go distribution
-$HOME/go/bin/go1.20.12 download
 ```
-
-You can automate the last two steps by using `./script/go.bash` as your
-Go compiler, as explained below.
 
 ### macOS developer setup
 
@@ -135,55 +125,11 @@ Then, you need to follow these instructions:
 ```bash
 # install the compiler
 brew install go
-
-# install the required go version binary
-go install -v golang.org/dl/go1.20.12@latest
-
-# fetch the whole go distribution
-$HOME/go/bin/go1.20.12 download
 ```
 
-You can automate the last two steps by using `./script/go.bash` as your
-Go compiler, as explained below.
+### The `./script/go.bash` script
 
-### Build instructions without using `./script/go.bash`
-
-This section describe how to manually use the correct version of Go you have
-installed. You can alternatively use the `./script/go.bash` wrapper to automatically
-use the correct Go version (provided you have Go >= 1.19 installed), as described
-in a subsequent section of this file.
-
-Once you have installed the correct Go version and a C compiler,
-you can compile `ooniprobe` using:
-
-```bash
-$HOME/go/bin/go1.20.12 build -v -ldflags '-s -w' ./cmd/ooniprobe
-```
-
-This command will generate a stripped binary called `ooniprobe`
-in the toplevel directory.
-
-Likewise, you can compile `miniooni` using:
-
-```bash
-$HOME/go/bin/go1.20.12 build -v -ldflags '-s -w' ./internal/cmd/miniooni
-```
-
-This command will generate a stripped binary called `miniooni`
-in the toplevel directory.
-
-And `oohelperd` using:
-
-```bash
-$HOME/go/bin/go1.20.12 build -v -ldflags '-s -w' ./internal/cmd/oohelperd
-```
-
-This command will generate a stripped binary called `oohelperd`
-in the toplevel directory.
-
-### Alternative: using the `./script/go.bash` script
-
-The `./script/go.bash` script requires Go >= 1.19 and automates installing and
+The `./script/go.bash` script requires Go >= 1.15 and automates installing and
 using the correct version of Go. Running this script as follows:
 
 ```bash
@@ -197,6 +143,39 @@ go install -v golang.org/dl/go1.20.12@latest
 $HOME/go/bin/go1.20.12 download
 $HOME/sdk/go1.20.12/bin/go build -v -ldflags '-s -w' ./internal/cmd/miniooni
 ```
+
+### Common build targets
+
+This section shows how to build using `./script/go.bash`. If you want to bypass
+using this script, just run `go` instead of `./script/go.bash`.
+
+Once you have installed the correct Go version and a C compiler,
+you can compile `ooniprobe` using:
+
+```bash
+./script/go.bash build -v -ldflags '-s -w' ./cmd/ooniprobe
+```
+
+This command will generate a stripped binary called `ooniprobe`
+in the toplevel directory.
+
+Likewise, you can compile `miniooni` using:
+
+```bash
+./script/go.bash build -v -ldflags '-s -w' ./internal/cmd/miniooni
+```
+
+This command will generate a stripped binary called `miniooni`
+in the toplevel directory.
+
+And `oohelperd` using:
+
+```bash
+./script/go.bash build -v -ldflags '-s -w' ./internal/cmd/oohelperd
+```
+
+This command will generate a stripped binary called `oohelperd`
+in the toplevel directory.
 
 ## Contributing
 
