@@ -1,9 +1,8 @@
-# Ensures that ./internal/cmd/buildtool gofixpath {command} [arguments] downloads the correct
-# version of go and executes {command} with [arguments] with "go" being the right version.
+# Ensures that ./script/go.bash works as intended with many versions of "go".
 #
 # See https://github.com/ooni/probe/issues/2664.
 
-name: gofixpath
+name: gobash
 on:
   push:
     branches:
@@ -21,7 +20,14 @@ jobs:
   build_with_specific_go_version:
     strategy:
       matrix:
-        goversion: ["1.19", "1.20", "1.21"]  # when releasing check whether we need to update this array
+        goversion:
+          # When releasing ask yourself the question of whether to change this list
+          - "1.16"
+          - "1.17"
+          - "1.18"
+          - "1.19"
+          - "1.20"
+          - "1.21"
         system: [ubuntu-latest, macos-latest]
     runs-on: "${{ matrix.system }}"
     steps:
