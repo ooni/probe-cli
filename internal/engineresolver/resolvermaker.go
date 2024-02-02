@@ -40,6 +40,8 @@ var allmakers = []*resolvermaker{{
 	url: "https://mozilla.cloudflare-dns.com/dns-query",
 }, {
 	url: "http3://mozilla.cloudflare-dns.com/dns-query",
+}, {
+	url: "https://wikimedia-dns.org/dns-query",
 }}
 
 // allbyurl contains all the resolvermakers by URL
