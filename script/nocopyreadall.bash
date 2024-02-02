@@ -89,6 +89,12 @@ for file in $(find . -type f -name \*.go); do
 		continue
 	fi
 
+	if [ "$file" = "./pkg/gobash/version.go" ]; then
+		# We're allowed to use ReadAll and Copy in this file because
+		# this code is only used by the build system
+		continue
+	fi
+
 	if grep -q 'io\.ReadAll' $file; then
 		echo "in $file: do not use io.ReadAll, use netxlite.ReadAllContext" 1>&2
 		exitcode=1
