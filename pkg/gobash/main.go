@@ -1,13 +1,13 @@
 package main
 
 import (
+	"io/ioutil"
 	"log"
-	"os"
 )
 
 func main() {
 	// read the content of GOVERSION
-	data, err := os.ReadFile("GOVERSION")
+	data, err := ioutil.ReadFile("GOVERSION")
 	if err != nil {
 		log.Fatal(err)
 	}
