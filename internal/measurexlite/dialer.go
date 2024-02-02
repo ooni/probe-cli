@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -38,7 +39,9 @@ var _ model.Dialer = &dialerTrace{}
 
 // DialContext implements model.Dialer.DialContext.
 func (d *dialerTrace) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
-	return d.d.DialContext(netxlite.ContextWithTrace(ctx, d.tx), network, address)
+	// Here we make sure that we're counting bytes sent and received.
+	dialer := bytecounter.WrapWithContextAwareDialer(d.d)
+	return dialer.DialContext(netxlite.ContextWithTrace(ctx, d.tx), network, address)
 }
 
 // CloseIdleConnections implements model.Dialer.CloseIdleConnections.
