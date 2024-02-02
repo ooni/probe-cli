@@ -8,11 +8,59 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
+// WrapWithContextAwareSystemResolver wraps the given resolver with a resolver that
+// is aware of context-byte counting. See MaybeWrapSystemResolver for a list of caveats.
+func WrapWithContextAwareSystemResolver(reso model.Resolver) model.Resolver {
+	return &ContextAwareSystemResolver{reso}
+}
+
+// ContextAwareSystemResolver is a [model.Resolver] that knows how to count bytes
+// sent and received. We typically use this for the system resolver only because for
+// other resolvers we are better off just wrapping their connections.
+type ContextAwareSystemResolver struct {
+	R model.Resolver
+}
+
+// Address implements model.Resolver.
+func (r *ContextAwareSystemResolver) Address() string {
+	return r.R.Address()
+}
+
+// CloseIdleConnections implements model.Resolver.
+func (r *ContextAwareSystemResolver) CloseIdleConnections() {
+	r.R.CloseIdleConnections()
+}
+
+func (r *ContextAwareSystemResolver) wrap(ctx context.Context) model.Resolver {
+	return MaybeWrapSystemResolver(MaybeWrapSystemResolver(
+		r.R, ContextSessionByteCounter(ctx)), ContextExperimentByteCounter(ctx))
+}
+
+// LookupHTTPS implements model.Resolver.
+func (r *ContextAwareSystemResolver) LookupHTTPS(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
+	return r.wrap(ctx).LookupHTTPS(ctx, domain)
+}
+
+// LookupHost implements model.Resolver.
+func (r *ContextAwareSystemResolver) LookupHost(ctx context.Context, hostname string) (addrs []string, err error) {
+	return r.wrap(ctx).LookupHost(ctx, hostname)
+}
+
+// LookupNS implements model.Resolver.
+func (r *ContextAwareSystemResolver) LookupNS(ctx context.Context, domain string) ([]*net.NS, error) {
+	return r.wrap(ctx).LookupNS(ctx, domain)
+}
+
+// Network implements model.Resolver.
+func (r *ContextAwareSystemResolver) Network() string {
+	return r.R.Network()
+}
+
 // MaybeWrapSystemResolver takes in input a Resolver and either wraps it
 // to perform byte counting, if this counter is not nil, or just returns to the
 // caller the original resolver, when the counter is nil.
 //
-// # Bug
+// # Caveat
 //
 // The returned resolver will only approximately estimate the bytes
 // sent and received by this resolver if this resolver is the system
