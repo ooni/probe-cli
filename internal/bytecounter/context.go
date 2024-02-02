@@ -11,7 +11,7 @@ import (
 
 type byteCounterSessionKey struct{}
 
-// ContextSessionByteCounter retrieves the session byte counter from the context
+// ContextSessionByteCounter retrieves the possibly-nil session byte counter from the context.
 func ContextSessionByteCounter(ctx context.Context) *Counter {
 	counter, _ := ctx.Value(byteCounterSessionKey{}).(*Counter)
 	return counter
@@ -24,7 +24,7 @@ func WithSessionByteCounter(ctx context.Context, counter *Counter) context.Conte
 
 type byteCounterExperimentKey struct{}
 
-// ContextExperimentByteCounter retrieves the experiment byte counter from the context
+// ContextExperimentByteCounter retrieves the possibly-nil experiment byte counter from the context.
 func ContextExperimentByteCounter(ctx context.Context) *Counter {
 	counter, _ := ctx.Value(byteCounterExperimentKey{}).(*Counter)
 	return counter

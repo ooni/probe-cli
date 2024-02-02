@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
+	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/geoipx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -93,7 +94,8 @@ func (r *resolverTrace) LookupNS(ctx context.Context, domain string) ([]*net.NS,
 
 // NewStdlibResolver returns a trace-ware system resolver
 func (tx *Trace) NewStdlibResolver(logger model.DebugLogger) model.Resolver {
-	return tx.wrapResolver(tx.Netx.NewStdlibResolver(logger))
+	// Here we make sure that we're counting bytes sent and received.
+	return bytecounter.WrapWithContextAwareSystemResolver(tx.wrapResolver(tx.Netx.NewStdlibResolver(logger)))
 }
 
 // NewParallelUDPResolver returns a trace-ware parallel UDP resolver

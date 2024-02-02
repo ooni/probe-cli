@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/miekg/dns"
+	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -328,7 +329,8 @@ func TestNewWrappedResolvers(t *testing.T) {
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
 		resolver := trace.NewStdlibResolver(model.DiscardLogger)
-		resolvert := resolver.(*resolverTrace)
+		resolverbyteaware := resolver.(*bytecounter.ContextAwareSystemResolver)
+		resolvert := resolverbyteaware.R.(*resolverTrace)
 		if resolvert.tx != trace {
 			t.Fatal("invalid trace")
 		}
