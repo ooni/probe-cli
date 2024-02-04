@@ -293,7 +293,7 @@ func analysisClassicComputeBlockingAccessible(woa *minipipeline.WebAnalysis, tk 
 				}
 
 				// 3.1.2. Otherwise, if the control worked, that's blocking.
-				tk.setBlockingString("http-failure")
+				tk.setBlockingString("tls")
 				tk.setHTTPExperimentFailure(entry.Failure)
 				return
 			}
@@ -306,7 +306,7 @@ func analysisClassicComputeBlockingAccessible(woa *minipipeline.WebAnalysis, tk 
 			}
 
 			// 3.3. Handle the case where just the probe failed.
-			tk.setBlockingString("http-failure")
+			tk.setBlockingString("tls")
 			tk.setHTTPExperimentFailure(entry.Failure)
 			return
 		}
@@ -327,7 +327,7 @@ func analysisClassicComputeBlockingAccessible(woa *minipipeline.WebAnalysis, tk 
 				}
 
 				// 4.1.2. Otherwise, if the control worked, that's blocking.
-				tk.setBlockingString("http-failure")
+				tk.setBlockingString("tcp_ip")
 				tk.setHTTPExperimentFailure(entry.Failure)
 				return
 			}

@@ -10,6 +10,7 @@ import (
 func tlsBlockingConnectionResetWithConsistentDNS() *TestCase {
 	return &TestCase{
 		Name:  "tlsBlockingConnectionResetWithConsistentDNS",
+		Flags: TestCaseFlagNoV04,
 		Input: "https://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 
@@ -31,7 +32,7 @@ func tlsBlockingConnectionResetWithConsistentDNS() *TestCase {
 			XStatus:               8448, // StatusExperimentHTTP | StatusAnomalyReadWrite
 			XBlockingFlags:        4,    // AnalysisBlockingFlagTLSBlocking
 			Accessible:            false,
-			Blocking:              "http-failure",
+			Blocking:              "tls",
 		},
 	}
 }
