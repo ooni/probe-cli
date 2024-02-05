@@ -322,7 +322,7 @@ func (t *SecureFlow) httpTransaction(ctx context.Context, network, address, alpn
 			t.CookieJar.SetCookies(req.URL, cookies)
 		}
 		reader := io.LimitReader(resp.Body, maxbody)
-		body, err = StreamAllContext(ctx, reader)
+		body, err = netxlite.StreamAllContext(ctx, reader)
 	}
 	if err == nil && httpRedirectIsRedirect(resp) {
 		err = httpValidateRedirect(resp)
