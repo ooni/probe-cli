@@ -19,7 +19,7 @@ func throttlingWithHTTP() *TestCase {
 			env.DPIEngine().AddRule(&netem.DPIThrottleTrafficForTCPEndpoint{
 				Delay:           300 * time.Millisecond,
 				Logger:          log.Log,
-				PLR:             0.2,
+				PLR:             0.1,
 				ServerIPAddress: netemx.AddressLargeFileCom1,
 				ServerPort:      80,
 			})
@@ -27,7 +27,7 @@ func throttlingWithHTTP() *TestCase {
 			env.DPIEngine().AddRule(&netem.DPIThrottleTrafficForTCPEndpoint{
 				Delay:           300 * time.Millisecond,
 				Logger:          log.Log,
-				PLR:             0.2,
+				PLR:             0.1,
 				ServerIPAddress: netemx.AddressLargeFileCom2,
 				ServerPort:      80,
 			})
