@@ -2,17 +2,16 @@
 package shellx
 
 import (
-	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"strings"
 
 	"github.com/google/shlex"
 	"github.com/ooni/probe-cli/v3/internal/fsx"
-	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/logmodel"
 	"golang.org/x/sys/execabs"
 )
 
@@ -109,7 +108,7 @@ const (
 // Config contains config for executing programs.
 type Config struct {
 	// Logger is the OPTIONAL logger to use.
-	Logger model.Logger
+	Logger logmodel.Logger
 
 	// Flags contains OPTIONAL binary flags to configure the program.
 	Flags int64
@@ -155,7 +154,7 @@ func OutputEx(config *Config, argv *Argv, envp *Envp) ([]byte, error) {
 }
 
 // output is the common implementation of [Output] and [OutputQuiet].
-func output(logger model.Logger, flags int64, command string, args ...string) ([]byte, error) {
+func output(logger logmodel.Logger, flags int64, command string, args ...string) ([]byte, error) {
 	argv, err := NewArgv(command, args...)
 	if err != nil {
 		return nil, err
@@ -176,7 +175,7 @@ func OutputQuiet(command string, args ...string) ([]byte, error) {
 
 // Output is like [OutputQuiet] except that it logs the command to be executed
 // and the environment variables specific to this command.
-func Output(logger model.Logger, command string, args ...string) ([]byte, error) {
+func Output(logger logmodel.Logger, command string, args ...string) ([]byte, error) {
 	return output(logger, FlagShowStdoutStderr, command, args...)
 }
 
@@ -191,7 +190,7 @@ func RunEx(config *Config, argv *Argv, envp *Envp) error {
 }
 
 // run is the common implementation of [Run] and [RunQuiet].
-func run(logger model.Logger, flags int64, command string, args ...string) error {
+func run(logger logmodel.Logger, flags int64, command string, args ...string) error {
 	argv, err := NewArgv(command, args...)
 	if err != nil {
 		return err
@@ -212,13 +211,13 @@ func RunQuiet(command string, args ...string) error {
 // Run is like [RunQuiet] except that it also logs the command to
 // exec, the environment variables specific to this command, the text
 // logged to stdout and stderr.
-func Run(logger model.Logger, command string, args ...string) error {
+func Run(logger logmodel.Logger, command string, args ...string) error {
 	return run(logger, FlagShowStdoutStderr, command, args...)
 }
 
 // runCommandLine is the common implementation of
 // [RunCommandLineQuiet] and [RunCommandLine].
-func runCommandLine(logger model.Logger, flags int64, cmdline string) error {
+func runCommandLine(logger logmodel.Logger, flags int64, cmdline string) error {
 	argv, err := ParseCommandLine(cmdline)
 	if err != nil {
 		return err
@@ -238,13 +237,13 @@ func RunCommandLineQuiet(cmdline string) error {
 
 // RunCommandLine is like [RunCommandLineQuiet] but logs the command to
 // execute as well as the command-specific environment variables.
-func RunCommandLine(logger model.Logger, cmdline string) error {
+func RunCommandLine(logger logmodel.Logger, cmdline string) error {
 	return runCommandLine(logger, FlagShowStdoutStderr, cmdline)
 }
 
 // outputCommandLine is the common implementation
 // of [OutputCommandLineQuiet] and [OutputCommandLine].
-func outputCommandLine(logger model.Logger, flags int64, cmdline string) ([]byte, error) {
+func outputCommandLine(logger logmodel.Logger, flags int64, cmdline string) ([]byte, error) {
 	argv, err := ParseCommandLine(cmdline)
 	if err != nil {
 		return nil, err
@@ -264,7 +263,7 @@ func OutputCommandLineQuiet(cmdline string) ([]byte, error) {
 
 // OutputCommandLine is like OutputCommandLineQuiet but logs the command to
 // execute as well as the command-specific environment variables.
-func OutputCommandLine(logger model.Logger, cmdline string) ([]byte, error) {
+func OutputCommandLine(logger logmodel.Logger, cmdline string) ([]byte, error) {
 	return outputCommandLine(logger, FlagShowStdoutStderr, cmdline)
 }
 
@@ -300,8 +299,8 @@ var fsxOpenFile = fsx.OpenFile
 // osOpenFile is the generic function to open a file.
 var osOpenFile = os.OpenFile
 
-// netxliteCopyContext is the generic function to copy content.
-var netxliteCopyContext = netxlite.CopyContext
+// ioCopy is the generic function to copy content.
+var ioCopy = io.Copy
 
 // CopyFile copies [source] to [dest].
 func CopyFile(source, dest string, perms fs.FileMode) error {
@@ -314,7 +313,7 @@ func CopyFile(source, dest string, perms fs.FileMode) error {
 	if err != nil {
 		return err
 	}
-	if _, err := netxliteCopyContext(context.Background(), destfp, sourcefp); err != nil {
+	if _, err := ioCopy(destfp, sourcefp); err != nil {
 		destfp.Close()
 		return err
 	}

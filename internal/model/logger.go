@@ -1,42 +1,20 @@
 package model
 
+import "github.com/ooni/probe-cli/v3/internal/logmodel"
+
 //
 // Logger
 //
 
 // DebugLogger is a logger emitting only debug messages.
-type DebugLogger interface {
-	// Debug emits a debug message.
-	Debug(msg string)
-
-	// Debugf formats and emits a debug message.
-	Debugf(format string, v ...interface{})
-}
+type DebugLogger = logmodel.DebugLogger
 
 // InfoLogger is a logger emitting debug and infor messages.
-type InfoLogger interface {
-	// An InfoLogger is also a DebugLogger.
-	DebugLogger
-
-	// Info emits an informational message.
-	Info(msg string)
-
-	// Infof formats and emits an informational message.
-	Infof(format string, v ...interface{})
-}
+type InfoLogger = logmodel.InfoLogger
 
 // Logger defines the common interface that a logger should have. It is
 // out of the box compatible with `log.Log` in `apex/log`.
-type Logger interface {
-	// A Logger is also an InfoLogger.
-	InfoLogger
-
-	// Warn emits a warning message.
-	Warn(msg string)
-
-	// Warnf formats and emits a warning message.
-	Warnf(format string, v ...interface{})
-}
+type Logger = logmodel.Logger
 
 // DiscardLogger is the default logger that discards its input
 var DiscardLogger Logger = logDiscarder{}

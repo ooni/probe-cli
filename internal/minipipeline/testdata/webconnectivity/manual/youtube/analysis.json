@@ -57,7 +57,7 @@
   "HTTPFinalResponseSuccessTLSWithControl": 16,
   "HTTPFinalResponseSuccessTCPWithoutControl": null,
   "HTTPFinalResponseSuccessTCPWithControl": null,
-  "HTTPFinalResponseDiffBodyProportionFactor": 0.5632578337691695,
+  "HTTPFinalResponseDiffBodyProportionFactor": null,
   "HTTPFinalResponseDiffStatusCodeMatch": true,
   "HTTPFinalResponseDiffTitleDifferentLongWords": {},
   "HTTPFinalResponseDiffUncommonHeadersIntersection": {
@@ -108,7 +108,7 @@
       "HTTPFailure": "",
       "HTTPResponseStatusCode": 200,
       "HTTPResponseBodyLength": 524268,
-      "HTTPResponseBodyIsTruncated": false,
+      "HTTPResponseBodyIsTruncated": true,
       "HTTPResponseHeadersKeys": {
         "Accept-Ch": true,
         "Accept-Ranges": true,

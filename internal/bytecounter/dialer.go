@@ -14,7 +14,7 @@ import (
 // MaybeWrapWithContextAwareDialer wraps the given dialer with a ContextAwareDialer
 // if the enabled argument is true and otherwise just returns the given dialer.
 //
-// # Bug
+// # Caveat
 //
 // This implementation cannot properly account for the bytes that are sent by
 // persistent connections, because they stick to the counters set when the
@@ -22,8 +22,7 @@ import (
 // received when submitting a measurement. Such bytes are specifically not
 // seen by the experiment specific byte counter.
 //
-// For this reason, this implementation may be heavily changed/removed
-// in the future (<- this message is now ~two years old, though).
+// As such, this implementation should only be used when measuring.
 func MaybeWrapWithContextAwareDialer(enabled bool, dialer model.Dialer) model.Dialer {
 	if !enabled {
 		return dialer

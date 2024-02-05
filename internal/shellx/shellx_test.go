@@ -1,7 +1,6 @@
 package shellx
 
 import (
-	"context"
 	"errors"
 	"io"
 	"io/fs"
@@ -16,7 +15,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // testGolangExe is the golang exe to use in this test suite
@@ -479,11 +477,11 @@ func TestCopyFile(t *testing.T) {
 		dest := filepath.Join("testdata", "copy.txt")
 		defer os.Remove(dest)
 		expected := errors.New("mocked error")
-		netxliteCopyContext = func(ctx context.Context, dst io.Writer, src io.Reader) (int64, error) {
+		ioCopy = func(dst io.Writer, src io.Reader) (int64, error) {
 			return 0, expected
 		}
 		defer func() {
-			netxliteCopyContext = netxlite.CopyContext
+			ioCopy = io.Copy
 		}()
 		if err := CopyFile(source, dest, 0600); !errors.Is(err, expected) {
 			t.Fatal("unexpected error", err)

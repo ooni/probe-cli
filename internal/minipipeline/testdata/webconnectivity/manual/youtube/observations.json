@@ -3407,7 +3407,7 @@
       "HTTPFailure": "",
       "HTTPResponseStatusCode": 200,
       "HTTPResponseBodyLength": 524268,
-      "HTTPResponseBodyIsTruncated": false,
+      "HTTPResponseBodyIsTruncated": true,
       "HTTPResponseHeadersKeys": {
         "Accept-Ch": true,
         "Accept-Ranges": true,

@@ -21,6 +21,20 @@ for file in $(find . -type f -name \*.go); do
 		continue
 	fi
 
+	if [ "$file" = "./internal/shellx/shellx.go" ]; then
+		# We're allowed to use ReadAll and Copy in this file to
+		# avoid depending on netxlite, given that netxlite's does
+		# not compile with go1.18 due to the quic dependency.
+		continue
+	fi
+
+	if [ "$file" = "./internal/shellx/shellx_test.go" ]; then
+		# We're allowed to use ReadAll and Copy in this file to
+		# avoid depending on netxlite, given that netxlite's does
+		# not compile with go1.18 due to the quic dependency.
+		continue
+	fi
+
 	if [ "$file" = "./internal/testingsocks5/request.go" ]; then
 		# We're allowed to use ReadAll and Copy in this file because
 		# it's code that we only use for testing purposes.
@@ -72,6 +86,12 @@ for file in $(find . -type f -name \*.go); do
 	if [ "$file" = "./internal/testingx/geoip_test.go" ]; then
 		# We're allowed to use ReadAll and Copy in this file because
 		# it's code that we only use for testing purposes.
+		continue
+	fi
+
+	if [ "$file" = "./pkg/gobash/version.go" ]; then
+		# We're allowed to use ReadAll and Copy in this file because
+		# this code is only used by the build system
 		continue
 	fi
 
