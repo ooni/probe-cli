@@ -55,7 +55,7 @@ func throttlingWithHTTPS() *TestCase {
 			env.DPIEngine().AddRule(&netem.DPIThrottleTrafficForTLSSNI{
 				Delay:  300 * time.Millisecond,
 				Logger: log.Log,
-				PLR:    0.2,
+				PLR:    0.1,
 				SNI:    "largefile.com",
 			})
 
