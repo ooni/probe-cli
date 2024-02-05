@@ -92,6 +92,9 @@ func AllTestCases() []*TestCase {
 		tcpBlockingConnectTimeout(),
 		tcpBlockingConnectionRefusedWithInconsistentDNS(),
 
+		throttlingWithHTTP(),
+		throttlingWithHTTPS(),
+
 		tlsBlockingConnectionResetWithConsistentDNS(),
 		tlsBlockingConnectionResetWithInconsistentDNS(),
 
