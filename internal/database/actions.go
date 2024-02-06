@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/pkg/errors"
 	"github.com/upper/db/v4"
@@ -354,11 +355,9 @@ func (d *Database) AddTestKeys(msmt *model.DatabaseMeasurement, sk model.Measure
 	if err != nil {
 		log.WithError(err).Error("failed to serialize summary")
 	}
-	// This is necessary so that we can extract from the the opaque testKeys just
-	// the IsAnomaly field of bool type.
-	// Maybe generics are not so bad after-all, heh golang?
 	msmt.TestKeys = string(skBytes)
-	msmt.IsAnomaly = sql.NullBool{Bool: sk.Anomaly(), Valid: true}
+	_, isNotImplemented := sk.(*engine.ExperimentMeasurementSummaryKeysNotImplemented)
+	msmt.IsAnomaly = sql.NullBool{Bool: sk.Anomaly(), Valid: !isNotImplemented}
 	err = d.sess.Collection("measurements").Find("measurement_id", msmt.ID).Update(msmt)
 	if err != nil {
 		log.WithError(err).Error("failed to update measurement")
