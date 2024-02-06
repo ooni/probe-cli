@@ -266,9 +266,6 @@ func failureFromError(err error) (failure *string) {
 var _ model.MeasurementSummaryKeysProvider = &TestKeys{}
 
 // SummaryKeys contains summary keys for this experiment.
-//
-// Note that this structure is part of the ABI contract with ooniprobe
-// therefore we should be careful when changing it.
 type SummaryKeys struct {
 	Upload         float64 `json:"upload"`
 	Download       float64 `json:"download"`
@@ -281,22 +278,22 @@ type SummaryKeys struct {
 	IsAnomaly      bool    `json:"-"`
 }
 
+// MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider.
+func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
+	sk := &SummaryKeys{IsAnomaly: false}
+	sk.Upload = tk.Summary.Upload
+	sk.Download = tk.Summary.Download
+	sk.Ping = tk.Summary.Ping
+	sk.MaxRTT = tk.Summary.MaxRTT
+	sk.AvgRTT = tk.Summary.AvgRTT
+	sk.MinRTT = tk.Summary.MinRTT
+	sk.MSS = float64(tk.Summary.MSS)
+	sk.RetransmitRate = tk.Summary.RetransmitRate
+	sk.IsAnomaly = false
+	return sk
+}
+
 // Anomaly implements model.MeasurementSummaryKeys.
 func (sk *SummaryKeys) Anomaly() bool {
 	return sk.IsAnomaly
-}
-
-// MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider.
-func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
-	return &SummaryKeys{
-		Upload:         tk.Summary.Upload,
-		Download:       tk.Summary.Download,
-		Ping:           tk.Summary.Ping,
-		MaxRTT:         tk.Summary.MaxRTT,
-		AvgRTT:         tk.Summary.AvgRTT,
-		MinRTT:         tk.Summary.MinRTT,
-		MSS:            float64(tk.Summary.MSS),
-		RetransmitRate: tk.Summary.RetransmitRate,
-		IsAnomaly:      false,
-	}
 }

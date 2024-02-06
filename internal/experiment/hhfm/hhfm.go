@@ -343,26 +343,23 @@ func (c Conn) Write(b []byte) (int, error) {
 var _ model.MeasurementSummaryKeysProvider = &TestKeys{}
 
 // SummaryKeys contains summary keys for this experiment.
-//
-// Note that this structure is part of the ABI contract with ooniprobe
-// therefore we should be careful when changing it.
 type SummaryKeys struct {
 	IsAnomaly bool `json:"-"`
+}
+
+// MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider.
+func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
+	sk := &SummaryKeys{IsAnomaly: false}
+	sk.IsAnomaly = (tk.Tampering.HeaderFieldName ||
+		tk.Tampering.HeaderFieldNumber ||
+		tk.Tampering.HeaderFieldValue ||
+		tk.Tampering.HeaderNameCapitalization ||
+		tk.Tampering.RequestLineCapitalization ||
+		tk.Tampering.Total)
+	return sk
 }
 
 // Anomaly implements model.MeasurementSummaryKeys.
 func (sk *SummaryKeys) Anomaly() bool {
 	return sk.IsAnomaly
-}
-
-// MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider.
-func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
-	return &SummaryKeys{
-		IsAnomaly: (tk.Tampering.HeaderFieldName ||
-			tk.Tampering.HeaderFieldNumber ||
-			tk.Tampering.HeaderFieldValue ||
-			tk.Tampering.HeaderNameCapitalization ||
-			tk.Tampering.RequestLineCapitalization ||
-			tk.Tampering.Total),
-	}
 }

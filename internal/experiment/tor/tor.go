@@ -383,9 +383,6 @@ func failureString(failure *string) (s string) {
 var _ model.MeasurementSummaryKeysProvider = &TestKeys{}
 
 // SummaryKeys contains summary keys for this experiment.
-//
-// Note that this structure is part of the ABI contract with ooniprobe
-// therefore we should be careful when changing it.
 type SummaryKeys struct {
 	DirPortTotal            int64 `json:"dir_port_total"`
 	DirPortAccessible       int64 `json:"dir_port_accessible"`
@@ -398,25 +395,25 @@ type SummaryKeys struct {
 	IsAnomaly               bool  `json:"-"`
 }
 
+// MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider.
+func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
+	sk := &SummaryKeys{IsAnomaly: false}
+	sk.DirPortTotal = tk.DirPortTotal
+	sk.DirPortAccessible = tk.DirPortAccessible
+	sk.OBFS4Total = tk.OBFS4Total
+	sk.OBFS4Accessible = tk.OBFS4Accessible
+	sk.ORPortDirauthTotal = tk.ORPortDirauthTotal
+	sk.ORPortDirauthAccessible = tk.ORPortDirauthAccessible
+	sk.ORPortTotal = tk.ORPortTotal
+	sk.ORPortAccessible = tk.ORPortAccessible
+	sk.IsAnomaly = ((sk.DirPortAccessible <= 0 && sk.DirPortTotal > 0) ||
+		(sk.OBFS4Accessible <= 0 && sk.OBFS4Total > 0) ||
+		(sk.ORPortDirauthAccessible <= 0 && sk.ORPortDirauthTotal > 0) ||
+		(sk.ORPortAccessible <= 0 && sk.ORPortTotal > 0))
+	return sk
+}
+
 // Anomaly implements model.MeasurementSummaryKeys.
 func (sk *SummaryKeys) Anomaly() bool {
 	return sk.IsAnomaly
-}
-
-// MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider.
-func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
-	return &SummaryKeys{
-		DirPortTotal:            tk.DirPortTotal,
-		DirPortAccessible:       tk.DirPortAccessible,
-		OBFS4Total:              tk.OBFS4Total,
-		OBFS4Accessible:         tk.OBFS4Accessible,
-		ORPortDirauthTotal:      tk.ORPortDirauthTotal,
-		ORPortDirauthAccessible: tk.ORPortDirauthAccessible,
-		ORPortTotal:             tk.ORPortTotal,
-		ORPortAccessible:        tk.ORPortAccessible,
-		IsAnomaly: ((tk.DirPortAccessible <= 0 && tk.DirPortTotal > 0) ||
-			(tk.OBFS4Accessible <= 0 && tk.OBFS4Total > 0) ||
-			(tk.ORPortDirauthAccessible <= 0 && tk.ORPortDirauthTotal > 0) ||
-			(tk.ORPortAccessible <= 0 && tk.ORPortTotal > 0)),
-	}
 }

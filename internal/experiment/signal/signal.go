@@ -207,25 +207,22 @@ func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
 var _ model.MeasurementSummaryKeysProvider = &TestKeys{}
 
 // SummaryKeys contains summary keys for this experiment.
-//
-// Note that this structure is part of the ABI contract with ooniprobe
-// therefore we should be careful when changing it.
 type SummaryKeys struct {
 	SignalBackendStatus  string  `json:"signal_backend_status"`
 	SignalBackendFailure *string `json:"signal_backend_failure"`
 	IsAnomaly            bool    `json:"-"`
 }
 
+// MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider.
+func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
+	sk := &SummaryKeys{IsAnomaly: false}
+	sk.SignalBackendStatus = tk.SignalBackendStatus
+	sk.SignalBackendFailure = tk.SignalBackendFailure
+	sk.IsAnomaly = tk.SignalBackendStatus == "blocked"
+	return sk
+}
+
 // Anomaly implements model.MeasurementSummaryKeys.
 func (tk *SummaryKeys) Anomaly() bool {
 	return tk.IsAnomaly
-}
-
-// MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider.
-func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
-	return &SummaryKeys{
-		SignalBackendStatus:  tk.SignalBackendStatus,
-		SignalBackendFailure: tk.SignalBackendFailure,
-		IsAnomaly:            tk.SignalBackendStatus == "blocked",
-	}
 }

@@ -109,29 +109,24 @@ func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
 var _ model.MeasurementSummaryKeysProvider = &TestKeys{}
 
 // SummaryKeys contains summary keys for this experiment.
-//
-// Note that this structure is part of the ABI contract with ooniprobe
-// therefore we should be careful when changing it.
 type SummaryKeys struct {
 	BootstrapTime float64 `json:"bootstrap_time"`
 	Failure       string  `json:"failure"`
 	IsAnomaly     bool    `json:"-"`
 }
 
+// MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider.
+func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
+	sk := &SummaryKeys{IsAnomaly: false}
+	if tk.Failure != nil {
+		sk.Failure = *tk.Failure
+		sk.IsAnomaly = true
+	}
+	sk.BootstrapTime = tk.BootstrapTime
+	return sk
+}
+
 // Anomaly implements model.MeasurementSummaryKeys.
 func (sk *SummaryKeys) Anomaly() bool {
 	return sk.IsAnomaly
-}
-
-// MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider.
-func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
-	var failure string
-	if tk.Failure != nil {
-		failure = *tk.Failure
-	}
-	return &SummaryKeys{
-		BootstrapTime: tk.BootstrapTime,
-		Failure:       failure,
-		IsAnomaly:     tk.Failure != nil,
-	}
 }

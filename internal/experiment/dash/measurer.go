@@ -127,9 +127,6 @@ func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
 var _ model.MeasurementSummaryKeysProvider = &TestKeys{}
 
 // SummaryKeys contains summary keys for this experiment.
-//
-// Note that this structure is part of the ABI contract with ooniprobe
-// therefore we should be careful when changing it.
 type SummaryKeys struct {
 	Latency   float64 `json:"connect_latency"`
 	Bitrate   float64 `json:"median_bitrate"`
@@ -137,17 +134,16 @@ type SummaryKeys struct {
 	IsAnomaly bool    `json:"-"`
 }
 
+// MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider.
+func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
+	sk := &SummaryKeys{IsAnomaly: false}
+	sk.Latency = tk.Simple.ConnectLatency
+	sk.Bitrate = float64(tk.Simple.MedianBitrate)
+	sk.Delay = tk.Simple.MinPlayoutDelay
+	return sk
+}
+
 // Anomaly implements model.MeasurementSummary.
 func (sk *SummaryKeys) Anomaly() bool {
 	return sk.IsAnomaly
-}
-
-// MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider.
-func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
-	return &SummaryKeys{
-		Latency:   tk.Simple.ConnectLatency,
-		Bitrate:   float64(tk.Simple.MedianBitrate),
-		Delay:     tk.Simple.MinPlayoutDelay,
-		IsAnomaly: false,
-	}
 }

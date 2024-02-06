@@ -138,9 +138,6 @@ func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
 var _ model.MeasurementSummaryKeysProvider = &TestKeys{}
 
 // SummaryKeys contains summary keys for this experiment.
-//
-// Note that this structure is part of the ABI contract with ooniprobe
-// therefore we should be careful when changing it.
 type SummaryKeys struct {
 	HTTPBlocking bool `json:"telegram_http_blocking"`
 	TCPBlocking  bool `json:"telegram_tcp_blocking"`
@@ -148,20 +145,20 @@ type SummaryKeys struct {
 	IsAnomaly    bool `json:"-"`
 }
 
-// Anomaly implements model.MeasurementSummaryKeys.
-func (sk *SummaryKeys) Anomaly() bool {
-	return sk.IsAnomaly
-}
-
 // MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider.
 func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
+	sk := &SummaryKeys{IsAnomaly: false}
 	tcpBlocking := tk.TelegramTCPBlocking
 	httpBlocking := tk.TelegramHTTPBlocking
 	webBlocking := tk.TelegramWebFailure != nil
-	return &SummaryKeys{
-		HTTPBlocking: httpBlocking,
-		TCPBlocking:  tcpBlocking,
-		WebBlocking:  webBlocking,
-		IsAnomaly:    webBlocking || httpBlocking || tcpBlocking,
-	}
+	sk.HTTPBlocking = httpBlocking
+	sk.TCPBlocking = tcpBlocking
+	sk.WebBlocking = webBlocking
+	sk.IsAnomaly = webBlocking || httpBlocking || tcpBlocking
+	return sk
+}
+
+// Anomaly implements model.MeasurementSummaryKeys.
+func (sk *SummaryKeys) Anomaly() bool {
+	return sk.IsAnomaly
 }

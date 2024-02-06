@@ -193,11 +193,6 @@ type SummaryKeys struct {
 	IsAnomaly                  bool `json:"-"`
 }
 
-// Anomaly implements model.MeasurementSummaryKeys.
-func (sk *SummaryKeys) Anomaly() bool {
-	return sk.IsAnomaly
-}
-
 // MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider.
 func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
 	sk := &SummaryKeys{}
@@ -209,4 +204,9 @@ func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
 	sk.EndpointsBlocking = blocking(tk.WhatsappEndpointsStatus)
 	sk.IsAnomaly = (sk.RegistrationServerBlocking || sk.WebBlocking || sk.EndpointsBlocking)
 	return sk
+}
+
+// Anomaly implements model.MeasurementSummaryKeys.
+func (sk *SummaryKeys) Anomaly() bool {
+	return sk.IsAnomaly
 }
