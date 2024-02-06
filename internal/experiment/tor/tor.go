@@ -6,7 +6,6 @@ package tor
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/url"
 	"sync"
@@ -381,6 +380,8 @@ func failureString(failure *string) (s string) {
 	return
 }
 
+var _ model.MeasurementSummaryKeysProvider = &TestKeys{}
+
 // SummaryKeys contains summary keys for this experiment.
 //
 // Note that this structure is part of the ABI contract with ooniprobe
@@ -397,24 +398,25 @@ type SummaryKeys struct {
 	IsAnomaly               bool  `json:"-"`
 }
 
-// GetSummaryKeys implements model.ExperimentMeasurer.GetSummaryKeys.
-func (m Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, error) {
-	sk := SummaryKeys{IsAnomaly: false}
-	tk, ok := measurement.TestKeys.(*TestKeys)
-	if !ok {
-		return sk, errors.New("invalid test keys type")
+// Anomaly implements model.MeasurementSummaryKeys.
+func (sk *SummaryKeys) Anomaly() bool {
+	return sk.IsAnomaly
+}
+
+// MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider.
+func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
+	return &SummaryKeys{
+		DirPortTotal:            tk.DirPortTotal,
+		DirPortAccessible:       tk.DirPortAccessible,
+		OBFS4Total:              tk.OBFS4Total,
+		OBFS4Accessible:         tk.OBFS4Accessible,
+		ORPortDirauthTotal:      tk.ORPortDirauthTotal,
+		ORPortDirauthAccessible: tk.ORPortDirauthAccessible,
+		ORPortTotal:             tk.ORPortTotal,
+		ORPortAccessible:        tk.ORPortAccessible,
+		IsAnomaly: ((tk.DirPortAccessible <= 0 && tk.DirPortTotal > 0) ||
+			(tk.OBFS4Accessible <= 0 && tk.OBFS4Total > 0) ||
+			(tk.ORPortDirauthAccessible <= 0 && tk.ORPortDirauthTotal > 0) ||
+			(tk.ORPortAccessible <= 0 && tk.ORPortTotal > 0)),
 	}
-	sk.DirPortTotal = tk.DirPortTotal
-	sk.DirPortAccessible = tk.DirPortAccessible
-	sk.OBFS4Total = tk.OBFS4Total
-	sk.OBFS4Accessible = tk.OBFS4Accessible
-	sk.ORPortDirauthTotal = tk.ORPortDirauthTotal
-	sk.ORPortDirauthAccessible = tk.ORPortDirauthAccessible
-	sk.ORPortTotal = tk.ORPortTotal
-	sk.ORPortAccessible = tk.ORPortAccessible
-	sk.IsAnomaly = ((sk.DirPortAccessible <= 0 && sk.DirPortTotal > 0) ||
-		(sk.OBFS4Accessible <= 0 && sk.OBFS4Total > 0) ||
-		(sk.ORPortDirauthAccessible <= 0 && sk.ORPortDirauthTotal > 0) ||
-		(sk.ORPortAccessible <= 0 && sk.ORPortTotal > 0))
-	return sk, nil
 }

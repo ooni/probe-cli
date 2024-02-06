@@ -305,6 +305,8 @@ func RunMethod(ctx context.Context, config RunMethodConfig) {
 	}
 }
 
+var _ model.MeasurementSummaryKeysProvider = &TestKeys{}
+
 // SummaryKeys contains summary keys for this experiment.
 //
 // Note that this structure is part of the ABI contract with ooniprobe
@@ -313,13 +315,12 @@ type SummaryKeys struct {
 	IsAnomaly bool `json:"-"`
 }
 
-// GetSummaryKeys implements model.ExperimentMeasurer.GetSummaryKeys.
-func (m Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, error) {
-	sk := SummaryKeys{IsAnomaly: false}
-	tk, ok := measurement.TestKeys.(*TestKeys)
-	if !ok {
-		return sk, errors.New("invalid test keys type")
-	}
-	sk.IsAnomaly = tk.Tampering
-	return sk, nil
+// Anomaly implements model.MeasurementSummaryKeys.
+func (sk *SummaryKeys) Anomaly() bool {
+	return sk.IsAnomaly
+}
+
+// MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider.
+func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
+	return &SummaryKeys{IsAnomaly: tk.Tampering}
 }

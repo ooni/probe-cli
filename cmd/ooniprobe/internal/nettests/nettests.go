@@ -240,18 +240,11 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 			return errors.Wrap(err, "failed to mark measurement as done")
 		}
 
-		// We're not sure whether it's enough to log the error or we should
-		// instead also mark the measurement as failed. Strictly speaking this
-		// is an inconsistency between the code that generate the measurement
-		// and the code that process the measurement. We do have some data
-		// but we're not gonna have a summary. To be reconsidered.
-		tk, err := exp.GetSummaryKeys(measurement)
-		if err != nil {
-			log.WithError(err).Error("failed to obtain testKeys")
-			continue
-		}
+		// Since 2024-02-06, the experiment GetSummaryKeys function returns a default
+		// implementation in case the experiment does not provide one.
+		sk := exp.GetSummaryKeys(measurement)
 		log.Debugf("Fetching: %d %v", idx, c.msmts[idx64])
-		if err := db.AddTestKeys(c.msmts[idx64], tk); err != nil {
+		if err := db.AddTestKeys(c.msmts[idx64], sk); err != nil {
 			return errors.Wrap(err, "failed to add test keys to summary")
 		}
 	}
