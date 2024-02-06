@@ -151,9 +151,9 @@ func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
 	tcpBlocking := tk.TelegramTCPBlocking
 	httpBlocking := tk.TelegramHTTPBlocking
 	webBlocking := tk.TelegramWebFailure != nil
+	sk.TCPBlocking = tcpBlocking
 	sk.HTTPBlocking = httpBlocking
 	sk.WebBlocking = webBlocking
-	sk.TCPBlocking = tcpBlocking
 	sk.IsAnomaly = webBlocking || httpBlocking || tcpBlocking
 	return sk
 }
