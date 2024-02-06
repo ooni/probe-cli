@@ -289,7 +289,6 @@ func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
 	sk.MinRTT = tk.Summary.MinRTT
 	sk.MSS = float64(tk.Summary.MSS)
 	sk.RetransmitRate = tk.Summary.RetransmitRate
-	sk.IsAnomaly = false
 	return sk
 }
 
