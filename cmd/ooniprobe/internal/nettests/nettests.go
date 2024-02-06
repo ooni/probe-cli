@@ -240,7 +240,7 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 			return errors.Wrap(err, "failed to mark measurement as done")
 		}
 
-		// Since 2024-02-06, the experiment GetSummaryKeys function returns a default
+		// Since ~2024-02-06, the experiment GetSummaryKeys function returns a default
 		// implementation in case the experiment does not provide one.
 		sk := exp.GetSummaryKeys(measurement)
 		log.Debugf("Fetching: %d %v", idx, c.msmts[idx64])
