@@ -127,7 +127,7 @@ type TestKeys struct {
 
 	// Accessible indicates whether the resource is accessible. Possible
 	// values for this field are: nil, true, and false.
-	Accessible any `json:"accessible"`
+	Accessible optional.Value[bool] `json:"accessible"`
 
 	// fundamentalFailure indicates that some fundamental error occurred
 	// in a background task. A fundamental error is something like a programmer
@@ -368,7 +368,7 @@ func NewTestKeys() *TestKeys {
 		StatusCodeMatch:       optional.None[bool](),
 		TitleMatch:            optional.None[bool](),
 		Blocking:              nil,
-		Accessible:            nil,
+		Accessible:            optional.None[bool](),
 		ControlRequest:        nil,
 		fundamentalFailure:    nil,
 		mu:                    &sync.Mutex{},
