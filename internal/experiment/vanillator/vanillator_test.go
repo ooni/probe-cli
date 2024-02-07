@@ -294,7 +294,7 @@ func TestFailureNoTorBinary(t *testing.T) {
 	})
 }
 
-func TestGetSummaryKeys(t *testing.T) {
+func TestMeasurementSummaryKeys(t *testing.T) {
 	t.Run("in case of success", func(t *testing.T) {
 		measurement := &model.Measurement{
 			TestKeys: &TestKeys{

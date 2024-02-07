@@ -33,22 +33,6 @@ func TestExperimentMeasurer(t *testing.T) {
 		}
 	})
 
-	t.Run("GetSummaryKeys", func(t *testing.T) {
-		expect := errors.New("mocked error")
-		em := &ExperimentMeasurer{
-			MockGetSummaryKeys: func(*model.Measurement) (any, error) {
-				return nil, expect
-			},
-		}
-		sk, err := em.GetSummaryKeys(&model.Measurement{})
-		if !errors.Is(err, expect) {
-			t.Fatal("unexpected error", err)
-		}
-		if sk != nil {
-			t.Fatal("expected nil summary keys")
-		}
-	})
-
 	t.Run("Run", func(t *testing.T) {
 		expect := errors.New("mocked error")
 		em := &ExperimentMeasurer{

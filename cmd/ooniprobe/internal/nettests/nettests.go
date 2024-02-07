@@ -240,9 +240,7 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 			return errors.Wrap(err, "failed to mark measurement as done")
 		}
 
-		// Since ~2024-02-06, the experiment GetSummaryKeys function returns a default
-		// implementation in case the experiment does not provide one.
-		sk := exp.GetSummaryKeys(measurement)
+		sk := engine.MeasurementSummaryKeys(measurement)
 		log.Debugf("Fetching: %d %v", idx, c.msmts[idx64])
 		if err := db.AddTestKeys(c.msmts[idx64], sk); err != nil {
 			return errors.Wrap(err, "failed to add test keys to summary")

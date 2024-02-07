@@ -71,8 +71,8 @@ func (*ExperimentMeasurementSummaryKeysNotImplemented) Anomaly() bool {
 	return false
 }
 
-// GetSummaryKeys implements Experiment.GetSummaryKeys.
-func (e *experiment) GetSummaryKeys(m *model.Measurement) model.MeasurementSummaryKeys {
+// MeasurementSummaryKeys returns the [model.MeasurementSummaryKeys] associated with a given measurement.
+func MeasurementSummaryKeys(m *model.Measurement) model.MeasurementSummaryKeys {
 	if tk, ok := m.TestKeys.(model.MeasurementSummaryKeysProvider); ok {
 		return tk.MeasurementSummaryKeys()
 	}

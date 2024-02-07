@@ -45,18 +45,6 @@ func TestExperiment(t *testing.T) {
 		}
 	})
 
-	t.Run("GetSummaryKeys", func(t *testing.T) {
-		e := &Experiment{
-			MockGetSummaryKeys: func(m *model.Measurement) model.MeasurementSummaryKeys {
-				return nil
-			},
-		}
-		out := e.GetSummaryKeys(&model.Measurement{})
-		if out != nil {
-			t.Fatal("invalid out")
-		}
-	})
-
 	t.Run("ReportID", func(t *testing.T) {
 		expect := "xyz"
 		e := &Experiment{

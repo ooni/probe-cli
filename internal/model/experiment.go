@@ -160,10 +160,6 @@ type Experiment interface {
 	// Name returns the experiment name.
 	Name() string
 
-	// GetSummaryKeys returns a data structure containing a
-	// summary of the test keys for ooniprobe.
-	GetSummaryKeys(m *Measurement) MeasurementSummaryKeys
-
 	// ReportID returns the open report's ID, if we have opened a report
 	// successfully before, or an empty string, otherwise.
 	//
