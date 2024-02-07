@@ -260,4 +260,7 @@ func TestSummaryKeysGood(t *testing.T) {
 	if sk.IsAnomaly {
 		t.Fatal("invalid isAnomaly")
 	}
+	if sk.IsAnomaly != sk.Anomaly() {
+		t.Fatal("invalid Anomaly()")
+	}
 }

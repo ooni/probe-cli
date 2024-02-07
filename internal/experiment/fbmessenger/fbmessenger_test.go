@@ -399,6 +399,9 @@ func TestSummaryKeysWithNils(t *testing.T) {
 	if sk.IsAnomaly {
 		t.Fatal("invalid isAnomaly")
 	}
+	if sk.Anomaly() != sk.IsAnomaly {
+		t.Fatal("the values should match")
+	}
 }
 
 func TestSummaryKeysWithFalseFalse(t *testing.T) {
@@ -418,6 +421,9 @@ func TestSummaryKeysWithFalseFalse(t *testing.T) {
 	}
 	if sk.IsAnomaly {
 		t.Fatal("invalid isAnomaly")
+	}
+	if sk.Anomaly() != sk.IsAnomaly {
+		t.Fatal("the values should match")
 	}
 }
 
@@ -439,6 +445,9 @@ func TestSummaryKeysWithFalseTrue(t *testing.T) {
 	if sk.IsAnomaly == false {
 		t.Fatal("invalid isAnomaly")
 	}
+	if sk.Anomaly() != sk.IsAnomaly {
+		t.Fatal("the values should match")
+	}
 }
 
 func TestSummaryKeysWithTrueFalse(t *testing.T) {
@@ -459,6 +468,9 @@ func TestSummaryKeysWithTrueFalse(t *testing.T) {
 	if sk.IsAnomaly == false {
 		t.Fatal("invalid isAnomaly")
 	}
+	if sk.Anomaly() != sk.IsAnomaly {
+		t.Fatal("the values should match")
+	}
 }
 
 func TestSummaryKeysWithTrueTrue(t *testing.T) {
@@ -478,5 +490,8 @@ func TestSummaryKeysWithTrueTrue(t *testing.T) {
 	}
 	if sk.IsAnomaly == false {
 		t.Fatal("invalid isAnomaly")
+	}
+	if sk.Anomaly() != sk.IsAnomaly {
+		t.Fatal("the values should match")
 	}
 }

@@ -245,6 +245,9 @@ func TestSummaryKeysWorksAsIntended(t *testing.T) {
 			if sk.IsAnomaly != tt.isAnomaly {
 				t.Fatal("unexpected isAnomaly value")
 			}
+			if sk.IsAnomaly != sk.Anomaly() {
+				t.Fatal("invalid Anomaly()")
+			}
 		})
 	}
 }

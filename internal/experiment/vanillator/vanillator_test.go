@@ -306,6 +306,9 @@ func TestMeasurementSummaryKeys(t *testing.T) {
 		if rsk.IsAnomaly {
 			t.Fatal("expected no anomaly here")
 		}
+		if rsk.IsAnomaly != sk.Anomaly() {
+			t.Fatal("invalid Anomaly()")
+		}
 	})
 
 	t.Run("in case of failure", func(t *testing.T) {
@@ -319,6 +322,9 @@ func TestMeasurementSummaryKeys(t *testing.T) {
 		rsk := sk.(*SummaryKeys)
 		if !rsk.IsAnomaly {
 			t.Fatal("expected anomaly here")
+		}
+		if rsk.IsAnomaly != sk.Anomaly() {
+			t.Fatal("invalid Anomaly()")
 		}
 	})
 }

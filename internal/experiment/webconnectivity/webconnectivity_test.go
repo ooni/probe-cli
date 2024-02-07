@@ -419,6 +419,9 @@ func TestSummaryKeysWorksAsIntended(t *testing.T) {
 			if sk.Blocking != tt.Blocking {
 				t.Fatal("unexpected Accessible value")
 			}
+			if sk.IsAnomaly != sk.Anomaly() {
+				t.Fatal("invalid Anomaly()")
+			}
 		})
 	}
 }

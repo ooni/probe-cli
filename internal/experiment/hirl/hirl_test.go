@@ -604,6 +604,9 @@ func TestSummaryKeysFalse(t *testing.T) {
 	if sk.IsAnomaly {
 		t.Fatal("invalid isAnomaly")
 	}
+	if sk.Anomaly() != sk.IsAnomaly {
+		t.Fatal("invalid Anomaly()")
+	}
 }
 
 func TestSummaryKeysTrue(t *testing.T) {
@@ -614,5 +617,8 @@ func TestSummaryKeysTrue(t *testing.T) {
 	sk := osk.(*hirl.SummaryKeys)
 	if sk.IsAnomaly == false {
 		t.Fatal("invalid isAnomaly")
+	}
+	if sk.Anomaly() != sk.IsAnomaly {
+		t.Fatal("invalid Anomaly()")
 	}
 }

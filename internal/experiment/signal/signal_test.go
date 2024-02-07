@@ -113,3 +113,23 @@ func TestBadSignalCA(t *testing.T) {
 		t.Fatal("not the error we expected")
 	}
 }
+
+func TestSummaryKeys(t *testing.T) {
+	t.Run("without anomaly", func(t *testing.T) {
+		sk := &signal.SummaryKeys{
+			IsAnomaly: false,
+		}
+		if sk.IsAnomaly != sk.Anomaly() {
+			t.Fatal("invalid Anomaly()")
+		}
+	})
+
+	t.Run("with anomaly", func(t *testing.T) {
+		sk := &signal.SummaryKeys{
+			IsAnomaly: false,
+		}
+		if sk.IsAnomaly != sk.Anomaly() {
+			t.Fatal("invalid Anomaly()")
+		}
+	})
+}

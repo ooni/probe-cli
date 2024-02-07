@@ -609,6 +609,9 @@ func TestSummaryKeysWorksAsIntended(t *testing.T) {
 			if sk.EndpointsBlocking != tt.EndpointsBlocking {
 				t.Fatal("unexpected endpointsBlocking value")
 			}
+			if sk.IsAnomaly != sk.Anomaly() {
+				t.Fatal("invalid Anomaly()")
+			}
 		})
 	}
 }
