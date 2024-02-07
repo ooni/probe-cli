@@ -126,7 +126,7 @@ func TestSummaryKeys(t *testing.T) {
 
 	t.Run("with anomaly", func(t *testing.T) {
 		sk := &signal.SummaryKeys{
-			IsAnomaly: false,
+			IsAnomaly: true,
 		}
 		if sk.IsAnomaly != sk.Anomaly() {
 			t.Fatal("invalid Anomaly()")
