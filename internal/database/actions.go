@@ -352,6 +352,7 @@ func (d *Database) CreateOrUpdateURL(urlStr string, categoryCode string, country
 func updateDatabaseMeasurementWithSummaryKeys(msmt *model.DatabaseMeasurement, sk model.MeasurementSummaryKeys) error {
 	skBytes, err := json.Marshal(sk)
 	if err != nil {
+		log.WithError(err).Error("failed to serialize summary")
 		return err
 	}
 	msmt.TestKeys = string(skBytes)
@@ -363,7 +364,7 @@ func updateDatabaseMeasurementWithSummaryKeys(msmt *model.DatabaseMeasurement, s
 // AddTestKeys implements WritableDatabase.AddTestKeys
 func (d *Database) AddTestKeys(msmt *model.DatabaseMeasurement, sk model.MeasurementSummaryKeys) error {
 	if err := updateDatabaseMeasurementWithSummaryKeys(msmt, sk); err != nil {
-		log.WithError(err).Error("failed to serialize summary")
+		// error message already printed
 		return err
 	}
 	err := d.sess.Collection("measurements").Find("measurement_id", msmt.ID).Update(msmt)
