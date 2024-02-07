@@ -71,9 +71,6 @@ func (*ExperimentMeasurementSummaryKeysNotImplemented) Anomaly() bool {
 	return false
 }
 
-// ErrInvalidTestKeysType indicates that the test keys are invalid.
-var ErrInvalidTestKeysType = errors.New("invalid test keys type")
-
 // GetSummaryKeys implements Experiment.GetSummaryKeys.
 func (e *experiment) GetSummaryKeys(m *model.Measurement) model.MeasurementSummaryKeys {
 	if tk, ok := m.TestKeys.(model.MeasurementSummaryKeysProvider); ok {
