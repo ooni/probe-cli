@@ -148,17 +148,17 @@ func (tk *TestKeys) titleMatch() optional.Value[bool] {
 // setBlockingFalse implements analysisClassicTestKeysProxy.
 func (tk *TestKeys) setBlockingFalse() {
 	tk.Blocking = false
-	tk.Accessible = true
+	tk.Accessible = optional.Some(true)
 }
 
 // setBlockingNil implements analysisClassicTestKeysProxy.
 func (tk *TestKeys) setBlockingNil() {
 	if !tk.DNSConsistency.IsNone() && tk.DNSConsistency.Unwrap() == "inconsistent" {
 		tk.Blocking = "dns"
-		tk.Accessible = false
+		tk.Accessible = optional.Some(false)
 	} else {
 		tk.Blocking = nil
-		tk.Accessible = nil
+		tk.Accessible = optional.None[bool]()
 	}
 }
 
@@ -169,7 +169,7 @@ func (tk *TestKeys) setBlockingString(value string) {
 	} else {
 		tk.Blocking = value
 	}
-	tk.Accessible = false
+	tk.Accessible = optional.Some(false)
 }
 
 // setHTTPExperimentFailure implements analysisClassicTestKeysProxy.
@@ -181,10 +181,10 @@ func (tk *TestKeys) setHTTPExperimentFailure(value optional.Value[string]) {
 func (tk *TestKeys) setWebsiteDown() {
 	if !tk.DNSConsistency.IsNone() && tk.DNSConsistency.Unwrap() == "inconsistent" {
 		tk.Blocking = "dns"
-		tk.Accessible = false
+		tk.Accessible = optional.Some(false)
 	} else {
 		tk.Blocking = false
-		tk.Accessible = false
+		tk.Accessible = optional.Some(false)
 	}
 }
 

@@ -450,6 +450,13 @@ func TestUpdateDatabaseMeasurementWithSummaryKeys(t *testing.T) {
 		ffiller := &testingx.FakeFiller{}
 		ffiller.Fill(sk)
 
+		// This field is not serialized, because historically it was used as an ABI to
+		// communicate between probe-engine and probe-cli, so we should not allow the fake
+		// filler to initialize it to a random value, otherwise we'll have issues in 50%
+		// of the cases where we would expect true and unmarshal false. For this reason,
+		// let's always set the field to the expected unmarshal value, i.e., false.
+		sk.IsAnomaly = false
+
 		if err := updateDatabaseMeasurementWithSummaryKeys(meas, sk); err != nil {
 			t.Fatal(err)
 		}
