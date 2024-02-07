@@ -180,13 +180,6 @@ func TestMeasurerRun(t *testing.T) {
 			if diff := cmp.Diff(expectAnalysis, tk.Analysis); diff != "" {
 				t.Fatal(diff)
 			}
-			sk, err := measurer.GetSummaryKeys(measurement)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if _, ok := sk.(fbmessenger.SummaryKeys); !ok {
-				t.Fatal("invalid type for summary keys")
-			}
 		})
 	})
 
@@ -393,23 +386,10 @@ func TestComputeEndpointStatsDNSIsLying(t *testing.T) {
 	}
 }
 
-func TestSummaryKeysInvalidType(t *testing.T) {
-	measurement := new(model.Measurement)
-	m := &fbmessenger.Measurer{}
-	_, err := m.GetSummaryKeys(measurement)
-	if err.Error() != "invalid test keys type" {
-		t.Fatal("not the error we expected")
-	}
-}
-
 func TestSummaryKeysWithNils(t *testing.T) {
 	measurement := &model.Measurement{TestKeys: &fbmessenger.TestKeys{}}
-	m := &fbmessenger.Measurer{}
-	osk, err := m.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	sk := osk.(fbmessenger.SummaryKeys)
+	osk := measurement.TestKeys.(*fbmessenger.TestKeys).MeasurementSummaryKeys()
+	sk := osk.(*fbmessenger.SummaryKeys)
 	if sk.DNSBlocking {
 		t.Fatal("invalid dnsBlocking")
 	}
@@ -418,6 +398,9 @@ func TestSummaryKeysWithNils(t *testing.T) {
 	}
 	if sk.IsAnomaly {
 		t.Fatal("invalid isAnomaly")
+	}
+	if sk.Anomaly() != sk.IsAnomaly {
+		t.Fatal("the values should match")
 	}
 }
 
@@ -428,12 +411,8 @@ func TestSummaryKeysWithFalseFalse(t *testing.T) {
 			FacebookDNSBlocking: &falseValue,
 		},
 	}}
-	m := &fbmessenger.Measurer{}
-	osk, err := m.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	sk := osk.(fbmessenger.SummaryKeys)
+	osk := measurement.TestKeys.(*fbmessenger.TestKeys).MeasurementSummaryKeys()
+	sk := osk.(*fbmessenger.SummaryKeys)
 	if sk.DNSBlocking {
 		t.Fatal("invalid dnsBlocking")
 	}
@@ -442,6 +421,9 @@ func TestSummaryKeysWithFalseFalse(t *testing.T) {
 	}
 	if sk.IsAnomaly {
 		t.Fatal("invalid isAnomaly")
+	}
+	if sk.Anomaly() != sk.IsAnomaly {
+		t.Fatal("the values should match")
 	}
 }
 
@@ -452,12 +434,8 @@ func TestSummaryKeysWithFalseTrue(t *testing.T) {
 			FacebookDNSBlocking: &trueValue,
 		},
 	}}
-	m := &fbmessenger.Measurer{}
-	osk, err := m.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	sk := osk.(fbmessenger.SummaryKeys)
+	osk := measurement.TestKeys.(*fbmessenger.TestKeys).MeasurementSummaryKeys()
+	sk := osk.(*fbmessenger.SummaryKeys)
 	if sk.DNSBlocking == false {
 		t.Fatal("invalid dnsBlocking")
 	}
@@ -466,6 +444,9 @@ func TestSummaryKeysWithFalseTrue(t *testing.T) {
 	}
 	if sk.IsAnomaly == false {
 		t.Fatal("invalid isAnomaly")
+	}
+	if sk.Anomaly() != sk.IsAnomaly {
+		t.Fatal("the values should match")
 	}
 }
 
@@ -476,12 +457,8 @@ func TestSummaryKeysWithTrueFalse(t *testing.T) {
 			FacebookDNSBlocking: &falseValue,
 		},
 	}}
-	m := &fbmessenger.Measurer{}
-	osk, err := m.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	sk := osk.(fbmessenger.SummaryKeys)
+	osk := measurement.TestKeys.(*fbmessenger.TestKeys).MeasurementSummaryKeys()
+	sk := osk.(*fbmessenger.SummaryKeys)
 	if sk.DNSBlocking {
 		t.Fatal("invalid dnsBlocking")
 	}
@@ -490,6 +467,9 @@ func TestSummaryKeysWithTrueFalse(t *testing.T) {
 	}
 	if sk.IsAnomaly == false {
 		t.Fatal("invalid isAnomaly")
+	}
+	if sk.Anomaly() != sk.IsAnomaly {
+		t.Fatal("the values should match")
 	}
 }
 
@@ -500,12 +480,8 @@ func TestSummaryKeysWithTrueTrue(t *testing.T) {
 			FacebookDNSBlocking: &trueValue,
 		},
 	}}
-	m := &fbmessenger.Measurer{}
-	osk, err := m.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	sk := osk.(fbmessenger.SummaryKeys)
+	osk := measurement.TestKeys.(*fbmessenger.TestKeys).MeasurementSummaryKeys()
+	sk := osk.(*fbmessenger.SummaryKeys)
 	if sk.DNSBlocking == false {
 		t.Fatal("invalid dnsBlocking")
 	}
@@ -514,5 +490,8 @@ func TestSummaryKeysWithTrueTrue(t *testing.T) {
 	}
 	if sk.IsAnomaly == false {
 		t.Fatal("invalid isAnomaly")
+	}
+	if sk.Anomaly() != sk.IsAnomaly {
+		t.Fatal("the values should match")
 	}
 }

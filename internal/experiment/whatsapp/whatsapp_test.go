@@ -286,13 +286,6 @@ func TestFailureAllEndpoints(t *testing.T) {
 		if tk.WhatsappWebStatus != "blocked" {
 			t.Fatal("invalid WhatsappWebStatus")
 		}
-		sk, err := measurer.GetSummaryKeys(measurement)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if _, ok := sk.(whatsapp.SummaryKeys); !ok {
-			t.Fatal("invalid type for summary keys")
-		}
 	})
 }
 
@@ -561,15 +554,6 @@ func TestWeConfigureWebChecksCorrectly(t *testing.T) {
 	}
 }
 
-func TestSummaryKeysInvalidType(t *testing.T) {
-	measurement := new(model.Measurement)
-	m := &whatsapp.Measurer{}
-	_, err := m.GetSummaryKeys(measurement)
-	if err.Error() != "invalid test keys type" {
-		t.Fatal("not the error we expected")
-	}
-}
-
 func TestSummaryKeysWorksAsIntended(t *testing.T) {
 	tests := []struct {
 		tk                         whatsapp.TestKeys
@@ -610,14 +594,9 @@ func TestSummaryKeysWorksAsIntended(t *testing.T) {
 	}}
 	for idx, tt := range tests {
 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
-			m := &whatsapp.Measurer{}
 			measurement := &model.Measurement{TestKeys: &tt.tk}
-			got, err := m.GetSummaryKeys(measurement)
-			if err != nil {
-				t.Fatal(err)
-				return
-			}
-			sk := got.(whatsapp.SummaryKeys)
+			got := measurement.TestKeys.(*whatsapp.TestKeys).MeasurementSummaryKeys()
+			sk := got.(*whatsapp.SummaryKeys)
 			if sk.IsAnomaly != tt.isAnomaly {
 				t.Fatal("unexpected isAnomaly value")
 			}
@@ -629,6 +608,9 @@ func TestSummaryKeysWorksAsIntended(t *testing.T) {
 			}
 			if sk.EndpointsBlocking != tt.EndpointsBlocking {
 				t.Fatal("unexpected endpointsBlocking value")
+			}
+			if sk.IsAnomaly != sk.Anomaly() {
+				t.Fatal("invalid Anomaly()")
 			}
 		})
 	}

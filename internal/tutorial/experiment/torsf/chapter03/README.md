@@ -24,6 +24,20 @@ type TestKeys struct {
 
 ```
 
+Note that we need to tell the TestKeys how to produce
+the SummaryKeys for producing a summary.
+
+```Go
+
+var _ model.MeasurementSummaryKeysProvider = &TestKeys{}
+
+MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider.
+func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
+	return &SummaryKeys{IsAnomaly: tk.Failure != nil}
+}
+
+```
+
 ### Rewriting the Run method
 
 Next we will rewrite the Run method. We will arrange for this

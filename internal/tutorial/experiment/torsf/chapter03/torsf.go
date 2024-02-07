@@ -57,6 +57,20 @@ type TestKeys struct {
 
 // ```
 //
+// Note that we need to tell the TestKeys how to produce
+// the SummaryKeys for producing a summary.
+//
+// ```Go
+
+var _ model.MeasurementSummaryKeysProvider = &TestKeys{}
+
+// MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider.
+func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
+	return &SummaryKeys{IsAnomaly: tk.Failure != nil}
+}
+
+// ```
+//
 // ### Rewriting the Run method
 //
 // Next we will rewrite the Run method. We will arrange for this
@@ -204,7 +218,8 @@ type SummaryKeys struct {
 	IsAnomaly bool `json:"-"`
 }
 
-// GetSummaryKeys implements model.ExperimentMeasurer.GetSummaryKeys.
-func (m *Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, error) {
-	return &SummaryKeys{IsAnomaly: false}, nil
+var _ model.MeasurementSummaryKeys = &SummaryKeys{}
+
+func (sk *SummaryKeys) Anomaly() bool {
+	return sk.IsAnomaly
 }

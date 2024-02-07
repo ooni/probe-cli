@@ -95,17 +95,9 @@ func TestMeasurer_input_failure(t *testing.T) {
 			t.Fatal(err)
 		}
 		URL.Scheme = "tlshandshake"
-		meas, m, err := runHelper(context.Background(), "tlstrace://google.com", URL.String(), "")
+		meas, _, err := runHelper(context.Background(), "tlstrace://google.com", URL.String(), "")
 		if err != nil {
 			t.Fatal(err)
-		}
-		ask, err := m.GetSummaryKeys(meas)
-		if err != nil {
-			t.Fatal("cannot obtain summary")
-		}
-		summary := ask.(SummaryKeys)
-		if summary.IsAnomaly {
-			t.Fatal("expected no anomaly")
 		}
 
 		t.Run("testkeys", func(t *testing.T) {
@@ -150,17 +142,9 @@ func TestMeasurer_input_failure(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		meas, m, err := runHelper(context.Background(), "tlstrace://google.com", URL.String(), "")
+		meas, _, err := runHelper(context.Background(), "tlstrace://google.com", URL.String(), "")
 		if err != nil {
 			t.Fatal(err)
-		}
-		ask, err := m.GetSummaryKeys(meas)
-		if err != nil {
-			t.Fatal("cannot obtain summary")
-		}
-		summary := ask.(SummaryKeys)
-		if summary.IsAnomaly {
-			t.Fatal("expected no anomaly")
 		}
 
 		t.Run("testkeys", func(t *testing.T) {
@@ -205,17 +189,9 @@ func TestMeasurer_input_failure(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		meas, m, err := runHelper(context.Background(), "tlstrace://google.com", URL.String(), "")
+		meas, _, err := runHelper(context.Background(), "tlstrace://google.com", URL.String(), "")
 		if err != nil {
 			t.Fatal(err)
-		}
-		ask, err := m.GetSummaryKeys(meas)
-		if err != nil {
-			t.Fatal("cannot obtain summary")
-		}
-		summary := ask.(SummaryKeys)
-		if summary.IsAnomaly {
-			t.Fatal("expected no anomaly")
 		}
 
 		t.Run("testkeys", func(t *testing.T) {

@@ -98,6 +98,13 @@ type TestKeys struct {
 	Failure *string `json:"failure"`
 }
 
+var _ model.MeasurementSummaryKeysProvider = &TestKeys{}
+
+// MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider.
+func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
+	return &SummaryKeys{IsAnomaly: tk.Failure != nil}
+}
+
 // Run implements ExperimentMeasurer.Run.
 func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	callbacks := args.Callbacks
@@ -271,7 +278,8 @@ type SummaryKeys struct {
 	IsAnomaly bool `json:"-"`
 }
 
-// GetSummaryKeys implements model.ExperimentMeasurer.GetSummaryKeys.
-func (m *Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, error) {
-	return &SummaryKeys{IsAnomaly: false}, nil
+var _ model.MeasurementSummaryKeys = &SummaryKeys{}
+
+func (sk *SummaryKeys) Anomaly() bool {
+	return sk.IsAnomaly
 }

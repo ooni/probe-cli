@@ -6,7 +6,6 @@ package dash
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"github.com/ooni/probe-cli/v3/internal/legacy/netx"
@@ -125,10 +124,9 @@ func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
 	return &Measurer{config: config}
 }
 
+var _ model.MeasurementSummaryKeysProvider = &TestKeys{}
+
 // SummaryKeys contains summary keys for this experiment.
-//
-// Note that this structure is part of the ABI contract with ooniprobe
-// therefore we should be careful when changing it.
 type SummaryKeys struct {
 	Latency   float64 `json:"connect_latency"`
 	Bitrate   float64 `json:"median_bitrate"`
@@ -136,15 +134,16 @@ type SummaryKeys struct {
 	IsAnomaly bool    `json:"-"`
 }
 
-// GetSummaryKeys implements model.ExperimentMeasurer.GetSummaryKeys.
-func (m Measurer) GetSummaryKeys(measurement *model.Measurement) (any, error) {
-	sk := SummaryKeys{IsAnomaly: false}
-	tk, ok := measurement.TestKeys.(*TestKeys)
-	if !ok {
-		return sk, errors.New("invalid test keys type")
-	}
+// MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider.
+func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
+	sk := &SummaryKeys{IsAnomaly: false}
 	sk.Latency = tk.Simple.ConnectLatency
 	sk.Bitrate = float64(tk.Simple.MedianBitrate)
 	sk.Delay = tk.Simple.MinPlayoutDelay
-	return sk, nil
+	return sk
+}
+
+// Anomaly implements model.MeasurementSummary.
+func (sk *SummaryKeys) Anomaly() bool {
+	return sk.IsAnomaly
 }

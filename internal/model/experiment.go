@@ -147,9 +147,6 @@ type ExperimentMeasurer interface {
 	// return nil. This is important because the caller WILL NOT submit
 	// the measurement if this method returns an error.
 	Run(ctx context.Context, args *ExperimentArgs) error
-
-	// GetSummaryKeys returns summary keys expected by ooni/probe-cli.
-	GetSummaryKeys(*Measurement) (interface{}, error)
 }
 
 // Experiment is an experiment instance.
@@ -162,10 +159,6 @@ type Experiment interface {
 
 	// Name returns the experiment name.
 	Name() string
-
-	// GetSummaryKeys returns a data structure containing a
-	// summary of the test keys for ooniprobe.
-	GetSummaryKeys(m *Measurement) (any, error)
 
 	// ReportID returns the open report's ID, if we have opened a report
 	// successfully before, or an empty string, otherwise.

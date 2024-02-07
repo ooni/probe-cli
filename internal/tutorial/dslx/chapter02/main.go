@@ -147,10 +147,6 @@ type SummaryKeys struct {
 	IsAnomaly bool `json:"-"`
 }
 
-func (m *Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, error) {
-	return SummaryKeys{IsAnomaly: false}, nil
-}
-
 // ```
 //
 // ## `Run`: The experiment code

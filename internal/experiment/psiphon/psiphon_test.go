@@ -46,13 +46,6 @@ func TestRunWithCancelledContext(t *testing.T) {
 	if tk.MaxRuntime <= 0 {
 		t.Fatal("you did not set the max runtime")
 	}
-	sk, err := measurer.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, ok := sk.(psiphon.SummaryKeys); !ok {
-		t.Fatal("invalid type for summary keys")
-	}
 }
 
 func TestRunWithCustomInputAndCancelledContext(t *testing.T) {
@@ -122,25 +115,12 @@ func newfakesession() model.ExperimentSession {
 	return &mockable.Session{MockableLogger: log.Log}
 }
 
-func TestSummaryKeysInvalidType(t *testing.T) {
-	measurement := new(model.Measurement)
-	m := &psiphon.Measurer{}
-	_, err := m.GetSummaryKeys(measurement)
-	if err.Error() != "invalid test keys type" {
-		t.Fatal("not the error we expected")
-	}
-}
-
 func TestSummaryKeysGood(t *testing.T) {
 	measurement := &model.Measurement{TestKeys: &psiphon.TestKeys{TestKeys: urlgetter.TestKeys{
 		BootstrapTime: 123,
 	}}}
-	m := &psiphon.Measurer{}
-	osk, err := m.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	sk := osk.(psiphon.SummaryKeys)
+	osk := measurement.TestKeys.(*psiphon.TestKeys).MeasurementSummaryKeys()
+	sk := osk.(*psiphon.SummaryKeys)
 	if sk.BootstrapTime != 123 {
 		t.Fatal("invalid latency")
 	}
@@ -158,12 +138,8 @@ func TestSummaryKeysFailure(t *testing.T) {
 		BootstrapTime: 123,
 		Failure:       &expected,
 	}}}
-	m := &psiphon.Measurer{}
-	osk, err := m.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	sk := osk.(psiphon.SummaryKeys)
+	osk := measurement.TestKeys.(*psiphon.TestKeys).MeasurementSummaryKeys()
+	sk := osk.(*psiphon.SummaryKeys)
 	if sk.BootstrapTime != 123 {
 		t.Fatal("invalid latency")
 	}
@@ -172,5 +148,8 @@ func TestSummaryKeysFailure(t *testing.T) {
 	}
 	if sk.IsAnomaly == false {
 		t.Fatal("invalid isAnomaly")
+	}
+	if sk.IsAnomaly != sk.Anomaly() {
+		t.Fatal("invalid Anomaly()")
 	}
 }

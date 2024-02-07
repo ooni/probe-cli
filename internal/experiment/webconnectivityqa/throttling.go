@@ -12,7 +12,7 @@ import (
 func throttlingWithHTTP() *TestCase {
 	return &TestCase{
 		Name:  "throttlingWithHTTP",
-		Flags: TestCaseFlagNoV04,
+		Flags: TestCaseFlagNoV04 | TestCaseFlagNoLTE, // TODO(https://github.com/ooni/probe/issues/2668)
 		Input: "http://largefile.com/",
 		Configure: func(env *netemx.QAEnv) {
 

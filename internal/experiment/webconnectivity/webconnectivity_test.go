@@ -88,14 +88,6 @@ func TestMeasureWithCancelledContext(t *testing.T) {
 	if tk.HTTPExperimentFailure != nil {
 		t.Fatal("unexpected http_experiment_failure")
 	}
-	// TODO(bassosimone): write further checks here?
-	sk, err := measurer.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, ok := sk.(webconnectivity.SummaryKeys); !ok {
-		t.Fatal("invalid type for summary keys")
-	}
 }
 
 func TestMeasureWithNoInput(t *testing.T) {
@@ -385,15 +377,6 @@ func TestComputeTCPBlocking(t *testing.T) {
 	}
 }
 
-func TestSummaryKeysInvalidType(t *testing.T) {
-	measurement := new(model.Measurement)
-	m := &webconnectivity.Measurer{}
-	_, err := m.GetSummaryKeys(measurement)
-	if err.Error() != "invalid test keys type" {
-		t.Fatal("not the error we expected")
-	}
-}
-
 func TestSummaryKeysWorksAsIntended(t *testing.T) {
 	failure := io.EOF.Error()
 	truy := true
@@ -424,14 +407,9 @@ func TestSummaryKeysWorksAsIntended(t *testing.T) {
 	}}
 	for idx, tt := range tests {
 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
-			m := &webconnectivity.Measurer{}
 			measurement := &model.Measurement{TestKeys: &tt.tk}
-			got, err := m.GetSummaryKeys(measurement)
-			if err != nil {
-				t.Fatal(err)
-				return
-			}
-			sk := got.(webconnectivity.SummaryKeys)
+			got := measurement.TestKeys.(*webconnectivity.TestKeys).MeasurementSummaryKeys()
+			sk := got.(*webconnectivity.SummaryKeys)
 			if sk.IsAnomaly != tt.isAnomaly {
 				t.Fatal("unexpected isAnomaly value")
 			}
@@ -440,6 +418,9 @@ func TestSummaryKeysWorksAsIntended(t *testing.T) {
 			}
 			if sk.Blocking != tt.Blocking {
 				t.Fatal("unexpected Accessible value")
+			}
+			if sk.IsAnomaly != sk.Anomaly() {
+				t.Fatal("invalid Anomaly()")
 			}
 		})
 	}

@@ -258,13 +258,6 @@ func TestCancelledContext(t *testing.T) {
 	if tk.Tampering.Total != true {
 		t.Fatal("invalid Tampering.Total")
 	}
-	sk, err := measurer.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, ok := sk.(hhfm.SummaryKeys); !ok {
-		t.Fatal("invalid type for summary keys")
-	}
 }
 
 func TestNoHelpers(t *testing.T) {
@@ -863,15 +856,6 @@ func TestDialerDialContext(t *testing.T) {
 	}
 }
 
-func TestSummaryKeysInvalidType(t *testing.T) {
-	measurement := new(model.Measurement)
-	m := &hhfm.Measurer{}
-	_, err := m.GetSummaryKeys(measurement)
-	if err.Error() != "invalid test keys type" {
-		t.Fatal("not the error we expected")
-	}
-}
-
 func TestSummaryKeysWorksAsIntended(t *testing.T) {
 	tests := []struct {
 		tampering hhfm.Tampering
@@ -900,18 +884,16 @@ func TestSummaryKeysWorksAsIntended(t *testing.T) {
 	}}
 	for idx, tt := range tests {
 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
-			m := &hhfm.Measurer{}
 			measurement := &model.Measurement{TestKeys: &hhfm.TestKeys{
 				Tampering: tt.tampering,
 			}}
-			got, err := m.GetSummaryKeys(measurement)
-			if err != nil {
-				t.Fatal(err)
-				return
-			}
-			sk := got.(hhfm.SummaryKeys)
+			got := measurement.TestKeys.(*hhfm.TestKeys).MeasurementSummaryKeys()
+			sk := got.(*hhfm.SummaryKeys)
 			if sk.IsAnomaly != tt.isAnomaly {
 				t.Fatal("unexpected isAnomaly value")
+			}
+			if sk.IsAnomaly != sk.Anomaly() {
+				t.Fatal("unexpected Anomaly() value")
 			}
 		})
 	}

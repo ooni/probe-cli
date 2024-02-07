@@ -249,27 +249,27 @@ func ComputeTCPBlocking(measurement []tracex.TCPConnectEntry,
 	return
 }
 
+var _ model.MeasurementSummaryKeysProvider = &TestKeys{}
+
 // SummaryKeys contains summary keys for this experiment.
-//
-// Note that this structure is part of the ABI contract with ooniprobe
-// therefore we should be careful when changing it.
 type SummaryKeys struct {
 	Accessible bool   `json:"accessible"`
 	Blocking   string `json:"blocking"`
 	IsAnomaly  bool   `json:"-"`
 }
 
-// GetSummaryKeys implements model.ExperimentMeasurer.GetSummaryKeys.
-func (m Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, error) {
-	sk := SummaryKeys{IsAnomaly: false}
-	tk, ok := measurement.TestKeys.(*TestKeys)
-	if !ok {
-		return sk, errors.New("invalid test keys type")
-	}
+// MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider.
+func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
+	sk := &SummaryKeys{}
 	sk.IsAnomaly = tk.BlockingReason != nil
 	if tk.BlockingReason != nil {
 		sk.Blocking = *tk.BlockingReason
 	}
 	sk.Accessible = tk.Accessible != nil && *tk.Accessible
-	return sk, nil
+	return sk
+}
+
+// Anomaly implements model.MeasurementSummaryKeys.
+func (sk *SummaryKeys) Anomaly() bool {
+	return sk.IsAnomaly
 }

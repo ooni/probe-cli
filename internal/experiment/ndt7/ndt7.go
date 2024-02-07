@@ -3,7 +3,6 @@ package ndt7
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -264,10 +263,9 @@ func failureFromError(err error) (failure *string) {
 	return
 }
 
+var _ model.MeasurementSummaryKeysProvider = &TestKeys{}
+
 // SummaryKeys contains summary keys for this experiment.
-//
-// Note that this structure is part of the ABI contract with ooniprobe
-// therefore we should be careful when changing it.
 type SummaryKeys struct {
 	Upload         float64 `json:"upload"`
 	Download       float64 `json:"download"`
@@ -280,13 +278,9 @@ type SummaryKeys struct {
 	IsAnomaly      bool    `json:"-"`
 }
 
-// GetSummaryKeys implements model.ExperimentMeasurer.GetSummaryKeys.
-func (m Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, error) {
-	sk := SummaryKeys{IsAnomaly: false}
-	tk, ok := measurement.TestKeys.(*TestKeys)
-	if !ok {
-		return sk, errors.New("invalid test keys type")
-	}
+// MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider.
+func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
+	sk := &SummaryKeys{IsAnomaly: false}
 	sk.Upload = tk.Summary.Upload
 	sk.Download = tk.Summary.Download
 	sk.Ping = tk.Summary.Ping
@@ -295,5 +289,10 @@ func (m Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, e
 	sk.MinRTT = tk.Summary.MinRTT
 	sk.MSS = float64(tk.Summary.MSS)
 	sk.RetransmitRate = tk.Summary.RetransmitRate
-	return sk, nil
+	return sk
+}
+
+// Anomaly implements model.MeasurementSummaryKeys.
+func (sk *SummaryKeys) Anomaly() bool {
+	return sk.IsAnomaly
 }

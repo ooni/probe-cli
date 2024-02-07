@@ -108,13 +108,6 @@ func TestMeasurerMeasureGood(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	sk, err := measurer.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, ok := sk.(SummaryKeys); !ok {
-		t.Fatal("invalid type for summary keys")
-	}
 }
 
 var staticPrivateTestingTargetEndpoint = "209.148.46.65:443"
@@ -736,15 +729,6 @@ func TestMaybeScrubbingLogger(t *testing.T) {
 	})
 }
 
-func TestSummaryKeysInvalidType(t *testing.T) {
-	measurement := new(model.Measurement)
-	m := &Measurer{}
-	_, err := m.GetSummaryKeys(measurement)
-	if err.Error() != "invalid test keys type" {
-		t.Fatal("not the error we expected")
-	}
-}
-
 func TestSummaryKeysWorksAsIntended(t *testing.T) {
 	tests := []struct {
 		tk        TestKeys
@@ -779,16 +763,14 @@ func TestSummaryKeysWorksAsIntended(t *testing.T) {
 	}}
 	for idx, tt := range tests {
 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
-			m := &Measurer{}
 			measurement := &model.Measurement{TestKeys: &tt.tk}
-			got, err := m.GetSummaryKeys(measurement)
-			if err != nil {
-				t.Fatal(err)
-				return
-			}
-			sk := got.(SummaryKeys)
+			got := measurement.TestKeys.(*TestKeys).MeasurementSummaryKeys()
+			sk := got.(*SummaryKeys)
 			if sk.IsAnomaly != tt.isAnomaly {
 				t.Fatal("unexpected isAnomaly value")
+			}
+			if sk.IsAnomaly != sk.Anomaly() {
+				t.Fatal("invalid Anomaly()")
 			}
 		})
 	}

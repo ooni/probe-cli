@@ -60,9 +60,23 @@ func (e *experiment) Name() string {
 	return e.testName
 }
 
-// GetSummaryKeys implements Experiment.GetSummaryKeys.
-func (e *experiment) GetSummaryKeys(m *model.Measurement) (interface{}, error) {
-	return e.measurer.GetSummaryKeys(m)
+// ExperimentMeasurementSummaryKeysNotImplemented is the [model.MeasurementSummary] we use when
+// the experiment TestKeys do not provide an implementation of [model.MeasurementSummary].
+type ExperimentMeasurementSummaryKeysNotImplemented struct{}
+
+var _ model.MeasurementSummaryKeys = &ExperimentMeasurementSummaryKeysNotImplemented{}
+
+// IsAnomaly implements MeasurementSummary.
+func (*ExperimentMeasurementSummaryKeysNotImplemented) Anomaly() bool {
+	return false
+}
+
+// MeasurementSummaryKeys returns the [model.MeasurementSummaryKeys] associated with a given measurement.
+func MeasurementSummaryKeys(m *model.Measurement) model.MeasurementSummaryKeys {
+	if tk, ok := m.TestKeys.(model.MeasurementSummaryKeysProvider); ok {
+		return tk.MeasurementSummaryKeys()
+	}
+	return &ExperimentMeasurementSummaryKeysNotImplemented{}
 }
 
 // ReportID implements Experiment.ReportID.

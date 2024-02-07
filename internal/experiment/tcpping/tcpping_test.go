@@ -102,7 +102,7 @@ func TestMeasurer_run(t *testing.T) {
 		defer env.Close()
 
 		env.Do(func() {
-			meas, m, err := runHelper("tcpconnect://8.8.8.8:443")
+			meas, _, err := runHelper("tcpconnect://8.8.8.8:443")
 			if err != nil {
 				t.Fatalf("Unexpected error: %s", err)
 			}
@@ -110,15 +110,6 @@ func TestMeasurer_run(t *testing.T) {
 			tk, _ := (meas.TestKeys).(*TestKeys)
 			if len(tk.Pings) != expectedPings {
 				t.Fatal("unexpected number of pings")
-			}
-
-			ask, err := m.GetSummaryKeys(meas)
-			if err != nil {
-				t.Fatal("cannot obtain summary")
-			}
-			summary := ask.(SummaryKeys)
-			if summary.IsAnomaly {
-				t.Fatal("expected no anomaly")
 			}
 
 			for _, p := range tk.Pings {
@@ -161,23 +152,12 @@ func TestMeasurer_run(t *testing.T) {
 		})
 
 		env.Do(func() {
-			meas, m, err := runHelper("tcpconnect://8.8.8.8:443")
+			meas, _, err := runHelper("tcpconnect://8.8.8.8:443")
 			if err != nil {
 				t.Fatalf("Unexpected error: %s", err)
 			}
 
 			tk, _ := (meas.TestKeys).(*TestKeys)
-
-			// note: this experiment does not set anomaly but we still want
-			// to have a test here for when we possibly will
-			ask, err := m.GetSummaryKeys(meas)
-			if err != nil {
-				t.Fatal("cannot obtain summary")
-			}
-			summary := ask.(SummaryKeys)
-			if summary.IsAnomaly {
-				t.Fatal("expected no anomaly")
-			}
 
 			for _, p := range tk.Pings {
 				if p.TCPConnect == nil {

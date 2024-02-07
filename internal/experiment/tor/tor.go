@@ -6,7 +6,6 @@ package tor
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/url"
 	"sync"
@@ -381,10 +380,9 @@ func failureString(failure *string) (s string) {
 	return
 }
 
+var _ model.MeasurementSummaryKeysProvider = &TestKeys{}
+
 // SummaryKeys contains summary keys for this experiment.
-//
-// Note that this structure is part of the ABI contract with ooniprobe
-// therefore we should be careful when changing it.
 type SummaryKeys struct {
 	DirPortTotal            int64 `json:"dir_port_total"`
 	DirPortAccessible       int64 `json:"dir_port_accessible"`
@@ -397,13 +395,9 @@ type SummaryKeys struct {
 	IsAnomaly               bool  `json:"-"`
 }
 
-// GetSummaryKeys implements model.ExperimentMeasurer.GetSummaryKeys.
-func (m Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, error) {
-	sk := SummaryKeys{IsAnomaly: false}
-	tk, ok := measurement.TestKeys.(*TestKeys)
-	if !ok {
-		return sk, errors.New("invalid test keys type")
-	}
+// MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider.
+func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
+	sk := &SummaryKeys{IsAnomaly: false}
 	sk.DirPortTotal = tk.DirPortTotal
 	sk.DirPortAccessible = tk.DirPortAccessible
 	sk.OBFS4Total = tk.OBFS4Total
@@ -416,5 +410,10 @@ func (m Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, e
 		(sk.OBFS4Accessible <= 0 && sk.OBFS4Total > 0) ||
 		(sk.ORPortDirauthAccessible <= 0 && sk.ORPortDirauthTotal > 0) ||
 		(sk.ORPortAccessible <= 0 && sk.ORPortTotal > 0))
-	return sk, nil
+	return sk
+}
+
+// Anomaly implements model.MeasurementSummaryKeys.
+func (sk *SummaryKeys) Anomaly() bool {
+	return sk.IsAnomaly
 }

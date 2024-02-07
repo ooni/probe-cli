@@ -35,13 +35,6 @@ func TestSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	sk, err := m.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, ok := sk.(example.SummaryKeys); !ok {
-		t.Fatal("invalid type for summary keys")
-	}
 }
 
 func TestFailure(t *testing.T) {
@@ -60,18 +53,5 @@ func TestFailure(t *testing.T) {
 	err := m.Run(ctx, args)
 	if !errors.Is(err, example.ErrFailure) {
 		t.Fatal("expected an error here")
-	}
-}
-
-func TestSummaryKeysGeneric(t *testing.T) {
-	measurement := &model.Measurement{TestKeys: &example.TestKeys{}}
-	m := &example.Measurer{}
-	osk, err := m.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	sk := osk.(example.SummaryKeys)
-	if sk.IsAnomaly {
-		t.Fatal("invalid isAnomaly")
 	}
 }
