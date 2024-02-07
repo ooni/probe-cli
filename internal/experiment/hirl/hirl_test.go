@@ -141,13 +141,6 @@ func TestCancelledContext(t *testing.T) {
 	if tk.Tampering != false {
 		t.Fatal("overall there is tampering?!")
 	}
-	sk, err := measurer.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, ok := sk.(hirl.SummaryKeys); !ok {
-		t.Fatal("invalid type for summary keys")
-	}
 }
 
 type FakeMethodSuccessful struct{}
@@ -602,25 +595,12 @@ func TestRunMethodReadEOFWithWrongData(t *testing.T) {
 	}
 }
 
-func TestSummaryKeysInvalidType(t *testing.T) {
-	measurement := new(model.Measurement)
-	m := &hirl.Measurer{}
-	_, err := m.GetSummaryKeys(measurement)
-	if err.Error() != "invalid test keys type" {
-		t.Fatal("not the error we expected")
-	}
-}
-
 func TestSummaryKeysFalse(t *testing.T) {
 	measurement := &model.Measurement{TestKeys: &hirl.TestKeys{
 		Tampering: false,
 	}}
-	m := &hirl.Measurer{}
-	osk, err := m.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	sk := osk.(hirl.SummaryKeys)
+	osk := measurement.TestKeys.(*hirl.TestKeys).MeasurementSummaryKeys()
+	sk := osk.(*hirl.SummaryKeys)
 	if sk.IsAnomaly {
 		t.Fatal("invalid isAnomaly")
 	}
@@ -630,12 +610,8 @@ func TestSummaryKeysTrue(t *testing.T) {
 	measurement := &model.Measurement{TestKeys: &hirl.TestKeys{
 		Tampering: true,
 	}}
-	m := &hirl.Measurer{}
-	osk, err := m.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	sk := osk.(hirl.SummaryKeys)
+	osk := measurement.TestKeys.(*hirl.TestKeys).MeasurementSummaryKeys()
+	sk := osk.(*hirl.SummaryKeys)
 	if sk.IsAnomaly == false {
 		t.Fatal("invalid isAnomaly")
 	}

@@ -14,7 +14,7 @@ type Experiment struct {
 
 	MockName func() string
 
-	MockGetSummaryKeys func(m *model.Measurement) (any, error)
+	MockGetSummaryKeys func(m *model.Measurement) model.MeasurementSummaryKeys
 
 	MockReportID func() string
 
@@ -43,7 +43,7 @@ func (e *Experiment) Name() string {
 	return e.MockName()
 }
 
-func (e *Experiment) GetSummaryKeys(m *model.Measurement) (any, error) {
+func (e *Experiment) GetSummaryKeys(m *model.Measurement) model.MeasurementSummaryKeys {
 	return e.MockGetSummaryKeys(m)
 }
 

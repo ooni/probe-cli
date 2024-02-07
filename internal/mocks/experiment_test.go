@@ -46,16 +46,12 @@ func TestExperiment(t *testing.T) {
 	})
 
 	t.Run("GetSummaryKeys", func(t *testing.T) {
-		expected := errors.New("mocked err")
 		e := &Experiment{
-			MockGetSummaryKeys: func(m *model.Measurement) (any, error) {
-				return nil, expected
+			MockGetSummaryKeys: func(m *model.Measurement) model.MeasurementSummaryKeys {
+				return nil
 			},
 		}
-		out, err := e.GetSummaryKeys(&model.Measurement{})
-		if !errors.Is(err, expected) {
-			t.Fatal("unexpected err", err)
-		}
+		out := e.GetSummaryKeys(&model.Measurement{})
 		if out != nil {
 			t.Fatal("invalid out")
 		}

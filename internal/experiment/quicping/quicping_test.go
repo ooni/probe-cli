@@ -113,13 +113,6 @@ func TestSuccess(t *testing.T) {
 			}
 		}
 	}
-	sk, err := measurer.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, ok := sk.(SummaryKeys); !ok {
-		t.Fatal("invalid type for summary keys")
-	}
 }
 
 func TestWithCancelledContext(t *testing.T) {

@@ -72,13 +72,6 @@ func TestGood(t *testing.T) {
 	if tk.SignalBackendStatus != "ok" {
 		t.Fatal("unexpected SignalBackendStatus")
 	}
-	sk, err := measurer.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, ok := sk.(signal.SummaryKeys); !ok {
-		t.Fatal("invalid type for summary keys")
-	}
 }
 
 func TestUpdate(t *testing.T) {
@@ -118,17 +111,5 @@ func TestBadSignalCA(t *testing.T) {
 	err := measurer.Run(context.Background(), args)
 	if err.Error() != "AppendCertsFromPEM failed" {
 		t.Fatal("not the error we expected")
-	}
-}
-
-func TestGetSummaryInvalidType(t *testing.T) {
-	measurer := signal.Measurer{}
-	in := make(chan int)
-	out, err := measurer.GetSummaryKeys(&model.Measurement{TestKeys: in})
-	if err == nil || err.Error() != "invalid test keys type" {
-		t.Fatal("not the error we expected", err)
-	}
-	if out != nil {
-		t.Fatal("expected nil output here")
 	}
 }

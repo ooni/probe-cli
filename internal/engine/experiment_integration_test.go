@@ -285,8 +285,9 @@ func runexperimentflow(t *testing.T, experiment model.Experiment, input string) 
 	if experiment.KibiBytesReceived() <= 0 {
 		t.Fatal("no data received?!")
 	}
-	if _, err := experiment.GetSummaryKeys(measurement); err != nil {
-		t.Fatal(err)
+	sk := experiment.GetSummaryKeys(measurement)
+	if sk == nil {
+		t.Fatal("got nil summary keys")
 	}
 }
 
