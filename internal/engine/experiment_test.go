@@ -73,3 +73,12 @@ func TestExperimentHonoursSharingDefaults(t *testing.T) {
 		})
 	}
 }
+
+func TestExperimentMeasurementSummaryKeysNotImplemented(t *testing.T) {
+	t.Run("the .Anomaly method returns false", func(t *testing.T) {
+		sk := &ExperimentMeasurementSummaryKeysNotImplemented{}
+		if sk.Anomaly() != false {
+			t.Fatal("expected false")
+		}
+	})
+}
