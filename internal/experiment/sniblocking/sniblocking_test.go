@@ -185,19 +185,6 @@ func TestMaybeURLToSNI(t *testing.T) {
 	})
 }
 
-func TestSummaryKeysGeneric(t *testing.T) {
-	measurement := &model.Measurement{TestKeys: &TestKeys{}}
-	m := &Measurer{}
-	osk, err := m.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	sk := osk.(SummaryKeys)
-	if sk.IsAnomaly {
-		t.Fatal("invalid isAnomaly")
-	}
-}
-
 // exampleOrgAddr is the IP address used for example.org in netem-based nettests.
 const exampleOrgAddr = "93.184.216.34"
 
@@ -378,13 +365,6 @@ func TestMeasurerRun(t *testing.T) {
 		tk := measurement.TestKeys.(*TestKeys)
 		if tk.Result != classAnomalyUnexpectedFailure {
 			t.Fatalf("Unexpected result, expected: %s, got: %s", classAnomalyUnexpectedFailure, tk.Result)
-		}
-		sk, err := measurer.GetSummaryKeys(measurement)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if _, ok := sk.(SummaryKeys); !ok {
-			t.Fatal("invalid type for summary keys")
 		}
 		target := tk.Target
 		if target.Agent != "" {

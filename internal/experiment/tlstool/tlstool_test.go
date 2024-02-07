@@ -69,24 +69,4 @@ func TestRunWithCancelledContext(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	sk, err := measurer.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, ok := sk.(tlstool.SummaryKeys); !ok {
-		t.Fatal("invalid type for summary keys")
-	}
-}
-
-func TestSummaryKeysGeneric(t *testing.T) {
-	measurement := &model.Measurement{TestKeys: &tlstool.TestKeys{}}
-	m := &tlstool.Measurer{}
-	osk, err := m.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	sk := osk.(tlstool.SummaryKeys)
-	if sk.IsAnomaly {
-		t.Fatal("invalid isAnomaly")
-	}
 }

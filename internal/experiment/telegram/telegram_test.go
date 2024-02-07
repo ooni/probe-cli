@@ -219,15 +219,6 @@ func TestUpdateWithAllGood(t *testing.T) {
 	}
 }
 
-func TestSummaryKeysInvalidType(t *testing.T) {
-	measurement := new(model.Measurement)
-	m := &telegram.Measurer{}
-	_, err := m.GetSummaryKeys(measurement)
-	if err.Error() != "invalid test keys type" {
-		t.Fatal("not the error we expected")
-	}
-}
-
 func TestSummaryKeysWorksAsIntended(t *testing.T) {
 	failure := io.EOF.Error()
 	tests := []struct {
@@ -248,16 +239,14 @@ func TestSummaryKeysWorksAsIntended(t *testing.T) {
 	}}
 	for idx, tt := range tests {
 		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
-			m := &telegram.Measurer{}
 			measurement := &model.Measurement{TestKeys: &tt.tk}
-			got, err := m.GetSummaryKeys(measurement)
-			if err != nil {
-				t.Fatal(err)
-				return
-			}
-			sk := got.(telegram.SummaryKeys)
+			got := measurement.TestKeys.(*telegram.TestKeys).MeasurementSummaryKeys()
+			sk := got.(*telegram.SummaryKeys)
 			if sk.IsAnomaly != tt.isAnomaly {
 				t.Fatal("unexpected isAnomaly value")
+			}
+			if sk.IsAnomaly != sk.Anomaly() {
+				t.Fatal("invalid Anomaly()")
 			}
 		})
 	}
@@ -373,13 +362,6 @@ func TestMeasurerRun(t *testing.T) {
 			}
 			if tk.TelegramWebStatus != "ok" {
 				t.Fatal("unexpected TelegramWebStatus")
-			}
-			sk, err := measurer.GetSummaryKeys(measurement)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if _, ok := sk.(telegram.SummaryKeys); !ok {
-				t.Fatal("invalid type for summary keys")
 			}
 		})
 	})

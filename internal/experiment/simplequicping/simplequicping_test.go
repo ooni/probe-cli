@@ -116,18 +116,9 @@ func TestMeasurerRun(t *testing.T) {
 		defer env.Close()
 
 		env.Do(func() {
-			meas, m, err := runHelper("quichandshake://8.8.8.8:443")
+			meas, _, err := runHelper("quichandshake://8.8.8.8:443")
 			if err != nil {
 				t.Fatalf("Unexpected error: %s", err)
-			}
-
-			ask, err := m.GetSummaryKeys(meas)
-			if err != nil {
-				t.Fatal("cannot obtain summary")
-			}
-			summary := ask.(SummaryKeys)
-			if summary.IsAnomaly {
-				t.Fatal("expected no anomaly")
 			}
 
 			tk, _ := (meas.TestKeys).(*TestKeys)
@@ -169,23 +160,12 @@ func TestMeasurerRun(t *testing.T) {
 		})
 
 		env.Do(func() {
-			meas, m, err := runHelper("quichandshake://8.8.8.8:443")
+			meas, _, err := runHelper("quichandshake://8.8.8.8:443")
 			if err != nil {
 				t.Fatalf("Unexpected error: %s", err)
 			}
 
 			tk, _ := (meas.TestKeys).(*TestKeys)
-
-			// note: this experiment does not set anomaly but we still want
-			// to have a test here for when we possibly will
-			ask, err := m.GetSummaryKeys(meas)
-			if err != nil {
-				t.Fatal("cannot obtain summary")
-			}
-			summary := ask.(SummaryKeys)
-			if summary.IsAnomaly {
-				t.Fatal("expected no anomaly")
-			}
 
 			for _, p := range tk.Pings {
 				if p.QUICHandshake.Failure == nil {

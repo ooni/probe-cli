@@ -105,22 +105,6 @@ func TestMeasureWithCancelledContext(t *testing.T) {
 	if !errors.Is(err, nil) {
 		t.Fatal("unexpected error value")
 	}
-	sk, err := m.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, ok := sk.(SummaryKeys); !ok {
-		t.Fatal("invalid type for summary keys")
-	}
-}
-
-func TestSummaryKeysInvalidType(t *testing.T) {
-	measurement := new(model.Measurement)
-	m := &Measurer{}
-	_, err := m.GetSummaryKeys(measurement)
-	if err.Error() != "invalid test keys type" {
-		t.Fatal("not the error we expected")
-	}
 }
 
 func TestSummaryKeysGood(t *testing.T) {
@@ -129,12 +113,8 @@ func TestSummaryKeysGood(t *testing.T) {
 		MedianBitrate:   123,
 		MinPlayoutDelay: 12,
 	}}}
-	m := &Measurer{}
-	osk, err := m.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	sk := osk.(SummaryKeys)
+	osk := measurement.TestKeys.(*TestKeys).MeasurementSummaryKeys()
+	sk := osk.(*SummaryKeys)
 	if sk.Latency != 1234 {
 		t.Fatal("invalid latency")
 	}
@@ -146,5 +126,8 @@ func TestSummaryKeysGood(t *testing.T) {
 	}
 	if sk.IsAnomaly {
 		t.Fatal("invalid isAnomaly")
+	}
+	if sk.Anomaly() != sk.IsAnomaly {
+		t.Fatal("sk.Anomaly() does not return sk.IsAnomaly's value")
 	}
 }

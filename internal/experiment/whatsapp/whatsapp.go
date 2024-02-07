@@ -5,7 +5,6 @@ package whatsapp
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math/rand"
 	"net/url"
@@ -184,10 +183,9 @@ func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
 	return Measurer{Config: config}
 }
 
+var _ model.MeasurementSummaryKeysProvider = &TestKeys{}
+
 // SummaryKeys contains summary keys for this experiment.
-//
-// Note that this structure is part of the ABI contract with ooniprobe
-// therefore we should be careful when changing it.
 type SummaryKeys struct {
 	RegistrationServerBlocking bool `json:"registration_server_blocking"`
 	WebBlocking                bool `json:"whatsapp_web_blocking"`
@@ -195,13 +193,9 @@ type SummaryKeys struct {
 	IsAnomaly                  bool `json:"-"`
 }
 
-// GetSummaryKeys implements model.ExperimentMeasurer.GetSummaryKeys.
-func (m Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, error) {
-	sk := SummaryKeys{IsAnomaly: false}
-	tk, ok := measurement.TestKeys.(*TestKeys)
-	if !ok {
-		return sk, errors.New("invalid test keys type")
-	}
+// MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider.
+func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
+	sk := &SummaryKeys{}
 	blocking := func(value string) bool {
 		return value == "blocked"
 	}
@@ -209,5 +203,10 @@ func (m Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, e
 	sk.WebBlocking = blocking(tk.WhatsappWebStatus)
 	sk.EndpointsBlocking = blocking(tk.WhatsappEndpointsStatus)
 	sk.IsAnomaly = (sk.RegistrationServerBlocking || sk.WebBlocking || sk.EndpointsBlocking)
-	return sk, nil
+	return sk
+}
+
+// Anomaly implements model.MeasurementSummaryKeys.
+func (sk *SummaryKeys) Anomaly() bool {
+	return sk.IsAnomaly
 }

@@ -121,13 +121,6 @@ func TestGood(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	sk, err := measurer.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, ok := sk.(SummaryKeys); !ok {
-		t.Fatal("invalid type for summary keys")
-	}
 }
 
 func TestFailDownload(t *testing.T) {
@@ -227,15 +220,6 @@ func TestDownloadJSONUnmarshalFail(t *testing.T) {
 	}
 }
 
-func TestSummaryKeysInvalidType(t *testing.T) {
-	measurement := new(model.Measurement)
-	m := &Measurer{}
-	_, err := m.GetSummaryKeys(measurement)
-	if err.Error() != "invalid test keys type" {
-		t.Fatal("not the error we expected")
-	}
-}
-
 func TestSummaryKeysGood(t *testing.T) {
 	measurement := &model.Measurement{TestKeys: &TestKeys{Summary: Summary{
 		RetransmitRate: 1,
@@ -247,12 +231,8 @@ func TestSummaryKeysGood(t *testing.T) {
 		Download:       7,
 		Upload:         8,
 	}}}
-	m := &Measurer{}
-	osk, err := m.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	sk := osk.(SummaryKeys)
+	osk := measurement.TestKeys.(*TestKeys).MeasurementSummaryKeys()
+	sk := osk.(*SummaryKeys)
 	if sk.RetransmitRate != 1 {
 		t.Fatal("invalid retransmitRate")
 	}
@@ -279,5 +259,8 @@ func TestSummaryKeysGood(t *testing.T) {
 	}
 	if sk.IsAnomaly {
 		t.Fatal("invalid isAnomaly")
+	}
+	if sk.IsAnomaly != sk.Anomaly() {
+		t.Fatal("invalid Anomaly()")
 	}
 }

@@ -294,55 +294,20 @@ func TestFailureNoTorBinary(t *testing.T) {
 	})
 }
 
-func TestGetSummaryKeys(t *testing.T) {
-	t.Run("in case of untyped nil TestKeys", func(t *testing.T) {
-		measurement := &model.Measurement{
-			TestKeys: nil,
-		}
-		m := &Measurer{}
-		_, err := m.GetSummaryKeys(measurement)
-		if !errors.Is(err, errInvalidTestKeysType) {
-			t.Fatal("unexpected error", err)
-		}
-	})
-
-	t.Run("in case of typed nil TestKeys", func(t *testing.T) {
-		var tk *TestKeys
-		measurement := &model.Measurement{
-			TestKeys: tk,
-		}
-		m := &Measurer{}
-		_, err := m.GetSummaryKeys(measurement)
-		if !errors.Is(err, errNilTestKeys) {
-			t.Fatal("unexpected error", err)
-		}
-	})
-
-	t.Run("in case of invalid TestKeys type", func(t *testing.T) {
-		measurement := &model.Measurement{
-			TestKeys: make(chan int),
-		}
-		m := &Measurer{}
-		_, err := m.GetSummaryKeys(measurement)
-		if !errors.Is(err, errInvalidTestKeysType) {
-			t.Fatal("unexpected error", err)
-		}
-	})
-
+func TestMeasurementSummaryKeys(t *testing.T) {
 	t.Run("in case of success", func(t *testing.T) {
 		measurement := &model.Measurement{
 			TestKeys: &TestKeys{
 				Failure: nil,
 			},
 		}
-		m := &Measurer{}
-		sk, err := m.GetSummaryKeys(measurement)
-		if err != nil {
-			t.Fatal(err)
-		}
-		rsk := sk.(SummaryKeys)
+		sk := measurement.TestKeys.(*TestKeys).MeasurementSummaryKeys()
+		rsk := sk.(*SummaryKeys)
 		if rsk.IsAnomaly {
 			t.Fatal("expected no anomaly here")
+		}
+		if rsk.IsAnomaly != sk.Anomaly() {
+			t.Fatal("invalid Anomaly()")
 		}
 	})
 
@@ -353,14 +318,13 @@ func TestGetSummaryKeys(t *testing.T) {
 				Failure: &failure,
 			},
 		}
-		m := &Measurer{}
-		sk, err := m.GetSummaryKeys(measurement)
-		if err != nil {
-			t.Fatal(err)
-		}
-		rsk := sk.(SummaryKeys)
+		sk := measurement.TestKeys.(*TestKeys).MeasurementSummaryKeys()
+		rsk := sk.(*SummaryKeys)
 		if !rsk.IsAnomaly {
 			t.Fatal("expected anomaly here")
+		}
+		if rsk.IsAnomaly != sk.Anomaly() {
+			t.Fatal("invalid Anomaly()")
 		}
 	})
 }

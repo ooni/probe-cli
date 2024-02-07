@@ -42,12 +42,4 @@ func TestMeasurer_run(t *testing.T) {
 	if len(tk.TCPConnect) != len(Ports) {
 		t.Fatal("unexpected number of ports")
 	}
-	ask, err := m.GetSummaryKeys(meas)
-	if err != nil {
-		t.Fatal("cannot obtain summary")
-	}
-	summary := ask.(SummaryKeys)
-	if summary.IsAnomaly {
-		t.Fatal("expected no anomaly")
-	}
 }

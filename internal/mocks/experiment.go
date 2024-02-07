@@ -14,8 +14,6 @@ type Experiment struct {
 
 	MockName func() string
 
-	MockGetSummaryKeys func(m *model.Measurement) (any, error)
-
 	MockReportID func() string
 
 	MockMeasureAsync func(ctx context.Context, input string) (<-chan *model.Measurement, error)
@@ -41,10 +39,6 @@ func (e *Experiment) KibiBytesSent() float64 {
 
 func (e *Experiment) Name() string {
 	return e.MockName()
-}
-
-func (e *Experiment) GetSummaryKeys(m *model.Measurement) (any, error) {
-	return e.MockGetSummaryKeys(m)
 }
 
 func (e *Experiment) ReportID() string {

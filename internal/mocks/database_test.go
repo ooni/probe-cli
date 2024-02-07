@@ -119,12 +119,11 @@ func TestDatabase(t *testing.T) {
 	t.Run("AddTestKeys", func(t *testing.T) {
 		expected := errors.New("mocked")
 		db := &Database{
-			MockAddTestKeys: func(msmt *model.DatabaseMeasurement, tk interface{}) error {
+			MockAddTestKeys: func(msmt *model.DatabaseMeasurement, sk model.MeasurementSummaryKeys) error {
 				return expected
 			},
 		}
-		tk := make(map[string]string) // use a random type to pass as any in test keys
-		err := db.AddTestKeys(&model.DatabaseMeasurement{}, tk)
+		err := db.AddTestKeys(&model.DatabaseMeasurement{}, nil /* it's fine because we don't use it in the func above */)
 		if !errors.Is(err, expected) {
 			t.Fatal("not the error we expected")
 		}

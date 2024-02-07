@@ -16,7 +16,7 @@ type Database struct {
 	MockDeleteResult         func(resultID int64) error
 	MockCreateMeasurement    func(reportID sql.NullString, testName string, measurementDir string,
 		idx int, resultID int64, urlID sql.NullInt64) (*model.DatabaseMeasurement, error)
-	MockAddTestKeys        func(msmt *model.DatabaseMeasurement, tk interface{}) error
+	MockAddTestKeys        func(msmt *model.DatabaseMeasurement, sk model.MeasurementSummaryKeys) error
 	MockDone               func(msmt *model.DatabaseMeasurement) error
 	MockUploadFailed       func(msmt *model.DatabaseMeasurement, failure string) error
 	MockUploadSucceeded    func(msmt *model.DatabaseMeasurement) error
@@ -65,8 +65,8 @@ func (d *Database) CreateMeasurement(reportID sql.NullString, testName string, m
 }
 
 // AddTestKeys calls MockAddTestKeys
-func (d *Database) AddTestKeys(msmt *model.DatabaseMeasurement, tk interface{}) error {
-	return d.MockAddTestKeys(msmt, tk)
+func (d *Database) AddTestKeys(msmt *model.DatabaseMeasurement, sk model.MeasurementSummaryKeys) error {
+	return d.MockAddTestKeys(msmt, sk)
 }
 
 // Done calls MockDone

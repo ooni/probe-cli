@@ -112,9 +112,9 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 //
 // Before concluding this chapter, we also need to create the `SummaryKeys`
 // for this experiment. For historical reasons, the `TestKeys` of each
-// experiment is an `interface{}`. Every experiment also defines a `SummaryKeys`
-// data structure and a `GetSummaryKeys` method to convert the opaque
-// result of a measurement to the summary for such an experiment.
+// experiment is an `interface{}`. Many experiment also defines a `SummaryKeys`
+// data structure and implement `model.MeasurementSummaryKeysProvider` to
+// convert the opaque result of a measurement to the summary for such an experiment.
 //
 // The experiment summary is *only* used by the OONI Probe CLI.
 
@@ -129,16 +129,10 @@ type SummaryKeys struct {
 	IsAnomaly bool `json:"-"`
 }
 
-// ```
-//
-// GetSummaryKeys implements model.ExperimentMeasurer.GetSummaryKeys. This
-// method just converts the `TestKeys` inside `measurement` to an instance of
-// the `SummaryKeys` structure. For now, we'll just implement a stub returning
-// fake `SummaryKeys` declaring there was no anomaly.
-//
-// ```Go
-func (m *Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, error) {
-	return &SummaryKeys{IsAnomaly: false}, nil
+var _ model.MeasurementSummaryKeys = &SummaryKeys{}
+
+func (sk *SummaryKeys) Anomaly() bool {
+	return sk.IsAnomaly
 }
 
 // ```

@@ -152,13 +152,6 @@ func TestCancelledContext(t *testing.T) {
 	if len(tk.Queries) <= 0 {
 		t.Fatal("no DNS queries?!")
 	}
-	sk, err := measurer.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, ok := sk.(SummaryKeys); !ok {
-		t.Fatal("invalid type for summary keys")
-	}
 }
 
 func TestNewClientFailure(t *testing.T) {
@@ -274,18 +267,5 @@ func TestReadFailure(t *testing.T) {
 	}
 	if len(tk.Queries) > 0 {
 		t.Fatal("DNS queries?!")
-	}
-}
-
-func TestSummaryKeysGeneric(t *testing.T) {
-	measurement := &model.Measurement{TestKeys: &TestKeys{}}
-	m := &Measurer{}
-	osk, err := m.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	sk := osk.(SummaryKeys)
-	if sk.IsAnomaly {
-		t.Fatal("invalid isAnomaly")
 	}
 }

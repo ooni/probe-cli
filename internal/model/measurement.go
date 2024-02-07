@@ -159,6 +159,20 @@ type Measurement struct {
 	TestVersion string `json:"test_version"`
 }
 
+// MeasurementSummaryKeysProvider is the interface that the experiment test keys should implement
+// when they want to have a customized implementation of the [MeasurementSummaryKeys]. If there is
+// no such implementation, common code for running experiments returns a default implementation
+// whose Anomaly method always returns false when invoked.
+type MeasurementSummaryKeysProvider interface {
+	MeasurementSummaryKeys() MeasurementSummaryKeys
+}
+
+// MeasurementSummaryKeys is the measurement summary.
+type MeasurementSummaryKeys interface {
+	// Anomaly returns whether there was a measurement anomaly.
+	Anomaly() bool
+}
+
 // AddAnnotations adds the annotations from input to m.Annotations.
 func (m *Measurement) AddAnnotations(input map[string]string) {
 	for key, value := range input {

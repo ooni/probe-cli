@@ -53,13 +53,6 @@ func TestMeasurerMeasureNoTestHelper(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	sk, err := measurer.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, ok := sk.(SummaryKeys); !ok {
-		t.Fatal("invalid type for summary keys")
-	}
 }
 
 func TestRunnerHTTPSetHostHeader(t *testing.T) {
@@ -91,17 +84,4 @@ func TestRunnerHTTPSetHostHeader(t *testing.T) {
 
 func newsession() model.ExperimentSession {
 	return &mockable.Session{MockableLogger: log.Log}
-}
-
-func TestSummaryKeysGeneric(t *testing.T) {
-	measurement := &model.Measurement{TestKeys: &TestKeys{}}
-	m := &Measurer{}
-	osk, err := m.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal(err)
-	}
-	sk := osk.(SummaryKeys)
-	if sk.IsAnomaly {
-		t.Fatal("invalid isAnomaly")
-	}
 }

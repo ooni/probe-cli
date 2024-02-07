@@ -133,13 +133,3 @@ func (m *Measurer) Run(
 func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
 	return &Measurer{config: config}
 }
-
-// SummaryKeys contains summary keys for this experiment.
-type SummaryKeys struct {
-	IsAnomaly bool `json:"-"`
-}
-
-// GetSummaryKeys implements model.ExperimentMeasurer.GetSummaryKeys.
-func (m *Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, error) {
-	return SummaryKeys{IsAnomaly: false}, nil
-}

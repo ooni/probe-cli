@@ -8,10 +8,10 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"reflect"
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/pkg/errors"
 	"github.com/upper/db/v4"
@@ -349,27 +349,25 @@ func (d *Database) CreateOrUpdateURL(urlStr string, categoryCode string, country
 	return url.ID.Int64, nil
 }
 
-// AddTestKeys implements WritableDatabase.AddTestKeys
-func (d *Database) AddTestKeys(msmt *model.DatabaseMeasurement, tk any) error {
-	var (
-		isAnomaly      bool
-		isAnomalyValid bool
-	)
-	tkBytes, err := json.Marshal(tk)
+func updateDatabaseMeasurementWithSummaryKeys(msmt *model.DatabaseMeasurement, sk model.MeasurementSummaryKeys) error {
+	skBytes, err := json.Marshal(sk)
 	if err != nil {
 		log.WithError(err).Error("failed to serialize summary")
+		return err
 	}
-	// This is necessary so that we can extract from the the opaque testKeys just
-	// the IsAnomaly field of bool type.
-	// Maybe generics are not so bad after-all, heh golang?
-	isAnomalyValue := reflect.ValueOf(tk).FieldByName("IsAnomaly")
-	if isAnomalyValue.IsValid() && isAnomalyValue.Kind() == reflect.Bool {
-		isAnomaly = isAnomalyValue.Bool()
-		isAnomalyValid = true
+	msmt.TestKeys = string(skBytes)
+	_, isNotImplemented := sk.(*engine.ExperimentMeasurementSummaryKeysNotImplemented)
+	msmt.IsAnomaly = sql.NullBool{Bool: sk.Anomaly(), Valid: !isNotImplemented}
+	return nil
+}
+
+// AddTestKeys implements WritableDatabase.AddTestKeys
+func (d *Database) AddTestKeys(msmt *model.DatabaseMeasurement, sk model.MeasurementSummaryKeys) error {
+	if err := updateDatabaseMeasurementWithSummaryKeys(msmt, sk); err != nil {
+		// error message already printed
+		return err
 	}
-	msmt.TestKeys = string(tkBytes)
-	msmt.IsAnomaly = sql.NullBool{Bool: isAnomaly, Valid: isAnomalyValid}
-	err = d.sess.Collection("measurements").Find("measurement_id", msmt.ID).Update(msmt)
+	err := d.sess.Collection("measurements").Find("measurement_id", msmt.ID).Update(msmt)
 	if err != nil {
 		log.WithError(err).Error("failed to update measurement")
 		return errors.Wrap(err, "updating measurement")

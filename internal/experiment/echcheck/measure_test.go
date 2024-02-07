@@ -113,13 +113,6 @@ func TestMeasurementSuccessRealWorld(t *testing.T) {
 	}
 
 	// check results
-	summary, err := measurer.GetSummaryKeys(&model.Measurement{})
-	if err != nil {
-		t.Fatal("unexpected error: ", err)
-	}
-	if summary.(SummaryKeys).IsAnomaly != false {
-		t.Fatal("expected false")
-	}
 	tk := msrmnt.TestKeys.(TestKeys)
 	if tk.Control.Failure != nil {
 		t.Fatal("unexpected control failure:", *tk.Control.Failure)

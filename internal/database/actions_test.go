@@ -8,7 +8,12 @@ import (
 	"os"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/engine"
+	"github.com/ooni/probe-cli/v3/internal/experiment/signal"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/must"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
 	"github.com/upper/db/v4"
 )
 
@@ -426,4 +431,96 @@ func TestGetMeasurementJSON(t *testing.T) {
 	if tk["probe_asn"] != "AS3216" {
 		t.Error("inconsistent measurement downloaded")
 	}
+}
+
+// chansummary is used to test that we handle summary serialization errors.
+type chansummary chan int
+
+var _ model.MeasurementSummaryKeys = make(chansummary)
+
+// Anomaly implements model.MeasurementSummaryKeys.
+func (chansummary) Anomaly() bool {
+	return false
+}
+
+func TestUpdateDatabaseMeasurementWithSummaryKeys(t *testing.T) {
+	t.Run("we update the .TestKeys field", func(t *testing.T) {
+		meas := &model.DatabaseMeasurement{}
+		sk := &signal.SummaryKeys{}
+		ffiller := &testingx.FakeFiller{}
+		ffiller.Fill(sk)
+
+		if err := updateDatabaseMeasurementWithSummaryKeys(meas, sk); err != nil {
+			t.Fatal(err)
+		}
+
+		if len(meas.TestKeys) <= 0 {
+			t.Fatal("no meas.TestKeys")
+		}
+
+		var got signal.SummaryKeys
+		must.UnmarshalJSON([]byte(meas.TestKeys), &got)
+		if diff := cmp.Diff(sk, &got); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
+	t.Run("we set .Anomaly.Bool to true and .Anomaly.Valid to true when needed", func(t *testing.T) {
+		meas := &model.DatabaseMeasurement{}
+		sk := &signal.SummaryKeys{
+			IsAnomaly: true,
+		}
+
+		if err := updateDatabaseMeasurementWithSummaryKeys(meas, sk); err != nil {
+			t.Fatal(err)
+		}
+
+		if meas.IsAnomaly.Bool != sk.IsAnomaly {
+			t.Fatal("unexpected value")
+		}
+		if meas.IsAnomaly.Valid != true {
+			t.Fatal("unexpected value")
+		}
+	})
+
+	t.Run("we set .Anomaly.Bool to false and .Anomaly.Valid to true when needed", func(t *testing.T) {
+		meas := &model.DatabaseMeasurement{}
+		sk := &signal.SummaryKeys{
+			IsAnomaly: false,
+		}
+
+		if err := updateDatabaseMeasurementWithSummaryKeys(meas, sk); err != nil {
+			t.Fatal(err)
+		}
+
+		if meas.IsAnomaly.Bool != sk.IsAnomaly {
+			t.Fatal("unexpected value")
+		}
+		if meas.IsAnomaly.Valid != true {
+			t.Fatal("unexpected value")
+		}
+	})
+
+	t.Run("we set .Anomaly.Valid to false when needed", func(t *testing.T) {
+		meas := &model.DatabaseMeasurement{}
+		sk := &engine.ExperimentMeasurementSummaryKeysNotImplemented{}
+
+		if err := updateDatabaseMeasurementWithSummaryKeys(meas, sk); err != nil {
+			t.Fatal(err)
+		}
+
+		if meas.IsAnomaly.Valid != false {
+			t.Fatal("unexpected value")
+		}
+	})
+
+	t.Run("we handle the case where we cannot serialize the summary", func(t *testing.T) {
+		meas := &model.DatabaseMeasurement{}
+		sk := make(chansummary)
+
+		err := updateDatabaseMeasurementWithSummaryKeys(meas, sk)
+		if err == nil || err.Error() != "json: unsupported type: database.chansummary" {
+			t.Fatal("unexpected error", err)
+		}
+	})
 }

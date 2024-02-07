@@ -495,18 +495,6 @@ func TestFailureGateway1TransportNOK(t *testing.T) {
 	}
 }
 
-func TestSummaryKeysAlwaysReturnIsAnomalyFalse(t *testing.T) {
-	measurement := new(model.Measurement)
-	m := &riseupvpn.Measurer{}
-	result, err := m.GetSummaryKeys(measurement)
-	if err != nil {
-		t.Fatal("GetSummaryKeys should never return an error")
-	}
-	if result.(riseupvpn.SummaryKeys).IsAnomaly {
-		t.Fatal("GetSummaryKeys should never return IsAnomaly true")
-	}
-}
-
 func generateMockGetter(requestResponse map[string]string, responseStatus map[string]bool) urlgetter.MultiGetter {
 	return func(ctx context.Context, g urlgetter.Getter) (urlgetter.TestKeys, error) {
 		url := g.Target
