@@ -131,7 +131,6 @@ type SummaryKeys struct {
 
 var _ model.MeasurementSummaryKeys = &SummaryKeys{}
 
-// Anomaly implements model.MeasurementSummaryKeys.
 func (sk *SummaryKeys) Anomaly() bool {
 	return sk.IsAnomaly
 }
