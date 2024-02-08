@@ -22,6 +22,7 @@ under the MIT license. So, this file is also under the MIT license.
   <ol>
     <li><a href="#about-this-project">About this project</a></li>
     <li><a href="#install-instructions">Install instructions</a></li>
+    <li><a href="#nightly-builds">Nightly Builds</a></li>
     <li><a href="#build-instructions">Build instructions<a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
@@ -59,6 +60,12 @@ Follow the instructions at [ooni.org/install/cli](https://ooni.org/install/cli)
 to install `ooniprobe` precompiled binaries for Windows, macOS, and
 Debian/Ubuntu. Once `ooniprobe` is installed, refer to the
 [user guide](https://ooni.org/support/ooni-probe-cli).
+
+## Nightly builds
+
+We publish nightly builds using the [rolling release tag](
+https://github.com/ooni/probe-cli/releases/tag/rolling). These
+builds use the latest commit of the `master` branch.
 
 ## Developer instructions
 
