@@ -132,9 +132,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	tk.Finalize(sess.Logger())
 
 	// set the test helper we used
-	// TODO(bassosimone): it may be more informative to know about all the
-	// test helpers we _tried_ to use, however the data format does not have
-	// support for that as far as I can tell...
+	// TODO(https://github.com/ooni/probe/issues/1857): record how we submitted
 	if th := tk.getTestHelper(); th != nil {
 		measurement.TestHelpers = map[string]interface{}{
 			"backend": th,

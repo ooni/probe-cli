@@ -13,7 +13,8 @@ type SummaryKeys struct {
 
 // MeasurementSummaryKeys implements model.MeasurementSummaryKeysProvider.
 func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
-	// TODO(https://github.com/ooni/probe/issues/1684)
+	// TODO(https://github.com/ooni/probe/issues/1684): accessible not computed correctly (which
+	// is an issue that needs some extra investigation to understand how to fix it).
 	sk := &SummaryKeys{}
 	switch v := tk.Blocking.(type) {
 	case string:
