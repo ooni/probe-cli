@@ -8,12 +8,12 @@ import (
 	"regexp"
 
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivitylte"
-	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivityqa"
 	"github.com/ooni/probe-cli/v3/internal/geoipx"
 	"github.com/ooni/probe-cli/v3/internal/minipipeline"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/webconnectivityqa"
 )
 
 var (
