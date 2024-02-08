@@ -1170,6 +1170,16 @@ func TestIOSBuildCdepsTor(t *testing.T) {
 				"git", "apply", faketopdir + "/CDEPS/tor/003.patch",
 			},
 		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/tor/004.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"autoreconf", "-vif",
+			},
+		}, {
 			Env: []string{
 				"AS=/Developer/SDKs/iphoneos/bin/as",
 				"CC=/Developer/SDKs/iphoneos/bin/cc",
@@ -1199,6 +1209,8 @@ func TestIOSBuildCdepsTor(t *testing.T) {
 				"--disable-systemd",
 				"--prefix=/",
 				"--disable-unittests",
+				"--disable-system-torrc",
+				"--disable-seccomp",
 			},
 		}, {
 			Env: []string{},
@@ -1248,6 +1260,16 @@ func TestIOSBuildCdepsTor(t *testing.T) {
 				"git", "apply", faketopdir + "/CDEPS/tor/003.patch",
 			},
 		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/tor/004.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"autoreconf", "-vif",
+			},
+		}, {
 			Env: []string{
 				"AS=/Developer/SDKs/iphonesimulator/bin/as",
 				"CC=/Developer/SDKs/iphonesimulator/bin/cc",
@@ -1277,6 +1299,8 @@ func TestIOSBuildCdepsTor(t *testing.T) {
 				"--disable-systemd",
 				"--prefix=/",
 				"--disable-unittests",
+				"--disable-system-torrc",
+				"--disable-seccomp",
 			},
 		}, {
 			Env: []string{},
@@ -1326,6 +1350,16 @@ func TestIOSBuildCdepsTor(t *testing.T) {
 				"git", "apply", faketopdir + "/CDEPS/tor/003.patch",
 			},
 		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/tor/004.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"autoreconf", "-vif",
+			},
+		}, {
 			Env: []string{
 				"AS=/Developer/SDKs/iphonesimulator/bin/as",
 				"CC=/Developer/SDKs/iphonesimulator/bin/cc",
@@ -1355,6 +1389,8 @@ func TestIOSBuildCdepsTor(t *testing.T) {
 				"--disable-systemd",
 				"--prefix=/",
 				"--disable-unittests",
+				"--disable-system-torrc",
+				"--disable-seccomp",
 			},
 		}, {
 			Env: []string{},

@@ -1766,6 +1766,16 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 				"git", "apply", faketopdir + "/CDEPS/tor/003.patch",
 			},
 		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/tor/004.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"autoreconf", "-vif",
+			},
+		}, {
 			Env: []string{
 				"AS=" + fakeBinPath + "/armv7a-linux-androideabi21-clang",
 				"CC=" + fakeBinPath + "/armv7a-linux-androideabi21-clang",
@@ -1794,6 +1804,8 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 				"--disable-systemd",
 				"--prefix=/",
 				"--disable-unittests",
+				"--disable-system-torrc",
+				"--disable-seccomp",
 			},
 		}, {
 			Env: []string{},
@@ -1843,6 +1855,16 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 				"git", "apply", faketopdir + "/CDEPS/tor/003.patch",
 			},
 		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/tor/004.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"autoreconf", "-vif",
+			},
+		}, {
 			Env: []string{
 				"AS=" + fakeBinPath + "/aarch64-linux-android21-clang",
 				"CC=" + fakeBinPath + "/aarch64-linux-android21-clang",
@@ -1871,6 +1893,8 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 				"--disable-systemd",
 				"--prefix=/",
 				"--disable-unittests",
+				"--disable-system-torrc",
+				"--disable-seccomp",
 			},
 		}, {
 			Env: []string{},
@@ -1920,6 +1944,16 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 				"git", "apply", faketopdir + "/CDEPS/tor/003.patch",
 			},
 		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/tor/004.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"autoreconf", "-vif",
+			},
+		}, {
 			Env: []string{
 				"AS=" + fakeBinPath + "/i686-linux-android21-clang",
 				"CC=" + fakeBinPath + "/i686-linux-android21-clang",
@@ -1948,6 +1982,8 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 				"--disable-systemd",
 				"--prefix=/",
 				"--disable-unittests",
+				"--disable-system-torrc",
+				"--disable-seccomp",
 			},
 		}, {
 			Env: []string{},
@@ -1997,6 +2033,16 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 				"git", "apply", faketopdir + "/CDEPS/tor/003.patch",
 			},
 		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/tor/004.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"autoreconf", "-vif",
+			},
+		}, {
 			Env: []string{
 				"AS=" + fakeBinPath + "/x86_64-linux-android21-clang",
 				"CC=" + fakeBinPath + "/x86_64-linux-android21-clang",
@@ -2025,6 +2071,8 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 				"--disable-systemd",
 				"--prefix=/",
 				"--disable-unittests",
+				"--disable-system-torrc",
+				"--disable-seccomp",
 			},
 		}, {
 			Env: []string{},
