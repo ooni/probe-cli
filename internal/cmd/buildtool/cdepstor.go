@@ -40,6 +40,8 @@ func cdepsTorBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencies) {
 		must.Run(log.Log, "git", "apply", patch)
 	}
 
+	must.Run(log.Log, "autoreconf", "-vif")
+
 	envp := cBuildExportAutotools(globalEnv)
 
 	argv := runtimex.Try1(shellx.NewArgv("./configure"))
@@ -57,6 +59,8 @@ func cdepsTorBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencies) {
 		"--disable-systemd",
 		"--prefix=/",
 		"--disable-unittests",
+		"--disable-system-torrc",
+		"--disable-seccomp",
 	)
 	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, envp))
 
