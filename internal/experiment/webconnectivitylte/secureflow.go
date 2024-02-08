@@ -298,15 +298,13 @@ func (t *SecureFlow) httpTransaction(ctx context.Context, network, address, alpn
 	txp model.HTTPTransport, req *http.Request, trace *measurexlite.Trace) (*http.Response, []byte, error) {
 	const maxbody = 1 << 19
 	started := trace.TimeSince(trace.ZeroTime())
-	// TODO(bassosimone): I am wondering whether we should have the HTTP transaction
-	// start at the beginning of the flow rather than here. If we start it at the
-	// beginning this is nicer, but, at the same time, starting it at the beginning
-	// of the flow means we're not collecting information about DNS. So, I am a
-	// bit torn about what is the best approach to follow here. Maybe it does not
-	// even matter to emit transaction_start/end events given that we have transaction ID.
+
+	// Implementation note: we want to emit http_transaction_start when we actually start doing
+	// HTTP things such that it's possible to correctly classify network events
 	t.TestKeys.AppendNetworkEvents(measurexlite.NewAnnotationArchivalNetworkEvent(
 		trace.Index(), started, "http_transaction_start", trace.Tags()...,
 	))
+
 	resp, err := txp.RoundTrip(req)
 	var body []byte
 	if err == nil {
@@ -320,10 +318,12 @@ func (t *SecureFlow) httpTransaction(ctx context.Context, network, address, alpn
 	if err == nil && httpRedirectIsRedirect(resp) {
 		err = httpValidateRedirect(resp)
 	}
+
 	finished := trace.TimeSince(trace.ZeroTime())
 	t.TestKeys.AppendNetworkEvents(measurexlite.NewAnnotationArchivalNetworkEvent(
 		trace.Index(), finished, "http_transaction_done", trace.Tags()...,
 	))
+
 	ev := measurexlite.NewArchivalHTTPRequestResult(
 		trace.Index(),
 		started,
@@ -339,6 +339,7 @@ func (t *SecureFlow) httpTransaction(ctx context.Context, network, address, alpn
 		finished,
 		trace.Tags()...,
 	)
+
 	t.TestKeys.PrependRequests(ev)
 	return resp, body, err
 }
