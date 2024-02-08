@@ -23,7 +23,7 @@ type DNSWhoamiInfoEntry struct {
 	Address string `json:"address"`
 }
 
-// dnsWhoamiInfoTimedEntry keeps an address and the time we create the entry together.
+// dnsWhoamiInfoTimedEntry keeps an address and the time we created the entry together.
 type dnsWhoamiInfoTimedEntry struct {
 	Addr string
 	T    time.Time
