@@ -27,7 +27,7 @@ func TestDNSWhoamiService(t *testing.T) {
 		domain string
 
 		// internals contains the expected internals cache
-		internals map[string]*dnsWhoamiInfoEntryWrapper
+		internals map[string]*dnsWhoamiInfoTimedEntry
 
 		// callResults contains the expectations
 		callResults []callResults
@@ -47,18 +47,14 @@ func TestDNSWhoamiService(t *testing.T) {
 			}},
 			Good: true,
 		}},
-		internals: map[string]*dnsWhoamiInfoEntryWrapper{
+		internals: map[string]*dnsWhoamiInfoTimedEntry{
 			"system:///": {
-				T: time.Date(2024, 2, 8, 9, 8, 7, 6, time.UTC).Add(time.Second),
-				V: &DNSWhoamiInfoEntry{
-					Address: netemx.DefaultClientAddress,
-				},
+				Addr: netemx.DefaultClientAddress,
+				T:    time.Date(2024, 2, 8, 9, 8, 7, 6, time.UTC).Add(time.Second),
 			},
 			"8.8.8.8:53": {
-				T: time.Date(2024, 2, 8, 9, 8, 7, 6, time.UTC).Add(2 * time.Second),
-				V: &DNSWhoamiInfoEntry{
-					Address: netemx.DefaultClientAddress,
-				},
+				Addr: netemx.DefaultClientAddress,
+				T:    time.Date(2024, 2, 8, 9, 8, 7, 6, time.UTC).Add(2 * time.Second),
 			},
 		},
 	}, {
@@ -71,7 +67,7 @@ func TestDNSWhoamiService(t *testing.T) {
 			Entries: nil,
 			Good:    false,
 		}},
-		internals: map[string]*dnsWhoamiInfoEntryWrapper{},
+		internals: map[string]*dnsWhoamiInfoTimedEntry{},
 	}}
 
 	for _, tc := range cases {
@@ -155,8 +151,6 @@ func TestDNSWhoamiService(t *testing.T) {
 		svc.netx = &netxlite.Netx{Underlying: &netxlite.NetemUnderlyingNetworkAdapter{UNet: env.ClientStack}}
 		svc.timeNow = ttp.timeNow
 
-		t.Log("~~~ first run ~~~~", ttp)
-
 		// run for the first time
 		_, _ = svc.SystemV4(context.Background())
 		_, _ = svc.UDPv4(context.Background(), "8.8.8.8:53")
@@ -164,18 +158,14 @@ func TestDNSWhoamiService(t *testing.T) {
 		// establish expectations for first run
 		//
 		// we expect the cache to be related to the first run
-		expectFirstInternals := map[string]*dnsWhoamiInfoEntryWrapper{
+		expectFirstInternals := map[string]*dnsWhoamiInfoTimedEntry{
 			"system:///": {
-				T: time.Date(2024, 2, 8, 9, 8, 7, 6, time.UTC).Add(time.Second),
-				V: &DNSWhoamiInfoEntry{
-					Address: netemx.DefaultClientAddress,
-				},
+				Addr: netemx.DefaultClientAddress,
+				T:    time.Date(2024, 2, 8, 9, 8, 7, 6, time.UTC).Add(time.Second),
 			},
 			"8.8.8.8:53": {
-				T: time.Date(2024, 2, 8, 9, 8, 7, 6, time.UTC).Add(2 * time.Second),
-				V: &DNSWhoamiInfoEntry{
-					Address: netemx.DefaultClientAddress,
-				},
+				Addr: netemx.DefaultClientAddress,
+				T:    time.Date(2024, 2, 8, 9, 8, 7, 6, time.UTC).Add(2 * time.Second),
 			},
 		}
 
@@ -184,8 +174,6 @@ func TestDNSWhoamiService(t *testing.T) {
 			t.Fatal(diff)
 		}
 
-		t.Log("~~~ second run ~~~~", ttp)
-
 		// run for the second time
 		_, _ = svc.SystemV4(context.Background())
 		_, _ = svc.UDPv4(context.Background(), "8.8.8.8:53")
@@ -193,18 +181,14 @@ func TestDNSWhoamiService(t *testing.T) {
 		// establish expectations for second run
 		//
 		// we expect the cache to be related to the first run
-		expectSecondInternals := map[string]*dnsWhoamiInfoEntryWrapper{
+		expectSecondInternals := map[string]*dnsWhoamiInfoTimedEntry{
 			"system:///": {
-				T: time.Date(2024, 2, 8, 9, 8, 7, 6, time.UTC).Add(time.Second),
-				V: &DNSWhoamiInfoEntry{
-					Address: netemx.DefaultClientAddress,
-				},
+				Addr: netemx.DefaultClientAddress,
+				T:    time.Date(2024, 2, 8, 9, 8, 7, 6, time.UTC).Add(time.Second),
 			},
 			"8.8.8.8:53": {
-				T: time.Date(2024, 2, 8, 9, 8, 7, 6, time.UTC).Add(2 * time.Second),
-				V: &DNSWhoamiInfoEntry{
-					Address: netemx.DefaultClientAddress,
-				},
+				Addr: netemx.DefaultClientAddress,
+				T:    time.Date(2024, 2, 8, 9, 8, 7, 6, time.UTC).Add(2 * time.Second),
 			},
 		}
 
@@ -213,8 +197,6 @@ func TestDNSWhoamiService(t *testing.T) {
 			t.Fatal(diff)
 		}
 
-		t.Log("~~~ third run ~~~~", ttp)
-
 		// run for the third time
 		_, _ = svc.SystemV4(context.Background())
 		_, _ = svc.UDPv4(context.Background(), "8.8.8.8:53")
@@ -222,18 +204,14 @@ func TestDNSWhoamiService(t *testing.T) {
 		// establish expectations for third run
 		//
 		// we expect the cache to be related to the third run
-		expectThirdInternals := map[string]*dnsWhoamiInfoEntryWrapper{
+		expectThirdInternals := map[string]*dnsWhoamiInfoTimedEntry{
 			"system:///": {
-				T: time.Date(2024, 2, 8, 9, 8, 7, 6, time.UTC).Add(60 * time.Second),
-				V: &DNSWhoamiInfoEntry{
-					Address: netemx.DefaultClientAddress,
-				},
+				Addr: netemx.DefaultClientAddress,
+				T:    time.Date(2024, 2, 8, 9, 8, 7, 6, time.UTC).Add(60 * time.Second),
 			},
 			"8.8.8.8:53": {
-				T: time.Date(2024, 2, 8, 9, 8, 7, 6, time.UTC).Add(62 * time.Second),
-				V: &DNSWhoamiInfoEntry{
-					Address: netemx.DefaultClientAddress,
-				},
+				Addr: netemx.DefaultClientAddress,
+				T:    time.Date(2024, 2, 8, 9, 8, 7, 6, time.UTC).Add(62 * time.Second),
 			},
 		}
 

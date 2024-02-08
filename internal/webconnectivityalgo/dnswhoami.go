@@ -23,10 +23,10 @@ type DNSWhoamiInfoEntry struct {
 	Address string `json:"address"`
 }
 
-// dnsWhoamiInfoEntryWrapper wraps a [DNSWhoamiInfoEntry].
-type dnsWhoamiInfoEntryWrapper struct {
-	T time.Time
-	V *DNSWhoamiInfoEntry
+// dnsWhoamiInfoTimedEntry wraps a [DNSWhoamiInfoEntry].
+type dnsWhoamiInfoTimedEntry struct {
+	Addr string
+	T    time.Time
 }
 
 // TODO(bassosimone): this code needs refining before we can merge it inside
@@ -43,7 +43,7 @@ type dnsWhoamiInfoEntryWrapper struct {
 // the [NewDNSWhoamiService] factory function.
 type DNSWhoamiService struct {
 	// entries contains the entries.
-	entries map[string]*dnsWhoamiInfoEntryWrapper
+	entries map[string]*dnsWhoamiInfoTimedEntry
 
 	// logger is the logger.
 	logger model.Logger
@@ -64,13 +64,38 @@ type DNSWhoamiService struct {
 // NewDNSWhoamiService constructs a new [*DNSWhoamiService].
 func NewDNSWhoamiService(logger model.Logger) *DNSWhoamiService {
 	return &DNSWhoamiService{
-		entries:      map[string]*dnsWhoamiInfoEntryWrapper{},
+		entries:      map[string]*dnsWhoamiInfoTimedEntry{},
 		logger:       logger,
 		mu:           &sync.Mutex{},
 		netx:         &netxlite.Netx{Underlying: nil},
 		timeNow:      time.Now,
 		whoamiDomain: "whoami.v4.powerdns.org",
 	}
+}
+
+// SystemV4 returns the results of querying using the system resolver and IPv4.
+func (svc *DNSWhoamiService) SystemV4(ctx context.Context) ([]DNSWhoamiInfoEntry, bool) {
+	spec := &dnsWhoamiResolverSpec{
+		name: "system:///",
+		factory: func(logger model.Logger, netx *netxlite.Netx) model.Resolver {
+			return svc.netx.NewStdlibResolver(svc.logger)
+		},
+	}
+	v := svc.lookup(ctx, spec)
+	return v, len(v) > 0
+}
+
+// UDPv4 returns the results of querying a given UDP resolver and IPv4.
+func (svc *DNSWhoamiService) UDPv4(ctx context.Context, address string) ([]DNSWhoamiInfoEntry, bool) {
+	spec := &dnsWhoamiResolverSpec{
+		name: address,
+		factory: func(logger model.Logger, netx *netxlite.Netx) model.Resolver {
+			dialer := svc.netx.NewDialerWithResolver(svc.logger, svc.netx.NewStdlibResolver(svc.logger))
+			return svc.netx.NewParallelUDPResolver(svc.logger, dialer, address)
+		},
+	}
+	v := svc.lookup(ctx, spec)
+	return v, len(v) > 0
 }
 
 type dnsWhoamiResolverSpec struct {
@@ -104,31 +129,6 @@ func (svc *DNSWhoamiService) lookup(ctx context.Context, spec *dnsWhoamiResolver
 	return []DNSWhoamiInfoEntry{{Address: addrs[0]}}
 }
 
-// SystemV4 returns the results of querying using the system resolver and IPv4.
-func (svc *DNSWhoamiService) SystemV4(ctx context.Context) ([]DNSWhoamiInfoEntry, bool) {
-	spec := &dnsWhoamiResolverSpec{
-		name: "system:///",
-		factory: func(logger model.Logger, netx *netxlite.Netx) model.Resolver {
-			return svc.netx.NewStdlibResolver(svc.logger)
-		},
-	}
-	v := svc.lookup(ctx, spec)
-	return v, len(v) > 0
-}
-
-// UDPv4 returns the results of querying a given UDP resolver and IPv4.
-func (svc *DNSWhoamiService) UDPv4(ctx context.Context, address string) ([]DNSWhoamiInfoEntry, bool) {
-	spec := &dnsWhoamiResolverSpec{
-		name: address,
-		factory: func(logger model.Logger, netx *netxlite.Netx) model.Resolver {
-			dialer := svc.netx.NewDialerWithResolver(svc.logger, svc.netx.NewStdlibResolver(svc.logger))
-			return svc.netx.NewParallelUDPResolver(svc.logger, dialer, address)
-		},
-	}
-	v := svc.lookup(ctx, spec)
-	return v, len(v) > 0
-}
-
 func (svc *DNSWhoamiService) lockAndGet(now time.Time, serverAddr string) optional.Value[DNSWhoamiInfoEntry] {
 	// ensure there's mutual exclusion
 	defer svc.mu.Unlock()
@@ -148,7 +148,7 @@ func (svc *DNSWhoamiService) lockAndGet(now time.Time, serverAddr string) option
 
 	// return a copy of the value
 	return optional.Some(DNSWhoamiInfoEntry{
-		Address: entry.V.Address,
+		Address: entry.Addr,
 	})
 }
 
@@ -158,24 +158,20 @@ func (svc *DNSWhoamiService) lockAndUpdate(now time.Time, serverAddr, whoamiAddr
 	svc.mu.Lock()
 
 	// insert into the table
-	svc.entries[serverAddr] = &dnsWhoamiInfoEntryWrapper{
-		T: now,
-		V: &DNSWhoamiInfoEntry{
-			Address: whoamiAddr,
-		},
+	svc.entries[serverAddr] = &dnsWhoamiInfoTimedEntry{
+		Addr: whoamiAddr,
+		T:    now,
 	}
 }
 
-func (svc *DNSWhoamiService) cloneEntries() map[string]*dnsWhoamiInfoEntryWrapper {
+func (svc *DNSWhoamiService) cloneEntries() map[string]*dnsWhoamiInfoTimedEntry {
 	defer svc.mu.Unlock()
 	svc.mu.Lock()
-	output := make(map[string]*dnsWhoamiInfoEntryWrapper)
+	output := make(map[string]*dnsWhoamiInfoTimedEntry)
 	for key, value := range svc.entries {
-		output[key] = &dnsWhoamiInfoEntryWrapper{
-			T: value.T,
-			V: &DNSWhoamiInfoEntry{
-				Address: value.V.Address,
-			},
+		output[key] = &dnsWhoamiInfoTimedEntry{
+			Addr: value.Addr,
+			T:    value.T,
 		}
 	}
 	return output
