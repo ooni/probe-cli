@@ -1,5 +1,11 @@
 package webconnectivityalgo
 
+//
+// DNS-over-HTTPS
+//
+// Code to manage DNS-over-HTTPS testing.
+//
+
 import (
 	"math/rand"
 	"sync"
