@@ -1,0 +1,19 @@
+diff --git a/configure.ac b/configure.ac
+index b218a59ce2..b87adec9fc 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -1294,10 +1294,10 @@ tor_cap_pkg_redhat="libcap"
+ tor_cap_devpkg_debian="libcap-dev"
+ tor_cap_devpkg_redhat="libcap-devel"
+ 
+-AC_CHECK_LIB([cap], [cap_init], [],
+-  AC_MSG_NOTICE([Libcap was not found. Capabilities will not be usable.])
+-)
+-AC_CHECK_FUNCS(cap_set_proc)
++dnl AC_CHECK_LIB([cap], [cap_init], [],
++dnl   AC_MSG_NOTICE([Libcap was not found. Capabilities will not be usable.])
++dnl )
++dnl AC_CHECK_FUNCS(cap_set_proc)
+ 
+ dnl ---------------------------------------------------------------------
+ dnl Now that we know about our major libraries, we can check for compiler

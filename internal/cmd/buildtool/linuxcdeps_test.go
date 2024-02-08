@@ -350,6 +350,16 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 				"git", "apply", faketopdir + "/CDEPS/tor/003.patch",
 			},
 		}, {
+			Env: []string{},
+			Argv: []string{
+				"git", "apply", faketopdir + "/CDEPS/tor/004.patch",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"autoreconf", "-vif",
+			},
+		}, {
 			Env: []string{
 				"CFLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong -fstack-clash-protection -fPIC -fsanitize=bounds -fsanitize-undefined-trap-on-error -O2",
 				"CXXFLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong -fstack-clash-protection -fPIC -fsanitize=bounds -fsanitize-undefined-trap-on-error -O2",
@@ -370,6 +380,8 @@ func TestLinuxCdepsBuildMain(t *testing.T) {
 				"--disable-systemd",
 				"--prefix=/",
 				"--disable-unittests",
+				"--disable-system-torrc",
+				"--disable-seccomp",
 			},
 		}, {
 			Env: []string{},
