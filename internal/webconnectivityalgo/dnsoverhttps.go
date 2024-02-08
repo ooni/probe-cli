@@ -21,7 +21,7 @@ import (
 //
 // Implementation note: this code uses memory to keep track of the resolvers and know
 // when to perform the next opportunistic check. It seems pointless to use the disk since
-// invocations or Web Connectivity typically consist of multiple URLs and therefore run
+// invocations of Web Connectivity typically consist of multiple URLs and therefore run
 // for a few minutes. Hence, storing state on disk seems a bit overkill here.
 type OpportunisticDNSOverHTTPSURLProvider struct {
 	// interval is the next interval after which to measure.
