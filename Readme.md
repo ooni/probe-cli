@@ -149,8 +149,7 @@ $HOME/sdk/go1.20.12/bin/go build -v -ldflags '-s -w' ./internal/cmd/miniooni
 This section shows how to build using `./script/go.bash`. If you want to bypass
 using this script, just run `go` instead of `./script/go.bash`.
 
-Once you have installed the correct Go version and a C compiler,
-you can compile `ooniprobe` using:
+You can compile `ooniprobe` using:
 
 ```bash
 ./script/go.bash build -v -ldflags '-s -w' ./cmd/ooniprobe
