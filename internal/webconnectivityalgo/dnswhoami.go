@@ -30,27 +30,41 @@ type DNSWhoamiInfoEntry struct {
 // TODO(bassosimone): consider factoring this code and keeping state
 // on disk rather than on memory.
 
+// TODO(bassosimone): we should periodically invalidate the whoami lookup results.
+
 // DNSWhoamiService is a service that performs DNS whoami lookups.
 //
 // The zero value of this struct is invalid. Please, construct using
 // the [NewDNSWhoamiService] factory function.
 type DNSWhoamiService struct {
+	// logger is the logger
+	logger model.Logger
+
 	// mu provides mutual exclusion
 	mu *sync.Mutex
+
+	// netx is the underlying network we're using
+	netx *netxlite.Netx
 
 	// systemv4 contains systemv4 results
 	systemv4 []DNSWhoamiInfoEntry
 
 	// udpv4 contains udpv4 results
 	udpv4 map[string][]DNSWhoamiInfoEntry
+
+	// whoamiDomain is the whoamiDomain to query for.
+	whoamiDomain string
 }
 
 // NewDNSWhoamiService constructs a new [*DNSWhoamiService].
-func NewDNSWhoamiService() *DNSWhoamiService {
+func NewDNSWhoamiService(logger model.Logger) *DNSWhoamiService {
 	return &DNSWhoamiService{
-		mu:       &sync.Mutex{},
-		systemv4: []DNSWhoamiInfoEntry{},
-		udpv4:    map[string][]DNSWhoamiInfoEntry{},
+		logger:       logger,
+		mu:           &sync.Mutex{},
+		netx:         &netxlite.Netx{Underlying: nil},
+		systemv4:     []DNSWhoamiInfoEntry{},
+		udpv4:        map[string][]DNSWhoamiInfoEntry{},
+		whoamiDomain: "whoami.v4.powerdns.org",
 	}
 }
 
@@ -61,9 +75,8 @@ func (svc *DNSWhoamiService) SystemV4(ctx context.Context) ([]DNSWhoamiInfoEntry
 	if len(svc.systemv4) <= 0 {
 		ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 		defer cancel()
-		netx := &netxlite.Netx{}
-		reso := netx.NewStdlibResolver(model.DiscardLogger)
-		addrs, err := reso.LookupHost(ctx, "whoami.v4.powerdns.org")
+		reso := svc.netx.NewStdlibResolver(svc.logger)
+		addrs, err := reso.LookupHost(ctx, svc.whoamiDomain)
 		if err != nil || len(addrs) < 1 {
 			return nil, false
 		}
@@ -81,12 +94,11 @@ func (svc *DNSWhoamiService) UDPv4(ctx context.Context, address string) ([]DNSWh
 	if len(svc.udpv4[address]) <= 0 {
 		ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 		defer cancel()
-		netx := &netxlite.Netx{}
-		dialer := netxlite.NewDialerWithStdlibResolver(model.DiscardLogger)
-		reso := netx.NewParallelUDPResolver(model.DiscardLogger, dialer, address)
+		dialer := svc.netx.NewDialerWithResolver(svc.logger, svc.netx.NewStdlibResolver(svc.logger))
+		reso := svc.netx.NewParallelUDPResolver(svc.logger, dialer, address)
 		// TODO(bassosimone): this should actually only send an A query. Sending an AAAA
 		// query is _way_ unnecessary since we know that only A is going to work.
-		addrs, err := reso.LookupHost(ctx, "whoami.v4.powerdns.org")
+		addrs, err := reso.LookupHost(ctx, svc.whoamiDomain)
 		if err != nil || len(addrs) < 1 {
 			return nil, false
 		}
