@@ -1,6 +1,9 @@
 package webconnectivityalgo
 
-import "testing"
+import (
+	"net"
+	"testing"
+)
 
 func TestRandomDNSOverUDPResolverEndpointIPv4(t *testing.T) {
 	results := make(map[string]int64)
@@ -8,6 +11,9 @@ func TestRandomDNSOverUDPResolverEndpointIPv4(t *testing.T) {
 	for idx := 0; idx < maxruns; idx++ {
 		endpoint := RandomDNSOverUDPResolverEndpointIPv4()
 		results[endpoint]++
+		if _, _, err := net.SplitHostPort(endpoint); err != nil {
+			t.Fatal(err)
+		}
 	}
 	t.Log(results)
 	if len(results) < 3 {
