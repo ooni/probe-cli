@@ -9,7 +9,6 @@ package webconnectivitylte
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
@@ -21,6 +20,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/webconnectivityalgo"
 )
 
 // Resolves the URL's domain using several resolvers.
@@ -95,8 +95,8 @@ func (t *DNSResolvers) run(parentCtx context.Context) []DNSEntry {
 	systemOut := make(chan []string)
 	udpOut := make(chan []string)
 	httpsOut := make(chan []string)
-	whoamiSystemV4Out := make(chan []DNSWhoamiInfoEntry)
-	whoamiUDPv4Out := make(chan []DNSWhoamiInfoEntry)
+	whoamiSystemV4Out := make(chan []webconnectivityalgo.DNSWhoamiInfoEntry)
+	whoamiUDPv4Out := make(chan []webconnectivityalgo.DNSWhoamiInfoEntry)
 
 	// TODO(bassosimone): add opportunistic support for detecting
 	// whether DNS queries are answered regardless of dest addr by
@@ -188,7 +188,7 @@ func (t *DNSResolvers) Run(parentCtx context.Context) {
 
 // whoamiSystemV4 performs a DNS whoami lookup for the system resolver. This function must
 // always emit an ouput on the [out] channel to synchronize with the caller func.
-func (t *DNSResolvers) whoamiSystemV4(parentCtx context.Context, out chan<- []DNSWhoamiInfoEntry) {
+func (t *DNSResolvers) whoamiSystemV4(parentCtx context.Context, out chan<- []webconnectivityalgo.DNSWhoamiInfoEntry) {
 	value, _ := DNSWhoamiSingleton.SystemV4(parentCtx)
 	t.Logger.Infof("DNS whoami for system resolver: %+v", value)
 	out <- value
@@ -196,7 +196,7 @@ func (t *DNSResolvers) whoamiSystemV4(parentCtx context.Context, out chan<- []DN
 
 // whoamiUDPv4 performs a DNS whoami lookup for the given UDP resolver. This function must
 // always emit an ouput on the [out] channel to synchronize with the caller func.
-func (t *DNSResolvers) whoamiUDPv4(parentCtx context.Context, udpAddress string, out chan<- []DNSWhoamiInfoEntry) {
+func (t *DNSResolvers) whoamiUDPv4(parentCtx context.Context, udpAddress string, out chan<- []webconnectivityalgo.DNSWhoamiInfoEntry) {
 	value, _ := DNSWhoamiSingleton.UDPv4(parentCtx, udpAddress)
 	t.Logger.Infof("DNS whoami for %s/udp resolver: %+v", udpAddress, value)
 	out <- value
@@ -302,62 +302,14 @@ func (t *DNSResolvers) udpAddress() string {
 	return "8.8.4.4:53"
 }
 
-// OpportunisticDNSOverHTTPS allows to perform opportunistic DNS-over-HTTPS
-// measurements as part of Web Connectivity.
-type OpportunisticDNSOverHTTPS struct {
-	// interval is the next interval after which to measure.
-	interval time.Duration
-
-	// mu provides mutual exclusion
-	mu *sync.Mutex
-
-	// rnd is the random number generator to use.
-	rnd *rand.Rand
-
-	// t is when we last run an opportunistic measurement.
-	t time.Time
-
-	// urls contains the urls of known DoH services.
-	urls []string
-}
-
-// MaybeNextURL returns the next URL to measure, if any. Our aim is to perform
-// periodic, opportunistic DoH measurements as part of Web Connectivity.
-func (o *OpportunisticDNSOverHTTPS) MaybeNextURL() (string, bool) {
-	now := time.Now()
-	o.mu.Lock()
-	defer o.mu.Unlock()
-	if o.t.IsZero() || now.Sub(o.t) > o.interval {
-		o.rnd.Shuffle(len(o.urls), func(i, j int) {
-			o.urls[i], o.urls[j] = o.urls[j], o.urls[i]
-		})
-		o.t = now
-		o.interval = time.Duration(20+o.rnd.Uint32()%20) * time.Second
-		return o.urls[0], true
-	}
-	return "", false
-}
-
-// TODO(bassosimone): consider whether factoring out this code
-// and storing the state on disk instead of using memory
-
-// TODO(bassosimone): consider unifying somehow this code and
-// the systemresolver code (or maybe just the list of resolvers)
-
 // OpportunisticDNSOverHTTPSSingleton is the singleton used to keep
 // track of the opportunistic DNS-over-HTTPS measurements state.
-var OpportunisticDNSOverHTTPSSingleton = &OpportunisticDNSOverHTTPS{
-	interval: 0,
-	mu:       &sync.Mutex{},
-	rnd:      rand.New(rand.NewSource(time.Now().UnixNano())),
-	t:        time.Time{},
-	urls: []string{
-		"https://mozilla.cloudflare-dns.com/dns-query",
-		"https://dns.nextdns.io/dns-query",
-		"https://dns.google/dns-query",
-		"https://dns.quad9.net/dns-query",
-	},
-}
+var OpportunisticDNSOverHTTPSSingleton = webconnectivityalgo.NewOpportunisticDNSOverHTTPSURLProvider(
+	"https://mozilla.cloudflare-dns.com/dns-query",
+	"https://dns.nextdns.io/dns-query",
+	"https://dns.google/dns-query",
+	"https://dns.quad9.net/dns-query",
+)
 
 // lookupHostDNSOverHTTPS performs a DNS lookup using a DoH resolver. This function must
 // always emit an ouput on the [out] channel to synchronize with the caller func.

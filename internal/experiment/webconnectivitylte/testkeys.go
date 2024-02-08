@@ -15,6 +15,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/optional"
+	"github.com/ooni/probe-cli/v3/internal/webconnectivityalgo"
 )
 
 // TestKeys contains the results produced by web_connectivity.
@@ -153,19 +154,13 @@ type ConnPriorityLogEntry struct {
 	T float64 `json:"t"`
 }
 
-// DNSWhoamiInfoEntry contains an entry for DNSWhoamiInfo.
-type DNSWhoamiInfoEntry struct {
-	// Address is the IP address
-	Address string `json:"address"`
-}
-
-// DNSWhoamiInfo contains info about DNS whoami.
+// DNSWhoamiInfo contains information about a DNS whoami lookup.
 type DNSWhoamiInfo struct {
 	// SystemV4 contains results related to the system resolver using IPv4.
-	SystemV4 []DNSWhoamiInfoEntry `json:"system_v4"`
+	SystemV4 []webconnectivityalgo.DNSWhoamiInfoEntry `json:"system_v4"`
 
 	// UDPv4 contains results related to an UDP resolver using IPv4.
-	UDPv4 map[string][]DNSWhoamiInfoEntry `json:"udp_v4"`
+	UDPv4 map[string][]webconnectivityalgo.DNSWhoamiInfoEntry `json:"udp_v4"`
 }
 
 // TestKeysDoH contains ancillary observations collected using DoH (e.g., the
@@ -334,8 +329,8 @@ func NewTestKeys() *TestKeys {
 		SOCKSProxy:     nil,
 		NetworkEvents:  []*model.ArchivalNetworkEvent{},
 		DNSWoami: &DNSWhoamiInfo{
-			SystemV4: []DNSWhoamiInfoEntry{},
-			UDPv4:    map[string][]DNSWhoamiInfoEntry{},
+			SystemV4: []webconnectivityalgo.DNSWhoamiInfoEntry{},
+			UDPv4:    map[string][]webconnectivityalgo.DNSWhoamiInfoEntry{},
 		},
 		DoH: &TestKeysDoH{
 			NetworkEvents: []*model.ArchivalNetworkEvent{},
