@@ -157,7 +157,7 @@ func TestDNSWhoamiService(t *testing.T) {
 
 		// establish expectations for first run
 		//
-		// we expect the cache to be related to the first run
+		// we expect the internals to be related to the first run
 		expectFirstInternals := map[string]*dnsWhoamiInfoTimedEntry{
 			"system:///": {
 				Addr: netemx.DefaultClientAddress,
@@ -180,7 +180,8 @@ func TestDNSWhoamiService(t *testing.T) {
 
 		// establish expectations for second run
 		//
-		// we expect the cache to be related to the first run
+		// we expect the internals to be related to the first run because not
+		// enough time has elapsed since we create the cache entries
 		expectSecondInternals := map[string]*dnsWhoamiInfoTimedEntry{
 			"system:///": {
 				Addr: netemx.DefaultClientAddress,
@@ -203,7 +204,8 @@ func TestDNSWhoamiService(t *testing.T) {
 
 		// establish expectations for third run
 		//
-		// we expect the cache to be related to the third run
+		// we expect the cache to be related to the third run because now the
+		// entries are stale and so we perform another lookup
 		expectThirdInternals := map[string]*dnsWhoamiInfoTimedEntry{
 			"system:///": {
 				Addr: netemx.DefaultClientAddress,
