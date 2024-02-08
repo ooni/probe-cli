@@ -51,6 +51,10 @@ func TCPConnect(rt Runtime) Func[*Endpoint, *TCPConnection] {
 			return nil, err
 		}
 
+		// TODO(https://github.com/ooni/probe/issues/2670).
+		//
+		// Start measuring for throttling here.
+
 		// handle success
 		state := &TCPConnection{
 			Address: input.Address,

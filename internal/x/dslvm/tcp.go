@@ -143,6 +143,10 @@ func (sx *TCPConnectStage) connect(ctx context.Context, rtx Runtime, endpoint st
 		return
 	}
 
+	// TODO(https://github.com/ooni/probe/issues/2670).
+	//
+	// Start measuring for throttling here.
+
 	// handle success
 	sx.Output <- &TCPConnection{Conn: conn, tx: trace}
 }

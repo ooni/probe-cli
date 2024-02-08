@@ -48,6 +48,10 @@ func QUICHandshake(rt Runtime, options ...TLSHandshakeOption) Func[*Endpoint, *Q
 		if quicConn != nil {
 			closerConn = &quicCloserConn{quicConn}
 			tlsState = quicConn.ConnectionState().TLS // only quicConn can be nil
+
+			// TODO(https://github.com/ooni/probe/issues/2670).
+			//
+			// Start measuring for throttling here.
 		}
 
 		// possibly track established conn for late close
