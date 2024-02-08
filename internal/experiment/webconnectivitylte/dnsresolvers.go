@@ -98,9 +98,7 @@ func (t *DNSResolvers) run(parentCtx context.Context) []DNSEntry {
 	whoamiSystemV4Out := make(chan []webconnectivityalgo.DNSWhoamiInfoEntry)
 	whoamiUDPv4Out := make(chan []webconnectivityalgo.DNSWhoamiInfoEntry)
 
-	// TODO(bassosimone): add opportunistic support for detecting
-	// whether DNS queries are answered regardless of dest addr by
-	// sending a few queries to root DNS servers
+	// TODO(https://github.com/ooni/probe/issues/1521): detecting DNS interception
 
 	udpAddress := t.udpAddress()
 
@@ -292,14 +290,12 @@ func (t *DNSResolvers) do53SplitQueries(
 	return
 }
 
-// TODO(bassosimone): maybe cycle through a bunch of well known addresses
-
 // Returns the UDP resolver we should be using by default.
 func (t *DNSResolvers) udpAddress() string {
 	if t.UDPAddress != "" {
 		return t.UDPAddress
 	}
-	return "8.8.4.4:53"
+	return webconnectivityalgo.RandomDNSOverUDPResolverEndpointIPv4()
 }
 
 // OpportunisticDNSOverHTTPSSingleton is the singleton used to keep

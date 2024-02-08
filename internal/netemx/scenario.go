@@ -129,10 +129,29 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 }, {
 	Domains: []string{"dns.quad9.net"},
 	Addresses: []string{
-		AddressDNSQuad9Net,
+		AddressDNSQuad9Net9999,
+		AddressDNSQuad9NetOther,
 	},
 	Role:             ScenarioRolePublicDNS,
 	ServerNameMain:   "dns.quad9.net",
+	ServerNameExtras: []string{},
+}, {
+	Domains: []string{"cloudflare-dns.com"},
+	Addresses: []string{
+		AddressCloudflareDNSCom1001,
+		AddressCloudflareDNSCom1111,
+	},
+	Role:             ScenarioRolePublicDNS,
+	ServerNameMain:   "cloudflare-dns.com",
+	ServerNameExtras: []string{},
+}, {
+	Domains: []string{"doh.opendns.com"},
+	Addresses: []string{
+		AddressOpenDNS220,
+		AddressOpenDNS222,
+	},
+	Role:             ScenarioRolePublicDNS,
+	ServerNameMain:   "doh.opendns.com",
 	ServerNameExtras: []string{},
 }, {
 	Domains: []string{"mozilla.cloudflare-dns.com"},
