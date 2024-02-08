@@ -121,21 +121,21 @@ func TestOpportunisticDNSOverHTTPSURLProvider(t *testing.T) {
 	// run test cases
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			o := NewOpportunisticDNSOverHTTPSURLProvider(tc.urls...)
+			oup := NewOpportunisticDNSOverHTTPSURLProvider(tc.urls...)
 
 			// note: we need to reconfigure timeNow before resetting the seed
 			if tc.timeNow != nil {
-				o.timeNow = tc.timeNow
+				oup.timeNow = tc.timeNow
 			}
 			if !tc.seed.IsZero() {
-				o.seed(tc.seed)
+				oup.seed(tc.seed)
 			} else {
-				o.seed(o.timeNow())
+				oup.seed(oup.timeNow())
 			}
 
 			var got []expectation
 			for len(got) < len(tc.expect) {
-				url, good := o.MaybeNextURL()
+				url, good := oup.MaybeNextURL()
 				got = append(got, expectation{
 					URL:  url,
 					Good: good,
