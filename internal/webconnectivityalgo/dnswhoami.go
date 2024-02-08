@@ -12,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/logmodel"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/optional"
@@ -136,7 +135,7 @@ func (svc *DNSWhoamiService) SystemV4(ctx context.Context) ([]DNSWhoamiInfoEntry
 func (svc *DNSWhoamiService) UDPv4(ctx context.Context, address string) ([]DNSWhoamiInfoEntry, bool) {
 	spec := &dnsWhoamiResolverSpec{
 		name: address,
-		factory: func(logger logmodel.Logger, netx *netxlite.Netx) model.Resolver {
+		factory: func(logger model.Logger, netx *netxlite.Netx) model.Resolver {
 			dialer := svc.netx.NewDialerWithResolver(svc.logger, svc.netx.NewStdlibResolver(svc.logger))
 			return svc.netx.NewParallelUDPResolver(svc.logger, dialer, address)
 		},
