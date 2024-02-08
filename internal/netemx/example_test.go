@@ -283,7 +283,7 @@ func Example_dnsOverUDPWithInternetScenario() {
 			net.JoinHostPort(netemx.RootResolverAddress, "53"),
 			net.JoinHostPort(netemx.AddressDNSGoogle8844, "53"),
 			net.JoinHostPort(netemx.AddressDNSGoogle8888, "53"),
-			net.JoinHostPort(netemx.AddressDNSQuad9Net, "53"),
+			net.JoinHostPort(netemx.AddressDNSQuad9Net9999, "53"),
 			net.JoinHostPort(netemx.AddressMozillaCloudflareDNSCom, "53"),
 		}
 

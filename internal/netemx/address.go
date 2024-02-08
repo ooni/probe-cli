@@ -33,8 +33,11 @@ const AddressThreeThOONIOrg = "209.97.183.73"
 // AddressTHCloudfront is the IP address for d33d1gs9kpq1c5.cloudfront.net.
 const AddressTHCloudfront = "52.85.15.84"
 
-// AddressDNSQuad9Net is the IP address for dns.quad9.net.
-const AddressDNSQuad9Net = "9.9.9.9"
+// AddressDNSQuad9Net9999 is the IP address for dns.quad9.net.
+const AddressDNSQuad9Net9999 = "9.9.9.9"
+
+// AddressDNSQuad9NetOther is the the other IP address for dns.quad9.net.
+const AddressDNSQuad9NetOther = "149.112.112.112"
 
 // AddressMozillaCloudflareDNSCom is the IP address for mozilla.cloudflare-dns.com.
 const AddressMozillaCloudflareDNSCom = "172.64.41.4"
@@ -83,3 +86,15 @@ const AddressCloudflareCache1 = "104.16.132.229"
 // AddressHTTPBinCom1 is the first address associated an httpbin.com-like
 // service which our QA environment exports as httpbin.com.
 const AddressHTTPBinCom1 = "172.67.144.64"
+
+// AddressCloudflareDNSCom1111 is the 1.1.1.1 adress.
+const AddressCloudflareDNSCom1111 = "1.1.1.1"
+
+// AddressCloudflareDNSCom1001 is the 1.0.0.1 adress.
+const AddressCloudflareDNSCom1001 = "1.0.0.1"
+
+// AddressOpenDNS222 is the 208.67.222.222 opendns.com address.
+const AddressOpenDNS222 = "208.67.222.222"
+
+// AddressOpenDNS220 is the 208.67.220.220 opendns.com address.
+const AddressOpenDNS220 = "208.67.220.220"

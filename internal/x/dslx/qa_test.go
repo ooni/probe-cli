@@ -91,7 +91,7 @@ func TestDNSLookupQA(t *testing.T) {
 			// create DNS lookup function
 			function := dslx.DNSLookupParallel(
 				dslx.DNSLookupGetaddrinfo(rt),
-				dslx.DNSLookupUDP(rt, net.JoinHostPort(netemx.AddressDNSQuad9Net, "53")),
+				dslx.DNSLookupUDP(rt, net.JoinHostPort(netemx.AddressDNSQuad9Net9999, "53")),
 			)
 
 			// create context
