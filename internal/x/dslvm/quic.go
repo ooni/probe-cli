@@ -158,6 +158,10 @@ func (sx *QUICHandshakeStage) handshake(ctx context.Context, rtx Runtime, endpoi
 		return
 	}
 
+	// TODO(https://github.com/ooni/probe/issues/2670).
+	//
+	// Start measuring for throttling here.
+
 	// handle success
 	sx.Output <- &QUICConnection{Conn: quicConn, tx: trace, tlsConfig: config}
 }

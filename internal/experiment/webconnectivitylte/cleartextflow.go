@@ -105,10 +105,6 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) error {
 	trace := measurexlite.NewTrace(index, t.ZeroTime, fmt.Sprintf("depth=%d", t.Depth),
 		fmt.Sprintf("fetch_body=%v", t.PrioSelector != nil))
 
-	// TODO(bassosimone): the DSL starts measuring for throttling when we start
-	// fetching the body while here we start immediately. We should come up with
-	// a consistent policy otherwise data won't be comparable.
-
 	// start measuring throttling
 	sampler := throttling.NewSampler(trace)
 	defer func() {
@@ -144,10 +140,7 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) error {
 	}
 
 	// create HTTP transport
-	// TODO(https://github.com/ooni/probe/issues/2534): here we're using the QUIRKY netxlite.NewHTTPTransport
-	// function, but we can probably avoid using it, given that this code is
-	// not using tracing and does not care about those quirks.
-	httpTransport := netxlite.NewHTTPTransport(
+	httpTransport := netxlite.NewHTTPTransportWithOptions(
 		t.Logger,
 		netxlite.NewSingleUseDialer(tcpConn),
 		netxlite.NewNullTLSDialer(),
@@ -188,7 +181,7 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) error {
 	// if enabled, follow possible redirects
 	t.maybeFollowRedirects(parentCtx, httpResp)
 
-	// TODO: insert here additional code if needed
+	// ignore the response body
 	_ = httpRespBody
 
 	// completed successfully
