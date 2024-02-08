@@ -73,21 +73,6 @@ func NewDNSWhoamiService(logger model.Logger) *DNSWhoamiService {
 	}
 }
 
-func (svc *DNSWhoamiService) cloneEntries() map[string]*dnsWhoamiInfoEntryWrapper {
-	defer svc.mu.Unlock()
-	svc.mu.Lock()
-	output := make(map[string]*dnsWhoamiInfoEntryWrapper)
-	for key, value := range svc.entries {
-		output[key] = &dnsWhoamiInfoEntryWrapper{
-			T: value.T,
-			V: &DNSWhoamiInfoEntry{
-				Address: value.V.Address,
-			},
-		}
-	}
-	return output
-}
-
 type dnsWhoamiResolverSpec struct {
 	name    string
 	factory func(logger model.Logger, netx *netxlite.Netx) model.Resolver
@@ -179,4 +164,19 @@ func (svc *DNSWhoamiService) lockAndUpdate(now time.Time, serverAddr, whoamiAddr
 			Address: whoamiAddr,
 		},
 	}
+}
+
+func (svc *DNSWhoamiService) cloneEntries() map[string]*dnsWhoamiInfoEntryWrapper {
+	defer svc.mu.Unlock()
+	svc.mu.Lock()
+	output := make(map[string]*dnsWhoamiInfoEntryWrapper)
+	for key, value := range svc.entries {
+		output[key] = &dnsWhoamiInfoEntryWrapper{
+			T: value.T,
+			V: &DNSWhoamiInfoEntry{
+				Address: value.V.Address,
+			},
+		}
+	}
+	return output
 }
