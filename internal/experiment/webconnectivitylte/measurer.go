@@ -78,6 +78,11 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	tk := NewTestKeys()
 	measurement.TestKeys = tk
 
+	// make sure we add the ClientResolver field
+	//
+	// See https://github.com/ooni/probe/issues/2676
+	tk.ClientResolver = sess.ResolverIP()
+
 	// create variables required to run parallel tasks
 	idGenerator := &atomic.Int64{}
 	wg := &sync.WaitGroup{}
