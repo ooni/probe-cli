@@ -12,7 +12,6 @@ import (
 
 // Checker checks whether a measurement is correct.
 type Checker interface {
-	// Check checks whether the measurement is correct.
 	Check(mx *model.Measurement) error
 }
 
