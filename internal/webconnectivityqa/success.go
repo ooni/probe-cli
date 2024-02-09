@@ -20,7 +20,10 @@ func successWithHTTP() *TestCase {
 			Accessible:      true,
 			Blocking:        false,
 		},
-		Checkers: []Checker{&ReadWriteEventsExistentialChecker{}},
+		Checkers: []Checker{
+			// See https://github.com/ooni/probe/issues/2674
+			&ReadWriteEventsExistentialChecker{},
+		},
 	}
 }
 
