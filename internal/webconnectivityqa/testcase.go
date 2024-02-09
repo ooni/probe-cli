@@ -1,8 +1,6 @@
 package webconnectivityqa
 
-import (
-	"github.com/ooni/probe-cli/v3/internal/netemx"
-)
+import "github.com/ooni/probe-cli/v3/internal/netemx"
 
 const (
 	// TestCaseFlagNoV04 means that this test case should not be run by v0.4
