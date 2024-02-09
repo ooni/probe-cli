@@ -124,7 +124,9 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) error {
 	tcpDialer := trace.NewDialerWithoutResolver(t.Logger)
 	tcpConn, err := tcpDialer.DialContext(tcpCtx, "tcp", t.Address)
 	t.TestKeys.AppendTCPConnectResults(trace.TCPConnects()...)
-	defer t.TestKeys.AppendNetworkEvents(trace.NetworkEvents()...) // here to include "connect" events
+	defer func() {
+		t.TestKeys.AppendNetworkEvents(trace.NetworkEvents()...) // here to include "connect" events
+	}()
 	if err != nil {
 		ol.Stop(err)
 		return err
