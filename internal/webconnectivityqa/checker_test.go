@@ -3,12 +3,14 @@ package webconnectivityqa_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivitylte"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/must"
+	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/optional"
 	"github.com/ooni/probe-cli/v3/internal/webconnectivityqa"
 )
@@ -91,6 +93,67 @@ func TestReadWriteEventsExistentialChecker(t *testing.T) {
 			}
 
 			err := (&webconnectivityqa.ReadWriteEventsExistentialChecker{}).Check(meas)
+
+			switch {
+			case tc.expect == nil && err == nil:
+				return
+
+			case tc.expect == nil && err != nil:
+				t.Fatal("expected", tc.expect, "got", err)
+
+			case tc.expect != nil && err == nil:
+				t.Fatal("expected", tc.expect, "got", err)
+
+			case tc.expect != nil && err != nil:
+				if err.Error() != tc.expect.Error() {
+					t.Fatal("expected", tc.expect, "got", err)
+				}
+			}
+		})
+	}
+}
+
+func TestClientResolverCorrectnessChecker(t *testing.T) {
+	type testcase struct {
+		name   string
+		tk     string
+		expect error
+	}
+
+	cases := []testcase{{
+		name:   "with correct value",
+		tk:     fmt.Sprintf(`{"client_resolver":"%s"}`, netemx.ISPResolverAddress),
+		expect: nil,
+	}, {
+		name: "with empty",
+		tk:   `{"client_resolver":""}`,
+		expect: fmt.Errorf(
+			"%w: expected '%s', got ''",
+			webconnectivityqa.ErrCheckerInvalidClientResolver,
+			netemx.ISPResolverAddress,
+		),
+	}, {
+		name: "with different value",
+		tk:   `{"client_resolver":"10.0.0.1"}`,
+		expect: fmt.Errorf(
+			"%w: expected '%s', got '%s'",
+			webconnectivityqa.ErrCheckerInvalidClientResolver,
+			netemx.ISPResolverAddress,
+			"10.0.0.1",
+		),
+	}}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var tks map[string]any
+			must.UnmarshalJSON([]byte(tc.tk), &tks)
+
+			meas := &model.Measurement{
+				TestKeys:   tks,
+				ResolverIP: netemx.ISPResolverAddress,
+			}
+
+			err := (&webconnectivityqa.ClientResolverCorrectnessChecker{}).Check(meas)
 
 			switch {
 			case tc.expect == nil && err == nil:
