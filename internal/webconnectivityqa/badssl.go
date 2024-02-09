@@ -16,7 +16,7 @@ func badSSLWithExpiredCertificate() *TestCase {
 			// nothing
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: "ssl_invalid_certificate",
 			XStatus:               16, // StatusAnomalyControlFailure
@@ -38,7 +38,7 @@ func badSSLWithWrongServerName() *TestCase {
 			// nothing
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: "ssl_invalid_hostname",
 			XStatus:               16, // StatusAnomalyControlFailure
@@ -59,7 +59,7 @@ func badSSLWithUnknownAuthorityWithConsistentDNS() *TestCase {
 			// nothing
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: "ssl_unknown_authority",
 			XStatus:               16, // StatusAnomalyControlFailure
@@ -88,7 +88,7 @@ func badSSLWithUnknownAuthorityWithInconsistentDNS() *TestCase {
 
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSConsistency:        "inconsistent",
 			HTTPExperimentFailure: "ssl_unknown_authority",
 			XStatus:               9248, // StatusExperimentHTTP | StatusAnomalyTLSHandshake | StatusAnomalyDNS

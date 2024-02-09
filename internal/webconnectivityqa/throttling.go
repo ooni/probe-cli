@@ -34,7 +34,7 @@ func throttlingWithHTTP() *TestCase {
 
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: "generic_timeout_error",
 			XBlockingFlags:        8, // AnalysisBlockingFlagHTTPBlocking
@@ -61,7 +61,7 @@ func throttlingWithHTTPS() *TestCase {
 
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: "generic_timeout_error",
 			XBlockingFlags:        8, // AnalysisBlockingFlagHTTPBlocking

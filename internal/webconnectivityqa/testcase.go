@@ -31,7 +31,12 @@ type TestCase struct {
 	ExpectErr bool
 
 	// ExpectTestKeys contains the expected test keys
-	ExpectTestKeys *testKeys
+	ExpectTestKeys *TestKeys
+
+	// Checkers contains an OPTIONAL list of checkers
+	// that perform additional parsing of the measurement
+	// to ensure that specific properties hold.
+	Checkers []Checker
 }
 
 // AllTestCases returns all the defined test cases.

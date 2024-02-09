@@ -8,7 +8,7 @@ func successWithHTTP() *TestCase {
 		Input:     "http://www.example.com/",
 		Configure: nil,
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSConsistency:  "consistent",
 			BodyLengthMatch: true,
 			BodyProportion:  1,
@@ -19,6 +19,10 @@ func successWithHTTP() *TestCase {
 			XBlockingFlags:  32,
 			Accessible:      true,
 			Blocking:        false,
+		},
+		Checkers: []Checker{
+			// See https://github.com/ooni/probe/issues/2674
+			&ReadWriteEventsExistentialChecker{},
 		},
 	}
 }
@@ -31,7 +35,7 @@ func successWithHTTPS() *TestCase {
 		Input:     "https://www.example.com/",
 		Configure: nil,
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSConsistency:  "consistent",
 			BodyLengthMatch: true,
 			BodyProportion:  1,

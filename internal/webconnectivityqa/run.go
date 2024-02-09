@@ -65,9 +65,17 @@ func MeasureTestCase(measurer model.ExperimentMeasurer, tc *TestCase) (*model.Me
 
 // RunTestCase runs a [testCase].
 func RunTestCase(measurer model.ExperimentMeasurer, tc *TestCase) error {
+	// run the test case proper to get a full OONI measurement
 	measurement, err := MeasureTestCase(measurer, tc)
 	if err != nil {
 		return err
+	}
+
+	// run each check in the list of checkers
+	for _, checker := range tc.Checkers {
+		if err := checker.Check(measurement); err != nil {
+			return err
+		}
 	}
 
 	// reduce the test keys to a common format

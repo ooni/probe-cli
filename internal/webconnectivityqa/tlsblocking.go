@@ -25,7 +25,7 @@ func tlsBlockingConnectionResetWithConsistentDNS() *TestCase {
 
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: "connection_reset",
 			XStatus:               8448, // StatusExperimentHTTP | StatusAnomalyReadWrite
@@ -63,7 +63,7 @@ func tlsBlockingConnectionResetWithInconsistentDNS() *TestCase {
 
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSConsistency:        "inconsistent",
 			HTTPExperimentFailure: "connection_reset",
 			XStatus:               8480, // StatusExperimentHTTP | StatusAnomalyReadWrite | StatusAnomalyDNS
