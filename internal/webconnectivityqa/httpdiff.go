@@ -26,7 +26,7 @@ func httpDiffWithConsistentDNS() *TestCase {
 
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "consistent",
 			BodyLengthMatch:       false,
@@ -81,7 +81,7 @@ func httpDiffWithInconsistentDNS() *TestCase {
 
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "inconsistent",
 			HTTPExperimentFailure: nil,

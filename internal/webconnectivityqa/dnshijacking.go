@@ -26,7 +26,7 @@ func dnsHijackingToProxyWithHTTPURL() *TestCase {
 
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSConsistency:  "inconsistent",
 			BodyLengthMatch: true,
 			BodyProportion:  1,
@@ -63,7 +63,7 @@ func dnsHijackingToProxyWithHTTPSURL() *TestCase {
 
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSConsistency:  "inconsistent",
 			BodyLengthMatch: true,
 			BodyProportion:  1,
@@ -97,7 +97,7 @@ func dnsHijackingToLocalhostWithHTTP() *TestCase {
 
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSConsistency: "inconsistent",
 			XDNSFlags:      5,  // AnalysisFlagDNSBogon | AnalysisDNSFlagUnexpectedAddrs
 			XBlockingFlags: 33, // AnalysisBlockingFlagDNSBlocking | AnalysisBlockingFlagSuccess
@@ -125,7 +125,7 @@ func dnsHijackingToLocalhostWithHTTPS() *TestCase {
 
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSConsistency: "inconsistent",
 			XDNSFlags:      5,  // AnalysisFlagDNSBogon | AnalysisDNSFlagUnexpectedAddrs
 			XBlockingFlags: 33, // AnalysisBlockingFlagDNSBlocking | AnalysisBlockingFlagSuccess

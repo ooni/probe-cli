@@ -1,20 +1,15 @@
 package webconnectivityqa
 
-import "github.com/ooni/probe-cli/v3/internal/netemx"
-
 // cloudflareCAPTCHAWithHTTP obtains the cloudflare CAPTCHA using HTTP.
 func cloudflareCAPTCHAWithHTTP() *TestCase {
 	// See https://github.com/ooni/probe/issues/2661 for an explanation of why
 	// here for now we're forced to declare "http-diff".
 	return &TestCase{
-		Name:  "cloudflareCAPTCHAWithHTTP",
-		Flags: TestCaseFlagNoV04,
-		Input: "http://www.cloudflare-cache.com/",
-		Configure: func(env *netemx.QAEnv) {
-			// nothing
-		},
+		Name:      "cloudflareCAPTCHAWithHTTP",
+		Flags:     TestCaseFlagNoV04,
+		Input:     "http://www.cloudflare-cache.com/",
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSConsistency:  "consistent",
 			StatusCodeMatch: false,
 			BodyLengthMatch: false,
@@ -31,14 +26,11 @@ func cloudflareCAPTCHAWithHTTP() *TestCase {
 // cloudflareCAPTCHAWithHTTPS obtains the cloudflare CAPTCHA using HTTPS.
 func cloudflareCAPTCHAWithHTTPS() *TestCase {
 	return &TestCase{
-		Name:  "cloudflareCAPTCHAWithHTTPS",
-		Flags: TestCaseFlagNoV04,
-		Input: "https://www.cloudflare-cache.com/",
-		Configure: func(env *netemx.QAEnv) {
-			// nothing
-		},
+		Name:      "cloudflareCAPTCHAWithHTTPS",
+		Flags:     TestCaseFlagNoV04,
+		Input:     "https://www.cloudflare-cache.com/",
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSConsistency:  "consistent",
 			StatusCodeMatch: false,
 			BodyLengthMatch: false,

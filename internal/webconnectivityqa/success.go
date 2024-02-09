@@ -8,7 +8,7 @@ func successWithHTTP() *TestCase {
 		Input:     "http://www.example.com/",
 		Configure: nil,
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSConsistency:  "consistent",
 			BodyLengthMatch: true,
 			BodyProportion:  1,
@@ -20,6 +20,7 @@ func successWithHTTP() *TestCase {
 			Accessible:      true,
 			Blocking:        false,
 		},
+		Checkers: []Checker{&ReadWriteEventsExistentialChecker{}},
 	}
 }
 
@@ -31,7 +32,7 @@ func successWithHTTPS() *TestCase {
 		Input:     "https://www.example.com/",
 		Configure: nil,
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSConsistency:  "consistent",
 			BodyLengthMatch: true,
 			BodyProportion:  1,

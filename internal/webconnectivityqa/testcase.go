@@ -1,6 +1,8 @@
 package webconnectivityqa
 
-import "github.com/ooni/probe-cli/v3/internal/netemx"
+import (
+	"github.com/ooni/probe-cli/v3/internal/netemx"
+)
 
 const (
 	// TestCaseFlagNoV04 means that this test case should not be run by v0.4
@@ -31,7 +33,14 @@ type TestCase struct {
 	ExpectErr bool
 
 	// ExpectTestKeys contains the expected test keys
-	ExpectTestKeys *testKeys
+	ExpectTestKeys *TestKeys
+
+	// Checkers contains an OPTIONAL list of functions
+	// that perform additional parsing of the measurement.
+	//
+	// Each function is expected to perform additional quality
+	// checks and return an explanatory error on failure.
+	Checkers []Checker
 }
 
 // AllTestCases returns all the defined test cases.

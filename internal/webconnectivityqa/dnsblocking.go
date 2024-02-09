@@ -20,7 +20,7 @@ func dnsBlockingAndroidDNSCacheNoData() *TestCase {
 			env.ISPResolverConfig().RemoveRecord("www.example.com")
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSExperimentFailure:  "android_dns_cache_no_data",
 			HTTPExperimentFailure: "android_dns_cache_no_data",
 			DNSConsistency:        "inconsistent",
@@ -52,7 +52,7 @@ func dnsBlockingNXDOMAIN() *TestCase {
 			env.ISPResolverConfig().RemoveRecord("www.example.com")
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSExperimentFailure:  "dns_nxdomain_error",
 			HTTPExperimentFailure: "dns_nxdomain_error",
 			DNSConsistency:        "inconsistent",
@@ -76,7 +76,7 @@ func dnsBlockingBOGON() *TestCase {
 			env.ISPResolverConfig().AddRecord("www.example.com", "", "10.10.34.35")
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			HTTPExperimentFailure: "generic_timeout_error",
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "inconsistent",

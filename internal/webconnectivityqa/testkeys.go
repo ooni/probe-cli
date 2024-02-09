@@ -10,8 +10,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// testKeys is the test keys structure returned by this package.
-type testKeys struct {
+// TestKeys is the test keys structure returned by this package.
+type TestKeys struct {
 	// XExperimentVersion is the experiment version.
 	XExperimentVersion string `json:"x_experiment_version"`
 
@@ -52,9 +52,9 @@ type testKeys struct {
 }
 
 // newTestKeys constructs the test keys from the measurement.
-func newTestKeys(measurement *model.Measurement) *testKeys {
+func newTestKeys(measurement *model.Measurement) *TestKeys {
 	rawTk := runtimex.Try1(json.Marshal(measurement.TestKeys))
-	var tk testKeys
+	var tk TestKeys
 	runtimex.Try0(json.Unmarshal(rawTk, &tk))
 	tk.XExperimentVersion = measurement.TestVersion
 	return &tk
@@ -62,20 +62,20 @@ func newTestKeys(measurement *model.Measurement) *testKeys {
 
 // compareTestKeys compares two testKeys instances. It returns an error in
 // case of a mismatch and returns nil otherwise.
-func compareTestKeys(expected, got *testKeys) error {
+func compareTestKeys(expected, got *TestKeys) error {
 	// always ignore the experiment version because it is not set inside the expected value
 	options := []cmp.Option{
-		cmpopts.IgnoreFields(testKeys{}, "XExperimentVersion"),
+		cmpopts.IgnoreFields(TestKeys{}, "XExperimentVersion"),
 	}
 
 	switch got.XExperimentVersion {
 	case "0.4.3":
 		// ignore the fields that are specific to LTE
-		options = append(options, cmpopts.IgnoreFields(testKeys{}, "XDNSFlags", "XBlockingFlags", "XNullNullFlags"))
+		options = append(options, cmpopts.IgnoreFields(TestKeys{}, "XDNSFlags", "XBlockingFlags", "XNullNullFlags"))
 
 	case "0.5.28":
 		// ignore the fields that are specific to v0.4
-		options = append(options, cmpopts.IgnoreFields(testKeys{}, "XStatus"))
+		options = append(options, cmpopts.IgnoreFields(TestKeys{}, "XStatus"))
 
 	default:
 		return fmt.Errorf("unknown experiment version: %s", got.XExperimentVersion)

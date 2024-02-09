@@ -31,7 +31,7 @@ func ghostDNSBlockingWithHTTP() *TestCase {
 			})
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSExperimentFailure: nil,
 			DNSConsistency:       "inconsistent",
 			XBlockingFlags:       16, // AnalysisBlockingFlagHTTPDiff
@@ -68,7 +68,7 @@ func ghostDNSBlockingWithHTTPS() *TestCase {
 			})
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "inconsistent",
 			HTTPExperimentFailure: "connection_refused",
