@@ -131,7 +131,14 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	tcpDialer := trace.NewDialerWithoutResolver(t.Logger)
 	tcpConn, err := tcpDialer.DialContext(tcpCtx, "tcp", t.Address)
 	t.TestKeys.AppendTCPConnectResults(trace.TCPConnects()...)
-	defer t.TestKeys.AppendNetworkEvents(trace.NetworkEvents()...) // here to include "connect" events
+	defer func() {
+		// BUGFIX: we must call trace.NetworkEvents()... inside the defer block otherwise
+		// we miss the read/write network events. See https://github.com/ooni/probe/issues/2674.
+		//
+		// Additionally, we must register this defer here because we want to include
+		// the "connect" event in case connect has failed.
+		t.TestKeys.AppendNetworkEvents(trace.NetworkEvents()...)
+	}()
 	if err != nil {
 		ol.Stop(err)
 		return err

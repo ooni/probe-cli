@@ -32,7 +32,7 @@ func redirectWithConsistentDNSAndThenConnectionRefusedForHTTP() *TestCase {
 
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: "connection_refused",
@@ -70,7 +70,7 @@ func redirectWithConsistentDNSAndThenConnectionRefusedForHTTPS() *TestCase {
 
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: "connection_refused",
@@ -108,7 +108,7 @@ func redirectWithConsistentDNSAndThenConnectionResetForHTTP() *TestCase {
 
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: "connection_reset",
@@ -146,7 +146,7 @@ func redirectWithConsistentDNSAndThenConnectionResetForHTTPS() *TestCase {
 
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: "connection_reset",
@@ -177,7 +177,7 @@ func redirectWithConsistentDNSAndThenNXDOMAIN() *TestCase {
 
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: "dns_nxdomain_error",
@@ -215,7 +215,7 @@ func redirectWithConsistentDNSAndThenEOFForHTTP() *TestCase {
 
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: "eof_error",
@@ -253,7 +253,7 @@ func redirectWithConsistentDNSAndThenEOFForHTTPS() *TestCase {
 
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: "eof_error",
@@ -292,7 +292,7 @@ func redirectWithConsistentDNSAndThenTimeoutForHTTP() *TestCase {
 
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: "generic_timeout_error",
@@ -331,7 +331,7 @@ func redirectWithConsistentDNSAndThenTimeoutForHTTPS() *TestCase {
 
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: "generic_timeout_error",
@@ -350,15 +350,12 @@ func redirectWithConsistentDNSAndThenTimeoutForHTTPS() *TestCase {
 // See https://github.com/ooni/probe/issues/2628 for more info.
 func redirectWithBrokenLocationForHTTP() *TestCase {
 	return &TestCase{
-		Name:     "redirectWithBrokenLocationForHTTP",
-		Flags:    TestCaseFlagNoV04,
-		Input:    "http://httpbin.com/broken-redirect-http",
-		LongTest: true,
-		Configure: func(env *netemx.QAEnv) {
-			// nothing
-		},
+		Name:      "redirectWithBrokenLocationForHTTP",
+		Flags:     TestCaseFlagNoV04,
+		Input:     "http://httpbin.com/broken-redirect-http",
+		LongTest:  true,
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: netxlite.FailureHTTPInvalidRedirectLocationHost,
@@ -377,15 +374,12 @@ func redirectWithBrokenLocationForHTTP() *TestCase {
 // See https://github.com/ooni/probe/issues/2628 for more info.
 func redirectWithBrokenLocationForHTTPS() *TestCase {
 	return &TestCase{
-		Name:     "redirectWithBrokenLocationForHTTPS",
-		Flags:    TestCaseFlagNoV04,
-		Input:    "https://httpbin.com/broken-redirect-https",
-		LongTest: true,
-		Configure: func(env *netemx.QAEnv) {
-			// nothing
-		},
+		Name:      "redirectWithBrokenLocationForHTTPS",
+		Flags:     TestCaseFlagNoV04,
+		Input:     "https://httpbin.com/broken-redirect-https",
+		LongTest:  true,
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: netxlite.FailureHTTPInvalidRedirectLocationHost,

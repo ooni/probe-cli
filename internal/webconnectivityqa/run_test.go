@@ -18,7 +18,7 @@ func TestRunTestCase(t *testing.T) {
 			Input:          "",
 			Configure:      nil,
 			ExpectErr:      false,
-			ExpectTestKeys: &testKeys{},
+			ExpectTestKeys: &TestKeys{},
 		}
 		measurer := &mocks.ExperimentMeasurer{
 			MockExperimentName: func() string {
@@ -43,7 +43,7 @@ func TestRunTestCase(t *testing.T) {
 			Input:          "",
 			Configure:      nil,
 			ExpectErr:      true,
-			ExpectTestKeys: &testKeys{},
+			ExpectTestKeys: &TestKeys{},
 		}
 		measurer := &mocks.ExperimentMeasurer{
 			MockExperimentName: func() string {
@@ -68,7 +68,7 @@ func TestRunTestCase(t *testing.T) {
 			Input:     "",
 			Configure: nil,
 			ExpectErr: false,
-			ExpectTestKeys: &testKeys{
+			ExpectTestKeys: &TestKeys{
 				Accessible: true,
 				Blocking:   nil,
 			},
@@ -81,7 +81,7 @@ func TestRunTestCase(t *testing.T) {
 				return "0.4.3"
 			},
 			MockRun: func(ctx context.Context, args *model.ExperimentArgs) error {
-				args.Measurement.TestKeys = &testKeys{}
+				args.Measurement.TestKeys = &TestKeys{}
 				return nil
 			},
 		}
@@ -97,7 +97,7 @@ func TestRunTestCase(t *testing.T) {
 			Input:     "",
 			Configure: nil,
 			ExpectErr: false,
-			ExpectTestKeys: &testKeys{
+			ExpectTestKeys: &TestKeys{
 				Accessible: false,
 				Blocking:   "http-diff",
 			},
@@ -110,7 +110,7 @@ func TestRunTestCase(t *testing.T) {
 				return "0.4.3"
 			},
 			MockRun: func(ctx context.Context, args *model.ExperimentArgs) error {
-				args.Measurement.TestKeys = &testKeys{
+				args.Measurement.TestKeys = &TestKeys{
 					Accessible: false,
 				}
 				return nil
@@ -128,7 +128,7 @@ func TestRunTestCase(t *testing.T) {
 			Input:     "",
 			Configure: nil,
 			ExpectErr: false,
-			ExpectTestKeys: &testKeys{
+			ExpectTestKeys: &TestKeys{
 				Accessible: false,
 				Blocking:   true,
 				XStatus:    100,
@@ -142,7 +142,7 @@ func TestRunTestCase(t *testing.T) {
 				return "0.4.3"
 			},
 			MockRun: func(ctx context.Context, args *model.ExperimentArgs) error {
-				args.Measurement.TestKeys = &testKeys{
+				args.Measurement.TestKeys = &TestKeys{
 					Accessible: false,
 					Blocking:   true,
 					XStatus:    101,
@@ -162,7 +162,7 @@ func TestRunTestCase(t *testing.T) {
 			Input:     "",
 			Configure: nil,
 			ExpectErr: false,
-			ExpectTestKeys: &testKeys{
+			ExpectTestKeys: &TestKeys{
 				Accessible: false,
 				Blocking:   true,
 				XStatus:    100,
@@ -176,7 +176,7 @@ func TestRunTestCase(t *testing.T) {
 				return "0.4.3"
 			},
 			MockRun: func(ctx context.Context, args *model.ExperimentArgs) error {
-				args.Measurement.TestKeys = &testKeys{
+				args.Measurement.TestKeys = &TestKeys{
 					Accessible: false,
 					Blocking:   true,
 					XStatus:    100,
@@ -197,7 +197,7 @@ func TestRunTestCase(t *testing.T) {
 			Input:     "",
 			Configure: nil,
 			ExpectErr: false,
-			ExpectTestKeys: &testKeys{
+			ExpectTestKeys: &TestKeys{
 				Accessible: false,
 				Blocking:   true,
 				XDNSFlags:  11,
@@ -211,7 +211,7 @@ func TestRunTestCase(t *testing.T) {
 				return "0.5.28"
 			},
 			MockRun: func(ctx context.Context, args *model.ExperimentArgs) error {
-				args.Measurement.TestKeys = &testKeys{
+				args.Measurement.TestKeys = &TestKeys{
 					Accessible: false,
 					Blocking:   true,
 					XDNSFlags:  10,
@@ -232,7 +232,7 @@ func TestRunTestCase(t *testing.T) {
 			Input:     "",
 			Configure: nil,
 			ExpectErr: false,
-			ExpectTestKeys: &testKeys{
+			ExpectTestKeys: &TestKeys{
 				Accessible:     false,
 				Blocking:       true,
 				XDNSFlags:      10,
@@ -247,7 +247,7 @@ func TestRunTestCase(t *testing.T) {
 				return "0.5.28"
 			},
 			MockRun: func(ctx context.Context, args *model.ExperimentArgs) error {
-				args.Measurement.TestKeys = &testKeys{
+				args.Measurement.TestKeys = &TestKeys{
 					Accessible:     false,
 					Blocking:       true,
 					XDNSFlags:      10,
@@ -269,7 +269,7 @@ func TestRunTestCase(t *testing.T) {
 			Input:     "",
 			Configure: nil,
 			ExpectErr: false,
-			ExpectTestKeys: &testKeys{
+			ExpectTestKeys: &TestKeys{
 				Accessible:     false,
 				Blocking:       true,
 				XDNSFlags:      10,
@@ -285,7 +285,7 @@ func TestRunTestCase(t *testing.T) {
 				return "0.5.28"
 			},
 			MockRun: func(ctx context.Context, args *model.ExperimentArgs) error {
-				args.Measurement.TestKeys = &testKeys{
+				args.Measurement.TestKeys = &TestKeys{
 					Accessible:     false,
 					Blocking:       true,
 					XDNSFlags:      10,
@@ -307,7 +307,7 @@ func TestRunTestCase(t *testing.T) {
 			Input:     "",
 			Configure: nil,
 			ExpectErr: false,
-			ExpectTestKeys: &testKeys{
+			ExpectTestKeys: &TestKeys{
 				Accessible:     false,
 				Blocking:       true,
 				XDNSFlags:      10,
@@ -323,7 +323,7 @@ func TestRunTestCase(t *testing.T) {
 				return "0.5.28"
 			},
 			MockRun: func(ctx context.Context, args *model.ExperimentArgs) error {
-				args.Measurement.TestKeys = &testKeys{
+				args.Measurement.TestKeys = &TestKeys{
 					Accessible:     false,
 					Blocking:       true,
 					XDNSFlags:      10,
@@ -345,7 +345,7 @@ func TestRunTestCase(t *testing.T) {
 			Input:     "",
 			Configure: nil,
 			ExpectErr: false,
-			ExpectTestKeys: &testKeys{
+			ExpectTestKeys: &TestKeys{
 				Accessible: false,
 				Blocking:   true,
 			},
@@ -358,7 +358,7 @@ func TestRunTestCase(t *testing.T) {
 				return "0.2.11"
 			},
 			MockRun: func(ctx context.Context, args *model.ExperimentArgs) error {
-				args.Measurement.TestKeys = &testKeys{
+				args.Measurement.TestKeys = &TestKeys{
 					Accessible: false,
 					Blocking:   true,
 				}
@@ -380,7 +380,7 @@ func TestRunTestCase(t *testing.T) {
 				called = true
 			},
 			ExpectErr: false,
-			ExpectTestKeys: &testKeys{
+			ExpectTestKeys: &TestKeys{
 				Accessible: true,
 				Blocking:   nil,
 			},
@@ -393,7 +393,7 @@ func TestRunTestCase(t *testing.T) {
 				return "0.5.28"
 			},
 			MockRun: func(ctx context.Context, args *model.ExperimentArgs) error {
-				args.Measurement.TestKeys = &testKeys{
+				args.Measurement.TestKeys = &TestKeys{
 					Accessible: true,
 					Blocking:   nil,
 				}

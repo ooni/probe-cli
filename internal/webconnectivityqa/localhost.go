@@ -16,7 +16,7 @@ func localhostWithHTTP() *TestCase {
 
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSConsistency: "consistent",
 			XDNSFlags:      1, // AnalysisFlagDNSBogon
 			Accessible:     false,
@@ -39,7 +39,7 @@ func localhostWithHTTPS() *TestCase {
 
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSConsistency: "consistent",
 			XDNSFlags:      1, // AnalysisFlagDNSBogon
 			Accessible:     false,

@@ -23,7 +23,7 @@ func tcpBlockingConnectTimeout() *TestCase {
 			})
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: "generic_timeout_error",
@@ -62,7 +62,7 @@ func tcpBlockingConnectionRefusedWithInconsistentDNS() *TestCase {
 
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "inconsistent",
 			HTTPExperimentFailure: "connection_refused",

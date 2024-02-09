@@ -27,7 +27,7 @@ func websiteDownNXDOMAIN() *TestCase {
 		Input:     "http://www.example.xyz/", // domain not defined in the simulation
 		Configure: nil,
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSExperimentFailure:  "dns_nxdomain_error",
 			HTTPExperimentFailure: "dns_nxdomain_error",
 			DNSConsistency:        "consistent",
@@ -51,7 +51,7 @@ func websiteDownTCPConnect() *TestCase {
 		Input:     "http://www.example.com:444/", // port where we're not listening.
 		Configure: nil,
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			HTTPExperimentFailure: "connection_refused",
 			DNSConsistency:        "consistent",
 			XStatus:               2052, // StatusExperimentDNS | StatusSuccessNXDOMAIN
@@ -78,7 +78,7 @@ func websiteDownNoAddrs() *TestCase {
 
 		},
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSExperimentFailure: "dns_no_answer",
 			DNSConsistency:       "consistent",
 			XBlockingFlags:       0,

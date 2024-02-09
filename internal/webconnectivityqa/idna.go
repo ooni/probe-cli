@@ -1,20 +1,13 @@
 package webconnectivityqa
 
-import (
-	"github.com/ooni/probe-cli/v3/internal/netemx"
-)
-
 // idnaWithoutCensorshipLowercase verifies that we can handle IDNA with lowercase.
 func idnaWithoutCensorshipLowercase() *TestCase {
 	return &TestCase{
-		Name:  "idnaWithoutCensorshipLowercase",
-		Flags: TestCaseFlagNoV04,
-		Input: "http://яндекс.рф/",
-		Configure: func(env *netemx.QAEnv) {
-			// nothing
-		},
+		Name:      "idnaWithoutCensorshipLowercase",
+		Flags:     TestCaseFlagNoV04,
+		Input:     "http://яндекс.рф/",
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: nil,
@@ -34,14 +27,11 @@ func idnaWithoutCensorshipLowercase() *TestCase {
 // with the first letter being uppercase.
 func idnaWithoutCensorshipWithFirstLetterUppercase() *TestCase {
 	return &TestCase{
-		Name:  "idnaWithoutCensorshipWithFirstLetterUppercase",
-		Flags: TestCaseFlagNoV04,
-		Input: "http://Яндекс.рф/",
-		Configure: func(env *netemx.QAEnv) {
-			// nothing
-		},
+		Name:      "idnaWithoutCensorshipWithFirstLetterUppercase",
+		Flags:     TestCaseFlagNoV04,
+		Input:     "http://Яндекс.рф/",
 		ExpectErr: false,
-		ExpectTestKeys: &testKeys{
+		ExpectTestKeys: &TestKeys{
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: nil,
