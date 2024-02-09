@@ -1,5 +1,13 @@
 package webconnectivityqa
 
+var successCheckers = []Checker{
+	// See https://github.com/ooni/probe/issues/2674
+	&ReadWriteEventsExistentialChecker{},
+
+	// See https://github.com/ooni/probe/issues/2676
+	&ClientResolverCorrectnessChecker{},
+}
+
 // successWithHTTP ensures we can successfully measure an HTTP URL.
 func successWithHTTP() *TestCase {
 	return &TestCase{
@@ -20,10 +28,7 @@ func successWithHTTP() *TestCase {
 			Accessible:      true,
 			Blocking:        false,
 		},
-		Checkers: []Checker{
-			// See https://github.com/ooni/probe/issues/2674
-			&ReadWriteEventsExistentialChecker{},
-		},
+		Checkers: successCheckers,
 	}
 }
 
@@ -47,5 +52,6 @@ func successWithHTTPS() *TestCase {
 			Accessible:      true,
 			Blocking:        false,
 		},
+		Checkers: successCheckers,
 	}
 }
