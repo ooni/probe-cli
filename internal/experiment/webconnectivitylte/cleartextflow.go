@@ -125,7 +125,12 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) error {
 	tcpConn, err := tcpDialer.DialContext(tcpCtx, "tcp", t.Address)
 	t.TestKeys.AppendTCPConnectResults(trace.TCPConnects()...)
 	defer func() {
-		t.TestKeys.AppendNetworkEvents(trace.NetworkEvents()...) // here to include "connect" events
+		// BUGFIX: we must call trace.NetworkEvents()... inside the defer block otherwise
+		// we miss the read/write network events. See https://github.com/ooni/probe/issues/2674.
+		//
+		// Additionally, we must register this defer here because we want to include
+		// the "connect" event in case connect has failed.
+		t.TestKeys.AppendNetworkEvents(trace.NetworkEvents()...)
 	}()
 	if err != nil {
 		ol.Stop(err)
