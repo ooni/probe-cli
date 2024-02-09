@@ -33,11 +33,9 @@ type TestCase struct {
 	// ExpectTestKeys contains the expected test keys
 	ExpectTestKeys *TestKeys
 
-	// Checkers contains an OPTIONAL list of functions
-	// that perform additional parsing of the measurement.
-	//
-	// Each function is expected to perform additional quality
-	// checks and return an explanatory error on failure.
+	// Checkers contains an OPTIONAL list of checkers
+	// that perform additional parsing of the measurement
+	// to ensure that specific properties hold.
 	Checkers []Checker
 }
 
