@@ -315,7 +315,7 @@
             ],
             [
               "Date",
-              "Mon, 12 Feb 2024 21:24:28 GMT"
+              "Mon, 12 Feb 2024 21:26:20 GMT"
             ],
             [
               "Location",
@@ -324,7 +324,7 @@
           ],
           "headers": {
             "Content-Length": "0",
-            "Date": "Mon, 12 Feb 2024 21:24:28 GMT",
+            "Date": "Mon, 12 Feb 2024 21:26:20 GMT",
             "Location": "http://www.example.com/"
           }
         },

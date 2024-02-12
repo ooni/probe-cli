@@ -85,7 +85,7 @@
       "HTTPRequestURL": "https://largefile.com/",
       "HTTPFailure": "",
       "HTTPResponseStatusCode": 200,
-      "HTTPResponseBodyLength": 524366,
+      "HTTPResponseBodyLength": 524335,
       "HTTPResponseBodyIsTruncated": true,
       "HTTPResponseHeadersKeys": {
         "Alt-Svc": true,
