@@ -32,6 +32,14 @@ func SortDNSLookupResults(inputs []*model.ArchivalDNSLookupResult) (outputs []*m
 			return false
 		}
 
+		// we want A entries to appear before AAAA entries
+		if left.QueryType < right.QueryType {
+			return true
+		}
+		if left.QueryType > right.QueryType {
+			return false
+		}
+
 		// we want entries that are successful to appear first
 		fsget := func(value *string) string {
 			if value == nil {
