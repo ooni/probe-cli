@@ -126,6 +126,7 @@ func SortTLSHandshakeResults(
 	sort.SliceStable(outputs, func(i, j int) bool {
 		left, right := outputs[i], outputs[j]
 
+		// we sort by endpoint address to significantly reduce the churn
 		if left.Address < right.Address {
 			return true
 		}
