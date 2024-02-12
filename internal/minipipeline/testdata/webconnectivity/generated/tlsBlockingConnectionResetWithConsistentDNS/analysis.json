@@ -7,18 +7,18 @@
   },
   "DNSLookupSuccess": [
     1,
-    2
+    10001
   ],
   "DNSLookupSuccessWithInvalidAddresses": [],
   "DNSLookupSuccessWithValidAddress": [
     1,
-    2
+    10001
   ],
   "DNSLookupSuccessWithBogonAddresses": [],
   "DNSLookupSuccessWithInvalidAddressesClassic": [],
   "DNSLookupSuccessWithValidAddressClassic": [
     1,
-    2
+    10001
   ],
   "DNSLookupUnexpectedFailure": [],
   "DNSLookupUnexplainedFailure": [],
@@ -34,10 +34,10 @@
   "TCPConnectUnexplainedFailureDuringConnectivityCheck": [],
   "TLSHandshakeExpectedFailure": [],
   "TLSHandshakeUnexpectedFailure": [
-    3
+    40001
   ],
   "TLSHandshakeUnexpectedFailureDuringWebFetch": [
-    3
+    40001
   ],
   "TLSHandshakeUnexpectedFailureDuringConnectivityCheck": [],
   "TLSHandshakeUnexplainedFailure": [],
@@ -58,7 +58,7 @@
       "TagDepth": 0,
       "Type": 2,
       "Failure": "connection_reset",
-      "TransactionID": 3,
+      "TransactionID": 40001,
       "TagFetchBody": true,
       "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
@@ -72,7 +72,7 @@
       "IPAddress": "93.184.216.34",
       "IPAddressASN": 15133,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 3,
+      "EndpointTransactionID": 40001,
       "EndpointProto": "tcp",
       "EndpointPort": "443",
       "EndpointAddress": "93.184.216.34:443",
@@ -110,9 +110,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 2,
+      "TransactionID": 10001,
       "TagFetchBody": null,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 10001,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
@@ -214,9 +214,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "dns_no_answer",
-      "TransactionID": 2,
+      "TransactionID": 10001,
       "TagFetchBody": null,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 10001,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",

@@ -7,16 +7,16 @@
     "FinalResponseFailure": ""
   },
   "DNSLookupSuccess": [
-    2
+    1
   ],
   "DNSLookupSuccessWithInvalidAddresses": [],
   "DNSLookupSuccessWithValidAddress": [
-    2
+    1
   ],
   "DNSLookupSuccessWithBogonAddresses": [],
   "DNSLookupSuccessWithInvalidAddressesClassic": [],
   "DNSLookupSuccessWithValidAddressClassic": [
-    2
+    1
   ],
   "DNSLookupUnexpectedFailure": [],
   "DNSLookupUnexplainedFailure": [],
@@ -38,7 +38,7 @@
   "TLSHandshakeUnexplainedFailureDuringWebFetch": [],
   "TLSHandshakeUnexplainedFailureDuringConnectivityCheck": [],
   "HTTPRoundTripUnexpectedFailure": [
-    3
+    30002
   ],
   "HTTPRoundTripUnexplainedFailure": [],
   "HTTPFinalResponseSuccessTLSWithoutControl": null,
@@ -54,9 +54,9 @@
       "TagDepth": 0,
       "Type": 3,
       "Failure": "generic_timeout_error",
-      "TransactionID": 3,
+      "TransactionID": 30002,
       "TagFetchBody": true,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "largefile.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -69,7 +69,7 @@
       "IPAddress": "35.161.85.189",
       "IPAddressASN": 16509,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 3,
+      "EndpointTransactionID": 30002,
       "EndpointProto": "tcp",
       "EndpointPort": "80",
       "EndpointAddress": "35.161.85.189:80",
@@ -107,9 +107,9 @@
       "TagDepth": 0,
       "Type": 1,
       "Failure": "",
-      "TransactionID": 4,
+      "TransactionID": 30001,
       "TagFetchBody": true,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "largefile.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -122,7 +122,7 @@
       "IPAddress": "52.35.36.75",
       "IPAddressASN": 16509,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 4,
+      "EndpointTransactionID": 30001,
       "EndpointProto": "tcp",
       "EndpointPort": "80",
       "EndpointAddress": "52.35.36.75:80",
@@ -160,9 +160,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 2,
+      "TransactionID": 1,
       "TagFetchBody": null,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "largefile.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -213,9 +213,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 2,
+      "TransactionID": 1,
       "TagFetchBody": null,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "largefile.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",

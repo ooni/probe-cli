@@ -14,7 +14,7 @@
   "DNSExperimentFailure": "dns_no_answer",
   "DNSLookupExpectedFailure": [
     1,
-    2
+    10001
   ],
   "DNSLookupExpectedSuccess": [],
   "TCPConnectExpectedFailure": [],
@@ -46,9 +46,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "dns_no_answer",
-      "TransactionID": 2,
+      "TransactionID": 10001,
       "TagFetchBody": null,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 10001,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "A",
@@ -89,9 +89,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "dns_no_answer",
-      "TransactionID": 2,
+      "TransactionID": 10001,
       "TagFetchBody": null,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 10001,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",

@@ -5,9 +5,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 2,
+      "TransactionID": 1,
       "TagFetchBody": null,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "itsat.info",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -48,13 +48,13 @@
     }
   ],
   "KnownTCPEndpoints": {
-    "3": {
+    "30001": {
       "TagDepth": 0,
       "Type": 3,
       "Failure": "",
-      "TransactionID": 3,
+      "TransactionID": 30001,
       "TagFetchBody": true,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "itsat.info",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -66,7 +66,7 @@
       "IPAddress": "83.224.65.41",
       "IPAddressASN": 30722,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 3,
+      "EndpointTransactionID": 30001,
       "EndpointProto": "tcp",
       "EndpointPort": "80",
       "EndpointAddress": "83.224.65.41:80",

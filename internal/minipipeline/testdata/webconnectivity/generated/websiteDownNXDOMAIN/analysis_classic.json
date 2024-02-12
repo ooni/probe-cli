@@ -13,7 +13,7 @@
   "DNSLookupUnexplainedFailure": [],
   "DNSExperimentFailure": "dns_nxdomain_error",
   "DNSLookupExpectedFailure": [
-    2
+    1
   ],
   "DNSLookupExpectedSuccess": [],
   "TCPConnectExpectedFailure": [],
@@ -45,9 +45,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "dns_nxdomain_error",
-      "TransactionID": 2,
+      "TransactionID": 1,
       "TagFetchBody": null,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.xyz",
       "DNSLookupFailure": "dns_nxdomain_error",
       "DNSQueryType": "ANY",

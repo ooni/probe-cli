@@ -6,15 +6,15 @@
     "FinalResponseFailure": ""
   },
   "DNSLookupSuccess": [
-    2
+    1
   ],
   "DNSLookupSuccessWithInvalidAddresses": [
-    2
+    1
   ],
   "DNSLookupSuccessWithValidAddress": [],
   "DNSLookupSuccessWithBogonAddresses": [],
   "DNSLookupSuccessWithInvalidAddressesClassic": [
-    2
+    1
   ],
   "DNSLookupSuccessWithValidAddressClassic": [],
   "DNSLookupUnexpectedFailure": [],
@@ -41,7 +41,7 @@
   "HTTPFinalResponseSuccessTLSWithoutControl": null,
   "HTTPFinalResponseSuccessTLSWithControl": null,
   "HTTPFinalResponseSuccessTCPWithoutControl": null,
-  "HTTPFinalResponseSuccessTCPWithControl": 3,
+  "HTTPFinalResponseSuccessTCPWithControl": 30001,
   "HTTPFinalResponseDiffBodyProportionFactor": 0.12263535551206783,
   "HTTPFinalResponseDiffStatusCodeMatch": true,
   "HTTPFinalResponseDiffTitleDifferentLongWords": {
@@ -55,9 +55,9 @@
       "TagDepth": 0,
       "Type": 3,
       "Failure": "",
-      "TransactionID": 3,
+      "TransactionID": 30001,
       "TagFetchBody": true,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -69,7 +69,7 @@
       "IPAddress": "130.192.182.17",
       "IPAddressASN": 137,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 3,
+      "EndpointTransactionID": 30001,
       "EndpointProto": "tcp",
       "EndpointPort": "80",
       "EndpointAddress": "130.192.182.17:80",
@@ -107,9 +107,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 2,
+      "TransactionID": 1,
       "TagFetchBody": null,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
