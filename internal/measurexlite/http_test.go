@@ -69,6 +69,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 			},
 			Response: model.ArchivalHTTPResponse{
 				Body:            model.ArchivalScrubbedMaybeBinaryString(""),
+				BodyLength:      0,
 				BodyIsTruncated: false,
 				Code:            0,
 				HeadersList:     []model.ArchivalHTTPHeader{},
@@ -137,6 +138,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 			},
 			Response: model.ArchivalHTTPResponse{
 				Body:            model.ArchivalScrubbedMaybeBinaryString(""),
+				BodyLength:      0,
 				BodyIsTruncated: false,
 				Code:            0,
 				HeadersList:     []model.ArchivalHTTPHeader{},
@@ -210,6 +212,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 				Body: model.ArchivalScrubbedMaybeBinaryString(
 					testingx.HTTPBlockpage451,
 				),
+				BodyLength:      int64(len(testingx.HTTPBlockpage451)),
 				BodyIsTruncated: false,
 				Code:            200,
 				HeadersList: []model.ArchivalHTTPHeader{{
@@ -298,6 +301,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 			},
 			Response: model.ArchivalHTTPResponse{
 				Body:            model.ArchivalScrubbedMaybeBinaryString(""),
+				BodyLength:      0,
 				BodyIsTruncated: false,
 				Code:            302,
 				HeadersList: []model.ArchivalHTTPHeader{{

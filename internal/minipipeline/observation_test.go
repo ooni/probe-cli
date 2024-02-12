@@ -211,3 +211,42 @@ func TestWebObservationsContainerIngestControlMessages(t *testing.T) {
 		}
 	})
 }
+
+func TestObservationHTTPGetResponseBodyLength(t *testing.T) {
+	type testcase struct {
+		name       string
+		bodyLength int64
+		body       string
+		expect     int64
+	}
+
+	cases := []testcase{{
+		name:       "the body length has priority",
+		bodyLength: 1024,
+		body:       "0xdeadbeef",
+		expect:     1024,
+	}, {
+		name:       "a zero body length causes us to fallback to the body",
+		bodyLength: 0,
+		body:       "0xdeadbeef",
+		expect:     10,
+	}, {
+		name:       "a negative body length (invalid) causes us to fallback to the body",
+		bodyLength: -1,
+		body:       "0xdeadbeef",
+		expect:     10,
+	}}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			resp := &model.ArchivalHTTPResponse{
+				Body:       model.ArchivalScrubbedMaybeBinaryString(tc.body),
+				BodyLength: tc.bodyLength,
+			}
+			got := observationHTTPGetResponseBodyLength(resp)
+			if v := got.Unwrap(); v != tc.expect {
+				t.Fatal("expected", tc.expect, "got", v)
+			}
+		})
+	}
+}

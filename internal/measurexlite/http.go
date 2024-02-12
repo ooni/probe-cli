@@ -62,6 +62,7 @@ func NewArchivalHTTPRequestResult(index int64, started time.Duration, network, a
 		},
 		Response: model.ArchivalHTTPResponse{
 			Body:            model.ArchivalScrubbedMaybeBinaryString(body),
+			BodyLength:      int64(len(body)),
 			BodyIsTruncated: httpResponseBodyIsTruncated(body, maxRespBodySize),
 			Code:            httpResponseStatusCode(resp),
 			HeadersList:     newHTTPResponseHeaderList(resp),
