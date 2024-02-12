@@ -409,7 +409,7 @@
     "requests": [
       {
         "network": "tcp",
-        "address": "5.255.255.88:443",
+        "address": "77.88.55.77:443",
         "alpn": "http/1.1",
         "failure": null,
         "request": {
@@ -482,17 +482,17 @@
             "Date": "Thu, 24 Aug 2023 14:35:29 GMT"
           }
         },
-        "t0": 0.098513,
-        "t": 0.104534,
+        "t0": 0.091815,
+        "t": 0.098231,
         "tags": [
           "depth=2",
           "fetch_body=true"
         ],
-        "transaction_id": 40009
+        "transaction_id": 40011
       },
       {
         "network": "tcp",
-        "address": "5.255.255.88:443",
+        "address": "77.88.55.77:443",
         "alpn": "http/1.1",
         "failure": null,
         "request": {
@@ -565,13 +565,13 @@
             "Location": "https://ya.ru/"
           }
         },
-        "t0": 0.064761,
-        "t": 0.07019,
+        "t0": 0.063906,
+        "t": 0.070099,
         "tags": [
           "depth=1",
           "fetch_body=true"
         ],
-        "transaction_id": 40006
+        "transaction_id": 40007
       },
       {
         "network": "tcp",
@@ -647,13 +647,13 @@
             "Location": "https://yandex.com/"
           }
         },
-        "t0": 0.037487,
-        "t": 0.043213,
+        "t0": 0.035893,
+        "t": 0.042347,
         "tags": [
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 30002
+        "transaction_id": 30004
       }
     ],
     "tcp_connect": [
@@ -669,7 +669,7 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 30001
+        "transaction_id": 30003
       },
       {
         "ip": "5.255.255.80",
@@ -683,7 +683,7 @@
           "depth=0",
           "fetch_body=false"
         ],
-        "transaction_id": 40001
+        "transaction_id": 40003
       },
       {
         "ip": "5.255.255.80",
@@ -711,7 +711,7 @@
           "depth=2",
           "fetch_body=true"
         ],
-        "transaction_id": 40012
+        "transaction_id": 40009
       },
       {
         "ip": "5.255.255.88",
@@ -725,7 +725,7 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 30002
+        "transaction_id": 30004
       },
       {
         "ip": "5.255.255.88",
@@ -739,7 +739,7 @@
           "depth=0",
           "fetch_body=false"
         ],
-        "transaction_id": 40002
+        "transaction_id": 40004
       },
       {
         "ip": "5.255.255.88",
@@ -767,7 +767,7 @@
           "depth=2",
           "fetch_body=true"
         ],
-        "transaction_id": 40009
+        "transaction_id": 40010
       },
       {
         "ip": "77.88.55.77",
@@ -781,7 +781,7 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 30003
+        "transaction_id": 30001
       },
       {
         "ip": "77.88.55.77",
@@ -795,7 +795,7 @@
           "depth=0",
           "fetch_body=false"
         ],
-        "transaction_id": 40003
+        "transaction_id": 40001
       },
       {
         "ip": "77.88.55.77",
@@ -823,7 +823,7 @@
           "depth=2",
           "fetch_body=true"
         ],
-        "transaction_id": 40010
+        "transaction_id": 40011
       },
       {
         "ip": "77.88.55.80",
@@ -837,7 +837,7 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 30004
+        "transaction_id": 30002
       },
       {
         "ip": "77.88.55.80",
@@ -851,7 +851,7 @@
           "depth=0",
           "fetch_body=false"
         ],
-        "transaction_id": 40004
+        "transaction_id": 40002
       },
       {
         "ip": "77.88.55.80",
@@ -879,7 +879,7 @@
           "depth=2",
           "fetch_body=true"
         ],
-        "transaction_id": 40011
+        "transaction_id": 40012
       }
     ],
     "tls_handshakes": [
@@ -898,7 +898,7 @@
           "fetch_body=false"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40001
+        "transaction_id": 40003
       },
       {
         "network": "tcp",
@@ -932,7 +932,7 @@
           "fetch_body=true"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40012
+        "transaction_id": 40009
       },
       {
         "network": "tcp",
@@ -949,7 +949,7 @@
           "fetch_body=false"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40002
+        "transaction_id": 40004
       },
       {
         "network": "tcp",
@@ -983,7 +983,7 @@
           "fetch_body=true"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40009
+        "transaction_id": 40010
       },
       {
         "network": "tcp",
@@ -1000,7 +1000,7 @@
           "fetch_body=false"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40003
+        "transaction_id": 40001
       },
       {
         "network": "tcp",
@@ -1034,7 +1034,7 @@
           "fetch_body=true"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40010
+        "transaction_id": 40011
       },
       {
         "network": "tcp",
@@ -1051,7 +1051,7 @@
           "fetch_body=false"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40004
+        "transaction_id": 40002
       },
       {
         "network": "tcp",
@@ -1085,7 +1085,7 @@
           "fetch_body=true"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40011
+        "transaction_id": 40012
       }
     ],
     "x_control_request": {
@@ -1102,14 +1102,14 @@
         ]
       },
       "tcp_connect": [
-        "5.255.255.80:443",
-        "5.255.255.80:80",
-        "5.255.255.88:443",
-        "5.255.255.88:80",
         "77.88.55.77:443",
         "77.88.55.77:80",
         "77.88.55.80:443",
-        "77.88.55.80:80"
+        "77.88.55.80:80",
+        "5.255.255.80:443",
+        "5.255.255.80:80",
+        "5.255.255.88:443",
+        "5.255.255.88:80"
       ],
       "x_quic_enabled": false
     },

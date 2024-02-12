@@ -409,7 +409,7 @@
     "requests": [
       {
         "network": "tcp",
-        "address": "77.88.55.80:443",
+        "address": "5.255.255.88:443",
         "alpn": "http/1.1",
         "failure": null,
         "request": {
@@ -482,8 +482,8 @@
             "Date": "Thu, 24 Aug 2023 14:35:29 GMT"
           }
         },
-        "t0": 0.089858,
-        "t": 0.09584,
+        "t0": 0.091749,
+        "t": 0.097818,
         "tags": [
           "depth=2",
           "fetch_body=true"
@@ -492,7 +492,7 @@
       },
       {
         "network": "tcp",
-        "address": "5.255.255.80:443",
+        "address": "77.88.55.77:443",
         "alpn": "http/1.1",
         "failure": null,
         "request": {
@@ -565,17 +565,17 @@
             "Location": "https://ya.ru/"
           }
         },
-        "t0": 0.062683,
-        "t": 0.068375,
+        "t0": 0.064232,
+        "t": 0.07038,
         "tags": [
           "depth=1",
           "fetch_body=true"
         ],
-        "transaction_id": 40005
+        "transaction_id": 40008
       },
       {
         "network": "tcp",
-        "address": "5.255.255.88:80",
+        "address": "77.88.55.77:80",
         "failure": null,
         "request": {
           "body": "",
@@ -647,13 +647,13 @@
             "Location": "https://yandex.com/"
           }
         },
-        "t0": 0.035499,
-        "t": 0.041231,
+        "t0": 0.038109,
+        "t": 0.04445,
         "tags": [
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 30001
+        "transaction_id": 30003
       }
     ],
     "tcp_connect": [
@@ -669,66 +669,10 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 30004
-      },
-      {
-        "ip": "5.255.255.80",
-        "port": 443,
-        "status": {
-          "failure": null,
-          "success": true
-        },
-        "t": 0,
-        "tags": [
-          "depth=0",
-          "fetch_body=false"
-        ],
-        "transaction_id": 40004
-      },
-      {
-        "ip": "5.255.255.80",
-        "port": 443,
-        "status": {
-          "failure": null,
-          "success": true
-        },
-        "t": 0,
-        "tags": [
-          "depth=1",
-          "fetch_body=true"
-        ],
-        "transaction_id": 40005
-      },
-      {
-        "ip": "5.255.255.80",
-        "port": 443,
-        "status": {
-          "failure": null,
-          "success": true
-        },
-        "t": 0,
-        "tags": [
-          "depth=2",
-          "fetch_body=true"
-        ],
-        "transaction_id": 40009
-      },
-      {
-        "ip": "5.255.255.88",
-        "port": 80,
-        "status": {
-          "failure": null,
-          "success": true
-        },
-        "t": 0,
-        "tags": [
-          "depth=0",
-          "fetch_body=true"
-        ],
         "transaction_id": 30001
       },
       {
-        "ip": "5.255.255.88",
+        "ip": "5.255.255.80",
         "port": 443,
         "status": {
           "failure": null,
@@ -742,7 +686,7 @@
         "transaction_id": 40001
       },
       {
-        "ip": "5.255.255.88",
+        "ip": "5.255.255.80",
         "port": 443,
         "status": {
           "failure": null,
@@ -756,63 +700,7 @@
         "transaction_id": 40006
       },
       {
-        "ip": "5.255.255.88",
-        "port": 443,
-        "status": {
-          "failure": null,
-          "success": true
-        },
-        "t": 0,
-        "tags": [
-          "depth=2",
-          "fetch_body=true"
-        ],
-        "transaction_id": 40010
-      },
-      {
-        "ip": "77.88.55.77",
-        "port": 80,
-        "status": {
-          "failure": null,
-          "success": true
-        },
-        "t": 0,
-        "tags": [
-          "depth=0",
-          "fetch_body=true"
-        ],
-        "transaction_id": 30002
-      },
-      {
-        "ip": "77.88.55.77",
-        "port": 443,
-        "status": {
-          "failure": null,
-          "success": true
-        },
-        "t": 0,
-        "tags": [
-          "depth=0",
-          "fetch_body=false"
-        ],
-        "transaction_id": 40002
-      },
-      {
-        "ip": "77.88.55.77",
-        "port": 443,
-        "status": {
-          "failure": null,
-          "success": true
-        },
-        "t": 0,
-        "tags": [
-          "depth=1",
-          "fetch_body=true"
-        ],
-        "transaction_id": 40007
-      },
-      {
-        "ip": "77.88.55.77",
+        "ip": "5.255.255.80",
         "port": 443,
         "status": {
           "failure": null,
@@ -826,7 +714,63 @@
         "transaction_id": 40011
       },
       {
-        "ip": "77.88.55.80",
+        "ip": "5.255.255.88",
+        "port": 80,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "depth=0",
+          "fetch_body=true"
+        ],
+        "transaction_id": 30002
+      },
+      {
+        "ip": "5.255.255.88",
+        "port": 443,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "depth=0",
+          "fetch_body=false"
+        ],
+        "transaction_id": 40002
+      },
+      {
+        "ip": "5.255.255.88",
+        "port": 443,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "depth=1",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40007
+      },
+      {
+        "ip": "5.255.255.88",
+        "port": 443,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "depth=2",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40012
+      },
+      {
+        "ip": "77.88.55.77",
         "port": 80,
         "status": {
           "failure": null,
@@ -840,7 +784,7 @@
         "transaction_id": 30003
       },
       {
-        "ip": "77.88.55.80",
+        "ip": "77.88.55.77",
         "port": 443,
         "status": {
           "failure": null,
@@ -854,7 +798,7 @@
         "transaction_id": 40003
       },
       {
-        "ip": "77.88.55.80",
+        "ip": "77.88.55.77",
         "port": 443,
         "status": {
           "failure": null,
@@ -868,6 +812,62 @@
         "transaction_id": 40008
       },
       {
+        "ip": "77.88.55.77",
+        "port": 443,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "depth=2",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40009
+      },
+      {
+        "ip": "77.88.55.80",
+        "port": 80,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "depth=0",
+          "fetch_body=true"
+        ],
+        "transaction_id": 30004
+      },
+      {
+        "ip": "77.88.55.80",
+        "port": 443,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "depth=0",
+          "fetch_body=false"
+        ],
+        "transaction_id": 40004
+      },
+      {
+        "ip": "77.88.55.80",
+        "port": 443,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "depth=1",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40005
+      },
+      {
         "ip": "77.88.55.80",
         "port": 443,
         "status": {
@@ -879,7 +879,7 @@
           "depth=2",
           "fetch_body=true"
         ],
-        "transaction_id": 40012
+        "transaction_id": 40010
       }
     ],
     "tls_handshakes": [
@@ -898,62 +898,11 @@
           "fetch_body=false"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40004
-      },
-      {
-        "network": "tcp",
-        "address": "5.255.255.80:443",
-        "cipher_suite": "TLS_AES_128_GCM_SHA256",
-        "failure": null,
-        "negotiated_protocol": "http/1.1",
-        "no_tls_verify": false,
-        "peer_certificates": null,
-        "server_name": "yandex.com",
-        "t": 0,
-        "tags": [
-          "depth=1",
-          "fetch_body=true"
-        ],
-        "tls_version": "TLSv1.3",
-        "transaction_id": 40005
-      },
-      {
-        "network": "tcp",
-        "address": "5.255.255.80:443",
-        "cipher_suite": "TLS_AES_128_GCM_SHA256",
-        "failure": null,
-        "negotiated_protocol": "http/1.1",
-        "no_tls_verify": false,
-        "peer_certificates": null,
-        "server_name": "ya.ru",
-        "t": 0,
-        "tags": [
-          "depth=2",
-          "fetch_body=true"
-        ],
-        "tls_version": "TLSv1.3",
-        "transaction_id": 40009
-      },
-      {
-        "network": "tcp",
-        "address": "5.255.255.88:443",
-        "cipher_suite": "TLS_AES_128_GCM_SHA256",
-        "failure": null,
-        "negotiated_protocol": "http/1.1",
-        "no_tls_verify": false,
-        "peer_certificates": null,
-        "server_name": "xn--d1acpjx3f.xn--p1ai",
-        "t": 0,
-        "tags": [
-          "depth=0",
-          "fetch_body=false"
-        ],
-        "tls_version": "TLSv1.3",
         "transaction_id": 40001
       },
       {
         "network": "tcp",
-        "address": "5.255.255.88:443",
+        "address": "5.255.255.80:443",
         "cipher_suite": "TLS_AES_128_GCM_SHA256",
         "failure": null,
         "negotiated_protocol": "http/1.1",
@@ -970,58 +919,7 @@
       },
       {
         "network": "tcp",
-        "address": "5.255.255.88:443",
-        "cipher_suite": "TLS_AES_128_GCM_SHA256",
-        "failure": null,
-        "negotiated_protocol": "http/1.1",
-        "no_tls_verify": false,
-        "peer_certificates": null,
-        "server_name": "ya.ru",
-        "t": 0,
-        "tags": [
-          "depth=2",
-          "fetch_body=true"
-        ],
-        "tls_version": "TLSv1.3",
-        "transaction_id": 40010
-      },
-      {
-        "network": "tcp",
-        "address": "77.88.55.77:443",
-        "cipher_suite": "TLS_AES_128_GCM_SHA256",
-        "failure": null,
-        "negotiated_protocol": "http/1.1",
-        "no_tls_verify": false,
-        "peer_certificates": null,
-        "server_name": "xn--d1acpjx3f.xn--p1ai",
-        "t": 0,
-        "tags": [
-          "depth=0",
-          "fetch_body=false"
-        ],
-        "tls_version": "TLSv1.3",
-        "transaction_id": 40002
-      },
-      {
-        "network": "tcp",
-        "address": "77.88.55.77:443",
-        "cipher_suite": "TLS_AES_128_GCM_SHA256",
-        "failure": null,
-        "negotiated_protocol": "http/1.1",
-        "no_tls_verify": false,
-        "peer_certificates": null,
-        "server_name": "yandex.com",
-        "t": 0,
-        "tags": [
-          "depth=1",
-          "fetch_body=true"
-        ],
-        "tls_version": "TLSv1.3",
-        "transaction_id": 40007
-      },
-      {
-        "network": "tcp",
-        "address": "77.88.55.77:443",
+        "address": "5.255.255.80:443",
         "cipher_suite": "TLS_AES_128_GCM_SHA256",
         "failure": null,
         "negotiated_protocol": "http/1.1",
@@ -1038,7 +936,58 @@
       },
       {
         "network": "tcp",
-        "address": "77.88.55.80:443",
+        "address": "5.255.255.88:443",
+        "cipher_suite": "TLS_AES_128_GCM_SHA256",
+        "failure": null,
+        "negotiated_protocol": "http/1.1",
+        "no_tls_verify": false,
+        "peer_certificates": null,
+        "server_name": "xn--d1acpjx3f.xn--p1ai",
+        "t": 0,
+        "tags": [
+          "depth=0",
+          "fetch_body=false"
+        ],
+        "tls_version": "TLSv1.3",
+        "transaction_id": 40002
+      },
+      {
+        "network": "tcp",
+        "address": "5.255.255.88:443",
+        "cipher_suite": "TLS_AES_128_GCM_SHA256",
+        "failure": null,
+        "negotiated_protocol": "http/1.1",
+        "no_tls_verify": false,
+        "peer_certificates": null,
+        "server_name": "yandex.com",
+        "t": 0,
+        "tags": [
+          "depth=1",
+          "fetch_body=true"
+        ],
+        "tls_version": "TLSv1.3",
+        "transaction_id": 40007
+      },
+      {
+        "network": "tcp",
+        "address": "5.255.255.88:443",
+        "cipher_suite": "TLS_AES_128_GCM_SHA256",
+        "failure": null,
+        "negotiated_protocol": "http/1.1",
+        "no_tls_verify": false,
+        "peer_certificates": null,
+        "server_name": "ya.ru",
+        "t": 0,
+        "tags": [
+          "depth=2",
+          "fetch_body=true"
+        ],
+        "tls_version": "TLSv1.3",
+        "transaction_id": 40012
+      },
+      {
+        "network": "tcp",
+        "address": "77.88.55.77:443",
         "cipher_suite": "TLS_AES_128_GCM_SHA256",
         "failure": null,
         "negotiated_protocol": "http/1.1",
@@ -1055,7 +1004,7 @@
       },
       {
         "network": "tcp",
-        "address": "77.88.55.80:443",
+        "address": "77.88.55.77:443",
         "cipher_suite": "TLS_AES_128_GCM_SHA256",
         "failure": null,
         "negotiated_protocol": "http/1.1",
@@ -1072,6 +1021,57 @@
       },
       {
         "network": "tcp",
+        "address": "77.88.55.77:443",
+        "cipher_suite": "TLS_AES_128_GCM_SHA256",
+        "failure": null,
+        "negotiated_protocol": "http/1.1",
+        "no_tls_verify": false,
+        "peer_certificates": null,
+        "server_name": "ya.ru",
+        "t": 0,
+        "tags": [
+          "depth=2",
+          "fetch_body=true"
+        ],
+        "tls_version": "TLSv1.3",
+        "transaction_id": 40009
+      },
+      {
+        "network": "tcp",
+        "address": "77.88.55.80:443",
+        "cipher_suite": "TLS_AES_128_GCM_SHA256",
+        "failure": null,
+        "negotiated_protocol": "http/1.1",
+        "no_tls_verify": false,
+        "peer_certificates": null,
+        "server_name": "xn--d1acpjx3f.xn--p1ai",
+        "t": 0,
+        "tags": [
+          "depth=0",
+          "fetch_body=false"
+        ],
+        "tls_version": "TLSv1.3",
+        "transaction_id": 40004
+      },
+      {
+        "network": "tcp",
+        "address": "77.88.55.80:443",
+        "cipher_suite": "TLS_AES_128_GCM_SHA256",
+        "failure": null,
+        "negotiated_protocol": "http/1.1",
+        "no_tls_verify": false,
+        "peer_certificates": null,
+        "server_name": "yandex.com",
+        "t": 0,
+        "tags": [
+          "depth=1",
+          "fetch_body=true"
+        ],
+        "tls_version": "TLSv1.3",
+        "transaction_id": 40005
+      },
+      {
+        "network": "tcp",
         "address": "77.88.55.80:443",
         "cipher_suite": "TLS_AES_128_GCM_SHA256",
         "failure": null,
@@ -1085,7 +1085,7 @@
           "fetch_body=true"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40012
+        "transaction_id": 40010
       }
     ],
     "x_control_request": {
@@ -1102,14 +1102,14 @@
         ]
       },
       "tcp_connect": [
+        "5.255.255.80:443",
+        "5.255.255.80:80",
         "5.255.255.88:443",
         "5.255.255.88:80",
         "77.88.55.77:443",
         "77.88.55.77:80",
         "77.88.55.80:443",
-        "77.88.55.80:80",
-        "5.255.255.80:443",
-        "5.255.255.80:80"
+        "77.88.55.80:80"
       ],
       "x_quic_enabled": false
     },

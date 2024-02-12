@@ -194,7 +194,7 @@
             ],
             [
               "Date",
-              "Mon, 12 Feb 2024 21:12:49 GMT"
+              "Mon, 12 Feb 2024 21:14:35 GMT"
             ],
             [
               "Location",
@@ -203,12 +203,12 @@
           ],
           "headers": {
             "Content-Length": "0",
-            "Date": "Mon, 12 Feb 2024 21:12:49 GMT",
+            "Date": "Mon, 12 Feb 2024 21:14:35 GMT",
             "Location": "http://"
           }
         },
-        "t0": 0.037081,
-        "t": 0.042551,
+        "t0": 0.037071,
+        "t": 0.042583,
         "tags": [
           "depth=0",
           "fetch_body=true"

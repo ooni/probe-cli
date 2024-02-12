@@ -251,8 +251,8 @@
           "headers_list": [],
           "headers": {}
         },
-        "t0": 0.064511,
-        "t": 0.068455,
+        "t0": 0.062712,
+        "t": 0.065819,
         "tags": [
           "depth=1",
           "fetch_body=true"
@@ -316,7 +316,7 @@
             ],
             [
               "Date",
-              "Mon, 12 Feb 2024 21:12:54 GMT"
+              "Mon, 12 Feb 2024 21:14:40 GMT"
             ],
             [
               "Location",
@@ -325,12 +325,12 @@
           ],
           "headers": {
             "Content-Length": "0",
-            "Date": "Mon, 12 Feb 2024 21:12:54 GMT",
+            "Date": "Mon, 12 Feb 2024 21:14:40 GMT",
             "Location": "http://www.example.com/"
           }
         },
-        "t0": 0.046905,
-        "t": 0.052264,
+        "t0": 0.046468,
+        "t": 0.051325,
         "tags": [
           "depth=0",
           "fetch_body=true"
