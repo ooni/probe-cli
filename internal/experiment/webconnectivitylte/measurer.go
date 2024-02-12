@@ -9,7 +9,6 @@ import (
 	"errors"
 	"net/http/cookiejar"
 	"sync"
-	"sync/atomic"
 
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/inputparser"
@@ -84,7 +83,6 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	tk.ClientResolver = sess.ResolverIP()
 
 	// create variables required to run parallel tasks
-	idGenerator := &atomic.Int64{}
 	wg := &sync.WaitGroup{}
 
 	// create cookiejar
@@ -109,7 +107,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		DNSCache:     NewDNSCache(),
 		Depth:        0,
 		Domain:       URL.Hostname(),
-		IDGenerator:  idGenerator,
+		IDGenerator:  NewIDGenerator(),
 		Logger:       sess.Logger(),
 		NumRedirects: NewNumRedirects(5),
 		TestKeys:     tk,

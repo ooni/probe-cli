@@ -14,7 +14,6 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
@@ -39,7 +38,7 @@ type CleartextFlow struct {
 	Depth int64
 
 	// IDGenerator is the MANDATORY atomic int64 to generate task IDs.
-	IDGenerator *atomic.Int64
+	IDGenerator *IDGenerator
 
 	// Logger is the MANDATORY logger to use.
 	Logger model.Logger
@@ -87,7 +86,7 @@ type CleartextFlow struct {
 // Start starts this task in a background goroutine.
 func (t *CleartextFlow) Start(ctx context.Context) {
 	t.WaitGroup.Add(1)
-	index := t.IDGenerator.Add(1)
+	index := t.IDGenerator.NewIDForEndpointCleartext()
 	go func() {
 		defer t.WaitGroup.Done() // synchronize with the parent
 		t.Run(ctx, index)
