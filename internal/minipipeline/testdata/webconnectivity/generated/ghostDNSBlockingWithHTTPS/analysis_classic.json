@@ -17,7 +17,7 @@
   "DNSLookupExpectedFailure": [],
   "DNSLookupExpectedSuccess": [],
   "TCPConnectExpectedFailure": [
-    3
+    40001
   ],
   "TCPConnectUnexpectedFailure": [],
   "TCPConnectUnexpectedFailureDuringWebFetch": [],
@@ -47,7 +47,7 @@
       "TagDepth": 0,
       "Type": 1,
       "Failure": "connection_refused",
-      "TransactionID": 3,
+      "TransactionID": 40001,
       "TagFetchBody": true,
       "DNSTransactionID": 1,
       "DNSDomain": "itsat.info",
@@ -61,7 +61,7 @@
       "IPAddress": "83.224.65.41",
       "IPAddressASN": 30722,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 3,
+      "EndpointTransactionID": 40001,
       "EndpointProto": "tcp",
       "EndpointPort": "443",
       "EndpointAddress": "83.224.65.41:443",

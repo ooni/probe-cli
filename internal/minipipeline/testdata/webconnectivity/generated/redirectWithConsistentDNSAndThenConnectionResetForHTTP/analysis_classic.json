@@ -6,16 +6,16 @@
     "FinalResponseFailure": ""
   },
   "DNSLookupSuccess": [
-    2
+    1
   ],
   "DNSLookupSuccessWithInvalidAddresses": [],
   "DNSLookupSuccessWithValidAddress": [
-    2
+    1
   ],
   "DNSLookupSuccessWithBogonAddresses": [],
   "DNSLookupSuccessWithInvalidAddressesClassic": [],
   "DNSLookupSuccessWithValidAddressClassic": [
-    2
+    1
   ],
   "DNSLookupUnexpectedFailure": [],
   "DNSLookupUnexplainedFailure": [],
@@ -37,7 +37,7 @@
   "TLSHandshakeUnexplainedFailureDuringWebFetch": [],
   "TLSHandshakeUnexplainedFailureDuringConnectivityCheck": [],
   "HTTPRoundTripUnexpectedFailure": [
-    6
+    30001
   ],
   "HTTPRoundTripUnexplainedFailure": [],
   "HTTPFinalResponseSuccessTLSWithoutControl": null,
@@ -53,9 +53,9 @@
       "TagDepth": 1,
       "Type": 3,
       "Failure": "connection_reset",
-      "TransactionID": 6,
+      "TransactionID": 30001,
       "TagFetchBody": true,
-      "DNSTransactionID": 4,
+      "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -67,7 +67,7 @@
       "IPAddress": "93.184.216.34",
       "IPAddressASN": 15133,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 6,
+      "EndpointTransactionID": 30001,
       "EndpointProto": "tcp",
       "EndpointPort": "80",
       "EndpointAddress": "93.184.216.34:80",
@@ -103,9 +103,9 @@
       "TagDepth": 1,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 4,
+      "TransactionID": 2,
       "TagFetchBody": null,
-      "DNSTransactionID": 4,
+      "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -153,9 +153,9 @@
       "TagDepth": 0,
       "Type": 3,
       "Failure": "",
-      "TransactionID": 3,
+      "TransactionID": 40001,
       "TagFetchBody": true,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -167,7 +167,7 @@
       "IPAddress": "67.199.248.11",
       "IPAddressASN": 396982,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 3,
+      "EndpointTransactionID": 40001,
       "EndpointProto": "tcp",
       "EndpointPort": "443",
       "EndpointAddress": "67.199.248.11:443",
@@ -209,9 +209,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 2,
+      "TransactionID": 1,
       "TagFetchBody": null,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",

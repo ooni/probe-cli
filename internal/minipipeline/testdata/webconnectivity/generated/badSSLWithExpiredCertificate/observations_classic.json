@@ -50,11 +50,11 @@
     }
   ],
   "KnownTCPEndpoints": {
-    "3": {
+    "40001": {
       "TagDepth": 0,
       "Type": 2,
       "Failure": "ssl_invalid_certificate",
-      "TransactionID": 3,
+      "TransactionID": 40001,
       "TagFetchBody": true,
       "DNSTransactionID": 1,
       "DNSDomain": "expired.badssl.com",
@@ -68,7 +68,7 @@
       "IPAddress": "104.154.89.105",
       "IPAddressASN": 396982,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 3,
+      "EndpointTransactionID": 40001,
       "EndpointProto": "tcp",
       "EndpointPort": "443",
       "EndpointAddress": "104.154.89.105:443",

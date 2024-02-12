@@ -7,18 +7,18 @@
   },
   "DNSLookupSuccess": [
     1,
-    2
+    10001
   ],
   "DNSLookupSuccessWithInvalidAddresses": [],
   "DNSLookupSuccessWithValidAddress": [
     1,
-    2
+    10001
   ],
   "DNSLookupSuccessWithBogonAddresses": [],
   "DNSLookupSuccessWithInvalidAddressesClassic": [],
   "DNSLookupSuccessWithValidAddressClassic": [
     1,
-    2
+    10001
   ],
   "DNSLookupUnexpectedFailure": [],
   "DNSLookupUnexplainedFailure": [],
@@ -30,10 +30,10 @@
   "TCPConnectUnexpectedFailureDuringWebFetch": [],
   "TCPConnectUnexpectedFailureDuringConnectivityCheck": [],
   "TCPConnectUnexplainedFailure": [
-    6
+    40002
   ],
   "TCPConnectUnexplainedFailureDuringWebFetch": [
-    6
+    40002
   ],
   "TCPConnectUnexplainedFailureDuringConnectivityCheck": [],
   "TLSHandshakeExpectedFailure": [],
@@ -58,9 +58,9 @@
       "TagDepth": 1,
       "Type": 1,
       "Failure": "connection_refused",
-      "TransactionID": 6,
+      "TransactionID": 40002,
       "TagFetchBody": true,
-      "DNSTransactionID": 4,
+      "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -72,7 +72,7 @@
       "IPAddress": "93.184.216.34",
       "IPAddressASN": 15133,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 6,
+      "EndpointTransactionID": 40002,
       "EndpointProto": "tcp",
       "EndpointPort": "443",
       "EndpointAddress": "93.184.216.34:443",
@@ -108,9 +108,9 @@
       "TagDepth": 1,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 5,
+      "TransactionID": 10002,
       "TagFetchBody": null,
-      "DNSTransactionID": 5,
+      "DNSTransactionID": 10002,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
@@ -158,9 +158,9 @@
       "TagDepth": 1,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 4,
+      "TransactionID": 2,
       "TagFetchBody": null,
-      "DNSTransactionID": 4,
+      "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -208,9 +208,9 @@
       "TagDepth": 1,
       "Type": 0,
       "Failure": "dns_no_answer",
-      "TransactionID": 5,
+      "TransactionID": 10002,
       "TagFetchBody": null,
-      "DNSTransactionID": 5,
+      "DNSTransactionID": 10002,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
@@ -256,7 +256,7 @@
       "TagDepth": 0,
       "Type": 3,
       "Failure": "",
-      "TransactionID": 3,
+      "TransactionID": 40001,
       "TagFetchBody": true,
       "DNSTransactionID": 1,
       "DNSDomain": "bit.ly",
@@ -270,7 +270,7 @@
       "IPAddress": "67.199.248.11",
       "IPAddressASN": 396982,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 3,
+      "EndpointTransactionID": 40001,
       "EndpointProto": "tcp",
       "EndpointPort": "443",
       "EndpointAddress": "67.199.248.11:443",
@@ -312,9 +312,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 2,
+      "TransactionID": 10001,
       "TagFetchBody": null,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 10001,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
@@ -416,9 +416,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "dns_no_answer",
-      "TransactionID": 2,
+      "TransactionID": 10001,
       "TagFetchBody": null,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 10001,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",

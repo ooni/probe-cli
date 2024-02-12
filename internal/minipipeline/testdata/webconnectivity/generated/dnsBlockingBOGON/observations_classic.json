@@ -5,9 +5,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 2,
+      "TransactionID": 1,
       "TagFetchBody": null,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -55,13 +55,13 @@
     }
   ],
   "KnownTCPEndpoints": {
-    "3": {
+    "40001": {
       "TagDepth": 0,
       "Type": 1,
       "Failure": "generic_timeout_error",
-      "TransactionID": 3,
+      "TransactionID": 40001,
       "TagFetchBody": true,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -73,7 +73,7 @@
       "IPAddress": "10.10.34.35",
       "IPAddressASN": null,
       "IPAddressBogon": true,
-      "EndpointTransactionID": 3,
+      "EndpointTransactionID": 40001,
       "EndpointProto": "tcp",
       "EndpointPort": "443",
       "EndpointAddress": "10.10.34.35:443",

@@ -7,22 +7,22 @@
   },
   "DNSLookupSuccess": [
     1,
-    2
+    10001
   ],
   "DNSLookupSuccessWithInvalidAddresses": [
-    2
+    1
   ],
   "DNSLookupSuccessWithValidAddress": [
-    1
+    10001
   ],
   "DNSLookupSuccessWithBogonAddresses": [
-    2
+    1
   ],
   "DNSLookupSuccessWithInvalidAddressesClassic": [
-    2
+    1
   ],
   "DNSLookupSuccessWithValidAddressClassic": [
-    1
+    10001
   ],
   "DNSLookupUnexpectedFailure": [],
   "DNSLookupUnexplainedFailure": [],
@@ -46,7 +46,7 @@
   "HTTPRoundTripUnexpectedFailure": [],
   "HTTPRoundTripUnexplainedFailure": [],
   "HTTPFinalResponseSuccessTLSWithoutControl": null,
-  "HTTPFinalResponseSuccessTLSWithControl": 4,
+  "HTTPFinalResponseSuccessTLSWithControl": 40002,
   "HTTPFinalResponseSuccessTCPWithoutControl": null,
   "HTTPFinalResponseSuccessTCPWithControl": null,
   "HTTPFinalResponseDiffBodyProportionFactor": 1,
@@ -61,9 +61,9 @@
       "TagDepth": 0,
       "Type": 3,
       "Failure": "",
-      "TransactionID": 4,
+      "TransactionID": 40002,
       "TagFetchBody": true,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 10001,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -75,7 +75,7 @@
       "IPAddress": "93.184.216.34",
       "IPAddressASN": 15133,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 4,
+      "EndpointTransactionID": 40002,
       "EndpointProto": "tcp",
       "EndpointPort": "443",
       "EndpointAddress": "93.184.216.34:443",
@@ -118,9 +118,9 @@
       "TagDepth": 0,
       "Type": 1,
       "Failure": "generic_timeout_error",
-      "TransactionID": 3,
+      "TransactionID": 40001,
       "TagFetchBody": true,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -132,7 +132,7 @@
       "IPAddress": "10.10.34.35",
       "IPAddressASN": null,
       "IPAddressBogon": true,
-      "EndpointTransactionID": 3,
+      "EndpointTransactionID": 40001,
       "EndpointProto": "tcp",
       "EndpointPort": "443",
       "EndpointAddress": "10.10.34.35:443",
@@ -170,61 +170,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 2,
+      "TransactionID": 10001,
       "TagFetchBody": null,
-      "DNSTransactionID": 2,
-      "DNSDomain": "www.example.com",
-      "DNSLookupFailure": "",
-      "DNSQueryType": "ANY",
-      "DNSEngine": "getaddrinfo",
-      "DNSResolvedAddrs": [
-        "10.10.34.35"
-      ],
-      "IPAddressOrigin": "dns",
-      "IPAddress": "10.10.34.35",
-      "IPAddressASN": null,
-      "IPAddressBogon": true,
-      "EndpointTransactionID": null,
-      "EndpointProto": null,
-      "EndpointPort": null,
-      "EndpointAddress": null,
-      "TCPConnectFailure": null,
-      "TLSHandshakeFailure": null,
-      "TLSServerName": null,
-      "HTTPRequestURL": null,
-      "HTTPFailure": null,
-      "HTTPResponseStatusCode": null,
-      "HTTPResponseBodyLength": null,
-      "HTTPResponseBodyIsTruncated": null,
-      "HTTPResponseHeadersKeys": null,
-      "HTTPResponseLocation": null,
-      "HTTPResponseTitle": null,
-      "HTTPResponseIsFinal": null,
-      "ControlDNSDomain": "www.example.com",
-      "ControlDNSLookupFailure": "",
-      "ControlDNSResolvedAddrs": [
-        "93.184.216.34"
-      ],
-      "ControlTCPConnectFailure": null,
-      "ControlTLSHandshakeFailure": null,
-      "ControlHTTPFailure": "",
-      "ControlHTTPResponseStatusCode": 200,
-      "ControlHTTPResponseBodyLength": 1533,
-      "ControlHTTPResponseHeadersKeys": {
-        "Alt-Svc": true,
-        "Content-Length": true,
-        "Content-Type": true,
-        "Date": true
-      },
-      "ControlHTTPResponseTitle": "Default Web Page"
-    },
-    {
-      "TagDepth": 0,
-      "Type": 0,
-      "Failure": "",
-      "TransactionID": 1,
-      "TagFetchBody": null,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 10001,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
@@ -273,10 +221,62 @@
     {
       "TagDepth": 0,
       "Type": 0,
-      "Failure": "dns_no_answer",
+      "Failure": "",
       "TransactionID": 1,
       "TagFetchBody": null,
       "DNSTransactionID": 1,
+      "DNSDomain": "www.example.com",
+      "DNSLookupFailure": "",
+      "DNSQueryType": "ANY",
+      "DNSEngine": "getaddrinfo",
+      "DNSResolvedAddrs": [
+        "10.10.34.35"
+      ],
+      "IPAddressOrigin": "dns",
+      "IPAddress": "10.10.34.35",
+      "IPAddressASN": null,
+      "IPAddressBogon": true,
+      "EndpointTransactionID": null,
+      "EndpointProto": null,
+      "EndpointPort": null,
+      "EndpointAddress": null,
+      "TCPConnectFailure": null,
+      "TLSHandshakeFailure": null,
+      "TLSServerName": null,
+      "HTTPRequestURL": null,
+      "HTTPFailure": null,
+      "HTTPResponseStatusCode": null,
+      "HTTPResponseBodyLength": null,
+      "HTTPResponseBodyIsTruncated": null,
+      "HTTPResponseHeadersKeys": null,
+      "HTTPResponseLocation": null,
+      "HTTPResponseTitle": null,
+      "HTTPResponseIsFinal": null,
+      "ControlDNSDomain": "www.example.com",
+      "ControlDNSLookupFailure": "",
+      "ControlDNSResolvedAddrs": [
+        "93.184.216.34"
+      ],
+      "ControlTCPConnectFailure": null,
+      "ControlTLSHandshakeFailure": null,
+      "ControlHTTPFailure": "",
+      "ControlHTTPResponseStatusCode": 200,
+      "ControlHTTPResponseBodyLength": 1533,
+      "ControlHTTPResponseHeadersKeys": {
+        "Alt-Svc": true,
+        "Content-Length": true,
+        "Content-Type": true,
+        "Date": true
+      },
+      "ControlHTTPResponseTitle": "Default Web Page"
+    },
+    {
+      "TagDepth": 0,
+      "Type": 0,
+      "Failure": "dns_no_answer",
+      "TransactionID": 10001,
+      "TagFetchBody": null,
+      "DNSTransactionID": 10001,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
