@@ -58,7 +58,7 @@
       "Failure": "ssl_invalid_hostname",
       "TransactionID": 3,
       "TagFetchBody": true,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "wrong.host.badssl.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,

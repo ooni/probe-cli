@@ -263,6 +263,14 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 	ServerNameMain:   "httpbin.com",
 	ServerNameExtras: []string{},
 	WebServerFactory: HTTPBinHandlerFactory(),
+}, {
+	Domains: []string{"dns.nextdns.io"},
+	Addresses: []string{
+		AddressNextDNSIo,
+	},
+	Role:             ScenarioRolePublicDNS,
+	ServerNameMain:   "dns.nextdns.io",
+	ServerNameExtras: []string{},
 }}
 
 // MustNewScenario constructs a complete testing scenario using the domains and IP

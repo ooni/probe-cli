@@ -7,6 +7,7 @@ import (
 )
 
 func TestQA(t *testing.T) {
+	SortObservations.Add(1) // make sure we have predictable observations
 	for _, tc := range webconnectivityqa.AllTestCases() {
 		t.Run(tc.Name, func(t *testing.T) {
 			if (tc.Flags & webconnectivityqa.TestCaseFlagNoLTE) != 0 {

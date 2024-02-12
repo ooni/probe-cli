@@ -98,3 +98,6 @@ const AddressOpenDNS222 = "208.67.222.222"
 
 // AddressOpenDNS220 is the 208.67.220.220 opendns.com address.
 const AddressOpenDNS220 = "208.67.220.220"
+
+// AddressNextDNSIo is a dns.nextdns.io address.
+const AddressNextDNSIo = "38.175.119.129"

@@ -6,16 +6,16 @@
     "FinalResponseFailure": ""
   },
   "DNSLookupSuccess": [
-    1
+    2
   ],
   "DNSLookupSuccessWithInvalidAddresses": [],
   "DNSLookupSuccessWithValidAddress": [
-    1
+    2
   ],
   "DNSLookupSuccessWithBogonAddresses": [],
   "DNSLookupSuccessWithInvalidAddressesClassic": [],
   "DNSLookupSuccessWithValidAddressClassic": [
-    1
+    2
   ],
   "DNSLookupUnexpectedFailure": [],
   "DNSLookupUnexplainedFailure": [],
@@ -41,7 +41,7 @@
   "HTTPFinalResponseSuccessTLSWithoutControl": null,
   "HTTPFinalResponseSuccessTLSWithControl": null,
   "HTTPFinalResponseSuccessTCPWithoutControl": null,
-  "HTTPFinalResponseSuccessTCPWithControl": 4,
+  "HTTPFinalResponseSuccessTCPWithControl": 3,
   "HTTPFinalResponseDiffBodyProportionFactor": 0.18180740037950663,
   "HTTPFinalResponseDiffStatusCodeMatch": false,
   "HTTPFinalResponseDiffTitleDifferentLongWords": {
@@ -59,9 +59,9 @@
       "TagDepth": 0,
       "Type": 3,
       "Failure": "",
-      "TransactionID": 4,
+      "TransactionID": 3,
       "TagFetchBody": true,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "www.cloudflare-cache.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -73,7 +73,7 @@
       "IPAddress": "104.16.132.229",
       "IPAddressASN": 13335,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 4,
+      "EndpointTransactionID": 3,
       "EndpointProto": "tcp",
       "EndpointPort": "80",
       "EndpointAddress": "104.16.132.229:80",
@@ -131,9 +131,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 1,
+      "TransactionID": 2,
       "TagFetchBody": null,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "www.cloudflare-cache.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
