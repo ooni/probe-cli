@@ -247,8 +247,7 @@
             "X-Frame-Options": "SAMEORIG"
           }
         },
-        "t0": 0.037215,
-        "t": 0.044497,
+        "t": 0,
         "tags": [
           "depth=0",
           "fetch_body=true"

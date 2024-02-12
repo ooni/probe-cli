@@ -208,13 +208,12 @@
             "Date": "Thu, 24 Aug 2023 14:35:29 GMT"
           }
         },
-        "t0": 0.535296,
-        "t": 0.540998,
+        "t": 0,
         "tags": [
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 30002
+        "transaction_id": 30001
       }
     ],
     "tcp_connect": [
@@ -230,7 +229,7 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 30002
+        "transaction_id": 30001
       },
       {
         "ip": "93.184.216.34",
@@ -244,7 +243,7 @@
           "depth=0",
           "fetch_body=false"
         ],
-        "transaction_id": 40002
+        "transaction_id": 40001
       }
     ],
     "tls_handshakes": [
@@ -263,7 +262,7 @@
           "fetch_body=false"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40002
+        "transaction_id": 40001
       }
     ],
     "x_control_request": {
@@ -280,10 +279,10 @@
         ]
       },
       "tcp_connect": [
-        "127.0.0.1:443",
-        "127.0.0.1:80",
         "93.184.216.34:443",
-        "93.184.216.34:80"
+        "93.184.216.34:80",
+        "127.0.0.1:443",
+        "127.0.0.1:80"
       ],
       "x_quic_enabled": false
     },

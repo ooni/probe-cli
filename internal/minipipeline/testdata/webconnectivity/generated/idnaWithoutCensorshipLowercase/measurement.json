@@ -409,7 +409,7 @@
     "requests": [
       {
         "network": "tcp",
-        "address": "77.88.55.77:443",
+        "address": "5.255.255.80:443",
         "alpn": "http/1.1",
         "failure": null,
         "request": {
@@ -482,17 +482,16 @@
             "Date": "Thu, 24 Aug 2023 14:35:29 GMT"
           }
         },
-        "t0": 0.091815,
-        "t": 0.098231,
+        "t": 0,
         "tags": [
           "depth=2",
           "fetch_body=true"
         ],
-        "transaction_id": 40011
+        "transaction_id": 40009
       },
       {
         "network": "tcp",
-        "address": "77.88.55.77:443",
+        "address": "5.255.255.80:443",
         "alpn": "http/1.1",
         "failure": null,
         "request": {
@@ -565,17 +564,16 @@
             "Location": "https://ya.ru/"
           }
         },
-        "t0": 0.063906,
-        "t": 0.070099,
+        "t": 0,
         "tags": [
           "depth=1",
           "fetch_body=true"
         ],
-        "transaction_id": 40007
+        "transaction_id": 40005
       },
       {
         "network": "tcp",
-        "address": "5.255.255.88:80",
+        "address": "77.88.55.80:80",
         "failure": null,
         "request": {
           "body": "",
@@ -647,8 +645,7 @@
             "Location": "https://yandex.com/"
           }
         },
-        "t0": 0.035893,
-        "t": 0.042347,
+        "t": 0,
         "tags": [
           "depth=0",
           "fetch_body=true"
@@ -669,7 +666,7 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 30003
+        "transaction_id": 30001
       },
       {
         "ip": "5.255.255.80",
@@ -683,7 +680,7 @@
           "depth=0",
           "fetch_body=false"
         ],
-        "transaction_id": 40003
+        "transaction_id": 40001
       },
       {
         "ip": "5.255.255.80",
@@ -725,7 +722,7 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 30004
+        "transaction_id": 30002
       },
       {
         "ip": "5.255.255.88",
@@ -739,7 +736,7 @@
           "depth=0",
           "fetch_body=false"
         ],
-        "transaction_id": 40004
+        "transaction_id": 40002
       },
       {
         "ip": "5.255.255.88",
@@ -781,7 +778,7 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 30001
+        "transaction_id": 30003
       },
       {
         "ip": "77.88.55.77",
@@ -795,7 +792,7 @@
           "depth=0",
           "fetch_body=false"
         ],
-        "transaction_id": 40001
+        "transaction_id": 40003
       },
       {
         "ip": "77.88.55.77",
@@ -837,7 +834,7 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 30002
+        "transaction_id": 30004
       },
       {
         "ip": "77.88.55.80",
@@ -851,7 +848,7 @@
           "depth=0",
           "fetch_body=false"
         ],
-        "transaction_id": 40002
+        "transaction_id": 40004
       },
       {
         "ip": "77.88.55.80",
@@ -898,7 +895,7 @@
           "fetch_body=false"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40003
+        "transaction_id": 40001
       },
       {
         "network": "tcp",
@@ -949,7 +946,7 @@
           "fetch_body=false"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40004
+        "transaction_id": 40002
       },
       {
         "network": "tcp",
@@ -1000,7 +997,7 @@
           "fetch_body=false"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40001
+        "transaction_id": 40003
       },
       {
         "network": "tcp",
@@ -1051,7 +1048,7 @@
           "fetch_body=false"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40002
+        "transaction_id": 40004
       },
       {
         "network": "tcp",
@@ -1102,14 +1099,14 @@
         ]
       },
       "tcp_connect": [
-        "77.88.55.77:443",
-        "77.88.55.77:80",
-        "77.88.55.80:443",
-        "77.88.55.80:80",
         "5.255.255.80:443",
         "5.255.255.80:80",
         "5.255.255.88:443",
-        "5.255.255.88:80"
+        "5.255.255.88:80",
+        "77.88.55.77:443",
+        "77.88.55.77:80",
+        "77.88.55.80:443",
+        "77.88.55.80:80"
       ],
       "x_quic_enabled": false
     },
