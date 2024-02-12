@@ -93,6 +93,11 @@ func (ph *httpProxyHandler) connect(rw http.ResponseWriter, req *http.Request) {
 }
 
 func (ph *httpProxyHandler) get(rw http.ResponseWriter, req *http.Request) {
+	// use fixed date because that allows for easier QA testing
+	//
+	// see https://github.com/ooni/probe/issues/2677
+	rw.Header().Add("Date", "Thu, 24 Aug 2023 14:35:29 GMT")
+
 	// reject requests that already visited the proxy and requests we cannot route
 	if req.Host == "" || req.Header.Get("Via") != "" {
 		rw.WriteHeader(http.StatusBadRequest)

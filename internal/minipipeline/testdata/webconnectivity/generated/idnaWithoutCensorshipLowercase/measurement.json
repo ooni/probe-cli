@@ -491,7 +491,7 @@
       },
       {
         "network": "tcp",
-        "address": "77.88.55.80:443",
+        "address": "77.88.55.77:443",
         "alpn": "http/1.1",
         "failure": null,
         "request": {
@@ -569,11 +569,11 @@
           "depth=1",
           "fetch_body=true"
         ],
-        "transaction_id": 40008
+        "transaction_id": 40007
       },
       {
         "network": "tcp",
-        "address": "5.255.255.88:80",
+        "address": "5.255.255.80:80",
         "failure": null,
         "request": {
           "body": "",
@@ -650,7 +650,7 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 30004
+        "transaction_id": 30003
       }
     ],
     "tcp_connect": [
