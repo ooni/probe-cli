@@ -81,8 +81,7 @@ func runWebConnectivityLTE(tc *webconnectivityqa.TestCase) {
 		tk.DoH.Queries = nil
 		tk.DNSDuplicateResponses = nil
 
-		tk.NetworkEvents = minipipeline.SortNetworkEvents(tk.NetworkEvents)
-		minipipeline.NormalizeNetworkEvents(tk.NetworkEvents)
+		tk.NetworkEvents = nil
 
 		tk.TCPConnect = minipipeline.SortTCPConnectResults(tk.TCPConnect)
 		minipipeline.NormalizeTCPConnectResults(tk.TCPConnect)
