@@ -487,11 +487,11 @@
           "depth=2",
           "fetch_body=true"
         ],
-        "transaction_id": 40012
+        "transaction_id": 40010
       },
       {
         "network": "tcp",
-        "address": "5.255.255.88:443",
+        "address": "5.255.255.80:443",
         "alpn": "http/1.1",
         "failure": null,
         "request": {
@@ -569,11 +569,11 @@
           "depth=1",
           "fetch_body=true"
         ],
-        "transaction_id": 40007
+        "transaction_id": 40005
       },
       {
         "network": "tcp",
-        "address": "77.88.55.77:80",
+        "address": "77.88.55.80:80",
         "failure": null,
         "request": {
           "body": "",
@@ -650,7 +650,7 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 30003
+        "transaction_id": 30004
       }
     ],
     "tcp_connect": [
@@ -694,7 +694,7 @@
           "depth=1",
           "fetch_body=true"
         ],
-        "transaction_id": 40006
+        "transaction_id": 40005
       },
       {
         "ip": "5.255.255.80",
@@ -708,7 +708,7 @@
           "depth=2",
           "fetch_body=true"
         ],
-        "transaction_id": 40012
+        "transaction_id": 40010
       },
       {
         "ip": "5.255.255.88",
@@ -750,7 +750,7 @@
           "depth=1",
           "fetch_body=true"
         ],
-        "transaction_id": 40007
+        "transaction_id": 40006
       },
       {
         "ip": "5.255.255.88",
@@ -764,7 +764,7 @@
           "depth=2",
           "fetch_body=true"
         ],
-        "transaction_id": 40009
+        "transaction_id": 40011
       },
       {
         "ip": "77.88.55.77",
@@ -806,7 +806,7 @@
           "depth=1",
           "fetch_body=true"
         ],
-        "transaction_id": 40008
+        "transaction_id": 40007
       },
       {
         "ip": "77.88.55.77",
@@ -820,7 +820,7 @@
           "depth=2",
           "fetch_body=true"
         ],
-        "transaction_id": 40010
+        "transaction_id": 40012
       },
       {
         "ip": "77.88.55.80",
@@ -862,7 +862,7 @@
           "depth=1",
           "fetch_body=true"
         ],
-        "transaction_id": 40005
+        "transaction_id": 40008
       },
       {
         "ip": "77.88.55.80",
@@ -876,7 +876,7 @@
           "depth=2",
           "fetch_body=true"
         ],
-        "transaction_id": 40011
+        "transaction_id": 40009
       }
     ],
     "tls_handshakes": [
@@ -912,7 +912,7 @@
           "fetch_body=true"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40006
+        "transaction_id": 40005
       },
       {
         "network": "tcp",
@@ -929,7 +929,7 @@
           "fetch_body=true"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40012
+        "transaction_id": 40010
       },
       {
         "network": "tcp",
@@ -963,7 +963,7 @@
           "fetch_body=true"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40007
+        "transaction_id": 40006
       },
       {
         "network": "tcp",
@@ -980,7 +980,7 @@
           "fetch_body=true"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40009
+        "transaction_id": 40011
       },
       {
         "network": "tcp",
@@ -1014,7 +1014,7 @@
           "fetch_body=true"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40008
+        "transaction_id": 40007
       },
       {
         "network": "tcp",
@@ -1031,7 +1031,7 @@
           "fetch_body=true"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40010
+        "transaction_id": 40012
       },
       {
         "network": "tcp",
@@ -1065,7 +1065,7 @@
           "fetch_body=true"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40005
+        "transaction_id": 40008
       },
       {
         "network": "tcp",
@@ -1082,7 +1082,7 @@
           "fetch_body=true"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40011
+        "transaction_id": 40009
       }
     ],
     "x_control_request": {
