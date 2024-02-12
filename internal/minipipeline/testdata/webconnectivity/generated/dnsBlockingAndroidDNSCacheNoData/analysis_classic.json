@@ -12,7 +12,7 @@
   "DNSLookupSuccessWithInvalidAddressesClassic": [],
   "DNSLookupSuccessWithValidAddressClassic": [],
   "DNSLookupUnexpectedFailure": [
-    2
+    1
   ],
   "DNSLookupUnexplainedFailure": [],
   "DNSExperimentFailure": "android_dns_cache_no_data",
@@ -47,9 +47,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "android_dns_cache_no_data",
-      "TransactionID": 2,
+      "TransactionID": 1,
       "TagFetchBody": null,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "android_dns_cache_no_data",
       "DNSQueryType": "ANY",

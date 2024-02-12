@@ -37,7 +37,7 @@
   "TLSHandshakeUnexplainedFailureDuringWebFetch": [],
   "TLSHandshakeUnexplainedFailureDuringConnectivityCheck": [],
   "HTTPRoundTripUnexpectedFailure": [
-    4
+    3
   ],
   "HTTPRoundTripUnexplainedFailure": [],
   "HTTPFinalResponseSuccessTLSWithoutControl": null,
@@ -53,7 +53,7 @@
       "TagDepth": 0,
       "Type": 3,
       "Failure": "http_invalid_redirect_location_host",
-      "TransactionID": 4,
+      "TransactionID": 3,
       "TagFetchBody": true,
       "DNSTransactionID": 2,
       "DNSDomain": "httpbin.com",
@@ -67,7 +67,7 @@
       "IPAddress": "172.67.144.64",
       "IPAddressASN": 13335,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 4,
+      "EndpointTransactionID": 3,
       "EndpointProto": "tcp",
       "EndpointPort": "80",
       "EndpointAddress": "172.67.144.64:80",

@@ -9,7 +9,7 @@
     "tunnel": 0
   },
   "input": "http://itsat.info/",
-  "measurement_start_time": "2024-01-23 16:07:40",
+  "measurement_start_time": "2024-02-12 12:28:03",
   "probe_asn": "AS137",
   "probe_cc": "IT",
   "probe_ip": "127.0.0.1",
@@ -28,17 +28,39 @@
   },
   "test_keys": {
     "agent": "redirect",
-    "client_resolver": "",
+    "client_resolver": "130.192.3.21",
     "retries": null,
     "socksproxy": null,
     "network_events": [
+      {
+        "failure": null,
+        "operation": "http_transaction_start",
+        "t0": 0.009228,
+        "t": 0.009228,
+        "transaction_id": 3,
+        "tags": [
+          "depth=0",
+          "fetch_body=true"
+        ]
+      },
+      {
+        "failure": null,
+        "operation": "http_transaction_done",
+        "t0": 0.013772,
+        "t": 0.013772,
+        "transaction_id": 3,
+        "tags": [
+          "depth=0",
+          "fetch_body=true"
+        ]
+      },
       {
         "address": "83.224.65.41:443",
         "failure": "connection_refused",
         "operation": "connect",
         "proto": "tcp",
-        "t0": 0.010657,
-        "t": 0.015289,
+        "t0": 0.004067,
+        "t": 0.008837,
         "transaction_id": 4,
         "tags": [
           "depth=0",
@@ -50,8 +72,8 @@
         "failure": null,
         "operation": "connect",
         "proto": "tcp",
-        "t0": 0.010645,
-        "t": 0.016491,
+        "t0": 0.004024,
+        "t": 0.009199,
         "transaction_id": 3,
         "tags": [
           "depth=0",
@@ -59,10 +81,13 @@
         ]
       },
       {
+        "address": "83.224.65.41:80",
         "failure": null,
-        "operation": "http_transaction_start",
-        "t0": 0.016521,
-        "t": 0.016521,
+        "num_bytes": 277,
+        "operation": "write",
+        "proto": "tcp",
+        "t0": 0.009271,
+        "t": 0.009306,
         "transaction_id": 3,
         "tags": [
           "depth=0",
@@ -70,10 +95,13 @@
         ]
       },
       {
+        "address": "83.224.65.41:80",
         "failure": null,
-        "operation": "http_transaction_done",
-        "t0": 0.02168,
-        "t": 0.02168,
+        "num_bytes": 305,
+        "operation": "read",
+        "proto": "tcp",
+        "t0": 0.009256,
+        "t": 0.013738,
         "transaction_id": 3,
         "tags": [
           "depth=0",
@@ -86,8 +114,8 @@
         "num_bytes": 305,
         "operation": "bytes_received_cumulative",
         "proto": "tcp",
-        "t0": 0.021711,
-        "t": 0.021711,
+        "t0": 0.013795,
+        "t": 0.013795,
         "transaction_id": 3,
         "tags": [
           "depth=0",
@@ -96,14 +124,22 @@
       }
     ],
     "x_dns_whoami": {
-      "system_v4": null,
+      "system_v4": [
+        {
+          "address": "130.192.91.211"
+        }
+      ],
       "udp_v4": {
-        "8.8.4.4:53": null
+        "9.9.9.9:53": [
+          {
+            "address": "130.192.91.211"
+          }
+        ]
       }
     },
     "x_doh": {
       "network_events": [],
-      "queries": [],
+      "queries": null,
       "requests": [],
       "tcp_connect": [],
       "tls_handshakes": []
@@ -113,60 +149,60 @@
         {
           "failure": null,
           "operation": "resolve_start",
-          "t0": 0.000063,
-          "t": 0.000063,
+          "t0": 0.000095,
+          "t": 0.000095,
           "transaction_id": 1,
           "tags": [
             "depth=0"
           ]
         },
         {
-          "address": "8.8.4.4:53",
+          "address": "9.9.9.9:53",
           "failure": null,
           "num_bytes": 28,
           "operation": "write",
           "proto": "udp",
-          "t0": 0.0001,
-          "t": 0.000109,
+          "t0": 0.000173,
+          "t": 0.000227,
           "transaction_id": 1,
           "tags": [
             "depth=0"
           ]
         },
         {
-          "address": "8.8.4.4:53",
+          "address": "9.9.9.9:53",
           "failure": null,
           "num_bytes": 28,
           "operation": "write",
           "proto": "udp",
-          "t0": 0.000108,
-          "t": 0.000114,
+          "t0": 0.000299,
+          "t": 0.000316,
           "transaction_id": 1,
           "tags": [
             "depth=0"
           ]
         },
         {
-          "address": "8.8.4.4:53",
+          "address": "9.9.9.9:53",
+          "failure": null,
+          "num_bytes": 28,
+          "operation": "read",
+          "proto": "udp",
+          "t0": 0.000321,
+          "t": 0.00295,
+          "transaction_id": 1,
+          "tags": [
+            "depth=0"
+          ]
+        },
+        {
+          "address": "9.9.9.9:53",
           "failure": null,
           "num_bytes": 54,
           "operation": "read",
           "proto": "udp",
-          "t0": 0.000121,
-          "t": 0.002804,
-          "transaction_id": 1,
-          "tags": [
-            "depth=0"
-          ]
-        },
-        {
-          "address": "8.8.4.4:53",
-          "failure": null,
-          "num_bytes": 28,
-          "operation": "read",
-          "proto": "udp",
-          "t0": 0.000116,
-          "t": 0.003164,
+          "t0": 0.000233,
+          "t": 0.003895,
           "transaction_id": 1,
           "tags": [
             "depth=0"
@@ -175,15 +211,15 @@
         {
           "failure": null,
           "operation": "resolve_done",
-          "t0": 0.003186,
-          "t": 0.003186,
+          "t0": 0.003931,
+          "t": 0.003931,
           "transaction_id": 1,
           "tags": [
             "depth=0"
           ]
         }
       ],
-      "queries": []
+      "queries": null
     },
     "x_dns_duplicate_responses": [
       {
@@ -192,13 +228,13 @@
         "failure": "dns_nxdomain_error",
         "hostname": "itsat.info",
         "query_type": "AAAA",
-        "raw_response": "VpGBAwABAAAAAAAABWl0c2F0BGluZm8AABwAAQ==",
+        "raw_response": "LiCBAwABAAAAAAAABWl0c2F0BGluZm8AABwAAQ==",
         "rcode": 3,
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "8.8.4.4:53",
-        "t0": 0.00318,
-        "t": 0.004827,
+        "resolver_address": "9.9.9.9:53",
+        "t0": 0.002967,
+        "t": 0.005092,
         "tags": [
           "depth=0"
         ],
@@ -210,13 +246,13 @@
         "failure": "dns_nxdomain_error",
         "hostname": "itsat.info",
         "query_type": "A",
-        "raw_response": "ysqBAwABAAAAAAAABWl0c2F0BGluZm8AAAEAAQ==",
+        "raw_response": "8aCBAwABAAAAAAAABWl0c2F0BGluZm8AAAEAAQ==",
         "rcode": 3,
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "8.8.4.4:53",
-        "t0": 0.002823,
-        "t": 0.00556,
+        "resolver_address": "9.9.9.9:53",
+        "t0": 0.003923,
+        "t": 0.006059,
         "tags": [
           "depth=0"
         ],
@@ -241,8 +277,8 @@
         "resolver_hostname": null,
         "resolver_port": null,
         "resolver_address": "",
-        "t0": 0.000077,
-        "t": 0.003039,
+        "t0": 0.000145,
+        "t": 0.003427,
         "tags": [
           "depth=0"
         ],
@@ -262,12 +298,12 @@
         "failure": null,
         "hostname": "itsat.info",
         "query_type": "A",
-        "raw_response": "ysqBAAABAAEAAAAABWl0c2F0BGluZm8AAAEAAQVpdHNhdARpbmZvAAABAAEAAA4QAART4EEp",
+        "raw_response": "8aCBAAABAAEAAAAABWl0c2F0BGluZm8AAAEAAQVpdHNhdARpbmZvAAABAAEAAA4QAART4EEp",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "8.8.4.4:53",
-        "t0": 0.000088,
-        "t": 0.002812,
+        "resolver_address": "9.9.9.9:53",
+        "t0": 0.000112,
+        "t": 0.003904,
         "tags": [
           "depth=0"
         ],
@@ -279,12 +315,12 @@
         "failure": "dns_no_answer",
         "hostname": "itsat.info",
         "query_type": "AAAA",
-        "raw_response": "VpGBAAABAAAAAAAABWl0c2F0BGluZm8AABwAAQ==",
+        "raw_response": "LiCBAAABAAAAAAAABWl0c2F0BGluZm8AABwAAQ==",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "8.8.4.4:53",
-        "t0": 0.000072,
-        "t": 0.003169,
+        "resolver_address": "9.9.9.9:53",
+        "t0": 0.000112,
+        "t": 0.002957,
         "tags": [
           "depth=0"
         ],
@@ -361,8 +397,8 @@
             "Date": "Thu, 24 Aug 2023 14:35:29 GMT"
           }
         },
-        "t0": 0.016521,
-        "t": 0.02168,
+        "t0": 0.009228,
+        "t": 0.013772,
         "tags": [
           "depth=0",
           "fetch_body=true"
@@ -373,36 +409,36 @@
     "tcp_connect": [
       {
         "ip": "83.224.65.41",
-        "port": 443,
-        "status": {
-          "failure": "connection_refused",
-          "success": false
-        },
-        "t0": 0.010657,
-        "t": 0.015289,
-        "tags": [
-          "depth=0",
-          "fetch_body=false"
-        ],
-        "transaction_id": 4
-      },
-      {
-        "ip": "83.224.65.41",
         "port": 80,
         "status": {
           "failure": null,
           "success": true
         },
-        "t0": 0.010645,
-        "t": 0.016491,
+        "t0": 0.004024,
+        "t": 0.009199,
         "tags": [
           "depth=0",
           "fetch_body=true"
         ],
         "transaction_id": 3
+      },
+      {
+        "ip": "83.224.65.41",
+        "port": 443,
+        "status": {
+          "failure": "connection_refused",
+          "success": false
+        },
+        "t0": 0.004067,
+        "t": 0.008837,
+        "tags": [
+          "depth=0",
+          "fetch_body=false"
+        ],
+        "transaction_id": 4
       }
     ],
-    "tls_handshakes": [],
+    "tls_handshakes": null,
     "x_control_request": {
       "http_request": "http://itsat.info/",
       "http_request_headers": {
@@ -457,11 +493,11 @@
     "x_conn_priority_log": [
       {
         "msg": "create with [{Addr:83.224.65.41 Flags:3}]",
-        "t": 0.010616
+        "t": 0.003984
       },
       {
         "msg": "conn 83.224.65.41:80: granted permission: true",
-        "t": 0.016497
+        "t": 0.009206
       }
     ],
     "control_failure": null,
@@ -480,7 +516,7 @@
     "accessible": false
   },
   "test_name": "web_connectivity",
-  "test_runtime": 0.503314,
-  "test_start_time": "2024-01-23 16:07:40",
+  "test_runtime": 0.504076,
+  "test_start_time": "2024-02-12 12:28:03",
   "test_version": "0.5.28"
 }

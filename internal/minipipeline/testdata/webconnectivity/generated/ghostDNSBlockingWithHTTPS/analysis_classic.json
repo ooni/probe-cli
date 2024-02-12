@@ -4,7 +4,7 @@
     "FinalResponseFailure": "dns_lookup_error"
   },
   "DNSLookupSuccess": [
-    1
+    2
   ],
   "DNSLookupSuccessWithInvalidAddresses": [],
   "DNSLookupSuccessWithValidAddress": [],
@@ -49,7 +49,7 @@
       "Failure": "connection_refused",
       "TransactionID": 3,
       "TagFetchBody": true,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "itsat.info",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -92,9 +92,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 1,
+      "TransactionID": 2,
       "TagFetchBody": null,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "itsat.info",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",

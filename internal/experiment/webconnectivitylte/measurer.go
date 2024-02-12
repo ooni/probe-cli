@@ -13,6 +13,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/inputparser"
+	"github.com/ooni/probe-cli/v3/internal/minipipeline"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"golang.org/x/net/publicsuffix"
 )
@@ -144,6 +145,23 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		}
 	}
 
+	// sort test keys to make output more predictable and avoid churn when generating
+	// minipipeline test cases; see https://github.com/ooni/probe/issues/2677.
+	//
+	// Note that tk.Do53 and tk.DoH are initialized by NewTestKeys so we know they're not nil.
+	//
+	// Note that we MUST NOT sort tk.Requests because its order matters for historical
+	// reasons and we don't wnat to break existing data consumers.
+	if SortObservations.Load() > 0 {
+		tk.Queries = minipipeline.SortDNSLookupResults(tk.Queries)
+		tk.Do53.Queries = minipipeline.SortDNSLookupResults(tk.Do53.Queries)
+		tk.DoH.Queries = minipipeline.SortDNSLookupResults(tk.DoH.Queries)
+		tk.DNSDuplicateResponses = minipipeline.SortDNSLookupResults(tk.DNSDuplicateResponses)
+		tk.NetworkEvents = minipipeline.SortNetworkEvents(tk.NetworkEvents)
+		tk.TCPConnect = minipipeline.SortTCPConnectResults(tk.TCPConnect)
+		tk.TLSHandshakes = minipipeline.SortTLSHandshakeResults(tk.TLSHandshakes)
+	}
+
 	// return whether there was a fundamental failure, which would prevent
 	// the measurement from being submitted to the OONI collector.
 	return tk.fundamentalFailure
@@ -159,3 +177,7 @@ func registerExtensions(m *model.Measurement) {
 	model.ArchivalExtTLSHandshake.AddTo(m)
 	model.ArchivalExtTunnel.AddTo(m)
 }
+
+// SortObservations allows to configure sorting observations when that's needed to
+// reduce churn in the generated JSON files (mainly for minipipeline).
+var SortObservations = &atomic.Int64{}
