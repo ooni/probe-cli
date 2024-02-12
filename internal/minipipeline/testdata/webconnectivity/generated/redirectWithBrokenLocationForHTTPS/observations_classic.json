@@ -61,7 +61,7 @@
       "Failure": "http_invalid_redirect_location_host",
       "TransactionID": 40001,
       "TagFetchBody": true,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 20001,
       "DNSDomain": "httpbin.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,

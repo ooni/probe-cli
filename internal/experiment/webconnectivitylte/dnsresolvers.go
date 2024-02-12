@@ -30,6 +30,10 @@ type DNSResolvers struct {
 	// DNSCache is the MANDATORY DNS cache.
 	DNSCache *DNSCache
 
+	// DNSOverHTTPSURLProvider is the MANDATORY provider of DNS-over-HTTPS
+	// URLs that arranges for periodic measurements.
+	DNSOverHTTPSURLProvider *webconnectivityalgo.OpportunisticDNSOverHTTPSURLProvider
+
 	// Domain is the MANDATORY domain to resolve.
 	Domain string
 
@@ -297,20 +301,11 @@ func (t *DNSResolvers) udpAddress() string {
 	return webconnectivityalgo.RandomDNSOverUDPResolverEndpointIPv4()
 }
 
-// OpportunisticDNSOverHTTPSSingleton is the singleton used to keep
-// track of the opportunistic DNS-over-HTTPS measurements state.
-var OpportunisticDNSOverHTTPSSingleton = webconnectivityalgo.NewOpportunisticDNSOverHTTPSURLProvider(
-	"https://mozilla.cloudflare-dns.com/dns-query",
-	"https://dns.nextdns.io/dns-query",
-	"https://dns.google/dns-query",
-	"https://dns.quad9.net/dns-query",
-)
-
 // lookupHostDNSOverHTTPS performs a DNS lookup using a DoH resolver. This function must
 // always emit an ouput on the [out] channel to synchronize with the caller func.
 func (t *DNSResolvers) lookupHostDNSOverHTTPS(parentCtx context.Context, out chan<- []string) {
 	// obtain an opportunistic DoH URL
-	URL, good := OpportunisticDNSOverHTTPSSingleton.MaybeNextURL()
+	URL, good := t.DNSOverHTTPSURLProvider.MaybeNextURL()
 	if !good {
 		// no need to perform opportunistic DoH at this time but we still
 		// need to fake out a lookup to please our caller
@@ -384,23 +379,24 @@ func (t *DNSResolvers) startCleartextFlows(
 	}
 	for _, addr := range addresses {
 		task := &CleartextFlow{
-			Address:         net.JoinHostPort(addr.Addr, port),
-			Depth:           t.Depth,
-			DNSCache:        t.DNSCache,
-			IDGenerator:     t.IDGenerator,
-			Logger:          t.Logger,
-			NumRedirects:    t.NumRedirects,
-			TestKeys:        t.TestKeys,
-			ZeroTime:        t.ZeroTime,
-			WaitGroup:       t.WaitGroup,
-			CookieJar:       t.CookieJar,
-			FollowRedirects: t.URL.Scheme == "http",
-			HostHeader:      t.URL.Host,
-			PrioSelector:    ps,
-			Referer:         t.Referer,
-			UDPAddress:      t.UDPAddress,
-			URLPath:         t.URL.Path,
-			URLRawQuery:     t.URL.RawQuery,
+			Address:                 net.JoinHostPort(addr.Addr, port),
+			Depth:                   t.Depth,
+			DNSCache:                t.DNSCache,
+			DNSOverHTTPSURLProvider: t.DNSOverHTTPSURLProvider,
+			IDGenerator:             t.IDGenerator,
+			Logger:                  t.Logger,
+			NumRedirects:            t.NumRedirects,
+			TestKeys:                t.TestKeys,
+			ZeroTime:                t.ZeroTime,
+			WaitGroup:               t.WaitGroup,
+			CookieJar:               t.CookieJar,
+			FollowRedirects:         t.URL.Scheme == "http",
+			HostHeader:              t.URL.Host,
+			PrioSelector:            ps,
+			Referer:                 t.Referer,
+			UDPAddress:              t.UDPAddress,
+			URLPath:                 t.URL.Path,
+			URLRawQuery:             t.URL.RawQuery,
 		}
 		task.Start(ctx)
 	}
@@ -427,25 +423,26 @@ func (t *DNSResolvers) startSecureFlows(
 	}
 	for _, addr := range addresses {
 		task := &SecureFlow{
-			Address:         net.JoinHostPort(addr.Addr, port),
-			Depth:           t.Depth,
-			DNSCache:        t.DNSCache,
-			IDGenerator:     t.IDGenerator,
-			Logger:          t.Logger,
-			NumRedirects:    t.NumRedirects,
-			TestKeys:        t.TestKeys,
-			ZeroTime:        t.ZeroTime,
-			WaitGroup:       t.WaitGroup,
-			ALPN:            []string{"h2", "http/1.1"},
-			CookieJar:       t.CookieJar,
-			FollowRedirects: t.URL.Scheme == "https",
-			SNI:             t.URL.Hostname(),
-			HostHeader:      t.URL.Host,
-			PrioSelector:    ps,
-			Referer:         t.Referer,
-			UDPAddress:      t.UDPAddress,
-			URLPath:         t.URL.Path,
-			URLRawQuery:     t.URL.RawQuery,
+			Address:                 net.JoinHostPort(addr.Addr, port),
+			Depth:                   t.Depth,
+			DNSCache:                t.DNSCache,
+			DNSOverHTTPSURLProvider: t.DNSOverHTTPSURLProvider,
+			IDGenerator:             t.IDGenerator,
+			Logger:                  t.Logger,
+			NumRedirects:            t.NumRedirects,
+			TestKeys:                t.TestKeys,
+			ZeroTime:                t.ZeroTime,
+			WaitGroup:               t.WaitGroup,
+			ALPN:                    []string{"h2", "http/1.1"},
+			CookieJar:               t.CookieJar,
+			FollowRedirects:         t.URL.Scheme == "https",
+			SNI:                     t.URL.Hostname(),
+			HostHeader:              t.URL.Host,
+			PrioSelector:            ps,
+			Referer:                 t.Referer,
+			UDPAddress:              t.UDPAddress,
+			URLPath:                 t.URL.Path,
+			URLRawQuery:             t.URL.RawQuery,
 		}
 		task.Start(ctx)
 	}
