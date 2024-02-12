@@ -29,6 +29,8 @@ func HTTPBinHandlerFactory() HTTPHandlerFactory {
 // Any other request URL causes a 404 respose.
 func HTTPBinHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Date", "Thu, 24 Aug 2023 14:35:29 GMT")
+
 		// missing address => 500
 		address, _, err := net.SplitHostPort(r.RemoteAddr)
 		if err != nil {

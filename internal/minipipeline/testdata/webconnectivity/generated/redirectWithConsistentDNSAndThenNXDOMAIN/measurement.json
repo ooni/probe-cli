@@ -242,7 +242,7 @@
             ],
             [
               "Date",
-              "Mon, 12 Feb 2024 21:26:22 GMT"
+              "Thu, 24 Aug 2023 14:35:29 GMT"
             ],
             [
               "Location",
@@ -251,7 +251,7 @@
           ],
           "headers": {
             "Content-Length": "0",
-            "Date": "Mon, 12 Feb 2024 21:26:22 GMT",
+            "Date": "Thu, 24 Aug 2023 14:35:29 GMT",
             "Location": "https://www.example.com/"
           }
         },
