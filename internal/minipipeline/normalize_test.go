@@ -202,3 +202,49 @@ func TestNormalizeTLSHandshakeResults(t *testing.T) {
 		})
 	}
 }
+
+func TestNormalizeHTTPRequestResults(t *testing.T) {
+	type testcase struct {
+		name     string
+		inputGen func() []*model.ArchivalHTTPRequestResult
+		expect   []*model.ArchivalHTTPRequestResult
+	}
+
+	cases := []testcase{{
+		name: "with nil input",
+		inputGen: func() []*model.ArchivalHTTPRequestResult {
+			return nil
+		},
+		expect: nil,
+	}, {
+		name: "with empty input",
+		inputGen: func() []*model.ArchivalHTTPRequestResult {
+			return []*model.ArchivalHTTPRequestResult{}
+		},
+		expect: []*model.ArchivalHTTPRequestResult{},
+	}, {
+		name: "with plausible input",
+		inputGen: func() []*model.ArchivalHTTPRequestResult {
+			return []*model.ArchivalHTTPRequestResult{{
+				T0: 0.11,
+				T:  0.4,
+			}, {
+				T0: 0.5,
+				T:  0.66,
+			}}
+		},
+		expect: []*model.ArchivalHTTPRequestResult{{}, {}},
+	}}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			values := tc.inputGen()
+
+			NormalizeHTTPRequestResults(values)
+
+			if diff := cmp.Diff(tc.expect, values); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+	}
+}

@@ -91,6 +91,8 @@ func runWebConnectivityLTE(tc *webconnectivityqa.TestCase) {
 		tk.TLSHandshakes = minipipeline.SortTLSHandshakeResults(tk.TLSHandshakes)
 		minipipeline.NormalizeTLSHandshakeResults(tk.TLSHandshakes)
 
+		minipipeline.NormalizeHTTPRequestResults(tk.Requests)
+
 		// normalize measurement fields
 		measurement.MeasurementStartTime = "2024-02-12 20:33:47"
 		measurement.MeasurementRuntime = 0

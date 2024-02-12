@@ -44,3 +44,11 @@ func NormalizeTLSHandshakeResults(values []*model.ArchivalTLSOrQUICHandshakeResu
 		entry.PeerCertificates = nil
 	}
 }
+
+// NormalizeHTTPRequestResults is like [NormalizeDNSLookupResults] but for HTTP requests.
+func NormalizeHTTPRequestResults(values []*model.ArchivalHTTPRequestResult) {
+	for _, entry := range values {
+		entry.T0 = 0
+		entry.T = 0
+	}
+}
