@@ -7,16 +7,16 @@
     "FinalResponseFailure": ""
   },
   "DNSLookupSuccess": [
-    1
+    2
   ],
   "DNSLookupSuccessWithInvalidAddresses": [],
   "DNSLookupSuccessWithValidAddress": [
-    1
+    2
   ],
   "DNSLookupSuccessWithBogonAddresses": [],
   "DNSLookupSuccessWithInvalidAddressesClassic": [],
   "DNSLookupSuccessWithValidAddressClassic": [
-    1
+    2
   ],
   "DNSLookupUnexpectedFailure": [],
   "DNSLookupUnexplainedFailure": [],
@@ -56,7 +56,7 @@
       "Failure": "",
       "TransactionID": 3,
       "TagFetchBody": true,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "largefile.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -79,7 +79,7 @@
       "HTTPRequestURL": "https://largefile.com/",
       "HTTPFailure": "",
       "HTTPResponseStatusCode": 200,
-      "HTTPResponseBodyLength": 524312,
+      "HTTPResponseBodyLength": 524328,
       "HTTPResponseBodyIsTruncated": true,
       "HTTPResponseHeadersKeys": {
         "Alt-Svc": true,
@@ -113,7 +113,7 @@
       "Failure": "",
       "TransactionID": 4,
       "TagFetchBody": true,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "largefile.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -164,9 +164,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 1,
+      "TransactionID": 2,
       "TagFetchBody": null,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "largefile.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -217,9 +217,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 1,
+      "TransactionID": 2,
       "TagFetchBody": null,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "largefile.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",

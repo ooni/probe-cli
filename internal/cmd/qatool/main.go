@@ -65,6 +65,20 @@ func runWebConnectivityLTE(tc *webconnectivityqa.TestCase) {
 		// run the test case
 		measurement := runtimex.Try1(webconnectivityqa.MeasureTestCase(measurer, tc))
 
+		// obtain the test keys
+		tk := measurement.TestKeys.(*webconnectivitylte.TestKeys)
+
+		// normalize the test keys
+		//
+		// see https://github.com/ooni/probe/issues/2677
+		tk.Queries = minipipeline.SortDNSLookupResults(tk.Queries)
+		tk.Do53.Queries = minipipeline.SortDNSLookupResults(tk.Do53.Queries)
+		tk.DoH.Queries = minipipeline.SortDNSLookupResults(tk.DoH.Queries)
+		tk.DNSDuplicateResponses = minipipeline.SortDNSLookupResults(tk.DNSDuplicateResponses)
+		tk.NetworkEvents = minipipeline.SortNetworkEvents(tk.NetworkEvents)
+		tk.TCPConnect = minipipeline.SortTCPConnectResults(tk.TCPConnect)
+		tk.TLSHandshakes = minipipeline.SortTLSHandshakeResults(tk.TLSHandshakes)
+
 		// serialize the original measurement
 		mustSerializeMkdirAllAndWriteFile(actualDestdir, "measurement.json", measurement)
 	}
@@ -134,9 +148,6 @@ func main() {
 
 	// build the regexp
 	selector := regexp.MustCompile(*runFlag)
-
-	// make sure we produce more predictable observations in output
-	webconnectivitylte.SortObservations.Add(1)
 
 	// select which test cases to run
 	for _, tc := range webconnectivityqa.AllTestCases() {
