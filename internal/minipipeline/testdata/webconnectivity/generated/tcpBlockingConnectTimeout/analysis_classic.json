@@ -57,7 +57,7 @@
       "Failure": "generic_timeout_error",
       "TransactionID": 40001,
       "TagFetchBody": true,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 20001,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,

@@ -10,7 +10,8 @@
   ],
   "DNSLookupSuccessWithInvalidAddresses": [],
   "DNSLookupSuccessWithValidAddress": [
-    1
+    1,
+    20001
   ],
   "DNSLookupSuccessWithBogonAddresses": [],
   "DNSLookupSuccessWithInvalidAddressesClassic": [],
@@ -61,7 +62,7 @@
       "Failure": "",
       "TransactionID": 40001,
       "TagFetchBody": true,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 20001,
       "DNSDomain": "www.cloudflare-cache.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,

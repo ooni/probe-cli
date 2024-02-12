@@ -55,7 +55,7 @@
       "Failure": "ssl_invalid_certificate",
       "TransactionID": 40001,
       "TagFetchBody": true,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 20001,
       "DNSDomain": "expired.badssl.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
