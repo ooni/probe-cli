@@ -4,9 +4,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "dns_no_answer",
-      "TransactionID": 1,
+      "TransactionID": 2,
       "TagFetchBody": null,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "www.example.org",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
@@ -61,8 +61,8 @@
       "DNSTransactionID": 1,
       "DNSDomain": "www.example.org",
       "DNSLookupFailure": "",
-      "DNSQueryType": "A",
-      "DNSEngine": "udp",
+      "DNSQueryType": "ANY",
+      "DNSEngine": "getaddrinfo",
       "DNSResolvedAddrs": [
         "83.224.65.41"
       ],
@@ -113,8 +113,8 @@
       "DNSTransactionID": 2,
       "DNSDomain": "www.example.org",
       "DNSLookupFailure": "",
-      "DNSQueryType": "ANY",
-      "DNSEngine": "getaddrinfo",
+      "DNSQueryType": "A",
+      "DNSEngine": "udp",
       "DNSResolvedAddrs": [
         "83.224.65.41"
       ],

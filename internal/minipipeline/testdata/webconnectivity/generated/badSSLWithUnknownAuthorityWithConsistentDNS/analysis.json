@@ -61,7 +61,7 @@
       "Failure": "ssl_unknown_authority",
       "TransactionID": 4,
       "TagFetchBody": true,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 3,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -112,7 +112,7 @@
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
-      "DNSEngine": "udp",
+      "DNSEngine": "doh",
       "DNSResolvedAddrs": [
         "104.154.89.105"
       ],
@@ -206,7 +206,7 @@
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
-      "DNSEngine": "doh",
+      "DNSEngine": "udp",
       "DNSResolvedAddrs": [
         "104.154.89.105"
       ],
@@ -253,7 +253,7 @@
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
-      "DNSEngine": "udp",
+      "DNSEngine": "doh",
       "DNSResolvedAddrs": null,
       "IPAddressOrigin": null,
       "IPAddress": null,
@@ -298,7 +298,7 @@
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
-      "DNSEngine": "doh",
+      "DNSEngine": "udp",
       "DNSResolvedAddrs": null,
       "IPAddressOrigin": null,
       "IPAddress": null,

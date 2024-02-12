@@ -51,7 +51,7 @@ func NewLinearWebAnalysis(input *WebObservationsContainer) (output []*WebObserva
 		output = append(output, entry)
 	}
 
-	// sort in descending order
+	// sort using complex sorting rule
 	sort.SliceStable(output, func(i, j int) bool {
 		left, right := output[i], output[j]
 
@@ -59,13 +59,15 @@ func NewLinearWebAnalysis(input *WebObservationsContainer) (output []*WebObserva
 		// TagDepth sort at the end of the generated list.
 		if left.TagDepth.UnwrapOr(-1) > right.TagDepth.UnwrapOr(-1) {
 			return true
-		} else if left.TagDepth.UnwrapOr(-1) < right.TagDepth.UnwrapOr(-1) {
+		}
+		if left.TagDepth.UnwrapOr(-1) < right.TagDepth.UnwrapOr(-1) {
 			return false
 		}
 
 		if left.Type > right.Type {
 			return true
-		} else if left.Type < right.Type {
+		}
+		if left.Type < right.Type {
 			return false
 		}
 
@@ -74,7 +76,8 @@ func NewLinearWebAnalysis(input *WebObservationsContainer) (output []*WebObserva
 		const defaultFailureValue = "unknown_failure"
 		if left.Failure.UnwrapOr(defaultFailureValue) < right.Failure.UnwrapOr(defaultFailureValue) {
 			return true
-		} else if left.Failure.UnwrapOr(defaultFailureValue) > right.Failure.UnwrapOr(defaultFailureValue) {
+		}
+		if left.Failure.UnwrapOr(defaultFailureValue) > right.Failure.UnwrapOr(defaultFailureValue) {
 			return false
 		}
 

@@ -291,13 +291,6 @@ func (tk *TestKeys) WithDNSWhoami(fun func(*DNSWhoamiInfo)) {
 	tk.mu.Unlock()
 }
 
-// SetClientResolver sets the ClientResolver field.
-func (tk *TestKeys) SetClientResolver(value string) {
-	tk.mu.Lock()
-	tk.ClientResolver = value
-	tk.mu.Unlock()
-}
-
 // AppendConnPriorityLogEntry appends an entry to ConnPriorityLog.
 func (tk *TestKeys) AppendConnPriorityLogEntry(entry *ConnPriorityLogEntry) {
 	tk.mu.Lock()

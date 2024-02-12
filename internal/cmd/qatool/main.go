@@ -135,6 +135,9 @@ func main() {
 	// build the regexp
 	selector := regexp.MustCompile(*runFlag)
 
+	// make sure we produce more predictable observations in output
+	webconnectivitylte.SortObservations.Add(1)
+
 	// select which test cases to run
 	for _, tc := range webconnectivityqa.AllTestCases() {
 		name := "webconnectivitylte/" + tc.Name
