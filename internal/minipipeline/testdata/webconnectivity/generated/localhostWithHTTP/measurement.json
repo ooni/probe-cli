@@ -9,7 +9,7 @@
     "tunnel": 0
   },
   "input": "http://www.example.com/",
-  "measurement_start_time": "2024-02-12 18:42:04",
+  "measurement_start_time": "2024-02-12 18:44:39",
   "probe_asn": "AS137",
   "probe_cc": "IT",
   "probe_ip": "127.0.0.1",
@@ -39,7 +39,7 @@
         }
       ],
       "udp_v4": {
-        "208.67.222.222:53": [
+        "9.9.9.9:53": [
           {
             "address": "130.192.91.211"
           }
@@ -58,60 +58,60 @@
         {
           "failure": null,
           "operation": "resolve_start",
-          "t0": 0.000068,
-          "t": 0.000068,
+          "t0": 0.000075,
+          "t": 0.000075,
           "transaction_id": 10001,
           "tags": [
             "depth=0"
           ]
         },
         {
-          "address": "208.67.222.222:53",
+          "address": "9.9.9.9:53",
           "failure": null,
           "num_bytes": 33,
           "operation": "write",
           "proto": "udp",
-          "t0": 0.00012,
-          "t": 0.000146,
+          "t0": 0.000123,
+          "t": 0.000149,
           "transaction_id": 10001,
           "tags": [
             "depth=0"
           ]
         },
         {
-          "address": "208.67.222.222:53",
+          "address": "9.9.9.9:53",
           "failure": null,
           "num_bytes": 33,
           "operation": "write",
           "proto": "udp",
-          "t0": 0.000159,
-          "t": 0.000162,
+          "t0": 0.000142,
+          "t": 0.000157,
           "transaction_id": 10001,
           "tags": [
             "depth=0"
           ]
         },
         {
-          "address": "208.67.222.222:53",
-          "failure": null,
-          "num_bytes": 33,
-          "operation": "read",
-          "proto": "udp",
-          "t0": 0.000151,
-          "t": 0.005767,
-          "transaction_id": 10001,
-          "tags": [
-            "depth=0"
-          ]
-        },
-        {
-          "address": "208.67.222.222:53",
+          "address": "9.9.9.9:53",
           "failure": null,
           "num_bytes": 64,
           "operation": "read",
           "proto": "udp",
-          "t0": 0.000167,
-          "t": 0.006264,
+          "t0": 0.000163,
+          "t": 0.005632,
+          "transaction_id": 10001,
+          "tags": [
+            "depth=0"
+          ]
+        },
+        {
+          "address": "9.9.9.9:53",
+          "failure": null,
+          "num_bytes": 33,
+          "operation": "read",
+          "proto": "udp",
+          "t0": 0.000154,
+          "t": 0.005753,
           "transaction_id": 10001,
           "tags": [
             "depth=0"
@@ -120,8 +120,8 @@
         {
           "failure": null,
           "operation": "resolve_done",
-          "t0": 0.006289,
-          "t": 0.006289,
+          "t0": 0.005773,
+          "t": 0.005773,
           "transaction_id": 10001,
           "tags": [
             "depth=0"
@@ -147,8 +147,8 @@
         "resolver_hostname": null,
         "resolver_port": null,
         "resolver_address": "",
-        "t0": 0.000086,
-        "t": 0.005192,
+        "t0": 0.000076,
+        "t": 0.005171,
         "tags": [
           "depth=0"
         ],
@@ -166,12 +166,12 @@
         "failure": null,
         "hostname": "www.example.com",
         "query_type": "A",
-        "raw_response": "uI6BAAABAAEAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQABA3d3dwdleGFtcGxlA2NvbQAAAQABAAAOEAAEfwAAAQ==",
+        "raw_response": "92yBAAABAAEAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQABA3d3dwdleGFtcGxlA2NvbQAAAQABAAAOEAAEfwAAAQ==",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "208.67.222.222:53",
-        "t0": 0.000087,
-        "t": 0.006269,
+        "resolver_address": "9.9.9.9:53",
+        "t0": 0.000106,
+        "t": 0.005639,
         "tags": [
           "depth=0"
         ],
@@ -183,12 +183,12 @@
         "failure": "dns_no_answer",
         "hostname": "www.example.com",
         "query_type": "AAAA",
-        "raw_response": "1XSBAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAHAAB",
+        "raw_response": "tEaBAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAHAAB",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "208.67.222.222:53",
-        "t0": 0.000081,
-        "t": 0.005777,
+        "resolver_address": "9.9.9.9:53",
+        "t0": 0.000085,
+        "t": 0.005758,
         "tags": [
           "depth=0"
         ],
@@ -245,7 +245,7 @@
     "x_conn_priority_log": [
       {
         "msg": "create with [{Addr:127.0.0.1 Flags:3}]",
-        "t": 0.006328
+        "t": 0.005818
       }
     ],
     "control_failure": null,
@@ -264,7 +264,7 @@
     "accessible": false
   },
   "test_name": "web_connectivity",
-  "test_runtime": 0.506393,
-  "test_start_time": "2024-02-12 18:42:04",
+  "test_runtime": 0.505918,
+  "test_start_time": "2024-02-12 18:44:39",
   "test_version": "0.5.28"
 }

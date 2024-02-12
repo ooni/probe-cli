@@ -10,8 +10,7 @@
   ],
   "DNSLookupSuccessWithInvalidAddresses": [],
   "DNSLookupSuccessWithValidAddress": [
-    1,
-    20001
+    1
   ],
   "DNSLookupSuccessWithBogonAddresses": [],
   "DNSLookupSuccessWithInvalidAddressesClassic": [],
@@ -57,7 +56,7 @@
       "Failure": "",
       "TransactionID": 40001,
       "TagFetchBody": true,
-      "DNSTransactionID": 20001,
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
