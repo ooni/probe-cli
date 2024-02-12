@@ -140,6 +140,7 @@ var DefaultURLShortenerMapping = map[string]string{
 func URLShortenerFactory(mapping map[string]string) HTTPHandlerFactory {
 	return HTTPHandlerFactoryFunc(func(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Add("Date", "Thu, 24 Aug 2023 14:35:29 GMT")
 			location, found := mapping[r.URL.Path]
 			if !found {
 				w.WriteHeader(http.StatusNotFound)
