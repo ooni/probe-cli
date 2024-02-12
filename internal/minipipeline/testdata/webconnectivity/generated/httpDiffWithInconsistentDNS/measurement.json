@@ -186,6 +186,7 @@
         "response": {
           "body": "\u003c!doctype html\u003e\n\u003chtml\u003e\n\u003chead\u003e\n\t\u003ctitle\u003eAccess Denied\u003c/title\u003e\n\u003c/head\u003e\n\u003cbody\u003e\n\u003cdiv\u003e\n\t\u003ch1\u003eAccess Denied\u003c/h1\u003e\n\t\u003cp\u003eThis request cannot be served in your jurisdiction.\u003c/p\u003e\n\u003c/div\u003e\n\u003c/body\u003e\n\u003c/html\u003e\n",
           "body_is_truncated": false,
+          "x_body_length": 188,
           "code": 200,
           "headers_list": [],
           "headers": {}

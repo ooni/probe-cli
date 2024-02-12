@@ -55,11 +55,11 @@
     }
   ],
   "KnownTCPEndpoints": {
-    "40001": {
+    "40002": {
       "TagDepth": 0,
       "Type": 2,
       "Failure": "connection_reset",
-      "TransactionID": 40001,
+      "TransactionID": 40002,
       "TagFetchBody": true,
       "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
@@ -73,7 +73,7 @@
       "IPAddress": "130.192.182.17",
       "IPAddressASN": 137,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 40001,
+      "EndpointTransactionID": 40002,
       "EndpointProto": "tcp",
       "EndpointPort": "443",
       "EndpointAddress": "130.192.182.17:443",

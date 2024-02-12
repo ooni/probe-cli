@@ -186,6 +186,7 @@
         "response": {
           "body": "\u003c!doctype html\u003e\n\u003chtml\u003e\n\u003chead\u003e\n\t\u003ctitle\u003eDefault Web Page\u003c/title\u003e\n\u003c/head\u003e\n\u003cbody\u003e\n\u003cdiv\u003e\n\t\u003ch1\u003eDefault Web Page\u003c/h1\u003e\n\n\t\u003cp\u003eThis is the default web page of the default domain.\u003c/p\u003e\n\n\t\u003cp\u003eWe detect webpage blocking by checking for the status code first. If the status\n\tcode is different, we consider the measurement http-diff. On the contrary when\n\tthe status code matches, we say it's all good if one of the following check succeeds:\u003c/p\u003e\n\n\t\u003cp\u003e\u003col\u003e\n\t\t\u003cli\u003ethe body length does not match (we say they match is the smaller of the two\n\t\twebpages is 70% or more of the size of the larger webpage);\u003c/li\u003e\n\n\t\t\u003cli\u003ethe uncommon headers match;\u003c/li\u003e\n\n\t\t\u003cli\u003ethe webpage title contains mostly the same words.\u003c/li\u003e\n\t\u003c/ol\u003e\u003c/p\u003e\n\n\t\u003cp\u003eIf the three above checks fail, then we also say that there is http-diff. Because\n\twe need QA checks to work as intended, the size of THIS webpage you are reading\n\thas been increased, by adding this description, such that the body length check fails. The\n\toriginal webpage size was too close to the blockpage in size, and therefore we did see\n\tthat there was no http-diff, as it ought to be.\u003c/p\u003e\n\n\t\u003cp\u003eTo make sure we're not going to have this issue in the future, there is now a runtime\n\tcheck that causes our code to crash if this web page size is too similar to the one of\n\tthe default blockpage. We chose to add this text for additional clarity.\u003c/p\u003e\n\n\t\u003cp\u003eAlso, note that the blockpage MUST be very small, because in some cases we need\n\tto spoof it into a single TCP segment using ooni/netem's DPI.\u003c/p\u003e\n\u003c/div\u003e\n\u003c/body\u003e\n\u003c/html\u003e\n",
           "body_is_truncated": false,
+          "x_body_length": 1533,
           "code": 200,
           "headers_list": [
             [
@@ -212,7 +213,7 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 30001
+        "transaction_id": 30002
       }
     ],
     "tcp_connect": [
@@ -228,7 +229,7 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 30001
+        "transaction_id": 30002
       },
       {
         "ip": "130.192.182.17",
@@ -242,7 +243,7 @@
           "depth=0",
           "fetch_body=false"
         ],
-        "transaction_id": 40001
+        "transaction_id": 40002
       },
       {
         "ip": "93.184.216.34",
@@ -256,7 +257,7 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 30002
+        "transaction_id": 30001
       },
       {
         "ip": "93.184.216.34",
@@ -270,7 +271,7 @@
           "depth=0",
           "fetch_body=false"
         ],
-        "transaction_id": 40002
+        "transaction_id": 40001
       }
     ],
     "tls_handshakes": [
@@ -289,7 +290,7 @@
           "fetch_body=false"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40001
+        "transaction_id": 40002
       },
       {
         "network": "tcp",
@@ -306,7 +307,7 @@
           "fetch_body=false"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40002
+        "transaction_id": 40001
       }
     ],
     "x_control_request": {
@@ -323,10 +324,10 @@
         ]
       },
       "tcp_connect": [
-        "130.192.182.17:443",
-        "130.192.182.17:80",
         "93.184.216.34:443",
-        "93.184.216.34:80"
+        "93.184.216.34:80",
+        "130.192.182.17:443",
+        "130.192.182.17:80"
       ],
       "x_quic_enabled": false
     },

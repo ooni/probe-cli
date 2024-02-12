@@ -55,11 +55,11 @@
     }
   ],
   "KnownTCPEndpoints": {
-    "30001": {
+    "30002": {
       "TagDepth": 0,
       "Type": 1,
       "Failure": "connection_refused",
-      "TransactionID": 30001,
+      "TransactionID": 30002,
       "TagFetchBody": true,
       "DNSTransactionID": 1,
       "DNSDomain": "www.example.org",
@@ -73,7 +73,7 @@
       "IPAddress": "83.224.65.41",
       "IPAddressASN": 30722,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 30001,
+      "EndpointTransactionID": 30002,
       "EndpointProto": "tcp",
       "EndpointPort": "80",
       "EndpointAddress": "83.224.65.41:80",
