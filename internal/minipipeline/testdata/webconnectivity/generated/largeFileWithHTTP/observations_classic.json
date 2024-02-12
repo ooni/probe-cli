@@ -5,9 +5,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 2,
+      "TransactionID": 3,
       "TagFetchBody": null,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 3,
       "DNSDomain": "largefile.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -58,9 +58,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 2,
+      "TransactionID": 3,
       "TagFetchBody": null,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 3,
       "DNSDomain": "largefile.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -109,11 +109,11 @@
     }
   ],
   "KnownTCPEndpoints": {
-    "3": {
+    "4": {
       "TagDepth": 0,
       "Type": 3,
       "Failure": "",
-      "TransactionID": 3,
+      "TransactionID": 4,
       "TagFetchBody": true,
       "DNSTransactionID": 2,
       "DNSDomain": "largefile.com",
@@ -128,7 +128,7 @@
       "IPAddress": "52.35.36.75",
       "IPAddressASN": 16509,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 3,
+      "EndpointTransactionID": 4,
       "EndpointProto": "tcp",
       "EndpointPort": "80",
       "EndpointAddress": "52.35.36.75:80",
@@ -138,7 +138,7 @@
       "HTTPRequestURL": "http://largefile.com/",
       "HTTPFailure": "",
       "HTTPResponseStatusCode": 200,
-      "HTTPResponseBodyLength": 524332,
+      "HTTPResponseBodyLength": 524320,
       "HTTPResponseBodyIsTruncated": true,
       "HTTPResponseHeadersKeys": {
         "Alt-Svc": true,
@@ -166,11 +166,11 @@
       },
       "ControlHTTPResponseTitle": ""
     },
-    "4": {
+    "5": {
       "TagDepth": 0,
       "Type": 1,
       "Failure": "",
-      "TransactionID": 4,
+      "TransactionID": 5,
       "TagFetchBody": true,
       "DNSTransactionID": 2,
       "DNSDomain": "largefile.com",
@@ -185,7 +185,7 @@
       "IPAddress": "35.161.85.189",
       "IPAddressASN": 16509,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 4,
+      "EndpointTransactionID": 5,
       "EndpointProto": "tcp",
       "EndpointPort": "80",
       "EndpointAddress": "35.161.85.189:80",

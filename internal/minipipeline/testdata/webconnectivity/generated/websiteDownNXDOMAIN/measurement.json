@@ -9,7 +9,7 @@
     "tunnel": 0
   },
   "input": "http://www.example.xyz/",
-  "measurement_start_time": "2024-02-12 12:29:15",
+  "measurement_start_time": "2024-02-12 15:13:26",
   "probe_asn": "AS137",
   "probe_cc": "IT",
   "probe_ip": "127.0.0.1",
@@ -31,7 +31,7 @@
     "client_resolver": "130.192.3.21",
     "retries": null,
     "socksproxy": null,
-    "network_events": null,
+    "network_events": [],
     "x_dns_whoami": {
       "system_v4": [
         {
@@ -48,7 +48,7 @@
     },
     "x_doh": {
       "network_events": [],
-      "queries": null,
+      "queries": [],
       "requests": [],
       "tcp_connect": [],
       "tls_handshakes": []
@@ -71,8 +71,8 @@
           "num_bytes": 33,
           "operation": "write",
           "proto": "udp",
-          "t0": 0.000101,
-          "t": 0.000107,
+          "t0": 0.000117,
+          "t": 0.000148,
           "transaction_id": 1,
           "tags": [
             "depth=0"
@@ -84,8 +84,8 @@
           "num_bytes": 33,
           "operation": "write",
           "proto": "udp",
-          "t0": 0.000133,
-          "t": 0.000137,
+          "t0": 0.000131,
+          "t": 0.00015,
           "transaction_id": 1,
           "tags": [
             "depth=0"
@@ -97,8 +97,8 @@
           "num_bytes": 33,
           "operation": "read",
           "proto": "udp",
-          "t0": 0.000112,
-          "t": 0.004717,
+          "t0": 0.000155,
+          "t": 0.005451,
           "transaction_id": 1,
           "tags": [
             "depth=0"
@@ -110,8 +110,8 @@
           "num_bytes": 33,
           "operation": "read",
           "proto": "udp",
-          "t0": 0.000141,
-          "t": 0.005902,
+          "t0": 0.000153,
+          "t": 0.005695,
           "transaction_id": 1,
           "tags": [
             "depth=0"
@@ -120,17 +120,17 @@
         {
           "failure": null,
           "operation": "resolve_done",
-          "t0": 0.005914,
-          "t": 0.005914,
+          "t0": 0.005706,
+          "t": 0.005706,
           "transaction_id": 1,
           "tags": [
             "depth=0"
           ]
         }
       ],
-      "queries": null
+      "queries": []
     },
-    "x_dns_duplicate_responses": null,
+    "x_dns_duplicate_responses": [],
     "queries": [
       {
         "answers": null,
@@ -141,8 +141,8 @@
         "resolver_hostname": null,
         "resolver_port": null,
         "resolver_address": "",
-        "t0": 0.000083,
-        "t": 0.006039,
+        "t0": 0.000106,
+        "t": 0.005245,
         "tags": [
           "depth=0"
         ],
@@ -153,14 +153,14 @@
         "engine": "udp",
         "failure": "dns_nxdomain_error",
         "hostname": "www.example.xyz",
-        "query_type": "AAAA",
-        "raw_response": "YJCBAwABAAAAAAAAA3d3dwdleGFtcGxlA3h5egAAHAAB",
+        "query_type": "A",
+        "raw_response": "lymBAwABAAAAAAAAA3d3dwdleGFtcGxlA3h5egAAAQAB",
         "rcode": 3,
         "resolver_hostname": null,
         "resolver_port": null,
         "resolver_address": "208.67.222.222:53",
-        "t0": 0.000076,
-        "t": 0.004721,
+        "t0": 0.000103,
+        "t": 0.005455,
         "tags": [
           "depth=0"
         ],
@@ -171,14 +171,14 @@
         "engine": "udp",
         "failure": "dns_nxdomain_error",
         "hostname": "www.example.xyz",
-        "query_type": "A",
-        "raw_response": "fkCBAwABAAAAAAAAA3d3dwdleGFtcGxlA3h5egAAAQAB",
+        "query_type": "AAAA",
+        "raw_response": "od2BAwABAAAAAAAAA3d3dwdleGFtcGxlA3h5egAAHAAB",
         "rcode": 3,
         "resolver_hostname": null,
         "resolver_port": null,
         "resolver_address": "208.67.222.222:53",
-        "t0": 0.000116,
-        "t": 0.005908,
+        "t0": 0.000079,
+        "t": 0.005701,
         "tags": [
           "depth=0"
         ],
@@ -186,8 +186,8 @@
       }
     ],
     "requests": [],
-    "tcp_connect": null,
-    "tls_handshakes": null,
+    "tcp_connect": [],
+    "tls_handshakes": [],
     "x_control_request": {
       "http_request": "http://www.example.xyz/",
       "http_request_headers": {
@@ -224,7 +224,7 @@
     "x_conn_priority_log": [
       {
         "msg": "create with []",
-        "t": 0.006066
+        "t": 0.005725
       }
     ],
     "control_failure": null,
@@ -243,7 +243,7 @@
     "accessible": false
   },
   "test_name": "web_connectivity",
-  "test_runtime": 0.506189,
-  "test_start_time": "2024-02-12 12:29:15",
+  "test_runtime": 0.505835,
+  "test_start_time": "2024-02-12 15:13:26",
   "test_version": "0.5.28"
 }

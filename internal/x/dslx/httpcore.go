@@ -230,6 +230,7 @@ func httpRoundTrip(
 		NewObservations(),
 	}
 
+	// TODO(bassosimone): https://github.com/ooni/probe-cli/pull/1505/files#r1486204572
 	observations[0].NetworkEvents = append(observations[0].NetworkEvents,
 		measurexlite.NewAnnotationArchivalNetworkEvent(
 			input.Trace.Index(),
@@ -257,6 +258,7 @@ func httpRoundTrip(
 	}
 	finished := input.Trace.TimeSince(input.Trace.ZeroTime())
 
+	// TODO(bassosimone): https://github.com/ooni/probe-cli/pull/1505/files#r1486204572
 	observations[0].NetworkEvents = append(observations[0].NetworkEvents,
 		measurexlite.NewAnnotationArchivalNetworkEvent(
 			input.Trace.Index(),

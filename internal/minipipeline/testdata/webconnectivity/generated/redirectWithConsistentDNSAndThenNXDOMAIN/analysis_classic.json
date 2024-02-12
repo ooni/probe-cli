@@ -6,17 +6,16 @@
     "FinalResponseFailure": ""
   },
   "DNSLookupSuccess": [
-    3
+    2
   ],
   "DNSLookupSuccessWithInvalidAddresses": [],
   "DNSLookupSuccessWithValidAddress": [
-    2,
-    3
+    2
   ],
   "DNSLookupSuccessWithBogonAddresses": [],
   "DNSLookupSuccessWithInvalidAddressesClassic": [],
   "DNSLookupSuccessWithValidAddressClassic": [
-    3
+    2
   ],
   "DNSLookupUnexpectedFailure": [],
   "DNSLookupUnexplainedFailure": [
@@ -102,7 +101,7 @@
       "TagDepth": 0,
       "Type": 3,
       "Failure": "",
-      "TransactionID": 4,
+      "TransactionID": 3,
       "TagFetchBody": true,
       "DNSTransactionID": 2,
       "DNSDomain": "bit.ly",
@@ -116,7 +115,7 @@
       "IPAddress": "67.199.248.11",
       "IPAddressASN": 396982,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 4,
+      "EndpointTransactionID": 3,
       "EndpointProto": "tcp",
       "EndpointPort": "443",
       "EndpointAddress": "67.199.248.11:443",
@@ -158,9 +157,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 3,
+      "TransactionID": 2,
       "TagFetchBody": null,
-      "DNSTransactionID": 3,
+      "DNSTransactionID": 2,
       "DNSDomain": "bit.ly",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",

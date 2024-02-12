@@ -253,8 +253,16 @@ func (t *CleartextFlow) httpTransaction(ctx context.Context, network, address, a
 
 	// Implementation note: we want to emit http_transaction_start when we actually start doing
 	// HTTP things such that it's possible to correctly classify network events
-	t.TestKeys.AppendNetworkEvents(measurexlite.NewAnnotationArchivalNetworkEvent(
-		trace.Index(), started, "http_transaction_start", trace.Tags()...,
+	t.TestKeys.AppendNetworkEvents(measurexlite.NewArchivalNetworkEvent(
+		trace.Index(),
+		started,
+		"http_transaction_start",
+		network,
+		address,
+		0,
+		nil,
+		started,
+		trace.Tags()...,
 	))
 
 	resp, err := txp.RoundTrip(req)
@@ -272,8 +280,16 @@ func (t *CleartextFlow) httpTransaction(ctx context.Context, network, address, a
 	}
 
 	finished := trace.TimeSince(trace.ZeroTime())
-	t.TestKeys.AppendNetworkEvents(measurexlite.NewAnnotationArchivalNetworkEvent(
-		trace.Index(), finished, "http_transaction_done", trace.Tags()...,
+	t.TestKeys.AppendNetworkEvents(measurexlite.NewArchivalNetworkEvent(
+		trace.Index(),
+		finished,
+		"http_transaction_done",
+		network,
+		address,
+		0,
+		nil,
+		finished,
+		trace.Tags()...,
 	))
 
 	ev := measurexlite.NewArchivalHTTPRequestResult(

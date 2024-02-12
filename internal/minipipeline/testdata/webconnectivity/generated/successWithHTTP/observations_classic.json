@@ -5,9 +5,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 1,
+      "TransactionID": 2,
       "TagFetchBody": null,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -55,11 +55,11 @@
     }
   ],
   "KnownTCPEndpoints": {
-    "4": {
+    "3": {
       "TagDepth": 0,
       "Type": 3,
       "Failure": "",
-      "TransactionID": 4,
+      "TransactionID": 3,
       "TagFetchBody": true,
       "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
@@ -73,7 +73,7 @@
       "IPAddress": "93.184.216.34",
       "IPAddressASN": 15133,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 4,
+      "EndpointTransactionID": 3,
       "EndpointProto": "tcp",
       "EndpointPort": "80",
       "EndpointAddress": "93.184.216.34:80",

@@ -196,6 +196,7 @@ func (sx *HTTPRoundTripStage[T]) doRoundTrip(ctx context.Context,
 		NewObservations(),
 	}
 
+	// TODO(bassosimone): https://github.com/ooni/probe-cli/pull/1505/files#r1486204572
 	observations[0].NetworkEvents = append(observations[0].NetworkEvents,
 		measurexlite.NewAnnotationArchivalNetworkEvent(
 			conn.Trace().Index(),
@@ -228,6 +229,7 @@ func (sx *HTTPRoundTripStage[T]) doRoundTrip(ctx context.Context,
 	}
 	finished := conn.Trace().TimeSince(conn.Trace().ZeroTime())
 
+	// TODO(bassosimone): https://github.com/ooni/probe-cli/pull/1505/files#r1486204572
 	observations[0].NetworkEvents = append(observations[0].NetworkEvents,
 		measurexlite.NewAnnotationArchivalNetworkEvent(
 			conn.Trace().Index(),
