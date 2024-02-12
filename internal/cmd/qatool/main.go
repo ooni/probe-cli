@@ -72,12 +72,19 @@ func runWebConnectivityLTE(tc *webconnectivityqa.TestCase) {
 		//
 		// see https://github.com/ooni/probe/issues/2677
 		tk.Queries = minipipeline.SortDNSLookupResults(tk.Queries)
+		minipipeline.ZeroTimeDNSLookupResults(tk.Queries)
 		tk.Do53.Queries = minipipeline.SortDNSLookupResults(tk.Do53.Queries)
+		minipipeline.ZeroTimeDNSLookupResults(tk.Do53.Queries)
 		tk.DoH.Queries = minipipeline.SortDNSLookupResults(tk.DoH.Queries)
+		minipipeline.ZeroTimeDNSLookupResults(tk.DoH.Queries)
 		tk.DNSDuplicateResponses = minipipeline.SortDNSLookupResults(tk.DNSDuplicateResponses)
+		minipipeline.ZeroTimeDNSLookupResults(tk.DNSDuplicateResponses)
 		tk.NetworkEvents = minipipeline.SortNetworkEvents(tk.NetworkEvents)
+		minipipeline.ZeroTimeNetworkEvents(tk.NetworkEvents)
 		tk.TCPConnect = minipipeline.SortTCPConnectResults(tk.TCPConnect)
+		minipipeline.ZeroTimeTCPConnectResults(tk.TCPConnect)
 		tk.TLSHandshakes = minipipeline.SortTLSHandshakeResults(tk.TLSHandshakes)
+		minipipeline.ZeroTimeTLSHandshakeResults(tk.TLSHandshakes)
 
 		// serialize the original measurement
 		mustSerializeMkdirAllAndWriteFile(actualDestdir, "measurement.json", measurement)
