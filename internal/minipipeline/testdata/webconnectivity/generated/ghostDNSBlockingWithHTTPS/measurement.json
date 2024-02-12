@@ -43,11 +43,11 @@
         "failure": "dns_nxdomain_error",
         "hostname": "itsat.info",
         "query_type": "A",
-        "raw_response": "PdyBAwABAAAAAAAABWl0c2F0BGluZm8AAAEAAQ==",
+        "raw_response": "2GmBAwABAAAAAAAABWl0c2F0BGluZm8AAAEAAQ==",
         "rcode": 3,
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "https://dns.google/dns-query",
+        "resolver_address": "https://dns.nextdns.io/dns-query",
         "t": 0,
         "tags": [
           "depth=0"
@@ -60,11 +60,11 @@
         "failure": "dns_nxdomain_error",
         "hostname": "itsat.info",
         "query_type": "AAAA",
-        "raw_response": "wB6BAwABAAAAAAAABWl0c2F0BGluZm8AABwAAQ==",
+        "raw_response": "X+GBAwABAAAAAAAABWl0c2F0BGluZm8AABwAAQ==",
         "rcode": 3,
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "https://dns.google/dns-query",
+        "resolver_address": "https://dns.nextdns.io/dns-query",
         "t": 0,
         "tags": [
           "depth=0"
@@ -108,10 +108,10 @@
         "failure": null,
         "hostname": "itsat.info",
         "query_type": "A",
-        "raw_response": "48mBAAABAAEAAAAABWl0c2F0BGluZm8AAAEAAQVpdHNhdARpbmZvAAABAAEAAA4QAART4EEp",
+        "raw_response": "X0GBAAABAAEAAAAABWl0c2F0BGluZm8AAAEAAQVpdHNhdARpbmZvAAABAAEAAA4QAART4EEp",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "208.67.220.220:53",
+        "resolver_address": "8.8.8.8:53",
         "t": 0,
         "tags": [
           "depth=0"
@@ -124,10 +124,10 @@
         "failure": "dns_no_answer",
         "hostname": "itsat.info",
         "query_type": "AAAA",
-        "raw_response": "YhmBAAABAAAAAAAABWl0c2F0BGluZm8AABwAAQ==",
+        "raw_response": "RMKBAAABAAAAAAAABWl0c2F0BGluZm8AABwAAQ==",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "208.67.220.220:53",
+        "resolver_address": "8.8.8.8:53",
         "t": 0,
         "tags": [
           "depth=0"

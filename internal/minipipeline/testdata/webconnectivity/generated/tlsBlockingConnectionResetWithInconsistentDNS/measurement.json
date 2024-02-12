@@ -51,7 +51,7 @@
         "failure": null,
         "hostname": "www.example.com",
         "query_type": "A",
-        "raw_response": "UbuBAAABAAEAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQABA3d3dwdleGFtcGxlA2NvbQAAAQABAAAOEAAEXbjYIg==",
+        "raw_response": "02yBAAABAAEAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQABA3d3dwdleGFtcGxlA2NvbQAAAQABAAAOEAAEXbjYIg==",
         "resolver_hostname": null,
         "resolver_port": null,
         "resolver_address": "https://dns.quad9.net/dns-query",
@@ -67,7 +67,7 @@
         "failure": "dns_no_answer",
         "hostname": "www.example.com",
         "query_type": "AAAA",
-        "raw_response": "tzWBAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAHAAB",
+        "raw_response": "DIWBAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAHAAB",
         "resolver_hostname": null,
         "resolver_port": null,
         "resolver_address": "https://dns.quad9.net/dns-query",
@@ -114,10 +114,10 @@
         "failure": null,
         "hostname": "www.example.com",
         "query_type": "A",
-        "raw_response": "ao2BAAABAAEAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQABA3d3dwdleGFtcGxlA2NvbQAAAQABAAAOEAAEgsC2EQ==",
+        "raw_response": "fX6BAAABAAEAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQABA3d3dwdleGFtcGxlA2NvbQAAAQABAAAOEAAEgsC2EQ==",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "208.67.222.222:53",
+        "resolver_address": "208.67.220.220:53",
         "t": 0,
         "tags": [
           "depth=0"
@@ -130,10 +130,10 @@
         "failure": "dns_no_answer",
         "hostname": "www.example.com",
         "query_type": "AAAA",
-        "raw_response": "c6eBAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAHAAB",
+        "raw_response": "2i+BAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAHAAB",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "208.67.222.222:53",
+        "resolver_address": "208.67.220.220:53",
         "t": 0,
         "tags": [
           "depth=0"
@@ -155,7 +155,7 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 40002
+        "transaction_id": 40001
       },
       {
         "ip": "93.184.216.34",
@@ -169,7 +169,7 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 40001
+        "transaction_id": 40002
       }
     ],
     "tls_handshakes": [
@@ -188,7 +188,7 @@
           "fetch_body=true"
         ],
         "tls_version": "",
-        "transaction_id": 40002
+        "transaction_id": 40001
       },
       {
         "network": "tcp",
@@ -205,7 +205,7 @@
           "fetch_body=true"
         ],
         "tls_version": "",
-        "transaction_id": 40001
+        "transaction_id": 40002
       }
     ],
     "x_control_request": {
@@ -222,10 +222,10 @@
         ]
       },
       "tcp_connect": [
-        "93.184.216.34:443",
-        "93.184.216.34:80",
         "130.192.182.17:443",
-        "130.192.182.17:80"
+        "130.192.182.17:80",
+        "93.184.216.34:443",
+        "93.184.216.34:80"
       ],
       "x_quic_enabled": false
     },

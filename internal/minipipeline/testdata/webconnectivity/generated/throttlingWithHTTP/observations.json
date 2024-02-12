@@ -425,7 +425,7 @@
     "30001": {
       "TagDepth": 0,
       "Type": 1,
-      "Failure": "generic_timeout_error",
+      "Failure": "",
       "TransactionID": 30001,
       "TagFetchBody": true,
       "DNSTransactionID": 20001,
@@ -445,7 +445,7 @@
       "EndpointProto": "tcp",
       "EndpointPort": "80",
       "EndpointAddress": "52.35.36.75:80",
-      "TCPConnectFailure": "generic_timeout_error",
+      "TCPConnectFailure": "",
       "TLSHandshakeFailure": null,
       "TLSServerName": null,
       "HTTPRequestURL": null,
