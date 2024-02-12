@@ -61,7 +61,7 @@
       "Failure": "ssl_unknown_authority",
       "TransactionID": 4,
       "TagFetchBody": true,
-      "DNSTransactionID": 3,
+      "DNSTransactionID": 2,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -111,8 +111,8 @@
       "DNSTransactionID": 3,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "",
-      "DNSQueryType": "A",
-      "DNSEngine": "doh",
+      "DNSQueryType": "ANY",
+      "DNSEngine": "getaddrinfo",
       "DNSResolvedAddrs": [
         "104.154.89.105"
       ],
@@ -158,8 +158,8 @@
       "DNSTransactionID": 2,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "",
-      "DNSQueryType": "ANY",
-      "DNSEngine": "getaddrinfo",
+      "DNSQueryType": "A",
+      "DNSEngine": "doh",
       "DNSResolvedAddrs": [
         "104.154.89.105"
       ],
@@ -247,9 +247,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "dns_no_answer",
-      "TransactionID": 3,
+      "TransactionID": 2,
       "TagFetchBody": null,
-      "DNSTransactionID": 3,
+      "DNSTransactionID": 2,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",

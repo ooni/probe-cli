@@ -13,7 +13,8 @@
   "DNSLookupUnexplainedFailure": [],
   "DNSExperimentFailure": "dns_no_answer",
   "DNSLookupExpectedFailure": [
-    1
+    1,
+    2
   ],
   "DNSLookupExpectedSuccess": [],
   "TCPConnectExpectedFailure": [],
@@ -50,7 +51,7 @@
       "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_no_answer",
-      "DNSQueryType": "AAAA",
+      "DNSQueryType": "A",
       "DNSEngine": "udp",
       "DNSResolvedAddrs": null,
       "IPAddressOrigin": null,
@@ -93,7 +94,7 @@
       "DNSTransactionID": 2,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_no_answer",
-      "DNSQueryType": "A",
+      "DNSQueryType": "AAAA",
       "DNSEngine": "udp",
       "DNSResolvedAddrs": null,
       "IPAddressOrigin": null,
