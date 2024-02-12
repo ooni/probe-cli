@@ -9,7 +9,7 @@
     "tunnel": 0
   },
   "input": "https://www.example.com/",
-  "measurement_start_time": "2024-02-12 20:02:22",
+  "measurement_start_time": "2024-02-12 20:04:32",
   "probe_asn": "AS137",
   "probe_cc": "IT",
   "probe_ip": "127.0.0.1",
@@ -37,8 +37,8 @@
         "failure": null,
         "operation": "connect",
         "proto": "tcp",
-        "t0": 0.033424,
-        "t": 0.03952,
+        "t0": 0.031056,
+        "t": 0.037272,
         "transaction_id": 40001,
         "tags": [
           "depth=0",
@@ -50,8 +50,8 @@
         "failure": null,
         "operation": "tls_handshake_start",
         "proto": "tcp",
-        "t0": 0.039537,
-        "t": 0.039537,
+        "t0": 0.037289,
+        "t": 0.037289,
         "transaction_id": 40001,
         "tags": [
           "depth=0",
@@ -64,8 +64,8 @@
         "num_bytes": 281,
         "operation": "write",
         "proto": "tcp",
-        "t0": 0.039621,
-        "t": 0.039627,
+        "t0": 0.037373,
+        "t": 0.037381,
         "transaction_id": 40001,
         "tags": [
           "depth=0",
@@ -78,8 +78,8 @@
         "num_bytes": 576,
         "operation": "read",
         "proto": "tcp",
-        "t0": 0.039629,
-        "t": 0.04696,
+        "t0": 0.037383,
+        "t": 0.044329,
         "transaction_id": 40001,
         "tags": [
           "depth=0",
@@ -89,25 +89,11 @@
       {
         "address": "93.184.216.34:443",
         "failure": null,
-        "num_bytes": 872,
+        "num_bytes": 1740,
         "operation": "read",
         "proto": "tcp",
-        "t0": 0.047055,
-        "t": 0.047057,
-        "transaction_id": 40001,
-        "tags": [
-          "depth=0",
-          "fetch_body=true"
-        ]
-      },
-      {
-        "address": "93.184.216.34:443",
-        "failure": null,
-        "num_bytes": 868,
-        "operation": "read",
-        "proto": "tcp",
-        "t0": 0.047058,
-        "t": 0.047319,
+        "t0": 0.044414,
+        "t": 0.044415,
         "transaction_id": 40001,
         "tags": [
           "depth=0",
@@ -120,8 +106,8 @@
         "num_bytes": 64,
         "operation": "write",
         "proto": "tcp",
-        "t0": 0.04819,
-        "t": 0.0482,
+        "t0": 0.04527,
+        "t": 0.045278,
         "transaction_id": 40001,
         "tags": [
           "depth=0",
@@ -133,8 +119,8 @@
         "failure": null,
         "operation": "tls_handshake_done",
         "proto": "tcp",
-        "t0": 0.048205,
-        "t": 0.048205,
+        "t0": 0.04528,
+        "t": 0.04528,
         "transaction_id": 40001,
         "tags": [
           "depth=0",
@@ -146,8 +132,8 @@
         "failure": null,
         "operation": "http_transaction_start",
         "proto": "tcp",
-        "t0": 0.048255,
-        "t": 0.048255,
+        "t0": 0.045311,
+        "t": 0.045311,
         "transaction_id": 40001,
         "tags": [
           "depth=0",
@@ -160,8 +146,8 @@
         "num_bytes": 304,
         "operation": "write",
         "proto": "tcp",
-        "t0": 0.048305,
-        "t": 0.048337,
+        "t0": 0.04535,
+        "t": 0.045377,
         "transaction_id": 40001,
         "tags": [
           "depth=0",
@@ -174,8 +160,8 @@
         "num_bytes": 1715,
         "operation": "read",
         "proto": "tcp",
-        "t0": 0.048344,
-        "t": 0.054265,
+        "t0": 0.045347,
+        "t": 0.051527,
         "transaction_id": 40001,
         "tags": [
           "depth=0",
@@ -187,8 +173,8 @@
         "failure": null,
         "operation": "http_transaction_done",
         "proto": "tcp",
-        "t0": 0.054332,
-        "t": 0.054332,
+        "t0": 0.051574,
+        "t": 0.051574,
         "transaction_id": 40001,
         "tags": [
           "depth=0",
@@ -201,8 +187,8 @@
         "num_bytes": 24,
         "operation": "write",
         "proto": "tcp",
-        "t0": 0.054356,
-        "t": 0.054363,
+        "t0": 0.051604,
+        "t": 0.051611,
         "transaction_id": 40001,
         "tags": [
           "depth=0",
@@ -215,8 +201,8 @@
         "num_bytes": 4031,
         "operation": "bytes_received_cumulative",
         "proto": "tcp",
-        "t0": 0.054372,
-        "t": 0.054372,
+        "t0": 0.051618,
+        "t": 0.051618,
         "transaction_id": 40001,
         "tags": [
           "depth=0",
@@ -231,7 +217,7 @@
         }
       ],
       "udp_v4": {
-        "9.9.9.9:53": [
+        "1.0.0.1:53": [
           {
             "address": "130.192.91.211"
           }
@@ -243,161 +229,161 @@
         {
           "failure": null,
           "operation": "resolve_start",
-          "t0": 0.000087,
-          "t": 0.000087,
+          "t0": 0.000074,
+          "t": 0.000074,
           "transaction_id": 20001,
           "tags": [
             "depth=0"
           ]
         },
         {
-          "address": "172.64.41.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
           "operation": "connect",
           "proto": "tcp",
-          "t0": 0.006242,
-          "t": 0.012163,
+          "t0": 0.005731,
+          "t": 0.011105,
           "transaction_id": 20001,
           "tags": [
             "depth=0"
           ]
         },
         {
-          "address": "172.64.41.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
           "operation": "tls_handshake_start",
           "proto": "tcp",
-          "t0": 0.012177,
-          "t": 0.012177,
+          "t0": 0.011119,
+          "t": 0.011119,
           "transaction_id": 20001,
           "tags": [
             "depth=0"
           ]
         },
         {
-          "address": "172.64.41.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
-          "num_bytes": 292,
+          "num_bytes": 279,
           "operation": "write",
           "proto": "tcp",
-          "t0": 0.012261,
-          "t": 0.012269,
+          "t0": 0.011218,
+          "t": 0.011227,
           "transaction_id": 20001,
           "tags": [
             "depth=0"
           ]
         },
         {
-          "address": "172.64.41.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
           "num_bytes": 576,
           "operation": "read",
           "proto": "tcp",
-          "t0": 0.012271,
-          "t": 0.020672,
+          "t0": 0.011229,
+          "t": 0.018297,
           "transaction_id": 20001,
           "tags": [
             "depth=0"
           ]
         },
         {
-          "address": "172.64.41.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
           "num_bytes": 872,
           "operation": "read",
           "proto": "tcp",
-          "t0": 0.020764,
-          "t": 0.020765,
+          "t0": 0.018398,
+          "t": 0.018399,
           "transaction_id": 20001,
           "tags": [
             "depth=0"
           ]
         },
         {
-          "address": "172.64.41.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
-          "num_bytes": 846,
+          "num_bytes": 820,
           "operation": "read",
           "proto": "tcp",
-          "t0": 0.020766,
-          "t": 0.020782,
+          "t0": 0.0184,
+          "t": 0.018887,
           "transaction_id": 20001,
           "tags": [
             "depth=0"
           ]
         },
         {
-          "address": "172.64.41.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
           "num_bytes": 64,
           "operation": "write",
           "proto": "tcp",
-          "t0": 0.021677,
-          "t": 0.021683,
+          "t0": 0.019758,
+          "t": 0.019765,
           "transaction_id": 20001,
           "tags": [
             "depth=0"
           ]
         },
         {
-          "address": "172.64.41.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
           "operation": "tls_handshake_done",
           "proto": "tcp",
-          "t0": 0.021685,
-          "t": 0.021685,
+          "t0": 0.019768,
+          "t": 0.019768,
           "transaction_id": 20001,
           "tags": [
             "depth=0"
           ]
         },
         {
-          "address": "172.64.41.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
-          "num_bytes": 396,
+          "num_bytes": 383,
           "operation": "write",
           "proto": "tcp",
-          "t0": 0.021722,
-          "t": 0.021747,
+          "t0": 0.019809,
+          "t": 0.019838,
           "transaction_id": 20001,
           "tags": [
             "depth=0"
           ]
         },
         {
-          "address": "172.64.41.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
           "num_bytes": 170,
           "operation": "read",
           "proto": "tcp",
-          "t0": 0.021713,
-          "t": 0.027621,
+          "t0": 0.0198,
+          "t": 0.02525,
           "transaction_id": 20001,
           "tags": [
             "depth=0"
           ]
         },
         {
-          "address": "172.64.41.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
-          "num_bytes": 396,
+          "num_bytes": 383,
           "operation": "write",
           "proto": "tcp",
-          "t0": 0.027654,
-          "t": 0.027662,
+          "t0": 0.025282,
+          "t": 0.02529,
           "transaction_id": 20001,
           "tags": [
             "depth=0"
           ]
         },
         {
-          "address": "172.64.41.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
           "num_bytes": 201,
           "operation": "read",
           "proto": "tcp",
-          "t0": 0.027644,
-          "t": 0.033264,
+          "t0": 0.025272,
+          "t": 0.030886,
           "transaction_id": 20001,
           "tags": [
             "depth=0"
@@ -406,21 +392,21 @@
         {
           "failure": null,
           "operation": "resolve_done",
-          "t0": 0.033309,
-          "t": 0.033309,
+          "t0": 0.030931,
+          "t": 0.030931,
           "transaction_id": 20001,
           "tags": [
             "depth=0"
           ]
         },
         {
-          "address": "172.64.41.4:443",
+          "address": "9.9.9.9:443",
           "failure": null,
           "num_bytes": 24,
           "operation": "write",
           "proto": "tcp",
-          "t0": 0.033314,
-          "t": 0.033346,
+          "t0": 0.030935,
+          "t": 0.030969,
           "transaction_id": 20001,
           "tags": [
             "depth=0"
@@ -431,22 +417,29 @@
         {
           "answers": [
             {
-              "asn": 13335,
-              "as_org_name": "Cloudflare Inc",
+              "asn": 19281,
+              "as_org_name": "Quad9",
               "answer_type": "A",
-              "ipv4": "172.64.41.4",
+              "ipv4": "9.9.9.9",
+              "ttl": null
+            },
+            {
+              "asn": 19281,
+              "as_org_name": "Quad9",
+              "answer_type": "A",
+              "ipv4": "149.112.112.112",
               "ttl": null
             }
           ],
           "engine": "getaddrinfo",
           "failure": null,
-          "hostname": "mozilla.cloudflare-dns.com",
+          "hostname": "dns.quad9.net",
           "query_type": "ANY",
           "resolver_hostname": null,
           "resolver_port": null,
           "resolver_address": "",
-          "t0": 0.000147,
-          "t": 0.006148,
+          "t0": 0.000136,
+          "t": 0.00569,
           "tags": [
             "depth=0"
           ],
@@ -456,14 +449,14 @@
       "requests": [],
       "tcp_connect": [
         {
-          "ip": "172.64.41.4",
+          "ip": "9.9.9.9",
           "port": 443,
           "status": {
             "failure": null,
             "success": true
           },
-          "t0": 0.006242,
-          "t": 0.012163,
+          "t0": 0.005731,
+          "t": 0.011105,
           "tags": [
             "depth=0"
           ],
@@ -473,24 +466,24 @@
       "tls_handshakes": [
         {
           "network": "tcp",
-          "address": "172.64.41.4:443",
+          "address": "9.9.9.9:443",
           "cipher_suite": "TLS_AES_128_GCM_SHA256",
           "failure": null,
           "negotiated_protocol": "http/1.1",
           "no_tls_verify": false,
           "peer_certificates": [
             {
-              "data": "MIIDiDCCAnCgAwIBAgIUB0cRwd4CUkKlTz5+ocomc3vlZ4gwDQYJKoZIhvcNAQELBQAwHzENMAsGA1UEChMET09OSTEOMAwGA1UEAxMFamFmYXIwHhcNMjQwMjEyMTkwMjIyWhcNMjQwMjEyMjEwMjIyWjA9MRYwFAYDVQQKEw1PT05JIE5ldGVtIENBMSMwIQYDVQQDExptb3ppbGxhLmNsb3VkZmxhcmUtZG5zLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANcyKCuVMD0ltuZFT7HkApUrdXOV1PNInMq/2wH1jONIGEy5hc1LRYwLASG3cBy5a3LeF2Gv8++haeI9/YDdAMeExjY9E0YHyM0esWU2b/oX/764vWdBFeEwSn/WVrDyRK3xp2tjMiz2rghDeHY65L1ADbEjvUK102oZfK4enupr1mq9e8/B55+QLwC0m5glGEkX3ZNrzTQnHS9Akhl6iYuJBLet2zpBrqoS/MW4sKi3QsvwKu+yJ6Ioec3y/zyVxU/Zwyh91h8w+SWEKx6ix68F2SlUI6ryZUhusb2RlNbP1Mv9v+MCuLRs2a5jmUnk7D/gJLA3snN8NT16g50lAlsCAwEAAaOBnTCBmjAOBgNVHQ8BAf8EBAMCBaAwEwYDVR0lBAwwCgYIKwYBBQUHAwEwDAYDVR0TAQH/BAIwADAdBgNVHQ4EFgQUag38Xqu614AQoG9ckEGaiecsNCgwHwYDVR0jBBgwFoAU+mQt+R9LZCd100P1hI5DjsG9SV8wJQYDVR0RBB4wHIIabW96aWxsYS5jbG91ZGZsYXJlLWRucy5jb20wDQYJKoZIhvcNAQELBQADggEBAJAbt3XUpJpLfr4Y2dVkjCju/splEHX8W6RVELkZlI8uKV12yt7YFks5FritWAevHTUkIJ2DGq0mXqyBBeR1FIZYpfJ/u7fKBynQlPZqwwe2gY+E61W4aEQ5BNHjc0JtHHKl6Ee0OllWSlsFavhR9pzTNc+PYv2CSPsCRJwbN6bQeeSUKIG6Wa+tPGdw4sYpallziJL/9VRqAPpBYQxsmYmfP8cYVGGREO4tvc+xZvfdJ25behPvUCpsEGrFTIFX955VBdVsnWrhQyzpHV+zfd142M6ni26qdEuzfC00jjWb2Rdh7dLZUrO/IEAammDN/aLqblAgDLkfiIHLzvqr/fk=",
+              "data": "MIIDbjCCAlagAwIBAgIUZ3tXa3Bbv2bYKJFFzUYq0heiQOUwDQYJKoZIhvcNAQELBQAwHzENMAsGA1UEChMET09OSTEOMAwGA1UEAxMFamFmYXIwHhcNMjQwMjEyMTkwNDMyWhcNMjQwMjEyMjEwNDMyWjAwMRYwFAYDVQQKEw1PT05JIE5ldGVtIENBMRYwFAYDVQQDEw1kbnMucXVhZDkubmV0MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6thGKw62WpYct9JuN8bm6KbRHVxVdxRBS/kgrNqquEDMJi9ky4NELx56EQhqZYTyyqIc9bcXPx6MTI8r6e9jzS5khzRdsXwYu03zkGwD0GMnT0hpwctvFxcSVg0/UW84Jl57EvAFFiOXSLOigQNYlTrW2CSqS54uVh//yKBjlIfKao+7T91dYqyPQXoBsfKOYIPDZh989kREwUQlWYCalPCyhvhllpknd6UkAzapwXnXKyF6fDvXrNTd9zPDiQ4K9fCVpcC6W6SykuVFE62d3eBP5xwkZt3Cd5dPnVmu8w2kO3Txx+BUzFKRxyg2/N+rhf79OFVgkO8KUKVE0DIDOQIDAQABo4GQMIGNMA4GA1UdDwEB/wQEAwIFoDATBgNVHSUEDDAKBggrBgEFBQcDATAMBgNVHRMBAf8EAjAAMB0GA1UdDgQWBBSkVJpBwflH31mXE6s7+hjffLfxzTAfBgNVHSMEGDAWgBSvVAil3EOazDEJlJyF29gDhVGvcTAYBgNVHREEETAPgg1kbnMucXVhZDkubmV0MA0GCSqGSIb3DQEBCwUAA4IBAQCezSTPnzxjo7ttyewHuidniG+nhee2+J1+AHFAxoRMMCl1AoAD93LCSvJ442O7E0sq8+7/rT8M784C38HW72HyEVyg+WU+iv6b5oiY+X8vg+ozmtc9MNYkXQk7EK2ZZMFwI8GxUyNg86mudWOWCmFn1SPlh1PEq0qMjmlNW8ODLY5n1nU5T6ZvVZgLo0ViJphs1UymPM9EKEG+uw+4nNAKCNTdwjxF3PoYthQ5g6SQNtQAwD/Qp6tvRbGRYT55vA2wGFcWt0/rG+xR9KZ/DGGBYfvpos6NV74yZO7Fh63MvFIL1pK1kkI6w2lLS/ZKTGolqXRLVRcuMr7OPJCtFXRl",
               "format": "base64"
             },
             {
-              "data": "MIIDNjCCAh6gAwIBAgIVANbfU9o4XUqDqZnZd2IG8D8YUGxqMA0GCSqGSIb3DQEBCwUAMB8xDTALBgNVBAoTBE9PTkkxDjAMBgNVBAMTBWphZmFyMB4XDTI0MDIxMTIwMDIyMloXDTI0MDIxMzIwMDIyMlowHzENMAsGA1UEChMET09OSTEOMAwGA1UEAxMFamFmYXIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDIpDXabUyPxUEJjP/UtyqdLVfMU4aJ+Vzco4pGZuuE3NkUXC9NDXtjRDukPQSR1nZ3A4BQ2Zn915lYq63au+kNJMf3qPIbjP4T6pKfBncj9nlW0RiH8gW1f4juoZeez7Uc42+Ntq9/eLSTbLUHBZuQEVNbHRjwrU3PVI3ODianDeExc1xdumPEBekIwY48WY/NpZkxsuaKy+ntl7jZr2+sFOH4EsMxyu2CwVqqgzZ3Y0qoQA0wwMs1bKn4ryzU+m6hURTREUPu17eQiF0SzpsWbBmXP6loWhrV/bZxiL2/btDEvNo/7okWp+3U3w2JbVPr16E45I/xTVLYPrlKrid1AgMBAAGjaTBnMA4GA1UdDwEB/wQEAwICpDATBgNVHSUEDDAKBggrBgEFBQcDATAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBT6ZC35H0tkJ3XTQ/WEjkOOwb1JXzAQBgNVHREECTAHggVqYWZhcjANBgkqhkiG9w0BAQsFAAOCAQEAoLvQW4mLSbwQpoimcyq6tM+3Dhp0Qs+2wKQHkNnpd22Iv7/L1K/AJT4ryr9/4F92jYcAg1C44/XhaFv+99Mk6/GmcjrvDf2HzMvu0jYseh57icZ1msCA16zVjvzwC/P1fDe2rq+oav8y6DiKqHL+/Hd+j861by4i9NeVegxno2MZqdfxFHu9s3nvj0ylPnrARsKquoyk+aewQ0DgNX9b8LKTL3uv5B/92p5TRJiSX17SAnKwwXT4dQ8+RmD+T5yvJC0sPOT7EDym8z5SvkPvs9yeq2qI1fo4alBdv8iixpD1iD2TTBjpIZJ6Li8o4oAFzU8EEjTgBjt3zvDBUOTNBg==",
+              "data": "MIIDNjCCAh6gAwIBAgIVAPW6Xre/YxXnp+W+kulj/RjZl03MMA0GCSqGSIb3DQEBCwUAMB8xDTALBgNVBAoTBE9PTkkxDjAMBgNVBAMTBWphZmFyMB4XDTI0MDIxMTIwMDQzMVoXDTI0MDIxMzIwMDQzMVowHzENMAsGA1UEChMET09OSTEOMAwGA1UEAxMFamFmYXIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQChrJlu6pKXf8JpOsyeyHFROvpQ9tQ5zjgaM0+VWm+HAK2KN4JtMthSHVbdAvb+MqRd2WPW2XXl44kW0Axj21qB8g7E08febF8RGTsDmI6fj1HaufPKR5RmFqj1vuiQSpsdSyEiPPE5KmHgsqgAZpHNOJUvl492rgvSehvpqvVORpLGz0Kx6WfyyxtMyqLsS1Zm40g+28SzYHO1+6YbEs2odUL3KanyEnVdu2ps+9gU+7lNFrCLD4jH8QcJvaqTb0oTZ1LC+BocyxqDrNCCvxlpabpbuuIGKL39Yuyvl94KVKSFyOzfxhepQ6o2zOfC3oFvNY//Y/2Ywh+IJkGr8uKnAgMBAAGjaTBnMA4GA1UdDwEB/wQEAwICpDATBgNVHSUEDDAKBggrBgEFBQcDATAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBSvVAil3EOazDEJlJyF29gDhVGvcTAQBgNVHREECTAHggVqYWZhcjANBgkqhkiG9w0BAQsFAAOCAQEAhB+9hd3ddUZY4nsk5ISlkZS2JCzWqKYoGRVZnw3Pn/Ki8rpc4hn1WmWY3gR6rkM20Tjzi9QxoFq59a9enBa0e9SO27RjLN198R/bQo86iMAVixHpv1w938O90MRrsCFYgoNJLJ+bkQitX1TpOa6HC9MIYA+t/xRdSJBPrPpjpcLNbalAthuSeim81mT9oledO99yFq1XfjtsL7wlFpj1+YwviLRM5KjIk42yK8+goi4j9o4BNroICXNqUoQJfLzTUzesXj0dkyFipannrQrKKhAcCX0mGtBFpC03GIufyXHs1BXRM8eZCs3l/75/6N7RkD78ZarP2RRPiiFyw+Hsww==",
               "format": "base64"
             }
           ],
-          "server_name": "mozilla.cloudflare-dns.com",
-          "t0": 0.012177,
-          "t": 0.021685,
+          "server_name": "dns.quad9.net",
+          "t0": 0.011119,
+          "t": 0.019768,
           "tags": [
             "depth=0"
           ],
@@ -504,60 +497,60 @@
         {
           "failure": null,
           "operation": "resolve_start",
-          "t0": 0.000092,
-          "t": 0.000092,
+          "t0": 0.000063,
+          "t": 0.000063,
           "transaction_id": 10001,
           "tags": [
             "depth=0"
           ]
         },
         {
-          "address": "9.9.9.9:53",
+          "address": "1.0.0.1:53",
           "failure": null,
           "num_bytes": 33,
           "operation": "write",
           "proto": "udp",
-          "t0": 0.000129,
-          "t": 0.00015,
+          "t0": 0.000116,
+          "t": 0.000167,
           "transaction_id": 10001,
           "tags": [
             "depth=0"
           ]
         },
         {
-          "address": "9.9.9.9:53",
+          "address": "1.0.0.1:53",
           "failure": null,
           "num_bytes": 33,
           "operation": "write",
           "proto": "udp",
-          "t0": 0.000142,
-          "t": 0.000156,
+          "t0": 0.000167,
+          "t": 0.000174,
           "transaction_id": 10001,
           "tags": [
             "depth=0"
           ]
         },
         {
-          "address": "9.9.9.9:53",
-          "failure": null,
-          "num_bytes": 33,
-          "operation": "read",
-          "proto": "udp",
-          "t0": 0.000155,
-          "t": 0.005184,
-          "transaction_id": 10001,
-          "tags": [
-            "depth=0"
-          ]
-        },
-        {
-          "address": "9.9.9.9:53",
+          "address": "1.0.0.1:53",
           "failure": null,
           "num_bytes": 64,
           "operation": "read",
           "proto": "udp",
-          "t0": 0.000165,
-          "t": 0.006011,
+          "t0": 0.000181,
+          "t": 0.005559,
+          "transaction_id": 10001,
+          "tags": [
+            "depth=0"
+          ]
+        },
+        {
+          "address": "1.0.0.1:53",
+          "failure": null,
+          "num_bytes": 33,
+          "operation": "read",
+          "proto": "udp",
+          "t0": 0.000201,
+          "t": 0.006038,
           "transaction_id": 10001,
           "tags": [
             "depth=0"
@@ -566,8 +559,8 @@
         {
           "failure": null,
           "operation": "resolve_done",
-          "t0": 0.006048,
-          "t": 0.006048,
+          "t0": 0.006058,
+          "t": 0.006058,
           "transaction_id": 10001,
           "tags": [
             "depth=0"
@@ -592,12 +585,12 @@
         "failure": null,
         "hostname": "www.example.com",
         "query_type": "A",
-        "raw_response": "AP2BAAABAAEAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQABA3d3dwdleGFtcGxlA2NvbQAAAQABAAAOEAAEXbjYIg==",
+        "raw_response": "1E+BAAABAAEAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQABA3d3dwdleGFtcGxlA2NvbQAAAQABAAAOEAAEXbjYIg==",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "https://mozilla.cloudflare-dns.com/dns-query",
-        "t0": 0.00013,
-        "t": 0.033286,
+        "resolver_address": "https://dns.quad9.net/dns-query",
+        "t0": 0.000173,
+        "t": 0.030911,
         "tags": [
           "depth=0"
         ],
@@ -609,12 +602,12 @@
         "failure": "dns_no_answer",
         "hostname": "www.example.com",
         "query_type": "AAAA",
-        "raw_response": "9L+BAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAHAAB",
+        "raw_response": "3G+BAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAHAAB",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "https://mozilla.cloudflare-dns.com/dns-query",
-        "t0": 0.000095,
-        "t": 0.027647,
+        "resolver_address": "https://dns.quad9.net/dns-query",
+        "t0": 0.000083,
+        "t": 0.025276,
         "tags": [
           "depth=0"
         ],
@@ -629,8 +622,8 @@
         "resolver_hostname": null,
         "resolver_port": null,
         "resolver_address": "",
-        "t0": 0.000076,
-        "t": 0.005786,
+        "t0": 0.000093,
+        "t": 0.005102,
         "tags": [
           "depth=0"
         ],
@@ -650,12 +643,12 @@
         "failure": null,
         "hostname": "www.example.com",
         "query_type": "A",
-        "raw_response": "yOSBAAABAAEAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQABA3d3dwdleGFtcGxlA2NvbQAAAQABAAAOEAAEXbjYIg==",
+        "raw_response": "C7KBAAABAAEAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQABA3d3dwdleGFtcGxlA2NvbQAAAQABAAAOEAAEXbjYIg==",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "9.9.9.9:53",
-        "t0": 0.000121,
-        "t": 0.006015,
+        "resolver_address": "1.0.0.1:53",
+        "t0": 0.000141,
+        "t": 0.005571,
         "tags": [
           "depth=0"
         ],
@@ -667,12 +660,12 @@
         "failure": "dns_no_answer",
         "hostname": "www.example.com",
         "query_type": "AAAA",
-        "raw_response": "BIiBAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAHAAB",
+        "raw_response": "jV+BAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAHAAB",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "9.9.9.9:53",
-        "t0": 0.000101,
-        "t": 0.00519,
+        "resolver_address": "1.0.0.1:53",
+        "t0": 0.000076,
+        "t": 0.006042,
         "tags": [
           "depth=0"
         ],
@@ -755,8 +748,8 @@
             "Date": "Thu, 24 Aug 2023 14:35:29 GMT"
           }
         },
-        "t0": 0.048255,
-        "t": 0.054332,
+        "t0": 0.045311,
+        "t": 0.051574,
         "tags": [
           "depth=0",
           "fetch_body=true"
@@ -772,8 +765,8 @@
           "failure": null,
           "success": true
         },
-        "t0": 0.033424,
-        "t": 0.03952,
+        "t0": 0.031056,
+        "t": 0.037272,
         "tags": [
           "depth=0",
           "fetch_body=true"
@@ -791,17 +784,17 @@
         "no_tls_verify": false,
         "peer_certificates": [
           {
-            "data": "MIIDnjCCAoagAwIBAgIVAIm/CHIU9pJIZI13MRBqZQgQ8QyDMA0GCSqGSIb3DQEBCwUAMB8xDTALBgNVBAoTBE9PTkkxDjAMBgNVBAMTBWphZmFyMB4XDTI0MDIxMjE5MDIyMloXDTI0MDIxMjIxMDIyMlowMjEWMBQGA1UEChMNT09OSSBOZXRlbSBDQTEYMBYGA1UEAxMPd3d3LmV4YW1wbGUuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1zIoK5UwPSW25kVPseQClSt1c5XU80icyr/bAfWM40gYTLmFzUtFjAsBIbdwHLlrct4XYa/z76Fp4j39gN0Ax4TGNj0TRgfIzR6xZTZv+hf/vri9Z0EV4TBKf9ZWsPJErfGna2MyLPauCEN4djrkvUANsSO9QrXTahl8rh6e6mvWar17z8Hnn5AvALSbmCUYSRfdk2vNNCcdL0CSGXqJi4kEt63bOkGuqhL8xbiwqLdCy/Aq77Inoih5zfL/PJXFT9nDKH3WHzD5JYQrHqLHrwXZKVQjqvJlSG6xvZGU1s/Uy/2/4wK4tGzZrmOZSeTsP+AksDeyc3w1PXqDnSUCWwIDAQABo4G9MIG6MA4GA1UdDwEB/wQEAwIFoDATBgNVHSUEDDAKBggrBgEFBQcDATAMBgNVHRMBAf8EAjAAMB0GA1UdDgQWBBRqDfxeq7rXgBCgb1yQQZqJ5yw0KDAfBgNVHSMEGDAWgBT6ZC35H0tkJ3XTQ/WEjkOOwb1JXzBFBgNVHREEPjA8gg93d3cuZXhhbXBsZS5jb22CC2V4YW1wbGUuY29tgg93d3cuZXhhbXBsZS5vcmeCC2V4YW1wbGUub3JnMA0GCSqGSIb3DQEBCwUAA4IBAQAcfnx6WsOpGtxik1/EfQ+m/xIhYAv/UTX/qVUgGpGh8oQx+XVC9fDLraEJE2TWsSmJnPQISu9gkILiQ7sy7uN1xuU7a2Eh2cwe054NTkShsw2XvKZ4W2Ac9MdqQsgPf6Fp4E+ZL/2X3SCyLkEvmDFguyDXRpyNo+3vJq8+jjFbRZunykLxX3tYhJYgryG1cm8txK1N4VJ8lfw+BbdugmoE5ZETI166bUbacMwh+O32eEh8MU4pQ7JoL00DXgP7QvTeIDOrjaTqZe6YG8SOzeyxDgY5cj1YUuDopgCup7rnkM1XaFz1Vv3WMe9ru+0XCwyzBcyArWXMPa7/DQLrVEwt",
+            "data": "MIIDnjCCAoagAwIBAgIVAOZ50E43dhRroTJpGrU4ksFKaUs4MA0GCSqGSIb3DQEBCwUAMB8xDTALBgNVBAoTBE9PTkkxDjAMBgNVBAMTBWphZmFyMB4XDTI0MDIxMjE5MDQzMloXDTI0MDIxMjIxMDQzMlowMjEWMBQGA1UEChMNT09OSSBOZXRlbSBDQTEYMBYGA1UEAxMPd3d3LmV4YW1wbGUuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6thGKw62WpYct9JuN8bm6KbRHVxVdxRBS/kgrNqquEDMJi9ky4NELx56EQhqZYTyyqIc9bcXPx6MTI8r6e9jzS5khzRdsXwYu03zkGwD0GMnT0hpwctvFxcSVg0/UW84Jl57EvAFFiOXSLOigQNYlTrW2CSqS54uVh//yKBjlIfKao+7T91dYqyPQXoBsfKOYIPDZh989kREwUQlWYCalPCyhvhllpknd6UkAzapwXnXKyF6fDvXrNTd9zPDiQ4K9fCVpcC6W6SykuVFE62d3eBP5xwkZt3Cd5dPnVmu8w2kO3Txx+BUzFKRxyg2/N+rhf79OFVgkO8KUKVE0DIDOQIDAQABo4G9MIG6MA4GA1UdDwEB/wQEAwIFoDATBgNVHSUEDDAKBggrBgEFBQcDATAMBgNVHRMBAf8EAjAAMB0GA1UdDgQWBBSkVJpBwflH31mXE6s7+hjffLfxzTAfBgNVHSMEGDAWgBSvVAil3EOazDEJlJyF29gDhVGvcTBFBgNVHREEPjA8gg93d3cuZXhhbXBsZS5jb22CC2V4YW1wbGUuY29tgg93d3cuZXhhbXBsZS5vcmeCC2V4YW1wbGUub3JnMA0GCSqGSIb3DQEBCwUAA4IBAQAbC/UXyjML9/xN5OJ/KCqBMtK/M8JaNO1oZ7w5D889TTT2KYFuJJrbBfT6wkuJovN/WM4iJ0bzK+NTjtbsynZOTbaMhnglMg0BbQC25PCMAW+gme4vpObSs8a190cVZudnTalocCvrW6+aNR17UL21GGw2/uWot8mI3St/aCq4PNL3Qz/DSZQLAUz39Yn+0nT3U+bBvFLvUDaqxJV1NFR9yTIZalMjZfBLNcEMI46xzgR7NdvvapCNDKWP1+1C1soIczMaS38GUWulz4eNV5ohG/yRp8egSpILgS7gFJklYGFUjCAAehLvQ5hPslSg/sIPcKqu/6vmqx3eGC+5MIkc",
             "format": "base64"
           },
           {
-            "data": "MIIDNjCCAh6gAwIBAgIVANbfU9o4XUqDqZnZd2IG8D8YUGxqMA0GCSqGSIb3DQEBCwUAMB8xDTALBgNVBAoTBE9PTkkxDjAMBgNVBAMTBWphZmFyMB4XDTI0MDIxMTIwMDIyMloXDTI0MDIxMzIwMDIyMlowHzENMAsGA1UEChMET09OSTEOMAwGA1UEAxMFamFmYXIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDIpDXabUyPxUEJjP/UtyqdLVfMU4aJ+Vzco4pGZuuE3NkUXC9NDXtjRDukPQSR1nZ3A4BQ2Zn915lYq63au+kNJMf3qPIbjP4T6pKfBncj9nlW0RiH8gW1f4juoZeez7Uc42+Ntq9/eLSTbLUHBZuQEVNbHRjwrU3PVI3ODianDeExc1xdumPEBekIwY48WY/NpZkxsuaKy+ntl7jZr2+sFOH4EsMxyu2CwVqqgzZ3Y0qoQA0wwMs1bKn4ryzU+m6hURTREUPu17eQiF0SzpsWbBmXP6loWhrV/bZxiL2/btDEvNo/7okWp+3U3w2JbVPr16E45I/xTVLYPrlKrid1AgMBAAGjaTBnMA4GA1UdDwEB/wQEAwICpDATBgNVHSUEDDAKBggrBgEFBQcDATAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBT6ZC35H0tkJ3XTQ/WEjkOOwb1JXzAQBgNVHREECTAHggVqYWZhcjANBgkqhkiG9w0BAQsFAAOCAQEAoLvQW4mLSbwQpoimcyq6tM+3Dhp0Qs+2wKQHkNnpd22Iv7/L1K/AJT4ryr9/4F92jYcAg1C44/XhaFv+99Mk6/GmcjrvDf2HzMvu0jYseh57icZ1msCA16zVjvzwC/P1fDe2rq+oav8y6DiKqHL+/Hd+j861by4i9NeVegxno2MZqdfxFHu9s3nvj0ylPnrARsKquoyk+aewQ0DgNX9b8LKTL3uv5B/92p5TRJiSX17SAnKwwXT4dQ8+RmD+T5yvJC0sPOT7EDym8z5SvkPvs9yeq2qI1fo4alBdv8iixpD1iD2TTBjpIZJ6Li8o4oAFzU8EEjTgBjt3zvDBUOTNBg==",
+            "data": "MIIDNjCCAh6gAwIBAgIVAPW6Xre/YxXnp+W+kulj/RjZl03MMA0GCSqGSIb3DQEBCwUAMB8xDTALBgNVBAoTBE9PTkkxDjAMBgNVBAMTBWphZmFyMB4XDTI0MDIxMTIwMDQzMVoXDTI0MDIxMzIwMDQzMVowHzENMAsGA1UEChMET09OSTEOMAwGA1UEAxMFamFmYXIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQChrJlu6pKXf8JpOsyeyHFROvpQ9tQ5zjgaM0+VWm+HAK2KN4JtMthSHVbdAvb+MqRd2WPW2XXl44kW0Axj21qB8g7E08febF8RGTsDmI6fj1HaufPKR5RmFqj1vuiQSpsdSyEiPPE5KmHgsqgAZpHNOJUvl492rgvSehvpqvVORpLGz0Kx6WfyyxtMyqLsS1Zm40g+28SzYHO1+6YbEs2odUL3KanyEnVdu2ps+9gU+7lNFrCLD4jH8QcJvaqTb0oTZ1LC+BocyxqDrNCCvxlpabpbuuIGKL39Yuyvl94KVKSFyOzfxhepQ6o2zOfC3oFvNY//Y/2Ywh+IJkGr8uKnAgMBAAGjaTBnMA4GA1UdDwEB/wQEAwICpDATBgNVHSUEDDAKBggrBgEFBQcDATAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBSvVAil3EOazDEJlJyF29gDhVGvcTAQBgNVHREECTAHggVqYWZhcjANBgkqhkiG9w0BAQsFAAOCAQEAhB+9hd3ddUZY4nsk5ISlkZS2JCzWqKYoGRVZnw3Pn/Ki8rpc4hn1WmWY3gR6rkM20Tjzi9QxoFq59a9enBa0e9SO27RjLN198R/bQo86iMAVixHpv1w938O90MRrsCFYgoNJLJ+bkQitX1TpOa6HC9MIYA+t/xRdSJBPrPpjpcLNbalAthuSeim81mT9oledO99yFq1XfjtsL7wlFpj1+YwviLRM5KjIk42yK8+goi4j9o4BNroICXNqUoQJfLzTUzesXj0dkyFipannrQrKKhAcCX0mGtBFpC03GIufyXHs1BXRM8eZCs3l/75/6N7RkD78ZarP2RRPiiFyw+Hsww==",
             "format": "base64"
           }
         ],
         "server_name": "www.example.com",
-        "t0": 0.039537,
-        "t": 0.048205,
+        "t0": 0.037289,
+        "t": 0.04528,
         "tags": [
           "depth=0",
           "fetch_body=true"
@@ -874,11 +867,11 @@
     "x_conn_priority_log": [
       {
         "msg": "create with [{Addr:93.184.216.34 Flags:6}]",
-        "t": 0.033382
+        "t": 0.031006
       },
       {
         "msg": "conn 93.184.216.34:443: granted permission: true",
-        "t": 0.048222
+        "t": 0.045289
       }
     ],
     "control_failure": null,
@@ -897,7 +890,7 @@
     "accessible": false
   },
   "test_name": "web_connectivity",
-  "test_runtime": 0.506268,
-  "test_start_time": "2024-02-12 20:02:22",
+  "test_runtime": 0.506176,
+  "test_start_time": "2024-02-12 20:04:32",
   "test_version": "0.5.28"
 }
