@@ -6,17 +6,17 @@
     "FinalResponseFailure": ""
   },
   "DNSLookupSuccess": [
-    2
+    1
   ],
   "DNSLookupSuccessWithInvalidAddresses": [
-    2
+    1
   ],
   "DNSLookupSuccessWithValidAddress": [],
   "DNSLookupSuccessWithBogonAddresses": [
-    2
+    1
   ],
   "DNSLookupSuccessWithInvalidAddressesClassic": [
-    2
+    1
   ],
   "DNSLookupSuccessWithValidAddressClassic": [],
   "DNSLookupUnexpectedFailure": [],
@@ -53,9 +53,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 2,
+      "TransactionID": 1,
       "TagFetchBody": null,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",

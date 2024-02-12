@@ -5,9 +5,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 3,
+      "TransactionID": 1,
       "TagFetchBody": null,
-      "DNSTransactionID": 3,
+      "DNSTransactionID": 1,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -50,13 +50,13 @@
     }
   ],
   "KnownTCPEndpoints": {
-    "4": {
+    "40001": {
       "TagDepth": 0,
       "Type": 2,
       "Failure": "ssl_unknown_authority",
-      "TransactionID": 4,
+      "TransactionID": 40001,
       "TagFetchBody": true,
-      "DNSTransactionID": 2,
+      "DNSTransactionID": 20001,
       "DNSDomain": "untrusted-root.badssl.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -68,7 +68,7 @@
       "IPAddress": "104.154.89.105",
       "IPAddressASN": 396982,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 4,
+      "EndpointTransactionID": 40001,
       "EndpointProto": "tcp",
       "EndpointPort": "443",
       "EndpointAddress": "104.154.89.105:443",

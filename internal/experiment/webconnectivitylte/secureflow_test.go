@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net/http"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -16,7 +15,7 @@ func TestSecureFlow_Run(t *testing.T) {
 	type fields struct {
 		Address         string
 		DNSCache        *DNSCache
-		IDGenerator     *atomic.Int64
+		IDGenerator     *IDGenerator
 		Logger          model.Logger
 		NumRedirects    *NumRedirects
 		TestKeys        *TestKeys

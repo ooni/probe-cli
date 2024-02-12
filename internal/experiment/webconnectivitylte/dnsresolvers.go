@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
@@ -38,7 +37,7 @@ type DNSResolvers struct {
 	Depth int64
 
 	// IDGenerator is the MANDATORY atomic int64 to generate task IDs.
-	IDGenerator *atomic.Int64
+	IDGenerator *IDGenerator
 
 	// Logger is the MANDATORY logger to use.
 	Logger model.Logger
@@ -209,7 +208,7 @@ func (t *DNSResolvers) lookupHostSystem(parentCtx context.Context, out chan<- []
 	defer lookpCancel()
 
 	// create trace's index
-	index := t.IDGenerator.Add(1)
+	index := t.IDGenerator.NewIDForGetaddrinfo()
 
 	// create trace
 	trace := measurexlite.NewTrace(index, t.ZeroTime, fmt.Sprintf("depth=%d", t.Depth))
@@ -236,7 +235,7 @@ func (t *DNSResolvers) lookupHostUDP(parentCtx context.Context, udpAddress strin
 	defer lookpCancel()
 
 	// create trace's index
-	index := t.IDGenerator.Add(1)
+	index := t.IDGenerator.NewIDForDNSOverUDP()
 
 	// create trace
 	trace := measurexlite.NewTrace(index, t.ZeroTime, fmt.Sprintf("depth=%d", t.Depth))
@@ -325,7 +324,7 @@ func (t *DNSResolvers) lookupHostDNSOverHTTPS(parentCtx context.Context, out cha
 	defer lookpCancel()
 
 	// create trace's index
-	index := t.IDGenerator.Add(1)
+	index := t.IDGenerator.NewIDForDNSOverHTTPS()
 
 	// create trace
 	trace := measurexlite.NewTrace(index, t.ZeroTime, fmt.Sprintf("depth=%d", t.Depth))
