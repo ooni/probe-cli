@@ -69,6 +69,8 @@ func runWebConnectivityLTE(tc *webconnectivityqa.TestCase) {
 		tk := measurement.TestKeys.(*webconnectivitylte.TestKeys)
 
 		// normalize the test keys
+		//
+		// see https://github.com/ooni/probe/issues/2677
 		tk.Queries = minipipeline.SortDNSLookupResults(tk.Queries)
 		tk.Do53.Queries = minipipeline.SortDNSLookupResults(tk.Do53.Queries)
 		tk.DoH.Queries = minipipeline.SortDNSLookupResults(tk.DoH.Queries)
