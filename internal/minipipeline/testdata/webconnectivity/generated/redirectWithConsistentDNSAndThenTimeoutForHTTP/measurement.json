@@ -51,10 +51,9 @@
         "failure": null,
         "hostname": "bit.ly",
         "query_type": "A",
-        "raw_response": "XwOBAAABAAEAAAAAA2JpdAJseQAAAQABA2JpdAJseQAAAQABAAAOEAAEQ8f4Cw==",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "https://dns.nextdns.io/dns-query",
+        "resolver_address": "https://dns.google/dns-query",
         "t": 0,
         "tags": [
           "depth=0"
@@ -67,10 +66,9 @@
         "failure": "dns_no_answer",
         "hostname": "bit.ly",
         "query_type": "AAAA",
-        "raw_response": "9sqBAAABAAAAAAAAA2JpdAJseQAAHAAB",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "https://dns.nextdns.io/dns-query",
+        "resolver_address": "https://dns.google/dns-query",
         "t": 0,
         "tags": [
           "depth=0"
@@ -137,10 +135,9 @@
         "failure": null,
         "hostname": "bit.ly",
         "query_type": "A",
-        "raw_response": "iqWBAAABAAEAAAAAA2JpdAJseQAAAQABA2JpdAJseQAAAQABAAAOEAAEQ8f4Cw==",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "1.0.0.1:53",
+        "resolver_address": "1.1.1.1:53",
         "t": 0,
         "tags": [
           "depth=0"
@@ -153,10 +150,9 @@
         "failure": "dns_no_answer",
         "hostname": "bit.ly",
         "query_type": "AAAA",
-        "raw_response": "zZqBAAABAAAAAAAAA2JpdAJseQAAHAAB",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "1.0.0.1:53",
+        "resolver_address": "1.1.1.1:53",
         "t": 0,
         "tags": [
           "depth=0"
@@ -177,10 +173,9 @@
         "failure": null,
         "hostname": "www.example.com",
         "query_type": "A",
-        "raw_response": "8HaBAAABAAEAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQABA3d3dwdleGFtcGxlA2NvbQAAAQABAAAOEAAEXbjYIg==",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "1.0.0.1:53",
+        "resolver_address": "1.1.1.1:53",
         "t": 0,
         "tags": [
           "depth=1"
@@ -193,10 +188,9 @@
         "failure": "dns_no_answer",
         "hostname": "www.example.com",
         "query_type": "AAAA",
-        "raw_response": "Ga+BAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAHAAB",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "1.0.0.1:53",
+        "resolver_address": "1.1.1.1:53",
         "t": 0,
         "tags": [
           "depth=1"
@@ -257,8 +251,8 @@
           "headers_list": [],
           "headers": {}
         },
-        "t0": 0.063813,
-        "t": 10.063717,
+        "t0": 0.066452,
+        "t": 10.066338,
         "tags": [
           "depth=1",
           "fetch_body=true"
@@ -322,7 +316,7 @@
             ],
             [
               "Date",
-              "Mon, 12 Feb 2024 21:05:38 GMT"
+              "Mon, 12 Feb 2024 21:12:59 GMT"
             ],
             [
               "Location",
@@ -331,12 +325,12 @@
           ],
           "headers": {
             "Content-Length": "0",
-            "Date": "Mon, 12 Feb 2024 21:05:38 GMT",
+            "Date": "Mon, 12 Feb 2024 21:12:59 GMT",
             "Location": "http://www.example.com/"
           }
         },
-        "t0": 0.046101,
-        "t": 0.051815,
+        "t0": 0.047649,
+        "t": 0.053372,
         "tags": [
           "depth=0",
           "fetch_body=true"
@@ -396,16 +390,7 @@
         "failure": null,
         "negotiated_protocol": "http/1.1",
         "no_tls_verify": false,
-        "peer_certificates": [
-          {
-            "data": "MIIDbDCCAlSgAwIBAgIVAPuCe1mSEqulV4ma5svpYjEDlpwBMA0GCSqGSIb3DQEBCwUAMB8xDTALBgNVBAoTBE9PTkkxDjAMBgNVBAMTBWphZmFyMB4XDTI0MDIxMjIwMDUzOFoXDTI0MDIxMjIyMDUzOFowKTEWMBQGA1UEChMNT09OSSBOZXRlbSBDQTEPMA0GA1UEAxMGYml0Lmx5MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtlzD0nfYmiooSHu+FR6+OZrqRmxYsNLVorXzIKlzvks/59rNfbwP+4GDpFjk+/jAn6KzytM7n3iY8dMM3MJEFO6wPJiEiQBrOkX0C7GjXbkb11qZiD0+mo9jVW92w0tB37unwHf52thGR/PaZR5YmU54bg+OsAo4Vpu0h0Rz5c7aH8qhoe2xbGHAZbNUs0tkPwy6PRw2NV6WR6YYS7jWByvvEpX6tvRE8Ppp/qqyqlPo2U5t5WchyDUUxd1uoWlLsP//LFsjCry/OmxSDLNKy+T6d1szuRFka1pBHtI5rHnNVgKzEiBIekfrrrjehrW4ezHSlAcRFUMhcxdAX4A/PwIDAQABo4GUMIGRMA4GA1UdDwEB/wQEAwIFoDATBgNVHSUEDDAKBggrBgEFBQcDATAMBgNVHRMBAf8EAjAAMB0GA1UdDgQWBBQREHmIDiALVXJVh7th1l7lXYRQmzAfBgNVHSMEGDAWgBTO01hXRvbZWwrXjEgtDh9CZ4bANjAcBgNVHREEFTATggZiaXQubHmCCWJpdGx5LmNvbTANBgkqhkiG9w0BAQsFAAOCAQEAejYdx3TrMru56SlYT0uO5LhbwL4gdMkjRRiKa/XDaNW+zUZ8bB7GeLGI41VKzEPXVGzJa17gRa4kPvT5CIP73vTMzOXjHv3ae3xKCvP6wKUQKned9mwnY/78bU1RrwLECd+gCrls+pas1UQfCUuFvTGXKC75Q616fWn2rSkdIdecG3S1rHa4BPjnlnUNkCmTSMYiukZDU32IKv/rjoeDwF9Bt6yJbYVbsFV1pkV1Pjte1KTobjhqrXJuGzicv8gN01J80XPuOEFJ6SvUoKoKaFCR/MXHaIVl5X0BWDk0R+pB3Vidp9wKJu2QeZ2hQlhM06d/EzqnfH7esr0wthwRvQ==",
-            "format": "base64"
-          },
-          {
-            "data": "MIIDNjCCAh6gAwIBAgIVAJ2un93/tUR7aQUhXowMFSbHAV7ZMA0GCSqGSIb3DQEBCwUAMB8xDTALBgNVBAoTBE9PTkkxDjAMBgNVBAMTBWphZmFyMB4XDTI0MDIxMTIxMDUzN1oXDTI0MDIxMzIxMDUzN1owHzENMAsGA1UEChMET09OSTEOMAwGA1UEAxMFamFmYXIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC4SgoeZ+uVLfRDlmUrHAQqiZr2K4uMhXM1UmBk9Psq61fD7CI/L5lE3VSPx3nfyJE5gRHeB+VVguu1ytuGaotrAaC38xhhFyjMqCqS9GHEunpGWlKTGtKOP9IZ1ABshoLX/TyPnejNsZBCyp+i7eOz20KtUHQuwJpPQ17r7BB5KtaZiS6vIRQsnVDeFxIzcrcMSoLmpkZzCchxFjI44j+EY7MTKlBp1uf7f+7gDthwcyk95OJMwb33mxvFZvTcbmtmJVFWvbyslPIJZCsfIYebZYs9IwM6krZGmtCQbyIL+aHsPADPgrU8QFsxmL2qswa21UywIpKdCA13ZGrADTVRAgMBAAGjaTBnMA4GA1UdDwEB/wQEAwICpDATBgNVHSUEDDAKBggrBgEFBQcDATAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBTO01hXRvbZWwrXjEgtDh9CZ4bANjAQBgNVHREECTAHggVqYWZhcjANBgkqhkiG9w0BAQsFAAOCAQEAhsdLoesVGflM94p6HCo/0DQjpkgZ5gNZiXXgLKJCwXOgcuAjMaNK2IDJ/wYyNoVWpA21M0JFReAMBRuR/u0AKaPqivlrUL8tgRHMfwZWC8q5yKet4pqin+szApmxRnQlwgTqPMEhg5SL/rCnf4vUzjO2JwWw79n8gmw/eKVB4LqE5KnnavKJG9hpY2q4UEneRy2ESR5FBlbyA/1u1FimLwqHZKxqls6VK463tLwJalg/BO5hAj/P+ZEwptfrGX7IqEYiqIUotVeNXd6/MvvU7UeRioSrvFTLKIlOuMb0+XP+eHb1zcYUpt1IxA+2RV+GwDZyADX0EkKkXPDfcvENCg==",
-            "format": "base64"
-          }
-        ],
+        "peer_certificates": null,
         "server_name": "bit.ly",
         "t": 0,
         "tags": [
@@ -422,7 +407,7 @@
         "failure": "generic_timeout_error",
         "negotiated_protocol": "",
         "no_tls_verify": false,
-        "peer_certificates": [],
+        "peer_certificates": null,
         "server_name": "www.example.com",
         "t": 0,
         "tags": [

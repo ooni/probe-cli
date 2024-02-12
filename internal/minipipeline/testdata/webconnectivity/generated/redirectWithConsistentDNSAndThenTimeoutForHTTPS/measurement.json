@@ -51,10 +51,9 @@
         "failure": null,
         "hostname": "bit.ly",
         "query_type": "A",
-        "raw_response": "zZuBAAABAAEAAAAAA2JpdAJseQAAAQABA2JpdAJseQAAAQABAAAOEAAEQ8f4Cw==",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "https://dns.quad9.net/dns-query",
+        "resolver_address": "https://dns.google/dns-query",
         "t": 0,
         "tags": [
           "depth=0"
@@ -67,10 +66,9 @@
         "failure": "dns_no_answer",
         "hostname": "bit.ly",
         "query_type": "AAAA",
-        "raw_response": "uQ2BAAABAAAAAAAAA2JpdAJseQAAHAAB",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "https://dns.quad9.net/dns-query",
+        "resolver_address": "https://dns.google/dns-query",
         "t": 0,
         "tags": [
           "depth=0"
@@ -137,10 +135,9 @@
         "failure": null,
         "hostname": "bit.ly",
         "query_type": "A",
-        "raw_response": "s3uBAAABAAEAAAAAA2JpdAJseQAAAQABA2JpdAJseQAAAQABAAAOEAAEQ8f4Cw==",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "8.8.8.8:53",
+        "resolver_address": "1.1.1.1:53",
         "t": 0,
         "tags": [
           "depth=0"
@@ -153,10 +150,9 @@
         "failure": "dns_no_answer",
         "hostname": "bit.ly",
         "query_type": "AAAA",
-        "raw_response": "NpGBAAABAAAAAAAAA2JpdAJseQAAHAAB",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "8.8.8.8:53",
+        "resolver_address": "1.1.1.1:53",
         "t": 0,
         "tags": [
           "depth=0"
@@ -177,10 +173,9 @@
         "failure": null,
         "hostname": "www.example.com",
         "query_type": "A",
-        "raw_response": "Y56BAAABAAEAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQABA3d3dwdleGFtcGxlA2NvbQAAAQABAAAOEAAEXbjYIg==",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "1.0.0.1:53",
+        "resolver_address": "1.1.1.1:53",
         "t": 0,
         "tags": [
           "depth=1"
@@ -193,10 +188,9 @@
         "failure": "dns_no_answer",
         "hostname": "www.example.com",
         "query_type": "AAAA",
-        "raw_response": "5lCBAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAHAAB",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "1.0.0.1:53",
+        "resolver_address": "1.1.1.1:53",
         "t": 0,
         "tags": [
           "depth=1"
@@ -262,7 +256,7 @@
             ],
             [
               "Date",
-              "Mon, 12 Feb 2024 21:05:48 GMT"
+              "Mon, 12 Feb 2024 21:13:10 GMT"
             ],
             [
               "Location",
@@ -271,12 +265,12 @@
           ],
           "headers": {
             "Content-Length": "0",
-            "Date": "Mon, 12 Feb 2024 21:05:48 GMT",
+            "Date": "Mon, 12 Feb 2024 21:13:10 GMT",
             "Location": "https://www.example.com/"
           }
         },
-        "t0": 0.047015,
-        "t": 0.053342,
+        "t0": 0.044937,
+        "t": 0.0513,
         "tags": [
           "depth=0",
           "fetch_body=true"
@@ -322,16 +316,7 @@
         "failure": null,
         "negotiated_protocol": "http/1.1",
         "no_tls_verify": false,
-        "peer_certificates": [
-          {
-            "data": "MIIDbDCCAlSgAwIBAgIVAL+OmyBNW3PHCPuuK4cF07NricmUMA0GCSqGSIb3DQEBCwUAMB8xDTALBgNVBAoTBE9PTkkxDjAMBgNVBAMTBWphZmFyMB4XDTI0MDIxMjIwMDU0OFoXDTI0MDIxMjIyMDU0OFowKTEWMBQGA1UEChMNT09OSSBOZXRlbSBDQTEPMA0GA1UEAxMGYml0Lmx5MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxCcFspuSML+/w71cDN4CWDWTmEj/5zFN4fI1KXVSYiBEa/Oa011r6uwyCPA0T2/CaorlcsXG21Tf2t/OfdglPTFLhJSkpkiv9eKbJWTYq8x40DjF6017ezOwH2Dy75Djx4XJiS/CSgpiIXEhvYVZO19h7DTqHcUfHnyvpqABeJVv7npXzgJsaJyrVBnP852dKUzZGrs7O2hgdwUzAX2VBpx35tLhcjcZDUCsS0RQs3nK/ZrXCF7qCck7IxDlWOg7W7J4EW7CQUiRdhf1T9PvEecYck57CR2CJIh36zn9+UO75ofZgPOqgG8+UZZGErUvsat11dFuwpA6UHkTIyUIlQIDAQABo4GUMIGRMA4GA1UdDwEB/wQEAwIFoDATBgNVHSUEDDAKBggrBgEFBQcDATAMBgNVHRMBAf8EAjAAMB0GA1UdDgQWBBSC8ERMPtmcdLqGjYE/x5SR1WssyDAfBgNVHSMEGDAWgBQ59NzmOEQ3wEFLExvkH9i3h9CGljAcBgNVHREEFTATggZiaXQubHmCCWJpdGx5LmNvbTANBgkqhkiG9w0BAQsFAAOCAQEAsVzfNrbpUT3BAk0e9W5jWMrlX98RvbZD4gA/yrt9DEyITyM3FltAW2IuNWYXk0jX5X9gnP2NfI9YHj/tFGfZJgzCBgU6fe11EHtARKKGnIMvTT5uEokk9WMiqKIPrnb4ku3Bfc25H6Gml/fhZr8kGqzyFJAtzcDr3TwfuvYPdSOyfyNzWiNv8j1sD9ovsdpAy0iSHr2SU2bcTgQVuo5faST7edVVFKqUWD4MW7THsyRlwRD8sE/iQ55vkngSfx78GvKjSzSTbUwDf3ubM4FKVR8aNv2E7cvN6tBHAmcIYaHneAcFmuDV/ag+ipfswQnAFFtkGzbJbfJJQWMkRI8Znw==",
-            "format": "base64"
-          },
-          {
-            "data": "MIIDNTCCAh2gAwIBAgIUUaHvIwPUyjaEs7c50QqCJZwbwvMwDQYJKoZIhvcNAQELBQAwHzENMAsGA1UEChMET09OSTEOMAwGA1UEAxMFamFmYXIwHhcNMjQwMjExMjEwNTQ4WhcNMjQwMjEzMjEwNTQ4WjAfMQ0wCwYDVQQKEwRPT05JMQ4wDAYDVQQDEwVqYWZhcjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALskD0lH4vFSSYdokUKhZRlqWFxqkz7/T1J+G0IOji4WBGhbM7/N9hh/Z1tU+U1HVO46v+bQzEbhQxZe2AjTdhbCuEUkrP51hP1n5jfvwiLinkVhU8XRHPvI8tUEvjeKrpwSaxPQyjgreatzgHVdUROnnvca+8zYaqod9wD/GPanbOSrm8uEo6B7DBwwvKINPvvs3lsUZ7E9+5OSGN7Y6HK1jgML0UtkRuVEfoDOBANtQCRwWiFZ+h1uFnki4EaAZshzdK1PTEyi1b8Az9jNORFfzXs01fExGBlJkaNfP+GF2qR6zUkmINxa//5vv8tji1mFk7NTYBfOUEtaVR5CLukCAwEAAaNpMGcwDgYDVR0PAQH/BAQDAgKkMBMGA1UdJQQMMAoGCCsGAQUFBwMBMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFDn03OY4RDfAQUsTG+Qf2LeH0IaWMBAGA1UdEQQJMAeCBWphZmFyMA0GCSqGSIb3DQEBCwUAA4IBAQBAyfUbBLHwPWBUVgvnjbLMnVuC4wTlX/AQ8SCwrUcld45/WDcB/4ZYbYGsKbJW7PCEIMKtBXZLEmTROmnrbgEvVHWsg4VIk2QwhFfr6aVoBzPit6DD9x5ZXvHrBXMQV6Nq6qlnLTUErcirYsTfZfBniapqShZsovu60062pc58QkqtioC+9bicyRN09fMy0NbUyAGHnQ06h4MTIIOePoHoFP6TPj6aW95ijyOcGV2IVEz8TsTMI+3HrcjQAjsulFfHgjJbnmqPMCLxM/Z9CyYSro01svb/6Fk4x36+hE9un1eJjv9sjHt4FpmnR6r2QqirJNvVbUJncA2zQkk9BoUV",
-            "format": "base64"
-          }
-        ],
+        "peer_certificates": null,
         "server_name": "bit.ly",
         "t": 0,
         "tags": [
@@ -348,7 +333,7 @@
         "failure": "generic_timeout_error",
         "negotiated_protocol": "",
         "no_tls_verify": false,
-        "peer_certificates": [],
+        "peer_certificates": null,
         "server_name": "www.example.com",
         "t": 0,
         "tags": [

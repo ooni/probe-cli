@@ -51,10 +51,9 @@
         "failure": null,
         "hostname": "www.example.com",
         "query_type": "A",
-        "raw_response": "+eeBAAABAAEAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQABA3d3dwdleGFtcGxlA2NvbQAAAQABAAAOEAAEXbjYIg==",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "https://mozilla.cloudflare-dns.com/dns-query",
+        "resolver_address": "https://dns.google/dns-query",
         "t": 0,
         "tags": [
           "depth=0"
@@ -67,10 +66,9 @@
         "failure": "dns_no_answer",
         "hostname": "www.example.com",
         "query_type": "AAAA",
-        "raw_response": "k72BAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAHAAB",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "https://mozilla.cloudflare-dns.com/dns-query",
+        "resolver_address": "https://dns.google/dns-query",
         "t": 0,
         "tags": [
           "depth=0"
@@ -114,10 +112,9 @@
         "failure": null,
         "hostname": "www.example.com",
         "query_type": "A",
-        "raw_response": "7qCBAAABAAEAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQABA3d3dwdleGFtcGxlA2NvbQAAAQABAAAOEAAEaJpZaQ==",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "8.8.8.8:53",
+        "resolver_address": "1.1.1.1:53",
         "t": 0,
         "tags": [
           "depth=0"
@@ -130,10 +127,9 @@
         "failure": "dns_no_answer",
         "hostname": "www.example.com",
         "query_type": "AAAA",
-        "raw_response": "deqBAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAHAAB",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "8.8.8.8:53",
+        "resolver_address": "1.1.1.1:53",
         "t": 0,
         "tags": [
           "depth=0"
@@ -217,8 +213,8 @@
             "Date": "Thu, 24 Aug 2023 14:35:29 GMT"
           }
         },
-        "t0": 0.547654,
-        "t": 0.553681,
+        "t0": 0.546374,
+        "t": 0.552544,
         "tags": [
           "depth=0",
           "fetch_body=true"
@@ -264,12 +260,7 @@
         "failure": "ssl_unknown_authority",
         "negotiated_protocol": "",
         "no_tls_verify": false,
-        "peer_certificates": [
-          {
-            "data": "MIIDNjCCAh6gAwIBAgIVAPh/iJDVlXeicegzTsIbeiOijYeFMA0GCSqGSIb3DQEBCwUAMB8xDTALBgNVBAoTBE9PTkkxDjAMBgNVBAMTBWphZmFyMB4XDTI0MDIxMTIxMDUwM1oXDTI0MDIxMzIxMDUwM1owHzENMAsGA1UEChMET09OSTEOMAwGA1UEAxMFamFmYXIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCdfy/1slephnOTdwzntd+PKu8sE6fLnNl2Y/WSi9p0lxw7vu4syRg9/L9uU1xe4SiT5DVxK5HudJ2NETVTpoDTYy8hAuCRTDt5RnmNf73hdhGInpRSLOXUnDJDh4j0X+BPJ7Sc3gh1l0xPFW7vsRMj4oT45qcOT22SXlZvHs7/7Mu8Hu25JJ98q/dyYjeZOK2J0eyoD8bJ83ME/YHJfP6V07J8tynn2hr8EQP0H9dqfdZfP/JEyHADOJD9/EvIA2ttSJdg62vr6UGy0HvqfQQGxTJKrxTUAeKwlvTtJyhaFb2cy5wdZT0udMpJriZTZFUwoKi4kIc7OvX1gZ7Fc443AgMBAAGjaTBnMA4GA1UdDwEB/wQEAwICpDATBgNVHSUEDDAKBggrBgEFBQcDATAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBQ0zqkiVG/mbVkxaZpESpJ1TFHm4zAQBgNVHREECTAHggVqYWZhcjANBgkqhkiG9w0BAQsFAAOCAQEAKahaLYkKdn9Vi3/b440QKFW2lY4jqP+yIYNK2CI5putzzDy7ME4KFFiXFQlDzEqBAV+ryKmADEFXb9Nx/WuAlM/75LGyOk/hGozWwVbh9WeEnjhGQgdQUyb2T0EI6SM5Ng83OQa9RCb7HcVRDZDszGHXbzKmJC5RkTe4q5FQL62XO4kruBF7y5FzERL3tHmYW78yJ11LPZLX7OEZ/HjXK0eO2a/+4k9wm7T1+lyYPAKlhOqXyJd/1vOt4HoUioA1VIufqqne/Q+iv68b4IoqNvXKPbS7Y6KSqWOiOiqY0C8zk7bY3DL4+Fad9NN2XRDwiKDXR8gBdz0I4BC6aWzbWQ==",
-            "format": "base64"
-          }
-        ],
+        "peer_certificates": null,
         "server_name": "www.example.com",
         "t": 0,
         "tags": [
@@ -286,16 +277,7 @@
         "failure": null,
         "negotiated_protocol": "http/1.1",
         "no_tls_verify": false,
-        "peer_certificates": [
-          {
-            "data": "MIIDnTCCAoWgAwIBAgIUf8t55PcMqAEbipnn8aehfOuFB/kwDQYJKoZIhvcNAQELBQAwHzENMAsGA1UEChMET09OSTEOMAwGA1UEAxMFamFmYXIwHhcNMjQwMjEyMjAwNTAzWhcNMjQwMjEyMjIwNTAzWjAyMRYwFAYDVQQKEw1PT05JIE5ldGVtIENBMRgwFgYDVQQDEw93d3cuZXhhbXBsZS5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDPzIk5KhxmLAovG4fyYrN4dpSdkHSPdgfUpu3Vq9ncnET9oPpsbXmj3pJaefHHgpxIZYPNn5ZyS0uOZ8VRRrZS1OvcijE7tMD6hftOd2kbsCsQXqg12oLGKozAwXm6lMyRhWKPiXGeii0rw0hyHpZCSrk+WhC5Zg+JWieN2Xok/GPyWPEjwHGkWFs206vlFZyPQWfbhK1l6CI9ZNetUGuqgToMUTmqWUWh+RCQWCVvPgerhTOLgp/dAArojQQH1Tu/whJCnxWn6coJ5TwkotZ9RDrNEhOMdZX8g2bLatZpjg93LgJk4N6Tzgv38DpiSNBX9G/JoLCKe6cEd5XuZau/AgMBAAGjgb0wgbowDgYDVR0PAQH/BAQDAgWgMBMGA1UdJQQMMAoGCCsGAQUFBwMBMAwGA1UdEwEB/wQCMAAwHQYDVR0OBBYEFCEK2alKgZB7id3RJz0RiJAu51BxMB8GA1UdIwQYMBaAFE+ny4FqH8q6NyAhO+gQ+KsQtQUzMEUGA1UdEQQ+MDyCD3d3dy5leGFtcGxlLmNvbYILZXhhbXBsZS5jb22CD3d3dy5leGFtcGxlLm9yZ4ILZXhhbXBsZS5vcmcwDQYJKoZIhvcNAQELBQADggEBAKylQfz3Ik6WxcqXsHeddciOT1dC9GLEs3sl7k/TxSR/gvChtk7oH5rsMs+a2NpP1kecMn1Q4UqREpKtYcp7GdHD9tOXIGISrIhA3gGp3H4O58NLBRU0C95K/gVbsEfnsv6THP+0hEclyO2y2nqPmqzXrSgOgMbeqDHcg2SCMPSGkNvZzVOP+kTZp1JkS3zSB9S9nNYpxznfMZNyebrxahJKByxTzAxhc9m+rErFfYySnwtF7i8iME09MKJcsf2E9LlCodjvZyp5DAUzseb7wODqvAXKSwgjITEub2tdbNoZJpQnhtqd47d3Kxoa+3O1RgbNMt0gBRDqbOIQ6ghU/vU=",
-            "format": "base64"
-          },
-          {
-            "data": "MIIDNTCCAh2gAwIBAgIUJ/Uh5Fa3cIC7qLnSmuTmKetJxlQwDQYJKoZIhvcNAQELBQAwHzENMAsGA1UEChMET09OSTEOMAwGA1UEAxMFamFmYXIwHhcNMjQwMjExMjEwNTAzWhcNMjQwMjEzMjEwNTAzWjAfMQ0wCwYDVQQKEwRPT05JMQ4wDAYDVQQDEwVqYWZhcjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALU+DwfJW9DbEEmQ2q9D9X4iVBzFaZlAQ6H9AmjTyxYrqbhZ5CJovYEKll+A472NtTDOX4tcdalwNYdmL9+ovAX2/E8dLwyNttceIWjj1bsKB3Sl3wMJSa1AfpEgbwziPJ1XLDTsaeeTQvJQJVJKcH79PH/frvj/gDOBhFwNR848MgGbk+1i9WWHV1UieCzy/xDp4KywlGteXRcKUHs3ouTHlSkgNNFqlUkdxpVc9fP8jrDHP+u4TA++XdRUbWQPcdnNFkSBnUkCuozSHeMF6vbimVJBCPeBC4wi+kGGQE7ENPeAYnH9NxOVUQ8u6oMkmICmg9XlVB0wNI50Sec+8FsCAwEAAaNpMGcwDgYDVR0PAQH/BAQDAgKkMBMGA1UdJQQMMAoGCCsGAQUFBwMBMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFE+ny4FqH8q6NyAhO+gQ+KsQtQUzMBAGA1UdEQQJMAeCBWphZmFyMA0GCSqGSIb3DQEBCwUAA4IBAQCvBCIsBGvr+fpxlj9lYXm8xEfJFJkOZuKP/X5T+dPxDFT/NUdx0Vs4QIdrv7Y2fJUA8GZAi24ubk/2i88rg9qAqITwjCEsWwBzA+tBt0T6Ec0Ui0aVx6mcM59f8w40+LmAobr//XdSoFBr0U/tP4UFUh0+ePOEM0998neJdmudPcdReV+Yj2sCCmzarMOa4+3zof9XcEPh8Zb0Nv/xP2Ydp9WSUhK9STEiHXi189yXqBkT9/gbQmVHP5EitvzPE80xmh/O6xkPT4cKu62wBgP7AcLYoCmPEkfso+OR424jDCdiQk6AHQPJXPQP70hUlW1zBXl0NtT0SS/3mpCs0jze",
-            "format": "base64"
-          }
-        ],
+        "peer_certificates": null,
         "server_name": "www.example.com",
         "t": 0,
         "tags": [

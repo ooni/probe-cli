@@ -51,10 +51,9 @@
         "failure": null,
         "hostname": "wrong.host.badssl.com",
         "query_type": "A",
-        "raw_response": "7JKBAAABAAEAAAAABXdyb25nBGhvc3QGYmFkc3NsA2NvbQAAAQABBXdyb25nBGhvc3QGYmFkc3NsA2NvbQAAAQABAAAOEAAEaJpZaQ==",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "https://mozilla.cloudflare-dns.com/dns-query",
+        "resolver_address": "https://dns.google/dns-query",
         "t": 0,
         "tags": [
           "depth=0"
@@ -67,10 +66,9 @@
         "failure": "dns_no_answer",
         "hostname": "wrong.host.badssl.com",
         "query_type": "AAAA",
-        "raw_response": "VSCBAAABAAAAAAAABXdyb25nBGhvc3QGYmFkc3NsA2NvbQAAHAAB",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "https://mozilla.cloudflare-dns.com/dns-query",
+        "resolver_address": "https://dns.google/dns-query",
         "t": 0,
         "tags": [
           "depth=0"
@@ -114,10 +112,9 @@
         "failure": null,
         "hostname": "wrong.host.badssl.com",
         "query_type": "A",
-        "raw_response": "NNyBAAABAAEAAAAABXdyb25nBGhvc3QGYmFkc3NsA2NvbQAAAQABBXdyb25nBGhvc3QGYmFkc3NsA2NvbQAAAQABAAAOEAAEaJpZaQ==",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "149.112.112.112:53",
+        "resolver_address": "1.1.1.1:53",
         "t": 0,
         "tags": [
           "depth=0"
@@ -130,10 +127,9 @@
         "failure": "dns_no_answer",
         "hostname": "wrong.host.badssl.com",
         "query_type": "AAAA",
-        "raw_response": "1dyBAAABAAAAAAAABXdyb25nBGhvc3QGYmFkc3NsA2NvbQAAHAAB",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "149.112.112.112:53",
+        "resolver_address": "1.1.1.1:53",
         "t": 0,
         "tags": [
           "depth=0"
@@ -166,12 +162,7 @@
         "failure": "ssl_invalid_hostname",
         "negotiated_protocol": "",
         "no_tls_verify": false,
-        "peer_certificates": [
-          {
-            "data": "MIIDfjCCAmagAwIBAgIUTjVGhiNA/RBhbHwKfdHKrOuK1R8wDQYJKoZIhvcNAQELBQAwHzENMAsGA1UEChMET09OSTEOMAwGA1UEAxMFamFmYXIwHhcNMjQwMjEyMjAwNTAyWhcNMjQwMjEyMjIwNTAyWjA4MRYwFAYDVQQKEw1PT05JIE5ldGVtIENBMR4wHAYDVQQDExV3cm9uZy1ob3N0LmJhZHNzbC5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDcuRHa0mNkoIrkIr9knrAo8Gtn/pESft5s+uppH3HVI6ttLWlyLVpfWo4p2fxSoCIYlPgqZtdh1yxAR3qaEDISZdaRaBq/996WLqFXtjfn+uPB14l3YKnTSPe9sKw8o1O32/U8iwOBMiCDDJAXaitmYc3jGNxx+27Fj/BHOIonsWnXz8ckwJ3xmbZmRQQehatrILaeayH0qXwgtbm+UL6mwdI92byDPk2TqF4wFsHhSHkyndazeZvCNLkt5ItWyWkqtOlwhyMv0HFLtAOnaIOxfen4ycLCwK041CjYtd2doRyTHo5hp+Vfb0KlF1mVHvXmv0IX2qBNbVMlujEt79ULAgMBAAGjgZgwgZUwDgYDVR0PAQH/BAQDAgWgMBMGA1UdJQQMMAoGCCsGAQUFBwMBMAwGA1UdEwEB/wQCMAAwHQYDVR0OBBYEFBbTf/eVBpBEPz5dG/PTPhall9j8MB8GA1UdIwQYMBaAFLuHb4lL5hU0GGLBE4vLYSCPN1WjMCAGA1UdEQQZMBeCFXdyb25nLWhvc3QuYmFkc3NsLmNvbTANBgkqhkiG9w0BAQsFAAOCAQEAXsRmWSwpRGOqzkRqvCDYfZaz6NrsjvRjP963f3fD6PJ69m+48zpeAryr7u3ss01ftFnFWU1oYNeeVH1MVRv7AnaF9XW3wpwsQsx5I0+tKyIE808H5zao8gVZmEJMuLkATtMWs4/1VDCgNEbPgkSd1Ztx5mBkkzinU++18WznCsafXO3jkhcJz6+WMRtatKY5XpWDIRtpSTyFFzq8wvwigu4+RtzhZCOm5yJODnM9HPORuuobobRN8OvLFUPGjaWFa5GehJEx3K7cRgrdxL7vVEepx0fC+QeaUfkmYrnNNTburidjDPyBO816QYBhSjknAOWZUT9gM3DrQtrQs4Id3w==",
-            "format": "base64"
-          }
-        ],
+        "peer_certificates": null,
         "server_name": "wrong.host.badssl.com",
         "t": 0,
         "tags": [

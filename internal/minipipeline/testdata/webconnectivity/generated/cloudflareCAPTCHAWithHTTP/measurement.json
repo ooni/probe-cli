@@ -51,10 +51,9 @@
         "failure": null,
         "hostname": "www.cloudflare-cache.com",
         "query_type": "A",
-        "raw_response": "lteBAAABAAEAAAAAA3d3dxBjbG91ZGZsYXJlLWNhY2hlA2NvbQAAAQABA3d3dxBjbG91ZGZsYXJlLWNhY2hlA2NvbQAAAQABAAAOEAAEaBCE5Q==",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "https://mozilla.cloudflare-dns.com/dns-query",
+        "resolver_address": "https://dns.google/dns-query",
         "t": 0,
         "tags": [
           "depth=0"
@@ -67,10 +66,9 @@
         "failure": "dns_no_answer",
         "hostname": "www.cloudflare-cache.com",
         "query_type": "AAAA",
-        "raw_response": "d5+BAAABAAAAAAAAA3d3dxBjbG91ZGZsYXJlLWNhY2hlA2NvbQAAHAAB",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "https://mozilla.cloudflare-dns.com/dns-query",
+        "resolver_address": "https://dns.google/dns-query",
         "t": 0,
         "tags": [
           "depth=0"
@@ -114,10 +112,9 @@
         "failure": null,
         "hostname": "www.cloudflare-cache.com",
         "query_type": "A",
-        "raw_response": "Ke2BAAABAAEAAAAAA3d3dxBjbG91ZGZsYXJlLWNhY2hlA2NvbQAAAQABA3d3dxBjbG91ZGZsYXJlLWNhY2hlA2NvbQAAAQABAAAOEAAEaBCE5Q==",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "208.67.220.220:53",
+        "resolver_address": "1.1.1.1:53",
         "t": 0,
         "tags": [
           "depth=0"
@@ -130,10 +127,9 @@
         "failure": "dns_no_answer",
         "hostname": "www.cloudflare-cache.com",
         "query_type": "AAAA",
-        "raw_response": "9AqBAAABAAAAAAAAA3d3dxBjbG91ZGZsYXJlLWNhY2hlA2NvbQAAHAAB",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "208.67.220.220:53",
+        "resolver_address": "1.1.1.1:53",
         "t": 0,
         "tags": [
           "depth=0"
@@ -251,8 +247,8 @@
             "X-Frame-Options": "SAMEORIG"
           }
         },
-        "t0": 0.036879,
-        "t": 0.044505,
+        "t0": 0.038119,
+        "t": 0.044673,
         "tags": [
           "depth=0",
           "fetch_body=true"
@@ -298,16 +294,7 @@
         "failure": null,
         "negotiated_protocol": "http/1.1",
         "no_tls_verify": false,
-        "peer_certificates": [
-          {
-            "data": "MIIDhDCCAmygAwIBAgIUaN1jnxfeCG/CJzoZkLLtB6E0xq4wDQYJKoZIhvcNAQELBQAwHzENMAsGA1UEChMET09OSTEOMAwGA1UEAxMFamFmYXIwHhcNMjQwMjEyMjAwNTA0WhcNMjQwMjEyMjIwNTA0WjA7MRYwFAYDVQQKEw1PT05JIE5ldGVtIENBMSEwHwYDVQQDExh3d3cuY2xvdWRmbGFyZS1jYWNoZS5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDSLWmjvARh0vnEAChS0zfGC1i8MOSeAfCJiCg4QTewlxeWGcQEtRUszZQooLR1Iu6fE4ZB6fvVxLR21LBzlSSWuSDgEgkE5ookYWpRQFruyzIabKI21JmmxhBWBbHrftT1yjUI+9MarYMu1IgLVfbRccnDYfJVMdyJnWTUiCJGuN8txfNS/8QqyEoKA2u8Ww46Q4frMcOwNDLCwWnlUx12nB82wGLQ1GQF3ks/ZnHtsnoDl91d/vBUJe4FL5yZqR2SH89iPJh2MzVKzDO53f2XsbEAtqwnZ7MAFaW6MLyd2/vlYLW5DYhVNnoNyPmI3hImHYB5p/+onzO4UqbX6qnpAgMBAAGjgZswgZgwDgYDVR0PAQH/BAQDAgWgMBMGA1UdJQQMMAoGCCsGAQUFBwMBMAwGA1UdEwEB/wQCMAAwHQYDVR0OBBYEFAB4J20lZ10f8hTGxAlRf2I0e57BMB8GA1UdIwQYMBaAFHfV7DVxMEghefrguhusHG7W918ZMCMGA1UdEQQcMBqCGHd3dy5jbG91ZGZsYXJlLWNhY2hlLmNvbTANBgkqhkiG9w0BAQsFAAOCAQEAnVZmlGjn1b+6anWxWsnsMGbZwdIVpVWtAA1oFKtUTJ4pc5iol3WJHYGasViWOK4cE9rsll9uSJ4tgYHl+TMLRNTO4tbNFLp+OCaGTpmmJKSqPXap1vNNW8KywRXGmYCBp83KzzLqQCujRPUUh7ssEGdhdootxmg+l19EseqEJGMjF3Xy2xSC+oA4I9CfIdQjnEhK1LHf5/KDJZ2BgDxHyBONUUY9MrJaXvVjJbK6AtmfP8loBgux9C6nuQCMjkfafphDKUfmTfwadJ9sUyEI60gsukoK0hakOGk8XIKlroxAbcJ18ja8d+I4zU2yXFOOu6HSOHrYTjQ+4Txp4+DNog==",
-            "format": "base64"
-          },
-          {
-            "data": "MIIDNTCCAh2gAwIBAgIUV2B/3X/cG0ct84PabYf+ItbTudswDQYJKoZIhvcNAQELBQAwHzENMAsGA1UEChMET09OSTEOMAwGA1UEAxMFamFmYXIwHhcNMjQwMjExMjEwNTAzWhcNMjQwMjEzMjEwNTAzWjAfMQ0wCwYDVQQKEwRPT05JMQ4wDAYDVQQDEwVqYWZhcjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAOWnIBD37FfCvvc/TDBChD8NZDwSaQLb83zaSBnBIsH5qLKPOKbSkV/iWSsxbiY8L0bDsUShKIsV7Y1Hv5L7LG25glN1Xv5ym47SDLe5M1dYk5QAV9fsRO7I4JdZmihz6zABHayNyp9hyqB1y802ZKWC8Lz9rNQVTd+EkJBdEWhvstUm5e0IHi080RCDo23w9KbdddBZiKfCjgLcuEFcIOJg634/Dz6OjriEB4vkbfwW1NGM9K6D96oK6cTbghWPJGTMehlnQqQz2fupXsZXf0i9Odx4PsX1x7yeXp6odBzJuzh1vyoWs8G9ytrGeb51NbOTDmp0EGAk9X5Z9L+Y0aUCAwEAAaNpMGcwDgYDVR0PAQH/BAQDAgKkMBMGA1UdJQQMMAoGCCsGAQUFBwMBMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFHfV7DVxMEghefrguhusHG7W918ZMBAGA1UdEQQJMAeCBWphZmFyMA0GCSqGSIb3DQEBCwUAA4IBAQAjMXaSq+ZGvpqqUaurOJ+XpzdYPrKvOK8nQ2FACMZHIOFrNQb30atcSp81iHq1hzSHrhqeoN0nlcbJeyxaWttNpeihAGe+5wvT+dQfsVHYmsNJQKLLlRgm+cvkC1W1VBxtEj2jaI1IArwRr38AiARfb/3Ui3yYp5HJUYyzbmgLySblwQvBY9P4Rn7m8EB9MiF059glW7puRk92j9ZpmXnu3DFk7rheDabuVCBCvQkOF/tJEPBRN+CETv3HlhlCzVBQAhTzwODsezU7fEd1/CQauY0uEZGtb1rhrGn5eD12DJXK4qX7ErCJ/GRAjUlWhZKuYEE0R3oG49nRSgBMSyN3",
-            "format": "base64"
-          }
-        ],
+        "peer_certificates": null,
         "server_name": "www.cloudflare-cache.com",
         "t": 0,
         "tags": [

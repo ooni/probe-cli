@@ -51,10 +51,9 @@
         "failure": null,
         "hostname": "www.example.com",
         "query_type": "A",
-        "raw_response": "nVqBAAABAAEAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQABA3d3dwdleGFtcGxlA2NvbQAAAQABAAAOEAAEXbjYIg==",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "https://dns.nextdns.io/dns-query",
+        "resolver_address": "https://dns.google/dns-query",
         "t": 0,
         "tags": [
           "depth=0"
@@ -67,10 +66,9 @@
         "failure": "dns_no_answer",
         "hostname": "www.example.com",
         "query_type": "AAAA",
-        "raw_response": "uv+BAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAHAAB",
         "resolver_hostname": null,
         "resolver_port": null,
-        "resolver_address": "https://dns.nextdns.io/dns-query",
+        "resolver_address": "https://dns.google/dns-query",
         "t": 0,
         "tags": [
           "depth=0"
@@ -106,7 +104,6 @@
         "failure": null,
         "hostname": "www.example.com",
         "query_type": "A",
-        "raw_response": "aNWBAAABAAEAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQABA3d3dwdleGFtcGxlA2NvbQAAAQABAAAOEAAEXbjYIg==",
         "resolver_hostname": null,
         "resolver_port": null,
         "resolver_address": "1.1.1.1:53",
@@ -122,7 +119,6 @@
         "failure": "dns_no_answer",
         "hostname": "www.example.com",
         "query_type": "AAAA",
-        "raw_response": "1/SBAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAHAAB",
         "resolver_hostname": null,
         "resolver_port": null,
         "resolver_address": "1.1.1.1:53",
@@ -209,8 +205,8 @@
             "Date": "Thu, 24 Aug 2023 14:35:29 GMT"
           }
         },
-        "t0": 0.047166,
-        "t": 0.053313,
+        "t0": 0.047682,
+        "t": 0.053746,
         "tags": [
           "depth=0",
           "fetch_body=true"
@@ -242,16 +238,7 @@
         "failure": null,
         "negotiated_protocol": "http/1.1",
         "no_tls_verify": false,
-        "peer_certificates": [
-          {
-            "data": "MIIDnTCCAoWgAwIBAgIUWi56i1Db6xJCA+zXp32zr3LFUfAwDQYJKoZIhvcNAQELBQAwHzENMAsGA1UEChMET09OSTEOMAwGA1UEAxMFamFmYXIwHhcNMjQwMjEyMjAwNTEwWhcNMjQwMjEyMjIwNTEwWjAyMRYwFAYDVQQKEw1PT05JIE5ldGVtIENBMRgwFgYDVQQDEw93d3cuZXhhbXBsZS5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDAvtpH2nzGF3ne1Nk6xtSAgOofW/Oh6/XHcfc2sDYcRrEj7yXg8dKHk+LO+kxv/cquzxzRaLqOLXxNunHFgSlxSv/kcWjIqHmGmqoHEj1BMwvFwyj+V1AczrGX9AyJVxVU8cvbttRQhMo2494vK/CEowfpInjhY48Q6ZvM+dg0sAW0iTfAw5TiKx5t4lAL70kWQA33Mmib/4DaSv7MsUotzybXuSCwM6iJA6C8bgYJidJ3KxxMrMjlaw3yjo+WLPFM0Y8za23y3odrCFee06VDXylvRXCHCtp7bqCujSybu52ZUEUIyc4ad7mdrfYS3eh5giIbCNw+hlhrL4suAlrPAgMBAAGjgb0wgbowDgYDVR0PAQH/BAQDAgWgMBMGA1UdJQQMMAoGCCsGAQUFBwMBMAwGA1UdEwEB/wQCMAAwHQYDVR0OBBYEFMAz9cDzjkcUCX8FyeElXXUd9RjjMB8GA1UdIwQYMBaAFHxXevI/HmVJPc9eRt2NkhqwENEEMEUGA1UdEQQ+MDyCD3d3dy5leGFtcGxlLmNvbYILZXhhbXBsZS5jb22CD3d3dy5leGFtcGxlLm9yZ4ILZXhhbXBsZS5vcmcwDQYJKoZIhvcNAQELBQADggEBAH3izenVA5YaAYl7cY5Nca7EzTZ6DR5QGZ/mmfCrd/E53cYzqBqHRavSa1+r6RB6v/4c0abjxHsYJQDNkILVk+DkGLpcuC/wEMTEGjDtJqFp2lGrnaGRbyeXnJsKkItzbIkxpp3nAdETj3+w+ZoKxwlTLarMP2Q1JGbbcb9Udhhln8RhPm+49V031uw9A3HcO+ssRNubmM44HkqOMnbjdOSwGg2ORrDSXY7oJPmFiA9GrlGMPOxj2Q+k8yTTtQuu8YS4TjUs18OOohkMBHiGp5bPKVccBCZ4ZdvVmoRlUaKExek1rgRvYy/9kyNLOqrJBjhwgwlaKBmGWAqqpQ06PSE=",
-            "format": "base64"
-          },
-          {
-            "data": "MIIDNjCCAh6gAwIBAgIVALwQSYppaUp9I2gp9t+Zl5RVfokYMA0GCSqGSIb3DQEBCwUAMB8xDTALBgNVBAoTBE9PTkkxDjAMBgNVBAMTBWphZmFyMB4XDTI0MDIxMTIxMDUxMFoXDTI0MDIxMzIxMDUxMFowHzENMAsGA1UEChMET09OSTEOMAwGA1UEAxMFamFmYXIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDAMPwMHcKSf48Tngs+FlAwpjxM1AbaNYESeqVtGGMSDWa3SmNtNPK/fHoMPpgAUBNsVO4sq1WkIIyJwJQYtwdUNS0r7s/yj+Lt0Y9TwaeHfPCGOQK2U+lHT/dyYJSUzowQH0xBfveIg93af8CPusvEUHs296wHm00TvBhbAMBXflmR9hrwPllPzvDy+ME8i7prkJayi+PF1HAa+Wdnf77cFqBMWw/NvodqMQ5JWzVhYhUoIcsfYoQT2Kk5DsBdA6weraDthH6TDT5a7FfggTOv1D0IElEWVGRZFQ1scQ1Oybh+nw3roHR/urss67NRq7ai6cP9U4hY/6go74slvGnDAgMBAAGjaTBnMA4GA1UdDwEB/wQEAwICpDATBgNVHSUEDDAKBggrBgEFBQcDATAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBR8V3ryPx5lST3PXkbdjZIasBDRBDAQBgNVHREECTAHggVqYWZhcjANBgkqhkiG9w0BAQsFAAOCAQEAd1HME3jPYXFRKu55v1i6/5X56yqIl3Mj88vTrpH2JDglhCQxDYa2ZcYoFk/nth7ssmHNM5eeyGmpXOZFCz2eTEy6HtwyL7PVK0Ah6QELZdUxj0krQR9Ym/f46d57Q+Ril0ijyBqj1XEBKPyw6wds3sVG2kIbzMxXTKrDyX1ZBBEvSGfRnOFAc1Rq8pCqjQZG4QjvBM/oWMTf4KngphRcgUgh8JxgAms86TUjK8flq/T3MEe3r/0Z+01CKtgBBjbr8AP9oYEbcejmb9Wh+8CSv1tFbfiSZGL3luNsjBe5qLtaeEUcQC11ffFsyVJSKMy4a/aLaMFkhwKmgXyISR3ulQ==",
-            "format": "base64"
-          }
-        ],
+        "peer_certificates": null,
         "server_name": "www.example.com",
         "t": 0,
         "tags": [
