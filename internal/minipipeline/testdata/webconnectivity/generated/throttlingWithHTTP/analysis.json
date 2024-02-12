@@ -30,8 +30,12 @@
   "DNSLookupExpectedFailure": [],
   "DNSLookupExpectedSuccess": [],
   "TCPConnectExpectedFailure": [],
-  "TCPConnectUnexpectedFailure": [],
-  "TCPConnectUnexpectedFailureDuringWebFetch": [],
+  "TCPConnectUnexpectedFailure": [
+    30001
+  ],
+  "TCPConnectUnexpectedFailureDuringWebFetch": [
+    30001
+  ],
   "TCPConnectUnexpectedFailureDuringConnectivityCheck": [],
   "TCPConnectUnexplainedFailure": [],
   "TCPConnectUnexplainedFailureDuringWebFetch": [],
@@ -218,7 +222,7 @@
     {
       "TagDepth": 0,
       "Type": 1,
-      "Failure": "",
+      "Failure": "generic_timeout_error",
       "TransactionID": 30001,
       "TagFetchBody": true,
       "DNSTransactionID": 20001,
@@ -238,7 +242,7 @@
       "EndpointProto": "tcp",
       "EndpointPort": "80",
       "EndpointAddress": "52.35.36.75:80",
-      "TCPConnectFailure": "",
+      "TCPConnectFailure": "generic_timeout_error",
       "TLSHandshakeFailure": null,
       "TLSServerName": null,
       "HTTPRequestURL": null,

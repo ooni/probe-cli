@@ -77,9 +77,11 @@ func runWebConnectivityLTE(tc *webconnectivityqa.TestCase) {
 		tk.Queries = minipipeline.SortDNSLookupResults(tk.Queries)
 		minipipeline.NormalizeDNSLookupResults(tk.Queries)
 
-		tk.Do53.Queries = nil
-		tk.DoH.Queries = nil
+		tk.Do53 = nil
+		tk.DoH = nil
 		tk.DNSDuplicateResponses = nil
+		tk.DNSWoami = nil
+		tk.ConnPriorityLog = nil
 
 		tk.NetworkEvents = nil
 
