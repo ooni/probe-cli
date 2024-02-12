@@ -30,14 +30,24 @@ func TestNormalizeDNSLookupResults(t *testing.T) {
 		name: "with plausible input",
 		inputGen: func() []*model.ArchivalDNSLookupResult {
 			return []*model.ArchivalDNSLookupResult{{
-				T0: 0.11,
-				T:  0.4,
+				Engine:      "udp",
+				RawResponse: []byte("0xdeadbeef"),
+				T0:          0.11,
+				T:           0.4,
 			}, {
-				T0: 0.5,
-				T:  0.66,
+				Engine:      "doh",
+				RawResponse: []byte("0xdeadbeef"),
+				T0:          0.5,
+				T:           0.66,
 			}}
 		},
-		expect: []*model.ArchivalDNSLookupResult{{}, {}},
+		expect: []*model.ArchivalDNSLookupResult{{
+			Engine:          "udp",
+			ResolverAddress: "1.1.1.1:53",
+		}, {
+			Engine:          "doh",
+			ResolverAddress: "https://dns.google/dns-query",
+		}},
 	}}
 
 	for _, tc := range cases {
@@ -168,11 +178,13 @@ func TestNormalizeTLSHandshakeResults(t *testing.T) {
 		name: "with plausible input",
 		inputGen: func() []*model.ArchivalTLSOrQUICHandshakeResult {
 			return []*model.ArchivalTLSOrQUICHandshakeResult{{
-				T0: 0.11,
-				T:  0.4,
+				PeerCertificates: []model.ArchivalBinaryData{[]byte("0xdeadbeef")},
+				T0:               0.11,
+				T:                0.4,
 			}, {
-				T0: 0.5,
-				T:  0.66,
+				PeerCertificates: []model.ArchivalBinaryData{[]byte("0xdeadbeef")},
+				T0:               0.5,
+				T:                0.66,
 			}}
 		},
 		expect: []*model.ArchivalTLSOrQUICHandshakeResult{{}, {}},

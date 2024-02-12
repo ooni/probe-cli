@@ -8,8 +8,15 @@ import (
 // other normalizations meant to reduce the size of diffs.
 func NormalizeDNSLookupResults(values []*model.ArchivalDNSLookupResult) {
 	for _, entry := range values {
+		switch entry.Engine {
+		case "udp":
+			entry.ResolverAddress = "1.1.1.1:53"
+		case "doh":
+			entry.ResolverAddress = "https://dns.google/dns-query"
+		}
 		entry.T0 = 0
 		entry.T = 0
+		entry.RawResponse = nil
 	}
 }
 
@@ -34,5 +41,6 @@ func NormalizeTLSHandshakeResults(values []*model.ArchivalTLSOrQUICHandshakeResu
 	for _, entry := range values {
 		entry.T0 = 0
 		entry.T = 0
+		entry.PeerCertificates = nil
 	}
 }
