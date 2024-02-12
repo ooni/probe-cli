@@ -54,7 +54,7 @@
       "Failure": "",
       "TransactionID": 30001,
       "TagFetchBody": true,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 20001,
       "DNSDomain": "www.example.org",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
