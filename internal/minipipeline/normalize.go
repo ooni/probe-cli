@@ -54,7 +54,7 @@ func NormalizeHTTPRequestResults(values []*model.ArchivalHTTPRequestResult) {
 		// Avoid storing large bodies because that wastes repository space.
 		//
 		// See https://github.com/ooni/probe/issues/2677.
-		const maxStoreBody = 1 << 17
+		const maxStoreBody = 1 << 14
 		if entry.Response.BodyLength > maxStoreBody {
 			entry.Response.Body = model.ArchivalScrubbedMaybeBinaryString("")
 			entry.Response.BodyIsTruncated = true
