@@ -68,16 +68,35 @@ func runWebConnectivityLTE(tc *webconnectivityqa.TestCase) {
 		// obtain the test keys
 		tk := measurement.TestKeys.(*webconnectivitylte.TestKeys)
 
-		// normalize the test keys
+		// Normalize the test keys
 		//
-		// see https://github.com/ooni/probe/issues/2677
+		// The general idea here is to remove everything that we do not use in the
+		// minipipeline to reduce the sizes of the diffs we commit.
+		//
+		// See https://github.com/ooni/probe/issues/2677
 		tk.Queries = minipipeline.SortDNSLookupResults(tk.Queries)
-		tk.Do53.Queries = minipipeline.SortDNSLookupResults(tk.Do53.Queries)
-		tk.DoH.Queries = minipipeline.SortDNSLookupResults(tk.DoH.Queries)
-		tk.DNSDuplicateResponses = minipipeline.SortDNSLookupResults(tk.DNSDuplicateResponses)
-		tk.NetworkEvents = minipipeline.SortNetworkEvents(tk.NetworkEvents)
+		minipipeline.NormalizeDNSLookupResults(tk.Queries)
+
+		tk.Do53 = nil
+		tk.DoH = nil
+		tk.DNSDuplicateResponses = nil
+		tk.DNSWoami = nil
+		tk.ConnPriorityLog = nil
+
+		tk.NetworkEvents = nil
+
 		tk.TCPConnect = minipipeline.SortTCPConnectResults(tk.TCPConnect)
+		minipipeline.NormalizeTCPConnectResults(tk.TCPConnect)
+
 		tk.TLSHandshakes = minipipeline.SortTLSHandshakeResults(tk.TLSHandshakes)
+		minipipeline.NormalizeTLSHandshakeResults(tk.TLSHandshakes)
+
+		minipipeline.NormalizeHTTPRequestResults(tk.Requests)
+
+		// normalize measurement fields
+		measurement.MeasurementStartTime = "2024-02-12 20:33:47"
+		measurement.MeasurementRuntime = 0
+		measurement.TestStartTime = "2024-02-12 20:33:47"
 
 		// serialize the original measurement
 		mustSerializeMkdirAllAndWriteFile(actualDestdir, "measurement.json", measurement)
