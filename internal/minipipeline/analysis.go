@@ -51,7 +51,7 @@ func NewLinearWebAnalysis(input *WebObservationsContainer) (output []*WebObserva
 		output = append(output, entry)
 	}
 
-	// sort in descending order
+	// sort using complex sorting rule
 	sort.SliceStable(output, func(i, j int) bool {
 		left, right := output[i], output[j]
 
