@@ -24,14 +24,8 @@
   "DNSLookupExpectedFailure": [],
   "DNSLookupExpectedSuccess": [],
   "TCPConnectExpectedFailure": [],
-  "TCPConnectUnexpectedFailure": [
-    30001,
-    30002
-  ],
-  "TCPConnectUnexpectedFailureDuringWebFetch": [
-    30001,
-    30002
-  ],
+  "TCPConnectUnexpectedFailure": [],
+  "TCPConnectUnexpectedFailureDuringWebFetch": [],
   "TCPConnectUnexpectedFailureDuringConnectivityCheck": [],
   "TCPConnectUnexplainedFailure": [],
   "TCPConnectUnexplainedFailureDuringWebFetch": [],
@@ -43,7 +37,9 @@
   "TLSHandshakeUnexplainedFailure": [],
   "TLSHandshakeUnexplainedFailureDuringWebFetch": [],
   "TLSHandshakeUnexplainedFailureDuringConnectivityCheck": [],
-  "HTTPRoundTripUnexpectedFailure": [],
+  "HTTPRoundTripUnexpectedFailure": [
+    30002
+  ],
   "HTTPRoundTripUnexplainedFailure": [],
   "HTTPFinalResponseSuccessTLSWithoutControl": null,
   "HTTPFinalResponseSuccessTLSWithControl": null,
@@ -56,7 +52,7 @@
   "Linear": [
     {
       "TagDepth": 0,
-      "Type": 1,
+      "Type": 3,
       "Failure": "generic_timeout_error",
       "TransactionID": 30002,
       "TagFetchBody": true,
@@ -77,11 +73,11 @@
       "EndpointProto": "tcp",
       "EndpointPort": "80",
       "EndpointAddress": "35.161.85.189:80",
-      "TCPConnectFailure": "generic_timeout_error",
+      "TCPConnectFailure": "",
       "TLSHandshakeFailure": null,
       "TLSServerName": null,
-      "HTTPRequestURL": null,
-      "HTTPFailure": null,
+      "HTTPRequestURL": "http://largefile.com/",
+      "HTTPFailure": "generic_timeout_error",
       "HTTPResponseStatusCode": null,
       "HTTPResponseBodyLength": null,
       "HTTPResponseBodyIsTruncated": null,
@@ -110,7 +106,7 @@
     {
       "TagDepth": 0,
       "Type": 1,
-      "Failure": "generic_timeout_error",
+      "Failure": "",
       "TransactionID": 30001,
       "TagFetchBody": true,
       "DNSTransactionID": 20001,
@@ -130,7 +126,7 @@
       "EndpointProto": "tcp",
       "EndpointPort": "80",
       "EndpointAddress": "52.35.36.75:80",
-      "TCPConnectFailure": "generic_timeout_error",
+      "TCPConnectFailure": "",
       "TLSHandshakeFailure": null,
       "TLSServerName": null,
       "HTTPRequestURL": null,

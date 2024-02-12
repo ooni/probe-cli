@@ -24,10 +24,10 @@
   "DNSLookupExpectedSuccess": [],
   "TCPConnectExpectedFailure": [],
   "TCPConnectUnexpectedFailure": [
-    30002
+    30001
   ],
   "TCPConnectUnexpectedFailureDuringWebFetch": [
-    30002
+    30001
   ],
   "TCPConnectUnexpectedFailureDuringConnectivityCheck": [],
   "TCPConnectUnexplainedFailure": [],
@@ -55,7 +55,7 @@
       "TagDepth": 0,
       "Type": 1,
       "Failure": "connection_refused",
-      "TransactionID": 30002,
+      "TransactionID": 30001,
       "TagFetchBody": true,
       "DNSTransactionID": 1,
       "DNSDomain": "www.example.org",
@@ -69,7 +69,7 @@
       "IPAddress": "83.224.65.41",
       "IPAddressASN": 30722,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 30002,
+      "EndpointTransactionID": 30001,
       "EndpointProto": "tcp",
       "EndpointPort": "80",
       "EndpointAddress": "83.224.65.41:80",

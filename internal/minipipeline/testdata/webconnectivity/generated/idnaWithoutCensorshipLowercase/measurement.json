@@ -409,7 +409,7 @@
     "requests": [
       {
         "network": "tcp",
-        "address": "77.88.55.77:443",
+        "address": "5.255.255.80:443",
         "alpn": "http/1.1",
         "failure": null,
         "request": {
@@ -573,7 +573,7 @@
       },
       {
         "network": "tcp",
-        "address": "77.88.55.80:80",
+        "address": "77.88.55.77:80",
         "failure": null,
         "request": {
           "body": "",
@@ -650,7 +650,7 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 30004
+        "transaction_id": 30003
       }
     ],
     "tcp_connect": [
@@ -708,7 +708,7 @@
           "depth=2",
           "fetch_body=true"
         ],
-        "transaction_id": 40010
+        "transaction_id": 40012
       },
       {
         "ip": "5.255.255.88",
@@ -764,7 +764,7 @@
           "depth=2",
           "fetch_body=true"
         ],
-        "transaction_id": 40011
+        "transaction_id": 40009
       },
       {
         "ip": "77.88.55.77",
@@ -820,7 +820,7 @@
           "depth=2",
           "fetch_body=true"
         ],
-        "transaction_id": 40012
+        "transaction_id": 40010
       },
       {
         "ip": "77.88.55.80",
@@ -876,7 +876,7 @@
           "depth=2",
           "fetch_body=true"
         ],
-        "transaction_id": 40009
+        "transaction_id": 40011
       }
     ],
     "tls_handshakes": [
@@ -929,7 +929,7 @@
           "fetch_body=true"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40010
+        "transaction_id": 40012
       },
       {
         "network": "tcp",
@@ -980,7 +980,7 @@
           "fetch_body=true"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40011
+        "transaction_id": 40009
       },
       {
         "network": "tcp",
@@ -1031,7 +1031,7 @@
           "fetch_body=true"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40012
+        "transaction_id": 40010
       },
       {
         "network": "tcp",
@@ -1082,7 +1082,7 @@
           "fetch_body=true"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40009
+        "transaction_id": 40011
       }
     ],
     "x_control_request": {
