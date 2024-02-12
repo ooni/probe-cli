@@ -260,11 +260,11 @@
     }
   ],
   "KnownTCPEndpoints": {
-    "30002": {
+    "30001": {
       "TagDepth": 0,
       "Type": 3,
       "Failure": "",
-      "TransactionID": 30002,
+      "TransactionID": 30001,
       "TagFetchBody": true,
       "DNSTransactionID": 20001,
       "DNSDomain": "www.example.com",
@@ -278,7 +278,7 @@
       "IPAddress": "93.184.216.34",
       "IPAddressASN": 15133,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 30002,
+      "EndpointTransactionID": 30001,
       "EndpointProto": "tcp",
       "EndpointPort": "80",
       "EndpointAddress": "93.184.216.34:80",
@@ -317,11 +317,11 @@
       },
       "ControlHTTPResponseTitle": "Default Web Page"
     },
-    "40002": {
+    "40001": {
       "TagDepth": 0,
       "Type": 2,
       "Failure": "",
-      "TransactionID": 40002,
+      "TransactionID": 40001,
       "TagFetchBody": false,
       "DNSTransactionID": 20001,
       "DNSDomain": "www.example.com",
@@ -335,7 +335,7 @@
       "IPAddress": "93.184.216.34",
       "IPAddressASN": 15133,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 40002,
+      "EndpointTransactionID": 40001,
       "EndpointProto": "tcp",
       "EndpointPort": "443",
       "EndpointAddress": "93.184.216.34:443",

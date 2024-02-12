@@ -72,19 +72,33 @@ func runWebConnectivityLTE(tc *webconnectivityqa.TestCase) {
 		//
 		// see https://github.com/ooni/probe/issues/2677
 		tk.Queries = minipipeline.SortDNSLookupResults(tk.Queries)
-		minipipeline.ZeroTimeDNSLookupResults(tk.Queries)
+		minipipeline.NormalizeDNSLookupResults(tk.Queries)
+
 		tk.Do53.Queries = minipipeline.SortDNSLookupResults(tk.Do53.Queries)
-		minipipeline.ZeroTimeDNSLookupResults(tk.Do53.Queries)
+		minipipeline.NormalizeDNSLookupResults(tk.Do53.Queries)
+		minipipeline.NormalizeNetworkEvents(tk.Do53.NetworkEvents)
+
 		tk.DoH.Queries = minipipeline.SortDNSLookupResults(tk.DoH.Queries)
-		minipipeline.ZeroTimeDNSLookupResults(tk.DoH.Queries)
+		minipipeline.NormalizeDNSLookupResults(tk.DoH.Queries)
+		minipipeline.NormalizeNetworkEvents(tk.DoH.NetworkEvents)
+		minipipeline.NormalizeTCPConnectResults(tk.DoH.TCPConnect)
+		minipipeline.NormalizeTLSHandshakeResults(tk.DoH.TLSHandshakes)
+
 		tk.DNSDuplicateResponses = minipipeline.SortDNSLookupResults(tk.DNSDuplicateResponses)
-		minipipeline.ZeroTimeDNSLookupResults(tk.DNSDuplicateResponses)
+		minipipeline.NormalizeDNSLookupResults(tk.DNSDuplicateResponses)
+
 		tk.NetworkEvents = minipipeline.SortNetworkEvents(tk.NetworkEvents)
-		minipipeline.ZeroTimeNetworkEvents(tk.NetworkEvents)
+		minipipeline.NormalizeNetworkEvents(tk.NetworkEvents)
+
 		tk.TCPConnect = minipipeline.SortTCPConnectResults(tk.TCPConnect)
-		minipipeline.ZeroTimeTCPConnectResults(tk.TCPConnect)
+		minipipeline.NormalizeTCPConnectResults(tk.TCPConnect)
+
 		tk.TLSHandshakes = minipipeline.SortTLSHandshakeResults(tk.TLSHandshakes)
-		minipipeline.ZeroTimeTLSHandshakeResults(tk.TLSHandshakes)
+		minipipeline.NormalizeTLSHandshakeResults(tk.TLSHandshakes)
+
+		// normalize measurement fields
+		measurement.MeasurementStartTime = "2024-02-12 20:33:47"
+		measurement.MeasurementRuntime = 0
 
 		// serialize the original measurement
 		mustSerializeMkdirAllAndWriteFile(actualDestdir, "measurement.json", measurement)
