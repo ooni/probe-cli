@@ -22,6 +22,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/throttling"
+	"github.com/ooni/probe-cli/v3/internal/webconnectivityalgo"
 )
 
 // Measures HTTPS endpoints.
@@ -34,6 +35,10 @@ type SecureFlow struct {
 
 	// DNSCache is the MANDATORY DNS cache.
 	DNSCache *DNSCache
+
+	// DNSOverHTTPSURLProvider is the MANDATORY provider of DNS-over-HTTPS
+	// URLs that arranges for periodic measurements.
+	DNSOverHTTPSURLProvider *webconnectivityalgo.OpportunisticDNSOverHTTPSURLProvider
 
 	// Depth is the OPTIONAL current redirect depth.
 	Depth int64
@@ -378,21 +383,22 @@ func (t *SecureFlow) maybeFollowRedirects(ctx context.Context, resp *http.Respon
 		}
 		t.Logger.Infof("redirect to: %s", location.String())
 		resolvers := &DNSResolvers{
-			CookieJar:    t.CookieJar,
-			Depth:        t.Depth + 1,
-			DNSCache:     t.DNSCache,
-			Domain:       location.Hostname(),
-			IDGenerator:  t.IDGenerator,
-			Logger:       t.Logger,
-			NumRedirects: t.NumRedirects,
-			TestKeys:     t.TestKeys,
-			URL:          location,
-			ZeroTime:     t.ZeroTime,
-			WaitGroup:    t.WaitGroup,
-			Referer:      resp.Request.URL.String(),
-			Session:      nil, // no need to issue another control request
-			TestHelpers:  nil, // ditto
-			UDPAddress:   t.UDPAddress,
+			CookieJar:               t.CookieJar,
+			Depth:                   t.Depth + 1,
+			DNSOverHTTPSURLProvider: t.DNSOverHTTPSURLProvider,
+			DNSCache:                t.DNSCache,
+			Domain:                  location.Hostname(),
+			IDGenerator:             t.IDGenerator,
+			Logger:                  t.Logger,
+			NumRedirects:            t.NumRedirects,
+			TestKeys:                t.TestKeys,
+			URL:                     location,
+			ZeroTime:                t.ZeroTime,
+			WaitGroup:               t.WaitGroup,
+			Referer:                 resp.Request.URL.String(),
+			Session:                 nil, // no need to issue another control request
+			TestHelpers:             nil, // ditto
+			UDPAddress:              t.UDPAddress,
 		}
 		resolvers.Start(ctx)
 	}
