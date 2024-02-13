@@ -218,7 +218,7 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 50002
+        "transaction_id": 50001
       }
     ],
     "tcp_connect": [
@@ -234,7 +234,7 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 50002
+        "transaction_id": 50001
       },
       {
         "ip": "93.184.216.34",
@@ -248,7 +248,7 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 50001
+        "transaction_id": 50002
       }
     ],
     "tls_handshakes": [
@@ -267,7 +267,7 @@
           "fetch_body=true"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 50002
+        "transaction_id": 50001
       },
       {
         "network": "tcp",
@@ -284,7 +284,7 @@
           "fetch_body=true"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 50001
+        "transaction_id": 50002
       }
     ],
     "x_control_request": {
@@ -301,10 +301,10 @@
         ]
       },
       "tcp_connect": [
-        "93.184.216.34:443",
-        "93.184.216.34:80",
         "130.192.182.17:443",
-        "130.192.182.17:80"
+        "130.192.182.17:80",
+        "93.184.216.34:443",
+        "93.184.216.34:80"
       ],
       "x_quic_enabled": false
     },
