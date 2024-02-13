@@ -65,15 +65,6 @@ const AddressBadSSLCom = "104.154.89.105"
 // AddressYandexCom1 is the first address associated with yandex.com.
 const AddressYandexCom1 = "5.255.255.80"
 
-// AddressYandexCom2 is the second address associated with yandex.com.
-const AddressYandexCom2 = "5.255.255.88"
-
-// AddressYandexCom3 is the third address associated with yandex.com.
-const AddressYandexCom3 = "77.88.55.77"
-
-// AddressYandexCom4 is the fourth address associated with yandex.com.
-const AddressYandexCom4 = "77.88.55.80"
-
 // AddressLargeFileCom1 is the first address associated with largefile.com.
 const AddressLargeFileCom1 = "52.35.36.75"
 

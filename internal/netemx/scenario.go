@@ -210,9 +210,6 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 }, {
 	Addresses: []string{
 		AddressYandexCom1,
-		AddressYandexCom2,
-		AddressYandexCom3,
-		AddressYandexCom4,
 	},
 	Domains: []string{
 		"yandex.com",
