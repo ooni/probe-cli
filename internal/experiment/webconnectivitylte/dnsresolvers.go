@@ -223,7 +223,7 @@ func (t *DNSResolvers) lookupHostSystem(parentCtx context.Context, out chan<- []
 	index := t.IDGenerator.NewIDForGetaddrinfo()
 
 	// create trace
-	trace := measurexlite.NewTrace(index, t.ZeroTime, fmt.Sprintf("depth=%d", t.Depth), "classic")
+	trace := measurexlite.NewTrace(index, t.ZeroTime, "classic", fmt.Sprintf("depth=%d", t.Depth))
 
 	// start the operation logger
 	ol := logx.NewOperationLogger(
