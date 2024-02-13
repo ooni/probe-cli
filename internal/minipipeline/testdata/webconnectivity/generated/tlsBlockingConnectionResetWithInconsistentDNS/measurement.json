@@ -94,6 +94,7 @@
         "resolver_address": "",
         "t": 0,
         "tags": [
+          "classic",
           "depth=0"
         ],
         "transaction_id": 10001
@@ -148,6 +149,8 @@
         },
         "t": 0,
         "tags": [
+          "classic",
+          "tcptls_experiment",
           "depth=0",
           "fetch_body=true"
         ],
@@ -162,6 +165,7 @@
         },
         "t": 0,
         "tags": [
+          "tcptls_experiment",
           "depth=0",
           "fetch_body=true"
         ],
@@ -180,6 +184,8 @@
         "server_name": "www.example.com",
         "t": 0,
         "tags": [
+          "classic",
+          "tcptls_experiment",
           "depth=0",
           "fetch_body=true"
         ],
@@ -197,6 +203,7 @@
         "server_name": "www.example.com",
         "t": 0,
         "tags": [
+          "tcptls_experiment",
           "depth=0",
           "fetch_body=true"
         ],

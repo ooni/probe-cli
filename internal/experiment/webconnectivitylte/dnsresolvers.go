@@ -223,7 +223,7 @@ func (t *DNSResolvers) lookupHostSystem(parentCtx context.Context, out chan<- []
 	index := t.IDGenerator.NewIDForGetaddrinfo()
 
 	// create trace
-	trace := measurexlite.NewTrace(index, t.ZeroTime, fmt.Sprintf("depth=%d", t.Depth))
+	trace := measurexlite.NewTrace(index, t.ZeroTime, "classic", fmt.Sprintf("depth=%d", t.Depth))
 
 	// start the operation logger
 	ol := logx.NewOperationLogger(
@@ -394,6 +394,7 @@ func (t *DNSResolvers) startCleartextFlows(
 		MaybeDelayCleartextFlows(index) // allow specific callers to space flows apart
 		task := &CleartextFlow{
 			Address:                 net.JoinHostPort(addr.Addr, port),
+			Classic:                 addr.Flags&DNSAddrFlagSystemResolver != 0,
 			Depth:                   t.Depth,
 			DNSCache:                t.DNSCache,
 			DNSOverHTTPSURLProvider: t.DNSOverHTTPSURLProvider,
@@ -444,6 +445,7 @@ func (t *DNSResolvers) startSecureFlows(
 		MaybeDelaySecureFlows(index) // allow specific callers to space flows apart
 		task := &SecureFlow{
 			Address:                 net.JoinHostPort(addr.Addr, port),
+			Classic:                 addr.Flags&DNSAddrFlagSystemResolver != 0,
 			Depth:                   t.Depth,
 			DNSCache:                t.DNSCache,
 			DNSOverHTTPSURLProvider: t.DNSOverHTTPSURLProvider,
