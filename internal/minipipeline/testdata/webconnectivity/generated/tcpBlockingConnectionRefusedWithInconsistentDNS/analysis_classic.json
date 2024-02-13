@@ -6,15 +6,15 @@
     "FinalResponseFailure": ""
   },
   "DNSLookupSuccess": [
-    1
+    10001
   ],
   "DNSLookupSuccessWithInvalidAddresses": [
-    1
+    10001
   ],
   "DNSLookupSuccessWithValidAddress": [],
   "DNSLookupSuccessWithBogonAddresses": [],
   "DNSLookupSuccessWithInvalidAddressesClassic": [
-    1
+    10001
   ],
   "DNSLookupSuccessWithValidAddressClassic": [],
   "DNSLookupUnexpectedFailure": [],
@@ -24,10 +24,10 @@
   "DNSLookupExpectedSuccess": [],
   "TCPConnectExpectedFailure": [],
   "TCPConnectUnexpectedFailure": [
-    30001
+    40001
   ],
   "TCPConnectUnexpectedFailureDuringWebFetch": [
-    30001
+    40001
   ],
   "TCPConnectUnexpectedFailureDuringConnectivityCheck": [],
   "TCPConnectUnexplainedFailure": [],
@@ -55,9 +55,9 @@
       "TagDepth": 0,
       "Type": 1,
       "Failure": "connection_refused",
-      "TransactionID": 30001,
+      "TransactionID": 40001,
       "TagFetchBody": true,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 10001,
       "DNSDomain": "www.example.org",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -69,7 +69,7 @@
       "IPAddress": "83.224.65.41",
       "IPAddressASN": 30722,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 30001,
+      "EndpointTransactionID": 40001,
       "EndpointProto": "tcp",
       "EndpointPort": "80",
       "EndpointAddress": "83.224.65.41:80",
@@ -107,9 +107,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 1,
+      "TransactionID": 10001,
       "TagFetchBody": null,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 10001,
       "DNSDomain": "www.example.org",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
