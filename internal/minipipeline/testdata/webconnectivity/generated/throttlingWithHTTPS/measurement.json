@@ -45,13 +45,6 @@
             "answer_type": "A",
             "ipv4": "52.35.36.75",
             "ttl": null
-          },
-          {
-            "asn": 16509,
-            "as_org_name": "Amazon.com, Inc.",
-            "answer_type": "A",
-            "ipv4": "35.161.85.189",
-            "ttl": null
           }
         ],
         "engine": "doh",
@@ -90,13 +83,6 @@
             "answer_type": "A",
             "ipv4": "52.35.36.75",
             "ttl": null
-          },
-          {
-            "asn": 16509,
-            "as_org_name": "Amazon.com, Inc.",
-            "answer_type": "A",
-            "ipv4": "35.161.85.189",
-            "ttl": null
           }
         ],
         "engine": "getaddrinfo",
@@ -119,13 +105,6 @@
             "as_org_name": "Amazon.com, Inc.",
             "answer_type": "A",
             "ipv4": "52.35.36.75",
-            "ttl": null
-          },
-          {
-            "asn": 16509,
-            "as_org_name": "Amazon.com, Inc.",
-            "answer_type": "A",
-            "ipv4": "35.161.85.189",
             "ttl": null
           }
         ],
@@ -161,7 +140,7 @@
     "requests": [
       {
         "network": "tcp",
-        "address": "35.161.85.189:443",
+        "address": "52.35.36.75:443",
         "alpn": "http/1.1",
         "failure": "generic_timeout_error",
         "request": {
@@ -207,7 +186,7 @@
         },
         "response": {
           "body": "",
-          "body_is_truncated": true,
+          "body_is_truncated": false,
           "code": 200,
           "headers_list": [
             [
@@ -239,20 +218,6 @@
     ],
     "tcp_connect": [
       {
-        "ip": "35.161.85.189",
-        "port": 443,
-        "status": {
-          "failure": null,
-          "success": true
-        },
-        "t": 0,
-        "tags": [
-          "depth=0",
-          "fetch_body=true"
-        ],
-        "transaction_id": 50001
-      },
-      {
         "ip": "52.35.36.75",
         "port": 443,
         "status": {
@@ -264,27 +229,10 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 50002
+        "transaction_id": 50001
       }
     ],
     "tls_handshakes": [
-      {
-        "network": "tcp",
-        "address": "35.161.85.189:443",
-        "cipher_suite": "TLS_AES_128_GCM_SHA256",
-        "failure": null,
-        "negotiated_protocol": "http/1.1",
-        "no_tls_verify": false,
-        "peer_certificates": null,
-        "server_name": "largefile.com",
-        "t": 0,
-        "tags": [
-          "depth=0",
-          "fetch_body=true"
-        ],
-        "tls_version": "TLSv1.3",
-        "transaction_id": 50001
-      },
       {
         "network": "tcp",
         "address": "52.35.36.75:443",
@@ -300,7 +248,7 @@
           "fetch_body=true"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 50002
+        "transaction_id": 50001
       }
     ],
     "x_control_request": {
@@ -317,8 +265,6 @@
         ]
       },
       "tcp_connect": [
-        "35.161.85.189:443",
-        "35.161.85.189:80",
         "52.35.36.75:443",
         "52.35.36.75:80"
       ],
@@ -326,21 +272,12 @@
     },
     "control": {
       "tcp_connect": {
-        "35.161.85.189:443": {
-          "status": true,
-          "failure": null
-        },
         "52.35.36.75:443": {
           "status": true,
           "failure": null
         }
       },
       "tls_handshake": {
-        "35.161.85.189:443": {
-          "server_name": "largefile.com",
-          "status": true,
-          "failure": null
-        },
         "52.35.36.75:443": {
           "server_name": "largefile.com",
           "status": true,
@@ -364,15 +301,10 @@
       "dns": {
         "failure": null,
         "addrs": [
-          "52.35.36.75",
-          "35.161.85.189"
+          "52.35.36.75"
         ]
       },
       "ip_info": {
-        "35.161.85.189": {
-          "asn": 16509,
-          "flags": 11
-        },
         "52.35.36.75": {
           "asn": 16509,
           "flags": 11

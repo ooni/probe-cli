@@ -13,60 +13,6 @@
       "DNSQueryType": "ANY",
       "DNSEngine": "getaddrinfo",
       "DNSResolvedAddrs": [
-        "35.161.85.189",
-        "52.35.36.75"
-      ],
-      "IPAddressOrigin": "dns",
-      "IPAddress": "35.161.85.189",
-      "IPAddressASN": 16509,
-      "IPAddressBogon": false,
-      "EndpointTransactionID": null,
-      "EndpointProto": null,
-      "EndpointPort": null,
-      "EndpointAddress": null,
-      "TCPConnectFailure": null,
-      "TLSHandshakeFailure": null,
-      "TLSServerName": null,
-      "HTTPRequestURL": null,
-      "HTTPFailure": null,
-      "HTTPResponseStatusCode": null,
-      "HTTPResponseBodyLength": null,
-      "HTTPResponseBodyIsTruncated": null,
-      "HTTPResponseHeadersKeys": null,
-      "HTTPResponseLocation": null,
-      "HTTPResponseTitle": null,
-      "HTTPResponseIsFinal": null,
-      "ControlDNSDomain": "largefile.com",
-      "ControlDNSLookupFailure": "",
-      "ControlDNSResolvedAddrs": [
-        "35.161.85.189",
-        "52.35.36.75"
-      ],
-      "ControlTCPConnectFailure": null,
-      "ControlTLSHandshakeFailure": null,
-      "ControlHTTPFailure": "",
-      "ControlHTTPResponseStatusCode": 200,
-      "ControlHTTPResponseBodyLength": 16777216,
-      "ControlHTTPResponseHeadersKeys": {
-        "Alt-Svc": true,
-        "Content-Type": true,
-        "Date": true
-      },
-      "ControlHTTPResponseTitle": ""
-    },
-    {
-      "TagDepth": 0,
-      "Type": 0,
-      "Failure": "",
-      "TransactionID": 10001,
-      "TagFetchBody": null,
-      "DNSTransactionID": 10001,
-      "DNSDomain": "largefile.com",
-      "DNSLookupFailure": "",
-      "DNSQueryType": "ANY",
-      "DNSEngine": "getaddrinfo",
-      "DNSResolvedAddrs": [
-        "35.161.85.189",
         "52.35.36.75"
       ],
       "IPAddressOrigin": "dns",
@@ -92,7 +38,6 @@
       "ControlDNSDomain": "largefile.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
-        "35.161.85.189",
         "52.35.36.75"
       ],
       "ControlTCPConnectFailure": null,
@@ -111,7 +56,7 @@
   "KnownTCPEndpoints": {
     "40001": {
       "TagDepth": 0,
-      "Type": 1,
+      "Type": 3,
       "Failure": "",
       "TransactionID": 40001,
       "TagFetchBody": true,
@@ -121,7 +66,6 @@
       "DNSQueryType": null,
       "DNSEngine": null,
       "DNSResolvedAddrs": [
-        "35.161.85.189",
         "52.35.36.75"
       ],
       "IPAddressOrigin": "dns",
@@ -132,59 +76,6 @@
       "EndpointProto": "tcp",
       "EndpointPort": "80",
       "EndpointAddress": "52.35.36.75:80",
-      "TCPConnectFailure": "",
-      "TLSHandshakeFailure": null,
-      "TLSServerName": null,
-      "HTTPRequestURL": null,
-      "HTTPFailure": null,
-      "HTTPResponseStatusCode": null,
-      "HTTPResponseBodyLength": null,
-      "HTTPResponseBodyIsTruncated": null,
-      "HTTPResponseHeadersKeys": null,
-      "HTTPResponseLocation": null,
-      "HTTPResponseTitle": null,
-      "HTTPResponseIsFinal": null,
-      "ControlDNSDomain": "largefile.com",
-      "ControlDNSLookupFailure": "",
-      "ControlDNSResolvedAddrs": [
-        "35.161.85.189",
-        "52.35.36.75"
-      ],
-      "ControlTCPConnectFailure": "",
-      "ControlTLSHandshakeFailure": null,
-      "ControlHTTPFailure": "",
-      "ControlHTTPResponseStatusCode": 200,
-      "ControlHTTPResponseBodyLength": 16777216,
-      "ControlHTTPResponseHeadersKeys": {
-        "Alt-Svc": true,
-        "Content-Type": true,
-        "Date": true
-      },
-      "ControlHTTPResponseTitle": ""
-    },
-    "40002": {
-      "TagDepth": 0,
-      "Type": 3,
-      "Failure": "",
-      "TransactionID": 40002,
-      "TagFetchBody": true,
-      "DNSTransactionID": 30001,
-      "DNSDomain": "largefile.com",
-      "DNSLookupFailure": "",
-      "DNSQueryType": null,
-      "DNSEngine": null,
-      "DNSResolvedAddrs": [
-        "35.161.85.189",
-        "52.35.36.75"
-      ],
-      "IPAddressOrigin": "dns",
-      "IPAddress": "35.161.85.189",
-      "IPAddressASN": 16509,
-      "IPAddressBogon": false,
-      "EndpointTransactionID": 40002,
-      "EndpointProto": "tcp",
-      "EndpointPort": "80",
-      "EndpointAddress": "35.161.85.189:80",
       "TCPConnectFailure": "",
       "TLSHandshakeFailure": null,
       "TLSServerName": null,
@@ -204,7 +95,6 @@
       "ControlDNSDomain": "largefile.com",
       "ControlDNSLookupFailure": "",
       "ControlDNSResolvedAddrs": [
-        "35.161.85.189",
         "52.35.36.75"
       ],
       "ControlTCPConnectFailure": "",
@@ -222,7 +112,6 @@
   },
   "ControlExpectations": {
     "DNSAddresses": [
-      "35.161.85.189",
       "52.35.36.75"
     ],
     "FinalResponseFailure": ""
