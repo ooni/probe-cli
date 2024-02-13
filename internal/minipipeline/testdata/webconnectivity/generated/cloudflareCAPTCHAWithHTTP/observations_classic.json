@@ -5,9 +5,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 1,
+      "TransactionID": 10001,
       "TagFetchBody": null,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 10001,
       "DNSDomain": "www.cloudflare-cache.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -63,13 +63,13 @@
     }
   ],
   "KnownTCPEndpoints": {
-    "30001": {
+    "40001": {
       "TagDepth": 0,
       "Type": 3,
       "Failure": "",
-      "TransactionID": 30001,
+      "TransactionID": 40001,
       "TagFetchBody": true,
-      "DNSTransactionID": 20001,
+      "DNSTransactionID": 30001,
       "DNSDomain": "www.cloudflare-cache.com",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -81,7 +81,7 @@
       "IPAddress": "104.16.132.229",
       "IPAddressASN": 13335,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 30001,
+      "EndpointTransactionID": 40001,
       "EndpointProto": "tcp",
       "EndpointPort": "80",
       "EndpointAddress": "104.16.132.229:80",

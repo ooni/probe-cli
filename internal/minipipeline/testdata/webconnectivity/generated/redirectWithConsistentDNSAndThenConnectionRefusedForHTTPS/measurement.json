@@ -58,7 +58,7 @@
         "tags": [
           "depth=0"
         ],
-        "transaction_id": 20001
+        "transaction_id": 30001
       },
       {
         "answers": null,
@@ -73,95 +73,95 @@
         "tags": [
           "depth=0"
         ],
+        "transaction_id": 30001
+      },
+      {
+        "answers": [
+          {
+            "asn": 396982,
+            "as_org_name": "Google LLC",
+            "answer_type": "A",
+            "ipv4": "67.199.248.11",
+            "ttl": null
+          }
+        ],
+        "engine": "getaddrinfo",
+        "failure": null,
+        "hostname": "bit.ly",
+        "query_type": "ANY",
+        "resolver_hostname": null,
+        "resolver_port": null,
+        "resolver_address": "",
+        "t": 0,
+        "tags": [
+          "depth=0"
+        ],
+        "transaction_id": 10001
+      },
+      {
+        "answers": [
+          {
+            "asn": 15133,
+            "as_org_name": "Edgecast Inc.",
+            "answer_type": "A",
+            "ipv4": "93.184.216.34",
+            "ttl": null
+          }
+        ],
+        "engine": "getaddrinfo",
+        "failure": null,
+        "hostname": "www.example.com",
+        "query_type": "ANY",
+        "resolver_hostname": null,
+        "resolver_port": null,
+        "resolver_address": "",
+        "t": 0,
+        "tags": [
+          "depth=1"
+        ],
+        "transaction_id": 10002
+      },
+      {
+        "answers": [
+          {
+            "asn": 396982,
+            "as_org_name": "Google LLC",
+            "answer_type": "A",
+            "ipv4": "67.199.248.11",
+            "ttl": null
+          }
+        ],
+        "engine": "udp",
+        "failure": null,
+        "hostname": "bit.ly",
+        "query_type": "A",
+        "resolver_hostname": null,
+        "resolver_port": null,
+        "resolver_address": "1.1.1.1:53",
+        "t": 0,
+        "tags": [
+          "depth=0"
+        ],
+        "transaction_id": 20001
+      },
+      {
+        "answers": null,
+        "engine": "udp",
+        "failure": "dns_no_answer",
+        "hostname": "bit.ly",
+        "query_type": "AAAA",
+        "resolver_hostname": null,
+        "resolver_port": null,
+        "resolver_address": "1.1.1.1:53",
+        "t": 0,
+        "tags": [
+          "depth=0"
+        ],
         "transaction_id": 20001
       },
       {
         "answers": [
           {
-            "asn": 396982,
-            "as_org_name": "Google LLC",
-            "answer_type": "A",
-            "ipv4": "67.199.248.11",
-            "ttl": null
-          }
-        ],
-        "engine": "getaddrinfo",
-        "failure": null,
-        "hostname": "bit.ly",
-        "query_type": "ANY",
-        "resolver_hostname": null,
-        "resolver_port": null,
-        "resolver_address": "",
-        "t": 0,
-        "tags": [
-          "depth=0"
-        ],
-        "transaction_id": 1
-      },
-      {
-        "answers": [
-          {
-            "asn": 15133,
-            "as_org_name": "Edgecast Inc.",
-            "answer_type": "A",
-            "ipv4": "93.184.216.34",
-            "ttl": null
-          }
-        ],
-        "engine": "getaddrinfo",
-        "failure": null,
-        "hostname": "www.example.com",
-        "query_type": "ANY",
-        "resolver_hostname": null,
-        "resolver_port": null,
-        "resolver_address": "",
-        "t": 0,
-        "tags": [
-          "depth=1"
-        ],
-        "transaction_id": 2
-      },
-      {
-        "answers": [
-          {
-            "asn": 396982,
-            "as_org_name": "Google LLC",
-            "answer_type": "A",
-            "ipv4": "67.199.248.11",
-            "ttl": null
-          }
-        ],
-        "engine": "udp",
-        "failure": null,
-        "hostname": "bit.ly",
-        "query_type": "A",
-        "resolver_hostname": null,
-        "resolver_port": null,
-        "resolver_address": "1.1.1.1:53",
-        "t": 0,
-        "tags": [
-          "depth=0"
-        ],
-        "transaction_id": 10001
-      },
-      {
-        "answers": null,
-        "engine": "udp",
-        "failure": "dns_no_answer",
-        "hostname": "bit.ly",
-        "query_type": "AAAA",
-        "resolver_hostname": null,
-        "resolver_port": null,
-        "resolver_address": "1.1.1.1:53",
-        "t": 0,
-        "tags": [
-          "depth=0"
-        ],
-        "transaction_id": 10001
-      },
-      {
-        "answers": [
-          {
             "asn": 15133,
             "as_org_name": "Edgecast Inc.",
             "answer_type": "A",
@@ -180,7 +180,7 @@
         "tags": [
           "depth=1"
         ],
-        "transaction_id": 10002
+        "transaction_id": 20002
       },
       {
         "answers": null,
@@ -195,7 +195,7 @@
         "tags": [
           "depth=1"
         ],
-        "transaction_id": 10002
+        "transaction_id": 20002
       }
     ],
     "requests": [
@@ -274,7 +274,7 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 40001
+        "transaction_id": 50001
       }
     ],
     "tcp_connect": [
@@ -290,7 +290,7 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 40001
+        "transaction_id": 50001
       },
       {
         "ip": "93.184.216.34",
@@ -304,7 +304,7 @@
           "depth=1",
           "fetch_body=true"
         ],
-        "transaction_id": 40002
+        "transaction_id": 50002
       }
     ],
     "tls_handshakes": [
@@ -323,7 +323,7 @@
           "fetch_body=true"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40001
+        "transaction_id": 50001
       }
     ],
     "x_control_request": {
