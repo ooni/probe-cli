@@ -231,22 +231,13 @@ func TestNormalizeHTTPRequestResults(t *testing.T) {
 				T:  0.4,
 			}, {
 				Response: model.ArchivalHTTPResponse{
-					Body:       model.ArchivalScrubbedMaybeBinaryString("1234567"),
-					BodyLength: 7,
+					Body: model.ArchivalScrubbedMaybeBinaryString("1234567"),
 				},
 				T0: 0.5,
 				T:  0.66,
 			}, {
 				Response: model.ArchivalHTTPResponse{
-					Body:       model.ArchivalScrubbedMaybeBinaryString("1234567"),
-					BodyLength: 0,
-				},
-				T0: 0.6,
-				T:  0.77,
-			}, {
-				Response: model.ArchivalHTTPResponse{
-					Body:       model.ArchivalScrubbedMaybeBinaryString(randx.Letters(1 << 19)),
-					BodyLength: 1 << 19,
+					Body: model.ArchivalScrubbedMaybeBinaryString(randx.Letters(1 << 19)),
 				},
 				T0: 0.7,
 				T:  0.88,
@@ -258,21 +249,13 @@ func TestNormalizeHTTPRequestResults(t *testing.T) {
 			},
 			{
 				Response: model.ArchivalHTTPResponse{
-					Body:       model.ArchivalScrubbedMaybeBinaryString("1234567"),
-					BodyLength: 7,
-				},
-			},
-			{
-				Response: model.ArchivalHTTPResponse{
-					Body:       model.ArchivalScrubbedMaybeBinaryString("1234567"),
-					BodyLength: 0,
+					Body: model.ArchivalScrubbedMaybeBinaryString("1234567"),
 				},
 			},
 			{
 				Response: model.ArchivalHTTPResponse{
 					Body:            model.ArchivalScrubbedMaybeBinaryString(""),
 					BodyIsTruncated: true,
-					BodyLength:      1 << 19,
 				},
 			},
 		},
