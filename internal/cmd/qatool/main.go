@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
+	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivitylte"
 	"github.com/ooni/probe-cli/v3/internal/geoipx"
@@ -134,6 +136,23 @@ func runWebConnectivityLTE(tc *webconnectivityqa.TestCase) {
 
 		// serialize the classic analysis results
 		mustSerializeMkdirAllAndWriteFile(actualDestdir, "analysis_classic.json", analysisClassic)
+	}
+}
+
+// override webconnectivitylte algorithm to make it less entropic
+func init() {
+	webconnectivitylte.MaybeSortAddresses = func(entries []webconnectivitylte.DNSEntry) {
+		sort.SliceStable(entries, func(i, j int) bool {
+			return entries[i].Addr < entries[j].Addr
+		})
+	}
+
+	webconnectivitylte.MaybeDelayCleartextFlows = func(index int) {
+		time.Sleep(10 * time.Millisecond * time.Duration(index))
+	}
+
+	webconnectivitylte.MaybeDelaySecureFlows = func(index int) {
+		time.Sleep(10 * time.Millisecond * time.Duration(index))
 	}
 }
 
