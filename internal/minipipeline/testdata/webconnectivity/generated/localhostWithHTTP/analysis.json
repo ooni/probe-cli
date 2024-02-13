@@ -6,26 +6,26 @@
     "FinalResponseFailure": "unknown_error"
   },
   "DNSLookupSuccess": [
-    1,
     10001,
-    20001
+    20001,
+    30001
   ],
   "DNSLookupSuccessWithInvalidAddresses": [],
   "DNSLookupSuccessWithValidAddress": [
-    1,
     10001,
-    20001
+    20001,
+    30001
   ],
   "DNSLookupSuccessWithBogonAddresses": [
-    1,
     10001,
-    20001
+    20001,
+    30001
   ],
   "DNSLookupSuccessWithInvalidAddressesClassic": [],
   "DNSLookupSuccessWithValidAddressClassic": [
-    1,
     10001,
-    20001
+    20001,
+    30001
   ],
   "DNSLookupUnexpectedFailure": [],
   "DNSLookupUnexplainedFailure": [],
@@ -61,9 +61,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 20001,
+      "TransactionID": 30001,
       "TagFetchBody": null,
-      "DNSTransactionID": 20001,
+      "DNSTransactionID": 30001,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
@@ -108,9 +108,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 10001,
+      "TransactionID": 20001,
       "TagFetchBody": null,
-      "DNSTransactionID": 10001,
+      "DNSTransactionID": 20001,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "A",
@@ -155,9 +155,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 1,
+      "TransactionID": 10001,
       "TagFetchBody": null,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 10001,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",
@@ -202,9 +202,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "dns_no_answer",
-      "TransactionID": 20001,
+      "TransactionID": 30001,
       "TagFetchBody": null,
-      "DNSTransactionID": 20001,
+      "DNSTransactionID": 30001,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",
@@ -247,9 +247,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "dns_no_answer",
-      "TransactionID": 10001,
+      "TransactionID": 20001,
       "TagFetchBody": null,
-      "DNSTransactionID": 10001,
+      "DNSTransactionID": 20001,
       "DNSDomain": "www.example.com",
       "DNSLookupFailure": "dns_no_answer",
       "DNSQueryType": "AAAA",

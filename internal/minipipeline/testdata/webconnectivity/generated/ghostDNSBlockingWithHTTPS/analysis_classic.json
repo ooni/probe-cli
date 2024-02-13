@@ -4,7 +4,7 @@
     "FinalResponseFailure": "dns_lookup_error"
   },
   "DNSLookupSuccess": [
-    1
+    10001
   ],
   "DNSLookupSuccessWithInvalidAddresses": [],
   "DNSLookupSuccessWithValidAddress": [],
@@ -17,7 +17,7 @@
   "DNSLookupExpectedFailure": [],
   "DNSLookupExpectedSuccess": [],
   "TCPConnectExpectedFailure": [
-    40001
+    50001
   ],
   "TCPConnectUnexpectedFailure": [],
   "TCPConnectUnexpectedFailureDuringWebFetch": [],
@@ -47,9 +47,9 @@
       "TagDepth": 0,
       "Type": 1,
       "Failure": "connection_refused",
-      "TransactionID": 40001,
+      "TransactionID": 50001,
       "TagFetchBody": true,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 10001,
       "DNSDomain": "itsat.info",
       "DNSLookupFailure": "",
       "DNSQueryType": null,
@@ -61,7 +61,7 @@
       "IPAddress": "83.224.65.41",
       "IPAddressASN": 30722,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 40001,
+      "EndpointTransactionID": 50001,
       "EndpointProto": "tcp",
       "EndpointPort": "443",
       "EndpointAddress": "83.224.65.41:443",
@@ -92,9 +92,9 @@
       "TagDepth": 0,
       "Type": 0,
       "Failure": "",
-      "TransactionID": 1,
+      "TransactionID": 10001,
       "TagFetchBody": null,
-      "DNSTransactionID": 1,
+      "DNSTransactionID": 10001,
       "DNSDomain": "itsat.info",
       "DNSLookupFailure": "",
       "DNSQueryType": "ANY",

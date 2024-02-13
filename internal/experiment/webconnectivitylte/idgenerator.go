@@ -3,11 +3,11 @@ package webconnectivitylte
 import "sync/atomic"
 
 const (
-	idGeneratorGetaddrinfoOffset       = 0
-	idGeneratorDNSOverUDPOffset        = 10_000
-	idGeneratorDNSOverHTTPSOffset      = 20_000
-	idGeneratorEndpointCleartextOffset = 30_000
-	idGeneratorEndpointSecureOffset    = 40_000
+	idGeneratorGetaddrinfoOffset       = 10_000
+	idGeneratorDNSOverUDPOffset        = 20_000
+	idGeneratorDNSOverHTTPSOffset      = 30_000
+	idGeneratorEndpointCleartextOffset = 40_000
+	idGeneratorEndpointSecureOffset    = 50_000
 )
 
 // IDGenerator helps with generating IDs that neatly fall into namespaces.
