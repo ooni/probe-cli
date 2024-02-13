@@ -161,7 +161,7 @@
     "requests": [
       {
         "network": "tcp",
-        "address": "52.35.36.75:80",
+        "address": "35.161.85.189:80",
         "failure": "generic_timeout_error",
         "request": {
           "body": "",
@@ -233,7 +233,7 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 40001
+        "transaction_id": 40002
       }
     ],
     "tcp_connect": [
@@ -241,8 +241,8 @@
         "ip": "35.161.85.189",
         "port": 80,
         "status": {
-          "failure": "generic_timeout_error",
-          "success": false
+          "failure": null,
+          "success": true
         },
         "t": 0,
         "tags": [
@@ -269,8 +269,8 @@
         "ip": "52.35.36.75",
         "port": 80,
         "status": {
-          "failure": null,
-          "success": true
+          "failure": "generic_timeout_error",
+          "success": false
         },
         "t": 0,
         "tags": [

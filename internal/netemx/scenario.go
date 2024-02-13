@@ -226,7 +226,6 @@ var InternetScenario = []*ScenarioDomainAddresses{{
 }, {
 	Addresses: []string{
 		AddressLargeFileCom1,
-		AddressLargeFileCom2,
 	},
 	Domains: []string{
 		"largefile.com",

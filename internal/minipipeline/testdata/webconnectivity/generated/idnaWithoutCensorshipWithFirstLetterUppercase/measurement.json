@@ -45,27 +45,6 @@
             "answer_type": "A",
             "ipv4": "5.255.255.80",
             "ttl": null
-          },
-          {
-            "asn": 208398,
-            "as_org_name": "Teletech d.o.o. Beograd",
-            "answer_type": "A",
-            "ipv4": "5.255.255.88",
-            "ttl": null
-          },
-          {
-            "asn": 208398,
-            "as_org_name": "Teletech d.o.o. Beograd",
-            "answer_type": "A",
-            "ipv4": "77.88.55.77",
-            "ttl": null
-          },
-          {
-            "asn": 208398,
-            "as_org_name": "Teletech d.o.o. Beograd",
-            "answer_type": "A",
-            "ipv4": "77.88.55.80",
-            "ttl": null
           }
         ],
         "engine": "doh",
@@ -103,27 +82,6 @@
             "as_org_name": "Teletech d.o.o. Beograd",
             "answer_type": "A",
             "ipv4": "5.255.255.80",
-            "ttl": null
-          },
-          {
-            "asn": 208398,
-            "as_org_name": "Teletech d.o.o. Beograd",
-            "answer_type": "A",
-            "ipv4": "5.255.255.88",
-            "ttl": null
-          },
-          {
-            "asn": 208398,
-            "as_org_name": "Teletech d.o.o. Beograd",
-            "answer_type": "A",
-            "ipv4": "77.88.55.77",
-            "ttl": null
-          },
-          {
-            "asn": 208398,
-            "as_org_name": "Teletech d.o.o. Beograd",
-            "answer_type": "A",
-            "ipv4": "77.88.55.80",
             "ttl": null
           }
         ],
@@ -148,27 +106,6 @@
             "answer_type": "A",
             "ipv4": "5.255.255.80",
             "ttl": null
-          },
-          {
-            "asn": 208398,
-            "as_org_name": "Teletech d.o.o. Beograd",
-            "answer_type": "A",
-            "ipv4": "5.255.255.88",
-            "ttl": null
-          },
-          {
-            "asn": 208398,
-            "as_org_name": "Teletech d.o.o. Beograd",
-            "answer_type": "A",
-            "ipv4": "77.88.55.77",
-            "ttl": null
-          },
-          {
-            "asn": 208398,
-            "as_org_name": "Teletech d.o.o. Beograd",
-            "answer_type": "A",
-            "ipv4": "77.88.55.80",
-            "ttl": null
           }
         ],
         "engine": "getaddrinfo",
@@ -191,27 +128,6 @@
             "as_org_name": "Teletech d.o.o. Beograd",
             "answer_type": "A",
             "ipv4": "5.255.255.80",
-            "ttl": null
-          },
-          {
-            "asn": 208398,
-            "as_org_name": "Teletech d.o.o. Beograd",
-            "answer_type": "A",
-            "ipv4": "5.255.255.88",
-            "ttl": null
-          },
-          {
-            "asn": 208398,
-            "as_org_name": "Teletech d.o.o. Beograd",
-            "answer_type": "A",
-            "ipv4": "77.88.55.77",
-            "ttl": null
-          },
-          {
-            "asn": 208398,
-            "as_org_name": "Teletech d.o.o. Beograd",
-            "answer_type": "A",
-            "ipv4": "77.88.55.80",
             "ttl": null
           }
         ],
@@ -236,27 +152,6 @@
             "answer_type": "A",
             "ipv4": "5.255.255.80",
             "ttl": null
-          },
-          {
-            "asn": 208398,
-            "as_org_name": "Teletech d.o.o. Beograd",
-            "answer_type": "A",
-            "ipv4": "5.255.255.88",
-            "ttl": null
-          },
-          {
-            "asn": 208398,
-            "as_org_name": "Teletech d.o.o. Beograd",
-            "answer_type": "A",
-            "ipv4": "77.88.55.77",
-            "ttl": null
-          },
-          {
-            "asn": 208398,
-            "as_org_name": "Teletech d.o.o. Beograd",
-            "answer_type": "A",
-            "ipv4": "77.88.55.80",
-            "ttl": null
           }
         ],
         "engine": "udp",
@@ -295,27 +190,6 @@
             "answer_type": "A",
             "ipv4": "5.255.255.80",
             "ttl": null
-          },
-          {
-            "asn": 208398,
-            "as_org_name": "Teletech d.o.o. Beograd",
-            "answer_type": "A",
-            "ipv4": "5.255.255.88",
-            "ttl": null
-          },
-          {
-            "asn": 208398,
-            "as_org_name": "Teletech d.o.o. Beograd",
-            "answer_type": "A",
-            "ipv4": "77.88.55.77",
-            "ttl": null
-          },
-          {
-            "asn": 208398,
-            "as_org_name": "Teletech d.o.o. Beograd",
-            "answer_type": "A",
-            "ipv4": "77.88.55.80",
-            "ttl": null
           }
         ],
         "engine": "udp",
@@ -353,27 +227,6 @@
             "as_org_name": "Teletech d.o.o. Beograd",
             "answer_type": "A",
             "ipv4": "5.255.255.80",
-            "ttl": null
-          },
-          {
-            "asn": 208398,
-            "as_org_name": "Teletech d.o.o. Beograd",
-            "answer_type": "A",
-            "ipv4": "5.255.255.88",
-            "ttl": null
-          },
-          {
-            "asn": 208398,
-            "as_org_name": "Teletech d.o.o. Beograd",
-            "answer_type": "A",
-            "ipv4": "77.88.55.77",
-            "ttl": null
-          },
-          {
-            "asn": 208398,
-            "as_org_name": "Teletech d.o.o. Beograd",
-            "answer_type": "A",
-            "ipv4": "77.88.55.80",
             "ttl": null
           }
         ],
@@ -409,7 +262,7 @@
     "requests": [
       {
         "network": "tcp",
-        "address": "5.255.255.88:443",
+        "address": "5.255.255.80:443",
         "alpn": "http/1.1",
         "failure": null,
         "request": {
@@ -487,11 +340,11 @@
           "depth=2",
           "fetch_body=true"
         ],
-        "transaction_id": 50010
+        "transaction_id": 50003
       },
       {
         "network": "tcp",
-        "address": "5.255.255.88:443",
+        "address": "5.255.255.80:443",
         "alpn": "http/1.1",
         "failure": null,
         "request": {
@@ -569,11 +422,11 @@
           "depth=1",
           "fetch_body=true"
         ],
-        "transaction_id": 50007
+        "transaction_id": 50002
       },
       {
         "network": "tcp",
-        "address": "77.88.55.80:80",
+        "address": "5.255.255.80:80",
         "failure": null,
         "request": {
           "body": "",
@@ -650,7 +503,7 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 40004
+        "transaction_id": 40001
       }
     ],
     "tcp_connect": [
@@ -694,7 +547,7 @@
           "depth=1",
           "fetch_body=true"
         ],
-        "transaction_id": 50006
+        "transaction_id": 50002
       },
       {
         "ip": "5.255.255.80",
@@ -708,175 +561,7 @@
           "depth=2",
           "fetch_body=true"
         ],
-        "transaction_id": 50009
-      },
-      {
-        "ip": "5.255.255.88",
-        "port": 80,
-        "status": {
-          "failure": null,
-          "success": true
-        },
-        "t": 0,
-        "tags": [
-          "depth=0",
-          "fetch_body=true"
-        ],
-        "transaction_id": 40002
-      },
-      {
-        "ip": "5.255.255.88",
-        "port": 443,
-        "status": {
-          "failure": null,
-          "success": true
-        },
-        "t": 0,
-        "tags": [
-          "depth=0",
-          "fetch_body=false"
-        ],
-        "transaction_id": 50002
-      },
-      {
-        "ip": "5.255.255.88",
-        "port": 443,
-        "status": {
-          "failure": null,
-          "success": true
-        },
-        "t": 0,
-        "tags": [
-          "depth=1",
-          "fetch_body=true"
-        ],
-        "transaction_id": 50007
-      },
-      {
-        "ip": "5.255.255.88",
-        "port": 443,
-        "status": {
-          "failure": null,
-          "success": true
-        },
-        "t": 0,
-        "tags": [
-          "depth=2",
-          "fetch_body=true"
-        ],
-        "transaction_id": 50010
-      },
-      {
-        "ip": "77.88.55.77",
-        "port": 80,
-        "status": {
-          "failure": null,
-          "success": true
-        },
-        "t": 0,
-        "tags": [
-          "depth=0",
-          "fetch_body=true"
-        ],
-        "transaction_id": 40003
-      },
-      {
-        "ip": "77.88.55.77",
-        "port": 443,
-        "status": {
-          "failure": null,
-          "success": true
-        },
-        "t": 0,
-        "tags": [
-          "depth=0",
-          "fetch_body=false"
-        ],
         "transaction_id": 50003
-      },
-      {
-        "ip": "77.88.55.77",
-        "port": 443,
-        "status": {
-          "failure": null,
-          "success": true
-        },
-        "t": 0,
-        "tags": [
-          "depth=1",
-          "fetch_body=true"
-        ],
-        "transaction_id": 50008
-      },
-      {
-        "ip": "77.88.55.77",
-        "port": 443,
-        "status": {
-          "failure": null,
-          "success": true
-        },
-        "t": 0,
-        "tags": [
-          "depth=2",
-          "fetch_body=true"
-        ],
-        "transaction_id": 50011
-      },
-      {
-        "ip": "77.88.55.80",
-        "port": 80,
-        "status": {
-          "failure": null,
-          "success": true
-        },
-        "t": 0,
-        "tags": [
-          "depth=0",
-          "fetch_body=true"
-        ],
-        "transaction_id": 40004
-      },
-      {
-        "ip": "77.88.55.80",
-        "port": 443,
-        "status": {
-          "failure": null,
-          "success": true
-        },
-        "t": 0,
-        "tags": [
-          "depth=0",
-          "fetch_body=false"
-        ],
-        "transaction_id": 50004
-      },
-      {
-        "ip": "77.88.55.80",
-        "port": 443,
-        "status": {
-          "failure": null,
-          "success": true
-        },
-        "t": 0,
-        "tags": [
-          "depth=1",
-          "fetch_body=true"
-        ],
-        "transaction_id": 50005
-      },
-      {
-        "ip": "77.88.55.80",
-        "port": 443,
-        "status": {
-          "failure": null,
-          "success": true
-        },
-        "t": 0,
-        "tags": [
-          "depth=2",
-          "fetch_body=true"
-        ],
-        "transaction_id": 50012
       }
     ],
     "tls_handshakes": [
@@ -912,7 +597,7 @@
           "fetch_body=true"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 50006
+        "transaction_id": 50002
       },
       {
         "network": "tcp",
@@ -929,160 +614,7 @@
           "fetch_body=true"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 50009
-      },
-      {
-        "network": "tcp",
-        "address": "5.255.255.88:443",
-        "cipher_suite": "TLS_AES_128_GCM_SHA256",
-        "failure": null,
-        "negotiated_protocol": "http/1.1",
-        "no_tls_verify": false,
-        "peer_certificates": null,
-        "server_name": "xn--d1acpjx3f.xn--p1ai",
-        "t": 0,
-        "tags": [
-          "depth=0",
-          "fetch_body=false"
-        ],
-        "tls_version": "TLSv1.3",
-        "transaction_id": 50002
-      },
-      {
-        "network": "tcp",
-        "address": "5.255.255.88:443",
-        "cipher_suite": "TLS_AES_128_GCM_SHA256",
-        "failure": null,
-        "negotiated_protocol": "http/1.1",
-        "no_tls_verify": false,
-        "peer_certificates": null,
-        "server_name": "yandex.com",
-        "t": 0,
-        "tags": [
-          "depth=1",
-          "fetch_body=true"
-        ],
-        "tls_version": "TLSv1.3",
-        "transaction_id": 50007
-      },
-      {
-        "network": "tcp",
-        "address": "5.255.255.88:443",
-        "cipher_suite": "TLS_AES_128_GCM_SHA256",
-        "failure": null,
-        "negotiated_protocol": "http/1.1",
-        "no_tls_verify": false,
-        "peer_certificates": null,
-        "server_name": "ya.ru",
-        "t": 0,
-        "tags": [
-          "depth=2",
-          "fetch_body=true"
-        ],
-        "tls_version": "TLSv1.3",
-        "transaction_id": 50010
-      },
-      {
-        "network": "tcp",
-        "address": "77.88.55.77:443",
-        "cipher_suite": "TLS_AES_128_GCM_SHA256",
-        "failure": null,
-        "negotiated_protocol": "http/1.1",
-        "no_tls_verify": false,
-        "peer_certificates": null,
-        "server_name": "xn--d1acpjx3f.xn--p1ai",
-        "t": 0,
-        "tags": [
-          "depth=0",
-          "fetch_body=false"
-        ],
-        "tls_version": "TLSv1.3",
         "transaction_id": 50003
-      },
-      {
-        "network": "tcp",
-        "address": "77.88.55.77:443",
-        "cipher_suite": "TLS_AES_128_GCM_SHA256",
-        "failure": null,
-        "negotiated_protocol": "http/1.1",
-        "no_tls_verify": false,
-        "peer_certificates": null,
-        "server_name": "yandex.com",
-        "t": 0,
-        "tags": [
-          "depth=1",
-          "fetch_body=true"
-        ],
-        "tls_version": "TLSv1.3",
-        "transaction_id": 50008
-      },
-      {
-        "network": "tcp",
-        "address": "77.88.55.77:443",
-        "cipher_suite": "TLS_AES_128_GCM_SHA256",
-        "failure": null,
-        "negotiated_protocol": "http/1.1",
-        "no_tls_verify": false,
-        "peer_certificates": null,
-        "server_name": "ya.ru",
-        "t": 0,
-        "tags": [
-          "depth=2",
-          "fetch_body=true"
-        ],
-        "tls_version": "TLSv1.3",
-        "transaction_id": 50011
-      },
-      {
-        "network": "tcp",
-        "address": "77.88.55.80:443",
-        "cipher_suite": "TLS_AES_128_GCM_SHA256",
-        "failure": null,
-        "negotiated_protocol": "http/1.1",
-        "no_tls_verify": false,
-        "peer_certificates": null,
-        "server_name": "xn--d1acpjx3f.xn--p1ai",
-        "t": 0,
-        "tags": [
-          "depth=0",
-          "fetch_body=false"
-        ],
-        "tls_version": "TLSv1.3",
-        "transaction_id": 50004
-      },
-      {
-        "network": "tcp",
-        "address": "77.88.55.80:443",
-        "cipher_suite": "TLS_AES_128_GCM_SHA256",
-        "failure": null,
-        "negotiated_protocol": "http/1.1",
-        "no_tls_verify": false,
-        "peer_certificates": null,
-        "server_name": "yandex.com",
-        "t": 0,
-        "tags": [
-          "depth=1",
-          "fetch_body=true"
-        ],
-        "tls_version": "TLSv1.3",
-        "transaction_id": 50005
-      },
-      {
-        "network": "tcp",
-        "address": "77.88.55.80:443",
-        "cipher_suite": "TLS_AES_128_GCM_SHA256",
-        "failure": null,
-        "negotiated_protocol": "http/1.1",
-        "no_tls_verify": false,
-        "peer_certificates": null,
-        "server_name": "ya.ru",
-        "t": 0,
-        "tags": [
-          "depth=2",
-          "fetch_body=true"
-        ],
-        "tls_version": "TLSv1.3",
-        "transaction_id": 50012
       }
     ],
     "x_control_request": {
@@ -1100,13 +632,7 @@
       },
       "tcp_connect": [
         "5.255.255.80:443",
-        "5.255.255.80:80",
-        "5.255.255.88:443",
-        "5.255.255.88:80",
-        "77.88.55.77:443",
-        "77.88.55.77:80",
-        "77.88.55.80:443",
-        "77.88.55.80:80"
+        "5.255.255.80:80"
       ],
       "x_quic_enabled": false
     },
@@ -1119,49 +645,10 @@
         "5.255.255.80:80": {
           "status": true,
           "failure": null
-        },
-        "5.255.255.88:443": {
-          "status": true,
-          "failure": null
-        },
-        "5.255.255.88:80": {
-          "status": true,
-          "failure": null
-        },
-        "77.88.55.77:443": {
-          "status": true,
-          "failure": null
-        },
-        "77.88.55.77:80": {
-          "status": true,
-          "failure": null
-        },
-        "77.88.55.80:443": {
-          "status": true,
-          "failure": null
-        },
-        "77.88.55.80:80": {
-          "status": true,
-          "failure": null
         }
       },
       "tls_handshake": {
         "5.255.255.80:443": {
-          "server_name": "xn--d1acpjx3f.xn--p1ai",
-          "status": true,
-          "failure": null
-        },
-        "5.255.255.88:443": {
-          "server_name": "xn--d1acpjx3f.xn--p1ai",
-          "status": true,
-          "failure": null
-        },
-        "77.88.55.77:443": {
-          "server_name": "xn--d1acpjx3f.xn--p1ai",
-          "status": true,
-          "failure": null
-        },
-        "77.88.55.80:443": {
           "server_name": "xn--d1acpjx3f.xn--p1ai",
           "status": true,
           "failure": null
@@ -1185,26 +672,11 @@
       "dns": {
         "failure": null,
         "addrs": [
-          "5.255.255.80",
-          "5.255.255.88",
-          "77.88.55.77",
-          "77.88.55.80"
+          "5.255.255.80"
         ]
       },
       "ip_info": {
         "5.255.255.80": {
-          "asn": 208398,
-          "flags": 11
-        },
-        "5.255.255.88": {
-          "asn": 208398,
-          "flags": 11
-        },
-        "77.88.55.77": {
-          "asn": 208398,
-          "flags": 11
-        },
-        "77.88.55.80": {
           "asn": 208398,
           "flags": 11
         }

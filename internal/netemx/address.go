@@ -68,9 +68,6 @@ const AddressYandexCom1 = "5.255.255.80"
 // AddressLargeFileCom1 is the first address associated with largefile.com.
 const AddressLargeFileCom1 = "52.35.36.75"
 
-// AddressLargeFileCom2 is the second address associated with largefile.com.
-const AddressLargeFileCom2 = "35.161.85.189"
-
 // AddressCloudflareCache1 is the first address associated with cloudflare caches.
 const AddressCloudflareCache1 = "104.16.132.229"
 
