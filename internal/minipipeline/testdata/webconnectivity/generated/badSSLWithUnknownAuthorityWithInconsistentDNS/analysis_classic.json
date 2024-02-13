@@ -30,7 +30,7 @@
   "TCPConnectUnexplainedFailureDuringWebFetch": [],
   "TCPConnectUnexplainedFailureDuringConnectivityCheck": [],
   "TLSHandshakeExpectedFailure": [
-    40001
+    40002
   ],
   "TLSHandshakeUnexpectedFailure": [],
   "TLSHandshakeUnexpectedFailureDuringWebFetch": [],
@@ -53,7 +53,7 @@
       "TagDepth": 0,
       "Type": 2,
       "Failure": "ssl_unknown_authority",
-      "TransactionID": 40001,
+      "TransactionID": 40002,
       "TagFetchBody": true,
       "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
@@ -67,7 +67,7 @@
       "IPAddress": "104.154.89.105",
       "IPAddressASN": 396982,
       "IPAddressBogon": false,
-      "EndpointTransactionID": 40001,
+      "EndpointTransactionID": 40002,
       "EndpointProto": "tcp",
       "EndpointPort": "443",
       "EndpointAddress": "104.154.89.105:443",
