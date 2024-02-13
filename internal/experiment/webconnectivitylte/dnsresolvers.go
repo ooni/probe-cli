@@ -92,6 +92,11 @@ func (t *DNSResolvers) Start(ctx context.Context) {
 	}()
 }
 
+// MaybeSortAddresses is an OPTIONAL hook that possibly sorts the resolved addresses.
+var MaybeSortAddresses = func(entries []DNSEntry) {
+	// nothing!
+}
+
 // run performs a DNS lookup and returns the looked up addrs
 func (t *DNSResolvers) run(parentCtx context.Context) []DNSEntry {
 	// create output channels for the lookup
@@ -152,6 +157,9 @@ func (t *DNSResolvers) run(parentCtx context.Context) []DNSEntry {
 	for _, entry := range merged {
 		entries = append(entries, *entry)
 	}
+
+	// allow specific users to sort addresses if needed
+	MaybeSortAddresses(entries)
 
 	return entries
 }
@@ -362,6 +370,11 @@ func (t *DNSResolvers) dohSplitQueries(
 	return
 }
 
+// MaybeDelayCleartextFlows is an OPTIONAL hook that possibly delays cleartext flows.
+var MaybeDelayCleartextFlows = func(index int) {
+	// nothing
+}
+
 // startCleartextFlows starts a TCP measurement flow for each IP addr.
 func (t *DNSResolvers) startCleartextFlows(
 	ctx context.Context,
@@ -377,7 +390,8 @@ func (t *DNSResolvers) startCleartextFlows(
 	if urlPort := t.URL.Port(); urlPort != "" {
 		port = urlPort
 	}
-	for _, addr := range addresses {
+	for index, addr := range addresses {
+		MaybeDelayCleartextFlows(index) // allow specific callers to space flows apart
 		task := &CleartextFlow{
 			Address:                 net.JoinHostPort(addr.Addr, port),
 			Depth:                   t.Depth,
@@ -402,6 +416,11 @@ func (t *DNSResolvers) startCleartextFlows(
 	}
 }
 
+// MaybeDelaySecureFlows is an OPTIONAL hook that possibly delays secure flows.
+var MaybeDelaySecureFlows = func(index int) {
+	// nothing
+}
+
 // startSecureFlows starts a TCP+TLS measurement flow for each IP addr.
 func (t *DNSResolvers) startSecureFlows(
 	ctx context.Context,
@@ -421,7 +440,8 @@ func (t *DNSResolvers) startSecureFlows(
 		}
 		port = urlPort
 	}
-	for _, addr := range addresses {
+	for index, addr := range addresses {
+		MaybeDelaySecureFlows(index) // allow specific callers to space flows apart
 		task := &SecureFlow{
 			Address:                 net.JoinHostPort(addr.Addr, port),
 			Depth:                   t.Depth,
