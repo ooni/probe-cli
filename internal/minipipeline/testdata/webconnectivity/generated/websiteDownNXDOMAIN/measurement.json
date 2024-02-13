@@ -80,6 +80,7 @@
         "resolver_address": "",
         "t": 0,
         "tags": [
+          "classic",
           "depth=0"
         ],
         "transaction_id": 10001

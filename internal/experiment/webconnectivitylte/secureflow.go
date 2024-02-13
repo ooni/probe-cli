@@ -9,7 +9,6 @@ package webconnectivitylte
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -32,6 +31,9 @@ import (
 type SecureFlow struct {
 	// Address is the MANDATORY address to connect to.
 	Address string
+
+	// Classic is true if this address was discovered using getaddrinfo.
+	Classic bool
 
 	// DNSCache is the MANDATORY DNS cache.
 	DNSCache *DNSCache
@@ -113,8 +115,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	}
 
 	// create trace
-	trace := measurexlite.NewTrace(index, t.ZeroTime, fmt.Sprintf("depth=%d", t.Depth),
-		fmt.Sprintf("fetch_body=%v", t.PrioSelector != nil))
+	trace := measurexlite.NewTrace(index, t.ZeroTime, generateTagsForEndpoints(t.Depth, t.PrioSelector, t.Classic)...)
 
 	// start measuring throttling
 	sampler := throttling.NewSampler(trace)
