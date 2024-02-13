@@ -161,7 +161,7 @@
     "requests": [
       {
         "network": "tcp",
-        "address": "35.161.85.189:80",
+        "address": "52.35.36.75:80",
         "failure": "generic_timeout_error",
         "request": {
           "body": "",
@@ -207,7 +207,6 @@
         "response": {
           "body": "",
           "body_is_truncated": true,
-          "x_body_length": 188416,
           "code": 200,
           "headers_list": [
             [
@@ -242,15 +241,15 @@
         "ip": "35.161.85.189",
         "port": 80,
         "status": {
-          "failure": null,
-          "success": true
+          "failure": "generic_timeout_error",
+          "success": false
         },
         "t": 0,
         "tags": [
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 30002
+        "transaction_id": 30001
       },
       {
         "ip": "35.161.85.189",
@@ -264,7 +263,7 @@
           "depth=0",
           "fetch_body=false"
         ],
-        "transaction_id": 40002
+        "transaction_id": 40001
       },
       {
         "ip": "52.35.36.75",
@@ -278,7 +277,7 @@
           "depth=0",
           "fetch_body=true"
         ],
-        "transaction_id": 30001
+        "transaction_id": 30002
       },
       {
         "ip": "52.35.36.75",
@@ -292,7 +291,7 @@
           "depth=0",
           "fetch_body=false"
         ],
-        "transaction_id": 40001
+        "transaction_id": 40002
       }
     ],
     "tls_handshakes": [
@@ -311,7 +310,7 @@
           "fetch_body=false"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40002
+        "transaction_id": 40001
       },
       {
         "network": "tcp",
@@ -328,7 +327,7 @@
           "fetch_body=false"
         ],
         "tls_version": "TLSv1.3",
-        "transaction_id": 40001
+        "transaction_id": 40002
       }
     ],
     "x_control_request": {
@@ -345,10 +344,10 @@
         ]
       },
       "tcp_connect": [
-        "52.35.36.75:443",
-        "52.35.36.75:80",
         "35.161.85.189:443",
-        "35.161.85.189:80"
+        "35.161.85.189:80",
+        "52.35.36.75:443",
+        "52.35.36.75:80"
       ],
       "x_quic_enabled": false
     },
@@ -421,7 +420,7 @@
     "dns_experiment_failure": null,
     "dns_consistency": "consistent",
     "http_experiment_failure": "generic_timeout_error",
-    "x_blocking_flags": 8,
+    "x_blocking_flags": 10,
     "x_null_null_flags": 0,
     "body_proportion": 0,
     "body_length_match": null,

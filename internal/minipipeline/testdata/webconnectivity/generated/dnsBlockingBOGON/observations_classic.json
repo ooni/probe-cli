@@ -55,11 +55,11 @@
     }
   ],
   "KnownTCPEndpoints": {
-    "40001": {
+    "40002": {
       "TagDepth": 0,
       "Type": 1,
       "Failure": "generic_timeout_error",
-      "TransactionID": 40001,
+      "TransactionID": 40002,
       "TagFetchBody": true,
       "DNSTransactionID": 1,
       "DNSDomain": "www.example.com",
@@ -73,7 +73,7 @@
       "IPAddress": "10.10.34.35",
       "IPAddressASN": null,
       "IPAddressBogon": true,
-      "EndpointTransactionID": 40001,
+      "EndpointTransactionID": 40002,
       "EndpointProto": "tcp",
       "EndpointPort": "443",
       "EndpointAddress": "10.10.34.35:443",
