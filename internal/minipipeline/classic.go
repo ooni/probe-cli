@@ -14,6 +14,8 @@ package minipipeline
 //
 // The result should approximate what v0.4 would have measured.
 func ClassicFilter(input *WebObservationsContainer) (output *WebObservationsContainer) {
+	// TODO(bassosimone): now that there's a "classic" tag it would probably
+	// be simpler to just always use the "classic" tag to extract.
 	output = &WebObservationsContainer{
 		DNSLookupFailures:  []*WebObservation{},
 		DNSLookupSuccesses: []*WebObservation{},
