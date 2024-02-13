@@ -471,7 +471,7 @@ func (c *WebObservationsContainer) IngestHTTPRoundTripEvents(evs ...*model.Archi
 		// consider the response authoritative only in case of success
 		if ev.Failure == nil {
 			obs.HTTPResponseStatusCode = optional.Some(ev.Response.Code)
-			obs.HTTPResponseBodyLength = observationHTTPGetResponseBodyLength(&ev.Response)
+			obs.HTTPResponseBodyLength = optional.Some(int64(len(ev.Response.Body)))
 			obs.HTTPResponseBodyIsTruncated = optional.Some(ev.Response.BodyIsTruncated)
 			obs.HTTPResponseHeadersKeys = utilsExtractHTTPHeaderKeys(ev.Response.Headers)
 			obs.HTTPResponseTitle = optional.Some(measurexlite.WebGetTitle(string(ev.Response.Body)))
@@ -479,13 +479,6 @@ func (c *WebObservationsContainer) IngestHTTPRoundTripEvents(evs ...*model.Archi
 			obs.HTTPResponseIsFinal = utilsDetermineWhetherHTTPResponseIsFinal(ev.Response.Code)
 		}
 	}
-}
-
-func observationHTTPGetResponseBodyLength(resp *model.ArchivalHTTPResponse) optional.Value[int64] {
-	if resp.BodyLength > 0 {
-		return optional.Some(resp.BodyLength)
-	}
-	return optional.Some(int64(len(resp.Body)))
 }
 
 // IngestControlMessages ingests the control request and response. You MUST call

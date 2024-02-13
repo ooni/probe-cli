@@ -1399,7 +1399,6 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 						Body: model.ArchivalScrubbedMaybeBinaryString(
 							"Bonsoir, Elliot!",
 						),
-						BodyLength:      16,
 						BodyIsTruncated: false,
 						Code:            200,
 						HeadersList: []model.ArchivalHTTPHeader{{
@@ -1421,12 +1420,10 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 					TransactionID: 5,
 				},
 				expectErr:  nil,
-				expectData: []byte(`{"network":"tcp","address":"[2606:2800:220:1:248:1893:25c8:1946]:443","alpn":"h2","failure":null,"request":{"body":"","body_is_truncated":false,"headers_list":[["Accept","text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"],["User-Agent","miniooni/0.1.0"]],"headers":{"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","User-Agent":"miniooni/0.1.0"},"method":"GET","tor":{"exit_ip":null,"exit_name":null,"is_tor":false},"x_transport":"tcp","url":"https://www.example.com/"},"response":{"body":"Bonsoir, Elliot!","body_is_truncated":false,"x_body_length":16,"code":200,"headers_list":[["Age","131833"],["Server","Apache"]],"headers":{"Age":"131833","Server":"Apache"}},"t0":0.7,"t":1.33,"tags":["http"],"transaction_id":5}`),
+				expectData: []byte(`{"network":"tcp","address":"[2606:2800:220:1:248:1893:25c8:1946]:443","alpn":"h2","failure":null,"request":{"body":"","body_is_truncated":false,"headers_list":[["Accept","text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"],["User-Agent","miniooni/0.1.0"]],"headers":{"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","User-Agent":"miniooni/0.1.0"},"method":"GET","tor":{"exit_ip":null,"exit_name":null,"is_tor":false},"x_transport":"tcp","url":"https://www.example.com/"},"response":{"body":"Bonsoir, Elliot!","body_is_truncated":false,"code":200,"headers_list":[["Age","131833"],["Server","Apache"]],"headers":{"Age":"131833","Server":"Apache"}},"t0":0.7,"t":1.33,"tags":["http"],"transaction_id":5}`),
 			},
 
-			// This test ensures we can serialize a typical failed HTTP measurement.
-			//
-			// We also check that we don't serialize x_body_length if it's zero.
+			// This test ensures we can serialize a typical failed HTTP measurement
 			{
 				name: "serialization of a failed HTTP request",
 				input: model.ArchivalHTTPRequestResult{
@@ -1462,7 +1459,6 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 					},
 					Response: model.ArchivalHTTPResponse{
 						Body:            model.ArchivalScrubbedMaybeBinaryString(""),
-						BodyLength:      0,
 						BodyIsTruncated: false,
 						Code:            0,
 						HeadersList:     []model.ArchivalHTTPHeader{},
@@ -1524,7 +1520,6 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 						Body: model.ArchivalScrubbedMaybeBinaryString(
 							archivalBinaryInput[:77],
 						),
-						BodyLength:      77,
 						BodyIsTruncated: false,
 						Code:            200,
 						HeadersList: []model.ArchivalHTTPHeader{{
@@ -1553,7 +1548,7 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 					TransactionID: 5,
 				},
 				expectErr:  nil,
-				expectData: []byte(`{"network":"tcp","address":"[2606:2800:220:1:248:1893:25c8:1946]:443","alpn":"h2","failure":null,"request":{"body":"","body_is_truncated":false,"headers_list":[["Accept","text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"],["User-Agent","miniooni/0.1.0"],["Antani",{"data":"V+V5+6a7DQ==","format":"base64"}],["Antani",{"data":"vM69p6C6pA==","format":"base64"}]],"headers":{"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","Antani":{"data":"V+V5+6a7DQ==","format":"base64"},"User-Agent":"miniooni/0.1.0"},"method":"GET","tor":{"exit_ip":null,"exit_name":null,"is_tor":false},"x_transport":"tcp","url":"https://www.example.com/"},"response":{"body":{"data":"V+V5+6a7DbzOvaeguqR4eBJZ7mg5pAeYxT68Vcv+NDx+G1qzIp3BLW7KW/EQJUceROItYAjqsArMBUig9Xg48Ns/nZ8lb4kAlpOvQ6w=","format":"base64"},"body_is_truncated":false,"x_body_length":77,"code":200,"headers_list":[["Age","131833"],["Server","Apache"],["Mascetti",{"data":"eHgSWe5oOQ==","format":"base64"}],["Mascetti",{"data":"pAeYxT68VQ==","format":"base64"}]],"headers":{"Age":"131833","Mascetti":"6a7DbzO","Server":"Apache"}},"t0":0.7,"t":1.33,"tags":["http"],"transaction_id":5}`),
+				expectData: []byte(`{"network":"tcp","address":"[2606:2800:220:1:248:1893:25c8:1946]:443","alpn":"h2","failure":null,"request":{"body":"","body_is_truncated":false,"headers_list":[["Accept","text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"],["User-Agent","miniooni/0.1.0"],["Antani",{"data":"V+V5+6a7DQ==","format":"base64"}],["Antani",{"data":"vM69p6C6pA==","format":"base64"}]],"headers":{"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","Antani":{"data":"V+V5+6a7DQ==","format":"base64"},"User-Agent":"miniooni/0.1.0"},"method":"GET","tor":{"exit_ip":null,"exit_name":null,"is_tor":false},"x_transport":"tcp","url":"https://www.example.com/"},"response":{"body":{"data":"V+V5+6a7DbzOvaeguqR4eBJZ7mg5pAeYxT68Vcv+NDx+G1qzIp3BLW7KW/EQJUceROItYAjqsArMBUig9Xg48Ns/nZ8lb4kAlpOvQ6w=","format":"base64"},"body_is_truncated":false,"code":200,"headers_list":[["Age","131833"],["Server","Apache"],["Mascetti",{"data":"eHgSWe5oOQ==","format":"base64"}],["Mascetti",{"data":"pAeYxT68VQ==","format":"base64"}]],"headers":{"Age":"131833","Mascetti":"6a7DbzO","Server":"Apache"}},"t0":0.7,"t":1.33,"tags":["http"],"transaction_id":5}`),
 			},
 
 			// This test ensures we can serialize an HTTP measurement containing
@@ -1616,7 +1611,6 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 						Body: model.ArchivalScrubbedMaybeBinaryString(
 							"<HTML><BODY>Your address is 130.192.91.211 and 2606:2800:220:1:248:1893:25c8:1946 and you have endpoints [2606:2800:220:1:248:1893:25c8:1946]:5222 and 130.192.91.211:443. You're welcome.</BODY></HTML>",
 						),
-						BodyLength:      200,
 						BodyIsTruncated: false,
 						Code:            200,
 						HeadersList: []model.ArchivalHTTPHeader{{
@@ -1654,7 +1648,7 @@ func TestArchivalHTTPRequestResult(t *testing.T) {
 					TransactionID: 5,
 				},
 				expectErr:  nil,
-				expectData: []byte(`{"network":"tcp","address":"[2606:2800:220:1:248:1893:25c8:1946]:443","alpn":"h2","failure":null,"request":{"body":"","body_is_truncated":false,"headers_list":[["Accept","text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"],["User-Agent","miniooni/0.1.0"],["AntaniV4","[scrubbed]"],["AntaniV6","[scrubbed]"],["AntaniV4Epnt","[scrubbed]"],["AntaniV6Epnt","[scrubbed]"]],"headers":{"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","AntaniV4":"[scrubbed]","AntaniV4Epnt":"[scrubbed]","AntaniV6":"[scrubbed]","AntaniV6Epnt":"[scrubbed]","User-Agent":"miniooni/0.1.0"},"method":"GET","tor":{"exit_ip":null,"exit_name":null,"is_tor":false},"x_transport":"tcp","url":"https://www.example.com/"},"response":{"body":"\u003cHTML\u003e\u003cBODY\u003eYour address is [scrubbed] and [scrubbed] and you have endpoints [scrubbed] and [scrubbed]. You're welcome.\u003c/BODY\u003e\u003c/HTML\u003e","body_is_truncated":false,"x_body_length":200,"code":200,"headers_list":[["Age","131833"],["Server","Apache"],["MascettiV4","[scrubbed]"],["MascettiV6","[scrubbed]"],["MascettiV4Epnt","[scrubbed]"],["MascettiV6Epnt","[scrubbed]"]],"headers":{"Age":"131833","MascettiV4":"[scrubbed]","MascettiV4Epnt":"[scrubbed]","MascettiV6":"[scrubbed]","MascettiV6Epnt":"[scrubbed]","Server":"Apache"}},"t0":0.7,"t":1.33,"tags":["http"],"transaction_id":5}`),
+				expectData: []byte(`{"network":"tcp","address":"[2606:2800:220:1:248:1893:25c8:1946]:443","alpn":"h2","failure":null,"request":{"body":"","body_is_truncated":false,"headers_list":[["Accept","text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"],["User-Agent","miniooni/0.1.0"],["AntaniV4","[scrubbed]"],["AntaniV6","[scrubbed]"],["AntaniV4Epnt","[scrubbed]"],["AntaniV6Epnt","[scrubbed]"]],"headers":{"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","AntaniV4":"[scrubbed]","AntaniV4Epnt":"[scrubbed]","AntaniV6":"[scrubbed]","AntaniV6Epnt":"[scrubbed]","User-Agent":"miniooni/0.1.0"},"method":"GET","tor":{"exit_ip":null,"exit_name":null,"is_tor":false},"x_transport":"tcp","url":"https://www.example.com/"},"response":{"body":"\u003cHTML\u003e\u003cBODY\u003eYour address is [scrubbed] and [scrubbed] and you have endpoints [scrubbed] and [scrubbed]. You're welcome.\u003c/BODY\u003e\u003c/HTML\u003e","body_is_truncated":false,"code":200,"headers_list":[["Age","131833"],["Server","Apache"],["MascettiV4","[scrubbed]"],["MascettiV6","[scrubbed]"],["MascettiV4Epnt","[scrubbed]"],["MascettiV6Epnt","[scrubbed]"]],"headers":{"Age":"131833","MascettiV4":"[scrubbed]","MascettiV4Epnt":"[scrubbed]","MascettiV6":"[scrubbed]","MascettiV6Epnt":"[scrubbed]","Server":"Apache"}},"t0":0.7,"t":1.33,"tags":["http"],"transaction_id":5}`),
 			},
 		}
 

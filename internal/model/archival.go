@@ -297,7 +297,6 @@ type ArchivalHTTPRequest struct {
 type ArchivalHTTPResponse struct {
 	Body            ArchivalScrubbedMaybeBinaryString            `json:"body"`
 	BodyIsTruncated bool                                         `json:"body_is_truncated"`
-	BodyLength      int64                                        `json:"x_body_length,omitempty"`
 	Code            int64                                        `json:"code"`
 	HeadersList     []ArchivalHTTPHeader                         `json:"headers_list"`
 	Headers         map[string]ArchivalScrubbedMaybeBinaryString `json:"headers"`
