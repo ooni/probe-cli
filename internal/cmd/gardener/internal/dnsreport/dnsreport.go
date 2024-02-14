@@ -67,7 +67,7 @@ func (s *Subcommand) Main(ctx context.Context) {
 
 	// if the database is not good, truncate it and restart
 	if !isGood {
-		log.Infof("rm -rf %s", s.Database)
+		log.Infof("rm -f %s", s.Database)
 		_ = os.Remove(s.Database)
 	}
 

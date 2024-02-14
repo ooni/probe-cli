@@ -85,7 +85,7 @@ func TestWorkingAsIntended(t *testing.T) {
 	// expectations for commands
 	expect := []string{
 		fmt.Sprintf("rm -rf %s", repodir),
-		fmt.Sprintf("rm -rf %s", dnsreportfile),
+		fmt.Sprintf("rm -f %s", dnsreportfile),
 		fmt.Sprintf("git clone https://github.com/citizenlab/test-lists %s", repodir),
 		fmt.Sprintf("cd %s", repodir),
 		"git checkout -b gardener_20230315T114300Z",

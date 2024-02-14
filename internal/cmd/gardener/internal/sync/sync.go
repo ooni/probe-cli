@@ -44,7 +44,7 @@ func (s *Subcommand) Main() {
 	// TODO(bassosimone): an alternative would be to somehow take note of the fact
 	// that the database needs merging from an updated repository, but doing that
 	// would require us to write a more complex diff.
-	runtimex.Try0(shellx.Run(log.Log, "rm", "-rf", s.DNSReportDatabase))
+	runtimex.Try0(shellx.Run(log.Log, "rm", "-f", s.DNSReportDatabase))
 
 	// clone a new working copy
 	runtimex.Try0(shellx.Run(log.Log, "git", "clone", testListsRepo, s.RepositoryDir))
