@@ -39,10 +39,11 @@ func main() {
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			sc := &sync.Subcommand{
-				RepositoryDir: repositoryDir,
-				OsChdir:       os.Chdir,
-				OsGetwd:       os.Getwd,
-				TimeNow:       time.Now,
+				DNSReportDatabase: "dnsreport.sqlite3",
+				RepositoryDir:     repositoryDir,
+				OsChdir:           os.Chdir,
+				OsGetwd:           os.Getwd,
+				TimeNow:           time.Now,
 			}
 			sc.Main()
 		},
