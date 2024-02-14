@@ -21,6 +21,9 @@ import (
 // repositoryDir is the path of the citizenlab/test-lists working copy.
 const repositoryDir = "citizenlab-test-lists"
 
+// dnsReportDatabase is the path of the database maintained by the dnsreport subcommand.
+const dnsReportDatabase = "dnsreport.sqlite3"
+
 func main() {
 	// select a colourful apex/log handler
 	log.SetHandler(cli.New(os.Stderr))
@@ -39,7 +42,7 @@ func main() {
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			sc := &sync.Subcommand{
-				DNSReportDatabase: "dnsreport.sqlite3",
+				DNSReportDatabase: dnsReportDatabase,
 				RepositoryDir:     repositoryDir,
 				OsChdir:           os.Chdir,
 				OsGetwd:           os.Getwd,
@@ -59,7 +62,7 @@ func main() {
 			sc := &dnsreport.Subcommand{
 				APIURL:                "https://api.ooni.io",
 				DNSOverHTTPSServerURL: "https://dns.google/dns-query",
-				Database:              "dnsreport.sqlite3",
+				Database:              dnsReportDatabase,
 				ReportFile:            "dnsreport.csv",
 				RepositoryDir:         repositoryDir,
 			}
