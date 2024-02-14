@@ -68,11 +68,13 @@ func TestWorkingAsIntended(t *testing.T) {
 
 	// create the subcommand instance
 	repodir := filepath.Join("testdata", "repo")
+	dnsreportfile := filepath.Join("testdata", "dnsreport.sqlite3")
 	sc := &sync.Subcommand{
-		RepositoryDir: repodir,
-		OsChdir:       cc.Chdir,
-		OsGetwd:       cc.Getwd,
-		TimeNow:       cc.TimeNow,
+		DNSReportDatabase: dnsreportfile,
+		RepositoryDir:     repodir,
+		OsChdir:           cc.Chdir,
+		OsGetwd:           cc.Getwd,
+		TimeNow:           cc.TimeNow,
 	}
 
 	// run the subcommand with custom shellx dependencies
@@ -83,6 +85,7 @@ func TestWorkingAsIntended(t *testing.T) {
 	// expectations for commands
 	expect := []string{
 		fmt.Sprintf("rm -rf %s", repodir),
+		fmt.Sprintf("rm -f %s", dnsreportfile),
 		fmt.Sprintf("git clone https://github.com/citizenlab/test-lists %s", repodir),
 		fmt.Sprintf("cd %s", repodir),
 		"git checkout -b gardener_20230315T114300Z",

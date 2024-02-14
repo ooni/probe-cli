@@ -32,7 +32,7 @@ func openWithFS(fs fs.FS, pathname string) (fs.File, error) {
 		file.Close()
 		return nil, err
 	}
-	if !isRegular(info) {
+	if !IsRegular(info) {
 		file.Close()
 		return nil, fmt.Errorf("%w: %s", ErrNotRegularFile, pathname)
 	}
@@ -47,7 +47,8 @@ func (filesystem) Open(pathname string) (fs.File, error) {
 	return os.Open(pathname)
 }
 
-func isRegular(info fs.FileInfo) bool {
+// IsRegular returns whether a file is a regular file.
+func IsRegular(info fs.FileInfo) bool {
 	return info.Mode().IsRegular()
 }
 
@@ -58,7 +59,7 @@ func RegularFileExists(filename string) bool {
 	if err != nil {
 		return false
 	}
-	return isRegular(finfo)
+	return IsRegular(finfo)
 }
 
 // DirectoryExists returns whether the given filename

@@ -16,6 +16,10 @@ const testListsRepo = "https://github.com/citizenlab/test-lists"
 // Subcommand is the sync subcommand. The zero value is invalid; please, make
 // sure you initialize all the fields marked as MANDATORY.
 type Subcommand struct {
+	// DNSReportDatabase is the MANDATORY file containing the `dnsreport` database
+	// that we're currently using to avoid repeating measurements.
+	DNSReportDatabase string
+
 	// RepositoryDir is the MANDATORY directory where to clone the test lists repository.
 	RepositoryDir string
 
@@ -34,6 +38,13 @@ type Subcommand struct {
 func (s *Subcommand) Main() {
 	// possibly remove a previous working copy
 	runtimex.Try0(shellx.Run(log.Log, "rm", "-rf", s.RepositoryDir))
+
+	// possibly remove an existing dnsreport.sqlite3 database
+	//
+	// TODO(bassosimone): an alternative would be to somehow take note of the fact
+	// that the database needs merging from an updated repository, but doing that
+	// would require us to write a more complex diff.
+	runtimex.Try0(shellx.Run(log.Log, "rm", "-f", s.DNSReportDatabase))
 
 	// clone a new working copy
 	runtimex.Try0(shellx.Run(log.Log, "git", "clone", testListsRepo, s.RepositoryDir))

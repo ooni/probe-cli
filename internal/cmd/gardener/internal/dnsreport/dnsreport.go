@@ -7,6 +7,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"net"
 	"net/url"
 	"os"
@@ -51,20 +52,31 @@ type Subcommand struct {
 // loadedFromRepository counts the number of times we loaded from the repository
 var loadedFromRepository = &atomic.Int64{}
 
+// databaseIsGood returns whether we should use the existing database content. You should
+// pass to this function the results of os.Stat invoked on the database file path.
+func databaseIsGood(statbuf fs.FileInfo, err error) bool {
+	const recreateInterval = 7 * 24 * time.Hour
+	return err == nil && fsx.IsRegular(statbuf) && time.Since(statbuf.ModTime()) < recreateInterval
+}
+
 // Main is the main function of the dnsreport subcommand. This function calls
 // [runtimex.PanicOnError] in case of failure.
 func (s *Subcommand) Main(ctx context.Context) {
-	// check whether the database exists
-	dbExists := fsx.RegularFileExists(s.Database)
+	// check whether the database exists and check its statistics
+	isGood := databaseIsGood(os.Stat(s.Database))
+
+	// if the database is not good, truncate it and restart
+	if !isGood {
+		log.Infof("rm -f %s", s.Database)
+		_ = os.Remove(s.Database)
+	}
 
 	// create or open the underlying sqlite3 database
 	db := s.createOrOpenDatabase()
 	defer db.Close()
 
-	// if the database has just been created, then import
-	// the URLs from the locally cloned git repository, otherwise
-	// keep using the existing database file
-	if !dbExists {
+	// fill again the database if what we had before was not good
+	if !isGood {
 		log.Infof("creating new %s database", s.Database)
 		s.loadFromRepository(db)
 		loadedFromRepository.Add(1)
