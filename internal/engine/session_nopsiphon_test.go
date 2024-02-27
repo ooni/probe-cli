@@ -9,7 +9,7 @@ import (
 )
 
 func TestEarlySessionNoPsiphonFetchPsiphonConfig(t *testing.T) {
-	s := &sessionTunnelEarlySession{}
+	s := &SessionTunnelEarlySession{}
 	out, err := s.FetchPsiphonConfig(context.Background())
 	if !errors.Is(err, errPsiphonNoEmbeddedConfig) {
 		t.Fatal("not the error we expected", err)
