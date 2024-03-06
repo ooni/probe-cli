@@ -5,8 +5,6 @@ package registry
 //
 
 import (
-	"time"
-
 	"github.com/ooni/probe-cli/v3/internal/experiment/openvpn"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -18,10 +16,8 @@ func init() {
 				*config.(*openvpn.Config), "openvpn",
 			)
 		},
-		config: &openvpn.Config{
-			Message:   "This is not an experiment yet!",
-			SleepTime: int64(time.Second),
-		},
+		// TODO(ainghazal): we can pass an array of providers here.
+		config:           &openvpn.Config{},
 		enabledByDefault: true,
 		interruptible:    true,
 		inputPolicy:      model.InputNone,
