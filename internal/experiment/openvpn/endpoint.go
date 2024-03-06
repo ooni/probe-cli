@@ -3,7 +3,6 @@ package openvpn
 import (
 	"fmt"
 
-	"github.com/ooni/minivpn/pkg/config"
 	vpnconfig "github.com/ooni/minivpn/pkg/config"
 	vpntracex "github.com/ooni/minivpn/pkg/tracex"
 )
@@ -51,11 +50,66 @@ func sampleRandomEndpoint(all []endpoint) endpoint {
 
 var defaultOptionsByProvider = map[string]*vpnconfig.OpenVPNOptions{
 	"riseup": {
-		Cipher: "AES-256-GCM",
 		Auth:   "SHA512",
-		CA:     []byte{},
-		Key:    []byte{},
-		Cert:   []byte{},
+		Cipher: "AES-256-GCM",
+		CA: []byte(`-----BEGIN CERTIFICATE-----
+MIIBYjCCAQigAwIBAgIBATAKBggqhkjOPQQDAjAXMRUwEwYDVQQDEwxMRUFQIFJv
+b3QgQ0EwHhcNMjExMTAyMTkwNTM3WhcNMjYxMTAyMTkxMDM3WjAXMRUwEwYDVQQD
+EwxMRUFQIFJvb3QgQ0EwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQxOXBGu+gf
+pjHzVteGTWL6XnFxtEnKMFpKaJkA/VOHmESzoLsZRQxt88GssxaqC01J17idQiqv
+zgNpedmtvFtyo0UwQzAOBgNVHQ8BAf8EBAMCAqQwEgYDVR0TAQH/BAgwBgEB/wIB
+ATAdBgNVHQ4EFgQUZdoUlJrCIUNFrpffAq+LQjnwEz4wCgYIKoZIzj0EAwIDSAAw
+RQIgfr3w4tnRG+NdI3LsGPlsRktGK20xHTzsB3orB0yC6cICIQCB+/9y8nmSStfN
+VUMUyk2hNd7/kC8nL222TTD7VZUtsg==
+-----END CERTIFICATE-----`),
+		// TODO(ainghazal): this is extremely hacky, but it's a first step
+		// until we manage to have the check-in API handing credentials.
+		// Do note that these certificates will expire ca. Apr 6 2024
+		// OTOH, yes, I do understand the risks of exposing key material
+		// on a public git repo. Thanks for caring.
+		Key: []byte(`-----BEGIN RSA PRIVATE KEY-----
+MIIEowIBAAKCAQEAqprWmGJKLgZBFbdJUEMzKpJkWnVLoALSTTZqmzX8vuQD7W2J
+HbwptiD+a7qCvikpX+bsRb9b84VctYZq/tnLwqRVeDfoega+pGws0KGMo74KWlUZ
+1k+AjCbqxWJPlaYKNkDXAInsc6alEv09ZbeuGGpWtQSVpP+sudgDf9JpIEsnTLSK
+5t0i1QX/53Vltr+omLCqd52a2bUxK8WNIwtsSs9lLGrpKTVJ1zKDpVBNmNFgahpk
+kX5KAkoS0TVzBLPwNNq14GLnTd6YnJ66m9k5iiUBbML81bnE3qbxG7C/qoXIP4eH
+0Y7RDBB0dlZ8PTBjeg0pnEtPF5MrglVRVeUimQIDAQABAoIBAGVgMspEBa5Jmx0r
+V44xEFNov+ccsf54Dr1A66IlN3W7CjZok0SvDd4ixuv+3TfgP6y0DIv5hMs04P0g
+za14f+K+Qed42VTBc0FC4nJqvKaEA6Tf0sWNYmZlrbXykDXtfz3z046HZpDmYkrh
+Xj12IyZw8esIuV9daibYnGO1BTDhXy/B53zDjx6wYMDC3DFVa2gLSRWONtMnCYY8
+Hw7FbaP1Jxs6sNS/AKVZZo4SyBL1te80HN9Wo2syDmdc3o3aBMkCY9+u560dj8+5
+4xvn+d8ojp91Ts3o33DB6PY88r2UTg00ejGMn8LN7dCnZDO2mQ98nczKfcpYL0nW
+CKxG6AECgYEA0L9XBdfps60nKNS5n4+rNvtYvhkvHOKkz7wFmYSo6r8M1ID3m7g3
+x6wwTY9MrlSPPsF9x6GnrmGIGIZsc8lNRuYFq/yemNhKfMi6KU9wnjqVQYDSg9S2
+fq4lutPxbeiQmSx5WYtjeaJXzTAzx9jT6t8QiAUXM06QgPPjLK7G+ZkCgYEA0Tku
+iSz8Y2uHyBWOYFTIaEvvyCEJqyZ+hMgVRRgN7QzDjP4VUVmQClwdK7JIPNBaIf6V
+Gvi+CXgb/oDMrcduMM4ZGoVN1ttpC3htn7qn35+38VsYPD3hgmF7r3WFSxoBd0vj
+Yh7rO4tQo91tm0DkCs+NZvNRrFr1yL/VAHnDEQECgYAi3XJpdXCBJBCAT1dZgSN1
+oXFm/snRp0EjuSGuTGvyGUrJS2kPxyr53JaMvbxu+YybTLH3X9aj14Jlpj4C8MJJ
+by3PVfgfSzDVuqjtMWl75Aj90chXYHXCns+Kbs/KLafJDZaPECrjK+xCRyS+4kYy
+2mLmdQM0/JBCGXn+AosVMQKBgEFgy/DjlM6AaIKWcdIaTDGDIR95a2sG8VwOpc7c
+cGWVqnmhYAn2obMLC7Z+1GHkfXXH9tHhzoho9t51YwAepIktrdyCsUslbtK9xAu4
+qQKRB0qtO4p/j7tNOPggEhHgw3qCxUABB2Ko6v75j2mHQns6ViZIfEoOdmVPxICM
+i+8BAoGBAIn2RfbrcbrH3jZKNkklUMg7fU8K0w7PQ7kCR8vql4chA6Lzf7BO2uUb
++KoDT6FZRI7vSZFqMmcqs/LEEPsBYtr0GKNmH3pcFHQ5HvfZdXkMILADHj0gxwZ0
+ng58SKQl8yU3B3wIoBOV+YEo8D+pLzlmH9XTRUl6sX0NvX1xeP/d
+-----END RSA PRIVATE KEY-----`),
+		Cert: []byte(`-----BEGIN CERTIFICATE-----
+MIICeDCCAh6gAwIBAgIRAPB+TCOgYy6vkH4CTz0UDdMwCgYIKoZIzj0EAwIwMzEx
+MC8GA1UEAwwoTEVBUCBSb290IENBIChjbGllbnQgY2VydGlmaWNhdGVzIG9ubHkh
+KTAeFw0yNDAyMjgyMTU4MTJaFw0yNDA0MDMyMTU4MTJaMBQxEjAQBgNVBAMTCVVO
+TElNSVRFRDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKqa1phiSi4G
+QRW3SVBDMyqSZFp1S6AC0k02aps1/L7kA+1tiR28KbYg/mu6gr4pKV/m7EW/W/OF
+XLWGav7Zy8KkVXg36HoGvqRsLNChjKO+ClpVGdZPgIwm6sViT5WmCjZA1wCJ7HOm
+pRL9PWW3rhhqVrUElaT/rLnYA3/SaSBLJ0y0iubdItUF/+d1Zba/qJiwqnedmtm1
+MSvFjSMLbErPZSxq6Sk1Sdcyg6VQTZjRYGoaZJF+SgJKEtE1cwSz8DTateBi503e
+mJyeupvZOYolAWzC/NW5xN6m8Ruwv6qFyD+Hh9GO0QwQdHZWfD0wY3oNKZxLTxeT
+K4JVUVXlIpkCAwEAAaNnMGUwDgYDVR0PAQH/BAQDAgeAMBMGA1UdJQQMMAoGCCsG
+AQUFBwMCMB0GA1UdDgQWBBSWz2IckC83grgDEuwOSfHtxBy3OTAfBgNVHSMEGDAW
+gBR9SmLY/ytJxHm2orHcjj5jB1yo/jAKBggqhkjOPQQDAgNIADBFAiEA/J7Y0zfR
+QxEBzQJEfSjT3Q9/cJkZJ11KwehMQYJTwGICIEMg3zaOg2XUlUg6jshTYx7S9xfE
+vly8wNG42zeRWAXz
+-----END CERTIFICATE-----`),
 	},
 }
 
@@ -64,7 +118,7 @@ var defaultOptionsByProvider = map[string]*vpnconfig.OpenVPNOptions{
 // These base options are for the moment hardcoded. In the future we will want to be smarter
 // about getting information for different providers.
 func getVPNConfig(tracer *vpntracex.Tracer, endpoint *endpoint) (*vpnconfig.Config, error) {
-	// TODO(ainghazal): use options merge
+	// TODO(ainghazal): use options merge (pending PR)
 	provider := endpoint.Provider
 	// TODO(ainghazal): return error if provider unknown. we're in the happy path for now.
 	baseOptions := defaultOptionsByProvider[provider]
@@ -72,6 +126,7 @@ func getVPNConfig(tracer *vpntracex.Tracer, endpoint *endpoint) (*vpnconfig.Conf
 	cfg := vpnconfig.NewConfig(
 		vpnconfig.WithOpenVPNOptions(
 			&vpnconfig.OpenVPNOptions{
+				// endpoint-specific options.
 				Remote: endpoint.IPAddr,
 				Port:   endpoint.Port,
 				Proto:  vpnconfig.Proto(endpoint.Transport),
@@ -85,7 +140,8 @@ func getVPNConfig(tracer *vpntracex.Tracer, endpoint *endpoint) (*vpnconfig.Conf
 				Auth:   baseOptions.Auth,
 			},
 		),
-		config.WithHandshakeTracer(tracer))
-	// TODO: validate here and return an error, maybe.
+		vpnconfig.WithHandshakeTracer(tracer))
+
+	// TODO: validate options here and return an error, maybe.
 	return cfg, nil
 }

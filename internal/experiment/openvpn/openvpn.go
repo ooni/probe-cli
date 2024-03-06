@@ -148,12 +148,14 @@ func (m *Measurer) connectAndHandshake(ctx context.Context, index int64,
 		// it's a failure to start the measurement. we should abort
 		return nil
 	}
-	_, err = tunnel.Start(ctx, dialer, openvpnOptions)
+	tun, err := tunnel.Start(ctx, dialer, openvpnOptions)
 
 	var failure string
 	if err != nil {
 		failure = err.Error()
 	}
+	defer tun.Close()
+
 	handshakeEvents := handshakeTracer.Trace()
 	port, _ := strconv.Atoi(endpoint.Port)
 
