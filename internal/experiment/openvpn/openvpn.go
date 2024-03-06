@@ -10,8 +10,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 
-	"github.com/ooni/minivpn/pkg/config"
-	vpnconfig "github.com/ooni/minivpn/pkg/config"
 	vpntracex "github.com/ooni/minivpn/pkg/tracex"
 	"github.com/ooni/minivpn/pkg/tunnel"
 )
@@ -27,23 +25,13 @@ const (
 // of this experiment. By tagging these variables with `ooni:"..."`, we allow
 // miniooni's -O flag to find them and set them.
 type Config struct {
-	vpnOptions vpnconfig.OpenVPNOptions
+	Provider string
 }
 
 // TestKeys contains the experiment's result.
 type TestKeys struct {
 	Success     bool                `json:"success"`
 	Connections []*SingleConnection `json:"connections"`
-
-	// TODO move into singlehandshake
-	/*
-		Provider      string  `json:"provider"`
-		VPNProtocol   string  `json:"vpn_protocol"`
-		Transport     string  `json:"transport"`
-		Remote        string  `json:"remote"`
-		Obfuscation   string  `json:"obfuscation"`
-		BootstrapTime float64 `json:"bootstrap_time"`
-	*/
 }
 
 // NewTestKeys creates new openvpn TestKeys.
@@ -78,11 +66,8 @@ type Measurer struct {
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
 func NewExperimentMeasurer(config Config, testName string) model.ExperimentMeasurer {
-	// TODO(ainghazal): get these per-provider, as defaults.
-	config.vpnOptions = vpnconfig.OpenVPNOptions{
-		Cipher: "AES-256-GCM",
-		Auth:   "SHA512",
-	}
+	// TODO(ainghazal): allow ooniprobe to override this.
+	config.Provider = "riseup"
 	return Measurer{config: config, testName: testName}
 }
 
@@ -123,7 +108,11 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 
 	sess.Logger().Info("Starting to measure OpenVPN endpoints.")
 	for idx, endpoint := range allEndpoints {
-		tk.AddConnectionTestKeys(m.connectAndHandshake(ctx, int64(idx+1), time.Now(), sess.Logger(), endpoint))
+		connResult := m.connectAndHandshake(ctx, int64(idx+1), time.Now(), sess.Logger(), endpoint)
+		// TODO: better catch error here.
+		if connResult != nil {
+			tk.AddConnectionTestKeys(connResult)
+		}
 	}
 	tk.Success = tk.allConnectionsSuccessful()
 
@@ -152,7 +141,14 @@ func (m *Measurer) connectAndHandshake(ctx context.Context, index int64,
 
 	// create a vpn tun Device that attempts to dial and performs the handshake
 	handshakeTracer := vpntracex.NewTracerWithTransactionID(zeroTime, index)
-	_, err := tunnel.Start(ctx, dialer, getVPNConfig(handshakeTracer, &endpoint, &m.config.vpnOptions))
+
+	openvpnOptions, err := getVPNConfig(handshakeTracer, &endpoint)
+	if err != nil {
+		// TODO: find a better way to return the error - this is not a test failure,
+		// it's a failure to start the measurement. we should abort
+		return nil
+	}
+	_, err = tunnel.Start(ctx, dialer, openvpnOptions)
 
 	var failure string
 	if err != nil {
@@ -192,22 +188,4 @@ func (m *Measurer) connectAndHandshake(ctx context.Context, index int64,
 		},
 		NetworkEvents: handshakeEvents,
 	}
-}
-
-func getVPNConfig(tracer *vpntracex.Tracer, endpoint *endpoint, opts *config.OpenVPNOptions) *config.Config {
-	cfg := config.NewConfig(
-		config.WithOpenVPNOptions(
-			&config.OpenVPNOptions{
-				Remote: endpoint.IPAddr,
-				Port:   endpoint.Port,
-				Proto:  config.Proto(endpoint.Transport),
-				CA:     opts.CA,
-				Cert:   opts.Cert,
-				Key:    opts.Key,
-				Cipher: opts.Cipher,
-				Auth:   opts.Auth,
-			},
-		),
-		config.WithHandshakeTracer(tracer))
-	return cfg
 }
