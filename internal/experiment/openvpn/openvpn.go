@@ -4,6 +4,7 @@ package openvpn
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -65,15 +66,19 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	if m.config.ReturnError {
 		err = ErrFailure
 	}
+
+	target := sampleRandomEndpoint(allEndpoints)
+
 	testkeys := &TestKeys{
 		Success:       err == nil,
-		Provider:      "unknown",
+		Provider:      target.Provider,
 		VPNProtocol:   openVPNProcol,
-		Transport:     "udp",
-		Remote:        "127.0.0.1:1194",
+		Transport:     target.Transport,
+		Remote:        fmt.Sprintf("%s:%s", target.IPAddr, target.Port),
 		Obfuscation:   "none",
 		BootstrapTime: 0,
 	}
+
 	measurement.TestKeys = testkeys
 	sess.Logger().Warnf("%s", "Follow the white rabbit.")
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(m.config.SleepTime))
