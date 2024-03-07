@@ -30,32 +30,60 @@ type Config struct {
 
 // TestKeys contains the experiment's result.
 type TestKeys struct {
-	Success     bool                `json:"success"`
-	Connections []*SingleConnection `json:"connections"`
+	AllSuccess       bool                              `json:"success_all"`
+	AnySuccess       bool                              `json:"success_any"`
+	TCPConnect       []*model.ArchivalTCPConnectResult `json:"tcp_connect,omitempty"`
+	OpenVPNHandshake []*ArchivalOpenVPNHandshakeResult `json:"openvpn_handshake"`
+	NetworkEvents    []*vpntracex.Event                `json:"network_events"`
 }
 
 // NewTestKeys creates new openvpn TestKeys.
 func NewTestKeys() *TestKeys {
 	return &TestKeys{
-		Success:     false,
-		Connections: []*SingleConnection{},
+		AllSuccess:       false,
+		AnySuccess:       false,
+		TCPConnect:       []*model.ArchivalTCPConnectResult{},
+		OpenVPNHandshake: []*ArchivalOpenVPNHandshakeResult{},
+		NetworkEvents:    []*vpntracex.Event{},
 	}
+}
+
+// SingleConnection contains the results of a single handshake.
+type SingleConnection struct {
+	TCPConnect       *model.ArchivalTCPConnectResult `json:"tcp_connect,omitempty"`
+	OpenVPNHandshake *ArchivalOpenVPNHandshakeResult `json:"openvpn_handshake"`
+	NetworkEvents    []*vpntracex.Event              `json:"network_events"`
+	// TODO(ainghazal): pass the transaction idx also to the event tracer for uniformity.
+	// TODO(ainghazal): make sure to document in the spec that these network events only cover the handshake.
+	// TODO(ainghazal): in the future, we will want to store more operations under this struct for a single connection,
+	// like pingResults or urlgetter calls.
 }
 
 // AddConnectionTestKeys adds the result of a single OpenVPN connection attempt to the
 // corresponding array in the [TestKeys] object.
 func (tk *TestKeys) AddConnectionTestKeys(result *SingleConnection) {
-	tk.Connections = append(tk.Connections, result)
+	tk.TCPConnect = append(tk.TCPConnect, result.TCPConnect)
+	tk.OpenVPNHandshake = append(tk.OpenVPNHandshake, result.OpenVPNHandshake)
+	tk.NetworkEvents = append(tk.NetworkEvents, result.NetworkEvents...)
 }
 
 // allConnectionsSuccessful returns true if all the registered connections have Status.Success equal to true.
 func (tk *TestKeys) allConnectionsSuccessful() bool {
-	for _, c := range tk.Connections {
-		if !c.OpenVPNHandshake.Status.Success {
+	for _, c := range tk.OpenVPNHandshake {
+		if !c.Status.Success {
 			return false
 		}
 	}
 	return true
+}
+
+func (tk *TestKeys) anyConnectionSuccessful() bool {
+	for _, c := range tk.OpenVPNHandshake {
+		if !c.Status.Success {
+			return true
+		}
+	}
+	return false
 }
 
 // Measurer performs the measurement.
@@ -85,19 +113,6 @@ func (m Measurer) ExperimentVersion() string {
 // config.ReturnError field to true.
 var ErrFailure = errors.New("mocked error")
 
-// SingleConnection contains the results of a single handshake.
-type SingleConnection struct {
-	TCPConnect       *model.ArchivalTCPConnectResult `json:"tcp_connect,omitempty"`
-	OpenVPNHandshake *ArchivalOpenVPNHandshakeResult `json:"openvpn_handshake"`
-	NetworkEvents    []*vpntracex.Event              `json:"network_events"`
-	// TODO(ainghazal): pass the transaction idx also to the event tracer for uniformity.
-	// TODO(ainghazal): make sure to document in the spec that these network events only cover the handshake.
-	// TODO(ainghazal): in the future, we will want to store more operations under this struct for a single connection,
-	// like pingResults or urlgetter calls.
-
-	// TODO(ainghazal): look how to store the index that identifies each connection attempt.
-}
-
 // Run implements model.ExperimentMeasurer.Run.
 func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	callbacks := args.Callbacks
@@ -114,7 +129,8 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 			tk.AddConnectionTestKeys(connResult)
 		}
 	}
-	tk.Success = tk.allConnectionsSuccessful()
+	tk.AllSuccess = tk.allConnectionsSuccessful()
+	tk.AnySuccess = tk.anyConnectionSuccessful()
 
 	callbacks.OnProgress(1.0, "All endpoints probed")
 	measurement.TestKeys = tk
