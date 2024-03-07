@@ -19,6 +19,12 @@ const (
 	openVPNProcol = "openvpn"
 )
 
+//
+// The input URI is in the form:
+// "openvpn://1.2.3.4:443/udp/&provider=tunnelbear&obfs=none"
+// "openvpn+obfs4://1.2.3.4:443/tcp/&provider=riseup&obfs=obfs4&cert=deadbeef"
+//
+
 // Config contains the experiment config.
 //
 // This contains all the settings that user can set to modify the behaviour
@@ -32,9 +38,10 @@ type Config struct {
 type TestKeys struct {
 	AllSuccess       bool                              `json:"success_all"`
 	AnySuccess       bool                              `json:"success_any"`
+	Inputs           []string                          `json:"inputs"`
+	NetworkEvents    []*vpntracex.Event                `json:"network_events"`
 	TCPConnect       []*model.ArchivalTCPConnectResult `json:"tcp_connect,omitempty"`
 	OpenVPNHandshake []*ArchivalOpenVPNHandshakeResult `json:"openvpn_handshake"`
-	NetworkEvents    []*vpntracex.Event                `json:"network_events"`
 }
 
 // NewTestKeys creates new openvpn TestKeys.
@@ -42,9 +49,10 @@ func NewTestKeys() *TestKeys {
 	return &TestKeys{
 		AllSuccess:       false,
 		AnySuccess:       false,
+		Inputs:           []string{},
+		NetworkEvents:    []*vpntracex.Event{},
 		TCPConnect:       []*model.ArchivalTCPConnectResult{},
 		OpenVPNHandshake: []*ArchivalOpenVPNHandshakeResult{},
-		NetworkEvents:    []*vpntracex.Event{},
 	}
 }
 
@@ -53,7 +61,6 @@ type SingleConnection struct {
 	TCPConnect       *model.ArchivalTCPConnectResult `json:"tcp_connect,omitempty"`
 	OpenVPNHandshake *ArchivalOpenVPNHandshakeResult `json:"openvpn_handshake"`
 	NetworkEvents    []*vpntracex.Event              `json:"network_events"`
-	// TODO(ainghazal): pass the transaction idx also to the event tracer for uniformity.
 	// TODO(ainghazal): make sure to document in the spec that these network events only cover the handshake.
 	// TODO(ainghazal): in the future, we will want to store more operations under this struct for a single connection,
 	// like pingResults or urlgetter calls.
@@ -62,12 +69,14 @@ type SingleConnection struct {
 // AddConnectionTestKeys adds the result of a single OpenVPN connection attempt to the
 // corresponding array in the [TestKeys] object.
 func (tk *TestKeys) AddConnectionTestKeys(result *SingleConnection) {
-	tk.TCPConnect = append(tk.TCPConnect, result.TCPConnect)
+	if result.TCPConnect != nil {
+		tk.TCPConnect = append(tk.TCPConnect, result.TCPConnect)
+	}
 	tk.OpenVPNHandshake = append(tk.OpenVPNHandshake, result.OpenVPNHandshake)
 	tk.NetworkEvents = append(tk.NetworkEvents, result.NetworkEvents...)
 }
 
-// allConnectionsSuccessful returns true if all the registered connections have Status.Success equal to true.
+// allConnectionsSuccessful returns true if all the registered handshakes have Status.Success equal to true.
 func (tk *TestKeys) allConnectionsSuccessful() bool {
 	for _, c := range tk.OpenVPNHandshake {
 		if !c.Status.Success {
@@ -77,9 +86,10 @@ func (tk *TestKeys) allConnectionsSuccessful() bool {
 	return true
 }
 
+// anyConnectionSuccessful returns true if any of the registered handshakes have Status.Success equal to true.
 func (tk *TestKeys) anyConnectionSuccessful() bool {
 	for _, c := range tk.OpenVPNHandshake {
-		if !c.Status.Success {
+		if c.Status.Success {
 			return true
 		}
 	}
@@ -121,8 +131,11 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 
 	tk := NewTestKeys()
 
-	sess.Logger().Info("Starting to measure OpenVPN endpoints.")
-	for idx, endpoint := range allEndpoints {
+	// TODO(ainghazal): we could parallelize multiple probing.
+	for idx, endpoint := range allEndpoints.Shuffle() {
+		sess.Logger().Infof("Probing endpoint %s", endpoint.String())
+		tk.Inputs = append(tk.Inputs, endpoint.AsInput())
+
 		connResult := m.connectAndHandshake(ctx, int64(idx+1), time.Now(), sess.Logger(), endpoint)
 		// TODO: better catch error here.
 		if connResult != nil {
@@ -199,6 +212,7 @@ func (m *Measurer) connectAndHandshake(ctx context.Context, index int64,
 				Failure: &failure,
 				Success: err == nil,
 			},
+			StartTime:     zeroTime,
 			T0:            tFirst,
 			T:             tLast,
 			Tags:          []string{},

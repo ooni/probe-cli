@@ -1,5 +1,7 @@
 package openvpn
 
+import "time"
+
 // TODO(ainghazal): move to archiva package when consolidated.
 
 // ArchivalOpenVPNHandshakeResult contains the result of a OpenVPN handshake.
@@ -10,6 +12,7 @@ type ArchivalOpenVPNHandshakeResult struct {
 	Port          int                          `json:"port"`
 	Provider      string                       `json:"provider"`
 	Status        ArchivalOpenVPNConnectStatus `json:"status"`
+	StartTime     time.Time                    `json:"handshake_start_time"`
 	T0            float64                      `json:"t0,omitempty"`
 	T             float64                      `json:"t"`
 	Tags          []string                     `json:"tags"`
