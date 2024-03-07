@@ -9,9 +9,15 @@ import (
 )
 
 // endpoint is a single endpoint to be probed.
+// The information contained in here is not generally not sufficient to complete a connection:
+// we need more info, as cipher selection or obfuscating proxy credentials.
 type endpoint struct {
 	// IPAddr is the IP Address for this endpoint.
 	IPAddr string
+
+	// Obfuscation is any obfuscation method use to connect to this endpoint.
+	// Valid values are: obfs4, none.
+	Obfuscation string
 
 	// Port is the Port for this endpoint.
 	Port string
@@ -26,6 +32,17 @@ type endpoint struct {
 	Transport string
 }
 
+// newEndpointFromInputString constructs an endpoint after parsing an input string.
+//
+// The input URI is in the form:
+// "openvpn://1.2.3.4:443/udp/&provider=tunnelbear&obfs=none"
+// "openvpn+obfs4://1.2.3.4:443/tcp/&provider=riseup&obfs=obfs4&cert=deadbeef"
+// TODO(ainghazal): implement
+func newEndpointFromInputString(input string) endpoint {
+	fmt.Println("should parse:", input)
+	return endpoint{}
+}
+
 // String implements Stringer. This is a subset of the input URI scheme.
 func (e *endpoint) String() string {
 	return fmt.Sprintf("%s://%s:%s/%s", e.Protocol, e.IPAddr, e.Port, e.Transport)
@@ -37,13 +54,21 @@ func (e *endpoint) AsInput() string {
 	if provider == "" {
 		provider = "unknown"
 	}
-	i := fmt.Sprintf("%s/?provider=%s", e.String(), provider)
+	obfs := e.Obfuscation
+	if obfs == "" {
+		obfs = "none"
+	}
+	i := fmt.Sprintf("%s/?provider=%s&obfs=%s", e.String(), provider, obfs)
 	return i
 }
 
+// endpointList is a list of endpoints.
 type endpointList []endpoint
 
 // allEndpoints contains a subset of known endpoints to be used if no input is passed to the experiment.
+// This is a hardcoded list for now, but the idea is that we can receive this from the check-in api in the future.
+// In any case, having hardcoded endpoints is good as a fallback for the cases in which we cannot contact
+// OONI's backend.
 var allEndpoints = endpointList{
 	{
 		Provider:  "riseup",
@@ -69,6 +94,11 @@ func (e endpointList) Shuffle() endpointList {
 	return e
 }
 
+// TODO(ainghazal): this is extremely hacky, but it's a first step
+// until we manage to have the check-in API handing credentials.
+// Do note that these certificates will expire ca. Apr 6 2024
+// OTOH, yes, I do understand the risks of exposing key material
+// on a public git repo. Thanks for caring.
 var defaultOptionsByProvider = map[string]*vpnconfig.OpenVPNOptions{
 	"riseup": {
 		Auth:   "SHA512",
@@ -83,11 +113,6 @@ ATAdBgNVHQ4EFgQUZdoUlJrCIUNFrpffAq+LQjnwEz4wCgYIKoZIzj0EAwIDSAAw
 RQIgfr3w4tnRG+NdI3LsGPlsRktGK20xHTzsB3orB0yC6cICIQCB+/9y8nmSStfN
 VUMUyk2hNd7/kC8nL222TTD7VZUtsg==
 -----END CERTIFICATE-----`),
-		// TODO(ainghazal): this is extremely hacky, but it's a first step
-		// until we manage to have the check-in API handing credentials.
-		// Do note that these certificates will expire ca. Apr 6 2024
-		// OTOH, yes, I do understand the risks of exposing key material
-		// on a public git repo. Thanks for caring.
 		Key: []byte(`-----BEGIN RSA PRIVATE KEY-----
 MIIEowIBAAKCAQEAqprWmGJKLgZBFbdJUEMzKpJkWnVLoALSTTZqmzX8vuQD7W2J
 HbwptiD+a7qCvikpX+bsRb9b84VctYZq/tnLwqRVeDfoega+pGws0KGMo74KWlUZ
@@ -152,8 +177,8 @@ func getVPNConfig(tracer *vpntracex.Tracer, endpoint *endpoint) (*vpnconfig.Conf
 				Port:   endpoint.Port,
 				Proto:  vpnconfig.Proto(endpoint.Transport),
 
-				// options coming from the default values,
-				// to be changed by check-in API info in the future.
+				// options coming from the default values for the provider,
+				// to switch to values provided by the check-in API in the future.
 				CA:     baseOptions.CA,
 				Cert:   baseOptions.Cert,
 				Key:    baseOptions.Key,
@@ -163,6 +188,6 @@ func getVPNConfig(tracer *vpntracex.Tracer, endpoint *endpoint) (*vpnconfig.Conf
 		),
 		vpnconfig.WithHandshakeTracer(tracer))
 
-	// TODO: validate options here and return an error, maybe.
+	// TODO: validate options here and return an error.
 	return cfg, nil
 }
