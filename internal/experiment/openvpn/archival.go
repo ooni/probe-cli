@@ -17,9 +17,10 @@ type ArchivalOpenVPNHandshakeResult struct {
 	BootstrapTime  float64                      `json:"bootstrap_time,omitempty"`
 	Endpoint       string                       `json:"endpoint"`
 	IP             string                       `json:"ip"`
-	OpenVPNOptions OpenVPNOptions               `json:"openvpn_options"`
 	Port           int                          `json:"port"`
+	Transport      string                       `json:"transport"`
 	Provider       string                       `json:"provider"`
+	OpenVPNOptions OpenVPNOptions               `json:"openvpn_options"`
 	Status         ArchivalOpenVPNConnectStatus `json:"status"`
 	StartTime      time.Time                    `json:"handshake_start_time"`
 
