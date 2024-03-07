@@ -4,15 +4,24 @@ import "time"
 
 // TODO(ainghazal): move to ooni internal archival package when consolidated.
 
+// OpenVPNOptions is a subset of [vpnconfig.OpenVPNOptions] that we want to include
+// in the archived result.
+type OpenVPNOptions struct {
+	Auth        string `json:"auth,omitempty"`
+	Cipher      string `json:"cipher,omitempty"`
+	Compression string `json:"compression,omitempty"`
+}
+
 // ArchivalOpenVPNHandshakeResult contains the result of a OpenVPN handshake.
 type ArchivalOpenVPNHandshakeResult struct {
-	BootstrapTime float64                      `json:"bootstrap_time,omitempty"`
-	Endpoint      string                       `json:"endpoint"`
-	IP            string                       `json:"ip"`
-	Port          int                          `json:"port"`
-	Provider      string                       `json:"provider"`
-	Status        ArchivalOpenVPNConnectStatus `json:"status"`
-	StartTime     time.Time                    `json:"handshake_start_time"`
+	BootstrapTime  float64                      `json:"bootstrap_time,omitempty"`
+	Endpoint       string                       `json:"endpoint"`
+	IP             string                       `json:"ip"`
+	OpenVPNOptions OpenVPNOptions               `json:"openvpn_options"`
+	Port           int                          `json:"port"`
+	Provider       string                       `json:"provider"`
+	Status         ArchivalOpenVPNConnectStatus `json:"status"`
+	StartTime      time.Time                    `json:"handshake_start_time"`
 
 	// T0 can differ from StartTime because for TCP we take T0 *after* dialing has successfully completed.
 	// This might be counterintuitive, review.

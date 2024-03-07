@@ -45,20 +45,22 @@ func newEndpointFromInputString(input string) endpoint {
 
 // String implements Stringer. This is a subset of the input URI scheme.
 func (e *endpoint) String() string {
-	return fmt.Sprintf("%s://%s:%s/%s", e.Protocol, e.IPAddr, e.Port, e.Transport)
+	var proto string
+	if e.Obfuscation == "obfs4" {
+		proto = e.Protocol + "+obfs4"
+	} else {
+		proto = e.Protocol
+	}
+	return fmt.Sprintf("%s://%s:%s/%s", proto, e.IPAddr, e.Port, e.Transport)
 }
 
-// AsInput is a string representation of this endpoint. It contains more information than the endpoint itself.
-func (e *endpoint) AsInput() string {
+// AsInputURI is a string representation of this endpoint. It contains more information than the endpoint itself.
+func (e *endpoint) AsInputURI() string {
 	provider := e.Provider
 	if provider == "" {
 		provider = "unknown"
 	}
-	obfs := e.Obfuscation
-	if obfs == "" {
-		obfs = "none"
-	}
-	i := fmt.Sprintf("%s/?provider=%s&obfs=%s", e.String(), provider, obfs)
+	i := fmt.Sprintf("%s/?provider=%s", e.String(), provider)
 	return i
 }
 
