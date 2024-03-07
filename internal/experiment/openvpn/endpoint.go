@@ -2,6 +2,7 @@ package openvpn
 
 import (
 	"fmt"
+	"math/rand"
 
 	vpnconfig "github.com/ooni/minivpn/pkg/config"
 	vpntracex "github.com/ooni/minivpn/pkg/tracex"
@@ -25,27 +26,47 @@ type endpoint struct {
 	Transport string
 }
 
+// String implements Stringer. This is a subset of the input URI scheme.
 func (e *endpoint) String() string {
 	return fmt.Sprintf("%s://%s:%s/%s", e.Protocol, e.IPAddr, e.Port, e.Transport)
 }
 
+// AsInput is a string representation of this endpoint. It contains more information than the endpoint itself.
+func (e *endpoint) AsInput() string {
+	provider := e.Provider
+	if provider == "" {
+		provider = "unknown"
+	}
+	i := fmt.Sprintf("%s/?provider=%s", e.String(), provider)
+	return i
+}
+
+type endpointList []endpoint
+
 // allEndpoints contains a subset of known endpoints to be used if no input is passed to the experiment.
-var allEndpoints = []endpoint{
+var allEndpoints = endpointList{
 	{
 		Provider:  "riseup",
-		IPAddr:    "185.220.103.11",
+		IPAddr:    "51.15.187.53",
 		Port:      "1194",
 		Protocol:  "openvpn",
 		Transport: "tcp",
 	},
+	{
+		Provider:  "riseup",
+		IPAddr:    "51.15.187.53",
+		Port:      "1194",
+		Protocol:  "openvpn",
+		Transport: "udp",
+	},
 }
 
-// sampleRandomEndpoint is a placeholder for a proper sampling function.
-func sampleRandomEndpoint(all []endpoint) endpoint {
-	// chosen by fair dice roll
-	// guaranteed to be random
-	// https://xkcd.com/221/
-	return all[0]
+// Shuffle returns a shuffled copy of the endpointList.
+func (e endpointList) Shuffle() endpointList {
+	rand.Shuffle(len(e), func(i, j int) {
+		e[i], e[j] = e[j], e[i]
+	})
+	return e
 }
 
 var defaultOptionsByProvider = map[string]*vpnconfig.OpenVPNOptions{
