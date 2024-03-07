@@ -19,12 +19,6 @@ const (
 	openVPNProcol = "openvpn"
 )
 
-//
-// The input URI is in the form:
-// "openvpn://1.2.3.4:443/udp/&provider=tunnelbear&obfs=none"
-// "openvpn+obfs4://1.2.3.4:443/tcp/&provider=riseup&obfs=obfs4&cert=deadbeef"
-//
-
 // Config contains the experiment config.
 //
 // This contains all the settings that user can set to modify the behaviour
@@ -134,7 +128,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	// TODO(ainghazal): we could parallelize multiple probing.
 	for idx, endpoint := range allEndpoints.Shuffle() {
 		sess.Logger().Infof("Probing endpoint %s", endpoint.String())
-		tk.Inputs = append(tk.Inputs, endpoint.AsInput())
+		tk.Inputs = append(tk.Inputs, endpoint.AsInputURI())
 
 		connResult := m.connectAndHandshake(ctx, int64(idx+1), time.Now(), sess.Logger(), endpoint)
 		// TODO: better catch error here.
@@ -171,13 +165,13 @@ func (m *Measurer) connectAndHandshake(ctx context.Context, index int64,
 	// create a vpn tun Device that attempts to dial and performs the handshake
 	handshakeTracer := vpntracex.NewTracerWithTransactionID(zeroTime, index)
 
-	openvpnOptions, err := getVPNConfig(handshakeTracer, &endpoint)
+	openvpnConfig, err := getVPNConfig(handshakeTracer, &endpoint)
 	if err != nil {
 		// TODO: find a better way to return the error - this is not a test failure,
 		// it's a failure to start the measurement. we should abort
 		return nil
 	}
-	tun, err := tunnel.Start(ctx, dialer, openvpnOptions)
+	tun, err := tunnel.Start(ctx, dialer, openvpnConfig)
 
 	var failure string
 	if err != nil {
@@ -206,8 +200,13 @@ func (m *Measurer) connectAndHandshake(ctx context.Context, index int64,
 			BootstrapTime: bootstrapTime,
 			Endpoint:      endpoint.String(),
 			IP:            endpoint.IPAddr,
-			Port:          port,
-			Provider:      endpoint.Provider,
+			OpenVPNOptions: OpenVPNOptions{
+				Cipher:      openvpnConfig.OpenVPNOptions().Cipher,
+				Auth:        openvpnConfig.OpenVPNOptions().Auth,
+				Compression: string(openvpnConfig.OpenVPNOptions().Compress),
+			},
+			Port:     port,
+			Provider: endpoint.Provider,
 			Status: ArchivalOpenVPNConnectStatus{
 				Failure: &failure,
 				Success: err == nil,
