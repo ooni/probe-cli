@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
@@ -25,7 +26,10 @@ const (
 // of this experiment. By tagging these variables with `ooni:"..."`, we allow
 // miniooni's -O flag to find them and set them.
 type Config struct {
-	Provider string
+	Provider string `ooni:"VPN provider"`
+	SafeKey  string `ooni:"key to connect to the OpenVPN endpoint"`
+	SafeCert string `ooni:"cert to connect to the OpenVPN endpoint"`
+	SafeCA   string `ooni:"ca to connect to the OpenVPN endpoint"`
 }
 
 // TestKeys contains the experiment's result.
@@ -113,6 +117,24 @@ func (m Measurer) ExperimentVersion() string {
 	return testVersion
 }
 
+var (
+	ErrInvalidInput = errors.New("invalid input")
+)
+
+func parseListOfInputs(inputs string) (endpointList, error) {
+	endpoints := make(endpointList, 0)
+	inputList := strings.Split(inputs, ",")
+	for _, i := range inputList {
+		e, err := newEndpointFromInputString(i)
+		if err != nil {
+			return endpoints, err
+		}
+		endpoints = append(endpoints, e)
+	}
+	return endpoints, nil
+
+}
+
 // ErrFailure is the error returned when you set the
 // config.ReturnError field to true.
 var ErrFailure = errors.New("mocked error")
@@ -123,10 +145,25 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	measurement := args.Measurement
 	sess := args.Session
 
+	var endpoints endpointList
+	var err error
+
+	if measurement.Input == "" {
+		// if input is null, we get the hardcoded list of inputs.
+		endpoints = allEndpoints
+	} else {
+		// otherwise, we expect a comma-separated value of inputs in
+		// the URI scheme defined for openvpn experiments.
+		endpoints, err = parseListOfInputs(string(measurement.Input))
+		if err != nil {
+			return err
+		}
+	}
+
 	tk := NewTestKeys()
 
 	// TODO(ainghazal): we could parallelize multiple probing.
-	for idx, endpoint := range allEndpoints.Shuffle() {
+	for idx, endpoint := range endpoints.Shuffle() {
 		sess.Logger().Infof("Probing endpoint %s", endpoint.String())
 		tk.Inputs = append(tk.Inputs, endpoint.AsInputURI())
 
@@ -143,6 +180,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	measurement.TestKeys = tk
 
 	// TODO(ainghazal): validate we have valid config for each endpoint.
+	// TODO(ainghazal): validate hostname is a valid IP (ipv4 or 6)
 	// TODO(ainghazal): decide what to do if we have expired certs (abort one measurement or abort the whole experiment?)
 
 	// Note: if here we return an error, the parent code will assume
@@ -154,7 +192,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 
 // connectAndHandshake dials a connection and attempts an OpenVPN handshake using that dialer.
 func (m *Measurer) connectAndHandshake(ctx context.Context, index int64,
-	zeroTime time.Time, logger model.Logger, endpoint endpoint) *SingleConnection {
+	zeroTime time.Time, logger model.Logger, endpoint *endpoint) *SingleConnection {
 
 	// create a trace for the network dialer
 	trace := measurexlite.NewTrace(index, zeroTime)
@@ -165,7 +203,7 @@ func (m *Measurer) connectAndHandshake(ctx context.Context, index int64,
 	// create a vpn tun Device that attempts to dial and performs the handshake
 	handshakeTracer := vpntracex.NewTracerWithTransactionID(zeroTime, index)
 
-	openvpnConfig, err := getVPNConfig(handshakeTracer, &endpoint)
+	openvpnConfig, err := getVPNConfig(handshakeTracer, endpoint, &m.config)
 	if err != nil {
 		// TODO: find a better way to return the error - this is not a test failure,
 		// it's a failure to start the measurement. we should abort

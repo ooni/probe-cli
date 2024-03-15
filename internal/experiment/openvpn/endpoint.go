@@ -1,11 +1,19 @@
 package openvpn
 
 import (
+	"encoding/base64"
+	"errors"
 	"fmt"
 	"math/rand"
+	"net/url"
+	"strings"
 
 	vpnconfig "github.com/ooni/minivpn/pkg/config"
 	vpntracex "github.com/ooni/minivpn/pkg/tracex"
+)
+
+var (
+	ErrBadBase64Blob = errors.New("wrong base64 encoding")
 )
 
 // endpoint is a single endpoint to be probed.
@@ -35,12 +43,64 @@ type endpoint struct {
 // newEndpointFromInputString constructs an endpoint after parsing an input string.
 //
 // The input URI is in the form:
-// "openvpn://1.2.3.4:443/udp/&provider=tunnelbear&obfs=none"
-// "openvpn+obfs4://1.2.3.4:443/tcp/&provider=riseup&obfs=obfs4&cert=deadbeef"
-// TODO(ainghazal): implement
-func newEndpointFromInputString(input string) endpoint {
-	fmt.Println("should parse:", input)
-	return endpoint{}
+// "openvpn://1.2.3.4:443/udp/&provider=tunnelbear"
+// "openvpn+obfs4://1.2.3.4:443/tcp/&provider=riseup&cert=deadbeef"
+func newEndpointFromInputString(uri string) (*endpoint, error) {
+	parsedURL, err := url.Parse(uri)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", ErrInvalidInput, err)
+	}
+	var obfuscation string
+	switch parsedURL.Scheme {
+	case "openvpn":
+		obfuscation = "openvpn"
+	case "openvpn+obfs4":
+		obfuscation = "obfs4"
+	default:
+		return nil, fmt.Errorf("%w: unknown scheme: %s", ErrInvalidInput, parsedURL.Scheme)
+	}
+
+	host := parsedURL.Hostname()
+	if host == "" {
+		return nil, fmt.Errorf("%w: expected host: %s", ErrInvalidInput, parsedURL.Host)
+	}
+
+	port := parsedURL.Port()
+	if port == "" {
+		return nil, fmt.Errorf("%w: expected port: %s", ErrInvalidInput, parsedURL.Port())
+	}
+
+	pathParts := strings.Split(parsedURL.Path, "/")
+	if len(pathParts) != 3 {
+		return nil, fmt.Errorf("%w: invalid path: %s (%d)", ErrInvalidInput, pathParts, len(pathParts))
+	}
+	transport := pathParts[1]
+	if transport != "tcp" && transport != "udp" {
+		return nil, fmt.Errorf("%w: invalid transport: %s", ErrInvalidInput, transport)
+	}
+
+	params := parsedURL.Query()
+	provider := params.Get("provider")
+
+	if provider == "" {
+		return nil, fmt.Errorf("%w: please specify a provider as part of the input", ErrInvalidInput)
+	}
+
+	if provider != "riseup" {
+		// because we are hardcoding at the moment. figure out a way to pass info for
+		// arbitrary providers as options instead
+		return nil, fmt.Errorf("%w: unknown provider: %s", ErrInvalidInput, provider)
+	}
+
+	endpoint := &endpoint{
+		IPAddr:      host,
+		Obfuscation: obfuscation,
+		Port:        port,
+		Protocol:    "openvpn",
+		Provider:    provider,
+		Transport:   transport,
+	}
+	return endpoint, nil
 }
 
 // String implements Stringer. This is a subset of the input URI scheme.
@@ -65,7 +125,7 @@ func (e *endpoint) AsInputURI() string {
 }
 
 // endpointList is a list of endpoints.
-type endpointList []endpoint
+type endpointList []*endpoint
 
 // allEndpoints contains a subset of known endpoints to be used if no input is passed to the experiment.
 // This is a hardcoded list for now, but the idea is that we can receive this from the check-in api in the future.
@@ -94,6 +154,15 @@ func (e endpointList) Shuffle() endpointList {
 		e[i], e[j] = e[j], e[i]
 	})
 	return e
+}
+
+func isValidProvider(provider string) bool {
+	switch provider {
+	case "riseup":
+		return true
+	default:
+		return false
+	}
 }
 
 // TODO(ainghazal): this is extremely hacky, but it's a first step
@@ -165,11 +234,40 @@ vly8wNG42zeRWAXz
 // To obtain that, we merge the endpoint specific configuration with base options.
 // These base options are for the moment hardcoded. In the future we will want to be smarter
 // about getting information for different providers.
-func getVPNConfig(tracer *vpntracex.Tracer, endpoint *endpoint) (*vpnconfig.Config, error) {
+func getVPNConfig(tracer *vpntracex.Tracer, endpoint *endpoint, experimentConfig *Config) (*vpnconfig.Config, error) {
 	// TODO(ainghazal): use options merge (pending PR)
+
 	provider := endpoint.Provider
-	// TODO(ainghazal): return error if provider unknown. we're in the happy path for now.
+	if !isValidProvider(provider) {
+		return nil, fmt.Errorf("%w: unknown provider: %s", ErrInvalidInput, provider)
+	}
+
 	baseOptions := defaultOptionsByProvider[provider]
+
+	// We override any provider related options found in the config
+	if experimentConfig.SafeCA != "" {
+		ca, err := extractBase64Blob(experimentConfig.SafeCA)
+		if err != nil {
+			return nil, err
+		}
+		baseOptions.CA = []byte(ca)
+	}
+
+	if experimentConfig.SafeKey != "" {
+		key, err := extractBase64Blob(experimentConfig.SafeKey)
+		if err != nil {
+			return nil, err
+		}
+		baseOptions.Key = []byte(key)
+	}
+
+	if experimentConfig.SafeCert != "" {
+		cert, err := extractBase64Blob(experimentConfig.SafeCert)
+		if err != nil {
+			return nil, err
+		}
+		baseOptions.Key = []byte(cert)
+	}
 
 	cfg := vpnconfig.NewConfig(
 		vpnconfig.WithOpenVPNOptions(
@@ -192,4 +290,19 @@ func getVPNConfig(tracer *vpntracex.Tracer, endpoint *endpoint) (*vpnconfig.Conf
 
 	// TODO: validate options here and return an error.
 	return cfg, nil
+}
+
+func extractBase64Blob(val string) (string, error) {
+	s := strings.TrimPrefix(val, "base64:")
+	if len(s) == len(val) {
+		return "", fmt.Errorf("%w: %s", ErrBadBase64Blob, "missing prefix")
+	}
+	dec, err := base64.URLEncoding.DecodeString(strings.TrimSpace(s))
+	if err != nil {
+		return "", fmt.Errorf("%w: %s", ErrBadBase64Blob, err)
+	}
+	if len(dec) == 0 {
+		return "", nil
+	}
+	return string(dec), nil
 }
