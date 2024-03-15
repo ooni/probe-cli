@@ -16,10 +16,9 @@ func init() {
 				*config.(*openvpn.Config), "openvpn",
 			)
 		},
-		// TODO(ainghazal): we can pass an array of providers here.
 		config:           &openvpn.Config{},
-		enabledByDefault: true,
+		enabledByDefault: false,
 		interruptible:    true,
-		inputPolicy:      model.InputNone,
+		inputPolicy:      model.InputOptional,
 	}
 }
