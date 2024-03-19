@@ -374,6 +374,16 @@ func (s *Session) FetchTorTargets(
 	return clnt.FetchTorTargets(ctx, cc)
 }
 
+// FetchOpenVPNConfig fetches openvpn config from the API.
+func (s *Session) FetchOpenVPNConfig(
+	ctx context.Context, cc string) (map[string]model.OOAPIOpenVPNConfig, error) {
+	clnt, err := s.NewOrchestraClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return clnt.FetchOpenVPNConfig(ctx, cc)
+}
+
 // KeyValueStore returns the configured key-value store.
 func (s *Session) KeyValueStore() model.KeyValueStore {
 	return s.kvStore
