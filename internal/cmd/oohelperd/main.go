@@ -32,9 +32,6 @@ var (
 	// pprofEndpoint is the endpoint where we serve pprof info.
 	pprofEndpoint = flag.String("pprof-endpoint", "127.0.0.1:6061", "Pprof endpoint")
 
-	// prometheusEndpoint is the endpoint where we serve prometheus metrics
-	prometheusEndpoint = flag.String("prometheus-endpoint", "127.0.0.1:9091", "Prometheus endpoint")
-
 	// replace runs the commands to replace a running oohelperd.
 	replace = flag.Bool("replace", false, "Replaces a running oohelperd instance")
 
@@ -49,6 +46,8 @@ var (
 
 	// versionFlag indicates we must print the version on stdout
 	versionFlag = flag.Bool("version", false, "Prints version information on the stdout")
+
+	prometheusMetricsPassword = os.Getenv("PROMETHEUS_METRICS_PASSWORD")
 )
 
 // shutdown calls srv.Shutdown with a reasonably long timeout. The srv.Shutdown
@@ -94,6 +93,16 @@ func main() {
 
 	// add the main oohelperd handler to the mux
 	mux.Handle("/", oohelperd.NewHandler(log.Log, &netxlite.Netx{}))
+	mux.HandleFunc("/metrics", func(w http.ResponseWriter, req *http.Request) {
+		user, pass, ok := req.BasicAuth()
+		if ok && user == "prom" && pass == prometheusMetricsPassword {
+			promhttp.Handler().ServeHTTP(w, req)
+		} else {
+			w.Header().Set("WWW-Authenticate", "Basic realm=metrics")
+			w.WriteHeader(401)
+			w.Write([]byte("401 Unauthorized\n"))
+		}
+	})
 
 	// create a listening server for serving ooniprobe requests
 	srv := &http.Server{Addr: *apiEndpoint, Handler: mux}
@@ -107,13 +116,6 @@ func main() {
 	// start listening in the background
 	go srv.Serve(listener)
 	log.Infof("serving ooniprobe requests at http://%s/", listener.Addr().String())
-
-	// create another server for serving prometheus metrics
-	promMux := http.NewServeMux()
-	promMux.Handle("/metrics", promhttp.Handler())
-	promSrv := &http.Server{Addr: *prometheusEndpoint, Handler: promMux}
-	go promSrv.ListenAndServe()
-	log.Infof("serving prometheus metrics at http://%s/", *prometheusEndpoint)
 
 	// create another server for serving pprof metrics
 	pprofMux := http.NewServeMux()
@@ -135,8 +137,6 @@ func main() {
 	shutdownWg := &sync.WaitGroup{}
 	shutdownWg.Add(1)
 	go shutdown(srv, shutdownWg)
-	shutdownWg.Add(1)
-	go shutdown(promSrv, shutdownWg)
 	shutdownWg.Add(1)
 	go shutdown(pprofSrv, shutdownWg)
 	shutdownWg.Wait()
