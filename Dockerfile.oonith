@@ -21,10 +21,7 @@ COPY --from=builder /build/CLI/oohelperd-* /app
 RUN mv oohelperd-* oohelperd
 
 # oohelperd service
-EXPOSE 8080
-
-# prometheus metrics
-EXPOSE 9091
+EXPOSE 80
 
 # Run
-CMD ["/app/oohelperd",  "-api-endpoint", "0.0.0.0:8080", "--prometheus-endpoint", "0.0.0.0:9091"]
+CMD ["/app/oohelperd",  "-api-endpoint", "0.0.0.0:80"]

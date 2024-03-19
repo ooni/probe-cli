@@ -54,6 +54,6 @@ clean:
 	rm -f imagedefinitions.json
 
 run:
-	echo "no run implemented"
+	cd .. && go run -tags netgo ./internal/cmd/oohelperd
 
 .PHONY: init test build clean docker print-labels
