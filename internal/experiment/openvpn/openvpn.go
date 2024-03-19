@@ -4,6 +4,7 @@ package openvpn
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 
+	vpnconfig "github.com/ooni/minivpn/pkg/config"
 	vpntracex "github.com/ooni/minivpn/pkg/tracex"
 	"github.com/ooni/minivpn/pkg/tunnel"
 )
@@ -34,9 +36,7 @@ type Config struct {
 
 // TestKeys contains the experiment's result.
 type TestKeys struct {
-	AllSuccess       bool                              `json:"success_all"`
-	AnySuccess       bool                              `json:"success_any"`
-	Inputs           []string                          `json:"inputs"`
+	Success          bool                              `json:"success"`
 	NetworkEvents    []*vpntracex.Event                `json:"network_events"`
 	TCPConnect       []*model.ArchivalTCPConnectResult `json:"tcp_connect,omitempty"`
 	OpenVPNHandshake []*ArchivalOpenVPNHandshakeResult `json:"openvpn_handshake"`
@@ -45,9 +45,7 @@ type TestKeys struct {
 // NewTestKeys creates new openvpn TestKeys.
 func NewTestKeys() *TestKeys {
 	return &TestKeys{
-		AllSuccess:       false,
-		AnySuccess:       false,
-		Inputs:           []string{},
+		Success:          true,
 		NetworkEvents:    []*vpntracex.Event{},
 		TCPConnect:       []*model.ArchivalTCPConnectResult{},
 		OpenVPNHandshake: []*ArchivalOpenVPNHandshakeResult{},
@@ -84,16 +82,6 @@ func (tk *TestKeys) allConnectionsSuccessful() bool {
 	return true
 }
 
-// anyConnectionSuccessful returns true if any of the registered handshakes have Status.Success equal to true.
-func (tk *TestKeys) anyConnectionSuccessful() bool {
-	for _, c := range tk.OpenVPNHandshake {
-		if c.Status.Success {
-			return true
-		}
-	}
-	return false
-}
-
 // Measurer performs the measurement.
 type Measurer struct {
 	config   Config
@@ -121,6 +109,8 @@ var (
 	ErrInvalidInput = errors.New("invalid input")
 )
 
+// parseListOfInputs return an endpointlist from a comma-separated list of inputs,
+// and any error if the endpoints could not be parsed properly.
 func parseListOfInputs(inputs string) (endpointList, error) {
 	endpoints := make(endpointList, 0)
 	inputList := strings.Split(inputs, ",")
@@ -132,7 +122,6 @@ func parseListOfInputs(inputs string) (endpointList, error) {
 		endpoints = append(endpoints, e)
 	}
 	return endpoints, nil
-
 }
 
 // ErrFailure is the error returned when you set the
@@ -140,41 +129,46 @@ func parseListOfInputs(inputs string) (endpointList, error) {
 var ErrFailure = errors.New("mocked error")
 
 // Run implements model.ExperimentMeasurer.Run.
+// A single run expects exactly ONE input (endpoint).
 func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	callbacks := args.Callbacks
 	measurement := args.Measurement
 	sess := args.Session
 
-	var endpoints endpointList
-	var err error
+	var endpoint *endpoint
 
 	if measurement.Input == "" {
-		// if input is null, we get the hardcoded list of inputs.
-		endpoints = allEndpoints
+		// if input is null, we get one from the hardcoded list of inputs.
+		sess.Logger().Info("No input given, picking one endpoint at random")
+		endpoint = allEndpoints.Shuffle()[0]
+		measurement.Input = model.MeasurementTarget(endpoint.AsInputURI())
 	} else {
 		// otherwise, we expect a comma-separated value of inputs in
 		// the URI scheme defined for openvpn experiments.
-		endpoints, err = parseListOfInputs(string(measurement.Input))
+		endpoints, err := parseListOfInputs(string(measurement.Input))
 		if err != nil {
 			return err
 		}
+		if len(endpoints) != 1 {
+			return fmt.Errorf("%w: only single input accepted", ErrInvalidInput)
+		}
+		endpoint = endpoints[0]
 	}
 
 	tk := NewTestKeys()
 
-	// TODO(ainghazal): we could parallelize multiple probing.
-	for idx, endpoint := range endpoints.Shuffle() {
-		sess.Logger().Infof("Probing endpoint %s", endpoint.String())
-		tk.Inputs = append(tk.Inputs, endpoint.AsInputURI())
+	sess.Logger().Infof("Probing endpoint %s", endpoint.String())
 
-		connResult := m.connectAndHandshake(ctx, int64(idx+1), time.Now(), sess.Logger(), endpoint)
-		// TODO: better catch error here.
-		if connResult != nil {
-			tk.AddConnectionTestKeys(connResult)
-		}
+	// TODO:  separate pre-connection checks
+	connResult, err := m.connectAndHandshake(ctx, int64(1), time.Now(), sess, endpoint)
+	if err != nil {
+		sess.Logger().Warn("Fatal error while attempting to connect to endpoint, aborting!")
+		return err
 	}
-	tk.AllSuccess = tk.allConnectionsSuccessful()
-	tk.AnySuccess = tk.anyConnectionSuccessful()
+	if connResult != nil {
+		tk.AddConnectionTestKeys(connResult)
+	}
+	tk.Success = tk.allConnectionsSuccessful()
 
 	callbacks.OnProgress(1.0, "All endpoints probed")
 	measurement.TestKeys = tk
@@ -190,9 +184,78 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	return nil
 }
 
+// getCredentialsFromOptionsOrAPI attempts to find valid credentials for the given provider, either
+// from the passed Options (cli, oonirun), or from a remote call to the OONI API endpoint.
+func (m *Measurer) getCredentialsFromOptionsOrAPI(
+	ctx context.Context,
+	sess model.ExperimentSession,
+	provider string) (*vpnconfig.OpenVPNOptions, error) {
+	// TODO(ainghazal): Ideally, we need to know which authentication methods each provider uses, and this is
+	// information that the experiment could hardcode. Sticking to Certificate-based auth for riseupvpn.
+
+	// get an empty options object to fill with credentials
+	creds := &vpnconfig.OpenVPNOptions{}
+
+	cfg := m.config
+
+	if cfg.SafeCA != "" && cfg.SafeCert != "" && cfg.SafeKey != "" {
+		// We override authentication info with what user provided in options.
+		ca, err := extractBase64Blob(cfg.SafeCA)
+		if err != nil {
+			return nil, err
+		}
+		creds.CA = []byte(ca)
+
+		key, err := extractBase64Blob(cfg.SafeKey)
+		if err != nil {
+			return nil, err
+		}
+		creds.Key = []byte(key)
+
+		cert, err := extractBase64Blob(cfg.SafeCert)
+		if err != nil {
+			return nil, err
+		}
+		creds.Key = []byte(cert)
+
+		// return options-based credentials
+		return creds, nil
+	}
+
+	// No options passed, let's hit OONI API for credential distribution.
+	// TODO(ainghazal): cache credentials fetch?
+	configFromAPI, err := m.fetchProviderCredentials(ctx, sess)
+	if err != nil {
+		sess.Logger().Warnf("Error fetching credentials from API: %s", err.Error())
+		return nil, err
+	}
+	apiCreds, ok := configFromAPI[provider]
+	if ok {
+		sess.Logger().Infof("Got credentials from provider: %s", provider)
+
+		ca, err := extractBase64Blob(apiCreds.CA)
+		if err == nil {
+			creds.CA = []byte(ca)
+		}
+		cert, err := extractBase64Blob(apiCreds.Cert)
+		if err == nil {
+			creds.Cert = []byte(cert)
+		}
+		key, err := extractBase64Blob(apiCreds.Key)
+		if err == nil {
+			creds.Key = []byte(key)
+		}
+	}
+
+	return creds, nil
+}
+
 // connectAndHandshake dials a connection and attempts an OpenVPN handshake using that dialer.
-func (m *Measurer) connectAndHandshake(ctx context.Context, index int64,
-	zeroTime time.Time, logger model.Logger, endpoint *endpoint) *SingleConnection {
+func (m *Measurer) connectAndHandshake(
+	ctx context.Context, index int64,
+	zeroTime time.Time, sess model.ExperimentSession, endpoint *endpoint) (*SingleConnection, error) {
+
+	logger := sess.Logger()
 
 	// create a trace for the network dialer
 	trace := measurexlite.NewTrace(index, zeroTime)
@@ -203,12 +266,16 @@ func (m *Measurer) connectAndHandshake(ctx context.Context, index int64,
 	// create a vpn tun Device that attempts to dial and performs the handshake
 	handshakeTracer := vpntracex.NewTracerWithTransactionID(zeroTime, index)
 
-	openvpnConfig, err := getVPNConfig(handshakeTracer, endpoint, &m.config)
+	credentials, err := m.getCredentialsFromOptionsOrAPI(ctx, sess, endpoint.Provider)
 	if err != nil {
-		// TODO: find a better way to return the error - this is not a test failure,
-		// it's a failure to start the measurement. we should abort
-		return nil
+		return nil, err
 	}
+
+	openvpnConfig, err := getVPNConfig(handshakeTracer, endpoint, credentials)
+	if err != nil {
+		return nil, err
+	}
+
 	tun, err := tunnel.Start(ctx, dialer, openvpnConfig)
 
 	var failure string
@@ -257,5 +324,10 @@ func (m *Measurer) connectAndHandshake(ctx context.Context, index int64,
 			TransactionID: index,
 		},
 		NetworkEvents: handshakeEvents,
-	}
+	}, nil
+}
+
+func (m *Measurer) fetchProviderCredentials(ctx context.Context, sess model.ExperimentSession) (map[string]model.OOAPIOpenVPNConfig, error) {
+	// TODO do pass country code, can be useful to orchestrate campaigns specific to areas
+	return sess.FetchOpenVPNConfig(ctx, "XX")
 }
