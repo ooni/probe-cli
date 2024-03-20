@@ -1,0 +1,29 @@
+version: 0.2
+env:
+  variables:
+    OONI_CODE_PATH: oonith
+    DOCKERHUB_SECRET_ID: oonidevops/dockerhub/access_token
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+
+  pre_build:
+    commands:
+      - echo "Logging in to dockerhub"
+      - DOCKER_SECRET=$(aws secretsmanager get-secret-value --secret-id $DOCKERHUB_SECRET_ID --query SecretString --output text)
+      - echo $DOCKER_SECRET | docker login --username ooni --password-stdin
+
+  build:
+    commands:
+      - export GIT_FULL_SHA=${CODEBUILD_RESOLVED_SOURCE_VERSION}
+      - cd $OONI_CODE_PATH
+      - make docker-build
+      - make docker-smoketest
+      - make docker-push
+      - make imagedefinitions.json
+      - cat imagedefinitions.json | tee ${CODEBUILD_SRC_DIR}/imagedefinitions.json
+
+artifacts:
+  files: imagedefinitions.json
