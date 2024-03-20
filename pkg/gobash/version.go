@@ -260,7 +260,7 @@ func unpackZip(targetDir, archiveFile string) error {
 		// The validRelPath function rejects empty paths, paths containing backslash, paths
 		// starting with / and paths containing ../. Additionally, according to
 		// src/archive/zip/reader.go, the zip specification only allows files containing
-		// forward slashes and considers files containing backslashes to be inscure.
+		// forward slashes and considers files containing backslashes to be insecure.
 		//
 		// Therefore, by using validRelPath here, we should be able to fix the security alert.
 		if !validRelPath(f.Name) {
