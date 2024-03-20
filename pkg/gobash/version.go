@@ -255,6 +255,18 @@ func unpackZip(targetDir, archiveFile string) error {
 	defer zr.Close()
 
 	for _, f := range zr.File {
+		// See https://github.com/ooni/probe-cli/security/code-scanning/12
+		//
+		// The validRelPath function rejects empty paths, paths containing backslash, paths
+		// starting with / and paths containing ../. Additionally, according to
+		// src/archive/zip/reader.go, the zip specification only allows files containing
+		// forward slashes and considers files containing backslashes to be inscure.
+		//
+		// Therefore, by using validRelPath here, we should be able to fix the security alert.
+		if !validRelPath(f.Name) {
+			return fmt.Errorf("tar file contained invalid name %q", f.Name)
+		}
+
 		name := strings.TrimPrefix(f.Name, "go/")
 
 		outpath := filepath.Join(targetDir, name)

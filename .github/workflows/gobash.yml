@@ -28,6 +28,7 @@ jobs:
           - "1.19" # debian 12 "bookworm"
           - "1.20"
           - "1.21"
+          - "1.22"
         system: [ubuntu-latest, macos-latest]
     runs-on: "${{ matrix.system }}"
     steps:
