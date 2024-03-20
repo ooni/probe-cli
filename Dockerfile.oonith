@@ -1,0 +1,27 @@
+# This dockerfile is used to build the oohelperd binary
+# To make use of it, see the Makefile located inside of oonith/Makefile.
+#
+# Note: The Dockerfile needs to reside in the root of the repo, so that we can
+# copy files into the docker build context.
+FROM golang:1.20.12-bullseye as builder
+ARG BRANCH_NAME=master
+
+WORKDIR /build
+
+COPY . .
+
+RUN go run ./internal/cmd/buildtool oohelperd build
+
+## Image running on the host
+FROM golang:1.20.12-bullseye as runner
+
+WORKDIR /app
+
+COPY --from=builder /build/CLI/oohelperd-* /app
+RUN mv oohelperd-* oohelperd
+
+# oohelperd service
+EXPOSE 80
+
+# Run
+CMD ["/app/oohelperd",  "-api-endpoint", "0.0.0.0:80"]
