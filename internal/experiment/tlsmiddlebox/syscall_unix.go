@@ -9,6 +9,7 @@ package tlsmiddlebox
 import (
 	"net"
 	"syscall"
+	"strings"
 )
 
 // SetTTL sets the IP TTL field for the underlying net.TCPConn
@@ -23,7 +24,12 @@ func (c *dialerTTLWrapperConn) SetTTL(ttl int) error {
 		return err
 	}
 	rawErr := rawConn.Control(func(fd uintptr) {
-		err = syscall.SetsockoptInt(int(fd), syscall.IPPROTO_IP, syscall.IP_TTL, ttl)
+		isIPv6 := strings.Contains(tcpConn.RemoteAddr().String(), "[")
+		if isIPv6 {
+			err = syscall.SetsockoptInt(int(fd), syscall.IPPROTO_IPV6, syscall.IPV6_UNICAST_HOPS, ttl)
+		} else {
+			err = syscall.SetsockoptInt(int(fd), syscall.IPPROTO_IP, syscall.IP_TTL, ttl)
+		}
 	})
 	// The syscall err is given a higher priority and returned early if non-nil
 	if err != nil {
