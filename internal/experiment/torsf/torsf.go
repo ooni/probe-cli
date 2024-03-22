@@ -25,7 +25,7 @@ import (
 // We may want to have a single implementation for both nettests in the future.
 
 // testVersion is the experiment version.
-const testVersion = "0.5.0"
+const testVersion = "0.5.1"
 
 // Config contains the experiment config.
 type Config struct {
@@ -37,6 +37,9 @@ type Config struct {
 
 	// RendezvousMethod allows to choose the method with which to rendezvous.
 	RendezvousMethod string `ooni:"Choose the method with which to rendezvous. Must be one of amp and domain_fronting. Leaving this field empty means we should use the default."`
+
+	BrokerURL   string `ooni:"TODO"`
+	FrontDomain string `ooni:"TODO"`
 }
 
 // TestKeys contains the experiment's result.
@@ -175,6 +178,11 @@ func (m *Measurer) setup(ctx context.Context,
 	if err != nil {
 		// cannot run the experiment with unknown rendezvous method
 		return nil, nil, err
+	}
+	if rm.Name() == "domain_fronting" {
+		t1 := rm.(*ptx.SnowflakeRendezvousMethodDomainFronting)
+		t1.URL = m.config.BrokerURL
+		t1.Front = m.config.FrontDomain
 	}
 	sfdialer := ptx.NewSnowflakeDialerWithRendezvousMethod(rm)
 	ptl := &ptx.Listener{
