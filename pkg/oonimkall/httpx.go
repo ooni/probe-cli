@@ -66,7 +66,7 @@ func (sess *Session) httpDoLocked(ctx *Context, jreq *HTTPRequest) (*HTTPRespons
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return nil, errors.New("xoonirun: HTTP request failed")
+		return nil, errors.New("httpx: HTTP request failed")
 	}
 
 	rawResp, err := netxlite.ReadAllContext(ctx.ctx, resp.Body)
