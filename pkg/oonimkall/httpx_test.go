@@ -1,7 +1,6 @@
 package oonimkall_test
 
 import (
-	"encoding/json"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -12,12 +11,25 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
+	"github.com/ooni/probe-cli/v3/pkg/oonimkall"
 )
 
-func TestOONIRunFetch(t *testing.T) {
-	t.Run("we can fetch a OONI Run link descriptor", func(t *testing.T) {
-		if testing.Short() {
-			t.Skip("skip test in short mode")
+func TestSessionHTTPDo(t *testing.T) {
+	t.Run("on success", func(t *testing.T) {
+		// Implementation note: because we need to backport this patch to the release/3.18
+		// branch, it would be quite verbose and burdensome use netem to implement this test,
+		// since release/3.18 is lagging behind from master in terms of netemx.
+		const expectedResponseBody = "Hello, World!\r\n"
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(expectedResponseBody))
+		}))
+		defer server.Close()
+
+		req := &oonimkall.HTTPRequest{
+			Method: "GET",
+			URL:    server.URL,
 		}
 
 		sess, err := NewSessionForTesting()
@@ -25,44 +37,12 @@ func TestOONIRunFetch(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		rawResp, err := sess.OONIRunFetch(sess.NewContext(), 9408643002)
+		resp, err := sess.HTTPDo(sess.NewContext(), req)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		expect := map[string]any{
-			"archived":                 false,
-			"descriptor_creation_time": "2023-07-18T15:38:21Z",
-			"descriptor": map[string]any{
-				"author":           "simone@openobservatory.org",
-				"description":      "We use this OONI Run descriptor for writing integration tests for ooni/probe-cli/v3/pkg/oonimkall.",
-				"description_intl": map[string]any{},
-				"icon":             "",
-				"name":             "OONIMkAll Integration Testing",
-				"name_intl":        map[string]any{},
-				"nettests": []any{
-					map[string]any{
-						"backend_options":           map[string]any{},
-						"inputs":                    []any{string("https://www.example.com/")},
-						"is_background_run_enabled": false,
-						"is_manual_run_enabled":     false,
-						"options":                   map[string]any{},
-						"test_name":                 "web_connectivity",
-					},
-				},
-				"short_description":      "Integration testing descriptor for ooni/probe-cli/v3/pkg/oonimkall.",
-				"short_description_intl": map[string]any{},
-			},
-			"mine":                      false,
-			"translation_creation_time": "2023-07-18T15:38:21Z",
-			"v":                         1.0,
-		}
-
-		var got map[string]any
-		runtimex.Try0(json.Unmarshal([]byte(rawResp), &got))
-		t.Log(got)
-
-		if diff := cmp.Diff(expect, got); diff != "" {
+		if diff := cmp.Diff(expectedResponseBody, resp.Body); diff != "" {
 			t.Fatal(diff)
 		}
 	})
@@ -73,14 +53,17 @@ func TestOONIRunFetch(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		URL := &url.URL{Host: "\t"} // this URL is invalid
+		req := &oonimkall.HTTPRequest{
+			Method: "GET",
+			URL:    "\t", // this URL is invalid
+		}
 
-		rawResp, err := sess.OONIRunFetchWithURL(sess.NewContext(), URL)
-		if !strings.HasSuffix(err.Error(), `invalid URL escape "%09"`) {
+		resp, err := sess.HTTPDo(sess.NewContext(), req)
+		if !strings.HasSuffix(err.Error(), `invalid control character in URL`) {
 			t.Fatal("unexpected error", err)
 		}
-		if rawResp != "" {
-			t.Fatal("expected empty raw response")
+		if resp != nil {
+			t.Fatal("expected nil response")
 		}
 	})
 
@@ -90,19 +73,22 @@ func TestOONIRunFetch(t *testing.T) {
 		}))
 		defer server.Close()
 
-		URL := runtimex.Try1(url.Parse(server.URL))
+		req := &oonimkall.HTTPRequest{
+			Method: "GET",
+			URL:    server.URL,
+		}
 
 		sess, err := NewSessionForTesting()
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		rawResp, err := sess.OONIRunFetchWithURL(sess.NewContext(), URL)
+		resp, err := sess.HTTPDo(sess.NewContext(), req)
 		if !strings.HasSuffix(err.Error(), "HTTP request failed") {
 			t.Fatal("unexpected error", err)
 		}
-		if rawResp != "" {
-			t.Fatal("expected empty raw response")
+		if resp != nil {
+			t.Fatal("expected nil response")
 		}
 	})
 
@@ -119,17 +105,22 @@ func TestOONIRunFetch(t *testing.T) {
 			Path:   "/",
 		}
 
+		req := &oonimkall.HTTPRequest{
+			Method: "GET",
+			URL:    URL.String(),
+		}
+
 		sess, err := NewSessionForTesting()
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		rawResp, err := sess.OONIRunFetchWithURL(sess.NewContext(), URL)
+		resp, err := sess.HTTPDo(sess.NewContext(), req)
 		if !strings.HasSuffix(err.Error(), "connection_reset") {
 			t.Fatal("unexpected error", err)
 		}
-		if rawResp != "" {
-			t.Fatal("expected empty raw response")
+		if resp != nil {
+			t.Fatal("expected nil response")
 		}
 	})
 
@@ -149,19 +140,22 @@ func TestOONIRunFetch(t *testing.T) {
 		}))
 		defer server.Close()
 
-		URL := runtimex.Try1(url.Parse(server.URL))
+		req := &oonimkall.HTTPRequest{
+			Method: "GET",
+			URL:    server.URL,
+		}
 
 		sess, err := NewSessionForTesting()
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		rawResp, err := sess.OONIRunFetchWithURL(sess.NewContext(), URL)
+		resp, err := sess.HTTPDo(sess.NewContext(), req)
 		if !strings.HasSuffix(err.Error(), "connection_reset") {
 			t.Fatal("unexpected error", err)
 		}
-		if rawResp != "" {
-			t.Fatal("expected empty raw response")
+		if resp != nil {
+			t.Fatal("expected nil response")
 		}
 	})
 }
