@@ -27,7 +27,7 @@ require (
 	github.com/ooni/netem v0.0.0-20240208095707-608dcbcd82b8
 	github.com/ooni/oocrypto v0.5.8
 	github.com/ooni/oohttp v0.6.8
-	github.com/ooni/probe-assets v0.21.0
+	github.com/ooni/probe-assets v0.22.0
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/pion/stun v0.6.1
 	github.com/pkg/errors v0.9.1
