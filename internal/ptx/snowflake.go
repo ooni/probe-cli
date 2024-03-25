@@ -27,36 +27,25 @@ type SnowflakeRendezvousMethod interface {
 // NewSnowflakeRendezvousMethodDomainFronting is a rendezvous method
 // that uses domain fronting to perform the rendezvous.
 func NewSnowflakeRendezvousMethodDomainFronting() SnowflakeRendezvousMethod {
-	return &SnowflakeRendezvousMethodDomainFronting{}
+	return &snowflakeRendezvousMethodDomainFronting{}
 }
 
-type SnowflakeRendezvousMethodDomainFronting struct {
-	URL   string
-	Front string
-}
+type snowflakeRendezvousMethodDomainFronting struct{}
 
-func (d *SnowflakeRendezvousMethodDomainFronting) Name() string {
+func (d *snowflakeRendezvousMethodDomainFronting) Name() string {
 	return "domain_fronting"
 }
 
-func (d *SnowflakeRendezvousMethodDomainFronting) AMPCacheURL() string {
+func (d *snowflakeRendezvousMethodDomainFronting) AMPCacheURL() string {
 	return ""
 }
 
-func (d *SnowflakeRendezvousMethodDomainFronting) BrokerURL() string {
-	if d.URL != "" {
-		return d.URL
-	} else {
-		return "https://1098762253.rsc.cdn77.org/"
-	}
+func (d *snowflakeRendezvousMethodDomainFronting) BrokerURL() string {
+	return "https://1098762253.rsc.cdn77.org/"
 }
 
-func (d *SnowflakeRendezvousMethodDomainFronting) FrontDomain() string {
-	if d.Front != "" {
-		return d.Front
-	} else {
-		return "www.phpmyadmin.net"
-	}
+func (d *snowflakeRendezvousMethodDomainFronting) FrontDomain() string {
+	return "www.phpmyadmin.net"
 }
 
 // NewSnowflakeRendezvousMethodAMP is a rendezvous method that
