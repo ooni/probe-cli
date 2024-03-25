@@ -33,7 +33,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.40.1
 	github.com/rogpeppe/go-internal v1.12.0
-	github.com/rubenv/sql-migrate v1.6.1
+	github.com/rubenv/sql-migrate v1.5.2
 	github.com/schollz/progressbar/v3 v3.14.2
 	github.com/upper/db/v4 v4.7.0
 	gitlab.com/yawning/obfs4.git v0.0.0-20231012084234-c3e2d44b1033
@@ -65,6 +65,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/klauspost/compress v1.17.4 // indirect
 	github.com/libp2p/go-reuseport v0.4.0 // indirect
+	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/mroth/weightedrand v1.0.0 // indirect
 	github.com/onsi/ginkgo/v2 v2.13.2 // indirect
@@ -133,9 +134,9 @@ require (
 	github.com/pion/srtp/v2 v2.0.18 // indirect
 	github.com/pion/turn/v2 v2.1.4 // indirect
 	github.com/pion/webrtc/v3 v3.2.23 // indirect
-	github.com/prometheus/client_golang v1.19.0
+	github.com/prometheus/client_golang v1.17.0
 	github.com/prometheus/client_model v0.5.0 // indirect
-	github.com/prometheus/common v0.48.0 // indirect
+	github.com/prometheus/common v0.45.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/refraction-networking/gotapdance v1.7.10 // indirect
 	github.com/refraction-networking/utls v1.3.3 // indirect
