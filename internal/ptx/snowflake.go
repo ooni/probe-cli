@@ -41,11 +41,11 @@ func (d *snowflakeRendezvousMethodDomainFronting) AMPCacheURL() string {
 }
 
 func (d *snowflakeRendezvousMethodDomainFronting) BrokerURL() string {
-	return "https://snowflake-broker.torproject.net.global.prod.fastly.net/"
+	return "https://1098762253.rsc.cdn77.org/"
 }
 
 func (d *snowflakeRendezvousMethodDomainFronting) FrontDomain() string {
-	return "foursquare.com"
+	return "www.phpmyadmin.net"
 }
 
 // NewSnowflakeRendezvousMethodAMP is a rendezvous method that

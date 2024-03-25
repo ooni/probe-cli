@@ -16,11 +16,11 @@ func TestSnowflakeMethodDomainFronting(t *testing.T) {
 	if meth.AMPCacheURL() != "" {
 		t.Fatal("invalid amp cache URL")
 	}
-	const brokerURL = "https://snowflake-broker.torproject.net.global.prod.fastly.net/"
+	const brokerURL = "https://1098762253.rsc.cdn77.org/"
 	if meth.BrokerURL() != brokerURL {
 		t.Fatal("invalid broker URL")
 	}
-	const frontDomain = "foursquare.com"
+	const frontDomain = "www.phpmyadmin.net"
 	if meth.FrontDomain() != frontDomain {
 		t.Fatal("invalid front domain")
 	}
