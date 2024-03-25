@@ -17,11 +17,11 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/gopacket v1.1.19
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
-	github.com/google/uuid v1.6.0
+	github.com/google/uuid v1.5.0
 	github.com/gorilla/websocket v1.5.1
 	github.com/hexops/gotextdiff v1.0.3
 	github.com/mattn/go-colorable v0.1.13
-	github.com/miekg/dns v1.1.58
+	github.com/miekg/dns v1.1.57
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.7.1
 	github.com/ooni/netem v0.0.0-20240208095707-608dcbcd82b8
@@ -32,9 +32,9 @@ require (
 	github.com/pion/stun v0.6.1
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.40.1
-	github.com/rogpeppe/go-internal v1.12.0
-	github.com/rubenv/sql-migrate v1.6.1
-	github.com/schollz/progressbar/v3 v3.14.2
+	github.com/rogpeppe/go-internal v1.11.0
+	github.com/rubenv/sql-migrate v1.5.2
+	github.com/schollz/progressbar/v3 v3.14.1
 	github.com/upper/db/v4 v4.7.0
 	gitlab.com/yawning/obfs4.git v0.0.0-20231012084234-c3e2d44b1033
 	gitlab.com/yawning/utls.git v0.0.12-1
@@ -65,6 +65,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/klauspost/compress v1.17.4 // indirect
 	github.com/libp2p/go-reuseport v0.4.0 // indirect
+	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/mroth/weightedrand v1.0.0 // indirect
 	github.com/onsi/ginkgo/v2 v2.13.2 // indirect
@@ -76,7 +77,7 @@ require (
 	github.com/refraction-networking/conjure v0.7.10 // indirect
 	github.com/refraction-networking/ed25519 v0.1.2 // indirect
 	github.com/refraction-networking/obfs4 v0.1.2 // indirect
-	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/segmentio/fasthash v1.0.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.8.4 // indirect
@@ -116,7 +117,7 @@ require (
 	github.com/klauspost/cpuid/v2 v2.2.6 // indirect
 	github.com/klauspost/reedsolomon v1.11.8 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mattn/go-sqlite3 v1.14.22
+	github.com/mattn/go-sqlite3 v1.14.18
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/oschwald/maxminddb-golang v1.12.0
 	github.com/pion/datachannel v1.5.5 // indirect
@@ -133,9 +134,9 @@ require (
 	github.com/pion/srtp/v2 v2.0.18 // indirect
 	github.com/pion/turn/v2 v2.1.4 // indirect
 	github.com/pion/webrtc/v3 v3.2.23 // indirect
-	github.com/prometheus/client_golang v1.19.0
+	github.com/prometheus/client_golang v1.17.0
 	github.com/prometheus/client_model v0.5.0 // indirect
-	github.com/prometheus/common v0.48.0 // indirect
+	github.com/prometheus/common v0.45.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/refraction-networking/gotapdance v1.7.10 // indirect
 	github.com/refraction-networking/utls v1.3.3 // indirect
@@ -154,6 +155,6 @@ require (
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/term v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	golang.org/x/tools v0.17.0 // indirect
+	golang.org/x/tools v0.16.1 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 )
