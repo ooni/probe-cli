@@ -3,7 +3,7 @@
 #
 # Note: The Dockerfile needs to reside in the root of the repo, so that we can
 # copy files into the docker build context.
-FROM golang:1.20.12-bullseye as builder
+FROM golang:1.20.14-bullseye as builder
 ARG BRANCH_NAME=master
 
 WORKDIR /build
@@ -13,7 +13,7 @@ COPY . .
 RUN go run ./internal/cmd/buildtool oohelperd build
 
 ## Image running on the host
-FROM golang:1.20.12-bullseye as runner
+FROM golang:1.20.14-bullseye as runner
 
 WORKDIR /app
 

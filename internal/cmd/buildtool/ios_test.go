@@ -349,12 +349,12 @@ func TestIOSBuildCdepsOpenSSL(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.2.0.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.2.1.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-3.2.0.tar.gz",
+				"tar", "-xf", "openssl-3.2.1.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -399,12 +399,12 @@ func TestIOSBuildCdepsOpenSSL(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.2.0.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.2.1.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-3.2.0.tar.gz",
+				"tar", "-xf", "openssl-3.2.1.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -449,12 +449,12 @@ func TestIOSBuildCdepsOpenSSL(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.2.0.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.2.1.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-3.2.0.tar.gz",
+				"tar", "-xf", "openssl-3.2.1.tar.gz",
 			},
 		}, {
 			Env: []string{},

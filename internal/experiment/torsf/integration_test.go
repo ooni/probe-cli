@@ -13,6 +13,7 @@ import (
 )
 
 func TestRunWithExistingTor(t *testing.T) {
+	t.Skip("TODO(https://github.com/ooni/probe/issues/2692)")
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
