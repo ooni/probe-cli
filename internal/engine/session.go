@@ -376,10 +376,10 @@ func (s *Session) FetchTorTargets(
 
 // FetchOpenVPNConfig fetches openvpn config from the API.
 func (s *Session) FetchOpenVPNConfig(
-	ctx context.Context, cc string) (map[string]model.OOAPIOpenVPNConfig, error) {
+	ctx context.Context, cc string) (model.OOAPIVPNProviderConfig, error) {
 	clnt, err := s.NewOrchestraClient(ctx)
 	if err != nil {
-		return nil, err
+		return model.OOAPIVPNProviderConfig{}, err
 	}
 	return clnt.FetchOpenVPNConfig(ctx, cc)
 }

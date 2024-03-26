@@ -224,36 +224,39 @@ func (m *Measurer) getCredentialsFromOptionsOrAPI(
 
 	// No options passed, let's hit OONI API for credential distribution.
 	// TODO(ainghazal): cache credentials fetch?
-	configFromAPI, err := m.fetchProviderCredentials(ctx, sess)
+
+	apiCreds, err := m.fetchProviderCredentials(ctx, sess)
+	// TODO(ainghazal): need to validate
+
 	if err != nil {
 		sess.Logger().Warnf("Error fetching credentials from API: %s", err.Error())
 		return nil, err
 	}
-	apiCreds, ok := configFromAPI[provider]
-	if ok {
-		sess.Logger().Infof("Got credentials from provider: %s", provider)
+	sess.Logger().Infof("Got credentials from provider: %s", provider)
 
-		ca, err := extractBase64Blob(apiCreds.CA)
-		if err == nil {
-			creds.CA = []byte(ca)
-		}
-		cert, err := extractBase64Blob(apiCreds.Cert)
-		if err == nil {
-			creds.Cert = []byte(cert)
-		}
-		key, err := extractBase64Blob(apiCreds.Key)
-		if err == nil {
-			creds.Key = []byte(key)
-		}
+	ca, err := extractBase64Blob(apiCreds.Config.CA)
+	if err != nil {
+		return nil, err
 	}
+	creds.CA = []byte(ca)
+
+	cert, err := extractBase64Blob(apiCreds.Config.Cert)
+	if err != nil {
+		return nil, err
+	}
+	creds.Cert = []byte(cert)
+
+	key, err := extractBase64Blob(apiCreds.Config.Key)
+	if err != nil {
+		return nil, err
+	}
+	creds.Key = []byte(key)
 
 	return creds, nil
 }
 
 // connectAndHandshake dials a connection and attempts an OpenVPN handshake using that dialer.
-func (m *Measurer) connectAndHandshake(
-	ctx context.Context, index int64,
-	zeroTime time.Time, sess model.ExperimentSession, endpoint *endpoint) (*SingleConnection, error) {
+func (m *Measurer) connectAndHandshake(ctx context.Context, index int64, zeroTime time.Time, sess model.ExperimentSession, endpoint *endpoint) (*SingleConnection, error) {
 
 	logger := sess.Logger()
 
@@ -327,7 +330,7 @@ func (m *Measurer) connectAndHandshake(
 	}, nil
 }
 
-func (m *Measurer) fetchProviderCredentials(ctx context.Context, sess model.ExperimentSession) (map[string]model.OOAPIOpenVPNConfig, error) {
+func (m *Measurer) fetchProviderCredentials(ctx context.Context, sess model.ExperimentSession) (model.OOAPIVPNProviderConfig, error) {
 	// TODO do pass country code, can be useful to orchestrate campaigns specific to areas
 	return sess.FetchOpenVPNConfig(ctx, "XX")
 }

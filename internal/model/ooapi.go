@@ -99,26 +99,32 @@ type OOAPICheckReportIDResponse struct {
 	V     int64  `json:"v"`
 }
 
-// OOAPIOpenVPNConfig is a minimal valid configuration subset for the openvpn experiment; at the moment it provides
+// OOAPIVPNProviderConfig is a minimal valid configuration subset for the openvpn experiment; at the moment it provides
 // only credentials valid for endpoints in a provider.
-type OOAPIOpenVPNConfig struct {
+type OOAPIVPNProviderConfig struct {
 	// Provider is the label for this provider.
 	Provider string `json:"provider,omitempty"`
 
-	// CA is the Certificate Authority for the endpoints by this provider.
-	CA string `json:"ca"`
+	// Config is the provider-specific VPN Config.
+	Config struct {
+		// CA is the Certificate Authority for the endpoints by this provider.
+		CA string `json:"ca"`
 
-	// Cert is a valid certificate, for providers that use x509 certificate authentication.
-	Cert string `json:"cert,omitempty"`
+		// Cert is a valid certificate, for providers that use x509 certificate authentication.
+		Cert string `json:"cert,omitempty"`
 
-	// Key is a valid key, for providers that use x509 certificate authentication.
-	Key string `json:"key,omitempty"`
+		// Key is a valid key, for providers that use x509 certificate authentication.
+		Key string `json:"key,omitempty"`
 
-	// Username is a valid username, for providers that use password authentication.
-	Username string `json:"username,omitempty"`
+		// Username is a valid username, for providers that use password authentication.
+		Username string `json:"username,omitempty"`
 
-	// Password is a valid password, for providers that use password authentication.
-	Password string `json:"password,omitempty"`
+		// Password is a valid password, for providers that use password authentication.
+		Password string `json:"password,omitempty"`
+	} `json:"config"`
+
+	// DateUpdated is when this credential was last updated in the server database.
+	DateUpdated time.Time `json:"date_updated"`
 }
 
 // OOAPIService describes a backend service.
