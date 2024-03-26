@@ -9,16 +9,16 @@ import (
 )
 
 // FetchOpenVPNConfig returns valid configuration for the openvpn experiment.
-func (c Client) FetchOpenVPNConfig(ctx context.Context, cc string) (result map[string]model.OOAPIOpenVPNConfig, err error) {
+func (c Client) FetchOpenVPNConfig(ctx context.Context, cc string) (result model.OOAPIVPNProviderConfig, err error) {
 	_, auth, err := c.GetCredsAndAuth()
 	if err != nil {
-		return nil, err
+		return model.OOAPIVPNProviderConfig{}, err
 	}
 	s := fmt.Sprintf("Bearer %s", auth.Token)
 	client := c.APIClientTemplate.BuildWithAuthorization(s)
 	query := url.Values{}
 	query.Add("country_code", cc)
 	err = client.GetJSONWithQuery(
-		ctx, "/api/v1/openvpn-config", query, &result)
+		ctx, "/api/v2/ooniprobe/vpn-config/riseup/", query, &result)
 	return
 }
