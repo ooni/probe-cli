@@ -223,9 +223,7 @@ func (m *Measurer) getCredentialsFromOptionsOrAPI(
 	}
 
 	// No options passed, let's hit OONI API for credential distribution.
-	// TODO(ainghazal): cache credentials fetch?
-
-	apiCreds, err := m.fetchProviderCredentials(ctx, sess)
+	apiCreds, err := m.fetchProviderCredentials(ctx, sess, provider)
 	// TODO(ainghazal): need to validate
 
 	if err != nil {
@@ -331,11 +329,14 @@ func (m *Measurer) connectAndHandshake(ctx context.Context, index int64, zeroTim
 }
 
 // TODO: get cached from session instead of fetching every time
-func (m *Measurer) fetchProviderCredentials(ctx context.Context, sess model.ExperimentSession) (model.OOAPIVPNProviderConfig, error) {
-	// TODO do pass country code, can be useful to orchestrate campaigns specific to areas
-	config, err := sess.FetchOpenVPNConfig(ctx, "XX")
+func (m *Measurer) fetchProviderCredentials(
+	ctx context.Context,
+	sess model.ExperimentSession,
+	provider string) (*model.OOAPIVPNProviderConfig, error) {
+	// TODO(ainghazal): do pass country code, can be useful to orchestrate campaigns specific to areas
+	config, err := sess.FetchOpenVPNConfig(ctx, provider, "XX")
 	if err != nil {
-		return model.OOAPIVPNProviderConfig{}, err
+		return &model.OOAPIVPNProviderConfig{}, err
 	}
-	return config["riseup"], nil
+	return config, nil
 }

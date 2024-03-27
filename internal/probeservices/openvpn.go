@@ -9,26 +9,23 @@ import (
 )
 
 // FetchOpenVPNConfig returns valid configuration for the openvpn experiment.
-func (c Client) FetchOpenVPNConfig(ctx context.Context, cc string) (map[string]model.OOAPIVPNProviderConfig, error) {
-	fmt.Println("FETCHING OPENVPN CONFIG>>>>")
+// It accepts the provider label, and the country code for the probe, in case the API wants to
+// return different targets to us depending on where we are located.
+func (c Client) FetchOpenVPNConfig(ctx context.Context, provider, cc string) (result model.OOAPIVPNProviderConfig, err error) {
 	_, auth, err := c.GetCredsAndAuth()
 	if err != nil {
-		return nil, err
+		return model.OOAPIVPNProviderConfig{}, err
 	}
 	s := fmt.Sprintf("Bearer %s", auth.Token)
 	client := c.APIClientTemplate.BuildWithAuthorization(s)
 	query := url.Values{}
 	query.Add("country_code", cc)
 
-	result := model.OOAPIVPNProviderConfig{}
-
 	err = client.GetJSONWithQuery(
-		ctx, "/api/v2/ooniprobe/vpn-config/riseup/", query, &result,
+		ctx,
+		fmt.Sprintf("/api/v2/ooniprobe/vpn-config/%s/", provider),
+		query,
+		&result,
 	)
-
-	allProviders := map[string]model.OOAPIVPNProviderConfig{
-		"riseup": result,
-	}
-
-	return allProviders, err
+	return
 }
