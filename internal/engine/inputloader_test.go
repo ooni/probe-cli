@@ -448,6 +448,10 @@ type InputLoaderMockableSession struct {
 	// be nil when Error is not-nil.
 	Output *model.OOAPICheckInResult
 
+	// FetchOpenVPNConfigOutput contains the output of FetchOpenVPNConfig.
+	// It should be nil when Error is non-nil.
+	FetchOpenVPNConfigOutput *model.OOAPIVPNProviderConfig
+
 	// Error is the error to be returned by CheckIn. It
 	// should be nil when Output is not-nil.
 	Error error
@@ -459,7 +463,16 @@ func (sess *InputLoaderMockableSession) CheckIn(
 	if sess.Output == nil && sess.Error == nil {
 		return nil, errors.New("both Output and Error are nil")
 	}
-	return sess.Output, sess.Error
+	return sess.CheckinOutput, sess.Error
+}
+
+// FetchOpenVPNConfig implements InputLoaderSession.FetchOpenVPNConfig.
+func (sess *InputLoaderMockableSession) FetchOpenVPNConfig(
+	ctx context.Context, provider, cc string) (*model.OOAPIVPNProviderConfig, error) {
+	if sess.FetchOpenVPNConfigOutput == nil && sess.Error == nil {
+		return nil, errors.New("both Output and Error are nil")
+	}
+	return sess.FetchOpenVPNConfigOutput, sess.Error
 }
 
 func TestInputLoaderCheckInFailure(t *testing.T) {

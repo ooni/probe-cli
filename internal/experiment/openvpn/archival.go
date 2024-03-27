@@ -1,7 +1,5 @@
 package openvpn
 
-import "time"
-
 // TODO(ainghazal): move to ooni internal archival package when consolidated.
 
 // OpenVPNOptions is a subset of [vpnconfig.OpenVPNOptions] that we want to include
@@ -22,7 +20,6 @@ type ArchivalOpenVPNHandshakeResult struct {
 	Provider       string                       `json:"provider"`
 	OpenVPNOptions OpenVPNOptions               `json:"openvpn_options"`
 	Status         ArchivalOpenVPNConnectStatus `json:"status"`
-	StartTime      time.Time                    `json:"handshake_start_time"`
 
 	// T0 can differ from StartTime because for TCP we take T0 *after* dialing has successfully completed.
 	// This might be counterintuitive, review.

@@ -100,7 +100,7 @@ type OOAPICheckReportIDResponse struct {
 }
 
 // OOAPIVPNProviderConfig is a minimal valid configuration subset for the openvpn experiment; at the moment it provides
-// only credentials valid for endpoints in a provider.
+// credentials valid for endpoints in a provider, and a list of inputs to be tested on this provider.
 type OOAPIVPNProviderConfig struct {
 	// Provider is the label for this provider.
 	Provider string `json:"provider,omitempty"`
@@ -126,7 +126,7 @@ type OOAPIVPNProviderConfig struct {
 	// Inputs is an array of valid endpoints for this provider.
 	Inputs []string
 
-	// DateUpdated is when this credential was last updated in the server database.
+	// DateUpdated is when the credential set was last updated in the server database.
 	DateUpdated time.Time `json:"date_updated"`
 }
 
