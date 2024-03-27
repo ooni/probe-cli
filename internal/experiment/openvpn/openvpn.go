@@ -330,7 +330,12 @@ func (m *Measurer) connectAndHandshake(ctx context.Context, index int64, zeroTim
 	}, nil
 }
 
+// TODO: get cached from session instead of fetching every time
 func (m *Measurer) fetchProviderCredentials(ctx context.Context, sess model.ExperimentSession) (model.OOAPIVPNProviderConfig, error) {
 	// TODO do pass country code, can be useful to orchestrate campaigns specific to areas
-	return sess.FetchOpenVPNConfig(ctx, "XX")
+	config, err := sess.FetchOpenVPNConfig(ctx, "XX")
+	if err != nil {
+		return model.OOAPIVPNProviderConfig{}, err
+	}
+	return config["riseup"], nil
 }

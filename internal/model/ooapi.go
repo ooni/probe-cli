@@ -106,7 +106,7 @@ type OOAPIVPNProviderConfig struct {
 	Provider string `json:"provider,omitempty"`
 
 	// Config is the provider-specific VPN Config.
-	Config struct {
+	Config *struct {
 		// CA is the Certificate Authority for the endpoints by this provider.
 		CA string `json:"ca"`
 
@@ -122,6 +122,9 @@ type OOAPIVPNProviderConfig struct {
 		// Password is a valid password, for providers that use password authentication.
 		Password string `json:"password,omitempty"`
 	} `json:"config"`
+
+	// Inputs is an array of valid endpoints for this provider.
+	Inputs []string
 
 	// DateUpdated is when this credential was last updated in the server database.
 	DateUpdated time.Time `json:"date_updated"`
