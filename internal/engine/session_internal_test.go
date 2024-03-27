@@ -253,6 +253,10 @@ func TestSessionMaybeLookupLocationContextLookupLocationContextFailure(t *testin
 	}
 }
 
+func TestSessionFetchOpenVPNConfigWithCancelledContext(t *testing.T) {
+	panic("TODO")
+}
+
 func TestSessionFetchTorTargetsWithCancelledContext(t *testing.T) {
 	sess := &Session{}
 	ctx, cancel := context.WithCancel(context.Background())

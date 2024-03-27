@@ -18,6 +18,9 @@ type Session struct {
 	MockFetchTorTargets func(
 		ctx context.Context, cc string) (map[string]model.OOAPITorTarget, error)
 
+	MockFetchOpenVPNConfig func(
+		ctx context.Context, provider, cc string) (*model.OOAPIVPNProviderConfig, error)
+
 	MockKeyValueStore func() model.KeyValueStore
 
 	MockLogger func() model.Logger
@@ -68,6 +71,11 @@ func (sess *Session) DefaultHTTPClient() model.HTTPClient {
 
 func (sess *Session) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
 	return sess.MockFetchPsiphonConfig(ctx)
+}
+
+func (sess *Session) FetchOpenVPNConfig(
+	ctx context.Context, provider, cc string) (*model.OOAPIVPNProviderConfig, error) {
+	return sess.MockFetchOpenVPNConfig(ctx, provider, cc)
 }
 
 func (sess *Session) FetchTorTargets(

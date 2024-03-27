@@ -26,6 +26,7 @@ type Session struct {
 	MockableFetchPsiphonConfigErr    error
 	MockableFetchTorTargetsResult    map[string]model.OOAPITorTarget
 	MockableFetchTorTargetsErr       error
+	MockableFetchOpenVPNConfigErr    error
 	MockableCheckInInfo              *model.OOAPICheckInResultNettests
 	MockableCheckInErr               error
 	MockableResolverIP               string
@@ -34,6 +35,7 @@ type Session struct {
 	MockableTempDir                  string
 	MockableTorArgs                  []string
 	MockableTorBinary                string
+	MockableOpenVPNConfig            *model.OOAPIVPNProviderConfig
 	MockableTunnelDir                string
 	MockableUserAgent                string
 }
@@ -58,6 +60,12 @@ func (sess *Session) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
 func (sess *Session) FetchTorTargets(
 	ctx context.Context, cc string) (map[string]model.OOAPITorTarget, error) {
 	return sess.MockableFetchTorTargetsResult, sess.MockableFetchTorTargetsErr
+}
+
+// FetchOpenVPNConfig implements ExperimentSession.FetchOpenVPNConfig
+func (sess *Session) FetchOpenVPNConfig(
+	ctx context.Context, provider, cc string) (*model.OOAPIVPNProviderConfig, error) {
+	return sess.MockableOpenVPNConfig, sess.MockableFetchOpenVPNConfigErr
 }
 
 // KeyValueStore returns the configured key-value store.
