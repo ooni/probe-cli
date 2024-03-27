@@ -115,6 +115,8 @@ func (e *endpoint) String() string {
 }
 
 // AsInputURI is a string representation of this endpoint. It contains more information than the endpoint itself.
+// TODO: redo with latest format
+// openvpn://provider.corp/?address=1.1.1.1:1194&transport=tcp
 func (e *endpoint) AsInputURI() string {
 	provider := e.Provider
 	if provider == "" {

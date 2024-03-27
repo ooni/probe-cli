@@ -19,6 +19,6 @@ func init() {
 		config:           &openvpn.Config{},
 		enabledByDefault: false,
 		interruptible:    true,
-		inputPolicy:      model.InputOptional,
+		inputPolicy:      model.InputOrQueryBackend,
 	}
 }
