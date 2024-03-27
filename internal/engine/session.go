@@ -376,24 +376,23 @@ func (s *Session) FetchTorTargets(
 	return clnt.FetchTorTargets(ctx, cc)
 }
 
-// FetchOpenVPNConfig fetches openvpn config from the API.
+// FetchOpenVPNConfig fetches openvpn config from the API if it's not found in the
+// internal cache. We do this to avoid hitting the API for every input.
 func (s *Session) FetchOpenVPNConfig(
-	ctx context.Context, cc string) (map[string]model.OOAPIVPNProviderConfig, error) {
-	// TODO: need to cache only the requested provider, since it's different calls to the API.
-	if len(s.vpnConfig) > 0 {
-		return s.vpnConfig, nil
+	ctx context.Context, provider, cc string) (*model.OOAPIVPNProviderConfig, error) {
+	if config, ok := s.vpnConfig[provider]; ok {
+		return &config, nil
 	}
-
 	clnt, err := s.NewOrchestraClient(ctx)
 	if err != nil {
-		return nil, err
+		return &model.OOAPIVPNProviderConfig{}, err
 	}
-	config, err := clnt.FetchOpenVPNConfig(ctx, cc)
+	config, err := clnt.FetchOpenVPNConfig(ctx, provider, cc)
 	if err != nil {
-		return nil, err
+		return &model.OOAPIVPNProviderConfig{}, err
 	}
-	s.vpnConfig = config
-	return config, nil
+	s.vpnConfig[provider] = config
+	return &config, nil
 }
 
 // KeyValueStore returns the configured key-value store.

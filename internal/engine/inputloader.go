@@ -30,7 +30,7 @@ type InputLoaderSession interface {
 	CheckIn(ctx context.Context,
 		config *model.OOAPICheckInConfig) (*model.OOAPICheckInResultNettests, error)
 	FetchOpenVPNConfig(ctx context.Context,
-		cc string) (map[string]model.OOAPIVPNProviderConfig, error)
+		provider, cc string) (*model.OOAPIVPNProviderConfig, error)
 }
 
 // InputLoaderLogger is the logger according to an InputLoader.
@@ -330,29 +330,33 @@ func (il *InputLoader) loadRemoteWebConnectivity(ctx context.Context) ([]model.O
 	return reply.WebConnectivity.URLs, nil
 }
 
+// These are the providers that are enabled in the API.
+var openvpnDefaultProviders = []string{
+	"riseup",
+}
+
 // loadRemoteOpenVPN loads openvpn inputs from a remote source.
 func (il *InputLoader) loadRemoteOpenVPN(ctx context.Context) ([]model.OOAPIURLInfo, error) {
-	reply, err := il.vpnConfig(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	// VPN Inputs do not match exactly the semantics expected from [model.OOAPIURLInfo],
 	// since OOAPIURLInfo is oriented twards webconnectivity,
 	// but we force VPN targets in the URL and ignore all the other fields.
 	urls := make([]model.OOAPIURLInfo, 0)
 
-	// here we're just collecting all the inputs. we also cache the configs so that
-	// each experiment run can access the credentials for a given provider.
-	for _, config := range reply {
-		for _, input := range config.Inputs {
+	for _, provider := range openvpnDefaultProviders {
+		reply, err := il.vpnConfig(ctx, provider)
+		if err != nil {
+			return nil, err
+		}
+		// here we're just collecting all the inputs. we also cache the configs so that
+		// each experiment run can access the credentials for a given provider.
+		for _, input := range reply.Inputs {
 			urls = append(urls, model.OOAPIURLInfo{URL: input})
 		}
 	}
+
 	if len(urls) == 0 {
 		return nil, ErrNoURLsReturned
 	}
-	// TODO(ainghazal): persist config for all providers
 	return urls, nil
 }
 
@@ -375,8 +379,8 @@ func (il *InputLoader) checkIn(
 }
 
 // vpnConfig fetches vpn information for the configured providers
-func (il *InputLoader) vpnConfig(ctx context.Context) (map[string]model.OOAPIVPNProviderConfig, error) {
-	reply, err := il.Session.FetchOpenVPNConfig(ctx, "XX")
+func (il *InputLoader) vpnConfig(ctx context.Context, provider string) (*model.OOAPIVPNProviderConfig, error) {
+	reply, err := il.Session.FetchOpenVPNConfig(ctx, provider, "XX")
 	if err != nil {
 		return nil, err
 	}
