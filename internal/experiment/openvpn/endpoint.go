@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"net"
 	"net/url"
 	"strings"
 
@@ -60,42 +61,36 @@ func newEndpointFromInputString(uri string) (*endpoint, error) {
 		return nil, fmt.Errorf("%w: unknown scheme: %s", ErrInvalidInput, parsedURL.Scheme)
 	}
 
-	host := parsedURL.Hostname()
-	if host == "" {
-		return nil, fmt.Errorf("%w: expected host: %s", ErrInvalidInput, parsedURL.Host)
-	}
-
-	port := parsedURL.Port()
-	if port == "" {
-		return nil, fmt.Errorf("%w: expected port: %s", ErrInvalidInput, parsedURL.Port())
-	}
-
-	pathParts := strings.Split(parsedURL.Path, "/")
-	if len(pathParts) != 3 {
-		return nil, fmt.Errorf("%w: invalid path: %s (%d)", ErrInvalidInput, pathParts, len(pathParts))
-	}
-	transport := pathParts[1]
-	if transport != "tcp" && transport != "udp" {
-		return nil, fmt.Errorf("%w: invalid transport: %s", ErrInvalidInput, transport)
-	}
-
-	params := parsedURL.Query()
-	provider := params.Get("provider")
-
+	provider := strings.TrimSuffix(parsedURL.Hostname(), ".corp")
 	if provider == "" {
-		return nil, fmt.Errorf("%w: please specify a provider as part of the input", ErrInvalidInput)
+		return nil, fmt.Errorf("%w: expected provider as host: %s", ErrInvalidInput, parsedURL.Host)
 	}
-
 	if provider != "riseup" {
 		// because we are hardcoding at the moment. figure out a way to pass info for
 		// arbitrary providers as options instead
 		return nil, fmt.Errorf("%w: unknown provider: %s", ErrInvalidInput, provider)
 	}
 
+	params := parsedURL.Query()
+
+	transport := params.Get("transport")
+	if transport != "tcp" && transport != "udp" {
+		return nil, fmt.Errorf("%w: invalid transport: %s", ErrInvalidInput, transport)
+	}
+
+	address := params.Get("address")
+	if provider == "" {
+		return nil, fmt.Errorf("%w: please specify a provider as part of the input", ErrInvalidInput)
+	}
+	ip, port, err := net.SplitHostPort(address)
+	if err != nil {
+		return nil, fmt.Errorf("%w: cannot split ip:port", ErrInvalidInput)
+	}
+
 	endpoint := &endpoint{
-		IPAddr:      host,
-		Obfuscation: obfuscation,
+		IPAddr:      ip,
 		Port:        port,
+		Obfuscation: obfuscation,
 		Protocol:    "openvpn",
 		Provider:    provider,
 		Transport:   transport,
