@@ -29,6 +29,8 @@ var (
 type InputLoaderSession interface {
 	CheckIn(ctx context.Context,
 		config *model.OOAPICheckInConfig) (*model.OOAPICheckInResultNettests, error)
+	FetchOpenVPNConfig(ctx context.Context,
+		provider, cc string) (*model.OOAPIVPNProviderConfig, error)
 }
 
 // InputLoaderLogger is the logger according to an InputLoader.
@@ -300,6 +302,16 @@ func (il *InputLoader) readfile(filepath string, open inputLoaderOpenFn) ([]mode
 
 // loadRemote loads inputs from a remote source.
 func (il *InputLoader) loadRemote(ctx context.Context) ([]model.OOAPIURLInfo, error) {
+	switch registry.CanonicalizeExperimentName(il.ExperimentName) {
+	case "openvpn":
+		return il.loadRemoteOpenVPN(ctx)
+	default:
+		return il.loadRemoteWebConnectivity(ctx)
+	}
+}
+
+// loadRemoteWebConnectivity loads webconnectivity inputs from a remote source.
+func (il *InputLoader) loadRemoteWebConnectivity(ctx context.Context) ([]model.OOAPIURLInfo, error) {
 	config := il.CheckInConfig
 	if config == nil {
 		// Note: Session.CheckIn documentation says it will fill in
@@ -318,6 +330,36 @@ func (il *InputLoader) loadRemote(ctx context.Context) ([]model.OOAPIURLInfo, er
 	return reply.WebConnectivity.URLs, nil
 }
 
+// These are the providers that are enabled in the API.
+var openvpnDefaultProviders = []string{
+	"riseup",
+}
+
+// loadRemoteOpenVPN loads openvpn inputs from a remote source.
+func (il *InputLoader) loadRemoteOpenVPN(ctx context.Context) ([]model.OOAPIURLInfo, error) {
+	// VPN Inputs do not match exactly the semantics expected from [model.OOAPIURLInfo],
+	// since OOAPIURLInfo is oriented twards webconnectivity,
+	// but we force VPN targets in the URL and ignore all the other fields.
+	urls := make([]model.OOAPIURLInfo, 0)
+
+	for _, provider := range openvpnDefaultProviders {
+		reply, err := il.vpnConfig(ctx, provider)
+		if err != nil {
+			return nil, err
+		}
+		// here we're just collecting all the inputs. we also cache the configs so that
+		// each experiment run can access the credentials for a given provider.
+		for _, input := range reply.Inputs {
+			urls = append(urls, model.OOAPIURLInfo{URL: input})
+		}
+	}
+
+	if len(urls) == 0 {
+		return nil, ErrNoURLsReturned
+	}
+	return urls, nil
+}
+
 // checkIn executes the check-in and filters the returned URLs to exclude
 // the URLs that are not part of the requested categories. This is done for
 // robustness, just in case we or the API do something wrong.
@@ -332,6 +374,15 @@ func (il *InputLoader) checkIn(
 		reply.WebConnectivity.URLs = il.preventMistakes(
 			reply.WebConnectivity.URLs, config.WebConnectivity.CategoryCodes,
 		)
+	}
+	return reply, nil
+}
+
+// vpnConfig fetches vpn information for the configured providers
+func (il *InputLoader) vpnConfig(ctx context.Context, provider string) (*model.OOAPIVPNProviderConfig, error) {
+	reply, err := il.Session.FetchOpenVPNConfig(ctx, provider, "XX")
+	if err != nil {
+		return nil, err
 	}
 	return reply, nil
 }
