@@ -67,6 +67,7 @@ type Session struct {
 	softwareName             string
 	softwareVersion          string
 	tempDir                  string
+	vpnConfig                map[string]model.OOAPIVPNProviderConfig
 
 	// closeOnce allows us to call Close just once.
 	closeOnce sync.Once
@@ -178,6 +179,7 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 		torArgs:                 config.TorArgs,
 		torBinary:               config.TorBinary,
 		tunnelDir:               config.TunnelDir,
+		vpnConfig:               make(map[string]model.OOAPIVPNProviderConfig),
 	}
 	proxyURL := config.ProxyURL
 	if proxyURL != nil {
@@ -377,11 +379,21 @@ func (s *Session) FetchTorTargets(
 // FetchOpenVPNConfig fetches openvpn config from the API.
 func (s *Session) FetchOpenVPNConfig(
 	ctx context.Context, cc string) (map[string]model.OOAPIVPNProviderConfig, error) {
+	// TODO: need to cache only the requested provider, since it's different calls to the API.
+	if len(s.vpnConfig) > 0 {
+		return s.vpnConfig, nil
+	}
+
 	clnt, err := s.NewOrchestraClient(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return clnt.FetchOpenVPNConfig(ctx, cc)
+	config, err := clnt.FetchOpenVPNConfig(ctx, cc)
+	if err != nil {
+		return nil, err
+	}
+	s.vpnConfig = config
+	return config, nil
 }
 
 // KeyValueStore returns the configured key-value store.

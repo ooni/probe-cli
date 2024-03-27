@@ -10,6 +10,7 @@ import (
 
 // FetchOpenVPNConfig returns valid configuration for the openvpn experiment.
 func (c Client) FetchOpenVPNConfig(ctx context.Context, cc string) (map[string]model.OOAPIVPNProviderConfig, error) {
+	fmt.Println("FETCHING OPENVPN CONFIG>>>>")
 	_, auth, err := c.GetCredsAndAuth()
 	if err != nil {
 		return nil, err

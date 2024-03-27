@@ -66,8 +66,8 @@ func newEndpointFromInputString(uri string) (*endpoint, error) {
 		return nil, fmt.Errorf("%w: expected provider as host: %s", ErrInvalidInput, parsedURL.Host)
 	}
 	if provider != "riseup" {
-		// because we are hardcoding at the moment. figure out a way to pass info for
-		// arbitrary providers as options instead
+		// I am hardcoding a single provider at the moment.
+		// I need to figure out a way to pass info for arbitrary providers as options instead.
 		return nil, fmt.Errorf("%w: unknown provider: %s", ErrInvalidInput, provider)
 	}
 
@@ -98,7 +98,8 @@ func newEndpointFromInputString(uri string) (*endpoint, error) {
 	return endpoint, nil
 }
 
-// String implements Stringer. This is a subset of the input URI scheme.
+// String implements Stringer. This is a compact representation of the endpoint,
+// which differs from the input URI scheme.
 func (e *endpoint) String() string {
 	var proto string
 	if e.Obfuscation == "obfs4" {
@@ -109,16 +110,23 @@ func (e *endpoint) String() string {
 	return fmt.Sprintf("%s://%s:%s/%s", proto, e.IPAddr, e.Port, e.Transport)
 }
 
-// AsInputURI is a string representation of this endpoint. It contains more information than the endpoint itself.
-// TODO: redo with latest format
-// openvpn://provider.corp/?address=1.1.1.1:1194&transport=tcp
+// AsInputURI is a string representation of this endpoint, as used in the experiment input URI format.
 func (e *endpoint) AsInputURI() string {
+	var proto string
+	if e.Obfuscation == "obfs4" {
+		proto = e.Protocol + "+obfs4"
+	} else {
+		proto = e.Protocol
+	}
+
 	provider := e.Provider
 	if provider == "" {
 		provider = "unknown"
 	}
-	i := fmt.Sprintf("%s/?provider=%s", e.String(), provider)
-	return i
+
+	return fmt.Sprintf(
+		"%s://%s.corp/?address=%s:%s&transport=%s",
+		proto, provider, e.IPAddr, e.Port, e.Transport)
 }
 
 // endpointList is a list of endpoints.
@@ -128,6 +136,7 @@ type endpointList []*endpoint
 // This is a hardcoded list for now, but the idea is that we can receive this from the check-in api in the future.
 // In any case, having hardcoded endpoints is good as a fallback for the cases in which we cannot contact
 // OONI's backend.
+// TODO: hardcoded, setup as backup if we cannot contact API.
 var allEndpoints = endpointList{
 	{
 		Provider:  "riseup",
