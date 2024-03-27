@@ -190,6 +190,7 @@ func (m *Measurer) getCredentialsFromOptionsOrAPI(
 	ctx context.Context,
 	sess model.ExperimentSession,
 	provider string) (*vpnconfig.OpenVPNOptions, error) {
+
 	// TODO(ainghazal): Ideally, we need to know which authentication methods each provider uses, and this is
 	// information that the experiment could hardcode. Sticking to Certificate-based auth for riseupvpn.
 
@@ -200,6 +201,7 @@ func (m *Measurer) getCredentialsFromOptionsOrAPI(
 
 	if cfg.SafeCA != "" && cfg.SafeCert != "" && cfg.SafeKey != "" {
 		// We override authentication info with what user provided in options.
+		// We expect the options to be encoded in base64 so that a single optin can be safely represented as command line options.
 		ca, err := extractBase64Blob(cfg.SafeCA)
 		if err != nil {
 			return nil, err
@@ -223,8 +225,9 @@ func (m *Measurer) getCredentialsFromOptionsOrAPI(
 	}
 
 	// No options passed, let's hit OONI API for credential distribution.
+	// We expect the credentials from the API response to be encoded as the direct PEM serialization.
 	apiCreds, err := m.fetchProviderCredentials(ctx, sess, provider)
-	// TODO(ainghazal): need to validate
+	// TODO(ainghazal): validate
 
 	if err != nil {
 		sess.Logger().Warnf("Error fetching credentials from API: %s", err.Error())
@@ -232,23 +235,9 @@ func (m *Measurer) getCredentialsFromOptionsOrAPI(
 	}
 	sess.Logger().Infof("Got credentials from provider: %s", provider)
 
-	ca, err := extractBase64Blob(apiCreds.Config.CA)
-	if err != nil {
-		return nil, err
-	}
-	creds.CA = []byte(ca)
-
-	cert, err := extractBase64Blob(apiCreds.Config.Cert)
-	if err != nil {
-		return nil, err
-	}
-	creds.Cert = []byte(cert)
-
-	key, err := extractBase64Blob(apiCreds.Config.Key)
-	if err != nil {
-		return nil, err
-	}
-	creds.Key = []byte(key)
+	creds.CA = []byte(apiCreds.Config.CA)
+	creds.Cert = []byte(apiCreds.Config.Cert)
+	creds.Key = []byte(apiCreds.Config.Key)
 
 	return creds, nil
 }
