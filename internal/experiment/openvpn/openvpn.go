@@ -45,7 +45,7 @@ type TestKeys struct {
 // NewTestKeys creates new openvpn TestKeys.
 func NewTestKeys() *TestKeys {
 	return &TestKeys{
-		Success:          true,
+		Success:          false,
 		NetworkEvents:    []*vpntracex.Event{},
 		TCPConnect:       []*model.ArchivalTCPConnectResult{},
 		OpenVPNHandshake: []*ArchivalOpenVPNHandshakeResult{},
@@ -72,8 +72,8 @@ func (tk *TestKeys) AddConnectionTestKeys(result *SingleConnection) {
 	tk.NetworkEvents = append(tk.NetworkEvents, result.NetworkEvents...)
 }
 
-// allConnectionsSuccessful returns true if all the registered handshakes have Status.Success equal to true.
-func (tk *TestKeys) allConnectionsSuccessful() bool {
+// AllConnectionsSuccessful returns true if all the registered handshakes have Status.Success equal to true.
+func (tk *TestKeys) AllConnectionsSuccessful() bool {
 	for _, c := range tk.OpenVPNHandshake {
 		if !c.Status.Success {
 			return false
@@ -168,7 +168,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	if connResult != nil {
 		tk.AddConnectionTestKeys(connResult)
 	}
-	tk.Success = tk.allConnectionsSuccessful()
+	tk.Success = tk.AllConnectionsSuccessful()
 
 	callbacks.OnProgress(1.0, "All endpoints probed")
 	measurement.TestKeys = tk

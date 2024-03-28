@@ -385,11 +385,11 @@ func (s *Session) FetchOpenVPNConfig(
 	}
 	clnt, err := s.NewOrchestraClient(ctx)
 	if err != nil {
-		return &model.OOAPIVPNProviderConfig{}, err
+		return nil, err
 	}
 	config, err := clnt.FetchOpenVPNConfig(ctx, provider, cc)
 	if err != nil {
-		return &model.OOAPIVPNProviderConfig{}, err
+		return nil, err
 	}
 	s.vpnConfig[provider] = config
 	return &config, nil
