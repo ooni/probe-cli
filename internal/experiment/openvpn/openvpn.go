@@ -4,7 +4,6 @@ package openvpn
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -28,6 +27,7 @@ const (
 // of this experiment. By tagging these variables with `ooni:"..."`, we allow
 // miniooni's -O flag to find them and set them.
 type Config struct {
+	// TODO(ainghazal): Provider is right now ignored. InputLoader should get the provider from options.
 	Provider string `ooni:"VPN provider"`
 	SafeKey  string `ooni:"key to connect to the OpenVPN endpoint"`
 	SafeCert string `ooni:"cert to connect to the OpenVPN endpoint"`
@@ -90,8 +90,6 @@ type Measurer struct {
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
 func NewExperimentMeasurer(config Config, testName string) model.ExperimentMeasurer {
-	// TODO(ainghazal): allow ooniprobe to override this.
-	config.Provider = "riseup"
 	return Measurer{config: config, testName: testName}
 }
 
@@ -109,19 +107,14 @@ var (
 	ErrInvalidInput = errors.New("invalid input")
 )
 
-// parseListOfInputs return an endpointlist from a comma-separated list of inputs,
-// and any error if the endpoints could not be parsed properly.
-func parseListOfInputs(inputs string) (endpointList, error) {
-	endpoints := make(endpointList, 0)
-	inputList := strings.Split(inputs, ",")
-	for _, i := range inputList {
-		e, err := newEndpointFromInputString(i)
-		if err != nil {
-			return endpoints, err
-		}
-		endpoints = append(endpoints, e)
+func isValidProtocol(s string) bool {
+	if strings.HasPrefix(s, "openvpn://") {
+		return true
 	}
-	return endpoints, nil
+	if strings.HasPrefix(s, "openvpn+obfs4://") {
+		return true
+	}
+	return false
 }
 
 // Run implements model.ExperimentMeasurer.Run.
@@ -134,26 +127,26 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 
 	var endpoint *endpoint
 
-	if measurement.Input == "" {
-		// if input is null, we get one from the hardcoded list of inputs.
-		sess.Logger().Info("No input given, picking one hardcoded endpoint at random")
-		endpoint = DefaultEndpoints.Shuffle()[0]
-		measurement.Input = model.MeasurementTarget(endpoint.AsInputURI())
-	} else {
-		// otherwise, we expect a comma-separated value of inputs in
-		// the URI scheme defined for openvpn experiments.
-		endpoints, err := parseListOfInputs(string(measurement.Input))
+	if measurement.Input != "" {
+		if ok := isValidProtocol(string(measurement.Input)); !ok {
+			return ErrInvalidInput
+		}
+		var err error
+		endpoint, err = newEndpointFromInputString(string(measurement.Input))
 		if err != nil {
 			return err
 		}
-		if len(endpoints) != 1 {
-			return fmt.Errorf("%w: only single input accepted", ErrInvalidInput)
-		}
-		endpoint = endpoints[0]
+	} else {
+		// if input is null, we get one from the hardcoded list of inputs.
+		// TODO(ainghazal): can input be empty at this stage?
+		// InputPolicy should ensure we have a hardcoded input,
+		// so this is probably non-reachable code. Move the shuffling there.
+		sess.Logger().Info("No input given, picking one hardcoded endpoint at random")
+		endpoint = DefaultEndpoints.Shuffle()[0]
+		measurement.Input = model.MeasurementTarget(endpoint.AsInputURI())
 	}
 
 	tk := NewTestKeys()
-
 	sess.Logger().Infof("Probing endpoint %s", endpoint.String())
 
 	// TODO:  separate pre-connection checks
@@ -221,10 +214,11 @@ func (m *Measurer) getCredentialsFromOptionsOrAPI(
 		return creds, nil
 	}
 
-	// No options passed, let's hit OONI API for credential distribution.
+	// No options passed, so let's get the credentials that inputbuilder should have cached
+	// for us after hitting the OONI API.
 	// We expect the credentials from the API response to be encoded as the direct PEM serialization.
 	apiCreds, err := m.fetchProviderCredentials(ctx, sess, provider)
-	// TODO(ainghazal): validate
+	// TODO(ainghazal): validate credentials have the info we expect, certs are not expired etc.
 
 	if err != nil {
 		sess.Logger().Warnf("Error fetching credentials from API: %s", err.Error())

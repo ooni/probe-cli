@@ -133,7 +133,7 @@ func (e *endpoint) AsInputURI() string {
 type endpointList []*endpoint
 
 // DefaultEndpoints contains a subset of known endpoints to be used if no input is passed to the experiment and
-// the backend query fails. We risk distributing endpoints that can go stale, so we should be careful about
+// the backend query fails for whatever reason. We risk distributing endpoints that can go stale, so we should be careful about
 // the stability of the endpoints selected here, but in restrictive environments it's useful to have something
 // to probe in absence of an useful OONI API. Valid credentials are still needed, though.
 var DefaultEndpoints = endpointList{
