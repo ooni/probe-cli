@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	testVersion   = "0.1.0"
+	testVersion   = "0.1.1"
 	openVPNProcol = "openvpn"
 )
 
@@ -124,12 +124,9 @@ func parseListOfInputs(inputs string) (endpointList, error) {
 	return endpoints, nil
 }
 
-// ErrFailure is the error returned when you set the
-// config.ReturnError field to true.
-var ErrFailure = errors.New("mocked error")
-
 // Run implements model.ExperimentMeasurer.Run.
-// A single run expects exactly ONE input (endpoint).
+// A single run expects exactly ONE input (endpoint), but we can modify whether
+// to test different transports by settings options.
 func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	callbacks := args.Callbacks
 	measurement := args.Measurement
@@ -139,8 +136,8 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 
 	if measurement.Input == "" {
 		// if input is null, we get one from the hardcoded list of inputs.
-		sess.Logger().Info("No input given, picking one endpoint at random")
-		endpoint = allEndpoints.Shuffle()[0]
+		sess.Logger().Info("No input given, picking one hardcoded endpoint at random")
+		endpoint = DefaultEndpoints.Shuffle()[0]
 		measurement.Input = model.MeasurementTarget(endpoint.AsInputURI())
 	} else {
 		// otherwise, we expect a comma-separated value of inputs in
@@ -286,7 +283,7 @@ func (m *Measurer) connectAndHandshake(ctx context.Context, index int64, zeroTim
 	if len(handshakeEvents) != 0 {
 		tFirst = handshakeEvents[0].AtTime
 		tLast = handshakeEvents[len(handshakeEvents)-1].AtTime
-		bootstrapTime = time.Since(zeroTime).Seconds()
+		bootstrapTime = tLast - tFirst
 	}
 
 	return &SingleConnection{
@@ -307,7 +304,6 @@ func (m *Measurer) connectAndHandshake(ctx context.Context, index int64, zeroTim
 				Failure: &failure,
 				Success: err == nil,
 			},
-			StartTime:     zeroTime,
 			T0:            tFirst,
 			T:             tLast,
 			Tags:          []string{},

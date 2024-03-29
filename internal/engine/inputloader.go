@@ -9,6 +9,7 @@ import (
 	"net/url"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/experiment/openvpn"
 	"github.com/ooni/probe-cli/v3/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/registry"
@@ -355,6 +356,14 @@ func (il *InputLoader) loadRemoteOpenVPN(ctx context.Context) ([]model.OOAPIURLI
 	}
 
 	if len(urls) == 0 {
+		// loadRemote returns ErrNoURLsReturned at this point for webconnectivity,
+		// but for OpenVPN we want to return a sensible default to be
+		// able to probe some endpoints even in very restrictive environments.
+		// Do note this means that you have to provide valid credentials
+		// by some other means.
+		for _, endpoint := range openvpn.DefaultEndpoints {
+			urls = append(urls, model.OOAPIURLInfo{URL: endpoint.AsInputURI()})
+		}
 		return nil, ErrNoURLsReturned
 	}
 	return urls, nil

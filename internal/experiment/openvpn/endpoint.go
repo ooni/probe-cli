@@ -132,12 +132,11 @@ func (e *endpoint) AsInputURI() string {
 // endpointList is a list of endpoints.
 type endpointList []*endpoint
 
-// allEndpoints contains a subset of known endpoints to be used if no input is passed to the experiment.
-// This is a hardcoded list for now, but the idea is that we can receive this from the check-in api in the future.
-// In any case, having hardcoded endpoints is good as a fallback for the cases in which we cannot contact
-// OONI's backend.
-// TODO: hardcoded, setup as backup if we cannot contact API.
-var allEndpoints = endpointList{
+// DefaultEndpoints contains a subset of known endpoints to be used if no input is passed to the experiment and
+// the backend query fails. We risk distributing endpoints that can go stale, so we should be careful about
+// the stability of the endpoints selected here, but in restrictive environments it's useful to have something
+// to probe in absence of an useful OONI API. Valid credentials are still needed, though.
+var DefaultEndpoints = endpointList{
 	{
 		Provider:  "riseup",
 		IPAddr:    "51.15.187.53",
