@@ -252,7 +252,7 @@ func (m *Measurer) connectAndHandshake(ctx context.Context, index int64, zeroTim
 		return nil, err
 	}
 
-	openvpnConfig, err := getVPNConfig(handshakeTracer, endpoint, credentials)
+	openvpnConfig, err := getOpenVPNConfig(handshakeTracer, endpoint, credentials)
 	if err != nil {
 		return nil, err
 	}

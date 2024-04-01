@@ -79,8 +79,8 @@ func newEndpointFromInputString(uri string) (*endpoint, error) {
 	}
 
 	address := params.Get("address")
-	if provider == "" {
-		return nil, fmt.Errorf("%w: please specify a provider as part of the input", ErrInvalidInput)
+	if address == "" {
+		return nil, fmt.Errorf("%w: please specify an address as part of the input", ErrInvalidInput)
 	}
 	ip, port, err := net.SplitHostPort(address)
 	if err != nil {
@@ -102,7 +102,8 @@ func newEndpointFromInputString(uri string) (*endpoint, error) {
 }
 
 // String implements Stringer. This is a compact representation of the endpoint,
-// which differs from the input URI scheme.
+// which differs from the input URI scheme. This is the canonical representation, that can be used
+// to deterministically slice a list of endpoints, sort them lexicographically, etc.
 func (e *endpoint) String() string {
 	var proto string
 	if e.Obfuscation == "obfs4" {
@@ -179,19 +180,16 @@ func isValidProvider(provider string) bool {
 	return ok
 }
 
-// getVPNConfig gets a properly configured [*vpnconfig.Config] object for the given endpoint.
+// getOpenVPNConfig gets a properly configured [*vpnconfig.Config] object for the given endpoint.
 // To obtain that, we merge the endpoint specific configuration with base options.
-// These base options are for the moment hardcoded. In the future we will want to be smarter
-// about getting information for different providers.
-func getVPNConfig(tracer *vpntracex.Tracer, endpoint *endpoint, creds *vpnconfig.OpenVPNOptions) (*vpnconfig.Config, error) {
-
+// Base options are hardcoded for the moment, for comparability among different providers.
+// We can add them to the OONI API and as extra cli options if ever needed.
+func getOpenVPNConfig(tracer *vpntracex.Tracer, endpoint *endpoint, creds *vpnconfig.OpenVPNOptions) (*vpnconfig.Config, error) {
 	// TODO(ainghazal): use merge ability in vpnconfig.OpenVPNOptions merge (pending PR)
-
 	provider := endpoint.Provider
 	if !isValidProvider(provider) {
 		return nil, fmt.Errorf("%w: unknown provider: %s", ErrInvalidInput, provider)
 	}
-
 	baseOptions := defaultOptionsByProvider[provider]
 
 	cfg := vpnconfig.NewConfig(
@@ -214,10 +212,11 @@ func getVPNConfig(tracer *vpntracex.Tracer, endpoint *endpoint, creds *vpnconfig
 		),
 		vpnconfig.WithHandshakeTracer(tracer))
 
-	// TODO: validate options here and return an error.
+	// TODO: sanity check (Remote, Port, Proto etc + missing certs)
 	return cfg, nil
 }
 
+// extractBase64Blob is used to pass credentials as command-line options.
 func extractBase64Blob(val string) (string, error) {
 	s := strings.TrimPrefix(val, "base64:")
 	if len(s) == len(val) {
@@ -226,9 +225,6 @@ func extractBase64Blob(val string) (string, error) {
 	dec, err := base64.URLEncoding.DecodeString(strings.TrimSpace(s))
 	if err != nil {
 		return "", fmt.Errorf("%w: %s", ErrBadBase64Blob, err)
-	}
-	if len(dec) == 0 {
-		return "", nil
 	}
 	return string(dec), nil
 }
