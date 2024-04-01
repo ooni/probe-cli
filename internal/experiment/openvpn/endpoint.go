@@ -54,7 +54,7 @@ func newEndpointFromInputString(uri string) (*endpoint, error) {
 	var obfuscation string
 	switch parsedURL.Scheme {
 	case "openvpn":
-		obfuscation = "openvpn"
+		obfuscation = "none"
 	case "openvpn+obfs4":
 		obfuscation = "obfs4"
 	default:
@@ -85,6 +85,9 @@ func newEndpointFromInputString(uri string) (*endpoint, error) {
 	ip, port, err := net.SplitHostPort(address)
 	if err != nil {
 		return nil, fmt.Errorf("%w: cannot split ip:port", ErrInvalidInput)
+	}
+	if parsedIP := net.ParseIP(ip); parsedIP == nil {
+		return nil, fmt.Errorf("%w: bad ip", ErrInvalidInput)
 	}
 
 	endpoint := &endpoint{
