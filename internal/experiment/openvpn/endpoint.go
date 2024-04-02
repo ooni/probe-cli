@@ -228,3 +228,13 @@ func extractBase64Blob(val string) (string, error) {
 	}
 	return string(dec), nil
 }
+
+func isValidProtocol(s string) bool {
+	if strings.HasPrefix(s, "openvpn://") {
+		return true
+	}
+	if strings.HasPrefix(s, "openvpn+obfs4://") {
+		return true
+	}
+	return false
+}

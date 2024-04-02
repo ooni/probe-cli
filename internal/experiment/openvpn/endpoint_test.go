@@ -380,3 +380,21 @@ func Test_extractBase64Blob(t *testing.T) {
 		}
 	})
 }
+
+func Test_IsValidProtocol(t *testing.T) {
+	t.Run("openvpn is valid", func(t *testing.T) {
+		if !isValidProtocol("openvpn://foobar.bar") {
+			t.Error("openvpn:// should be a valid protocol")
+		}
+	})
+	t.Run("openvpn+obfs4 is valid", func(t *testing.T) {
+		if !isValidProtocol("openvpn+obfs4://foobar.bar") {
+			t.Error("openvpn+obfs4:// should be a valid protocol")
+		}
+	})
+	t.Run("openvpn+other is not valid", func(t *testing.T) {
+		if isValidProtocol("openvpn+ss://foobar.bar") {
+			t.Error("openvpn+ss:// should not be a valid protocol")
+		}
+	})
+}
