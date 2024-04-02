@@ -15,7 +15,8 @@ document will take precedence.
 
 ## Golang Resources
 
-We use golang as our primary language for the development of OONI Probe CLI and do check out the resources below, quite useful to read before contributing.
+We use golang as our primary language for the development of OONI Probe CLI and do
+check out the resources below, quite useful to read before contributing.
 
 - [Effective Go](https://go.dev/doc/effective_go)
 - [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
@@ -81,6 +82,23 @@ is documented. At the minimum document all the exported symbols.
 Make sure you commit `go.mod` and `go.sum` changes. Make sure you
 run `go mod tidy` to minimize such changes.
 
+## Version of Go
+
+OONI Probe release builds use a specific version Go. To make sure
+you use the correct version of Go, please develop using:
+
+```bash
+./script/go.bash
+```
+
+rather than using Go directly. This script is a drop-in replacement
+for the `go` command that requires Go >= 1.15, downloads the correct
+version of Go in `$HOME/sdk/go1.Y.Z`, and invokes it.
+
+By using the version of Go we'll be using for releasing, you make
+sure that your contribution doesn't include functionality implemented
+by later versions of Go.
+
 ## Implementation requirements
 
 - always use `x/sys/execabs` or `./internal/shellx` instead of
@@ -102,10 +120,9 @@ will understand you want to use the default pool)
 
 ## Code testing requirements
 
-Make sure all tests pass with `go test -race ./...` run from the
-top-level directory of this repository. (Running [netem](
-https://github.com/ooni/netem) based tests may not work as intended
-with `-race` with macOS.)
+Make sure all tests pass with `go test ./...` run from the
+top-level directory of this repository. If you're using Linux,
+please, run `go test -race ./...`.
 
 ## Writing a new OONI experiment
 
@@ -118,50 +135,58 @@ not clear, please let us know during the review.
 To get a sense of what we expect from an experiment, see the [internal/tutorial](
 https://github.com/ooni/probe-cli/tree/master/internal/tutorial) tutorial
 
-## Branching and releasing
+## Branch management and releasing
 
-The following diagram illustrates the overall branching and releasing
-strategy loosely followed by the core team. If you are an external
-contributor, you generally only care about the development part, which
-is on the left-hand side of the diagram.
+We integrate new features in the `master` branch. If you are an external
+contributor, you generally only care about that. However, if you are
+part of the OONI team, you also need to care about releasing.
 
-![branching and releasing](docs/branching.png)
+In terms of branching, the release process is roughly the following:
 
-Development uses the `master` branch. When we need to implement a
-feature or fix a bug, we branch off of the `master` branch. We squash
-and merge to include a feature or fix branch back into `master`.
+1. we use the [routine sprint releases template](
+https://github.com/ooni/probe/blob/master/.github/ISSUE_TEMPLATE/routine-sprint-releases.md)
+to create an issue describing the activities bound to an
+upcoming OONI Probe release;
 
-We periodically tag `-alpha` releases directly on `master`. The
-semantics of such releases is that we reached a point where we have
-features we would like to test using the `miniooni` research CLI
-client. As part of these releases, we also update dependencies and
-embedded assets. This process ensures that we perform better testing
-of dependencies and assets as part of development.
+2. the first part of the procedure happens inside the `master` branch
+until we reach a point where we tag an `alpha` release (e.g., `v3.21.0-alpha`);
 
-The `master` branch and pull requests only run CI lightweight tests
-that ensure the code still compiles, has good coverage, and we are
-not introducing regressions in terms of the measurement engine.
+3. once we have tagged an `alpha` release, we create and push a branch
+named `release/X.Y` (e.g., `release/3.21`);
 
-To draft a release we branch off of `master` and create a `release/x.y`
-branch where `x` is the major number and `y` is the minor number. For
-release branches, we enable a very comprehensive set of tests that run
-automatically with every commit. The purpose of a release branch is to
-make sure all checks are green and hotfix bugs that we may discover
-as part of more extensively testing a release candidate. Beta and stable
-releases should occur on this branch. Subsequent patch releases should
-also occur on this branch. We have one such branch for each `x.y`
-release. If there are fixes on `master` that we want to backport, we
-cherry-pick them into the release branch. Likewise, if we need to
-forward port fixes, we cherry-pick them into `master`. When we backport,
-the commit message should start with `[backport]`; when we forward
-port, the commit message should start with `[forwardport]`.
+4. we commit to the `master` branch and bump the `internal/version/version.go`
+version number to be the next `alpha` release, such that we can distinguish
+measurements from the `master` branch taken after tagging the `alpha`;
 
-When we branch off release `x.y` from `master`, we also need to bump
-the `alpha` version used by `master`.
+5. we finish preparing the release and eventually tag a stable release
+(e.g., `v3.21.0`) inside the `release/X.Y` branch;
 
-We build binary packages for each tagged release. We will use external
-tools for publishing binaries to our Debian repository, Maven Central, etc.
+6. we keep the `release/X.Y` around forever and we keep it as the
+branching point from which to create patch releases (e.g., `v.3.21.1`).
+
+The `release/X.Y` branches run many more CI checks than the `master` branch
+and this allows us to ensure that everything is in order for releasing. We run
+fewer checks in the `master` branch to make the development process leaner.
+
+We prefer backporting from `master` to `release/X.Y` to forward porting from
+a `release/X.Y` to `master`. When backporting, the commit name should start
+with `[backport]` to identify it as a backporting commit.
+
+## Releases
+
+Tagging causes specific GitHub Actions to create a pre-release (if the
+tag contains `-alpha` or `-beta`) or a stable release (if the tag is like
+`vX.Y.Z`; e.g., `v3.21.0`).
+
+Every night there is a GitHub Action that builds the current state of
+the `master` branch and publishes it inside the [rolling release tag](
+https://github.com/ooni/probe-cli/releases/tag/rolling).
+
+We use a separate (private) repository to publish Android artefacts to
+Maven Central, publish Debian packages, etc.
 
 ## Community Channels
 
-Stuck somewhere or Have any questions? please join our [Slack Channels](https://slack.ooni.org/) or [IRC](ircs://irc.oftc.net:6697/#ooni). We're here to help and always available to discuss.
+Stuck somewhere or Have any questions? please join our
+[Slack Channels](https://slack.ooni.org/) or [IRC](ircs://irc.oftc.net:6697/#ooni). We're
+here to help and always available to discuss.
