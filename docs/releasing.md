@@ -182,7 +182,7 @@ the `release/X.Y` branch, as explained above.
 
 ## Releasing proper
 
-This stage should also be self explanatory.
+This check-list stage should also be self explanatory.
 
 ## Publishing stable packages
 
