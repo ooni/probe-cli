@@ -141,36 +141,7 @@ We integrate new features in the `master` branch. If you are an external
 contributor, you generally only care about that. However, if you are
 part of the OONI team, you also need to care about releasing.
 
-In terms of branching, the release process is roughly the following:
-
-1. we use the [routine sprint releases template](
-https://github.com/ooni/probe/blob/master/.github/ISSUE_TEMPLATE/routine-sprint-releases.md)
-to create an issue describing the activities bound to an
-upcoming OONI Probe release;
-
-2. the first part of the procedure happens inside the `master` branch
-until we reach a point where we tag an `alpha` release (e.g., `v3.21.0-alpha`);
-
-3. once we have tagged an `alpha` release, we create and push a branch
-named `release/X.Y` (e.g., `release/3.21`);
-
-4. we commit to the `master` branch and bump the `internal/version/version.go`
-version number to be the next `alpha` release, such that we can distinguish
-measurements from the `master` branch taken after tagging the `alpha`;
-
-5. we finish preparing the release and eventually tag a stable release
-(e.g., `v3.21.0`) inside the `release/X.Y` branch;
-
-6. we keep the `release/X.Y` around forever and we keep it as the
-branching point from which to create patch releases (e.g., `v.3.21.1`).
-
-The `release/X.Y` branches run many more CI checks than the `master` branch
-and this allows us to ensure that everything is in order for releasing. We run
-fewer checks in the `master` branch to make the development process leaner.
-
-We prefer backporting from `master` to `release/X.Y` to forward porting from
-a `release/X.Y` to `master`. When backporting, the commit name should start
-with `[backport]` to identify it as a backporting commit.
+See [docs/releasing.md](docs/releasing.md) for additional information.
 
 ## Releases
 
