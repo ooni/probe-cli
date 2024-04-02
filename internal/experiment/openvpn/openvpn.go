@@ -231,79 +231,54 @@ func (m *Measurer) GetCredentialsFromOptionsOrAPI(
 
 }
 
-// Run implements model.ExperimentMeasurer.Run.
-// A single run expects exactly ONE input (endpoint), but we can modify whether
-// to test different transports by settings options.
-func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
-	callbacks := args.Callbacks
-	measurement := args.Measurement
-	sess := args.Session
+// mergeOpenVPNConfig attempts to get credentials from Options or API, and then
+// constructs a [vpnconfig.Config] instance after merging the credentials passed by options or API response.
+// It also returns an error if the operation fails.
+func (m *Measurer) mergeOpenVPNConfig(
+	ctx context.Context,
+	sess model.ExperimentSession,
+	endpoint *endpoint,
+	tracer *vpntracex.Tracer) (*vpnconfig.Config, error) {
 
-	endpoint, err := parseEndpoint(measurement)
+	logger := sess.Logger()
+
+	credentials, err := m.GetCredentialsFromOptionsOrAPI(ctx, sess, endpoint.Provider)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	tk := NewTestKeys()
-	sess.Logger().Infof("Probing endpoint %s", endpoint.String())
-
-	// TODO:  separate pre-connection checks
-	connResult, err := m.connectAndHandshake(ctx, int64(1), time.Now(), sess, endpoint)
+	openvpnConfig, err := getOpenVPNConfig(tracer, logger, endpoint, credentials)
 	if err != nil {
-		sess.Logger().Warn("Fatal error while attempting to connect to endpoint, aborting!")
-		return err
+		return nil, err
 	}
-	if connResult != nil {
-		tk.AddConnectionTestKeys(connResult)
-	}
-	tk.Success = tk.AllConnectionsSuccessful()
-
-	callbacks.OnProgress(1.0, "All endpoints probed")
-	measurement.TestKeys = tk
-
-	// TODO(ainghazal): validate we have valid config for each endpoint.
-	// TODO(ainghazal): validate hostname is a valid IP (ipv4 or 6)
-	// TODO(ainghazal): decide what to do if we have expired certs (abort one measurement or abort the whole experiment?)
-
-	// Note: if here we return an error, the parent code will assume
-	// something fundamental was wrong and we don't have a measurement
-	// to submit to the OONI collector. Keep this in mind when you
-	// are writing new experiments!
-	return nil
+	// TODO: sanity check (Remote, Port, Proto etc + missing certs)
+	return openvpnConfig, nil
 }
 
 // connectAndHandshake dials a connection and attempts an OpenVPN handshake using that dialer.
-func (m *Measurer) connectAndHandshake(ctx context.Context, index int64, zeroTime time.Time, sess model.ExperimentSession, endpoint *endpoint) (*SingleConnection, error) {
-
-	logger := sess.Logger()
+func (m *Measurer) connectAndHandshake(
+	ctx context.Context,
+	zeroTime time.Time,
+	index int64,
+	logger model.Logger,
+	endpoint *endpoint,
+	openvpnConfig *vpnconfig.Config,
+	handshakeTracer *vpntracex.Tracer) (*SingleConnection, error) {
 
 	// create a trace for the network dialer
 	trace := measurexlite.NewTrace(index, zeroTime)
 
 	dialer := trace.NewDialerWithoutResolver(logger)
 
-	// create a vpn tun Device that attempts to dial and performs the handshake
-	handshakeTracer := vpntracex.NewTracerWithTransactionID(zeroTime, index)
-
-	// TODO -- move to outer function ------
-	credentials, err := m.GetCredentialsFromOptionsOrAPI(ctx, sess, endpoint.Provider)
-	if err != nil {
-		return nil, err
-	}
-
-	openvpnConfig, err := getOpenVPNConfig(handshakeTracer, endpoint, credentials)
-	if err != nil {
-		return nil, err
-	}
-	// TODO -- move to outer function ------
-
-	tun, err := tunnel.Start(ctx, dialer, openvpnConfig)
-
 	var failure string
+	// create a vpn tun Device that attempts to dial and performs the handshake
+	tun, err := tunnel.Start(ctx, dialer, openvpnConfig)
 	if err != nil {
 		failure = err.Error()
 	}
-	defer tun.Close()
+	if tun != nil {
+		defer tun.Close()
+	}
 
 	handshakeEvents := handshakeTracer.Trace()
 	port, _ := strconv.Atoi(endpoint.Port)
@@ -347,15 +322,63 @@ func (m *Measurer) connectAndHandshake(ctx context.Context, index int64, zeroTim
 	}, nil
 }
 
-// TODO: get cached from session instead of fetching every time
 func (m *Measurer) FetchProviderCredentials(
 	ctx context.Context,
 	sess model.ExperimentSession,
 	provider string) (*model.OOAPIVPNProviderConfig, error) {
-	// TODO(ainghazal): do pass country code, can be useful to orchestrate campaigns specific to areas
+	// TODO(ainghazal): pass real country code, can be useful to orchestrate campaigns specific to areas.
 	config, err := sess.FetchOpenVPNConfig(ctx, provider, "XX")
 	if err != nil {
 		return &model.OOAPIVPNProviderConfig{}, err
 	}
 	return config, nil
+}
+
+// Run implements model.ExperimentMeasurer.Run.
+// A single run expects exactly ONE input (endpoint), but we can modify whether
+// to test different transports by settings options.
+func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
+	callbacks := args.Callbacks
+	measurement := args.Measurement
+	sess := args.Session
+
+	endpoint, err := parseEndpoint(measurement)
+	if err != nil {
+		return err
+	}
+
+	tk := NewTestKeys()
+
+	zeroTime := time.Now()
+	idx := int64(1)
+	handshakeTracer := vpntracex.NewTracerWithTransactionID(zeroTime, idx)
+
+	openvpnConfig, err := m.mergeOpenVPNConfig(ctx, sess, endpoint, handshakeTracer)
+	if err != nil {
+		return err
+	}
+	sess.Logger().Infof("Probing endpoint %s", endpoint.String())
+
+	connResult, err := m.connectAndHandshake(ctx, zeroTime, idx, sess.Logger(), endpoint, openvpnConfig, handshakeTracer)
+	if err != nil {
+		sess.Logger().Warn("Fatal error while attempting to connect to endpoint, aborting!")
+		return err
+	}
+	if connResult != nil {
+		tk.AddConnectionTestKeys(connResult)
+	}
+	tk.Success = tk.AllConnectionsSuccessful()
+
+	callbacks.OnProgress(1.0, "All endpoints probed")
+	measurement.TestKeys = tk
+
+	// TODO(ainghazal): validate we have valid config for each endpoint.
+	// TODO(ainghazal): validate hostname is a valid IP (ipv4 or 6)
+	// TODO(ainghazal): decide what to do if we have expired certs (abort one measurement or abort the whole experiment?)
+
+	// Note: if here we return an error, the parent code will assume
+	// something fundamental was wrong and we don't have a measurement
+	// to submit to the OONI collector. Keep this in mind when you
+	// are writing new experiments!
+	return nil
 }

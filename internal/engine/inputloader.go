@@ -346,7 +346,7 @@ func (il *InputLoader) loadRemoteOpenVPN(ctx context.Context) ([]model.OOAPIURLI
 	for _, provider := range openvpnDefaultProviders {
 		reply, err := il.vpnConfig(ctx, provider)
 		if err != nil {
-			return nil, err
+			break
 		}
 		// here we're just collecting all the inputs. we also cache the configs so that
 		// each experiment run can access the credentials for a given provider.
@@ -364,7 +364,6 @@ func (il *InputLoader) loadRemoteOpenVPN(ctx context.Context) ([]model.OOAPIURLI
 		for _, endpoint := range openvpn.DefaultEndpoints {
 			urls = append(urls, model.OOAPIURLInfo{URL: endpoint.AsInputURI()})
 		}
-		return nil, ErrNoURLsReturned
 	}
 	return urls, nil
 }

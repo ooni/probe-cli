@@ -254,12 +254,6 @@ func TestGetCredentialsFromOptionsOrAPI(t *testing.T) {
 			t.Fatalf("expected nil options, got %v", opts)
 		}
 	})
-	/*
-		sess.MockFetchOpenVPNConfig = func(context.Context, string, string) (*model.OOAPIVPNProviderConfig, error) {
-			return nil, someError
-		}
-	*/
-
 }
 
 func TestAddConnectionTestKeys(t *testing.T) {
@@ -369,25 +363,6 @@ func TestVPNInput(t *testing.T) {
 	// TODO -- do a real test, get credentials etc.
 }
 
-func TestSuccess(t *testing.T) {
-	m := openvpn.NewExperimentMeasurer(openvpn.Config{}, "openvpn")
-	ctx := context.Background()
-	sess := makeMockSession()
-	callbacks := model.NewPrinterCallbacks(sess.Logger())
-	measurement := new(model.Measurement)
-	args := &model.ExperimentArgs{
-		Callbacks:   callbacks,
-		Measurement: measurement,
-		Session:     sess,
-	}
-	fmt.Println(args, m, ctx)
-	// TODO: mock runner
-	// err := m.Run(ctx, args)
-	//if err != nil {
-	//	t.Fatal(err)
-	//}
-}
-
 func TestMeasurer_FetchProviderCredentials(t *testing.T) {
 	t.Run("Measurer.FetchProviderCredentials calls method in session", func(t *testing.T) {
 		m := openvpn.NewExperimentMeasurer(
@@ -421,4 +396,32 @@ func TestMeasurer_FetchProviderCredentials(t *testing.T) {
 		}
 	})
 
+}
+
+func TestSuccess(t *testing.T) {
+	m := openvpn.NewExperimentMeasurer(openvpn.Config{
+		Provider: "riseup",
+		SafeCA:   "base64:Zm9v",
+		SafeKey:  "base64:Zm9v",
+		SafeCert: "base64:Zm9v",
+	}, "openvpn")
+	ctx := context.Background()
+	sess := makeMockSession()
+	callbacks := model.NewPrinterCallbacks(sess.Logger())
+	measurement := new(model.Measurement)
+	measurement.Input = "openvpn://riseup.corp/?address=127.0.0.1:9989&transport=tcp"
+	args := &model.ExperimentArgs{
+		Callbacks:   callbacks,
+		Measurement: measurement,
+		Session:     sess,
+	}
+	if sess.Logger() == nil {
+		t.Fatal("logger should not be nil")
+	}
+	fmt.Println(ctx, args, m)
+
+	err := m.Run(ctx, args)
+	if err != nil {
+		t.Fatal(err)
+	}
 }

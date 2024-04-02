@@ -11,6 +11,7 @@ import (
 
 	vpnconfig "github.com/ooni/minivpn/pkg/config"
 	vpntracex "github.com/ooni/minivpn/pkg/tracex"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 var (
@@ -184,7 +185,11 @@ func isValidProvider(provider string) bool {
 // To obtain that, we merge the endpoint specific configuration with base options.
 // Base options are hardcoded for the moment, for comparability among different providers.
 // We can add them to the OONI API and as extra cli options if ever needed.
-func getOpenVPNConfig(tracer *vpntracex.Tracer, endpoint *endpoint, creds *vpnconfig.OpenVPNOptions) (*vpnconfig.Config, error) {
+func getOpenVPNConfig(
+	tracer *vpntracex.Tracer,
+	logger model.Logger,
+	endpoint *endpoint,
+	creds *vpnconfig.OpenVPNOptions) (*vpnconfig.Config, error) {
 	// TODO(ainghazal): use merge ability in vpnconfig.OpenVPNOptions merge (pending PR)
 	provider := endpoint.Provider
 	if !isValidProvider(provider) {
@@ -193,6 +198,7 @@ func getOpenVPNConfig(tracer *vpntracex.Tracer, endpoint *endpoint, creds *vpnco
 	baseOptions := defaultOptionsByProvider[provider]
 
 	cfg := vpnconfig.NewConfig(
+		vpnconfig.WithLogger(logger),
 		vpnconfig.WithOpenVPNOptions(
 			&vpnconfig.OpenVPNOptions{
 				// endpoint-specific options.
@@ -210,9 +216,9 @@ func getOpenVPNConfig(tracer *vpntracex.Tracer, endpoint *endpoint, creds *vpnco
 				Key:  creds.Key,
 			},
 		),
-		vpnconfig.WithHandshakeTracer(tracer))
+		vpnconfig.WithHandshakeTracer(tracer),
+	)
 
-	// TODO: sanity check (Remote, Port, Proto etc + missing certs)
 	return cfg, nil
 }
 

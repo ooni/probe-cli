@@ -284,7 +284,7 @@ func Test_getVPNConfig(t *testing.T) {
 		Key:  []byte("key"),
 	}
 
-	cfg, err := getOpenVPNConfig(tracer, e, creds)
+	cfg, err := getOpenVPNConfig(tracer, nil, e, creds)
 	if err != nil {
 		t.Fatalf("did not expect error, got: %v", err)
 	}
@@ -333,7 +333,7 @@ func Test_getVPNConfig_with_unknown_provider(t *testing.T) {
 		Cert: []byte("cert"),
 		Key:  []byte("key"),
 	}
-	_, err := getOpenVPNConfig(tracer, e, creds)
+	_, err := getOpenVPNConfig(tracer, nil, e, creds)
 	if !errors.Is(err, ErrInvalidInput) {
 		t.Fatalf("expected invalid input error, got: %v", err)
 	}
