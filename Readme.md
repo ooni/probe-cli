@@ -193,20 +193,12 @@ Please, see [CONTRIBUTING.md](CONTRIBUTING.md).
 SPDX-License-Identifier: GPL-3.0-or-later
 ```
 
-## Updating dependencies
-
-```bash
-go get -t -u -v ./... && go mod tidy
-```
-
 ## Releasing
-
-Create an issue according to [the routine release template](
-https://github.com/ooni/probe/blob/master/.github/ISSUE_TEMPLATE/routine-sprint-releases.md)
-and perform any item inside the check-list.
 
 We build releases using [Makefile](Makefile), which requires GNU make. Run
 `make help` for detailed usage.
+
+See also the relevant section of [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Semantic versioning policy
 
