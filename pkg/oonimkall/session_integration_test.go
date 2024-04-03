@@ -297,7 +297,7 @@ func TestCheckInLookupLocationFailure(t *testing.T) {
 	config.WebConnectivity.AddCategory("CULTR")
 	ctx.Cancel() // immediate failure
 	result, err := sess.CheckIn(ctx, &config)
-	if !errors.Is(err, enginelocate.ErrAllIPLookuppersFailed) {
+	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
 	if result != nil {

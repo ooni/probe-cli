@@ -277,15 +277,14 @@ type GeolocateResults struct {
 func (sess *Session) Geolocate(ctx *Context) (*GeolocateResults, error) {
 	sess.mtx.Lock()
 	defer sess.mtx.Unlock()
-	info, err := sess.sessp.LookupLocationContext(ctx.ctx)
-	if err != nil {
+	if err := sess.sessp.MaybeLookupLocationContext(ctx.ctx); err != nil {
 		return nil, err
 	}
 	return &GeolocateResults{
-		ASN:     info.ASNString(),
-		Country: info.CountryCode,
-		IP:      info.ProbeIP,
-		Org:     info.NetworkName,
+		ASN:     sess.sessp.ProbeASNString(),
+		Country: sess.sessp.ProbeCC(),
+		IP:      sess.sessp.ProbeIP(),
+		Org:     sess.sessp.ProbeNetworkName(),
 	}, nil
 }
 
@@ -446,8 +445,7 @@ func (sess *Session) CheckIn(ctx *Context, config *CheckInConfig) (*CheckInInfo,
 	if config.WebConnectivity == nil {
 		return nil, errors.New("oonimkall: missing webconnectivity config")
 	}
-	info, err := sess.sessp.LookupLocationContext(ctx.ctx)
-	if err != nil {
+	if err := sess.sessp.MaybeLookupLocationContext(ctx.ctx); err != nil {
 		return nil, err
 	}
 	if sess.TestingCheckInBeforeNewProbeServicesClient != nil {
@@ -464,8 +462,8 @@ func (sess *Session) CheckIn(ctx *Context, config *CheckInConfig) (*CheckInInfo,
 		Charging:        config.Charging,
 		OnWiFi:          config.OnWiFi,
 		Platform:        config.Platform,
-		ProbeASN:        info.ASNString(),
-		ProbeCC:         info.CountryCode,
+		ProbeASN:        sess.sessp.ProbeASNString(),
+		ProbeCC:         sess.sessp.ProbeCC(),
 		RunType:         model.RunType(config.RunType),
 		SoftwareName:    config.SoftwareName,
 		SoftwareVersion: config.SoftwareVersion,

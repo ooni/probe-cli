@@ -654,9 +654,9 @@ func (s *Session) MaybeLookupBackendsContext(ctx context.Context) error {
 	return nil
 }
 
-// LookupLocationContext performs a location lookup. If you want memoisation
+// doLookupLocationContext performs a location lookup. If you want memoisation
 // of the results, you should use MaybeLookupLocationContext.
-func (s *Session) LookupLocationContext(ctx context.Context) (*enginelocate.Results, error) {
+func (s *Session) doLookupLocationContext(ctx context.Context) (*enginelocate.Results, error) {
 	task := enginelocate.NewTask(enginelocate.Config{
 		Logger:    s.Logger(),
 		Resolver:  s.resolver,
@@ -671,7 +671,7 @@ func (s *Session) lookupLocationContext(ctx context.Context) (*enginelocate.Resu
 	if s.testLookupLocationContext != nil {
 		return s.testLookupLocationContext(ctx)
 	}
-	return s.LookupLocationContext(ctx)
+	return s.doLookupLocationContext(ctx)
 }
 
 // MaybeLookupLocationContext is like MaybeLookupLocation but with a context
