@@ -231,7 +231,7 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 		}
 		// We only save the measurement to disk if we failed to upload the measurement
 		if saveToDisk {
-			if err := exp.SaveMeasurement(measurement, msmt.MeasurementFilePath.String); err != nil {
+			if err := engine.SaveMeasurement(measurement, msmt.MeasurementFilePath.String); err != nil {
 				return errors.Wrap(err, "failed to save measurement on disk")
 			}
 		}

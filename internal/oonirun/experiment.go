@@ -166,10 +166,9 @@ func (ed *Experiment) newSaver(experiment model.Experiment) (engine.Saver, error
 		return ed.newSaverFn(experiment)
 	}
 	return engine.NewSaver(engine.SaverConfig{
-		Enabled:    !ed.NoJSON,
-		Experiment: experiment,
-		FilePath:   ed.ReportFile,
-		Logger:     ed.Session.Logger(),
+		Enabled:  !ed.NoJSON,
+		FilePath: ed.ReportFile,
+		Logger:   ed.Session.Logger(),
 	})
 }
 

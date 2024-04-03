@@ -3,15 +3,13 @@ package engine
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/registry"
 )
@@ -264,18 +262,24 @@ func runexperimentflow(t *testing.T, experiment model.Experiment, input string) 
 	measurement.AddAnnotations(map[string]string{
 		"probe-engine-ci": "yes",
 	})
-	data, err := json.Marshal(measurement)
+	savedMeasurement, err := json.Marshal(measurement)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if data == nil {
+	if savedMeasurement == nil {
 		t.Fatal("data is nil")
 	}
+	tempfile, err := os.CreateTemp("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	filename := tempfile.Name()
+	tempfile.Close()
 	err = experiment.SubmitAndUpdateMeasurementContext(ctx, measurement)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = experiment.SaveMeasurement(measurement, "/tmp/experiment.jsonl")
+	err = SaveMeasurement(measurement, filename)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -289,54 +293,13 @@ func runexperimentflow(t *testing.T, experiment model.Experiment, input string) 
 	if sk == nil {
 		t.Fatal("got nil summary keys")
 	}
-}
-
-func TestSaveMeasurementErrors(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	sess := newSessionForTesting(t)
-	defer sess.Close()
-	builder, err := sess.NewExperimentBuilder("example")
+	loadedMeasurement, err := os.ReadFile(filename)
 	if err != nil {
 		t.Fatal(err)
 	}
-	exp := builder.NewExperiment().(*experiment)
-	dirname, err := ioutil.TempDir("", "ooniprobe-engine-save-measurement")
-	if err != nil {
-		t.Fatal(err)
-	}
-	filename := filepath.Join(dirname, "report.jsonl")
-	m := new(model.Measurement)
-	err = exp.saveMeasurement(
-		m, filename, func(v interface{}) ([]byte, error) {
-			return nil, errors.New("mocked error")
-		}, os.OpenFile, func(fp *os.File, b []byte) (int, error) {
-			return fp.Write(b)
-		},
-	)
-	if err == nil {
-		t.Fatal("expected an error here")
-	}
-	err = exp.saveMeasurement(
-		m, filename, json.Marshal,
-		func(name string, flag int, perm os.FileMode) (*os.File, error) {
-			return nil, errors.New("mocked error")
-		}, func(fp *os.File, b []byte) (int, error) {
-			return fp.Write(b)
-		},
-	)
-	if err == nil {
-		t.Fatal("expected an error here")
-	}
-	err = exp.saveMeasurement(
-		m, filename, json.Marshal, os.OpenFile,
-		func(fp *os.File, b []byte) (int, error) {
-			return 0, errors.New("mocked error")
-		},
-	)
-	if err == nil {
-		t.Fatal("expected an error here")
+	withFinalNewline := append(savedMeasurement, '\n')
+	if diff := cmp.Diff(withFinalNewline, loadedMeasurement); diff != "" {
+		t.Fatal(diff)
 	}
 }
 

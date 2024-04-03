@@ -196,11 +196,6 @@ type Experiment interface {
 	// when used with an asynchronous experiment.
 	MeasureWithContext(ctx context.Context, input string) (measurement *Measurement, err error)
 
-	// SaveMeasurement saves a measurement on the specified file path.
-	//
-	// Deprecated: new code should use a Saver.
-	SaveMeasurement(measurement *Measurement, filePath string) error
-
 	// SubmitAndUpdateMeasurementContext submits a measurement and updates the
 	// fields whose value has changed as part of the submission.
 	//
