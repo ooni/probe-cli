@@ -331,19 +331,15 @@ func (il *InputLoader) loadRemoteWebConnectivity(ctx context.Context) ([]model.O
 	return reply.WebConnectivity.URLs, nil
 }
 
-// These are the providers that are enabled in the API.
-var openvpnDefaultProviders = []string{
-	"riseup",
-}
-
 // loadRemoteOpenVPN loads openvpn inputs from a remote source.
 func (il *InputLoader) loadRemoteOpenVPN(ctx context.Context) ([]model.OOAPIURLInfo, error) {
 	// VPN Inputs do not match exactly the semantics expected from [model.OOAPIURLInfo],
-	// since OOAPIURLInfo is oriented twards webconnectivity,
+	// since OOAPIURLInfo is oriented towards webconnectivity,
 	// but we force VPN targets in the URL and ignore all the other fields.
 	urls := make([]model.OOAPIURLInfo, 0)
 
-	for _, provider := range openvpnDefaultProviders {
+	// The openvpn experiment contains an array of the providers that the API knows about.
+	for _, provider := range openvpn.APIEnabledProviders {
 		reply, err := il.vpnConfig(ctx, provider)
 		if err != nil {
 			break
