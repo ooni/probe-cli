@@ -451,10 +451,6 @@ func (sess *Session) CheckIn(ctx *Context, config *CheckInConfig) (*CheckInInfo,
 	if sess.TestingCheckInBeforeNewProbeServicesClient != nil {
 		sess.TestingCheckInBeforeNewProbeServicesClient(ctx) // for testing
 	}
-	psc, err := sess.sessp.NewProbeServicesClient(ctx.ctx)
-	if err != nil {
-		return nil, err
-	}
 	if sess.TestingCheckInBeforeCheckIn != nil {
 		sess.TestingCheckInBeforeCheckIn(ctx) // for testing
 	}
@@ -469,7 +465,7 @@ func (sess *Session) CheckIn(ctx *Context, config *CheckInConfig) (*CheckInInfo,
 		SoftwareVersion: config.SoftwareVersion,
 		WebConnectivity: config.WebConnectivity.toModel(),
 	}
-	result, err := psc.CheckIn(ctx.ctx, cfg)
+	result, err := sess.sessp.CheckIn(ctx.ctx, &cfg)
 	if err != nil {
 		return nil, err
 	}

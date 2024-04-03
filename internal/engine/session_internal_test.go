@@ -65,24 +65,24 @@ func (c *mockableProbeServicesClientForCheckIn) CheckIn(
 }
 
 func TestSessionCheckInSuccessful(t *testing.T) {
-	results := &model.OOAPICheckInResultNettests{
-		WebConnectivity: &model.OOAPICheckInInfoWebConnectivity{
-			ReportID: "xxx-x-xx",
-			URLs: []model.OOAPIURLInfo{{
-				CategoryCode: "NEWS",
-				CountryCode:  "IT",
-				URL:          "https://www.repubblica.it/",
-			}, {
-				CategoryCode: "NEWS",
-				CountryCode:  "IT",
-				URL:          "https://www.unita.it/",
-			}},
+	results := &model.OOAPICheckInResult{
+		Tests: model.OOAPICheckInResultNettests{
+			WebConnectivity: &model.OOAPICheckInInfoWebConnectivity{
+				ReportID: "xxx-x-xx",
+				URLs: []model.OOAPIURLInfo{{
+					CategoryCode: "NEWS",
+					CountryCode:  "IT",
+					URL:          "https://www.repubblica.it/",
+				}, {
+					CategoryCode: "NEWS",
+					CountryCode:  "IT",
+					URL:          "https://www.unita.it/",
+				}},
+			},
 		},
 	}
 	mockedClnt := &mockableProbeServicesClientForCheckIn{
-		Results: &model.OOAPICheckInResult{
-			Tests: *results,
-		},
+		Results: results,
 	}
 	s := &Session{
 		location: &enginelocate.Results{

@@ -9,7 +9,7 @@ import (
 
 // FetchPsiphonConfig fetches psiphon config from the API.
 func (s *Session) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
-	clnt, err := s.NewOrchestraClient(ctx)
+	clnt, err := s.newOrchestraClient(ctx)
 	if err != nil {
 		return nil, err
 	}
