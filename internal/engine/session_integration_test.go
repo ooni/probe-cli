@@ -447,7 +447,7 @@ func TestNewOrchestraClientMaybeLookupBackendsFailure(t *testing.T) {
 	sess.testMaybeLookupBackendsContext = func(ctx context.Context) error {
 		return errMocked
 	}
-	client, err := sess.NewOrchestraClient(context.Background())
+	client, err := sess.newOrchestraClient(context.Background())
 	if !errors.Is(err, errMocked) {
 		t.Fatal("not the error we expected", err)
 	}
@@ -465,7 +465,7 @@ func TestNewOrchestraClientMaybeLookupLocationFailure(t *testing.T) {
 	sess.testMaybeLookupLocationContext = func(ctx context.Context) error {
 		return errMocked
 	}
-	client, err := sess.NewOrchestraClient(context.Background())
+	client, err := sess.newOrchestraClient(context.Background())
 	if !errors.Is(err, errMocked) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
@@ -482,7 +482,7 @@ func TestNewOrchestraClientProbeServicesNewClientFailure(t *testing.T) {
 	sess.selectedProbeServiceHook = func(svc *model.OOAPIService) {
 		svc.Type = "antani" // should really not be supported for a long time
 	}
-	client, err := sess.NewOrchestraClient(context.Background())
+	client, err := sess.newOrchestraClient(context.Background())
 	if !errors.Is(err, probeservices.ErrUnsupportedEndpoint) {
 		t.Fatal("not the error we expected")
 	}

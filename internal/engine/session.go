@@ -264,9 +264,7 @@ func (s *Session) KibiBytesSent() float64 {
 //
 // The return value is either the check-in response or an error.
 func (s *Session) CheckIn(
-	ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInResultNettests, error) {
-	// TODO(bassosimone): consider refactoring this function to return
-	// the whole check-in response to the caller.
+	ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInResult, error) {
 	if err := s.maybeLookupLocationContext(ctx); err != nil {
 		return nil, err
 	}
@@ -299,7 +297,7 @@ func (s *Session) CheckIn(
 	if err != nil {
 		return nil, err
 	}
-	return &resp.Tests, nil
+	return resp, nil
 }
 
 // maybeLookupLocationContext is a wrapper for MaybeLookupLocationContext that calls
@@ -366,7 +364,7 @@ func (s *Session) DefaultHTTPClient() model.HTTPClient {
 // FetchTorTargets fetches tor targets from the API.
 func (s *Session) FetchTorTargets(
 	ctx context.Context, cc string) (map[string]model.OOAPITorTarget, error) {
-	clnt, err := s.NewOrchestraClient(ctx)
+	clnt, err := s.newOrchestraClient(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -430,12 +428,9 @@ func (s *Session) NewSubmitter(ctx context.Context) (Submitter, error) {
 	return probeservices.NewSubmitter(psc, s.Logger()), nil
 }
 
-// NewOrchestraClient creates a new orchestra client. This client is registered
+// newOrchestraClient creates a new orchestra client. This client is registered
 // and logged in with the OONI orchestra. An error is returned on failure.
-//
-// This function is DEPRECATED. New code SHOULD NOT use it. It will eventually
-// be made private or entirely removed from the codebase.
-func (s *Session) NewOrchestraClient(ctx context.Context) (*probeservices.Client, error) {
+func (s *Session) newOrchestraClient(ctx context.Context) (*probeservices.Client, error) {
 	clnt, err := s.NewProbeServicesClient(ctx)
 	if err != nil {
 		return nil, err

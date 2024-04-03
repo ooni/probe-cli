@@ -27,8 +27,7 @@ var (
 // InputLoaderSession is the session according to an InputLoader. We
 // introduce this abstraction because it helps us with testing.
 type InputLoaderSession interface {
-	CheckIn(ctx context.Context,
-		config *model.OOAPICheckInConfig) (*model.OOAPICheckInResultNettests, error)
+	CheckIn(ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInResult, error)
 }
 
 // InputLoaderLogger is the logger according to an InputLoader.
@@ -328,12 +327,12 @@ func (il *InputLoader) checkIn(
 		return nil, err
 	}
 	// Note: safe to assume that reply is not nil if err is nil
-	if reply.WebConnectivity != nil && len(reply.WebConnectivity.URLs) > 0 {
-		reply.WebConnectivity.URLs = il.preventMistakes(
-			reply.WebConnectivity.URLs, config.WebConnectivity.CategoryCodes,
+	if reply.Tests.WebConnectivity != nil && len(reply.Tests.WebConnectivity.URLs) > 0 {
+		reply.Tests.WebConnectivity.URLs = il.preventMistakes(
+			reply.Tests.WebConnectivity.URLs, config.WebConnectivity.CategoryCodes,
 		)
 	}
-	return reply, nil
+	return &reply.Tests, nil
 }
 
 // preventMistakes makes the code more robust with respect to any possible
