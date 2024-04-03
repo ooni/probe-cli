@@ -148,7 +148,20 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		version.Version,
 	))
 
-	// we only handle the POST method
+	// handle GET method for health check
+	if req.Method == "GET" {
+		metricRequestsCount.WithLabelValues("200", "ok").Inc()
+		resp := map[string]string{
+			"message": "Hello OONItarian!",
+		}
+		data, err := json.Marshal(resp)
+		runtimex.PanicOnError(err, "json.Marshal failed")
+		w.Header().Add("Content-Type", "application/json")
+		w.Write(data)
+		return
+	}
+
+	// we only handle the POST method for response generation
 	if req.Method != "POST" {
 		metricRequestsCount.WithLabelValues("400", "bad_request_method").Inc()
 		w.WriteHeader(400)

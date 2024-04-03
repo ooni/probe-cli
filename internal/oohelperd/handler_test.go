@@ -100,12 +100,20 @@ func TestHandlerWorkingAsIntended(t *testing.T) {
 
 	expectations := []expectationSpec{{
 		name:            "check for invalid method",
-		reqMethod:       "GET",
+		reqMethod:       "PUT",
 		reqContentType:  "",
 		reqBody:         strings.NewReader(""),
 		respStatusCode:  400,
 		respContentType: "",
 		parseBody:       false,
+	}, {
+		name:            "check for health message",
+		reqMethod:       "GET",
+		reqContentType:  "",
+		reqBody:         strings.NewReader(""),
+		respStatusCode:  200,
+		respContentType: "application/json",
+		parseBody:       true,
 	}, {
 		name:           "check for error reading request body",
 		reqMethod:      "POST",
