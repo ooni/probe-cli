@@ -40,10 +40,10 @@ type Config struct {
 
 // TestKeys contains the experiment's result.
 type TestKeys struct {
-	Success          bool                              `json:"success"`
-	NetworkEvents    []*vpntracex.Event                `json:"network_events"`
-	TCPConnect       []*model.ArchivalTCPConnectResult `json:"tcp_connect,omitempty"`
-	OpenVPNHandshake []*ArchivalOpenVPNHandshakeResult `json:"openvpn_handshake"`
+	Success          bool                                    `json:"success"`
+	NetworkEvents    []*vpntracex.Event                      `json:"network_events"`
+	TCPConnect       []*model.ArchivalTCPConnectResult       `json:"tcp_connect,omitempty"`
+	OpenVPNHandshake []*model.ArchivalOpenVPNHandshakeResult `json:"openvpn_handshake"`
 }
 
 // NewTestKeys creates new openvpn TestKeys.
@@ -52,15 +52,15 @@ func NewTestKeys() *TestKeys {
 		Success:          false,
 		NetworkEvents:    []*vpntracex.Event{},
 		TCPConnect:       []*model.ArchivalTCPConnectResult{},
-		OpenVPNHandshake: []*ArchivalOpenVPNHandshakeResult{},
+		OpenVPNHandshake: []*model.ArchivalOpenVPNHandshakeResult{},
 	}
 }
 
 // SingleConnection contains the results of a single handshake.
 type SingleConnection struct {
-	TCPConnect       *model.ArchivalTCPConnectResult `json:"tcp_connect,omitempty"`
-	OpenVPNHandshake *ArchivalOpenVPNHandshakeResult `json:"openvpn_handshake"`
-	NetworkEvents    []*vpntracex.Event              `json:"network_events"`
+	TCPConnect       *model.ArchivalTCPConnectResult       `json:"tcp_connect,omitempty"`
+	OpenVPNHandshake *model.ArchivalOpenVPNHandshakeResult `json:"openvpn_handshake"`
+	NetworkEvents    []*vpntracex.Event                    `json:"network_events"`
 	// TODO(ainghazal): make sure to document in the spec that these network events only cover the handshake.
 	// TODO(ainghazal): in the future, we will want to store more operations under this struct for a single connection,
 	// like pingResults or urlgetter calls.
@@ -297,19 +297,19 @@ func (m *Measurer) connectAndHandshake(
 
 	return &SingleConnection{
 		TCPConnect: trace.FirstTCPConnectOrNil(),
-		OpenVPNHandshake: &ArchivalOpenVPNHandshakeResult{
+		OpenVPNHandshake: &model.ArchivalOpenVPNHandshakeResult{
 			BootstrapTime: bootstrapTime,
 			Endpoint:      endpoint.String(),
 			IP:            endpoint.IPAddr,
 			Port:          port,
 			Transport:     endpoint.Transport,
 			Provider:      endpoint.Provider,
-			OpenVPNOptions: OpenVPNOptions{
+			OpenVPNOptions: model.ArchivalOpenVPNOptions{
 				Cipher:      openvpnConfig.OpenVPNOptions().Cipher,
 				Auth:        openvpnConfig.OpenVPNOptions().Auth,
 				Compression: string(openvpnConfig.OpenVPNOptions().Compress),
 			},
-			Status: ArchivalOpenVPNConnectStatus{
+			Status: model.ArchivalOpenVPNConnectStatus{
 				Failure: &failure,
 				Success: err == nil,
 			},

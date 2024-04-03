@@ -273,15 +273,15 @@ func TestAddConnectionTestKeys(t *testing.T) {
 				Tags:          []string{},
 				TransactionID: 1,
 			},
-			OpenVPNHandshake: &openvpn.ArchivalOpenVPNHandshakeResult{
+			OpenVPNHandshake: &model.ArchivalOpenVPNHandshakeResult{
 				BootstrapTime:  1,
 				Endpoint:       "aa",
 				IP:             "1.1.1.1",
 				Port:           1194,
 				Transport:      "tcp",
 				Provider:       "unknown",
-				OpenVPNOptions: openvpn.OpenVPNOptions{},
-				Status:         openvpn.ArchivalOpenVPNConnectStatus{},
+				OpenVPNOptions: model.ArchivalOpenVPNOptions{},
+				Status:         model.ArchivalOpenVPNConnectStatus{},
 				T0:             0,
 				T:              0,
 				Tags:           []string{},
@@ -305,10 +305,10 @@ func TestAddConnectionTestKeys(t *testing.T) {
 func TestAllConnectionsSuccessful(t *testing.T) {
 	t.Run("all success", func(t *testing.T) {
 		tk := openvpn.NewTestKeys()
-		tk.OpenVPNHandshake = []*openvpn.ArchivalOpenVPNHandshakeResult{
-			{Status: openvpn.ArchivalOpenVPNConnectStatus{Success: true}},
-			{Status: openvpn.ArchivalOpenVPNConnectStatus{Success: true}},
-			{Status: openvpn.ArchivalOpenVPNConnectStatus{Success: true}},
+		tk.OpenVPNHandshake = []*model.ArchivalOpenVPNHandshakeResult{
+			{Status: model.ArchivalOpenVPNConnectStatus{Success: true}},
+			{Status: model.ArchivalOpenVPNConnectStatus{Success: true}},
+			{Status: model.ArchivalOpenVPNConnectStatus{Success: true}},
 		}
 		if tk.AllConnectionsSuccessful() != true {
 			t.Fatal("expected all connections successful")
@@ -316,10 +316,10 @@ func TestAllConnectionsSuccessful(t *testing.T) {
 	})
 	t.Run("one failure", func(t *testing.T) {
 		tk := openvpn.NewTestKeys()
-		tk.OpenVPNHandshake = []*openvpn.ArchivalOpenVPNHandshakeResult{
-			{Status: openvpn.ArchivalOpenVPNConnectStatus{Success: false}},
-			{Status: openvpn.ArchivalOpenVPNConnectStatus{Success: true}},
-			{Status: openvpn.ArchivalOpenVPNConnectStatus{Success: true}},
+		tk.OpenVPNHandshake = []*model.ArchivalOpenVPNHandshakeResult{
+			{Status: model.ArchivalOpenVPNConnectStatus{Success: false}},
+			{Status: model.ArchivalOpenVPNConnectStatus{Success: true}},
+			{Status: model.ArchivalOpenVPNConnectStatus{Success: true}},
 		}
 		if tk.AllConnectionsSuccessful() != false {
 			t.Fatal("expected false")
@@ -327,10 +327,10 @@ func TestAllConnectionsSuccessful(t *testing.T) {
 	})
 	t.Run("all failures", func(t *testing.T) {
 		tk := openvpn.NewTestKeys()
-		tk.OpenVPNHandshake = []*openvpn.ArchivalOpenVPNHandshakeResult{
-			{Status: openvpn.ArchivalOpenVPNConnectStatus{Success: false}},
-			{Status: openvpn.ArchivalOpenVPNConnectStatus{Success: false}},
-			{Status: openvpn.ArchivalOpenVPNConnectStatus{Success: false}},
+		tk.OpenVPNHandshake = []*model.ArchivalOpenVPNHandshakeResult{
+			{Status: model.ArchivalOpenVPNConnectStatus{Success: false}},
+			{Status: model.ArchivalOpenVPNConnectStatus{Success: false}},
+			{Status: model.ArchivalOpenVPNConnectStatus{Success: false}},
 		}
 		if tk.AllConnectionsSuccessful() != false {
 			t.Fatal("expected false")

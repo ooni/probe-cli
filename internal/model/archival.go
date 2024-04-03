@@ -392,3 +392,38 @@ type ArchivalNetworkEvent struct {
 	TransactionID int64    `json:"transaction_id,omitempty"`
 	Tags          []string `json:"tags,omitempty"`
 }
+
+//
+// OpenVPN
+//
+
+// ArchivalOpenVPNHandshakeResult contains the result of a OpenVPN handshake.
+type ArchivalOpenVPNHandshakeResult struct {
+	BootstrapTime  float64                      `json:"bootstrap_time,omitempty"`
+	Endpoint       string                       `json:"endpoint"`
+	IP             string                       `json:"ip"`
+	Port           int                          `json:"port"`
+	Transport      string                       `json:"transport"`
+	Provider       string                       `json:"provider"`
+	OpenVPNOptions ArchivalOpenVPNOptions       `json:"openvpn_options"`
+	Status         ArchivalOpenVPNConnectStatus `json:"status"`
+	T0             float64                      `json:"t0,omitempty"`
+	T              float64                      `json:"t"`
+	Tags           []string                     `json:"tags"`
+	TransactionID  int64                        `json:"transaction_id,omitempty"`
+}
+
+// ArchivalOpenVPNOptions is a subset of [vpnconfig.OpenVPNOptions] that we want to include
+// in the archived result.
+type ArchivalOpenVPNOptions struct {
+	Auth        string `json:"auth,omitempty"`
+	Cipher      string `json:"cipher,omitempty"`
+	Compression string `json:"compression,omitempty"`
+}
+
+// ArchivalOpenVPNConnectStatus is the status of ArchivalOpenVPNConnectResult.
+type ArchivalOpenVPNConnectStatus struct {
+	Blocked *bool   `json:"blocked,omitempty"`
+	Failure *string `json:"failure"`
+	Success bool    `json:"success"`
+}
