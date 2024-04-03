@@ -42,7 +42,7 @@ type ProbeCLI interface {
 // ProbeEngine is an instance of the OONI Probe engine.
 type ProbeEngine interface {
 	Close() error
-	MaybeLookupLocation() error
+	MaybeLookupLocationContext(context.Context) error
 	ProbeASNString() string
 	ProbeCC() string
 	ProbeIP() string

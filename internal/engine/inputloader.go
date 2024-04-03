@@ -146,7 +146,7 @@ func (il *InputLoader) loadOptional() ([]model.OOAPIURLInfo, error) {
 }
 
 // loadStrictlyRequired implements the InputStrictlyRequired policy.
-func (il *InputLoader) loadStrictlyRequired(ctx context.Context) ([]model.OOAPIURLInfo, error) {
+func (il *InputLoader) loadStrictlyRequired(_ context.Context) ([]model.OOAPIURLInfo, error) {
 	inputs, err := il.loadLocal()
 	if err != nil || len(inputs) > 0 {
 		return inputs, err
@@ -242,7 +242,7 @@ func staticInputForExperiment(name string) ([]model.OOAPIURLInfo, error) {
 }
 
 // loadOrStaticDefault implements the InputOrStaticDefault policy.
-func (il *InputLoader) loadOrStaticDefault(ctx context.Context) ([]model.OOAPIURLInfo, error) {
+func (il *InputLoader) loadOrStaticDefault(_ context.Context) ([]model.OOAPIURLInfo, error) {
 	inputs, err := il.loadLocal()
 	if err != nil || len(inputs) > 0 {
 		return inputs, err

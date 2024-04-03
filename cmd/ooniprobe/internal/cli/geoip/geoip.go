@@ -43,7 +43,7 @@ func dogeoip(config dogeoipconfig) error {
 	}
 	defer engine.Close()
 
-	err = engine.MaybeLookupLocation()
+	err = engine.MaybeLookupLocationContext(context.Background())
 	if err != nil {
 		return err
 	}

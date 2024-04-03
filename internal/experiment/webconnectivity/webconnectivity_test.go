@@ -236,11 +236,11 @@ func newsession(t *testing.T, lookupBackends bool) model.ExperimentSession {
 		t.Fatal(err)
 	}
 	if lookupBackends {
-		if err := sess.MaybeLookupBackends(); err != nil {
+		if err := sess.MaybeLookupBackendsContext(context.Background()); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if err := sess.MaybeLookupLocation(); err != nil {
+	if err := sess.MaybeLookupLocationContext(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	return sess
