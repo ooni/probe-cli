@@ -1,7 +1,9 @@
 package engine
 
 import (
+	"encoding/json"
 	"errors"
+	"os"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -14,20 +16,12 @@ type SaverConfig struct {
 	// Enabled is true if saving is enabled.
 	Enabled bool
 
-	// Experiment is the experiment we're currently running.
-	Experiment SaverExperiment
-
 	// FilePath is the filepath where to append the measurement as a
 	// serialized JSON followed by a newline character.
 	FilePath string
 
 	// Logger is the logger used by the saver.
 	Logger model.Logger
-}
-
-// SaverExperiment is an experiment according to the Saver.
-type SaverExperiment interface {
-	SaveMeasurement(m *model.Measurement, filepath string) error
 }
 
 // NewSaver creates a new instance of Saver.
@@ -38,10 +32,10 @@ func NewSaver(config SaverConfig) (Saver, error) {
 	if config.FilePath == "" {
 		return nil, errors.New("saver: passed an empty filepath")
 	}
-	return realSaver{
-		Experiment: config.Experiment,
-		FilePath:   config.FilePath,
-		Logger:     config.Logger,
+	return &realSaver{
+		FilePath: config.FilePath,
+		Logger:   config.Logger,
+		savefunc: SaveMeasurement,
 	}, nil
 }
 
@@ -54,14 +48,45 @@ func (fs fakeSaver) SaveMeasurement(m *model.Measurement) error {
 var _ Saver = fakeSaver{}
 
 type realSaver struct {
-	Experiment SaverExperiment
-	FilePath   string
-	Logger     model.Logger
+	FilePath string
+	Logger   model.Logger
+	savefunc func(measurement *model.Measurement, filePath string) error
 }
 
-func (rs realSaver) SaveMeasurement(m *model.Measurement) error {
+func (rs *realSaver) SaveMeasurement(m *model.Measurement) error {
 	rs.Logger.Info("saving measurement to disk")
-	return rs.Experiment.SaveMeasurement(m, rs.FilePath)
+	return rs.savefunc(m, rs.FilePath)
 }
 
-var _ Saver = realSaver{}
+var _ Saver = &realSaver{}
+
+// SaveMeasurement saves a measurement on the specified file path.
+func SaveMeasurement(measurement *model.Measurement, filePath string) error {
+	return saveMeasurement(
+		measurement, filePath, json.Marshal, os.OpenFile,
+		func(fp *os.File, b []byte) (int, error) {
+			return fp.Write(b)
+		},
+	)
+}
+
+func saveMeasurement(
+	measurement *model.Measurement, filePath string,
+	marshal func(v interface{}) ([]byte, error),
+	openFile func(name string, flag int, perm os.FileMode) (*os.File, error),
+	write func(fp *os.File, b []byte) (n int, err error),
+) error {
+	data, err := marshal(measurement)
+	if err != nil {
+		return err
+	}
+	data = append(data, byte('\n'))
+	filep, err := openFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	if err != nil {
+		return err
+	}
+	if _, err := write(filep, data); err != nil {
+		return err
+	}
+	return filep.Close()
+}
