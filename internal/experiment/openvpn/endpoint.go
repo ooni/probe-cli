@@ -45,8 +45,8 @@ type endpoint struct {
 // newEndpointFromInputString constructs an endpoint after parsing an input string.
 //
 // The input URI is in the form:
-// "openvpn://1.2.3.4:443/udp/&provider=tunnelbear"
-// "openvpn+obfs4://1.2.3.4:443/tcp/&provider=riseup&cert=deadbeef"
+// "openvpn://provider.corp/?address=1.2.3.4:1194&transport=udp
+// "openvpn+obfs4://provider.corp/address=1.2.3.4:1194?&cert=deadbeef&iat=0"
 func newEndpointFromInputString(uri string) (*endpoint, error) {
 	parsedURL, err := url.Parse(uri)
 	if err != nil {
@@ -66,9 +66,7 @@ func newEndpointFromInputString(uri string) (*endpoint, error) {
 	if provider == "" {
 		return nil, fmt.Errorf("%w: expected provider as host: %s", ErrInvalidInput, parsedURL.Host)
 	}
-	if provider != "riseup" {
-		// I am hardcoding a single provider at the moment.
-		// I need to figure out a way to pass info for arbitrary providers as options instead.
+	if !isValidProvider(provider) {
 		return nil, fmt.Errorf("%w: unknown provider: %s", ErrInvalidInput, provider)
 	}
 
@@ -176,6 +174,8 @@ var defaultOptionsByProvider = map[string]*vpnconfig.OpenVPNOptions{
 	},
 }
 
+// isValidProvider returns true if the provider is found as key in the registry of defaultOptionsByProvider.
+// TODO(ainghazal): consolidate with list of enabled providers from the API viewpoint.
 func isValidProvider(provider string) bool {
 	_, ok := defaultOptionsByProvider[provider]
 	return ok
