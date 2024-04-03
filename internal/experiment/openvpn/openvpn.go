@@ -31,7 +31,6 @@ var (
 // of this experiment. By tagging these variables with `ooni:"..."`, we allow
 // miniooni's -O flag to find them and set them.
 type Config struct {
-	// TODO(ainghazal): Provider is right now ignored. InputLoader should get the provider from options.
 	Provider string `ooni:"VPN provider"`
 	SafeKey  string `ooni:"key to connect to the OpenVPN endpoint"`
 	SafeCert string `ooni:"cert to connect to the OpenVPN endpoint"`

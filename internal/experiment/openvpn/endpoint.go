@@ -19,8 +19,8 @@ var (
 )
 
 // endpoint is a single endpoint to be probed.
-// The information contained in here is not generally not sufficient to complete a connection:
-// we need more info, as cipher selection or obfuscating proxy credentials.
+// The information contained in here is not sufficient to complete a connection:
+// we need to augment it with more info, as cipher selection or obfuscating proxy credentials.
 type endpoint struct {
 	// IPAddr is the IP Address for this endpoint.
 	IPAddr string
@@ -172,6 +172,13 @@ var defaultOptionsByProvider = map[string]*vpnconfig.OpenVPNOptions{
 		Auth:   "SHA512",
 		Cipher: "AES-256-GCM",
 	},
+}
+
+// APIEnabledProviders is the list of providers that the stable API Endpoint knows about.
+// This array will be a subset of the keys in defaultOptionsByProvider, but it might make sense
+// to still register info about more providers that the API officially knows about.
+var APIEnabledProviders = []string{
+	"riseup",
 }
 
 // isValidProvider returns true if the provider is found as key in the registry of defaultOptionsByProvider.
