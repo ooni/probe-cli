@@ -84,7 +84,7 @@ func (eng *FakeProbeEngine) Close() error {
 }
 
 // MaybeLookupLocation implements ProbeEngine.MaybeLookupLocation
-func (eng *FakeProbeEngine) MaybeLookupLocation() error {
+func (eng *FakeProbeEngine) MaybeLookupLocationContext(_ context.Context) error {
 	return eng.FakeMaybeLookupLocation
 }
 

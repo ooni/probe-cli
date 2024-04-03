@@ -66,7 +66,7 @@ func RunGroup(config RunGroupConfig) error {
 	}
 	defer sess.Close()
 
-	err = sess.MaybeLookupLocation()
+	err = sess.MaybeLookupLocationContext(context.Background())
 	if err != nil {
 		log.WithError(err).Error("Failed to lookup the location of the probe")
 		return err
@@ -77,7 +77,7 @@ func RunGroup(config RunGroupConfig) error {
 		log.WithError(err).Error("Failed to create the network row")
 		return err
 	}
-	if err := sess.MaybeLookupBackends(); err != nil {
+	if err := sess.MaybeLookupBackendsContext(context.Background()); err != nil {
 		log.WithError(err).Errorf("Failed to discover OONI backends")
 		return err
 	}

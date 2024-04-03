@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"sync"
@@ -155,7 +154,7 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 	// use the temporary directory on the current system. This should
 	// work on Desktop. We tested that it did also work on iOS, but
 	// we have also seen on 2020-06-10 that it does not work on Android.
-	tempDir, err := ioutil.TempDir(config.TempDir, "ooniengine")
+	tempDir, err := os.MkdirTemp(config.TempDir, "ooniengine")
 	if err != nil {
 		return nil, err
 	}
@@ -382,16 +381,6 @@ func (s *Session) KeyValueStore() model.KeyValueStore {
 // Logger returns the logger used by the session.
 func (s *Session) Logger() model.Logger {
 	return s.logger
-}
-
-// MaybeLookupLocation is a caching location lookup call.
-func (s *Session) MaybeLookupLocation() error {
-	return s.MaybeLookupLocationContext(context.Background())
-}
-
-// MaybeLookupBackends is a caching OONI backends lookup call.
-func (s *Session) MaybeLookupBackends() error {
-	return s.MaybeLookupBackendsContext(context.Background())
 }
 
 // ErrAlreadyUsingProxy indicates that we cannot create a tunnel with
