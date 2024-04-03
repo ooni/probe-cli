@@ -128,5 +128,5 @@ type errUnexpectedResponse struct {
 
 // Error implements error.Error()
 func (e *errUnexpectedResponse) Error() string {
-	return fmt.Sprintf("unexptected response: %s", e.msg)
+	return fmt.Sprintf("unexpected response: %s", e.msg)
 }
