@@ -250,7 +250,7 @@ func (e *experiment) OpenReportContext(ctx context.Context) error {
 			e.byteCounter,
 		),
 	}
-	client, err := e.session.NewProbeServicesClient(ctx)
+	client, err := e.session.newProbeServicesClient(ctx)
 	if err != nil {
 		e.session.logger.Debugf("%+v", err)
 		return err

@@ -13,7 +13,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -127,7 +126,7 @@ type Session struct {
 
 	cl        []context.CancelFunc
 	mtx       sync.Mutex
-	submitter *probeservices.Submitter
+	submitter model.Submitter
 	sessp     *engine.Session
 }
 
@@ -306,11 +305,11 @@ func (sess *Session) Submit(ctx *Context, measurement string) (*SubmitMeasuremen
 	sess.mtx.Lock()
 	defer sess.mtx.Unlock()
 	if sess.submitter == nil {
-		psc, err := sess.sessp.NewProbeServicesClient(ctx.ctx)
+		submitter, err := sess.sessp.NewSubmitter(ctx.ctx)
 		if err != nil {
 			return nil, err
 		}
-		sess.submitter = probeservices.NewSubmitter(psc, sess.sessp.Logger())
+		sess.submitter = submitter
 	}
 	var mm model.Measurement
 	if err := json.Unmarshal([]byte(measurement), &mm); err != nil {

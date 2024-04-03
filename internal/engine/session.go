@@ -318,7 +318,7 @@ func (s *Session) newProbeServicesClientForCheckIn(
 	if s.testNewProbeServicesClientForCheckIn != nil {
 		return s.testNewProbeServicesClientForCheckIn(ctx)
 	}
-	client, err := s.NewProbeServicesClient(ctx)
+	client, err := s.newProbeServicesClient(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -398,12 +398,12 @@ func (s *Session) NewExperimentBuilder(name string) (model.ExperimentBuilder, er
 	return eb, nil
 }
 
-// NewProbeServicesClient creates a new client for talking with the
+// newProbeServicesClient creates a new client for talking with the
 // OONI probe services. This function will benchmark the available
 // probe services, and select the fastest. In case all probe services
 // seem to be down, we try again applying circumvention tactics.
 // This function will fail IMMEDIATELY if given a cancelled context.
-func (s *Session) NewProbeServicesClient(ctx context.Context) (*probeservices.Client, error) {
+func (s *Session) newProbeServicesClient(ctx context.Context) (*probeservices.Client, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err() // helps with testing
 	}
@@ -421,7 +421,7 @@ func (s *Session) NewProbeServicesClient(ctx context.Context) (*probeservices.Cl
 
 // NewSubmitter creates a new submitter instance.
 func (s *Session) NewSubmitter(ctx context.Context) (Submitter, error) {
-	psc, err := s.NewProbeServicesClient(ctx)
+	psc, err := s.newProbeServicesClient(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -431,7 +431,7 @@ func (s *Session) NewSubmitter(ctx context.Context) (Submitter, error) {
 // newOrchestraClient creates a new orchestra client. This client is registered
 // and logged in with the OONI orchestra. An error is returned on failure.
 func (s *Session) newOrchestraClient(ctx context.Context) (*probeservices.Client, error) {
-	clnt, err := s.NewProbeServicesClient(ctx)
+	clnt, err := s.newProbeServicesClient(ctx)
 	if err != nil {
 		return nil, err
 	}
