@@ -64,14 +64,14 @@ type Experiment struct {
 	newInputLoaderFn func(inputPolicy model.InputPolicy) inputLoader
 
 	// newSubmitterFn is OPTIONAL and used for testing.
-	newSubmitterFn func(ctx context.Context) (engine.Submitter, error)
+	newSubmitterFn func(ctx context.Context) (model.Submitter, error)
 
 	// newSaverFn is OPTIONAL and used for testing.
-	newSaverFn func(experiment model.Experiment) (engine.Saver, error)
+	newSaverFn func(experiment model.Experiment) (model.Saver, error)
 
 	// newInputProcessorFn is OPTIONAL and used for testing.
 	newInputProcessorFn func(experiment model.Experiment, inputList []model.OOAPIURLInfo,
-		saver engine.Saver, submitter engine.Submitter) inputProcessor
+		saver model.Saver, submitter model.Submitter) inputProcessor
 }
 
 // Run runs the given experiment.
@@ -138,34 +138,34 @@ type inputProcessor = model.ExperimentInputProcessor
 
 // newInputProcessor creates a new inputProcessor instance.
 func (ed *Experiment) newInputProcessor(experiment model.Experiment,
-	inputList []model.OOAPIURLInfo, saver engine.Saver, submitter engine.Submitter) inputProcessor {
+	inputList []model.OOAPIURLInfo, saver model.Saver, submitter model.Submitter) inputProcessor {
 	if ed.newInputProcessorFn != nil {
 		return ed.newInputProcessorFn(experiment, inputList, saver, submitter)
 	}
-	return &engine.InputProcessor{
+	return &InputProcessor{
 		Annotations: ed.Annotations,
 		Experiment: &experimentWrapper{
-			child:  engine.NewInputProcessorExperimentWrapper(experiment),
+			child:  NewInputProcessorExperimentWrapper(experiment),
 			logger: ed.Session.Logger(),
 			total:  len(inputList),
 		},
 		Inputs:     inputList,
 		MaxRuntime: time.Duration(ed.MaxRuntime) * time.Second,
 		Options:    experimentOptionsToStringList(ed.ExtraOptions),
-		Saver:      engine.NewInputProcessorSaverWrapper(saver),
+		Saver:      NewInputProcessorSaverWrapper(saver),
 		Submitter: &experimentSubmitterWrapper{
-			child:  engine.NewInputProcessorSubmitterWrapper(submitter),
+			child:  NewInputProcessorSubmitterWrapper(submitter),
 			logger: ed.Session.Logger(),
 		},
 	}
 }
 
 // newSaver creates a new engine.Saver instance.
-func (ed *Experiment) newSaver(experiment model.Experiment) (engine.Saver, error) {
+func (ed *Experiment) newSaver(experiment model.Experiment) (model.Saver, error) {
 	if ed.newSaverFn != nil {
 		return ed.newSaverFn(experiment)
 	}
-	return engine.NewSaver(engine.SaverConfig{
+	return NewSaver(SaverConfig{
 		Enabled:  !ed.NoJSON,
 		FilePath: ed.ReportFile,
 		Logger:   ed.Session.Logger(),
@@ -173,11 +173,11 @@ func (ed *Experiment) newSaver(experiment model.Experiment) (engine.Saver, error
 }
 
 // newSubmitter creates a new engine.Submitter instance.
-func (ed *Experiment) newSubmitter(ctx context.Context) (engine.Submitter, error) {
+func (ed *Experiment) newSubmitter(ctx context.Context) (model.Submitter, error) {
 	if ed.newSubmitterFn != nil {
 		return ed.newSubmitterFn(ctx)
 	}
-	return engine.NewSubmitter(ctx, engine.SubmitterConfig{
+	return NewSubmitter(ctx, SubmitterConfig{
 		Enabled: !ed.NoCollector,
 		Session: ed.Session,
 		Logger:  ed.Session.Logger(),
@@ -233,7 +233,7 @@ func experimentOptionsToStringList(options map[string]any) (out []string) {
 // experimentWrapper wraps an experiment and logs progress
 type experimentWrapper struct {
 	// child is the child experiment wrapper
-	child engine.InputProcessorExperimentWrapper
+	child InputProcessorExperimentWrapper
 
 	// logger is the logger to use
 	logger model.Logger
@@ -254,7 +254,7 @@ func (ew *experimentWrapper) MeasureAsync(
 // fail if we cannot submit a measurement
 type experimentSubmitterWrapper struct {
 	// child is the child submitter wrapper
-	child engine.InputProcessorSubmitterWrapper
+	child InputProcessorSubmitterWrapper
 
 	// logger is the logger to use
 	logger model.Logger

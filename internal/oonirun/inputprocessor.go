@@ -1,4 +1,4 @@
-package engine
+package oonirun
 
 import (
 	"context"
@@ -76,11 +76,11 @@ type InputProcessorSaverWrapper interface {
 }
 
 type inputProcessorSaverWrapper struct {
-	saver Saver
+	saver model.Saver
 }
 
 // NewInputProcessorSaverWrapper wraps a Saver for InputProcessor.
-func NewInputProcessorSaverWrapper(saver Saver) InputProcessorSaverWrapper {
+func NewInputProcessorSaverWrapper(saver model.Saver) InputProcessorSaverWrapper {
 	return inputProcessorSaverWrapper{saver: saver}
 }
 

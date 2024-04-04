@@ -20,7 +20,7 @@ type Session interface {
 	engine.InputLoaderSession
 
 	// A Session is also a SubmitterSession.
-	engine.SubmitterSession
+	SubmitterSession
 
 	// DefaultHTTPClient returns the session's default HTTPClient.
 	DefaultHTTPClient() model.HTTPClient
