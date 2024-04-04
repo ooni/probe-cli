@@ -420,7 +420,7 @@ func (s *Session) newProbeServicesClient(ctx context.Context) (*probeservices.Cl
 }
 
 // NewSubmitter creates a new submitter instance.
-func (s *Session) NewSubmitter(ctx context.Context) (Submitter, error) {
+func (s *Session) NewSubmitter(ctx context.Context) (model.Submitter, error) {
 	psc, err := s.newProbeServicesClient(ctx)
 	if err != nil {
 		return nil, err

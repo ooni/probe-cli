@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
@@ -81,7 +80,7 @@ func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 		},
 		newExperimentBuilderFn: nil,
 		newInputLoaderFn:       nil,
-		newSubmitterFn: func(ctx context.Context) (engine.Submitter, error) {
+		newSubmitterFn: func(ctx context.Context) (model.Submitter, error) {
 			subm := &mocks.Submitter{
 				MockSubmit: func(ctx context.Context, m *model.Measurement) error {
 					failedToSubmit++
@@ -171,9 +170,9 @@ func TestExperimentRun(t *testing.T) {
 		Session                Session
 		newExperimentBuilderFn func(experimentName string) (model.ExperimentBuilder, error)
 		newInputLoaderFn       func(inputPolicy model.InputPolicy) inputLoader
-		newSubmitterFn         func(ctx context.Context) (engine.Submitter, error)
-		newSaverFn             func(experiment model.Experiment) (engine.Saver, error)
-		newInputProcessorFn    func(experiment model.Experiment, inputList []model.OOAPIURLInfo, saver engine.Saver, submitter engine.Submitter) inputProcessor
+		newSubmitterFn         func(ctx context.Context) (model.Submitter, error)
+		newSaverFn             func(experiment model.Experiment) (model.Saver, error)
+		newInputProcessorFn    func(experiment model.Experiment, inputList []model.OOAPIURLInfo, saver model.Saver, submitter model.Submitter) inputProcessor
 	}
 	type args struct {
 		ctx context.Context
@@ -274,7 +273,7 @@ func TestExperimentRun(t *testing.T) {
 					},
 				}
 			},
-			newSubmitterFn: func(ctx context.Context) (engine.Submitter, error) {
+			newSubmitterFn: func(ctx context.Context) (model.Submitter, error) {
 				return nil, errMocked
 			},
 		},
@@ -317,10 +316,10 @@ func TestExperimentRun(t *testing.T) {
 					},
 				}
 			},
-			newSubmitterFn: func(ctx context.Context) (engine.Submitter, error) {
+			newSubmitterFn: func(ctx context.Context) (model.Submitter, error) {
 				return &mocks.Submitter{}, nil
 			},
-			newSaverFn: func(experiment model.Experiment) (engine.Saver, error) {
+			newSaverFn: func(experiment model.Experiment) (model.Saver, error) {
 				return nil, errMocked
 			},
 		},
@@ -363,14 +362,14 @@ func TestExperimentRun(t *testing.T) {
 					},
 				}
 			},
-			newSubmitterFn: func(ctx context.Context) (engine.Submitter, error) {
+			newSubmitterFn: func(ctx context.Context) (model.Submitter, error) {
 				return &mocks.Submitter{}, nil
 			},
-			newSaverFn: func(experiment model.Experiment) (engine.Saver, error) {
+			newSaverFn: func(experiment model.Experiment) (model.Saver, error) {
 				return &mocks.Saver{}, nil
 			},
 			newInputProcessorFn: func(experiment model.Experiment, inputList []model.OOAPIURLInfo,
-				saver engine.Saver, submitter engine.Submitter) inputProcessor {
+				saver model.Saver, submitter model.Submitter) inputProcessor {
 				return &mocks.ExperimentInputProcessor{
 					MockRun: func(ctx context.Context) error {
 						return errMocked
