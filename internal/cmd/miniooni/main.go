@@ -40,6 +40,8 @@ type Options struct {
 	RepeatEvery         int64
 	ReportFile          string
 	SnowflakeRendezvous string
+	SoftwareName        string
+	SoftwareVersion     string
 	TorArgs             []string
 	TorBinary           string
 	Tunnel              string
@@ -131,6 +133,20 @@ func main() {
 		"snowflake-rendezvous",
 		"domain_fronting",
 		"rendezvous method for --tunnel=torsf (one of: \"domain_fronting\" and \"amp\")",
+	)
+
+	flags.StringVar(
+		&globalOptions.SoftwareName,
+		"software-name",
+		"miniooni",
+		"Set the name of the application",
+	)
+
+	flags.StringVar(
+		&globalOptions.SoftwareVersion,
+		"software-version",
+		version.Version,
+		"Set the version of the application",
 	)
 
 	flags.StringSliceVar(
@@ -268,7 +284,7 @@ func registerAllExperiments(rootCmd *cobra.Command, globalOptions *Options) {
 			// nothing
 		}
 
-		if doc := documentationForOptions(name, factory); doc != "" {
+		if doc := documentationForOptions(factory); doc != "" {
 			flags.StringSliceVarP(
 				&globalOptions.ExtraOptions,
 				"option",
@@ -376,7 +392,7 @@ func mainSingleIteration(logger model.Logger, experimentName string, currentOpti
 	runx(ctx, sess, experimentName, annotations, extraOptions, currentOptions)
 }
 
-func documentationForOptions(name string, factory *registry.Factory) string {
+func documentationForOptions(factory *registry.Factory) string {
 	var sb strings.Builder
 	options, err := factory.Options()
 	if err != nil || len(options) < 1 {
