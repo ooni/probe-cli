@@ -10,7 +10,7 @@ import (
 )
 
 // registerJavaScript registers the javascript subcommand
-func registerJavaScript(rootCmd *cobra.Command, globalOptions *Options) {
+func registerJavaScript(rootCmd *cobra.Command, _ *Options) {
 	subCmd := &cobra.Command{
 		Use:   "javascript",
 		Short: "Very experimental command to run JavaScript snippets",
