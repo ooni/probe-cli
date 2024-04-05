@@ -6,6 +6,7 @@ package oonimkall
 
 import (
 	"errors"
+	"log"
 	"net/http"
 
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -54,12 +55,17 @@ func (sess *Session) HTTPDo(ctx *Context, jreq *HTTPRequest) (*HTTPResponse, err
 func (sess *Session) httpDoLocked(ctx *Context, jreq *HTTPRequest) (*HTTPResponse, error) {
 	clnt := sess.sessp.DefaultHTTPClient()
 
+	log.Printf("BONSOIR ELLIOT: %+v", jreq)
+
 	req, err := http.NewRequestWithContext(ctx.ctx, jreq.Method, jreq.URL, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	resp, err := clnt.Do(req)
+
+	log.Printf("BONSOIR ELLIOT #2: %+v %+v", resp, err)
+
 	if err != nil {
 		return nil, err
 	}
@@ -70,6 +76,9 @@ func (sess *Session) httpDoLocked(ctx *Context, jreq *HTTPRequest) (*HTTPRespons
 	}
 
 	rawResp, err := netxlite.ReadAllContext(ctx.ctx, resp.Body)
+
+	log.Printf("BONSOIR ELLIOT #3: %+v", err)
+
 	if err != nil {
 		return nil, err
 	}
