@@ -29,7 +29,7 @@ type HTTPRequest struct {
 	// Method is the MANDATORY request method.
 	Method string
 
-	// URL is the MANDATORY request URL.
+	// Url is the MANDATORY request URL.
 	Url string
 }
 
