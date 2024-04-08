@@ -30,7 +30,7 @@ type HTTPRequest struct {
 	Method string
 
 	// URL is the MANDATORY request URL.
-	URL string
+	Url string
 }
 
 // HTTPResponse is an HTTP response.
@@ -54,7 +54,7 @@ func (sess *Session) HTTPDo(ctx *Context, jreq *HTTPRequest) (*HTTPResponse, err
 func (sess *Session) httpDoLocked(ctx *Context, jreq *HTTPRequest) (*HTTPResponse, error) {
 	clnt := sess.sessp.DefaultHTTPClient()
 
-	req, err := http.NewRequestWithContext(ctx.ctx, jreq.Method, jreq.URL, nil)
+	req, err := http.NewRequestWithContext(ctx.ctx, jreq.Method, jreq.Url, nil)
 	if err != nil {
 		return nil, err
 	}

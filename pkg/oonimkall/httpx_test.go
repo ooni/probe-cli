@@ -29,7 +29,7 @@ func TestSessionHTTPDo(t *testing.T) {
 
 		req := &oonimkall.HTTPRequest{
 			Method: "GET",
-			URL:    server.URL,
+			Url:    server.URL,
 		}
 
 		sess, err := NewSessionForTesting()
@@ -55,7 +55,7 @@ func TestSessionHTTPDo(t *testing.T) {
 
 		req := &oonimkall.HTTPRequest{
 			Method: "GET",
-			URL:    "\t", // this URL is invalid
+			Url:    "\t", // this URL is invalid
 		}
 
 		resp, err := sess.HTTPDo(sess.NewContext(), req)
@@ -75,7 +75,7 @@ func TestSessionHTTPDo(t *testing.T) {
 
 		req := &oonimkall.HTTPRequest{
 			Method: "GET",
-			URL:    server.URL,
+			Url:    server.URL,
 		}
 
 		sess, err := NewSessionForTesting()
@@ -107,7 +107,7 @@ func TestSessionHTTPDo(t *testing.T) {
 
 		req := &oonimkall.HTTPRequest{
 			Method: "GET",
-			URL:    URL.String(),
+			Url:    URL.String(),
 		}
 
 		sess, err := NewSessionForTesting()
@@ -142,7 +142,7 @@ func TestSessionHTTPDo(t *testing.T) {
 
 		req := &oonimkall.HTTPRequest{
 			Method: "GET",
-			URL:    server.URL,
+			Url:    server.URL,
 		}
 
 		sess, err := NewSessionForTesting()
