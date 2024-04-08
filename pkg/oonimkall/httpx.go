@@ -31,7 +31,7 @@ type HTTPRequest struct {
 
 	// Url is the MANDATORY request URL.
 	//
-	// This variable MUST be named "Url" not "URL"; see https://github.com/ooni/probe/issues/2701.
+	// Note: this field MUST be named "Url" not "URL"; see https://github.com/ooni/probe/issues/2701.
 	Url string
 }
 
