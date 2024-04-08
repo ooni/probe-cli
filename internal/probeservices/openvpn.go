@@ -18,7 +18,7 @@ func (c Client) FetchOpenVPNConfig(ctx context.Context, provider, cc string) (re
 
 	err = client.GetJSONWithQuery(
 		ctx,
-		fmt.Sprintf("/api/v2/ooniprobe/vpn-config/%s/", provider),
+		fmt.Sprintf("/api/v2/ooniprobe/vpn-config/%svpn/", provider),
 		query,
 		&result,
 	)
