@@ -29,7 +29,9 @@ type HTTPRequest struct {
 	// Method is the MANDATORY request method.
 	Method string
 
-	// Url is the MANDATORY request URL. See https://github.com/ooni/probe/issues/2701
+	// Url is the MANDATORY request URL.
+	//
+	// This variable MUST be named "Url" not "URL"; see https://github.com/ooni/probe/issues/2701.
 	Url string
 }
 
