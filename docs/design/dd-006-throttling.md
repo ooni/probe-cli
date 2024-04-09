@@ -71,7 +71,7 @@ structure of a "read" network events is the following:
 Through these events, we know when "read" returned (`t`), for how much time it was blocked
 (`t - t0`), and the number of bytes sent or received.
 
-The slope of the integral of "read" events, threfore, provides information about the speed
+The slope of the integral of "read" events, therefore, provides information about the speed
 at which we were receiving data from the network. Slow downs in the stream either correspond
 to reordering and retransmission events (where there is head of line blocking) or to
 timeout events (where the TCP pipe is empty).
@@ -168,8 +168,8 @@ should be careful to exclude segments sent back to back.
 In general, detecting more precisely the characteristics of throttling either
 requires additional research aimed at classifying the stream of events emitted
 by a receiving socket under specific throttling conditions. A possible starting
-point for this research could be [Strengthening measurements from the edges:
-application-level packet loss rate estimation by Basso et al.](
+point for this research could be ["Strengthening measurements from the edges:
+application-level packet loss rate estimation" by Basso et al.](
 https://www.sigcomm.org/sites/default/files/ccr/papers/2013/July/2500098-2500104.pdf).
 
 An alternative approach would require the possibility of providing OONI experiments
