@@ -62,6 +62,7 @@ var bridgesPolicyTestHelpersDomains = []string{
 	"2.th.ooni.org",
 	"3.th.ooni.org",
 	"d33d1gs9kpq1c5.cloudfront.net",
+	"oohelperd.th.prod.ooni.io",
 }
 
 // TODO(bassosimone): this would be slices.Contains when we'll use go1.21

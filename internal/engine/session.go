@@ -352,6 +352,20 @@ func (s *Session) doClose() {
 func (s *Session) GetTestHelpersByName(name string) ([]model.OOAPIService, bool) {
 	defer s.mu.Unlock()
 	s.mu.Lock()
+
+	// TODO(https://github.com/ooni/probe/issues/2703): this change is a quick hack to
+	// make sure we have a way of testing the new TH deployment.
+	//
+	// We definitely NOT MEAN to merge this set of changes.
+	if th := os.Getenv("OONI_WEB_CONNECTIVITY_TH_URL"); th != "" {
+		custom := []model.OOAPIService{{
+			Address: th,
+			Type:    "https",
+			Front:   "",
+		}}
+		return custom, true
+	}
+
 	services, ok := s.availableTestHelpers[name]
 	return services, ok
 }
