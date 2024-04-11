@@ -9,6 +9,7 @@ import (
 	"strings"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
@@ -550,6 +551,64 @@ func TestInputLoaderCheckInSuccessWithSomeURLs(t *testing.T) {
 	}
 }
 
+func TestInputLoaderOpenVPNSuccessWithNoInput(t *testing.T) {
+	il := &InputLoader{
+		ExperimentName: "openvpn",
+		InputPolicy:    model.InputOrQueryBackend,
+		Session: &InputLoaderMockableSession{
+			Error: nil,
+		},
+	}
+	_, err := il.loadRemote(context.Background())
+	if err != nil {
+		t.Fatal("we did not expect an error")
+	}
+}
+
+func TestInputLoaderOpenVPNSuccessWithNoInputAndAPICall(t *testing.T) {
+	il := &InputLoader{
+		ExperimentName: "openvpn",
+		InputPolicy:    model.InputOrQueryBackend,
+		Session: &InputLoaderMockableSession{
+			Error: nil,
+			FetchOpenVPNConfigOutput: &model.OOAPIVPNProviderConfig{
+				Provider: "riseup",
+				Inputs: []string{
+					"openvpn://foo.corp/?address=1.1.1.1:1194&transport=tcp",
+				},
+				DateUpdated: time.Now(),
+			},
+		},
+	}
+	out, err := il.loadRemote(context.Background())
+	if err != nil {
+		t.Fatal("we did not expect an error")
+	}
+	if len(out) != 1 {
+		t.Fatal("we expected output of len=1")
+	}
+}
+
+func TestInputLoaderOpenVPNWithAPIFailureAndFallback(t *testing.T) {
+	expected := errors.New("mocked API error")
+	il := &InputLoader{
+		ExperimentName: "openvpn",
+		InputPolicy:    model.InputOrQueryBackend,
+		Session: &InputLoaderMockableSession{
+			Error: expected,
+		},
+	}
+	out, err := il.loadRemote(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out) != 2 {
+		t.Fatal("we expected 2 fallback URLs")
+	}
+}
+
+// TODO: WIP marker -------------------------------
+
 func TestPreventMistakesWithCategories(t *testing.T) {
 	input := []model.OOAPIURLInfo{{
 		CategoryCode: "NEWS",
@@ -686,7 +745,7 @@ func TestStringListToModelURLInfoWithError(t *testing.T) {
 	expected := errors.New("mocked error")
 	output, err := stringListToModelURLInfo(input, expected)
 	if !errors.Is(err, expected) {
-		t.Fatal("no the error we expected", err)
+		t.Fatal("not the error we expected", err)
 	}
 	if output != nil {
 		t.Fatal("unexpected nil output")
