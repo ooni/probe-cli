@@ -33,8 +33,7 @@ const simpleRequestForHandler = `{
 	},
 	"tcp_connect": [
 	  "8.8.8.8:443"
-	],
-	"x_quic_enabled": true
+	]
 }`
 
 // requestWithDomainName is input for testing the [handler].
