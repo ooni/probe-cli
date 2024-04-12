@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/cookiejar"
+	"os"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -31,6 +32,9 @@ const maxAcceptableBodySize = 1 << 24
 //
 // The zero value is invalid; construct using [NewHandler].
 type Handler struct {
+	// EnableQUIC OPTIONALLY enables QUIC.
+	EnableQUIC bool
+
 	// baseLogger is the MANDATORY logger to use.
 	baseLogger model.Logger
 
@@ -69,9 +73,13 @@ type Handler struct {
 
 var _ http.Handler = &Handler{}
 
+// enableQUIC allows to control whether to enable QUIC by using environment variables.
+var enableQUIC = (os.Getenv("OOHELPERD_ENABLE_QUIC") == "1")
+
 // NewHandler constructs the [handler].
 func NewHandler(logger model.Logger, netx *netxlite.Netx) *Handler {
 	return &Handler{
+		EnableQUIC:        enableQUIC,
 		baseLogger:        logger,
 		countRequests:     &atomic.Int64{},
 		indexer:           &atomic.Int64{},
