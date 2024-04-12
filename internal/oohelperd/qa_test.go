@@ -119,10 +119,10 @@ func TestQAEnableDisableQUIC(t *testing.T) {
 			// check whether we have QUIC handshakes
 			switch {
 			case !tc.enableQUIC.IsNone() && tc.enableQUIC.Unwrap() && len(jsonresp.QUICHandshake) > 0:
-				// all good: we have QUIC enabled and we get an HTTP/3 response
+				// all good: we have QUIC enabled and we get QUIC handshakes
 
 			case (tc.enableQUIC.IsNone() || tc.enableQUIC.Unwrap() == false) && len(jsonresp.QUICHandshake) <= 0:
-				// all good: either default behavior or QUIC not enabled and not HTTP/3 response
+				// all good: either default behavior or QUIC not enabled and no QUIC handshakes
 
 			default:
 				t.Fatalf(
