@@ -1,8 +1,11 @@
 package netemx
 
 import (
+	"fmt"
 	"net"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/ooni/netem"
 )
@@ -29,7 +32,7 @@ func HTTPBinHandlerFactory() HTTPHandlerFactory {
 // Any other request URL causes a 404 respose.
 func HTTPBinHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Date", "Thu, 24 Aug 2023 14:35:29 GMT")
+		w.Header().Set("Date", "Thu, 24 Aug 2023 14:35:29 GMT")
 
 		// missing address => 500
 		address, _, err := net.SplitHostPort(r.RemoteAddr)
@@ -44,6 +47,20 @@ func HTTPBinHandler() http.Handler {
 		secureRedirect := r.URL.Path == "/broken-redirect-https"
 
 		switch {
+		// redirect with count
+		case strings.HasPrefix(r.URL.Path, "/redirect/"):
+			count, err := strconv.Atoi(strings.TrimPrefix(r.URL.Path, "/redirect/"))
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			if count <= 0 {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+			w.Header().Set("Location", fmt.Sprintf("/redirect/%d", count-1))
+			w.WriteHeader(http.StatusFound)
+
 		// broken HTTP redirect for clients
 		case cleartextRedirect && client:
 			w.Header().Set("Location", "http://")
