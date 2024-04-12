@@ -62,7 +62,12 @@ Probe SHOULD build for any version greater than this version. We indicate the ex
 Go version inside the `GOVERSION` file. We try to use a stable, still supported Go
 version that is compatible with our dependencies.
 
-After updating `GOVERSION`, we need to update our stdlib forks:
+We should additionally update the `toolchain` line inside of `go.mod` to use the
+specific toolchain we want to use. (The `toolchain` mechanism was introduced by
+Go 1.21.0 and it may be that we can now use just the `toolchain` instead of
+using the `GOVERSIOn` file; this should eventually be investigated.)
+
+After updating `GOVERSION` and `go.mod`, we need to update our stdlib forks:
 
 - https://github.com/ooni/oocrypto
 - https://github.com/ooni/oohttp
