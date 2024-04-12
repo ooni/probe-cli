@@ -9,6 +9,7 @@ package webconnectivitylte
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -305,6 +306,9 @@ func (t *SecureFlow) newHTTPRequest(ctx context.Context) (*http.Request, error) 
 	return httpReq, nil
 }
 
+// ErrTooManyRedirects indicates we have seen too many HTTP redirects.
+var ErrTooManyRedirects = errors.New("stopped after too many redirects")
+
 // httpTransaction runs the HTTP transaction and saves the results.
 func (t *SecureFlow) httpTransaction(ctx context.Context, network, address, alpn string,
 	txp model.HTTPTransport, req *http.Request, trace *measurexlite.Trace) (*http.Response, []byte, error) {
@@ -337,6 +341,9 @@ func (t *SecureFlow) httpTransaction(ctx context.Context, network, address, alpn
 	}
 	if err == nil && httpRedirectIsRedirect(resp) {
 		err = httpValidateRedirect(resp)
+		if err == nil && t.FollowRedirects && !t.NumRedirects.CanFollowOneMoreRedirect() {
+			err = ErrTooManyRedirects
+		}
 	}
 
 	finished := trace.TimeSince(trace.ZeroTime())
@@ -374,10 +381,7 @@ func (t *SecureFlow) httpTransaction(ctx context.Context, network, address, alpn
 
 // maybeFollowRedirects follows redirects if configured and needed
 func (t *SecureFlow) maybeFollowRedirects(ctx context.Context, resp *http.Response) {
-	if !t.FollowRedirects || !t.NumRedirects.CanFollowOneMoreRedirect() {
-		return // not configured or too many redirects
-	}
-	if httpRedirectIsRedirect(resp) {
+	if t.FollowRedirects && httpRedirectIsRedirect(resp) {
 		location, err := resp.Location()
 		if err != nil {
 			return // broken response from server
