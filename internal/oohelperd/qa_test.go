@@ -25,7 +25,16 @@ func TestQAEnableDisableQUIC(t *testing.T) {
 		enableQUIC optional.Value[bool]
 	}
 
-	cases := []testcase{{}}
+	cases := []testcase{{
+		name:       "with the default settings",
+		enableQUIC: optional.None[bool](),
+	}, {
+		name:       "with explicit false",
+		enableQUIC: optional.Some(false),
+	}, {
+		name:       "with explicit true",
+		enableQUIC: optional.Some(true),
+	}}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -46,13 +55,13 @@ func TestQAEnableDisableQUIC(t *testing.T) {
 
 			// create request body
 			reqbody := &model.THRequest{
-				HTTPRequest: "https://dns.google",
+				HTTPRequest: "https://www.example.com/",
 				HTTPRequestHeaders: map[string][]string{
 					"Accept-Language": {model.HTTPHeaderAcceptLanguage},
 					"Accept":          {model.HTTPHeaderAccept},
 					"User-Agent":      {model.HTTPHeaderUserAgent},
 				},
-				TCPConnect:   []string{"8.8.8.8", "8.8.4.4"},
+				TCPConnect:   []string{netemx.AddressWwwExampleCom},
 				XQUICEnabled: true,
 			}
 

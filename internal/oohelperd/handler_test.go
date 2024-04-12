@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 	"testing"
 
@@ -266,11 +265,8 @@ func TestHandlerWorkingAsIntended(t *testing.T) {
 }
 
 func TestNewHandlerEnableQUIC(t *testing.T) {
-	if os.Getenv("OOHELPERD_ENABLE_QUIC") != "" {
-		t.Skip("skip test when environment variable is set")
-	}
 	handler := NewHandler(log.Log, &netxlite.Netx{Underlying: nil})
 	if handler.EnableQUIC != false {
-		t.Fatal("expected to see false here")
+		t.Fatal("expected to see false here (is the the environment variable OOHELPERD_ENABLE_QUIC set?!)")
 	}
 }
