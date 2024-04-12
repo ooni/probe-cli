@@ -90,6 +90,8 @@ func AllTestCases() []*TestCase {
 		redirectWithConsistentDNSAndThenEOFForHTTPS(),
 		redirectWithConsistentDNSAndThenTimeoutForHTTP(),
 		redirectWithConsistentDNSAndThenTimeoutForHTTPS(),
+		redirectWithMoreThanTenRedirectsAndHTTP(),
+		redirectWithMoreThanTenRedirectsAndHTTPS(),
 
 		successWithHTTP(),
 		successWithHTTPS(),
