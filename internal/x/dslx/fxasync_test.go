@@ -101,15 +101,3 @@ func TestParallel(t *testing.T) {
 		}
 	})
 }
-
-func TestMatrixMin(t *testing.T) {
-	if v := matrixMin(1, 7); v != 1 {
-		t.Fatal("expected to see 1, got", v)
-	}
-	if v := matrixMin(7, 4); v != 4 {
-		t.Fatal("expected to see 4, got", v)
-	}
-	if v := matrixMin(11, 11); v != 11 {
-		t.Fatal("expected to see 11, got", v)
-	}
-}
