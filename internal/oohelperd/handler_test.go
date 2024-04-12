@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 
@@ -33,7 +34,8 @@ const simpleRequestForHandler = `{
 	},
 	"tcp_connect": [
 	  "8.8.8.8:443"
-	]
+	],
+	"x_quic_enabled": true
 }`
 
 // requestWithDomainName is input for testing the [handler].
@@ -260,5 +262,15 @@ func TestHandlerWorkingAsIntended(t *testing.T) {
 				t.Fatal(err)
 			}
 		})
+	}
+}
+
+func TestNewHandlerEnableQUIC(t *testing.T) {
+	if os.Getenv("OOHELPERD_ENABLE_QUIC") != "" {
+		t.Skip("skip test when environment variable is set")
+	}
+	handler := NewHandler(log.Log, &netxlite.Netx{Underlying: nil})
+	if handler.EnableQUIC != false {
+		t.Fatal("expected to see false here")
 	}
 }
