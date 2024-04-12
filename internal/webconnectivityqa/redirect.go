@@ -405,7 +405,7 @@ func redirectWithMoreThanTenRedirectsAndHTTP() *TestCase {
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: `unknown_failure: stopped after too many redirects`,
-			XStatus:               8192, // StatusExperimentHTTP
+			XStatus:               0,
 			XDNSFlags:             0,
 			XBlockingFlags:        0,
 			Accessible:            false,
@@ -427,7 +427,7 @@ func redirectWithMoreThanTenRedirectsAndHTTPS() *TestCase {
 			DNSExperimentFailure:  nil,
 			DNSConsistency:        "consistent",
 			HTTPExperimentFailure: `unknown_failure: stopped after too many redirects`,
-			XStatus:               8192, // StatusExperimentHTTP
+			XStatus:               0,
 			XDNSFlags:             0,
 			XBlockingFlags:        0,
 			Accessible:            false,
