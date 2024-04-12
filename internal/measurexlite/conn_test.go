@@ -20,10 +20,10 @@ func TestRemoteAddrProvider(t *testing.T) {
 			},
 		}
 		if safeRemoteAddrNetwork(conn) != "" {
-			t.Fatal("unexpected empty network")
+			t.Fatal("expected empty network")
 		}
 		if safeRemoteAddrString(conn) != "" {
-			t.Fatal("unexpected empty string")
+			t.Fatal("expected empty string")
 		}
 	})
 
