@@ -35,7 +35,7 @@ func (p *OOAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (p *OOAPIHandler) getApiV1TestHelpers(w http.ResponseWriter, r *http.Request) {
+func (p *OOAPIHandler) getApiV1TestHelpers(w http.ResponseWriter, _ *http.Request) {
 	resp := map[string][]model.OOAPIService{
 		"web-connectivity": {
 			{

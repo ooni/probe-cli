@@ -262,3 +262,10 @@ func TestHandlerWorkingAsIntended(t *testing.T) {
 		})
 	}
 }
+
+func TestNewHandlerEnableQUIC(t *testing.T) {
+	handler := NewHandler(log.Log, &netxlite.Netx{Underlying: nil})
+	if handler.EnableQUIC != false {
+		t.Fatal("expected to see false here (is the the environment variable OOHELPERD_ENABLE_QUIC set?!)")
+	}
+}

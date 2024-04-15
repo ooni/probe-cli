@@ -12,6 +12,43 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
+func TestRemoteAddrProvider(t *testing.T) {
+	t.Run("for nil address", func(t *testing.T) {
+		conn := &mocks.Conn{
+			MockRemoteAddr: func() net.Addr {
+				return nil
+			},
+		}
+		if safeRemoteAddrNetwork(conn) != "" {
+			t.Fatal("expected empty network")
+		}
+		if safeRemoteAddrString(conn) != "" {
+			t.Fatal("expected empty string")
+		}
+	})
+
+	t.Run("for common case", func(t *testing.T) {
+		conn := &mocks.Conn{
+			MockRemoteAddr: func() net.Addr {
+				return &mocks.Addr{
+					MockString: func() string {
+						return "1.1.1.1:443"
+					},
+					MockNetwork: func() string {
+						return "tcp"
+					},
+				}
+			},
+		}
+		if safeRemoteAddrNetwork(conn) != "tcp" {
+			t.Fatal("unexpected network")
+		}
+		if safeRemoteAddrString(conn) != "1.1.1.1:443" {
+			t.Fatal("unexpected string")
+		}
+	})
+}
+
 func TestMaybeClose(t *testing.T) {
 	t.Run("with nil conn", func(t *testing.T) {
 		var conn net.Conn = nil

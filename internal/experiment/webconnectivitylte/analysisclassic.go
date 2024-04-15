@@ -25,7 +25,7 @@ func analysisEngineClassic(tk *TestKeys, logger model.Logger) {
 	tk.analysisClassic(model.GeoIPASNLookupperFunc(geoipx.LookupASN), logger)
 }
 
-func (tk *TestKeys) analysisClassic(lookupper model.GeoIPASNLookupper, logger model.Logger) {
+func (tk *TestKeys) analysisClassic(lookupper model.GeoIPASNLookupper, _ model.Logger) {
 	// Since we run after all tasks have completed (or so we assume) we're
 	// not going to use any form of locking here.
 

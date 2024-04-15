@@ -121,7 +121,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		Domain:                  URL.Hostname(),
 		IDGenerator:             NewIDGenerator(),
 		Logger:                  sess.Logger(),
-		NumRedirects:            NewNumRedirects(5),
+		NumRedirects:            NewNumRedirects(10),
 		TestKeys:                tk,
 		URL:                     URL,
 		ZeroTime:                measurement.MeasurementStartTimeSaved,

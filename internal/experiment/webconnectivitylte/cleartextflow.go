@@ -282,6 +282,9 @@ func (t *CleartextFlow) httpTransaction(ctx context.Context, network, address, a
 	}
 	if err == nil && httpRedirectIsRedirect(resp) {
 		err = httpValidateRedirect(resp)
+		if err == nil && t.FollowRedirects && !t.NumRedirects.CanFollowOneMoreRedirect() {
+			err = ErrTooManyRedirects
+		}
 	}
 
 	finished := trace.TimeSince(trace.ZeroTime())
@@ -319,10 +322,7 @@ func (t *CleartextFlow) httpTransaction(ctx context.Context, network, address, a
 
 // maybeFollowRedirects follows redirects if configured and needed
 func (t *CleartextFlow) maybeFollowRedirects(ctx context.Context, resp *http.Response) {
-	if !t.FollowRedirects || !t.NumRedirects.CanFollowOneMoreRedirect() {
-		return // not configured or too many redirects
-	}
-	if httpRedirectIsRedirect(resp) {
+	if t.FollowRedirects && httpRedirectIsRedirect(resp) {
 		location, err := resp.Location()
 		if err != nil {
 			return // broken response from server

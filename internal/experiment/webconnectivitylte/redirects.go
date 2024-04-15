@@ -19,5 +19,5 @@ func NewNumRedirects(n int64) *NumRedirects {
 // CanFollowOneMoreRedirect returns true if we are
 // allowed to follow one more redirect.
 func (nr *NumRedirects) CanFollowOneMoreRedirect() bool {
-	return nr.count.Add(-1) > 0
+	return nr.count.Add(-1) >= 0
 }
