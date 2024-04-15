@@ -25,6 +25,9 @@ type bridgesPolicy struct {
 
 var _ httpsDialerPolicy = &bridgesPolicy{}
 
+// maxInitialBridgeTactics is the number of initial bridge tactics we return.
+const maxInitialBridgeTactics = 4
+
 // LookupTactics implements httpsDialerPolicy.
 func (p *bridgesPolicy) LookupTactics(ctx context.Context, domain, port string) <-chan *httpsDialerTactic {
 	out := make(chan *httpsDialerTactic)
@@ -33,20 +36,32 @@ func (p *bridgesPolicy) LookupTactics(ctx context.Context, domain, port string) 
 		defer close(out) // tell the parent when we're done
 		index := 0
 
-		// emit bridges related tactics first which are empty if there are
-		// no bridges for the givend domain and port
-		for tx := range p.bridgesTacticsForDomain(domain, port) {
+		// Get channel for reading bridge tactics.
+		bridges := p.bridgesTacticsForDomain(domain, port)
+
+		// Emit the first N bridge tactics. Note that tactics are empty if there
+		// is no bridge configured for the given domain and port.
+		for tx := range bridges {
+			tx.InitialDelay = happyEyeballsDelay(index)
+			index += 1
+			out <- tx
+			if index >= maxInitialBridgeTactics {
+				break
+			}
+		}
+
+		// Now fallback to get more tactics (typically via DNS).
+		//
+		// We wrap whatever the underlying policy returns us with some
+		// extra logic for better communicating with test helpers.
+		for tx := range p.maybeRewriteTestHelpersTactics(p.Fallback.LookupTactics(ctx, domain, port)) {
 			tx.InitialDelay = happyEyeballsDelay(index)
 			index += 1
 			out <- tx
 		}
 
-		// now fallback to get more tactics (typically here the fallback
-		// uses the DNS and obtains some extra tactics)
-		//
-		// we wrap whatever the underlying policy returns us with some
-		// extra logic for better communicating with test helpers
-		for tx := range p.maybeRewriteTestHelpersTactics(p.Fallback.LookupTactics(ctx, domain, port)) {
+		// Now finish emitting bridge tactics.
+		for tx := range bridges {
 			tx.InitialDelay = happyEyeballsDelay(index)
 			index += 1
 			out <- tx
@@ -81,6 +96,10 @@ func (p *bridgesPolicy) maybeRewriteTestHelpersTactics(input <-chan *httpsDialer
 		defer close(out) // tell the parent when we're done
 
 		for tactic := range input {
+			// TODO(bassosimone): here we could potentially attempt using tactics
+			// changing the SNI also for api.ooni.io when we're getting its address
+			// using a DNS resolver that is working as intended.
+
 			// When we're not connecting to a TH, pass the policy down the chain unmodified
 			if !bridgesPolicySlicesContains(bridgesPolicyTestHelpersDomains, tactic.VerifyHostname) {
 				out <- tactic

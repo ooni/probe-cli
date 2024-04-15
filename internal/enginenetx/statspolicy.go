@@ -60,6 +60,10 @@ func (p *statsPolicy) LookupTactics(ctx context.Context, domain string, port str
 			out <- t
 		}
 
+		// TODO(bassosimone): as an optimization, here we could mix cached tactics
+		// and fallback tactics to avoid slow bootstraps in the event in which
+		// known-to-work cached tactics have become obsolete.
+
 		// give priority to what we know from stats
 		for _, t := range statsPolicyPostProcessTactics(p.Stats.LookupTactics(domain, port)) {
 			maybeEmitTactic(t)
