@@ -108,6 +108,7 @@ type httpsDialerEventsHandler interface {
 	// case, obviously, you MUST NOT consider the tactic failed.
 	OnStarting(tactic *httpsDialerTactic)
 	OnTCPConnectError(ctx context.Context, tactic *httpsDialerTactic, err error)
+	OnTCPConnectSuccess(tactic *httpsDialerTactic)
 	OnTLSHandshakeError(ctx context.Context, tactic *httpsDialerTactic, err error)
 	OnTLSVerifyError(tactic *httpsDialerTactic, err error)
 	OnSuccess(tactic *httpsDialerTactic)
@@ -259,9 +260,6 @@ func httpsFilterTactics(input <-chan *httpsDialerTactic) <-chan *httpsDialerTact
 			tx.InitialDelay = happyEyeballsDelay(index)
 			index++
 
-			// TODO(bassosimone): here we should also avoid connecting
-			// to TCP endpoints that are unreachable
-
 			// emit the tactic
 			output <- tx
 		}
@@ -343,6 +341,12 @@ func (hd *httpsDialer) dialTLS(
 		hd.stats.OnTCPConnectError(ctx, tactic, err)
 		return nil, err
 	}
+
+	// track successful TCP connections such that we have stats
+	// regarding which endpoints work as intended: if we can't dial
+	// a specific TCP endpoint a couple of times, it doesn't make
+	// sense to continue trying with different SNIs.
+	hd.stats.OnTCPConnectSuccess(tactic)
 
 	// create TLS configuration
 	tlsConfig := &tls.Config{
