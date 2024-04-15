@@ -137,6 +137,8 @@ func statsDefensivelySortTacticsByDescendingSuccessRateWithAcceptPredicate(
 	input []*statsTactic, acceptfunc func(*statsTactic) bool) []*statsTactic {
 	// first let's create a working list such that we don't modify
 	// the input in place thus avoiding any data race
+	//
+	// make sure we explicitly filter out malformed entries
 	work := []*statsTactic{}
 	for _, t := range input {
 		if t != nil && t.Tactic != nil {
@@ -193,8 +195,8 @@ func (st *statsTactic) Clone() *statsTactic {
 	// a pointer to a location which is typically immutable, so it's perfectly
 	// fine to copy the LastUpdate field by assignment.
 	//
-	// here we're using a bunch of robustness aware mechanisms to clone
-	// considering that the struct may be edited by the user
+	// here we're using safe functions to clone the original struct considering
+	// that a user can edit the content on disk freely introducing nulls.
 	return &statsTactic{
 		CountStarted:               st.CountStarted,
 		CountTCPConnectError:       st.CountTCPConnectError,

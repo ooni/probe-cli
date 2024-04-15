@@ -104,7 +104,7 @@ func (ldp *userPolicy) LookupTactics(
 		return ldp.Fallback.LookupTactics(ctx, domain, port)
 	}
 
-	// emit the resuults, which may possibly be empty
+	// emit the results, which may possibly be empty
 	out := make(chan *httpsDialerTactic)
 	go func() {
 		defer close(out) // let the caller know we're done
