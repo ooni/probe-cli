@@ -9,7 +9,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-func TestBeaconsPolicy(t *testing.T) {
+func TestBridgesPolicy(t *testing.T) {
 	t.Run("for domains for which we don't have bridges and DNS failure", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		p := &bridgesPolicy{
@@ -76,7 +76,10 @@ func TestBeaconsPolicy(t *testing.T) {
 		}
 	})
 
-	t.Run("for the api.ooni.io domain", func(t *testing.T) {
+	// TODO(bassosimone): we need to write better test cases for what
+	// happens when we have a mixture of tactics here.
+
+	t.Run("for the api.ooni.io domain with DNS failure", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		p := &bridgesPolicy{
 			Fallback: &dnsPolicy{
