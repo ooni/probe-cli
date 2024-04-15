@@ -209,7 +209,7 @@ func (hd *httpsDialer) DialTLSContext(ctx context.Context, network string, endpo
 
 	// The emitter will emit tactics and then close the channel when done. We spawn 16 workers
 	// that handle tactics in parallel and post results on the collector channel.
-	emitter := hd.policy.LookupTactics(ctx, hostname, port)
+	emitter := httpsFilterTactics(hd.policy.LookupTactics(ctx, hostname, port))
 	collector := make(chan *httpsDialerErrorOrConn)
 	joiner := make(chan any)
 	const parallelism = 16
@@ -243,6 +243,31 @@ func (hd *httpsDialer) DialTLSContext(ctx context.Context, network string, endpo
 	}
 
 	return httpsDialerReduceResult(connv, errorv)
+}
+
+// httpsFilterTactics filters the tactics and rewrites their InitialDelay.
+func httpsFilterTactics(input <-chan *httpsDialerTactic) <-chan *httpsDialerTactic {
+	output := make(chan *httpsDialerTactic)
+	go func() {
+
+		// make sure we close output chan
+		defer close(output)
+
+		index := 0
+		for tx := range input {
+			// rewrite the delays
+			tx.InitialDelay = happyEyeballsDelay(index)
+			index++
+
+			// TODO(bassosimone): here we should also avoid connecting
+			// to TCP endpoints that are unreachable
+
+			// emit the tactic
+			output <- tx
+		}
+
+	}()
+	return output
 }
 
 // httpsDialerReduceResult returns either an established conn or an error, using [errDNSNoAnswer] in
