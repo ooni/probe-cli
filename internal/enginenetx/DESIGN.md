@@ -32,7 +32,8 @@ should allow for smooth operations _for them_ rather than prioritizing the
 non-censored case and using additional tactics as the fallback;
 
 6. try to defer sending the true `SNI` on the wire, therefore trying to
-avoid triggering potential residual censorship;
+avoid triggering potential residual censorship blocking a given TCP endpoint
+for some time regardless of what `SNI` is being used next;
 
 7. allow users to force specific bridges and SNIs by edigint `$OONI_HOME/engine/bridges.conf`.
 
