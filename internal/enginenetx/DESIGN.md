@@ -35,7 +35,7 @@ non-censored case and using additional tactics as the fallback;
 avoid triggering potential residual censorship blocking a given TCP endpoint
 for some time regardless of what `SNI` is being used next;
 
-7. allow users to force specific bridges and SNIs by edigint `$OONI_HOME/engine/bridges.conf`.
+7. allow users to force specific bridges and SNIs by editing `$OONI_HOME/engine/bridges.conf`.
 
 The rest of this document explains how we designed for achieving these goals.
 
