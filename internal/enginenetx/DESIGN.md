@@ -25,8 +25,7 @@ from a pre-defined list of SNIs;
 
 3. use tactics for creating TLS connections that worked previously;
 
-4. recover ~quickly if the network condition change (e.g., if a bridge is
-discontinued, the code should ~quickly attempt other strategies);
+4. recover ~quickly if the conditions change (e.g., if a bridge is discontinued);
 
 5. adopt a censored-users-first approach where the strategy we use by default
 should allow for smooth operations _for them_ rather than prioritizing the
