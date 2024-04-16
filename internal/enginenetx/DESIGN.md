@@ -125,7 +125,8 @@ Here's an explanation of why we have each field in the struct:
 - `Address` and `Port` qualify the TCP endpoint;
 
 - `InitialDelay` allows a policy to delay a connect operation to implement
-something similar to [happy eyeballs](https://en.wikipedia.org/wiki/Happy_Eyeballs);
+something similar to [happy eyeballs](https://en.wikipedia.org/wiki/Happy_Eyeballs),
+where dialing attempts run in parallel but are staggered in time;
 
 - `SNI` is the `SNI` to send as part of the TLS ClientHello;
 
