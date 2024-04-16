@@ -349,7 +349,7 @@ by the [remix.go](remix.go) file:
 
 1. we take the first two tactics from the stats;
 
-2. then we take the first two tactics from the fallback;
+2. then we take the first four tactics from the fallback;
 
 3. then we remix the rest, not caring much about whether we're
 reading from the stats of from the fallback.
@@ -357,6 +357,10 @@ reading from the stats of from the fallback.
 Because we sort tactics from the stats by our understanding of whether
 they are working as intended, we'll prioritize what we know to be working,
 but then we'll also throw some new tactics into the mix.
+
+(We read four tactics from the fallback because that allows us to
+include two bridge tactics and two DNS tactics, as explained below
+when we discuss the `bridgePolicy` policy.)
 
 As an additional optimization, when reading from the fallback, the
 `statsPolicy` will automatically exclude TCP endpoints that have
