@@ -175,8 +175,8 @@ func (hd *httpsDialer) DialTLSContext(
 		// dial in a background goroutine
 		go func(tx *httpsDialerTactic, deadline time.Duration) {
 			// wait for deadline
-			if d := time.Until(deadline); d > 0 {
-				time.Sleep(d)
+			if delta := time.Until(deadline); delta > 0 {
+				time.Sleep(delta)
 			}
 
 			// dial TCP
