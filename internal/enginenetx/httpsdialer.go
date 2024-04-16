@@ -247,7 +247,16 @@ func (hd *httpsDialer) DialTLSContext(ctx context.Context, network string, endpo
 	return httpsDialerReduceResult(connv, errorv)
 }
 
-// httpsFilterTactics filters the tactics and rewrites their InitialDelay.
+// httpsFilterTactics filters the tactics to:
+//
+// 1. be paranoid and filter out nil tactics if any;
+//
+// 2. avoid emitting duplicate tactics as part of the same run;
+//
+// 3. rewrite the happy eyeball delays.
+//
+// This function returns a channel where we emit the edited
+// tactics, and which we clone when we're done.
 func httpsFilterTactics(input <-chan *httpsDialerTactic) <-chan *httpsDialerTactic {
 	output := make(chan *httpsDialerTactic)
 	go func() {
