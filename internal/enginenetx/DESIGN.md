@@ -72,6 +72,8 @@ As a first approximation, we can consider each arrow in the diagram to mean "fal
 back to". In reality, some policies implement a more complex strategy where they remix
 tactics they know and tactics provided by the downstream policy.
 
+When using a proxy, we just use the `dnsPolicy` assuming the proxy knows how to do circumvention.
+
 ## Instructions For Dialing
 
 Each policy implements the following interface (defined in [httpsdialer.go](httpsdialer.go)):
