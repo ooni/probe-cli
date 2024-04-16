@@ -134,7 +134,8 @@ something similar to [happy eyeballs](https://en.wikipedia.org/wiki/Happy_Eyebal
 - `VerifyHostname` is the hostname to use for TLS certificate verification.
 
 The separation of `SNI` and `VerifyHostname` is what allows us to send an innocuous
-SNI over the network and then verify the certificate using the real SNI.
+SNI over the network and then verify the certificate using the real SNI after a
+`skipVerify=true` TLS handshake has completed.
 
 ## HTTPS Dialer
 
