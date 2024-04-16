@@ -28,6 +28,6 @@ func happyEyeballsDelay(idx int) time.Duration {
 	case idx <= 4:
 		return baseDelay << (idx - 1)
 	default:
-		return baseDelay << 3 * (time.Duration(idx) - 3)
+		return baseDelay << 3
 	}
 }

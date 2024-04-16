@@ -19,12 +19,12 @@ func TestHappyEyeballsDelay(t *testing.T) {
 		{2, 2 * time.Second},
 		{3, 4 * time.Second},
 		{4, 8 * time.Second},
-		{5, 2 * 8 * time.Second},
-		{6, 3 * 8 * time.Second},
-		{7, 4 * 8 * time.Second},
-		{8, 5 * 8 * time.Second},
-		{9, 6 * 8 * time.Second},
-		{10, 7 * 8 * time.Second},
+		{5, 8 * time.Second},
+		{6, 8 * time.Second},
+		{7, 8 * time.Second},
+		{8, 8 * time.Second},
+		{9, 8 * time.Second},
+		{10, 8 * time.Second},
 	}
 
 	for _, tc := range cases {
