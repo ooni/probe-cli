@@ -108,7 +108,7 @@ Also, as you may have guessed, the `dnsPolicy` is a policy that, under the hood,
 eventually calls [net.Resolver.LookupHost](https://pkg.go.dev/net#Resolver.LookupHost)
 to get IP addresses using the DNS used by the `*engine.Session` type. Typically, such a
 resolver, in turn, composes several DNS-over-HTTPS resolvers with the fallback
-`getaddrinfo` resolver.
+`getaddrinfo` resolver, and remebers which resolvers work.
 
 A "tactic" looks like this:
 
