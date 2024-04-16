@@ -420,4 +420,84 @@ Having discussed this, it only remains to discuss managing stats.
 
 ## Managing Stats
 
-TODO
+The [statsmanager.go](statsmanager.go) file implements the `*statsManager`.
+
+We initialize the `*statsManager` by calling `newStatsManager` with a stats trim
+interval of 30 seconds in `NewNetwork` in [network.go](network.go).
+
+The `*statsManager` keeps stats at `$OONI_HOME/engine/httpsdialerstats.state`.
+
+In `newStatsManager`, we attempt to read this file using `loadStatsContainer` and, if
+not present, we fall back to create empty stats with `newStatsContainer`.
+
+While creating the `*statsManager` we also spawn a goroutine that trims the stats
+at every stats trimming internal by calling `(*statsManager).trim`. In turn, `trim`
+calls `statsContainerPruneEntries`, which eventually:
+
+1. removes entries not modified for more than one week;
+
+2. sort entries by descending success rate and only keep the top 10 entries.
+
+More specifically we sort entries using this algorithm:
+
+1. by decreasing success rate;
+
+2. by decreasing number of successes;
+
+3. by decreasing last update time.
+
+Likewise, calling `(*statsManager).Close` invokes `statsContainerPruneEntries`
+and ensures that we write `$OONI_HOME/engine/httpsdialerstats.state`.
+
+This way, subsequent OONI Probe runs could load the stats thare are more likely
+to work and `statsPolicy` can take advantage of this information.
+
+The overall structure of `httpsdialerstats.state` is roughly the following:
+
+```JavaScript
+{
+  "DomainEndpoints": {
+    "api.ooni.io:443": {
+      "Tactics": {
+        "162.55.247.208:443 sni=api.trademe.co.nz verify=api.ooni.io": {
+          "CountStarted": 58,
+          "CountTCPConnectError": 0,
+          "CountTCPConnectInterrupt": 0,
+          "CountTCPConnectSuccess": 58,
+          "CountTLSHandshakeError": 0,
+          "CountTLSHandshakeInterrupt": 0,
+          "CountTLSVerificationError": 0,
+          "CountSuccess": 58,
+          "HistoTCPConnectError": {},
+          "HistoTLSHandshakeError": {},
+          "HistoTLSVerificationError": {},
+          "LastUpdated": "2024-04-15T10:38:53.575561+02:00",
+          "Tactic": {
+            "Address": "162.55.247.208",
+            "InitialDelay": 0,
+            "Port": "443",
+            "SNI": "api.trademe.co.nz",
+            "VerifyHostname": "api.ooni.io"
+          }
+        }
+      }
+    }
+  }
+  "Version": 5
+}
+```
+
+That is, the `DomainEndpoints` map contains contains an entry for each
+TLS endpoint and, in turn, such an entry contains tactics. We index each
+tactic by a summary string to speed up looking it up.
+
+For each tactic, we keep counters and histograms, the time when the
+entry had been updated last, and the tactic itself.
+
+The `*statsManager` implements `httpsDialerEventsHandler`, which means
+that it has callbacks invoked by the `*httpsDialer` for interesting
+events regarding dialing (e.g., whether TCP connect failed).
+
+These callbacks basically create or update stats by locking a mutex
+and updating the relevant counters and histograms.
+

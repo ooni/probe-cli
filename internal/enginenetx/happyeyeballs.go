@@ -19,8 +19,6 @@ import "time"
 // actual issues inside the network. By using this algorithm, we are still
 // able to overlap and pack more dialing attempts overall.
 func happyEyeballsDelay(idx int) time.Duration {
-	// FIXME: we need to adjust how we implement happy eyeballs
-	// to make sure the time is relative to a deadline.
 	const baseDelay = time.Second
 	switch {
 	case idx <= 0:
@@ -30,6 +28,6 @@ func happyEyeballsDelay(idx int) time.Duration {
 	case idx <= 4:
 		return baseDelay << (idx - 1)
 	default:
-		return baseDelay << 3
+		return baseDelay << 3 * (time.Duration(idx) - 3)
 	}
 }
