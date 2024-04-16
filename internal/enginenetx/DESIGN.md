@@ -197,7 +197,7 @@ func (hd *httpsDialer) DialTLSContext(
 		}(tx, deadline)
 	}
 
-	// [...] omitting code to decide what to return [...]
+	// [...] omitting code to decide whether to return a conn or an error [...]
 }
 ```
 
