@@ -140,7 +140,9 @@ the HTTPS server we're using must be okay with receiving unrelated SNIs.)
 ## HTTPS Dialer
 
 Creating TLS connections is implemented by `(*httpsDialer).DialTLSContext`, also
-part of [httpsdialer.go](httpsdialer.go). This method _morally_ does the following:
+part of [httpsdialer.go](httpsdialer.go).
+
+This method _morally_ does the following:
 
 ```Go
 func (hd *httpsDialer) DialTLSContext(ctx context.Context, network string, endpoint string) (net.Conn, error) {
