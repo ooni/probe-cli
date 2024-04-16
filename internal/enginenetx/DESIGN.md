@@ -15,7 +15,7 @@ We define "bridge" an IP address with the following properties:
 
 We also assume that the Web Connectivity test helpers (TH) could accept any SNIs.
 
-Considering the definition of bridges and the assumptions about the THs, we aim to:
+Considering all of this, this package aims to:
 
 1. overcome DNS-based censorship for "api.ooni.io" by hardcoding known-good
 bridges IP addresses inside the codebase;
@@ -24,7 +24,7 @@ bridges IP addresses inside the codebase;
 from a pre-defined list of SNIs to use _instead_;
 
 3. introduce state by remembering which tactics for creating TLS connections
-have worked in the past and trying to reuse them in the future;
+have worked in the past and trying to reuse them;
 
 4. allow for relatively fast recovery in case of network-condition changes
 by remixing known-good solutions and bridge strategies with more conventional
@@ -35,19 +35,19 @@ should allow for smooth operations _for them_ rather than prioritizing the
 non-censored case and using additional tactics as the fallback;
 
 6. try to defer sending the true `SNI` on the wire, therefore trying to
-avoid triggering potential residual censorship for the TCP endpoint;
+avoid triggering potential residual censorship;
 
 7. provide a configuration file (`$OONI_HOME/engine/bridges.conf`) such that
 users can manually configure TLS dialing for any backend service and third party
 service that may be required by OONI Probe, therefore allowing to bypass also
-IP-based restrictions as long as a bridge exists.
+IP-based restrictions as long as a known-good bridge exists.
 
 The rest of this document explains how we designed for achieving these goals.
 
 ## High-Level API
 
-The purpose of the `enginenetx` package is to provide a `*Network` object from which
-consumers can obtain a `model.HTTPTransport` or an `*http.Client`:
+The purpose of the `enginenetx` package is to provide a `*Network` object from which consumers
+can obtain a `model.HTTPTransport` and `*http.Client` for HTTP operations:
 
 ```Go
 func (n *Network) HTTPTransport() model.HTTPTransport
@@ -55,10 +55,8 @@ func (n *Network) NewHTTPClient() *http.Client
 ```
 
 The returned `*http.Client` uses an internal transport, which is returned when the
-package user invokes the `HTTPTransport` method.
-
-In turn, the internal transport is configured to significantly customize creating
-TLS connections, so to meet the objectives explained before.
+package user invokes the `HTTPTransport` method. In turn, the internal transport is configured
+to significantly customize creating TLS connections, so to meet the objectives explained before.
 
 ## Creating TLS Connections
 
