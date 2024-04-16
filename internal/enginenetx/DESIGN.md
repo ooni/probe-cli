@@ -173,7 +173,9 @@ composed error including all errors (again, not showed above for simplicity).
 By using a modified happy eyeballs with baseline values that take into account
 the overall time to perform a TLS handshake, we attempt to strike a balance
 between simplicity (i.e., running operations sequentially), performance (running
-them in parallel) and network load (hence the usage of happy eyeballs).
+them in parallel) and network load: there is some parallelism but operations
+are reasonably spaced in time with increasing delays. This is implemented by the
+[happyeyeballs.go](happyeyeballs.go) file.
 
 Additionally, the dialing algorithm keeps statistics about the operations it
 performs using an `httpsDialerEventsHandler` type:
