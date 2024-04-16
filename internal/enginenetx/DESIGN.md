@@ -261,8 +261,8 @@ only record TLS handshake and certificate verification failures. This
 happens because the same TCP endpoint (e.g., `162.55.247.208:443`) will
 be tried with different SNIs when using `bridgePolicy`. However, there's no
 point to continue trying once we learn that we cannot connect to such
-an endpoint. And, because TCP connect may fail with timeout, by not
-attempting, we reduce the amount of operations parked waiting for timeouts.
+an endpoint. And, because TCP connect may timeout, by not attempting, we
+avoid wasting time waiting for timeouts.
 
 ## dnsPolicy
 
