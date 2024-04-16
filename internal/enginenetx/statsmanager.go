@@ -671,9 +671,3 @@ func (mt *statsManager) LookupTactics(domain string, port string) ([]*statsTacti
 	}
 	return out, len(out) > 0
 }
-
-// IsTCPEndpointAccessible returns whether a given TCP endpoint has recently been accessible.
-func (mt *statsManager) IsTCPEndpointAccessible(address, port string) bool {
-	// TODO(bassosimone): implement
-	return true
-}

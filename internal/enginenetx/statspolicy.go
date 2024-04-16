@@ -38,7 +38,7 @@ func (p *statsPolicy) LookupTactics(ctx context.Context, domain string, port str
 		ReadFromLeft: 2,
 
 		// And remix it with the fallback
-		Right: p.onlyAccessibleEndpoints(p.Fallback.LookupTactics(ctx, domain, port)),
+		Right: p.Fallback.LookupTactics(ctx, domain, port),
 
 		// Under the assumption that below us we have bridgePolicy composed with DNS policy
 		// and that the stage below emits two bridge tactics, if possible, followed by two
@@ -84,23 +84,4 @@ func statsPolicyFilterStatsTactics(tactics []*statsTactic, good bool) (out []*ht
 		out = append(out, t.Tactic)
 	}
 	return
-}
-
-// onlyAccessibleEndpoints uses stats-based knowledge to exclude using endpoints that
-// have recently been observed as being failing during TCP connect.
-func (p *statsPolicy) onlyAccessibleEndpoints(input <-chan *httpsDialerTactic) <-chan *httpsDialerTactic {
-	output := make(chan *httpsDialerTactic)
-	go func() {
-		// make sure we close the output channel
-		defer close(output)
-
-		// avoid including tactics using endpoints that are consistently failing
-		for tx := range input {
-			if tx == nil || !p.Stats.IsTCPEndpointAccessible(tx.Address, tx.Port) {
-				continue
-			}
-			output <- tx
-		}
-	}()
-	return output
 }
