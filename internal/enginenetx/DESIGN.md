@@ -369,9 +369,9 @@ avoid wasting time with known-to-be-broken endpoints.
 ## bridgePolicy
 
 The `bridgePolicy` is implemented by [bridgespolicy.go](bridgespolicy.go) and
-rests on the assumptions made explicit in the design section. That is:
+rests on the assumptions made explicit above. That is:
 
-1. that there is a _bridge_ for "api.ooni.io";
+1. that there is at least one _bridge_ for "api.ooni.io";
 
 2. that the Web Connectivity Test Helpers accepts any SNI.
 
