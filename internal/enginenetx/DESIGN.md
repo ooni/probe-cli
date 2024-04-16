@@ -259,7 +259,7 @@ conditions and influence the generation of tactics.
 You may notice that we record both TCP connects and failures, while we
 only record TLS handshake and certificate verification failures. This
 happens because the same TCP endpoint (e.g., `162.55.247.208:443`) will
-be tried with different SNIs when using bridges. However, there's no
+be tried with different SNIs when using `bridgePolicy`. However, there's no
 point to continue trying once we learn that we cannot connect to such
 an endpoint. And, because TCP connect may fail with timeout, by not
 attempting, we reduce the amount of operations parked waiting for timeouts.
