@@ -13,11 +13,7 @@ We define "bridge" an IP address with the following properties:
 
 3. the webserver on port 443 proxies to the OONI APIs.
 
-The notion of bridge is central to the `bridgePolicy` as we will shortly see. Before
-discussing each policy, though, we need to explain how we create TLS connections.
-
-We also assume that the Web Connectivity test helpers (TH), while they may
-have changing-in-time IP addresses, could accept any SNIs.
+We also assume that the Web Connectivity test helpers (TH) could accept any SNIs.
 
 Considering the definition of bridges and the assumptions about the THs, we aim to:
 
