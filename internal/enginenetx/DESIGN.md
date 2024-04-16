@@ -178,17 +178,14 @@ are reasonably spaced in time with increasing delays. This is implemented by the
 [happyeyeballs.go](happyeyeballs.go) file and produces the following delays depending
 on the index used by the current attempt:
 
-1. the first attempt has zero delay;
-
-2. the second attempt has a one-second delay;
-
-3. the third attempt has a two-second delay;
-
-4. the fourth attempt has a four-second delay;
-
-5. the fifth attempt has an eight-second delay;
-
-6. subsequent attempts are spaced eight-second in time.
+| Attempt number | Delay since the beginning of dialing (seconds) |
+| -------------- | ---------------------------------------------- |
+| 1              | 0                                              |
+| 2              | 1                                              |
+| 4              | 2                                              |
+| 4              | 4                                              |
+| 5              | 8                                              |
+| 6              | XXX did I break it?                            |
 
 Additionally, the dialing algorithm keeps statistics about the operations it
 performs using an `httpsDialerEventsHandler` type:
