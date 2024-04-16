@@ -50,11 +50,6 @@ func (*httpsDialerCancelingContextStatsTracker) OnTCPConnectError(ctx context.Co
 	// nothing
 }
 
-// OnTCPConnectSuccess implements httpsDialerEventsHandler.
-func (*httpsDialerCancelingContextStatsTracker) OnTCPConnectSuccess(tactic *httpsDialerTactic) {
-	// nothing
-}
-
 // OnTLSHandshakeError implements httpsDialerEventsHandler.
 func (*httpsDialerCancelingContextStatsTracker) OnTLSHandshakeError(ctx context.Context, tactic *httpsDialerTactic, err error) {
 	// nothing

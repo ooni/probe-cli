@@ -39,11 +39,6 @@ func (*nullStatsManager) OnTCPConnectError(ctx context.Context, tactic *httpsDia
 	// nothing
 }
 
-// OnTCPConnectSuccess implements httpsDialerEventsHandler.
-func (*nullStatsManager) OnTCPConnectSuccess(tactic *httpsDialerTactic) {
-	// nothing
-}
-
 // OnTLSHandshakeError implements httpsDialerEventsHandler.
 func (*nullStatsManager) OnTLSHandshakeError(ctx context.Context, tactic *httpsDialerTactic, err error) {
 	// nothing
@@ -527,11 +522,6 @@ func (mt *statsManager) OnTCPConnectError(ctx context.Context, tactic *httpsDial
 	runtimex.Assert(err != nil, "OnTCPConnectError passed a nil error")
 	record.CountTCPConnectError++
 	statsSafeIncrementMapStringInt64(&record.HistoTCPConnectError, err.Error())
-}
-
-// OnTCPConnectSuccess implements httpsDialerEventsHandler.
-func (mt *statsManager) OnTCPConnectSuccess(tactic *httpsDialerTactic) {
-	// TODO(bassosimone): implement this method
 }
 
 // OnTLSHandshakeError implements httpsDialerEventsHandler.
