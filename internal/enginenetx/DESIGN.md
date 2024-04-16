@@ -114,14 +114,10 @@ A "tactic" looks like this:
 
 ```Go
 type httpsDialerTactic struct {
-	Address string
-
-	InitialDelay time.Duration
-
-	Port string
-
-	SNI string
-
+	Address        string
+	InitialDelay   time.Duration
+	Port           string
+	SNI            string
 	VerifyHostname string
 }
 ```
