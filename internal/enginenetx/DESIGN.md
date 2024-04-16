@@ -304,8 +304,9 @@ As of 2024-04-16, the structure of such a file is like in the following example:
 }
 ```
 
-This example instructs to use the given `Address`, `Port`, `SNI`, and `VerifyHostname`
-when trying to establish a TLS connection to `"api.ooni.io:443"`.
+This example instructs to use the given tactic when establishing a TLS connection to
+`"api.ooni.io:443"`. Any other destination hostname and port would instead use the
+configured "fallback" dialing policy.
 
 The `newUserPolicy` constructor reads this file from disk on startup
 and keeps its content in memory.
