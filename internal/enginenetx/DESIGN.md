@@ -60,8 +60,8 @@ creating TLS connections, to meet the objectives explained before.
 
 ## Creating TLS Connections
 
-In [network.go](network.go), `newHTTPSDialerPolicy` determines the dialing policy
-depending on the arguments passed to the `NewNetwork` constructor:
+In [network.go](network.go), `newHTTPSDialerPolicy` configures the dialing policy
+depending on the arguments passed `NewNetwork`:
 
 1. if the `proxyURL` argument is not `nil`, we use the `dnsPolicy` alone;
 
