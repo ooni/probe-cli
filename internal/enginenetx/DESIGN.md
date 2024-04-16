@@ -142,7 +142,18 @@ the HTTPS server we're using must be okay with receiving unrelated SNIs.)
 Creating TLS connections is implemented by `(*httpsDialer).DialTLSContext`, also
 part of [httpsdialer.go](httpsdialer.go).
 
-This method _morally_ does the following:
+This method _morally_ does the following in ~parallel:
+
+```mermaid
+stateDiagram-v2
+  tacticsGenerator --> skipDuplicate
+  skipDuplicate --> computeHappyEyeballsDelay
+  computeHappyEyeballsDelay --> tcpConnect
+  tcpConnect --> tlsHandshake
+  tlsHandshake --> verifyCertificate
+```
+
+Such a diagram roughly corresponds to this Go ~pseudo-code:
 
 ```Go
 func (hd *httpsDialer) DialTLSContext(
@@ -172,7 +183,7 @@ func (hd *httpsDialer) DialTLSContext(
 		deadline := t0.Add(happyEyeballsDelay(idx))
 		idx++
 
-		// dial in a background goroutine
+		// dial in a background goroutine so this code runs in parallel
 		go func(tx *httpsDialerTactic, deadline time.Duration) {
 			// wait for deadline
 			if delta := time.Until(deadline); delta > 0 {
@@ -246,7 +257,6 @@ using an `httpsDialerEventsHandler` type:
 type httpsDialerEventsHandler interface {
 	OnStarting(tactic *httpsDialerTactic)
 	OnTCPConnectError(ctx context.Context, tactic *httpsDialerTactic, err error)
-	OnTCPConnectSuccess(tactic *httpsDialerTactic)
 	OnTLSHandshakeError(ctx context.Context, tactic *httpsDialerTactic, err error)
 	OnTLSVerifyError(tactic *httpsDialerTactic, err error)
 	OnSuccess(tactic *httpsDialerTactic)
@@ -255,14 +265,6 @@ type httpsDialerEventsHandler interface {
 
 These statistics contribute to construct knowledge about the network
 conditions and influence the generation of tactics.
-
-You may notice that we record both TCP connects and failures, while we
-only record TLS handshake and certificate verification failures. This
-happens because the same TCP endpoint (e.g., `162.55.247.208:443`) will
-be tried with different SNIs when using `bridgePolicy`. However, there's no
-point to continue trying once we learn that we cannot connect to such
-an endpoint. And, because TCP connect may timeout, by not attempting, we
-avoid wasting time waiting for timeouts.
 
 ## dnsPolicy
 
@@ -344,7 +346,7 @@ to a specific bridge address that has been discontinued;
 2. if we try all these 10 tactics before trying fallback tactics, we
 would waste lots of time failing before falling back.
 
-Conversely, a better strategy is to remix tactics as implemented
+Conversely, a better strategy is to "remix" tactics as implemented
 by the [remix.go](remix.go) file:
 
 1. we take the first two tactics from the stats;
@@ -360,11 +362,6 @@ but then we'll also throw some new tactics into the mix. (We read four
 tactics from the fallback because that allows us to include two bridge tactics
 and two DNS tactics, as explained below when we discuss the
 `bridgePolicy` policy.)
-
-As an additional optimization, when reading from the fallback, the
-`statsPolicy` will automatically exclude TCP endpoints that have
-failed recently during their TCP connect stage. By doing this, we
-avoid wasting time with known-to-be-broken endpoints.
 
 ## bridgePolicy
 
@@ -416,6 +413,40 @@ use it without trying more tactics; otherwise,
 
 5. finally, randomly remix the remaining tactics.
 
+Excluding the case where we have a valid entry in `bridges.conf`, the following
+diagram illustrates how we're mixing tactics:
+
+```mermaid
+stateDiagram-v2
+  state statsTacticsChan <<join>>
+  statsTactics --> statsTacticsChan
+
+  state bridgesTacticsChan <<join>>
+  bridgesTactics --> bridgesTacticsChan
+
+  state dnsTacticsChan <<join>>
+  dnsTactics --> dnsTacticsChan
+
+  state "mix(2, 2)" as mix22
+  bridgesTacticsChan --> mix22
+  dnsTacticsChan --> mix22
+
+  state mix22Chan <<join>>
+  mix22 --> mix22Chan
+
+  state "mix(2, 4)" as mix24
+  statsTacticsChan --> mix24
+  mix22Chan --> mix24
+
+  state tacticsChan <<join>>
+  mix24 --> tacticsChan
+  tacticsChan --> tactics
+```
+
+Here `mix(X, Y)` means taking `X` from the left block, if possible, then `Y` from the
+right block, if possible, and then mixing the remainder in random order. Also, the "join"
+blocks in the diagram represent channels.
+
 Having discussed this, it only remains to discuss managing stats.
 
 ## Managing Stats
@@ -431,23 +462,23 @@ In `newStatsManager`, we attempt to read this file using `loadStatsContainer` an
 not present, we fall back to create empty stats with `newStatsContainer`.
 
 While creating the `*statsManager` we also spawn a goroutine that trims the stats
-at every stats trimming internal by calling `(*statsManager).trim`. In turn, `trim`
+at every stats trimming interval by calling `(*statsManager).trim`. In turn, `trim`
 calls `statsContainerPruneEntries`, which eventually:
 
 1. removes entries not modified for more than one week;
 
-2. sort entries by descending success rate and only keep the top 10 entries.
+2. sorts entries and only keeps the top 10 entries.
 
 More specifically we sort entries using this algorithm:
 
-1. by decreasing success rate;
+1. by decreasing success rate; then
 
-2. by decreasing number of successes;
+2. by decreasing number of successes; then
 
 3. by decreasing last update time.
 
-Likewise, calling `(*statsManager).Close` invokes `statsContainerPruneEntries`
-and ensures that we write `$OONI_HOME/engine/httpsdialerstats.state`.
+Likewise, calling `(*statsManager).Close` invokes `statsContainerPruneEntries`, and
+then ensures that we write `$OONI_HOME/engine/httpsdialerstats.state`.
 
 This way, subsequent OONI Probe runs could load the stats thare are more likely
 to work and `statsPolicy` can take advantage of this information.
@@ -501,3 +532,187 @@ events regarding dialing (e.g., whether TCP connect failed).
 These callbacks basically create or update stats by locking a mutex
 and updating the relevant counters and histograms.
 
+## Real-World Scenarios
+
+This section illustrates the behavior of this package under specific
+network failure conditions, with specific emphasis on what happens if
+the bridge IP address becomes, for any reason, unavailable. (We are
+doing this because all this work was prompeted by addressing the
+[ooni/probe#2704](https://github.com/ooni/probe/issues/2704) issue.)
+
+### Invalid bridge without cached data
+
+In this first scenario, we're showing what happens if the bridge IP address
+becomes unavailable without any previous state saved on disk. (To emulate
+this scenario, change the bridge IP address in [bridgespolicy.go](bridgespolicy.go)
+to become `10.0.0.1`, recompile, and wipe `httpsdialerstats.state`).
+
+Here's an excerpt from the logs:
+
+```
+[      0.001346] <info> httpsDialer: [#1] TCPConnect 10.0.0.1:443... started
+[      0.002101] <info> sessionresolver: lookup api.ooni.io using https://wikimedia-dns.org/dns-query... started
+[      0.264132] <info> sessionresolver: lookup api.ooni.io using https://wikimedia-dns.org/dns-query... ok
+[      0.501774] <info> httpsDialer: [#1] TCPConnect 10.0.0.1:443... in progress
+[      1.002330] <info> httpsDialer: [#2] TCPConnect 10.0.0.1:443... started
+[      1.503687] <info> httpsDialer: [#2] TCPConnect 10.0.0.1:443... in progress
+[      2.001488] <info> httpsDialer: [#4] TCPConnect 162.55.247.208:443... started
+[      2.046917] <info> httpsDialer: [#4] TCPConnect 162.55.247.208:443... ok
+[      2.047016] <info> httpsDialer: [#4] TLSHandshake with 162.55.247.208:443 SNI=api.ooni.io ALPN=[h2 http/1.1]... started
+[      2.093148] <info> httpsDialer: [#4] TLSHandshake with 162.55.247.208:443 SNI=api.ooni.io ALPN=[h2 http/1.1]... ok
+[      2.093181] <info> httpsDialer: [#4] TLSVerifyCertificateChain api.ooni.io... started
+[      2.095923] <info> httpsDialer: [#4] TLSVerifyCertificateChain api.ooni.io... ok
+[      2.096054] <info> httpsDialer: [#1] TCPConnect 10.0.0.1:443... interrupted
+[      2.096077] <info> httpsDialer: [#2] TCPConnect 10.0.0.1:443... interrupted
+```
+
+After 2s, we start dialing with the IP addresses obtained through the DNS.
+
+Subsequent runs will cache this information on disk and use it.
+
+### Invalid bridge with cached data
+
+This scenario is like the previous one, however we also assume that we have
+a cached `httpsdialerstats.state` containing now-invalid lines. To this
+end, we replace the original file with this content:
+
+```JSON
+{
+  "DomainEndpoints": {
+    "api.ooni.io:443": {
+      "Tactics": {
+        "10.0.0.1:443 sni=static-tracking.klaviyo.com verify=api.ooni.io": {
+          "CountStarted": 1,
+          "CountTCPConnectError": 0,
+          "CountTCPConnectInterrupt": 0,
+          "CountTLSHandshakeError": 0,
+          "CountTLSHandshakeInterrupt": 0,
+          "CountTLSVerificationError": 0,
+          "CountSuccess": 1,
+          "HistoTCPConnectError": {},
+          "HistoTLSHandshakeError": {},
+          "HistoTLSVerificationError": {},
+          "LastUpdated": "2024-04-16T16:04:34.398778+02:00",
+          "Tactic": {
+            "Address": "10.0.0.1",
+            "InitialDelay": 0,
+            "Port": "443",
+            "SNI": "static-tracking.klaviyo.com",
+            "VerifyHostname": "api.ooni.io"
+          }
+        },
+        "10.0.0.1:443 sni=vidstat.taboola.com verify=api.ooni.io": {
+          "CountStarted": 1,
+          "CountTCPConnectError": 0,
+          "CountTCPConnectInterrupt": 0,
+          "CountTLSHandshakeError": 0,
+          "CountTLSHandshakeInterrupt": 0,
+          "CountTLSVerificationError": 0,
+          "CountSuccess": 1,
+          "HistoTCPConnectError": {},
+          "HistoTLSHandshakeError": {},
+          "HistoTLSVerificationError": {},
+          "LastUpdated": "2024-04-16T16:04:34.398795+02:00",
+          "Tactic": {
+            "Address": "10.0.0.1",
+            "InitialDelay": 1000000000,
+            "Port": "443",
+            "SNI": "vidstat.taboola.com",
+            "VerifyHostname": "api.ooni.io"
+          }
+        },
+        "10.0.0.1:443 sni=www.example.com verify=api.ooni.io": {
+          "CountStarted": 1,
+          "CountTCPConnectError": 0,
+          "CountTCPConnectInterrupt": 0,
+          "CountTLSHandshakeError": 0,
+          "CountTLSHandshakeInterrupt": 0,
+          "CountTLSVerificationError": 0,
+          "CountSuccess": 1,
+          "HistoTCPConnectError": {},
+          "HistoTLSHandshakeError": {},
+          "HistoTLSVerificationError": {},
+          "LastUpdated": "2024-04-16T16:04:34.398641+02:00",
+          "Tactic": {
+            "Address": "10.0.0.1",
+            "InitialDelay": 2000000000,
+            "Port": "443",
+            "SNI": "www.example.com",
+            "VerifyHostname": "api.ooni.io"
+          }
+        }
+      }
+    }
+  },
+  "Version": 5
+}
+```
+
+Here's an excerpt from the logs:
+
+```
+[      0.004017] <info> sessionresolver: lookup api.ooni.io using https://wikimedia-dns.org/dns-query... started
+[      0.003854] <info> httpsDialer: [#2] TCPConnect 10.0.0.1:443... started
+[      0.108089] <info> sessionresolver: lookup api.ooni.io using https://wikimedia-dns.org/dns-query... ok
+[      0.505472] <info> httpsDialer: [#2] TCPConnect 10.0.0.1:443... in progress
+[      1.004614] <info> httpsDialer: [#1] TCPConnect 10.0.0.1:443... started
+[      1.506069] <info> httpsDialer: [#1] TCPConnect 10.0.0.1:443... in progress
+[      2.003650] <info> httpsDialer: [#3] TCPConnect 10.0.0.1:443... started
+[      2.505130] <info> httpsDialer: [#3] TCPConnect 10.0.0.1:443... in progress
+[      4.004683] <info> httpsDialer: [#4] TCPConnect 10.0.0.1:443... started
+[      4.506176] <info> httpsDialer: [#4] TCPConnect 10.0.0.1:443... in progress
+[      8.004547] <info> httpsDialer: [#5] TCPConnect 162.55.247.208:443... started
+[      8.042946] <info> httpsDialer: [#5] TCPConnect 162.55.247.208:443... ok
+[      8.043015] <info> httpsDialer: [#5] TLSHandshake with 162.55.247.208:443 SNI=api.ooni.io ALPN=[h2 http/1.1]... started
+[      8.088383] <info> httpsDialer: [#5] TLSHandshake with 162.55.247.208:443 SNI=api.ooni.io ALPN=[h2 http/1.1]... ok
+[      8.088417] <info> httpsDialer: [#5] TLSVerifyCertificateChain api.ooni.io... started
+[      8.091007] <info> httpsDialer: [#5] TLSVerifyCertificateChain api.ooni.io... ok
+[      8.091174] <info> httpsDialer: [#1] TCPConnect 10.0.0.1:443... interrupted
+[      8.091234] <info> httpsDialer: [#3] TCPConnect 10.0.0.1:443... interrupted
+[      8.091258] <info> httpsDialer: [#2] TCPConnect 10.0.0.1:443... interrupted
+[      8.091324] <info> httpsDialer: [#4] TCPConnect 10.0.0.1:443... interrupted
+```
+
+So, here the fifth attempt is using the DNS. This is in line with the mixing algorithm, where
+the first four attempt come from the stats or from the bridge policies.
+
+Let's also shows what happens if we repeat the bootstrap:
+
+```
+[      0.000938] <info> httpsDialer: [#2] TCPConnect 162.55.247.208:443... started
+[      0.001014] <info> sessionresolver: lookup api.ooni.io using https://mozilla.cloudflare-dns.com/dns-query... started
+[      0.053325] <info> httpsDialer: [#2] TCPConnect 162.55.247.208:443... ok
+[      0.053355] <info> httpsDialer: [#2] TLSHandshake with 162.55.247.208:443 SNI=api.ooni.io ALPN=[h2 http/1.1]... started
+[      0.080695] <info> sessionresolver: lookup api.ooni.io using https://mozilla.cloudflare-dns.com/dns-query... ok
+[      0.094648] <info> httpsDialer: [#2] TLSHandshake with 162.55.247.208:443 SNI=api.ooni.io ALPN=[h2 http/1.1]... ok
+[      0.094662] <info> httpsDialer: [#2] TLSVerifyCertificateChain api.ooni.io... started
+[      0.096677] <info> httpsDialer: [#2] TLSVerifyCertificateChain api.ooni.io... ok
+```
+
+You see that now we immediately use the correct address thanks to the stats.
+
+### Valid bridge with invalid cached data
+
+In this scenario, the bridge inside [bridgespolicy.go](bridgespolicy.go) is valid
+but we have a cache listing an invalid bridge (I modified my cache to use `10.0.0.1`).
+
+Here's an excerpt from the logs:
+
+```
+[      0.002641] <info> sessionresolver: lookup api.ooni.io using https://mozilla.cloudflare-dns.com/dns-query... started
+[      0.081401] <info> sessionresolver: lookup api.ooni.io using https://mozilla.cloudflare-dns.com/dns-query... ok
+[      0.503518] <info> httpsDialer: [#1] TCPConnect 10.0.0.1:443... in progress
+[      1.005322] <info> httpsDialer: [#2] TCPConnect 10.0.0.1:443... started
+[      1.506304] <info> httpsDialer: [#2] TCPConnect 10.0.0.1:443... in progress
+[      2.002837] <info> httpsDialer: [#4] TCPConnect 162.55.247.208:443... started
+[      2.048721] <info> httpsDialer: [#4] TCPConnect 162.55.247.208:443... ok
+[      2.048760] <info> httpsDialer: [#4] TLSHandshake with 162.55.247.208:443 SNI=player.ex.co ALPN=[h2 http/1.1]... started
+[      2.091016] <info> httpsDialer: [#4] TLSHandshake with 162.55.247.208:443 SNI=player.ex.co ALPN=[h2 http/1.1]... ok
+[      2.091033] <info> httpsDialer: [#4] TLSVerifyCertificateChain api.ooni.io... started
+[      2.093542] <info> httpsDialer: [#4] TLSVerifyCertificateChain api.ooni.io... ok
+[      2.093708] <info> httpsDialer: [#2] TCPConnect 10.0.0.1:443... interrupted
+[      2.093718] <info> httpsDialer: [#1] TCPConnect 10.0.0.1:443... interrupted
+```
+
+In this case, we pick up the right bridge configuration and successfully
+use it after two seconds. This configuration is provided by the `bridgesPolicy`.
