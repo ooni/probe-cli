@@ -345,7 +345,7 @@ to a specific bridge address that has been discontinued;
 would waste lots of time failing before falling back.
 
 Conversely, a better strategy is to remix tactics as implemented
-by the [remix](remix.go) file:
+by the [remix.go](remix.go) file:
 
 1. we take the first two tactics from the stats;
 
