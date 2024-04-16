@@ -165,10 +165,10 @@ for tx := range policy.LookupTactics() {
 }
 ```
 
-When a connection attempt succeds, we use cancellable `context.Context` to cancel
-all the other connect attempts that may be in progress (not shown in the above
+When a TLS connection attempt succeds, we use cancellable `context.Context` to cancel
+all the other the TLS connect attempts that may be in progress (not shown in the above
 algorithm for simplicity). If all connection attempts fail, instead, we return a
-composed error (again, not showed above for simplicity).
+composed error including all errors (again, not showed above for simplicity).
 
 By using a modified happy eyeballs with baseline values that take into account
 the overall time to perform a TLS handshake, we attempt to strike a balance
