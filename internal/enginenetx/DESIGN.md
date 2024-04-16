@@ -277,8 +277,8 @@ what `getaddrinfo` would do when asked to "resolve" an IP address);
 2. for each resolved address, we generate tactics where the `SNI` and
 `VerifyHostname` equal the `domain`.
 
-Using this policy alone is functionally equivalent to combining a DNS lookup
-operation with TCP connect and TLS handshake operations.
+If `httpsDialer` uses this policy as its only policy, the operation it
+performs are morally equivalent to normally dialing for TLS.
 
 ## userPolicy
 
