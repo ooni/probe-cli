@@ -239,8 +239,8 @@ and/or access network experiencing temporary failures to deliver packets. Howeve
 we also aim to have dialing parallelism, to reduce the overall time to connect
 when we're experiencing many timeouts when attempting to dial.
 
-Additionally, the `*httpsDialer` algorithm keeps statistics about the operations
-it performs using an `httpsDialerEventsHandler` type:
+Additionally, the `*httpsDialer` algorithm keeps statistics
+using an `httpsDialerEventsHandler` type:
 
 ```Go
 type httpsDialerEventsHandler interface {
