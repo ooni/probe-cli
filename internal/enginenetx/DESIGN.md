@@ -221,13 +221,6 @@ immediately cancel any other parallel attempts.
 The `happyEyeballsDelay` function (in [happyeyeballs.go](happyeyeballs.go)) is
 such that we generate the following delays:
 
-the overall time to perform a TLS handshake, we attempt to strike a balance
-between simplicity (i.e., running operations sequentially), performance (running
-them in parallel) and network load: there is some parallelism but operations
-are reasonably spaced in time with increasing delays. This is implemented by the
-[happyeyeballs.go](happyeyeballs.go) file and, assuming `T0` is the time when
-we start dialing, produces the following minimum dial times:
-
 | idx | delay (s) |
 | --- | --------- |
 | 1   | 0         |
@@ -242,7 +235,9 @@ we start dialing, produces the following minimum dial times:
 
 That is, we exponentially increase the delay until `8s`, then we linearly space
 each attempt by `8s`. We aim to space attempts to accommodate for slow access networks
-and/or access network experiencing temporary failures to deliver packets.
+and/or access network experiencing temporary failures to deliver packets. However,
+we also aim to have dialing parallelism, to reduce the overall time to connect
+when we're experiencing many timeouts when attempting to dial.
 
 Additionally, the `*httpsDialer` algorithm keeps statistics about the operations
 it performs using an `httpsDialerEventsHandler` type:
