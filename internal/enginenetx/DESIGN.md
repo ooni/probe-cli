@@ -73,11 +73,9 @@ depending on the arguments passed `NewNetwork`:
 +------------+     +-------------+     +--------------+     +-----------+
 ```
 
-As a first approximation, we can consider each arrow in the diagram to mean that
-a policy tries to produce instructions for creating a connection and then falls back
-to the subsequent policy in case it cannot generate instructions. In reality, some
-policies implement a more complex strategy where they remix tactics they know and
-tactics provided by the fallback, to more quickly recover from changes.
+As a first approximation, we can consider each arrow in the diagram to mean "fall
+back to". In reality, some policies implement a more complex strategy where they remix
+tactics they know and tactics provided by the downstream policy.
 
 ## Instructions For Dialing
 
