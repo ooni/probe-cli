@@ -145,7 +145,8 @@ part of [httpsdialer.go](httpsdialer.go).
 This method _morally_ does the following:
 
 ```Go
-func (hd *httpsDialer) DialTLSContext(ctx context.Context, network string, endpoint string) (net.Conn, error) {
+func (hd *httpsDialer) DialTLSContext(
+	ctx context.Context, network string, endpoint string) (net.Conn, error) {
 	// map to ensure we don't have duplicate tactics
 	uniq := make(map[string]int)
 
