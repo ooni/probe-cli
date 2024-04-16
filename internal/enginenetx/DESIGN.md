@@ -55,8 +55,8 @@ func (n *Network) NewHTTPClient() *http.Client
 ```
 
 The returned `*http.Client` uses an internal transport, which is returned when the
-package user invokes the `HTTPTransport` method. In turn, the internal transport is configured
-to significantly customize creating TLS connections, so to meet the objectives explained before.
+package user invokes the `HTTPTransport` method. In turn, the internal transport customizes
+creating TLS connections, to meet the objectives explained before.
 
 ## Creating TLS Connections
 
