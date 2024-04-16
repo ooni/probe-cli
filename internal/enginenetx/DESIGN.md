@@ -205,7 +205,7 @@ This simplified algorithm differs for the real implementation in that we
 have omitted the following (boring) details:
 
 1. code to obtain `hostname` and `port` from `endpoint` (e.g., code to extract
-`"api.ooni.io"` and `"443"` from `"api.ooni.io:443"`);
+`"x.org"` and `"443"` from `"x.org:443"`);
 
 2. code to pass back a connection or an error from a background
 goroutine to the `DialTLSContext` method;
