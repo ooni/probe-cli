@@ -175,17 +175,23 @@ the overall time to perform a TLS handshake, we attempt to strike a balance
 between simplicity (i.e., running operations sequentially), performance (running
 them in parallel) and network load: there is some parallelism but operations
 are reasonably spaced in time with increasing delays. This is implemented by the
-[happyeyeballs.go](happyeyeballs.go) file and produces the following delays depending
-on the index used by the current attempt:
+[happyeyeballs.go](happyeyeballs.go) file and, assuming `T0` is the time when
+we start dialing, produces the following minimum dial times:
 
-| Attempt number | Delay since the beginning of dialing (seconds) |
-| -------------- | ---------------------------------------------- |
-| 1              | 0                                              |
-| 2              | 1                                              |
-| 4              | 2                                              |
-| 4              | 4                                              |
-| 5              | 8                                              |
-| 6              | XXX did I break it?                            |
+| Attempt | MinDialTime   |
+| ------- | ------------- |
+| 1       | `T0 + 0`      |
+| 2       | `T0 + 1s`     |
+| 4       | `T0 + 2s`     |
+| 4       | `T0 + 4s`     |
+| 5       | `T0 + 8s`     |
+| 6       | `T0 + 16s`    |
+| 7       | `T0 + 24s`    |
+| 8       | `T0 + 32s`    |
+| ...     | ...           |
+
+In other words, we exponentially increase the delay until we reach `8s` and
+then we linearly space each attempt by `8s` from the previous one.
 
 Additionally, the dialing algorithm keeps statistics about the operations it
 performs using an `httpsDialerEventsHandler` type:
