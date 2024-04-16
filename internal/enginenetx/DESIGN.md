@@ -213,12 +213,12 @@ goroutine to the `DialTLSContext` method;
 3. code to decide whether to return a `net.Conn` or an `error`;
 
 4. the fact that `DialTLSContext` uses a goroutine pool rather than creating a
-new goroutine for each tactic (which could create too many goroutines);
+goroutine for each tactic;
 
-5. the fact that, as soon as we successfully have a good TLS connection, we
-immediately cancel any other parallel attempt at connecting.
+5. the fact that, as soon as we successfully have a connection, we
+immediately cancel any other parallel attempts.
 
-We `happyEyeballsDelay` function (in [happyeyeballs.go](happyeyeballs.go)) is
+The `happyEyeballsDelay` function (in [happyeyeballs.go](happyeyeballs.go)) is
 such that we generate the following delays:
 
 the overall time to perform a TLS handshake, we attempt to strike a balance
