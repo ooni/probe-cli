@@ -23,7 +23,7 @@ bridges IP addresses inside the codebase;
 2. overcome SNI-based censorship for "api.ooni.io" and test helpers by choosing
 from a pre-defined list of SNIs;
 
-3. use tactics for creating TLS connections that worked previously;
+3. remember and use tactics for creating TLS connections that worked previously;
 
 4. recover ~quickly if the conditions change (e.g., if a bridge is discontinued);
 
