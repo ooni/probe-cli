@@ -190,7 +190,7 @@ we start dialing, produces the following minimum dial times:
 | 8       | `T0 + 32s`    |
 | ...     | ...           |
 
-That, we exponentially increase the delay until `8s`, then we linearly space
+That is, we exponentially increase the delay until `8s`, then we linearly space
 each attempt by `8s`.
 
 Additionally, the dialing algorithm keeps statistics about the operations it
