@@ -190,8 +190,8 @@ we start dialing, produces the following minimum dial times:
 | 8       | `T0 + 32s`    |
 | ...     | ...           |
 
-In other words, we exponentially increase the delay until we reach `8s` and
-then we linearly space each attempt by `8s` from the previous one.
+That, we exponentially increase the delay until `8s`, then we linearly space
+each attempt by `8s`.
 
 Additionally, the dialing algorithm keeps statistics about the operations it
 performs using an `httpsDialerEventsHandler` type:
