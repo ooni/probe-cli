@@ -405,8 +405,8 @@ The composed policy is the following (as discussed above):
 Therefore, the compose policy will return the following tactics:
 
 
-1. if there is a `$OONI_HOME/engine/bridges.conf` with a valid entry
-for the domain and port, use it without trying more tactics;
+1. if there is a `$OONI_HOME/engine/bridges.conf` with a valid entry,
+use it without trying more tactics; otherwise,
 
 2. use the first two tactics coming from stats, if any;
 
