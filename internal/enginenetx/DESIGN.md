@@ -23,12 +23,10 @@ bridges IP addresses inside the codebase;
 2. overcome SNI-based censorship for "api.ooni.io" and test helpers by choosing
 from a pre-defined list of SNIs;
 
-3. introduce state by remembering which tactics for creating TLS connections
-have worked in the past and trying to reuse them;
+3. use tactics for creating TLS connections that worked previously;
 
-4. allow for relatively fast recovery in case of network-condition changes
-by remixing known-good solutions and bridge strategies with more conventional
-approaches relying on using the DNS and sending the true SNI;
+4. recover ~quickly if the network condition change (e.g., if a bridge is
+discontinued, the code should ~quickly attempt other strategies);
 
 5. adopt a censored-users-first approach where the strategy we use by default
 should allow for smooth operations _for them_ rather than prioritizing the
