@@ -175,7 +175,8 @@ the overall time to perform a TLS handshake, we attempt to strike a balance
 between simplicity (i.e., running operations sequentially), performance (running
 them in parallel) and network load: there is some parallelism but operations
 are reasonably spaced in time with increasing delays. This is implemented by the
-[happyeyeballs.go](happyeyeballs.go) file and roughly works as follows:
+[happyeyeballs.go](happyeyeballs.go) file and produces the following delays depending
+on the index used by the current attempt:
 
 1. the first attempt has zero delay;
 
