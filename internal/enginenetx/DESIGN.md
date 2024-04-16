@@ -182,17 +182,17 @@ func (hd *httpsDialer) DialTLSContext(
 			// dial TCP
 			conn, err := tcpConnect(tx.Address, tx.Port)
 
-			// [...] omitting error handling [...]
+			// [...] omitting error handling and passing error to DialTLSContext [...]
 
 			// handshake
 			tconn, err := tlsHandshake(conn, tx.SNI, false /* skip verification */)
 
-			// [...] omitting error handling [...]
+			// [...] omitting error handling and passing error to DialTLSContext [...]
 
 			// make sure the hostname's OK
 			err := verifyHostname(tconn, tx.VerifyHostname)
 
-			// [...] omitting error handling and producing result [...]
+			// [...] omitting error handling and passing error or conn to DialTLSContext [...]
 
 		}(tx, deadline)
 	}
