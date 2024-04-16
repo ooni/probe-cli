@@ -100,10 +100,9 @@ returns a list of IP addresses.
 
 The second point, in particular, is crucial. The design of `LookupTactics` is
 such that we can start attempting to dial as soon as we have some tactics
-to try, while more advanced tactics are generated. A composed `httpsDialerPolicy` can,
-in fact, start multiple child `LookupTactics` operations and then return them to the
-caller as soon as they are ready, thus avoiding to block dialing until all of the
-child operations are ready.
+to try. A composed `httpsDialerPolicy` can, in fact, start multiple child `LookupTactics`
+operations and then return them to the caller as soon as they are ready, thus avoiding
+to block dialing until _all_ the child operations are complete.
 
 Also, as you may have guessed, the `dnsPolicy` is a policy that, under the hood,
 eventually calls [net.Resolver.LookupHost](https://pkg.go.dev/net#Resolver.LookupHost)
