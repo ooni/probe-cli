@@ -93,7 +93,8 @@ there are also some key differences, namely:
 only takes in input the domain name to resolve;
 
 2. `LookupTactics` returns _a stream_ of viable "tactics", while `LookupHost`
-returns a list of IP addresses.
+returns a list of IP addresses (we define "stream" a channel where a background
+goroutine posts content and which is closed when done).
 
 The second point, in particular, is crucial. The design of `LookupTactics` is
 such that we can start attempting to dial as soon as we have some tactics
