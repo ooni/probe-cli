@@ -34,8 +34,7 @@ non-censored case and using additional tactics as the fallback;
 6. try to defer sending the true `SNI` on the wire, therefore trying to
 avoid triggering potential residual censorship;
 
-7. provide a configuration file (`$OONI_HOME/engine/bridges.conf`) such that
-users can manually force using specific bridges and SNIs.
+7. allow users to force specific bridges and SNIs by edigint `$OONI_HOME/engine/bridges.conf`.
 
 The rest of this document explains how we designed for achieving these goals.
 
