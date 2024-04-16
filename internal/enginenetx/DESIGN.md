@@ -134,7 +134,8 @@ where dialing attempts run in parallel but are staggered in time;
 
 The separation of `SNI` and `VerifyHostname` is what allows us to send an innocuous
 SNI over the network and then verify the certificate using the real SNI after a
-`skipVerify=true` TLS handshake has completed.
+`skipVerify=true` TLS handshake has completed. (Obviously, for this trick to work,
+the HTTPS server we're using must be okay with receiving unrelated SNIs.)
 
 ## HTTPS Dialer
 
