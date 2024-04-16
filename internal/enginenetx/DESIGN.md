@@ -233,8 +233,8 @@ such that we generate the following delays:
 | 8   | 32        |
 | ... | ...       |
 
-That is, we exponentially increase the delay until `8s`, then we linearly space
-each attempt by `8s`. We aim to space attempts to accommodate for slow access networks
+That is, we exponentially increase the delay until `8s`, then we linearly increase by `8s`. We
+aim to space attempts to accommodate for slow access networks
 and/or access network experiencing temporary failures to deliver packets. However,
 we also aim to have dialing parallelism, to reduce the overall time to connect
 when we're experiencing many timeouts when attempting to dial.
