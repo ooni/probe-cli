@@ -272,8 +272,7 @@ Its `LookupTactics` algorithm is quite simple:
 
 1. we arrange for short circuiting cases in which the `domain` argument
 contains an IP address to "resolve" exactly that IP address (thus emulating
-what `getaddrinfo` would do and avoiding to call onto the more-complex
-underlying composed DNS resolver);
+what `getaddrinfo` would do when asked to "resolve" an IP address);
 
 2. for each resolved address, we generate tactics in the most straightforward
 way, e.g., where the `SNI` and `VerifyHostname` equal the `domain`.
