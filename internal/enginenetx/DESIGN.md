@@ -35,9 +35,7 @@ non-censored case and using additional tactics as the fallback;
 avoid triggering potential residual censorship;
 
 7. provide a configuration file (`$OONI_HOME/engine/bridges.conf`) such that
-users can manually configure TLS dialing for any backend service and third party
-service required by OONI Probe, therefore allowing to bypass IP-based
-restrictions as long as known-good bridges are available.
+users can manually force using specific bridges and SNIs.
 
 The rest of this document explains how we designed for achieving these goals.
 
