@@ -43,21 +43,19 @@ func (p *statsPolicy) LookupTactics(ctx context.Context, domain string, port str
 		maybeEmitTactic := func(t *httpsDialerTactic) {
 			// as a safety mechanism let's gracefully handle the
 			// case in which the tactic is nil
-			if t == nil {
-				return
-			}
+			if t != nil {
+				// handle the case in which we already emitted a policy
+				key := t.tacticSummaryKey()
+				if uniq[key] > 0 {
+					return
+				}
+				uniq[key]++
 
-			// handle the case in which we already emitted a policy
-			key := t.tacticSummaryKey()
-			if uniq[key] > 0 {
-				return
+				// 🚀!!!
+				t.InitialDelay = happyEyeballsDelay(index)
+				index += 1
+				out <- t
 			}
-			uniq[key]++
-
-			// 🚀!!!
-			t.InitialDelay = happyEyeballsDelay(index)
-			index += 1
-			out <- t
 		}
 
 		// TODO(bassosimone): as an optimization, here we could mix cached tactics
@@ -70,7 +68,7 @@ func (p *statsPolicy) LookupTactics(ctx context.Context, domain string, port str
 		}
 
 		// fallback to the secondary policy
-		for t := range p.Fallback.LookupTactics(ctx, domain, port) {
+		for t := range p.onlyAccessibleEndpoints(p.Fallback.LookupTactics(ctx, domain, port)) {
 			maybeEmitTactic(t)
 		}
 	}()
@@ -98,4 +96,23 @@ func statsPolicyFilterStatsTactics(tactics []*statsTactic, good bool) (out []*ht
 		out = append(out, t.Tactic)
 	}
 	return
+}
+
+// onlyAccessibleEndpoints uses stats-based knowledge to exclude using endpoints that
+// have recently been observed as being failing during TCP connect.
+func (p *statsPolicy) onlyAccessibleEndpoints(input <-chan *httpsDialerTactic) <-chan *httpsDialerTactic {
+	output := make(chan *httpsDialerTactic)
+	go func() {
+		// make sure we close the output channel
+		defer close(output)
+
+		// avoid including tactics using endpoints that are consistently failing
+		for tx := range input {
+			if tx == nil || !p.Stats.IsTCPEndpointAccessible(tx.Address, tx.Port) {
+				continue
+			}
+			output <- tx
+		}
+	}()
+	return output
 }
