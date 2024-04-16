@@ -95,8 +95,8 @@ there are also some key differences, namely:
 1. `LookupTactics` is domain _and_ port specific, while `LookupHost`
 only takes in input the domain name to resolve;
 
-2. `LookupTactics` returns _a stream_ of viable "tactics" to establish
-TLS connections, while `LookupHost` returns a list of IP addresses.
+2. `LookupTactics` returns _a stream_ of viable "tactics", while `LookupHost`
+returns a list of IP addresses.
 
 The second point, in particular, is crucial. The design of `LookupTactics` is
 such that we can start attempting to dial as soon as we have some tactics
