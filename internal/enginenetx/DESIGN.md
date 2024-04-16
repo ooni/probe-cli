@@ -270,12 +270,12 @@ The `dnsPolicy` is implemented by [dnspolicy.go](dnspolicy.go).
 
 Its `LookupTactics` algorithm is quite simple:
 
-1. we arrange for short circuiting cases in which the `domain` argument
+1. we short circuit the cases in which the `domain` argument
 contains an IP address to "resolve" exactly that IP address (thus emulating
 what `getaddrinfo` would do when asked to "resolve" an IP address);
 
-2. for each resolved address, we generate tactics in the most straightforward
-way, e.g., where the `SNI` and `VerifyHostname` equal the `domain`.
+2. for each resolved address, we generate tactics where the `SNI` and
+`VerifyHostname` equal the `domain`.
 
 Using this policy alone is functionally equivalent to combining a DNS lookup
 operation with TCP connect and TLS handshake operations.
