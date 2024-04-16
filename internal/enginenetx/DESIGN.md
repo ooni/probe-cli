@@ -356,17 +356,15 @@ reading from the stats of from the fallback.
 
 Because we sort tactics from the stats by our understanding of whether
 they are working as intended, we'll prioritize what we know to be working,
-but then we'll also throw some new tactics into the mix.
-
-(We read four tactics from the fallback because that allows us to
-include two bridge tactics and two DNS tactics, as explained below
-when we discuss the `bridgePolicy` policy.)
+but then we'll also throw some new tactics into the mix. (We read four
+tactics from the fallback because that allows us to include two bridge tactics
+and two DNS tactics, as explained below when we discuss the
+`bridgePolicy` policy.)
 
 As an additional optimization, when reading from the fallback, the
 `statsPolicy` will automatically exclude TCP endpoints that have
-failed recently during their TCP connect stage. If an IP address seems
-IP blocked, it does not make sense to continue wasting time trying
-to connect to it (a timeout is in the order of ~10s).
+failed recently during their TCP connect stage. By doing this, we
+avoid wasting time with known-to-be-broken endpoints.
 
 ## bridgePolicy
 
