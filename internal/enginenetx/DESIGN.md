@@ -394,24 +394,29 @@ the fallback after getting two tactics from the stats.
 
 ## Overall Algorithm
 
-**TODO(bassosimone)**: adapt the mixing algorithm to do exactly
-this and make sure there are tests for this.
+The composed policy is the following (as discussed above):
 
-Having discussed all the polices in isolation, it now seems useful
-to describe what is the overall algorithm we want to achieve:
+```
++------------+     +-------------+     +--------------+     +-----------+
+| userPolicy | --> | statsPolicy | --> | bridgePolicy | --> | dnsPolicy |
++------------+     +-------------+     +--------------+     +-----------+
+```
+
+Therefore, the compose policy will return the following tactics:
+
 
 1. if there is a `$OONI_HOME/engine/bridges.conf` with a valid entry
-for the domain and port, use it without trying subsequent tactics;
+for the domain and port, use it without trying more tactics;
 
 2. use the first two tactics coming from stats, if any;
 
 3. then use the first two tactics coming from bridges, if any;
 
-4. then use the first two tactics coming from the DNS;
+4. then use the first two tactics coming from the DNS, if successful;
 
-5. after that, randomly remix the remaining tactics.
+5. finally, randomly remix the remaining tactics.
 
-Now, it only remains to discuss managing stats.
+Having discussed this, it only remains to discuss managing stats.
 
 ## Managing Stats
 
