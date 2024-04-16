@@ -237,8 +237,10 @@ func (hd *httpsDialer) DialTLSContext(ctx context.Context, network string, endpo
 				continue
 			}
 
-			// Save the conn and tell goroutines to stop ASAP
+			// Save the conn
 			connv = append(connv, result.Conn)
+
+			// Interrupt other concurrent dialing attempts
 			cancel()
 		}
 	}
@@ -254,14 +256,28 @@ func httpsFilterTactics(input <-chan *httpsDialerTactic) <-chan *httpsDialerTact
 		// make sure we close output chan
 		defer close(output)
 
+		// useful to make sure we don't emit two equal policy in a single run
+		uniq := make(map[string]int)
+
 		index := 0
 		for tx := range input {
-			// rewrite the delays
-			tx.InitialDelay = happyEyeballsDelay(index)
-			index++
+			// as a safety mechanism let's gracefully handle the
+			// case in which the tactic is nil
+			if tx != nil {
+				// handle the case in which we already emitted a policy
+				key := tx.tacticSummaryKey()
+				if uniq[key] > 0 {
+					return
+				}
+				uniq[key]++
 
-			// emit the tactic
-			output <- tx
+				// rewrite the delays
+				tx.InitialDelay = happyEyeballsDelay(index)
+				index++
+
+				// emit the tactic
+				output <- tx
+			}
 		}
 
 	}()

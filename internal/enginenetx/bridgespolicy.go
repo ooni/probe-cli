@@ -25,50 +25,39 @@ type bridgesPolicy struct {
 
 var _ httpsDialerPolicy = &bridgesPolicy{}
 
-// maxInitialBridgeTactics is the number of initial bridge tactics we return.
-const maxInitialBridgeTactics = 4
-
 // LookupTactics implements httpsDialerPolicy.
+//
+// The remix policy of this operation is such that the following happens:
+//
+// 1. we emit the first two bridge tactics, if any;
+//
+// 2. we emit the first two fallback (usually DNS) tactics, if any;
+//
+// 3. we randomly remix the rest.
 func (p *bridgesPolicy) LookupTactics(ctx context.Context, domain, port string) <-chan *httpsDialerTactic {
-	out := make(chan *httpsDialerTactic)
+	rx := &remix{
+		// Prioritize emitting tactics for bridges. Currently we only have bridges
+		// for "api.ooni.io", therefore, for all other hosts this arm ends up
+		// returning a channel that will be immediately closed.
+		Left: p.bridgesTacticsForDomain(domain, port),
 
-	go func() {
-		defer close(out) // tell the parent when we're done
-		index := 0
-
-		// Get channel for reading bridge tactics.
-		bridges := p.bridgesTacticsForDomain(domain, port)
-
-		// Emit the first N bridge tactics. Note that tactics are empty if there
-		// is no bridge configured for the given domain and port.
-		for tx := range bridges {
-			tx.InitialDelay = happyEyeballsDelay(index)
-			index += 1
-			out <- tx
-			if index >= maxInitialBridgeTactics {
-				break
-			}
-		}
-
-		// Now fallback to get more tactics (typically via DNS).
+		// This ensures we read the first two bridge tactics.
 		//
-		// We wrap whatever the underlying policy returns us with some
-		// extra logic for better communicating with test helpers.
-		for tx := range p.maybeRewriteTestHelpersTactics(p.Fallback.LookupTactics(ctx, domain, port)) {
-			tx.InitialDelay = happyEyeballsDelay(index)
-			index += 1
-			out <- tx
-		}
+		// Note: modifying this field likely indicates you also need to modify the
+		// corresponding remix{} instantiation in statspolicy.go.
+		ReadFromLeft: 2,
 
-		// Now finish emitting bridge tactics.
-		for tx := range bridges {
-			tx.InitialDelay = happyEyeballsDelay(index)
-			index += 1
-			out <- tx
-		}
-	}()
+		// Mix the above with using the fallback policy and rewriting the SNIs
+		// used by the test helpers to avoid exposing the real SNIs.
+		Right: p.maybeRewriteTestHelpersTactics(p.Fallback.LookupTactics(ctx, domain, port)),
 
-	return out
+		// This ensures we read the first two DNS tactics.
+		//
+		// Note: modifying this field likely indicates you also need to modify the
+		// corresponding remix{} instantiation in statspolicy.go.
+		ReadFromRight: 2,
+	}
+	return rx.Run()
 }
 
 var bridgesPolicyTestHelpersDomains = []string{
@@ -105,6 +94,9 @@ func (p *bridgesPolicy) maybeRewriteTestHelpersTactics(input <-chan *httpsDialer
 				out <- tactic
 				continue
 			}
+
+			// TODO(bassosimone): potentially we should also throw the real SNI
+			// into the mix, but it should not be the first SNI we emit.
 
 			// This is the case where we're connecting to a test helper. Let's try
 			// to produce policies hiding the SNI to censoring middleboxes.
