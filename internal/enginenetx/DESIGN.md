@@ -385,6 +385,12 @@ using existing knowledge of bridges and random SNIs;
 coming from the fallback tactic such that, if we are connecting
 to a known test-helper domain name, we're trying to hide its SNI.
 
+The first two returned tactics will be bridges tactics for "api.ooni.io",
+if applicable, followed by two tactics generated using the DNS,
+followed by a random remix of all the remaining tactics. This is the
+reason why in `statsPolicy` we return the first four tactics from
+the fallback after getting two tactics from the stats.
+
 ## Overall Algorithm
 
 **TODO(bassosimone)**: adapt the mixing algorithm to do exactly
