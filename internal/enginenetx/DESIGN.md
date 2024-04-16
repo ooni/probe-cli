@@ -285,7 +285,8 @@ performs are morally equivalent to normally dialing for TLS.
 The `userPolicy` is implemented by [userpolicy.go](userpolicy.go).
 
 When constructing a `userPolicy` with `newUserPolicy` we indicate a fallback
-`httpsDialerPolicy` to use if there is no `$OONI_HOME/engine/bridges.conf` file.
+`httpsDialerPolicy` to use as the fallback, when either `$OONI_HOME/engine/bridges.conf`
+does not exist or it does not contain actionable dialing rules.
 
 As of 2024-04-16, the structure of such a file is like in the following example:
 
@@ -302,6 +303,9 @@ As of 2024-04-16, the structure of such a file is like in the following example:
 	"Version": 3
 }
 ```
+
+This example instructs to use the given `Address`, `Port`, `SNI`, and `VerifyHostname`
+when trying to establish a TLS connection to `"api.ooni.io:443"`.
 
 The `newUserPolicy` constructor reads this file from disk on startup
 and keeps its content in memory.
