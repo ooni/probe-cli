@@ -140,37 +140,84 @@ SNI over the network and then verify the certificate using the real SNI after a
 ## HTTPS Dialer
 
 Creating TLS connections is implemented by `(*httpsDialer).DialTLSContext`, also
-part of [httpsdialer.go](httpsdialer.go). This method _morally_ implements the following
-algorithm (where we omitted error handling and returning a conn for simplicity):
+part of [httpsdialer.go](httpsdialer.go). This method _morally_ does the following:
 
 ```Go
-index := 0
-for tx := range policy.LookupTactics() {
-	// avoid trying the same policy twice
-	if isDuplicate(tx) {
-		continue
+func (hd *httpsDialer) DialTLSContext(ctx context.Context, network string, endpoint string) (net.Conn, error) {
+	// map to ensure we don't have duplicate tactics
+	uniq := make(map[string]int)
+
+	// time when we started dialing
+	t0 := time.Now()
+
+	// index of each dialing attempt
+	idx := 0
+
+	// [...] omitting code to get hostname and port from endpoint [...]
+
+	// fetch tactics asynchronously
+	for tx := range hd.policy.LookupTactics(ctx, hostname, port) {
+
+		// avoid using the same tactic more than once
+		summary := tx.tacticSummaryKey()
+		if uniq[summary] > 0 {
+			continue
+		}
+		uniq[summary]++
+
+		// compute the happy eyeballs deadline
+		deadline := t0.Add(happyEyeballsDelay(idx))
+		idx++
+
+		// dial in a background goroutine
+		go func(tx *httpsDialerTactic, deadline time.Duration) {
+			// wait for deadline
+			if d := time.Until(deadline); d > 0 {
+				time.Sleep(d)
+			}
+
+			// dial TCP
+			conn, err := tcpConnect(tx.Address, tx.Port)
+
+			// [...] omitting error handling [...]
+
+			// handshake
+			tconn, err := tlsHandshake(conn, tx.SNI, false /* skip verification */)
+
+			// [...] omitting error handling [...]
+
+			// make sure the hostname's OK
+			err := verifyHostname(tconn, tx.VerifyHostname)
+
+			// [...] omitting error handling and producing result [...]
+
+		}(tx, deadline)
 	}
 
-	// create delay for this tactic
-	delay := happyEyeballsDelay(index)
-	index++
-
-	// dial in a background gorountine (simplified algorithm)
-	go func(tx, delay) {
-		time.Sleep(delay)
-		conn := tcpConnect(tx.Address, tx.Port)
-		tconn := tlsHandshake(conn, tx.SNI, false /* skip verification */)
-		verifyHostname(tlsConn, tx.VerifyHostname)
-	}(tx, delay)
+	// [...] omitting code to decide what to return [...]
 }
 ```
 
-When a TLS connection attempt succeds, we use cancellable `context.Context` to cancel
-all the other the TLS connect attempts that may be in progress (not shown in the above
-algorithm for simplicity). If all connection attempts fail, instead, we return a
-composed error including all errors (again, not showed above for simplicity).
+This simplified algorithm differs for the real implementation in that we
+have omitted the following (boring) implementation details:
 
-By using a modified happy eyeballs with baseline values that take into account
+1. code to obtain `hostname` and `port` from `endpoint` (e.g., code to extract
+`"api.ooni.io"` and `"443"` from `"api.ooni.io:443"`);
+
+2. code to pass back a connection or an error from a background
+goroutine to the `DialTLSContext` method;
+
+3. code to decide whether to return a `net.Conn` or an `error`;
+
+4. the fact that `DialTLSContext` uses a goroutine pool rather than creating a
+new goroutine for each tactic (which could create too many goroutines);
+
+5. the fact that, as soon as we successfully have a good TLS connection, we
+immediately cancel any other parallel attempt at connecting.
+
+We `happyEyeballsDelay` function (in [happyeyeballs.go](happyeyeballs.go)) is
+such that we generate the following delays:
+
 the overall time to perform a TLS handshake, we attempt to strike a balance
 between simplicity (i.e., running operations sequentially), performance (running
 them in parallel) and network load: there is some parallelism but operations
@@ -178,23 +225,24 @@ are reasonably spaced in time with increasing delays. This is implemented by the
 [happyeyeballs.go](happyeyeballs.go) file and, assuming `T0` is the time when
 we start dialing, produces the following minimum dial times:
 
-| Attempt | MinDialTime   |
-| ------- | ------------- |
-| 1       | `T0 + 0`      |
-| 2       | `T0 + 1s`     |
-| 4       | `T0 + 2s`     |
-| 4       | `T0 + 4s`     |
-| 5       | `T0 + 8s`     |
-| 6       | `T0 + 16s`    |
-| 7       | `T0 + 24s`    |
-| 8       | `T0 + 32s`    |
-| ...     | ...           |
+| idx | delay (s) |
+| --- | --------- |
+| 1   | 0         |
+| 2   | 1         |
+| 4   | 2         |
+| 4   | 4         |
+| 5   | 8         |
+| 6   | 16        |
+| 7   | 24        |
+| 8   | 32        |
+| ... | ...       |
 
 That is, we exponentially increase the delay until `8s`, then we linearly space
-each attempt by `8s`.
+each attempt by `8s`. We aim to space attempts to accommodate for slow access networks
+and/or access network experiencing temporary failures to deliver packets.
 
-Additionally, the dialing algorithm keeps statistics about the operations it
-performs using an `httpsDialerEventsHandler` type:
+Additionally, the `*httpsDialer` algorithm keeps statistics about the operations
+it performs using an `httpsDialerEventsHandler` type:
 
 ```Go
 type httpsDialerEventsHandler interface {
@@ -208,7 +256,7 @@ type httpsDialerEventsHandler interface {
 ```
 
 These statistics contribute to construct knowledge about the network
-conditions and influence the choice of policies.
+conditions and influence the generation of tactics.
 
 ## dnsPolicy
 
