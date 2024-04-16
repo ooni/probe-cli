@@ -256,6 +256,13 @@ type httpsDialerEventsHandler interface {
 These statistics contribute to construct knowledge about the network
 conditions and influence the generation of tactics.
 
+You may notice that we record both TCP connects and failures, while we
+only record TLS handshake and certificate verification failures. This
+happens because the same TCP endpoint (e.g., `162.55.247.208:443`) may
+be used with different SNIs, but there's no point to try with other
+SNIs when we see we cannot connect to such an endpoint. Hence, this knowledge
+allows avoiding to perform usless (possibly time-costly) operations.
+
 ## dnsPolicy
 
 The `dnsPolicy` is implemented by [dnspolicy.go](dnspolicy.go).
