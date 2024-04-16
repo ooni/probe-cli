@@ -21,7 +21,7 @@ Considering all of this, this package aims to:
 bridges IP addresses inside the codebase;
 
 2. overcome SNI-based censorship for "api.ooni.io" and test helpers by choosing
-from a pre-defined list of SNIs to use _instead_;
+from a pre-defined list of SNIs;
 
 3. introduce state by remembering which tactics for creating TLS connections
 have worked in the past and trying to reuse them;
