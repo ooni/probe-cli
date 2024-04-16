@@ -202,7 +202,7 @@ func (hd *httpsDialer) DialTLSContext(
 ```
 
 This simplified algorithm differs for the real implementation in that we
-have omitted the following (boring) implementation details:
+have omitted the following (boring) details:
 
 1. code to obtain `hostname` and `port` from `endpoint` (e.g., code to extract
 `"api.ooni.io"` and `"443"` from `"api.ooni.io:443"`);
