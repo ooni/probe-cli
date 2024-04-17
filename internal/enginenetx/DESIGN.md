@@ -395,7 +395,7 @@ to a specific bridge address that has been discontinued;
 would waste lots of time failing before falling back.
 
 Conversely, a better strategy is to "remix" tactics as implemented
-by the [remix.go](remix.go) file:
+by the [mix.go](mix.go) file:
 
 1. we take the first two tactics from the stats;
 
@@ -420,7 +420,7 @@ rests on the assumptions made explicit above. That is:
 
 2. that the Web Connectivity Test Helpers accepts any SNI.
 
-Here we're also using the [remix.go](remix.go) algorithm to remix
+Here we're also using the [mix.go](mix.go) algorithm to remix
 two different sources of tactics:
 
 1. the `bridgesTacticsForDomain` only returns tactics for "api.ooni.io"
