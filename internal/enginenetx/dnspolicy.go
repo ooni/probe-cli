@@ -56,10 +56,10 @@ func (p *dnsPolicy) LookupTactics(
 		}
 
 		// The tactics we generate here have SNI == VerifyHostname == domain
-		for idx, addr := range addrs {
+		for _, addr := range addrs {
 			tactic := &httpsDialerTactic{
 				Address:        addr,
-				InitialDelay:   happyEyeballsDelay(idx),
+				InitialDelay:   0, // set when dialing
 				Port:           port,
 				SNI:            domain,
 				VerifyHostname: domain,

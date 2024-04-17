@@ -169,21 +169,19 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 
 		// compute the list of results we expect to see from the stats data
 		var expect []*httpsDialerTactic
-		idx := 0
 		for _, entry := range expectTacticsStats {
 			if entry.CountSuccess <= 0 || entry.Tactic == nil {
 				continue // we SHOULD NOT include entries that systematically failed
 			}
 			t := entry.Tactic.Clone()
-			t.InitialDelay = happyEyeballsDelay(idx)
+			t.InitialDelay = 0
 			expect = append(expect, t)
-			idx++
 		}
 
 		// extend the expected list to include DNS results
 		expect = append(expect, &httpsDialerTactic{
 			Address:        bridgeAddress,
-			InitialDelay:   2 * time.Second,
+			InitialDelay:   0,
 			Port:           "443",
 			SNI:            "api.ooni.io",
 			VerifyHostname: "api.ooni.io",
@@ -234,21 +232,19 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 
 		// compute the list of results we expect to see from the stats data
 		var expect []*httpsDialerTactic
-		idx := 0
 		for _, entry := range expectTacticsStats {
 			if entry.CountSuccess <= 0 || entry.Tactic == nil {
 				continue // we SHOULD NOT include entries that systematically failed
 			}
 			t := entry.Tactic.Clone()
-			t.InitialDelay = happyEyeballsDelay(idx)
+			t.InitialDelay = 0
 			expect = append(expect, t)
-			idx++
 		}
 
 		// extend the expected list to include DNS results
 		expect = append(expect, &httpsDialerTactic{
 			Address:        bridgeAddress,
-			InitialDelay:   2 * time.Second,
+			InitialDelay:   0,
 			Port:           "443",
 			SNI:            "api.ooni.io",
 			VerifyHostname: "api.ooni.io",
@@ -290,15 +286,13 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 
 		// compute the list of results we expect to see from the stats data
 		var expect []*httpsDialerTactic
-		idx := 0
 		for _, entry := range expectTacticsStats {
 			if entry.CountSuccess <= 0 || entry.Tactic == nil {
 				continue // we SHOULD NOT include entries that systematically failed
 			}
 			t := entry.Tactic.Clone()
-			t.InitialDelay = happyEyeballsDelay(idx)
+			t.InitialDelay = 0
 			expect = append(expect, t)
-			idx++
 		}
 
 		// perform the actual comparison

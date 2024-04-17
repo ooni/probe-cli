@@ -632,3 +632,231 @@ func TestHTTPSDialerReduceResult(t *testing.T) {
 		}
 	})
 }
+
+// Make sure that (1) we remove nils; (2) we avoid emitting duplicate tactics; (3) we fill
+// the happy-eyeballs delays for each entry we return.
+func TestHTTPSDialerFilterTactics(t *testing.T) {
+	// define the inputs vector including duplicates and nils
+	inputs := []*httpsDialerTactic{
+		nil,
+		nil,
+		{
+			Address:        "130.192.91.211",
+			InitialDelay:   0,
+			Port:           "443",
+			SNI:            "x.org",
+			VerifyHostname: "api.ooni.io",
+		},
+		nil,
+		{
+			Address:        "130.192.91.211",
+			InitialDelay:   0,
+			Port:           "443",
+			SNI:            "www.polito.it",
+			VerifyHostname: "api.ooni.io",
+		},
+		nil,
+		nil,
+		{
+			Address:        "130.192.91.211",
+			InitialDelay:   0,
+			Port:           "443",
+			SNI:            "x.org",
+			VerifyHostname: "api.ooni.io",
+		},
+		nil,
+		{
+			Address:        "130.192.91.211",
+			InitialDelay:   0,
+			Port:           "443",
+			SNI:            "www.polito.it",
+			VerifyHostname: "api.ooni.io",
+		},
+		nil,
+		{
+			Address:        "130.192.91.211",
+			InitialDelay:   0,
+			Port:           "443",
+			SNI:            "x.com",
+			VerifyHostname: "api.ooni.io",
+		},
+		nil,
+		nil,
+		{
+			Address:        "130.192.91.211",
+			InitialDelay:   0,
+			Port:           "443",
+			SNI:            "kerneltrap.org",
+			VerifyHostname: "api.ooni.io",
+		},
+		nil,
+		nil,
+		nil,
+		{
+			Address:        "130.192.91.211",
+			InitialDelay:   0,
+			Port:           "443",
+			SNI:            "kerneltrap.org",
+			VerifyHostname: "api.ooni.io",
+		},
+		nil,
+		nil,
+		{
+			Address:        "130.192.91.211",
+			InitialDelay:   0,
+			Port:           "443",
+			SNI:            "freebsd.org",
+			VerifyHostname: "api.ooni.io",
+		},
+		nil,
+		nil,
+		{
+			Address:        "130.192.91.211",
+			InitialDelay:   0,
+			Port:           "443",
+			SNI:            "kerneltrap.org",
+			VerifyHostname: "api.ooni.io",
+		},
+		nil,
+		nil,
+		{
+			Address:        "130.192.91.211",
+			InitialDelay:   0,
+			Port:           "443",
+			SNI:            "dragonflybsd.org",
+			VerifyHostname: "api.ooni.io",
+		},
+		nil,
+		{
+			Address:        "130.192.91.211",
+			InitialDelay:   0,
+			Port:           "443",
+			SNI:            "kerneltrap.org",
+			VerifyHostname: "api.ooni.io",
+		},
+		nil,
+		nil,
+		{
+			Address:        "130.192.91.211",
+			InitialDelay:   0,
+			Port:           "443",
+			SNI:            "openbsd.org",
+			VerifyHostname: "api.ooni.io",
+		},
+		nil,
+		nil,
+		{
+			Address:        "130.192.91.231",
+			InitialDelay:   0,
+			Port:           "443",
+			SNI:            "openbsd.org",
+			VerifyHostname: "api.ooni.io",
+		},
+		nil,
+		nil,
+		{
+			Address:        "130.192.91.231",
+			InitialDelay:   0,
+			Port:           "443",
+			SNI:            "openbsd.org",
+			VerifyHostname: "api.ooni.io",
+		},
+		nil,
+		nil,
+		{
+			Address:        "130.192.91.231",
+			InitialDelay:   0,
+			Port:           "443",
+			SNI:            "netbsd.org",
+			VerifyHostname: "api.ooni.io",
+		},
+		nil,
+		nil,
+		{
+			Address:        "130.192.91.231",
+			InitialDelay:   0,
+			Port:           "443",
+			SNI:            "openbsd.org",
+			VerifyHostname: "api.ooni.io",
+		},
+		nil,
+	}
+
+	// define the expectations
+	expect := []*httpsDialerTactic{
+		{
+			Address:        "130.192.91.211",
+			InitialDelay:   0,
+			Port:           "443",
+			SNI:            "x.org",
+			VerifyHostname: "api.ooni.io",
+		},
+		{
+			Address:        "130.192.91.211",
+			InitialDelay:   time.Second,
+			Port:           "443",
+			SNI:            "www.polito.it",
+			VerifyHostname: "api.ooni.io",
+		},
+		{
+			Address:        "130.192.91.211",
+			InitialDelay:   2 * time.Second,
+			Port:           "443",
+			SNI:            "x.com",
+			VerifyHostname: "api.ooni.io",
+		},
+		{
+			Address:        "130.192.91.211",
+			InitialDelay:   4 * time.Second,
+			Port:           "443",
+			SNI:            "kerneltrap.org",
+			VerifyHostname: "api.ooni.io",
+		},
+		{
+			Address:        "130.192.91.211",
+			InitialDelay:   8 * time.Second,
+			Port:           "443",
+			SNI:            "freebsd.org",
+			VerifyHostname: "api.ooni.io",
+		},
+		{
+			Address:        "130.192.91.211",
+			InitialDelay:   16 * time.Second,
+			Port:           "443",
+			SNI:            "dragonflybsd.org",
+			VerifyHostname: "api.ooni.io",
+		},
+		{
+			Address:        "130.192.91.211",
+			InitialDelay:   24 * time.Second,
+			Port:           "443",
+			SNI:            "openbsd.org",
+			VerifyHostname: "api.ooni.io",
+		},
+		{
+			Address:        "130.192.91.231",
+			InitialDelay:   32 * time.Second,
+			Port:           "443",
+			SNI:            "openbsd.org",
+			VerifyHostname: "api.ooni.io",
+		},
+		{
+			Address:        "130.192.91.231",
+			InitialDelay:   40 * time.Second,
+			Port:           "443",
+			SNI:            "netbsd.org",
+			VerifyHostname: "api.ooni.io",
+		},
+	}
+
+	// run the algorithm
+	var results []*httpsDialerTactic
+	for tx := range httpsDialerFilterTactics(streamTacticsFromSlice(inputs)) {
+		results = append(results, tx)
+	}
+
+	// compare the results
+	if diff := cmp.Diff(expect, results); diff != "" {
+		t.Fatal(diff)
+	}
+}
