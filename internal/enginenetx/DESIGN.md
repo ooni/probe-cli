@@ -55,9 +55,10 @@ func (n *Network) NewHTTPClient() *http.Client
 
 **Listing 1.** `*enginenetx.Network` HTTP APIs.
 
-The returned `*http.Client` uses an internal transport, which is returned when the
-package user invokes the `HTTPTransport` method. In turn, the internal transport customizes
-creating TLS connections, to meet the objectives explained before.
+The `HTTPTransport` method returns a `*Network` field containing an HTTP transport with
+custom TLS connection establishment tactics depending on the configured policies.
+
+The `NewHTTPClient` method wraps such a transport into an `*http.Client`.
 
 ## Creating TLS Connections
 
