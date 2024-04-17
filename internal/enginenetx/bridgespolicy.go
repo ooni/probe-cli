@@ -35,7 +35,6 @@ func (p *bridgesPolicy) LookupTactics(ctx context.Context, domain, port string) 
 		// emit bridges related tactics first which are empty if there are
 		// no bridges for the givend domain and port
 		for tx := range p.bridgesTacticsForDomain(domain, port) {
-			tx.InitialDelay = 0 // set when dialing
 			out <- tx
 		}
 
@@ -45,7 +44,6 @@ func (p *bridgesPolicy) LookupTactics(ctx context.Context, domain, port string) 
 		// we wrap whatever the underlying policy returns us with some
 		// extra logic for better communicating with test helpers
 		for tx := range p.maybeRewriteTestHelpersTactics(p.Fallback.LookupTactics(ctx, domain, port)) {
-			tx.InitialDelay = 0 // set when dialing
 			out <- tx
 		}
 	}()
