@@ -138,7 +138,6 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 		return newStatsManager(kvStore, log.Log, trimInterval)
 	}
 
-	// TODO(bassosimone): do we still need this test?
 	t.Run("when we have unique statistics", func(t *testing.T) {
 		// create stats manager
 		stats := createStatsManager("api.ooni.io:443", expectTacticsStats...)
@@ -194,7 +193,6 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 		}
 	})
 
-	// TODO(bassosimone): do we still need this test?
 	t.Run("when we have duplicates", func(t *testing.T) {
 		// add each entry twice to create obvious duplicates
 		statsWithDupes := []*statsTactic{}
