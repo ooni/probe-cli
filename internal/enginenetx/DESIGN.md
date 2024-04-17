@@ -773,3 +773,14 @@ Here's an excerpt from the logs:
 
 In this case, we pick up the right bridge configuration and successfully
 use it after two seconds. This configuration is provided by the `bridgesPolicy`.
+
+## Limitations and Future Work
+
+1. We should integrate the [engineresolver](../engineresolver/) package with this package
+more tightly: doing that would allow users to configure the order in which we use DNS-over-HTTPS
+resolvers (see [probe#2675](https://github.com/ooni/probe/issues/2675)) and would allow us
+to improve our adaptive strategies when using these resolvers.
+
+2. We lack a mechanism to dynamically distribute new bridges IP addresses to probes using,
+for example, the check-in API and possibly other mechanisms. Lacking this functionality, our
+bridge strategy is incomplete since it rests on a single bridge being available.
