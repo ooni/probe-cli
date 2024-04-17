@@ -778,8 +778,7 @@ use it after two seconds. This configuration is provided by the `bridgesPolicy`.
 
 1. We should integrate the [engineresolver](../engineresolver/) package with this package
 more tightly: doing that would allow users to configure the order in which we use DNS-over-HTTPS
-resolvers (see [probe#2675](https://github.com/ooni/probe/issues/2675)) and would allow us
-to improve our adaptive strategies when using these resolvers.
+resolvers (see [probe#2675](https://github.com/ooni/probe/issues/2675)).
 
 2. We lack a mechanism to dynamically distribute new bridges IP addresses to probes using,
 for example, the check-in API and possibly other mechanisms. Lacking this functionality, our
@@ -787,3 +786,5 @@ bridge strategy is incomplete since it rests on a single bridge being available.
 more, if this bridge disappears or is IP blocked, all the probes will have one slow bootstrap
 and probes where DNS is not working will stop working (see
 [probe#2500](https://github.com/ooni/probe/issues/2500)).
+
+3. We should consider adding TLS ClientHello fragmentation as a tactic.
