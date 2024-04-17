@@ -139,7 +139,7 @@ func TestBridgesPolicy(t *testing.T) {
 			dnsCount     int
 			overallCount int
 		)
-		const expectedDNSEntryCount = 153
+		const expectedDNSEntryCount = 153 // yikes!
 		for tactic := range tactics {
 			overallCount++
 
