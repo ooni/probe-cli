@@ -566,8 +566,8 @@ The overall structure of `httpsdialerstats.state` is roughly the following:
 **Listing 7.** Content of the stats state as cached on disk.
 
 That is, the `DomainEndpoints` map contains contains an entry for each
-TLS endpoint and, in turn, such an entry contains tactics. We index each
-tactic by a summary string to speed up looking it up.
+TLS endpoint and, in turn, such an entry contains tactics indexed by
+a summary string to speed up looking them up.
 
 For each tactic, we keep counters and histograms, the time when the
 entry had been updated last, and the tactic itself.
