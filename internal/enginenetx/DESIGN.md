@@ -289,7 +289,7 @@ and/or access network experiencing temporary failures to deliver packets. Howeve
 we also aim to have dialing parallelism, to reduce the overall time to connect
 when we're experiencing many timeouts when attempting to dial.
 
-(We chose 1s as the baseline delay because that would be three happy-eyeballs delays as
+(We chose 1s as the baseline delay because that would be ~three happy-eyeballs delays as
 implemented by the Go standard library, and overall a TCP connect followed by a TLS
 handshake should roughly amount to three round trips.)
 
