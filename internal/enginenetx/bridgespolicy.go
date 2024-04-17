@@ -88,18 +88,11 @@ func (p *bridgesPolicy) maybeRewriteTestHelpersTactics(input <-chan *httpsDialer
 		defer close(out) // tell the parent when we're done
 
 		for tactic := range input {
-			// TODO(bassosimone): here we could potentially attempt using tactics
-			// changing the SNI also for api.ooni.io when we're getting its address
-			// using a DNS resolver that is working as intended.
-
 			// When we're not connecting to a TH, pass the policy down the chain unmodified
 			if !bridgesPolicySlicesContains(bridgesPolicyTestHelpersDomains, tactic.VerifyHostname) {
 				out <- tactic
 				continue
 			}
-
-			// TODO(bassosimone): potentially we should also throw the real SNI
-			// into the mix, but it should not be the first SNI we emit.
 
 			// This is the case where we're connecting to a test helper. Let's try
 			// to produce policies hiding the SNI to censoring middleboxes.
