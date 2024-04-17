@@ -334,9 +334,9 @@ When constructing a `userPolicy` with `newUserPolicy` we indicate a fallback
 `httpsDialerPolicy` to use as the fallback, when either `$OONI_HOME/engine/bridges.conf`
 does not exist or it does not contain actionable dialing rules.
 
-As of 2024-04-16, the structure of such a file is like in the following example:
+As of 2024-04-16, the structure of `bridges.conf` is like in the following example:
 
-```JSON
+```JavaScript
 {
 	"DomainEndpoints": {
 		"api.ooni.io:443": [{
@@ -344,6 +344,8 @@ As of 2024-04-16, the structure of such a file is like in the following example:
 			"Port": "443",
 			"SNI": "www.example.com",
 			"VerifyHostname": "api.ooni.io"
+		}, {
+			/* omitted */
 		}]
 	},
 	"Version": 3
@@ -352,7 +354,7 @@ As of 2024-04-16, the structure of such a file is like in the following example:
 
 **Listing 6.** Sample `bridges.conf` content.
 
-This example instructs to use the given tactic when establishing a TLS connection to
+This example instructs to use the given tactic(s) when establishing a TLS connection to
 `"api.ooni.io:443"`. Any other destination hostname and port would instead use the
 configured "fallback" dialing policy.
 
@@ -480,7 +482,7 @@ stateDiagram-v2
 
   state tacticsChan <<join>>
   mix24 --> tacticsChan
-  tacticsChan --> tactics
+  tacticsChan --> DialTLSContext
 ```
 
 **Diagram 3.** Tactics generation priorities when not using a proxy.
