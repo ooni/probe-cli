@@ -31,25 +31,25 @@ var _ httpsDialerPolicy = &statsPolicy{}
 // LookupTactics implements HTTPSDialerPolicy.
 func (p *statsPolicy) LookupTactics(ctx context.Context, domain string, port string) <-chan *httpsDialerTactic {
 	return mixDeterministicThenRandom(
-		// Give priority to what we know from stats
-		//
-		// We make sure we emit two stats-based tactics if possible
 		&mixDeterministicThenRandomConfig{
+			// Give priority to what we know from stats.
 			C: statsPolicyStream(statsPolicyFilterStatsTactics(p.Stats.LookupTactics(domain, port))),
+
+			// We make sure we emit two stats-based tactics if possible.
 			N: 2,
 		},
 
-		// And remix it with the fallback
-		//
-		// Under the assumption that below us we have bridgePolicy composed with DNS policy
-		// and that the stage below emits two bridge tactics, if possible, followed by two
-		// additional DNS tactics, if possible, we need to allow for four tactics to pass through
-		// befofe we start remixing from the two channels.
-		//
-		// Note: modifying this field likely indicates you also need to modify the
-		// corresponding instantiation in bridgespolicy.go.
 		&mixDeterministicThenRandomConfig{
+			// And remix it with the fallback.
 			C: p.Fallback.LookupTactics(ctx, domain, port),
+
+			// Under the assumption that below us we have bridgePolicy composed with DNS policy
+			// and that the stage below emits two bridge tactics, if possible, followed by two
+			// additional DNS tactics, if possible, we need to allow for four tactics to pass through
+			// befofe we start remixing from the two channels.
+			//
+			// Note: modifying this field likely indicates you also need to modify the
+			// corresponding instantiation in bridgespolicy.go.
 			N: 4,
 		},
 	)

@@ -36,28 +36,28 @@ var _ httpsDialerPolicy = &bridgesPolicy{}
 // 3. we randomly remix the rest.
 func (p *bridgesPolicy) LookupTactics(ctx context.Context, domain, port string) <-chan *httpsDialerTactic {
 	return mixDeterministicThenRandom(
-		// Prioritize emitting tactics for bridges. Currently we only have bridges
-		// for "api.ooni.io", therefore, for all other hosts this arm ends up
-		// returning a channel that will be immediately closed.
-		//
-		// This ensures we read the first two bridge tactics.
-		//
-		// Note: modifying this field likely indicates you also need to modify the
-		// corresponding instantiation in statspolicy.go.
 		&mixDeterministicThenRandomConfig{
+			// Prioritize emitting tactics for bridges. Currently we only have bridges
+			// for "api.ooni.io", therefore, for all other hosts this arm ends up
+			// returning a channel that will be immediately closed.
 			C: p.bridgesTacticsForDomain(domain, port),
+
+			// This ensures we read the first two bridge tactics.
+			//
+			// Note: modifying this field likely indicates you also need to modify the
+			// corresponding instantiation in statspolicy.go.
 			N: 2,
 		},
 
-		// Mix the above with using the fallback policy and rewriting the SNIs
-		// used by the test helpers to avoid exposing the real SNIs.
-		//
-		// This ensures we read the first two DNS tactics.
-		//
-		// Note: modifying this field likely indicates you also need to modify the
-		// corresponding remix{} instantiation in statspolicy.go.
 		&mixDeterministicThenRandomConfig{
+			// Mix the above with using the fallback policy and rewriting the SNIs
+			// used by the test helpers to avoid exposing the real SNIs.
 			C: p.maybeRewriteTestHelpersTactics(p.Fallback.LookupTactics(ctx, domain, port)),
+
+			// This ensures we read the first two DNS tactics.
+			//
+			// Note: modifying this field likely indicates you also need to modify the
+			// corresponding remix{} instantiation in statspolicy.go.
 			N: 2,
 		},
 	)
