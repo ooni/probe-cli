@@ -555,7 +555,7 @@ The overall structure of `httpsdialerstats.state` is roughly the following:
             "VerifyHostname": "api.ooni.io"
           }
         },
-		/* ... */
+        /* ... */
       }
     }
   }
