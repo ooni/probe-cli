@@ -78,13 +78,13 @@ Policies are described in detail in subsequent sections. On a high-level, here's
 inside it, then it falls back to the subsequent policy;
 
 2. `statsPolicy`: uses statistics collected from previous runs to select tactics that
-worked recently, otherwise it falls back to the subsequent policy;
+worked recently for specific dialing targets, otherwise it falls back to the subsequent policy;
 
-3. `bridgePolicy`: adopts a bridge strategy for `api.ooni.io`, hides the SNI for
-THs, and otherwise falls back to the subsequent policy;
+3. `bridgePolicy`: adopts a bridge strategy for `api.ooni.io` (i.e., uses known-in-advance
+IP addresses), hides the SNI for THs, and otherwise falls back to the subsequent policy;
 
 4. `dnsPolicy`: uses the `*engine.Session` DNS resolver to lookup domain names
-and produces trivial tactics equivalent to connecting normally.
+and produces trivial tactics equivalent to connecting normally using the Go standard library.
 
 While the previous description says "falls back to," the actual semantics of falling
 back is more complex than just falling back. For `statsPolicy` and `bridgePolicy`,
