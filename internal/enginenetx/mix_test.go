@@ -120,7 +120,7 @@ func TestMixDeterministicThenRandom(t *testing.T) {
 	}}
 
 	// define the expectations for the beginning of the result
-	expectBeinning := []*httpsDialerTactic{{
+	expectBeginning := []*httpsDialerTactic{{
 		Address:        "130.192.91.211",
 		InitialDelay:   0,
 		Port:           "443",
@@ -170,9 +170,9 @@ func TestMixDeterministicThenRandom(t *testing.T) {
 
 	// make sure we have the expected number of entries
 	if len(output) != 14 {
-		t.Fatal("we need 12 entries")
+		t.Fatal("we need 14 entries")
 	}
-	if diff := cmp.Diff(expectBeinning, output[:5]); diff != "" {
+	if diff := cmp.Diff(expectBeginning, output[:5]); diff != "" {
 		t.Fatal(diff)
 	}
 
@@ -196,5 +196,32 @@ func TestMixDeterministicThenRandom(t *testing.T) {
 		if flags != (inprimary|inoutput) && flags != (infallback|inoutput) {
 			t.Fatal("unexpected flags", flags, "for entry", entry)
 		}
+	}
+}
+
+func TestMixTryEmitNWithClosedChannel(t *testing.T) {
+	// create an already closed channel
+	inputch := make(chan *httpsDialerTactic)
+	close(inputch)
+
+	// create channel for collecting the results
+	outputch := make(chan *httpsDialerTactic)
+
+	go func() {
+		// Implementation note: mixTryEmitN does not close the channel
+		// when done, therefore we need to close it ourselves.
+		mixTryEmitN(inputch, 10, outputch)
+		close(outputch)
+	}()
+
+	// read the output channel
+	var output []*httpsDialerTactic
+	for tx := range outputch {
+		output = append(output, tx)
+	}
+
+	// make sure we didn't read anything
+	if len(output) != 0 {
+		t.Fatal("expected zero entries")
 	}
 }

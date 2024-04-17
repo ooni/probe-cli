@@ -20,7 +20,7 @@ func mixSequentially(primary, fallback <-chan *httpsDialerTactic) <-chan *httpsD
 	return output
 }
 
-// mixDeterministicThenRandomConfig is a channel for [mixRandomlyWithPrefix].
+// mixDeterministicThenRandomConfig contains config for [mixDeterministicThenRandom].
 type mixDeterministicThenRandomConfig struct {
 	// C is the channel to mix from.
 	C <-chan *httpsDialerTactic
@@ -31,13 +31,13 @@ type mixDeterministicThenRandomConfig struct {
 }
 
 // mixDeterministicThenRandom reads the first N entries from primary, if any, then the first N
-// entries fromfallback, if any, and then randomly mixes the entries.
+// entries from fallback, if any, and then randomly mixes the entries.
 func mixDeterministicThenRandom(primary, fallback *mixDeterministicThenRandomConfig) <-chan *httpsDialerTactic {
 	output := make(chan *httpsDialerTactic)
 	go func() {
 		defer close(output)
-		mixEmitN(primary.C, primary.N, output)
-		mixEmitN(fallback.C, fallback.N, output)
+		mixTryEmitN(primary.C, primary.N, output)
+		mixTryEmitN(fallback.C, fallback.N, output)
 		for tx := range mixRandomly(primary.C, fallback.C) {
 			output <- tx
 		}
@@ -45,7 +45,7 @@ func mixDeterministicThenRandom(primary, fallback *mixDeterministicThenRandomCon
 	return output
 }
 
-func mixEmitN(input <-chan *httpsDialerTactic, numToRead int, output chan<- *httpsDialerTactic) {
+func mixTryEmitN(input <-chan *httpsDialerTactic, numToRead int, output chan<- *httpsDialerTactic) {
 	for idx := 0; idx < numToRead; idx++ {
 		tactic, good := <-input
 		if !good {
