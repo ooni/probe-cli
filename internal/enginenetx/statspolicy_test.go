@@ -138,7 +138,6 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 		return newStatsManager(kvStore, log.Log, trimInterval)
 	}
 
-	// TODO(bassosimone): do we still need this test?
 	t.Run("when we have unique statistics", func(t *testing.T) {
 		// create stats manager
 		stats := createStatsManager("api.ooni.io:443", expectTacticsStats...)
@@ -170,19 +169,21 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 
 		// compute the list of results we expect to see from the stats data
 		var expect []*httpsDialerTactic
+		idx := 0
 		for _, entry := range expectTacticsStats {
 			if entry.CountSuccess <= 0 || entry.Tactic == nil {
 				continue // we SHOULD NOT include entries that systematically failed
 			}
 			t := entry.Tactic.Clone()
-			t.InitialDelay = 0
+			t.InitialDelay = happyEyeballsDelay(idx)
 			expect = append(expect, t)
+			idx++
 		}
 
 		// extend the expected list to include DNS results
 		expect = append(expect, &httpsDialerTactic{
 			Address:        bridgeAddress,
-			InitialDelay:   0,
+			InitialDelay:   2 * time.Second,
 			Port:           "443",
 			SNI:            "api.ooni.io",
 			VerifyHostname: "api.ooni.io",
@@ -194,7 +195,6 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 		}
 	})
 
-	// TODO(bassosimone): do we still need this test?
 	t.Run("when we have duplicates", func(t *testing.T) {
 		// add each entry twice to create obvious duplicates
 		statsWithDupes := []*statsTactic{}
@@ -234,19 +234,21 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 
 		// compute the list of results we expect to see from the stats data
 		var expect []*httpsDialerTactic
+		idx := 0
 		for _, entry := range expectTacticsStats {
 			if entry.CountSuccess <= 0 || entry.Tactic == nil {
 				continue // we SHOULD NOT include entries that systematically failed
 			}
 			t := entry.Tactic.Clone()
-			t.InitialDelay = 0
+			t.InitialDelay = happyEyeballsDelay(idx)
 			expect = append(expect, t)
+			idx++
 		}
 
 		// extend the expected list to include DNS results
 		expect = append(expect, &httpsDialerTactic{
 			Address:        bridgeAddress,
-			InitialDelay:   0,
+			InitialDelay:   2 * time.Second,
 			Port:           "443",
 			SNI:            "api.ooni.io",
 			VerifyHostname: "api.ooni.io",
@@ -288,13 +290,15 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 
 		// compute the list of results we expect to see from the stats data
 		var expect []*httpsDialerTactic
+		idx := 0
 		for _, entry := range expectTacticsStats {
 			if entry.CountSuccess <= 0 || entry.Tactic == nil {
 				continue // we SHOULD NOT include entries that systematically failed
 			}
 			t := entry.Tactic.Clone()
-			t.InitialDelay = 0
+			t.InitialDelay = happyEyeballsDelay(idx)
 			expect = append(expect, t)
+			idx++
 		}
 
 		// perform the actual comparison

@@ -30,14 +30,48 @@ var _ httpsDialerPolicy = &statsPolicy{}
 
 // LookupTactics implements HTTPSDialerPolicy.
 func (p *statsPolicy) LookupTactics(ctx context.Context, domain string, port string) <-chan *httpsDialerTactic {
-	// avoid emitting nil tactics and duplicate tactics
-	return filterOnlyKeepUniqueTactics(filterOutNilTactics(mixSequentially(
+	out := make(chan *httpsDialerTactic)
+
+	go func() {
+		defer close(out) // make sure the parent knows when we're done
+		index := 0
+
+		// useful to make sure we don't emit two equal policy in a single run
+		uniq := make(map[string]int)
+
+		// function that emits a given tactic unless we already emitted it
+		maybeEmitTactic := func(t *httpsDialerTactic) {
+			// as a safety mechanism let's gracefully handle the
+			// case in which the tactic is nil
+			if t == nil {
+				return
+			}
+
+			// handle the case in which we already emitted a policy
+			key := t.tacticSummaryKey()
+			if uniq[key] > 0 {
+				return
+			}
+			uniq[key]++
+
+			// 🚀!!!
+			t.InitialDelay = happyEyeballsDelay(index)
+			index += 1
+			out <- t
+		}
+
 		// give priority to what we know from stats
-		streamTacticsFromSlice(statsPolicyFilterStatsTactics(p.Stats.LookupTactics(domain, port))),
+		for _, t := range statsPolicyFilterStatsTactics(p.Stats.LookupTactics(domain, port)) {
+			maybeEmitTactic(t)
+		}
 
 		// fallback to the secondary policy
-		p.Fallback.LookupTactics(ctx, domain, port),
-	)))
+		for t := range p.Fallback.LookupTactics(ctx, domain, port) {
+			maybeEmitTactic(t)
+		}
+	}()
+
+	return out
 }
 
 func statsPolicyFilterStatsTactics(tactics []*statsTactic, good bool) (out []*httpsDialerTactic) {

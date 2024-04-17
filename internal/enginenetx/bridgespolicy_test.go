@@ -62,10 +62,6 @@ func TestBridgesPolicy(t *testing.T) {
 				t.Fatal("the host should always be 93.184.216.34")
 			}
 
-			if tactic.InitialDelay != 0 {
-				t.Fatal("unexpected InitialDelay")
-			}
-
 			if tactic.SNI != "www.example.com" {
 				t.Fatal("the SNI field should always be like `www.example.com`")
 			}
@@ -106,10 +102,6 @@ func TestBridgesPolicy(t *testing.T) {
 			}
 			if tactic.Address != "162.55.247.208" {
 				t.Fatal("the host should always be 162.55.247.208")
-			}
-
-			if tactic.InitialDelay != 0 {
-				t.Fatal("unexpected InitialDelay")
 			}
 
 			if tactic.SNI == "api.ooni.io" {
@@ -181,10 +173,6 @@ func TestBridgesPolicy(t *testing.T) {
 				bridgesCount++
 			}
 
-			if tactic.InitialDelay != 0 {
-				t.Fatal("unexpected InitialDelay")
-			}
-
 			if tactic.VerifyHostname != "api.ooni.io" {
 				t.Fatal("the VerifyHostname field should always be like `api.ooni.io`")
 			}
@@ -218,25 +206,27 @@ func TestBridgesPolicy(t *testing.T) {
 				}
 
 				ctx := context.Background()
-				for tactic := range p.LookupTactics(ctx, domain, "443") {
+				index := 0
+				for tactics := range p.LookupTactics(ctx, domain, "443") {
 
-					if tactic.Address != "164.92.180.7" {
+					if tactics.Address != "164.92.180.7" {
 						t.Fatal("unexpected .Address")
 					}
 
-					if tactic.InitialDelay != 0 {
+					if tactics.InitialDelay != happyEyeballsDelay(index) {
 						t.Fatal("unexpected .InitialDelay")
 					}
+					index++
 
-					if tactic.Port != "443" {
+					if tactics.Port != "443" {
 						t.Fatal("unexpected .Port")
 					}
 
-					if tactic.SNI == domain {
+					if tactics.SNI == domain {
 						t.Fatal("unexpected .Domain")
 					}
 
-					if tactic.VerifyHostname != domain {
+					if tactics.VerifyHostname != domain {
 						t.Fatal("unexpected .VerifyHostname")
 					}
 				}
