@@ -72,7 +72,7 @@ depending on the arguments passed to `NewNetwork`:
 +------------+     +-------------+     +--------------+     +-----------+
 ```
 
-Policies are described in detail below. On a high-level, here's what each policy does:
+Policies are described in detail in subsequent sections. On a high-level, here's what each does:
 
 1. `userPolicy`: honours the `bridges.conf` configuration file and, if no entry is found
 inside it, then it falls back to the subsequent policy;
