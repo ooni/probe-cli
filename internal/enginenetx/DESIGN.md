@@ -157,7 +157,8 @@ Here's an explanation of why we have each field in the struct:
 
 - `InitialDelay` allows a policy to delay a connect operation to implement
 something similar to [happy eyeballs](https://en.wikipedia.org/wiki/Happy_Eyeballs),
-where dialing attempts run in parallel but are staggered in time;
+where dialing attempts run in parallel that are staggered in time (the classical
+example being: dialing for IPv6 and then attempting dialing for IPv4 after 0.3s);
 
 - `SNI` is the `SNI` to send as part of the TLS ClientHello;
 
