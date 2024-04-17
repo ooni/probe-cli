@@ -198,3 +198,30 @@ func TestMixDeterministicThenRandom(t *testing.T) {
 		}
 	}
 }
+
+func TestMixEmitNWithClosedChannel(t *testing.T) {
+	// create an already closed channel
+	inputch := make(chan *httpsDialerTactic)
+	close(inputch)
+
+	// create channel for collecting the results
+	outputch := make(chan *httpsDialerTactic)
+
+	go func() {
+		// Implementation note: mixTryEmitN does not close the channel
+		// when done, therefore we need to close it ourselves.
+		mixTryEmitN(inputch, 10, outputch)
+		close(outputch)
+	}()
+
+	// read the output channel
+	var output []*httpsDialerTactic
+	for tx := range outputch {
+		output = append(output, tx)
+	}
+
+	// make sure we didn't read anything
+	if len(output) != 0 {
+		t.Fatal("expected zero entries")
+	}
+}
