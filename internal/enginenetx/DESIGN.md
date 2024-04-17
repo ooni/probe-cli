@@ -15,6 +15,10 @@ We define "bridge" an IP address with the following properties:
 
 We also assume that the Web Connectivity test helpers (TH) could accept any SNIs.
 
+We also define "tactic" a tactic to perform a TLS handshake either with a
+bridge or with a TH. We also define "policy" the collection of algorithms for
+producing tactics for performing TLS handshakes.
+
 Considering all of this, this package aims to:
 
 1. overcome DNS-based censorship for "api.ooni.io" by hardcoding known-good
@@ -68,11 +72,30 @@ depending on the arguments passed to `NewNetwork`:
 +------------+     +-------------+     +--------------+     +-----------+
 ```
 
-As a first approximation, we can consider each arrow in the diagram to mean "fall
-back to". In reality, some policies implement a more complex strategy where they remix
-tactics they know and tactics provided by the downstream policy.
+Policies are described in detail below. On a high-level, here's what each policy does:
 
-When using a proxy, we just use the `dnsPolicy` assuming the proxy knows how to do circumvention.
+1. `userPolicy`: honours the `bridges.conf` configuration file and, if no entry is found
+inside it, then it falls back to the subsequent policy;
+
+2. `statsPolicy`: uses statistics collected from previous runs to select tactics that
+worked recently, otherwise it falls back to the subsequent policy;
+
+3. `bridgePolicy`: adopts a bridge strategy for `api.ooni.io`, hides the SNI for
+THs, and otherwise falls back to the subsequent policy;
+
+4. `dnsPolicy`: uses the `*engine.Session` DNS resolver to lookup domain names
+and produces trivial tactics equivalent to connecting normally.
+
+While the previous description says "falls back to," the actual semantics of falling
+back is more complex than just falling back. For `statsPolicy` and `bridgePolicy`,
+we remix the current policy strategy and subsequent policies strategies to strike a
+balance between what a policy suggests and what subsequent policies would suggest. In
+turn, this reduces the overall bootstrap time in light of issues with policies.
+
+We added remix as part of [probe-cli#1552](https://github.com/ooni/probe-cli/pull/1552). Before
+this pull requests, OONI Probe implemented strict falling back.
+
+Also, when using a proxy, we just use `dnsPolicy` assuming the proxy knows how to do circumvention.
 
 ## Instructions For Dialing
 
