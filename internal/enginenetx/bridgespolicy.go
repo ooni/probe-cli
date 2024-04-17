@@ -57,7 +57,7 @@ func (p *bridgesPolicy) LookupTactics(ctx context.Context, domain, port string) 
 			// This ensures we read the first two DNS tactics.
 			//
 			// Note: modifying this field likely indicates you also need to modify the
-			// corresponding remix{} instantiation in statspolicy.go.
+			// corresponding instantiation in statspolicy.go.
 			N: 2,
 		},
 	)
