@@ -139,6 +139,7 @@ func TestBridgesPolicy(t *testing.T) {
 			dnsCount     int
 			overallCount int
 		)
+		const expectedDNSEntryCount = 153 // yikes!
 		for tactic := range tactics {
 			overallCount++
 
@@ -149,24 +150,24 @@ func TestBridgesPolicy(t *testing.T) {
 			}
 
 			switch {
-			case overallCount == 5:
+			case overallCount == expectedDNSEntryCount:
 				if tactic.Address != "130.192.91.211" {
-					t.Fatal("the host should be 130.192.91.211 for count == 5")
+					t.Fatal("the host should be 130.192.91.211 for count ==", expectedDNSEntryCount)
 				}
 
 				if tactic.SNI != "api.ooni.io" {
-					t.Fatal("we should see the `api.ooni.io` SNI on the wire for count == 5")
+					t.Fatal("we should see the `api.ooni.io` SNI on the wire for count ==", expectedDNSEntryCount)
 				}
 
 				dnsCount++
 
 			default:
 				if tactic.Address != "162.55.247.208" {
-					t.Fatal("the host should be 162.55.247.208 for count != 5")
+					t.Fatal("the host should be 162.55.247.208 for count !=", expectedDNSEntryCount)
 				}
 
 				if tactic.SNI == "api.ooni.io" {
-					t.Fatal("we should not see the `api.ooni.io` SNI on the wire for count != 5")
+					t.Fatal("we should not see the `api.ooni.io` SNI on the wire for count !=", expectedDNSEntryCount)
 				}
 
 				bridgesCount++
