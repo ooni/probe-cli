@@ -319,9 +319,9 @@ func (p *mocksPolicy) LookupTactics(ctx context.Context, domain string, port str
 	return p.MockLookupTactics(ctx, domain, port)
 }
 
-func TestStatsPolicyPostProcessTactics(t *testing.T) {
+func TestStatsPolicyFilterStatsTactics(t *testing.T) {
 	t.Run("we do nothing when good is false", func(t *testing.T) {
-		tactics := statsPolicyPostProcessTactics(nil, false)
+		tactics := statsPolicyFilterStatsTactics(nil, false)
 		if len(tactics) != 0 {
 			t.Fatal("expected zero-lenght return value")
 		}
@@ -390,7 +390,7 @@ func TestStatsPolicyPostProcessTactics(t *testing.T) {
 			},
 		}
 
-		got := statsPolicyPostProcessTactics(input, true)
+		got := statsPolicyFilterStatsTactics(input, true)
 
 		if len(got) != 1 {
 			t.Fatal("expected just one element")

@@ -61,7 +61,7 @@ func (p *statsPolicy) LookupTactics(ctx context.Context, domain string, port str
 		}
 
 		// give priority to what we know from stats
-		for _, t := range statsPolicyPostProcessTactics(p.Stats.LookupTactics(domain, port)) {
+		for _, t := range statsPolicyFilterStatsTactics(p.Stats.LookupTactics(domain, port)) {
 			maybeEmitTactic(t)
 		}
 
@@ -74,7 +74,7 @@ func (p *statsPolicy) LookupTactics(ctx context.Context, domain string, port str
 	return out
 }
 
-func statsPolicyPostProcessTactics(tactics []*statsTactic, good bool) (out []*httpsDialerTactic) {
+func statsPolicyFilterStatsTactics(tactics []*statsTactic, good bool) (out []*httpsDialerTactic) {
 	// when good is false, it means p.Stats.LookupTactics failed
 	if !good {
 		return

@@ -97,7 +97,7 @@ type httpsDialerPolicy interface {
 
 // httpsDialerEventsHandler handles events occurring while we try dialing TLS.
 type httpsDialerEventsHandler interface {
-	// These callbacks are invoked during the TLS handshake to inform this
+	// These callbacks are invoked during the TLS dialing to inform this
 	// interface about events that occurred. A policy SHOULD keep track of which
 	// addresses, SNIs, etc. work and return them more frequently.
 	//
@@ -236,8 +236,10 @@ func (hd *httpsDialer) DialTLSContext(ctx context.Context, network string, endpo
 				continue
 			}
 
-			// Save the conn and tell goroutines to stop ASAP
+			// Save the conn
 			connv = append(connv, result.Conn)
+
+			// Interrupt other concurrent dialing attempts
 			cancel()
 		}
 	}
