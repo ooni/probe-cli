@@ -31,7 +31,7 @@ type mixDeterministicThenRandomConfig struct {
 }
 
 // mixDeterministicThenRandom reads the first N entries from primary, if any, then the first N
-// entries fromfallback, if any, and then randomly mixes the entries.
+// entries from fallback, if any, and then randomly mixes the entries.
 func mixDeterministicThenRandom(primary, fallback *mixDeterministicThenRandomConfig) <-chan *httpsDialerTactic {
 	output := make(chan *httpsDialerTactic)
 	go func() {
