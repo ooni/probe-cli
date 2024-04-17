@@ -497,7 +497,7 @@ Having discussed this, it only remains to discuss managing stats.
 
 The [statsmanager.go](statsmanager.go) file implements the `*statsManager`.
 
-We initialize the `*statsManager` by calling `newStatsManager` with a stats trim
+We initialize the `*statsManager` by calling `newStatsManager` with a stats-trim
 interval of 30 seconds in `NewNetwork` in [network.go](network.go).
 
 The `*statsManager` keeps stats at `$OONI_HOME/engine/httpsdialerstats.state`.
@@ -506,7 +506,7 @@ In `newStatsManager`, we attempt to read this file using `loadStatsContainer` an
 not present, we fall back to create empty stats with `newStatsContainer`.
 
 While creating the `*statsManager` we also spawn a goroutine that trims the stats
-at every stats trimming interval by calling `(*statsManager).trim`. In turn, `trim`
+at every stats-trimming interval by calling `(*statsManager).trim`. In turn, `trim`
 calls `statsContainerPruneEntries`, which eventually:
 
 1. removes entries not modified for more than one week;
@@ -524,7 +524,7 @@ More specifically we sort entries using this algorithm:
 Likewise, calling `(*statsManager).Close` invokes `statsContainerPruneEntries`, and
 then ensures that we write `$OONI_HOME/engine/httpsdialerstats.state`.
 
-This way, subsequent OONI Probe runs could load the stats thare are more likely
+This way, subsequent OONI Probe runs could load the stats that are more likely
 to work and `statsPolicy` can take advantage of this information.
 
 The overall structure of `httpsdialerstats.state` is roughly the following:
@@ -554,7 +554,8 @@ The overall structure of `httpsdialerstats.state` is roughly the following:
             "SNI": "api.trademe.co.nz",
             "VerifyHostname": "api.ooni.io"
           }
-        }
+        },
+		/* ... */
       }
     }
   }
