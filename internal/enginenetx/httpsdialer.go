@@ -148,6 +148,9 @@ type httpsDialer struct {
 
 	// stats tracks what happens while dialing.
 	stats httpsDialerEventsHandler
+
+	// timeNow allows mocking [time.Now] function calls.
+	timeNow func() time.Time
 }
 
 // newHTTPSDialer constructs a new [*httpsDialer] instance.
@@ -160,7 +163,9 @@ type httpsDialer struct {
 //
 // - policy defines the dialer policy;
 //
-// - stats tracks what happens while we're dialing.
+// - stats tracks what happens while we're dialing;
+//
+// - timeNow allows mocking [time.Now] calls.
 //
 // The returned [*httpsDialer] would use the underlying network's
 // DefaultCertPool to create and cache the cert pool to use.
@@ -169,6 +174,7 @@ func newHTTPSDialer(
 	netx *netxlite.Netx,
 	policy httpsDialerPolicy,
 	stats httpsDialerEventsHandler,
+	timeNow func() time.Time,
 ) *httpsDialer {
 	dx := &httpsDialer{
 		dialTLSFn:   nil, // set just below
@@ -181,6 +187,7 @@ func newHTTPSDialer(
 		policy:  policy,
 		rootCAs: netx.MaybeCustomUnderlyingNetwork().Get().DefaultCertPool(),
 		stats:   stats,
+		timeNow: timeNow,
 	}
 	dx.dialTLSFn = dx.dialTLS
 	return dx
@@ -227,7 +234,7 @@ func (hd *httpsDialer) DialTLSContext(ctx context.Context, network string, endpo
 	collector := make(chan *httpsDialerErrorOrConn)
 	joiner := make(chan any)
 	const parallelism = 16
-	t0 := time.Now()
+	t0 := hd.timeNow()
 	for idx := 0; idx < parallelism; idx++ {
 		go hd.worker(ctx, joiner, emitter, t0, collector)
 	}

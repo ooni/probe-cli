@@ -87,7 +87,7 @@ func NewNetwork(
 	proxyURL *url.URL,
 	resolver model.Resolver,
 ) *Network {
-	nx, _ := newNetwork(counter, kvStore, logger, proxyURL, resolver)
+	nx, _ := newNetwork(counter, kvStore, logger, proxyURL, resolver, time.Now)
 	return nx
 }
 
@@ -98,6 +98,7 @@ func newNetwork(
 	logger model.Logger,
 	proxyURL *url.URL,
 	resolver model.Resolver,
+	timeNow func() time.Time,
 ) (*Network, *httpsDialer) {
 	// Create a dialer ONLY used for dialing unencrypted TCP connections. The common use
 	// case of this Network is to dial encrypted connections. For this reason, here it is
@@ -108,15 +109,16 @@ func newNetwork(
 	// Create manager for keeping track of statistics. This implies creating a background
 	// goroutine that we'll need to close when we're done.
 	const trimInterval = 30 * time.Second
-	stats := newStatsManager(kvStore, logger, trimInterval)
+	stats := newStatsManager(kvStore, logger, timeNow, trimInterval)
 
 	// Create a TLS dialer ONLY used for dialing TLS connections. This dialer will use
 	// happy-eyeballs and possibly custom policies for dialing TLS connections.
 	httpsDialer := newHTTPSDialer(
 		logger,
 		&netxlite.Netx{Underlying: nil}, // nil means using netxlite's singleton
-		newHTTPSDialerPolicy(kvStore, logger, proxyURL, resolver, stats),
+		newHTTPSDialerPolicy(kvStore, logger, proxyURL, resolver, stats, timeNow),
 		stats,
+		timeNow,
 	)
 
 	// Here we're creating a "new style" HTTPS transport, which has less
@@ -157,6 +159,7 @@ func newHTTPSDialerPolicy(
 	proxyURL *url.URL, // optional!
 	resolver model.Resolver,
 	stats *statsManager,
+	timeNow func() time.Time,
 ) httpsDialerPolicy {
 	// in case there's a proxy URL, we're going to trust the proxy to do the right thing and
 	// know what it's doing, hence we'll have a very simple DNS policy
@@ -166,8 +169,11 @@ func newHTTPSDialerPolicy(
 
 	// create a composed fallback TLS dialer policy
 	fallback := &statsPolicy{
-		Fallback: &bridgesPolicy{Fallback: &dnsPolicy{logger, resolver}},
-		Stats:    stats,
+		Fallback: &bridgesPolicy{
+			Fallback: &dnsPolicy{logger, resolver},
+			TimeNow:  timeNow,
+		},
+		Stats: stats,
 	}
 
 	// make sure we honor a user-provided policy

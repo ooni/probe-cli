@@ -513,7 +513,7 @@ func TestLoadStatsContainer(t *testing.T) {
 				}
 			}
 
-			root, err := loadStatsContainer(kvStore)
+			root, err := loadStatsContainer(kvStore, time.Now)
 
 			switch {
 			case err == nil && tc.expectErr == "":
@@ -799,7 +799,7 @@ func TestStatsManagerCallbacks(t *testing.T) {
 
 			// create the stats manager
 			const trimInterval = 30 * time.Second
-			stats := newStatsManager(kvStore, logger, trimInterval)
+			stats := newStatsManager(kvStore, logger, time.Now, trimInterval)
 			defer stats.Close()
 
 			// invoke the proper stats callback
@@ -922,7 +922,7 @@ func TestStatsManagerLookupTactics(t *testing.T) {
 
 	// create the stats manager
 	const trimInterval = 30 * time.Second
-	stats := newStatsManager(kvStore, log.Log, trimInterval)
+	stats := newStatsManager(kvStore, log.Log, time.Now, trimInterval)
 	defer stats.Close()
 
 	t.Run("when we're searching for a domain endpoint we know about", func(t *testing.T) {
@@ -1284,7 +1284,7 @@ func TestStatsDomainEndpointPruneEntries(t *testing.T) {
 			Tactics: map[string]*statsTactic{},
 		}
 
-		got := statsDomainEndpointPruneEntries(input)
+		got := statsDomainEndpointPruneEntries(input, time.Now)
 
 		if diff := cmp.Diff(expect, got); diff != "" {
 			t.Fatal(diff)
@@ -1340,7 +1340,7 @@ func TestStatsDomainEndpointPruneEntries(t *testing.T) {
 			},
 		}
 
-		got := statsDomainEndpointPruneEntries(input)
+		got := statsDomainEndpointPruneEntries(input, time.Now)
 
 		if diff := cmp.Diff(expect, got); diff != "" {
 			t.Fatal(diff)
@@ -1422,7 +1422,7 @@ func TestStatsDomainEndpointPruneEntries(t *testing.T) {
 			input.Tactics[entry.Tactic.tacticSummaryKey()] = entry
 		}
 
-		got := statsDomainEndpointPruneEntries(input)
+		got := statsDomainEndpointPruneEntries(input, time.Now)
 
 		// log the results because it may be useful in case something is wrong
 		t.Log(string(runtimex.Try1(json.MarshalIndent(got, "", "  "))))
@@ -1440,7 +1440,7 @@ func TestStatsContainerPruneEntries(t *testing.T) {
 			Version:         statsContainerVersion,
 		}
 
-		output := statsContainerPruneEntries(input)
+		output := statsContainerPruneEntries(input, time.Now)
 
 		expect := &statsContainer{
 			DomainEndpoints: map[string]*statsDomainEndpoint{},
@@ -1475,7 +1475,7 @@ func TestStatsContainerPruneEntries(t *testing.T) {
 			Version: statsContainerVersion,
 		}
 
-		output := statsContainerPruneEntries(input)
+		output := statsContainerPruneEntries(input, time.Now)
 
 		expect := &statsContainer{
 			DomainEndpoints: map[string]*statsDomainEndpoint{},
@@ -1510,7 +1510,7 @@ func TestStatsContainerPruneEntries(t *testing.T) {
 			Version: statsContainerVersion,
 		}
 
-		output := statsContainerPruneEntries(input)
+		output := statsContainerPruneEntries(input, time.Now)
 
 		expect := &statsContainer{
 			DomainEndpoints: map[string]*statsDomainEndpoint{},
@@ -1560,7 +1560,7 @@ func TestStatsContainerPruneEntries(t *testing.T) {
 			Version: statsContainerVersion,
 		}
 
-		output := statsContainerPruneEntries(input)
+		output := statsContainerPruneEntries(input, time.Now)
 
 		expect := &statsContainer{
 			DomainEndpoints: map[string]*statsDomainEndpoint{
@@ -1582,7 +1582,7 @@ func TestStatsContainerPruneEntries(t *testing.T) {
 func TestStatsManagerTrimEntriesConcurrently(t *testing.T) {
 	// start stats manager that trims very frequently
 	store := &kvstore.Memory{}
-	sm := newStatsManager(store, model.DiscardLogger, 1*time.Second)
+	sm := newStatsManager(store, model.DiscardLogger, time.Now, 1*time.Second)
 
 	// obtain exclusive access
 	sm.mu.Lock()

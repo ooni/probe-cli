@@ -21,6 +21,9 @@ import (
 type bridgesPolicy struct {
 	// Fallback is the MANDATORY fallback policy.
 	Fallback httpsDialerPolicy
+
+	// TimeNow is the MANDATORY time generator.
+	TimeNow func() time.Time
 }
 
 var _ httpsDialerPolicy = &bridgesPolicy{}
@@ -30,7 +33,7 @@ func (p *bridgesPolicy) LookupTactics(ctx context.Context, domain, port string) 
 	return mixSequentially(
 		// emit bridges related tactics first which are empty if there are
 		// no bridges for the givend domain and port
-		bridgesTacticsForDomain(domain, port),
+		p.bridgesTacticsForDomain(domain, port),
 
 		// now fallback to get more tactics (typically here the fallback
 		// uses the DNS and obtains some extra tactics)
@@ -74,7 +77,7 @@ func (p *bridgesPolicy) maybeRewriteTestHelpersTactics(input <-chan *httpsDialer
 
 			// This is the case where we're connecting to a test helper. Let's try
 			// to produce policies hiding the SNI to censoring middleboxes.
-			for _, sni := range bridgesDomainsInRandomOrder() {
+			for _, sni := range bridgesDomainsInRandomOrder(p.TimeNow) {
 				out <- &httpsDialerTactic{
 					Address:        tactic.Address,
 					InitialDelay:   0, // set when dialing
@@ -89,7 +92,7 @@ func (p *bridgesPolicy) maybeRewriteTestHelpersTactics(input <-chan *httpsDialer
 	return out
 }
 
-func bridgesTacticsForDomain(domain, port string) <-chan *httpsDialerTactic {
+func (p *bridgesPolicy) bridgesTacticsForDomain(domain, port string) <-chan *httpsDialerTactic {
 	out := make(chan *httpsDialerTactic)
 
 	go func() {
@@ -101,7 +104,7 @@ func bridgesTacticsForDomain(domain, port string) <-chan *httpsDialerTactic {
 		}
 
 		for _, ipAddr := range bridgesAddrs() {
-			for _, sni := range bridgesDomainsInRandomOrder() {
+			for _, sni := range bridgesDomainsInRandomOrder(p.TimeNow) {
 				out <- &httpsDialerTactic{
 					Address:        ipAddr,
 					InitialDelay:   0, // set when dialing
@@ -116,9 +119,9 @@ func bridgesTacticsForDomain(domain, port string) <-chan *httpsDialerTactic {
 	return out
 }
 
-func bridgesDomainsInRandomOrder() (out []string) {
+func bridgesDomainsInRandomOrder(timeNow func() time.Time) (out []string) {
 	out = bridgesDomains()
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	r := rand.New(rand.NewSource(timeNow().UnixNano()))
 	r.Shuffle(len(out), func(i, j int) {
 		out[i], out[j] = out[j], out[i]
 	})

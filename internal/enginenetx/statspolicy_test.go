@@ -135,7 +135,7 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 		}
 
 		const trimInterval = 30 * time.Second
-		return newStatsManager(kvStore, log.Log, trimInterval)
+		return newStatsManager(kvStore, log.Log, time.Now, trimInterval)
 	}
 
 	t.Run("when we have unique statistics", func(t *testing.T) {

@@ -387,6 +387,7 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 					netx,
 					policy,
 					tc.stats,
+					time.Now,
 				)
 				defer dialer.CloseIdleConnections()
 
@@ -514,6 +515,7 @@ func TestHTTPSDialerHostNetworkQA(t *testing.T) {
 				Resolver: resolver,
 			},
 			&nullStatsManager{},
+			time.Now,
 		)
 
 		URL := runtimex.Try1(url.Parse(server.URL))

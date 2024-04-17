@@ -22,6 +22,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
 func TestNetworkUnit(t *testing.T) {
@@ -291,6 +292,7 @@ func TestNewHTTPSDialerPolicy(t *testing.T) {
 				tc.proxyURL,       // possibly nil
 				&mocks.Resolver{}, // we are not using `out` so it does not matter
 				&statsManager{},   // ditto
+				time.Now,
 			)
 
 			got := fmt.Sprintf("%T", p)
@@ -314,6 +316,11 @@ func TestNetworkVerifyGeneratedTactics(t *testing.T) {
 
 		// store is the kvstore we're using
 		store *kvstore.Memory
+	}
+
+	// newPredictableTimeGenerator returns a predictable time generator.
+	newPredictableTimeGenerator := func() func() time.Time {
+		return testingx.NewTimeDeterministic(time.Date(2024, 4, 17, 14, 56, 0, 0, time.UTC)).Now
 	}
 
 	// newTestEnv creates a new [*testEnv] instance.
@@ -342,6 +349,9 @@ func TestNetworkVerifyGeneratedTactics(t *testing.T) {
 			MockLookupNS:    nil,
 		}
 
+		// use deterministic time to have predictable random shuffling
+		timeNow := newPredictableTimeGenerator()
+
 		// create the network and the HTTPS dialer
 		network, hdx := newNetwork(
 			bytecounter.New(),
@@ -349,6 +359,7 @@ func TestNetworkVerifyGeneratedTactics(t *testing.T) {
 			model.DiscardLogger,
 			nil, // proxyURL disabled
 			reso,
+			timeNow,
 		)
 
 		// ignore the network
@@ -390,6 +401,18 @@ func TestNetworkVerifyGeneratedTactics(t *testing.T) {
 		mu.Unlock()
 
 		// return results
+		return output
+	}
+
+	// generateExpectedBridgesSchedule generates the expected bridges schedule
+	generateExpectedBridgesSchedule := func() []*httpsDialerTactic {
+		output := []*httpsDialerTactic{}
+
+		for _, ipaddr := range bridgesAddrs() {
+			for _, domain := range bridgesDomainsInRandomOrder(newPredictableTimeGenerator()) {
+			}
+		}
+
 		return output
 	}
 

@@ -220,9 +220,9 @@ type statsDomainEndpoint struct {
 
 // statsDomainEndpointPruneEntries returns a DEEP COPY of a [*statsDomainEndpoint] with old
 // and excess entries removed, such that the overall size is not unbounded.
-func statsDomainEndpointPruneEntries(input *statsDomainEndpoint) *statsDomainEndpoint {
+func statsDomainEndpointPruneEntries(input *statsDomainEndpoint, timeNow func() time.Time) *statsDomainEndpoint {
 	tactics := []*statsTactic{}
-	now := time.Now()
+	now := timeNow()
 
 	// if .Tactics is empty here we're just going to do nothing
 	for summary, tactic := range input.Tactics {
@@ -289,7 +289,7 @@ type statsContainer struct {
 }
 
 // statsContainerPruneEntries returns a DEEP COPY of a [*statsContainer] with old entries removed.
-func statsContainerPruneEntries(input *statsContainer) (output *statsContainer) {
+func statsContainerPruneEntries(input *statsContainer, timeNow func() time.Time) (output *statsContainer) {
 	output = newStatsContainer()
 
 	// if .DomainEndpoints is nil here we're just going to do nothing
@@ -301,7 +301,7 @@ func statsContainerPruneEntries(input *statsContainer) (output *statsContainer) 
 			continue
 		}
 
-		prunedStats := statsDomainEndpointPruneEntries(inputStats)
+		prunedStats := statsDomainEndpointPruneEntries(inputStats, timeNow)
 
 		// We don't want to include an entry when it's empty because all the
 		// stats inside it have just been pruned
@@ -384,6 +384,9 @@ type statsManager struct {
 	// by the background goroutine that prunes.
 	pruned chan any
 
+	// timeNow allows mocking [time.Time] calls.
+	timeNow func() time.Time
+
 	// wg tells us when the background goroutine joined.
 	wg *sync.WaitGroup
 }
@@ -395,7 +398,7 @@ const statsKey = "httpsdialerstats.state"
 var errStatsContainerWrongVersion = errors.New("wrong stats container version")
 
 // loadStatsContainer loads a stats container from the given [model.KeyValueStore].
-func loadStatsContainer(kvStore model.KeyValueStore) (*statsContainer, error) {
+func loadStatsContainer(kvStore model.KeyValueStore, timeNow func() time.Time) (*statsContainer, error) {
 	// load data from the kvstore
 	data, err := kvStore.Get(statsKey)
 	if err != nil {
@@ -421,15 +424,20 @@ func loadStatsContainer(kvStore model.KeyValueStore) (*statsContainer, error) {
 	}
 
 	// make sure we prune the data structure
-	pruned := statsContainerPruneEntries(&container)
+	pruned := statsContainerPruneEntries(&container, timeNow)
 	return pruned, nil
 }
 
 // newStatsManager constructs a new instance of [*statsManager].
-func newStatsManager(kvStore model.KeyValueStore, logger model.Logger, trimInterval time.Duration) *statsManager {
+func newStatsManager(
+	kvStore model.KeyValueStore,
+	logger model.Logger,
+	timeNow func() time.Time,
+	trimInterval time.Duration,
+) *statsManager {
 	runtimex.Assert(trimInterval > 0, "passed non-positive trimInterval")
 
-	root, err := loadStatsContainer(kvStore)
+	root, err := loadStatsContainer(kvStore, timeNow)
 	if err != nil {
 		root = newStatsContainer()
 	}
@@ -444,6 +452,7 @@ func newStatsManager(kvStore model.KeyValueStore, logger model.Logger, trimInter
 		logger:    logger,
 		mu:        sync.Mutex{},
 		pruned:    make(chan any),
+		timeNow:   timeNow,
 		wg:        &sync.WaitGroup{},
 	}
 
@@ -488,7 +497,7 @@ func (mt *statsManager) OnStarting(tactic *httpsDialerTactic) {
 
 	// update stats
 	record.CountStarted++
-	record.LastUpdated = time.Now()
+	record.LastUpdated = mt.timeNow()
 }
 
 func statsSafeIncrementMapStringInt64(input *map[string]int64, value string) {
@@ -513,7 +522,7 @@ func (mt *statsManager) OnTCPConnectError(ctx context.Context, tactic *httpsDial
 	}
 
 	// update stats
-	record.LastUpdated = time.Now()
+	record.LastUpdated = mt.timeNow()
 	if ctx.Err() != nil {
 		record.CountTCPConnectInterrupt++
 		return
@@ -538,7 +547,7 @@ func (mt *statsManager) OnTLSHandshakeError(ctx context.Context, tactic *httpsDi
 	}
 
 	// update stats
-	record.LastUpdated = time.Now()
+	record.LastUpdated = mt.timeNow()
 	if ctx.Err() != nil {
 		record.CountTLSHandshakeInterrupt++
 		return
@@ -566,7 +575,7 @@ func (mt *statsManager) OnTLSVerifyError(tactic *httpsDialerTactic, err error) {
 	runtimex.Assert(err != nil, "OnTLSVerifyError passed a nil error")
 	record.CountTLSVerificationError++
 	statsSafeIncrementMapStringInt64(&record.HistoTLSVerificationError, err.Error())
-	record.LastUpdated = time.Now()
+	record.LastUpdated = mt.timeNow()
 }
 
 // OnSuccess implements httpsDialerEventsHandler.
@@ -584,7 +593,7 @@ func (mt *statsManager) OnSuccess(tactic *httpsDialerTactic) {
 
 	// update stats
 	record.CountSuccess++
-	record.LastUpdated = time.Now()
+	record.LastUpdated = mt.timeNow()
 }
 
 // Close implements io.Closer
@@ -599,7 +608,7 @@ func (mt *statsManager) Close() (err error) {
 			mt.mu.Lock()
 
 			// make sure we remove the unneeded entries one last time before saving them
-			container := statsContainerPruneEntries(mt.container)
+			container := statsContainerPruneEntries(mt.container, mt.timeNow)
 
 			// write updated stats into the underlying key-value store
 			err = mt.kvStore.Set(statsKey, runtimex.Try1(json.Marshal(container)))
@@ -627,7 +636,7 @@ func (mt *statsManager) trim(ctx context.Context, interval time.Duration) {
 
 			// get exclusive access and edit the container
 			mt.mu.Lock()
-			mt.container = statsContainerPruneEntries(mt.container)
+			mt.container = statsContainerPruneEntries(mt.container, mt.timeNow)
 			mt.mu.Unlock()
 
 			// notify whoever's concerned that we pruned

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -21,6 +22,7 @@ func TestBridgesPolicy(t *testing.T) {
 					},
 				},
 			},
+			TimeNow: time.Now,
 		}
 
 		ctx := context.Background()
@@ -46,6 +48,7 @@ func TestBridgesPolicy(t *testing.T) {
 					},
 				},
 			},
+			TimeNow: time.Now,
 		}
 
 		ctx := context.Background()
@@ -91,6 +94,7 @@ func TestBridgesPolicy(t *testing.T) {
 					},
 				},
 			},
+			TimeNow: time.Now,
 		}
 
 		ctx := context.Background()
@@ -136,6 +140,7 @@ func TestBridgesPolicy(t *testing.T) {
 					},
 				},
 			},
+			TimeNow: time.Now,
 		}
 
 		ctx := context.Background()
@@ -215,6 +220,7 @@ func TestBridgesPolicy(t *testing.T) {
 							},
 						},
 					},
+					TimeNow: time.Now,
 				}
 
 				ctx := context.Background()
