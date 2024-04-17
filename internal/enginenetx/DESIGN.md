@@ -91,10 +91,9 @@ While the previous description says "falls back to," the actual semantics of fal
 back is more complex than just falling back. For `statsPolicy` and `bridgePolicy`,
 we remix the current policy strategy and subsequent policies strategies to strike a
 balance between what a policy suggests and what subsequent policies would suggest. In
-turn, this reduces the overall bootstrap time in light of issues with policies.
-
-We added remix as part of [probe-cli#1552](https://github.com/ooni/probe-cli/pull/1552). Before
-this pull requests, OONI Probe implemented strict falling back.
+turn, this reduces the overall bootstrap time in light of issues with policies. (We
+added remix as part of [probe-cli#1552](https://github.com/ooni/probe-cli/pull/1552); before
+that, OONI Probe implemented strict falling back.)
 
 Also, when using a proxy, we just use `dnsPolicy` assuming the proxy knows how to do circumvention.
 
