@@ -81,7 +81,8 @@ inside it, then it falls back to the subsequent policy;
 worked recently for specific dialing targets, otherwise it falls back to the subsequent policy;
 
 3. `bridgePolicy`: adopts a bridge strategy for `api.ooni.io` (i.e., uses known-in-advance
-IP addresses), hides the SNI for THs, and otherwise falls back to the subsequent policy;
+IP addresses), and otherwise falls back to the subsequent policy, still taking care of
+hiding the THs SNIs;
 
 4. `dnsPolicy`: uses the `*engine.Session` DNS resolver to lookup domain names
 and produces trivial tactics equivalent to connecting normally using the Go standard library.
