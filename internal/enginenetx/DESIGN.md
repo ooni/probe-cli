@@ -489,7 +489,7 @@ stateDiagram-v2
 
 Here `mix(X, Y)` means taking `X` from the left block, if possible, then `Y` from the
 right block, if possible, and then mixing the remainder in random order. Also, the "join"
-blocks in the diagram represent channels.
+blocks in the diagram represent Go channels.
 
 Having discussed this, it only remains to discuss managing stats.
 
