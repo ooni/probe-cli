@@ -27,8 +27,7 @@ var _ httpsDialerPolicy = &bridgesPolicy{}
 
 // LookupTactics implements httpsDialerPolicy.
 func (p *bridgesPolicy) LookupTactics(ctx context.Context, domain, port string) <-chan *httpsDialerTactic {
-	// avoid emitting nil tactics and duplicate tactics
-	return filterOnlyKeepUniqueTactics(filterOutNilTactics(mixSequentially(
+	return mixSequentially(
 		// emit bridges related tactics first which are empty if there are
 		// no bridges for the givend domain and port
 		p.bridgesTacticsForDomain(domain, port),
@@ -39,7 +38,7 @@ func (p *bridgesPolicy) LookupTactics(ctx context.Context, domain, port string) 
 		// we wrap whatever the underlying policy returns us with some
 		// extra logic for better communicating with test helpers
 		p.maybeRewriteTestHelpersTactics(p.Fallback.LookupTactics(ctx, domain, port)),
-	)))
+	)
 }
 
 var bridgesPolicyTestHelpersDomains = []string{
