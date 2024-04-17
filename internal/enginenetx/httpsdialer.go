@@ -209,7 +209,7 @@ func (hd *httpsDialer) DialTLSContext(ctx context.Context, network string, endpo
 
 	// The emitter will emit tactics and then close the channel when done. We spawn 16 workers
 	// that handle tactics in parallel and post results on the collector channel.
-	emitter := httpsFilterTactics(hd.policy.LookupTactics(ctx, hostname, port))
+	emitter := httpsDialerFilterTactics(hd.policy.LookupTactics(ctx, hostname, port))
 	collector := make(chan *httpsDialerErrorOrConn)
 	joiner := make(chan any)
 	const parallelism = 16
@@ -247,7 +247,7 @@ func (hd *httpsDialer) DialTLSContext(ctx context.Context, network string, endpo
 	return httpsDialerReduceResult(connv, errorv)
 }
 
-// httpsFilterTactics filters the tactics to:
+// httpsDialerFilterTactics filters the tactics to:
 //
 // 1. be paranoid and filter out nil tactics if any;
 //
@@ -257,39 +257,8 @@ func (hd *httpsDialer) DialTLSContext(ctx context.Context, network string, endpo
 //
 // This function returns a channel where we emit the edited
 // tactics, and which we clone when we're done.
-func httpsFilterTactics(input <-chan *httpsDialerTactic) <-chan *httpsDialerTactic {
-	output := make(chan *httpsDialerTactic)
-	go func() {
-
-		// make sure we close output chan
-		defer close(output)
-
-		// useful to make sure we don't emit two equal policy in a single run
-		uniq := make(map[string]int)
-
-		index := 0
-		for tx := range input {
-			// as a safety mechanism let's gracefully handle the
-			// case in which the tactic is nil
-			if tx != nil {
-				// handle the case in which we already emitted a policy
-				key := tx.tacticSummaryKey()
-				if uniq[key] > 0 {
-					return
-				}
-				uniq[key]++
-
-				// rewrite the delays
-				tx.InitialDelay = happyEyeballsDelay(index)
-				index++
-
-				// emit the tactic
-				output <- tx
-			}
-		}
-
-	}()
-	return output
+func httpsDialerFilterTactics(input <-chan *httpsDialerTactic) <-chan *httpsDialerTactic {
+	return filterAssignInitialDelays(filterOnlyKeepUniqueTactics(filterOutNilTactics(input)))
 }
 
 // httpsDialerReduceResult returns either an established conn or an error, using [errDNSNoAnswer] in

@@ -35,29 +35,32 @@ var _ httpsDialerPolicy = &bridgesPolicy{}
 //
 // 3. we randomly remix the rest.
 func (p *bridgesPolicy) LookupTactics(ctx context.Context, domain, port string) <-chan *httpsDialerTactic {
-	rx := &remix{
+	return mixDeterministicThenRandom(
 		// Prioritize emitting tactics for bridges. Currently we only have bridges
 		// for "api.ooni.io", therefore, for all other hosts this arm ends up
 		// returning a channel that will be immediately closed.
-		Left: p.bridgesTacticsForDomain(domain, port),
-
+		//
 		// This ensures we read the first two bridge tactics.
 		//
 		// Note: modifying this field likely indicates you also need to modify the
 		// corresponding remix{} instantiation in statspolicy.go.
-		ReadFromLeft: 2,
+		&mixDeterministicThenRandomConfig{
+			C: p.bridgesTacticsForDomain(domain, port),
+			N: 2,
+		},
 
 		// Mix the above with using the fallback policy and rewriting the SNIs
 		// used by the test helpers to avoid exposing the real SNIs.
-		Right: p.maybeRewriteTestHelpersTactics(p.Fallback.LookupTactics(ctx, domain, port)),
-
+		//
 		// This ensures we read the first two DNS tactics.
 		//
 		// Note: modifying this field likely indicates you also need to modify the
 		// corresponding remix{} instantiation in statspolicy.go.
-		ReadFromRight: 2,
-	}
-	return rx.Run()
+		&mixDeterministicThenRandomConfig{
+			C: p.maybeRewriteTestHelpersTactics(p.Fallback.LookupTactics(ctx, domain, port)),
+			N: 2,
+		},
+	)
 }
 
 var bridgesPolicyTestHelpersDomains = []string{
@@ -103,7 +106,7 @@ func (p *bridgesPolicy) maybeRewriteTestHelpersTactics(input <-chan *httpsDialer
 			for _, sni := range p.bridgesDomainsInRandomOrder() {
 				out <- &httpsDialerTactic{
 					Address:        tactic.Address,
-					InitialDelay:   0,
+					InitialDelay:   0, // set when dialing
 					Port:           tactic.Port,
 					SNI:            sni,
 					VerifyHostname: tactic.VerifyHostname,
@@ -130,7 +133,7 @@ func (p *bridgesPolicy) bridgesTacticsForDomain(domain, port string) <-chan *htt
 			for _, sni := range p.bridgesDomainsInRandomOrder() {
 				out <- &httpsDialerTactic{
 					Address:        ipAddr,
-					InitialDelay:   0,
+					InitialDelay:   0, // set when dialing
 					Port:           port,
 					SNI:            sni,
 					VerifyHostname: domain,
