@@ -20,7 +20,7 @@ func mixSequentially(primary, fallback <-chan *httpsDialerTactic) <-chan *httpsD
 	return output
 }
 
-// mixDeterministicThenRandomConfig is a channel for [mixDeterministicThenRandom].
+// mixDeterministicThenRandomConfig contains config for [mixDeterministicThenRandom].
 type mixDeterministicThenRandomConfig struct {
 	// C is the channel to mix from.
 	C <-chan *httpsDialerTactic
