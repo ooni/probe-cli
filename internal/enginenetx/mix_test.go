@@ -199,7 +199,7 @@ func TestMixDeterministicThenRandom(t *testing.T) {
 	}
 }
 
-func TestMixEmitNWithClosedChannel(t *testing.T) {
+func TestMixTryEmitNWithClosedChannel(t *testing.T) {
 	// create an already closed channel
 	inputch := make(chan *httpsDialerTactic)
 	close(inputch)
