@@ -120,7 +120,7 @@ func TestMixDeterministicThenRandom(t *testing.T) {
 	}}
 
 	// define the expectations for the beginning of the result
-	expectBeinning := []*httpsDialerTactic{{
+	expectBeginning := []*httpsDialerTactic{{
 		Address:        "130.192.91.211",
 		InitialDelay:   0,
 		Port:           "443",
@@ -172,7 +172,7 @@ func TestMixDeterministicThenRandom(t *testing.T) {
 	if len(output) != 14 {
 		t.Fatal("we need 14 entries")
 	}
-	if diff := cmp.Diff(expectBeinning, output[:5]); diff != "" {
+	if diff := cmp.Diff(expectBeginning, output[:5]); diff != "" {
 		t.Fatal(diff)
 	}
 
