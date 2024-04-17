@@ -788,3 +788,5 @@ and probes where DNS is not working will stop working (see
 [probe#2500](https://github.com/ooni/probe/issues/2500)).
 
 3. We should consider adding TLS ClientHello fragmentation as a tactic.
+
+4. We should add support for HTTP/3 bridges.
