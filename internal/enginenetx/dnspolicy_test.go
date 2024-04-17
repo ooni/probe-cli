@@ -55,7 +55,7 @@ func TestDNSPolicy(t *testing.T) {
 				t.Fatal("invalid endpoint address")
 			}
 			if tactic.InitialDelay != 0 {
-				t.Fatal("")
+				t.Fatal("unexpected .InitialDelay")
 			}
 			if tactic.Port != "443" {
 				t.Fatal("invalid endpoint port")
