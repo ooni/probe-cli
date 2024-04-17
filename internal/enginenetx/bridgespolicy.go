@@ -31,13 +31,11 @@ func (p *bridgesPolicy) LookupTactics(ctx context.Context, domain, port string) 
 
 	go func() {
 		defer close(out) // tell the parent when we're done
-		index := 0
 
 		// emit bridges related tactics first which are empty if there are
 		// no bridges for the givend domain and port
 		for tx := range p.bridgesTacticsForDomain(domain, port) {
 			tx.InitialDelay = 0 // set when dialing
-			index += 1
 			out <- tx
 		}
 
@@ -48,7 +46,6 @@ func (p *bridgesPolicy) LookupTactics(ctx context.Context, domain, port string) 
 		// extra logic for better communicating with test helpers
 		for tx := range p.maybeRewriteTestHelpersTactics(p.Fallback.LookupTactics(ctx, domain, port)) {
 			tx.InitialDelay = 0 // set when dialing
-			index += 1
 			out <- tx
 		}
 	}()
@@ -92,7 +89,7 @@ func (p *bridgesPolicy) maybeRewriteTestHelpersTactics(input <-chan *httpsDialer
 			for _, sni := range p.bridgesDomainsInRandomOrder() {
 				out <- &httpsDialerTactic{
 					Address:        tactic.Address,
-					InitialDelay:   0,
+					InitialDelay:   0, // set when dialing
 					Port:           tactic.Port,
 					SNI:            sni,
 					VerifyHostname: tactic.VerifyHostname,
@@ -119,7 +116,7 @@ func (p *bridgesPolicy) bridgesTacticsForDomain(domain, port string) <-chan *htt
 			for _, sni := range p.bridgesDomainsInRandomOrder() {
 				out <- &httpsDialerTactic{
 					Address:        ipAddr,
-					InitialDelay:   0,
+					InitialDelay:   0, // set when dialing
 					Port:           port,
 					SNI:            sni,
 					VerifyHostname: domain,

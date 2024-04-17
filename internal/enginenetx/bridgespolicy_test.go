@@ -206,17 +206,15 @@ func TestBridgesPolicy(t *testing.T) {
 				}
 
 				ctx := context.Background()
-				index := 0
 				for tactics := range p.LookupTactics(ctx, domain, "443") {
 
 					if tactics.Address != "164.92.180.7" {
 						t.Fatal("unexpected .Address")
 					}
 
-					if tactics.InitialDelay != happyEyeballsDelay(index) {
+					if tactics.InitialDelay != 0 {
 						t.Fatal("unexpected .InitialDelay")
 					}
-					index++
 
 					if tactics.Port != "443" {
 						t.Fatal("unexpected .Port")

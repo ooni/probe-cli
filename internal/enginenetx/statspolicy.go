@@ -34,7 +34,6 @@ func (p *statsPolicy) LookupTactics(ctx context.Context, domain string, port str
 
 	go func() {
 		defer close(out) // make sure the parent knows when we're done
-		index := 0
 
 		// useful to make sure we don't emit two equal policy in a single run
 		uniq := make(map[string]int)
@@ -56,7 +55,6 @@ func (p *statsPolicy) LookupTactics(ctx context.Context, domain string, port str
 
 			// 🚀!!!
 			t.InitialDelay = 0 // set when dialing
-			index += 1
 			out <- t
 		}
 
