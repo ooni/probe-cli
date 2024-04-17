@@ -47,7 +47,7 @@ func (p *statsPolicy) LookupTactics(ctx context.Context, domain string, port str
 		// befofe we start remixing from the two channels.
 		//
 		// Note: modifying this field likely indicates you also need to modify the
-		// corresponding remix{} instantiation in bridgespolicy.go.
+		// corresponding instantiation in bridgespolicy.go.
 		&mixDeterministicThenRandomConfig{
 			C: p.Fallback.LookupTactics(ctx, domain, port),
 			N: 4,
