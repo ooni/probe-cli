@@ -258,38 +258,7 @@ func (hd *httpsDialer) DialTLSContext(ctx context.Context, network string, endpo
 // This function returns a channel where we emit the edited
 // tactics, and which we clone when we're done.
 func httpsFilterTactics(input <-chan *httpsDialerTactic) <-chan *httpsDialerTactic {
-	output := make(chan *httpsDialerTactic)
-	go func() {
-
-		// make sure we close output chan
-		defer close(output)
-
-		// useful to make sure we don't emit two equal policy in a single run
-		uniq := make(map[string]int)
-
-		index := 0
-		for tx := range input {
-			// as a safety mechanism let's gracefully handle the
-			// case in which the tactic is nil
-			if tx != nil {
-				// handle the case in which we already emitted a policy
-				key := tx.tacticSummaryKey()
-				if uniq[key] > 0 {
-					return
-				}
-				uniq[key]++
-
-				// rewrite the delays
-				tx.InitialDelay = happyEyeballsDelay(index)
-				index++
-
-				// emit the tactic
-				output <- tx
-			}
-		}
-
-	}()
-	return output
+	return filterAssignInitialDelays(filterOnlyKeepUniqueTactics(filterOutNilTactics(input)))
 }
 
 // httpsDialerReduceResult returns either an established conn or an error, using [errDNSNoAnswer] in
