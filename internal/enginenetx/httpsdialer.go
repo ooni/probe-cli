@@ -11,6 +11,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	http "github.com/ooni/oohttp"
+	"github.com/ooni/probe-cli/v3/internal/logmodel"
 	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -120,6 +122,15 @@ type httpsDialerEventsHandler interface {
 // This dialer MAY use an happy-eyeballs-like policy where we may try several IP addresses,
 // including IPv4 and IPv6, and dialing tactics in parallel.
 type httpsDialer struct {
+	// dialTLSFn is the actual function used to perform the dial. The constructor
+	// initializes it to dialTLS but you can override it with testing.
+	dialTLSFn func(
+		ctx context.Context,
+		logger logmodel.Logger,
+		t0 time.Time,
+		tactic *httpsDialerTactic,
+	) (http.TLSConn, error)
+
 	// idGenerator is the ID generator.
 	idGenerator *atomic.Int64
 
@@ -159,7 +170,8 @@ func newHTTPSDialer(
 	policy httpsDialerPolicy,
 	stats httpsDialerEventsHandler,
 ) *httpsDialer {
-	return &httpsDialer{
+	dx := &httpsDialer{
+		dialTLSFn:   nil, // set just below
 		idGenerator: &atomic.Int64{},
 		logger: &logx.PrefixLogger{
 			Prefix: "httpsDialer: ",
@@ -170,6 +182,8 @@ func newHTTPSDialer(
 		rootCAs: netx.MaybeCustomUnderlyingNetwork().Get().DefaultCertPool(),
 		stats:   stats,
 	}
+	dx.dialTLSFn = dx.dialTLS
+	return dx
 }
 
 var _ model.TLSDialer = &httpsDialer{}
@@ -299,8 +313,8 @@ func (hd *httpsDialer) worker(
 			Logger: hd.logger,
 		}
 
-		// perform the actual dial
-		conn, err := hd.dialTLS(ctx, prefixLogger, t0, tactic)
+		// perform the dial through an indirect function call mockabled for testing
+		conn, err := hd.dialTLSFn(ctx, prefixLogger, t0, tactic)
 
 		// send results to the parent
 		writer <- &httpsDialerErrorOrConn{Conn: conn, Err: err}

@@ -3,17 +3,22 @@ package enginenetx
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
+	http "github.com/ooni/oohttp"
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/logmodel"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/must"
 	"github.com/ooni/probe-cli/v3/internal/netemx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -290,6 +295,151 @@ func TestNewHTTPSDialerPolicy(t *testing.T) {
 
 			got := fmt.Sprintf("%T", p)
 			if diff := cmp.Diff(tc.expectType, got); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+	}
+}
+
+// The purpose of this function is to mock the dialTLSFn field to collect the tactics
+// that would be used by the (*httpsDialer) to guarantee that we obtain the correct scheduling
+// for the tactics in a variety of working conditions. For example, let us assume that the
+// bridge is broken, then we want to know _when_ we're trying to use the DNS.
+func TestNetworkVerifyGeneratedTactics(t *testing.T) {
+
+	// testEnv is the environment for running a given test
+	type testEnv struct {
+		// hdx is the HTTPS dialer we're using
+		hdx *httpsDialer
+
+		// store is the kvstore we're using
+		store *kvstore.Memory
+	}
+
+	// newTestEnv creates a new [*testEnv] instance.
+	newTestEnv := func(container *statsContainer, err error, addrs ...string) *testEnv {
+		// create an in-memory key-value store
+		store := &kvstore.Memory{}
+
+		// serialize and write the stats container into the kvstore
+		runtimex.Try0(store.Set(statsKey, must.MarshalJSON(container)))
+
+		// create a fake resolver resolving the given addrs
+		reso := &mocks.Resolver{
+			MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+				return append([]string{}, addrs...), err
+			},
+			MockNetwork: func() string {
+				return netxlite.StdlibResolverGetaddrinfo
+			},
+			MockAddress: func() string {
+				return ""
+			},
+			MockCloseIdleConnections: func() {
+				// nothing
+			},
+			MockLookupHTTPS: nil,
+			MockLookupNS:    nil,
+		}
+
+		// create the network and the HTTPS dialer
+		network, hdx := newNetwork(
+			bytecounter.New(),
+			store,
+			model.DiscardLogger,
+			nil, // proxyURL disabled
+			reso,
+		)
+
+		// ignore the network
+		_ = network
+
+		// fill and return the result
+		return &testEnv{
+			hdx:   hdx,
+			store: store,
+		}
+	}
+
+	// obtainDialerTactics runs DialTLSContext with a mocked function
+	// such that we can obtain the tactics that would be used.
+	obtainDialerTactics := func(ctx context.Context, network, endpoint string, tex *testEnv) []*httpsDialerTactic {
+		// arrange for extracting the tactics that would be used
+		var (
+			buffer []*httpsDialerTactic
+			mu     sync.Mutex
+		)
+		tex.hdx.dialTLSFn = func(
+			ctx context.Context,
+			logger logmodel.Logger,
+			t0 time.Time,
+			tactic *httpsDialerTactic,
+		) (http.TLSConn, error) {
+			mu.Lock()
+			buffer = append(buffer, tactic)
+			mu.Unlock()
+			return nil, errors.New("dialing disabled")
+		}
+
+		// perform the actual dial
+		_, _ = tex.hdx.DialTLSContext(ctx, network, endpoint)
+
+		// copy the tactics
+		mu.Lock()
+		output := append([]*httpsDialerTactic{}, buffer...)
+		mu.Unlock()
+
+		// return results
+		return output
+	}
+
+	// testCase is a test case for this function
+	type testCase struct {
+		// name is the test case name
+		name string
+
+		// dialEndpoint is the endpoint we should dial.
+		dialEndpoint string
+
+		// dnsAddrs are the addrs that the DNS should return
+		dnsAddrs []string
+
+		// dnsErr is the error that the DNS should return
+		dnsErr error
+
+		// initialStatsContainer is the initial stats container context
+		initialStatsContainer *statsContainer
+
+		// expectTactics contains the expected tactics
+		expectTactics []*httpsDialerTactic
+	}
+
+	// cases contains all the test cases
+	cases := []testCase{
+
+		{
+			name:                  "DNS=failing, cache=empty, domain=api.ooni.io",
+			dialEndpoint:          "api.ooni.io:443",
+			dnsAddrs:              []string{},
+			dnsErr:                errors.New("dns_nxdomain_error"),
+			initialStatsContainer: nil,
+			expectTactics:         []*httpsDialerTactic{},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// create a new testing environment
+			env := newTestEnv(tc.initialStatsContainer, tc.dnsErr, tc.dnsAddrs...)
+
+			// create a background context
+			ctx := context.Background()
+
+			// obtain the tactics that would be used
+			output := obtainDialerTactics(ctx, "tcp", tc.dialEndpoint, env)
+
+			// compare with expectations
+			if diff := cmp.Diff(tc.expectTactics, output); diff != "" {
 				t.Fatal(diff)
 			}
 		})

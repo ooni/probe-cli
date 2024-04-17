@@ -87,6 +87,18 @@ func NewNetwork(
 	proxyURL *url.URL,
 	resolver model.Resolver,
 ) *Network {
+	nx, _ := newNetwork(counter, kvStore, logger, proxyURL, resolver)
+	return nx
+}
+
+// newNetwork is like [NewNetwork] but also returns the [*httpsDialer] we'll use.
+func newNetwork(
+	counter *bytecounter.Counter,
+	kvStore model.KeyValueStore,
+	logger model.Logger,
+	proxyURL *url.URL,
+	resolver model.Resolver,
+) (*Network, *httpsDialer) {
 	// Create a dialer ONLY used for dialing unencrypted TCP connections. The common use
 	// case of this Network is to dial encrypted connections. For this reason, here it is
 	// reasonably fine to use the legacy sequential dialer implemented in netxlite.
@@ -135,7 +147,7 @@ func NewNetwork(
 		stats: stats,
 		txp:   txp,
 	}
-	return network
+	return network, httpsDialer
 }
 
 // newHTTPSDialerPolicy contains the logic to select the [HTTPSDialerPolicy] to use.
