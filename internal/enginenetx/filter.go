@@ -35,7 +35,7 @@ func filterOnlyKeepUniqueTactics(input <-chan *httpsDialerTactic) <-chan *httpsD
 			// handle the case in which we already emitted a tactic
 			key := tx.tacticSummaryKey()
 			if uniq[key] > 0 {
-				return
+				continue
 			}
 			uniq[key]++
 
