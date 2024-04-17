@@ -53,6 +53,8 @@ func (n *Network) HTTPTransport() model.HTTPTransport
 func (n *Network) NewHTTPClient() *http.Client
 ```
 
+**Listing 1** `*enginenetx.Network` HTTP APIs.
+
 The returned `*http.Client` uses an internal transport, which is returned when the
 package user invokes the `HTTPTransport` method. In turn, the internal transport customizes
 creating TLS connections, to meet the objectives explained before.
@@ -71,6 +73,8 @@ depending on the arguments passed to `NewNetwork`:
 | userPolicy | --> | statsPolicy | --> | bridgePolicy | --> | dnsPolicy |
 +------------+     +-------------+     +--------------+     +-----------+
 ```
+
+**Diagram 1** Sequence of policies constructed when not using a proxy.
 
 Policies are described in detail in subsequent sections. On a high-level, here's what each does:
 
@@ -106,6 +110,8 @@ type httpsDialerPolicy interface {
 	LookupTactics(ctx context.Context, domain, port string) <-chan *httpsDialerTactic
 }
 ```
+
+**Listing 2** Interface implemented by policies.
 
 The `LookupTactics` operation is _conceptually_ similar to
 [net.Resolver.LookupHost](https://pkg.go.dev/net#Resolver.LookupHost), because
@@ -143,6 +149,8 @@ type httpsDialerTactic struct {
 }
 ```
 
+**Listing 3** Structure describing a tactic.
+
 Here's an explanation of why we have each field in the struct:
 
 - `Address` and `Port` qualify the TCP endpoint;
@@ -175,6 +183,8 @@ stateDiagram-v2
   tcpConnect --> tlsHandshake
   tlsHandshake --> verifyCertificate
 ```
+
+**Diagram 2** Sequence of operations when dialing TLS connections.
 
 Such a diagram roughly corresponds to this Go ~pseudo-code:
 
@@ -235,6 +245,8 @@ func (hd *httpsDialer) DialTLSContext(
 }
 ```
 
+**Listing 4** Algorithm implementing dialing TLS connections.
+
 This simplified algorithm differs for the real implementation in that we
 have omitted the following (boring) details:
 
@@ -267,6 +279,8 @@ such that we generate the following delays:
 | 8   | 32        |
 | ... | ...       |
 
+**Table 1** Happy eyeballs delays.
+
 That is, we exponentially increase the delay until `8s`, then we linearly increase by `8s`. We
 aim to space attempts to accommodate for slow access networks
 and/or access network experiencing temporary failures to deliver packets. However,
@@ -285,6 +299,8 @@ type httpsDialerEventsHandler interface {
 	OnSuccess(tactic *httpsDialerTactic)
 }
 ```
+
+**Listing 5** Interface for collecting statistics.
 
 These statistics contribute to construct knowledge about the network
 conditions and influence the generation of tactics.
@@ -328,6 +344,8 @@ As of 2024-04-16, the structure of such a file is like in the following example:
 	"Version": 3
 }
 ```
+
+**Listing 6** Sample `bridges.conf` content.
 
 This example instructs to use the given tactic when establishing a TLS connection to
 `"api.ooni.io:443"`. Any other destination hostname and port would instead use the
@@ -414,13 +432,7 @@ the fallback after getting two tactics from the stats.
 
 ## Overall Algorithm
 
-The composed policy is the following (as discussed above):
-
-```
-+------------+     +-------------+     +--------------+     +-----------+
-| userPolicy | --> | statsPolicy | --> | bridgePolicy | --> | dnsPolicy |
-+------------+     +-------------+     +--------------+     +-----------+
-```
+The composed policy is as described in Diagram 1.
 
 Therefore, the compose policy will return the following tactics:
 
@@ -465,6 +477,8 @@ stateDiagram-v2
   mix24 --> tacticsChan
   tacticsChan --> tactics
 ```
+
+**Diagram 3** Tactics generation priorities when not using a proxy.
 
 Here `mix(X, Y)` means taking `X` from the left block, if possible, then `Y` from the
 right block, if possible, and then mixing the remainder in random order. Also, the "join"
@@ -541,6 +555,8 @@ The overall structure of `httpsdialerstats.state` is roughly the following:
 }
 ```
 
+**Listing 7** Content of the stats state as cached on disk.
+
 That is, the `DomainEndpoints` map contains contains an entry for each
 TLS endpoint and, in turn, such an entry contains tactics. We index each
 tactic by a summary string to speed up looking it up.
@@ -588,6 +604,8 @@ Here's an excerpt from the logs:
 [      2.096054] <info> httpsDialer: [#1] TCPConnect 10.0.0.1:443... interrupted
 [      2.096077] <info> httpsDialer: [#2] TCPConnect 10.0.0.1:443... interrupted
 ```
+
+**Listing 8** Run with no previous cached state and unreachable hardcoded bridge address.
 
 After 2s, we start dialing with the IP addresses obtained through the DNS.
 
@@ -671,6 +689,8 @@ end, we replace the original file with this content:
 }
 ```
 
+**Listing 9** Cached state for run with invalid cached state and invalid bridge address.
+
 Here's an excerpt from the logs:
 
 ```
@@ -696,6 +716,8 @@ Here's an excerpt from the logs:
 [      8.091324] <info> httpsDialer: [#4] TCPConnect 10.0.0.1:443... interrupted
 ```
 
+**Listing 10** Run with invalid cached state and invalid bridge address.
+
 So, here the fifth attempt is using the DNS. This is in line with the mixing algorithm, where
 the first four attempt come from the stats or from the bridge policies.
 
@@ -711,6 +733,8 @@ Let's also shows what happens if we repeat the bootstrap:
 [      0.094662] <info> httpsDialer: [#2] TLSVerifyCertificateChain api.ooni.io... started
 [      0.096677] <info> httpsDialer: [#2] TLSVerifyCertificateChain api.ooni.io... ok
 ```
+
+**Listing 11** Re-run with invalid cached state and bridge address.
 
 You see that now we immediately use the correct address thanks to the stats.
 
@@ -736,6 +760,8 @@ Here's an excerpt from the logs:
 [      2.093708] <info> httpsDialer: [#2] TCPConnect 10.0.0.1:443... interrupted
 [      2.093718] <info> httpsDialer: [#1] TCPConnect 10.0.0.1:443... interrupted
 ```
+
+**Listing 11** Re with invalid cached state and valid bridge address.
 
 In this case, we pick up the right bridge configuration and successfully
 use it after two seconds. This configuration is provided by the `bridgesPolicy`.
