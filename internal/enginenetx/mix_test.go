@@ -170,7 +170,7 @@ func TestMixDeterministicThenRandom(t *testing.T) {
 
 	// make sure we have the expected number of entries
 	if len(output) != 14 {
-		t.Fatal("we need 12 entries")
+		t.Fatal("we need 14 entries")
 	}
 	if diff := cmp.Diff(expectBeinning, output[:5]); diff != "" {
 		t.Fatal(diff)
