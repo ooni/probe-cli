@@ -5,7 +5,7 @@ as of [probe-cli#1552](https://github.com/ooni/probe-cli/pull/1552).
 
 ## Table of Contents
 
-- [Design Goals](#design-goals)
+- [Goals & Assumptions](#goals--assumptions)
 - [High-Level API](#high-level-api)
 - [Creating TLS Connections](#creating-tls-connections)
 - [Dialing Tactics](#dialing-tactics)
@@ -23,7 +23,7 @@ as of [probe-cli#1552](https://github.com/ooni/probe-cli/pull/1552).
 	- [Valid bridge with invalid cached data](#valid-bridge-with-invalid-cached-data)
 - [Limitations and Future Work](#limitations-and-future-work)
 
-## Design Goals
+## Goals & Assumptions
 
 We define "bridge" an IP address with the following properties:
 
