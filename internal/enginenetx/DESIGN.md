@@ -3,6 +3,26 @@
 This file documents the [./internal/enginenetx](.) package design. The content is current
 as of [probe-cli#1552](https://github.com/ooni/probe-cli/pull/1552).
 
+## Table of Contents
+
+- [Design Goals](#design-goals)
+- [High-Level API](#high-level-api)
+- [Creating TLS Connections](#creating-tls-connections)
+- [Dialing Tactics](#dialing-tactics)
+- [Dialing Algorithm](#dialing-algorithm)
+- [Dialing Policies](#dialing-policies)
+	- [dnsPolicy](#dnspolicy)
+	- [userPolicy](#userpolicy)
+	- [statsPolicy](#statspolicy)
+	- [bridgePolicy](#bridgepolicy)
+- [Overall Algorithm](#overall-algorithm)
+- [Managing Stats](#managing-stats)
+- [Real-World Scenarios](#real-world-scenarios)
+	- [Invalid bridge without cached data](#invalid-bridge-without-cached-data)
+	- [Invalid bridge with cached data](#invalid-bridge-with-cached-data)
+	- [Valid bridge with invalid cached data](#valid-bridge-with-invalid-cached-data)
+- [Limitations and Future Work](#limitations-and-future-work)
+
 ## Design Goals
 
 We define "bridge" an IP address with the following properties:
@@ -102,7 +122,7 @@ we implemented strict falling back.)
 
 Also, when using a proxy, we just use `dnsPolicy` assuming the proxy knows how to do circumvention.
 
-## Instructions For Dialing
+## Dialing Tactics
 
 Each policy implements the following interface (defined in [httpsdialer.go](httpsdialer.go)):
 
@@ -170,7 +190,7 @@ SNI over the network and then verify the certificate using the real SNI after a
 `skipVerify=true` TLS handshake has completed. (Obviously, for this trick to work,
 the HTTPS server we're using must be okay with receiving unrelated SNIs.)
 
-## HTTPS Dialer
+## Dialing Algorithm
 
 Creating TLS connections is implemented by `(*httpsDialer).DialTLSContext`, also
 part of [httpsdialer.go](httpsdialer.go).
@@ -311,7 +331,9 @@ type httpsDialerEventsHandler interface {
 These statistics contribute to construct knowledge about the network
 conditions and influence the generation of tactics.
 
-## dnsPolicy
+## Dialing Policies
+
+### dnsPolicy
 
 The `dnsPolicy` is implemented by [dnspolicy.go](dnspolicy.go).
 
@@ -327,7 +349,7 @@ what `getaddrinfo` would do when asked to "resolve" an IP address);
 If `httpsDialer` uses this policy as its only policy, the operation it
 performs are morally equivalent to normally dialing for TLS.
 
-## userPolicy
+### userPolicy
 
 The `userPolicy` is implemented by [userpolicy.go](userpolicy.go).
 
@@ -374,7 +396,7 @@ inside the `DomainEndpoints` map;
 Because `userPolicy` is user-configured, we _entirely bypass_ the
 fallback policy when there's an user-configured entry.
 
-## statsPolicy
+### statsPolicy
 
 The `statsPolicy` is implemented by [statspolicy.go](statspolicy.go).
 
@@ -412,7 +434,7 @@ tactics from the fallback because that allows us to include two bridge tactics
 and two DNS tactics, as explained below when we discuss the
 `bridgePolicy` policy.)
 
-## bridgePolicy
+### bridgePolicy
 
 The `bridgePolicy` is implemented by [bridgespolicy.go](bridgespolicy.go) and
 rests on the assumptions made explicit above. That is:
