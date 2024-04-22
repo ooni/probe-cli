@@ -645,7 +645,13 @@ func (s *Session) MaybeLookupBackendsContext(ctx context.Context) error {
 	}
 	s.logger.Infof("session: using probe services: %+v", selected.Endpoint)
 	s.selectedProbeService = &selected.Endpoint
-	s.availableTestHelpers = selected.TestHelpers
+	s.availableTestHelpers = map[string][]model.OOAPIService{
+		"web-connectivity": {{
+			Address: "https://4.th.ooni.org/",
+			Type:    "https",
+			Front:   "",
+		}},
+	}
 	return nil
 }
 

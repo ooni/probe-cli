@@ -498,3 +498,43 @@ func TestHTTPTestxWithNetem(t *testing.T) {
 		})
 	}
 }
+
+func TestHTTPHandlerResetWhileReadingBody(t *testing.T) {
+	// create a server for testing the given handler
+	server := testingx.MustNewHTTPServer(testingx.HTTPHandlerResetWhileReadingBody())
+	defer server.Close()
+
+	// create a suitable HTTP transport using netxlite
+	netx := &netxlite.Netx{Underlying: nil}
+	dialer := netx.NewDialerWithoutResolver(log.Log)
+	handshaker := netx.NewTLSHandshakerStdlib(log.Log)
+	tlsDialer := netxlite.NewTLSDialer(dialer, handshaker)
+	txp := netxlite.NewHTTPTransportWithOptions(log.Log, dialer, tlsDialer)
+
+	// create the request
+	req := runtimex.Try1(http.NewRequest("GET", server.URL, nil))
+
+	// perform the round trip
+	resp, err := txp.RoundTrip(req)
+
+	// we do not expect an error during the round trip
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// make sure we close the body
+	defer resp.Body.Close()
+
+	// start reading the response where we expect to see a RST
+	respbody, err := netxlite.ReadAllContext(req.Context(), resp.Body)
+
+	// verify we received a connection reset
+	if !errors.Is(err, netxlite.ECONNRESET) {
+		t.Fatal("expected ECONNRESET, got", err)
+	}
+
+	// make sure we've got no bytes
+	if len(respbody) != 0 {
+		t.Fatal("expected to see zero bytes here")
+	}
+}

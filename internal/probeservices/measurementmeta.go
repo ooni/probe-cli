@@ -1,33 +1,39 @@
 package probeservices
 
+//
+// measurementmeta.go - GET /api/v1/measurement_meta
+//
+
 import (
 	"context"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/httpx"
+	"github.com/ooni/probe-cli/v3/internal/httpclientx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // GetMeasurementMeta returns meta information about a measurement.
 func (c Client) GetMeasurementMeta(
-	ctx context.Context, config model.OOAPIMeasurementMetaConfig) (*model.OOAPIMeasurementMeta, error) {
+	ctx context.Context, input *model.OOAPIMeasurementMetaConfig) (*model.OOAPIMeasurementMeta, error) {
+	// construct the query to use
 	query := url.Values{}
-	query.Add("report_id", config.ReportID)
-	if config.Input != "" {
-		query.Add("input", config.Input)
+	query.Add("report_id", input.ReportID)
+	if input.Input != "" {
+		query.Add("input", input.Input)
 	}
-	if config.Full {
+	if input.Full {
 		query.Add("full", "true")
 	}
-	var response model.OOAPIMeasurementMeta
-	err := (&httpx.APIClientTemplate{
-		BaseURL:    c.BaseURL,
-		HTTPClient: c.HTTPClient,
-		Logger:     c.Logger,
-		UserAgent:  c.UserAgent,
-	}).WithBodyLogging().Build().GetJSONWithQuery(ctx, "/api/v1/measurement_meta", query, &response)
+
+	// construct the URL to use
+	URL, err := url.Parse(c.BaseURL)
 	if err != nil {
 		return nil, err
 	}
-	return &response, nil
+	URL.Path = "/api/v1/measurement_meta"
+	URL.RawQuery = query.Encode()
+
+	// get the response
+	return httpclientx.GetJSON[*model.OOAPIMeasurementMeta](
+		ctx, URL.String(), c.HTTPClient, c.Logger, c.UserAgent)
 }

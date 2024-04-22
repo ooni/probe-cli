@@ -14,7 +14,7 @@ import (
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
 	"github.com/hexops/gotextdiff/span"
-	"github.com/ooni/probe-cli/v3/internal/httpx"
+	"github.com/ooni/probe-cli/v3/internal/httpclientx"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -67,21 +67,7 @@ var ErrHTTPRequestFailed = errors.New("oonirun: HTTP request failed")
 // a static URL (e.g., from a GitHub repo or from a Gist).
 func getV2DescriptorFromHTTPSURL(ctx context.Context, client model.HTTPClient,
 	logger model.Logger, URL string) (*V2Descriptor, error) {
-	template := httpx.APIClientTemplate{
-		Accept:        "",
-		Authorization: "",
-		BaseURL:       URL,
-		HTTPClient:    client,
-		Host:          "",
-		LogBody:       true,
-		Logger:        logger,
-		UserAgent:     model.HTTPHeaderUserAgent,
-	}
-	var desc V2Descriptor
-	if err := template.Build().GetJSON(ctx, "", &desc); err != nil {
-		return nil, err
-	}
-	return &desc, nil
+	return httpclientx.GetJSON[*V2Descriptor](ctx, URL, client, logger, model.HTTPHeaderUserAgent)
 }
 
 // v2DescriptorCache contains all the known v2Descriptor entries.
