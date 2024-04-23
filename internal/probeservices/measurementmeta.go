@@ -14,14 +14,14 @@ import (
 
 // GetMeasurementMeta returns meta information about a measurement.
 func (c Client) GetMeasurementMeta(
-	ctx context.Context, input model.OOAPIMeasurementMetaConfig) (*model.OOAPIMeasurementMeta, error) {
+	ctx context.Context, config model.OOAPIMeasurementMetaConfig) (*model.OOAPIMeasurementMeta, error) {
 	// construct the query to use
 	query := url.Values{}
-	query.Add("report_id", input.ReportID)
-	if input.Input != "" {
-		query.Add("input", input.Input)
+	query.Add("report_id", config.ReportID)
+	if config.Input != "" {
+		query.Add("input", config.Input)
 	}
-	if input.Full {
+	if config.Full {
 		query.Add("full", "true")
 	}
 
