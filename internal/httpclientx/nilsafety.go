@@ -6,7 +6,7 @@ import (
 )
 
 // ErrIsNil indicates that [NilSafetyErrorIfNil] was passed a nil value.
-var ErrIsNil = errors.New("nil map, pointer or slice")
+var ErrIsNil = errors.New("nil map, pointer, or slice")
 
 // NilSafetyErrorIfNil returns [ErrIsNil] iff input is a nil map, struct, or slice.
 //
