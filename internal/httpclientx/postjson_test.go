@@ -292,7 +292,7 @@ func TestPostJSONLoggingOkay(t *testing.T) {
 	}
 }
 
-// TestPostJSONCorrectlyRejectsNilValues ensures we correctly reject nil values.
+// TestPostJSONCorrectlyRejectsNilValues ensures we do not emit and correctly reject nil values.
 func TestPostJSONCorrectlyRejectsNilValues(t *testing.T) {
 
 	t.Run("when sending a nil map", func(t *testing.T) {
