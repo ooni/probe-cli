@@ -107,7 +107,7 @@ func mmeta(c probeservices.Client, full bool) *model.OOAPIMeasurementMeta {
 		Input:    *input,
 	}
 	ctx := context.Background()
-	m, err := c.GetMeasurementMeta(ctx, &config)
+	m, err := c.GetMeasurementMeta(ctx, config)
 	fatalOnError(err, "client.GetMeasurementMeta failed")
 	return m
 }

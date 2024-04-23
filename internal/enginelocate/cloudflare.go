@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/ooni/probe-cli/v3/internal/httpclientx"
+	"github.com/ooni/probe-cli/v3/internal/httpx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -17,24 +17,17 @@ func cloudflareIPLookup(
 	userAgent string,
 	resolver model.Resolver,
 ) (string, error) {
-	// get the raw response body
-	data, err := httpclientx.GetRaw(
-		ctx,
-		"https://www.cloudflare.com/cdn-cgi/trace",
-		httpClient,
-		logger,
-		userAgent,
-	)
-
-	// handle the error case
+	data, err := (&httpx.APIClientTemplate{
+		BaseURL:    "https://www.cloudflare.com",
+		HTTPClient: httpClient,
+		Logger:     logger,
+		UserAgent:  model.HTTPHeaderUserAgent,
+	}).WithBodyLogging().Build().FetchResource(ctx, "/cdn-cgi/trace")
 	if err != nil {
 		return model.DefaultProbeIP, err
 	}
-
-	// find the IP addr
 	r := regexp.MustCompile("(?:ip)=(.*)")
 	ip := strings.Trim(string(r.Find(data)), "ip=")
-
-	// done!
+	logger.Debugf("cloudflare: body: %s", ip)
 	return ip, nil
 }
