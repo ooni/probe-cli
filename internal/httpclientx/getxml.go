@@ -21,6 +21,10 @@ import (
 //
 // This function either returns an error or a valid Output.
 func GetXML[Output any](ctx context.Context, config *Config, URL string) (Output, error) {
+	return NewOverlappedGetXML[Output](config).Run(ctx, URL)
+}
+
+func getXML[Output any](ctx context.Context, config *Config, URL string) (Output, error) {
 	// read the raw body
 	rawrespbody, err := GetRaw(ctx, config, URL)
 

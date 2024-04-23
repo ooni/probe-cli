@@ -12,8 +12,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/erroror"
 )
 
-// TODO(bassosimone): we still need to write tests for overlapped.
-
 // OverlappedDefaultScheduleInterval is the default schedule interval. After this interval
 // has elapsed for a URL without seeing a success, we will schedule the next URL.
 const OverlappedDefaultScheduleInterval = 15 * time.Second
@@ -29,50 +27,55 @@ const OverlappedDefaultScheduleInterval = 15 * time.Second
 // a response. A future implementation SHOULD probably account for this possibility.
 type Overlapped[Output any] struct {
 	// RunFunc is the MANDATORY function that fetches the given URL.
+	//
+	// This field is typically initialized by [NewOverlappedGetJSON], [NewOverlappedGetRaw],
+	// [NewOverlappedGetXML], or [NewOverlappedPostJSON] to be the proper function that
+	// makes sense for the operation that you requested with the constructor.
+	//
+	// If you set it manually, you MUST modify it before calling [*Overlapped.Run].
 	RunFunc func(ctx context.Context, URL string) (Output, error)
 
 	// ScheduleInterval is the MANDATORY scheduling interval.
+	// This field is typically initialized by [NewOverlappedGetJSON], [NewOverlappedGetRaw],
+	// [NewOverlappedGetXML], or [NewOverlappedPostJSON] to be [OverlappedDefaultScheduleInterval].
+	//
+	// If you set it manually, you MUST modify it before calling [*Overlapped.Run].
 	ScheduleInterval time.Duration
 }
 
-// NewOverlappedGetJSON constructs a [*Overlapped] for calling [GetJSON].
-func NewOverlappedGetJSON[Output any](ctx context.Context, config *Config) *Overlapped[Output] {
+func newOverlappedWithFunc[Output any](fx func(context.Context, string) (Output, error)) *Overlapped[Output] {
 	return &Overlapped[Output]{
-		RunFunc: func(ctx context.Context, URL string) (Output, error) {
-			return GetJSON[Output](ctx, config, URL)
-		},
+		RunFunc:          fx,
 		ScheduleInterval: OverlappedDefaultScheduleInterval,
 	}
 }
 
-// NewOverlappedGetRaw constructs a [*Overlapped] for calling [GetRaw].
-func NewOverlappedGetRaw(ctx context.Context, config *Config) *Overlapped[[]byte] {
-	return &Overlapped[[]byte]{
-		RunFunc: func(ctx context.Context, URL string) ([]byte, error) {
-			return GetRaw(ctx, config, URL)
-		},
-		ScheduleInterval: OverlappedDefaultScheduleInterval,
-	}
+// NewOverlappedGetJSON constructs a [*Overlapped] for calling [GetJSON] with multiple URLs.
+func NewOverlappedGetJSON[Output any](config *Config) *Overlapped[Output] {
+	return newOverlappedWithFunc(func(ctx context.Context, URL string) (Output, error) {
+		return getJSON[Output](ctx, config, URL)
+	})
 }
 
-// NewOverlappedGetXML constructs a [*Overlapped] for calling [GetXML].
-func NewOverlappedGetXML[Output any](ctx context.Context, config *Config) *Overlapped[Output] {
-	return &Overlapped[Output]{
-		RunFunc: func(ctx context.Context, URL string) (Output, error) {
-			return GetXML[Output](ctx, config, URL)
-		},
-		ScheduleInterval: OverlappedDefaultScheduleInterval,
-	}
+// NewOverlappedGetRaw constructs a [*Overlapped] for calling [GetRaw] with multiple URLs.
+func NewOverlappedGetRaw(config *Config) *Overlapped[[]byte] {
+	return newOverlappedWithFunc(func(ctx context.Context, URL string) ([]byte, error) {
+		return getRaw(ctx, config, URL)
+	})
 }
 
-// NewOverlappedPostJSON constructs a [*Overlapped] for calling [PostJSON].
-func NewOverlappedPostJSON[Input, Output any](ctx context.Context, config *Config, input Input) *Overlapped[Output] {
-	return &Overlapped[Output]{
-		RunFunc: func(ctx context.Context, URL string) (Output, error) {
-			return PostJSON[Input, Output](ctx, config, URL, input)
-		},
-		ScheduleInterval: OverlappedDefaultScheduleInterval,
-	}
+// NewOverlappedGetXML constructs a [*Overlapped] for calling [GetXML] with multiple URLs.
+func NewOverlappedGetXML[Output any](config *Config) *Overlapped[Output] {
+	return newOverlappedWithFunc(func(ctx context.Context, URL string) (Output, error) {
+		return getXML[Output](ctx, config, URL)
+	})
+}
+
+// NewOverlappedPostJSON constructs a [*Overlapped] for calling [PostJSON] with multiple URLs.
+func NewOverlappedPostJSON[Input, Output any](config *Config, input Input) *Overlapped[Output] {
+	return newOverlappedWithFunc(func(ctx context.Context, URL string) (Output, error) {
+		return postJSON[Input, Output](ctx, config, URL, input)
+	})
 }
 
 // ErrGenericOverlappedFailure indicates that a generic [*Overlapped] failure occurred.

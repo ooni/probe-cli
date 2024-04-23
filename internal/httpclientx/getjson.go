@@ -21,6 +21,10 @@ import (
 //
 // This function either returns an error or a valid Output.
 func GetJSON[Output any](ctx context.Context, config *Config, URL string) (Output, error) {
+	return NewOverlappedGetJSON[Output](config).Run(ctx, URL)
+}
+
+func getJSON[Output any](ctx context.Context, config *Config, URL string) (Output, error) {
 	// read the raw body
 	rawrespbody, err := GetRaw(ctx, config, URL)
 

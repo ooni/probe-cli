@@ -25,6 +25,10 @@ import (
 //
 // This function either returns an error or a valid Output.
 func PostJSON[Input, Output any](ctx context.Context, config *Config, URL string, input Input) (Output, error) {
+	return NewOverlappedPostJSON[Input, Output](config, input).Run(ctx, URL)
+}
+
+func postJSON[Input, Output any](ctx context.Context, config *Config, URL string, input Input) (Output, error) {
 	// serialize the request body
 	rawreqbody, err := json.Marshal(input)
 	if err != nil {

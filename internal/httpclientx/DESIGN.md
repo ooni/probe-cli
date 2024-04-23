@@ -124,13 +124,13 @@ for the first endpoint to complete.
 We allow for overlapped operations by defining these constructors:
 
 ```Go
-func NewOverlappedGetJSON[Output any](ctx context.Context, config *Config) *Overlapped[Output]
+func NewOverlappedGetJSON[Output any](config *Config) *Overlapped[Output]
 
-func NewOverlappedGetRaw(ctx context.Context, config *Config) *Overlapped[[]byte]
+func NewOverlappedGetRaw(config *Config) *Overlapped[[]byte]
 
-func NewOverlappedGetXML[Output any](ctx context.Context, config *Config) *Overlapped[Output]
+func NewOverlappedGetXML[Output any](config *Config) *Overlapped[Output]
 
-func NewOverlappedPostJSON[Input, Output any](ctx context.Context, config *Config, input Input) *Overlapped[Output]
+func NewOverlappedPostJSON[Input, Output any](config *Config, input Input) *Overlapped[Output]
 ```
 
 They all construct the same `*Overlapped` struct, which looks like this:
@@ -144,7 +144,7 @@ type Overlapped[Output any] struct {
 ```
 
 The constructor configures `RunFunc` to invoke the call corresponding to the construct
-name (i.e., `NewOverlappedGetXML` configures `RunFunc` to be `GetXML`).
+name (i.e., `NewOverlappedGetXML` configures `RunFunc` to run `GetXML`).
 
 Then, we define the following method:
 

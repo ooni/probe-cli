@@ -21,6 +21,10 @@ import (
 //
 // This function either returns an error or a valid Output.
 func GetRaw(ctx context.Context, config *Config, URL string) ([]byte, error) {
+	return NewOverlappedGetRaw(config).Run(ctx, URL)
+}
+
+func getRaw(ctx context.Context, config *Config, URL string) ([]byte, error) {
 	// construct the request to use
 	req, err := http.NewRequestWithContext(ctx, "GET", URL, nil)
 	if err != nil {
