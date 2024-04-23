@@ -23,7 +23,6 @@ jobs:
         goversion:
           # When releasing, make sure this list contains the latest
           # stable version of Go as the last entry.
-          - "1.15" # debian 11 "bullseye"
           - "1.16"
           - "1.17"
           - "1.18" # ubuntu 22.04 LTS
