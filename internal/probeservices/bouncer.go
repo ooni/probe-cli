@@ -6,23 +6,22 @@ package probeservices
 
 import (
 	"context"
-	"net/url"
 
 	"github.com/ooni/probe-cli/v3/internal/httpclientx"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/urlx"
 )
 
 // GetTestHelpers queries the /api/v1/test-helpers API.
 func (c *Client) GetTestHelpers(ctx context.Context) (map[string][]model.OOAPIService, error) {
 	// construct the URL to use
-	URL, err := url.Parse(c.BaseURL)
+	URL, err := urlx.ResolveReference(c.BaseURL, "/api/v1/test-helpers", "")
 	if err != nil {
 		return nil, err
 	}
-	URL.Path = "/api/v1/test-helpers"
 
 	// get the response
-	return httpclientx.GetJSON[map[string][]model.OOAPIService](ctx, URL.String(), &httpclientx.Config{
+	return httpclientx.GetJSON[map[string][]model.OOAPIService](ctx, URL, &httpclientx.Config{
 		Client:    c.HTTPClient,
 		Logger:    c.Logger,
 		UserAgent: c.UserAgent,

@@ -10,6 +10,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/httpclientx"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/urlx"
 )
 
 // GetMeasurementMeta returns meta information about a measurement.
@@ -26,15 +27,13 @@ func (c Client) GetMeasurementMeta(
 	}
 
 	// construct the URL to use
-	URL, err := url.Parse(c.BaseURL)
+	URL, err := urlx.ResolveReference(c.BaseURL, "/api/v1/measurement_meta", query.Encode())
 	if err != nil {
 		return nil, err
 	}
-	URL.Path = "/api/v1/measurement_meta"
-	URL.RawQuery = query.Encode()
 
 	// get the response
-	return httpclientx.GetJSON[*model.OOAPIMeasurementMeta](ctx, URL.String(), &httpclientx.Config{
+	return httpclientx.GetJSON[*model.OOAPIMeasurementMeta](ctx, URL, &httpclientx.Config{
 		Client:    c.HTTPClient,
 		Logger:    c.Logger,
 		UserAgent: c.UserAgent,
