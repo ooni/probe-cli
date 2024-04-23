@@ -29,6 +29,11 @@ func PostJSON[Input, Output any](ctx context.Context, URL string, input Input, c
 }
 
 func postJSON[Input, Output any](ctx context.Context, URL string, input Input, config *Config) (Output, error) {
+	// ensure we're not sending a nil map, pointer, or slice
+	if _, err := NilSafetyErrorIfNil(input); err != nil {
+		return zeroValue[Output](), err
+	}
+
 	// serialize the request body
 	rawreqbody, err := json.Marshal(input)
 	if err != nil {
@@ -61,5 +66,6 @@ func postJSON[Input, Output any](ctx context.Context, URL string, input Input, c
 		return zeroValue[Output](), err
 	}
 
-	return output, nil
+	// avoid returning nil pointers, maps, slices
+	return NilSafetyErrorIfNil(output)
 }

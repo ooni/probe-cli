@@ -291,3 +291,178 @@ func TestPostJSONLoggingOkay(t *testing.T) {
 		t.Fatal("did not see raw response body log line")
 	}
 }
+
+// TestPostJSONCorrectlyRejectsNilValues ensures we correctly reject nil values.
+func TestPostJSONCorrectlyRejectsNilValues(t *testing.T) {
+
+	t.Run("when sending a nil map", func(t *testing.T) {
+		server := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(`{}`))
+		}))
+		defer server.Close()
+
+		// invoke the API
+		resp, err := PostJSON[map[string]string, *apiResponse](context.Background(), server.URL, nil, &Config{
+			Client:    http.DefaultClient,
+			Logger:    model.DiscardLogger,
+			UserAgent: model.HTTPHeaderUserAgent,
+		})
+
+		t.Log(resp)
+		t.Log(err)
+
+		// make sure that the error is the expected one
+		if !errors.Is(err, ErrIsNil) {
+			t.Fatal("unexpected error", err)
+		}
+
+		// make sure resp is nil
+		if resp != nil {
+			t.Fatal("expected nil resp")
+		}
+	})
+
+	t.Run("when sending a nil struct pointer", func(t *testing.T) {
+		server := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(`{}`))
+		}))
+		defer server.Close()
+
+		// invoke the API
+		resp, err := PostJSON[*apiRequest, *apiResponse](context.Background(), server.URL, nil, &Config{
+			Client:    http.DefaultClient,
+			Logger:    model.DiscardLogger,
+			UserAgent: model.HTTPHeaderUserAgent,
+		})
+
+		t.Log(resp)
+		t.Log(err)
+
+		// make sure that the error is the expected one
+		if !errors.Is(err, ErrIsNil) {
+			t.Fatal("unexpected error", err)
+		}
+
+		// make sure resp is nil
+		if resp != nil {
+			t.Fatal("expected nil resp")
+		}
+	})
+
+	t.Run("when sending a nil slice", func(t *testing.T) {
+		server := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(`{}`))
+		}))
+		defer server.Close()
+
+		// invoke the API
+		resp, err := PostJSON[[]string, *apiResponse](context.Background(), server.URL, nil, &Config{
+			Client:    http.DefaultClient,
+			Logger:    model.DiscardLogger,
+			UserAgent: model.HTTPHeaderUserAgent,
+		})
+
+		t.Log(resp)
+		t.Log(err)
+
+		// make sure that the error is the expected one
+		if !errors.Is(err, ErrIsNil) {
+			t.Fatal("unexpected error", err)
+		}
+
+		// make sure resp is nil
+		if resp != nil {
+			t.Fatal("expected nil resp")
+		}
+	})
+
+	t.Run("when unmarshaling into a map", func(t *testing.T) {
+		server := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(`null`))
+		}))
+		defer server.Close()
+
+		// create an empty request
+		apireq := &apiRequest{}
+
+		// invoke the API
+		resp, err := PostJSON[*apiRequest, map[string]string](context.Background(), server.URL, apireq, &Config{
+			Client:    http.DefaultClient,
+			Logger:    model.DiscardLogger,
+			UserAgent: model.HTTPHeaderUserAgent,
+		})
+
+		t.Log(resp)
+		t.Log(err)
+
+		// make sure that the error is the expected one
+		if !errors.Is(err, ErrIsNil) {
+			t.Fatal("unexpected error", err)
+		}
+
+		// make sure resp is nil
+		if resp != nil {
+			t.Fatal("expected nil resp")
+		}
+	})
+
+	t.Run("when unmarshaling into a struct pointer", func(t *testing.T) {
+		server := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(`null`))
+		}))
+		defer server.Close()
+
+		// create an empty request
+		apireq := &apiRequest{}
+
+		// invoke the API
+		resp, err := PostJSON[*apiRequest, *apiResponse](context.Background(), server.URL, apireq, &Config{
+			Client:    http.DefaultClient,
+			Logger:    model.DiscardLogger,
+			UserAgent: model.HTTPHeaderUserAgent,
+		})
+
+		t.Log(resp)
+		t.Log(err)
+
+		// make sure that the error is the expected one
+		if !errors.Is(err, ErrIsNil) {
+			t.Fatal("unexpected error", err)
+		}
+
+		// make sure resp is nil
+		if resp != nil {
+			t.Fatal("expected nil resp")
+		}
+	})
+
+	t.Run("when unmarshaling into a slice", func(t *testing.T) {
+		server := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(`null`))
+		}))
+		defer server.Close()
+
+		// create an empty request
+		apireq := &apiRequest{}
+
+		// invoke the API
+		resp, err := PostJSON[*apiRequest, []string](context.Background(), server.URL, apireq, &Config{
+			Client:    http.DefaultClient,
+			Logger:    model.DiscardLogger,
+			UserAgent: model.HTTPHeaderUserAgent,
+		})
+
+		t.Log(resp)
+		t.Log(err)
+
+		// make sure that the error is the expected one
+		if !errors.Is(err, ErrIsNil) {
+			t.Fatal("unexpected error", err)
+		}
+
+		// make sure resp is nil
+		if resp != nil {
+			t.Fatal("expected nil resp")
+		}
+	})
+}

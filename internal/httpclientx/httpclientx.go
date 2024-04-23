@@ -98,5 +98,6 @@ func do(ctx context.Context, req *http.Request, config *Config) ([]byte, error) 
 		return nil, &ErrRequestFailed{resp.StatusCode}
 	}
 
-	return rawrespbody, nil
+	// make sure we replace a nil slice with an empty slice
+	return NilSafetyAvoidNilBytesSlice(rawrespbody), nil
 }

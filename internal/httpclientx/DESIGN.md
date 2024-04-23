@@ -23,6 +23,7 @@ The rest of this document explains the requirements and describes the design.
 		- [GetRaw](#getraw)
 		- [GetXML](#getxml)
 		- [PostJSON](#postjson)
+- [Nil Safety](#nil-safety)
 - [Refactoring Plan](#refactoring-plan)
 - [Limitations and Future Work](#limitations-and-future-work)
 
@@ -325,6 +326,43 @@ practical significance for all the APIs we invoke and the new behavior is strict
 
 The `yes~` means that `httpapi` already receives a marshaled body from a higher-level API
 that is part of the same package, while in this package we marshal in `PostJSON`.
+
+## Nil Safety
+
+Consider the following code snippet:
+
+```Go
+resp, err := httpclientx.GetJSON[*APIResponse](ctx, URL, config)
+runtimex.Assert((resp == nil && err != nil) || (resp != nil && err == nil), "ouch")
+```
+
+Now, consider the case where `URL` refers to a server that returns `null` as the JSON
+answer, rather than returning a JSON object. The `encoding/json` package will accept the
+`null` value and unmarshal it into a `nil` pointer. So, `GetJSON` will return `nil` and
+`nil`, and the `runtimex.Assert` will fail.
+
+The `httpx` package did not have this issue because the usage pattern was:
+
+```Go
+var resp APIResponse
+err := apiClient.GetJSON(ctx, "/foobar", &resp) // where apiClient implements httpx.APIClient
+```
+
+In such a case, the `null` would have no effect and `resp` would be an empty response.
+
+However, it is still handy to return a value and an error, and it is the most commonly used
+pattern in Go and, as a result, in OONI Probe. So, what do we do?
+
+Well, here's the strategy:
+
+1. When sending pointers, slices, or maps in `PostJSON`, we return `ErrIsNil` if the pointer,
+slice, or map is `nil`, to avoid sending literal `null` to servers.
+
+2. `GetJSON`, `GetXML`, and `PostJSON` include checks after unmarshaling so that, if the API response
+type is a slice, pointer, or map, and it is `nil`, we also return `ErrIsNil`.
+
+Strictly speaking, it is still unclear to us whether this could happen with `GetXML` but we have
+decided to implements these checks for `GetXML` as well, just in case.
 
 ## Refactoring Plan
 

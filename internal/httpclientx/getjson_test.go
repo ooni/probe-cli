@@ -203,3 +203,88 @@ func TestGetJSONLoggingOkay(t *testing.T) {
 		t.Fatal("did not see raw response body log line")
 	}
 }
+
+// TestGetJSONCorrectlyRejectsNilValues ensures we correctly reject nil values.
+func TestGetJSONCorrectlyRejectsNilValues(t *testing.T) {
+
+	t.Run("when unmarshaling into a map", func(t *testing.T) {
+		server := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(`null`))
+		}))
+		defer server.Close()
+
+		// invoke the API
+		resp, err := GetJSON[map[string]string](context.Background(), server.URL, &Config{
+			Client:    http.DefaultClient,
+			Logger:    model.DiscardLogger,
+			UserAgent: model.HTTPHeaderUserAgent,
+		})
+
+		t.Log(resp)
+		t.Log(err)
+
+		// make sure that the error is the expected one
+		if !errors.Is(err, ErrIsNil) {
+			t.Fatal("unexpected error", err)
+		}
+
+		// make sure resp is nil
+		if resp != nil {
+			t.Fatal("expected nil resp")
+		}
+	})
+
+	t.Run("when unmarshaling into a struct pointer", func(t *testing.T) {
+		server := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(`null`))
+		}))
+		defer server.Close()
+
+		// invoke the API
+		resp, err := GetJSON[*apiResponse](context.Background(), server.URL, &Config{
+			Client:    http.DefaultClient,
+			Logger:    model.DiscardLogger,
+			UserAgent: model.HTTPHeaderUserAgent,
+		})
+
+		t.Log(resp)
+		t.Log(err)
+
+		// make sure that the error is the expected one
+		if !errors.Is(err, ErrIsNil) {
+			t.Fatal("unexpected error", err)
+		}
+
+		// make sure resp is nil
+		if resp != nil {
+			t.Fatal("expected nil resp")
+		}
+	})
+
+	t.Run("when unmarshaling into a slice", func(t *testing.T) {
+		server := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(`null`))
+		}))
+		defer server.Close()
+
+		// invoke the API
+		resp, err := GetJSON[[]string](context.Background(), server.URL, &Config{
+			Client:    http.DefaultClient,
+			Logger:    model.DiscardLogger,
+			UserAgent: model.HTTPHeaderUserAgent,
+		})
+
+		t.Log(resp)
+		t.Log(err)
+
+		// make sure that the error is the expected one
+		if !errors.Is(err, ErrIsNil) {
+			t.Fatal("unexpected error", err)
+		}
+
+		// make sure resp is nil
+		if resp != nil {
+			t.Fatal("expected nil resp")
+		}
+	})
+}

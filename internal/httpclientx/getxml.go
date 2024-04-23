@@ -39,5 +39,10 @@ func getXML[Output any](ctx context.Context, URL string, config *Config) (Output
 		return zeroValue[Output](), err
 	}
 
-	return output, nil
+	// TODO(bassosimone): it's unclear to me whether output can be nil when unmarshaling
+	// XML input, since there is no "null" in XML. In any case, the code below checks for
+	// and avoids emitting nil, so I guess we should be fine here.
+
+	// avoid returning nil pointers, maps, slices
+	return NilSafetyErrorIfNil(output)
 }

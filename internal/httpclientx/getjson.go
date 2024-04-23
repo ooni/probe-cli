@@ -39,5 +39,6 @@ func getJSON[Output any](ctx context.Context, URL string, config *Config) (Outpu
 		return zeroValue[Output](), err
 	}
 
-	return output, nil
+	// avoid returning nil pointers, maps, slices
+	return NilSafetyErrorIfNil(output)
 }
