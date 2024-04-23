@@ -77,14 +77,17 @@ type Config struct {
 	UserAgent string
 }
 
-func GetJSON[Output any](ctx context.Context, config *Config, URL string) (Output, error)
+func GetJSON[Output any](ctx context.Context, URL string, config *Config) (Output, error)
 
-func GetRaw(ctx context.Context, config *Config, URL string) ([]byte, error)
+func GetRaw(ctx context.Context, URL string, config *Config) ([]byte, error)
 
-func GetXML[Output any](ctx context.Context, config *Config, URL string) (Output, error)
+func GetXML[Output any](ctx context.Context, URL string, config *Config) (Output, error)
 
-func PostJSON[Input, Output any](ctx context.Context, config *Config, URL string, input Input) (Output, error)
+func PostJSON[Input, Output any](ctx context.Context, URL string, input Input, config *Config) (Output, error)
 ```
+
+(The `*Config` is the last argument because it is handy to create it inline when calling
+and having it last reduces readability the least.)
 
 These operations implement all the actions listed in the first requirement.
 
@@ -130,7 +133,7 @@ func NewOverlappedGetRaw(config *Config) *Overlapped[[]byte]
 
 func NewOverlappedGetXML[Output any](config *Config) *Overlapped[Output]
 
-func NewOverlappedPostJSON[Input, Output any](config *Config, input Input) *Overlapped[Output]
+func NewOverlappedPostJSON[Input, Output any](input Input, config *Config) *Overlapped[Output]
 ```
 
 They all construct the same `*Overlapped` struct, which looks like this:

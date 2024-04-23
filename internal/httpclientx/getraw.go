@@ -20,11 +20,11 @@ import (
 // - URL is the URL to use.
 //
 // This function either returns an error or a valid Output.
-func GetRaw(ctx context.Context, config *Config, URL string) ([]byte, error) {
+func GetRaw(ctx context.Context, URL string, config *Config) ([]byte, error) {
 	return NewOverlappedGetRaw(config).Run(ctx, URL)
 }
 
-func getRaw(ctx context.Context, config *Config, URL string) ([]byte, error) {
+func getRaw(ctx context.Context, URL string, config *Config) ([]byte, error) {
 	// construct the request to use
 	req, err := http.NewRequestWithContext(ctx, "GET", URL, nil)
 	if err != nil {

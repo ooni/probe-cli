@@ -14,7 +14,7 @@ import (
 
 // GetMeasurementMeta returns meta information about a measurement.
 func (c Client) GetMeasurementMeta(
-	ctx context.Context, input *model.OOAPIMeasurementMetaConfig) (*model.OOAPIMeasurementMeta, error) {
+	ctx context.Context, input model.OOAPIMeasurementMetaConfig) (*model.OOAPIMeasurementMeta, error) {
 	// construct the query to use
 	query := url.Values{}
 	query.Add("report_id", input.ReportID)
@@ -34,6 +34,9 @@ func (c Client) GetMeasurementMeta(
 	URL.RawQuery = query.Encode()
 
 	// get the response
-	return httpclientx.GetJSON[*model.OOAPIMeasurementMeta](
-		ctx, URL.String(), c.HTTPClient, c.Logger, c.UserAgent)
+	return httpclientx.GetJSON[*model.OOAPIMeasurementMeta](ctx, URL.String(), &httpclientx.Config{
+		Client:    c.HTTPClient,
+		Logger:    c.Logger,
+		UserAgent: c.UserAgent,
+	})
 }

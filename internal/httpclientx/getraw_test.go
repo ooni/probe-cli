@@ -15,16 +15,15 @@ import (
 func TestGetRaw(t *testing.T) {
 	t.Run("when we cannot create a request", func(t *testing.T) {
 		// create API call config
-		config := &Config{
-			Client:    http.DefaultClient,
-			Logger:    model.DiscardLogger,
-			UserAgent: model.HTTPHeaderUserAgent,
-		}
 
 		rawrespbody, err := GetRaw(
 			context.Background(),
-			config,
 			"\t", // <- invalid URL that we cannot parse
+			&Config{
+				Client:    http.DefaultClient,
+				Logger:    model.DiscardLogger,
+				UserAgent: model.HTTPHeaderUserAgent,
+			},
 		)
 
 		t.Log(rawrespbody)
@@ -48,14 +47,11 @@ func TestGetRaw(t *testing.T) {
 		}))
 		defer server.Close()
 
-		// create API call config
-		config := &Config{
+		rawrespbody, err := GetRaw(context.Background(), server.URL, &Config{
 			Client:    http.DefaultClient,
 			Logger:    model.DiscardLogger,
 			UserAgent: model.HTTPHeaderUserAgent,
-		}
-
-		rawrespbody, err := GetRaw(context.Background(), config, server.URL)
+		})
 
 		t.Log(rawrespbody)
 		t.Log(err)
@@ -89,16 +85,13 @@ func TestGetRawHeadersOkay(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// create API call config
-	config := &Config{
+	// send the request and receive the response
+	rawresp, err := GetRaw(context.Background(), server.URL, &Config{
 		Authorization: "scribai",
 		Client:        http.DefaultClient,
 		Logger:        model.DiscardLogger,
 		UserAgent:     model.HTTPHeaderUserAgent,
-	}
-
-	// send the request and receive the response
-	rawresp, err := GetRaw(context.Background(), config, server.URL)
+	})
 
 	// we do not expect to see an error here
 	if err != nil {
@@ -143,14 +136,11 @@ func TestGetRawLoggingOkay(t *testing.T) {
 	// instantiate a logger that collects logs
 	logger := &testingx.Logger{}
 
-	// create API call config
-	config := &Config{
+	rawrespbody, err := GetRaw(context.Background(), server.URL, &Config{
 		Client:    http.DefaultClient,
 		Logger:    logger,
 		UserAgent: model.HTTPHeaderUserAgent,
-	}
-
-	rawrespbody, err := GetRaw(context.Background(), config, server.URL)
+	})
 
 	t.Log(rawrespbody)
 	t.Log(err)

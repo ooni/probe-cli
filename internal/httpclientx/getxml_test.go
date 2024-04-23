@@ -21,15 +21,12 @@ func TestGetXML(t *testing.T) {
 		server := testingx.MustNewHTTPServer(testingx.HTTPHandlerReset())
 		defer server.Close()
 
-		// create API call config
-		config := &Config{
+		// invoke the API
+		resp, err := GetXML[*apiResponse](context.Background(), server.URL, &Config{
 			Client:    http.DefaultClient,
 			Logger:    model.DiscardLogger,
 			UserAgent: model.HTTPHeaderUserAgent,
-		}
-
-		// invoke the API
-		resp, err := GetXML[*apiResponse](context.Background(), config, server.URL)
+		})
 
 		t.Log(resp)
 		t.Log(err)
@@ -52,15 +49,12 @@ func TestGetXML(t *testing.T) {
 		}))
 		defer server.Close()
 
-		// create API call config
-		config := &Config{
+		// invoke the API
+		resp, err := GetXML[*apiResponse](context.Background(), server.URL, &Config{
 			Client:    http.DefaultClient,
 			Logger:    model.DiscardLogger,
 			UserAgent: model.HTTPHeaderUserAgent,
-		}
-
-		// invoke the API
-		resp, err := GetXML[*apiResponse](context.Background(), config, server.URL)
+		})
 
 		t.Log(resp)
 		t.Log(err)
@@ -83,15 +77,12 @@ func TestGetXML(t *testing.T) {
 		}))
 		defer server.Close()
 
-		// create API call config
-		config := &Config{
+		// invoke the API
+		resp, err := GetXML[*apiResponse](context.Background(), server.URL, &Config{
 			Client:    http.DefaultClient,
 			Logger:    model.DiscardLogger,
 			UserAgent: model.HTTPHeaderUserAgent,
-		}
-
-		// invoke the API
-		resp, err := GetXML[*apiResponse](context.Background(), config, server.URL)
+		})
 
 		t.Log(resp)
 		t.Log(err)
@@ -128,16 +119,13 @@ func TestGetXMLHeadersOkay(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// create API call config
-	config := &Config{
+	// send the request and receive the response
+	apiresp, err := GetXML[*apiResponse](context.Background(), server.URL, &Config{
 		Authorization: "scribai",
 		Client:        http.DefaultClient,
 		Logger:        model.DiscardLogger,
 		UserAgent:     model.HTTPHeaderUserAgent,
-	}
-
-	// send the request and receive the response
-	apiresp, err := GetXML[*apiResponse](context.Background(), config, server.URL)
+	})
 
 	// we do not expect to see an error here
 	if err != nil {
@@ -180,15 +168,12 @@ func TestGetXMLLoggingOkay(t *testing.T) {
 	// instantiate a logger that collects logs
 	logger := &testingx.Logger{}
 
-	// create API call config
-	config := &Config{
+	// invoke the API
+	resp, err := GetXML[*apiResponse](context.Background(), server.URL, &Config{
 		Client:    http.DefaultClient,
 		Logger:    logger,
 		UserAgent: model.HTTPHeaderUserAgent,
-	}
-
-	// invoke the API
-	resp, err := GetXML[*apiResponse](context.Background(), config, server.URL)
+	})
 
 	t.Log(resp)
 	t.Log(err)

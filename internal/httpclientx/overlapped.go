@@ -53,28 +53,28 @@ func newOverlappedWithFunc[Output any](fx func(context.Context, string) (Output,
 // NewOverlappedGetJSON constructs a [*Overlapped] for calling [GetJSON] with multiple URLs.
 func NewOverlappedGetJSON[Output any](config *Config) *Overlapped[Output] {
 	return newOverlappedWithFunc(func(ctx context.Context, URL string) (Output, error) {
-		return getJSON[Output](ctx, config, URL)
+		return getJSON[Output](ctx, URL, config)
 	})
 }
 
 // NewOverlappedGetRaw constructs a [*Overlapped] for calling [GetRaw] with multiple URLs.
 func NewOverlappedGetRaw(config *Config) *Overlapped[[]byte] {
 	return newOverlappedWithFunc(func(ctx context.Context, URL string) ([]byte, error) {
-		return getRaw(ctx, config, URL)
+		return getRaw(ctx, URL, config)
 	})
 }
 
 // NewOverlappedGetXML constructs a [*Overlapped] for calling [GetXML] with multiple URLs.
 func NewOverlappedGetXML[Output any](config *Config) *Overlapped[Output] {
 	return newOverlappedWithFunc(func(ctx context.Context, URL string) (Output, error) {
-		return getXML[Output](ctx, config, URL)
+		return getXML[Output](ctx, URL, config)
 	})
 }
 
 // NewOverlappedPostJSON constructs a [*Overlapped] for calling [PostJSON] with multiple URLs.
-func NewOverlappedPostJSON[Input, Output any](config *Config, input Input) *Overlapped[Output] {
+func NewOverlappedPostJSON[Input, Output any](input Input, config *Config) *Overlapped[Output] {
 	return newOverlappedWithFunc(func(ctx context.Context, URL string) (Output, error) {
-		return postJSON[Input, Output](ctx, config, URL, input)
+		return postJSON[Input, Output](ctx, URL, input, config)
 	})
 }
 

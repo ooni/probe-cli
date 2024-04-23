@@ -53,14 +53,12 @@ func TestNewOverlappedPostJSONIsPerformingOverlappedCalls(t *testing.T) {
 		UserID: 117,
 	}
 
-	config := &Config{
+	overlapped := NewOverlappedPostJSON[*apiRequest, *apiResponse](apiReq, &Config{
 		Authorization: "", // not relevant for this test
 		Client:        http.DefaultClient,
 		Logger:        log.Log,
 		UserAgent:     model.HTTPHeaderUserAgent,
-	}
-
-	overlapped := NewOverlappedPostJSON[*apiRequest, *apiResponse](config, apiReq)
+	})
 
 	// make sure we set a low scheduling interval to make test faster
 	overlapped.ScheduleInterval = time.Second
@@ -133,14 +131,12 @@ func TestNewOverlappedPostJSONCancelsPendingCalls(t *testing.T) {
 		UserID: 117,
 	}
 
-	config := &Config{
+	overlapped := NewOverlappedPostJSON[*apiRequest, *apiResponse](apiReq, &Config{
 		Authorization: "", // not relevant for this test
 		Client:        http.DefaultClient,
 		Logger:        log.Log,
 		UserAgent:     model.HTTPHeaderUserAgent,
-	}
-
-	overlapped := NewOverlappedPostJSON[*apiRequest, *apiResponse](config, apiReq)
+	})
 
 	// make sure the schedule interval is high because we want
 	// all the goroutines but the first to be waiting for permission
@@ -189,14 +185,12 @@ func TestNewOverlappedPostJSONWithNoURLs(t *testing.T) {
 		UserID: 117,
 	}
 
-	config := &Config{
+	overlapped := NewOverlappedPostJSON[*apiRequest, *apiResponse](apiReq, &Config{
 		Authorization: "", // not relevant for this test
 		Client:        http.DefaultClient,
 		Logger:        log.Log,
 		UserAgent:     model.HTTPHeaderUserAgent,
-	}
-
-	overlapped := NewOverlappedPostJSON[*apiRequest, *apiResponse](config, apiReq)
+	})
 
 	// Now we issue the requests without any URLs and make sure
 	// the result we get is the generic overlapped error

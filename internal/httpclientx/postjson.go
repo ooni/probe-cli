@@ -17,18 +17,18 @@ import (
 //
 // - ctx is the cancellable context;
 //
-// - config is the config to use;
-//
 // - URL is the URL to use;
 //
-// - input is the input structure to JSON serialize as the request body.
+// - input is the input structure to JSON serialize as the request body;
+//
+// - config is the config to use.
 //
 // This function either returns an error or a valid Output.
-func PostJSON[Input, Output any](ctx context.Context, config *Config, URL string, input Input) (Output, error) {
-	return NewOverlappedPostJSON[Input, Output](config, input).Run(ctx, URL)
+func PostJSON[Input, Output any](ctx context.Context, URL string, input Input, config *Config) (Output, error) {
+	return NewOverlappedPostJSON[Input, Output](input, config).Run(ctx, URL)
 }
 
-func postJSON[Input, Output any](ctx context.Context, config *Config, URL string, input Input) (Output, error) {
+func postJSON[Input, Output any](ctx context.Context, URL string, input Input, config *Config) (Output, error) {
 	// serialize the request body
 	rawreqbody, err := json.Marshal(input)
 	if err != nil {

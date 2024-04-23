@@ -30,15 +30,12 @@ func TestGzipDecompression(t *testing.T) {
 		}))
 		defer server.Close()
 
-		// create API call config
-		config := &Config{
+		// make sure we can read it
+		respbody, err := GetRaw(context.Background(), server.URL, &Config{
 			Client:    http.DefaultClient,
 			Logger:    model.DiscardLogger,
 			UserAgent: model.HTTPHeaderUserAgent,
-		}
-
-		// make sure we can read it
-		respbody, err := GetRaw(context.Background(), config, server.URL)
+		})
 
 		t.Log(respbody)
 		t.Log(err)
@@ -62,15 +59,12 @@ func TestGzipDecompression(t *testing.T) {
 		}))
 		defer server.Close()
 
-		// create API call config
-		config := &Config{
+		// attempt to get a response body
+		respbody, err := GetRaw(context.Background(), server.URL, &Config{
 			Client:    http.DefaultClient,
 			Logger:    model.DiscardLogger,
 			UserAgent: model.HTTPHeaderUserAgent,
-		}
-
-		// attempt to get a response body
-		respbody, err := GetRaw(context.Background(), config, server.URL)
+		})
 
 		t.Log(respbody)
 		t.Log(err)
@@ -89,14 +83,11 @@ func TestHTTPStatusCodeHandling(t *testing.T) {
 	server := testingx.MustNewHTTPServer(testingx.HTTPHandlerBlockpage451())
 	defer server.Close()
 
-	// create API call config
-	config := &Config{
+	respbody, err := GetRaw(context.Background(), server.URL, &Config{
 		Client:    http.DefaultClient,
 		Logger:    model.DiscardLogger,
 		UserAgent: model.HTTPHeaderUserAgent,
-	}
-
-	respbody, err := GetRaw(context.Background(), config, server.URL)
+	})
 
 	t.Log(respbody)
 	t.Log(err)
@@ -122,14 +113,11 @@ func TestHTTPReadBodyErrorsHandling(t *testing.T) {
 	server := testingx.MustNewHTTPServer(testingx.HTTPHandlerResetWhileReadingBody())
 	defer server.Close()
 
-	// create API call config
-	config := &Config{
+	respbody, err := GetRaw(context.Background(), server.URL, &Config{
 		Client:    http.DefaultClient,
 		Logger:    model.DiscardLogger,
 		UserAgent: model.HTTPHeaderUserAgent,
-	}
-
-	respbody, err := GetRaw(context.Background(), config, server.URL)
+	})
 
 	t.Log(respbody)
 	t.Log(err)

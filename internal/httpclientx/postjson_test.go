@@ -26,14 +26,11 @@ func TestPostJSON(t *testing.T) {
 		req := make(chan int)
 		close(req)
 
-		// create API call config
-		config := &Config{
+		resp, err := PostJSON[chan int, *apiResponse](context.Background(), "", req, &Config{
 			Client:    http.DefaultClient,
 			Logger:    model.DiscardLogger,
 			UserAgent: model.HTTPHeaderUserAgent,
-		}
-
-		resp, err := PostJSON[chan int, *apiResponse](context.Background(), config, "", req)
+		})
 
 		t.Log(resp)
 		t.Log(err)
@@ -50,18 +47,15 @@ func TestPostJSON(t *testing.T) {
 	t.Run("when we cannot create a request", func(t *testing.T) {
 		req := &apiRequest{117}
 
-		// create API call config
-		config := &Config{
-			Client:    http.DefaultClient,
-			Logger:    model.DiscardLogger,
-			UserAgent: model.HTTPHeaderUserAgent,
-		}
-
 		resp, err := PostJSON[*apiRequest, *apiResponse](
 			context.Background(),
-			config,
 			"\t", // <- invalid URL that we cannot parse
 			req,
+			&Config{
+				Client:    http.DefaultClient,
+				Logger:    model.DiscardLogger,
+				UserAgent: model.HTTPHeaderUserAgent,
+			},
 		)
 
 		t.Log(resp)
@@ -82,14 +76,11 @@ func TestPostJSON(t *testing.T) {
 
 		req := &apiRequest{117}
 
-		// create API call config
-		config := &Config{
+		resp, err := PostJSON[*apiRequest, *apiResponse](context.Background(), server.URL, req, &Config{
 			Client:    http.DefaultClient,
 			Logger:    model.DiscardLogger,
 			UserAgent: model.HTTPHeaderUserAgent,
-		}
-
-		resp, err := PostJSON[*apiRequest, *apiResponse](context.Background(), config, server.URL, req)
+		})
 
 		t.Log(resp)
 		t.Log(err)
@@ -111,14 +102,11 @@ func TestPostJSON(t *testing.T) {
 
 		req := &apiRequest{117}
 
-		// create API call config
-		config := &Config{
+		resp, err := PostJSON[*apiRequest, *apiResponse](context.Background(), server.URL, req, &Config{
 			Client:    http.DefaultClient,
 			Logger:    model.DiscardLogger,
 			UserAgent: model.HTTPHeaderUserAgent,
-		}
-
-		resp, err := PostJSON[*apiRequest, *apiResponse](context.Background(), config, server.URL, req)
+		})
 
 		t.Log(resp)
 		t.Log(err)
@@ -151,14 +139,11 @@ func TestPostJSON(t *testing.T) {
 		}))
 		defer server.Close()
 
-		// create API call config
-		config := &Config{
+		resp, err := PostJSON[*apiRequest, *apiResponse](context.Background(), server.URL, req, &Config{
 			Client:    http.DefaultClient,
 			Logger:    model.DiscardLogger,
 			UserAgent: model.HTTPHeaderUserAgent,
-		}
-
-		resp, err := PostJSON[*apiRequest, *apiResponse](context.Background(), config, server.URL, req)
+		})
 
 		t.Log(resp)
 		t.Log(err)
@@ -205,16 +190,13 @@ func TestPostJSONCommunicationOkay(t *testing.T) {
 	}
 	rawapireq := must.MarshalJSON(apireq)
 
-	// create API call config
-	config := &Config{
+	// send the request and receive the response
+	apiresp, err := PostJSON[*apiRequest, *apiResponse](context.Background(), server.URL, apireq, &Config{
 		Authorization: "scribai",
 		Client:        http.DefaultClient,
 		Logger:        model.DiscardLogger,
 		UserAgent:     model.HTTPHeaderUserAgent,
-	}
-
-	// send the request and receive the response
-	apiresp, err := PostJSON[*apiRequest, *apiResponse](context.Background(), config, server.URL, apireq)
+	})
 
 	// we do not expect to see an error here
 	if err != nil {
@@ -277,14 +259,11 @@ func TestPostJSONLoggingOkay(t *testing.T) {
 	// instantiate a logger that collects logs
 	logger := &testingx.Logger{}
 
-	// create API call config
-	config := &Config{
+	resp, err := PostJSON[*apiRequest, *apiResponse](context.Background(), server.URL, req, &Config{
 		Client:    http.DefaultClient,
 		Logger:    logger,
 		UserAgent: model.HTTPHeaderUserAgent,
-	}
-
-	resp, err := PostJSON[*apiRequest, *apiResponse](context.Background(), config, server.URL, req)
+	})
 
 	t.Log(resp)
 	t.Log(err)
