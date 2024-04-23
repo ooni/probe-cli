@@ -220,7 +220,8 @@ Regarding all the other cases for which `GetJSON` is marked as "NO":
 1. Enforcing a call timeout is better done just through the context like `httpx` does.
 
 2. `GetJSON` lets the caller completely manage the construction of the URL, so we do not need
-code to join together a base URL, possibly including a base path, a path, and a query.
+code to join together a base URL, possibly including a base path, a path, and a query (and we're
+introducing the new `./internal/urlx` package to handle this situation).
 
 3. `GetJSON` does not handle cloud fronting because we don't use it. The design where the
 `Config` contains mandatory and optional fields would still allow doing that easily.
