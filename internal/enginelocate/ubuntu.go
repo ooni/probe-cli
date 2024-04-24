@@ -3,6 +3,7 @@ package enginelocate
 import (
 	"context"
 	"encoding/xml"
+	"net"
 
 	"github.com/ooni/probe-cli/v3/internal/httpclientx"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -31,6 +32,11 @@ func ubuntuIPLookup(
 	// handle the error case
 	if err != nil {
 		return model.DefaultProbeIP, err
+	}
+
+	// make sure the IP addr is valid
+	if net.ParseIP(resp.IP) == nil {
+		return model.DefaultProbeIP, ErrInvalidIPAddress
 	}
 
 	// handle the success case
