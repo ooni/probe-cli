@@ -13,7 +13,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
 func TestOONIRunV2LinkCommonCase(t *testing.T) {
@@ -209,7 +211,7 @@ func TestOONIRunV2LinkEmptyTestName(t *testing.T) {
 	// later on check whether this count has increased due to running this test
 	emptyTestNamesPrev := v2CountEmptyNettestNames.Load()
 
-	// create a local server that will respond with a  minimal descriptor that
+	// create a local server that will respond with a minimal descriptor that
 	// actually contains an empty test name, which is what we want to test
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		descriptor := &V2Descriptor{
@@ -261,6 +263,71 @@ func TestOONIRunV2LinkEmptyTestName(t *testing.T) {
 	}
 }
 
+func TestOONIRunV2LinkConnectionResetByPeer(t *testing.T) {
+	// create a local server that will reset the connection immediately.
+	// actually contains an empty test name, which is what we want to test
+	server := testingx.MustNewHTTPServer(testingx.HTTPHandlerReset())
+
+	defer server.Close()
+	ctx := context.Background()
+
+	// create a minimal link configuration
+	config := &LinkConfig{
+		AcceptChanges: true, // avoid "oonirun: need to accept changes" error
+		Annotations: map[string]string{
+			"platform": "linux",
+		},
+		KVStore:     &kvstore.Memory{},
+		MaxRuntime:  0,
+		NoCollector: true,
+		NoJSON:      true,
+		Random:      false,
+		ReportFile:  "",
+		Session:     newMinimalFakeSession(),
+	}
+
+	// construct a link runner relative to the local server URL
+	r := NewLinkRunner(config, server.URL)
+
+	// attempt to run and verify we got ECONNRESET
+	if err := r.Run(ctx); !errors.Is(err, netxlite.ECONNRESET) {
+		t.Fatal("unexpected error", err)
+	}
+}
+
+func TestOONIRunV2LinkNonParseableJSON(t *testing.T) {
+	// create a local server that will respond with a non-parseable JSON.
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{`))
+	}))
+
+	defer server.Close()
+	ctx := context.Background()
+
+	// create a minimal link configuration
+	config := &LinkConfig{
+		AcceptChanges: true, // avoid "oonirun: need to accept changes" error
+		Annotations: map[string]string{
+			"platform": "linux",
+		},
+		KVStore:     &kvstore.Memory{},
+		MaxRuntime:  0,
+		NoCollector: true,
+		NoJSON:      true,
+		Random:      false,
+		ReportFile:  "",
+		Session:     newMinimalFakeSession(),
+	}
+
+	// construct a link runner relative to the local server URL
+	r := NewLinkRunner(config, server.URL)
+
+	// attempt to run and verify there's a JSON parsing error
+	if err := r.Run(ctx); err == nil || err.Error() != "unexpected end of JSON input" {
+		t.Fatal("unexpected error", err)
+	}
+}
+
 func TestV2MeasureDescriptor(t *testing.T) {
 
 	t.Run("with nil descriptor", func(t *testing.T) {
@@ -285,7 +352,7 @@ func TestV2MeasureDescriptor(t *testing.T) {
 		ctx := context.Background()
 		sess := newMinimalFakeSession()
 
-		// create a mocked submitted that will panic in case we try to submit, such that
+		// create a mocked submitter that will panic in case we try to submit, such that
 		// this test fails with a panic if we go as far as attempting to submit
 		//
 		// Note: the convention is that we do not submit experiment results when the
