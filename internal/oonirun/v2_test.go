@@ -352,7 +352,7 @@ func TestV2MeasureDescriptor(t *testing.T) {
 		ctx := context.Background()
 		sess := newMinimalFakeSession()
 
-		// create a mocked submitted that will panic in case we try to submit, such that
+		// create a mocked submitter that will panic in case we try to submit, such that
 		// this test fails with a panic if we go as far as attempting to submit
 		//
 		// Note: the convention is that we do not submit experiment results when the
