@@ -22,7 +22,7 @@ func ubuntuIPLookup(
 	resolver model.Resolver,
 ) (string, error) {
 	// read the HTTP response and parse as XML
-	resp, err := httpclientx.GetXML[*ubuntuResponse](ctx, "https://geoip.ubuntu.com/lookup", &httpclientx.Config{
+	v, err := httpclientx.GetXML[*ubuntuResponse](ctx, "https://geoip.ubuntu.com/lookup", &httpclientx.Config{
 		Authorization: "", // not needed
 		Client:        httpClient,
 		Logger:        logger,
@@ -35,10 +35,10 @@ func ubuntuIPLookup(
 	}
 
 	// make sure the IP addr is valid
-	if net.ParseIP(resp.IP) == nil {
+	if net.ParseIP(v.IP) == nil {
 		return model.DefaultProbeIP, ErrInvalidIPAddress
 	}
 
 	// handle the success case
-	return resp.IP, nil
+	return v.IP, nil
 }
