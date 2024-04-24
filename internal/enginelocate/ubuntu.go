@@ -3,7 +3,6 @@ package enginelocate
 import (
 	"context"
 	"encoding/xml"
-	"net/http"
 
 	"github.com/ooni/probe-cli/v3/internal/httpclientx"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -16,7 +15,7 @@ type ubuntuResponse struct {
 
 func ubuntuIPLookup(
 	ctx context.Context,
-	httpClient *http.Client,
+	httpClient model.HTTPClient,
 	logger model.Logger,
 	userAgent string,
 	resolver model.Resolver,

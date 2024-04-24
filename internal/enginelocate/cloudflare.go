@@ -2,7 +2,7 @@ package enginelocate
 
 import (
 	"context"
-	"net/http"
+	"net"
 	"regexp"
 	"strings"
 
@@ -12,7 +12,7 @@ import (
 
 func cloudflareIPLookup(
 	ctx context.Context,
-	httpClient *http.Client,
+	httpClient model.HTTPClient,
 	logger model.Logger,
 	userAgent string,
 	resolver model.Resolver,
@@ -33,6 +33,11 @@ func cloudflareIPLookup(
 	// find the IP addr
 	r := regexp.MustCompile("(?:ip)=(.*)")
 	ip := strings.Trim(string(r.Find(data)), "ip=")
+
+	// make sure the IP addr is valid
+	if net.ParseIP(ip) == nil {
+		return model.DefaultProbeIP, ErrInvalidIPAddress
+	}
 
 	// done!
 	return ip, nil
