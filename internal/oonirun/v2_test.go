@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/httpclientx"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -162,8 +163,8 @@ func TestOONIRunV2LinkNilDescriptor(t *testing.T) {
 		Session:     newMinimalFakeSession(),
 	}
 	r := NewLinkRunner(config, server.URL)
-	if err := r.Run(ctx); err != nil {
-		t.Fatal(err)
+	if err := r.Run(ctx); !errors.Is(err, httpclientx.ErrIsNil) {
+		t.Fatal("unexpected error", err)
 	}
 }
 
