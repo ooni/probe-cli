@@ -31,7 +31,7 @@ We define "bridge" an IP address with the following properties:
 
 2. the IP address listens on port 443 and accepts _any_ incoming SNI;
 
-3. the webserver on port 443 proxies to the OONI APIs.
+3. the webserver on port 443 provides unified access to [OONI API services](https://docs.ooni.org/backend/ooniapi/services/).
 
 We also assume that the Web Connectivity test helpers (TH) could accept any SNIs.
 
