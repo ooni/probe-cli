@@ -127,9 +127,6 @@ func TestOONIBackendWithLoginFlow(t *testing.T) {
 			Password:           uuid.Must(uuid.NewRandom()).String(),
 		}
 
-		// fill it with random data
-		ff.Fill(&request)
-
 		// create HTTP request
 		req := runtimex.Try1(http.NewRequest(
 			"POST",
