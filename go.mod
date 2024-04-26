@@ -33,7 +33,7 @@ require (
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/pion/stun v0.6.1
 	github.com/pkg/errors v0.9.1
-	github.com/quic-go/quic-go v0.40.1
+	github.com/quic-go/quic-go v0.42.0
 	github.com/rogpeppe/go-internal v1.12.0
 	github.com/rubenv/sql-migrate v1.5.2
 	github.com/schollz/progressbar/v3 v3.14.2
@@ -73,7 +73,6 @@ require (
 	github.com/pion/transport/v2 v2.2.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/quic-go/qpack v0.4.0 // indirect
-	github.com/quic-go/qtls-go1-20 v0.4.1 // indirect
 	github.com/refraction-networking/conjure v0.7.11-0.20240130155008-c8df96195ab2 // indirect
 	github.com/refraction-networking/ed25519 v0.1.2 // indirect
 	github.com/refraction-networking/obfs4 v0.1.2 // indirect
@@ -83,7 +82,7 @@ require (
 	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
 	gitlab.com/yawning/edwards25519-extra v0.0.0-20231005122941-2149dcafc266 // indirect
-	go.uber.org/mock v0.3.0 // indirect
+	go.uber.org/mock v0.4.0 // indirect
 	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb // indirect
 	golang.org/x/exp/typeparams v0.0.0-20230522175609-2e198f4a06a1 // indirect
 	golang.org/x/time v0.5.0 // indirect
