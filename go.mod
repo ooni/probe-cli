@@ -7,7 +7,7 @@ toolchain go1.21.9
 require (
 	filippo.io/age v1.1.1
 	github.com/AlecAivazis/survey/v2 v2.3.7
-	github.com/Psiphon-Labs/psiphon-tunnel-core v1.0.11-0.20240312131609-91e2a902d867
+	github.com/Psiphon-Labs/psiphon-tunnel-core v1.0.11-0.20240424194431-3612a5a6fb4c
 	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/apex/log v1.9.0
 	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5
@@ -52,10 +52,8 @@ require (
 	filippo.io/keygen v0.0.0-20230306160926-5201437acf8e // indirect
 	github.com/Psiphon-Labs/bolt v0.0.0-20200624191537-23cedaef7ad7 // indirect
 	github.com/Psiphon-Labs/goptlib v0.0.0-20200406165125-c0e32a7a3464 // indirect
-	github.com/Psiphon-Labs/qtls-go1-19 v0.0.0-20230608213623-d58aa73e519a // indirect
-	github.com/Psiphon-Labs/qtls-go1-20 v0.0.0-20230608214729-dd57d6787acf // indirect
-	github.com/Psiphon-Labs/quic-go v0.0.0-20230626192210-73f29effc9da // indirect
-	github.com/Psiphon-Labs/tls-tris v0.0.0-20230824155421-58bf6d336a9a // indirect
+	github.com/Psiphon-Labs/psiphon-tls v0.0.0-20240424193802-52b2602ec60c // indirect
+	github.com/Psiphon-Labs/quic-go v0.0.0-20240424181006-45545f5e1536 // indirect
 	github.com/andybalholm/brotli v1.0.6 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.10.0 // indirect
@@ -76,7 +74,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/quic-go/qpack v0.4.0 // indirect
 	github.com/quic-go/qtls-go1-20 v0.4.1 // indirect
-	github.com/refraction-networking/conjure v0.7.10 // indirect
+	github.com/refraction-networking/conjure v0.7.11-0.20240130155008-c8df96195ab2 // indirect
 	github.com/refraction-networking/ed25519 v0.1.2 // indirect
 	github.com/refraction-networking/obfs4 v0.1.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
