@@ -189,7 +189,6 @@ originally derived from `httpx`. Anyways, better to double check.
 
 We compare to `httpapi.Call` and `httpx.GetJSONWithQuery`.
 
-| ------------------------- | ------- | ------- | ----- |
 | Operation                 | GetJSON | httpapi | httpx |
 | ------------------------- | ------- | ------- | ----- |
 | enforce a call timeout    |   NO    |   yes   |  NO   |
@@ -238,7 +237,6 @@ the caller try parsing the body and failing if it is indeed truncated.
 
 Here we're comparing to `httpapi.Call` and `httpx.FetchResource`.
 
-| ------------------------- | ------- | ------- | ----- |
 | Operation                 | GetRaw  | httpapi | httpx |
 | ------------------------- | ------- | ------- | ----- |
 | enforce a call timeout    |   NO    |   yes   |  NO   |
@@ -260,12 +258,13 @@ Here we're comparing to `httpapi.Call` and `httpx.FetchResource`.
 | log response body         |   yes   |   yes   |  yes  |
 | handle non-200 response   | ️  yes   |   yes*  |  yes  |
 
+Here we can basically make equivalent remarks as those of the previous section.
+
 #### GetXML
 
 There's no direct equivalent of `GetXML` in `httpapi` and `httpx`. Therefore, when using these
 two APIs, the caller would need to fetch a raw body and then manually parse XML.
 
-| ------------------------- | ------- | ------- | ----- |
 | Operation                 | GetXML  | httpapi | httpx |
 | ------------------------- | ------- | ------- | ----- |
 | enforce a call timeout    |   NO    |   N/A   |  N/A  |
@@ -294,7 +293,6 @@ Because comparison is not possible, there is not much else to say.
 
 Here we're comparing to `httpapi.Call` and `httpx.PostJSON`.
 
-| ------------------------- | -------- | ------- | ----- |
 | Operation                 | PostJSON | httpapi | httpx |
 | ------------------------- | -------- | ------- | ----- |
 | marshal JSON              |   yes    |   yes~  |  yes  |
@@ -416,7 +414,5 @@ with invocations of `*Overlapped`;
 
 The current implementation of `*Overlapped` may cause us to do more work than needed in
 case the network is really slow and an attempt is slowly fetching the body. In such a case,
-starting a new attempt duplicayes work. Handling this case does not seem straightforward
+starting a new attempt duplicates work. Handling this case does not seem straightforward
 currently, therefore, we will focus on this as part of future work.
-
-

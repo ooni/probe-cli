@@ -36,6 +36,7 @@ type Overlapped[Output any] struct {
 	RunFunc func(ctx context.Context, URL string) (Output, error)
 
 	// ScheduleInterval is the MANDATORY scheduling interval.
+	//
 	// This field is typically initialized by [NewOverlappedGetJSON], [NewOverlappedGetRaw],
 	// [NewOverlappedGetXML], or [NewOverlappedPostJSON] to be [OverlappedDefaultScheduleInterval].
 	//
