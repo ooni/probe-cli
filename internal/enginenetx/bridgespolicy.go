@@ -8,6 +8,7 @@ package enginenetx
 import (
 	"context"
 	"math/rand"
+	"slices"
 	"time"
 )
 
@@ -49,16 +50,6 @@ var bridgesPolicyTestHelpersDomains = []string{
 	"d33d1gs9kpq1c5.cloudfront.net",
 }
 
-// TODO(bassosimone): this would be slices.Contains when we'll use go1.21
-func bridgesPolicySlicesContains(slice []string, value string) bool {
-	for _, entry := range slice {
-		if value == entry {
-			return true
-		}
-	}
-	return false
-}
-
 func (p *bridgesPolicy) maybeRewriteTestHelpersTactics(input <-chan *httpsDialerTactic) <-chan *httpsDialerTactic {
 	out := make(chan *httpsDialerTactic)
 
@@ -67,7 +58,7 @@ func (p *bridgesPolicy) maybeRewriteTestHelpersTactics(input <-chan *httpsDialer
 
 		for tactic := range input {
 			// When we're not connecting to a TH, pass the policy down the chain unmodified
-			if !bridgesPolicySlicesContains(bridgesPolicyTestHelpersDomains, tactic.VerifyHostname) {
+			if !slices.Contains(bridgesPolicyTestHelpersDomains, tactic.VerifyHostname) {
 				out <- tactic
 				continue
 			}
