@@ -414,5 +414,5 @@ with invocations of `*Overlapped`;
 
 The current implementation of `*Overlapped` may cause us to do more work than needed in
 case the network is really slow and an attempt is slowly fetching the body. In such a case,
-starting a new attempt duplicayes work. Handling this case does not seem straightforward
+starting a new attempt duplicates work. Handling this case does not seem straightforward
 currently, therefore, we will focus on this as part of future work.
