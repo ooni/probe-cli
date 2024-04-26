@@ -258,6 +258,8 @@ Here we're comparing to `httpapi.Call` and `httpx.FetchResource`.
 | log response body         |   yes   |   yes   |  yes  |
 | handle non-200 response   | ️  yes   |   yes*  |  yes  |
 
+Here we can basically make equivalent remarks as those of the previous section.
+
 #### GetXML
 
 There's no direct equivalent of `GetXML` in `httpapi` and `httpx`. Therefore, when using these
