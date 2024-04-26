@@ -138,7 +138,7 @@ func TestFetchPsiphonConfig(t *testing.T) {
 			t.Fatal("unexpected error", err)
 		}
 
-		// we expect to see  zero-length data
+		// we expect to see zero-length data
 		if len(data) != 0 {
 			t.Fatal("expected result lenght to be zero")
 		}

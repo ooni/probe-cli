@@ -138,7 +138,7 @@ func TestFetchTorTargets(t *testing.T) {
 			t.Fatal("unexpected error", err)
 		}
 
-		// we expect to see  zero-length targets
+		// we expect to see zero-length targets
 		if len(targets) != 0 {
 			t.Fatal("expected targets to be zero length")
 		}
@@ -184,7 +184,7 @@ func TestFetchTorTargets(t *testing.T) {
 			t.Fatal("unexpected error", err)
 		}
 
-		// we expect to see  zero-length targets
+		// we expect to see zero-length targets
 		if len(targets) != 0 {
 			t.Fatal("expected targets to be zero length")
 		}
