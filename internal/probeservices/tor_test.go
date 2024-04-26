@@ -56,6 +56,50 @@ func TestFetchTorTargets(t *testing.T) {
 		}
 	})
 
+	// Now let's construct a test server that returns a valid response and try
+	// to communicate with such a test server successfully and with errors
+
+	t.Run("is working as intended with a local test server", func(t *testing.T) {
+		// create state for emulating the OONI backend
+		state := &testingx.OONIBackendWithLoginFlow{}
+
+		// make sure we return something that is JSON parseable and non-zero-length
+		state.SetTorTargets([]byte(`{"foo": {}}`))
+
+		// expose the state via HTTP
+		srv := testingx.MustNewHTTPServer(state.NewMux())
+		defer srv.Close()
+
+		// create a probeservices client
+		client := newclient()
+
+		// override the HTTP client so we speak with out local server rather than the true backend
+		client.HTTPClient = &mocks.HTTPClient{
+			MockDo: func(req *http.Request) (*http.Response, error) {
+				URL := runtimex.Try1(url.Parse(srv.URL))
+				req.URL.Scheme = URL.Scheme
+				req.URL.Host = URL.Host
+				return http.DefaultClient.Do(req)
+			},
+			MockCloseIdleConnections: func() {
+				http.DefaultClient.CloseIdleConnections()
+			},
+		}
+
+		// run the tor flow
+		targets, err := torflow(t, client)
+
+		// we do not expect an error here
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// we expect non-zero length targets
+		if len(targets) <= 0 {
+			t.Fatal("expected non-zero-length targets")
+		}
+	})
+
 	t.Run("reports an error when the connection is reset", func(t *testing.T) {
 		// create quick and dirty server to serve the response
 		srv := testingx.MustNewHTTPServer(testingx.HTTPHandlerReset())
@@ -94,7 +138,7 @@ func TestFetchTorTargets(t *testing.T) {
 			t.Fatal("unexpected error", err)
 		}
 
-		// we expect to see  zero-length targets
+		// we expect to see zero-length targets
 		if len(targets) != 0 {
 			t.Fatal("expected targets to be zero length")
 		}
@@ -140,7 +184,7 @@ func TestFetchTorTargets(t *testing.T) {
 			t.Fatal("unexpected error", err)
 		}
 
-		// we expect to see  zero-length targets
+		// we expect to see zero-length targets
 		if len(targets) != 0 {
 			t.Fatal("expected targets to be zero length")
 		}
