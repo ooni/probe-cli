@@ -93,7 +93,8 @@ func NewNetwork(
 	netx := &netxlite.Netx{}
 	dialer := netx.NewDialerWithResolver(logger, resolver)
 
-	// Create manager for keeping track of statistics
+	// Create manager for keeping track of statistics. This implies creating a background
+	// goroutine that we'll need to close when we're done.
 	const trimInterval = 30 * time.Second
 	stats := newStatsManager(kvStore, logger, trimInterval)
 
@@ -118,15 +119,8 @@ func NewNetwork(
 	// the proxy, otherwise it means that we're using the ooni/oohttp library
 	// to dial for proxies, which has some restrictions.
 	//
-	// In particular, the returned transport uses dialer for dialing with
-	// cleartext proxies (e.g., socks5 and http) and httpsDialer for dialing
-	// with encrypted proxies (e.g., https). After this has happened,
-	// the code currently falls back to using the standard library's tls
-	// client code for establishing TLS connections over the proxy. The main
-	// implication here is that we're not using our custom mozilla CA for
-	// validating TLS certificates, rather we're using the system's cert store.
-	//
-	// Fixing this issue is TODO(https://github.com/ooni/probe/issues/2536).
+	// - this code does not work as intended when using netem and proxies
+	// as documented by TODO(https://github.com/ooni/probe/issues/2536).
 	txp := netxlite.NewHTTPTransportWithOptions(
 		logger, dialer, httpsDialer,
 		netxlite.HTTPTransportOptionDisableCompression(false),

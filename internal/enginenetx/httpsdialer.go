@@ -97,7 +97,7 @@ type httpsDialerPolicy interface {
 
 // httpsDialerEventsHandler handles events occurring while we try dialing TLS.
 type httpsDialerEventsHandler interface {
-	// These callbacks are invoked during the TLS handshake to inform this
+	// These callbacks are invoked during the TLS dialing to inform this
 	// interface about events that occurred. A policy SHOULD keep track of which
 	// addresses, SNIs, etc. work and return them more frequently.
 	//
@@ -209,7 +209,7 @@ func (hd *httpsDialer) DialTLSContext(ctx context.Context, network string, endpo
 
 	// The emitter will emit tactics and then close the channel when done. We spawn 16 workers
 	// that handle tactics in parallel and post results on the collector channel.
-	emitter := hd.policy.LookupTactics(ctx, hostname, port)
+	emitter := httpsDialerFilterTactics(hd.policy.LookupTactics(ctx, hostname, port))
 	collector := make(chan *httpsDialerErrorOrConn)
 	joiner := make(chan any)
 	const parallelism = 16
@@ -236,13 +236,29 @@ func (hd *httpsDialer) DialTLSContext(ctx context.Context, network string, endpo
 				continue
 			}
 
-			// Save the conn and tell goroutines to stop ASAP
+			// Save the conn
 			connv = append(connv, result.Conn)
+
+			// Interrupt other concurrent dialing attempts
 			cancel()
 		}
 	}
 
 	return httpsDialerReduceResult(connv, errorv)
+}
+
+// httpsDialerFilterTactics filters the tactics to:
+//
+// 1. be paranoid and filter out nil tactics if any;
+//
+// 2. avoid emitting duplicate tactics as part of the same run;
+//
+// 3. rewrite the happy eyeball delays.
+//
+// This function returns a channel where we emit the edited
+// tactics, and which we clone when we're done.
+func httpsDialerFilterTactics(input <-chan *httpsDialerTactic) <-chan *httpsDialerTactic {
+	return filterAssignInitialDelays(filterOnlyKeepUniqueTactics(filterOutNilTactics(input)))
 }
 
 // httpsDialerReduceResult returns either an established conn or an error, using [errDNSNoAnswer] in

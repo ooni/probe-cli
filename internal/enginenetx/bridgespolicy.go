@@ -28,33 +28,18 @@ var _ httpsDialerPolicy = &bridgesPolicy{}
 
 // LookupTactics implements httpsDialerPolicy.
 func (p *bridgesPolicy) LookupTactics(ctx context.Context, domain, port string) <-chan *httpsDialerTactic {
-	out := make(chan *httpsDialerTactic)
-
-	go func() {
-		defer close(out) // tell the parent when we're done
-		index := 0
-
+	return mixSequentially(
 		// emit bridges related tactics first which are empty if there are
 		// no bridges for the givend domain and port
-		for tx := range p.bridgesTacticsForDomain(domain, port) {
-			tx.InitialDelay = happyEyeballsDelay(index)
-			index += 1
-			out <- tx
-		}
+		p.bridgesTacticsForDomain(domain, port),
 
 		// now fallback to get more tactics (typically here the fallback
 		// uses the DNS and obtains some extra tactics)
 		//
 		// we wrap whatever the underlying policy returns us with some
 		// extra logic for better communicating with test helpers
-		for tx := range p.maybeRewriteTestHelpersTactics(p.Fallback.LookupTactics(ctx, domain, port)) {
-			tx.InitialDelay = happyEyeballsDelay(index)
-			index += 1
-			out <- tx
-		}
-	}()
-
-	return out
+		p.maybeRewriteTestHelpersTactics(p.Fallback.LookupTactics(ctx, domain, port)),
+	)
 }
 
 var bridgesPolicyTestHelpersDomains = []string{
@@ -83,7 +68,7 @@ func (p *bridgesPolicy) maybeRewriteTestHelpersTactics(input <-chan *httpsDialer
 			for _, sni := range p.bridgesDomainsInRandomOrder() {
 				out <- &httpsDialerTactic{
 					Address:        tactic.Address,
-					InitialDelay:   0,
+					InitialDelay:   0, // set when dialing
 					Port:           tactic.Port,
 					SNI:            sni,
 					VerifyHostname: tactic.VerifyHostname,
@@ -110,7 +95,7 @@ func (p *bridgesPolicy) bridgesTacticsForDomain(domain, port string) <-chan *htt
 			for _, sni := range p.bridgesDomainsInRandomOrder() {
 				out <- &httpsDialerTactic{
 					Address:        ipAddr,
-					InitialDelay:   0,
+					InitialDelay:   0, // set when dialing
 					Port:           port,
 					SNI:            sni,
 					VerifyHostname: domain,

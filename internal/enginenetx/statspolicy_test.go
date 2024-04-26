@@ -169,21 +169,19 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 
 		// compute the list of results we expect to see from the stats data
 		var expect []*httpsDialerTactic
-		idx := 0
 		for _, entry := range expectTacticsStats {
 			if entry.CountSuccess <= 0 || entry.Tactic == nil {
 				continue // we SHOULD NOT include entries that systematically failed
 			}
 			t := entry.Tactic.Clone()
-			t.InitialDelay = happyEyeballsDelay(idx)
+			t.InitialDelay = 0
 			expect = append(expect, t)
-			idx++
 		}
 
 		// extend the expected list to include DNS results
 		expect = append(expect, &httpsDialerTactic{
 			Address:        bridgeAddress,
-			InitialDelay:   2 * time.Second,
+			InitialDelay:   0,
 			Port:           "443",
 			SNI:            "api.ooni.io",
 			VerifyHostname: "api.ooni.io",
@@ -234,21 +232,19 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 
 		// compute the list of results we expect to see from the stats data
 		var expect []*httpsDialerTactic
-		idx := 0
 		for _, entry := range expectTacticsStats {
 			if entry.CountSuccess <= 0 || entry.Tactic == nil {
 				continue // we SHOULD NOT include entries that systematically failed
 			}
 			t := entry.Tactic.Clone()
-			t.InitialDelay = happyEyeballsDelay(idx)
+			t.InitialDelay = 0
 			expect = append(expect, t)
-			idx++
 		}
 
 		// extend the expected list to include DNS results
 		expect = append(expect, &httpsDialerTactic{
 			Address:        bridgeAddress,
-			InitialDelay:   2 * time.Second,
+			InitialDelay:   0,
 			Port:           "443",
 			SNI:            "api.ooni.io",
 			VerifyHostname: "api.ooni.io",
@@ -290,15 +286,13 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 
 		// compute the list of results we expect to see from the stats data
 		var expect []*httpsDialerTactic
-		idx := 0
 		for _, entry := range expectTacticsStats {
 			if entry.CountSuccess <= 0 || entry.Tactic == nil {
 				continue // we SHOULD NOT include entries that systematically failed
 			}
 			t := entry.Tactic.Clone()
-			t.InitialDelay = happyEyeballsDelay(idx)
+			t.InitialDelay = 0
 			expect = append(expect, t)
-			idx++
 		}
 
 		// perform the actual comparison
@@ -319,9 +313,9 @@ func (p *mocksPolicy) LookupTactics(ctx context.Context, domain string, port str
 	return p.MockLookupTactics(ctx, domain, port)
 }
 
-func TestStatsPolicyPostProcessTactics(t *testing.T) {
+func TestStatsPolicyFilterStatsTactics(t *testing.T) {
 	t.Run("we do nothing when good is false", func(t *testing.T) {
-		tactics := statsPolicyPostProcessTactics(nil, false)
+		tactics := statsPolicyFilterStatsTactics(nil, false)
 		if len(tactics) != 0 {
 			t.Fatal("expected zero-lenght return value")
 		}
@@ -390,7 +384,7 @@ func TestStatsPolicyPostProcessTactics(t *testing.T) {
 			},
 		}
 
-		got := statsPolicyPostProcessTactics(input, true)
+		got := statsPolicyFilterStatsTactics(input, true)
 
 		if len(got) != 1 {
 			t.Fatal("expected just one element")

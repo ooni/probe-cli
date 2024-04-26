@@ -2,14 +2,13 @@ package enginelocate
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func invalidIPLookup(
 	ctx context.Context,
-	httpClient *http.Client,
+	httpClient model.HTTPClient,
 	logger model.Logger,
 	userAgent string,
 	resolver model.Resolver,

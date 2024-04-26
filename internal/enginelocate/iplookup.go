@@ -25,7 +25,7 @@ var (
 )
 
 type lookupFunc func(
-	ctx context.Context, client *http.Client,
+	ctx context.Context, client model.HTTPClient,
 	logger model.Logger, userAgent string,
 	resolver model.Resolver,
 ) (string, error)
