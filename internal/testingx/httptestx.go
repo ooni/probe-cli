@@ -6,8 +6,10 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/ooni/netem"
+	"github.com/ooni/probe-cli/v3/internal/randx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -173,14 +175,7 @@ func HTTPHandlerTimeout() http.Handler {
 }
 
 func httpHandlerHijack(w http.ResponseWriter, r *http.Request, policy string) {
-	// Note:
-	//
-	// 1. we assume we can hihack the connection
-	//
-	// 2. Hijack won't fail the first time it's invoked
-	hijacker := w.(http.Hijacker)
-	conn, _ := runtimex.Try2(hijacker.Hijack())
-
+	conn := httpHijack(w)
 	defer conn.Close()
 
 	switch policy {
@@ -193,4 +188,41 @@ func httpHandlerHijack(w http.ResponseWriter, r *http.Request, policy string) {
 	case "eof":
 		// nothing
 	}
+}
+
+// HTTPHandlerResetWhileReadingBody returns a handler that sends a
+// connection reset by peer while the client is reading the body.
+func HTTPHandlerResetWhileReadingBody() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn := httpHijack(w)
+		defer conn.Close()
+
+		// write the HTTP response headers
+		conn.Write([]byte("HTTP/1.1 200 Ok\r\n"))
+		conn.Write([]byte("Content-Type: text/html\r\n"))
+		conn.Write([]byte("Content-Length: 65535\r\n"))
+		conn.Write([]byte("\r\n"))
+
+		// start writing the response
+		content := randx.Letters(32768)
+		conn.Write([]byte(content))
+
+		// sleep for half a second simulating something wrong
+		time.Sleep(500 * time.Millisecond)
+
+		// finally issue reset for the conn
+		tcpMaybeResetNetConn(conn)
+	})
+}
+
+// httpHijack is a convenience function to hijack the underlying connection.
+func httpHijack(w http.ResponseWriter) net.Conn {
+	// Note:
+	//
+	// 1. we assume we can hihack the connection
+	//
+	// 2. Hijack won't fail the first time it's invoked
+	hijacker := w.(http.Hijacker)
+	conn, _ := runtimex.Try2(hijacker.Hijack())
+	return conn
 }

@@ -1,11 +1,13 @@
 module github.com/ooni/probe-cli/v3
 
-go 1.20
+go 1.21
+
+toolchain go1.21.9
 
 require (
 	filippo.io/age v1.1.1
 	github.com/AlecAivazis/survey/v2 v2.3.7
-	github.com/Psiphon-Labs/psiphon-tunnel-core v1.0.11-0.20240312131609-91e2a902d867
+	github.com/Psiphon-Labs/psiphon-tunnel-core v1.0.11-0.20240424194431-3612a5a6fb4c
 	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/apex/log v1.9.0
 	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5
@@ -25,13 +27,13 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.7.1
 	github.com/ooni/netem v0.0.0-20240208095707-608dcbcd82b8
-	github.com/ooni/oocrypto v0.5.8
-	github.com/ooni/oohttp v0.6.8
+	github.com/ooni/oocrypto v0.6.0
+	github.com/ooni/oohttp v0.7.1
 	github.com/ooni/probe-assets v0.22.0
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/pion/stun v0.6.1
 	github.com/pkg/errors v0.9.1
-	github.com/quic-go/quic-go v0.40.1
+	github.com/quic-go/quic-go v0.42.0
 	github.com/rogpeppe/go-internal v1.12.0
 	github.com/rubenv/sql-migrate v1.5.2
 	github.com/schollz/progressbar/v3 v3.14.2
@@ -40,9 +42,9 @@ require (
 	gitlab.com/yawning/utls.git v0.0.12-1
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib v1.5.0
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2 v2.6.1
-	golang.org/x/crypto v0.21.0
-	golang.org/x/net v0.22.0
-	golang.org/x/sys v0.18.0
+	golang.org/x/crypto v0.22.0
+	golang.org/x/net v0.24.0
+	golang.org/x/sys v0.19.0
 )
 
 require (
@@ -50,10 +52,8 @@ require (
 	filippo.io/keygen v0.0.0-20230306160926-5201437acf8e // indirect
 	github.com/Psiphon-Labs/bolt v0.0.0-20200624191537-23cedaef7ad7 // indirect
 	github.com/Psiphon-Labs/goptlib v0.0.0-20200406165125-c0e32a7a3464 // indirect
-	github.com/Psiphon-Labs/qtls-go1-19 v0.0.0-20230608213623-d58aa73e519a // indirect
-	github.com/Psiphon-Labs/qtls-go1-20 v0.0.0-20230608214729-dd57d6787acf // indirect
-	github.com/Psiphon-Labs/quic-go v0.0.0-20230626192210-73f29effc9da // indirect
-	github.com/Psiphon-Labs/tls-tris v0.0.0-20230824155421-58bf6d336a9a // indirect
+	github.com/Psiphon-Labs/psiphon-tls v0.0.0-20240424193802-52b2602ec60c // indirect
+	github.com/Psiphon-Labs/quic-go v0.0.0-20240424181006-45545f5e1536 // indirect
 	github.com/andybalholm/brotli v1.0.6 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.10.0 // indirect
@@ -73,8 +73,7 @@ require (
 	github.com/pion/transport/v2 v2.2.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/quic-go/qpack v0.4.0 // indirect
-	github.com/quic-go/qtls-go1-20 v0.4.1 // indirect
-	github.com/refraction-networking/conjure v0.7.10 // indirect
+	github.com/refraction-networking/conjure v0.7.11-0.20240130155008-c8df96195ab2 // indirect
 	github.com/refraction-networking/ed25519 v0.1.2 // indirect
 	github.com/refraction-networking/obfs4 v0.1.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
@@ -83,7 +82,7 @@ require (
 	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
 	gitlab.com/yawning/edwards25519-extra v0.0.0-20231005122941-2149dcafc266 // indirect
-	go.uber.org/mock v0.3.0 // indirect
+	go.uber.org/mock v0.4.0 // indirect
 	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb // indirect
 	golang.org/x/exp/typeparams v0.0.0-20230522175609-2e198f4a06a1 // indirect
 	golang.org/x/time v0.5.0 // indirect
@@ -153,7 +152,7 @@ require (
 	github.com/xtaci/smux v1.5.24 // indirect
 	gitlab.com/yawning/bsaes.git v0.0.0-20190805113838-0a714cd429ec // indirect
 	golang.org/x/mod v0.14.0 // indirect
-	golang.org/x/term v0.18.0 // indirect
+	golang.org/x/term v0.19.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.17.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect

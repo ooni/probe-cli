@@ -60,9 +60,6 @@ type V2Nettest struct {
 	TestName string `json:"test_name"`
 }
 
-// ErrHTTPRequestFailed indicates that an HTTP request failed.
-var ErrHTTPRequestFailed = errors.New("oonirun: HTTP request failed")
-
 // getV2DescriptorFromHTTPSURL GETs a v2Descriptor instance from
 // a static URL (e.g., from a GitHub repo or from a Gist).
 func getV2DescriptorFromHTTPSURL(ctx context.Context, client model.HTTPClient,
@@ -96,7 +93,11 @@ const v2DescriptorCacheKey = "oonirun-v2.state"
 
 // v2DescriptorCacheLoad loads the v2DescriptorCache.
 func v2DescriptorCacheLoad(fsstore model.KeyValueStore) (*v2DescriptorCache, error) {
+	// attempt to access the cache
 	data, err := fsstore.Get(v2DescriptorCacheKey)
+
+	// if there's a miss either create a new descriptor or return the
+	// error if it's something I/O related
 	if err != nil {
 		if errors.Is(err, kvstore.ErrNoSuchKey) {
 			cache := &v2DescriptorCache{
@@ -106,13 +107,19 @@ func v2DescriptorCacheLoad(fsstore model.KeyValueStore) (*v2DescriptorCache, err
 		}
 		return nil, err
 	}
+
+	// transform the raw descriptor into a struct
 	var cache v2DescriptorCache
 	if err := json.Unmarshal(data, &cache); err != nil {
 		return nil, err
 	}
+
+	// handle the case where there are no entries inside the on-disk cache
+	// by properly initializing to a non-nil map
 	if cache.Entries == nil {
 		cache.Entries = make(map[string]*V2Descriptor)
 	}
+
 	return &cache, nil
 }
 
@@ -168,13 +175,18 @@ func V2MeasureDescriptor(ctx context.Context, config *LinkConfig, desc *V2Descri
 		// more robust in terms of the implementation.
 		return ErrNilDescriptor
 	}
+
 	logger := config.Session.Logger()
+
 	for _, nettest := range desc.Nettests {
+		// early handling of the case where the test name is empty
 		if nettest.TestName == "" {
 			logger.Warn("oonirun: nettest name cannot be empty")
 			v2CountEmptyNettestNames.Add(1)
 			continue
 		}
+
+		// construct an experiment from the current nettest
 		exp := &Experiment{
 			Annotations:            config.Annotations,
 			ExtraOptions:           nettest.Options,
@@ -193,12 +205,15 @@ func V2MeasureDescriptor(ctx context.Context, config *LinkConfig, desc *V2Descri
 			newSaverFn:             nil,
 			newInputProcessorFn:    nil,
 		}
+
+		// actually run the experiment
 		if err := exp.Run(ctx); err != nil {
 			logger.Warnf("cannot run experiment: %s", err.Error())
 			v2CountFailedExperiments.Add(1)
 			continue
 		}
 	}
+
 	return nil
 }
 
@@ -209,14 +224,25 @@ var ErrNeedToAcceptChanges = errors.New("oonirun: need to accept changes")
 
 // v2DescriptorDiff shows what changed between the old and the new descriptors.
 func v2DescriptorDiff(oldValue, newValue *V2Descriptor, URL string) string {
+	// JSON serialize old descriptor
 	oldData, err := json.MarshalIndent(oldValue, "", "  ")
 	runtimex.PanicOnError(err, "json.MarshalIndent failed unexpectedly")
+
+	// JSON serialize new descriptor
 	newData, err := json.MarshalIndent(newValue, "", "  ")
 	runtimex.PanicOnError(err, "json.MarshalIndent failed unexpectedly")
+
+	// make sure the serializations are newline-terminated
 	oldString, newString := string(oldData)+"\n", string(newData)+"\n"
+
+	// generate names for the final diff
 	oldFile := "OLD " + URL
 	newFile := "NEW " + URL
+
+	// compute the edits to update from the old to the new descriptor
 	edits := myers.ComputeEdits(span.URIFromPath(oldFile), oldString, newString)
+
+	// transform the edits and obtain an unified diff
 	return fmt.Sprint(gotextdiff.ToUnified(oldFile, newFile, oldString, edits))
 }
 
@@ -233,25 +259,39 @@ func v2DescriptorDiff(oldValue, newValue *V2Descriptor, URL string) string {
 func v2MeasureHTTPS(ctx context.Context, config *LinkConfig, URL string) error {
 	logger := config.Session.Logger()
 	logger.Infof("oonirun/v2: running %s", URL)
+
+	// load the descriptor from the cache
 	cache, err := v2DescriptorCacheLoad(config.KVStore)
 	if err != nil {
 		return err
 	}
+
+	// pull a possibly new descriptor without updating the old descriptor
 	clnt := config.Session.DefaultHTTPClient()
 	oldValue, newValue, err := cache.PullChangesWithoutSideEffects(ctx, clnt, logger, URL)
 	if err != nil {
 		return err
 	}
+
+	// compare the new descriptor to the old descriptor
 	diff := v2DescriptorDiff(oldValue, newValue, URL)
+
+	// possibly stop if configured to ask for permission when accepting changes
 	if !config.AcceptChanges && diff != "" {
 		logger.Warnf("oonirun: %s changed as follows:\n\n%s", URL, diff)
 		logger.Warnf("oonirun: we are not going to run this link until you accept changes")
 		return ErrNeedToAcceptChanges
 	}
+
+	// in case there are changes, update the descriptor
 	if diff != "" {
 		if err := cache.Update(config.KVStore, URL, newValue); err != nil {
 			return err
 		}
 	}
-	return V2MeasureDescriptor(ctx, config, newValue) // handles nil newValue gracefully
+
+	// measure using the possibly-new descriptor
+	//
+	// note: this function gracefully handles nil values
+	return V2MeasureDescriptor(ctx, config, newValue)
 }
