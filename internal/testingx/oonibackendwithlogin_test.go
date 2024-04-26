@@ -119,7 +119,7 @@ func TestOONIBackendWithLoginFlow(t *testing.T) {
 
 	// registerflow attempts to register and returns the username and password
 	registerflow := func(t *testing.T) (string, string) {
-		// create fake register request
+		// create register request
 		//
 		// we ignore the metadata because we're testing
 		request := &model.OOAPIRegisterRequest{
@@ -145,7 +145,7 @@ func TestOONIBackendWithLoginFlow(t *testing.T) {
 		// make sure we eventually close the body
 		defer resp.Body.Close()
 
-		// we expect to be unauthorized
+		// we expect to be authorized
 		if resp.StatusCode != http.StatusOK {
 			t.Fatal("unexpected status code", resp.StatusCode)
 		}
@@ -166,7 +166,7 @@ func TestOONIBackendWithLoginFlow(t *testing.T) {
 	})
 
 	loginrequest := func(username, password string) *http.Response {
-		// create fake login request
+		// create login request
 		request := &model.OOAPILoginCredentials{
 			Username: username,
 			Password: password,
@@ -197,7 +197,7 @@ func TestOONIBackendWithLoginFlow(t *testing.T) {
 		// make sure we eventually close the body
 		defer resp.Body.Close()
 
-		// we expect to be unauthorized
+		// we expect to be authorized
 		if resp.StatusCode != http.StatusOK {
 			t.Fatal("unexpected status code", resp.StatusCode)
 		}
@@ -209,7 +209,7 @@ func TestOONIBackendWithLoginFlow(t *testing.T) {
 		var response model.OOAPILoginAuth
 		must.UnmarshalJSON(rawrespbody, &response)
 
-		// return username and password
+		// return token and expiry date
 		return response.Token, response.Expire
 	}
 
@@ -221,13 +221,13 @@ func TestOONIBackendWithLoginFlow(t *testing.T) {
 		// obtain the credentials
 		username, _ := registerflow(t)
 
-		// obtain the response
+		// obtain the response using a completely different password
 		resp := loginrequest(username, "antani")
 
 		// make sure we eventually close the body
 		defer resp.Body.Close()
 
-		// we expect to see not implemented
+		// we expect to see 401
 		if resp.StatusCode != http.StatusUnauthorized {
 			t.Fatal("unexpected status code", resp.StatusCode)
 		}
@@ -298,7 +298,7 @@ func TestOONIBackendWithLoginFlow(t *testing.T) {
 	t.Run("get psiphon config with invalid token", func(t *testing.T) {
 		// create HTTP request
 		req := runtimex.Try1(http.NewRequest(
-			"DELETE",
+			"GET",
 			runtimex.Try1(urlx.ResolveReference(server.URL, "/api/v1/test-list/psiphon-config", "")),
 			nil,
 		))
@@ -317,7 +317,7 @@ func TestOONIBackendWithLoginFlow(t *testing.T) {
 		// make sure we eventually close the body
 		defer resp.Body.Close()
 
-		// we expect to see not implemented
+		// we expect to see 401
 		if resp.StatusCode != http.StatusUnauthorized {
 			t.Fatal("unexpected status code", resp.StatusCode)
 		}
@@ -338,7 +338,7 @@ func TestOONIBackendWithLoginFlow(t *testing.T) {
 
 		// create HTTP request
 		req := runtimex.Try1(http.NewRequest(
-			"DELETE",
+			"GET",
 			runtimex.Try1(urlx.ResolveReference(server.URL, "/api/v1/test-list/psiphon-config", "")),
 			nil,
 		))
@@ -357,7 +357,7 @@ func TestOONIBackendWithLoginFlow(t *testing.T) {
 		// make sure we eventually close the body
 		defer resp.Body.Close()
 
-		// we expect to see not implemented
+		// we expect to see 401
 		if resp.StatusCode != http.StatusUnauthorized {
 			t.Fatal("unexpected status code", resp.StatusCode)
 		}
@@ -397,7 +397,7 @@ func TestOONIBackendWithLoginFlow(t *testing.T) {
 		// make sure we eventually close the body
 		defer resp.Body.Close()
 
-		// we expect to see not implemented
+		// we expect to see 200
 		if resp.StatusCode != http.StatusOK {
 			t.Fatal("unexpected status code", resp.StatusCode)
 		}
@@ -445,7 +445,7 @@ func TestOONIBackendWithLoginFlow(t *testing.T) {
 		// make sure we eventually close the body
 		defer resp.Body.Close()
 
-		// we expect to see not implemented
+		// we expect to see 200
 		if resp.StatusCode != http.StatusOK {
 			t.Fatal("unexpected status code", resp.StatusCode)
 		}
@@ -493,7 +493,7 @@ func TestOONIBackendWithLoginFlow(t *testing.T) {
 		// make sure we eventually close the body
 		defer resp.Body.Close()
 
-		// we expect to see not implemented
+		// we expect to see 400
 		if resp.StatusCode != http.StatusBadRequest {
 			t.Fatal("unexpected status code", resp.StatusCode)
 		}
