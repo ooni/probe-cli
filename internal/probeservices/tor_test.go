@@ -2,85 +2,202 @@ package probeservices
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"net/url"
 	"testing"
+	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/mocks"
+	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
 func TestFetchTorTargets(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	clnt := newclient()
-	if err := clnt.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
-		t.Fatal(err)
-	}
-	if err := clnt.MaybeLogin(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-	data, err := clnt.FetchTorTargets(context.Background(), "ZZ")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if data == nil || len(data) <= 0 {
-		t.Fatal("invalid data")
-	}
-}
+	// Implementation note: OONIBackendWithLoginFlow ensures that tor sends a query
+	// string and there are also tests making sure of that. We use to have a test that
+	// checked for the query string here, but now it seems unnecessary.
 
-func TestFetchTorTargetsNotRegistered(t *testing.T) {
-	clnt := newclient()
-	state := State{
-		// Explicitly empty so the test is more clear
-	}
-	if err := clnt.StateFile.Set(state); err != nil {
-		t.Fatal(err)
-	}
-	data, err := clnt.FetchTorTargets(context.Background(), "ZZ")
-	if err == nil {
-		t.Fatal("expected an error here")
-	}
-	if data != nil {
-		t.Fatal("expected nil data here")
-	}
-}
+	// torflow is the flow with which we invoke the tor API
+	torflow := func(t *testing.T, client *Client) (map[string]model.OOAPITorTarget, error) {
+		// we need to make sure we're registered and logged in
+		if err := client.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
+			t.Fatal(err)
+		}
+		if err := client.MaybeLogin(context.Background()); err != nil {
+			t.Fatal(err)
+		}
 
-type FetchTorTargetsHTTPTransport struct {
-	Response *http.Response
-}
-
-func (clnt *FetchTorTargetsHTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	resp, err := http.DefaultTransport.RoundTrip(req)
-	if err != nil {
-		return nil, err
-	}
-	if req.URL.Path == "/api/v1/test-list/tor-targets" {
-		clnt.Response = resp
-	}
-	return resp, err
-}
-
-func TestFetchTorTargetsSetsQueryString(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
+		// then we can try to fetch the config
+		return client.FetchTorTargets(context.Background(), "ZZ")
 	}
 
-	clnt := newclient()
-	txp := new(FetchTorTargetsHTTPTransport)
-	clnt.HTTPClient = &http.Client{Transport: txp}
-	if err := clnt.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
-		t.Fatal(err)
-	}
-	if err := clnt.MaybeLogin(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-	data, err := clnt.FetchTorTargets(context.Background(), "ZZ")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if data == nil || len(data) <= 0 {
-		t.Fatal("invalid data")
-	}
-	requestURL := txp.Response.Request.URL
-	if requestURL.Query().Get("country_code") != "ZZ" {
-		t.Fatal("invalid country code")
-	}
+	// First, let's check whether we can get a response from the real OONI backend.
+	t.Run("is working as intended with the real backend", func(t *testing.T) {
+		if testing.Short() {
+			t.Skip("skip test in short mode")
+		}
+
+		clnt := newclient()
+
+		// run the tor flow
+		targets, err := torflow(t, clnt)
+
+		// we do not expect an error here
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// we expect non-zero length targets
+		if len(targets) <= 0 {
+			t.Fatal("expected non-zero-length targets")
+		}
+	})
+
+	t.Run("reports an error when the connection is reset", func(t *testing.T) {
+		// create quick and dirty server to serve the response
+		srv := testingx.MustNewHTTPServer(testingx.HTTPHandlerReset())
+		defer srv.Close()
+
+		// create a probeservices client
+		client := newclient()
+
+		// override the HTTP client
+		client.HTTPClient = &mocks.HTTPClient{
+			MockDo: func(req *http.Request) (*http.Response, error) {
+				URL := runtimex.Try1(url.Parse(srv.URL))
+				req.URL.Scheme = URL.Scheme
+				req.URL.Host = URL.Host
+				return http.DefaultClient.Do(req)
+			},
+			MockCloseIdleConnections: func() {
+				http.DefaultClient.CloseIdleConnections()
+			},
+		}
+
+		// we need to convince the client that we're logged in first otherwise it will
+		// refuse to send a request to the server and we won't be testing networking
+		runtimex.Try0(client.StateFile.Set(State{
+			ClientID: "ttt-uuu-iii",
+			Expire:   time.Now().Add(30 * time.Hour),
+			Password: "xxx-xxx-xxx",
+			Token:    "abc-yyy-zzz",
+		}))
+
+		// run the tor flow
+		targets, err := torflow(t, client)
+
+		// we do expect an error
+		if !errors.Is(err, netxlite.ECONNRESET) {
+			t.Fatal("unexpected error", err)
+		}
+
+		// we expect to see  zero-length targets
+		if len(targets) != 0 {
+			t.Fatal("expected targets to be zero length")
+		}
+	})
+
+	t.Run("reports an error when the response is not JSON parsable", func(t *testing.T) {
+		// create quick and dirty server to serve the response
+		srv := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(`{`))
+		}))
+		defer srv.Close()
+
+		// create a probeservices client
+		client := newclient()
+
+		// override the HTTP client
+		client.HTTPClient = &mocks.HTTPClient{
+			MockDo: func(req *http.Request) (*http.Response, error) {
+				URL := runtimex.Try1(url.Parse(srv.URL))
+				req.URL.Scheme = URL.Scheme
+				req.URL.Host = URL.Host
+				return http.DefaultClient.Do(req)
+			},
+			MockCloseIdleConnections: func() {
+				http.DefaultClient.CloseIdleConnections()
+			},
+		}
+
+		// we need to convince the client that we're logged in first otherwise it will
+		// refuse to send a request to the server and we won't be testing networking
+		runtimex.Try0(client.StateFile.Set(State{
+			ClientID: "ttt-uuu-iii",
+			Expire:   time.Now().Add(30 * time.Hour),
+			Password: "xxx-xxx-xxx",
+			Token:    "abc-yyy-zzz",
+		}))
+
+		// run the tor flow
+		targets, err := torflow(t, client)
+
+		// we do expect an error
+		if err == nil || err.Error() != "unexpected end of JSON input" {
+			t.Fatal("unexpected error", err)
+		}
+
+		// we expect to see  zero-length targets
+		if len(targets) != 0 {
+			t.Fatal("expected targets to be zero length")
+		}
+	})
+
+	t.Run("when we're not registered", func(t *testing.T) {
+		clnt := newclient()
+
+		// With explicitly empty state so it's pretty obvioust there's no state
+		state := State{}
+
+		// force the state to be empty
+		if err := clnt.StateFile.Set(state); err != nil {
+			t.Fatal(err)
+		}
+
+		// run the tor flow
+		targets, err := clnt.FetchTorTargets(context.Background(), "ZZ")
+
+		// ensure that the error says we're not registered
+		if !errors.Is(err, ErrNotRegistered) {
+			t.Fatal("expected an error here")
+		}
+
+		// we expect zero length targets
+		if len(targets) != 0 {
+			t.Fatal("expected zero-length targets")
+		}
+	})
+
+	t.Run("correctly handles the case where the URL is unparseable", func(t *testing.T) {
+		// create a probeservices client
+		client := newclient()
+
+		// override the URL to be unparseable
+		client.BaseURL = "\t\t\t"
+
+		// we need to convince the client that we're logged in first otherwise it will
+		// refuse to send a request to the server and we won't be testing networking
+		runtimex.Try0(client.StateFile.Set(State{
+			ClientID: "ttt-uuu-iii",
+			Expire:   time.Now().Add(30 * time.Hour),
+			Password: "xxx-xxx-xxx",
+			Token:    "abc-yyy-zzz",
+		}))
+
+		targets, err := client.FetchTorTargets(context.Background(), "ZZ")
+
+		// we do expect an error
+		if err == nil || err.Error() != `parse "\t\t\t": net/url: invalid control character in URL` {
+			t.Fatal("unexpected error", err)
+		}
+
+		// we expect zero length targets
+		if len(targets) != 0 {
+			t.Fatal("expected zero-length targets")
+		}
+	})
+
 }
