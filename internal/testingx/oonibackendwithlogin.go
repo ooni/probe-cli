@@ -32,7 +32,7 @@ type OONIBackendWithLoginFlowUserRecord struct {
 //
 // This struct methods panics for several errors. Only use for testing purposes!
 type OONIBackendWithLoginFlow struct {
-	// logins maps the existing login names to their password.
+	// logins maps the existing login names to the corresponding record.
 	logins map[string]*OONIBackendWithLoginFlowUserRecord
 
 	// mu provides mutual exclusion.
