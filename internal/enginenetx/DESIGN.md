@@ -27,7 +27,7 @@ as of [probe-cli#1552](https://github.com/ooni/probe-cli/pull/1552).
 
 We define "bridge" an IP address with the following properties:
 
-1. the IP address is not expected to change;
+1. the IP address is not expected to change frequently;
 
 2. the IP address listens on port 443 and accepts _any_ incoming SNI;
 
