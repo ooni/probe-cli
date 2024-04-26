@@ -1,7 +1,7 @@
 package httpclientx
 
 //
-// getraw.go - GET a RAW response.
+// getraw.go - GET a raw response.
 //
 
 import (
