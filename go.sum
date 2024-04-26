@@ -192,6 +192,8 @@ github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/google/gopacket v1.1.19 h1:ves8RnFZPGiFnTS0uPQStjwru6uO6h+nlr9j6fL7kF8=
 github.com/google/gopacket v1.1.19/go.mod h1:iJ8V8n6KS+z2U1A8pUwu8bW5SyEMkXJB8Yo/Vo+TKTo=
+github.com/google/martian v2.1.0+incompatible h1:/CP5g8u/VJHijgedC/Legn3BAbAaWPgecwXBIDzw5no=
+github.com/google/martian v2.1.0+incompatible/go.mod h1:9I4somxYTbIHy5NJKHRl3wXiIaQGbYVAs8BPL6v8lEs=
 github.com/google/pprof v0.0.0-20230207041349-798e818bf904/go.mod h1:uglQLonpP8qtYCYyzA+8c/9qtqgA3qsXGYqCPKARAFg=
 github.com/google/pprof v0.0.0-20240509144519-723abb6459b7 h1:velgFPYr1X9TDwLIfkV7fWqsFlf7TeP11M/7kPd/dVI=
 github.com/google/pprof v0.0.0-20240509144519-723abb6459b7/go.mod h1:kf6iHlnVGwgKolg33glAes7Yg/8iWP8ukqeldJSO7jw=
@@ -350,6 +352,8 @@ github.com/onsi/ginkgo/v2 v2.17.3/go.mod h1:nP2DPOQoNsQmsVyv5rDA8JkXQoCs6goXIvr/
 github.com/onsi/gomega v1.5.0/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1CpauHY=
 github.com/onsi/gomega v1.33.0 h1:snPCflnZrpMsy94p4lXVEkHo12lmPnc3vY5XBbreexE=
 github.com/onsi/gomega v1.33.0/go.mod h1:+925n5YtiFsLzzafLUHzVMBpvvRAzrydIBiSIxjX3wY=
+github.com/ooni/minivpn v0.0.6 h1:pGTsYRtofEupMrJL28f1IXO1LJslSI7dEHxSadNgGik=
+github.com/ooni/minivpn v0.0.6/go.mod h1:0KNwmK2Wg9lDbk936XjtxvCq4tPNbK4C3IJvyLwIMrE=
 github.com/ooni/netem v0.0.0-20240208095707-608dcbcd82b8 h1:kJ2wn19lIP/y9ng85BbFRdWKHK6Er116Bbt5uhqHVD4=
 github.com/ooni/netem v0.0.0-20240208095707-608dcbcd82b8/go.mod h1:b/wAvTR5n92Vk2b0SBmuMU0xO4ZGVrsXtU7zjTby7vw=
 github.com/ooni/oocrypto v0.6.1 h1:D0fGokmHoVKGBy39RxPxK77ov0Ob9Z5pdx4vKA6vpWk=
