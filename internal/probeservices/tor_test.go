@@ -243,5 +243,4 @@ func TestFetchTorTargets(t *testing.T) {
 			t.Fatal("expected zero-length targets")
 		}
 	})
-
 }
