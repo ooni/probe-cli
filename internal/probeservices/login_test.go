@@ -201,7 +201,7 @@ func TestMaybeLogin(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// now call loging and we expect no error because we should
+		// now call login and we expect no error because we should
 		// already have what we need to perform a login
 		if err := clnt.MaybeLogin(context.Background()); err != nil {
 			t.Fatal(err)
