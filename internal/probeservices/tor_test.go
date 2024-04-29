@@ -73,7 +73,7 @@ func TestFetchTorTargets(t *testing.T) {
 		// create a probeservices client
 		client := newclient()
 
-		// override the HTTP client so we speak with out local server rather than the true backend
+		// override the HTTP client so we speak with our local server rather than the true backend
 		client.HTTPClient = &mocks.HTTPClient{
 			MockDo: func(req *http.Request) (*http.Response, error) {
 				URL := runtimex.Try1(url.Parse(srv.URL))
