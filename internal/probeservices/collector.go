@@ -99,6 +99,9 @@ func (r reportChan) CanSubmit(m *model.Measurement) bool {
 // submitted. Otherwise, we'll set the report ID to the empty
 // string, so that you know which measurements weren't submitted.
 func (r reportChan) SubmitMeasurement(ctx context.Context, m *model.Measurement) error {
+	// TODO(bassosimone): do we need to prevent measurement submission
+	// if the measurement isn't consistent with the orig template?
+
 	m.ReportID = r.ID
 
 	URL, err := urlx.ResolveReference(r.client.BaseURL, fmt.Sprintf("/report/%s", r.ID), "")
