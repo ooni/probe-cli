@@ -5,7 +5,7 @@ import (
 	"encoding/xml"
 	"net"
 
-	"github.com/ooni/probe-cli/v3/internal/httpx"
+	"github.com/ooni/probe-cli/v3/internal/httpclientx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -21,23 +21,13 @@ func ubuntuIPLookup(
 	userAgent string,
 	resolver model.Resolver,
 ) (string, error) {
-	// read the HTTP response body
-	data, err := (&httpx.APIClientTemplate{
-		BaseURL:    "https://geoip.ubuntu.com/",
-		HTTPClient: httpClient,
-		Logger:     logger,
-		UserAgent:  userAgent,
-	}).WithBodyLogging().Build().FetchResource(ctx, "/lookup")
-
-	// handle the error case
-	if err != nil {
-		return model.DefaultProbeIP, err
-	}
-
-	// parse the XML
-	logger.Debugf("ubuntu: body: %s", string(data))
-	var v ubuntuResponse
-	err = xml.Unmarshal(data, &v)
+	// read the HTTP response and parse as XML
+	v, err := httpclientx.GetXML[*ubuntuResponse](ctx, "https://geoip.ubuntu.com/lookup", &httpclientx.Config{
+		Authorization: "", // not needed
+		Client:        httpClient,
+		Logger:        logger,
+		UserAgent:     userAgent,
+	})
 
 	// handle the error case
 	if err != nil {
