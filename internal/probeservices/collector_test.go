@@ -72,7 +72,7 @@ func TestNewReportTemplate(t *testing.T) {
 	// define expectations
 	expect := newReportTemplateForTesting()
 
-	// make sure they ar4e equal
+	// make sure they are equal
 	if diff := cmp.Diff(expect, rt); diff != "" {
 		t.Fatal(diff)
 	}
