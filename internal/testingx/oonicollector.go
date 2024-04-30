@@ -182,6 +182,7 @@ func (oc *OONICollector) updateReport(w http.ResponseWriter, urlpath string, bod
 		return
 	}
 
+	// make sure the measurement is encoded as JSON
 	if request.Format != "json" {
 		log.Printf("OONICollector: invalid request format: %s", request.Format)
 		w.WriteHeader(http.StatusBadRequest)
