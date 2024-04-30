@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -241,6 +242,76 @@ func TestFetchTorTargets(t *testing.T) {
 		// we expect zero length targets
 		if len(targets) != 0 {
 			t.Fatal("expected zero-length targets")
+		}
+	})
+
+	t.Run("is not logging the response body", func(t *testing.T) {
+		// create state for emulating the OONI backend
+		state := &testingx.OONIBackendWithLoginFlow{}
+
+		// make sure we return something that is JSON parseable
+		state.SetTorTargets([]byte(`{}`))
+
+		// expose the state via HTTP
+		srv := testingx.MustNewHTTPServer(state.NewMux())
+		defer srv.Close()
+
+		// create a probeservices client
+		client := newclient()
+
+		// create and use a logger for collecting logs
+		logger := &testingx.Logger{}
+		client.Logger = logger
+
+		// override the HTTP client so we speak with our local server rather than the true backend
+		client.HTTPClient = &mocks.HTTPClient{
+			MockDo: func(req *http.Request) (*http.Response, error) {
+				URL := runtimex.Try1(url.Parse(srv.URL))
+				req.URL.Scheme = URL.Scheme
+				req.URL.Host = URL.Host
+				return http.DefaultClient.Do(req)
+			},
+			MockCloseIdleConnections: func() {
+				http.DefaultClient.CloseIdleConnections()
+			},
+		}
+
+		// compared to other tests, here we need to drop the log lines after
+		// login and register to make sure that tor does not log.
+
+		// we need to make sure we're registered and logged in
+		if err := client.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
+			t.Fatal(err)
+		}
+		if err := client.MaybeLogin(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+
+		// before clearing logs ensure we had _some_ logs
+		if len(logger.AllLines()) <= 0 {
+			t.Fatal("expected to see logging lines caused by register and login")
+		}
+
+		// now clear the logs such that we can more easily verify
+		// that tor is not logging
+		logger.ClearAll()
+
+		// then we can try to fetch the targets
+		targets, err := client.FetchTorTargets(context.Background(), "ZZ")
+
+		// we do not expect an error here
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// we expect to see zero-length targets
+		if len(targets) != 0 {
+			t.Fatal("expected targets to be zero length")
+		}
+
+		// assert that there are no logs
+		if diff := cmp.Diff([]string{}, logger.AllLines()); diff != "" {
+			t.Fatal(diff)
 		}
 	})
 }
