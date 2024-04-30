@@ -190,6 +190,9 @@ func (oc *OONICollector) updateReport(w http.ResponseWriter, urlpath string, bod
 	}
 
 	// make sure we can parse the content
+	//
+	// note: we unmarshaled into a map[string]any so we need to marshal
+	// and unmarshal again to get a measurement structure
 	var measurement model.Measurement
 	if err := json.Unmarshal(must.MarshalJSON(request.Content), &measurement); err != nil {
 		log.Printf("OONICollector: cannot unmarshal JSON: %s", err.Error())
