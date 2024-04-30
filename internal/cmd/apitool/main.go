@@ -17,7 +17,6 @@ import (
 	"sync/atomic"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/httpx"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -32,16 +31,14 @@ func newclient() probeservices.Client {
 	txp := netx.NewHTTPTransportStdlib(log.Log)
 	ua := fmt.Sprintf("apitool/%s ooniprobe-engine/%s", version.Version, version.Version)
 	return probeservices.Client{
-		APIClientTemplate: httpx.APIClientTemplate{
-			BaseURL:    *backend,
-			HTTPClient: &http.Client{Transport: txp},
-			Logger:     log.Log,
-			UserAgent:  ua,
-		},
+		BaseURL:       *backend,
+		HTTPClient:    &http.Client{Transport: txp},
 		KVStore:       &kvstore.Memory{},
+		Logger:        log.Log,
 		LoginCalls:    &atomic.Int64{},
 		RegisterCalls: &atomic.Int64{},
 		StateFile:     probeservices.NewStateFile(&kvstore.Memory{}),
+		UserAgent:     ua,
 	}
 }
 

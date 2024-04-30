@@ -35,6 +35,7 @@ func (c Client) GetMeasurementMeta(
 	// get the response
 	return httpclientx.GetJSON[*model.OOAPIMeasurementMeta](ctx, URL, &httpclientx.Config{
 		Client:    c.HTTPClient,
+		Host:      c.Host,
 		Logger:    c.Logger,
 		UserAgent: c.UserAgent,
 	})

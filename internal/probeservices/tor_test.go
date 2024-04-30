@@ -101,6 +101,53 @@ func TestFetchTorTargets(t *testing.T) {
 		}
 	})
 
+	t.Run("we can use cloudfronting", func(t *testing.T) {
+		// create state for emulating the OONI backend
+		state := &testingx.OONIBackendWithLoginFlow{}
+		mux := state.NewMux()
+
+		// make sure we return something that is JSON parseable and non-zero-length
+		state.SetTorTargets([]byte(`{"foo": {}}`))
+
+		// expose the state via HTTP
+		srv := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			runtimex.Assert(r.Host == "www.cloudfront.com", "invalid r.Host")
+			mux.ServeHTTP(w, r)
+		}))
+		defer srv.Close()
+
+		// create a probeservices client
+		client := newclient()
+
+		// make sure we're using cloudfronting
+		client.Host = "www.cloudfront.com"
+
+		// override the HTTP client so we speak with our local server rather than the true backend
+		client.HTTPClient = &mocks.HTTPClient{
+			MockDo: func(req *http.Request) (*http.Response, error) {
+				URL := runtimex.Try1(url.Parse(srv.URL))
+				req.URL.Scheme = URL.Scheme
+				req.URL.Host = URL.Host
+				return http.DefaultClient.Do(req)
+			},
+			MockCloseIdleConnections: func() {
+				http.DefaultClient.CloseIdleConnections()
+			},
+		}
+
+		// run the tor flow
+		targets, err := torflow(t, client)
+
+		// we do not expect an error here
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// we expect non-zero length targets
+		if len(targets) <= 0 {
+			t.Fatal("expected non-zero-length targets")
+		}
+	})
 	t.Run("reports an error when the connection is reset", func(t *testing.T) {
 		// create quick and dirty server to serve the response
 		srv := testingx.MustNewHTTPServer(testingx.HTTPHandlerReset())

@@ -29,7 +29,6 @@ import (
 	"sync/atomic"
 
 	"github.com/ooni/probe-cli/v3/internal/httpapi"
-	"github.com/ooni/probe-cli/v3/internal/httpx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -65,11 +64,15 @@ type Session interface {
 
 // Client is a client for the OONI probe services API.
 type Client struct {
-	httpx.APIClientTemplate
+	BaseURL       string
+	HTTPClient    model.HTTPClient
+	Host          string
 	KVStore       model.KeyValueStore
+	Logger        model.Logger
 	LoginCalls    *atomic.Int64
 	RegisterCalls *atomic.Int64
 	StateFile     StateFile
+	UserAgent     string
 }
 
 // GetCredsAndAuth is an utility function that returns the credentials with
@@ -92,16 +95,15 @@ func (c Client) GetCredsAndAuth() (*model.OOAPILoginCredentials, *model.OOAPILog
 // function fails, e.g., we don't support the specified endpoint.
 func NewClient(sess Session, endpoint model.OOAPIService) (*Client, error) {
 	client := &Client{
-		APIClientTemplate: httpx.APIClientTemplate{
-			BaseURL:    endpoint.Address,
-			HTTPClient: sess.DefaultHTTPClient(),
-			Logger:     sess.Logger(),
-			UserAgent:  sess.UserAgent(),
-		},
+		BaseURL:       endpoint.Address,
+		HTTPClient:    sess.DefaultHTTPClient(),
+		Host:          "",
 		KVStore:       sess.KeyValueStore(),
+		Logger:        sess.Logger(),
 		LoginCalls:    &atomic.Int64{},
 		RegisterCalls: &atomic.Int64{},
 		StateFile:     NewStateFile(sess.KeyValueStore()),
+		UserAgent:     sess.UserAgent(),
 	}
 	switch endpoint.Type {
 	case "https":
@@ -117,7 +119,7 @@ func NewClient(sess Session, endpoint model.OOAPIService) (*Client, error) {
 		if URL.Scheme != "https" || URL.Host != URL.Hostname() {
 			return nil, ErrUnsupportedCloudFrontAddress
 		}
-		client.APIClientTemplate.Host = URL.Hostname()
+		client.Host = URL.Hostname()
 		URL.Host = endpoint.Front
 		client.BaseURL = URL.String()
 		if _, err := url.Parse(client.BaseURL); err != nil {

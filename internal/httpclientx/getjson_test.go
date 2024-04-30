@@ -163,7 +163,7 @@ func TestGetJSONHeadersOkay(t *testing.T) {
 		t.Fatal("unexpected Accept-Encoding value", value)
 	}
 
-	// now make sure we could our cloudfronting
+	// now make sure we could use cloudfronting
 	if gothost != "www.cloudfront.com" {
 		t.Fatal("unexpected Host value", gothost)
 	}

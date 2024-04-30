@@ -141,6 +141,80 @@ func TestCheckIn(t *testing.T) {
 		}
 	})
 
+	t.Run("we can use cloudfronting", func(t *testing.T) {
+		// define our expectations
+		expect := &model.OOAPICheckInResult{
+			Conf: model.OOAPICheckInResultConfig{
+				Features: map[string]bool{},
+				TestHelpers: map[string][]model.OOAPIService{
+					"web-connectivity": {{
+						Address: "https://0.th.ooni.org/",
+						Type:    "https",
+					}},
+				},
+			},
+			ProbeASN: "AS30722",
+			ProbeCC:  "US",
+			Tests: model.OOAPICheckInResultNettests{
+				WebConnectivity: &model.OOAPICheckInInfoWebConnectivity{
+					ReportID: "20240424T134700Z_webconnectivity_IT_30722_n1_q5N5YSTWEqHYDo9v",
+					URLs: []model.OOAPIURLInfo{{
+						CategoryCode: "NEWS",
+						CountryCode:  "IT",
+						URL:          "https://www.example.com/",
+					}},
+				},
+			},
+			UTCTime: time.Date(2022, 11, 22, 1, 2, 3, 0, time.UTC),
+			V:       1,
+		}
+
+		// create a local server that responds with the expectation
+		srv := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			runtimex.Assert(r.Host == "www.cloudfront.com", "invalid r.Host")
+			runtimex.Assert(r.Method == http.MethodPost, "invalid method")
+			runtimex.Assert(r.URL.Path == "/api/v1/check-in", "invalid URL path")
+			rawreqbody := runtimex.Try1(netxlite.ReadAllContext(r.Context(), r.Body))
+			var gotrequest model.OOAPICheckInConfig
+			must.UnmarshalJSON(rawreqbody, &gotrequest)
+			diff := cmp.Diff(config, gotrequest)
+			runtimex.Assert(diff == "", "request mismatch:"+diff)
+			w.Write(must.MarshalJSON(expect))
+		}))
+		defer srv.Close()
+
+		// create a probeservices client
+		client := newclient()
+
+		// make sure we're using cloudfronting
+		client.Host = "www.cloudfront.com"
+
+		// override the HTTP client
+		client.HTTPClient = &mocks.HTTPClient{
+			MockDo: func(req *http.Request) (*http.Response, error) {
+				URL := runtimex.Try1(url.Parse(srv.URL))
+				req.URL.Scheme = URL.Scheme
+				req.URL.Host = URL.Host
+				return http.DefaultClient.Do(req)
+			},
+			MockCloseIdleConnections: func() {
+				http.DefaultClient.CloseIdleConnections()
+			},
+		}
+
+		// call the API
+		result, err := client.CheckIn(context.Background(), config)
+
+		// we do not expect to see an error
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// we expect to see exactly what the server sent
+		if diff := cmp.Diff(expect, result); diff != "" {
+			t.Fatal(diff)
+		}
+	})
 	t.Run("reports an error when the connection is reset", func(t *testing.T) {
 		// create quick and dirty server to serve the response
 		srv := testingx.MustNewHTTPServer(testingx.HTTPHandlerReset())

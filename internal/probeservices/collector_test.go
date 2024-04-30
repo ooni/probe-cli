@@ -179,6 +179,69 @@ func TestReportLifecycle(t *testing.T) {
 		}
 	})
 
+	t.Run("we can use cloudfronting", func(t *testing.T) {
+		// create state for emulating the OONI backend
+		state := &testingx.OONICollector{}
+
+		// expose the state via HTTP
+		srv := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			runtimex.Assert(r.Host == "www.cloudfront.com", "invalid r.Host")
+			state.ServeHTTP(w, r)
+		}))
+		defer srv.Close()
+
+		// create a probeservices client
+		client := newclient()
+
+		// make sure we're using cloudfronting
+		client.Host = "www.cloudfront.com"
+
+		// override the HTTP client so we speak with our local server rather than the true backend
+		client.HTTPClient = &mocks.HTTPClient{
+			MockDo: func(req *http.Request) (*http.Response, error) {
+				URL := runtimex.Try1(url.Parse(srv.URL))
+				req.URL.Scheme = URL.Scheme
+				req.URL.Host = URL.Host
+				return http.DefaultClient.Do(req)
+			},
+			MockCloseIdleConnections: func() {
+				http.DefaultClient.CloseIdleConnections()
+			},
+		}
+
+		// create the report template used for testing
+		template := newReportTemplateForTesting()
+
+		// open the report
+		report, err := client.OpenReport(context.Background(), template)
+
+		// we expect to be able to open the report
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// make a measurement out of the report template
+		measurement := makeMeasurement(template, report.ReportID())
+
+		// make sure we can submit this measurement within the report, which we really
+		// expect to succeed since we created the measurement from the template
+		if report.CanSubmit(&measurement) != true {
+			t.Fatal("report should be able to submit this measurement")
+		}
+
+		// attempt to submit the measurement to the backend, which should succeed
+		// since we've just opened a report for it
+		if err = report.SubmitMeasurement(context.Background(), &measurement); err != nil {
+			t.Fatal(err)
+		}
+
+		// additionally make sure we edited the measurement report ID to
+		// contain the correct report ID used to submit
+		if measurement.ReportID != report.ReportID() {
+			t.Fatal("report ID mismatch")
+		}
+	})
+
 	t.Run("opening a report fails with an error when the connection is reset", func(t *testing.T) {
 		// create quick and dirty server to serve the response
 		srv := testingx.MustNewHTTPServer(testingx.HTTPHandlerReset())

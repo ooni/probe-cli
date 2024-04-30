@@ -37,6 +37,7 @@ func (c Client) FetchTorTargets(ctx context.Context, cc string) (map[string]mode
 	return httpclientx.GetJSON[map[string]model.OOAPITorTarget](ctx, URL, &httpclientx.Config{
 		Authorization: s,
 		Client:        c.HTTPClient,
+		Host:          c.Host,
 		Logger:        model.DiscardLogger,
 		UserAgent:     c.UserAgent,
 	})

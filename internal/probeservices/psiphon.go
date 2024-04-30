@@ -32,6 +32,7 @@ func (c Client) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
 	return httpclientx.GetRaw(ctx, URL, &httpclientx.Config{
 		Authorization: s,
 		Client:        c.HTTPClient,
+		Host:          c.Host,
 		Logger:        model.DiscardLogger,
 		UserAgent:     c.UserAgent,
 	})

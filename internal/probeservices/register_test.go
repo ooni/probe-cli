@@ -83,6 +83,53 @@ func TestMaybeRegister(t *testing.T) {
 		}
 	})
 
+	t.Run("we can use cloudfronting", func(t *testing.T) {
+		// create state for emulating the OONI backend
+		state := &testingx.OONIBackendWithLoginFlow{}
+		mux := state.NewMux()
+
+		// expose the state via HTTP
+		srv := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			runtimex.Assert(r.Host == "www.cloudfront.com", "invalid r.Host")
+			mux.ServeHTTP(w, r)
+		}))
+		defer srv.Close()
+
+		// create a probeservices client
+		client := newclient()
+
+		// make sure we're using cloudfronting
+		client.Host = "www.cloudfront.com"
+
+		// override the HTTP client so we speak with our local server rather than the true backend
+		client.HTTPClient = &mocks.HTTPClient{
+			MockDo: func(req *http.Request) (*http.Response, error) {
+				URL := runtimex.Try1(url.Parse(srv.URL))
+				req.URL.Scheme = URL.Scheme
+				req.URL.Host = URL.Host
+				return http.DefaultClient.Do(req)
+			},
+			MockCloseIdleConnections: func() {
+				http.DefaultClient.CloseIdleConnections()
+			},
+		}
+
+		// attempt to register once
+		if err := client.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
+			t.Fatal(err)
+		}
+
+		// try again (we want to make sure it's idempotent once we've registered)
+		if err := client.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
+			t.Fatal(err)
+		}
+
+		// make sure we indeed only called it once
+		if client.RegisterCalls.Load() != 1 {
+			t.Fatal("called register API too many times")
+		}
+	})
+
 	t.Run("reports an error when the connection is reset", func(t *testing.T) {
 		// create quick and dirty server to serve the response
 		srv := testingx.MustNewHTTPServer(testingx.HTTPHandlerReset())
