@@ -129,6 +129,49 @@ func TestGetMeasurementMeta(t *testing.T) {
 		}
 	})
 
+	t.Run("we can use cloudfronting", func(t *testing.T) {
+		// create quick and dirty server to serve the response
+		srv := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			runtimex.Assert(r.Host == "www.cloudfront.com", "invalid r.Host")
+			runtimex.Assert(r.Method == http.MethodGet, "invalid method")
+			runtimex.Assert(r.URL.Path == "/api/v1/measurement_meta", "invalid URL path")
+			w.Write(must.MarshalJSON(expectMmeta))
+		}))
+		defer srv.Close()
+
+		// create a probeservices client
+		client := newclient()
+
+		// make sure we're using cloudfronting
+		client.Host = "www.cloudfront.com"
+
+		// override the HTTP client
+		client.HTTPClient = &mocks.HTTPClient{
+			MockDo: func(req *http.Request) (*http.Response, error) {
+				URL := runtimex.Try1(url.Parse(srv.URL))
+				req.URL.Scheme = URL.Scheme
+				req.URL.Host = URL.Host
+				return http.DefaultClient.Do(req)
+			},
+			MockCloseIdleConnections: func() {
+				http.DefaultClient.CloseIdleConnections()
+			},
+		}
+
+		// issue the API call proper
+		mmeta, err := client.GetMeasurementMeta(context.Background(), config)
+
+		// we do not expect to see errors obviously
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// compare with the expectation
+		if diff := cmp.Diff(expectMmeta, mmeta); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
 	t.Run("reports an error when the connection is reset", func(t *testing.T) {
 		// create quick and dirty server to serve the response
 		srv := testingx.MustNewHTTPServer(testingx.HTTPHandlerReset())
