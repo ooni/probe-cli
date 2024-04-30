@@ -292,8 +292,6 @@ func TestFetchTorTargets(t *testing.T) {
 		// assert that there are no logs
 		//
 		// the register, login, and tor API should not log their bodies
-		// especially the tor response body and, for backwards consistency,
-		// also the other APIs should not emit logs
 		if diff := cmp.Diff([]string{}, logger.AllLines()); diff != "" {
 			t.Fatal(diff)
 		}
