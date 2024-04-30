@@ -85,3 +85,17 @@ func (l *Logger) WarnLines() []string {
 	l.mu.Unlock()
 	return out
 }
+
+// ClearAll removes all the log lines collected so far.
+func (l *Logger) ClearAll() {
+	l.mu.Lock()
+	l.debug = []string{}
+	l.info = []string{}
+	l.warning = []string{}
+	l.mu.Unlock()
+}
+
+// AllLines returns all the collected lines.
+func (l *Logger) AllLines() []string {
+	return append(append(append([]string{}, l.DebugLines()...), l.InfoLines()...), l.WarnLines()...)
+}

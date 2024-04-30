@@ -8,7 +8,9 @@ import (
 	"reflect"
 	"sync"
 
+	"github.com/ooni/probe-cli/v3/internal/httpclientx"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/urlx"
 )
 
 var (
@@ -58,10 +60,24 @@ func (c Client) OpenReport(ctx context.Context, rt model.OOAPIReportTemplate) (R
 	if rt.Format != model.OOAPIReportDefaultFormat {
 		return nil, ErrUnsupportedFormat
 	}
-	var cor model.OOAPICollectorOpenResponse
-	if err := c.APIClientTemplate.WithBodyLogging().Build().PostJSON(ctx, "/report", rt, &cor); err != nil {
+
+	URL, err := urlx.ResolveReference(c.BaseURL, "/report", "")
+	if err != nil {
 		return nil, err
 	}
+
+	cor, err := httpclientx.PostJSON[model.OOAPIReportTemplate, *model.OOAPICollectorOpenResponse](
+		ctx, URL, rt, &httpclientx.Config{
+			Client:    c.HTTPClient,
+			Logger:    c.Logger,
+			UserAgent: c.UserAgent,
+		},
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
 	for _, format := range cor.SupportedFormats {
 		if format == "json" {
 			return &reportChan{ID: cor.ReportID, client: c, tmpl: rt}, nil
@@ -83,18 +99,35 @@ func (r reportChan) CanSubmit(m *model.Measurement) bool {
 // submitted. Otherwise, we'll set the report ID to the empty
 // string, so that you know which measurements weren't submitted.
 func (r reportChan) SubmitMeasurement(ctx context.Context, m *model.Measurement) error {
-	var updateResponse model.OOAPICollectorUpdateResponse
+	// TODO(bassosimone): do we need to prevent measurement submission
+	// if the measurement isn't consistent with the orig template?
+
 	m.ReportID = r.ID
-	err := r.client.APIClientTemplate.WithBodyLogging().Build().PostJSON(
-		ctx, fmt.Sprintf("/report/%s", r.ID), model.OOAPICollectorUpdateRequest{
-			Format:  "json",
-			Content: m,
-		}, &updateResponse,
+
+	URL, err := urlx.ResolveReference(r.client.BaseURL, fmt.Sprintf("/report/%s", r.ID), "")
+	if err != nil {
+		return err
+	}
+
+	apiReq := model.OOAPICollectorUpdateRequest{
+		Format:  "json",
+		Content: m,
+	}
+
+	updateResponse, err := httpclientx.PostJSON[
+		model.OOAPICollectorUpdateRequest, *model.OOAPICollectorUpdateResponse](
+		ctx, URL, apiReq, &httpclientx.Config{
+			Client:    r.client.HTTPClient,
+			Logger:    r.client.Logger,
+			UserAgent: r.client.UserAgent,
+		},
 	)
+
 	if err != nil {
 		m.ReportID = ""
 		return err
 	}
+
 	// TODO(bassosimone): we should use the session logger here but for now this stopgap
 	// solution will allow observing the measurement URL for CLI users.
 	log.Printf("Measurement URL: https://explorer.ooni.org/m/%s", updateResponse.MeasurementUID)
