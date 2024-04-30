@@ -162,4 +162,25 @@ func TestGetTestHelpers(t *testing.T) {
 			t.Fatal("expected result lenght to be zero")
 		}
 	})
+
+	t.Run("correctly handles the case where the URL is unparseable", func(t *testing.T) {
+		// create a probeservices client
+		client := newclient()
+
+		// override the URL to be unparseable
+		client.BaseURL = "\t\t\t"
+
+		// issue the GET request
+		testhelpers, err := client.GetTestHelpers(context.Background())
+
+		// we do expect an error
+		if err == nil || err.Error() != `parse "\t\t\t": net/url: invalid control character in URL` {
+			t.Fatal("unexpected error", err)
+		}
+
+		// we expect to see a zero-length / nil map
+		if len(testhelpers) != 0 {
+			t.Fatal("expected result lenght to be zero")
+		}
+	})
 }

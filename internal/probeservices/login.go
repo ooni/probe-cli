@@ -25,7 +25,7 @@ func (c Client) MaybeLogin(ctx context.Context) error {
 		return err
 	}
 
-	auth, err := httpclientx.PostJSON[*model.OOAPILoginCredentials, model.OOAPILoginAuth](
+	auth, err := httpclientx.PostJSON[*model.OOAPILoginCredentials, *model.OOAPILoginAuth](
 		ctx, URL, creds, &httpclientx.Config{
 			Client:    c.HTTPClient,
 			Logger:    c.Logger,

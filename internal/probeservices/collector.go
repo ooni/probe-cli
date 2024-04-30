@@ -66,7 +66,7 @@ func (c Client) OpenReport(ctx context.Context, rt model.OOAPIReportTemplate) (R
 		return nil, err
 	}
 
-	cor, err := httpclientx.PostJSON[model.OOAPIReportTemplate, model.OOAPICollectorOpenResponse](
+	cor, err := httpclientx.PostJSON[model.OOAPIReportTemplate, *model.OOAPICollectorOpenResponse](
 		ctx, URL, rt, &httpclientx.Config{
 			Client:    c.HTTPClient,
 			Logger:    c.Logger,
@@ -115,7 +115,7 @@ func (r reportChan) SubmitMeasurement(ctx context.Context, m *model.Measurement)
 	}
 
 	updateResponse, err := httpclientx.PostJSON[
-		model.OOAPICollectorUpdateRequest, model.OOAPICollectorUpdateResponse](
+		model.OOAPICollectorUpdateRequest, *model.OOAPICollectorUpdateResponse](
 		ctx, URL, apiReq, &httpclientx.Config{
 			Client:    r.client.HTTPClient,
 			Logger:    r.client.Logger,
@@ -127,6 +127,7 @@ func (r reportChan) SubmitMeasurement(ctx context.Context, m *model.Measurement)
 		m.ReportID = ""
 		return err
 	}
+
 	// TODO(bassosimone): we should use the session logger here but for now this stopgap
 	// solution will allow observing the measurement URL for CLI users.
 	log.Printf("Measurement URL: https://explorer.ooni.org/m/%s", updateResponse.MeasurementUID)
