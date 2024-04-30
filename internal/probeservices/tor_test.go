@@ -276,28 +276,8 @@ func TestFetchTorTargets(t *testing.T) {
 			},
 		}
 
-		// compared to other tests, here we need to drop the log lines after
-		// login and register to make sure that tor does not log.
-
-		// we need to make sure we're registered and logged in
-		if err := client.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
-			t.Fatal(err)
-		}
-		if err := client.MaybeLogin(context.Background()); err != nil {
-			t.Fatal(err)
-		}
-
-		// before clearing logs ensure we had _some_ logs
-		if len(logger.AllLines()) <= 0 {
-			t.Fatal("expected to see logging lines caused by register and login")
-		}
-
-		// now clear the logs such that we can more easily verify
-		// that tor is not logging
-		logger.ClearAll()
-
 		// then we can try to fetch the targets
-		targets, err := client.FetchTorTargets(context.Background(), "ZZ")
+		targets, err := torflow(t, client)
 
 		// we do not expect an error here
 		if err != nil {
@@ -310,6 +290,10 @@ func TestFetchTorTargets(t *testing.T) {
 		}
 
 		// assert that there are no logs
+		//
+		// the register, login, and tor API should not log their bodies
+		// especially the tor response body and, for backwards consistency,
+		// also the other APIs should not emit logs
 		if diff := cmp.Diff([]string{}, logger.AllLines()); diff != "" {
 			t.Fatal(diff)
 		}
