@@ -12,6 +12,9 @@ type Config struct {
 	// Client is the MANDATORY [model.HTTPClient] to use.
 	Client model.HTTPClient
 
+	// Host is the OPTIONAL Host header to use to implement cloudfronting.
+	Host string
+
 	// Logger is the MANDATORY [model.Logger] to use.
 	Logger model.Logger
 

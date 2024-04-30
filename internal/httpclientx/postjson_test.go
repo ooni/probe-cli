@@ -163,6 +163,7 @@ func TestPostJSON(t *testing.T) {
 // This test ensures that PostJSON sets correct HTTP headers and sends the right body.
 func TestPostJSONCommunicationOkay(t *testing.T) {
 	var (
+		gothost    string
 		gotheaders http.Header
 		gotrawbody []byte
 		gotmu      sync.Mutex
@@ -174,6 +175,7 @@ func TestPostJSONCommunicationOkay(t *testing.T) {
 
 		// save the raw response body and headers
 		gotmu.Lock()
+		gothost = r.Host
 		gotrawbody = rawbody
 		gotheaders = r.Header
 		gotmu.Unlock()
@@ -194,6 +196,7 @@ func TestPostJSONCommunicationOkay(t *testing.T) {
 	apiresp, err := PostJSON[*apiRequest, *apiResponse](context.Background(), server.URL, apireq, &Config{
 		Authorization: "scribai",
 		Client:        http.DefaultClient,
+		Host:          "www.cloudfront.com",
 		Logger:        model.DiscardLogger,
 		UserAgent:     model.HTTPHeaderUserAgent,
 	})
@@ -235,6 +238,11 @@ func TestPostJSONCommunicationOkay(t *testing.T) {
 	// now make sure we have sent accept-encoding
 	if value := gotheaders.Get("Accept-Encoding"); value != "gzip" {
 		t.Fatal("unexpected Accept-Encoding value", value)
+	}
+
+	// now make sure we could use cloudfronting
+	if gothost != "www.cloudfront.com" {
+		t.Fatal("unexpected Host value", gothost)
 	}
 }
 

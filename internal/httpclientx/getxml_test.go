@@ -103,6 +103,7 @@ func TestGetXML(t *testing.T) {
 // This test ensures that GetXML sets correct HTTP headers
 func TestGetXMLHeadersOkay(t *testing.T) {
 	var (
+		gothost    string
 		gotheaders http.Header
 		gotmu      sync.Mutex
 	)
@@ -110,6 +111,7 @@ func TestGetXMLHeadersOkay(t *testing.T) {
 	server := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// save the headers
 		gotmu.Lock()
+		gothost = r.Host
 		gotheaders = r.Header
 		gotmu.Unlock()
 
@@ -123,6 +125,7 @@ func TestGetXMLHeadersOkay(t *testing.T) {
 	apiresp, err := GetXML[*apiResponse](context.Background(), server.URL, &Config{
 		Authorization: "scribai",
 		Client:        http.DefaultClient,
+		Host:          "www.cloudfront.com",
 		Logger:        model.DiscardLogger,
 		UserAgent:     model.HTTPHeaderUserAgent,
 	})
@@ -154,6 +157,11 @@ func TestGetXMLHeadersOkay(t *testing.T) {
 	// now make sure we have sent accept-encoding
 	if value := gotheaders.Get("Accept-Encoding"); value != "gzip" {
 		t.Fatal("unexpected Accept-Encoding value", value)
+	}
+
+	// now make sure we could use cloudfronting
+	if gothost != "www.cloudfront.com" {
+		t.Fatal("unexpected Host value", gothost)
 	}
 }
 
