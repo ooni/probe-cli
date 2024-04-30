@@ -5,10 +5,10 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"reflect"
 	"strings"
 	"sync"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/must"
@@ -64,6 +64,13 @@ func (oc *OONICollector) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		log.Printf("OONICollector: invalid method")
 		w.WriteHeader(http.StatusNotImplemented)
+		return
+	}
+
+	// make sure the URL path starts with /report
+	if !strings.HasPrefix(r.URL.Path, "/report") {
+		log.Printf("OONICollector: invalid URL path prefix")
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -175,6 +182,12 @@ func (oc *OONICollector) updateReport(w http.ResponseWriter, urlpath string, bod
 		return
 	}
 
+	if request.Format != "json" {
+		log.Printf("OONICollector: invalid request format: %s", request.Format)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	// make sure we can parse the content
 	var measurement model.Measurement
 	if err := json.Unmarshal(must.MarshalJSON(request.Content), &measurement); err != nil {
@@ -195,8 +208,8 @@ func (oc *OONICollector) updateReport(w http.ResponseWriter, urlpath string, bod
 		TestStartTime:     measurement.TestStartTime,
 		TestVersion:       measurement.TestVersion,
 	}
-	if !reflect.DeepEqual(template, mt) {
-		log.Printf("OONICollector: measurement %+v differs from template %+v", mt, template)
+	if diff := cmp.Diff(template, mt); diff != "" {
+		log.Printf("OONICollector: measurement differs from template %s", diff)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
