@@ -148,6 +148,7 @@ func TestFetchTorTargets(t *testing.T) {
 			t.Fatal("expected non-zero-length targets")
 		}
 	})
+
 	t.Run("reports an error when the connection is reset", func(t *testing.T) {
 		// create quick and dirty server to serve the response
 		srv := testingx.MustNewHTTPServer(testingx.HTTPHandlerReset())

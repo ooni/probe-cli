@@ -215,6 +215,7 @@ func TestCheckIn(t *testing.T) {
 			t.Fatal(diff)
 		}
 	})
+
 	t.Run("reports an error when the connection is reset", func(t *testing.T) {
 		// create quick and dirty server to serve the response
 		srv := testingx.MustNewHTTPServer(testingx.HTTPHandlerReset())
