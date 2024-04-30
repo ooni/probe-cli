@@ -25,8 +25,8 @@ type OONIBackendWithLoginFlowUserRecord struct {
 	Token    string
 }
 
-// OONIBackendWithLoginFlow is an [http.Handler] that implements the register and
-// loging workflow and serves psiphon and tor config.
+// OONIBackendWithLoginFlow implements the register and login workflows
+// and serves the psiphon config and tor targets.
 //
 // The zero value is ready to use.
 //
