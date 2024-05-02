@@ -570,6 +570,9 @@ func TestSessionCallWebConnectivityTestHelper(t *testing.T) {
 		}
 	})
 
+	// Now we include some tests that ensure that we can chain (in more or less
+	// smart fashion) API calls using multiple test helper endpoints.
+
 	t.Run("with two test helpers where the first one resets the connection and the second works", func(t *testing.T) {
 		// create a local test server1 that always resets the connection
 		server1 := testingx.MustNewHTTPServer(testingx.HTTPHandlerReset())
