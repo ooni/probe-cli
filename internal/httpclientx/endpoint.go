@@ -4,7 +4,11 @@ import "github.com/ooni/probe-cli/v3/internal/model"
 
 // Endpoint is an HTTP endpoint.
 //
+<<<<<<< HEAD
 // The zero value is invalid; the zero value is invalid, construct using [NewEndpoint].
+=======
+// The zero value is invalid; construct using [NewEndpoint].
+>>>>>>> master
 type Endpoint struct {
 	// URL is the MANDATORY endpoint URL.
 	URL string
@@ -29,7 +33,7 @@ func (e *Endpoint) WithHostOverride(host string) *Endpoint {
 	}
 }
 
-// NewEndpointFromModelOOAPIServices constructs a new [*Endpoint] instance from the
+// NewEndpointFromModelOOAPIServices constructs new [*Endpoint] instances from the
 // given [model.OOAPIService] instances, assigning the host header if "cloudfront", and
 // skipping all the entries that are neither "https" not "cloudfront".
 func NewEndpointFromModelOOAPIServices(svcs ...model.OOAPIService) (epnts []*Endpoint) {
