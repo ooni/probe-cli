@@ -48,7 +48,7 @@ type Overlapped[Output any] struct {
 	// attempt that was previously scheduled failed very early.
 	//
 	// This field is typically initialized by [NewOverlappedGetJSON], [NewOverlappedGetRaw],
-	// [NewOverlappedGetXML], or [NewOverlappedPostJSON] to be [OverlappedDefaultScheduleInterval].
+	// [NewOverlappedGetXML], or [NewOverlappedPostJSON] using [NewOverlappedSemaphore].
 	//
 	// If you set it manually, initialize it with [NewOverlappedSemaphore] as follows:
 	//
