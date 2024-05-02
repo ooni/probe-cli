@@ -81,9 +81,6 @@ func (m Measurer) ExperimentVersion() string {
 }
 
 var (
-	// ErrNoAvailableTestHelpers is emitted when there are no available test helpers.
-	ErrNoAvailableTestHelpers = errors.New("no available helpers")
-
 	// ErrInvalidHelperType is emitted when the helper type is invalid.
 	ErrInvalidHelperType = errors.New("invalid helper type")
 )
@@ -104,7 +101,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	const helperName = "http-return-json-headers"
 	helpers, ok := sess.GetTestHelpersByName(helperName)
 	if !ok || len(helpers) < 1 {
-		return ErrNoAvailableTestHelpers
+		return model.ErrNoAvailableTestHelpers
 	}
 	helper := helpers[0]
 	if helper.Type != "legacy" {

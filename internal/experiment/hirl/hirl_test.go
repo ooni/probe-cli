@@ -302,7 +302,7 @@ func TestNoHelpers(t *testing.T) {
 		Session:     sess,
 	}
 	err := measurer.Run(ctx, args)
-	if !errors.Is(err, hirl.ErrNoAvailableTestHelpers) {
+	if !errors.Is(err, model.ErrNoAvailableTestHelpers) {
 		t.Fatal("not the error we expected")
 	}
 	tk := measurement.TestKeys.(*hirl.TestKeys)
@@ -340,7 +340,7 @@ func TestNoActualHelperInList(t *testing.T) {
 		Session:     sess,
 	}
 	err := measurer.Run(ctx, args)
-	if !errors.Is(err, hirl.ErrNoAvailableTestHelpers) {
+	if !errors.Is(err, model.ErrNoAvailableTestHelpers) {
 		t.Fatal("not the error we expected")
 	}
 	tk := measurement.TestKeys.(*hirl.TestKeys)

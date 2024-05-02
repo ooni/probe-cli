@@ -13,7 +13,7 @@ import (
 // given request object, the given list of available test helpers, and the given session.
 //
 // If the list of test helpers is empty this function immediately returns nil, zero,
-// and the [ErrNoAvailableTestHelpers] error to the caller.
+// and the [model.ErrNoAvailableTestHelpers] error to the caller.
 //
 // In case of any other failure, this function returns nil, zero, and an error.
 //
