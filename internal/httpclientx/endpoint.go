@@ -29,12 +29,21 @@ func (e *Endpoint) WithHostOverride(host string) *Endpoint {
 	}
 }
 
-// NewEndpointFromModelOOAPIService constructs a new [*Endpoint] instance from the
-// given [model.OOAPIService] instance, assigning the host header if required.
-func NewEndpointFromModelOOAPIService(svc model.OOAPIService) *Endpoint {
-	epnt := NewEndpoint(svc.Address)
-	if svc.Type == "cloudfront" {
-		epnt = epnt.WithHostOverride(svc.Front)
+// NewEndpointFromModelOOAPIServices constructs a new [*Endpoint] instance from the
+// given [model.OOAPIService] instances, assigning the host header if "cloudfront", and
+// skipping all the entries that are neither "https" not "cloudfront".
+func NewEndpointFromModelOOAPIServices(svcs ...model.OOAPIService) (epnts []*Endpoint) {
+	for _, svc := range svcs {
+		epnt := NewEndpoint(svc.Address)
+		switch svc.Type {
+		case "cloudfront":
+			epnt = epnt.WithHostOverride(svc.Front)
+			fallthrough
+		case "https":
+			epnts = append(epnts, epnt)
+		default:
+			// skip entry
+		}
 	}
-	return epnt
+	return
 }

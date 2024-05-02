@@ -25,10 +25,12 @@ func (c Client) CheckIn(
 
 	// issue the API call
 	resp, err := httpclientx.PostJSON[*model.OOAPICheckInConfig, *model.OOAPICheckInResult](
-		ctx, URL, &config, &httpclientx.Config{
+		ctx,
+		httpclientx.NewEndpoint(URL).WithHostOverride(c.Host),
+		&config,
+		&httpclientx.Config{
 			Authorization: "", // not needed
 			Client:        c.HTTPClient,
-			Host:          c.Host,
 			Logger:        c.Logger,
 			UserAgent:     c.UserAgent,
 		})

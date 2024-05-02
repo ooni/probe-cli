@@ -49,8 +49,8 @@ to a single IP address, it might still be useful to fallback.
 and, if so, with which status code, which is needed to intercept `401` responses
 to take the appropriate logging-in actions.
 
-7. Make the design extensible such that re-adding unused functionality (such
-as cloud fronting) does not require us to refactor the code much.
+7. Make the design extensible such that re-adding unused functionality
+does not require us to refactor the code much.
 
 8. Functional equivalent with existing packages (modulo the existing
 functionality that is not relevant anymore).
@@ -65,8 +65,6 @@ overly complex code, which hampers maintenance.
 2. implementing algorithms such as logging in to the OONI backend and requesting
 tokens, which should be the responsibility of another package.
 
-3. implementing cloud fronting, which is not used anymore.
-
 ## Design
 
 This package supports the following operations:
@@ -78,13 +76,18 @@ type Config struct {
 	UserAgent string
 }
 
-func GetJSON[Output any](ctx context.Context, URL string, config *Config) (Output, error)
+type Endpoint struct {
+	URL string
+	Host string // optional for cloudfronting
+}
 
-func GetRaw(ctx context.Context, URL string, config *Config) ([]byte, error)
+func GetJSON[Output any](ctx context.Context, epnt *Endpoint, config *Config) (Output, error)
 
-func GetXML[Output any](ctx context.Context, URL string, config *Config) (Output, error)
+func GetRaw(ctx context.Context, epnt *Endpoint, config *Config) ([]byte, error)
 
-func PostJSON[Input, Output any](ctx context.Context, URL string, input Input, config *Config) (Output, error)
+func GetXML[Output any](ctx context.Context, epnt *Endpoint, config *Config) (Output, error)
+
+func PostJSON[Input, Output any](ctx context.Context, epnt *Endpoint, input Input, config *Config) (Output, error)
 ```
 
 (The `*Config` is the last argument because it is handy to create it inline when calling
@@ -141,7 +144,7 @@ They all construct the same `*Overlapped` struct, which looks like this:
 
 ```Go
 type Overlapped[Output any] struct {
-	RunFunc func(ctx context.Context, URL string) (Output, error)
+	RunFunc func(ctx context.Context, epnt *Endpoint) (Output, error)
 
 	ScheduleInterval time.Duration
 }
@@ -153,29 +156,32 @@ name (i.e., `NewOverlappedGetXML` configures `RunFunc` to run `GetXML`).
 Then, we define the following method:
 
 ```Go
-func (ovx *Overlapped[Output]) Run(ctx context.Context, URLs ...string) (Output, error)
+func (ovx *Overlapped[Output]) Run(ctx context.Context, epnts ...*Endpoint) (Output, error)
 ```
 
-This method starts N goroutines to issue the API calls with each URL. (A classic example is for
-the URLs to be `https://0.th.ooni.org/`, `https://1.th.ooni.org/` and so on.)
+This method starts N goroutines to issue the API calls with each endpoint URL. (A classic example
+is for the URLs to be `https://0.th.ooni.org/`, `https://1.th.ooni.org/` and so on.)
 
-By default, `ScheduleInterval` is 15 seconds. If the first URL does not provide a result
+By default, `ScheduleInterval` is 15 seconds. If the first endpoint URL does not provide a result
 within 15 seconds, we try the second one. That is, every 15 seconds, we will attempt using
-another URL, until there's a successful response or we run out of URLs.
+another endpoint URL, until there's a successful response or we run out of URLs.
 
 As soon as we have a successful response, we cancel all the other pending operations
 that may exist. Once all operations have terminated, we return to the caller.
 
 ### Extensibility
 
-We use the `Config` object to package common settings. Thus adding a new field (e.g., a
-custom `Host` header to implement cloud fronting), only means the following:
+We use the `Config` object to package common settings. Thus adding a new field, only means
+the following:
 
 1. Adding a new OPTIONAL field to `Config`.
 
 2. Honoring this field inside the internal implementation.
 
 _Et voilà_, this should allow for minimal efforts API upgrades.
+
+In fact, we used this strategy to easily add support for cloudfront in
+[probe-cli#1577](https://github.com/ooni/probe-cli/pull/1577).
 
 ### Functionality Comparison
 
@@ -196,7 +202,7 @@ We compare to `httpapi.Call` and `httpx.GetJSONWithQuery`.
 | join path and base URL    |   NO    |   yes   |  yes  |
 | append query to URL       |   NO    |   yes   |  yes  |
 | NewRequestWithContext     |   yes️   |   yes   |  yes  |
-| handle cloud front        |   NO    |   yes   |  yes  |
+| handle cloud front        |   yes   |   yes   |  yes  |
 | set Authorization         |   yes   |   yes   |  yes  |
 | set Accept                |   NO    |   yes   |  yes  |
 | set User-Agent            |   yes ️  |   yes   |  yes  |
@@ -223,13 +229,10 @@ Regarding all the other cases for which `GetJSON` is marked as "NO":
 code to join together a base URL, possibly including a base path, a path, and a query (and we're
 introducing the new `./internal/urlx` package to handle this situation).
 
-3. `GetJSON` does not handle cloud fronting because we don't use it. The design where the
-`Config` contains mandatory and optional fields would still allow doing that easily.
-
-4. Setting the `Accept` header does not seem to matter in out context because we mostly
+3. Setting the `Accept` header does not seem to matter in out context because we mostly
 call API for which there's no need for content negotiation.
 
-5. It's difficult to say whether a body size was exactly the amount specified for truncation
+4. It's difficult to say whether a body size was exactly the amount specified for truncation
 or the body has been truncated. While this is a corner case, it seems perhaps wiser to let
 the caller try parsing the body and failing if it is indeed truncated.
 
@@ -244,7 +247,7 @@ Here we're comparing to `httpapi.Call` and `httpx.FetchResource`.
 | join path and base URL    |   NO    |   yes   |  yes  |
 | append query to URL       |   NO    |   yes   |  yes  |
 | NewRequestWithContext     |   yes️   |   yes   |  yes  |
-| handle cloud front        |   NO    |   yes   |  yes  |
+| handle cloud front        |   yes   |   yes   |  yes  |
 | set Authorization         |   yes   |   yes   |  yes  |
 | set Accept                |   NO    |   yes   |  yes  |
 | set User-Agent            |   yes ️  |   yes   |  yes  |
@@ -272,7 +275,7 @@ two APIs, the caller would need to fetch a raw body and then manually parse XML.
 | join path and base URL    |   NO    |   N/A   |  N/A  |
 | append query to URL       |   NO    |   N/A   |  N/A  |
 | NewRequestWithContext     |   yes️   |   N/A   |  N/A  |
-| handle cloud front        |   NO    |   N/A   |  N/A  |
+| handle cloud front        |   yes   |   N/A   |  N/A  |
 | set Authorization         |   yes   |   N/A   |  N/A  |
 | set Accept                |   NO    |   N/A   |  N/A  |
 | set User-Agent            |   yes ️  |   N/A   |  N/A  |
@@ -302,7 +305,7 @@ Here we're comparing to `httpapi.Call` and `httpx.PostJSON`.
 | join path and base URL    |   NO     |   yes   |  yes  |
 | append query to URL       |   NO     |   yes   |  yes  |
 | NewRequestWithContext     |   yes️    |   yes   |  yes  |
-| handle cloud front        |   NO     |   yes   |  yes  |
+| handle cloud front        |   yes    |   yes   |  yes  |
 | set Authorization         |   yes    |   yes   |  yes  |
 | set Accept                |   NO     |   yes   |  yes  |
 | set Content-Type          |   yes    |   yes   |  yes  |
@@ -330,7 +333,7 @@ that is part of the same package, while in this package we marshal in `PostJSON`
 Consider the following code snippet:
 
 ```Go
-resp, err := httpclientx.GetJSON[*APIResponse](ctx, URL, config)
+resp, err := httpclientx.GetJSON[*APIResponse](ctx, epnt, config)
 runtimex.Assert((resp == nil && err != nil) || (resp != nil && err == nil), "ouch")
 ```
 

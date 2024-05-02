@@ -22,12 +22,15 @@ func ubuntuIPLookup(
 	resolver model.Resolver,
 ) (string, error) {
 	// read the HTTP response and parse as XML
-	v, err := httpclientx.GetXML[*ubuntuResponse](ctx, "https://geoip.ubuntu.com/lookup", &httpclientx.Config{
-		Authorization: "", // not needed
-		Client:        httpClient,
-		Logger:        logger,
-		UserAgent:     userAgent,
-	})
+	v, err := httpclientx.GetXML[*ubuntuResponse](
+		ctx,
+		httpclientx.NewEndpoint("https://geoip.ubuntu.com/lookup"),
+		&httpclientx.Config{
+			Authorization: "", // not needed
+			Client:        httpClient,
+			Logger:        logger,
+			UserAgent:     userAgent,
+		})
 
 	// handle the error case
 	if err != nil {

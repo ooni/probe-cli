@@ -29,11 +29,13 @@ func (c Client) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
 	// get response
 	//
 	// use a model.DiscardLogger to avoid logging config
-	return httpclientx.GetRaw(ctx, URL, &httpclientx.Config{
-		Authorization: s,
-		Client:        c.HTTPClient,
-		Host:          c.Host,
-		Logger:        model.DiscardLogger,
-		UserAgent:     c.UserAgent,
-	})
+	return httpclientx.GetRaw(
+		ctx,
+		httpclientx.NewEndpoint(URL).WithHostOverride(c.Host),
+		&httpclientx.Config{
+			Authorization: s,
+			Client:        c.HTTPClient,
+			Logger:        model.DiscardLogger,
+			UserAgent:     c.UserAgent,
+		})
 }
