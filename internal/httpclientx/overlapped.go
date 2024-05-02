@@ -153,6 +153,9 @@ func (ovx *Overlapped[Output]) Run(ctx context.Context, epnts ...*Endpoint) (Out
 func (ovx *Overlapped[Output]) transact(ctx context.Context, idx int, epnt *Endpoint, output chan<- *erroror.Value[Output]) {
 	// TODO(bassosimone): the index is currently unused but we need to use it
 	// soon to return back which endpoint actually succeded
+	// obtain the results
 	value, err := ovx.RunFunc(ctx, epnt)
+
+	// emit the results
 	output <- &erroror.Value[Output]{Err: err, Value: value}
 }
