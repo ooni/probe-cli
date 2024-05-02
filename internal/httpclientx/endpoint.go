@@ -29,7 +29,7 @@ func (e *Endpoint) WithHostOverride(host string) *Endpoint {
 	}
 }
 
-// NewEndpointFromModelOOAPIServices constructs a new [*Endpoint] instance from the
+// NewEndpointFromModelOOAPIServices constructs new [*Endpoint] instances from the
 // given [model.OOAPIService] instances, assigning the host header if "cloudfront", and
 // skipping all the entries that are neither "https" not "cloudfront".
 func NewEndpointFromModelOOAPIServices(svcs ...model.OOAPIService) (epnts []*Endpoint) {
