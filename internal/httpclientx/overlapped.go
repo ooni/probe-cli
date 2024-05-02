@@ -42,12 +42,34 @@ type Overlapped[Output any] struct {
 	//
 	// If you set it manually, you MUST modify it before calling [*Overlapped.Run].
 	ScheduleInterval time.Duration
+
+	// Semaphore is the MANDATORY channel working as a semaphore for cross-signaling
+	// between goroutines such that we don't wait the full ScheduleInterval if an
+	// attempt that was previously scheduled failed very early.
+	//
+	// This field is typically initialized by [NewOverlappedGetJSON], [NewOverlappedGetRaw],
+	// [NewOverlappedGetXML], or [NewOverlappedPostJSON] to be [OverlappedDefaultScheduleInterval].
+	//
+	// If you set it manually, initialize it with [NewOverlappedSemaphore] as follows:
+	//
+	//	overlapped.Semaphore = NewOverlappedSemaphore()
+	//
+	// Also, you MUST initialize this field before calling [*Overlapped.Run].
+	Semaphore chan any
+}
+
+// NewOverlappedSemaphore properly initializes a semaphore for the [*Overlapped] struct.
+func NewOverlappedSemaphore() (out chan any) {
+	out = make(chan any, 1)
+	out <- true
+	return
 }
 
 func newOverlappedWithFunc[Output any](fx func(context.Context, *Endpoint) (Output, error)) *Overlapped[Output] {
 	return &Overlapped[Output]{
 		RunFunc:          fx,
 		ScheduleInterval: OverlappedDefaultScheduleInterval,
+		Semaphore:        NewOverlappedSemaphore(),
 	}
 }
 
@@ -151,6 +173,8 @@ func (ovx *Overlapped[Output]) transact(ctx context.Context, idx int, epnt *Endp
 	case <-ctx.Done():
 		output <- &erroror.Value[Output]{Err: ctx.Err()}
 		return
+	case <-ovx.Semaphore:
+		// fallthrough
 	case <-timer.C:
 		// fallthrough
 	}
@@ -160,4 +184,7 @@ func (ovx *Overlapped[Output]) transact(ctx context.Context, idx int, epnt *Endp
 
 	// emit the results
 	output <- &erroror.Value[Output]{Err: err, Value: value}
+
+	// unblock the next goroutine
+	ovx.Semaphore <- true
 }

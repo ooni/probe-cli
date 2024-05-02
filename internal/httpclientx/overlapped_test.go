@@ -18,14 +18,25 @@ import (
 // an [*Overlapped], we do not necessarily need to test that each top-level constructor
 // are WAI; rather, we should focus on the mechanics of multiple URLs.
 
-func TestNewOverlappedPostJSONIsPerformingOverlappedCalls(t *testing.T) {
+func TestNewOverlappedPostJSONIsPerformingOverlappedCallsWithSemaphoreUsage(t *testing.T) {
 
+	//
 	// Scenario:
 	//
 	// - 0.th.ooni.org is SNI blocked
 	// - 1.th.ooni.org is SNI blocked
 	// - 2.th.ooni.org is SNI blocked
 	// - 3.th.ooni.org WAIs
+	//
+	// We expect to get a response from 3.th.ooni.org.
+	//
+	// Because the first three THs fail fast but the schedule interval is the default (i.e.,
+	// 15 seconds), we're testing whether the semaphore is allowing goroutines to start running
+	// ahead of their respective scheduled interval since previous goroutines failed.
+	//
+	// Note: before adding the semaphore, this test ran for 45 seconds. Now it runs in less
+	// than one second, since the semaphore provides fast fallback on immediate failure.
+	//
 
 	zeroTh := testingx.MustNewHTTPServer(testingx.HTTPHandlerReset())
 	defer zeroTh.Close()
@@ -60,9 +71,6 @@ func TestNewOverlappedPostJSONIsPerformingOverlappedCalls(t *testing.T) {
 		UserAgent:     model.HTTPHeaderUserAgent,
 	})
 
-	// make sure we set a low scheduling interval to make test faster
-	overlapped.ScheduleInterval = time.Second
-
 	// Now we issue the requests and check we're getting the correct response.
 
 	apiResp, err := overlapped.Run(
@@ -86,12 +94,18 @@ func TestNewOverlappedPostJSONIsPerformingOverlappedCalls(t *testing.T) {
 
 func TestNewOverlappedPostJSONCancelsPendingCalls(t *testing.T) {
 
+	//
 	// Scenario:
 	//
 	// - 0.th.ooni.org is WAI but slow
-	// - 1.th.ooni.org is WAI
-	// - 2.th.ooni.org is WAI
-	// - 3.th.ooni.org is WAI
+	// - 1.th.ooni.org is WAI but slow
+	// - 2.th.ooni.org is WAI but slow
+	// - 3.th.ooni.org is WAI but slow
+	//
+	// We expect to get a response from the first TH because it's the first goroutine
+	// that we schedule and, even if the wakeup signals for THs are random, the schedule
+	// interval is 15 seconds while we emit a wakeup signal every 0.25 seconds.
+	//
 
 	expectedResponse := &apiResponse{
 		Age:  41,
@@ -165,7 +179,7 @@ func TestNewOverlappedPostJSONCancelsPendingCalls(t *testing.T) {
 		NewEndpoint(threeTh.URL),
 	)
 
-	// we do not expect to see a failure because threeTh is WAI
+	// we do not expect to see a failure because all the THs are WAI
 	if err != nil {
 		t.Fatal(err)
 	}
