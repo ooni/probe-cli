@@ -10,8 +10,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// checkInFlagsState is the state created by check-in flags.
-const checkInFlagsState = "checkinflags.state"
+// CheckInFlagsState is the state created by check-in flags.
+const CheckInFlagsState = "checkinflags.state"
 
 // checkInFlagsWrapper is the struct wrapping the check-in flags.
 //
@@ -37,13 +37,13 @@ func Store(kvStore model.KeyValueStore, resp *model.OOAPICheckInResult) error {
 	}
 	data, err := json.Marshal(wrapper)
 	runtimex.PanicOnError(err, "json.Marshal unexpectedly failed")
-	return kvStore.Set(checkInFlagsState, data)
+	return kvStore.Set(CheckInFlagsState, data)
 }
 
 // GetFeatureFlag returns the value of a check-in feature flag. In case of any
 // error this function will always return a false value.
 func GetFeatureFlag(kvStore model.KeyValueStore, name string) bool {
-	data, err := kvStore.Get(checkInFlagsState)
+	data, err := kvStore.Get(CheckInFlagsState)
 	if err != nil {
 		return false // as documented
 	}
