@@ -167,6 +167,17 @@ func (ovx *Overlapped[Output]) transact(ctx context.Context, idx int, epnt *Endp
 	// wait for our time to start
 	//
 	// add one nanosecond to make sure the delay is always positive
+	//
+	// starting conditions:
+	//
+	// 1. time timer has fired;
+	//
+	// 2. a previous goroutine finished running.
+	//
+	// If the previous goroutine that finished running succeeded, there is a race
+	// between the semaphore being readbale and the context being done. When the
+	// semaphore wins, we start performing an HTTP round trip that will eventually
+	// fail because of the canceled context.
 	timer := time.NewTimer(time.Duration(idx)*ovx.ScheduleInterval + time.Nanosecond)
 	defer timer.Stop()
 	select {
