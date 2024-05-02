@@ -7,6 +7,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/webconnectivityalgo"
 )
 
 // Redirect to types defined inside the model package
@@ -23,7 +24,7 @@ func Control(
 	ctx context.Context, sess model.ExperimentSession,
 	testhelpers []model.OOAPIService, creq ControlRequest) (ControlResponse, *model.OOAPIService, error) {
 	sess.Logger().Infof("control for %s...", creq.HTTPRequest)
-	out, idx, err := sess.CallWebConnectivityTestHelper(ctx, &creq, testhelpers)
+	out, idx, err := webconnectivityalgo.CallWebConnectivityTestHelper(ctx, &creq, testhelpers, sess)
 	sess.Logger().Infof("control for %s... %+v", creq.HTTPRequest, model.ErrorToStringOrOK(err))
 	if err != nil {
 		// make sure error is wrapped

@@ -12,6 +12,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/webconnectivityalgo"
 )
 
 // EndpointMeasurementsStarter is used by Control to start extra
@@ -108,7 +109,7 @@ func (c *Control) Run(parentCtx context.Context) {
 	)
 
 	// issue the control request and wait for the response
-	cresp, idx, err := c.Session.CallWebConnectivityTestHelper(opCtx, creq, c.TestHelpers)
+	cresp, idx, err := webconnectivityalgo.CallWebConnectivityTestHelper(opCtx, creq, c.TestHelpers, c.Session)
 	if err != nil {
 		// make sure error is wrapped
 		err = netxlite.NewTopLevelGenericErrWrapper(err)

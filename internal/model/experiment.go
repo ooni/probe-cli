@@ -15,26 +15,10 @@ var ErrNoAvailableTestHelpers = errors.New("no available helpers")
 
 // ExperimentSession is the experiment's view of a session.
 type ExperimentSession interface {
-	// CallWebConnectivityTestHelper invokes the Web Connectivity test helper with the
-	// given request object and the given list of available test helpers.
-	//
-	// If the list of test helpers is empty this function immediately returns nil, zero,
-	// and the [ErrNoAvailableTestHelpers] error to the caller.
-	//
-	// In case of any other failure, this function returns nil, zero, and an error
-	//
-	// On success, it returns the response, the used TH index, and nil.
-	//
-	// Note that the returned error won't be wrapped, so you need to wrap it yourself.
-	CallWebConnectivityTestHelper(
-		ctx context.Context, request *THRequest, ths []OOAPIService) (*THResponse, int, error)
-
 	// GetTestHelpersByName returns a list of test helpers with the given name.
 	GetTestHelpersByName(name string) ([]OOAPIService, bool)
 
 	// DefaultHTTPClient returns the default HTTPClient used by the session.
-	//
-	// Deprecated: Web Connectivity should use CallWebConnectivityTestHelper instead.
 	DefaultHTTPClient() HTTPClient
 
 	// FetchPsiphonConfig returns psiphon's config as a serialized JSON or an error.
