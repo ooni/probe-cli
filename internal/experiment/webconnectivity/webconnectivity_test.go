@@ -206,7 +206,7 @@ func TestMeasureWithNoAvailableTestHelpers(t *testing.T) {
 		Session:     sess,
 	}
 	err := measurer.Run(ctx, args)
-	if !errors.Is(err, webconnectivity.ErrNoAvailableTestHelpers) {
+	if !errors.Is(err, model.ErrNoAvailableTestHelpers) {
 		t.Fatal(err)
 	}
 	tk := measurement.TestKeys.(*webconnectivity.TestKeys)
