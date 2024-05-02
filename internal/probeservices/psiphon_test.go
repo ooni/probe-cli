@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -70,6 +71,55 @@ func TestFetchPsiphonConfig(t *testing.T) {
 
 		// create a probeservices client
 		client := newclient()
+
+		// override the HTTP client so we speak with our local server rather than the true backend
+		client.HTTPClient = &mocks.HTTPClient{
+			MockDo: func(req *http.Request) (*http.Response, error) {
+				URL := runtimex.Try1(url.Parse(srv.URL))
+				req.URL.Scheme = URL.Scheme
+				req.URL.Host = URL.Host
+				return http.DefaultClient.Do(req)
+			},
+			MockCloseIdleConnections: func() {
+				http.DefaultClient.CloseIdleConnections()
+			},
+		}
+
+		// then we can try to fetch the config
+		data, err := psiphonflow(t, client)
+
+		// we do not expect an error here
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// the config is bytes but we want to make sure we can parse it
+		var config interface{}
+		if err := json.Unmarshal(data, &config); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("we can use cloudfronting", func(t *testing.T) {
+		// create state for emulating the OONI backend
+		state := &testingx.OONIBackendWithLoginFlow{}
+		mux := state.NewMux()
+
+		// make sure we return something that is JSON parseable
+		state.SetPsiphonConfig([]byte(`{}`))
+
+		// expose the state via HTTP
+		srv := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			runtimex.Assert(r.Host == "www.cloudfront.com", "invalid r.Host")
+			mux.ServeHTTP(w, r)
+		}))
+		defer srv.Close()
+
+		// create a probeservices client
+		client := newclient()
+
+		// make sure we're using cloudfronting
+		client.Host = "www.cloudfront.com"
 
 		// override the HTTP client so we speak with our local server rather than the true backend
 		client.HTTPClient = &mocks.HTTPClient{
@@ -196,6 +246,59 @@ func TestFetchPsiphonConfig(t *testing.T) {
 		// we expect data to be zero length
 		if len(data) != 0 {
 			t.Fatal("expected zero length data")
+		}
+	})
+
+	t.Run("is not logging the response body", func(t *testing.T) {
+		// create state for emulating the OONI backend
+		state := &testingx.OONIBackendWithLoginFlow{}
+
+		// make sure we return something that is JSON parseable
+		state.SetPsiphonConfig([]byte(`{}`))
+
+		// expose the state via HTTP
+		srv := testingx.MustNewHTTPServer(state.NewMux())
+		defer srv.Close()
+
+		// create a probeservices client
+		client := newclient()
+
+		// create and use a logger for collecting logs
+		logger := &testingx.Logger{}
+		client.Logger = logger
+
+		// override the HTTP client so we speak with our local server rather than the true backend
+		client.HTTPClient = &mocks.HTTPClient{
+			MockDo: func(req *http.Request) (*http.Response, error) {
+				URL := runtimex.Try1(url.Parse(srv.URL))
+				req.URL.Scheme = URL.Scheme
+				req.URL.Host = URL.Host
+				return http.DefaultClient.Do(req)
+			},
+			MockCloseIdleConnections: func() {
+				http.DefaultClient.CloseIdleConnections()
+			},
+		}
+
+		// then we can try to fetch the config
+		data, err := psiphonflow(t, client)
+
+		// we do not expect an error here
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// the config is bytes but we want to make sure we can parse it
+		var config interface{}
+		if err := json.Unmarshal(data, &config); err != nil {
+			t.Fatal(err)
+		}
+
+		// assert that there are no logs
+		//
+		// the register, login, and psiphon API should not log their bodies
+		if diff := cmp.Diff([]string{}, logger.AllLines()); diff != "" {
+			t.Fatal(diff)
 		}
 	})
 }

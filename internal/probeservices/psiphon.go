@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ooni/probe-cli/v3/internal/httpclientx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/urlx"
 )
 
@@ -26,10 +27,13 @@ func (c Client) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
 	}
 
 	// get response
+	//
+	// use a model.DiscardLogger to avoid logging config
 	return httpclientx.GetRaw(ctx, URL, &httpclientx.Config{
 		Authorization: s,
 		Client:        c.HTTPClient,
-		Logger:        c.Logger,
+		Host:          c.Host,
+		Logger:        model.DiscardLogger,
 		UserAgent:     c.UserAgent,
 	})
 }

@@ -53,6 +53,10 @@ func do(ctx context.Context, req *http.Request, config *Config) ([]byte, error) 
 	// say that we're accepting gzip encoded bodies
 	req.Header.Set("Accept-Encoding", "gzip")
 
+	// OPTIONALLY allow for cloudfronting (the default in net/http is for
+	// the req.Host to be empty and to use req.URL.Host)
+	req.Host = config.Host
+
 	// get the response
 	resp, err := config.Client.Do(req)
 

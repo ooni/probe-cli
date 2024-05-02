@@ -23,6 +23,7 @@ func (c *Client) GetTestHelpers(ctx context.Context) (map[string][]model.OOAPISe
 	// get the response
 	return httpclientx.GetJSON[map[string][]model.OOAPIService](ctx, URL, &httpclientx.Config{
 		Client:    c.HTTPClient,
+		Host:      c.Host,
 		Logger:    c.Logger,
 		UserAgent: c.UserAgent,
 	})

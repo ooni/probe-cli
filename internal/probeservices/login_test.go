@@ -97,6 +97,60 @@ func TestMaybeLogin(t *testing.T) {
 		}
 	})
 
+	t.Run("we can use cloudfronting", func(t *testing.T) {
+		// create state for emulating the OONI backend
+		state := &testingx.OONIBackendWithLoginFlow{}
+		mux := state.NewMux()
+
+		// expose the state via HTTP
+		srv := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			runtimex.Assert(r.Host == "www.cloudfront.com", "invalid r.Host")
+			mux.ServeHTTP(w, r)
+		}))
+		defer srv.Close()
+
+		// create a probeservices client
+		client := newclient()
+
+		// make sure we're using cloudfronting
+		client.Host = "www.cloudfront.com"
+
+		// override the HTTP client so we speak with our local server rather than the true backend
+		client.HTTPClient = &mocks.HTTPClient{
+			MockDo: func(req *http.Request) (*http.Response, error) {
+				URL := runtimex.Try1(url.Parse(srv.URL))
+				req.URL.Scheme = URL.Scheme
+				req.URL.Host = URL.Host
+				return http.DefaultClient.Do(req)
+			},
+			MockCloseIdleConnections: func() {
+				http.DefaultClient.CloseIdleConnections()
+			},
+		}
+
+		// we need to register first because we don't have state yet
+		if err := client.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
+			t.Fatal(err)
+		}
+
+		// now we try to login and get a token
+		if err := client.MaybeLogin(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+
+		// do this again, and later on we'll verify that we
+		// did actually issue just a single login call
+		if err := client.MaybeLogin(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+
+		// make sure we did call login just once: the second call
+		// should not invoke login because we have good state
+		if client.LoginCalls.Load() != 1 {
+			t.Fatal("called login API too many times")
+		}
+	})
+
 	t.Run("reports an error when the connection is reset", func(t *testing.T) {
 		// create quick and dirty server to serve the response
 		srv := testingx.MustNewHTTPServer(testingx.HTTPHandlerReset())

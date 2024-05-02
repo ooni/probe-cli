@@ -32,10 +32,13 @@ func (c Client) FetchTorTargets(ctx context.Context, cc string) (map[string]mode
 	}
 
 	// get response
+	//
+	// use a model.DiscardLogger to avoid logging bridges
 	return httpclientx.GetJSON[map[string]model.OOAPITorTarget](ctx, URL, &httpclientx.Config{
 		Authorization: s,
 		Client:        c.HTTPClient,
-		Logger:        c.Logger,
+		Host:          c.Host,
+		Logger:        model.DiscardLogger,
 		UserAgent:     c.UserAgent,
 	})
 }
