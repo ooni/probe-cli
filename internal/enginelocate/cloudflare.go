@@ -18,12 +18,15 @@ func cloudflareIPLookup(
 	resolver model.Resolver,
 ) (string, error) {
 	// get the raw response body
-	data, err := httpclientx.GetRaw(ctx, "https://www.cloudflare.com/cdn-cgi/trace", &httpclientx.Config{
-		Authorization: "", // not needed
-		Client:        httpClient,
-		Logger:        logger,
-		UserAgent:     userAgent,
-	})
+	data, err := httpclientx.GetRaw(
+		ctx,
+		httpclientx.NewEndpoint("https://www.cloudflare.com/cdn-cgi/trace"),
+		&httpclientx.Config{
+			Authorization: "", // not needed
+			Client:        httpClient,
+			Logger:        logger,
+			UserAgent:     userAgent,
+		})
 
 	// handle the error case
 	if err != nil {

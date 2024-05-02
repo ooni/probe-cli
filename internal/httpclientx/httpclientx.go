@@ -41,7 +41,7 @@ func newLimitReader(r io.Reader) io.Reader {
 }
 
 // do is the internal function to finish preparing the request and getting a raw response.
-func do(ctx context.Context, req *http.Request, config *Config) ([]byte, error) {
+func do(ctx context.Context, req *http.Request, epnt *Endpoint, config *Config) ([]byte, error) {
 	// optionally assign authorization
 	if value := config.Authorization; value != "" {
 		req.Header.Set("Authorization", value)
@@ -55,7 +55,7 @@ func do(ctx context.Context, req *http.Request, config *Config) ([]byte, error) 
 
 	// OPTIONALLY allow for cloudfronting (the default in net/http is for
 	// the req.Host to be empty and to use req.URL.Host)
-	req.Host = config.Host
+	req.Host = epnt.Host
 
 	// get the response
 	resp, err := config.Client.Do(req)

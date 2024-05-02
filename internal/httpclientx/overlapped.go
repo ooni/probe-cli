@@ -26,14 +26,14 @@ const OverlappedDefaultScheduleInterval = 15 * time.Second
 // call to start while the previous one is still in progress and very slowly downloading
 // a response. A future implementation SHOULD probably account for this possibility.
 type Overlapped[Output any] struct {
-	// RunFunc is the MANDATORY function that fetches the given URL.
+	// RunFunc is the MANDATORY function that fetches the given [*Endpoint].
 	//
 	// This field is typically initialized by [NewOverlappedGetJSON], [NewOverlappedGetRaw],
 	// [NewOverlappedGetXML], or [NewOverlappedPostJSON] to be the proper function that
 	// makes sense for the operation that you requested with the constructor.
 	//
 	// If you set it manually, you MUST modify it before calling [*Overlapped.Run].
-	RunFunc func(ctx context.Context, URL string) (Output, error)
+	RunFunc func(ctx context.Context, epnt *Endpoint) (Output, error)
 
 	// ScheduleInterval is the MANDATORY scheduling interval.
 	//
@@ -44,7 +44,7 @@ type Overlapped[Output any] struct {
 	ScheduleInterval time.Duration
 }
 
-func newOverlappedWithFunc[Output any](fx func(context.Context, string) (Output, error)) *Overlapped[Output] {
+func newOverlappedWithFunc[Output any](fx func(context.Context, *Endpoint) (Output, error)) *Overlapped[Output] {
 	return &Overlapped[Output]{
 		RunFunc:          fx,
 		ScheduleInterval: OverlappedDefaultScheduleInterval,
@@ -53,29 +53,29 @@ func newOverlappedWithFunc[Output any](fx func(context.Context, string) (Output,
 
 // NewOverlappedGetJSON constructs a [*Overlapped] for calling [GetJSON] with multiple URLs.
 func NewOverlappedGetJSON[Output any](config *Config) *Overlapped[Output] {
-	return newOverlappedWithFunc(func(ctx context.Context, URL string) (Output, error) {
-		return getJSON[Output](ctx, URL, config)
+	return newOverlappedWithFunc(func(ctx context.Context, epnt *Endpoint) (Output, error) {
+		return getJSON[Output](ctx, epnt, config)
 	})
 }
 
 // NewOverlappedGetRaw constructs a [*Overlapped] for calling [GetRaw] with multiple URLs.
 func NewOverlappedGetRaw(config *Config) *Overlapped[[]byte] {
-	return newOverlappedWithFunc(func(ctx context.Context, URL string) ([]byte, error) {
-		return getRaw(ctx, URL, config)
+	return newOverlappedWithFunc(func(ctx context.Context, epnt *Endpoint) ([]byte, error) {
+		return getRaw(ctx, epnt, config)
 	})
 }
 
 // NewOverlappedGetXML constructs a [*Overlapped] for calling [GetXML] with multiple URLs.
 func NewOverlappedGetXML[Output any](config *Config) *Overlapped[Output] {
-	return newOverlappedWithFunc(func(ctx context.Context, URL string) (Output, error) {
-		return getXML[Output](ctx, URL, config)
+	return newOverlappedWithFunc(func(ctx context.Context, epnt *Endpoint) (Output, error) {
+		return getXML[Output](ctx, epnt, config)
 	})
 }
 
 // NewOverlappedPostJSON constructs a [*Overlapped] for calling [PostJSON] with multiple URLs.
 func NewOverlappedPostJSON[Input, Output any](input Input, config *Config) *Overlapped[Output] {
-	return newOverlappedWithFunc(func(ctx context.Context, URL string) (Output, error) {
-		return postJSON[Input, Output](ctx, URL, input, config)
+	return newOverlappedWithFunc(func(ctx context.Context, epnt *Endpoint) (Output, error) {
+		return postJSON[Input, Output](ctx, epnt, input, config)
 	})
 }
 
@@ -89,7 +89,7 @@ var ErrGenericOverlappedFailure = errors.New("overlapped: generic failure")
 //
 // This implementation creates a new goroutine for each provided URL under the assumption that
 // the overall number of URLs is small. A future revision would address this issue.
-func (ovx *Overlapped[Output]) Run(ctx context.Context, URLs ...string) (Output, error) {
+func (ovx *Overlapped[Output]) Run(ctx context.Context, epnts ...*Endpoint) (Output, error) {
 	// create cancellable context for early cancellation
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -98,8 +98,8 @@ func (ovx *Overlapped[Output]) Run(ctx context.Context, URLs ...string) (Output,
 	output := make(chan *erroror.Value[Output])
 
 	// schedule a measuring goroutine per URL.
-	for idx := 0; idx < len(URLs); idx++ {
-		go ovx.transact(ctx, idx, URLs[idx], output)
+	for idx := 0; idx < len(epnts); idx++ {
+		go ovx.transact(ctx, idx, epnts[idx], output)
 	}
 
 	// we expect to see exactly a response for each goroutine
@@ -107,7 +107,7 @@ func (ovx *Overlapped[Output]) Run(ctx context.Context, URLs ...string) (Output,
 		firstOutput *Output
 		errorv      []error
 	)
-	for idx := 0; idx < len(URLs); idx++ {
+	for idx := 0; idx < len(epnts); idx++ {
 		// get a result from one of the goroutines
 		result := <-output
 
@@ -141,7 +141,7 @@ func (ovx *Overlapped[Output]) Run(ctx context.Context, URLs ...string) (Output,
 }
 
 // transact performs an HTTP transaction with the given URL and writes results to the output channel.
-func (ovx *Overlapped[Output]) transact(ctx context.Context, idx int, URL string, output chan<- *erroror.Value[Output]) {
+func (ovx *Overlapped[Output]) transact(ctx context.Context, idx int, epnt *Endpoint, output chan<- *erroror.Value[Output]) {
 	// wait for our time to start
 	//
 	// add one nanosecond to make sure the delay is always positive
@@ -156,7 +156,7 @@ func (ovx *Overlapped[Output]) transact(ctx context.Context, idx int, URL string
 	}
 
 	// obtain the results
-	value, err := ovx.RunFunc(ctx, URL)
+	value, err := ovx.RunFunc(ctx, epnt)
 
 	// emit the results
 	output <- &erroror.Value[Output]{Err: err, Value: value}

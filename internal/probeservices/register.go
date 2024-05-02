@@ -38,9 +38,11 @@ func (c Client) MaybeRegister(ctx context.Context, metadata model.OOAPIProbeMeta
 	}
 
 	resp, err := httpclientx.PostJSON[*model.OOAPIRegisterRequest, *model.OOAPIRegisterResponse](
-		ctx, URL, req, &httpclientx.Config{
+		ctx,
+		httpclientx.NewEndpoint(URL).WithHostOverride(c.Host),
+		req,
+		&httpclientx.Config{
 			Client:    c.HTTPClient,
-			Host:      c.Host,
 			Logger:    model.DiscardLogger,
 			UserAgent: c.UserAgent,
 		},

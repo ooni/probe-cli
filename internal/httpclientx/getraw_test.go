@@ -18,7 +18,7 @@ func TestGetRaw(t *testing.T) {
 
 		rawrespbody, err := GetRaw(
 			context.Background(),
-			"\t", // <- invalid URL that we cannot parse
+			NewEndpoint("\t"), // <- invalid URL that we cannot parse
 			&Config{
 				Client:    http.DefaultClient,
 				Logger:    model.DiscardLogger,
@@ -47,11 +47,14 @@ func TestGetRaw(t *testing.T) {
 		}))
 		defer server.Close()
 
-		rawrespbody, err := GetRaw(context.Background(), server.URL, &Config{
-			Client:    http.DefaultClient,
-			Logger:    model.DiscardLogger,
-			UserAgent: model.HTTPHeaderUserAgent,
-		})
+		rawrespbody, err := GetRaw(
+			context.Background(),
+			NewEndpoint(server.URL),
+			&Config{
+				Client:    http.DefaultClient,
+				Logger:    model.DiscardLogger,
+				UserAgent: model.HTTPHeaderUserAgent,
+			})
 
 		t.Log(rawrespbody)
 		t.Log(err)
@@ -88,13 +91,15 @@ func TestGetRawHeadersOkay(t *testing.T) {
 	defer server.Close()
 
 	// send the request and receive the response
-	rawresp, err := GetRaw(context.Background(), server.URL, &Config{
-		Authorization: "scribai",
-		Client:        http.DefaultClient,
-		Host:          "www.cloudfront.com",
-		Logger:        model.DiscardLogger,
-		UserAgent:     model.HTTPHeaderUserAgent,
-	})
+	rawresp, err := GetRaw(
+		context.Background(),
+		NewEndpoint(server.URL).WithHostOverride("www.cloudfront.com"),
+		&Config{
+			Authorization: "scribai",
+			Client:        http.DefaultClient,
+			Logger:        model.DiscardLogger,
+			UserAgent:     model.HTTPHeaderUserAgent,
+		})
 
 	// we do not expect to see an error here
 	if err != nil {
@@ -144,11 +149,14 @@ func TestGetRawLoggingOkay(t *testing.T) {
 	// instantiate a logger that collects logs
 	logger := &testingx.Logger{}
 
-	rawrespbody, err := GetRaw(context.Background(), server.URL, &Config{
-		Client:    http.DefaultClient,
-		Logger:    logger,
-		UserAgent: model.HTTPHeaderUserAgent,
-	})
+	rawrespbody, err := GetRaw(
+		context.Background(),
+		NewEndpoint(server.URL),
+		&Config{
+			Client:    http.DefaultClient,
+			Logger:    logger,
+			UserAgent: model.HTTPHeaderUserAgent,
+		})
 
 	t.Log(rawrespbody)
 	t.Log(err)
