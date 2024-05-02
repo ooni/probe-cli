@@ -8,9 +8,11 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivity"
+	"github.com/ooni/probe-cli/v3/internal/httpapi"
 	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/ooapi"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -107,8 +109,14 @@ func (c *Control) Run(parentCtx context.Context) {
 		c.TestHelpers,
 	)
 
+	// create an httpapi sequence caller
+	seqCaller := httpapi.NewSequenceCaller(
+		ooapi.NewDescriptorTH(creq),
+		httpapi.NewEndpointList(c.Session.DefaultHTTPClient(), c.Logger, c.Session.UserAgent(), c.TestHelpers...)...,
+	)
+
 	// issue the control request and wait for the response
-	cresp, idx, err := c.Session.CallWebConnectivityTestHelper(opCtx, creq, c.TestHelpers)
+	cresp, idx, err := seqCaller.Call(opCtx)
 	if err != nil {
 		// make sure error is wrapped
 		err = netxlite.NewTopLevelGenericErrWrapper(err)

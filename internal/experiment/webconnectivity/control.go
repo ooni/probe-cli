@@ -4,8 +4,10 @@ import (
 	"context"
 
 	"github.com/ooni/probe-cli/v3/internal/geoipx"
+	"github.com/ooni/probe-cli/v3/internal/httpapi"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/ooapi"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -22,8 +24,12 @@ type (
 func Control(
 	ctx context.Context, sess model.ExperimentSession,
 	testhelpers []model.OOAPIService, creq ControlRequest) (ControlResponse, *model.OOAPIService, error) {
+	seqCaller := httpapi.NewSequenceCaller(
+		ooapi.NewDescriptorTH(&creq),
+		httpapi.NewEndpointList(sess.DefaultHTTPClient(), sess.Logger(), sess.UserAgent(), testhelpers...)...,
+	)
 	sess.Logger().Infof("control for %s...", creq.HTTPRequest)
-	out, idx, err := sess.CallWebConnectivityTestHelper(ctx, &creq, testhelpers)
+	out, idx, err := seqCaller.Call(ctx)
 	sess.Logger().Infof("control for %s... %+v", creq.HTTPRequest, model.ErrorToStringOrOK(err))
 	if err != nil {
 		// make sure error is wrapped
