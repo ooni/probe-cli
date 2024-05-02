@@ -42,34 +42,12 @@ type Overlapped[Output any] struct {
 	//
 	// If you set it manually, you MUST modify it before calling [*Overlapped.Run].
 	ScheduleInterval time.Duration
-
-	// Semaphore is the MANDATORY channel working as a semaphore for cross-signaling
-	// between goroutines such that we don't wait the full ScheduleInterval if an
-	// attempt that was previously scheduled failed very early.
-	//
-	// This field is typically initialized by [NewOverlappedGetJSON], [NewOverlappedGetRaw],
-	// [NewOverlappedGetXML], or [NewOverlappedPostJSON] using [NewOverlappedSemaphore].
-	//
-	// If you set it manually, initialize it with [NewOverlappedSemaphore] as follows:
-	//
-	//	overlapped.Semaphore = NewOverlappedSemaphore()
-	//
-	// If you set it manually, you MUST modify it before calling [*Overlapped.Run].
-	Semaphore chan any
-}
-
-// NewOverlappedSemaphore properly initializes a semaphore for the [*Overlapped] struct.
-func NewOverlappedSemaphore() (out chan any) {
-	out = make(chan any, 1)
-	out <- true
-	return
 }
 
 func newOverlappedWithFunc[Output any](fx func(context.Context, *Endpoint) (Output, error)) *Overlapped[Output] {
 	return &Overlapped[Output]{
 		RunFunc:          fx,
 		ScheduleInterval: OverlappedDefaultScheduleInterval,
-		Semaphore:        NewOverlappedSemaphore(),
 	}
 }
 
@@ -106,11 +84,6 @@ var ErrGenericOverlappedFailure = errors.New("overlapped: generic failure")
 
 // Run runs the overlapped operations, returning the result of the first operation
 // that succeeds and otherwise returning an error describing what happened.
-//
-// # Limitations
-//
-// This implementation creates a new goroutine for each provided URL under the assumption that
-// the overall number of URLs is small. A future revision would address this issue.
 func (ovx *Overlapped[Output]) Run(ctx context.Context, epnts ...*Endpoint) (Output, error) {
 	// create cancellable context for early cancellation
 	ctx, cancel := context.WithCancel(ctx)
@@ -119,38 +92,51 @@ func (ovx *Overlapped[Output]) Run(ctx context.Context, epnts ...*Endpoint) (Out
 	// construct channel for collecting the results
 	output := make(chan *erroror.Value[Output])
 
-	// schedule a measuring goroutine per URL.
-	for idx := 0; idx < len(epnts); idx++ {
-		go ovx.transact(ctx, idx, epnts[idx], output)
-	}
+	// create ticker for scheduling subsequent attempts
+	ticker := time.NewTicker(ovx.ScheduleInterval)
+	defer ticker.Stop()
 
-	// we expect to see exactly a response for each goroutine
-	var (
-		firstOutput *Output
-		errorv      []error
-	)
-	for idx := 0; idx < len(epnts); idx++ {
-		// get a result from one of the goroutines
-		result := <-output
+	// create index for the next endpoint to try
+	idx := 0
 
-		// handle the error case
-		if result.Err != nil {
-			errorv = append(errorv, result.Err)
-			continue
+	// create vector for collecting results
+	results := []*erroror.Value[Output]{}
+
+	// keep looping until we have results for each endpoints
+	for len(results) < len(epnts) {
+
+		// if possible, start and advance the index, when we've gone past
+		// the index, we'll just keep waiting for channel events.
+		if idx < len(epnts) {
+			go ovx.transact(ctx, idx, epnts[idx], output)
+			idx++
 		}
 
-		// possibly record the first success
-		if firstOutput == nil {
-			firstOutput = &result.Value
-		}
+		select {
+		// this event means that a child goroutine completed
+		// so we store the result and cancel the context on the
+		// first success, to avoid doing duplicate work
+		case result := <-output:
+			results = append(results, result)
+			if result.Err == nil {
+				cancel()
+			}
 
-		// make sure we interrupt all the other goroutines
-		cancel()
+		// this means the ticker ticked, so we should loop again and
+		// attempt another endpoint (if we've tried all of them ticking
+		// is not going to hurt us anyway)
+		case <-ticker.C:
+		}
 	}
 
-	// handle the case of success
-	if firstOutput != nil {
-		return *firstOutput, nil
+	// postprocess the results to check for success and
+	// aggregate all the errors that occurred
+	errorv := []error{}
+	for _, result := range results {
+		if result.Err == nil {
+			return result.Value, nil
+		}
+		errorv = append(errorv, result.Err)
 	}
 
 	// handle the case where there's no error
@@ -163,39 +149,7 @@ func (ovx *Overlapped[Output]) Run(ctx context.Context, epnts ...*Endpoint) (Out
 }
 
 // transact performs an HTTP transaction with the given URL and writes results to the output channel.
-func (ovx *Overlapped[Output]) transact(ctx context.Context, idx int, epnt *Endpoint, output chan<- *erroror.Value[Output]) {
-	// wait for our time to start
-	//
-	// add one nanosecond to make sure the delay is always positive
-	//
-	// starting conditions:
-	//
-	// 1. time timer has fired;
-	//
-	// 2. a previous goroutine finished running.
-	//
-	// If the previous goroutine that finished running succeeded, there is a race
-	// between the semaphore being readbale and the context being done. When the
-	// semaphore wins, we start performing an HTTP round trip that will eventually
-	// fail because of the canceled context.
-	timer := time.NewTimer(time.Duration(idx)*ovx.ScheduleInterval + time.Nanosecond)
-	defer timer.Stop()
-	select {
-	case <-ctx.Done():
-		output <- &erroror.Value[Output]{Err: ctx.Err()}
-		return
-	case <-ovx.Semaphore:
-		// fallthrough
-	case <-timer.C:
-		// fallthrough
-	}
-
-	// obtain the results
+func (ovx *Overlapped[Output]) transact(ctx context.Context, _ int, epnt *Endpoint, output chan<- *erroror.Value[Output]) {
 	value, err := ovx.RunFunc(ctx, epnt)
-
-	// emit the results
 	output <- &erroror.Value[Output]{Err: err, Value: value}
-
-	// unblock the next goroutine
-	ovx.Semaphore <- true
 }
