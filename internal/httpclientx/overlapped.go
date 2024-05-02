@@ -105,7 +105,7 @@ func (ovx *Overlapped[Output]) Run(ctx context.Context, epnts ...*Endpoint) (Out
 	// keep looping until we have results for each endpoints
 	for len(results) < len(epnts) {
 
-		// if there are more endpoints to try, spawn a goroutine to try
+		// if there are more endpoints to try, spawn a goroutine to try,
 		// otherwise, we can safely stop ticking
 		if idx < len(epnts) {
 			go ovx.transact(ctx, idx, epnts[idx], output)
