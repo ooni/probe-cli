@@ -4,11 +4,7 @@ import "github.com/ooni/probe-cli/v3/internal/model"
 
 // Endpoint is an HTTP endpoint.
 //
-<<<<<<< HEAD
-// The zero value is invalid; the zero value is invalid, construct using [NewEndpoint].
-=======
 // The zero value is invalid; construct using [NewEndpoint].
->>>>>>> master
 type Endpoint struct {
 	// URL is the MANDATORY endpoint URL.
 	URL string
