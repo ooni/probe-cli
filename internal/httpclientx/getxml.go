@@ -15,18 +15,18 @@ import (
 //
 // - ctx is the cancellable context;
 //
-// - URL is the URL to use;
+// - epnt is the HTTP [*Endpoint] to use;
 //
 // - config is the config to use.
 //
 // This function either returns an error or a valid Output.
-func GetXML[Output any](ctx context.Context, URL string, config *Config) (Output, error) {
-	return NewOverlappedGetXML[Output](config).Run(ctx, URL)
+func GetXML[Output any](ctx context.Context, epnt *Endpoint, config *Config) (Output, error) {
+	return NewOverlappedGetXML[Output](config).Run(ctx, epnt)
 }
 
-func getXML[Output any](ctx context.Context, URL string, config *Config) (Output, error) {
+func getXML[Output any](ctx context.Context, epnt *Endpoint, config *Config) (Output, error) {
 	// read the raw body
-	rawrespbody, err := GetRaw(ctx, URL, config)
+	rawrespbody, err := GetRaw(ctx, epnt, config)
 
 	// handle the case of error
 	if err != nil {

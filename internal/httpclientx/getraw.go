@@ -15,22 +15,22 @@ import (
 //
 // - ctx is the cancellable context;
 //
-// - config is the config to use;
+// - epnt is the HTTP [*Endpoint] to use;
 //
-// - URL is the URL to use.
+// - config is the config to use.
 //
 // This function either returns an error or a valid Output.
-func GetRaw(ctx context.Context, URL string, config *Config) ([]byte, error) {
-	return NewOverlappedGetRaw(config).Run(ctx, URL)
+func GetRaw(ctx context.Context, epnt *Endpoint, config *Config) ([]byte, error) {
+	return NewOverlappedGetRaw(config).Run(ctx, epnt)
 }
 
-func getRaw(ctx context.Context, URL string, config *Config) ([]byte, error) {
+func getRaw(ctx context.Context, epnt *Endpoint, config *Config) ([]byte, error) {
 	// construct the request to use
-	req, err := http.NewRequestWithContext(ctx, "GET", URL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", epnt.URL, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	// get raw response body
-	return do(ctx, req, config)
+	return do(ctx, req, epnt, config)
 }

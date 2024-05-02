@@ -22,11 +22,14 @@ func TestGetXML(t *testing.T) {
 		defer server.Close()
 
 		// invoke the API
-		resp, err := GetXML[*apiResponse](context.Background(), server.URL, &Config{
-			Client:    http.DefaultClient,
-			Logger:    model.DiscardLogger,
-			UserAgent: model.HTTPHeaderUserAgent,
-		})
+		resp, err := GetXML[*apiResponse](
+			context.Background(),
+			NewEndpoint(server.URL),
+			&Config{
+				Client:    http.DefaultClient,
+				Logger:    model.DiscardLogger,
+				UserAgent: model.HTTPHeaderUserAgent,
+			})
 
 		t.Log(resp)
 		t.Log(err)
@@ -50,11 +53,14 @@ func TestGetXML(t *testing.T) {
 		defer server.Close()
 
 		// invoke the API
-		resp, err := GetXML[*apiResponse](context.Background(), server.URL, &Config{
-			Client:    http.DefaultClient,
-			Logger:    model.DiscardLogger,
-			UserAgent: model.HTTPHeaderUserAgent,
-		})
+		resp, err := GetXML[*apiResponse](
+			context.Background(),
+			NewEndpoint(server.URL),
+			&Config{
+				Client:    http.DefaultClient,
+				Logger:    model.DiscardLogger,
+				UserAgent: model.HTTPHeaderUserAgent,
+			})
 
 		t.Log(resp)
 		t.Log(err)
@@ -78,11 +84,14 @@ func TestGetXML(t *testing.T) {
 		defer server.Close()
 
 		// invoke the API
-		resp, err := GetXML[*apiResponse](context.Background(), server.URL, &Config{
-			Client:    http.DefaultClient,
-			Logger:    model.DiscardLogger,
-			UserAgent: model.HTTPHeaderUserAgent,
-		})
+		resp, err := GetXML[*apiResponse](
+			context.Background(),
+			NewEndpoint(server.URL),
+			&Config{
+				Client:    http.DefaultClient,
+				Logger:    model.DiscardLogger,
+				UserAgent: model.HTTPHeaderUserAgent,
+			})
 
 		t.Log(resp)
 		t.Log(err)
@@ -122,13 +131,15 @@ func TestGetXMLHeadersOkay(t *testing.T) {
 	defer server.Close()
 
 	// send the request and receive the response
-	apiresp, err := GetXML[*apiResponse](context.Background(), server.URL, &Config{
-		Authorization: "scribai",
-		Client:        http.DefaultClient,
-		Host:          "www.cloudfront.com",
-		Logger:        model.DiscardLogger,
-		UserAgent:     model.HTTPHeaderUserAgent,
-	})
+	apiresp, err := GetXML[*apiResponse](
+		context.Background(),
+		NewEndpoint(server.URL).WithHostOverride("www.cloudfront.com"),
+		&Config{
+			Authorization: "scribai",
+			Client:        http.DefaultClient,
+			Logger:        model.DiscardLogger,
+			UserAgent:     model.HTTPHeaderUserAgent,
+		})
 
 	// we do not expect to see an error here
 	if err != nil {
@@ -177,11 +188,14 @@ func TestGetXMLLoggingOkay(t *testing.T) {
 	logger := &testingx.Logger{}
 
 	// invoke the API
-	resp, err := GetXML[*apiResponse](context.Background(), server.URL, &Config{
-		Client:    http.DefaultClient,
-		Logger:    logger,
-		UserAgent: model.HTTPHeaderUserAgent,
-	})
+	resp, err := GetXML[*apiResponse](
+		context.Background(),
+		NewEndpoint(server.URL),
+		&Config{
+			Client:    http.DefaultClient,
+			Logger:    logger,
+			UserAgent: model.HTTPHeaderUserAgent,
+		})
 
 	t.Log(resp)
 	t.Log(err)

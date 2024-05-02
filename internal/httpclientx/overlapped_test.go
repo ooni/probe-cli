@@ -67,10 +67,10 @@ func TestNewOverlappedPostJSONIsPerformingOverlappedCalls(t *testing.T) {
 
 	apiResp, err := overlapped.Run(
 		context.Background(),
-		zeroTh.URL,
-		oneTh.URL,
-		twoTh.URL,
-		threeTh.URL,
+		NewEndpoint(zeroTh.URL),
+		NewEndpoint(oneTh.URL),
+		NewEndpoint(twoTh.URL),
+		NewEndpoint(threeTh.URL),
 	)
 
 	// we do not expect to see a failure because threeTh is WAI
@@ -159,10 +159,10 @@ func TestNewOverlappedPostJSONCancelsPendingCalls(t *testing.T) {
 
 	apiResp, err := overlapped.Run(
 		context.Background(),
-		zeroTh.URL,
-		oneTh.URL,
-		twoTh.URL,
-		threeTh.URL,
+		NewEndpoint(zeroTh.URL),
+		NewEndpoint(oneTh.URL),
+		NewEndpoint(twoTh.URL),
+		NewEndpoint(threeTh.URL),
 	)
 
 	// we do not expect to see a failure because threeTh is WAI

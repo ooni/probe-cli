@@ -31,11 +31,14 @@ func TestGzipDecompression(t *testing.T) {
 		defer server.Close()
 
 		// make sure we can read it
-		respbody, err := GetRaw(context.Background(), server.URL, &Config{
-			Client:    http.DefaultClient,
-			Logger:    model.DiscardLogger,
-			UserAgent: model.HTTPHeaderUserAgent,
-		})
+		respbody, err := GetRaw(
+			context.Background(),
+			NewEndpoint(server.URL),
+			&Config{
+				Client:    http.DefaultClient,
+				Logger:    model.DiscardLogger,
+				UserAgent: model.HTTPHeaderUserAgent,
+			})
 
 		t.Log(respbody)
 		t.Log(err)
@@ -60,11 +63,14 @@ func TestGzipDecompression(t *testing.T) {
 		defer server.Close()
 
 		// attempt to get a response body
-		respbody, err := GetRaw(context.Background(), server.URL, &Config{
-			Client:    http.DefaultClient,
-			Logger:    model.DiscardLogger,
-			UserAgent: model.HTTPHeaderUserAgent,
-		})
+		respbody, err := GetRaw(
+			context.Background(),
+			NewEndpoint(server.URL),
+			&Config{
+				Client:    http.DefaultClient,
+				Logger:    model.DiscardLogger,
+				UserAgent: model.HTTPHeaderUserAgent,
+			})
 
 		t.Log(respbody)
 		t.Log(err)
@@ -83,11 +89,14 @@ func TestHTTPStatusCodeHandling(t *testing.T) {
 	server := testingx.MustNewHTTPServer(testingx.HTTPHandlerBlockpage451())
 	defer server.Close()
 
-	respbody, err := GetRaw(context.Background(), server.URL, &Config{
-		Client:    http.DefaultClient,
-		Logger:    model.DiscardLogger,
-		UserAgent: model.HTTPHeaderUserAgent,
-	})
+	respbody, err := GetRaw(
+		context.Background(),
+		NewEndpoint(server.URL),
+		&Config{
+			Client:    http.DefaultClient,
+			Logger:    model.DiscardLogger,
+			UserAgent: model.HTTPHeaderUserAgent,
+		})
 
 	t.Log(respbody)
 	t.Log(err)
@@ -113,11 +122,14 @@ func TestHTTPReadBodyErrorsHandling(t *testing.T) {
 	server := testingx.MustNewHTTPServer(testingx.HTTPHandlerResetWhileReadingBody())
 	defer server.Close()
 
-	respbody, err := GetRaw(context.Background(), server.URL, &Config{
-		Client:    http.DefaultClient,
-		Logger:    model.DiscardLogger,
-		UserAgent: model.HTTPHeaderUserAgent,
-	})
+	respbody, err := GetRaw(
+		context.Background(),
+		NewEndpoint(server.URL),
+		&Config{
+			Client:    http.DefaultClient,
+			Logger:    model.DiscardLogger,
+			UserAgent: model.HTTPHeaderUserAgent,
+		})
 
 	t.Log(respbody)
 	t.Log(err)
