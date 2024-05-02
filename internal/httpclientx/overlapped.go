@@ -54,7 +54,7 @@ type Overlapped[Output any] struct {
 	//
 	//	overlapped.Semaphore = NewOverlappedSemaphore()
 	//
-	// Also, you MUST initialize this field before calling [*Overlapped.Run].
+	// If you set it manually, you MUST modify it before calling [*Overlapped.Run].
 	Semaphore chan any
 }
 
