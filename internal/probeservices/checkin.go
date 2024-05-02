@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"github.com/ooni/probe-cli/v3/internal/checkincache"
-	"github.com/ooni/probe-cli/v3/internal/httpapi"
+	"github.com/ooni/probe-cli/v3/internal/httpclientx"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/ooapi"
+	"github.com/ooni/probe-cli/v3/internal/urlx"
 )
 
 // CheckIn function is called by probes asking if there are tests to be run
@@ -17,17 +17,31 @@ import (
 // or an explanatory error, in case of failure.
 func (c Client) CheckIn(
 	ctx context.Context, config model.OOAPICheckInConfig) (*model.OOAPICheckInResult, error) {
-	// prepare endpoint and descriptor for the API call
-	epnt := c.newHTTPAPIEndpoint()
-	desc := ooapi.NewDescriptorCheckIn(&config)
-
-	// issue the API call and handle failures
-	resp, err := httpapi.Call(ctx, desc, epnt)
+	// construct the URL to use
+	URL, err := urlx.ResolveReference(c.BaseURL, "/api/v1/check-in", "")
 	if err != nil {
 		return nil, err
 	}
 
-	// make sure we track selected parts of the response
+	// issue the API call
+	resp, err := httpclientx.PostJSON[*model.OOAPICheckInConfig, *model.OOAPICheckInResult](
+		ctx, URL, &config, &httpclientx.Config{
+			Authorization: "", // not needed
+			Client:        c.HTTPClient,
+			Host:          c.Host,
+			Logger:        c.Logger,
+			UserAgent:     c.UserAgent,
+		})
+
+	// handle the case of error
+	if err != nil {
+		return nil, err
+	}
+
+	// make sure we track selected parts of the response and ignore
+	// the error because OONI Probe would also work without this caching
+	// it would only work more poorly, but it does not seem worth it
+	// crippling it entirely if we cannot write into the kvstore
 	_ = checkincache.Store(c.KVStore, resp)
 	return resp, nil
 }
