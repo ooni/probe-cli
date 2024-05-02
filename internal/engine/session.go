@@ -13,8 +13,10 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/enginelocate"
 	"github.com/ooni/probe-cli/v3/internal/enginenetx"
 	"github.com/ooni/probe-cli/v3/internal/engineresolver"
+	"github.com/ooni/probe-cli/v3/internal/httpapi"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/ooapi"
 	"github.com/ooni/probe-cli/v3/internal/platform"
 	"github.com/ooni/probe-cli/v3/internal/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -686,6 +688,36 @@ func (s *Session) MaybeLookupLocationContext(ctx context.Context) error {
 		s.location = location
 	}
 	return nil
+}
+
+// CallWebConnectivityTestHelper implements [model.EngineExperimentSession].
+func (s *Session) CallWebConnectivityTestHelper(ctx context.Context,
+	creq *model.THRequest, testhelpers []model.OOAPIService) (*model.THResponse, int, error) {
+	// handle the case where there are no available web connectivity test helpers
+	if len(testhelpers) <= 0 {
+		return nil, 0, model.ErrNoAvailableTestHelpers
+	}
+
+	// initialize a sequence caller for invoking the THs in FIFO order
+	seqCaller := httpapi.NewSequenceCaller(
+		ooapi.NewDescriptorTH(creq),
+		httpapi.NewEndpointList(s.DefaultHTTPClient(), s.Logger(), s.UserAgent(), testhelpers...)...,
+	)
+
+	// issue the composed call proper and obtain a response and an index or an error
+	cresp, idx, err := seqCaller.Call(ctx)
+
+	// handle the case where all test helpers failed
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// apply some sanity checks to the results
+	runtimex.Assert(idx >= 0 && idx < len(testhelpers), "idx out of bounds")
+	runtimex.Assert(cresp != nil, "out is nil")
+
+	// return the results to the web connectivity caller
+	return cresp, idx, nil
 }
 
 var _ model.ExperimentSession = &Session{}

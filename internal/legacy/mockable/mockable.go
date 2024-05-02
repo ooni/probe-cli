@@ -38,6 +38,12 @@ type Session struct {
 	MockableUserAgent                string
 }
 
+// CallWebConnectivityTestHelper implements [model.EngineExperimentSession].
+func (sess *Session) CallWebConnectivityTestHelper(
+	ctx context.Context, request *model.THRequest, ths []model.OOAPIService) (*model.THResponse, int, error) {
+	panic("not implemented")
+}
+
 // GetTestHelpersByName implements ExperimentSession.GetTestHelpersByName
 func (sess *Session) GetTestHelpersByName(name string) ([]model.OOAPIService, bool) {
 	services, okay := sess.MockableTestHelpers[name]

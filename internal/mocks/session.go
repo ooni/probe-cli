@@ -58,6 +58,11 @@ type Session struct {
 		config *model.OOAPICheckInConfig) (*model.OOAPICheckInResult, error)
 }
 
+func (sess *Session) CallWebConnectivityTestHelper(ctx context.Context,
+	req *model.THRequest, ths []model.OOAPIService) (*model.THResponse, int, error) {
+	panic("not implemented")
+}
+
 func (sess *Session) GetTestHelpersByName(name string) ([]model.OOAPIService, bool) {
 	return sess.MockGetTestHelpersByName(name)
 }
