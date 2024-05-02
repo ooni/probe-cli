@@ -13,9 +13,6 @@ import (
 //
 // Deprecated: use ./internal/model/mocks.Session instead.
 type Session struct {
-	MocakbleCallWCTHResp             *model.THResponse
-	MockableCallWCTHCount            int
-	MockableCallWCTHErr              error
 	MockableTestHelpers              map[string][]model.OOAPIService
 	MockableHTTPClient               model.HTTPClient
 	MockableLogger                   model.Logger
@@ -39,12 +36,6 @@ type Session struct {
 	MockableTorBinary                string
 	MockableTunnelDir                string
 	MockableUserAgent                string
-}
-
-// CallWebConnectivityTestHelper implements [model.EngineExperimentSession].
-func (sess *Session) CallWebConnectivityTestHelper(
-	ctx context.Context, request *model.THRequest, ths []model.OOAPIService) (*model.THResponse, int, error) {
-	return sess.MocakbleCallWCTHResp, sess.MockableCallWCTHCount, sess.MockableCallWCTHErr
 }
 
 // GetTestHelpersByName implements ExperimentSession.GetTestHelpersByName

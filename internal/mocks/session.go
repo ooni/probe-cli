@@ -9,9 +9,6 @@ import (
 
 // Session allows to mock sessions.
 type Session struct {
-	MockCallWebConnectivityTestHelper func(ctx context.Context,
-		req *model.THRequest, ths []model.OOAPIService) (*model.THResponse, int, error)
-
 	MockGetTestHelpersByName func(name string) ([]model.OOAPIService, bool)
 
 	MockDefaultHTTPClient func() model.HTTPClient
@@ -59,11 +56,6 @@ type Session struct {
 
 	MockCheckIn func(ctx context.Context,
 		config *model.OOAPICheckInConfig) (*model.OOAPICheckInResult, error)
-}
-
-func (sess *Session) CallWebConnectivityTestHelper(ctx context.Context,
-	req *model.THRequest, ths []model.OOAPIService) (*model.THResponse, int, error) {
-	return sess.MockCallWebConnectivityTestHelper(ctx, req, ths)
 }
 
 func (sess *Session) GetTestHelpersByName(name string) ([]model.OOAPIService, bool) {

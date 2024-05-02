@@ -13,26 +13,6 @@ import (
 )
 
 func TestSession(t *testing.T) {
-	t.Run("CallWebConnectivityTestHelper", func(t *testing.T) {
-		expect := errors.New("mocked error")
-		s := &Session{
-			MockCallWebConnectivityTestHelper: func(
-				ctx context.Context, req *model.THRequest, ths []model.OOAPIService) (*model.THResponse, int, error) {
-				return nil, 0, expect
-			},
-		}
-		resp, count, err := s.CallWebConnectivityTestHelper(context.Background(), &model.THRequest{}, nil)
-		if !errors.Is(err, expect) {
-			t.Fatal("unexpected error", err)
-		}
-		if count != 0 {
-			t.Fatal("expected zero")
-		}
-		if resp != nil {
-			t.Fatal("expected nil")
-		}
-	})
-
 	t.Run("GetTestHelpersByName", func(t *testing.T) {
 		var expect []model.OOAPIService
 		ff := &testingx.FakeFiller{}
