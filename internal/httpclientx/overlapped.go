@@ -105,11 +105,13 @@ func (ovx *Overlapped[Output]) Run(ctx context.Context, epnts ...*Endpoint) (Out
 	// keep looping until we have results for each endpoints
 	for len(results) < len(epnts) {
 
-		// if possible, start and advance the index, when we've gone past
-		// the index, we'll just keep waiting for channel events.
+		// if there are more endpoints to try, spawn a goroutine to try
+		// otherwise, we can safely stop ticking
 		if idx < len(epnts) {
 			go ovx.transact(ctx, idx, epnts[idx], output)
 			idx++
+		} else {
+			ticker.Stop()
 		}
 
 		select {
@@ -123,8 +125,7 @@ func (ovx *Overlapped[Output]) Run(ctx context.Context, epnts ...*Endpoint) (Out
 			}
 
 		// this means the ticker ticked, so we should loop again and
-		// attempt another endpoint (if we've tried all of them ticking
-		// is not going to hurt us anyway)
+		// attempt another endpoint because it's time to do that
 		case <-ticker.C:
 		}
 	}
