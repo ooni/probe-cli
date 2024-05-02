@@ -150,7 +150,9 @@ func (ovx *Overlapped[Output]) Run(ctx context.Context, epnts ...*Endpoint) (Out
 }
 
 // transact performs an HTTP transaction with the given URL and writes results to the output channel.
-func (ovx *Overlapped[Output]) transact(ctx context.Context, _ int, epnt *Endpoint, output chan<- *erroror.Value[Output]) {
+func (ovx *Overlapped[Output]) transact(ctx context.Context, idx int, epnt *Endpoint, output chan<- *erroror.Value[Output]) {
+	// TODO(bassosimone): the index is currently unused but we need to use it
+	// soon to return back which endpoint actually succeded
 	value, err := ovx.RunFunc(ctx, epnt)
 	output <- &erroror.Value[Output]{Err: err, Value: value}
 }
