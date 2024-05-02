@@ -116,11 +116,12 @@ func (ovx *Overlapped[Output]) Run(ctx context.Context, epnts ...*Endpoint) (Out
 
 		select {
 		// this event means that a child goroutine completed
-		// so we store the result and cancel the context on the
-		// first success, to avoid doing duplicate work
+		// so we store the result; on success interrupt all the
+		// background goroutines and stop ticking
 		case result := <-output:
 			results = append(results, result)
 			if result.Err == nil {
+				ticker.Stop()
 				cancel()
 			}
 
