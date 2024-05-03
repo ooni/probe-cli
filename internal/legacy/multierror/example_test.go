@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ooni/probe-cli/v3/internal/multierror"
+	"github.com/ooni/probe-cli/v3/internal/legacy/multierror"
 )
 
 func ExampleUnion() {

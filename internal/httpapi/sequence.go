@@ -12,7 +12,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/ooni/probe-cli/v3/internal/multierror"
+	"github.com/ooni/probe-cli/v3/internal/legacy/multierror"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
