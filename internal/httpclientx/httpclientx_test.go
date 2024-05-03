@@ -116,7 +116,7 @@ func TestGzipDecompression(t *testing.T) {
 				UserAgent: model.HTTPHeaderUserAgent,
 			})
 
-		t.Log(respbody)
+		//t.Log(respbody) // maybe this operation is a bit expensive to be the default
 		t.Log(err)
 
 		if err != nil {
@@ -196,6 +196,8 @@ func TestLimitMaximumBodySize(t *testing.T) {
 		defer server.Close()
 
 		// make sure we can read it
+		//
+		// note: here we're using a small max body size, definitely smaller than what we send
 		respbody, err := GetRaw(
 			context.Background(),
 			NewEndpoint(server.URL),
@@ -228,7 +230,7 @@ func TestLimitMaximumBodySize(t *testing.T) {
 
 		// make sure we can read it
 		//
-		// note: here we're using a small body, definitely smaller than the gzip bomb
+		// note: here we're using a small max body size, definitely smaller than the gzip bomb
 		respbody, err := GetRaw(
 			context.Background(),
 			NewEndpoint(server.URL),
