@@ -215,7 +215,7 @@ func OverlappedReduce[Output any](results []*OverlappedErrorOr[Output]) (Output,
 
 	// return zero value and errors list
 	//
-	// note thay errors.Join returns nil if all the errors are nil or the
+	// note that errors.Join returns nil if all the errors are nil or the
 	// list is nil, which is why we handle the corner case above
 	return *new(Output), 0, errors.Join(errorv...)
 }
