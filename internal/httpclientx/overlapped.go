@@ -117,7 +117,7 @@ type OverlappedErrorOr[Output any] struct {
 // Note that you SHOULD use [*Overlapped.Run] unless you want to observe the result
 // of each operation, which is mostly useful when running unit tests.
 //
-// Note that this function will return a zero length slice of epnts lenth is also zero.
+// Note that this function will return a zero length slice if epnts lenth is also zero.
 func (ovx *Overlapped[Output]) Map(ctx context.Context, epnts ...*Endpoint) []*OverlappedErrorOr[Output] {
 	// create cancellable context for early cancellation and also apply the
 	// watchdog timeout so that eventually this code returns.
