@@ -8,6 +8,7 @@ package httpclientx
 import (
 	"compress/gzip"
 	"context"
+	"errors"
 	"io"
 	"net/http"
 
@@ -34,11 +35,11 @@ func zeroValue[T any]() T {
 	return *new(T)
 }
 
-// newLimitReader is a wrapper for [io.LimitReader] that automatically
-// sets the maximum readable amount of bytes.
-func newLimitReader(r io.Reader) io.Reader {
-	return io.LimitReader(r, 1<<24)
-}
+// ErrTruncated indicates we truncated the response body.
+//
+// Note: we SHOULD NOT change the error string because this error string was previously
+// used by the httpapi package and it's better to keep the same strings.
+var ErrTruncated = errors.New("httpapi: truncated response body")
 
 // do is the internal function to finish preparing the request and getting a raw response.
 func do(ctx context.Context, req *http.Request, epnt *Endpoint, config *Config) ([]byte, error) {
@@ -84,7 +85,10 @@ func do(ctx context.Context, req *http.Request, epnt *Endpoint, config *Config) 
 	}
 
 	// protect against unreasonably large response bodies
-	limitReader := newLimitReader(baseReader)
+	//
+	// read one more byte than the maximum allowed size so we can
+	// always tell whether it was truncated here
+	limitReader := io.LimitReader(baseReader, config.maxResponseBodySize()+1)
 
 	// read the raw body
 	rawrespbody, err := netxlite.ReadAllContext(ctx, limitReader)
@@ -92,6 +96,11 @@ func do(ctx context.Context, req *http.Request, epnt *Endpoint, config *Config) 
 	// handle the case of failure
 	if err != nil {
 		return nil, err
+	}
+
+	// handle the case of truncated body
+	if int64(len(rawrespbody)) > config.maxResponseBodySize() {
+		return nil, ErrTruncated
 	}
 
 	// log the response body for debugging purposes

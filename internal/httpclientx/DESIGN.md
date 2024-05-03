@@ -212,7 +212,7 @@ We compare to `httpapi.Call` and `httpx.GetJSONWithQuery`.
 | handle gzip encoding      |   yes   |   yes   |  NO   |
 | limit io.Reader           |   yes   |   yes   |  yes  |
 | netxlite.ReadAllContext() |   yes   |   yes   |  yes  |
-| handle truncated body     |   NO    |   yes   |  NO   |
+| handle truncated body     |   yes   |   yes   |  NO   |
 | log response body         |   yes   |   yes   |  yes  |
 | handle non-200 response   | ️  yes   |   yes*  |  yes* |
 | unmarshal JSON            |   yes   |   yes   |  yes  |
@@ -231,10 +231,6 @@ introducing the new `./internal/urlx` package to handle this situation).
 
 3. Setting the `Accept` header does not seem to matter in out context because we mostly
 call API for which there's no need for content negotiation.
-
-4. It's difficult to say whether a body size was exactly the amount specified for truncation
-or the body has been truncated. While this is a corner case, it seems perhaps wiser to let
-the caller try parsing the body and failing if it is indeed truncated.
 
 #### GetRaw
 
@@ -257,7 +253,7 @@ Here we're comparing to `httpapi.Call` and `httpx.FetchResource`.
 | handle gzip encoding      |   yes   |   yes   |  NO   |
 | limit io.Reader           |   yes   |   yes   |  yes  |
 | netxlite.ReadAllContext() |   yes   |   yes   |  yes  |
-| handle truncated body     |   NO    |   yes   |  NO   |
+| handle truncated body     |   yes   |   yes   |  NO   |
 | log response body         |   yes   |   yes   |  yes  |
 | handle non-200 response   | ️  yes   |   yes*  |  yes  |
 
@@ -285,7 +281,7 @@ two APIs, the caller would need to fetch a raw body and then manually parse XML.
 | handle gzip encoding      |   yes   |   N/A   |  N/A  |
 | limit io.Reader           |   yes   |   N/A   |  N/A  |
 | netxlite.ReadAllContext() |   yes   |   N/A   |  N/A  |
-| handle truncated body     |   NO    |   N/A   |  N/A  |
+| handle truncated body     |   yes   |   N/A   |  N/A  |
 | log response body         |   yes   |   N/A   |  N/A  |
 | handle non-200 response   | ️  yes   |   N/A   |  N/A  |
 | unmarshal XML             |   yes   |   N/A   |  N/A  |
@@ -316,7 +312,7 @@ Here we're comparing to `httpapi.Call` and `httpx.PostJSON`.
 | handle gzip encoding      |   yes    |   yes   |  NO   |
 | limit io.Reader           |   yes    |   yes   |  yes  |
 | netxlite.ReadAllContext() |   yes    |   yes   |  yes  |
-| handle truncated body     |   NO     |   yes   |  NO   |
+| handle truncated body     |   yes    |   yes   |  NO   |
 | log response body         |   yes    |   yes   |  yes  |
 | handle non-200 response   | ️  yes    |   yes*  |  yes* |
 | unmarshal JSON            |   yes    |   yes   |  yes  |

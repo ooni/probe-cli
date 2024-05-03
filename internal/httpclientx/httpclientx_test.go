@@ -15,6 +15,20 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
+// createGzipBomb creates a gzip bomb with the given size.
+func createGzipBomb(size int) []byte {
+	input := make([]byte, size)
+	runtimex.Assert(len(input) == size, "unexpected input length")
+	var buf bytes.Buffer
+	gz := runtimex.Try1(gzip.NewWriterLevel(&buf, gzip.BestCompression))
+	_ = runtimex.Try1(gz.Write(input))
+	runtimex.Try0(gz.Close())
+	return buf.Bytes()
+}
+
+// gzipBomb is a gzip bomb containing 1 megabyte of zeroes
+var gzipBomb = createGzipBomb(1 << 20)
+
 func TestGzipDecompression(t *testing.T) {
 	t.Run("we correctly handle gzip encoding", func(t *testing.T) {
 		expected := []byte(`Bonsoir, Elliot!!!`)
@@ -83,6 +97,36 @@ func TestGzipDecompression(t *testing.T) {
 			t.Fatal("expected nil response body")
 		}
 	})
+
+	t.Run("we can correctly decode a large body", func(t *testing.T) {
+		// create a server returning compressed content
+		server := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Add("Content-Encoding", "gzip")
+			w.Write(gzipBomb)
+		}))
+		defer server.Close()
+
+		// make sure we can read it
+		respbody, err := GetRaw(
+			context.Background(),
+			NewEndpoint(server.URL),
+			&Config{
+				Client:    http.DefaultClient,
+				Logger:    model.DiscardLogger,
+				UserAgent: model.HTTPHeaderUserAgent,
+			})
+
+		t.Log(respbody)
+		t.Log(err)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if length := len(respbody); length != 1<<20 {
+			t.Fatal("unexpected response body length", length)
+		}
+	})
 }
 
 func TestHTTPStatusCodeHandling(t *testing.T) {
@@ -141,4 +185,69 @@ func TestHTTPReadBodyErrorsHandling(t *testing.T) {
 	if respbody != nil {
 		t.Fatal("expected nil response body")
 	}
+}
+
+func TestLimitMaximumBodySize(t *testing.T) {
+	t.Run("we can correctly avoid receiving a large body when uncompressed", func(t *testing.T) {
+		// create a server returning uncompressed content
+		server := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write(make([]byte, 1<<20))
+		}))
+		defer server.Close()
+
+		// make sure we can read it
+		respbody, err := GetRaw(
+			context.Background(),
+			NewEndpoint(server.URL),
+			&Config{
+				Client:              http.DefaultClient,
+				Logger:              model.DiscardLogger,
+				MaxResponseBodySize: 1 << 10,
+				UserAgent:           model.HTTPHeaderUserAgent,
+			})
+
+		t.Log(respbody)
+		t.Log(err)
+
+		if !errors.Is(err, ErrTruncated) {
+			t.Fatal("unexpected error", err)
+		}
+
+		if len(respbody) != 0 {
+			t.Fatal("expected zero length response body length")
+		}
+	})
+
+	t.Run("we can correctly avoid receiving a large body when compressed", func(t *testing.T) {
+		// create a server returning compressed content
+		server := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Add("Content-Encoding", "gzip")
+			w.Write(gzipBomb)
+		}))
+		defer server.Close()
+
+		// make sure we can read it
+		//
+		// note: here we're using a small body, definitely smaller than the gzip bomb
+		respbody, err := GetRaw(
+			context.Background(),
+			NewEndpoint(server.URL),
+			&Config{
+				Client:              http.DefaultClient,
+				Logger:              model.DiscardLogger,
+				MaxResponseBodySize: 1 << 10,
+				UserAgent:           model.HTTPHeaderUserAgent,
+			})
+
+		t.Log(respbody)
+		t.Log(err)
+
+		if !errors.Is(err, ErrTruncated) {
+			t.Fatal("unexpected error", err)
+		}
+
+		if len(respbody) != 0 {
+			t.Fatal("expected zero length response body length")
+		}
+	})
 }
