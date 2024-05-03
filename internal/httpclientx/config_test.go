@@ -12,7 +12,7 @@ func TestConfigMaxResponseBodySize(t *testing.T) {
 
 	t.Run("we can override the default", func(t *testing.T) {
 		config := &Config{}
-		const expectedValue = 1 << 18
+		const expectedValue = DefaultMaxResponseBodySize / 2
 		config.MaxResponseBodySize = expectedValue
 		if value := config.maxResponseBodySize(); value != expectedValue {
 			t.Fatal("unexpected maxResponseBodySize()", value)
