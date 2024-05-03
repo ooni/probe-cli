@@ -95,15 +95,20 @@ func NewOverlappedPostJSON[Input, Output any](input Input, config *Config) *Over
 var ErrGenericOverlappedFailure = errors.New("overlapped: generic failure")
 
 // Run runs the overlapped operations, returning the result of the first operation
-// that succeeds and otherwise returning an error describing what happened.
+// that succeeds and its endpoint index, or the error that occurred.
 func (ovx *Overlapped[Output]) Run(ctx context.Context, epnts ...*Endpoint) (Output, int, error) {
 	return OverlappedReduce[Output](ovx.Map(ctx, epnts...))
 }
 
 // OverlappedErrorOr combines error information, result information and the endpoint index.
 type OverlappedErrorOr[Output any] struct {
-	Err   error
+	// Err is the error or nil.
+	Err error
+
+	// Index is the endpoint index.
 	Index int
+
+	// Value is the result.
 	Value Output
 }
 
