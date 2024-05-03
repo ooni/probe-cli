@@ -131,10 +131,10 @@ func TestNewOverlappedPostJSONFirstCallSucceeds(t *testing.T) {
 	//
 	// Scenario:
 	//
-	// - 0.th.ooni.org is WAI but slow
-	// - 1.th.ooni.org is WAI but slow
-	// - 2.th.ooni.org is WAI but slow
-	// - 3.th.ooni.org is WAI but slow
+	// - 0.th.ooni.org is WAI
+	// - 1.th.ooni.org is WAI
+	// - 2.th.ooni.org is WAI
+	// - 3.th.ooni.org is WAI
 	//
 	// We expect to get a response from the first TH because it's the first goroutine
 	// that we schedule. Subsequent calls should be canceled.
