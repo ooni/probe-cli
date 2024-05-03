@@ -450,7 +450,7 @@ func TestNewOverlappedPostJSONResetTimeoutSuccessCanceled(t *testing.T) {
 
 	apiResp, err := overlapped.Reduce(results)
 
-	// we do not expect to see a failure because all the THs are WAI
+	// we do not expect to see a failure because one of the THs is WAI
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -483,9 +483,9 @@ func TestNewOverlappedPostJSONWithNoURLs(t *testing.T) {
 	// Now we issue the requests without any URLs and make sure
 	// the result we get is the generic overlapped error
 
-	apiResp, err := overlapped.Run(context.Background())
+	apiResp, err := overlapped.Run(context.Background() /* no URLs here! */)
 
-	// we do not expect to see a failure because threeTh is WAI
+	// we do expect to see the generic overlapped failure
 	if !errors.Is(err, ErrGenericOverlappedFailure) {
 		t.Fatal("unexpected error", err)
 	}
