@@ -25,6 +25,9 @@ func New(root error) *Union {
 }
 
 // Unwrap returns the Root error of the Union error.
+//
+// QUIRK: we cannot change this function to be `Unwrap() []error` as
+// explained by https://github.com/ooni/probe-cli/pull/1587.
 func (err Union) Unwrap() error {
 	return err.Root
 }
