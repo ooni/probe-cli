@@ -11,6 +11,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/must"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
@@ -73,14 +75,45 @@ func TestNewOverlappedPostJSONFastRecoverFromEarlyErrors(t *testing.T) {
 	})
 
 	// Now we issue the requests and check we're getting the correct response.
+	//
+	// We're splitting the algorithm into its Map step and its Reduce step because
+	// this allows us to clearly observe what happened.
 
-	apiResp, err := overlapped.Run(
+	results := overlapped.Map(
 		context.Background(),
 		NewEndpoint(zeroTh.URL),
 		NewEndpoint(oneTh.URL),
 		NewEndpoint(twoTh.URL),
 		NewEndpoint(threeTh.URL),
 	)
+
+	runtimex.Assert(len(results) == 4, "unexpected number of results")
+
+	// the first three attempts should have failed with connection reset
+	// while the fourth result should be successful
+	for _, entry := range results {
+		t.Log(entry.Index, string(must.MarshalJSON(entry)))
+		switch entry.Index {
+		case 0, 1, 2:
+			if err := entry.Err; !errors.Is(err, netxlite.ECONNRESET) {
+				t.Fatal("unexpected error", err)
+			}
+		case 3:
+			if err := entry.Err; err != nil {
+				t.Fatal("unexpected error", err)
+			}
+			if diff := cmp.Diff(expectedResponse, entry.Value); diff != "" {
+				t.Fatal(diff)
+			}
+		default:
+			t.Fatal("unexpected index", entry.Index)
+		}
+	}
+
+	// Now run the reduce step of the algorithm and make sure we correctly
+	// return the first success and the nil error
+
+	apiResp, err := overlapped.Reduce(results)
 
 	// we do not expect to see a failure because threeTh is WAI
 	if err != nil {
@@ -104,10 +137,7 @@ func TestNewOverlappedPostJSONFirstCallSucceeds(t *testing.T) {
 	// - 3.th.ooni.org is WAI but slow
 	//
 	// We expect to get a response from the first TH because it's the first goroutine
-	// that we schedule and, even if the wakeup signals for THs are random, the schedule
-	// interval is 15 seconds while we emit a wakeup signal every 0.25 seconds.
-	//
-	// What we're testing here, therefore, is that subsequent calls w
+	// that we schedule. Subsequent calls should be canceled.
 	//
 
 	expectedResponse := &apiResponse{
@@ -115,28 +145,22 @@ func TestNewOverlappedPostJSONFirstCallSucceeds(t *testing.T) {
 		Name: "sbs",
 	}
 
-	slowwakeup := make(chan any)
-
 	zeroTh := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		<-slowwakeup
 		w.Write(must.MarshalJSON(expectedResponse))
 	}))
 	defer zeroTh.Close()
 
 	oneTh := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		<-slowwakeup
 		w.Write(must.MarshalJSON(expectedResponse))
 	}))
 	defer oneTh.Close()
 
 	twoTh := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		<-slowwakeup
 		w.Write(must.MarshalJSON(expectedResponse))
 	}))
 	defer twoTh.Close()
 
 	threeTh := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		<-slowwakeup
 		w.Write(must.MarshalJSON(expectedResponse))
 	}))
 	defer threeTh.Close()
@@ -160,27 +184,46 @@ func TestNewOverlappedPostJSONFirstCallSucceeds(t *testing.T) {
 	// to fetch from their respective URLs.
 	overlapped.ScheduleInterval = 15 * time.Second
 
-	// In the background we're going to emit slow wakeup signals at fixed intervals
-	// after an initial waiting interval, such that goroutines unblock in order
-
-	go func() {
-		time.Sleep(250 * time.Millisecond)
-		for idx := 0; idx < 4; idx++ {
-			slowwakeup <- true
-			time.Sleep(250 * time.Millisecond)
-		}
-		close(slowwakeup)
-	}()
-
 	// Now we issue the requests and check we're getting the correct response.
+	//
+	// We're splitting the algorithm into its Map step and its Reduce step because
+	// this allows us to clearly observe what happened.
 
-	apiResp, err := overlapped.Run(
+	results := overlapped.Map(
 		context.Background(),
 		NewEndpoint(zeroTh.URL),
 		NewEndpoint(oneTh.URL),
 		NewEndpoint(twoTh.URL),
 		NewEndpoint(threeTh.URL),
 	)
+
+	runtimex.Assert(len(results) == 4, "unexpected number of results")
+
+	// the first three attempts should succeed and subsequent ones should
+	// have failed with the context.Canceled error
+	for _, entry := range results {
+		t.Log(entry.Index, string(must.MarshalJSON(entry)))
+		switch entry.Index {
+		case 1, 2, 3:
+			if err := entry.Err; !errors.Is(err, context.Canceled) {
+				t.Fatal("unexpected error", err)
+			}
+		case 0:
+			if err := entry.Err; err != nil {
+				t.Fatal("unexpected error", err)
+			}
+			if diff := cmp.Diff(expectedResponse, entry.Value); diff != "" {
+				t.Fatal(diff)
+			}
+		default:
+			t.Fatal("unexpected index", entry.Index)
+		}
+	}
+
+	// Now run the reduce step of the algorithm and make sure we correctly
+	// return the first success and the nil error
+
+	apiResp, err := overlapped.Reduce(results)
 
 	// we do not expect to see a failure because all the THs are WAI
 	if err != nil {
@@ -252,30 +295,169 @@ func TestNewOverlappedPostJSONHandlesAllTimeouts(t *testing.T) {
 
 	// Now we issue the requests and check we're getting the correct response.
 	//
-	// IMPORTANT: here we need a context with timeout to ensure that we
-	// eventually stop trying with the blocked-forever servers. In a more
-	// real scenario, even without a context timeout, we have other
-	// safeguards to unblock stuck readers in netxlite code.
+	// We're splitting the algorithm into its Map step and its Reduce step because
+	// this allows us to clearly observe what happened.
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
+	// modify the watchdog timeout be much smaller than usual
+	overlapped.WatchdogTimeout = 2 * time.Second
 
-	apiResp, err := overlapped.Run(
-		ctx,
+	results := overlapped.Map(
+		context.Background(),
 		NewEndpoint(zeroTh.URL),
 		NewEndpoint(oneTh.URL),
 		NewEndpoint(twoTh.URL),
 		NewEndpoint(threeTh.URL),
 	)
 
-	// we do not expect to see a failure because all the THs are WAI
+	runtimex.Assert(len(results) == 4, "unexpected number of results")
+
+	// all the attempts should have failed with context deadline exceeded
+	for _, entry := range results {
+		t.Log(entry.Index, string(must.MarshalJSON(entry)))
+		switch entry.Index {
+		case 0, 1, 2, 3:
+			if err := entry.Err; !errors.Is(err, context.DeadlineExceeded) {
+				t.Fatal("unexpected error", err)
+			}
+		default:
+			t.Fatal("unexpected index", entry.Index)
+		}
+	}
+
+	// Now run the reduce step of the algorithm and make sure we correctly
+	// return the first success and the nil error
+
+	apiResp, err := overlapped.Reduce(results)
+
+	// we expect to see a failure because the watchdog timeout should have fired
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatal("unexpected error", err)
 	}
 
 	// we expect the api response to be nil
 	if apiResp != nil {
-		t.Fatal("expected non-nil resp")
+		t.Fatal("expected nil resp")
+	}
+
+	// now unblock the blocked goroutines
+	close(blockforever)
+}
+
+func TestNewOverlappedPostJSONResetTimeoutSuccessCanceled(t *testing.T) {
+
+	//
+	// Scenario:
+	//
+	// - 0.th.ooni.org resets the connection
+	// - 1.th.ooni.org causes timeout
+	// - 2.th.ooni.org is WAI
+	// - 3.th.ooni.org causes timeout
+	//
+	// We expect to see a success and to never attempt with 3.th.ooni.org.
+	//
+
+	blockforever := make(chan any)
+
+	zeroTh := testingx.MustNewHTTPServer(testingx.HTTPHandlerReset())
+	defer zeroTh.Close()
+
+	oneTh := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		<-blockforever
+		w.WriteHeader(http.StatusBadGateway)
+	}))
+	defer oneTh.Close()
+
+	expectedResponse := &apiResponse{
+		Age:  41,
+		Name: "sbs",
+	}
+
+	twoTh := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write(must.MarshalJSON(expectedResponse))
+	}))
+	defer twoTh.Close()
+
+	threeTh := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		<-blockforever
+		w.WriteHeader(http.StatusBadGateway)
+	}))
+	defer threeTh.Close()
+
+	// Create client configuration. We don't care much about the
+	// JSON requests and reponses being aligned to reality.
+
+	apiReq := &apiRequest{
+		UserID: 117,
+	}
+
+	overlapped := NewOverlappedPostJSON[*apiRequest, *apiResponse](apiReq, &Config{
+		Authorization: "", // not relevant for this test
+		Client:        http.DefaultClient,
+		Logger:        log.Log,
+		UserAgent:     model.HTTPHeaderUserAgent,
+	})
+
+	// make sure the schedule interval is low to make this test run faster.
+	overlapped.ScheduleInterval = 250 * time.Millisecond
+
+	// Now we issue the requests and check we're getting the correct response.
+	//
+	// We're splitting the algorithm into its Map step and its Reduce step because
+	// this allows us to clearly observe what happened.
+
+	// modify the watchdog timeout be much smaller than usual
+	overlapped.WatchdogTimeout = 2 * time.Second
+
+	results := overlapped.Map(
+		context.Background(),
+		NewEndpoint(zeroTh.URL),
+		NewEndpoint(oneTh.URL),
+		NewEndpoint(twoTh.URL),
+		NewEndpoint(threeTh.URL),
+	)
+
+	runtimex.Assert(len(results) == 4, "unexpected number of results")
+
+	// attempt 0: should have seen connection reset
+	// attempt 1: should have seen the context canceled
+	// attempt 2: should be successful
+	// attempt 3: should have seen the context canceled
+	for _, entry := range results {
+		t.Log(entry.Index, string(must.MarshalJSON(entry)))
+		switch entry.Index {
+		case 0:
+			if err := entry.Err; !errors.Is(err, netxlite.ECONNRESET) {
+				t.Fatal("unexpected error", err)
+			}
+		case 1, 3:
+			if err := entry.Err; !errors.Is(err, context.Canceled) {
+				t.Fatal("unexpected error", err)
+			}
+		case 2:
+			if err := entry.Err; err != nil {
+				t.Fatal("unexpected error", err)
+			}
+			if diff := cmp.Diff(expectedResponse, entry.Value); diff != "" {
+				t.Fatal(diff)
+			}
+		default:
+			t.Fatal("unexpected index", entry.Index)
+		}
+	}
+
+	// Now run the reduce step of the algorithm and make sure we correctly
+	// return the first success and the nil error
+
+	apiResp, err := overlapped.Reduce(results)
+
+	// we do not expect to see a failure because all the THs are WAI
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// compare response to expectation
+	if diff := cmp.Diff(expectedResponse, apiResp); diff != "" {
+		t.Fatal(diff)
 	}
 
 	// now unblock the blocked goroutines

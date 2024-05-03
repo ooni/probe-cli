@@ -8,13 +8,15 @@ import (
 	"context"
 	"errors"
 	"time"
-
-	"github.com/ooni/probe-cli/v3/internal/erroror"
 )
 
 // OverlappedDefaultScheduleInterval is the default schedule interval. After this interval
 // has elapsed for a URL without seeing a success, we will schedule the next URL.
 const OverlappedDefaultScheduleInterval = 15 * time.Second
+
+// OverlappedDefaultWatchdogTimeout is the timeout after which we assume all the API calls
+// have gone rogue and forcibly interrupt all of them.
+const OverlappedDefaultWatchdogTimeout = 5 * time.Minute
 
 // Overlapped represents the possibility of overlapping HTTP calls for a set of
 // functionally equivalent URLs, such that we start a new call if the previous one
@@ -24,7 +26,7 @@ const OverlappedDefaultScheduleInterval = 15 * time.Second
 //
 // Under very bad networking conditions, [*Overlapped] would cause a new network
 // call to start while the previous one is still in progress and very slowly downloading
-// a response. A future implementation SHOULD probably account for this possibility.
+// a response. A future implementation MIGHT want to account for this possibility.
 type Overlapped[Output any] struct {
 	// RunFunc is the MANDATORY function that fetches the given [*Endpoint].
 	//
@@ -42,12 +44,22 @@ type Overlapped[Output any] struct {
 	//
 	// If you set it manually, you MUST modify it before calling [*Overlapped.Run].
 	ScheduleInterval time.Duration
+
+	// WatchdogTimeout is the MANDATORY timeout after which the code assumes
+	// that all API calls must be aborted and give up.
+	//
+	// This field is typically initialized by [NewOverlappedGetJSON], [NewOverlappedGetRaw],
+	// [NewOverlappedGetXML], or [NewOverlappedPostJSON] to be [OverlappedDefaultWatchdogTimeout].
+	//
+	// If you set it manually, you MUST modify it before calling [*Overlapped.Run].
+	WatchdogTimeout time.Duration
 }
 
 func newOverlappedWithFunc[Output any](fx func(context.Context, *Endpoint) (Output, error)) *Overlapped[Output] {
 	return &Overlapped[Output]{
 		RunFunc:          fx,
 		ScheduleInterval: OverlappedDefaultScheduleInterval,
+		WatchdogTimeout:  OverlappedDefaultWatchdogTimeout,
 	}
 }
 
@@ -82,10 +94,20 @@ func NewOverlappedPostJSON[Input, Output any](input Input, config *Config) *Over
 // ErrGenericOverlappedFailure indicates that a generic [*Overlapped] failure occurred.
 var ErrGenericOverlappedFailure = errors.New("overlapped: generic failure")
 
+// TODO(bassosimone): to use this API with test helpers, we also need to return
+// the successful index to the caller.
+
 // Run runs the overlapped operations, returning the result of the first operation
 // that succeeds and otherwise returning an error describing what happened.
 func (ovx *Overlapped[Output]) Run(ctx context.Context, epnts ...*Endpoint) (Output, error) {
 	return ovx.Reduce(ovx.Map(ctx, epnts...))
+}
+
+// OverlappedErrorOr combines error information, result information and the endpoint index.
+type OverlappedErrorOr[Output any] struct {
+	Err   error
+	Index int
+	Value Output
 }
 
 // Map applies the [*Overlapped.RunFunc] function to each epnts entry, thus producing
@@ -96,19 +118,20 @@ func (ovx *Overlapped[Output]) Run(ctx context.Context, epnts ...*Endpoint) (Out
 // of each operation, which is mostly useful when running unit tests.
 //
 // Note that this function will return a zero length slice of epnts lenth is also zero.
-func (ovx *Overlapped[Output]) Map(ctx context.Context, epnts ...*Endpoint) []*erroror.Value[Output] {
-	// create cancellable context for early cancellation
+func (ovx *Overlapped[Output]) Map(ctx context.Context, epnts ...*Endpoint) []*OverlappedErrorOr[Output] {
+	// create cancellable context for early cancellation and also apply the
+	// watchdog timeout so that eventually this code returns.
 	//
 	// we are going to cancel this context as soon as we have a successful response so
 	// that we do not waste network resources by performing other attempts.
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithTimeout(ctx, ovx.WatchdogTimeout)
 	defer cancel()
 
 	// construct channel for collecting the results
 	//
 	// we're using this channel to communicate results back from goroutines running
 	// in the background and performing the real API call
-	output := make(chan *erroror.Value[Output])
+	output := make(chan *OverlappedErrorOr[Output])
 
 	// create ticker for scheduling subsequent attempts
 	//
@@ -125,7 +148,7 @@ func (ovx *Overlapped[Output]) Map(ctx context.Context, epnts ...*Endpoint) []*e
 	// for simplicity, we're going to collect results from every goroutine
 	// including the ones cancelled by context after the previous success and
 	// then we're going to filter the results and produce a final result
-	results := []*erroror.Value[Output]{}
+	results := []*OverlappedErrorOr[Output]{}
 
 	// keep looping until we have results for each endpoints
 	for len(results) < len(epnts) {
@@ -165,7 +188,7 @@ func (ovx *Overlapped[Output]) Map(ctx context.Context, epnts ...*Endpoint) []*e
 }
 
 // Reduce takes the results of [*Overlapped.Map] and returns either an Output or an error.
-func (ovx *Overlapped[Output]) Reduce(results []*erroror.Value[Output]) (Output, error) {
+func (ovx *Overlapped[Output]) Reduce(results []*OverlappedErrorOr[Output]) (Output, error) {
 	// postprocess the results to check for success and
 	// aggregate all the errors that occurred
 	errorv := []error{}
@@ -191,9 +214,8 @@ func (ovx *Overlapped[Output]) Reduce(results []*erroror.Value[Output]) (Output,
 }
 
 // transact performs an HTTP transaction with the given URL and writes results to the output channel.
-func (ovx *Overlapped[Output]) transact(ctx context.Context, _ int, epnt *Endpoint, output chan<- *erroror.Value[Output]) {
-	// TODO(bassosimone): the index is currently unused but we need to use it
-	// soon to return back which endpoint actually succeded
+func (ovx *Overlapped[Output]) transact(
+	ctx context.Context, idx int, epnt *Endpoint, output chan<- *OverlappedErrorOr[Output]) {
 	// obtain the results
 	value, err := ovx.RunFunc(ctx, epnt)
 
@@ -201,5 +223,9 @@ func (ovx *Overlapped[Output]) transact(ctx context.Context, _ int, epnt *Endpoi
 	//
 	// note that this unconditional channel write REQUIRES that we keep reading from
 	// the results channel in Run until we have a result per input endpoint
-	output <- &erroror.Value[Output]{Err: err, Value: value}
+	output <- &OverlappedErrorOr[Output]{
+		Err:   err,
+		Index: idx,
+		Value: value,
+	}
 }
