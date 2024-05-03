@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/legacy/multierror"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/multierror"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 

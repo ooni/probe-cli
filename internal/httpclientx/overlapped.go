@@ -6,8 +6,9 @@ package httpclientx
 
 import (
 	"context"
-	"errors"
 	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/legacy/multierror"
 )
 
 // OverlappedDefaultScheduleInterval is the default schedule interval. After this interval
@@ -90,9 +91,6 @@ func NewOverlappedPostJSON[Input, Output any](input Input, config *Config) *Over
 		return postJSON[Input, Output](ctx, epnt, input, config)
 	})
 }
-
-// ErrGenericOverlappedFailure indicates that a generic [*Overlapped] failure occurred.
-var ErrGenericOverlappedFailure = errors.New("overlapped: generic failure")
 
 // Run runs the overlapped operations, returning the result of the first operation
 // that succeeds and its endpoint index, or the error that occurred.
@@ -189,6 +187,46 @@ func (ovx *Overlapped[Output]) Map(ctx context.Context, epnts ...*Endpoint) []*O
 	return results
 }
 
+// AllEndpointsFailedPrefix is the prefix used by [*ErrAllEndpointsFailed].
+//
+// Note: we SHOULD NOT change this prefix because we previously released probe
+// versions that included this message inside measurements when all the THs failed, so
+// changing the error message would make data analysis a bit more complicated.
+const AllEndpointsFailedPrefix = "httpapi: all endpoints failed"
+
+// ErrAllEndpointsFailed indicates that all endpoints we tried failed.
+type ErrAllEndpointsFailed struct {
+	// Indexes contains the index of each failed endpoint.
+	Indexes []int
+
+	// Errors contains an entry for each failed endpoint.
+	Errors []error
+}
+
+// Unwrap allows the errors package to inspect and unwrap this error.
+func (err *ErrAllEndpointsFailed) Unwrap() []error {
+	return err.Errors
+}
+
+// Error returns the error as a string.
+func (err *ErrAllEndpointsFailed) Error() string {
+	switch len(err.Errors) {
+
+	// when there are no underlying errors just return the prefix
+	case 0:
+		return AllEndpointsFailedPrefix
+
+	// with a single wrapped error just auto-unwrap it
+	case 1:
+		return err.Errors[0].Error()
+
+	// otherwise build a string compatible with the string that the
+	// [multierror] package would build
+	default:
+		return multierror.BuildErrorString(AllEndpointsFailedPrefix, err.Errors...)
+	}
+}
+
 // OverlappedReduce takes the results of [*Overlapped.Map] and returns either an Output or an error.
 //
 // Note that you SHOULD use [*Overlapped.Run] unless you want to observe the result
@@ -198,26 +236,17 @@ func (ovx *Overlapped[Output]) Map(ctx context.Context, epnts ...*Endpoint) []*O
 func OverlappedReduce[Output any](results []*OverlappedErrorOr[Output]) (Output, int, error) {
 	// postprocess the results to check for success and
 	// aggregate all the errors that occurred
-	errorv := []error{}
+	merr := &ErrAllEndpointsFailed{}
 	for _, res := range results {
 		if res.Err == nil {
 			return res.Value, res.Index, nil
 		}
-		errorv = append(errorv, res.Err)
+		merr.Indexes = append(merr.Indexes, res.Index)
+		merr.Errors = append(merr.Errors, res.Err)
 	}
 
-	// handle the case where there's no error
-	//
-	// this happens if the user provided no endpoints to measure
-	if len(errorv) <= 0 {
-		errorv = append(errorv, ErrGenericOverlappedFailure)
-	}
-
-	// return zero value and errors list
-	//
-	// note that errors.Join returns nil if all the errors are nil or the
-	// list is nil, which is why we handle the corner case above
-	return *new(Output), 0, errors.Join(errorv...)
+	// return zero value and composed error
+	return *new(Output), 0, merr
 }
 
 // transact performs an HTTP transaction with the given URL and writes results to the output channel.

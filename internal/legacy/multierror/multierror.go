@@ -56,10 +56,16 @@ func (err Union) Is(target error) bool {
 
 // Error returns a string representation of the Union error.
 func (err Union) Error() string {
+	return BuildErrorString(err.Root.Error(), err.Children...)
+}
+
+// BuildErrorString builds the error string returned by [*Union.Error] using the
+// given prefix string as the prefix and the given list of errors.
+func BuildErrorString(prefix string, errs ...error) string {
 	var sb strings.Builder
-	sb.WriteString(err.Root.Error())
+	sb.WriteString(prefix)
 	sb.WriteString(": [")
-	for _, c := range err.Children {
+	for _, c := range errs {
 		sb.WriteString(" ")
 		sb.WriteString(c.Error())
 		sb.WriteString(";")

@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/multierror"
+	"github.com/ooni/probe-cli/v3/internal/legacy/multierror"
 )
 
 func TestEmpty(t *testing.T) {
