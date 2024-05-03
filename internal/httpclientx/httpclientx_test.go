@@ -116,7 +116,7 @@ func TestGzipDecompression(t *testing.T) {
 				UserAgent: model.HTTPHeaderUserAgent,
 			})
 
-		t.Log(respbody)
+		//t.Log(respbody) // maybe this operation is a bit expensive to be the default
 		t.Log(err)
 
 		if err != nil {
