@@ -2,7 +2,6 @@ package webconnectivity
 
 import (
 	"context"
-	"errors"
 
 	"github.com/ooni/probe-cli/v3/internal/geoipx"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -29,21 +28,7 @@ func Control(
 	sess.Logger().Infof("control for %s... %+v", creq.HTTPRequest, model.ErrorToStringOrOK(err))
 	if err != nil {
 		// make sure error is wrapped
-		//
-		// IMPORTANT: here we create a new string error using `errors.New(err.Error())` because
-		// `*httpclientx.ErrAllEndpointsFailed` implements the `Unwrap() []error` method which
-		// would otherwise cause the `netxlite.NewTopLevelGenericErrWrapper` function to unwrap
-		// as the first syscall error that occurred. So, without this error laundry passing through
-		// strings, we would get the following:
-		//
-		//	connection_reset
-		//
-		// instead of
-		//
-		//	httpapi: all endpoints failed: [ connection_reset; connection_reset; connection_reset; connection_reset;]
-		//
-		// when running webconnectivity QA tests in the `webconnectivityqa` package.
-		err = netxlite.NewTopLevelGenericErrWrapper(errors.New(err.Error()))
+		err = netxlite.NewTopLevelGenericErrWrapper(err)
 		return ControlResponse{}, nil, err
 	}
 	fillASNs(&out.DNS)

@@ -3,8 +3,9 @@ package webconnectivityalgo
 import (
 	"context"
 
-	"github.com/ooni/probe-cli/v3/internal/httpclientx"
+	"github.com/ooni/probe-cli/v3/internal/httpapi"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/ooapi"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -26,18 +27,14 @@ func CallWebConnectivityTestHelper(ctx context.Context, creq *model.THRequest,
 		return nil, 0, model.ErrNoAvailableTestHelpers
 	}
 
-	// create overlapped state for performing overlapped HTTP calls
-	overlapped := httpclientx.NewOverlappedPostJSON[*model.THRequest, *model.THResponse](
-		creq, &httpclientx.Config{
-			Authorization: "", // not needed
-			Client:        sess.DefaultHTTPClient(),
-			Logger:        sess.Logger(),
-			UserAgent:     sess.UserAgent(),
-		},
+	// initialize a sequence caller for invoking the THs in FIFO order
+	seqCaller := httpapi.NewSequenceCaller(
+		ooapi.NewDescriptorTH(creq),
+		httpapi.NewEndpointList(sess.DefaultHTTPClient(), sess.Logger(), sess.UserAgent(), testhelpers...)...,
 	)
 
-	// perform the overlapped HTTP API calls
-	cresp, idx, err := overlapped.Run(ctx, httpclientx.NewEndpointFromModelOOAPIServices(testhelpers...)...)
+	// issue the composed call proper and obtain a response and an index or an error
+	cresp, idx, err := seqCaller.Call(ctx)
 
 	// handle the case where all test helpers failed
 	if err != nil {
