@@ -199,7 +199,7 @@ func TestNewOverlappedPostJSONFirstCallSucceeds(t *testing.T) {
 
 	runtimex.Assert(len(results) == 4, "unexpected number of results")
 
-	// the first three attempts should succeed and subsequent ones should
+	// the first attempt should succeed and subsequent ones should
 	// have failed with the context.Canceled error
 	for _, entry := range results {
 		t.Log(entry.Index, string(must.MarshalJSON(entry)))
