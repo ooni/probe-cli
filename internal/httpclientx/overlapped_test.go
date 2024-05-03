@@ -405,9 +405,8 @@ func TestNewOverlappedPostJSONResetTimeoutSuccessCanceled(t *testing.T) {
 	//
 	// We're splitting the algorithm into its Map step and its Reduce step because
 	// this allows us to clearly observe what happened.
-
-	// modify the watchdog timeout be much smaller than usual
-	overlapped.WatchdogTimeout = 2 * time.Second
+	//
+	// Note: we're running this test with the default watchdog timeout.
 
 	results := overlapped.Map(
 		context.Background(),
