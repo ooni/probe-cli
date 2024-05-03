@@ -25,7 +25,7 @@ import (
 //
 // This function either returns an error or a valid Output.
 func PostJSON[Input, Output any](ctx context.Context, epnt *Endpoint, input Input, config *Config) (Output, error) {
-	return NewOverlappedPostJSON[Input, Output](input, config).Run(ctx, epnt)
+	return OverlappedIgnoreIndex(NewOverlappedPostJSON[Input, Output](input, config).Run(ctx, epnt))
 }
 
 func postJSON[Input, Output any](ctx context.Context, epnt *Endpoint, input Input, config *Config) (Output, error) {
