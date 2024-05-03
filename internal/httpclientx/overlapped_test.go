@@ -247,7 +247,8 @@ func TestNewOverlappedPostJSONHandlesAllTimeouts(t *testing.T) {
 	// - 3.th.ooni.org causes timeout
 	//
 	// We expect to loop for all endpoints and then discover that all of them
-	// failed. To make the test ~quick, we reduce the scheduling interval.
+	// failed. To make the test ~quick, we reduce the scheduling interval, and
+	// the watchdog timeout.
 	//
 
 	blockforever := make(chan any)
@@ -493,5 +494,17 @@ func TestNewOverlappedPostJSONWithNoURLs(t *testing.T) {
 	// we expect a nil response
 	if apiResp != nil {
 		t.Fatal("expected nil API response")
+	}
+}
+
+func TestNewOverlappedWithFuncDefaultsAreCorrect(t *testing.T) {
+	overlapped := newOverlappedWithFunc(func(ctx context.Context, e *Endpoint) (int, error) {
+		return 1, nil
+	})
+	if overlapped.ScheduleInterval != 15*time.Second {
+		t.Fatal("unexpected ScheduleInterval")
+	}
+	if overlapped.WatchdogTimeout != 5*time.Minute {
+		t.Fatal("unexpected WatchdogTimeout")
 	}
 }
