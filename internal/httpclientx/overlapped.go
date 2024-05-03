@@ -94,13 +94,10 @@ func NewOverlappedPostJSON[Input, Output any](input Input, config *Config) *Over
 // ErrGenericOverlappedFailure indicates that a generic [*Overlapped] failure occurred.
 var ErrGenericOverlappedFailure = errors.New("overlapped: generic failure")
 
-// TODO(bassosimone): to use this API with test helpers, we also need to return
-// the successful index to the caller.
-
 // Run runs the overlapped operations, returning the result of the first operation
 // that succeeds and otherwise returning an error describing what happened.
-func (ovx *Overlapped[Output]) Run(ctx context.Context, epnts ...*Endpoint) (Output, error) {
-	return ovx.Reduce(ovx.Map(ctx, epnts...))
+func (ovx *Overlapped[Output]) Run(ctx context.Context, epnts ...*Endpoint) (Output, int, error) {
+	return OverlappedReduce[Output](ovx.Map(ctx, epnts...))
 }
 
 // OverlappedErrorOr combines error information, result information and the endpoint index.
@@ -187,14 +184,19 @@ func (ovx *Overlapped[Output]) Map(ctx context.Context, epnts ...*Endpoint) []*O
 	return results
 }
 
-// Reduce takes the results of [*Overlapped.Map] and returns either an Output or an error.
-func (ovx *Overlapped[Output]) Reduce(results []*OverlappedErrorOr[Output]) (Output, error) {
+// OverlappedReduce takes the results of [*Overlapped.Map] and returns either an Output or an error.
+//
+// Note that you SHOULD use [*Overlapped.Run] unless you want to observe the result
+// of each operation, which is mostly useful when running unit tests.
+//
+// The return value is (output, index, nil) on success and (zero, zero, error) on failure.
+func OverlappedReduce[Output any](results []*OverlappedErrorOr[Output]) (Output, int, error) {
 	// postprocess the results to check for success and
 	// aggregate all the errors that occurred
 	errorv := []error{}
 	for _, res := range results {
 		if res.Err == nil {
-			return res.Value, nil
+			return res.Value, res.Index, nil
 		}
 		errorv = append(errorv, res.Err)
 	}
@@ -210,7 +212,7 @@ func (ovx *Overlapped[Output]) Reduce(results []*OverlappedErrorOr[Output]) (Out
 	//
 	// note thay errors.Join returns nil if all the errors are nil or the
 	// list is nil, which is why we handle the corner case above
-	return *new(Output), errors.Join(errorv...)
+	return *new(Output), 0, errors.Join(errorv...)
 }
 
 // transact performs an HTTP transaction with the given URL and writes results to the output channel.
@@ -228,4 +230,9 @@ func (ovx *Overlapped[Output]) transact(
 		Index: idx,
 		Value: value,
 	}
+}
+
+// OverlappedIgnoreIndex is a filter that removes the index from [*Overlapped.Run] results.
+func OverlappedIgnoreIndex[Output any](value Output, _ int, err error) (Output, error) {
+	return value, err
 }

@@ -21,7 +21,7 @@ import (
 //
 // This function either returns an error or a valid Output.
 func GetXML[Output any](ctx context.Context, epnt *Endpoint, config *Config) (Output, error) {
-	return NewOverlappedGetXML[Output](config).Run(ctx, epnt)
+	return OverlappedIgnoreIndex(NewOverlappedGetXML[Output](config).Run(ctx, epnt))
 }
 
 func getXML[Output any](ctx context.Context, epnt *Endpoint, config *Config) (Output, error) {

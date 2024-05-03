@@ -21,7 +21,7 @@ import (
 //
 // This function either returns an error or a valid Output.
 func GetJSON[Output any](ctx context.Context, epnt *Endpoint, config *Config) (Output, error) {
-	return NewOverlappedGetJSON[Output](config).Run(ctx, epnt)
+	return OverlappedIgnoreIndex(NewOverlappedGetJSON[Output](config).Run(ctx, epnt))
 }
 
 func getJSON[Output any](ctx context.Context, epnt *Endpoint, config *Config) (Output, error) {

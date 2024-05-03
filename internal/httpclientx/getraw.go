@@ -21,7 +21,7 @@ import (
 //
 // This function either returns an error or a valid Output.
 func GetRaw(ctx context.Context, epnt *Endpoint, config *Config) ([]byte, error) {
-	return NewOverlappedGetRaw(config).Run(ctx, epnt)
+	return OverlappedIgnoreIndex(NewOverlappedGetRaw(config).Run(ctx, epnt))
 }
 
 func getRaw(ctx context.Context, epnt *Endpoint, config *Config) ([]byte, error) {

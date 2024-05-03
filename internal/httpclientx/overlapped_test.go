@@ -113,11 +113,15 @@ func TestNewOverlappedPostJSONFastRecoverFromEarlyErrors(t *testing.T) {
 	// Now run the reduce step of the algorithm and make sure we correctly
 	// return the first success and the nil error
 
-	apiResp, err := overlapped.Reduce(results)
+	apiResp, idx, err := OverlappedReduce(results)
 
 	// we do not expect to see a failure because threeTh is WAI
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	if idx != 3 {
+		t.Fatal("unexpected success index", idx)
 	}
 
 	// compare response to expectation
@@ -223,11 +227,15 @@ func TestNewOverlappedPostJSONFirstCallSucceeds(t *testing.T) {
 	// Now run the reduce step of the algorithm and make sure we correctly
 	// return the first success and the nil error
 
-	apiResp, err := overlapped.Reduce(results)
+	apiResp, idx, err := OverlappedReduce(results)
 
 	// we do not expect to see a failure because all the THs are WAI
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	if idx != 0 {
+		t.Fatal("unexpected success index", idx)
 	}
 
 	// compare response to expectation
@@ -328,11 +336,15 @@ func TestNewOverlappedPostJSONHandlesAllTimeouts(t *testing.T) {
 	// Now run the reduce step of the algorithm and make sure we correctly
 	// return the first success and the nil error
 
-	apiResp, err := overlapped.Reduce(results)
+	apiResp, idx, err := OverlappedReduce(results)
 
 	// we expect to see a failure because the watchdog timeout should have fired
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatal("unexpected error", err)
+	}
+
+	if idx != 0 {
+		t.Fatal("unexpected index", idx)
 	}
 
 	// we expect the api response to be nil
@@ -448,11 +460,15 @@ func TestNewOverlappedPostJSONResetTimeoutSuccessCanceled(t *testing.T) {
 	// Now run the reduce step of the algorithm and make sure we correctly
 	// return the first success and the nil error
 
-	apiResp, err := overlapped.Reduce(results)
+	apiResp, idx, err := OverlappedReduce(results)
 
 	// we do not expect to see a failure because one of the THs is WAI
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	if idx != 2 {
+		t.Fatal("unexpected success index", idx)
 	}
 
 	// compare response to expectation
@@ -483,11 +499,15 @@ func TestNewOverlappedPostJSONWithNoURLs(t *testing.T) {
 	// Now we issue the requests without any URLs and make sure
 	// the result we get is the generic overlapped error
 
-	apiResp, err := overlapped.Run(context.Background() /* no URLs here! */)
+	apiResp, idx, err := overlapped.Run(context.Background() /* no URLs here! */)
 
 	// we do expect to see the generic overlapped failure
 	if !errors.Is(err, ErrGenericOverlappedFailure) {
 		t.Fatal("unexpected error", err)
+	}
+
+	if idx != 0 {
+		t.Fatal("unexpected index", idx)
 	}
 
 	// we expect a nil response
