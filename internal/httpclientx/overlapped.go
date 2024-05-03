@@ -164,7 +164,7 @@ func (ovx *Overlapped[Output]) Map(ctx context.Context, epnts ...*Endpoint) []*O
 
 		select {
 		// this event means that a child goroutine completed
-		// so we store the res; on success interrupt all the
+		// so we store the result; on success interrupt all the
 		// background goroutines and stop ticking
 		//
 		// note that we MUST continue reading until we have
