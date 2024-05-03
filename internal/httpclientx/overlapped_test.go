@@ -18,7 +18,7 @@ import (
 // an [*Overlapped], we do not necessarily need to test that each top-level constructor
 // are WAI; rather, we should focus on the mechanics of multiple URLs.
 
-func TestNewOverlappedPostJSONIsPerformingOverlappedCalls(t *testing.T) {
+func TestNewOverlappedPostJSONFastRecoverFromEarlyErrors(t *testing.T) {
 
 	//
 	// Scenario:
@@ -34,7 +34,9 @@ func TestNewOverlappedPostJSONIsPerformingOverlappedCalls(t *testing.T) {
 	// 15 seconds), we're testing whether the algorithm allows us to recover quickly from
 	// failure and check the other endpoints without waiting for too much time.
 	//
-	// Note: before changing the algorith,, this test ran for 45 seconds. Now it runs for 1s.
+	// Note: before changing the algorithm, this test ran for 45 seconds. Now it runs
+	// for 1s because a previous goroutine terminating with error causes the next
+	// goroutine to start and attempt to fetch the resource.
 	//
 
 	zeroTh := testingx.MustNewHTTPServer(testingx.HTTPHandlerReset())
@@ -91,7 +93,7 @@ func TestNewOverlappedPostJSONIsPerformingOverlappedCalls(t *testing.T) {
 	}
 }
 
-func TestNewOverlappedPostJSONCancelsPendingCalls(t *testing.T) {
+func TestNewOverlappedPostJSONFirstCallSucceeds(t *testing.T) {
 
 	//
 	// Scenario:
@@ -104,6 +106,8 @@ func TestNewOverlappedPostJSONCancelsPendingCalls(t *testing.T) {
 	// We expect to get a response from the first TH because it's the first goroutine
 	// that we schedule and, even if the wakeup signals for THs are random, the schedule
 	// interval is 15 seconds while we emit a wakeup signal every 0.25 seconds.
+	//
+	// What we're testing here, therefore, is that subsequent calls w
 	//
 
 	expectedResponse := &apiResponse{
