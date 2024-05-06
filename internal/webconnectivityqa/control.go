@@ -43,7 +43,7 @@ func controlFailureWithSuccessfulHTTPWebsite() *TestCase {
 		},
 		ExpectErr: false,
 		ExpectTestKeys: &TestKeys{
-			ControlFailure: "unknown_failure: httpapi: all endpoints failed: [ connection_reset; connection_reset; connection_reset; connection_reset;]",
+			ControlFailure: "connection_reset",
 			XStatus:        8, // StatusAnomalyControlUnreachable
 			Accessible:     nil,
 			Blocking:       nil,
@@ -88,7 +88,7 @@ func controlFailureWithSuccessfulHTTPSWebsite() *TestCase {
 		},
 		ExpectErr: false,
 		ExpectTestKeys: &TestKeys{
-			ControlFailure: "unknown_failure: httpapi: all endpoints failed: [ connection_reset; connection_reset; connection_reset; connection_reset;]",
+			ControlFailure: "connection_reset",
 			XStatus:        1,  // StatusSuccessSecure
 			XBlockingFlags: 32, // AnalysisBlockingFlagSuccess
 			XNullNullFlags: 8,  // AnalysisFlagNullNullSuccessfulHTTPS
