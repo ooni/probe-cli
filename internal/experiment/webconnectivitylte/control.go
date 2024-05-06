@@ -2,7 +2,6 @@ package webconnectivitylte
 
 import (
 	"context"
-	"errors"
 	"net"
 	"net/url"
 	"sync"
@@ -113,21 +112,7 @@ func (c *Control) Run(parentCtx context.Context) {
 	cresp, idx, err := webconnectivityalgo.CallWebConnectivityTestHelper(opCtx, creq, c.TestHelpers, c.Session)
 	if err != nil {
 		// make sure error is wrapped
-		//
-		// IMPORTANT: here we create a new string error using `errors.New(err.Error())` because
-		// `*httpclientx.ErrAllEndpointsFailed` implements the `Unwrap() []error` method which
-		// would otherwise cause the `netxlite.NewTopLevelGenericErrWrapper` function to unwrap
-		// as the first syscall error that occurred. So, without this error laundry passing through
-		// strings, we would get the following:
-		//
-		//	connection_reset
-		//
-		// instead of
-		//
-		//	httpapi: all endpoints failed: [ connection_reset; connection_reset; connection_reset; connection_reset;]
-		//
-		// when running webconnectivity QA tests in the `webconnectivityqa` package.
-		err = netxlite.NewTopLevelGenericErrWrapper(errors.New(err.Error()))
+		err = netxlite.NewTopLevelGenericErrWrapper(err)
 		c.TestKeys.SetControlFailure(err)
 		ol.Stop(err)
 		return
