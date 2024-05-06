@@ -19,7 +19,7 @@ func (c Client) FetchOpenVPNConfig(ctx context.Context, provider, cc string) (re
 	query.Add("country_code", cc)
 
 	URL, err := urlx.ResolveReference(c.BaseURL,
-		fmt.Sprintf("/api/v2/ooniprobe/vpn-config/%svpn/", provider),
+		fmt.Sprintf("/api/v2/ooniprobe/vpn-config/%svpn", provider),
 		query.Encode())
 	if err != nil {
 		return

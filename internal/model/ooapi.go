@@ -126,7 +126,7 @@ type OOAPIVPNProviderConfig struct {
 	Config *OOAPIVPNConfig `json:"config"`
 
 	// Inputs is an array of valid endpoints for this provider.
-	Inputs []string
+	Inputs []string `json:"endpoints"`
 
 	// DateUpdated is when the credential set was last updated in the server database.
 	DateUpdated time.Time `json:"date_updated"`
