@@ -11,13 +11,13 @@
 ## Introduction
 
 While running OONI Probe needs to communicate with several services, some
-of which are managed by OONI, some of which by third parties This document is
+of which are managed by OONI, some of which by third parties. This document is
 about explaining the interaction with internal services.
 
 Services managed by OONI are divided into two distinct categories:
 
 1. "probe services", that is APIs that provide services to OONI probe
-during its bootstrap, when fetcing inputs, or when submitting measurements;
+during its bootstrap, when fetching inputs, or when submitting measurements;
 
 2. "test helpers", that is APIs invoked while measuring.
 
@@ -29,7 +29,7 @@ point has been implemented by the `api.ooni.io` host.
 
 ## Software Architecture
 
-There is OONI Probe Mobile, OONI Probe Desktop, and OONI Probe CLI. Also, there
+There are OONI Probe Mobile, OONI Probe Desktop, and OONI Probe CLI. Also, there
 are two CLI clients, `ooniprobe` and `miniooni` (the research client).
 
 Mobile clients used the [pkg/oonimkall](../../pkg/oonimkall/) API. Desktop
