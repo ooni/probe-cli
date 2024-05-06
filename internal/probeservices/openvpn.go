@@ -27,11 +27,13 @@ func (c Client) FetchOpenVPNConfig(ctx context.Context, provider, cc string) (re
 
 	// get response
 	//
-	// use a model.DiscardLogger to avoid logging bridges
-	return httpclientx.GetJSON[model.OOAPIVPNProviderConfig](ctx, URL, &httpclientx.Config{
-		Client:    c.HTTPClient,
-		Host:      c.Host,
-		Logger:    model.DiscardLogger,
-		UserAgent: c.UserAgent,
-	})
+	// use a model.DiscardLogger to avoid logging config
+	return httpclientx.GetJSON[model.OOAPIVPNProviderConfig](
+		ctx,
+		httpclientx.NewEndpoint(URL).WithHostOverride(c.Host),
+		&httpclientx.Config{
+			Client:    c.HTTPClient,
+			Logger:    model.DiscardLogger,
+			UserAgent: c.UserAgent,
+		})
 }
