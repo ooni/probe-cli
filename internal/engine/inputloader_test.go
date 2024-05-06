@@ -464,7 +464,7 @@ func (sess *InputLoaderMockableSession) CheckIn(
 	if sess.Output == nil && sess.Error == nil {
 		return nil, errors.New("both Output and Error are nil")
 	}
-	return sess.CheckinOutput, sess.Error
+	return sess.Output, sess.Error
 }
 
 // FetchOpenVPNConfig implements InputLoaderSession.FetchOpenVPNConfig.

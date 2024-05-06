@@ -23,13 +23,7 @@ func makeMockSession() *mocks.Session {
 		MockFetchOpenVPNConfig: func(context.Context, string, string) (*model.OOAPIVPNProviderConfig, error) {
 			return &model.OOAPIVPNProviderConfig{
 				Provider: "provider",
-				Config: &struct {
-					CA       string "json:\"ca\""
-					Cert     string "json:\"cert,omitempty\""
-					Key      string "json:\"key,omitempty\""
-					Username string "json:\"username,omitempty\""
-					Password string "json:\"password,omitempty\""
-				}{
+				Config: &model.OOAPIVPNConfig{
 					CA:   "ca",
 					Cert: "cert",
 					Key:  "key",

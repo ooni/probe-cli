@@ -380,7 +380,7 @@ func (s *Session) FetchOpenVPNConfig(
 	if config, ok := s.vpnConfig[provider]; ok {
 		return &config, nil
 	}
-	clnt, err := s.NewOrchestraClient(ctx)
+	clnt, err := s.newOrchestraClient(ctx)
 	if err != nil {
 		return nil, err
 	}
