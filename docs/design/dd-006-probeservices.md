@@ -129,3 +129,7 @@ the "engine" API. In turn, the "engine" API uses the support
 turn, "probeservices" uses algorithms defined by "httpclientx" as
 well as an HTTP client created by the "engine" API using the
 "engineresolver" and "enginenetx" packages.
+
+Experiments also use the probe services (or other backend services
+such as the test helpers). Also all these interactions are
+always mediated through the "engine" API.
