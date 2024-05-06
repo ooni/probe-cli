@@ -292,12 +292,9 @@ func TestNewOverlappedPostJSONHandlesAllTimeouts(t *testing.T) {
 		UserID: 117,
 	}
 
-	// Note: here we're using netxlite.NewHTTPClientStdlib to get error wrapping like we
-	// normally do when running webconnectivity. This ensures that we are getting the same
-	// error strings (i.e., with wrapping) we get inside the webconnectivityqa package.
 	overlapped := NewOverlappedPostJSON[*apiRequest, *apiResponse](apiReq, &Config{
 		Authorization: "", // not relevant for this test
-		Client:        netxlite.NewHTTPClientStdlib(model.DiscardLogger),
+		Client:        http.DefaultClient,
 		Logger:        log.Log,
 		UserAgent:     model.HTTPHeaderUserAgent,
 	})
@@ -344,16 +341,6 @@ func TestNewOverlappedPostJSONHandlesAllTimeouts(t *testing.T) {
 	// we expect to see a failure because the watchdog timeout should have fired
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatal("unexpected error", err)
-	}
-
-	// make sure the returned error is exactly what we expect
-	var errorvalue *ErrAllEndpointsFailed
-	if !errors.As(err, &errorvalue) {
-		t.Fatal("cannot convert the returned error to *ErrAllEndpointsFailed")
-	}
-	expectErrString := "httpapi: all endpoints failed: [ generic_timeout_error; generic_timeout_error; generic_timeout_error; generic_timeout_error;]"
-	if err.Error() != expectErrString {
-		t.Fatal("unexpected error string", err.Error())
 	}
 
 	if idx != 0 {
@@ -515,15 +502,8 @@ func TestNewOverlappedPostJSONWithNoURLs(t *testing.T) {
 	apiResp, idx, err := overlapped.Run(context.Background() /* no URLs here! */)
 
 	// we do expect to see the generic overlapped failure
-	var errorvalue *ErrAllEndpointsFailed
-	if !errors.As(err, &errorvalue) {
+	if !errors.Is(err, ErrGenericOverlappedFailure) {
 		t.Fatal("unexpected error", err)
-	}
-	if len(errorvalue.Errors) != 0 || len(errorvalue.Indexes) != 0 {
-		t.Fatal("expected to see no errors or indexes")
-	}
-	if err.Error() != AllEndpointsFailedPrefix {
-		t.Fatal("unexpected error string", err.Error())
 	}
 
 	if idx != 0 {
