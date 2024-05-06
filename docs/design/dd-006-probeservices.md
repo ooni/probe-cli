@@ -64,18 +64,26 @@ The `*engine.Session` type represents a measurement session. This type
 provides APIs to higher-level blocks in the software architecture, as
 described above. In addition, it provides individual network experiments
 with services and state. For example, it constructs an HTTP client with
-possibly circumvention features, to communicate with probe services.
+possibly circumvention features, to communicate with test helpers. The
+session also implements all the functionality to communicate with the probe
+services (e.g., the functionality to invoke the check-in API).
 
 From the engine's point of view, the software architecture is the following:
 
 ```
   +------------------------------------------------------------------+
   |                       .../engine (Engine API)                    |
-  +-----------------+---------------------+--------------------------+
-  | .../enginenetx  |  .../engineresolver |   .../probeservices      |
-  +-----------------+---------------------+--------------------------+
-                                          |    .../httpclientx       |
-										  +--------------------------+
+  +------------------------------------------------------------------+
+           |                     |                      |
+		   V                     V                      V
+  +-----------------+ +---------------------+ +----------------------+
+  | .../enginenetx  | |  .../engineresolver | | .../probeservices    |
+  +-----------------+ +---------------------+ +----------------------+
+                                                        |
+														V
+                                              +----------------------+
+                                              |   .../httpclientx    |
+										      +----------------------+
 ```
 
 The `.../` ellipsis indicates packages inside [internal](../../internal/).
@@ -83,18 +91,18 @@ The `.../` ellipsis indicates packages inside [internal](../../internal/).
 Basically:
 
 1. the `engineresolver` package manages a composed DNS-over-HTTPS
-resolver that fallsback to the system resolver;
+resolver that falls back to the system resolver;
 
 2. the `enginenetx` package manages dialing TLS connections
-and is where we implement the "bridges" circumvention strategy;
+and is where we implement the "bridges" circumvention strategy (see
+the package's design document for more information);
 
 3. the `engine` API uses `engineresolver` and `enginenetx`
 to create an HTTP client with extra robustness properties compared to
 the one provided by the Go standard library;
 
 4. the `probeservices` package is where we use such an HTTP
-client to communicate with the probe services (see the package's
-design document for more information);
+client to communicate with the probe services;
 
 5. in turn `probeservices` uses the `httpclientx` package implements
 algorithms for communicating with the probe services (and other services),
@@ -109,7 +117,8 @@ is instantiated by the engine API;
 2. `httpclientx` provides algorithms to use such a client;
 
 3. `probeservices` uses `httpclientx` algorithms and the given client
-to implement communication with the probe services.
+to implement communication with the probe services, but all the
+OONI Probe's code uses the `probeservices` package through the engine API.
 
 ## Conclusion
 
