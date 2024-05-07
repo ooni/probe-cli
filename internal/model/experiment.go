@@ -7,7 +7,11 @@ package model
 
 import (
 	"context"
+	"errors"
 )
+
+// ErrNoAvailableTestHelpers is emitted when there are no available test helpers.
+var ErrNoAvailableTestHelpers = errors.New("no available helpers")
 
 // ExperimentSession is the experiment's view of a session.
 type ExperimentSession interface {

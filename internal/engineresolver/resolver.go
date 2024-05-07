@@ -14,9 +14,9 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
+	"github.com/ooni/probe-cli/v3/internal/legacy/multierror"
 	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/multierror"
 )
 
 // Resolver is the session resolver. Resolver will try to use

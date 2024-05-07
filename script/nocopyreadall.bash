@@ -1,5 +1,13 @@
 #!/bin/bash
 set -euo pipefail
+
+#
+# This script ensures that non-testing code never uses io.ReadAll and io.Copy and
+# prefers their netxlite counterparts who also take a context argument.
+#
+# See https://github.com/ooni/probe/issues/1609.
+#
+
 exitcode=0
 for file in $(find . -type f -name \*.go); do
 	if [ "$file" = "./internal/netemx/ooapi_test.go" ]; then
@@ -66,6 +74,30 @@ for file in $(find . -type f -name \*.go); do
 	fi
 
 	if [ "$file" = "./internal/testingx/httptestx_test.go" ]; then
+		# We're allowed to use ReadAll and Copy in this file because
+		# it's code that we only use for testing purposes.
+		continue
+	fi
+
+	if [ "$file" = "./internal/testingx/oonibackendwithlogin.go" ]; then
+		# We're allowed to use ReadAll and Copy in this file because
+		# it's code that we only use for testing purposes.
+		continue
+	fi
+
+	if [ "$file" = "./internal/testingx/oonibackendwithlogin_test.go" ]; then
+		# We're allowed to use ReadAll and Copy in this file because
+		# it's code that we only use for testing purposes.
+		continue
+	fi
+
+	if [ "$file" = "./internal/testingx/oonicollector.go" ]; then
+		# We're allowed to use ReadAll and Copy in this file because
+		# it's code that we only use for testing purposes.
+		continue
+	fi
+
+	if [ "$file" = "./internal/testingx/oonicollector_test.go" ]; then
 		# We're allowed to use ReadAll and Copy in this file because
 		# it's code that we only use for testing purposes.
 		continue

@@ -80,7 +80,7 @@ func TestMeasureWithCancelledContext(t *testing.T) {
 	}
 	tk := measurement.TestKeys.(*webconnectivity.TestKeys)
 	if *tk.ControlFailure != netxlite.FailureInterrupted {
-		t.Fatal("unexpected control_failure")
+		t.Fatal("unexpected control_failure", *tk.ControlFailure)
 	}
 	if *tk.DNSExperimentFailure != netxlite.FailureInterrupted {
 		t.Fatal("unexpected dns_experiment_failure")
@@ -206,7 +206,7 @@ func TestMeasureWithNoAvailableTestHelpers(t *testing.T) {
 		Session:     sess,
 	}
 	err := measurer.Run(ctx, args)
-	if !errors.Is(err, webconnectivity.ErrNoAvailableTestHelpers) {
+	if !errors.Is(err, model.ErrNoAvailableTestHelpers) {
 		t.Fatal(err)
 	}
 	tk := measurement.TestKeys.(*webconnectivity.TestKeys)

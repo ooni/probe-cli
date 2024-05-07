@@ -21,6 +21,7 @@ func TestLogger(t *testing.T) {
 	logger.Warnf("jar%s", "baz")
 	expectWarn := []string{"jarjar", "jarbaz"}
 
+	// make sure we can get individual lines
 	if diff := cmp.Diff(expectDebug, logger.DebugLines()); diff != "" {
 		t.Fatal(diff)
 	}
@@ -28,6 +29,18 @@ func TestLogger(t *testing.T) {
 		t.Fatal(diff)
 	}
 	if diff := cmp.Diff(expectWarn, logger.WarnLines()); diff != "" {
+		t.Fatal(diff)
+	}
+
+	// make sure we can get combines lines
+	expectCombined := append(append(append([]string{}, expectDebug...), expectInfo...), expectWarn...)
+	if diff := cmp.Diff(expectCombined, logger.AllLines()); diff != "" {
+		t.Fatal(diff)
+	}
+
+	// make sure clear works
+	logger.ClearAll()
+	if diff := cmp.Diff([]string{}, logger.AllLines()); diff != "" {
 		t.Fatal(diff)
 	}
 }
