@@ -49,11 +49,9 @@ from a pre-defined list of SNIs;
 
 3. remember and use tactics for creating TLS connections that worked previously;
 
-4. recover ~quickly if the conditions change (e.g., if a bridge is discontinued);
+4. for the trivial case, an uncensored API backend, communication to the API should use the simplest way possible. This naturally leads to the fact that it should recover ~quickly if the conditions change (e.g., if a bridge is discontinued);
 
-5. adopt a censored-users-first approach where the strategy we use by default
-should allow for smooth operations _for them_ rather than prioritizing the
-non-censored case and using additional tactics as the fallback;
+5. for users in censored regions it should be possible to use tactics to overcome the restrictions;
 
 6. try to defer sending the true `SNI` on the wire, therefore trying to
 avoid triggering potential residual censorship blocking a given TCP endpoint
