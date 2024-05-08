@@ -20,6 +20,7 @@ func TestBridgesPolicy(t *testing.T) {
 						return nil, expected
 					},
 				},
+				Fallback: &nullPolicy{},
 			},
 		}
 
@@ -45,6 +46,7 @@ func TestBridgesPolicy(t *testing.T) {
 						return []string{"93.184.216.34"}, nil
 					},
 				},
+				Fallback: &nullPolicy{},
 			},
 		}
 
@@ -90,6 +92,7 @@ func TestBridgesPolicy(t *testing.T) {
 						return nil, expected
 					},
 				},
+				Fallback: &nullPolicy{},
 			},
 		}
 
@@ -135,6 +138,7 @@ func TestBridgesPolicy(t *testing.T) {
 						return []string{"130.192.91.211"}, nil
 					},
 				},
+				Fallback: &nullPolicy{},
 			},
 		}
 
@@ -214,6 +218,7 @@ func TestBridgesPolicy(t *testing.T) {
 								return expectedAddrs, nil
 							},
 						},
+						Fallback: &nullPolicy{},
 					},
 				}
 

@@ -4,8 +4,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestDNSPolicy(t *testing.T) {
@@ -19,6 +21,7 @@ func TestDNSPolicy(t *testing.T) {
 				},
 			},
 			Resolver: &mocks.Resolver{}, // empty so we crash if we hit the resolver
+			Fallback: &nullPolicy{},
 		}
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -43,6 +46,7 @@ func TestDNSPolicy(t *testing.T) {
 		policy := &dnsPolicy{
 			Logger:   model.DiscardLogger,
 			Resolver: &mocks.Resolver{}, // empty so we crash if we hit the resolver
+			Fallback: &nullPolicy{},
 		}
 
 		tactics := policy.LookupTactics(context.Background(), "130.192.91.211", "443")
@@ -70,6 +74,51 @@ func TestDNSPolicy(t *testing.T) {
 
 		if count != 1 {
 			t.Fatal("expected to see just one tactic")
+		}
+	})
+
+	t.Run("we fallback if the fallback is implemented", func(t *testing.T) {
+		// define what tactic we expect to see in output
+		expectTactic := &httpsDialerTactic{
+			Address:        "130.192.91.211",
+			InitialDelay:   0,
+			Port:           "443",
+			SNI:            "shelob.polito.it",
+			VerifyHostname: "api.ooni.io",
+		}
+
+		// create a DNS policy where the DNS lookup fails and then add a fallback
+		// use policy where we return back the expected tactic
+		policy := &dnsPolicy{
+			Logger: model.DiscardLogger,
+			Resolver: &mocks.Resolver{
+				MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+					return nil, netxlite.ErrOODNSNoSuchHost
+				},
+			},
+			Fallback: &userPolicy{
+				Fallback: &nullPolicy{},
+				Root: &userPolicyRoot{
+					DomainEndpoints: map[string][]*httpsDialerTactic{
+						"api.ooni.io:443": {expectTactic},
+					},
+					Version: userPolicyVersion,
+				},
+			},
+		}
+
+		// lookup for api.ooni.io:443
+		input := policy.LookupTactics(context.Background(), "api.ooni.io", "443")
+
+		// collect all the returned tactics
+		var tactics []*httpsDialerTactic
+		for tx := range input {
+			tactics = append(tactics, tx)
+		}
+
+		// make sure we exactly got the tactic we expected
+		if diff := cmp.Diff([]*httpsDialerTactic{expectTactic}, tactics); diff != "" {
+			t.Fatal(diff)
 		}
 	})
 }

@@ -157,6 +157,7 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 						}
 					},
 				},
+				Fallback: &nullPolicy{},
 			},
 			Stats: stats,
 		}
@@ -220,6 +221,7 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 						}
 					},
 				},
+				Fallback: &nullPolicy{},
 			},
 			Stats: stats,
 		}

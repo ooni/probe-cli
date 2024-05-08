@@ -149,13 +149,21 @@ func newHTTPSDialerPolicy(
 	// in case there's a proxy URL, we're going to trust the proxy to do the right thing and
 	// know what it's doing, hence we'll have a very simple DNS policy
 	if proxyURL != nil {
-		return &dnsPolicy{logger, resolver}
+		return &dnsPolicy{
+			Logger:   logger,
+			Resolver: resolver,
+			Fallback: &nullPolicy{},
+		}
 	}
 
 	// create a composed fallback TLS dialer policy
 	fallback := &statsPolicy{
-		Fallback: &bridgesPolicy{Fallback: &dnsPolicy{logger, resolver}},
-		Stats:    stats,
+		Fallback: &bridgesPolicy{Fallback: &dnsPolicy{
+			Logger:   logger,
+			Resolver: resolver,
+			Fallback: &nullPolicy{},
+		}},
+		Stats: stats,
 	}
 
 	// make sure we honor a user-provided policy
