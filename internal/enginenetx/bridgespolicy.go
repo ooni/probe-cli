@@ -41,7 +41,7 @@ func (p *bridgesPolicy) LookupTactics(ctx context.Context, domain, port string) 
 			// Prioritize emitting tactics for bridges. Currently we only have bridges
 			// for "api.ooni.io", therefore, for all other hosts this arm ends up
 			// returning a channel that will be immediately closed.
-			C: p.bridgesTacticsForDomain(domain, port),
+			C: bridgesTacticsForDomain(domain, port),
 
 			// This ensures we read the first two bridge tactics.
 			//
@@ -53,7 +53,7 @@ func (p *bridgesPolicy) LookupTactics(ctx context.Context, domain, port string) 
 		&mixDeterministicThenRandomConfig{
 			// Mix the above with using the fallback policy and rewriting the SNIs
 			// used by the test helpers to avoid exposing the real SNIs.
-			C: p.maybeRewriteTestHelpersTactics(p.Fallback.LookupTactics(ctx, domain, port)),
+			C: maybeRewriteTestHelpersTactics(p.Fallback.LookupTactics(ctx, domain, port)),
 
 			// This ensures we read the first two DNS tactics.
 			//
@@ -72,7 +72,7 @@ var bridgesPolicyTestHelpersDomains = []string{
 	"d33d1gs9kpq1c5.cloudfront.net",
 }
 
-func (p *bridgesPolicy) maybeRewriteTestHelpersTactics(input <-chan *httpsDialerTactic) <-chan *httpsDialerTactic {
+func maybeRewriteTestHelpersTactics(input <-chan *httpsDialerTactic) <-chan *httpsDialerTactic {
 	out := make(chan *httpsDialerTactic)
 
 	go func() {
@@ -87,7 +87,7 @@ func (p *bridgesPolicy) maybeRewriteTestHelpersTactics(input <-chan *httpsDialer
 
 			// This is the case where we're connecting to a test helper. Let's try
 			// to produce policies hiding the SNI to censoring middleboxes.
-			for _, sni := range p.bridgesDomainsInRandomOrder() {
+			for _, sni := range bridgesDomainsInRandomOrder() {
 				out <- &httpsDialerTactic{
 					Address:        tactic.Address,
 					InitialDelay:   0, // set when dialing
@@ -102,7 +102,7 @@ func (p *bridgesPolicy) maybeRewriteTestHelpersTactics(input <-chan *httpsDialer
 	return out
 }
 
-func (p *bridgesPolicy) bridgesTacticsForDomain(domain, port string) <-chan *httpsDialerTactic {
+func bridgesTacticsForDomain(domain, port string) <-chan *httpsDialerTactic {
 	out := make(chan *httpsDialerTactic)
 
 	go func() {
@@ -113,8 +113,8 @@ func (p *bridgesPolicy) bridgesTacticsForDomain(domain, port string) <-chan *htt
 			return
 		}
 
-		for _, ipAddr := range p.bridgesAddrs() {
-			for _, sni := range p.bridgesDomainsInRandomOrder() {
+		for _, ipAddr := range bridgesAddrs() {
+			for _, sni := range bridgesDomainsInRandomOrder() {
 				out <- &httpsDialerTactic{
 					Address:        ipAddr,
 					InitialDelay:   0, // set when dialing
@@ -129,8 +129,8 @@ func (p *bridgesPolicy) bridgesTacticsForDomain(domain, port string) <-chan *htt
 	return out
 }
 
-func (p *bridgesPolicy) bridgesDomainsInRandomOrder() (out []string) {
-	out = p.bridgesDomains()
+func bridgesDomainsInRandomOrder() (out []string) {
+	out = bridgesDomains()
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	r.Shuffle(len(out), func(i, j int) {
 		out[i], out[j] = out[j], out[i]
@@ -138,14 +138,14 @@ func (p *bridgesPolicy) bridgesDomainsInRandomOrder() (out []string) {
 	return
 }
 
-func (p *bridgesPolicy) bridgesAddrs() (out []string) {
+func bridgesAddrs() (out []string) {
 	return append(
 		out,
 		"162.55.247.208",
 	)
 }
 
-func (p *bridgesPolicy) bridgesDomains() (out []string) {
+func bridgesDomains() (out []string) {
 	// See https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/-/issues/40273
 	return append(
 		out,
