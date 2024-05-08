@@ -64,6 +64,26 @@ func (p *bridgesPolicy) LookupTactics(ctx context.Context, domain, port string) 
 	)
 }
 
+// bridgesPolicyV2 is a policy where we use bridges for communicating
+// with the OONI backend, i.e., api.ooni.io.
+//
+// A bridge is an IP address that can route traffic from and to
+// the OONI backend and accepts any SNI.
+//
+// The zero value is invalid; please, init MANDATORY fields.
+//
+// This is v2 of the bridgesPolicy because the previous implementation
+// incorporated mixing logic, while now the mixing happens outside
+// of this policy, this giving us much more flexibility.
+type bridgesPolicyV2 struct{}
+
+var _ httpsDialerPolicy = &bridgesPolicyV2{}
+
+// LookupTactics implements httpsDialerPolicy.
+func (p *bridgesPolicyV2) LookupTactics(ctx context.Context, domain, port string) <-chan *httpsDialerTactic {
+	return bridgesTacticsForDomain(domain, port)
+}
+
 var bridgesPolicyTestHelpersDomains = []string{
 	"0.th.ooni.org",
 	"1.th.ooni.org",
@@ -71,6 +91,9 @@ var bridgesPolicyTestHelpersDomains = []string{
 	"3.th.ooni.org",
 	"d33d1gs9kpq1c5.cloudfront.net",
 }
+
+// TODO(bassosimone): the rewriting of test helper tactics should happen elsewhere
+// once we stop using the bridgesPolicy (i.e., version 1)
 
 func maybeRewriteTestHelpersTactics(input <-chan *httpsDialerTactic) <-chan *httpsDialerTactic {
 	out := make(chan *httpsDialerTactic)

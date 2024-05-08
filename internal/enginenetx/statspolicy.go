@@ -56,6 +56,28 @@ func (p *statsPolicy) LookupTactics(ctx context.Context, domain string, port str
 	)))
 }
 
+// statsPolicyV2 is a policy that schedules tactics already known
+// to work based on the previously collected stats.
+//
+// The zero value of this struct is invalid; please, make sure
+// you fill all the fields marked as MANDATORY.
+//
+// This is v2 of the statsPolicy because the previous implementation
+// incorporated mixing logic, while now the mixing happens outside
+// of this policy, this giving us much more flexibility.
+type statsPolicyV2 struct {
+	// Stats is the MANDATORY stats manager.
+	Stats *statsManager
+}
+
+var _ httpsDialerPolicy = &statsPolicyV2{}
+
+// LookupTactics implements httpsDialerPolicy.
+func (p *statsPolicyV2) LookupTactics(ctx context.Context, domain string, port string) <-chan *httpsDialerTactic {
+	// avoid emitting nil tactics and duplicate tactics
+	return streamTacticsFromSlice(statsPolicyFilterStatsTactics(p.Stats.LookupTactics(domain, port)))
+}
+
 func statsPolicyFilterStatsTactics(tactics []*statsTactic, good bool) (out []*httpsDialerTactic) {
 	// when good is false, it means p.Stats.LookupTactics failed
 	if !good {
