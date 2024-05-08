@@ -202,6 +202,10 @@ func (hd *httpsDialer) DialTLSContext(ctx context.Context, network string, endpo
 		return nil, err
 	}
 
+	// TODO(bassosimone): this code should be refactored using the same
+	// pattern used by `./internal/httpclientx` to perform attempts faster
+	// in case there is an initial early failure
+
 	// We need a cancellable context to interrupt the tactics emitter early when we
 	// immediately get a valid response and we don't need to use other tactics.
 	ctx, cancel := context.WithCancel(ctx)

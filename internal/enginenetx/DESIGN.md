@@ -31,7 +31,8 @@ We define "bridge" an IP address with the following properties:
 
 2. the IP address listens on port 443 and accepts _any_ incoming SNI;
 
-3. the webserver on port 443 provides unified access to [OONI API services](https://docs.ooni.org/backend/ooniapi/services/).
+3. the webserver on port 443 provides unified access to
+[OONI API services](https://docs.ooni.org/backend/ooniapi/services/).
 
 We also assume that the Web Connectivity test helpers (TH) could accept any SNIs.
 
@@ -49,15 +50,20 @@ from a pre-defined list of SNIs;
 
 3. remember and use tactics for creating TLS connections that worked previously;
 
-4. for the trivial case, an uncensored API backend, communication to the API should use the simplest way possible. This naturally leads to the fact that it should recover ~quickly if the conditions change (e.g., if a bridge is discontinued);
+4. for the trivial case, an uncensored API backend, communication to the API
+should use the simplest way possible. This naturally leads to the fact that
+it should recover ~quickly if the conditions change (e.g., if a bridge
+is discontinued);
 
-5. for users in censored regions it should be possible to use tactics to overcome the restrictions;
+5. for users in censored regions it should be possible to use
+tactics to overcome the restrictions;
 
-6. try to defer sending the true `SNI` on the wire, therefore trying to
-avoid triggering potential residual censorship blocking a given TCP endpoint
-for some time regardless of what `SNI` is being used next;
+6. when using tactics, try to defer sending the true `SNI` on the wire,
+therefore trying to avoid triggering potential residual censorship blocking
+a given TCP endpoint for some time regardless of what `SNI` is being used next;
 
-7. allow users to force specific bridges and SNIs by editing `$OONI_HOME/engine/bridges.conf`.
+7. allow users to force specific bridges and SNIs by editing
+`$OONI_HOME/engine/bridges.conf`.
 
 The rest of this document explains how we designed for achieving these goals.
 
@@ -117,6 +123,10 @@ balance between what a policy suggests and what subsequent policies would sugges
 turn, this reduces the overall bootstrap time in light of issues with policies. (We
 added remix as part of [probe-cli#1552](https://github.com/ooni/probe-cli/pull/1552); before,
 we implemented strict falling back.)
+
+In particular, `statsPolicy` and `bridgePolicy` allow DNS resolved addresses to being
+used first, because "for the trivial case, an uncensored API backend, communication to the API
+should use the simplest way possible."
 
 Also, when using a proxy, we just use `dnsPolicy` assuming the proxy knows how to do circumvention.
 
@@ -418,9 +428,9 @@ would waste lots of time failing before falling back.
 Conversely, a better strategy is to "remix" tactics as implemented
 by the [mix.go](mix.go) file:
 
-1. we take the first two tactics from the stats;
+1. we take the first four tactics from the fallback;
 
-2. then we take the first four tactics from the fallback;
+2. then, we take the first two tactics from the stats;
 
 3. then we remix the rest, not caring much about whether we're
 reading from the stats of from the fallback.

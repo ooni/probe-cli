@@ -11,6 +11,48 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/optional"
 )
 
+// mixPolicyEitherOr reads from primary and only if primary does
+// not return any tactic, then it reads from fallback.
+type mixPolicyEitherOr struct {
+	// Primary is the primary policy.
+	Primary httpsDialerPolicy
+
+	// Fallback is the fallback policy.
+	Fallback httpsDialerPolicy
+}
+
+var _ httpsDialerPolicy = &mixPolicyEitherOr{}
+
+// LookupTactics implements httpsDialerPolicy.
+func (m *mixPolicyEitherOr) LookupTactics(ctx context.Context, domain string, port string) <-chan *httpsDialerTactic {
+	// create the output channel
+	output := make(chan *httpsDialerTactic)
+
+	go func() {
+		// make sure we eventually close the output channel
+		defer close(output)
+
+		// drain the primary policy
+		var count int
+		for tx := range m.Primary.LookupTactics(ctx, domain, port) {
+			output <- tx
+			count++
+		}
+
+		// if the primary worked, we're good
+		if count > 0 {
+			return
+		}
+
+		// drain the fallback policy
+		for tx := range m.Fallback.LookupTactics(ctx, domain, port) {
+			output <- tx
+		}
+	}()
+
+	return output
+}
+
 // mixPolicyInterleave interleaves policies by a given interleaving
 // factor. Say the interleave factor is N, then we first read N tactics
 // from the primary policy, then N from the fallback one, and we keep

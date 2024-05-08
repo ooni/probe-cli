@@ -202,7 +202,7 @@ func TestBridgesPolicy(t *testing.T) {
 	})
 
 	t.Run("for test helper domains", func(t *testing.T) {
-		for _, domain := range bridgesPolicyTestHelpersDomains {
+		for _, domain := range testHelpersDomains {
 			t.Run(domain, func(t *testing.T) {
 				expectedAddrs := []string{"164.92.180.7"}
 

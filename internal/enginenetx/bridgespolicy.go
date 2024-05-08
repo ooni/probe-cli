@@ -84,14 +84,6 @@ func (p *bridgesPolicyV2) LookupTactics(ctx context.Context, domain, port string
 	return bridgesTacticsForDomain(domain, port)
 }
 
-var bridgesPolicyTestHelpersDomains = []string{
-	"0.th.ooni.org",
-	"1.th.ooni.org",
-	"2.th.ooni.org",
-	"3.th.ooni.org",
-	"d33d1gs9kpq1c5.cloudfront.net",
-}
-
 // TODO(bassosimone): the rewriting of test helper tactics should happen elsewhere
 // once we stop using the bridgesPolicy (i.e., version 1)
 
@@ -103,7 +95,7 @@ func maybeRewriteTestHelpersTactics(input <-chan *httpsDialerTactic) <-chan *htt
 
 		for tactic := range input {
 			// When we're not connecting to a TH, pass the policy down the chain unmodified
-			if !slices.Contains(bridgesPolicyTestHelpersDomains, tactic.VerifyHostname) {
+			if !slices.Contains(testHelpersDomains, tactic.VerifyHostname) {
 				out <- tactic
 				continue
 			}
