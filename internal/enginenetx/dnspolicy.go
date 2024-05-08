@@ -22,10 +22,6 @@ type dnsPolicy struct {
 
 	// Resolver is the MANDATORY resolver.
 	Resolver model.Resolver
-
-	// Fallback is the MANDATORY fallback policy. Use the [*nullPolicy] if
-	// you don't want any other policy to runafter the DNS.
-	Fallback httpsDialerPolicy
 }
 
 var _ httpsDialerPolicy = &dnsPolicy{}
@@ -54,9 +50,7 @@ func (p *dnsPolicy) LookupTactics(
 		addrs, err := resoWithShortCircuit.LookupHost(ctx, domain)
 		if err != nil {
 			p.Logger.Warnf("resoWithShortCircuit.LookupHost: %s", err.Error())
-			// fallthrough because we need to also read from tactics
-			// from the fallback policy. The returned address list will
-			// be zero-length when the lookup fails anyway.
+			return
 		}
 
 		// The tactics we generate here have SNI == VerifyHostname == domain
@@ -68,11 +62,6 @@ func (p *dnsPolicy) LookupTactics(
 				SNI:            domain,
 				VerifyHostname: domain,
 			}
-			out <- tactic
-		}
-
-		// Now forward tactics from the fallback policy
-		for tactic := range p.Fallback.LookupTactics(ctx, domain, port) {
 			out <- tactic
 		}
 	}()

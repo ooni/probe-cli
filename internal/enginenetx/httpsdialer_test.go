@@ -379,7 +379,6 @@ func TestHTTPSDialerNetemQA(t *testing.T) {
 				policy := &dnsPolicy{
 					Logger:   log.Log,
 					Resolver: resolver,
-					Fallback: &nullPolicy{},
 				}
 
 				// create the TLS dialer
@@ -513,7 +512,6 @@ func TestHTTPSDialerHostNetworkQA(t *testing.T) {
 			&dnsPolicy{
 				Logger:   log.Log,
 				Resolver: resolver,
-				Fallback: &nullPolicy{},
 			},
 			&nullStatsManager{},
 		)

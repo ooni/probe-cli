@@ -152,7 +152,6 @@ func newHTTPSDialerPolicy(
 		return &dnsPolicy{
 			Logger:   logger,
 			Resolver: resolver,
-			Fallback: &nullPolicy{},
 		}
 	}
 
@@ -161,7 +160,6 @@ func newHTTPSDialerPolicy(
 		Fallback: &bridgesPolicy{Fallback: &dnsPolicy{
 			Logger:   logger,
 			Resolver: resolver,
-			Fallback: &nullPolicy{},
 		}},
 		Stats: stats,
 	}

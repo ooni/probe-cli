@@ -242,7 +242,6 @@ func TestUserPolicy(t *testing.T) {
 						return []string{"93.184.216.34"}, nil
 					},
 				},
-				Fallback: &nullPolicy{},
 			}
 
 			policy, err := newUserPolicy(kvStore, fallback)
@@ -280,7 +279,6 @@ func TestUserPolicy(t *testing.T) {
 						return []string{"93.184.216.34"}, nil
 					},
 				},
-				Fallback: &nullPolicy{},
 			}
 
 			policy, err := newUserPolicy(kvStore, fallback)
