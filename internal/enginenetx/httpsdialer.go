@@ -202,6 +202,16 @@ func (hd *httpsDialer) DialTLSContext(ctx context.Context, network string, endpo
 		return nil, err
 	}
 
+	// TODO(bassosimone): this code should be refactored using the same
+	// pattern used by `./internal/httpclientx` to perform attempts faster
+	// in case there is an initial early failure.
+
+	// TODO(bassosimone): the algorithm to filter and assign initial
+	// delays is broken because, if the DNS runs for more than one
+	// second, then several policies will immediately be due. We should
+	// probably use a better strategy that takes as the zero the time
+	// when the first dialing policy becomes available.
+
 	// We need a cancellable context to interrupt the tactics emitter early when we
 	// immediately get a valid response and we don't need to use other tactics.
 	ctx, cancel := context.WithCancel(ctx)
@@ -318,6 +328,9 @@ func (hd *httpsDialer) dialTLS(
 	if err := httpsDialerTacticWaitReady(ctx, t0, tactic); err != nil {
 		return nil, err
 	}
+
+	// for debugging let the user know which tactic is ready
+	logger.Infof("tactic '%+v' is ready", tactic)
 
 	// tell the observer that we're starting
 	hd.stats.OnStarting(tactic)

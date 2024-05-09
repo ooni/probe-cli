@@ -12,6 +12,26 @@ import (
 	"time"
 )
 
+// bridgesPolicyV2 is a policy where we use bridges for communicating
+// with the OONI backend, i.e., api.ooni.io.
+//
+// A bridge is an IP address that can route traffic from and to
+// the OONI backend and accepts any SNI.
+//
+// The zero value is invalid; please, init MANDATORY fields.
+//
+// This is v2 of the bridgesPolicy because the previous implementation
+// incorporated mixing logic, while now the mixing happens outside
+// of this policy, thus giving us much more flexibility.
+type bridgesPolicyV2 struct{}
+
+var _ httpsDialerPolicy = &bridgesPolicyV2{}
+
+// LookupTactics implements httpsDialerPolicy.
+func (p *bridgesPolicyV2) LookupTactics(ctx context.Context, domain, port string) <-chan *httpsDialerTactic {
+	return bridgesTacticsForDomain(domain, port)
+}
+
 // bridgesPolicy is a policy where we use bridges for communicating
 // with the OONI backend, i.e., api.ooni.io.
 //
@@ -31,7 +51,7 @@ func (p *bridgesPolicy) LookupTactics(ctx context.Context, domain, port string) 
 	return mixSequentially(
 		// emit bridges related tactics first which are empty if there are
 		// no bridges for the givend domain and port
-		p.bridgesTacticsForDomain(domain, port),
+		bridgesTacticsForDomain(domain, port),
 
 		// now fallback to get more tactics (typically here the fallback
 		// uses the DNS and obtains some extra tactics)
@@ -42,14 +62,6 @@ func (p *bridgesPolicy) LookupTactics(ctx context.Context, domain, port string) 
 	)
 }
 
-var bridgesPolicyTestHelpersDomains = []string{
-	"0.th.ooni.org",
-	"1.th.ooni.org",
-	"2.th.ooni.org",
-	"3.th.ooni.org",
-	"d33d1gs9kpq1c5.cloudfront.net",
-}
-
 func (p *bridgesPolicy) maybeRewriteTestHelpersTactics(input <-chan *httpsDialerTactic) <-chan *httpsDialerTactic {
 	out := make(chan *httpsDialerTactic)
 
@@ -58,14 +70,14 @@ func (p *bridgesPolicy) maybeRewriteTestHelpersTactics(input <-chan *httpsDialer
 
 		for tactic := range input {
 			// When we're not connecting to a TH, pass the policy down the chain unmodified
-			if !slices.Contains(bridgesPolicyTestHelpersDomains, tactic.VerifyHostname) {
+			if !slices.Contains(testHelpersDomains, tactic.VerifyHostname) {
 				out <- tactic
 				continue
 			}
 
 			// This is the case where we're connecting to a test helper. Let's try
 			// to produce policies hiding the SNI to censoring middleboxes.
-			for _, sni := range p.bridgesDomainsInRandomOrder() {
+			for _, sni := range bridgesDomainsInRandomOrder() {
 				out <- &httpsDialerTactic{
 					Address:        tactic.Address,
 					InitialDelay:   0, // set when dialing
@@ -80,7 +92,7 @@ func (p *bridgesPolicy) maybeRewriteTestHelpersTactics(input <-chan *httpsDialer
 	return out
 }
 
-func (p *bridgesPolicy) bridgesTacticsForDomain(domain, port string) <-chan *httpsDialerTactic {
+func bridgesTacticsForDomain(domain, port string) <-chan *httpsDialerTactic {
 	out := make(chan *httpsDialerTactic)
 
 	go func() {
@@ -91,8 +103,8 @@ func (p *bridgesPolicy) bridgesTacticsForDomain(domain, port string) <-chan *htt
 			return
 		}
 
-		for _, ipAddr := range p.bridgesAddrs() {
-			for _, sni := range p.bridgesDomainsInRandomOrder() {
+		for _, ipAddr := range bridgesAddrs() {
+			for _, sni := range bridgesDomainsInRandomOrder() {
 				out <- &httpsDialerTactic{
 					Address:        ipAddr,
 					InitialDelay:   0, // set when dialing
@@ -107,8 +119,8 @@ func (p *bridgesPolicy) bridgesTacticsForDomain(domain, port string) <-chan *htt
 	return out
 }
 
-func (p *bridgesPolicy) bridgesDomainsInRandomOrder() (out []string) {
-	out = p.bridgesDomains()
+func bridgesDomainsInRandomOrder() (out []string) {
+	out = bridgesDomains()
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	r.Shuffle(len(out), func(i, j int) {
 		out[i], out[j] = out[j], out[i]
@@ -116,14 +128,14 @@ func (p *bridgesPolicy) bridgesDomainsInRandomOrder() (out []string) {
 	return
 }
 
-func (p *bridgesPolicy) bridgesAddrs() (out []string) {
+func bridgesAddrs() (out []string) {
 	return append(
 		out,
 		"162.55.247.208",
 	)
 }
 
-func (p *bridgesPolicy) bridgesDomains() (out []string) {
+func bridgesDomains() (out []string) {
 	// See https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/-/issues/40273
 	return append(
 		out,
