@@ -273,7 +273,7 @@ func TestMixPolicyInterleave(t *testing.T) {
 			name:     "with two null policies",
 			primary:  &nullPolicy{},
 			fallback: &nullPolicy{},
-			factor:   2,
+			factor:   0,
 			domain:   "api.ooni.io",
 			port:     "443",
 			expect:   nil,
@@ -285,7 +285,7 @@ func TestMixPolicyInterleave(t *testing.T) {
 			name:     "with the fallback policy being null",
 			primary:  primary,
 			fallback: &nullPolicy{},
-			factor:   2,
+			factor:   0,
 			domain:   "api.ooni.io",
 			port:     "443",
 			expect:   expectedPrimaryTactics,
@@ -297,7 +297,7 @@ func TestMixPolicyInterleave(t *testing.T) {
 			name:     "with the primary policy being null",
 			primary:  &nullPolicy{},
 			fallback: fallback,
-			factor:   2,
+			factor:   0,
 			domain:   "api.ooni.io",
 			port:     "443",
 			expect:   expectedFallbackTactics,
@@ -305,7 +305,7 @@ func TestMixPolicyInterleave(t *testing.T) {
 
 		// This test ensures that we correctly interleave the tactics
 		{
-			name:     "with both policies being nonnull",
+			name:     "with both policies being nonnull and interleave being nonzero",
 			primary:  primary,
 			fallback: fallback,
 			factor:   2,
@@ -319,6 +319,25 @@ func TestMixPolicyInterleave(t *testing.T) {
 				expectedPrimaryTactics[2],
 				expectedPrimaryTactics[3],
 				expectedFallbackTactics[2],
+			},
+		},
+
+		// This test ensures that we behave correctly when factor is zero
+		{
+			name:     "with both policies being nonnull and interleave being zero",
+			primary:  primary,
+			fallback: fallback,
+			factor:   0,
+			domain:   "api.ooni.io",
+			port:     "443",
+			expect: []*httpsDialerTactic{
+				expectedPrimaryTactics[0],
+				expectedFallbackTactics[0],
+				expectedPrimaryTactics[1],
+				expectedFallbackTactics[1],
+				expectedPrimaryTactics[2],
+				expectedFallbackTactics[2],
+				expectedPrimaryTactics[3],
 			},
 		},
 	}

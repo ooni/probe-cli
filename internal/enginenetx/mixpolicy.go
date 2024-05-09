@@ -65,7 +65,8 @@ type mixPolicyInterleave struct {
 	// Fallback is the fallback policy.
 	Fallback httpsDialerPolicy
 
-	// Factor is the interleaving factor to use.
+	// Factor is the interleaving factor to use. If this value is
+	// zero, we behave like it was set to one.
 	Factor uint8
 }
 
@@ -113,7 +114,7 @@ func (p *mixPolicyInterleave) maybeTakeN(
 		ch := input.Unwrap()
 
 		// take N entries from the channel
-		for idx := uint8(0); idx < p.Factor; idx++ {
+		for idx := uint8(0); idx < max(1, p.Factor); idx++ {
 
 			// attempt to get the next tactic
 			tactic, good := <-ch
