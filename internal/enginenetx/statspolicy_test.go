@@ -484,17 +484,6 @@ func TestStatsPolicyWorkingAsIntended(t *testing.T) {
 	})
 }
 
-type mocksPolicy struct {
-	MockLookupTactics func(ctx context.Context, domain string, port string) <-chan *httpsDialerTactic
-}
-
-var _ httpsDialerPolicy = &mocksPolicy{}
-
-// LookupTactics implements httpsDialerPolicy.
-func (p *mocksPolicy) LookupTactics(ctx context.Context, domain string, port string) <-chan *httpsDialerTactic {
-	return p.MockLookupTactics(ctx, domain, port)
-}
-
 func TestStatsPolicyFilterStatsTactics(t *testing.T) {
 	t.Run("we do nothing when good is false", func(t *testing.T) {
 		tactics := statsPolicyFilterStatsTactics(nil, false)
