@@ -196,8 +196,8 @@ func TestUserPolicyV2(t *testing.T) {
 				},
 
 				// We add additional entries to make sure that in those
-				// cases we are going to fallback as they're basically empty
-				// and so non-actionable for us.
+				// cases we are going to get nil entries as they're basically
+				// empty and so non-actionable for us.
 				"api.ooni.xyz:443": nil,
 				"api.ooni.org:443": {},
 				"api.ooni.com:443": {nil, nil, nil},
