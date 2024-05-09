@@ -149,50 +149,19 @@ func newHTTPSDialerPolicy(
 	// in case there's a proxy URL, we're going to trust the proxy to do the right thing and
 	// know what it's doing, hence we'll have a very simple DNS policy
 	if proxyURL != nil {
-		return &dnsPolicy{
-			Logger:   logger,
-			Resolver: resolver,
-		}
+		return &dnsPolicy{logger, resolver}
 	}
 
-	// create a policy interleaving stats policies and bridges policies
-	statsOrBridges := &mixPolicyInterleave{
-		Primary: &statsPolicyV2{
-			Stats: stats,
-		},
-		Fallback: &bridgesPolicyV2{},
-		Factor:   3,
+	// create a composed fallback TLS dialer policy
+	fallback := &statsPolicy{
+		Fallback: &bridgesPolicy{Fallback: &dnsPolicy{logger, resolver}},
+		Stats:    stats,
 	}
 
-	// wrap the DNS policy with a policy that extends tactics for test
-	// helpers so that we also try using different SNIs.
-	dnsExt := &testHelpersPolicy{
-		Child: &dnsPolicy{
-			Logger:   logger,
-			Resolver: resolver,
-		},
-	}
-
-	// compose dnsExt and statsOrBridges such that dnsExt has
-	// priority in the selection of tactics
-	composed := &mixPolicyInterleave{
-		Primary:  dnsExt,
-		Fallback: statsOrBridges,
-		Factor:   3,
-	}
-
-	// attempt to load a user-provided dialing policy
-	primary, err := newUserPolicyV2(kvStore)
-
-	// on error, just use composed
+	// make sure we honor a user-provided policy
+	policy, err := newUserPolicy(kvStore, fallback)
 	if err != nil {
-		return composed
-	}
-
-	// otherwise, finish creating the dialing policy
-	policy := &mixPolicyEitherOr{
-		Primary:  primary,
-		Fallback: composed,
+		return fallback
 	}
 
 	return policy
