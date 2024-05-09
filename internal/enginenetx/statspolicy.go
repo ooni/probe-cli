@@ -12,34 +12,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// statsPolicy is a policy that schedules tactics already known
-// to work based on statistics and defers to a fallback policy
-// once it has generated all the tactics known to work.
-//
-// The zero value of this struct is invalid; please, make sure you
-// fill all the fields marked as MANDATORY.
-type statsPolicy struct {
-	// Fallback is the MANDATORY fallback policy.
-	Fallback httpsDialerPolicy
-
-	// Stats is the MANDATORY stats manager.
-	Stats *statsManager
-}
-
-var _ httpsDialerPolicy = &statsPolicy{}
-
-// LookupTactics implements HTTPSDialerPolicy.
-func (p *statsPolicy) LookupTactics(ctx context.Context, domain string, port string) <-chan *httpsDialerTactic {
-	// avoid emitting nil tactics and duplicate tactics
-	return filterOnlyKeepUniqueTactics(filterOutNilTactics(mixSequentially(
-		// give priority to what we know from stats
-		streamTacticsFromSlice(statsPolicyFilterStatsTactics(p.Stats.LookupTactics(domain, port))),
-
-		// fallback to the secondary policy
-		p.Fallback.LookupTactics(ctx, domain, port),
-	)))
-}
-
 // statsPolicyV2 is a policy that schedules tactics already known
 // to work based on the previously collected stats.
 //

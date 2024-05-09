@@ -8,7 +8,6 @@ package enginenetx
 import (
 	"context"
 	"math/rand"
-	"slices"
 	"time"
 )
 
@@ -30,66 +29,6 @@ var _ httpsDialerPolicy = &bridgesPolicyV2{}
 // LookupTactics implements httpsDialerPolicy.
 func (p *bridgesPolicyV2) LookupTactics(ctx context.Context, domain, port string) <-chan *httpsDialerTactic {
 	return bridgesTacticsForDomain(domain, port)
-}
-
-// bridgesPolicy is a policy where we use bridges for communicating
-// with the OONI backend, i.e., api.ooni.io.
-//
-// A bridge is an IP address that can route traffic from and to
-// the OONI backend and accepts any SNI.
-//
-// The zero value is invalid; please, init MANDATORY fields.
-type bridgesPolicy struct {
-	// Fallback is the MANDATORY fallback policy.
-	Fallback httpsDialerPolicy
-}
-
-var _ httpsDialerPolicy = &bridgesPolicy{}
-
-// LookupTactics implements httpsDialerPolicy.
-func (p *bridgesPolicy) LookupTactics(ctx context.Context, domain, port string) <-chan *httpsDialerTactic {
-	return mixSequentially(
-		// emit bridges related tactics first which are empty if there are
-		// no bridges for the givend domain and port
-		bridgesTacticsForDomain(domain, port),
-
-		// now fallback to get more tactics (typically here the fallback
-		// uses the DNS and obtains some extra tactics)
-		//
-		// we wrap whatever the underlying policy returns us with some
-		// extra logic for better communicating with test helpers
-		p.maybeRewriteTestHelpersTactics(p.Fallback.LookupTactics(ctx, domain, port)),
-	)
-}
-
-func (p *bridgesPolicy) maybeRewriteTestHelpersTactics(input <-chan *httpsDialerTactic) <-chan *httpsDialerTactic {
-	out := make(chan *httpsDialerTactic)
-
-	go func() {
-		defer close(out) // tell the parent when we're done
-
-		for tactic := range input {
-			// When we're not connecting to a TH, pass the policy down the chain unmodified
-			if !slices.Contains(testHelpersDomains, tactic.VerifyHostname) {
-				out <- tactic
-				continue
-			}
-
-			// This is the case where we're connecting to a test helper. Let's try
-			// to produce policies hiding the SNI to censoring middleboxes.
-			for _, sni := range bridgesDomainsInRandomOrder() {
-				out <- &httpsDialerTactic{
-					Address:        tactic.Address,
-					InitialDelay:   0, // set when dialing
-					Port:           tactic.Port,
-					SNI:            sni,
-					VerifyHostname: tactic.VerifyHostname,
-				}
-			}
-		}
-	}()
-
-	return out
 }
 
 func bridgesTacticsForDomain(domain, port string) <-chan *httpsDialerTactic {
