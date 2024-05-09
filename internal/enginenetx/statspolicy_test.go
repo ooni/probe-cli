@@ -138,7 +138,7 @@ func TestStatsPolicyV2(t *testing.T) {
 		return newStatsManager(kvStore, log.Log, trimInterval)
 	}
 
-	t.Run("when stats about tactics", func(t *testing.T) {
+	t.Run("when we have relevant stats", func(t *testing.T) {
 		// create stats manager
 		stats := createStatsManager("api.ooni.io:443", expectTacticsStats...)
 		defer stats.Close()
@@ -171,9 +171,9 @@ func TestStatsPolicyV2(t *testing.T) {
 		}
 	})
 
-	t.Run("when there are no returned tactics", func(t *testing.T) {
+	t.Run("when there are no relevant stats", func(t *testing.T) {
 		// create stats manager
-		stats := createStatsManager("api.ooni.io:443" /* nothing */)
+		stats := createStatsManager("api.ooni.io:443" /*, nothing */)
 		defer stats.Close()
 
 		// create the policy
