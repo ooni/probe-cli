@@ -350,7 +350,7 @@ func TestNewHTTPSDialerPolicyTypes(t *testing.T) {
 	}
 }
 
-// This test ensures that newHTTPSDialerPolicy is working as intended.
+// This test ensures that newHTTPSDialerPolicy is functionally working as intended.
 func TestNewHTTPSDialerPolicyFunctional(t *testing.T) {
 	// testcase is a test case implemented by this func
 	type testcase struct {
