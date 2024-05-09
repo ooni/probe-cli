@@ -8,7 +8,6 @@ package enginenetx
 import (
 	"context"
 	"math/rand"
-	"slices"
 	"time"
 )
 
@@ -30,88 +29,6 @@ var _ httpsDialerPolicy = &bridgesPolicyV2{}
 // LookupTactics implements httpsDialerPolicy.
 func (p *bridgesPolicyV2) LookupTactics(ctx context.Context, domain, port string) <-chan *httpsDialerTactic {
 	return bridgesTacticsForDomain(domain, port)
-}
-
-// bridgesPolicy is a policy where we use bridges for communicating
-// with the OONI backend, i.e., api.ooni.io.
-//
-// A bridge is an IP address that can route traffic from and to
-// the OONI backend and accepts any SNI.
-//
-// The zero value is invalid; please, init MANDATORY fields.
-type bridgesPolicy struct {
-	// Fallback is the MANDATORY fallback policy.
-	Fallback httpsDialerPolicy
-}
-
-var _ httpsDialerPolicy = &bridgesPolicy{}
-
-// LookupTactics implements httpsDialerPolicy.
-//
-// The remix policy of this operation is such that the following happens:
-//
-// 1. we emit the first two bridge tactics, if any;
-//
-// 2. we emit the first two fallback (usually DNS) tactics, if any;
-//
-// 3. we randomly remix the rest.
-func (p *bridgesPolicy) LookupTactics(ctx context.Context, domain, port string) <-chan *httpsDialerTactic {
-	return mixDeterministicThenRandom(
-		&mixDeterministicThenRandomConfig{
-			// Prioritize emitting tactics for bridges. Currently we only have bridges
-			// for "api.ooni.io", therefore, for all other hosts this arm ends up
-			// returning a channel that will be immediately closed.
-			C: bridgesTacticsForDomain(domain, port),
-
-			// This ensures we read the first two bridge tactics.
-			//
-			// Note: modifying this field likely indicates you also need to modify the
-			// corresponding instantiation in statspolicy.go.
-			N: 2,
-		},
-
-		&mixDeterministicThenRandomConfig{
-			// Mix the above with using the fallback policy and rewriting the SNIs
-			// used by the test helpers to avoid exposing the real SNIs.
-			C: p.maybeRewriteTestHelpersTactics(p.Fallback.LookupTactics(ctx, domain, port)),
-
-			// This ensures we read the first two DNS tactics.
-			//
-			// Note: modifying this field likely indicates you also need to modify the
-			// corresponding instantiation in statspolicy.go.
-			N: 2,
-		},
-	)
-}
-
-func (p *bridgesPolicy) maybeRewriteTestHelpersTactics(input <-chan *httpsDialerTactic) <-chan *httpsDialerTactic {
-	out := make(chan *httpsDialerTactic)
-
-	go func() {
-		defer close(out) // tell the parent when we're done
-
-		for tactic := range input {
-			// When we're not connecting to a TH, pass the policy down the chain unmodified
-			if !slices.Contains(testHelpersDomains, tactic.VerifyHostname) {
-				out <- tactic
-				continue
-			}
-
-			// This is the case where we're connecting to a test helper. Let's try
-			// to produce policies hiding the SNI to censoring middleboxes.
-			for _, sni := range bridgesDomainsInRandomOrder() {
-				out <- &httpsDialerTactic{
-					Address:        tactic.Address,
-					InitialDelay:   0, // set when dialing
-					Port:           tactic.Port,
-					SNI:            sni,
-					VerifyHostname: tactic.VerifyHostname,
-				}
-			}
-		}
-	}()
-
-	return out
 }
 
 func bridgesTacticsForDomain(domain, port string) <-chan *httpsDialerTactic {
