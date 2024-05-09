@@ -21,7 +21,7 @@ func (p *mocksPolicy) LookupTactics(ctx context.Context, domain string, port str
 }
 
 func TestMocksPolicy(t *testing.T) {
-	// create and fake fill a mocked policy
+	// create and fake fill a mocked tactic
 	var tx httpsDialerTactic
 	ff := &testingx.FakeFiller{}
 	ff.Fill(&tx)
