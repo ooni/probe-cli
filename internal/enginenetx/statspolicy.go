@@ -48,7 +48,7 @@ func (p *statsPolicy) LookupTactics(ctx context.Context, domain string, port str
 //
 // This is v2 of the statsPolicy because the previous implementation
 // incorporated mixing logic, while now the mixing happens outside
-// of this policy, this giving us much more flexibility.
+// of this policy, thus giving us much more flexibility.
 type statsPolicyV2 struct {
 	// Stats is the MANDATORY stats manager.
 	Stats *statsManager

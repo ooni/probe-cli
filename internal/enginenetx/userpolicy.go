@@ -131,7 +131,7 @@ func userPolicyRemoveNilEntries(input []*httpsDialerTactic) (output []*httpsDial
 //
 // This is v2 of the userPolicy because the previous implementation
 // incorporated mixing logic, while now the mixing happens outside
-// of this policy, this giving us much more flexibility.
+// of this policy, thus giving us much more flexibility.
 type userPolicyV2 struct {
 	// Root is the root of the user policy loaded from disk.
 	Root *userPolicyRoot

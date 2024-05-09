@@ -22,7 +22,7 @@ import (
 //
 // This is v2 of the bridgesPolicy because the previous implementation
 // incorporated mixing logic, while now the mixing happens outside
-// of this policy, this giving us much more flexibility.
+// of this policy, thus giving us much more flexibility.
 type bridgesPolicyV2 struct{}
 
 var _ httpsDialerPolicy = &bridgesPolicyV2{}
