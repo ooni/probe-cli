@@ -80,8 +80,7 @@ func (ldp *userPolicyV2) LookupTactics(ctx context.Context, domain string, port 
 			return
 		}
 
-		// note that we also need to fallback when the tactics contains an empty list
-		// or a list that only contains nil entries
+		// make sure that there are actionable entries here
 		tactics = userPolicyRemoveNilEntries(tactics)
 		if len(tactics) <= 0 {
 			return
