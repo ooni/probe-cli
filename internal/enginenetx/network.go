@@ -113,7 +113,9 @@ func NewNetwork(
 	// Note that:
 	//
 	// - we're enabling compression, which is desiredable since this transport
-	// is not made for measuring and compression is good(TM);
+	// is not made for measuring and compression is good(TM), also note that
+	// when the request uses Accept-Encoding, this kind of automatic management
+	// of compression is disabled, so there is no conflict.
 	//
 	// - if proxyURL is nil, the proxy option is equivalent to disabling
 	// the proxy, otherwise it means that we're using the ooni/oohttp library
