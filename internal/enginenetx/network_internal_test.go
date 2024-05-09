@@ -667,7 +667,7 @@ func TestNewHTTPSDialerPolicyFunctional(t *testing.T) {
 				tc.kvStore(),
 				model.DiscardLogger,
 				tc.proxyURL, // possibly nil
-				tc.resolver, // we are not using `out` so it does not matter
+				tc.resolver,
 				stats,
 			)
 
