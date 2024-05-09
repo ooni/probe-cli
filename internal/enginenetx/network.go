@@ -151,10 +151,7 @@ func newHTTPSDialerPolicy(
 	// in case there's a proxy URL, we're going to trust the proxy to do the right thing and
 	// know what it's doing, hence we'll have a very simple DNS policy
 	if proxyURL != nil {
-		return &dnsPolicy{
-			Logger:   logger,
-			Resolver: resolver,
-		}
+		return &dnsPolicy{logger, resolver}
 	}
 
 	// create a policy interleaving stats policies and bridges policies
@@ -169,10 +166,7 @@ func newHTTPSDialerPolicy(
 	// wrap the DNS policy with a policy that extends tactics for test
 	// helpers so that we also try using different SNIs.
 	dnsExt := &testHelpersPolicy{
-		Child: &dnsPolicy{
-			Logger:   logger,
-			Resolver: resolver,
-		},
+		Child: &dnsPolicy{logger, resolver},
 	}
 
 	// compose dnsExt and statsOrBridges such that dnsExt has
