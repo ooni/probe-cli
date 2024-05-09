@@ -47,40 +47,18 @@ type bridgesPolicy struct {
 var _ httpsDialerPolicy = &bridgesPolicy{}
 
 // LookupTactics implements httpsDialerPolicy.
-//
-// The remix policy of this operation is such that the following happens:
-//
-// 1. we emit the first two bridge tactics, if any;
-//
-// 2. we emit the first two fallback (usually DNS) tactics, if any;
-//
-// 3. we randomly remix the rest.
 func (p *bridgesPolicy) LookupTactics(ctx context.Context, domain, port string) <-chan *httpsDialerTactic {
-	return mixDeterministicThenRandom(
-		&mixDeterministicThenRandomConfig{
-			// Prioritize emitting tactics for bridges. Currently we only have bridges
-			// for "api.ooni.io", therefore, for all other hosts this arm ends up
-			// returning a channel that will be immediately closed.
-			C: bridgesTacticsForDomain(domain, port),
+	return mixSequentially(
+		// emit bridges related tactics first which are empty if there are
+		// no bridges for the givend domain and port
+		bridgesTacticsForDomain(domain, port),
 
-			// This ensures we read the first two bridge tactics.
-			//
-			// Note: modifying this field likely indicates you also need to modify the
-			// corresponding instantiation in statspolicy.go.
-			N: 2,
-		},
-
-		&mixDeterministicThenRandomConfig{
-			// Mix the above with using the fallback policy and rewriting the SNIs
-			// used by the test helpers to avoid exposing the real SNIs.
-			C: p.maybeRewriteTestHelpersTactics(p.Fallback.LookupTactics(ctx, domain, port)),
-
-			// This ensures we read the first two DNS tactics.
-			//
-			// Note: modifying this field likely indicates you also need to modify the
-			// corresponding instantiation in statspolicy.go.
-			N: 2,
-		},
+		// now fallback to get more tactics (typically here the fallback
+		// uses the DNS and obtains some extra tactics)
+		//
+		// we wrap whatever the underlying policy returns us with some
+		// extra logic for better communicating with test helpers
+		p.maybeRewriteTestHelpersTactics(p.Fallback.LookupTactics(ctx, domain, port)),
 	)
 }
 

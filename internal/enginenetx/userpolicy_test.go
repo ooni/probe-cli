@@ -305,7 +305,7 @@ func TestUserPolicy(t *testing.T) {
 			expectedPolicy *userPolicy
 		}
 
-		fallback := &nullPolicy{}
+		fallback := &dnsPolicy{}
 
 		cases := []testcase{{
 			name:           "when there is no key in the kvstore",
