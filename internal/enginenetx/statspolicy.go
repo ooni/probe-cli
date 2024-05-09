@@ -58,7 +58,6 @@ var _ httpsDialerPolicy = &statsPolicyV2{}
 
 // LookupTactics implements httpsDialerPolicy.
 func (p *statsPolicyV2) LookupTactics(ctx context.Context, domain string, port string) <-chan *httpsDialerTactic {
-	// avoid emitting nil tactics and duplicate tactics
 	return streamTacticsFromSlice(statsPolicyFilterStatsTactics(p.Stats.LookupTactics(domain, port)))
 }
 
