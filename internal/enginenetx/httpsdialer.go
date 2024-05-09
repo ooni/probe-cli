@@ -323,6 +323,9 @@ func (hd *httpsDialer) dialTLS(
 		return nil, err
 	}
 
+	// for debugging let the user know which tactic is ready
+	logger.Infof("tactic '%+v' is ready", tactic)
+
 	// tell the observer that we're starting
 	hd.stats.OnStarting(tactic)
 
