@@ -95,7 +95,7 @@ func TestTestHelpersPolicy(t *testing.T) {
 				},
 			}
 
-			// obtain tactics for the given domain
+			// start to generate tactics for the given domain
 			generator := policy.LookupTactics(context.Background(), tc.domain, "443")
 
 			// obtain all the tactics
