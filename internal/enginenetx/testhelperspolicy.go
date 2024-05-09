@@ -5,6 +5,7 @@ import (
 	"slices"
 )
 
+// testHelpersDomains is our understanding of TH domains.
 var testHelpersDomains = []string{
 	"0.th.ooni.org",
 	"1.th.ooni.org",
@@ -13,8 +14,8 @@ var testHelpersDomains = []string{
 	"d33d1gs9kpq1c5.cloudfront.net",
 }
 
-// testHelpersPolicy is a policy where we use attempt to
-// hide the test helpers domains.
+// testHelpersPolicy is a policy where we extend TH related policies
+// by adding additional SNIs that it makes sense to try.
 //
 // The zero value is invalid; please, init MANDATORY fields.
 type testHelpersPolicy struct {
@@ -29,10 +30,17 @@ func (p *testHelpersPolicy) LookupTactics(ctx context.Context, domain, port stri
 	out := make(chan *httpsDialerTactic)
 
 	go func() {
-		defer close(out) // tell the parent when we're done
+		// tell the parent when we're done
+		defer close(out)
 
+		// collect tactics that we may want to modify later
+		var todo []*httpsDialerTactic
+
+		// always emit the original tactic first
+		//
+		// See https://github.com/ooni/probe-cli/pull/1552 review for
+		// a rationale of why we're emitting the original first
 		for tactic := range p.Child.LookupTactics(ctx, domain, port) {
-			// always emit the original tactic first
 			out <- tactic
 
 			// When we're not connecting to a TH, our job is done
@@ -40,8 +48,13 @@ func (p *testHelpersPolicy) LookupTactics(ctx context.Context, domain, port stri
 				continue
 			}
 
-			// This is the case where we're connecting to a test helper. Let's try
-			// to produce policies using different SNIs for the domain.
+			// otherwise, let's rememeber to modify this later
+			todo = append(todo, tactic)
+		}
+
+		// This is the case where we're connecting to a test helper. Let's try
+		// to produce tactics using different SNIs for the domain.
+		for _, tactic := range todo {
 			for _, sni := range bridgesDomainsInRandomOrder() {
 				out <- &httpsDialerTactic{
 					Address:        tactic.Address,

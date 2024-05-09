@@ -12,6 +12,26 @@ import (
 	"time"
 )
 
+// bridgesPolicyV2 is a policy where we use bridges for communicating
+// with the OONI backend, i.e., api.ooni.io.
+//
+// A bridge is an IP address that can route traffic from and to
+// the OONI backend and accepts any SNI.
+//
+// The zero value is invalid; please, init MANDATORY fields.
+//
+// This is v2 of the bridgesPolicy because the previous implementation
+// incorporated mixing logic, while now the mixing happens outside
+// of this policy, thus giving us much more flexibility.
+type bridgesPolicyV2 struct{}
+
+var _ httpsDialerPolicy = &bridgesPolicyV2{}
+
+// LookupTactics implements httpsDialerPolicy.
+func (p *bridgesPolicyV2) LookupTactics(ctx context.Context, domain, port string) <-chan *httpsDialerTactic {
+	return bridgesTacticsForDomain(domain, port)
+}
+
 // bridgesPolicy is a policy where we use bridges for communicating
 // with the OONI backend, i.e., api.ooni.io.
 //
@@ -53,7 +73,7 @@ func (p *bridgesPolicy) LookupTactics(ctx context.Context, domain, port string) 
 		&mixDeterministicThenRandomConfig{
 			// Mix the above with using the fallback policy and rewriting the SNIs
 			// used by the test helpers to avoid exposing the real SNIs.
-			C: maybeRewriteTestHelpersTactics(p.Fallback.LookupTactics(ctx, domain, port)),
+			C: p.maybeRewriteTestHelpersTactics(p.Fallback.LookupTactics(ctx, domain, port)),
 
 			// This ensures we read the first two DNS tactics.
 			//
@@ -64,30 +84,7 @@ func (p *bridgesPolicy) LookupTactics(ctx context.Context, domain, port string) 
 	)
 }
 
-// bridgesPolicyV2 is a policy where we use bridges for communicating
-// with the OONI backend, i.e., api.ooni.io.
-//
-// A bridge is an IP address that can route traffic from and to
-// the OONI backend and accepts any SNI.
-//
-// The zero value is invalid; please, init MANDATORY fields.
-//
-// This is v2 of the bridgesPolicy because the previous implementation
-// incorporated mixing logic, while now the mixing happens outside
-// of this policy, this giving us much more flexibility.
-type bridgesPolicyV2 struct{}
-
-var _ httpsDialerPolicy = &bridgesPolicyV2{}
-
-// LookupTactics implements httpsDialerPolicy.
-func (p *bridgesPolicyV2) LookupTactics(ctx context.Context, domain, port string) <-chan *httpsDialerTactic {
-	return bridgesTacticsForDomain(domain, port)
-}
-
-// TODO(bassosimone): the rewriting of test helper tactics should happen elsewhere
-// once we stop using the bridgesPolicy (i.e., version 1)
-
-func maybeRewriteTestHelpersTactics(input <-chan *httpsDialerTactic) <-chan *httpsDialerTactic {
+func (p *bridgesPolicy) maybeRewriteTestHelpersTactics(input <-chan *httpsDialerTactic) <-chan *httpsDialerTactic {
 	out := make(chan *httpsDialerTactic)
 
 	go func() {
