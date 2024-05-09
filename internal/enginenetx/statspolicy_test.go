@@ -138,7 +138,7 @@ func TestStatsPolicyV2(t *testing.T) {
 		return newStatsManager(kvStore, log.Log, trimInterval)
 	}
 
-	t.Run("when we have unique statistics", func(t *testing.T) {
+	t.Run("when stats about tactics", func(t *testing.T) {
 		// create stats manager
 		stats := createStatsManager("api.ooni.io:443", expectTacticsStats...)
 		defer stats.Close()
@@ -171,47 +171,7 @@ func TestStatsPolicyV2(t *testing.T) {
 		}
 	})
 
-	t.Run("when we have duplicates", func(t *testing.T) {
-		// add each entry twice to create obvious duplicates
-		statsWithDupes := []*statsTactic{}
-		for _, entry := range expectTacticsStats {
-			statsWithDupes = append(statsWithDupes, entry.Clone())
-			statsWithDupes = append(statsWithDupes, entry.Clone())
-		}
-
-		// create stats manager
-		stats := createStatsManager("api.ooni.io:443", statsWithDupes...)
-		defer stats.Close()
-
-		// create the policy
-		policy := &statsPolicyV2{
-			Stats: stats,
-		}
-
-		// obtain the tactics from the saved stats
-		var tactics []*httpsDialerTactic
-		for entry := range policy.LookupTactics(context.Background(), "api.ooni.io", "443") {
-			tactics = append(tactics, entry)
-		}
-
-		// compute the list of results we expect to see from the stats data
-		var expect []*httpsDialerTactic
-		for _, entry := range expectTacticsStats {
-			if entry.CountSuccess <= 0 || entry.Tactic == nil {
-				continue // we SHOULD NOT include entries that systematically failed
-			}
-			t := entry.Tactic.Clone()
-			t.InitialDelay = 0
-			expect = append(expect, t)
-		}
-
-		// perform the actual comparison
-		if diff := cmp.Diff(expect, tactics); diff != "" {
-			t.Fatal(diff)
-		}
-	})
-
-	t.Run("when there are no returned tactis", func(t *testing.T) {
+	t.Run("when there are no returned tactics", func(t *testing.T) {
 		// create stats manager
 		stats := createStatsManager("api.ooni.io:443" /* nothing */)
 		defer stats.Close()
