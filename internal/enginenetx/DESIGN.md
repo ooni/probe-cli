@@ -94,32 +94,32 @@ we assume that the proxy knows how to do circumvention.
 2. othwerwise, we compose policies as illustrated by the following diagram:
 
 ```
-									+---------------+	+-----------------+
-									| statsPolicyV2 |	| bridgesPolicyV2 |
-			+---------------+		+---------------+	+-----------------+
-			|   dnsPolicy   |					|			|
-			+---------------+					| P			| F
-					|							|			|
-					V							V			V
-				+-------------------+	+------------------------+
-				| testHelpersPolicy |	| mixPolicyInterleave<3> |
-				+-------------------+	+------------------------+
-							|				|
-							| P				| F
-							|				|
-							V				V
-	+--------------+	+------------------------+
-	| userPolicyV2 |	| mixPolicyInterleave<3> |
-	+--------------+	+------------------------+
-				|			|
-				| P			| F
-				|			|
-				V			V
-			+-------------------+
-			| mixPolicyEitherOr |
-			+-------------------+
-					|
-					V
+							+---------------+	+-----------------+
+							| statsPolicyV2 |	| bridgesPolicyV2 |
+			+------------------+		+---------------+	+-----------------+
+			|     dnsPolicy    |			|			|
+			+------------------+			| P			| F
+					|			|			|
+					V			V			V
+				+-------------------+	+----------------------------------+
+				| testHelpersPolicy |	|        mixPolicyInterleave<3>    |
+				+-------------------+	+----------------------------------+
+					|			|
+					| P			| F
+					|			|
+					V			V
+	+--------------+	+--------------------------------------+
+	| userPolicyV2 |	|         mixPolicyInterleave<3>       |
+	+--------------+	+--------------------------------------+
+		|			|
+		| P			| F
+		|			|
+		V			V
+	+-----------------------------------+
+	|           mixPolicyEitherOr       |
+	+-----------------------------------+
+			|
+			V
 ```
 
 **Diagram 1.** Sequence of policies constructed when not using a proxy.
@@ -565,3 +565,7 @@ did for the [httpclientx](../httpclientx/) package.
 field for a tactic. We are currently not using this field as we rewrite
 the happy eyeballs delay unconditionally. Perhaps, we should keep the original
 field value when reading user policies, to give users more control.
+
+7. We should consider using existing knowledge from the stats to change
+the SNI being used when using the DNS. This would make our knowledge about
+what is working and not working much more effective than now.
