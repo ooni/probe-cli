@@ -18,9 +18,6 @@ as of [probe-cli#1552](https://github.com/ooni/probe-cli/pull/1552).
 - [Overall Algorithm](#overall-algorithm)
 - [Managing Stats](#managing-stats)
 - [Real-World Scenarios](#real-world-scenarios)
-	- [Invalid bridge without cached data](#invalid-bridge-without-cached-data)
-	- [Invalid bridge with cached data](#invalid-bridge-with-cached-data)
-	- [Valid bridge with invalid cached data](#valid-bridge-with-invalid-cached-data)
 - [Limitations and Future Work](#limitations-and-future-work)
 
 ## Goals & Assumptions
