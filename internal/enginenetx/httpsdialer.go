@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -206,16 +207,15 @@ func (hd *httpsDialer) DialTLSContext(ctx context.Context, network string, endpo
 	// pattern used by `./internal/httpclientx` to perform attempts faster
 	// in case there is an initial early failure.
 
-	// TODO(bassosimone): the algorithm to filter and assign initial
-	// delays is broken because, if the DNS runs for more than one
-	// second, then several policies will immediately be due. We should
-	// probably use a better strategy that takes as the zero the time
-	// when the first dialing policy becomes available.
-
 	// We need a cancellable context to interrupt the tactics emitter early when we
 	// immediately get a valid response and we don't need to use other tactics.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	// Create structure for computing the zero dialing time once during
+	// the first dial, so that subsequent attempts use happy eyeballs based
+	// on the moment in which we tried the first dial.
+	t0 := &httpsDialerWorkerZeroTime{}
 
 	// The emitter will emit tactics and then close the channel when done. We spawn 16 workers
 	// that handle tactics in parallel and post results on the collector channel.
@@ -223,7 +223,6 @@ func (hd *httpsDialer) DialTLSContext(ctx context.Context, network string, endpo
 	collector := make(chan *httpsDialerErrorOrConn)
 	joiner := make(chan any)
 	const parallelism = 16
-	t0 := time.Now()
 	for idx := 0; idx < parallelism; idx++ {
 		go hd.worker(ctx, joiner, emitter, t0, collector)
 	}
@@ -255,6 +254,36 @@ func (hd *httpsDialer) DialTLSContext(ctx context.Context, network string, endpo
 	}
 
 	return httpsDialerReduceResult(connv, errorv)
+}
+
+// httpsDialerWorkerZeroTime contains the zero time used when dialing. We set this
+// zero time when we start the first dialing attempt, such that subsequent attempts
+// are correctly spaced starting from such a zero time.
+//
+// A previous approach was that we were taking the zero time when we started
+// getting tactics, but this approach was wrong, because it caused several tactics
+// to be ready, when the DNS lookup was slow.
+//
+// The zero value of this structure is ready to use.
+type httpsDialerWorkerZeroTime struct {
+	// mu provides mutual exclusion.
+	mu sync.Mutex
+
+	// t is the zero time.
+	t time.Time
+}
+
+// Get returns the zero dialing time. The first invocation of this method
+// saves the zero dialing time and subsquent invocations just return it.
+//
+// This method is safe to be called concurrently by goroutines.
+func (t0 *httpsDialerWorkerZeroTime) Get() time.Time {
+	defer t0.mu.Unlock()
+	t0.mu.Lock()
+	if t0.t.IsZero() {
+		t0.t = time.Now()
+	}
+	return t0.t
 }
 
 // httpsDialerFilterTactics filters the tactics to:
@@ -297,7 +326,7 @@ func (hd *httpsDialer) worker(
 	ctx context.Context,
 	joiner chan<- any,
 	reader <-chan *httpsDialerTactic,
-	t0 time.Time,
+	t0 *httpsDialerWorkerZeroTime,
 	writer chan<- *httpsDialerErrorOrConn,
 ) {
 	// let the parent know that we terminated
@@ -321,7 +350,7 @@ func (hd *httpsDialer) worker(
 func (hd *httpsDialer) dialTLS(
 	ctx context.Context,
 	logger model.Logger,
-	t0 time.Time,
+	t0 *httpsDialerWorkerZeroTime,
 	tactic *httpsDialerTactic,
 ) (model.TLSConn, error) {
 	// honor happy-eyeballs delays and wait for the tactic to be ready to run
@@ -398,10 +427,10 @@ func (hd *httpsDialer) dialTLS(
 // return the context error if the context expires.
 func httpsDialerTacticWaitReady(
 	ctx context.Context,
-	t0 time.Time,
+	t0 *httpsDialerWorkerZeroTime,
 	tactic *httpsDialerTactic,
 ) error {
-	deadline := t0.Add(tactic.InitialDelay)
+	deadline := t0.Get().Add(tactic.InitialDelay)
 	delta := time.Until(deadline)
 	if delta <= 0 {
 		return nil

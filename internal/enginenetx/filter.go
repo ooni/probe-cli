@@ -60,6 +60,9 @@ func filterAssignInitialDelays(input <-chan *httpsDialerTactic) <-chan *httpsDia
 
 		index := 0
 		for tx := range input {
+			// TODO(bassosimone): what do we do now about the user configured
+			// initial delays? Should we declare them as deprecated?
+
 			// rewrite the delays
 			tx.InitialDelay = happyEyeballsDelay(index)
 			index++
