@@ -151,10 +151,7 @@ func newHTTPSDialerPolicy(
 	// in case there's a proxy URL, we're going to trust the proxy to do the right thing and
 	// know what it's doing, hence we'll have a very simple DNS policy
 	if proxyURL != nil {
-		return &dnsPolicy{
-			Logger:   logger,
-			Resolver: resolver,
-		}
+		return &dnsPolicy{logger, resolver}
 	}
 
 	// create a policy interleaving stats policies and bridges policies
