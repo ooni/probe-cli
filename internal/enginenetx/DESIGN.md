@@ -15,7 +15,6 @@ as of [probe-cli#1552](https://github.com/ooni/probe-cli/pull/1552).
 	- [userPolicy](#userpolicy)
 	- [statsPolicy](#statspolicy)
 	- [bridgePolicy](#bridgepolicy)
-- [Overall Algorithm](#overall-algorithm)
 - [Managing Stats](#managing-stats)
 - [Real-World Scenarios](#real-world-scenarios)
 - [Limitations and Future Work](#limitations-and-future-work)
