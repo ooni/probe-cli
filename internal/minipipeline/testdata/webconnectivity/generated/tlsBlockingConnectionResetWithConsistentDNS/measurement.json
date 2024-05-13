@@ -19,7 +19,7 @@
   "resolver_ip": "130.192.3.21",
   "resolver_network_name": "Consortium GARR",
   "software_name": "ooniprobe",
-  "software_version": "3.21.0-alpha",
+  "software_version": "3.22.0-alpha",
   "test_helpers": {
     "backend": {
       "address": "https://0.th.ooni.org/",
@@ -188,7 +188,7 @@
           "en-US,en;q=0.9"
         ],
         "User-Agent": [
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.3"
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.3"
         ]
       },
       "tcp_connect": [
