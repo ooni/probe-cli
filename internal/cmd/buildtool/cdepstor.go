@@ -27,13 +27,13 @@ func cdepsTorBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencies) {
 	defer restore()
 
 	// See https://github.com/Homebrew/homebrew-core/blob/master/Formula/t/tor.rb
-	cdepsMustFetch("https://www.torproject.org/dist/tor-0.4.8.10.tar.gz")
+	cdepsMustFetch("https://www.torproject.org/dist/tor-0.4.8.11.tar.gz")
 	deps.VerifySHA256( // must be mockable
-		"e628b4fab70edb4727715b23cf2931375a9f7685ac08f2c59ea498a178463a86",
-		"tor-0.4.8.10.tar.gz",
+		"8f2bdf90e63380781235aa7d604e159570f283ecee674670873d8bb7052c8e07",
+		"tor-0.4.8.11.tar.gz",
 	)
-	must.Run(log.Log, "tar", "-xf", "tor-0.4.8.10.tar.gz")
-	_ = deps.MustChdir("tor-0.4.8.10") // must be mockable
+	must.Run(log.Log, "tar", "-xf", "tor-0.4.8.11.tar.gz")
+	_ = deps.MustChdir("tor-0.4.8.11") // must be mockable
 
 	mydir := filepath.Join(topdir, "CDEPS", "tor")
 	for _, patch := range cdepsMustListPatches(mydir) {
