@@ -2,7 +2,7 @@ module github.com/ooni/probe-cli/v3
 
 go 1.21
 
-toolchain go1.21.9
+toolchain go1.21.10
 
 require (
 	filippo.io/age v1.1.1
@@ -27,8 +27,8 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.7.1
 	github.com/ooni/netem v0.0.0-20240208095707-608dcbcd82b8
-	github.com/ooni/oocrypto v0.6.0
-	github.com/ooni/oohttp v0.7.1
+	github.com/ooni/oocrypto v0.6.1
+	github.com/ooni/oohttp v0.7.2
 	github.com/ooni/probe-assets v0.22.0
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/pion/stun v0.6.1
