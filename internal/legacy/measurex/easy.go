@@ -61,7 +61,7 @@ type EasyTLSConfig struct {
 // NewEasyTLSConfig creates a new EasyTLSConfig instance.
 func NewEasyTLSConfig() *EasyTLSConfig {
 	return &EasyTLSConfig{
-		config: &tls.Config{ // #nosec G402 - we need to use a large TLS range for measuring
+		config: &tls.Config{ // #nosec G402 - we need to use a large TLS versions range for measuring
 			// Because here we use nil, this causes netxlite to use
 			// a cached copy of Mozilla's CA pool. We don't create a
 			// new pool every time for performance reasons. See
@@ -98,7 +98,7 @@ func (easy *EasyTLSConfig) RootCAs(v *x509.CertPool) *EasyTLSConfig {
 // asTLSConfig converts an *EasyTLSConfig to a *tls.Config.
 func (easy *EasyTLSConfig) asTLSConfig() *tls.Config {
 	if easy == nil || easy.config == nil {
-		return &tls.Config{} // #nosec G402 - we need to use a large TLS range for measuring
+		return &tls.Config{} // #nosec G402 - we need to use a large TLS versions range for measuring
 	}
 	return easy.config
 }

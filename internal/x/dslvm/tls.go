@@ -162,7 +162,7 @@ func (sx *TLSHandshakeStage) handshake(ctx context.Context, rtx Runtime, tcpConn
 }
 
 func (sx *TLSHandshakeStage) newTLSConfig() *tls.Config {
-	return &tls.Config{ // #nosec G402 - we need to use a large TLS range for measuring
+	return &tls.Config{ // #nosec G402 - we need to use a large TLS versions range for measuring
 		NextProtos:         sx.NextProtos,
 		InsecureSkipVerify: sx.InsecureSkipVerify,
 		RootCAs:            sx.RootCAs,
