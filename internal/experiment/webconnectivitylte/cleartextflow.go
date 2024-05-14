@@ -96,7 +96,7 @@ func (t *CleartextFlow) Start(ctx context.Context) {
 	index := t.IDGenerator.NewIDForEndpointCleartext()
 	go func() {
 		defer t.WaitGroup.Done() // synchronize with the parent
-		t.Run(ctx, index)
+		_ = t.Run(ctx, index)
 	}()
 }
 
@@ -114,7 +114,7 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) error {
 	sampler := throttling.NewSampler(trace)
 	defer func() {
 		t.TestKeys.AppendNetworkEvents(sampler.ExtractSamples()...)
-		sampler.Close()
+		_ = sampler.Close()
 	}()
 
 	// start the operation logger

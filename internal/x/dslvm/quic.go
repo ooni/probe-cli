@@ -167,7 +167,7 @@ func (sx *QUICHandshakeStage) handshake(ctx context.Context, rtx Runtime, endpoi
 }
 
 func (sx *QUICHandshakeStage) newTLSConfig() *tls.Config {
-	return &tls.Config{
+	return &tls.Config{ // #nosec G402 - we need to use a large TLS range for measuring
 		NextProtos:         sx.NextProtos,
 		InsecureSkipVerify: sx.InsecureSkipVerify,
 		RootCAs:            sx.RootCAs,

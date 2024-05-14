@@ -45,7 +45,7 @@ func stunIPLookup(ctx context.Context, config stunConfig) (string, error) {
 		}
 		clnt, err := newClient(conn)
 		if err != nil {
-			conn.Close()
+			_ = conn.Close()
 			return model.DefaultProbeIP, err
 		}
 		defer clnt.Close()

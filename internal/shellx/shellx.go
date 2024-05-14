@@ -314,7 +314,7 @@ func CopyFile(source, dest string, perms fs.FileMode) error {
 		return err
 	}
 	if _, err := ioCopy(destfp, sourcefp); err != nil {
-		destfp.Close()
+		_ = destfp.Close()
 		return err
 	}
 	return destfp.Close()

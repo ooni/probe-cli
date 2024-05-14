@@ -29,11 +29,11 @@ func openWithFS(fs fs.FS, pathname string) (fs.File, error) {
 	}
 	info, err := file.Stat()
 	if err != nil {
-		file.Close()
+		_ = file.Close()
 		return nil, err
 	}
 	if !IsRegular(info) {
-		file.Close()
+		_ = file.Close()
 		return nil, fmt.Errorf("%w: %s", ErrNotRegularFile, pathname)
 	}
 	return file, nil

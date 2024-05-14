@@ -68,7 +68,7 @@ var certpool = netxlite.NewMozillaCertPool()
 
 // genTLSConfig generates tls.Config from a given SNI
 func genTLSConfig(sni string) *tls.Config {
-	return &tls.Config{
+	return &tls.Config{ // #nosec G402 - we need to use a large TLS range for measuring
 		RootCAs:            certpool,
 		ServerName:         sni,
 		NextProtos:         []string{"h2", "http/1.1"},

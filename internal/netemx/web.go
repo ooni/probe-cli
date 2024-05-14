@@ -74,7 +74,7 @@ func ExampleWebPageHandler() http.Handler {
 
 		switch host {
 		case "www.example.com", "www.example.org":
-			w.Write([]byte(ExampleWebPage))
+			_, _ = w.Write([]byte(ExampleWebPage))
 
 		case "example.com":
 			w.Header().Add("Location", "https://www.example.com/")
@@ -118,7 +118,7 @@ func BlockpageHandlerFactory() HTTPHandlerFactory {
 	return HTTPHandlerFactoryFunc(func(env NetStackServerFactoryEnv, stack *netem.UNetStack) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add("Date", "Thu, 24 Aug 2023 14:35:29 GMT")
-			w.Write([]byte(Blockpage))
+			_, _ = w.Write([]byte(Blockpage))
 		})
 	})
 }

@@ -211,7 +211,7 @@ func (h *tlsHandshakerConfigurable) Handshake(
 		timeout = 10 * time.Second
 	}
 	defer conn.SetDeadline(time.Time{})
-	conn.SetDeadline(time.Now().Add(timeout))
+	_ = conn.SetDeadline(time.Now().Add(timeout))
 	if config.RootCAs == nil {
 		config = config.Clone()
 		// See https://github.com/ooni/probe/issues/2413 for context
@@ -318,7 +318,7 @@ func (d *tlsDialer) DialTLSContext(ctx context.Context, network, address string)
 	config := d.config(host, port)
 	tlsconn, err := d.TLSHandshaker.Handshake(ctx, conn, config)
 	if err != nil {
-		conn.Close()
+		_ = conn.Close()
 		return nil, err
 	}
 	return tlsconn, nil

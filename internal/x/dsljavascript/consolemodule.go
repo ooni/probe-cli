@@ -15,9 +15,9 @@ import (
 func (vm *VM) newModuleConsole(gojaVM *goja.Runtime, mod *goja.Object) {
 	runtimex.Assert(vm.vm == gojaVM, "dsljavascript: unexpected gojaVM pointer value")
 	exports := mod.Get("exports").(*goja.Object)
-	exports.Set("log", vm.consoleLog)
-	exports.Set("error", vm.consoleError)
-	exports.Set("warn", vm.consoleWarn)
+	runtimex.Try0(exports.Set("log", vm.consoleLog))
+	runtimex.Try0(exports.Set("error", vm.consoleError))
+	runtimex.Try0(exports.Set("warn", vm.consoleWarn))
 }
 
 // consoleLog implements console.log

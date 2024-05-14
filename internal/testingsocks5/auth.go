@@ -65,7 +65,7 @@ func (s *Server) authenticate(cconn net.Conn) (*authContext, error) {
 
 // noAcceptableAuth is used to handle when we have no eligible authentication mechanism
 func noAcceptableAuth(conn net.Conn) error {
-	conn.Write([]byte{socks5Version, noAcceptable})
+	_, _ = conn.Write([]byte{socks5Version, noAcceptable})
 	return errNoSupportedAuth
 }
 

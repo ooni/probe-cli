@@ -15,7 +15,7 @@ import (
 func (vm *VM) newModuleOONI(gojaVM *goja.Runtime, mod *goja.Object) {
 	runtimex.Assert(vm.vm == gojaVM, "dsljavascript: unexpected gojaVM pointer value")
 	exports := mod.Get("exports").(*goja.Object)
-	exports.Set("runDSL", vm.ooniRunDSL)
+	runtimex.Try0(exports.Set("runDSL", vm.ooniRunDSL))
 }
 
 func (vm *VM) ooniRunDSL(jsAST *goja.Object, zeroTime time.Time) (string, error) {

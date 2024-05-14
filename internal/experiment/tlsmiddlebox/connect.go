@@ -21,7 +21,7 @@ func (m *Measurer) TCPConnect(ctx context.Context, index int64, zeroTime time.Ti
 	ol := logx.NewOperationLogger(logger, "TCPConnect #%d %s", index, address)
 	conn, err := dialer.DialContext(ctx, "tcp", address)
 	ol.Stop(err)
-	measurexlite.MaybeClose(conn)
+	_ = measurexlite.MaybeClose(conn)
 	tcpEvents := trace.TCPConnects()
 	tk.addTCPConnect(tcpEvents)
 	return err

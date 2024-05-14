@@ -20,5 +20,5 @@ func (p *GeoIPHandlerUbuntu) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		p.ProbeIP,
 	)
 	w.Header().Add("Content-Type", "text/xml")
-	w.Write([]byte(resp))
+	_, _ = w.Write([]byte(resp))
 }

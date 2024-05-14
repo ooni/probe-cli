@@ -138,7 +138,7 @@ func (d *obfs4CancellableDialer) dial(
 		select {
 		case connch <- conn:
 		default:
-			conn.Close() // context won the race
+			_ = conn.Close() // context won the race
 		}
 	}()
 	select {

@@ -2,6 +2,7 @@ package webconnectivityqa
 
 import (
 	"github.com/ooni/probe-cli/v3/internal/netemx"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // dnsBlockingAndroidDNSCacheNoData is the case where we're on Android and the getaddrinfo
@@ -73,7 +74,7 @@ func dnsBlockingBOGON() *TestCase {
 		Input: "https://www.example.com/",
 		Configure: func(env *netemx.QAEnv) {
 			env.ISPResolverConfig().RemoveRecord("www.example.com")
-			env.ISPResolverConfig().AddRecord("www.example.com", "", "10.10.34.35")
+			runtimex.Try0(env.ISPResolverConfig().AddRecord("www.example.com", "", "10.10.34.35"))
 		},
 		ExpectErr: false,
 		ExpectTestKeys: &TestKeys{

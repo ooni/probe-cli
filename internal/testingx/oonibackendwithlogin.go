@@ -131,7 +131,7 @@ func (h *OONIBackendWithLoginFlow) handleRegister() http.Handler {
 		}
 
 		// send response
-		w.Write(must.MarshalJSON(response))
+		_, _ = w.Write(must.MarshalJSON(response))
 	})
 }
 
@@ -207,7 +207,7 @@ func (h *OONIBackendWithLoginFlow) handleLogin() http.Handler {
 		}
 
 		// send response
-		w.Write(must.MarshalJSON(response))
+		_, _ = w.Write(must.MarshalJSON(response))
 	})
 }
 
@@ -221,7 +221,7 @@ func (h *OONIBackendWithLoginFlow) handlePsiphonConfig() http.Handler {
 
 		// we must lock because of SetPsiphonConfig
 		h.mu.Lock()
-		w.Write(h.psiphonConfig)
+		_, _ = w.Write(h.psiphonConfig)
 		h.mu.Unlock()
 	})
 }
@@ -243,7 +243,7 @@ func (h *OONIBackendWithLoginFlow) handleTorTargets() http.Handler {
 
 		// we must lock because of SetTorTargets
 		h.mu.Lock()
-		w.Write(h.torTargets)
+		_, _ = w.Write(h.torTargets)
 		h.mu.Unlock()
 	})
 

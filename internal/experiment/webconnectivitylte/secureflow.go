@@ -104,7 +104,7 @@ func (t *SecureFlow) Start(ctx context.Context) {
 	index := t.IDGenerator.NewIDForEndpointSecure()
 	go func() {
 		defer t.WaitGroup.Done() // synchronize with the parent
-		t.Run(ctx, index)
+		_ = t.Run(ctx, index)
 	}()
 }
 
@@ -122,7 +122,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	sampler := throttling.NewSampler(trace)
 	defer func() {
 		t.TestKeys.AppendNetworkEvents(sampler.ExtractSamples()...)
-		sampler.Close()
+		_ = sampler.Close()
 	}()
 
 	// start the operation logger
@@ -162,7 +162,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) error {
 	// See https://github.com/ooni/probe/issues/2413 to understand
 	// why we're using nil to force netxlite to use the cached
 	// default Mozilla cert pool.
-	tlsConfig := &tls.Config{
+	tlsConfig := &tls.Config{ // #nosec G402 - we need to use a large TLS range for measuring
 		NextProtos: t.alpn(),
 		RootCAs:    nil,
 		ServerName: tlsSNI,

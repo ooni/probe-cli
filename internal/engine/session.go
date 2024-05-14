@@ -338,7 +338,7 @@ func (s *Session) Close() error {
 // doClose implements Close. This function is called just once.
 func (s *Session) doClose() {
 	// make sure we close open connections and persist stats to the key-value store
-	s.network.Close()
+	_ = s.network.Close()
 
 	s.resolver.CloseIdleConnections()
 	if s.tunnel != nil {

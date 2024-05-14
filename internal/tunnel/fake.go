@@ -27,7 +27,7 @@ func (t *fakeTunnel) BootstrapTime() time.Duration {
 func (t *fakeTunnel) Stop() {
 	// Implementation note: closing the listener causes
 	// the socks5 server.Serve to return an error
-	t.once.Do(func() { t.listener.Close() })
+	t.once.Do(func() { _ = t.listener.Close() })
 }
 
 // SOCKS5ProxyURL returns the SOCKS5 proxy URL.

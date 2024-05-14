@@ -92,7 +92,7 @@ func (ed *Experiment) Run(ctx context.Context) error {
 
 	// 3. randomize input, if needed
 	if ed.Random {
-		rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+		rnd := rand.New(rand.NewSource(time.Now().UnixNano())) // #nosec G404 -- not really important
 		rnd.Shuffle(len(inputList), func(i, j int) {
 			inputList[i], inputList[j] = inputList[j], inputList[i]
 		})

@@ -36,11 +36,11 @@ func tcpMaybeResetNetConn(conn net.Conn) {
 		SetLinger(sec int) error
 	}
 	if setter, good := conn.(connLingerSetter); good {
-		setter.SetLinger(0)
+		_ = setter.SetLinger(0)
 	}
 
 	// close the conn to trigger the reset (we MUST call Close here where
 	// we're using the underlying conn and it doesn't suffice to call it
 	// inside the http.Handler, where wrapping would not cause a RST)
-	conn.Close()
+	_ = conn.Close()
 }

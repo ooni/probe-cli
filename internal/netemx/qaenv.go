@@ -238,8 +238,8 @@ func (env *QAEnv) mustNewNetStacks(config *qaEnvConfig) (closables []io.Closer) 
 // AddRecordToAllResolvers adds the given DNS record to all DNS resolvers. You can safely
 // add new DNS records from concurrent goroutines at any time.
 func (env *QAEnv) AddRecordToAllResolvers(domain string, cname string, addrs ...string) {
-	env.ISPResolverConfig().AddRecord(domain, cname, addrs...)
-	env.OtherResolversConfig().AddRecord(domain, cname, addrs...)
+	runtimex.Try0(env.ISPResolverConfig().AddRecord(domain, cname, addrs...))
+	runtimex.Try0(env.OtherResolversConfig().AddRecord(domain, cname, addrs...))
 }
 
 // ISPResolverConfig returns the [*netem.DNSConfig] of the ISP resolver. Note that can safely
@@ -288,11 +288,11 @@ func (env *QAEnv) Close() error {
 	env.once.Do(func() {
 		// first close all the possible closables we track
 		for _, c := range env.closables {
-			c.Close()
+			_ = c.Close()
 		}
 
 		// finally close the whole network topology
-		env.topology.Close()
+		_ = env.topology.Close()
 	})
 	return nil
 }

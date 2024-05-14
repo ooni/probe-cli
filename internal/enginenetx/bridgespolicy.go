@@ -60,7 +60,7 @@ func bridgesTacticsForDomain(domain, port string) <-chan *httpsDialerTactic {
 
 func bridgesDomainsInRandomOrder() (out []string) {
 	out = bridgesDomains()
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	r := rand.New(rand.NewSource(time.Now().UnixNano())) // #nosec G404 -- not really important
 	r.Shuffle(len(out), func(i, j int) {
 		out[i], out[j] = out[j], out[i]
 	})

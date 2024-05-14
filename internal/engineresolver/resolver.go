@@ -168,7 +168,7 @@ func (r *Resolver) lookupHost(ctx context.Context, ri *resolverinfo, hostname st
 //
 // The return value is only meaningful for testing.
 func (r *Resolver) maybeConfusion(state []*resolverinfo, seed int64) int {
-	rng := rand.New(rand.NewSource(seed))
+	rng := rand.New(rand.NewSource(seed)) // #nosec G404 -- not really important
 	const confusion = 0.3
 	if rng.Float64() >= confusion {
 		return -1

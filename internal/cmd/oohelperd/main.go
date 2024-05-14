@@ -60,7 +60,7 @@ func shutdown(srv *http.Server, wg *sync.WaitGroup) {
 	defer wg.Done()
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
-	srv.Shutdown(ctx)
+	_ = srv.Shutdown(ctx)
 }
 
 func main() {

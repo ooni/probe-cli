@@ -24,6 +24,6 @@ func LargeFileHandler(reader func(b []byte) (n int, err error)) http.Handler {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		w.Write(data)
+		_, _ = w.Write(data)
 	})
 }

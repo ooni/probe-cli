@@ -154,7 +154,7 @@ func (oc *OONICollector) openReport(w http.ResponseWriter, body []byte) {
 	w.Header().Set("Content-Type", "application/json")
 
 	// serialize and send
-	w.Write(must.MarshalJSON(response))
+	_, _ = w.Write(must.MarshalJSON(response))
 }
 
 // updateReport handles updating an existing OONI report.
@@ -241,5 +241,5 @@ func (oc *OONICollector) updateReport(w http.ResponseWriter, urlpath string, bod
 	w.Header().Set("Content-Type", "application/json")
 
 	// serialize and send
-	w.Write(must.MarshalJSON(response))
+	_, _ = w.Write(must.MarshalJSON(response))
 }

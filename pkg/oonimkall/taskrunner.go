@@ -127,7 +127,7 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 	}
 	endEvent := new(eventStatusEnd)
 	defer func() {
-		sess.Close()
+		_ = sess.Close()
 		r.emitter.Emit(eventTypeStatusEnd, endEvent)
 	}()
 

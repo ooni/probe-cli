@@ -113,7 +113,7 @@ func (r Runner) tlsHandshake(ctx context.Context, address string) error {
 	tlsDialer := netx.NewTLSDialer(r.HTTPConfig)
 	conn, err := tlsDialer.DialTLSContext(ctx, "tcp", address)
 	if conn != nil {
-		conn.Close()
+		_ = conn.Close()
 	}
 	return err
 }
@@ -122,7 +122,7 @@ func (r Runner) tcpConnect(ctx context.Context, address string) error {
 	dialer := netx.NewDialer(r.HTTPConfig)
 	conn, err := dialer.DialContext(ctx, "tcp", address)
 	if conn != nil {
-		conn.Close()
+		_ = conn.Close()
 	}
 	return err
 }

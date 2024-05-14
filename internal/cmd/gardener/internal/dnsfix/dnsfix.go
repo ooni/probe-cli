@@ -46,7 +46,7 @@ func (s *Subcommand) Main() {
 
 	// walk through each entry
 	for _, entry := range entries {
-		bar.Add(1)
+		_ = bar.Add(1)
 		s.processEntry(entry)
 	}
 }
