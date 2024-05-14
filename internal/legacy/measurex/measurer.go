@@ -583,7 +583,7 @@ func (mx *Measurer) httpEndpointGetQUIC(ctx context.Context,
 	// Using a nil cert pool here forces netxlite to use a cached copy of Mozilla's
 	// CA bundle. See https://github.com/ooni/probe/issues/2413 for context.
 	qconn, err := mx.QUICHandshakeWithDB(ctx, db, epnt.Address,
-		&tls.Config{ // // #nosec G402 - we need to use a large TLS versions range for measuring
+		&tls.Config{ // #nosec G402 - we need to use a large TLS versions range for measuring
 			ServerName: epnt.SNI,
 			NextProtos: epnt.ALPN,
 			RootCAs:    nil,

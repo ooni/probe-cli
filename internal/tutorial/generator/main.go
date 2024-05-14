@@ -21,7 +21,7 @@ func writeString(w io.Writer, s string) {
 
 // gen1 generates a single file within a chapter.
 func gen1(destfile io.Writer, filepath string) {
-	srcfile, err := os.Open(filepath)
+	srcfile, err := os.Open(filepath) // #nosec G304 - this is working as intended
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -67,7 +67,7 @@ func gen1(destfile io.Writer, filepath string) {
 //	gen("./experiment/torsf/chapter01", "main.go")
 func gen(dirpath string, files ...string) {
 	readme := path.Join(dirpath, "README.md")
-	destfile, err := os.Create(path.Join(readme))
+	destfile, err := os.Create(path.Join(readme)) // #nosec G304 - this is working as intended
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -198,7 +198,7 @@ func csvReadAndFilter(filepath string, shouldKeep func(URL string) bool) [][]str
 
 // csvWriteBack writes records back to a given file.
 func csvWriteBack(filename string, records [][]string) {
-	filep := runtimex.Try1(os.Create(filename))
+	filep := runtimex.Try1(os.Create(filename)) // #nosec G304 - this is working as intended
 	writer := csv.NewWriter(filep)
 	runtimex.Try0(writer.WriteAll(records))
 	runtimex.Try0(writer.Error())

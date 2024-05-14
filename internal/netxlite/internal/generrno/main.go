@@ -191,7 +191,7 @@ func mapSystemToLibrary(system string) string {
 }
 
 func fileCreate(filename string) *os.File {
-	filep, err := os.Create(filename)
+	filep, err := os.Create(filename) // #nosec G304 - this is working as intended
 	if err != nil {
 		log.Fatal(err)
 	}

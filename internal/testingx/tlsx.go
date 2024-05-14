@@ -230,7 +230,7 @@ type tlsHandlerReset struct{}
 // GetCertificate implements TLSHandler.
 func (*tlsHandlerReset) GetCertificate(ctx context.Context, tcpConn net.Conn, chi *tls.ClientHelloInfo) (*tls.Certificate, error) {
 	tcpMaybeResetNetConn(tcpConn)
-	tcpConn.Close() // just in case to avoid the error returned here to be sent remotely as an alert
+	_ = tcpConn.Close() // just in case to avoid the error returned here to be sent remotely as an alert
 	return nil, errors.New("internal error")
 }
 

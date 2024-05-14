@@ -48,7 +48,7 @@ func main() {
 	}
 	var found int
 	for _, file := range files {
-		data, err := os.ReadFile(file)
+		data, err := os.ReadFile(file) // #nosec G304 - this is working as intended
 		fatalOnError(err)
 		measurements := bytes.Split(data, []byte("\n"))
 		for _, measurement := range measurements {
@@ -72,7 +72,7 @@ func main() {
 				options = append(options, *entry.Input)
 			}
 			log.Printf("run: go %s", strings.Join(options, " "))
-			cmd := execabs.Command("go", options...)
+			cmd := execabs.Command("go", options...) // #nosec G204 - this is working as intended
 			cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 			err = cmd.Run()
 			fatalOnError(err)

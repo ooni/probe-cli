@@ -49,7 +49,7 @@ func ReadBootstrapLogs(logFilePath string) ([]string, error) {
 	if logFilePath == "" {
 		return nil, ErrEmptyLogFilePath
 	}
-	data, err := os.ReadFile(logFilePath)
+	data, err := os.ReadFile(logFilePath) // #nosec G304 - this is working as intended
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", ErrCannotReadLogFile, err.Error())
 	}
