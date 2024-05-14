@@ -235,9 +235,6 @@ func TestSessionCallWebConnectivityTestHelper(t *testing.T) {
 	})
 
 	t.Run("with two test helpers where the first one times out the connection and the second works", func(t *testing.T) {
-		// TODO(bassosimone): the utility of this test will become more obvious
-		// once we switch this specific test to using httpclientx.
-
 		// create a local test server1 that resets the connection after a ~long delay
 		server1 := testingx.MustNewHTTPServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			select {

@@ -8,8 +8,8 @@ package tlsmiddlebox
 
 import (
 	"net"
-	"syscall"
 	"strings"
+	"syscall"
 )
 
 // SetTTL sets the IP TTL field for the underlying net.TCPConn
