@@ -11,7 +11,7 @@ import (
 func (vm *VM) newModuleGolang(gojaVM *goja.Runtime, mod *goja.Object) {
 	runtimex.Assert(vm.vm == gojaVM, "dsljavascript: unexpected gojaVM pointer value")
 	exports := mod.Get("exports").(*goja.Object)
-	exports.Set("timeNow", vm.golangTimeNow)
+	runtimex.Try0(exports.Set("timeNow", vm.golangTimeNow))
 }
 
 // golangTimeNow returns the current time using golang [time.Now]

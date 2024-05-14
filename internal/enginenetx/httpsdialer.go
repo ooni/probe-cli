@@ -306,7 +306,7 @@ func httpsDialerReduceResult(connv []model.TLSConn, errorv []error) (model.TLSCo
 	switch {
 	case len(connv) >= 1:
 		for _, c := range connv[1:] {
-			c.Close()
+			_ = c.Close()
 		}
 		return connv[0], nil
 
@@ -400,7 +400,7 @@ func (hd *httpsDialer) dialTLS(
 	// handle handshake error
 	if err != nil {
 		hd.stats.OnTLSHandshakeError(ctx, tactic, err)
-		tcpConn.Close()
+		_ = tcpConn.Close()
 		return nil, err
 	}
 
@@ -412,7 +412,7 @@ func (hd *httpsDialer) dialTLS(
 	// handle verification error
 	if err != nil {
 		hd.stats.OnTLSVerifyError(tactic, err)
-		tlsConn.Close()
+		_ = tlsConn.Close()
 		return nil, err
 	}
 

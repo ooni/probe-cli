@@ -57,5 +57,5 @@ func (p *OOAPIHandler) getApiV1TestHelpers(w http.ResponseWriter, _ *http.Reques
 		},
 	}
 	w.Header().Add("Content-Type", "application/json")
-	w.Write(runtimex.Try1(json.Marshal(resp)))
+	_, _ = w.Write(runtimex.Try1(json.Marshal(resp)))
 }

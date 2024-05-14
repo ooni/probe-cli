@@ -58,7 +58,7 @@ func NewOpportunisticDNSOverHTTPSURLProvider(urls ...string) *OpportunisticDNSOv
 }
 
 func (o *OpportunisticDNSOverHTTPSURLProvider) seed(t time.Time) {
-	o.rnd = rand.New(rand.NewSource(t.UnixNano()))
+	o.rnd = rand.New(rand.NewSource(t.UnixNano())) // #nosec G404 -- not really important
 }
 
 // MaybeNextURL returns the next URL to measure, if any. Our aim is to perform

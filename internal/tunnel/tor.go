@@ -46,7 +46,7 @@ func (tt *torTunnel) SOCKS5ProxyURL() *url.URL {
 
 // Stop stops the Tor tunnel
 func (tt *torTunnel) Stop() {
-	tt.instance.Close()
+	_ = tt.instance.Close()
 }
 
 // ErrTorUnableToGetSOCKSProxyAddress indicates that we could not
@@ -99,23 +99,23 @@ func torStart(ctx context.Context, config *Config) (Tunnel, DebugInfo, error) {
 	instance.StopProcessOnClose = true
 	start := time.Now()
 	if err := config.torEnableNetwork(ctx, instance, true); err != nil {
-		instance.Close()
+		_ = instance.Close()
 		return nil, debugInfo, err
 	}
 	stop := time.Now()
 	// Adapted from <https://git.io/Jfc7N>
 	info, err := config.torGetInfo(instance.Control, "net/listeners/socks")
 	if err != nil {
-		instance.Close()
+		_ = instance.Close()
 		return nil, debugInfo, err
 	}
 	if len(info) != 1 || info[0].Key != "net/listeners/socks" {
-		instance.Close()
+		_ = instance.Close()
 		return nil, debugInfo, ErrTorUnableToGetSOCKSProxyAddress
 	}
 	proxyAddress := info[0].Val
 	if strings.HasPrefix(proxyAddress, "unix:") {
-		instance.Close()
+		_ = instance.Close()
 		return nil, debugInfo, ErrTorReturnedUnsupportedProxy
 	}
 	return &torTunnel{
@@ -128,7 +128,7 @@ func torStart(ctx context.Context, config *Config) (Tunnel, DebugInfo, error) {
 // maybeCleanupTunnelDir removes stale files inside
 // of the tunnel directory.
 func maybeCleanupTunnelDir(dir, logfile string) {
-	os.Remove(logfile)
+	_ = os.Remove(logfile)
 	removeWithGlob(filepath.Join(dir, "torrc-*"))
 	removeWithGlob(filepath.Join(dir, "control-port-*"))
 }
@@ -137,6 +137,6 @@ func maybeCleanupTunnelDir(dir, logfile string) {
 func removeWithGlob(pattern string) {
 	files, _ := filepath.Glob(pattern)
 	for _, file := range files {
-		os.Remove(file)
+		_ = os.Remove(file)
 	}
 }

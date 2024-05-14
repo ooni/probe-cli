@@ -39,7 +39,7 @@ func (txp *http3Transport) RoundTrip(req *http.Request) (*http.Response, error) 
 
 // CloseIdleConnections implements HTTPTransport.CloseIdleConnections.
 func (txp *http3Transport) CloseIdleConnections() {
-	txp.child.Close()
+	_ = txp.child.Close()
 	txp.dialer.CloseIdleConnections()
 }
 

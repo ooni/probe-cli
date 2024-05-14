@@ -10,6 +10,7 @@ import (
 	"github.com/dop251/goja_nodejs/require"
 	"github.com/dop251/goja_nodejs/util"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // VMConfig contains configuration for creating a VM.
@@ -103,7 +104,7 @@ func NewVM(config *VMConfig, scriptPath string) (*VM, error) {
 	registry.RegisterNativeModule("console", vm.newModuleConsole)
 
 	// make sure the 'console' object exists in the VM before running scripts
-	gojaVM.Set("console", require.Require(gojaVM, "console"))
+	runtimex.Try0(gojaVM.Set("console", require.Require(gojaVM, "console")))
 
 	// register the _golang module in JavaScript
 	registry.RegisterNativeModule("_golang", vm.newModuleGolang)
@@ -124,7 +125,7 @@ func LoadExperiment(config *VMConfig, exPath string) (*VM, error) {
 	}
 
 	// make sure there's an empty dictionary containing exports
-	vm.vm.Set("exports", vm.vm.NewObject())
+	runtimex.Try0(vm.vm.Set("exports", vm.vm.NewObject()))
 
 	// run the script
 	if err := vm.RunScript(exPath); err != nil {

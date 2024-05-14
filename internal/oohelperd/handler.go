@@ -165,7 +165,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		data, err := json.Marshal(resp)
 		runtimex.PanicOnError(err, "json.Marshal failed")
 		w.Header().Add("Content-Type", "application/json")
-		w.Write(data)
+		_, _ = w.Write(data)
 		return
 	}
 
@@ -223,7 +223,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	data, err = json.Marshal(cresp)
 	runtimex.PanicOnError(err, "json.Marshal failed")
 	w.Header().Add("Content-Type", "application/json")
-	w.Write(data)
+	_, _ = w.Write(data)
 }
 
 // newResolver creates a new [model.Resolver] suitable for serving

@@ -259,7 +259,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 
 	// set context and read timeouts
 	deadline := time.Duration(rep*2) * time.Second
-	pconn.SetDeadline(time.Now().Add(deadline))
+	_ = pconn.SetDeadline(time.Now().Add(deadline))
 	ctx, cancel := context.WithTimeout(ctx, deadline)
 	defer cancel()
 

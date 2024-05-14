@@ -67,7 +67,7 @@ func (tc *netemTestCaseWithHTTP) Run(t *testing.T) {
 
 	// configure the wwwStack as the DNS resolver with proper configuration
 	dnsConfig := netem.NewDNSConfig()
-	dnsConfig.AddRecord("www.example.com.", "", wwwIPAddr)
+	runtimex.Try0(dnsConfig.AddRecord("www.example.com.", "", wwwIPAddr))
 	dnsServer := runtimex.Try1(netem.NewDNSServer(log.Log, wwwStack, wwwIPAddr, dnsConfig))
 	defer dnsServer.Close()
 
@@ -76,7 +76,7 @@ func (tc *netemTestCaseWithHTTP) Run(t *testing.T) {
 		&net.TCPAddr{IP: net.ParseIP(wwwIPAddr), Port: 80},
 		wwwStack,
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte("Bonsoir, Elliot!\r\n"))
+			_, _ = w.Write([]byte("Bonsoir, Elliot!\r\n"))
 		}),
 	)
 	defer wwwServer80.Close()
@@ -86,7 +86,7 @@ func (tc *netemTestCaseWithHTTP) Run(t *testing.T) {
 		&net.TCPAddr{IP: net.ParseIP(wwwIPAddr), Port: 443},
 		wwwStack,
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte("Bonsoir, Elliot!\r\n"))
+			_, _ = w.Write([]byte("Bonsoir, Elliot!\r\n"))
 		}),
 		wwwStack,
 		"www.example.com",
@@ -118,7 +118,7 @@ func (tc *netemTestCaseWithHTTP) Run(t *testing.T) {
 		netxlite.HTTPTransportOptionProxyURL(runtimex.Try1(url.Parse(proxyServer.URL))),
 
 		// TODO(https://github.com/ooni/probe/issues/2536)
-		netxlite.HTTPTransportOptionTLSClientConfig(&tls.Config{
+		netxlite.HTTPTransportOptionTLSClientConfig(&tls.Config{ // #nosec G402 - code used for testing
 			RootCAs: clientStack.DefaultCertPool(),
 		}),
 	)

@@ -97,7 +97,9 @@ func (mx *Measurer) NewHTTPTransportWithTLSConn(
 func (mx *Measurer) NewHTTPTransportWithQUICConn(
 	logger model.Logger, db WritableDB, qconn quic.EarlyConnection) *HTTPTransportDB {
 	return mx.WrapHTTPTransport(db, netxlite.NewHTTP3Transport(
-		logger, netxlite.NewSingleUseQUICDialer(qconn), &tls.Config{}))
+		logger, netxlite.NewSingleUseQUICDialer(qconn),
+		&tls.Config{}, // #nosec G402 - we need to use a large TLS versions range for measuring
+	))
 }
 
 // HTTPTransportDB is an implementation of HTTPTransport that

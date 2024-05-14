@@ -68,7 +68,7 @@ type ipLookupClient struct {
 }
 
 func makeSlice() []method {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	r := rand.New(rand.NewSource(time.Now().UnixNano())) // #nosec G404 -- not really important
 	ret := make([]method, len(methods))
 	perm := r.Perm(len(methods))
 	for idx, randIdx := range perm {

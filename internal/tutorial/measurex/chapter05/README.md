@@ -51,7 +51,7 @@ The API signature is indeed the same as the previous chapter,
 except that here we call the `QUICHandshake` function.
 
 ```Go
-	m := mx.QUICHandshake(ctx, *address, &tls.Config{
+	m := mx.QUICHandshake(ctx, *address, &tls.Config{ // #nosec G402 - we need to use a large TLS versions range for measuring
 		ServerName: *sni,
 		NextProtos: []string{"h3"},
 		RootCAs:    nil, // use netxlite's default

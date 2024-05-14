@@ -21,7 +21,7 @@ func (p *DNSOverHTTPSHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	rawQuery := runtimex.Try1(io.ReadAll(r.Body))
 	rawResponse := runtimex.Try1(p.RoundTripper.RoundTrip(r.Context(), rawQuery))
 	w.Header().Add("content-type", "application/dns-message")
-	w.Write(rawResponse)
+	_, _ = w.Write(rawResponse)
 }
 
 func (p *DNSOverHTTPSHandler) handlePanic(w http.ResponseWriter) {

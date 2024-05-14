@@ -48,7 +48,7 @@ func main() {
 	// QUIC/HTTP3 by using `"h3"` here.
 	//
 	// ```Go
-	config := &tls.Config{
+	config := &tls.Config{ // #nosec G402 - we need to use a large TLS versions range for measuring
 		ServerName: *sni,
 		NextProtos: []string{"h3"},
 		RootCAs:    nil,
@@ -72,7 +72,7 @@ func main() {
 	log.Infof("Cipher suite       : %s", netxlite.TLSCipherSuiteString(state.CipherSuite))
 	log.Infof("Negotiated protocol: %s", state.NegotiatedProtocol)
 	log.Infof("TLS version        : %s", netxlite.TLSVersionString(state.Version))
-	qconn.CloseWithError(0, "")
+	_ = qconn.CloseWithError(0, "")
 }
 
 // ```

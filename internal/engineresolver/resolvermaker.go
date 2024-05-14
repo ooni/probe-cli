@@ -58,7 +58,7 @@ var allbyurl = resolverMakeInitialState()
 // see https://github.com/ooni/probe/issues/2544.
 func resolverMakeInitialState() map[string]*resolvermaker {
 	output := make(map[string]*resolvermaker)
-	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	rng := rand.New(rand.NewSource(time.Now().UnixNano())) // #nosec G404 -- not really important
 	for _, e := range allmakers {
 		output[e.url] = e
 		if e.url != systemResolverURL {

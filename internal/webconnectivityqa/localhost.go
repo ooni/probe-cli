@@ -1,6 +1,9 @@
 package webconnectivityqa
 
-import "github.com/ooni/probe-cli/v3/internal/netemx"
+import (
+	"github.com/ooni/probe-cli/v3/internal/netemx"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
+)
 
 // localhostWithHTTP is the case where the website DNS is misconfigured and returns a loopback address.
 func localhostWithHTTP() *TestCase {
@@ -11,8 +14,8 @@ func localhostWithHTTP() *TestCase {
 		Configure: func(env *netemx.QAEnv) {
 
 			// make sure all resolvers think the correct answer is localhost
-			env.ISPResolverConfig().AddRecord("www.example.com", "", "127.0.0.1")
-			env.OtherResolversConfig().AddRecord("www.example.com", "", "127.0.0.1")
+			runtimex.Try0(env.ISPResolverConfig().AddRecord("www.example.com", "", "127.0.0.1"))
+			runtimex.Try0(env.OtherResolversConfig().AddRecord("www.example.com", "", "127.0.0.1"))
 
 		},
 		ExpectErr: false,
@@ -34,8 +37,8 @@ func localhostWithHTTPS() *TestCase {
 		Configure: func(env *netemx.QAEnv) {
 
 			// make sure all resolvers think the correct answer is localhost
-			env.ISPResolverConfig().AddRecord("www.example.com", "", "127.0.0.1")
-			env.OtherResolversConfig().AddRecord("www.example.com", "", "127.0.0.1")
+			runtimex.Try0(env.ISPResolverConfig().AddRecord("www.example.com", "", "127.0.0.1"))
+			runtimex.Try0(env.OtherResolversConfig().AddRecord("www.example.com", "", "127.0.0.1"))
 
 		},
 		ExpectErr: false,

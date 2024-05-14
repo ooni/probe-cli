@@ -32,7 +32,7 @@ func YandexHandler() http.Handler {
 
 		switch host {
 		case "ya.ru":
-			w.Write([]byte(ExampleWebPage))
+			_, _ = w.Write([]byte(ExampleWebPage))
 
 		case "yandex.com":
 			w.Header().Add("Location", "https://ya.ru/")

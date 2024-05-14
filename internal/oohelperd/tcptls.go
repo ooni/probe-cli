@@ -127,7 +127,7 @@ func tcpTLSDo(ctx context.Context, config *tcpTLSConfig) {
 	// See https://github.com/ooni/probe/issues/2413 to understand
 	// why we're using nil to force netxlite to use the cached
 	// default Mozilla cert pool.
-	tlsConfig := &tls.Config{
+	tlsConfig := &tls.Config{ // #nosec G402 - we need to use a large TLS versions range for measuring
 		NextProtos: []string{"h2", "http/1.1"},
 		RootCAs:    nil,
 		ServerName: config.URLHostname,
@@ -140,7 +140,7 @@ func tcpTLSDo(ctx context.Context, config *tcpTLSConfig) {
 
 	// perform the handshake
 	tlsConn, err := thx.Handshake(ctx, conn, tlsConfig)
-	measurexlite.MaybeClose(tlsConn)
+	_ = measurexlite.MaybeClose(tlsConn)
 
 	// publish time required to handshake
 	tlsElapsed := time.Since(tlsT0)

@@ -80,7 +80,7 @@ func (c Configurer) NewConfiguration() (Configuration, error) {
 	configuration.DNSClient = dnsclient
 	configuration.HTTPConfig.BaseResolver = dnsclient
 	// configure TLS
-	configuration.HTTPConfig.TLSConfig = &tls.Config{
+	configuration.HTTPConfig.TLSConfig = &tls.Config{ // #nosec G402 - we need to use a large TLS versions range for measuring
 		NextProtos: []string{"h2", "http/1.1"},
 	}
 	if c.Config.TLSServerName != "" {

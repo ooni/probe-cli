@@ -60,7 +60,7 @@ func (tc *hostNetworkTestCaseWithHTTPWithTLS) Run(t *testing.T) {
 	// extend the default cert pool with the proxy's own CA
 	pool := netxlite.NewMozillaCertPool()
 	pool.AddCert(proxyServer.CACert)
-	tlsConfig := &tls.Config{RootCAs: pool}
+	tlsConfig := &tls.Config{RootCAs: pool} // #nosec G402 - code used for testing
 
 	// create an HTTP client configured to use the given proxy
 	//

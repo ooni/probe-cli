@@ -44,6 +44,6 @@ func (m *Measurer) tcpConnect(ctx context.Context, index int64,
 	dialer := trace.NewDialerWithoutResolver(logger)
 	conn, err := dialer.DialContext(ctx, "tcp", address)
 	ol.Stop(err)
-	measurexlite.MaybeClose(conn)
+	_ = measurexlite.MaybeClose(conn)
 	return trace.FirstTCPConnectOrNil()
 }

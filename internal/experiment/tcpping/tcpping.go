@@ -138,7 +138,7 @@ func (m *Measurer) tcpConnect(ctx context.Context, index int64,
 	ol := logx.NewOperationLogger(logger, "TCPPing #%d %s", index, address)
 	conn, err := dialer.DialContext(ctx, "tcp", address)
 	ol.Stop(err)
-	measurexlite.MaybeClose(conn)
+	_ = measurexlite.MaybeClose(conn)
 	sp := &SinglePing{
 		TCPConnect: trace.FirstTCPConnectOrNil(), // record the first connect from the buffer
 	}

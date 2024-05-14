@@ -58,7 +58,7 @@ func Splitter3264rand(input []byte) (output [][]byte) {
 		output = append(output, input)
 		return
 	}
-	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano())) // #nosec G404 -- not really important
 	offset := rnd.Intn(32) + 32
 	output = append(output, input[:offset])
 	output = append(output, input[offset:])

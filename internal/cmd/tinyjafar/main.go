@@ -153,7 +153,7 @@ func mainWithArgs(writer io.Writer, sigChan <-chan os.Signal, args ...string) {
 	fset := flag.NewFlagSet("tinyjafar", flag.ExitOnError)
 	cfg.initFlags(fset)
 
-	fset.Parse(args)
+	runtimex.Try0(fset.Parse(args))
 
 	cs := newCmdSet()
 	cs.handleDropIP(cfg)

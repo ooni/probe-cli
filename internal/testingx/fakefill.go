@@ -42,7 +42,7 @@ func (ff *FakeFiller) getRandLocked() *rand.Rand {
 		if ff.Now != nil {
 			now = ff.Now
 		}
-		ff.rnd = rand.New(rand.NewSource(now().UnixNano()))
+		ff.rnd = rand.New(rand.NewSource(now().UnixNano())) // #nosec G404 -- used for testing
 	}
 	return ff.rnd
 }

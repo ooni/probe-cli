@@ -132,7 +132,7 @@ func webConnectivity(ctx context.Context, URL string) (*measurement, error) {
 			m.TCPConnect = append(
 				m.TCPConnect, measurex.NewArchivalTCPConnectList(tcp.Connect)...)
 		case "https":
-			config := &tls.Config{
+			config := &tls.Config{ // #nosec G402 - we need to use a large TLS versions range for measuring
 				ServerName: parsedURL.Hostname(),
 				NextProtos: []string{"h2", "http/1.1"},
 				RootCAs:    nil, // use netxlite's default
@@ -211,7 +211,7 @@ func webConnectivity(ctx context.Context, URL string) (*measurement, error) {
 	// ```Go
 
 	if resp != nil {
-		resp.Body.Close() // tidy
+		_ = resp.Body.Close() // tidy
 	}
 
 	// ```

@@ -146,7 +146,7 @@ func emit(filepath string, all []*Entry, och chan<- *Entry) {
 		progressbar.OptionSetWriter(os.Stdout),
 	)
 	for _, entry := range all {
-		bar.Add(1)
+		_ = bar.Add(1)
 		och <- entry
 	}
 }

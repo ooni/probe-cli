@@ -112,7 +112,7 @@ func (m *Measurer) measureone(
 	thaddr string,
 ) Subresult {
 	// slightly delay the measurement
-	gen := rand.New(rand.NewSource(time.Now().UnixNano()))
+	gen := rand.New(rand.NewSource(time.Now().UnixNano())) // #nosec G404 -- not really important
 	sleeptime := time.Duration(gen.Intn(250)) * time.Millisecond
 	select {
 	case <-time.After(sleeptime):

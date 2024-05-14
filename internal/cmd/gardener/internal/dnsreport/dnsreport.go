@@ -220,7 +220,7 @@ func (s *Subcommand) measureEntries(ctx context.Context, db *sql.DB, entries []*
 
 	// walk through each entry until we're interrupted by the context
 	for idx := 0; idx < len(entries) && ctx.Err() == nil; idx++ {
-		bar.Add(1)
+		_ = bar.Add(1)
 		s.measureSingleEntry(db, entries[idx])
 	}
 }

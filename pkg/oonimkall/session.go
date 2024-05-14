@@ -208,7 +208,7 @@ func sessionFinalizer(sess *Session) {
 	for _, fn := range sess.cl {
 		fn()
 	}
-	sess.sessp.Close() // ignore return value
+	_ = sess.sessp.Close()
 	ActiveSessions.Add(-1)
 }
 

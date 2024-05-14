@@ -145,7 +145,7 @@ var HTTPBlockpage451 = []byte(`<html><head>
 func HTTPHandlerBlockpage451() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnavailableForLegalReasons)
-		w.Write(HTTPBlockpage451)
+		_, _ = w.Write(HTTPBlockpage451)
 	})
 }
 
@@ -198,14 +198,14 @@ func HTTPHandlerResetWhileReadingBody() http.Handler {
 		defer conn.Close()
 
 		// write the HTTP response headers
-		conn.Write([]byte("HTTP/1.1 200 Ok\r\n"))
-		conn.Write([]byte("Content-Type: text/html\r\n"))
-		conn.Write([]byte("Content-Length: 65535\r\n"))
-		conn.Write([]byte("\r\n"))
+		_, _ = conn.Write([]byte("HTTP/1.1 200 Ok\r\n"))
+		_, _ = conn.Write([]byte("Content-Type: text/html\r\n"))
+		_, _ = conn.Write([]byte("Content-Length: 65535\r\n"))
+		_, _ = conn.Write([]byte("\r\n"))
 
 		// start writing the response
 		content := randx.Letters(32768)
-		conn.Write([]byte(content))
+		_, _ = conn.Write([]byte(content))
 
 		// sleep for half a second simulating something wrong
 		time.Sleep(500 * time.Millisecond)

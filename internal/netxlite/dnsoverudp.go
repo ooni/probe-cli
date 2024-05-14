@@ -95,16 +95,16 @@ func (t *DNSOverUDPTransport) RoundTrip(
 	if err != nil {
 		return nil, err
 	}
-	conn.SetDeadline(deadline) // time to dial (usually ~zero) already factored in
+	_ = conn.SetDeadline(deadline) // time to dial (usually ~zero) already factored in
 	joinedch := make(chan bool)
 	myaddr := conn.LocalAddr().String()
 	if _, err := conn.Write(rawQuery); err != nil {
-		conn.Close() // we still own the conn
+		_ = conn.Close() // we still own the conn
 		return nil, err
 	}
 	resp, err := t.recv(query, conn)
 	if err != nil {
-		conn.Close() // we still own the conn
+		_ = conn.Close() // we still own the conn
 		return nil, err
 	}
 	// start a goroutine to listen for any delayed DNS response and

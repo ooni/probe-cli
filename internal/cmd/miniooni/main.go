@@ -372,7 +372,7 @@ func mainSingleIteration(logger model.Logger, experimentName string, currentOpti
 
 	sess := newSessionOrPanic(ctx, currentOptions, miniooniDir, logger)
 	defer func() {
-		sess.Close()
+		_ = sess.Close()
 		log.Infof("whole session: recv %s, sent %s",
 			humanize.SI(sess.KibiBytesReceived()*1024, "byte"),
 			humanize.SI(sess.KibiBytesSent()*1024, "byte"),
