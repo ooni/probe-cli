@@ -46,7 +46,7 @@ func main() {
 	flag.Parse()
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
-	tlsConfig := &tls.Config{ // #nosec G402 - we need to use a large TLS range for measuring
+	tlsConfig := &tls.Config{ // #nosec G402 - we need to use a large TLS versions range for measuring
 		ServerName: *sni,
 		NextProtos: []string{"h2", "http/1.1"},
 		RootCAs:    nil,

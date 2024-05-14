@@ -48,7 +48,7 @@ func main() {
 	// QUIC/HTTP3 by using `"h3"` here.
 	//
 	// ```Go
-	config := &tls.Config{ // #nosec G402 - we need to use a large TLS range for measuring
+	config := &tls.Config{ // #nosec G402 - we need to use a large TLS versions range for measuring
 		ServerName: *sni,
 		NextProtos: []string{"h3"},
 		RootCAs:    nil,

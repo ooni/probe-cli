@@ -142,7 +142,7 @@ func (m Measurer) run(ctx context.Context, config runConfig) error {
 
 func (m Measurer) tlsConfig() *tls.Config {
 	if m.config.SNI != "" {
-		return &tls.Config{ServerName: m.config.SNI} // #nosec G402 - we need to use a large TLS range for measuring
+		return &tls.Config{ServerName: m.config.SNI} // #nosec G402 - we need to use a large TLS versions range for measuring
 	}
 	return nil
 }
