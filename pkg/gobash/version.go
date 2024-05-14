@@ -105,8 +105,7 @@ func install(targetDir, version string) error {
 		return nil
 	}
 
-	err := os.MkdirAll(targetDir, 0755) // #nosec G301 - no need to be more strict
-	if err != nil {
+	if err := os.MkdirAll(targetDir, 0700); err != nil {
 		return err
 	}
 	goURL := versionArchiveURL(version)
@@ -149,8 +148,7 @@ func install(targetDir, version string) error {
 	if err := unpackArchive(targetDir, archiveFile); err != nil {
 		return fmt.Errorf("extracting archive %v: %v", archiveFile, err)
 	}
-	err = ioutil.WriteFile(filepath.Join(targetDir, unpackedOkay), nil, 0644) // #nosec G306 - no need to be more strict
-	if err != nil {
+	if err = ioutil.WriteFile(filepath.Join(targetDir, unpackedOkay), nil, 0600); err != nil {
 		return err
 	}
 	log.Printf("Success. You may now run '%v'", version)
@@ -207,8 +205,7 @@ func unpackTarGz(targetDir, archiveFile string) error {
 			// write will fail with the same error.
 			dir := filepath.Dir(abs)
 			if !madeDir[dir] {
-				err := os.MkdirAll(filepath.Dir(abs), 0755) // #nosec G301 - no need to be more strict
-				if err != nil {
+				if err := os.MkdirAll(filepath.Dir(abs), 0700); err != nil {
 					return err
 				}
 				madeDir[dir] = true
@@ -239,8 +236,7 @@ func unpackTarGz(targetDir, archiveFile string) error {
 				}
 			}
 		case mode.IsDir():
-			err := os.MkdirAll(abs, 0755) // #nosec G301 - no need to be more strict
-			if err != nil {
+			if err := os.MkdirAll(abs, 0700); err != nil {
 				return err
 			}
 			madeDir[abs] = true
@@ -276,8 +272,7 @@ func unpackZip(targetDir, archiveFile string) error {
 
 		outpath := filepath.Join(targetDir, name)
 		if f.FileInfo().IsDir() {
-			err := os.MkdirAll(outpath, 0755) // #nosec G301 - no need to be more strict
-			if err != nil {
+			if err := os.MkdirAll(outpath, 0700); err != nil {
 				return err
 			}
 			continue
@@ -289,8 +284,7 @@ func unpackZip(targetDir, archiveFile string) error {
 		}
 
 		// File
-		err = os.MkdirAll(filepath.Dir(outpath), 0755) // #nosec G301 - no need to be more strict
-		if err != nil {
+		if err = os.MkdirAll(filepath.Dir(outpath), 0755); err != nil {
 			return err
 		}
 		out, err := os.OpenFile( // #nosec G304 - this is working as intended

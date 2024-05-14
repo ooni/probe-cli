@@ -29,7 +29,7 @@ func newDialManager(ndt7URL string, logger model.Logger, userAgent string) dialM
 	}
 }
 
-func (mgr dialManager) dialWithTestName(ctx context.Context, testName string) (*websocket.Conn, error) {
+func (mgr dialManager) dialWithTestName(ctx context.Context, _ string) (*websocket.Conn, error) {
 	netx := &netxlite.Netx{}
 	reso := netx.NewStdlibResolver(mgr.logger)
 	dlr := netx.NewDialerWithResolver(mgr.logger, reso)
