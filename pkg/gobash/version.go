@@ -148,7 +148,7 @@ func install(targetDir, version string) error {
 	if err := unpackArchive(targetDir, archiveFile); err != nil {
 		return fmt.Errorf("extracting archive %v: %v", archiveFile, err)
 	}
-	if err = ioutil.WriteFile(filepath.Join(targetDir, unpackedOkay), nil, 0600); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(targetDir, unpackedOkay), nil, 0600); err != nil {
 		return err
 	}
 	log.Printf("Success. You may now run '%v'", version)
