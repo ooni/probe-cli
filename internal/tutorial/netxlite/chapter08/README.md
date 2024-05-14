@@ -75,7 +75,8 @@ seen how to do the same using TLS conns.)
 
 ```Go
 	clnt := &http.Client{Transport: netxlite.NewHTTP3Transport(
-		log.Log, netxlite.NewSingleUseQUICDialer(qconn), &tls.Config{},
+		log.Log, netxlite.NewSingleUseQUICDialer(qconn),
+		&tls.Config{}, // #nosec G402 - we need to use a large TLS versions range for measuring
 	)}
 ```
 
@@ -92,7 +93,7 @@ using the GET method.
 		fatal(err)
 	}
 	log.Infof("Status code: %d", resp.StatusCode)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 }
 
 ```

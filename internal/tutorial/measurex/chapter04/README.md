@@ -49,7 +49,7 @@ we have seen in chapter02, using the address argument. Then, if
 successful, it will TLS handshake using the given TLS config.
 
 ```Go
-	m := mx.TLSConnectAndHandshake(ctx, *address, &tls.Config{
+	m := mx.TLSConnectAndHandshake(ctx, *address, &tls.Config{ // #nosec G402 - we need to use a large TLS versions range for measuring
 		ServerName: *sni,
 		NextProtos: []string{"h2", "http/1.1"},
 		RootCAs:    nil, // use netxlite's default
