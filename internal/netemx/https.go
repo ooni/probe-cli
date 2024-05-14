@@ -5,7 +5,6 @@ import (
 	"net"
 	"net/http"
 	"sync"
-	"time"
 
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -99,9 +98,8 @@ func (srv *httpSecureServer) mustListenPortLocked(handler http.Handler, ipAddr n
 
 	// serve requests in a background goroutine
 	srvr := &http.Server{
-		Handler:           handler,
-		ReadHeaderTimeout: 5 * time.Second,
-		TLSConfig:         tlsConfig,
+		Handler:   handler,
+		TLSConfig: tlsConfig,
 	}
 	go srvr.ServeTLS(listener, "", "")
 
