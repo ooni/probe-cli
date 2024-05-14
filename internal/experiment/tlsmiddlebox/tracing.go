@@ -128,7 +128,7 @@ func genTLSConfig(sni string) *tls.Config {
 		RootCAs:            nil,
 		ServerName:         sni,
 		NextProtos:         []string{"h2", "http/1.1"},
-		InsecureSkipVerify: true,
+		InsecureSkipVerify: true, // #nosec G402 - it's fine to skip verify in a nettest
 	}
 }
 

@@ -379,7 +379,7 @@ func (hd *httpsDialer) dialTLS(
 
 	// create TLS configuration
 	tlsConfig := &tls.Config{
-		InsecureSkipVerify: true, // Note: we're going to verify at the end of the func!
+		InsecureSkipVerify: true, // #nosec G402 - we verify at end of func
 		NextProtos:         []string{"h2", "http/1.1"},
 		RootCAs:            hd.rootCAs,
 		ServerName:         tactic.SNI,

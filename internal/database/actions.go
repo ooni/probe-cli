@@ -112,7 +112,7 @@ func (d *Database) GetMeasurementJSON(msmtID int64) (map[string]interface{}, err
 		return nil, errors.New("cannot access measurement file")
 	}
 	measurementFilePath := measurement.DatabaseMeasurement.MeasurementFilePath.String
-	b, err := os.ReadFile(measurementFilePath)
+	b, err := os.ReadFile(measurementFilePath) // #nosec G304 - this is working as intended
 	if err != nil {
 		return nil, err
 	}

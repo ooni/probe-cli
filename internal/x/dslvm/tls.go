@@ -164,7 +164,7 @@ func (sx *TLSHandshakeStage) handshake(ctx context.Context, rtx Runtime, tcpConn
 func (sx *TLSHandshakeStage) newTLSConfig() *tls.Config {
 	return &tls.Config{ // #nosec G402 - we need to use a large TLS versions range for measuring
 		NextProtos:         sx.NextProtos,
-		InsecureSkipVerify: sx.InsecureSkipVerify,
+		InsecureSkipVerify: sx.InsecureSkipVerify, // #nosec G402 - it's fine to possibly skip verify in a nettest
 		RootCAs:            sx.RootCAs,
 		ServerName:         sx.ServerName,
 	}

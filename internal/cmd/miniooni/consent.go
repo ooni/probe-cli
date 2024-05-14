@@ -27,7 +27,7 @@ func acquireUserConsent(miniooniDir string, currentOptions *Options) {
 // maybeWriteConsentFile writes the consent file iff the yes argument is true
 func maybeWriteConsentFile(yes bool, filepath string) (err error) {
 	if yes {
-		err = os.WriteFile(filepath, []byte("\n"), 0644)
+		err = os.WriteFile(filepath, []byte("\n"), 0600)
 	}
 	return
 }

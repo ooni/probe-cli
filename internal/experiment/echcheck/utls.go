@@ -37,7 +37,7 @@ func (t *tlsHandshakerWithExtensions) Handshake(
 	runtimex.Assert(err == nil, "unexpected error when creating UTLSConn")
 
 	if t.extensions != nil && len(t.extensions) != 0 {
-		tlsConn.BuildHandshakeState()
+		runtimex.Try0(tlsConn.BuildHandshakeState())
 		tlsConn.Extensions = append(tlsConn.Extensions, t.extensions...)
 	}
 

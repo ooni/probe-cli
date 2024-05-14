@@ -137,7 +137,7 @@ func LoadExperiment(config *VMConfig, exPath string) (*VM, error) {
 
 func (vm *VM) RunScript(exPath string) error {
 	// read the file content
-	content, err := os.ReadFile(exPath)
+	content, err := os.ReadFile(exPath) // #nosec G304 - this is working as intended
 	if err != nil {
 		return err
 	}

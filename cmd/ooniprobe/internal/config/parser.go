@@ -14,7 +14,7 @@ const ConfigVersion = 1
 
 // ReadConfig reads the configuration from the path
 func ReadConfig(path string) (*Config, error) {
-	b, err := os.ReadFile(path)
+	b, err := os.ReadFile(path) // #nosec G304 - this is working as intended
 	if err != nil {
 		return nil, err
 	}

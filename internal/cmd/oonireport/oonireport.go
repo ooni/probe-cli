@@ -53,7 +53,7 @@ func fatalIfFalse(cond bool, msg string) {
 
 func readLines(path string) []string {
 	// open measurement file
-	file, err := os.Open(path)
+	file, err := os.Open(path) // #nosec G304 - this is working as intended
 	runtimex.PanicOnError(err, "Open file error.")
 	defer file.Close()
 
