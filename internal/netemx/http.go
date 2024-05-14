@@ -5,7 +5,6 @@ import (
 	"net"
 	"net/http"
 	"sync"
-	"time"
 
 	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -100,10 +99,7 @@ func (srv *httpCleartextServer) mustListenPortLocked(handler http.Handler, ipAdd
 	listener := runtimex.Try1(srv.unet.ListenTCP("tcp", addr))
 
 	// serve requests in a background goroutine
-	srvr := &http.Server{
-		Handler:           handler,
-		ReadHeaderTimeout: 5 * time.Second,
-	}
+	srvr := &http.Server{Handler: handler}
 	go srvr.Serve(listener)
 
 	// make sure we track the server (the .Serve method will close the

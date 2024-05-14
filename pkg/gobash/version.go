@@ -56,7 +56,7 @@ func Run(version string) {
 
 func runGo(root string) {
 	gobin := filepath.Join(root, "bin", "go"+exe())
-	cmd := exec.Command(gobin, os.Args[1:]...) // #nosec G204 - this is working as intended
+	cmd := exec.Command(gobin, os.Args[1:]...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -105,12 +105,11 @@ func install(targetDir, version string) error {
 		return nil
 	}
 
-	err := os.MkdirAll(targetDir, 0755) // #nosec G301 - no need to be more strict
-	if err != nil {
+	if err := os.MkdirAll(targetDir, 0755); err != nil {
 		return err
 	}
 	goURL := versionArchiveURL(version)
-	res, err := http.Head(goURL) // #nosec G107 -- this is working as intended
+	res, err := http.Head(goURL)
 	if err != nil {
 		return err
 	}
@@ -149,8 +148,7 @@ func install(targetDir, version string) error {
 	if err := unpackArchive(targetDir, archiveFile); err != nil {
 		return fmt.Errorf("extracting archive %v: %v", archiveFile, err)
 	}
-	err = ioutil.WriteFile(filepath.Join(targetDir, unpackedOkay), nil, 0644) // #nosec G306 - no need to be more strict
-	if err != nil {
+	if err := ioutil.WriteFile(filepath.Join(targetDir, unpackedOkay), nil, 0644); err != nil {
 		return err
 	}
 	log.Printf("Success. You may now run '%v'", version)
@@ -172,7 +170,7 @@ func unpackArchive(targetDir, archiveFile string) error {
 
 // unpackTarGz is the tar.gz implementation of unpackArchive.
 func unpackTarGz(targetDir, archiveFile string) error {
-	r, err := os.Open(archiveFile) // #nosec G304 - this is working as intended
+	r, err := os.Open(archiveFile)
 	if err != nil {
 		return err
 	}
@@ -207,14 +205,12 @@ func unpackTarGz(targetDir, archiveFile string) error {
 			// write will fail with the same error.
 			dir := filepath.Dir(abs)
 			if !madeDir[dir] {
-				err := os.MkdirAll(filepath.Dir(abs), 0755) // #nosec G301 - no need to be more strict
-				if err != nil {
+				if err := os.MkdirAll(filepath.Dir(abs), 0755); err != nil {
 					return err
 				}
 				madeDir[dir] = true
 			}
-			wf, err := os.OpenFile( // #nosec G304 - this is working as intended
-				abs, os.O_RDWR|os.O_CREATE|os.O_TRUNC, mode.Perm())
+			wf, err := os.OpenFile(abs, os.O_RDWR|os.O_CREATE|os.O_TRUNC, mode.Perm())
 			if err != nil {
 				return err
 			}
@@ -239,8 +235,7 @@ func unpackTarGz(targetDir, archiveFile string) error {
 				}
 			}
 		case mode.IsDir():
-			err := os.MkdirAll(abs, 0755) // #nosec G301 - no need to be more strict
-			if err != nil {
+			if err := os.MkdirAll(abs, 0755); err != nil {
 				return err
 			}
 			madeDir[abs] = true
@@ -276,8 +271,7 @@ func unpackZip(targetDir, archiveFile string) error {
 
 		outpath := filepath.Join(targetDir, name)
 		if f.FileInfo().IsDir() {
-			err := os.MkdirAll(outpath, 0755) // #nosec G301 - no need to be more strict
-			if err != nil {
+			if err := os.MkdirAll(outpath, 0755); err != nil {
 				return err
 			}
 			continue
@@ -289,19 +283,17 @@ func unpackZip(targetDir, archiveFile string) error {
 		}
 
 		// File
-		err = os.MkdirAll(filepath.Dir(outpath), 0755) // #nosec G301 - no need to be more strict
-		if err != nil {
+		if err := os.MkdirAll(filepath.Dir(outpath), 0755); err != nil {
 			return err
 		}
-		out, err := os.OpenFile( // #nosec G304 - this is working as intended
-			outpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+		out, err := os.OpenFile(outpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
 			return err
 		}
 		_, err = io.Copy(out, rc)
-		_ = rc.Close()
+		rc.Close()
 		if err != nil {
-			_ = out.Close()
+			out.Close()
 			return err
 		}
 		if err := out.Close(); err != nil {
@@ -314,7 +306,7 @@ func unpackZip(targetDir, archiveFile string) error {
 // verifySHA256 reports whether the named file has contents with
 // SHA-256 of the given wantHex value.
 func verifySHA256(file, wantHex string) error {
-	f, err := os.Open(file) // #nosec G304 - this is working as intended
+	f, err := os.Open(file)
 	if err != nil {
 		return err
 	}
@@ -331,7 +323,7 @@ func verifySHA256(file, wantHex string) error {
 
 // slurpURLToString downloads the given URL and returns it as a string.
 func slurpURLToString(url_ string) (string, error) {
-	res, err := http.Get(url_) // #nosec G107 -- this is working as intended
+	res, err := http.Get(url_)
 	if err != nil {
 		return "", err
 	}
@@ -348,14 +340,14 @@ func slurpURLToString(url_ string) (string, error) {
 
 // copyFromURL downloads srcURL to dstFile.
 func copyFromURL(dstFile, srcURL string) (err error) {
-	f, err := os.Create(dstFile) // #nosec G304 - this is working as intended
+	f, err := os.Create(dstFile)
 	if err != nil {
 		return err
 	}
 	defer func() {
 		if err != nil {
-			_ = f.Close()
-			_ = os.Remove(dstFile)
+			f.Close()
+			os.Remove(dstFile)
 		}
 	}()
 	c := &http.Client{
