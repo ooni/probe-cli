@@ -198,7 +198,7 @@ func (d *Database) DeleteResult(resultID int64) error {
 		return err
 	}
 	if err := res.Delete(); err != nil {
-		log.WithError(err).Error("failed to delete the result directory")
+		log.WithError(err).Error("failed to delete the result")
 		return err
 	}
 	return os.RemoveAll(result.MeasurementDir)

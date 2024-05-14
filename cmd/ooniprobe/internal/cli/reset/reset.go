@@ -26,10 +26,9 @@ func init() {
 			return err
 		}
 		if *force {
-			if err := os.RemoveAll(ctx.Home()); err != nil {
-				log.WithError(err).Error("failed to delete OONI Home dir")
-				return err
-			}
+			// trade off: we're not checking for an error here to make the
+			// OONI directory deletion idempotent
+			_ = os.RemoveAll(ctx.Home())
 			log.Infof("Deleted %s", ctx.Home())
 		} else {
 			log.Infof("Run with --force to delete %s", ctx.Home())
