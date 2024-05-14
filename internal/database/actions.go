@@ -201,8 +201,7 @@ func (d *Database) DeleteResult(resultID int64) error {
 		log.WithError(err).Error("failed to delete the result directory")
 		return err
 	}
-	os.RemoveAll(result.MeasurementDir)
-	return nil
+	return os.RemoveAll(result.MeasurementDir)
 }
 
 // UpdateUploadedStatus implements WritableDatabase.UpdateUploadedStatus
@@ -337,7 +336,10 @@ func (d *Database) CreateOrUpdateURL(urlStr string, categoryCode string, country
 			return err
 		} else {
 			url.CategoryCode = sql.NullString{String: categoryCode, Valid: true}
-			res.Update(url)
+			if err := res.Update(url); err != nil {
+				log.WithError(err).Error("Failed to update the database")
+				return err
+			}
 		}
 
 		return nil

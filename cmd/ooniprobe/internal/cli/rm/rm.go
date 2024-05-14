@@ -9,6 +9,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/cli/root"
 	"github.com/ooni/probe-cli/v3/internal/database"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/upper/db/v4"
 )
 
@@ -20,7 +21,7 @@ func deleteAll(d *database.Database, skipInteractive bool) error {
 			Options: []string{"true", "false"},
 			Default: "false",
 		}
-		survey.AskOne(confirm, &answer, nil)
+		runtimex.Try0(survey.AskOne(confirm, &answer, nil))
 		if answer == "false" {
 			return errors.New("canceled by user")
 		}
@@ -80,7 +81,7 @@ func init() {
 			Options: []string{"true", "false"},
 			Default: "false",
 		}
-		survey.AskOne(confirm, &answer, nil)
+		runtimex.Try0(survey.AskOne(confirm, &answer, nil))
 		if answer == "false" {
 			return errors.New("canceled by user")
 		}

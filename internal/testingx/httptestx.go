@@ -68,10 +68,7 @@ func MustNewHTTPServerEx(addr *net.TCPAddr, httpListener TCPListener, handler ht
 		Path:   "/",
 	}
 	srv := &HTTPServer{
-		Config: &http.Server{
-			Handler:           handler,
-			ReadHeaderTimeout: 5 * time.Second,
-		},
+		Config:       &http.Server{Handler: handler}, // #nosec G112 - just a testing server
 		Listener:     listener,
 		TLS:          nil,
 		URL:          baseURL.String(),
@@ -116,10 +113,7 @@ func MustNewHTTPServerTLSEx(
 	otherNames = append(otherNames, extraSNIs...)
 
 	srv := &HTTPServer{
-		Config: &http.Server{
-			Handler:           handler,
-			ReadHeaderTimeout: 5 * time.Second,
-		},
+		Config:       &http.Server{Handler: handler}, // #nosec G112 - just a testing server
 		Listener:     listener,
 		TLS:          ca.MustNewServerTLSConfig(commonName, otherNames...),
 		URL:          baseURL.String(),

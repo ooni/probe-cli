@@ -284,7 +284,7 @@ func unpackZip(targetDir, archiveFile string) error {
 		}
 
 		// File
-		if err := os.MkdirAll(filepath.Dir(outpath), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(outpath), 0700); err != nil {
 			return err
 		}
 		out, err := os.OpenFile( // #nosec G304 - this is working as intended

@@ -67,7 +67,7 @@ func (c *Config) Write() error {
 	if c.path == "" {
 		return errors.New("config file path is empty")
 	}
-	if err := os.WriteFile(c.path, configJSON, 0644); err != nil {
+	if err := os.WriteFile(c.path, configJSON, 0600); err != nil {
 		return errors.Wrap(err, "writing config JSON")
 	}
 	return nil
