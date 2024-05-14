@@ -56,7 +56,7 @@ func Run(version string) {
 
 func runGo(root string) {
 	gobin := filepath.Join(root, "bin", "go"+exe())
-	cmd := exec.Command(gobin, os.Args[1:]...)
+	cmd := exec.Command(gobin, os.Args[1:]...) // #nosec G204 - this is working as intended
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -105,11 +105,11 @@ func install(targetDir, version string) error {
 		return nil
 	}
 
-	if err := os.MkdirAll(targetDir, 0755); err != nil {
+	if err := os.MkdirAll(targetDir, 0700); err != nil {
 		return err
 	}
 	goURL := versionArchiveURL(version)
-	res, err := http.Head(goURL)
+	res, err := http.Head(goURL) // #nosec G107 -- this is working as intended
 	if err != nil {
 		return err
 	}
@@ -148,7 +148,7 @@ func install(targetDir, version string) error {
 	if err := unpackArchive(targetDir, archiveFile); err != nil {
 		return fmt.Errorf("extracting archive %v: %v", archiveFile, err)
 	}
-	if err := ioutil.WriteFile(filepath.Join(targetDir, unpackedOkay), nil, 0644); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(targetDir, unpackedOkay), nil, 0600); err != nil {
 		return err
 	}
 	log.Printf("Success. You may now run '%v'", version)
@@ -170,7 +170,7 @@ func unpackArchive(targetDir, archiveFile string) error {
 
 // unpackTarGz is the tar.gz implementation of unpackArchive.
 func unpackTarGz(targetDir, archiveFile string) error {
-	r, err := os.Open(archiveFile)
+	r, err := os.Open(archiveFile) // #nosec G304 - this is working as intended
 	if err != nil {
 		return err
 	}
@@ -205,12 +205,13 @@ func unpackTarGz(targetDir, archiveFile string) error {
 			// write will fail with the same error.
 			dir := filepath.Dir(abs)
 			if !madeDir[dir] {
-				if err := os.MkdirAll(filepath.Dir(abs), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Dir(abs), 0700); err != nil {
 					return err
 				}
 				madeDir[dir] = true
 			}
-			wf, err := os.OpenFile(abs, os.O_RDWR|os.O_CREATE|os.O_TRUNC, mode.Perm())
+			wf, err := os.OpenFile( // #nosec G304 - this is working as intended
+				abs, os.O_RDWR|os.O_CREATE|os.O_TRUNC, mode.Perm())
 			if err != nil {
 				return err
 			}
@@ -235,7 +236,7 @@ func unpackTarGz(targetDir, archiveFile string) error {
 				}
 			}
 		case mode.IsDir():
-			if err := os.MkdirAll(abs, 0755); err != nil {
+			if err := os.MkdirAll(abs, 0700); err != nil {
 				return err
 			}
 			madeDir[abs] = true
@@ -271,7 +272,7 @@ func unpackZip(targetDir, archiveFile string) error {
 
 		outpath := filepath.Join(targetDir, name)
 		if f.FileInfo().IsDir() {
-			if err := os.MkdirAll(outpath, 0755); err != nil {
+			if err := os.MkdirAll(outpath, 0700); err != nil {
 				return err
 			}
 			continue
@@ -286,14 +287,15 @@ func unpackZip(targetDir, archiveFile string) error {
 		if err := os.MkdirAll(filepath.Dir(outpath), 0755); err != nil {
 			return err
 		}
-		out, err := os.OpenFile(outpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+		out, err := os.OpenFile( // #nosec G304 - this is working as intended
+			outpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
 			return err
 		}
 		_, err = io.Copy(out, rc)
-		rc.Close()
+		_ = rc.Close()
 		if err != nil {
-			out.Close()
+			_ = out.Close()
 			return err
 		}
 		if err := out.Close(); err != nil {
@@ -306,7 +308,7 @@ func unpackZip(targetDir, archiveFile string) error {
 // verifySHA256 reports whether the named file has contents with
 // SHA-256 of the given wantHex value.
 func verifySHA256(file, wantHex string) error {
-	f, err := os.Open(file)
+	f, err := os.Open(file) // #nosec G304 - this is working as intended
 	if err != nil {
 		return err
 	}
@@ -323,7 +325,7 @@ func verifySHA256(file, wantHex string) error {
 
 // slurpURLToString downloads the given URL and returns it as a string.
 func slurpURLToString(url_ string) (string, error) {
-	res, err := http.Get(url_)
+	res, err := http.Get(url_) // #nosec G107 -- this is working as intended
 	if err != nil {
 		return "", err
 	}
@@ -340,14 +342,14 @@ func slurpURLToString(url_ string) (string, error) {
 
 // copyFromURL downloads srcURL to dstFile.
 func copyFromURL(dstFile, srcURL string) (err error) {
-	f, err := os.Create(dstFile)
+	f, err := os.Create(dstFile) // #nosec G304 - this is working as intended
 	if err != nil {
 		return err
 	}
 	defer func() {
 		if err != nil {
-			f.Close()
-			os.Remove(dstFile)
+			_ = f.Close()
+			_ = os.Remove(dstFile)
 		}
 	}()
 	c := &http.Client{
