@@ -26,7 +26,9 @@ func init() {
 			return err
 		}
 		if *force {
-			os.RemoveAll(ctx.Home())
+			// trade off: we're not checking for an error here to make the
+			// OONI directory deletion idempotent
+			_ = os.RemoveAll(ctx.Home())
 			log.Infof("Deleted %s", ctx.Home())
 		} else {
 			log.Infof("Run with --force to delete %s", ctx.Home())

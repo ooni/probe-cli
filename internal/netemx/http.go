@@ -99,7 +99,7 @@ func (srv *httpCleartextServer) mustListenPortLocked(handler http.Handler, ipAdd
 	listener := runtimex.Try1(srv.unet.ListenTCP("tcp", addr))
 
 	// serve requests in a background goroutine
-	srvr := &http.Server{Handler: handler}
+	srvr := &http.Server{Handler: handler} // #nosec G112 - just a testing server
 	go srvr.Serve(listener)
 
 	// make sure we track the server (the .Serve method will close the

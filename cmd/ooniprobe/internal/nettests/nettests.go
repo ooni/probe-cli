@@ -246,9 +246,9 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 			return errors.Wrap(err, "failed to add test keys to summary")
 		}
 	}
-	db.UpdateUploadedStatus(c.res)
+	err := db.UpdateUploadedStatus(c.res)
 	log.Debugf("status.end")
-	return nil
+	return err
 }
 
 // OnProgress should be called when a new progress event is available.
