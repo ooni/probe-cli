@@ -65,7 +65,7 @@ version that is compatible with our dependencies.
 We should additionally update the `toolchain` line inside of `go.mod` to use the
 specific toolchain we want to use. (The `toolchain` mechanism was introduced by
 Go 1.21.0 and it may be that we can now use just the `toolchain` instead of
-using the `GOVERSIOn` file; this should eventually be investigated.)
+using the `GOVERSION` file; this should eventually be investigated.)
 
 After updating `GOVERSION` and `go.mod`, we need to update our stdlib forks:
 
