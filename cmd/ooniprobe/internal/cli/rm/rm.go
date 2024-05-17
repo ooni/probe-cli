@@ -20,7 +20,7 @@ func deleteAll(d *database.Database, skipInteractive bool) error {
 			Options: []string{"true", "false"},
 			Default: "false",
 		}
-		_ = survey.AskOne(confirm, &answer, nil) // no error checking: we rely on the default
+		_ = survey.AskOne(confirm, &answer, nil) // no error checking: we rely on the default value
 		if answer == "false" {
 			return errors.New("canceled by user")
 		}
@@ -80,7 +80,7 @@ func init() {
 			Options: []string{"true", "false"},
 			Default: "false",
 		}
-		_ = survey.AskOne(confirm, &answer, nil) // no error checking: we rely on the default
+		_ = survey.AskOne(confirm, &answer, nil) // no error checking: we rely on the default value
 		if answer == "false" {
 			return errors.New("canceled by user")
 		}
