@@ -11,12 +11,13 @@ import (
 
 func init() {
 	AllExperiments["echcheck"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
+		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
 			return echcheck.NewExperimentMeasurer(
 				*config.(*echcheck.Config),
 			)
 		},
-		config:      &echcheck.Config{},
-		inputPolicy: model.InputOptional,
+		buildRicherInputExperiment: echcheck.NewRicherInputExperiment,
+		config:                     &echcheck.Config{},
+		inputPolicy:                model.InputOptional,
 	}
 }

@@ -11,13 +11,14 @@ import (
 
 func init() {
 	AllExperiments["dnscheck"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
+		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
 			return dnscheck.NewExperimentMeasurer(
 				*config.(*dnscheck.Config),
 			)
 		},
-		config:           &dnscheck.Config{},
-		enabledByDefault: true,
-		inputPolicy:      model.InputOrStaticDefault,
+		buildRicherInputExperiment: dnscheck.NewRicherInputExperiment,
+		config:                     &dnscheck.Config{},
+		enabledByDefault:           true,
+		inputPolicy:                model.InputOrStaticDefault,
 	}
 }

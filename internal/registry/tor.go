@@ -11,13 +11,14 @@ import (
 
 func init() {
 	AllExperiments["tor"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
+		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
 			return tor.NewExperimentMeasurer(
 				*config.(*tor.Config),
 			)
 		},
-		config:           &tor.Config{},
-		enabledByDefault: true,
-		inputPolicy:      model.InputNone,
+		buildRicherInputExperiment: tor.NewRicherInputExperiment,
+		config:                     &tor.Config{},
+		enabledByDefault:           true,
+		inputPolicy:                model.InputNone,
 	}
 }

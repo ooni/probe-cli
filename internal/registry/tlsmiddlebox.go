@@ -11,13 +11,14 @@ import (
 
 func init() {
 	AllExperiments["tlsmiddlebox"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
+		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
 			return tlsmiddlebox.NewExperimentMeasurer(
 				*config.(*tlsmiddlebox.Config),
 			)
 		},
-		config:           &tlsmiddlebox.Config{},
-		enabledByDefault: true,
-		inputPolicy:      model.InputStrictlyRequired,
+		buildRicherInputExperiment: tlsmiddlebox.NewRicherInputExperiment,
+		config:                     &tlsmiddlebox.Config{},
+		enabledByDefault:           true,
+		inputPolicy:                model.InputStrictlyRequired,
 	}
 }

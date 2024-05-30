@@ -11,13 +11,14 @@ import (
 
 func init() {
 	AllExperiments["tcpping"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
+		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
 			return tcpping.NewExperimentMeasurer(
 				*config.(*tcpping.Config),
 			)
 		},
-		config:           &tcpping.Config{},
-		enabledByDefault: true,
-		inputPolicy:      model.InputStrictlyRequired,
+		buildRicherInputExperiment: tcpping.NewRicherInputExperiment,
+		config:                     &tcpping.Config{},
+		enabledByDefault:           true,
+		inputPolicy:                model.InputStrictlyRequired,
 	}
 }

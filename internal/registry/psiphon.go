@@ -11,13 +11,14 @@ import (
 
 func init() {
 	AllExperiments["psiphon"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
+		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
 			return psiphon.NewExperimentMeasurer(
 				*config.(*psiphon.Config),
 			)
 		},
-		config:           &psiphon.Config{},
-		enabledByDefault: true,
-		inputPolicy:      model.InputOptional,
+		buildRicherInputExperiment: psiphon.NewRicherInputExperiment,
+		config:                     &psiphon.Config{},
+		enabledByDefault:           true,
+		inputPolicy:                model.InputOptional,
 	}
 }

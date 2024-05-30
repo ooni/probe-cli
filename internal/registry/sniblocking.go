@@ -11,13 +11,14 @@ import (
 
 func init() {
 	AllExperiments["sni_blocking"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
+		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
 			return sniblocking.NewExperimentMeasurer(
 				*config.(*sniblocking.Config),
 			)
 		},
-		config:           &sniblocking.Config{},
-		enabledByDefault: true,
-		inputPolicy:      model.InputOrQueryBackend,
+		buildRicherInputExperiment: sniblocking.NewRicherInputExperiment,
+		config:                     &sniblocking.Config{},
+		enabledByDefault:           true,
+		inputPolicy:                model.InputOrQueryBackend,
 	}
 }

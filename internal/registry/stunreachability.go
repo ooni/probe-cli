@@ -11,13 +11,14 @@ import (
 
 func init() {
 	AllExperiments["stunreachability"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
+		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
 			return stunreachability.NewExperimentMeasurer(
 				*config.(*stunreachability.Config),
 			)
 		},
-		config:           &stunreachability.Config{},
-		enabledByDefault: true,
-		inputPolicy:      model.InputOrStaticDefault,
+		buildRicherInputExperiment: stunreachability.NewRicherInputExperiment,
+		config:                     &stunreachability.Config{},
+		enabledByDefault:           true,
+		inputPolicy:                model.InputOrStaticDefault,
 	}
 }

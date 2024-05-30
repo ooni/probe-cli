@@ -11,13 +11,14 @@ import (
 
 func init() {
 	AllExperiments["torsf"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
+		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
 			return torsf.NewExperimentMeasurer(
 				*config.(*torsf.Config),
 			)
 		},
-		config:           &torsf.Config{},
-		enabledByDefault: false,
-		inputPolicy:      model.InputNone,
+		buildRicherInputExperiment: torsf.NewRicherInputExperiment,
+		config:                     &torsf.Config{},
+		enabledByDefault:           false,
+		inputPolicy:                model.InputNone,
 	}
 }

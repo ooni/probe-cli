@@ -11,12 +11,13 @@ import (
 
 func init() {
 	AllExperiments["riseupvpn"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
+		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
 			return riseupvpn.NewExperimentMeasurer(
 				*config.(*riseupvpn.Config),
 			)
 		},
-		config:      &riseupvpn.Config{},
-		inputPolicy: model.InputNone,
+		buildRicherInputExperiment: riseupvpn.NewRicherInputExperiment,
+		config:                     &riseupvpn.Config{},
+		inputPolicy:                model.InputNone,
 	}
 }

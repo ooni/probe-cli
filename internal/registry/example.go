@@ -13,11 +13,12 @@ import (
 
 func init() {
 	AllExperiments["example"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
+		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
 			return example.NewExperimentMeasurer(
 				*config.(*example.Config), "example",
 			)
 		},
+		buildRicherInputExperiment: example.NewRicherInputExperiment,
 		config: &example.Config{
 			Message:   "Good day from the example experiment!",
 			SleepTime: int64(time.Second),

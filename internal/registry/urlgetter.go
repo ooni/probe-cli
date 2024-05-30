@@ -11,13 +11,14 @@ import (
 
 func init() {
 	AllExperiments["urlgetter"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
+		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
 			return urlgetter.NewExperimentMeasurer(
 				*config.(*urlgetter.Config),
 			)
 		},
-		config:           &urlgetter.Config{},
-		enabledByDefault: true,
-		inputPolicy:      model.InputStrictlyRequired,
+		buildRicherInputExperiment: urlgetter.NewRicherInputExperiment,
+		config:                     &urlgetter.Config{},
+		enabledByDefault:           true,
+		inputPolicy:                model.InputStrictlyRequired,
 	}
 }

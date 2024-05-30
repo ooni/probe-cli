@@ -11,13 +11,14 @@ import (
 
 func init() {
 	AllExperiments["facebook_messenger"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
+		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
 			return fbmessenger.NewExperimentMeasurer(
 				*config.(*fbmessenger.Config),
 			)
 		},
-		config:           &fbmessenger.Config{},
-		enabledByDefault: true,
-		inputPolicy:      model.InputNone,
+		buildRicherInputExperiment: fbmessenger.NewRicherInputExperiment,
+		config:                     &fbmessenger.Config{},
+		enabledByDefault:           true,
+		inputPolicy:                model.InputNone,
 	}
 }

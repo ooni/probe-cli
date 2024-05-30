@@ -11,14 +11,15 @@ import (
 
 func init() {
 	AllExperiments["dash"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
+		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
 			return dash.NewExperimentMeasurer(
 				*config.(*dash.Config),
 			)
 		},
-		config:           &dash.Config{},
-		enabledByDefault: true,
-		interruptible:    true,
-		inputPolicy:      model.InputNone,
+		buildRicherInputExperiment: dash.NewRicherInputExperiment,
+		config:                     &dash.Config{},
+		enabledByDefault:           true,
+		interruptible:              true,
+		inputPolicy:                model.InputNone,
 	}
 }

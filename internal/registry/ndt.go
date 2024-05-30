@@ -11,14 +11,15 @@ import (
 
 func init() {
 	AllExperiments["ndt"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
+		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
 			return ndt7.NewExperimentMeasurer(
 				*config.(*ndt7.Config),
 			)
 		},
-		config:           &ndt7.Config{},
-		enabledByDefault: true,
-		interruptible:    true,
-		inputPolicy:      model.InputNone,
+		buildRicherInputExperiment: ndt7.NewRicherInputExperiment,
+		config:                     &ndt7.Config{},
+		enabledByDefault:           true,
+		interruptible:              true,
+		inputPolicy:                model.InputNone,
 	}
 }

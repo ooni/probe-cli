@@ -19,8 +19,12 @@ import (
 
 // Factory allows to construct an experiment measurer.
 type Factory struct {
-	// build is the constructor that build an experiment with the given config.
-	build func(config interface{}) model.ExperimentMeasurer
+	// buildMeasurer is the constructor that builds an experiment with the given config.
+	buildMeasurer func(config interface{}) model.ExperimentMeasurer
+
+	// buildRicherInputExperiment is the constructor that builds a richer input experiment.
+	buildRicherInputExperiment func(
+		cbs model.ExperimentCallbacks, sess model.RicherInputSession) model.RicherInputExperiment
 
 	// config contains the experiment's config.
 	config any
@@ -213,9 +217,15 @@ func (b *Factory) fieldbyname(v interface{}, key string) (reflect.Value, error) 
 	return field, nil
 }
 
-// NewExperimentMeasurer creates the experiment
+// NewExperimentMeasurer creates a [model.ExperimentMeasurer].
 func (b *Factory) NewExperimentMeasurer() model.ExperimentMeasurer {
-	return b.build(b.config)
+	return b.buildMeasurer(b.config)
+}
+
+// NewRicherInputExperiment creates a [model.RicherInputExperiment].
+func (b *Factory) NewRicherInputExperiment(
+	cbs model.ExperimentCallbacks, sess model.RicherInputSession) model.RicherInputExperiment {
+	return b.buildRicherInputExperiment(cbs, sess)
 }
 
 // CanonicalizeExperimentName allows code to provide experiment names
