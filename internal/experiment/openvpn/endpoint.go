@@ -191,7 +191,7 @@ var defaultOptionsByProvider = map[string]*vpnconfig.OpenVPNOptions{
 // This array will be a subset of the keys in defaultOptionsByProvider, but it might make sense
 // to still register info about more providers that the API officially knows about.
 var APIEnabledProviders = []string{
-	"riseup",
+	"riseupvpn",
 }
 
 // isValidProvider returns true if the provider is found as key in the registry of defaultOptionsByProvider.
