@@ -214,6 +214,11 @@ func configToStringList[Config any](config Config) (output []string) {
 		// obtain field type
 		fieldType := structType.Field(idx)
 
+		// ignore fields that are not exported
+		if !fieldType.IsExported() {
+			continue
+		}
+
 		// ignore fields whose name starts with "Safe"
 		if strings.HasPrefix(fieldType.Name, "Safe") {
 			continue
