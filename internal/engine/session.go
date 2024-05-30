@@ -366,9 +366,6 @@ func (s *Session) DefaultHTTPClient() model.HTTPClient {
 // FetchTorTargets fetches tor targets from the API.
 func (s *Session) FetchTorTargets(
 	ctx context.Context, cc string) (map[string]model.OOAPITorTarget, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	clnt, err := s.newOrchestraClient(ctx)
 	if err != nil {
 		return nil, err
@@ -380,8 +377,10 @@ func (s *Session) FetchTorTargets(
 // internal cache. We do this to avoid hitting the API for every input.
 func (s *Session) FetchOpenVPNConfig(
 	ctx context.Context, provider, cc string) (*model.OOAPIVPNProviderConfig, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+
+	// TODO(ain): deadlock?
+	// defer s.mu.Unlock()
+	// s.mu.Lock()
 
 	if config, ok := s.vpnConfig[provider]; ok {
 		return &config, nil
