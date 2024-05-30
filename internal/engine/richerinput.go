@@ -33,6 +33,11 @@ func (r *richerInputExperimentWrapper) Measure(ctx context.Context, input model.
 	return r.exp.Measure(ctx, input)
 }
 
+// Name implements model.RicherInputExperiment.
+func (r *richerInputExperimentWrapper) Name() string {
+	return r.exp.Name()
+}
+
 // NewReportTemplate implements model.RicherInputExperiment.
 func (r *richerInputExperimentWrapper) NewReportTemplate() *model.OOAPIReportTemplate {
 	return r.exp.NewReportTemplate()

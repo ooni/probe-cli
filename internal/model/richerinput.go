@@ -62,6 +62,9 @@ type RicherInputExperiment interface {
 	// Measure performs a measurement using richer input.
 	Measure(ctx context.Context, input RicherInput) (*Measurement, error)
 
+	// Name returns the experiment name.
+	Name() string
+
 	// NewReportTemplate creates a new report template suitable
 	// for opening a report for this experiment.
 	NewReportTemplate() *OOAPIReportTemplate

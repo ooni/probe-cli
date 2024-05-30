@@ -121,6 +121,11 @@ func (r *Experiment[Config]) Measure(ctx context.Context, input model.RicherInpu
 	return measurement, nil
 }
 
+// Name implements [model.RicherInputExperiment].
+func (r *Experiment[Config]) Name() string {
+	return r.testName
+}
+
 // NewReportTemplate implements [model.RicherInputExperiment].
 func (r *Experiment[Config]) NewReportTemplate() *model.OOAPIReportTemplate {
 	return &model.OOAPIReportTemplate{
