@@ -46,6 +46,7 @@ import (
 	"net"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/richerinput"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/x/dslx"
 )
@@ -417,6 +418,29 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	//
 	// ```Go
 	return nil
+}
+
+// ```
+//
+// ### Richer Input Experiment
+//
+// To facilitate implementing OONI Run v2 and passing rich configuration to
+// the experiment from the OONI backend API, we wrap the Measurer into
+// a `model.RicherInputExperiment` using the `richerinput` support package.
+//
+// ```Go
+
+// NewRicherInputExperiment constructs a new [model.RicherInputExperiment] instance.
+func NewRicherInputExperiment(cbs model.ExperimentCallbacks, sess model.RicherInputSession) model.RicherInputExperiment {
+	return richerinput.NewExperiment(
+		cbs,
+		sess,
+		testName,
+		testVersion,
+		func(config Config) model.ExperimentMeasurer {
+			return NewExperimentMeasurer(config)
+		},
+	)
 }
 
 // ```
