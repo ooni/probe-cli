@@ -6,7 +6,10 @@ package model
 // See https://api.ooni.io/apidocs/.
 //
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 // OOAPICheckInConfigWebConnectivity is the WebConnectivity
 // portion of OOAPICheckInConfig.
@@ -322,4 +325,21 @@ type OOAPIRegisterRequest struct {
 // OOAPIRegisterResponse is a reponse from the register API.
 type OOAPIRegisterResponse struct {
 	ClientID string `json:"client_id"`
+}
+
+// OOAPIReportChannel is a channel for submitting reports to the OONI backend.
+type OOAPIReportChannel interface {
+	// CanSubmit returns true if we can submit a given measurement
+	// using the given report channel or we need a new one.
+	CanSubmit(m *Measurement) bool
+
+	// ReportID returns the report ID associated to this report channel.
+	ReportID() string
+
+	// SubmitMeasurement submits a measurement belonging to the report
+	// to the OONI collector. On success, we will modify the measurement
+	// such that it contains the report ID for which it has been
+	// submitted. Otherwise, we'll set the report ID to the empty
+	// string, so that you know which measurements weren't submitted.
+	SubmitMeasurement(ctx context.Context, m *Measurement) error
 }

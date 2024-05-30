@@ -428,6 +428,15 @@ func (s *Session) NewSubmitter(ctx context.Context) (model.Submitter, error) {
 	return probeservices.NewSubmitter(psc, s.Logger()), nil
 }
 
+// OpenReport opens a report using the given report template.
+func (s *Session) OpenReport(ctx context.Context, rt *model.OOAPIReportTemplate) (model.OOAPIReportChannel, error) {
+	psc, err := s.newProbeServicesClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return psc.OpenReport(ctx, *rt)
+}
+
 // newOrchestraClient creates a new orchestra client. This client is registered
 // and logged in with the OONI orchestra. An error is returned on failure.
 func (s *Session) newOrchestraClient(ctx context.Context) (*probeservices.Client, error) {
