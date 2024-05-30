@@ -126,7 +126,7 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 	// called by ooni/probe-engine/experiment.Experiment.
 	builder.SetCallbacks(model.ExperimentCallbacks(c))
 	c.numInputs = len(inputs)
-	exp := builder.NewExperiment()
+	exp := builder.NewRicherInputExperiment()
 	defer func() {
 		c.res.DataUsageDown += exp.KibiBytesReceived()
 		c.res.DataUsageUp += exp.KibiBytesSent()
@@ -141,14 +141,17 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 	log.Debug(color.RedString("status.queued"))
 	log.Debug(color.RedString("status.started"))
 
+	var reportChan model.OOAPIReportChannel
 	if c.Probe.Config().Sharing.UploadResults {
-		if err := exp.OpenReportContext(context.Background()); err != nil {
+		var err error
+		reportChan, err = c.Session.OpenReport(context.Background(), exp.NewReportTemplate())
+		if err != nil {
 			log.Debugf(
 				"%s: %s", color.RedString("failure.report_create"), err.Error(),
 			)
 		} else {
 			log.Debugf(color.RedString("status.report_create"))
-			reportID = sql.NullString{String: exp.ReportID(), Valid: true}
+			reportID = sql.NullString{String: reportChan.ReportID(), Valid: true}
 		}
 	}
 
@@ -168,7 +171,7 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 	}
 	start := time.Now()
 	c.ntStartTime = start
-	for idx, input := range inputs {
+	for idx, input := range builder.BuildRicherInput(nil, inputs) {
 		if c.Probe.IsTerminated() {
 			log.Info("user requested us to terminate using Ctrl-C")
 			break
@@ -193,10 +196,10 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 		}
 		c.msmts[idx64] = msmt
 
-		if input != "" {
+		if input.Input != "" {
 			c.OnProgress(0, fmt.Sprintf("processing input: %s", input))
 		}
-		measurement, err := exp.MeasureWithContext(context.Background(), input)
+		measurement, err := exp.Measure(context.Background(), input)
 		if err != nil {
 			log.WithError(err).Debug(color.RedString("failure.measurement"))
 			if err := db.Failed(c.msmts[idx64], err.Error()); err != nil {
@@ -213,11 +216,11 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 		}
 
 		saveToDisk := true
-		if c.Probe.Config().Sharing.UploadResults {
+		if reportChan != nil {
 			// Implementation note: SubmitMeasurement will fail here if we did fail
 			// to open the report but we still want to continue. There will be a
 			// bit of a spew in the logs, perhaps, but stopping seems less efficient.
-			if err := exp.SubmitAndUpdateMeasurementContext(context.Background(), measurement); err != nil {
+			if err := reportChan.SubmitMeasurement(context.Background(), measurement); err != nil {
 				log.Debug(color.RedString("failure.measurement_submission"))
 				if err := db.UploadFailed(c.msmts[idx64], err.Error()); err != nil {
 					return errors.Wrap(err, "failed to mark upload as failed")
