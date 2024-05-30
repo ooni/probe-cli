@@ -276,6 +276,13 @@ type ExperimentBuilder interface {
 
 	// NewExperiment creates a [RicherInputExperiment] instance.
 	NewRicherInputExperiment() RicherInputExperiment
+
+	// BuildRicherInput constructs richer input given a flat list of
+	// inputs and the options that were configured. This method is meant
+	// as a stop gap solution for delivering richer input, awaiting for
+	// a more comprehensive solution. Since I know how these things go, just
+	// for fun, here's the date of when I am writing this: 2024-05-30.
+	BuildRicherInput(annotations map[string]string, flatInputs []string) []RicherInput
 }
 
 // ExperimentOptionInfo contains info about an experiment option.

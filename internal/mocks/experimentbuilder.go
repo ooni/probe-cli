@@ -19,6 +19,8 @@ type ExperimentBuilder struct {
 	MockNewExperiment func() model.Experiment
 
 	MockNewRicherInputExperiment func() model.RicherInputExperiment
+
+	MockBuildRicherInput func(annotations map[string]string, flatInputs []string) []model.RicherInput
 }
 
 func (eb *ExperimentBuilder) Interruptible() bool {
@@ -51,4 +53,8 @@ func (eb *ExperimentBuilder) NewExperiment() model.Experiment {
 
 func (eb *ExperimentBuilder) NewRicherInputExperiment() model.RicherInputExperiment {
 	return eb.MockNewRicherInputExperiment()
+}
+
+func (eb *ExperimentBuilder) BuildRicherInput(annotations map[string]string, flatInputs []string) []model.RicherInput {
+	return eb.MockBuildRicherInput(annotations, flatInputs)
 }

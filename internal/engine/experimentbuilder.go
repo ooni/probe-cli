@@ -69,6 +69,11 @@ func (b *experimentBuilder) NewRicherInputExperiment() model.RicherInputExperime
 	}
 }
 
+// BuildRicherInput implements [model.ExperimentBuilder].
+func (b *experimentBuilder) BuildRicherInput(annotations map[string]string, flatInputs []string) []model.RicherInput {
+	return b.factory.BuildRicherInput(annotations, flatInputs)
+}
+
 // newExperimentBuilder creates a new experimentBuilder instance.
 func newExperimentBuilder(session *Session, name string) (*experimentBuilder, error) {
 	factory, err := registry.NewFactory(name, session.kvStore, session.logger)

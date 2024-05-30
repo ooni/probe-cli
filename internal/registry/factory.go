@@ -5,6 +5,7 @@ package registry
 //
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/checkincache"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/strcasex"
 )
 
@@ -226,6 +228,20 @@ func (b *Factory) NewExperimentMeasurer() model.ExperimentMeasurer {
 func (b *Factory) NewRicherInputExperiment(
 	cbs model.ExperimentCallbacks, sess model.RicherInputSession) model.RicherInputExperiment {
 	return b.buildRicherInputExperiment(cbs, sess)
+}
+
+// BuildRicherInput is a stop-gap solution for building richer input until
+// we improve our codebase to deliver richer input more easily.
+func (b *Factory) BuildRicherInput(annotations map[string]string, flatInputs []string) (outputs []model.RicherInput) {
+	options := runtimex.Try1(json.Marshal(b.config))
+	for _, input := range flatInputs {
+		outputs = append(outputs, model.RicherInput{
+			Annotations: annotations,
+			Input:       input,
+			Options:     options,
+		})
+	}
+	return
 }
 
 // CanonicalizeExperimentName allows code to provide experiment names
