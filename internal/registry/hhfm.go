@@ -10,15 +10,17 @@ import (
 )
 
 func init() {
-	AllExperiments["http_header_field_manipulation"] = &Factory{
-		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
-			return hhfm.NewExperimentMeasurer(
-				*config.(*hhfm.Config),
-			)
-		},
-		buildRicherInputExperiment: hhfm.NewRicherInputExperiment,
-		config:                     &hhfm.Config{},
-		enabledByDefault:           true,
-		inputPolicy:                model.InputNone,
+	AllExperiments["http_header_field_manipulation"] = func() *Factory {
+		return &Factory{
+			buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
+				return hhfm.NewExperimentMeasurer(
+					*config.(*hhfm.Config),
+				)
+			},
+			buildRicherInputExperiment: hhfm.NewRicherInputExperiment,
+			config:                     &hhfm.Config{},
+			enabledByDefault:           true,
+			inputPolicy:                model.InputNone,
+		}
 	}
 }

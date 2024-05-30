@@ -3,7 +3,7 @@ package registry
 import "sort"
 
 // Where we register all the available experiments.
-var AllExperiments = map[string]*Factory{}
+var AllExperiments = map[string]func() *Factory{}
 
 // ExperimentNames returns the name of all experiments
 func ExperimentNames() (names []string) {

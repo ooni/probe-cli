@@ -10,15 +10,17 @@ import (
 )
 
 func init() {
-	AllExperiments["dnsping"] = &Factory{
-		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
-			return dnsping.NewExperimentMeasurer(
-				*config.(*dnsping.Config),
-			)
-		},
-		buildRicherInputExperiment: dnsping.NewRicherInputExperiment,
-		config:                     &dnsping.Config{},
-		enabledByDefault:           true,
-		inputPolicy:                model.InputOrStaticDefault,
+	AllExperiments["dnsping"] = func() *Factory {
+		return &Factory{
+			buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
+				return dnsping.NewExperimentMeasurer(
+					*config.(*dnsping.Config),
+				)
+			},
+			buildRicherInputExperiment: dnsping.NewRicherInputExperiment,
+			config:                     &dnsping.Config{},
+			enabledByDefault:           true,
+			inputPolicy:                model.InputOrStaticDefault,
+		}
 	}
 }

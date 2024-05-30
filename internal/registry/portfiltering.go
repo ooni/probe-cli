@@ -10,16 +10,18 @@ import (
 )
 
 func init() {
-	AllExperiments["portfiltering"] = &Factory{
-		buildMeasurer: func(config any) model.ExperimentMeasurer {
-			return portfiltering.NewExperimentMeasurer(
-				config.(portfiltering.Config),
-			)
-		},
-		buildRicherInputExperiment: portfiltering.NewRicherInputExperiment,
-		config:                     portfiltering.Config{},
-		enabledByDefault:           true,
-		interruptible:              false,
-		inputPolicy:                model.InputNone,
+	AllExperiments["portfiltering"] = func() *Factory {
+		return &Factory{
+			buildMeasurer: func(config any) model.ExperimentMeasurer {
+				return portfiltering.NewExperimentMeasurer(
+					config.(portfiltering.Config),
+				)
+			},
+			buildRicherInputExperiment: portfiltering.NewRicherInputExperiment,
+			config:                     portfiltering.Config{},
+			enabledByDefault:           true,
+			interruptible:              false,
+			inputPolicy:                model.InputNone,
+		}
 	}
 }

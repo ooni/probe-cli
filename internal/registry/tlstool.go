@@ -10,15 +10,17 @@ import (
 )
 
 func init() {
-	AllExperiments["tlstool"] = &Factory{
-		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
-			return tlstool.NewExperimentMeasurer(
-				*config.(*tlstool.Config),
-			)
-		},
-		buildRicherInputExperiment: tlstool.NewRicherInputExperiment,
-		config:                     &tlstool.Config{},
-		enabledByDefault:           true,
-		inputPolicy:                model.InputOrQueryBackend,
+	AllExperiments["tlstool"] = func() *Factory {
+		return &Factory{
+			buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
+				return tlstool.NewExperimentMeasurer(
+					*config.(*tlstool.Config),
+				)
+			},
+			buildRicherInputExperiment: tlstool.NewRicherInputExperiment,
+			config:                     &tlstool.Config{},
+			enabledByDefault:           true,
+			inputPolicy:                model.InputOrQueryBackend,
+		}
 	}
 }

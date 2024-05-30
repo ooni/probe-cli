@@ -10,15 +10,17 @@ import (
 )
 
 func init() {
-	AllExperiments["tor"] = &Factory{
-		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
-			return tor.NewExperimentMeasurer(
-				*config.(*tor.Config),
-			)
-		},
-		buildRicherInputExperiment: tor.NewRicherInputExperiment,
-		config:                     &tor.Config{},
-		enabledByDefault:           true,
-		inputPolicy:                model.InputNone,
+	AllExperiments["tor"] = func() *Factory {
+		return &Factory{
+			buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
+				return tor.NewExperimentMeasurer(
+					*config.(*tor.Config),
+				)
+			},
+			buildRicherInputExperiment: tor.NewRicherInputExperiment,
+			config:                     &tor.Config{},
+			enabledByDefault:           true,
+			inputPolicy:                model.InputNone,
+		}
 	}
 }

@@ -10,14 +10,16 @@ import (
 )
 
 func init() {
-	AllExperiments["simple_sni"] = &Factory{
-		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
-			return chapter02.NewExperimentMeasurer(
-				*config.(*chapter02.Config),
-			)
-		},
-		buildRicherInputExperiment: chapter02.NewRicherInputExperiment,
-		config:                     &chapter02.Config{},
-		inputPolicy:                model.InputOrQueryBackend,
+	AllExperiments["simple_sni"] = func() *Factory {
+		return &Factory{
+			buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
+				return chapter02.NewExperimentMeasurer(
+					*config.(*chapter02.Config),
+				)
+			},
+			buildRicherInputExperiment: chapter02.NewRicherInputExperiment,
+			config:                     &chapter02.Config{},
+			inputPolicy:                model.InputOrQueryBackend,
+		}
 	}
 }

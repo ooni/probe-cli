@@ -10,15 +10,17 @@ import (
 )
 
 func init() {
-	AllExperiments["whatsapp"] = &Factory{
-		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
-			return whatsapp.NewExperimentMeasurer(
-				*config.(*whatsapp.Config),
-			)
-		},
-		buildRicherInputExperiment: whatsapp.NewRicherInputExperiment,
-		config:                     &whatsapp.Config{},
-		enabledByDefault:           true,
-		inputPolicy:                model.InputNone,
+	AllExperiments["whatsapp"] = func() *Factory {
+		return &Factory{
+			buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
+				return whatsapp.NewExperimentMeasurer(
+					*config.(*whatsapp.Config),
+				)
+			},
+			buildRicherInputExperiment: whatsapp.NewRicherInputExperiment,
+			config:                     &whatsapp.Config{},
+			enabledByDefault:           true,
+			inputPolicy:                model.InputNone,
+		}
 	}
 }

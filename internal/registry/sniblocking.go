@@ -10,15 +10,17 @@ import (
 )
 
 func init() {
-	AllExperiments["sni_blocking"] = &Factory{
-		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
-			return sniblocking.NewExperimentMeasurer(
-				*config.(*sniblocking.Config),
-			)
-		},
-		buildRicherInputExperiment: sniblocking.NewRicherInputExperiment,
-		config:                     &sniblocking.Config{},
-		enabledByDefault:           true,
-		inputPolicy:                model.InputOrQueryBackend,
+	AllExperiments["sni_blocking"] = func() *Factory {
+		return &Factory{
+			buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
+				return sniblocking.NewExperimentMeasurer(
+					*config.(*sniblocking.Config),
+				)
+			},
+			buildRicherInputExperiment: sniblocking.NewRicherInputExperiment,
+			config:                     &sniblocking.Config{},
+			enabledByDefault:           true,
+			inputPolicy:                model.InputOrQueryBackend,
+		}
 	}
 }

@@ -10,15 +10,17 @@ import (
 )
 
 func init() {
-	AllExperiments["stunreachability"] = &Factory{
-		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
-			return stunreachability.NewExperimentMeasurer(
-				*config.(*stunreachability.Config),
-			)
-		},
-		buildRicherInputExperiment: stunreachability.NewRicherInputExperiment,
-		config:                     &stunreachability.Config{},
-		enabledByDefault:           true,
-		inputPolicy:                model.InputOrStaticDefault,
+	AllExperiments["stunreachability"] = func() *Factory {
+		return &Factory{
+			buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
+				return stunreachability.NewExperimentMeasurer(
+					*config.(*stunreachability.Config),
+				)
+			},
+			buildRicherInputExperiment: stunreachability.NewRicherInputExperiment,
+			config:                     &stunreachability.Config{},
+			enabledByDefault:           true,
+			inputPolicy:                model.InputOrStaticDefault,
+		}
 	}
 }

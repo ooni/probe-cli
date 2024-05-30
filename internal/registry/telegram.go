@@ -10,16 +10,18 @@ import (
 )
 
 func init() {
-	AllExperiments["telegram"] = &Factory{
-		buildMeasurer: func(config any) model.ExperimentMeasurer {
-			return telegram.NewExperimentMeasurer(
-				config.(telegram.Config),
-			)
-		},
-		buildRicherInputExperiment: telegram.NewRicherInputExperiment,
-		config:                     telegram.Config{},
-		enabledByDefault:           true,
-		interruptible:              false,
-		inputPolicy:                model.InputNone,
+	AllExperiments["telegram"] = func() *Factory {
+		return &Factory{
+			buildMeasurer: func(config any) model.ExperimentMeasurer {
+				return telegram.NewExperimentMeasurer(
+					config.(telegram.Config),
+				)
+			},
+			buildRicherInputExperiment: telegram.NewRicherInputExperiment,
+			config:                     telegram.Config{},
+			enabledByDefault:           true,
+			interruptible:              false,
+			inputPolicy:                model.InputNone,
+		}
 	}
 }

@@ -10,15 +10,17 @@ import (
 )
 
 func init() {
-	AllExperiments["http_host_header"] = &Factory{
-		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
-			return httphostheader.NewExperimentMeasurer(
-				*config.(*httphostheader.Config),
-			)
-		},
-		buildRicherInputExperiment: httphostheader.NewRicherInputExperiment,
-		config:                     &httphostheader.Config{},
-		enabledByDefault:           true,
-		inputPolicy:                model.InputOrQueryBackend,
+	AllExperiments["http_host_header"] = func() *Factory {
+		return &Factory{
+			buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
+				return httphostheader.NewExperimentMeasurer(
+					*config.(*httphostheader.Config),
+				)
+			},
+			buildRicherInputExperiment: httphostheader.NewRicherInputExperiment,
+			config:                     &httphostheader.Config{},
+			enabledByDefault:           true,
+			inputPolicy:                model.InputOrQueryBackend,
+		}
 	}
 }

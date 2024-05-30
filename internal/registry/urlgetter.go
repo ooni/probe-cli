@@ -10,15 +10,17 @@ import (
 )
 
 func init() {
-	AllExperiments["urlgetter"] = &Factory{
-		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
-			return urlgetter.NewExperimentMeasurer(
-				*config.(*urlgetter.Config),
-			)
-		},
-		buildRicherInputExperiment: urlgetter.NewRicherInputExperiment,
-		config:                     &urlgetter.Config{},
-		enabledByDefault:           true,
-		inputPolicy:                model.InputStrictlyRequired,
+	AllExperiments["urlgetter"] = func() *Factory {
+		return &Factory{
+			buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
+				return urlgetter.NewExperimentMeasurer(
+					*config.(*urlgetter.Config),
+				)
+			},
+			buildRicherInputExperiment: urlgetter.NewRicherInputExperiment,
+			config:                     &urlgetter.Config{},
+			enabledByDefault:           true,
+			inputPolicy:                model.InputStrictlyRequired,
+		}
 	}
 }

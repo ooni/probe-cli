@@ -10,15 +10,17 @@ import (
 )
 
 func init() {
-	AllExperiments["quicping"] = &Factory{
-		buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
-			return quicping.NewExperimentMeasurer(
-				*config.(*quicping.Config),
-			)
-		},
-		buildRicherInputExperiment: quicping.NewRicherInputExperiment,
-		config:                     &quicping.Config{},
-		enabledByDefault:           true,
-		inputPolicy:                model.InputStrictlyRequired,
+	AllExperiments["quicping"] = func() *Factory {
+		return &Factory{
+			buildMeasurer: func(config interface{}) model.ExperimentMeasurer {
+				return quicping.NewExperimentMeasurer(
+					*config.(*quicping.Config),
+				)
+			},
+			buildRicherInputExperiment: quicping.NewRicherInputExperiment,
+			config:                     &quicping.Config{},
+			enabledByDefault:           true,
+			inputPolicy:                model.InputStrictlyRequired,
+		}
 	}
 }
