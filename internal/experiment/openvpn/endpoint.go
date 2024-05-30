@@ -110,7 +110,12 @@ func (e *endpoint) String() string {
 	} else {
 		proto = e.Protocol
 	}
-	return fmt.Sprintf("%s://%s:%s/%s", proto, e.IPAddr, e.Port, e.Transport)
+	url := &url.URL{
+		Scheme: proto,
+		Host:   net.JoinHostPort(e.IPAddr, e.Port),
+		Path:   e.Transport,
+	}
+	return url.String()
 }
 
 // AsInputURI is a string representation of this endpoint, as used in the experiment input URI format.
@@ -127,9 +132,17 @@ func (e *endpoint) AsInputURI() string {
 		provider = "unknown"
 	}
 
-	return fmt.Sprintf(
-		"%s://%s.corp/?address=%s:%s&transport=%s",
-		proto, provider, e.IPAddr, e.Port, e.Transport)
+	values := map[string][]string{
+		"address":   {net.JoinHostPort(e.IPAddr, e.Port)},
+		"transport": {e.Transport},
+	}
+
+	url := &url.URL{
+		Scheme:   proto,
+		Host:     provider + ".corp",
+		RawQuery: url.Values(values).Encode(),
+	}
+	return url.String()
 }
 
 // endpointList is a list of endpoints.

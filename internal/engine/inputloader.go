@@ -350,7 +350,7 @@ func (il *InputLoader) loadRemoteOpenVPN(ctx context.Context) ([]model.OOAPIURLI
 		}
 	}
 
-	if len(urls) == 0 {
+	if len(urls) <= 0 {
 		// loadRemote returns ErrNoURLsReturned at this point for webconnectivity,
 		// but for OpenVPN we want to return a sensible default to be
 		// able to probe some endpoints even in very restrictive environments.

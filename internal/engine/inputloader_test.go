@@ -15,6 +15,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func TestInputLoaderInputNoneWithStaticInputs(t *testing.T) {
@@ -470,9 +471,7 @@ func (sess *InputLoaderMockableSession) CheckIn(
 // FetchOpenVPNConfig implements InputLoaderSession.FetchOpenVPNConfig.
 func (sess *InputLoaderMockableSession) FetchOpenVPNConfig(
 	ctx context.Context, provider, cc string) (*model.OOAPIVPNProviderConfig, error) {
-	if sess.FetchOpenVPNConfigOutput == nil && sess.Error == nil {
-		return nil, errors.New("both Output and Error are nil")
-	}
+	runtimex.Assert(!(sess.FetchOpenVPNConfig == nil && sess.FetchOpenVPNConfigOutput == nil), "both FetchOpenVPNConfig")
 	return sess.FetchOpenVPNConfigOutput, sess.Error
 }
 
@@ -612,8 +611,6 @@ func TestInputLoaderOpenVPNWithAPIFailureAndFallback(t *testing.T) {
 		t.Fatal("we expected 2 fallback URLs")
 	}
 }
-
-// TODO: WIP marker -------------------------------
 
 func TestPreventMistakesWithCategories(t *testing.T) {
 	input := []model.OOAPIURLInfo{{
