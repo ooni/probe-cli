@@ -181,7 +181,7 @@ func (e endpointList) Shuffle() endpointList {
 // all the known providers. We extend this base config with credentials coming
 // from the OONI API.
 var defaultOptionsByProvider = map[string]*vpnconfig.OpenVPNOptions{
-	"riseup": {
+	"riseupvpn": {
 		Auth:   "SHA512",
 		Cipher: "AES-256-GCM",
 	},
@@ -191,7 +191,9 @@ var defaultOptionsByProvider = map[string]*vpnconfig.OpenVPNOptions{
 // This array will be a subset of the keys in defaultOptionsByProvider, but it might make sense
 // to still register info about more providers that the API officially knows about.
 var APIEnabledProviders = []string{
+	// TODO: fix the backend so that we can remove the spurious "vpn" suffix here.
 	"riseupvpn",
+	"riseup",
 }
 
 // isValidProvider returns true if the provider is found as key in the registry of defaultOptionsByProvider.
@@ -215,7 +217,18 @@ func getOpenVPNConfig(
 	if !isValidProvider(provider) {
 		return nil, fmt.Errorf("%w: unknown provider: %s", ErrInvalidInput, provider)
 	}
+
 	baseOptions := defaultOptionsByProvider[provider]
+
+	if baseOptions == nil {
+		return nil, fmt.Errorf("empty baseOptions for provider: %s", provider)
+	}
+	if baseOptions.Cipher == "" {
+		return nil, fmt.Errorf("empty cipher for provider: %s", provider)
+	}
+	if baseOptions.Auth == "" {
+		return nil, fmt.Errorf("empty auth for provider: %s", provider)
+	}
 
 	cfg := vpnconfig.NewConfig(
 		vpnconfig.WithLogger(logger),

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/ooni/probe-cli/v3/internal/httpclientx"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -18,8 +19,13 @@ func (c Client) FetchOpenVPNConfig(ctx context.Context, provider, cc string) (re
 	query := url.Values{}
 	query.Add("country_code", cc)
 
+	// TODO(ain): remove temporary fix
+	if !strings.HasSuffix(provider, "vpn") {
+		provider = provider + "vpn"
+	}
+
 	URL, err := urlx.ResolveReference(c.BaseURL,
-		fmt.Sprintf("/api/v2/ooniprobe/vpn-config/%svpn", provider),
+		fmt.Sprintf("/api/v2/ooniprobe/vpn-config/%s", provider),
 		query.Encode())
 	if err != nil {
 		return

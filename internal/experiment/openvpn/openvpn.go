@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
@@ -200,7 +201,7 @@ func (m *Measurer) GetCredentialsFromOptionsOrAPI(
 	sess model.ExperimentSession,
 	provider string) (*vpnconfig.OpenVPNOptions, error) {
 
-	method, ok := providerAuthentication[provider]
+	method, ok := providerAuthentication[strings.TrimSuffix(provider, "vpn")]
 	if !ok {
 		return nil, fmt.Errorf("%w: provider auth unknown: %s", ErrInvalidInput, provider)
 	}
