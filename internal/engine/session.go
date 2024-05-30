@@ -664,8 +664,11 @@ func (s *Session) MaybeLookupBackendsContext(ctx context.Context) error {
 		return nil
 	}
 	s.queryProbeServicesCount.Add(1)
+	fmt.Println(">>> get available probe services unlocked", s.getAvailableProbeServicesUnlocked())
 	candidates := probeservices.TryAll(ctx, s, s.getAvailableProbeServicesUnlocked())
+	fmt.Println(">>> candidates", candidates)
 	selected := probeservices.SelectBest(candidates)
+	fmt.Println(">>> selected", selected)
 	if selected == nil {
 		return ErrAllProbeServicesFailed
 	}
