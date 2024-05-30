@@ -52,12 +52,21 @@ func (b *experimentBuilder) SetCallbacks(callbacks model.ExperimentCallbacks) {
 	b.callbacks = callbacks
 }
 
-// NewExperiment creates the experiment
+// NewExperiment creates a [model.Experiment].
 func (b *experimentBuilder) NewExperiment() model.Experiment {
 	measurer := b.factory.NewExperimentMeasurer()
 	experiment := newExperiment(b.session, measurer)
 	experiment.callbacks = b.callbacks
 	return experiment
+}
+
+// NewRicherInputExperiment creates a [model.RicherInputExperiment].
+func (b *experimentBuilder) NewRicherInputExperiment() model.RicherInputExperiment {
+	exp := b.factory.NewRicherInputExperiment(b.callbacks, b.session)
+	return &richerInputExperimentWrapper{
+		exp:  exp,
+		sess: b.session,
+	}
 }
 
 // newExperimentBuilder creates a new experimentBuilder instance.

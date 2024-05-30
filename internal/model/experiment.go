@@ -271,8 +271,11 @@ type ExperimentBuilder interface {
 	// SetCallbacks sets the experiment's interactive callbacks.
 	SetCallbacks(callbacks ExperimentCallbacks)
 
-	// NewExperiment creates the experiment instance.
+	// NewExperiment creates an [Experiment] instance.
 	NewExperiment() Experiment
+
+	// NewExperiment creates a [RicherInputExperiment] instance.
+	NewRicherInputExperiment() RicherInputExperiment
 }
 
 // ExperimentOptionInfo contains info about an experiment option.

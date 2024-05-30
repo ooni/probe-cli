@@ -17,6 +17,8 @@ type ExperimentBuilder struct {
 	MockSetCallbacks func(callbacks model.ExperimentCallbacks)
 
 	MockNewExperiment func() model.Experiment
+
+	MockNewRicherInputExperiment func() model.RicherInputExperiment
 }
 
 func (eb *ExperimentBuilder) Interruptible() bool {
@@ -45,4 +47,8 @@ func (eb *ExperimentBuilder) SetCallbacks(callbacks model.ExperimentCallbacks) {
 
 func (eb *ExperimentBuilder) NewExperiment() model.Experiment {
 	return eb.MockNewExperiment()
+}
+
+func (eb *ExperimentBuilder) NewRicherInputExperiment() model.RicherInputExperiment {
+	return eb.MockNewRicherInputExperiment()
 }
