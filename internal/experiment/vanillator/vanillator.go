@@ -12,6 +12,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/richerinput"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/torlogs"
 	"github.com/ooni/probe-cli/v3/internal/tunnel"
@@ -22,8 +23,26 @@ import (
 //
 // We may want to have a single implementation for both nettests in the future.
 
-// testVersion is the experiment version.
-const testVersion = "0.3.0"
+// NewRicherInputExperiment constructs a new [model.RicherInputExperiment] instance.
+func NewRicherInputExperiment(cbs model.ExperimentCallbacks, sess model.RicherInputSession) model.RicherInputExperiment {
+	return richerinput.NewExperiment(
+		cbs,
+		sess,
+		testName,
+		testVersion,
+		func(config Config) model.ExperimentMeasurer {
+			return NewExperimentMeasurer(config)
+		},
+	)
+}
+
+const (
+	// testName is the experiment name.
+	testName = "vanilla_tor"
+
+	// testVersion is the experiment version.
+	testVersion = "0.3.0"
+)
 
 // Config contains the experiment config.
 type Config struct {
@@ -86,7 +105,7 @@ type Measurer struct {
 
 // ExperimentName implements model.ExperimentMeasurer.ExperimentName.
 func (m *Measurer) ExperimentName() string {
-	return "vanilla_tor"
+	return testName
 }
 
 // ExperimentVersion implements model.ExperimentMeasurer.ExperimentVersion.

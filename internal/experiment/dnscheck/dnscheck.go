@@ -18,6 +18,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/legacy/netx"
 	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/richerinput"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -26,6 +27,19 @@ const (
 	testVersion   = "0.9.2"
 	defaultDomain = "example.org"
 )
+
+// NewRicherInputExperiment constructs a new [model.RicherInputExperiment] instance.
+func NewRicherInputExperiment(cbs model.ExperimentCallbacks, sess model.RicherInputSession) model.RicherInputExperiment {
+	return richerinput.NewExperiment(
+		cbs,
+		sess,
+		testName,
+		testVersion,
+		func(config Config) model.ExperimentMeasurer {
+			return NewExperimentMeasurer(config)
+		},
+	)
+}
 
 // Endpoints keeps track of repeatedly measured endpoints.
 type Endpoints struct {

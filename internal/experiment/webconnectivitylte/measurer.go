@@ -12,8 +12,27 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/inputparser"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/richerinput"
 	"github.com/ooni/probe-cli/v3/internal/webconnectivityalgo"
 	"golang.org/x/net/publicsuffix"
+)
+
+// NewRicherInputExperiment constructs a new [model.RicherInputExperiment] instance.
+func NewRicherInputExperiment(cbs model.ExperimentCallbacks, sess model.RicherInputSession) model.RicherInputExperiment {
+	return richerinput.NewExperiment(
+		cbs,
+		sess,
+		testName,
+		testVersion,
+		func(config Config) model.ExperimentMeasurer {
+			return NewExperimentMeasurer(&config)
+		},
+	)
+}
+
+const (
+	testName    = "web_connectivity"
+	testVersion = "0.5.28"
 )
 
 // Measurer for the web_connectivity experiment.
@@ -41,12 +60,12 @@ func NewExperimentMeasurer(config *Config) model.ExperimentMeasurer {
 
 // ExperimentName implements model.ExperimentMeasurer.
 func (m *Measurer) ExperimentName() string {
-	return "web_connectivity"
+	return testName
 }
 
 // ExperimentVersion implements model.ExperimentMeasurer.
 func (m *Measurer) ExperimentVersion() string {
-	return "0.5.28"
+	return testVersion
 }
 
 // Run implements model.ExperimentMeasurer.

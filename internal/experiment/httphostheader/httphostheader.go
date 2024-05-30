@@ -11,7 +11,21 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/richerinput"
 )
+
+// NewRicherInputExperiment constructs a new [model.RicherInputExperiment] instance.
+func NewRicherInputExperiment(cbs model.ExperimentCallbacks, sess model.RicherInputSession) model.RicherInputExperiment {
+	return richerinput.NewExperiment(
+		cbs,
+		sess,
+		testName,
+		testVersion,
+		func(config Config) model.ExperimentMeasurer {
+			return NewExperimentMeasurer(config)
+		},
+	)
+}
 
 const (
 	testName    = "http_host_header"

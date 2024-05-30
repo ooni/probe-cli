@@ -19,8 +19,22 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/legacy/netx"
 	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/richerinput"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
+
+// NewRicherInputExperiment constructs a new [model.RicherInputExperiment] instance.
+func NewRicherInputExperiment(cbs model.ExperimentCallbacks, sess model.RicherInputSession) model.RicherInputExperiment {
+	return richerinput.NewExperiment(
+		cbs,
+		sess,
+		testName,
+		testVersion,
+		func(config Config) model.ExperimentMeasurer {
+			return NewExperimentMeasurer(config)
+		},
+	)
+}
 
 const (
 	testName    = "tlstool"
