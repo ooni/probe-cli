@@ -83,31 +83,28 @@ type MockableTaskRunnerDependencies struct {
 	MockResolverASNString          func() string
 	MockResolverIP                 func() string
 	MockResolverNetworkName        func() string
+	MockOpenReport                 func(ctx context.Context, rt *model.OOAPIReportTemplate) (model.OOAPIReportChannel, error)
 
 	// model.ExperimentBuilder:
 
-	MockableSetCallbacks  func(callbacks model.ExperimentCallbacks)
-	MockableInputPolicy   func() model.InputPolicy
-	MockableNewExperiment func() model.Experiment
-	MockableInterruptible func() bool
+	MockableSetCallbacks             func(callbacks model.ExperimentCallbacks)
+	MockableInputPolicy              func() model.InputPolicy
+	MockableNewRicherInputExperiment func() model.RicherInputExperiment
+	MockableInterruptible            func() bool
 
-	// model.Experiment:
+	// model.RicherInputExperiment:
 
-	MockableKibiBytesReceived  func() float64
-	MockableKibiBytesSent      func() float64
-	MockableOpenReportContext  func(ctx context.Context) error
-	MockableReportID           func() string
-	MockableMeasureWithContext func(ctx context.Context, input string) (
-		measurement *model.Measurement, err error)
-	MockableSubmitAndUpdateMeasurementContext func(
-		ctx context.Context, measurement *model.Measurement) error
+	MockableKibiBytesReceived func() float64
+	MockableKibiBytesSent     func() float64
+	MockableMeasure           func(ctx context.Context, input model.RicherInput) (*model.Measurement, error)
+	MockableNewReportTemplate func() *model.OOAPIReportTemplate
 }
 
 var (
-	_ taskSessionBuilder      = &MockableTaskRunnerDependencies{}
-	_ taskSession             = &MockableTaskRunnerDependencies{}
-	_ model.ExperimentBuilder = &MockableTaskRunnerDependencies{}
-	_ model.Experiment        = &MockableTaskRunnerDependencies{}
+	_ taskSessionBuilder          = &MockableTaskRunnerDependencies{}
+	_ taskSession                 = &MockableTaskRunnerDependencies{}
+	_ model.ExperimentBuilder     = &MockableTaskRunnerDependencies{}
+	_ model.RicherInputExperiment = &MockableTaskRunnerDependencies{}
 )
 
 // NewSession implements taskSessionBuilder
@@ -177,6 +174,11 @@ func (dep *MockableTaskRunnerDependencies) ResolverNetworkName() string {
 	return dep.MockResolverNetworkName()
 }
 
+// OpenReport implements taskSession.
+func (dep *MockableTaskRunnerDependencies) OpenReport(ctx context.Context, rt *model.OOAPIReportTemplate) (model.OOAPIReportChannel, error) {
+	return dep.MockOpenReport(ctx, rt)
+}
+
 // BuildRicherInput implements model.ExperimentBuilder.
 func (dep *MockableTaskRunnerDependencies) BuildRicherInput(annotations map[string]string, flatInputs []string) []model.RicherInput {
 	// This method is unimplemented because it's not used by oonimkall
@@ -185,8 +187,10 @@ func (dep *MockableTaskRunnerDependencies) BuildRicherInput(annotations map[stri
 
 // NewRicherInputExperiment implements model.ExperimentBuilder.
 func (dep *MockableTaskRunnerDependencies) NewRicherInputExperiment() model.RicherInputExperiment {
-	// This method is unimplemented because it's not used by oonimkall
-	panic("unimplemented")
+	if f := dep.MockableNewRicherInputExperiment; f != nil {
+		return f()
+	}
+	return dep
 }
 
 // Options implements model.ExperimentBuilder.
@@ -219,10 +223,8 @@ func (dep *MockableTaskRunnerDependencies) InputPolicy() model.InputPolicy {
 
 // NewExperiment implements model.ExperimentBuilder
 func (dep *MockableTaskRunnerDependencies) NewExperiment() model.Experiment {
-	if f := dep.MockableNewExperiment; f != nil {
-		return f()
-	}
-	return dep
+	// This method is unimplemented because it's not used by oonimkall
+	panic("unimplemented")
 }
 
 // Interruptible implements model.ExperimentBuilder
@@ -230,48 +232,30 @@ func (dep *MockableTaskRunnerDependencies) Interruptible() bool {
 	return dep.MockableInterruptible()
 }
 
-// KibiBytesReceived implements model.Experiment
+// KibiBytesReceived implements model.RicherInputExperiment
 func (dep *MockableTaskRunnerDependencies) KibiBytesReceived() float64 {
 	return dep.MockableKibiBytesReceived()
 }
 
-// KibiBytesSent implements model.Experiment
+// KibiBytesSent implements model.RicherInputExperiment
 func (dep *MockableTaskRunnerDependencies) KibiBytesSent() float64 {
 	return dep.MockableKibiBytesSent()
 }
 
-// OpenReportContext implements model.Experiment
-func (dep *MockableTaskRunnerDependencies) OpenReportContext(ctx context.Context) error {
-	return dep.MockableOpenReportContext(ctx)
+// Measure implements model.RicherInputExperiment.
+func (dep *MockableTaskRunnerDependencies) Measure(ctx context.Context, input model.RicherInput) (*model.Measurement, error) {
+	return dep.MockableMeasure(ctx, input)
 }
 
-// ReportID implements model.Experiment
-func (dep *MockableTaskRunnerDependencies) ReportID() string {
-	return dep.MockableReportID()
+// NewReportTemplate implements model.RicherInputExperiment.
+func (dep *MockableTaskRunnerDependencies) NewReportTemplate() *model.OOAPIReportTemplate {
+	return dep.MockableNewReportTemplate()
 }
 
-// MeasureAsync implements model.Experiment.
-func (dep *MockableTaskRunnerDependencies) MeasureAsync(ctx context.Context, input string) (<-chan *model.Measurement, error) {
-	// This method is unimplemented because it's not used by oonimkall
-	panic("unimplemented")
-}
-
-// MeasureWithContext implements model.Experiment
-func (dep *MockableTaskRunnerDependencies) MeasureWithContext(ctx context.Context, input string) (
-	measurement *model.Measurement, err error) {
-	return dep.MockableMeasureWithContext(ctx, input)
-}
-
-// Name implements model.Experiment.
+// Name implements model.RicherInputExperiment.
 func (dep *MockableTaskRunnerDependencies) Name() string {
 	// This method is unimplemented because it's not used by oonimkall
 	panic("unimplemented")
-}
-
-// SubmitAndUpdateMeasurementContext implements model.Experiment
-func (dep *MockableTaskRunnerDependencies) SubmitAndUpdateMeasurementContext(
-	ctx context.Context, measurement *model.Measurement) error {
-	return dep.MockableSubmitAndUpdateMeasurementContext(ctx, measurement)
 }
 
 // MockableKVStoreFSBuilder is a mockable taskKVStoreFSBuilder.

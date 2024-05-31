@@ -192,6 +192,9 @@ type taskSession interface {
 	// this operation has already been performed.
 	MaybeLookupLocationContext(ctx context.Context) error
 
+	// OpenReport opens a new report for the given measurement template.
+	OpenReport(ctx context.Context, rt *model.OOAPIReportTemplate) (model.OOAPIReportChannel, error)
+
 	// ProbeIP must be called after MaybeLookupLocationContext
 	// and returns the resolved probe IP.
 	ProbeIP() string

@@ -209,20 +209,23 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 		}
 		r.settings.Inputs = append(r.settings.Inputs, "")
 	}
-	experiment := builder.NewExperiment()
+	experiment := builder.NewRicherInputExperiment()
 	defer func() {
 		endEvent.DownloadedKB = experiment.KibiBytesReceived()
 		endEvent.UploadedKB = experiment.KibiBytesSent()
 	}()
+	var reportChan model.OOAPIReportChannel
 	if !r.settings.Options.NoCollector {
+		var err error
 		logger.Info("Opening report... please, be patient")
-		if err := experiment.OpenReportContext(rootCtx); err != nil {
+		reportChan, err = sess.OpenReport(rootCtx, experiment.NewReportTemplate())
+		if err != nil {
 			r.emitter.EmitFailureGeneric(eventTypeFailureReportCreate, err.Error())
 			return
 		}
 		r.emitter.EmitStatusProgress(0.4, "open report")
 		r.emitter.Emit(eventTypeStatusReportCreate, eventStatusReportGeneric{
-			ReportID: experiment.ReportID(),
+			ReportID: reportChan.ReportID(),
 		})
 	}
 	measCtx, measCancel := context.WithCancel(rootCtx)
@@ -261,16 +264,16 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 	start := time.Now()
 	inflatedMaxRuntime := r.settings.Options.MaxRuntime + r.settings.Options.MaxRuntime/10
 	eta := start.Add(time.Duration(inflatedMaxRuntime) * time.Second)
-	for idx, input := range r.settings.Inputs {
+	for idx, input := range builder.BuildRicherInput(r.settings.Annotations, r.settings.Inputs) {
 		if measCtx.Err() != nil {
 			break
 		}
 		logger.Infof("Starting measurement with index %d", idx)
 		r.emitter.Emit(eventTypeStatusMeasurementStart, eventMeasurementGeneric{
 			Idx:   int64(idx),
-			Input: input,
+			Input: input.Input,
 		})
-		if input != "" && inputCount > 0 {
+		if input.Input != "" && inputCount > 0 {
 			var percentage float64
 			if r.settings.Options.MaxRuntime > 0 {
 				now := time.Now()
@@ -282,7 +285,7 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 				"processing %s", input,
 			))
 		}
-		m, err := experiment.MeasureWithContext(
+		m, err := experiment.Measure(
 			r.contextForExperiment(measCtx, builder),
 			input,
 		)
@@ -295,7 +298,7 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 			r.emitter.Emit(eventTypeFailureMeasurement, eventMeasurementGeneric{
 				Failure: err.Error(),
 				Idx:     int64(idx),
-				Input:   input,
+				Input:   input.Input,
 			})
 			// Historical note: here we used to fallthrough but, since we have
 			// implemented async measurements, the case where there is an error
@@ -303,28 +306,27 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 			// now the only valid strategy here is to continue.
 			continue
 		}
-		m.AddAnnotations(r.settings.Annotations)
 		data, err := json.Marshal(m)
 		runtimex.PanicOnError(err, "measurement.MarshalJSON failed")
 		r.emitter.Emit(eventTypeMeasurement, eventMeasurementGeneric{
 			Idx:     int64(idx),
-			Input:   input,
+			Input:   input.Input,
 			JSONStr: string(data),
 		})
-		if !r.settings.Options.NoCollector {
+		if reportChan != nil {
 			logger.Info("Submitting measurement... please, be patient")
-			err := experiment.SubmitAndUpdateMeasurementContext(submitCtx, m)
+			err := reportChan.SubmitMeasurement(submitCtx, m)
 			warnOnFailure(logger, "cannot submit measurement", err)
 			r.emitter.Emit(measurementSubmissionEventName(err), eventMeasurementGeneric{
 				Idx:     int64(idx),
-				Input:   input,
+				Input:   input.Input,
 				JSONStr: string(data),
 				Failure: measurementSubmissionFailure(err),
 			})
 		}
 		r.emitter.Emit(eventTypeStatusMeasurementDone, eventMeasurementGeneric{
 			Idx:   int64(idx),
-			Input: input,
+			Input: input.Input,
 		})
 	}
 }
