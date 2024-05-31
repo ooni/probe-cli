@@ -1,13 +1,5 @@
 package oonimkall
 
-import (
-	"context"
-	"io"
-
-	"github.com/ooni/probe-cli/v3/internal/engine"
-	"github.com/ooni/probe-cli/v3/internal/model"
-)
-
 //
 // Task Model
 //
@@ -24,6 +16,14 @@ import (
 // as a logger. This is a pretty fundamental interface in
 // ooni/probe-cli and so it's not defined in this file.
 //
+
+import (
+	"context"
+	"io"
+
+	"github.com/ooni/probe-cli/v3/internal/engine"
+	"github.com/ooni/probe-cli/v3/internal/model"
+)
 
 const taskABIVersion = 1
 
@@ -180,9 +180,9 @@ type taskSession interface {
 	// A session can be closed.
 	io.Closer
 
-	// NewExperimentBuilderByName creates the builder for constructing
+	// NewExperimentBuilder creates the builder for constructing
 	// a new experiment given the experiment's name.
-	NewExperimentBuilderByName(name string) (taskExperimentBuilder, error)
+	NewExperimentBuilder(name string) (model.ExperimentBuilder, error)
 
 	// MaybeLookupBackendsContext lookups the OONI backend unless
 	// this operation has already been performed.
@@ -219,46 +219,6 @@ type taskSession interface {
 	// ResolverNetworkName must be called after MaybeLookupLocationContext
 	// and returns the resolved resolver's network name.
 	ResolverNetworkName() string
-}
-
-// taskExperimentBuilder builds a taskExperiment.
-type taskExperimentBuilder interface {
-	// SetCallbacks sets the experiment callbacks.
-	SetCallbacks(callbacks model.ExperimentCallbacks)
-
-	// InputPolicy returns the experiment's input policy.
-	InputPolicy() model.InputPolicy
-
-	// NewExperiment creates the new experiment.
-	NewExperimentInstance() taskExperiment
-
-	// Interruptible returns whether this experiment is interruptible.
-	Interruptible() bool
-}
-
-// taskExperiment is a runnable experiment.
-type taskExperiment interface {
-	// KibiBytesReceived returns the KiB received by the experiment.
-	KibiBytesReceived() float64
-
-	// KibiBytesSent returns the KiB sent by the experiment.
-	KibiBytesSent() float64
-
-	// OpenReportContext opens a new report.
-	OpenReportContext(ctx context.Context) error
-
-	// ReportID must be called after a successful OpenReportContext
-	// and returns the report ID for this measurement.
-	ReportID() string
-
-	// MeasureWithContext runs the measurement.
-	MeasureWithContext(ctx context.Context, input string) (
-		measurement *model.Measurement, err error)
-
-	// SubmitAndUpdateMeasurementContext submits the measurement
-	// and updates its report ID on success.
-	SubmitAndUpdateMeasurementContext(
-		ctx context.Context, measurement *model.Measurement) error
 }
 
 //

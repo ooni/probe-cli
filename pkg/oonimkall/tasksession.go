@@ -1,5 +1,9 @@
 package oonimkall
 
+//
+// This file implements taskSession and derived types.
+//
+
 import (
 	"context"
 
@@ -7,10 +11,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
-
-//
-// This file implements taskSession and derived types.
-//
 
 // taskKVStoreFSBuilderEngine creates a new KVStore
 // using the ./internal/engine package.
@@ -32,47 +32,10 @@ var _ taskSessionBuilder = &taskSessionBuilderEngine{}
 func (b *taskSessionBuilderEngine) NewSession(ctx context.Context,
 	config engine.SessionConfig) (taskSession, error) {
 	sess, err := engine.NewSession(ctx, config)
+	// note: here we need to explicitly return nil because we're changing
+	// the type and we would not otherwise get a nil session on error
 	if err != nil {
 		return nil, err
 	}
-	return &taskSessionEngine{sess}, nil
+	return sess, nil
 }
-
-// taskSessionEngine wraps ./internal/engine's Session.
-type taskSessionEngine struct {
-	*engine.Session
-}
-
-var _ taskSession = &taskSessionEngine{}
-
-// NewExperimentBuilderByName implements
-// taskSessionEngine.NewExperimentBuilderByName.
-func (sess *taskSessionEngine) NewExperimentBuilderByName(
-	name string) (taskExperimentBuilder, error) {
-	builder, err := sess.NewExperimentBuilder(name)
-	if err != nil {
-		return nil, err
-	}
-	return &taskExperimentBuilderEngine{builder}, err
-}
-
-// taskExperimentBuilderEngine wraps ./internal/engine's
-// ExperimentBuilder type.
-type taskExperimentBuilderEngine struct {
-	model.ExperimentBuilder
-}
-
-var _ taskExperimentBuilder = &taskExperimentBuilderEngine{}
-
-// NewExperimentInstance implements
-// taskExperimentBuilder.NewExperimentInstance.
-func (b *taskExperimentBuilderEngine) NewExperimentInstance() taskExperiment {
-	return &taskExperimentEngine{b.NewExperiment()}
-}
-
-// taskExperimentEngine wraps ./internal/engine's Experiment.
-type taskExperimentEngine struct {
-	model.Experiment
-}
-
-var _ taskExperiment = &taskExperimentEngine{}

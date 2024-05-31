@@ -79,7 +79,7 @@ func (r *runnerForTask) newsession(ctx context.Context, logger model.Logger) (ta
 // contextForExperiment ensurs that for measuring we only use an
 // interruptible context when we can interrupt the experiment
 func (r *runnerForTask) contextForExperiment(
-	ctx context.Context, builder taskExperimentBuilder,
+	ctx context.Context, builder model.ExperimentBuilder,
 ) context.Context {
 	if builder.Interruptible() {
 		return ctx
@@ -131,7 +131,7 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 		r.emitter.Emit(eventTypeStatusEnd, endEvent)
 	}()
 
-	builder, err := sess.NewExperimentBuilderByName(r.settings.Name)
+	builder, err := sess.NewExperimentBuilder(r.settings.Name)
 	if err != nil {
 		r.emitter.EmitFailureStartup(err.Error())
 		return
@@ -209,7 +209,7 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 		}
 		r.settings.Inputs = append(r.settings.Inputs, "")
 	}
-	experiment := builder.NewExperimentInstance()
+	experiment := builder.NewExperiment()
 	defer func() {
 		endEvent.DownloadedKB = experiment.KibiBytesReceived()
 		endEvent.UploadedKB = experiment.KibiBytesSent()

@@ -6,6 +6,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
@@ -73,7 +74,7 @@ func TestTaskSessionEngine(t *testing.T) {
 	t.Run("NewExperimentBuilderByName", func(t *testing.T) {
 		t.Run("on success", func(t *testing.T) {
 			sess := newSession(t)
-			builder, err := sess.NewExperimentBuilderByName("ndt")
+			builder, err := sess.NewExperimentBuilder("ndt")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -84,7 +85,7 @@ func TestTaskSessionEngine(t *testing.T) {
 
 		t.Run("on failure", func(t *testing.T) {
 			sess := newSession(t)
-			builder, err := sess.NewExperimentBuilderByName("antani")
+			builder, err := sess.NewExperimentBuilder("antani")
 			if err == nil {
 				t.Fatal("expected an error here")
 			}
@@ -99,7 +100,7 @@ func TestTaskExperimentBuilderEngine(t *testing.T) {
 
 	// newBuilder is a helper function for creating a new session
 	// as well as a new experiment builder
-	newBuilder := func(t *testing.T) (taskSession, taskExperimentBuilder) {
+	newBuilder := func(t *testing.T) (taskSession, model.ExperimentBuilder) {
 		builder := &taskSessionBuilderEngine{}
 		ctx := context.Background()
 		config := engine.SessionConfig{
@@ -111,7 +112,7 @@ func TestTaskExperimentBuilderEngine(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		expBuilder, err := sess.NewExperimentBuilderByName("ndt")
+		expBuilder, err := sess.NewExperimentBuilder("ndt")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -120,7 +121,7 @@ func TestTaskExperimentBuilderEngine(t *testing.T) {
 
 	t.Run("NewExperiment", func(t *testing.T) {
 		_, builder := newBuilder(t)
-		exp := builder.NewExperimentInstance()
+		exp := builder.NewExperiment()
 		if exp == nil {
 			t.Fatal("expected non-nil experiment here")
 		}

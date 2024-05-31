@@ -252,7 +252,7 @@ func TestTaskRunnerRun(t *testing.T) {
 	t.Run("with invalid experiment name", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		fake := fakeSuccessfulRun()
-		fake.MockNewExperimentBuilderByName = func(name string) (taskExperimentBuilder, error) {
+		fake.MockNewExperimentBuilder = func(name string) (model.ExperimentBuilder, error) {
 			return nil, errors.New("invalid experiment name")
 		}
 		runner.sessionBuilder = fake

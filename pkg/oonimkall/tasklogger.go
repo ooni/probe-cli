@@ -1,16 +1,16 @@
 package oonimkall
 
-import (
-	"fmt"
-
-	"github.com/ooni/probe-cli/v3/internal/model"
-)
-
 //
 // This file implements the logger used by a task. Outside
 // of this file, the rest of the codebase just sees a generic
 // model.Logger that can log events.
 //
+
+import (
+	"fmt"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
+)
 
 // taskLogger is the logger used by a task.
 type taskLogger struct {
