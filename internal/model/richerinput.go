@@ -53,6 +53,28 @@ type RicherInput struct {
 	Options json.RawMessage
 }
 
+// TODO(bassosimone): how do we support OONI Run v2 here?
+
+type RicherInputExperimentRunConfig struct {
+	// Annotations contains OPTIONAL Annotations for the experiment.
+	Annotations map[string]string
+
+	// ExtraOptions contains OPTIONAL extra options for the experiment.
+	ExtraOptions map[string]any
+
+	// Inputs contains the OPTIONAL experiment Inputs
+	Inputs []string
+
+	// InputFilePaths contains OPTIONAL files to read inputs from.
+	InputFilePaths []string
+
+	// MaxRuntime is the OPTIONAL maximum runtime in seconds.
+	MaxRuntime int64
+
+	// Random OPTIONALLY indicates we should randomize inputs.
+	Random bool
+}
+
 // RicherInputExperiment is an experiment using richer input.
 type RicherInputExperiment interface {
 	// KibiBytesReceived returns the KiB received by the experiment.
@@ -73,5 +95,5 @@ type RicherInputExperiment interface {
 
 	// Run fetches richer input for the experiment, performs all the
 	// measurements and returns each of them on a channel.
-	Run(ctx context.Context) <-chan *erroror.Value[*Measurement]
+	Run(ctx context.Context, config *RicherInputExperimentRunConfig) <-chan *erroror.Value[*Measurement]
 }
