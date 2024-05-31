@@ -7,6 +7,8 @@ package model
 import (
 	"context"
 	"encoding/json"
+
+	"github.com/ooni/probe-cli/v3/internal/erroror"
 )
 
 // RicherInputSession is the richer inputs's view of a session.
@@ -68,4 +70,8 @@ type RicherInputExperiment interface {
 	// NewReportTemplate creates a new report template suitable
 	// for opening a report for this experiment.
 	NewReportTemplate() *OOAPIReportTemplate
+
+	// Run fetches richer input for the experiment, performs all the
+	// measurements and returns each of them on a channel.
+	Run(ctx context.Context) <-chan *erroror.Value[*Measurement]
 }

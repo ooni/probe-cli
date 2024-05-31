@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/engine"
+	"github.com/ooni/probe-cli/v3/internal/erroror"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -254,6 +255,12 @@ func (dep *MockableTaskRunnerDependencies) NewReportTemplate() *model.OOAPIRepor
 
 // Name implements model.RicherInputExperiment.
 func (dep *MockableTaskRunnerDependencies) Name() string {
+	// This method is unimplemented because it's not used by oonimkall
+	panic("unimplemented")
+}
+
+// Run implements model.RicherInputExperiment.
+func (dep *MockableTaskRunnerDependencies) Run(ctx context.Context) <-chan *erroror.Value[*model.Measurement] {
 	// This method is unimplemented because it's not used by oonimkall
 	panic("unimplemented")
 }

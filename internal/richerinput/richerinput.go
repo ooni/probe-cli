@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
+	"github.com/ooni/probe-cli/v3/internal/erroror"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
@@ -143,6 +144,17 @@ func (r *Experiment[Config]) NewReportTemplate() *model.OOAPIReportTemplate {
 		TestStartTime:     r.testStartTimeString(),
 		TestVersion:       r.testVersion,
 	}
+}
+
+// Run implements [model.RicherInputExperiment].
+func (r *Experiment[Config]) Run(ctx context.Context) <-chan *erroror.Value[*model.Measurement] {
+	output := make(chan *erroror.Value[*model.Measurement], 1)
+	meas, err := r.Measure(ctx, model.RicherInput{})
+	output <- &erroror.Value[*model.Measurement]{
+		Err:   err,
+		Value: meas,
+	}
+	return output
 }
 
 // testStartTimeString is a convenience method to get the test start time as a string.

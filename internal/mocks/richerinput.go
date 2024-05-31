@@ -3,6 +3,7 @@ package mocks
 import (
 	"context"
 
+	"github.com/ooni/probe-cli/v3/internal/erroror"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -17,6 +18,8 @@ type RicherInputExperiment struct {
 	MockMeasure func(ctx context.Context, input model.RicherInput) (*model.Measurement, error)
 
 	MockNewReportTemplate func() *model.OOAPIReportTemplate
+
+	MockRun func(ctx context.Context) <-chan *erroror.Value[*model.Measurement]
 }
 
 func (e *RicherInputExperiment) KibiBytesReceived() float64 {
@@ -37,4 +40,8 @@ func (e *RicherInputExperiment) Measure(ctx context.Context, input model.RicherI
 
 func (e *RicherInputExperiment) NewReportTemplate() *model.OOAPIReportTemplate {
 	return e.MockNewReportTemplate()
+}
+
+func (e *RicherInputExperiment) Run(ctx context.Context) <-chan *erroror.Value[*model.Measurement] {
+	return e.MockRun(ctx)
 }

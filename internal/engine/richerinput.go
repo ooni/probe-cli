@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
+	"github.com/ooni/probe-cli/v3/internal/erroror"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -12,6 +13,13 @@ import (
 type richerInputExperimentWrapper struct {
 	exp  model.RicherInputExperiment
 	sess *Session
+}
+
+// Run implements model.RicherInputExperiment.
+func (r *richerInputExperimentWrapper) Run(ctx context.Context) <-chan *erroror.Value[*model.Measurement] {
+	// make sure we account bytes into the session's byte counter
+	ctx = bytecounter.WithSessionByteCounter(ctx, r.sess.byteCounter)
+	return r.exp.Run(ctx)
 }
 
 var _ model.RicherInputExperiment = &richerInputExperimentWrapper{}
