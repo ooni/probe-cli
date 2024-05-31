@@ -77,9 +77,13 @@ func (r *Experiment[Config]) Measure(ctx context.Context, input model.RicherInpu
 	ctx = bytecounter.WithExperimentByteCounter(ctx, r.bc)
 
 	// parse the configuration from JSON
+	//
+	// note: if the input.Options is empty we continue with an empty config
 	var config Config
-	if err := json.Unmarshal(input.Options, &config); err != nil {
-		return nil, err
+	if len(input.Options) > 0 {
+		if err := json.Unmarshal(input.Options, &config); err != nil {
+			return nil, err
+		}
 	}
 
 	// create a measurer instance

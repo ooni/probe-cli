@@ -6,9 +6,7 @@ package oonirun
 
 import (
 	"context"
-	"fmt"
 	"math/rand"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -67,10 +65,10 @@ type Experiment struct {
 	newSubmitterFn func(ctx context.Context) (model.Submitter, error)
 
 	// newSaverFn is OPTIONAL and used for testing.
-	newSaverFn func(experiment model.Experiment) (model.Saver, error)
+	newSaverFn func(experiment model.RicherInputExperiment) (model.Saver, error)
 
 	// newInputProcessorFn is OPTIONAL and used for testing.
-	newInputProcessorFn func(experiment model.Experiment, inputList []model.OOAPIURLInfo,
+	newInputProcessorFn func(experiment model.RicherInputExperiment, inputList []model.RicherInput,
 		saver model.Saver, submitter model.Submitter) inputProcessor
 }
 
@@ -105,7 +103,7 @@ func (ed *Experiment) Run(ctx context.Context) error {
 	}
 
 	// 5. construct the experiment instance
-	experiment := builder.NewExperiment()
+	experiment := builder.NewRicherInputExperiment()
 	logger := ed.Session.Logger()
 	defer func() {
 		logger.Infof("experiment: recv %s, sent %s",
@@ -126,24 +124,36 @@ func (ed *Experiment) Run(ctx context.Context) error {
 		return err
 	}
 
-	// 8. create an input processor
-	inputProcessor := ed.newInputProcessor(experiment, inputList, saver, submitter)
+	// 8. convert the API input list to richer input
+	richerInputList := builder.BuildRicherInput(
+		ed.Annotations,
+		experimentOOAPIURLInfoToFlatInputList(inputList...),
+	)
 
-	// 9. process input and generate measurements
+	// 9. create an input processor
+	inputProcessor := ed.newInputProcessor(experiment, richerInputList, saver, submitter)
+
+	// 10. process input and generate measurements
 	return inputProcessor.Run(ctx)
+}
+
+func experimentOOAPIURLInfoToFlatInputList(inputs ...model.OOAPIURLInfo) (outputs []string) {
+	for _, input := range inputs {
+		outputs = append(outputs, input.URL)
+	}
+	return
 }
 
 // inputProcessor is an alias for model.ExperimentInputProcessor
 type inputProcessor = model.ExperimentInputProcessor
 
 // newInputProcessor creates a new inputProcessor instance.
-func (ed *Experiment) newInputProcessor(experiment model.Experiment,
-	inputList []model.OOAPIURLInfo, saver model.Saver, submitter model.Submitter) inputProcessor {
+func (ed *Experiment) newInputProcessor(experiment model.RicherInputExperiment,
+	inputList []model.RicherInput, saver model.Saver, submitter model.Submitter) inputProcessor {
 	if ed.newInputProcessorFn != nil {
 		return ed.newInputProcessorFn(experiment, inputList, saver, submitter)
 	}
 	return &InputProcessor{
-		Annotations: ed.Annotations,
 		Experiment: &experimentWrapper{
 			child:  NewInputProcessorExperimentWrapper(experiment),
 			logger: ed.Session.Logger(),
@@ -151,7 +161,6 @@ func (ed *Experiment) newInputProcessor(experiment model.Experiment,
 		},
 		Inputs:     inputList,
 		MaxRuntime: time.Duration(ed.MaxRuntime) * time.Second,
-		Options:    experimentOptionsToStringList(ed.ExtraOptions),
 		Saver:      NewInputProcessorSaverWrapper(saver),
 		Submitter: &experimentSubmitterWrapper{
 			child:  NewInputProcessorSubmitterWrapper(submitter),
@@ -161,7 +170,7 @@ func (ed *Experiment) newInputProcessor(experiment model.Experiment,
 }
 
 // newSaver creates a new engine.Saver instance.
-func (ed *Experiment) newSaver(experiment model.Experiment) (model.Saver, error) {
+func (ed *Experiment) newSaver(experiment model.RicherInputExperiment) (model.Saver, error) {
 	if ed.newSaverFn != nil {
 		return ed.newSaverFn(experiment)
 	}
@@ -214,22 +223,6 @@ func (ed *Experiment) newInputLoader(inputPolicy model.InputPolicy) inputLoader 
 	}
 }
 
-// experimentOptionsToStringList convers the options to []string, which is
-// the format with which we include them into a OONI Measurement. The resulting
-// []string will skip any option that is named with a `Safe` prefix (case
-// sensitive).
-func experimentOptionsToStringList(options map[string]any) (out []string) {
-	// the prefix to skip inclusion in the string list
-	safeOptionPrefix := "Safe"
-	for key, value := range options {
-		if strings.HasPrefix(key, safeOptionPrefix) {
-			continue
-		}
-		out = append(out, fmt.Sprintf("%s=%v", key, value))
-	}
-	return
-}
-
 // experimentWrapper wraps an experiment and logs progress
 type experimentWrapper struct {
 	// child is the child experiment wrapper
@@ -242,12 +235,12 @@ type experimentWrapper struct {
 	total int
 }
 
-func (ew *experimentWrapper) MeasureAsync(
-	ctx context.Context, input string, idx int) (<-chan *model.Measurement, error) {
-	if input != "" {
+func (ew *experimentWrapper) Measure(
+	ctx context.Context, input model.RicherInput, idx int) (*model.Measurement, error) {
+	if input.Input != "" {
 		ew.logger.Infof("[%d/%d] running with input: %s", idx+1, ew.total, input)
 	}
-	return ew.child.MeasureAsync(ctx, input, idx)
+	return ew.child.Measure(ctx, input, idx)
 }
 
 // experimentSubmitterWrapper implements a submission policy where we don't

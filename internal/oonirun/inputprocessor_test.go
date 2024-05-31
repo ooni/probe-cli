@@ -15,8 +15,8 @@ type FakeInputProcessorExperiment struct {
 	M         []*model.Measurement
 }
 
-func (fipe *FakeInputProcessorExperiment) MeasureAsync(
-	ctx context.Context, input string) (<-chan *model.Measurement, error) {
+func (fipe *FakeInputProcessorExperiment) Measure(
+	ctx context.Context, input model.RicherInput) (*model.Measurement, error) {
 	if fipe.Err != nil {
 		return nil, fipe.Err
 	}
@@ -28,14 +28,9 @@ func (fipe *FakeInputProcessorExperiment) MeasureAsync(
 	// is MERGING annotations as opposed to overwriting them.
 	m.AddAnnotation("antani", "antani")
 	m.AddAnnotation("foo", "baz") // would be bar below
-	m.Input = model.MeasurementTarget(input)
+	m.Input = model.MeasurementTarget(input.Input)
 	fipe.M = append(fipe.M, m)
-	out := make(chan *model.Measurement)
-	go func() {
-		defer close(out)
-		out <- m
-	}()
-	return out, nil
+	return m, nil
 }
 
 func TestInputProcessorMeasurementFailed(t *testing.T) {
@@ -44,8 +39,8 @@ func TestInputProcessorMeasurementFailed(t *testing.T) {
 		Experiment: NewInputProcessorExperimentWrapper(
 			&FakeInputProcessorExperiment{Err: expected},
 		),
-		Inputs: []model.OOAPIURLInfo{{
-			URL: "https://www.kernel.org/",
+		Inputs: []model.RicherInput{{
+			Input: "https://www.kernel.org/",
 		}},
 	}
 	ctx := context.Background()
@@ -69,14 +64,14 @@ func TestInputProcessorSubmissionFailed(t *testing.T) {
 	fipe := &FakeInputProcessorExperiment{}
 	expected := errors.New("mocked error")
 	ip := &InputProcessor{
-		Annotations: map[string]string{
-			"foo": "bar",
-		},
 		Experiment: NewInputProcessorExperimentWrapper(fipe),
-		Inputs: []model.OOAPIURLInfo{{
-			URL: "https://www.kernel.org/",
+		Inputs: []model.RicherInput{{
+			Annotations: map[string]string{
+				"foo": "bar",
+			},
+			Input:   "https://www.kernel.org/",
+			Options: []byte(`{"fake": true}`),
 		}},
-		Options: []string{"fake=true"},
 		Submitter: NewInputProcessorSubmitterWrapper(
 			&FakeInputProcessorSubmitter{Err: expected},
 		),
@@ -96,7 +91,7 @@ func TestInputProcessorSubmissionFailed(t *testing.T) {
 		t.Fatal("invalid number of annotations")
 	}
 	if m.Annotations["foo"] != "bar" {
-		t.Fatal("invalid annotation: foo")
+		t.Fatal("invalid annotation: foo", m.Annotations["foo"])
 	}
 	if m.Annotations["antani"] != "antani" {
 		t.Fatal("invalid annotation: antani")
@@ -122,10 +117,10 @@ func TestInputProcessorSaveOnDiskFailed(t *testing.T) {
 		Experiment: NewInputProcessorExperimentWrapper(
 			&FakeInputProcessorExperiment{},
 		),
-		Inputs: []model.OOAPIURLInfo{{
-			URL: "https://www.kernel.org/",
+		Inputs: []model.RicherInput{{
+			Input:   "https://www.kernel.org/",
+			Options: []byte(`{"fake": true}`),
 		}},
-		Options: []string{"fake=true"},
 		Saver: NewInputProcessorSaverWrapper(
 			&FakeInputProcessorSaver{Err: expected},
 		),
@@ -145,12 +140,13 @@ func TestInputProcessorGood(t *testing.T) {
 	submitter := &FakeInputProcessorSubmitter{Err: nil}
 	ip := &InputProcessor{
 		Experiment: NewInputProcessorExperimentWrapper(fipe),
-		Inputs: []model.OOAPIURLInfo{{
-			URL: "https://www.kernel.org/",
+		Inputs: []model.RicherInput{{
+			Input:   "https://www.kernel.org/",
+			Options: []byte(`{"fake": true}`),
 		}, {
-			URL: "https://www.slashdot.org/",
+			Input:   "https://www.slashdot.org/",
+			Options: []byte(`{"fake": true}`),
 		}},
-		Options:   []string{"fake=true"},
 		Saver:     NewInputProcessorSaverWrapper(saver),
 		Submitter: NewInputProcessorSubmitterWrapper(submitter),
 	}
@@ -187,13 +183,14 @@ func TestInputProcessorMaxRuntime(t *testing.T) {
 	submitter := &FakeInputProcessorSubmitter{Err: nil}
 	ip := &InputProcessor{
 		Experiment: NewInputProcessorExperimentWrapper(fipe),
-		Inputs: []model.OOAPIURLInfo{{
-			URL: "https://www.kernel.org/",
+		Inputs: []model.RicherInput{{
+			Input:   "https://www.kernel.org/",
+			Options: []byte(`{"fake": true}`),
 		}, {
-			URL: "https://www.slashdot.org/",
+			Input:   "https://www.slashdot.org/",
+			Options: []byte(`{"fake": true}`),
 		}},
 		MaxRuntime: 1 * time.Nanosecond,
-		Options:    []string{"fake=true"},
 		Saver:      NewInputProcessorSaverWrapper(saver),
 		Submitter:  NewInputProcessorSubmitterWrapper(submitter),
 	}

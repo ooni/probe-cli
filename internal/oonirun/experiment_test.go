@@ -3,8 +3,6 @@ package oonirun
 import (
 	"context"
 	"errors"
-	"reflect"
-	"sort"
 	"testing"
 	"time"
 
@@ -47,18 +45,13 @@ func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 						calledSetOptionsAny++
 						return nil
 					},
-					MockNewExperiment: func() model.Experiment {
-						exp := &mocks.Experiment{
-							MockMeasureAsync: func(ctx context.Context, input string) (<-chan *model.Measurement, error) {
-								out := make(chan *model.Measurement)
-								go func() {
-									defer close(out)
-									ff := &testingx.FakeFiller{}
-									var meas model.Measurement
-									ff.Fill(&meas)
-									out <- &meas
-								}()
-								return out, nil
+					MockNewRicherInputExperiment: func() model.RicherInputExperiment {
+						exp := &mocks.RicherInputExperiment{
+							MockMeasure: func(ctx context.Context, input model.RicherInput) (*model.Measurement, error) {
+								ff := &testingx.FakeFiller{}
+								var meas model.Measurement
+								ff.Fill(&meas)
+								return &meas, nil
 							},
 							MockKibiBytesReceived: func() float64 {
 								calledKibiBytesReceived++
@@ -70,6 +63,15 @@ func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 							},
 						}
 						return exp
+					},
+					MockBuildRicherInput: func(annotations map[string]string, flatInputs []string) (output []model.RicherInput) {
+						for _, input := range flatInputs {
+							output = append(output, model.RicherInput{
+								Annotations: annotations,
+								Input:       input,
+							})
+						}
+						return
 					},
 				}
 				return eb, nil
@@ -112,48 +114,6 @@ func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 	}
 }
 
-func Test_experimentOptionsToStringList(t *testing.T) {
-	type args struct {
-		options map[string]any
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantOut []string
-	}{
-		{
-			name: "happy path: a map with three entries returns three items",
-			args: args{
-				map[string]any{
-					"foo":  1,
-					"bar":  2,
-					"baaz": 3,
-				},
-			},
-			wantOut: []string{"baaz=3", "bar=2", "foo=1"},
-		},
-		{
-			name: "an option beginning with `Safe` is skipped from the output",
-			args: args{
-				map[string]any{
-					"foo":     1,
-					"Safefoo": 42,
-				},
-			},
-			wantOut: []string{"foo=1"},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gotOut := experimentOptionsToStringList(tt.args.options)
-			sort.Strings(gotOut)
-			if !reflect.DeepEqual(gotOut, tt.wantOut) {
-				t.Errorf("experimentOptionsToStringList() = %v, want %v", gotOut, tt.wantOut)
-			}
-		})
-	}
-}
-
 func TestExperimentRun(t *testing.T) {
 	errMocked := errors.New("mocked error")
 	type fields struct {
@@ -171,8 +131,8 @@ func TestExperimentRun(t *testing.T) {
 		newExperimentBuilderFn func(experimentName string) (model.ExperimentBuilder, error)
 		newInputLoaderFn       func(inputPolicy model.InputPolicy) inputLoader
 		newSubmitterFn         func(ctx context.Context) (model.Submitter, error)
-		newSaverFn             func(experiment model.Experiment) (model.Saver, error)
-		newInputProcessorFn    func(experiment model.Experiment, inputList []model.OOAPIURLInfo, saver model.Saver, submitter model.Submitter) inputProcessor
+		newSaverFn             func(experiment model.RicherInputExperiment) (model.Saver, error)
+		newInputProcessorFn    func(experiment model.RicherInputExperiment, inputList []model.RicherInput, saver model.Saver, submitter model.Submitter) inputProcessor
 	}
 	type args struct {
 		ctx context.Context
@@ -319,7 +279,7 @@ func TestExperimentRun(t *testing.T) {
 			newSubmitterFn: func(ctx context.Context) (model.Submitter, error) {
 				return &mocks.Submitter{}, nil
 			},
-			newSaverFn: func(experiment model.Experiment) (model.Saver, error) {
+			newSaverFn: func(experiment model.RicherInputExperiment) (model.Saver, error) {
 				return nil, errMocked
 			},
 		},
@@ -365,10 +325,10 @@ func TestExperimentRun(t *testing.T) {
 			newSubmitterFn: func(ctx context.Context) (model.Submitter, error) {
 				return &mocks.Submitter{}, nil
 			},
-			newSaverFn: func(experiment model.Experiment) (model.Saver, error) {
+			newSaverFn: func(experiment model.RicherInputExperiment) (model.Saver, error) {
 				return &mocks.Saver{}, nil
 			},
-			newInputProcessorFn: func(experiment model.Experiment, inputList []model.OOAPIURLInfo,
+			newInputProcessorFn: func(experiment model.RicherInputExperiment, inputList []model.RicherInput,
 				saver model.Saver, submitter model.Submitter) inputProcessor {
 				return &mocks.ExperimentInputProcessor{
 					MockRun: func(ctx context.Context) error {
