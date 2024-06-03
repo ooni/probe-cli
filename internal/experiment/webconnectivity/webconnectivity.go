@@ -11,7 +11,15 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivity/internal"
 	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/webconnectivityalgo"
 )
+
+// NewRicherInputExperiment constructs a new [model.RicherInputExperiment].
+func NewRicherInputExperiment(sess model.RicherInputSession) model.RicherInputExperiment {
+	// TODO(bassosimone): we should probably correctly select the
+	// web connectivity version to run via check-in
+	return webconnectivityalgo.NewRicherInputExperiment(sess, NewExperimentMeasurer(Config{}))
+}
 
 const (
 	testName    = "web_connectivity"

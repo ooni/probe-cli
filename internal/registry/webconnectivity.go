@@ -16,6 +16,7 @@ func init() {
 				config.(webconnectivity.Config),
 			)
 		},
+		buildRIE:         webconnectivity.NewRicherInputExperiment,
 		config:           webconnectivity.Config{},
 		enabledByDefault: true,
 		interruptible:    false,
