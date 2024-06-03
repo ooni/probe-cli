@@ -83,14 +83,19 @@ func (ed *Experiment) Run(ctx context.Context) error {
 		return err
 	}
 
-	// 2. create input loader and load input for this experiment
+	// 2. handle the case where we're using richer input
+	if builder.SupportsRicherInput() {
+		return ed.richerInputRun(ctx, builder)
+	}
+
+	// 3. create input loader and load input for this experiment
 	inputLoader := ed.newInputLoader(builder.InputPolicy())
 	inputList, err := inputLoader.Load(ctx)
 	if err != nil {
 		return err
 	}
 
-	// 3. randomize input, if needed
+	// 4. randomize input, if needed
 	if ed.Random {
 		rnd := rand.New(rand.NewSource(time.Now().UnixNano())) // #nosec G404 -- not really important
 		rnd.Shuffle(len(inputList), func(i, j int) {
@@ -99,12 +104,12 @@ func (ed *Experiment) Run(ctx context.Context) error {
 		experimentShuffledInputs.Add(1)
 	}
 
-	// 4. configure experiment's options
+	// 5. configure experiment's options
 	if err := builder.SetOptionsAny(ed.ExtraOptions); err != nil {
 		return err
 	}
 
-	// 5. construct the experiment instance
+	// 6. construct the experiment instance
 	experiment := builder.NewExperiment()
 	logger := ed.Session.Logger()
 	defer func() {
@@ -114,23 +119,78 @@ func (ed *Experiment) Run(ctx context.Context) error {
 		)
 	}()
 
-	// 6. create the submitter
+	// 7. create the submitter
 	submitter, err := ed.newSubmitter(ctx)
 	if err != nil {
 		return err
 	}
 
-	// 7. create the saver
+	// 8. create the saver
 	saver, err := ed.newSaver()
 	if err != nil {
 		return err
 	}
 
-	// 8. create an input processor
+	// 9. create an input processor
 	inputProcessor := ed.newInputProcessor(experiment, inputList, saver, submitter)
 
-	// 9. process input and generate measurements
+	// 10. process input and generate measurements
 	return inputProcessor.Run(ctx)
+}
+
+// richerInputRun runs a richer-input-aware experiment
+func (ed *Experiment) richerInputRun(ctx context.Context, builder model.ExperimentBuilder) error {
+	// 1. create configuration for the experiment
+	config := &model.RicherInputConfig{
+		Annotations:     ed.Annotations,
+		Callbacks:       model.NewPrinterCallbacks(ed.Session.Logger()),
+		ExtraOptions:    ed.ExtraOptions,
+		Inputs:          ed.Inputs,
+		InputFilePaths:  ed.InputFilePaths,
+		MaxRuntime:      ed.MaxRuntime,
+		RandomizeInputs: ed.Random,
+	}
+
+	// 2. construct the experiment instance
+	experiment := builder.NewRicherInputExperiment(config)
+	logger := ed.Session.Logger()
+	defer func() {
+		logger.Infof("experiment: recv %s, sent %s",
+			humanize.SI(experiment.KibiBytesReceived()*1024, "byte"),
+			humanize.SI(experiment.KibiBytesSent()*1024, "byte"),
+		)
+	}()
+
+	// 3. create the submitter
+	submitter, err := ed.newSubmitter(ctx)
+	if err != nil {
+		return err
+	}
+
+	// 4. create the saver
+	saver, err := ed.newSaver()
+	if err != nil {
+		return err
+	}
+
+	// 5. run the experiment until completion
+	for maybeMeas := range experiment.Start(ctx, config) {
+		if err := maybeMeas.Err; err != nil {
+			ed.Session.Logger().Warnf("measurement failed: %s", err.Error())
+			continue
+		}
+		meas := maybeMeas.Value
+		if err := submitter.Submit(ctx, meas); err != nil {
+			ed.Session.Logger().Warnf("cannot submit measurement: %s", err.Error())
+			// fallthrough
+		}
+		if err := saver.SaveMeasurement(meas); err != nil {
+			ed.Session.Logger().Warnf("cannot save measurement: %s", err.Error())
+			// fallthrough
+		}
+	}
+
+	return nil
 }
 
 // inputProcessor is an alias for model.ExperimentInputProcessor
