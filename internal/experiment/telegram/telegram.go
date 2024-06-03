@@ -10,7 +10,19 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/richerinput"
 )
+
+// NewRicherInputExperiment constructs a new [model.RicherInputExperiment].
+func NewRicherInputExperiment(sess model.RicherInputSession) model.RicherInputExperiment {
+	return richerinput.NewExperiment(
+		&richerinput.VoidInputLoader{},
+		&richerinput.VoidMeasurer{
+			Measurer: NewExperimentMeasurer(Config{}),
+		},
+		sess,
+	)
+}
 
 const (
 	testName    = "telegram"

@@ -16,6 +16,7 @@ func init() {
 				config.(telegram.Config),
 			)
 		},
+		buildRIE:         telegram.NewRicherInputExperiment,
 		config:           telegram.Config{},
 		enabledByDefault: true,
 		interruptible:    false,
