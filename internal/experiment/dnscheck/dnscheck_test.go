@@ -182,7 +182,7 @@ func TestDNSCheckWait(t *testing.T) {
 	}
 	measurer := &Measurer{Endpoints: endpoints}
 	run := func(input string) {
-		measurement := model.Measurement{Input: model.MeasurementTarget(input)}
+		measurement := model.Measurement{Input: model.MeasurementInput(input)}
 		args := &model.ExperimentArgs{
 			Callbacks:   model.NewPrinterCallbacks(log.Log),
 			Measurement: &measurement,

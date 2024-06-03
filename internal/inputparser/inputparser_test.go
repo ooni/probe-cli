@@ -20,7 +20,7 @@ func TestParse(t *testing.T) {
 		config *Config
 
 		// input is the MANDATORY string-format input-URL to parse.
-		input model.MeasurementTarget
+		input model.MeasurementInput
 
 		// expectURL is the OPTIONAL URL we expect in output.
 		expectURL *url.URL

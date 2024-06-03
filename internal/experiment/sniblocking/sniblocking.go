@@ -221,7 +221,7 @@ func processall(
 
 // maybeURLToSNI handles the case where the input is from the test-lists
 // and hence every input is a URL rather than a domain.
-func maybeURLToSNI(input model.MeasurementTarget) (model.MeasurementTarget, error) {
+func maybeURLToSNI(input model.MeasurementInput) (model.MeasurementInput, error) {
 	parsed, err := url.Parse(string(input))
 	if err != nil {
 		return "", err
@@ -229,7 +229,7 @@ func maybeURLToSNI(input model.MeasurementTarget) (model.MeasurementTarget, erro
 	if parsed.Path == string(input) {
 		return input, nil
 	}
-	return model.MeasurementTarget(parsed.Hostname()), nil
+	return model.MeasurementInput(parsed.Hostname()), nil
 }
 
 // Run implements ExperimentMeasurer.Run.

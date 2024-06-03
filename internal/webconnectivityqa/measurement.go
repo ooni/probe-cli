@@ -15,7 +15,7 @@ func newMeasurement(input string, measurer model.ExperimentMeasurer, t0 time.Tim
 		DataFormatVersion:         "0.2.0",
 		Extensions:                nil,
 		ID:                        "",
-		Input:                     model.MeasurementTarget(input),
+		Input:                     model.MeasurementInput(input),
 		InputHashes:               nil,
 		MeasurementStartTime:      t0.Format(model.MeasurementDateFormat),
 		MeasurementStartTimeSaved: t0,
