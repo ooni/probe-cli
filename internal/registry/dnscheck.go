@@ -16,6 +16,7 @@ func init() {
 				*config.(*dnscheck.Config),
 			)
 		},
+		buildRIE:         dnscheck.NewRicherInputExperiment,
 		config:           &dnscheck.Config{},
 		enabledByDefault: true,
 		inputPolicy:      model.InputOrStaticDefault,
