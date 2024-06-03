@@ -377,10 +377,8 @@ func (s *Session) FetchTorTargets(
 // internal cache. We do this to avoid hitting the API for every input.
 func (s *Session) FetchOpenVPNConfig(
 	ctx context.Context, provider, cc string) (*model.OOAPIVPNProviderConfig, error) {
-
-	// TODO(ain): deadlock?
-	// defer s.mu.Unlock()
-	// s.mu.Lock()
+	defer s.mu.Unlock()
+	s.mu.Lock()
 
 	if config, ok := s.vpnConfig[provider]; ok {
 		return &config, nil
