@@ -403,7 +403,7 @@ func TestSuccess(t *testing.T) {
 	sess := makeMockSession()
 	callbacks := model.NewPrinterCallbacks(sess.Logger())
 	measurement := new(model.Measurement)
-	measurement.Input = "openvpn://riseup.corp/?address=127.0.0.1:9989&transport=tcp"
+	measurement.Input = "openvpn://riseupvpn.corp/?address=127.0.0.1:9989&transport=tcp"
 	args := &model.ExperimentArgs{
 		Callbacks:   callbacks,
 		Measurement: measurement,

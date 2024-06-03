@@ -2,6 +2,7 @@ package openvpn
 
 import (
 	"errors"
+	"fmt"
 	"sort"
 	"testing"
 	"time"
@@ -23,13 +24,13 @@ func Test_newEndpointFromInputString(t *testing.T) {
 	}{
 		{
 			name: "valid endpoint returns good endpoint",
-			args: args{"openvpn://riseup.corp/?address=1.1.1.1:1194&transport=tcp"},
+			args: args{"openvpn://riseupvpn.corp/?address=1.1.1.1:1194&transport=tcp"},
 			want: &endpoint{
 				IPAddr:      "1.1.1.1",
 				Obfuscation: "none",
 				Port:        "1194",
 				Protocol:    "openvpn",
-				Provider:    "riseup",
+				Provider:    "riseupvpn",
 				Transport:   "tcp",
 			},
 			wantErr: nil,
@@ -42,26 +43,26 @@ func Test_newEndpointFromInputString(t *testing.T) {
 		},
 		{
 			name: "openvpn+obfs4 does not fail",
-			args: args{"openvpn+obfs4://riseup.corp/?address=1.1.1.1:1194&transport=tcp"},
+			args: args{"openvpn+obfs4://riseupvpn.corp/?address=1.1.1.1:1194&transport=tcp"},
 			want: &endpoint{
 				IPAddr:      "1.1.1.1",
 				Obfuscation: "obfs4",
 				Port:        "1194",
 				Protocol:    "openvpn",
-				Provider:    "riseup",
+				Provider:    "riseupvpn",
 				Transport:   "tcp",
 			},
 			wantErr: nil,
 		},
 		{
 			name:    "unknown proto fails",
-			args:    args{"unknown://riseup.corp/?address=1.1.1.1:1194&transport=tcp"},
+			args:    args{"unknown://riseupvpn.corp/?address=1.1.1.1:1194&transport=tcp"},
 			want:    nil,
 			wantErr: ErrInvalidInput,
 		},
 		{
 			name:    "any tld other than .corp fails",
-			args:    args{"openvpn://riseup.org/?address=1.1.1.1:1194&transport=tcp"},
+			args:    args{"openvpn://riseupvpn.org/?address=1.1.1.1:1194&transport=tcp"},
 			want:    nil,
 			wantErr: ErrInvalidInput,
 		},
@@ -79,43 +80,43 @@ func Test_newEndpointFromInputString(t *testing.T) {
 		},
 		{
 			name:    "endpoint with invalid ipv4 fails",
-			args:    args{"openvpn://riseup.corp/?address=example.com:1194&transport=tcp"},
+			args:    args{"openvpn://riseupvpn.corp/?address=example.com:1194&transport=tcp"},
 			want:    nil,
 			wantErr: ErrInvalidInput,
 		},
 		{
 			name:    "endpoint with no port fails",
-			args:    args{"openvpn://riseup.corp/?address=1.1.1.1&transport=tcp"},
+			args:    args{"openvpn://riseupvpn.corp/?address=1.1.1.1&transport=tcp"},
 			want:    nil,
 			wantErr: ErrInvalidInput,
 		},
 		{
 			name:    "endpoint with empty transport fails",
-			args:    args{"openvpn://riseup.corp/?address=1.1.1.1:1194&transport="},
+			args:    args{"openvpn://riseupvpn.corp/?address=1.1.1.1:1194&transport="},
 			want:    nil,
 			wantErr: ErrInvalidInput,
 		},
 		{
 			name:    "endpoint with no transport fails",
-			args:    args{"openvpn://riseup.corp/?address=1.1.1.1:1194"},
+			args:    args{"openvpn://riseupvpn.corp/?address=1.1.1.1:1194"},
 			want:    nil,
 			wantErr: ErrInvalidInput,
 		},
 		{
 			name:    "endpoint with unknown transport fails",
-			args:    args{"openvpn://riseup.corp/?address=1.1.1.1:1194&transport=uh"},
+			args:    args{"openvpn://riseupvpn.corp/?address=1.1.1.1:1194&transport=uh"},
 			want:    nil,
 			wantErr: ErrInvalidInput,
 		},
 		{
 			name:    "endpoint with no address fails",
-			args:    args{"openvpn://riseup.corp/?transport=tcp"},
+			args:    args{"openvpn://riseupvpn.corp/?transport=tcp"},
 			want:    nil,
 			wantErr: ErrInvalidInput,
 		},
 		{
 			name:    "endpoint with empty address fails",
-			args:    args{"openvpn://riseup.corp/?address=&transport=tcp"},
+			args:    args{"openvpn://riseupvpn.corp/?address=&transport=tcp"},
 			want:    nil,
 			wantErr: ErrInvalidInput,
 		},
@@ -155,7 +156,7 @@ func Test_EndpointToInputURI(t *testing.T) {
 					Transport:   "udp",
 				},
 			},
-			want: "openvpn://shady.corp/?address=1.1.1.1:443&transport=udp",
+			want: "openvpn://shady.corp?address=1.1.1.1%3A443&transport=udp",
 		},
 		{
 			name: "good endpoint with openvpn+obfs4",
@@ -169,7 +170,7 @@ func Test_EndpointToInputURI(t *testing.T) {
 					Transport:   "udp",
 				},
 			},
-			want: "openvpn+obfs4://shady.corp/?address=1.1.1.1:443&transport=udp",
+			want: "openvpn+obfs4://shady.corp?address=1.1.1.1%3A443&transport=udp",
 		},
 		{
 			name: "empty provider is marked as unknown",
@@ -183,12 +184,13 @@ func Test_EndpointToInputURI(t *testing.T) {
 					Transport:   "udp",
 				},
 			},
-			want: "openvpn+obfs4://unknown.corp/?address=1.1.1.1:443&transport=udp",
+			want: "openvpn+obfs4://unknown.corp?address=1.1.1.1%3A443&transport=udp",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.args.endpoint.AsInputURI(); cmp.Diff(got, tt.want) != "" {
+				fmt.Println("GOT", got)
 				t.Error(cmp.Diff(got, tt.want))
 			}
 		})
@@ -262,7 +264,7 @@ func Test_endpointList_Shuffle(t *testing.T) {
 }
 
 func Test_isValidProvider(t *testing.T) {
-	if valid := isValidProvider("riseup"); !valid {
+	if valid := isValidProvider("riseupvpn"); !valid {
 		t.Fatal("riseup is the only valid provider now")
 	}
 	if valid := isValidProvider("nsa"); valid {
@@ -273,7 +275,7 @@ func Test_isValidProvider(t *testing.T) {
 func Test_getVPNConfig(t *testing.T) {
 	tracer := vpntracex.NewTracer(time.Now())
 	e := &endpoint{
-		Provider:  "riseup",
+		Provider:  "riseupvpn",
 		IPAddr:    "1.1.1.1",
 		Port:      "443",
 		Transport: "udp",
