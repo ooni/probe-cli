@@ -6,7 +6,10 @@ package model
 // See https://api.ooni.io/apidocs/.
 //
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 // OOAPICheckInConfigWebConnectivity is the WebConnectivity
 // portion of OOAPICheckInConfig.
@@ -322,4 +325,18 @@ type OOAPIRegisterRequest struct {
 // OOAPIRegisterResponse is a reponse from the register API.
 type OOAPIRegisterResponse struct {
 	ClientID string `json:"client_id"`
+}
+
+// OOAPIReport represents a report opened using the OONI API.
+type OOAPIReport interface {
+	// CanSubmit indicates whether we can submit the given measurement
+	// as part of this report or we need to open a new report.
+	CanSubmit(m *Measurement) bool
+
+	// ReportID returns the open report ID.
+	ReportID() string
+
+	// SubmitMeasurement submits a measurement and, on success, modifies its
+	// ReportID field to refer to the currently opened report.
+	SubmitMeasurement(ctx context.Context, m *Measurement) error
 }

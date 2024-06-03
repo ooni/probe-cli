@@ -147,11 +147,7 @@ func (r reportChan) ReportID() string {
 
 // ReportChannel is a channel through which one could submit measurements
 // belonging to the same report. The Report struct belongs to this interface.
-type ReportChannel interface {
-	CanSubmit(m *model.Measurement) bool
-	ReportID() string
-	SubmitMeasurement(ctx context.Context, m *model.Measurement) error
-}
+type ReportChannel = model.OOAPIReport
 
 var _ ReportChannel = &reportChan{}
 
