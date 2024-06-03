@@ -471,7 +471,7 @@ func (sess *InputLoaderMockableSession) CheckIn(
 // FetchOpenVPNConfig implements InputLoaderSession.FetchOpenVPNConfig.
 func (sess *InputLoaderMockableSession) FetchOpenVPNConfig(
 	ctx context.Context, provider, cc string) (*model.OOAPIVPNProviderConfig, error) {
-	runtimex.Assert(!(sess.FetchOpenVPNConfig == nil && sess.FetchOpenVPNConfigOutput == nil), "both FetchOpenVPNConfig")
+	runtimex.Assert(!(sess.Error == nil && sess.FetchOpenVPNConfigOutput == nil), "both FetchOpenVPNConfig and Error are nil")
 	return sess.FetchOpenVPNConfigOutput, sess.Error
 }
 
