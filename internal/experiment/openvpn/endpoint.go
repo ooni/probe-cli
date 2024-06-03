@@ -193,7 +193,6 @@ var defaultOptionsByProvider = map[string]*vpnconfig.OpenVPNOptions{
 var APIEnabledProviders = []string{
 	// TODO: fix the backend so that we can remove the spurious "vpn" suffix here.
 	"riseupvpn",
-	"riseup",
 }
 
 // isValidProvider returns true if the provider is found as key in the registry of defaultOptionsByProvider.

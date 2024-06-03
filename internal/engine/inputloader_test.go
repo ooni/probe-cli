@@ -584,9 +584,9 @@ func TestInputLoaderOpenVPNSuccessWithNoInputAndAPICall(t *testing.T) {
 		Session: &InputLoaderMockableSession{
 			Error: nil,
 			FetchOpenVPNConfigOutput: &model.OOAPIVPNProviderConfig{
-				Provider: "riseup",
+				Provider: "riseupvpn",
 				Inputs: []string{
-					"openvpn://foo.corp/?address=1.1.1.1:1194&transport=tcp",
+					"openvpn://foo.corp/?address=1.2.3.4:1194&transport=tcp",
 				},
 				DateUpdated: time.Now(),
 			},
