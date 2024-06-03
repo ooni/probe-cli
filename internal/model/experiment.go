@@ -106,19 +106,31 @@ type ExperimentCallbacks interface {
 	OnProgress(percentage float64, message string)
 }
 
-// PrinterCallbacks is the default event handler
+// PrinterCallbacks is the default [RicherInputCallbacks] implementation
+// that uses a logger to emit a log message for each callback.
+//
+// Note: this struct contains goroutine-safe methods.
 type PrinterCallbacks struct {
 	Logger
 }
+
+var _ RicherInputCallbacks = PrinterCallbacks{}
 
 // NewPrinterCallbacks returns a new default callback handler
 func NewPrinterCallbacks(logger Logger) PrinterCallbacks {
 	return PrinterCallbacks{Logger: logger}
 }
 
-// OnProgress provides information about an experiment progress.
+// OnProgress implements [RicherInputCallbacks].
 func (d PrinterCallbacks) OnProgress(percentage float64, message string) {
 	d.Logger.Infof("[%5.1f%%] %s", percentage*100, message)
+}
+
+// OnTargets implements [RicherInputCallbacks].
+func (d PrinterCallbacks) OnTargets(targets []RicherInputTarget) {
+	for idx, target := range targets {
+		d.Logger.Infof("measuring richer-input target #%d %+v", idx, target)
+	}
 }
 
 // ExperimentArgs contains the arguments passed to an experiment.
@@ -273,6 +285,13 @@ type ExperimentBuilder interface {
 
 	// NewExperiment creates the experiment instance.
 	NewExperiment() Experiment
+
+	// NewRicherInputExperiment creates the richer-input-aware experiment instance.
+	NewRicherInputExperiment(config *RicherInputConfig) RicherInputExperiment
+
+	// SupportsRicherInput indicates whether this builder supports creating
+	// richer-input-aware experiment instances.
+	SupportsRicherInput() bool
 }
 
 // ExperimentOptionInfo contains info about an experiment option.
