@@ -12,15 +12,16 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/registry"
+	"github.com/ooni/probe-cli/v3/internal/richerinput"
 	"github.com/ooni/probe-cli/v3/internal/stuninput"
 )
 
 // These errors are returned by the InputLoader.
 var (
-	ErrNoURLsReturned    = errors.New("no URLs returned")
-	ErrDetectedEmptyFile = errors.New("file did not contain any input")
+	ErrNoURLsReturned    = richerinput.ErrNoURLsReturned
+	ErrDetectedEmptyFile = richerinput.ErrDetectedEmptyFile
 	ErrInputRequired     = errors.New("no input provided")
-	ErrNoInputExpected   = errors.New("we did not expect any input")
+	ErrNoInputExpected   = richerinput.ErrNoInputExpected
 	ErrNoStaticInput     = errors.New("no static input for this experiment")
 )
 
@@ -248,6 +249,8 @@ func (il *InputLoader) loadOrStaticDefault(_ context.Context) ([]model.OOAPIURLI
 	}
 	return staticInputForExperiment(il.ExperimentName)
 }
+
+// TODO(bassosimone): this code should call richerinput.LoadInputs.
 
 // loadLocal loads inputs from StaticInputs and SourceFiles.
 func (il *InputLoader) loadLocal() ([]model.OOAPIURLInfo, error) {

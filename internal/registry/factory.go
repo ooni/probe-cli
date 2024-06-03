@@ -22,6 +22,9 @@ type Factory struct {
 	// build is the constructor that build an experiment with the given config.
 	build func(config interface{}) model.ExperimentMeasurer
 
+	// buildRIE is the constructor to build a richer-input experiment.
+	buildRIE func(sess model.RicherInputSession) model.RicherInputExperiment
+
 	// config contains the experiment's config.
 	config any
 
@@ -216,6 +219,19 @@ func (b *Factory) fieldbyname(v interface{}, key string) (reflect.Value, error) 
 // NewExperimentMeasurer creates the experiment
 func (b *Factory) NewExperimentMeasurer() model.ExperimentMeasurer {
 	return b.build(b.config)
+}
+
+// NewRicherInputExperiment constructs a new [model.RicherInputExperiment].
+func (b *Factory) NewRicherInputExperiment(sess model.RicherInputSession) (model.RicherInputExperiment, error) {
+	if b.buildRIE == nil {
+		return nil, ErrNoSuchExperiment
+	}
+	return b.buildRIE(sess), nil
+}
+
+// SupportsRicherInput returns true when the factory supports richer input.
+func (b *Factory) SupportsRicherInput() bool {
+	return b.buildRIE != nil
 }
 
 // CanonicalizeExperimentName allows code to provide experiment names
