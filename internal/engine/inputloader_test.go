@@ -562,6 +562,13 @@ func TestInputLoaderOpenVPNSuccessWithNoInput(t *testing.T) {
 		InputPolicy:    model.InputOrQueryBackend,
 		Session: &InputLoaderMockableSession{
 			Error: nil,
+			FetchOpenVPNConfigOutput: &model.OOAPIVPNProviderConfig{
+				Provider: "riseup",
+				Inputs: []string{
+					"openvpn://foo.corp/?address=1.1.1.1:1194&transport=tcp",
+				},
+				DateUpdated: time.Now(),
+			},
 		},
 	}
 	_, err := il.loadRemote(context.Background())
