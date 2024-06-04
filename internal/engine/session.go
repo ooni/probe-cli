@@ -370,6 +370,8 @@ func (s *Session) FetchTorTargets(
 	if err != nil {
 		return nil, err
 	}
+
+	// here we could also lock the mutex.
 	return clnt.FetchTorTargets(ctx, cc)
 }
 
@@ -377,9 +379,6 @@ func (s *Session) FetchTorTargets(
 // internal cache. We do this to avoid hitting the API for every input.
 func (s *Session) FetchOpenVPNConfig(
 	ctx context.Context, provider, cc string) (*model.OOAPIVPNProviderConfig, error) {
-	defer s.mu.Unlock()
-	s.mu.Lock()
-
 	if config, ok := s.vpnConfig[provider]; ok {
 		return &config, nil
 	}
@@ -387,6 +386,11 @@ func (s *Session) FetchOpenVPNConfig(
 	if err != nil {
 		return nil, err
 	}
+
+	// we cannot lock earlier because newOrchestraClient locks the mutex.
+	defer s.mu.Unlock()
+	s.mu.Lock()
+
 	config, err := clnt.FetchOpenVPNConfig(ctx, provider, cc)
 	if err != nil {
 		return nil, err
