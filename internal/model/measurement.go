@@ -57,7 +57,7 @@ func MeasurementFormatTimeNowUTC() string {
 // MeasurementInput is the target of a OONI measurement.
 type MeasurementInput string
 
-// MarshalJSON serializes the MeasurementTarget.
+// MarshalJSON serializes the [MeasurementInput].
 func (t MeasurementInput) MarshalJSON() ([]byte, error) {
 	if t == "" {
 		return json.Marshal(nil)

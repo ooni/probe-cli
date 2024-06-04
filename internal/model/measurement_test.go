@@ -20,7 +20,7 @@ func TestMeasurementFormatTimeNowUTC(t *testing.T) {
 	})
 }
 
-func TestMeasurementTargetMarshalJSON(t *testing.T) {
+func TestMeasurementInputMarshalJSON(t *testing.T) {
 	var mt MeasurementInput
 	data, err := json.Marshal(mt)
 	if err != nil {
