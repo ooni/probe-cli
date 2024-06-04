@@ -171,7 +171,7 @@ func TestExperimentRun(t *testing.T) {
 		newExperimentBuilderFn func(experimentName string) (model.ExperimentBuilder, error)
 		newInputLoaderFn       func(inputPolicy model.InputPolicy) inputLoader
 		newSubmitterFn         func(ctx context.Context) (model.Submitter, error)
-		newSaverFn             func(experiment model.Experiment) (model.Saver, error)
+		newSaverFn             func() (model.Saver, error)
 		newInputProcessorFn    func(experiment model.Experiment, inputList []model.OOAPIURLInfo, saver model.Saver, submitter model.Submitter) inputProcessor
 	}
 	type args struct {
@@ -319,7 +319,7 @@ func TestExperimentRun(t *testing.T) {
 			newSubmitterFn: func(ctx context.Context) (model.Submitter, error) {
 				return &mocks.Submitter{}, nil
 			},
-			newSaverFn: func(experiment model.Experiment) (model.Saver, error) {
+			newSaverFn: func() (model.Saver, error) {
 				return nil, errMocked
 			},
 		},
@@ -365,7 +365,7 @@ func TestExperimentRun(t *testing.T) {
 			newSubmitterFn: func(ctx context.Context) (model.Submitter, error) {
 				return &mocks.Submitter{}, nil
 			},
-			newSaverFn: func(experiment model.Experiment) (model.Saver, error) {
+			newSaverFn: func() (model.Saver, error) {
 				return &mocks.Saver{}, nil
 			},
 			newInputProcessorFn: func(experiment model.Experiment, inputList []model.OOAPIURLInfo,

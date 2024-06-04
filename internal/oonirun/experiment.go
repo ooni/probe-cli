@@ -67,7 +67,7 @@ type Experiment struct {
 	newSubmitterFn func(ctx context.Context) (model.Submitter, error)
 
 	// newSaverFn is OPTIONAL and used for testing.
-	newSaverFn func(experiment model.Experiment) (model.Saver, error)
+	newSaverFn func() (model.Saver, error)
 
 	// newInputProcessorFn is OPTIONAL and used for testing.
 	newInputProcessorFn func(experiment model.Experiment, inputList []model.OOAPIURLInfo,
@@ -121,7 +121,7 @@ func (ed *Experiment) Run(ctx context.Context) error {
 	}
 
 	// 7. create the saver
-	saver, err := ed.newSaver(experiment)
+	saver, err := ed.newSaver()
 	if err != nil {
 		return err
 	}
@@ -161,9 +161,9 @@ func (ed *Experiment) newInputProcessor(experiment model.Experiment,
 }
 
 // newSaver creates a new engine.Saver instance.
-func (ed *Experiment) newSaver(experiment model.Experiment) (model.Saver, error) {
+func (ed *Experiment) newSaver() (model.Saver, error) {
 	if ed.newSaverFn != nil {
-		return ed.newSaverFn(experiment)
+		return ed.newSaverFn()
 	}
 	return NewSaver(SaverConfig{
 		Enabled:  !ed.NoJSON,
