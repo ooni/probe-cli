@@ -16,7 +16,7 @@ import (
 )
 
 func newclientWithStagingEnv() *Client {
-	client, err := NewClient(
+	client := runtimex.Try1(NewClient(
 		&mockable.Session{
 			MockableHTTPClient: http.DefaultClient,
 			MockableLogger:     log.Log,
@@ -25,10 +25,7 @@ func newclientWithStagingEnv() *Client {
 			Address: "https://api.dev.ooni.io/",
 			Type:    "https",
 		},
-	)
-	if err != nil {
-		panic(err) // so fail the test
-	}
+	))
 	return client
 }
 
@@ -82,7 +79,6 @@ func TestFetchOpenVPNConfig(t *testing.T) {
 		srv := testingx.MustNewHTTPServer(state.NewMux())
 		defer srv.Close()
 
-		// TODO(ain)
 		client := newclient()
 
 		// override the HTTP client so we speak with our local server rather than the true backend

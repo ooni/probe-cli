@@ -268,7 +268,7 @@ func Test_isValidProvider(t *testing.T) {
 		t.Fatal("riseup is the only valid provider now")
 	}
 	if valid := isValidProvider("nsa"); valid {
-		t.Fatal("nsa will nevel be a provider")
+		t.Fatal("nsa will never be a provider")
 	}
 }
 

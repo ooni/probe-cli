@@ -22,10 +22,6 @@ const (
 	openVPNProcol = "openvpn"
 )
 
-var (
-	ErrBadAuth = errors.New("bad provider authentication")
-)
-
 // Config contains the experiment config.
 //
 // This contains all the settings that user can set to modify the behaviour
@@ -69,6 +65,7 @@ type SingleConnection struct {
 // AddConnectionTestKeys adds the result of a single OpenVPN connection attempt to the
 // corresponding array in the [TestKeys] object.
 func (tk *TestKeys) AddConnectionTestKeys(result *SingleConnection) {
+	// Note that TCPConnect is nil when we're using UDP.
 	if result.TCPConnect != nil {
 		tk.TCPConnect = append(tk.TCPConnect, result.TCPConnect)
 	}
@@ -78,6 +75,9 @@ func (tk *TestKeys) AddConnectionTestKeys(result *SingleConnection) {
 
 // AllConnectionsSuccessful returns true if all the registered handshakes have Status.Success equal to true.
 func (tk *TestKeys) AllConnectionsSuccessful() bool {
+	if len(tk.OpenVPNHandshake) == 0 {
+		return false
+	}
 	for _, c := range tk.OpenVPNHandshake {
 		if !c.Status.Success {
 			return false
@@ -108,6 +108,7 @@ func (m Measurer) ExperimentVersion() string {
 }
 
 var (
+	// ErrInvalidInput is returned if we failed to parse the input to obtain an endpoint we can measure.
 	ErrInvalidInput = errors.New("invalid input")
 )
 
@@ -118,8 +119,6 @@ func parseEndpoint(m *model.Measurement) (*endpoint, error) {
 		}
 		return newEndpointFromInputString(string(m.Input))
 	}
-	// The current InputPolicy should ensure we have a hardcoded input,
-	// so this error should only be raised if by mistake we change the InputPolicy.
 	return nil, fmt.Errorf("%w: %s", ErrInvalidInput, "input is mandatory")
 }
 
@@ -127,8 +126,11 @@ func parseEndpoint(m *model.Measurement) (*endpoint, error) {
 type AuthMethod string
 
 var (
+	// AuthCertificate is used for providers that authenticate clients via certificates.
 	AuthCertificate = AuthMethod("cert")
-	AuthUserPass    = AuthMethod("userpass")
+
+	// AuthUserPass is used for providers that authenticate clients via username (or token) and password.
+	AuthUserPass = AuthMethod("userpass")
 )
 
 var providerAuthentication = map[string]AuthMethod{
@@ -232,7 +234,7 @@ func (m *Measurer) GetCredentialsFromOptionsOrAPI(
 }
 
 // mergeOpenVPNConfig attempts to get credentials from Options or API, and then
-// constructs a [vpnconfig.Config] instance after merging the credentials passed by options or API response.
+// constructs a [*vpnconfig.Config] instance after merging the credentials passed by options or API response.
 // It also returns an error if the operation fails.
 func (m *Measurer) mergeOpenVPNConfig(
 	ctx context.Context,
@@ -251,7 +253,7 @@ func (m *Measurer) mergeOpenVPNConfig(
 	if err != nil {
 		return nil, err
 	}
-	// TODO: sanity check (Remote, Port, Proto etc + missing certs)
+	// TODO(ainghazal): sanity check (Remote, Port, Proto etc + missing certs)
 	return openvpnConfig, nil
 }
 
@@ -263,15 +265,16 @@ func (m *Measurer) connectAndHandshake(
 	logger model.Logger,
 	endpoint *endpoint,
 	openvpnConfig *vpnconfig.Config,
-	handshakeTracer *vpntracex.Tracer) (*SingleConnection, error) {
+	handshakeTracer *vpntracex.Tracer) *SingleConnection {
 
 	// create a trace for the network dialer
 	trace := measurexlite.NewTrace(index, zeroTime)
-
 	dialer := trace.NewDialerWithoutResolver(logger)
 
 	var failure string
-	// create a vpn tun Device that attempts to dial and performs the handshake
+
+	// Create a vpn tun Device that attempts to dial and performs the handshake.
+	// Any error will be returned as a failure in the SingleConnection result.
 	tun, err := tunnel.Start(ctx, dialer, openvpnConfig)
 	if err != nil {
 		failure = err.Error()
@@ -289,7 +292,7 @@ func (m *Measurer) connectAndHandshake(
 		bootstrapTime float64
 	)
 
-	if len(handshakeEvents) != 0 {
+	if len(handshakeEvents) > 0 {
 		tFirst = handshakeEvents[0].AtTime
 		tLast = handshakeEvents[len(handshakeEvents)-1].AtTime
 		bootstrapTime = tLast - tFirst
@@ -319,17 +322,19 @@ func (m *Measurer) connectAndHandshake(
 			TransactionID: index,
 		},
 		NetworkEvents: handshakeEvents,
-	}, nil
+	}
 }
 
+// FetchProviderCredentials will extract credentials from the configuration we gathered for a given provider.
 func (m *Measurer) FetchProviderCredentials(
 	ctx context.Context,
 	sess model.ExperimentSession,
 	provider string) (*model.OOAPIVPNProviderConfig, error) {
 	// TODO(ainghazal): pass real country code, can be useful to orchestrate campaigns specific to areas.
+	// Since we have contacted the API previously, this call should use the cached info contained in the session.
 	config, err := sess.FetchOpenVPNConfig(ctx, provider, "XX")
 	if err != nil {
-		return &model.OOAPIVPNProviderConfig{}, err
+		return nil, err
 	}
 	return config, nil
 }
@@ -359,14 +364,8 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	}
 	sess.Logger().Infof("Probing endpoint %s", endpoint.String())
 
-	connResult, err := m.connectAndHandshake(ctx, zeroTime, idx, sess.Logger(), endpoint, openvpnConfig, handshakeTracer)
-	if err != nil {
-		sess.Logger().Warn("Fatal error while attempting to connect to endpoint, aborting!")
-		return err
-	}
-	if connResult != nil {
-		tk.AddConnectionTestKeys(connResult)
-	}
+	connResult := m.connectAndHandshake(ctx, zeroTime, idx, sess.Logger(), endpoint, openvpnConfig, handshakeTracer)
+	tk.AddConnectionTestKeys(connResult)
 	tk.Success = tk.AllConnectionsSuccessful()
 
 	callbacks.OnProgress(1.0, "All endpoints probed")

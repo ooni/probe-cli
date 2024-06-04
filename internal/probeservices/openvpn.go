@@ -19,7 +19,7 @@ func (c Client) FetchOpenVPNConfig(ctx context.Context, provider, cc string) (re
 	query := url.Values{}
 	query.Add("country_code", cc)
 
-	// TODO(ain): remove temporary fix
+	// TODO(ainghazal): remove temporary fix
 	if !strings.HasSuffix(provider, "vpn") {
 		provider = provider + "vpn"
 	}

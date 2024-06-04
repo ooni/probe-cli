@@ -15,6 +15,7 @@ import (
 )
 
 var (
+	// ErrBadBase64Blob is the error returned when we cannot decode an option passed as base64.
 	ErrBadBase64Blob = errors.New("wrong base64 encoding")
 )
 
@@ -100,7 +101,7 @@ func newEndpointFromInputString(uri string) (*endpoint, error) {
 	return endpoint, nil
 }
 
-// String implements Stringer. This is a compact representation of the endpoint,
+// String implements [fmt.Stringer]. This is a compact representation of the endpoint,
 // which differs from the input URI scheme. This is the canonical representation, that can be used
 // to deterministically slice a list of endpoints, sort them lexicographically, etc.
 func (e *endpoint) String() string {
@@ -169,7 +170,7 @@ var DefaultEndpoints = endpointList{
 	},
 }
 
-// Shuffle returns a shuffled copy of the endpointList.
+// Shuffle randomizes the order of items in the endpoint list.
 func (e endpointList) Shuffle() endpointList {
 	rand.Shuffle(len(e), func(i, j int) {
 		e[i], e[j] = e[j], e[i]
@@ -191,7 +192,7 @@ var defaultOptionsByProvider = map[string]*vpnconfig.OpenVPNOptions{
 // This array will be a subset of the keys in defaultOptionsByProvider, but it might make sense
 // to still register info about more providers that the API officially knows about.
 var APIEnabledProviders = []string{
-	// TODO: fix the backend so that we can remove the spurious "vpn" suffix here.
+	// TODO(ainghazal): fix the backend so that we can remove the spurious "vpn" suffix here.
 	"riseupvpn",
 }
 
@@ -258,7 +259,7 @@ func getOpenVPNConfig(
 func extractBase64Blob(val string) (string, error) {
 	s := strings.TrimPrefix(val, "base64:")
 	if len(s) == len(val) {
-		return "", fmt.Errorf("%w: %s", ErrBadBase64Blob, "missing prefix")
+		return "", fmt.Errorf("%w: %s", ErrBadBase64Blob, "missing base64 prefix")
 	}
 	dec, err := base64.URLEncoding.DecodeString(strings.TrimSpace(s))
 	if err != nil {

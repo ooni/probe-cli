@@ -99,6 +99,8 @@ type OOAPICheckReportIDResponse struct {
 	V     int64  `json:"v"`
 }
 
+// OOAPIVPNConfig contains the configuration needed to start an OpenVPN connection, returned as part of
+// [OOAPIVPNProviderConfig].
 type OOAPIVPNConfig struct {
 	// CA is the Certificate Authority for the endpoints by this provider.
 	CA string `json:"ca"`

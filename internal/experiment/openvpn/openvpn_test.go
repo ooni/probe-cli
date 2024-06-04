@@ -3,7 +3,6 @@ package openvpn_test
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 	"time"
 
@@ -154,7 +153,6 @@ func TestMaybeGetCredentialsFromOptions(t *testing.T) {
 			t.Fatalf("expected err=nil, got %v", err)
 		}
 	})
-
 }
 
 func TestGetCredentialsFromOptionsOrAPI(t *testing.T) {
@@ -251,7 +249,7 @@ func TestGetCredentialsFromOptionsOrAPI(t *testing.T) {
 }
 
 func TestAddConnectionTestKeys(t *testing.T) {
-	t.Run("append connection result to empty keys", func(t *testing.T) {
+	t.Run("append tcp connection result to empty keys", func(t *testing.T) {
 		tk := openvpn.NewTestKeys()
 		sc := &openvpn.SingleConnection{
 			TCPConnect: &model.ArchivalTCPConnectResult{
@@ -286,6 +284,38 @@ func TestAddConnectionTestKeys(t *testing.T) {
 		tk.AddConnectionTestKeys(sc)
 		if diff := cmp.Diff(tk.TCPConnect[0], sc.TCPConnect); diff != "" {
 			t.Fatal(diff)
+		}
+		if diff := cmp.Diff(tk.OpenVPNHandshake[0], sc.OpenVPNHandshake); diff != "" {
+			t.Fatal(diff)
+		}
+		if diff := cmp.Diff(tk.NetworkEvents, sc.NetworkEvents); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
+	t.Run("append udp connection result to empty keys", func(t *testing.T) {
+		tk := openvpn.NewTestKeys()
+		sc := &openvpn.SingleConnection{
+			TCPConnect: nil,
+			OpenVPNHandshake: &model.ArchivalOpenVPNHandshakeResult{
+				BootstrapTime:  1,
+				Endpoint:       "aa",
+				IP:             "1.1.1.1",
+				Port:           1194,
+				Transport:      "udp",
+				Provider:       "unknown",
+				OpenVPNOptions: model.ArchivalOpenVPNOptions{},
+				Status:         model.ArchivalOpenVPNConnectStatus{},
+				T0:             0,
+				T:              0,
+				Tags:           []string{},
+				TransactionID:  1,
+			},
+			NetworkEvents: []*vpntracex.Event{},
+		}
+		tk.AddConnectionTestKeys(sc)
+		if len(tk.TCPConnect) != 0 {
+			t.Fatal("expected empty tcpconnect")
 		}
 		if diff := cmp.Diff(tk.OpenVPNHandshake[0], sc.OpenVPNHandshake); diff != "" {
 			t.Fatal(diff)
@@ -354,7 +384,7 @@ func TestVPNInput(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	// TODO -- do a real test, get credentials etc.
+	// TODO(ainghazal): do a real test, get credentials etc.
 }
 
 func TestMeasurer_FetchProviderCredentials(t *testing.T) {
@@ -389,7 +419,6 @@ func TestMeasurer_FetchProviderCredentials(t *testing.T) {
 			t.Fatalf("expected error %v, got %v", someError, err)
 		}
 	})
-
 }
 
 func TestSuccess(t *testing.T) {
@@ -409,11 +438,6 @@ func TestSuccess(t *testing.T) {
 		Measurement: measurement,
 		Session:     sess,
 	}
-	if sess.Logger() == nil {
-		t.Fatal("logger should not be nil")
-	}
-	fmt.Println(ctx, args, m)
-
 	err := m.Run(ctx, args)
 	if err != nil {
 		t.Fatal(err)

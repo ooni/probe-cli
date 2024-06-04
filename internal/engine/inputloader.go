@@ -348,12 +348,12 @@ func (il *InputLoader) loadRemoteOpenVPN(ctx context.Context) ([]model.OOAPIURLI
 	// The openvpn experiment contains an array of the providers that the API knows about.
 	// We try to get all the remotes from the API for the list of enabled providers.
 	for _, provider := range openvpn.APIEnabledProviders {
-		reply, err := il.vpnConfig(ctx, provider)
+		// fetchOpenVPNConfig ultimately uses an internal cache in the session to avoid
+		// hitting the API too many times.
+		reply, err := il.fetchOpenVPNConfig(ctx, provider)
 		if err != nil {
-			break
+			return urls, err
 		}
-		// here we're just collecting all the inputs. we also cache the configs so that
-		// each experiment run can access the credentials for a given provider.
 		for _, input := range reply.Inputs {
 			urls = append(urls, model.OOAPIURLInfo{URL: input})
 		}
@@ -390,8 +390,8 @@ func (il *InputLoader) checkIn(
 	return &reply.Tests, nil
 }
 
-// vpnConfig fetches vpn information for the configured providers
-func (il *InputLoader) vpnConfig(ctx context.Context, provider string) (*model.OOAPIVPNProviderConfig, error) {
+// fetchOpenVPNConfig fetches vpn information for the configured providers
+func (il *InputLoader) fetchOpenVPNConfig(ctx context.Context, provider string) (*model.OOAPIVPNProviderConfig, error) {
 	reply, err := il.Session.FetchOpenVPNConfig(ctx, provider, "XX")
 	if err != nil {
 		return nil, err
