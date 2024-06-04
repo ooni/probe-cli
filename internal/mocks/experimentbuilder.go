@@ -46,13 +46,3 @@ func (eb *ExperimentBuilder) SetCallbacks(callbacks model.ExperimentCallbacks) {
 func (eb *ExperimentBuilder) NewExperiment() model.Experiment {
 	return eb.MockNewExperiment()
 }
-
-func (eb *ExperimentBuilder) NewRicherInputExperiment(config *model.RicherInputConfig) model.RicherInputExperiment {
-	// TODO(bassosimone): implement
-	panic("not implemented")
-}
-
-func (eb *ExperimentBuilder) SupportsRicherInput() bool {
-	// TODO(bassosimone): implement
-	panic("not implemented")
-}

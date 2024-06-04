@@ -7,7 +7,6 @@ package engine
 import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/registry"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // experimentBuilder implements ExperimentBuilder.
@@ -59,16 +58,6 @@ func (b *experimentBuilder) NewExperiment() model.Experiment {
 	experiment := newExperiment(b.session, measurer)
 	experiment.callbacks = b.callbacks
 	return experiment
-}
-
-// NewRicherInputExperiment implements [model.ExperimentBuilder].
-func (b *experimentBuilder) NewRicherInputExperiment(config *model.RicherInputConfig) model.RicherInputExperiment {
-	return runtimex.Try1(b.factory.NewRicherInputExperiment(b.session))
-}
-
-// SupportsRicherInput implements [model.ExperimentBuilder].
-func (b *experimentBuilder) SupportsRicherInput() bool {
-	return b.factory.SupportsRicherInput()
 }
 
 // newExperimentBuilder creates a new experimentBuilder instance.
