@@ -73,13 +73,13 @@ func (tk *TestKeys) AddConnectionTestKeys(result *SingleConnection) {
 	tk.NetworkEvents = append(tk.NetworkEvents, result.NetworkEvents...)
 }
 
-// AllConnectionsSuccessful returns true if all the registered handshakes have Status.Success equal to true.
+// AllConnectionsSuccessful returns true if all the registered handshakes have nil failures.
 func (tk *TestKeys) AllConnectionsSuccessful() bool {
 	if len(tk.OpenVPNHandshake) == 0 {
 		return false
 	}
 	for _, c := range tk.OpenVPNHandshake {
-		if !c.Status.Success {
+		if c.Failure != nil {
 			return false
 		}
 	}
@@ -303,6 +303,7 @@ func (m *Measurer) connectAndHandshake(
 		OpenVPNHandshake: &model.ArchivalOpenVPNHandshakeResult{
 			BootstrapTime: bootstrapTime,
 			Endpoint:      endpoint.String(),
+			Failure:       &failure,
 			IP:            endpoint.IPAddr,
 			Port:          port,
 			Transport:     endpoint.Transport,
@@ -311,10 +312,6 @@ func (m *Measurer) connectAndHandshake(
 				Cipher:      openvpnConfig.OpenVPNOptions().Cipher,
 				Auth:        openvpnConfig.OpenVPNOptions().Auth,
 				Compression: string(openvpnConfig.OpenVPNOptions().Compress),
-			},
-			Status: model.ArchivalOpenVPNConnectStatus{
-				Failure: &failure,
-				Success: err == nil,
 			},
 			T0:            tFirst,
 			T:             tLast,
