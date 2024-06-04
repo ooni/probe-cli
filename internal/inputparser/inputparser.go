@@ -50,7 +50,7 @@ var ErrUnsupportedScheme = errors.New("inputparser: unsupported URL.Scheme")
 
 // Parse parses the experiment input using the given config and returns
 // to the caller either the resulting URL or an error.
-func Parse(config *Config, input model.MeasurementTarget) (*url.URL, error) {
+func Parse(config *Config, input model.MeasurementInput) (*url.URL, error) {
 	runtimex.Assert(config != nil, "passed nil config")
 	runtimex.Assert(input != "", "passed empty input")
 

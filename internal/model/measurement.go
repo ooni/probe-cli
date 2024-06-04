@@ -54,11 +54,11 @@ func MeasurementFormatTimeNowUTC() string {
 	return time.Now().UTC().Format(MeasurementDateFormat)
 }
 
-// MeasurementTarget is the target of a OONI measurement.
-type MeasurementTarget string
+// MeasurementInput is the input of an OONI measurement.
+type MeasurementInput string
 
-// MarshalJSON serializes the MeasurementTarget.
-func (t MeasurementTarget) MarshalJSON() ([]byte, error) {
+// MarshalJSON serializes the [MeasurementInput].
+func (t MeasurementInput) MarshalJSON() ([]byte, error) {
 	if t == "" {
 		return json.Marshal(nil)
 	}
@@ -84,7 +84,7 @@ type Measurement struct {
 	ID string `json:"id,omitempty"`
 
 	// Input is the measurement input
-	Input MeasurementTarget `json:"input"`
+	Input MeasurementInput `json:"input"`
 
 	// InputHashes contains input hashes
 	InputHashes []string `json:"input_hashes,omitempty"`

@@ -60,7 +60,7 @@ type ExperimentAsyncTestKeys struct {
 	Extensions map[string]int64
 
 	// Input is the input this measurement refers to.
-	Input MeasurementTarget
+	Input MeasurementInput
 
 	// MeasurementRuntime is the total measurement runtime.
 	MeasurementRuntime float64

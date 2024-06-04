@@ -20,8 +20,8 @@ func TestMeasurementFormatTimeNowUTC(t *testing.T) {
 	})
 }
 
-func TestMeasurementTargetMarshalJSON(t *testing.T) {
-	var mt MeasurementTarget
+func TestMeasurementInputMarshalJSON(t *testing.T) {
+	var mt MeasurementInput
 	data, err := json.Marshal(mt)
 	if err != nil {
 		t.Fatal(err)
@@ -83,7 +83,7 @@ func makeMeasurement(config makeMeasurementConfig) *Measurement {
 	return &Measurement{
 		DataFormatVersion:    "0.3.0",
 		ID:                   "bdd20d7a-bba5-40dd-a111-9863d7908572",
-		Input:                MeasurementTarget(config.Input),
+		Input:                MeasurementInput(config.Input),
 		MeasurementStartTime: "2018-11-01 15:33:20",
 		ProbeIP:              config.ProbeIP,
 		ProbeASN:             config.ProbeASN,

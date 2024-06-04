@@ -28,7 +28,7 @@ func (fipe *FakeInputProcessorExperiment) MeasureAsync(
 	// is MERGING annotations as opposed to overwriting them.
 	m.AddAnnotation("antani", "antani")
 	m.AddAnnotation("foo", "baz") // would be bar below
-	m.Input = model.MeasurementTarget(input)
+	m.Input = model.MeasurementInput(input)
 	fipe.M = append(fipe.M, m)
 	out := make(chan *model.Measurement)
 	go func() {

@@ -197,7 +197,7 @@ func (e *experiment) newMeasurement(input string) *model.Measurement {
 	utctimenow := time.Now().UTC()
 	m := &model.Measurement{
 		DataFormatVersion:         model.OOAPIReportDefaultDataFormatVersion,
-		Input:                     model.MeasurementTarget(input),
+		Input:                     model.MeasurementInput(input),
 		MeasurementStartTime:      utctimenow.Format(model.MeasurementDateFormat),
 		MeasurementStartTimeSaved: utctimenow,
 		ProbeIP:                   model.DefaultProbeIP,

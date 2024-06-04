@@ -30,7 +30,7 @@ func TestMeasurer_input_failure(t *testing.T) {
 			SNIControl: sniControl,
 		})
 		meas := &model.Measurement{
-			Input: model.MeasurementTarget(input),
+			Input: model.MeasurementInput(input),
 		}
 		sess := &mocks.Session{
 			MockLogger: func() model.Logger {
