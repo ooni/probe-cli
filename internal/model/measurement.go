@@ -54,7 +54,7 @@ func MeasurementFormatTimeNowUTC() string {
 	return time.Now().UTC().Format(MeasurementDateFormat)
 }
 
-// MeasurementInput is the target of a OONI measurement.
+// MeasurementInput is the input of an OONI measurement.
 type MeasurementInput string
 
 // MarshalJSON serializes the [MeasurementInput].
