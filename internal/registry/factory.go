@@ -213,7 +213,7 @@ func (b *Factory) fieldbyname(v interface{}, key string) (reflect.Value, error) 
 	return field, nil
 }
 
-// NewExperimentMeasurer creates the experiment
+// NewExperimentMeasurer creates a new [model.ExperimentMeasurer] instance.
 func (b *Factory) NewExperimentMeasurer() model.ExperimentMeasurer {
 	return b.build(b.config)
 }
