@@ -96,104 +96,6 @@ func (e *experiment) ReportID() string {
 	return report.ReportID()
 }
 
-// experimentAsyncWrapper makes a sync experiment behave like it was async
-type experimentAsyncWrapper struct {
-	*experiment
-}
-
-var _ model.ExperimentMeasurerAsync = &experimentAsyncWrapper{}
-
-// RunAsync implements ExperimentMeasurerAsync.RunAsync.
-func (eaw *experimentAsyncWrapper) RunAsync(
-	ctx context.Context, sess model.ExperimentSession, input string,
-	callbacks model.ExperimentCallbacks) (<-chan *model.ExperimentAsyncTestKeys, error) {
-	out := make(chan *model.ExperimentAsyncTestKeys)
-	measurement := eaw.experiment.newMeasurement(input)
-	start := time.Now()
-	args := &model.ExperimentArgs{
-		Callbacks:   eaw.callbacks,
-		Measurement: measurement,
-		Session:     eaw.session,
-	}
-	err := eaw.experiment.measurer.Run(ctx, args)
-	stop := time.Now()
-	if err != nil {
-		return nil, err
-	}
-	go func() {
-		defer close(out) // signal the reader we're done!
-		out <- &model.ExperimentAsyncTestKeys{
-			Extensions:         measurement.Extensions,
-			Input:              measurement.Input,
-			MeasurementRuntime: stop.Sub(start).Seconds(),
-			TestKeys:           measurement.TestKeys,
-			TestHelpers:        measurement.TestHelpers,
-		}
-	}()
-	return out, nil
-}
-
-// MeasureAsync implements [model.Experiment].
-func (e *experiment) MeasureAsync(
-	ctx context.Context, input string) (<-chan *model.Measurement, error) {
-	err := e.session.MaybeLookupLocationContext(ctx) // this already tracks session bytes
-	if err != nil {
-		return nil, err
-	}
-	ctx = bytecounter.WithSessionByteCounter(ctx, e.session.byteCounter)
-	ctx = bytecounter.WithExperimentByteCounter(ctx, e.byteCounter)
-	var async model.ExperimentMeasurerAsync
-	if v, okay := e.measurer.(model.ExperimentMeasurerAsync); okay {
-		async = v
-	} else {
-		async = &experimentAsyncWrapper{e}
-	}
-	in, err := async.RunAsync(ctx, e.session, input, e.callbacks)
-	if err != nil {
-		return nil, err
-	}
-	out := make(chan *model.Measurement)
-	go func() {
-		defer close(out) // we need to signal the consumer we're done
-		for tk := range in {
-			measurement := e.newMeasurement(input)
-			measurement.Extensions = tk.Extensions
-			measurement.Input = tk.Input
-			measurement.MeasurementRuntime = tk.MeasurementRuntime
-			measurement.TestHelpers = tk.TestHelpers
-			measurement.TestKeys = tk.TestKeys
-			if err := model.ScrubMeasurement(measurement, e.session.ProbeIP()); err != nil {
-				// If we fail to scrub the measurement then we are not going to
-				// submit it. Most likely causes of error here are unlikely,
-				// e.g., the TestKeys being not serializable.
-				e.session.Logger().Warnf("can't scrub measurement: %s", err.Error())
-				continue
-			}
-			out <- measurement
-		}
-	}()
-	return out, nil
-}
-
-// MeasureWithContext implements [model.Experiment].
-func (e *experiment) MeasureWithContext(
-	ctx context.Context, input string,
-) (measurement *model.Measurement, err error) {
-	out, err := e.MeasureAsync(ctx, input)
-	if err != nil {
-		return nil, err
-	}
-	for m := range out {
-		if measurement == nil {
-			measurement = m // as documented just return the first one
-		}
-	}
-	if measurement == nil {
-		err = errors.New("experiment returned no measurements")
-	}
-	return
-}
-
 // SubmitAndUpdateMeasurementContext implements [model.Experiment].
 func (e *experiment) SubmitAndUpdateMeasurementContext(
 	ctx context.Context, measurement *model.Measurement) error {
@@ -275,6 +177,79 @@ func (e *experiment) OpenReportContext(ctx context.Context) error {
 	// on success, assign the new report
 	e.mrep.Set(report)
 	return nil
+}
+
+// MeasureWithContext implements [model.Experiment].
+func (e *experiment) MeasureWithContext(ctx context.Context, input string) (*model.Measurement, error) {
+	// Here we ensure that we have already looked up the probe location
+	// information such that we correctly populate the measurement and also
+	// VERY IMPORTANTLY to scrub the IP address from the measurement.
+	//
+	// Also, this SHOULD happen before wrapping the context for byte counting
+	// since MaybeLookupLocationContext already accounts for bytes I/O.
+	//
+	// TODO(bassosimone,DecFox): historically we did this only for measuring
+	// and not for opening a report, which probably is not correct. Because the
+	// function call is idempotent, call it also when opening a report?
+	if err := e.session.MaybeLookupLocationContext(ctx); err != nil {
+		return nil, err
+	}
+
+	// Tweak the context such that the bytes sent and received are accounted
+	// to both the session's byte counter and to the experiment's byte counter.
+	ctx = bytecounter.WithSessionByteCounter(ctx, e.session.byteCounter)
+	ctx = bytecounter.WithExperimentByteCounter(ctx, e.byteCounter)
+
+	// Create a new measurement that the experiment measurer will finish filling
+	// by adding the test keys etc. Please, note that, as of 2024-06-05, we're using
+	// the measurement Input to provide input to an experiment. We'll probably
+	// change this, when we'll have finished implementing richer input.
+	measurement := e.newMeasurement(input)
+
+	// Record when we started the experiment, to compute the runtime.
+	start := time.Now()
+
+	// Prepare the arguments for the experiment measurer
+	args := &model.ExperimentArgs{
+		Callbacks:   e.callbacks,
+		Measurement: measurement,
+		Session:     e.session,
+	}
+
+	// Invoke the measurer. Conventionally, an error being returned here
+	// indicates that something went wrong during the measurement. For example,
+	// it could be that the user provided us with a malformed input. In case
+	// there's censorship, by all means the experiment should return a nil error
+	// and fill the measurement accordingly.
+	err := e.measurer.Run(ctx, args)
+
+	// Record when the experiment finished running.
+	stop := time.Now()
+
+	// Handle the case where there was a fundamental error.
+	if err != nil {
+		return nil, err
+	}
+
+	// Make sure we record the measurement runtime.
+	measurement.MeasurementRuntime = stop.Sub(start).Seconds()
+
+	// Scrub the measurement removing the probe IP addr from it. We are 100% sure we know
+	// our own IP addr, since we called MaybeLookupLocation above. Obviously, we aren't
+	// going to submit the measurement in case we can't scrub it, so we just return an error
+	// if this specific corner case happens.
+	//
+	// TODO(bassosimone,DecFox): a dual stack client MAY be such that we discover its IPv4
+	// address but the IPv6 address is present inside the measurement. We should ensure that
+	// we improve our discovering capabilities to also cover this specific case.
+	if err := model.ScrubMeasurement(measurement, e.session.ProbeIP()); err != nil {
+		e.session.Logger().Warnf("can't scrub measurement: %s", err.Error())
+		return nil, err
+	}
+
+	// We're all good! Let us return the measurement to the caller, which will
+	// addtionally take care that we're submitting it, if needed.
+	return measurement, nil
 }
 
 func (e *experiment) newReportTemplate() model.OOAPIReportTemplate {

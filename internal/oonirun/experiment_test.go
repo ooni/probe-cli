@@ -49,16 +49,11 @@ func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 					},
 					MockNewExperiment: func() model.Experiment {
 						exp := &mocks.Experiment{
-							MockMeasureAsync: func(ctx context.Context, input string) (<-chan *model.Measurement, error) {
-								out := make(chan *model.Measurement)
-								go func() {
-									defer close(out)
-									ff := &testingx.FakeFiller{}
-									var meas model.Measurement
-									ff.Fill(&meas)
-									out <- &meas
-								}()
-								return out, nil
+							MockMeasureWithContext: func(ctx context.Context, input string) (*model.Measurement, error) {
+								ff := &testingx.FakeFiller{}
+								var meas model.Measurement
+								ff.Fill(&meas)
+								return &meas, nil
 							},
 							MockKibiBytesReceived: func() float64 {
 								calledKibiBytesReceived++

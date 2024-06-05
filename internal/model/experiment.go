@@ -53,57 +53,13 @@ type ExperimentSession interface {
 	UserAgent() string
 }
 
-// ExperimentAsyncTestKeys is the type of test keys returned by an experiment
-// when running in async fashion rather than in sync fashion.
-type ExperimentAsyncTestKeys struct {
-	// Extensions contains the extensions used by this experiment.
-	Extensions map[string]int64
-
-	// Input is the input this measurement refers to.
-	Input MeasurementInput
-
-	// MeasurementRuntime is the total measurement runtime.
-	MeasurementRuntime float64
-
-	// TestHelpers contains the test helpers used in the experiment
-	TestHelpers map[string]interface{}
-
-	// TestKeys contains the actual test keys.
-	TestKeys interface{}
-}
-
-// ExperimentMeasurerAsync is a measurer that can run in async fashion.
-//
-// Currently this functionality is optional, but we will likely
-// migrate all experiments to use this functionality in 2022.
-type ExperimentMeasurerAsync interface {
-	// RunAsync runs the experiment in async fashion.
-	//
-	// Arguments:
-	//
-	// - ctx is the context for deadline/timeout/cancellation
-	//
-	// - sess is the measurement session
-	//
-	// - input is the input URL to measure
-	//
-	// - callbacks contains the experiment callbacks
-	//
-	// Returns either a channel where TestKeys are posted or an error.
-	//
-	// An error indicates that specific preconditions for running the experiment
-	// are not met (e.g., the input URL is invalid).
-	//
-	// On success, the experiment will post on the channel each new
-	// measurement until it is done and closes the channel.
-	RunAsync(ctx context.Context, sess ExperimentSession, input string,
-		callbacks ExperimentCallbacks) (<-chan *ExperimentAsyncTestKeys, error)
-}
-
-// ExperimentCallbacks contains experiment event-handling callbacks
+// ExperimentCallbacks contains experiment event-handling callbacks.
 type ExperimentCallbacks interface {
-	// OnProgress provides information about an experiment progress.
-	OnProgress(percentage float64, message string)
+	// OnProgress provides information about the experiment's progress.
+	//
+	// The prog field is a number between 0.0 and 1.0 representing progress, where
+	// 0.0 corresponds to 0% and 1.0 corresponds to 100%.
+	OnProgress(prog float64, message string)
 }
 
 // PrinterCallbacks is the default event handler
@@ -166,51 +122,21 @@ type Experiment interface {
 
 	// ReportID returns the open report's ID, if we have opened a report
 	// successfully before, or an empty string, otherwise.
-	//
-	// Deprecated: new code should use a Submitter.
 	ReportID() string
-
-	// MeasureAsync runs an async measurement. This operation could post
-	// one or more measurements onto the returned channel. We'll close the
-	// channel when we've emitted all the measurements.
-	//
-	// Arguments:
-	//
-	// - ctx is the context for deadline/cancellation/timeout;
-	//
-	// - input is the input (typically a URL but it could also be
-	// just an endpoint or an empty string for input-less experiments
-	// such as, e.g., ndt7 and dash).
-	//
-	// Return value:
-	//
-	// - on success, channel where to post measurements (the channel
-	// will be closed when done) and nil error;
-	//
-	// - on failure, nil channel and non-nil error.
-	MeasureAsync(ctx context.Context, input string) (<-chan *Measurement, error)
 
 	// MeasureWithContext performs a synchronous measurement.
 	//
 	// Return value: strictly either a non-nil measurement and
 	// a nil error or a nil measurement and a non-nil error.
-	//
-	// CAVEAT: while this API is perfectly fine for experiments that
-	// return a single measurement, it will only return the first measurement
-	// when used with an asynchronous experiment.
 	MeasureWithContext(ctx context.Context, input string) (measurement *Measurement, err error)
 
 	// SubmitAndUpdateMeasurementContext submits a measurement and updates the
 	// fields whose value has changed as part of the submission.
-	//
-	// Deprecated: new code should use a Submitter.
 	SubmitAndUpdateMeasurementContext(
 		ctx context.Context, measurement *Measurement) error
 
 	// OpenReportContext will open a report using the given context
 	// to possibly limit the lifetime of this operation.
-	//
-	// Deprecated: new code should use a Submitter.
 	OpenReportContext(ctx context.Context) error
 }
 
