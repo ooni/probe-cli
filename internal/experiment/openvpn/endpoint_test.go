@@ -355,9 +355,12 @@ func Test_extractBase64Blob(t *testing.T) {
 	})
 	t.Run("try decode without prefix", func(t *testing.T) {
 		blob := "dGhlIGJsdWUgb2N0b3B1cyBpcyB3YXRjaGluZw=="
-		_, err := maybeExtractBase64Blob(blob)
-		if !errors.Is(err, ErrBadBase64Blob) {
+		dec, err := maybeExtractBase64Blob(blob)
+		if err != nil {
 			t.Fatal("should fail without prefix")
+		}
+		if dec != blob {
+			t.Fatal("decoded should be the same")
 		}
 	})
 	t.Run("bad base64 blob should fail", func(t *testing.T) {
