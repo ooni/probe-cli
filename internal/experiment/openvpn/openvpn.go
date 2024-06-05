@@ -276,14 +276,9 @@ func (m *Measurer) connectAndHandshake(
 	trace := measurexlite.NewTrace(index, zeroTime)
 	dialer := trace.NewDialerWithoutResolver(logger)
 
-	var failure string
-
 	// Create a vpn tun Device that attempts to dial and performs the handshake.
 	// Any error will be returned as a failure in the SingleConnection result.
 	tun, err := tunnel.Start(ctx, dialer, openvpnConfig)
-	if err != nil {
-		failure = err.Error()
-	}
 	if tun != nil {
 		defer tun.Close()
 	}
@@ -308,7 +303,7 @@ func (m *Measurer) connectAndHandshake(
 		OpenVPNHandshake: &model.ArchivalOpenVPNHandshakeResult{
 			BootstrapTime: bootstrapTime,
 			Endpoint:      endpoint.String(),
-			Failure:       &failure,
+			Failure:       measurexlite.NewFailure(err),
 			IP:            endpoint.IPAddr,
 			Port:          port,
 			Transport:     endpoint.Transport,
