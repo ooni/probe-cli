@@ -10,15 +10,17 @@ import (
 )
 
 func init() {
-	AllExperiments["ndt"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
-			return ndt7.NewExperimentMeasurer(
-				*config.(*ndt7.Config),
-			)
-		},
-		config:           &ndt7.Config{},
-		enabledByDefault: true,
-		interruptible:    true,
-		inputPolicy:      model.InputNone,
+	AllExperiments["ndt"] = func() *Factory {
+		return &Factory{
+			build: func(config interface{}) model.ExperimentMeasurer {
+				return ndt7.NewExperimentMeasurer(
+					*config.(*ndt7.Config),
+				)
+			},
+			config:           &ndt7.Config{},
+			enabledByDefault: true,
+			interruptible:    true,
+			inputPolicy:      model.InputNone,
+		}
 	}
 }

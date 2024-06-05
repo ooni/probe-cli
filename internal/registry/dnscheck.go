@@ -10,14 +10,16 @@ import (
 )
 
 func init() {
-	AllExperiments["dnscheck"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
-			return dnscheck.NewExperimentMeasurer(
-				*config.(*dnscheck.Config),
-			)
-		},
-		config:           &dnscheck.Config{},
-		enabledByDefault: true,
-		inputPolicy:      model.InputOrStaticDefault,
+	AllExperiments["dnscheck"] = func() *Factory {
+		return &Factory{
+			build: func(config interface{}) model.ExperimentMeasurer {
+				return dnscheck.NewExperimentMeasurer(
+					*config.(*dnscheck.Config),
+				)
+			},
+			config:           &dnscheck.Config{},
+			enabledByDefault: true,
+			inputPolicy:      model.InputOrStaticDefault,
+		}
 	}
 }

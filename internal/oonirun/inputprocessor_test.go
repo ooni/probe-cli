@@ -15,8 +15,8 @@ type FakeInputProcessorExperiment struct {
 	M         []*model.Measurement
 }
 
-func (fipe *FakeInputProcessorExperiment) MeasureAsync(
-	ctx context.Context, input string) (<-chan *model.Measurement, error) {
+func (fipe *FakeInputProcessorExperiment) MeasureWithContext(
+	ctx context.Context, input string) (*model.Measurement, error) {
 	if fipe.Err != nil {
 		return nil, fipe.Err
 	}
@@ -30,12 +30,7 @@ func (fipe *FakeInputProcessorExperiment) MeasureAsync(
 	m.AddAnnotation("foo", "baz") // would be bar below
 	m.Input = model.MeasurementInput(input)
 	fipe.M = append(fipe.M, m)
-	out := make(chan *model.Measurement)
-	go func() {
-		defer close(out)
-		out <- m
-	}()
-	return out, nil
+	return m, nil
 }
 
 func TestInputProcessorMeasurementFailed(t *testing.T) {

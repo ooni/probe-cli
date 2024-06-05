@@ -10,14 +10,16 @@ import (
 )
 
 func init() {
-	AllExperiments["http_header_field_manipulation"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
-			return hhfm.NewExperimentMeasurer(
-				*config.(*hhfm.Config),
-			)
-		},
-		config:           &hhfm.Config{},
-		enabledByDefault: true,
-		inputPolicy:      model.InputNone,
+	AllExperiments["http_header_field_manipulation"] = func() *Factory {
+		return &Factory{
+			build: func(config interface{}) model.ExperimentMeasurer {
+				return hhfm.NewExperimentMeasurer(
+					*config.(*hhfm.Config),
+				)
+			},
+			config:           &hhfm.Config{},
+			enabledByDefault: true,
+			inputPolicy:      model.InputNone,
+		}
 	}
 }

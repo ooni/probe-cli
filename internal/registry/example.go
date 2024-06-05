@@ -12,18 +12,20 @@ import (
 )
 
 func init() {
-	AllExperiments["example"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
-			return example.NewExperimentMeasurer(
-				*config.(*example.Config), "example",
-			)
-		},
-		config: &example.Config{
-			Message:   "Good day from the example experiment!",
-			SleepTime: int64(time.Second),
-		},
-		enabledByDefault: true,
-		interruptible:    true,
-		inputPolicy:      model.InputNone,
+	AllExperiments["example"] = func() *Factory {
+		return &Factory{
+			build: func(config interface{}) model.ExperimentMeasurer {
+				return example.NewExperimentMeasurer(
+					*config.(*example.Config), "example",
+				)
+			},
+			config: &example.Config{
+				Message:   "Good day from the example experiment!",
+				SleepTime: int64(time.Second),
+			},
+			enabledByDefault: true,
+			interruptible:    true,
+			inputPolicy:      model.InputNone,
+		}
 	}
 }
