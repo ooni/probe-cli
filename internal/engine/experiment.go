@@ -195,12 +195,13 @@ func (e *experiment) MeasureWithContext(
 }
 
 // SubmitAndUpdateMeasurementContext implements [model.Experiment].
-func (e *experiment) SubmitAndUpdateMeasurementContext(ctx context.Context, m *model.Measurement) error {
+func (e *experiment) SubmitAndUpdateMeasurementContext(
+	ctx context.Context, measurement *model.Measurement) error {
 	report := e.mrep.Get()
 	if report == nil {
 		return errors.New("report is not open")
 	}
-	return report.SubmitMeasurement(ctx, m)
+	return report.SubmitMeasurement(ctx, measurement)
 }
 
 // newMeasurement creates a new measurement for this experiment with the given input.
