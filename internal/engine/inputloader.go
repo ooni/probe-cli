@@ -324,7 +324,15 @@ func (il *InputLoader) loadRemote(ctx context.Context) ([]model.ExperimentTarget
 func inputLoaderWebConnectivityURLsToModelExperimentTarget(
 	inputs []model.OOAPIURLInfo) (outputs []model.ExperimentTarget) {
 	for _, input := range inputs {
-		outputs = append(outputs, &input)
+		// Note: Dammit! Before we switch to go1.22 we need to continue to
+		// stay careful about the variable over which we're looping!
+		//
+		// See https://go.dev/blog/loopvar-preview for more information.
+		outputs = append(outputs, &model.OOAPIURLInfo{
+			CategoryCode: input.CategoryCode,
+			CountryCode:  input.CountryCode,
+			URL:          input.URL,
+		})
 	}
 	return
 }

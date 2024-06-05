@@ -192,7 +192,7 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []model.Experim
 		c.msmts[idx64] = msmt
 
 		if input.Input() != "" {
-			c.OnProgress(0, fmt.Sprintf("processing input: %s", input))
+			c.OnProgress(0, fmt.Sprintf("processing input: %s", input.Input()))
 		}
 		measurement, err := exp.MeasureWithContext(context.Background(), input)
 		if err != nil {
