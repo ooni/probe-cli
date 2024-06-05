@@ -10,15 +10,17 @@ import (
 )
 
 func init() {
-	AllExperiments["web_connectivity"] = &Factory{
-		build: func(config any) model.ExperimentMeasurer {
-			return webconnectivity.NewExperimentMeasurer(
-				config.(webconnectivity.Config),
-			)
-		},
-		config:           webconnectivity.Config{},
-		enabledByDefault: true,
-		interruptible:    false,
-		inputPolicy:      model.InputOrQueryBackend,
+	AllExperiments["web_connectivity"] = func() *Factory {
+		return &Factory{
+			build: func(config any) model.ExperimentMeasurer {
+				return webconnectivity.NewExperimentMeasurer(
+					config.(webconnectivity.Config),
+				)
+			},
+			config:           webconnectivity.Config{},
+			enabledByDefault: true,
+			interruptible:    false,
+			inputPolicy:      model.InputOrQueryBackend,
+		}
 	}
 }

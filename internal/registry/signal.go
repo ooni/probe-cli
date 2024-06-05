@@ -10,14 +10,16 @@ import (
 )
 
 func init() {
-	AllExperiments["signal"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
-			return signal.NewExperimentMeasurer(
-				*config.(*signal.Config),
-			)
-		},
-		config:           &signal.Config{},
-		enabledByDefault: true,
-		inputPolicy:      model.InputNone,
+	AllExperiments["signal"] = func() *Factory {
+		return &Factory{
+			build: func(config interface{}) model.ExperimentMeasurer {
+				return signal.NewExperimentMeasurer(
+					*config.(*signal.Config),
+				)
+			},
+			config:           &signal.Config{},
+			enabledByDefault: true,
+			inputPolicy:      model.InputNone,
+		}
 	}
 }

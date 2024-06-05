@@ -10,14 +10,16 @@ import (
 )
 
 func init() {
-	AllExperiments["http_host_header"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
-			return httphostheader.NewExperimentMeasurer(
-				*config.(*httphostheader.Config),
-			)
-		},
-		config:           &httphostheader.Config{},
-		enabledByDefault: true,
-		inputPolicy:      model.InputOrQueryBackend,
+	AllExperiments["http_host_header"] = func() *Factory {
+		return &Factory{
+			build: func(config interface{}) model.ExperimentMeasurer {
+				return httphostheader.NewExperimentMeasurer(
+					*config.(*httphostheader.Config),
+				)
+			},
+			config:           &httphostheader.Config{},
+			enabledByDefault: true,
+			inputPolicy:      model.InputOrQueryBackend,
+		}
 	}
 }
