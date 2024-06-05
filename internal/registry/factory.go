@@ -305,10 +305,11 @@ func NewFactory(name string, kvStore model.KeyValueStore, logger model.Logger) (
 	}
 
 	// Obtain the factory for the canonical name.
-	factory := AllExperiments[name]
-	if factory == nil {
+	ff := AllExperiments[name]
+	if ff == nil {
 		return nil, fmt.Errorf("%w: %s", ErrNoSuchExperiment, name)
 	}
+	factory := ff()
 
 	// Some experiments are not enabled by default. To enable them we use
 	// the cached check-in response or an environment variable.

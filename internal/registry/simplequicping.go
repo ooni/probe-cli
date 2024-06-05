@@ -10,14 +10,16 @@ import (
 )
 
 func init() {
-	AllExperiments["simplequicping"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
-			return simplequicping.NewExperimentMeasurer(
-				*config.(*simplequicping.Config),
-			)
-		},
-		config:           &simplequicping.Config{},
-		enabledByDefault: true,
-		inputPolicy:      model.InputStrictlyRequired,
+	AllExperiments["simplequicping"] = func() *Factory {
+		return &Factory{
+			build: func(config interface{}) model.ExperimentMeasurer {
+				return simplequicping.NewExperimentMeasurer(
+					*config.(*simplequicping.Config),
+				)
+			},
+			config:           &simplequicping.Config{},
+			enabledByDefault: true,
+			inputPolicy:      model.InputStrictlyRequired,
+		}
 	}
 }

@@ -12,15 +12,17 @@ import (
 )
 
 func init() {
-	AllExperiments["web_connectivity@v0.5"] = &Factory{
-		build: func(config any) model.ExperimentMeasurer {
-			return webconnectivitylte.NewExperimentMeasurer(
-				config.(*webconnectivitylte.Config),
-			)
-		},
-		config:           &webconnectivitylte.Config{},
-		enabledByDefault: true,
-		interruptible:    false,
-		inputPolicy:      model.InputOrQueryBackend,
+	AllExperiments["web_connectivity@v0.5"] = func() *Factory {
+		return &Factory{
+			build: func(config any) model.ExperimentMeasurer {
+				return webconnectivitylte.NewExperimentMeasurer(
+					config.(*webconnectivitylte.Config),
+				)
+			},
+			config:           &webconnectivitylte.Config{},
+			enabledByDefault: true,
+			interruptible:    false,
+			inputPolicy:      model.InputOrQueryBackend,
+		}
 	}
 }
