@@ -234,7 +234,7 @@ func (e *experiment) MeasureWithContext(ctx context.Context, input string) (*mod
 	// Make sure we record the measurement runtime.
 	measurement.MeasurementRuntime = stop.Sub(start).Seconds()
 
-	// Scub the measurement removing the probe IP addr from it. We are 100% sure we know
+	// Scrub the measurement removing the probe IP addr from it. We are 100% sure we know
 	// our own IP addr, since we called MaybeLookupLocation above. Obviously, we aren't
 	// going to submit the measurement in case we can't scrub it, so we just return an error
 	// if this specific corner case happens.
