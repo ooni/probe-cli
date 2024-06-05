@@ -169,18 +169,23 @@ func NewOOAPIURLInfoWithDefaultCategoryAndCountry(URL string) *OOAPIURLInfo {
 
 var _ ExperimentTarget = &OOAPIURLInfo{}
 
-// Category implements ExperimentTarget.
+// Category implements [ExperimentTarget].
 func (o *OOAPIURLInfo) Category() string {
 	return o.CategoryCode
 }
 
-// Country implements ExperimentTarget.
+// Country implements [ExperimentTarget].
 func (o *OOAPIURLInfo) Country() string {
 	return o.CountryCode
 }
 
-// Input implements ExperimentTarget.
+// Input implements [ExperimentTarget].
 func (o *OOAPIURLInfo) Input() string {
+	return o.URL
+}
+
+// String implements [ExperimentTarget].
+func (o *OOAPIURLInfo) String() string {
 	return o.URL
 }
 

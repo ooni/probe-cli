@@ -8,6 +8,7 @@ package model
 import (
 	"context"
 	"errors"
+	"fmt"
 )
 
 // ErrNoAvailableTestHelpers is emitted when there are no available test helpers.
@@ -91,9 +92,22 @@ type ExperimentTarget interface {
 	// Return [DefaultCountryCode] if there's not applicable country code.
 	Country() string
 
-	// Input returns the experiment input, which typically is a URL.
+	// Input returns the experiment input, which is typically a URL.
 	Input() string
+
+	// String MUST return the experiment input.
+	//
+	// Implementation note: previously existing code often times treated
+	// the input as a string and, crucially, printed it using %s. To be
+	// robust with respect to introducing richer input, we would like the
+	// code to print in output the same value as before, which possibly
+	// is processed by the desktop app. This is the reason why we are
+	// introducing an explicit String() method and why we say that this
+	// method MUST return the experiment input.
+	String() string
 }
+
+var _ fmt.Stringer = ExperimentTarget(nil)
 
 // ExperimentArgs contains the arguments passed to an experiment.
 type ExperimentArgs struct {

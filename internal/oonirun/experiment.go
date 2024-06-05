@@ -245,7 +245,7 @@ type experimentWrapper struct {
 func (ew *experimentWrapper) MeasureWithContext(
 	ctx context.Context, target model.ExperimentTarget, idx int) (*model.Measurement, error) {
 	if target.Input() != "" {
-		ew.logger.Infof("[%d/%d] running with input: %s", idx+1, ew.total, target.Input())
+		ew.logger.Infof("[%d/%d] running with input: %s", idx+1, ew.total, target)
 	}
 	return ew.child.MeasureWithContext(ctx, target, idx)
 }
