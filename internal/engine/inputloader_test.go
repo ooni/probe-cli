@@ -611,11 +611,11 @@ func TestInputLoaderOpenVPNWithAPIFailureAndFallback(t *testing.T) {
 		},
 	}
 	out, err := il.loadRemote(context.Background())
-	if err != nil {
-		t.Fatal(err)
+	if err != expected {
+		t.Fatal("we expected an error")
 	}
-	if len(out) != 2 {
-		t.Fatal("we expected 2 fallback URLs")
+	if len(out) != 0 {
+		t.Fatal("we expected no fallback URLs")
 	}
 }
 
