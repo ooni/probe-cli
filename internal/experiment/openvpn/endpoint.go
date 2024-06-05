@@ -255,11 +255,12 @@ func getOpenVPNConfig(
 	return cfg, nil
 }
 
-// extractBase64Blob is used to pass credentials as command-line options.
-func extractBase64Blob(val string) (string, error) {
+// maybeExtractBase64Blob is used to pass credentials as command-line options.
+func maybeExtractBase64Blob(val string) (string, error) {
 	s := strings.TrimPrefix(val, "base64:")
 	if len(s) == len(val) {
-		return "", fmt.Errorf("%w: %s", ErrBadBase64Blob, "missing base64 prefix")
+		// no prefix, so we'll treat this as a pem-encoded credential.
+		return s, nil
 	}
 	dec, err := base64.URLEncoding.DecodeString(strings.TrimSpace(s))
 	if err != nil {

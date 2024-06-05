@@ -345,7 +345,7 @@ func Test_getVPNConfig_with_unknown_provider(t *testing.T) {
 func Test_extractBase64Blob(t *testing.T) {
 	t.Run("decode good blob", func(t *testing.T) {
 		blob := "base64:dGhlIGJsdWUgb2N0b3B1cyBpcyB3YXRjaGluZw=="
-		decoded, err := extractBase64Blob(blob)
+		decoded, err := maybeExtractBase64Blob(blob)
 		if decoded != "the blue octopus is watching" {
 			t.Fatal("could not decoded blob correctly")
 		}
@@ -355,28 +355,28 @@ func Test_extractBase64Blob(t *testing.T) {
 	})
 	t.Run("try decode without prefix", func(t *testing.T) {
 		blob := "dGhlIGJsdWUgb2N0b3B1cyBpcyB3YXRjaGluZw=="
-		_, err := extractBase64Blob(blob)
+		_, err := maybeExtractBase64Blob(blob)
 		if !errors.Is(err, ErrBadBase64Blob) {
 			t.Fatal("should fail without prefix")
 		}
 	})
 	t.Run("bad base64 blob should fail", func(t *testing.T) {
 		blob := "base64:dGhlIGJsdWUgb2N0b3B1cyBpcyB3YXRjaGluZw"
-		_, err := extractBase64Blob(blob)
+		_, err := maybeExtractBase64Blob(blob)
 		if !errors.Is(err, ErrBadBase64Blob) {
 			t.Fatal("bad blob should fail without prefix")
 		}
 	})
 	t.Run("decode empty blob", func(t *testing.T) {
 		blob := "base64:"
-		_, err := extractBase64Blob(blob)
+		_, err := maybeExtractBase64Blob(blob)
 		if err != nil {
 			t.Fatal("empty blob should not fail")
 		}
 	})
 	t.Run("illegal base64 data should fail", func(t *testing.T) {
 		blob := "base64:=="
-		_, err := extractBase64Blob(blob)
+		_, err := maybeExtractBase64Blob(blob)
 		if !errors.Is(err, ErrBadBase64Blob) {
 			t.Fatal("bad base64 data should fail")
 		}

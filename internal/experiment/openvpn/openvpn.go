@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	testVersion   = "0.1.1"
+	testVersion   = "0.1.2"
 	openVPNProcol = "openvpn"
 )
 
@@ -27,11 +27,16 @@ const (
 // This contains all the settings that user can set to modify the behaviour
 // of this experiment. By tagging these variables with `ooni:"..."`, we allow
 // miniooni's -O flag to find them and set them.
+// TODO(ainghazal): do pass Auth, Cipher and Compress to OpenVPN config options.
 type Config struct {
-	Provider string `ooni:"VPN provider"`
-	SafeKey  string `ooni:"key to connect to the OpenVPN endpoint"`
-	SafeCert string `ooni:"cert to connect to the OpenVPN endpoint"`
-	SafeCA   string `ooni:"ca to connect to the OpenVPN endpoint"`
+	Auth        string `ooni:"OpenVPN authentication to use"`
+	Cipher      string `ooni:"OpenVPN cipher to use"`
+	Compress    string `ooni:"OpenVPN compression to use"`
+	Provider    string `ooni:"VPN provider"`
+	Obfuscation string `ooni:"Obfuscation to use (obfs4, none)"`
+	SafeKey     string `ooni:"key to connect to the OpenVPN endpoint"`
+	SafeCert    string `ooni:"cert to connect to the OpenVPN endpoint"`
+	SafeCA      string `ooni:"ca to connect to the OpenVPN endpoint"`
 }
 
 // TestKeys contains the experiment's result.
@@ -156,19 +161,19 @@ func MaybeGetCredentialsFromOptions(cfg Config, opts *vpnconfig.OpenVPNOptions, 
 	if ok := hasCredentialsInOptions(cfg, method); !ok {
 		return false, nil
 	}
-	ca, err := extractBase64Blob(cfg.SafeCA)
+	ca, err := maybeExtractBase64Blob(cfg.SafeCA)
 	if err != nil {
 		return false, err
 	}
 	opts.CA = []byte(ca)
 
-	key, err := extractBase64Blob(cfg.SafeKey)
+	key, err := maybeExtractBase64Blob(cfg.SafeKey)
 	if err != nil {
 		return false, err
 	}
 	opts.Key = []byte(key)
 
-	cert, err := extractBase64Blob(cfg.SafeCert)
+	cert, err := maybeExtractBase64Blob(cfg.SafeCert)
 	if err != nil {
 		return false, err
 	}
