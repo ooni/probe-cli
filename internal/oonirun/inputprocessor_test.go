@@ -16,7 +16,7 @@ type FakeInputProcessorExperiment struct {
 }
 
 func (fipe *FakeInputProcessorExperiment) MeasureWithContext(
-	ctx context.Context, input string) (*model.Measurement, error) {
+	ctx context.Context, target model.ExperimentTarget) (*model.Measurement, error) {
 	if fipe.Err != nil {
 		return nil, fipe.Err
 	}
@@ -28,7 +28,7 @@ func (fipe *FakeInputProcessorExperiment) MeasureWithContext(
 	// is MERGING annotations as opposed to overwriting them.
 	m.AddAnnotation("antani", "antani")
 	m.AddAnnotation("foo", "baz") // would be bar below
-	m.Input = model.MeasurementInput(input)
+	m.Input = model.MeasurementInput(target.Input())
 	fipe.M = append(fipe.M, m)
 	return m, nil
 }
@@ -39,9 +39,9 @@ func TestInputProcessorMeasurementFailed(t *testing.T) {
 		Experiment: NewInputProcessorExperimentWrapper(
 			&FakeInputProcessorExperiment{Err: expected},
 		),
-		Inputs: []model.OOAPIURLInfo{{
-			URL: "https://www.kernel.org/",
-		}},
+		Inputs: []model.ExperimentTarget{
+			model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("https://www.kernel.org/"),
+		},
 	}
 	ctx := context.Background()
 	if err := ip.Run(ctx); !errors.Is(err, expected) {
@@ -68,9 +68,9 @@ func TestInputProcessorSubmissionFailed(t *testing.T) {
 			"foo": "bar",
 		},
 		Experiment: NewInputProcessorExperimentWrapper(fipe),
-		Inputs: []model.OOAPIURLInfo{{
-			URL: "https://www.kernel.org/",
-		}},
+		Inputs: []model.ExperimentTarget{
+			model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("https://www.kernel.org/"),
+		},
 		Options: []string{"fake=true"},
 		Submitter: NewInputProcessorSubmitterWrapper(
 			&FakeInputProcessorSubmitter{Err: expected},
@@ -117,9 +117,9 @@ func TestInputProcessorSaveOnDiskFailed(t *testing.T) {
 		Experiment: NewInputProcessorExperimentWrapper(
 			&FakeInputProcessorExperiment{},
 		),
-		Inputs: []model.OOAPIURLInfo{{
-			URL: "https://www.kernel.org/",
-		}},
+		Inputs: []model.ExperimentTarget{
+			model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("https://www.kernel.org/"),
+		},
 		Options: []string{"fake=true"},
 		Saver: NewInputProcessorSaverWrapper(
 			&FakeInputProcessorSaver{Err: expected},
@@ -140,11 +140,10 @@ func TestInputProcessorGood(t *testing.T) {
 	submitter := &FakeInputProcessorSubmitter{Err: nil}
 	ip := &InputProcessor{
 		Experiment: NewInputProcessorExperimentWrapper(fipe),
-		Inputs: []model.OOAPIURLInfo{{
-			URL: "https://www.kernel.org/",
-		}, {
-			URL: "https://www.slashdot.org/",
-		}},
+		Inputs: []model.ExperimentTarget{
+			model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("https://www.kernel.org/"),
+			model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("https://www.slashdot.org/"),
+		},
 		Options:   []string{"fake=true"},
 		Saver:     NewInputProcessorSaverWrapper(saver),
 		Submitter: NewInputProcessorSubmitterWrapper(submitter),
@@ -182,11 +181,10 @@ func TestInputProcessorMaxRuntime(t *testing.T) {
 	submitter := &FakeInputProcessorSubmitter{Err: nil}
 	ip := &InputProcessor{
 		Experiment: NewInputProcessorExperimentWrapper(fipe),
-		Inputs: []model.OOAPIURLInfo{{
-			URL: "https://www.kernel.org/",
-		}, {
-			URL: "https://www.slashdot.org/",
-		}},
+		Inputs: []model.ExperimentTarget{
+			model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("https://www.kernel.org/"),
+			model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("https://www.slashdot.org/"),
+		},
 		MaxRuntime: 1 * time.Nanosecond,
 		Options:    []string{"fake=true"},
 		Saver:      NewInputProcessorSaverWrapper(saver),

@@ -49,7 +49,8 @@ func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 					},
 					MockNewExperiment: func() model.Experiment {
 						exp := &mocks.Experiment{
-							MockMeasureWithContext: func(ctx context.Context, input string) (*model.Measurement, error) {
+							MockMeasureWithContext: func(
+								ctx context.Context, target model.ExperimentTarget) (*model.Measurement, error) {
 								ff := &testingx.FakeFiller{}
 								var meas model.Measurement
 								ff.Fill(&meas)
@@ -167,7 +168,8 @@ func TestExperimentRun(t *testing.T) {
 		newInputLoaderFn       func(inputPolicy model.InputPolicy) inputLoader
 		newSubmitterFn         func(ctx context.Context) (model.Submitter, error)
 		newSaverFn             func() (model.Saver, error)
-		newInputProcessorFn    func(experiment model.Experiment, inputList []model.OOAPIURLInfo, saver model.Saver, submitter model.Submitter) inputProcessor
+		newInputProcessorFn    func(experiment model.Experiment,
+			inputList []model.ExperimentTarget, saver model.Saver, submitter model.Submitter) inputProcessor
 	}
 	type args struct {
 		ctx context.Context
@@ -199,7 +201,7 @@ func TestExperimentRun(t *testing.T) {
 			},
 			newInputLoaderFn: func(inputPolicy model.InputPolicy) inputLoader {
 				return &mocks.ExperimentInputLoader{
-					MockLoad: func(ctx context.Context) ([]model.OOAPIURLInfo, error) {
+					MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
 						return nil, errMocked
 					},
 				}
@@ -223,8 +225,8 @@ func TestExperimentRun(t *testing.T) {
 			},
 			newInputLoaderFn: func(inputPolicy model.InputPolicy) inputLoader {
 				return &mocks.ExperimentInputLoader{
-					MockLoad: func(ctx context.Context) ([]model.OOAPIURLInfo, error) {
-						return []model.OOAPIURLInfo{}, nil
+					MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
+						return []model.ExperimentTarget{}, nil
 					},
 				}
 			},
@@ -263,8 +265,8 @@ func TestExperimentRun(t *testing.T) {
 			},
 			newInputLoaderFn: func(inputPolicy model.InputPolicy) inputLoader {
 				return &mocks.ExperimentInputLoader{
-					MockLoad: func(ctx context.Context) ([]model.OOAPIURLInfo, error) {
-						return []model.OOAPIURLInfo{}, nil
+					MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
+						return []model.ExperimentTarget{}, nil
 					},
 				}
 			},
@@ -306,8 +308,8 @@ func TestExperimentRun(t *testing.T) {
 			},
 			newInputLoaderFn: func(inputPolicy model.InputPolicy) inputLoader {
 				return &mocks.ExperimentInputLoader{
-					MockLoad: func(ctx context.Context) ([]model.OOAPIURLInfo, error) {
-						return []model.OOAPIURLInfo{}, nil
+					MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
+						return []model.ExperimentTarget{}, nil
 					},
 				}
 			},
@@ -352,8 +354,8 @@ func TestExperimentRun(t *testing.T) {
 			},
 			newInputLoaderFn: func(inputPolicy model.InputPolicy) inputLoader {
 				return &mocks.ExperimentInputLoader{
-					MockLoad: func(ctx context.Context) ([]model.OOAPIURLInfo, error) {
-						return []model.OOAPIURLInfo{}, nil
+					MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
+						return []model.ExperimentTarget{}, nil
 					},
 				}
 			},
@@ -363,7 +365,7 @@ func TestExperimentRun(t *testing.T) {
 			newSaverFn: func() (model.Saver, error) {
 				return &mocks.Saver{}, nil
 			},
-			newInputProcessorFn: func(experiment model.Experiment, inputList []model.OOAPIURLInfo,
+			newInputProcessorFn: func(experiment model.Experiment, inputList []model.ExperimentTarget,
 				saver model.Saver, submitter model.Submitter) inputProcessor {
 				return &mocks.ExperimentInputProcessor{
 					MockRun: func(ctx context.Context) error {

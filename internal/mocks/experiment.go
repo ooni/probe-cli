@@ -17,7 +17,7 @@ type Experiment struct {
 	MockReportID func() string
 
 	MockMeasureWithContext func(
-		ctx context.Context, input string) (measurement *model.Measurement, err error)
+		ctx context.Context, target model.ExperimentTarget) (measurement *model.Measurement, err error)
 
 	MockSaveMeasurement func(measurement *model.Measurement, filePath string) error
 
@@ -44,8 +44,8 @@ func (e *Experiment) ReportID() string {
 }
 
 func (e *Experiment) MeasureWithContext(
-	ctx context.Context, input string) (measurement *model.Measurement, err error) {
-	return e.MockMeasureWithContext(ctx, input)
+	ctx context.Context, target model.ExperimentTarget) (measurement *model.Measurement, err error) {
+	return e.MockMeasureWithContext(ctx, target)
 }
 
 func (e *Experiment) SaveMeasurement(measurement *model.Measurement, filePath string) error {

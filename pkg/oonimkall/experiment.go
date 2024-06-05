@@ -84,7 +84,7 @@ func (eb *experimentBuilderWrapper) setCallbacks(cb ExperimentCallbacks) {
 type experiment interface {
 	// MeasureWithContext runs the measurement with the given input
 	// and context. It returns a measurement or an error.
-	MeasureWithContext(ctx context.Context, input string) (
+	MeasureWithContext(ctx context.Context, target model.ExperimentTarget) (
 		measurement *model.Measurement, err error)
 
 	// KibiBytesSent returns the number of KiB sent.

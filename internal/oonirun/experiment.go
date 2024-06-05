@@ -70,7 +70,7 @@ type Experiment struct {
 	newSaverFn func() (model.Saver, error)
 
 	// newInputProcessorFn is OPTIONAL and used for testing.
-	newInputProcessorFn func(experiment model.Experiment, inputList []model.OOAPIURLInfo,
+	newInputProcessorFn func(experiment model.Experiment, inputList []model.ExperimentTarget,
 		saver model.Saver, submitter model.Submitter) inputProcessor
 }
 
@@ -138,7 +138,7 @@ type inputProcessor = model.ExperimentInputProcessor
 
 // newInputProcessor creates a new inputProcessor instance.
 func (ed *Experiment) newInputProcessor(experiment model.Experiment,
-	inputList []model.OOAPIURLInfo, saver model.Saver, submitter model.Submitter) inputProcessor {
+	inputList []model.ExperimentTarget, saver model.Saver, submitter model.Submitter) inputProcessor {
 	if ed.newInputProcessorFn != nil {
 		return ed.newInputProcessorFn(experiment, inputList, saver, submitter)
 	}
@@ -243,11 +243,11 @@ type experimentWrapper struct {
 }
 
 func (ew *experimentWrapper) MeasureWithContext(
-	ctx context.Context, input string, idx int) (*model.Measurement, error) {
-	if input != "" {
-		ew.logger.Infof("[%d/%d] running with input: %s", idx+1, ew.total, input)
+	ctx context.Context, target model.ExperimentTarget, idx int) (*model.Measurement, error) {
+	if target.Input() != "" {
+		ew.logger.Infof("[%d/%d] running with input: %s", idx+1, ew.total, target.Input())
 	}
-	return ew.child.MeasureWithContext(ctx, input, idx)
+	return ew.child.MeasureWithContext(ctx, target, idx)
 }
 
 // experimentSubmitterWrapper implements a submission policy where we don't

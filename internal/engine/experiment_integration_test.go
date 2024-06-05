@@ -177,7 +177,8 @@ func TestSetCallbacks(t *testing.T) {
 	}
 	register := &registerCallbacksCalled{}
 	builder.SetCallbacks(register)
-	if _, err := builder.NewExperiment().MeasureWithContext(context.Background(), ""); err != nil {
+	target := model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("")
+	if _, err := builder.NewExperiment().MeasureWithContext(context.Background(), target); err != nil {
 		t.Fatal(err)
 	}
 	if register.onProgressCalled == false {
@@ -221,7 +222,8 @@ func TestMeasurementFailure(t *testing.T) {
 	if err := builder.SetOptionAny("ReturnError", true); err != nil {
 		t.Fatal(err)
 	}
-	measurement, err := builder.NewExperiment().MeasureWithContext(context.Background(), "")
+	target := model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("")
+	measurement, err := builder.NewExperiment().MeasureWithContext(context.Background(), target)
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
@@ -255,7 +257,8 @@ func runexperimentflow(t *testing.T, experiment model.Experiment, input string) 
 	if experiment.ReportID() == "" {
 		t.Fatal("reportID should not be empty here")
 	}
-	measurement, err := experiment.MeasureWithContext(ctx, input)
+	target := model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(input)
+	measurement, err := experiment.MeasureWithContext(ctx, target)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -413,7 +416,8 @@ func TestMeasureLookupLocationFailure(t *testing.T) {
 	exp := newExperiment(sess, new(antaniMeasurer))
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // so we fail immediately
-	if _, err := exp.MeasureWithContext(ctx, "xx"); err == nil {
+	target := model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("xx")
+	if _, err := exp.MeasureWithContext(ctx, target); err == nil {
 		t.Fatal("expected an error here")
 	}
 }

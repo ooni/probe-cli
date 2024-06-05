@@ -81,7 +81,7 @@ type FakeExperiment struct {
 }
 
 // MeasureWithContext implements experiment.MeasureWithContext.
-func (e *FakeExperiment) MeasureWithContext(ctx context.Context, input string) (
+func (e *FakeExperiment) MeasureWithContext(ctx context.Context, target model.ExperimentTarget) (
 	measurement *model.Measurement, err error) {
 	return e.Measurement, e.Err
 }

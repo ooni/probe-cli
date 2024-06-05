@@ -284,7 +284,7 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 		}
 		m, err := experiment.MeasureWithContext(
 			r.contextForExperiment(measCtx, builder),
-			input,
+			model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(input),
 		)
 		if builder.Interruptible() && measCtx.Err() != nil {
 			// We want to stop here only if interruptible otherwise we want to

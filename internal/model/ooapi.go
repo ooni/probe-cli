@@ -148,6 +148,43 @@ type OOAPIURLInfo struct {
 }
 
 const (
+	// DefaultCategoryCode is the default category code to use
+	// when a URL's category code is unknown.
+	DefaultCategoryCode = "MISC"
+
+	// DefaultCountryCode is the default country code to use
+	// when a URL's country code is unknown.
+	DefaultCountryCode = "ZZ"
+)
+
+// NewOOAPIURLInfoWithDefaultCategoryAndCountry constructs a new instance
+// of [*OOAPIURLInfo] with default category and country code.
+func NewOOAPIURLInfoWithDefaultCategoryAndCountry(URL string) *OOAPIURLInfo {
+	return &OOAPIURLInfo{
+		CategoryCode: DefaultCategoryCode,
+		CountryCode:  DefaultCountryCode,
+		URL:          URL,
+	}
+}
+
+var _ ExperimentTarget = &OOAPIURLInfo{}
+
+// Category implements ExperimentTarget.
+func (o *OOAPIURLInfo) Category() string {
+	return o.CategoryCode
+}
+
+// Country implements ExperimentTarget.
+func (o *OOAPIURLInfo) Country() string {
+	return o.CountryCode
+}
+
+// Input implements ExperimentTarget.
+func (o *OOAPIURLInfo) Input() string {
+	return o.URL
+}
+
+const (
 	// OOAPIReportDefaultDataFormatVersion is the default data format version.
 	//
 	// See https://github.com/ooni/spec/tree/master/data-formats#history.

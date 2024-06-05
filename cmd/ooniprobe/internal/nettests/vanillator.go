@@ -1,5 +1,7 @@
 package nettests
 
+import "github.com/ooni/probe-cli/v3/internal/model"
+
 // VanillaTor test implementation
 type VanillaTor struct {
 }
@@ -10,7 +12,7 @@ func (h VanillaTor) Run(ctl *Controller) error {
 	if err != nil {
 		return err
 	}
-	return ctl.Run(builder, []string{""})
+	return ctl.Run(builder, []model.ExperimentTarget{model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("")})
 }
 
 func (h VanillaTor) onlyBackground() {}

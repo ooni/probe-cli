@@ -97,7 +97,7 @@ type MockableTaskRunnerDependencies struct {
 	MockableKibiBytesSent      func() float64
 	MockableOpenReportContext  func(ctx context.Context) error
 	MockableReportID           func() string
-	MockableMeasureWithContext func(ctx context.Context, input string) (
+	MockableMeasureWithContext func(ctx context.Context, target model.ExperimentTarget) (
 		measurement *model.Measurement, err error)
 	MockableSubmitAndUpdateMeasurementContext func(
 		ctx context.Context, measurement *model.Measurement) error
@@ -200,9 +200,9 @@ func (dep *MockableTaskRunnerDependencies) ReportID() string {
 	return dep.MockableReportID()
 }
 
-func (dep *MockableTaskRunnerDependencies) MeasureWithContext(ctx context.Context, input string) (
-	measurement *model.Measurement, err error) {
-	return dep.MockableMeasureWithContext(ctx, input)
+func (dep *MockableTaskRunnerDependencies) MeasureWithContext(
+	ctx context.Context, target model.ExperimentTarget) (measurement *model.Measurement, err error) {
+	return dep.MockableMeasureWithContext(ctx, target)
 }
 
 func (dep *MockableTaskRunnerDependencies) SubmitAndUpdateMeasurementContext(

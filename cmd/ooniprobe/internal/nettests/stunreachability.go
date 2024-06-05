@@ -10,7 +10,7 @@ import (
 // STUNReachability nettest implementation.
 type STUNReachability struct{}
 
-func (n STUNReachability) lookupURLs(ctl *Controller) ([]string, error) {
+func (n STUNReachability) lookupURLs(ctl *Controller) ([]model.ExperimentTarget, error) {
 	inputloader := &engine.InputLoader{
 		CheckInConfig: &model.OOAPICheckInConfig{
 			// not needed because we have default static input in the engine

@@ -77,7 +77,7 @@ func TestInputLoaderInputNoneWithNoInput(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(out) != 1 || out[0].URL != "" {
+	if len(out) != 1 || out[0].Input() != "" {
 		t.Fatal("not the output we expected")
 	}
 }
@@ -91,7 +91,7 @@ func TestInputLoaderInputOptionalWithNoInput(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(out) != 1 || out[0].URL != "" {
+	if len(out) != 1 || out[0].Input() != "" {
 		t.Fatal("not the output we expected")
 	}
 }
@@ -272,13 +272,13 @@ func TestInputLoaderInputOrStaticDefaultWithoutInputDNSCheck(t *testing.T) {
 	}
 	for idx := 0; idx < len(dnsCheckDefaultInput); idx++ {
 		e := out[idx]
-		if e.CategoryCode != "MISC" {
+		if e.Category() != "MISC" {
 			t.Fatal("invalid category code")
 		}
-		if e.CountryCode != "XX" {
+		if e.Country() != "XX" {
 			t.Fatal("invalid country code")
 		}
-		if e.URL != dnsCheckDefaultInput[idx] {
+		if e.Input() != dnsCheckDefaultInput[idx] {
 			t.Fatal("invalid URL")
 		}
 	}
@@ -299,13 +299,13 @@ func TestInputLoaderInputOrStaticDefaultWithoutInputStunReachability(t *testing.
 	}
 	for idx := 0; idx < len(stunReachabilityDefaultInput); idx++ {
 		e := out[idx]
-		if e.CategoryCode != "MISC" {
+		if e.Category() != "MISC" {
 			t.Fatal("invalid category code")
 		}
-		if e.CountryCode != "XX" {
+		if e.Country() != "XX" {
 			t.Fatal("invalid country code")
 		}
-		if e.URL != stunReachabilityDefaultInput[idx] {
+		if e.Input() != stunReachabilityDefaultInput[idx] {
 			t.Fatal("invalid URL")
 		}
 	}
@@ -635,7 +635,7 @@ func TestStringListToModelURLInfoWithValidInput(t *testing.T) {
 		"stun://stun.voip.blackberry.com:3478",
 		"stun://stun.altar.com.pl:3478",
 	}
-	output, err := stringListToModelURLInfo(input, nil)
+	output, err := inputLoaderStringListToModelExperimentTarget(input, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -643,13 +643,13 @@ func TestStringListToModelURLInfoWithValidInput(t *testing.T) {
 		t.Fatal("unexpected output length")
 	}
 	for idx := 0; idx < len(input); idx++ {
-		if input[idx] != output[idx].URL {
+		if input[idx] != output[idx].Input() {
 			t.Fatal("unexpected entry")
 		}
-		if output[idx].CategoryCode != "MISC" {
+		if output[idx].Category() != "MISC" {
 			t.Fatal("unexpected category")
 		}
-		if output[idx].CountryCode != "XX" {
+		if output[idx].Country() != "XX" {
 			t.Fatal("unexpected country")
 		}
 	}
@@ -661,7 +661,7 @@ func TestStringListToModelURLInfoWithInvalidInput(t *testing.T) {
 		"\t", // <- not a valid URL
 		"stun://stun.altar.com.pl:3478",
 	}
-	output, err := stringListToModelURLInfo(input, nil)
+	output, err := inputLoaderStringListToModelExperimentTarget(input, nil)
 	if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
 		t.Fatal("no the error we expected", err)
 	}
@@ -677,7 +677,7 @@ func TestStringListToModelURLInfoWithError(t *testing.T) {
 		"stun://stun.altar.com.pl:3478",
 	}
 	expected := errors.New("mocked error")
-	output, err := stringListToModelURLInfo(input, expected)
+	output, err := inputLoaderStringListToModelExperimentTarget(input, expected)
 	if !errors.Is(err, expected) {
 		t.Fatal("no the error we expected", err)
 	}
