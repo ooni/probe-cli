@@ -379,7 +379,7 @@ func TestV2MeasureDescriptor(t *testing.T) {
 				},
 				MockNewExperiment: func() model.Experiment {
 					exp := &mocks.Experiment{
-						MockMeasureAsync: func(ctx context.Context, input string) (<-chan *model.Measurement, error) {
+						MockMeasureWithContext: func(ctx context.Context, input string) (*model.Measurement, error) {
 							return nil, expected
 						},
 						MockKibiBytesReceived: func() float64 {

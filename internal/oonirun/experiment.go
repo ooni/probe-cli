@@ -242,12 +242,12 @@ type experimentWrapper struct {
 	total int
 }
 
-func (ew *experimentWrapper) MeasureAsync(
-	ctx context.Context, input string, idx int) (<-chan *model.Measurement, error) {
+func (ew *experimentWrapper) MeasureWithContext(
+	ctx context.Context, input string, idx int) (*model.Measurement, error) {
 	if input != "" {
 		ew.logger.Infof("[%d/%d] running with input: %s", idx+1, ew.total, input)
 	}
-	return ew.child.MeasureAsync(ctx, input, idx)
+	return ew.child.MeasureWithContext(ctx, input, idx)
 }
 
 // experimentSubmitterWrapper implements a submission policy where we don't
