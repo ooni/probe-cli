@@ -1,4 +1,4 @@
-// Package targetloading contains common code to load input.
+// Package targetloading contains common code to load richer-input targets.
 package targetloading
 
 import (

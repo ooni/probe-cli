@@ -35,8 +35,8 @@ func TestInputLoaderInputNoneWithStaticInputs(t *testing.T) {
 func TestInputLoaderInputNoneWithFilesInputs(t *testing.T) {
 	il := &Loader{
 		SourceFiles: []string{
-			"testdata/inputloader1.txt",
-			"testdata/inputloader2.txt",
+			"testdata/loader1.txt",
+			"testdata/loader2.txt",
 		},
 		InputPolicy: model.InputNone,
 	}
@@ -54,8 +54,8 @@ func TestInputLoaderInputNoneWithBothInputs(t *testing.T) {
 	il := &Loader{
 		StaticInputs: []string{"https://www.google.com/"},
 		SourceFiles: []string{
-			"testdata/inputloader1.txt",
-			"testdata/inputloader2.txt",
+			"testdata/loader1.txt",
+			"testdata/loader2.txt",
 		},
 		InputPolicy: model.InputNone,
 	}
@@ -101,8 +101,8 @@ func TestInputLoaderInputOptionalWithInput(t *testing.T) {
 	il := &Loader{
 		StaticInputs: []string{"https://www.google.com/"},
 		SourceFiles: []string{
-			"testdata/inputloader1.txt",
-			"testdata/inputloader2.txt",
+			"testdata/loader1.txt",
+			"testdata/loader2.txt",
 		},
 		InputPolicy: model.InputOptional,
 	}
@@ -150,9 +150,9 @@ func TestInputLoaderInputOptionalNonexistentFile(t *testing.T) {
 	il := &Loader{
 		StaticInputs: []string{"https://www.google.com/"},
 		SourceFiles: []string{
-			"testdata/inputloader1.txt",
+			"testdata/loader1.txt",
 			"/nonexistent",
-			"testdata/inputloader2.txt",
+			"testdata/loader2.txt",
 		},
 		InputPolicy: model.InputOptional,
 	}
@@ -170,8 +170,8 @@ func TestInputLoaderInputStrictlyRequiredWithInput(t *testing.T) {
 	il := &Loader{
 		StaticInputs: []string{"https://www.google.com/"},
 		SourceFiles: []string{
-			"testdata/inputloader1.txt",
-			"testdata/inputloader2.txt",
+			"testdata/loader1.txt",
+			"testdata/loader2.txt",
 		},
 		InputPolicy: model.InputStrictlyRequired,
 	}
@@ -233,9 +233,9 @@ func TestInputLoaderInputStrictlyRequiredWithEmptyFile(t *testing.T) {
 	il := &Loader{
 		InputPolicy: model.InputStrictlyRequired,
 		SourceFiles: []string{
-			"testdata/inputloader1.txt",
-			"testdata/inputloader3.txt", // we want it before inputloader2.txt
-			"testdata/inputloader2.txt",
+			"testdata/loader1.txt",
+			"testdata/loader3.txt", // we want it before loader2.txt
+			"testdata/loader2.txt",
 		},
 	}
 	ctx := context.Background()
@@ -253,8 +253,8 @@ func TestInputLoaderInputOrStaticDefaultWithInput(t *testing.T) {
 		ExperimentName: "dnscheck",
 		StaticInputs:   []string{"https://www.google.com/"},
 		SourceFiles: []string{
-			"testdata/inputloader1.txt",
-			"testdata/inputloader2.txt",
+			"testdata/loader1.txt",
+			"testdata/loader2.txt",
 		},
 		InputPolicy: model.InputOrStaticDefault,
 	}
@@ -303,9 +303,9 @@ func TestInputLoaderInputOrStaticDefaultWithEmptyFile(t *testing.T) {
 		ExperimentName: "dnscheck",
 		InputPolicy:    model.InputOrStaticDefault,
 		SourceFiles: []string{
-			"testdata/inputloader1.txt",
-			"testdata/inputloader3.txt", // we want it before inputloader2.txt
-			"testdata/inputloader2.txt",
+			"testdata/loader1.txt",
+			"testdata/loader3.txt", // we want it before loader2.txt
+			"testdata/loader2.txt",
 		},
 	}
 	ctx := context.Background()
@@ -400,8 +400,8 @@ func TestInputLoaderInputOrQueryBackendWithInput(t *testing.T) {
 	il := &Loader{
 		StaticInputs: []string{"https://www.google.com/"},
 		SourceFiles: []string{
-			"testdata/inputloader1.txt",
-			"testdata/inputloader2.txt",
+			"testdata/loader1.txt",
+			"testdata/loader2.txt",
 		},
 		InputPolicy: model.InputOrQueryBackend,
 	}
@@ -473,9 +473,9 @@ func TestInputLoaderInputOrQueryBackendWithEmptyFile(t *testing.T) {
 	il := &Loader{
 		InputPolicy: model.InputOrQueryBackend,
 		SourceFiles: []string{
-			"testdata/inputloader1.txt",
-			"testdata/inputloader3.txt", // we want it before inputloader2.txt
-			"testdata/inputloader2.txt",
+			"testdata/loader1.txt",
+			"testdata/loader3.txt", // we want it before loader2.txt
+			"testdata/loader2.txt",
 		},
 	}
 	ctx := context.Background()
