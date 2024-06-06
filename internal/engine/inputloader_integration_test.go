@@ -6,13 +6,13 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine"
-	"github.com/ooni/probe-cli/v3/internal/inputloading"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // This historical integration test ensures that we're able to fetch URLs from
-// the dev infrastructure. We say this test's historical because the inputloading.Loader
+// the dev infrastructure. We say this test's historical because the targetloading.Loader
 // belonged to the engine package before we introduced richer input. It kind of feels
 // good to keep this integration test here since we want to use a real session and a real
 // Loader and double check whether we can get inputs. In a more distant future it would
@@ -36,7 +36,7 @@ func TestInputLoaderInputOrQueryBackendWithNoInput(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer sess.Close()
-	il := &inputloading.Loader{
+	il := &targetloading.Loader{
 		InputPolicy: model.InputOrQueryBackend,
 		Session:     sess,
 	}

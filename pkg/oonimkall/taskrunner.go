@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine"
-	"github.com/ooni/probe-cli/v3/internal/inputloading"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -192,7 +192,7 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 		}
 	case model.InputOrStaticDefault:
 		if len(r.settings.Inputs) <= 0 {
-			inputs, err := inputloading.StaticBareInputForExperiment(r.settings.Name)
+			inputs, err := targetloading.StaticBareInputForExperiment(r.settings.Name)
 			if err != nil {
 				r.emitter.EmitFailureStartup("no default static input for this experiment")
 				return

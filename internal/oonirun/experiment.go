@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/humanize"
-	"github.com/ooni/probe-cli/v3/internal/inputloading"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -200,7 +200,7 @@ func (ed *Experiment) newInputLoader(inputPolicy model.InputPolicy) inputLoader 
 	if ed.newInputLoaderFn != nil {
 		return ed.newInputLoaderFn(inputPolicy)
 	}
-	return &inputloading.Loader{
+	return &targetloading.Loader{
 		CheckInConfig: &model.OOAPICheckInConfig{
 			RunType:  model.RunTypeManual,
 			OnWiFi:   true, // meaning: not on 4G

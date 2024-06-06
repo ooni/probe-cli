@@ -3,7 +3,7 @@ package nettests
 import (
 	"context"
 
-	"github.com/ooni/probe-cli/v3/internal/inputloading"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -11,7 +11,7 @@ import (
 type DNSCheck struct{}
 
 func (n DNSCheck) lookupURLs(ctl *Controller) ([]model.ExperimentTarget, error) {
-	inputloader := &inputloading.Loader{
+	inputloader := &targetloading.Loader{
 		CheckInConfig: &model.OOAPICheckInConfig{
 			// not needed because we have default static input in the engine
 		},

@@ -1,5 +1,5 @@
-// Package inputloading contains common code to load input.
-package inputloading
+// Package targetloading contains common code to load input.
+package targetloading
 
 import (
 	"bufio"

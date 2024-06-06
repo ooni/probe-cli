@@ -4,12 +4,12 @@ import (
 	"context"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/inputloading"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func (n WebConnectivity) lookupURLs(ctl *Controller, categories []string) ([]model.ExperimentTarget, error) {
-	inputloader := &inputloading.Loader{
+	inputloader := &targetloading.Loader{
 		CheckInConfig: &model.OOAPICheckInConfig{
 			// Setting Charging and OnWiFi to true causes the CheckIn
 			// API to return to us as much URL as possible with the
