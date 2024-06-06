@@ -111,7 +111,7 @@ func (e *experiment) SubmitAndUpdateMeasurementContext(
 // newMeasurement creates a new measurement for this experiment with the given input.
 func (e *experiment) newMeasurement(target model.ExperimentTarget) *model.Measurement {
 	utctimenow := time.Now().UTC()
-	// TODO(bassosimone,DecFox): move here code that supports unmarshaling options
+	// TODO(bassosimone,DecFox): move here code that supports filling the options field
 	// when there is richer input, which currently is inside ./internal/oonirun.
 	//
 	// We MUST do this because the current solution only works for OONI Run and when
@@ -211,10 +211,11 @@ func (e *experiment) MeasureWithContext(
 	// Create a new measurement that the experiment measurer will finish filling
 	// by adding the test keys etc. Please, note that, as of 2024-06-06:
 	//
-	// 1. experiments using richer input receive input via the Target field
-	// and ignore (*Measurement).Input field.
+	// 1. Experiments using richer input receive input via the Target field
+	// and ignore (*Measurement).Input, which however contains the same value
+	// that would be returned by the Target.Input method.
 	//
-	// 2. other experiments use (*Measurement).Input.
+	// 2. Other experiments use (*Measurement).Input.
 	//
 	// Here we're passing the whole target to newMeasurement such that we're able
 	// to record options values in addition to the input value.

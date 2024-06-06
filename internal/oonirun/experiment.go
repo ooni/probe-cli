@@ -104,8 +104,10 @@ func (ed *Experiment) Run(ctx context.Context) error {
 
 	// 4. randomize input, if needed
 	if ed.Random {
-		rnd := rand.New(rand.NewSource(time.Now().UnixNano())) // #nosec G404 -- not really important
-		rnd.Shuffle(len(targetList), func(i, j int) {
+		// Note: since go1.20 the default random generated is random seeded
+		//
+		// See https://tip.golang.org/doc/go1.20
+		rand.Shuffle(len(targetList), func(i, j int) {
 			targetList[i], targetList[j] = targetList[j], targetList[i]
 		})
 		experimentShuffledInputs.Add(1)

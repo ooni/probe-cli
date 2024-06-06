@@ -27,9 +27,6 @@ func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 		ExtraOptions: map[string]any{
 			"SleepTime": int64(10 * time.Millisecond),
 		},
-		Inputs: []string{
-			"a", "b", "c",
-		},
 		InputFilePaths: []string{},
 		MaxRuntime:     0,
 		Name:           "example",
@@ -70,10 +67,12 @@ func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 					MockNewTargetLoader: func(config *model.ExperimentTargetLoaderConfig) model.ExperimentTargetLoader {
 						return &mocks.ExperimentTargetLoader{
 							MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
-								// Implementation note: the convention for input-less experiments is that
-								// they require a single entry containing an empty input.
-								entry := model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("")
-								return []model.ExperimentTarget{entry}, nil
+								results := []model.ExperimentTarget{
+									model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("a"),
+									model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("b"),
+									model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("c"),
+								}
+								return results, nil
 							},
 						}
 					},
@@ -199,34 +198,10 @@ func TestExperimentRun(t *testing.T) {
 		args:      args{},
 		expectErr: errMocked,
 	}, {
-		name: "cannot load input",
-		fields: fields{
-			newExperimentBuilderFn: func(experimentName string) (model.ExperimentBuilder, error) {
-				eb := &mocks.ExperimentBuilder{
-					MockInputPolicy: func() model.InputPolicy {
-						return model.InputOptional
-					},
-				}
-				return eb, nil
-			},
-			newTargetLoaderFn: func(builder model.ExperimentBuilder) targetLoader {
-				return &mocks.ExperimentTargetLoader{
-					MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
-						return nil, errMocked
-					},
-				}
-			},
-		},
-		args:      args{},
-		expectErr: errMocked,
-	}, {
 		name: "cannot set options",
 		fields: fields{
 			newExperimentBuilderFn: func(experimentName string) (model.ExperimentBuilder, error) {
 				eb := &mocks.ExperimentBuilder{
-					MockInputPolicy: func() model.InputPolicy {
-						return model.InputOptional
-					},
 					MockSetOptionsAny: func(options map[string]any) error {
 						return errMocked
 					},
@@ -237,6 +212,30 @@ func TestExperimentRun(t *testing.T) {
 				return &mocks.ExperimentTargetLoader{
 					MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
 						return []model.ExperimentTarget{}, nil
+					},
+				}
+			},
+		},
+		args:      args{},
+		expectErr: errMocked,
+	}, {
+		name: "cannot load input",
+		fields: fields{
+			newExperimentBuilderFn: func(experimentName string) (model.ExperimentBuilder, error) {
+				eb := &mocks.ExperimentBuilder{
+					MockInputPolicy: func() model.InputPolicy {
+						return model.InputOptional
+					},
+					MockSetOptionsAny: func(options map[string]any) error {
+						return nil
+					},
+				}
+				return eb, nil
+			},
+			newTargetLoaderFn: func(builder model.ExperimentBuilder) targetLoader {
+				return &mocks.ExperimentTargetLoader{
+					MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
+						return nil, errMocked
 					},
 				}
 			},
