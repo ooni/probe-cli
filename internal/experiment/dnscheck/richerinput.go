@@ -112,8 +112,8 @@ var defaultInput = []model.ExperimentTarget{
 		},
 	},
 
-	// TODO(bassosimone): before merging, we need to reinstate the
-	// whole list that we previously had in tree
+	// TODO(bassosimone,DecFox): before releasing, we need to either sync up
+	// this list with ./internal/targetloader or implement a backend API.
 }
 
 func (tl *targetLoader) loadFromBackend(_ context.Context) ([]model.ExperimentTarget, error) {
