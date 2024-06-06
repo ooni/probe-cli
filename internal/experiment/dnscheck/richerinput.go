@@ -4,16 +4,17 @@ import (
 	"context"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/reflectx"
 	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 // Target is a richer-input target that this experiment should measure.
 type Target struct {
-	// input is the input.
-	input string
+	// Options contains the configuration.
+	Options *Config
 
-	// options is the configuration.
-	options *Config
+	// URL is the input URL.
+	URL string
 }
 
 var _ model.ExperimentTarget = &Target{}
@@ -30,12 +31,12 @@ func (t *Target) Country() string {
 
 // Input implements [model.ExperimentTarget].
 func (t *Target) Input() string {
-	return t.input
+	return t.URL
 }
 
 // String implements [model.ExperimentTarget].
 func (t *Target) String() string {
-	return t.input
+	return t.URL
 }
 
 // NewLoader constructs a new [model.ExperimentTargerLoader] instance.
@@ -49,22 +50,24 @@ func NewLoader(loader *targetloading.Loader, gopts any) model.ExperimentTargetLo
 
 	// Construct the proper loader instance.
 	return &targetLoader{
-		loader:  loader,
-		options: options,
+		defaultInput: defaultInput,
+		loader:       loader,
+		options:      options,
 	}
 }
 
+// targetLoader loads targets for this experiment.
 type targetLoader struct {
-	loader  *targetloading.Loader
-	options *Config
+	defaultInput []model.ExperimentTarget
+	loader       *targetloading.Loader
+	options      *Config
 }
 
 // Load implements model.ExperimentTargetLoader.
 func (tl *targetLoader) Load(ctx context.Context) ([]model.ExperimentTarget, error) {
-	// TODO(bassosimone): we need a way to know whether the options are empty!!!
-
-	// If there's nothing to statically load fallback to the API
-	if len(tl.loader.StaticInputs) <= 0 && len(tl.loader.SourceFiles) <= 0 {
+	// If inputs and files are all empty and there are no options, let's use the backend
+	if len(tl.loader.StaticInputs) <= 0 && len(tl.loader.SourceFiles) <= 0 &&
+		reflectx.StructOrStructPtrIsZero(tl.options) {
 		return tl.loadFromBackend(ctx)
 	}
 
@@ -80,8 +83,8 @@ func (tl *targetLoader) Load(ctx context.Context) ([]model.ExperimentTarget, err
 	var targets []model.ExperimentTarget
 	for _, input := range inputs {
 		targets = append(targets, &Target{
-			options: tl.options,
-			input:   input,
+			Options: tl.options,
+			URL:     input,
 		})
 	}
 	return targets, nil
@@ -96,15 +99,15 @@ var defaultInput = []model.ExperimentTarget{
 	// Make sure we include the typical IP addresses for the domain.
 	//
 	&Target{
-		input: "https://dns.google/dns-query",
-		options: &Config{
+		URL: "https://dns.google/dns-query",
+		Options: &Config{
 			HTTP3Enabled: true,
 			DefaultAddrs: "8.8.8.8 8.8.4.4",
 		},
 	},
 	&Target{
-		input: "https://dns.google/dns-query",
-		options: &Config{
+		URL: "https://dns.google/dns-query",
+		Options: &Config{
 			DefaultAddrs: "8.8.8.8 8.8.4.4",
 		},
 	},

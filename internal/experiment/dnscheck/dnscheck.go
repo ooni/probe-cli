@@ -130,7 +130,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		return ErrInputRequired
 	}
 	target := args.Target.(*Target)
-	config, input := target.options, target.input
+	config, input := target.Options, target.URL
 
 	// 1. fill the measurement with test keys
 	tk := new(TestKeys)

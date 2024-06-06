@@ -57,8 +57,8 @@ func TestDNSCheckFailsWithoutInput(t *testing.T) {
 		Measurement: new(model.Measurement),
 		Session:     newsession(),
 		Target: &Target{
-			input: "", // explicitly empty
-			options: &Config{
+			URL: "", // explicitly empty
+			Options: &Config{
 				Domain: "example.com",
 			},
 		},
@@ -76,8 +76,8 @@ func TestDNSCheckFailsWithInvalidURL(t *testing.T) {
 		Measurement: &model.Measurement{Input: "Not a valid URL \x7f"},
 		Session:     newsession(),
 		Target: &Target{
-			input:   "Not a valid URL \x7f",
-			options: &Config{},
+			URL:     "Not a valid URL \x7f",
+			Options: &Config{},
 		},
 	}
 	err := measurer.Run(context.Background(), args)
@@ -93,8 +93,8 @@ func TestDNSCheckFailsWithUnsupportedProtocol(t *testing.T) {
 		Measurement: &model.Measurement{Input: "file://1.1.1.1"},
 		Session:     newsession(),
 		Target: &Target{
-			input:   "file://1.1.1.1",
-			options: &Config{},
+			URL:     "file://1.1.1.1",
+			Options: &Config{},
 		},
 	}
 	err := measurer.Run(context.Background(), args)
@@ -113,8 +113,8 @@ func TestWithCancelledContext(t *testing.T) {
 		Measurement: measurement,
 		Session:     newsession(),
 		Target: &Target{
-			input: "dot://one.one.one.one",
-			options: &Config{
+			URL: "dot://one.one.one.one",
+			Options: &Config{
 				DefaultAddrs: "1.1.1.1 1.0.0.1",
 			},
 		},
@@ -122,6 +122,23 @@ func TestWithCancelledContext(t *testing.T) {
 	err := measurer.Run(ctx, args)
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestWithNilTarget(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // immediately cancel the context
+	measurer := NewExperimentMeasurer()
+	measurement := &model.Measurement{Input: "dot://one.one.one.one"}
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: measurement,
+		Session:     newsession(),
+		Target:      nil, // explicitly nil
+	}
+	err := measurer.Run(ctx, args)
+	if !errors.Is(err, ErrInputRequired) {
+		t.Fatal("unexpected err", err)
 	}
 }
 
@@ -161,8 +178,8 @@ func TestDNSCheckValid(t *testing.T) {
 		Measurement: &measurement,
 		Session:     newsession(),
 		Target: &Target{
-			input: "dot://one.one.one.one:853",
-			options: &Config{
+			URL: "dot://one.one.one.one:853",
+			Options: &Config{
 				DefaultAddrs: "1.1.1.1 1.0.0.1",
 			},
 		},
@@ -210,8 +227,8 @@ func TestDNSCheckWait(t *testing.T) {
 			Measurement: &measurement,
 			Session:     newsession(),
 			Target: &Target{
-				input:   input,
-				options: &Config{},
+				URL:     input,
+				Options: &Config{},
 			},
 		}
 		err := measurer.Run(context.Background(), args)
