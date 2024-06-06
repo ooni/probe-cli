@@ -125,9 +125,7 @@ func TestWithCancelledContext(t *testing.T) {
 	}
 }
 
-func TestWithNilTarget(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // immediately cancel the context
+func TestDNSCheckFailsWithNilTarget(t *testing.T) {
 	measurer := NewExperimentMeasurer()
 	measurement := &model.Measurement{Input: "dot://one.one.one.one"}
 	args := &model.ExperimentArgs{
@@ -136,7 +134,7 @@ func TestWithNilTarget(t *testing.T) {
 		Session:     newsession(),
 		Target:      nil, // explicitly nil
 	}
-	err := measurer.Run(ctx, args)
+	err := measurer.Run(context.Background(), args)
 	if !errors.Is(err, ErrInputRequired) {
 		t.Fatal("unexpected err", err)
 	}
