@@ -10,13 +10,15 @@ import (
 )
 
 func init() {
-	AllExperiments["tlsmiddlebox"] = func() *Factory {
+	const canonicalName = "tlsmiddlebox"
+	AllExperiments[canonicalName] = func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
 				return tlsmiddlebox.NewExperimentMeasurer(
 					*config.(*tlsmiddlebox.Config),
 				)
 			},
+			canonicalName:    canonicalName,
 			config:           &tlsmiddlebox.Config{},
 			enabledByDefault: true,
 			inputPolicy:      model.InputStrictlyRequired,

@@ -10,13 +10,15 @@ import (
 )
 
 func init() {
-	AllExperiments["http_invalid_request_line"] = func() *Factory {
+	const canonicalName = "http_invalid_request_line"
+	AllExperiments[canonicalName] = func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
 				return hirl.NewExperimentMeasurer(
 					*config.(*hirl.Config),
 				)
 			},
+			canonicalName:    canonicalName,
 			config:           &hirl.Config{},
 			enabledByDefault: true,
 			inputPolicy:      model.InputNone,

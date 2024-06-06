@@ -10,13 +10,15 @@ import (
 )
 
 func init() {
-	AllExperiments["ndt"] = func() *Factory {
+	const canonicalName = "ndt"
+	AllExperiments[canonicalName] = func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
 				return ndt7.NewExperimentMeasurer(
 					*config.(*ndt7.Config),
 				)
 			},
+			canonicalName:    canonicalName,
 			config:           &ndt7.Config{},
 			enabledByDefault: true,
 			interruptible:    true,

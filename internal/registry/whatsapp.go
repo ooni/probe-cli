@@ -10,13 +10,15 @@ import (
 )
 
 func init() {
-	AllExperiments["whatsapp"] = func() *Factory {
+	const canonicalName = "whatsapp"
+	AllExperiments[canonicalName] = func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
 				return whatsapp.NewExperimentMeasurer(
 					*config.(*whatsapp.Config),
 				)
 			},
+			canonicalName:    canonicalName,
 			config:           &whatsapp.Config{},
 			enabledByDefault: true,
 			inputPolicy:      model.InputNone,

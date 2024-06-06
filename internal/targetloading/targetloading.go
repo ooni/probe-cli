@@ -13,7 +13,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/experiment/openvpn"
 	"github.com/ooni/probe-cli/v3/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/registry"
 	"github.com/ooni/probe-cli/v3/internal/stuninput"
 )
 
@@ -26,12 +25,8 @@ var (
 	ErrNoStaticInput     = errors.New("no static input for this experiment")
 )
 
-// Session is the session according to a [*Loader].
-type Session interface {
-	CheckIn(ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInResult, error)
-	FetchOpenVPNConfig(ctx context.Context,
-		provider, cc string) (*model.OOAPIVPNProviderConfig, error)
-}
+// Session is the session according to a [*Loader] instance.
+type Session = model.ExperimentTargetLoaderSession
 
 // Logger is the [model.Logger] according to a [*Loader].
 type Logger interface {
@@ -230,7 +225,7 @@ func StaticBareInputForExperiment(name string) ([]string, error) {
 	//
 	// TODO(https://github.com/ooni/probe/issues/2557): server STUNReachability
 	// inputs using richer input (aka check-in v2).
-	switch registry.CanonicalizeExperimentName(name) {
+	switch name {
 	case "dnscheck":
 		return dnsCheckDefaultInput, nil
 	case "stunreachability":
@@ -305,7 +300,7 @@ func (il *Loader) readfile(filepath string, open openFunc) ([]model.ExperimentTa
 
 // loadRemote loads inputs from a remote source.
 func (il *Loader) loadRemote(ctx context.Context) ([]model.ExperimentTarget, error) {
-	switch registry.CanonicalizeExperimentName(il.ExperimentName) {
+	switch il.ExperimentName {
 	case "openvpn":
 		// TODO(ainghazal): given the semantics of the current API call, in an ideal world we'd need to pass
 		// the desired provider here, if known. We only have one provider for now, so I'm acting like YAGNI. Another

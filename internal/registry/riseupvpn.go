@@ -10,15 +10,17 @@ import (
 )
 
 func init() {
-	AllExperiments["riseupvpn"] = func() *Factory {
+	const canonicalName = "riseupvpn"
+	AllExperiments[canonicalName] = func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
 				return riseupvpn.NewExperimentMeasurer(
 					*config.(*riseupvpn.Config),
 				)
 			},
-			config:      &riseupvpn.Config{},
-			inputPolicy: model.InputNone,
+			canonicalName: canonicalName,
+			config:        &riseupvpn.Config{},
+			inputPolicy:   model.InputNone,
 		}
 	}
 }

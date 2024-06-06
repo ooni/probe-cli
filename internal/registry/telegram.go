@@ -10,13 +10,15 @@ import (
 )
 
 func init() {
-	AllExperiments["telegram"] = func() *Factory {
+	const canonicalName = "telegram"
+	AllExperiments[canonicalName] = func() *Factory {
 		return &Factory{
 			build: func(config any) model.ExperimentMeasurer {
 				return telegram.NewExperimentMeasurer(
 					config.(telegram.Config),
 				)
 			},
+			canonicalName:    canonicalName,
 			config:           telegram.Config{},
 			enabledByDefault: true,
 			interruptible:    false,

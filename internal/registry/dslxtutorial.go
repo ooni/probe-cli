@@ -10,15 +10,17 @@ import (
 )
 
 func init() {
-	AllExperiments["simple_sni"] = func() *Factory {
+	const canonicalName = "simple_sni"
+	AllExperiments[canonicalName] = func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
 				return chapter02.NewExperimentMeasurer(
 					*config.(*chapter02.Config),
 				)
 			},
-			config:      &chapter02.Config{},
-			inputPolicy: model.InputOrQueryBackend,
+			canonicalName: canonicalName,
+			config:        &chapter02.Config{},
+			inputPolicy:   model.InputOrQueryBackend,
 		}
 	}
 }

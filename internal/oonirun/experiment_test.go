@@ -165,7 +165,7 @@ func TestExperimentRun(t *testing.T) {
 		ReportFile             string
 		Session                Session
 		newExperimentBuilderFn func(experimentName string) (model.ExperimentBuilder, error)
-		newTargetLoaderFn      func(inputPolicy model.InputPolicy) targetLoader
+		newTargetLoaderFn      func(builder model.ExperimentBuilder) targetLoader
 		newSubmitterFn         func(ctx context.Context) (model.Submitter, error)
 		newSaverFn             func() (model.Saver, error)
 		newInputProcessorFn    func(experiment model.Experiment,
@@ -199,7 +199,7 @@ func TestExperimentRun(t *testing.T) {
 				}
 				return eb, nil
 			},
-			newTargetLoaderFn: func(inputPolicy model.InputPolicy) targetLoader {
+			newTargetLoaderFn: func(builder model.ExperimentBuilder) targetLoader {
 				return &mocks.ExperimentTargetLoader{
 					MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
 						return nil, errMocked
@@ -223,7 +223,7 @@ func TestExperimentRun(t *testing.T) {
 				}
 				return eb, nil
 			},
-			newTargetLoaderFn: func(inputPolicy model.InputPolicy) targetLoader {
+			newTargetLoaderFn: func(builder model.ExperimentBuilder) targetLoader {
 				return &mocks.ExperimentTargetLoader{
 					MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
 						return []model.ExperimentTarget{}, nil
@@ -263,7 +263,7 @@ func TestExperimentRun(t *testing.T) {
 				}
 				return eb, nil
 			},
-			newTargetLoaderFn: func(inputPolicy model.InputPolicy) targetLoader {
+			newTargetLoaderFn: func(builder model.ExperimentBuilder) targetLoader {
 				return &mocks.ExperimentTargetLoader{
 					MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
 						return []model.ExperimentTarget{}, nil
@@ -306,7 +306,7 @@ func TestExperimentRun(t *testing.T) {
 				}
 				return eb, nil
 			},
-			newTargetLoaderFn: func(inputPolicy model.InputPolicy) targetLoader {
+			newTargetLoaderFn: func(builder model.ExperimentBuilder) targetLoader {
 				return &mocks.ExperimentTargetLoader{
 					MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
 						return []model.ExperimentTarget{}, nil
@@ -352,7 +352,7 @@ func TestExperimentRun(t *testing.T) {
 				}
 				return eb, nil
 			},
-			newTargetLoaderFn: func(inputPolicy model.InputPolicy) targetLoader {
+			newTargetLoaderFn: func(builder model.ExperimentBuilder) targetLoader {
 				return &mocks.ExperimentTargetLoader{
 					MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
 						return []model.ExperimentTarget{}, nil

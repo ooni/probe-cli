@@ -22,6 +22,8 @@ type experimentBuilder struct {
 	session *Session
 }
 
+var _ model.ExperimentBuilder = &experimentBuilder{}
+
 // Interruptible implements ExperimentBuilder.Interruptible.
 func (b *experimentBuilder) Interruptible() bool {
 	return b.factory.Interruptible()
@@ -58,6 +60,11 @@ func (b *experimentBuilder) NewExperiment() model.Experiment {
 	experiment := newExperiment(b.session, measurer)
 	experiment.callbacks = b.callbacks
 	return experiment
+}
+
+// NewTargetLoader creates a new [model.ExperimentTargetLoader] instance.
+func (b *experimentBuilder) NewTargetLoader(config *model.ExperimentTargetLoaderConfig) model.ExperimentTargetLoader {
+	return b.factory.NewTargetLoader(config)
 }
 
 // newExperimentBuilder creates a new experimentBuilder instance.
