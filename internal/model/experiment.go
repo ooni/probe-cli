@@ -245,8 +245,8 @@ type ExperimentOptionInfo struct {
 	Type string
 }
 
-// ExperimentInputLoader loads inputs from local or remote sources.
-type ExperimentInputLoader interface {
+// ExperimentTargetLoader loads targets from local or remote sources.
+type ExperimentTargetLoader interface {
 	Load(ctx context.Context) ([]ExperimentTarget, error)
 }
 

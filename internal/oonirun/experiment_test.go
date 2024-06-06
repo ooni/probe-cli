@@ -75,7 +75,7 @@ func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 			},
 		},
 		newExperimentBuilderFn: nil,
-		newInputLoaderFn:       nil,
+		newTargetLoaderFn:      nil,
 		newSubmitterFn: func(ctx context.Context) (model.Submitter, error) {
 			subm := &mocks.Submitter{
 				MockSubmit: func(ctx context.Context, m *model.Measurement) error {
@@ -165,7 +165,7 @@ func TestExperimentRun(t *testing.T) {
 		ReportFile             string
 		Session                Session
 		newExperimentBuilderFn func(experimentName string) (model.ExperimentBuilder, error)
-		newInputLoaderFn       func(inputPolicy model.InputPolicy) inputLoader
+		newTargetLoaderFn      func(inputPolicy model.InputPolicy) targetLoader
 		newSubmitterFn         func(ctx context.Context) (model.Submitter, error)
 		newSaverFn             func() (model.Saver, error)
 		newInputProcessorFn    func(experiment model.Experiment,
@@ -199,8 +199,8 @@ func TestExperimentRun(t *testing.T) {
 				}
 				return eb, nil
 			},
-			newInputLoaderFn: func(inputPolicy model.InputPolicy) inputLoader {
-				return &mocks.ExperimentInputLoader{
+			newTargetLoaderFn: func(inputPolicy model.InputPolicy) targetLoader {
+				return &mocks.ExperimentTargetLoader{
 					MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
 						return nil, errMocked
 					},
@@ -223,8 +223,8 @@ func TestExperimentRun(t *testing.T) {
 				}
 				return eb, nil
 			},
-			newInputLoaderFn: func(inputPolicy model.InputPolicy) inputLoader {
-				return &mocks.ExperimentInputLoader{
+			newTargetLoaderFn: func(inputPolicy model.InputPolicy) targetLoader {
+				return &mocks.ExperimentTargetLoader{
 					MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
 						return []model.ExperimentTarget{}, nil
 					},
@@ -263,8 +263,8 @@ func TestExperimentRun(t *testing.T) {
 				}
 				return eb, nil
 			},
-			newInputLoaderFn: func(inputPolicy model.InputPolicy) inputLoader {
-				return &mocks.ExperimentInputLoader{
+			newTargetLoaderFn: func(inputPolicy model.InputPolicy) targetLoader {
+				return &mocks.ExperimentTargetLoader{
 					MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
 						return []model.ExperimentTarget{}, nil
 					},
@@ -306,8 +306,8 @@ func TestExperimentRun(t *testing.T) {
 				}
 				return eb, nil
 			},
-			newInputLoaderFn: func(inputPolicy model.InputPolicy) inputLoader {
-				return &mocks.ExperimentInputLoader{
+			newTargetLoaderFn: func(inputPolicy model.InputPolicy) targetLoader {
+				return &mocks.ExperimentTargetLoader{
 					MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
 						return []model.ExperimentTarget{}, nil
 					},
@@ -352,8 +352,8 @@ func TestExperimentRun(t *testing.T) {
 				}
 				return eb, nil
 			},
-			newInputLoaderFn: func(inputPolicy model.InputPolicy) inputLoader {
-				return &mocks.ExperimentInputLoader{
+			newTargetLoaderFn: func(inputPolicy model.InputPolicy) targetLoader {
+				return &mocks.ExperimentTargetLoader{
 					MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
 						return []model.ExperimentTarget{}, nil
 					},
@@ -392,7 +392,7 @@ func TestExperimentRun(t *testing.T) {
 				ReportFile:             tt.fields.ReportFile,
 				Session:                tt.fields.Session,
 				newExperimentBuilderFn: tt.fields.newExperimentBuilderFn,
-				newInputLoaderFn:       tt.fields.newInputLoaderFn,
+				newTargetLoaderFn:      tt.fields.newTargetLoaderFn,
 				newSubmitterFn:         tt.fields.newSubmitterFn,
 				newSaverFn:             tt.fields.newSaverFn,
 				newInputProcessorFn:    tt.fields.newInputProcessorFn,

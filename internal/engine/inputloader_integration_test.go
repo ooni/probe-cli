@@ -6,9 +6,9 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine"
-	"github.com/ooni/probe-cli/v3/internal/targetloading"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 // This historical integration test ensures that we're able to fetch URLs from
@@ -17,7 +17,7 @@ import (
 // good to keep this integration test here since we want to use a real session and a real
 // Loader and double check whether we can get inputs. In a more distant future it would
 // kind of make sense to have a broader package with this kind of integration tests.
-func TestInputLoaderInputOrQueryBackendWithNoInput(t *testing.T) {
+func TestTargetLoaderInputOrQueryBackendWithNoInput(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}

@@ -243,7 +243,7 @@ func StaticBareInputForExperiment(name string) ([]string, error) {
 // staticInputForExperiment returns the static input for the given experiment
 // or an error if there's no static input for the experiment.
 func staticInputForExperiment(name string) ([]model.ExperimentTarget, error) {
-	return inputLoaderStringListToModelExperimentTarget(StaticBareInputForExperiment(name))
+	return stringListToModelExperimentTarget(StaticBareInputForExperiment(name))
 }
 
 // loadOrStaticDefault implements the InputOrStaticDefault policy.
@@ -275,12 +275,12 @@ func (il *Loader) loadLocal() ([]model.ExperimentTarget, error) {
 	return inputs, nil
 }
 
-// inputLoaderOpenFn is the type of the function to open a file.
-type inputLoaderOpenFn func(filepath string) (fs.File, error)
+// openFunc is the type of the function to open a file.
+type openFunc func(filepath string) (fs.File, error)
 
 // readfile reads inputs from the specified file. The open argument should be
 // compatible with stdlib's fs.Open and helps us with unit testing.
-func (il *Loader) readfile(filepath string, open inputLoaderOpenFn) ([]model.ExperimentTarget, error) {
+func (il *Loader) readfile(filepath string, open openFunc) ([]model.ExperimentTarget, error) {
 	inputs := []model.ExperimentTarget{}
 	filep, err := open(filepath)
 	if err != nil {
@@ -335,11 +335,11 @@ func (il *Loader) loadRemoteWebConnectivity(ctx context.Context) ([]model.Experi
 	if reply.WebConnectivity == nil || len(reply.WebConnectivity.URLs) <= 0 {
 		return nil, ErrNoURLsReturned
 	}
-	output := inputLoaderModelOOAPIURLInfoToModelExperimentTarget(reply.WebConnectivity.URLs)
+	output := modelOOAPIURLInfoToModelExperimentTarget(reply.WebConnectivity.URLs)
 	return output, nil
 }
 
-func inputLoaderModelOOAPIURLInfoToModelExperimentTarget(
+func modelOOAPIURLInfoToModelExperimentTarget(
 	inputs []model.OOAPIURLInfo) (outputs []model.ExperimentTarget) {
 	for _, input := range inputs {
 		// Note: Dammit! Before we switch to go1.22 we need to continue to
@@ -372,7 +372,7 @@ func (il *Loader) loadRemoteOpenVPN(ctx context.Context) ([]model.ExperimentTarg
 		// hitting the API too many times.
 		reply, err := il.fetchOpenVPNConfig(ctx, provider)
 		if err != nil {
-			output := inputLoaderModelOOAPIURLInfoToModelExperimentTarget(urls)
+			output := modelOOAPIURLInfoToModelExperimentTarget(urls)
 			return output, err
 		}
 		for _, input := range reply.Inputs {
@@ -386,7 +386,7 @@ func (il *Loader) loadRemoteOpenVPN(ctx context.Context) ([]model.ExperimentTarg
 		// the experiment on the backend.
 		return nil, ErrNoURLsReturned
 	}
-	output := inputLoaderModelOOAPIURLInfoToModelExperimentTarget(urls)
+	output := modelOOAPIURLInfoToModelExperimentTarget(urls)
 	return output, nil
 }
 
@@ -449,12 +449,12 @@ func (il *Loader) logger() Logger {
 	return log.Log
 }
 
-// inputLoaderStringListToModelExperimentTarget is an utility function to convert
+// stringListToModelExperimentTarget is an utility function to convert
 // a list of strings containing URLs into a list of model.ExperimentTarget
 // which would have been returned by an hypothetical backend
 // API serving input for a test for which we don't have an API
 // yet (e.g., stunreachability and dnscheck).
-func inputLoaderStringListToModelExperimentTarget(input []string, err error) ([]model.ExperimentTarget, error) {
+func stringListToModelExperimentTarget(input []string, err error) ([]model.ExperimentTarget, error) {
 	if err != nil {
 		return nil, err
 	}

@@ -194,7 +194,7 @@ func V2MeasureDescriptor(ctx context.Context, config *LinkConfig, desc *V2Descri
 			ReportFile:             config.ReportFile,
 			Session:                config.Session,
 			newExperimentBuilderFn: nil,
-			newInputLoaderFn:       nil,
+			newTargetLoaderFn:      nil,
 			newSubmitterFn:         nil,
 			newSaverFn:             nil,
 			newInputProcessorFn:    nil,

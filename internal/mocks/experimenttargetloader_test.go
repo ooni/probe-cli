@@ -11,7 +11,7 @@ import (
 func TestExperimentInputLoader(t *testing.T) {
 	t.Run("Load", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		eil := &ExperimentInputLoader{
+		eil := &ExperimentTargetLoader{
 			MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
 				return nil, expected
 			},

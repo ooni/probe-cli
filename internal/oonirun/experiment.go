@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/humanize"
-	"github.com/ooni/probe-cli/v3/internal/targetloading"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 // experimentShuffledInputs counts how many times we shuffled inputs
@@ -60,8 +60,8 @@ type Experiment struct {
 	// newExperimentBuilderFn is OPTIONAL and used for testing.
 	newExperimentBuilderFn func(experimentName string) (model.ExperimentBuilder, error)
 
-	// newInputLoaderFn is OPTIONAL and used for testing.
-	newInputLoaderFn func(inputPolicy model.InputPolicy) inputLoader
+	// newTargetLoaderFn is OPTIONAL and used for testing.
+	newTargetLoaderFn func(inputPolicy model.InputPolicy) targetLoader
 
 	// newSubmitterFn is OPTIONAL and used for testing.
 	newSubmitterFn func(ctx context.Context) (model.Submitter, error)
@@ -84,8 +84,8 @@ func (ed *Experiment) Run(ctx context.Context) error {
 	}
 
 	// 2. create input loader and load input for this experiment
-	inputLoader := ed.newInputLoader(builder.InputPolicy())
-	inputList, err := inputLoader.Load(ctx)
+	targetLoader := ed.newTargetLoader(builder.InputPolicy())
+	targetList, err := targetLoader.Load(ctx)
 	if err != nil {
 		return err
 	}
@@ -93,8 +93,8 @@ func (ed *Experiment) Run(ctx context.Context) error {
 	// 3. randomize input, if needed
 	if ed.Random {
 		rnd := rand.New(rand.NewSource(time.Now().UnixNano())) // #nosec G404 -- not really important
-		rnd.Shuffle(len(inputList), func(i, j int) {
-			inputList[i], inputList[j] = inputList[j], inputList[i]
+		rnd.Shuffle(len(targetList), func(i, j int) {
+			targetList[i], targetList[j] = targetList[j], targetList[i]
 		})
 		experimentShuffledInputs.Add(1)
 	}
@@ -127,7 +127,7 @@ func (ed *Experiment) Run(ctx context.Context) error {
 	}
 
 	// 8. create an input processor
-	inputProcessor := ed.newInputProcessor(experiment, inputList, saver, submitter)
+	inputProcessor := ed.newInputProcessor(experiment, targetList, saver, submitter)
 
 	// 9. process input and generate measurements
 	return inputProcessor.Run(ctx)
@@ -192,13 +192,13 @@ func (ed *Experiment) newExperimentBuilder(experimentName string) (model.Experim
 	return ed.Session.NewExperimentBuilder(ed.Name)
 }
 
-// inputLoader is an alias for model.ExperimentInputLoader
-type inputLoader = model.ExperimentInputLoader
+// targetLoader is an alias for [model.ExperimentTargetLoader].
+type targetLoader = model.ExperimentTargetLoader
 
-// newInputLoader creates a new inputLoader.
-func (ed *Experiment) newInputLoader(inputPolicy model.InputPolicy) inputLoader {
-	if ed.newInputLoaderFn != nil {
-		return ed.newInputLoaderFn(inputPolicy)
+// newTargetLoader creates a new [model.ExperimentTargetLoader].
+func (ed *Experiment) newTargetLoader(inputPolicy model.InputPolicy) targetLoader {
+	if ed.newTargetLoaderFn != nil {
+		return ed.newTargetLoaderFn(inputPolicy)
 	}
 	return &targetloading.Loader{
 		CheckInConfig: &model.OOAPICheckInConfig{
