@@ -392,6 +392,16 @@ func TestV2MeasureDescriptor(t *testing.T) {
 					}
 					return exp
 				},
+				MockNewTargetLoader: func(config *model.ExperimentTargetLoaderConfig) model.ExperimentTargetLoader {
+					return &mocks.ExperimentTargetLoader{
+						MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
+							// Implementation note: the convention for input-less experiments is that
+							// they require a single entry containing an empty input.
+							entry := model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("")
+							return []model.ExperimentTarget{entry}, nil
+						},
+					}
+				},
 			}
 			return eb, nil
 		}
