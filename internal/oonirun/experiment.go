@@ -14,7 +14,6 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/humanize"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 // experimentShuffledInputs counts how many times we shuffled inputs
@@ -61,7 +60,7 @@ type Experiment struct {
 	newExperimentBuilderFn func(experimentName string) (model.ExperimentBuilder, error)
 
 	// newTargetLoaderFn is OPTIONAL and used for testing.
-	newTargetLoaderFn func(inputPolicy model.InputPolicy) targetLoader
+	newTargetLoaderFn func(builder model.ExperimentBuilder) targetLoader
 
 	// newSubmitterFn is OPTIONAL and used for testing.
 	newSubmitterFn func(ctx context.Context) (model.Submitter, error)
@@ -84,7 +83,7 @@ func (ed *Experiment) Run(ctx context.Context) error {
 	}
 
 	// 2. create input loader and load input for this experiment
-	targetLoader := ed.newTargetLoader(builder.InputPolicy())
+	targetLoader := ed.newTargetLoader(builder)
 	targetList, err := targetLoader.Load(ctx)
 	if err != nil {
 		return err
@@ -196,22 +195,20 @@ func (ed *Experiment) newExperimentBuilder(experimentName string) (model.Experim
 type targetLoader = model.ExperimentTargetLoader
 
 // newTargetLoader creates a new [model.ExperimentTargetLoader].
-func (ed *Experiment) newTargetLoader(inputPolicy model.InputPolicy) targetLoader {
+func (ed *Experiment) newTargetLoader(builder model.ExperimentBuilder) targetLoader {
 	if ed.newTargetLoaderFn != nil {
-		return ed.newTargetLoaderFn(inputPolicy)
+		return ed.newTargetLoaderFn(builder)
 	}
-	return &targetloading.Loader{
+	return builder.NewTargetLoader(&model.ExperimentTargetLoaderConfig{
 		CheckInConfig: &model.OOAPICheckInConfig{
 			RunType:  model.RunTypeManual,
 			OnWiFi:   true, // meaning: not on 4G
 			Charging: true,
 		},
-		ExperimentName: ed.Name,
-		InputPolicy:    inputPolicy,
-		StaticInputs:   ed.Inputs,
-		SourceFiles:    ed.InputFilePaths,
-		Session:        ed.Session,
-	}
+		StaticInputs: ed.Inputs,
+		SourceFiles:  ed.InputFilePaths,
+		Session:      ed.Session,
+	})
 }
 
 // experimentOptionsToStringList convers the options to []string, which is

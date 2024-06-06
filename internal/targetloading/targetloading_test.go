@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -535,7 +536,7 @@ type TargetLoaderMockableSession struct {
 	Error error
 }
 
-// CheckIn implements TargetLoaderSession.CheckIn.
+// CheckIn implements [Session].
 func (sess *TargetLoaderMockableSession) CheckIn(
 	ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInResult, error) {
 	if sess.Output == nil && sess.Error == nil {
@@ -544,11 +545,17 @@ func (sess *TargetLoaderMockableSession) CheckIn(
 	return sess.Output, sess.Error
 }
 
-// FetchOpenVPNConfig implements TargetLoaderSession.FetchOpenVPNConfig.
+// FetchOpenVPNConfig implements [Session].
 func (sess *TargetLoaderMockableSession) FetchOpenVPNConfig(
 	ctx context.Context, provider, cc string) (*model.OOAPIVPNProviderConfig, error) {
 	runtimex.Assert(!(sess.Error == nil && sess.FetchOpenVPNConfigOutput == nil), "both FetchOpenVPNConfig and Error are nil")
 	return sess.FetchOpenVPNConfigOutput, sess.Error
+}
+
+// Logger implements [Session].
+func (sess *TargetLoaderMockableSession) Logger() model.Logger {
+	// Such that we see some logs when running tests
+	return log.Log
 }
 
 func TestTargetLoaderCheckInFailure(t *testing.T) {

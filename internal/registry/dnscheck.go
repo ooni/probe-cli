@@ -10,13 +10,15 @@ import (
 )
 
 func init() {
-	AllExperiments["dnscheck"] = func() *Factory {
+	const canonicalName = "dnscheck"
+	AllExperiments[canonicalName] = func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
 				return dnscheck.NewExperimentMeasurer(
 					*config.(*dnscheck.Config),
 				)
 			},
+			canonicalName:    canonicalName,
 			config:           &dnscheck.Config{},
 			enabledByDefault: true,
 			inputPolicy:      model.InputOrStaticDefault,

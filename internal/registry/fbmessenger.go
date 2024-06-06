@@ -10,13 +10,15 @@ import (
 )
 
 func init() {
-	AllExperiments["facebook_messenger"] = func() *Factory {
+	const canonicalName = "facebook_messenger"
+	AllExperiments[canonicalName] = func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
 				return fbmessenger.NewExperimentMeasurer(
 					*config.(*fbmessenger.Config),
 				)
 			},
+			canonicalName:    canonicalName,
 			config:           &fbmessenger.Config{},
 			enabledByDefault: true,
 			inputPolicy:      model.InputNone,

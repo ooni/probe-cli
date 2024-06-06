@@ -10,13 +10,15 @@ import (
 )
 
 func init() {
-	AllExperiments["openvpn"] = func() *Factory {
+	const canonicalName = "openvpn"
+	AllExperiments[canonicalName] = func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
 				return openvpn.NewExperimentMeasurer(
 					*config.(*openvpn.Config), "openvpn",
 				)
 			},
+			canonicalName:    canonicalName,
 			config:           &openvpn.Config{},
 			enabledByDefault: true,
 			interruptible:    true,

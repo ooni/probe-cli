@@ -17,7 +17,11 @@ type ExperimentBuilder struct {
 	MockSetCallbacks func(callbacks model.ExperimentCallbacks)
 
 	MockNewExperiment func() model.Experiment
+
+	MockNewTargetLoader func(config *model.ExperimentTargetLoaderConfig) model.ExperimentTargetLoader
 }
+
+var _ model.ExperimentBuilder = &ExperimentBuilder{}
 
 func (eb *ExperimentBuilder) Interruptible() bool {
 	return eb.MockInterruptible()
@@ -45,4 +49,8 @@ func (eb *ExperimentBuilder) SetCallbacks(callbacks model.ExperimentCallbacks) {
 
 func (eb *ExperimentBuilder) NewExperiment() model.Experiment {
 	return eb.MockNewExperiment()
+}
+
+func (eb *ExperimentBuilder) NewTargetLoader(config *model.ExperimentTargetLoaderConfig) model.ExperimentTargetLoader {
+	return eb.MockNewTargetLoader(config)
 }

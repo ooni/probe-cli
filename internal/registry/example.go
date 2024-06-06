@@ -12,13 +12,15 @@ import (
 )
 
 func init() {
-	AllExperiments["example"] = func() *Factory {
+	const canonicalName = "example"
+	AllExperiments[canonicalName] = func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
 				return example.NewExperimentMeasurer(
 					*config.(*example.Config), "example",
 				)
 			},
+			canonicalName: canonicalName,
 			config: &example.Config{
 				Message:   "Good day from the example experiment!",
 				SleepTime: int64(time.Second),

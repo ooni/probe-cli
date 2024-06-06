@@ -10,13 +10,15 @@ import (
 )
 
 func init() {
-	AllExperiments["portfiltering"] = func() *Factory {
+	const canonicalName = "portfiltering"
+	AllExperiments[canonicalName] = func() *Factory {
 		return &Factory{
 			build: func(config any) model.ExperimentMeasurer {
 				return portfiltering.NewExperimentMeasurer(
 					config.(portfiltering.Config),
 				)
 			},
+			canonicalName:    canonicalName,
 			config:           portfiltering.Config{},
 			enabledByDefault: true,
 			interruptible:    false,

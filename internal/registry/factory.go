@@ -13,14 +13,18 @@ import (
 	"strconv"
 
 	"github.com/ooni/probe-cli/v3/internal/checkincache"
+	"github.com/ooni/probe-cli/v3/internal/experimentname"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/strcasex"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 // Factory allows to construct an experiment measurer.
 type Factory struct {
 	// build is the constructor that build an experiment with the given config.
 	build func(config interface{}) model.ExperimentMeasurer
+
+	// canonicalName is the canonical name of the experiment.
+	canonicalName string
 
 	// config contains the experiment's config.
 	config any
@@ -33,6 +37,22 @@ type Factory struct {
 
 	// interruptible indicates whether the experiment is interruptible.
 	interruptible bool
+}
+
+// Session is the session definition according to this package.
+type Session = model.ExperimentTargetLoaderSession
+
+// NewTargetLoader creates a new [model.ExperimentTargetLoader] instance.
+func (b *Factory) NewTargetLoader(config *model.ExperimentTargetLoaderConfig) model.ExperimentTargetLoader {
+	return &targetloading.Loader{
+		CheckInConfig:  config.CheckInConfig, // OPTIONAL
+		ExperimentName: b.canonicalName,
+		InputPolicy:    b.inputPolicy,
+		Logger:         config.Session.Logger(),
+		Session:        config.Session,
+		StaticInputs:   config.StaticInputs,
+		SourceFiles:    config.SourceFiles,
+	}
 }
 
 // Interruptible returns whether the experiment is interruptible.
@@ -218,27 +238,6 @@ func (b *Factory) NewExperimentMeasurer() model.ExperimentMeasurer {
 	return b.build(b.config)
 }
 
-// CanonicalizeExperimentName allows code to provide experiment names
-// in a more flexible way, where we have aliases.
-//
-// Because we allow for uppercase experiment names for backwards
-// compatibility with MK, we need to add some exceptions here when
-// mapping (e.g., DNSCheck => dnscheck).
-func CanonicalizeExperimentName(name string) string {
-	switch name = strcasex.ToSnake(name); name {
-	case "ndt_7":
-		name = "ndt" // since 2020-03-18, we use ndt7 to implement ndt by default
-	case "dns_check":
-		name = "dnscheck"
-	case "stun_reachability":
-		name = "stunreachability"
-	case "web_connectivity@v_0_5":
-		name = "web_connectivity@v0.5"
-	default:
-	}
-	return name
-}
-
 // ErrNoSuchExperiment indicates a given experiment does not exist.
 var ErrNoSuchExperiment = errors.New("no such experiment")
 
@@ -285,7 +284,7 @@ const OONI_FORCE_ENABLE_EXPERIMENT = "OONI_FORCE_ENABLE_EXPERIMENT"
 func NewFactory(name string, kvStore model.KeyValueStore, logger model.Logger) (*Factory, error) {
 	// Make sure we are deadling with the canonical experiment name. Historically MK used
 	// names such as WebConnectivity and we want to continue supporting this use case.
-	name = CanonicalizeExperimentName(name)
+	name = experimentname.Canonicalize(name)
 
 	// Handle A/B testing where we dynamically choose LTE for some users. The current policy
 	// only relates to a few users to collect data.

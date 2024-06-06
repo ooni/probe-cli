@@ -1,16 +1,20 @@
 package registry
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math"
 	"os"
 	"testing"
 
+	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/checkincache"
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivitylte"
+	"github.com/ooni/probe-cli/v3/internal/experimentname"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -294,6 +298,15 @@ func TestExperimentBuilderSetOptionAny(t *testing.T) {
 		FieldValue:    1.11,
 		ExpectErr:     ErrCannotSetIntegerOption,
 		ExpectConfig:  &fakeExperimentConfig{},
+	}, {
+		TestCaseName:  "[int] for float64 with zero fractional value",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "Value",
+		FieldValue:    float64(16.0),
+		ExpectErr:     nil,
+		ExpectConfig: &fakeExperimentConfig{
+			Value: 16,
+		},
 	}, {
 		TestCaseName:  "[string] for serialized bool value while setting a string value",
 		InitialConfig: &fakeExperimentConfig{},
@@ -691,7 +704,7 @@ func TestNewFactory(t *testing.T) {
 
 			// get experiment expectations -- note that here we must canonicalize the
 			// experiment name otherwise we won't find it into the map when testing non-canonical names
-			expectations := expectationsMap[CanonicalizeExperimentName(tc.experimentName)]
+			expectations := expectationsMap[experimentname.Canonicalize(tc.experimentName)]
 			if expectations == nil {
 				t.Fatal("no expectations for", tc.experimentName)
 			}
@@ -800,4 +813,50 @@ func TestNewFactory(t *testing.T) {
 			t.Fatal("expected nil factory here")
 		}
 	})
+}
+
+// Make sure the target loader for web connectivity is WAI when using no static inputs.
+func TestFactoryNewTargetLoaderWebConnectivity(t *testing.T) {
+	// construct the proper factory instance
+	store := &kvstore.Memory{}
+	factory, err := NewFactory("web_connectivity", store, log.Log)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// define the expected error.
+	expected := errors.New("antani")
+
+	// create suitable loader config.
+	config := &model.ExperimentTargetLoaderConfig{
+		CheckInConfig: &model.OOAPICheckInConfig{
+			// nothing
+		},
+		Session: &mocks.Session{
+			MockCheckIn: func(ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInResult, error) {
+				return nil, expected
+			},
+			MockLogger: func() model.Logger {
+				return log.Log
+			},
+		},
+		StaticInputs: nil,
+		SourceFiles:  nil,
+	}
+
+	// obtain the loader
+	loader := factory.NewTargetLoader(config)
+
+	// attempt to load targets
+	targets, err := loader.Load(context.Background())
+
+	// make sure we've got the expected error
+	if !errors.Is(err, expected) {
+		t.Fatal("unexpected error", err)
+	}
+
+	// make sure there are no targets
+	if len(targets) != 0 {
+		t.Fatal("expected zero length targets")
+	}
 }

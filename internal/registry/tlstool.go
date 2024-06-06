@@ -10,13 +10,15 @@ import (
 )
 
 func init() {
-	AllExperiments["tlstool"] = func() *Factory {
+	const canonicalName = "tlstool"
+	AllExperiments[canonicalName] = func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
 				return tlstool.NewExperimentMeasurer(
 					*config.(*tlstool.Config),
 				)
 			},
+			canonicalName:    canonicalName,
 			config:           &tlstool.Config{},
 			enabledByDefault: true,
 			inputPolicy:      model.InputOrQueryBackend,

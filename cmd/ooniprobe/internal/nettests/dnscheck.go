@@ -4,23 +4,21 @@ import (
 	"context"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 // DNSCheck nettest implementation.
 type DNSCheck struct{}
 
-func (n DNSCheck) lookupURLs(ctl *Controller) ([]model.ExperimentTarget, error) {
-	targetloader := &targetloading.Loader{
+func (n DNSCheck) lookupURLs(ctl *Controller, builder model.ExperimentBuilder) ([]model.ExperimentTarget, error) {
+	config := &model.ExperimentTargetLoaderConfig{
 		CheckInConfig: &model.OOAPICheckInConfig{
 			// not needed because we have default static input in the engine
 		},
-		ExperimentName: "dnscheck",
-		InputPolicy:    model.InputOrStaticDefault,
-		Session:        ctl.Session,
-		SourceFiles:    ctl.InputFiles,
-		StaticInputs:   ctl.Inputs,
+		Session:      ctl.Session,
+		SourceFiles:  ctl.InputFiles,
+		StaticInputs: ctl.Inputs,
 	}
+	targetloader := builder.NewTargetLoader(config)
 	testlist, err := targetloader.Load(context.Background())
 	if err != nil {
 		return nil, err
@@ -34,7 +32,7 @@ func (n DNSCheck) Run(ctl *Controller) error {
 	if err != nil {
 		return err
 	}
-	urls, err := n.lookupURLs(ctl)
+	urls, err := n.lookupURLs(ctl, builder)
 	if err != nil {
 		return err
 	}

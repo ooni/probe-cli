@@ -232,8 +232,46 @@ type ExperimentBuilder interface {
 	// SetCallbacks sets the experiment's interactive callbacks.
 	SetCallbacks(callbacks ExperimentCallbacks)
 
-	// NewExperiment creates the experiment instance.
+	// NewExperiment creates the [Experiment] instance.
 	NewExperiment() Experiment
+
+	// NewTargetLoader creates the [ExperimentTargetLoader] instance.
+	NewTargetLoader(config *ExperimentTargetLoaderConfig) ExperimentTargetLoader
+}
+
+// ExperimentTargetLoaderConfig is the configuration to create a new [ExperimentTargetLoader].
+//
+// The zero value is not ready to use; please, init the MANDATORY fields.
+type ExperimentTargetLoaderConfig struct {
+	// CheckInConfig contains OPTIONAL options for the CheckIn API. If not set, then we'll create a
+	// default config. If set but there are fields inside it that are not set, then we will set them
+	// to a default value.
+	CheckInConfig *OOAPICheckInConfig
+
+	// Session is the MANDATORY current measurement session.
+	Session ExperimentTargetLoaderSession
+
+	// StaticInputs contains OPTIONAL input to be added
+	// to the resulting input list if possible.
+	StaticInputs []string
+
+	// SourceFiles contains OPTIONAL files to read input
+	// from. Each file should contain a single input string
+	// per line. We will fail if any file is unreadable
+	// as well as if any file is empty.
+	SourceFiles []string
+}
+
+// ExperimentTargetLoaderSession is the session according to [ExperimentTargetLoader].
+type ExperimentTargetLoaderSession interface {
+	// CheckIn invokes the check-in API.
+	CheckIn(ctx context.Context, config *OOAPICheckInConfig) (*OOAPICheckInResult, error)
+
+	// FetchOpenVPNConfig fetches the OpenVPN experiment configuration.
+	FetchOpenVPNConfig(ctx context.Context, provider, cc string) (*OOAPIVPNProviderConfig, error)
+
+	// Logger returns the logger to use.
+	Logger() Logger
 }
 
 // ExperimentOptionInfo contains info about an experiment option.
