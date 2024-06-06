@@ -175,7 +175,7 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 	// code a lot, I'd rather avoid changing it even more,
 	// for the following reason:
 	//
-	// If we add an call targetloading.Loader here, this code will
+	// If we add and call targetloading.Loader here, this code will
 	// magically invoke check-in for InputOrQueryBackend,
 	// which we need to make sure the app can handle. This is
 	// the main reason why now I don't fill like properly
