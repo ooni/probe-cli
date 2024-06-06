@@ -82,6 +82,11 @@ func (ed *Experiment) Run(ctx context.Context) error {
 		return err
 	}
 
+	// TODO(bassosimone,DecFox): when we're executed by OONI Run v2, it probably makes
+	// slightly more sense to set options from a json.RawMessage because the current
+	// command line limitation is that it's hard to set non scalar parameters and instead
+	// with using OONI Run v2 we can completely bypass such a limitation.
+
 	// 2. configure experiment's options
 	//
 	// This MUST happen before loading targets because the options will
