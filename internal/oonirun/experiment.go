@@ -83,11 +83,14 @@ func (ed *Experiment) Run(ctx context.Context) error {
 	}
 
 	// 2. configure experiment's options
+	//
+	// This MUST happen before loading targets because the options will
+	// possibly be used to produce richer input targets.
 	if err := builder.SetOptionsAny(ed.ExtraOptions); err != nil {
 		return err
 	}
 
-	// 3. create input loader and load input for this experiment
+	// 3. create target loader and load targets for this experiment
 	targetLoader := ed.newTargetLoader(builder)
 	targetList, err := targetLoader.Load(ctx)
 	if err != nil {

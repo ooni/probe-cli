@@ -111,7 +111,11 @@ func (e *experiment) SubmitAndUpdateMeasurementContext(
 // newMeasurement creates a new measurement for this experiment with the given input.
 func (e *experiment) newMeasurement(target model.ExperimentTarget) *model.Measurement {
 	utctimenow := time.Now().UTC()
-	// TODO(bassosimone,DecFox): add support for unmarshaling options.
+	// TODO(bassosimone,DecFox): move here code that supports unmarshaling options
+	// when there is richer input, which currently is inside ./internal/oonirun.
+	//
+	// We MUST do this because the current solution only works for OONI Run and when
+	// there are command line options but does not work for API/static targets.
 	m := &model.Measurement{
 		DataFormatVersion:         model.OOAPIReportDefaultDataFormatVersion,
 		Input:                     model.MeasurementInput(target.Input()),
@@ -207,7 +211,8 @@ func (e *experiment) MeasureWithContext(
 	// Create a new measurement that the experiment measurer will finish filling
 	// by adding the test keys etc. Please, note that, as of 2024-06-06:
 	//
-	// 1. experiments using richer input receive input via the Target field;
+	// 1. experiments using richer input receive input via the Target field
+	// and ignore (*Measurement).Input field.
 	//
 	// 2. other experiments use (*Measurement).Input.
 	//
@@ -218,7 +223,9 @@ func (e *experiment) MeasureWithContext(
 	// Record when we started the experiment, to compute the runtime.
 	start := time.Now()
 
-	// Prepare the arguments for the experiment measurer
+	// Prepare the arguments for the experiment measurer.
+	//
+	// Only richer-input-aware experiments honour the Target field.
 	args := &model.ExperimentArgs{
 		Callbacks:   e.callbacks,
 		Measurement: measurement,

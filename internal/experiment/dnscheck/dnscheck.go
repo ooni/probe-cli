@@ -19,6 +19,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 const (
@@ -113,7 +114,7 @@ func (m *Measurer) ExperimentVersion() string {
 // errors are in addition to any other errors returned by the low level packages
 // that are used by this experiment to implement its functionality.
 var (
-	ErrInputRequired        = errors.New("this experiment needs input")
+	ErrInputRequired        = targetloading.ErrInputRequired
 	ErrInvalidURL           = errors.New("the input URL is invalid")
 	ErrUnsupportedURLScheme = errors.New("unsupported URL scheme")
 )
@@ -125,6 +126,9 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	sess := args.Session
 
 	// 0. obtain the richer input target, config, and input or panic
+	if args.Target == nil {
+		return ErrInputRequired
+	}
 	target := args.Target.(*Target)
 	config, input := target.options, target.input
 

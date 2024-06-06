@@ -124,7 +124,10 @@ type ExperimentArgs struct {
 	// Session is the MANDATORY session the experiment can use.
 	Session ExperimentSession
 
-	// Target is the MANDATORY target we're measuring.
+	// Target is the OPTIONAL target we're measuring.
+	//
+	// Only richer-input-aware experiments use this field. These experiments
+	// SHOULD be defensive and handle the case where this field is nil.
 	Target ExperimentTarget
 }
 

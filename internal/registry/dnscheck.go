@@ -12,7 +12,7 @@ import (
 func init() {
 	const canonicalName = "dnscheck"
 	AllExperiments[canonicalName] = func() *Factory {
-		// TODO(bassosimone): for now, we MUST keep the InputOrStaticDefault
+		// TODO(bassosimone,DecFox): for now, we MUST keep the InputOrStaticDefault
 		// policy because otherwise ./pkg/oonimkall should break.
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
