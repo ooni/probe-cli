@@ -11,6 +11,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/experiment/openvpn"
+	"github.com/ooni/probe-cli/v3/internal/experimentname"
 	"github.com/ooni/probe-cli/v3/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/stuninput"
@@ -225,7 +226,7 @@ func StaticBareInputForExperiment(name string) ([]string, error) {
 	//
 	// TODO(https://github.com/ooni/probe/issues/2557): server STUNReachability
 	// inputs using richer input (aka check-in v2).
-	switch name {
+	switch experimentname.Canonicalize(name) {
 	case "dnscheck":
 		return dnsCheckDefaultInput, nil
 	case "stunreachability":
@@ -300,7 +301,7 @@ func (il *Loader) readfile(filepath string, open openFunc) ([]model.ExperimentTa
 
 // loadRemote loads inputs from a remote source.
 func (il *Loader) loadRemote(ctx context.Context) ([]model.ExperimentTarget, error) {
-	switch il.ExperimentName {
+	switch experimentname.Canonicalize(il.ExperimentName) {
 	case "openvpn":
 		// TODO(ainghazal): given the semantics of the current API call, in an ideal world we'd need to pass
 		// the desired provider here, if known. We only have one provider for now, so I'm acting like YAGNI. Another

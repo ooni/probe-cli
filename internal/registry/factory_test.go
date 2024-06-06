@@ -10,6 +10,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/checkincache"
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivitylte"
+	"github.com/ooni/probe-cli/v3/internal/experimentname"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -691,7 +692,7 @@ func TestNewFactory(t *testing.T) {
 
 			// get experiment expectations -- note that here we must canonicalize the
 			// experiment name otherwise we won't find it into the map when testing non-canonical names
-			expectations := expectationsMap[CanonicalizeExperimentName(tc.experimentName)]
+			expectations := expectationsMap[experimentname.Canonicalize(tc.experimentName)]
 			if expectations == nil {
 				t.Fatal("no expectations for", tc.experimentName)
 			}
