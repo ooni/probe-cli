@@ -154,7 +154,12 @@ const (
 
 	// DefaultCountryCode is the default country code to use
 	// when a URL's country code is unknown.
-	DefaultCountryCode = "ZZ"
+	//
+	// We use XX because it is the same string that the URL
+	// prioritization code would return.
+	//
+	// See https://github.com/ooni/backend/blob/f7a93f477111c7278424996815b91e6300d66b83/api/ooniapi/prio.py#L182
+	DefaultCountryCode = "XX"
 )
 
 // NewOOAPIURLInfoWithDefaultCategoryAndCountry constructs a new instance

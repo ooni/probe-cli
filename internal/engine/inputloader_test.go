@@ -332,10 +332,10 @@ func TestInputLoaderInputOrStaticDefaultWithoutInputDNSCheck(t *testing.T) {
 	}
 	for idx := 0; idx < len(dnsCheckDefaultInput); idx++ {
 		e := out[idx]
-		if e.Category() != "MISC" {
+		if e.Category() != model.DefaultCategoryCode {
 			t.Fatal("invalid category code")
 		}
-		if e.Country() != "ZZ" {
+		if e.Country() != model.DefaultCountryCode {
 			t.Fatal("invalid country code")
 		}
 		if e.Input() != dnsCheckDefaultInput[idx] {
@@ -359,10 +359,10 @@ func TestInputLoaderInputOrStaticDefaultWithoutInputStunReachability(t *testing.
 	}
 	for idx := 0; idx < len(stunReachabilityDefaultInput); idx++ {
 		e := out[idx]
-		if e.Category() != "MISC" {
+		if e.Category() != model.DefaultCategoryCode {
 			t.Fatal("invalid category code")
 		}
-		if e.Country() != "ZZ" {
+		if e.Country() != model.DefaultCountryCode {
 			t.Fatal("invalid country code")
 		}
 		if e.Input() != stunReachabilityDefaultInput[idx] {
@@ -729,10 +729,10 @@ func TestStringListToModelURLInfoWithValidInput(t *testing.T) {
 		if input[idx] != output[idx].Input() {
 			t.Fatal("unexpected entry")
 		}
-		if output[idx].Category() != "MISC" {
+		if output[idx].Category() != model.DefaultCategoryCode {
 			t.Fatal("unexpected category")
 		}
-		if output[idx].Country() != "ZZ" {
+		if output[idx].Country() != model.DefaultCountryCode {
 			t.Fatal("unexpected country")
 		}
 	}
