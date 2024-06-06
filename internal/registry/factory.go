@@ -39,6 +39,22 @@ type Factory struct {
 	interruptible bool
 }
 
+// Session is the session definition according to this package.
+type Session = model.ExperimentTargetLoaderSession
+
+// NewTargetLoader creates a new [model.ExperimentTargetLoader] instance.
+func (b *Factory) NewTargetLoader(config *model.ExperimentTargetLoaderConfig) model.ExperimentTargetLoader {
+	return &targetloading.Loader{
+		CheckInConfig:  config.CheckInConfig, // OPTIONAL
+		ExperimentName: b.canonicalName,
+		InputPolicy:    b.inputPolicy,
+		Logger:         config.Session.Logger(),
+		Session:        config.Session,
+		StaticInputs:   config.StaticInputs,
+		SourceFiles:    config.SourceFiles,
+	}
+}
+
 // Interruptible returns whether the experiment is interruptible.
 func (b *Factory) Interruptible() bool {
 	return b.interruptible
@@ -220,22 +236,6 @@ func (b *Factory) fieldbyname(v interface{}, key string) (reflect.Value, error) 
 // NewExperimentMeasurer creates a new [model.ExperimentMeasurer] instance.
 func (b *Factory) NewExperimentMeasurer() model.ExperimentMeasurer {
 	return b.build(b.config)
-}
-
-// Session is the session definition according to this package.
-type Session = model.ExperimentTargetLoaderSession
-
-// NewTargetLoader creates a new [model.ExperimentTargetLoader] instance.
-func (b *Factory) NewTargetLoader(config *model.ExperimentTargetLoaderConfig) model.ExperimentTargetLoader {
-	return &targetloading.Loader{
-		CheckInConfig:  config.CheckInConfig, // OPTIONAL
-		ExperimentName: b.canonicalName,
-		InputPolicy:    b.inputPolicy,
-		Logger:         config.Session.Logger(),
-		Session:        config.Session,
-		StaticInputs:   config.StaticInputs,
-		SourceFiles:    config.SourceFiles,
-	}
 }
 
 // ErrNoSuchExperiment indicates a given experiment does not exist.
