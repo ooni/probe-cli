@@ -455,6 +455,11 @@ func TestNewFactory(t *testing.T) {
 			inputPolicy:      model.InputNone,
 			interruptible:    true,
 		},
+		"openvpn": {
+			enabledByDefault: true,
+			inputPolicy:      model.InputOrQueryBackend,
+			interruptible:    true,
+		},
 		"portfiltering": {
 			enabledByDefault: true,
 			inputPolicy:      model.InputNone,

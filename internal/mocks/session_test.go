@@ -80,6 +80,22 @@ func TestSession(t *testing.T) {
 		}
 	})
 
+	t.Run("FetchOpenVPNConfig", func(t *testing.T) {
+		expected := errors.New("mocked err")
+		s := &Session{
+			MockFetchOpenVPNConfig: func(ctx context.Context, provider, cc string) (*model.OOAPIVPNProviderConfig, error) {
+				return nil, expected
+			},
+		}
+		cfg, err := s.FetchOpenVPNConfig(context.Background(), "riseup", "XX")
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected err", err)
+		}
+		if cfg != nil {
+			t.Fatal("expected nil cfg")
+		}
+	})
+
 	t.Run("KeyValueStore", func(t *testing.T) {
 		expect := &KeyValueStore{}
 		s := &Session{

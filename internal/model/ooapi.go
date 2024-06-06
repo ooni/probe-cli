@@ -99,6 +99,41 @@ type OOAPICheckReportIDResponse struct {
 	V     int64  `json:"v"`
 }
 
+// OOAPIVPNConfig contains the configuration needed to start an OpenVPN connection, returned as part of
+// [OOAPIVPNProviderConfig].
+type OOAPIVPNConfig struct {
+	// CA is the Certificate Authority for the endpoints by this provider.
+	CA string `json:"ca"`
+
+	// Cert is a valid certificate, for providers that use x509 certificate authentication.
+	Cert string `json:"cert,omitempty"`
+
+	// Key is a valid key, for providers that use x509 certificate authentication.
+	Key string `json:"key,omitempty"`
+
+	// Username is a valid username, for providers that use password authentication.
+	Username string `json:"username,omitempty"`
+
+	// Password is a valid password, for providers that use password authentication.
+	Password string `json:"password,omitempty"`
+}
+
+// OOAPIVPNProviderConfig is a minimal valid configuration subset for the openvpn experiment; at the moment it provides
+// credentials valid for endpoints in a provider, and a list of inputs to be tested on this provider.
+type OOAPIVPNProviderConfig struct {
+	// Provider is the label for this provider.
+	Provider string `json:"provider,omitempty"`
+
+	// Config is the provider-specific VPN Config.
+	Config *OOAPIVPNConfig `json:"config"`
+
+	// Inputs is an array of valid endpoints for this provider.
+	Inputs []string `json:"endpoints"`
+
+	// DateUpdated is when the credential set was last updated in the server database.
+	DateUpdated time.Time `json:"date_updated"`
+}
+
 // OOAPIService describes a backend service.
 //
 // The fields of this struct have the meaning described in v2.0.0 of the OONI
