@@ -113,7 +113,7 @@ type InputLoader struct {
 
 // Load attempts to load input using the specified input loader. We will
 // return a list of URLs because this is the only input we support.
-func (il *InputLoader) Load(ctx context.Context) ([]model.OOAPIURLInfo, error) {
+func (il *InputLoader) Load(ctx context.Context) ([]model.ExperimentTarget, error) {
 	switch il.InputPolicy {
 	case model.InputOptional:
 		return il.loadOptional()
@@ -129,26 +129,29 @@ func (il *InputLoader) Load(ctx context.Context) ([]model.OOAPIURLInfo, error) {
 }
 
 // loadNone implements the InputNone policy.
-func (il *InputLoader) loadNone() ([]model.OOAPIURLInfo, error) {
+func (il *InputLoader) loadNone() ([]model.ExperimentTarget, error) {
 	if len(il.StaticInputs) > 0 || len(il.SourceFiles) > 0 {
 		return nil, ErrNoInputExpected
 	}
-	// Note that we need to return a single empty entry.
-	return []model.OOAPIURLInfo{{}}, nil
+	// Implementation note: the convention for input-less experiments is that
+	// they require a single entry containing an empty input.
+	entry := model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("")
+	return []model.ExperimentTarget{entry}, nil
 }
 
 // loadOptional implements the InputOptional policy.
-func (il *InputLoader) loadOptional() ([]model.OOAPIURLInfo, error) {
+func (il *InputLoader) loadOptional() ([]model.ExperimentTarget, error) {
 	inputs, err := il.loadLocal()
 	if err == nil && len(inputs) <= 0 {
-		// Note that we need to return a single empty entry.
-		inputs = []model.OOAPIURLInfo{{}}
+		// Implementation note: the convention for input-less experiments is that
+		// they require a single entry containing an empty input.
+		inputs = []model.ExperimentTarget{model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("")}
 	}
 	return inputs, err
 }
 
 // loadStrictlyRequired implements the InputStrictlyRequired policy.
-func (il *InputLoader) loadStrictlyRequired(_ context.Context) ([]model.OOAPIURLInfo, error) {
+func (il *InputLoader) loadStrictlyRequired(_ context.Context) ([]model.ExperimentTarget, error) {
 	inputs, err := il.loadLocal()
 	if err != nil || len(inputs) > 0 {
 		return inputs, err
@@ -157,7 +160,7 @@ func (il *InputLoader) loadStrictlyRequired(_ context.Context) ([]model.OOAPIURL
 }
 
 // loadOrQueryBackend implements the InputOrQueryBackend policy.
-func (il *InputLoader) loadOrQueryBackend(ctx context.Context) ([]model.OOAPIURLInfo, error) {
+func (il *InputLoader) loadOrQueryBackend(ctx context.Context) ([]model.ExperimentTarget, error) {
 	inputs, err := il.loadLocal()
 	if err != nil || len(inputs) > 0 {
 		return inputs, err
@@ -239,12 +242,12 @@ func StaticBareInputForExperiment(name string) ([]string, error) {
 
 // staticInputForExperiment returns the static input for the given experiment
 // or an error if there's no static input for the experiment.
-func staticInputForExperiment(name string) ([]model.OOAPIURLInfo, error) {
-	return stringListToModelURLInfo(StaticBareInputForExperiment(name))
+func staticInputForExperiment(name string) ([]model.ExperimentTarget, error) {
+	return inputLoaderStringListToModelExperimentTarget(StaticBareInputForExperiment(name))
 }
 
 // loadOrStaticDefault implements the InputOrStaticDefault policy.
-func (il *InputLoader) loadOrStaticDefault(_ context.Context) ([]model.OOAPIURLInfo, error) {
+func (il *InputLoader) loadOrStaticDefault(_ context.Context) ([]model.ExperimentTarget, error) {
 	inputs, err := il.loadLocal()
 	if err != nil || len(inputs) > 0 {
 		return inputs, err
@@ -253,10 +256,10 @@ func (il *InputLoader) loadOrStaticDefault(_ context.Context) ([]model.OOAPIURLI
 }
 
 // loadLocal loads inputs from StaticInputs and SourceFiles.
-func (il *InputLoader) loadLocal() ([]model.OOAPIURLInfo, error) {
-	inputs := []model.OOAPIURLInfo{}
+func (il *InputLoader) loadLocal() ([]model.ExperimentTarget, error) {
+	inputs := []model.ExperimentTarget{}
 	for _, input := range il.StaticInputs {
-		inputs = append(inputs, model.OOAPIURLInfo{URL: input})
+		inputs = append(inputs, model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(input))
 	}
 	for _, filepath := range il.SourceFiles {
 		extra, err := il.readfile(filepath, fsx.OpenFile)
@@ -277,8 +280,8 @@ type inputLoaderOpenFn func(filepath string) (fs.File, error)
 
 // readfile reads inputs from the specified file. The open argument should be
 // compatible with stdlib's fs.Open and helps us with unit testing.
-func (il *InputLoader) readfile(filepath string, open inputLoaderOpenFn) ([]model.OOAPIURLInfo, error) {
-	inputs := []model.OOAPIURLInfo{}
+func (il *InputLoader) readfile(filepath string, open inputLoaderOpenFn) ([]model.ExperimentTarget, error) {
+	inputs := []model.ExperimentTarget{}
 	filep, err := open(filepath)
 	if err != nil {
 		return nil, err
@@ -291,7 +294,7 @@ func (il *InputLoader) readfile(filepath string, open inputLoaderOpenFn) ([]mode
 	for scanner.Scan() {
 		line := scanner.Text()
 		if line != "" {
-			inputs = append(inputs, model.OOAPIURLInfo{URL: line})
+			inputs = append(inputs, model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(line))
 		}
 	}
 	if scanner.Err() != nil {
@@ -301,7 +304,7 @@ func (il *InputLoader) readfile(filepath string, open inputLoaderOpenFn) ([]mode
 }
 
 // loadRemote loads inputs from a remote source.
-func (il *InputLoader) loadRemote(ctx context.Context) ([]model.OOAPIURLInfo, error) {
+func (il *InputLoader) loadRemote(ctx context.Context) ([]model.ExperimentTarget, error) {
 	switch registry.CanonicalizeExperimentName(il.ExperimentName) {
 	case "openvpn":
 		// TODO(ainghazal): given the semantics of the current API call, in an ideal world we'd need to pass
@@ -316,7 +319,7 @@ func (il *InputLoader) loadRemote(ctx context.Context) ([]model.OOAPIURLInfo, er
 }
 
 // loadRemoteWebConnectivity loads webconnectivity inputs from a remote source.
-func (il *InputLoader) loadRemoteWebConnectivity(ctx context.Context) ([]model.OOAPIURLInfo, error) {
+func (il *InputLoader) loadRemoteWebConnectivity(ctx context.Context) ([]model.ExperimentTarget, error) {
 	config := il.CheckInConfig
 	if config == nil {
 		// Note: Session.CheckIn documentation says it will fill in
@@ -332,11 +335,28 @@ func (il *InputLoader) loadRemoteWebConnectivity(ctx context.Context) ([]model.O
 	if reply.WebConnectivity == nil || len(reply.WebConnectivity.URLs) <= 0 {
 		return nil, ErrNoURLsReturned
 	}
-	return reply.WebConnectivity.URLs, nil
+	output := inputLoaderModelOOAPIURLInfoToModelExperimentTarget(reply.WebConnectivity.URLs)
+	return output, nil
+}
+
+func inputLoaderModelOOAPIURLInfoToModelExperimentTarget(
+	inputs []model.OOAPIURLInfo) (outputs []model.ExperimentTarget) {
+	for _, input := range inputs {
+		// Note: Dammit! Before we switch to go1.22 we need to continue to
+		// stay careful about the variable over which we're looping!
+		//
+		// See https://go.dev/blog/loopvar-preview for more information.
+		outputs = append(outputs, &model.OOAPIURLInfo{
+			CategoryCode: input.CategoryCode,
+			CountryCode:  input.CountryCode,
+			URL:          input.URL,
+		})
+	}
+	return
 }
 
 // loadRemoteOpenVPN loads openvpn inputs from a remote source.
-func (il *InputLoader) loadRemoteOpenVPN(ctx context.Context) ([]model.OOAPIURLInfo, error) {
+func (il *InputLoader) loadRemoteOpenVPN(ctx context.Context) ([]model.ExperimentTarget, error) {
 	// VPN Inputs do not match exactly the semantics expected from [model.OOAPIURLInfo],
 	// since OOAPIURLInfo is oriented towards webconnectivity,
 	// but we force VPN targets in the URL and ignore all the other fields.
@@ -352,7 +372,8 @@ func (il *InputLoader) loadRemoteOpenVPN(ctx context.Context) ([]model.OOAPIURLI
 		// hitting the API too many times.
 		reply, err := il.fetchOpenVPNConfig(ctx, provider)
 		if err != nil {
-			return urls, err
+			output := inputLoaderModelOOAPIURLInfoToModelExperimentTarget(urls)
+			return output, err
 		}
 		for _, input := range reply.Inputs {
 			urls = append(urls, model.OOAPIURLInfo{URL: input})
@@ -365,7 +386,8 @@ func (il *InputLoader) loadRemoteOpenVPN(ctx context.Context) ([]model.OOAPIURLI
 		// the experiment on the backend.
 		return nil, ErrNoURLsReturned
 	}
-	return urls, nil
+	output := inputLoaderModelOOAPIURLInfoToModelExperimentTarget(urls)
+	return output, nil
 }
 
 // checkIn executes the check-in and filters the returned URLs to exclude
@@ -427,25 +449,21 @@ func (il *InputLoader) logger() InputLoaderLogger {
 	return log.Log
 }
 
-// stringListToModelURLInfo is an utility function to convert
-// a list of strings containing URLs into a list of model.URLInfo
+// inputLoaderStringListToModelExperimentTarget is an utility function to convert
+// a list of strings containing URLs into a list of model.ExperimentTarget
 // which would have been returned by an hypothetical backend
 // API serving input for a test for which we don't have an API
 // yet (e.g., stunreachability and dnscheck).
-func stringListToModelURLInfo(input []string, err error) ([]model.OOAPIURLInfo, error) {
+func inputLoaderStringListToModelExperimentTarget(input []string, err error) ([]model.ExperimentTarget, error) {
 	if err != nil {
 		return nil, err
 	}
-	var output []model.OOAPIURLInfo
+	var output []model.ExperimentTarget
 	for _, URL := range input {
 		if _, err := url.Parse(URL); err != nil {
 			return nil, err
 		}
-		output = append(output, model.OOAPIURLInfo{
-			CategoryCode: "MISC", // hard to find a category
-			CountryCode:  "XX",   // representing no country
-			URL:          URL,
-		})
+		output = append(output, model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(URL))
 	}
 	return output, nil
 }

@@ -1,5 +1,7 @@
 package nettests
 
+import "github.com/ooni/probe-cli/v3/internal/model"
+
 // HTTPHeaderFieldManipulation test implementation
 type HTTPHeaderFieldManipulation struct {
 }
@@ -12,5 +14,5 @@ func (h HTTPHeaderFieldManipulation) Run(ctl *Controller) error {
 	if err != nil {
 		return err
 	}
-	return ctl.Run(builder, []string{""})
+	return ctl.Run(builder, []model.ExperimentTarget{model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("")})
 }

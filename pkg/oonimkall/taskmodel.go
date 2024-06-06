@@ -252,7 +252,7 @@ type taskExperiment interface {
 	ReportID() string
 
 	// MeasureWithContext runs the measurement.
-	MeasureWithContext(ctx context.Context, input string) (
+	MeasureWithContext(ctx context.Context, target model.ExperimentTarget) (
 		measurement *model.Measurement, err error)
 
 	// SubmitAndUpdateMeasurementContext submits the measurement

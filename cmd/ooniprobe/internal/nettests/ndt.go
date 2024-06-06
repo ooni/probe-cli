@@ -1,5 +1,7 @@
 package nettests
 
+import "github.com/ooni/probe-cli/v3/internal/model"
+
 // NDT test implementation. We use v7 of NDT since 2020-03-12.
 type NDT struct {
 }
@@ -11,5 +13,5 @@ func (n NDT) Run(ctl *Controller) error {
 	if err != nil {
 		return err
 	}
-	return ctl.Run(builder, []string{""})
+	return ctl.Run(builder, []model.ExperimentTarget{model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("")})
 }

@@ -8,6 +8,7 @@ package model
 import (
 	"context"
 	"errors"
+	"fmt"
 )
 
 // ErrNoAvailableTestHelpers is emitted when there are no available test helpers.
@@ -80,6 +81,37 @@ func (d PrinterCallbacks) OnProgress(percentage float64, message string) {
 	d.Logger.Infof("[%5.1f%%] %s", percentage*100, message)
 }
 
+// ExperimentTarget contains a target for the experiment to measure.
+type ExperimentTarget interface {
+	// Category returns the github.com/citizenlab/test-lists category
+	// code for this piece of richer input.
+	//
+	// Return [DefaultCategoryCode] if there's no applicable category code.
+	Category() string
+
+	// Country returns the country code for this
+	// piece of richer input.
+	//
+	// Return [DefaultCountryCode] if there's not applicable country code.
+	Country() string
+
+	// Input returns the experiment input, which is typically a URL.
+	Input() string
+
+	// String MUST return the experiment input.
+	//
+	// Implementation note: previously existing code often times treated
+	// the input as a string and, crucially, printed it using %s. To be
+	// robust with respect to introducing richer input, we would like the
+	// code to print in output the same value as before, which possibly
+	// is processed by the desktop app. This is the reason why we are
+	// introducing an explicit String() method and why we say that this
+	// method MUST return the experiment input.
+	String() string
+}
+
+var _ fmt.Stringer = ExperimentTarget(nil)
+
 // ExperimentArgs contains the arguments passed to an experiment.
 type ExperimentArgs struct {
 	// Callbacks contains MANDATORY experiment callbacks.
@@ -127,11 +159,11 @@ type Experiment interface {
 	// successfully before, or an empty string, otherwise.
 	ReportID() string
 
-	// MeasureWithContext performs a synchronous measurement.
+	// MeasureWithContext measures the given experiment target.
 	//
-	// Return value: strictly either a non-nil measurement and
-	// a nil error or a nil measurement and a non-nil error.
-	MeasureWithContext(ctx context.Context, input string) (measurement *Measurement, err error)
+	// Return value: either a non-nil measurement and a nil error
+	// or a nil measurement and a non-nil error.
+	MeasureWithContext(ctx context.Context, target ExperimentTarget) (measurement *Measurement, err error)
 
 	// SubmitAndUpdateMeasurementContext submits a measurement and updates the
 	// fields whose value has changed as part of the submission.
@@ -215,7 +247,7 @@ type ExperimentOptionInfo struct {
 
 // ExperimentInputLoader loads inputs from local or remote sources.
 type ExperimentInputLoader interface {
-	Load(ctx context.Context) ([]OOAPIURLInfo, error)
+	Load(ctx context.Context) ([]ExperimentTarget, error)
 }
 
 // Submitter submits a measurement to the OONI collector.

@@ -58,6 +58,8 @@ type experiment struct {
 	testVersion   string
 }
 
+var _ model.Experiment = &experiment{}
+
 // newExperiment creates a new [*experiment] given a [model.ExperimentMeasurer].
 func newExperiment(sess *Session, measurer model.ExperimentMeasurer) *experiment {
 	return &experiment{
@@ -180,7 +182,8 @@ func (e *experiment) OpenReportContext(ctx context.Context) error {
 }
 
 // MeasureWithContext implements [model.Experiment].
-func (e *experiment) MeasureWithContext(ctx context.Context, input string) (*model.Measurement, error) {
+func (e *experiment) MeasureWithContext(
+	ctx context.Context, target model.ExperimentTarget) (*model.Measurement, error) {
 	// Here we ensure that we have already looked up the probe location
 	// information such that we correctly populate the measurement and also
 	// VERY IMPORTANTLY to scrub the IP address from the measurement.
@@ -204,7 +207,7 @@ func (e *experiment) MeasureWithContext(ctx context.Context, input string) (*mod
 	// by adding the test keys etc. Please, note that, as of 2024-06-05, we're using
 	// the measurement Input to provide input to an experiment. We'll probably
 	// change this, when we'll have finished implementing richer input.
-	measurement := e.newMeasurement(input)
+	measurement := e.newMeasurement(target.Input())
 
 	// Record when we started the experiment, to compute the runtime.
 	start := time.Now()

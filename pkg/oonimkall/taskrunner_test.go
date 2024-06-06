@@ -196,7 +196,7 @@ func TestTaskRunnerRun(t *testing.T) {
 			MockableReportID: func() string {
 				return "20211202T074907Z_example_IT_30722_n1_axDLHNUfJaV1IbuU"
 			},
-			MockableMeasureWithContext: func(ctx context.Context, input string) (*model.Measurement, error) {
+			MockableMeasureWithContext: func(ctx context.Context, target model.ExperimentTarget) (*model.Measurement, error) {
 				return &model.Measurement{}, nil
 			},
 			MockableSubmitAndUpdateMeasurementContext: func(ctx context.Context, measurement *model.Measurement) error {
@@ -447,7 +447,7 @@ func TestTaskRunnerRun(t *testing.T) {
 		fake.MockableInputPolicy = func() model.InputPolicy {
 			return model.InputNone
 		}
-		fake.MockableMeasureWithContext = func(ctx context.Context, input string) (measurement *model.Measurement, err error) {
+		fake.MockableMeasureWithContext = func(ctx context.Context, target model.ExperimentTarget) (measurement *model.Measurement, err error) {
 			return nil, errors.New("preconditions error")
 		}
 		runner.sessionBuilder = fake
@@ -477,7 +477,7 @@ func TestTaskRunnerRun(t *testing.T) {
 		fake.MockableInputPolicy = func() model.InputPolicy {
 			return model.InputNone
 		}
-		fake.MockableMeasureWithContext = func(ctx context.Context, input string) (measurement *model.Measurement, err error) {
+		fake.MockableMeasureWithContext = func(ctx context.Context, target model.ExperimentTarget) (measurement *model.Measurement, err error) {
 			return nil, errors.New("preconditions error")
 		}
 		runner.sessionBuilder = fake
@@ -669,7 +669,7 @@ func TestTaskRunnerRun(t *testing.T) {
 		fake.MockableInputPolicy = func() model.InputPolicy {
 			return model.InputStrictlyRequired
 		}
-		fake.MockableMeasureWithContext = func(ctx context.Context, input string) (measurement *model.Measurement, err error) {
+		fake.MockableMeasureWithContext = func(ctx context.Context, target model.ExperimentTarget) (measurement *model.Measurement, err error) {
 			time.Sleep(1 * time.Second)
 			return &model.Measurement{}, nil
 		}
@@ -714,7 +714,7 @@ func TestTaskRunnerRun(t *testing.T) {
 			return true
 		}
 		ctx, cancel := context.WithCancel(context.Background())
-		fake.MockableMeasureWithContext = func(ctx context.Context, input string) (measurement *model.Measurement, err error) {
+		fake.MockableMeasureWithContext = func(ctx context.Context, target model.ExperimentTarget) (measurement *model.Measurement, err error) {
 			cancel()
 			return &model.Measurement{}, nil
 		}
@@ -778,7 +778,7 @@ func TestTaskRunnerRun(t *testing.T) {
 		fake.MockableSetCallbacks = func(cbs model.ExperimentCallbacks) {
 			callbacks = cbs
 		}
-		fake.MockableMeasureWithContext = func(ctx context.Context, input string) (measurement *model.Measurement, err error) {
+		fake.MockableMeasureWithContext = func(ctx context.Context, target model.ExperimentTarget) (measurement *model.Measurement, err error) {
 			callbacks.OnProgress(1, "hello from the fake experiment")
 			return &model.Measurement{}, nil
 		}

@@ -28,7 +28,8 @@ func newMinimalFakeSession() *mocks.Session {
 				},
 				MockNewExperiment: func() model.Experiment {
 					exp := &mocks.Experiment{
-						MockMeasureWithContext: func(ctx context.Context, input string) (*model.Measurement, error) {
+						MockMeasureWithContext: func(
+							ctx context.Context, target model.ExperimentTarget) (*model.Measurement, error) {
 							ff := &testingx.FakeFiller{}
 							var meas model.Measurement
 							ff.Fill(&meas)

@@ -79,7 +79,7 @@ func TestInputLoaderInputNoneWithNoInput(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(out) != 1 || out[0].URL != "" {
+	if len(out) != 1 || out[0].Input() != "" {
 		t.Fatal("not the output we expected")
 	}
 }
@@ -93,7 +93,7 @@ func TestInputLoaderInputOptionalWithNoInput(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(out) != 1 || out[0].URL != "" {
+	if len(out) != 1 || out[0].Input() != "" {
 		t.Fatal("not the output we expected")
 	}
 }
@@ -115,12 +115,32 @@ func TestInputLoaderInputOptionalWithInput(t *testing.T) {
 	if len(out) != 5 {
 		t.Fatal("not the output length we expected")
 	}
-	expect := []model.OOAPIURLInfo{
-		{URL: "https://www.google.com/"},
-		{URL: "https://www.x.org/"},
-		{URL: "https://www.slashdot.org/"},
-		{URL: "https://abc.xyz/"},
-		{URL: "https://run.ooni.io/"},
+	expect := []model.ExperimentTarget{
+		&model.OOAPIURLInfo{
+			CountryCode:  model.DefaultCountryCode,
+			CategoryCode: model.DefaultCategoryCode,
+			URL:          "https://www.google.com/",
+		},
+		&model.OOAPIURLInfo{
+			CountryCode:  model.DefaultCountryCode,
+			CategoryCode: model.DefaultCategoryCode,
+			URL:          "https://www.x.org/",
+		},
+		&model.OOAPIURLInfo{
+			CountryCode:  model.DefaultCountryCode,
+			CategoryCode: model.DefaultCategoryCode,
+			URL:          "https://www.slashdot.org/",
+		},
+		&model.OOAPIURLInfo{
+			CountryCode:  model.DefaultCountryCode,
+			CategoryCode: model.DefaultCategoryCode,
+			URL:          "https://abc.xyz/",
+		},
+		&model.OOAPIURLInfo{
+			CountryCode:  model.DefaultCountryCode,
+			CategoryCode: model.DefaultCategoryCode,
+			URL:          "https://run.ooni.io/",
+		},
 	}
 	if diff := cmp.Diff(out, expect); diff != "" {
 		t.Fatal(diff)
@@ -164,12 +184,32 @@ func TestInputLoaderInputStrictlyRequiredWithInput(t *testing.T) {
 	if len(out) != 5 {
 		t.Fatal("not the output length we expected")
 	}
-	expect := []model.OOAPIURLInfo{
-		{URL: "https://www.google.com/"},
-		{URL: "https://www.x.org/"},
-		{URL: "https://www.slashdot.org/"},
-		{URL: "https://abc.xyz/"},
-		{URL: "https://run.ooni.io/"},
+	expect := []model.ExperimentTarget{
+		&model.OOAPIURLInfo{
+			CountryCode:  model.DefaultCountryCode,
+			CategoryCode: model.DefaultCategoryCode,
+			URL:          "https://www.google.com/",
+		},
+		&model.OOAPIURLInfo{
+			CountryCode:  model.DefaultCountryCode,
+			CategoryCode: model.DefaultCategoryCode,
+			URL:          "https://www.x.org/",
+		},
+		&model.OOAPIURLInfo{
+			CountryCode:  model.DefaultCountryCode,
+			CategoryCode: model.DefaultCategoryCode,
+			URL:          "https://www.slashdot.org/",
+		},
+		&model.OOAPIURLInfo{
+			CountryCode:  model.DefaultCountryCode,
+			CategoryCode: model.DefaultCategoryCode,
+			URL:          "https://abc.xyz/",
+		},
+		&model.OOAPIURLInfo{
+			CountryCode:  model.DefaultCountryCode,
+			CategoryCode: model.DefaultCategoryCode,
+			URL:          "https://run.ooni.io/",
+		},
 	}
 	if diff := cmp.Diff(out, expect); diff != "" {
 		t.Fatal(diff)
@@ -227,12 +267,32 @@ func TestInputLoaderInputOrStaticDefaultWithInput(t *testing.T) {
 	if len(out) != 5 {
 		t.Fatal("not the output length we expected")
 	}
-	expect := []model.OOAPIURLInfo{
-		{URL: "https://www.google.com/"},
-		{URL: "https://www.x.org/"},
-		{URL: "https://www.slashdot.org/"},
-		{URL: "https://abc.xyz/"},
-		{URL: "https://run.ooni.io/"},
+	expect := []model.ExperimentTarget{
+		&model.OOAPIURLInfo{
+			CountryCode:  model.DefaultCountryCode,
+			CategoryCode: model.DefaultCategoryCode,
+			URL:          "https://www.google.com/",
+		},
+		&model.OOAPIURLInfo{
+			CountryCode:  model.DefaultCountryCode,
+			CategoryCode: model.DefaultCategoryCode,
+			URL:          "https://www.x.org/",
+		},
+		&model.OOAPIURLInfo{
+			CountryCode:  model.DefaultCountryCode,
+			CategoryCode: model.DefaultCategoryCode,
+			URL:          "https://www.slashdot.org/",
+		},
+		&model.OOAPIURLInfo{
+			CountryCode:  model.DefaultCountryCode,
+			CategoryCode: model.DefaultCategoryCode,
+			URL:          "https://abc.xyz/",
+		},
+		&model.OOAPIURLInfo{
+			CountryCode:  model.DefaultCountryCode,
+			CategoryCode: model.DefaultCategoryCode,
+			URL:          "https://run.ooni.io/",
+		},
 	}
 	if diff := cmp.Diff(out, expect); diff != "" {
 		t.Fatal(diff)
@@ -274,13 +334,13 @@ func TestInputLoaderInputOrStaticDefaultWithoutInputDNSCheck(t *testing.T) {
 	}
 	for idx := 0; idx < len(dnsCheckDefaultInput); idx++ {
 		e := out[idx]
-		if e.CategoryCode != "MISC" {
+		if e.Category() != model.DefaultCategoryCode {
 			t.Fatal("invalid category code")
 		}
-		if e.CountryCode != "XX" {
+		if e.Country() != model.DefaultCountryCode {
 			t.Fatal("invalid country code")
 		}
-		if e.URL != dnsCheckDefaultInput[idx] {
+		if e.Input() != dnsCheckDefaultInput[idx] {
 			t.Fatal("invalid URL")
 		}
 	}
@@ -301,13 +361,13 @@ func TestInputLoaderInputOrStaticDefaultWithoutInputStunReachability(t *testing.
 	}
 	for idx := 0; idx < len(stunReachabilityDefaultInput); idx++ {
 		e := out[idx]
-		if e.CategoryCode != "MISC" {
+		if e.Category() != model.DefaultCategoryCode {
 			t.Fatal("invalid category code")
 		}
-		if e.CountryCode != "XX" {
+		if e.Country() != model.DefaultCountryCode {
 			t.Fatal("invalid country code")
 		}
-		if e.URL != stunReachabilityDefaultInput[idx] {
+		if e.Input() != stunReachabilityDefaultInput[idx] {
 			t.Fatal("invalid URL")
 		}
 	}
@@ -354,12 +414,32 @@ func TestInputLoaderInputOrQueryBackendWithInput(t *testing.T) {
 	if len(out) != 5 {
 		t.Fatal("not the output length we expected")
 	}
-	expect := []model.OOAPIURLInfo{
-		{URL: "https://www.google.com/"},
-		{URL: "https://www.x.org/"},
-		{URL: "https://www.slashdot.org/"},
-		{URL: "https://abc.xyz/"},
-		{URL: "https://run.ooni.io/"},
+	expect := []model.ExperimentTarget{
+		&model.OOAPIURLInfo{
+			CountryCode:  model.DefaultCountryCode,
+			CategoryCode: model.DefaultCategoryCode,
+			URL:          "https://www.google.com/",
+		},
+		&model.OOAPIURLInfo{
+			CountryCode:  model.DefaultCountryCode,
+			CategoryCode: model.DefaultCategoryCode,
+			URL:          "https://www.x.org/",
+		},
+		&model.OOAPIURLInfo{
+			CountryCode:  model.DefaultCountryCode,
+			CategoryCode: model.DefaultCategoryCode,
+			URL:          "https://www.slashdot.org/",
+		},
+		&model.OOAPIURLInfo{
+			CountryCode:  model.DefaultCountryCode,
+			CategoryCode: model.DefaultCategoryCode,
+			URL:          "https://abc.xyz/",
+		},
+		&model.OOAPIURLInfo{
+			CountryCode:  model.DefaultCountryCode,
+			CategoryCode: model.DefaultCategoryCode,
+			URL:          "https://run.ooni.io/",
+		},
 	}
 	if diff := cmp.Diff(out, expect); diff != "" {
 		t.Fatal(diff)
@@ -527,21 +607,24 @@ func TestInputLoaderCheckInSuccessWithNoURLs(t *testing.T) {
 }
 
 func TestInputLoaderCheckInSuccessWithSomeURLs(t *testing.T) {
-	expect := []model.OOAPIURLInfo{{
+	inputs0 := model.OOAPIURLInfo{
 		CategoryCode: "NEWS",
 		CountryCode:  "IT",
 		URL:          "https://repubblica.it",
-	}, {
+	}
+	inputs1 := model.OOAPIURLInfo{
 		CategoryCode: "NEWS",
 		CountryCode:  "IT",
 		URL:          "https://corriere.it",
-	}}
+	}
+	inputs := []model.OOAPIURLInfo{inputs0, inputs1}
+	expect := []model.ExperimentTarget{&inputs0, &inputs1}
 	il := &InputLoader{
 		Session: &InputLoaderMockableSession{
 			Output: &model.OOAPICheckInResult{
 				Tests: model.OOAPICheckInResultNettests{
 					WebConnectivity: &model.OOAPICheckInInfoWebConnectivity{
-						URLs: expect,
+						URLs: inputs,
 					},
 				},
 			},
@@ -711,7 +794,7 @@ func TestStringListToModelURLInfoWithValidInput(t *testing.T) {
 		"stun://stun.voip.blackberry.com:3478",
 		"stun://stun.altar.com.pl:3478",
 	}
-	output, err := stringListToModelURLInfo(input, nil)
+	output, err := inputLoaderStringListToModelExperimentTarget(input, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -719,13 +802,13 @@ func TestStringListToModelURLInfoWithValidInput(t *testing.T) {
 		t.Fatal("unexpected output length")
 	}
 	for idx := 0; idx < len(input); idx++ {
-		if input[idx] != output[idx].URL {
+		if input[idx] != output[idx].Input() {
 			t.Fatal("unexpected entry")
 		}
-		if output[idx].CategoryCode != "MISC" {
+		if output[idx].Category() != model.DefaultCategoryCode {
 			t.Fatal("unexpected category")
 		}
-		if output[idx].CountryCode != "XX" {
+		if output[idx].Country() != model.DefaultCountryCode {
 			t.Fatal("unexpected country")
 		}
 	}
@@ -737,7 +820,7 @@ func TestStringListToModelURLInfoWithInvalidInput(t *testing.T) {
 		"\t", // <- not a valid URL
 		"stun://stun.altar.com.pl:3478",
 	}
-	output, err := stringListToModelURLInfo(input, nil)
+	output, err := inputLoaderStringListToModelExperimentTarget(input, nil)
 	if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
 		t.Fatal("no the error we expected", err)
 	}
@@ -753,7 +836,7 @@ func TestStringListToModelURLInfoWithError(t *testing.T) {
 		"stun://stun.altar.com.pl:3478",
 	}
 	expected := errors.New("mocked error")
-	output, err := stringListToModelURLInfo(input, expected)
+	output, err := inputLoaderStringListToModelExperimentTarget(input, expected)
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected", err)
 	}

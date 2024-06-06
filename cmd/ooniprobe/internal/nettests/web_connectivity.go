@@ -8,7 +8,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-func (n WebConnectivity) lookupURLs(ctl *Controller, categories []string) ([]string, error) {
+func (n WebConnectivity) lookupURLs(ctl *Controller, categories []string) ([]model.ExperimentTarget, error) {
 	inputloader := &engine.InputLoader{
 		CheckInConfig: &model.OOAPICheckInConfig{
 			// Setting Charging and OnWiFi to true causes the CheckIn
