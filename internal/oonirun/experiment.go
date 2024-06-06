@@ -12,8 +12,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/humanize"
+	"github.com/ooni/probe-cli/v3/internal/inputloading"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -200,7 +200,7 @@ func (ed *Experiment) newInputLoader(inputPolicy model.InputPolicy) inputLoader 
 	if ed.newInputLoaderFn != nil {
 		return ed.newInputLoaderFn(inputPolicy)
 	}
-	return &engine.InputLoader{
+	return &inputloading.Loader{
 		CheckInConfig: &model.OOAPICheckInConfig{
 			RunType:  model.RunTypeManual,
 			OnWiFi:   true, // meaning: not on 4G

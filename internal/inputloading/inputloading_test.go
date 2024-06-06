@@ -1,4 +1,4 @@
-package engine
+package inputloading
 
 import (
 	"context"
@@ -11,15 +11,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func TestInputLoaderInputNoneWithStaticInputs(t *testing.T) {
-	il := &InputLoader{
+	il := &Loader{
 		StaticInputs: []string{"https://www.google.com/"},
 		InputPolicy:  model.InputNone,
 	}
@@ -34,7 +33,7 @@ func TestInputLoaderInputNoneWithStaticInputs(t *testing.T) {
 }
 
 func TestInputLoaderInputNoneWithFilesInputs(t *testing.T) {
-	il := &InputLoader{
+	il := &Loader{
 		SourceFiles: []string{
 			"testdata/inputloader1.txt",
 			"testdata/inputloader2.txt",
@@ -52,7 +51,7 @@ func TestInputLoaderInputNoneWithFilesInputs(t *testing.T) {
 }
 
 func TestInputLoaderInputNoneWithBothInputs(t *testing.T) {
-	il := &InputLoader{
+	il := &Loader{
 		StaticInputs: []string{"https://www.google.com/"},
 		SourceFiles: []string{
 			"testdata/inputloader1.txt",
@@ -71,7 +70,7 @@ func TestInputLoaderInputNoneWithBothInputs(t *testing.T) {
 }
 
 func TestInputLoaderInputNoneWithNoInput(t *testing.T) {
-	il := &InputLoader{
+	il := &Loader{
 		InputPolicy: model.InputNone,
 	}
 	ctx := context.Background()
@@ -85,7 +84,7 @@ func TestInputLoaderInputNoneWithNoInput(t *testing.T) {
 }
 
 func TestInputLoaderInputOptionalWithNoInput(t *testing.T) {
-	il := &InputLoader{
+	il := &Loader{
 		InputPolicy: model.InputOptional,
 	}
 	ctx := context.Background()
@@ -99,7 +98,7 @@ func TestInputLoaderInputOptionalWithNoInput(t *testing.T) {
 }
 
 func TestInputLoaderInputOptionalWithInput(t *testing.T) {
-	il := &InputLoader{
+	il := &Loader{
 		StaticInputs: []string{"https://www.google.com/"},
 		SourceFiles: []string{
 			"testdata/inputloader1.txt",
@@ -148,7 +147,7 @@ func TestInputLoaderInputOptionalWithInput(t *testing.T) {
 }
 
 func TestInputLoaderInputOptionalNonexistentFile(t *testing.T) {
-	il := &InputLoader{
+	il := &Loader{
 		StaticInputs: []string{"https://www.google.com/"},
 		SourceFiles: []string{
 			"testdata/inputloader1.txt",
@@ -168,7 +167,7 @@ func TestInputLoaderInputOptionalNonexistentFile(t *testing.T) {
 }
 
 func TestInputLoaderInputStrictlyRequiredWithInput(t *testing.T) {
-	il := &InputLoader{
+	il := &Loader{
 		StaticInputs: []string{"https://www.google.com/"},
 		SourceFiles: []string{
 			"testdata/inputloader1.txt",
@@ -217,7 +216,7 @@ func TestInputLoaderInputStrictlyRequiredWithInput(t *testing.T) {
 }
 
 func TestInputLoaderInputStrictlyRequiredWithoutInput(t *testing.T) {
-	il := &InputLoader{
+	il := &Loader{
 		InputPolicy: model.InputStrictlyRequired,
 	}
 	ctx := context.Background()
@@ -231,7 +230,7 @@ func TestInputLoaderInputStrictlyRequiredWithoutInput(t *testing.T) {
 }
 
 func TestInputLoaderInputStrictlyRequiredWithEmptyFile(t *testing.T) {
-	il := &InputLoader{
+	il := &Loader{
 		InputPolicy: model.InputStrictlyRequired,
 		SourceFiles: []string{
 			"testdata/inputloader1.txt",
@@ -250,7 +249,7 @@ func TestInputLoaderInputStrictlyRequiredWithEmptyFile(t *testing.T) {
 }
 
 func TestInputLoaderInputOrStaticDefaultWithInput(t *testing.T) {
-	il := &InputLoader{
+	il := &Loader{
 		ExperimentName: "dnscheck",
 		StaticInputs:   []string{"https://www.google.com/"},
 		SourceFiles: []string{
@@ -300,7 +299,7 @@ func TestInputLoaderInputOrStaticDefaultWithInput(t *testing.T) {
 }
 
 func TestInputLoaderInputOrStaticDefaultWithEmptyFile(t *testing.T) {
-	il := &InputLoader{
+	il := &Loader{
 		ExperimentName: "dnscheck",
 		InputPolicy:    model.InputOrStaticDefault,
 		SourceFiles: []string{
@@ -320,7 +319,7 @@ func TestInputLoaderInputOrStaticDefaultWithEmptyFile(t *testing.T) {
 }
 
 func TestInputLoaderInputOrStaticDefaultWithoutInputDNSCheck(t *testing.T) {
-	il := &InputLoader{
+	il := &Loader{
 		ExperimentName: "dnscheck",
 		InputPolicy:    model.InputOrStaticDefault,
 	}
@@ -347,7 +346,7 @@ func TestInputLoaderInputOrStaticDefaultWithoutInputDNSCheck(t *testing.T) {
 }
 
 func TestInputLoaderInputOrStaticDefaultWithoutInputStunReachability(t *testing.T) {
-	il := &InputLoader{
+	il := &Loader{
 		ExperimentName: "stunreachability",
 		InputPolicy:    model.InputOrStaticDefault,
 	}
@@ -383,7 +382,7 @@ func TestStaticBareInputForExperimentWorksWithNonCanonicalNames(t *testing.T) {
 }
 
 func TestInputLoaderInputOrStaticDefaultWithoutInputOtherName(t *testing.T) {
-	il := &InputLoader{
+	il := &Loader{
 		ExperimentName: "xx",
 		InputPolicy:    model.InputOrStaticDefault,
 	}
@@ -398,7 +397,7 @@ func TestInputLoaderInputOrStaticDefaultWithoutInputOtherName(t *testing.T) {
 }
 
 func TestInputLoaderInputOrQueryBackendWithInput(t *testing.T) {
-	il := &InputLoader{
+	il := &Loader{
 		StaticInputs: []string{"https://www.google.com/"},
 		SourceFiles: []string{
 			"testdata/inputloader1.txt",
@@ -447,18 +446,15 @@ func TestInputLoaderInputOrQueryBackendWithInput(t *testing.T) {
 }
 
 func TestInputLoaderInputOrQueryBackendWithNoInputAndCancelledContext(t *testing.T) {
-	sess, err := NewSession(context.Background(), SessionConfig{
-		KVStore:         &kvstore.Memory{},
-		Logger:          log.Log,
-		SoftwareName:    "miniooni",
-		SoftwareVersion: "0.1.0-dev",
-		TempDir:         "testdata",
-	})
-	if err != nil {
-		t.Fatal(err)
+	sess := &mocks.Session{
+		MockCheckIn: func(ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInResult, error) {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+			panic("should not arrive here")
+		},
 	}
-	defer sess.Close()
-	il := &InputLoader{
+	il := &Loader{
 		InputPolicy: model.InputOrQueryBackend,
 		Session:     sess,
 	}
@@ -474,7 +470,7 @@ func TestInputLoaderInputOrQueryBackendWithNoInputAndCancelledContext(t *testing
 }
 
 func TestInputLoaderInputOrQueryBackendWithEmptyFile(t *testing.T) {
-	il := &InputLoader{
+	il := &Loader{
 		InputPolicy: model.InputOrQueryBackend,
 		SourceFiles: []string{
 			"testdata/inputloader1.txt",
@@ -513,7 +509,7 @@ func (InputLoaderBrokenFile) Close() error {
 }
 
 func TestInputLoaderReadfileScannerFailure(t *testing.T) {
-	il := &InputLoader{}
+	il := &Loader{}
 	out, err := il.readfile("", InputLoaderBrokenFS{}.Open)
 	if !errors.Is(err, syscall.EFAULT) {
 		t.Fatal("not the error we expected")
@@ -556,7 +552,7 @@ func (sess *InputLoaderMockableSession) FetchOpenVPNConfig(
 }
 
 func TestInputLoaderCheckInFailure(t *testing.T) {
-	il := &InputLoader{
+	il := &Loader{
 		Session: &InputLoaderMockableSession{
 			Error: io.EOF,
 		},
@@ -571,7 +567,7 @@ func TestInputLoaderCheckInFailure(t *testing.T) {
 }
 
 func TestInputLoaderCheckInSuccessWithNilWebConnectivity(t *testing.T) {
-	il := &InputLoader{
+	il := &Loader{
 		Session: &InputLoaderMockableSession{
 			Output: &model.OOAPICheckInResult{
 				Tests: model.OOAPICheckInResultNettests{},
@@ -588,7 +584,7 @@ func TestInputLoaderCheckInSuccessWithNilWebConnectivity(t *testing.T) {
 }
 
 func TestInputLoaderCheckInSuccessWithNoURLs(t *testing.T) {
-	il := &InputLoader{
+	il := &Loader{
 		Session: &InputLoaderMockableSession{
 			Output: &model.OOAPICheckInResult{
 				Tests: model.OOAPICheckInResultNettests{
@@ -619,7 +615,7 @@ func TestInputLoaderCheckInSuccessWithSomeURLs(t *testing.T) {
 	}
 	inputs := []model.OOAPIURLInfo{inputs0, inputs1}
 	expect := []model.ExperimentTarget{&inputs0, &inputs1}
-	il := &InputLoader{
+	il := &Loader{
 		Session: &InputLoaderMockableSession{
 			Output: &model.OOAPICheckInResult{
 				Tests: model.OOAPICheckInResultNettests{
@@ -640,7 +636,7 @@ func TestInputLoaderCheckInSuccessWithSomeURLs(t *testing.T) {
 }
 
 func TestInputLoaderOpenVPNSuccessWithNoInput(t *testing.T) {
-	il := &InputLoader{
+	il := &Loader{
 		ExperimentName: "openvpn",
 		InputPolicy:    model.InputOrQueryBackend,
 		Session: &InputLoaderMockableSession{
@@ -661,7 +657,7 @@ func TestInputLoaderOpenVPNSuccessWithNoInput(t *testing.T) {
 }
 
 func TestInputLoaderOpenVPNSuccessWithNoInputAndAPICall(t *testing.T) {
-	il := &InputLoader{
+	il := &Loader{
 		ExperimentName: "openvpn",
 		InputPolicy:    model.InputOrQueryBackend,
 		Session: &InputLoaderMockableSession{
@@ -686,7 +682,7 @@ func TestInputLoaderOpenVPNSuccessWithNoInputAndAPICall(t *testing.T) {
 
 func TestInputLoaderOpenVPNWithAPIFailureAndFallback(t *testing.T) {
 	expected := errors.New("mocked API error")
-	il := &InputLoader{
+	il := &Loader{
 		ExperimentName: "openvpn",
 		InputPolicy:    model.InputOrQueryBackend,
 		Session: &InputLoaderMockableSession{
@@ -696,6 +692,28 @@ func TestInputLoaderOpenVPNWithAPIFailureAndFallback(t *testing.T) {
 	out, err := il.loadRemote(context.Background())
 	if err != expected {
 		t.Fatal("we expected an error")
+	}
+	if len(out) != 0 {
+		t.Fatal("we expected no fallback URLs")
+	}
+}
+
+func TestInputLoaderOpenVPNWithNoReturnedURLs(t *testing.T) {
+	il := &Loader{
+		ExperimentName: "openvpn",
+		InputPolicy:    model.InputOrQueryBackend,
+		Session: &InputLoaderMockableSession{
+			FetchOpenVPNConfigOutput: &model.OOAPIVPNProviderConfig{
+				Provider:    "riseupvpn",
+				Config:      &model.OOAPIVPNConfig{},
+				Inputs:      []string{},
+				DateUpdated: time.Time{},
+			},
+		},
+	}
+	out, err := il.loadRemote(context.Background())
+	if !errors.Is(err, ErrNoURLsReturned) {
+		t.Fatal("unexpected a error")
 	}
 	if len(out) != 0 {
 		t.Fatal("we expected no fallback URLs")
@@ -725,7 +743,7 @@ func TestPreventMistakesWithCategories(t *testing.T) {
 		URL:          "https://addons.mozilla.org/",
 		CountryCode:  "XX",
 	}}
-	il := &InputLoader{}
+	il := &Loader{}
 	output := il.preventMistakes(input, []string{"NEWS", "FILE"})
 	if diff := cmp.Diff(desired, output); diff != "" {
 		t.Fatal(diff)
@@ -746,7 +764,7 @@ func TestPreventMistakesWithoutCategoriesAndNil(t *testing.T) {
 		URL:          "https://addons.mozilla.org/",
 		CountryCode:  "XX",
 	}}
-	il := &InputLoader{}
+	il := &Loader{}
 	output := il.preventMistakes(input, nil)
 	if diff := cmp.Diff(input, output); diff != "" {
 		t.Fatal(diff)
@@ -767,7 +785,7 @@ func TestPreventMistakesWithoutCategoriesAndEmpty(t *testing.T) {
 		URL:          "https://addons.mozilla.org/",
 		CountryCode:  "XX",
 	}}
-	il := &InputLoader{}
+	il := &Loader{}
 	output := il.preventMistakes(input, []string{})
 	if diff := cmp.Diff(input, output); diff != "" {
 		t.Fatal(diff)
@@ -782,7 +800,7 @@ func (ilfl *InputLoaderFakeLogger) Warnf(format string, v ...interface{}) {}
 
 func TestInputLoaderLoggerWorksAsIntended(t *testing.T) {
 	logger := &InputLoaderFakeLogger{}
-	inputLoader := &InputLoader{Logger: logger}
+	inputLoader := &Loader{Logger: logger}
 	out := inputLoader.logger()
 	if out != logger {
 		t.Fatal("logger not working as intended")

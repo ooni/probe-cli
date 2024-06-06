@@ -3,7 +3,7 @@ package nettests
 import (
 	"context"
 
-	engine "github.com/ooni/probe-cli/v3/internal/engine"
+	"github.com/ooni/probe-cli/v3/internal/inputloading"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -11,7 +11,7 @@ import (
 type STUNReachability struct{}
 
 func (n STUNReachability) lookupURLs(ctl *Controller) ([]model.ExperimentTarget, error) {
-	inputloader := &engine.InputLoader{
+	inputloader := &inputloading.Loader{
 		CheckInConfig: &model.OOAPICheckInConfig{
 			// not needed because we have default static input in the engine
 		},
