@@ -1,4 +1,5 @@
-package engine
+// Package targetloading contains common code to load richer-input targets.
+package targetloading
 
 import (
 	"bufio"
@@ -16,7 +17,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/stuninput"
 )
 
-// These errors are returned by the InputLoader.
+// These errors are returned by the [*Loader].
 var (
 	ErrNoURLsReturned    = errors.New("no URLs returned")
 	ErrDetectedEmptyFile = errors.New("file did not contain any input")
@@ -25,21 +26,20 @@ var (
 	ErrNoStaticInput     = errors.New("no static input for this experiment")
 )
 
-// InputLoaderSession is the session according to an InputLoader. We
-// introduce this abstraction because it helps us with testing.
-type InputLoaderSession interface {
+// Session is the session according to a [*Loader].
+type Session interface {
 	CheckIn(ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInResult, error)
 	FetchOpenVPNConfig(ctx context.Context,
 		provider, cc string) (*model.OOAPIVPNProviderConfig, error)
 }
 
-// InputLoaderLogger is the logger according to an InputLoader.
-type InputLoaderLogger interface {
+// Logger is the [model.Logger] according to a [*Loader].
+type Logger interface {
 	// Warnf formats and emits a warning message.
 	Warnf(format string, v ...interface{})
 }
 
-// InputLoader loads input according to the specified policy
+// Loader loads input according to the specified policy
 // either from command line and input files or from OONI services. The
 // behaviour depends on the input policy as described below.
 //
@@ -74,7 +74,7 @@ type InputLoaderLogger interface {
 //
 // We gather input from StaticInput and SourceFiles. If there is
 // input, we return it. Otherwise, we return an error.
-type InputLoader struct {
+type Loader struct {
 	// CheckInConfig contains options for the CheckIn API. If
 	// not set, then we'll create a default config. If set but
 	// there are fields inside it that are not set, then we
@@ -91,14 +91,14 @@ type InputLoader struct {
 	// this field.
 	InputPolicy model.InputPolicy
 
-	// Logger is the optional logger that the InputLoader
+	// Logger is the optional logger that the [*Loader]
 	// should be using. If not set, we will use the default
 	// logger of github.com/apex/log.
-	Logger InputLoaderLogger
+	Logger Logger
 
 	// Session is the current measurement session. You
 	// MUST fill in this field.
-	Session InputLoaderSession
+	Session Session
 
 	// StaticInputs contains optional input to be added
 	// to the resulting input list if possible.
@@ -113,7 +113,7 @@ type InputLoader struct {
 
 // Load attempts to load input using the specified input loader. We will
 // return a list of URLs because this is the only input we support.
-func (il *InputLoader) Load(ctx context.Context) ([]model.ExperimentTarget, error) {
+func (il *Loader) Load(ctx context.Context) ([]model.ExperimentTarget, error) {
 	switch il.InputPolicy {
 	case model.InputOptional:
 		return il.loadOptional()
@@ -129,7 +129,7 @@ func (il *InputLoader) Load(ctx context.Context) ([]model.ExperimentTarget, erro
 }
 
 // loadNone implements the InputNone policy.
-func (il *InputLoader) loadNone() ([]model.ExperimentTarget, error) {
+func (il *Loader) loadNone() ([]model.ExperimentTarget, error) {
 	if len(il.StaticInputs) > 0 || len(il.SourceFiles) > 0 {
 		return nil, ErrNoInputExpected
 	}
@@ -140,7 +140,7 @@ func (il *InputLoader) loadNone() ([]model.ExperimentTarget, error) {
 }
 
 // loadOptional implements the InputOptional policy.
-func (il *InputLoader) loadOptional() ([]model.ExperimentTarget, error) {
+func (il *Loader) loadOptional() ([]model.ExperimentTarget, error) {
 	inputs, err := il.loadLocal()
 	if err == nil && len(inputs) <= 0 {
 		// Implementation note: the convention for input-less experiments is that
@@ -151,7 +151,7 @@ func (il *InputLoader) loadOptional() ([]model.ExperimentTarget, error) {
 }
 
 // loadStrictlyRequired implements the InputStrictlyRequired policy.
-func (il *InputLoader) loadStrictlyRequired(_ context.Context) ([]model.ExperimentTarget, error) {
+func (il *Loader) loadStrictlyRequired(_ context.Context) ([]model.ExperimentTarget, error) {
 	inputs, err := il.loadLocal()
 	if err != nil || len(inputs) > 0 {
 		return inputs, err
@@ -160,7 +160,7 @@ func (il *InputLoader) loadStrictlyRequired(_ context.Context) ([]model.Experime
 }
 
 // loadOrQueryBackend implements the InputOrQueryBackend policy.
-func (il *InputLoader) loadOrQueryBackend(ctx context.Context) ([]model.ExperimentTarget, error) {
+func (il *Loader) loadOrQueryBackend(ctx context.Context) ([]model.ExperimentTarget, error) {
 	inputs, err := il.loadLocal()
 	if err != nil || len(inputs) > 0 {
 		return inputs, err
@@ -243,11 +243,11 @@ func StaticBareInputForExperiment(name string) ([]string, error) {
 // staticInputForExperiment returns the static input for the given experiment
 // or an error if there's no static input for the experiment.
 func staticInputForExperiment(name string) ([]model.ExperimentTarget, error) {
-	return inputLoaderStringListToModelExperimentTarget(StaticBareInputForExperiment(name))
+	return stringListToModelExperimentTarget(StaticBareInputForExperiment(name))
 }
 
 // loadOrStaticDefault implements the InputOrStaticDefault policy.
-func (il *InputLoader) loadOrStaticDefault(_ context.Context) ([]model.ExperimentTarget, error) {
+func (il *Loader) loadOrStaticDefault(_ context.Context) ([]model.ExperimentTarget, error) {
 	inputs, err := il.loadLocal()
 	if err != nil || len(inputs) > 0 {
 		return inputs, err
@@ -256,7 +256,7 @@ func (il *InputLoader) loadOrStaticDefault(_ context.Context) ([]model.Experimen
 }
 
 // loadLocal loads inputs from StaticInputs and SourceFiles.
-func (il *InputLoader) loadLocal() ([]model.ExperimentTarget, error) {
+func (il *Loader) loadLocal() ([]model.ExperimentTarget, error) {
 	inputs := []model.ExperimentTarget{}
 	for _, input := range il.StaticInputs {
 		inputs = append(inputs, model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(input))
@@ -275,12 +275,12 @@ func (il *InputLoader) loadLocal() ([]model.ExperimentTarget, error) {
 	return inputs, nil
 }
 
-// inputLoaderOpenFn is the type of the function to open a file.
-type inputLoaderOpenFn func(filepath string) (fs.File, error)
+// openFunc is the type of the function to open a file.
+type openFunc func(filepath string) (fs.File, error)
 
 // readfile reads inputs from the specified file. The open argument should be
 // compatible with stdlib's fs.Open and helps us with unit testing.
-func (il *InputLoader) readfile(filepath string, open inputLoaderOpenFn) ([]model.ExperimentTarget, error) {
+func (il *Loader) readfile(filepath string, open openFunc) ([]model.ExperimentTarget, error) {
 	inputs := []model.ExperimentTarget{}
 	filep, err := open(filepath)
 	if err != nil {
@@ -304,7 +304,7 @@ func (il *InputLoader) readfile(filepath string, open inputLoaderOpenFn) ([]mode
 }
 
 // loadRemote loads inputs from a remote source.
-func (il *InputLoader) loadRemote(ctx context.Context) ([]model.ExperimentTarget, error) {
+func (il *Loader) loadRemote(ctx context.Context) ([]model.ExperimentTarget, error) {
 	switch registry.CanonicalizeExperimentName(il.ExperimentName) {
 	case "openvpn":
 		// TODO(ainghazal): given the semantics of the current API call, in an ideal world we'd need to pass
@@ -319,7 +319,7 @@ func (il *InputLoader) loadRemote(ctx context.Context) ([]model.ExperimentTarget
 }
 
 // loadRemoteWebConnectivity loads webconnectivity inputs from a remote source.
-func (il *InputLoader) loadRemoteWebConnectivity(ctx context.Context) ([]model.ExperimentTarget, error) {
+func (il *Loader) loadRemoteWebConnectivity(ctx context.Context) ([]model.ExperimentTarget, error) {
 	config := il.CheckInConfig
 	if config == nil {
 		// Note: Session.CheckIn documentation says it will fill in
@@ -335,11 +335,11 @@ func (il *InputLoader) loadRemoteWebConnectivity(ctx context.Context) ([]model.E
 	if reply.WebConnectivity == nil || len(reply.WebConnectivity.URLs) <= 0 {
 		return nil, ErrNoURLsReturned
 	}
-	output := inputLoaderModelOOAPIURLInfoToModelExperimentTarget(reply.WebConnectivity.URLs)
+	output := modelOOAPIURLInfoToModelExperimentTarget(reply.WebConnectivity.URLs)
 	return output, nil
 }
 
-func inputLoaderModelOOAPIURLInfoToModelExperimentTarget(
+func modelOOAPIURLInfoToModelExperimentTarget(
 	inputs []model.OOAPIURLInfo) (outputs []model.ExperimentTarget) {
 	for _, input := range inputs {
 		// Note: Dammit! Before we switch to go1.22 we need to continue to
@@ -356,7 +356,7 @@ func inputLoaderModelOOAPIURLInfoToModelExperimentTarget(
 }
 
 // loadRemoteOpenVPN loads openvpn inputs from a remote source.
-func (il *InputLoader) loadRemoteOpenVPN(ctx context.Context) ([]model.ExperimentTarget, error) {
+func (il *Loader) loadRemoteOpenVPN(ctx context.Context) ([]model.ExperimentTarget, error) {
 	// VPN Inputs do not match exactly the semantics expected from [model.OOAPIURLInfo],
 	// since OOAPIURLInfo is oriented towards webconnectivity,
 	// but we force VPN targets in the URL and ignore all the other fields.
@@ -372,7 +372,7 @@ func (il *InputLoader) loadRemoteOpenVPN(ctx context.Context) ([]model.Experimen
 		// hitting the API too many times.
 		reply, err := il.fetchOpenVPNConfig(ctx, provider)
 		if err != nil {
-			output := inputLoaderModelOOAPIURLInfoToModelExperimentTarget(urls)
+			output := modelOOAPIURLInfoToModelExperimentTarget(urls)
 			return output, err
 		}
 		for _, input := range reply.Inputs {
@@ -386,14 +386,14 @@ func (il *InputLoader) loadRemoteOpenVPN(ctx context.Context) ([]model.Experimen
 		// the experiment on the backend.
 		return nil, ErrNoURLsReturned
 	}
-	output := inputLoaderModelOOAPIURLInfoToModelExperimentTarget(urls)
+	output := modelOOAPIURLInfoToModelExperimentTarget(urls)
 	return output, nil
 }
 
 // checkIn executes the check-in and filters the returned URLs to exclude
 // the URLs that are not part of the requested categories. This is done for
 // robustness, just in case we or the API do something wrong.
-func (il *InputLoader) checkIn(
+func (il *Loader) checkIn(
 	ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInResultNettests, error) {
 	reply, err := il.Session.CheckIn(ctx, config)
 	if err != nil {
@@ -409,7 +409,7 @@ func (il *InputLoader) checkIn(
 }
 
 // fetchOpenVPNConfig fetches vpn information for the configured providers
-func (il *InputLoader) fetchOpenVPNConfig(ctx context.Context, provider string) (*model.OOAPIVPNProviderConfig, error) {
+func (il *Loader) fetchOpenVPNConfig(ctx context.Context, provider string) (*model.OOAPIVPNProviderConfig, error) {
 	reply, err := il.Session.FetchOpenVPNConfig(ctx, provider, "XX")
 	if err != nil {
 		return nil, err
@@ -420,7 +420,7 @@ func (il *InputLoader) fetchOpenVPNConfig(ctx context.Context, provider string) 
 // preventMistakes makes the code more robust with respect to any possible
 // integration issue where the backend returns to us URLs that don't
 // belong to the category codes we requested.
-func (il *InputLoader) preventMistakes(input []model.OOAPIURLInfo, categories []string) (output []model.OOAPIURLInfo) {
+func (il *Loader) preventMistakes(input []model.OOAPIURLInfo, categories []string) (output []model.OOAPIURLInfo) {
 	if len(categories) <= 0 {
 		return input
 	}
@@ -442,19 +442,19 @@ func (il *InputLoader) preventMistakes(input []model.OOAPIURLInfo, categories []
 }
 
 // logger returns the configured logger or apex/log's default.
-func (il *InputLoader) logger() InputLoaderLogger {
+func (il *Loader) logger() Logger {
 	if il.Logger != nil {
 		return il.Logger
 	}
 	return log.Log
 }
 
-// inputLoaderStringListToModelExperimentTarget is an utility function to convert
+// stringListToModelExperimentTarget is an utility function to convert
 // a list of strings containing URLs into a list of model.ExperimentTarget
 // which would have been returned by an hypothetical backend
 // API serving input for a test for which we don't have an API
 // yet (e.g., stunreachability and dnscheck).
-func inputLoaderStringListToModelExperimentTarget(input []string, err error) ([]model.ExperimentTarget, error) {
+func stringListToModelExperimentTarget(input []string, err error) ([]model.ExperimentTarget, error) {
 	if err != nil {
 		return nil, err
 	}

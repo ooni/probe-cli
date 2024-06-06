@@ -10,6 +10,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 // runnerForTask runs a specific task
@@ -169,16 +170,16 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 	builder.SetCallbacks(&runnerCallbacks{emitter: r.emitter})
 
 	// TODO(bassosimone): replace the following code with an
-	// invocation of the InputLoader. Since I am making these
+	// invocation of the targetloading.Loader. Since I am making these
 	// changes before a release and I've already changed the
 	// code a lot, I'd rather avoid changing it even more,
 	// for the following reason:
 	//
-	// If we add an call InputLoader here, this code will
+	// If we add and call targetloading.Loader here, this code will
 	// magically invoke check-in for InputOrQueryBackend,
 	// which we need to make sure the app can handle. This is
 	// the main reason why now I don't fill like properly
-	// fixing this code and use InputLoader: too much work
+	// fixing this code and use targetloading.Loader: too much work
 	// in too little time, so mistakes more likely.
 	//
 	// In fact, our current app assumes that it's its
@@ -191,7 +192,7 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 		}
 	case model.InputOrStaticDefault:
 		if len(r.settings.Inputs) <= 0 {
-			inputs, err := engine.StaticBareInputForExperiment(r.settings.Name)
+			inputs, err := targetloading.StaticBareInputForExperiment(r.settings.Name)
 			if err != nil {
 				r.emitter.EmitFailureStartup("no default static input for this experiment")
 				return

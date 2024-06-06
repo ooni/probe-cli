@@ -84,7 +84,7 @@ func v1Measure(ctx context.Context, config *LinkConfig, URL string) error {
 		ReportFile:             config.ReportFile,
 		Session:                config.Session,
 		newExperimentBuilderFn: nil,
-		newInputLoaderFn:       nil,
+		newTargetLoaderFn:      nil,
 		newSubmitterFn:         nil,
 		newSaverFn:             nil,
 		newInputProcessorFn:    nil,

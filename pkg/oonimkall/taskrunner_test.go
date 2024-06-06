@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	engine "github.com/ooni/probe-cli/v3/internal/engine"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -645,7 +645,7 @@ func TestTaskRunnerRun(t *testing.T) {
 			{Key: eventTypeStatusProgress, Count: 1},
 			{Key: eventTypeStatusReportCreate, Count: 1},
 		}
-		allEntries, err := engine.StaticBareInputForExperiment(experimentName)
+		allEntries, err := targetloading.StaticBareInputForExperiment(experimentName)
 		if err != nil {
 			t.Fatal(err)
 		}
