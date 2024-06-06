@@ -131,6 +131,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	}
 	target := args.Target.(*Target)
 	config, input := target.Options, target.URL
+	sess.Logger().Infof("dnscheck: using richer input: %+v %+v", config, input)
 
 	// 1. fill the measurement with test keys
 	tk := new(TestKeys)
