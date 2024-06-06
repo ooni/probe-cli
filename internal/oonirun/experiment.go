@@ -82,25 +82,25 @@ func (ed *Experiment) Run(ctx context.Context) error {
 		return err
 	}
 
-	// 2. create input loader and load input for this experiment
+	// 2. configure experiment's options
+	if err := builder.SetOptionsAny(ed.ExtraOptions); err != nil {
+		return err
+	}
+
+	// 3. create input loader and load input for this experiment
 	targetLoader := ed.newTargetLoader(builder)
 	targetList, err := targetLoader.Load(ctx)
 	if err != nil {
 		return err
 	}
 
-	// 3. randomize input, if needed
+	// 4. randomize input, if needed
 	if ed.Random {
 		rnd := rand.New(rand.NewSource(time.Now().UnixNano())) // #nosec G404 -- not really important
 		rnd.Shuffle(len(targetList), func(i, j int) {
 			targetList[i], targetList[j] = targetList[j], targetList[i]
 		})
 		experimentShuffledInputs.Add(1)
-	}
-
-	// 4. configure experiment's options
-	if err := builder.SetOptionsAny(ed.ExtraOptions); err != nil {
-		return err
 	}
 
 	// 5. construct the experiment instance

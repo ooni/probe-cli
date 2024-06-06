@@ -123,6 +123,9 @@ type ExperimentArgs struct {
 
 	// Session is the MANDATORY session the experiment can use.
 	Session ExperimentSession
+
+	// Target is the MANDATORY target we're measuring.
+	Target ExperimentTarget
 }
 
 // ExperimentMeasurer is the interface that allows to run a

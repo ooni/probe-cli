@@ -109,11 +109,12 @@ func (e *experiment) SubmitAndUpdateMeasurementContext(
 }
 
 // newMeasurement creates a new measurement for this experiment with the given input.
-func (e *experiment) newMeasurement(input string) *model.Measurement {
+func (e *experiment) newMeasurement(target model.ExperimentTarget) *model.Measurement {
 	utctimenow := time.Now().UTC()
+	// TODO(bassosimone,DecFox): add support for unmarshaling options.
 	m := &model.Measurement{
 		DataFormatVersion:         model.OOAPIReportDefaultDataFormatVersion,
-		Input:                     model.MeasurementInput(input),
+		Input:                     model.MeasurementInput(target.Input()),
 		MeasurementStartTime:      utctimenow.Format(model.MeasurementDateFormat),
 		MeasurementStartTimeSaved: utctimenow,
 		ProbeIP:                   model.DefaultProbeIP,
@@ -204,10 +205,15 @@ func (e *experiment) MeasureWithContext(
 	ctx = bytecounter.WithExperimentByteCounter(ctx, e.byteCounter)
 
 	// Create a new measurement that the experiment measurer will finish filling
-	// by adding the test keys etc. Please, note that, as of 2024-06-05, we're using
-	// the measurement Input to provide input to an experiment. We'll probably
-	// change this, when we'll have finished implementing richer input.
-	measurement := e.newMeasurement(target.Input())
+	// by adding the test keys etc. Please, note that, as of 2024-06-06:
+	//
+	// 1. experiments using richer input receive input via the Target field;
+	//
+	// 2. other experiments use (*Measurement).Input.
+	//
+	// Here we're passing the whole target to newMeasurement such that we're able
+	// to record options values in addition to the input value.
+	measurement := e.newMeasurement(target)
 
 	// Record when we started the experiment, to compute the runtime.
 	start := time.Now()
@@ -217,6 +223,7 @@ func (e *experiment) MeasureWithContext(
 		Callbacks:   e.callbacks,
 		Measurement: measurement,
 		Session:     e.session,
+		Target:      target,
 	}
 
 	// Invoke the measurer. Conventionally, an error being returned here

@@ -37,6 +37,9 @@ type Factory struct {
 
 	// interruptible indicates whether the experiment is interruptible.
 	interruptible bool
+
+	// newLoader is the OPTIONAL function to create a new loader.
+	newLoader func(config *targetloading.Loader, options any) model.ExperimentTargetLoader
 }
 
 // Session is the session definition according to this package.
@@ -44,7 +47,7 @@ type Session = model.ExperimentTargetLoaderSession
 
 // NewTargetLoader creates a new [model.ExperimentTargetLoader] instance.
 func (b *Factory) NewTargetLoader(config *model.ExperimentTargetLoaderConfig) model.ExperimentTargetLoader {
-	return &targetloading.Loader{
+	loader := &targetloading.Loader{
 		CheckInConfig:  config.CheckInConfig, // OPTIONAL
 		ExperimentName: b.canonicalName,
 		InputPolicy:    b.inputPolicy,
@@ -53,6 +56,10 @@ func (b *Factory) NewTargetLoader(config *model.ExperimentTargetLoaderConfig) mo
 		StaticInputs:   config.StaticInputs,
 		SourceFiles:    config.SourceFiles,
 	}
+	if b.newLoader != nil {
+		return b.newLoader(loader, b.config)
+	}
+	return loader
 }
 
 // Interruptible returns whether the experiment is interruptible.
