@@ -242,7 +242,7 @@ func TestFetchTorTargets(t *testing.T) {
 	t.Run("when we're not registered", func(t *testing.T) {
 		clnt := newclient()
 
-		// With explicitly empty state so it's pretty obvioust there's no state
+		// With explicitly empty state so it's pretty obvious there's no state
 		state := State{}
 
 		// force the state to be empty

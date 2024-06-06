@@ -38,6 +38,9 @@ type OONIBackendWithLoginFlow struct {
 	// mu provides mutual exclusion.
 	mu sync.Mutex
 
+	// openVPNConfig is the serialized openvpn config to send to clients.
+	openVPNConfig []byte
+
 	// psiphonConfig is the serialized psiphon config to send to authenticated clients.
 	psiphonConfig []byte
 
@@ -46,6 +49,15 @@ type OONIBackendWithLoginFlow struct {
 
 	// torTargets is the serialized tor config to send to authenticated clients.
 	torTargets []byte
+}
+
+// SetOpenVPNConfig sets openvpn configuration to use.
+//
+// This method is safe to call concurrently with incoming HTTP requests.
+func (h *OONIBackendWithLoginFlow) SetOpenVPNConfig(config []byte) {
+	defer h.mu.Unlock()
+	h.mu.Lock()
+	h.openVPNConfig = config
 }
 
 // SetPsiphonConfig sets psiphon configuration to use.
@@ -86,6 +98,7 @@ func (h *OONIBackendWithLoginFlow) NewMux() *http.ServeMux {
 	mux.Handle("/api/v1/login", h.handleLogin())
 	mux.Handle("/api/v1/test-list/psiphon-config", h.withAuthentication(h.handlePsiphonConfig()))
 	mux.Handle("/api/v1/test-list/tor-targets", h.withAuthentication(h.handleTorTargets()))
+	mux.Handle("/api/v2/ooniprobe/vpn-config/demovpn", h.handleOpenVPNConfig())
 	return mux
 }
 
@@ -208,6 +221,21 @@ func (h *OONIBackendWithLoginFlow) handleLogin() http.Handler {
 
 		// send response
 		_, _ = w.Write(must.MarshalJSON(response))
+	})
+}
+
+func (h *OONIBackendWithLoginFlow) handleOpenVPNConfig() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// make sure the method is OK
+		if r.Method != http.MethodGet {
+			w.WriteHeader(501)
+			return
+		}
+
+		// we must lock because of SetOpenVPNConfig
+		h.mu.Lock()
+		w.Write(h.openVPNConfig)
+		h.mu.Unlock()
 	})
 }
 

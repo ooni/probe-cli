@@ -22,6 +22,9 @@ type ExperimentSession interface {
 	// DefaultHTTPClient returns the default HTTPClient used by the session.
 	DefaultHTTPClient() HTTPClient
 
+	// FetchOpenVPNConfig returns vpn config as a serialized JSON or an error.
+	FetchOpenVPNConfig(ctx context.Context, provider, cc string) (*OOAPIVPNProviderConfig, error)
+
 	// FetchPsiphonConfig returns psiphon's config as a serialized JSON or an error.
 	FetchPsiphonConfig(ctx context.Context) ([]byte, error)
 

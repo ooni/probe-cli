@@ -9,6 +9,7 @@ import (
 	"net/url"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/experiment/openvpn"
 	"github.com/ooni/probe-cli/v3/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/registry"
@@ -28,6 +29,8 @@ var (
 // introduce this abstraction because it helps us with testing.
 type InputLoaderSession interface {
 	CheckIn(ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInResult, error)
+	FetchOpenVPNConfig(ctx context.Context,
+		provider, cc string) (*model.OOAPIVPNProviderConfig, error)
 }
 
 // InputLoaderLogger is the logger according to an InputLoader.
@@ -302,6 +305,21 @@ func (il *InputLoader) readfile(filepath string, open inputLoaderOpenFn) ([]mode
 
 // loadRemote loads inputs from a remote source.
 func (il *InputLoader) loadRemote(ctx context.Context) ([]model.ExperimentTarget, error) {
+	switch registry.CanonicalizeExperimentName(il.ExperimentName) {
+	case "openvpn":
+		// TODO(ainghazal): given the semantics of the current API call, in an ideal world we'd need to pass
+		// the desired provider here, if known. We only have one provider for now, so I'm acting like YAGNI. Another
+		// option is perhaps to coalesce all the known providers per proto into a single API call and let client
+		// pick whatever they want.
+		// This will likely improve after Richer Input is available.
+		return il.loadRemoteOpenVPN(ctx)
+	default:
+		return il.loadRemoteWebConnectivity(ctx)
+	}
+}
+
+// loadRemoteWebConnectivity loads webconnectivity inputs from a remote source.
+func (il *InputLoader) loadRemoteWebConnectivity(ctx context.Context) ([]model.ExperimentTarget, error) {
 	config := il.CheckInConfig
 	if config == nil {
 		// Note: Session.CheckIn documentation says it will fill in
@@ -317,11 +335,11 @@ func (il *InputLoader) loadRemote(ctx context.Context) ([]model.ExperimentTarget
 	if reply.WebConnectivity == nil || len(reply.WebConnectivity.URLs) <= 0 {
 		return nil, ErrNoURLsReturned
 	}
-	output := inputLoaderWebConnectivityURLsToModelExperimentTarget(reply.WebConnectivity.URLs)
+	output := inputLoaderModelOOAPIURLInfoToModelExperimentTarget(reply.WebConnectivity.URLs)
 	return output, nil
 }
 
-func inputLoaderWebConnectivityURLsToModelExperimentTarget(
+func inputLoaderModelOOAPIURLInfoToModelExperimentTarget(
 	inputs []model.OOAPIURLInfo) (outputs []model.ExperimentTarget) {
 	for _, input := range inputs {
 		// Note: Dammit! Before we switch to go1.22 we need to continue to
@@ -335,6 +353,41 @@ func inputLoaderWebConnectivityURLsToModelExperimentTarget(
 		})
 	}
 	return
+}
+
+// loadRemoteOpenVPN loads openvpn inputs from a remote source.
+func (il *InputLoader) loadRemoteOpenVPN(ctx context.Context) ([]model.ExperimentTarget, error) {
+	// VPN Inputs do not match exactly the semantics expected from [model.OOAPIURLInfo],
+	// since OOAPIURLInfo is oriented towards webconnectivity,
+	// but we force VPN targets in the URL and ignore all the other fields.
+	// There's still some level of impedance mismatch here, since it's also possible that
+	// the user of the library wants to use remotes by unknown providers passed via cli options,
+	// oonirun etc; in that case we'll need to extract the provider annotation from the URLs.
+	urls := make([]model.OOAPIURLInfo, 0)
+
+	// The openvpn experiment contains an array of the providers that the API knows about.
+	// We try to get all the remotes from the API for the list of enabled providers.
+	for _, provider := range openvpn.APIEnabledProviders {
+		// fetchOpenVPNConfig ultimately uses an internal cache in the session to avoid
+		// hitting the API too many times.
+		reply, err := il.fetchOpenVPNConfig(ctx, provider)
+		if err != nil {
+			output := inputLoaderModelOOAPIURLInfoToModelExperimentTarget(urls)
+			return output, err
+		}
+		for _, input := range reply.Inputs {
+			urls = append(urls, model.OOAPIURLInfo{URL: input})
+		}
+	}
+
+	if len(urls) <= 0 {
+		// At some point we might want to return [openvpn.DefaultEndpoints],
+		// but for now we're assuming that no targets means we've disabled
+		// the experiment on the backend.
+		return nil, ErrNoURLsReturned
+	}
+	output := inputLoaderModelOOAPIURLInfoToModelExperimentTarget(urls)
+	return output, nil
 }
 
 // checkIn executes the check-in and filters the returned URLs to exclude
@@ -353,6 +406,15 @@ func (il *InputLoader) checkIn(
 		)
 	}
 	return &reply.Tests, nil
+}
+
+// fetchOpenVPNConfig fetches vpn information for the configured providers
+func (il *InputLoader) fetchOpenVPNConfig(ctx context.Context, provider string) (*model.OOAPIVPNProviderConfig, error) {
+	reply, err := il.Session.FetchOpenVPNConfig(ctx, provider, "XX")
+	if err != nil {
+		return nil, err
+	}
+	return reply, nil
 }
 
 // preventMistakes makes the code more robust with respect to any possible

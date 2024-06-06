@@ -9,11 +9,13 @@ import (
 	"strings"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func TestInputLoaderInputNoneWithStaticInputs(t *testing.T) {
@@ -528,6 +530,10 @@ type InputLoaderMockableSession struct {
 	// be nil when Error is not-nil.
 	Output *model.OOAPICheckInResult
 
+	// FetchOpenVPNConfigOutput contains the output of FetchOpenVPNConfig.
+	// It should be nil when Error is non-nil.
+	FetchOpenVPNConfigOutput *model.OOAPIVPNProviderConfig
+
 	// Error is the error to be returned by CheckIn. It
 	// should be nil when Output is not-nil.
 	Error error
@@ -540,6 +546,13 @@ func (sess *InputLoaderMockableSession) CheckIn(
 		return nil, errors.New("both Output and Error are nil")
 	}
 	return sess.Output, sess.Error
+}
+
+// FetchOpenVPNConfig implements InputLoaderSession.FetchOpenVPNConfig.
+func (sess *InputLoaderMockableSession) FetchOpenVPNConfig(
+	ctx context.Context, provider, cc string) (*model.OOAPIVPNProviderConfig, error) {
+	runtimex.Assert(!(sess.Error == nil && sess.FetchOpenVPNConfigOutput == nil), "both FetchOpenVPNConfig and Error are nil")
+	return sess.FetchOpenVPNConfigOutput, sess.Error
 }
 
 func TestInputLoaderCheckInFailure(t *testing.T) {
@@ -623,6 +636,69 @@ func TestInputLoaderCheckInSuccessWithSomeURLs(t *testing.T) {
 	}
 	if diff := cmp.Diff(expect, out); diff != "" {
 		t.Fatal(diff)
+	}
+}
+
+func TestInputLoaderOpenVPNSuccessWithNoInput(t *testing.T) {
+	il := &InputLoader{
+		ExperimentName: "openvpn",
+		InputPolicy:    model.InputOrQueryBackend,
+		Session: &InputLoaderMockableSession{
+			Error: nil,
+			FetchOpenVPNConfigOutput: &model.OOAPIVPNProviderConfig{
+				Provider: "riseup",
+				Inputs: []string{
+					"openvpn://foo.corp/?address=1.1.1.1:1194&transport=tcp",
+				},
+				DateUpdated: time.Now(),
+			},
+		},
+	}
+	_, err := il.loadRemote(context.Background())
+	if err != nil {
+		t.Fatal("we did not expect an error")
+	}
+}
+
+func TestInputLoaderOpenVPNSuccessWithNoInputAndAPICall(t *testing.T) {
+	il := &InputLoader{
+		ExperimentName: "openvpn",
+		InputPolicy:    model.InputOrQueryBackend,
+		Session: &InputLoaderMockableSession{
+			Error: nil,
+			FetchOpenVPNConfigOutput: &model.OOAPIVPNProviderConfig{
+				Provider: "riseupvpn",
+				Inputs: []string{
+					"openvpn://foo.corp/?address=1.2.3.4:1194&transport=tcp",
+				},
+				DateUpdated: time.Now(),
+			},
+		},
+	}
+	out, err := il.loadRemote(context.Background())
+	if err != nil {
+		t.Fatal("we did not expect an error")
+	}
+	if len(out) != 1 {
+		t.Fatal("we expected output of len=1")
+	}
+}
+
+func TestInputLoaderOpenVPNWithAPIFailureAndFallback(t *testing.T) {
+	expected := errors.New("mocked API error")
+	il := &InputLoader{
+		ExperimentName: "openvpn",
+		InputPolicy:    model.InputOrQueryBackend,
+		Session: &InputLoaderMockableSession{
+			Error: expected,
+		},
+	}
+	out, err := il.loadRemote(context.Background())
+	if err != expected {
+		t.Fatal("we expected an error")
+	}
+	if len(out) != 0 {
+		t.Fatal("we expected no fallback URLs")
 	}
 }
 
@@ -762,7 +838,7 @@ func TestStringListToModelURLInfoWithError(t *testing.T) {
 	expected := errors.New("mocked error")
 	output, err := inputLoaderStringListToModelExperimentTarget(input, expected)
 	if !errors.Is(err, expected) {
-		t.Fatal("no the error we expected", err)
+		t.Fatal("not the error we expected", err)
 	}
 	if output != nil {
 		t.Fatal("unexpected nil output")
