@@ -371,7 +371,9 @@ func (s *Session) FetchTorTargets(
 		return nil, err
 	}
 
-	// here we could also lock the mutex.
+	// TODO(bassosimone,DecFox): here we could also lock the mutex
+	// or we should consider using the same strategy we used for the
+	// experiments, where we separated mutable state into dedicated types.
 	return clnt.FetchTorTargets(ctx, cc)
 }
 
