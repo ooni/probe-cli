@@ -96,4 +96,16 @@ func TestExperimentBuilder(t *testing.T) {
 			t.Fatal("invalid result")
 		}
 	})
+
+	t.Run("NewTargetLoader", func(t *testing.T) {
+		tloader := &ExperimentTargetLoader{}
+		eb := &ExperimentBuilder{
+			MockNewTargetLoader: func(*model.ExperimentTargetLoaderConfig) model.ExperimentTargetLoader {
+				return tloader
+			},
+		}
+		if out := eb.NewTargetLoader(&model.ExperimentTargetLoaderConfig{}); out != tloader {
+			t.Fatal("invalid result")
+		}
+	})
 }
