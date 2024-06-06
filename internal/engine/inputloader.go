@@ -388,7 +388,7 @@ func (il *InputLoader) logger() InputLoaderLogger {
 }
 
 // inputLoaderStringListToModelExperimentTarget is an utility function to convert
-// a list of strings containing URLs into a list of model.URLInfo
+// a list of strings containing URLs into a list of model.ExperimentTarget
 // which would have been returned by an hypothetical backend
 // API serving input for a test for which we don't have an API
 // yet (e.g., stunreachability and dnscheck).
