@@ -873,37 +873,72 @@ func (c *customTargetLoader) Load(ctx context.Context) ([]model.ExperimentTarget
 	panic("should not be called")
 }
 
-func TestFactoryCustomTargetLoaderForRicherInput(t *testing.T) {
-	// create factory creating a custom target loader
-	factory := &Factory{
-		build:            nil,
-		canonicalName:    "",
-		config:           &customConfig{},
-		enabledByDefault: false,
-		inputPolicy:      "",
-		interruptible:    false,
-		newLoader: func(config *targetloading.Loader, options any) model.ExperimentTargetLoader {
-			return &customTargetLoader{}
-		},
-	}
-
-	// create config for creating a new target loader
-	config := &model.ExperimentTargetLoaderConfig{
-		CheckInConfig: &model.OOAPICheckInConfig{ /* nothing */ },
-		Session: &mocks.Session{
-			MockLogger: func() model.Logger {
-				return model.DiscardLogger
+func TestFactoryNewTargetLoader(t *testing.T) {
+	t.Run("with custom target loader", func(t *testing.T) {
+		// create factory creating a custom target loader
+		factory := &Factory{
+			build:            nil,
+			canonicalName:    "",
+			config:           &customConfig{},
+			enabledByDefault: false,
+			inputPolicy:      "",
+			interruptible:    false,
+			newLoader: func(config *targetloading.Loader, options any) model.ExperimentTargetLoader {
+				return &customTargetLoader{}
 			},
-		},
-		StaticInputs: []string{},
-		SourceFiles:  []string{},
-	}
+		}
 
-	// create the loader
-	loader := factory.NewTargetLoader(config)
+		// create config for creating a new target loader
+		config := &model.ExperimentTargetLoaderConfig{
+			CheckInConfig: &model.OOAPICheckInConfig{ /* nothing */ },
+			Session: &mocks.Session{
+				MockLogger: func() model.Logger {
+					return model.DiscardLogger
+				},
+			},
+			StaticInputs: []string{},
+			SourceFiles:  []string{},
+		}
 
-	// make sure the type is the one we expected
-	if _, good := loader.(*customTargetLoader); !good {
-		t.Fatalf("expected a *customTargetLoader, got %T", loader)
-	}
+		// create the loader
+		loader := factory.NewTargetLoader(config)
+
+		// make sure the type is the one we expected
+		if _, good := loader.(*customTargetLoader); !good {
+			t.Fatalf("expected a *customTargetLoader, got %T", loader)
+		}
+	})
+
+	t.Run("with default target loader", func(t *testing.T) {
+		// create factory creating a default target loader
+		factory := &Factory{
+			build:            nil,
+			canonicalName:    "",
+			config:           &customConfig{},
+			enabledByDefault: false,
+			inputPolicy:      "",
+			interruptible:    false,
+			newLoader:        nil, // explicitly nil
+		}
+
+		// create config for creating a new target loader
+		config := &model.ExperimentTargetLoaderConfig{
+			CheckInConfig: &model.OOAPICheckInConfig{ /* nothing */ },
+			Session: &mocks.Session{
+				MockLogger: func() model.Logger {
+					return model.DiscardLogger
+				},
+			},
+			StaticInputs: []string{},
+			SourceFiles:  []string{},
+		}
+
+		// create the loader
+		loader := factory.NewTargetLoader(config)
+
+		// make sure the type is the one we expected
+		if _, good := loader.(*targetloading.Loader); !good {
+			t.Fatalf("expected a *targetloading.Loader, got %T", loader)
+		}
+	})
 }

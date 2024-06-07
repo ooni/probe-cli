@@ -7,17 +7,18 @@ import (
 )
 
 type example struct {
-	_    struct{}
-	Age  int64
-	Ch   chan int64
-	F    bool
-	Fmp  map[string]*bool
-	Fp   *bool
-	Fv   []bool
-	Fvp  []*bool
-	Name string
-	Ptr  *int64
-	V    []int64
+	Age   int64
+	Ch    chan int64
+	F     bool
+	Fmp   map[string]*bool
+	Fp    *bool
+	Fv    []bool
+	Fvp   []*bool
+	Name  string
+	Ptr   *int64
+	V     []int64
+	namex string
+	num   int64
 }
 
 var nonzero example
@@ -25,6 +26,8 @@ var nonzero example
 func init() {
 	ff := &testingx.FakeFiller{}
 	ff.Fill(&nonzero)
+	nonzero.namex = "foo"
+	nonzero.num = 123
 }
 
 func TestStructOrStructPtrIsZero(t *testing.T) {
@@ -57,6 +60,20 @@ func TestStructOrStructPtrIsZero(t *testing.T) {
 		name:   "[ptr] with nonzero value",
 		input:  &nonzero,
 		expect: false,
+	}, {
+		name: "[struct] with only private fields being nonzero",
+		input: example{
+			namex: "abc",
+			num:   128,
+		},
+		expect: true,
+	}, {
+		name: "[ptr] with only private fields being nonzero",
+		input: &example{
+			namex: "abc",
+			num:   128,
+		},
+		expect: true,
 	}}
 
 	for _, tc := range cases {
