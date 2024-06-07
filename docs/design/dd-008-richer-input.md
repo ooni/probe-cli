@@ -152,8 +152,6 @@ requiring options at scale. For example, richer input would enable us to
 study [DNS over HTTP/3 is blocking](https://github.com/ooni/probe/issues/2675))
 at scale.
 
-## Towards implementing richer input
-
 ## Design choice: deprecating the check-in API
 
 We originally envisioned distributing richer input through the check-in API
