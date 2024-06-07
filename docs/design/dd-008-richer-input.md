@@ -323,7 +323,7 @@ the changes roughly look like this:
 	Run(ctx context.Context, args *ExperimentArgs) error
  }
 
- type experimentMeasuer struct{
+ type experimentMeasurer struct{
 -	options map[string]any
  }
 
