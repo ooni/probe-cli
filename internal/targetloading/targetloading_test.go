@@ -509,9 +509,8 @@ func (TargetLoaderBrokenFile) Close() error {
 	return nil
 }
 
-func TestTargetLoaderReadfileScannerFailure(t *testing.T) {
-	il := &Loader{}
-	out, err := il.readfile("", TargetLoaderBrokenFS{}.Open)
+func TestReadfileScannerFailure(t *testing.T) {
+	out, err := readfile("", TargetLoaderBrokenFS{}.Open)
 	if !errors.Is(err, syscall.EFAULT) {
 		t.Fatal("not the error we expected")
 	}

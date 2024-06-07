@@ -19,6 +19,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/legacy/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 const (
@@ -96,7 +97,6 @@ type TestKeys struct {
 
 // Measurer performs the measurement.
 type Measurer struct {
-	Config
 	Endpoints *Endpoints
 }
 
@@ -114,7 +114,7 @@ func (m *Measurer) ExperimentVersion() string {
 // errors are in addition to any other errors returned by the low level packages
 // that are used by this experiment to implement its functionality.
 var (
-	ErrInputRequired        = errors.New("this experiment needs input")
+	ErrInputRequired        = targetloading.ErrInputRequired
 	ErrInvalidURL           = errors.New("the input URL is invalid")
 	ErrUnsupportedURLScheme = errors.New("unsupported URL scheme")
 )
@@ -125,6 +125,14 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	measurement := args.Measurement
 	sess := args.Session
 
+	// 0. obtain the richer input target, config, and input or panic
+	if args.Target == nil {
+		return ErrInputRequired
+	}
+	target := args.Target.(*Target)
+	config, input := target.Options, target.URL
+	sess.Logger().Infof("dnscheck: using richer input: %+v %+v", config, input)
+
 	// 1. fill the measurement with test keys
 	tk := new(TestKeys)
 	tk.Lookups = make(map[string]urlgetter.TestKeys)
@@ -133,20 +141,19 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 
 	// 2. select the domain to resolve or use default and, while there, also
 	// ensure that we register all the other options we're using.
-	domain := m.Config.Domain
+	domain := config.Domain
 	if domain == "" {
 		domain = defaultDomain
 	}
-	tk.DefaultAddrs = m.Config.DefaultAddrs
+	tk.DefaultAddrs = config.DefaultAddrs
 	tk.Domain = domain
-	tk.HTTP3Enabled = m.Config.HTTP3Enabled
-	tk.HTTPHost = m.Config.HTTPHost
-	tk.TLSServerName = m.Config.TLSServerName
-	tk.TLSVersion = m.Config.TLSVersion
+	tk.HTTP3Enabled = config.HTTP3Enabled
+	tk.HTTPHost = config.HTTPHost
+	tk.TLSServerName = config.TLSServerName
+	tk.TLSVersion = config.TLSVersion
 	tk.Residual = m.Endpoints != nil
 
 	// 3. parse the input URL describing the resolver to use
-	input := string(measurement.Input)
 	if input == "" {
 		return ErrInputRequired
 	}
@@ -191,7 +198,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	for _, addr := range addrs {
 		allAddrs[addr] = true
 	}
-	for _, addr := range strings.Split(m.Config.DefaultAddrs, " ") {
+	for _, addr := range strings.Split(config.DefaultAddrs, " ") {
 		if addr != "" {
 			allAddrs[addr] = true
 		}
@@ -208,10 +215,10 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	for addr := range allAddrs {
 		inputs = append(inputs, urlgetter.MultiInput{
 			Config: urlgetter.Config{
-				DNSHTTPHost:      m.httpHost(URL.Host),
-				DNSTLSServerName: m.tlsServerName(URL.Hostname()),
-				DNSTLSVersion:    m.Config.TLSVersion,
-				HTTP3Enabled:     m.Config.HTTP3Enabled,
+				DNSHTTPHost:      config.httpHost(URL.Host),
+				DNSTLSServerName: config.tlsServerName(URL.Hostname()),
+				DNSTLSVersion:    config.TLSVersion,
+				HTTP3Enabled:     config.HTTP3Enabled,
 				RejectDNSBogons:  true, // bogons are errors in this context
 				ResolverURL:      makeResolverURL(URL, addr),
 				Timeout:          15 * time.Second,
@@ -244,17 +251,17 @@ func (m *Measurer) lookupHost(ctx context.Context, hostname string, r model.Reso
 
 // httpHost returns the configured HTTP host, if set, otherwise
 // it will return the host provide as argument.
-func (m *Measurer) httpHost(httpHost string) string {
-	if m.Config.HTTPHost != "" {
-		return m.Config.HTTPHost
+func (c *Config) httpHost(httpHost string) string {
+	if c.HTTPHost != "" {
+		return c.HTTPHost
 	}
 	return httpHost
 }
 
 // tlsServerName is like httpHost for the TLS server name.
-func (m *Measurer) tlsServerName(tlsServerName string) string {
-	if m.Config.TLSServerName != "" {
-		return m.Config.TLSServerName
+func (c *Config) tlsServerName(tlsServerName string) string {
+	if c.TLSServerName != "" {
+		return c.TLSServerName
 	}
 	return tlsServerName
 }
@@ -311,9 +318,8 @@ func makeResolverURL(URL *url.URL, addr string) string {
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
-func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
+func NewExperimentMeasurer() model.ExperimentMeasurer {
 	return &Measurer{
-		Config:    config,
 		Endpoints: nil, // disabled by default
 	}
 }

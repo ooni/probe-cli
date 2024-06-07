@@ -17,7 +17,7 @@ func TestExperimentHonoursSharingDefaults(t *testing.T) {
 			t.Fatal(err)
 		}
 		exp := builder.NewExperiment().(*experiment)
-		return exp.newMeasurement("")
+		return exp.newMeasurement(model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(""))
 	}
 	type spec struct {
 		name         string

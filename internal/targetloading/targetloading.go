@@ -220,16 +220,14 @@ func StaticBareInputForExperiment(name string) ([]string, error) {
 	// Implementation note: we may be called from pkg/oonimkall
 	// with a non-canonical experiment name, so we need to convert
 	// the experiment name to be canonical before proceeding.
-	//
-	// TODO(https://github.com/ooni/probe/issues/1390): serve DNSCheck
-	// inputs using richer input (aka check-in v2).
-	//
-	// TODO(https://github.com/ooni/probe/issues/2557): server STUNReachability
-	// inputs using richer input (aka check-in v2).
 	switch experimentname.Canonicalize(name) {
 	case "dnscheck":
+		// TODO(https://github.com/ooni/probe/issues/1390): serve DNSCheck
+		// inputs using richer input (aka check-in v2).
 		return dnsCheckDefaultInput, nil
 	case "stunreachability":
+		// TODO(https://github.com/ooni/probe/issues/2557): server STUNReachability
+		// inputs using richer input (aka check-in v2).
 		return stunReachabilityDefaultInput, nil
 	default:
 		return nil, ErrNoStaticInput
@@ -251,24 +249,17 @@ func (il *Loader) loadOrStaticDefault(_ context.Context) ([]model.ExperimentTarg
 	return staticInputForExperiment(il.ExperimentName)
 }
 
-// loadLocal loads inputs from StaticInputs and SourceFiles.
+// loadLocal loads inputs from the [*Loader] StaticInputs and SourceFiles.
 func (il *Loader) loadLocal() ([]model.ExperimentTarget, error) {
-	inputs := []model.ExperimentTarget{}
-	for _, input := range il.StaticInputs {
-		inputs = append(inputs, model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(input))
+	inputs, err := LoadStatic(il)
+	if err != nil {
+		return nil, err
 	}
-	for _, filepath := range il.SourceFiles {
-		extra, err := il.readfile(filepath, fsx.OpenFile)
-		if err != nil {
-			return nil, err
-		}
-		// See https://github.com/ooni/probe-engine/issues/1123.
-		if len(extra) <= 0 {
-			return nil, fmt.Errorf("%w: %s", ErrDetectedEmptyFile, filepath)
-		}
-		inputs = append(inputs, extra...)
+	var targets []model.ExperimentTarget
+	for _, input := range inputs {
+		targets = append(targets, model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(input))
 	}
-	return inputs, nil
+	return targets, nil
 }
 
 // openFunc is the type of the function to open a file.
@@ -276,8 +267,8 @@ type openFunc func(filepath string) (fs.File, error)
 
 // readfile reads inputs from the specified file. The open argument should be
 // compatible with stdlib's fs.Open and helps us with unit testing.
-func (il *Loader) readfile(filepath string, open openFunc) ([]model.ExperimentTarget, error) {
-	inputs := []model.ExperimentTarget{}
+func readfile(filepath string, open openFunc) ([]string, error) {
+	inputs := []string{}
 	filep, err := open(filepath)
 	if err != nil {
 		return nil, err
@@ -290,11 +281,28 @@ func (il *Loader) readfile(filepath string, open openFunc) ([]model.ExperimentTa
 	for scanner.Scan() {
 		line := scanner.Text()
 		if line != "" {
-			inputs = append(inputs, model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(line))
+			inputs = append(inputs, line)
 		}
 	}
 	if scanner.Err() != nil {
 		return nil, scanner.Err()
+	}
+	return inputs, nil
+}
+
+// LoadStatic loads inputs from the [*Loader] StaticInputs and SourceFiles.
+func LoadStatic(config *Loader) ([]string, error) {
+	inputs := append([]string{}, config.StaticInputs...)
+	for _, filepath := range config.SourceFiles {
+		extra, err := readfile(filepath, fsx.OpenFile)
+		if err != nil {
+			return nil, err
+		}
+		// See https://github.com/ooni/probe-engine/issues/1123.
+		if len(extra) <= 0 {
+			return nil, fmt.Errorf("%w: %s", ErrDetectedEmptyFile, filepath)
+		}
+		inputs = append(inputs, extra...)
 	}
 	return inputs, nil
 }

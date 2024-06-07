@@ -109,11 +109,16 @@ func (e *experiment) SubmitAndUpdateMeasurementContext(
 }
 
 // newMeasurement creates a new measurement for this experiment with the given input.
-func (e *experiment) newMeasurement(input string) *model.Measurement {
+func (e *experiment) newMeasurement(target model.ExperimentTarget) *model.Measurement {
 	utctimenow := time.Now().UTC()
+	// TODO(bassosimone,DecFox): move here code that supports filling the options field
+	// when there is richer input, which currently is inside ./internal/oonirun.
+	//
+	// We MUST do this because the current solution only works for OONI Run and when
+	// there are command line options but does not work for API/static targets.
 	m := &model.Measurement{
 		DataFormatVersion:         model.OOAPIReportDefaultDataFormatVersion,
-		Input:                     model.MeasurementInput(input),
+		Input:                     model.MeasurementInput(target.Input()),
 		MeasurementStartTime:      utctimenow.Format(model.MeasurementDateFormat),
 		MeasurementStartTimeSaved: utctimenow,
 		ProbeIP:                   model.DefaultProbeIP,
@@ -204,19 +209,29 @@ func (e *experiment) MeasureWithContext(
 	ctx = bytecounter.WithExperimentByteCounter(ctx, e.byteCounter)
 
 	// Create a new measurement that the experiment measurer will finish filling
-	// by adding the test keys etc. Please, note that, as of 2024-06-05, we're using
-	// the measurement Input to provide input to an experiment. We'll probably
-	// change this, when we'll have finished implementing richer input.
-	measurement := e.newMeasurement(target.Input())
+	// by adding the test keys etc. Please, note that, as of 2024-06-06:
+	//
+	// 1. Experiments using richer input receive input via the Target field
+	// and ignore (*Measurement).Input, which however contains the same value
+	// that would be returned by the Target.Input method.
+	//
+	// 2. Other experiments use (*Measurement).Input.
+	//
+	// Here we're passing the whole target to newMeasurement such that we're able
+	// to record options values in addition to the input value.
+	measurement := e.newMeasurement(target)
 
 	// Record when we started the experiment, to compute the runtime.
 	start := time.Now()
 
-	// Prepare the arguments for the experiment measurer
+	// Prepare the arguments for the experiment measurer.
+	//
+	// Only richer-input-aware experiments honour the Target field.
 	args := &model.ExperimentArgs{
 		Callbacks:   e.callbacks,
 		Measurement: measurement,
 		Session:     e.session,
+		Target:      target,
 	}
 
 	// Invoke the measurer. Conventionally, an error being returned here
