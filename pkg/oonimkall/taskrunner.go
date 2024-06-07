@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine"
+	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/targetloading"
@@ -15,10 +16,10 @@ import (
 
 // runnerForTask runs a specific task
 type runnerForTask struct {
-	emitter        *taskEmitterWrapper
-	kvStoreBuilder taskKVStoreFSBuilder
-	sessionBuilder taskSessionBuilder
-	settings       *settings
+	emitter    *taskEmitterWrapper
+	newKVStore func(path string) (model.KeyValueStore, error)
+	newSession func(ctx context.Context, config engine.SessionConfig) (taskSession, error)
+	settings   *settings
 }
 
 var _ taskRunner = &runnerForTask{}
@@ -26,10 +27,20 @@ var _ taskRunner = &runnerForTask{}
 // newRunner creates a new task runner
 func newRunner(settings *settings, emitter taskEmitter) *runnerForTask {
 	return &runnerForTask{
-		emitter:        &taskEmitterWrapper{emitter},
-		kvStoreBuilder: &taskKVStoreFSBuilderEngine{},
-		sessionBuilder: &taskSessionBuilderEngine{},
-		settings:       settings,
+		emitter: &taskEmitterWrapper{emitter},
+		newKVStore: func(path string) (model.KeyValueStore, error) {
+			// Note that we will return a non-nil model.KeyValueStore even if the
+			// kvstore.NewFS factory returns a nil *kvstore.FS because of how golang
+			// converts between nil types. Because we're checking the error and
+			// acting upon it, it is not a big deal.
+			return kvstore.NewFS(path)
+		},
+		newSession: func(ctx context.Context, config engine.SessionConfig) (taskSession, error) {
+			// Same note as above: the returned session is not nil even when the
+			// factory returns a nil *engine.Session because of golang nil conversion.
+			return engine.NewSession(ctx, config)
+		},
+		settings: settings,
 	}
 }
 
@@ -45,7 +56,7 @@ func (r *runnerForTask) hasUnsupportedSettings() bool {
 }
 
 func (r *runnerForTask) newsession(ctx context.Context, logger model.Logger) (taskSession, error) {
-	kvstore, err := r.kvStoreBuilder.NewFS(r.settings.StateDir)
+	kvstore, err := r.newKVStore(r.settings.StateDir)
 	if err != nil {
 		return nil, err
 	}
@@ -74,13 +85,13 @@ func (r *runnerForTask) newsession(ctx context.Context, logger model.Logger) (ta
 			Address: r.settings.Options.ProbeServicesBaseURL,
 		}}
 	}
-	return r.sessionBuilder.NewSession(ctx, config)
+	return r.newSession(ctx, config)
 }
 
 // contextForExperiment ensurs that for measuring we only use an
 // interruptible context when we can interrupt the experiment
 func (r *runnerForTask) contextForExperiment(
-	ctx context.Context, builder taskExperimentBuilder,
+	ctx context.Context, builder model.ExperimentBuilder,
 ) context.Context {
 	if builder.Interruptible() {
 		return ctx
@@ -132,7 +143,7 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 		r.emitter.Emit(eventTypeStatusEnd, endEvent)
 	}()
 
-	builder, err := sess.NewExperimentBuilderByName(r.settings.Name)
+	builder, err := sess.NewExperimentBuilder(r.settings.Name)
 	if err != nil {
 		r.emitter.EmitFailureStartup(err.Error())
 		return
@@ -210,7 +221,7 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 		}
 		r.settings.Inputs = append(r.settings.Inputs, "")
 	}
-	experiment := builder.NewExperimentInstance()
+	experiment := builder.NewExperiment()
 	defer func() {
 		endEvent.DownloadedKB = experiment.KibiBytesReceived()
 		endEvent.UploadedKB = experiment.KibiBytesSent()

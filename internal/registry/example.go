@@ -22,7 +22,7 @@ func init() {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
 				return example.NewExperimentMeasurer(
-					*config.(*example.Config), "example",
+					*config.(*example.Config),
 				)
 			},
 			canonicalName: canonicalName,

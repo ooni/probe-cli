@@ -354,4 +354,65 @@ func TestSession(t *testing.T) {
 			t.Fatal("unexpected out")
 		}
 	})
+
+	t.Run("Close", func(t *testing.T) {
+		expected := errors.New("mocked err")
+		s := &Session{
+			MockClose: func() error {
+				return expected
+			},
+		}
+		err := s.Close()
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected err")
+		}
+	})
+
+	t.Run("MaybeLookupBackendsContext", func(t *testing.T) {
+		expected := errors.New("mocked err")
+		s := &Session{
+			MockMaybeLookupBackendsContext: func(ctx context.Context) error {
+				return expected
+			},
+		}
+		err := s.MaybeLookupBackendsContext(context.Background())
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected err")
+		}
+	})
+
+	t.Run("MaybeLookupLocationContext", func(t *testing.T) {
+		expected := errors.New("mocked err")
+		s := &Session{
+			MockMaybeLookupLocationContext: func(ctx context.Context) error {
+				return expected
+			},
+		}
+		err := s.MaybeLookupLocationContext(context.Background())
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected err")
+		}
+	})
+
+	t.Run("ResolverASNString", func(t *testing.T) {
+		s := &Session{
+			MockResolverASNString: func() string {
+				return "xx"
+			},
+		}
+		if s.ResolverASNString() != "xx" {
+			t.Fatal("unexpected result")
+		}
+	})
+
+	t.Run("ResolverNetworkName", func(t *testing.T) {
+		s := &Session{
+			MockResolverNetworkName: func() string {
+				return "xx"
+			},
+		}
+		if s.ResolverNetworkName() != "xx" {
+			t.Fatal("unexpected result")
+		}
+	})
 }

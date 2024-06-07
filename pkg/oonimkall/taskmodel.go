@@ -1,13 +1,5 @@
 package oonimkall
 
-import (
-	"context"
-	"io"
-
-	"github.com/ooni/probe-cli/v3/internal/engine"
-	"github.com/ooni/probe-cli/v3/internal/model"
-)
-
 //
 // Task Model
 //
@@ -24,6 +16,13 @@ import (
 // as a logger. This is a pretty fundamental interface in
 // ooni/probe-cli and so it's not defined in this file.
 //
+
+import (
+	"context"
+	"io"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
+)
 
 const taskABIVersion = 1
 
@@ -161,28 +160,20 @@ type event struct {
 // The abstraction representing a OONI session is taskSession.
 //
 
-// taskKVStoreFSBuilder constructs a KVStore with
-// filesystem backing for running tests.
-type taskKVStoreFSBuilder interface {
-	// NewFS creates a new KVStore using the filesystem.
-	NewFS(path string) (model.KeyValueStore, error)
-}
-
-// taskSessionBuilder constructs a new Session.
-type taskSessionBuilder interface {
-	// NewSession creates a new taskSession.
-	NewSession(ctx context.Context,
-		config engine.SessionConfig) (taskSession, error)
-}
-
 // taskSession abstracts a OONI session.
 type taskSession interface {
+	// A session should be used by an experiment.
+	model.ExperimentSession
+
+	// A session should be used when loading targets.
+	model.ExperimentTargetLoaderSession
+
 	// A session can be closed.
 	io.Closer
 
-	// NewExperimentBuilderByName creates the builder for constructing
+	// NewExperimentBuilder creates the builder for constructing
 	// a new experiment given the experiment's name.
-	NewExperimentBuilderByName(name string) (taskExperimentBuilder, error)
+	NewExperimentBuilder(name string) (model.ExperimentBuilder, error)
 
 	// MaybeLookupBackendsContext lookups the OONI backend unless
 	// this operation has already been performed.
@@ -200,10 +191,6 @@ type taskSession interface {
 	// and returns the resolved probe ASN as a string.
 	ProbeASNString() string
 
-	// ProbeCC must be called after MaybeLookupLocationContext
-	// and returns the resolved probe country code.
-	ProbeCC() string
-
 	// ProbeNetworkName must be called after MaybeLookupLocationContext
 	// and returns the resolved probe country code.
 	ProbeNetworkName() string
@@ -212,53 +199,9 @@ type taskSession interface {
 	// and returns the resolved resolver's ASN as a string.
 	ResolverASNString() string
 
-	// ResolverIP must be called after MaybeLookupLocationContext
-	// and returns the resolved resolver's IP.
-	ResolverIP() string
-
 	// ResolverNetworkName must be called after MaybeLookupLocationContext
 	// and returns the resolved resolver's network name.
 	ResolverNetworkName() string
-}
-
-// taskExperimentBuilder builds a taskExperiment.
-type taskExperimentBuilder interface {
-	// SetCallbacks sets the experiment callbacks.
-	SetCallbacks(callbacks model.ExperimentCallbacks)
-
-	// InputPolicy returns the experiment's input policy.
-	InputPolicy() model.InputPolicy
-
-	// NewExperiment creates the new experiment.
-	NewExperimentInstance() taskExperiment
-
-	// Interruptible returns whether this experiment is interruptible.
-	Interruptible() bool
-}
-
-// taskExperiment is a runnable experiment.
-type taskExperiment interface {
-	// KibiBytesReceived returns the KiB received by the experiment.
-	KibiBytesReceived() float64
-
-	// KibiBytesSent returns the KiB sent by the experiment.
-	KibiBytesSent() float64
-
-	// OpenReportContext opens a new report.
-	OpenReportContext(ctx context.Context) error
-
-	// ReportID must be called after a successful OpenReportContext
-	// and returns the report ID for this measurement.
-	ReportID() string
-
-	// MeasureWithContext runs the measurement.
-	MeasureWithContext(ctx context.Context, target model.ExperimentTarget) (
-		measurement *model.Measurement, err error)
-
-	// SubmitAndUpdateMeasurementContext submits the measurement
-	// and updates its report ID on success.
-	SubmitAndUpdateMeasurementContext(
-		ctx context.Context, measurement *model.Measurement) error
 }
 
 //

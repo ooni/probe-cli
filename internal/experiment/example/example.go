@@ -14,6 +14,8 @@ import (
 
 const testVersion = "0.1.0"
 
+const testName = "example"
+
 // Config contains the experiment config.
 //
 // This contains all the settings that user can set to modify the behaviour
@@ -22,7 +24,7 @@ const testVersion = "0.1.0"
 type Config struct {
 	Message     string `ooni:"Message to emit at test completion"`
 	ReturnError bool   `ooni:"Toogle to return a mocked error"`
-	SleepTime   int64  `ooni:"Amount of time to sleep for"`
+	SleepTime   int64  `ooni:"Amount of time to sleep for in nanosecond"`
 }
 
 // TestKeys contains the experiment's result.
@@ -38,13 +40,12 @@ type TestKeys struct {
 
 // Measurer performs the measurement.
 type Measurer struct {
-	config   Config
-	testName string
+	config Config
 }
 
 // ExperimentName implements model.ExperimentMeasurer.ExperimentName.
 func (m Measurer) ExperimentName() string {
-	return m.testName
+	return testName
 }
 
 // ExperimentVersion implements model.ExperimentMeasurer.ExperimentVersion.
@@ -81,6 +82,6 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
-func NewExperimentMeasurer(config Config, testName string) model.ExperimentMeasurer {
-	return Measurer{config: config, testName: testName}
+func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
+	return Measurer{config: config}
 }
