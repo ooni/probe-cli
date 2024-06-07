@@ -27,6 +27,7 @@ func TestFakeFillWorksWithCustomTime(t *testing.T) {
 	if req == nil {
 		t.Fatal("we expected non nil here")
 	}
+	t.Log(req)
 }
 
 func TestFakeFillAllocatesIntoAPointerToPointer(t *testing.T) {
@@ -36,6 +37,7 @@ func TestFakeFillAllocatesIntoAPointerToPointer(t *testing.T) {
 	if req == nil {
 		t.Fatal("we expected non nil here")
 	}
+	t.Log(req)
 }
 
 func TestFakeFillAllocatesIntoAMapLikeWithStringKeys(t *testing.T) {
@@ -48,6 +50,7 @@ func TestFakeFillAllocatesIntoAMapLikeWithStringKeys(t *testing.T) {
 	if len(resp) < 1 {
 		t.Fatal("we expected some data here")
 	}
+	t.Log(resp)
 	for _, value := range resp {
 		if value == nil {
 			t.Fatal("expected non-nil here")
@@ -55,7 +58,7 @@ func TestFakeFillAllocatesIntoAMapLikeWithStringKeys(t *testing.T) {
 	}
 }
 
-func TestFakeFillAllocatesIntoAMapLikeWithNonStringKeys(t *testing.T) {
+func TestFakeFillPanicsWithMapsWithNonStringKeys(t *testing.T) {
 	var panicmsg string
 	func() {
 		defer func() {
@@ -85,6 +88,7 @@ func TestFakeFillAllocatesIntoASlice(t *testing.T) {
 	if len(*resp) < 1 {
 		t.Fatal("we expected some data here")
 	}
+	t.Log(resp)
 	for _, entry := range *resp {
 		if entry == nil {
 			t.Fatal("expected non-nil here")
