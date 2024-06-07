@@ -8,7 +8,7 @@ import (
 )
 
 // StructOrStructPtrIsZero returns whether a given struct or struct pointer
-// only contains zero value public fields. This function panic if passed a value
+// only contains zero-value public fields. This function panic if passed a value
 // that is neither a pointer to struct nor a struct. This function panics if
 // passed a nil struct pointer.
 func StructOrStructPtrIsZero(vop any) bool {
