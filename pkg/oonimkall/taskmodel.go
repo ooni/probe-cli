@@ -162,6 +162,12 @@ type event struct {
 
 // taskSession abstracts a OONI session.
 type taskSession interface {
+	// A session should be used by an experiment.
+	model.ExperimentSession
+
+	// A session should be used when loading targets.
+	model.ExperimentTargetLoaderSession
+
 	// A session can be closed.
 	io.Closer
 
@@ -196,12 +202,6 @@ type taskSession interface {
 	// ResolverNetworkName must be called after MaybeLookupLocationContext
 	// and returns the resolved resolver's network name.
 	ResolverNetworkName() string
-
-	// A session should be used by an experiment.
-	model.ExperimentSession
-
-	// A session should be used when loading targets.
-	model.ExperimentTargetLoaderSession
 }
 
 //

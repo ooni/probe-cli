@@ -91,6 +91,13 @@ func (ff *FakeFiller) doFill(v reflect.Value) {
 		// switch to the element
 		v = v.Elem()
 	}
+
+	// make sure we skip initialization of fields we cannot initialize
+	// anyway because they're private or immutable
+	if !v.CanSet() {
+		return
+	}
+
 	switch v.Type().Kind() {
 	case reflect.String:
 		v.SetString(ff.getRandomString())
