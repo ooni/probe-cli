@@ -45,10 +45,6 @@ func (dep *MockableTaskRunnerDependencies) NewSession(ctx context.Context, confi
 }
 
 func TestTaskRunnerRun(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-
 	// newRunnerForTesting is a factory for creating a new
 	// runner that wraps newRunner and also sets a specific
 	// taskSessionBuilder for testing purposes.

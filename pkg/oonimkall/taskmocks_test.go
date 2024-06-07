@@ -5,9 +5,7 @@ package oonimkall
 // we only use mocks when testing, this file is a `_test.go` file.
 //
 
-import (
-	"sync"
-)
+import "sync"
 
 // CollectorTaskEmitter is a thread-safe taskEmitter
 // that stores all the events inside itself.
