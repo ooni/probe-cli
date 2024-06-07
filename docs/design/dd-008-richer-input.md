@@ -9,6 +9,8 @@
 
 This document is a living document documenting our in-progress design
 for implementing [richer input](https://github.com/ooni/ooni.org/issues/1291).
+The intent for the final document is to explain the problem we wanted to solve,
+the alternatives we considered, and how we specifically implemented it.
 
 We define as richer input the possibility of using the OONI backend API to
 provide OONI experiments with not only inputs but also options.
