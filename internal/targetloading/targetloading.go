@@ -10,7 +10,8 @@ import (
 	"net/url"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/experiment/openvpn"
+	// FIXME - move this to the experiment
+	// "github.com/ooni/probe-cli/v3/internal/experiment/openvpn"
 	"github.com/ooni/probe-cli/v3/internal/experimentname"
 	"github.com/ooni/probe-cli/v3/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -372,7 +373,8 @@ func (il *Loader) loadRemoteOpenVPN(ctx context.Context) ([]model.ExperimentTarg
 
 	// The openvpn experiment contains an array of the providers that the API knows about.
 	// We try to get all the remotes from the API for the list of enabled providers.
-	for _, provider := range openvpn.APIEnabledProviders {
+	providers := []string{}
+	for _, provider := range providers {
 		// fetchOpenVPNConfig ultimately uses an internal cache in the session to avoid
 		// hitting the API too many times.
 		reply, err := il.fetchOpenVPNConfig(ctx, provider)

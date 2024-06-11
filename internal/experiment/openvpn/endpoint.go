@@ -1,12 +1,12 @@
 package openvpn
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"math/rand"
 	"net"
 	"net/url"
+	"slices"
 	"strings"
 
 	vpnconfig "github.com/ooni/minivpn/pkg/config"
@@ -178,16 +178,6 @@ func (e endpointList) Shuffle() endpointList {
 	return e
 }
 
-// defaultOptionsByProvider is a map containing base config for
-// all the known providers. We extend this base config with credentials coming
-// from the OONI API.
-var defaultOptionsByProvider = map[string]*vpnconfig.OpenVPNOptions{
-	"riseupvpn": {
-		Auth:   "SHA512",
-		Cipher: "AES-256-GCM",
-	},
-}
-
 // APIEnabledProviders is the list of providers that the stable API Endpoint knows about.
 // This array will be a subset of the keys in defaultOptionsByProvider, but it might make sense
 // to still register info about more providers that the API officially knows about.
@@ -196,38 +186,23 @@ var APIEnabledProviders = []string{
 	"riseupvpn",
 }
 
-// isValidProvider returns true if the provider is found as key in the registry of defaultOptionsByProvider.
-// TODO(ainghazal): consolidate with list of enabled providers from the API viewpoint.
+// isValidProvider returns true if the provider is found as key in the array of APIEnabledProviders
 func isValidProvider(provider string) bool {
-	_, ok := defaultOptionsByProvider[provider]
-	return ok
+	return slices.Contains(APIEnabledProviders, provider)
 }
 
-// getOpenVPNConfig gets a properly configured [*vpnconfig.Config] object for the given endpoint.
-// To obtain that, we merge the endpoint specific configuration with base options.
-// Base options are hardcoded for the moment, for comparability among different providers.
-// We can add them to the OONI API and as extra cli options if ever needed.
-func getOpenVPNConfig(
+// mergeOpenVPNConfig gets a properly configured [*vpnconfig.Config] object for the given endpoint.
+// To obtain that, we merge the endpoint specific configuration with the options passed as richer input targets.
+func mergeOpenVPNConfig(
 	tracer *vpntracex.Tracer,
 	logger model.Logger,
 	endpoint *endpoint,
-	creds *vpnconfig.OpenVPNOptions) (*vpnconfig.Config, error) {
+	config *Config) (*vpnconfig.Config, error) {
+
 	// TODO(ainghazal): use merge ability in vpnconfig.OpenVPNOptions merge (pending PR)
 	provider := endpoint.Provider
 	if !isValidProvider(provider) {
 		return nil, fmt.Errorf("%w: unknown provider: %s", ErrInvalidInput, provider)
-	}
-
-	baseOptions := defaultOptionsByProvider[provider]
-
-	if baseOptions == nil {
-		return nil, fmt.Errorf("empty baseOptions for provider: %s", provider)
-	}
-	if baseOptions.Cipher == "" {
-		return nil, fmt.Errorf("empty cipher for provider: %s", provider)
-	}
-	if baseOptions.Auth == "" {
-		return nil, fmt.Errorf("empty auth for provider: %s", provider)
 	}
 
 	cfg := vpnconfig.NewConfig(
@@ -239,34 +214,19 @@ func getOpenVPNConfig(
 				Port:   endpoint.Port,
 				Proto:  vpnconfig.Proto(endpoint.Transport),
 
-				// options coming from the default known values.
-				Cipher: baseOptions.Cipher,
-				Auth:   baseOptions.Auth,
-
-				// auth coming from passed credentials.
-				CA:   creds.CA,
-				Cert: creds.Cert,
-				Key:  creds.Key,
+				// options and credentials come from the experiment
+				// richer input targets.
+				Cipher: config.Cipher,
+				Auth:   config.Auth,
+				CA:     []byte(config.SafeCA),
+				Cert:   []byte(config.SafeCert),
+				Key:    []byte(config.SafeKey),
 			},
 		),
 		vpnconfig.WithHandshakeTracer(tracer),
 	)
 
 	return cfg, nil
-}
-
-// maybeExtractBase64Blob is used to pass credentials as command-line options.
-func maybeExtractBase64Blob(val string) (string, error) {
-	s := strings.TrimPrefix(val, "base64:")
-	if len(s) == len(val) {
-		// no prefix, so we'll treat this as a pem-encoded credential.
-		return s, nil
-	}
-	dec, err := base64.URLEncoding.DecodeString(strings.TrimSpace(s))
-	if err != nil {
-		return "", fmt.Errorf("%w: %s", ErrBadBase64Blob, err)
-	}
-	return string(dec), nil
 }
 
 func isValidProtocol(s string) bool {

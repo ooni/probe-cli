@@ -4,13 +4,12 @@ package openvpn
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 
 	vpnconfig "github.com/ooni/minivpn/pkg/config"
 	vpntracex "github.com/ooni/minivpn/pkg/tracex"
@@ -18,8 +17,19 @@ import (
 )
 
 const (
-	testVersion   = "0.1.2"
-	openVPNProcol = "openvpn"
+	testName        = "openvpn"
+	testVersion     = "0.1.3"
+	openVPNProtocol = "openvpn"
+)
+
+// errors are in addition to any other errors returned by the low level packages
+// that are used by this experiment to implement its functionality.
+var (
+	// ErrInputRequired is returned when the experiment is not passed any input.
+	ErrInputRequired = targetloading.ErrInputRequired
+
+	// ErrInvalidInput is returned if we failed to parse the input to obtain an endpoint we can measure.
+	ErrInvalidInput = errors.New("invalid input")
 )
 
 // Config contains the experiment config.
@@ -93,18 +103,16 @@ func (tk *TestKeys) AllConnectionsSuccessful() bool {
 
 // Measurer performs the measurement.
 type Measurer struct {
-	config   Config
-	testName string
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
-func NewExperimentMeasurer(config Config, testName string) model.ExperimentMeasurer {
-	return Measurer{config: config, testName: testName}
+func NewExperimentMeasurer() model.ExperimentMeasurer {
+	return Measurer{}
 }
 
 // ExperimentName implements model.ExperimentMeasurer.ExperimentName.
 func (m Measurer) ExperimentName() string {
-	return m.testName
+	return testName
 }
 
 // ExperimentVersion implements model.ExperimentMeasurer.ExperimentVersion.
@@ -112,19 +120,14 @@ func (m Measurer) ExperimentVersion() string {
 	return testVersion
 }
 
-var (
-	// ErrInvalidInput is returned if we failed to parse the input to obtain an endpoint we can measure.
-	ErrInvalidInput = errors.New("invalid input")
-)
-
-func parseEndpoint(m *model.Measurement) (*endpoint, error) {
-	if m.Input != "" {
-		if ok := isValidProtocol(string(m.Input)); !ok {
-			return nil, ErrInvalidInput
-		}
-		return newEndpointFromInputString(string(m.Input))
+func parseEndpoint(input string) (*endpoint, error) {
+	if input == "" {
+		return nil, ErrInputRequired
 	}
-	return nil, fmt.Errorf("%w: %s", ErrInvalidInput, "input is mandatory")
+	if ok := isValidProtocol(input); !ok {
+		return nil, ErrInvalidInput
+	}
+	return newEndpointFromInputString(input)
 }
 
 // AuthMethod is the authentication method used by a provider.
@@ -137,130 +140,6 @@ var (
 	// AuthUserPass is used for providers that authenticate clients via username (or token) and password.
 	AuthUserPass = AuthMethod("userpass")
 )
-
-var providerAuthentication = map[string]AuthMethod{
-	"riseup":     AuthCertificate,
-	"tunnelbear": AuthUserPass,
-	"surfshark":  AuthUserPass,
-}
-
-func hasCredentialsInOptions(cfg Config, method AuthMethod) bool {
-	switch method {
-	case AuthCertificate:
-		ok := cfg.SafeCA != "" && cfg.SafeCert != "" && cfg.SafeKey != ""
-		return ok
-	default:
-		return false
-	}
-}
-
-// MaybeGetCredentialsFromOptions overrides authentication info with what user provided in options.
-// Each certificate/key can be encoded in base64 so that a single option can be safely represented as command line options.
-// This function returns no error if there are no credentials in the passed options, only if failing to parse them.
-func MaybeGetCredentialsFromOptions(cfg Config, opts *vpnconfig.OpenVPNOptions, method AuthMethod) (bool, error) {
-	if ok := hasCredentialsInOptions(cfg, method); !ok {
-		return false, nil
-	}
-	ca, err := maybeExtractBase64Blob(cfg.SafeCA)
-	if err != nil {
-		return false, err
-	}
-	opts.CA = []byte(ca)
-
-	key, err := maybeExtractBase64Blob(cfg.SafeKey)
-	if err != nil {
-		return false, err
-	}
-	opts.Key = []byte(key)
-
-	cert, err := maybeExtractBase64Blob(cfg.SafeCert)
-	if err != nil {
-		return false, err
-	}
-	opts.Cert = []byte(cert)
-	return true, nil
-}
-
-func (m *Measurer) getCredentialsFromAPI(
-	ctx context.Context,
-	sess model.ExperimentSession,
-	provider string,
-	opts *vpnconfig.OpenVPNOptions) error {
-	// We expect the credentials from the API response to be encoded as the direct PEM serialization.
-	apiCreds, err := m.FetchProviderCredentials(ctx, sess, provider)
-	// TODO(ainghazal): validate credentials have the info we expect, certs are not expired etc.
-	if err != nil {
-		sess.Logger().Warnf("Error fetching credentials from API: %s", err.Error())
-		return err
-	}
-	sess.Logger().Infof("Got credentials from provider: %s", provider)
-
-	opts.CA = []byte(apiCreds.Config.CA)
-	opts.Cert = []byte(apiCreds.Config.Cert)
-	opts.Key = []byte(apiCreds.Config.Key)
-	return nil
-}
-
-// GetCredentialsFromOptionsOrAPI attempts to find valid credentials for the given provider, either
-// from the passed Options (cli, oonirun), or from a remote call to the OONI API endpoint.
-func (m *Measurer) GetCredentialsFromOptionsOrAPI(
-	ctx context.Context,
-	sess model.ExperimentSession,
-	provider string) (*vpnconfig.OpenVPNOptions, error) {
-
-	method, ok := providerAuthentication[strings.TrimSuffix(provider, "vpn")]
-	if !ok {
-		return nil, fmt.Errorf("%w: provider auth unknown: %s", ErrInvalidInput, provider)
-	}
-
-	// Empty options object to fill with credentials.
-	creds := &vpnconfig.OpenVPNOptions{}
-
-	switch method {
-	case AuthCertificate:
-		ok, err := MaybeGetCredentialsFromOptions(m.config, creds, method)
-		if err != nil {
-			return nil, err
-		}
-		if ok {
-			return creds, nil
-		}
-		// No options passed, so let's get the credentials that inputbuilder should have cached
-		// for us after hitting the OONI API.
-		if err := m.getCredentialsFromAPI(ctx, sess, provider, creds); err != nil {
-			return nil, err
-		}
-		return creds, nil
-
-	default:
-		return nil, fmt.Errorf("%w: method not implemented (%s)", ErrInvalidInput, method)
-	}
-
-}
-
-// mergeOpenVPNConfig attempts to get credentials from Options or API, and then
-// constructs a [*vpnconfig.Config] instance after merging the credentials passed by options or API response.
-// It also returns an error if the operation fails.
-func (m *Measurer) mergeOpenVPNConfig(
-	ctx context.Context,
-	sess model.ExperimentSession,
-	endpoint *endpoint,
-	tracer *vpntracex.Tracer) (*vpnconfig.Config, error) {
-
-	logger := sess.Logger()
-
-	credentials, err := m.GetCredentialsFromOptionsOrAPI(ctx, sess, endpoint.Provider)
-	if err != nil {
-		return nil, err
-	}
-
-	openvpnConfig, err := getOpenVPNConfig(tracer, logger, endpoint, credentials)
-	if err != nil {
-		return nil, err
-	}
-	// TODO(ainghazal): sanity check (Remote, Port, Proto etc + missing certs)
-	return openvpnConfig, nil
-}
 
 // connectAndHandshake dials a connection and attempts an OpenVPN handshake using that dialer.
 func (m *Measurer) connectAndHandshake(
@@ -344,9 +223,9 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	measurement := args.Measurement
 	sess := args.Session
 
-	endpoint, err := parseEndpoint(measurement)
-	if err != nil {
-		return err
+	// 0. obtain the richer input target, config, and input or panic
+	if args.Target == nil {
+		return ErrInputRequired
 	}
 
 	tk := NewTestKeys()
@@ -355,10 +234,21 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	idx := int64(1)
 	handshakeTracer := vpntracex.NewTracerWithTransactionID(zeroTime, idx)
 
-	openvpnConfig, err := m.mergeOpenVPNConfig(ctx, sess, endpoint, handshakeTracer)
+	// build the input
+	target := args.Target.(*Target)
+	config, input := target.Options, target.URL
+	sess.Logger().Infof("openvpn: using richer input: %+v", input)
+
+	endpoint, err := parseEndpoint(input)
 	if err != nil {
 		return err
 	}
+
+	openvpnConfig, err := mergeOpenVPNConfig(handshakeTracer, sess.Logger(), endpoint, config)
+	if err != nil {
+		return err
+	}
+
 	sess.Logger().Infof("Probing endpoint %s", endpoint.String())
 
 	connResult := m.connectAndHandshake(ctx, zeroTime, idx, sess.Logger(), endpoint, openvpnConfig, handshakeTracer)
@@ -366,6 +256,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	tk.Success = tk.AllConnectionsSuccessful()
 
 	callbacks.OnProgress(1.0, "All endpoints probed")
+
 	measurement.TestKeys = tk
 
 	// TODO(ainghazal): validate we have valid config for each endpoint.
