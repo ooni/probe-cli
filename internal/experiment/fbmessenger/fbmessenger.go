@@ -8,9 +8,9 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/urlgetter"
 )
 
 const (
@@ -78,15 +78,21 @@ type Analysis struct {
 }
 
 // Update updates the TestKeys using the given MultiOutput result.
-func (tk *TestKeys) Update(v urlgetter.MultiOutput) {
+func (tk *TestKeys) Update(v *urlgetter.MultiResult) {
+	// handle the case where there are no test keys
+	if v.TestKeys.Err != nil {
+		return
+	}
+
 	// Update the easy to update entries first
-	tk.NetworkEvents = append(tk.NetworkEvents, v.TestKeys.NetworkEvents...)
-	tk.Queries = append(tk.Queries, v.TestKeys.Queries...)
-	tk.Requests = append(tk.Requests, v.TestKeys.Requests...)
-	tk.TCPConnect = append(tk.TCPConnect, v.TestKeys.TCPConnect...)
-	tk.TLSHandshakes = append(tk.TLSHandshakes, v.TestKeys.TLSHandshakes...)
+	tk.NetworkEvents = append(tk.NetworkEvents, v.TestKeys.Value.NetworkEvents...)
+	tk.Queries = append(tk.Queries, v.TestKeys.Value.Queries...)
+	tk.Requests = append(tk.Requests, v.TestKeys.Value.Requests...)
+	tk.TCPConnect = append(tk.TCPConnect, v.TestKeys.Value.TCPConnect...)
+	tk.TLSHandshakes = append(tk.TLSHandshakes, v.TestKeys.Value.TLSHandshakes...)
+
 	// Set the status of endpoints
-	switch v.Input.Target {
+	switch v.Target.URL {
 	case ServiceSTUN:
 		var ignored *bool
 		tk.ComputeEndpointStatus(v, &tk.FacebookSTUNDNSConsistent, &ignored)
@@ -117,16 +123,22 @@ var (
 )
 
 // ComputeEndpointStatus computes the DNS and TCP status of a specific endpoint.
-func (tk *TestKeys) ComputeEndpointStatus(v urlgetter.MultiOutput, dns, tcp **bool) {
+func (tk *TestKeys) ComputeEndpointStatus(v *urlgetter.MultiResult, dns, tcp **bool) {
 	// start where all is unknown
 	*dns, *tcp = nil, nil
+
+	// handle the case where there are no test keys
+	if v.TestKeys.Err != nil {
+		return
+	}
+
 	// process DNS first
-	if v.TestKeys.FailedOperation != nil && *v.TestKeys.FailedOperation == netxlite.ResolveOperation {
+	if v.TestKeys.Value.FailedOperation.UnwrapOr("") == netxlite.ResolveOperation {
 		tk.FacebookDNSBlocking = &trueValue
 		*dns = &falseValue
 		return // we know that the DNS has failed
 	}
-	for _, query := range v.TestKeys.Queries {
+	for _, query := range v.TestKeys.Value.Queries {
 		for _, ans := range query.Answers {
 			if ans.ASN != FacebookASN {
 				tk.FacebookDNSBlocking = &trueValue
@@ -137,7 +149,7 @@ func (tk *TestKeys) ComputeEndpointStatus(v urlgetter.MultiOutput, dns, tcp **bo
 	}
 	*dns = &trueValue
 	// now process connect
-	if v.TestKeys.FailedOperation != nil && *v.TestKeys.FailedOperation == netxlite.ConnectOperation {
+	if v.TestKeys.Value.FailedOperation.UnwrapOr("") == netxlite.ConnectOperation {
 		tk.FacebookTCPBlocking = &trueValue
 		*tcp = &falseValue
 		return // because connect failed
@@ -151,9 +163,6 @@ type Measurer struct {
 	// Config contains the experiment settings. If empty we
 	// will be using default settings.
 	Config Config
-
-	// Getter is an optional getter to be used for testing.
-	Getter urlgetter.MultiGetter
 }
 
 // ExperimentName implements ExperimentMeasurer.ExperimentName
@@ -173,24 +182,32 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	sess := args.Session
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
-	urlgetter.RegisterExtensions(measurement)
+	//urlgetter.RegisterExtensions(measurement) // TODO(bassosimone)
+
 	// generate targets
-	var inputs []urlgetter.MultiInput
+	var inputs []*urlgetter.EasyTarget
 	for _, service := range Services {
-		inputs = append(inputs, urlgetter.MultiInput{Target: service})
+		inputs = append(inputs, &urlgetter.EasyTarget{URL: service})
 	}
-	rnd := rand.New(rand.NewSource(time.Now().UnixNano())) // #nosec G404 -- not really important
-	rnd.Shuffle(len(inputs), func(i, j int) {
+	rand.Shuffle(len(inputs), func(i, j int) {
 		inputs[i], inputs[j] = inputs[j], inputs[i]
 	})
+
 	// measure in parallel
-	multi := urlgetter.Multi{Begin: time.Now(), Getter: m.Getter, Session: sess}
+	multi := &urlgetter.MultiHandle{
+		Begin:    time.Now(),
+		IndexGen: &urlgetter.IndexGen{},
+		Session:  sess,
+	}
 	testkeys := new(TestKeys)
 	testkeys.Agent = "redirect"
 	measurement.TestKeys = testkeys
-	for entry := range multi.Collect(ctx, inputs, "facebook_messenger", callbacks) {
+	results := urlgetter.MultiCollect(callbacks, 0, len(inputs),
+		"facebook_messenger", multi.Run(ctx, inputs...))
+	for entry := range results {
 		testkeys.Update(entry)
 	}
+
 	// if we haven't yet determined the status of DNS blocking and TCP blocking
 	// then no blocking has been detected and we can set them
 	if testkeys.FacebookDNSBlocking == nil {
