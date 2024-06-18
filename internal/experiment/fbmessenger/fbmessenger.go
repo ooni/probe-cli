@@ -180,8 +180,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	callbacks := args.Callbacks
 	measurement := args.Measurement
 	sess := args.Session
-	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
-	defer cancel()
+
 	//urlgetter.RegisterExtensions(measurement) // TODO(bassosimone)
 
 	// generate targets
