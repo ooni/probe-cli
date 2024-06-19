@@ -24,6 +24,7 @@ var (
 	ErrInputRequired     = errors.New("no input provided")
 	ErrNoInputExpected   = errors.New("we did not expect any input")
 	ErrNoStaticInput     = errors.New("no static input for this experiment")
+	ErrInvalidInputType  = errors.New("invalid richer input type")
 )
 
 // Session is the session according to a [*Loader] instance.

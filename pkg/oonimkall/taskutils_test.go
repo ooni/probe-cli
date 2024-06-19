@@ -1,8 +1,7 @@
 package oonimkall
 
 //
-// This file contains mocks for types used by tasks. Because
-// we only use mocks when testing, this file is a `_test.go` file.
+// This file contains testing code reused by other `_test.go` files.
 //
 
 import "sync"

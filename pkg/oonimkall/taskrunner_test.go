@@ -10,6 +10,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 func TestMeasurementSubmissionEventName(t *testing.T) {
@@ -200,7 +201,7 @@ func TestTaskRunnerRun(t *testing.T) {
 	//
 	// You MAY override some functions to provoke specific errors
 	// or generally change the operating conditions.
-	fakeSuccessfulDeps := func() *MockableTaskRunnerDependencies {
+	fakeSuccessfulRun := func() *MockableTaskRunnerDependencies {
 		deps := &MockableTaskRunnerDependencies{
 
 			// Configure the fake experiment
@@ -306,7 +307,7 @@ func TestTaskRunnerRun(t *testing.T) {
 
 	t.Run("with invalid experiment name", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
-		fake := fakeSuccessfulDeps()
+		fake := fakeSuccessfulRun()
 		fake.Session.MockNewExperimentBuilder = func(name string) (model.ExperimentBuilder, error) {
 			return nil, errors.New("invalid experiment name")
 		}
@@ -324,7 +325,7 @@ func TestTaskRunnerRun(t *testing.T) {
 
 	t.Run("with error during backends lookup", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
-		fake := fakeSuccessfulDeps()
+		fake := fakeSuccessfulRun()
 		fake.Session.MockMaybeLookupBackendsContext = func(ctx context.Context) error {
 			return errors.New("mocked error")
 		}
@@ -342,7 +343,7 @@ func TestTaskRunnerRun(t *testing.T) {
 
 	t.Run("with error during location lookup", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
-		fake := fakeSuccessfulDeps()
+		fake := fakeSuccessfulRun()
 		fake.Session.MockMaybeLookupLocationContext = func(ctx context.Context) error {
 			return errors.New("mocked error")
 		}
@@ -364,13 +365,79 @@ func TestTaskRunnerRun(t *testing.T) {
 
 	t.Run("with error during target loading", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
-		fake := fakeSuccessfulDeps()
-		fake.Loader.MockLoad = func(ctx context.Context) ([]model.ExperimentTarget, error) {
-			return nil, errors.New("mocked error")
+		fake := fakeSuccessfulRun()
+		fake.Builder.MockInputPolicy = func() model.InputPolicy {
+			return model.InputOrQueryBackend
 		}
 		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(t, events)
+		reduced := reduceEventsKeysIgnoreLog(events)
+		expect := []eventKeyCount{
+			{Key: eventTypeStatusQueued, Count: 1},
+			{Key: eventTypeStatusStarted, Count: 1},
+			{Key: eventTypeStatusProgress, Count: 3},
+			{Key: eventTypeStatusGeoIPLookup, Count: 1},
+			{Key: eventTypeStatusResolverLookup, Count: 1},
+			{Key: eventTypeFailureStartup, Count: 1},
+			{Key: eventTypeStatusEnd, Count: 1},
+		}
+		assertReducedEventsLike(t, expect, reduced)
+	})
+
+	t.Run("with missing input and InputStrictlyRequired policy", func(t *testing.T) {
+		runner, emitter := newRunnerForTesting()
+		fake := fakeSuccessfulRun()
+		fake.Builder.MockInputPolicy = func() model.InputPolicy {
+			return model.InputStrictlyRequired
+		}
+		runner.newSession = fake.NewSession
+		events := runAndCollect(runner, emitter)
+		reduced := reduceEventsKeysIgnoreLog(events)
+		expect := []eventKeyCount{
+			{Key: eventTypeStatusQueued, Count: 1},
+			{Key: eventTypeStatusStarted, Count: 1},
+			{Key: eventTypeStatusProgress, Count: 3},
+			{Key: eventTypeStatusGeoIPLookup, Count: 1},
+			{Key: eventTypeStatusResolverLookup, Count: 1},
+			{Key: eventTypeFailureStartup, Count: 1},
+			{Key: eventTypeStatusEnd, Count: 1},
+		}
+		assertReducedEventsLike(t, expect, reduced)
+	})
+
+	t.Run("with InputOrStaticDefault policy and experiment with no static input",
+		func(t *testing.T) {
+			runner, emitter := newRunnerForTesting()
+			runner.settings.Name = "Antani" // no input for this experiment
+			fake := fakeSuccessfulRun()
+			fake.Builder.MockInputPolicy = func() model.InputPolicy {
+				return model.InputOrStaticDefault
+			}
+			runner.newSession = fake.NewSession
+			events := runAndCollect(runner, emitter)
+			reduced := reduceEventsKeysIgnoreLog(events)
+			expect := []eventKeyCount{
+				{Key: eventTypeStatusQueued, Count: 1},
+				{Key: eventTypeStatusStarted, Count: 1},
+				{Key: eventTypeStatusProgress, Count: 3},
+				{Key: eventTypeStatusGeoIPLookup, Count: 1},
+				{Key: eventTypeStatusResolverLookup, Count: 1},
+				{Key: eventTypeFailureStartup, Count: 1},
+				{Key: eventTypeStatusEnd, Count: 1},
+			}
+			assertReducedEventsLike(t, expect, reduced)
+		})
+
+	t.Run("with InputNone policy and provided input", func(t *testing.T) {
+		runner, emitter := newRunnerForTesting()
+		runner.settings.Inputs = append(runner.settings.Inputs, "https://x.org/")
+		fake := fakeSuccessfulRun()
+		fake.Builder.MockInputPolicy = func() model.InputPolicy {
+			return model.InputNone
+		}
+		runner.newSession = fake.NewSession
+		events := runAndCollect(runner, emitter)
+		reduced := reduceEventsKeysIgnoreLog(events)
 		expect := []eventKeyCount{
 			{Key: eventTypeStatusQueued, Count: 1},
 			{Key: eventTypeStatusStarted, Count: 1},
@@ -385,7 +452,7 @@ func TestTaskRunnerRun(t *testing.T) {
 
 	t.Run("with failure opening report", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
-		fake := fakeSuccessfulDeps()
+		fake := fakeSuccessfulRun()
 		fake.Experiment.MockOpenReportContext = func(ctx context.Context) error {
 			return errors.New("mocked error")
 		}
@@ -406,8 +473,10 @@ func TestTaskRunnerRun(t *testing.T) {
 
 	t.Run("with success and just a single entry", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
-		fake := fakeSuccessfulDeps()
-		// Note that a single entry is the default we use
+		fake := fakeSuccessfulRun()
+		fake.Builder.MockInputPolicy = func() model.InputPolicy {
+			return model.InputNone
+		}
 		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)
 		reduced := reduceEventsKeysIgnoreLog(t, events)
@@ -430,8 +499,10 @@ func TestTaskRunnerRun(t *testing.T) {
 
 	t.Run("with failure and just a single entry", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
-		fake := fakeSuccessfulDeps()
-		// Note that a single entry is the default we use
+		fake := fakeSuccessfulRun()
+		fake.Builder.MockInputPolicy = func() model.InputPolicy {
+			return model.InputNone
+		}
 		fake.Experiment.MockMeasureWithContext = func(ctx context.Context, target model.ExperimentTarget) (measurement *model.Measurement, err error) {
 			return nil, errors.New("preconditions error")
 		}
@@ -458,8 +529,10 @@ func TestTaskRunnerRun(t *testing.T) {
 		// we are not crashing when the measurement fails and there are annotations,
 		// which is what was happening in the above referenced issue.
 		runner, emitter := newRunnerForTesting()
-		fake := fakeSuccessfulDeps()
-		// Note that a single entry is the default we use
+		fake := fakeSuccessfulRun()
+		fake.Builder.MockInputPolicy = func() model.InputPolicy {
+			return model.InputNone
+		}
 		fake.Experiment.MockMeasureWithContext = func(ctx context.Context, target model.ExperimentTarget) (measurement *model.Measurement, err error) {
 			return nil, errors.New("preconditions error")
 		}
@@ -487,16 +560,9 @@ func TestTaskRunnerRun(t *testing.T) {
 	t.Run("with success and explicit input provided", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		runner.settings.Inputs = []string{"a", "b", "c", "d"}
-		fake := fakeSuccessfulDeps()
+		fake := fakeSuccessfulRun()
 		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputStrictlyRequired
-		}
-		fake.Loader.MockLoad = func(ctx context.Context) ([]model.ExperimentTarget, error) {
-			targets := []model.ExperimentTarget{}
-			for _, input := range runner.settings.Inputs {
-				targets = append(targets, model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(input))
-			}
-			return targets, nil
 		}
 		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)
@@ -539,20 +605,125 @@ func TestTaskRunnerRun(t *testing.T) {
 		assertReducedEventsLike(t, expect, reduced)
 	})
 
+	t.Run("with success and InputOptional and input", func(t *testing.T) {
+		runner, emitter := newRunnerForTesting()
+		runner.settings.Inputs = []string{"a", "b", "c", "d"}
+		fake := fakeSuccessfulRun()
+		fake.Builder.MockInputPolicy = func() model.InputPolicy {
+			return model.InputOptional
+		}
+		runner.newSession = fake.NewSession
+		events := runAndCollect(runner, emitter)
+		reduced := reduceEventsKeysIgnoreLog(events)
+		expect := []eventKeyCount{
+			{Key: eventTypeStatusQueued, Count: 1},
+			{Key: eventTypeStatusStarted, Count: 1},
+			{Key: eventTypeStatusProgress, Count: 3},
+			{Key: eventTypeStatusGeoIPLookup, Count: 1},
+			{Key: eventTypeStatusResolverLookup, Count: 1},
+			{Key: eventTypeStatusProgress, Count: 1},
+			{Key: eventTypeStatusReportCreate, Count: 1},
+			//
+			{Key: eventTypeStatusMeasurementStart, Count: 1},
+			{Key: eventTypeStatusProgress, Count: 1},
+			{Key: eventTypeMeasurement, Count: 1},
+			{Key: eventTypeStatusMeasurementSubmission, Count: 1},
+			{Key: eventTypeStatusMeasurementDone, Count: 1},
+			//
+			{Key: eventTypeStatusMeasurementStart, Count: 1},
+			{Key: eventTypeStatusProgress, Count: 1},
+			{Key: eventTypeMeasurement, Count: 1},
+			{Key: eventTypeStatusMeasurementSubmission, Count: 1},
+			{Key: eventTypeStatusMeasurementDone, Count: 1},
+			//
+			{Key: eventTypeStatusMeasurementStart, Count: 1},
+			{Key: eventTypeStatusProgress, Count: 1},
+			{Key: eventTypeMeasurement, Count: 1},
+			{Key: eventTypeStatusMeasurementSubmission, Count: 1},
+			{Key: eventTypeStatusMeasurementDone, Count: 1},
+			//
+			{Key: eventTypeStatusMeasurementStart, Count: 1},
+			{Key: eventTypeStatusProgress, Count: 1},
+			{Key: eventTypeMeasurement, Count: 1},
+			{Key: eventTypeStatusMeasurementSubmission, Count: 1},
+			{Key: eventTypeStatusMeasurementDone, Count: 1},
+			//
+			{Key: eventTypeStatusEnd, Count: 1},
+		}
+		assertReducedEventsLike(t, expect, reduced)
+	})
+
+	t.Run("with success and InputOptional and no input", func(t *testing.T) {
+		runner, emitter := newRunnerForTesting()
+		fake := fakeSuccessfulRun()
+		fake.Builder.MockInputPolicy = func() model.InputPolicy {
+			return model.InputOptional
+		}
+		runner.newSession = fake.NewSession
+		events := runAndCollect(runner, emitter)
+		reduced := reduceEventsKeysIgnoreLog(events)
+		expect := []eventKeyCount{
+			{Key: eventTypeStatusQueued, Count: 1},
+			{Key: eventTypeStatusStarted, Count: 1},
+			{Key: eventTypeStatusProgress, Count: 3},
+			{Key: eventTypeStatusGeoIPLookup, Count: 1},
+			{Key: eventTypeStatusResolverLookup, Count: 1},
+			{Key: eventTypeStatusProgress, Count: 1},
+			{Key: eventTypeStatusReportCreate, Count: 1},
+			//
+			{Key: eventTypeStatusMeasurementStart, Count: 1},
+			{Key: eventTypeMeasurement, Count: 1},
+			{Key: eventTypeStatusMeasurementSubmission, Count: 1},
+			{Key: eventTypeStatusMeasurementDone, Count: 1},
+			//
+			{Key: eventTypeStatusEnd, Count: 1},
+		}
+		assertReducedEventsLike(t, expect, reduced)
+	})
+
+	t.Run("with success and InputOrStaticDefault", func(t *testing.T) {
+		experimentName := "DNSCheck"
+		runner, emitter := newRunnerForTesting()
+		runner.settings.Name = experimentName
+		fake := fakeSuccessfulRun()
+		fake.Builder.MockInputPolicy = func() model.InputPolicy {
+			return model.InputOrStaticDefault
+		}
+		runner.newSession = fake.NewSession
+		events := runAndCollect(runner, emitter)
+		reduced := reduceEventsKeysIgnoreLog(events)
+		expect := []eventKeyCount{
+			{Key: eventTypeStatusQueued, Count: 1},
+			{Key: eventTypeStatusStarted, Count: 1},
+			{Key: eventTypeStatusProgress, Count: 3},
+			{Key: eventTypeStatusGeoIPLookup, Count: 1},
+			{Key: eventTypeStatusResolverLookup, Count: 1},
+			{Key: eventTypeStatusProgress, Count: 1},
+			{Key: eventTypeStatusReportCreate, Count: 1},
+		}
+		allEntries, err := targetloading.StaticBareInputForExperiment(experimentName)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// write the correct entries for each expected measurement.
+		for idx := 0; idx < len(allEntries); idx++ {
+			expect = append(expect, eventKeyCount{Key: eventTypeStatusMeasurementStart, Count: 1})
+			expect = append(expect, eventKeyCount{Key: eventTypeStatusProgress, Count: 1})
+			expect = append(expect, eventKeyCount{Key: eventTypeMeasurement, Count: 1})
+			expect = append(expect, eventKeyCount{Key: eventTypeStatusMeasurementSubmission, Count: 1})
+			expect = append(expect, eventKeyCount{Key: eventTypeStatusMeasurementDone, Count: 1})
+		}
+		expect = append(expect, eventKeyCount{Key: eventTypeStatusEnd, Count: 1})
+		assertReducedEventsLike(t, expect, reduced)
+	})
+
 	t.Run("with success and max runtime", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		runner.settings.Inputs = []string{"a", "b", "c", "d"}
 		runner.settings.Options.MaxRuntime = 2
-		fake := fakeSuccessfulDeps()
+		fake := fakeSuccessfulRun()
 		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputStrictlyRequired
-		}
-		fake.Loader.MockLoad = func(ctx context.Context) ([]model.ExperimentTarget, error) {
-			targets := []model.ExperimentTarget{}
-			for _, input := range runner.settings.Inputs {
-				targets = append(targets, model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(input))
-			}
-			return targets, nil
 		}
 		fake.Experiment.MockMeasureWithContext = func(ctx context.Context, target model.ExperimentTarget) (measurement *model.Measurement, err error) {
 			time.Sleep(1 * time.Second)
@@ -591,7 +762,7 @@ func TestTaskRunnerRun(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		runner.settings.Inputs = []string{"a", "b", "c", "d"}
 		runner.settings.Options.MaxRuntime = 2
-		fake := fakeSuccessfulDeps()
+		fake := fakeSuccessfulRun()
 		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputStrictlyRequired
 		}
@@ -633,7 +804,7 @@ func TestTaskRunnerRun(t *testing.T) {
 	t.Run("with measurement submission failure", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		runner.settings.Inputs = []string{"a"}
-		fake := fakeSuccessfulDeps()
+		fake := fakeSuccessfulRun()
 		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputStrictlyRequired
 		}
