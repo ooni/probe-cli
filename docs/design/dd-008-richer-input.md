@@ -33,7 +33,6 @@ the following command runs the `dnscheck` experiment measuring
 ./miniooni dnscheck -i https://8.8.8.8/dns-query -O HTTP3Enabled=true
 ```
 
-
 Additionally, OONI Run v2 allows to run experiments with options. For example,
 the following JSON document is equivalent to the previous `miniooni` command:
 
@@ -151,7 +150,7 @@ Solving this problem is crucial because most OONI measurements run automatically
 in the background with input provided by the backend. Therefore, by enabling
 richer input, we open up the possibility of answering specific research questions
 requiring options at scale. For example, richer input would enable us to
-study [DNS over HTTP/3 is blocking](https://github.com/ooni/probe/issues/2675))
+study [DNS over HTTP/3 blocking](https://github.com/ooni/probe/issues/2675))
 at scale.
 
 ## Design choice: deprecating the check-in API
@@ -159,8 +158,9 @@ at scale.
 We originally envisioned distributing richer input through the check-in API
 but we later realized that this design would be problematic because:
 
-1. it prevents us from having experiments implemented as scripts, a solution
-that we heavily explored while researching richer input;
+1. it prevents us from having experiments implemented as scripts, [a solution
+that we heavily explored while researching richer input](
+https://github.com/bassosimone/2023-12-09-ooni-javascript);
 
 2. the check-in API serves URLs for Web Connectivity, which is the most
 important experiment we run, which means that changing the component serving
@@ -343,11 +343,23 @@ the changes roughly look like this:
 +	if args.Target == nil {
 +		return ErrInputRequired
 +	}
-+	input := args.Target.(*target).input
++	input, ok := args.Target.(*target).input
++	if !ok {
++		return ErrInvalidInputType
++	}
 +	options := args.Target.(*target).options
 	// [...]
  }
 ```
+
+Note how we MUST gracefully cast to `*target` (as we did in [probe-cli#XXX](
+XXX)) because richer input could potentially come from ~any source, including
+the mobile app. While richer input is anything that fullfills the
+`model.ExperimentTarget` interface, mobile apps could, for example,
+construct a Java class implementing such an interface but we wouldn't
+be able to cast such an interface to the `*target` type. Therefore,
+unconditionally casting could lead to crashes when integrating new code
+and generally makes for a less robust codebase.
 
 ## Next steps
 
@@ -387,5 +399,3 @@ inside of the `targetloader` package to have multiple target loaders.
 
 *  devise long term strategy for delivering richer input to `oonimkall`
 from mobile apps, which we'll need as soon as we convert the IM experiments
-
-
