@@ -50,6 +50,20 @@ func TestExperimentNameAndVersion(t *testing.T) {
 	}
 }
 
+func TestDNSCheckFailsWithInvalidInputType(t *testing.T) {
+	measurer := NewExperimentMeasurer()
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: new(model.Measurement),
+		Session:     newsession(),
+		Target:      &model.OOAPIURLInfo{}, // not the expected input type
+	}
+	err := measurer.Run(context.Background(), args)
+	if !errors.Is(err, ErrInvalidInputType) {
+		t.Fatal("expected no input error")
+	}
+}
+
 func TestDNSCheckFailsWithoutInput(t *testing.T) {
 	measurer := NewExperimentMeasurer()
 	args := &model.ExperimentArgs{

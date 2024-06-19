@@ -115,6 +115,7 @@ func (m *Measurer) ExperimentVersion() string {
 // that are used by this experiment to implement its functionality.
 var (
 	ErrInputRequired        = targetloading.ErrInputRequired
+	ErrInvalidInputType     = targetloading.ErrInvalidInputType
 	ErrInvalidURL           = errors.New("the input URL is invalid")
 	ErrUnsupportedURLScheme = errors.New("unsupported URL scheme")
 )
@@ -125,11 +126,14 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	measurement := args.Measurement
 	sess := args.Session
 
-	// 0. obtain the richer input target, config, and input or panic
+	// 0. obtain the richer input target, config, and input or fail
 	if args.Target == nil {
 		return ErrInputRequired
 	}
-	target := args.Target.(*Target)
+	target, ok := args.Target.(*Target)
+	if !ok {
+		return ErrInvalidInputType
+	}
 	config, input := target.Options, target.URL
 	sess.Logger().Infof("dnscheck: using richer input: %+v %+v", config, input)
 
