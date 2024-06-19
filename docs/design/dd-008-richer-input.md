@@ -352,12 +352,12 @@ the changes roughly look like this:
  }
 ```
 
-Note how we MUST gracefully cast to `*target` (as we did in [probe-cli#XXX](
-XXX)) because richer input could potentially come from ~any source, including
-the mobile app. While richer input is anything that fullfills the
-`model.ExperimentTarget` interface, mobile apps could, for example,
-construct a Java class implementing such an interface but we wouldn't
-be able to cast such an interface to the `*target` type. Therefore,
+Note how we MUST gracefully cast to `*target` (as we did in [probe-cli#1623](
+https://github.com/ooni/probe-cli/pull/1623)) because richer input could
+potentially come from ~any source, including the mobile app. While richer input
+is anything that fullfills the `model.ExperimentTarget` interface, mobile apps
+could, for example, construct a Java class implementing such an interface but we
+wouldn't be able to cast such an interface to the `*target` type. Therefore,
 unconditionally casting could lead to crashes when integrating new code
 and generally makes for a less robust codebase.
 
