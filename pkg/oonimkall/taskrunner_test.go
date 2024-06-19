@@ -371,7 +371,7 @@ func TestTaskRunnerRun(t *testing.T) {
 		}
 		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(events)
+		reduced := reduceEventsKeysIgnoreLog(t, events)
 		expect := []eventKeyCount{
 			{Key: eventTypeStatusQueued, Count: 1},
 			{Key: eventTypeStatusStarted, Count: 1},
@@ -392,7 +392,7 @@ func TestTaskRunnerRun(t *testing.T) {
 		}
 		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(events)
+		reduced := reduceEventsKeysIgnoreLog(t, events)
 		expect := []eventKeyCount{
 			{Key: eventTypeStatusQueued, Count: 1},
 			{Key: eventTypeStatusStarted, Count: 1},
@@ -415,7 +415,7 @@ func TestTaskRunnerRun(t *testing.T) {
 			}
 			runner.newSession = fake.NewSession
 			events := runAndCollect(runner, emitter)
-			reduced := reduceEventsKeysIgnoreLog(events)
+			reduced := reduceEventsKeysIgnoreLog(t, events)
 			expect := []eventKeyCount{
 				{Key: eventTypeStatusQueued, Count: 1},
 				{Key: eventTypeStatusStarted, Count: 1},
@@ -437,7 +437,7 @@ func TestTaskRunnerRun(t *testing.T) {
 		}
 		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(events)
+		reduced := reduceEventsKeysIgnoreLog(t, events)
 		expect := []eventKeyCount{
 			{Key: eventTypeStatusQueued, Count: 1},
 			{Key: eventTypeStatusStarted, Count: 1},
@@ -614,7 +614,7 @@ func TestTaskRunnerRun(t *testing.T) {
 		}
 		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(events)
+		reduced := reduceEventsKeysIgnoreLog(t, events)
 		expect := []eventKeyCount{
 			{Key: eventTypeStatusQueued, Count: 1},
 			{Key: eventTypeStatusStarted, Count: 1},
@@ -661,7 +661,7 @@ func TestTaskRunnerRun(t *testing.T) {
 		}
 		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(events)
+		reduced := reduceEventsKeysIgnoreLog(t, events)
 		expect := []eventKeyCount{
 			{Key: eventTypeStatusQueued, Count: 1},
 			{Key: eventTypeStatusStarted, Count: 1},
@@ -691,7 +691,7 @@ func TestTaskRunnerRun(t *testing.T) {
 		}
 		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(events)
+		reduced := reduceEventsKeysIgnoreLog(t, events)
 		expect := []eventKeyCount{
 			{Key: eventTypeStatusQueued, Count: 1},
 			{Key: eventTypeStatusStarted, Count: 1},
