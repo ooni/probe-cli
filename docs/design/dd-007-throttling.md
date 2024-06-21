@@ -28,7 +28,7 @@ cases where a set of specific websites gets significantly worse performance whil
 overall users' internet experience is unchanged. This kind of throttling is in opposition
 to _generalized throttling_ where the internet experience is degraded regardless of the
 website compared to the previous internet experience (see [Dimming the Internet by Collin
-Anderson](https://arxiv.org/pdf/1306.4361v1) for seminal work on this topic).
+Anderson](https://censorbib.nymity.ch/#Anderson2013a) for seminal work on this topic).
 
 We, and other researchers, have documented extreme, targeted throttling in the
 past. See, for example:
