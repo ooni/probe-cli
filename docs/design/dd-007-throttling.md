@@ -195,7 +195,9 @@ Additionally, with the availability of
 it would become possible to
 run custom `urlgetter` experiments where we use possibly offending and possibly not
 offending SNIs with target addresses and possibly-unrelated addresses, thus giving
-us a chance to narrow down the cause of throttling to, say, the SNI being used.
+us a chance to narrow down the cause of throttling to, say, the SNI being used. This
+kind of A/B experiments would basically replicate the functionality of [the prototype
+that we originally wrote to investigate throttling](https://github.com/ooni/probe-cli/pull/684).
 
 Throttling could be caused by policers and shapers as well as by forcing specific
 users to pass through a congested path. When policers and shapers are used, we
