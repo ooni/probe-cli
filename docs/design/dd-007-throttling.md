@@ -211,8 +211,8 @@ By collecting passive performance metrics, we are not only equipped to detect
 extreme, targeted throttling, but we are also gathering information about the performance
 achievable by clients in several world regions for reaching specific websites. The
 availability of HTTP headers and the practice of some CDNs of annotating the
-responses with headers indicating which specific cache is being (as mentioned above
-in the case of Cloudflare) used could also be exploited to make interesting
+responses with headers indicating which specific cache is being used (as mentioned above
+in the case of Cloudflare) could also be exploited to make interesting
 digital-divide statements.
 
 ## Future Work
