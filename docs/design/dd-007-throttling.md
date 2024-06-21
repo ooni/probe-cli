@@ -133,7 +133,7 @@ so a reasoning similar to the one made above for the TLS handshake also applies 
 process of handshadking and then downloading a web page. However, because very long
 downloads could collect lots of "read" events, and because we want to limit the maximum
 amount of "read" events we collected to 64, we have also introduced the following,
-complementary metrics to investigate throttling.
+complementary metric to investigate throttling.
 
 ### Download speed metrics
 
