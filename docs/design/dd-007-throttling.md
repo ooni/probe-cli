@@ -244,13 +244,11 @@ also the possibility of instrumenting the QUIC library to periodically collect
 snapshots about the receiver's state. However, in general, sender stats are
 much more useful to understand QUIC performance. This fact implies that we could
 instrument a QUIC library to observe the sender's state and gather information
-about throttling uploads. (Yet, the whole design of Web Connectivity is not
-such that we upload resources, therefore we would need to figure out whether
-it is possible to overcome this fundamental limitation first.)
+about throttling uploads.
 
-In the same vein, our Web Connectivity methodology does not currently factor in
-the possibility of measuring upload speed throttling for HTTP/1.1 and HTTP/2. However,
-anecdotal evidence exists that some countries may throttle the upload path or just
-have poor upstream connectivity towards interesting websites. A technique that
-has sometimes been applied is that of including very large headers into the request
-body, even though servers may not necessarily accept such headers.
+Yet, the whole design of Web Connectivity is not
+such that we upload resources, therefore we would need to figure out whether
+it is possible to overcome this fundamental limitation for HTTP/1.1 and HTTP/2
+first. A technique that has sometimes been applied is that of including very
+large headers into the request body, even though servers may not
+necessarily accept such headers.
