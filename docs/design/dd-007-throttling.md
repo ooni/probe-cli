@@ -52,8 +52,9 @@ be useful to document episodes of extreme, targeted throttling.
 
 ## Methodology
 
-The overall idea of our methodology is that we're not concerned with _how_ throttling
-is implemented, rather we aim to show clearly-degraded network performance.
+The overall idea of our methodology is that, as a first approximation,
+we're not concerned with _how_ throttling is implemented, rather we aim to
+show clearly-degraded network performance.
 
 We aim to detect such a degradation by comparing metrics collected by OONI Probe instances
 running in a country and network with measurements previously collected by users and/or with
