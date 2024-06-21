@@ -190,7 +190,9 @@ indicate specific geographic locations. For example, Cloudflare includes a
 `cf-ray` header indicating the specific cache that is serving the content using
 the name of the nearest airport.
 
-Additionally, with the availability of richer input, it would become possible to
+Additionally, with the availability of
+[richer input](https://github.com/ooni/probe-cli/blob/master/docs/design/dd-008-richer-input.md),
+it would become possible to
 run custom `urlgetter` experiments where we use possibly offending and possibly not
 offending SNIs with target addresses and possibly-unrelated addresses, thus giving
 us a chance to narrow down the cause of throttling to, say, the SNI being used.
@@ -227,7 +229,9 @@ application-level packet loss rate estimation" by Basso et al.](
 https://www.sigcomm.org/sites/default/files/ccr/papers/2013/July/2500098-2500104.pdf).
 
 An alternative approach, already mentioned above, would require the possibility
-of providing OONI experiments such as `urlgetter` with "richer input" parameters that
+of providing OONI experiments such as `urlgetter` with
+[richer input](https://github.com/ooni/probe-cli/blob/master/docs/design/dd-008-richer-input.md)
+parameters that
 could provide additional data to answer more-narrow research questions. For example, if
 there are reports that a website is throttled by SNI, we could perform a download
 from a given test server with certificate verification disabled, using the offending
