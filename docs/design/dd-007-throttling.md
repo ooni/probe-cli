@@ -181,7 +181,7 @@ country and using the same autonomous system. Alternatively, we could compare
 measurements collected during the same time frame towards different websites, even
 though this signal is weaker because it can just be caused by interconnection
 issues. In any case, these considerations imply that our methodology rests
-on the assumption that we will have several measurements for the targer websites,
+on the assumption that we will have several measurements for the target websites,
 and our confidence would clearly lower with little available data.
 
 In analysing the data, it would also be useful to consider the possibility of
