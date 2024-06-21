@@ -80,6 +80,22 @@ func TestSession(t *testing.T) {
 		}
 	})
 
+	t.Run("FetchOpenVPNConfig", func(t *testing.T) {
+		expected := errors.New("mocked err")
+		s := &Session{
+			MockFetchOpenVPNConfig: func(ctx context.Context, provider, cc string) (*model.OOAPIVPNProviderConfig, error) {
+				return nil, expected
+			},
+		}
+		cfg, err := s.FetchOpenVPNConfig(context.Background(), "riseup", "XX")
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected err", err)
+		}
+		if cfg != nil {
+			t.Fatal("expected nil cfg")
+		}
+	})
+
 	t.Run("KeyValueStore", func(t *testing.T) {
 		expect := &KeyValueStore{}
 		s := &Session{
@@ -336,6 +352,67 @@ func TestSession(t *testing.T) {
 		}
 		if out != nil {
 			t.Fatal("unexpected out")
+		}
+	})
+
+	t.Run("Close", func(t *testing.T) {
+		expected := errors.New("mocked err")
+		s := &Session{
+			MockClose: func() error {
+				return expected
+			},
+		}
+		err := s.Close()
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected err")
+		}
+	})
+
+	t.Run("MaybeLookupBackendsContext", func(t *testing.T) {
+		expected := errors.New("mocked err")
+		s := &Session{
+			MockMaybeLookupBackendsContext: func(ctx context.Context) error {
+				return expected
+			},
+		}
+		err := s.MaybeLookupBackendsContext(context.Background())
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected err")
+		}
+	})
+
+	t.Run("MaybeLookupLocationContext", func(t *testing.T) {
+		expected := errors.New("mocked err")
+		s := &Session{
+			MockMaybeLookupLocationContext: func(ctx context.Context) error {
+				return expected
+			},
+		}
+		err := s.MaybeLookupLocationContext(context.Background())
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected err")
+		}
+	})
+
+	t.Run("ResolverASNString", func(t *testing.T) {
+		s := &Session{
+			MockResolverASNString: func() string {
+				return "xx"
+			},
+		}
+		if s.ResolverASNString() != "xx" {
+			t.Fatal("unexpected result")
+		}
+	})
+
+	t.Run("ResolverNetworkName", func(t *testing.T) {
+		s := &Session{
+			MockResolverNetworkName: func() string {
+				return "xx"
+			},
+		}
+		if s.ResolverNetworkName() != "xx" {
+			t.Fatal("unexpected result")
 		}
 	})
 }

@@ -131,7 +131,7 @@ func RunGroup(config RunGroupConfig) error {
 	defer dir.Close()
 	_, err = dir.Readdirnames(1)
 	if err != nil {
-		os.Remove(result.MeasurementDir)
+		_ = os.Remove(result.MeasurementDir)
 	}
 	if err = db.Finished(result); err != nil {
 		return err

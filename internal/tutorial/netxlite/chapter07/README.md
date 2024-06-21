@@ -46,7 +46,7 @@ func main() {
 	flag.Parse()
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
-	config := &tls.Config{
+	config := &tls.Config{ // #nosec G402 - we need to use a large TLS versions range for measuring
 		ServerName: *sni,
 		NextProtos: []string{"h2", "http/1.1"},
 		RootCAs:    nil,
@@ -105,7 +105,7 @@ using the GET method.
 		fatal(err)
 	}
 	log.Infof("Status code: %d", resp.StatusCode)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 }
 
 ```
@@ -134,7 +134,7 @@ func dialTLS(ctx context.Context, address string, config *tls.Config) (model.TLS
 	}
 	tlsConn, err := handshakeTLS(ctx, tcpConn, config)
 	if err != nil {
-		tcpConn.Close()
+		_ = tcpConn.Close()
 		return nil, err
 	}
 	return tlsConn, nil

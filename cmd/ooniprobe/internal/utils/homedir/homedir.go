@@ -151,7 +151,7 @@ func dirUnix() (string, error) {
 	var stdout bytes.Buffer
 
 	// If that fails, try OS specific commands
-	cmd := execabs.Command("getent", "passwd", strconv.Itoa(os.Getuid()))
+	cmd := execabs.Command("getent", "passwd", strconv.Itoa(os.Getuid())) // #nosec G204 - this is fine
 	cmd.Stdout = &stdout
 	if err := cmd.Run(); err == nil {
 		if passwd := strings.TrimSpace(stdout.String()); passwd != "" {

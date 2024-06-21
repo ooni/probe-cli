@@ -62,7 +62,7 @@ func (d *httpTLSDialerWithReadTimeout) DialTLSContext(
 	}
 	tconn, okay := conn.(TLSConn) // part of the contract but let's be graceful
 	if !okay {
-		conn.Close() // we own the conn here
+		_ = conn.Close() // we own the conn here
 		return nil, ErrNotTLSConn
 	}
 	return &httpTLSConnWithReadTimeout{tconn}, nil
@@ -95,7 +95,7 @@ const httpConnReadTimeout = 300 * time.Second
 
 // Read implements Conn.Read.
 func (c *httpConnWithReadTimeout) Read(b []byte) (int, error) {
-	c.Conn.SetReadDeadline(time.Now().Add(httpConnReadTimeout))
+	_ = c.Conn.SetReadDeadline(time.Now().Add(httpConnReadTimeout))
 	defer c.Conn.SetReadDeadline(time.Time{})
 	return c.Conn.Read(b)
 }
@@ -108,7 +108,7 @@ type httpTLSConnWithReadTimeout struct {
 
 // Read implements Conn.Read.
 func (c *httpTLSConnWithReadTimeout) Read(b []byte) (int, error) {
-	c.TLSConn.SetReadDeadline(time.Now().Add(httpConnReadTimeout))
+	_ = c.TLSConn.SetReadDeadline(time.Now().Add(httpConnReadTimeout))
 	defer c.TLSConn.SetReadDeadline(time.Time{})
 	return c.TLSConn.Read(b)
 }

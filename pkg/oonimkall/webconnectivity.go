@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // WebConnectivityConfig contains settings for WebConnectivity.
+//
+// Deprecated: this code was just an experiment that we never ended up using.
 type WebConnectivityConfig struct {
 	// Callbacks contains the experiment callbacks. This field is
 	// optional. Leave it empty and we'll use a default set of
@@ -20,6 +23,8 @@ type WebConnectivityConfig struct {
 }
 
 // WebConnectivityResults contains the results of WebConnectivity.
+//
+// Deprecated: this code was just an experiment that we never ended up using.
 type WebConnectivityResults struct {
 	// KibiBytesReceived contains the KiB received.
 	KibiBytesReceived float64
@@ -65,7 +70,8 @@ func (r *webConnectivityRunner) run(ctx context.Context, config *WebConnectivity
 		builder.setCallbacks(config.Callbacks)
 	}
 	exp := builder.newExperiment()
-	measurement, err := exp.MeasureWithContext(ctx, config.Input)
+	target := model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(config.Input)
+	measurement, err := exp.MeasureWithContext(ctx, target)
 	if err != nil {
 		return nil, err
 	}
@@ -86,6 +92,8 @@ func (r *webConnectivityRunner) run(ctx context.Context, config *WebConnectivity
 //
 // This API is currently experimental. We do not promise that we will bump
 // the major version number when changing it.
+//
+// Deprecated: this code was just an experiment that we never ended up using.
 func (sess *Session) WebConnectivity(ctx *Context, config *WebConnectivityConfig) (*WebConnectivityResults, error) {
 	return (&webConnectivityRunner{sess: sess}).run(ctx.ctx, config)
 }

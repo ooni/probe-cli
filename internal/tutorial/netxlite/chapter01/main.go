@@ -76,7 +76,7 @@ func main() {
 	// Otherwise, we're tidy and close the opened connection.
 	//
 	// ```Go
-	conn.Close()
+	_ = conn.Close()
 }
 
 // ```

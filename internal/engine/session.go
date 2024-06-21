@@ -66,6 +66,7 @@ type Session struct {
 	softwareName             string
 	softwareVersion          string
 	tempDir                  string
+	vpnConfig                map[string]model.OOAPIVPNProviderConfig
 
 	// closeOnce allows us to call Close just once.
 	closeOnce sync.Once
@@ -177,6 +178,7 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 		torArgs:                 config.TorArgs,
 		torBinary:               config.TorBinary,
 		tunnelDir:               config.TunnelDir,
+		vpnConfig:               make(map[string]model.OOAPIVPNProviderConfig),
 	}
 	proxyURL := config.ProxyURL
 	if proxyURL != nil {
@@ -338,7 +340,7 @@ func (s *Session) Close() error {
 // doClose implements Close. This function is called just once.
 func (s *Session) doClose() {
 	// make sure we close open connections and persist stats to the key-value store
-	s.network.Close()
+	_ = s.network.Close()
 
 	s.resolver.CloseIdleConnections()
 	if s.tunnel != nil {
@@ -368,7 +370,35 @@ func (s *Session) FetchTorTargets(
 	if err != nil {
 		return nil, err
 	}
+
+	// TODO(bassosimone,DecFox): here we could also lock the mutex
+	// or we should consider using the same strategy we used for the
+	// experiments, where we separated mutable state into dedicated types.
 	return clnt.FetchTorTargets(ctx, cc)
+}
+
+// FetchOpenVPNConfig fetches openvpn config from the API if it's not found in the
+// internal cache. We do this to avoid hitting the API for every input.
+func (s *Session) FetchOpenVPNConfig(
+	ctx context.Context, provider, cc string) (*model.OOAPIVPNProviderConfig, error) {
+	if config, ok := s.vpnConfig[provider]; ok {
+		return &config, nil
+	}
+	clnt, err := s.newOrchestraClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// we cannot lock earlier because newOrchestraClient locks the mutex.
+	defer s.mu.Unlock()
+	s.mu.Lock()
+
+	config, err := clnt.FetchOpenVPNConfig(ctx, provider, cc)
+	if err != nil {
+		return nil, err
+	}
+	s.vpnConfig[provider] = config
+	return &config, nil
 }
 
 // KeyValueStore returns the configured key-value store.

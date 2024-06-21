@@ -81,7 +81,7 @@ func quicDo(ctx context.Context, config *quicConfig) {
 	// See https://github.com/ooni/probe/issues/2413 to understand
 	// why we're using nil to force netxlite to use the cached
 	// default Mozilla cert pool.
-	tlsConfig := &tls.Config{
+	tlsConfig := &tls.Config{ // #nosec G402 - we need to use a large TLS versions range for measuring
 		NextProtos: []string{"h3"},
 		RootCAs:    nil,
 		ServerName: config.URLHostname,

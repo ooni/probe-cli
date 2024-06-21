@@ -27,7 +27,7 @@ func init() {
 
 func shutdown(ctx context.Context, l net.Listener) {
 	<-ctx.Done()
-	l.Close()
+	_ = l.Close()
 }
 
 // TODO(DecFox): Add the ability of an echo service to generate some traffic

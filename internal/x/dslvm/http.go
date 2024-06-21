@@ -138,7 +138,7 @@ func (sx *HTTPRoundTripStage[T]) roundTrip(ctx context.Context, rtx Runtime, con
 }
 
 func (sx *HTTPRoundTripStage[T]) newHTTPRequest(
-	ctx context.Context, conn HTTPConnection, logger model.Logger) (*http.Request, error) {
+	ctx context.Context, conn HTTPConnection, _ model.Logger) (*http.Request, error) {
 	// create the default HTTP request
 	URL := &url.URL{
 		Scheme:      conn.Scheme(),

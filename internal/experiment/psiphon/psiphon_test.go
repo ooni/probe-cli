@@ -51,7 +51,7 @@ func TestRunWithCancelledContext(t *testing.T) {
 func TestRunWithCustomInputAndCancelledContext(t *testing.T) {
 	expected := "http://x.org"
 	measurement := &model.Measurement{
-		Input: model.MeasurementTarget(expected),
+		Input: model.MeasurementInput(expected),
 	}
 	measurer := psiphon.NewExperimentMeasurer(psiphon.Config{})
 	measurer.(*psiphon.Measurer).BeforeGetHook = func(g urlgetter.Getter) {

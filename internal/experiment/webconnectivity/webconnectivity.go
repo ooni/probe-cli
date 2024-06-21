@@ -94,9 +94,6 @@ func (m Measurer) ExperimentVersion() string {
 }
 
 var (
-	// ErrNoAvailableTestHelpers is emitted when there are no available test helpers.
-	ErrNoAvailableTestHelpers = errors.New("no available helpers")
-
 	// ErrNoInput indicates that no input was provided
 	ErrNoInput = errors.New("no input provided")
 
@@ -145,7 +142,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	// 1. find test helper
 	testhelpers, _ := sess.GetTestHelpersByName("web-connectivity")
 	if len(testhelpers) < 1 {
-		return ErrNoAvailableTestHelpers
+		return model.ErrNoAvailableTestHelpers
 	}
 	// 2. perform the DNS lookup step
 	dnsBegin := time.Now()

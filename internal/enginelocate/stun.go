@@ -3,7 +3,6 @@ package enginelocate
 import (
 	"context"
 	"net"
-	"net/http"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -46,7 +45,7 @@ func stunIPLookup(ctx context.Context, config stunConfig) (string, error) {
 		}
 		clnt, err := newClient(conn)
 		if err != nil {
-			conn.Close()
+			_ = conn.Close()
 			return model.DefaultProbeIP, err
 		}
 		defer clnt.Close()
@@ -86,7 +85,7 @@ func stunIPLookup(ctx context.Context, config stunConfig) (string, error) {
 
 func stunEkigaIPLookup(
 	ctx context.Context,
-	httpClient *http.Client,
+	httpClient model.HTTPClient,
 	logger model.Logger,
 	userAgent string,
 	resolver model.Resolver,
@@ -100,7 +99,7 @@ func stunEkigaIPLookup(
 
 func stunGoogleIPLookup(
 	ctx context.Context,
-	httpClient *http.Client,
+	httpClient model.HTTPClient,
 	logger model.Logger,
 	userAgent string,
 	resolver model.Resolver,

@@ -10,14 +10,18 @@ import (
 )
 
 func init() {
-	AllExperiments["tor"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
-			return tor.NewExperimentMeasurer(
-				*config.(*tor.Config),
-			)
-		},
-		config:           &tor.Config{},
-		enabledByDefault: true,
-		inputPolicy:      model.InputNone,
+	const canonicalName = "tor"
+	AllExperiments[canonicalName] = func() *Factory {
+		return &Factory{
+			build: func(config interface{}) model.ExperimentMeasurer {
+				return tor.NewExperimentMeasurer(
+					*config.(*tor.Config),
+				)
+			},
+			canonicalName:    canonicalName,
+			config:           &tor.Config{},
+			enabledByDefault: true,
+			inputPolicy:      model.InputNone,
+		}
 	}
 }

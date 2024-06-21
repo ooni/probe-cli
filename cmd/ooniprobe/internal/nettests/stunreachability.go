@@ -3,25 +3,23 @@ package nettests
 import (
 	"context"
 
-	engine "github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // STUNReachability nettest implementation.
 type STUNReachability struct{}
 
-func (n STUNReachability) lookupURLs(ctl *Controller) ([]string, error) {
-	inputloader := &engine.InputLoader{
+func (n STUNReachability) lookupURLs(ctl *Controller, builder model.ExperimentBuilder) ([]model.ExperimentTarget, error) {
+	config := &model.ExperimentTargetLoaderConfig{
 		CheckInConfig: &model.OOAPICheckInConfig{
 			// not needed because we have default static input in the engine
 		},
-		ExperimentName: "stunreachability",
-		InputPolicy:    model.InputOrStaticDefault,
-		Session:        ctl.Session,
-		SourceFiles:    ctl.InputFiles,
-		StaticInputs:   ctl.Inputs,
+		Session:      ctl.Session,
+		SourceFiles:  ctl.InputFiles,
+		StaticInputs: ctl.Inputs,
 	}
-	testlist, err := inputloader.Load(context.Background())
+	targetloader := builder.NewTargetLoader(config)
+	testlist, err := targetloader.Load(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +32,7 @@ func (n STUNReachability) Run(ctl *Controller) error {
 	if err != nil {
 		return err
 	}
-	urls, err := n.lookupURLs(ctl)
+	urls, err := n.lookupURLs(ctl, builder)
 	if err != nil {
 		return err
 	}

@@ -93,7 +93,8 @@ func NewNetwork(
 	netx := &netxlite.Netx{}
 	dialer := netx.NewDialerWithResolver(logger, resolver)
 
-	// Create manager for keeping track of statistics
+	// Create manager for keeping track of statistics. This implies creating a background
+	// goroutine that we'll need to close when we're done.
 	const trimInterval = 30 * time.Second
 	stats := newStatsManager(kvStore, logger, trimInterval)
 
@@ -112,21 +113,16 @@ func NewNetwork(
 	// Note that:
 	//
 	// - we're enabling compression, which is desiredable since this transport
-	// is not made for measuring and compression is good(TM);
+	// is not made for measuring and compression is good(TM), also note that
+	// when the request uses Accept-Encoding, this kind of automatic management
+	// of compression is disabled, so there is no conflict.
 	//
 	// - if proxyURL is nil, the proxy option is equivalent to disabling
 	// the proxy, otherwise it means that we're using the ooni/oohttp library
 	// to dial for proxies, which has some restrictions.
 	//
-	// In particular, the returned transport uses dialer for dialing with
-	// cleartext proxies (e.g., socks5 and http) and httpsDialer for dialing
-	// with encrypted proxies (e.g., https). After this has happened,
-	// the code currently falls back to using the standard library's tls
-	// client code for establishing TLS connections over the proxy. The main
-	// implication here is that we're not using our custom mozilla CA for
-	// validating TLS certificates, rather we're using the system's cert store.
-	//
-	// Fixing this issue is TODO(https://github.com/ooni/probe/issues/2536).
+	// - this code does not work as intended when using netem and proxies
+	// as documented by TODO(https://github.com/ooni/probe/issues/2536).
 	txp := netxlite.NewHTTPTransportWithOptions(
 		logger, dialer, httpsDialer,
 		netxlite.HTTPTransportOptionDisableCompression(false),
@@ -158,16 +154,41 @@ func newHTTPSDialerPolicy(
 		return &dnsPolicy{logger, resolver}
 	}
 
-	// create a composed fallback TLS dialer policy
-	fallback := &statsPolicy{
-		Fallback: &bridgesPolicy{Fallback: &dnsPolicy{logger, resolver}},
-		Stats:    stats,
+	// create a policy interleaving stats policies and bridges policies
+	statsOrBridges := &mixPolicyInterleave{
+		Primary: &statsPolicyV2{
+			Stats: stats,
+		},
+		Fallback: &bridgesPolicyV2{},
+		Factor:   3,
 	}
 
-	// make sure we honor a user-provided policy
-	policy, err := newUserPolicy(kvStore, fallback)
+	// wrap the DNS policy with a policy that extends tactics for test
+	// helpers so that we also try using different SNIs.
+	dnsExt := &testHelpersPolicy{
+		Child: &dnsPolicy{logger, resolver},
+	}
+
+	// compose dnsExt and statsOrBridges such that dnsExt has
+	// priority in the selection of tactics
+	composed := &mixPolicyInterleave{
+		Primary:  dnsExt,
+		Fallback: statsOrBridges,
+		Factor:   3,
+	}
+
+	// attempt to load a user-provided dialing policy
+	primary, err := newUserPolicyV2(kvStore)
+
+	// on error, just use composed
 	if err != nil {
-		return fallback
+		return composed
+	}
+
+	// otherwise, finish creating the dialing policy
+	policy := &mixPolicyEitherOr{
+		Primary:  primary,
+		Fallback: composed,
 	}
 
 	return policy

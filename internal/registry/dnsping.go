@@ -10,14 +10,18 @@ import (
 )
 
 func init() {
-	AllExperiments["dnsping"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
-			return dnsping.NewExperimentMeasurer(
-				*config.(*dnsping.Config),
-			)
-		},
-		config:           &dnsping.Config{},
-		enabledByDefault: true,
-		inputPolicy:      model.InputOrStaticDefault,
+	const canonicalName = "dnsping"
+	AllExperiments[canonicalName] = func() *Factory {
+		return &Factory{
+			build: func(config interface{}) model.ExperimentMeasurer {
+				return dnsping.NewExperimentMeasurer(
+					*config.(*dnsping.Config),
+				)
+			},
+			canonicalName:    canonicalName,
+			config:           &dnsping.Config{},
+			enabledByDefault: true,
+			inputPolicy:      model.InputOrStaticDefault,
+		}
 	}
 }

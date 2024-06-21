@@ -162,7 +162,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		// don't care about the HTTP response code.
 		Target: WebHTTPSURL,
 	})
-	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano())) // #nosec G404 -- not really important
 	rnd.Shuffle(len(inputs), func(i, j int) {
 		inputs[i], inputs[j] = inputs[j], inputs[i]
 	})

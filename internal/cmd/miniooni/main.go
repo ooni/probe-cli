@@ -232,7 +232,7 @@ func registerOONIRun(rootCmd *cobra.Command, globalOptions *Options) {
 
 // registerAllExperiments registers a subcommand for each experiment
 func registerAllExperiments(rootCmd *cobra.Command, globalOptions *Options) {
-	for name, factory := range registry.AllExperiments {
+	for name, ff := range registry.AllExperiments {
 		subCmd := &cobra.Command{
 			Use:   name,
 			Short: fmt.Sprintf("Runs the %s experiment", name),
@@ -243,6 +243,7 @@ func registerAllExperiments(rootCmd *cobra.Command, globalOptions *Options) {
 		}
 		rootCmd.AddCommand(subCmd)
 		flags := subCmd.Flags()
+		factory := ff()
 
 		switch factory.InputPolicy() {
 		case model.InputOrQueryBackend,
@@ -372,7 +373,7 @@ func mainSingleIteration(logger model.Logger, experimentName string, currentOpti
 
 	sess := newSessionOrPanic(ctx, currentOptions, miniooniDir, logger)
 	defer func() {
-		sess.Close()
+		_ = sess.Close()
 		log.Infof("whole session: recv %s, sent %s",
 			humanize.SI(sess.KibiBytesReceived()*1024, "byte"),
 			humanize.SI(sess.KibiBytesSent()*1024, "byte"),

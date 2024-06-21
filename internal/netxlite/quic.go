@@ -139,7 +139,7 @@ func (d *quicDialerQUICGo) DialContext(ctx context.Context,
 	err = MaybeNewErrWrapper(ClassifyQUICHandshakeError, QUICHandshakeOperation, err)
 	trace.OnQUICHandshakeDone(started, address, qconn, tlsConfig, err, finished)
 	if err != nil {
-		pconn.Close() // we own it on failure
+		_ = pconn.Close() // we own it on failure
 		return nil, err
 	}
 	return newQUICConnectionOwnsConn(qconn, pconn), nil
@@ -200,7 +200,7 @@ func (d *quicDialerHandshakeCompleter) DialContext(
 	case <-conn.HandshakeComplete():
 		return conn, nil
 	case <-ctx.Done():
-		conn.CloseWithError(0, "") // we own the conn
+		_ = conn.CloseWithError(0, "") // we own the conn
 		return nil, ctx.Err()
 	}
 }
@@ -227,7 +227,7 @@ func newQUICConnectionOwnsConn(qconn quic.EarlyConnection, pconn model.UDPLikeCo
 func (qconn *quicConnectionOwnsConn) CloseWithError(
 	code quic.ApplicationErrorCode, reason string) error {
 	err := qconn.EarlyConnection.CloseWithError(code, reason)
-	qconn.conn.Close()
+	_ = qconn.conn.Close()
 	return err
 }
 

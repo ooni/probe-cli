@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/legacy/multierror"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/multierror"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -25,7 +25,7 @@ var (
 )
 
 type lookupFunc func(
-	ctx context.Context, client *http.Client,
+	ctx context.Context, client model.HTTPClient,
 	logger model.Logger, userAgent string,
 	resolver model.Resolver,
 ) (string, error)
@@ -68,7 +68,7 @@ type ipLookupClient struct {
 }
 
 func makeSlice() []method {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	r := rand.New(rand.NewSource(time.Now().UnixNano())) // #nosec G404 -- not really important
 	ret := make([]method, len(methods))
 	perm := r.Perm(len(methods))
 	for idx, randIdx := range perm {

@@ -1,5 +1,7 @@
 package nettests
 
+import "github.com/ooni/probe-cli/v3/internal/model"
+
 // Signal nettest implementation.
 type Signal struct{}
 
@@ -11,5 +13,5 @@ func (h Signal) Run(ctl *Controller) error {
 	if err != nil {
 		return err
 	}
-	return ctl.Run(builder, []string{""})
+	return ctl.Run(builder, []model.ExperimentTarget{model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("")})
 }

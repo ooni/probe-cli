@@ -391,3 +391,47 @@ func redirectWithBrokenLocationForHTTPS() *TestCase {
 		},
 	}
 }
+
+// redirectWithMoreThanTenRedirectsAndHTTP is a scenario where the redirect
+// consists of more than ten redirects for http:// URLs.
+func redirectWithMoreThanTenRedirectsAndHTTP() *TestCase {
+	return &TestCase{
+		Name:      "redirectWithMoreThanTenRedirectsAndHTTP",
+		Flags:     TestCaseFlagNoV04,
+		Input:     "http://httpbin.com/redirect/15",
+		LongTest:  true,
+		ExpectErr: false,
+		ExpectTestKeys: &TestKeys{
+			DNSExperimentFailure:  nil,
+			DNSConsistency:        "consistent",
+			HTTPExperimentFailure: `unknown_failure: stopped after too many redirects`,
+			XStatus:               0,
+			XDNSFlags:             0,
+			XBlockingFlags:        0,
+			Accessible:            false,
+			Blocking:              false,
+		},
+	}
+}
+
+// redirectWithMoreThanTenRedirectsAndHTTPS is a scenario where the redirect
+// consists of more than ten redirects for https:// URLs.
+func redirectWithMoreThanTenRedirectsAndHTTPS() *TestCase {
+	return &TestCase{
+		Name:      "redirectWithMoreThanTenRedirectsAndHTTPS",
+		Flags:     TestCaseFlagNoV04,
+		Input:     "https://httpbin.com/redirect/15",
+		LongTest:  true,
+		ExpectErr: false,
+		ExpectTestKeys: &TestKeys{
+			DNSExperimentFailure:  nil,
+			DNSConsistency:        "consistent",
+			HTTPExperimentFailure: `unknown_failure: stopped after too many redirects`,
+			XStatus:               0,
+			XDNSFlags:             0,
+			XBlockingFlags:        0,
+			Accessible:            false,
+			Blocking:              false,
+		},
+	}
+}

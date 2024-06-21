@@ -12,69 +12,28 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// statsPolicy is a policy that schedules tactics already known
-// to work based on statistics and defers to a fallback policy
-// once it has generated all the tactics known to work.
+// statsPolicyV2 is a policy that schedules tactics already known
+// to work based on the previously collected stats.
 //
-// The zero value of this struct is invalid; please, make sure you
-// fill all the fields marked as MANDATORY.
-type statsPolicy struct {
-	// Fallback is the MANDATORY fallback policy.
-	Fallback httpsDialerPolicy
-
+// The zero value of this struct is invalid; please, make sure
+// you fill all the fields marked as MANDATORY.
+//
+// This is v2 of the statsPolicy because the previous implementation
+// incorporated mixing logic, while now the mixing happens outside
+// of this policy, thus giving us much more flexibility.
+type statsPolicyV2 struct {
 	// Stats is the MANDATORY stats manager.
 	Stats *statsManager
 }
 
-var _ httpsDialerPolicy = &statsPolicy{}
+var _ httpsDialerPolicy = &statsPolicyV2{}
 
-// LookupTactics implements HTTPSDialerPolicy.
-func (p *statsPolicy) LookupTactics(ctx context.Context, domain string, port string) <-chan *httpsDialerTactic {
-	out := make(chan *httpsDialerTactic)
-
-	go func() {
-		defer close(out) // make sure the parent knows when we're done
-		index := 0
-
-		// useful to make sure we don't emit two equal policy in a single run
-		uniq := make(map[string]int)
-
-		// function that emits a given tactic unless we already emitted it
-		maybeEmitTactic := func(t *httpsDialerTactic) {
-			// as a safety mechanism let's gracefully handle the
-			// case in which the tactic is nil
-			if t == nil {
-				return
-			}
-
-			// handle the case in which we already emitted a policy
-			key := t.tacticSummaryKey()
-			if uniq[key] > 0 {
-				return
-			}
-			uniq[key]++
-
-			// 🚀!!!
-			t.InitialDelay = happyEyeballsDelay(index)
-			index += 1
-			out <- t
-		}
-
-		// give priority to what we know from stats
-		for _, t := range statsPolicyPostProcessTactics(p.Stats.LookupTactics(domain, port)) {
-			maybeEmitTactic(t)
-		}
-
-		// fallback to the secondary policy
-		for t := range p.Fallback.LookupTactics(ctx, domain, port) {
-			maybeEmitTactic(t)
-		}
-	}()
-
-	return out
+// LookupTactics implements httpsDialerPolicy.
+func (p *statsPolicyV2) LookupTactics(ctx context.Context, domain string, port string) <-chan *httpsDialerTactic {
+	return streamTacticsFromSlice(statsPolicyFilterStatsTactics(p.Stats.LookupTactics(domain, port)))
 }
 
-func statsPolicyPostProcessTactics(tactics []*statsTactic, good bool) (out []*httpsDialerTactic) {
+func statsPolicyFilterStatsTactics(tactics []*statsTactic, good bool) (out []*httpsDialerTactic) {
 	// when good is false, it means p.Stats.LookupTactics failed
 	if !good {
 		return

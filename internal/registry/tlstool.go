@@ -10,14 +10,18 @@ import (
 )
 
 func init() {
-	AllExperiments["tlstool"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
-			return tlstool.NewExperimentMeasurer(
-				*config.(*tlstool.Config),
-			)
-		},
-		config:           &tlstool.Config{},
-		enabledByDefault: true,
-		inputPolicy:      model.InputOrQueryBackend,
+	const canonicalName = "tlstool"
+	AllExperiments[canonicalName] = func() *Factory {
+		return &Factory{
+			build: func(config interface{}) model.ExperimentMeasurer {
+				return tlstool.NewExperimentMeasurer(
+					*config.(*tlstool.Config),
+				)
+			},
+			canonicalName:    canonicalName,
+			config:           &tlstool.Config{},
+			enabledByDefault: true,
+			inputPolicy:      model.InputOrQueryBackend,
+		}
 	}
 }

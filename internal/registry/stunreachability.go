@@ -10,14 +10,18 @@ import (
 )
 
 func init() {
-	AllExperiments["stunreachability"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
-			return stunreachability.NewExperimentMeasurer(
-				*config.(*stunreachability.Config),
-			)
-		},
-		config:           &stunreachability.Config{},
-		enabledByDefault: true,
-		inputPolicy:      model.InputOrStaticDefault,
+	const canonicalName = "stunreachability"
+	AllExperiments[canonicalName] = func() *Factory {
+		return &Factory{
+			build: func(config interface{}) model.ExperimentMeasurer {
+				return stunreachability.NewExperimentMeasurer(
+					*config.(*stunreachability.Config),
+				)
+			},
+			canonicalName:    canonicalName,
+			config:           &stunreachability.Config{},
+			enabledByDefault: true,
+			inputPolicy:      model.InputOrStaticDefault,
+		}
 	}
 }

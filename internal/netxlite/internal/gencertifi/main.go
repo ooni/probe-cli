@@ -41,7 +41,7 @@ func main() {
 	}
 	url := os.Args[1]
 
-	resp, err := http.Get(url)
+	resp, err := http.Get(url) // #nosec G107 -- this is working as intended
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -1,5 +1,7 @@
 package nettests
 
+import "github.com/ooni/probe-cli/v3/internal/model"
+
 // ECHCheck nettest implementation.
 type ECHCheck struct{}
 
@@ -11,5 +13,5 @@ func (n ECHCheck) Run(ctl *Controller) error {
 	}
 	// providing an input containing an empty string causes the experiment
 	// to recognize the empty string and use the default URL
-	return ctl.Run(builder, []string{""})
+	return ctl.Run(builder, []model.ExperimentTarget{model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("")})
 }

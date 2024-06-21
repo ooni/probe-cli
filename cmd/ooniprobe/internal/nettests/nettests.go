@@ -88,24 +88,22 @@ type Controller struct {
 // - on success, a list of strings containing URLs to test;
 //
 // - on failure, an error.
-func (c *Controller) BuildAndSetInputIdxMap(testlist []model.OOAPIURLInfo) ([]string, error) {
-	var urls []string
+func (c *Controller) BuildAndSetInputIdxMap(testlist []model.ExperimentTarget) ([]model.ExperimentTarget, error) {
 	urlIDMap := make(map[int64]int64)
 	for idx, url := range testlist {
 		log.Debugf("Going over URL %d", idx)
 		urlID, err := c.Probe.DB().CreateOrUpdateURL(
-			url.URL, url.CategoryCode, url.CountryCode,
+			url.Input(), url.Category(), url.Country(),
 		)
 		if err != nil {
 			log.Error("failed to add to the URL table")
 			return nil, err
 		}
-		log.Debugf("Mapped URL %s to idx %d and urlID %d", url.URL, idx, urlID)
+		log.Debugf("Mapped URL %s to idx %d and urlID %d", url.Input(), idx, urlID)
 		urlIDMap[int64(idx)] = urlID
-		urls = append(urls, url.URL)
 	}
 	c.inputIdxMap = urlIDMap
-	return urls, nil
+	return testlist, nil
 }
 
 // SetNettestIndex is used to set the current nettest index and total nettest
@@ -120,7 +118,7 @@ func (c *Controller) SetNettestIndex(i, n int) {
 //
 // This function will continue to run in most cases but will
 // immediately halt if something's wrong with the file system.
-func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error {
+func (c *Controller) Run(builder model.ExperimentBuilder, inputs []model.ExperimentTarget) error {
 	db := c.Probe.DB()
 	// This will configure the controller as handler for the callbacks
 	// called by ooni/probe-engine/experiment.Experiment.
@@ -193,7 +191,7 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 		}
 		c.msmts[idx64] = msmt
 
-		if input != "" {
+		if input.Input() != "" {
 			c.OnProgress(0, fmt.Sprintf("processing input: %s", input))
 		}
 		measurement, err := exp.MeasureWithContext(context.Background(), input)
@@ -246,9 +244,9 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []string) error
 			return errors.Wrap(err, "failed to add test keys to summary")
 		}
 	}
-	db.UpdateUploadedStatus(c.res)
+	err := db.UpdateUploadedStatus(c.res)
 	log.Debugf("status.end")
-	return nil
+	return err
 }
 
 // OnProgress should be called when a new progress event is available.

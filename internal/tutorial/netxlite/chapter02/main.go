@@ -63,7 +63,7 @@ func main() {
 	// have to trust the system-wide certificate store)
 	//
 	// ```Go
-	tlsConfig := &tls.Config{
+	tlsConfig := &tls.Config{ // #nosec G402 - we need to use a large TLS versions range for measuring
 		ServerName: *sni,
 		NextProtos: []string{"h2", "http/1.1"},
 		RootCAs:    nil,
@@ -91,7 +91,7 @@ func main() {
 	log.Infof("Cipher suite       : %s", netxlite.TLSCipherSuiteString(state.CipherSuite))
 	log.Infof("Negotiated protocol: %s", state.NegotiatedProtocol)
 	log.Infof("TLS version        : %s", netxlite.TLSVersionString(state.Version))
-	conn.Close()
+	_ = conn.Close()
 }
 
 // ```
@@ -150,7 +150,7 @@ func dialTLS(ctx context.Context, address string, config *tls.Config) (model.TLS
 	}
 	tlsConn, err := handshakeTLS(ctx, tcpConn, config)
 	if err != nil {
-		tcpConn.Close()
+		_ = tcpConn.Close()
 		return nil, err
 	}
 	return tlsConn, nil

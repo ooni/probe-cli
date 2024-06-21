@@ -10,15 +10,13 @@ import (
 // InputProcessorExperiment is the Experiment
 // according to InputProcessor.
 type InputProcessorExperiment interface {
-	MeasureAsync(
-		ctx context.Context, input string) (<-chan *model.Measurement, error)
+	MeasureWithContext(ctx context.Context, target model.ExperimentTarget) (*model.Measurement, error)
 }
 
 // InputProcessorExperimentWrapper is a wrapper for an
 // Experiment that also allow to pass around the input index.
 type InputProcessorExperimentWrapper interface {
-	MeasureAsync(
-		ctx context.Context, input string, idx int) (<-chan *model.Measurement, error)
+	MeasureWithContext(ctx context.Context, target model.ExperimentTarget, idx int) (*model.Measurement, error)
 }
 
 // NewInputProcessorExperimentWrapper creates a new
@@ -32,9 +30,9 @@ type inputProcessorExperimentWrapper struct {
 	exp InputProcessorExperiment
 }
 
-func (ipew inputProcessorExperimentWrapper) MeasureAsync(
-	ctx context.Context, input string, idx int) (<-chan *model.Measurement, error) {
-	return ipew.exp.MeasureAsync(ctx, input)
+func (ipew inputProcessorExperimentWrapper) MeasureWithContext(
+	ctx context.Context, target model.ExperimentTarget, idx int) (*model.Measurement, error) {
+	return ipew.exp.MeasureWithContext(ctx, target)
 }
 
 var _ InputProcessorExperimentWrapper = inputProcessorExperimentWrapper{}
@@ -49,7 +47,7 @@ type InputProcessor struct {
 	Experiment InputProcessorExperimentWrapper
 
 	// Inputs is the list of inputs to measure.
-	Inputs []model.OOAPIURLInfo
+	Inputs []model.ExperimentTarget
 
 	// MaxRuntime is the optional maximum runtime
 	// when looping over a list of inputs (e.g. when
@@ -137,34 +135,25 @@ const (
 // also returns the reason why we stopped.
 func (ip *InputProcessor) run(ctx context.Context) (int, error) {
 	start := time.Now()
-	for idx, url := range ip.Inputs {
+	for idx, target := range ip.Inputs {
 		if ip.MaxRuntime > 0 && time.Since(start) > ip.MaxRuntime {
 			return stopMaxRuntime, nil
 		}
-		input := url.URL
-		var measurements []*model.Measurement
-		source, err := ip.Experiment.MeasureAsync(ctx, input, idx)
+		meas, err := ip.Experiment.MeasureWithContext(ctx, target, idx)
 		if err != nil {
 			return 0, err
 		}
-		// NOTE: we don't want to intermix measuring with submitting
-		// therefore we collect all measurements first
-		for meas := range source {
-			measurements = append(measurements, meas)
+		meas.AddAnnotations(ip.Annotations)
+		meas.Options = ip.Options
+		err = ip.Submitter.Submit(ctx, idx, meas)
+		if err != nil {
+			return 0, err
 		}
-		for _, meas := range measurements {
-			meas.AddAnnotations(ip.Annotations)
-			meas.Options = ip.Options
-			err = ip.Submitter.Submit(ctx, idx, meas)
-			if err != nil {
-				return 0, err
-			}
-			// Note: must be after submission because submission modifies
-			// the measurement to include the report ID.
-			err = ip.Saver.SaveMeasurement(idx, meas)
-			if err != nil {
-				return 0, err
-			}
+		// Note: must be after submission because submission modifies
+		// the measurement to include the report ID.
+		err = ip.Saver.SaveMeasurement(idx, meas)
+		if err != nil {
+			return 0, err
 		}
 	}
 	return stopNormal, nil

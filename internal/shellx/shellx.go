@@ -128,7 +128,7 @@ func cmd(config *Config, argv *Argv, envp *Envp) *execabs.Cmd {
 	// hence the choice to keep using x/sys/execabs everywhere.
 	//
 	// See <https://tip.golang.org/doc/go1.19> for more information.
-	cmd := execabs.Command(argv.P, argv.V...)
+	cmd := execabs.Command(argv.P, argv.V...) // #nosec G204 - this is working as intended
 	cmd.Env = os.Environ()
 	for _, entry := range envp.V {
 		if config.Logger != nil {
@@ -314,7 +314,7 @@ func CopyFile(source, dest string, perms fs.FileMode) error {
 		return err
 	}
 	if _, err := ioCopy(destfp, sourcefp); err != nil {
-		destfp.Close()
+		_ = destfp.Close()
 		return err
 	}
 	return destfp.Close()

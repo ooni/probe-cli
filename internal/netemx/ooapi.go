@@ -35,7 +35,7 @@ func (p *OOAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (p *OOAPIHandler) getApiV1TestHelpers(w http.ResponseWriter, r *http.Request) {
+func (p *OOAPIHandler) getApiV1TestHelpers(w http.ResponseWriter, _ *http.Request) {
 	resp := map[string][]model.OOAPIService{
 		"web-connectivity": {
 			{
@@ -57,5 +57,5 @@ func (p *OOAPIHandler) getApiV1TestHelpers(w http.ResponseWriter, r *http.Reques
 		},
 	}
 	w.Header().Add("Content-Type", "application/json")
-	w.Write(runtimex.Try1(json.Marshal(resp)))
+	_, _ = w.Write(runtimex.Try1(json.Marshal(resp)))
 }

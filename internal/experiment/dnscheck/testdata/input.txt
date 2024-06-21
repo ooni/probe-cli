@@ -1,0 +1,2 @@
+https://1dot1dot1dot1dot.com/dns-query
+https://dns.cloudflare/dns-query

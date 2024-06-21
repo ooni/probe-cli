@@ -43,7 +43,7 @@ func ooniRunMain(ctx context.Context,
 		}
 	}
 	for _, filename := range currentOptions.InputFilePaths {
-		data, err := os.ReadFile(filename)
+		data, err := os.ReadFile(filename) // #nosec G304 - this is working as intended
 		if err != nil {
 			logger.Warnf("oonirun: reading OONI Run v2 descriptor failed: %s", err.Error())
 			continue

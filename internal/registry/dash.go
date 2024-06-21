@@ -10,15 +10,19 @@ import (
 )
 
 func init() {
-	AllExperiments["dash"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
-			return dash.NewExperimentMeasurer(
-				*config.(*dash.Config),
-			)
-		},
-		config:           &dash.Config{},
-		enabledByDefault: true,
-		interruptible:    true,
-		inputPolicy:      model.InputNone,
+	const canonicalName = "dash"
+	AllExperiments[canonicalName] = func() *Factory {
+		return &Factory{
+			build: func(config interface{}) model.ExperimentMeasurer {
+				return dash.NewExperimentMeasurer(
+					*config.(*dash.Config),
+				)
+			},
+			canonicalName:    canonicalName,
+			config:           &dash.Config{},
+			enabledByDefault: true,
+			interruptible:    true,
+			inputPolicy:      model.InputNone,
+		}
 	}
 }

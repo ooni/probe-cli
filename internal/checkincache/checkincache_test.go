@@ -28,7 +28,7 @@ func TestStore(t *testing.T) {
 			t.Fatal(err)
 		}
 		var wrapper checkInFlagsWrapper
-		data, err := memstore.Get(checkInFlagsState)
+		data, err := memstore.Get(CheckInFlagsState)
 		if err != nil {
 			t.Fatal(err)
 		}

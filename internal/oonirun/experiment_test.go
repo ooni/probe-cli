@@ -27,9 +27,6 @@ func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 		ExtraOptions: map[string]any{
 			"SleepTime": int64(10 * time.Millisecond),
 		},
-		Inputs: []string{
-			"a", "b", "c",
-		},
 		InputFilePaths: []string{},
 		MaxRuntime:     0,
 		Name:           "example",
@@ -49,16 +46,12 @@ func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 					},
 					MockNewExperiment: func() model.Experiment {
 						exp := &mocks.Experiment{
-							MockMeasureAsync: func(ctx context.Context, input string) (<-chan *model.Measurement, error) {
-								out := make(chan *model.Measurement)
-								go func() {
-									defer close(out)
-									ff := &testingx.FakeFiller{}
-									var meas model.Measurement
-									ff.Fill(&meas)
-									out <- &meas
-								}()
-								return out, nil
+							MockMeasureWithContext: func(
+								ctx context.Context, target model.ExperimentTarget) (*model.Measurement, error) {
+								ff := &testingx.FakeFiller{}
+								var meas model.Measurement
+								ff.Fill(&meas)
+								return &meas, nil
 							},
 							MockKibiBytesReceived: func() float64 {
 								calledKibiBytesReceived++
@@ -71,6 +64,18 @@ func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 						}
 						return exp
 					},
+					MockNewTargetLoader: func(config *model.ExperimentTargetLoaderConfig) model.ExperimentTargetLoader {
+						return &mocks.ExperimentTargetLoader{
+							MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
+								results := []model.ExperimentTarget{
+									model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("a"),
+									model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("b"),
+									model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("c"),
+								}
+								return results, nil
+							},
+						}
+					},
 				}
 				return eb, nil
 			},
@@ -79,7 +84,7 @@ func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 			},
 		},
 		newExperimentBuilderFn: nil,
-		newInputLoaderFn:       nil,
+		newTargetLoaderFn:      nil,
 		newSubmitterFn: func(ctx context.Context) (model.Submitter, error) {
 			subm := &mocks.Submitter{
 				MockSubmit: func(ctx context.Context, m *model.Measurement) error {
@@ -169,10 +174,11 @@ func TestExperimentRun(t *testing.T) {
 		ReportFile             string
 		Session                Session
 		newExperimentBuilderFn func(experimentName string) (model.ExperimentBuilder, error)
-		newInputLoaderFn       func(inputPolicy model.InputPolicy) inputLoader
+		newTargetLoaderFn      func(builder model.ExperimentBuilder) targetLoader
 		newSubmitterFn         func(ctx context.Context) (model.Submitter, error)
-		newSaverFn             func(experiment model.Experiment) (model.Saver, error)
-		newInputProcessorFn    func(experiment model.Experiment, inputList []model.OOAPIURLInfo, saver model.Saver, submitter model.Submitter) inputProcessor
+		newSaverFn             func() (model.Saver, error)
+		newInputProcessorFn    func(experiment model.Experiment,
+			inputList []model.ExperimentTarget, saver model.Saver, submitter model.Submitter) inputProcessor
 	}
 	type args struct {
 		ctx context.Context
@@ -192,20 +198,20 @@ func TestExperimentRun(t *testing.T) {
 		args:      args{},
 		expectErr: errMocked,
 	}, {
-		name: "cannot load input",
+		name: "cannot set options",
 		fields: fields{
 			newExperimentBuilderFn: func(experimentName string) (model.ExperimentBuilder, error) {
 				eb := &mocks.ExperimentBuilder{
-					MockInputPolicy: func() model.InputPolicy {
-						return model.InputOptional
+					MockSetOptionsAny: func(options map[string]any) error {
+						return errMocked
 					},
 				}
 				return eb, nil
 			},
-			newInputLoaderFn: func(inputPolicy model.InputPolicy) inputLoader {
-				return &mocks.ExperimentInputLoader{
-					MockLoad: func(ctx context.Context) ([]model.OOAPIURLInfo, error) {
-						return nil, errMocked
+			newTargetLoaderFn: func(builder model.ExperimentBuilder) targetLoader {
+				return &mocks.ExperimentTargetLoader{
+					MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
+						return []model.ExperimentTarget{}, nil
 					},
 				}
 			},
@@ -213,7 +219,7 @@ func TestExperimentRun(t *testing.T) {
 		args:      args{},
 		expectErr: errMocked,
 	}, {
-		name: "cannot set options",
+		name: "cannot load input",
 		fields: fields{
 			newExperimentBuilderFn: func(experimentName string) (model.ExperimentBuilder, error) {
 				eb := &mocks.ExperimentBuilder{
@@ -221,15 +227,15 @@ func TestExperimentRun(t *testing.T) {
 						return model.InputOptional
 					},
 					MockSetOptionsAny: func(options map[string]any) error {
-						return errMocked
+						return nil
 					},
 				}
 				return eb, nil
 			},
-			newInputLoaderFn: func(inputPolicy model.InputPolicy) inputLoader {
-				return &mocks.ExperimentInputLoader{
-					MockLoad: func(ctx context.Context) ([]model.OOAPIURLInfo, error) {
-						return []model.OOAPIURLInfo{}, nil
+			newTargetLoaderFn: func(builder model.ExperimentBuilder) targetLoader {
+				return &mocks.ExperimentTargetLoader{
+					MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
+						return nil, errMocked
 					},
 				}
 			},
@@ -266,10 +272,10 @@ func TestExperimentRun(t *testing.T) {
 				}
 				return eb, nil
 			},
-			newInputLoaderFn: func(inputPolicy model.InputPolicy) inputLoader {
-				return &mocks.ExperimentInputLoader{
-					MockLoad: func(ctx context.Context) ([]model.OOAPIURLInfo, error) {
-						return []model.OOAPIURLInfo{}, nil
+			newTargetLoaderFn: func(builder model.ExperimentBuilder) targetLoader {
+				return &mocks.ExperimentTargetLoader{
+					MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
+						return []model.ExperimentTarget{}, nil
 					},
 				}
 			},
@@ -309,17 +315,17 @@ func TestExperimentRun(t *testing.T) {
 				}
 				return eb, nil
 			},
-			newInputLoaderFn: func(inputPolicy model.InputPolicy) inputLoader {
-				return &mocks.ExperimentInputLoader{
-					MockLoad: func(ctx context.Context) ([]model.OOAPIURLInfo, error) {
-						return []model.OOAPIURLInfo{}, nil
+			newTargetLoaderFn: func(builder model.ExperimentBuilder) targetLoader {
+				return &mocks.ExperimentTargetLoader{
+					MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
+						return []model.ExperimentTarget{}, nil
 					},
 				}
 			},
 			newSubmitterFn: func(ctx context.Context) (model.Submitter, error) {
 				return &mocks.Submitter{}, nil
 			},
-			newSaverFn: func(experiment model.Experiment) (model.Saver, error) {
+			newSaverFn: func() (model.Saver, error) {
 				return nil, errMocked
 			},
 		},
@@ -355,20 +361,20 @@ func TestExperimentRun(t *testing.T) {
 				}
 				return eb, nil
 			},
-			newInputLoaderFn: func(inputPolicy model.InputPolicy) inputLoader {
-				return &mocks.ExperimentInputLoader{
-					MockLoad: func(ctx context.Context) ([]model.OOAPIURLInfo, error) {
-						return []model.OOAPIURLInfo{}, nil
+			newTargetLoaderFn: func(builder model.ExperimentBuilder) targetLoader {
+				return &mocks.ExperimentTargetLoader{
+					MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
+						return []model.ExperimentTarget{}, nil
 					},
 				}
 			},
 			newSubmitterFn: func(ctx context.Context) (model.Submitter, error) {
 				return &mocks.Submitter{}, nil
 			},
-			newSaverFn: func(experiment model.Experiment) (model.Saver, error) {
+			newSaverFn: func() (model.Saver, error) {
 				return &mocks.Saver{}, nil
 			},
-			newInputProcessorFn: func(experiment model.Experiment, inputList []model.OOAPIURLInfo,
+			newInputProcessorFn: func(experiment model.Experiment, inputList []model.ExperimentTarget,
 				saver model.Saver, submitter model.Submitter) inputProcessor {
 				return &mocks.ExperimentInputProcessor{
 					MockRun: func(ctx context.Context) error {
@@ -395,7 +401,7 @@ func TestExperimentRun(t *testing.T) {
 				ReportFile:             tt.fields.ReportFile,
 				Session:                tt.fields.Session,
 				newExperimentBuilderFn: tt.fields.newExperimentBuilderFn,
-				newInputLoaderFn:       tt.fields.newInputLoaderFn,
+				newTargetLoaderFn:      tt.fields.newTargetLoaderFn,
 				newSubmitterFn:         tt.fields.newSubmitterFn,
 				newSaverFn:             tt.fields.newSaverFn,
 				newInputProcessorFn:    tt.fields.newInputProcessorFn,

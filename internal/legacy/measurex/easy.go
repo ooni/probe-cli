@@ -49,7 +49,7 @@ func (mx *Measurer) EasyHTTPRoundTripGET(ctx context.Context, timeout time.Durat
 		failure := err.Error()
 		return NewArchivalMeasurement(db.AsMeasurement()), &failure
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	return NewArchivalMeasurement(db.AsMeasurement()), nil
 }
 
@@ -61,7 +61,7 @@ type EasyTLSConfig struct {
 // NewEasyTLSConfig creates a new EasyTLSConfig instance.
 func NewEasyTLSConfig() *EasyTLSConfig {
 	return &EasyTLSConfig{
-		config: &tls.Config{
+		config: &tls.Config{ // #nosec G402 - we need to use a large TLS versions range for measuring
 			// Because here we use nil, this causes netxlite to use
 			// a cached copy of Mozilla's CA pool. We don't create a
 			// new pool every time for performance reasons. See
@@ -98,7 +98,7 @@ func (easy *EasyTLSConfig) RootCAs(v *x509.CertPool) *EasyTLSConfig {
 // asTLSConfig converts an *EasyTLSConfig to a *tls.Config.
 func (easy *EasyTLSConfig) asTLSConfig() *tls.Config {
 	if easy == nil || easy.config == nil {
-		return &tls.Config{}
+		return &tls.Config{} // #nosec G402 - we need to use a large TLS versions range for measuring
 	}
 	return easy.config
 }
@@ -135,7 +135,7 @@ func (mx *Measurer) EasyTLSConnectAndHandshake(ctx context.Context, endpoint str
 		failure := err.Error()
 		return NewArchivalMeasurement(db.AsMeasurement()), &failure
 	}
-	conn.Close()
+	_ = conn.Close()
 	return NewArchivalMeasurement(db.AsMeasurement()), nil
 }
 
@@ -168,7 +168,7 @@ func (mx *Measurer) EasyTCPConnect(ctx context.Context,
 		failure := err.Error()
 		return NewArchivalMeasurement(db.AsMeasurement()), &failure
 	}
-	conn.Close()
+	_ = conn.Close()
 	return NewArchivalMeasurement(db.AsMeasurement()), nil
 }
 
@@ -272,6 +272,6 @@ func (mx *Measurer) EasyOBFS4ConnectAndHandshake(ctx context.Context,
 		failure := err.Error()
 		return NewArchivalMeasurement(db.AsMeasurement()), &failure
 	}
-	o4conn.Close()
+	_ = o4conn.Close()
 	return NewArchivalMeasurement(db.AsMeasurement()), nil
 }

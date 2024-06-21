@@ -1,0 +1,1606 @@
+{
+  "data_format_version": "0.2.0",
+  "extensions": {
+    "dnst": 0,
+    "httpt": 0,
+    "netevents": 0,
+    "tcpconnect": 0,
+    "tlshandshake": 0,
+    "tunnel": 0
+  },
+  "input": "http://httpbin.com/redirect/15",
+  "measurement_start_time": "2024-02-12 20:33:47",
+  "probe_asn": "AS137",
+  "probe_cc": "IT",
+  "probe_ip": "127.0.0.1",
+  "probe_network_name": "Consortium GARR",
+  "report_id": "",
+  "resolver_asn": "AS137",
+  "resolver_ip": "130.192.3.21",
+  "resolver_network_name": "Consortium GARR",
+  "software_name": "ooniprobe",
+  "software_version": "3.22.0-alpha",
+  "test_helpers": {
+    "backend": {
+      "address": "https://0.th.ooni.org/",
+      "type": "https"
+    }
+  },
+  "test_keys": {
+    "agent": "redirect",
+    "client_resolver": "130.192.3.21",
+    "retries": null,
+    "socksproxy": null,
+    "network_events": null,
+    "x_dns_whoami": null,
+    "x_doh": null,
+    "x_do53": null,
+    "x_dns_duplicate_responses": null,
+    "queries": [
+      {
+        "answers": [
+          {
+            "asn": 13335,
+            "as_org_name": "Cloudflare Inc",
+            "answer_type": "A",
+            "ipv4": "172.67.144.64",
+            "ttl": null
+          }
+        ],
+        "engine": "doh",
+        "failure": null,
+        "hostname": "httpbin.com",
+        "query_type": "A",
+        "resolver_hostname": null,
+        "resolver_port": null,
+        "resolver_address": "https://dns.google/dns-query",
+        "t": 0,
+        "tags": [
+          "depth=0"
+        ],
+        "transaction_id": 30001
+      },
+      {
+        "answers": null,
+        "engine": "doh",
+        "failure": "dns_no_answer",
+        "hostname": "httpbin.com",
+        "query_type": "AAAA",
+        "resolver_hostname": null,
+        "resolver_port": null,
+        "resolver_address": "https://dns.google/dns-query",
+        "t": 0,
+        "tags": [
+          "depth=0"
+        ],
+        "transaction_id": 30001
+      },
+      {
+        "answers": [
+          {
+            "asn": 13335,
+            "as_org_name": "Cloudflare Inc",
+            "answer_type": "A",
+            "ipv4": "172.67.144.64",
+            "ttl": null
+          }
+        ],
+        "engine": "getaddrinfo",
+        "failure": null,
+        "hostname": "httpbin.com",
+        "query_type": "ANY",
+        "resolver_hostname": null,
+        "resolver_port": null,
+        "resolver_address": "",
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=0"
+        ],
+        "transaction_id": 10001
+      },
+      {
+        "answers": [
+          {
+            "asn": 13335,
+            "as_org_name": "Cloudflare Inc",
+            "answer_type": "A",
+            "ipv4": "172.67.144.64",
+            "ttl": null
+          }
+        ],
+        "engine": "udp",
+        "failure": null,
+        "hostname": "httpbin.com",
+        "query_type": "A",
+        "resolver_hostname": null,
+        "resolver_port": null,
+        "resolver_address": "1.1.1.1:53",
+        "t": 0,
+        "tags": [
+          "depth=0"
+        ],
+        "transaction_id": 20001
+      },
+      {
+        "answers": null,
+        "engine": "udp",
+        "failure": "dns_no_answer",
+        "hostname": "httpbin.com",
+        "query_type": "AAAA",
+        "resolver_hostname": null,
+        "resolver_port": null,
+        "resolver_address": "1.1.1.1:53",
+        "t": 0,
+        "tags": [
+          "depth=0"
+        ],
+        "transaction_id": 20001
+      }
+    ],
+    "requests": [
+      {
+        "network": "tcp",
+        "address": "172.67.144.64:80",
+        "failure": "unknown_failure: stopped after too many redirects",
+        "request": {
+          "body": "",
+          "body_is_truncated": false,
+          "headers_list": [
+            [
+              "Accept",
+              "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+            ],
+            [
+              "Accept-Language",
+              "en-US,en;q=0.9"
+            ],
+            [
+              "Host",
+              "httpbin.com"
+            ],
+            [
+              "Referer",
+              "http://httpbin.com/redirect/6"
+            ],
+            [
+              "User-Agent",
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+            ]
+          ],
+          "headers": {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Host": "httpbin.com",
+            "Referer": "http://httpbin.com/redirect/6",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+          },
+          "method": "GET",
+          "tor": {
+            "exit_ip": null,
+            "exit_name": null,
+            "is_tor": false
+          },
+          "x_transport": "tcp",
+          "url": "http://httpbin.com/redirect/5"
+        },
+        "response": {
+          "body": "",
+          "body_is_truncated": false,
+          "code": 302,
+          "headers_list": [
+            [
+              "Content-Length",
+              "0"
+            ],
+            [
+              "Date",
+              "Thu, 24 Aug 2023 14:35:29 GMT"
+            ],
+            [
+              "Location",
+              "/redirect/4"
+            ]
+          ],
+          "headers": {
+            "Content-Length": "0",
+            "Date": "Thu, 24 Aug 2023 14:35:29 GMT",
+            "Location": "/redirect/4"
+          }
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=10",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40011
+      },
+      {
+        "network": "tcp",
+        "address": "172.67.144.64:80",
+        "failure": null,
+        "request": {
+          "body": "",
+          "body_is_truncated": false,
+          "headers_list": [
+            [
+              "Accept",
+              "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+            ],
+            [
+              "Accept-Language",
+              "en-US,en;q=0.9"
+            ],
+            [
+              "Host",
+              "httpbin.com"
+            ],
+            [
+              "Referer",
+              "http://httpbin.com/redirect/7"
+            ],
+            [
+              "User-Agent",
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+            ]
+          ],
+          "headers": {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Host": "httpbin.com",
+            "Referer": "http://httpbin.com/redirect/7",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+          },
+          "method": "GET",
+          "tor": {
+            "exit_ip": null,
+            "exit_name": null,
+            "is_tor": false
+          },
+          "x_transport": "tcp",
+          "url": "http://httpbin.com/redirect/6"
+        },
+        "response": {
+          "body": "",
+          "body_is_truncated": false,
+          "code": 302,
+          "headers_list": [
+            [
+              "Content-Length",
+              "0"
+            ],
+            [
+              "Date",
+              "Thu, 24 Aug 2023 14:35:29 GMT"
+            ],
+            [
+              "Location",
+              "/redirect/5"
+            ]
+          ],
+          "headers": {
+            "Content-Length": "0",
+            "Date": "Thu, 24 Aug 2023 14:35:29 GMT",
+            "Location": "/redirect/5"
+          }
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=9",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40010
+      },
+      {
+        "network": "tcp",
+        "address": "172.67.144.64:80",
+        "failure": null,
+        "request": {
+          "body": "",
+          "body_is_truncated": false,
+          "headers_list": [
+            [
+              "Accept",
+              "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+            ],
+            [
+              "Accept-Language",
+              "en-US,en;q=0.9"
+            ],
+            [
+              "Host",
+              "httpbin.com"
+            ],
+            [
+              "Referer",
+              "http://httpbin.com/redirect/8"
+            ],
+            [
+              "User-Agent",
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+            ]
+          ],
+          "headers": {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Host": "httpbin.com",
+            "Referer": "http://httpbin.com/redirect/8",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+          },
+          "method": "GET",
+          "tor": {
+            "exit_ip": null,
+            "exit_name": null,
+            "is_tor": false
+          },
+          "x_transport": "tcp",
+          "url": "http://httpbin.com/redirect/7"
+        },
+        "response": {
+          "body": "",
+          "body_is_truncated": false,
+          "code": 302,
+          "headers_list": [
+            [
+              "Content-Length",
+              "0"
+            ],
+            [
+              "Date",
+              "Thu, 24 Aug 2023 14:35:29 GMT"
+            ],
+            [
+              "Location",
+              "/redirect/6"
+            ]
+          ],
+          "headers": {
+            "Content-Length": "0",
+            "Date": "Thu, 24 Aug 2023 14:35:29 GMT",
+            "Location": "/redirect/6"
+          }
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=8",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40009
+      },
+      {
+        "network": "tcp",
+        "address": "172.67.144.64:80",
+        "failure": null,
+        "request": {
+          "body": "",
+          "body_is_truncated": false,
+          "headers_list": [
+            [
+              "Accept",
+              "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+            ],
+            [
+              "Accept-Language",
+              "en-US,en;q=0.9"
+            ],
+            [
+              "Host",
+              "httpbin.com"
+            ],
+            [
+              "Referer",
+              "http://httpbin.com/redirect/9"
+            ],
+            [
+              "User-Agent",
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+            ]
+          ],
+          "headers": {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Host": "httpbin.com",
+            "Referer": "http://httpbin.com/redirect/9",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+          },
+          "method": "GET",
+          "tor": {
+            "exit_ip": null,
+            "exit_name": null,
+            "is_tor": false
+          },
+          "x_transport": "tcp",
+          "url": "http://httpbin.com/redirect/8"
+        },
+        "response": {
+          "body": "",
+          "body_is_truncated": false,
+          "code": 302,
+          "headers_list": [
+            [
+              "Content-Length",
+              "0"
+            ],
+            [
+              "Date",
+              "Thu, 24 Aug 2023 14:35:29 GMT"
+            ],
+            [
+              "Location",
+              "/redirect/7"
+            ]
+          ],
+          "headers": {
+            "Content-Length": "0",
+            "Date": "Thu, 24 Aug 2023 14:35:29 GMT",
+            "Location": "/redirect/7"
+          }
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=7",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40008
+      },
+      {
+        "network": "tcp",
+        "address": "172.67.144.64:80",
+        "failure": null,
+        "request": {
+          "body": "",
+          "body_is_truncated": false,
+          "headers_list": [
+            [
+              "Accept",
+              "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+            ],
+            [
+              "Accept-Language",
+              "en-US,en;q=0.9"
+            ],
+            [
+              "Host",
+              "httpbin.com"
+            ],
+            [
+              "Referer",
+              "http://httpbin.com/redirect/10"
+            ],
+            [
+              "User-Agent",
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+            ]
+          ],
+          "headers": {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Host": "httpbin.com",
+            "Referer": "http://httpbin.com/redirect/10",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+          },
+          "method": "GET",
+          "tor": {
+            "exit_ip": null,
+            "exit_name": null,
+            "is_tor": false
+          },
+          "x_transport": "tcp",
+          "url": "http://httpbin.com/redirect/9"
+        },
+        "response": {
+          "body": "",
+          "body_is_truncated": false,
+          "code": 302,
+          "headers_list": [
+            [
+              "Content-Length",
+              "0"
+            ],
+            [
+              "Date",
+              "Thu, 24 Aug 2023 14:35:29 GMT"
+            ],
+            [
+              "Location",
+              "/redirect/8"
+            ]
+          ],
+          "headers": {
+            "Content-Length": "0",
+            "Date": "Thu, 24 Aug 2023 14:35:29 GMT",
+            "Location": "/redirect/8"
+          }
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=6",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40007
+      },
+      {
+        "network": "tcp",
+        "address": "172.67.144.64:80",
+        "failure": null,
+        "request": {
+          "body": "",
+          "body_is_truncated": false,
+          "headers_list": [
+            [
+              "Accept",
+              "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+            ],
+            [
+              "Accept-Language",
+              "en-US,en;q=0.9"
+            ],
+            [
+              "Host",
+              "httpbin.com"
+            ],
+            [
+              "Referer",
+              "http://httpbin.com/redirect/11"
+            ],
+            [
+              "User-Agent",
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+            ]
+          ],
+          "headers": {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Host": "httpbin.com",
+            "Referer": "http://httpbin.com/redirect/11",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+          },
+          "method": "GET",
+          "tor": {
+            "exit_ip": null,
+            "exit_name": null,
+            "is_tor": false
+          },
+          "x_transport": "tcp",
+          "url": "http://httpbin.com/redirect/10"
+        },
+        "response": {
+          "body": "",
+          "body_is_truncated": false,
+          "code": 302,
+          "headers_list": [
+            [
+              "Content-Length",
+              "0"
+            ],
+            [
+              "Date",
+              "Thu, 24 Aug 2023 14:35:29 GMT"
+            ],
+            [
+              "Location",
+              "/redirect/9"
+            ]
+          ],
+          "headers": {
+            "Content-Length": "0",
+            "Date": "Thu, 24 Aug 2023 14:35:29 GMT",
+            "Location": "/redirect/9"
+          }
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=5",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40006
+      },
+      {
+        "network": "tcp",
+        "address": "172.67.144.64:80",
+        "failure": null,
+        "request": {
+          "body": "",
+          "body_is_truncated": false,
+          "headers_list": [
+            [
+              "Accept",
+              "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+            ],
+            [
+              "Accept-Language",
+              "en-US,en;q=0.9"
+            ],
+            [
+              "Host",
+              "httpbin.com"
+            ],
+            [
+              "Referer",
+              "http://httpbin.com/redirect/12"
+            ],
+            [
+              "User-Agent",
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+            ]
+          ],
+          "headers": {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Host": "httpbin.com",
+            "Referer": "http://httpbin.com/redirect/12",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+          },
+          "method": "GET",
+          "tor": {
+            "exit_ip": null,
+            "exit_name": null,
+            "is_tor": false
+          },
+          "x_transport": "tcp",
+          "url": "http://httpbin.com/redirect/11"
+        },
+        "response": {
+          "body": "",
+          "body_is_truncated": false,
+          "code": 302,
+          "headers_list": [
+            [
+              "Content-Length",
+              "0"
+            ],
+            [
+              "Date",
+              "Thu, 24 Aug 2023 14:35:29 GMT"
+            ],
+            [
+              "Location",
+              "/redirect/10"
+            ]
+          ],
+          "headers": {
+            "Content-Length": "0",
+            "Date": "Thu, 24 Aug 2023 14:35:29 GMT",
+            "Location": "/redirect/10"
+          }
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=4",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40005
+      },
+      {
+        "network": "tcp",
+        "address": "172.67.144.64:80",
+        "failure": null,
+        "request": {
+          "body": "",
+          "body_is_truncated": false,
+          "headers_list": [
+            [
+              "Accept",
+              "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+            ],
+            [
+              "Accept-Language",
+              "en-US,en;q=0.9"
+            ],
+            [
+              "Host",
+              "httpbin.com"
+            ],
+            [
+              "Referer",
+              "http://httpbin.com/redirect/13"
+            ],
+            [
+              "User-Agent",
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+            ]
+          ],
+          "headers": {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Host": "httpbin.com",
+            "Referer": "http://httpbin.com/redirect/13",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+          },
+          "method": "GET",
+          "tor": {
+            "exit_ip": null,
+            "exit_name": null,
+            "is_tor": false
+          },
+          "x_transport": "tcp",
+          "url": "http://httpbin.com/redirect/12"
+        },
+        "response": {
+          "body": "",
+          "body_is_truncated": false,
+          "code": 302,
+          "headers_list": [
+            [
+              "Content-Length",
+              "0"
+            ],
+            [
+              "Date",
+              "Thu, 24 Aug 2023 14:35:29 GMT"
+            ],
+            [
+              "Location",
+              "/redirect/11"
+            ]
+          ],
+          "headers": {
+            "Content-Length": "0",
+            "Date": "Thu, 24 Aug 2023 14:35:29 GMT",
+            "Location": "/redirect/11"
+          }
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=3",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40004
+      },
+      {
+        "network": "tcp",
+        "address": "172.67.144.64:80",
+        "failure": null,
+        "request": {
+          "body": "",
+          "body_is_truncated": false,
+          "headers_list": [
+            [
+              "Accept",
+              "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+            ],
+            [
+              "Accept-Language",
+              "en-US,en;q=0.9"
+            ],
+            [
+              "Host",
+              "httpbin.com"
+            ],
+            [
+              "Referer",
+              "http://httpbin.com/redirect/14"
+            ],
+            [
+              "User-Agent",
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+            ]
+          ],
+          "headers": {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Host": "httpbin.com",
+            "Referer": "http://httpbin.com/redirect/14",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+          },
+          "method": "GET",
+          "tor": {
+            "exit_ip": null,
+            "exit_name": null,
+            "is_tor": false
+          },
+          "x_transport": "tcp",
+          "url": "http://httpbin.com/redirect/13"
+        },
+        "response": {
+          "body": "",
+          "body_is_truncated": false,
+          "code": 302,
+          "headers_list": [
+            [
+              "Content-Length",
+              "0"
+            ],
+            [
+              "Date",
+              "Thu, 24 Aug 2023 14:35:29 GMT"
+            ],
+            [
+              "Location",
+              "/redirect/12"
+            ]
+          ],
+          "headers": {
+            "Content-Length": "0",
+            "Date": "Thu, 24 Aug 2023 14:35:29 GMT",
+            "Location": "/redirect/12"
+          }
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=2",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40003
+      },
+      {
+        "network": "tcp",
+        "address": "172.67.144.64:80",
+        "failure": null,
+        "request": {
+          "body": "",
+          "body_is_truncated": false,
+          "headers_list": [
+            [
+              "Accept",
+              "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+            ],
+            [
+              "Accept-Language",
+              "en-US,en;q=0.9"
+            ],
+            [
+              "Host",
+              "httpbin.com"
+            ],
+            [
+              "Referer",
+              "http://httpbin.com/redirect/15"
+            ],
+            [
+              "User-Agent",
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+            ]
+          ],
+          "headers": {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Host": "httpbin.com",
+            "Referer": "http://httpbin.com/redirect/15",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+          },
+          "method": "GET",
+          "tor": {
+            "exit_ip": null,
+            "exit_name": null,
+            "is_tor": false
+          },
+          "x_transport": "tcp",
+          "url": "http://httpbin.com/redirect/14"
+        },
+        "response": {
+          "body": "",
+          "body_is_truncated": false,
+          "code": 302,
+          "headers_list": [
+            [
+              "Content-Length",
+              "0"
+            ],
+            [
+              "Date",
+              "Thu, 24 Aug 2023 14:35:29 GMT"
+            ],
+            [
+              "Location",
+              "/redirect/13"
+            ]
+          ],
+          "headers": {
+            "Content-Length": "0",
+            "Date": "Thu, 24 Aug 2023 14:35:29 GMT",
+            "Location": "/redirect/13"
+          }
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=1",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40002
+      },
+      {
+        "network": "tcp",
+        "address": "172.67.144.64:80",
+        "failure": null,
+        "request": {
+          "body": "",
+          "body_is_truncated": false,
+          "headers_list": [
+            [
+              "Accept",
+              "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+            ],
+            [
+              "Accept-Language",
+              "en-US,en;q=0.9"
+            ],
+            [
+              "Host",
+              "httpbin.com"
+            ],
+            [
+              "Referer",
+              ""
+            ],
+            [
+              "User-Agent",
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+            ]
+          ],
+          "headers": {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Host": "httpbin.com",
+            "Referer": "",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[scrubbed] Safari/537.3"
+          },
+          "method": "GET",
+          "tor": {
+            "exit_ip": null,
+            "exit_name": null,
+            "is_tor": false
+          },
+          "x_transport": "tcp",
+          "url": "http://httpbin.com/redirect/15"
+        },
+        "response": {
+          "body": "",
+          "body_is_truncated": false,
+          "code": 302,
+          "headers_list": [
+            [
+              "Content-Length",
+              "0"
+            ],
+            [
+              "Date",
+              "Thu, 24 Aug 2023 14:35:29 GMT"
+            ],
+            [
+              "Location",
+              "/redirect/14"
+            ]
+          ],
+          "headers": {
+            "Content-Length": "0",
+            "Date": "Thu, 24 Aug 2023 14:35:29 GMT",
+            "Location": "/redirect/14"
+          }
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "tcptls_experiment",
+          "depth=0",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40001
+      }
+    ],
+    "tcp_connect": [
+      {
+        "ip": "172.67.144.64",
+        "port": 80,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "tcptls_experiment",
+          "depth=0",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40001
+      },
+      {
+        "ip": "172.67.144.64",
+        "port": 80,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=1",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40002
+      },
+      {
+        "ip": "172.67.144.64",
+        "port": 80,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=2",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40003
+      },
+      {
+        "ip": "172.67.144.64",
+        "port": 80,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=3",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40004
+      },
+      {
+        "ip": "172.67.144.64",
+        "port": 80,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=4",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40005
+      },
+      {
+        "ip": "172.67.144.64",
+        "port": 80,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=5",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40006
+      },
+      {
+        "ip": "172.67.144.64",
+        "port": 80,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=6",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40007
+      },
+      {
+        "ip": "172.67.144.64",
+        "port": 80,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=7",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40008
+      },
+      {
+        "ip": "172.67.144.64",
+        "port": 80,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=8",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40009
+      },
+      {
+        "ip": "172.67.144.64",
+        "port": 80,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=9",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40010
+      },
+      {
+        "ip": "172.67.144.64",
+        "port": 80,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=10",
+          "fetch_body=true"
+        ],
+        "transaction_id": 40011
+      },
+      {
+        "ip": "172.67.144.64",
+        "port": 443,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "tcptls_experiment",
+          "depth=0",
+          "fetch_body=false"
+        ],
+        "transaction_id": 50001
+      },
+      {
+        "ip": "172.67.144.64",
+        "port": 443,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=1",
+          "fetch_body=false"
+        ],
+        "transaction_id": 50002
+      },
+      {
+        "ip": "172.67.144.64",
+        "port": 443,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=2",
+          "fetch_body=false"
+        ],
+        "transaction_id": 50003
+      },
+      {
+        "ip": "172.67.144.64",
+        "port": 443,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=3",
+          "fetch_body=false"
+        ],
+        "transaction_id": 50004
+      },
+      {
+        "ip": "172.67.144.64",
+        "port": 443,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=4",
+          "fetch_body=false"
+        ],
+        "transaction_id": 50005
+      },
+      {
+        "ip": "172.67.144.64",
+        "port": 443,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=5",
+          "fetch_body=false"
+        ],
+        "transaction_id": 50006
+      },
+      {
+        "ip": "172.67.144.64",
+        "port": 443,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=6",
+          "fetch_body=false"
+        ],
+        "transaction_id": 50007
+      },
+      {
+        "ip": "172.67.144.64",
+        "port": 443,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=7",
+          "fetch_body=false"
+        ],
+        "transaction_id": 50008
+      },
+      {
+        "ip": "172.67.144.64",
+        "port": 443,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=8",
+          "fetch_body=false"
+        ],
+        "transaction_id": 50009
+      },
+      {
+        "ip": "172.67.144.64",
+        "port": 443,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=9",
+          "fetch_body=false"
+        ],
+        "transaction_id": 50010
+      },
+      {
+        "ip": "172.67.144.64",
+        "port": 443,
+        "status": {
+          "failure": null,
+          "success": true
+        },
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=10",
+          "fetch_body=false"
+        ],
+        "transaction_id": 50011
+      }
+    ],
+    "tls_handshakes": [
+      {
+        "network": "tcp",
+        "address": "172.67.144.64:443",
+        "cipher_suite": "TLS_AES_128_GCM_SHA256",
+        "failure": null,
+        "negotiated_protocol": "http/1.1",
+        "no_tls_verify": false,
+        "peer_certificates": null,
+        "server_name": "httpbin.com",
+        "t": 0,
+        "tags": [
+          "classic",
+          "tcptls_experiment",
+          "depth=0",
+          "fetch_body=false"
+        ],
+        "tls_version": "TLSv1.3",
+        "transaction_id": 50001
+      },
+      {
+        "network": "tcp",
+        "address": "172.67.144.64:443",
+        "cipher_suite": "TLS_AES_128_GCM_SHA256",
+        "failure": null,
+        "negotiated_protocol": "http/1.1",
+        "no_tls_verify": false,
+        "peer_certificates": null,
+        "server_name": "httpbin.com",
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=1",
+          "fetch_body=false"
+        ],
+        "tls_version": "TLSv1.3",
+        "transaction_id": 50002
+      },
+      {
+        "network": "tcp",
+        "address": "172.67.144.64:443",
+        "cipher_suite": "TLS_AES_128_GCM_SHA256",
+        "failure": null,
+        "negotiated_protocol": "http/1.1",
+        "no_tls_verify": false,
+        "peer_certificates": null,
+        "server_name": "httpbin.com",
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=2",
+          "fetch_body=false"
+        ],
+        "tls_version": "TLSv1.3",
+        "transaction_id": 50003
+      },
+      {
+        "network": "tcp",
+        "address": "172.67.144.64:443",
+        "cipher_suite": "TLS_AES_128_GCM_SHA256",
+        "failure": null,
+        "negotiated_protocol": "http/1.1",
+        "no_tls_verify": false,
+        "peer_certificates": null,
+        "server_name": "httpbin.com",
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=3",
+          "fetch_body=false"
+        ],
+        "tls_version": "TLSv1.3",
+        "transaction_id": 50004
+      },
+      {
+        "network": "tcp",
+        "address": "172.67.144.64:443",
+        "cipher_suite": "TLS_AES_128_GCM_SHA256",
+        "failure": null,
+        "negotiated_protocol": "http/1.1",
+        "no_tls_verify": false,
+        "peer_certificates": null,
+        "server_name": "httpbin.com",
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=4",
+          "fetch_body=false"
+        ],
+        "tls_version": "TLSv1.3",
+        "transaction_id": 50005
+      },
+      {
+        "network": "tcp",
+        "address": "172.67.144.64:443",
+        "cipher_suite": "TLS_AES_128_GCM_SHA256",
+        "failure": null,
+        "negotiated_protocol": "http/1.1",
+        "no_tls_verify": false,
+        "peer_certificates": null,
+        "server_name": "httpbin.com",
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=5",
+          "fetch_body=false"
+        ],
+        "tls_version": "TLSv1.3",
+        "transaction_id": 50006
+      },
+      {
+        "network": "tcp",
+        "address": "172.67.144.64:443",
+        "cipher_suite": "TLS_AES_128_GCM_SHA256",
+        "failure": null,
+        "negotiated_protocol": "http/1.1",
+        "no_tls_verify": false,
+        "peer_certificates": null,
+        "server_name": "httpbin.com",
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=6",
+          "fetch_body=false"
+        ],
+        "tls_version": "TLSv1.3",
+        "transaction_id": 50007
+      },
+      {
+        "network": "tcp",
+        "address": "172.67.144.64:443",
+        "cipher_suite": "TLS_AES_128_GCM_SHA256",
+        "failure": null,
+        "negotiated_protocol": "http/1.1",
+        "no_tls_verify": false,
+        "peer_certificates": null,
+        "server_name": "httpbin.com",
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=7",
+          "fetch_body=false"
+        ],
+        "tls_version": "TLSv1.3",
+        "transaction_id": 50008
+      },
+      {
+        "network": "tcp",
+        "address": "172.67.144.64:443",
+        "cipher_suite": "TLS_AES_128_GCM_SHA256",
+        "failure": null,
+        "negotiated_protocol": "http/1.1",
+        "no_tls_verify": false,
+        "peer_certificates": null,
+        "server_name": "httpbin.com",
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=8",
+          "fetch_body=false"
+        ],
+        "tls_version": "TLSv1.3",
+        "transaction_id": 50009
+      },
+      {
+        "network": "tcp",
+        "address": "172.67.144.64:443",
+        "cipher_suite": "TLS_AES_128_GCM_SHA256",
+        "failure": null,
+        "negotiated_protocol": "http/1.1",
+        "no_tls_verify": false,
+        "peer_certificates": null,
+        "server_name": "httpbin.com",
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=9",
+          "fetch_body=false"
+        ],
+        "tls_version": "TLSv1.3",
+        "transaction_id": 50010
+      },
+      {
+        "network": "tcp",
+        "address": "172.67.144.64:443",
+        "cipher_suite": "TLS_AES_128_GCM_SHA256",
+        "failure": null,
+        "negotiated_protocol": "http/1.1",
+        "no_tls_verify": false,
+        "peer_certificates": null,
+        "server_name": "httpbin.com",
+        "t": 0,
+        "tags": [
+          "classic",
+          "depth=10",
+          "fetch_body=false"
+        ],
+        "tls_version": "TLSv1.3",
+        "transaction_id": 50011
+      }
+    ],
+    "x_control_request": {
+      "http_request": "http://httpbin.com/redirect/15",
+      "http_request_headers": {
+        "Accept": [
+          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        ],
+        "Accept-Language": [
+          "en-US,en;q=0.9"
+        ],
+        "User-Agent": [
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.3"
+        ]
+      },
+      "tcp_connect": [
+        "172.67.144.64:443",
+        "172.67.144.64:80"
+      ],
+      "x_quic_enabled": false
+    },
+    "control": {
+      "tcp_connect": {
+        "172.67.144.64:443": {
+          "status": true,
+          "failure": null
+        },
+        "172.67.144.64:80": {
+          "status": true,
+          "failure": null
+        }
+      },
+      "tls_handshake": {
+        "172.67.144.64:443": {
+          "server_name": "httpbin.com",
+          "status": true,
+          "failure": null
+        }
+      },
+      "quic_handshake": {},
+      "http_request": {
+        "body_length": -1,
+        "discovered_h3_endpoint": "",
+        "failure": "unknown_error",
+        "title": "",
+        "headers": {},
+        "status_code": -1
+      },
+      "http3_request": null,
+      "dns": {
+        "failure": null,
+        "addrs": [
+          "172.67.144.64"
+        ]
+      },
+      "ip_info": {
+        "172.67.144.64": {
+          "asn": 13335,
+          "flags": 11
+        }
+      }
+    },
+    "x_conn_priority_log": null,
+    "control_failure": null,
+    "x_dns_flags": 0,
+    "dns_experiment_failure": null,
+    "dns_consistency": "consistent",
+    "http_experiment_failure": "unknown_failure: stopped after too many redirects",
+    "x_blocking_flags": 0,
+    "x_null_null_flags": 0,
+    "body_proportion": 0,
+    "body_length_match": null,
+    "headers_match": null,
+    "status_code_match": null,
+    "title_match": null,
+    "blocking": false,
+    "accessible": false
+  },
+  "test_name": "web_connectivity",
+  "test_runtime": 0,
+  "test_start_time": "2024-02-12 20:33:47",
+  "test_version": "0.5.28"
+}

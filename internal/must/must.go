@@ -20,7 +20,7 @@ import (
 // CreateFile is like [os.Create] but calls
 // [runtimex.PanicOnError] on failure.
 func CreateFile(name string) *File {
-	fp, err := os.Create(name)
+	fp, err := os.Create(name) // #nosec G304 - this is working as intended
 	runtimex.PanicOnError(err, "os.Create failed")
 	return &File{fp}
 }
@@ -28,7 +28,7 @@ func CreateFile(name string) *File {
 // OpenFile is like [os.Open] but calls
 // [runtimex.PanicOnError] on failure.
 func OpenFile(name string) *File {
-	fp, err := os.Open(name)
+	fp, err := os.Open(name) // #nosec G304 - this is working as intended
 	runtimex.PanicOnError(err, "os.Open failed")
 	return &File{fp}
 }
@@ -143,7 +143,7 @@ func WriteFile(filename string, content []byte, mode fs.FileMode) {
 // ReadFile is like [os.ReadFile] but calls
 // [runtimex.PanicOnError] on failure.
 func ReadFile(filename string) []byte {
-	data, err := os.ReadFile(filename)
+	data, err := os.ReadFile(filename) // #nosec G304 - this is working as intended
 	runtimex.PanicOnError(err, "os.ReadFile failed")
 	return data
 }

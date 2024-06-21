@@ -10,14 +10,18 @@ import (
 )
 
 func init() {
-	AllExperiments["http_invalid_request_line"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
-			return hirl.NewExperimentMeasurer(
-				*config.(*hirl.Config),
-			)
-		},
-		config:           &hirl.Config{},
-		enabledByDefault: true,
-		inputPolicy:      model.InputNone,
+	const canonicalName = "http_invalid_request_line"
+	AllExperiments[canonicalName] = func() *Factory {
+		return &Factory{
+			build: func(config interface{}) model.ExperimentMeasurer {
+				return hirl.NewExperimentMeasurer(
+					*config.(*hirl.Config),
+				)
+			},
+			canonicalName:    canonicalName,
+			config:           &hirl.Config{},
+			enabledByDefault: true,
+			inputPolicy:      model.InputNone,
+		}
 	}
 }

@@ -39,11 +39,29 @@ type connTrace struct {
 
 var _ net.Conn = &connTrace{}
 
+type remoteAddrProvider interface {
+	RemoteAddr() net.Addr
+}
+
+func safeRemoteAddrNetwork(rap remoteAddrProvider) (result string) {
+	if addr := rap.RemoteAddr(); addr != nil {
+		result = addr.Network()
+	}
+	return result
+}
+
+func safeRemoteAddrString(rap remoteAddrProvider) (result string) {
+	if addr := rap.RemoteAddr(); addr != nil {
+		result = addr.String()
+	}
+	return result
+}
+
 // Read implements net.Conn.Read and saves network events.
 func (c *connTrace) Read(b []byte) (int, error) {
 	// collect preliminary stats when the connection is surely active
-	network := c.RemoteAddr().Network()
-	addr := c.RemoteAddr().String()
+	network := safeRemoteAddrNetwork(c)
+	addr := safeRemoteAddrString(c)
 	started := c.tx.TimeSince(c.tx.ZeroTime())
 
 	// perform the underlying network operation
@@ -99,8 +117,8 @@ func (tx *Trace) CloneBytesReceivedMap() (out map[string]int64) {
 
 // Write implements net.Conn.Write and saves network events.
 func (c *connTrace) Write(b []byte) (int, error) {
-	network := c.RemoteAddr().Network()
-	addr := c.RemoteAddr().String()
+	network := safeRemoteAddrNetwork(c)
+	addr := safeRemoteAddrString(c)
 	started := c.tx.TimeSince(c.tx.ZeroTime())
 
 	count, err := c.Conn.Write(b)

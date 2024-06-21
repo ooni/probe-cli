@@ -60,7 +60,7 @@ func shutdown(srv *http.Server, wg *sync.WaitGroup) {
 	defer wg.Done()
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
-	srv.Shutdown(ctx)
+	_ = srv.Shutdown(ctx)
 }
 
 func main() {
@@ -100,12 +100,16 @@ func main() {
 		} else {
 			w.Header().Set("WWW-Authenticate", "Basic realm=metrics")
 			w.WriteHeader(401)
-			w.Write([]byte("401 Unauthorized\n"))
+			_, _ = w.Write([]byte("401 Unauthorized\n"))
 		}
 	})
 
 	// create a listening server for serving ooniprobe requests
-	srv := &http.Server{Addr: *apiEndpoint, Handler: mux}
+	srv := &http.Server{
+		Addr:              *apiEndpoint,
+		Handler:           mux,
+		ReadHeaderTimeout: 8 * time.Second,
+	}
 	listener, err := net.Listen("tcp", *apiEndpoint)
 	runtimex.PanicOnError(err, "net.Listen failed")
 
@@ -121,7 +125,11 @@ func main() {
 	pprofMux := http.NewServeMux()
 	pprofMux.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
 	pprofMux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
-	pprofSrv := &http.Server{Addr: *pprofEndpoint, Handler: pprofMux}
+	pprofSrv := &http.Server{
+		Addr:              *pprofEndpoint,
+		Handler:           pprofMux,
+		ReadHeaderTimeout: 8 * time.Second,
+	}
 	go pprofSrv.ListenAndServe()
 	log.Infof("serving CPU profile at http://%s/debug/pprof/profile", *pprofEndpoint)
 	log.Infof("serving execution traces at http://%s/debug/pprof/trace", *pprofEndpoint)

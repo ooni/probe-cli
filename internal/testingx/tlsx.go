@@ -124,7 +124,7 @@ func (p *TLSServer) handle(ctx context.Context, tcpConn net.Conn) {
 	defer tcpConn.Close()
 
 	// create TLS configuration where the handler is responsible for continuing the handshake
-	tlsConfig := &tls.Config{
+	tlsConfig := &tls.Config{ // #nosec G402 - code used for testing
 		GetCertificate: func(chi *tls.ClientHelloInfo) (*tls.Certificate, error) {
 			return p.handler.GetCertificate(ctx, tcpConn, chi)
 		},
@@ -214,7 +214,7 @@ type tlsHandlerEOF struct{}
 
 // GetCertificate implements TLSHandler.
 func (*tlsHandlerEOF) GetCertificate(ctx context.Context, tcpConn net.Conn, chi *tls.ClientHelloInfo) (*tls.Certificate, error) {
-	tcpConn.Close() // close the TCP connection to force EOF during the handshake
+	_ = tcpConn.Close() // close the TCP connection to force EOF during the handshake
 	return nil, errors.New("internal error")
 }
 
@@ -230,7 +230,7 @@ type tlsHandlerReset struct{}
 // GetCertificate implements TLSHandler.
 func (*tlsHandlerReset) GetCertificate(ctx context.Context, tcpConn net.Conn, chi *tls.ClientHelloInfo) (*tls.Certificate, error) {
 	tcpMaybeResetNetConn(tcpConn)
-	tcpConn.Close() // just in case to avoid the error returned here to be sent remotely as an alert
+	_ = tcpConn.Close() // just in case to avoid the error returned here to be sent remotely as an alert
 	return nil, errors.New("internal error")
 }
 

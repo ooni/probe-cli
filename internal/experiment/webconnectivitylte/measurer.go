@@ -10,7 +10,6 @@ import (
 	"net/http/cookiejar"
 	"sync"
 
-	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/inputparser"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/webconnectivityalgo"
@@ -108,7 +107,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	testhelpers, _ := sess.GetTestHelpersByName("web-connectivity")
 	if len(testhelpers) < 1 {
 		sess.Logger().Warnf("continuing without a valid TH address")
-		tk.SetControlFailure(webconnectivity.ErrNoAvailableTestHelpers)
+		tk.SetControlFailure(model.ErrNoAvailableTestHelpers)
 	}
 
 	registerExtensions(measurement)
@@ -121,7 +120,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		Domain:                  URL.Hostname(),
 		IDGenerator:             NewIDGenerator(),
 		Logger:                  sess.Logger(),
-		NumRedirects:            NewNumRedirects(5),
+		NumRedirects:            NewNumRedirects(10),
 		TestKeys:                tk,
 		URL:                     URL,
 		ZeroTime:                measurement.MeasurementStartTimeSaved,

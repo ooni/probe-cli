@@ -122,11 +122,11 @@ func (lst *Listener) forward(ctx context.Context, left, right net.Conn, done cha
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		netxlite.CopyContext(ctx, left, right)
+		_, _ = netxlite.CopyContext(ctx, left, right)
 	}()
 	go func() {
 		defer wg.Done()
-		netxlite.CopyContext(ctx, right, left)
+		_, _ = netxlite.CopyContext(ctx, right, left)
 	}()
 	wg.Wait()
 }
@@ -157,7 +157,7 @@ func (lst *Listener) handleSocksConn(ctx context.Context, socksConn SocksConn) e
 	}
 	ptConn, err := lst.PTDialer.DialContext(ctx)
 	if err != nil {
-		socksConn.Close() // we own it
+		_ = socksConn.Close() // we own it
 		lst.logger().Warnf("ptx: ContextDialer.DialContext error: %s", err)
 		return err // used for testing
 	}
@@ -296,7 +296,7 @@ func (lst *Listener) Stop() {
 		lst.cancel() // cancel is idempotent
 	}
 	if lst.listener != nil {
-		lst.listener.Close() // should be idempotent
+		_ = lst.listener.Close() // should be idempotent
 	}
 }
 

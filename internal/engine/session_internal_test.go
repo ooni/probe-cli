@@ -253,6 +253,19 @@ func TestSessionMaybeLookupLocationContextLookupLocationContextFailure(t *testin
 	}
 }
 
+func TestSessionFetchOpenVPNConfigWithCancelledContext(t *testing.T) {
+	sess := &Session{}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // cause failure
+	resp, err := sess.FetchOpenVPNConfig(ctx, "riseup", "XX")
+	if !errors.Is(err, context.Canceled) {
+		t.Fatal("not the error we expected", err)
+	}
+	if resp != nil {
+		t.Fatal("expected nil response here")
+	}
+}
+
 func TestSessionFetchTorTargetsWithCancelledContext(t *testing.T) {
 	sess := &Session{}
 	ctx, cancel := context.WithCancel(context.Background())

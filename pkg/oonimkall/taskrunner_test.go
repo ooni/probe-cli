@@ -7,8 +7,10 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	engine "github.com/ooni/probe-cli/v3/internal/engine"
+	"github.com/ooni/probe-cli/v3/internal/engine"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 func TestMeasurementSubmissionEventName(t *testing.T) {
@@ -29,11 +31,20 @@ func TestMeasurementSubmissionFailure(t *testing.T) {
 	}
 }
 
-func TestTaskRunnerRun(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
+// MockableTaskRunnerDependencies is the mockable struct used by [TestTaskRunnerRun].
+type MockableTaskRunnerDependencies struct {
+	Builder    *mocks.ExperimentBuilder
+	Experiment *mocks.Experiment
+	Loader     *mocks.ExperimentTargetLoader
+	Session    *mocks.Session
+}
 
+// NewSession is the method that returns the new fake session.
+func (dep *MockableTaskRunnerDependencies) NewSession(ctx context.Context, config engine.SessionConfig) (taskSession, error) {
+	return dep.Session, nil
+}
+
+func TestTaskRunnerRun(t *testing.T) {
 	// newRunnerForTesting is a factory for creating a new
 	// runner that wraps newRunner and also sets a specific
 	// taskSessionBuilder for testing purposes.
@@ -95,10 +106,8 @@ func TestTaskRunnerRun(t *testing.T) {
 	t.Run("with failure when creating a new kvstore", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		// override the kvstore builder to provoke an error
-		runner.kvStoreBuilder = &MockableKVStoreFSBuilder{
-			MockNewFS: func(path string) (model.KeyValueStore, error) {
-				return nil, errors.New("generic error")
-			},
+		runner.newKVStore = func(path string) (model.KeyValueStore, error) {
+			return nil, errors.New("generic error")
 		}
 		events := runAndCollect(runner, emitter)
 		assertCountEventsByKey(events, eventTypeFailureStartup, 1)
@@ -117,11 +126,14 @@ func TestTaskRunnerRun(t *testing.T) {
 		runner.settings.Proxy = "https://127.0.0.1/"
 		// set a fake session builder that causes the startup to
 		// fail but records the config passed to NewSession
-		saver := &SessionBuilderConfigSaver{}
-		runner.sessionBuilder = saver
+		var savedConfig engine.SessionConfig
+		runner.newSession = func(ctx context.Context, config engine.SessionConfig) (taskSession, error) {
+			savedConfig = config
+			return nil, errors.New("generic error")
+		}
 		events := runAndCollect(runner, emitter)
 		assertCountEventsByKey(events, eventTypeFailureStartup, 1)
-		if saver.Config.ProxyURL.String() != runner.settings.Proxy {
+		if savedConfig.ProxyURL.String() != runner.settings.Proxy {
 			t.Fatal("invalid proxy URL")
 		}
 	})
@@ -132,11 +144,14 @@ func TestTaskRunnerRun(t *testing.T) {
 		runner.settings.Options.ProbeServicesBaseURL = "https://127.0.0.1"
 		// set a fake session builder that causes the startup to
 		// fail but records the config passed to NewSession
-		saver := &SessionBuilderConfigSaver{}
-		runner.sessionBuilder = saver
+		var savedConfig engine.SessionConfig
+		runner.newSession = func(ctx context.Context, config engine.SessionConfig) (taskSession, error) {
+			savedConfig = config
+			return nil, errors.New("generic error")
+		}
 		events := runAndCollect(runner, emitter)
 		assertCountEventsByKey(events, eventTypeFailureStartup, 1)
-		psu := saver.Config.AvailableProbeServices
+		psu := savedConfig.AvailableProbeServices
 		if len(psu) != 1 {
 			t.Fatal("invalid length")
 		}
@@ -158,9 +173,10 @@ func TestTaskRunnerRun(t *testing.T) {
 
 	// reduceEventsKeysIgnoreLog reduces the list of event keys
 	// counting equal subsequent keys and ignoring log events
-	reduceEventsKeysIgnoreLog := func(events []*event) (out []eventKeyCount) {
+	reduceEventsKeysIgnoreLog := func(t *testing.T, events []*event) (out []eventKeyCount) {
 		var current eventKeyCount
 		for _, ev := range events {
+			t.Log(ev)
 			if ev.Key == eventTypeLog {
 				continue
 			}
@@ -182,65 +198,96 @@ func TestTaskRunnerRun(t *testing.T) {
 
 	// fakeSuccessfulRun returns a new set of dependencies that
 	// will perform a fully successful, but fake, run.
+	//
+	// You MAY override some functions to provoke specific errors
+	// or generally change the operating conditions.
 	fakeSuccessfulRun := func() *MockableTaskRunnerDependencies {
-		return &MockableTaskRunnerDependencies{
-			MockableKibiBytesReceived: func() float64 {
-				return 10
+		deps := &MockableTaskRunnerDependencies{
+
+			// Configure the fake experiment
+			Experiment: &mocks.Experiment{
+				MockKibiBytesReceived: func() float64 {
+					return 10
+				},
+				MockKibiBytesSent: func() float64 {
+					return 4
+				},
+				MockOpenReportContext: func(ctx context.Context) error {
+					return nil
+				},
+				MockReportID: func() string {
+					return "20211202T074907Z_example_IT_30722_n1_axDLHNUfJaV1IbuU"
+				},
+				MockMeasureWithContext: func(ctx context.Context, target model.ExperimentTarget) (*model.Measurement, error) {
+					return &model.Measurement{}, nil
+				},
+				MockSubmitAndUpdateMeasurementContext: func(ctx context.Context, measurement *model.Measurement) error {
+					return nil
+				},
 			},
-			MockableKibiBytesSent: func() float64 {
-				return 4
+
+			// Configure the fake experiment builder
+			Builder: &mocks.ExperimentBuilder{
+				MockSetCallbacks: func(callbacks model.ExperimentCallbacks) {},
+				MockInputPolicy: func() model.InputPolicy {
+					return model.InputNone
+				},
+				MockInterruptible: func() bool {
+					return false
+				},
 			},
-			MockableOpenReportContext: func(ctx context.Context) error {
-				return nil
-			},
-			MockableReportID: func() string {
-				return "20211202T074907Z_example_IT_30722_n1_axDLHNUfJaV1IbuU"
-			},
-			MockableMeasureWithContext: func(ctx context.Context, input string) (*model.Measurement, error) {
-				return &model.Measurement{}, nil
-			},
-			MockableSubmitAndUpdateMeasurementContext: func(ctx context.Context, measurement *model.Measurement) error {
-				return nil
-			},
-			MockableSetCallbacks: func(callbacks model.ExperimentCallbacks) {
-			},
-			MockableInputPolicy: func() model.InputPolicy {
-				return model.InputNone
-			},
-			MockableInterruptible: func() bool {
-				return false
-			},
-			MockClose: func() error {
-				return nil
-			},
-			MockMaybeLookupBackendsContext: func(ctx context.Context) error {
-				return nil
-			},
-			MockMaybeLookupLocationContext: func(ctx context.Context) error {
-				return nil
-			},
-			MockProbeIP: func() string {
-				return "130.192.91.211"
-			},
-			MockProbeASNString: func() string {
-				return "AS137"
-			},
-			MockProbeCC: func() string {
-				return "IT"
-			},
-			MockProbeNetworkName: func() string {
-				return "GARR"
-			},
-			MockResolverASNString: func() string {
-				return "AS137"
-			},
-			MockResolverIP: func() string {
-				return "130.192.3.24"
-			},
-			MockResolverNetworkName: func() string {
-				return "GARR"
+
+			// Configure the fake session
+			Session: &mocks.Session{
+				MockClose: func() error {
+					return nil
+				},
+				MockMaybeLookupBackendsContext: func(ctx context.Context) error {
+					return nil
+				},
+				MockMaybeLookupLocationContext: func(ctx context.Context) error {
+					return nil
+				},
+				MockProbeIP: func() string {
+					return "130.192.91.211"
+				},
+				MockProbeASNString: func() string {
+					return "AS137"
+				},
+				MockProbeCC: func() string {
+					return "IT"
+				},
+				MockProbeNetworkName: func() string {
+					return "GARR"
+				},
+				MockResolverASNString: func() string {
+					return "AS137"
+				},
+				MockResolverIP: func() string {
+					return "130.192.3.24"
+				},
+				MockResolverNetworkName: func() string {
+					return "GARR"
+				},
 			},
 		}
+
+		// The fake session MUST return the fake experiment builder
+		deps.Session.MockNewExperimentBuilder = func(name string) (model.ExperimentBuilder, error) {
+			return deps.Builder, nil
+		}
+
+		// The fake experiment builder MUST return the fake target loader
+		deps.Builder.MockNewTargetLoader = func(config *model.ExperimentTargetLoaderConfig) model.ExperimentTargetLoader {
+			return deps.Loader
+		}
+
+		// The fake experiment builder MUST return the fake experiment
+		deps.Builder.MockNewExperiment = func() model.Experiment {
+			return deps.Experiment
+		}
+
+		return deps
 	}
 
 	assertReducedEventsLike := func(t *testing.T, expected, got []eventKeyCount) {
@@ -252,12 +299,12 @@ func TestTaskRunnerRun(t *testing.T) {
 	t.Run("with invalid experiment name", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		fake := fakeSuccessfulRun()
-		fake.MockNewExperimentBuilderByName = func(name string) (taskExperimentBuilder, error) {
+		fake.Session.MockNewExperimentBuilder = func(name string) (model.ExperimentBuilder, error) {
 			return nil, errors.New("invalid experiment name")
 		}
-		runner.sessionBuilder = fake
+		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(events)
+		reduced := reduceEventsKeysIgnoreLog(t, events)
 		expect := []eventKeyCount{
 			{Key: eventTypeStatusQueued, Count: 1},
 			{Key: eventTypeStatusStarted, Count: 1},
@@ -270,12 +317,12 @@ func TestTaskRunnerRun(t *testing.T) {
 	t.Run("with error during backends lookup", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		fake := fakeSuccessfulRun()
-		fake.MockMaybeLookupBackendsContext = func(ctx context.Context) error {
+		fake.Session.MockMaybeLookupBackendsContext = func(ctx context.Context) error {
 			return errors.New("mocked error")
 		}
-		runner.sessionBuilder = fake
+		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(events)
+		reduced := reduceEventsKeysIgnoreLog(t, events)
 		expect := []eventKeyCount{
 			{Key: eventTypeStatusQueued, Count: 1},
 			{Key: eventTypeStatusStarted, Count: 1},
@@ -288,12 +335,12 @@ func TestTaskRunnerRun(t *testing.T) {
 	t.Run("with error during location lookup", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		fake := fakeSuccessfulRun()
-		fake.MockMaybeLookupLocationContext = func(ctx context.Context) error {
+		fake.Session.MockMaybeLookupLocationContext = func(ctx context.Context) error {
 			return errors.New("mocked error")
 		}
-		runner.sessionBuilder = fake
+		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(events)
+		reduced := reduceEventsKeysIgnoreLog(t, events)
 		expect := []eventKeyCount{
 			{Key: eventTypeStatusQueued, Count: 1},
 			{Key: eventTypeStatusStarted, Count: 1},
@@ -310,12 +357,12 @@ func TestTaskRunnerRun(t *testing.T) {
 	t.Run("with missing input and InputOrQueryBackend policy", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		fake := fakeSuccessfulRun()
-		fake.MockableInputPolicy = func() model.InputPolicy {
+		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputOrQueryBackend
 		}
-		runner.sessionBuilder = fake
+		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(events)
+		reduced := reduceEventsKeysIgnoreLog(t, events)
 		expect := []eventKeyCount{
 			{Key: eventTypeStatusQueued, Count: 1},
 			{Key: eventTypeStatusStarted, Count: 1},
@@ -331,12 +378,12 @@ func TestTaskRunnerRun(t *testing.T) {
 	t.Run("with missing input and InputStrictlyRequired policy", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		fake := fakeSuccessfulRun()
-		fake.MockableInputPolicy = func() model.InputPolicy {
+		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputStrictlyRequired
 		}
-		runner.sessionBuilder = fake
+		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(events)
+		reduced := reduceEventsKeysIgnoreLog(t, events)
 		expect := []eventKeyCount{
 			{Key: eventTypeStatusQueued, Count: 1},
 			{Key: eventTypeStatusStarted, Count: 1},
@@ -354,12 +401,12 @@ func TestTaskRunnerRun(t *testing.T) {
 			runner, emitter := newRunnerForTesting()
 			runner.settings.Name = "Antani" // no input for this experiment
 			fake := fakeSuccessfulRun()
-			fake.MockableInputPolicy = func() model.InputPolicy {
+			fake.Builder.MockInputPolicy = func() model.InputPolicy {
 				return model.InputOrStaticDefault
 			}
-			runner.sessionBuilder = fake
+			runner.newSession = fake.NewSession
 			events := runAndCollect(runner, emitter)
-			reduced := reduceEventsKeysIgnoreLog(events)
+			reduced := reduceEventsKeysIgnoreLog(t, events)
 			expect := []eventKeyCount{
 				{Key: eventTypeStatusQueued, Count: 1},
 				{Key: eventTypeStatusStarted, Count: 1},
@@ -376,12 +423,12 @@ func TestTaskRunnerRun(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		runner.settings.Inputs = append(runner.settings.Inputs, "https://x.org/")
 		fake := fakeSuccessfulRun()
-		fake.MockableInputPolicy = func() model.InputPolicy {
+		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputNone
 		}
-		runner.sessionBuilder = fake
+		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(events)
+		reduced := reduceEventsKeysIgnoreLog(t, events)
 		expect := []eventKeyCount{
 			{Key: eventTypeStatusQueued, Count: 1},
 			{Key: eventTypeStatusStarted, Count: 1},
@@ -397,12 +444,12 @@ func TestTaskRunnerRun(t *testing.T) {
 	t.Run("with failure opening report", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		fake := fakeSuccessfulRun()
-		fake.MockableOpenReportContext = func(ctx context.Context) error {
+		fake.Experiment.MockOpenReportContext = func(ctx context.Context) error {
 			return errors.New("mocked error")
 		}
-		runner.sessionBuilder = fake
+		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(events)
+		reduced := reduceEventsKeysIgnoreLog(t, events)
 		expect := []eventKeyCount{
 			{Key: eventTypeStatusQueued, Count: 1},
 			{Key: eventTypeStatusStarted, Count: 1},
@@ -418,12 +465,12 @@ func TestTaskRunnerRun(t *testing.T) {
 	t.Run("with success and InputNone policy", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		fake := fakeSuccessfulRun()
-		fake.MockableInputPolicy = func() model.InputPolicy {
+		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputNone
 		}
-		runner.sessionBuilder = fake
+		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(events)
+		reduced := reduceEventsKeysIgnoreLog(t, events)
 		expect := []eventKeyCount{
 			{Key: eventTypeStatusQueued, Count: 1},
 			{Key: eventTypeStatusStarted, Count: 1},
@@ -444,15 +491,15 @@ func TestTaskRunnerRun(t *testing.T) {
 	t.Run("with measurement failure and InputNone policy", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		fake := fakeSuccessfulRun()
-		fake.MockableInputPolicy = func() model.InputPolicy {
+		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputNone
 		}
-		fake.MockableMeasureWithContext = func(ctx context.Context, input string) (measurement *model.Measurement, err error) {
+		fake.Experiment.MockMeasureWithContext = func(ctx context.Context, target model.ExperimentTarget) (measurement *model.Measurement, err error) {
 			return nil, errors.New("preconditions error")
 		}
-		runner.sessionBuilder = fake
+		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(events)
+		reduced := reduceEventsKeysIgnoreLog(t, events)
 		expect := []eventKeyCount{
 			{Key: eventTypeStatusQueued, Count: 1},
 			{Key: eventTypeStatusStarted, Count: 1},
@@ -474,18 +521,18 @@ func TestTaskRunnerRun(t *testing.T) {
 		// which is what was happening in the above referenced issue.
 		runner, emitter := newRunnerForTesting()
 		fake := fakeSuccessfulRun()
-		fake.MockableInputPolicy = func() model.InputPolicy {
+		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputNone
 		}
-		fake.MockableMeasureWithContext = func(ctx context.Context, input string) (measurement *model.Measurement, err error) {
+		fake.Experiment.MockMeasureWithContext = func(ctx context.Context, target model.ExperimentTarget) (measurement *model.Measurement, err error) {
 			return nil, errors.New("preconditions error")
 		}
-		runner.sessionBuilder = fake
+		runner.newSession = fake.NewSession
 		runner.settings.Annotations = map[string]string{
 			"architecture": "arm64",
 		}
 		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(events)
+		reduced := reduceEventsKeysIgnoreLog(t, events)
 		expect := []eventKeyCount{
 			{Key: eventTypeStatusQueued, Count: 1},
 			{Key: eventTypeStatusStarted, Count: 1},
@@ -505,12 +552,12 @@ func TestTaskRunnerRun(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		runner.settings.Inputs = []string{"a", "b", "c", "d"}
 		fake := fakeSuccessfulRun()
-		fake.MockableInputPolicy = func() model.InputPolicy {
+		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputStrictlyRequired
 		}
-		runner.sessionBuilder = fake
+		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(events)
+		reduced := reduceEventsKeysIgnoreLog(t, events)
 		expect := []eventKeyCount{
 			{Key: eventTypeStatusQueued, Count: 1},
 			{Key: eventTypeStatusStarted, Count: 1},
@@ -553,12 +600,12 @@ func TestTaskRunnerRun(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		runner.settings.Inputs = []string{"a", "b", "c", "d"}
 		fake := fakeSuccessfulRun()
-		fake.MockableInputPolicy = func() model.InputPolicy {
+		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputOptional
 		}
-		runner.sessionBuilder = fake
+		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(events)
+		reduced := reduceEventsKeysIgnoreLog(t, events)
 		expect := []eventKeyCount{
 			{Key: eventTypeStatusQueued, Count: 1},
 			{Key: eventTypeStatusStarted, Count: 1},
@@ -600,12 +647,12 @@ func TestTaskRunnerRun(t *testing.T) {
 	t.Run("with success and InputOptional and no input", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		fake := fakeSuccessfulRun()
-		fake.MockableInputPolicy = func() model.InputPolicy {
+		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputOptional
 		}
-		runner.sessionBuilder = fake
+		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(events)
+		reduced := reduceEventsKeysIgnoreLog(t, events)
 		expect := []eventKeyCount{
 			{Key: eventTypeStatusQueued, Count: 1},
 			{Key: eventTypeStatusStarted, Count: 1},
@@ -630,12 +677,12 @@ func TestTaskRunnerRun(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		runner.settings.Name = experimentName
 		fake := fakeSuccessfulRun()
-		fake.MockableInputPolicy = func() model.InputPolicy {
+		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputOrStaticDefault
 		}
-		runner.sessionBuilder = fake
+		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(events)
+		reduced := reduceEventsKeysIgnoreLog(t, events)
 		expect := []eventKeyCount{
 			{Key: eventTypeStatusQueued, Count: 1},
 			{Key: eventTypeStatusStarted, Count: 1},
@@ -645,7 +692,7 @@ func TestTaskRunnerRun(t *testing.T) {
 			{Key: eventTypeStatusProgress, Count: 1},
 			{Key: eventTypeStatusReportCreate, Count: 1},
 		}
-		allEntries, err := engine.StaticBareInputForExperiment(experimentName)
+		allEntries, err := targetloading.StaticBareInputForExperiment(experimentName)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -666,16 +713,16 @@ func TestTaskRunnerRun(t *testing.T) {
 		runner.settings.Inputs = []string{"a", "b", "c", "d"}
 		runner.settings.Options.MaxRuntime = 2
 		fake := fakeSuccessfulRun()
-		fake.MockableInputPolicy = func() model.InputPolicy {
+		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputStrictlyRequired
 		}
-		fake.MockableMeasureWithContext = func(ctx context.Context, input string) (measurement *model.Measurement, err error) {
+		fake.Experiment.MockMeasureWithContext = func(ctx context.Context, target model.ExperimentTarget) (measurement *model.Measurement, err error) {
 			time.Sleep(1 * time.Second)
 			return &model.Measurement{}, nil
 		}
-		runner.sessionBuilder = fake
+		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(events)
+		reduced := reduceEventsKeysIgnoreLog(t, events)
 		expect := []eventKeyCount{
 			{Key: eventTypeStatusQueued, Count: 1},
 			{Key: eventTypeStatusStarted, Count: 1},
@@ -707,20 +754,20 @@ func TestTaskRunnerRun(t *testing.T) {
 		runner.settings.Inputs = []string{"a", "b", "c", "d"}
 		runner.settings.Options.MaxRuntime = 2
 		fake := fakeSuccessfulRun()
-		fake.MockableInputPolicy = func() model.InputPolicy {
+		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputStrictlyRequired
 		}
-		fake.MockableInterruptible = func() bool {
+		fake.Builder.MockInterruptible = func() bool {
 			return true
 		}
 		ctx, cancel := context.WithCancel(context.Background())
-		fake.MockableMeasureWithContext = func(ctx context.Context, input string) (measurement *model.Measurement, err error) {
+		fake.Experiment.MockMeasureWithContext = func(ctx context.Context, target model.ExperimentTarget) (measurement *model.Measurement, err error) {
 			cancel()
 			return &model.Measurement{}, nil
 		}
-		runner.sessionBuilder = fake
+		runner.newSession = fake.NewSession
 		events := runAndCollectContext(ctx, runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(events)
+		reduced := reduceEventsKeysIgnoreLog(t, events)
 		expect := []eventKeyCount{
 			{Key: eventTypeStatusQueued, Count: 1},
 			{Key: eventTypeStatusStarted, Count: 1},
@@ -742,15 +789,15 @@ func TestTaskRunnerRun(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		runner.settings.Inputs = []string{"a"}
 		fake := fakeSuccessfulRun()
-		fake.MockableInputPolicy = func() model.InputPolicy {
+		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputStrictlyRequired
 		}
-		fake.MockableSubmitAndUpdateMeasurementContext = func(ctx context.Context, measurement *model.Measurement) error {
+		fake.Experiment.MockSubmitAndUpdateMeasurementContext = func(ctx context.Context, measurement *model.Measurement) error {
 			return errors.New("cannot submit")
 		}
-		runner.sessionBuilder = fake
+		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(events)
+		reduced := reduceEventsKeysIgnoreLog(t, events)
 		expect := []eventKeyCount{
 			{Key: eventTypeStatusQueued, Count: 1},
 			{Key: eventTypeStatusStarted, Count: 1},
@@ -775,16 +822,16 @@ func TestTaskRunnerRun(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		fake := fakeSuccessfulRun()
 		var callbacks model.ExperimentCallbacks
-		fake.MockableSetCallbacks = func(cbs model.ExperimentCallbacks) {
+		fake.Builder.MockSetCallbacks = func(cbs model.ExperimentCallbacks) {
 			callbacks = cbs
 		}
-		fake.MockableMeasureWithContext = func(ctx context.Context, input string) (measurement *model.Measurement, err error) {
+		fake.Experiment.MockMeasureWithContext = func(ctx context.Context, target model.ExperimentTarget) (measurement *model.Measurement, err error) {
 			callbacks.OnProgress(1, "hello from the fake experiment")
 			return &model.Measurement{}, nil
 		}
-		runner.sessionBuilder = fake
+		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)
-		reduced := reduceEventsKeysIgnoreLog(events)
+		reduced := reduceEventsKeysIgnoreLog(t, events)
 		expect := []eventKeyCount{
 			{Key: eventTypeStatusQueued, Count: 1},
 			{Key: eventTypeStatusStarted, Count: 1},

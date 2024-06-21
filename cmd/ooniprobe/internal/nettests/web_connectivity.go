@@ -4,12 +4,12 @@ import (
 	"context"
 
 	"github.com/apex/log"
-	engine "github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-func (n WebConnectivity) lookupURLs(ctl *Controller, categories []string) ([]string, error) {
-	inputloader := &engine.InputLoader{
+func (n WebConnectivity) lookupURLs(
+	ctl *Controller, builder model.ExperimentBuilder, categories []string) ([]model.ExperimentTarget, error) {
+	config := &model.ExperimentTargetLoaderConfig{
 		CheckInConfig: &model.OOAPICheckInConfig{
 			// Setting Charging and OnWiFi to true causes the CheckIn
 			// API to return to us as much URL as possible with the
@@ -21,13 +21,12 @@ func (n WebConnectivity) lookupURLs(ctl *Controller, categories []string) ([]str
 				CategoryCodes: categories,
 			},
 		},
-		ExperimentName: "web_connectivity",
-		InputPolicy:    model.InputOrQueryBackend,
-		Session:        ctl.Session,
-		SourceFiles:    ctl.InputFiles,
-		StaticInputs:   ctl.Inputs,
+		Session:      ctl.Session,
+		SourceFiles:  ctl.InputFiles,
+		StaticInputs: ctl.Inputs,
 	}
-	testlist, err := inputloader.Load(context.Background())
+	targetloader := builder.NewTargetLoader(config)
+	testlist, err := targetloader.Load(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -39,12 +38,12 @@ type WebConnectivity struct{}
 
 // Run starts the test
 func (n WebConnectivity) Run(ctl *Controller) error {
-	log.Debugf("Enabled category codes are the following %v", ctl.Probe.Config().Nettests.WebsitesEnabledCategoryCodes)
-	urls, err := n.lookupURLs(ctl, ctl.Probe.Config().Nettests.WebsitesEnabledCategoryCodes)
+	builder, err := ctl.Session.NewExperimentBuilder("web_connectivity")
 	if err != nil {
 		return err
 	}
-	builder, err := ctl.Session.NewExperimentBuilder("web_connectivity")
+	log.Debugf("Enabled category codes are the following %v", ctl.Probe.Config().Nettests.WebsitesEnabledCategoryCodes)
+	urls, err := n.lookupURLs(ctl, builder, ctl.Probe.Config().Nettests.WebsitesEnabledCategoryCodes)
 	if err != nil {
 		return err
 	}

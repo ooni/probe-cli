@@ -12,7 +12,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/humanize"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -60,17 +59,17 @@ type Experiment struct {
 	// newExperimentBuilderFn is OPTIONAL and used for testing.
 	newExperimentBuilderFn func(experimentName string) (model.ExperimentBuilder, error)
 
-	// newInputLoaderFn is OPTIONAL and used for testing.
-	newInputLoaderFn func(inputPolicy model.InputPolicy) inputLoader
+	// newTargetLoaderFn is OPTIONAL and used for testing.
+	newTargetLoaderFn func(builder model.ExperimentBuilder) targetLoader
 
 	// newSubmitterFn is OPTIONAL and used for testing.
 	newSubmitterFn func(ctx context.Context) (model.Submitter, error)
 
 	// newSaverFn is OPTIONAL and used for testing.
-	newSaverFn func(experiment model.Experiment) (model.Saver, error)
+	newSaverFn func() (model.Saver, error)
 
 	// newInputProcessorFn is OPTIONAL and used for testing.
-	newInputProcessorFn func(experiment model.Experiment, inputList []model.OOAPIURLInfo,
+	newInputProcessorFn func(experiment model.Experiment, inputList []model.ExperimentTarget,
 		saver model.Saver, submitter model.Submitter) inputProcessor
 }
 
@@ -83,25 +82,35 @@ func (ed *Experiment) Run(ctx context.Context) error {
 		return err
 	}
 
-	// 2. create input loader and load input for this experiment
-	inputLoader := ed.newInputLoader(builder.InputPolicy())
-	inputList, err := inputLoader.Load(ctx)
+	// TODO(bassosimone,DecFox): when we're executed by OONI Run v2, it probably makes
+	// slightly more sense to set options from a json.RawMessage because the current
+	// command line limitation is that it's hard to set non scalar parameters and instead
+	// with using OONI Run v2 we can completely bypass such a limitation.
+
+	// 2. configure experiment's options
+	//
+	// This MUST happen before loading targets because the options will
+	// possibly be used to produce richer input targets.
+	if err := builder.SetOptionsAny(ed.ExtraOptions); err != nil {
+		return err
+	}
+
+	// 3. create target loader and load targets for this experiment
+	targetLoader := ed.newTargetLoader(builder)
+	targetList, err := targetLoader.Load(ctx)
 	if err != nil {
 		return err
 	}
 
-	// 3. randomize input, if needed
+	// 4. randomize input, if needed
 	if ed.Random {
-		rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
-		rnd.Shuffle(len(inputList), func(i, j int) {
-			inputList[i], inputList[j] = inputList[j], inputList[i]
+		// Note: since go1.20 the default random generated is random seeded
+		//
+		// See https://tip.golang.org/doc/go1.20
+		rand.Shuffle(len(targetList), func(i, j int) {
+			targetList[i], targetList[j] = targetList[j], targetList[i]
 		})
 		experimentShuffledInputs.Add(1)
-	}
-
-	// 4. configure experiment's options
-	if err := builder.SetOptionsAny(ed.ExtraOptions); err != nil {
-		return err
 	}
 
 	// 5. construct the experiment instance
@@ -121,13 +130,13 @@ func (ed *Experiment) Run(ctx context.Context) error {
 	}
 
 	// 7. create the saver
-	saver, err := ed.newSaver(experiment)
+	saver, err := ed.newSaver()
 	if err != nil {
 		return err
 	}
 
 	// 8. create an input processor
-	inputProcessor := ed.newInputProcessor(experiment, inputList, saver, submitter)
+	inputProcessor := ed.newInputProcessor(experiment, targetList, saver, submitter)
 
 	// 9. process input and generate measurements
 	return inputProcessor.Run(ctx)
@@ -138,7 +147,7 @@ type inputProcessor = model.ExperimentInputProcessor
 
 // newInputProcessor creates a new inputProcessor instance.
 func (ed *Experiment) newInputProcessor(experiment model.Experiment,
-	inputList []model.OOAPIURLInfo, saver model.Saver, submitter model.Submitter) inputProcessor {
+	inputList []model.ExperimentTarget, saver model.Saver, submitter model.Submitter) inputProcessor {
 	if ed.newInputProcessorFn != nil {
 		return ed.newInputProcessorFn(experiment, inputList, saver, submitter)
 	}
@@ -161,9 +170,9 @@ func (ed *Experiment) newInputProcessor(experiment model.Experiment,
 }
 
 // newSaver creates a new engine.Saver instance.
-func (ed *Experiment) newSaver(experiment model.Experiment) (model.Saver, error) {
+func (ed *Experiment) newSaver() (model.Saver, error) {
 	if ed.newSaverFn != nil {
-		return ed.newSaverFn(experiment)
+		return ed.newSaverFn()
 	}
 	return NewSaver(SaverConfig{
 		Enabled:  !ed.NoJSON,
@@ -192,26 +201,24 @@ func (ed *Experiment) newExperimentBuilder(experimentName string) (model.Experim
 	return ed.Session.NewExperimentBuilder(ed.Name)
 }
 
-// inputLoader is an alias for model.ExperimentInputLoader
-type inputLoader = model.ExperimentInputLoader
+// targetLoader is an alias for [model.ExperimentTargetLoader].
+type targetLoader = model.ExperimentTargetLoader
 
-// newInputLoader creates a new inputLoader.
-func (ed *Experiment) newInputLoader(inputPolicy model.InputPolicy) inputLoader {
-	if ed.newInputLoaderFn != nil {
-		return ed.newInputLoaderFn(inputPolicy)
+// newTargetLoader creates a new [model.ExperimentTargetLoader].
+func (ed *Experiment) newTargetLoader(builder model.ExperimentBuilder) targetLoader {
+	if ed.newTargetLoaderFn != nil {
+		return ed.newTargetLoaderFn(builder)
 	}
-	return &engine.InputLoader{
+	return builder.NewTargetLoader(&model.ExperimentTargetLoaderConfig{
 		CheckInConfig: &model.OOAPICheckInConfig{
 			RunType:  model.RunTypeManual,
 			OnWiFi:   true, // meaning: not on 4G
 			Charging: true,
 		},
-		ExperimentName: ed.Name,
-		InputPolicy:    inputPolicy,
-		StaticInputs:   ed.Inputs,
-		SourceFiles:    ed.InputFilePaths,
-		Session:        ed.Session,
-	}
+		StaticInputs: ed.Inputs,
+		SourceFiles:  ed.InputFilePaths,
+		Session:      ed.Session,
+	})
 }
 
 // experimentOptionsToStringList convers the options to []string, which is
@@ -242,12 +249,12 @@ type experimentWrapper struct {
 	total int
 }
 
-func (ew *experimentWrapper) MeasureAsync(
-	ctx context.Context, input string, idx int) (<-chan *model.Measurement, error) {
-	if input != "" {
-		ew.logger.Infof("[%d/%d] running with input: %s", idx+1, ew.total, input)
+func (ew *experimentWrapper) MeasureWithContext(
+	ctx context.Context, target model.ExperimentTarget, idx int) (*model.Measurement, error) {
+	if target.Input() != "" {
+		ew.logger.Infof("[%d/%d] running with input: %s", idx+1, ew.total, target)
 	}
-	return ew.child.MeasureAsync(ctx, input, idx)
+	return ew.child.MeasureWithContext(ctx, target, idx)
 }
 
 // experimentSubmitterWrapper implements a submission policy where we don't

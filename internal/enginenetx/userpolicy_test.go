@@ -6,15 +6,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
-	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-func TestUserPolicy(t *testing.T) {
-	t.Run("newUserPolicy", func(t *testing.T) {
+func TestUserPolicyV2(t *testing.T) {
+	t.Run("newUserPolicyV2", func(t *testing.T) {
 		// testcase is a test case implemented by this function
 		type testcase struct {
 			// name is the test case name
@@ -30,10 +28,8 @@ func TestUserPolicy(t *testing.T) {
 			expectErr string
 
 			// expectRoot contains the expected policy we loaded or nil
-			expectedPolicy *userPolicy
+			expectedPolicy *userPolicyV2
 		}
-
-		fallback := &dnsPolicy{}
 
 		cases := []testcase{{
 			name:           "when there is no key in the kvstore",
@@ -106,8 +102,7 @@ func TestUserPolicy(t *testing.T) {
 				}))
 			})(),
 			expectErr: "",
-			expectedPolicy: &userPolicy{
-				Fallback: fallback,
+			expectedPolicy: &userPolicyV2{
 				Root: &userPolicyRoot{
 					DomainEndpoints: map[string][]*httpsDialerTactic{
 						"api.ooni.io:443": {{
@@ -152,7 +147,7 @@ func TestUserPolicy(t *testing.T) {
 				kvStore := &kvstore.Memory{}
 				runtimex.Try0(kvStore.Set(tc.key, tc.input))
 
-				policy, err := newUserPolicy(kvStore, fallback)
+				policy, err := newUserPolicyV2(kvStore)
 
 				switch {
 				case err != nil && tc.expectErr == "":
@@ -178,6 +173,7 @@ func TestUserPolicy(t *testing.T) {
 	})
 
 	t.Run("LookupTactics", func(t *testing.T) {
+		// define the tactic we would expect to see
 		expectedTactic := &httpsDialerTactic{
 			Address:        "162.55.247.208",
 			InitialDelay:   0,
@@ -185,6 +181,8 @@ func TestUserPolicy(t *testing.T) {
 			SNI:            "www.example.com",
 			VerifyHostname: "api.ooni.io",
 		}
+
+		// define the root of the user policy
 		userPolicyRoot := &userPolicyRoot{
 			DomainEndpoints: map[string][]*httpsDialerTactic{
 				// Note that here we're adding explicitly nil entries
@@ -196,14 +194,16 @@ func TestUserPolicy(t *testing.T) {
 				},
 
 				// We add additional entries to make sure that in those
-				// cases we are going to fallback as they're basically empty
-				// and so non-actionable for us.
+				// cases we are going to get nil entries as they're basically
+				// empty and so non-actionable for us.
 				"api.ooni.xyz:443": nil,
 				"api.ooni.org:443": {},
 				"api.ooni.com:443": {nil, nil, nil},
 			},
 			Version: userPolicyVersion,
 		}
+
+		// serialize into a key-value store running in memory
 		kvStore := &kvstore.Memory{}
 		rawUserPolicyRoot := runtimex.Try1(json.Marshal(userPolicyRoot))
 		if err := kvStore.Set(userPolicyKey, rawUserPolicyRoot); err != nil {
@@ -213,7 +213,7 @@ func TestUserPolicy(t *testing.T) {
 		t.Run("with user policy", func(t *testing.T) {
 			ctx := context.Background()
 
-			policy, err := newUserPolicy(kvStore, nil /* explictly to crash if used */)
+			policy, err := newUserPolicyV2(kvStore)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -232,19 +232,10 @@ func TestUserPolicy(t *testing.T) {
 			}
 		})
 
-		t.Run("we fallback if there is no entry in the user policy", func(t *testing.T) {
+		t.Run("we get nothing if there is no entry in the user policy", func(t *testing.T) {
 			ctx := context.Background()
 
-			fallback := &dnsPolicy{
-				Logger: log.Log,
-				Resolver: &mocks.Resolver{
-					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-						return []string{"93.184.216.34"}, nil
-					},
-				},
-			}
-
-			policy, err := newUserPolicy(kvStore, fallback)
+			policy, err := newUserPolicyV2(kvStore)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -256,32 +247,17 @@ func TestUserPolicy(t *testing.T) {
 				got = append(got, tactic)
 			}
 
-			expect := []*httpsDialerTactic{{
-				Address:        "93.184.216.34",
-				InitialDelay:   0,
-				Port:           "443",
-				SNI:            "www.example.com",
-				VerifyHostname: "www.example.com",
-			}}
+			expect := []*httpsDialerTactic{}
 
 			if diff := cmp.Diff(expect, got); diff != "" {
 				t.Fatal(diff)
 			}
 		})
 
-		t.Run("we fallback if the entry in the user policy is ~empty", func(t *testing.T) {
+		t.Run("we get nothing if the entry in the user policy is ~empty", func(t *testing.T) {
 			ctx := context.Background()
 
-			fallback := &dnsPolicy{
-				Logger: log.Log,
-				Resolver: &mocks.Resolver{
-					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-						return []string{"93.184.216.34"}, nil
-					},
-				},
-			}
-
-			policy, err := newUserPolicy(kvStore, fallback)
+			policy, err := newUserPolicyV2(kvStore)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -296,13 +272,7 @@ func TestUserPolicy(t *testing.T) {
 						got = append(got, tactic)
 					}
 
-					expect := []*httpsDialerTactic{{
-						Address:        "93.184.216.34",
-						InitialDelay:   0,
-						Port:           "443",
-						SNI:            domain,
-						VerifyHostname: domain,
-					}}
+					expect := []*httpsDialerTactic{}
 
 					if diff := cmp.Diff(expect, got); diff != "" {
 						t.Fatal(diff)

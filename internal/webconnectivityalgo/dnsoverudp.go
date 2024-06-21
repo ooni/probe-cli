@@ -26,6 +26,6 @@ var dnsOverUDPResolverAddressIPv4 = []string{
 
 // RandomDNSOverUDPResolverEndpointIPv4 returns a random DNS-over-UDP resolver endpoint using IPv4.
 func RandomDNSOverUDPResolverEndpointIPv4() string {
-	idx := rand.Intn(len(dnsOverUDPResolverAddressIPv4))
+	idx := rand.Intn(len(dnsOverUDPResolverAddressIPv4)) // #nosec G404 -- not really important
 	return net.JoinHostPort(dnsOverUDPResolverAddressIPv4[idx], "53")
 }

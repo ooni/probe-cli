@@ -126,5 +126,5 @@ func (tp *TLSSNIProxy) handle(clientConn net.Conn) {
 
 func (tp *TLSSNIProxy) forward(wg *sync.WaitGroup, left, right net.Conn) {
 	defer wg.Done()
-	io.Copy(right, left)
+	_, _ = io.Copy(right, left)
 }

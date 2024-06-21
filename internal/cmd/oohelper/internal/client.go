@@ -108,7 +108,8 @@ func (oo OOClient) Do(ctx context.Context, config OOConfig) (*CtrlResponse, erro
 			"Accept-Language": {model.HTTPHeaderAcceptLanguage},
 			"User-Agent":      {model.HTTPHeaderUserAgent},
 		},
-		TCPConnect: endpoints,
+		TCPConnect:   endpoints,
+		XQUICEnabled: true,
 	}
 	data, err := json.Marshal(creq)
 	runtimex.PanicOnError(err, "oohelper: cannot marshal control request")

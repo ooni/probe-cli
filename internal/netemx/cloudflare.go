@@ -192,7 +192,7 @@ func CloudflareCAPTCHAHandler() http.Handler {
 		if address == DefaultClientAddress {
 			log.Printf("CLOUDFLARE_CACHE: request from %s => 503", address)
 			w.WriteHeader(http.StatusServiceUnavailable)
-			w.Write(cloudflareCAPTCHAWebPage)
+			_, _ = w.Write(cloudflareCAPTCHAWebPage)
 			return
 
 		}
@@ -200,6 +200,6 @@ func CloudflareCAPTCHAHandler() http.Handler {
 		// otherwise => 200
 		log.Printf("CLOUDFLARE_CACHE: request from %s => 200", address)
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(ExampleWebPage))
+		_, _ = w.Write([]byte(ExampleWebPage))
 	})
 }

@@ -57,30 +57,18 @@ func TestExperiment(t *testing.T) {
 		}
 	})
 
-	t.Run("MeasureAsync", func(t *testing.T) {
-		expected := errors.New("mocked err")
-		e := &Experiment{
-			MockMeasureAsync: func(ctx context.Context, input string) (<-chan *model.Measurement, error) {
-				return nil, expected
-			},
-		}
-		out, err := e.MeasureAsync(context.Background(), "xo")
-		if !errors.Is(err, expected) {
-			t.Fatal("unexpected err", err)
-		}
-		if out != nil {
-			t.Fatal("expected nil")
-		}
-	})
-
 	t.Run("MeasureWithContext", func(t *testing.T) {
 		expected := errors.New("mocked err")
 		e := &Experiment{
-			MockMeasureWithContext: func(ctx context.Context, input string) (measurement *model.Measurement, err error) {
+			MockMeasureWithContext: func(
+				ctx context.Context, target model.ExperimentTarget) (measurement *model.Measurement, err error) {
 				return nil, expected
 			},
 		}
-		out, err := e.MeasureWithContext(context.Background(), "xo")
+		out, err := e.MeasureWithContext(
+			context.Background(),
+			model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("https://www.example.com/"),
+		)
 		if !errors.Is(err, expected) {
 			t.Fatal("unexpected err", err)
 		}

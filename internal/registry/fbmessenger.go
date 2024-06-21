@@ -10,14 +10,18 @@ import (
 )
 
 func init() {
-	AllExperiments["facebook_messenger"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
-			return fbmessenger.NewExperimentMeasurer(
-				*config.(*fbmessenger.Config),
-			)
-		},
-		config:           &fbmessenger.Config{},
-		enabledByDefault: true,
-		inputPolicy:      model.InputNone,
+	const canonicalName = "facebook_messenger"
+	AllExperiments[canonicalName] = func() *Factory {
+		return &Factory{
+			build: func(config interface{}) model.ExperimentMeasurer {
+				return fbmessenger.NewExperimentMeasurer(
+					*config.(*fbmessenger.Config),
+				)
+			},
+			canonicalName:    canonicalName,
+			config:           &fbmessenger.Config{},
+			enabledByDefault: true,
+			inputPolicy:      model.InputNone,
+		}
 	}
 }

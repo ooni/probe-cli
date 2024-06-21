@@ -7,6 +7,3 @@ Android build artifacts inside this directory as well.
 
 The [ios](ios) directory contains iOS specific code. We will put iOS
 build artifacts inside this directory as well.
-
-The [gomobile](gomobile) script is the top-level entry point for building
-[../pkg/oonimkall](../pkg/oonimkall/) for Android and iOS.

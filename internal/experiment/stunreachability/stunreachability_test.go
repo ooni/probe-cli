@@ -46,7 +46,7 @@ func TestRunWithoutInput(t *testing.T) {
 func TestRunWithInvalidURL(t *testing.T) {
 	measurer := NewExperimentMeasurer(Config{})
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementTarget("\t") // <- invalid URL
+	measurement.Input = model.MeasurementInput("\t") // <- invalid URL
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
@@ -61,7 +61,7 @@ func TestRunWithInvalidURL(t *testing.T) {
 func TestRunWithNoPort(t *testing.T) {
 	measurer := NewExperimentMeasurer(Config{})
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementTarget("stun://stun.ekiga.net")
+	measurement.Input = model.MeasurementInput("stun://stun.ekiga.net")
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
@@ -76,7 +76,7 @@ func TestRunWithNoPort(t *testing.T) {
 func TestRunWithUnsupportedURLScheme(t *testing.T) {
 	measurer := NewExperimentMeasurer(Config{})
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementTarget("https://stun.ekiga.net:3478")
+	measurement.Input = model.MeasurementInput("https://stun.ekiga.net:3478")
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
@@ -95,7 +95,7 @@ func TestRunWithInput(t *testing.T) {
 
 	measurer := NewExperimentMeasurer(Config{})
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementTarget(defaultInput)
+	measurement.Input = model.MeasurementInput(defaultInput)
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
@@ -127,7 +127,7 @@ func TestCancelledContext(t *testing.T) {
 	cancel() // immediately fail everything
 	measurer := NewExperimentMeasurer(Config{})
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementTarget(defaultInput)
+	measurement.Input = model.MeasurementInput(defaultInput)
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
@@ -166,7 +166,7 @@ func TestNewClientFailure(t *testing.T) {
 	}
 	measurer := NewExperimentMeasurer(*config)
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementTarget(defaultInput)
+	measurement.Input = model.MeasurementInput(defaultInput)
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
@@ -202,7 +202,7 @@ func TestStartFailure(t *testing.T) {
 	}
 	measurer := NewExperimentMeasurer(*config)
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementTarget(defaultInput)
+	measurement.Input = model.MeasurementInput(defaultInput)
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,
@@ -242,7 +242,7 @@ func TestReadFailure(t *testing.T) {
 	}
 	measurer := NewExperimentMeasurer(*config)
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementTarget(defaultInput)
+	measurement.Input = model.MeasurementInput(defaultInput)
 	args := &model.ExperimentArgs{
 		Callbacks:   model.NewPrinterCallbacks(log.Log),
 		Measurement: measurement,

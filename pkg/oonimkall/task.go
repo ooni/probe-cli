@@ -49,7 +49,7 @@ func StartTask(input string) (*Task, error) {
 		r := newRunner(&settings, emitter)
 		r.Run(ctx)
 		task.out <- nil // signal that we're done w/o closing the channel
-		emitter.Close()
+		_ = emitter.Close()
 		close(task.isstopped)
 	}()
 	return task, nil

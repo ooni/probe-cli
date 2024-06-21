@@ -290,7 +290,7 @@ func InitDefaultConfig(home string) (*config.Config, error) {
 	if err != nil {
 		if os.IsNotExist(err) {
 			log.Debugf("writing default config to %s", configPath)
-			if err = os.WriteFile(configPath, defaultConfig, 0644); err != nil {
+			if err = os.WriteFile(configPath, defaultConfig, 0600); err != nil {
 				return nil, err
 			}
 			// If the user did the informed consent procedure in

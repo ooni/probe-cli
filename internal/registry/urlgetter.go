@@ -10,14 +10,18 @@ import (
 )
 
 func init() {
-	AllExperiments["urlgetter"] = &Factory{
-		build: func(config interface{}) model.ExperimentMeasurer {
-			return urlgetter.NewExperimentMeasurer(
-				*config.(*urlgetter.Config),
-			)
-		},
-		config:           &urlgetter.Config{},
-		enabledByDefault: true,
-		inputPolicy:      model.InputStrictlyRequired,
+	const canonicalName = "urlgetter"
+	AllExperiments[canonicalName] = func() *Factory {
+		return &Factory{
+			build: func(config interface{}) model.ExperimentMeasurer {
+				return urlgetter.NewExperimentMeasurer(
+					*config.(*urlgetter.Config),
+				)
+			},
+			canonicalName:    canonicalName,
+			config:           &urlgetter.Config{},
+			enabledByDefault: true,
+			inputPolicy:      model.InputStrictlyRequired,
+		}
 	}
 }

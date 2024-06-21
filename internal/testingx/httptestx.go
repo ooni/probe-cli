@@ -6,8 +6,10 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/ooni/netem"
+	"github.com/ooni/probe-cli/v3/internal/randx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -66,7 +68,7 @@ func MustNewHTTPServerEx(addr *net.TCPAddr, httpListener TCPListener, handler ht
 		Path:   "/",
 	}
 	srv := &HTTPServer{
-		Config:       &http.Server{Handler: handler},
+		Config:       &http.Server{Handler: handler}, // #nosec G112 - just a testing server
 		Listener:     listener,
 		TLS:          nil,
 		URL:          baseURL.String(),
@@ -111,7 +113,7 @@ func MustNewHTTPServerTLSEx(
 	otherNames = append(otherNames, extraSNIs...)
 
 	srv := &HTTPServer{
-		Config:       &http.Server{Handler: handler},
+		Config:       &http.Server{Handler: handler}, // #nosec G112 - just a testing server
 		Listener:     listener,
 		TLS:          ca.MustNewServerTLSConfig(commonName, otherNames...),
 		URL:          baseURL.String(),
@@ -143,7 +145,7 @@ var HTTPBlockpage451 = []byte(`<html><head>
 func HTTPHandlerBlockpage451() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnavailableForLegalReasons)
-		w.Write(HTTPBlockpage451)
+		_, _ = w.Write(HTTPBlockpage451)
 	})
 }
 
@@ -173,14 +175,7 @@ func HTTPHandlerTimeout() http.Handler {
 }
 
 func httpHandlerHijack(w http.ResponseWriter, r *http.Request, policy string) {
-	// Note:
-	//
-	// 1. we assume we can hihack the connection
-	//
-	// 2. Hijack won't fail the first time it's invoked
-	hijacker := w.(http.Hijacker)
-	conn, _ := runtimex.Try2(hijacker.Hijack())
-
+	conn := httpHijack(w)
 	defer conn.Close()
 
 	switch policy {
@@ -193,4 +188,41 @@ func httpHandlerHijack(w http.ResponseWriter, r *http.Request, policy string) {
 	case "eof":
 		// nothing
 	}
+}
+
+// HTTPHandlerResetWhileReadingBody returns a handler that sends a
+// connection reset by peer while the client is reading the body.
+func HTTPHandlerResetWhileReadingBody() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn := httpHijack(w)
+		defer conn.Close()
+
+		// write the HTTP response headers
+		_, _ = conn.Write([]byte("HTTP/1.1 200 Ok\r\n"))
+		_, _ = conn.Write([]byte("Content-Type: text/html\r\n"))
+		_, _ = conn.Write([]byte("Content-Length: 65535\r\n"))
+		_, _ = conn.Write([]byte("\r\n"))
+
+		// start writing the response
+		content := randx.Letters(32768)
+		_, _ = conn.Write([]byte(content))
+
+		// sleep for half a second simulating something wrong
+		time.Sleep(500 * time.Millisecond)
+
+		// finally issue reset for the conn
+		tcpMaybeResetNetConn(conn)
+	})
+}
+
+// httpHijack is a convenience function to hijack the underlying connection.
+func httpHijack(w http.ResponseWriter) net.Conn {
+	// Note:
+	//
+	// 1. we assume we can hihack the connection
+	//
+	// 2. Hijack won't fail the first time it's invoked
+	hijacker := w.(http.Hijacker)
+	conn, _ := runtimex.Try2(hijacker.Hijack())
+	return conn
 }

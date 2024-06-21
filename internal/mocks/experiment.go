@@ -16,10 +16,8 @@ type Experiment struct {
 
 	MockReportID func() string
 
-	MockMeasureAsync func(ctx context.Context, input string) (<-chan *model.Measurement, error)
-
 	MockMeasureWithContext func(
-		ctx context.Context, input string) (measurement *model.Measurement, err error)
+		ctx context.Context, target model.ExperimentTarget) (measurement *model.Measurement, err error)
 
 	MockSaveMeasurement func(measurement *model.Measurement, filePath string) error
 
@@ -45,14 +43,9 @@ func (e *Experiment) ReportID() string {
 	return e.MockReportID()
 }
 
-func (e *Experiment) MeasureAsync(
-	ctx context.Context, input string) (<-chan *model.Measurement, error) {
-	return e.MockMeasureAsync(ctx, input)
-}
-
 func (e *Experiment) MeasureWithContext(
-	ctx context.Context, input string) (measurement *model.Measurement, err error) {
-	return e.MockMeasureWithContext(ctx, input)
+	ctx context.Context, target model.ExperimentTarget) (measurement *model.Measurement, err error) {
+	return e.MockMeasureWithContext(ctx, target)
 }
 
 func (e *Experiment) SaveMeasurement(measurement *model.Measurement, filePath string) error {

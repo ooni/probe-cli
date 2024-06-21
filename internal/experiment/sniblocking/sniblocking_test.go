@@ -445,7 +445,7 @@ func TestMeasurerRun(t *testing.T) {
 			})
 			measurer.(*Measurer).cache = cache
 			measurement := &model.Measurement{
-				Input: model.MeasurementTarget(testsni),
+				Input: model.MeasurementInput(testsni),
 			}
 			args := &model.ExperimentArgs{
 				Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),

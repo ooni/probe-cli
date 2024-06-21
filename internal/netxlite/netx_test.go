@@ -68,7 +68,7 @@ func TestNetxWithNetem(t *testing.T) {
 	webServerUDPListener := runtimex.Try1(webServerStack.ListenUDP("udp", webServerUDPAddress))
 	webServerUDPServer := &http3.Server{
 		TLSConfig:  webServerTLSConfig,
-		QuicConfig: &quic.Config{},
+		QUICConfig: &quic.Config{},
 		Handler:    webServerHandler,
 	}
 	go webServerUDPServer.Serve(webServerUDPListener)

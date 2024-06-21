@@ -109,11 +109,11 @@ func (managerDarwin) writePlist() error {
 		return err
 	}
 	log.Infof("exec: mkdir -p %s", plistDir)
-	if err := os.MkdirAll(plistDir, 0755); err != nil {
+	if err := os.MkdirAll(plistDir, 0700); err != nil {
 		return err
 	}
 	log.Infof("exec: writePlist(%s)", plistPath)
-	return os.WriteFile(plistPath, out.Bytes(), 0644)
+	return os.WriteFile(plistPath, out.Bytes(), 0600)
 }
 
 func (managerDarwin) start() error {

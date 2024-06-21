@@ -72,7 +72,7 @@ builds use the latest commit of the `master` branch.
 To setup development for this repository you need Go >= 1.15. The
 `./script/go.bash` script will automatically download the expected
 version of Go mentioned in the [GOVERSION](GOVERSION) file (i.e.,
-go1.20.14) and use it for building.
+go1.21.10) and use it for building.
 
 You can also bypass `./script/go.bash` and build ooniprobe manually using
 `go build ...` but, in such a case, note that:
@@ -146,9 +146,10 @@ using the correct version of Go. Running this script as follows:
 Is equivalent to running these commands:
 
 ```bash
-go install -v golang.org/dl/go1.20.14@latest
-$HOME/go/bin/go1.20.14 download
-$HOME/sdk/go1.20.14/bin/go build -v -ldflags '-s -w' ./internal/cmd/miniooni
+go install -v golang.org/dl/go1.21.10@latest
+$HOME/go/bin/go1.21.10 download
+export GOTOOLCHAIN=local
+$HOME/sdk/go1.21.10/bin/go build -v -ldflags '-s -w' ./internal/cmd/miniooni
 ```
 
 ### Common build targets

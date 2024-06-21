@@ -2,32 +2,46 @@ package enginelocate
 
 import (
 	"context"
-	"net/http"
+	"net"
 	"regexp"
 	"strings"
 
-	"github.com/ooni/probe-cli/v3/internal/httpx"
+	"github.com/ooni/probe-cli/v3/internal/httpclientx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func cloudflareIPLookup(
 	ctx context.Context,
-	httpClient *http.Client,
+	httpClient model.HTTPClient,
 	logger model.Logger,
 	userAgent string,
 	resolver model.Resolver,
 ) (string, error) {
-	data, err := (&httpx.APIClientTemplate{
-		BaseURL:    "https://www.cloudflare.com",
-		HTTPClient: httpClient,
-		Logger:     logger,
-		UserAgent:  model.HTTPHeaderUserAgent,
-	}).WithBodyLogging().Build().FetchResource(ctx, "/cdn-cgi/trace")
+	// get the raw response body
+	data, err := httpclientx.GetRaw(
+		ctx,
+		httpclientx.NewEndpoint("https://www.cloudflare.com/cdn-cgi/trace"),
+		&httpclientx.Config{
+			Authorization: "", // not needed
+			Client:        httpClient,
+			Logger:        logger,
+			UserAgent:     userAgent,
+		})
+
+	// handle the error case
 	if err != nil {
 		return model.DefaultProbeIP, err
 	}
+
+	// find the IP addr
 	r := regexp.MustCompile("(?:ip)=(.*)")
 	ip := strings.Trim(string(r.Find(data)), "ip=")
-	logger.Debugf("cloudflare: body: %s", ip)
+
+	// make sure the IP addr is valid
+	if net.ParseIP(ip) == nil {
+		return model.DefaultProbeIP, ErrInvalidIPAddress
+	}
+
+	// done!
 	return ip, nil
 }

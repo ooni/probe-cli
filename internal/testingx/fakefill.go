@@ -42,7 +42,7 @@ func (ff *FakeFiller) getRandLocked() *rand.Rand {
 		if ff.Now != nil {
 			now = ff.Now
 		}
-		ff.rnd = rand.New(rand.NewSource(now().UnixNano()))
+		ff.rnd = rand.New(rand.NewSource(now().UnixNano())) // #nosec G404 -- used for testing
 	}
 	return ff.rnd
 }
@@ -91,6 +91,13 @@ func (ff *FakeFiller) doFill(v reflect.Value) {
 		// switch to the element
 		v = v.Elem()
 	}
+
+	// make sure we skip initialization of fields we cannot initialize
+	// anyway because they're private or immutable
+	if !v.CanSet() {
+		return
+	}
+
 	switch v.Type().Kind() {
 	case reflect.String:
 		v.SetString(ff.getRandomString())

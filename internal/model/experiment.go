@@ -7,7 +7,12 @@ package model
 
 import (
 	"context"
+	"errors"
+	"fmt"
 )
+
+// ErrNoAvailableTestHelpers is emitted when there are no available test helpers.
+var ErrNoAvailableTestHelpers = errors.New("no available helpers")
 
 // ExperimentSession is the experiment's view of a session.
 type ExperimentSession interface {
@@ -16,6 +21,9 @@ type ExperimentSession interface {
 
 	// DefaultHTTPClient returns the default HTTPClient used by the session.
 	DefaultHTTPClient() HTTPClient
+
+	// FetchOpenVPNConfig returns vpn config as a serialized JSON or an error.
+	FetchOpenVPNConfig(ctx context.Context, provider, cc string) (*OOAPIVPNProviderConfig, error)
 
 	// FetchPsiphonConfig returns psiphon's config as a serialized JSON or an error.
 	FetchPsiphonConfig(ctx context.Context) ([]byte, error)
@@ -49,57 +57,13 @@ type ExperimentSession interface {
 	UserAgent() string
 }
 
-// ExperimentAsyncTestKeys is the type of test keys returned by an experiment
-// when running in async fashion rather than in sync fashion.
-type ExperimentAsyncTestKeys struct {
-	// Extensions contains the extensions used by this experiment.
-	Extensions map[string]int64
-
-	// Input is the input this measurement refers to.
-	Input MeasurementTarget
-
-	// MeasurementRuntime is the total measurement runtime.
-	MeasurementRuntime float64
-
-	// TestHelpers contains the test helpers used in the experiment
-	TestHelpers map[string]interface{}
-
-	// TestKeys contains the actual test keys.
-	TestKeys interface{}
-}
-
-// ExperimentMeasurerAsync is a measurer that can run in async fashion.
-//
-// Currently this functionality is optional, but we will likely
-// migrate all experiments to use this functionality in 2022.
-type ExperimentMeasurerAsync interface {
-	// RunAsync runs the experiment in async fashion.
-	//
-	// Arguments:
-	//
-	// - ctx is the context for deadline/timeout/cancellation
-	//
-	// - sess is the measurement session
-	//
-	// - input is the input URL to measure
-	//
-	// - callbacks contains the experiment callbacks
-	//
-	// Returns either a channel where TestKeys are posted or an error.
-	//
-	// An error indicates that specific preconditions for running the experiment
-	// are not met (e.g., the input URL is invalid).
-	//
-	// On success, the experiment will post on the channel each new
-	// measurement until it is done and closes the channel.
-	RunAsync(ctx context.Context, sess ExperimentSession, input string,
-		callbacks ExperimentCallbacks) (<-chan *ExperimentAsyncTestKeys, error)
-}
-
-// ExperimentCallbacks contains experiment event-handling callbacks
+// ExperimentCallbacks contains experiment event-handling callbacks.
 type ExperimentCallbacks interface {
-	// OnProgress provides information about an experiment progress.
-	OnProgress(percentage float64, message string)
+	// OnProgress provides information about the experiment's progress.
+	//
+	// The prog field is a number between 0.0 and 1.0 representing progress, where
+	// 0.0 corresponds to 0% and 1.0 corresponds to 100%.
+	OnProgress(prog float64, message string)
 }
 
 // PrinterCallbacks is the default event handler
@@ -117,6 +81,37 @@ func (d PrinterCallbacks) OnProgress(percentage float64, message string) {
 	d.Logger.Infof("[%5.1f%%] %s", percentage*100, message)
 }
 
+// ExperimentTarget contains a target for the experiment to measure.
+type ExperimentTarget interface {
+	// Category returns the github.com/citizenlab/test-lists category
+	// code for this piece of richer input.
+	//
+	// Return [DefaultCategoryCode] if there's no applicable category code.
+	Category() string
+
+	// Country returns the country code for this
+	// piece of richer input.
+	//
+	// Return [DefaultCountryCode] if there's not applicable country code.
+	Country() string
+
+	// Input returns the experiment input, which is typically a URL.
+	Input() string
+
+	// String MUST return the experiment input.
+	//
+	// Implementation note: previously existing code often times treated
+	// the input as a string and, crucially, printed it using %s. To be
+	// robust with respect to introducing richer input, we would like the
+	// code to print in output the same value as before, which possibly
+	// is processed by the desktop app. This is the reason why we are
+	// introducing an explicit String() method and why we say that this
+	// method MUST return the experiment input.
+	String() string
+}
+
+var _ fmt.Stringer = ExperimentTarget(nil)
+
 // ExperimentArgs contains the arguments passed to an experiment.
 type ExperimentArgs struct {
 	// Callbacks contains MANDATORY experiment callbacks.
@@ -128,6 +123,12 @@ type ExperimentArgs struct {
 
 	// Session is the MANDATORY session the experiment can use.
 	Session ExperimentSession
+
+	// Target is the OPTIONAL target we're measuring.
+	//
+	// Only richer-input-aware experiments use this field. These experiments
+	// SHOULD be defensive and handle the case where this field is nil.
+	Target ExperimentTarget
 }
 
 // ExperimentMeasurer is the interface that allows to run a
@@ -162,51 +163,21 @@ type Experiment interface {
 
 	// ReportID returns the open report's ID, if we have opened a report
 	// successfully before, or an empty string, otherwise.
-	//
-	// Deprecated: new code should use a Submitter.
 	ReportID() string
 
-	// MeasureAsync runs an async measurement. This operation could post
-	// one or more measurements onto the returned channel. We'll close the
-	// channel when we've emitted all the measurements.
+	// MeasureWithContext measures the given experiment target.
 	//
-	// Arguments:
-	//
-	// - ctx is the context for deadline/cancellation/timeout;
-	//
-	// - input is the input (typically a URL but it could also be
-	// just an endpoint or an empty string for input-less experiments
-	// such as, e.g., ndt7 and dash).
-	//
-	// Return value:
-	//
-	// - on success, channel where to post measurements (the channel
-	// will be closed when done) and nil error;
-	//
-	// - on failure, nil channel and non-nil error.
-	MeasureAsync(ctx context.Context, input string) (<-chan *Measurement, error)
-
-	// MeasureWithContext performs a synchronous measurement.
-	//
-	// Return value: strictly either a non-nil measurement and
-	// a nil error or a nil measurement and a non-nil error.
-	//
-	// CAVEAT: while this API is perfectly fine for experiments that
-	// return a single measurement, it will only return the first measurement
-	// when used with an asynchronous experiment.
-	MeasureWithContext(ctx context.Context, input string) (measurement *Measurement, err error)
+	// Return value: either a non-nil measurement and a nil error
+	// or a nil measurement and a non-nil error.
+	MeasureWithContext(ctx context.Context, target ExperimentTarget) (measurement *Measurement, err error)
 
 	// SubmitAndUpdateMeasurementContext submits a measurement and updates the
 	// fields whose value has changed as part of the submission.
-	//
-	// Deprecated: new code should use a Submitter.
 	SubmitAndUpdateMeasurementContext(
 		ctx context.Context, measurement *Measurement) error
 
 	// OpenReportContext will open a report using the given context
 	// to possibly limit the lifetime of this operation.
-	//
-	// Deprecated: new code should use a Submitter.
 	OpenReportContext(ctx context.Context) error
 }
 
@@ -267,8 +238,46 @@ type ExperimentBuilder interface {
 	// SetCallbacks sets the experiment's interactive callbacks.
 	SetCallbacks(callbacks ExperimentCallbacks)
 
-	// NewExperiment creates the experiment instance.
+	// NewExperiment creates the [Experiment] instance.
 	NewExperiment() Experiment
+
+	// NewTargetLoader creates the [ExperimentTargetLoader] instance.
+	NewTargetLoader(config *ExperimentTargetLoaderConfig) ExperimentTargetLoader
+}
+
+// ExperimentTargetLoaderConfig is the configuration to create a new [ExperimentTargetLoader].
+//
+// The zero value is not ready to use; please, init the MANDATORY fields.
+type ExperimentTargetLoaderConfig struct {
+	// CheckInConfig contains OPTIONAL options for the CheckIn API. If not set, then we'll create a
+	// default config. If set but there are fields inside it that are not set, then we will set them
+	// to a default value.
+	CheckInConfig *OOAPICheckInConfig
+
+	// Session is the MANDATORY current measurement session.
+	Session ExperimentTargetLoaderSession
+
+	// StaticInputs contains OPTIONAL input to be added
+	// to the resulting input list if possible.
+	StaticInputs []string
+
+	// SourceFiles contains OPTIONAL files to read input
+	// from. Each file should contain a single input string
+	// per line. We will fail if any file is unreadable
+	// as well as if any file is empty.
+	SourceFiles []string
+}
+
+// ExperimentTargetLoaderSession is the session according to [ExperimentTargetLoader].
+type ExperimentTargetLoaderSession interface {
+	// CheckIn invokes the check-in API.
+	CheckIn(ctx context.Context, config *OOAPICheckInConfig) (*OOAPICheckInResult, error)
+
+	// FetchOpenVPNConfig fetches the OpenVPN experiment configuration.
+	FetchOpenVPNConfig(ctx context.Context, provider, cc string) (*OOAPIVPNProviderConfig, error)
+
+	// Logger returns the logger to use.
+	Logger() Logger
 }
 
 // ExperimentOptionInfo contains info about an experiment option.
@@ -280,9 +289,9 @@ type ExperimentOptionInfo struct {
 	Type string
 }
 
-// ExperimentInputLoader loads inputs from local or remote sources.
-type ExperimentInputLoader interface {
-	Load(ctx context.Context) ([]OOAPIURLInfo, error)
+// ExperimentTargetLoader loads targets from local or remote sources.
+type ExperimentTargetLoader interface {
+	Load(ctx context.Context) ([]ExperimentTarget, error)
 }
 
 // Submitter submits a measurement to the OONI collector.

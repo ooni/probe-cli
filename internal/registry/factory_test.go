@@ -1,17 +1,22 @@
 package registry
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math"
 	"os"
 	"testing"
 
+	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/checkincache"
 	"github.com/ooni/probe-cli/v3/internal/experiment/webconnectivitylte"
+	"github.com/ooni/probe-cli/v3/internal/experimentname"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 type fakeExperimentConfig struct {
@@ -295,6 +300,15 @@ func TestExperimentBuilderSetOptionAny(t *testing.T) {
 		ExpectErr:     ErrCannotSetIntegerOption,
 		ExpectConfig:  &fakeExperimentConfig{},
 	}, {
+		TestCaseName:  "[int] for float64 with zero fractional value",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "Value",
+		FieldValue:    float64(16.0),
+		ExpectErr:     nil,
+		ExpectConfig: &fakeExperimentConfig{
+			Value: 16,
+		},
+	}, {
 		TestCaseName:  "[string] for serialized bool value while setting a string value",
 		InitialConfig: &fakeExperimentConfig{},
 		FieldName:     "String",
@@ -453,6 +467,11 @@ func TestNewFactory(t *testing.T) {
 		"ndt": {
 			enabledByDefault: true,
 			inputPolicy:      model.InputNone,
+			interruptible:    true,
+		},
+		"openvpn": {
+			enabledByDefault: true,
+			inputPolicy:      model.InputOrQueryBackend,
 			interruptible:    true,
 		},
 		"portfiltering": {
@@ -686,7 +705,7 @@ func TestNewFactory(t *testing.T) {
 
 			// get experiment expectations -- note that here we must canonicalize the
 			// experiment name otherwise we won't find it into the map when testing non-canonical names
-			expectations := expectationsMap[CanonicalizeExperimentName(tc.experimentName)]
+			expectations := expectationsMap[experimentname.Canonicalize(tc.experimentName)]
 			if expectations == nil {
 				t.Fatal("no expectations for", tc.experimentName)
 			}
@@ -793,6 +812,133 @@ func TestNewFactory(t *testing.T) {
 		}
 		if factory != nil {
 			t.Fatal("expected nil factory here")
+		}
+	})
+}
+
+// Make sure the target loader for web connectivity is WAI when using no static inputs.
+func TestFactoryNewTargetLoaderWebConnectivity(t *testing.T) {
+	// construct the proper factory instance
+	store := &kvstore.Memory{}
+	factory, err := NewFactory("web_connectivity", store, log.Log)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// define the expected error.
+	expected := errors.New("antani")
+
+	// create suitable loader config.
+	config := &model.ExperimentTargetLoaderConfig{
+		CheckInConfig: &model.OOAPICheckInConfig{
+			// nothing
+		},
+		Session: &mocks.Session{
+			MockCheckIn: func(ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInResult, error) {
+				return nil, expected
+			},
+			MockLogger: func() model.Logger {
+				return log.Log
+			},
+		},
+		StaticInputs: nil,
+		SourceFiles:  nil,
+	}
+
+	// obtain the loader
+	loader := factory.NewTargetLoader(config)
+
+	// attempt to load targets
+	targets, err := loader.Load(context.Background())
+
+	// make sure we've got the expected error
+	if !errors.Is(err, expected) {
+		t.Fatal("unexpected error", err)
+	}
+
+	// make sure there are no targets
+	if len(targets) != 0 {
+		t.Fatal("expected zero length targets")
+	}
+}
+
+// customConfig is a custom config for [TestFactoryCustomTargetLoaderForRicherInput].
+type customConfig struct{}
+
+// customTargetLoader is a custom target loader for [TestFactoryCustomTargetLoaderForRicherInput].
+type customTargetLoader struct{}
+
+// Load implements [model.ExperimentTargetLoader].
+func (c *customTargetLoader) Load(ctx context.Context) ([]model.ExperimentTarget, error) {
+	panic("should not be called")
+}
+
+func TestFactoryNewTargetLoader(t *testing.T) {
+	t.Run("with custom target loader", func(t *testing.T) {
+		// create factory creating a custom target loader
+		factory := &Factory{
+			build:            nil,
+			canonicalName:    "",
+			config:           &customConfig{},
+			enabledByDefault: false,
+			inputPolicy:      "",
+			interruptible:    false,
+			newLoader: func(config *targetloading.Loader, options any) model.ExperimentTargetLoader {
+				return &customTargetLoader{}
+			},
+		}
+
+		// create config for creating a new target loader
+		config := &model.ExperimentTargetLoaderConfig{
+			CheckInConfig: &model.OOAPICheckInConfig{ /* nothing */ },
+			Session: &mocks.Session{
+				MockLogger: func() model.Logger {
+					return model.DiscardLogger
+				},
+			},
+			StaticInputs: []string{},
+			SourceFiles:  []string{},
+		}
+
+		// create the loader
+		loader := factory.NewTargetLoader(config)
+
+		// make sure the type is the one we expected
+		if _, good := loader.(*customTargetLoader); !good {
+			t.Fatalf("expected a *customTargetLoader, got %T", loader)
+		}
+	})
+
+	t.Run("with default target loader", func(t *testing.T) {
+		// create factory creating a default target loader
+		factory := &Factory{
+			build:            nil,
+			canonicalName:    "",
+			config:           &customConfig{},
+			enabledByDefault: false,
+			inputPolicy:      "",
+			interruptible:    false,
+			newLoader:        nil, // explicitly nil
+		}
+
+		// create config for creating a new target loader
+		config := &model.ExperimentTargetLoaderConfig{
+			CheckInConfig: &model.OOAPICheckInConfig{ /* nothing */ },
+			Session: &mocks.Session{
+				MockLogger: func() model.Logger {
+					return model.DiscardLogger
+				},
+			},
+			StaticInputs: []string{},
+			SourceFiles:  []string{},
+		}
+
+		// create the loader
+		loader := factory.NewTargetLoader(config)
+
+		// make sure the type is the one we expected
+		if _, good := loader.(*targetloading.Loader); !good {
+			t.Fatalf("expected a *targetloading.Loader, got %T", loader)
 		}
 	})
 }

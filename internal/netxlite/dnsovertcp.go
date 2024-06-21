@@ -88,7 +88,7 @@ func (t *DNSOverTCPTransport) RoundTrip(
 	}
 	defer conn.Close()
 	const iotimeout = 10 * time.Second
-	conn.SetDeadline(time.Now().Add(iotimeout))
+	_ = conn.SetDeadline(time.Now().Add(iotimeout))
 	// Write request
 	buf := []byte{byte(len(rawQuery) >> 8)}
 	buf = append(buf, byte(len(rawQuery)))

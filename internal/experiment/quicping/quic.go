@@ -49,7 +49,7 @@ func buildPacket() ([]byte, connectionID, connectionID) {
 	// generate random payload
 	minPayloadSize := 1200 - 14 - (len(destConnID) + len(srcConnID))
 	randomPayload := make([]byte, minPayloadSize)
-	rand.Read(randomPayload)
+	_ = runtimex.Try1(rand.Read(randomPayload))
 
 	clientSecret, _ := computeSecrets(destConnID)
 	encrypted := encryptPayload(randomPayload, destConnID, clientSecret)

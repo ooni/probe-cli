@@ -18,6 +18,9 @@ type Session struct {
 	MockFetchTorTargets func(
 		ctx context.Context, cc string) (map[string]model.OOAPITorTarget, error)
 
+	MockFetchOpenVPNConfig func(
+		ctx context.Context, provider, cc string) (*model.OOAPIVPNProviderConfig, error)
+
 	MockKeyValueStore func() model.KeyValueStore
 
 	MockLogger func() model.Logger
@@ -56,6 +59,16 @@ type Session struct {
 
 	MockCheckIn func(ctx context.Context,
 		config *model.OOAPICheckInConfig) (*model.OOAPICheckInResult, error)
+
+	MockClose func() error
+
+	MockMaybeLookupBackendsContext func(ctx context.Context) error
+
+	MockMaybeLookupLocationContext func(ctx context.Context) error
+
+	MockResolverASNString func() string
+
+	MockResolverNetworkName func() string
 }
 
 func (sess *Session) GetTestHelpersByName(name string) ([]model.OOAPIService, bool) {
@@ -68,6 +81,11 @@ func (sess *Session) DefaultHTTPClient() model.HTTPClient {
 
 func (sess *Session) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
 	return sess.MockFetchPsiphonConfig(ctx)
+}
+
+func (sess *Session) FetchOpenVPNConfig(
+	ctx context.Context, provider, cc string) (*model.OOAPIVPNProviderConfig, error) {
+	return sess.MockFetchOpenVPNConfig(ctx, provider, cc)
 }
 
 func (sess *Session) FetchTorTargets(
@@ -150,4 +168,24 @@ func (sess *Session) NewSubmitter(ctx context.Context) (model.Submitter, error) 
 func (sess *Session) CheckIn(ctx context.Context,
 	config *model.OOAPICheckInConfig) (*model.OOAPICheckInResult, error) {
 	return sess.MockCheckIn(ctx, config)
+}
+
+func (sess *Session) Close() error {
+	return sess.MockClose()
+}
+
+func (sess *Session) MaybeLookupBackendsContext(ctx context.Context) error {
+	return sess.MockMaybeLookupBackendsContext(ctx)
+}
+
+func (sess *Session) MaybeLookupLocationContext(ctx context.Context) error {
+	return sess.MockMaybeLookupLocationContext(ctx)
+}
+
+func (sess *Session) ResolverASNString() string {
+	return sess.MockResolverASNString()
+}
+
+func (sess *Session) ResolverNetworkName() string {
+	return sess.MockResolverNetworkName()
 }

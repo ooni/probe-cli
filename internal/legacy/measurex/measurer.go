@@ -251,7 +251,7 @@ func (mx *Measurer) TCPConnect(ctx context.Context, address string) *EndpointMea
 	conn, _ := mx.TCPConnectWithDB(ctx, db, address)
 	measurement := db.AsMeasurement()
 	if conn != nil {
-		conn.Close()
+		_ = conn.Close()
 	}
 	return &EndpointMeasurement{
 		Network:     NetworkTCP,
@@ -322,7 +322,7 @@ func (mx *Measurer) TLSConnectAndHandshake(ctx context.Context,
 	conn, _ := mx.TLSConnectAndHandshakeWithDB(ctx, db, address, config)
 	measurement := db.AsMeasurement()
 	if conn != nil {
-		conn.Close()
+		_ = conn.Close()
 	}
 	return &EndpointMeasurement{
 		Network:     NetworkTCP,
@@ -393,7 +393,7 @@ func (mx *Measurer) QUICHandshake(ctx context.Context, address string,
 	measurement := db.AsMeasurement()
 	if qconn != nil {
 		// TODO(bassosimone): close connection with correct message
-		qconn.CloseWithError(0, "")
+		_ = qconn.CloseWithError(0, "")
 	}
 	return &EndpointMeasurement{
 		Network:     NetworkUDP,
@@ -449,7 +449,7 @@ func (mx *Measurer) HTTPEndpointGet(
 	ctx context.Context, epnt *HTTPEndpoint, jar http.CookieJar) *HTTPEndpointMeasurement {
 	resp, m, _ := mx.httpEndpointGet(ctx, epnt, jar)
 	if resp != nil {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 	return m
 }
@@ -561,11 +561,12 @@ func (mx *Measurer) httpEndpointGetHTTPS(ctx context.Context,
 	db WritableDB, epnt *HTTPEndpoint, jar http.CookieJar) (*http.Response, error) {
 	// Using a nil cert pool here forces netxlite to use a cached copy of Mozilla's
 	// CA bundle. See https://github.com/ooni/probe/issues/2413 for context.
-	conn, err := mx.TLSConnectAndHandshakeWithDB(ctx, db, epnt.Address, &tls.Config{
-		ServerName: epnt.SNI,
-		NextProtos: epnt.ALPN,
-		RootCAs:    nil,
-	})
+	conn, err := mx.TLSConnectAndHandshakeWithDB(ctx, db, epnt.Address,
+		&tls.Config{ // #nosec G402 - we need to use a large TLS versions range for measuring
+			ServerName: epnt.SNI,
+			NextProtos: epnt.ALPN,
+			RootCAs:    nil,
+		})
 	if err != nil {
 		return nil, err
 	}
@@ -581,11 +582,12 @@ func (mx *Measurer) httpEndpointGetQUIC(ctx context.Context,
 	db WritableDB, epnt *HTTPEndpoint, jar http.CookieJar) (*http.Response, error) {
 	// Using a nil cert pool here forces netxlite to use a cached copy of Mozilla's
 	// CA bundle. See https://github.com/ooni/probe/issues/2413 for context.
-	qconn, err := mx.QUICHandshakeWithDB(ctx, db, epnt.Address, &tls.Config{
-		ServerName: epnt.SNI,
-		NextProtos: epnt.ALPN,
-		RootCAs:    nil,
-	})
+	qconn, err := mx.QUICHandshakeWithDB(ctx, db, epnt.Address,
+		&tls.Config{ // #nosec G402 - we need to use a large TLS versions range for measuring
+			ServerName: epnt.SNI,
+			NextProtos: epnt.ALPN,
+			RootCAs:    nil,
+		})
 	if err != nil {
 		return nil, err
 	}

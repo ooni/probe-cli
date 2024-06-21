@@ -124,11 +124,11 @@ func genTLSConfig(sni string) *tls.Config {
 	// See https://github.com/ooni/probe/issues/2413 to understand
 	// why we're using nil to force netxlite to use the cached
 	// default Mozilla cert pool.
-	return &tls.Config{
+	return &tls.Config{ // #nosec G402 - we need to use a large TLS versions range for measuring
 		RootCAs:            nil,
 		ServerName:         sni,
 		NextProtos:         []string{"h2", "http/1.1"},
-		InsecureSkipVerify: true,
+		InsecureSkipVerify: true, // #nosec G402 - it's fine to skip verify in a nettest
 	}
 }
 

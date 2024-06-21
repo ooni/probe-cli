@@ -58,7 +58,7 @@ func TestMeasurerRun(t *testing.T) {
 		}
 
 		meas := &model.Measurement{
-			Input: model.MeasurementTarget(input),
+			Input: model.MeasurementInput(input),
 		}
 		sess := &mocks.Session{
 			MockLogger: func() model.Logger { return model.DiscardLogger },

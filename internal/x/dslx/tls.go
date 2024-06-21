@@ -121,7 +121,7 @@ func tlsNewConfig(address string, defaultALPN []string, domain string, logger mo
 	// See https://github.com/ooni/probe/issues/2413 to understand
 	// why we're using nil to force netxlite to use the cached
 	// default Mozilla cert pool.
-	config := &tls.Config{
+	config := &tls.Config{ // #nosec G402 - we need to use a large TLS versions range for measuring
 		NextProtos:         append([]string{}, defaultALPN...),
 		InsecureSkipVerify: false,
 		RootCAs:            nil,
