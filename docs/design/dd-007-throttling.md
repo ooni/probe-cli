@@ -244,7 +244,7 @@ also the possibility of instrumenting the QUIC library to periodically collect
 snapshots about the receiver's state. However, in general, sender stats are
 much more useful to understand QUIC performance. This fact implies that we could
 instrument a QUIC library to observe the sender's state and gather information
-about throttling uploads. (However, the whole design of Web Connectivity is not
+about throttling uploads. (Yet, the whole design of Web Connectivity is not
 such that we upload resources, therefore we would need to figure out whether
 it is possible to overcome this fundamental limitation first.)
 
