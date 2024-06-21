@@ -125,10 +125,15 @@ required to complete the TLS handshake should be a sufficient metric (and, in fa
 _is_ a performance metric used by speed tests such as
 [speed.cloudflare.com](https://speed.cloudflare.com/)).
 
-As of Web Connectivity v0.4, we limit our data collection process to the TLS handshake,
-but Web Connectivity v0.5 will extend the scope and collect up to 64 "read" events
-including when we are downloading the body. The availability of more data will allow
-us to better investigate throttling by analysing more "read" event samples.
+Additionally, in Web Connectivity v0.5, the "read" events data collection does not
+stop after the TLS handshake, therefore, we will have several post-handshake data
+points we could also use to make statements about throttling. The size of the webpage
+fetched from a given country and network, in fact, should also be pretty constant,
+so a reasoning similar to the one made above for the TLS handshake also applies to the
+process of handshadking and then downloading a web page. However, because very long
+downloads could collect lots of "read" events, and because we want to limit the maximum
+amount of "read" events we collected to 64, we have also introduced the following,
+complementary metrics to investigate throttling.
 
 ### Download speed metrics
 
