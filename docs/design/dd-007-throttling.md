@@ -223,7 +223,7 @@ retransmission of the `SYN` segment. The TLS handshake also involves sending TCP
 back and forth in such a fashion that it's possible to extract RTT metrics. Howewer, we
 should be careful to exclude segments sent back to back.
 
-In general, detecting more precisely the characteristics of throttling either
+In general, detecting more precisely the characteristics of throttling
 requires additional research aimed at classifying the stream of events emitted
 by a receiving socket under specific throttling conditions. A possible starting
 point for this research could be ["Strengthening measurements from the edges:
