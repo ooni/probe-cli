@@ -137,7 +137,7 @@ complementary metric to investigate throttling.
 
 ### Download speed metrics
 
-Additionally, Web Connectivity v0.5 collects download speed samples for connections
+Web Connectivity v0.5 also collects download speed samples for connections
 used to access websites. We use the same methodology used by [ndt7](
 https://github.com/m-lab/ndt-server/blob/main/spec/ndt7-protocol.md). We measure
 the cumulative number of bytes received by a connection using a truncated exponential
