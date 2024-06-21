@@ -9,7 +9,6 @@ import (
 	"strings"
 	"syscall"
 	"testing"
-	"time"
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
@@ -563,7 +562,7 @@ func TestTargetLoaderCheckInFailure(t *testing.T) {
 			Error: io.EOF,
 		},
 	}
-	out, err := il.loadRemote(context.Background())
+	out, err := il.loadRemoteWebConnectivity(context.Background())
 	if !errors.Is(err, io.EOF) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
@@ -580,7 +579,7 @@ func TestTargetLoaderCheckInSuccessWithNilWebConnectivity(t *testing.T) {
 			},
 		},
 	}
-	out, err := il.loadRemote(context.Background())
+	out, err := il.loadRemoteWebConnectivity(context.Background())
 	if !errors.Is(err, ErrNoURLsReturned) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
@@ -599,7 +598,7 @@ func TestTargetLoaderCheckInSuccessWithNoURLs(t *testing.T) {
 			},
 		},
 	}
-	out, err := il.loadRemote(context.Background())
+	out, err := il.loadRemoteWebConnectivity(context.Background())
 	if !errors.Is(err, ErrNoURLsReturned) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
@@ -632,97 +631,12 @@ func TestTargetLoaderCheckInSuccessWithSomeURLs(t *testing.T) {
 			},
 		},
 	}
-	out, err := il.loadRemote(context.Background())
+	out, err := il.loadRemoteWebConnectivity(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(expect, out); diff != "" {
 		t.Fatal(diff)
-	}
-}
-
-func TestTargetLoaderOpenVPNSuccessWithNoInput(t *testing.T) {
-	il := &Loader{
-		ExperimentName: "openvpn",
-		InputPolicy:    model.InputOrQueryBackend,
-		Session: &TargetLoaderMockableSession{
-			Error: nil,
-			FetchOpenVPNConfigOutput: &model.OOAPIVPNProviderConfig{
-				Provider: "riseup",
-				Inputs: []string{
-					"openvpn://foo.corp/?address=1.1.1.1:1194&transport=tcp",
-				},
-				DateUpdated: time.Now(),
-			},
-		},
-	}
-	_, err := il.loadRemote(context.Background())
-	if err != nil {
-		t.Fatal("we did not expect an error")
-	}
-}
-
-func TestTargetLoaderOpenVPNSuccessWithNoInputAndAPICall(t *testing.T) {
-	il := &Loader{
-		ExperimentName: "openvpn",
-		InputPolicy:    model.InputOrQueryBackend,
-		Session: &TargetLoaderMockableSession{
-			Error: nil,
-			FetchOpenVPNConfigOutput: &model.OOAPIVPNProviderConfig{
-				Provider: "riseupvpn",
-				Inputs: []string{
-					"openvpn://foo.corp/?address=1.2.3.4:1194&transport=tcp",
-				},
-				DateUpdated: time.Now(),
-			},
-		},
-	}
-	out, err := il.loadRemote(context.Background())
-	if err != nil {
-		t.Fatal("we did not expect an error")
-	}
-	if len(out) != 1 {
-		t.Fatal("we expected output of len=1")
-	}
-}
-
-func TestTargetLoaderOpenVPNWithAPIFailureAndFallback(t *testing.T) {
-	expected := errors.New("mocked API error")
-	il := &Loader{
-		ExperimentName: "openvpn",
-		InputPolicy:    model.InputOrQueryBackend,
-		Session: &TargetLoaderMockableSession{
-			Error: expected,
-		},
-	}
-	out, err := il.loadRemote(context.Background())
-	if err != expected {
-		t.Fatal("we expected an error")
-	}
-	if len(out) != 0 {
-		t.Fatal("we expected no fallback URLs")
-	}
-}
-
-func TestTargetLoaderOpenVPNWithNoReturnedURLs(t *testing.T) {
-	il := &Loader{
-		ExperimentName: "openvpn",
-		InputPolicy:    model.InputOrQueryBackend,
-		Session: &TargetLoaderMockableSession{
-			FetchOpenVPNConfigOutput: &model.OOAPIVPNProviderConfig{
-				Provider:    "riseupvpn",
-				Config:      &model.OOAPIVPNConfig{},
-				Inputs:      []string{},
-				DateUpdated: time.Time{},
-			},
-		},
-	}
-	out, err := il.loadRemote(context.Background())
-	if !errors.Is(err, ErrNoURLsReturned) {
-		t.Fatal("unexpected a error")
-	}
-	if len(out) != 0 {
-		t.Fatal("we expected no fallback URLs")
 	}
 }
 
