@@ -3,7 +3,9 @@ package openvpn
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
@@ -172,4 +174,45 @@ func TestTargetLoaderLoad(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestTargetLoaderLoadFromBackend(t *testing.T) {
+	loader := &targetloading.Loader{
+		ExperimentName: "openvpn",
+		InputPolicy:    model.InputOrQueryBackend,
+		Logger:         model.DiscardLogger,
+		Session:        &mocks.Session{},
+	}
+	sess := &mocks.Session{}
+	sess.MockFetchOpenVPNConfig = func(context.Context, string, string) (*model.OOAPIVPNProviderConfig, error) {
+		return &model.OOAPIVPNProviderConfig{
+			Provider: "riseupvpn",
+			Config:   &model.OOAPIVPNConfig{},
+			Inputs: []string{
+				"openvpn://target0",
+				"openvpn://target1",
+			},
+			DateUpdated: time.Now(),
+		}, nil
+	}
+	tl := &targetLoader{
+		loader:  loader,
+		options: &Config{},
+		session: sess,
+	}
+	targets, err := tl.Load(context.Background())
+	if err != nil {
+		t.Fatal("expected no error")
+	}
+	fmt.Println("targets", targets)
+	if len(targets) != 2 {
+		t.Fatal("expected 2 targets")
+	}
+	if targets[0].String() != "openvpn://target0" {
+		t.Fatal("expected openvpn://target0")
+	}
+	if targets[1].String() != "openvpn://target1" {
+		t.Fatal("expected openvpn://target1")
+	}
+
 }
