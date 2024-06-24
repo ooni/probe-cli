@@ -120,16 +120,6 @@ func (m Measurer) ExperimentVersion() string {
 	return testVersion
 }
 
-func parseEndpoint(input string) (*endpoint, error) {
-	if input == "" {
-		return nil, ErrInputRequired
-	}
-	if ok := isValidProtocol(input); !ok {
-		return nil, ErrInvalidInput
-	}
-	return newEndpointFromInputString(input)
-}
-
 // AuthMethod is the authentication method used by a provider.
 type AuthMethod string
 
@@ -239,7 +229,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	config, input := target.Options, target.URL
 	sess.Logger().Infof("openvpn: using richer input: %+v", input)
 
-	endpoint, err := parseEndpoint(input)
+	endpoint, err := newEndpointFromInputString(input)
 	if err != nil {
 		return err
 	}

@@ -49,6 +49,9 @@ type endpoint struct {
 // "openvpn://provider.corp/?address=1.2.3.4:1194&transport=udp
 // "openvpn+obfs4://provider.corp/address=1.2.3.4:1194?&cert=deadbeef&iat=0"
 func newEndpointFromInputString(uri string) (*endpoint, error) {
+	if uri == "" {
+		return nil, ErrInputRequired
+	}
 	parsedURL, err := url.Parse(uri)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", ErrInvalidInput, err)
@@ -227,14 +230,4 @@ func mergeOpenVPNConfig(
 	)
 
 	return cfg, nil
-}
-
-func isValidProtocol(s string) bool {
-	if strings.HasPrefix(s, "openvpn://") {
-		return true
-	}
-	if strings.HasPrefix(s, "openvpn+obfs4://") {
-		return true
-	}
-	return false
 }

@@ -22,7 +22,25 @@ func Test_newEndpointFromInputString(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "valid endpoint returns good endpoint",
+			name:    "empty input returns error",
+			args:    args{""},
+			want:    nil,
+			wantErr: ErrInputRequired,
+		},
+		{
+			name:    "invalid protocol returns error",
+			args:    args{"bad://foo.bar"},
+			want:    nil,
+			wantErr: ErrInvalidInput,
+		},
+		{
+			name:    "uri with illegal chars returns error",
+			args:    args{"openvpn://\x7f/#"},
+			want:    nil,
+			wantErr: ErrInvalidInput,
+		},
+		{
+			name: "valid input uri returns good endpoint",
 			args: args{"openvpn://riseupvpn.corp/?address=1.1.1.1:1194&transport=tcp"},
 			want: &endpoint{
 				IPAddr:      "1.1.1.1",
@@ -341,23 +359,4 @@ func Test_mergeOpenVPNConfig_with_unknown_provider(t *testing.T) {
 	if !errors.Is(err, ErrInvalidInput) {
 		t.Fatalf("expected invalid input error, got: %v", err)
 	}
-
-}
-
-func Test_IsValidProtocol(t *testing.T) {
-	t.Run("openvpn is valid", func(t *testing.T) {
-		if !isValidProtocol("openvpn://foobar.bar") {
-			t.Error("openvpn:// should be a valid protocol")
-		}
-	})
-	t.Run("openvpn+obfs4 is valid", func(t *testing.T) {
-		if !isValidProtocol("openvpn+obfs4://foobar.bar") {
-			t.Error("openvpn+obfs4:// should be a valid protocol")
-		}
-	})
-	t.Run("openvpn+other is not valid", func(t *testing.T) {
-		if isValidProtocol("openvpn+ss://foobar.bar") {
-			t.Error("openvpn+ss:// should not be a valid protocol")
-		}
-	})
 }
