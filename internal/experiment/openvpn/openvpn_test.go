@@ -253,3 +253,18 @@ func TestSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestTimestampsFromHandshake(t *testing.T) {
+	events := []*vpntracex.Event{{AtTime: 0}, {AtTime: 1}, {AtTime: 2}}
+	t0, tlast, duration := openvpn.TimestampsFromHandshake(events)
+	if t0 != 0 {
+		t.Fatal("expected t0 == 0")
+	}
+	if tlast != 2.0 {
+		t.Fatal("expected t0 == 2")
+	}
+	if duration != 2 {
+		t.Fatal("expected duration == 2")
+	}
+
+}

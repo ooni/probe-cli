@@ -155,17 +155,7 @@ func (m *Measurer) connectAndHandshake(
 	handshakeEvents := handshakeTracer.Trace()
 	port, _ := strconv.Atoi(endpoint.Port)
 
-	var (
-		tFirst        float64
-		tLast         float64
-		bootstrapTime float64
-	)
-
-	if len(handshakeEvents) > 0 {
-		tFirst = handshakeEvents[0].AtTime
-		tLast = handshakeEvents[len(handshakeEvents)-1].AtTime
-		bootstrapTime = tLast - tFirst
-	}
+	t0, t, bootstrapTime := TimestampsFromHandshake(handshakeEvents)
 
 	return &SingleConnection{
 		TCPConnect: trace.FirstTCPConnectOrNil(),
@@ -182,13 +172,27 @@ func (m *Measurer) connectAndHandshake(
 				Auth:        openvpnConfig.OpenVPNOptions().Auth,
 				Compression: string(openvpnConfig.OpenVPNOptions().Compress),
 			},
-			T0:            tFirst,
-			T:             tLast,
+			T0:            t0,
+			T:             t,
 			Tags:          []string{},
 			TransactionID: index,
 		},
 		NetworkEvents: handshakeEvents,
 	}
+}
+
+func TimestampsFromHandshake(events []*vpntracex.Event) (float64, float64, float64) {
+	var (
+		t0       float64
+		t        float64
+		duration float64
+	)
+	if len(events) > 0 {
+		t0 = events[0].AtTime
+		t = events[len(events)-1].AtTime
+		duration = t - t0
+	}
+	return t0, t, duration
 }
 
 // FetchProviderCredentials will extract credentials from the configuration we gathered for a given provider.
