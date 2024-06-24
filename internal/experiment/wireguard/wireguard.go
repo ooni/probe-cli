@@ -33,10 +33,7 @@ var (
 
 // Measurer performs the measurement.
 type Measurer struct {
-	config    Config
-	rawconfig []byte
-	options   options
-
+	options  wireguardOptions
 	events   *eventLogger
 	testName string
 	tnet     *netstack.Net
@@ -71,12 +68,12 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	// TODO(ainghazal): process the input when the backend hands us one.
 	config, _ := target.Options, target.URL
 
-	if err := m.setupConfig(config); err != nil {
+	if err := m.setupWireguardConfig(config); err != nil {
 		return err
 	}
 
 	// 2. create tunnel
-	err = m.createTunnel(sess, zeroTime)
+	err = m.createTunnel(sess, zeroTime, config)
 
 	testkeys := &TestKeys{
 		Success: err == nil,
@@ -99,8 +96,8 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	return nil
 }
 
-func (m *Measurer) setupConfig(config *Config) error {
-	opts, err := getOptionsFromConfig(config)
+func (m *Measurer) setupWireguardConfig(config *Config) error {
+	opts, err := getWireguardOptionsFromConfig(config)
 	if err != nil {
 		return err
 	}
@@ -108,11 +105,11 @@ func (m *Measurer) setupConfig(config *Config) error {
 	return nil
 }
 
-func (m *Measurer) createTunnel(sess model.ExperimentSession, zeroTime time.Time) error {
+func (m *Measurer) createTunnel(sess model.ExperimentSession, zeroTime time.Time, config *Config) error {
 	sess.Logger().Info("wireguard: create tunnel")
 	sess.Logger().Infof("endpoint: %s", m.options.endpoint)
 
-	_, tnet, err := m.configureWireguardInterface(sess.Logger(), m.events, zeroTime)
+	_, tnet, err := m.configureWireguardInterface(sess.Logger(), m.events, zeroTime, config)
 	if err != nil {
 		return err
 	}
@@ -171,7 +168,7 @@ func (m *Measurer) urlget(zeroTime time.Time, logger model.Logger) *URLGetResult
 func NewExperimentMeasurer() model.ExperimentMeasurer {
 	return Measurer{
 		events:   newEventLogger(),
-		options:  options{},
+		options:  wireguardOptions{},
 		testName: testName,
 	}
 }
@@ -179,7 +176,8 @@ func NewExperimentMeasurer() model.ExperimentMeasurer {
 func (m *Measurer) configureWireguardInterface(
 	logger model.Logger,
 	eventlogger *eventLogger,
-	zeroTime time.Time) (tun.Device, *netstack.Net, error) {
+	zeroTime time.Time,
+	config *Config) (tun.Device, *netstack.Net, error) {
 	devTun, tnet, err := netstack.CreateNetTUN(
 		[]netip.Addr{netip.MustParseAddr(m.options.ip)},
 		[]netip.Addr{netip.MustParseAddr(m.options.ns)},
@@ -191,21 +189,14 @@ func (m *Measurer) configureWireguardInterface(
 	dev := device.NewDevice(
 		devTun,
 		conn.NewDefaultBind(),
-		newWireguardLogger(logger, eventlogger, m.config.Verbose, zeroTime),
+		newWireguardLogger(logger, eventlogger, config.Verbose, zeroTime),
 	)
 
 	var ipcStr string
 
-	// If the rawconfig string has content, it means that we
-	// did not bother to pass every option separatedly, so we assume
-	// we got a valid config file. This might be dangerous, so think twice
-	// about enforcing proper validation of the configuration file.
-	if len(m.rawconfig) > 0 {
-		ipcStr = string(m.rawconfig)
-	} else {
-		opts := m.options
+	opts := m.options
 
-		ipcStr = `jc=` + opts.jc + `
+	ipcStr = `jc=` + opts.jc + `
 jmin=` + opts.jmin + `
 jmax=` + opts.jmax + `
 s1=` + opts.s1 + `
@@ -220,7 +211,6 @@ preshared_key=` + opts.presharedKey + `
 endpoint=` + opts.endpoint + `
 allowed_ip=0.0.0.0/0
 `
-	}
 	dev.IpcSet(ipcStr)
 
 	err = dev.Up()

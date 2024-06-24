@@ -37,7 +37,7 @@ type Config struct {
 	H4   string `ooni:"h4"`
 }
 
-type options struct {
+type wireguardOptions struct {
 	// common wireguard parameters
 	endpoint     string
 	ip           string
@@ -59,8 +59,8 @@ type options struct {
 	h4   string
 }
 
-func getOptionsFromConfig(c *Config) (options, error) {
-	o := options{}
+func getWireguardOptionsFromConfig(c *Config) (wireguardOptions, error) {
+	o := wireguardOptions{}
 
 	pub, _ := base64.StdEncoding.DecodeString(c.SafePublicKey)
 	pubHex := hex.EncodeToString(pub)
