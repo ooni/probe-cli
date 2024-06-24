@@ -2,7 +2,6 @@ package openvpn
 
 import (
 	"fmt"
-	"math/rand"
 	"net"
 	"net/url"
 	"slices"
@@ -149,60 +148,26 @@ func (e *endpoint) AsInputURI() string {
 	return url.String()
 }
 
-// endpointList is a list of endpoints.
-type endpointList []*endpoint
-
-// DefaultEndpoints contains a subset of known endpoints to be used if no input is passed to the experiment and
-// the backend query fails for whatever reason. We risk distributing endpoints that can go stale, so we should be careful about
-// the stability of the endpoints selected here, but in restrictive environments it's useful to have something
-// to probe in absence of an useful OONI API. Valid credentials are still needed, though.
-var DefaultEndpoints = endpointList{
-	{
-		Provider:  "riseup",
-		IPAddr:    "51.15.187.53",
-		Port:      "1194",
-		Protocol:  "openvpn",
-		Transport: "tcp",
-	},
-	{
-		Provider:  "riseup",
-		IPAddr:    "51.15.187.53",
-		Port:      "1194",
-		Protocol:  "openvpn",
-		Transport: "udp",
-	},
-}
-
-// Shuffle randomizes the order of items in the endpoint list.
-func (e endpointList) Shuffle() endpointList {
-	rand.Shuffle(len(e), func(i, j int) {
-		e[i], e[j] = e[j], e[i]
-	})
-	return e
-}
-
 // APIEnabledProviders is the list of providers that the stable API Endpoint knows about.
 // This array will be a subset of the keys in defaultOptionsByProvider, but it might make sense
 // to still register info about more providers that the API officially knows about.
 var APIEnabledProviders = []string{
-	// TODO(ainghazal): fix the backend so that we can remove the spurious "vpn" suffix here.
 	"riseupvpn",
 }
 
-// isValidProvider returns true if the provider is found as key in the array of APIEnabledProviders
+// isValidProvider returns true if the provider is found as key in the array of [APIEnabledProviders].
 func isValidProvider(provider string) bool {
 	return slices.Contains(APIEnabledProviders, provider)
 }
 
-// mergeOpenVPNConfig returns a properly configured [*vpnconfig.Config] object for the given endpoint.
+// newOpenVPNConfig returns a properly configured [*vpnconfig.Config] object for the given endpoint.
 // To obtain that, we merge the endpoint specific configuration with the options passed as richer input targets.
-func mergeOpenVPNConfig(
+func newOpenVPNConfig(
 	tracer *vpntracex.Tracer,
 	logger model.Logger,
 	endpoint *endpoint,
 	config *Config) (*vpnconfig.Config, error) {
 
-	// TODO(ainghazal): use merge ability in vpnconfig.OpenVPNOptions merge (pending PR)
 	provider := endpoint.Provider
 	if !isValidProvider(provider) {
 		return nil, fmt.Errorf("%w: unknown provider: %s", ErrInvalidInput, provider)

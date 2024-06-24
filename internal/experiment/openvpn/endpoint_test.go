@@ -306,7 +306,7 @@ func Test_mergeVPNConfig(t *testing.T) {
 		SafeKey:  "key",
 	}
 
-	cfg, err := mergeOpenVPNConfig(tracer, nil, e, config)
+	cfg, err := newOpenVPNConfig(tracer, nil, e, config)
 	if err != nil {
 		t.Fatalf("did not expect error, got: %v", err)
 	}
@@ -355,7 +355,7 @@ func Test_mergeOpenVPNConfig_with_unknown_provider(t *testing.T) {
 		SafeCert: "cert",
 		SafeKey:  "key",
 	}
-	_, err := mergeOpenVPNConfig(tracer, nil, e, cfg)
+	_, err := newOpenVPNConfig(tracer, nil, e, cfg)
 	if !errors.Is(err, ErrInvalidInput) {
 		t.Fatalf("expected invalid input error, got: %v", err)
 	}

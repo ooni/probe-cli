@@ -237,7 +237,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	}
 
 	// 3. build openvpn config from endpoint and options
-	openvpnConfig, err := mergeOpenVPNConfig(handshakeTracer, sess.Logger(), endpoint, config)
+	openvpnConfig, err := newOpenVPNConfig(handshakeTracer, sess.Logger(), endpoint, config)
 	if err != nil {
 		return err
 	}
