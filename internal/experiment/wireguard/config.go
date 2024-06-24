@@ -59,7 +59,7 @@ type options struct {
 	h4   string
 }
 
-func getOptionsFromConfig(c Config) (options, error) {
+func getOptionsFromConfig(c *Config) (options, error) {
 	o := options{}
 
 	pub, _ := base64.StdEncoding.DecodeString(c.SafePublicKey)

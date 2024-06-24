@@ -4,22 +4,20 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"time"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/experiment/example"
+	"github.com/ooni/probe-cli/v3/internal/experiment/wireguard"
 	"github.com/ooni/probe-cli/v3/internal/legacy/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestSuccess(t *testing.T) {
-	m := example.NewExperimentMeasurer(example.Config{
-		SleepTime: int64(2 * time.Millisecond),
-	}, "example")
-	if m.ExperimentName() != "example" {
+	m := wireguard.NewExperimentMeasurer()
+	if m.ExperimentName() != "wireguard" {
 		t.Fatal("invalid ExperimentName")
 	}
-	if m.ExperimentVersion() != "0.1.0" {
+	if m.ExperimentVersion() != "0.1.1" {
 		t.Fatal("invalid ExperimentVersion")
 	}
 	ctx := context.Background()
@@ -38,10 +36,7 @@ func TestSuccess(t *testing.T) {
 }
 
 func TestFailure(t *testing.T) {
-	m := example.NewExperimentMeasurer(example.Config{
-		SleepTime:   int64(2 * time.Millisecond),
-		ReturnError: true,
-	}, "example")
+	m := wireguard.NewExperimentMeasurer()
 	ctx := context.Background()
 	sess := &mockable.Session{MockableLogger: log.Log}
 	callbacks := model.NewPrinterCallbacks(sess.Logger())

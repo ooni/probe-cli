@@ -1,19 +1,17 @@
-// Package wireguard contains the wireguard experiment.
 package wireguard
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/netip"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 
 	"github.com/amnezia-vpn/amneziawg-go/conn"
 	"github.com/amnezia-vpn/amneziawg-go/device"
@@ -27,6 +25,10 @@ const (
 
 	// defaultNameserver is the dns server using for resolving names inside the wg tunnel.
 	defaultNameserver = "8.8.8.8"
+)
+
+var (
+	ErrInputRequired = errors.New("input is required")
 )
 
 // Measurer performs the measurement.
@@ -53,16 +55,23 @@ func (m Measurer) ExperimentVersion() string {
 // Run implements model.ExperimentMeasurer.Run.
 func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	measurement := args.Measurement
-	zeroTime := measurement.MeasurementStartTimeSaved
-
 	sess := args.Session
+	zeroTime := measurement.MeasurementStartTimeSaved
 
 	var err error
 
+	// 0. obtain the richer input target, config, and input or panic
+	if args.Target == nil {
+		return ErrInputRequired
+	}
+
 	// 1. setup (parse config file)
-	err = m.setupConfig()
-	sess.Logger().Debug(string(m.rawconfig))
-	if err != nil {
+	target := args.Target.(*Target)
+
+	// TODO(ainghazal): process the input when the backend hands us one.
+	config, _ := target.Options, target.URL
+
+	if err := m.setupConfig(config); err != nil {
 		return err
 	}
 
@@ -90,16 +99,12 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	return nil
 }
 
-func (m *Measurer) setupConfig() error {
-	cfg := readConfigFromFile(m.config.ConfigFile)
-	opts, err := getOptionsFromConfig(m.config)
+func (m *Measurer) setupConfig(config *Config) error {
+	opts, err := getOptionsFromConfig(config)
 	if err != nil {
 		return err
 	}
 	m.options = opts
-	if len(cfg) > 0 {
-		m.rawconfig = cfg
-	}
 	return nil
 }
 
@@ -163,22 +168,12 @@ func (m *Measurer) urlget(zeroTime time.Time, logger model.Logger) *URLGetResult
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
-func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
+func NewExperimentMeasurer() model.ExperimentMeasurer {
 	return Measurer{
-		config:   config,
 		events:   newEventLogger(),
 		options:  options{},
 		testName: testName,
 	}
-}
-
-func readConfigFromFile(path string) []byte {
-	cfg, err := os.ReadFile(path)
-	if err != nil {
-		return []byte{}
-	}
-	runtimex.PanicOnError(err, "cannot open file")
-	return cfg
 }
 
 func (m *Measurer) configureWireguardInterface(
@@ -226,7 +221,6 @@ endpoint=` + opts.endpoint + `
 allowed_ip=0.0.0.0/0
 `
 	}
-	fmt.Println(ipcStr)
 	dev.IpcSet(ipcStr)
 
 	err = dev.Up()

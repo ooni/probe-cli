@@ -14,15 +14,16 @@ func init() {
 	AllExperiments["wireguard"] = func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
-				return wireguard.NewExperimentMeasurer(
-					*config.(*wireguard.Config),
-				)
+				return wireguard.NewExperimentMeasurer()
 			},
 			canonicalName:    canonicalName,
 			config:           &wireguard.Config{},
 			enabledByDefault: true,
 			interruptible:    true,
-			inputPolicy:      model.InputNone,
+			// TODO(ainghazal): when the backend is ready to hand us targets,
+			// we will use InputOrQueryBackend.
+			inputPolicy: model.InputNone,
+			newLoader:   wireguard.NewLoader,
 		}
 	}
 }
