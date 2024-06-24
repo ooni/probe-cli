@@ -33,15 +33,14 @@ var (
 
 // Measurer performs the measurement.
 type Measurer struct {
-	options  wireguardOptions
-	events   *eventLogger
-	testName string
-	tnet     *netstack.Net
+	options wireguardOptions
+	events  *eventLogger
+	tnet    *netstack.Net
 }
 
 // ExperimentName implements model.ExperimentMeasurer.ExperimentName.
 func (m Measurer) ExperimentName() string {
-	return m.testName
+	return testName
 }
 
 // ExperimentVersion implements model.ExperimentMeasurer.ExperimentVersion.
