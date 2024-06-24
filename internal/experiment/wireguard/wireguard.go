@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"net/netip"
 	"strings"
 	"time"
@@ -29,10 +27,12 @@ const (
 
 var (
 	ErrInputRequired = errors.New("input is required")
+	ErrInvalidInput  = errors.New("invalid input")
 )
 
 // Measurer performs the measurement.
 type Measurer struct {
+	// TODO(ainghzal): no need to keep track of this
 	options wireguardOptions
 	events  *eventLogger
 	tnet    *netstack.Net
@@ -64,10 +64,9 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	// 1. setup (parse config file)
 	target := args.Target.(*Target)
 
-	// TODO(ainghazal): process the input when the backend hands us one.
-	config, _ := target.Options, target.URL
-
-	if err := m.setupWireguardConfig(config); err != nil {
+	// TODO(ainghazal): if the target is not public, substitute it with ASN?
+	config, input := target.Options, target.URL
+	if err := m.setupWireguardFromConfig(config); err != nil {
 		return err
 	}
 
@@ -80,10 +79,16 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		URLGet:  make([]*URLGetResult, 0),
 	}
 
+	if config.PublicTarget {
+		testkeys.Endpoint = m.options.endpoint
+	} else {
+		testkeys.Endpoint = input
+	}
+
 	// 3. use tunnel
 	if err == nil {
 		sess.Logger().Info("Using the wireguard tunnel.")
-		urlgetResult := m.urlget(zeroTime, sess.Logger())
+		urlgetResult := m.urlget(defaultURLGetTarget, zeroTime, sess.Logger())
 		testkeys.URLGet = append(testkeys.URLGet, urlgetResult)
 		testkeys.NetworkEvents = m.events.log()
 	}
@@ -95,10 +100,13 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	return nil
 }
 
-func (m *Measurer) setupWireguardConfig(config *Config) error {
-	opts, err := getWireguardOptionsFromConfig(config)
+func (m *Measurer) setupWireguardFromConfig(config *Config) error {
+	opts, err := newWireguardOptionsFromConfig(config)
 	if err != nil {
 		return err
+	}
+	if ok := opts.validate(); !ok {
+		return fmt.Errorf("%w: %s", ErrInvalidInput, "cannot validate wireguard options")
 	}
 	m.options = opts
 	return nil
@@ -116,51 +124,6 @@ func (m *Measurer) createTunnel(sess model.ExperimentSession, zeroTime time.Time
 
 	sess.Logger().Info("wireguard: create tunnel done")
 	return nil
-}
-
-func newURLResultFromError(url string, zeroTime time.Time, start float64, err error) *URLGetResult {
-	return &URLGetResult{
-		URL:     url,
-		T0:      start,
-		T:       time.Since(zeroTime).Seconds(),
-		Failure: measurexlite.NewFailure(err),
-		Error:   err.Error(),
-	}
-}
-
-func newURLResultWithStatusCode(url string, zeroTime time.Time, start float64, statusCode int, body []byte) *URLGetResult {
-	return &URLGetResult{
-		ByteCount:  len(body),
-		URL:        url,
-		T0:         start,
-		T:          time.Since(zeroTime).Seconds(),
-		StatusCode: statusCode,
-	}
-}
-
-func (m *Measurer) urlget(zeroTime time.Time, logger model.Logger) *URLGetResult {
-	url := "https://info.cern.ch/"
-	client := http.Client{
-		Timeout: 30 * time.Second,
-		Transport: &http.Transport{
-			DialContext:         m.tnet.DialContext,
-			TLSHandshakeTimeout: 30 * time.Second,
-		}}
-
-	start := time.Since(zeroTime).Seconds()
-	r, err := client.Get(url)
-	if err != nil {
-		logger.Warnf("urlget error: %v", err.Error())
-		return newURLResultFromError(url, zeroTime, start, err)
-	}
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		logger.Warnf("urlget error: %v", err.Error())
-		return newURLResultFromError(url, zeroTime, start, err)
-	}
-	defer r.Body.Close()
-
-	return newURLResultWithStatusCode(url, zeroTime, start, r.StatusCode, body)
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.

@@ -14,7 +14,8 @@ type Config struct {
 	ConfigFile string `ooni:"Configuration file for the WireGuard experiment"`
 
 	// TODO(ainghzal): honor it
-	PublicTarget bool `ooni:"Treat the target endpoint as public data (if true, it will be included in the report)`
+	PublicTarget            bool `ooni:"Treat the target endpoint as public data (if true, it will be included in the report)`
+	PublicAmneziaParameters bool `ooni:"Obfuscate the Public AmneziaWG advanced security parameters`
 
 	Verbose bool `ooni:"Use extra-verbose mode in wireguard logs"`
 
@@ -59,7 +60,13 @@ type wireguardOptions struct {
 	h4   string
 }
 
-func getWireguardOptionsFromConfig(c *Config) (wireguardOptions, error) {
+// validate returns true if this looks like a sensible wireguard configuration.
+func (wgopt *wireguardOptions) validate() bool {
+	// TODO(ainghazal): implement
+	return true
+}
+
+func newWireguardOptionsFromConfig(c *Config) (wireguardOptions, error) {
 	o := wireguardOptions{}
 
 	pub, _ := base64.StdEncoding.DecodeString(c.SafePublicKey)

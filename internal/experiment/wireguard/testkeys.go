@@ -9,6 +9,8 @@ package wireguard
 // the specific results of this experiment.
 type TestKeys struct {
 	Success       bool            `json:"success"`
+	Endpoint      string          `json:"endpoint"`
+	EndpointASN   string          `json:"endpoint_asn,omitempty"`
 	Failure       *string         `json:"failure"`
 	NetworkEvents []*Event        `json:"network_events"`
 	URLGet        []*URLGetResult `json:"urlget"`
