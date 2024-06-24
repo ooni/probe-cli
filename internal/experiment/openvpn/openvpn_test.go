@@ -6,11 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	vpntracex "github.com/ooni/minivpn/pkg/tracex"
 	"github.com/ooni/probe-cli/v3/internal/experiment/openvpn"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 func makeMockSession() *mocks.Session {
@@ -175,6 +177,20 @@ func TestAllConnectionsSuccessful(t *testing.T) {
 	})
 }
 
+func TestOpenVPNFailsWithInvalidInputType(t *testing.T) {
+	measurer := openvpn.NewExperimentMeasurer()
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: new(model.Measurement),
+		Session:     makeMockSession(),
+		Target:      &model.OOAPIURLInfo{}, // not the input type we expect
+	}
+	err := measurer.Run(context.Background(), args)
+	if !errors.Is(err, openvpn.ErrInvalidInputType) {
+		t.Fatal("expected input error")
+	}
+}
+
 func TestBadTargetURLFailure(t *testing.T) {
 	m := openvpn.NewExperimentMeasurer()
 	ctx := context.Background()
@@ -191,7 +207,7 @@ func TestBadTargetURLFailure(t *testing.T) {
 		},
 	}
 	err := m.Run(ctx, args)
-	if !errors.Is(err, openvpn.ErrInvalidInput) {
+	if !errors.Is(err, targetloading.ErrInvalidInput) {
 		t.Fatalf("expected ErrInvalidInput, got %v", err)
 	}
 }

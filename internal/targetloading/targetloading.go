@@ -16,7 +16,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/stuninput"
 )
 
-// These errors are returned by the [*Loader].
+// These errors are returned by the [*Loader] or the experiment execution.
 var (
 	ErrNoURLsReturned    = errors.New("no URLs returned")
 	ErrDetectedEmptyFile = errors.New("file did not contain any input")
@@ -24,6 +24,7 @@ var (
 	ErrNoInputExpected   = errors.New("we did not expect any input")
 	ErrNoStaticInput     = errors.New("no static input for this experiment")
 	ErrInvalidInputType  = errors.New("invalid richer input type")
+	ErrInvalidInput      = errors.New("input does not conform to spec")
 )
 
 // Session is the session according to a [*Loader] instance.

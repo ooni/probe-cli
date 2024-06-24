@@ -105,7 +105,7 @@ func (tl *targetLoader) Load(ctx context.Context) ([]model.ExperimentTarget, err
 
 // TODO(ainghazal): we might want to get both the BaseURL and the HTTPClient from the session,
 // and then deal with the openvpn-specific API calls ourselves within the boundaries of the experiment.
-func (tl *targetLoader) loadFromBackend(_ context.Context) ([]model.ExperimentTarget, error) {
+func (tl *targetLoader) loadFromBackend(ctx context.Context) ([]model.ExperimentTarget, error) {
 	if tl.options.Provider == "" {
 		tl.options.Provider = defaultProvider
 	}
@@ -113,15 +113,15 @@ func (tl *targetLoader) loadFromBackend(_ context.Context) ([]model.ExperimentTa
 	targets := make([]model.ExperimentTarget, 0)
 	provider := tl.options.Provider
 
-	// TODO(ainghazal): pass country code too (from session?)
-	apiConfig, err := tl.session.FetchOpenVPNConfig(context.Background(), provider, "XX")
+	apiConfig, err := tl.session.FetchOpenVPNConfig(ctx, provider, tl.session.ProbeCC())
 	if err != nil {
+		tl.session.Logger().Warnf("Cannot fetch openvpn config: %v", err)
 		return nil, err
 	}
 
 	auth, ok := providerAuthentication[provider]
 	if !ok {
-		return nil, fmt.Errorf("%w: unknown authentication for provider %s", ErrInvalidInput, provider)
+		return nil, fmt.Errorf("%w: unknown authentication for provider %s", targetloading.ErrInvalidInput, provider)
 	}
 
 	for _, input := range apiConfig.Inputs {

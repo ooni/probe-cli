@@ -1,7 +1,6 @@
 package openvpn
 
 import (
-	"errors"
 	"fmt"
 	"math/rand"
 	"net"
@@ -12,11 +11,12 @@ import (
 	vpnconfig "github.com/ooni/minivpn/pkg/config"
 	vpntracex "github.com/ooni/minivpn/pkg/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 var (
-	// ErrBadBase64Blob is the error returned when we cannot decode an option passed as base64.
-	ErrBadBase64Blob = errors.New("wrong base64 encoding")
+	ErrInputRequired = targetloading.ErrInputRequired
+	ErrInvalidInput  = targetloading.ErrInvalidInput
 )
 
 // endpoint is a single endpoint to be probed.
@@ -194,7 +194,7 @@ func isValidProvider(provider string) bool {
 	return slices.Contains(APIEnabledProviders, provider)
 }
 
-// mergeOpenVPNConfig gets a properly configured [*vpnconfig.Config] object for the given endpoint.
+// mergeOpenVPNConfig returns a properly configured [*vpnconfig.Config] object for the given endpoint.
 // To obtain that, we merge the endpoint specific configuration with the options passed as richer input targets.
 func mergeOpenVPNConfig(
 	tracer *vpntracex.Tracer,

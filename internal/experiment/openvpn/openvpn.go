@@ -3,7 +3,6 @@ package openvpn
 
 import (
 	"context"
-	"errors"
 	"strconv"
 	"time"
 
@@ -22,14 +21,8 @@ const (
 	openVPNProtocol = "openvpn"
 )
 
-// errors are in addition to any other errors returned by the low level packages
-// that are used by this experiment to implement its functionality.
 var (
-	// ErrInputRequired is returned when the experiment is not passed any input.
-	ErrInputRequired = targetloading.ErrInputRequired
-
-	// ErrInvalidInput is returned if we failed to parse the input to obtain an endpoint we can measure.
-	ErrInvalidInput = errors.New("invalid input")
+	ErrInvalidInputType = targetloading.ErrInvalidInputType
 )
 
 // Config contains the experiment config.
@@ -219,7 +212,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 
 	// 0. obtain the richer input target, config, and input or panic
 	if args.Target == nil {
-		return ErrInputRequired
+		return targetloading.ErrInputRequired
 	}
 
 	tk := NewTestKeys()
@@ -228,29 +221,36 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	idx := int64(1)
 	handshakeTracer := vpntracex.NewTracerWithTransactionID(zeroTime, idx)
 
-	// build the input
-	target := args.Target.(*Target)
+	// 1. build the input
+	target, ok := args.Target.(*Target)
+	if !ok {
+		return targetloading.ErrInvalidInputType
+	}
+
 	config, input := target.Options, target.URL
 	sess.Logger().Infof("openvpn: using richer input: %+v", input)
 
+	// 2. obtain the endpoint representation from the input URL
 	endpoint, err := newEndpointFromInputString(input)
 	if err != nil {
 		return err
 	}
 
+	// 3. build openvpn config from endpoint and options
 	openvpnConfig, err := mergeOpenVPNConfig(handshakeTracer, sess.Logger(), endpoint, config)
 	if err != nil {
 		return err
 	}
-
 	sess.Logger().Infof("Probing endpoint %s", endpoint.String())
 
+	// 4. initiate openvpn handshake against endpoint
 	connResult := m.connectAndHandshake(ctx, zeroTime, idx, sess.Logger(), endpoint, openvpnConfig, handshakeTracer)
 	tk.AddConnectionTestKeys(connResult)
 	tk.Success = tk.AllConnectionsSuccessful()
 
 	callbacks.OnProgress(1.0, "All endpoints probed")
 
+	// 5. assign the testkeys
 	measurement.TestKeys = tk
 
 	// TODO(ainghazal): validate we have valid config for each endpoint.

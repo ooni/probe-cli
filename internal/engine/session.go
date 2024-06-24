@@ -384,6 +384,9 @@ func (s *Session) FetchOpenVPNConfig(
 		return nil, err
 	}
 
+	// ensure that we have fetched the location before fetching openvpn configuration.
+	s.MaybeLookupLocationContext(ctx)
+
 	// we cannot lock earlier because newOrchestraClient locks the mutex.
 	defer s.mu.Unlock()
 	s.mu.Lock()
