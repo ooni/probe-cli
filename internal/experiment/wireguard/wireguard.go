@@ -37,7 +37,7 @@ var (
 // Measurer performs the measurement.
 type Measurer struct {
 	events  *eventLogger
-	options wireguardOptions
+	options *wireguardOptions
 	tnet    *netstack.Net
 }
 
@@ -45,7 +45,7 @@ type Measurer struct {
 func NewExperimentMeasurer() model.ExperimentMeasurer {
 	return &Measurer{
 		events:  newEventLogger(),
-		options: wireguardOptions{},
+		options: &wireguardOptions{},
 	}
 }
 
@@ -100,6 +100,11 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		testkeys.Endpoint = m.options.endpoint
 	} else {
 		testkeys.Endpoint = input
+	}
+
+	testkeys.EndpointID = m.options.configurationHash()
+	if config.PublicAmneziaParameters {
+		// TODO(ainghazal): copy the parameters as testkeys
 	}
 
 	// 3. use tunnel

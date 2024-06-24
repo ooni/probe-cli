@@ -11,6 +11,7 @@ type TestKeys struct {
 	Success       bool            `json:"success"`
 	Endpoint      string          `json:"endpoint"`
 	EndpointASN   string          `json:"endpoint_asn,omitempty"`
+	EndpointID    string          `json:"endpoint_id,omitempty"`
 	Failure       *string         `json:"failure"`
 	NetworkEvents []*Event        `json:"network_events"`
 	URLGet        []*URLGetResult `json:"urlget"`
