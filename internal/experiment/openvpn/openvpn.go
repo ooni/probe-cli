@@ -211,7 +211,7 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	measurement := args.Measurement
 	sess := args.Session
 
-	// 0. obtain the richer input target, config, and input or panic
+	// 0. fail if there's no richer input target
 	if args.Target == nil {
 		return targetloading.ErrInputRequired
 	}
