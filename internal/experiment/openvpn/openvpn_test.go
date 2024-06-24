@@ -261,7 +261,7 @@ func TestTimestampsFromHandshake(t *testing.T) {
 		t.Fatal("expected t0 == 0")
 	}
 	if tlast != 2.0 {
-		t.Fatal("expected t0 == 2")
+		t.Fatal("expected t == 2")
 	}
 	if duration != 2 {
 		t.Fatal("expected duration == 2")
