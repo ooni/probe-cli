@@ -142,9 +142,6 @@ func TestTargetLoaderLoad(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			// create a target loader using the given config
-			//
-			// note that we use a default test input for results predictability
-			// since the static list may change over time
 			tl := &targetLoader{
 				loader:  tc.loader,
 				options: tc.options,

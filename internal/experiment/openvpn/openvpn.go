@@ -95,21 +95,20 @@ func (tk *TestKeys) AllConnectionsSuccessful() bool {
 }
 
 // Measurer performs the measurement.
-type Measurer struct {
-}
+type Measurer struct{}
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
 func NewExperimentMeasurer() model.ExperimentMeasurer {
-	return Measurer{}
+	return &Measurer{}
 }
 
 // ExperimentName implements model.ExperimentMeasurer.ExperimentName.
-func (m Measurer) ExperimentName() string {
+func (m *Measurer) ExperimentName() string {
 	return testName
 }
 
 // ExperimentVersion implements model.ExperimentMeasurer.ExperimentVersion.
-func (m Measurer) ExperimentVersion() string {
+func (m *Measurer) ExperimentVersion() string {
 	return testVersion
 }
 
@@ -174,6 +173,8 @@ func (m *Measurer) connectAndHandshake(
 	}
 }
 
+// TimestampsFromHandshake returns the t0, t and duration of the handshake events.
+// If the passed events are a zero-len array, all of the results will be zero.
 func TimestampsFromHandshake(events []*vpntracex.Event) (float64, float64, float64) {
 	var (
 		t0       float64
@@ -236,6 +237,10 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		return err
 	}
 
+	// TODO(ainghazal): validate we have valid config for each endpoint.
+	// TODO(ainghazal): validate hostname is a valid IP (ipv4 or 6)
+	// TODO(ainghazal): decide what to do if we have expired certs (abort one measurement or abort the whole experiment?)
+
 	// 3. build openvpn config from endpoint and options
 	openvpnConfig, err := newOpenVPNConfig(handshakeTracer, sess.Logger(), endpoint, config)
 	if err != nil {
@@ -252,10 +257,6 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 
 	// 5. assign the testkeys
 	measurement.TestKeys = tk
-
-	// TODO(ainghazal): validate we have valid config for each endpoint.
-	// TODO(ainghazal): validate hostname is a valid IP (ipv4 or 6)
-	// TODO(ainghazal): decide what to do if we have expired certs (abort one measurement or abort the whole experiment?)
 
 	// Note: if here we return an error, the parent code will assume
 	// something fundamental was wrong and we don't have a measurement

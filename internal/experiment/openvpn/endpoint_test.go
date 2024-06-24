@@ -3,7 +3,6 @@ package openvpn
 import (
 	"errors"
 	"fmt"
-	"sort"
 	"testing"
 	"time"
 
@@ -270,16 +269,6 @@ func Test_endpoint_String(t *testing.T) {
 	}
 }
 
-func Test_endpointList_Shuffle(t *testing.T) {
-	shuffled := DefaultEndpoints.Shuffle()
-	sort.Slice(shuffled, func(i, j int) bool {
-		return shuffled[i].IPAddr < shuffled[j].IPAddr
-	})
-	if diff := cmp.Diff(shuffled, DefaultEndpoints); diff != "" {
-		t.Error(diff)
-	}
-}
-
 func Test_isValidProvider(t *testing.T) {
 	if valid := isValidProvider("riseupvpn"); !valid {
 		t.Fatal("riseup is the only valid provider now")
@@ -289,7 +278,7 @@ func Test_isValidProvider(t *testing.T) {
 	}
 }
 
-func Test_mergeVPNConfig(t *testing.T) {
+func Test_newVPNConfig(t *testing.T) {
 	tracer := vpntracex.NewTracer(time.Now())
 	e := &endpoint{
 		Provider:  "riseupvpn",

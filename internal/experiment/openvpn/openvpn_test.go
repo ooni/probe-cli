@@ -221,7 +221,7 @@ func TestVPNInput(t *testing.T) {
 
 func TestMeasurer_FetchProviderCredentials(t *testing.T) {
 	t.Run("Measurer.FetchProviderCredentials calls method in session", func(t *testing.T) {
-		m := openvpn.NewExperimentMeasurer().(openvpn.Measurer)
+		m := openvpn.NewExperimentMeasurer().(*openvpn.Measurer)
 
 		sess := makeMockSession()
 		_, err := m.FetchProviderCredentials(
@@ -234,7 +234,7 @@ func TestMeasurer_FetchProviderCredentials(t *testing.T) {
 	t.Run("Measurer.FetchProviderCredentials raises error if API calls fail", func(t *testing.T) {
 		someError := errors.New("unexpected")
 
-		m := openvpn.NewExperimentMeasurer().(openvpn.Measurer)
+		m := openvpn.NewExperimentMeasurer().(*openvpn.Measurer)
 
 		sess := makeMockSession()
 		sess.MockFetchOpenVPNConfig = func(context.Context, string, string) (*model.OOAPIVPNProviderConfig, error) {

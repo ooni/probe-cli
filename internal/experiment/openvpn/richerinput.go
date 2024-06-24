@@ -103,8 +103,8 @@ func (tl *targetLoader) Load(ctx context.Context) ([]model.ExperimentTarget, err
 	return targets, nil
 }
 
-// TODO(ainghazal): we might want to get both the BaseURL and the HTTPClient from the session,
-// and then deal with the openvpn-specific API calls ourselves within the boundaries of the experiment.
+// TODO(https://github.com/ooni/probe/issues/2755): make the code that fetches experiment private
+// and let the common code export just the bare minimum to make this possible.
 func (tl *targetLoader) loadFromBackend(ctx context.Context) ([]model.ExperimentTarget, error) {
 	if tl.options.Provider == "" {
 		tl.options.Provider = defaultProvider
@@ -126,7 +126,8 @@ func (tl *targetLoader) loadFromBackend(ctx context.Context) ([]model.Experiment
 
 	for _, input := range apiConfig.Inputs {
 		config := &Config{
-			// Auth and Cipher are hardcoded for now.
+			// TODO(ainghazal): Auth and Cipher are hardcoded for now.
+			// Backend should provide them as richer input; and if empty we can use these as defaults.
 			Auth:   "SHA512",
 			Cipher: "AES-256-GCM",
 		}
@@ -135,6 +136,8 @@ func (tl *targetLoader) loadFromBackend(ctx context.Context) ([]model.Experiment
 			config.SafeCA = apiConfig.Config.CA
 			config.SafeCert = apiConfig.Config.Cert
 			config.SafeKey = apiConfig.Config.Key
+		case AuthUserPass:
+			// TODO(ainghazal): implement (surfshark, etc)
 		}
 		targets = append(targets, &Target{
 			URL:     input,
