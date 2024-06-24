@@ -166,9 +166,8 @@ func (m *Measurer) urlget(zeroTime time.Time, logger model.Logger) *URLGetResult
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
 func NewExperimentMeasurer() model.ExperimentMeasurer {
 	return Measurer{
-		events:   newEventLogger(),
-		options:  wireguardOptions{},
-		testName: testName,
+		events:  newEventLogger(),
+		options: wireguardOptions{},
 	}
 }
 
@@ -188,7 +187,7 @@ func (m *Measurer) configureWireguardInterface(
 	dev := device.NewDevice(
 		devTun,
 		conn.NewDefaultBind(),
-		newWireguardLogger(logger, eventlogger, config.Verbose, zeroTime),
+		newWireguardLogger(logger, eventlogger, config.Verbose, zeroTime, time.Since),
 	)
 
 	var ipcStr string
@@ -219,6 +218,10 @@ allowed_ip=0.0.0.0/0
 	return devTun, tnet, nil
 }
 
+//
+// logging utilities
+//
+
 // Event is a network event obtained by parsing wireguard logs.
 type Event struct {
 	EventType string  `json:"operation"`
@@ -247,11 +250,29 @@ func (el *eventLogger) log() []*Event {
 	return el.events
 }
 
+const (
+	LOG_KEEPALIVE      = "Receiving keepalive packet"
+	LOG_SEND_HANDSHAKE = "Sending handshake initiation"
+	LOG_RECV_HANDSHAKE = "Received handshake response"
+
+	EVT_RECV_KEEPALIVE      = "RECV_KEEPALIVE"
+	EVT_SEND_HANDSHAKE_INIT = "SEND_HANDSHAKE_INIT"
+	EVT_RECV_HANDSHAKE_RESP = "RECV_HANDSHAKE_RESP"
+)
+
+// newWireguardLogger looks at the strings logged by the wireguard
+// implementation. It performs simple regex matching and then
+// it appends the matchign Event in the passed eventLogger.
+// This approach has some potential for brittleness (in the unlikely case
+// that upstream wireguard codebase changes the emitted log lines),
+// but adding typed log events to the wg codebase might prove to be a
+// particularly time-consuming rewrite.
 func newWireguardLogger(
 	logger model.Logger,
 	eventlogger *eventLogger,
 	verbose bool,
-	zeroTime time.Time) *device.Logger {
+	zeroTime time.Time,
+	sinceFn func(time.Time) time.Duration) *device.Logger {
 	verbosef := func(format string, args ...any) {
 		msg := fmt.Sprintf(format, args...)
 
@@ -259,22 +280,22 @@ func newWireguardLogger(
 			logger.Debugf(msg)
 		}
 
-		// TODO(ainghazal): we might be interested in parsing other type of events here.
-		if strings.Contains(msg, "Receiving keepalive packet") {
-			evt := newEvent("RECV_KEEPALIVE")
-			evt.T = time.Since(zeroTime).Seconds()
+		// TODO(ainghazal): we might be interested in parsing additional events.
+		if strings.Contains(msg, LOG_KEEPALIVE) {
+			evt := newEvent(EVT_RECV_KEEPALIVE)
+			evt.T = sinceFn(zeroTime).Seconds()
 			eventlogger.append(evt)
 			return
 		}
-		if strings.Contains(msg, "Sending handshake initiation") {
-			evt := newEvent("SEND_HANDSHAKE_INIT")
-			evt.T = time.Since(zeroTime).Seconds()
+		if strings.Contains(msg, LOG_SEND_HANDSHAKE) {
+			evt := newEvent(EVT_SEND_HANDSHAKE_INIT)
+			evt.T = sinceFn(zeroTime).Seconds()
 			eventlogger.append(evt)
 			return
 		}
-		if strings.Contains(msg, "Received handshake response") {
-			evt := newEvent("RECV_HANDSHAKE_RESP")
-			evt.T = time.Since(zeroTime).Seconds()
+		if strings.Contains(msg, LOG_RECV_HANDSHAKE) {
+			evt := newEvent(EVT_RECV_HANDSHAKE_RESP)
+			evt.T = sinceFn(zeroTime).Seconds()
 			eventlogger.append(evt)
 			return
 		}
