@@ -10,6 +10,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 
 	"github.com/amnezia-vpn/amneziawg-go/conn"
 	"github.com/amnezia-vpn/amneziawg-go/device"
@@ -26,47 +27,63 @@ const (
 )
 
 var (
-	ErrInputRequired = errors.New("input is required")
-	ErrInvalidInput  = errors.New("invalid input")
+	ErrInputRequired    = targetloading.ErrInputRequired
+	ErrInvalidInputType = targetloading.ErrInvalidInputType
+
+	// TODO(ainghazal): fix after adding this error into targetloading
+	ErrInvalidInput = errors.New("invalid input")
 )
 
 // Measurer performs the measurement.
 type Measurer struct {
-	// TODO(ainghzal): no need to keep track of this
-	options wireguardOptions
 	events  *eventLogger
+	options wireguardOptions
 	tnet    *netstack.Net
 }
 
+// NewExperimentMeasurer creates a new ExperimentMeasurer.
+func NewExperimentMeasurer() model.ExperimentMeasurer {
+	return &Measurer{
+		events:  newEventLogger(),
+		options: wireguardOptions{},
+	}
+}
+
 // ExperimentName implements model.ExperimentMeasurer.ExperimentName.
-func (m Measurer) ExperimentName() string {
+func (m *Measurer) ExperimentName() string {
 	return testName
 }
 
 // ExperimentVersion implements model.ExperimentMeasurer.ExperimentVersion.
-func (m Measurer) ExperimentVersion() string {
+func (m *Measurer) ExperimentVersion() string {
 	return testVersion
 }
 
 // Run implements model.ExperimentMeasurer.Run.
-func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
+func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	measurement := args.Measurement
 	sess := args.Session
 	zeroTime := measurement.MeasurementStartTimeSaved
 
 	var err error
 
-	// 0. obtain the richer input target, config, and input or panic
+	// 0. fail if there is no richer input target.
 	if args.Target == nil {
 		return ErrInputRequired
 	}
 
-	// 1. setup (parse config file)
-	target := args.Target.(*Target)
+	// 1. setup tunnel after parsing options
+	target, ok := args.Target.(*Target)
+	if !ok {
+		return ErrInvalidInputType
+	}
 
 	// TODO(ainghazal): if the target is not public, substitute it with ASN?
 	config, input := target.Options, target.URL
 	if err := m.setupWireguardFromConfig(config); err != nil {
+		// A failure at this point means that we are not able
+		// to validate the minimal set of options that we need to probe an endpoint.
+		// We abort the experiment and submit nothing.
 		return err
 	}
 
@@ -124,14 +141,6 @@ func (m *Measurer) createTunnel(sess model.ExperimentSession, zeroTime time.Time
 
 	sess.Logger().Info("wireguard: create tunnel done")
 	return nil
-}
-
-// NewExperimentMeasurer creates a new ExperimentMeasurer.
-func NewExperimentMeasurer() model.ExperimentMeasurer {
-	return Measurer{
-		events:  newEventLogger(),
-		options: wireguardOptions{},
-	}
 }
 
 func (m *Measurer) configureWireguardInterface(
