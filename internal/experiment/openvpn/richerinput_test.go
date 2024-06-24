@@ -192,6 +192,9 @@ func TestTargetLoaderLoadFromBackend(t *testing.T) {
 			DateUpdated: time.Now(),
 		}, nil
 	}
+	sess.MockProbeCC = func() string {
+		return "IT"
+	}
 	tl := &targetLoader{
 		loader:  loader,
 		options: &Config{},
