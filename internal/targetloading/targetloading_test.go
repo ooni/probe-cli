@@ -529,6 +529,9 @@ type TargetLoaderMockableSession struct {
 	// It should be nil when Error is non-nil.
 	FetchOpenVPNConfigOutput *model.OOAPIVPNProviderConfig
 
+	// ProbeCountryCode is the probe country code
+	ProbeCountryCode string
+
 	// Error is the error to be returned by CheckIn. It
 	// should be nil when Output is not-nil.
 	Error error
@@ -548,6 +551,10 @@ func (sess *TargetLoaderMockableSession) FetchOpenVPNConfig(
 	ctx context.Context, provider, cc string) (*model.OOAPIVPNProviderConfig, error) {
 	runtimex.Assert(!(sess.Error == nil && sess.FetchOpenVPNConfigOutput == nil), "both FetchOpenVPNConfig and Error are nil")
 	return sess.FetchOpenVPNConfigOutput, sess.Error
+}
+
+func (sess *TargetLoaderMockableSession) ProbeCC() string {
+	return sess.ProbeCountryCode
 }
 
 // Logger implements [Session].
