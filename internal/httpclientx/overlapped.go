@@ -35,7 +35,7 @@ type Overlapped[Output any] struct {
 	// makes sense for the operation that you requested with the constructor.
 	//
 	// If you set it manually, you MUST modify it before calling [*Overlapped.Run].
-	RunFunc func(ctx context.Context, epnt *BaseURL) (Output, error)
+	RunFunc func(ctx context.Context, base *BaseURL) (Output, error)
 
 	// ScheduleInterval is the MANDATORY scheduling interval.
 	//
@@ -65,29 +65,29 @@ func newOverlappedWithFunc[Output any](fx func(context.Context, *BaseURL) (Outpu
 
 // NewOverlappedGetJSON constructs a [*Overlapped] for calling [GetJSON] with multiple URLs.
 func NewOverlappedGetJSON[Output any](config *Config) *Overlapped[Output] {
-	return newOverlappedWithFunc(func(ctx context.Context, epnt *BaseURL) (Output, error) {
-		return getJSON[Output](ctx, epnt, config)
+	return newOverlappedWithFunc(func(ctx context.Context, base *BaseURL) (Output, error) {
+		return getJSON[Output](ctx, base, config)
 	})
 }
 
 // NewOverlappedGetRaw constructs a [*Overlapped] for calling [GetRaw] with multiple URLs.
 func NewOverlappedGetRaw(config *Config) *Overlapped[[]byte] {
-	return newOverlappedWithFunc(func(ctx context.Context, epnt *BaseURL) ([]byte, error) {
-		return getRaw(ctx, epnt, config)
+	return newOverlappedWithFunc(func(ctx context.Context, base *BaseURL) ([]byte, error) {
+		return getRaw(ctx, base, config)
 	})
 }
 
 // NewOverlappedGetXML constructs a [*Overlapped] for calling [GetXML] with multiple URLs.
 func NewOverlappedGetXML[Output any](config *Config) *Overlapped[Output] {
-	return newOverlappedWithFunc(func(ctx context.Context, epnt *BaseURL) (Output, error) {
-		return getXML[Output](ctx, epnt, config)
+	return newOverlappedWithFunc(func(ctx context.Context, base *BaseURL) (Output, error) {
+		return getXML[Output](ctx, base, config)
 	})
 }
 
 // NewOverlappedPostJSON constructs a [*Overlapped] for calling [PostJSON] with multiple URLs.
 func NewOverlappedPostJSON[Input, Output any](input Input, config *Config) *Overlapped[Output] {
-	return newOverlappedWithFunc(func(ctx context.Context, epnt *BaseURL) (Output, error) {
-		return postJSON[Input, Output](ctx, epnt, input, config)
+	return newOverlappedWithFunc(func(ctx context.Context, base *BaseURL) (Output, error) {
+		return postJSON[Input, Output](ctx, base, input, config)
 	})
 }
 
@@ -96,8 +96,8 @@ var ErrGenericOverlappedFailure = errors.New("overlapped: generic failure")
 
 // Run runs the overlapped operations, returning the result of the first operation
 // that succeeds and its base URL index, or the error that occurred.
-func (ovx *Overlapped[Output]) Run(ctx context.Context, epnts ...*BaseURL) (Output, int, error) {
-	return OverlappedReduce[Output](ovx.Map(ctx, epnts...))
+func (ovx *Overlapped[Output]) Run(ctx context.Context, bases ...*BaseURL) (Output, int, error) {
+	return OverlappedReduce[Output](ovx.Map(ctx, bases...))
 }
 
 // OverlappedErrorOr combines error information, result information and the base URL index.
@@ -112,15 +112,15 @@ type OverlappedErrorOr[Output any] struct {
 	Value Output
 }
 
-// Map applies the [*Overlapped.RunFunc] function to each epnts entry, thus producing
+// Map applies the [*Overlapped.RunFunc] function to each bases entry, thus producing
 // a result for each entry. This function will cancel subsequent operations until there
 // is a success: subsequent results will be [context.Canceled] errors.
 //
 // Note that you SHOULD use [*Overlapped.Run] unless you want to observe the result
 // of each operation, which is mostly useful when running unit tests.
 //
-// Note that this function will return a zero length slice if epnts lenth is also zero.
-func (ovx *Overlapped[Output]) Map(ctx context.Context, epnts ...*BaseURL) []*OverlappedErrorOr[Output] {
+// Note that this function will return a zero length slice if bases lenth is also zero.
+func (ovx *Overlapped[Output]) Map(ctx context.Context, bases ...*BaseURL) []*OverlappedErrorOr[Output] {
 	// create cancellable context for early cancellation and also apply the
 	// watchdog timeout so that eventually this code returns.
 	//
@@ -153,12 +153,12 @@ func (ovx *Overlapped[Output]) Map(ctx context.Context, epnts ...*BaseURL) []*Ov
 	results := []*OverlappedErrorOr[Output]{}
 
 	// keep looping until we have results for each base URLs
-	for len(results) < len(epnts) {
+	for len(results) < len(bases) {
 
 		// if there are more base URLs to try, spawn a goroutine to try,
 		// and, otherwise, we can safely stop ticking
-		if idx < len(epnts) {
-			go ovx.transact(ctx, idx, epnts[idx], output)
+		if idx < len(bases) {
+			go ovx.transact(ctx, idx, bases[idx], output)
 			idx++
 		} else {
 			ticker.Stop()
@@ -170,7 +170,7 @@ func (ovx *Overlapped[Output]) Map(ctx context.Context, epnts ...*BaseURL) []*Ov
 		// background goroutines and stop ticking
 		//
 		// note that we MUST continue reading until we have
-		// exactly `len(epnts)` results because the inner
+		// exactly `len(bases)` results because the inner
 		// goroutine performs blocking writes on the channel
 		case res := <-output:
 			results = append(results, res)
@@ -222,9 +222,9 @@ func OverlappedReduce[Output any](results []*OverlappedErrorOr[Output]) (Output,
 
 // transact performs an HTTP transaction with the given URL and writes results to the output channel.
 func (ovx *Overlapped[Output]) transact(
-	ctx context.Context, idx int, epnt *BaseURL, output chan<- *OverlappedErrorOr[Output]) {
+	ctx context.Context, idx int, base *BaseURL, output chan<- *OverlappedErrorOr[Output]) {
 	// obtain the results
-	value, err := ovx.RunFunc(ctx, epnt)
+	value, err := ovx.RunFunc(ctx, base)
 
 	// emit the results
 	//
