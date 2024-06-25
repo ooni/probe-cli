@@ -278,6 +278,9 @@ type ExperimentTargetLoaderSession interface {
 
 	// Logger returns the logger to use.
 	Logger() Logger
+
+	// ProbeCC returns the probe country code.
+	ProbeCC() string
 }
 
 // ExperimentOptionInfo contains info about an experiment option.
