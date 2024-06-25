@@ -19,8 +19,8 @@ func Default() []model.OOAPIService {
 	}}
 }
 
-// SortEndpoints gives priority to https, then cloudfronted, then onion.
-func SortEndpoints(in []model.OOAPIService) (out []model.OOAPIService) {
+// SortServices gives priority to https, then cloudfronted, then onion.
+func SortServices(in []model.OOAPIService) (out []model.OOAPIService) {
 	for _, entry := range in {
 		if entry.Type == "https" {
 			out = append(out, entry)
@@ -39,7 +39,7 @@ func SortEndpoints(in []model.OOAPIService) (out []model.OOAPIService) {
 	return
 }
 
-// OnlyHTTPS returns the HTTPS endpoints only.
+// OnlyHTTPS returns the HTTPS services only.
 func OnlyHTTPS(in []model.OOAPIService) (out []model.OOAPIService) {
 	for _, entry := range in {
 		if entry.Type == "https" {
@@ -49,9 +49,9 @@ func OnlyHTTPS(in []model.OOAPIService) (out []model.OOAPIService) {
 	return
 }
 
-// OnlyFallbacks returns the fallback endpoints only.
+// OnlyFallbacks returns the fallback services only.
 func OnlyFallbacks(in []model.OOAPIService) (out []model.OOAPIService) {
-	for _, entry := range SortEndpoints(in) {
+	for _, entry := range SortServices(in) {
 		if entry.Type != "https" {
 			out = append(out, entry)
 		}
@@ -67,15 +67,16 @@ type Candidate struct {
 	// Err indicates whether the service works.
 	Err error
 
-	// Endpoint is the service endpoint.
-	Endpoint model.OOAPIService
+	// Service is the service to use.
+	Service model.OOAPIService
 
-	// TestHelpers contains the data returned by the endpoint.
+	// TestHelpers contains the data returned by the service when
+	// querying the /api/v1/test-helpers API endpoint.
 	TestHelpers map[string][]model.OOAPIService
 }
 
 func (c *Candidate) try(ctx context.Context, sess Session) {
-	client, err := NewClient(sess, c.Endpoint)
+	client, err := NewClient(sess, c.Service)
 	if err != nil {
 		c.Err = err
 		return
@@ -85,11 +86,11 @@ func (c *Candidate) try(ctx context.Context, sess Session) {
 	c.Duration = time.Since(start)
 	c.Err = err
 	c.TestHelpers = testhelpers
-	sess.Logger().Debugf("probe services: %+v: %+v %s", c.Endpoint, err, c.Duration)
+	sess.Logger().Debugf("probe services: %+v: %+v %s", c.Service, err, c.Duration)
 }
 
 func try(ctx context.Context, sess Session, svc model.OOAPIService) *Candidate {
-	candidate := &Candidate{Endpoint: svc}
+	candidate := &Candidate{Service: svc}
 	candidate.try(ctx, sess)
 	return candidate
 }
