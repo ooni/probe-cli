@@ -8,6 +8,11 @@ import (
 	"io"
 )
 
+var (
+	// defaultNameserver is the dns server using for resolving names inside the wg tunnel.
+	defaultNameserver = "8.8.8.8"
+)
+
 // Config contains the experiment config.
 //
 // This contains all the settings that user can set to modify the behaviour

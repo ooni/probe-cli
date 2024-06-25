@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"net/http"
 	"net/netip"
 	"strings"
 	"time"
@@ -20,10 +22,7 @@ import (
 
 const (
 	testName    = "wireguard"
-	testVersion = "0.1.1"
-
-	// defaultNameserver is the dns server using for resolving names inside the wg tunnel.
-	defaultNameserver = "8.8.8.8"
+	testVersion = "0.1.2"
 )
 
 var (
@@ -34,11 +33,19 @@ var (
 	ErrInvalidInput = errors.New("invalid input")
 )
 
+type httpClient interface {
+	Get(string) (*http.Response, error)
+}
+
 // Measurer performs the measurement.
 type Measurer struct {
 	events  *eventLogger
 	options *wireguardOptions
 	tnet    *netstack.Net
+
+	// used just for testing
+	dialContextFn func(context.Context, string, string) (net.Conn, error)
+	httpClient    httpClient
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
@@ -78,7 +85,6 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		return ErrInvalidInputType
 	}
 
-	// TODO(ainghazal): if the target is not public, substitute it with ASN?
 	config, input := target.Options, target.URL
 	if err := m.setupWireguardFromConfig(config); err != nil {
 		// A failure at this point means that we are not able
@@ -99,6 +105,8 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	if config.PublicTarget {
 		testkeys.Endpoint = m.options.endpoint
 	} else {
+		// TODO(ainghazal): if the target is not public,
+		// we might want to substitute it with ASN.
 		testkeys.Endpoint = input
 	}
 
@@ -115,6 +123,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 		testkeys.NetworkEvents = m.events.log()
 	}
 
+	// 4. assign test keys
 	measurement.TestKeys = testkeys
 	sess.Logger().Infof("%s", "Wireguard experiment done.")
 
