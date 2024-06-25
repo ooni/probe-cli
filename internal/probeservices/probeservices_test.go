@@ -47,13 +47,13 @@ func TestNewClientHTTPS(t *testing.T) {
 	}
 }
 
-func TestNewClientUnsupportedEndpoint(t *testing.T) {
+func TestNewClientUnsupportedService(t *testing.T) {
 	client, err := NewClient(
 		&mockable.Session{}, model.OOAPIService{
 			Address: "https://x.org",
 			Type:    "onion",
 		})
-	if !errors.Is(err, ErrUnsupportedEndpoint) {
+	if !errors.Is(err, ErrUnsupportedServiceType) {
 		t.Fatal("not the error we expected")
 	}
 	if client != nil {
@@ -193,7 +193,7 @@ func TestDefaultProbeServicesWorkAsIntended(t *testing.T) {
 	}
 }
 
-func TestSortEndpoints(t *testing.T) {
+func TestSortServices(t *testing.T) {
 	in := []model.OOAPIService{{
 		Type:    "onion",
 		Address: "httpo://jehhrikjjqrlpufu.onion",
@@ -216,7 +216,7 @@ func TestSortEndpoints(t *testing.T) {
 		Type:    "onion",
 		Address: "httpo://jehhrikjjqrlpufu.onion",
 	}}
-	out := SortEndpoints(in)
+	out := SortServices(in)
 	diff := cmp.Diff(out, expect)
 	if diff != "" {
 		t.Fatal(diff)
@@ -259,7 +259,7 @@ func TestOnlyHTTPS(t *testing.T) {
 }
 
 func TestOnlyFallbacks(t *testing.T) {
-	// put onion first so we also verify that we sort the endpoints
+	// put onion first so we also verify that we sort the services
 	in := []model.OOAPIService{{
 		Type:    "onion",
 		Address: "httpo://jehhrikjjqrlpufu.onion",
@@ -293,7 +293,7 @@ func TestOnlyFallbacks(t *testing.T) {
 }
 
 func TestTryAllCanceledContext(t *testing.T) {
-	// put onion first so we also verify that we sort the endpoints
+	// put onion first so we also verify that we sort the services
 	in := []model.OOAPIService{{
 		Type:    "onion",
 		Address: "httpo://jehhrikjjqrlpufu.onion",
@@ -328,11 +328,11 @@ func TestTryAllCanceledContext(t *testing.T) {
 	if !errors.Is(out[0].Err, context.Canceled) {
 		t.Fatal("invalid error")
 	}
-	if out[0].Endpoint.Type != "https" {
-		t.Fatal("invalid endpoint type")
+	if out[0].Service.Type != "https" {
+		t.Fatal("invalid service type")
 	}
-	if out[0].Endpoint.Address != "https://ams-ps-nonexistent.ooni.io" {
-		t.Fatal("invalid endpoint type")
+	if out[0].Service.Address != "https://ams-ps-nonexistent.ooni.io" {
+		t.Fatal("invalid service type")
 	}
 	//
 	if out[1].Duration <= 0 {
@@ -341,11 +341,11 @@ func TestTryAllCanceledContext(t *testing.T) {
 	if !errors.Is(out[1].Err, context.Canceled) {
 		t.Fatal("invalid error")
 	}
-	if out[1].Endpoint.Type != "https" {
-		t.Fatal("invalid endpoint type")
+	if out[1].Service.Type != "https" {
+		t.Fatal("invalid service type")
 	}
-	if out[1].Endpoint.Address != "https://hkg-ps-nonexistent.ooni.io" {
-		t.Fatal("invalid endpoint type")
+	if out[1].Service.Address != "https://hkg-ps-nonexistent.ooni.io" {
+		t.Fatal("invalid service type")
 	}
 	//
 	if out[2].Duration <= 0 {
@@ -354,11 +354,11 @@ func TestTryAllCanceledContext(t *testing.T) {
 	if !errors.Is(out[2].Err, context.Canceled) {
 		t.Fatal("invalid error")
 	}
-	if out[2].Endpoint.Type != "https" {
-		t.Fatal("invalid endpoint type")
+	if out[2].Service.Type != "https" {
+		t.Fatal("invalid service type")
 	}
-	if out[2].Endpoint.Address != "https://mia-ps-nonexistent.ooni.io" {
-		t.Fatal("invalid endpoint type")
+	if out[2].Service.Address != "https://mia-ps-nonexistent.ooni.io" {
+		t.Fatal("invalid service type")
 	}
 	//
 	if out[3].Duration <= 0 {
@@ -367,28 +367,28 @@ func TestTryAllCanceledContext(t *testing.T) {
 	if !errors.Is(out[3].Err, context.Canceled) {
 		t.Fatal("invalid error")
 	}
-	if out[3].Endpoint.Type != "cloudfront" {
-		t.Fatal("invalid endpoint type")
+	if out[3].Service.Type != "cloudfront" {
+		t.Fatal("invalid service type")
 	}
-	if out[3].Endpoint.Front != "dkyhjv0wpi2dk.cloudfront.net" {
-		t.Fatal("invalid endpoint type")
+	if out[3].Service.Front != "dkyhjv0wpi2dk.cloudfront.net" {
+		t.Fatal("invalid service type")
 	}
-	if out[3].Endpoint.Address != "https://dkyhjv0wpi2dk.cloudfront.net" {
-		t.Fatal("invalid endpoint type")
+	if out[3].Service.Address != "https://dkyhjv0wpi2dk.cloudfront.net" {
+		t.Fatal("invalid service type")
 	}
 	//
-	// Note: here duration may be zero because the endpoint is not supported
+	// Note: here duration may be zero because the service is not supported
 	// and so we don't basically do anything. But it also may be nonzero since
 	// we also run tests in the cloud, which is slower than my desktop. So, I
 	// have not written a specific test concerning out[4].Duration.
-	if !errors.Is(out[4].Err, ErrUnsupportedEndpoint) {
+	if !errors.Is(out[4].Err, ErrUnsupportedServiceType) {
 		t.Fatal("invalid error")
 	}
-	if out[4].Endpoint.Type != "onion" {
-		t.Fatal("invalid endpoint type")
+	if out[4].Service.Type != "onion" {
+		t.Fatal("invalid service type")
 	}
-	if out[4].Endpoint.Address != "httpo://jehhrikjjqrlpufu.onion" {
-		t.Fatal("invalid endpoint type")
+	if out[4].Service.Address != "httpo://jehhrikjjqrlpufu.onion" {
+		t.Fatal("invalid service type")
 	}
 }
 
@@ -396,7 +396,7 @@ func TestTryAllIntegrationWeRaceForFastestHTTPS(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	// put onion first so we also verify that we sort the endpoints
+	// put onion first so we also verify that we sort the services
 	in := []model.OOAPIService{{
 		Type:    "onion",
 		Address: "httpo://jehhrikjjqrlpufu.onion",
@@ -423,11 +423,11 @@ func TestTryAllIntegrationWeRaceForFastestHTTPS(t *testing.T) {
 	if out[0].Err != nil {
 		t.Fatal("invalid error")
 	}
-	if out[0].Endpoint.Type != "https" {
-		t.Fatal("invalid endpoint type")
+	if out[0].Service.Type != "https" {
+		t.Fatal("invalid service type")
 	}
-	if out[0].Endpoint.Address != "https://api.ooni.io" {
-		t.Fatal("invalid endpoint address")
+	if out[0].Service.Address != "https://api.ooni.io" {
+		t.Fatal("invalid service address")
 	}
 }
 
@@ -435,7 +435,7 @@ func TestTryAllIntegrationWeFallback(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	// put onion first so we also verify that we sort the endpoints
+	// put onion first so we also verify that we sort the services
 	in := []model.OOAPIService{{
 		Type:    "onion",
 		Address: "httpo://jehhrikjjqrlpufu.onion",
@@ -468,11 +468,11 @@ func TestTryAllIntegrationWeFallback(t *testing.T) {
 	if !strings.HasSuffix(out[0].Err.Error(), "no such host") {
 		t.Fatal("invalid error")
 	}
-	if out[0].Endpoint.Type != "https" {
-		t.Fatal("invalid endpoint type")
+	if out[0].Service.Type != "https" {
+		t.Fatal("invalid service type")
 	}
-	if out[0].Endpoint.Address != "https://ps-nonexistent.ooni.io" {
-		t.Fatal("invalid endpoint type")
+	if out[0].Service.Address != "https://ps-nonexistent.ooni.io" {
+		t.Fatal("invalid service type")
 	}
 	//
 	if out[1].Duration <= 0 {
@@ -481,11 +481,11 @@ func TestTryAllIntegrationWeFallback(t *testing.T) {
 	if !strings.HasSuffix(out[1].Err.Error(), "no such host") {
 		t.Fatal("invalid error")
 	}
-	if out[1].Endpoint.Type != "https" {
-		t.Fatal("invalid endpoint type")
+	if out[1].Service.Type != "https" {
+		t.Fatal("invalid service type")
 	}
-	if out[1].Endpoint.Address != "https://hkg-ps-nonexistent.ooni.nu" {
-		t.Fatal("invalid endpoint type")
+	if out[1].Service.Address != "https://hkg-ps-nonexistent.ooni.nu" {
+		t.Fatal("invalid service type")
 	}
 	//
 	if out[2].Duration <= 0 {
@@ -494,11 +494,11 @@ func TestTryAllIntegrationWeFallback(t *testing.T) {
 	if !strings.HasSuffix(out[2].Err.Error(), "no such host") {
 		t.Fatal("invalid error")
 	}
-	if out[2].Endpoint.Type != "https" {
-		t.Fatal("invalid endpoint type")
+	if out[2].Service.Type != "https" {
+		t.Fatal("invalid service type")
 	}
-	if out[2].Endpoint.Address != "https://mia-ps2-nonexistent.ooni.nu" {
-		t.Fatal("invalid endpoint type")
+	if out[2].Service.Address != "https://mia-ps2-nonexistent.ooni.nu" {
+		t.Fatal("invalid service type")
 	}
 	//
 	if out[3].Duration <= 0 {
@@ -507,13 +507,13 @@ func TestTryAllIntegrationWeFallback(t *testing.T) {
 	if out[3].Err != nil {
 		t.Fatal("invalid error")
 	}
-	if out[3].Endpoint.Type != "cloudfront" {
-		t.Fatal("invalid endpoint type")
+	if out[3].Service.Type != "cloudfront" {
+		t.Fatal("invalid service type")
 	}
-	if out[3].Endpoint.Address != "https://dkyhjv0wpi2dk.cloudfront.net" {
-		t.Fatal("invalid endpoint type")
+	if out[3].Service.Address != "https://dkyhjv0wpi2dk.cloudfront.net" {
+		t.Fatal("invalid service type")
 	}
-	if out[3].Endpoint.Front != "dkyhjv0wpi2dk.cloudfront.net" {
+	if out[3].Service.Front != "dkyhjv0wpi2dk.cloudfront.net" {
 		t.Fatal("invalid front")
 	}
 }
@@ -537,32 +537,32 @@ func TestSelectBestOnlyFailures(t *testing.T) {
 func TestSelectBestSelectsTheFastest(t *testing.T) {
 	in := []*Candidate{{
 		Duration: 10 * time.Millisecond,
-		Endpoint: model.OOAPIService{
+		Service: model.OOAPIService{
 			Address: "https://ps1.ooni.nonexistent",
 			Type:    "https",
 		},
 	}, {
 		Duration: 4 * time.Millisecond,
-		Endpoint: model.OOAPIService{
+		Service: model.OOAPIService{
 			Address: "https://ps2.ooni.nonexistent",
 			Type:    "https",
 		},
 	}, {
 		Duration: 7 * time.Millisecond,
-		Endpoint: model.OOAPIService{
+		Service: model.OOAPIService{
 			Address: "https://ps3.ooni.nonexistent",
 			Type:    "https",
 		},
 	}, {
 		Duration: 11 * time.Millisecond,
-		Endpoint: model.OOAPIService{
+		Service: model.OOAPIService{
 			Address: "https://ps4.ooni.nonexistent",
 			Type:    "https",
 		},
 	}}
 	expected := &Candidate{
 		Duration: 4 * time.Millisecond,
-		Endpoint: model.OOAPIService{
+		Service: model.OOAPIService{
 			Address: "https://ps2.ooni.nonexistent",
 			Type:    "https",
 		},
