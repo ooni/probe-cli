@@ -394,7 +394,7 @@ func (s *Session) FetchOpenVPNConfig(
 	// We cannot lock earlier because newOrchestraClient and
 	// MaybeLookupLocation both lock the mutex.
 	//
-	// TODO(bassosimone,DecFox):  we should consider using the same strategy we used for the
+	// TODO(bassosimone,DecFox): we should consider using the same strategy we used for the
 	// experiments, where we separated mutable state into dedicated types.
 	defer s.mu.Unlock()
 	s.mu.Lock()
