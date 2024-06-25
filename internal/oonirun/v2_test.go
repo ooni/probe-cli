@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/httpclientx"
@@ -659,4 +660,36 @@ func TestV2DescriptorCacheLoad(t *testing.T) {
 			t.Fatal("expected nil cache")
 		}
 	})
+}
+
+func Test_readFirstLineFromFile(t *testing.T) {
+
+	t.Run("return empty string if file is empty", func(t *testing.T) {
+		f, err := os.CreateTemp(t.TempDir(), "auth-")
+		if err != nil {
+			t.Fatal(err)
+		}
+		f.Write([]byte(""))
+		defer f.Close()
+		defer os.Remove(f.Name())
+
+		line, err := readFirstLineFromFile(f.Name())
+		if line != "" {
+			t.Fatal("expected empty string")
+		}
+		if err != nil {
+			t.Fatal("expected err==nil")
+		}
+	})
+
+	t.Run("return error if file does not exist", func(t *testing.T) {
+		line, err := readFirstLineFromFile(filepath.Join(t.TempDir(), "non-existent"))
+		if line != "" {
+			t.Fatal("expected empty string")
+		}
+		if !errors.Is(err, os.ErrNotExist) {
+			t.Fatal("expected ErrNotExist")
+		}
+	})
+
 }
