@@ -34,7 +34,7 @@ func TestNewOverlappedPostJSONFastRecoverFromEarlyErrors(t *testing.T) {
 	//
 	// Because the first three THs fail fast but the schedule interval is the default (i.e.,
 	// 15 seconds), we're testing whether the algorithm allows us to recover quickly from
-	// failure and check the other base URLs without waiting for too much time.
+	// failure and check the other endpoints without waiting for too much time.
 	//
 	// Note: before changing the algorithm, this test ran for 45 seconds. Now it runs
 	// for 1s because a previous goroutine terminating with error causes the next
@@ -81,10 +81,10 @@ func TestNewOverlappedPostJSONFastRecoverFromEarlyErrors(t *testing.T) {
 
 	results := overlapped.Map(
 		context.Background(),
-		NewBaseURL(zeroTh.URL),
-		NewBaseURL(oneTh.URL),
-		NewBaseURL(twoTh.URL),
-		NewBaseURL(threeTh.URL),
+		NewEndpoint(zeroTh.URL),
+		NewEndpoint(oneTh.URL),
+		NewEndpoint(twoTh.URL),
+		NewEndpoint(threeTh.URL),
 	)
 
 	runtimex.Assert(len(results) == 4, "unexpected number of results")
@@ -195,10 +195,10 @@ func TestNewOverlappedPostJSONFirstCallSucceeds(t *testing.T) {
 
 	results := overlapped.Map(
 		context.Background(),
-		NewBaseURL(zeroTh.URL),
-		NewBaseURL(oneTh.URL),
-		NewBaseURL(twoTh.URL),
-		NewBaseURL(threeTh.URL),
+		NewEndpoint(zeroTh.URL),
+		NewEndpoint(oneTh.URL),
+		NewEndpoint(twoTh.URL),
+		NewEndpoint(threeTh.URL),
 	)
 
 	runtimex.Assert(len(results) == 4, "unexpected number of results")
@@ -254,7 +254,7 @@ func TestNewOverlappedPostJSONHandlesAllTimeouts(t *testing.T) {
 	// - 2.th.ooni.org causes timeout
 	// - 3.th.ooni.org causes timeout
 	//
-	// We expect to loop for all base URLs and then discover that all of them
+	// We expect to loop for all endpoints and then discover that all of them
 	// failed. To make the test ~quick, we reduce the scheduling interval, and
 	// the watchdog timeout.
 	//
@@ -312,10 +312,10 @@ func TestNewOverlappedPostJSONHandlesAllTimeouts(t *testing.T) {
 
 	results := overlapped.Map(
 		context.Background(),
-		NewBaseURL(zeroTh.URL),
-		NewBaseURL(oneTh.URL),
-		NewBaseURL(twoTh.URL),
-		NewBaseURL(threeTh.URL),
+		NewEndpoint(zeroTh.URL),
+		NewEndpoint(oneTh.URL),
+		NewEndpoint(twoTh.URL),
+		NewEndpoint(threeTh.URL),
 	)
 
 	runtimex.Assert(len(results) == 4, "unexpected number of results")
@@ -422,10 +422,10 @@ func TestNewOverlappedPostJSONResetTimeoutSuccessCanceled(t *testing.T) {
 
 	results := overlapped.Map(
 		context.Background(),
-		NewBaseURL(zeroTh.URL),
-		NewBaseURL(oneTh.URL),
-		NewBaseURL(twoTh.URL),
-		NewBaseURL(threeTh.URL),
+		NewEndpoint(zeroTh.URL),
+		NewEndpoint(oneTh.URL),
+		NewEndpoint(twoTh.URL),
+		NewEndpoint(threeTh.URL),
 	)
 
 	runtimex.Assert(len(results) == 4, "unexpected number of results")
@@ -517,7 +517,7 @@ func TestNewOverlappedPostJSONWithNoURLs(t *testing.T) {
 }
 
 func TestNewOverlappedWithFuncDefaultsAreCorrect(t *testing.T) {
-	overlapped := newOverlappedWithFunc(func(ctx context.Context, e *BaseURL) (int, error) {
+	overlapped := newOverlappedWithFunc(func(ctx context.Context, e *Endpoint) (int, error) {
 		return 1, nil
 	})
 	if overlapped.ScheduleInterval != 15*time.Second {

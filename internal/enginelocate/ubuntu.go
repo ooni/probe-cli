@@ -24,7 +24,7 @@ func ubuntuIPLookup(
 	// read the HTTP response and parse as XML
 	v, err := httpclientx.GetXML[*ubuntuResponse](
 		ctx,
-		httpclientx.NewBaseURL("https://geoip.ubuntu.com/lookup"),
+		httpclientx.NewEndpoint("https://geoip.ubuntu.com/lookup"),
 		&httpclientx.Config{
 			Authorization: "", // not needed
 			Client:        httpClient,

@@ -28,7 +28,7 @@ func TestPostJSON(t *testing.T) {
 
 		resp, err := PostJSON[chan int, *apiResponse](
 			context.Background(),
-			NewBaseURL(""),
+			NewEndpoint(""),
 			req,
 			&Config{
 				Client:    http.DefaultClient,
@@ -53,7 +53,7 @@ func TestPostJSON(t *testing.T) {
 
 		resp, err := PostJSON[*apiRequest, *apiResponse](
 			context.Background(),
-			NewBaseURL("\t"), // <- invalid URL that we cannot parse
+			NewEndpoint("\t"), // <- invalid URL that we cannot parse
 			req,
 			&Config{
 				Client:    http.DefaultClient,
@@ -82,7 +82,7 @@ func TestPostJSON(t *testing.T) {
 
 		resp, err := PostJSON[*apiRequest, *apiResponse](
 			context.Background(),
-			NewBaseURL(server.URL),
+			NewEndpoint(server.URL),
 			req,
 			&Config{
 				Client:    http.DefaultClient,
@@ -112,7 +112,7 @@ func TestPostJSON(t *testing.T) {
 
 		resp, err := PostJSON[*apiRequest, *apiResponse](
 			context.Background(),
-			NewBaseURL(server.URL),
+			NewEndpoint(server.URL),
 			req,
 			&Config{
 				Client:    http.DefaultClient,
@@ -153,7 +153,7 @@ func TestPostJSON(t *testing.T) {
 
 		resp, err := PostJSON[*apiRequest, *apiResponse](
 			context.Background(),
-			NewBaseURL(server.URL),
+			NewEndpoint(server.URL),
 			req,
 			&Config{
 				Client:    http.DefaultClient,
@@ -211,7 +211,7 @@ func TestPostJSONCommunicationOkay(t *testing.T) {
 	// send the request and receive the response
 	apiresp, err := PostJSON[*apiRequest, *apiResponse](
 		context.Background(),
-		NewBaseURL(server.URL).WithHostOverride("www.cloudfront.com"),
+		NewEndpoint(server.URL).WithHostOverride("www.cloudfront.com"),
 		apireq,
 		&Config{
 			Authorization: "scribai",
@@ -288,7 +288,7 @@ func TestPostJSONLoggingOkay(t *testing.T) {
 
 	resp, err := PostJSON[*apiRequest, *apiResponse](
 		context.Background(),
-		NewBaseURL(server.URL),
+		NewEndpoint(server.URL),
 		req,
 		&Config{
 			Client:    http.DefaultClient,
@@ -335,7 +335,7 @@ func TestPostJSONCorrectlyRejectsNilValues(t *testing.T) {
 		// invoke the API
 		resp, err := PostJSON[map[string]string, *apiResponse](
 			context.Background(),
-			NewBaseURL(server.URL),
+			NewEndpoint(server.URL),
 			nil,
 			&Config{
 				Client:    http.DefaultClient,
@@ -366,7 +366,7 @@ func TestPostJSONCorrectlyRejectsNilValues(t *testing.T) {
 		// invoke the API
 		resp, err := PostJSON[*apiRequest, *apiResponse](
 			context.Background(),
-			NewBaseURL(server.URL),
+			NewEndpoint(server.URL),
 			nil,
 			&Config{
 				Client:    http.DefaultClient,
@@ -397,7 +397,7 @@ func TestPostJSONCorrectlyRejectsNilValues(t *testing.T) {
 		// invoke the API
 		resp, err := PostJSON[[]string, *apiResponse](
 			context.Background(),
-			NewBaseURL(server.URL),
+			NewEndpoint(server.URL),
 			nil,
 			&Config{
 				Client:    http.DefaultClient,
@@ -431,7 +431,7 @@ func TestPostJSONCorrectlyRejectsNilValues(t *testing.T) {
 		// invoke the API
 		resp, err := PostJSON[*apiRequest, map[string]string](
 			context.Background(),
-			NewBaseURL(server.URL),
+			NewEndpoint(server.URL),
 			apireq,
 			&Config{
 				Client:    http.DefaultClient,
@@ -465,7 +465,7 @@ func TestPostJSONCorrectlyRejectsNilValues(t *testing.T) {
 		// invoke the API
 		resp, err := PostJSON[*apiRequest, *apiResponse](
 			context.Background(),
-			NewBaseURL(server.URL),
+			NewEndpoint(server.URL),
 			apireq,
 			&Config{
 				Client:    http.DefaultClient,
@@ -499,7 +499,7 @@ func TestPostJSONCorrectlyRejectsNilValues(t *testing.T) {
 		// invoke the API
 		resp, err := PostJSON[*apiRequest, []string](
 			context.Background(),
-			NewBaseURL(server.URL),
+			NewEndpoint(server.URL),
 			apireq,
 			&Config{
 				Client:    http.DefaultClient,

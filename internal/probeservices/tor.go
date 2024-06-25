@@ -36,7 +36,7 @@ func (c Client) FetchTorTargets(ctx context.Context, cc string) (map[string]mode
 	// use a model.DiscardLogger to avoid logging bridges
 	return httpclientx.GetJSON[map[string]model.OOAPITorTarget](
 		ctx,
-		httpclientx.NewBaseURL(URL).WithHostOverride(c.Host),
+		httpclientx.NewEndpoint(URL).WithHostOverride(c.Host),
 		&httpclientx.Config{
 			Authorization: s,
 			Client:        c.HTTPClient,

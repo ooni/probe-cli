@@ -68,7 +68,7 @@ func (c Client) OpenReport(ctx context.Context, rt model.OOAPIReportTemplate) (R
 
 	cor, err := httpclientx.PostJSON[model.OOAPIReportTemplate, *model.OOAPICollectorOpenResponse](
 		ctx,
-		httpclientx.NewBaseURL(URL).WithHostOverride(c.Host),
+		httpclientx.NewEndpoint(URL).WithHostOverride(c.Host),
 		rt,
 		&httpclientx.Config{
 			Client:    c.HTTPClient,
@@ -120,7 +120,7 @@ func (r reportChan) SubmitMeasurement(ctx context.Context, m *model.Measurement)
 	updateResponse, err := httpclientx.PostJSON[
 		model.OOAPICollectorUpdateRequest, *model.OOAPICollectorUpdateResponse](
 		ctx,
-		httpclientx.NewBaseURL(URL).WithHostOverride(r.client.Host),
+		httpclientx.NewEndpoint(URL).WithHostOverride(r.client.Host),
 		apiReq,
 		&httpclientx.Config{
 			Client:    r.client.HTTPClient,

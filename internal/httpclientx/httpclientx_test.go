@@ -47,7 +47,7 @@ func TestGzipDecompression(t *testing.T) {
 		// make sure we can read it
 		respbody, err := GetRaw(
 			context.Background(),
-			NewBaseURL(server.URL),
+			NewEndpoint(server.URL),
 			&Config{
 				Client:    http.DefaultClient,
 				Logger:    model.DiscardLogger,
@@ -79,7 +79,7 @@ func TestGzipDecompression(t *testing.T) {
 		// attempt to get a response body
 		respbody, err := GetRaw(
 			context.Background(),
-			NewBaseURL(server.URL),
+			NewEndpoint(server.URL),
 			&Config{
 				Client:    http.DefaultClient,
 				Logger:    model.DiscardLogger,
@@ -109,7 +109,7 @@ func TestGzipDecompression(t *testing.T) {
 		// make sure we can read it
 		respbody, err := GetRaw(
 			context.Background(),
-			NewBaseURL(server.URL),
+			NewEndpoint(server.URL),
 			&Config{
 				Client:    http.DefaultClient,
 				Logger:    model.DiscardLogger,
@@ -135,7 +135,7 @@ func TestHTTPStatusCodeHandling(t *testing.T) {
 
 	respbody, err := GetRaw(
 		context.Background(),
-		NewBaseURL(server.URL),
+		NewEndpoint(server.URL),
 		&Config{
 			Client:    http.DefaultClient,
 			Logger:    model.DiscardLogger,
@@ -168,7 +168,7 @@ func TestHTTPReadBodyErrorsHandling(t *testing.T) {
 
 	respbody, err := GetRaw(
 		context.Background(),
-		NewBaseURL(server.URL),
+		NewEndpoint(server.URL),
 		&Config{
 			Client:    http.DefaultClient,
 			Logger:    model.DiscardLogger,
@@ -200,7 +200,7 @@ func TestLimitMaximumBodySize(t *testing.T) {
 		// note: here we're using a small max body size, definitely smaller than what we send
 		respbody, err := GetRaw(
 			context.Background(),
-			NewBaseURL(server.URL),
+			NewEndpoint(server.URL),
 			&Config{
 				Client:              http.DefaultClient,
 				Logger:              model.DiscardLogger,
@@ -233,7 +233,7 @@ func TestLimitMaximumBodySize(t *testing.T) {
 		// note: here we're using a small max body size, definitely smaller than the gzip bomb
 		respbody, err := GetRaw(
 			context.Background(),
-			NewBaseURL(server.URL),
+			NewEndpoint(server.URL),
 			&Config{
 				Client:              http.DefaultClient,
 				Logger:              model.DiscardLogger,
