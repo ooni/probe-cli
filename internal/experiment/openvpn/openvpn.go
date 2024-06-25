@@ -206,7 +206,7 @@ func (m *Measurer) FetchProviderCredentials(
 // Run implements model.ExperimentMeasurer.Run.
 // A single run expects exactly ONE input (endpoint), but we can modify whether
 // to test different transports by settings options.
-func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
+func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	callbacks := args.Callbacks
 	measurement := args.Measurement
 	sess := args.Session
