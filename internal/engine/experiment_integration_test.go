@@ -384,7 +384,7 @@ func TestOpenReportNewClientFailure(t *testing.T) {
 		Type:    "antani",
 	}
 	err = exp.OpenReportContext(context.Background())
-	if err.Error() != "probe services: unsupported endpoint type" {
+	if err.Error() != "probe services: unsupported service type" {
 		t.Fatal(err)
 	}
 }
