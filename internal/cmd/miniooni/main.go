@@ -26,6 +26,7 @@ import (
 // Options contains the options you can set from the CLI.
 type Options struct {
 	Annotations         []string
+	AuthFile            string
 	Emoji               bool
 	ExtraOptions        []string
 	HomeDir             string
@@ -227,6 +228,13 @@ func registerOONIRun(rootCmd *cobra.Command, globalOptions *Options) {
 		"f",
 		[]string{},
 		"Path to the OONI Run v2 descriptor to run (may be specified multiple times)",
+	)
+	flags.StringVarP(
+		&globalOptions.AuthFile,
+		"auth-file",
+		"a",
+		"",
+		"Path to a file with authentication headers (for fetching a remote OONI Run v2 descriptor)",
 	)
 }
 

@@ -19,6 +19,10 @@ type LinkConfig struct {
 	// reviewing what it contains or what has changed.
 	AcceptChanges bool
 
+	// AuthFile is OPTIONAL and will add any authentication headers to the request
+	// for fetching this OONI Run link.
+	AuthFile string
+
 	// Annotations contains OPTIONAL Annotations for the experiment.
 	Annotations map[string]string
 

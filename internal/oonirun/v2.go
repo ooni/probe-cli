@@ -5,11 +5,15 @@ package oonirun
 //
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"strings"
 	"sync/atomic"
+	"unicode"
 
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
@@ -63,12 +67,16 @@ type V2Nettest struct {
 // getV2DescriptorFromHTTPSURL GETs a v2Descriptor instance from
 // a static URL (e.g., from a GitHub repo or from a Gist).
 func getV2DescriptorFromHTTPSURL(ctx context.Context, client model.HTTPClient,
-	logger model.Logger, URL string) (*V2Descriptor, error) {
+	logger model.Logger, URL, auth string) (*V2Descriptor, error) {
+	if auth != "" {
+		// we assume a bearer token
+		auth = fmt.Sprintf("Bearer %s", auth)
+	}
 	return httpclientx.GetJSON[*V2Descriptor](
 		ctx,
 		httpclientx.NewEndpoint(URL),
 		&httpclientx.Config{
-			Authorization: "", // not needed
+			Authorization: auth,
 			Client:        client,
 			Logger:        logger,
 			UserAgent:     model.HTTPHeaderUserAgent,
@@ -140,9 +148,9 @@ func v2DescriptorCacheLoad(fsstore model.KeyValueStore) (*v2DescriptorCache, err
 // - err is the error that occurred, or nil in case of success.
 func (cache *v2DescriptorCache) PullChangesWithoutSideEffects(
 	ctx context.Context, client model.HTTPClient, logger model.Logger,
-	URL string) (oldValue, newValue *V2Descriptor, err error) {
+	URL, auth string) (oldValue, newValue *V2Descriptor, err error) {
 	oldValue = cache.Entries[URL]
-	newValue, err = getV2DescriptorFromHTTPSURL(ctx, client, logger, URL)
+	newValue, err = getV2DescriptorFromHTTPSURL(ctx, client, logger, URL, auth)
 	return
 }
 
@@ -263,7 +271,11 @@ func v2MeasureHTTPS(ctx context.Context, config *LinkConfig, URL string) error {
 
 	// pull a possibly new descriptor without updating the old descriptor
 	clnt := config.Session.DefaultHTTPClient()
-	oldValue, newValue, err := cache.PullChangesWithoutSideEffects(ctx, clnt, logger, URL)
+	auth, err := maybeGetAuthenticationTokenFromFile(config.AuthFile)
+	if err != nil {
+		logger.Warnf("oonirun: failed to retrieve auth token: %v", err)
+	}
+	oldValue, newValue, err := cache.PullChangesWithoutSideEffects(ctx, clnt, logger, URL, auth)
 	if err != nil {
 		return err
 	}
@@ -289,4 +301,39 @@ func v2MeasureHTTPS(ctx context.Context, config *LinkConfig, URL string) error {
 	//
 	// note: this function gracefully handles nil values
 	return V2MeasureDescriptor(ctx, config, newValue)
+}
+
+func maybeGetAuthenticationTokenFromFile(path string) (string, error) {
+	if path != "" {
+		return readFirstLineFromFile(path)
+	}
+	return "", nil
+}
+
+// readFirstLineFromFile reads the first line of the passed text file and trims any non-printable characters.
+func readFirstLineFromFile(filePath string) (string, error) {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+
+	// Scan the first line
+	if scanner.Scan() {
+		line := scanner.Text()
+		trimmed := strings.TrimFunc(line, func(r rune) bool {
+			return !unicode.IsPrint(r)
+		})
+		return trimmed, nil
+	}
+
+	// Check for any scanning error
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
+
+	// Return empty string if file is empty
+	return "", nil
 }
