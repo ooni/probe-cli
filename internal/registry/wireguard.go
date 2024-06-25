@@ -1,7 +1,7 @@
 package registry
 
 //
-// Registers the `wireguard' experiment.
+// Registers the `wireguard` experiment.
 //
 
 import (
