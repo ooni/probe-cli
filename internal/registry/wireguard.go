@@ -22,7 +22,7 @@ func init() {
 			interruptible:    true,
 			// TODO(ainghazal): when the backend is ready to hand us targets,
 			// we will use InputOrQueryBackend.
-			inputPolicy: model.InputNone,
+			inputPolicy: model.InputStrictlyRequired,
 			newLoader:   wireguard.NewLoader,
 		}
 	}
