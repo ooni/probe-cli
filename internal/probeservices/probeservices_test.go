@@ -53,7 +53,7 @@ func TestNewClientUnsupportedService(t *testing.T) {
 			Address: "https://x.org",
 			Type:    "onion",
 		})
-	if !errors.Is(err, ErrUnsupportedService) {
+	if !errors.Is(err, ErrUnsupportedServiceType) {
 		t.Fatal("not the error we expected")
 	}
 	if client != nil {
@@ -381,7 +381,7 @@ func TestTryAllCanceledContext(t *testing.T) {
 	// and so we don't basically do anything. But it also may be nonzero since
 	// we also run tests in the cloud, which is slower than my desktop. So, I
 	// have not written a specific test concerning out[4].Duration.
-	if !errors.Is(out[4].Err, ErrUnsupportedService) {
+	if !errors.Is(out[4].Err, ErrUnsupportedServiceType) {
 		t.Fatal("invalid error")
 	}
 	if out[4].Service.Type != "onion" {

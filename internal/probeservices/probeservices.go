@@ -32,8 +32,8 @@ import (
 )
 
 var (
-	// ErrUnsupportedService indicates that we don't support this service type.
-	ErrUnsupportedService = errors.New("probe services: unsupported service type")
+	// ErrUnsupportedServiceType indicates that we don't support this service type.
+	ErrUnsupportedServiceType = errors.New("probe services: unsupported service type")
 
 	// ErrUnsupportedCloudFrontAddress indicates that we don't support this
 	// cloudfront address (e.g. wrong scheme, presence of port).
@@ -126,6 +126,6 @@ func NewClient(sess Session, service model.OOAPIService) (*Client, error) {
 		}
 		return client, nil
 	default:
-		return nil, ErrUnsupportedService
+		return nil, ErrUnsupportedServiceType
 	}
 }
