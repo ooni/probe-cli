@@ -20,7 +20,7 @@ func cloudflareIPLookup(
 	// get the raw response body
 	data, err := httpclientx.GetRaw(
 		ctx,
-		httpclientx.NewEndpoint("https://www.cloudflare.com/cdn-cgi/trace"),
+		httpclientx.NewBaseURL("https://www.cloudflare.com/cdn-cgi/trace"),
 		&httpclientx.Config{
 			Authorization: "", // not needed
 			Client:        httpClient,

@@ -37,7 +37,7 @@ func CallWebConnectivityTestHelper(ctx context.Context, creq *model.THRequest,
 	)
 
 	// perform the overlapped HTTP API calls
-	cresp, idx, err := overlapped.Run(ctx, httpclientx.NewEndpointFromModelOOAPIServices(testhelpers...)...)
+	cresp, idx, err := overlapped.Run(ctx, httpclientx.NewBaseURLsFromModelOOAPIServices(testhelpers...)...)
 
 	// handle the case where all test helpers failed
 	if err != nil {

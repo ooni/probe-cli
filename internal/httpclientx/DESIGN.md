@@ -76,18 +76,18 @@ type Config struct {
 	UserAgent string
 }
 
-type Endpoint struct {
-	URL string
-	Host string // optional for cloudfronting
+type BaseURL struct {
+	Value string // mandatory base-URL value
+	HostOverride string // optional for cloudfronting
 }
 
-func GetJSON[Output any](ctx context.Context, epnt *Endpoint, config *Config) (Output, error)
+func GetJSON[Output any](ctx context.Context, base *BaseURL, config *Config) (Output, error)
 
-func GetRaw(ctx context.Context, epnt *Endpoint, config *Config) ([]byte, error)
+func GetRaw(ctx context.Context, base *BaseURL, config *Config) ([]byte, error)
 
-func GetXML[Output any](ctx context.Context, epnt *Endpoint, config *Config) (Output, error)
+func GetXML[Output any](ctx context.Context, base *BaseURL, config *Config) (Output, error)
 
-func PostJSON[Input, Output any](ctx context.Context, epnt *Endpoint, input Input, config *Config) (Output, error)
+func PostJSON[Input, Output any](ctx context.Context, base *BaseURL, input Input, config *Config) (Output, error)
 ```
 
 (The `*Config` is the last argument because it is handy to create it inline when calling
@@ -124,9 +124,9 @@ To avoid logging bodies, one just needs to pass `model.DiscardLogger` as the
 The code at `./internal/httpapi` performs sequential function calls. This design
 does not interact well with the `enginenetx` package and its dial tactics. A better
 strategy is to allow calls to be overlapped. This means that, if the `enginenetx`
-is busy trying tactics for a given API endpoint, we eventually try to use the
-subsequent (semantically-equivalent) endpoint after a given time, without waiting
-for the first endpoint to complete.
+is busy trying tactics for a given API base URL, we eventually try to use the
+subsequent (semantically-equivalent) base URL after a given time, without waiting
+for the first base URL to complete.
 
 We allow for overlapped operations by defining these constructors:
 
@@ -144,7 +144,7 @@ They all construct the same `*Overlapped` struct, which looks like this:
 
 ```Go
 type Overlapped[Output any] struct {
-	RunFunc func(ctx context.Context, epnt *Endpoint) (Output, error)
+	RunFunc func(ctx context.Context, base *BaseURL) (Output, error)
 
 	ScheduleInterval time.Duration
 }
@@ -156,15 +156,15 @@ name (i.e., `NewOverlappedGetXML` configures `RunFunc` to run `GetXML`).
 Then, we define the following method:
 
 ```Go
-func (ovx *Overlapped[Output]) Run(ctx context.Context, epnts ...*Endpoint) (Output, error)
+func (ovx *Overlapped[Output]) Run(ctx context.Context, bases ...*BaseURL) (Output, error)
 ```
 
-This method starts N goroutines to issue the API calls with each endpoint URL. (A classic example
+This method starts N goroutines to issue the API calls with each base URL. (A classic example
 is for the URLs to be `https://0.th.ooni.org/`, `https://1.th.ooni.org/` and so on.)
 
-By default, `ScheduleInterval` is 15 seconds. If the first endpoint URL does not provide a result
+By default, `ScheduleInterval` is 15 seconds. If the first base URL does not provide a result
 within 15 seconds, we try the second one. That is, every 15 seconds, we will attempt using
-another endpoint URL, until there's a successful response or we run out of URLs.
+another base URL, until there's a successful response or we run out of URLs.
 
 As soon as we have a successful response, we cancel all the other pending operations
 that may exist. Once all operations have terminated, we return to the caller.
@@ -329,7 +329,7 @@ that is part of the same package, while in this package we marshal in `PostJSON`
 Consider the following code snippet:
 
 ```Go
-resp, err := httpclientx.GetJSON[*APIResponse](ctx, epnt, config)
+resp, err := httpclientx.GetJSON[*APIResponse](ctx, base, config)
 runtimex.Assert((resp == nil && err != nil) || (resp != nil && err == nil), "ouch")
 ```
 

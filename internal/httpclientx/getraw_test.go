@@ -18,7 +18,7 @@ func TestGetRaw(t *testing.T) {
 
 		rawrespbody, err := GetRaw(
 			context.Background(),
-			NewEndpoint("\t"), // <- invalid URL that we cannot parse
+			NewBaseURL("\t"), // <- invalid URL that we cannot parse
 			&Config{
 				Client:    http.DefaultClient,
 				Logger:    model.DiscardLogger,
@@ -49,7 +49,7 @@ func TestGetRaw(t *testing.T) {
 
 		rawrespbody, err := GetRaw(
 			context.Background(),
-			NewEndpoint(server.URL),
+			NewBaseURL(server.URL),
 			&Config{
 				Client:    http.DefaultClient,
 				Logger:    model.DiscardLogger,
@@ -93,7 +93,7 @@ func TestGetRawHeadersOkay(t *testing.T) {
 	// send the request and receive the response
 	rawresp, err := GetRaw(
 		context.Background(),
-		NewEndpoint(server.URL).WithHostOverride("www.cloudfront.com"),
+		NewBaseURL(server.URL).WithHostOverride("www.cloudfront.com"),
 		&Config{
 			Authorization: "scribai",
 			Client:        http.DefaultClient,
@@ -151,7 +151,7 @@ func TestGetRawLoggingOkay(t *testing.T) {
 
 	rawrespbody, err := GetRaw(
 		context.Background(),
-		NewEndpoint(server.URL),
+		NewBaseURL(server.URL),
 		&Config{
 			Client:    http.DefaultClient,
 			Logger:    logger,

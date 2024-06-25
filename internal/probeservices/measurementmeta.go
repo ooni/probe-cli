@@ -35,7 +35,7 @@ func (c Client) GetMeasurementMeta(
 	// get the response
 	return httpclientx.GetJSON[*model.OOAPIMeasurementMeta](
 		ctx,
-		httpclientx.NewEndpoint(URL).WithHostOverride(c.Host),
+		httpclientx.NewBaseURL(URL).WithHostOverride(c.Host),
 		&httpclientx.Config{
 			Client:    c.HTTPClient,
 			Logger:    c.Logger,

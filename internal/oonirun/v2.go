@@ -66,7 +66,7 @@ func getV2DescriptorFromHTTPSURL(ctx context.Context, client model.HTTPClient,
 	logger model.Logger, URL string) (*V2Descriptor, error) {
 	return httpclientx.GetJSON[*V2Descriptor](
 		ctx,
-		httpclientx.NewEndpoint(URL),
+		httpclientx.NewBaseURL(URL),
 		&httpclientx.Config{
 			Authorization: "", // not needed
 			Client:        client,

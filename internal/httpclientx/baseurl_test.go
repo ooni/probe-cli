@@ -7,23 +7,23 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-func TestEndpoint(t *testing.T) {
+func TestBaseURL(t *testing.T) {
 	t.Run("the constructor only assigns the URL", func(t *testing.T) {
-		epnt := NewEndpoint("https://www.example.com/")
-		if epnt.URL != "https://www.example.com/" {
+		epnt := NewBaseURL("https://www.example.com/")
+		if epnt.Value != "https://www.example.com/" {
 			t.Fatal("unexpected URL")
 		}
-		if epnt.Host != "" {
+		if epnt.HostOverride != "" {
 			t.Fatal("unexpected host")
 		}
 	})
 
 	t.Run("we can optionally get a copy with an assigned host header", func(t *testing.T) {
-		epnt := NewEndpoint("https://www.example.com/").WithHostOverride("www.cloudfront.com")
-		if epnt.URL != "https://www.example.com/" {
+		epnt := NewBaseURL("https://www.example.com/").WithHostOverride("www.cloudfront.com")
+		if epnt.Value != "https://www.example.com/" {
 			t.Fatal("unexpected URL")
 		}
-		if epnt.Host != "www.cloudfront.com" {
+		if epnt.HostOverride != "www.cloudfront.com" {
 			t.Fatal("unexpected host")
 		}
 	})
@@ -50,14 +50,14 @@ func TestEndpoint(t *testing.T) {
 			Front:   "",
 		}}
 
-		expect := []*Endpoint{{
-			URL: "https://www.example.com/",
+		expect := []*BaseURL{{
+			Value: "https://www.example.com/",
 		}, {
-			URL:  "https://www.example.com/",
-			Host: "www.cloudfront.com",
+			Value:        "https://www.example.com/",
+			HostOverride: "www.cloudfront.com",
 		}}
 
-		got := NewEndpointFromModelOOAPIServices(services...)
+		got := NewBaseURLsFromModelOOAPIServices(services...)
 		if diff := cmp.Diff(expect, got); diff != "" {
 			t.Fatal(diff)
 		}

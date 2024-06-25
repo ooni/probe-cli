@@ -28,7 +28,7 @@ func TestGetJSON(t *testing.T) {
 		// invoke the API
 		resp, err := GetJSON[*apiResponse](
 			context.Background(),
-			NewEndpoint(server.URL),
+			NewBaseURL(server.URL),
 			&Config{
 				Client:    http.DefaultClient,
 				Logger:    model.DiscardLogger,
@@ -59,7 +59,7 @@ func TestGetJSON(t *testing.T) {
 		// invoke the API
 		resp, err := GetJSON[*apiResponse](
 			context.Background(),
-			NewEndpoint(server.URL),
+			NewBaseURL(server.URL),
 			&Config{
 				Client:    http.DefaultClient,
 				Logger:    model.DiscardLogger,
@@ -90,7 +90,7 @@ func TestGetJSON(t *testing.T) {
 		// invoke the API
 		resp, err := GetJSON[*apiResponse](
 			context.Background(),
-			NewEndpoint(server.URL),
+			NewBaseURL(server.URL),
 			&Config{
 				Client:    http.DefaultClient,
 				Logger:    model.DiscardLogger,
@@ -137,7 +137,7 @@ func TestGetJSONHeadersOkay(t *testing.T) {
 	// send the request and receive the response
 	apiresp, err := GetJSON[*apiResponse](
 		context.Background(),
-		NewEndpoint(server.URL).WithHostOverride("www.cloudfront.com"),
+		NewBaseURL(server.URL).WithHostOverride("www.cloudfront.com"),
 		&Config{
 			Authorization: "scribai",
 			Client:        http.DefaultClient,
@@ -194,7 +194,7 @@ func TestGetJSONLoggingOkay(t *testing.T) {
 	// invoke the API
 	resp, err := GetJSON[*apiResponse](
 		context.Background(),
-		NewEndpoint(server.URL),
+		NewBaseURL(server.URL),
 		&Config{
 			Client:    http.DefaultClient,
 			Logger:    logger,
@@ -238,7 +238,7 @@ func TestGetJSONCorrectlyRejectsNilValues(t *testing.T) {
 		// invoke the API
 		resp, err := GetJSON[map[string]string](
 			context.Background(),
-			NewEndpoint(server.URL),
+			NewBaseURL(server.URL),
 			&Config{
 				Client:    http.DefaultClient,
 				Logger:    model.DiscardLogger,
@@ -268,7 +268,7 @@ func TestGetJSONCorrectlyRejectsNilValues(t *testing.T) {
 		// invoke the API
 		resp, err := GetJSON[*apiResponse](
 			context.Background(),
-			NewEndpoint(server.URL),
+			NewBaseURL(server.URL),
 			&Config{
 				Client:    http.DefaultClient,
 				Logger:    model.DiscardLogger,
@@ -298,7 +298,7 @@ func TestGetJSONCorrectlyRejectsNilValues(t *testing.T) {
 		// invoke the API
 		resp, err := GetJSON[[]string](
 			context.Background(),
-			NewEndpoint(server.URL),
+			NewBaseURL(server.URL),
 			&Config{
 				Client:    http.DefaultClient,
 				Logger:    model.DiscardLogger,

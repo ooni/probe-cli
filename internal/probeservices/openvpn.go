@@ -36,7 +36,7 @@ func (c Client) FetchOpenVPNConfig(ctx context.Context, provider, cc string) (re
 	// use a model.DiscardLogger to avoid logging config
 	return httpclientx.GetJSON[model.OOAPIVPNProviderConfig](
 		ctx,
-		httpclientx.NewEndpoint(URL).WithHostOverride(c.Host),
+		httpclientx.NewBaseURL(URL).WithHostOverride(c.Host),
 		&httpclientx.Config{
 			Client:    c.HTTPClient,
 			Logger:    model.DiscardLogger,
