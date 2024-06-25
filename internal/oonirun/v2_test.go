@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/httpclientx"
@@ -262,6 +263,131 @@ func TestOONIRunV2LinkEmptyTestName(t *testing.T) {
 	}
 }
 
+func TestOONIRunV2LinkWithAuthentication(t *testing.T) {
+
+	t.Run("authentication raises error if no token is passed", func(t *testing.T) {
+		token := "secret-token"
+		bearerToken := "Bearer " + token
+
+		// make a local server that returns a reasonable descriptor for the example experiment
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authHeader := r.Header.Get("Authorization")
+			if authHeader != bearerToken {
+				// If the header is not what expected, return a 401 Unauthorized status
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+			descriptor := &V2Descriptor{
+				Name:        "",
+				Description: "",
+				Author:      "",
+				Nettests: []V2Nettest{{
+					Inputs: []string{},
+					Options: map[string]any{
+						"SleepTime": int64(10 * time.Millisecond),
+					},
+					TestName: "example",
+				}},
+			}
+			data, err := json.Marshal(descriptor)
+			runtimex.PanicOnError(err, "json.Marshal failed")
+			w.Write(data)
+		}))
+
+		defer server.Close()
+		ctx := context.Background()
+
+		// create a minimal link configuration
+		config := &LinkConfig{
+			AcceptChanges: true, // avoid "oonirun: need to accept changes" error
+			Annotations: map[string]string{
+				"platform": "linux",
+			},
+			KVStore:     &kvstore.Memory{},
+			MaxRuntime:  0,
+			NoCollector: true,
+			NoJSON:      true,
+			Random:      false,
+			ReportFile:  "",
+			Session:     newMinimalFakeSession(),
+		}
+
+		// construct a link runner relative to the local server URL
+		r := NewLinkRunner(config, server.URL)
+
+		if err := r.Run(ctx); err != nil {
+			if err.Error() != "httpx: request failed" {
+				t.Fatal("expected error")
+			}
+		}
+	})
+
+	t.Run("authentication does not fail the auth token is passed", func(t *testing.T) {
+		token := "secret-token"
+		bearerToken := "Bearer " + token
+
+		// make a local server that returns a reasonable descriptor for the example experiment
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authHeader := r.Header.Get("Authorization")
+			if authHeader != bearerToken {
+				// If the header is not what expected, return a 401 Unauthorized status
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+			descriptor := &V2Descriptor{
+				Name:        "",
+				Description: "",
+				Author:      "",
+				Nettests: []V2Nettest{{
+					Inputs: []string{},
+					Options: map[string]any{
+						"SleepTime": int64(10 * time.Millisecond),
+					},
+					TestName: "example",
+				}},
+			}
+			data, err := json.Marshal(descriptor)
+			runtimex.PanicOnError(err, "json.Marshal failed")
+			w.Write(data)
+		}))
+
+		defer server.Close()
+		ctx := context.Background()
+
+		authFile, err := os.CreateTemp(t.TempDir(), "token-")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer authFile.Close()
+		defer os.Remove(authFile.Name())
+
+		authFile.Write([]byte(token))
+
+		// create a minimal link configuration
+		config := &LinkConfig{
+			AcceptChanges: true, // avoid "oonirun: need to accept changes" error
+			Annotations: map[string]string{
+				"platform": "linux",
+			},
+			AuthFile:    authFile.Name(),
+			KVStore:     &kvstore.Memory{},
+			MaxRuntime:  0,
+			NoCollector: true,
+			NoJSON:      true,
+			Random:      false,
+			ReportFile:  "",
+			Session:     newMinimalFakeSession(),
+		}
+
+		// construct a link runner relative to the local server URL
+		r := NewLinkRunner(config, server.URL)
+
+		if err := r.Run(ctx); err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
 func TestOONIRunV2LinkConnectionResetByPeer(t *testing.T) {
 	// create a local server that will reset the connection immediately.
 	// actually contains an empty test name, which is what we want to test
@@ -509,7 +635,6 @@ func TestV2MeasureHTTPS(t *testing.T) {
 			t.Fatal("unexpected err", err)
 		}
 	})
-
 }
 
 func TestV2DescriptorCacheLoad(t *testing.T) {
