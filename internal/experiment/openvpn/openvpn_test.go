@@ -271,15 +271,45 @@ func TestSuccess(t *testing.T) {
 }
 
 func TestTimestampsFromHandshake(t *testing.T) {
-	events := []*vpntracex.Event{{AtTime: 0}, {AtTime: 1}, {AtTime: 2}}
-	t0, tlast, duration := openvpn.TimestampsFromHandshake(events)
-	if t0 != 0 {
-		t.Fatal("expected t0 == 0")
-	}
-	if tlast != 2.0 {
-		t.Fatal("expected t == 2")
-	}
-	if duration != 2 {
-		t.Fatal("expected duration == 2")
-	}
+	t.Run("with more than a single event (common case)", func(t *testing.T) {
+		events := []*vpntracex.Event{{AtTime: 0}, {AtTime: 1}, {AtTime: 2}}
+		t0, tlast, duration := openvpn.TimestampsFromHandshake(events)
+		if t0 != 0 {
+			t.Fatal("expected t0 == 0")
+		}
+		if tlast != 2.0 {
+			t.Fatal("expected t == 2")
+		}
+		if duration != 2 {
+			t.Fatal("expected duration == 2")
+		}
+	})
+
+	t.Run("with a single event", func(t *testing.T) {
+		events := []*vpntracex.Event{{AtTime: 1}}
+		t0, tlast, duration := openvpn.TimestampsFromHandshake(events)
+		if t0 != 1.0 {
+			t.Fatal("expected t0 == 1.0")
+		}
+		if tlast != 1.0 {
+			t.Fatal("expected t == 1.0")
+		}
+		if duration != 0 {
+			t.Fatal("expected duration == 0")
+		}
+	})
+
+	t.Run("with no events", func(t *testing.T) {
+		events := []*vpntracex.Event{}
+		t0, tlast, duration := openvpn.TimestampsFromHandshake(events)
+		if t0 != 0 {
+			t.Fatal("expected t0 == 0")
+		}
+		if tlast != 0 {
+			t.Fatal("expected t == 0")
+		}
+		if duration != 0 {
+			t.Fatal("expected duration == 0")
+		}
+	})
 }
