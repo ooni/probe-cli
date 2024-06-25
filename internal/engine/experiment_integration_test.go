@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/registry"
 )
 
@@ -384,7 +386,7 @@ func TestOpenReportNewClientFailure(t *testing.T) {
 		Type:    "antani",
 	}
 	err = exp.OpenReportContext(context.Background())
-	if err.Error() != "probe services: unsupported service type" {
+	if !errors.Is(err, probeservices.ErrUnsupportedServiceType) {
 		t.Fatal(err)
 	}
 }
