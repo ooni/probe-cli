@@ -670,8 +670,8 @@ func (s *Session) MaybeLookupBackendsContext(ctx context.Context) error {
 	if selected == nil {
 		return ErrAllProbeServicesFailed
 	}
-	s.logger.Infof("session: using probe services: %+v", selected.Endpoint)
-	s.selectedProbeService = &selected.Endpoint
+	s.logger.Infof("session: using probe services: %+v", selected.Service)
+	s.selectedProbeService = &selected.Service
 	s.availableTestHelpers = selected.TestHelpers
 	return nil
 }
