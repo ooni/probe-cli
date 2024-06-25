@@ -118,7 +118,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	// 3. use tunnel
 	if err == nil {
 		sess.Logger().Info("Using the wireguard tunnel.")
-		urlgetResult := m.urlget(defaultURLGetTarget, zeroTime, sess.Logger())
+		urlgetResult := m.urlget(ctx, defaultURLGetTarget, zeroTime, sess.Logger())
 		testkeys.URLGet = append(testkeys.URLGet, urlgetResult)
 		testkeys.NetworkEvents = m.events.log()
 	}

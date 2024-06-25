@@ -22,17 +22,17 @@ func (c *failingHttpClient) Get(string) (*http.Response, error) {
 func Test_urlget(t *testing.T) {
 	t.Run("dummy server gets a URLGetResult, with no error", func(t *testing.T) {
 		expected := "dummy data"
-		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(200)
 			w.Write([]byte(expected))
 		}))
-		defer svr.Close()
+		defer srv.Close()
 
 		m := &Measurer{}
 		m.dialContextFn = func(_ context.Context, network, address string) (net.Conn, error) {
 			return net.Dial(network, address)
 		}
-		r := m.urlget(svr.URL, time.Now(), model.DiscardLogger)
+		r := m.urlget(context.Background(), srv.URL, time.Now(), model.DiscardLogger)
 		if r.StatusCode != 200 {
 			t.Fatal("expected statusCode==200")
 		}
@@ -40,17 +40,17 @@ func Test_urlget(t *testing.T) {
 
 	t.Run("dummy server gets a URLGetResult with 500 status code", func(t *testing.T) {
 		expected := "dummy data"
-		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(500)
 			w.Write([]byte(expected))
 		}))
-		defer svr.Close()
+		defer srv.Close()
 
 		m := &Measurer{}
 		m.dialContextFn = func(_ context.Context, network, address string) (net.Conn, error) {
 			return net.Dial(network, address)
 		}
-		r := m.urlget(svr.URL, time.Now(), model.DiscardLogger)
+		r := m.urlget(context.Background(), srv.URL, time.Now(), model.DiscardLogger)
 		if r.StatusCode != 500 {
 			t.Fatal("expected statusCode==500")
 		}
@@ -60,7 +60,7 @@ func Test_urlget(t *testing.T) {
 		m := &Measurer{}
 		m.httpClient = &failingHttpClient{}
 
-		r := m.urlget("http://example.org", time.Now(), model.DiscardLogger)
+		r := m.urlget(context.Background(), "http://example.org", time.Now(), model.DiscardLogger)
 		expectedError := "unknown_failure: some error"
 		if *r.Failure != expectedError {
 			t.Fatal("expected error")
