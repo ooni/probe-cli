@@ -17,18 +17,18 @@ import (
 //
 // - ctx is the cancellable context;
 //
-// - base is the HTTP [*BaseURL] to use;
+// - epnt is the HTTP [*BaseURL] to use;
 //
 // - input is the input structure to JSON serialize as the request body;
 //
 // - config is the config to use.
 //
 // This function either returns an error or a valid Output.
-func PostJSON[Input, Output any](ctx context.Context, base *BaseURL, input Input, config *Config) (Output, error) {
-	return OverlappedIgnoreIndex(NewOverlappedPostJSON[Input, Output](input, config).Run(ctx, base))
+func PostJSON[Input, Output any](ctx context.Context, epnt *BaseURL, input Input, config *Config) (Output, error) {
+	return OverlappedIgnoreIndex(NewOverlappedPostJSON[Input, Output](input, config).Run(ctx, epnt))
 }
 
-func postJSON[Input, Output any](ctx context.Context, base *BaseURL, input Input, config *Config) (Output, error) {
+func postJSON[Input, Output any](ctx context.Context, epnt *BaseURL, input Input, config *Config) (Output, error) {
 	// ensure we're not sending a nil map, pointer, or slice
 	if _, err := NilSafetyErrorIfNil(input); err != nil {
 		return zeroValue[Output](), err
@@ -41,10 +41,10 @@ func postJSON[Input, Output any](ctx context.Context, base *BaseURL, input Input
 	}
 
 	// log the raw request body
-	config.Logger.Debugf("POST %s: raw request body: %s", base.Value, string(rawreqbody))
+	config.Logger.Debugf("POST %s: raw request body: %s", epnt.Value, string(rawreqbody))
 
 	// construct the request to use
-	req, err := http.NewRequestWithContext(ctx, "POST", base.Value, bytes.NewReader(rawreqbody))
+	req, err := http.NewRequestWithContext(ctx, "POST", epnt.Value, bytes.NewReader(rawreqbody))
 	if err != nil {
 		return zeroValue[Output](), err
 	}
@@ -53,7 +53,7 @@ func postJSON[Input, Output any](ctx context.Context, base *BaseURL, input Input
 	req.Header.Set("Content-Type", "application/json")
 
 	// get the raw response body
-	rawrespbody, err := do(ctx, req, base, config)
+	rawrespbody, err := do(ctx, req, epnt, config)
 
 	// handle the case of error
 	if err != nil {

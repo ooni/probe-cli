@@ -32,15 +32,15 @@ func (e *BaseURL) WithHostOverride(host string) *BaseURL {
 // NewBaseURLsFromModelOOAPIServices constructs new [*BaseURL] instances from the
 // given [model.OOAPIService] instances, assigning the host header if "cloudfront", and
 // skipping all the entries that are neither "https" not "cloudfront".
-func NewBaseURLsFromModelOOAPIServices(svcs ...model.OOAPIService) (bases []*BaseURL) {
+func NewBaseURLsFromModelOOAPIServices(svcs ...model.OOAPIService) (epnts []*BaseURL) {
 	for _, svc := range svcs {
-		base := NewBaseURL(svc.Address)
+		epnt := NewBaseURL(svc.Address)
 		switch svc.Type {
 		case "cloudfront":
-			base = base.WithHostOverride(svc.Front)
+			epnt = epnt.WithHostOverride(svc.Front)
 			fallthrough
 		case "https":
-			bases = append(bases, base)
+			epnts = append(epnts, epnt)
 		default:
 			// skip entry
 		}

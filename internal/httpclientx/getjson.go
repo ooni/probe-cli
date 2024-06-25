@@ -15,18 +15,18 @@ import (
 //
 // - ctx is the cancellable context;
 //
-// - base is the HTTP [*BaseURL] to use;
+// - epnt is the HTTP [*BaseURL] to use;
 //
 // - config contains the config.
 //
 // This function either returns an error or a valid Output.
-func GetJSON[Output any](ctx context.Context, base *BaseURL, config *Config) (Output, error) {
-	return OverlappedIgnoreIndex(NewOverlappedGetJSON[Output](config).Run(ctx, base))
+func GetJSON[Output any](ctx context.Context, epnt *BaseURL, config *Config) (Output, error) {
+	return OverlappedIgnoreIndex(NewOverlappedGetJSON[Output](config).Run(ctx, epnt))
 }
 
-func getJSON[Output any](ctx context.Context, base *BaseURL, config *Config) (Output, error) {
+func getJSON[Output any](ctx context.Context, epnt *BaseURL, config *Config) (Output, error) {
 	// read the raw body
-	rawrespbody, err := GetRaw(ctx, base, config)
+	rawrespbody, err := GetRaw(ctx, epnt, config)
 
 	// handle the case of error
 	if err != nil {

@@ -9,21 +9,21 @@ import (
 
 func TestBaseURL(t *testing.T) {
 	t.Run("the constructor only assigns the URL", func(t *testing.T) {
-		base := NewBaseURL("https://www.example.com/")
-		if base.Value != "https://www.example.com/" {
+		epnt := NewBaseURL("https://www.example.com/")
+		if epnt.Value != "https://www.example.com/" {
 			t.Fatal("unexpected URL")
 		}
-		if base.HostOverride != "" {
+		if epnt.HostOverride != "" {
 			t.Fatal("unexpected host")
 		}
 	})
 
 	t.Run("we can optionally get a copy with an assigned host header", func(t *testing.T) {
-		base := NewBaseURL("https://www.example.com/").WithHostOverride("www.cloudfront.com")
-		if base.Value != "https://www.example.com/" {
+		epnt := NewBaseURL("https://www.example.com/").WithHostOverride("www.cloudfront.com")
+		if epnt.Value != "https://www.example.com/" {
 			t.Fatal("unexpected URL")
 		}
-		if base.HostOverride != "www.cloudfront.com" {
+		if epnt.HostOverride != "www.cloudfront.com" {
 			t.Fatal("unexpected host")
 		}
 	})
