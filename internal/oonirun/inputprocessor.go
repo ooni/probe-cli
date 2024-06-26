@@ -55,9 +55,6 @@ type InputProcessor struct {
 	// there will be no MaxRuntime limit.
 	MaxRuntime time.Duration
 
-	// Options contains command line options for this experiment.
-	Options []string
-
 	// Saver is the code that will save measurement results
 	// on persistent storage (e.g. the file system).
 	Saver InputProcessorSaverWrapper
@@ -144,9 +141,10 @@ func (ip *InputProcessor) run(ctx context.Context) (int, error) {
 			return 0, err
 		}
 		meas.AddAnnotations(ip.Annotations)
-		meas.Options = ip.Options
 		err = ip.Submitter.Submit(ctx, idx, meas)
 		if err != nil {
+			// TODO(bassosimone): the default submitter used by
+			// miniooni ignores errors. Should we make it the default?
 			return 0, err
 		}
 		// Note: must be after submission because submission modifies

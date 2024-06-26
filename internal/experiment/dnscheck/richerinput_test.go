@@ -16,7 +16,7 @@ import (
 func TestTarget(t *testing.T) {
 	target := &Target{
 		URL: "https://dns.google/dns-query",
-		Options: &Config{
+		Config: &Config{
 			DefaultAddrs:  "8.8.8.8 8.8.4.4",
 			Domain:        "example.com",
 			HTTP3Enabled:  false,
@@ -79,14 +79,14 @@ func TestNewLoader(t *testing.T) {
 var testDefaultInput = []model.ExperimentTarget{
 	&Target{
 		URL: "https://dns.google/dns-query",
-		Options: &Config{
+		Config: &Config{
 			HTTP3Enabled: true,
 			DefaultAddrs: "8.8.8.8 8.8.4.4",
 		},
 	},
 	&Target{
 		URL: "https://dns.google/dns-query",
-		Options: &Config{
+		Config: &Config{
 			DefaultAddrs: "8.8.8.8 8.8.4.4",
 		},
 	},
@@ -136,25 +136,25 @@ func TestTargetLoaderLoad(t *testing.T) {
 			expectTargets: []model.ExperimentTarget{
 				&Target{
 					URL: "https://dns.cloudflare.com/dns-query",
-					Options: &Config{
+					Config: &Config{
 						DefaultAddrs: "1.1.1.1 1.0.0.1",
 					},
 				},
 				&Target{
 					URL: "https://one.one.one.one/dns-query",
-					Options: &Config{
+					Config: &Config{
 						DefaultAddrs: "1.1.1.1 1.0.0.1",
 					},
 				},
 				&Target{
 					URL: "https://1dot1dot1dot1dot.com/dns-query",
-					Options: &Config{
+					Config: &Config{
 						DefaultAddrs: "1.1.1.1 1.0.0.1",
 					},
 				},
 				&Target{
 					URL: "https://dns.cloudflare/dns-query",
-					Options: &Config{
+					Config: &Config{
 						DefaultAddrs: "1.1.1.1 1.0.0.1",
 					},
 				},
@@ -202,12 +202,12 @@ func TestTargetLoaderLoad(t *testing.T) {
 			expectErr: nil,
 			expectTargets: []model.ExperimentTarget{
 				&Target{
-					URL:     "https://dns.cloudflare.com/dns-query",
-					Options: &Config{},
+					URL:    "https://dns.cloudflare.com/dns-query",
+					Config: &Config{},
 				},
 				&Target{
-					URL:     "https://one.one.one.one/dns-query",
-					Options: &Config{},
+					URL:    "https://one.one.one.one/dns-query",
+					Config: &Config{},
 				},
 			},
 		},
@@ -229,12 +229,12 @@ func TestTargetLoaderLoad(t *testing.T) {
 			expectErr: nil,
 			expectTargets: []model.ExperimentTarget{
 				&Target{
-					URL:     "https://1dot1dot1dot1dot.com/dns-query",
-					Options: &Config{},
+					URL:    "https://1dot1dot1dot1dot.com/dns-query",
+					Config: &Config{},
 				},
 				&Target{
-					URL:     "https://dns.cloudflare/dns-query",
-					Options: &Config{},
+					URL:    "https://dns.cloudflare/dns-query",
+					Config: &Config{},
 				},
 			},
 		},

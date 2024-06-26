@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ooni/probe-cli/v3/internal/experimentconfig"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/reflectx"
 	"github.com/ooni/probe-cli/v3/internal/targetloading"
@@ -23,8 +24,8 @@ var providerAuthentication = map[string]AuthMethod{
 
 // Target is a richer-input target that this experiment should measure.
 type Target struct {
-	// Options contains the configuration.
-	Options *Config
+	// Config contains the configuration.
+	Config *Config
 
 	// URL is the input URL.
 	URL string
@@ -45,6 +46,11 @@ func (t *Target) Country() string {
 // Input implements [model.ExperimentTarget].
 func (t *Target) Input() string {
 	return t.URL
+}
+
+// Options implements [model.ExperimentTarget].
+func (t *Target) Options() (options []string) {
+	return experimentconfig.DefaultOptionsSerializer(t.Config)
 }
 
 // String implements [model.ExperimentTarget].
@@ -96,8 +102,8 @@ func (tl *targetLoader) Load(ctx context.Context) ([]model.ExperimentTarget, err
 	var targets []model.ExperimentTarget
 	for _, input := range inputs {
 		targets = append(targets, &Target{
-			Options: tl.options,
-			URL:     input,
+			Config: tl.options,
+			URL:    input,
 		})
 	}
 	return targets, nil
@@ -140,8 +146,8 @@ func (tl *targetLoader) loadFromBackend(ctx context.Context) ([]model.Experiment
 			// TODO(ainghazal): implement (surfshark, etc)
 		}
 		targets = append(targets, &Target{
-			URL:     input,
-			Options: config,
+			URL:    input,
+			Config: config,
 		})
 	}
 

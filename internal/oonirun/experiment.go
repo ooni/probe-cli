@@ -92,11 +92,6 @@ func (ed *Experiment) Run(ctx context.Context) error {
 		return err
 	}
 
-	// TODO(bassosimone): we need another patch after the current one
-	// to correctly serialize the options as configured using InitialOptions
-	// and ExtraOptions otherwise the Measurement.Options field turns out
-	// to always be empty and this is highly suboptimal for us.
-
 	// 2. configure experiment's options
 	//
 	// We first unmarshal the InitialOptions into the experiment
@@ -121,7 +116,7 @@ func (ed *Experiment) Run(ctx context.Context) error {
 
 	// 4. randomize input, if needed
 	if ed.Random {
-		// Note: since go1.20 the default random generated is random seeded
+		// Note: since go1.20 the default random generator is randomly seeded
 		//
 		// See https://tip.golang.org/doc/go1.20
 		rand.Shuffle(len(targetList), func(i, j int) {
@@ -177,7 +172,6 @@ func (ed *Experiment) newInputProcessor(experiment model.Experiment,
 		},
 		Inputs:     inputList,
 		MaxRuntime: time.Duration(ed.MaxRuntime) * time.Second,
-		Options:    experimentOptionsToStringList(ed.ExtraOptions),
 		Saver:      NewInputProcessorSaverWrapper(saver),
 		Submitter: &experimentSubmitterWrapper{
 			child:  NewInputProcessorSubmitterWrapper(submitter),

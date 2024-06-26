@@ -3,6 +3,7 @@ package dnscheck
 import (
 	"context"
 
+	"github.com/ooni/probe-cli/v3/internal/experimentconfig"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/reflectx"
 	"github.com/ooni/probe-cli/v3/internal/targetloading"
@@ -10,8 +11,8 @@ import (
 
 // Target is a richer-input target that this experiment should measure.
 type Target struct {
-	// Options contains the configuration.
-	Options *Config
+	// Config contains the configuration.
+	Config *Config
 
 	// URL is the input URL.
 	URL string
@@ -32,6 +33,11 @@ func (t *Target) Country() string {
 // Input implements [model.ExperimentTarget].
 func (t *Target) Input() string {
 	return t.URL
+}
+
+// Options implements [model.ExperimentTarget].
+func (t *Target) Options() []string {
+	return experimentconfig.DefaultOptionsSerializer(t.Config)
 }
 
 // String implements [model.ExperimentTarget].
@@ -83,8 +89,8 @@ func (tl *targetLoader) Load(ctx context.Context) ([]model.ExperimentTarget, err
 	var targets []model.ExperimentTarget
 	for _, input := range inputs {
 		targets = append(targets, &Target{
-			Options: tl.options,
-			URL:     input,
+			Config: tl.options,
+			URL:    input,
 		})
 	}
 	return targets, nil
@@ -100,14 +106,14 @@ var defaultInput = []model.ExperimentTarget{
 	//
 	&Target{
 		URL: "https://dns.google/dns-query",
-		Options: &Config{
+		Config: &Config{
 			HTTP3Enabled: true,
 			DefaultAddrs: "8.8.8.8 8.8.4.4",
 		},
 	},
 	&Target{
 		URL: "https://dns.google/dns-query",
-		Options: &Config{
+		Config: &Config{
 			DefaultAddrs: "8.8.8.8 8.8.4.4",
 		},
 	},
