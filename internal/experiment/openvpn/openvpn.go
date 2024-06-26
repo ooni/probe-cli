@@ -3,14 +3,12 @@ package openvpn
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/targetloading"
 
 	vpnconfig "github.com/ooni/minivpn/pkg/config"
 	vpntracex "github.com/ooni/minivpn/pkg/tracex"
@@ -18,8 +16,13 @@ import (
 )
 
 const (
-	testVersion   = "0.1.2"
-	openVPNProcol = "openvpn"
+	testName        = "openvpn"
+	testVersion     = "0.1.3"
+	openVPNProtocol = "openvpn"
+)
+
+var (
+	ErrInvalidInputType = targetloading.ErrInvalidInputType
 )
 
 // Config contains the experiment config.
@@ -92,39 +95,21 @@ func (tk *TestKeys) AllConnectionsSuccessful() bool {
 }
 
 // Measurer performs the measurement.
-type Measurer struct {
-	config   Config
-	testName string
-}
+type Measurer struct{}
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
-func NewExperimentMeasurer(config Config, testName string) model.ExperimentMeasurer {
-	return Measurer{config: config, testName: testName}
+func NewExperimentMeasurer() model.ExperimentMeasurer {
+	return &Measurer{}
 }
 
 // ExperimentName implements model.ExperimentMeasurer.ExperimentName.
-func (m Measurer) ExperimentName() string {
-	return m.testName
+func (m *Measurer) ExperimentName() string {
+	return testName
 }
 
 // ExperimentVersion implements model.ExperimentMeasurer.ExperimentVersion.
-func (m Measurer) ExperimentVersion() string {
+func (m *Measurer) ExperimentVersion() string {
 	return testVersion
-}
-
-var (
-	// ErrInvalidInput is returned if we failed to parse the input to obtain an endpoint we can measure.
-	ErrInvalidInput = errors.New("invalid input")
-)
-
-func parseEndpoint(m *model.Measurement) (*endpoint, error) {
-	if m.Input != "" {
-		if ok := isValidProtocol(string(m.Input)); !ok {
-			return nil, ErrInvalidInput
-		}
-		return newEndpointFromInputString(string(m.Input))
-	}
-	return nil, fmt.Errorf("%w: %s", ErrInvalidInput, "input is mandatory")
 }
 
 // AuthMethod is the authentication method used by a provider.
@@ -137,130 +122,6 @@ var (
 	// AuthUserPass is used for providers that authenticate clients via username (or token) and password.
 	AuthUserPass = AuthMethod("userpass")
 )
-
-var providerAuthentication = map[string]AuthMethod{
-	"riseup":     AuthCertificate,
-	"tunnelbear": AuthUserPass,
-	"surfshark":  AuthUserPass,
-}
-
-func hasCredentialsInOptions(cfg Config, method AuthMethod) bool {
-	switch method {
-	case AuthCertificate:
-		ok := cfg.SafeCA != "" && cfg.SafeCert != "" && cfg.SafeKey != ""
-		return ok
-	default:
-		return false
-	}
-}
-
-// MaybeGetCredentialsFromOptions overrides authentication info with what user provided in options.
-// Each certificate/key can be encoded in base64 so that a single option can be safely represented as command line options.
-// This function returns no error if there are no credentials in the passed options, only if failing to parse them.
-func MaybeGetCredentialsFromOptions(cfg Config, opts *vpnconfig.OpenVPNOptions, method AuthMethod) (bool, error) {
-	if ok := hasCredentialsInOptions(cfg, method); !ok {
-		return false, nil
-	}
-	ca, err := maybeExtractBase64Blob(cfg.SafeCA)
-	if err != nil {
-		return false, err
-	}
-	opts.CA = []byte(ca)
-
-	key, err := maybeExtractBase64Blob(cfg.SafeKey)
-	if err != nil {
-		return false, err
-	}
-	opts.Key = []byte(key)
-
-	cert, err := maybeExtractBase64Blob(cfg.SafeCert)
-	if err != nil {
-		return false, err
-	}
-	opts.Cert = []byte(cert)
-	return true, nil
-}
-
-func (m *Measurer) getCredentialsFromAPI(
-	ctx context.Context,
-	sess model.ExperimentSession,
-	provider string,
-	opts *vpnconfig.OpenVPNOptions) error {
-	// We expect the credentials from the API response to be encoded as the direct PEM serialization.
-	apiCreds, err := m.FetchProviderCredentials(ctx, sess, provider)
-	// TODO(ainghazal): validate credentials have the info we expect, certs are not expired etc.
-	if err != nil {
-		sess.Logger().Warnf("Error fetching credentials from API: %s", err.Error())
-		return err
-	}
-	sess.Logger().Infof("Got credentials from provider: %s", provider)
-
-	opts.CA = []byte(apiCreds.Config.CA)
-	opts.Cert = []byte(apiCreds.Config.Cert)
-	opts.Key = []byte(apiCreds.Config.Key)
-	return nil
-}
-
-// GetCredentialsFromOptionsOrAPI attempts to find valid credentials for the given provider, either
-// from the passed Options (cli, oonirun), or from a remote call to the OONI API endpoint.
-func (m *Measurer) GetCredentialsFromOptionsOrAPI(
-	ctx context.Context,
-	sess model.ExperimentSession,
-	provider string) (*vpnconfig.OpenVPNOptions, error) {
-
-	method, ok := providerAuthentication[strings.TrimSuffix(provider, "vpn")]
-	if !ok {
-		return nil, fmt.Errorf("%w: provider auth unknown: %s", ErrInvalidInput, provider)
-	}
-
-	// Empty options object to fill with credentials.
-	creds := &vpnconfig.OpenVPNOptions{}
-
-	switch method {
-	case AuthCertificate:
-		ok, err := MaybeGetCredentialsFromOptions(m.config, creds, method)
-		if err != nil {
-			return nil, err
-		}
-		if ok {
-			return creds, nil
-		}
-		// No options passed, so let's get the credentials that inputbuilder should have cached
-		// for us after hitting the OONI API.
-		if err := m.getCredentialsFromAPI(ctx, sess, provider, creds); err != nil {
-			return nil, err
-		}
-		return creds, nil
-
-	default:
-		return nil, fmt.Errorf("%w: method not implemented (%s)", ErrInvalidInput, method)
-	}
-
-}
-
-// mergeOpenVPNConfig attempts to get credentials from Options or API, and then
-// constructs a [*vpnconfig.Config] instance after merging the credentials passed by options or API response.
-// It also returns an error if the operation fails.
-func (m *Measurer) mergeOpenVPNConfig(
-	ctx context.Context,
-	sess model.ExperimentSession,
-	endpoint *endpoint,
-	tracer *vpntracex.Tracer) (*vpnconfig.Config, error) {
-
-	logger := sess.Logger()
-
-	credentials, err := m.GetCredentialsFromOptionsOrAPI(ctx, sess, endpoint.Provider)
-	if err != nil {
-		return nil, err
-	}
-
-	openvpnConfig, err := getOpenVPNConfig(tracer, logger, endpoint, credentials)
-	if err != nil {
-		return nil, err
-	}
-	// TODO(ainghazal): sanity check (Remote, Port, Proto etc + missing certs)
-	return openvpnConfig, nil
-}
 
 // connectAndHandshake dials a connection and attempts an OpenVPN handshake using that dialer.
 func (m *Measurer) connectAndHandshake(
@@ -286,17 +147,7 @@ func (m *Measurer) connectAndHandshake(
 	handshakeEvents := handshakeTracer.Trace()
 	port, _ := strconv.Atoi(endpoint.Port)
 
-	var (
-		tFirst        float64
-		tLast         float64
-		bootstrapTime float64
-	)
-
-	if len(handshakeEvents) > 0 {
-		tFirst = handshakeEvents[0].AtTime
-		tLast = handshakeEvents[len(handshakeEvents)-1].AtTime
-		bootstrapTime = tLast - tFirst
-	}
+	t0, t, bootstrapTime := TimestampsFromHandshake(handshakeEvents)
 
 	return &SingleConnection{
 		TCPConnect: trace.FirstTCPConnectOrNil(),
@@ -313,13 +164,29 @@ func (m *Measurer) connectAndHandshake(
 				Auth:        openvpnConfig.OpenVPNOptions().Auth,
 				Compression: string(openvpnConfig.OpenVPNOptions().Compress),
 			},
-			T0:            tFirst,
-			T:             tLast,
+			T0:            t0,
+			T:             t,
 			Tags:          []string{},
 			TransactionID: index,
 		},
 		NetworkEvents: handshakeEvents,
 	}
+}
+
+// TimestampsFromHandshake returns the t0, t and duration of the handshake events.
+// If the passed events are a zero-len array, all of the results will be zero.
+func TimestampsFromHandshake(events []*vpntracex.Event) (float64, float64, float64) {
+	var (
+		t0       float64
+		t        float64
+		duration float64
+	)
+	if len(events) > 0 {
+		t0 = events[0].AtTime
+		t = events[len(events)-1].AtTime
+		duration = t - t0
+	}
+	return t0, t, duration
 }
 
 // FetchProviderCredentials will extract credentials from the configuration we gathered for a given provider.
@@ -339,14 +206,14 @@ func (m *Measurer) FetchProviderCredentials(
 // Run implements model.ExperimentMeasurer.Run.
 // A single run expects exactly ONE input (endpoint), but we can modify whether
 // to test different transports by settings options.
-func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
+func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	callbacks := args.Callbacks
 	measurement := args.Measurement
 	sess := args.Session
 
-	endpoint, err := parseEndpoint(measurement)
-	if err != nil {
-		return err
+	// 0. fail if there's no richer input target
+	if args.Target == nil {
+		return targetloading.ErrInputRequired
 	}
 
 	tk := NewTestKeys()
@@ -355,22 +222,39 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	idx := int64(1)
 	handshakeTracer := vpntracex.NewTracerWithTransactionID(zeroTime, idx)
 
-	openvpnConfig, err := m.mergeOpenVPNConfig(ctx, sess, endpoint, handshakeTracer)
+	// 1. build the input
+	target, ok := args.Target.(*Target)
+	if !ok {
+		return targetloading.ErrInvalidInputType
+	}
+	config, input := target.Options, target.URL
+
+	// 2. obtain the endpoint representation from the input URL
+	endpoint, err := newEndpointFromInputString(input)
+	if err != nil {
+		return err
+	}
+
+	// TODO(ainghazal): validate we have valid config for each endpoint.
+	// TODO(ainghazal): validate hostname is a valid IP (ipv4 or 6)
+	// TODO(ainghazal): decide what to do if we have expired certs (abort one measurement or abort the whole experiment?)
+
+	// 3. build openvpn config from endpoint and options
+	openvpnConfig, err := newOpenVPNConfig(handshakeTracer, sess.Logger(), endpoint, config)
 	if err != nil {
 		return err
 	}
 	sess.Logger().Infof("Probing endpoint %s", endpoint.String())
 
+	// 4. initiate openvpn handshake against endpoint
 	connResult := m.connectAndHandshake(ctx, zeroTime, idx, sess.Logger(), endpoint, openvpnConfig, handshakeTracer)
 	tk.AddConnectionTestKeys(connResult)
 	tk.Success = tk.AllConnectionsSuccessful()
 
 	callbacks.OnProgress(1.0, "All endpoints probed")
-	measurement.TestKeys = tk
 
-	// TODO(ainghazal): validate we have valid config for each endpoint.
-	// TODO(ainghazal): validate hostname is a valid IP (ipv4 or 6)
-	// TODO(ainghazal): decide what to do if we have expired certs (abort one measurement or abort the whole experiment?)
+	// 5. assign the testkeys
+	measurement.TestKeys = tk
 
 	// Note: if here we return an error, the parent code will assume
 	// something fundamental was wrong and we don't have a measurement

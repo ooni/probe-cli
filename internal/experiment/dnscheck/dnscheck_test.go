@@ -60,7 +60,7 @@ func TestDNSCheckFailsWithInvalidInputType(t *testing.T) {
 	}
 	err := measurer.Run(context.Background(), args)
 	if !errors.Is(err, ErrInvalidInputType) {
-		t.Fatal("expected no input error")
+		t.Fatal("expected invalid-input-type error")
 	}
 }
 

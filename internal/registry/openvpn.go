@@ -14,15 +14,14 @@ func init() {
 	AllExperiments[canonicalName] = func() *Factory {
 		return &Factory{
 			build: func(config interface{}) model.ExperimentMeasurer {
-				return openvpn.NewExperimentMeasurer(
-					*config.(*openvpn.Config), "openvpn",
-				)
+				return openvpn.NewExperimentMeasurer()
 			},
 			canonicalName:    canonicalName,
 			config:           &openvpn.Config{},
 			enabledByDefault: true,
 			interruptible:    true,
 			inputPolicy:      model.InputOrQueryBackend,
+			newLoader:        openvpn.NewLoader,
 		}
 	}
 }

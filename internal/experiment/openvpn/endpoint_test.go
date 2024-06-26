@@ -3,12 +3,10 @@ package openvpn
 import (
 	"errors"
 	"fmt"
-	"sort"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	vpnconfig "github.com/ooni/minivpn/pkg/config"
 	vpntracex "github.com/ooni/minivpn/pkg/tracex"
 )
 
@@ -23,7 +21,25 @@ func Test_newEndpointFromInputString(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "valid endpoint returns good endpoint",
+			name:    "empty input returns error",
+			args:    args{""},
+			want:    nil,
+			wantErr: ErrInputRequired,
+		},
+		{
+			name:    "invalid protocol returns error",
+			args:    args{"bad://foo.bar"},
+			want:    nil,
+			wantErr: ErrInvalidInput,
+		},
+		{
+			name:    "uri with illegal chars returns error",
+			args:    args{"openvpn://\x7f/#"},
+			want:    nil,
+			wantErr: ErrInvalidInput,
+		},
+		{
+			name: "valid input uri returns good endpoint",
 			args: args{"openvpn://riseupvpn.corp/?address=1.1.1.1:1194&transport=tcp"},
 			want: &endpoint{
 				IPAddr:      "1.1.1.1",
@@ -253,16 +269,6 @@ func Test_endpoint_String(t *testing.T) {
 	}
 }
 
-func Test_endpointList_Shuffle(t *testing.T) {
-	shuffled := DefaultEndpoints.Shuffle()
-	sort.Slice(shuffled, func(i, j int) bool {
-		return shuffled[i].IPAddr < shuffled[j].IPAddr
-	})
-	if diff := cmp.Diff(shuffled, DefaultEndpoints); diff != "" {
-		t.Error(diff)
-	}
-}
-
 func Test_isValidProvider(t *testing.T) {
 	if valid := isValidProvider("riseupvpn"); !valid {
 		t.Fatal("riseup is the only valid provider now")
@@ -272,7 +278,7 @@ func Test_isValidProvider(t *testing.T) {
 	}
 }
 
-func Test_getVPNConfig(t *testing.T) {
+func Test_newVPNConfig(t *testing.T) {
 	tracer := vpntracex.NewTracer(time.Now())
 	e := &endpoint{
 		Provider:  "riseupvpn",
@@ -280,13 +286,16 @@ func Test_getVPNConfig(t *testing.T) {
 		Port:      "443",
 		Transport: "udp",
 	}
-	creds := &vpnconfig.OpenVPNOptions{
-		CA:   []byte("ca"),
-		Cert: []byte("cert"),
-		Key:  []byte("key"),
+
+	config := &Config{
+		Auth:     "SHA512",
+		Cipher:   "AES-256-GCM",
+		SafeCA:   "ca",
+		SafeCert: "cert",
+		SafeKey:  "key",
 	}
 
-	cfg, err := getOpenVPNConfig(tracer, nil, e, creds)
+	cfg, err := newOpenVPNConfig(tracer, nil, e, config)
 	if err != nil {
 		t.Fatalf("did not expect error, got: %v", err)
 	}
@@ -311,18 +320,18 @@ func Test_getVPNConfig(t *testing.T) {
 	if transport := cfg.OpenVPNOptions().Proto; string(transport) != e.Transport {
 		t.Errorf("expected transport %s, got %s", e.Transport, transport)
 	}
-	if diff := cmp.Diff(cfg.OpenVPNOptions().CA, creds.CA); diff != "" {
+	if diff := cmp.Diff(cfg.OpenVPNOptions().CA, []byte(config.SafeCA)); diff != "" {
 		t.Error(diff)
 	}
-	if diff := cmp.Diff(cfg.OpenVPNOptions().Cert, creds.Cert); diff != "" {
+	if diff := cmp.Diff(cfg.OpenVPNOptions().Cert, []byte(config.SafeCert)); diff != "" {
 		t.Error(diff)
 	}
-	if diff := cmp.Diff(cfg.OpenVPNOptions().Key, creds.Key); diff != "" {
+	if diff := cmp.Diff(cfg.OpenVPNOptions().Key, []byte(config.SafeKey)); diff != "" {
 		t.Error(diff)
 	}
 }
 
-func Test_getVPNConfig_with_unknown_provider(t *testing.T) {
+func Test_mergeOpenVPNConfig_with_unknown_provider(t *testing.T) {
 	tracer := vpntracex.NewTracer(time.Now())
 	e := &endpoint{
 		Provider:  "nsa",
@@ -330,76 +339,13 @@ func Test_getVPNConfig_with_unknown_provider(t *testing.T) {
 		Port:      "443",
 		Transport: "udp",
 	}
-	creds := &vpnconfig.OpenVPNOptions{
-		CA:   []byte("ca"),
-		Cert: []byte("cert"),
-		Key:  []byte("key"),
+	cfg := &Config{
+		SafeCA:   "ca",
+		SafeCert: "cert",
+		SafeKey:  "key",
 	}
-	_, err := getOpenVPNConfig(tracer, nil, e, creds)
+	_, err := newOpenVPNConfig(tracer, nil, e, cfg)
 	if !errors.Is(err, ErrInvalidInput) {
 		t.Fatalf("expected invalid input error, got: %v", err)
 	}
-
-}
-
-func Test_extractBase64Blob(t *testing.T) {
-	t.Run("decode good blob", func(t *testing.T) {
-		blob := "base64:dGhlIGJsdWUgb2N0b3B1cyBpcyB3YXRjaGluZw=="
-		decoded, err := maybeExtractBase64Blob(blob)
-		if decoded != "the blue octopus is watching" {
-			t.Fatal("could not decoded blob correctly")
-		}
-		if err != nil {
-			t.Fatal("should not fail with first blob")
-		}
-	})
-	t.Run("try decode without prefix", func(t *testing.T) {
-		blob := "dGhlIGJsdWUgb2N0b3B1cyBpcyB3YXRjaGluZw=="
-		dec, err := maybeExtractBase64Blob(blob)
-		if err != nil {
-			t.Fatal("should fail without prefix")
-		}
-		if dec != blob {
-			t.Fatal("decoded should be the same")
-		}
-	})
-	t.Run("bad base64 blob should fail", func(t *testing.T) {
-		blob := "base64:dGhlIGJsdWUgb2N0b3B1cyBpcyB3YXRjaGluZw"
-		_, err := maybeExtractBase64Blob(blob)
-		if !errors.Is(err, ErrBadBase64Blob) {
-			t.Fatal("bad blob should fail without prefix")
-		}
-	})
-	t.Run("decode empty blob", func(t *testing.T) {
-		blob := "base64:"
-		_, err := maybeExtractBase64Blob(blob)
-		if err != nil {
-			t.Fatal("empty blob should not fail")
-		}
-	})
-	t.Run("illegal base64 data should fail", func(t *testing.T) {
-		blob := "base64:=="
-		_, err := maybeExtractBase64Blob(blob)
-		if !errors.Is(err, ErrBadBase64Blob) {
-			t.Fatal("bad base64 data should fail")
-		}
-	})
-}
-
-func Test_IsValidProtocol(t *testing.T) {
-	t.Run("openvpn is valid", func(t *testing.T) {
-		if !isValidProtocol("openvpn://foobar.bar") {
-			t.Error("openvpn:// should be a valid protocol")
-		}
-	})
-	t.Run("openvpn+obfs4 is valid", func(t *testing.T) {
-		if !isValidProtocol("openvpn+obfs4://foobar.bar") {
-			t.Error("openvpn+obfs4:// should be a valid protocol")
-		}
-	})
-	t.Run("openvpn+other is not valid", func(t *testing.T) {
-		if isValidProtocol("openvpn+ss://foobar.bar") {
-			t.Error("openvpn+ss:// should not be a valid protocol")
-		}
-	})
 }

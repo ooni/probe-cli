@@ -1,6 +1,6 @@
 // Package probeservices contains code to contact OONI probe services.
 //
-// The probe services are HTTPS endpoints distributed across a bunch of data
+// The probe services are HTTPS services distributed across a bunch of data
 // centres implementing a bunch of OONI APIs. When started, OONI will benchmark
 // the available probe services and select the fastest one. Eventually all the
 // possible OONI APIs will run as probe services.
@@ -32,8 +32,8 @@ import (
 )
 
 var (
-	// ErrUnsupportedEndpoint indicates that we don't support this endpoint type.
-	ErrUnsupportedEndpoint = errors.New("probe services: unsupported endpoint type")
+	// ErrUnsupportedServiceType indicates that we don't support this service type.
+	ErrUnsupportedServiceType = errors.New("probe services: unsupported service type")
 
 	// ErrUnsupportedCloudFrontAddress indicates that we don't support this
 	// cloudfront address (e.g. wrong scheme, presence of port).
@@ -90,11 +90,11 @@ func (c Client) GetCredsAndAuth() (*model.OOAPILoginCredentials, *model.OOAPILog
 	return creds, auth, nil
 }
 
-// NewClient creates a new client for the specified probe services endpoint. This
-// function fails, e.g., we don't support the specified endpoint.
-func NewClient(sess Session, endpoint model.OOAPIService) (*Client, error) {
+// NewClient creates a new client for the specified probe services service. This
+// function fails, e.g., we don't support the specified service.
+func NewClient(sess Session, service model.OOAPIService) (*Client, error) {
 	client := &Client{
-		BaseURL:       endpoint.Address,
+		BaseURL:       service.Address,
 		HTTPClient:    sess.DefaultHTTPClient(),
 		Host:          "",
 		KVStore:       sess.KeyValueStore(),
@@ -104,7 +104,7 @@ func NewClient(sess Session, endpoint model.OOAPIService) (*Client, error) {
 		StateFile:     NewStateFile(sess.KeyValueStore()),
 		UserAgent:     sess.UserAgent(),
 	}
-	switch endpoint.Type {
+	switch service.Type {
 	case "https":
 		return client, nil
 	case "cloudfront":
@@ -119,13 +119,13 @@ func NewClient(sess Session, endpoint model.OOAPIService) (*Client, error) {
 			return nil, ErrUnsupportedCloudFrontAddress
 		}
 		client.Host = URL.Hostname()
-		URL.Host = endpoint.Front
+		URL.Host = service.Front
 		client.BaseURL = URL.String()
 		if _, err := url.Parse(client.BaseURL); err != nil {
 			return nil, err
 		}
 		return client, nil
 	default:
-		return nil, ErrUnsupportedEndpoint
+		return nil, ErrUnsupportedServiceType
 	}
 }
