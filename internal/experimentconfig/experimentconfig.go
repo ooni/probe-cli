@@ -16,7 +16,7 @@ import (
 //
 // 1. we do not serialize options whose name starts with "Safe";
 //
-// 2. we do not serialize scalar values.
+// 2. we only serialize scalar values.
 //
 // This method MUST be passed a pointer to a struct. Otherwise, the return
 // value will be a zero-length list (either nil or empty).
