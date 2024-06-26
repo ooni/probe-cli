@@ -249,8 +249,10 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 		}
 		logger.Infof("Starting measurement with index %d", idx)
 		r.emitter.Emit(eventTypeStatusMeasurementStart, eventMeasurementGeneric{
-			Idx:   int64(idx),
-			Input: target.Input(),
+			CategoryCode: target.Category(),
+			CountryCode:  target.Country(),
+			Idx:          int64(idx),
+			Input:        target.Input(),
 		})
 		if target.Input() != "" && inputCount > 0 {
 			var percentage float64

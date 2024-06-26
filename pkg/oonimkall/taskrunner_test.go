@@ -843,7 +843,7 @@ func TestTaskRunnerRun(t *testing.T) {
 
 	t.Run("with success and progress", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
-		fake := fakeSuccessfulDeps()
+		fake := fakeSuccessfulRun()
 		var callbacks model.ExperimentCallbacks
 		fake.Builder.MockSetCallbacks = func(cbs model.ExperimentCallbacks) {
 			callbacks = cbs
