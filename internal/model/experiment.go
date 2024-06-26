@@ -7,6 +7,7 @@ package model
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 )
@@ -234,6 +235,11 @@ type ExperimentBuilder interface {
 	// SetOptionsAny sets options from a map[string]any. See the documentation of
 	// the SetOptionAny method for more information.
 	SetOptionsAny(options map[string]any) error
+
+	// SetOptionsJSON uses the given [json.RawMessage] to initialize fields
+	// of the configuration for running the experiment. The [json.RawMessage]
+	// MUST contain a serialization of the experiment config's type.
+	SetOptionsJSON(value json.RawMessage) error
 
 	// SetCallbacks sets the experiment's interactive callbacks.
 	SetCallbacks(callbacks ExperimentCallbacks)

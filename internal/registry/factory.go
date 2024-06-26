@@ -5,6 +5,7 @@ package registry
 //
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -226,6 +227,20 @@ func (b *Factory) SetOptionsAny(options map[string]any) error {
 		}
 	}
 	return nil
+}
+
+// SetOptionsJSON unmarshals the given [json.RawMessage] inside
+// the experiment specific configuration.
+func (b *Factory) SetOptionsJSON(value json.RawMessage) error {
+	// handle the case where the options are empty
+	if len(value) <= 0 {
+		return nil
+	}
+
+	// otherwise unmarshal into the configuration, which we assume
+	// to be a pointer to a structure.
+	// TODO(bassosimone): make sure with testing that b.config is always a pointer.
+	return json.Unmarshal(value, b.config)
 }
 
 // fieldbyname return v's field whose name is equal to the given key.

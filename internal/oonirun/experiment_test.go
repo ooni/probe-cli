@@ -2,6 +2,7 @@ package oonirun
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"reflect"
 	"sort"
@@ -16,6 +17,7 @@ import (
 func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 	shuffledInputsPrev := experimentShuffledInputs.Load()
 	var calledSetOptionsAny int
+	var calledSetOptionsJSON int
 	var failedToSubmit int
 	var calledKibiBytesReceived int
 	var calledKibiBytesSent int
@@ -42,6 +44,10 @@ func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 					},
 					MockSetOptionsAny: func(options map[string]any) error {
 						calledSetOptionsAny++
+						return nil
+					},
+					MockSetOptionsJSON: func(value json.RawMessage) error {
+						calledSetOptionsJSON++
 						return nil
 					},
 					MockNewExperiment: func() model.Experiment {
@@ -108,6 +114,9 @@ func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 	}
 	if calledSetOptionsAny < 1 {
 		t.Fatal("should have called SetOptionsAny")
+	}
+	if calledSetOptionsJSON < 1 {
+		t.Fatal("should have called SetOptionsJSON")
 	}
 	if calledKibiBytesReceived < 1 {
 		t.Fatal("did not call KibiBytesReceived")
@@ -198,10 +207,14 @@ func TestExperimentRun(t *testing.T) {
 		args:      args{},
 		expectErr: errMocked,
 	}, {
-		name: "cannot set options",
+		name: "cannot set ExtraOptions",
 		fields: fields{
 			newExperimentBuilderFn: func(experimentName string) (model.ExperimentBuilder, error) {
 				eb := &mocks.ExperimentBuilder{
+					MockSetOptionsJSON: func(value json.RawMessage) error {
+						// TODO(bassosimone): need a test case before this one
+						return nil
+					},
 					MockSetOptionsAny: func(options map[string]any) error {
 						return errMocked
 					},
@@ -225,6 +238,9 @@ func TestExperimentRun(t *testing.T) {
 				eb := &mocks.ExperimentBuilder{
 					MockInputPolicy: func() model.InputPolicy {
 						return model.InputOptional
+					},
+					MockSetOptionsJSON: func(value json.RawMessage) error {
+						return nil
 					},
 					MockSetOptionsAny: func(options map[string]any) error {
 						return nil
@@ -254,6 +270,9 @@ func TestExperimentRun(t *testing.T) {
 				eb := &mocks.ExperimentBuilder{
 					MockInputPolicy: func() model.InputPolicy {
 						return model.InputOptional
+					},
+					MockSetOptionsJSON: func(value json.RawMessage) error {
+						return nil
 					},
 					MockSetOptionsAny: func(options map[string]any) error {
 						return nil
@@ -297,6 +316,9 @@ func TestExperimentRun(t *testing.T) {
 				eb := &mocks.ExperimentBuilder{
 					MockInputPolicy: func() model.InputPolicy {
 						return model.InputOptional
+					},
+					MockSetOptionsJSON: func(value json.RawMessage) error {
+						return nil
 					},
 					MockSetOptionsAny: func(options map[string]any) error {
 						return nil
@@ -343,6 +365,9 @@ func TestExperimentRun(t *testing.T) {
 				eb := &mocks.ExperimentBuilder{
 					MockInputPolicy: func() model.InputPolicy {
 						return model.InputOptional
+					},
+					MockSetOptionsJSON: func(value json.RawMessage) error {
+						return nil
 					},
 					MockSetOptionsAny: func(options map[string]any) error {
 						return nil

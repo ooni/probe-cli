@@ -15,11 +15,11 @@ func init() {
 		return &Factory{
 			build: func(config any) model.ExperimentMeasurer {
 				return telegram.NewExperimentMeasurer(
-					config.(telegram.Config),
+					*config.(*telegram.Config),
 				)
 			},
 			canonicalName:    canonicalName,
-			config:           telegram.Config{},
+			config:           &telegram.Config{},
 			enabledByDefault: true,
 			interruptible:    false,
 			inputPolicy:      model.InputNone,

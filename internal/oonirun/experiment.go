@@ -6,6 +6,7 @@ package oonirun
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"strings"
@@ -25,8 +26,17 @@ type Experiment struct {
 	// Annotations contains OPTIONAL Annotations for the experiment.
 	Annotations map[string]string
 
-	// ExtraOptions contains OPTIONAL extra options for the experiment.
+	// ExtraOptions contains OPTIONAL extra options that modify the
+	// default-empty experiment-specific configuration. We apply
+	// the changes described by this field after using the InitialOptions
+	// field to initialize the experiment-specific configuration.
 	ExtraOptions map[string]any
+
+	// InitialOptions contains an OPTIONAL [json.RawMessage] object
+	// used to initialize the default-empty experiment-specific
+	// configuration. After we have initialized the configuration
+	// as such, we then apply the changes described by the ExtraOptions.
+	InitialOptions json.RawMessage
 
 	// Inputs contains the OPTIONAL experiment Inputs
 	Inputs []string
@@ -82,15 +92,22 @@ func (ed *Experiment) Run(ctx context.Context) error {
 		return err
 	}
 
-	// TODO(bassosimone,DecFox): when we're executed by OONI Run v2, it probably makes
-	// slightly more sense to set options from a json.RawMessage because the current
-	// command line limitation is that it's hard to set non scalar parameters and instead
-	// with using OONI Run v2 we can completely bypass such a limitation.
+	// TODO(bassosimone): we need another patch after the current one
+	// to correctly serialize the options as configured using InitialOptions
+	// and ExtraOptions otherwise the Measurement.Options field turns out
+	// to always be empty and this is highly suboptimal for us.
 
 	// 2. configure experiment's options
 	//
+	// We first unmarshal the InitialOptions into the experiment
+	// configuration and afterwards we modify the configuration using
+	// the values contained inside the ExtraOptions field.
+	//
 	// This MUST happen before loading targets because the options will
 	// possibly be used to produce richer input targets.
+	if err := builder.SetOptionsJSON(ed.InitialOptions); err != nil {
+		return err
+	}
 	if err := builder.SetOptionsAny(ed.ExtraOptions); err != nil {
 		return err
 	}

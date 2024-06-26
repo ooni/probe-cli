@@ -54,7 +54,7 @@ type V2Nettest struct {
 	// `Safe` will be available for the experiment run, but omitted from
 	// the serialized Measurement that the experiment builder will submit
 	// to the OONI backend.
-	Options map[string]any `json:"options"`
+	Options json.RawMessage `json:"options"`
 
 	// TestName contains the nettest name.
 	TestName string `json:"test_name"`
@@ -183,7 +183,8 @@ func V2MeasureDescriptor(ctx context.Context, config *LinkConfig, desc *V2Descri
 		// construct an experiment from the current nettest
 		exp := &Experiment{
 			Annotations:            config.Annotations,
-			ExtraOptions:           nettest.Options,
+			ExtraOptions:           make(map[string]any),
+			InitialOptions:         nettest.Options,
 			Inputs:                 nettest.Inputs,
 			InputFilePaths:         nil,
 			MaxRuntime:             config.MaxRuntime,

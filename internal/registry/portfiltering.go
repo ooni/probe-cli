@@ -15,11 +15,11 @@ func init() {
 		return &Factory{
 			build: func(config any) model.ExperimentMeasurer {
 				return portfiltering.NewExperimentMeasurer(
-					config.(portfiltering.Config),
+					*config.(*portfiltering.Config),
 				)
 			},
 			canonicalName:    canonicalName,
-			config:           portfiltering.Config{},
+			config:           &portfiltering.Config{},
 			enabledByDefault: true,
 			interruptible:    false,
 			inputPolicy:      model.InputNone,
