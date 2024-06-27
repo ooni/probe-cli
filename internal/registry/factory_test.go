@@ -528,6 +528,7 @@ func TestFactorySetOptionsJSON(t *testing.T) {
 				if diff := cmp.Diff(tc.expectRecord, tc.mutableConfig); diff != "" {
 					t.Fatal(diff)
 				}
+				return
 
 			case err != nil && tc.expectErr != nil:
 				if err.Error() != tc.expectErr.Error() {
