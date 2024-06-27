@@ -2,6 +2,7 @@ package registry
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -34,7 +35,7 @@ type fakeExperimentConfig struct {
 	Invisible int64
 }
 
-func TestExperimentBuilderOptions(t *testing.T) {
+func TestFactoryOptions(t *testing.T) {
 	t.Run("when config is not a pointer", func(t *testing.T) {
 		b := &Factory{
 			config: 17,
@@ -132,7 +133,7 @@ func TestExperimentBuilderOptions(t *testing.T) {
 	})
 }
 
-func TestExperimentBuilderSetOptionAny(t *testing.T) {
+func TestFactorySetOptionAny(t *testing.T) {
 	var inputs = []struct {
 		TestCaseName  string
 		InitialConfig any
@@ -398,7 +399,7 @@ func TestExperimentBuilderSetOptionAny(t *testing.T) {
 	}
 }
 
-func TestExperimentBuilderSetOptionsAny(t *testing.T) {
+func TestFactorySetOptionsAny(t *testing.T) {
 	b := &Factory{config: &fakeExperimentConfig{}}
 
 	t.Run("we correctly handle an empty map", func(t *testing.T) {
@@ -439,6 +440,106 @@ func TestExperimentBuilderSetOptionsAny(t *testing.T) {
 			t.Fatal("unexpected err", err)
 		}
 	})
+}
+
+func TestFactorySetOptionsJSON(t *testing.T) {
+
+	// PersonRecord is a fake experiment configuration.
+	//
+	// Note how the `ooni` tag here is missing because we don't care
+	// about whether such a tag is present when using JSON.
+	type PersonRecord struct {
+		Name    string
+		Age     int64
+		Friends []string
+	}
+
+	// testcase is a test case for this function.
+	type testcase struct {
+		// name is the name of the test case
+		name string
+
+		// mutableConfig is the config in which we should unmarshal the JSON
+		mutableConfig *PersonRecord
+
+		// rawJSON contains the raw JSON to unmarshal into mutableConfig
+		rawJSON json.RawMessage
+
+		// expectErr is the error we expect
+		expectErr error
+
+		// expectRecord is what we expectRecord to see in the end
+		expectRecord *PersonRecord
+	}
+
+	cases := []testcase{
+		{
+			name: "we correctly accept zero-length options",
+			mutableConfig: &PersonRecord{
+				Name:    "foo",
+				Age:     55,
+				Friends: []string{"bar", "baz"},
+			},
+			rawJSON: []byte{},
+			expectRecord: &PersonRecord{
+				Name:    "foo",
+				Age:     55,
+				Friends: []string{"bar", "baz"},
+			},
+		},
+
+		{
+			name:          "we return an error on JSON parsing error",
+			mutableConfig: &PersonRecord{},
+			rawJSON:       []byte(`{`),
+			expectErr:     errors.New("unexpected end of JSON input"),
+			expectRecord:  &PersonRecord{},
+		},
+
+		{
+			name: "we correctly unmarshal into the existing config",
+			mutableConfig: &PersonRecord{
+				Name:    "foo",
+				Age:     55,
+				Friends: []string{"bar", "baz"},
+			},
+			rawJSON:   []byte(`{"Friends":["foo","oof"]}`),
+			expectErr: nil,
+			expectRecord: &PersonRecord{
+				Name:    "foo",
+				Age:     55,
+				Friends: []string{"foo", "oof"},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			// create the factory to use
+			factory := &Factory{config: tc.mutableConfig}
+
+			// unmarshal into the mutableConfig
+			err := factory.SetOptionsJSON(tc.rawJSON)
+
+			// make sure the error is the one we actually expect
+			switch {
+			case err == nil && tc.expectErr == nil:
+				if diff := cmp.Diff(tc.expectRecord, tc.mutableConfig); diff != "" {
+					t.Fatal(diff)
+				}
+
+			case err != nil && tc.expectErr != nil:
+				if err.Error() != tc.expectErr.Error() {
+					t.Fatal("expected", tc.expectErr, "got", err)
+				}
+				return
+
+			default:
+				t.Fatal("expected", tc.expectErr, "got", err)
+			}
+		})
+	}
 }
 
 func TestNewFactory(t *testing.T) {
@@ -975,6 +1076,8 @@ func TestFactoryNewTargetLoader(t *testing.T) {
 	})
 }
 
+// This test is important because SetOptionsJSON assumes that the experiment
+// config is a struct pointer into which it is possible to write
 func TestExperimentConfigIsAlwaysAPointerToStruct(t *testing.T) {
 	for name, ffunc := range AllExperiments {
 		t.Run(name, func(t *testing.T) {
