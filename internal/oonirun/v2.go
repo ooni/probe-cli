@@ -7,6 +7,7 @@ package oonirun
 import (
 	"bufio"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -305,13 +306,16 @@ func v2MeasureHTTPS(ctx context.Context, config *LinkConfig, URL string) error {
 
 func maybeGetAuthenticationTokenFromFile(path string) (string, error) {
 	if path != "" {
-		return readFirstLineFromFile(path)
+		return readBearerTokenFromFile(path)
 	}
 	return "", nil
 }
 
-// readFirstLineFromFile reads the first line of the passed text file and trims any non-printable characters.
-func readFirstLineFromFile(filep string) (string, error) {
+// readBearerTokenFromFile tries to extract a valid (base64) bearer token from
+// the first line of the passed text file.
+// If there is an error while reading from the file, the error will be returned.
+// If we can read from the file but there's no valid token found, an empty string will be returned.
+func readBearerTokenFromFile(filep string) (string, error) {
 	f, err := fsx.OpenFile(filep)
 	if err != nil {
 		return "", err
@@ -323,10 +327,29 @@ func readFirstLineFromFile(filep string) (string, error) {
 	// Scan the first line
 	if scanner.Scan() {
 		line := scanner.Text()
+
+		// trim any non printable characters (like control chars)
 		trimmed := strings.TrimFunc(line, func(r rune) bool {
 			return !unicode.IsPrint(r)
 		})
-		return trimmed, nil
+
+		// tokenize by whitespace
+		tokens := strings.Fields(trimmed)
+
+		// return empty string if tokens is empty
+		if len(tokens) <= 0 {
+			return "", nil
+		}
+
+		// ignore all tokens after the first
+		token := tokens[0]
+
+		// if this is not a valid base64 token, return empty string
+		if _, err := base64.StdEncoding.DecodeString(token); err != nil {
+			return "", nil
+		}
+
+		return token, nil
 	}
 
 	// Check for any scanning error

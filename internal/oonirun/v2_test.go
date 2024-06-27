@@ -267,7 +267,7 @@ func TestOONIRunV2LinkEmptyTestName(t *testing.T) {
 func TestOONIRunV2LinkWithAuthentication(t *testing.T) {
 
 	t.Run("authentication raises error if no token is passed", func(t *testing.T) {
-		token := "secret-token"
+		token := "c2VjcmV0"
 		bearerToken := "Bearer " + token
 
 		// make a local server that returns a reasonable descriptor for the example experiment
@@ -324,7 +324,7 @@ func TestOONIRunV2LinkWithAuthentication(t *testing.T) {
 	})
 
 	t.Run("authentication does not fail the auth token is passed", func(t *testing.T) {
-		token := "secret-token"
+		token := "c2VjcmV0"
 		bearerToken := "Bearer " + token
 
 		// make a local server that returns a reasonable descriptor for the example experiment
@@ -673,7 +673,25 @@ func Test_readFirstLineFromFile(t *testing.T) {
 		defer f.Close()
 		defer os.Remove(f.Name())
 
-		line, err := readFirstLineFromFile(f.Name())
+		line, err := readBearerTokenFromFile(f.Name())
+		if line != "" {
+			t.Fatal("expected empty string")
+		}
+		if err != nil {
+			t.Fatal("expected err==nil")
+		}
+	})
+
+	t.Run("return empty string if first line is just whitespace", func(t *testing.T) {
+		f, err := os.CreateTemp(t.TempDir(), "auth-")
+		if err != nil {
+			t.Fatal(err)
+		}
+		f.Write([]byte("     \n"))
+		defer f.Close()
+		defer os.Remove(f.Name())
+
+		line, err := readBearerTokenFromFile(f.Name())
 		if line != "" {
 			t.Fatal("expected empty string")
 		}
@@ -683,7 +701,7 @@ func Test_readFirstLineFromFile(t *testing.T) {
 	})
 
 	t.Run("return error if file does not exist", func(t *testing.T) {
-		line, err := readFirstLineFromFile(filepath.Join(t.TempDir(), "non-existent"))
+		line, err := readBearerTokenFromFile(filepath.Join(t.TempDir(), "non-existent"))
 		if line != "" {
 			t.Fatal("expected empty string")
 		}
@@ -698,12 +716,12 @@ func Test_readFirstLineFromFile(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		token := "asecret"
+		token := "c2VjcmV0" // b64("secret")
 		f.Write([]byte(token))
 		defer f.Close()
 		defer os.Remove(f.Name())
 
-		line, err := readFirstLineFromFile(f.Name())
+		line, err := readBearerTokenFromFile(f.Name())
 		if line != token {
 			t.Fatalf("expected %s, got %s", token, line)
 		}
@@ -718,16 +736,62 @@ func Test_readFirstLineFromFile(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		token := "asecret"
+		token := "c2VjcmV0" // b64("secret")
 		f.Write([]byte(token))
 		f.Write([]byte("\n"))
 		f.Write([]byte("something\nelse\nand\nsomething\nmore"))
 		defer f.Close()
 		defer os.Remove(f.Name())
 
-		line, err := readFirstLineFromFile(f.Name())
+		line, err := readBearerTokenFromFile(f.Name())
 		if line != token {
 			t.Fatalf("expected %s, got %s", token, line)
+		}
+		if err != nil {
+			t.Fatal("expected err==nil")
+		}
+	})
+
+	t.Run("return only first token if >1 is found", func(t *testing.T) {
+		f, err := os.CreateTemp(t.TempDir(), "auth-")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		token := "c2VjcmV0" // b64("secret")
+		f.Write([]byte(token))
+		f.Write([]byte("\n"))
+		f.Write([]byte(" antani\n"))
+		defer f.Close()
+		defer os.Remove(f.Name())
+
+		line, err := readBearerTokenFromFile(f.Name())
+		if line != token {
+			t.Fatalf("expected %s, got %s", token, line)
+		}
+		if err != nil {
+			t.Fatal("expected err==nil")
+		}
+	})
+
+	t.Run("return empty string if not a valid b64 token", func(t *testing.T) {
+		f, err := os.CreateTemp(t.TempDir(), "auth-")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		token := "secret!"
+		f.Write([]byte(token))
+		f.Write([]byte("\n"))
+		f.Write([]byte(" antani\n"))
+		defer f.Close()
+		defer os.Remove(f.Name())
+
+		expected := ""
+
+		line, err := readBearerTokenFromFile(f.Name())
+		if line != expected {
+			t.Fatalf("expected empty string, got %s", line)
 		}
 		if err != nil {
 			t.Fatal("expected err==nil")
