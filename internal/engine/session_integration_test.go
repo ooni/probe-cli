@@ -483,7 +483,7 @@ func TestNewOrchestraClientProbeServicesNewClientFailure(t *testing.T) {
 		svc.Type = "antani" // should really not be supported for a long time
 	}
 	client, err := sess.newOrchestraClient(context.Background())
-	if !errors.Is(err, probeservices.ErrUnsupportedEndpoint) {
+	if !errors.Is(err, probeservices.ErrUnsupportedServiceType) {
 		t.Fatal("not the error we expected")
 	}
 	if client != nil {

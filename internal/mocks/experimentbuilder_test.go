@@ -1,6 +1,7 @@
 package mocks
 
 import (
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -67,6 +68,19 @@ func TestExperimentBuilder(t *testing.T) {
 			},
 		}
 		err := eb.SetOptionsAny(make(map[string]any))
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected value")
+		}
+	})
+
+	t.Run("SetOptionsJSON", func(t *testing.T) {
+		expected := errors.New("mocked error")
+		eb := &ExperimentBuilder{
+			MockSetOptionsJSON: func(value json.RawMessage) error {
+				return expected
+			},
+		}
+		err := eb.SetOptionsJSON([]byte(`{}`))
 		if !errors.Is(err, expected) {
 			t.Fatal("unexpected value")
 		}
