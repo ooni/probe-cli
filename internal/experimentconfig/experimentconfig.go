@@ -24,6 +24,9 @@ import (
 // value will be a zero-length list (either nil or empty).
 func DefaultOptionsSerializer(config any) (options []string) {
 	// as documented, this method MUST be passed a struct pointer
+	//
+	// Implementation note: the .Elem method converts a nil
+	// pointer to a zero value pointee type.
 	stval := reflect.ValueOf(config)
 	if stval.Kind() != reflect.Pointer {
 		return
