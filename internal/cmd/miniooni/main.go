@@ -234,7 +234,7 @@ func registerOONIRun(rootCmd *cobra.Command, globalOptions *Options) {
 		"auth-file",
 		"a",
 		"",
-		"Path to a file with authentication headers (for fetching a remote OONI Run v2 descriptor)",
+		"Path to a file containing a bearer token for fetching a remote OONI Run v2 descriptor",
 	)
 }
 
