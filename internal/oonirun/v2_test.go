@@ -710,7 +710,7 @@ func Test_readFirstLineFromFile(t *testing.T) {
 		}
 	})
 
-	t.Run("return first line with a file of one line", func(t *testing.T) {
+	t.Run("return first line with a file of one line without EOL", func(t *testing.T) {
 		f, err := os.CreateTemp(t.TempDir(), "auth-")
 		if err != nil {
 			t.Fatal(err)
@@ -718,6 +718,26 @@ func Test_readFirstLineFromFile(t *testing.T) {
 
 		token := "c2VjcmV0" // b64("secret")
 		f.Write([]byte(token))
+		defer f.Close()
+		defer os.Remove(f.Name())
+
+		line, err := v2ReadBearerTokenFromFile(f.Name())
+		if line != token {
+			t.Fatalf("expected %s, got %s", token, line)
+		}
+		if err != nil {
+			t.Fatal("expected err==nil")
+		}
+	})
+
+	t.Run("return first line with a file of one line with EOL", func(t *testing.T) {
+		f, err := os.CreateTemp(t.TempDir(), "auth-")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		token := "c2VjcmV0" // b64("secret")
+		f.Write(append([]byte(token), '\n'))
 		defer f.Close()
 		defer os.Remove(f.Name())
 
@@ -740,28 +760,6 @@ func Test_readFirstLineFromFile(t *testing.T) {
 		f.Write([]byte(token))
 		f.Write([]byte("\n"))
 		f.Write([]byte("something\nelse\nand\nsomething\nmore"))
-		defer f.Close()
-		defer os.Remove(f.Name())
-
-		line, err := v2ReadBearerTokenFromFile(f.Name())
-		if line != token {
-			t.Fatalf("expected %s, got %s", token, line)
-		}
-		if err != nil {
-			t.Fatal("expected err==nil")
-		}
-	})
-
-	t.Run("return only first token if >1 is found", func(t *testing.T) {
-		f, err := os.CreateTemp(t.TempDir(), "auth-")
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		token := "c2VjcmV0" // b64("secret")
-		f.Write([]byte(token))
-		f.Write([]byte("\n"))
-		f.Write([]byte(" antani\n"))
 		defer f.Close()
 		defer os.Remove(f.Name())
 
@@ -797,5 +795,4 @@ func Test_readFirstLineFromFile(t *testing.T) {
 			t.Fatal("expected err==nil")
 		}
 	})
-
 }
