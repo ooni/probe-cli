@@ -692,4 +692,46 @@ func Test_readFirstLineFromFile(t *testing.T) {
 		}
 	})
 
+	t.Run("return first line with a file of one line", func(t *testing.T) {
+		f, err := os.CreateTemp(t.TempDir(), "auth-")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		token := "asecret"
+		f.Write([]byte(token))
+		defer f.Close()
+		defer os.Remove(f.Name())
+
+		line, err := readFirstLineFromFile(f.Name())
+		if line != token {
+			t.Fatalf("expected %s, got %s", token, line)
+		}
+		if err != nil {
+			t.Fatal("expected err==nil")
+		}
+	})
+
+	t.Run("return first line with a file of >1 line", func(t *testing.T) {
+		f, err := os.CreateTemp(t.TempDir(), "auth-")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		token := "asecret"
+		f.Write([]byte(token))
+		f.Write([]byte("\n"))
+		f.Write([]byte("something\nelse\nand\nsomething\nmore"))
+		defer f.Close()
+		defer os.Remove(f.Name())
+
+		line, err := readFirstLineFromFile(f.Name())
+		if line != token {
+			t.Fatalf("expected %s, got %s", token, line)
+		}
+		if err != nil {
+			t.Fatal("expected err==nil")
+		}
+	})
+
 }
