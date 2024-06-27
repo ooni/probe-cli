@@ -284,9 +284,9 @@ func TestOONIRunV2LinkWithAuthentication(t *testing.T) {
 				Author:      "",
 				Nettests: []V2Nettest{{
 					Inputs: []string{},
-					Options: map[string]any{
-						"SleepTime": int64(10 * time.Millisecond),
-					},
+					Options: json.RawMessage(`{
+					    "SleepTime": 10000000
+					}`),
 					TestName: "example",
 				}},
 			}
@@ -341,9 +341,9 @@ func TestOONIRunV2LinkWithAuthentication(t *testing.T) {
 				Author:      "",
 				Nettests: []V2Nettest{{
 					Inputs: []string{},
-					Options: map[string]any{
-						"SleepTime": int64(10 * time.Millisecond),
-					},
+					Options: json.RawMessage(`{
+					    "SleepTime": 10000000
+					}`),
 					TestName: "example",
 				}},
 			}
