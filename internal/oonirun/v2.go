@@ -272,7 +272,7 @@ func v2MeasureHTTPS(ctx context.Context, config *LinkConfig, URL string) error {
 
 	// pull a possibly new descriptor without updating the old descriptor
 	clnt := config.Session.DefaultHTTPClient()
-	auth, err := maybeGetAuthenticationTokenFromFile(config.AuthFile)
+	auth, err := v2MaybeGetAuthenticationTokenFromFile(config.AuthFile)
 	if err != nil {
 		logger.Warnf("oonirun: failed to retrieve auth token: %v", err)
 	}
@@ -304,25 +304,25 @@ func v2MeasureHTTPS(ctx context.Context, config *LinkConfig, URL string) error {
 	return V2MeasureDescriptor(ctx, config, newValue)
 }
 
-func maybeGetAuthenticationTokenFromFile(path string) (string, error) {
+func v2MaybeGetAuthenticationTokenFromFile(path string) (string, error) {
 	if path != "" {
-		return readBearerTokenFromFile(path)
+		return v2ReadBearerTokenFromFile(path)
 	}
 	return "", nil
 }
 
-// readBearerTokenFromFile tries to extract a valid (base64) bearer token from
+// v2ReadBearerTokenFromFile tries to extract a valid (base64) bearer token from
 // the first line of the passed text file.
 // If there is an error while reading from the file, the error will be returned.
 // If we can read from the file but there's no valid token found, an empty string will be returned.
-func readBearerTokenFromFile(filep string) (string, error) {
-	f, err := fsx.OpenFile(filep)
+func v2ReadBearerTokenFromFile(fileName string) (string, error) {
+	filep, err := fsx.OpenFile(fileName)
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer filep.Close()
 
-	scanner := bufio.NewScanner(f)
+	scanner := bufio.NewScanner(filep)
 
 	// Scan the first line
 	if scanner.Scan() {

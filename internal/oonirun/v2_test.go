@@ -673,7 +673,7 @@ func Test_readFirstLineFromFile(t *testing.T) {
 		defer f.Close()
 		defer os.Remove(f.Name())
 
-		line, err := readBearerTokenFromFile(f.Name())
+		line, err := v2ReadBearerTokenFromFile(f.Name())
 		if line != "" {
 			t.Fatal("expected empty string")
 		}
@@ -691,7 +691,7 @@ func Test_readFirstLineFromFile(t *testing.T) {
 		defer f.Close()
 		defer os.Remove(f.Name())
 
-		line, err := readBearerTokenFromFile(f.Name())
+		line, err := v2ReadBearerTokenFromFile(f.Name())
 		if line != "" {
 			t.Fatal("expected empty string")
 		}
@@ -701,7 +701,7 @@ func Test_readFirstLineFromFile(t *testing.T) {
 	})
 
 	t.Run("return error if file does not exist", func(t *testing.T) {
-		line, err := readBearerTokenFromFile(filepath.Join(t.TempDir(), "non-existent"))
+		line, err := v2ReadBearerTokenFromFile(filepath.Join(t.TempDir(), "non-existent"))
 		if line != "" {
 			t.Fatal("expected empty string")
 		}
@@ -721,7 +721,7 @@ func Test_readFirstLineFromFile(t *testing.T) {
 		defer f.Close()
 		defer os.Remove(f.Name())
 
-		line, err := readBearerTokenFromFile(f.Name())
+		line, err := v2ReadBearerTokenFromFile(f.Name())
 		if line != token {
 			t.Fatalf("expected %s, got %s", token, line)
 		}
@@ -743,7 +743,7 @@ func Test_readFirstLineFromFile(t *testing.T) {
 		defer f.Close()
 		defer os.Remove(f.Name())
 
-		line, err := readBearerTokenFromFile(f.Name())
+		line, err := v2ReadBearerTokenFromFile(f.Name())
 		if line != token {
 			t.Fatalf("expected %s, got %s", token, line)
 		}
@@ -765,7 +765,7 @@ func Test_readFirstLineFromFile(t *testing.T) {
 		defer f.Close()
 		defer os.Remove(f.Name())
 
-		line, err := readBearerTokenFromFile(f.Name())
+		line, err := v2ReadBearerTokenFromFile(f.Name())
 		if line != token {
 			t.Fatalf("expected %s, got %s", token, line)
 		}
@@ -789,7 +789,7 @@ func Test_readFirstLineFromFile(t *testing.T) {
 
 		expected := ""
 
-		line, err := readBearerTokenFromFile(f.Name())
+		line, err := v2ReadBearerTokenFromFile(f.Name())
 		if line != expected {
 			t.Fatalf("expected empty string, got %s", line)
 		}
