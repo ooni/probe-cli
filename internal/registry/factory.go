@@ -5,6 +5,7 @@ package registry
 //
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -105,22 +106,47 @@ var (
 
 // Options returns the options exposed by this experiment.
 func (b *Factory) Options() (map[string]model.ExperimentOptionInfo, error) {
+	// create the result value
 	result := make(map[string]model.ExperimentOptionInfo)
+
+	// make sure we're dealing with a pointer
 	ptrinfo := reflect.ValueOf(b.config)
 	if ptrinfo.Kind() != reflect.Ptr {
 		return nil, ErrConfigIsNotAStructPointer
 	}
-	structinfo := ptrinfo.Elem().Type()
-	if structinfo.Kind() != reflect.Struct {
+
+	// obtain information about the value and its type
+	valueinfo := ptrinfo.Elem()
+	typeinfo := valueinfo.Type()
+
+	// make sure we're dealing with a struct
+	if typeinfo.Kind() != reflect.Struct {
 		return nil, ErrConfigIsNotAStructPointer
 	}
-	for i := 0; i < structinfo.NumField(); i++ {
-		field := structinfo.Field(i)
-		result[field.Name] = model.ExperimentOptionInfo{
-			Doc:  field.Tag.Get("ooni"),
-			Type: field.Type.String(),
+
+	// cycle through the fields
+	for i := 0; i < typeinfo.NumField(); i++ {
+		fieldType, fieldValue := typeinfo.Field(i), valueinfo.Field(i)
+
+		// do not include private fields into our list of fields
+		if !fieldType.IsExported() {
+			continue
+		}
+
+		// skip fields that are missing an `ooni` tag
+		docs := fieldType.Tag.Get("ooni")
+		if docs == "" {
+			continue
+		}
+
+		// create a description of this field
+		result[fieldType.Name] = model.ExperimentOptionInfo{
+			Doc:   docs,
+			Type:  fieldType.Type.String(),
+			Value: fieldValue.Interface(),
 		}
 	}
+
 	return result, nil
 }
 
@@ -226,6 +252,19 @@ func (b *Factory) SetOptionsAny(options map[string]any) error {
 		}
 	}
 	return nil
+}
+
+// SetOptionsJSON unmarshals the given [json.RawMessage] inside
+// the experiment specific configuration.
+func (b *Factory) SetOptionsJSON(value json.RawMessage) error {
+	// handle the case where the options are empty
+	if len(value) <= 0 {
+		return nil
+	}
+
+	// otherwise unmarshal into the configuration, which we assume
+	// to be a pointer to a structure.
+	return json.Unmarshal(value, b.config)
 }
 
 // fieldbyname return v's field whose name is equal to the given key.

@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/httpclientx"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
@@ -27,9 +26,9 @@ func TestOONIRunV2LinkCommonCase(t *testing.T) {
 			Author:      "",
 			Nettests: []V2Nettest{{
 				Inputs: []string{},
-				Options: map[string]any{
-					"SleepTime": int64(10 * time.Millisecond),
-				},
+				Options: json.RawMessage(`{
+					"SleepTime": 10000000
+				}`),
 				TestName: "example",
 			}},
 		}
@@ -73,9 +72,9 @@ func TestOONIRunV2LinkCannotUpdateCache(t *testing.T) {
 			Author:      "",
 			Nettests: []V2Nettest{{
 				Inputs: []string{},
-				Options: map[string]any{
-					"SleepTime": int64(10 * time.Millisecond),
-				},
+				Options: json.RawMessage(`{
+					"SleepTime": 10000000
+				}`),
 				TestName: "example",
 			}},
 		}
@@ -132,9 +131,9 @@ func TestOONIRunV2LinkWithoutAcceptChanges(t *testing.T) {
 			Author:      "",
 			Nettests: []V2Nettest{{
 				Inputs: []string{},
-				Options: map[string]any{
-					"SleepTime": int64(10 * time.Millisecond),
-				},
+				Options: json.RawMessage(`{
+					"SleepTime": 10000000
+				}`),
 				TestName: "example",
 			}},
 		}
@@ -220,9 +219,9 @@ func TestOONIRunV2LinkEmptyTestName(t *testing.T) {
 			Author:      "",
 			Nettests: []V2Nettest{{
 				Inputs: []string{},
-				Options: map[string]any{
-					"SleepTime": int64(10 * time.Millisecond),
-				},
+				Options: json.RawMessage(`{
+					"SleepTime": 10000000
+				}`),
 				TestName: "", // empty!
 			}},
 		}
@@ -374,6 +373,9 @@ func TestV2MeasureDescriptor(t *testing.T) {
 				MockInputPolicy: func() model.InputPolicy {
 					return model.InputNone
 				},
+				MockSetOptionsJSON: func(value json.RawMessage) error {
+					return nil
+				},
 				MockSetOptionsAny: func(options map[string]any) error {
 					return nil
 				},
@@ -426,7 +428,7 @@ func TestV2MeasureDescriptor(t *testing.T) {
 			Author:      "",
 			Nettests: []V2Nettest{{
 				Inputs:   []string{},
-				Options:  map[string]any{},
+				Options:  json.RawMessage(`{}`),
 				TestName: "example",
 			}},
 		}
@@ -532,5 +534,4 @@ func TestV2DescriptorCacheLoad(t *testing.T) {
 			t.Fatal("expected nil cache")
 		}
 	})
-
 }

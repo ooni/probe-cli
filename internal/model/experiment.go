@@ -7,6 +7,7 @@ package model
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 )
@@ -235,6 +236,12 @@ type ExperimentBuilder interface {
 	// the SetOptionAny method for more information.
 	SetOptionsAny(options map[string]any) error
 
+	// SetOptionsJSON uses the given [json.RawMessage] to initialize fields
+	// of the configuration for running the experiment. The [json.RawMessage], if
+	// not empty, MUST contain a serialization of the experiment config's
+	// type. An empty [json.RawMessage] will silently be ignored.
+	SetOptionsJSON(value json.RawMessage) error
+
 	// SetCallbacks sets the experiment's interactive callbacks.
 	SetCallbacks(callbacks ExperimentCallbacks)
 
@@ -290,6 +297,9 @@ type ExperimentOptionInfo struct {
 
 	// Type contains the type.
 	Type string
+
+	// Value contains the current option value.
+	Value any
 }
 
 // ExperimentTargetLoader loads targets from local or remote sources.
