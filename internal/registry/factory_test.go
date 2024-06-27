@@ -21,21 +21,23 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
-type fakeExperimentConfig struct {
-	// values that should be included into the Options return value
-	Chan   chan any `ooni:"we cannot set this"`
-	String string   `ooni:"a string"`
-	Truth  bool     `ooni:"something that no-one knows"`
-	Value  int64    `ooni:"a number"`
-
-	// values that should not be included because they're private
-	private int64 `ooni:"a private number"`
-
-	// values that should not be included because they lack "ooni"'s tag
-	Invisible int64
-}
-
 func TestFactoryOptions(t *testing.T) {
+
+	// the fake configuration we're using in this test
+	type fakeExperimentConfig struct {
+		// values that should be included into the Options return value
+		Chan   chan any `ooni:"we cannot set this"`
+		String string   `ooni:"a string"`
+		Truth  bool     `ooni:"something that no-one knows"`
+		Value  int64    `ooni:"a number"`
+
+		// values that should not be included because they're private
+		private int64 `ooni:"a private number"`
+
+		// values that should not be included because they lack "ooni"'s tag
+		Invisible int64
+	}
+
 	t.Run("when config is not a pointer", func(t *testing.T) {
 		b := &Factory{
 			config: 17,
@@ -134,6 +136,15 @@ func TestFactoryOptions(t *testing.T) {
 }
 
 func TestFactorySetOptionAny(t *testing.T) {
+
+	// the fake configuration we're using in this test
+	type fakeExperimentConfig struct {
+		Chan   chan any `ooni:"we cannot set this"`
+		String string   `ooni:"a string"`
+		Truth  bool     `ooni:"something that no-one knows"`
+		Value  int64    `ooni:"a number"`
+	}
+
 	var inputs = []struct {
 		TestCaseName  string
 		InitialConfig any
@@ -400,6 +411,16 @@ func TestFactorySetOptionAny(t *testing.T) {
 }
 
 func TestFactorySetOptionsAny(t *testing.T) {
+
+	// the fake configuration we're using in this test
+	type fakeExperimentConfig struct {
+		// values that should be included into the Options return value
+		Chan   chan any `ooni:"we cannot set this"`
+		String string   `ooni:"a string"`
+		Truth  bool     `ooni:"something that no-one knows"`
+		Value  int64    `ooni:"a number"`
+	}
+
 	b := &Factory{config: &fakeExperimentConfig{}}
 
 	t.Run("we correctly handle an empty map", func(t *testing.T) {
