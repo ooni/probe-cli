@@ -101,16 +101,9 @@ func (ed *Experiment) Run(ctx context.Context) error {
 
 	// 2. configure experiment's options
 	//
-	// We first unmarshal the InitialOptions into the experiment
-	// configuration and afterwards we modify the configuration using
-	// the values contained inside the ExtraOptions field.
-	//
 	// This MUST happen before loading targets because the options will
 	// possibly be used to produce richer input targets.
-	if err := builder.SetOptionsJSON(ed.InitialOptions); err != nil {
-		return err
-	}
-	if err := builder.SetOptionsAny(ed.ExtraOptions); err != nil {
+	if err := ed.setOptions(builder); err != nil {
 		return err
 	}
 
@@ -159,6 +152,16 @@ func (ed *Experiment) Run(ctx context.Context) error {
 
 	// 9. process input and generate measurements
 	return inputProcessor.Run(ctx)
+}
+
+func (ed *Experiment) setOptions(builder model.ExperimentBuilder) error {
+	// We first unmarshal the InitialOptions into the experiment
+	// configuration and afterwards we modify the configuration using
+	// the values contained inside the ExtraOptions field.
+	if err := builder.SetOptionsJSON(ed.InitialOptions); err != nil {
+		return err
+	}
+	return builder.SetOptionsAny(ed.ExtraOptions)
 }
 
 // inputProcessor is an alias for model.ExperimentInputProcessor
