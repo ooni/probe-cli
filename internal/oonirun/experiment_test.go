@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
@@ -42,12 +44,12 @@ func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 					MockInputPolicy: func() model.InputPolicy {
 						return model.InputOptional
 					},
-					MockSetOptionsAny: func(options map[string]any) error {
-						calledSetOptionsAny++
-						return nil
-					},
 					MockSetOptionsJSON: func(value json.RawMessage) error {
 						calledSetOptionsJSON++
+						return nil
+					},
+					MockSetOptionsAny: func(options map[string]any) error {
+						calledSetOptionsAny++
 						return nil
 					},
 					MockNewExperiment: func() model.Experiment {
@@ -123,6 +125,67 @@ func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 	}
 	if calledKibiBytesSent < 1 {
 		t.Fatal("did not call KibiBytesSent")
+	}
+}
+
+// This test ensures that we honour InitialOptions then ExtraOptions.
+func TestExperimentSetOptions(t *testing.T) {
+
+	// create the Experiment we're using for this test
+	exp := &Experiment{
+		ExtraOptions: map[string]any{
+			"Message": "jarjarbinks",
+		},
+		InitialOptions: []byte(`{"Message": "foobar", "ReturnError": true}`),
+		Name:           "example",
+
+		// TODO(bassosimone): A zero-value session works here. The proper change
+		// however would be to write a engine.NewExperimentBuilder factory that takes
+		// as input an interface for the session. This would help testing.
+		Session: &engine.Session{},
+	}
+
+	// create the experiment builder manually
+	builder, err := exp.newExperimentBuilder(exp.Name)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// invoke the method we're testing
+	if err := exp.setOptions(builder); err != nil {
+		t.Fatal(err)
+	}
+
+	// obtain the options
+	options, err := builder.Options()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// describe what we expect to happen
+	//
+	// we basically want ExtraOptions to override InitialOptions
+	expect := map[string]model.ExperimentOptionInfo{
+		"Message": {
+			Doc:   "Message to emit at test completion",
+			Type:  "string",
+			Value: string("jarjarbinks"), // set by ExtraOptions
+		},
+		"ReturnError": {
+			Doc:   "Toogle to return a mocked error",
+			Type:  "bool",
+			Value: bool(true), // set by InitialOptions
+		},
+		"SleepTime": {
+			Doc:   "Amount of time to sleep for in nanosecond",
+			Type:  "int64",
+			Value: int64(1000000000), // still the default nonzero value
+		},
+	}
+
+	// make sure the result equals expectation
+	if diff := cmp.Diff(expect, options); diff != "" {
+		t.Fatal(diff)
 	}
 }
 
@@ -207,12 +270,32 @@ func TestExperimentRun(t *testing.T) {
 		args:      args{},
 		expectErr: errMocked,
 	}, {
+		name: "cannot set InitialOptions",
+		fields: fields{
+			newExperimentBuilderFn: func(experimentName string) (model.ExperimentBuilder, error) {
+				eb := &mocks.ExperimentBuilder{
+					MockSetOptionsJSON: func(value json.RawMessage) error {
+						return errMocked
+					},
+				}
+				return eb, nil
+			},
+			newTargetLoaderFn: func(builder model.ExperimentBuilder) targetLoader {
+				return &mocks.ExperimentTargetLoader{
+					MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
+						return []model.ExperimentTarget{}, nil
+					},
+				}
+			},
+		},
+		args:      args{},
+		expectErr: errMocked,
+	}, {
 		name: "cannot set ExtraOptions",
 		fields: fields{
 			newExperimentBuilderFn: func(experimentName string) (model.ExperimentBuilder, error) {
 				eb := &mocks.ExperimentBuilder{
 					MockSetOptionsJSON: func(value json.RawMessage) error {
-						// TODO(bassosimone): need a test case before this one
 						return nil
 					},
 					MockSetOptionsAny: func(options map[string]any) error {

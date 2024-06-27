@@ -309,6 +309,9 @@ type ExperimentOptionInfo struct {
 
 	// Type contains the type.
 	Type string
+
+	// Value contains the current option value.
+	Value any
 }
 
 // ExperimentTargetLoader loads targets from local or remote sources.

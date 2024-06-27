@@ -11,6 +11,12 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/registry"
 )
 
+// TODO(bassosimone,DecFox): we should eventually finish merging the code in
+// file with the code inside the ./internal/registry package.
+//
+// If there's time, this could happen at the end of the current (as of 2024-06-27)
+// richer input work, otherwise any time in the future is actually fine.
+
 // experimentBuilder implements [model.ExperimentBuilder].
 //
 // This type is now just a tiny wrapper around registry.Factory.
