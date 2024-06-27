@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"strings"
 	"sync/atomic"
-	"unicode"
 
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
@@ -328,21 +327,7 @@ func v2ReadBearerTokenFromFile(fileName string) (string, error) {
 	if scanner.Scan() {
 		line := scanner.Text()
 
-		// trim any non printable characters (like control chars)
-		trimmed := strings.TrimFunc(line, func(r rune) bool {
-			return !unicode.IsPrint(r)
-		})
-
-		// tokenize by whitespace
-		tokens := strings.Fields(trimmed)
-
-		// return empty string if tokens is empty
-		if len(tokens) <= 0 {
-			return "", nil
-		}
-
-		// ignore all tokens after the first
-		token := tokens[0]
+		token := strings.TrimSpace(line)
 
 		// if this is not a valid base64 token, return empty string
 		if _, err := base64.StdEncoding.DecodeString(token); err != nil {
