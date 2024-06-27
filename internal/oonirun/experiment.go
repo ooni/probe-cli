@@ -96,6 +96,8 @@ func (ed *Experiment) Run(ctx context.Context) error {
 	// to correctly serialize the options as configured using InitialOptions
 	// and ExtraOptions otherwise the Measurement.Options field turns out
 	// to always be empty and this is highly suboptimal for us.
+	//
+	// The next patch is https://github.com/ooni/probe-cli/pull/1630.
 
 	// 2. configure experiment's options
 	//

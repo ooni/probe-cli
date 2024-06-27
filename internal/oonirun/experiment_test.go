@@ -42,12 +42,12 @@ func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 					MockInputPolicy: func() model.InputPolicy {
 						return model.InputOptional
 					},
-					MockSetOptionsAny: func(options map[string]any) error {
-						calledSetOptionsAny++
-						return nil
-					},
 					MockSetOptionsJSON: func(value json.RawMessage) error {
 						calledSetOptionsJSON++
+						return nil
+					},
+					MockSetOptionsAny: func(options map[string]any) error {
+						calledSetOptionsAny++
 						return nil
 					},
 					MockNewExperiment: func() model.Experiment {
@@ -207,12 +207,32 @@ func TestExperimentRun(t *testing.T) {
 		args:      args{},
 		expectErr: errMocked,
 	}, {
+		name: "cannot set InitialOptions",
+		fields: fields{
+			newExperimentBuilderFn: func(experimentName string) (model.ExperimentBuilder, error) {
+				eb := &mocks.ExperimentBuilder{
+					MockSetOptionsJSON: func(value json.RawMessage) error {
+						return errMocked
+					},
+				}
+				return eb, nil
+			},
+			newTargetLoaderFn: func(builder model.ExperimentBuilder) targetLoader {
+				return &mocks.ExperimentTargetLoader{
+					MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
+						return []model.ExperimentTarget{}, nil
+					},
+				}
+			},
+		},
+		args:      args{},
+		expectErr: errMocked,
+	}, {
 		name: "cannot set ExtraOptions",
 		fields: fields{
 			newExperimentBuilderFn: func(experimentName string) (model.ExperimentBuilder, error) {
 				eb := &mocks.ExperimentBuilder{
 					MockSetOptionsJSON: func(value json.RawMessage) error {
-						// TODO(bassosimone): need a test case before this one
 						return nil
 					},
 					MockSetOptionsAny: func(options map[string]any) error {
