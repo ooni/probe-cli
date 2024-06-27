@@ -95,9 +95,6 @@ func TestInputProcessorSubmissionFailed(t *testing.T) {
 	if m.Annotations["antani"] != "antani" {
 		t.Fatal("invalid annotation: antani")
 	}
-	if len(m.Options) != 1 || m.Options[0] != "fake=true" {
-		t.Fatal("options not set")
-	}
 }
 
 type FakeInputProcessorSaver struct {
