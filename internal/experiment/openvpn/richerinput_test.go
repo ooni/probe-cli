@@ -44,6 +44,17 @@ func TestTarget(t *testing.T) {
 		}
 	})
 
+	t.Run("Options", func(t *testing.T) {
+		expect := []string{
+			"Auth=SHA512",
+			"Cipher=AES-256-GCM",
+			"Provider=unknown",
+		}
+		if diff := cmp.Diff(expect, target.Options()); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
 	t.Run("String", func(t *testing.T) {
 		if target.String() != "openvpn://unknown.corp?address=1.1.1.1%3A443&transport=udp" {
 			t.Fatal("invalid String")
