@@ -24,10 +24,10 @@ func newMinimalFakeSession() *mocks.Session {
 				MockInputPolicy: func() model.InputPolicy {
 					return model.InputNone
 				},
-				MockSetOptionsAny: func(options map[string]any) error {
+				MockSetOptionsJSON: func(value json.RawMessage) error {
 					return nil
 				},
-				MockSetOptionsJSON: func(value json.RawMessage) error {
+				MockSetOptionsAny: func(options map[string]any) error {
 					return nil
 				},
 				MockNewExperiment: func() model.Experiment {
