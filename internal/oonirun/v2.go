@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"sync/atomic"
 	"unicode"
@@ -18,6 +17,7 @@ import (
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
 	"github.com/hexops/gotextdiff/span"
+	"github.com/ooni/probe-cli/v3/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/httpclientx"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -311,8 +311,8 @@ func maybeGetAuthenticationTokenFromFile(path string) (string, error) {
 }
 
 // readFirstLineFromFile reads the first line of the passed text file and trims any non-printable characters.
-func readFirstLineFromFile(filePath string) (string, error) {
-	f, err := os.Open(filePath)
+func readFirstLineFromFile(filep string) (string, error) {
+	f, err := fsx.OpenFile(filep)
 	if err != nil {
 		return "", err
 	}
