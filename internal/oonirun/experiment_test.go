@@ -134,10 +134,9 @@ func TestExperimentSetOptions(t *testing.T) {
 	// create the Experiment we're using for this test
 	exp := &Experiment{
 		ExtraOptions: map[string]any{
-			"ReturnError": true,
-			"SleepTime":   500,
+			"Message": "jarjarbinks",
 		},
-		InitialOptions: []byte(`{"Message": "foobar", "SleepTime": 100}`),
+		InitialOptions: []byte(`{"Message": "foobar", "ReturnError": true}`),
 		Name:           "example",
 
 		// TODO(bassosimone): A zero-value session works here. The proper change
@@ -170,17 +169,17 @@ func TestExperimentSetOptions(t *testing.T) {
 		"Message": {
 			Doc:   "Message to emit at test completion",
 			Type:  "string",
-			Value: string("foobar"), // set by InitialOptions
+			Value: string("jarjarbinks"), // set by ExtraOptions
 		},
 		"ReturnError": {
 			Doc:   "Toogle to return a mocked error",
 			Type:  "bool",
-			Value: bool(true), // set by ExtraOptions
+			Value: bool(true), // set by InitialOptions
 		},
 		"SleepTime": {
 			Doc:   "Amount of time to sleep for in nanosecond",
 			Type:  "int64",
-			Value: int64(500), // set by InitialOptions, overriden by ExtraOptions
+			Value: int64(1000000000), // still the default nonzero value
 		},
 	}
 
