@@ -55,7 +55,12 @@ func TestExperimentBuilderOptions(t *testing.T) {
 	})
 
 	t.Run("when config is a pointer to struct", func(t *testing.T) {
-		config := &fakeExperimentConfig{}
+		config := &fakeExperimentConfig{
+			Chan:   make(chan any),
+			String: "foobar",
+			Truth:  true,
+			Value:  177114,
+		}
 		b := &Factory{
 			config: config,
 		}
@@ -63,6 +68,7 @@ func TestExperimentBuilderOptions(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		for name, value := range options {
 			switch name {
 			case "Chan":
@@ -72,6 +78,10 @@ func TestExperimentBuilderOptions(t *testing.T) {
 				if value.Type != "chan interface {}" {
 					t.Fatal("invalid type", value.Type)
 				}
+				if value.Value.(chan any) == nil {
+					t.Fatal("expected non-nil channel here")
+				}
+
 			case "String":
 				if value.Doc != "a string" {
 					t.Fatal("invalid doc")
@@ -79,6 +89,10 @@ func TestExperimentBuilderOptions(t *testing.T) {
 				if value.Type != "string" {
 					t.Fatal("invalid type", value.Type)
 				}
+				if v := value.Value.(string); v != "foobar" {
+					t.Fatal("unexpected string value", v)
+				}
+
 			case "Truth":
 				if value.Doc != "something that no-one knows" {
 					t.Fatal("invalid doc")
@@ -86,6 +100,10 @@ func TestExperimentBuilderOptions(t *testing.T) {
 				if value.Type != "bool" {
 					t.Fatal("invalid type", value.Type)
 				}
+				if v := value.Value.(bool); !v {
+					t.Fatal("unexpected bool value", v)
+				}
+
 			case "Value":
 				if value.Doc != "a number" {
 					t.Fatal("invalid doc")
@@ -93,6 +111,10 @@ func TestExperimentBuilderOptions(t *testing.T) {
 				if value.Type != "int64" {
 					t.Fatal("invalid type", value.Type)
 				}
+				if v := value.Value.(int64); v != 177114 {
+					t.Fatal("unexpected int64 value", v)
+				}
+
 			default:
 				t.Fatal("unknown name", name)
 			}

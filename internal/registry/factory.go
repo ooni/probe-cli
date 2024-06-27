@@ -111,15 +111,17 @@ func (b *Factory) Options() (map[string]model.ExperimentOptionInfo, error) {
 	if ptrinfo.Kind() != reflect.Ptr {
 		return nil, ErrConfigIsNotAStructPointer
 	}
-	structinfo := ptrinfo.Elem().Type()
+	valueinfo := ptrinfo.Elem()
+	structinfo := valueinfo.Type()
 	if structinfo.Kind() != reflect.Struct {
 		return nil, ErrConfigIsNotAStructPointer
 	}
 	for i := 0; i < structinfo.NumField(); i++ {
 		field := structinfo.Field(i)
 		result[field.Name] = model.ExperimentOptionInfo{
-			Doc:  field.Tag.Get("ooni"),
-			Type: field.Type.String(),
+			Doc:   field.Tag.Get("ooni"),
+			Type:  field.Type.String(),
+			Value: valueinfo.Field(i).Interface(),
 		}
 	}
 	return result, nil
