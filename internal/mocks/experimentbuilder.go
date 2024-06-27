@@ -50,7 +50,6 @@ func (eb *ExperimentBuilder) SetOptionsAny(options map[string]any) error {
 }
 
 func (eb *ExperimentBuilder) SetOptionsJSON(value json.RawMessage) error {
-	// TODO(bassosimone): write unit tests for this method
 	return eb.MockSetOptionsJSON(value)
 }
 
