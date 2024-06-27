@@ -104,9 +104,8 @@ type ExperimentTarget interface {
 	// using the command line `-O option=value` syntax.
 	//
 	// This method MUST NOT serialize all the options whose name
-	// starts with the "Safe" prefix. This method MAY skip serializing
-	// sensitive options and options we cannot serialize into a list
-	// of strings (e.g., objects and lists).
+	// starts with the "Safe" prefix. This method MUST skip serializing
+	// sensitive options, non-scalar options, and zero value options.
 	//
 	// Consider using the [experimentconfig] package to serialize.
 	Options() []string

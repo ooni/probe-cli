@@ -46,6 +46,10 @@ func (emr *experimentMutableReport) Get() (report probeservices.ReportChannel) {
 	return
 }
 
+// TODO(bassosimone,DecFox): it would be nice if `*experiment` depended
+// on an interface rather than depending on the concrete session, because
+// that will allow us to write tests using mocks much more easily.
+
 // experiment implements [model.Experiment].
 type experiment struct {
 	byteCounter   *bytecounter.Counter

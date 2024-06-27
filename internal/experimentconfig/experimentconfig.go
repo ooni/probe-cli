@@ -16,7 +16,9 @@ import (
 //
 // 1. we do not serialize options whose name starts with "Safe";
 //
-// 2. we only serialize scalar values.
+// 2. we only serialize scalar values;
+//
+// 3. we never serialize any zero values.
 //
 // This method MUST be passed a pointer to a struct. Otherwise, the return
 // value will be a zero-length list (either nil or empty).
@@ -49,7 +51,7 @@ func DefaultOptionsSerializer(config any) (options []string) {
 			continue
 		}
 
-		// add the field iff it's a scalar
+		// add the field iff it's a nonzero scalar
 		switch fieldval.Kind() {
 		case reflect.Bool,
 			reflect.Int,
@@ -65,7 +67,10 @@ func DefaultOptionsSerializer(config any) (options []string) {
 			reflect.Float32,
 			reflect.Float64,
 			reflect.String:
-			options = append(options, fmt.Sprintf("%s=%s", fieldtype.Name, fieldval.Interface()))
+			if fieldval.IsZero() {
+				continue
+			}
+			options = append(options, fmt.Sprintf("%s=%v", fieldtype.Name, fieldval.Interface()))
 
 		default:
 			// nothing
