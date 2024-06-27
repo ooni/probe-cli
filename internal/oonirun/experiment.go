@@ -27,13 +27,13 @@ type Experiment struct {
 	Annotations map[string]string
 
 	// ExtraOptions contains OPTIONAL extra options that modify the
-	// default-empty experiment-specific configuration. We apply
+	// default experiment-specific configuration. We apply
 	// the changes described by this field after using the InitialOptions
 	// field to initialize the experiment-specific configuration.
 	ExtraOptions map[string]any
 
 	// InitialOptions contains an OPTIONAL [json.RawMessage] object
-	// used to initialize the default-empty experiment-specific
+	// used to initialize the default experiment-specific
 	// configuration. After we have initialized the configuration
 	// as such, we then apply the changes described by the ExtraOptions.
 	InitialOptions json.RawMessage
