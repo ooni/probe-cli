@@ -44,6 +44,19 @@ func TestTarget(t *testing.T) {
 		}
 	})
 
+	t.Run("Options", func(t *testing.T) {
+		expect := []string{
+			"DefaultAddrs=8.8.8.8 8.8.4.4",
+			"Domain=example.com",
+			"HTTPHost=dns.google",
+			"TLSServerName=dns.google.com",
+			"TLSVersion=TLSv1.3",
+		}
+		if diff := cmp.Diff(expect, target.Options()); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
 	t.Run("String", func(t *testing.T) {
 		if target.String() != "https://dns.google/dns-query" {
 			t.Fatal("invalid String")
