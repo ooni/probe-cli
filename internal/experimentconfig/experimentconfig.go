@@ -26,7 +26,7 @@ func DefaultOptionsSerializer(config any) (options []string) {
 	// as documented, this method MUST be passed a struct pointer
 	//
 	// Implementation note: the .Elem method converts a nil
-	// pointer to a zero value pointee type.
+	// pointer to a zero-value pointee type.
 	stval := reflect.ValueOf(config)
 	if stval.Kind() != reflect.Pointer {
 		return
@@ -49,7 +49,7 @@ func DefaultOptionsSerializer(config any) (options []string) {
 			continue
 		}
 
-		// make sure the file name does not start with Safe
+		// make sure the field name does not start with "Safe"
 		if strings.HasPrefix(fieldtype.Name, "Safe") {
 			continue
 		}
