@@ -143,8 +143,11 @@ func (ip *InputProcessor) run(ctx context.Context) (int, error) {
 		meas.AddAnnotations(ip.Annotations)
 		err = ip.Submitter.Submit(ctx, idx, meas)
 		if err != nil {
-			// TODO(bassosimone): the default submitter used by
-			// miniooni ignores errors. Should we make it the default?
+			// TODO(bassosimone): when re-reading this code, I find it confusing that
+			// we return on error because I am always like "wait, this is not the right
+			// thing to do here". Then, I remember that the experimentSubmitterWrapper
+			// ignores this error and so it's like it does not exist. Maybe we should
+			// rewrite the code to do the right thing here.
 			return 0, err
 		}
 		// Note: must be after submission because submission modifies

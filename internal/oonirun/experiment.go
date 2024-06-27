@@ -7,9 +7,7 @@ package oonirun
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"math/rand"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -233,22 +231,6 @@ func (ed *Experiment) newTargetLoader(builder model.ExperimentBuilder) targetLoa
 		SourceFiles:  ed.InputFilePaths,
 		Session:      ed.Session,
 	})
-}
-
-// experimentOptionsToStringList convers the options to []string, which is
-// the format with which we include them into a OONI Measurement. The resulting
-// []string will skip any option that is named with a `Safe` prefix (case
-// sensitive).
-func experimentOptionsToStringList(options map[string]any) (out []string) {
-	// the prefix to skip inclusion in the string list
-	safeOptionPrefix := "Safe"
-	for key, value := range options {
-		if strings.HasPrefix(key, safeOptionPrefix) {
-			continue
-		}
-		out = append(out, fmt.Sprintf("%s=%v", key, value))
-	}
-	return
 }
 
 // experimentWrapper wraps an experiment and logs progress
