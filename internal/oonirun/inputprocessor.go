@@ -145,9 +145,9 @@ func (ip *InputProcessor) run(ctx context.Context) (int, error) {
 		if err != nil {
 			// TODO(bassosimone): when re-reading this code, I find it confusing that
 			// we return on error because I am always like "wait, this is not the right
-			// thing to do here". Then, I remember that the experimentSubmitterWrapper
+			// thing to do here". Then, I remember that the experimentSubmitterWrapper{}
 			// ignores this error and so it's like it does not exist. Maybe we should
-			// rewrite the code to do the right thing here.
+			// rewrite the code to do the right thing here 😬😬😬.
 			return 0, err
 		}
 		// Note: must be after submission because submission modifies
