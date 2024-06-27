@@ -21,10 +21,17 @@ import (
 )
 
 type fakeExperimentConfig struct {
+	// values that should be included into the Options return value
 	Chan   chan any `ooni:"we cannot set this"`
 	String string   `ooni:"a string"`
 	Truth  bool     `ooni:"something that no-one knows"`
 	Value  int64    `ooni:"a number"`
+
+	// values that should not be included because they're private
+	private int64 `ooni:"a private number"`
+
+	// values that should not be included because they lack "ooni"'s tag
+	Invisible int64
 }
 
 func TestExperimentBuilderOptions(t *testing.T) {
@@ -57,10 +64,12 @@ func TestExperimentBuilderOptions(t *testing.T) {
 
 	t.Run("when config is a pointer to struct", func(t *testing.T) {
 		config := &fakeExperimentConfig{
-			Chan:   make(chan any),
-			String: "foobar",
-			Truth:  true,
-			Value:  177114,
+			Chan:      make(chan any),
+			String:    "foobar",
+			Truth:     true,
+			Value:     177114,
+			private:   55,
+			Invisible: 9876,
 		}
 		b := &Factory{
 			config: config,
@@ -117,7 +126,7 @@ func TestExperimentBuilderOptions(t *testing.T) {
 				}
 
 			default:
-				t.Fatal("unknown name", name)
+				t.Fatal("unexpected option name", name)
 			}
 		}
 	})
