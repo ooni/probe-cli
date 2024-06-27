@@ -264,7 +264,6 @@ func (b *Factory) SetOptionsJSON(value json.RawMessage) error {
 
 	// otherwise unmarshal into the configuration, which we assume
 	// to be a pointer to a structure.
-	// TODO(bassosimone): make sure with testing that b.config is always a pointer.
 	return json.Unmarshal(value, b.config)
 }
 

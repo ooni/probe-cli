@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/apex/log"
@@ -963,4 +964,21 @@ func TestFactoryNewTargetLoader(t *testing.T) {
 			t.Fatalf("expected a *targetloading.Loader, got %T", loader)
 		}
 	})
+}
+
+func TestExperimentConfigIsAlwaysAPointerToStruct(t *testing.T) {
+	for name, ffunc := range AllExperiments {
+		t.Run(name, func(t *testing.T) {
+			factory := ffunc()
+			config := factory.config
+			ctype := reflect.TypeOf(config)
+			if ctype.Kind() != reflect.Pointer {
+				t.Fatal("expected a pointer")
+			}
+			ctype = ctype.Elem()
+			if ctype.Kind() != reflect.Struct {
+				t.Fatal("expected a struct")
+			}
+		})
+	}
 }
