@@ -231,8 +231,8 @@ func registerOONIRun(rootCmd *cobra.Command, globalOptions *Options) {
 	)
 	flags.StringVarP(
 		&globalOptions.AuthFile,
-		"auth-file",
-		"a",
+		"bearer-token-file",
+		"",
 		"",
 		"Path to a file containing a bearer token for fetching a remote OONI Run v2 descriptor",
 	)
