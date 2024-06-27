@@ -231,7 +231,9 @@ func (o *OOAPIURLInfo) Options() []string {
 	//
 	// 1. skip options whose name begins with "Safe";
 	//
-	// 2. skip options that are not scalars.
+	// 2. skip options that are not scalars;
+	//
+	// 3. avoid serializing zero values.
 	//
 	// Consider using the [experimentconfig] package to serialize.
 	return nil
