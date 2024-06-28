@@ -450,7 +450,7 @@ of them were available.
 In [#1620](https://github.com/ooni/probe-cli/pull/1620), we started to
 modify the `./pkg/oonimkall` package to support richer input.
 
-Before this diff, the code was not using a loader for loading inputs
+Before this diff, the code was not using a loader for loading targets
 for experiments, and the code roughly looked like this:
 
 ```Go
