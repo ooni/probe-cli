@@ -196,12 +196,12 @@ func TestTaskRunnerRun(t *testing.T) {
 		return
 	}
 
-	// fakeSuccessfulRun returns a new set of dependencies that
+	// fakeSuccessfulDeps returns a new set of dependencies that
 	// will perform a fully successful, but fake, run.
 	//
 	// You MAY override some functions to provoke specific errors
 	// or generally change the operating conditions.
-	fakeSuccessfulRun := func() *MockableTaskRunnerDependencies {
+	fakeSuccessfulDeps := func() *MockableTaskRunnerDependencies {
 		deps := &MockableTaskRunnerDependencies{
 
 			// Configure the fake experiment
@@ -298,7 +298,7 @@ func TestTaskRunnerRun(t *testing.T) {
 
 	t.Run("with invalid experiment name", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
-		fake := fakeSuccessfulRun()
+		fake := fakeSuccessfulDeps()
 		fake.Session.MockNewExperimentBuilder = func(name string) (model.ExperimentBuilder, error) {
 			return nil, errors.New("invalid experiment name")
 		}
@@ -316,7 +316,7 @@ func TestTaskRunnerRun(t *testing.T) {
 
 	t.Run("with error during backends lookup", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
-		fake := fakeSuccessfulRun()
+		fake := fakeSuccessfulDeps()
 		fake.Session.MockMaybeLookupBackendsContext = func(ctx context.Context) error {
 			return errors.New("mocked error")
 		}
@@ -334,7 +334,7 @@ func TestTaskRunnerRun(t *testing.T) {
 
 	t.Run("with error during location lookup", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
-		fake := fakeSuccessfulRun()
+		fake := fakeSuccessfulDeps()
 		fake.Session.MockMaybeLookupLocationContext = func(ctx context.Context) error {
 			return errors.New("mocked error")
 		}
@@ -356,7 +356,7 @@ func TestTaskRunnerRun(t *testing.T) {
 
 	t.Run("with missing input and InputOrQueryBackend policy", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
-		fake := fakeSuccessfulRun()
+		fake := fakeSuccessfulDeps()
 		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputOrQueryBackend
 		}
@@ -377,7 +377,7 @@ func TestTaskRunnerRun(t *testing.T) {
 
 	t.Run("with missing input and InputStrictlyRequired policy", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
-		fake := fakeSuccessfulRun()
+		fake := fakeSuccessfulDeps()
 		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputStrictlyRequired
 		}
@@ -400,7 +400,7 @@ func TestTaskRunnerRun(t *testing.T) {
 		func(t *testing.T) {
 			runner, emitter := newRunnerForTesting()
 			runner.settings.Name = "Antani" // no input for this experiment
-			fake := fakeSuccessfulRun()
+			fake := fakeSuccessfulDeps()
 			fake.Builder.MockInputPolicy = func() model.InputPolicy {
 				return model.InputOrStaticDefault
 			}
@@ -422,7 +422,7 @@ func TestTaskRunnerRun(t *testing.T) {
 	t.Run("with InputNone policy and provided input", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		runner.settings.Inputs = append(runner.settings.Inputs, "https://x.org/")
-		fake := fakeSuccessfulRun()
+		fake := fakeSuccessfulDeps()
 		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputNone
 		}
@@ -443,7 +443,7 @@ func TestTaskRunnerRun(t *testing.T) {
 
 	t.Run("with failure opening report", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
-		fake := fakeSuccessfulRun()
+		fake := fakeSuccessfulDeps()
 		fake.Experiment.MockOpenReportContext = func(ctx context.Context) error {
 			return errors.New("mocked error")
 		}
@@ -464,7 +464,7 @@ func TestTaskRunnerRun(t *testing.T) {
 
 	t.Run("with success and InputNone policy", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
-		fake := fakeSuccessfulRun()
+		fake := fakeSuccessfulDeps()
 		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputNone
 		}
@@ -490,7 +490,7 @@ func TestTaskRunnerRun(t *testing.T) {
 
 	t.Run("with measurement failure and InputNone policy", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
-		fake := fakeSuccessfulRun()
+		fake := fakeSuccessfulDeps()
 		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputNone
 		}
@@ -520,7 +520,7 @@ func TestTaskRunnerRun(t *testing.T) {
 		// we are not crashing when the measurement fails and there are annotations,
 		// which is what was happening in the above referenced issue.
 		runner, emitter := newRunnerForTesting()
-		fake := fakeSuccessfulRun()
+		fake := fakeSuccessfulDeps()
 		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputNone
 		}
@@ -551,7 +551,7 @@ func TestTaskRunnerRun(t *testing.T) {
 	t.Run("with success and InputStrictlyRequired", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		runner.settings.Inputs = []string{"a", "b", "c", "d"}
-		fake := fakeSuccessfulRun()
+		fake := fakeSuccessfulDeps()
 		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputStrictlyRequired
 		}
@@ -599,7 +599,7 @@ func TestTaskRunnerRun(t *testing.T) {
 	t.Run("with success and InputOptional and input", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		runner.settings.Inputs = []string{"a", "b", "c", "d"}
-		fake := fakeSuccessfulRun()
+		fake := fakeSuccessfulDeps()
 		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputOptional
 		}
@@ -646,7 +646,7 @@ func TestTaskRunnerRun(t *testing.T) {
 
 	t.Run("with success and InputOptional and no input", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
-		fake := fakeSuccessfulRun()
+		fake := fakeSuccessfulDeps()
 		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputOptional
 		}
@@ -676,7 +676,7 @@ func TestTaskRunnerRun(t *testing.T) {
 		experimentName := "DNSCheck"
 		runner, emitter := newRunnerForTesting()
 		runner.settings.Name = experimentName
-		fake := fakeSuccessfulRun()
+		fake := fakeSuccessfulDeps()
 		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputOrStaticDefault
 		}
@@ -712,7 +712,7 @@ func TestTaskRunnerRun(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		runner.settings.Inputs = []string{"a", "b", "c", "d"}
 		runner.settings.Options.MaxRuntime = 2
-		fake := fakeSuccessfulRun()
+		fake := fakeSuccessfulDeps()
 		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputStrictlyRequired
 		}
@@ -753,7 +753,7 @@ func TestTaskRunnerRun(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		runner.settings.Inputs = []string{"a", "b", "c", "d"}
 		runner.settings.Options.MaxRuntime = 2
-		fake := fakeSuccessfulRun()
+		fake := fakeSuccessfulDeps()
 		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputStrictlyRequired
 		}
@@ -788,7 +788,7 @@ func TestTaskRunnerRun(t *testing.T) {
 	t.Run("with measurement submission failure", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		runner.settings.Inputs = []string{"a"}
-		fake := fakeSuccessfulRun()
+		fake := fakeSuccessfulDeps()
 		fake.Builder.MockInputPolicy = func() model.InputPolicy {
 			return model.InputStrictlyRequired
 		}
@@ -820,7 +820,7 @@ func TestTaskRunnerRun(t *testing.T) {
 
 	t.Run("with success and progress", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
-		fake := fakeSuccessfulRun()
+		fake := fakeSuccessfulDeps()
 		var callbacks model.ExperimentCallbacks
 		fake.Builder.MockSetCallbacks = func(cbs model.ExperimentCallbacks) {
 			callbacks = cbs
