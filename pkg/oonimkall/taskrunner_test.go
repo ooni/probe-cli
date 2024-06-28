@@ -503,7 +503,7 @@ func TestTaskRunnerRun(t *testing.T) {
 		fake.Builder.MockNewTargetLoader = func(config *model.ExperimentTargetLoaderConfig) model.ExperimentTargetLoader {
 			return &mocks.ExperimentTargetLoader{
 				MockLoad: func(ctx context.Context) (targets []model.ExperimentTarget, err error) {
-					// We need to mimic wht would happen when settings.Inputs is explicitly provided
+					// We need to mimic what would happen when settings.Inputs is explicitly provided
 					for _, input := range inputs {
 						targets = append(targets, model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(input))
 					}
@@ -561,7 +561,7 @@ func TestTaskRunnerRun(t *testing.T) {
 		fake.Builder.MockNewTargetLoader = func(config *model.ExperimentTargetLoaderConfig) model.ExperimentTargetLoader {
 			return &mocks.ExperimentTargetLoader{
 				MockLoad: func(ctx context.Context) (targets []model.ExperimentTarget, err error) {
-					// We need to mimic wht would happen when settings.Inputs is explicitly provided
+					// We need to mimic what would happen when settings.Inputs is explicitly provided
 					for _, input := range inputs {
 						targets = append(targets, model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(input))
 					}
@@ -611,7 +611,7 @@ func TestTaskRunnerRun(t *testing.T) {
 		fake.Builder.MockNewTargetLoader = func(config *model.ExperimentTargetLoaderConfig) model.ExperimentTargetLoader {
 			return &mocks.ExperimentTargetLoader{
 				MockLoad: func(ctx context.Context) (targets []model.ExperimentTarget, err error) {
-					// We need to mimic wht would happen when settings.Inputs is explicitly provided
+					// We need to mimic what would happen when settings.Inputs is explicitly provided
 					for _, input := range inputs {
 						targets = append(targets, model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(input))
 					}
