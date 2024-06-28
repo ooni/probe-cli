@@ -2,10 +2,12 @@ package registry
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/apex/log"
@@ -19,14 +21,23 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
-type fakeExperimentConfig struct {
-	Chan   chan any `ooni:"we cannot set this"`
-	String string   `ooni:"a string"`
-	Truth  bool     `ooni:"something that no-one knows"`
-	Value  int64    `ooni:"a number"`
-}
+func TestFactoryOptions(t *testing.T) {
 
-func TestExperimentBuilderOptions(t *testing.T) {
+	// the fake configuration we're using in this test
+	type fakeExperimentConfig struct {
+		// values that should be included into the Options return value
+		Chan   chan any `ooni:"we cannot set this"`
+		String string   `ooni:"a string"`
+		Truth  bool     `ooni:"something that no-one knows"`
+		Value  int64    `ooni:"a number"`
+
+		// values that should not be included because they're private
+		private int64 `ooni:"a private number"`
+
+		// values that should not be included because they lack "ooni"'s tag
+		Invisible int64
+	}
+
 	t.Run("when config is not a pointer", func(t *testing.T) {
 		b := &Factory{
 			config: 17,
@@ -55,7 +66,14 @@ func TestExperimentBuilderOptions(t *testing.T) {
 	})
 
 	t.Run("when config is a pointer to struct", func(t *testing.T) {
-		config := &fakeExperimentConfig{}
+		config := &fakeExperimentConfig{
+			Chan:      make(chan any),
+			String:    "foobar",
+			Truth:     true,
+			Value:     177114,
+			private:   55,
+			Invisible: 9876,
+		}
 		b := &Factory{
 			config: config,
 		}
@@ -63,6 +81,7 @@ func TestExperimentBuilderOptions(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		for name, value := range options {
 			switch name {
 			case "Chan":
@@ -72,6 +91,10 @@ func TestExperimentBuilderOptions(t *testing.T) {
 				if value.Type != "chan interface {}" {
 					t.Fatal("invalid type", value.Type)
 				}
+				if value.Value.(chan any) == nil {
+					t.Fatal("expected non-nil channel here")
+				}
+
 			case "String":
 				if value.Doc != "a string" {
 					t.Fatal("invalid doc")
@@ -79,6 +102,10 @@ func TestExperimentBuilderOptions(t *testing.T) {
 				if value.Type != "string" {
 					t.Fatal("invalid type", value.Type)
 				}
+				if v := value.Value.(string); v != "foobar" {
+					t.Fatal("unexpected string value", v)
+				}
+
 			case "Truth":
 				if value.Doc != "something that no-one knows" {
 					t.Fatal("invalid doc")
@@ -86,6 +113,10 @@ func TestExperimentBuilderOptions(t *testing.T) {
 				if value.Type != "bool" {
 					t.Fatal("invalid type", value.Type)
 				}
+				if v := value.Value.(bool); !v {
+					t.Fatal("unexpected bool value", v)
+				}
+
 			case "Value":
 				if value.Doc != "a number" {
 					t.Fatal("invalid doc")
@@ -93,14 +124,27 @@ func TestExperimentBuilderOptions(t *testing.T) {
 				if value.Type != "int64" {
 					t.Fatal("invalid type", value.Type)
 				}
+				if v := value.Value.(int64); v != 177114 {
+					t.Fatal("unexpected int64 value", v)
+				}
+
 			default:
-				t.Fatal("unknown name", name)
+				t.Fatal("unexpected option name", name)
 			}
 		}
 	})
 }
 
-func TestExperimentBuilderSetOptionAny(t *testing.T) {
+func TestFactorySetOptionAny(t *testing.T) {
+
+	// the fake configuration we're using in this test
+	type fakeExperimentConfig struct {
+		Chan   chan any `ooni:"we cannot set this"`
+		String string   `ooni:"a string"`
+		Truth  bool     `ooni:"something that no-one knows"`
+		Value  int64    `ooni:"a number"`
+	}
+
 	var inputs = []struct {
 		TestCaseName  string
 		InitialConfig any
@@ -366,7 +410,17 @@ func TestExperimentBuilderSetOptionAny(t *testing.T) {
 	}
 }
 
-func TestExperimentBuilderSetOptionsAny(t *testing.T) {
+func TestFactorySetOptionsAny(t *testing.T) {
+
+	// the fake configuration we're using in this test
+	type fakeExperimentConfig struct {
+		// values that should be included into the Options return value
+		Chan   chan any `ooni:"we cannot set this"`
+		String string   `ooni:"a string"`
+		Truth  bool     `ooni:"something that no-one knows"`
+		Value  int64    `ooni:"a number"`
+	}
+
 	b := &Factory{config: &fakeExperimentConfig{}}
 
 	t.Run("we correctly handle an empty map", func(t *testing.T) {
@@ -407,6 +461,107 @@ func TestExperimentBuilderSetOptionsAny(t *testing.T) {
 			t.Fatal("unexpected err", err)
 		}
 	})
+}
+
+func TestFactorySetOptionsJSON(t *testing.T) {
+
+	// PersonRecord is a fake experiment configuration.
+	//
+	// Note how the `ooni` tag here is missing because we don't care
+	// about whether such a tag is present when using JSON.
+	type PersonRecord struct {
+		Name    string
+		Age     int64
+		Friends []string
+	}
+
+	// testcase is a test case for this function.
+	type testcase struct {
+		// name is the name of the test case
+		name string
+
+		// mutableConfig is the config in which we should unmarshal the JSON
+		mutableConfig *PersonRecord
+
+		// rawJSON contains the raw JSON to unmarshal into mutableConfig
+		rawJSON json.RawMessage
+
+		// expectErr is the error we expect
+		expectErr error
+
+		// expectRecord is what we expectRecord to see in the end
+		expectRecord *PersonRecord
+	}
+
+	cases := []testcase{
+		{
+			name: "we correctly accept zero-length options",
+			mutableConfig: &PersonRecord{
+				Name:    "foo",
+				Age:     55,
+				Friends: []string{"bar", "baz"},
+			},
+			rawJSON: []byte{},
+			expectRecord: &PersonRecord{
+				Name:    "foo",
+				Age:     55,
+				Friends: []string{"bar", "baz"},
+			},
+		},
+
+		{
+			name:          "we return an error on JSON parsing error",
+			mutableConfig: &PersonRecord{},
+			rawJSON:       []byte(`{`),
+			expectErr:     errors.New("unexpected end of JSON input"),
+			expectRecord:  &PersonRecord{},
+		},
+
+		{
+			name: "we correctly unmarshal into the existing config",
+			mutableConfig: &PersonRecord{
+				Name:    "foo",
+				Age:     55,
+				Friends: []string{"bar", "baz"},
+			},
+			rawJSON:   []byte(`{"Friends":["foo","oof"]}`),
+			expectErr: nil,
+			expectRecord: &PersonRecord{
+				Name:    "foo",
+				Age:     55,
+				Friends: []string{"foo", "oof"},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			// create the factory to use
+			factory := &Factory{config: tc.mutableConfig}
+
+			// unmarshal into the mutableConfig
+			err := factory.SetOptionsJSON(tc.rawJSON)
+
+			// make sure the error is the one we actually expect
+			switch {
+			case err == nil && tc.expectErr == nil:
+				if diff := cmp.Diff(tc.expectRecord, tc.mutableConfig); diff != "" {
+					t.Fatal(diff)
+				}
+				return
+
+			case err != nil && tc.expectErr != nil:
+				if err.Error() != tc.expectErr.Error() {
+					t.Fatal("expected", tc.expectErr, "got", err)
+				}
+				return
+
+			default:
+				t.Fatal("expected", tc.expectErr, "got", err)
+			}
+		})
+	}
 }
 
 func TestNewFactory(t *testing.T) {
@@ -941,4 +1096,23 @@ func TestFactoryNewTargetLoader(t *testing.T) {
 			t.Fatalf("expected a *targetloading.Loader, got %T", loader)
 		}
 	})
+}
+
+// This test is important because SetOptionsJSON assumes that the experiment
+// config is a struct pointer into which it is possible to write
+func TestExperimentConfigIsAlwaysAPointerToStruct(t *testing.T) {
+	for name, ffunc := range AllExperiments {
+		t.Run(name, func(t *testing.T) {
+			factory := ffunc()
+			config := factory.config
+			ctype := reflect.TypeOf(config)
+			if ctype.Kind() != reflect.Pointer {
+				t.Fatal("expected a pointer")
+			}
+			ctype = ctype.Elem()
+			if ctype.Kind() != reflect.Struct {
+				t.Fatal("expected a struct")
+			}
+		})
+	}
 }

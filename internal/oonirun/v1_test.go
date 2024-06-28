@@ -2,6 +2,7 @@ package oonirun
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -22,6 +23,9 @@ func newMinimalFakeSession() *mocks.Session {
 			eb := &mocks.ExperimentBuilder{
 				MockInputPolicy: func() model.InputPolicy {
 					return model.InputNone
+				},
+				MockSetOptionsJSON: func(value json.RawMessage) error {
+					return nil
 				},
 				MockSetOptionsAny: func(options map[string]any) error {
 					return nil

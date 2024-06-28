@@ -1,6 +1,10 @@
 package mocks
 
-import "github.com/ooni/probe-cli/v3/internal/model"
+import (
+	"encoding/json"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
+)
 
 // ExperimentBuilder mocks model.ExperimentBuilder.
 type ExperimentBuilder struct {
@@ -13,6 +17,8 @@ type ExperimentBuilder struct {
 	MockSetOptionAny func(key string, value any) error
 
 	MockSetOptionsAny func(options map[string]any) error
+
+	MockSetOptionsJSON func(value json.RawMessage) error
 
 	MockSetCallbacks func(callbacks model.ExperimentCallbacks)
 
@@ -41,6 +47,10 @@ func (eb *ExperimentBuilder) SetOptionAny(key string, value any) error {
 
 func (eb *ExperimentBuilder) SetOptionsAny(options map[string]any) error {
 	return eb.MockSetOptionsAny(options)
+}
+
+func (eb *ExperimentBuilder) SetOptionsJSON(value json.RawMessage) error {
+	return eb.MockSetOptionsJSON(value)
 }
 
 func (eb *ExperimentBuilder) SetCallbacks(callbacks model.ExperimentCallbacks) {

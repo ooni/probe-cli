@@ -6,8 +6,9 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/httpclientx"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
@@ -27,9 +28,9 @@ func TestOONIRunV2LinkCommonCase(t *testing.T) {
 			Author:      "",
 			Nettests: []V2Nettest{{
 				Inputs: []string{},
-				Options: map[string]any{
-					"SleepTime": int64(10 * time.Millisecond),
-				},
+				Options: json.RawMessage(`{
+					"SleepTime": 10000000
+				}`),
 				TestName: "example",
 			}},
 		}
@@ -73,9 +74,9 @@ func TestOONIRunV2LinkCannotUpdateCache(t *testing.T) {
 			Author:      "",
 			Nettests: []V2Nettest{{
 				Inputs: []string{},
-				Options: map[string]any{
-					"SleepTime": int64(10 * time.Millisecond),
-				},
+				Options: json.RawMessage(`{
+					"SleepTime": 10000000
+				}`),
 				TestName: "example",
 			}},
 		}
@@ -132,9 +133,9 @@ func TestOONIRunV2LinkWithoutAcceptChanges(t *testing.T) {
 			Author:      "",
 			Nettests: []V2Nettest{{
 				Inputs: []string{},
-				Options: map[string]any{
-					"SleepTime": int64(10 * time.Millisecond),
-				},
+				Options: json.RawMessage(`{
+					"SleepTime": 10000000
+				}`),
 				TestName: "example",
 			}},
 		}
@@ -220,9 +221,9 @@ func TestOONIRunV2LinkEmptyTestName(t *testing.T) {
 			Author:      "",
 			Nettests: []V2Nettest{{
 				Inputs: []string{},
-				Options: map[string]any{
-					"SleepTime": int64(10 * time.Millisecond),
-				},
+				Options: json.RawMessage(`{
+					"SleepTime": 10000000
+				}`),
 				TestName: "", // empty!
 			}},
 		}
@@ -261,6 +262,131 @@ func TestOONIRunV2LinkEmptyTestName(t *testing.T) {
 	if v2CountEmptyNettestNames.Load() != emptyTestNamesPrev+1 {
 		t.Fatal("expected to see 1 more instance of empty nettest names")
 	}
+}
+
+func TestOONIRunV2LinkWithAuthentication(t *testing.T) {
+
+	t.Run("authentication raises error if no token is passed", func(t *testing.T) {
+		token := "c2VjcmV0"
+		bearerToken := "Bearer " + token
+
+		// make a local server that returns a reasonable descriptor for the example experiment
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authHeader := r.Header.Get("Authorization")
+			if authHeader != bearerToken {
+				// If the header is not what expected, return a 401 Unauthorized status
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+			descriptor := &V2Descriptor{
+				Name:        "",
+				Description: "",
+				Author:      "",
+				Nettests: []V2Nettest{{
+					Inputs: []string{},
+					Options: json.RawMessage(`{
+					    "SleepTime": 10000000
+					}`),
+					TestName: "example",
+				}},
+			}
+			data, err := json.Marshal(descriptor)
+			runtimex.PanicOnError(err, "json.Marshal failed")
+			w.Write(data)
+		}))
+
+		defer server.Close()
+		ctx := context.Background()
+
+		// create a minimal link configuration
+		config := &LinkConfig{
+			AcceptChanges: true, // avoid "oonirun: need to accept changes" error
+			Annotations: map[string]string{
+				"platform": "linux",
+			},
+			KVStore:     &kvstore.Memory{},
+			MaxRuntime:  0,
+			NoCollector: true,
+			NoJSON:      true,
+			Random:      false,
+			ReportFile:  "",
+			Session:     newMinimalFakeSession(),
+		}
+
+		// construct a link runner relative to the local server URL
+		r := NewLinkRunner(config, server.URL)
+
+		if err := r.Run(ctx); err != nil {
+			if err.Error() != "httpx: request failed" {
+				t.Fatal("expected error")
+			}
+		}
+	})
+
+	t.Run("authentication does not fail the auth token is passed", func(t *testing.T) {
+		token := "c2VjcmV0"
+		bearerToken := "Bearer " + token
+
+		// make a local server that returns a reasonable descriptor for the example experiment
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authHeader := r.Header.Get("Authorization")
+			if authHeader != bearerToken {
+				// If the header is not what expected, return a 401 Unauthorized status
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+			descriptor := &V2Descriptor{
+				Name:        "",
+				Description: "",
+				Author:      "",
+				Nettests: []V2Nettest{{
+					Inputs: []string{},
+					Options: json.RawMessage(`{
+					    "SleepTime": 10000000
+					}`),
+					TestName: "example",
+				}},
+			}
+			data, err := json.Marshal(descriptor)
+			runtimex.PanicOnError(err, "json.Marshal failed")
+			w.Write(data)
+		}))
+
+		defer server.Close()
+		ctx := context.Background()
+
+		authFile, err := os.CreateTemp(t.TempDir(), "token-")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer authFile.Close()
+		defer os.Remove(authFile.Name())
+
+		authFile.Write([]byte(token))
+
+		// create a minimal link configuration
+		config := &LinkConfig{
+			AcceptChanges: true, // avoid "oonirun: need to accept changes" error
+			Annotations: map[string]string{
+				"platform": "linux",
+			},
+			AuthFile:    authFile.Name(),
+			KVStore:     &kvstore.Memory{},
+			MaxRuntime:  0,
+			NoCollector: true,
+			NoJSON:      true,
+			Random:      false,
+			ReportFile:  "",
+			Session:     newMinimalFakeSession(),
+		}
+
+		// construct a link runner relative to the local server URL
+		r := NewLinkRunner(config, server.URL)
+
+		if err := r.Run(ctx); err != nil {
+			t.Fatal(err)
+		}
+	})
 }
 
 func TestOONIRunV2LinkConnectionResetByPeer(t *testing.T) {
@@ -374,6 +500,9 @@ func TestV2MeasureDescriptor(t *testing.T) {
 				MockInputPolicy: func() model.InputPolicy {
 					return model.InputNone
 				},
+				MockSetOptionsJSON: func(value json.RawMessage) error {
+					return nil
+				},
 				MockSetOptionsAny: func(options map[string]any) error {
 					return nil
 				},
@@ -426,7 +555,7 @@ func TestV2MeasureDescriptor(t *testing.T) {
 			Author:      "",
 			Nettests: []V2Nettest{{
 				Inputs:   []string{},
-				Options:  map[string]any{},
+				Options:  json.RawMessage(`{}`),
 				TestName: "example",
 			}},
 		}
@@ -507,7 +636,6 @@ func TestV2MeasureHTTPS(t *testing.T) {
 			t.Fatal("unexpected err", err)
 		}
 	})
-
 }
 
 func TestV2DescriptorCacheLoad(t *testing.T) {
@@ -532,5 +660,139 @@ func TestV2DescriptorCacheLoad(t *testing.T) {
 			t.Fatal("expected nil cache")
 		}
 	})
+}
 
+func Test_readFirstLineFromFile(t *testing.T) {
+
+	t.Run("return empty string if file is empty", func(t *testing.T) {
+		f, err := os.CreateTemp(t.TempDir(), "auth-")
+		if err != nil {
+			t.Fatal(err)
+		}
+		f.Write([]byte(""))
+		defer f.Close()
+		defer os.Remove(f.Name())
+
+		line, err := v2ReadBearerTokenFromFile(f.Name())
+		if line != "" {
+			t.Fatal("expected empty string")
+		}
+		if err != nil {
+			t.Fatal("expected err==nil")
+		}
+	})
+
+	t.Run("return empty string if first line is just whitespace", func(t *testing.T) {
+		f, err := os.CreateTemp(t.TempDir(), "auth-")
+		if err != nil {
+			t.Fatal(err)
+		}
+		f.Write([]byte("     \n"))
+		defer f.Close()
+		defer os.Remove(f.Name())
+
+		line, err := v2ReadBearerTokenFromFile(f.Name())
+		if line != "" {
+			t.Fatal("expected empty string")
+		}
+		if err != nil {
+			t.Fatal("expected err==nil")
+		}
+	})
+
+	t.Run("return error if file does not exist", func(t *testing.T) {
+		line, err := v2ReadBearerTokenFromFile(filepath.Join(t.TempDir(), "non-existent"))
+		if line != "" {
+			t.Fatal("expected empty string")
+		}
+		if !errors.Is(err, os.ErrNotExist) {
+			t.Fatal("expected ErrNotExist")
+		}
+	})
+
+	t.Run("return first line with a file of one line without EOL", func(t *testing.T) {
+		f, err := os.CreateTemp(t.TempDir(), "auth-")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		token := "c2VjcmV0" // b64("secret")
+		f.Write([]byte(token))
+		defer f.Close()
+		defer os.Remove(f.Name())
+
+		line, err := v2ReadBearerTokenFromFile(f.Name())
+		if line != token {
+			t.Fatalf("expected %s, got %s", token, line)
+		}
+		if err != nil {
+			t.Fatal("expected err==nil")
+		}
+	})
+
+	t.Run("return first line with a file of one line with EOL", func(t *testing.T) {
+		f, err := os.CreateTemp(t.TempDir(), "auth-")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		token := "c2VjcmV0" // b64("secret")
+		f.Write(append([]byte(token), '\n'))
+		defer f.Close()
+		defer os.Remove(f.Name())
+
+		line, err := v2ReadBearerTokenFromFile(f.Name())
+		if line != token {
+			t.Fatalf("expected %s, got %s", token, line)
+		}
+		if err != nil {
+			t.Fatal("expected err==nil")
+		}
+	})
+
+	t.Run("return first line with a file of >1 line", func(t *testing.T) {
+		f, err := os.CreateTemp(t.TempDir(), "auth-")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		token := "c2VjcmV0" // b64("secret")
+		f.Write([]byte(token))
+		f.Write([]byte("\n"))
+		f.Write([]byte("something\nelse\nand\nsomething\nmore"))
+		defer f.Close()
+		defer os.Remove(f.Name())
+
+		line, err := v2ReadBearerTokenFromFile(f.Name())
+		if line != token {
+			t.Fatalf("expected %s, got %s", token, line)
+		}
+		if err != nil {
+			t.Fatal("expected err==nil")
+		}
+	})
+
+	t.Run("return empty string if not a valid b64 token", func(t *testing.T) {
+		f, err := os.CreateTemp(t.TempDir(), "auth-")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		token := "secret!"
+		f.Write([]byte(token))
+		f.Write([]byte("\n"))
+		f.Write([]byte(" antani\n"))
+		defer f.Close()
+		defer os.Remove(f.Name())
+
+		expected := ""
+
+		line, err := v2ReadBearerTokenFromFile(f.Name())
+		if line != expected {
+			t.Fatalf("expected empty string, got %s", line)
+		}
+		if err != nil {
+			t.Fatal("expected err==nil")
+		}
+	})
 }
