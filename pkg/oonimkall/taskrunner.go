@@ -309,15 +309,6 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 		}
 
 		// Perform the measurement proper.
-		//
-		// Richer input implementation note: in mobile, we only observe richer input
-		// for Web Connectivity and only store this kind of input into the database and
-		// otherwise we ignore richer input for other experiments, which are just
-		// treated as experimental. As such, the thinking here is that we do not care
-		// about *passing* richer input from desktop to mobile for some time. When
-		// we will care, it would most likely suffice to require the Inputs field to
-		// implement in Java the [model.ExperimentTarget] interface, which is something
-		// we can always do, since it only has string accessors.
 		m, err := experiment.MeasureWithContext(
 			r.contextForExperiment(measCtx, builder),
 			target,
