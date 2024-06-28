@@ -280,6 +280,7 @@ func TestTaskRunnerRun(t *testing.T) {
 
 			Loader: &mocks.ExperimentTargetLoader{
 				MockLoad: func(ctx context.Context) ([]model.ExperimentTarget, error) {
+					// This returns a single entry, which is what dash, ndt, telegram, etc need
 					targets := []model.ExperimentTarget{
 						model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(""),
 					}
