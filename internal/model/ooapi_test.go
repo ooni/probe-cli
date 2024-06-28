@@ -128,6 +128,10 @@ func TestOOAPIURLInfo(t *testing.T) {
 		t.Fatal("invalid Input")
 	}
 
+	if info.Options() != nil {
+		t.Fatal("invalid Options")
+	}
+
 	if info.String() != "https://www.facebook.com/" {
 		t.Fatal("invalid String")
 	}

@@ -55,9 +55,6 @@ type InputProcessor struct {
 	// there will be no MaxRuntime limit.
 	MaxRuntime time.Duration
 
-	// Options contains command line options for this experiment.
-	Options []string
-
 	// Saver is the code that will save measurement results
 	// on persistent storage (e.g. the file system).
 	Saver InputProcessorSaverWrapper
@@ -144,9 +141,13 @@ func (ip *InputProcessor) run(ctx context.Context) (int, error) {
 			return 0, err
 		}
 		meas.AddAnnotations(ip.Annotations)
-		meas.Options = ip.Options
 		err = ip.Submitter.Submit(ctx, idx, meas)
 		if err != nil {
+			// TODO(bassosimone): when re-reading this code, I find it confusing that
+			// we return on error because I am always like "wait, this is not the right
+			// thing to do here". Then, I remember that the experimentSubmitterWrapper{}
+			// ignores this error and so it's like it does not exist. Maybe we should
+			// rewrite the code to do the right thing here 😬😬😬.
 			return 0, err
 		}
 		// Note: must be after submission because submission modifies

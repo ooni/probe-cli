@@ -224,6 +224,21 @@ func (o *OOAPIURLInfo) Input() string {
 	return o.URL
 }
 
+// Options implements ExperimentTarget.
+func (o *OOAPIURLInfo) Options() []string {
+	// Implementation note: we're not serializing any options for now. If/when
+	// we do that, remember the Options contract:
+	//
+	// 1. skip options whose name begins with "Safe";
+	//
+	// 2. skip options that are not scalars;
+	//
+	// 3. avoid serializing zero values.
+	//
+	// Consider using the [experimentconfig] package to serialize.
+	return nil
+}
+
 // String implements [ExperimentTarget].
 func (o *OOAPIURLInfo) String() string {
 	return o.URL

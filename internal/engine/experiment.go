@@ -46,6 +46,10 @@ func (emr *experimentMutableReport) Get() (report probeservices.ReportChannel) {
 	return
 }
 
+// TODO(bassosimone,DecFox): it would be nice if `*experiment` depended
+// on an interface rather than depending on the concrete session, because
+// that will allow us to write tests using mocks much more easily.
+
 // experiment implements [model.Experiment].
 type experiment struct {
 	byteCounter   *bytecounter.Counter
@@ -111,13 +115,10 @@ func (e *experiment) SubmitAndUpdateMeasurementContext(
 // newMeasurement creates a new measurement for this experiment with the given input.
 func (e *experiment) newMeasurement(target model.ExperimentTarget) *model.Measurement {
 	utctimenow := time.Now().UTC()
-	// TODO(bassosimone,DecFox): move here code that supports filling the options field
-	// when there is richer input, which currently is inside ./internal/oonirun.
-	//
-	// We MUST do this because the current solution only works for OONI Run and when
-	// there are command line options but does not work for API/static targets.
+
 	m := &model.Measurement{
 		DataFormatVersion:         model.OOAPIReportDefaultDataFormatVersion,
+		Options:                   target.Options(),
 		Input:                     model.MeasurementInput(target.Input()),
 		MeasurementStartTime:      utctimenow.Format(model.MeasurementDateFormat),
 		MeasurementStartTimeSaved: utctimenow,
@@ -135,6 +136,7 @@ func (e *experiment) newMeasurement(target model.ExperimentTarget) *model.Measur
 		TestStartTime:             e.testStartTime,
 		TestVersion:               e.testVersion,
 	}
+
 	m.AddAnnotation("architecture", runtime.GOARCH)
 	m.AddAnnotation("engine_name", "ooniprobe-engine")
 	m.AddAnnotation("engine_version", version.Version)
@@ -144,6 +146,7 @@ func (e *experiment) newMeasurement(target model.ExperimentTarget) *model.Measur
 	m.AddAnnotation("vcs_revision", runtimex.BuildInfo.VcsRevision)
 	m.AddAnnotation("vcs_time", runtimex.BuildInfo.VcsTime)
 	m.AddAnnotation("vcs_tool", runtimex.BuildInfo.VcsTool)
+
 	return m
 }
 

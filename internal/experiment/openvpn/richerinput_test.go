@@ -16,7 +16,7 @@ import (
 func TestTarget(t *testing.T) {
 	target := &Target{
 		URL: "openvpn://unknown.corp?address=1.1.1.1%3A443&transport=udp",
-		Options: &Config{
+		Config: &Config{
 			Auth:     "SHA512",
 			Cipher:   "AES-256-GCM",
 			Provider: "unknown",
@@ -41,6 +41,17 @@ func TestTarget(t *testing.T) {
 	t.Run("Input", func(t *testing.T) {
 		if target.Input() != "openvpn://unknown.corp?address=1.1.1.1%3A443&transport=udp" {
 			t.Fatal("invalid Input")
+		}
+	})
+
+	t.Run("Options", func(t *testing.T) {
+		expect := []string{
+			"Auth=SHA512",
+			"Cipher=AES-256-GCM",
+			"Provider=unknown",
+		}
+		if diff := cmp.Diff(expect, target.Options()); diff != "" {
+			t.Fatal(diff)
 		}
 	})
 
@@ -112,7 +123,7 @@ func TestTargetLoaderLoad(t *testing.T) {
 			expectTargets: []model.ExperimentTarget{
 				&Target{
 					URL: "openvpn://unknown.corp/1.1.1.1",
-					Options: &Config{
+					Config: &Config{
 						Provider: "unknown",
 						SafeCA:   "aa",
 						SafeCert: "bb",

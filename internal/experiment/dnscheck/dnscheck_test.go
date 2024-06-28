@@ -72,7 +72,7 @@ func TestDNSCheckFailsWithoutInput(t *testing.T) {
 		Session:     newsession(),
 		Target: &Target{
 			URL: "", // explicitly empty
-			Options: &Config{
+			Config: &Config{
 				Domain: "example.com",
 			},
 		},
@@ -90,8 +90,8 @@ func TestDNSCheckFailsWithInvalidURL(t *testing.T) {
 		Measurement: &model.Measurement{Input: "Not a valid URL \x7f"},
 		Session:     newsession(),
 		Target: &Target{
-			URL:     "Not a valid URL \x7f",
-			Options: &Config{},
+			URL:    "Not a valid URL \x7f",
+			Config: &Config{},
 		},
 	}
 	err := measurer.Run(context.Background(), args)
@@ -107,8 +107,8 @@ func TestDNSCheckFailsWithUnsupportedProtocol(t *testing.T) {
 		Measurement: &model.Measurement{Input: "file://1.1.1.1"},
 		Session:     newsession(),
 		Target: &Target{
-			URL:     "file://1.1.1.1",
-			Options: &Config{},
+			URL:    "file://1.1.1.1",
+			Config: &Config{},
 		},
 	}
 	err := measurer.Run(context.Background(), args)
@@ -128,7 +128,7 @@ func TestWithCancelledContext(t *testing.T) {
 		Session:     newsession(),
 		Target: &Target{
 			URL: "dot://one.one.one.one",
-			Options: &Config{
+			Config: &Config{
 				DefaultAddrs: "1.1.1.1 1.0.0.1",
 			},
 		},
@@ -191,7 +191,7 @@ func TestDNSCheckValid(t *testing.T) {
 		Session:     newsession(),
 		Target: &Target{
 			URL: "dot://one.one.one.one:853",
-			Options: &Config{
+			Config: &Config{
 				DefaultAddrs: "1.1.1.1 1.0.0.1",
 			},
 		},
@@ -239,8 +239,8 @@ func TestDNSCheckWait(t *testing.T) {
 			Measurement: &measurement,
 			Session:     newsession(),
 			Target: &Target{
-				URL:     input,
-				Options: &Config{},
+				URL:    input,
+				Config: &Config{},
 			},
 		}
 		err := measurer.Run(context.Background(), args)

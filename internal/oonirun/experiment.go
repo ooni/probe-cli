@@ -7,9 +7,7 @@ package oonirun
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"math/rand"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -92,13 +90,6 @@ func (ed *Experiment) Run(ctx context.Context) error {
 		return err
 	}
 
-	// TODO(bassosimone): we need another patch after the current one
-	// to correctly serialize the options as configured using InitialOptions
-	// and ExtraOptions otherwise the Measurement.Options field turns out
-	// to always be empty and this is highly suboptimal for us.
-	//
-	// The next patch is https://github.com/ooni/probe-cli/pull/1630.
-
 	// 2. configure experiment's options
 	//
 	// This MUST happen before loading targets because the options will
@@ -116,7 +107,7 @@ func (ed *Experiment) Run(ctx context.Context) error {
 
 	// 4. randomize input, if needed
 	if ed.Random {
-		// Note: since go1.20 the default random generated is random seeded
+		// Note: since go1.20 the default random generator is randomly seeded
 		//
 		// See https://tip.golang.org/doc/go1.20
 		rand.Shuffle(len(targetList), func(i, j int) {
@@ -182,7 +173,6 @@ func (ed *Experiment) newInputProcessor(experiment model.Experiment,
 		},
 		Inputs:     inputList,
 		MaxRuntime: time.Duration(ed.MaxRuntime) * time.Second,
-		Options:    experimentOptionsToStringList(ed.ExtraOptions),
 		Saver:      NewInputProcessorSaverWrapper(saver),
 		Submitter: &experimentSubmitterWrapper{
 			child:  NewInputProcessorSubmitterWrapper(submitter),
@@ -241,22 +231,6 @@ func (ed *Experiment) newTargetLoader(builder model.ExperimentBuilder) targetLoa
 		SourceFiles:  ed.InputFilePaths,
 		Session:      ed.Session,
 	})
-}
-
-// experimentOptionsToStringList convers the options to []string, which is
-// the format with which we include them into a OONI Measurement. The resulting
-// []string will skip any option that is named with a `Safe` prefix (case
-// sensitive).
-func experimentOptionsToStringList(options map[string]any) (out []string) {
-	// the prefix to skip inclusion in the string list
-	safeOptionPrefix := "Safe"
-	for key, value := range options {
-		if strings.HasPrefix(key, safeOptionPrefix) {
-			continue
-		}
-		out = append(out, fmt.Sprintf("%s=%v", key, value))
-	}
-	return
 }
 
 // experimentWrapper wraps an experiment and logs progress
