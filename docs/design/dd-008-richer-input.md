@@ -466,11 +466,12 @@ than using the check-in API (and maybe keep the caching support?).
 its own constructor for the proper target loader, and split the implementation
 inside of the `targetloader` package to have multiple target loaders.
 
-	*  rework `pkg/oonimkall` to invoke a target loader rather than relying
-	on the `InputPolicy`
-
 	*  make sure richer-input-enabled experiments can run with `oonimkall`
 	after we have performed the previous change
+
+	* make sure we're passing the correct check-in settings to `oonimkall`
+	such that it's possible to run Web Connectivity from mobile using
+	the loader and we can simplify the mobile app codebase
 
 *  devise long term strategy for delivering richer input to `oonimkall`
 from mobile apps, which we'll need as soon as we convert the IM experiments
