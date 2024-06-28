@@ -19,10 +19,10 @@ func TestRemoteAddrProvider(t *testing.T) {
 				return nil
 			},
 		}
-		if safeRemoteAddrNetwork(conn) != "" {
+		if SafeRemoteAddrNetwork(conn) != "" {
 			t.Fatal("expected empty network")
 		}
-		if safeRemoteAddrString(conn) != "" {
+		if SafeRemoteAddrString(conn) != "" {
 			t.Fatal("expected empty string")
 		}
 	})
@@ -40,10 +40,10 @@ func TestRemoteAddrProvider(t *testing.T) {
 				}
 			},
 		}
-		if safeRemoteAddrNetwork(conn) != "tcp" {
+		if SafeRemoteAddrNetwork(conn) != "tcp" {
 			t.Fatal("unexpected network")
 		}
-		if safeRemoteAddrString(conn) != "1.1.1.1:443" {
+		if SafeRemoteAddrString(conn) != "1.1.1.1:443" {
 			t.Fatal("unexpected string")
 		}
 	})
