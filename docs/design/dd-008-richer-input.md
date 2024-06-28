@@ -445,6 +445,106 @@ In practice, the code would always use either `InitialOptions` or
 `ExtraOptions`, but we also wanted to specify priority in case both
 of them were available.
 
+## Implementation: oonimkall changes
+
+In [#1620](https://github.com/ooni/probe-cli/pull/1620), we started to
+modify the `./pkg/oonimkall` package to support richer input.
+
+Before this diff, the code was not using a loader for loading inputs
+for experiments, and the code roughly looked like this:
+
+```Go
+switch builder.InputPolicy() {
+	case model.InputOrQueryBackend, model.InputStrictlyRequired:
+		if len(r.settings.Inputs) <= 0 {
+			r.emitter.EmitFailureStartup("no input provided")
+			return
+		}
+
+	case model.InputOrStaticDefault:
+		if len(r.settings.Inputs) <= 0 {
+			inputs, err := targetloading.StaticBareInputForExperiment(r.settings.Name)
+			if err != nil {
+				r.emitter.EmitFailureStartup("no default static input for this experiment")
+				return
+			}
+			r.settings.Inputs = inputs
+		}
+
+	case model.InputOptional:
+		if len(r.settings.Inputs) <= 0 {
+			r.settings.Inputs = append(r.settings.Inputs, "")
+		}
+
+	default: // treat this case as engine.InputNone.
+		if len(r.settings.Inputs) > 0 {
+			r.emitter.EmitFailureStartup("experiment does not accept input")
+			return
+		}
+		r.settings.Inputs = append(r.settings.Inputs, "")
+}
+```
+
+Basically, we were switching on the experiment builder's `InputPolicy` and
+checking whether input was present or absent according to policy. But, we were
+not *actually* loading input when needed.
+
+To support richer input for experiments such as `openvpn`, instead, we must
+use a loader and fetch such input, as follows:
+
+```Go
+loader := builder.NewTargetLoader(&model.ExperimentTargetLoaderConfig{
+	CheckInConfig: &model.OOAPICheckInConfig{ /* not needed for now */ },
+	Session:      sess,
+	StaticInputs: r.settings.Inputs,
+	SourceFiles:  []string{},
+})
+loadCtx, loadCancel := context.WithTimeout(rootCtx, 30*time.Second)
+defer loadCancel()
+targets, err := loader.Load(loadCtx)
+if err != nil {
+	r.emitter.EmitFailureStartup(err.Error())
+	return
+}
+```
+
+After this change, we still assume the mobile app is providing us with
+inputs for Web Connectivity. Because the loader honours user-provided inputs,
+there's no functional change with the previous behavior. However, if there
+is no input, we're going to load it using the proper mechanisms, including
+using the correct backend API for the `openvpn` experiment.
+
+Also, to pave the way for supporting loading for Web Connectivity as well, we
+need to supply the information required to populate the URLs table as part
+of the `status.measurement_start` event, as follows:
+
+```diff
+ type eventMeasurementGeneric struct {
++	CategoryCode string `json:"category_code,omitempty"`
++	CountryCode  string `json:"country_code,omitempty"`
+	Failure      string `json:"failure,omitempty"`
+	Idx          int64  `json:"idx"`
+	Input        string `json:"input"`
+	JSONStr      string `json:"json_str,omitempty"`
+ }
+
+
+ r.emitter.Emit(eventTypeStatusMeasurementStart, eventMeasurementGeneric{
++	CategoryCode: target.Category(),
++	CountryCode:  target.Country(),
+ 	Idx:          int64(idx),
+ 	Input:        target.Input(),
+ })
+```
+
+By providing the `CategoryCode` and the `CountryCode`, the mobile app is now
+able to correctly populate the URLs table ahead of measuring.
+
+Future work will address passing the correct check-in options to the
+experiment runner, so that we can actually remove the mobile app source
+code that invokes the check-in API, and simplify both the codebase of
+the mobile app and the one of `./pkg/oonimkall`.
+
 ## Next steps
 
 This is a rough sequence of next steps that we should expand as we implement
