@@ -21,6 +21,7 @@ func ooniRunMain(ctx context.Context,
 	logger := sess.Logger()
 	cfg := &oonirun.LinkConfig{
 		AcceptChanges: currentOptions.Yes,
+		AuthFile:      currentOptions.AuthFile,
 		Annotations:   annotations,
 		KVStore:       sess.KeyValueStore(),
 		MaxRuntime:    currentOptions.MaxRuntime,
