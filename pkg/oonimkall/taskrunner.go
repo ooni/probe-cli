@@ -283,6 +283,9 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 		}
 
 		// notify the mobile app that we are about to measure a specific target
+		//
+		// note that here we provide also the CategoryCode and the CountryCode
+		// so that the mobile app can update its URLs table here
 		logger.Infof("Starting measurement with index %d", idx)
 		r.emitter.Emit(eventTypeStatusMeasurementStart, eventMeasurementGeneric{
 			CategoryCode: target.Category(),
