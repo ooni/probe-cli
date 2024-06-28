@@ -134,7 +134,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	if !ok {
 		return ErrInvalidInputType
 	}
-	config, input := target.Options, target.URL
+	config, input := target.Config, target.URL
 	sess.Logger().Infof("dnscheck: using richer input: %+v %+v", config, input)
 
 	// 1. fill the measurement with test keys

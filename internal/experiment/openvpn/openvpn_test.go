@@ -202,8 +202,8 @@ func TestBadTargetURLFailure(t *testing.T) {
 		Measurement: measurement,
 		Session:     sess,
 		Target: &openvpn.Target{
-			URL:     "openvpn://badprovider/?address=aa",
-			Options: &openvpn.Config{},
+			URL:    "openvpn://badprovider/?address=aa",
+			Config: &openvpn.Config{},
 		},
 	}
 	err := m.Run(ctx, args)
@@ -260,8 +260,8 @@ func TestSuccess(t *testing.T) {
 		Measurement: measurement,
 		Session:     sess,
 		Target: &openvpn.Target{
-			URL:     "openvpn://riseupvpn.corp/?address=127.0.0.1:9989&transport=tcp",
-			Options: &openvpn.Config{},
+			URL:    "openvpn://riseupvpn.corp/?address=127.0.0.1:9989&transport=tcp",
+			Config: &openvpn.Config{},
 		},
 	}
 	err := m.Run(ctx, args)

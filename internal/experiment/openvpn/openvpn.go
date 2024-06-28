@@ -227,7 +227,7 @@ func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	if !ok {
 		return targetloading.ErrInvalidInputType
 	}
-	config, input := target.Options, target.URL
+	config, input := target.Config, target.URL
 
 	// 2. obtain the endpoint representation from the input URL
 	endpoint, err := newEndpointFromInputString(input)

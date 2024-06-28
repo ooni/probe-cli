@@ -71,7 +71,6 @@ func TestInputProcessorSubmissionFailed(t *testing.T) {
 		Inputs: []model.ExperimentTarget{
 			model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("https://www.kernel.org/"),
 		},
-		Options: []string{"fake=true"},
 		Submitter: NewInputProcessorSubmitterWrapper(
 			&FakeInputProcessorSubmitter{Err: expected},
 		),
@@ -96,9 +95,6 @@ func TestInputProcessorSubmissionFailed(t *testing.T) {
 	if m.Annotations["antani"] != "antani" {
 		t.Fatal("invalid annotation: antani")
 	}
-	if len(m.Options) != 1 || m.Options[0] != "fake=true" {
-		t.Fatal("options not set")
-	}
 }
 
 type FakeInputProcessorSaver struct {
@@ -120,7 +116,6 @@ func TestInputProcessorSaveOnDiskFailed(t *testing.T) {
 		Inputs: []model.ExperimentTarget{
 			model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("https://www.kernel.org/"),
 		},
-		Options: []string{"fake=true"},
 		Saver: NewInputProcessorSaverWrapper(
 			&FakeInputProcessorSaver{Err: expected},
 		),
@@ -144,7 +139,6 @@ func TestInputProcessorGood(t *testing.T) {
 			model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("https://www.kernel.org/"),
 			model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("https://www.slashdot.org/"),
 		},
-		Options:   []string{"fake=true"},
 		Saver:     NewInputProcessorSaverWrapper(saver),
 		Submitter: NewInputProcessorSubmitterWrapper(submitter),
 	}
@@ -186,7 +180,6 @@ func TestInputProcessorMaxRuntime(t *testing.T) {
 			model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("https://www.slashdot.org/"),
 		},
 		MaxRuntime: 1 * time.Nanosecond,
-		Options:    []string{"fake=true"},
 		Saver:      NewInputProcessorSaverWrapper(saver),
 		Submitter:  NewInputProcessorSubmitterWrapper(submitter),
 	}

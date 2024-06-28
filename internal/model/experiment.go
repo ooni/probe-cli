@@ -99,6 +99,17 @@ type ExperimentTarget interface {
 	// Input returns the experiment input, which is typically a URL.
 	Input() string
 
+	// Options transforms the options contained by this target
+	// into a []string containing options as they were provided
+	// using the command line `-O option=value` syntax.
+	//
+	// This method MUST NOT serialize all the options whose name
+	// starts with the "Safe" prefix. This method MUST skip serializing
+	// sensitive options, non-scalar options, and zero value options.
+	//
+	// Consider using the [experimentconfig] package to serialize.
+	Options() []string
+
 	// String MUST return the experiment input.
 	//
 	// Implementation note: previously existing code often times treated

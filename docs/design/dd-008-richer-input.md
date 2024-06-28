@@ -199,6 +199,7 @@ type ExperimentTarget struct {
 	Category() string  // equivalent to OOAPIURLInfo.CategoryCode
 	Country() string   // equivalent to OOAPIURLInfo.CountryCode
 	Input() string     // equivalent to OOAPIURLInfo.URL
+	String() string    // serializes to the input
 }
 
 type InputLoader = TargetLoader // we renamed to reflect the change of purpose
@@ -211,6 +212,10 @@ type Experiment interface {
 	MeasureWithContext(ctx context.Context, target ExperimentTarget) (*Measurement, error)
 }
 ```
+
+The `String` method is used to reduce the `ExperimentTarget` to the input string, which
+allows for backwards compatibility. We can obtain a string representation of the target's
+input and use it every time where previous we used the `input` string.
 
 Note that we also renamed the `InputLoader` to `TargetLoader` to reflect the fact that
 we're not loading bare input anymore, rather we're loading richer input targets.
@@ -361,13 +366,89 @@ wouldn't be able to cast such an interface to the `*target` type. Therefore,
 unconditionally casting could lead to crashes when integrating new code
 and generally makes for a less robust codebase.
 
+## Implementation: add OpenVPN
+
+Pull request [#1625](https://github.com/ooni/probe-cli/pull/1625) added richer
+input support for the `openvpn` experiment. Because this experiment already
+supports richer input through the `api.dev.ooni.io` backend, we now have the
+first experiment capable of using richer input.
+
+## Implementation: fix serializing options
+
+Pull request [#1630](https://github.com/ooni/probe-cli/pull/1630) adds
+support for correctly serializing options. We extend the model of a richer
+input target to include the following function:
+
+```Go
+type ExperimentTarget struct {
+	// ...
+	Options() []string
+}
+```
+
+Then we implement `Options` for every possible experiment target. There is
+a default implementation in the `experimentconfig` package implementing the
+default semantics that was also available before:
+
+1. skip fields whose name starts with `Safe`;
+
+2. only serialize scalar values;
+
+3. do not serializes any zero value.
+
+Additionally, we now serialize the options inside the `newMeasurement`
+constructor typical of each experiment.
+
+## Implementation: improve passing options to experiments
+
+Pull request [#1629](https://github.com/ooni/probe-cli/pull/1629) modifies
+the way in which the `./internal/oonirun` package loads data for experiments
+such that, when using OONI Run v2, we load its `options` field as a
+`json.RawMessage` rather than using a `map[string]any`. This fact is
+significant because, previously, we could only unmarshal options provided
+by command line, which were always scalar. With this change, instead, we
+can keep backwards compatibility with respect to the command line but it's
+now also possible for experiments options specified via OONI Run v2 to
+provide non-scalar options.
+
+The key change to enable this is to modify a `*registry.Factory` type to add:
+
+```Go
+type Factory struct { /* ... */ }
+
+func (fx *Factory) SetOptionsJSON(value json.RawMessage) error
+```
+
+In this way, we can directly assign the raw JSON to the experiment config
+that is kept inside of the `*Factory` itself.
+
+Additionally, constructing an experiment using `*oonirun.Experiment` now
+includes two options related field:
+
+```Go
+type Experiment struct {
+	InitialOptions json.RawMessage  // new addition
+	ExtraOptions   map[string]any   // also present before
+}
+```
+
+Initialization of experiment options will work as follows:
+
+1. the per-experiment `*Factory` constructor initializes fields to their
+default value, which, in most cases, SHOULD be the zero value;
+
+2. we update the config using `InitialOptions` unless it is empty;
+
+3. we update the config using `ExtraOptions` unless it is empty.
+
+In practice, the code would always use either `InitialOptions` or
+`ExtraOptions`, but we also wanted to specify priority in case both
+of them were available.
+
 ## Next steps
 
 This is a rough sequence of next steps that we should expand as we implement
 additional bits of richer input and for which we need reference issues.
-
-*  setting `(*Measurement).Options` inside `(*engine.experiment).newMeasurement`
-rather than inside the `oonirun` package.
 
 *  fully convert `dnscheck`'s static list to live inside `dnscheck` instead of
 `targetloading` and to use the proper richer input.
@@ -378,14 +459,8 @@ rather than inside the `oonirun` package.
 
 	*  implement backend API for serving `stunreachability` richer input.
 
-	*  implement backend API for serving `openvpn` richer input.
-
 *  deliver feature flags using experiment-specific richer input rather
 than using the check-in API (and maybe keep the caching support?).
-
-*  deliver OONI Run v2 options as a `json.RawMessage` rather than passing
-through a `map[string]any` such that we can support non-scalar options when
-using OONI Run v2.
 
 *  try to eliminate `InputPolicy` and instead have each experiment define
 its own constructor for the proper target loader, and split the implementation
