@@ -179,18 +179,19 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 
 	builder.SetCallbacks(&runnerCallbacks{emitter: r.emitter})
 
-	// Load targets. Note that, for Web Connectivity, the mobile app has
-	// already loaded inputs and provides them as r.settings.Inputs.
+	// Load targets.
 	loader := builder.NewTargetLoader(&model.ExperimentTargetLoaderConfig{
 		CheckInConfig: &model.OOAPICheckInConfig{
-			// Not needed since the app already provides the
-			// inputs to use for Web Connectivity.
+			// TODO(bassosimone,DecFox): to correctly load Web Connectivity targets
+			// here we need to honour the relevant check-in settings.
 		},
 		Session:      sess,
 		StaticInputs: r.settings.Inputs,
 		SourceFiles:  []string{},
 	})
-	targets, err := loader.Load(rootCtx)
+	loadCtx, loadCancel := context.WithTimeout(rootCtx, 30*time.Second)
+	defer loadCancel()
+	targets, err := loader.Load(loadCtx)
 	if err != nil {
 		r.emitter.EmitFailureStartup(err.Error())
 		return
@@ -220,6 +221,12 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 	// This deviates a little bit from measurement-kit, for which
 	// a zero timeout is actually valid. Since it does not make much
 	// sense, here we're changing the behaviour.
+	//
+	// Additionally, since https://github.com/ooni/probe-cli/pull/1620,
+	// we honour the MaxRuntime for all experiments that have more
+	// than one input. Previously, it was just Web Connectivity, yet,
+	// it seems reasonable to honour MaxRuntime everytime the whole
+	// experiment runtime depends on more than one input.
 	//
 	// See https://github.com/measurement-kit/measurement-kit/issues/1922
 	if r.settings.Options.MaxRuntime > 0 && len(targets) > 1 {
