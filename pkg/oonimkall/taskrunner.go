@@ -194,7 +194,7 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 	// load targets using the experiment-specific loader
 	loader := builder.NewTargetLoader(&model.ExperimentTargetLoaderConfig{
 		CheckInConfig: &model.OOAPICheckInConfig{
-			// TODO(bassosimone,DecFox): to correctly load Web Connectivity targets
+			// TODO(https://github.com/ooni/probe/issues/2766): to correctly load Web Connectivity targets
 			// here we need to honour the relevant check-in settings.
 		},
 		Session:      sess,
