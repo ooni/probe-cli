@@ -183,7 +183,7 @@ func TestTaskRunnerRun(t *testing.T) {
 	reduceEventsKeysIgnoreLog := func(t *testing.T, events []*event) (out []eventKeyCount) {
 		var current eventKeyCount
 		for _, ev := range events {
-			t.Log(ev)
+			t.Logf("%+v", ev)
 			if ev.Key == eventTypeLog {
 				continue
 			}
@@ -649,8 +649,24 @@ func TestTaskRunnerRun(t *testing.T) {
 	})
 
 	t.Run("with measurement submission failure", func(t *testing.T) {
+		// Implementation note: this experiment needs a non-empty input otherwise the
+		// code will not emit a progress event when it finished measuring the input and
+		// we would be missing the eventTypeStatusProgress event.
+		inputs := []string{"a"}
 		runner, emitter := newRunnerForTesting()
+		runner.settings.Inputs = inputs // this is basically ignored because we override MockLoad
 		fake := fakeSuccessfulDeps()
+		fake.Builder.MockNewTargetLoader = func(config *model.ExperimentTargetLoaderConfig) model.ExperimentTargetLoader {
+			return &mocks.ExperimentTargetLoader{
+				MockLoad: func(ctx context.Context) (targets []model.ExperimentTarget, err error) {
+					// We need to mimic what would happen when settings.Inputs is explicitly provided
+					for _, input := range inputs {
+						targets = append(targets, model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(input))
+					}
+					return
+				},
+			}
+		}
 		fake.Experiment.MockSubmitAndUpdateMeasurementContext = func(ctx context.Context, measurement *model.Measurement) error {
 			return errors.New("cannot submit")
 		}
