@@ -11,7 +11,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
-	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
 // runnerForTask runs a specific task
@@ -118,6 +117,8 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 	//
 	// - rootCtx is the root context and is controlled by the user;
 	//
+	// - loadCtx derives from rootCtx and is used to load inputs;
+	//
 	// - measCtx derives from rootCtx and is possibly tied to the
 	// maximum runtime and is used to choose when to stop measuring;
 	//
@@ -127,28 +128,36 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 	// See https://github.com/ooni/probe/issues/2037.
 	var logger model.Logger = newTaskLogger(r.emitter, r.settings.LogLevel)
 	r.emitter.Emit(eventTypeStatusQueued, eventEmpty{})
+
+	// check whether we support the provided settings
 	if r.hasUnsupportedSettings() {
 		// event failureStartup already emitted
 		return
 	}
 	r.emitter.Emit(eventTypeStatusStarted, eventEmpty{})
+
+	// create a new measurement session
 	sess, err := r.newsession(rootCtx, logger)
 	if err != nil {
 		r.emitter.EmitFailureStartup(err.Error())
 		return
 	}
+
+	// make sure we emit the status.end event when we're done
 	endEvent := new(eventStatusEnd)
 	defer func() {
 		_ = sess.Close()
 		r.emitter.Emit(eventTypeStatusEnd, endEvent)
 	}()
 
+	// create an experiment builder for the given experiment name
 	builder, err := sess.NewExperimentBuilder(r.settings.Name)
 	if err != nil {
 		r.emitter.EmitFailureStartup(err.Error())
 		return
 	}
 
+	// choose the proper OONI backend to use
 	logger.Info("Looking up OONI backends... please, be patient")
 	if err := sess.MaybeLookupBackendsContext(rootCtx); err != nil {
 		r.emitter.EmitFailureStartup(err.Error())
@@ -156,6 +165,7 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 	}
 	r.emitter.EmitStatusProgress(0.1, "contacted bouncer")
 
+	// discover the probe location
 	logger.Info("Looking up your location... please, be patient")
 	if err := sess.MaybeLookupLocationContext(rootCtx); err != nil {
 		r.emitter.EmitFailureGeneric(eventTypeFailureIPLookup, err.Error())
@@ -178,54 +188,37 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 		ResolverNetworkName: sess.ResolverNetworkName(),
 	})
 
+	// configure the callbacks to emit events
 	builder.SetCallbacks(&runnerCallbacks{emitter: r.emitter})
 
-	// TODO(bassosimone): replace the following code with an
-	// invocation of the targetloading.Loader. Since I am making these
-	// changes before a release and I've already changed the
-	// code a lot, I'd rather avoid changing it even more,
-	// for the following reason:
-	//
-	// If we add and call targetloading.Loader here, this code will
-	// magically invoke check-in for InputOrQueryBackend,
-	// which we need to make sure the app can handle. This is
-	// the main reason why now I don't fill like properly
-	// fixing this code and use targetloading.Loader: too much work
-	// in too little time, so mistakes more likely.
-	//
-	// In fact, our current app assumes that it's its
-	// responsibility to load the inputs, not oonimkall's.
-	switch builder.InputPolicy() {
-	case model.InputOrQueryBackend, model.InputStrictlyRequired:
-		if len(r.settings.Inputs) <= 0 {
-			r.emitter.EmitFailureStartup("no input provided")
-			return
-		}
-	case model.InputOrStaticDefault:
-		if len(r.settings.Inputs) <= 0 {
-			inputs, err := targetloading.StaticBareInputForExperiment(r.settings.Name)
-			if err != nil {
-				r.emitter.EmitFailureStartup("no default static input for this experiment")
-				return
-			}
-			r.settings.Inputs = inputs
-		}
-	case model.InputOptional:
-		if len(r.settings.Inputs) <= 0 {
-			r.settings.Inputs = append(r.settings.Inputs, "")
-		}
-	default: // treat this case as engine.InputNone.
-		if len(r.settings.Inputs) > 0 {
-			r.emitter.EmitFailureStartup("experiment does not accept input")
-			return
-		}
-		r.settings.Inputs = append(r.settings.Inputs, "")
+	// load targets using the experiment-specific loader
+	loader := builder.NewTargetLoader(&model.ExperimentTargetLoaderConfig{
+		CheckInConfig: &model.OOAPICheckInConfig{
+			// TODO(https://github.com/ooni/probe/issues/2766): to correctly load Web Connectivity targets
+			// here we need to honour the relevant check-in settings.
+		},
+		Session:      sess,
+		StaticInputs: r.settings.Inputs,
+		SourceFiles:  []string{},
+	})
+	loadCtx, loadCancel := context.WithTimeout(rootCtx, 30*time.Second)
+	defer loadCancel()
+	targets, err := loader.Load(loadCtx)
+	if err != nil {
+		r.emitter.EmitFailureStartup(err.Error())
+		return
 	}
+
+	// create the new experiment
 	experiment := builder.NewExperiment()
+
+	// make sure we account for the bytes sent and received
 	defer func() {
 		endEvent.DownloadedKB = experiment.KibiBytesReceived()
 		endEvent.UploadedKB = experiment.KibiBytesSent()
 	}()
+
+	// open a new report if possible
 	if !r.settings.Options.NoCollector {
 		logger.Info("Opening report... please, be patient")
 		if err := experiment.OpenReportContext(rootCtx); err != nil {
@@ -237,52 +230,72 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 			ReportID: experiment.ReportID(),
 		})
 	}
+
+	// create the default context for measuring
 	measCtx, measCancel := context.WithCancel(rootCtx)
 	defer measCancel()
+
+	// create the default context for submitting
 	submitCtx, submitCancel := context.WithCancel(rootCtx)
 	defer submitCancel()
+
+	// Update measCtx and submitCtx to be timeout bound in case there's
+	// more than one input/target to measure.
+	//
 	// This deviates a little bit from measurement-kit, for which
 	// a zero timeout is actually valid. Since it does not make much
 	// sense, here we're changing the behaviour.
 	//
+	// Additionally, since https://github.com/ooni/probe-cli/pull/1620,
+	// we honour the MaxRuntime for all experiments that have more
+	// than one input. Previously, it was just Web Connectivity, yet,
+	// it seems reasonable to honour MaxRuntime everytime the whole
+	// experiment runtime depends on more than one input.
+	//
 	// See https://github.com/measurement-kit/measurement-kit/issues/1922
-	if r.settings.Options.MaxRuntime > 0 {
-		// We want to honour max_runtime only when we're running an
-		// experiment that clearly wants specific input. We could refine
-		// this policy in the future, but for now this covers in a
-		// reasonable way web connectivity, so we should be ok.
-		switch builder.InputPolicy() {
-		case model.InputOrQueryBackend, model.InputStrictlyRequired:
-			var (
-				cancelMeas   context.CancelFunc
-				cancelSubmit context.CancelFunc
-			)
-			// We give the context used for submitting extra time so that
-			// it's possible to submit the last measurement.
-			//
-			// See https://github.com/ooni/probe/issues/2037 for more info.
-			maxRuntime := time.Duration(r.settings.Options.MaxRuntime) * time.Second
-			measCtx, cancelMeas = context.WithTimeout(measCtx, maxRuntime)
-			defer cancelMeas()
-			maxRuntime += 30 * time.Second
-			submitCtx, cancelSubmit = context.WithTimeout(submitCtx, maxRuntime)
-			defer cancelSubmit()
-		}
+	if r.settings.Options.MaxRuntime > 0 && len(targets) > 1 {
+		var (
+			cancelMeas   context.CancelFunc
+			cancelSubmit context.CancelFunc
+		)
+		// We give the context used for submitting extra time so that
+		// it's possible to submit the last measurement.
+		//
+		// See https://github.com/ooni/probe/issues/2037 for more info.
+		maxRuntime := time.Duration(r.settings.Options.MaxRuntime) * time.Second
+		measCtx, cancelMeas = context.WithTimeout(measCtx, maxRuntime)
+		defer cancelMeas()
+		maxRuntime += 30 * time.Second
+		submitCtx, cancelSubmit = context.WithTimeout(submitCtx, maxRuntime)
+		defer cancelSubmit()
 	}
-	inputCount := len(r.settings.Inputs)
+
+	// prepare for cycling through the targets
+	inputCount := len(targets)
 	start := time.Now()
 	inflatedMaxRuntime := r.settings.Options.MaxRuntime + r.settings.Options.MaxRuntime/10
 	eta := start.Add(time.Duration(inflatedMaxRuntime) * time.Second)
-	for idx, input := range r.settings.Inputs {
+
+	for idx, target := range targets {
+		// handle the case where the time allocated for measuring has elapsed
 		if measCtx.Err() != nil {
 			break
 		}
+
+		// notify the mobile app that we are about to measure a specific target
+		//
+		// note that here we provide also the CategoryCode and the CountryCode
+		// so that the mobile app can update its URLs table here
 		logger.Infof("Starting measurement with index %d", idx)
 		r.emitter.Emit(eventTypeStatusMeasurementStart, eventMeasurementGeneric{
-			Idx:   int64(idx),
-			Input: input,
+			CategoryCode: target.Category(),
+			CountryCode:  target.Country(),
+			Idx:          int64(idx),
+			Input:        target.Input(),
 		})
-		if input != "" && inputCount > 0 {
+
+		// emit progress when there is more than one target to measure
+		if target.Input() != "" && inputCount > 0 {
 			var percentage float64
 			if r.settings.Options.MaxRuntime > 0 {
 				now := time.Now()
@@ -291,33 +304,29 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 				percentage = (float64(idx)/float64(inputCount))*0.6 + 0.4
 			}
 			r.emitter.EmitStatusProgress(percentage, fmt.Sprintf(
-				"processing %s", input,
+				"processing %s", target,
 			))
 		}
 
-		// Richer input implementation note: in mobile, we only observe richer input
-		// for Web Connectivity and only store this kind of input into the database and
-		// otherwise we ignore richer input for other experiments, which are just
-		// treated as experimental. As such, the thinking here is that we do not care
-		// about *passing* richer input from desktop to mobile for some time. When
-		// we will care, it would most likely suffice to require the Inputs field to
-		// implement in Java the [model.ExperimentTarget] interface, which is something
-		// we can always do, since it only has string accessors.
+		// Perform the measurement proper.
 		m, err := experiment.MeasureWithContext(
 			r.contextForExperiment(measCtx, builder),
-			model.NewOOAPIURLInfoWithDefaultCategoryAndCountry(input),
+			target,
 		)
 
+		// Handle the case where our time for measuring has elapsed while
+		// we were measuring and assume the context interrupted the measurement
+		// midway, so it doesn't make sense to submit it.
 		if builder.Interruptible() && measCtx.Err() != nil {
-			// We want to stop here only if interruptible otherwise we want to
-			// submit measurement and stop at beginning of next iteration
 			break
 		}
+
+		// handle the case where the measurement has failed
 		if err != nil {
 			r.emitter.Emit(eventTypeFailureMeasurement, eventMeasurementGeneric{
 				Failure: err.Error(),
 				Idx:     int64(idx),
-				Input:   input,
+				Input:   target.Input(),
 			})
 			// Historical note: here we used to fallthrough but, since we have
 			// implemented async measurements, the case where there is an error
@@ -325,28 +334,38 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 			// now the only valid strategy here is to continue.
 			continue
 		}
+
+		// make sure the measurement contains the user-specified annotations
 		m.AddAnnotations(r.settings.Annotations)
+
+		// serialize the measurement to JSON (cannot fail in practice)
 		data, err := json.Marshal(m)
 		runtimex.PanicOnError(err, "measurement.MarshalJSON failed")
+
+		// let the mobile app know about this measurement
 		r.emitter.Emit(eventTypeMeasurement, eventMeasurementGeneric{
 			Idx:     int64(idx),
-			Input:   input,
+			Input:   target.Input(),
 			JSONStr: string(data),
 		})
+
+		// if possible, submit the measurement to the OONI backend
 		if !r.settings.Options.NoCollector {
 			logger.Info("Submitting measurement... please, be patient")
 			err := experiment.SubmitAndUpdateMeasurementContext(submitCtx, m)
 			warnOnFailure(logger, "cannot submit measurement", err)
 			r.emitter.Emit(measurementSubmissionEventName(err), eventMeasurementGeneric{
 				Idx:     int64(idx),
-				Input:   input,
+				Input:   target.Input(),
 				JSONStr: string(data),
 				Failure: measurementSubmissionFailure(err),
 			})
 		}
+
+		// let the app know that we're done measuring this entry
 		r.emitter.Emit(eventTypeStatusMeasurementDone, eventMeasurementGeneric{
 			Idx:   int64(idx),
-			Input: input,
+			Input: target.Input(),
 		})
 	}
 }

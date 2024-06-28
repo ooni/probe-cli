@@ -215,10 +215,10 @@ var dnsCheckDefaultInput = []string{
 
 var stunReachabilityDefaultInput = stuninput.AsnStunReachabilityInput()
 
-// StaticBareInputForExperiment returns the list of strings an
+// staticBareInputForExperiment returns the list of strings an
 // experiment should use as static input. In case there is no
 // static input for this experiment, we return an error.
-func StaticBareInputForExperiment(name string) ([]string, error) {
+func staticBareInputForExperiment(name string) ([]string, error) {
 	// Implementation note: we may be called from pkg/oonimkall
 	// with a non-canonical experiment name, so we need to convert
 	// the experiment name to be canonical before proceeding.
@@ -239,7 +239,7 @@ func StaticBareInputForExperiment(name string) ([]string, error) {
 // staticInputForExperiment returns the static input for the given experiment
 // or an error if there's no static input for the experiment.
 func staticInputForExperiment(name string) ([]model.ExperimentTarget, error) {
-	return stringListToModelExperimentTarget(StaticBareInputForExperiment(name))
+	return stringListToModelExperimentTarget(staticBareInputForExperiment(name))
 }
 
 // loadOrStaticDefault implements the InputOrStaticDefault policy.
@@ -362,15 +362,6 @@ func (il *Loader) checkIn(
 		)
 	}
 	return &reply.Tests, nil
-}
-
-// fetchOpenVPNConfig fetches vpn information for the configured providers
-func (il *Loader) fetchOpenVPNConfig(ctx context.Context, provider string) (*model.OOAPIVPNProviderConfig, error) {
-	reply, err := il.Session.FetchOpenVPNConfig(ctx, provider, "XX")
-	if err != nil {
-		return nil, err
-	}
-	return reply, nil
 }
 
 // preventMistakes makes the code more robust with respect to any possible

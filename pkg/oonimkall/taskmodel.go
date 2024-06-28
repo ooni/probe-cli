@@ -106,10 +106,12 @@ type eventLog struct {
 }
 
 type eventMeasurementGeneric struct {
-	Failure string `json:"failure,omitempty"`
-	Idx     int64  `json:"idx"`
-	Input   string `json:"input"`
-	JSONStr string `json:"json_str,omitempty"`
+	CategoryCode string `json:"category_code,omitempty"`
+	CountryCode  string `json:"country_code,omitempty"`
+	Failure      string `json:"failure,omitempty"`
+	Idx          int64  `json:"idx"`
+	Input        string `json:"input"`
+	JSONStr      string `json:"json_str,omitempty"`
 }
 
 type eventStatusEnd struct {
@@ -314,4 +316,8 @@ type settingsOptions struct {
 	// SoftwareVersion is the software version. If this option is not
 	// present, then the library startup will fail.
 	SoftwareVersion string `json:"software_version,omitempty"`
+
+	// TODO(https://github.com/ooni/probe/issues/2767): to support OONI Run v2 descriptors with
+	// richer input from mobile, here we also need a string-serialization
+	// of the descriptor options to load.
 }
