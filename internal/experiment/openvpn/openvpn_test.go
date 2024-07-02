@@ -79,7 +79,7 @@ func TestAddConnectionTestKeys(t *testing.T) {
 				TransactionID: 1,
 			},
 			OpenVPNHandshake: &model.ArchivalOpenVPNHandshakeResult{
-				BootstrapTime:  1,
+				HandshakeTime:  1,
 				Endpoint:       "aa",
 				Failure:        nil,
 				IP:             "1.1.1.1",
@@ -111,7 +111,7 @@ func TestAddConnectionTestKeys(t *testing.T) {
 		sc := &openvpn.SingleConnection{
 			TCPConnect: nil,
 			OpenVPNHandshake: &model.ArchivalOpenVPNHandshakeResult{
-				BootstrapTime:  1,
+				HandshakeTime:  1,
 				Endpoint:       "aa",
 				Failure:        nil,
 				IP:             "1.1.1.1",

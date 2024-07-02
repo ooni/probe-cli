@@ -17,7 +17,7 @@ import (
 
 const (
 	testName        = "openvpn"
-	testVersion     = "0.1.3"
+	testVersion     = "0.1.4"
 	openVPNProtocol = "openvpn"
 )
 
@@ -48,6 +48,9 @@ type TestKeys struct {
 	NetworkEvents    []*vpntracex.Event                      `json:"network_events"`
 	TCPConnect       []*model.ArchivalTCPConnectResult       `json:"tcp_connect,omitempty"`
 	OpenVPNHandshake []*model.ArchivalOpenVPNHandshakeResult `json:"openvpn_handshake"`
+	BootstrapTime    float64                                 `json:"bootstrap_time,omitempty"`
+	Tunnel           string                                  `json:"tunnel"`
+	Failure          *string                                 `json:"failure"`
 }
 
 // NewTestKeys creates new openvpn TestKeys.
@@ -57,11 +60,15 @@ func NewTestKeys() *TestKeys {
 		NetworkEvents:    []*vpntracex.Event{},
 		TCPConnect:       []*model.ArchivalTCPConnectResult{},
 		OpenVPNHandshake: []*model.ArchivalOpenVPNHandshakeResult{},
+		BootstrapTime:    0,
+		Tunnel:           "openvpn",
+		Failure:          nil,
 	}
 }
 
 // SingleConnection contains the results of a single handshake.
 type SingleConnection struct {
+	BootstrapTime    float64
 	TCPConnect       *model.ArchivalTCPConnectResult       `json:"tcp_connect,omitempty"`
 	OpenVPNHandshake *model.ArchivalOpenVPNHandshakeResult `json:"openvpn_handshake"`
 	NetworkEvents    []*vpntracex.Event                    `json:"network_events"`
@@ -79,6 +86,13 @@ func (tk *TestKeys) AddConnectionTestKeys(result *SingleConnection) {
 	}
 	tk.OpenVPNHandshake = append(tk.OpenVPNHandshake, result.OpenVPNHandshake)
 	tk.NetworkEvents = append(tk.NetworkEvents, result.NetworkEvents...)
+
+	// we assume one measurement has exactly one effective connection
+	tk.BootstrapTime = result.BootstrapTime
+
+	if result.OpenVPNHandshake.Failure != nil {
+		tk.Failure = result.OpenVPNHandshake.Failure
+	}
 }
 
 // AllConnectionsSuccessful returns true if all the registered handshakes have nil failures.
@@ -147,12 +161,18 @@ func (m *Measurer) connectAndHandshake(
 	handshakeEvents := handshakeTracer.Trace()
 	port, _ := strconv.Atoi(endpoint.Port)
 
-	t0, t, bootstrapTime := TimestampsFromHandshake(handshakeEvents)
+	t0, t, handshakeTime := TimestampsFromHandshake(handshakeEvents)
+
+	var bootstrapTime float64
+	if err == nil {
+		bootstrapTime = time.Since(zeroTime).Seconds()
+	}
 
 	return &SingleConnection{
-		TCPConnect: trace.FirstTCPConnectOrNil(),
+		BootstrapTime: bootstrapTime,
+		TCPConnect:    trace.FirstTCPConnectOrNil(),
 		OpenVPNHandshake: &model.ArchivalOpenVPNHandshakeResult{
-			BootstrapTime: bootstrapTime,
+			HandshakeTime: handshakeTime,
 			Endpoint:      endpoint.String(),
 			Failure:       measurexlite.NewFailure(err),
 			IP:            endpoint.IPAddr,
