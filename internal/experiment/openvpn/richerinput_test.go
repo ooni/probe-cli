@@ -225,5 +225,4 @@ func TestTargetLoaderLoadFromBackend(t *testing.T) {
 	if targets[1].String() != "openvpn://target1" {
 		t.Fatal("expected openvpn://target1")
 	}
-
 }
