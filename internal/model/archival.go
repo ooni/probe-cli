@@ -399,9 +399,9 @@ type ArchivalNetworkEvent struct {
 
 // ArchivalOpenVPNHandshakeResult contains the result of a OpenVPN handshake.
 type ArchivalOpenVPNHandshakeResult struct {
-	BootstrapTime  float64                `json:"bootstrap_time,omitempty"`
 	Endpoint       string                 `json:"endpoint"`
 	Failure        *string                `json:"failure"`
+	HandshakeTime  float64                `json:"handshake_time,omitempty"`
 	IP             string                 `json:"ip"`
 	Port           int                    `json:"port"`
 	Transport      string                 `json:"transport"`
