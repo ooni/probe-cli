@@ -210,23 +210,6 @@ func TimestampsFromHandshake(events []*vpntracex.Event) (float64, float64, float
 	return t0, t, duration
 }
 
-// TODO: delete-me
-// FetchProviderCredentials will extract credentials from the configuration we gathered for a given provider.
-/*
-func (m *Measurer) FetchProviderCredentials(
-	ctx context.Context,
-	sess model.ExperimentSession,
-	provider string) (*model.OOAPIVPNProviderConfig, error) {
-	// TODO(ainghazal): pass real country code, can be useful to orchestrate campaigns specific to areas.
-	// Since we have contacted the API previously, this call should use the cached info contained in the session.
-	config, err := sess.FetchOpenVPNConfig(ctx, provider, "XX")
-	if err != nil {
-		return nil, err
-	}
-	return config, nil
-}
-*/
-
 // Run implements model.ExperimentMeasurer.Run.
 // A single run expects exactly ONE input (endpoint), but we can modify whether
 // to test different transports by settings options.

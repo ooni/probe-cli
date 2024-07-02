@@ -213,45 +213,6 @@ func TestBadTargetURLFailure(t *testing.T) {
 	}
 }
 
-func TestVPNInput(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	// TODO(ainghazal): do a real test, get credentials etc.
-}
-
-/*
-func TestMeasurer_FetchProviderCredentials(t *testing.T) {
-	t.Run("Measurer.FetchProviderCredentials calls method in session", func(t *testing.T) {
-		m := openvpn.NewExperimentMeasurer().(*openvpn.Measurer)
-
-		sess := makeMockSession()
-		_, err := m.FetchProviderCredentials(
-			context.Background(),
-			sess, "riseup")
-		if err != nil {
-			t.Fatal("expected no error")
-		}
-	})
-	t.Run("Measurer.FetchProviderCredentials raises error if API calls fail", func(t *testing.T) {
-		someError := errors.New("unexpected")
-
-		m := openvpn.NewExperimentMeasurer().(*openvpn.Measurer)
-
-		sess := makeMockSession()
-		sess.MockFetchOpenVPNConfig = func(context.Context, string, string) (*model.OOAPIVPNProviderConfig, error) {
-			return nil, someError
-		}
-		_, err := m.FetchProviderCredentials(
-			context.Background(),
-			sess, "riseup")
-		if !errors.Is(err, someError) {
-			t.Fatalf("expected error %v, got %v", someError, err)
-		}
-	})
-}
-*/
-
 func TestSuccess(t *testing.T) {
 	m := openvpn.NewExperimentMeasurer()
 	ctx := context.Background()
@@ -413,4 +374,11 @@ func TestBootstrapTimeWithFailure(t *testing.T) {
 	if tk.Tunnel != "openvpn" {
 		t.Fatal("tunnel should be openvpn")
 	}
+}
+
+func TestVPNInput(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+	// TODO(ainghazal): do a real test, get credentials etc.
 }
