@@ -72,9 +72,8 @@ type SingleConnection struct {
 	TCPConnect       *model.ArchivalTCPConnectResult       `json:"tcp_connect,omitempty"`
 	OpenVPNHandshake *model.ArchivalOpenVPNHandshakeResult `json:"openvpn_handshake"`
 	NetworkEvents    []*vpntracex.Event                    `json:"network_events"`
-	// TODO(ainghazal): make sure to document in the spec that these network events only cover the handshake.
 	// TODO(ainghazal): in the future, we will want to store more operations under this struct for a single connection,
-	// like pingResults or urlgetter calls.
+	// like pingResults or urlgetter calls. Be sure to modify the spec when that happens.
 }
 
 // AddConnectionTestKeys adds the result of a single OpenVPN connection attempt to the
@@ -92,6 +91,7 @@ func (tk *TestKeys) AddConnectionTestKeys(result *SingleConnection) {
 
 	if result.OpenVPNHandshake.Failure != nil {
 		tk.Failure = result.OpenVPNHandshake.Failure
+		tk.BootstrapTime = 0
 	}
 }
 
@@ -163,6 +163,7 @@ func (m *Measurer) connectAndHandshake(
 
 	t0, t, handshakeTime := TimestampsFromHandshake(handshakeEvents)
 
+	// the bootstrap time is defined to be zero if there's a handshake failure.
 	var bootstrapTime float64
 	if err == nil {
 		bootstrapTime = time.Since(zeroTime).Seconds()
@@ -209,7 +210,9 @@ func TimestampsFromHandshake(events []*vpntracex.Event) (float64, float64, float
 	return t0, t, duration
 }
 
+// TODO: delete-me
 // FetchProviderCredentials will extract credentials from the configuration we gathered for a given provider.
+/*
 func (m *Measurer) FetchProviderCredentials(
 	ctx context.Context,
 	sess model.ExperimentSession,
@@ -222,6 +225,7 @@ func (m *Measurer) FetchProviderCredentials(
 	}
 	return config, nil
 }
+*/
 
 // Run implements model.ExperimentMeasurer.Run.
 // A single run expects exactly ONE input (endpoint), but we can modify whether
