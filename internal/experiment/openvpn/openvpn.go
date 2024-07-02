@@ -48,7 +48,7 @@ type TestKeys struct {
 	NetworkEvents    []*vpntracex.Event                      `json:"network_events"`
 	TCPConnect       []*model.ArchivalTCPConnectResult       `json:"tcp_connect,omitempty"`
 	OpenVPNHandshake []*model.ArchivalOpenVPNHandshakeResult `json:"openvpn_handshake"`
-	BootstrapTime    float64                                 `json:"bootstrap_time,omitempty"`
+	BootstrapTime    float64                                 `json:"bootstrap_time"`
 	Tunnel           string                                  `json:"tunnel"`
 	Failure          *string                                 `json:"failure"`
 }
