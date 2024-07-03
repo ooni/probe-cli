@@ -117,3 +117,12 @@ search/for/xcode:
 search/for/zip:
 	@printf "checking for zip... "
 	@command -v zip || { echo "not found"; exit 1; }
+
+#help:
+#help: The `make docs clean` commanfd build the docs for docs.ooni.org.
+.PHONY: docs clean
+docs:
+	./scripts/build_docs.sh
+
+clean:
+	rm -rf dist/
