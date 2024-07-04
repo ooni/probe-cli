@@ -1,0 +1,46 @@
+name: build docs
+on: push
+
+jobs:
+  build_docs:
+    runs-on: "ubuntu-20.04"
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
+      - name: Build docs
+        run: make docs
+
+      - name: Get current git ref
+        id: rev_parse
+        run: echo "COMMIT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Checkout ooni/docs
+        uses: actions/checkout@v2
+        with:
+          repository: "ooni/docs"
+          ssh-key: ${{ secrets.OONI_DOCS_DEPLOYKEY }}
+          path: "ooni-docs"
+
+      - name: Update docs
+        run: cp -R dist/docs/* ooni-docs/src/content/docs/probe-engine/
+
+      - name: Check for conflicting slugs
+        run: |
+          cat ooni-docs/src/content/docs/probe-engine/*.md \
+            | grep "^slug:" | awk -F':' '{gsub(/^ +/, "", $2); print $2}' | sort | uniq -c \
+            | awk '{if ($1 > 1) { print "duplicate slug for: " $2; exit 1}}'
+
+      - name: Print the lines of the generated docs
+        run: wc -l ooni-docs/src/content/docs/probe-engine/*
+
+      - name: Commit changes
+        # Only push the docs update when we are in master
+        if: github.ref == 'refs/heads/master'
+        run: |
+          cd ooni-docs
+          git config --global user.email "github+backend@ooni.org"
+          git config --global user.name "OONI Github Actions Bot"
+          git add .
+          git commit -m "auto: update backend docs to ${{ steps.rev_parse.outputs.COMMIT_HASH }}" || echo "No changes to commit"
+          git push origin
