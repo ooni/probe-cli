@@ -122,7 +122,7 @@ search/for/zip:
 #help: The `make docs clean` command builds the docs for docs.ooni.org.
 .PHONY: docs clean
 docs:
-	./scripts/build_docs.sh
+	./script/build_docs.sh
 
 clean:
 	rm -rf dist/
