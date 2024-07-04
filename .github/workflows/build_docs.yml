@@ -23,7 +23,9 @@ jobs:
           path: "ooni-docs"
 
       - name: Update docs
-        run: cp -R dist/docs/* ooni-docs/src/content/docs/probe-engine/
+        run: |
+          mkdir -p ooni-docs/src/content/docs/probe-engine/
+          cp -R dist/docs/* ooni-docs/src/content/docs/probe-engine/
 
       - name: Check for conflicting slugs
         run: |
