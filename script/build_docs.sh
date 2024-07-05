@@ -23,7 +23,10 @@ description: OONI Probe Engine documentation
 slug: probe-engine
 ---
 EOF
-strip_title README.md >> $DOCS_ROOT/00-index.md
+strip_title Readme.md >> $DOCS_ROOT/00-index.md
+mkdir -p $DOCS_ROOT/img
+cp docs/logo.png $DOCS_ROOT/img/
+sed -i 's+docs/logo.png+../../../assets/images-probe-engine/logo.png' $DOC_PATH
 
 # design docs
 BASE_PATH=docs/design
@@ -79,7 +82,6 @@ slug: probe-engine/design/step-by-step
 ---
 EOF
 strip_title $BASE_PATH/dd-003-step-by-step.md >> $DOC_PATH
-mkdir -p $DOCS_ROOT/img
 cp -R $BASE_PATH/img/* $DOCS_ROOT/img/
 sed -i 's+img/git-probe-cli-netx-deps.png+../../../assets/images-probe-engine/git-probe-cli-netx-deps.png+' $DOC_PATH
 sed -i 's+img/git-probe-cli-change-histogram.png+../../../assets/images-probe-engine/git-probe-cli-change-histogram.png+' $DOC_PATH

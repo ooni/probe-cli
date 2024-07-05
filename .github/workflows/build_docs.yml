@@ -25,7 +25,8 @@ jobs:
       - name: Update docs
         run: |
           mkdir -p ooni-docs/src/content/docs/probe-engine/
-          cp -R dist/docs/img/* ooni-docs/src/assets/
+          mkdir -p ooni-docs/src/assets/images-probe-engine/
+          cp -R dist/docs/img/* ooni-docs/src/assets/images-probe-engine/
           rm -r dist/docs/img
           cp -R dist/docs/* ooni-docs/src/content/docs/probe-engine/
 
