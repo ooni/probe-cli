@@ -28,3 +28,4 @@
 /probe-cli.cov
 /tinyjafar
 /tmp-*
+/dist
