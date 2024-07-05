@@ -25,8 +25,9 @@ jobs:
       - name: Update docs
         run: |
           mkdir -p ooni-docs/src/content/docs/probe-engine/
-          cp -R dist/docs/* ooni-docs/src/content/docs/probe-engine/
           cp -R dist/docs/img/* ooni-docs/src/assets/
+          rm -r dist/docs/img
+          cp -R dist/docs/* ooni-docs/src/content/docs/probe-engine/
 
       - name: Check for conflicting slugs
         run: |
