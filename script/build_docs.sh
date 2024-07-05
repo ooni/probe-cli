@@ -65,7 +65,7 @@ description: OONI netx package design documentation
 slug: probe-engine/design/netx
 ---
 EOF
-strip_title $BASE_PATH/dd-02-netx.md >> $DOC_PATH
+strip_title $BASE_PATH/dd-002-netx.md >> $DOC_PATH
 
 DOC_PATH=$DOCS_ROOT/03-design-step-by-step.md
 cat <<EOF>$DOC_PATH
