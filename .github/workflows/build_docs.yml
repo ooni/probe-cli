@@ -38,6 +38,9 @@ jobs:
       - name: Print the lines of the generated docs
         run: wc -l ooni-docs/src/content/docs/probe-engine/*
 
+      - name: Print assets used in docs
+        run: ls ooni-docs/src/assets
+
       - name: Commit changes
         # Only push the docs update when we are in master
         if: github.ref == 'refs/heads/master'
