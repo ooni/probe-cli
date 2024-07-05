@@ -26,6 +26,7 @@ jobs:
         run: |
           mkdir -p ooni-docs/src/content/docs/probe-engine/
           cp -R dist/docs/* ooni-docs/src/content/docs/probe-engine/
+          cp -R dist/docs/img/* ooni-docs/src/assets/
 
       - name: Check for conflicting slugs
         run: |
