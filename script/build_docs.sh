@@ -81,8 +81,8 @@ EOF
 strip_title $BASE_PATH/dd-003-step-by-step.md >> $DOC_PATH
 mkdir -p $DOCS_ROOT/img
 cp -R $BASE_PATH/img/* $DOCS_ROOT/img/
-sed -i '' 's+img/git-probe-cli-netx-deps.png+../../../assets/images-probe-engine/git-probe-cli-netx-deps.png+' $DOC_PATH
-sed -i '' 's+img/git-probe-cli-change-histogram.png+../../../assets/images-probe-engine/git-probe-cli-change-histogram.png+' $DOC_PATH
+sed -i 's+img/git-probe-cli-netx-deps.png+../../../assets/images-probe-engine/git-probe-cli-netx-deps.png+' $DOC_PATH
+sed -i 's+img/git-probe-cli-change-histogram.png+../../../assets/images-probe-engine/git-probe-cli-change-histogram.png+' $DOC_PATH
 
 DOC_PATH=$DOCS_ROOT/04-design-minioonirunv2.md
 cat <<EOF>$DOC_PATH
