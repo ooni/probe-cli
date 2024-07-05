@@ -25,6 +25,9 @@ jobs:
       - name: Update docs
         run: |
           mkdir -p ooni-docs/src/content/docs/probe-engine/
+          mkdir -p ooni-docs/src/assets/images-probe-engine/
+          cp -R dist/docs/img/* ooni-docs/src/assets/images-probe-engine/
+          rm -r dist/docs/img
           cp -R dist/docs/* ooni-docs/src/content/docs/probe-engine/
 
       - name: Check for conflicting slugs
@@ -36,6 +39,9 @@ jobs:
       - name: Print the lines of the generated docs
         run: wc -l ooni-docs/src/content/docs/probe-engine/*
 
+      - name: Print assets used in docs
+        run: ls ooni-docs/src/assets
+
       - name: Commit changes
         # Only push the docs update when we are in master
         if: github.ref == 'refs/heads/master'
@@ -44,5 +50,5 @@ jobs:
           git config --global user.email "github+backend@ooni.org"
           git config --global user.name "OONI Github Actions Bot"
           git add .
-          git commit -m "auto: update backend docs to ${{ steps.rev_parse.outputs.COMMIT_HASH }}" || echo "No changes to commit"
+          git commit -m "auto: update probe-engine docs to ${{ steps.rev_parse.outputs.COMMIT_HASH }}" || echo "No changes to commit"
           git push origin

@@ -1,4 +1,5 @@
 #!/bin/bash
+set +ex
 DOCS_ROOT=dist/docs/
 REPO_NAME="ooni/probe-cli"
 COMMIT_HASH=$(git rev-parse --short HEAD)
@@ -22,7 +23,10 @@ description: OONI Probe Engine documentation
 slug: probe-engine
 ---
 EOF
-strip_title README.md >> $DOCS_ROOT/00-index.md
+strip_title Readme.md >> $DOCS_ROOT/00-index.md
+mkdir -p $DOCS_ROOT/img
+cp docs/logo.png $DOCS_ROOT/img/
+sed -i 's+docs/logo.png+../../../assets/images-probe-engine/logo.png+' $DOCS_ROOT/00-index.md
 
 # design docs
 BASE_PATH=docs/design
@@ -64,7 +68,7 @@ description: OONI netx package design documentation
 slug: probe-engine/design/netx
 ---
 EOF
-strip_title $BASE_PATH/dd-02-netx.md >> $DOC_PATH
+strip_title $BASE_PATH/dd-002-netx.md >> $DOC_PATH
 
 DOC_PATH=$DOCS_ROOT/03-design-step-by-step.md
 cat <<EOF>$DOC_PATH
@@ -78,6 +82,9 @@ slug: probe-engine/design/step-by-step
 ---
 EOF
 strip_title $BASE_PATH/dd-003-step-by-step.md >> $DOC_PATH
+cp -R $BASE_PATH/img/* $DOCS_ROOT/img/
+sed -i 's+img/git-probe-cli-netx-deps.png+../../../assets/images-probe-engine/git-probe-cli-netx-deps.png+' $DOC_PATH
+sed -i 's+img/git-probe-cli-change-histogram.png+../../../assets/images-probe-engine/git-probe-cli-change-histogram.png+' $DOC_PATH
 
 DOC_PATH=$DOCS_ROOT/04-design-minioonirunv2.md
 cat <<EOF>$DOC_PATH
