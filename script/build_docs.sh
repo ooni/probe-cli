@@ -26,7 +26,7 @@ EOF
 strip_title Readme.md >> $DOCS_ROOT/00-index.md
 mkdir -p $DOCS_ROOT/img
 cp docs/logo.png $DOCS_ROOT/img/
-sed -i 's+docs/logo.png+../../../assets/images-probe-engine/logo.png+' $DOC_PATH
+sed -i 's+docs/logo.png+../../../assets/images-probe-engine/logo.png+' $DOCS_ROOT/00-index.md
 
 # design docs
 BASE_PATH=docs/design
