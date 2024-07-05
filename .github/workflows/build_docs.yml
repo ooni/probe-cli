@@ -46,5 +46,5 @@ jobs:
           git config --global user.email "github+backend@ooni.org"
           git config --global user.name "OONI Github Actions Bot"
           git add .
-          git commit -m "auto: update backend docs to ${{ steps.rev_parse.outputs.COMMIT_HASH }}" || echo "No changes to commit"
+          git commit -m "auto: update probe-engine docs to ${{ steps.rev_parse.outputs.COMMIT_HASH }}" || echo "No changes to commit"
           git push origin
