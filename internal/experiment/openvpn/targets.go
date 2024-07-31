@@ -15,15 +15,15 @@ const defaultOpenVPNEndpoint = "openvpn-server1.ooni.io"
 // and perhaps also transform DNS failure into a specific failure of the experiment, not
 // a skip.
 // TODO(ain): update the openvpn spec to reflect the CURRENT state of delivering the targets.
-func resolveTarget() (string, error) {
-	ips, err := net.LookupIP(defaultOpenVPNEndpoint)
+func resolveTarget(domain string) (string, error) {
+	ips, err := net.LookupIP(domain)
 	if err != nil {
 		return "", err
 	}
-	if len(ips) == 0 {
-		return "", fmt.Errorf("cannot resolve %v", defaultOpenVPNEndpoint)
+	if len(ips) > 0 {
+		return ips[0].String(), nil
 	}
-	return ips[0].String(), nil
+	return "", fmt.Errorf("cannot resolve %v", defaultOpenVPNEndpoint)
 }
 
 func defaultOONITargetURL(ip string) string {
@@ -31,7 +31,7 @@ func defaultOONITargetURL(ip string) string {
 }
 
 func defaultOONIOpenVPNTargetUDP() (string, error) {
-	ip, err := resolveTarget()
+	ip, err := resolveTarget(defaultOpenVPNEndpoint)
 	if err != nil {
 		return "", err
 	}
@@ -39,7 +39,7 @@ func defaultOONIOpenVPNTargetUDP() (string, error) {
 }
 
 func defaultOONIOpenVPNTargetTCP() (string, error) {
-	ip, err := resolveTarget()
+	ip, err := resolveTarget(defaultOpenVPNEndpoint)
 	if err != nil {
 		return "", err
 	}
