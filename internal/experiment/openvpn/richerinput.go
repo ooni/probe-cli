@@ -93,7 +93,7 @@ func (tl *targetLoader) Load(ctx context.Context) ([]model.ExperimentTarget, err
 		}
 	}
 
-	tl.session.Logger().Warn("Error fetching OpenVPN targets from backend")
+	tl.loader.Logger.Warnf("Error fetching OpenVPN targets from backend")
 
 	// Otherwise, attempt to load the static inputs from CLI and files
 	inputs, err := targetloading.LoadStatic(tl.loader)
@@ -120,7 +120,7 @@ func (tl *targetLoader) Load(ctx context.Context) ([]model.ExperimentTarget, err
 }
 
 func (tl *targetLoader) loadFromDefaultEndpoints() ([]model.ExperimentTarget, error) {
-	tl.session.Logger().Info("Using default OpenVPN endpoints")
+	tl.loader.Logger.Warnf("Using default OpenVPN endpoints")
 	targets := []model.ExperimentTarget{}
 	if udp, err := defaultOONIOpenVPNTargetUDP(); err == nil {
 		targets = append(targets,
