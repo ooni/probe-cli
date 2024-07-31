@@ -7,6 +7,11 @@ import (
 )
 
 func Test_resolveTarget(t *testing.T) {
+	// TODO: mustHaveExternalNetwork() equivalent.
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
 	_, err := resolveTarget("google.com")
 	if err != nil {
 		t.Fatal("should be able to resolve the target")
