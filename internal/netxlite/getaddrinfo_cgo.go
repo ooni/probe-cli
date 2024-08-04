@@ -9,6 +9,9 @@ package netxlite
 
 #ifndef _WIN32
 #include <netdb.h> // for getaddrinfo
+#ifdef __FreeBSD__
+#include <sys/socket.h> // for C.SOCK_STREAM and C.AF_*
+#endif
 #else
 #include <ws2tcpip.h> // for getaddrinfo
 #endif
