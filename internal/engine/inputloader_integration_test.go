@@ -42,6 +42,8 @@ func TestTargetLoaderInputOrQueryBackendWithNoInput(t *testing.T) {
 	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
+	// TODO(decfox): it seems `backend-hel.ooni.org` returns a different response
+	// than intended which is why the test fails.
 	if err != nil {
 		t.Fatal(err)
 	}
