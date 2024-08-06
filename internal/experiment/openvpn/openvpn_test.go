@@ -10,6 +10,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	vpntracex "github.com/ooni/minivpn/pkg/tracex"
 	"github.com/ooni/probe-cli/v3/internal/experiment/openvpn"
+	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/targetloading"
@@ -40,7 +41,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	if m.ExperimentName() != "openvpn" {
 		t.Fatal("invalid ExperimentName")
 	}
-	if m.ExperimentVersion() != "0.1.3" {
+	if m.ExperimentVersion() != "0.1.4" {
 		t.Fatal("invalid ExperimentVersion")
 	}
 }
@@ -79,7 +80,7 @@ func TestAddConnectionTestKeys(t *testing.T) {
 				TransactionID: 1,
 			},
 			OpenVPNHandshake: &model.ArchivalOpenVPNHandshakeResult{
-				BootstrapTime:  1,
+				HandshakeTime:  1,
 				Endpoint:       "aa",
 				Failure:        nil,
 				IP:             "1.1.1.1",
@@ -111,7 +112,7 @@ func TestAddConnectionTestKeys(t *testing.T) {
 		sc := &openvpn.SingleConnection{
 			TCPConnect: nil,
 			OpenVPNHandshake: &model.ArchivalOpenVPNHandshakeResult{
-				BootstrapTime:  1,
+				HandshakeTime:  1,
 				Endpoint:       "aa",
 				Failure:        nil,
 				IP:             "1.1.1.1",
@@ -212,43 +213,6 @@ func TestBadTargetURLFailure(t *testing.T) {
 	}
 }
 
-func TestVPNInput(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	// TODO(ainghazal): do a real test, get credentials etc.
-}
-
-func TestMeasurer_FetchProviderCredentials(t *testing.T) {
-	t.Run("Measurer.FetchProviderCredentials calls method in session", func(t *testing.T) {
-		m := openvpn.NewExperimentMeasurer().(*openvpn.Measurer)
-
-		sess := makeMockSession()
-		_, err := m.FetchProviderCredentials(
-			context.Background(),
-			sess, "riseup")
-		if err != nil {
-			t.Fatal("expected no error")
-		}
-	})
-	t.Run("Measurer.FetchProviderCredentials raises error if API calls fail", func(t *testing.T) {
-		someError := errors.New("unexpected")
-
-		m := openvpn.NewExperimentMeasurer().(*openvpn.Measurer)
-
-		sess := makeMockSession()
-		sess.MockFetchOpenVPNConfig = func(context.Context, string, string) (*model.OOAPIVPNProviderConfig, error) {
-			return nil, someError
-		}
-		_, err := m.FetchProviderCredentials(
-			context.Background(),
-			sess, "riseup")
-		if !errors.Is(err, someError) {
-			t.Fatalf("expected error %v, got %v", someError, err)
-		}
-	})
-}
-
 func TestSuccess(t *testing.T) {
 	m := openvpn.NewExperimentMeasurer()
 	ctx := context.Background()
@@ -312,4 +276,109 @@ func TestTimestampsFromHandshake(t *testing.T) {
 			t.Fatal("expected duration == 0")
 		}
 	})
+}
+
+func TestBootstrapTimeWithNoFailure(t *testing.T) {
+	bootstrapTime := 1.2305
+	tk := openvpn.NewTestKeys()
+	sc := &openvpn.SingleConnection{
+		BootstrapTime: bootstrapTime,
+		TCPConnect: &model.ArchivalTCPConnectResult{
+			IP:   "1.1.1.1",
+			Port: 1194,
+			Status: model.ArchivalTCPConnectStatus{
+				Blocked: new(bool),
+				Failure: new(string),
+				Success: false,
+			},
+			T0:            0.1,
+			T:             0.9,
+			Tags:          []string{},
+			TransactionID: 1,
+		},
+		OpenVPNHandshake: &model.ArchivalOpenVPNHandshakeResult{
+			HandshakeTime:  1.20,
+			Endpoint:       "aa",
+			Failure:        nil,
+			IP:             "1.1.1.1",
+			Port:           1194,
+			Transport:      "tcp",
+			Provider:       "unknown",
+			OpenVPNOptions: model.ArchivalOpenVPNOptions{},
+			T0:             0.03,
+			T:              1.23,
+			Tags:           []string{},
+			TransactionID:  1,
+		},
+		NetworkEvents: []*vpntracex.Event{},
+	}
+	tk.AddConnectionTestKeys(sc)
+
+	if tk.Failure != nil {
+		t.Fatal("expected nil failure")
+	}
+	if tk.BootstrapTime != bootstrapTime {
+		t.Fatal("wrong bootstrap time")
+	}
+	if tk.Tunnel != "openvpn" {
+		t.Fatal("tunnel should be openvpn")
+	}
+}
+
+func TestBootstrapTimeWithFailure(t *testing.T) {
+	bootstrapTime := 6.1
+
+	handshakeError := errors.New("mocked error")
+	handshakeFailure := measurexlite.NewFailure(handshakeError)
+
+	tk := openvpn.NewTestKeys()
+	sc := &openvpn.SingleConnection{
+		BootstrapTime: bootstrapTime,
+		TCPConnect: &model.ArchivalTCPConnectResult{
+			IP:   "1.1.1.1",
+			Port: 1194,
+			Status: model.ArchivalTCPConnectStatus{
+				Blocked: new(bool),
+				Failure: new(string),
+				Success: false,
+			},
+			T0:            0.1,
+			T:             0.9,
+			Tags:          []string{},
+			TransactionID: 1,
+		},
+		OpenVPNHandshake: &model.ArchivalOpenVPNHandshakeResult{
+			HandshakeTime:  1.20,
+			Endpoint:       "aa",
+			Failure:        handshakeFailure,
+			IP:             "1.1.1.1",
+			Port:           1194,
+			Transport:      "tcp",
+			Provider:       "unknown",
+			OpenVPNOptions: model.ArchivalOpenVPNOptions{},
+			T0:             0.03,
+			T:              1.23,
+			Tags:           []string{},
+			TransactionID:  1,
+		},
+		NetworkEvents: []*vpntracex.Event{},
+	}
+	tk.AddConnectionTestKeys(sc)
+
+	if tk.Failure != handshakeFailure {
+		t.Fatalf("expected handshake failure, got %v", tk.Failure)
+	}
+	if tk.BootstrapTime != 0 {
+		t.Fatalf("wrong bootstrap time: expected 0, got %v", tk.BootstrapTime)
+	}
+	if tk.Tunnel != "openvpn" {
+		t.Fatal("tunnel should be openvpn")
+	}
+}
+
+func TestVPNInput(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+	// TODO(ainghazal): do a real test, get credentials etc.
 }

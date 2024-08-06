@@ -57,7 +57,7 @@ var All = map[string]Group{
 			DNSCheck{},
 			ECHCheck{},
 			STUNReachability{},
-			RiseupVPN{},
+			OpenVPN{},
 			TorSf{},
 			VanillaTor{},
 		},

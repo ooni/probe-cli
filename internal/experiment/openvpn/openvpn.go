@@ -17,7 +17,7 @@ import (
 
 const (
 	testName        = "openvpn"
-	testVersion     = "0.1.3"
+	testVersion     = "0.1.4"
 	openVPNProtocol = "openvpn"
 )
 
@@ -48,6 +48,9 @@ type TestKeys struct {
 	NetworkEvents    []*vpntracex.Event                      `json:"network_events"`
 	TCPConnect       []*model.ArchivalTCPConnectResult       `json:"tcp_connect,omitempty"`
 	OpenVPNHandshake []*model.ArchivalOpenVPNHandshakeResult `json:"openvpn_handshake"`
+	BootstrapTime    float64                                 `json:"bootstrap_time"`
+	Tunnel           string                                  `json:"tunnel"`
+	Failure          *string                                 `json:"failure"`
 }
 
 // NewTestKeys creates new openvpn TestKeys.
@@ -57,17 +60,20 @@ func NewTestKeys() *TestKeys {
 		NetworkEvents:    []*vpntracex.Event{},
 		TCPConnect:       []*model.ArchivalTCPConnectResult{},
 		OpenVPNHandshake: []*model.ArchivalOpenVPNHandshakeResult{},
+		BootstrapTime:    0,
+		Tunnel:           "openvpn",
+		Failure:          nil,
 	}
 }
 
 // SingleConnection contains the results of a single handshake.
 type SingleConnection struct {
+	BootstrapTime    float64
 	TCPConnect       *model.ArchivalTCPConnectResult       `json:"tcp_connect,omitempty"`
 	OpenVPNHandshake *model.ArchivalOpenVPNHandshakeResult `json:"openvpn_handshake"`
 	NetworkEvents    []*vpntracex.Event                    `json:"network_events"`
-	// TODO(ainghazal): make sure to document in the spec that these network events only cover the handshake.
 	// TODO(ainghazal): in the future, we will want to store more operations under this struct for a single connection,
-	// like pingResults or urlgetter calls.
+	// like pingResults or urlgetter calls. Be sure to modify the spec when that happens.
 }
 
 // AddConnectionTestKeys adds the result of a single OpenVPN connection attempt to the
@@ -79,6 +85,14 @@ func (tk *TestKeys) AddConnectionTestKeys(result *SingleConnection) {
 	}
 	tk.OpenVPNHandshake = append(tk.OpenVPNHandshake, result.OpenVPNHandshake)
 	tk.NetworkEvents = append(tk.NetworkEvents, result.NetworkEvents...)
+
+	// we assume one measurement has exactly one effective connection
+	tk.BootstrapTime = result.BootstrapTime
+
+	if result.OpenVPNHandshake.Failure != nil {
+		tk.Failure = result.OpenVPNHandshake.Failure
+		tk.BootstrapTime = 0
+	}
 }
 
 // AllConnectionsSuccessful returns true if all the registered handshakes have nil failures.
@@ -147,12 +161,19 @@ func (m *Measurer) connectAndHandshake(
 	handshakeEvents := handshakeTracer.Trace()
 	port, _ := strconv.Atoi(endpoint.Port)
 
-	t0, t, bootstrapTime := TimestampsFromHandshake(handshakeEvents)
+	t0, t, handshakeTime := TimestampsFromHandshake(handshakeEvents)
+
+	// the bootstrap time is defined to be zero if there's a handshake failure.
+	var bootstrapTime float64
+	if err == nil {
+		bootstrapTime = time.Since(zeroTime).Seconds()
+	}
 
 	return &SingleConnection{
-		TCPConnect: trace.FirstTCPConnectOrNil(),
+		BootstrapTime: bootstrapTime,
+		TCPConnect:    trace.FirstTCPConnectOrNil(),
 		OpenVPNHandshake: &model.ArchivalOpenVPNHandshakeResult{
-			BootstrapTime: bootstrapTime,
+			HandshakeTime: handshakeTime,
 			Endpoint:      endpoint.String(),
 			Failure:       measurexlite.NewFailure(err),
 			IP:            endpoint.IPAddr,
@@ -187,20 +208,6 @@ func TimestampsFromHandshake(events []*vpntracex.Event) (float64, float64, float
 		duration = t - t0
 	}
 	return t0, t, duration
-}
-
-// FetchProviderCredentials will extract credentials from the configuration we gathered for a given provider.
-func (m *Measurer) FetchProviderCredentials(
-	ctx context.Context,
-	sess model.ExperimentSession,
-	provider string) (*model.OOAPIVPNProviderConfig, error) {
-	// TODO(ainghazal): pass real country code, can be useful to orchestrate campaigns specific to areas.
-	// Since we have contacted the API previously, this call should use the cached info contained in the session.
-	config, err := sess.FetchOpenVPNConfig(ctx, provider, "XX")
-	if err != nil {
-		return nil, err
-	}
-	return config, nil
 }
 
 // Run implements model.ExperimentMeasurer.Run.
