@@ -23,7 +23,7 @@ func TestTargetLoaderInputOrQueryBackendWithNoInput(t *testing.T) {
 	}
 	sess, err := engine.NewSession(context.Background(), engine.SessionConfig{
 		AvailableProbeServices: []model.OOAPIService{{
-			Address: "https://ams-pg-test.ooni.org/",
+			Address: "https://backend-hel.ooni.org/",
 			Type:    "https",
 		}},
 		KVStore:         &kvstore.Memory{},
@@ -42,6 +42,8 @@ func TestTargetLoaderInputOrQueryBackendWithNoInput(t *testing.T) {
 	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
+	// TODO(decfox): it seems `backend-hel.ooni.org` returns a different response
+	// than intended which is why the test fails.
 	if err != nil {
 		t.Fatal(err)
 	}
