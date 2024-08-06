@@ -42,7 +42,7 @@ func TestCheckIn(t *testing.T) {
 		}
 
 		client := newclient()
-		client.BaseURL = "https://ams-pg-test.ooni.org" // use the test infra
+		client.BaseURL = "https://backend-hel.ooni.org" // use the test infra
 
 		ctx := context.Background()
 

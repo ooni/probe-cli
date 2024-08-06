@@ -23,7 +23,7 @@ func TestTargetLoaderInputOrQueryBackendWithNoInput(t *testing.T) {
 	}
 	sess, err := engine.NewSession(context.Background(), engine.SessionConfig{
 		AvailableProbeServices: []model.OOAPIService{{
-			Address: "https://ams-pg-test.ooni.org/",
+			Address: "https://backend-hel.ooni.org/",
 			Type:    "https",
 		}},
 		KVStore:         &kvstore.Memory{},

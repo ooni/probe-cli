@@ -23,7 +23,7 @@ func newclient() *Client {
 			MockableLogger:     log.Log,
 		},
 		model.OOAPIService{
-			Address: "https://ams-pg-test.ooni.org/",
+			Address: "https://backend-hel.ooni.org/",
 			Type:    "https",
 		},
 	)
