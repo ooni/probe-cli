@@ -4,7 +4,7 @@
 |--------------|------------------------------------------------|
 | Author       | [@bassosimone](https://github.com/bassosimone) |
 | Last-Updated | 2024-07-02                                     |
-| Reviewed-by  | [@DecFox](https://github.com/DecFox            |
+| Reviewed-by  | [@DecFox](https://github.com/DecFox)           |
 | Status       | living document                                |
 
 This document is a living document documenting our in-progress design
