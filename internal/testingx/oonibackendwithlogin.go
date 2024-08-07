@@ -234,7 +234,7 @@ func (h *OONIBackendWithLoginFlow) handleOpenVPNConfig() http.Handler {
 
 		// we must lock because of SetOpenVPNConfig
 		h.mu.Lock()
-		w.Write(h.openVPNConfig)
+		_, _ = w.Write(h.openVPNConfig)
 		h.mu.Unlock()
 	})
 }
