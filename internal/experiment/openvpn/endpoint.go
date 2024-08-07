@@ -148,11 +148,11 @@ func (e *endpoint) AsInputURI() string {
 	return url.String()
 }
 
-// APIEnabledProviders is the list of providers that the stable API Endpoint knows about.
-// This array will be a subset of the keys in defaultOptionsByProvider, but it might make sense
-// to still register info about more providers that the API officially knows about.
+// APIEnabledProviders is the list of providers that the stable API Endpoint and/or this
+// experiment knows about.
 var APIEnabledProviders = []string{
 	"riseupvpn",
+	"oonivpn",
 }
 
 // isValidProvider returns true if the provider is found as key in the array of [APIEnabledProviders].
@@ -178,9 +178,10 @@ func newOpenVPNConfig(
 		vpnconfig.WithOpenVPNOptions(
 			&vpnconfig.OpenVPNOptions{
 				// endpoint-specific options.
-				Remote: endpoint.IPAddr,
-				Port:   endpoint.Port,
-				Proto:  vpnconfig.Proto(endpoint.Transport),
+				Remote:   endpoint.IPAddr,
+				Port:     endpoint.Port,
+				Proto:    vpnconfig.Proto(endpoint.Transport),
+				Compress: vpnconfig.Compression(config.Compress),
 
 				// options and credentials come from the experiment
 				// richer input targets.

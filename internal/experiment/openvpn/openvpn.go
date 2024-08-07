@@ -17,7 +17,7 @@ import (
 
 const (
 	testName        = "openvpn"
-	testVersion     = "0.1.4"
+	testVersion     = "0.1.5"
 	openVPNProtocol = "openvpn"
 )
 

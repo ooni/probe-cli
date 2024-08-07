@@ -87,13 +87,18 @@ func (tl *targetLoader) Load(ctx context.Context) ([]model.ExperimentTarget, err
 	// If inputs and files are all empty and there are no options, let's use the backend
 	if len(tl.loader.StaticInputs) <= 0 && len(tl.loader.SourceFiles) <= 0 &&
 		reflectx.StructOrStructPtrIsZero(tl.options) {
-		return tl.loadFromBackend(ctx)
+		targets, err := tl.loadFromBackend(ctx)
+		if err == nil {
+			return targets, nil
+		}
 	}
+
+	tl.loader.Logger.Warnf("Error fetching OpenVPN targets from backend")
 
 	// Otherwise, attempt to load the static inputs from CLI and files
 	inputs, err := targetloading.LoadStatic(tl.loader)
 
-	// Handle the case where we couldn't load from CLI or files
+	// Handle the case where we couldn't load from CLI or files:
 	if err != nil {
 		return nil, err
 	}
@@ -106,11 +111,34 @@ func (tl *targetLoader) Load(ctx context.Context) ([]model.ExperimentTarget, err
 			URL:    input,
 		})
 	}
+	if len(targets) > 0 {
+		return targets, nil
+	}
+
+	// Return the hardcoded endpoints.
+	return tl.loadFromDefaultEndpoints()
+}
+
+func (tl *targetLoader) loadFromDefaultEndpoints() ([]model.ExperimentTarget, error) {
+	tl.loader.Logger.Warnf("Using default OpenVPN endpoints")
+	targets := []model.ExperimentTarget{}
+	if udp, err := defaultOONIOpenVPNTargetUDP(); err == nil {
+		targets = append(targets,
+			&Target{
+				Config: pickFromDefaultOONIOpenVPNConfig(),
+				URL:    udp,
+			})
+	}
+	if tcp, err := defaultOONIOpenVPNTargetTCP(); err == nil {
+		targets = append(targets,
+			&Target{
+				Config: pickFromDefaultOONIOpenVPNConfig(),
+				URL:    tcp,
+			})
+	}
 	return targets, nil
 }
 
-// TODO(https://github.com/ooni/probe/issues/2755): make the code that fetches experiment private
-// and let the common code export just the bare minimum to make this possible.
 func (tl *targetLoader) loadFromBackend(ctx context.Context) ([]model.ExperimentTarget, error) {
 	if tl.options.Provider == "" {
 		tl.options.Provider = defaultProvider
