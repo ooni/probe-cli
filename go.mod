@@ -7,7 +7,7 @@ toolchain go1.21.10
 require (
 	filippo.io/age v1.1.1
 	github.com/AlecAivazis/survey/v2 v2.3.7
-	github.com/Psiphon-Labs/psiphon-tunnel-core v1.0.11-0.20240424194431-3612a5a6fb4c
+	github.com/Psiphon-Labs/psiphon-tunnel-core v1.0.11-0.20240705153833-eea9ace08cd1
 	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/apex/log v1.9.0
 	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5
@@ -62,6 +62,7 @@ require (
 	github.com/gaukas/godicttls v0.0.4 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
+	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/pprof v0.0.0-20240509144519-723abb6459b7 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -111,8 +112,6 @@ require (
 	github.com/golang/glog v1.2.1 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/grafov/m3u8 v0.12.0 // indirect
-	github.com/hashicorp/golang-lru v1.0.2 // indirect
-	github.com/juju/ratelimit v1.0.2 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.6 // indirect
 	github.com/klauspost/reedsolomon v1.11.8 // indirect
