@@ -30,10 +30,10 @@ func cdepsOpenSSLBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencie
 	cdepsMustFetch("https://www.openssl.org/source/openssl-3.3.1.tar.gz")
 	deps.VerifySHA256( // must be mockable
 		"777cd596284c883375a2a7a11bf5d2786fc5413255efab20c50d6ffe6d020b7e",
-		"openssl-3.3.0.tar.gz",
+		"openssl-3.3.1.tar.gz",
 	)
-	must.Run(log.Log, "tar", "-xf", "openssl-3.3.0.tar.gz")
-	_ = deps.MustChdir("openssl-3.3.0") // must be mockable
+	must.Run(log.Log, "tar", "-xf", "openssl-3.3.1.tar.gz")
+	_ = deps.MustChdir("openssl-3.3.1") // must be mockable
 
 	mydir := filepath.Join(topdir, "CDEPS", "openssl")
 	for _, patch := range cdepsMustListPatches(mydir) {

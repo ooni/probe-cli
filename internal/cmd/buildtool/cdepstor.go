@@ -30,10 +30,10 @@ func cdepsTorBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencies) {
 	cdepsMustFetch("https://www.torproject.org/dist/tor-0.4.8.12.tar.gz")
 	deps.VerifySHA256( // must be mockable
 		"ca7cc735d98e3747b58f2f3cc14f804dd789fa0fb333a84dcb6bd70adbb8c874",
-		"tor-0.4.8.11.tar.gz",
+		"tor-0.4.8.12.tar.gz",
 	)
-	must.Run(log.Log, "tar", "-xf", "tor-0.4.8.11.tar.gz")
-	_ = deps.MustChdir("tor-0.4.8.11") // must be mockable
+	must.Run(log.Log, "tar", "-xf", "tor-0.4.8.12.tar.gz")
+	_ = deps.MustChdir("tor-0.4.8.12") // must be mockable
 
 	mydir := filepath.Join(topdir, "CDEPS", "tor")
 	for _, patch := range cdepsMustListPatches(mydir) {
