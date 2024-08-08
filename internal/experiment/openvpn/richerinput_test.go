@@ -132,22 +132,6 @@ func TestTargetLoaderLoad(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "with just options",
-			options: &Config{
-				Provider: "riseupvpn",
-			},
-			loader: &targetloading.Loader{
-				ExperimentName: "openvpn",
-				InputPolicy:    model.InputOrQueryBackend,
-				Logger:         model.DiscardLogger,
-				Session:        &mocks.Session{},
-				StaticInputs:   []string{},
-				SourceFiles:    []string{},
-			},
-			expectErr:     nil,
-			expectTargets: nil,
-		},
 	}
 
 	for _, tc := range cases {
