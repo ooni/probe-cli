@@ -22,6 +22,7 @@ func init() {
 			config:           &dnscheck.Config{},
 			enabledByDefault: true,
 			inputPolicy:      model.InputOrStaticDefault,
+			newLoader:        dnscheck.NewLoader,
 		}
 	}
 }
