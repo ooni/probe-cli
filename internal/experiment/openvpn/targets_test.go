@@ -1,6 +1,7 @@
 package openvpn
 
 import (
+	"net/url"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -35,8 +36,8 @@ func Test_resolveTarget(t *testing.T) {
 	}
 }
 
-func Test_defaultOONIOpenVPNTargetUDP(t *testing.T) {
-	url, err := defaultOONIOpenVPNTargetUDP()
+func Test_pickOpenVPNTargets(t *testing.T) {
+	urls, err := pickOONIOpenVPNTargets("udp", "IT", 1, false)
 	if err != nil {
 		if err.Error() == "connection_refused" {
 			// connection_refused is raised when running this test
@@ -46,25 +47,14 @@ func Test_defaultOONIOpenVPNTargetUDP(t *testing.T) {
 		}
 		t.Fatal("unexpected error")
 	}
-	expected := "openvpn://oonivpn.corp/?address=37.218.243.98:1194&transport=udp"
-	if diff := cmp.Diff(url, expected); diff != "" {
-		t.Fatal(diff)
-	}
-}
+	expected := "openvpn://oonivpn.corp?address=37.218.243.98:1194&transport=udp"
 
-func Test_defaultOONIOpenVPNTargetTCP(t *testing.T) {
-	url, err := defaultOONIOpenVPNTargetTCP()
+	got, err := url.QueryUnescape(urls[0])
 	if err != nil {
-		if err.Error() == "connection_refused" {
-			// connection_refused is raised when running this test
-			// on the restricted network for coverage tests.
-			// so we bail out
-			return
-		}
-		t.Fatal("unexpected error")
+		t.Fatal(err)
 	}
-	expected := "openvpn://oonivpn.corp/?address=37.218.243.98:1194&transport=tcp"
-	if diff := cmp.Diff(url, expected); diff != "" {
+
+	if diff := cmp.Diff(got, expected); diff != "" {
 		t.Fatal(diff)
 	}
 }
