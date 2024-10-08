@@ -41,7 +41,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	if m.ExperimentName() != "openvpn" {
 		t.Fatal("invalid ExperimentName")
 	}
-	if m.ExperimentVersion() != "0.1.5" {
+	if m.ExperimentVersion() != "0.1.6" {
 		t.Fatal("invalid ExperimentVersion")
 	}
 }
