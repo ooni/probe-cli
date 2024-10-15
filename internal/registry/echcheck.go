@@ -18,9 +18,10 @@ func init() {
 					*config.(*echcheck.Config),
 				)
 			},
-			canonicalName: canonicalName,
-			config:        &echcheck.Config{},
-			inputPolicy:   model.InputOptional,
+			canonicalName:    canonicalName,
+			config:           &echcheck.Config{},
+			enabledByDefault: true,
+			inputPolicy:      model.InputOptional,
 		}
 	}
 }
