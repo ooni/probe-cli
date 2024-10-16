@@ -3,16 +3,26 @@ package openvpn
 import (
 	"context"
 	"fmt"
+	"slices"
+	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/experimentconfig"
+	"github.com/ooni/probe-cli/v3/internal/legacy/netx"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/reflectx"
 	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
-// defaultProvider is the provider we will request from API in case we got no provider set
-// in the CLI options.
-var defaultProvider = "riseupvpn"
+// defaultOONIHostnames is the array of hostnames that will return valid
+// endpoints to be probed. Do note that this is a workaround for the lack
+// of a backend service.
+var defaultOONIEndpoints = []string{
+	"a.composer-presenter.com",
+	"a.goodyear2dumpster.com",
+}
+
+// maxDefaultOONIAddresses is how many IPs to use from the
+// set of resolved IPs.
+var maxDefaultOONIAddresses = 3
 
 // providerAuthentication is a map so that we know which kind of credentials we
 // need to fill in the openvpn options for each known provider.
@@ -91,16 +101,6 @@ func (tl *targetLoader) Load(ctx context.Context) ([]model.ExperimentTarget, err
 		tl.loader.Logger.Warnf("Error loading OpenVPN targets from cli")
 	}
 
-	// If inputs and files are all empty and there are no options, let's use the backend
-	if len(tl.loader.StaticInputs) <= 0 && len(tl.loader.SourceFiles) <= 0 &&
-		reflectx.StructOrStructPtrIsZero(tl.options) {
-		targets, err := tl.loadFromBackend(ctx)
-		if err == nil {
-			return targets, nil
-		}
-		tl.loader.Logger.Warnf("Error fetching OpenVPN targets from backend")
-	}
-
 	// Build the list of targets that we should measure.
 	var targets []model.ExperimentTarget
 	for _, input := range inputs {
@@ -117,93 +117,50 @@ func (tl *targetLoader) Load(ctx context.Context) ([]model.ExperimentTarget, err
 	return tl.loadFromDefaultEndpoints()
 }
 
-func makeTargetListPerProtocol(cc string, num int) []model.ExperimentTarget {
-	targets := []model.ExperimentTarget{}
-	var reverse bool
-	switch num {
-	case 1, 2:
-		// for single or few picks, we start the list in the natural order
-		reverse = false
-	default:
-		// for multiple picks, we start the list from the bottom, so that we can lookup
-		// custom country campaigns first.
-		reverse = true
-	}
-	if inputsUDP, err := pickOONIOpenVPNTargets("udp", cc, num, reverse); err == nil {
-		for _, t := range inputsUDP {
-			targets = append(targets,
-				&Target{
-					Config: pickFromDefaultOONIOpenVPNConfig(),
-					URL:    t,
-				})
-		}
-	}
-	if inputsTCP, err := pickOONIOpenVPNTargets("tcp", cc, num, reverse); err == nil {
-		for _, t := range inputsTCP {
-			targets = append(targets,
-				&Target{
-					Config: pickFromDefaultOONIOpenVPNConfig(),
-					URL:    t,
-				})
-		}
-	}
-	return targets
+// TODO: move to targets.
+func lookupHost(ctx context.Context, hostname string, r model.Resolver) ([]string, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	return r.LookupHost(ctx, hostname)
 }
 
 func (tl *targetLoader) loadFromDefaultEndpoints() ([]model.ExperimentTarget, error) {
-	cc := tl.session.ProbeCC()
+	resolver := netx.NewResolver(netx.Config{
+		BogonIsError: false,
+		Logger:       tl.session.Logger(),
+		Saver:        nil,
+	})
 
-	tl.loader.Logger.Warnf("Using default OpenVPN endpoints")
-	tl.loader.Logger.Warnf("Picking endpoints for %s", cc)
+	addrs := []string{}
 
-	var targets []model.ExperimentTarget
-	switch cc {
-	case "RU", "CN", "IR", "EG", "NL":
-		// we want to cover all of our bases for a few interest countries
-		targets = makeTargetListPerProtocol(cc, 20)
-	default:
-		targets = makeTargetListPerProtocol(cc, 1)
-	}
-	return targets, nil
-}
-
-func (tl *targetLoader) loadFromBackend(ctx context.Context) ([]model.ExperimentTarget, error) {
-	if tl.options.Provider == "" {
-		tl.options.Provider = defaultProvider
-	}
-
-	targets := make([]model.ExperimentTarget, 0)
-	provider := tl.options.Provider
-
-	apiConfig, err := tl.session.FetchOpenVPNConfig(ctx, provider, tl.session.ProbeCC())
-	if err != nil {
-		tl.session.Logger().Warnf("Cannot fetch openvpn config: %v", err)
-		return nil, err
-	}
-
-	auth, ok := providerAuthentication[provider]
-	if !ok {
-		return nil, fmt.Errorf("%w: unknown authentication for provider %s", targetloading.ErrInvalidInput, provider)
-	}
-
-	for _, input := range apiConfig.Inputs {
-		config := &Config{
-			Auth:   "SHA512",
-			Cipher: "AES-256-GCM",
+	// get the set of all IPs for all the hostnames we have.
+	for _, hostname := range defaultOONIEndpoints {
+		resolved, err := lookupHost(context.Background(), hostname, resolver)
+		if err != nil {
+			tl.loader.Logger.Warnf("Cannot resolve %s", hostname)
+			continue
 		}
-		switch auth {
-		case AuthCertificate:
-			config.SafeCA = apiConfig.Config.CA
-			config.SafeCert = apiConfig.Config.Cert
-			config.SafeKey = apiConfig.Config.Key
-		case AuthUserPass:
-			// TODO(ainghazal): implement (surfshark, etc)
+		for _, ipaddr := range resolved {
+			if !slices.Contains(addrs, ipaddr) {
+				addrs = append(addrs, ipaddr)
+			}
 		}
-		targets = append(targets, &Target{
-			URL:    input,
-			Config: config,
-		})
 	}
 
+	fmt.Println(">>> ADDRS", addrs)
+
+	// TODO: filter bogons (here), return err if nil
+
+	tl.loader.Logger.Warnf("Picking from default OpenVPN endpoints")
+	targets := []model.ExperimentTarget{}
+	if inputs, err := pickOONIOpenVPNTargets(addrs); err == nil {
+		for _, url := range inputs {
+			targets = append(targets,
+				&Target{
+					Config: pickFromDefaultOONIOpenVPNConfig(),
+					URL:    url,
+				})
+		}
+	}
 	return targets, nil
 }

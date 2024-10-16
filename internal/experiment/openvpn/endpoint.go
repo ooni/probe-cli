@@ -25,20 +25,12 @@ type endpoint struct {
 	// IPAddr is the IP Address for this endpoint.
 	IPAddr string
 
-	// DomainName is an optional domain name that we use internally to get the IP address.
-	// This is just a convenience field, the experiments should always be done against a canonical IPAddr.
-	DomainName string
-
 	// Obfuscation is any obfuscation method use to connect to this endpoint.
 	// Valid values are: obfs4, none.
 	Obfuscation string
 
 	// Port is the Port for this endpoint.
 	Port string
-
-	// PreferredCountries is an optional array of country codes. Probes in these countries have preference on this
-	// endpoint.
-	PreferredCountries []string
 
 	// Protocol is the tunneling protocol (openvpn, openvpn+obfs4).
 	Protocol string

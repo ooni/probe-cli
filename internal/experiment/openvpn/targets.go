@@ -3,142 +3,94 @@ package openvpn
 import (
 	"fmt"
 	"math/rand"
-	"net"
-	"slices"
 )
 
+// TODO: deprecate, move to function below
 // defaultOpenVPNEndpoints contain a list of all default endpoints
-// to be tried, in the order that we want the name resolution to happen.
+// to be tried. We will fill in the IP Addresses.
 var defaultOpenVPNEndpoints = []endpoint{
-	// default domain. this should work fine for most places.
 	{
-		IPAddr:      "",
-		DomainName:  "openvpn-server1.ooni.io",
 		Obfuscation: "none",
 		Port:        "1194",
+		Protocol:    "openvpn",
+		Provider:    "oonivpn",
+		IPAddr:      "",
+		Transport:   "",
+	},
+	{
+		IPAddr:      "",
+		Obfuscation: "none",
+		Port:        "443",
 		Protocol:    "openvpn",
 		Provider:    "oonivpn",
 		Transport:   "tcp",
 	},
 	{
 		IPAddr:      "",
-		DomainName:  "openvpn-server1.ooni.io",
-		Obfuscation: "none",
-		Port:        "1194",
-		Protocol:    "openvpn",
-		Provider:    "oonivpn",
-		Transport:   "udp",
-	},
-	// alt domain 1. still same endpoint ports, one udp and one tcp.
-	// TODO(ain): update to real domain names
-	{
-		IPAddr:      "",
-		DomainName:  "alt-domain1.example.org",
-		Obfuscation: "none",
-		Port:        "1194",
-		Protocol:    "openvpn",
-		Provider:    "oonivpn",
-		Transport:   "udp",
-	},
-	{
-		IPAddr:      "",
-		DomainName:  "alt-domain1.example.org",
-		Obfuscation: "none",
-		Port:        "1194",
-		Protocol:    "openvpn",
-		Provider:    "oonivpn",
-		Transport:   "tcp",
-	},
-	// alt domain 2. still same endpoint ports, one udp and one tcp.
-	// TODO(ain): update to real domain names
-	{
-		IPAddr:      "",
-		DomainName:  "alt-domain2.example.org",
 		Obfuscation: "none",
 		Port:        "53",
 		Protocol:    "openvpn",
 		Provider:    "oonivpn",
 		Transport:   "udp",
 	},
-	{
-		IPAddr:      "",
-		DomainName:  "alt-domain2.example.org",
-		Obfuscation: "none",
-		Port:        "443",
-		Protocol:    "openvpn",
-		Provider:    "oonivpn",
-		Transport:   "tcp",
-	},
-	// alt domain 3. this is reserved.
-	// TODO(ain): update to real domain names
-	{
-		IPAddr:      "",
-		DomainName:  "alt-domain3.example.org",
-		Obfuscation: "none",
-		Port:        "443",
-		Protocol:    "openvpn",
-		Provider:    "oonivpn",
-		Transport:   "tcp",
-		PreferredCountries: []string{
-			"AM", "AZ", "BY", "GE", "KZ", "KG", "LT", "MD", "RU", "TJ", "TM", "UA", "UZ",
-			"IR", "CN", "EG"},
-	},
-	//  TODO: add more backup domains here
-}
-
-// this is a safety toggle: it's on purpose that the experiment will receive no
-// input if the resolution fails. This also implies that we have no way of knowing if this
-// target has been blocked at the level of DNS.
-// TODO(ain,mehul): we might want to try resolving with other techniques (DoT etc),
-// and perhaps also transform DNS failure into a specific failure of the experiment, not
-// a skip.
-// TODO(ain): update the openvpn spec to reflect the CURRENT state of delivering the targets.
-// If the probe services ever gets deployed, this step will not be needed anymore.
-func resolveTarget(domain string) (string, error) {
-	ips, err := net.LookupIP(domain)
-	if err != nil {
-		return "", err
-	}
-	if len(ips) > 0 {
-		return ips[0].String(), nil
-	}
-	return "", fmt.Errorf("cannot resolve %v", domain)
 }
 
 // pickOONIOpenVPNTargets returns an array of input URIs from the list of available endpoints, up to max,
 // for the given transport. By default, we use the first endpoint that resolves to an IP. If reverseOrder
 // is specified, we reverse the list before attempting resolution.
-func pickOONIOpenVPNTargets(transport string, cc string, max int, reverseOrder bool) ([]string, error) {
-	endpoints := slices.Clone(defaultOpenVPNEndpoints)[:]
-	if reverseOrder {
-		slices.Reverse(endpoints)
-	}
-	targets := make([]string, 0)
-	for _, endpoint := range endpoints {
-		if endpoint.Transport != transport {
-			continue
-		}
-		if len(endpoint.PreferredCountries) > 0 && !slices.Contains(endpoint.PreferredCountries, cc) {
-			// not for us
-			continue
-		}
-		// Do note that this will get the wrong result if we got DNS poisoning.
-		// When analyzing this data, you should be careful about bogus IPs.
-		ip, err := resolveTarget(endpoint.DomainName)
-		if err != nil {
-			continue
-		}
-		endpoint.IPAddr = ip
+func pickOONIOpenVPNTargets(ipaddrList []string) ([]string, error) {
+	// Step 1. Create endpoint list.
+	endpoints := []endpoint{}
+	for _, ipAddr := range ipaddrList {
+		// 1. Probe the canonical 1194/udp and 1194/tcp ports
+		endpoints = append(endpoints, endpoint{
+			Obfuscation: "none",
+			Port:        "1194",
+			Protocol:    "openvpn",
+			Provider:    "oonivpn",
+			IPAddr:      ipAddr,
+			Transport:   "tcp",
+		})
+		endpoints = append(endpoints, endpoint{
+			Obfuscation: "none",
+			Port:        "1194",
+			Protocol:    "openvpn",
+			Provider:    "oonivpn",
+			IPAddr:      ipAddr,
+			Transport:   "udp",
+		})
 
-		targets = append(targets, endpoint.AsInputURI())
-		if len(targets) == max {
-			return targets, nil
-		}
+	}
+
+	// Pick one IP and sample on non-standard ports
+	// to confirm if this one goes through.
+	extra := ipaddrList[rand.Intn(len(ipaddrList))]
+	endpoints = append(endpoints, endpoint{
+		Obfuscation: "none",
+		Protocol:    "openvpn",
+		Provider:    "oonivpn",
+		IPAddr:      extra,
+		Port:        "53",
+		Transport:   "udp",
+	})
+	endpoints = append(endpoints, endpoint{
+		Obfuscation: "none",
+		Protocol:    "openvpn",
+		Provider:    "oonivpn",
+		IPAddr:      extra,
+		Port:        "443",
+		Transport:   "tcp",
+	})
+
+	// Step 2. Create targets for the selected endpoints.
+	targets := make([]string, 0)
+	for _, e := range endpoints {
+		targets = append(targets, e.AsInputURI())
 	}
 	if len(targets) > 0 {
 		return targets, nil
 	}
-	return nil, fmt.Errorf("cannot find any endpoint for %s", transport)
+	return nil, fmt.Errorf("cannot find any usable endpoint")
 }
 
 func pickFromDefaultOONIOpenVPNConfig() *Config {
