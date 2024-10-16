@@ -2,13 +2,13 @@ package openvpn
 
 import (
 	"context"
-	"fmt"
 	"slices"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/experimentconfig"
 	"github.com/ooni/probe-cli/v3/internal/legacy/netx"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
 
@@ -147,13 +147,19 @@ func (tl *targetLoader) loadFromDefaultEndpoints() ([]model.ExperimentTarget, er
 		}
 	}
 
-	fmt.Println(">>> ADDRS", addrs)
+	// Remove the bogons
 
-	// TODO: filter bogons (here), return err if nil
+	validAddrs := []string{}
+
+	for _, addr := range addrs {
+		if !netxlite.IsBogon(addr) {
+			validAddrs = append(validAddrs, addr)
+		}
+	}
 
 	tl.loader.Logger.Warnf("Picking from default OpenVPN endpoints")
 	targets := []model.ExperimentTarget{}
-	if inputs, err := pickOONIOpenVPNTargets(addrs); err == nil {
+	if inputs, err := pickOONIOpenVPNTargets(validAddrs); err == nil {
 		for _, url := range inputs {
 			targets = append(targets,
 				&Target{
