@@ -5,36 +5,6 @@ import (
 	"math/rand"
 )
 
-// TODO: deprecate, move to function below
-// defaultOpenVPNEndpoints contain a list of all default endpoints
-// to be tried. We will fill in the IP Addresses.
-var defaultOpenVPNEndpoints = []endpoint{
-	{
-		Obfuscation: "none",
-		Port:        "1194",
-		Protocol:    "openvpn",
-		Provider:    "oonivpn",
-		IPAddr:      "",
-		Transport:   "",
-	},
-	{
-		IPAddr:      "",
-		Obfuscation: "none",
-		Port:        "443",
-		Protocol:    "openvpn",
-		Provider:    "oonivpn",
-		Transport:   "tcp",
-	},
-	{
-		IPAddr:      "",
-		Obfuscation: "none",
-		Port:        "53",
-		Protocol:    "openvpn",
-		Provider:    "oonivpn",
-		Transport:   "udp",
-	},
-}
-
 // pickOONIOpenVPNTargets returns an array of input URIs from the list of available endpoints, up to max,
 // for the given transport. By default, we use the first endpoint that resolves to an IP. If reverseOrder
 // is specified, we reverse the list before attempting resolution.
