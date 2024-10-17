@@ -2,17 +2,11 @@ package openvpn
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/ooni/probe-cli/v3/internal/experimentconfig"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/reflectx"
 	"github.com/ooni/probe-cli/v3/internal/targetloading"
 )
-
-// defaultProvider is the provider we will request from API in case we got no provider set
-// in the CLI options.
-var defaultProvider = "riseupvpn"
 
 // providerAuthentication is a map so that we know which kind of credentials we
 // need to fill in the openvpn options for each known provider.
@@ -84,23 +78,11 @@ type targetLoader struct {
 
 // Load implements model.ExperimentTargetLoader.
 func (tl *targetLoader) Load(ctx context.Context) ([]model.ExperimentTarget, error) {
-	// If inputs and files are all empty and there are no options, let's use the backend
-	if len(tl.loader.StaticInputs) <= 0 && len(tl.loader.SourceFiles) <= 0 &&
-		reflectx.StructOrStructPtrIsZero(tl.options) {
-		targets, err := tl.loadFromBackend(ctx)
-		if err == nil {
-			return targets, nil
-		}
-	}
-
-	tl.loader.Logger.Warnf("Error fetching OpenVPN targets from backend")
-
-	// Otherwise, attempt to load the static inputs from CLI and files
+	// First, attempt to load the static inputs from CLI and files
 	inputs, err := targetloading.LoadStatic(tl.loader)
-
-	// Handle the case where we couldn't load from CLI or files:
+	// Handle the case where we couldn't load from CLI or files (fallthru)
 	if err != nil {
-		return nil, err
+		tl.loader.Logger.Warnf("Error loading OpenVPN targets from cli")
 	}
 
 	// Build the list of targets that we should measure.
@@ -120,64 +102,22 @@ func (tl *targetLoader) Load(ctx context.Context) ([]model.ExperimentTarget, err
 }
 
 func (tl *targetLoader) loadFromDefaultEndpoints() ([]model.ExperimentTarget, error) {
-	tl.loader.Logger.Warnf("Using default OpenVPN endpoints")
 	targets := []model.ExperimentTarget{}
-	if udp, err := defaultOONIOpenVPNTargetUDP(); err == nil {
-		targets = append(targets,
-			&Target{
-				Config: pickFromDefaultOONIOpenVPNConfig(),
-				URL:    udp,
-			})
-	}
-	if tcp, err := defaultOONIOpenVPNTargetTCP(); err == nil {
-		targets = append(targets,
-			&Target{
-				Config: pickFromDefaultOONIOpenVPNConfig(),
-				URL:    tcp,
-			})
-	}
-	return targets, nil
-}
 
-func (tl *targetLoader) loadFromBackend(ctx context.Context) ([]model.ExperimentTarget, error) {
-	if tl.options.Provider == "" {
-		tl.options.Provider = defaultProvider
-	}
-
-	targets := make([]model.ExperimentTarget, 0)
-	provider := tl.options.Provider
-
-	apiConfig, err := tl.session.FetchOpenVPNConfig(ctx, provider, tl.session.ProbeCC())
+	addrs, err := resolveOONIAddresses(tl.session.Logger())
 	if err != nil {
-		tl.session.Logger().Warnf("Cannot fetch openvpn config: %v", err)
-		return nil, err
+		return targets, err
 	}
 
-	auth, ok := providerAuthentication[provider]
-	if !ok {
-		return nil, fmt.Errorf("%w: unknown authentication for provider %s", targetloading.ErrInvalidInput, provider)
-	}
-
-	for _, input := range apiConfig.Inputs {
-		config := &Config{
-			// TODO(ainghazal): Auth and Cipher are hardcoded for now.
-			// Backend should provide them as richer input; and if empty we can use these as defaults.
-			Auth:   "SHA512",
-			Cipher: "AES-256-GCM",
+	tl.loader.Logger.Warnf("Picking from default OpenVPN endpoints")
+	if inputs, err := pickOONIOpenVPNTargets(addrs); err == nil {
+		for _, url := range inputs {
+			targets = append(targets,
+				&Target{
+					Config: pickFromDefaultOONIOpenVPNConfig(),
+					URL:    url,
+				})
 		}
-		switch auth {
-		case AuthCertificate:
-			config.SafeCA = apiConfig.Config.CA
-			config.SafeCert = apiConfig.Config.Cert
-			config.SafeKey = apiConfig.Config.Key
-		case AuthUserPass:
-			// TODO(ainghazal): implement (surfshark, etc)
-		}
-		targets = append(targets, &Target{
-			URL:    input,
-			Config: config,
-		})
 	}
-
 	return targets, nil
 }
