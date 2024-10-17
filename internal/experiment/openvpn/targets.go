@@ -13,7 +13,9 @@ import (
 
 // defaultOONIEndpoints is the array of hostnames that will return valid
 // endpoints to be probed. Do note that this is a workaround for the lack
-// of a backend service.
+// of a backend service; if you maintain this experiment in the future please
+// feel free to remove this workaround after the probe-services for distributing
+// endpoints has been deployed to production.
 var defaultOONIEndpoints = []string{
 	"a.composer-presenter.com",
 	"a.goodyear2dumpster.com",
@@ -96,20 +98,22 @@ func resolveOONIAddresses(logger model.Logger) ([]string, error) {
 	return valid, nil
 }
 
-// pickOONIOpenVPNTargets returns an array of input URIs from the list of available endpoints, up to max,
-// for the given transport. By default, we use the first endpoint that resolves to an IP. If reverseOrder
-// is specified, we reverse the list before attempting resolution.
+// pickOONIOpenVPNTargets crafts targets from the passed array of IP addresses.
 func pickOONIOpenVPNTargets(ipaddrList []string) ([]string, error) {
+
 	// Step 1. Create endpoint list.
+
 	endpoints := []endpoint{}
-	for _, ipAddr := range ipaddrList {
-		// 1. Probe the canonical 1194/udp and 1194/tcp ports
+	for _, ipaddr := range ipaddrList {
+
+		// Probe the canonical 1194/udp and 1194/tcp ports
+
 		endpoints = append(endpoints, endpoint{
 			Obfuscation: "none",
 			Port:        "1194",
 			Protocol:    "openvpn",
 			Provider:    "oonivpn",
-			IPAddr:      ipAddr,
+			IPAddr:      ipaddr,
 			Transport:   "tcp",
 		})
 		endpoints = append(endpoints, endpoint{
@@ -117,14 +121,15 @@ func pickOONIOpenVPNTargets(ipaddrList []string) ([]string, error) {
 			Port:        "1194",
 			Protocol:    "openvpn",
 			Provider:    "oonivpn",
-			IPAddr:      ipAddr,
+			IPAddr:      ipaddr,
 			Transport:   "udp",
 		})
 
 	}
 
-	// Pick one IP and sample on non-standard ports
-	// to confirm if this one goes through.
+	// Pick one IP from the list and sample on non-standard ports
+	// to check if the standard port was filtered.
+
 	extra := ipaddrList[rand.Intn(len(ipaddrList))]
 	endpoints = append(endpoints, endpoint{
 		Obfuscation: "none",
@@ -144,6 +149,7 @@ func pickOONIOpenVPNTargets(ipaddrList []string) ([]string, error) {
 	})
 
 	// Step 2. Create targets for the selected endpoints.
+
 	targets := make([]string, 0)
 	for _, e := range endpoints {
 		targets = append(targets, e.AsInputURI())
