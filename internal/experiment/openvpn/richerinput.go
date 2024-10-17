@@ -2,7 +2,6 @@ package openvpn
 
 import (
 	"context"
-	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/experimentconfig"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -100,13 +99,6 @@ func (tl *targetLoader) Load(ctx context.Context) ([]model.ExperimentTarget, err
 
 	// Return the hardcoded endpoints.
 	return tl.loadFromDefaultEndpoints()
-}
-
-// TODO: move to targets.
-func lookupHost(ctx context.Context, hostname string, r model.Resolver) ([]string, error) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	return r.LookupHost(ctx, hostname)
 }
 
 func (tl *targetLoader) loadFromDefaultEndpoints() ([]model.ExperimentTarget, error) {

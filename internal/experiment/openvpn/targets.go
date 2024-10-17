@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"slices"
+	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/legacy/netx"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -96,6 +97,12 @@ func resolveOONIAddresses(logger model.Logger) ([]string, error) {
 	}
 
 	return valid, nil
+}
+
+func lookupHost(ctx context.Context, hostname string, r model.Resolver) ([]string, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	return r.LookupHost(ctx, hostname)
 }
 
 // pickOONIOpenVPNTargets crafts targets from the passed array of IP addresses.
