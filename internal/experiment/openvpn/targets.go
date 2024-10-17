@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"math/rand"
 	"slices"
-	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/legacy/netx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// defaultOONIHostnames is the array of hostnames that will return valid
+// defaultOONIEndpoints is the array of hostnames that will return valid
 // endpoints to be probed. Do note that this is a workaround for the lack
 // of a backend service.
 var defaultOONIEndpoints = []string{
@@ -30,7 +29,6 @@ func sampleN(a []string, n int) []string {
 		n = len(a)
 	}
 
-	rand.Seed(time.Now().UnixNano())
 	sampled := make([]string, 0)
 
 	// Use a map to track indices we've already selected to avoid duplicates
