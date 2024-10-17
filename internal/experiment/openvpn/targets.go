@@ -1,9 +1,102 @@
 package openvpn
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
+	"slices"
+	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/legacy/netx"
+	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
+
+// defaultOONIHostnames is the array of hostnames that will return valid
+// endpoints to be probed. Do note that this is a workaround for the lack
+// of a backend service.
+var defaultOONIEndpoints = []string{
+	"a.composer-presenter.com",
+	"a.goodyear2dumpster.com",
+}
+
+// maxDefaultOONIAddresses is how many IPs to use from the
+// set of resolved IPs.
+var maxDefaultOONIAddresses = 3
+
+// sampleN takes max n elements sampled ramdonly from the array a.
+func sampleN(a []string, n int) []string {
+	if n > len(a) {
+		n = len(a)
+	}
+
+	rand.Seed(time.Now().UnixNano())
+	sampled := make([]string, 0)
+
+	// Use a map to track indices we've already selected to avoid duplicates
+	picked := make(map[int]struct{})
+
+	for len(sampled) < n {
+		idx := rand.Intn(len(a)) // Random index
+		if _, exists := picked[idx]; !exists {
+			sampled = append(sampled, a[idx])
+			picked[idx] = struct{}{} // Mark index as used
+		}
+	}
+
+	return sampled
+}
+
+// resolveOONIAddresses returns a max of maxDefaultOONIAddresses after
+// performing DNS resolution. The returned IP addreses exclude possible
+// bogons.
+func resolveOONIAddresses(logger model.Logger) ([]string, error) {
+	resolver := netx.NewResolver(netx.Config{
+		BogonIsError: false,
+		Logger:       logger,
+		Saver:        nil,
+	})
+
+	addrs := []string{}
+
+	var lastErr error
+
+	// get the set of all IPs for all the hostnames we have.
+	for _, hostname := range defaultOONIEndpoints {
+		resolved, err := lookupHost(context.Background(), hostname, resolver)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		for _, ipaddr := range resolved {
+			if !slices.Contains(addrs, ipaddr) {
+				addrs = append(addrs, ipaddr)
+			}
+		}
+	}
+
+	// Sample a max of maxDefaultOONIAddresses
+
+	sampled := sampleN(addrs, maxDefaultOONIAddresses)
+
+	// Remove the bogons
+
+	valid := []string{}
+
+	for _, addr := range sampled {
+		if !netxlite.IsBogon(addr) {
+			valid = append(valid, addr)
+		}
+	}
+
+	// We only return error if the filtered list is zero len.
+
+	if (len(valid) == 0) && (lastErr != nil) {
+		return valid, lastErr
+	}
+
+	return valid, nil
+}
 
 // pickOONIOpenVPNTargets returns an array of input URIs from the list of available endpoints, up to max,
 // for the given transport. By default, we use the first endpoint that resolves to an IP. If reverseOrder
