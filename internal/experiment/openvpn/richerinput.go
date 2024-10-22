@@ -77,6 +77,9 @@ type targetLoader struct {
 }
 
 // Load implements model.ExperimentTargetLoader.
+// Returning an empty ExperimentTarget slice here is equivalent to not
+// passing any input to the experiment; in this case the `openvpn` experiment
+// just does not probe any endpoint (no-op).
 func (tl *targetLoader) Load(ctx context.Context) ([]model.ExperimentTarget, error) {
 	// First, attempt to load the static inputs from CLI and files
 	inputs, err := targetloading.LoadStatic(tl.loader)
@@ -97,8 +100,17 @@ func (tl *targetLoader) Load(ctx context.Context) ([]model.ExperimentTarget, err
 		return targets, nil
 	}
 
-	// Return the hardcoded endpoints.
-	return tl.loadFromDefaultEndpoints()
+	// As a fallback (no backend, no files, no input from cli)
+	// return the hardcoded endpoints.
+	targets, err = tl.loadFromDefaultEndpoints()
+	if err != nil {
+		tl.loader.Logger.Warnf("Error loading default endpoints: %v", err)
+		return targets, nil
+	}
+	if len(targets) == 0 {
+		tl.loader.Logger.Warnf("No targets loaded from default endpoints")
+	}
+	return targets, nil
 }
 
 func (tl *targetLoader) loadFromDefaultEndpoints() ([]model.ExperimentTarget, error) {

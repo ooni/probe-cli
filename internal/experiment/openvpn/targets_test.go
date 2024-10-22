@@ -75,3 +75,33 @@ func Test_resolveOONIAddresses(t *testing.T) {
 		}
 	})
 }
+
+func Test_pickOONIOpenVPNTargets(t *testing.T) {
+	t.Run("empty ip list produces empty targets", func(t *testing.T) {
+		endpoints, err := pickOONIOpenVPNTargets([]string{})
+		if err != nil {
+			t.Fatal("expected nil error")
+		}
+		if len(endpoints) != 0 {
+			t.Fatal("expected empty endpoints")
+		}
+	})
+	t.Run("single-item ip list produces valid targets", func(t *testing.T) {
+		endpoints, err := pickOONIOpenVPNTargets([]string{"1.1.1.1"})
+		if err != nil {
+			t.Fatal("expected nil error")
+		}
+		if len(endpoints) != 4 {
+			t.Fatalf("expected 4 endpoints, got %d", len(endpoints))
+		}
+	})
+	t.Run("2-item ip list produces 6 targets", func(t *testing.T) {
+		endpoints, err := pickOONIOpenVPNTargets([]string{"1.1.1.1", "2.2.2.2"})
+		if err != nil {
+			t.Fatal("expected nil error")
+		}
+		if len(endpoints) != 6 {
+			t.Fatalf("expected 6 endpoints, got %d", len(endpoints))
+		}
+	})
+}

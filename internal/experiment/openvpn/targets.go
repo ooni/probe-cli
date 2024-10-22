@@ -31,27 +31,22 @@ func sampleN(a []string, n int) []string {
 	if n > len(a) {
 		n = len(a)
 	}
-
-	sampled := make([]string, 0)
-
-	// Use a map to track indices we've already selected to avoid duplicates
-	picked := make(map[int]struct{})
-
-	for len(sampled) < n {
-		idx := rand.Intn(len(a)) // Random index
-		if _, exists := picked[idx]; !exists {
-			sampled = append(sampled, a[idx])
-			picked[idx] = struct{}{} // Mark index as used
-		}
-	}
-
-	return sampled
+	rand.Shuffle(len(a), func(i, j int) {
+		a[i], a[j] = a[j], a[i]
+	})
+	return a[:n]
 }
 
 // resolveOONIAddresses returns a max of maxDefaultOONIAddresses after
 // performing DNS resolution. The returned IP addreses exclude possible
 // bogons.
 func resolveOONIAddresses(logger model.Logger) ([]string, error) {
+
+	// We explicitely resolve with BogonIsError set to false, and
+	// later remove bogons from the list. The reason is that in this way
+	// we are able to control the rate at which we run tests by adding bogon addresses to the
+	// domain records for the test.
+
 	resolver := netx.NewResolver(netx.Config{
 		BogonIsError: false,
 		Logger:       logger,
@@ -62,7 +57,8 @@ func resolveOONIAddresses(logger model.Logger) ([]string, error) {
 
 	var lastErr error
 
-	// get the set of all IPs for all the hostnames we have.
+	// Get the set of all IPs for all the hostnames we have.
+
 	for _, hostname := range defaultOONIEndpoints {
 		resolved, err := lookupHost(context.Background(), hostname, resolver)
 		if err != nil {
@@ -107,6 +103,9 @@ func lookupHost(ctx context.Context, hostname string, r model.Resolver) ([]strin
 
 // pickOONIOpenVPNTargets crafts targets from the passed array of IP addresses.
 func pickOONIOpenVPNTargets(ipaddrList []string) ([]string, error) {
+	if len(ipaddrList) == 0 {
+		return []string{}, nil
+	}
 
 	// Step 1. Create endpoint list.
 
