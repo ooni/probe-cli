@@ -254,6 +254,13 @@ func (sess *Session) NewContextWithTimeout(timeout int64) *Context {
 	return &Context{cancel: cancel, ctx: ctx}
 }
 
+// Close closes the session. This is done by closing the embedded engine
+// session
+func (sess *Session) Close() error {
+	err := sess.sessp.Close()
+	return err
+}
+
 // GeolocateResults contains the results of session.Geolocate.
 type GeolocateResults struct {
 	// ASN is the autonomous system number.
