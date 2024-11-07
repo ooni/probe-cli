@@ -114,10 +114,13 @@ func TestMeasurementSuccessRealWorld(t *testing.T) {
 
 	// check results
 	tk := msrmnt.TestKeys.(TestKeys)
-	if tk.Control.Failure != nil {
-		t.Fatal("unexpected control failure:", *tk.Control.Failure)
-	}
-	if tk.Target.Failure != nil {
-		t.Fatal("unexpected target failure:", *tk.Target.Failure)
+	for _, hs := range tk.TLSHandshakes {
+		if hs.Failure != nil {
+			if hs.ECHConfig == "GREASE" {
+				t.Fatal("unexpected exp failure:", hs.Failure)
+			} else {
+				t.Fatal("unexpected ctrl failure:", hs.Failure)
+			}
+		}
 	}
 }

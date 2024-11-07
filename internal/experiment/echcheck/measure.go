@@ -16,7 +16,7 @@ import (
 
 const (
 	testName    = "echcheck"
-	testVersion = "0.1.2"
+	testVersion = "0.2.0"
 	defaultURL  = "https://cloudflare-ech.com/cdn-cgi/trace"
 )
 
@@ -30,8 +30,7 @@ var (
 
 // TestKeys contains echcheck test keys.
 type TestKeys struct {
-	Control model.ArchivalTLSOrQUICHandshakeResult `json:"control"`
-	Target  model.ArchivalTLSOrQUICHandshakeResult `json:"target"`
+	TLSHandshakes []*model.ArchivalTLSOrQUICHandshakeResult `json:"tls_handshakes"`
 }
 
 // Measurer performs the measurement.
@@ -124,7 +123,7 @@ func (m *Measurer) Run(
 	control := <-controlChannel
 	target := <-targetChannel
 
-	args.Measurement.TestKeys = TestKeys{Control: control, Target: target}
+	args.Measurement.TestKeys = TestKeys{TLSHandshakes: []*model.ArchivalTLSOrQUICHandshakeResult{&control, &target}}
 
 	return nil
 }

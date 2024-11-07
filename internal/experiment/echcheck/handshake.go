@@ -34,7 +34,9 @@ func handshakeWithEch(ctx context.Context, conn net.Conn, zeroTime time.Time,
 	utlsEchExtension.Id = echExtensionType
 	utlsEchExtension.Data = payload
 
-	return handshakeWithExtension(ctx, conn, zeroTime, address, sni, []utls.TLSExtension{&utlsEchExtension}, logger)
+	hs := handshakeWithExtension(ctx, conn, zeroTime, address, sni, []utls.TLSExtension{&utlsEchExtension}, logger)
+	hs.ECHConfig = "GREASE"
+	return hs
 }
 
 func handshakeMaybePrintWithECH(doprint bool) string {
