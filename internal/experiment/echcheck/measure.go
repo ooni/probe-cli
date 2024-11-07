@@ -17,7 +17,7 @@ import (
 const (
 	testName    = "echcheck"
 	testVersion = "0.1.2"
-	defaultURL  = "https://crypto.cloudflare.com/cdn-cgi/trace"
+	defaultURL  = "https://cloudflare-ech.com/cdn-cgi/trace"
 )
 
 var (
