@@ -92,14 +92,22 @@ func (m *Measurer) Run(
 		return netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ConnectOperation, err)
 	}
 
+	ol = logx.NewOperationLogger(args.Session.Logger(), "echcheck: TCPConnect#3 %s", address)
+	conn3, err := dialer.DialContext(ctx, "tcp", address)
+	ol.Stop(err)
+	if err != nil {
+		return netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ConnectOperation, err)
+	}
+
 	// 3. Conduct and measure control and target TLS handshakes in parallel
-	controlChannel := make(chan model.ArchivalTLSOrQUICHandshakeResult)
-	targetChannel := make(chan model.ArchivalTLSOrQUICHandshakeResult)
+	noEchChannel := make(chan model.ArchivalTLSOrQUICHandshakeResult)
+	echWithMatchingOuterSniChannel := make(chan model.ArchivalTLSOrQUICHandshakeResult)
+	echWithExampleOuterSniChannel := make(chan model.ArchivalTLSOrQUICHandshakeResult)
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	go func() {
-		controlChannel <- *handshake(
+		noEchChannel <- *handshake(
 			ctx,
 			conn,
 			args.Measurement.MeasurementStartTimeSaved,
@@ -110,7 +118,7 @@ func (m *Measurer) Run(
 	}()
 
 	go func() {
-		targetChannel <- *handshakeWithEch(
+		echWithMatchingOuterSniChannel <- *handshakeWithEch(
 			ctx,
 			conn2,
 			args.Measurement.MeasurementStartTimeSaved,
@@ -120,10 +128,29 @@ func (m *Measurer) Run(
 		)
 	}()
 
-	control := <-controlChannel
-	target := <-targetChannel
+	exampleSni := "cloudflare.com"
+	go func() {
+		echWithExampleOuterSniChannel <- *handshakeWithEch(
+			ctx,
+			conn3,
+			args.Measurement.MeasurementStartTimeSaved,
+			address,
+			exampleSni,
+			args.Session.Logger(),
+		)
+	}()
 
-	args.Measurement.TestKeys = TestKeys{TLSHandshakes: []*model.ArchivalTLSOrQUICHandshakeResult{&control, &target}}
+	noEch := <-noEchChannel
+	echWithMatchingOuterSni := <-echWithMatchingOuterSniChannel
+	echWithMatchingOuterSni.ServerName = parsed.Host
+	echWithMatchingOuterSni.OuterServerName = parsed.Host
+	echWithExampleOuterSni := <-echWithExampleOuterSniChannel
+	echWithExampleOuterSni.ServerName = parsed.Host
+	echWithExampleOuterSni.OuterServerName = exampleSni
+
+	args.Measurement.TestKeys = TestKeys{TLSHandshakes: []*model.ArchivalTLSOrQUICHandshakeResult{
+		&noEch, &echWithMatchingOuterSni, &echWithExampleOuterSni,
+	}}
 
 	return nil
 }
