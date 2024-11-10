@@ -255,7 +255,7 @@ func (sess *Session) NewContextWithTimeout(timeout int64) *Context {
 }
 
 // Close closes the session. This is done by closing the embedded engine
-// session
+// session and ensures that any tunnel (if open) is stopped
 func (sess *Session) Close() error {
 	err := sess.sessp.Close()
 	return err
