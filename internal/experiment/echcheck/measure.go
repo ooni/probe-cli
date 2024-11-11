@@ -3,14 +3,13 @@ package echcheck
 import (
 	"context"
 	"errors"
+	"math/rand"
 	"net"
 	"net/url"
-	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -76,80 +75,51 @@ func (m *Measurer) Run(
 	runtimex.Assert(len(addrs) > 0, "expected at least one entry in addrs")
 	address := net.JoinHostPort(addrs[0], "443")
 
-	// 2. Set up TCP connections
-	ol = logx.NewOperationLogger(args.Session.Logger(), "echcheck: TCPConnect#1 %s", address)
-	var dialer net.Dialer
-	conn, err := dialer.DialContext(ctx, "tcp", address)
-	ol.Stop(err)
-	if err != nil {
-		return netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ConnectOperation, err)
+	handshakes := []func() (chan model.ArchivalTLSOrQUICHandshakeResult, error){
+		// handshake with ECH disabled and SNI coming from the URL
+		func() (chan model.ArchivalTLSOrQUICHandshakeResult, error) {
+			return connectAndHandshake(ctx, args.Measurement.MeasurementStartTimeSaved,
+				address, parsed.Host, "", args.Session.Logger())
+		},
+		// handshake with ECH enabled and ClientHelloOuter SNI coming from the URL
+		func() (chan model.ArchivalTLSOrQUICHandshakeResult, error) {
+			return connectAndHandshake(ctx, args.Measurement.MeasurementStartTimeSaved,
+				address, parsed.Host, parsed.Host, args.Session.Logger())
+		},
+		// handshake with ECH enabled and hardcoded different ClientHelloOuter SNI
+		func() (chan model.ArchivalTLSOrQUICHandshakeResult, error) {
+			return connectAndHandshake(ctx, args.Measurement.MeasurementStartTimeSaved,
+				address, parsed.Host, "cloudflare.com", args.Session.Logger())
+		},
 	}
 
-	ol = logx.NewOperationLogger(args.Session.Logger(), "echcheck: TCPConnect#2 %s", address)
-	conn2, err := dialer.DialContext(ctx, "tcp", address)
-	ol.Stop(err)
-	if err != nil {
-		return netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ConnectOperation, err)
+	// We shuffle the order in which the operations are done to avoid residual
+	// censorship issues.
+	rand.Shuffle(len(handshakes), func(i, j int) {
+		handshakes[i], handshakes[j] = handshakes[j], handshakes[i]
+	})
+
+	var channels [3](chan model.ArchivalTLSOrQUICHandshakeResult)
+	var results [3](model.ArchivalTLSOrQUICHandshakeResult)
+
+	// Fire the handshakes in parallel
+	// TODO: currently if one of the connects fails we fail the whole result
+	// set. This is probably OK given that we only ever use the same address,
+	// but this may be something we want to change in the future.
+	for idx, hs := range handshakes {
+		channels[idx], err = hs()
+		if err != nil {
+			return err
+		}
 	}
 
-	ol = logx.NewOperationLogger(args.Session.Logger(), "echcheck: TCPConnect#3 %s", address)
-	conn3, err := dialer.DialContext(ctx, "tcp", address)
-	ol.Stop(err)
-	if err != nil {
-		return netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ConnectOperation, err)
+	// Wait on each channel for the results to come in
+	for idx, ch := range channels {
+		results[idx] = <-ch
 	}
-
-	// 3. Conduct and measure control and target TLS handshakes in parallel
-	noEchChannel := make(chan model.ArchivalTLSOrQUICHandshakeResult)
-	echWithMatchingOuterSniChannel := make(chan model.ArchivalTLSOrQUICHandshakeResult)
-	echWithExampleOuterSniChannel := make(chan model.ArchivalTLSOrQUICHandshakeResult)
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
-	go func() {
-		noEchChannel <- *handshake(
-			ctx,
-			conn,
-			args.Measurement.MeasurementStartTimeSaved,
-			address,
-			parsed.Host,
-			args.Session.Logger(),
-		)
-	}()
-
-	go func() {
-		echWithMatchingOuterSniChannel <- *handshakeWithEch(
-			ctx,
-			conn2,
-			args.Measurement.MeasurementStartTimeSaved,
-			address,
-			parsed.Host,
-			args.Session.Logger(),
-		)
-	}()
-
-	exampleSni := "cloudflare.com"
-	go func() {
-		echWithExampleOuterSniChannel <- *handshakeWithEch(
-			ctx,
-			conn3,
-			args.Measurement.MeasurementStartTimeSaved,
-			address,
-			exampleSni,
-			args.Session.Logger(),
-		)
-	}()
-
-	noEch := <-noEchChannel
-	echWithMatchingOuterSni := <-echWithMatchingOuterSniChannel
-	echWithMatchingOuterSni.ServerName = parsed.Host
-	echWithMatchingOuterSni.OuterServerName = parsed.Host
-	echWithExampleOuterSni := <-echWithExampleOuterSniChannel
-	echWithExampleOuterSni.ServerName = parsed.Host
-	echWithExampleOuterSni.OuterServerName = exampleSni
 
 	args.Measurement.TestKeys = TestKeys{TLSHandshakes: []*model.ArchivalTLSOrQUICHandshakeResult{
-		&noEch, &echWithMatchingOuterSni, &echWithExampleOuterSni,
+		&results[0], &results[1], &results[2],
 	}}
 
 	return nil
