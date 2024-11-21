@@ -1,49 +1,169 @@
 package openvpn
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
-	"net"
+	"slices"
+	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/legacy/netx"
+	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-const defaultOpenVPNEndpoint = "openvpn-server1.ooni.io"
-
-// this is a safety toggle: it's on purpose that the experiment will receive no
-// input if the resolution fails. This also implies that we have no way of knowing if this
-// target has been blocked at the level of DNS.
-// TODO(ain,mehul): we might want to try resolving with other techniques (DoT etc),
-// and perhaps also transform DNS failure into a specific failure of the experiment, not
-// a skip.
-// TODO(ain): update the openvpn spec to reflect the CURRENT state of delivering the targets.
-func resolveTarget(domain string) (string, error) {
-	ips, err := net.LookupIP(domain)
-	if err != nil {
-		return "", err
-	}
-	if len(ips) > 0 {
-		return ips[0].String(), nil
-	}
-	return "", fmt.Errorf("cannot resolve %v", defaultOpenVPNEndpoint)
+// defaultOONIEndpoints is the array of hostnames that will return valid
+// endpoints to be probed. Do note that this is a workaround for the lack
+// of a backend service; if you maintain this experiment in the future please
+// feel free to remove this workaround after the probe-services for distributing
+// endpoints has been deployed to production.
+var defaultOONIEndpoints = []string{
+	"a.composer-presenter.com",
+	"a.goodyear2dumpster.com",
 }
 
-func defaultOONITargetURL(ip string) string {
-	return "openvpn://oonivpn.corp/?address=" + ip + ":1194"
+// maxDefaultOONIAddresses is how many IPs to use from the
+// set of resolved IPs.
+var maxDefaultOONIAddresses = 3
+
+// sampleN takes max n elements sampled ramdonly from the array a.
+func sampleN(a []string, n int) []string {
+	if n > len(a) {
+		n = len(a)
+	}
+	rand.Shuffle(len(a), func(i, j int) {
+		a[i], a[j] = a[j], a[i]
+	})
+	return a[:n]
 }
 
-func defaultOONIOpenVPNTargetUDP() (string, error) {
-	ip, err := resolveTarget(defaultOpenVPNEndpoint)
-	if err != nil {
-		return "", err
+// resolveOONIAddresses returns a max of maxDefaultOONIAddresses after
+// performing DNS resolution. The returned IP addreses exclude possible
+// bogons.
+func resolveOONIAddresses(logger model.Logger) ([]string, error) {
+
+	// We explicitely resolve with BogonIsError set to false, and
+	// later remove bogons from the list. The reason is that in this way
+	// we are able to control the rate at which we run tests by adding bogon addresses to the
+	// domain records for the test.
+
+	resolver := netx.NewResolver(netx.Config{
+		BogonIsError: false,
+		Logger:       logger,
+		Saver:        nil,
+	})
+
+	addrs := []string{}
+
+	var lastErr error
+
+	// Get the set of all IPs for all the hostnames we have.
+
+	for _, hostname := range defaultOONIEndpoints {
+		resolved, err := lookupHost(context.Background(), hostname, resolver)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		for _, ipaddr := range resolved {
+			if !slices.Contains(addrs, ipaddr) {
+				addrs = append(addrs, ipaddr)
+			}
+		}
 	}
-	return defaultOONITargetURL(ip) + "&transport=udp", nil
+
+	// Sample a max of maxDefaultOONIAddresses
+
+	sampled := sampleN(addrs, maxDefaultOONIAddresses)
+
+	// Remove the bogons
+
+	valid := []string{}
+
+	for _, addr := range sampled {
+		if !netxlite.IsBogon(addr) {
+			valid = append(valid, addr)
+		}
+	}
+
+	// We only return error if the filtered list is zero len.
+
+	if (len(valid) == 0) && (lastErr != nil) {
+		return valid, lastErr
+	}
+
+	return valid, nil
 }
 
-func defaultOONIOpenVPNTargetTCP() (string, error) {
-	ip, err := resolveTarget(defaultOpenVPNEndpoint)
-	if err != nil {
-		return "", err
+func lookupHost(ctx context.Context, hostname string, r model.Resolver) ([]string, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	return r.LookupHost(ctx, hostname)
+}
+
+// pickOONIOpenVPNTargets crafts targets from the passed array of IP addresses.
+func pickOONIOpenVPNTargets(ipaddrList []string) ([]string, error) {
+	if len(ipaddrList) == 0 {
+		return []string{}, nil
 	}
-	return defaultOONITargetURL(ip) + "&transport=tcp", nil
+
+	// Step 1. Create endpoint list.
+
+	endpoints := []endpoint{}
+	for _, ipaddr := range ipaddrList {
+
+		// Probe the canonical 1194/udp and 1194/tcp ports
+
+		endpoints = append(endpoints, endpoint{
+			Obfuscation: "none",
+			Port:        "1194",
+			Protocol:    "openvpn",
+			Provider:    "oonivpn",
+			IPAddr:      ipaddr,
+			Transport:   "tcp",
+		})
+		endpoints = append(endpoints, endpoint{
+			Obfuscation: "none",
+			Port:        "1194",
+			Protocol:    "openvpn",
+			Provider:    "oonivpn",
+			IPAddr:      ipaddr,
+			Transport:   "udp",
+		})
+
+	}
+
+	// Pick one IP from the list and sample on non-standard ports
+	// to check if the standard port was filtered.
+
+	extra := ipaddrList[rand.Intn(len(ipaddrList))]
+	endpoints = append(endpoints, endpoint{
+		Obfuscation: "none",
+		Protocol:    "openvpn",
+		Provider:    "oonivpn",
+		IPAddr:      extra,
+		Port:        "53",
+		Transport:   "udp",
+	})
+	endpoints = append(endpoints, endpoint{
+		Obfuscation: "none",
+		Protocol:    "openvpn",
+		Provider:    "oonivpn",
+		IPAddr:      extra,
+		Port:        "443",
+		Transport:   "tcp",
+	})
+
+	// Step 2. Create targets for the selected endpoints.
+
+	targets := make([]string, 0)
+	for _, e := range endpoints {
+		targets = append(targets, e.AsInputURI())
+	}
+	if len(targets) > 0 {
+		return targets, nil
+	}
+	return nil, fmt.Errorf("cannot find any usable endpoint")
 }
 
 func pickFromDefaultOONIOpenVPNConfig() *Config {
