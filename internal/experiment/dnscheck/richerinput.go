@@ -201,7 +201,7 @@ var defaultInput = []model.ExperimentTarget{
 // while using the default list for normal runs.
 //
 //lint:ignore U1000 ignore unused var
-var _extendedInput = []model.ExperimentTarget{
+var extendedInput = []model.ExperimentTarget{
 	//
 	// https://dns.google/dns-query
 	//
