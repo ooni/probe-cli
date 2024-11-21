@@ -354,8 +354,8 @@ github.com/onsi/ginkgo/v2 v2.17.3/go.mod h1:nP2DPOQoNsQmsVyv5rDA8JkXQoCs6goXIvr/
 github.com/onsi/gomega v1.5.0/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1CpauHY=
 github.com/onsi/gomega v1.33.0 h1:snPCflnZrpMsy94p4lXVEkHo12lmPnc3vY5XBbreexE=
 github.com/onsi/gomega v1.33.0/go.mod h1:+925n5YtiFsLzzafLUHzVMBpvvRAzrydIBiSIxjX3wY=
-github.com/ooni/minivpn v0.0.6 h1:pGTsYRtofEupMrJL28f1IXO1LJslSI7dEHxSadNgGik=
-github.com/ooni/minivpn v0.0.6/go.mod h1:0KNwmK2Wg9lDbk936XjtxvCq4tPNbK4C3IJvyLwIMrE=
+github.com/ooni/minivpn v0.0.7 h1:fRL6lOivKM+Q23HcN/FFiBftbKTAtz7U8r6cOypBAeM=
+github.com/ooni/minivpn v0.0.7/go.mod h1:0KNwmK2Wg9lDbk936XjtxvCq4tPNbK4C3IJvyLwIMrE=
 github.com/ooni/netem v0.0.0-20240208095707-608dcbcd82b8 h1:kJ2wn19lIP/y9ng85BbFRdWKHK6Er116Bbt5uhqHVD4=
 github.com/ooni/netem v0.0.0-20240208095707-608dcbcd82b8/go.mod h1:b/wAvTR5n92Vk2b0SBmuMU0xO4ZGVrsXtU7zjTby7vw=
 github.com/ooni/oocrypto v0.6.2 h1:gAg24bVP03PNsOkMYGxllxmvlKlBOvyHmFAsdBlFJag=
