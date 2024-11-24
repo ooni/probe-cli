@@ -724,6 +724,11 @@ func TestNewFactory(t *testing.T) {
 			enabledByDefault: true,
 			inputPolicy:      model.InputNone,
 		},
+		"wireguard": {
+			enabledByDefault: true,
+			inputPolicy:      model.InputStrictlyRequired,
+			interruptible:    true,
+		},
 	}
 
 	// testCase is a test case checked by this func
