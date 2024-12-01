@@ -17,6 +17,52 @@ import (
 
 const echExtensionType uint16 = 0xfe0d
 
+func connectAndHandshake(
+	ctx context.Context,
+	startTime time.Time,
+	address string, sni string, outerSni string,
+	logger model.Logger) (chan model.ArchivalTLSOrQUICHandshakeResult, error) {
+
+	channel := make(chan model.ArchivalTLSOrQUICHandshakeResult)
+
+	ol := logx.NewOperationLogger(logger, "echcheck: TCPConnect %s", address)
+	var dialer net.Dialer
+	conn, err := dialer.DialContext(ctx, "tcp", address)
+	ol.Stop(err)
+	if err != nil {
+		return nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ConnectOperation, err)
+	}
+
+	go func() {
+		var res *model.ArchivalTLSOrQUICHandshakeResult
+		if outerSni == "" {
+			res = handshake(
+				ctx,
+				conn,
+				startTime,
+				address,
+				sni,
+				logger,
+			)
+		} else {
+			res = handshakeWithEch(
+				ctx,
+				conn,
+				startTime,
+				address,
+				outerSni,
+				logger,
+			)
+			// We need to set this explicitly because otherwise it will get
+			// overridden with the outerSni in the case of ECH
+			res.ServerName = sni
+		}
+		channel <- *res
+	}()
+
+	return channel, nil
+}
+
 func handshake(ctx context.Context, conn net.Conn, zeroTime time.Time,
 	address string, sni string, logger model.Logger) *model.ArchivalTLSOrQUICHandshakeResult {
 	return handshakeWithExtension(ctx, conn, zeroTime, address, sni, []utls.TLSExtension{}, logger)
@@ -34,7 +80,10 @@ func handshakeWithEch(ctx context.Context, conn net.Conn, zeroTime time.Time,
 	utlsEchExtension.Id = echExtensionType
 	utlsEchExtension.Data = payload
 
-	return handshakeWithExtension(ctx, conn, zeroTime, address, sni, []utls.TLSExtension{&utlsEchExtension}, logger)
+	hs := handshakeWithExtension(ctx, conn, zeroTime, address, sni, []utls.TLSExtension{&utlsEchExtension}, logger)
+	hs.ECHConfig = "GREASE"
+	hs.OuterServerName = sni
+	return hs
 }
 
 func handshakeMaybePrintWithECH(doprint bool) string {

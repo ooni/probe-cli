@@ -103,6 +103,83 @@ var testDefaultInput = []model.ExperimentTarget{
 			DefaultAddrs: "8.8.8.8 8.8.4.4",
 		},
 	},
+	&Target{
+		URL: "https://cloudflare-dns.com/dns-query",
+		Config: &Config{
+			HTTP3Enabled: true,
+			DefaultAddrs: "1.1.1.1 1.0.0.1",
+		},
+	},
+	&Target{
+		URL: "https://cloudflare-dns.com/dns-query",
+		Config: &Config{
+			DefaultAddrs: "1.1.1.1 1.0.0.1",
+		},
+	},
+	&Target{
+		URL: "https://dns.quad9.net/dns-query",
+		Config: &Config{
+			HTTP3Enabled: true,
+			DefaultAddrs: "9.9.9.9",
+		},
+	},
+	&Target{
+		URL: "https://dns.quad9.net/dns-query",
+		Config: &Config{
+			DefaultAddrs: "9.9.9.9",
+		},
+	},
+	&Target{
+		URL: "https://dns.adguard.com/dns-query",
+		Config: &Config{
+			HTTP3Enabled: true,
+		},
+	},
+	&Target{
+		URL:    "https://dns.adguard.com/dns-query",
+		Config: &Config{},
+	},
+	&Target{
+		URL: "https://dns.alidns.com/dns-query",
+		Config: &Config{
+			HTTP3Enabled: true,
+		},
+	},
+	&Target{
+		URL:    "https://dns.alidns.com/dns-query",
+		Config: &Config{},
+	},
+	&Target{
+		URL: "https://doh.opendns.com/dns-query",
+		Config: &Config{
+			HTTP3Enabled: true,
+		},
+	},
+	&Target{
+		URL:    "https://doh.opendns.com/dns-query",
+		Config: &Config{},
+	},
+	&Target{
+		URL: "https://dns.nextdns.io/dns-query",
+		Config: &Config{
+			HTTP3Enabled: true,
+		},
+	},
+	&Target{
+		URL:    "https://dns.nextdns.io/dns-query",
+		Config: &Config{},
+	},
+
+	&Target{
+		URL: "https://dns.switch.ch/dns-query",
+		Config: &Config{
+			HTTP3Enabled: true,
+		},
+	},
+	&Target{
+		URL:    "https://dns.switch.ch/dns-query",
+		Config: &Config{},
+	},
 }
 
 func TestTargetLoaderLoad(t *testing.T) {
