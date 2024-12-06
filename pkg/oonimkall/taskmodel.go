@@ -112,6 +112,7 @@ type eventMeasurementGeneric struct {
 	Idx          int64  `json:"idx"`
 	Input        string `json:"input"`
 	JSONStr      string `json:"json_str,omitempty"`
+	MeasurementUID string `json:"measurement_uid,omitempty"`
 }
 
 type eventStatusEnd struct {
