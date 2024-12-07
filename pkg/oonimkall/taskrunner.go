@@ -352,13 +352,14 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 		// if possible, submit the measurement to the OONI backend
 		if !r.settings.Options.NoCollector {
 			logger.Info("Submitting measurement... please, be patient")
-			err := experiment.SubmitAndUpdateMeasurementContext(submitCtx, m)
+			muid, err := experiment.SubmitAndUpdateMeasurementContext(submitCtx, m)
 			warnOnFailure(logger, "cannot submit measurement", err)
 			r.emitter.Emit(measurementSubmissionEventName(err), eventMeasurementGeneric{
 				Idx:     int64(idx),
 				Input:   target.Input(),
 				JSONStr: string(data),
 				Failure: measurementSubmissionFailure(err),
+				MeasurementUID: muid,
 			})
 		}
 

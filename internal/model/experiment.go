@@ -186,7 +186,7 @@ type Experiment interface {
 	// SubmitAndUpdateMeasurementContext submits a measurement and updates the
 	// fields whose value has changed as part of the submission.
 	SubmitAndUpdateMeasurementContext(
-		ctx context.Context, measurement *Measurement) error
+		ctx context.Context, measurement *Measurement) (string, error)
 
 	// OpenReportContext will open a report using the given context
 	// to possibly limit the lifetime of this operation.
@@ -322,7 +322,7 @@ type ExperimentTargetLoader interface {
 type Submitter interface {
 	// Submit submits the measurement and updates its
 	// report ID field in case of success.
-	Submit(ctx context.Context, m *Measurement) error
+	Submit(ctx context.Context, m *Measurement) (string, error)
 }
 
 // Saver saves a measurement on some persistent storage.

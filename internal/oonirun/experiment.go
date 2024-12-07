@@ -263,10 +263,11 @@ type experimentSubmitterWrapper struct {
 	logger model.Logger
 }
 
-func (sw *experimentSubmitterWrapper) Submit(ctx context.Context, idx int, m *model.Measurement) error {
-	if err := sw.child.Submit(ctx, idx, m); err != nil {
+func (sw *experimentSubmitterWrapper) Submit(ctx context.Context, idx int, m *model.Measurement) (string, error) {
+	mstUID, err := sw.child.Submit(ctx, idx, m)
+	if err != nil {
 		sw.logger.Warnf("submitting measurement failed: %s", err.Error())
 	}
 	// policy: we do not stop the loop if measurement submission fails
-	return nil
+	return mstUID, nil
 }

@@ -101,7 +101,7 @@ func (r reportChan) CanSubmit(m *model.Measurement) bool {
 // such that it contains the report ID for which it has been
 // submitted. Otherwise, we'll set the report ID to the empty
 // string, so that you know which measurements weren't submitted.
-func (r reportChan) SubmitMeasurement(ctx context.Context, m *model.Measurement) error {
+func (r reportChan) SubmitMeasurement(ctx context.Context, m *model.Measurement) (string, error) {
 	// TODO(bassosimone): do we need to prevent measurement submission
 	// if the measurement isn't consistent with the orig template?
 
@@ -109,7 +109,7 @@ func (r reportChan) SubmitMeasurement(ctx context.Context, m *model.Measurement)
 
 	URL, err := urlx.ResolveReference(r.client.BaseURL, fmt.Sprintf("/report/%s", r.ID), "")
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	apiReq := model.OOAPICollectorUpdateRequest{
@@ -131,13 +131,13 @@ func (r reportChan) SubmitMeasurement(ctx context.Context, m *model.Measurement)
 
 	if err != nil {
 		m.ReportID = ""
-		return err
+		return "", err
 	}
 
 	// TODO(bassosimone): we should use the session logger here but for now this stopgap
 	// solution will allow observing the measurement URL for CLI users.
 	log.Printf("Measurement URL: https://explorer.ooni.org/m/%s", updateResponse.MeasurementUID)
-	return nil
+	return updateResponse.MeasurementUID, nil
 }
 
 // ReportID returns the report ID.
@@ -150,7 +150,7 @@ func (r reportChan) ReportID() string {
 type ReportChannel interface {
 	CanSubmit(m *model.Measurement) bool
 	ReportID() string
-	SubmitMeasurement(ctx context.Context, m *model.Measurement) error
+	SubmitMeasurement(ctx context.Context, m *model.Measurement) (string, error)
 }
 
 var _ ReportChannel = &reportChan{}
@@ -182,14 +182,14 @@ func NewSubmitter(opener ReportOpener, logger model.Logger) *Submitter {
 
 // Submit submits the current measurement to the OONI backend created using
 // the ReportOpener passed to the constructor.
-func (sub *Submitter) Submit(ctx context.Context, m *model.Measurement) error {
+func (sub *Submitter) Submit(ctx context.Context, m *model.Measurement) (string, error) {
 	var err error
 	sub.mu.Lock()
 	defer sub.mu.Unlock()
 	if sub.channel == nil || !sub.channel.CanSubmit(m) {
 		sub.channel, err = sub.opener.OpenReport(ctx, NewReportTemplate(m))
 		if err != nil {
-			return err
+			return "", err
 		}
 		sub.logger.Infof("New reportID: %s", sub.channel.ReportID())
 	}

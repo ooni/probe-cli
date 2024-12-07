@@ -93,9 +93,9 @@ func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 		newTargetLoaderFn:      nil,
 		newSubmitterFn: func(ctx context.Context) (model.Submitter, error) {
 			subm := &mocks.Submitter{
-				MockSubmit: func(ctx context.Context, m *model.Measurement) error {
+				MockSubmit: func(ctx context.Context, m *model.Measurement) (string, error) {
 					failedToSubmit++
-					return errors.New("mocked error")
+					return "", errors.New("mocked error")
 				},
 			}
 			return subm, nil

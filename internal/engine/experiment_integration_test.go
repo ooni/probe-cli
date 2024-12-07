@@ -280,7 +280,7 @@ func runexperimentflow(t *testing.T, experiment model.Experiment, input string) 
 	}
 	filename := tempfile.Name()
 	tempfile.Close()
-	err = experiment.SubmitAndUpdateMeasurementContext(ctx, measurement)
+	_, err = experiment.SubmitAndUpdateMeasurementContext(ctx, measurement)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -323,7 +323,7 @@ func TestOpenReportIdempotent(t *testing.T) {
 		t.Fatal("unexpected initial report ID")
 	}
 	ctx := context.Background()
-	if err := exp.SubmitAndUpdateMeasurementContext(ctx, &model.Measurement{}); err == nil {
+	if _, err := exp.SubmitAndUpdateMeasurementContext(ctx, &model.Measurement{}); err == nil {
 		t.Fatal("we should not be able to submit before OpenReport")
 	}
 	err = exp.OpenReportContext(ctx)
@@ -403,7 +403,7 @@ func TestSubmitAndUpdateMeasurementWithClosedReport(t *testing.T) {
 	}
 	exp := builder.NewExperiment()
 	m := new(model.Measurement)
-	err = exp.SubmitAndUpdateMeasurementContext(context.Background(), m)
+	_, err = exp.SubmitAndUpdateMeasurementContext(context.Background(), m)
 	if err == nil {
 		t.Fatal("expected an error here")
 	}

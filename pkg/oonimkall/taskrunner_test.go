@@ -228,8 +228,8 @@ func TestTaskRunnerRun(t *testing.T) {
 				MockMeasureWithContext: func(ctx context.Context, target model.ExperimentTarget) (*model.Measurement, error) {
 					return &model.Measurement{}, nil
 				},
-				MockSubmitAndUpdateMeasurementContext: func(ctx context.Context, measurement *model.Measurement) error {
-					return nil
+				MockSubmitAndUpdateMeasurementContext: func(ctx context.Context, measurement *model.Measurement) (string, error) {
+					return "", nil
 				},
 			},
 
@@ -667,8 +667,8 @@ func TestTaskRunnerRun(t *testing.T) {
 				},
 			}
 		}
-		fake.Experiment.MockSubmitAndUpdateMeasurementContext = func(ctx context.Context, measurement *model.Measurement) error {
-			return errors.New("cannot submit")
+		fake.Experiment.MockSubmitAndUpdateMeasurementContext = func(ctx context.Context, measurement *model.Measurement) (string, error) {
+			return "", errors.New("cannot submit")
 		}
 		runner.newSession = fake.NewSession
 		events := runAndCollect(runner, emitter)

@@ -22,7 +22,7 @@ type Experiment struct {
 	MockSaveMeasurement func(measurement *model.Measurement, filePath string) error
 
 	MockSubmitAndUpdateMeasurementContext func(
-		ctx context.Context, measurement *model.Measurement) error
+		ctx context.Context, measurement *model.Measurement) (string, error)
 
 	MockOpenReportContext func(ctx context.Context) error
 }
@@ -53,7 +53,7 @@ func (e *Experiment) SaveMeasurement(measurement *model.Measurement, filePath st
 }
 
 func (e *Experiment) SubmitAndUpdateMeasurementContext(
-	ctx context.Context, measurement *model.Measurement) error {
+	ctx context.Context, measurement *model.Measurement) (string, error) {
 	return e.MockSubmitAndUpdateMeasurementContext(ctx, measurement)
 }
 

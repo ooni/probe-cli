@@ -302,6 +302,9 @@ type SubmitMeasurementResults struct {
 
 	// UpdatedReportID is the report ID used for the measurement.
 	UpdatedReportID string
+
+	// MeasurementUID is the measurement unique identifier returned from the backend
+	MeasurementUID string
 }
 
 // Submit submits the given measurement and returns the results.
@@ -322,7 +325,8 @@ func (sess *Session) Submit(ctx *Context, measurement string) (*SubmitMeasuremen
 	if err := json.Unmarshal([]byte(measurement), &mm); err != nil {
 		return nil, err
 	}
-	if err := sess.submitter.Submit(ctx.ctx, &mm); err != nil {
+	muid, err := sess.submitter.Submit(ctx.ctx, &mm)
+	if err != nil {
 		return nil, err
 	}
 	data, err := json.Marshal(mm)
@@ -330,6 +334,7 @@ func (sess *Session) Submit(ctx *Context, measurement string) (*SubmitMeasuremen
 	return &SubmitMeasurementResults{
 		UpdatedMeasurement: string(data),
 		UpdatedReportID:    mm.ReportID,
+		MeasurementUID:     muid,
 	}, nil
 }
 

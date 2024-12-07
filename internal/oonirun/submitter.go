@@ -46,8 +46,8 @@ func NewSubmitter(ctx context.Context, config SubmitterConfig) (Submitter, error
 
 type stubSubmitter struct{}
 
-func (stubSubmitter) Submit(ctx context.Context, m *model.Measurement) error {
-	return nil
+func (stubSubmitter) Submit(ctx context.Context, m *model.Measurement) (string, error) {
+	return "", nil
 }
 
 var _ Submitter = stubSubmitter{}
@@ -57,7 +57,7 @@ type realSubmitter struct {
 	logger model.Logger
 }
 
-func (rs realSubmitter) Submit(ctx context.Context, m *model.Measurement) error {
+func (rs realSubmitter) Submit(ctx context.Context, m *model.Measurement) (string, error) {
 	rs.logger.Info("submitting measurement to OONI collector; please be patient...")
 	return rs.subm.Submit(ctx, m)
 }
