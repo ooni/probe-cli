@@ -18,17 +18,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	utls "gitlab.com/yawning/utls.git"
 )
-
-// ClientIDs to map configurable inputs to uTLS fingerprints
-// We use a non-zero index to map to each ClientID
-var ClientIDs = map[int]*utls.ClientHelloID{
-	1: &utls.HelloGolang,
-	2: &utls.HelloChrome_Auto,
-	3: &utls.HelloFirefox_Auto,
-	4: &utls.HelloIOS_Auto,
-}
 
 // TLSTrace performs tracing using control and target SNI
 func (m *Measurer) TLSTrace(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
@@ -93,10 +83,6 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 	// 3. Perform the handshake and extract the SO_ERROR value (if any)
 	// Note: we switch to a uTLS Handshaker if the configured ClientID is non-zero
 	thx := trace.NewTLSHandshakerStdlib(logger)
-	clientId := m.config.clientid()
-	if clientId > 0 {
-		thx = trace.NewTLSHandshakerUTLS(logger, ClientIDs[clientId])
-	}
 	_, err = thx.Handshake(ctx, conn, genTLSConfig(sni))
 	ol.Stop(err)
 	soErr := extractSoError(conn)

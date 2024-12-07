@@ -2,23 +2,21 @@ package echcheck
 
 import (
 	"context"
-	"crypto/rand"
 	"crypto/tls"
 	"net"
 	"time"
 
-	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	utls "gitlab.com/yawning/utls.git"
 )
 
 const echExtensionType uint16 = 0xfe0d
 
 func connectAndHandshake(
 	ctx context.Context,
+	trace *measurexlite.Trace,
 	startTime time.Time,
 	address string, sni string, outerSni string,
 	logger model.Logger) (chan model.ArchivalTLSOrQUICHandshakeResult, error) {
@@ -38,6 +36,7 @@ func connectAndHandshake(
 		if outerSni == "" {
 			res = handshake(
 				ctx,
+				trace,
 				conn,
 				startTime,
 				address,
@@ -47,6 +46,7 @@ func connectAndHandshake(
 		} else {
 			res = handshakeWithEch(
 				ctx,
+				trace,
 				conn,
 				startTime,
 				address,
@@ -63,24 +63,15 @@ func connectAndHandshake(
 	return channel, nil
 }
 
-func handshake(ctx context.Context, conn net.Conn, zeroTime time.Time,
+func handshake(ctx context.Context, trace *measurexlite.Trace, conn net.Conn, zeroTime time.Time,
 	address string, sni string, logger model.Logger) *model.ArchivalTLSOrQUICHandshakeResult {
-	return handshakeWithExtension(ctx, conn, zeroTime, address, sni, []utls.TLSExtension{}, logger)
+	return doHandshake(ctx, trace, conn, zeroTime, address, sni, []byte{}, logger)
 }
 
-func handshakeWithEch(ctx context.Context, conn net.Conn, zeroTime time.Time,
+func handshakeWithEch(ctx context.Context, trace *measurexlite.Trace, conn net.Conn, zeroTime time.Time,
 	address string, sni string, logger model.Logger) *model.ArchivalTLSOrQUICHandshakeResult {
-	payload, err := generateGreaseExtension(rand.Reader)
-	if err != nil {
-		panic("failed to generate grease ECH: " + err.Error())
-	}
 
-	var utlsEchExtension utls.GenericExtension
-
-	utlsEchExtension.Id = echExtensionType
-	utlsEchExtension.Data = payload
-
-	hs := handshakeWithExtension(ctx, conn, zeroTime, address, sni, []utls.TLSExtension{&utlsEchExtension}, logger)
+	hs := doHandshake(ctx, trace, conn, zeroTime, address, sni, []byte("ECHCONFIG"), logger)
 	hs.ECHConfig = "GREASE"
 	hs.OuterServerName = sni
 	return hs
@@ -93,14 +84,18 @@ func handshakeMaybePrintWithECH(doprint bool) string {
 	return ""
 }
 
-func handshakeWithExtension(ctx context.Context, conn net.Conn, zeroTime time.Time, address string, sni string,
-	extensions []utls.TLSExtension, logger model.Logger) *model.ArchivalTLSOrQUICHandshakeResult {
+func doHandshake(ctx context.Context, trace *measurexlite.Trace, conn net.Conn, zeroTime time.Time, address string, sni string,
+	echConfig []byte, logger model.Logger) *model.ArchivalTLSOrQUICHandshakeResult {
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
 	tlsConfig := genTLSConfig(sni)
+	if len(echConfig) > 0 {
+		tlsConfig.EncryptedClientHelloConfigList = echConfig
+	}
 
-	handshakerConstructor := newHandshakerWithExtensions(extensions)
-	tracedHandshaker := handshakerConstructor(log.Log, &utls.HelloFirefox_Auto)
+	tracedHandshaker := trace.NewTLSHandshakerStdlib(logger)
 
-	ol := logx.NewOperationLogger(logger, "echcheck: TLSHandshake%s", handshakeMaybePrintWithECH(len(extensions) > 0))
+	ol := logx.NewOperationLogger(logger, "echcheck: TLSHandshake with ECH")
 	start := time.Now()
 	maybeTLSConn, err := tracedHandshaker.Handshake(ctx, conn, tlsConfig)
 	finish := time.Now()

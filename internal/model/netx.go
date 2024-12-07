@@ -13,9 +13,7 @@ import (
 	"syscall"
 	"time"
 
-	oohttp "github.com/ooni/oohttp"
 	"github.com/quic-go/quic-go"
-	utls "gitlab.com/yawning/utls.git"
 )
 
 // DNSResponse is a parsed DNS response ready for further processing.
@@ -225,14 +223,6 @@ type MeasuringNetwork interface {
 	// that is using the go standard library to manage TLS.
 	NewTLSHandshakerStdlib(logger DebugLogger) TLSHandshaker
 
-	// NewTLSHandshakerUTLS creates a new TLS handshaker using
-	// gitlab.com/yawning/utls for TLS that implements error wrapping.
-	//
-	// The id is the address of something like utls.HelloFirefox_55.
-	//
-	// Passing a nil `id` will make this function panic.
-	NewTLSHandshakerUTLS(logger DebugLogger, id *utls.ClientHelloID) TLSHandshaker
-
 	// NewUDPListener creates a new UDPListener with error wrapping.
 	NewUDPListener() UDPListener
 }
@@ -314,10 +304,7 @@ type Resolver interface {
 // kind of TLSConn we're able to use both the standard library
 // and gitlab.com/yawning/utls.git to perform TLS operations. Note
 // that the stdlib's tls.Conn implements this interface.
-type TLSConn = oohttp.TLSConn
-
-// Ensures that a [*tls.Conn] implements the [TLSConn] interface.
-var _ TLSConn = &tls.Conn{}
+type TLSConn = *tls.Conn
 
 // TLSDialer is a Dialer dialing TLS connections.
 type TLSDialer interface {

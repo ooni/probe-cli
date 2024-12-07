@@ -78,17 +78,17 @@ func (m *Measurer) Run(
 	handshakes := []func() (chan model.ArchivalTLSOrQUICHandshakeResult, error){
 		// handshake with ECH disabled and SNI coming from the URL
 		func() (chan model.ArchivalTLSOrQUICHandshakeResult, error) {
-			return connectAndHandshake(ctx, args.Measurement.MeasurementStartTimeSaved,
+			return connectAndHandshake(ctx, trace, args.Measurement.MeasurementStartTimeSaved,
 				address, parsed.Host, "", args.Session.Logger())
 		},
 		// handshake with ECH enabled and ClientHelloOuter SNI coming from the URL
 		func() (chan model.ArchivalTLSOrQUICHandshakeResult, error) {
-			return connectAndHandshake(ctx, args.Measurement.MeasurementStartTimeSaved,
+			return connectAndHandshake(ctx, trace, args.Measurement.MeasurementStartTimeSaved,
 				address, parsed.Host, parsed.Host, args.Session.Logger())
 		},
 		// handshake with ECH enabled and hardcoded different ClientHelloOuter SNI
 		func() (chan model.ArchivalTLSOrQUICHandshakeResult, error) {
-			return connectAndHandshake(ctx, args.Measurement.MeasurementStartTimeSaved,
+			return connectAndHandshake(ctx, trace, args.Measurement.MeasurementStartTimeSaved,
 				address, parsed.Host, "cloudflare.com", args.Session.Logger())
 		},
 	}
