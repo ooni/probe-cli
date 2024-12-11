@@ -5,17 +5,18 @@ package echcheck
 
 import (
 	"fmt"
+	"io"
+
 	"github.com/cloudflare/circl/hpke"
 	"golang.org/x/crypto/cryptobyte"
-	"io"
 )
 
 const clientHelloOuter uint8 = 0
 
-// echExtension is the Encrypted Client Hello extension that is part of
+// echTLSExtension is the Encrypted Client Hello extension that is part of
 // ClientHelloOuter as specified in:
 // ietf.org/archive/id/draft-ietf-tls-esni-14.html#section-5
-type echExtension struct {
+type echTLSExtension struct {
 	kdfID    uint16
 	aeadID   uint16
 	configID uint8
@@ -23,7 +24,7 @@ type echExtension struct {
 	payload  []byte
 }
 
-func (ech *echExtension) marshal() []byte {
+func (ech *echTLSExtension) marshal() []byte {
 	var b cryptobyte.Builder
 	b.AddUint8(clientHelloOuter)
 	b.AddUint16(ech.kdfID)
@@ -65,7 +66,7 @@ func generateGreaseExtension(rand io.Reader) ([]byte, error) {
 	}
 
 	// Set ECH Extension Fields
-	var ech echExtension
+	var ech echTLSExtension
 
 	ech.kdfID = uint16(kdf)
 	ech.aeadID = uint16(aead)

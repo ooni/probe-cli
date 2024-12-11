@@ -101,6 +101,7 @@ func (r *dnsResponse) DecodeHTTPS() (*model.HTTPSSvc, error) {
 		ALPN: []string{}, // ensure it's not nil
 		IPv4: []string{}, // ensure it's not nil
 		IPv6: []string{}, // ensure it's not nil
+		Ech:  []byte{},   // ensure it's not nil
 	}
 	for _, answer := range r.msg.Answer {
 		switch avalue := answer.(type) {
@@ -117,11 +118,13 @@ func (r *dnsResponse) DecodeHTTPS() (*model.HTTPSSvc, error) {
 					for _, ip := range extv.Hint {
 						out.IPv6 = append(out.IPv6, ip.String())
 					}
+				case *dns.SVCBECHConfig:
+					out.Ech = extv.ECH
 				}
 			}
 		}
 	}
-	if len(out.IPv4) <= 0 && len(out.IPv6) <= 0 {
+	if len(out.IPv4) <= 0 && len(out.IPv6) <= 0 && len(out.Ech) <= 0 {
 		return nil, dnsDecoderWrapError(ErrOODNSNoAnswer)
 	}
 	return out, nil

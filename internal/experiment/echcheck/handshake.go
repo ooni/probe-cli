@@ -17,11 +17,21 @@ import (
 
 const echExtensionType uint16 = 0xfe0d
 
-func connectAndHandshake(
-	ctx context.Context,
-	startTime time.Time,
-	address string, sni string, outerSni string,
-	logger model.Logger) (chan model.ArchivalTLSOrQUICHandshakeResult, error) {
+type EchMode int
+
+const (
+	NoECH EchMode = iota
+	GreaseECH
+	RealECH
+)
+
+// Connect to `host` at `address` and attempt a TLS handshake.  When using real ECH, `ecl` must
+// contain the ECHConfigList to use; in other modes, `ecl` is ignored. If the ECH config provides
+// a different OuterServerName than `host`, it will be recorded in the result and used per go's
+// tls package's behavior.
+// Returns a channel that will contain the archival result of the handshake.
+func connectAndHandshake(ctx context.Context, mode EchMode, ecl echConfigList, startTime time.Time,
+	address string, host string, logger model.Logger) (chan model.ArchivalTLSOrQUICHandshakeResult, error) {
 
 	channel := make(chan model.ArchivalTLSOrQUICHandshakeResult)
 
@@ -35,27 +45,13 @@ func connectAndHandshake(
 
 	go func() {
 		var res *model.ArchivalTLSOrQUICHandshakeResult
-		if outerSni == "" {
-			res = handshake(
-				ctx,
-				conn,
-				startTime,
-				address,
-				sni,
-				logger,
-			)
-		} else {
-			res = handshakeWithEch(
-				ctx,
-				conn,
-				startTime,
-				address,
-				outerSni,
-				logger,
-			)
-			// We need to set this explicitly because otherwise it will get
-			// overridden with the outerSni in the case of ECH
-			res.ServerName = sni
+		switch mode {
+		case NoECH:
+			res = handshakeWithoutEch(ctx, conn, startTime, address, host, logger)
+		case GreaseECH:
+			res = handshakeWithGreaseyEch(ctx, conn, startTime, address, host, logger)
+		case RealECH:
+			res = handshakeWithRealEch(ctx, conn, startTime, address, host, ecl, logger)
 		}
 		channel <- *res
 	}()
@@ -63,12 +59,12 @@ func connectAndHandshake(
 	return channel, nil
 }
 
-func handshake(ctx context.Context, conn net.Conn, zeroTime time.Time,
+func handshakeWithoutEch(ctx context.Context, conn net.Conn, zeroTime time.Time,
 	address string, sni string, logger model.Logger) *model.ArchivalTLSOrQUICHandshakeResult {
 	return handshakeWithExtension(ctx, conn, zeroTime, address, sni, []utls.TLSExtension{}, logger)
 }
 
-func handshakeWithEch(ctx context.Context, conn net.Conn, zeroTime time.Time,
+func handshakeWithGreaseyEch(ctx context.Context, conn net.Conn, zeroTime time.Time,
 	address string, sni string, logger model.Logger) *model.ArchivalTLSOrQUICHandshakeResult {
 	payload, err := generateGreaseExtension(rand.Reader)
 	if err != nil {
@@ -88,9 +84,31 @@ func handshakeWithEch(ctx context.Context, conn net.Conn, zeroTime time.Time,
 
 func handshakeMaybePrintWithECH(doprint bool) string {
 	if doprint {
-		return "WithECH"
+		return "WithGreaseECH"
 	}
 	return ""
+}
+
+// ECHConfigList must be valid, non-empty, and to specify only one unique PublicName,
+// i.e. OuterServerName across all configs.  Host is the service to connect to, i.e.
+// the inner SNI.
+func handshakeWithRealEch(ctx context.Context, conn net.Conn, zeroTime time.Time,
+	address string, host string, ecl echConfigList, logger model.Logger) *model.ArchivalTLSOrQUICHandshakeResult {
+
+	tlsConfig := genEchTLSConfig(host, ecl)
+
+	ol := logx.NewOperationLogger(logger, "echcheck: TLSHandshakeWithRealECH")
+	start := time.Now()
+	maybeTLSConn, err := tls.Dial("tcp", address, tlsConfig)
+	finish := time.Now()
+	ol.Stop(err)
+
+	connState := netxlite.MaybeTLSConnectionState(maybeTLSConn)
+	hs := measurexlite.NewArchivalTLSOrQUICHandshakeResult(0, start.Sub(zeroTime), "tcp", address, tlsConfig,
+		connState, err, finish.Sub(zeroTime))
+	hs.ECHConfig = ecl.Base64()
+	hs.OuterServerName = string(ecl.Configs[0].PublicName)
+	return hs
 }
 
 func handshakeWithExtension(ctx context.Context, conn net.Conn, zeroTime time.Time, address string, sni string,
@@ -122,5 +140,15 @@ func genTLSConfig(sni string) *tls.Config {
 		ServerName:         sni,
 		NextProtos:         []string{"h2", "http/1.1"},
 		InsecureSkipVerify: true, // #nosec G402 - it's fine to skip verify in a nettest
+	}
+}
+
+func genEchTLSConfig(host string, ecl echConfigList) *tls.Config {
+	return &tls.Config{
+		EncryptedClientHelloConfigList: ecl.raw,
+		// This will be used as the inner SNI and we will validate
+		// we get a certificate for this name.  The outer SNI will
+		// be set based on the ECH config.
+		ServerName: host,
 	}
 }
