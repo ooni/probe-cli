@@ -24,7 +24,7 @@ func Progress(key string, perc float64, eta float64, msg string) {
 	log.WithFields(log.Fields{
 		"type":       "progress",
 		"key":        key,
-		"percentage": perc,
+		"percentage": 100.0 * perc,
 		"eta":        eta,
 	}).Info(msg)
 }
