@@ -1,8 +1,7 @@
 module github.com/ooni/probe-cli/v3
 
 go 1.21.0
-
-toolchain go1.22.2
+toolchain go1.22.5
 
 require (
 	filippo.io/age v1.2.0
@@ -37,7 +36,7 @@ require (
 	github.com/pion/stun v0.6.1
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.20.5
-	github.com/quic-go/quic-go v0.43.1
+	github.com/quic-go/quic-go v0.48.2
 	github.com/rogpeppe/go-internal v1.12.0
 	github.com/rubenv/sql-migrate v1.7.0
 	github.com/schollz/progressbar/v3 v3.14.2
@@ -150,7 +149,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	github.com/quic-go/qpack v0.4.0 // indirect
+	github.com/quic-go/qpack v0.5.1 // indirect
 	github.com/realclientip/realclientip-go v1.0.0 // indirect
 	github.com/refraction-networking/conjure v0.7.11-0.20240130155008-c8df96195ab2 // indirect
 	github.com/refraction-networking/ed25519 v0.1.2 // indirect
@@ -185,7 +184,7 @@ require (
 	go.uber.org/mock v0.4.0 // indirect
 	go4.org/mem v0.0.0-20220726221520-4f986261bf13 // indirect
 	go4.org/netipx v0.0.0-20230824141953-6213f710f925 // indirect
-	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8 // indirect
+	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	golang.org/x/mod v0.18.0 // indirect
 	golang.org/x/sync v0.9.0 // indirect
 	golang.org/x/term v0.26.0 // indirect
