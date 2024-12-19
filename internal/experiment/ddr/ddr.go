@@ -19,6 +19,9 @@ const (
 )
 
 type Config struct {
+	// CustomResolver is the custom resolver to use.
+	// If empty, the system resolver is used.
+	CustomResolver *string
 }
 
 // Measurer performs the measurement.
@@ -70,19 +73,23 @@ func (m *Measurer) Run(
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	systemResolver := getSystemResolverAddress()
-	if systemResolver == "" {
-		return errors.New("could not get system resolver")
+	if m.config.CustomResolver == nil {
+		systemResolver := getSystemResolverAddress()
+		if systemResolver == "" {
+			return errors.New("could not get system resolver")
+		}
+		log.Infof("Using system resolver: %s", systemResolver)
+		tk.Resolver = systemResolver
+	} else {
+		tk.Resolver = *m.config.CustomResolver
 	}
-	log.Infof("Using system resolver: %s", systemResolver)
-	tk.Resolver = systemResolver
 
 	// DDR queries are queries of the SVCB type for the _dns.resolver.arpa. domain.
 
 	netx := &netxlite.Netx{}
 	dialer := netx.NewDialerWithoutResolver(log.Log)
 	transport := netxlite.NewUnwrappedDNSOverUDPTransport(
-		dialer, systemResolver)
+		dialer, tk.Resolver)
 	encoder := &netxlite.DNSEncoderMiekg{}
 	query := encoder.Encode(
 		"_dns.resolver.arpa.", // As specified in RFC 9462
