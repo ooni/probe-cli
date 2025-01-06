@@ -248,6 +248,8 @@ type ArchivalTLSOrQUICHandshakeResult struct {
 	NoTLSVerify        bool                 `json:"no_tls_verify"`
 	PeerCertificates   []ArchivalBinaryData `json:"peer_certificates"`
 	ServerName         string               `json:"server_name"`
+	OuterServerName    string               `json:"outer_server_name,omitempty"`
+	ECHConfig          string               `json:"echconfig,omitempty"`
 	T0                 float64              `json:"t0,omitempty"`
 	T                  float64              `json:"t"`
 	Tags               []string             `json:"tags"`

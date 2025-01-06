@@ -3,21 +3,20 @@ package echcheck
 import (
 	"context"
 	"errors"
+	"math/rand"
 	"net"
 	"net/url"
-	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 const (
 	testName    = "echcheck"
-	testVersion = "0.1.2"
-	defaultURL  = "https://crypto.cloudflare.com/cdn-cgi/trace"
+	testVersion = "0.2.0"
+	defaultURL  = "https://cloudflare-ech.com/cdn-cgi/trace"
 )
 
 var (
@@ -30,8 +29,7 @@ var (
 
 // TestKeys contains echcheck test keys.
 type TestKeys struct {
-	Control model.ArchivalTLSOrQUICHandshakeResult `json:"control"`
-	Target  model.ArchivalTLSOrQUICHandshakeResult `json:"target"`
+	TLSHandshakes []*model.ArchivalTLSOrQUICHandshakeResult `json:"tls_handshakes"`
 }
 
 // Measurer performs the measurement.
@@ -77,54 +75,52 @@ func (m *Measurer) Run(
 	runtimex.Assert(len(addrs) > 0, "expected at least one entry in addrs")
 	address := net.JoinHostPort(addrs[0], "443")
 
-	// 2. Set up TCP connections
-	ol = logx.NewOperationLogger(args.Session.Logger(), "echcheck: TCPConnect#1 %s", address)
-	var dialer net.Dialer
-	conn, err := dialer.DialContext(ctx, "tcp", address)
-	ol.Stop(err)
-	if err != nil {
-		return netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ConnectOperation, err)
+	handshakes := []func() (chan model.ArchivalTLSOrQUICHandshakeResult, error){
+		// handshake with ECH disabled and SNI coming from the URL
+		func() (chan model.ArchivalTLSOrQUICHandshakeResult, error) {
+			return connectAndHandshake(ctx, args.Measurement.MeasurementStartTimeSaved,
+				address, parsed.Host, "", args.Session.Logger())
+		},
+		// handshake with ECH enabled and ClientHelloOuter SNI coming from the URL
+		func() (chan model.ArchivalTLSOrQUICHandshakeResult, error) {
+			return connectAndHandshake(ctx, args.Measurement.MeasurementStartTimeSaved,
+				address, parsed.Host, parsed.Host, args.Session.Logger())
+		},
+		// handshake with ECH enabled and hardcoded different ClientHelloOuter SNI
+		func() (chan model.ArchivalTLSOrQUICHandshakeResult, error) {
+			return connectAndHandshake(ctx, args.Measurement.MeasurementStartTimeSaved,
+				address, parsed.Host, "cloudflare.com", args.Session.Logger())
+		},
 	}
 
-	ol = logx.NewOperationLogger(args.Session.Logger(), "echcheck: TCPConnect#2 %s", address)
-	conn2, err := dialer.DialContext(ctx, "tcp", address)
-	ol.Stop(err)
-	if err != nil {
-		return netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ConnectOperation, err)
+	// We shuffle the order in which the operations are done to avoid residual
+	// censorship issues.
+	rand.Shuffle(len(handshakes), func(i, j int) {
+		handshakes[i], handshakes[j] = handshakes[j], handshakes[i]
+	})
+
+	var channels [3](chan model.ArchivalTLSOrQUICHandshakeResult)
+	var results [3](model.ArchivalTLSOrQUICHandshakeResult)
+
+	// Fire the handshakes in parallel
+	// TODO: currently if one of the connects fails we fail the whole result
+	// set. This is probably OK given that we only ever use the same address,
+	// but this may be something we want to change in the future.
+	for idx, hs := range handshakes {
+		channels[idx], err = hs()
+		if err != nil {
+			return err
+		}
 	}
 
-	// 3. Conduct and measure control and target TLS handshakes in parallel
-	controlChannel := make(chan model.ArchivalTLSOrQUICHandshakeResult)
-	targetChannel := make(chan model.ArchivalTLSOrQUICHandshakeResult)
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
+	// Wait on each channel for the results to come in
+	for idx, ch := range channels {
+		results[idx] = <-ch
+	}
 
-	go func() {
-		controlChannel <- *handshake(
-			ctx,
-			conn,
-			args.Measurement.MeasurementStartTimeSaved,
-			address,
-			parsed.Host,
-			args.Session.Logger(),
-		)
-	}()
-
-	go func() {
-		targetChannel <- *handshakeWithEch(
-			ctx,
-			conn2,
-			args.Measurement.MeasurementStartTimeSaved,
-			address,
-			parsed.Host,
-			args.Session.Logger(),
-		)
-	}()
-
-	control := <-controlChannel
-	target := <-targetChannel
-
-	args.Measurement.TestKeys = TestKeys{Control: control, Target: target}
+	args.Measurement.TestKeys = TestKeys{TLSHandshakes: []*model.ArchivalTLSOrQUICHandshakeResult{
+		&results[0], &results[1], &results[2],
+	}}
 
 	return nil
 }
