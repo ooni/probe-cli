@@ -1,4 +1,5 @@
 // This file contains verbatim copies of the code from go's tls package at 1.23.4.
+// https://github.com/golang/go/blob/go1.23.4/src/crypto/tls/common.go
 // https://github.com/golang/go/blob/go1.23.4/src/crypto/tls/ech.go
 // This should be refreshed to newer implementations if the ECH RFC change the format.
 
@@ -14,6 +15,8 @@ import (
 
 	"golang.org/x/crypto/cryptobyte"
 )
+
+const extensionEncryptedClientHello uint16 = 0xfe0d
 
 type echCipher struct {
 	KDFID  uint16

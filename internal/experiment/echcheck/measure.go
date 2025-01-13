@@ -2,6 +2,7 @@ package echcheck
 
 import (
 	"context"
+	crand "crypto/rand"
 	"errors"
 	"fmt"
 	"math/rand/v2"
@@ -65,30 +66,35 @@ func (m *Measurer) Run(
 		return errInvalidInputScheme
 	}
 
-	// 1. perform a DNSLookup
-	ol := logx.NewOperationLogger(args.Session.Logger(), "echcheck: DNSLookup[%s] %s", m.config.resolverURL(), parsed.Host)
+	// DNS Lookups for Address and HTTPS RR
+	ol := logx.NewOperationLogger(args.Session.Logger(), "echcheck: DNSLookups[%s] %s", m.config.resolverURL(), parsed.Host)
 	trace := measurexlite.NewTrace(0, args.Measurement.MeasurementStartTimeSaved)
 	resolver := trace.NewParallelDNSOverHTTPSResolver(args.Session.Logger(), m.config.resolverURL())
 	// We dial the alias, even when there are hints in the HTTPS record.
-	addrs, addrsErr := resolver.LookupHost(ctx, parsed.Host)
-	httpsRr, httpsErr := resolver.LookupHTTPS(ctx, parsed.Host)
+	addrs, addrsErr := resolver.LookupHost(ctx, parsed.Hostname())
+	// Port prefixing per:
+	// https://www.rfc-editor.org/rfc/rfc9460.html#name-query-names-for-https-rrs
+	var dnsQueryHost = parsed.Hostname()
+	if parsed.Port() != "" && parsed.Port() != "443" {
+		dnsQueryHost = fmt.Sprintf("_%s._https.%s", parsed.Port(), parsed.Hostname())
+	}
+	httpsRr, httpsErr := resolver.LookupHTTPS(ctx, dnsQueryHost)
 	ol.Stop(err)
+
 	if addrsErr != nil {
 		return addrsErr
 	}
 	if httpsErr != nil {
 		return httpsErr
 	}
-	rawEchConfig := httpsRr.Ech
-	ecl, err := parseRawEchConfig(rawEchConfig)
+	realEchConfig := httpsRr.Ech
+	configs, err := parseECHConfigList(realEchConfig)
 	if err != nil {
 		return fmt.Errorf("failed to parse ECH config: %w", err)
 	}
-	if len(ecl.Configs) == 0 {
-		return fmt.Errorf("no ECH configs for %s", parsed.Host)
-	}
-	outerServerName := string(ecl.Configs[0].PublicName)
-	for _, ec := range ecl.Configs {
+	// outerServerName is Populated in results when ECH is used.
+	outerServerName := string(configs[0].PublicName)
+	for _, ec := range configs {
 		if string(ec.PublicName) != outerServerName {
 			// It's perfectly valid to have multiple ECH configs with different
 			// `PublicName`s. But, since we can't see which one is selected by
@@ -96,27 +102,38 @@ func (m *Measurer) Run(
 			return fmt.Errorf("ambigious OuterServerName for %s", parsed.Host)
 		}
 	}
+	grease, err := generateGreaseyECHConfigList(crand.Reader, parsed.Hostname())
+	if err != nil {
+		return fmt.Errorf("failed to generate GREASE ECH config: %w", err)
+	}
 
 	runtimex.Assert(len(addrs) > 0, "expected at least one entry in addrs")
-	address := net.JoinHostPort(addrs[0], "443")
+	port := parsed.Port()
+	if port == "" {
+		port = "443"
+	}
+	address := net.JoinHostPort(addrs[0], port)
 
 	handshakes := []func() (chan model.ArchivalTLSOrQUICHandshakeResult, error){
 		// Handshake with no ECH
 		func() (chan model.ArchivalTLSOrQUICHandshakeResult, error) {
-			return connectAndHandshake(ctx, NoECH, echConfigList{}, args.Measurement.MeasurementStartTimeSaved,
-				address, parsed.Host, args.Session.Logger())
+			return connectAndHandshake(ctx, []byte{}, false,
+				args.Measurement.MeasurementStartTimeSaved,
+				address, parsed, "", args.Session.Logger())
 		},
 
 		// Handshake with ECH GREASE
 		func() (chan model.ArchivalTLSOrQUICHandshakeResult, error) {
-			return connectAndHandshake(ctx, GreaseECH, echConfigList{}, args.Measurement.MeasurementStartTimeSaved,
-				address, parsed.Host, args.Session.Logger())
+			return connectAndHandshake(ctx, grease, true,
+				args.Measurement.MeasurementStartTimeSaved,
+				address, parsed, outerServerName, args.Session.Logger())
 		},
 
-		// Use real ECH
+		// Handshake with real ECH
 		func() (chan model.ArchivalTLSOrQUICHandshakeResult, error) {
-			return connectAndHandshake(ctx, RealECH, ecl, args.Measurement.MeasurementStartTimeSaved,
-				address, parsed.Host, args.Session.Logger())
+			return connectAndHandshake(ctx, realEchConfig, false,
+				args.Measurement.MeasurementStartTimeSaved,
+				address, parsed, outerServerName, args.Session.Logger())
 		},
 	}
 

@@ -117,11 +117,11 @@ func TestMeasurementSuccessRealWorld(t *testing.T) {
 	for _, hs := range tk.TLSHandshakes {
 		if hs.Failure != nil {
 			if hs.ECHConfig == "GREASE" {
-				t.Fatal("unexpected exp (grease) failure:", hs.Failure)
+				t.Fatal("unexpected exp (grease) failure:", *hs.Failure)
 			} else if len(hs.ECHConfig) > 0 {
-				t.Fatal("unexpected exp (ech) failure:", hs.Failure)
+				t.Fatal("unexpected exp (ech) failure:", *hs.Failure)
 			} else {
-				t.Fatal("unexpected ctrl failure:", hs.Failure)
+				t.Fatal("unexpected ctrl failure:", *hs.Failure)
 			}
 		}
 	}

@@ -2,8 +2,6 @@ module github.com/ooni/probe-cli/v3
 
 go 1.23.4
 
-toolchain go1.22.2
-
 require (
 	filippo.io/age v1.2.0
 	github.com/AlecAivazis/survey/v2 v2.3.7
