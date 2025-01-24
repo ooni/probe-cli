@@ -31,6 +31,9 @@ var (
 
 // TestKeys contains echcheck test keys.
 type TestKeys struct {
+	NetworkEvents []*model.ArchivalNetworkEvent             `json:"network_events"`
+	Queries       []*model.ArchivalDNSLookupResult          `json:"queries"`
+	TCPConnect    []*model.ArchivalTCPConnectResult         `json:"tcp_connects"`
 	TLSHandshakes []*model.ArchivalTLSOrQUICHandshakeResult `json:"tls_handshakes"`
 }
 
@@ -114,26 +117,26 @@ func (m *Measurer) Run(
 	}
 	address := net.JoinHostPort(addrs[0], port)
 
-	handshakes := []func() (chan model.ArchivalTLSOrQUICHandshakeResult, error){
+	handshakes := []func() (chan TestKeys, error){
 		// Handshake with no ECH
-		func() (chan model.ArchivalTLSOrQUICHandshakeResult, error) {
+		func() (chan TestKeys, error) {
 			return connectAndHandshake(ctx, []byte{}, false,
-				args.Measurement.MeasurementStartTimeSaved,
-				address, parsed, "", args.Session.Logger())
+				args.Measurement.MeasurementStartTimeSaved, address,
+				parsed, "", args.Session.Logger(), nil)
 		},
 
 		// Handshake with ECH GREASE
-		func() (chan model.ArchivalTLSOrQUICHandshakeResult, error) {
+		func() (chan TestKeys, error) {
 			return connectAndHandshake(ctx, grease, true,
-				args.Measurement.MeasurementStartTimeSaved,
-				address, parsed, outerServerName, args.Session.Logger())
+				args.Measurement.MeasurementStartTimeSaved, address,
+				parsed, outerServerName, args.Session.Logger(), nil)
 		},
 
 		// Handshake with real ECH
-		func() (chan model.ArchivalTLSOrQUICHandshakeResult, error) {
+		func() (chan TestKeys, error) {
 			return connectAndHandshake(ctx, realEchConfig, false,
-				args.Measurement.MeasurementStartTimeSaved,
-				address, parsed, outerServerName, args.Session.Logger())
+				args.Measurement.MeasurementStartTimeSaved, address,
+				parsed, outerServerName, args.Session.Logger(), nil)
 		},
 	}
 
@@ -143,8 +146,7 @@ func (m *Measurer) Run(
 		handshakes[i], handshakes[j] = handshakes[j], handshakes[i]
 	})
 
-	var channels [3](chan model.ArchivalTLSOrQUICHandshakeResult)
-	var results [3](model.ArchivalTLSOrQUICHandshakeResult)
+	var channels [3](chan TestKeys)
 
 	// Fire the handshakes in parallel
 	// TODO: currently if one of the connects fails we fail the whole result
@@ -157,14 +159,23 @@ func (m *Measurer) Run(
 		}
 	}
 
-	// Wait on each channel for the results to come in
-	for idx, ch := range channels {
-		results[idx] = <-ch
+	alltks := TestKeys{
+		TLSHandshakes: []*model.ArchivalTLSOrQUICHandshakeResult{},
+		NetworkEvents: []*model.ArchivalNetworkEvent{},
+		Queries:       []*model.ArchivalDNSLookupResult{},
+		TCPConnect:    []*model.ArchivalTCPConnectResult{},
 	}
 
-	args.Measurement.TestKeys = TestKeys{TLSHandshakes: []*model.ArchivalTLSOrQUICHandshakeResult{
-		&results[0], &results[1], &results[2],
-	}}
+	// Wait on each channel for the results to come in
+	for _, ch := range channels {
+		tk := <-ch
+		alltks.TLSHandshakes = append(alltks.TLSHandshakes, tk.TLSHandshakes...)
+		alltks.NetworkEvents = append(alltks.NetworkEvents, tk.NetworkEvents...)
+		alltks.Queries = append(alltks.Queries, tk.Queries...)
+		alltks.TCPConnect = append(alltks.TCPConnect, tk.TCPConnect...)
+	}
+
+	args.Measurement.TestKeys = alltks
 
 	return nil
 }

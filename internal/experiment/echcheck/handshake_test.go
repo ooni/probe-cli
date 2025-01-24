@@ -6,7 +6,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -52,21 +51,27 @@ func TestHandshake(t *testing.T) {
 		name            string
 		sendGrease      bool
 		useRetryConfigs bool
-		want            func(*testing.T, testServerConfig, *model.ArchivalTLSOrQUICHandshakeResult)
+		want            func(*testing.T, testServerConfig, TestKeys)
 	}{
 		{
 			name:            "no ECH",
 			sendGrease:      false,
 			useRetryConfigs: false,
-			want: func(t *testing.T, testConfig testServerConfig, result *model.ArchivalTLSOrQUICHandshakeResult) {
-				if result.SoError != nil {
-					t.Fatal("did not expect error, got: ", result.SoError)
+			want: func(t *testing.T, testConfig testServerConfig, result TestKeys) {
+				if len(result.TCPConnect) != 1 {
+					t.Fatal("expected exactly one TCPConnect, got: ", len(result.TCPConnect))
 				}
-				if result.Failure != nil {
-					t.Fatal("did not expect error, got: ", *result.Failure)
+				if len(result.TLSHandshakes) != 1 {
+					t.Fatal("expected exactly one TLS handshake, got: ", len(result.TLSHandshakes))
 				}
-				if result.OuterServerName != "" {
-					t.Fatal("expected OuterServerName to be empty, got: ", result.OuterServerName)
+				if result.TLSHandshakes[0].SoError != nil {
+					t.Fatal("did not expect error, got: ", result.TLSHandshakes[0].SoError)
+				}
+				if result.TLSHandshakes[0].Failure != nil {
+					t.Fatal("did not expect error, got: ", *result.TLSHandshakes[0].Failure)
+				}
+				if result.TLSHandshakes[0].OuterServerName != "" {
+					t.Fatal("expected OuterServerName to be empty, got: ", result.TLSHandshakes[0].OuterServerName)
 				}
 			},
 		},
@@ -76,17 +81,21 @@ func TestHandshake(t *testing.T) {
 			// Test server doesn't handle ECH yet, so it wouldn't send retry configs anyways.
 			sendGrease:      true,
 			useRetryConfigs: false,
-			want: func(t *testing.T, testConfig testServerConfig, result *model.ArchivalTLSOrQUICHandshakeResult) {
-				if result.ServerName != testConfig.url.Hostname() {
-					t.Fatal("expected ServerName to be set to ts.URL.Hostname(), got: ", result.ServerName)
+			want: func(t *testing.T, testConfig testServerConfig, result TestKeys) {
+				if len(result.TCPConnect) != 1 {
+					t.Fatal("expected exactly one TCPConnect, got: ", len(result.TCPConnect))
 				}
-
-				if result.SoError != nil {
-					t.Fatal("did not expect error, got: ", result.SoError)
+				if len(result.TLSHandshakes) != 1 {
+					t.Fatal("expected exactly one TLS handshake, got: ", len(result.TLSHandshakes))
 				}
-
-				if result.Failure == nil || !strings.Contains(*result.Failure, "tls: server rejected ECH") {
-					t.Fatal("server should have rejected ECH: ", *result.Failure)
+				if result.TLSHandshakes[0].ServerName != testConfig.url.Hostname() {
+					t.Fatal("expected ServerName to be set to ts.URL.Hostname(), got: ", result.TLSHandshakes[0].ServerName)
+				}
+				if result.TLSHandshakes[0].SoError != nil {
+					t.Fatal("did not expect error, got: ", result.TLSHandshakes[0].SoError)
+				}
+				if result.TLSHandshakes[0].Failure == nil || !strings.Contains(*result.TLSHandshakes[0].Failure, "tls: server rejected ECH") {
+					t.Fatal("server should have rejected ECH: ", *result.TLSHandshakes[0].Failure)
 				}
 			},
 		},
@@ -94,14 +103,20 @@ func TestHandshake(t *testing.T) {
 			name:            "GREASEy ECH handshake",
 			sendGrease:      true,
 			useRetryConfigs: true,
-			want: func(t *testing.T, testConfig testServerConfig, result *model.ArchivalTLSOrQUICHandshakeResult) {
-				if result.ECHConfig != "GREASE" {
-					t.Fatal("expected ECHConfig to be string literal 'GREASE', got: ", result.ECHConfig)
+			want: func(t *testing.T, testConfig testServerConfig, result TestKeys) {
+				if len(result.TCPConnect) != 1 {
+					t.Fatal("expected exactly one TCPConnect, got: ", len(result.TCPConnect))
 				}
-				if result.SoError != nil {
-					t.Fatal("did not expect error, got: ", result.SoError)
+				if len(result.TLSHandshakes) != 1 {
+					t.Fatal("expected exactly one TLS handshake, got: ", len(result.TLSHandshakes))
 				}
-				if result.Failure == nil || !strings.Contains(*result.Failure, "tls: server rejected ECH") {
+				if result.TLSHandshakes[0].ECHConfig != "GREASE" {
+					t.Fatal("expected ECHConfig to be string literal 'GREASE', got: ", result.TLSHandshakes[0].ECHConfig)
+				}
+				if result.TLSHandshakes[0].SoError != nil {
+					t.Fatal("did not expect error, got: ", result.TLSHandshakes[0].SoError)
+				}
+				if result.TLSHandshakes[0].Failure == nil || !strings.Contains(*result.TLSHandshakes[0].Failure, "tls: server rejected ECH") {
 					t.Fatal("expected Connection to fail because test server doesn't handle ECH yet")
 				}
 			},
@@ -125,11 +140,11 @@ func TestHandshake(t *testing.T) {
 			}
 
 			ctx := context.Background()
-			conn, err := net.Dial("tcp", testConfig.url.Host)
+			ch, err := connectAndHandshake(ctx, ecl, test.useRetryConfigs, time.Now(), testConfig.url.Host, testConfig.url, "", model.DiscardLogger, testConfig.tlsConfig.RootCAs)
 			if err != nil {
 				t.Fatal(err)
 			}
-			result := handshake(ctx, conn, ecl, test.useRetryConfigs, time.Now(), testConfig.url.Host, model.DiscardLogger, testConfig.tlsConfig)
+			result := <-ch
 			test.want(t, testConfig, result)
 		})
 	}

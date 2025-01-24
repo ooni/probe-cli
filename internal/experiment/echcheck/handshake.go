@@ -3,6 +3,7 @@ package echcheck
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
 	"net"
 	"net/url"
@@ -14,30 +15,33 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-func connectAndHandshake(ctx context.Context, echConfigList []byte, isGrease bool, startTime time.Time, address string, target *url.URL, outerServerName string, logger model.Logger) (chan model.ArchivalTLSOrQUICHandshakeResult, error) {
+func connectAndHandshake(ctx context.Context, echConfigList []byte, isGrease bool, startTime time.Time, address string, target *url.URL, outerServerName string, logger model.Logger, testOnlyRootCAs *x509.CertPool) (chan TestKeys, error) {
 
-	channel := make(chan model.ArchivalTLSOrQUICHandshakeResult)
+	channel := make(chan TestKeys)
 
 	ol := logx.NewOperationLogger(logger, "echcheck: TCPConnect %s", address)
-	var dialer net.Dialer
+	trace := measurexlite.NewTrace(0, startTime)
+	dialer := trace.NewDialerWithoutResolver(logger)
 	conn, err := dialer.DialContext(ctx, "tcp", address)
 	ol.Stop(err)
 	if err != nil {
 		return nil, netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.ConnectOperation, err)
 	}
 
-	tlsConfig := genEchTLSConfig(target.Hostname(), echConfigList)
+	tlsConfig := genEchTLSConfig(target.Hostname(), echConfigList, testOnlyRootCAs)
 
 	go func() {
-		hs := handshake(ctx, conn, echConfigList, isGrease, startTime, address, logger, tlsConfig)
-		hs.OuterServerName = outerServerName
-		channel <- *hs
+		tk := handshake(ctx, conn, echConfigList, isGrease, startTime, address, logger, tlsConfig)
+		tk.TLSHandshakes[0].OuterServerName = outerServerName
+		tcpcs := trace.TCPConnects()
+		tk.TCPConnect = append(tk.TCPConnect, tcpcs...)
+		channel <- tk
 	}()
 
 	return channel, nil
 }
 
-func handshake(ctx context.Context, conn net.Conn, echConfigList []byte, isGrease bool, startTime time.Time, address string, logger model.Logger, tlsConfig *tls.Config) *model.ArchivalTLSOrQUICHandshakeResult {
+func handshake(ctx context.Context, conn net.Conn, echConfigList []byte, isGrease bool, startTime time.Time, address string, logger model.Logger, tlsConfig *tls.Config) TestKeys {
 	var d string
 	if isGrease {
 		d = " (GREASE)"
@@ -53,6 +57,7 @@ func handshake(ctx context.Context, conn net.Conn, echConfigList []byte, isGreas
 	if echErr, ok := err.(*tls.ECHRejectionError); ok && isGrease {
 		if len(echErr.RetryConfigList) > 0 {
 			tlsConfig.EncryptedClientHelloConfigList = echErr.RetryConfigList
+			// TODO: trace this TCP connection
 			maybeTLSConn, err = tls.Dial("tcp", address, tlsConfig)
 		}
 	}
@@ -73,18 +78,19 @@ func handshake(ctx context.Context, conn net.Conn, echConfigList []byte, isGreas
 	} else {
 		hs.ECHConfig = base64.StdEncoding.EncodeToString(echConfigList)
 	}
-	return hs
+	tk := TestKeys{
+		TLSHandshakes: []*model.ArchivalTLSOrQUICHandshakeResult{hs},
+	}
+	return tk
 }
 
-func genEchTLSConfig(host string, echConfigList []byte) *tls.Config {
-	if len(echConfigList) == 0 {
-		return &tls.Config{ServerName: host}
+func genEchTLSConfig(host string, echConfigList []byte, testOnlyRootCAs *x509.CertPool) *tls.Config {
+	c := &tls.Config{ServerName: host}
+	if len(echConfigList) > 0 {
+		c.EncryptedClientHelloConfigList = echConfigList
 	}
-	return &tls.Config{
-		EncryptedClientHelloConfigList: echConfigList,
-		// This will be used as the inner SNI and we will validate
-		// we get a certificate for this name.  The outer SNI will
-		// be set based on the ECH config.
-		ServerName: host,
+	if testOnlyRootCAs != nil {
+		c.RootCAs = testOnlyRootCAs
 	}
+	return c
 }
