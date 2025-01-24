@@ -2,6 +2,7 @@ package echcheck
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/mocks"
@@ -114,10 +115,21 @@ func TestMeasurementSuccessRealWorld(t *testing.T) {
 
 	// check results
 	tk := msrmnt.TestKeys.(TestKeys)
+	// NoECH, GREASE, GREASE retry, RealECH
+	if len(tk.TLSHandshakes) != 4 {
+		t.Fatal("unexpected number of TLS handshakes", len(tk.TLSHandshakes))
+	}
+	if len(tk.TCPConnects) != 4 {
+		t.Fatal("unexpected number of TCP connections", len(tk.TCPConnects))
+	}
 	for _, hs := range tk.TLSHandshakes {
 		if hs.Failure != nil {
 			if hs.ECHConfig == "GREASE" {
-				t.Fatal("unexpected exp (grease) failure:", *hs.Failure)
+				// We expect that this either succeeds (i.e. with a non-ECH server)
+				// OR that it fails with an EchRejeECHRejectionError
+				if !strings.Contains(*hs.Failure, "tls: server rejected ECH") {
+					t.Fatal("unexpected exp (grease) failure:", *hs.Failure)
+				}
 			} else if len(hs.ECHConfig) > 0 {
 				t.Fatal("unexpected exp (ech) failure:", *hs.Failure)
 			} else {

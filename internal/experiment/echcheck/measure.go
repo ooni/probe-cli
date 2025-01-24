@@ -33,7 +33,7 @@ var (
 type TestKeys struct {
 	NetworkEvents []*model.ArchivalNetworkEvent             `json:"network_events"`
 	Queries       []*model.ArchivalDNSLookupResult          `json:"queries"`
-	TCPConnect    []*model.ArchivalTCPConnectResult         `json:"tcp_connects"`
+	TCPConnects   []*model.ArchivalTCPConnectResult         `json:"tcp_connects"`
 	TLSHandshakes []*model.ArchivalTLSOrQUICHandshakeResult `json:"tls_handshakes"`
 }
 
@@ -91,20 +91,6 @@ func (m *Measurer) Run(
 		return httpsErr
 	}
 	realEchConfig := httpsRr.Ech
-	configs, err := parseECHConfigList(realEchConfig)
-	if err != nil {
-		return fmt.Errorf("failed to parse ECH config: %w", err)
-	}
-	// outerServerName is Populated in results when ECH is used.
-	outerServerName := string(configs[0].PublicName)
-	for _, ec := range configs {
-		if string(ec.PublicName) != outerServerName {
-			// It's perfectly valid to have multiple ECH configs with different
-			// `PublicName`s. But, since we can't see which one is selected by
-			// go's tls package, we can't accurately record OuterServerName.
-			return fmt.Errorf("ambigious OuterServerName for %s", parsed.Host)
-		}
-	}
 	grease, err := generateGreaseyECHConfigList(crand.Reader, parsed.Hostname())
 	if err != nil {
 		return fmt.Errorf("failed to generate GREASE ECH config: %w", err)
@@ -120,23 +106,23 @@ func (m *Measurer) Run(
 	handshakes := []func() (chan TestKeys, error){
 		// Handshake with no ECH
 		func() (chan TestKeys, error) {
-			return connectAndHandshake(ctx, []byte{}, false,
+			return startHandshake(ctx, []byte{}, false,
 				args.Measurement.MeasurementStartTimeSaved, address,
-				parsed, "", args.Session.Logger(), nil)
+				parsed, args.Session.Logger(), nil)
 		},
 
 		// Handshake with ECH GREASE
 		func() (chan TestKeys, error) {
-			return connectAndHandshake(ctx, grease, true,
+			return startHandshake(ctx, grease, true,
 				args.Measurement.MeasurementStartTimeSaved, address,
-				parsed, outerServerName, args.Session.Logger(), nil)
+				parsed, args.Session.Logger(), nil)
 		},
 
 		// Handshake with real ECH
 		func() (chan TestKeys, error) {
-			return connectAndHandshake(ctx, realEchConfig, false,
+			return startHandshake(ctx, realEchConfig, false,
 				args.Measurement.MeasurementStartTimeSaved, address,
-				parsed, outerServerName, args.Session.Logger(), nil)
+				parsed, args.Session.Logger(), nil)
 		},
 	}
 
@@ -163,7 +149,7 @@ func (m *Measurer) Run(
 		TLSHandshakes: []*model.ArchivalTLSOrQUICHandshakeResult{},
 		NetworkEvents: []*model.ArchivalNetworkEvent{},
 		Queries:       []*model.ArchivalDNSLookupResult{},
-		TCPConnect:    []*model.ArchivalTCPConnectResult{},
+		TCPConnects:   []*model.ArchivalTCPConnectResult{},
 	}
 
 	// Wait on each channel for the results to come in
@@ -172,7 +158,7 @@ func (m *Measurer) Run(
 		alltks.TLSHandshakes = append(alltks.TLSHandshakes, tk.TLSHandshakes...)
 		alltks.NetworkEvents = append(alltks.NetworkEvents, tk.NetworkEvents...)
 		alltks.Queries = append(alltks.Queries, tk.Queries...)
-		alltks.TCPConnect = append(alltks.TCPConnect, tk.TCPConnect...)
+		alltks.TCPConnects = append(alltks.TCPConnects, tk.TCPConnects...)
 	}
 
 	args.Measurement.TestKeys = alltks
