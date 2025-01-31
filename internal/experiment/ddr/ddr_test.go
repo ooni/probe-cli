@@ -46,7 +46,13 @@ func TestMeasurerRun(t *testing.T) {
 		t.Fatal("unexpected Failure")
 	}
 
-	if tk.Resolver != oneOneOneOneResolver {
+	firstAnswer := tk.Queries.Answers[0]
+
+	if firstAnswer.AnswerType != "SVCB" {
+		t.Fatal("unexpected AnswerType")
+	}
+
+	if tk.Queries.ResolverAddress != oneOneOneOneResolver {
 		t.Fatal("Resolver should be written to TestKeys")
 	}
 

@@ -9,6 +9,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/miekg/dns"
+	"github.com/ooni/probe-cli/v3/internal/geoipx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -39,21 +40,12 @@ func (m *Measurer) ExperimentVersion() string {
 	return testVersion
 }
 
-type DDRResponse struct {
-	Priority int               `json:"priority"`
-	Target   string            `json:"target"`
-	Keys     map[string]string `json:"keys"`
-}
-
 type TestKeys struct {
-	// DDRResponse is the DDR response.
-	DDRResponse []DDRResponse `json:"ddr_responses"`
+	// DNS Queries and results (as specified in https://github.com/ooni/spec/blob/master/data-formats/df-002-dnst.md#dns-data-format)
+	Queries model.ArchivalDNSLookupResult `json:"queries"`
 
 	// SupportsDDR is true if DDR is supported.
 	SupportsDDR bool `json:"supports_ddr"`
-
-	// Resolver is the resolver used (the system resolver of the host).
-	Resolver string `json:"resolver"`
 
 	// Failure is the failure that occurred, or nil.
 	Failure *string `json:"failure"`
@@ -73,15 +65,16 @@ func (m *Measurer) Run(
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
+	resolver := ""
 	if m.config.CustomResolver == nil {
 		systemResolver := getSystemResolverAddress()
 		if systemResolver == "" {
 			return errors.New("could not get system resolver")
 		}
 		log.Infof("Using system resolver: %s", systemResolver)
-		tk.Resolver = systemResolver
+		resolver = systemResolver
 	} else {
-		tk.Resolver = *m.config.CustomResolver
+		resolver = *m.config.CustomResolver
 	}
 
 	// DDR queries are queries of the SVCB type for the _dns.resolver.arpa. domain.
@@ -89,12 +82,13 @@ func (m *Measurer) Run(
 	netx := &netxlite.Netx{}
 	dialer := netx.NewDialerWithoutResolver(log.Log)
 	transport := netxlite.NewUnwrappedDNSOverUDPTransport(
-		dialer, tk.Resolver)
+		dialer, resolver)
 	encoder := &netxlite.DNSEncoderMiekg{}
 	query := encoder.Encode(
 		"_dns.resolver.arpa.", // As specified in RFC 9462
 		dns.TypeSVCB,
 		true)
+	t0 := time.Since(measurement.MeasurementStartTimeSaved).Seconds()
 	resp, err := transport.RoundTrip(ctx, query)
 	if err != nil {
 		failure := err.Error()
@@ -115,20 +109,19 @@ func (m *Measurer) Run(
 	if err != nil {
 		decodingError := err.Error()
 		tk.Failure = &decodingError
-	} else {
-		tk.DDRResponse = ddrResponse
 	}
+	t := time.Since(measurement.MeasurementStartTimeSaved).Seconds()
+	tk.Queries = createResult(t, t0, tk.Failure, resp, resolver, ddrResponse)
 
-	tk.SupportsDDR = len(tk.DDRResponse) > 0
+	tk.SupportsDDR = len(ddrResponse) > 0
 
-	log.Infof("Gathered DDR Responses: %+v", tk.DDRResponse)
 	return nil
 }
 
 // decodeResponse decodes the response from the DNS query.
 // DDR is only concerned with SVCB records, so we only decode those.
-func decodeResponse(responseFields []dns.RR) ([]DDRResponse, error) {
-	responses := make([]DDRResponse, 0)
+func decodeResponse(responseFields []dns.RR) ([]model.SVCBData, error) {
+	responses := make([]model.SVCBData, 0)
 	for _, rr := range responseFields {
 		switch rr := rr.(type) {
 		case *dns.SVCB:
@@ -144,7 +137,7 @@ func decodeResponse(responseFields []dns.RR) ([]DDRResponse, error) {
 	return responses, nil
 }
 
-func parseSvcb(rr *dns.SVCB) (DDRResponse, error) {
+func parseSvcb(rr *dns.SVCB) (model.SVCBData, error) {
 	keys := make(map[string]string)
 	for _, kv := range rr.Value {
 		value := kv.String()
@@ -152,10 +145,10 @@ func parseSvcb(rr *dns.SVCB) (DDRResponse, error) {
 		keys[key] = value
 	}
 
-	return DDRResponse{
-		Priority: int(rr.Priority),
-		Target:   rr.Target,
-		Keys:     keys,
+	return model.SVCBData{
+		Priority:   rr.Priority,
+		TargetName: rr.Target,
+		Params:     keys,
 	}, nil
 }
 
@@ -172,6 +165,51 @@ func getSystemResolverAddress() string {
 	}
 
 	return ""
+}
+
+func createResult(t float64, t0 float64, failure *string, resp model.DNSResponse, resolver string, svcbRecords []model.SVCBData) model.ArchivalDNSLookupResult {
+	resolverHost, _, err := net.SplitHostPort(resolver)
+	if err != nil {
+		log.Warnf("Could not split resolver address %s: %s", resolver, err)
+		resolverHost = resolver
+	}
+	asn, org, err := geoipx.LookupASN(resolverHost)
+	if err != nil {
+		log.Warnf("Could not lookup ASN for resolver %s: %s", resolverHost, err)
+		asn = 0
+		org = ""
+	}
+
+	answers := make([]model.ArchivalDNSAnswer, 0)
+	for _, record := range svcbRecords {
+		// Create an ArchivalDNSAnswer for each SVCB record
+		// for this experiment, only the SVCB key is relevant.
+		answers = append(answers, model.ArchivalDNSAnswer{
+			ASN:        int64(asn),
+			ASOrgName:  org,
+			AnswerType: "SVCB",
+			Hostname:   "",
+			IPv4:       "",
+			IPv6:       "",
+			SVCB:       &record,
+		})
+	}
+
+	return model.ArchivalDNSLookupResult{
+		Answers:          answers,
+		Engine:           "udp",
+		Failure:          failure,
+		GetaddrinfoError: 0,
+		Hostname:         "_dns.resolver.arpa.",
+		QueryType:        "SVCB",
+		RawResponse:      resp.Bytes(),
+		Rcode:            int64(resp.Rcode()),
+		ResolverAddress:  resolverHost,
+		T0:               t0,
+		T:                t,
+		Tags:             nil,
+		TransactionID:    0,
+	}
 }
 
 func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
