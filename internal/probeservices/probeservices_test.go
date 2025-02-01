@@ -16,6 +16,23 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
+func newEmptyClient() *Client {
+	client, err := NewClient(
+		&mockable.Session{
+			MockableHTTPClient: http.DefaultClient,
+			MockableLogger:     log.Log,
+		},
+		model.OOAPIService{
+			Address: "",
+			Type:    "https",
+		},
+	)
+	if err != nil {
+		panic(err) // so fail the test
+	}
+	return client
+}
+
 func newclient() *Client {
 	client, err := NewClient(
 		&mockable.Session{
@@ -23,7 +40,7 @@ func newclient() *Client {
 			MockableLogger:     log.Log,
 		},
 		model.OOAPIService{
-			Address: "https://backend-hel.ooni.org/",
+			Address: "https://api.dev.ooni.io",
 			Type:    "https",
 		},
 	)
@@ -579,7 +596,7 @@ func TestGetCredsAndAuthNotLoggedIn(t *testing.T) {
 	}
 
 	clnt := newclient()
-	if err := clnt.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
+	if err := clnt.MaybeRegister(context.Background(), "", MetadataFixture()); err != nil {
 		t.Fatal(err)
 	}
 	creds, auth, err := clnt.GetCredsAndAuth()

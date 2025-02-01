@@ -24,10 +24,10 @@ func TestFetchTorTargets(t *testing.T) {
 	// torflow is the flow with which we invoke the tor API
 	torflow := func(t *testing.T, client *Client) (map[string]model.OOAPITorTarget, error) {
 		// we need to make sure we're registered and logged in
-		if err := client.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
+		if err := client.MaybeRegister(context.Background(), "", MetadataFixture()); err != nil {
 			t.Fatal(err)
 		}
-		if err := client.MaybeLogin(context.Background()); err != nil {
+		if err := client.MaybeLogin(context.Background(), ""); err != nil {
 			t.Fatal(err)
 		}
 

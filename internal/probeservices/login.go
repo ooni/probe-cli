@@ -9,7 +9,7 @@ import (
 )
 
 // MaybeLogin performs login if necessary
-func (c Client) MaybeLogin(ctx context.Context) error {
+func (c Client) MaybeLogin(ctx context.Context, baseURL string) error {
 	state := c.StateFile.Get()
 	if state.Auth() != nil {
 		return nil // we're already good
@@ -20,7 +20,11 @@ func (c Client) MaybeLogin(ctx context.Context) error {
 	}
 	c.LoginCalls.Add(1)
 
-	URL, err := urlx.ResolveReference(c.BaseURL, "/api/v1/login", "")
+	// construct the URL to use
+	if baseURL == "" {
+		baseURL = c.BaseURL // fallback to the client BaseURL if the passed url is empty
+	}
+	URL, err := urlx.ResolveReference(baseURL, "/api/v1/login", "")
 	if err != nil {
 		return err
 	}

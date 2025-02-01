@@ -19,6 +19,14 @@ func Default() []model.OOAPIService {
 	}}
 }
 
+// DefaultOrchestrator returns the defaul orchestrate probe service
+func DefaultOrchestrator() model.OOAPIService {
+	return model.OOAPIService{
+		Address: "https://api.ooni.org",
+		Type:    "orchestrate",
+	}
+}
+
 // SortServices gives priority to https, then cloudfronted, then onion.
 func SortServices(in []model.OOAPIService) (out []model.OOAPIService) {
 	for _, entry := range in {
@@ -53,6 +61,16 @@ func OnlyHTTPS(in []model.OOAPIService) (out []model.OOAPIService) {
 func OnlyFallbacks(in []model.OOAPIService) (out []model.OOAPIService) {
 	for _, entry := range SortServices(in) {
 		if entry.Type != "https" {
+			out = append(out, entry)
+		}
+	}
+	return
+}
+
+// OnlyOrchestrate returns the orchestrate services only
+func OnlyOrchestrate(in []model.OOAPIService) (out []model.OOAPIService) {
+	for _, entry := range in {
+		if entry.Type == "orchestrate" {
 			out = append(out, entry)
 		}
 	}

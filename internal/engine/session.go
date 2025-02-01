@@ -627,7 +627,7 @@ func (s *Session) getAvailableProbeServicesUnlocked() []model.OOAPIService {
 
 func (s *Session) initOrchestraClient(
 	ctx context.Context, clnt *probeservices.Client,
-	maybeLogin func(ctx context.Context) error,
+	maybeLogin func(ctx context.Context, baseURL string) error,
 ) (*probeservices.Client, error) {
 	// The original implementation has as its only use case that we
 	// were registering and logging in for sending an update regarding
@@ -644,10 +644,12 @@ func (s *Session) initOrchestraClient(
 		SoftwareVersion: "0.1.0-dev",
 		SupportedTests:  []string{"web_connectivity"},
 	}
-	if err := clnt.MaybeRegister(ctx, meta); err != nil {
+
+	orchestrator := probeservices.DefaultOrchestrator()
+	if err := clnt.MaybeRegister(ctx, orchestrator.Address, meta); err != nil {
 		return nil, err
 	}
-	if err := maybeLogin(ctx); err != nil {
+	if err := maybeLogin(ctx, orchestrator.Address); err != nil {
 		return nil, err
 	}
 	return clnt, nil
