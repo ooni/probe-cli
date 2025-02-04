@@ -51,10 +51,7 @@ type TestKeys struct {
 	Failure *string `json:"failure"`
 }
 
-func (m *Measurer) Run(
-	ctx context.Context,
-	args *model.ExperimentArgs) error {
-
+func (m *Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	log.SetLevel(log.DebugLevel)
 	measurement := args.Measurement
 
@@ -77,20 +74,22 @@ func (m *Measurer) Run(
 		resolver = *m.config.CustomResolver
 	}
 
-	// DDR queries are queries of the SVCB type for the _dns.resolver.arpa. domain.
-
 	netx := &netxlite.Netx{}
 	dialer := netx.NewDialerWithoutResolver(log.Log)
-	transport := netxlite.NewUnwrappedDNSOverUDPTransport(
-		dialer, resolver)
+	transport := netxlite.NewUnwrappedDNSOverUDPTransport(dialer, resolver)
 	encoder := &netxlite.DNSEncoderMiekg{}
-	query := encoder.Encode(
-		"_dns.resolver.arpa.", // As specified in RFC 9462
-		dns.TypeSVCB,
-		true)
+	// As specified in RFC 9462 a DDR Query is a SVCB query for the _dns.resolver.arpa. domain
+	query := encoder.Encode("_dns.resolver.arpa.", dns.TypeSVCB, true)
 	t0 := time.Since(measurement.MeasurementStartTimeSaved).Seconds()
+
 	resp, err := transport.RoundTrip(ctx, query)
 	if err != nil {
+		// Since we are using a custom transport, we need to check for context errors manually
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			failure := "interrupted"
+			tk.Failure = &failure
+			return nil
+		}
 		failure := err.Error()
 		tk.Failure = &failure
 		return nil
@@ -105,14 +104,12 @@ func (m *Measurer) Run(
 	}
 
 	ddrResponse, err := decodeResponse(reply.Answer)
-
 	if err != nil {
 		decodingError := err.Error()
 		tk.Failure = &decodingError
 	}
 	t := time.Since(measurement.MeasurementStartTimeSaved).Seconds()
 	tk.Queries = createResult(t, t0, tk.Failure, resp, resolver, ddrResponse)
-
 	tk.SupportsDDR = len(ddrResponse) > 0
 
 	return nil

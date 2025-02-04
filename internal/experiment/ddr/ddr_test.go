@@ -3,6 +3,7 @@ package ddr
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
@@ -52,7 +53,7 @@ func TestMeasurerRun(t *testing.T) {
 		t.Fatal("unexpected AnswerType")
 	}
 
-	if tk.Queries.ResolverAddress != oneOneOneOneResolver {
+	if tk.Queries.ResolverAddress != "1.1.1.1" {
 		t.Fatal("Resolver should be written to TestKeys")
 	}
 
@@ -78,6 +79,87 @@ func TestMeasurerFailsWithNoPort(t *testing.T) {
 	tk, _ := runExperiment(invalidResolver)
 	if tk.Failure == nil {
 		t.Fatal("expected Failure")
+	}
+}
+
+func TestMeasurerFailsWithInvalidResolver(t *testing.T) {
+	invalidResolver := "256.256.256.256:53"
+
+	tk, _ := runExperiment(invalidResolver)
+	if tk.Failure == nil {
+		t.Fatal("expected Failure")
+	}
+}
+
+func TestMeasurerRunWithSystemResolver(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
+	measurer := NewExperimentMeasurer(Config{})
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: new(model.Measurement),
+		Session: &mocks.Session{
+			MockLogger: func() model.Logger {
+				return log.Log
+			},
+		},
+	}
+	if err := measurer.Run(context.Background(), args); err != nil {
+		t.Fatal(err)
+	}
+	tk := args.Measurement.TestKeys.(*TestKeys)
+	if tk.Failure != nil {
+		t.Fatal("unexpected Failure")
+	}
+}
+
+func TestMeasurerRunWithCancelledContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // immediately cancel the context
+
+	measurer := NewExperimentMeasurer(Config{})
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: new(model.Measurement),
+		Session: &mocks.Session{
+			MockLogger: func() model.Logger {
+				return log.Log
+			},
+		},
+	}
+	err := measurer.Run(ctx, args)
+	if err != nil {
+		t.Fatal("expected no error due to cancelled context")
+	}
+	tk := args.Measurement.TestKeys.(*TestKeys)
+	if tk.Failure == nil || *tk.Failure != "interrupted" {
+		t.Fatal("expected interrupted failure")
+	}
+}
+
+func TestMeasurerRunWithTimeout(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
+	defer cancel()
+
+	measurer := NewExperimentMeasurer(Config{})
+	args := &model.ExperimentArgs{
+		Callbacks:   model.NewPrinterCallbacks(log.Log),
+		Measurement: new(model.Measurement),
+		Session: &mocks.Session{
+			MockLogger: func() model.Logger {
+				return log.Log
+			},
+		},
+	}
+	err := measurer.Run(ctx, args)
+	if err != nil {
+		t.Fatal("expected no error due to context timeout")
+	}
+	tk := args.Measurement.TestKeys.(*TestKeys)
+	if tk.Failure == nil || *tk.Failure != "interrupted" {
+		t.Fatal("expected interrupted failure")
 	}
 }
 
