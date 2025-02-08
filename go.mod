@@ -7,7 +7,7 @@ toolchain go1.22.2
 require (
 	filippo.io/age v1.2.0
 	github.com/AlecAivazis/survey/v2 v2.3.7
-	github.com/Psiphon-Labs/psiphon-tunnel-core v1.0.11-0.20241119203223-a6c5cfa67fd9
+	github.com/Psiphon-Labs/psiphon-tunnel-core v1.0.11-0.20250205204422-09be8eec478f
 	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/apex/log v1.9.0
 	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5
@@ -58,11 +58,12 @@ require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	filippo.io/keygen v0.0.0-20230306160926-5201437acf8e // indirect
 	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
+	github.com/Jigsaw-Code/outline-sdk v0.0.16 // indirect
 	github.com/Psiphon-Labs/bolt v0.0.0-20200624191537-23cedaef7ad7 // indirect
 	github.com/Psiphon-Labs/consistent v0.0.0-20240322131436-20aaa4e05737 // indirect
 	github.com/Psiphon-Labs/goptlib v0.0.0-20200406165125-c0e32a7a3464 // indirect
 	github.com/Psiphon-Labs/psiphon-tls v0.0.0-20240824224428-ca6969e315a9 // indirect
-	github.com/Psiphon-Labs/quic-go v0.0.0-20240821052333-b6316b594e39 // indirect
+	github.com/Psiphon-Labs/quic-go v0.0.0-20250203210204-a4381c68e52f // indirect
 	github.com/Psiphon-Labs/utls v1.1.1-0.20241107183331-b18909f8ccaa // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/alexbrainman/sspi v0.0.0-20231016080023-1a75b4708caa // indirect
@@ -101,6 +102,7 @@ require (
 	github.com/flynn/noise v1.0.1-0.20220214164934-d803f5c4b0f4 // indirect
 	github.com/fxamacker/cbor/v2 v2.5.0 // indirect
 	github.com/go-gorp/gorp/v3 v3.1.0 // indirect
+	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
@@ -118,6 +120,7 @@ require (
 	github.com/klauspost/cpuid/v2 v2.2.6 // indirect
 	github.com/klauspost/reedsolomon v1.12.0 // indirect
 	github.com/libp2p/go-reuseport v0.4.0 // indirect
+	github.com/marusama/semaphore v0.0.0-20171214154724-565ffd8e868a // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mdlayher/netlink v1.7.2 // indirect
 	github.com/mdlayher/socket v0.5.0 // indirect
@@ -160,6 +163,7 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/segmentio/fasthash v1.0.3 // indirect
 	github.com/sergeyfrolov/bsbuffer v0.0.0-20180903213811-94e85abb8507 // indirect
+	github.com/shadowsocks/go-shadowsocks2 v0.1.5 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.9.0 // indirect
