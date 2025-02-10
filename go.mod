@@ -2,7 +2,7 @@ module github.com/ooni/probe-cli/v3
 
 go 1.21.0
 
-toolchain go1.22.2
+toolchain go1.22.3
 
 require (
 	filippo.io/age v1.2.1
