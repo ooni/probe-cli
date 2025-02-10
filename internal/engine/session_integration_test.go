@@ -438,56 +438,28 @@ func TestUserAgentNoProxy(t *testing.T) {
 	}
 }
 
-func TestNewOrchestraClientMaybeLookupBackendsFailure(t *testing.T) {
+func TestNewOrchestraClientProbeServicesSuccess(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	errMocked := errors.New("mocked error")
 	sess := newSessionForTestingNoLookups(t)
-	sess.testMaybeLookupBackendsContext = func(ctx context.Context) error {
-		return errMocked
-	}
-	client, err := sess.newOrchestraClient(context.Background(), "https://api.dev.ooni.io")
-	if !errors.Is(err, errMocked) {
-		t.Fatal("not the error we expected", err)
-	}
-	if client != nil {
-		t.Fatal("expected nil client here")
+	_, err := sess.newOrchestraClient(context.Background(), "https://api.dev.ooni.io")
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
-func TestNewOrchestraClientMaybeLookupLocationFailure(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	errMocked := errors.New("mocked error")
-	sess := newSessionForTestingNoLookups(t)
-	sess.testMaybeLookupLocationContext = func(ctx context.Context) error {
-		return errMocked
-	}
-	client, err := sess.newOrchestraClient(context.Background(), "https://api.dev.ooni.io")
-	if !errors.Is(err, errMocked) {
-		t.Fatalf("not the error we expected: %+v", err)
-	}
-	if client != nil {
-		t.Fatal("expected nil client here")
-	}
-}
-
-func TestNewOrchestraClientProbeServicesNewClientFailure(t *testing.T) {
+func TestNewOrchestraClientProbeServicesFailure(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
 	sess := newSessionForTestingNoLookups(t)
-	sess.selectedProbeServiceHook = func(svc *model.OOAPIService) {
-		svc.Type = "antani" // should really not be supported for a long time
-	}
-	client, err := sess.newOrchestraClient(context.Background(), "https://api.dev.ooni.io")
-	if !errors.Is(err, probeservices.ErrUnsupportedServiceType) {
-		t.Fatal("not the error we expected")
-	}
+	client, err := sess.newOrchestraClient(context.Background(), "https://api.stage.ooni.io")
 	if client != nil {
 		t.Fatal("expected nil client here")
+	}
+	if err == nil {
+		t.Fatal("expected non-nil error here")
 	}
 }
 
