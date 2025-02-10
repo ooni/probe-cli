@@ -20,7 +20,14 @@ func Default() []model.OOAPIService {
 }
 
 // DefaultOrchestrator returns the defaul orchestrate probe service
-func DefaultOrchestrator() model.OOAPIService {
+func DefaultOrchestrator(baseURL string) model.OOAPIService {
+	// allows testing of orchestrate services
+	if baseURL != "" {
+		return model.OOAPIService{
+			Address: baseURL,
+			Type:    "orchestrate",
+		}
+	}
 	return model.OOAPIService{
 		Address: "https://api.ooni.org",
 		Type:    "orchestrate",

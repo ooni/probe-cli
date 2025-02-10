@@ -25,12 +25,12 @@ func TestMaybeRegister(t *testing.T) {
 		clnt := newclient()
 
 		// attempt to register once
-		if err := clnt.MaybeRegister(context.Background(), "", MetadataFixture()); err != nil {
+		if err := clnt.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
 			t.Fatal(err)
 		}
 
 		// try again (we want to make sure it's idempotent once we've registered)
-		if err := clnt.MaybeRegister(context.Background(), "", MetadataFixture()); err != nil {
+		if err := clnt.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
 			t.Fatal(err)
 		}
 
@@ -39,33 +39,6 @@ func TestMaybeRegister(t *testing.T) {
 			t.Fatal("called register API too many times")
 		}
 	})
-
-	t.Run("is working as intended with the passed baseURL", func(t *testing.T) {
-		if testing.Short() {
-			t.Skip("skip test in short mode")
-		}
-
-		// create client
-		clnt := newEmptyClient()
-
-		// attempt to register once
-		if err := clnt.MaybeRegister(context.Background(), "https://api.dev.ooni.io", MetadataFixture()); err != nil {
-			t.Fatal(err)
-		}
-
-		// try again (we want to make sure it's idempotent once we've registered)
-		if err := clnt.MaybeRegister(context.Background(), "https://api.dev.ooni.io", MetadataFixture()); err != nil {
-			t.Fatal(err)
-		}
-
-		// make sure we indeed only called it once
-		if clnt.RegisterCalls.Load() != 1 {
-			t.Fatal("called register API too many times")
-		}
-	})
-
-	// Now let's construct a test server that returns a valid response and try
-	// to communicate with such a test server successfully and with errors
 
 	t.Run("is working as intended with a local test server", func(t *testing.T) {
 		// create state for emulating the OONI backend
@@ -92,12 +65,12 @@ func TestMaybeRegister(t *testing.T) {
 		}
 
 		// attempt to register once
-		if err := client.MaybeRegister(context.Background(), "", MetadataFixture()); err != nil {
+		if err := client.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
 			t.Fatal(err)
 		}
 
 		// try again (we want to make sure it's idempotent once we've registered)
-		if err := client.MaybeRegister(context.Background(), "", MetadataFixture()); err != nil {
+		if err := client.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
 			t.Fatal(err)
 		}
 
@@ -139,12 +112,12 @@ func TestMaybeRegister(t *testing.T) {
 		}
 
 		// attempt to register once
-		if err := client.MaybeRegister(context.Background(), "", MetadataFixture()); err != nil {
+		if err := client.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
 			t.Fatal(err)
 		}
 
 		// try again (we want to make sure it's idempotent once we've registered)
-		if err := client.MaybeRegister(context.Background(), "", MetadataFixture()); err != nil {
+		if err := client.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
 			t.Fatal(err)
 		}
 
@@ -176,7 +149,7 @@ func TestMaybeRegister(t *testing.T) {
 		}
 
 		// attempt to register
-		err := client.MaybeRegister(context.Background(), "", MetadataFixture())
+		err := client.MaybeRegister(context.Background(), MetadataFixture())
 
 		// we do expect an error
 		if !errors.Is(err, netxlite.ECONNRESET) {
@@ -213,7 +186,7 @@ func TestMaybeRegister(t *testing.T) {
 		}
 
 		// attempt to register
-		err := client.MaybeRegister(context.Background(), "", MetadataFixture())
+		err := client.MaybeRegister(context.Background(), MetadataFixture())
 
 		// we do expect an error
 		if err == nil || err.Error() != "unexpected end of JSON input" {
@@ -229,7 +202,7 @@ func TestMaybeRegister(t *testing.T) {
 	t.Run("when metadata is not valid", func(t *testing.T) {
 		// we expect ErrInvalidMetadata when metadata is empty
 		clnt := newclient()
-		err := clnt.MaybeRegister(context.Background(), "", model.OOAPIProbeMetadata{})
+		err := clnt.MaybeRegister(context.Background(), model.OOAPIProbeMetadata{})
 		if !errors.Is(err, ErrInvalidMetadata) {
 			t.Fatal("expected an error here")
 		}
@@ -250,7 +223,7 @@ func TestMaybeRegister(t *testing.T) {
 		}
 
 		// attempt to register, which should immediately succeed
-		if err := clnt.MaybeRegister(context.Background(), "", MetadataFixture()); err != nil {
+		if err := clnt.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
 			t.Fatal(err)
 		}
 
@@ -265,7 +238,7 @@ func TestMaybeRegister(t *testing.T) {
 		clnt.BaseURL = "\t\t\t" // makes it fail
 		ctx := context.Background()
 		metadata := MetadataFixture()
-		err := clnt.MaybeRegister(ctx, "", metadata)
+		err := clnt.MaybeRegister(ctx, metadata)
 		if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
 			t.Fatal("expected an error here")
 		}
@@ -279,7 +252,7 @@ func TestMaybeRegister(t *testing.T) {
 		client.BaseURL = "\t\t\t"
 
 		// attempt to register
-		err := client.MaybeRegister(context.Background(), "", MetadataFixture())
+		err := client.MaybeRegister(context.Background(), MetadataFixture())
 
 		// we do expect an error
 		if err == nil || err.Error() != `parse "\t\t\t": net/url: invalid control character in URL` {

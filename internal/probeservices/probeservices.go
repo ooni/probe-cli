@@ -125,6 +125,8 @@ func NewClient(sess Session, service model.OOAPIService) (*Client, error) {
 			return nil, err
 		}
 		return client, nil
+	case "orchestrate":
+		return client, nil
 	default:
 		return nil, ErrUnsupportedServiceType
 	}

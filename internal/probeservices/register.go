@@ -14,7 +14,7 @@ import (
 )
 
 // MaybeRegister registers this client if not already registered
-func (c Client) MaybeRegister(ctx context.Context, baseURL string, metadata model.OOAPIProbeMetadata) error {
+func (c Client) MaybeRegister(ctx context.Context, metadata model.OOAPIProbeMetadata) error {
 	if !metadata.Valid() {
 		return ErrInvalidMetadata
 	}
@@ -31,11 +31,7 @@ func (c Client) MaybeRegister(ctx context.Context, baseURL string, metadata mode
 		Password:           pwd,
 	}
 
-	// construct the URL to use
-	if baseURL == "" {
-		baseURL = c.BaseURL // fallback to the client BaseURL if the passed url is empty
-	}
-	URL, err := urlx.ResolveReference(baseURL, "/api/v1/register", "")
+	URL, err := urlx.ResolveReference(c.BaseURL, "/api/v1/register", "")
 	if err != nil {
 		return err
 	}

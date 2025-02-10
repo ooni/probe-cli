@@ -212,7 +212,7 @@ func TestInitOrchestraClientMaybeLoginError(t *testing.T) {
 	}
 	expected := errors.New("mocked error")
 	outclnt, err := sess.initOrchestraClient(
-		ctx, clnt, func(context.Context, string) error {
+		ctx, clnt, func(context.Context) error {
 			return expected
 		},
 	)
@@ -447,7 +447,7 @@ func TestNewOrchestraClientMaybeLookupBackendsFailure(t *testing.T) {
 	sess.testMaybeLookupBackendsContext = func(ctx context.Context) error {
 		return errMocked
 	}
-	client, err := sess.newOrchestraClient(context.Background())
+	client, err := sess.newOrchestraClient(context.Background(), "https://api.dev.ooni.io")
 	if !errors.Is(err, errMocked) {
 		t.Fatal("not the error we expected", err)
 	}
@@ -465,7 +465,7 @@ func TestNewOrchestraClientMaybeLookupLocationFailure(t *testing.T) {
 	sess.testMaybeLookupLocationContext = func(ctx context.Context) error {
 		return errMocked
 	}
-	client, err := sess.newOrchestraClient(context.Background())
+	client, err := sess.newOrchestraClient(context.Background(), "https://api.dev.ooni.io")
 	if !errors.Is(err, errMocked) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
@@ -482,7 +482,7 @@ func TestNewOrchestraClientProbeServicesNewClientFailure(t *testing.T) {
 	sess.selectedProbeServiceHook = func(svc *model.OOAPIService) {
 		svc.Type = "antani" // should really not be supported for a long time
 	}
-	client, err := sess.newOrchestraClient(context.Background())
+	client, err := sess.newOrchestraClient(context.Background(), "https://api.dev.ooni.io")
 	if !errors.Is(err, probeservices.ErrUnsupportedServiceType) {
 		t.Fatal("not the error we expected")
 	}

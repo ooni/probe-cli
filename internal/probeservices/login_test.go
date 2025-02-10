@@ -25,50 +25,18 @@ func TestMaybeLogin(t *testing.T) {
 		clnt := newclient()
 
 		// we need to register first because we don't have state yet
-		if err := clnt.MaybeRegister(context.Background(), "", MetadataFixture()); err != nil {
+		if err := clnt.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
 			t.Fatal(err)
 		}
 
 		// now we try to login and get a token
-		if err := clnt.MaybeLogin(context.Background(), ""); err != nil {
+		if err := clnt.MaybeLogin(context.Background()); err != nil {
 			t.Fatal(err)
 		}
 
 		// do this again, and later on we'll verify that we
 		// did actually issue just a single login call
-		if err := clnt.MaybeLogin(context.Background(), ""); err != nil {
-			t.Fatal(err)
-		}
-
-		// make sure we did call login just once: the second call
-		// should not invoke login because we have good state
-		if clnt.LoginCalls.Load() != 1 {
-			t.Fatal("called login API too many times")
-		}
-	})
-
-	// Let's also test that the passes baseURL is given precedence over the client baseURL
-	t.Run("is working with passed baseURL", func(t *testing.T) {
-		if testing.Short() {
-			t.Skip("skip test in short mode")
-		}
-
-		// create client
-		clnt := newEmptyClient()
-
-		// we need to register first because we don't have state yet
-		if err := clnt.MaybeRegister(context.Background(), "https://api.dev.ooni.io", MetadataFixture()); err != nil {
-			t.Fatal(err)
-		}
-
-		// now we try to login and get a token
-		if err := clnt.MaybeLogin(context.Background(), "https://api.dev.ooni.io"); err != nil {
-			t.Fatal(err)
-		}
-
-		// do this again, and later on we'll verify that we
-		// did actually issue just a single login call
-		if err := clnt.MaybeLogin(context.Background(), "https://api.dev.ooni.io"); err != nil {
+		if err := clnt.MaybeLogin(context.Background()); err != nil {
 			t.Fatal(err)
 		}
 
@@ -107,18 +75,18 @@ func TestMaybeLogin(t *testing.T) {
 		}
 
 		// we need to register first because we don't have state yet
-		if err := client.MaybeRegister(context.Background(), "", MetadataFixture()); err != nil {
+		if err := client.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
 			t.Fatal(err)
 		}
 
 		// now we try to login and get a token
-		if err := client.MaybeLogin(context.Background(), ""); err != nil {
+		if err := client.MaybeLogin(context.Background()); err != nil {
 			t.Fatal(err)
 		}
 
 		// do this again, and later on we'll verify that we
 		// did actually issue just a single login call
-		if err := client.MaybeLogin(context.Background(), ""); err != nil {
+		if err := client.MaybeLogin(context.Background()); err != nil {
 			t.Fatal(err)
 		}
 
@@ -161,18 +129,18 @@ func TestMaybeLogin(t *testing.T) {
 		}
 
 		// we need to register first because we don't have state yet
-		if err := client.MaybeRegister(context.Background(), "", MetadataFixture()); err != nil {
+		if err := client.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
 			t.Fatal(err)
 		}
 
 		// now we try to login and get a token
-		if err := client.MaybeLogin(context.Background(), ""); err != nil {
+		if err := client.MaybeLogin(context.Background()); err != nil {
 			t.Fatal(err)
 		}
 
 		// do this again, and later on we'll verify that we
 		// did actually issue just a single login call
-		if err := client.MaybeLogin(context.Background(), ""); err != nil {
+		if err := client.MaybeLogin(context.Background()); err != nil {
 			t.Fatal(err)
 		}
 
@@ -214,7 +182,7 @@ func TestMaybeLogin(t *testing.T) {
 		}))
 
 		// now we try to login and get a token
-		err := client.MaybeLogin(context.Background(), "")
+		err := client.MaybeLogin(context.Background())
 
 		// we do expect an error
 		if !errors.Is(err, netxlite.ECONNRESET) {
@@ -260,7 +228,7 @@ func TestMaybeLogin(t *testing.T) {
 		}))
 
 		// now we try to login and get a token
-		err := client.MaybeLogin(context.Background(), "")
+		err := client.MaybeLogin(context.Background())
 
 		// we do expect an error
 		if err == nil || err.Error() != "unexpected end of JSON input" {
@@ -289,7 +257,7 @@ func TestMaybeLogin(t *testing.T) {
 
 		// now call login and we expect no error because we should
 		// already have what we need to perform a login
-		if err := clnt.MaybeLogin(context.Background(), ""); err != nil {
+		if err := clnt.MaybeLogin(context.Background()); err != nil {
 			t.Fatal(err)
 		}
 
@@ -311,7 +279,7 @@ func TestMaybeLogin(t *testing.T) {
 		}
 
 		// now try to login and expect to see we've not registered yet
-		if err := clnt.MaybeLogin(context.Background(), ""); !errors.Is(err, ErrNotRegistered) {
+		if err := clnt.MaybeLogin(context.Background()); !errors.Is(err, ErrNotRegistered) {
 			t.Fatal("unexpected error", err)
 		}
 
@@ -338,7 +306,7 @@ func TestMaybeLogin(t *testing.T) {
 		}))
 
 		// now we try to login and get a token
-		err := client.MaybeLogin(context.Background(), "")
+		err := client.MaybeLogin(context.Background())
 
 		// we do expect an error
 		if err == nil || err.Error() != `parse "\t\t\t": net/url: invalid control character in URL` {

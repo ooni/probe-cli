@@ -364,7 +364,7 @@ func (s *Session) DefaultHTTPClient() model.HTTPClient {
 // FetchTorTargets fetches tor targets from the API.
 func (s *Session) FetchTorTargets(
 	ctx context.Context, cc string) (map[string]model.OOAPITorTarget, error) {
-	clnt, err := s.newOrchestraClient(ctx)
+	clnt, err := s.newOrchestraClient(ctx, "")
 	if err != nil {
 		return nil, err
 	}
@@ -379,7 +379,7 @@ func (s *Session) FetchTorTargets(
 // internal cache. We do this to avoid hitting the API for every input.
 func (s *Session) FetchOpenVPNConfig(
 	ctx context.Context, provider, cc string) (*model.OOAPIVPNProviderConfig, error) {
-	clnt, err := s.newOrchestraClient(ctx)
+	clnt, err := s.newOrchestraClient(ctx, "")
 	if err != nil {
 		return nil, err
 	}
@@ -465,8 +465,12 @@ func (s *Session) NewSubmitter(ctx context.Context) (model.Submitter, error) {
 
 // newOrchestraClient creates a new orchestra client. This client is registered
 // and logged in with the OONI orchestra. An error is returned on failure.
-func (s *Session) newOrchestraClient(ctx context.Context) (*probeservices.Client, error) {
-	clnt, err := s.newProbeServicesClient(ctx)
+func (s *Session) newOrchestraClient(ctx context.Context, baseURL string) (*probeservices.Client, error) {
+	if ctx.Err() != nil {
+		return nil, ctx.Err() // helps with testing
+	}
+	orchestrateService := probeservices.DefaultOrchestrator(baseURL)
+	clnt, err := probeservices.NewClient(s, orchestrateService)
 	if err != nil {
 		return nil, err
 	}
@@ -627,7 +631,7 @@ func (s *Session) getAvailableProbeServicesUnlocked() []model.OOAPIService {
 
 func (s *Session) initOrchestraClient(
 	ctx context.Context, clnt *probeservices.Client,
-	maybeLogin func(ctx context.Context, baseURL string) error,
+	maybeLogin func(ctx context.Context) error,
 ) (*probeservices.Client, error) {
 	// The original implementation has as its only use case that we
 	// were registering and logging in for sending an update regarding
@@ -645,11 +649,10 @@ func (s *Session) initOrchestraClient(
 		SupportedTests:  []string{"web_connectivity"},
 	}
 
-	orchestrator := probeservices.DefaultOrchestrator()
-	if err := clnt.MaybeRegister(ctx, orchestrator.Address, meta); err != nil {
+	if err := clnt.MaybeRegister(ctx, meta); err != nil {
 		return nil, err
 	}
-	if err := maybeLogin(ctx, orchestrator.Address); err != nil {
+	if err := maybeLogin(ctx); err != nil {
 		return nil, err
 	}
 	return clnt, nil

@@ -596,7 +596,7 @@ func TestGetCredsAndAuthNotLoggedIn(t *testing.T) {
 	}
 
 	clnt := newclient()
-	if err := clnt.MaybeRegister(context.Background(), "", MetadataFixture()); err != nil {
+	if err := clnt.MaybeRegister(context.Background(), MetadataFixture()); err != nil {
 		t.Fatal(err)
 	}
 	creds, auth, err := clnt.GetCredsAndAuth()
