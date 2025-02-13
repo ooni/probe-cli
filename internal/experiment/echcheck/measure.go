@@ -147,7 +147,7 @@ func (m *Measurer) Run(
 
 	alltks := TestKeys{
 		TLSHandshakes: []*model.ArchivalTLSOrQUICHandshakeResult{},
-		NetworkEvents: []*model.ArchivalNetworkEvent{},
+		NetworkEvents: trace.NetworkEvents(),
 		Queries:       trace.DNSLookupsFromRoundTrip(),
 		TCPConnects:   []*model.ArchivalTCPConnectResult{},
 	}
