@@ -2,6 +2,7 @@ package echcheck
 
 import (
 	"context"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -115,9 +116,34 @@ func TestMeasurementSuccessRealWorld(t *testing.T) {
 
 	// check results
 	tk := msrmnt.TestKeys.(TestKeys)
-	if len(tk.Queries) != 3 {
-		// TODO Check that expected DNS Queries are included
-		t.Fatal("unexpected number of DNS Queries recorded", len(tk.Queries))
+	foundA, foundAAAA, foundHTTPS := false, false, false
+	parsed, err := url.Parse(defaultURL)
+	if err != nil {
+		t.Fatal("bad default url:", err)
+	}
+	for _, q := range tk.Queries {
+		aboutHost := q.Hostname == parsed.Hostname()
+		if (q.Failure == nil) && aboutHost {
+			switch q.QueryType {
+			case "A":
+				foundA = true
+			case "AAAA":
+				foundAAAA = true
+			case "HTTPS":
+				foundHTTPS = true
+			default:
+				// nothing
+			}
+		}
+	}
+	if !foundA {
+		t.Fatal("No DNS type A roundtrip reported")
+	}
+	if !foundAAAA {
+		t.Fatal("No DNS type AAAA roundtrip reported")
+	}
+	if !foundHTTPS {
+		t.Fatal("No DNS type HTTPS roundtrip reported")
 	}
 	if len(tk.NetworkEvents) == 0 {
 		t.Fatal("no network events recorded")
