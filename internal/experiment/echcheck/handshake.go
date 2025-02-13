@@ -67,8 +67,8 @@ func handshake(ctx context.Context, isGrease bool, startTime time.Time, address 
 	dialer := trace.NewDialerWithoutResolver(logger)
 	conn, err := dialer.DialContext(ctx, "tcp", address)
 	ol1.Stop(err)
-	newTcpcs := trace.TCPConnects()
-	tk.TCPConnects = append(tk.TCPConnects, newTcpcs...)
+	tk.TCPConnects = append(tk.TCPConnects, trace.TCPConnects()...)
+	tk.NetworkEvents = append(tk.NetworkEvents, trace.NetworkEvents()...)
 
 	ol2 := logx.NewOperationLogger(logger, "echcheck: DialTLS%s", d)
 	start := time.Now()
