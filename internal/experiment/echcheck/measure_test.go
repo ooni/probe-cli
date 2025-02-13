@@ -115,6 +115,10 @@ func TestMeasurementSuccessRealWorld(t *testing.T) {
 
 	// check results
 	tk := msrmnt.TestKeys.(TestKeys)
+	if len(tk.Queries) != 3 {
+		// TODO Check that expected DNS Queries are included
+		t.Fatal("unexpected number of DNS Queries recorded", len(tk.Queries))
+	}
 	// NoECH, GREASE, GREASE retry, RealECH
 	if len(tk.TLSHandshakes) != 4 {
 		t.Fatal("unexpected number of TLS handshakes", len(tk.TLSHandshakes))
