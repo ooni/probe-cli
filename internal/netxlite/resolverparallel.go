@@ -79,11 +79,16 @@ func (r *ParallelResolver) LookupHost(ctx context.Context, hostname string) ([]s
 func (r *ParallelResolver) LookupHTTPS(
 	ctx context.Context, hostname string) (*model.HTTPSSvc, error) {
 	encoder := &DNSEncoderMiekg{}
+	trace := ContextTraceOrDefault(ctx)
 	query := encoder.Encode(hostname, dns.TypeHTTPS, r.Txp.RequiresPadding())
+	started := trace.TimeNow()
 	response, err := r.Txp.RoundTrip(ctx, query)
+	finished := trace.TimeNow()
 	if err != nil {
+		trace.OnDNSRoundTripForLookupHost(started, r, query, response, []string{}, err, finished)
 		return nil, err
 	}
+	trace.OnDNSRoundTripForLookupHost(started, r, query, response, []string{}, err, finished)
 	return response.DecodeHTTPS()
 }
 
