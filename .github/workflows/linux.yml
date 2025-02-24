@@ -42,12 +42,12 @@ jobs:
 
       - run: make CLI/linux-static-386
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ooniprobe-linux-386
           path: ./CLI/ooniprobe-linux-386
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: miniooni-linux-386
           path: ./CLI/miniooni-linux-386
@@ -103,12 +103,12 @@ jobs:
 
       - run: make CLI/linux-static-amd64
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ooniprobe-linux-amd64
           path: ./CLI/ooniprobe-linux-amd64
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: miniooni-linux-amd64
           path: ./CLI/miniooni-linux-amd64
@@ -202,12 +202,12 @@ jobs:
 
       - run: make CLI/linux-static-armv6
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ooniprobe-linux-armv6
           path: ./CLI/ooniprobe-linux-armv6
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: miniooni-linux-armv6
           path: ./CLI/miniooni-linux-armv6
@@ -266,12 +266,12 @@ jobs:
 
       - run: make CLI/linux-static-armv7
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ooniprobe-linux-armv7
           path: ./CLI/ooniprobe-linux-armv7
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: miniooni-linux-armv7
           path: ./CLI/miniooni-linux-armv7
@@ -330,12 +330,12 @@ jobs:
 
       - run: make CLI/linux-static-arm64
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ooniprobe-linux-arm64
           path: ./CLI/ooniprobe-linux-arm64
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: miniooni-linux-arm64
           path: ./CLI/miniooni-linux-arm64
