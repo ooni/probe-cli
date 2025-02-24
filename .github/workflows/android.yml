@@ -16,7 +16,7 @@ jobs:
   build_android:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -37,57 +37,57 @@ jobs:
 
       - run: make android
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: oonimkall.aar
           path: ./MOBILE/android/oonimkall.aar
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: oonimkall-sources.jar
           path: ./MOBILE/android/oonimkall-sources.jar
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: oonimkall.pom
           path: ./MOBILE/android/oonimkall.pom
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: miniooni-android-386
           path: ./CLI/miniooni-android-386
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ooniprobe-android-386
           path: ./CLI/ooniprobe-android-386
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: miniooni-android-amd64
           path: ./CLI/miniooni-android-amd64
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ooniprobe-android-amd64
           path: ./CLI/ooniprobe-android-amd64
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: miniooni-android-arm
           path: ./CLI/miniooni-android-arm
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ooniprobe-android-arm
           path: ./CLI/ooniprobe-android-arm
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: miniooni-android-arm64
           path: ./CLI/miniooni-android-arm64
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ooniprobe-android-arm64
           path: ./CLI/ooniprobe-android-arm64
@@ -98,7 +98,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
