@@ -74,7 +74,7 @@ func newStepUploadArtifacts(w io.Writer, artifacts []string) {
 
 func newStepDownloadArtifacts(w io.Writer, artifacts []string) {
 	for _, arti := range artifacts {
-		mustFprintf(w, "      - uses: actions/download-artifact@v3\n")
+		mustFprintf(w, "      - uses: actions/download-artifact@v4\n")
 		mustFprintf(w, "        with:\n")
 		mustFprintf(w, "          name: %s\n", filepath.Base(arti))
 		mustFprintf(w, "\n")
