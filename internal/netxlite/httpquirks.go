@@ -11,7 +11,6 @@ package netxlite
 import (
 	"net/http"
 
-	oohttp "github.com/ooni/oohttp"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -61,7 +60,7 @@ func NewHTTPTransport(logger model.DebugLogger, dialer model.Dialer, tlsDialer m
 // This function behavior is QUIRKY as documented in [NewHTTPTransport].
 func newOOHTTPBaseTransport(dialer model.Dialer, tlsDialer model.TLSDialer) model.HTTPTransport {
 	// Using oohttp to support any TLS library.
-	txp := oohttp.DefaultTransport.(*oohttp.Transport).Clone()
+	txp := http.DefaultTransport.(*http.Transport).Clone()
 
 	// This wrapping ensures that we always have a timeout when we
 	// are using HTTP; see https://github.com/ooni/probe/issues/1609.
@@ -90,7 +89,7 @@ func newOOHTTPBaseTransport(dialer model.Dialer, tlsDialer model.TLSDialer) mode
 
 	// Ensure we correctly forward CloseIdleConnections.
 	return &httpTransportConnectionsCloser{
-		HTTPTransport: &httpTransportStdlib{&oohttp.StdlibTransport{Transport: txp}},
+		HTTPTransport: &httpTransportStdlib{StdlibTransport: txp},
 		Dialer:        dialer,
 		TLSDialer:     tlsDialer,
 	}
