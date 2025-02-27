@@ -55,7 +55,7 @@ const (
 	runsOnUbuntu = "ubuntu-22.04"
 
 	// runsOnMacOS is the macOS system where to run.
-	runsOnMacOS = "macos-12"
+	runsOnMacOS = "macos-13"
 
 	// runsOnWindows is the windows system where to run.
 	runsOnWindows = "windows-2022"
