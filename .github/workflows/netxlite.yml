@@ -15,10 +15,10 @@ jobs:
     runs-on: "${{ matrix.os }}"
     strategy:
       matrix:
-        os: [ "ubuntu-22.04", "windows-2022", "macos-12" ]
+        os: [ "ubuntu-22.04", "windows-2022", "macos-13" ]
     steps:
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Get GOVERSION content
         id: goversion

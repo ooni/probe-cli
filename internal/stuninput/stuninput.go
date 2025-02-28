@@ -12,15 +12,14 @@ import (
 //
 // We should sync with https://gitlab.torproject.org/tpo/applications/tor-browser-build/-/blob/main/projects/tor-expert-bundle/pt_config.json
 var inputs = map[string]bool{
-	"stun.l.google.com:19302": true,
 	"stun.antisip.com:3478":   true,
-	"stun.bluesip.net:3478":   true,
-	"stun.dus.net:3478":       true,
 	"stun.epygi.com:3478":     true,
-	"stun.sonetel.com:3478":   true,
 	"stun.uls.co.za:3478":     true,
 	"stun.voipgate.com:3478":  true,
-	"stun.voys.nl:3478":       true,
+	"stun.mixvoip.com:3478":   true,
+	"stun.nextcloud.com:3478": true,
+	"stun.bethesda.net:3478":  true,
+	"stun.nextcloud.com:443":  true,
 }
 
 // AsSnowflakeInput formats the input in the format

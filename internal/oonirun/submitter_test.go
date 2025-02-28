@@ -22,7 +22,8 @@ func TestSubmitterNotEnabled(t *testing.T) {
 		t.Fatal("we did not get a stubSubmitter instance")
 	}
 	m := new(model.Measurement)
-	if err := submitter.Submit(ctx, m); err != nil {
+	_, err = submitter.Submit(ctx, m)
+	if err != nil {
 		t.Fatal(err)
 	}
 }
@@ -32,11 +33,11 @@ type FakeSubmitter struct {
 	Error error
 }
 
-func (fs *FakeSubmitter) Submit(ctx context.Context, m *model.Measurement) error {
+func (fs *FakeSubmitter) Submit(ctx context.Context, m *model.Measurement) (string, error) {
 	if fs.Calls != nil {
 		fs.Calls.Add(1)
 	}
-	return fs.Error
+	return "", fs.Error
 }
 
 var _ Submitter = &FakeSubmitter{}
@@ -83,7 +84,7 @@ func TestNewSubmitterWithFailedSubmission(t *testing.T) {
 		t.Fatal(err)
 	}
 	m := new(model.Measurement)
-	err = submitter.Submit(context.Background(), m)
+	_, err = submitter.Submit(context.Background(), m)
 	if !errors.Is(err, expected) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}

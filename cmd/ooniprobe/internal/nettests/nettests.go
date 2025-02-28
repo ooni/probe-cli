@@ -215,7 +215,7 @@ func (c *Controller) Run(builder model.ExperimentBuilder, inputs []model.Experim
 			// Implementation note: SubmitMeasurement will fail here if we did fail
 			// to open the report but we still want to continue. There will be a
 			// bit of a spew in the logs, perhaps, but stopping seems less efficient.
-			if err := exp.SubmitAndUpdateMeasurementContext(context.Background(), measurement); err != nil {
+			if _, err := exp.SubmitAndUpdateMeasurementContext(context.Background(), measurement); err != nil {
 				log.Debug(color.RedString("failure.measurement_submission"))
 				if err := db.UploadFailed(c.msmts[idx64], err.Error()); err != nil {
 					return errors.Wrap(err, "failed to mark upload as failed")

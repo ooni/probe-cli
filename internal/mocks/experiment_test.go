@@ -93,11 +93,11 @@ func TestExperiment(t *testing.T) {
 	t.Run("SubmitAndUpdateMeasurementContext", func(t *testing.T) {
 		expected := errors.New("mocked err")
 		e := &Experiment{
-			MockSubmitAndUpdateMeasurementContext: func(ctx context.Context, measurement *model.Measurement) error {
-				return expected
+			MockSubmitAndUpdateMeasurementContext: func(ctx context.Context, measurement *model.Measurement) (string, error) {
+				return "", expected
 			},
 		}
-		err := e.SubmitAndUpdateMeasurementContext(context.Background(), &model.Measurement{})
+		_, err := e.SubmitAndUpdateMeasurementContext(context.Background(), &model.Measurement{})
 		if !errors.Is(err, expected) {
 			t.Fatal("unexpected err", err)
 		}
