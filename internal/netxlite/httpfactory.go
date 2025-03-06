@@ -14,9 +14,6 @@ type HTTPTransportOption func(txp *http.Transport)
 // NewHTTPTransport is the high-level factory to create a [model.HTTPTransport] using
 // net/http as the HTTP library with HTTP/1.1 and HTTP2 support.
 //
-// This transport is suitable for HTTP2 and HTTP/1.1 using any TLS
-// library, including, e.g., github.com/ooni/oocrypto.
-//
 // This factory clones the default net/http transport and
 // configures the provided dialer and TLS dialer by setting the .DialContext
 // and .DialTLSContext fields of the transport. We also wrap the provided
