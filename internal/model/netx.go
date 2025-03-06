@@ -13,7 +13,6 @@ import (
 	"syscall"
 	"time"
 
-	oohttp "github.com/ooni/oohttp"
 	"github.com/quic-go/quic-go"
 	utls "gitlab.com/yawning/utls.git"
 )
@@ -309,12 +308,25 @@ type Resolver interface {
 	LookupNS(ctx context.Context, domain string) ([]*net.NS, error)
 }
 
-// TLSConn is the type of connection that oohttp expects from
-// any library that implements TLS functionality. By using this
-// kind of TLSConn we're able to use both the standard library
-// and gitlab.com/yawning/utls.git to perform TLS operations. Note
-// that the stdlib's tls.Conn implements this interface.
-type TLSConn = oohttp.TLSConn
+// TLSConn is the interface representing a *tls.Conn compatible
+// connection, which could possibly be different from a *tls.Conn
+// as long as it implements the interface. You can use, for
+// example, refraction-networking/utls instead of the stdlib.
+type TLSConn interface {
+	// net.Conn is the underlying interface
+	net.Conn
+
+	// ConnectionState returns the ConnectionState according
+	// to the standard library.
+	ConnectionState() tls.ConnectionState
+
+	// HandshakeContext performs an TLS handshake bounded
+	// in time by the given context.
+	HandshakeContext(ctx context.Context) error
+
+	// NetConn returns the underlying net.Conn
+	NetConn() net.Conn
+}
 
 // Ensures that a [*tls.Conn] implements the [TLSConn] interface.
 var _ TLSConn = &tls.Conn{}
@@ -325,7 +337,7 @@ type TLSDialer interface {
 	CloseIdleConnections()
 
 	// DialTLSContext dials a TLS connection. This method will always return
-	// to you a oohttp.TLSConn, so you can always safely cast to it.
+	// to you a [TLSConn], so you can always safely cast to it.
 	//
 	// The endpoint is an endpoint like the ones accepted by [net.DialContext]. For example,
 	// x.org:443, 130.192.91.211:443 and [::1]:443. Note that IPv6 addrs are quoted.
