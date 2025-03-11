@@ -225,7 +225,7 @@ func TestMeasureWithNoAvailableTestHelpers(t *testing.T) {
 func newsession(t *testing.T, lookupBackends bool) model.ExperimentSession {
 	sess, err := engine.NewSession(context.Background(), engine.SessionConfig{
 		AvailableProbeServices: []model.OOAPIService{{
-			Address: "https://backend-hel.ooni.org",
+			Address: "https://api.dev.ooni.io",
 			Type:    "https",
 		}},
 		Logger:          log.Log,
