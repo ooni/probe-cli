@@ -183,6 +183,10 @@ type HTTPSSvc struct {
 
 	// IPv6 contains the IPv6 hints (which may be empty).
 	IPv6 []string
+
+	// Encrypted ClientHello config decoded from base64 to bytes
+	// (which may be empty).
+	Ech []byte
 }
 
 // MeasuringNetwork defines the constructors required for implementing OONI experiments. All

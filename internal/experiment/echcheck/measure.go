@@ -2,8 +2,10 @@ package echcheck
 
 import (
 	"context"
+	crand "crypto/rand"
 	"errors"
-	"math/rand"
+	"fmt"
+	"math/rand/v2"
 	"net"
 	"net/url"
 
@@ -15,7 +17,7 @@ import (
 
 const (
 	testName    = "echcheck"
-	testVersion = "0.2.0"
+	testVersion = "0.3.0"
 	defaultURL  = "https://cloudflare-ech.com/cdn-cgi/trace"
 )
 
@@ -29,6 +31,9 @@ var (
 
 // TestKeys contains echcheck test keys.
 type TestKeys struct {
+	NetworkEvents []*model.ArchivalNetworkEvent             `json:"network_events"`
+	Queries       []*model.ArchivalDNSLookupResult          `json:"queries"`
+	TCPConnects   []*model.ArchivalTCPConnectResult         `json:"tcp_connects"`
 	TLSHandshakes []*model.ArchivalTLSOrQUICHandshakeResult `json:"tls_handshakes"`
 }
 
@@ -52,6 +57,7 @@ func (m *Measurer) Run(
 	ctx context.Context,
 	args *model.ExperimentArgs,
 ) error {
+
 	if args.Measurement.Input == "" {
 		args.Measurement.Input = defaultURL
 	}
@@ -63,33 +69,60 @@ func (m *Measurer) Run(
 		return errInvalidInputScheme
 	}
 
-	// 1. perform a DNSLookup
-	ol := logx.NewOperationLogger(args.Session.Logger(), "echcheck: DNSLookup[%s] %s", m.config.resolverURL(), parsed.Host)
+	// DNS Lookups for Address and HTTPS RR
+	ol := logx.NewOperationLogger(args.Session.Logger(), "echcheck: DNSLookups[%s] %s", m.config.resolverURL(), parsed.Host)
 	trace := measurexlite.NewTrace(0, args.Measurement.MeasurementStartTimeSaved)
 	resolver := trace.NewParallelDNSOverHTTPSResolver(args.Session.Logger(), m.config.resolverURL())
-	addrs, err := resolver.LookupHost(ctx, parsed.Host)
-	ol.Stop(err)
-	if err != nil {
-		return err
+	// We dial the alias, even when there are hints in the HTTPS record.
+	addrs, addrsErr := resolver.LookupHost(ctx, parsed.Hostname())
+	// Port prefixing per:
+	// https://www.rfc-editor.org/rfc/rfc9460.html#name-query-names-for-https-rrs
+	var dnsQueryHost = parsed.Hostname()
+	if parsed.Port() != "" && parsed.Port() != "443" {
+		dnsQueryHost = fmt.Sprintf("_%s._https.%s", parsed.Port(), parsed.Hostname())
 	}
-	runtimex.Assert(len(addrs) > 0, "expected at least one entry in addrs")
-	address := net.JoinHostPort(addrs[0], "443")
+	httpsRr, httpsErr := resolver.LookupHTTPS(ctx, dnsQueryHost)
+	ol.Stop(err)
 
-	handshakes := []func() (chan model.ArchivalTLSOrQUICHandshakeResult, error){
-		// handshake with ECH disabled and SNI coming from the URL
-		func() (chan model.ArchivalTLSOrQUICHandshakeResult, error) {
-			return connectAndHandshake(ctx, args.Measurement.MeasurementStartTimeSaved,
-				address, parsed.Host, "", args.Session.Logger())
+	if addrsErr != nil {
+		return addrsErr
+	}
+	if httpsErr != nil {
+		return httpsErr
+	}
+	realEchConfig := httpsRr.Ech
+	grease, err := generateGreaseyECHConfigList(crand.Reader, parsed.Hostname())
+	if err != nil {
+		return fmt.Errorf("failed to generate GREASE ECH config: %w", err)
+	}
+
+	runtimex.Assert(len(addrs) > 0, "expected at least one entry in addrs")
+	port := parsed.Port()
+	if port == "" {
+		port = "443"
+	}
+	address := net.JoinHostPort(addrs[0], port)
+
+	handshakes := []func() (chan TestKeys, error){
+		// Handshake with no ECH
+		func() (chan TestKeys, error) {
+			return startHandshake(ctx, []byte{}, false,
+				args.Measurement.MeasurementStartTimeSaved, address,
+				parsed, args.Session.Logger(), nil)
 		},
-		// handshake with ECH enabled and ClientHelloOuter SNI coming from the URL
-		func() (chan model.ArchivalTLSOrQUICHandshakeResult, error) {
-			return connectAndHandshake(ctx, args.Measurement.MeasurementStartTimeSaved,
-				address, parsed.Host, parsed.Host, args.Session.Logger())
+
+		// Handshake with ECH GREASE
+		func() (chan TestKeys, error) {
+			return startHandshake(ctx, grease, true,
+				args.Measurement.MeasurementStartTimeSaved, address,
+				parsed, args.Session.Logger(), nil)
 		},
-		// handshake with ECH enabled and hardcoded different ClientHelloOuter SNI
-		func() (chan model.ArchivalTLSOrQUICHandshakeResult, error) {
-			return connectAndHandshake(ctx, args.Measurement.MeasurementStartTimeSaved,
-				address, parsed.Host, "cloudflare.com", args.Session.Logger())
+
+		// Handshake with real ECH
+		func() (chan TestKeys, error) {
+			return startHandshake(ctx, realEchConfig, false,
+				args.Measurement.MeasurementStartTimeSaved, address,
+				parsed, args.Session.Logger(), nil)
 		},
 	}
 
@@ -99,8 +132,7 @@ func (m *Measurer) Run(
 		handshakes[i], handshakes[j] = handshakes[j], handshakes[i]
 	})
 
-	var channels [3](chan model.ArchivalTLSOrQUICHandshakeResult)
-	var results [3](model.ArchivalTLSOrQUICHandshakeResult)
+	var channels [3](chan TestKeys)
 
 	// Fire the handshakes in parallel
 	// TODO: currently if one of the connects fails we fail the whole result
@@ -113,14 +145,23 @@ func (m *Measurer) Run(
 		}
 	}
 
-	// Wait on each channel for the results to come in
-	for idx, ch := range channels {
-		results[idx] = <-ch
+	alltks := TestKeys{
+		TLSHandshakes: []*model.ArchivalTLSOrQUICHandshakeResult{},
+		NetworkEvents: trace.NetworkEvents(),
+		Queries:       trace.DNSLookupsFromRoundTrip(),
+		TCPConnects:   []*model.ArchivalTCPConnectResult{},
 	}
 
-	args.Measurement.TestKeys = TestKeys{TLSHandshakes: []*model.ArchivalTLSOrQUICHandshakeResult{
-		&results[0], &results[1], &results[2],
-	}}
+	// Wait on each channel for the results to come in
+	for _, ch := range channels {
+		tk := <-ch
+		alltks.TLSHandshakes = append(alltks.TLSHandshakes, tk.TLSHandshakes...)
+		alltks.NetworkEvents = append(alltks.NetworkEvents, tk.NetworkEvents...)
+		alltks.Queries = append(alltks.Queries, tk.Queries...)
+		alltks.TCPConnects = append(alltks.TCPConnects, tk.TCPConnects...)
+	}
+
+	args.Measurement.TestKeys = alltks
 
 	return nil
 }
