@@ -2,22 +2,19 @@ package netxlite
 
 import (
 	"crypto/tls"
+	"net/http"
 	"net/url"
 
-	oohttp "github.com/ooni/oohttp"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // HTTPTransportOption is an initialization option for [NewHTTPTransport].
-type HTTPTransportOption func(txp *oohttp.Transport)
+type HTTPTransportOption func(txp *http.Transport)
 
 // NewHTTPTransport is the high-level factory to create a [model.HTTPTransport] using
-// github.com/ooni/oohttp as the HTTP library with HTTP/1.1 and HTTP2 support.
+// net/http as the HTTP library with HTTP/1.1 and HTTP2 support.
 //
-// This transport is suitable for HTTP2 and HTTP/1.1 using any TLS
-// library, including, e.g., github.com/ooni/oocrypto.
-//
-// This factory clones the default github.com/ooni/oohttp transport and
+// This factory clones the default net/http transport and
 // configures the provided dialer and TLS dialer by setting the .DialContext
 // and .DialTLSContext fields of the transport. We also wrap the provided
 // dialers to address https://github.com/ooni/probe/issues/1609.
@@ -41,8 +38,7 @@ type HTTPTransportOption func(txp *oohttp.Transport)
 // This factory is the RECOMMENDED way of creating a [model.HTTPTransport].
 func NewHTTPTransportWithOptions(logger model.Logger,
 	dialer model.Dialer, tlsDialer model.TLSDialer, options ...HTTPTransportOption) model.HTTPTransport {
-	// Using oohttp to support any TLS library.
-	txp := oohttp.DefaultTransport.(*oohttp.Transport).Clone()
+	txp := http.DefaultTransport.(*http.Transport).Clone()
 
 	// This wrapping ensures that we always have a timeout when we
 	// are using HTTP; see https://github.com/ooni/probe/issues/1609.
@@ -63,7 +59,7 @@ func NewHTTPTransportWithOptions(logger model.Logger,
 
 	// Return a fully wrapped HTTP transport
 	return WrapHTTPTransport(logger, &httpTransportConnectionsCloser{
-		HTTPTransport: &httpTransportStdlib{&oohttp.StdlibTransport{Transport: txp}},
+		HTTPTransport: &httpTransportStdlib{StdlibTransport: txp},
 		Dialer:        dialer,
 		TLSDialer:     tlsDialer,
 	})
@@ -72,8 +68,8 @@ func NewHTTPTransportWithOptions(logger model.Logger,
 // HTTPTransportOptionProxyURL configures the transport to use the given proxyURL
 // or disables proxying (already the default) if the proxyURL is nil.
 func HTTPTransportOptionProxyURL(proxyURL *url.URL) HTTPTransportOption {
-	return func(txp *oohttp.Transport) {
-		txp.Proxy = func(r *oohttp.Request) (*url.URL, error) {
+	return func(txp *http.Transport) {
+		txp.Proxy = func(r *http.Request) (*url.URL, error) {
 			// "If Proxy is nil or returns a nil *URL, no proxy is used."
 			return proxyURL, nil
 		}
@@ -81,9 +77,9 @@ func HTTPTransportOptionProxyURL(proxyURL *url.URL) HTTPTransportOption {
 }
 
 // HTTPTransportOptionMaxConnsPerHost configures the .MaxConnPerHosts field, which
-// otherwise uses the default set in github.com/ooni/oohttp.
+// otherwise uses the default set in net/http.
 func HTTPTransportOptionMaxConnsPerHost(value int) HTTPTransportOption {
-	return func(txp *oohttp.Transport) {
+	return func(txp *http.Transport) {
 		txp.MaxConnsPerHost = value
 	}
 }
@@ -91,7 +87,7 @@ func HTTPTransportOptionMaxConnsPerHost(value int) HTTPTransportOption {
 // HTTPTransportOptionDisableCompression configures the .DisableCompression field, which
 // otherwise is set to true, so that this code is ready for measuring out of the box.
 func HTTPTransportOptionDisableCompression(value bool) HTTPTransportOption {
-	return func(txp *oohttp.Transport) {
+	return func(txp *http.Transport) {
 		txp.DisableCompression = value
 	}
 }
@@ -104,7 +100,7 @@ func HTTPTransportOptionDisableCompression(value bool) HTTPTransportOption {
 // this limitation. Future releases MIGHT use a different technique and, as such,
 // we MAY remove this option when we don't need it anymore.
 func HTTPTransportOptionTLSClientConfig(config *tls.Config) HTTPTransportOption {
-	return func(txp *oohttp.Transport) {
+	return func(txp *http.Transport) {
 		txp.TLSClientConfig = config
 	}
 }
