@@ -143,9 +143,9 @@ func TestCloudfront(t *testing.T) {
 	}
 	client, err := NewClient(
 		&mockable.Session{}, model.OOAPIService{
-			Address: "https://api.github.com",
+			Address: "https://meek.azureedge.net",
 			Type:    "cloudfront",
-			Front:   "cdn.github.com",
+			Front:   "ajax.aspnetcdn.com",
 		})
 	if err != nil {
 		t.Fatal(err)
