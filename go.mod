@@ -1,8 +1,8 @@
 module github.com/ooni/probe-cli/v3
 
-go 1.21.0
+go 1.23.0
 
-toolchain go1.22.3
+toolchain go1.23.4
 
 require (
 	filippo.io/age v1.2.1
@@ -46,9 +46,9 @@ require (
 	gitlab.com/yawning/utls.git v0.0.12-1
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib v1.6.0
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2 v2.10.1
-	golang.org/x/crypto v0.32.0
+	golang.org/x/crypto v0.36.0
 	golang.org/x/net v0.34.0
-	golang.org/x/sys v0.30.0
+	golang.org/x/sys v0.31.0
 )
 
 require (
@@ -60,7 +60,7 @@ require (
 	github.com/Psiphon-Labs/bolt v0.0.0-20200624191537-23cedaef7ad7 // indirect
 	github.com/Psiphon-Labs/consistent v0.0.0-20240322131436-20aaa4e05737 // indirect
 	github.com/Psiphon-Labs/goptlib v0.0.0-20200406165125-c0e32a7a3464 // indirect
-	github.com/Psiphon-Labs/psiphon-tls v0.0.0-20240824224428-ca6969e315a9 // indirect
+	github.com/Psiphon-Labs/psiphon-tls v0.0.0-20250219165059-533f95b512e9 // indirect
 	github.com/Psiphon-Labs/quic-go v0.0.0-20250203210204-a4381c68e52f // indirect
 	github.com/Psiphon-Labs/utls v1.1.1-0.20241107183331-b18909f8ccaa // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
@@ -189,9 +189,9 @@ require (
 	go4.org/netipx v0.0.0-20230824141953-6213f710f925 // indirect
 	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8 // indirect
 	golang.org/x/mod v0.18.0 // indirect
-	golang.org/x/sync v0.10.0 // indirect
-	golang.org/x/term v0.28.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/sync v0.12.0 // indirect
+	golang.org/x/term v0.30.0 // indirect
+	golang.org/x/text v0.23.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.22.0 // indirect
 	golang.zx2c4.com/wireguard v0.0.0-20231211153847-12269c276173 // indirect
