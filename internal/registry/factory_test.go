@@ -594,7 +594,7 @@ func TestNewFactory(t *testing.T) {
 		},
 		"echcheck": {
 			enabledByDefault: true,
-			inputPolicy: model.InputOptional,
+			inputPolicy:      model.InputOptional,
 		},
 		"example": {
 			enabledByDefault: true,

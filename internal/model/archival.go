@@ -198,14 +198,14 @@ type ArchivalDNSLookupResult struct {
 
 // ArchivalDNSAnswer is a DNS answer.
 type ArchivalDNSAnswer struct {
-	ASN        int64     `json:"asn,omitempty"`
-	ASOrgName  string    `json:"as_org_name,omitempty"`
-	AnswerType string    `json:"answer_type"`
-	Hostname   string    `json:"hostname,omitempty"`
-	IPv4       string    `json:"ipv4,omitempty"`
-	IPv6       string    `json:"ipv6,omitempty"`
-	TTL        *uint32   `json:"ttl"`
-	SVCB       *SVCBData `json:"svcb,omitempty"` // SVCB-specific data
+	ASN        int64      `json:"asn,omitempty"`
+	ASOrgName  string     `json:"as_org_name,omitempty"`
+	AnswerType string     `json:"answer_type"`
+	Hostname   string     `json:"hostname,omitempty"`
+	IPv4       string     `json:"ipv4,omitempty"`
+	IPv6       string     `json:"ipv6,omitempty"`
+	TTL        *uint32    `json:"ttl"`
+	SVCB       []SVCBData `json:"svcb,omitempty"` // SVCB-specific data
 }
 
 // SVCBData represents details of an SVCB record.

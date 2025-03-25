@@ -127,6 +127,51 @@ func (r *dnsResponse) DecodeHTTPS() (*model.HTTPSSvc, error) {
 	return out, nil
 }
 
+// DecodeSVCB implements model.DNSResponse.DecodeSVCB.
+func (r *dnsResponse) DecodeSVCB() ([]*model.SVCB, error) {
+	if err := r.rcodeToError(); err != nil {
+		return nil, err // error already wrapped
+	}
+	out := []*model.SVCB{}
+	for _, answer := range r.msg.Answer {
+		switch record := answer.(type) {
+		case *dns.SVCB:
+			svcb := &model.SVCB{
+				ALPN: []string{}, // ensure it's not nil
+				IPv4: []string{}, // ensure it's not nil
+				IPv6: []string{}, // ensure it's not nil
+			}
+			for _, v := range record.Value {
+				switch extv := v.(type) {
+				case *dns.SVCBAlpn:
+					svcb.ALPN = extv.Alpn
+				case *dns.SVCBIPv4Hint:
+					for _, ip := range extv.Hint {
+						svcb.IPv4 = append(svcb.IPv4, ip.String())
+					}
+				case *dns.SVCBIPv6Hint:
+					for _, ip := range extv.Hint {
+						svcb.IPv6 = append(svcb.IPv6, ip.String())
+					}
+				case *dns.SVCBPort:
+					svcb.Port = extv.Port
+				case *dns.SVCBOhttp:
+					svcb.OHttp = true
+				case *dns.SVCBDoHPath:
+					svcb.DoHPath = extv.String()
+				}
+			}
+			svcb.Priority = record.Priority
+			svcb.TargetName = record.Target
+			out = append(out, svcb)
+		}
+	}
+	if len(out) <= 0 {
+		return nil, dnsDecoderWrapError(ErrOODNSNoAnswer)
+	}
+	return out, nil
+}
+
 // DecodeLookupHost implements model.DNSResponse.DecodeLookupHost.
 func (r *dnsResponse) DecodeLookupHost() ([]string, error) {
 	if err := r.rcodeToError(); err != nil {

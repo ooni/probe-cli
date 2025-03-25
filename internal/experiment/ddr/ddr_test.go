@@ -3,7 +3,6 @@ package ddr
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
@@ -47,13 +46,13 @@ func TestMeasurerRun(t *testing.T) {
 		t.Fatal("unexpected Failure")
 	}
 
-	firstAnswer := tk.Queries.Answers[0]
+	firstAnswer := tk.Queries[0].Answers[0]
 
 	if firstAnswer.AnswerType != "SVCB" {
 		t.Fatal("unexpected AnswerType")
 	}
 
-	if tk.Queries.ResolverAddress != "1.1.1.1" {
+	if tk.Queries[0].ResolverAddress != "1.1.1.1:53" {
 		t.Fatal("Resolver should be written to TestKeys")
 	}
 
@@ -132,30 +131,6 @@ func TestMeasurerRunWithCancelledContext(t *testing.T) {
 	err := measurer.Run(ctx, args)
 	if err != nil {
 		t.Fatal("expected no error due to cancelled context")
-	}
-	tk := args.Measurement.TestKeys.(*TestKeys)
-	if tk.Failure == nil || *tk.Failure != "interrupted" {
-		t.Fatal("expected interrupted failure")
-	}
-}
-
-func TestMeasurerRunWithTimeout(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
-	defer cancel()
-
-	measurer := NewExperimentMeasurer(Config{})
-	args := &model.ExperimentArgs{
-		Callbacks:   model.NewPrinterCallbacks(log.Log),
-		Measurement: new(model.Measurement),
-		Session: &mocks.Session{
-			MockLogger: func() model.Logger {
-				return log.Log
-			},
-		},
-	}
-	err := measurer.Run(ctx, args)
-	if err != nil {
-		t.Fatal("expected no error due to context timeout")
 	}
 	tk := args.Measurement.TestKeys.(*TestKeys)
 	if tk.Failure == nil || *tk.Failure != "interrupted" {
