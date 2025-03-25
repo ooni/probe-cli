@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -276,8 +277,10 @@ func (ev *EventWriteOperation) Name() string {
 type EventValue struct {
 	Addresses                   []string      `json:",omitempty"`
 	Address                     string        `json:",omitempty"`
+	DNSQueryType                string        `json:",omitempty"`
 	DNSQuery                    []byte        `json:",omitempty"`
 	DNSResponse                 []byte        `json:",omitempty"`
+	DNSSVCBRespones             []*model.SVCB `json:",omitempty"`
 	Data                        []byte        `json:",omitempty"`
 	Duration                    time.Duration `json:",omitempty"`
 	Err                         FailureStr    `json:",omitempty"`
