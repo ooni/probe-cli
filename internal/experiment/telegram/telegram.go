@@ -7,9 +7,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/optional"
+	"github.com/ooni/probe-cli/v3/internal/urlgetter"
 )
 
 const (
@@ -23,10 +24,10 @@ type Config struct{}
 // TestKeys contains telegram test keys.
 type TestKeys struct {
 	urlgetter.TestKeys
-	TelegramHTTPBlocking bool    `json:"telegram_http_blocking"`
-	TelegramTCPBlocking  bool    `json:"telegram_tcp_blocking"`
-	TelegramWebFailure   *string `json:"telegram_web_failure"`
-	TelegramWebStatus    string  `json:"telegram_web_status"`
+	TelegramHTTPBlocking bool                   `json:"telegram_http_blocking"`
+	TelegramTCPBlocking  bool                   `json:"telegram_tcp_blocking"`
+	TelegramWebFailure   optional.Value[string] `json:"telegram_web_failure"`
+	TelegramWebStatus    string                 `json:"telegram_web_status"`
 }
 
 // NewTestKeys creates new telegram TestKeys.
@@ -34,34 +35,41 @@ func NewTestKeys() *TestKeys {
 	return &TestKeys{
 		TelegramHTTPBlocking: true,
 		TelegramTCPBlocking:  true,
-		TelegramWebFailure:   nil,
+		TelegramWebFailure:   optional.None[string](),
 		TelegramWebStatus:    "ok",
 	}
 }
 
 // Update updates the TestKeys using the given MultiOutput result.
-func (tk *TestKeys) Update(v urlgetter.MultiOutput) {
+func (tk *TestKeys) Update(v *urlgetter.MultiResult) {
+	// handle the case where there are no test keys
+	if v.TestKeys.Err != nil {
+		return
+	}
+
 	// update the easy to update entries first
-	tk.NetworkEvents = append(tk.NetworkEvents, v.TestKeys.NetworkEvents...)
-	tk.Queries = append(tk.Queries, v.TestKeys.Queries...)
-	tk.Requests = append(tk.Requests, v.TestKeys.Requests...)
-	tk.TCPConnect = append(tk.TCPConnect, v.TestKeys.TCPConnect...)
-	tk.TLSHandshakes = append(tk.TLSHandshakes, v.TestKeys.TLSHandshakes...)
+	tk.NetworkEvents = append(tk.NetworkEvents, v.TestKeys.Value.NetworkEvents...)
+	tk.Queries = append(tk.Queries, v.TestKeys.Value.Queries...)
+	tk.Requests = append(tk.Requests, v.TestKeys.Value.Requests...)
+	tk.TCPConnect = append(tk.TCPConnect, v.TestKeys.Value.TCPConnect...)
+	tk.TLSHandshakes = append(tk.TLSHandshakes, v.TestKeys.Value.TLSHandshakes...)
+
 	// then process access points
-	if v.Input.Config.Method != "GET" {
-		if v.TestKeys.Failure == nil {
+	if v.Target.Config.Method != "GET" {
+		if v.TestKeys.Value.Failure.IsNone() {
 			tk.TelegramHTTPBlocking = false
 			tk.TelegramTCPBlocking = false
 			return // found successful access point connection
 		}
-		if v.TestKeys.FailedOperation == nil || *v.TestKeys.FailedOperation != netxlite.ConnectOperation {
+		if v.TestKeys.Value.FailedOperation.UnwrapOr("") != netxlite.ConnectOperation {
 			tk.TelegramTCPBlocking = false
 		}
 		return
 	}
-	if v.TestKeys.Failure != nil {
+
+	if !v.TestKeys.Value.Failure.IsNone() {
 		tk.TelegramWebStatus = "blocked"
-		tk.TelegramWebFailure = v.TestKeys.Failure
+		tk.TelegramWebFailure = v.TestKeys.Value.Failure
 		return
 	}
 }
@@ -71,9 +79,6 @@ type Measurer struct {
 	// Config contains the experiment settings. If empty we
 	// will be using default settings.
 	Config Config
-
-	// Getter is an optional getter to be used for testing.
-	Getter urlgetter.MultiGetter
 }
 
 // ExperimentName implements ExperimentMeasurer.ExperimentName
@@ -102,13 +107,12 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	measurement := args.Measurement
 	sess := args.Session
 
-	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
-	defer cancel()
-	urlgetter.RegisterExtensions(measurement)
-	inputs := []urlgetter.MultiInput{
+	//urlgetter.RegisterExtensions(measurement) // TODO(bassosimone)
+
+	inputs := []*urlgetter.EasyTarget{
 		// Here we need to provide the method explicitly. See
 		// https://github.com/ooni/probe-engine/issues/827.
-		{Target: "https://web.telegram.org/", Config: urlgetter.Config{
+		{URL: "https://web.telegram.org/", Config: &urlgetter.Config{
 			Method: "GET",
 		}},
 	}
@@ -116,15 +120,20 @@ func (m Measurer) Run(ctx context.Context, args *model.ExperimentArgs) error {
 	// We need to measure each address twice. Once using port 80 and once using port 443. In both
 	// cases, the protocol MUST be HTTP. The DCs do not support access on port 443 using TLS.
 	for _, dc := range DatacenterIPAddrs {
-		inputs = append(inputs, urlgetter.MultiInput{Target: "http://" + dc + "/", Config: urlgetter.Config{Method: "POST"}})
-		inputs = append(inputs, urlgetter.MultiInput{Target: "http://" + dc + ":443/", Config: urlgetter.Config{Method: "POST"}})
+		inputs = append(inputs, &urlgetter.EasyTarget{URL: "http://" + dc + "/", Config: &urlgetter.Config{Method: "POST"}})
+		inputs = append(inputs, &urlgetter.EasyTarget{URL: "http://" + dc + ":443/", Config: &urlgetter.Config{Method: "POST"}})
 	}
 
-	multi := urlgetter.Multi{Begin: time.Now(), Getter: m.Getter, Session: sess}
+	multi := &urlgetter.MultiHandle{
+		Begin:    time.Now(),
+		IndexGen: &urlgetter.IndexGen{},
+		Session:  sess,
+	}
 	testkeys := NewTestKeys()
 	testkeys.Agent = "redirect"
 	measurement.TestKeys = testkeys
-	for entry := range multi.Collect(ctx, inputs, "telegram", callbacks) {
+	results := urlgetter.MultiCollect(callbacks, 0, len(inputs), "telegram", multi.Run(ctx, inputs...))
+	for entry := range results {
 		testkeys.Update(entry)
 	}
 	return nil
@@ -150,7 +159,7 @@ func (tk *TestKeys) MeasurementSummaryKeys() model.MeasurementSummaryKeys {
 	sk := &SummaryKeys{IsAnomaly: false}
 	tcpBlocking := tk.TelegramTCPBlocking
 	httpBlocking := tk.TelegramHTTPBlocking
-	webBlocking := tk.TelegramWebFailure != nil
+	webBlocking := !tk.TelegramWebFailure.IsNone()
 	sk.TCPBlocking = tcpBlocking
 	sk.HTTPBlocking = httpBlocking
 	sk.WebBlocking = webBlocking
