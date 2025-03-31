@@ -11,9 +11,9 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"reflect"
 	"time"
 
-	ootls "github.com/ooni/oocrypto/tls"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -56,6 +56,11 @@ var (
 		0:                                           "", // guarantee correct behaviour
 	}
 )
+
+// ErrIncompatibleStdlibConfig is returned when NewClientConnStdlib is
+// passed an incompatible config (i.e., a config containing fields that
+// we don't know how to convert and whose value is not ~zero).
+var ErrIncompatibleStdlibConfig = errors.New("incompatible stdlib config")
 
 // ClonedTLSConfigOrNewEmptyConfig returns a clone of the provided config,
 // if not nil, or a fresh and completely empty *tls.Config.
@@ -236,12 +241,74 @@ func (h *tlsHandshakerConfigurable) Handshake(
 	return tlsconn, nil
 }
 
+// NewClientConnStdlib is like Client but takes in input a *crypto/tls.Config
+//
+// The config cannot be nil: users must set either ServerName or
+// InsecureSkipVerify in the config.
+//
+// This function returns a *ConnStdlib type in case of success.
+//
+// This function will return ErrIncompatibleStdlibConfig if unsupported
+// fields have a nonzero value, because the resulting Conn will not
+// be compatible with the configuration you provided us with.
+//
+// We currently support these fields:
+//
+// - DynamicRecordSizingDisabled
+//
+// - InsecureSkipVerify
+//
+// - MaxVersion
+//
+// - MinVersion
+//
+// - NextProtos
+//
+// - RootCAs
+//
+// - ServerName
+func NewClientConnStdlib(conn net.Conn, config *tls.Config) (*tls.Conn, error) {
+	supportedFields := map[string]bool{
+		"DynamicRecordSizingDisabled": true,
+		"InsecureSkipVerify":          true,
+		"MaxVersion":                  true,
+		"MinVersion":                  true,
+		"NextProtos":                  true,
+		"RootCAs":                     true,
+		"ServerName":                  true,
+	}
+	value := reflect.ValueOf(config).Elem()
+	kind := value.Type()
+	for idx := 0; idx < value.NumField(); idx++ {
+		field := value.Field(idx)
+		if field.IsZero() {
+			continue
+		}
+		fieldKind := kind.Field(idx)
+		if supportedFields[fieldKind.Name] {
+			continue
+		}
+		err := fmt.Errorf("%w: field %s is nonzero", ErrIncompatibleStdlibConfig, fieldKind.Name)
+		return nil, err
+	}
+	ourConfig := &tls.Config{
+		DynamicRecordSizingDisabled: config.DynamicRecordSizingDisabled,
+		InsecureSkipVerify:          config.InsecureSkipVerify,
+		MaxVersion:                  config.MaxVersion,
+		MinVersion:                  config.MinVersion,
+		NextProtos:                  config.NextProtos,
+		RootCAs:                     config.RootCAs,
+		ServerName:                  config.ServerName,
+	}
+	return tls.Client(conn, ourConfig), nil
+}
+
 // newConn creates a new TLSConn.
 func (h *tlsHandshakerConfigurable) newConn(conn net.Conn, config *tls.Config) (TLSConn, error) {
 	if h.NewConn != nil {
 		return h.NewConn(conn, config)
 	}
-	return ootls.NewClientConnStdlib(conn, config)
+	return NewClientConnStdlib(conn, config)
 }
 
 // tlsHandshakerLogger is a TLSHandshaker with logging.

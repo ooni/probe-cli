@@ -87,21 +87,12 @@ func TestHTTPTLSDialerWithReadTimeout(t *testing.T) {
 	t.Run("DialContext", func(t *testing.T) {
 		t.Run("on success", func(t *testing.T) {
 			var (
-				calledWithZeroTime    bool
-				calledWithNonZeroTime bool
+				called bool
 			)
 			origConn := &mocks.TLSConn{
 				Conn: mocks.Conn{
-					MockSetReadDeadline: func(t time.Time) error {
-						switch t.IsZero() {
-						case true:
-							calledWithZeroTime = true
-						case false:
-							calledWithNonZeroTime = true
-						}
-						return nil
-					},
 					MockRead: func(b []byte) (int, error) {
+						called = true
 						return 0, io.EOF
 					},
 				},
@@ -118,10 +109,10 @@ func TestHTTPTLSDialerWithReadTimeout(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if _, okay := conn.(*httpTLSConnWithReadTimeout); !okay {
+			if _, okay := conn.(TLSConn); !okay {
 				t.Fatal("invalid conn type")
 			}
-			if conn.(*httpTLSConnWithReadTimeout).TLSConn != origConn {
+			if conn.(TLSConn) != origConn {
 				t.Fatal("invalid origin conn")
 			}
 			b := make([]byte, 1024)
@@ -132,7 +123,7 @@ func TestHTTPTLSDialerWithReadTimeout(t *testing.T) {
 			if count != 0 {
 				t.Fatal("invalid count")
 			}
-			if !calledWithZeroTime || !calledWithNonZeroTime {
+			if !called {
 				t.Fatal("not called")
 			}
 		})
@@ -152,32 +143,6 @@ func TestHTTPTLSDialerWithReadTimeout(t *testing.T) {
 			}
 			if conn != nil {
 				t.Fatal("expected nil conn here")
-			}
-		})
-
-		t.Run("with invalid conn type", func(t *testing.T) {
-			var called bool
-			d := &httpTLSDialerWithReadTimeout{
-				TLSDialer: &mocks.TLSDialer{
-					MockDialTLSContext: func(ctx context.Context, network, address string) (net.Conn, error) {
-						return &mocks.Conn{
-							MockClose: func() error {
-								called = true
-								return nil
-							},
-						}, nil
-					},
-				},
-			}
-			conn, err := d.DialTLSContext(context.Background(), "", "")
-			if !errors.Is(err, ErrNotTLSConn) {
-				t.Fatal("not the error we expected")
-			}
-			if conn != nil {
-				t.Fatal("expected nil conn here")
-			}
-			if !called {
-				t.Fatal("not called")
 			}
 		})
 	})

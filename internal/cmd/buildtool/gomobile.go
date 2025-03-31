@@ -57,7 +57,9 @@ func gomobileBuild(config *gomobileConfig) {
 	} else {
 		argv.Append("-tags", "ooni_libtor")
 	}
-	argv.Append("-ldflags", "-s -w")
+	// we have to pass the "-checklinkname=0" flag to build for go>=1.23.0
+	// https://github.com/wlynxg/anet?tab=readme-ov-file#how-to-build-with-go-1230-or-later
+	argv.Append("-ldflags", "-checklinkname=0 -s -w")
 	argv.Append("./pkg/oonimkall")
 
 	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, config.envp))

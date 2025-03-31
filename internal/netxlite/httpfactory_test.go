@@ -2,12 +2,12 @@ package netxlite
 
 import (
 	"crypto/tls"
+	"net/http"
 	"net/url"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	oohttp "github.com/ooni/oohttp"
 	"github.com/ooni/probe-cli/v3/internal/mocks"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -42,18 +42,17 @@ func TestNewHTTPTransportWithOptions(t *testing.T) {
 
 		// make sure there's the stdlib adapter
 		stdlibAdapter := txpCloser.HTTPTransport.(*httpTransportStdlib)
-		oohttpStdlibAdapter := stdlibAdapter.StdlibTransport
-		underlying := oohttpStdlibAdapter.Transport
+		underlying := stdlibAdapter.StdlibTransport
 
 		// now let's check that everything is configured as intended
-		expectedTxp := oohttp.DefaultTransport.(*oohttp.Transport).Clone()
+		expectedTxp := http.DefaultTransport.(*http.Transport).Clone()
 		diff := cmp.Diff(
 			expectedTxp,
 			underlying,
-			cmpopts.IgnoreUnexported(oohttp.Transport{}),
+			cmpopts.IgnoreUnexported(http.Transport{}),
 			cmpopts.IgnoreUnexported(tls.Config{}),
 			cmpopts.IgnoreFields(
-				oohttp.Transport{},
+				http.Transport{},
 				"DialContext",
 				"DialTLSContext",
 				"DisableCompression",
@@ -83,13 +82,12 @@ func TestNewHTTPTransportWithOptions(t *testing.T) {
 		}
 	})
 
-	unwrap := func(txp model.HTTPTransport) *oohttp.Transport {
+	unwrap := func(txp model.HTTPTransport) *http.Transport {
 		txpLogger := txp.(*httpTransportLogger)
 		txpErrWrapper := txpLogger.HTTPTransport.(*httpTransportErrWrapper)
 		txpCloser := txpErrWrapper.HTTPTransport.(*httpTransportConnectionsCloser)
 		stdlibAdapter := txpCloser.HTTPTransport.(*httpTransportStdlib)
-		oohttpStdlibAdapter := stdlibAdapter.StdlibTransport
-		return oohttpStdlibAdapter.Transport
+		return stdlibAdapter.StdlibTransport
 	}
 
 	t.Run("make sure HTTPTransportOptionProxyURL is WAI", func(t *testing.T) {
@@ -107,7 +105,7 @@ func TestNewHTTPTransportWithOptions(t *testing.T) {
 			if underlying.Proxy == nil {
 				t.Fatal("expected non-nil .Proxy")
 			}
-			got, err := underlying.Proxy(&oohttp.Request{})
+			got, err := underlying.Proxy(&http.Request{})
 			if err != nil {
 				t.Fatal(err)
 			}

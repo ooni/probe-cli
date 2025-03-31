@@ -118,7 +118,7 @@ func NewNetwork(
 	// of compression is disabled, so there is no conflict.
 	//
 	// - if proxyURL is nil, the proxy option is equivalent to disabling
-	// the proxy, otherwise it means that we're using the ooni/oohttp library
+	// the proxy, otherwise it means that we're using the net/http library
 	// to dial for proxies, which has some restrictions.
 	//
 	// - this code does not work as intended when using netem and proxies

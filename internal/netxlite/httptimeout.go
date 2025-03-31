@@ -60,12 +60,7 @@ func (d *httpTLSDialerWithReadTimeout) DialTLSContext(
 	if err != nil {
 		return nil, err
 	}
-	tconn, okay := conn.(TLSConn) // part of the contract but let's be graceful
-	if !okay {
-		_ = conn.Close() // we own the conn here
-		return nil, ErrNotTLSConn
-	}
-	return &httpTLSConnWithReadTimeout{tconn}, nil
+	return conn, nil
 }
 
 // httpConnWithReadTimeout enforces a read timeout for all HTTP
