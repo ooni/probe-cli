@@ -49,7 +49,7 @@ func TestIOSBuildGomobile(t *testing.T) {
 				"gomobile", "bind", "-target", "ios",
 				"-o", "MOBILE/ios/oonimkall.xcframework",
 				"-tags", "ooni_psiphon_config,ooni_libtor",
-				"-ldflags", "-s -w",
+				"-ldflags", "-checklinkname=0 -s -w",
 				"./pkg/oonimkall",
 			},
 		}, {
@@ -82,7 +82,7 @@ func TestIOSBuildGomobile(t *testing.T) {
 				"gomobile", "bind", "-target", "ios",
 				"-o", "MOBILE/ios/oonimkall.xcframework",
 				"-tags", "ooni_libtor",
-				"-ldflags", "-s -w", "./pkg/oonimkall",
+				"-ldflags", "-checklinkname=0 -s -w", "./pkg/oonimkall",
 			},
 		}, {
 			Env: []string{},
