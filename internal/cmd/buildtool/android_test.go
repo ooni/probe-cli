@@ -55,7 +55,7 @@ func TestAndroidBuildGomobile(t *testing.T) {
 				"-o", "MOBILE/android/oonimkall.aar",
 				"-androidapi", "21",
 				"-tags", "ooni_psiphon_config,ooni_libtor",
-				"-ldflags", "-s -w",
+				"-ldflags", "-checklinkname=0 -s -w",
 				"./pkg/oonimkall",
 			},
 		}, {
@@ -93,7 +93,7 @@ func TestAndroidBuildGomobile(t *testing.T) {
 				"-o", "MOBILE/android/oonimkall.aar",
 				"-androidapi", "21",
 				"-tags", "ooni_libtor",
-				"-ldflags", "-s -w",
+				"-ldflags", "-checklinkname=0 -s -w",
 				"./pkg/oonimkall",
 			},
 		}, {
@@ -173,7 +173,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			},
 			Argv: []string{
 				"go", "build", "-tags", "ooni_psiphon_config,ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/miniooni-android-amd64",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/miniooni-android-amd64",
 				"./internal/cmd/miniooni",
 			},
 		}, {
@@ -186,7 +186,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			},
 			Argv: []string{
 				"go", "build", "-tags", "ooni_psiphon_config,ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-android-amd64",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/ooniprobe-android-amd64",
 				"./cmd/ooniprobe",
 			},
 		}, {
@@ -199,7 +199,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			},
 			Argv: []string{
 				"go", "build", "-tags", "ooni_psiphon_config,ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/miniooni-android-386",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/miniooni-android-386",
 				"./internal/cmd/miniooni",
 			},
 		}, {
@@ -212,7 +212,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			},
 			Argv: []string{
 				"go", "build", "-tags", "ooni_psiphon_config,ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-android-386",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/ooniprobe-android-386",
 				"./cmd/ooniprobe",
 			},
 		}, {
@@ -225,7 +225,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			},
 			Argv: []string{
 				"go", "build", "-tags", "ooni_psiphon_config,ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/miniooni-android-arm64",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/miniooni-android-arm64",
 				"./internal/cmd/miniooni",
 			},
 		}, {
@@ -238,7 +238,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			},
 			Argv: []string{
 				"go", "build", "-tags", "ooni_psiphon_config,ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-android-arm64",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/ooniprobe-android-arm64",
 				"./cmd/ooniprobe",
 			},
 		}, {
@@ -252,7 +252,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			},
 			Argv: []string{
 				"go", "build", "-tags", "ooni_psiphon_config,ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/miniooni-android-arm",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/miniooni-android-arm",
 				"./internal/cmd/miniooni",
 			},
 		}, {
@@ -266,7 +266,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			},
 			Argv: []string{
 				"go", "build", "-tags", "ooni_psiphon_config,ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-android-arm",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/ooniprobe-android-arm",
 				"./cmd/ooniprobe",
 			},
 		}},
@@ -284,7 +284,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			Argv: []string{
 				"go", "build",
 				"-tags", "ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/miniooni-android-amd64",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/miniooni-android-amd64",
 				"./internal/cmd/miniooni",
 			},
 		}, {
@@ -298,7 +298,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			Argv: []string{
 				"go", "build",
 				"-tags", "ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-android-amd64",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/ooniprobe-android-amd64",
 				"./cmd/ooniprobe",
 			},
 		}, {
@@ -312,7 +312,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			Argv: []string{
 				"go", "build",
 				"-tags", "ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/miniooni-android-386",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/miniooni-android-386",
 				"./internal/cmd/miniooni",
 			},
 		}, {
@@ -326,7 +326,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			Argv: []string{
 				"go", "build",
 				"-tags", "ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-android-386",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/ooniprobe-android-386",
 				"./cmd/ooniprobe",
 			},
 		}, {
@@ -340,7 +340,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			Argv: []string{
 				"go", "build",
 				"-tags", "ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/miniooni-android-arm64",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/miniooni-android-arm64",
 				"./internal/cmd/miniooni",
 			},
 		}, {
@@ -354,7 +354,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			Argv: []string{
 				"go", "build",
 				"-tags", "ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-android-arm64",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/ooniprobe-android-arm64",
 				"./cmd/ooniprobe",
 			},
 		}, {
@@ -369,7 +369,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			Argv: []string{
 				"go", "build",
 				"-tags", "ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/miniooni-android-arm",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/miniooni-android-arm",
 				"./internal/cmd/miniooni",
 			},
 		}, {
@@ -384,7 +384,7 @@ func TestAndroidBuildCLIAll(t *testing.T) {
 			Argv: []string{
 				"go", "build",
 				"-tags", "ooni_libtor",
-				"-ldflags", "-s -w", "-o", "CLI/ooniprobe-android-arm",
+				"-ldflags", "-checklinkname=0 -s -w", "-o", "CLI/ooniprobe-android-arm",
 				"./cmd/ooniprobe",
 			},
 		}},
