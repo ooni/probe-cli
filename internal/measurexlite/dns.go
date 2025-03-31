@@ -85,6 +85,13 @@ func (r *resolverTrace) LookupHTTPS(ctx context.Context, domain string) (*model.
 	return r.r.LookupHTTPS(netxlite.ContextWithTrace(ctx, r.tx), domain)
 }
 
+// LookupSVCB implements model.Resolver.LookupSVCB
+func (r *resolverTrace) LookupSVCB(ctx context.Context, domain string) ([]*model.SVCB, error) {
+	defer r.emiteResolveDone()
+	r.emitResolveStart()
+	return r.r.LookupSVCB(netxlite.ContextWithTrace(ctx, r.tx), domain)
+}
+
 // LookupNS implements model.Resolver.LookupNS
 func (r *resolverTrace) LookupNS(ctx context.Context, domain string) ([]*net.NS, error) {
 	defer r.emiteResolveDone()
