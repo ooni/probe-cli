@@ -65,7 +65,7 @@ func TestGetFeatureFlag(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
-		if GetFeatureFlag(memstore, "antani") {
+		if GetFeatureFlag(memstore, "antani", false) {
 			t.Fatal("expected to see false here")
 		}
 	})
@@ -76,7 +76,7 @@ func TestGetFeatureFlag(t *testing.T) {
 				return []byte(`{`), nil
 			},
 		}
-		if GetFeatureFlag(memstore, "antani") {
+		if GetFeatureFlag(memstore, "antani", false) {
 			t.Fatal("expected to see false here")
 		}
 	})
@@ -88,7 +88,7 @@ func TestGetFeatureFlag(t *testing.T) {
 				return []byte(response), nil
 			},
 		}
-		if GetFeatureFlag(memstore, "antani") {
+		if GetFeatureFlag(memstore, "antani", false) {
 			t.Fatal("expected to see false here")
 		}
 	})
@@ -109,7 +109,7 @@ func TestGetFeatureFlag(t *testing.T) {
 				return data, nil
 			},
 		}
-		if !GetFeatureFlag(memstore, "antani") {
+		if !GetFeatureFlag(memstore, "antani", false) {
 			t.Fatal("expected to see true here")
 		}
 	})
@@ -128,7 +128,7 @@ func TestGetFeatureFlag(t *testing.T) {
 				return data, nil
 			},
 		}
-		if GetFeatureFlag(memstore, "antani") {
+		if GetFeatureFlag(memstore, "antani", false) {
 			t.Fatal("expected to see false here")
 		}
 	})

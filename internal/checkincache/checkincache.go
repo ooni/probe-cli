@@ -42,19 +42,24 @@ func Store(kvStore model.KeyValueStore, resp *model.OOAPICheckInResult) error {
 
 // GetFeatureFlag returns the value of a check-in feature flag. In case of any
 // error this function will always return a false value.
-func GetFeatureFlag(kvStore model.KeyValueStore, name string) bool {
+func GetFeatureFlag(kvStore model.KeyValueStore, name string, defaultFlag bool) bool {
 	data, err := kvStore.Get(CheckInFlagsState)
 	if err != nil {
-		return false // as documented
+		return defaultFlag // as documented
 	}
 	var wrapper checkInFlagsWrapper
 	if err := json.Unmarshal(data, &wrapper); err != nil {
-		return false // as documented
+		return defaultFlag // as documented
 	}
+	fmt.Println(wrapper)
 	if time.Now().After(wrapper.Expire) {
-		return false // as documented
+		return defaultFlag // as documented
 	}
-	return wrapper.Flags[name] // works even if map is nil
+	flag, ok := wrapper.Flags[name]
+	if ok {
+		return flag
+	}
+	return defaultFlag // default to true if the flag is not present
 }
 
 // ExperimentEnabledKey returns the [model.KeyValueStore] key to use to
@@ -66,6 +71,6 @@ func ExperimentEnabledKey(name string) string {
 // ExperimentEnabled returns whether a given experiment has been enabled by a previous
 // execution of check-in. Some experiments are disabled by default for different reasons
 // and we use the check-in API to control whether and when they should be enabled.
-func ExperimentEnabled(kvStore model.KeyValueStore, name string) bool {
-	return GetFeatureFlag(kvStore, ExperimentEnabledKey(name))
+func ExperimentEnabled(kvStore model.KeyValueStore, name string, defaultFlag bool) bool {
+	return GetFeatureFlag(kvStore, ExperimentEnabledKey(name), defaultFlag)
 }
