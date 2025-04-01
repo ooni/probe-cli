@@ -379,7 +379,7 @@ func NewFactory(name string, kvStore model.KeyValueStore, logger model.Logger) (
 		return factory, nil // enabled by environment variable
 	}
 	if checkincache.ExperimentEnabled(kvStore, name, false) {
-		return factory, nil
+		return factory, nil // enabled by check-in
 	}
 
 	logger.Warnf(experimentDisabledByCheckInWarning, name)
