@@ -653,6 +653,74 @@ func TestResolverIDNA(t *testing.T) {
 				t.Fatal("expected no response here")
 			}
 		})
+
+		t.Run("with underscore prefixed HTTPS SVCB Record", func(t *testing.T) {
+			expected := &model.HTTPSSvc{
+				ALPN: []string{"h3"},
+				IPv4: []string{"1.1.1.1"},
+				IPv6: []string{},
+			}
+			r := &resolverIDNA{
+				Resolver: &mocks.Resolver{
+					MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
+						if domain != "_12345._https.example.org" {
+							return nil, errors.New("passed invalid domain")
+						}
+						return expected, nil
+					},
+				},
+			}
+			ctx := context.Background()
+			https, err := r.LookupHTTPS(ctx, "_12345._https.example.org")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(expected, https); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+
+		t.Run("with underscore prefixed non-LDH HTTPS SVCB Record", func(t *testing.T) {
+			expected := &model.HTTPSSvc{
+				ALPN: []string{"h3"},
+				IPv4: []string{"1.1.1.1"},
+				IPv6: []string{},
+			}
+			r := &resolverIDNA{
+				Resolver: &mocks.Resolver{
+					MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
+						if domain != "_12345._https.xn--d1acpjx3f.xn--p1ai" {
+							return nil, errors.New("passed invalid domain")
+						}
+						return expected, nil
+					},
+				},
+			}
+			ctx := context.Background()
+			https, err := r.LookupHTTPS(ctx, "_12345._https.яндекс.рф")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(expected, https); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+
+		t.Run("with invalid underscore-prefixed domain", func(t *testing.T) {
+			r := &resolverIDNA{Resolver: &mocks.Resolver{
+				MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
+					return nil, errors.New("should not happen")
+				},
+			}}
+			ctx := context.Background()
+			https, err := r.LookupHTTPS(ctx, "_asdf._https.foo.bar")
+			if err == nil || !strings.HasPrefix(err.Error(), "invalid domain:") {
+				t.Fatal("not the error we expected")
+			}
+			if https != nil {
+				t.Fatal("expected no response here")
+			}
+		})
 	})
 
 	t.Run("Network", func(t *testing.T) {
