@@ -156,6 +156,44 @@ func NewDNSQueriesList(begin time.Time, events []Event) (out []DNSQueryEntry) {
 			}
 			out = append(out, entry)
 		}
+		// Handle SVCB records
+		if ev.DNSQueryType == "SVCB" {
+			entry := DNSQueryEntry{
+				Engine:          ev.Proto,
+				Failure:         ev.Err.ToFailure(),
+				Hostname:        ev.Hostname,
+				QueryType:       ev.DNSQueryType,
+				ResolverAddress: ev.Address,
+				T:               ev.Time.Sub(begin).Seconds(),
+			}
+			svcbResponses := make([]model.SVCBData, 0)
+			for _, record := range ev.DNSSVCBRespones {
+				svcb := model.SVCBData{Priority: record.Priority,
+					TargetName: record.TargetName}
+				svcb.Params = make(map[string]string)
+
+				svcb.Params["alpn"] = strings.Join(record.ALPN, ",")
+				svcb.Params["ipv4hint"] = strings.Join(record.IPv4, ",")
+				svcb.Params["ipv6hint"] = strings.Join(record.IPv6, ",")
+				if record.DoHPath != "" {
+					svcb.Params["dohpath"] = record.DoHPath
+				}
+				if record.OHttp {
+					svcb.Params["ohttp"] = strconv.FormatBool(record.OHttp)
+				}
+				if record.Port != 0 {
+					svcb.Params["port"] = strconv.Itoa(int(record.Port))
+				}
+				//svcb.Params["echconfig"] = record.ECHConfig
+				svcbResponses = append(svcbResponses, svcb)
+			}
+			entry.Answers = append(entry.Answers, DNSAnswerEntry{
+				AnswerType: "SVCB",
+				SVCB:       svcbResponses,
+			})
+			out = append(out, entry)
+		}
+
 	}
 	return
 }
