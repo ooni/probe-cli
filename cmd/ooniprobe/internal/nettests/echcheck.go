@@ -13,5 +13,9 @@ func (n ECHCheck) Run(ctl *Controller) error {
 	}
 	// providing an input containing an empty string causes the experiment
 	// to recognize the empty string and use the default URL
-	return ctl.Run(builder, []model.ExperimentTarget{model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("")})
+	return ctl.Run(builder, []model.ExperimentTarget{
+		model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("https://cloudflare-ech.com/cdn-cgi/trace"),
+		// Use ECH on a non-standard port.
+		model.NewOOAPIURLInfoWithDefaultCategoryAndCountry("https://min-ng.test.defo.ie:15443"),
+	})
 }

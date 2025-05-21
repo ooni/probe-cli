@@ -2,6 +2,8 @@ package echcheck
 
 import (
 	"context"
+	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/mocks"
@@ -14,7 +16,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	if measurer.ExperimentName() != "echcheck" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.2.0" {
+	if measurer.ExperimentVersion() != "0.3.0" {
 		t.Fatal("unexpected version")
 	}
 }
@@ -114,12 +116,57 @@ func TestMeasurementSuccessRealWorld(t *testing.T) {
 
 	// check results
 	tk := msrmnt.TestKeys.(TestKeys)
+	foundA, foundAAAA, foundHTTPS := false, false, false
+	parsed, err := url.Parse(defaultURL)
+	if err != nil {
+		t.Fatal("bad default url:", err)
+	}
+	for _, q := range tk.Queries {
+		aboutHost := q.Hostname == parsed.Hostname()
+		if (q.Failure == nil) && aboutHost {
+			switch q.QueryType {
+			case "A":
+				foundA = true
+			case "AAAA":
+				foundAAAA = true
+			case "HTTPS":
+				foundHTTPS = true
+			default:
+				// nothing
+			}
+		}
+	}
+	if !foundA {
+		t.Fatal("No DNS type A roundtrip reported")
+	}
+	if !foundAAAA {
+		t.Fatal("No DNS type AAAA roundtrip reported")
+	}
+	if !foundHTTPS {
+		t.Fatal("No DNS type HTTPS roundtrip reported")
+	}
+	if len(tk.NetworkEvents) == 0 {
+		t.Fatal("no network events recorded")
+	}
+	// NoECH, GREASE, RealECH
+	if len(tk.TLSHandshakes) != 3 {
+		t.Fatal("unexpected number of TLS handshakes", len(tk.TLSHandshakes))
+	}
+	if len(tk.TCPConnects) != 3 {
+		t.Fatal("unexpected number of TCP connections", len(tk.TCPConnects))
+	}
 	for _, hs := range tk.TLSHandshakes {
 		if hs.Failure != nil {
 			if hs.ECHConfig == "GREASE" {
-				t.Fatal("unexpected exp failure:", hs.Failure)
+				// We expect that this either succeeds (i.e. with a non-ECH server)
+				// OR that it fails with an EchRejeECHRejectionError
+				if !strings.Contains(*hs.Failure, "tls: server rejected ECH") {
+					t.Fatal("unexpected exp (grease) failure:", *hs.Failure)
+				}
+			} else if len(hs.ECHConfig) > 0 {
+				t.Fatal("unexpected exp (ech) failure:", *hs.Failure)
 			} else {
-				t.Fatal("unexpected ctrl failure:", hs.Failure)
+				t.Fatal("unexpected ctrl failure:", *hs.Failure)
 			}
 		}
 	}

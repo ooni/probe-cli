@@ -4,91 +4,74 @@ package echcheck
 // ietf.org/archive/id/draft-ietf-tls-esni-14.html
 
 import (
-	"fmt"
+	"io"
+
 	"github.com/cloudflare/circl/hpke"
 	"golang.org/x/crypto/cryptobyte"
-	"io"
 )
 
-const clientHelloOuter uint8 = 0
+// ECH Config List per:
+// https://www.ietf.org/archive/id/draft-ietf-tls-esni-22.html#name-encrypted-clienthello-confi
+func generateGreaseyECHConfigList(rand io.Reader, publicName string) ([]byte, error) {
+	// Start ECHConfig
+	var c cryptobyte.Builder
+	version := uint16(0xfe0d)
+	c.AddUint16(version)
 
-// echExtension is the Encrypted Client Hello extension that is part of
-// ClientHelloOuter as specified in:
-// ietf.org/archive/id/draft-ietf-tls-esni-14.html#section-5
-type echExtension struct {
-	kdfID    uint16
-	aeadID   uint16
-	configID uint8
-	enc      []byte
-	payload  []byte
-}
-
-func (ech *echExtension) marshal() []byte {
-	var b cryptobyte.Builder
-	b.AddUint8(clientHelloOuter)
-	b.AddUint16(ech.kdfID)
-	b.AddUint16(ech.aeadID)
-	b.AddUint8(ech.configID)
-	b.AddUint16LengthPrefixed(func(b *cryptobyte.Builder) {
-		b.AddBytes(ech.enc)
-	})
-	b.AddUint16LengthPrefixed(func(b *cryptobyte.Builder) {
-		b.AddBytes(ech.payload)
-	})
-	return b.BytesOrPanic()
-}
-
-// generateGreaseExtension generates an ECH extension with random values as
-// specified in ietf.org/archive/id/draft-ietf-tls-esni-14.html#section-6.2
-func generateGreaseExtension(rand io.Reader) ([]byte, error) {
-	// initialize HPKE suite parameters
-	kem := hpke.KEM(uint16(hpke.KEM_X25519_HKDF_SHA256))
-	kdf := hpke.KDF(uint16(hpke.KDF_HKDF_SHA256))
-	aead := hpke.AEAD(uint16(hpke.AEAD_AES128GCM))
-
-	if !kem.IsValid() || !kdf.IsValid() || !aead.IsValid() {
-		return nil, fmt.Errorf("required parameters not supported")
+	// Start ECHConfigContents
+	var ecc cryptobyte.Builder
+	// Start HpkeKeyConfig
+	randConfigId := make([]byte, 1)
+	if _, err := io.ReadFull(rand, randConfigId); err != nil {
+		return nil, err
 	}
-
-	defaultHPKESuite := hpke.NewSuite(kem, kdf, aead)
-
-	// generate a public key to place in 'enc' field
+	ecc.AddUint8(randConfigId[0])
+	ecc.AddUint16(uint16(hpke.KEM_X25519_HKDF_SHA256))
+	// Generate a public key
+	kem := hpke.KEM(uint16(hpke.KEM_X25519_HKDF_SHA256))
 	publicKey, _, err := kem.Scheme().GenerateKeyPair()
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate key pair: %s", err)
+		return nil, err
 	}
-
-	// initiate HPKE Sender
-	sender, err := defaultHPKESuite.NewSender(publicKey, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create sender: %s", err)
-	}
-
-	// Set ECH Extension Fields
-	var ech echExtension
-
-	ech.kdfID = uint16(kdf)
-	ech.aeadID = uint16(aead)
-
-	randomByte := make([]byte, 1)
-	_, err = io.ReadFull(rand, randomByte)
+	publicKeyBytes, err := publicKey.MarshalBinary()
 	if err != nil {
 		return nil, err
 	}
-	ech.configID = randomByte[0]
+	ecc.AddUint16LengthPrefixed(func(b *cryptobyte.Builder) {
+		b.AddBytes(publicKeyBytes)
+	})
+	// Start HpkeSymmetricCipherSuite
+	kdf := hpke.KDF(uint16(hpke.KDF_HKDF_SHA256))
+	aead := hpke.AEAD(uint16(hpke.AEAD_AES128GCM))
+	var cs cryptobyte.Builder
+	cs.AddUint16(uint16(kdf))
+	cs.AddUint16(uint16(aead))
+	ecc.AddUint16LengthPrefixed(func(b *cryptobyte.Builder) {
+		b.AddBytes(cs.BytesOrPanic())
+	})
+	// End HpkeSymmetricCipherSuite
+	// End HpkeKeyConfig
+	maxNameLength := uint8(42)
+	ecc.AddUint8(maxNameLength)
+	publicNameBytes := []byte(publicName)
+	ecc.AddUint8LengthPrefixed(func(b *cryptobyte.Builder) {
+		b.AddBytes(publicNameBytes)
+	})
+	// Start ECHConfigExtension
+	var ece cryptobyte.Builder
+	ecc.AddUint16LengthPrefixed(func(b *cryptobyte.Builder) {
+		b.AddBytes(ece.BytesOrPanic())
+	})
+	// End ECHConfigExtension
+	// End ECHConfigContents
+	c.AddUint16LengthPrefixed(func(b *cryptobyte.Builder) {
+		b.AddBytes(ecc.BytesOrPanic())
+	})
+	// End ECHConfig
+	var l cryptobyte.Builder
+	l.AddUint16LengthPrefixed(func(b *cryptobyte.Builder) {
+		b.AddBytes(c.BytesOrPanic())
+	})
 
-	ech.enc, _, err = sender.Setup(rand)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO: compute this correctly as per https://www.ietf.org/archive/id/draft-ietf-tls-esni-14.html#name-recommended-padding-scheme
-	randomEncodedClientHelloInnerLen := 100
-	cipherLen := int(aead.CipherLen(uint(randomEncodedClientHelloInnerLen)))
-	ech.payload = make([]byte, randomEncodedClientHelloInnerLen+cipherLen)
-	if _, err = io.ReadFull(rand, ech.payload); err != nil {
-		return nil, err
-	}
-
-	return ech.marshal(), nil
+	return l.BytesOrPanic(), nil
 }

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -234,13 +235,34 @@ func (r *resolverIDNA) LookupHost(ctx context.Context, hostname string) ([]strin
 	return r.Resolver.LookupHost(ctx, host)
 }
 
+// HTTPS queries may be for either an IDNA-encodable domain or a
+// Port Prefix Named domain where the portion following the port
+// and service components is an IDNA-encodable domain.
 func (r *resolverIDNA) LookupHTTPS(
 	ctx context.Context, domain string) (*model.HTTPSSvc, error) {
-	host, err := idnax.ToASCII(domain)
+
+	idnable := domain
+	portPrefix := ""
+	if strings.HasPrefix(domain, "_") {
+		components := strings.Split(domain, ".")
+		port, err := strconv.Atoi(strings.TrimPrefix(components[0], "_"))
+		if err != nil {
+			return nil, fmt.Errorf("invalid domain: %s", domain)
+		}
+		if len(components) >= 2 && components[1] == "_https" && port >= 0 && port <= 65535 {
+			idnable = strings.Join(components[2:], ".")
+			portPrefix = components[0] + "." + components[1] + "."
+		} else {
+			return nil, fmt.Errorf("invalid domain: %s", domain)
+		}
+	}
+
+	ldh, err := idnax.ToASCII(idnable)
 	if err != nil {
 		return nil, err
 	}
-	return r.Resolver.LookupHTTPS(ctx, host)
+	query := portPrefix + ldh
+	return r.Resolver.LookupHTTPS(ctx, query)
 }
 
 func (r *resolverIDNA) Network() string {
