@@ -20,9 +20,9 @@ jobs:
 
       - name: Install custom gomobile
         run: |
-          go install github.com/ooni/oomobile/cmd/gomobile@v0.1.2
-          go install github.com/ooni/oomobile/cmd/gobind@v0.1.2
-          go get github.com/ooni/oomobile@v0.1.2
+          go install github.com/ooni/oomobile/cmd/gomobile@v0.1.5
+          go install github.com/ooni/oomobile/cmd/gobind@v0.1.5
+          go get github.com/ooni/oomobile@v0.1.5
 
       - name: Run gomobile commands with full path
         shell: pwsh
