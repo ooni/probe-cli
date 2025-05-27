@@ -24,7 +24,7 @@ jobs:
           go install go install github.com/ooni/oomobile/cmd/gobind@v0.1.4
           go get github.com/ooni/oomobile@v0.1.4
 
-     - name: Run gomobile commands with full path
+      - name: Run gomobile commands with full path
         shell: pwsh
         run: |
           $gomobile = "$env:USERPROFILE\go\bin\gomobile.exe"
