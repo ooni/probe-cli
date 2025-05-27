@@ -24,11 +24,11 @@ jobs:
           go install github.com/ooni/oomobile/cmd/gobind@v0.1.5
           go get github.com/ooni/oomobile@v0.1.5
 
-      - name: Run gomobile commands with full path
-        shell: pwsh
+      - name: Run gomobile init
         run: |
-          $gomobile = "$env:USERPROFILE\go\bin\gomobile.exe"
-          $gobind = "$env:USERPROFILE\go\bin\gobind.exe"
+          gomobile init
 
-          & $gomobile init -v
-          & $gomobile bind -target=java -o oonimkall.jar ./pkg/oonimkall
+      - name: Run gomobile bind
+        run: |
+          gomobile bind -target=java -o oonimkall.jar ./pkg/oonimkall
+ 
