@@ -22,7 +22,7 @@ jobs:
         run: |
           go install go install github.com/ooni/oomobile/cmd/gomobile@v0.1.4
           go install go install github.com/ooni/oomobile/cmd/gobind@v0.1.4
-          go get github.com/ooni/oomobile/bind@v0.1.4
+          go get github.com/ooni/oomobile@v0.1.4
 
       - name: Run gomobile init
         run: gomobile init -v
