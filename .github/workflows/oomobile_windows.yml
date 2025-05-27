@@ -1,0 +1,29 @@
+name: Setup Custom Gomobile
+
+on:
+  push:
+    branches:
+      - test/oomobile
+  workflow_dispatch:
+
+jobs:
+  setup-gomobile:
+    runs-on: windows-latest
+
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.23'  # Adjust as needed
+
+      - name: Install custom gomobile
+        run: |
+          go install go install github.com/ooni/oomobile/cmd/gomobile@v0.1.4
+          go install go install github.com/ooni/oomobile/cmd/gobind@v0.1.4
+          go get github.com/ooni/oomobile/bind@v0.1.4
+
+      - name: Run gomobile init
+        run: gomobile init -v
+
+      - name: Run gomobile bind
+        run:  gomobile bind -target=java -o oonimkall.jar ./pkg/oonimkall
