@@ -28,7 +28,11 @@ jobs:
         run: echo "$env:USERPROFILE\go\bin" | Out-File -Append -Encoding ascii $env:GITHUB_PATH
 
       - name: Run gomobile init
-        run: gomobile init -v
+        run: |
+          $env:Path += ";$env:USERPROFILE\go\bin"
+          gomobile init -v
 
       - name: Run gomobile bind
-        run:  gomobile bind -target=java -o oonimkall.jar ./pkg/oonimkall
+        run:  |
+          $env:Path += ";$env:USERPROFILE\go\bin"
+          gomobile bind -target=java -o oonimkall.jar ./pkg/oonimkall
