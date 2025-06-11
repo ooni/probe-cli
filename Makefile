@@ -105,10 +105,22 @@ ios: search/for/zip search/for/xcode
 	./MOBILE/ios/createpodspecs
 
 #help:
-#help: The `make desktop` command builds the oonimkall jar for desktop.
+#help: The `make DESKTOP/windows` command builds the oonimkall jar for windows.
 .PHONY: DESKTOP/windows
 DESKTOP/windows: search/for/java
 	./script/go.bash run ./internal/cmd/buildtool desktop oomobile --target=windows
+
+#help:
+#help: The `make DESKTOP/darwin` command builds the oonimkall jar for darwin.
+.PHONY: DESKTOP/darwin
+DESKTOP/darwin: search/for/java
+	./script/go.bash run ./internal/cmd/buildtool desktop oomobile --target=darwin
+
+#help:
+#help: The `make DESKTOP/linux` command builds the oonimkall jar for linux.
+.PHONY: DESKTOP/linux
+DESKTOP/linux: search/for/java
+	./script/go.bash run ./internal/cmd/buildtool desktop oomobile --target=linux
 
 .PHONY: search/for/java
 search/for/java:

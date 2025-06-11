@@ -1,0 +1,74 @@
+name: Setup Custom Gomobile
+
+on:
+  push:
+    branches:
+      - test/oomobile
+      - "release/**"
+      - "fullbuild"
+      - "windowsbuild"
+    tags:
+      - "v*"
+  schedule:
+    - cron: "17 1 * * *"
+
+jobs:
+  build_linux_desktop_jar:
+    runs-on: ubuntu-22.04 
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get GOVERSION content
+        id: goversion
+        run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
+      - uses: magnetikonline/action-golang-cache@v4
+        with:
+          go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
+ 
+      - run: make DESKTOP/windows
+
+  build_linux_desktop_jar:
+    runs-on: macos-13 
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get GOVERSION content
+        id: goversion
+        run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
+      - uses: magnetikonline/action-golang-cache@v4
+        with:
+          go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
+ 
+      - run: make DESKTOP/darwin
+
+  build_windows_desktop_jar:
+    runs-on: windows-latest 
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get GOVERSION content
+        id: goversion
+        run: echo "version=$(cat GOVERSION)" >> "$GITHUB_OUTPUT"
+      - uses: magnetikonline/action-golang-cache@v4
+        with:
+          go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
+ 
+      - run: make DESKTOP/windows
+
+      # - uses: actions/upload-artifact@v4
+        # with:
+          # name: oonimkall-windows.jar
+          # path: ./DESKTOP/oonimkall.jar
+ 
