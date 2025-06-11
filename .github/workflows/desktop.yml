@@ -14,8 +14,8 @@ on:
 
 jobs:
   build_linux_desktop_jar:
-    runs-on: ubuntu-22.04 
-    
+    runs-on: ubuntu-22.04  
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,9 +29,12 @@ jobs:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
  
+      - run: sudo apt-get update -q
+      - run: sudo apt-get install -y mingw-w64
+
       - run: make DESKTOP/windows
 
-  build_linux_desktop_jar:
+  build_darwin_desktop_jar:
     runs-on: macos-13 
     
     steps:
