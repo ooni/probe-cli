@@ -1,4 +1,4 @@
-name: Setup Custom Gomobile
+name: desktop
 
 on:
   push:
