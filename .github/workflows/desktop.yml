@@ -33,6 +33,11 @@ jobs:
 
       - run: make DESKTOP/linux
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oonimkall-linux.jar
+          path: ./DESKTOP/oonimkall.jar
+
   build_darwin_desktop_jar:
     runs-on: macos-13 
     
@@ -50,6 +55,11 @@ jobs:
           cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
  
       - run: make DESKTOP/darwin
+      
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oonimkall-darwin.jar
+          path: ./DESKTOP/oonimkall.jar
 
   build_windows_desktop_jar:
     runs-on: windows-latest 
@@ -78,5 +88,9 @@ jobs:
 
       - name: Run bind
         run: gomobile bind -target java/amd64 -o oonimkall.jar ./pkg/oonimkall
-
- 
+      
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oonimkall-windows.jar
+          path: ./DESKTOP/oonimkall.jar
+  
