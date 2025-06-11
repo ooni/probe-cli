@@ -139,7 +139,7 @@ jobs:
       - name: Repack merged JAR
         run: |
           cd merged
-          jar c ../oonimkall.jar .
+          jar cf ../oonimkall.jar .
 
       - name: Upload merged multiplatform JAR
         uses: actions/upload-artifact@v4
