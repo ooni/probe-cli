@@ -87,7 +87,7 @@ jobs:
         run: gomobile init
 
       - name: Run bind
-        run: gomobile bind -target java/amd64 -o oonimkall.jar ./pkg/oonimkall
+        run: gomobile bind -target java/amd64 -o oonimkall-windows.jar ./pkg/oonimkall
       
       - uses: actions/upload-artifact@v4
         with:
