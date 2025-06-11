@@ -28,10 +28,7 @@ jobs:
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
-
-      - run: sudo apt-get update -q
-      - run: sudo apt-get install -y mingw-w64
-      
+ 
       - run: make DESKTOP/windows
 
       # - uses: actions/upload-artifact@v4
