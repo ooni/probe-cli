@@ -50,7 +50,6 @@ func desktopBuildOomobile(deps buildtoolmodel.Dependencies, targetOs string) {
 	if targetOs == "windows" {
 		log.Infof("detected GOOS: %s, setting target as amd64", runtime.GOOS)
 		config.target = "java/amd64"
-		config.envp.Append("CC", "x86_64-w64-mingw32-gcc")
 	}
 
 	log.Info("building the desktop jar using oomobile")

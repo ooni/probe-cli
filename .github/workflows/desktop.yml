@@ -32,7 +32,7 @@ jobs:
       - run: sudo apt-get update -q
       - run: sudo apt-get install -y mingw-w64
 
-      - run: make DESKTOP/windows
+      - run: make DESKTOP/linux
 
   build_darwin_desktop_jar:
     runs-on: macos-13 
@@ -68,10 +68,16 @@ jobs:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
  
-      - run: make DESKTOP/windows
+      - name: Install oomobile
+        run: |
+          go install github.com/ooni/oomobile/cmd/gomobile@latest
+          go install github.com/ooni/oomobile/cmd/gobind@latest
+          go get github.com/ooni/oomobile/bind@latest
+      
+      - name: Init oomobile
+        run: gomobile init
 
-      # - uses: actions/upload-artifact@v4
-        # with:
-          # name: oonimkall-windows.jar
-          # path: ./DESKTOP/oonimkall.jar
+      - name: Run bind
+        run: gomobile bind -target java/amd64 -o oonimkall.jar ./pkg/oonimkall
+
  
