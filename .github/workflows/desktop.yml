@@ -93,4 +93,56 @@ jobs:
         with:
           name: oonimkall-windows.jar
           path: ./DESKTOP/oonimkall.jar
-  
+
+  merge_desktop_jar:
+    runs-on: ubuntu-22.04
+    needs:
+      - build_linux_desktop_jar
+      - build_darwin_desktop_jar
+      - build_windows_desktop_jar
+
+    steps:
+      - name: Download Linux JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: oonimkall-linux.jar
+          path: linux
+
+      - name: Download Darwin JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: oonimkall-darwin.jar
+          path: darwin
+
+      - name: Download Windows JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: oonimkall-windows.jar
+          path: windows
+
+      - name: Unzip all JARs
+        run: |
+          mkdir -p merged
+          unzip -q linux/oonimkall.jar -d merged
+          unzip -q darwin/oonimkall.jar -d darwin_unzip
+          unzip -q windows/oonimkall.jar -d windows_unzip
+
+      - name: Copy Darwin native libs
+        run: |
+          cp -r darwin_unzip/jniLibs/amd64/*.dylib merged/jniLibs/amd64/ || true
+          cp -r darwin_unzip/jniLibs/arm64/*.dylib merged/jniLibs/arm64/ || true
+
+      - name: Copy Windows native libs
+        run: |
+          cp -r windows_unzip/jniLibs/amd64/* merged/jniLibs/amd64/ || true
+      
+      - name: Repack merged JAR
+        run: |
+          cd merged
+          jar c ../oonimkall.jar .
+
+      - name: Upload merged multiplatform JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: oonimkall.jar
+          path: oonimkall.jar
