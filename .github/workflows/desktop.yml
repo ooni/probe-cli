@@ -3,7 +3,6 @@ name: desktop
 on:
   push:
     branches:
-      - test/oomobile
       - "release/**"
       - "fullbuild"
       - "windowsbuild"
