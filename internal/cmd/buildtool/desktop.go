@@ -17,19 +17,24 @@ func desktopSubcommand() *cobra.Command {
 		Short: "Builds oonimkall and its dependencies for desktop",
 	}
 
-	cmd.AddCommand(&cobra.Command{
+	var targetOs string
+
+	oomobileCmd := &cobra.Command{
 		Use:   "oomobile",
 		Short: "Builds oonimkall for desktop using oomobile",
 		Run: func(cmd *cobra.Command, args []string) {
-			desktopBuildOomobile(&buildDeps{})
+			desktopBuildOomobile(&buildDeps{}, targetOs)
 		},
-	})
+	}
 
+	oomobileCmd.Flags().StringVar(&targetOs, "target", "linux", "Target OS (e.g., linux, windows, darwin)")
+
+	cmd.AddCommand(oomobileCmd)
 	return cmd
 }
 
 // desktopBuildOomobile invokes the oomobile build.
-func desktopBuildOomobile(deps buildtoolmodel.Dependencies) {
+func desktopBuildOomobile(deps buildtoolmodel.Dependencies, targetOs string) {
 	deps.GolangCheck()
 
 	config := &gomobileConfig{
@@ -39,8 +44,10 @@ func desktopBuildOomobile(deps buildtoolmodel.Dependencies) {
 		output:     filepath.Join("DESKTOP", "oonimkall.jar"),
 		target:     "java",
 	}
+	config.envp.Append("GOOS", targetOs)
+
 	// NOTE: we only support windows builds on amd64 for now
-	if runtime.GOOS == "windows" {
+	if targetOs == "windows" {
 		log.Infof("detected GOOS: %s, setting target as amd64", runtime.GOOS)
 		config.target = "java/amd64"
 	}

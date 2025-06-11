@@ -32,7 +32,7 @@ jobs:
       - run: sudo apt-get update -q
       - run: sudo apt-get install -y mingw-w64
       
-      - run: GOOS=windows make desktop
+      - run: make DESKTOP/windows
 
       # - uses: actions/upload-artifact@v4
         # with:

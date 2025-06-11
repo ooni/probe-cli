@@ -106,9 +106,9 @@ ios: search/for/zip search/for/xcode
 
 #help:
 #help: The `make desktop` command builds the oonimkall jar for desktop.
-.PHONY: desktop
-desktop: search/for/java
-	./script/go.bash run ./internal/cmd/buildtool desktop oomobile
+.PHONY: DESKTOP/windows
+DESKTOP/windows: search/for/java
+	./script/go.bash run ./internal/cmd/buildtool desktop oomobile --target=windows
 
 .PHONY: search/for/java
 search/for/java:
