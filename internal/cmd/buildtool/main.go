@@ -21,6 +21,7 @@ func main() {
 	root.AddCommand(darwinSubcommand())
 	root.AddCommand(genericSubcommand())
 	root.AddCommand(iosSubcommand())
+	root.AddCommand(desktopSubcommand())
 	root.AddCommand(linuxSubcommand())
 	root.AddCommand(oohelperdSubcommand())
 	root.AddCommand(windowsSubcommand())

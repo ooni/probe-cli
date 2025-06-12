@@ -64,3 +64,30 @@ func gomobileBuild(config *gomobileConfig) {
 
 	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, config.envp))
 }
+
+// oomobileBuild runs a build based on oomobile
+func oomobileBuild(config *gomobileConfig) {
+	// Undoes the effects of go-getting golang.org/x/mobile/cmd/gomobile
+	defer must.Run(log.Log, "go", "mod", "tidy")
+
+	must.Run(log.Log, "go", "install", "github.com/ooni/oomobile/cmd/gomobile@latest")
+	must.Run(log.Log, "go", "install", "github.com/ooni/oomobile/cmd/gobind@latest")
+
+	gopath := config.deps.GOPATH()
+	gomobile := filepath.Join(gopath, "bin", "gomobile")
+	must.Run(log.Log, gomobile, "init")
+
+	// Adding gomobile to go.mod as documented by golang.org/wiki/Mobile
+	must.Run(log.Log, "go", "get", "-d", "github.com/ooni/oomobile/cmd/gomobile")
+
+	argv := runtimex.Try1(shellx.NewArgv(gomobile, "bind"))
+	argv.Append("-target", config.target)
+	argv.Append("-o", config.output)
+	for _, entry := range config.extraFlags {
+		argv.Append(entry)
+	}
+
+	argv.Append("./pkg/oonimkall")
+
+	runtimex.Try0(shellx.RunEx(defaultShellxConfig(), argv, config.envp))
+}
