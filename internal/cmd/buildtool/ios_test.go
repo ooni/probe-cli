@@ -349,12 +349,12 @@ func TestIOSBuildCdepsOpenSSL(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.4.0.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.5.0.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-3.4.0.tar.gz",
+				"tar", "-xf", "openssl-3.5.0.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -399,12 +399,12 @@ func TestIOSBuildCdepsOpenSSL(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.4.0.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.5.0.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-3.4.0.tar.gz",
+				"tar", "-xf", "openssl-3.5.0.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -449,12 +449,12 @@ func TestIOSBuildCdepsOpenSSL(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.4.0.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.5.0.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-3.4.0.tar.gz",
+				"tar", "-xf", "openssl-3.5.0.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -1142,12 +1142,12 @@ func TestIOSBuildCdepsTor(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.14.tar.gz",
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.16.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "tor-0.4.8.14.tar.gz",
+				"tar", "-xf", "tor-0.4.8.16.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -1232,12 +1232,12 @@ func TestIOSBuildCdepsTor(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.14.tar.gz",
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.16.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "tor-0.4.8.14.tar.gz",
+				"tar", "-xf", "tor-0.4.8.16.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -1322,12 +1322,12 @@ func TestIOSBuildCdepsTor(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.14.tar.gz",
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.16.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "tor-0.4.8.14.tar.gz",
+				"tar", "-xf", "tor-0.4.8.16.tar.gz",
 			},
 		}, {
 			Env: []string{},
