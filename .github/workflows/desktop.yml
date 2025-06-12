@@ -145,3 +145,21 @@ jobs:
         with:
           name: oonimkall.jar
           path: oonimkall.jar
+
+  publish_desktop_jar:
+    runs-on: ubuntu-22.04
+    needs: merge_desktop_jar
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: oonimkall.jar
+
+      - run: ./script/ghpublish.bash oonimkall.jar
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
