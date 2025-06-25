@@ -1,5 +1,3 @@
-export CGO_LDFLAGS="-Wl,-z,max-page-size=16384"
-
 # Many rules in here break if run in parallel.
 .NOTPARALLEL:
 
@@ -91,7 +89,6 @@ CLI/windows:
 #help: and compiles miniooni and ooniprobe for android CLI usage.
 .PHONY: android
 android: search/for/java
-	echo $$CGO_LDFLAGS
 	./script/go.bash run ./internal/cmd/buildtool android cdeps zlib openssl libevent tor
 	./script/go.bash run ./internal/cmd/buildtool android cli
 	./script/go.bash run ./internal/cmd/buildtool android gomobile
