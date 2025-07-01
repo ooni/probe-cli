@@ -56,7 +56,7 @@
 						<configuration>
 							<artifacts>
 								<artifact>
-									<file>${project.build.directory}/${project.artifactId}-${project.version}.${project.packaging}</file>
+									<file>${project.basedir}/${project.artifact.file}</file>
 									<type>${project.packaging}</type>
 									<classifier>${project.classifier}</classifier>
 								</artifact>
@@ -103,8 +103,6 @@
 				<extensions>true</extensions>
 				<configuration>
 					<publishingServerId>central</publishingServerId>
-					<autoPublish>true</autoPublish>
-					<waitUntil>published</waitUntil>
 				</configuration>
 			</plugin>
 		</plugins>
@@ -117,8 +115,8 @@
 				<activeByDefault>true</activeByDefault>
 			</activation>
 			<properties>
-				<primary.artifact.file>oonimkall.aar</primary.artifact.file>
-				<primary.artifact.type>aar</primary.artifact.type>
+				<project.artifact.file>oonimkall.aar</project.artifact.file>
+				<project.artifact.type>aar</project.artifact.type>
 			</properties>
 			<build>
 				<plugins>
@@ -180,8 +178,8 @@
 		<profile>
 			<id>deploy-desktop</id>
 			<properties>
-				<primary.artifact.file>oonimkall.jar</primary.artifact.file>
-				<primary.artifact.type>jar</primary.artifact.type>
+				<project.artifact.file>oonimkall.jar</project.artifact.file>
+				<project.artifact.type>jar</project.artifact.type>
 				<project.packaging>jar</project.packaging>
 				<project.classifier>desktop</project.classifier>
 			</properties>
