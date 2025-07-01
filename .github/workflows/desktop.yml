@@ -188,7 +188,9 @@ jobs:
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Publish to Maven Central
-        run: mvn clean deploy -P deploy-desktop --batch-mode -DskipTests
+        run: |
+          ls -alh
+          mvn clean deploy -P deploy-desktop --batch-mode -DskipTests
         env:
           MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
