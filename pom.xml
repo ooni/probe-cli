@@ -40,17 +40,15 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
-
 	<build>
 		<plugins>
-
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>build-helper-maven-plugin</artifactId>
 				<version>3.5.0</version>
 				<executions>
 					<execution>
-						<id>attach-aar</id>
+						<id>attach-primary-artifact</id>
 						<phase>package</phase>
 						<goals>
 							<goal>attach-artifact</goal>
@@ -58,9 +56,9 @@
 						<configuration>
 							<artifacts>
 								<artifact>
-									<file>${project.basedir}/oonimkall.aar</file>
-									<type>aar</type>
-									<classifier></classifier>
+									<file>${project.build.directory}/${project.artifactId}-${project.version}.${project.packaging}</file>
+									<type>${project.packaging}</type>
+									<classifier>${project.classifier}</classifier>
 								</artifact>
 							</artifacts>
 						</configuration>
@@ -70,51 +68,20 @@
 
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.6.3</version>
+				<artifactId>maven-gpg-plugin</artifactId>
+				<version>3.2.4</version>
 				<executions>
 					<execution>
-						<id>attach-javadocs</id>
+						<id>sign-artifacts</id>
+						<phase>verify</phase>
 						<goals>
-							<goal>jar</goal>
+							<goal>sign</goal>
 						</goals>
 						<configuration>
-							<source>8</source>
-							<failOnError>false</failOnError>
-							<forceTags>true</forceTags>
-							<doclint>none</doclint>
-							<excludePackageNames>*.internal</excludePackageNames>
-							<outputDirectory>${project.build.directory}</outputDirectory>
-							<reportOutputDirectory>${project.build.directory}</reportOutputDirectory>
-							<additionalJOption>-Xdoclint:none</additionalJOption>
-							<stylesheetfile>${project.basedir}/javadoc-stylesheet.css</stylesheetfile>
-							<detectLinks>true</detectLinks>
-							<linksource>true</linksource>
-							<aggregate>true</aggregate>
-							<dryRun>true</dryRun>
-							<includeDependencySources>false</includeDependencySources>
-							<nohelp>true</nohelp>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-source-plugin</artifactId>
-				<version>3.3.1</version>
-				<executions>
-					<execution>
-						<id>attach-sources</id>
-						<goals>
-							<goal>jar-no-fork</goal>
-						</goals>
-						<configuration>
-							<excludeResources>true</excludeResources>
-							<includes>**/*</includes>
-							<excludes>
-								<exclude>*.*</exclude>
-							</excludes>
+							<gpgArguments>
+								<arg>--pinentry-mode</arg>
+								<arg>loopback</arg>
+							</gpgArguments>
 						</configuration>
 					</execution>
 				</executions>
@@ -136,6 +103,8 @@
 				<extensions>true</extensions>
 				<configuration>
 					<publishingServerId>central</publishingServerId>
+					<autoPublish>true</autoPublish>
+					<waitUntil>published</waitUntil>
 				</configuration>
 			</plugin>
 		</plugins>
@@ -143,38 +112,23 @@
 
 	<profiles>
 		<profile>
-			<id>deploy-desktop</id>
+			<id>android-only</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+			<properties>
+				<primary.artifact.file>oonimkall.aar</primary.artifact.file>
+				<primary.artifact.type>aar</primary.artifact.type>
+			</properties>
 			<build>
 				<plugins>
 					<plugin>
-						<groupId>org.codehaus.mojo</groupId>
-						<artifactId>build-helper-maven-plugin</artifactId>
-						<executions>
-							<execution>
-								<id>attach-desktop-jar</id>
-								<phase>package</phase>
-								<goals>
-									<goal>attach-artifact</goal>
-								</goals>
-								<configuration>
-									<artifacts>
-										<artifact>
-											<file>${project.basedir}/oonimkall.jar</file>
-											<type>jar</type>
-											<classifier>desktop</classifier>
-										</artifact>
-									</artifacts>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-
-					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-javadoc-plugin</artifactId>
+						<version>3.6.3</version>
 						<executions>
 							<execution>
-								<id>attach-desktop-javadocs</id>
+								<id>attach-javadocs</id>
 								<goals>
 									<goal>jar</goal>
 								</goals>
@@ -183,7 +137,7 @@
 									<failOnError>false</failOnError>
 									<forceTags>true</forceTags>
 									<doclint>none</doclint>
-									<classifier>desktop-javadoc</classifier>
+									<excludePackageNames>*.internal</excludePackageNames>
 									<outputDirectory>${project.build.directory}</outputDirectory>
 									<reportOutputDirectory>${project.build.directory}</reportOutputDirectory>
 									<additionalJOption>-Xdoclint:none</additionalJOption>
@@ -202,6 +156,75 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-source-plugin</artifactId>
+						<version>3.3.1</version>
+						<executions>
+							<execution>
+								<id>attach-sources</id>
+								<goals>
+									<goal>jar-no-fork</goal>
+								</goals>
+								<configuration>
+									<excludeResources>true</excludeResources>
+									<includes>**/*</includes>
+									<excludes>
+										<exclude>*.*</exclude>
+									</excludes>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+
+		<profile>
+			<id>deploy-desktop</id>
+			<properties>
+				<primary.artifact.file>oonimkall.jar</primary.artifact.file>
+				<primary.artifact.type>jar</primary.artifact.type>
+				<project.packaging>jar</project.packaging>
+				<project.classifier>desktop</project.classifier>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<version>3.6.3</version>
+						<executions>
+							<execution>
+								<id>attach-desktop-javadocs</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+								<configuration>
+									<source>8</source>
+									<failOnError>false</failOnError>
+									<forceTags>true</forceTags>
+									<doclint>none</doclint>
+									<classifier>javadoc</classifier> <outputDirectory>${project.build.directory}</outputDirectory>
+									<reportOutputDirectory>${project.build.directory}</reportOutputDirectory>
+									<additionalJOption>-Xdoclint:none</additionalJOption>
+									<stylesheetfile>${project.basedir}/javadoc-stylesheet.css</stylesheetfile>
+									<detectLinks>true</detectLinks>
+									<linksource>true</linksource>
+									<aggregate>true</aggregate>
+									<dryRun>true</dryRun>
+									<includeDependencySources>false</includeDependencySources>
+									<nohelp>true</nohelp>
+								</configuration>
+							</execution>
+							<execution>
+								<id>attach-javadocs</id>
+								<phase>none</phase>
+							</execution>
+						</executions>
+					</plugin>
+
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-source-plugin</artifactId>
+						<version>3.3.1</version>
 						<executions>
 							<execution>
 								<id>attach-desktop-sources</id>
@@ -209,13 +232,16 @@
 									<goal>jar-no-fork</goal>
 								</goals>
 								<configuration>
-									<classifier>desktop-sources</classifier>
-									<excludeResources>true</excludeResources>
+									<classifier>sources</classifier> <excludeResources>true</excludeResources>
 									<includes>**/*</includes>
 									<excludes>
 										<exclude>*.*</exclude>
 									</excludes>
 								</configuration>
+							</execution>
+							<execution>
+								<id>attach-sources</id>
+								<phase>none</phase>
 							</execution>
 						</executions>
 					</plugin>
