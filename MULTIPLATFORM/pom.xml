@@ -7,7 +7,7 @@
 
 	<groupId>org.ooni</groupId>
 	<artifactId>oonimkall</artifactId>
-	<version>2025.07.01-000001</version>
+	<version>@VERSION@</version>
 	<packaging>pom</packaging>
 
 	<name>oonimkall</name>
@@ -91,7 +91,7 @@
 				<activeByDefault>true</activeByDefault>
 			</activation>
 			<properties>
-				<project.artifact.file>${project.basedir}/oonimkall-desktop.jar</project.artifact.file>
+				<project.artifact.file>${project.basedir}/oonimkall.aar</project.artifact.file>
 				<project.artifact.type>aar</project.artifact.type>
 			</properties>
 			<build>
