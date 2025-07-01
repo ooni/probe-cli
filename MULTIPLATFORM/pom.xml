@@ -23,12 +23,12 @@
 
 	<developers>
 		<developer>
-			<name>Simone Basso</name>
-			<email>simone@openobservatory.org</email>
+			<name>Mehul Gulati</name>
+			<email>mehul@openobservatory.org</email>
 			<roles>
 				<role>Core developer</role>
 			</roles>
-			<timezone>Europe/Rome</timezone>
+			<timezone>Asia/Kolkata</timezone>
 		</developer>
 	</developers>
 
@@ -42,29 +42,6 @@
 	</properties>
 	<build>
 		<plugins>
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>build-helper-maven-plugin</artifactId>
-				<version>3.5.0</version>
-				<executions>
-					<execution>
-						<id>attach-main-artifact</id>
-						<phase>package</phase>
-						<goals>
-							<goal>attach-artifact</goal>
-						</goals>
-						<configuration>
-							<artifacts>
-								<artifact>
-									<file>${project.basedir}/oonimkall.jar</file>
-									<type>jar</type>
-								</artifact>
-							</artifacts>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-gpg-plugin</artifactId>
@@ -96,60 +73,25 @@
 			</plugin>
 
 			<plugin>
-				<groupId>org.sonatype.central</groupId>
-				<artifactId>central-publishing-maven-plugin</artifactId>
-				<version>0.8.0</version>
-				<extensions>true</extensions>
-				<configuration>
-					<publishingServerId>central</publishingServerId>
-				</configuration>
-			</plugin>
-
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-assembly-plugin</artifactId>
-				<version>3.6.0</version>
-				<executions>
-					<execution>
-						<id>sources-jar</id>
-						<phase>package</phase>
-						<goals>
-							<goal>single</goal>
-						</goals>
-						<configuration>
-							<descriptors>
-								<descriptor>src/assembly/sources.xml</descriptor>
-							</descriptors>
-							<attach>true</attach>
-						</configuration>
-					</execution>
-					<execution>
-						<id>javadoc-jar</id>
-						<phase>package</phase>
-						<goals>
-							<goal>single</goal>
-						</goals>
-						<configuration>
-							<descriptors>
-								<descriptor>src/assembly/javadoc.xml</descriptor>
-							</descriptors>
-							<attach>true</attach>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-
+        		<groupId>org.sonatype.central</groupId>
+        		<artifactId>central-publishing-maven-plugin</artifactId>
+        		<version>0.8.0</version>
+        		<extensions>true</extensions>
+        		<configuration>
+          		<publishingServerId>central</publishingServerId>
+        		</configuration>
+      		</plugin>
 		</plugins>
 	</build>
 
 	<profiles>
 		<profile>
-			<id>android-only</id>
+			<id>deploy-android</id>
 			<activation>
 				<activeByDefault>true</activeByDefault>
 			</activation>
 			<properties>
-				<project.artifact.file>oonimkall.aar</project.artifact.file>
+				<project.artifact.file>${project.basedir}/oonimkall-desktop.jar</project.artifact.file>
 				<project.artifact.type>aar</project.artifact.type>
 			</properties>
 			<build>
@@ -194,7 +136,7 @@
 		<profile>
 			<id>deploy-desktop</id>
 			<properties>
-				<project.artifact.file>oonimkall.jar</project.artifact.file>
+				<project.artifact.file>oonimkall-desktop.jar</project.artifact.file>
 				<project.artifact.type>jar</project.artifact.type>
 				<project.packaging>jar</project.packaging>
 				<project.classifier>desktop</project.classifier>
@@ -214,7 +156,7 @@
 								<configuration>
 									<artifacts>
 										<artifact>
-											<file>${project.basedir}/oonimkall.jar</file>
+											<file>${project.basedir}/oonimkall-desktop.jar</file>
 											<type>jar</type>
 											<classifier>desktop</classifier>
 										</artifact>
