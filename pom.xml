@@ -183,9 +183,31 @@
 			<build>
 				<plugins>
 					<plugin>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>build-helper-maven-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>attach-desktop-jar</id>
+								<phase>package</phase>
+								<goals>
+									<goal>attach-artifact</goal>
+								</goals>
+								<configuration>
+									<artifacts>
+										<artifact>
+											<file>${project.basedir}/oonimkall.jar</file>
+											<type>jar</type>
+											<classifier>desktop</classifier>
+										</artifact>
+									</artifacts>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+
+					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-javadoc-plugin</artifactId>
-						<version>3.6.3</version>
 						<executions>
 							<execution>
 								<id>attach-desktop-javadocs</id>
@@ -197,7 +219,8 @@
 									<failOnError>false</failOnError>
 									<forceTags>true</forceTags>
 									<doclint>none</doclint>
-									<classifier>javadoc</classifier> <outputDirectory>${project.build.directory}</outputDirectory>
+									<classifier>desktop-javadoc</classifier>
+									<outputDirectory>${project.build.directory}</outputDirectory>
 									<reportOutputDirectory>${project.build.directory}</reportOutputDirectory>
 									<additionalJOption>-Xdoclint:none</additionalJOption>
 									<stylesheetfile>${project.basedir}/javadoc-stylesheet.css</stylesheetfile>
@@ -209,17 +232,12 @@
 									<nohelp>true</nohelp>
 								</configuration>
 							</execution>
-							<execution>
-								<id>attach-javadocs</id>
-								<phase>none</phase>
-							</execution>
 						</executions>
 					</plugin>
 
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-source-plugin</artifactId>
-						<version>3.3.1</version>
 						<executions>
 							<execution>
 								<id>attach-desktop-sources</id>
@@ -227,13 +245,13 @@
 									<goal>jar-no-fork</goal>
 								</goals>
 								<configuration>
-									<classifier>sources</classifier> <excludeResources>true</excludeResources>
+									<classifier>desktop-sources</classifier>
+									<excludeResources>true</excludeResources>
 									<includes>**/*</includes>
+									<excludes>
+										<exclude>*.*</exclude>
+									</excludes>
 								</configuration>
-							</execution>
-							<execution>
-								<id>attach-sources</id>
-								<phase>none</phase>
 							</execution>
 						</executions>
 					</plugin>

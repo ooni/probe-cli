@@ -189,7 +189,6 @@ jobs:
 
       - name: Publish to Maven Central
         run: |
-          ls -alh
           mvn clean deploy -P deploy-desktop --batch-mode -DskipTests
         env:
           MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
