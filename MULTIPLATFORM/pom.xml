@@ -150,10 +150,10 @@
 								<goals>
 									<goal>jar-no-fork</goal>
 								</goals>
-							</execution>
 								<configuration>
 									<classifier>android</classifier>
 								</configuration>
+							</execution>
 						</executions>
 					</plugin>
 				</plugins>
