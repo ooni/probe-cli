@@ -8,7 +8,7 @@
 	<groupId>org.ooni</groupId>
 	<artifactId>oonimkall</artifactId>
 	<version>2025.07.01-000001</version>
-	<packaging>jar</packaging>
+	<packaging>pom</packaging>
 
 	<name>oonimkall</name>
 	<description>OONI Probe Library for Android</description>
@@ -48,7 +48,7 @@
 				<version>3.5.0</version>
 				<executions>
 					<execution>
-						<id>attach-primary-artifact</id>
+						<id>attach-main-artifact</id>
 						<phase>package</phase>
 						<goals>
 							<goal>attach-artifact</goal>
@@ -56,9 +56,8 @@
 						<configuration>
 							<artifacts>
 								<artifact>
-									<file>${project.basedir}/${project.artifact.file}</file>
-									<type>${project.packaging}</type>
-									<classifier>${project.classifier}</classifier>
+									<file>${project.basedir}/oonimkall.jar</file>
+									<type>jar</type>
 								</artifact>
 							</artifacts>
 						</configuration>
@@ -105,6 +104,41 @@
 					<publishingServerId>central</publishingServerId>
 				</configuration>
 			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>3.6.0</version>
+				<executions>
+					<execution>
+						<id>sources-jar</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+						<configuration>
+							<descriptors>
+								<descriptor>src/assembly/sources.xml</descriptor>
+							</descriptors>
+							<attach>true</attach>
+						</configuration>
+					</execution>
+					<execution>
+						<id>javadoc-jar</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+						<configuration>
+							<descriptors>
+								<descriptor>src/assembly/javadoc.xml</descriptor>
+							</descriptors>
+							<attach>true</attach>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
 		</plugins>
 	</build>
 
@@ -133,19 +167,8 @@
 								<configuration>
 									<source>8</source>
 									<failOnError>false</failOnError>
-									<forceTags>true</forceTags>
 									<doclint>none</doclint>
-									<excludePackageNames>*.internal</excludePackageNames>
-									<outputDirectory>${project.build.directory}</outputDirectory>
-									<reportOutputDirectory>${project.build.directory}</reportOutputDirectory>
 									<additionalJOption>-Xdoclint:none</additionalJOption>
-									<stylesheetfile>${project.basedir}/javadoc-stylesheet.css</stylesheetfile>
-									<detectLinks>true</detectLinks>
-									<linksource>true</linksource>
-									<aggregate>true</aggregate>
-									<dryRun>true</dryRun>
-									<includeDependencySources>false</includeDependencySources>
-									<nohelp>true</nohelp>
 								</configuration>
 							</execution>
 						</executions>
@@ -161,10 +184,6 @@
 								<goals>
 									<goal>jar-no-fork</goal>
 								</goals>
-								<configuration>
-									<excludeResources>true</excludeResources>
-									<includes>**/*</includes>
-								</configuration>
 							</execution>
 						</executions>
 					</plugin>
@@ -217,19 +236,9 @@
 								<configuration>
 									<source>8</source>
 									<failOnError>false</failOnError>
-									<forceTags>true</forceTags>
 									<doclint>none</doclint>
-									<classifier>desktop-javadoc</classifier>
-									<outputDirectory>${project.build.directory}</outputDirectory>
-									<reportOutputDirectory>${project.build.directory}</reportOutputDirectory>
+									<classifier>desktop</classifier>
 									<additionalJOption>-Xdoclint:none</additionalJOption>
-									<stylesheetfile>${project.basedir}/javadoc-stylesheet.css</stylesheetfile>
-									<detectLinks>true</detectLinks>
-									<linksource>true</linksource>
-									<aggregate>true</aggregate>
-									<dryRun>true</dryRun>
-									<includeDependencySources>false</includeDependencySources>
-									<nohelp>true</nohelp>
 								</configuration>
 							</execution>
 						</executions>
@@ -245,12 +254,7 @@
 									<goal>jar-no-fork</goal>
 								</goals>
 								<configuration>
-									<classifier>desktop-sources</classifier>
-									<excludeResources>true</excludeResources>
-									<includes>**/*</includes>
-									<excludes>
-										<exclude>*.*</exclude>
-									</excludes>
+									<classifier>desktop</classifier>
 								</configuration>
 							</execution>
 						</executions>
