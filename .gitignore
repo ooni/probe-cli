@@ -10,6 +10,9 @@
 /*.sqlite3
 /*.tar.gz
 /*.zip
+/target
+/MOBILE/android/target
+/DESKTOP/target
 /DEBIAN_INSTALLED_PACKAGE.txt
 /apitool
 /badproxy.pem
