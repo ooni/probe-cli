@@ -99,6 +99,11 @@ func androidBuildGomobile(deps buildtoolmodel.Dependencies) {
 	goPath := filepath.Join(deps.GOPATH(), "bin")
 	envp.Append("PATH", cdepsPrependToPath(goPath))
 
+	// We need to support 16KB page size as per android guidelines
+	//
+	// See https://android-developers.googleblog.com/2025/05/prepare-play-apps-for-devices-with-16kb-page-size.html
+	envp.Append("CGO_LDFLAGS", "-Wl,-z,max-page-size=16384")
+
 	config := &gomobileConfig{
 		deps:       deps,
 		envp:       envp,

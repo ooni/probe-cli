@@ -27,12 +27,12 @@
 
   <developers>
     <developer>
-      <name>Simone Basso</name>
-      <email>simone@openobservatory.org</email>
+      <name>Mehul Gulati</name>
+      <email>mehul@openobservatory.org</email>
       <roles>
         <role>Core developer</role>
       </roles>
-      <timezone>Europe/Rome</timezone>
+      <timezone>Asia/Kolkata</timezone>
     </developer>
   </developers>
 
