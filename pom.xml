@@ -164,9 +164,6 @@
 								<configuration>
 									<excludeResources>true</excludeResources>
 									<includes>**/*</includes>
-									<excludes>
-										<exclude>*.*</exclude>
-									</excludes>
 								</configuration>
 							</execution>
 						</executions>
@@ -232,9 +229,6 @@
 								<configuration>
 									<classifier>sources</classifier> <excludeResources>true</excludeResources>
 									<includes>**/*</includes>
-									<excludes>
-										<exclude>*.*</exclude>
-									</excludes>
 								</configuration>
 							</execution>
 							<execution>
