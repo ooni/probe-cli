@@ -197,7 +197,7 @@ jobs:
           # Generate the timestamp
           CURRENT_UTC_TIME=$(date -u +%Y.%m.%d-%H%M%S)
           echo "Generated version: $CURRENT_UTC_TIME"
-          mvn -f MULTIPLATFORM/pom.xml versions:set -P deploy-desktop -DnewVersion=${CURRENT_UTC_TIME} -DremoveSnapshot=true
+          mvn -f MULTIPLATFORM/pom.xml versions:set -P deploy-desktop -DnewVersion=${CURRENT_UTC_TIME}-desktop -DremoveSnapshot=true
         env:
           # Maven versions plugin might need GPG passphrase if it triggers a 'verify' phase.
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
