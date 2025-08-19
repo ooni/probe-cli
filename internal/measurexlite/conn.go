@@ -6,6 +6,7 @@ package measurexlite
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"time"
 
@@ -13,8 +14,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// MaybeClose is a convenience function for closing a [net.Conn] when it is not nil.
-func MaybeClose(conn net.Conn) (err error) {
+// MaybeClose is a convenience function for closing a [io.Closer] when it is not nil.
+func MaybeClose(conn io.Closer) (err error) {
 	if conn != nil {
 		err = conn.Close()
 	}
@@ -39,18 +40,21 @@ type connTrace struct {
 
 var _ net.Conn = &connTrace{}
 
-type remoteAddrProvider interface {
+// RemoteAddrProvider is something returning the remote address.
+type RemoteAddrProvider interface {
 	RemoteAddr() net.Addr
 }
 
-func safeRemoteAddrNetwork(rap remoteAddrProvider) (result string) {
+// SafeRemoteAddrNetwork is a safe accessor to get the remote addr network.
+func SafeRemoteAddrNetwork(rap RemoteAddrProvider) (result string) {
 	if addr := rap.RemoteAddr(); addr != nil {
 		result = addr.Network()
 	}
 	return result
 }
 
-func safeRemoteAddrString(rap remoteAddrProvider) (result string) {
+// SafeRemoteAddrString is a safe accessor to get the remote addr string representation.
+func SafeRemoteAddrString(rap RemoteAddrProvider) (result string) {
 	if addr := rap.RemoteAddr(); addr != nil {
 		result = addr.String()
 	}
@@ -60,8 +64,8 @@ func safeRemoteAddrString(rap remoteAddrProvider) (result string) {
 // Read implements net.Conn.Read and saves network events.
 func (c *connTrace) Read(b []byte) (int, error) {
 	// collect preliminary stats when the connection is surely active
-	network := safeRemoteAddrNetwork(c)
-	addr := safeRemoteAddrString(c)
+	network := SafeRemoteAddrNetwork(c)
+	addr := SafeRemoteAddrString(c)
 	started := c.tx.TimeSince(c.tx.ZeroTime())
 
 	// perform the underlying network operation
@@ -117,8 +121,8 @@ func (tx *Trace) CloneBytesReceivedMap() (out map[string]int64) {
 
 // Write implements net.Conn.Write and saves network events.
 func (c *connTrace) Write(b []byte) (int, error) {
-	network := safeRemoteAddrNetwork(c)
-	addr := safeRemoteAddrString(c)
+	network := SafeRemoteAddrNetwork(c)
+	addr := SafeRemoteAddrString(c)
 	started := c.tx.TimeSince(c.tx.ZeroTime())
 
 	count, err := c.Conn.Write(b)

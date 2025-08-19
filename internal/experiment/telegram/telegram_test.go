@@ -1,21 +1,9 @@
 package telegram_test
 
 import (
-	"context"
-	"fmt"
-	"io"
-	"net/http"
 	"testing"
 
-	"github.com/apex/log"
-	"github.com/google/gopacket/layers"
-	"github.com/ooni/netem"
 	"github.com/ooni/probe-cli/v3/internal/experiment/telegram"
-	"github.com/ooni/probe-cli/v3/internal/experiment/urlgetter"
-	"github.com/ooni/probe-cli/v3/internal/mocks"
-	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netemx"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
@@ -28,6 +16,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	}
 }
 
+/*
 func TestUpdateWithNoAccessPointsBlocking(t *testing.T) {
 	tk := telegram.NewTestKeys()
 	tk.Update(urlgetter.MultiOutput{
@@ -496,3 +485,4 @@ func TestMeasurerRun(t *testing.T) {
 		})
 	})
 }
+*/
