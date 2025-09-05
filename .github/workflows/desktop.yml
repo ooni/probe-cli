@@ -5,7 +5,7 @@ on:
     branches:
       - "release/**"
       - "fullbuild"
-      - "windowsbuild"
+      - "desktopbuild"
     tags:
       - "v*"
   schedule:
@@ -13,7 +13,7 @@ on:
 
 jobs:
   build_linux_desktop_jar:
-    runs-on: ubuntu-22.04  
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +27,7 @@ jobs:
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
- 
+
       - run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
 
       - run: make DESKTOP/linux
@@ -38,8 +38,8 @@ jobs:
           path: ./DESKTOP/oonimkall.jar
 
   build_darwin_desktop_jar:
-    runs-on: macos-13 
-    
+    runs-on: macos-13
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -52,17 +52,17 @@ jobs:
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
- 
+
       - run: make DESKTOP/darwin
-      
+
       - uses: actions/upload-artifact@v4
         with:
           name: oonimkall-darwin.jar
           path: ./DESKTOP/oonimkall.jar
 
   build_windows_desktop_jar:
-    runs-on: windows-latest 
-    
+    runs-on: windows-latest
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -75,19 +75,19 @@ jobs:
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
- 
+
       - name: Install oomobile
         run: |
           go install github.com/ooni/oomobile/cmd/gomobile@latest
           go install github.com/ooni/oomobile/cmd/gobind@latest
           go get github.com/ooni/oomobile/bind@latest
-      
+
       - name: Init oomobile
         run: gomobile init
 
       - name: Run bind
         run: gomobile bind -target java/amd64 -o DESKTOP/oonimkall.jar ./pkg/oonimkall
-      
+
       - uses: actions/upload-artifact@v4
         with:
           name: oonimkall-windows.jar
@@ -134,19 +134,19 @@ jobs:
       - name: Copy Windows native libs
         run: |
           cp -r windows_unzip/jniLibs/amd64/* merged/jniLibs/amd64/ || true
-      
+
       - name: Repack merged JAR
         run: |
           cd merged
-          jar cf ../oonimkall.jar .
+          jar cf ../oonimkall-desktop.jar .
 
       - name: Upload merged multiplatform JAR
         uses: actions/upload-artifact@v4
         with:
-          name: oonimkall.jar
-          path: oonimkall.jar
-
-  publish_desktop_jar:
+          name: oonimkall-desktop.jar
+          path: oonimkall-desktop.jar
+  
+  publish_desktop_jar_github:
     runs-on: ubuntu-22.04
     needs: merge_desktop_jar
     permissions:
@@ -158,8 +158,57 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: oonimkall.jar
+          name: oonimkall-desktop.jar
 
-      - run: ./script/ghpublish.bash oonimkall.jar
+      - name: Upload to Github
+        run: ./script/ghpublish.bash oonimkall-desktop.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish_desktop_jar_maven:
+    runs-on: ubuntu-22.04
+    needs: merge_desktop_jar
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+          server-id: central
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Download oonimkall-desktop JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: oonimkall-desktop.jar
+          path: MULTIPLATFORM
+
+      - name: Set Project Version
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME}"
+          else
+            SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-8)
+            VERSION="${SHORT_SHA}"
+          fi
+          echo "Generated version: $VERSION"
+          mvn -f MULTIPLATFORM/pom.xml versions:set -P deploy-desktop -DnewVersion=${VERSION}-desktop -DremoveSnapshot=true
+        env:
+          # Maven versions plugin might need GPG passphrase if it triggers a 'verify' phase.
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Publish to Maven Central
+        run: |
+          mvn -f MULTIPLATFORM/pom.xml clean deploy -P deploy-desktop --batch-mode -DskipTests
+        env:
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}

@@ -92,7 +92,6 @@ android: search/for/java
 	./script/go.bash run ./internal/cmd/buildtool android cdeps zlib openssl libevent tor
 	./script/go.bash run ./internal/cmd/buildtool android cli
 	./script/go.bash run ./internal/cmd/buildtool android gomobile
-	./MOBILE/android/createpom
 
 #help:
 #help: The `make ios` command builds the oonimkall library for iOS.
