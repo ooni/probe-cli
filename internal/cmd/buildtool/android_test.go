@@ -49,6 +49,7 @@ func TestAndroidBuildGomobile(t *testing.T) {
 				"ANDROID_HOME=Android/sdk",
 				"ANDROID_NDK_HOME=Android/sdk/ndk/25.1.7654321",
 				"PATH=/go/gopath/bin:" + os.Getenv("PATH"),
+				"CGO_LDFLAGS=-Wl,-z,max-page-size=16384",
 			},
 			Argv: []string{
 				"gomobile", "bind", "-target", "android",
@@ -87,6 +88,7 @@ func TestAndroidBuildGomobile(t *testing.T) {
 				"ANDROID_HOME=Android/sdk",
 				"ANDROID_NDK_HOME=Android/sdk/ndk/25.1.7654321",
 				"PATH=/go/gopath/bin:" + os.Getenv("PATH"),
+				"CGO_LDFLAGS=-Wl,-z,max-page-size=16384",
 			},
 			Argv: []string{
 				"gomobile", "bind", "-target", "android",
@@ -702,12 +704,12 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.5.0.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.5.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-3.5.0.tar.gz",
+				"tar", "-xf", "openssl-3.5.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -757,12 +759,12 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.5.0.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.5.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-3.5.0.tar.gz",
+				"tar", "-xf", "openssl-3.5.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -812,12 +814,12 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.5.0.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.5.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-3.5.0.tar.gz",
+				"tar", "-xf", "openssl-3.5.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -867,12 +869,12 @@ func TestAndroidBuildCdepsOpenSSL(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.5.0.tar.gz",
+				"curl", "-fsSLO", "https://www.openssl.org/source/openssl-3.5.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "openssl-3.5.0.tar.gz",
+				"tar", "-xf", "openssl-3.5.2.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -1738,12 +1740,12 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.16.tar.gz",
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.17.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "tor-0.4.8.16.tar.gz",
+				"tar", "-xf", "tor-0.4.8.17.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -1827,12 +1829,12 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.16.tar.gz",
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.17.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "tor-0.4.8.16.tar.gz",
+				"tar", "-xf", "tor-0.4.8.17.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -1916,12 +1918,12 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.16.tar.gz",
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.17.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "tor-0.4.8.16.tar.gz",
+				"tar", "-xf", "tor-0.4.8.17.tar.gz",
 			},
 		}, {
 			Env: []string{},
@@ -2005,12 +2007,12 @@ func TestAndroidBuildCdepsTor(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.16.tar.gz",
+				"curl", "-fsSLO", "https://www.torproject.org/dist/tor-0.4.8.17.tar.gz",
 			},
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"tar", "-xf", "tor-0.4.8.16.tar.gz",
+				"tar", "-xf", "tor-0.4.8.17.tar.gz",
 			},
 		}, {
 			Env: []string{},
