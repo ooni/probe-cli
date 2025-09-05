@@ -11,7 +11,9 @@ install_flow() {
 	export DEBIAN_FRONTEND=noninteractive
 	dpkg --add-architecture "$1"
 	apt-get update
-	apt-get install --yes gnupg
+	apt-get install --yes gnupg dirmngr
+	mkdir -p /root/.gnupg
+	chmod 700 /root/.gnupg
 	gpg --no-default-keyring --keyring /usr/share/keyrings/ooniprobe-archive-keyring.gpg \
     --keyserver hkp://keyserver.ubuntu.com:80 \
     --recv-keys B5A08F01796E7F521861B449372D1FF271F2DD50
