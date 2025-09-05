@@ -11,9 +11,13 @@ install_flow() {
 	export DEBIAN_FRONTEND=noninteractive
 	dpkg --add-architecture "$1"
 	apt-get update
-	apt-get install --yes gnupg
-	apt-key adv --verbose --keyserver hkp://keyserver.ubuntu.com --recv-keys 'B5A08F01796E7F521861B449372D1FF271F2DD50'
-	echo "deb [arch=$1] http://deb.ooni.org/ unstable main" | tee /etc/apt/sources.list.d/ooniprobe.list
+	apt-get install --yes gnupg wget
+	mkdir -p /root/.gnupg
+	chmod 700 /root/.gnupg
+	wget -O- "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xB5A08F01796E7F521861B449372D1FF271F2DD50" \
+    | gpg --dearmor \
+    | tee /usr/share/keyrings/ooniprobe-archive-keyring.gpg > /dev/null
+	echo "deb [arch=$1 signed-by=/usr/share/keyrings/ooniprobe-archive-keyring.gpg] http://deb.ooni.org/ unstable main" | tee /etc/apt/sources.list.d/ooniprobe.list
 	apt-get update
 	apt-get install --yes ooniprobe-cli
 	dpkg -l | grep ooniprobe-cli > DEBIAN_INSTALLED_PACKAGE.txt
