@@ -95,7 +95,7 @@ func TestOOHelperDHandler(t *testing.T) {
 			},
 			IPInfo: map[string]*model.THIPInfo{
 				"93.184.216.34": {
-					ASN:   15133,
+					ASN:   0,
 					Flags: 10,
 				},
 			},

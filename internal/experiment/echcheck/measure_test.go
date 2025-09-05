@@ -149,10 +149,10 @@ func TestMeasurementSuccessRealWorld(t *testing.T) {
 		t.Fatal("no network events recorded")
 	}
 	// NoECH, GREASE, RealECH
-	if len(tk.TLSHandshakes) != 3 {
+	if len(tk.TLSHandshakes) != 4 {
 		t.Fatal("unexpected number of TLS handshakes", len(tk.TLSHandshakes))
 	}
-	if len(tk.TCPConnects) != 3 {
+	if len(tk.TCPConnects) != 4 {
 		t.Fatal("unexpected number of TCP connections", len(tk.TCPConnects))
 	}
 	for _, hs := range tk.TLSHandshakes {
