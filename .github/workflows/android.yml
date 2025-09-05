@@ -146,6 +146,7 @@ jobs:
   publish_android_maven:
     runs-on: ubuntu-22.04
     needs: build_android
+    if: github.event_name != 'schedule'
     permissions:
       contents: write
     steps:
@@ -173,9 +174,14 @@ jobs:
 
       - name: Set Project Version
         run: |
-          CURRENT_UTC_TIME=$(date -u +%Y.%m.%d-%H%M%S)
-          echo "Generated version: $CURRENT_UTC_TIME"
-          mvn -f MULTIPLATFORM/pom.xml versions:set -P deploy-android -DnewVersion=${CURRENT_UTC_TIME} -DremoveSnapshot=true
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME}"
+          else
+            SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-8)
+            VERSION="${SHORT_SHA}"
+          fi
+          echo "Generated version: $VERSION"
+          mvn -f MULTIPLATFORM/pom.xml versions:set -P deploy-android -DnewVersion=${VERSION}-android -DremoveSnapshot=true
         env:
           # Maven versions plugin might need GPG passphrase if it triggers a 'verify' phase.
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
