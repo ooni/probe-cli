@@ -146,10 +146,10 @@ using the correct version of Go. Running this script as follows:
 Is equivalent to running these commands:
 
 ```bash
-go install -v golang.org/dl/go1.23.7@latest
-$HOME/go/bin/go1.23.7 download
+go install -v golang.org/dl/go1.24.4@latest
+$HOME/go/bin/go1.24.4 download
 export GOTOOLCHAIN=local
-$HOME/sdk/go1.23.7/bin/go build -v -ldflags '-s -w' ./internal/cmd/miniooni
+$HOME/sdk/go1.24.4/bin/go build -v -ldflags '-s -w' ./internal/cmd/miniooni
 ```
 
 ### Common build targets
