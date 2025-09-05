@@ -22,7 +22,7 @@ func TestDNSDecoderMiekg(t *testing.T) {
 		t.Run("UnpackError", func(t *testing.T) {
 			d := &DNSDecoderMiekg{}
 			resp, err := d.DecodeResponse(nil, &mocks.DNSQuery{})
-			if err == nil || err.Error() != "unknown_failure: dns: overflow unpacking uint16" {
+			if err == nil || err.Error() != "unknown_failure: bad header id: dns: overflow unpacking uint16" {
 				t.Fatal("unexpected error", err)
 			}
 			if !dnsDecoderErrorIsWrapped(err) {
