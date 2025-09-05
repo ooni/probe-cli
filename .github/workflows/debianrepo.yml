@@ -6,7 +6,6 @@ on:
       - "master"
       - "release/**"
       - "fullbuild"
-      - debug/e2e-debian
 
 jobs:
   test_386:
