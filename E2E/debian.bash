@@ -11,7 +11,7 @@ install_flow() {
 	export DEBIAN_FRONTEND=noninteractive
 	dpkg --add-architecture "$1"
 	apt-get update
-	apt-get install --yes gnupg wget dirmngr
+	apt-get install --yes gnupg wget
 	mkdir -p /root/.gnupg
 	chmod 700 /root/.gnupg
 	wget -O- "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xB5A08F01796E7F521861B449372D1FF271F2DD50" \
