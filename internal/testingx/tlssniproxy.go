@@ -106,7 +106,7 @@ func (tp *TLSSNIProxy) handle(clientConn net.Conn) {
 	rawRecords := buffer[:count]
 
 	// inspecty the raw records to find the SNI
-	sni := runtimex.Try1(netem.ExtractTLSServerName(rawRecords))
+	sni := runtimex.Try1(netem.ExtractTLServerName(rawRecords))
 
 	// connect to the remote host
 	tcpDialer := tp.netx.NewDialerWithResolver(tp.logger, tp.netx.NewStdlibResolver(tp.logger))
