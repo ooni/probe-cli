@@ -11,12 +11,10 @@ install_flow() {
 	export DEBIAN_FRONTEND=noninteractive
 	dpkg --add-architecture "$1"
 	apt-get update
-	apt-get install --yes gnupg dirmngr
+	apt-get install --yes gnupg wget dirmngr
 	mkdir -p /root/.gnupg
 	chmod 700 /root/.gnupg
-	gpg --no-default-keyring --keyring /usr/share/keyrings/ooniprobe-archive-keyring.gpg \
-    --keyserver hkp://keyserver.ubuntu.com:80 \
-    --recv-keys B5A08F01796E7F521861B449372D1FF271F2DD50
+	wget -O- https://ooni.org/ooniprobe.asc | gpg --dearmor | tee /usr/share/keyrings/ooniprobe-archive-keyring.gpg > /dev/null
 	echo "deb [arch=$1 signed-by=/usr/share/keyrings/ooniprobe-archive-keyring.gpg] http://deb.ooni.org/ unstable main" | tee /etc/apt/sources.list.d/ooniprobe.list
 	apt-get update
 	apt-get install --yes ooniprobe-cli
