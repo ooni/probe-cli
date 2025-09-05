@@ -5,7 +5,7 @@ on:
     branches:
       - "release/**"
       - "fullbuild"
-      - "windowsbuild"
+      - "desktopbuild"
       - "maven-release"
     tags:
       - "v*"
