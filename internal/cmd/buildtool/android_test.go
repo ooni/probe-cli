@@ -49,6 +49,7 @@ func TestAndroidBuildGomobile(t *testing.T) {
 				"ANDROID_HOME=Android/sdk",
 				"ANDROID_NDK_HOME=Android/sdk/ndk/25.1.7654321",
 				"PATH=/go/gopath/bin:" + os.Getenv("PATH"),
+				"CGO_LDFLAGS=-Wl,-z,max-page-size=16384",
 			},
 			Argv: []string{
 				"gomobile", "bind", "-target", "android",
@@ -87,6 +88,7 @@ func TestAndroidBuildGomobile(t *testing.T) {
 				"ANDROID_HOME=Android/sdk",
 				"ANDROID_NDK_HOME=Android/sdk/ndk/25.1.7654321",
 				"PATH=/go/gopath/bin:" + os.Getenv("PATH"),
+				"CGO_LDFLAGS=-Wl,-z,max-page-size=16384",
 			},
 			Argv: []string{
 				"gomobile", "bind", "-target", "android",
