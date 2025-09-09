@@ -93,7 +93,6 @@
 			<properties>
 				<project.artifact.file>${project.basedir}/oonimkall.aar</project.artifact.file>
 				<project.artifact.type>aar</project.artifact.type>
-				<project.classifier>android</project.classifier>
 			</properties>
 			<build>
 				<plugins>
@@ -112,7 +111,6 @@
 										<artifact>
 											<file>${project.artifact.file}</file>
 											<type>aar</type>
-											<classifier>android</classifier>
 										</artifact>
 									</artifacts>
 								</configuration>
@@ -150,9 +148,6 @@
 								<goals>
 									<goal>jar-no-fork</goal>
 								</goals>
-								<configuration>
-									<classifier>android</classifier>
-								</configuration>
 							</execution>
 						</executions>
 					</plugin>
@@ -166,7 +161,6 @@
 				<project.artifact.file>${project.basedir}/oonimkall-desktop.jar</project.artifact.file>
 				<project.artifact.type>jar</project.artifact.type>
 				<project.packaging>jar</project.packaging>
-				<project.classifier>desktop</project.classifier>
 			</properties>
 			<build>
 				<plugins>
@@ -185,7 +179,6 @@
 										<artifact>
 											<file>${project.artifact.file}</file>
 											<type>jar</type>
-											<classifier>desktop</classifier>
 										</artifact>
 									</artifacts>
 								</configuration>
@@ -206,7 +199,6 @@
 									<source>8</source>
 									<failOnError>false</failOnError>
 									<doclint>none</doclint>
-									<classifier>desktop</classifier>
 									<additionalJOption>-Xdoclint:none</additionalJOption>
 								</configuration>
 							</execution>
@@ -222,9 +214,6 @@
 								<goals>
 									<goal>jar-no-fork</goal>
 								</goals>
-								<configuration>
-									<classifier>desktop</classifier>
-								</configuration>
 							</execution>
 						</executions>
 					</plugin>
