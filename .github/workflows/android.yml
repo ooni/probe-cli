@@ -176,7 +176,7 @@ jobs:
       - name: Set Project Version
         run: |
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            VERSION="${GITHUB_REF_NAME}"
+            VERSION="${GITHUB_REF_NAME#v}"
           else
             SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-8)
             VERSION="${SHORT_SHA}"
