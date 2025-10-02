@@ -182,6 +182,7 @@ func newSessionWithContext(ctx context.Context, config *SessionConfig) (*Session
 	engineConfig := engine.SessionConfig{
 		AvailableProbeServices: availableps,
 		KVStore:                kvstore,
+		GeoipDB:                config.AssetsDir,
 		Logger:                 newLogger(config.Logger, config.Verbose),
 		ProxyURL:               proxyURL,
 		SoftwareName:           config.SoftwareName,
@@ -280,7 +281,7 @@ type GeolocateResults struct {
 //
 // This function locks the session until it's done. That is, no other operation
 // can be performed as long as this function is pending.
-func (sess *Session) Geolocate(ctx *Context) (*GeolocateResults, error) {
+func (sess *Session) Geolocate(ctx *Context, geoipDB string) (*GeolocateResults, error) {
 	sess.mtx.Lock()
 	defer sess.mtx.Unlock()
 	if err := sess.sessp.MaybeLookupLocationContext(ctx.ctx); err != nil {

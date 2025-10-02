@@ -1,9 +1,13 @@
 package model
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/oschwald/maxminddb-golang"
+)
 
 func TestGeoIPLookupperFunc(t *testing.T) {
-	fx := func(ip string) (asn uint, org string, err error) {
+	fx := func(reader *maxminddb.Reader, ip string) (asn uint, org string, err error) {
 		return 137, "Consortium GARR", nil
 	}
 	lookupper := GeoIPASNLookupperFunc(fx)

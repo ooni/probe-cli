@@ -26,6 +26,7 @@ import (
 type SessionConfig struct {
 	AvailableProbeServices []model.OOAPIService
 	KVStore                model.KeyValueStore
+	GeoipDB                string
 	Logger                 model.Logger
 	ProxyURL               *url.URL
 	SoftwareName           string
@@ -63,6 +64,7 @@ type Session struct {
 	resolver                 *engineresolver.Resolver
 	selectedProbeServiceHook func(*model.OOAPIService)
 	selectedProbeService     *model.OOAPIService
+	geoipDB                  string
 	softwareName             string
 	softwareVersion          string
 	tempDir                  string
@@ -76,6 +78,10 @@ type Session struct {
 	// testLookupLocationContext is a an optional hook for testing
 	// allowing us to mock LookupLocationContext.
 	testLookupLocationContext func(ctx context.Context) (*enginelocate.Results, error)
+
+	// testLoadLocationDB is an optional hook for testing
+	// allowing us to mock localLocationDB
+	testloadLocationDB func(ctx context.Context, path string) error
 
 	// testMaybeLookupBackendsContext is an optional hook for testing
 	// allowing us to mock MaybeLookupBackendsContext.
@@ -170,6 +176,7 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 		byteCounter:             bytecounter.New(),
 		kvStore:                 config.KVStore,
 		logger:                  config.Logger,
+		geoipDB:                 config.GeoipDB,
 		queryProbeServicesCount: &atomic.Int64{},
 		softwareName:            config.SoftwareName,
 		softwareVersion:         config.SoftwareVersion,
@@ -691,6 +698,7 @@ func (s *Session) doLookupLocationContext(ctx context.Context) (*enginelocate.Re
 		Logger:    s.Logger(),
 		Resolver:  s.resolver,
 		UserAgent: s.UserAgent(),
+		DBPath:    s.geoipDB,
 	})
 	return task.Run(ctx)
 }

@@ -14,10 +14,13 @@ import (
 // once the database and then reuse it for every address.
 
 // LookupASN maps [ip] to an AS number and an AS organization name.
-func LookupASN(ip string) (asn uint, org string, err error) {
+func LookupASN(reader *maxminddb.Reader, ip string) (asn uint, org string, err error) {
 	asn, org = model.DefaultProbeASN, model.DefaultProbeNetworkName
-	db, err := maxminddb.FromBytes(assets.OOMMDBDatabaseBytes)
-	runtimex.PanicOnError(err, "cannot load embedded geoip2 database")
+	var db *maxminddb.Reader = reader
+	if db == nil {
+		db, err = maxminddb.FromBytes(assets.OOMMDBDatabaseBytes)
+		runtimex.PanicOnError(err, "cannot load embedded geoip2 database")
+	}
 	defer db.Close()
 	record, err := assets.OOMMDBLooup(db, net.ParseIP(ip))
 	if err != nil {
@@ -31,9 +34,13 @@ func LookupASN(ip string) (asn uint, org string, err error) {
 }
 
 // LookupCC maps [ip] to a country code.
-func LookupCC(ip string) (cc string, err error) {
+func LookupCC(reader *maxminddb.Reader, ip string) (cc string, err error) {
 	cc = model.DefaultProbeCC
-	db, err := maxminddb.FromBytes(assets.OOMMDBDatabaseBytes)
+	var db *maxminddb.Reader = reader
+	if db == nil {
+		db, err = maxminddb.FromBytes(assets.OOMMDBDatabaseBytes)
+		runtimex.PanicOnError(err, "cannot load embedded geoip2 database")
+	}
 	runtimex.PanicOnError(err, "cannot load embedded geoip2 country database")
 	defer db.Close()
 	record, err := assets.OOMMDBLooup(db, net.ParseIP(ip))

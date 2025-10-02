@@ -7,6 +7,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
@@ -72,6 +73,10 @@ type Config struct {
 	// UserAgent is the user agent to use. If not set, then
 	// we will use a default user agent.
 	UserAgent string
+
+	// DBPath is the geoip database path. If not set,
+	// we will use the default embedded geoip db
+	DBPath string
 }
 
 // NewTask creates a new instance of Task from config.
@@ -86,11 +91,21 @@ func NewTask(config Config) *Task {
 	if config.Resolver == nil {
 		config.Resolver = netx.NewStdlibResolver(config.Logger)
 	}
+
+	mmdbLookupper, err := InitMmdbLookupper(config.DBPath) // TODO: handle the error here gracefully
+	if err != nil {
+		runtimex.PanicOnError(err, "Failed to load geoip db from external path")
+	}
+
 	return &Task{
-		countryLookupper:     mmdbLookupper{},
-		probeIPLookupper:     ipLookupClient(config),
-		probeASNLookupper:    mmdbLookupper{},
-		resolverASNLookupper: mmdbLookupper{},
+		countryLookupper: mmdbLookupper,
+		probeIPLookupper: ipLookupClient{
+			Resolver:  config.Resolver,
+			Logger:    config.Logger,
+			UserAgent: config.UserAgent,
+		},
+		probeASNLookupper:    mmdbLookupper,
+		resolverASNLookupper: mmdbLookupper,
 		resolverIPLookupper: resolverLookupClient{
 			Logger: config.Logger,
 		},
