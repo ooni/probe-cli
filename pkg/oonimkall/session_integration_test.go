@@ -68,7 +68,7 @@ func TestGeolocateWithCancelledContext(t *testing.T) {
 	}
 	ctx := sess.NewContext()
 	ctx.Cancel() // cause immediate failure
-	location, err := sess.Geolocate(ctx, "")
+	location, err := sess.Geolocate(ctx)
 	if err := ReduceErrorForGeolocate(err); err != nil {
 		t.Fatal(err)
 	}
@@ -86,7 +86,7 @@ func TestGeolocateGood(t *testing.T) {
 		t.Fatal(err)
 	}
 	ctx := sess.NewContext()
-	location, err := sess.Geolocate(ctx, "")
+	location, err := sess.Geolocate(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
