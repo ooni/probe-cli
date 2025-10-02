@@ -73,6 +73,7 @@ func (r *runnerForTask) newsession(ctx context.Context, logger model.Logger) (ta
 		KVStore:         kvstore,
 		Logger:          logger,
 		ProxyURL:        proxyURL,
+		GeoipDB:         r.settings.GeoipDB,
 		SoftwareName:    r.settings.Options.SoftwareName,
 		SoftwareVersion: r.settings.Options.SoftwareVersion,
 		TempDir:         r.settings.TempDir,

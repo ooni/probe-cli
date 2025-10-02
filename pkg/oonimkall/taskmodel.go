@@ -239,6 +239,9 @@ type settings struct {
 	// this field is empty, the task won't start.
 	AssetsDir string `json:"assets_dir"`
 
+	// GeoipDB is the path of the geoip database
+	GeoipDB string `json:"geoip_db"`
+
 	// DisabledEvents contains disabled events. See
 	// https://git.io/Jv4Rv for the events names.
 	//
