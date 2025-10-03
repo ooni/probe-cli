@@ -94,7 +94,7 @@ func NewTask(config Config) *Task {
 
 	mmdbLookupper, err := InitMmdbLookupper(config.DBPath) // TODO: handle the error here gracefully
 	if err != nil {
-		runtimex.PanicOnError(err, "Failed to load geoip db from external path")
+		runtimex.PanicOnError(err, fmt.Sprintf("Failed to load geoip db from external path: %s", config.DBPath))
 	}
 
 	return &Task{

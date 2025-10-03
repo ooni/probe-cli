@@ -122,6 +122,7 @@ type eventStatusEnd struct {
 }
 
 type eventStatusGeoIPLookup struct {
+	GeoipDB          string `json:"geoip_db"`
 	ProbeASN         string `json:"probe_asn"`
 	ProbeCC          string `json:"probe_cc"`
 	ProbeIP          string `json:"probe_ip"`
@@ -139,6 +140,7 @@ type eventStatusReportGeneric struct {
 }
 
 type eventStatusResolverLookup struct {
+	GeoipDB             string `json:"geoip_db"`
 	ResolverASN         string `json:"resolver_asn"`
 	ResolverIP          string `json:"resolver_ip"`
 	ResolverNetworkName string `json:"resolver_network_name"`
@@ -205,6 +207,10 @@ type taskSession interface {
 	// ResolverNetworkName must be called after MaybeLookupLocationContext
 	// and returns the resolved resolver's network name.
 	ResolverNetworkName() string
+
+	// GeoipDB must be called after MaybeLookupLocationContext
+	// and returns the path of the geoip database used to perform the location lookup.
+	GeoipDB() string
 }
 
 //

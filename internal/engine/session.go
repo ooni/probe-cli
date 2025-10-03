@@ -545,6 +545,17 @@ func (s *Session) ProbeIP() string {
 	return ip
 }
 
+// GeoipDB return the geoip database path
+func (s *Session) GeoipDB() string {
+	defer s.mu.Unlock()
+	s.mu.Lock()
+	db := model.DefaultGeoipDB
+	if db != "" {
+		db = s.geoipDB
+	}
+	return db
+}
+
 // ProxyURL returns the Proxy URL, or nil if not set
 func (s *Session) ProxyURL() *url.URL {
 	return s.proxyURL

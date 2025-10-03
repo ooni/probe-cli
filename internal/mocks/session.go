@@ -35,6 +35,8 @@ type Session struct {
 
 	MockProbeNetworkName func() string
 
+	MockGeoipDB func() string
+
 	MockProxyURL func() *url.URL
 
 	MockResolverIP func() string
@@ -188,4 +190,8 @@ func (sess *Session) ResolverASNString() string {
 
 func (sess *Session) ResolverNetworkName() string {
 	return sess.MockResolverNetworkName()
+}
+
+func (sess *Session) GeoipDB() string {
+	return sess.MockGeoipDB()
 }

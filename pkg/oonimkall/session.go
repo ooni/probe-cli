@@ -279,6 +279,9 @@ type GeolocateResults struct {
 
 	// Org is the commercial name of the ASN.
 	Org string
+
+	// GeoipDB is the geoip db
+	GeoipDB string
 }
 
 // Geolocate performs a geolocate operation and returns the results.
@@ -292,6 +295,7 @@ func (sess *Session) Geolocate(ctx *Context) (*GeolocateResults, error) {
 		return nil, err
 	}
 	return &GeolocateResults{
+		GeoipDB: sess.sessp.GeoipDB(),
 		ASN:     sess.sessp.ProbeASNString(),
 		Country: sess.sessp.ProbeCC(),
 		IP:      sess.sessp.ProbeIP(),

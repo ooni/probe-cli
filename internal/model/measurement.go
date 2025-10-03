@@ -36,6 +36,9 @@ const (
 
 	// DefaultResolverNetworkName is the default resolver network name.
 	DefaultResolverNetworkName = ""
+
+	// DefaultGeoipDB is the default geoip database.
+	DefaultGeoipDB = "engine-internal"
 )
 
 var (
