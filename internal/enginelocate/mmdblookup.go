@@ -2,33 +2,23 @@ package enginelocate
 
 import (
 	"github.com/ooni/probe-cli/v3/internal/geoipx"
-	"github.com/oschwald/maxminddb-golang"
 )
 
 type mmdbLookupper struct {
-	reader *maxminddb.Reader
+	dbPath string
 }
 
 // InitMmdbLookupper
-func InitMmdbLookupper(path string) (mmdbLookupper, error) {
-	if path == "" {
-		return mmdbLookupper{}, nil
-
-	}
-	db, err := maxminddb.Open(path)
-	if err != nil {
-		return mmdbLookupper{}, err
-	}
-
+func InitMmdbLookupper(path string) mmdbLookupper {
 	return mmdbLookupper{
-		reader: db,
-	}, nil
+		dbPath: path,
+	}
 }
 
 func (mmdb mmdbLookupper) LookupASN(ip string) (uint, string, error) {
-	return geoipx.LookupASN(mmdb.reader, ip)
+	return geoipx.LookupASN(ip, mmdb.dbPath)
 }
 
 func (mmdb mmdbLookupper) LookupCC(ip string) (string, error) {
-	return geoipx.LookupCC(mmdb.reader, ip)
+	return geoipx.LookupCC(ip, mmdb.dbPath)
 }

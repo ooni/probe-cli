@@ -7,7 +7,6 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
@@ -92,10 +91,7 @@ func NewTask(config Config) *Task {
 		config.Resolver = netx.NewStdlibResolver(config.Logger)
 	}
 
-	mmdbLookupper, err := InitMmdbLookupper(config.DBPath) // TODO: handle the error here gracefully
-	if err != nil {
-		runtimex.PanicOnError(err, fmt.Sprintf("Failed to load geoip db from external path: %s", config.DBPath))
-	}
+	mmdbLookupper := InitMmdbLookupper(config.DBPath)
 
 	return &Task{
 		countryLookupper: mmdbLookupper,
