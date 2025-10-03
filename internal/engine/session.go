@@ -550,7 +550,7 @@ func (s *Session) GeoipDB() string {
 	defer s.mu.Unlock()
 	s.mu.Lock()
 	db := model.DefaultGeoipDB
-	if db != "" {
+	if s.geoipDB != "" {
 		db = s.geoipDB
 	}
 	return db
