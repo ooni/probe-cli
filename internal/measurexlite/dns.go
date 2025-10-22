@@ -198,7 +198,7 @@ func newArchivalDNSAnswers(addrs []string, resp model.DNSResponse) (out []model.
 			log.Printf("BUG: NewArchivalDNSLookupResult: invalid IP address: %s", addr)
 			continue
 		}
-		asn, org, _ := geoipx.LookupASN(addr) // error if not in the DB; returns sensible values on error
+		asn, org, _ := geoipx.LookupASN(addr, "") // error if not in the DB; returns sensible values on error
 		switch ipv6 {
 
 		case false:

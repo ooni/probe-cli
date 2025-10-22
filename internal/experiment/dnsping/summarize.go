@@ -107,7 +107,7 @@ func (as *addressSummarizer) addAnswer(hostname string, ipAddr string, late bool
 		as.m[hostname] = make(map[string]*summarizeAddressStats)
 	}
 	if as.m[hostname][ipAddr] == nil {
-		asNum, asOrg, _ := geoipx.LookupASN(ipAddr)
+		asNum, asOrg, _ := geoipx.LookupASN(ipAddr, "")
 		as.m[hostname][ipAddr] = &summarizeAddressStats{
 			Domain:      hostname,
 			IPAddress:   ipAddr,

@@ -73,6 +73,7 @@ func (r *runnerForTask) newsession(ctx context.Context, logger model.Logger) (ta
 		KVStore:         kvstore,
 		Logger:          logger,
 		ProxyURL:        proxyURL,
+		GeoipDB:         r.settings.GeoipDB,
 		SoftwareName:    r.settings.Options.SoftwareName,
 		SoftwareVersion: r.settings.Options.SoftwareVersion,
 		TempDir:         r.settings.TempDir,
@@ -177,12 +178,14 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 	r.emitter.EmitStatusProgress(0.2, "geoip lookup")
 	r.emitter.EmitStatusProgress(0.3, "resolver lookup")
 	r.emitter.Emit(eventTypeStatusGeoIPLookup, eventStatusGeoIPLookup{
+		GeoipDB:          sess.GeoipDB(),
 		ProbeIP:          sess.ProbeIP(),
 		ProbeASN:         sess.ProbeASNString(),
 		ProbeCC:          sess.ProbeCC(),
 		ProbeNetworkName: sess.ProbeNetworkName(),
 	})
 	r.emitter.Emit(eventTypeStatusResolverLookup, eventStatusResolverLookup{
+		GeoipDB:             sess.GeoipDB(),
 		ResolverASN:         sess.ResolverASNString(),
 		ResolverIP:          sess.ResolverIP(),
 		ResolverNetworkName: sess.ResolverNetworkName(),

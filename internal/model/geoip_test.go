@@ -1,9 +1,11 @@
 package model
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestGeoIPLookupperFunc(t *testing.T) {
-	fx := func(ip string) (asn uint, org string, err error) {
+	fx := func(ip string, dbPath string) (asn uint, org string, err error) {
 		return 137, "Consortium GARR", nil
 	}
 	lookupper := GeoIPASNLookupperFunc(fx)

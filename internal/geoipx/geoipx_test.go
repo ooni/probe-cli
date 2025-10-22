@@ -10,7 +10,7 @@ const ipAddr = "8.8.8.8"
 
 func TestLookupASN(t *testing.T) {
 	t.Run("with valid IP address", func(t *testing.T) {
-		asn, org, err := LookupASN(ipAddr)
+		asn, org, err := LookupASN(ipAddr, "")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -23,7 +23,7 @@ func TestLookupASN(t *testing.T) {
 	})
 
 	t.Run("with invalid IP address", func(t *testing.T) {
-		asn, org, err := LookupASN("xxx")
+		asn, org, err := LookupASN("xxx", "")
 		if err == nil {
 			t.Fatal("expected an error here")
 		}
@@ -38,7 +38,7 @@ func TestLookupASN(t *testing.T) {
 
 func TestLookupCC(t *testing.T) {
 	t.Run("with valid IP address", func(t *testing.T) {
-		cc, err := LookupCC(ipAddr)
+		cc, err := LookupCC(ipAddr, "")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -48,7 +48,7 @@ func TestLookupCC(t *testing.T) {
 	})
 
 	t.Run("with invalid IP address", func(t *testing.T) {
-		cc, err := LookupCC("xxx")
+		cc, err := LookupCC("xxx", "")
 		if err == nil {
 			t.Fatal("expected an error here")
 		}
