@@ -276,6 +276,9 @@ func TestTaskRunnerRun(t *testing.T) {
 				MockResolverNetworkName: func() string {
 					return "GARR"
 				},
+				MockGeoipDB: func() string {
+					return ""
+				},
 			},
 
 			Loader: &mocks.ExperimentTargetLoader{
