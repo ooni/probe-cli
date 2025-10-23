@@ -29,7 +29,9 @@ func iosSubcommand() *cobra.Command {
 		Use:   "gomobile",
 		Short: "Builds oonimkall for iOS using gomobile",
 		Run: func(cmd *cobra.Command, args []string) {
-			iosBuildGomobile(&buildDeps{})
+			iosBuildGomobile(&buildDeps{
+				libtorEnabled: true,
+			})
 		},
 	})
 
@@ -64,7 +66,7 @@ func iosBuildGomobile(deps buildtoolmodel.Dependencies) {
 	}
 
 	log.Info("building the mobile library using gomobile")
-	gomobileBuild(config)
+	oomobileBuild(config)
 }
 
 // iosCdepsBuildMain builds C dependencies for ios.

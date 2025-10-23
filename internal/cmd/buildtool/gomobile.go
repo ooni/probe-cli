@@ -6,6 +6,7 @@ package main
 
 import (
 	"path/filepath"
+	"strings"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/cmd/buildtool/internal/buildtoolmodel"
@@ -86,6 +87,18 @@ func oomobileBuild(config *gomobileConfig) {
 	for _, entry := range config.extraFlags {
 		argv.Append(entry)
 	}
+	tags := []string{}
+	if config.deps.LibtorEnabled() {
+		tags = append(tags, "ooni_libtor")
+	}
+	if config.deps.PsiphonFilesExist() {
+		tags = append(tags, "ooni_psiphon_config")
+	}
+	argv.Append("-tags", strings.Join(tags, ","))
+
+	// we have to pass the "-checklinkname=0" flag to build for go>=1.23.0
+	// https://github.com/wlynxg/anet?tab=readme-ov-file#how-to-build-with-go-1230-or-later
+	argv.Append("-ldflags", "-checklinkname=0 -s -w")
 
 	argv.Append("./pkg/oonimkall")
 

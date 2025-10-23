@@ -42,6 +42,10 @@ type Dependencies interface {
 	// config files are in the correct location.
 	PsiphonFilesExist() bool
 
+	// LibtorEnabled returns true if libtor is supported
+	// for the build target
+	LibtorEnabled() bool
+
 	// PsiphonMaybeCopyConfigFiles copies psiphon
 	// config files if possible
 	PsiphonMaybeCopyConfigFiles()

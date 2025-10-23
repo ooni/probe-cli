@@ -145,6 +145,7 @@ const (
 	TagMustChdir                   = "mustChdir"
 	TagPsiphonFilesExist           = "psiphonFilesExist"
 	TagPsiphonMaybeCopyConfigFiles = "maybeCopyPsiphonFiles"
+	TagLibtorEnabled               = "libtorEnabled"
 	TagVerifySHA256                = "verifySHA256"
 	TagWindowsMingwCheck           = "windowsMingwCheck"
 	TagGOOS                        = "GOOS"
@@ -220,6 +221,12 @@ func (cc *DependenciesCallCounter) PsiphonFilesExist() bool {
 // psiphonMaybeCopyConfigFiles implements buildtoolmodel.Dependencies
 func (cc *DependenciesCallCounter) PsiphonMaybeCopyConfigFiles() {
 	cc.increment(TagPsiphonMaybeCopyConfigFiles)
+}
+
+// LibtorEnabled implements buildtool.Dependencies
+func (cc *DependenciesCallCounter) LibtorEnabled() bool {
+	cc.increment(TagLibtorEnabled)
+	return false
 }
 
 // VerifySHA256 implements buildtoolmodel.Dependencies
