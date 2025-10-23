@@ -32,7 +32,12 @@ func TestAndroidBuildGomobile(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"go", "install", "golang.org/x/mobile/cmd/gomobile@latest",
+				"go", "install", "github.com/ooni/oomobile/cmd/gomobile@latest",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"go", "install", "github.com/ooni/oomobile/cmd/gobind@latest",
 			},
 		}, {
 			Env: []string{},
@@ -42,7 +47,7 @@ func TestAndroidBuildGomobile(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"go", "get", "-d", "golang.org/x/mobile/cmd/gomobile",
+				"go", "get", "-d", "github.com/ooni/oomobile/cmd/gomobile",
 			},
 		}, {
 			Env: []string{
@@ -55,7 +60,7 @@ func TestAndroidBuildGomobile(t *testing.T) {
 				"gomobile", "bind", "-target", "android",
 				"-o", "MOBILE/android/oonimkall.aar",
 				"-androidapi", "21",
-				"-tags", "ooni_psiphon_config,ooni_libtor",
+				"-tags", "ooni_libtor,ooni_psiphon_config",
 				"-ldflags", "-checklinkname=0 -s -w",
 				"./pkg/oonimkall",
 			},
@@ -71,7 +76,12 @@ func TestAndroidBuildGomobile(t *testing.T) {
 		expect: []buildtooltest.ExecExpectations{{
 			Env: []string{},
 			Argv: []string{
-				"go", "install", "golang.org/x/mobile/cmd/gomobile@latest",
+				"go", "install", "github.com/ooni/oomobile/cmd/gomobile@latest",
+			},
+		}, {
+			Env: []string{},
+			Argv: []string{
+				"go", "install", "github.com/ooni/oomobile/cmd/gobind@latest",
 			},
 		}, {
 			Env: []string{},
@@ -81,7 +91,7 @@ func TestAndroidBuildGomobile(t *testing.T) {
 		}, {
 			Env: []string{},
 			Argv: []string{
-				"go", "get", "-d", "golang.org/x/mobile/cmd/gomobile",
+				"go", "get", "-d", "github.com/ooni/oomobile/cmd/gomobile",
 			},
 		}, {
 			Env: []string{
@@ -112,7 +122,8 @@ func TestAndroidBuildGomobile(t *testing.T) {
 			cc := &buildtooltest.SimpleCommandCollector{}
 
 			deps := &buildtooltest.DependenciesCallCounter{
-				HasPsiphon: testcase.hasPsiphon,
+				HasPsiphon:      testcase.hasPsiphon,
+				IsLibtorEnabled: true,
 			}
 
 			shellxtesting.WithCustomLibrary(cc, func() {
@@ -124,6 +135,7 @@ func TestAndroidBuildGomobile(t *testing.T) {
 				buildtooltest.TagAndroidNDKCheck:             1,
 				buildtooltest.TagAndroidSDKCheck:             1,
 				buildtooltest.TagGolangCheck:                 1,
+				buildtooltest.TagLibtorEnabled:               1,
 				buildtooltest.TagPsiphonMaybeCopyConfigFiles: 1,
 				buildtooltest.TagPsiphonFilesExist:           1,
 			}

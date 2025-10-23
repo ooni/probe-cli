@@ -145,6 +145,7 @@ const (
 	TagMustChdir                   = "mustChdir"
 	TagPsiphonFilesExist           = "psiphonFilesExist"
 	TagPsiphonMaybeCopyConfigFiles = "maybeCopyPsiphonFiles"
+	TagLibtorEnabled               = "libtorEnabled"
 	TagVerifySHA256                = "verifySHA256"
 	TagWindowsMingwCheck           = "windowsMingwCheck"
 	TagGOOS                        = "GOOS"
@@ -153,9 +154,10 @@ const (
 // DependenciesCallCounter allows to counter how many times the
 // build dependencies have been called in a run.
 type DependenciesCallCounter struct {
-	Counter    map[string]int
-	HasPsiphon bool
-	OS         string
+	Counter         map[string]int
+	HasPsiphon      bool
+	OS              string
+	IsLibtorEnabled bool
 }
 
 var _ buildtoolmodel.Dependencies = &DependenciesCallCounter{}
@@ -220,6 +222,12 @@ func (cc *DependenciesCallCounter) PsiphonFilesExist() bool {
 // psiphonMaybeCopyConfigFiles implements buildtoolmodel.Dependencies
 func (cc *DependenciesCallCounter) PsiphonMaybeCopyConfigFiles() {
 	cc.increment(TagPsiphonMaybeCopyConfigFiles)
+}
+
+// LibtorEnabled implements buildtool.Dependencies
+func (cc *DependenciesCallCounter) LibtorEnabled() bool {
+	cc.increment(TagLibtorEnabled)
+	return cc.IsLibtorEnabled
 }
 
 // VerifySHA256 implements buildtoolmodel.Dependencies

@@ -37,7 +37,9 @@ func androidSubcommand() *cobra.Command {
 				runtime.GOOS == "darwin" || runtime.GOOS == "linux",
 				"this command requires darwin or linux",
 			)
-			androidBuildGomobile(&buildDeps{})
+			androidBuildGomobile(&buildDeps{
+				libtorEnabled: true,
+			})
 		},
 	})
 
@@ -112,7 +114,7 @@ func androidBuildGomobile(deps buildtoolmodel.Dependencies) {
 		target:     "android",
 	}
 	log.Info("building the mobile library using gomobile")
-	gomobileBuild(config)
+	oomobileBuild(config)
 }
 
 // androidSDKCheck checks we have the right SDK installed.

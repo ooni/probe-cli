@@ -14,7 +14,9 @@ import (
 )
 
 // buildDeps is the default buildDeps implementation
-type buildDeps struct{}
+type buildDeps struct {
+	libtorEnabled bool
+}
 
 var _ buildtoolmodel.Dependencies = &buildDeps{}
 
@@ -86,4 +88,9 @@ func (*buildDeps) VerifySHA256(expectedSHA256 string, tarball string) {
 // XCRun implements buildtoolmodel.Dependencies
 func (*buildDeps) XCRun(args ...string) string {
 	return iosXCRun(args...)
+}
+
+// LibtorEnabled implemented buildtoolmodel.Dependencies
+func (b *buildDeps) LibtorEnabled() bool {
+	return b.libtorEnabled
 }
