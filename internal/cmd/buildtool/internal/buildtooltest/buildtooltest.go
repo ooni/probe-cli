@@ -154,9 +154,10 @@ const (
 // DependenciesCallCounter allows to counter how many times the
 // build dependencies have been called in a run.
 type DependenciesCallCounter struct {
-	Counter    map[string]int
-	HasPsiphon bool
-	OS         string
+	Counter         map[string]int
+	HasPsiphon      bool
+	OS              string
+	IsLibtorEnabled bool
 }
 
 var _ buildtoolmodel.Dependencies = &DependenciesCallCounter{}
@@ -226,7 +227,7 @@ func (cc *DependenciesCallCounter) PsiphonMaybeCopyConfigFiles() {
 // LibtorEnabled implements buildtool.Dependencies
 func (cc *DependenciesCallCounter) LibtorEnabled() bool {
 	cc.increment(TagLibtorEnabled)
-	return false
+	return cc.IsLibtorEnabled
 }
 
 // VerifySHA256 implements buildtoolmodel.Dependencies

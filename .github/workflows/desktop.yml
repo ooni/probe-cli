@@ -6,7 +6,6 @@ on:
       - "release/**"
       - "fullbuild"
       - "desktopbuild"
-      - "feat/oomobile-tags"
     tags:
       - "v*"
   schedule:
