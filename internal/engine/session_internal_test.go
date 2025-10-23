@@ -337,7 +337,8 @@ func TestNewSessionWithFakeTunnelAndCancelledContext(t *testing.T) {
 func TestSessionNewExperimentBuilder(t *testing.T) {
 	t.Run("for a normal experiment", func(t *testing.T) {
 		sess := &Session{
-			logger: model.DiscardLogger,
+			kvStore: &kvstore.Memory{},
+			logger:  model.DiscardLogger,
 		}
 		builder, err := sess.NewExperimentBuilder("ndt7")
 		if err != nil {
