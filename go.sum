@@ -408,6 +408,8 @@ github.com/ooni/netem v0.0.0-20250905215919-3882eda4fb66 h1:i2sw2lTJKT4dbeTNW8GD
 github.com/ooni/netem v0.0.0-20250905215919-3882eda4fb66/go.mod h1:CKKtaYpxFRzD2I0Cxlkz9msGyc6p/ZkOLu6TfXneDyU=
 github.com/ooni/probe-assets v0.28.0 h1:r1hlPmC9PwfKqX0of9T0tx9xTIczPvqx5N6Bt0LK2LA=
 github.com/ooni/probe-assets v0.28.0/go.mod h1:m0k2FFzcLfFm7dhgyYkLCUR3R0CoRPr0jcjctDS2+gU=
+github.com/ooni/probe-assets v0.29.0 h1:+jUBn5xZ5bHOP4++0tAd6J7w6kLS1q2fFeKyAXsfMFE=
+github.com/ooni/probe-assets v0.29.0/go.mod h1:m0k2FFzcLfFm7dhgyYkLCUR3R0CoRPr0jcjctDS2+gU=
 github.com/oschwald/geoip2-golang v1.9.0 h1:uvD3O6fXAXs+usU+UGExshpdP13GAqp4GBrzN7IgKZc=
 github.com/oschwald/geoip2-golang v1.9.0/go.mod h1:BHK6TvDyATVQhKNbQBdrj9eAvuwOMi2zSFXizL3K81Y=
 github.com/oschwald/maxminddb-golang v1.13.1 h1:G3wwjdN9JmIK2o/ermkHM+98oX5fS+k5MbwsmL4MRQE=
