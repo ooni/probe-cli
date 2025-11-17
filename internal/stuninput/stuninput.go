@@ -12,7 +12,6 @@ import (
 //
 // We should sync with https://gitlab.torproject.org/tpo/applications/tor-browser-build/-/blob/main/projects/tor-expert-bundle/pt_config.json
 var inputs = map[string]bool{
-	"stun.antisip.com:3478":   true,
 	"stun.epygi.com:3478":     true,
 	"stun.uls.co.za:3478":     true,
 	"stun.voipgate.com:3478":  true,
