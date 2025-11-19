@@ -29,7 +29,7 @@ func cdepsTorBuildMain(globalEnv *cBuildEnv, deps buildtoolmodel.Dependencies) {
 	// See https://github.com/Homebrew/homebrew-core/blob/master/Formula/t/tor.rb
 	cdepsMustFetch("https://www.torproject.org/dist/tor-0.4.8.17.tar.gz")
 	deps.VerifySHA256( // must be mockable
-		"b6a5f44b7eb69e3fa35dbf15524405b44837a481d43d81daddde3ff21fcbb8e9",
+		"79b4725e1d4b887b9e68fd09b0d2243777d5ce3cd471e538583bcf6f9d8cdb56",
 		"tor-0.4.8.17.tar.gz",
 	)
 	must.Run(log.Log, "tar", "-xf", "tor-0.4.8.17.tar.gz")
