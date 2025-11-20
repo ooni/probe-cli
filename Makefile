@@ -107,7 +107,7 @@ ios: search/for/zip search/for/xcode
 #help: The `make DESKTOP/windows` command builds the oonimkall jar for windows.
 .PHONY: DESKTOP/windows
 DESKTOP/windows: search/for/java
-	./script/go.bash run ./internal/cmd/buildtool desktop oomobile --target=windows
+	go run ./internal/cmd/buildtool desktop oomobile --target=windows
 
 #help:
 #help: The `make DESKTOP/darwin` command builds the oonimkall jar for darwin.
