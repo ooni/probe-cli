@@ -98,6 +98,9 @@ jobs:
           PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
 
+      - name: Add Git Bash to PATH
+        run: echo "C:\Program Files\Git\bin" >> $env:GITHUB_PATH
+
       - run: make DESKTOP/windows
 
       - uses: actions/upload-artifact@v4
